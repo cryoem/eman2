@@ -334,7 +334,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.launch_task(E2CTFGeneralTask,"e2ctf general")
 	
 	def launch_e2boxer_output(self):
-		self.launch_task(E2BoxerOuputTask,"e2ctf general")
+		self.launch_task(E2BoxerOutputTask,"e2ctf general")
 	
 	def launch_boxer_general(self):
 		self.launch_task(E2BoxerGeneralTask,"e2boxer general")

@@ -297,7 +297,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 				vals.append(-1)
 		return vals
 
-	def pet_project_particle_param_table(self):
+	def get_project_particle_param_table(self):
 		'''
 		Use the names in the global.micrograph_ccd_filenames to build a table showing the corresponding and  current number of boxed particles in the particles directory, and also lists their dimensions
 		Puts the information in a ParamTable.
@@ -349,7 +349,6 @@ class ParticleReportTask(ParticleWorkFlowTask):
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=ParticleReportTask.documentation_string,choices=None))
 		
 	   	p = self.pet_particle_param_table()
-	   	self.get_particle_db_names(strip_ptcls=False)
 		params.append(p)  
 		
 		return params
@@ -439,32 +438,143 @@ class ParticleImportTask(ParticleWorkFlowTask):
 			
 			db_close_dict("bdb:project")
 
-class E2BoxerAutoTask(ParticleWorkFlowTask):	
-	documentation_string = "Information"
+class E2BoxerTask(ParticleWorkFlowTask):
+	'''
+	Provides some common functions for the e2boxer tasks
+	'''
 	def __init__(self,application):
 		ParticleWorkFlowTask.__init__(self,application)
+		
+	def get_e2boxer_boxes_and_project_particles_table(self):
+		
+		p = self.get_project_particle_param_table() # now p is a ParamTable with rows for as many files as there in the project
+		# also, p contains columns with filename | particle number | particle dimensions
+		 
+		project_db = db_open_dict("bdb:project")	
+		project_names = project_db.get("global.micrograph_ccd_filenames",dfl=[])
+		
+		
+		nboxes,dimensions = self.__get_e2boxer_data(project_names)
+		pboxes = ParamDef(name="Num boxes",vartype="intlist",desc_short="Boxes in DB",desc_long="The number of boxes stored for this image in the database",property=None,defaultunits=None,choices=nboxes)
+		pdims = ParamDef(name="DB Box Dims",vartype="stringlist",desc_short="Dims in DB",desc_long="The dimensions boxes",property=None,defaultunits=None,choices=dimensions)
+		
+		p.append(pboxes)
+		p.append(pdims)
+		return p
+	
+	def get_project_files_that_have_db_boxes_in_table(self):
+		project_db = db_open_dict("bdb:project")	
+		project_names = project_db.get("global.micrograph_ccd_filenames",dfl=[])
+		
+		flat_boxes = self.get_num_particles(project_names)
+		flat_dims = self.get_particle_dims(project_names)
+		
+		
+		db_boxes,db_dims = self.__get_e2boxer_data(project_names)
+		
+		
+		
+		for i in range(len(db_dims)-1,-1,-1):
+			if db_boxes[i] == "":
+				for data in [project_names,flat_boxes,flat_dims,db_boxes,db_dims]:
+					data.pop(i)
+		
+		
+		pnames = ParamDef(name="global.micrograph_ccd_filenames",vartype="stringlist",desc_short="File names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=None,choices=project_names)
+		pboxes = ParamDef(name="Num boxes",vartype="intlist",desc_short="Particles",desc_long="The number of box images stored for this image in the database",property=None,defaultunits=None,choices=flat_boxes)
+		pdims = ParamDef(name="Dimensions",vartype="stringlist",desc_short="Dimensions",desc_long="The dimensions of the particle images",property=None,defaultunits=None,choices=flat_dims)
+		pdbboxes = ParamDef(name="Num boxes",vartype="intlist",desc_short="Boxes in DB",desc_long="The number of boxes stored for this image in the database",property=None,defaultunits=None,choices=db_boxes)
+		pdvdims = ParamDef(name="DB Box Dims",vartype="stringlist",desc_short="Dims in DB",desc_long="The dimensions boxes",property=None,defaultunits=None,choices=db_dims)
+		
+		p = ParamTable(name="filenames",desc_short="Choose images to box",desc_long="")
+		p.append(pnames)
+		p.append(pboxes)
+		p.append(pdbboxes)
+		p.append(pdvdims)
+		
+		return p,len(db_dims)
+		
+	def __get_e2boxer_data(self,project_names):
+		
+		db_name = "bdb:e2boxer.cache"		
+		box_maps = {}
+		if db_check_dict(db_name):
+			e2boxer_db = db_open_dict(db_name)
+			for name in e2boxer_db.keys():
+				d = e2boxer_db[name]
+				if not isinstance(d,dict): continue
+				if not d.has_key("e2boxer_image_name"): # this is the test, if something else has this key then we're screwed.
+					continue
+				name = d["e2boxer_image_name"]
+				if not name in project_names: continue
+				dim = ""
+				nbox = 0
+				for key in ["auto_boxes","manual_boxes","reference_boxes"]:
+					if d.has_key(key):
+						boxes = d[key]
+						if boxes != None:
+							nbox += len(boxes)
+							if dim == "" and len(boxes) > 0:
+								box = boxes[0]
+								dim = str(box.xsize) + "x"+str(box.ysize)
+				
+				if nbox == 0: nbox = "" # just so it appears as nothin in the interface			
+				box_maps[name] = [dim,nbox]
+		
+		nboxes = []
+		dimensions = []
+		print project_names
+		for name in project_names:
+			if box_maps.has_key(name):
+				dimensions.append(box_maps[name][0])
+				nboxes.append(box_maps[name][1])
+			else:
+				dimensions.append("")
+				nboxes.append("")
+				
+		return nboxes,dimensions
+
+
+class E2BoxerAutoTask(E2BoxerTask):
+	documentation_string = "Select the images you wish to run autoboxing on and hit OK.\nThis will cause the workflow to spawn processes based on the available CPUs.\nData will be autoboxed using the current autoboxer in the database, which is placed there by e2boxer."
+	warning_string = "\n\n\nNOTE: This feature is currently disabled as there is no autoboxing information in the EMAN database. You can fix this situation by using e2boxer to interactively box a few images first"
+	
+	def __init__(self,application):
+		E2BoxerTask.__init__(self,application)
 		self.window_title = "e2boxer auto"
 		self.boxer_module = None # this will actually point to an EMBoxerModule, potentially
 
 	def get_params(self):
 		params = []
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="Using e2boxer",desc_long="",property=None,defaultunits=E2BoxerAutoTask.documentation_string,choices=None))
 		
-		p = self.pet_project_particle_param_table()
-		params.append(p)
+		
+		db_name = "bdb:e2boxer.cache"
+		fail = False
+		if db_check_dict(db_name):
+			db = db_open_dict(db_name)
+			if not db.has_key("current_autoboxer"): fail = True
+		else:
+			fail = True
+			
+		if fail:
+			params.append(ParamDef(name="blurb",vartype="text",desc_short="Using e2boxer",desc_long="",property=None,defaultunits=E2BoxerAutoTask.documentation_string+E2BoxerAutoTask.warning_string,choices=None))
+		else:
+			params.append(ParamDef(name="blurb",vartype="text",desc_short="Using e2boxer",desc_long="",property=None,defaultunits=E2BoxerAutoTask.documentation_string,choices=None))
+			p = self.get_e2boxer_boxes_and_project_particles_table()
+			params.append(p)
 	
-		boxer_project_db = db_open_dict("bdb:e2boxer.project")
-		pbox = ParamDef(name="boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=boxer_project_db.get("working_boxsize",dfl=128),choices=[])
+#		boxer_project_db = db_open_dict("bdb:e2boxer.project")
+#		pbox = ParamDef(name="boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=boxer_project_db.get("working_boxsize",dfl=128),choices=[])
 		
-		pfo = ParamDef(name="force",vartype="boolean",desc_short="Force overwrite",desc_long="Whether or not to force overwrite files that already exist",property=None,defaultunits=False,choices=None)
-		pwc = ParamDef(name="write_coord_files",vartype="boolean",desc_short="Write box db files",desc_long="Whether or not box db files should be written",property=None,defaultunits=False,choices=None)
-		pwb = ParamDef(name="write_box_images",vartype="boolean",desc_short="Write box image files",desc_long="Whether or not box images should be written",property=None,defaultunits=True,choices=None)
-		pn =  ParamDef(name="normproc",vartype="string",desc_short="Normalize images",desc_long="How the output box images should be normalized",property=None,defaultunits="normalize.edgemean",choices=["normalize","normalize.edgemean","none"])
-		pop = ParamDef(name="outformat",vartype="string",desc_short="Output image format",desc_long="The format of the output box images",property=None,defaultunits="bdb",choices=["bdb","img","hdf"])
-		params.append([pbox,pfo])
-		params.append([pwc,pwb])
-		params.append(pn)
-		params.append(pop)
+#		pfo = ParamDef(name="force",vartype="boolean",desc_short="Force overwrite",desc_long="Whether or not to force overwrite files that already exist",property=None,defaultunits=False,choices=None)
+#		pwc = ParamDef(name="write_coord_files",vartype="boolean",desc_short="Write box db files",desc_long="Whether or not box db files should be written",property=None,defaultunits=False,choices=None)
+#		pwb = ParamDef(name="write_box_images",vartype="boolean",desc_short="Write box image files",desc_long="Whether or not box images should be written",property=None,defaultunits=False,choices=None)
+#		pn =  ParamDef(name="normproc",vartype="string",desc_short="Normalize images",desc_long="How the output box images should be normalized",property=None,defaultunits="normalize.edgemean",choices=["normalize","normalize.edgemean","none"])
+#		pop = ParamDef(name="outformat",vartype="string",desc_short="Output image format",desc_long="The format of the output box images",property=None,defaultunits="bdb",choices=["bdb","img","hdf"])
+#		params.append([pbox,pfo])
+#		params.append([pwc,pwb])
+#		params.append(pn)
+#		params.append(pop)
 		return params
 			
 	def on_form_ok(self,params):
@@ -482,8 +592,8 @@ class E2BoxerAutoTask(ParticleWorkFlowTask):
 			for k,v in params.items():
 				setattr(options,k,v)
 			
-			string_args = ["normproc","outformat","boxsize"]
-			bool_args = ["force","write_coord_files","write_box_images"]
+			string_args = []
+			bool_args = []
 			additional_args = ["--method=Swarm", "--auto=db"]
 			temp_file_name = "e2boxer_autobox_stdout.txt"
 			self.run_task("e2boxer.py",options,string_args,bool_args,additional_args,temp_file_name)
@@ -500,11 +610,11 @@ class E2BoxerAutoTask(ParticleWorkFlowTask):
 			pass
 	
 
-class E2BoxerGuiTask(ParticleWorkFlowTask):	
-	documentation_string = "Use this tool to box the selected images using e2boxer. Choose from the list of images and hit ok. This will lauch e2boxer and automatically load the selected images for boxing. Alternatively you may choose the auto_db option to execute automated boxing using information stored in the e2boxer database."
+class E2BoxerGuiTask(E2BoxerTask):	
+	documentation_string = "Select the images you want to box, enter your boxsize, and hit ok to launch e2boxer. Choose from the list of images and hit ok. This will lauch e2boxer and automatically load the selected images for boxing. Alternatively you may choose the auto_db option to execute automated boxing using information stored in the e2boxer database."
 	
 	def __init__(self,application):
-		ParticleWorkFlowTask.__init__(self,application)
+		E2BoxerTask.__init__(self,application)
 		self.window_title = "e2boxer interface"
 		self.boxer_module = None # this will actually point to an EMBoxerModule, potentially
 
@@ -512,7 +622,7 @@ class E2BoxerGuiTask(ParticleWorkFlowTask):
 		params = []
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="Using e2boxer",desc_long="",property=None,defaultunits=E2BoxerGuiTask.documentation_string,choices=None))
 		
-		p = self.pet_project_particle_param_table()
+		p = self.get_e2boxer_boxes_and_project_particles_table()
 		params.append(p)
 		boxer_project_db = db_open_dict("bdb:e2boxer.project")
 		params.append(ParamDef(name="boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=boxer_project_db.get("working_boxsize",dfl=128),choices=[]))
@@ -571,41 +681,121 @@ class E2BoxerGuiTask(ParticleWorkFlowTask):
 			db_close_dict("bdb:e2boxer.project")
 		else:
 			pass
-		
-class E2BoxerOuputTask(ParticleWorkFlowTask):	
-	documentation_string = "Write me"
-	def __init__(self,application):
-		ParticleWorkFlowTask.__init__(self,application)
-		self.window_title = "e2boxer output"
-		self.boxer_module = None # this will actually point to an EMBoxerModule, potentially
 
+class E2BoxerOutputTask(E2BoxerTask):	
+	documentation_string = "Select the images you wish to generate output for, enter the box size and normalization etc, and then hit OK.\nThis will cause the workflow to spawn output writing processes using the available CPUs. Note that the bdb option is the preferred output format, in this mode output particles are written directly to the EMAN project database."
+	warning_string = "\n\n\nNOTE: There are no boxes currently stored in the database. To rectify this situation use e2boxer to interactively box your images, or alternatively used autoboxing information stored in the database to autobox your images."
+	def __init__(self,application):
+		E2BoxerTask.__init__(self,application)
+		self.window_title = "e2boxer output"
+	
 	def get_params(self):
 		params = []
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="Using e2boxer",desc_long="",property=None,defaultunits=E2BoxerOuputTask.documentation_string,choices=None))
 		
-		p = self.get_e2boxer_particle_table()
-		params.append(p)
+		p,n = self.get_project_files_that_have_db_boxes_in_table()
+		if n == 0:
+			params.append(ParamDef(name="blurb",vartype="text",desc_short="Using e2boxer",desc_long="",property=None,defaultunits=E2BoxerOutputTask.documentation_string+E2BoxerOutputTask.warning_string,choices=None))
+		else:
+			params.append(ParamDef(name="blurb",vartype="text",desc_short="Using e2boxer",desc_long="",property=None,defaultunits=E2BoxerOutputTask.documentation_string,choices=None))
+			params.append(p)
+			self.add_general_params(params)
+	
 #		boxer_project_db = db_open_dict("bdb:e2boxer.project")
 #		params.append(ParamDef(name="boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=boxer_project_db.get("working_boxsize",dfl=128),choices=[]))
 		return params
 	
-	def get_e2boxer_particle_table(self):
+	def add_general_params(self,params):
+		'''
+		Functionality used in several places
+		'''
+		boxer_project_db = db_open_dict("bdb:e2boxer.project")
+		pbox = ParamDef(name="boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=boxer_project_db.get("working_boxsize",dfl=128),choices=[])	
+		pfo = ParamDef(name="force",vartype="boolean",desc_short="Force overwrite",desc_long="Whether or not to force overwrite files that already exist",property=None,defaultunits=False,choices=None)
+		pwc = ParamDef(name="write_coord_files",vartype="boolean",desc_short="Write box db files",desc_long="Whether or not box db files should be written",property=None,defaultunits=False,choices=None)
+		pwb = ParamDef(name="write_box_images",vartype="boolean",desc_short="Write box image files",desc_long="Whether or not box images should be written",property=None,defaultunits=True,choices=None)
+		pn =  ParamDef(name="normproc",vartype="string",desc_short="Normalize images",desc_long="How the output box images should be normalized",property=None,defaultunits="normalize.edgemean",choices=["normalize","normalize.edgemean","none"])
+		pop = ParamDef(name="outformat",vartype="string",desc_short="Output image format",desc_long="The format of the output box images",property=None,defaultunits="bdb",choices=["bdb","img","hdf"])
+		params.append([pbox,pfo])
+		params.append([pwc,pwb])
+		params.append(pn)
+		params.append(pop)
+		
+			
+	def on_form_ok(self,params):
+		for k,v in params.items():
+			self.write_db_entry(k,v)
+			
+		if not params.has_key("filenames") or len(params["filenames"]) == 0:
+			self.emit(QtCore.SIGNAL("task_idle"))
+			self.application().close_specific(self.form)
+			self.form = None
+			return
+	
+		else:
+			options = EmptyObject()
+			for k,v in params.items():
+				setattr(options,k,v)
+				
+			options.just_output=True # this is implicit, it has to happen
+			
+			string_args = ["normproc","outformat","boxsize"]
+			bool_args = ["force","write_coord_files","write_box_images","just_output"]
+			additional_args = ["--method=Swarm", "--auto=db"]
+			temp_file_name = "e2boxer_autobox_stdout.txt"
+			self.run_task("e2boxer.py",options,string_args,bool_args,additional_args,temp_file_name)
+			self.emit(QtCore.SIGNAL("task_idle"))
+			self.application().close_specific(self.form)
+			self.form = None
+#	
+	def write_db_entry(self,key,value):
+		if key == "boxsize":
+			boxer_project_db = db_open_dict("bdb:e2boxer.project")
+			boxer_project_db["working_boxsize"] = value
+			db_close_dict("bdb:e2boxer.project")
+		else:
+			pass
+
+class E2BoxerOutputTaskGeneral(E2BoxerOutputTask):
+	documentation_string = "Write me"
+	def __init__(self,application):
+		E2BoxerOutputTask.__init__(self,application)
+		
+	def get_params(self):
+		params = []
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="Using e2boxer",desc_long="",property=None,defaultunits=E2BoxerOutputTaskGeneral.documentation_string,choices=None))
+		
+		p = self.get_e2boxer_boxes_table(project_check=False)
+		params.append(p)
+		
+		self.add_general_params(params)
+	
+#		boxer_project_db = db_open_dict("bdb:e2boxer.project")
+#		params.append(ParamDef(name="boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=boxer_project_db.get("working_boxsize",dfl=128),choices=[]))
+		return params
+	
+	def get_e2boxer_boxes_table(self,project_check=True):
 		db_name = "bdb:e2boxer.cache"
 		p = ParamTable(name="filenames",desc_short="Current boxes generated by e2boxer",desc_long="")
 		names = []
 		nboxes = []
 		dimensions = []
+		
+		if project_check:
+			project_db = db_open_dict("bdb:project")	
+			project_names = project_db.get("global.micrograph_ccd_filenames",dfl=[])
+		
 		if db_check_dict(db_name):
 			e2boxer_db = db_open_dict(db_name)
 			for name in e2boxer_db.keys():
 				d = e2boxer_db[name]
 				if not isinstance(d,dict): continue
-#				print name,d
-				if len(name) < 3:
-					n = name
-				else:
-					n = name[:-3] # get rid of the _DD
-				names.append(n)
+				if not d.has_key("e2boxer_image_name"): # this is the test, if something else has this key then we're screwed.
+					continue
+
+				name = d["e2boxer_image_name"]
+				if project_check:
+					if not name in project_names: continue
+				names.append(name)
 				
 				dim = ""
 				nbox = 0
@@ -627,174 +817,15 @@ class E2BoxerOuputTask(ParticleWorkFlowTask):
 		print "dims are",dimensions
 		
 		pnames = ParamDef(name="Filenames",vartype="stringlist",desc_short="File names",desc_long="The filenames",property=None,defaultunits=None,choices=names)
-		pboxes = ParamDef(name="Num boxes",vartype="intlist",desc_short="Particles",desc_long="The number of boxes stored for this image in the database",property=None,defaultunits=None,choices=nboxes)
+		pboxes = ParamDef(name="Num boxes",vartype="intlist",desc_short="Boxes in DB",desc_long="The number of boxes stored for this image in the database",property=None,defaultunits=None,choices=nboxes)
 		pdims = ParamDef(name="Dimensions",vartype="stringlist",desc_short="Dimensions",desc_long="The dimensions boxes",property=None,defaultunits=None,choices=dimensions)
 		
 		p = ParamTable(name="filenames",desc_short="Choose images to box",desc_long="")
 		p.append(pnames)
 		p.append(pboxes)
 		p.append(pdims)
-		
 		return p
-		
-			
-	def on_form_ok(self,params):
-		pass
-#		for k,v in params.items():
-#			self.write_db_entry(k,v)
-#			
-#		if not params.has_key("filenames") or len(params["filenames"]) == 0:
-#			self.emit(QtCore.SIGNAL("task_idle"))
-#			self.application().close_specific(self.form)
-#			self.form = None
-#			return
-#
-#		else:
-#			options = EmptyObject()
-#			for key in params.keys():
-#				setattr(options,key,params[key])
-#			options.running_mode = "gui"
-#			options.method = "Swarm"
-#			
-#			
-#			self.boxer_module = EMBoxerModule(self.application(),options)
-#			self.emit(QtCore.SIGNAL("gui_running"),"Boxer",self.boxer_module) # The controlled program should intercept this signal and keep the E2BoxerTask instance in memory, else signals emitted internally in boxer won't work
-#			
-#			QtCore.QObject.connect(self.boxer_module, QtCore.SIGNAL("module_idle"), self.on_boxer_idle)
-#			QtCore.QObject.connect(self.boxer_module, QtCore.SIGNAL("module_closed"), self.on_boxer_closed)
-#			self.application().close_specific(self.form)
-#			self.boxer_module.show_guis()
-#			self.form = None
-#			
-	def on_form_close(self):
-		self.emit(QtCore.SIGNAL("task_idle"))
-		# this is to avoid a task_idle signal, which would be incorrect if e2boxer is running
-#		if self.boxer_module == None:
-#			self.emit(QtCore.SIGNAL("task_idle"))
-#		else: pass
-	
-	def on_boxer_closed(self):
-		self.emit(QtCore.SIGNAL("gui_exit"))
-#		if self.boxer_module != None:
-#			self.boxer_module = None
-#			self.emit(QtCore.SIGNAL("gui_exit"))
-#	
-	def write_db_entry(self,key,value):
-		if key == "boxsize":
-			boxer_project_db = db_open_dict("bdb:e2boxer.project")
-			boxer_project_db["working_boxsize"] = value
-			db_close_dict("bdb:e2boxer.project")
-		else:
-			pass
-class E2BoxerOuputTask(ParticleWorkFlowTask):	
-	documentation_string = "Write me"
-	def __init__(self,application):
-		ParticleWorkFlowTask.__init__(self,application)
-		self.window_title = "e2boxer output"
-		self.boxer_module = None # this will actually point to an EMBoxerModule, potentially
 
-	def get_params(self):
-		params = []
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="Using e2boxer",desc_long="",property=None,defaultunits=E2BoxerOuputTask.documentation_string,choices=None))
-		
-		p = self.get_e2boxer_particle_table()
-		params.append(p)
-#		boxer_project_db = db_open_dict("bdb:e2boxer.project")
-#		params.append(ParamDef(name="boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=boxer_project_db.get("working_boxsize",dfl=128),choices=[]))
-		return params
-	
-	def get_e2boxer_particle_table(self):
-		db_name = "bdb:e2boxer.cache"
-		p = ParamTable(name="filenames",desc_short="Current boxes generated by e2boxer",desc_long="")
-		names = []
-		boxes = []
-		dimensions = []
-		if db_check_dict(db_name):
-			e2boxer_db = db_open_dict(db_name)
-			for name in e2boxer_db.keys():
-				d = e2boxer_db[name]
-				if not isinstance(d,dict): continue
-#				print name,d
-				if len(name) < 3:
-					n = name
-				else:
-					n = name[:-3] # get rid of the _DD
-				names.append(n)
-				
-				dim = ""
-				nbox = 0
-				for key in ["auto_boxes","manual_boxes","reference_boxes"]:
-					if d.has_key(key):
-						boxes = d[key]
-						nbox += len(boxes)
-						if dim == "" and len(boxes) > 0:
-							box = boxes[0]
-							dim = str(box.xsize) + "x"+str(box.ysize)
-							
-				boxes.append(nbox)
-				dimensions.append(dim)
-				
-		print names, boxes,dimensions
-		pnames = ParamDef(name="Filenames",vartype="stringlist",desc_short="File names",desc_long="The filenames",property=None,defaultunits=None,choices=names)
-		pboxes = ParamDef(name="Num boxes",vartype="intlist",desc_short="Particles",desc_long="The number of boxes stored for this image in the database",property=None,defaultunits=None,choices=boxes)
-		pdims = ParamDef(name="Dimensions",vartype="stringlist",desc_short="Dimensions",desc_long="The dimensions boxes",property=None,defaultunits=None,choices=dimensions)
-		
-		p = ParamTable(name="filenames",desc_short="Choose images to box",desc_long="")
-		p.append(pnames)
-		p.append(pboxes)
-		p.append(pdims)
-		
-		return p
-		
-			
-	def on_form_ok(self,params):
-		pass
-#		for k,v in params.items():
-#			self.write_db_entry(k,v)
-#			
-#		if not params.has_key("filenames") or len(params["filenames"]) == 0:
-#			self.emit(QtCore.SIGNAL("task_idle"))
-#			self.application().close_specific(self.form)
-#			self.form = None
-#			return
-#
-#		else:
-#			options = EmptyObject()
-#			for key in params.keys():
-#				setattr(options,key,params[key])
-#			options.running_mode = "gui"
-#			options.method = "Swarm"
-#			
-#			
-#			self.boxer_module = EMBoxerModule(self.application(),options)
-#			self.emit(QtCore.SIGNAL("gui_running"),"Boxer",self.boxer_module) # The controlled program should intercept this signal and keep the E2BoxerTask instance in memory, else signals emitted internally in boxer won't work
-#			
-#			QtCore.QObject.connect(self.boxer_module, QtCore.SIGNAL("module_idle"), self.on_boxer_idle)
-#			QtCore.QObject.connect(self.boxer_module, QtCore.SIGNAL("module_closed"), self.on_boxer_closed)
-#			self.application().close_specific(self.form)
-#			self.boxer_module.show_guis()
-#			self.form = None
-#			
-	def on_form_close(self):
-		self.emit(QtCore.SIGNAL("task_idle"))
-		# this is to avoid a task_idle signal, which would be incorrect if e2boxer is running
-#		if self.boxer_module == None:
-#			self.emit(QtCore.SIGNAL("task_idle"))
-#		else: pass
-	
-	def on_boxer_closed(self):
-		self.emit(QtCore.SIGNAL("gui_exit"))
-#		if self.boxer_module != None:
-#			self.boxer_module = None
-#			self.emit(QtCore.SIGNAL("gui_exit"))
-#	
-	def write_db_entry(self,key,value):
-		if key == "boxsize":
-			boxer_project_db = db_open_dict("bdb:e2boxer.project")
-			boxer_project_db["working_boxsize"] = value
-			db_close_dict("bdb:e2boxer.project")
-		else:
-			pass
 class E2BoxerGeneralTask(WorkFlowTask):
 	documentation_string = "You can run e2boxer on whichever images you like using this tool. If there is a current autoboxer in the EMAN2 database then you will also be able to execute automated boxing"
 	auto_documentation_string = "Choose the images that you want to run automated boxing on using the current autoboxer in the EMAN2 database"
@@ -1135,15 +1166,15 @@ class E2CTFGeneralTask(E2CTFWorkFlowTask):
 
 	def on_form_ok(self,params):
 		if params["running_mode"] == "auto params":
-			self.emit(QtCore.SIGNAL("replace_task"),E2CTFAutoFitTaskAlternate,"ctf auto fit")
+			self.emit(QtCore.SIGNAL("replace_task"),E2CTFAutoFitTaskGeneral,"ctf auto fit")
 			self.application().close_specific(self.form)
 			self.form = None
 		elif params["running_mode"] == "interactively fine tune":
-			self.emit(QtCore.SIGNAL("replace_task"),E2CTFGuiTaskAlternate,"fine tune ctf")
+			self.emit(QtCore.SIGNAL("replace_task"),E2CTFGuiTaskGeneral,"fine tune ctf")
 			self.application().close_specific(self.form)
 			self.form = None
 		elif params["running_mode"] == "write output":
-			self.emit(QtCore.SIGNAL("replace_task"),E2CTFOutputTaskAlternate,"ctf output")
+			self.emit(QtCore.SIGNAL("replace_task"),E2CTFOutputTaskGeneral,"ctf output")
 			self.application().close_specific(self.form)
 			self.form = None	
 		else:
@@ -1283,7 +1314,7 @@ class E2CTFAutoFitTask(E2CTFWorkFlowTask):
 			# there are some general parameters that need writing:
 			WorkFlowTask.write_db_entry(self,key,value)
 			
-class E2CTFAutoFitTaskAlternate(E2CTFAutoFitTask):
+class E2CTFAutoFitTaskGeneral(E2CTFAutoFitTask):
 	'''
 	This one has a generic url browser to get the input file names as opposed to the more rigid project based one
 	'''
@@ -1414,7 +1445,7 @@ class E2CTFOutputTask(E2CTFWorkFlowTask):
 		# this is to avoid a task_idle signal, which would be incorrect if e2boxer is running
 		self.emit(QtCore.SIGNAL("task_idle"))
 
-class E2CTFOutputTaskAlternate(E2CTFOutputTask):
+class E2CTFOutputTaskGeneral(E2CTFOutputTask):
 	''' This one uses the names in the e2ctf.parms to generate it's table of options, not the particles in the particles directory
 	'''
 	documentation_string = "Write me"
@@ -1425,7 +1456,7 @@ class E2CTFOutputTaskAlternate(E2CTFOutputTask):
 
 	def get_params(self):
 		params = []		
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFOutputTaskAlternate.documentation_string,choices=None))
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFOutputTaskGeneral.documentation_string,choices=None))
 		
 		names = self.get_names_with_parms()
 		n = [l[0] for l in names]
@@ -1548,7 +1579,7 @@ class E2CTFGuiTask(E2CTFWorkFlowTask):
 			self.emit(QtCore.SIGNAL("task_idle"))
 		else: pass
 		
-class E2CTFGuiTaskAlternate(E2CTFGuiTask):
+class E2CTFGuiTaskGeneral(E2CTFGuiTask):
 	''' This one uses the names in the e2ctf.parms to generate it's table of options, not the particles in the particles directory
 	'''
 	documentation_string = "Write me"
@@ -1557,7 +1588,7 @@ class E2CTFGuiTaskAlternate(E2CTFGuiTask):
 
 	def get_params(self):
 		params = []		
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFGuiTaskAlternate.documentation_string,choices=None))
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFGuiTaskGeneral.documentation_string,choices=None))
 		
 		names = self.get_names_with_parms()
 		n = [l[0] for l in names]

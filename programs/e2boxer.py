@@ -69,6 +69,7 @@ from sys import getrefcount
 
 from emglobjects import EMOpenGLFlagsAndTools
 from emapplication import EMStandAloneApplication,EMQtWidgetModule
+import weakref
 
 if os.name == 'nt':
 	def kill(pid):
@@ -112,6 +113,7 @@ for single particle analysis."""
 	parser.add_option("--subsample_method",help="The method used to subsample images prior to generation of the correlation image. Available methods are standard,careful",default="standard")	
 	parser.add_option("--method", help="boxer method, Swarm or Gauss", default="Swarm")
 	parser.add_option("--outformat", help="Format of the output particles images, should be bdb,img, or hdf", default="bdb")
+	parser.add_option("--just_output", help="Applicable if doing auto boxing using the database. Bypasses autoboxing and just writes boxes that are currently stored in the database. Useful for changing the boxsize, for example", default=False)
 	parser.add_option("--normproc", help="Normalization processor to apply to particle images. Should be normalize, normalize.edgemean or none", default="normalize.edgemean")
 
 	# options added for cmdline calling of screening with gauss convolution. parameters for Gauss are passed as
@@ -830,7 +832,7 @@ class EMBoxerModuleEventsMediator:
 
 class RawDatabaseAutoBoxer:
 	def __init__(self):
-		self.required_options = ["boxsize","write_coord_files","write_box_images","force","normproc","outformat"]
+		self.required_options = self.required_options = ["boxsize","write_coord_files","write_box_images","force","normproc","outformat","just_output"]
 	
 	def go(self,options):
 		options_ready = True
@@ -880,7 +882,8 @@ class RawDatabaseAutoBoxer:
 			
 			autoboxer.set_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
 			# Tell the boxer to delete non refs - FIXME - the uniform appraoch needs to occur - see SwarmAutoBoxer.auto_box
-			autoboxer.auto_box(boxable,False)
+			if not options.just_output: # This is useful if you want to just change the boxsize, or the normalization method
+				autoboxer.auto_box(boxable,False)
 			if options.write_coord_files:
 				boxable.write_coord_file(options.boxsize,options.force)
 			if options.write_box_images:
@@ -916,7 +919,8 @@ class RawDatabaseAutoBoxer:
 		
 		autoboxer.set_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
 		# Tell the boxer to delete non refs - FIXME - the uniform appraoch needs to occur - see SwarmAutoBoxer.auto_box
-		autoboxer.auto_box(boxable,False)
+		if not options.just_output: # This is useful if you want to just change the boxsize, or the normalization method
+			autoboxer.auto_box(boxable,False)
 		if options.write_coord_files:
 			print "writing box coordinates"
 			boxable.write_coord_file(-1,options.force)
@@ -928,7 +932,7 @@ class RawDatabaseAutoBoxer:
 		return 1
 
 
-class DatabaseAutoBoxer(QtCore.QObject):
+class DatabaseAutoBoxer(QtCore.QObject,RawDatabaseAutoBoxer):
 	'''
 	Initialize this with the application
 	Then call the member function go (with the options)
@@ -936,8 +940,8 @@ class DatabaseAutoBoxer(QtCore.QObject):
 	'''
 	def __init__(self,application):
 		QtCore.QObject.__init__(self)
-		self.application = application
-		self.required_options = ["boxsize","write_coord_files","write_box_images","force","normproc","outformat"]
+		RawDatabaseAutoBoxer.__init__(self)
+		self.application = weakref.ref(application)
 		
 
 	def go(self,options):
@@ -958,13 +962,12 @@ class DatabaseAutoBoxer(QtCore.QObject):
 
 	def __run_form_initialization(self,options):
 		from emform import EMFormModule
-		self.form = EMFormModule(self.get_params(options),self.application)
+		self.form = EMFormModule(self.get_params(options),self.application())
 		self.form.setWindowTitle("Auto boxing parameters")
-		self.application.show_specific(self.form)
-		emitter = self.application.get_qt_emitter(self.form)
+		self.application().show_specific(self.form)
 		#print emitter
-		QtCore.QObject.connect(emitter,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
-		QtCore.QObject.connect(emitter,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
 
 	def on_form_ok(self,params):
 		options = EmptyObject()
@@ -980,15 +983,14 @@ class DatabaseAutoBoxer(QtCore.QObject):
 				print "a parameters is missing"
 				return
 		
-		self.application.close_specific(self.form)
+		self.application().close_specific(self.form)
 		self.autobox_multi(options)
 		
 	def on_form_cancel(self):
-		self.application.close_specific(self.form)
+		self.application().close_specific(self.form)
 	
 	def get_params(self,options):
 		from emdatastorage import ParamDef
-		
 		
 		try: filenames = options.filenames
 		except: filenames = []
@@ -1004,110 +1006,30 @@ class DatabaseAutoBoxer(QtCore.QObject):
 		except: norm = "normalize.edgemean"
 		try: output = options.outformat
 		except: output = "hdf"
+		try: jo = options.just_output
+		except: jo = False
 	
 		params = []
 		params.append(ParamDef(name="filenames",vartype="url",desc_short="File names",desc_long="The files you wish to box",property=None,defaultunits=filenames,choices=[]))
 		pbox = ParamDef(name="boxsize",vartype="int",desc_short="Box size",desc_long="The output box size",property=None,defaultunits=boxsize,choices=None)
 		pfo = ParamDef(name="force",vartype="boolean",desc_short="Force overwrite",desc_long="Whether or not to force overwrite files that already exist",property=None,defaultunits=fo,choices=None)
+		pjo = ParamDef(name="just_output",vartype="boolean",desc_short="Just output",desc_long="Bypass autoboxing and just use the boxes that are currently stored in the database",property=None,defaultunits=jo,choices=None)
 		pwc = ParamDef(name="write_coord_files",vartype="boolean",desc_short="Write box db files",desc_long="Whether or not box db files should be written",property=None,defaultunits=wc,choices=None)
 		pwb = ParamDef(name="write_box_images",vartype="boolean",desc_short="Write box image files",desc_long="Whether or not box images should be written",property=None,defaultunits=wb,choices=None)
 		pn =  ParamDef(name="normproc",vartype="string",desc_short="Normalize images",desc_long="How the output box images should be normalized",property=None,defaultunits="normalize.edgmean",choices=["normalize","normalize.edgemean","none"])
 		pop = ParamDef(name="outformat",vartype="string",desc_short="Output image format",desc_long="The format of the output box images",property=None,defaultunits="bdb",choices=["bdb","img","hdf"])
-		params.append([pbox,pfo])
+		params.append([pbox,pfo,pjo])
 		params.append([pwc,pwb])
 		params.append(pn)
 		params.append(pop)
 		
 		return params
 
-	def autobox_multi(self,options):
-		image_names = options.filenames
-		project_db = EMProjectDB()
-		for image_name in image_names:
-			print "autoboxing",image_name
-			
-			try:
-				data = project_db[get_idd_key(image_name)]
-				
-				trim_autoboxer = project_db[data["autoboxer_unique_id"]]["autoboxer"]
-				autoboxer = SwarmAutoBoxer(None)
-				autoboxer.become(trim_autoboxer)
-				print 'using cached autoboxer db'
-			except:
-				try:
-					print "using most recent autoboxer"
-					if project_db["current_autoboxer_type"]=="Gauss":
-						trim_autoboxer = project_db["current_autoboxer"]
-						autoboxer = PawelAutoBoxer(None)
-						autoboxer.become(trim_autoboxer)
-					else:
-						trim_autoboxer = project_db["current_autoboxer"]
-						autoboxer = SwarmAutoBoxer(None)
-						autoboxer.become(trim_autoboxer)
-				except:
-					print "Error - there seems to be no autoboxing information in the database - autobox interactively first - bailing"
-					continue
-			
-			boxable = Boxable(image_name,None,autoboxer)
-			
-			if boxable.is_excluded():
-				print "Image",image_name,"is excluded and being ignored"
-				continue
-			
-			autoboxer.set_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
-			# Tell the boxer to delete non refs - FIXME - the uniform appraoch needs to occur - see SwarmAutoBoxer.auto_box
-			autoboxer.auto_box(boxable,False)
-			if options.write_coord_files:
-				boxable.write_coord_file(options.boxsize,options.force)
-			if options.write_box_images:
-				if options.normproc == "none":normalize=False
-				else: normalize=True
-				boxable.write_box_images(options.boxsize,options.force,imageformat=options.outformat,normalize=normalize,norm_method=options.normproc)
-		
-		project_db.close()
-		self.emit(QtCore.SIGNAL("db_auto_boxing_done"))
-
-	def autobox_single(self,image_name,options):
-		
-		project_db = EMProjectDB()
-		try:
-			data = project_db[get_idd_key(image_name)]
-			trim_autoboxer = project_db[data["autoboxer_unique_id"]]["autoboxer"]
-			autoboxer = SwarmAutoBoxer(None)
-			autoboxer.become(trim_autoboxer)
-			print 'using cached autoboxer db'
-		except:
-			try:
-				trim_autoboxer = project_db["current_autoboxer"]
-				autoboxer = SwarmAutoBoxer(None)
-				autoboxer.become(trim_autoboxer)
-			except:
-				print "Error - there seems to be no autoboxing information in the database - autobox interactively first - bailing"
-				project_db.close()
-				return 0
-		
-		boxable = Boxable(image_name,None,autoboxer)
-		if boxable.is_excluded():
-			print "Image",image_name,"is excluded and being ignored"
-			return
-		
-		autoboxer.set_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
-		# Tell the boxer to delete non refs - FIXME - the uniform appraoch needs to occur - see SwarmAutoBoxer.auto_box
-		autoboxer.auto_box(boxable,False)
-		if options.write_coord_files:
-			print "writing box coordinates"
-			boxable.write_coord_file(-1,options.force)
-		if options.write_box_images:
-			print "writing boxed images"
-			boxable.write_box_images(-1,options.force)
-		
-		project_db.close()
-		return 1
-
 	def close(self):
 		if self.form != None:
-			self.application.close_specific(self.form)
+			self.application().close_specific(self.form)
 			self.form = None
+
 class EmptyObject:
 	'''
 	This just because I need an object I can assign attributes to, and object() doesn't seem to work
@@ -1143,7 +1065,7 @@ class EMBoxerModule(QtCore.QObject):
 	def __init__(self,application,options=None):
 		QtCore.QObject.__init__(self)
 		"""Implements the 'boxer' GUI."""
-		self.application = application
+		self.application = weakref.ref(application)
 		self.required_options = ["filenames","running_mode"]
 		
 		self.boxable = None
@@ -1179,16 +1101,16 @@ class EMBoxerModule(QtCore.QObject):
 		for gui in [self.guiim,self.guictl_module,self.guimxit,self.guimx,self.form]:
 			if gui != None:
 				something_shown = True
-				self.application.show_specific(gui)
+				self.application().show_specific(gui)
 				
 		if not something_shown:
 			self.emit(QtCore.SIGNAL("module_idle"))
 	
 	def __run_form_initialization(self,options):
 		from emform import EMFormModule
-		self.form = EMFormModule(self.get_params(options),self.application)
+		self.form = EMFormModule(self.get_params(options),self.application())
 		self.form.setWindowTitle("Boxer input variables")
-		emitter = self.application.get_qt_emitter(self.form)
+		emitter = self.application().get_qt_emitter(self.form)
 		QtCore.QObject.connect(emitter,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
 		QtCore.QObject.connect(emitter,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
 		QtCore.QObject.connect(emitter,QtCore.SIGNAL("emform_close"),self.on_form_cancel)
@@ -1203,17 +1125,17 @@ class EMBoxerModule(QtCore.QObject):
 			return
 		elif options.running_mode == "gui":
 			self.__disconnect_form_signals()
-			self.application.close_specific(self.form)
+			self.application().close_specific(self.form)
 			self.form = None
 			self.__gui_init(options)
 		elif options.running_mode == "auto_db":
 			self.__disconnect_form_signals()
-			self.application.close_specific(self.form)
+			self.application().close_specific(self.form)
 			self.form = None
 			self.__auto_box_from_db(options)
 			
 	def __disconnect_form_signals(self):
-		emitter = self.application.get_qt_emitter(self.form)
+		emitter = self.application().get_qt_emitter(self.form)
 		QtCore.QObject.disconnect(emitter,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
 		QtCore.QObject.disconnect(emitter,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
 		QtCore.QObject.disconnect(emitter,QtCore.SIGNAL("emform_close"),self.on_form_cancel)	
@@ -1221,14 +1143,14 @@ class EMBoxerModule(QtCore.QObject):
 	def on_form_cancel(self):
 		# this means e2boxer isn't doing anything. The application should probably be told to close the EMBoxerModule
 #		self.__disconnect_form_signals()
-		self.application.close_specific(self.form)
+		self.application().close_specific(self.form)
 		self.form = None
 		self.emit(QtCore.SIGNAL("module_idle"))
 	
 	def __auto_box_from_db(self,options):
 		print "auto data base boxing"
 		
-		self.dab = DatabaseAutoBoxer(self.application)
+		self.dab = DatabaseAutoBoxer(self.application())
 		QtCore.QObject.connect(self.dab,QtCore.SIGNAL("db_auto_boxing_done"),self.on_db_autoboxing_done)
 		
 		self.dab.go(options)
@@ -1321,13 +1243,13 @@ class EMBoxerModule(QtCore.QObject):
 		self.guictlrotor.setWindowTitle("e2boxer Controllers")
 
 	def __init_guictl(self):
-		self.guictl_module = EMBoxerModulePanelModule(self.application,self,self.ab_sel_mediator)
+		self.guictl_module = EMBoxerModulePanelModule(self.application(),self,self.ab_sel_mediator)
 		self.guictl = self.guictl_module.qt_widget
 		self.guictl.set_image_quality(self.boxable.get_quality())
 		self.guictl.setWindowTitle("e2boxer Controller")
 		self.guictl.set_dynapix(self.dynapix)
 		#if self.fancy_mode == EMBoxerModule.FANCY_MODE: self.guictl.hide()
-		#self.application.show_specific(self.guictl_module)
+		#self.application().show_specific(self.guictl_module)
 		if isinstance(self.autoboxer,PawelAutoBoxer):
 			print "Setting GUI for Gauss boxing method"
 			gauss_method_id = 1
@@ -1345,9 +1267,9 @@ class EMBoxerModule(QtCore.QObject):
 		if self.guimxit != None:
 			if isinstance(self.guimxit,EMImageRotorModule):
 				self.guimxit.optimally_resize()
-				QtCore.QObject.connect(self.application.get_qt_emitter(self.guimxit),QtCore.SIGNAL("image_selected"),self.image_selected)
+				QtCore.QObject.connect(self.application().get_qt_emitter(self.guimxit),QtCore.SIGNAL("image_selected"),self.image_selected)
 			else:
-				QtCore.QObject.connect(self.application.get_qt_emitter(self.guimxit),QtCore.SIGNAL("mx_image_selected"),self.image_selected)
+				QtCore.QObject.connect(self.application().get_qt_emitter(self.guimxit),QtCore.SIGNAL("mx_image_selected"),self.image_selected)
 		
 			if isinstance(self.guimxit,EMImageRotorModule):
 				self.guimxit.set_frozen(self.boxable.is_frozen(),self.current_image_idx)
@@ -1366,13 +1288,13 @@ class EMBoxerModule(QtCore.QObject):
 			##self.fancy_mode = EMBoxerModule.FANCY_MODE
 			
 		#else:
-		self.guimx=EMImageMXModule(application=self.application)
+		self.guimx=EMImageMXModule(application=self.application())
 		self.guimx.desktop_hint = "rotor"
 		self.fancy_mode = EMBoxerModule.PLAIN_MODE
 		
 		self.guimx.set_mouse_mode("app")
 		
-		qt_target = self.application.get_qt_emitter(self.guimx)
+		qt_target = self.application().get_qt_emitter(self.guimx)
 
 		if self.fancy_mode == EMBoxerModule.FANCY_MODE:
 			 QtCore.QObject.connect(self.guiim,QtCore.SIGNAL("inspector_shown"),self.guiim_inspector_requested)
@@ -1389,15 +1311,15 @@ class EMBoxerModule(QtCore.QObject):
 			imagename = self.image_names[self.current_image_idx]
 			image=BigImageCache.get_object(imagename).get_image(use_alternate=True)
 		
-		self.guiim= EMImage2DModule(application=self.application)
+		self.guiim= EMImage2DModule(application=self.application())
 		self.guiim.set_data(image,imagename)
 		self.guiim.force_display_update()
-		#self.application.show_specific(self.guiim)
+		#self.application().show_specific(self.guiim)
 
 		self.__update_guiim_states()
 		self.guiim.set_mouse_mode(0)
 		
-		qt_target = self.application.get_qt_emitter(self.guiim)
+		qt_target = self.application().get_qt_emitter(self.guiim)
 			
 		self.guiim.setWindowTitle(imagename)
 		
@@ -1499,22 +1421,22 @@ class EMBoxerModule(QtCore.QObject):
 	
 	def view_boxes_clicked(self,bool):
 		if bool:
-			self.application.show_specific(self.guimx)
+			self.application().show_specific(self.guimx)
 		else:
-			self.application.hide_specific(self.guimx)
+			self.application().hide_specific(self.guimx)
 			
 	def view_image_clicked(self,bool):
 		if bool:
-			self.application.show_specific(self.guiim)
+			self.application().show_specific(self.guiim)
 		else:
-			self.application.hide_specific(self.guiim)
+			self.application().hide_specific(self.guiim)
 			
 	def view_thumbs_clicked(self,bool):
 		if  self.guimxit== None: return
 		if bool:
-			self.application.show_specific(self.guimxit)
+			self.application().show_specific(self.guimxit)
 		else:
-			self.application.hide_specific(self.guimxit)
+			self.application().hide_specific(self.guimxit)
 			
 	def within_main_image_bounds(self,coords):
 		x = coords[0]
@@ -1719,12 +1641,12 @@ class EMBoxerModule(QtCore.QObject):
 			if self.guimx == None:
 				self.__init_guimx()
 			if len(data) != 0:
-				#self.application.show_specific(self.guimx) #NEED TO CHANGE THIS IN THE MIDDLE OF REFURBISHMENT
+				#self.application().show_specific(self.guimx) #NEED TO CHANGE THIS IN THE MIDDLE OF REFURBISHMENT
 				self.guimx.set_data(data)
 			
 				#qt_target = self.guimx.get_parent()
 				#if not qt_target.isVisible():
-					#self.application.show_specific(self.guimx)
+					#self.application().show_specific(self.guimx)
 	
 	def clear_displays(self):
 		self.ptcl = []
@@ -1855,7 +1777,7 @@ class EMBoxerModule(QtCore.QObject):
 			#if not glflags.npt_textures_unsupported() and emftgl_supported:
 				#self.guimxit=EMImageRotorModule(application=self.application)
 			#else:
-			self.guimxit=EMImageMXModule(application=self.application)
+			self.guimxit=EMImageMXModule(application=self.application())
 			self.guimxit.desktop_hint = "rotor"
 				
 			try:
@@ -1863,7 +1785,7 @@ class EMBoxerModule(QtCore.QObject):
 				qt_parent.setWindowTitle("Image Thumbs")
 			except:
 				pass
-			#self.application.show_specific(self.guimxit)
+			#self.application().show_specific(self.guimxit)
 			self.guimxit.set_data(self.imagethumbs)
 			
 			try:
@@ -2056,7 +1978,7 @@ class EMBoxerModule(QtCore.QObject):
 		if self.guimxit != None: self.guimxit.get_parent()
 		
 	def update_mx_display(self):
-		#self.application.get_qt_gl_updategl_target(self.guimx).updateGL()
+		#self.application().get_qt_gl_updategl_target(self.guimx).updateGL()
 		self.guimx.updateGL()
 
 	def delete_display_boxes(self,numbers):
@@ -2754,7 +2676,7 @@ class EMBoxerModulePanelModule(EMQtWidgetModule):
 	or application.show_specific(this), depending on what you're doing
 	'''
 	def __init__(self,application,target,ab_sel_mediator):
-		self.application = application
+		self.application = weakref.ref(application)
 		self.widget = EMBoxerModulePanel(self,target,ab_sel_mediator)
 		EMQtWidgetModule.__init__(self,self.widget,application)
 		

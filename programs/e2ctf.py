@@ -863,8 +863,8 @@ class GUIctf(QtGui.QWidget):
 #	def get_output_params(self):
 	
 	def on_output(self):
-		from emsprworkflow import E2CTFOutputTaskAlternate
-		self.form = E2CTFOutputTaskAlternate(self.app())
+		from emsprworkflow import E2CTFOutputTaskGeneral
+		self.form = E2CTFOutputTaskGeneral(self.app())
 		self.form.run_form()
 	
 	def show_guis(self):

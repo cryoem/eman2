@@ -270,7 +270,6 @@ def main():
 							average.process_inplace(options.norm[0],options.norm[1])
 							average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 							#average.write_image("ave_.hdf",-1)
-							average.write_image("e2_seeding_bs.img",-1);
 							np = 1
 						else:
 							# there are a lot of ways to do and there is probably
@@ -314,15 +313,6 @@ def main():
 							ta.process_inplace("mask.sharp",{"outer_radius":ta.get_xsize()/2})				
 							np += 1
 							average.add(ta) # now add the image
-							
-							#image.process_inplace("normalize.edgemean")
-							#ta = align(average,image,options)
-							#t = ta.get_attr("xform.align2d")
-							#t.invert()
-							#image.transform(t)
-							#image.process_inplace("mask.sharp",{"outer_radius":ta.get_xsize()/2})
-							#np += 1
-							#average.add(image) # now add the image
 			
 			#average/=np
 			if np != 0:

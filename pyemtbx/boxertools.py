@@ -1197,7 +1197,6 @@ class Boxable:
 		self.reload_boxes()
 		self.get_frozen_from_db()	
 		self.get_quality_from_db()
-		print self.image_name
 		self.check_store_image_name_db()	
 		if autoboxer == None: self.get_auto_boxer_from_db()
 	
@@ -1448,12 +1447,15 @@ class Boxable:
 		#print "in cheack and Store image tag in db"
 		project_db = EMProjectDB()
 		data = project_db[self.get_dd_key()]
+		if data == None:
+			data = {}
+		
 		newimage = self.image_name
 		try:
-			oldimage = data["image_name"]
+			oldimage = data["e2boxer_image_name"]
 		except:
 			#print "stored image tag for first time"
-			data["image_name"] = newimage
+			data["e2boxer_image_name"] = newimage
 			project_db.set_key_entry(self.get_dd_key(),data)
 			return
 		
@@ -1462,7 +1464,7 @@ class Boxable:
 			return
 		else:
 			#print "storing image tag"
-			data["image_name"] = newimage
+			data["e2boxer_image_name"] = newimage
 			project_db.set_key_entry(self.get_dd_key(),data)
 
 		
@@ -1627,9 +1629,18 @@ class Boxable:
 			
 	def get_image_file_name(self,imageformat="hdf"):
 		from os import path
-		name,suffix = path.splitext( self.image_name )
+		
+		name = self.image_name
+		if len(name) > 4 and name[:4] == "bdb:": # the micrographs are in the database 
+				hash = name.find("#")
+				if hash != -1:
+					name = name[hash+1:]
+				else:
+					name[4:] # then just get rid of the "bdb:"
+		
+		name,suffix = path.splitext( name )
 		if imageformat == "bdb":
-			return "bdb:particles#"+get_file_tag(self.image_name)+"_ptcls"
+			return "bdb:particles#"+get_file_tag(name)+"_ptcls"
 		else:
 			
 			return name+"_particles."+imageformat
@@ -1666,12 +1677,13 @@ class Boxable:
 					else:
 						db_remove_dict(image_name)
 
-			elif file_exists(image_name):
-				if not force:
-					print "warning, file already exists - ", image_name, " doing nothing. Use force to override this behavior"
-					return
-				else:
-					remove_file(image_name)
+			else:	
+				if file_exists(image_name):
+					if not force:
+						print "warning, file already exists - ", image_name, " doing nothing. Use force to override this behavior"
+						return
+					else:
+						remove_file(image_name)
 			
 			if verbose:	print "writing",self.num_boxes(),"boxed images to", image_name
 			
