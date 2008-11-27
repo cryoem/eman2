@@ -168,9 +168,6 @@ def main():
 			dy.read_image(args[1],3)
 			da.read_image(args[1],4)
 			dflip.read_image(args[1],5)
-		
-		
-		
 	
 	# empty space for storing x-flipping flags (0s or 1s, if a 1 is stored it will be used at the necessary point to flip prior to adding to the average)
 	# sometimes this will not be used at all (it depends on whether or not the aligners that the user has specified do flipping and set flip flags)

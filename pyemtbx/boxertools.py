@@ -1197,9 +1197,8 @@ class Boxable:
 		self.reload_boxes()
 		self.get_frozen_from_db()	
 		self.get_quality_from_db()
-		try:
-			self.check_store_image_tag_db()	
-		except: pass
+		print self.image_name
+		self.check_store_image_name_db()	
 		if autoboxer == None: self.get_auto_boxer_from_db()
 	
 	def reload_boxes(self):
@@ -1445,25 +1444,25 @@ class Boxable:
 	def get_quality(self):
 		return self.__quality
 		
-	def check_store_image_tag_db(self):
+	def check_store_image_name_db(self):
 		#print "in cheack and Store image tag in db"
 		project_db = EMProjectDB()
 		data = project_db[self.get_dd_key()]
-		newimagetag = get_file_tag(self.image_name)
+		newimage = self.image_name
 		try:
-			oldimagetag = data["image_tag"]
+			oldimage = data["image_name"]
 		except:
 			#print "stored image tag for first time"
-			data["image_tag"] = newimagetag
+			data["image_name"] = newimage
 			project_db.set_key_entry(self.get_dd_key(),data)
 			return
 		
-		if oldimagetag != newimagetag:
-			print "warning with respect to",self.image_name,"- you are using information in the database that was generated using an image of type",newimagetag,"on an image of type",oldimagetag,". This will potentially cause problems if the images are not equivalent. Suggest renaming the image or boxing it in a separate directory"
+		if oldimage != newimage:
+			print "warning with respect to",self.image_name,"- you are using information in the database that was generated using image",oldimage,"but now you're using", newimage,". This will potentially cause problems if the images are not equivalent. Suggest renaming the image or boxing it in a separate directory"
 			return
 		else:
 			#print "storing image tag"
-			data["image_tag"] = newimagetag
+			data["image_name"] = newimage
 			project_db.set_key_entry(self.get_dd_key(),data)
 
 		
