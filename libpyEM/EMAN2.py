@@ -547,38 +547,11 @@ def num_cpus():
 		print "error, in num_cpus - uknown platform string:",platform_string," - returning 1"
 		return 1
 
-		
-			
-		 
-
-# Get the uniform dimension of the (square) input images. For instance
-# if the images are all 128x128 this will return 128. If the dimensions of the
-# images are not uniform an error is printed and the program exits.
 def gimme_image_dimensions2D( imagefilename ):
+	"""returns the dimensions of the first image in a file (2-D)"""
 	
-	#pdb.set_trace()
-	
-	read_header_only = True
-	e = EMData();
-	images = e.read_images(imagefilename,[], read_header_only)
-	
-	xsize = images[0].get_xsize()
-	ysize = images[0].get_ysize()
-	
-	
-	for i in range(1,len(images)):
-		if (images[i].get_xsize() != xsize):
-			print "ERROR: make3d does not currently support the reconstruction of images that do not have uniform dimensions"
-			print "Image %d x dimension does not match that of image 0 ( %d != %d )" % (images[i].get_xsize(), xsize)
-			exit(1)
-		if (images[i].get_ysize() != ysize):
-			print "ERROR: make3d does not currently support the reconstruction of images that do not have uniform dimensions"
-			print "Image %d y dimension does not match that of image 0 ( %d != %d )" % (images[i].get_ysize(), ysize)
-			exit(1)
-			
-	
-	# if we make it here all the image dimensions are uniform and equal in all directions, it is safe to return xsize or ysize
-	return (xsize, ysize)
+	e = EMData(imagefilename,0,1);
+	return (e.get_xsize(),e.get_ysize())
 
 # get the three dimensions of a an image
 def gimme_image_dimensions3D( imagefilename ):

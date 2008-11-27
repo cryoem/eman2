@@ -82,8 +82,6 @@ def main():
 		
 	if (options.nofilecheck == False):
 		options.classifyfile=args[1]
-		if ( options.ref ):
-			options.ref=options.ref
 		options.datafile = args[0]
 		options.outfile = args[2]
 	
@@ -551,7 +549,7 @@ def check(options, verbose=False):
 				if (verbose):
 					print "Error: output file %s exists, force not specified, will not overwrite, exiting" %options.outfile
 		
-		if not os.path.exists(options.classifyfile):
+		if not os.path.exists(options.classifyfile) and not db_check_dict(options.classifyfile):
 			error = True
 			if (verbose):
 				print "Error: the file expected to contain the classification matrix (%s) was not found, cannot run e2classaverage.py" %(options.classifyfile)
@@ -601,9 +599,9 @@ def check(options, verbose=False):
 		if options.ref != None and not os.path.exists(options.ref) and not db_check_dict(options.ref):
 			print "Error: the file expected to contain the reference images (%s) does not exist" %(options.ref)
 			error = True
-		elif os.path.exists(options.ref) and (os.path.exists(options.datafile) or db_check_dict(options.ref)):
-			(xsize, ysize ) = gimme_image_dimensions2D(options.datafile);
-			(pxsize, pysize ) = gimme_image_dimensions2D(options.ref);
+		elif options.ref and (os.path.exists(options.ref) or db_check_dict(options.ref)):
+			xsize=EMData(options.datafile,0,1).get_xsize()
+			pxsize=EMData(options.ref,0,1).get_xsize()
 			if ( xsize != pxsize ):
 				error = True
 				if (verbose):
