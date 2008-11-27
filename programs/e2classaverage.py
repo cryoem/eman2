@@ -615,7 +615,7 @@ def check(options, verbose=False):
 		if options.ref != None and not os.path.exists(options.ref) and not db_check_dict(options.ref):
 			print "Error: the file expected to contain the reference images (%s) does not exist" %(options.ref)
 			error = True
-		elif os.path.exists(options.datafile) or db_check_dict(options.datafile):
+		elif options.ref and (os.path.exists(options.datafile) or db_check_dict(options.datafile)):
 			(xsize, ysize ) = gimme_image_dimensions2D(options.datafile);
 			(pxsize, pysize ) = gimme_image_dimensions2D(options.ref);
 			if ( xsize != pxsize ):
