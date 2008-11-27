@@ -314,9 +314,6 @@ def main():
 								# FIXME this doesn'twork
 								#ta = image.process("math.transform",{"transform":(t)})
 								
-
-							ta.get_xsize()
-							ta.write_image("tmp.hdf",-1)
 							ta.process_inplace("mask.sharp",{"outer_radius":ta.get_xsize()/2})				
 							np += 1
 							average.add(ta) # now add the image
