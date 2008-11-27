@@ -225,7 +225,7 @@ def pspec_and_ctf_fit(options,debug=False):
 	db_parms=db_open_dict("bdb:e2ctf.parms")
 	db_misc=db_open_dict("bdb:e2ctf.misc")
 
-	for filename in options.filenames:
+	for i,filename in enumerate(options.filenames):
 		name=get_file_tag(filename)
 
 		# compute the power spectra

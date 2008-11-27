@@ -104,7 +104,6 @@ class EMTaskMonitorWidget(QtGui.QWidget,Animator):
 		for i,pid in enumerate(self.history_check):
 			for j in range(self.init_history_db_entries+1,HOMEDB.history["count"]+1):
 				try:
-					print "adding process",pid
 					if HOMEDB.history[j]["pid"] == pid:
 						self.project_db = db_open_dict("bdb:project")
 						self.current_process_info[j] = HOMEDB.history[j]

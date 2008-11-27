@@ -538,11 +538,13 @@ class EMProgressDialog(QtGui.QProgressDialog):
 		QtGui.QProgressDialog.__init__(self,label_text,cancel_button_text, minimum, maximum, parent)
 		self.widget_module = None # this should be immediately set after init
 		
-	def set_widget_module(self,module): self.widget_module = module
+	def set_widget_module(self,module):
+		self.widget_module = weakref.ref(module)
+		
 	def __setattr__( self, attr, value ):
 		QtGui.QProgressDialog.__setattr__(self,attr,value)
 		if self.widget_module != None:
-			self.widget_module.force_texture_update()
+			self.widget_module().force_texture_update()
 		
 
 			

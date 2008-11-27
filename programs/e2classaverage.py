@@ -122,6 +122,7 @@ def main():
 	class_max = int(classes.get_attr("maximum"))
 	class_min = int(classes.get_attr("minimum"))
 	
+	# NOT SURE IF THiS IS ALREADY IN THE CHECK FUNCTION FIXME 
 	# double check that the argument reference image makes sense
 	if (options.ref):
 		if not os.path.exists(options.ref) and not db_check_dict(options.ref):
@@ -599,9 +600,9 @@ def check(options, verbose=False):
 		if options.ref != None and not os.path.exists(options.ref) and not db_check_dict(options.ref):
 			print "Error: the file expected to contain the reference images (%s) does not exist" %(options.ref)
 			error = True
-		elif options.ref and (os.path.exists(options.ref) or db_check_dict(options.ref)):
-			xsize=EMData(options.datafile,0,1).get_xsize()
-			pxsize=EMData(options.ref,0,1).get_xsize()
+		elif os.path.exists(options.datafile) or db_check_dict(options.datafile):
+			(xsize, ysize ) = gimme_image_dimensions2D(options.datafile);
+			(pxsize, pysize ) = gimme_image_dimensions2D(options.ref);
 			if ( xsize != pxsize ):
 				error = True
 				if (verbose):

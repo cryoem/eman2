@@ -41,7 +41,7 @@ from emapplication import EMProgressDialogModule
 from e2boxer import EMBoxerModule
 from e2ctf import pspec_and_ctf_fit,GUIctfModule,write_e2ctf_output,get_gui_arg_img_sets
 import subprocess
-from pyemtbx.boxertools import set_idd_key_entry
+from pyemtbx.boxertools import set_idd_image_entry, TrimBox
 import weakref
 
 class EmptyObject:
@@ -297,9 +297,28 @@ class ParticleWorkFlowTask(WorkFlowTask):
 				vals.append(-1)
 		return vals
 
-	def get_particle_param_table(self):
+	def pet_project_particle_param_table(self):
+		'''
+		Use the names in the global.micrograph_ccd_filenames to build a table showing the corresponding and  current number of boxed particles in the particles directory, and also lists their dimensions
+		Puts the information in a ParamTable.
+		'''
 		project_db = db_open_dict("bdb:project")	
 		particle_file_names = project_db.get("global.micrograph_ccd_filenames",dfl=[])
+		
+		return self.__make_particle_param_table(particle_file_names)
+	
+	def pet_particle_param_table(self):
+		'''
+		Inspects the particle databases in the particles directory, gathering their names, number of particles and dimenions. Puts the information in a ParamTable.
+		'''
+		particle_file_names = self.get_particle_db_names(strip_ptcls=True)
+		
+		return self.__make_particle_param_table(particle_file_names)
+	
+	def __make_particle_param_table(self,particle_file_names):
+		'''
+		Functionality used in two places (directly above)
+		'''
 		
 		num_boxes = self.get_num_particles(particle_file_names)
 		dimensions = self.get_particle_dims(particle_file_names)
@@ -313,8 +332,8 @@ class ParticleWorkFlowTask(WorkFlowTask):
 		p.append(pboxes)
 		p.append(pdims)
 		
-		
 		return p
+		
 
 class ParticleReportTask(ParticleWorkFlowTask):
 	
@@ -329,26 +348,11 @@ class ParticleReportTask(ParticleWorkFlowTask):
 		
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=ParticleReportTask.documentation_string,choices=None))
 		
-	   	p = self.get_particle_param_table()
+	   	p = self.pet_particle_param_table()
+	   	self.get_particle_db_names(strip_ptcls=False)
 		params.append(p)  
 		
 		return params
-
-	
-	
-#	def get_num_particles(self,particle_file_names):
-#		if not os.path.exists("particles/EMAN2DB"):
-#			vals = [ 0 for i in range(len(particle_file_names))]
-#			return vals
-#		else:
-#			vals = []
-#			for name in particle_file_names:
-#				try:
-#					db = db_open_dict("bdb:particles#"+name+"_ptcls")
-#					vals.append(db["maxrec"]+1)
-#				except:	vals.append(0)
-#			return vals
-
 
 
 class ParticleImportTask(ParticleWorkFlowTask):	
@@ -397,11 +401,14 @@ class ParticleImportTask(ParticleWorkFlowTask):
 					return
 			# okay if we make it here we're fine, import that particles
 			progress = EMProgressDialogModule(self.application(),"Importing files into database...", "Abort import", 0, len(v),None)
-			self.application().show_specific(progress)
+			progress.qt_widget.show()
+#			self.application().show_specific(progress)
 			read_header_only = True
 			a= EMData()
+			cancelled_dbs = []
 			for i,name in enumerate(v):
 				progress.qt_widget.setValue(i)
+				self.application().processEvents()
 				if os.path.exists(name) or db_check_dict(name):
 					
 					try:
@@ -413,13 +420,22 @@ class ParticleImportTask(ParticleWorkFlowTask):
 					tag = get_file_tag(name)
 					db_name = "bdb:particles#"+tag+"_ptcls"
 					imgs = EMData().read_images(name)
+					cancelled_dbs.append(db_name)
 					for img in imgs: img.write_image(db_name,-1)
 				else:
 					print "error,",name,"doesn't exist. Ignoring"
 					
-			progress.qt_widget.setValue(len(v))
-			self.application().close_specific(progress)
+				if progress.qt_widget.wasCanceled():
+					cancelled = True
+					for db_name in cancelled_dbs:
+						db_remove_dict(db_name)
+					break
 			
+					
+			progress.qt_widget.setValue(len(v))
+			#self.application().close_specific(progress)
+			progress.qt_widget.close()
+				
 			
 			db_close_dict("bdb:project")
 
@@ -434,7 +450,7 @@ class E2BoxerAutoTask(ParticleWorkFlowTask):
 		params = []
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="Using e2boxer",desc_long="",property=None,defaultunits=E2BoxerAutoTask.documentation_string,choices=None))
 		
-		p = self.get_particle_param_table()
+		p = self.pet_project_particle_param_table()
 		params.append(p)
 	
 		boxer_project_db = db_open_dict("bdb:e2boxer.project")
@@ -496,7 +512,7 @@ class E2BoxerGuiTask(ParticleWorkFlowTask):
 		params = []
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="Using e2boxer",desc_long="",property=None,defaultunits=E2BoxerGuiTask.documentation_string,choices=None))
 		
-		p = self.get_particle_param_table()
+		p = self.pet_project_particle_param_table()
 		params.append(p)
 		boxer_project_db = db_open_dict("bdb:e2boxer.project")
 		params.append(ParamDef(name="boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=boxer_project_db.get("working_boxsize",dfl=128),choices=[]))
@@ -548,6 +564,102 @@ class E2BoxerGuiTask(ParticleWorkFlowTask):
 		self.boxer_module = None
 		self.emit(QtCore.SIGNAL("gui_exit"))
 
+	def write_db_entry(self,key,value):
+		if key == "boxsize":
+			boxer_project_db = db_open_dict("bdb:e2boxer.project")
+			boxer_project_db["working_boxsize"] = value
+			db_close_dict("bdb:e2boxer.project")
+		else:
+			pass
+		
+class E2BoxerOuputTask(ParticleWorkFlowTask):	
+	documentation_string = "Write me"
+	def __init__(self,application):
+		ParticleWorkFlowTask.__init__(self,application)
+		self.window_title = "e2boxer output"
+		self.boxer_module = None # this will actually point to an EMBoxerModule, potentially
+
+	def get_params(self):
+		params = []
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="Using e2boxer",desc_long="",property=None,defaultunits=E2BoxerOuputTask.documentation_string,choices=None))
+		
+		p = self.get_e2boxer_particle_table()
+		params.append(p)
+		boxer_project_db = db_open_dict("bdb:e2boxer.project")
+		params.append(ParamDef(name="boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=boxer_project_db.get("working_boxsize",dfl=128),choices=[]))
+		return params
+	
+	def get_e2boxer_particle_table(self):
+		db_name = "bdb:e2boxer.cache"
+		p = ParamTable(name="filenames",desc_short="Current boxes generated by e2boxer",desc_long="")
+		if db_check_dict(db_name):
+			e2boxer_db = db_open_dict(db_name)
+			names = []
+			boxes = []
+			dimensions = []
+			for name,d in eboxer_db.items():
+				if len(name) < 3:
+					n = name
+				else:
+					n = name[:-3] # get rid of the _DD
+				names.append(n)
+				
+				dim = ""
+				nbox = 0
+				for key in ["auto_boxes","manual_boxes","reference_boxes"]:
+					if d.has_key(key):
+						boxes = d[key]
+						nbox += len(boxes)
+						if dim == "" and len(boxes) > 0:
+							box = boxes[0]
+							dim = str(box.xsize) + "x"+str(box.ysize)
+
+					
+				
+				
+		e2boxer = "e2boxer.cache"
+	
+	def on_form_ok(self,params):
+		pass
+#		for k,v in params.items():
+#			self.write_db_entry(k,v)
+#			
+#		if not params.has_key("filenames") or len(params["filenames"]) == 0:
+#			self.emit(QtCore.SIGNAL("task_idle"))
+#			self.application().close_specific(self.form)
+#			self.form = None
+#			return
+#
+#		else:
+#			options = EmptyObject()
+#			for key in params.keys():
+#				setattr(options,key,params[key])
+#			options.running_mode = "gui"
+#			options.method = "Swarm"
+#			
+#			
+#			self.boxer_module = EMBoxerModule(self.application(),options)
+#			self.emit(QtCore.SIGNAL("gui_running"),"Boxer",self.boxer_module) # The controlled program should intercept this signal and keep the E2BoxerTask instance in memory, else signals emitted internally in boxer won't work
+#			
+#			QtCore.QObject.connect(self.boxer_module, QtCore.SIGNAL("module_idle"), self.on_boxer_idle)
+#			QtCore.QObject.connect(self.boxer_module, QtCore.SIGNAL("module_closed"), self.on_boxer_closed)
+#			self.application().close_specific(self.form)
+#			self.boxer_module.show_guis()
+#			self.form = None
+#			
+	def on_form_close(self):
+		self.emit(QtCore.SIGNAL("task_idle"))
+		# this is to avoid a task_idle signal, which would be incorrect if e2boxer is running
+#		if self.boxer_module == None:
+#			self.emit(QtCore.SIGNAL("task_idle"))
+#		else: pass
+	
+	def on_boxer_closed(self):
+		self.emit(QtCore.SIGNAL("gui_exit"))
+#		if self.boxer_module != None:
+#			self.boxer_module = None
+#			self.emit(QtCore.SIGNAL("gui_exit"))
+#	
 	def write_db_entry(self,key,value):
 		if key == "boxsize":
 			boxer_project_db = db_open_dict("bdb:e2boxer.project")
@@ -1433,8 +1545,10 @@ class MicrographCCDImportTask(WorkFlowTask):
 		
 		# now add the files to db (if they don't already exist
 		progress = EMProgressDialogModule(self.application(),"Importing files into database...", "Abort import", 0, len(filenames)*num_processing_operations,None)
-		self.application().show_specific(progress)
+		progress.qt_widget.show()
 		i = 0
+		cancelled = False # if the user cancels the import then we must act
+		cancelled_dbs = []
 		for name in filenames:
 			
 			tag = get_file_tag(name)
@@ -1452,37 +1566,50 @@ class MicrographCCDImportTask(WorkFlowTask):
 				e.read_image(name,0)
 				i += 1
 				progress.qt_widget.setValue(i)	
+				self.application().processEvents()
 				e.set_attr("disk_file_name",name)
 				
 				if params["invert"]:
 					e.mult(-1)
 					i += 1
-					progress.qt_widget.setValue(i)	
+					progress.qt_widget.setValue(i)
+					self.application().processEvents()
 				
 				if params["xraypixel"]:
 					e.process_inplace("threshold.clampminmax.nsigma",{"nsigma":4,"tomean":True})
 					i += 1
-					progress.qt_widget.setValue(i)	
+					progress.qt_widget.setValue(i)
+					self.application().processEvents()
 				
 				e.write_image(db_name,0)
+				cancelled_dbs.append(db_name)
 				i += 1
-				progress.qt_widget.setValue(i)	
+				progress.qt_widget.setValue(i)
+				self.application().processEvents()
 				current_project_files.append(db_name)
 				
 				if params["thumbs"]:
 					shrink = self.get_thumb_shrink(e.get_xsize(),e.get_ysize())
 					thumb = e.process("math.meanshrink",{"n":shrink})
-					set_idd_key_entry(get_file_tag(db_name),"e2boxer_image_thumb",thumb)
+					set_idd_image_entry(db_name,"image_thumb",thumb) # boxer uses the full name
 					i += 1
-					progress.qt_widget.setValue(i)	
+					progress.qt_widget.setValue(i)
+					self.application().processEvents()
+					
+				if progress.qt_widget.wasCanceled():
+					cancelled = True
+					for data_db in cancelled_dbs: # policy here is to remove only the raw data dbs - the e2boxer thumbnails are tiny and I don't have time...
+						db_remove_dict(data_db)
+					break
 			
 				
 		progress.qt_widget.setValue(len(filenames))
-		self.application().close_specific(progress)
+		progress.qt_widget.close()
 		
-		project_db["global.micrograph_ccd_filenames"] = current_project_files
-		db_close_dict("bdb:project")
-	
+		if not cancelled:
+			project_db["global.micrograph_ccd_filenames"] = current_project_files
+			db_close_dict("bdb:project")
+		
 	def get_thumb_shrink(self,nx,ny):
 		if self.thumb_shrink == -1:
 			shrink = 1
