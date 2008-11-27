@@ -95,10 +95,11 @@ class EMFormWidget(QtGui.QWidget):
 		self.__auto_incorporate["floatlist"] = self.__incorporate_floatlist
 		self.__auto_incorporate["paramtable"] = self.__incorporate_paramtable
 		
-		self.vbl = QtGui.QVBoxLayout(self)
+		self.vbl = QtGui.QVBoxLayout()
 		self.__incorporate_params(self.params,self.vbl)
 		self.__add_ok_cancel_buttons(self.vbl)
-	
+		self.setLayout(self.vbl)
+		
 	def __incorporate_params(self,params,layout):
 		for param in self.params:
 			try:

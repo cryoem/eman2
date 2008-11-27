@@ -51,7 +51,7 @@ from copy import deepcopy
 
 
 
-GLUT.glutInit(sys.argv ) # is this really necessary ?
+#GLUT.glutInit(sys.argv ) # is this really necessary ?
 
 
 def image_update():

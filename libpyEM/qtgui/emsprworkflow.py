@@ -180,8 +180,8 @@ class WorkFlowTask(QtCore.QObject):
 
 class ParticleWorkFlowTask(WorkFlowTask):
 	'''
-	Enncapsulates some functionality  common to the particle based work flow tasks
-	Such task should inherit from this class, not the the WorkFlowTask
+	Encapsulates some functionality  common to the particle based work flow tasks
+	Such tasks should inherit from this class, not the the WorkFlowTask
 	'''
 	def __init__(self,application):
 		WorkFlowTask.__init__(self,application)
@@ -336,6 +336,10 @@ class ParticleWorkFlowTask(WorkFlowTask):
 		
 
 class ParticleReportTask(ParticleWorkFlowTask):
+	'''
+	
+	Reports the current status of the particles in the projec
+	'''
 	
 	documentation_string = "This tool is for displaying the particles that are currently associated with this project. This list is generating by inspecting the contents of the project particles directory."
 	warning_string = "\n\n\nNOTE: There are no particles currently associated with the project. You can add particles to the project using e2boxer or by importing them directly - see from the list of options associated with this task." 
@@ -357,6 +361,10 @@ class ParticleReportTask(ParticleWorkFlowTask):
 
 
 class ParticleImportTask(ParticleWorkFlowTask):	
+	'''
+	
+	A task for importing particles into the project particles directory
+	'''
 	documentation_string = "Use this tool for importing particle images into the particle directory in the project database. Files that you import in this way will be automatically added the list of particle files in the project."
 	
 	def __init__(self,application):
@@ -439,6 +447,8 @@ class ParticleImportTask(ParticleWorkFlowTask):
 				
 			
 			db_close_dict("bdb:project")
+
+		
 
 class E2BoxerTask(ParticleWorkFlowTask):
 	'''
@@ -542,7 +552,6 @@ class E2BoxerTask(ParticleWorkFlowTask):
 		
 		nboxes = []
 		dimensions = []
-		print project_names
 		for name in project_names:
 			if box_maps.has_key(name):
 				dimensions.append(box_maps[name][0])
@@ -554,9 +563,50 @@ class E2BoxerTask(ParticleWorkFlowTask):
 		return nboxes,dimensions
 
 
+class E2BoxerGeneralTask(ParticleWorkFlowTask):
+	documentation_string = "Fill me in"
+	def __init__(self,application):
+		ParticleWorkFlowTask.__init__(self,application)
+		self.window_title = "e2ctf"
+		self.preferred_size = (480,200)
+		
+		
+	def get_params(self):
+		params = []		
+#		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFGeneralTask.documentation_string,choices=None))
+		
+		params.append(ParamDef(name="running_mode",vartype="choice",desc_short="Choose your running mode",desc_long="There are three Boxer related task which are generally run in order",property=None,defaultunits="auto",choices=["Interactive boxing", "Autoboxing", "Write output"]))
+		
+		return params
+
+	def on_form_ok(self,params):
+		if params["running_mode"] == "Interactive boxing":
+			self.emit(QtCore.SIGNAL("replace_task"),E2BoxerGuiTaskGeneral,"e2boxer interface launcher")
+			self.application().close_specific(self.form)
+			self.form = None
+		elif params["running_mode"] == "Autoboxing":
+			self.emit(QtCore.SIGNAL("replace_task"),E2BoxerAutoTaskGeneral,"e2boxer automated boxing")
+			self.application().close_specific(self.form)
+			self.form = None
+		elif params["running_mode"] == "Write output":
+			self.emit(QtCore.SIGNAL("replace_task"),E2BoxerOutputTaskGeneral,"e2boxer write output")
+			self.application().close_specific(self.form)
+			self.form = None	
+		else:
+			self.application().close_specific(self.form)
+			self.form = None
+			self.emit(QtCore.SIGNAL("task_idle"))
+			
+	def write_db_entry(self,key,value):
+		pass
+
+
 class E2BoxerAutoTask(E2BoxerTask):
+	'''
+	A task for running automated boxing in the project context
+	'''
 	documentation_string = "Select the images you wish to run autoboxing on and hit OK.\nThis will cause the workflow to spawn processes based on the available CPUs.\nData will be autoboxed using the current autoboxer in the database, which is placed there by e2boxer."
-	warning_string = "\n\n\nNOTE: This feature is currently disabled as there is no autoboxing information in the EMAN database. You can fix this situation by using e2boxer to interactively box a few images first"
+	warning_string = "\n\n\nNOTE: This feature is currently disabled as there is no autoboxing information in the EMAN2 database. You can fix this situation by using e2boxer to interactively box a few images first"
 	
 	def __init__(self,application):
 		E2BoxerTask.__init__(self,application)
@@ -582,18 +632,6 @@ class E2BoxerAutoTask(E2BoxerTask):
 			p,n = self.get_e2boxer_boxes_and_project_particles_table()
 			params.append(p)
 	
-#		boxer_project_db = db_open_dict("bdb:e2boxer.project")
-#		pbox = ParamDef(name="boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=boxer_project_db.get("working_boxsize",dfl=128),choices=[])
-		
-#		pfo = ParamDef(name="force",vartype="boolean",desc_short="Force overwrite",desc_long="Whether or not to force overwrite files that already exist",property=None,defaultunits=False,choices=None)
-#		pwc = ParamDef(name="write_coord_files",vartype="boolean",desc_short="Write box db files",desc_long="Whether or not box db files should be written",property=None,defaultunits=False,choices=None)
-#		pwb = ParamDef(name="write_box_images",vartype="boolean",desc_short="Write box image files",desc_long="Whether or not box images should be written",property=None,defaultunits=False,choices=None)
-#		pn =  ParamDef(name="normproc",vartype="string",desc_short="Normalize images",desc_long="How the output box images should be normalized",property=None,defaultunits="normalize.edgemean",choices=["normalize","normalize.edgemean","none"])
-#		pop = ParamDef(name="outformat",vartype="string",desc_short="Output image format",desc_long="The format of the output box images",property=None,defaultunits="bdb",choices=["bdb","img","hdf"])
-#		params.append([pbox,pfo])
-#		params.append([pwc,pwb])
-#		params.append(pn)
-#		params.append(pop)
 		return params
 			
 	def on_form_ok(self,params): 
@@ -628,6 +666,31 @@ class E2BoxerAutoTask(E2BoxerTask):
 		else:
 			pass
 	
+class E2BoxerAutoTaskGeneral(E2BoxerAutoTask):
+	def __init__(self,application):
+		E2BoxerAutoTask.__init__(self,application)
+		self.window_title = "e2boxer auto"
+		self.boxer_module = None # this will actually point to an EMBoxerModule, potentially
+
+	def get_params(self):
+		params = []
+		
+		
+		db_name = "bdb:e2boxer.cache"
+		fail = False
+		if db_check_dict(db_name):
+			db = db_open_dict(db_name)
+			if not db.has_key("current_autoboxer"): fail = True
+		else:
+			fail = True
+			
+		if fail:
+			params.append(ParamDef(name="blurb",vartype="text",desc_short="Using e2boxer",desc_long="",property=None,defaultunits=E2BoxerAutoTask.documentation_string+E2BoxerAutoTask.warning_string,choices=None))
+		else:
+			params.append(ParamDef(name="blurb",vartype="text",desc_short="Using e2boxer",desc_long="",property=None,defaultunits=E2BoxerAutoTask.documentation_string,choices=None))
+			params.append(ParamDef(name="filenames",vartype="url",desc_short="File names",desc_long="The names of the particle files you want to interactively box using e2boxer",property=None,defaultunits=[],choices=[]))
+		
+		return params
 
 class E2BoxerGuiTask(E2BoxerTask):	
 	documentation_string = "Select the images you want to box, enter your boxsize, and hit OK. This will lauch e2boxer and automatically load the selected images for boxing."
@@ -695,7 +758,6 @@ class E2BoxerGuiTask(E2BoxerTask):
 		'''
 		Presently this means boxer did stuff but never opened any guis, so it's safe just to emit the signal
 		'''
-		print "boxer idle"
 		self.boxer_module = None
 		self.emit(QtCore.SIGNAL("gui_exit"))
 
@@ -707,6 +769,22 @@ class E2BoxerGuiTask(E2BoxerTask):
 		else:
 			pass
 
+class E2BoxerGuiTaskGeneral(E2BoxerGuiTask):	
+	def __init__(self,application):
+		E2BoxerTask.__init__(self,application)
+		self.window_title = "e2boxer interface"
+		self.boxer_module = None # this will actually point to an EMBoxerModule, potentially
+
+	def get_params(self):
+		params = []
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="Using e2boxer",desc_long="",property=None,defaultunits=E2BoxerGuiTask.documentation_string,choices=None))
+		params.append(ParamDef(name="filenames",vartype="url",desc_short="File names",desc_long="The names of the particle files you want to interactively box using e2boxer",property=None,defaultunits=[],choices=[]))
+		boxer_project_db = db_open_dict("bdb:e2boxer.project")
+		params.append(ParamDef(name="boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=boxer_project_db.get("working_boxsize",dfl=128),choices=[]))
+		
+		return params
+	
+	
 class E2BoxerOutputTask(E2BoxerTask):	
 	documentation_string = "Select the images you wish to generate output for, enter the box size and normalization etc, and then hit OK.\nThis will cause the workflow to spawn output writing processes using the available CPUs. Note that the bdb option is the preferred output format, in this mode output particles are written directly to the EMAN project database."
 	warning_string = "\n\n\nNOTE: There are no boxes currently stored in the database. To rectify this situation use e2boxer to interactively box your images, or alternatively used autoboxing information stored in the database to autobox your images."
@@ -826,7 +904,6 @@ class E2BoxerOutputTaskGeneral(E2BoxerOutputTask):
 					if d.has_key(key):
 						boxes = d[key]
 						nbox += len(boxes)
-						print len(boxes)
 						if dim == "" and len(boxes) > 0:
 							box = boxes[0]
 							dim = str(box.xsize) + "x"+str(box.ysize)
@@ -835,10 +912,6 @@ class E2BoxerOutputTaskGeneral(E2BoxerOutputTask):
 				nboxes.append(nbox)
 				dimensions.append(dim)
 			
-		print "names are",names
-		print "boxes are",nboxes
-		print "dims are",dimensions
-		
 		pnames = ParamDef(name="Filenames",vartype="stringlist",desc_short="File names",desc_long="The filenames",property=None,defaultunits=None,choices=names)
 		pboxes = ParamDef(name="Num boxes",vartype="intlist",desc_short="Boxes in DB",desc_long="The number of boxes stored for this image in the database",property=None,defaultunits=None,choices=nboxes)
 		pdims = ParamDef(name="Dimensions",vartype="stringlist",desc_short="Dimensions",desc_long="The dimensions boxes",property=None,defaultunits=None,choices=dimensions)
@@ -849,191 +922,191 @@ class E2BoxerOutputTaskGeneral(E2BoxerOutputTask):
 		p.append(pdims)
 		return p
 
-class E2BoxerGeneralTask(WorkFlowTask):
-	documentation_string = "You can run e2boxer on whichever images you like using this tool. If there is a current autoboxer in the EMAN2 database then you will also be able to execute automated boxing"
-	auto_documentation_string = "Choose the images that you want to run automated boxing on using the current autoboxer in the EMAN2 database"
-	def __init__(self,application):
-		WorkFlowTask.__init__(self,application)
-		self.window_title = "Boxer"
-		self.form2 = None
-		self.boxer_module = None
-		
-	def get_params(self):
-		
-		params = []
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2BoxerGeneralTask.documentation_string,choices=None))
-		
-		
-		params.append(ParamDef(name="filenames",vartype="url",desc_short="File names",desc_long="The files you wish to box",property=None,defaultunits=[],choices=[]))
-		
-		boxer_project_db = db_open_dict("bdb:e2boxer.project")
-		params.append(ParamDef(name="boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=boxer_project_db.get("working_boxsize",dfl=128),choices=[]))
-		params.append(ParamDef(name="method",vartype="choice",desc_short="Boxing mode",desc_long="Currently only one mode is supported, but this could change",property=None,defaultunits="Swarm",choices=["Swarm"]))
-		
-		
-		boxer_cache_db = db_open_dict("bdb:e2boxer.cache")
-		if boxer_cache_db.has_key("current_autoboxer"):
-			running_mode_options = ["gui","auto_db"]
-		else:
-			running_mode_options = ["gui"]
-		params.append(ParamDef(name="running_mode",vartype="choice",desc_short="Boxing mode",desc_long="Whether to load the GUI or run automatic boxing based on information stored in the database",property=None,defaultunits="gui",choices=running_mode_options))
-		return params
-
-	def get_auto_params(self,params):
-		
-		
-		try: filenames = params["filenames"]
-		except: filenames = []
-		try: boxsize = params["boxsize"]
-		except: boxsize = 128
-		fo = False
-		wc = False
-		wb = True
-		norm = "normalize.edgemean"
-		output = "hdf"
-	
-		params = []
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2BoxerGeneralTask.auto_documentation_string,choices=None))
-		
-		params.append(ParamDef(name="filenames",vartype="url",desc_short="File names",desc_long="The files you wish to box",property=None,defaultunits=filenames,choices=[]))
-		pbox = ParamDef(name="boxsize",vartype="int",desc_short="Box size",desc_long="The output box size",property=None,defaultunits=boxsize,choices=None)
-		pfo = ParamDef(name="force",vartype="boolean",desc_short="Force overwrite",desc_long="Whether or not to force overwrite files that already exist",property=None,defaultunits=fo,choices=None)
-		pwc = ParamDef(name="write_coord_files",vartype="boolean",desc_short="Write box db files",desc_long="Whether or not box db files should be written",property=None,defaultunits=wc,choices=None)
-		pwb = ParamDef(name="write_box_images",vartype="boolean",desc_short="Write box image files",desc_long="Whether or not box images should be written",property=None,defaultunits=wb,choices=None)
-		pn =  ParamDef(name="normproc",vartype="string",desc_short="Normalize images",desc_long="How the output box images should be normalized",property=None,defaultunits="normalize.edgmean",choices=["normalize","normalize.edgemean","none"])
-		pop = ParamDef(name="outformat",vartype="string",desc_short="Output image format",desc_long="The format of the output box images",property=None,defaultunits="bdb",choices=["bdb","img","hdf"])
-		params.append([pbox,pfo])
-		params.append([pwc,pwb])
-		params.append(pn)
-		params.append(pop)
-		return params
-
-	def on_form_ok(self,params):
-		
-		for k,v in params.items():
-			self.write_db_entry(k,v)
-		
-		filenames_ok = True
-		if len(params["filenames"]) == 0: filenames_ok = False
-		else:
-			fine,message = check_files_are_2d_images(params["filenames"])
-			if not fine:
-				filenames_ok = False
-#				message_box = QtGui.QMessageBox()
-#				message_box.setText(message)
-#				message_box.show()
-#				return
+#class E2BoxerGeneralTask(WorkFlowTask):
+#	documentation_string = "You can run e2boxer on whichever images you like using this tool. If there is a current autoboxer in the EMAN2 database then you will also be able to execute automated boxing"
+#	auto_documentation_string = "Choose the images that you want to run automated boxing on using the current autoboxer in the EMAN2 database"
+#	def __init__(self,application):
+#		WorkFlowTask.__init__(self,application)
+#		self.window_title = "Boxer"
+#		self.form2 = None
+#		self.boxer_module = None
+#		
+#	def get_params(self):
+#		
+#		params = []
+#		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2BoxerGeneralTask.documentation_string,choices=None))
+#		
+#		
+#		params.append(ParamDef(name="filenames",vartype="url",desc_short="File names",desc_long="The files you wish to box",property=None,defaultunits=[],choices=[]))
+#		
+#		boxer_project_db = db_open_dict("bdb:e2boxer.project")
+#		params.append(ParamDef(name="boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=boxer_project_db.get("working_boxsize",dfl=128),choices=[]))
+#		params.append(ParamDef(name="method",vartype="choice",desc_short="Boxing mode",desc_long="Currently only one mode is supported, but this could change",property=None,defaultunits="Swarm",choices=["Swarm"]))
+#		
+#		
+#		boxer_cache_db = db_open_dict("bdb:e2boxer.cache")
+#		if boxer_cache_db.has_key("current_autoboxer"):
+#			running_mode_options = ["gui","auto_db"]
+#		else:
+#			running_mode_options = ["gui"]
+#		params.append(ParamDef(name="running_mode",vartype="choice",desc_short="Boxing mode",desc_long="Whether to load the GUI or run automatic boxing based on information stored in the database",property=None,defaultunits="gui",choices=running_mode_options))
+#		return params
+#
+#	def get_auto_params(self,params):
+#		
+#		
+#		try: filenames = params["filenames"]
+#		except: filenames = []
+#		try: boxsize = params["boxsize"]
+#		except: boxsize = 128
+#		fo = False
+#		wc = False
+#		wb = True
+#		norm = "normalize.edgemean"
+#		output = "hdf"
+#	
+#		params = []
+#		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2BoxerGeneralTask.auto_documentation_string,choices=None))
+#		
+#		params.append(ParamDef(name="filenames",vartype="url",desc_short="File names",desc_long="The files you wish to box",property=None,defaultunits=filenames,choices=[]))
+#		pbox = ParamDef(name="boxsize",vartype="int",desc_short="Box size",desc_long="The output box size",property=None,defaultunits=boxsize,choices=None)
+#		pfo = ParamDef(name="force",vartype="boolean",desc_short="Force overwrite",desc_long="Whether or not to force overwrite files that already exist",property=None,defaultunits=fo,choices=None)
+#		pwc = ParamDef(name="write_coord_files",vartype="boolean",desc_short="Write box db files",desc_long="Whether or not box db files should be written",property=None,defaultunits=wc,choices=None)
+#		pwb = ParamDef(name="write_box_images",vartype="boolean",desc_short="Write box image files",desc_long="Whether or not box images should be written",property=None,defaultunits=wb,choices=None)
+#		pn =  ParamDef(name="normproc",vartype="string",desc_short="Normalize images",desc_long="How the output box images should be normalized",property=None,defaultunits="normalize.edgmean",choices=["normalize","normalize.edgemean","none"])
+#		pop = ParamDef(name="outformat",vartype="string",desc_short="Output image format",desc_long="The format of the output box images",property=None,defaultunits="bdb",choices=["bdb","img","hdf"])
+#		params.append([pbox,pfo])
+#		params.append([pwc,pwb])
+#		params.append(pn)
+#		params.append(pop)
+#		return params
+#
+#	def on_form_ok(self,params):
+#		
+#		for k,v in params.items():
+#			self.write_db_entry(k,v)
+#		
+#		filenames_ok = True
+#		if len(params["filenames"]) == 0: filenames_ok = False
+#		else:
+#			fine,message = check_files_are_2d_images(params["filenames"])
+#			if not fine:
+#				filenames_ok = False
+##				message_box = QtGui.QMessageBox()
+##				message_box.setText(message)
+##				message_box.show()
+##				return
+##				
+#			# if this is true we can't do anything, just kill the form. Yes their could be other ways to act here, but this is the simplest option
+#		if not filenames_ok:
+#			self.application().close_specific(self.form)
+#			self.form = None
+#		
+#			self.emit(QtCore.SIGNAL("task_idle"))
+#		else:
+#			if params["running_mode"] == "gui":
+#				options = EmptyObject()
+#				options.running_mode = "gui"
+#				options.method = params["method"] # this always be "Swarm" but it could change
+#				options.filenames = params["filenames"]
+#				options.boxsize = params["boxsize"]
 #				
-			# if this is true we can't do anything, just kill the form. Yes their could be other ways to act here, but this is the simplest option
-		if not filenames_ok:
-			self.application().close_specific(self.form)
-			self.form = None
-		
-			self.emit(QtCore.SIGNAL("task_idle"))
-		else:
-			if params["running_mode"] == "gui":
-				options = EmptyObject()
-				options.running_mode = "gui"
-				options.method = params["method"] # this always be "Swarm" but it could change
-				options.filenames = params["filenames"]
-				options.boxsize = params["boxsize"]
-				
-				
-				
-				self.boxer_module = EMBoxerModule(self.application(),options)
-				self.emit(QtCore.SIGNAL("gui_running"),"Boxer",self.boxer_module) # The controlled program should intercept this signal and keep the E2BoxerTask instance in memory, else signals emitted internally in boxer won't work
-				
-				QtCore.QObject.connect(self.boxer_module, QtCore.SIGNAL("module_idle"), self.on_boxer_idle)
-				QtCore.QObject.connect(self.boxer_module, QtCore.SIGNAL("module_closed"), self.on_boxer_closed)
-				
-				self.boxer_module.show_guis()
-				self.application().close_specific(self.form)
-				self.form = None
-				
-			elif params["running_mode"] == "auto_db":
-				self.run_second_form(params)
-				
-				
-	
-	def on_form_close(self):
-		# this is to avoid a task_idle signal, which would be incorrect if e2boxer or the seconf form is running
-		if self.form2 == None and self.boxer_module == None:
-			self.emit(QtCore.SIGNAL("task_idle"))
-		else: pass
-				
-	def run_second_form(self,params):
-		self.form2 = EMFormModule(self.get_auto_params(params),self.application)
-		self.form2.qt_widget.resize(480,640)
-		self.form2.setWindowTitle("Automated Boxing")
-		self.application().show_specific(self.form2)
-		QtCore.QObject.connect(self.form2,QtCore.SIGNAL("emform_ok"),self.on_form_2_ok)
-		QtCore.QObject.connect(self.form2,QtCore.SIGNAL("emform_cancel"),self.on_form_2_cancel)
-		QtCore.QObject.connect(self.form2,QtCore.SIGNAL("emform_close"),self.on_form_2_close)
-	
-		self.application().close_specific(self.form)
-		self.form = None # have to this now or the form close function will emit "task_idle"
-		
-	
-	def on_form_2_ok(self,params):
-		filenames_ok = True
-		if len(params["filenames"]) == 0: filenames_ok = False
-		else:
-			fine,message = check_files_are_2d_images(params["filenames"])
-			if not fine:
-				filenames_ok = False
-#				message_box = QtGui.QMessageBox()
-#				message_box.setText(message)
-#				message_box.show()
-#				return
 #				
-			# if this is true we can't do anything, just kill the form. Yes their could be other ways to act here, but this is the simplest option
-		if not filenames_ok:
-			self.application().close_specific(self.form2)
-			self.form2 = None
-		
-			self.emit(QtCore.SIGNAL("task_idle"))
-		else:
-			options = EmptyObject()
-			for k,v in params.items():
-				setattr(options,k,v)
-			
-			string_args = ["normproc","outformat","boxsize"]
-			bool_args = ["force","write_coord_files","write_box_images"]
-			additional_args = ["--method=Swarm", "--auto=db"]
-			temp_file_name = "e2boxer_autobox_stdout.txt"
-			self.run_task("e2boxer.py",options,string_args,bool_args,additional_args,temp_file_name)
-			
-			self.emit(QtCore.SIGNAL("task_idle"))
-			self.application().close_specific(self.form2)
-			self.form2 = None
-			
-	def on_form_2_cancel(self):
-		self.application().close_specific(self.form2)
-		self.form2 = None
-		self.emit(QtCore.SIGNAL("task_idle"))
-	
-	def on_form_2_close(self):
-		self.form2 = None
-		self.emit(QtCore.SIGNAL("task_idle"))
-		
-	def write_db_entry(self,k,v):
-		if k == "boxsize" and v > 0:
-			boxer_project_db = db_open_dict("bdb:e2boxer.project")
-			boxer_project_db["working_boxsize"] = v
-	
-	
-	def on_boxer_closed(self): 
-		if self.boxer_module != None:
-			self.boxer_module = None
-			self.emit(QtCore.SIGNAL("gui_exit"))
-	
-	def on_boxer_idle(self):
-		'''
-		Presently this means boxer did stuff but never opened any guis, so it's safe just to emit the signal
-		'''
-		print "boxer idle"
-		self.boxer_module = None
-		self.emit(QtCore.SIGNAL("gui_exit"))
+#				
+#				self.boxer_module = EMBoxerModule(self.application(),options)
+#				self.emit(QtCore.SIGNAL("gui_running"),"Boxer",self.boxer_module) # The controlled program should intercept this signal and keep the E2BoxerTask instance in memory, else signals emitted internally in boxer won't work
+#				
+#				QtCore.QObject.connect(self.boxer_module, QtCore.SIGNAL("module_idle"), self.on_boxer_idle)
+#				QtCore.QObject.connect(self.boxer_module, QtCore.SIGNAL("module_closed"), self.on_boxer_closed)
+#				
+#				self.boxer_module.show_guis()
+#				self.application().close_specific(self.form)
+#				self.form = None
+#				
+#			elif params["running_mode"] == "auto_db":
+#				self.run_second_form(params)
+#				
+#				
+#	
+#	def on_form_close(self):
+#		# this is to avoid a task_idle signal, which would be incorrect if e2boxer or the seconf form is running
+#		if self.form2 == None and self.boxer_module == None:
+#			self.emit(QtCore.SIGNAL("task_idle"))
+#		else: pass
+#				
+#	def run_second_form(self,params):
+#		self.form2 = EMFormModule(self.get_auto_params(params),self.application)
+#		self.form2.qt_widget.resize(480,640)
+#		self.form2.setWindowTitle("Automated Boxing")
+#		self.application().show_specific(self.form2)
+#		QtCore.QObject.connect(self.form2,QtCore.SIGNAL("emform_ok"),self.on_form_2_ok)
+#		QtCore.QObject.connect(self.form2,QtCore.SIGNAL("emform_cancel"),self.on_form_2_cancel)
+#		QtCore.QObject.connect(self.form2,QtCore.SIGNAL("emform_close"),self.on_form_2_close)
+#	
+#		self.application().close_specific(self.form)
+#		self.form = None # have to this now or the form close function will emit "task_idle"
+#		
+#	
+#	def on_form_2_ok(self,params):
+#		filenames_ok = True
+#		if len(params["filenames"]) == 0: filenames_ok = False
+#		else:
+#			fine,message = check_files_are_2d_images(params["filenames"])
+#			if not fine:
+#				filenames_ok = False
+##				message_box = QtGui.QMessageBox()
+##				message_box.setText(message)
+##				message_box.show()
+##				return
+##				
+#			# if this is true we can't do anything, just kill the form. Yes their could be other ways to act here, but this is the simplest option
+#		if not filenames_ok:
+#			self.application().close_specific(self.form2)
+#			self.form2 = None
+#		
+#			self.emit(QtCore.SIGNAL("task_idle"))
+#		else:
+#			options = EmptyObject()
+#			for k,v in params.items():
+#				setattr(options,k,v)
+#			
+#			string_args = ["normproc","outformat","boxsize"]
+#			bool_args = ["force","write_coord_files","write_box_images"]
+#			additional_args = ["--method=Swarm", "--auto=db"]
+#			temp_file_name = "e2boxer_autobox_stdout.txt"
+#			self.run_task("e2boxer.py",options,string_args,bool_args,additional_args,temp_file_name)
+#			
+#			self.emit(QtCore.SIGNAL("task_idle"))
+#			self.application().close_specific(self.form2)
+#			self.form2 = None
+#			
+#	def on_form_2_cancel(self):
+#		self.application().close_specific(self.form2)
+#		self.form2 = None
+#		self.emit(QtCore.SIGNAL("task_idle"))
+#	
+#	def on_form_2_close(self):
+#		self.form2 = None
+#		self.emit(QtCore.SIGNAL("task_idle"))
+#		
+#	def write_db_entry(self,k,v):
+#		if k == "boxsize" and v > 0:
+#			boxer_project_db = db_open_dict("bdb:e2boxer.project")
+#			boxer_project_db["working_boxsize"] = v
+#	
+#	
+#	def on_boxer_closed(self): 
+#		if self.boxer_module != None:
+#			self.boxer_module = None
+#			self.emit(QtCore.SIGNAL("gui_exit"))
+#	
+#	def on_boxer_idle(self):
+#		'''
+#		Presently this means boxer did stuff but never opened any guis, so it's safe just to emit the signal
+#		'''
+#		print "boxer idle"
+#		self.boxer_module = None
+#		self.emit(QtCore.SIGNAL("gui_exit"))
 		
 class E2CTFWorkFlowTask(ParticleWorkFlowTask):
 	'''
@@ -1193,7 +1266,6 @@ class E2CTFWorkFlowTask(ParticleWorkFlowTask):
 			db_close_dict("bdb:e2ctf.parms")
 			return vals
 		else:
-			print "empty, empty"
 			return []
 		
 	def get_project_particle_names_with_ctf(self):
@@ -1251,10 +1323,10 @@ class CTFReportTask(E2CTFWorkFlowTask):
 	def write_db_entry(self,key,value):
 		pass
 		
-class E2CTFGeneralTask(E2CTFWorkFlowTask):
+class E2CTFGeneralTask(ParticleWorkFlowTask):
 	documentation_string = "Fill me in"
 	def __init__(self,application):
-		E2CTFWorkFlowTask.__init__(self,application)
+		ParticleWorkFlowTask.__init__(self,application)
 		self.window_title = "e2ctf"
 		self.preferred_size = (480,200)
 		
@@ -1313,7 +1385,7 @@ class E2CTFAutoFitTask(E2CTFWorkFlowTask):
 		project_db = db_open_dict("bdb:project")
 		ctf_misc_db = db_open_dict("bdb:e2ctf.misc")
 		papix = ParamDef(name="global.apix",vartype="float",desc_short="A/pix for project",desc_long="The physical distance represented by the pixel spacing",property=None,defaultunits=project_db.get("global.apix",dfl=1.1),choices=None)
-		pvolt = ParamDef(name="global.microscope_voltage",vartype="float",desc_short="Microscope voltage",desc_long="The operating voltage of the microscope",property=None,defaultunits=project_db.get("global.microscope_voltage",dfl=300),choices=None)
+		pvolt = ParamDef(name="global.microscope_voltage",vartype="float",desc_short="Microscope voltage",desc_long="The operating voltage of the microscope in kilo volts",property=None,defaultunits=project_db.get("global.microscope_voltage",dfl=300),choices=None)
 		pcs = ParamDef(name="global.microscope_cs",vartype="float",desc_short="Microscope Cs",desc_long="Microscope spherical aberration constant",property=None,defaultunits=project_db.get("global.microscope_cs",dfl=2.0),choices=None)
 		pac = ParamDef(name="working_ac",vartype="float",desc_short="Amplitude contrast",desc_long="The amplitude contrast constant. It is recommended that this value is identical in all of your images.",property=None,defaultunits=ctf_misc_db.get("working_ac",dfl=10),choices=None)
 		pos = ParamDef(name="working_oversamp",vartype="int",desc_short="Oversampling",desc_long="If greater than 1, oversampling by this amount will be used when images are being phase flipped and Wiener filtered.",property=None,defaultunits=ctf_misc_db.get("working_oversamp",dfl=1),choices=None)
@@ -1426,7 +1498,7 @@ class E2CTFAutoFitTaskGeneral(E2CTFAutoFitTask):
 	'''
 	This one has a generic url browser to get the input file names as opposed to the more rigid project based one
 	'''
-	documentation_string = "Use this tool to use e2ctf to generate ctf parameters for the particles located anywhere on disk"
+	documentation_string = "Use this tool to use e2ctf to generate ctf parameters for the particles located anywhere on disk. Use the browse buttons to locate the files on disk, enter the fitting parameters such as microscope voltage and angstrom per pixel, and hit OK. \nThis will cause the workflow to spawn processes based on the available CPUs. Once finished the automatically determined CTF parameters will be stored in the EMAN2 database."
 	
 	def __init__(self,application):
 		E2CTFAutoFitTask.__init__(self,application)
@@ -1440,7 +1512,6 @@ class E2CTFAutoFitTaskGeneral(E2CTFAutoFitTask):
 		
 		self.add_general_params(params)
 
-		db_close_dict("bdb:project")
 		return params
 	
 	def get_default_ctf_options(self,params):
@@ -1448,9 +1519,8 @@ class E2CTFAutoFitTaskGeneral(E2CTFAutoFitTask):
 		These are the options required to run pspec_and_ctf_fit in e2ctf.py
 		'''
 		
-		if not params.has_key("filenames") and len(params["filenames"]) == 0:
-			print "there is an internal error. You are asking for the default ctf options but there are no filenames" # this shouldn't happen
-			return None
+		if not params.has_key("filenames") or len(params["filenames"]) == 0:
+			return None # this is fine
 		
 		filenames = params["filenames"]
 		fine,message = check_files_are_em_images(filenames)
@@ -1558,25 +1628,28 @@ class E2CTFOutputTask(E2CTFWorkFlowTask):
 class E2CTFOutputTaskGeneral(E2CTFOutputTask):
 	''' This one uses the names in the e2ctf.parms to generate it's table of options, not the particles in the particles directory
 	'''
-	documentation_string = "Write me"
+	warning_string = "\n\n\nNOTE: There are no CTF parameters currently stored for any images in the local database. You can change this by running automated fitting with e2ctf."
 	
 	def __init__(self,application):
 		E2CTFOutputTask.__init__(self,application)
 		self.window_title = "e2ctf management"
 
 	def get_params(self):
-		params = []		
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFOutputTaskGeneral.documentation_string,choices=None))
-		
+		params = []
 		names = self.get_names_with_ctf_params()
 		n = [l[0] for l in names]
 		p,num = self.get_ctf_param_table(n)
-		params.append(p)
 		
-		pwiener = ParamDef(name="wiener",vartype="boolean",desc_short="Wiener",desc_long="Wiener filter your particle images using parameters in the database. Phase flipping will also occur",property=None,defaultunits=False,choices=None)
-		pphase = ParamDef(name="phaseflip",vartype="boolean",desc_short="Phase flip",desc_long="Phase flip your particle images using parameters in the database",property=None,defaultunits=False,choices=None)
+		if num == 0:
+			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFOutputTask.documentation_string+E2CTFOutputTaskGeneral.warning_string,choices=None))
+		else:
+			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFOutputTask.documentation_string,choices=None))
+			params.append(p)
+			pwiener = ParamDef(name="wiener",vartype="boolean",desc_short="Wiener",desc_long="Wiener filter your particle images using parameters in the database. Phase flipping will also occur",property=None,defaultunits=False,choices=None)
+			pphase = ParamDef(name="phaseflip",vartype="boolean",desc_short="Phase flip",desc_long="Phase flip your particle images using parameters in the database",property=None,defaultunits=False,choices=None)
 		
-		params.append([pphase,pwiener])
+			params.append([pphase,pwiener])
+			
 		return params
 	
 	def get_ctf_options(self,params):
@@ -1584,6 +1657,9 @@ class E2CTFOutputTaskGeneral(E2CTFOutputTask):
 		This is a way to get the ctf optiosn if one is using the "alternate" path, which means just in the context of general use of e2ctf (not the workflow)
 		'''
 		options = EmptyObject()
+		
+		if not params.has_key("filenames") or len(params["filenames"]) == 0:
+			return None # this is fine, for example, there were no files to work
 
 		selected_filenames = params["filenames"]
 		
@@ -1610,7 +1686,6 @@ class E2CTFOutputTaskGeneral(E2CTFOutputTask):
 			bool_args = ["wiener","phaseflip"]
 			additional_args = []
 			temp_file_name = "e2ctf_output_stdout.txt"
-			print "running task"
 			self.run_task("e2ctf.py",options,string_args,bool_args,additional_args,temp_file_name)
 			
 
@@ -1621,7 +1696,7 @@ class E2CTFOutputTaskGeneral(E2CTFOutputTask):
 			self.emit(QtCore.SIGNAL("task_idle"))
 	
 class E2CTFGuiTask(E2CTFWorkFlowTask):	
-	documentation_string = "Select the particle data you wish to evaluate/tweak in the e2ctf interactive interface and hit OK. This will launch e2ctf and the selected images will automatically be loaded for viewing."
+	documentation_string = "Select the particle data you wish to evaluate/tweak in the e2ctf interactive interface and hit OK. This will launch e2ctf and the selected images will automatically be loaded for viewing. Once inside the e2ctf interface you can save your tweaked parameters to the database using the Save button."
 	warning_string = "\n\n\nNOTE: There are no particles associated with the project and/or there are no previously generated CTF parameters for these particles. To establish project particles go to the \"Particles\" task. To generate CTF parameters go to the \"Automated fitting - e2ctf\" task" 
 	def __init__(self,application):
 		E2CTFWorkFlowTask.__init__(self,application)
@@ -1703,18 +1778,24 @@ class E2CTFGuiTask(E2CTFWorkFlowTask):
 class E2CTFGuiTaskGeneral(E2CTFGuiTask):
 	''' This one uses the names in the e2ctf.parms to generate it's table of options, not the particles in the particles directory
 	'''
+	warning_string = "\n\n\nNOTE: There are there are no previously generated CTF parameters. Please run automated fitting using e2ctf first." 
+	
 	documentation_string = "Write me"
 	def __init__(self,application):
 		E2CTFGuiTask.__init__(self,application)
 
 	def get_params(self):
 		params = []		
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFGuiTaskGeneral.documentation_string,choices=None))
 		
 		names = self.get_names_with_ctf_params()
 		n = [l[0] for l in names]
 		p,num = self.get_ctf_param_table(n)
-		params.append(p)
+		
+		if num == 0:
+			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFGuiTask.documentation_string+E2CTFGuiTaskGeneral.warning_string,choices=None))
+		else:
+			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFGuiTaskGeneral.documentation_string,choices=None))
+			params.append(p)
 		return params
 	
 	def get_default_ctf_options(self,params):
@@ -1722,9 +1803,8 @@ class E2CTFGuiTaskGeneral(E2CTFGuiTask):
 		These are the options required to run pspec_and_ctf_fit in e2ctf.py
 		'''
 		
-		if not params.has_key("filenames") and len(params["filenames"]) == 0:
-			print "There are no filenames" # this shouldn't happen
-			return None
+		if not params.has_key("filenames") or len(params["filenames"]) == 0:
+			return None # this is fine
 		
 		
 		options = EmptyObject()
@@ -1934,8 +2014,7 @@ class MicrographCCDTask(WorkFlowTask):
 				project_db = db_open_dict("bdb:project")
 				project_db["global.micrograph_ccd_filenames"] = new_names
 				db_close_dict("bdb:project")
-		else:
-			print "unknown key:",key,"this object is",self
+		else:  pass
 					
 
 
@@ -1964,7 +2043,7 @@ class SPRInitTask(WorkFlowTask):
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="SPR",desc_long="Information regarding this task",property=None,defaultunits=SPRInitTask.documentation_string,choices=None))
 		
 		papix = ParamDef(name="global.apix",vartype="float",desc_short="A/pix for project",desc_long="The physical distance represented by the pixel spacing",property=None,defaultunits=project_db.get("global.apix",dfl=1.1),choices=None)
-		pvolt = ParamDef(name="global.microscope_voltage",vartype="float",desc_short="Microscope voltage",desc_long="The operating voltage of the microscope",property=None,defaultunits=project_db.get("global.microscope_voltage",dfl=300),choices=None)
+		pvolt = ParamDef(name="global.microscope_voltage",vartype="float",desc_short="Microscope voltage",desc_long="The operating voltage of the microscope in kilo volts",property=None,defaultunits=project_db.get("global.microscope_voltage",dfl=300),choices=None)
 		pcs = ParamDef(name="global.microscope_cs",vartype="float",desc_short="Microscope Cs",desc_long="Microscope spherical aberration constant",property=None,defaultunits=project_db.get("global.microscope_cs",dfl=2.0),choices=None)
 		pncp = ParamDef(name="global.num_cpus",vartype="int",desc_short="Number of CPUs",desc_long="Number of CPUS available for the project to use",property=None,defaultunits=project_db.get("global.num_cpus",dfl=num_cpus()),choices=None)
 		mem = memory_stats()

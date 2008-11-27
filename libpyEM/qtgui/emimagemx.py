@@ -52,7 +52,7 @@ from emglobjects import EMOpenGLFlagsAndTools
 from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
 import weakref
 
-GLUT.glutInit(sys.argv)
+#GLUT.glutInit(sys.argv)
 
 class EMImageMXWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 	"""
@@ -495,7 +495,7 @@ class EMImageMXModule(EMGUIModule):
 			glDeleteLists(self.main_display_list,1)
 			self.main_display_list = 0
 	
-		if ( len(self.tex_names) > 0 ):	
+		if self.tex_names != None and ( len(self.tex_names) > 0 ):	
 			glDeleteTextures(self.tex_names)
 			self.tex_names = []	
 	
