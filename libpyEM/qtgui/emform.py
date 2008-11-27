@@ -154,11 +154,13 @@ class EMFormWidget(QtGui.QWidget):
 			item = QtGui.QTableWidgetItem(param.desc_short)
 			if len(param.desc_short) > max_len: max_len = len(param.desc_short)
 			item.setTextAlignment(QtCore.Qt.AlignHCenter)
+			item.setToolTip(param.desc_long)
 			table_widget.setHorizontalHeaderItem(i,item)
 			correct_len = 7.5*max_len # the 7.5 means "string are rendered approximately 7.5 pixels wide"
 			table_widget.setColumnWidth(i,int(correct_len))
 			
 		table_widget.setSortingEnabled(True)
+		table_widget.setToolTip(paramtable.desc_long)
 		hbl.addWidget(table_widget,1)
 		
 		groupbox = QtGui.QGroupBox(paramtable.desc_short)
@@ -237,6 +239,7 @@ class EMFormWidget(QtGui.QWidget):
 		hbl.setSpacing(2)
 		check_box = QtGui.QCheckBox(str(param.desc_short),self)
 		check_box.setChecked(bool(param.defaultunits))
+		check_box.setToolTip(param.desc_long)
 		hbl.addWidget(check_box)
 		layout.addLayout(hbl)
 		self.output_writers.append(BoolParamWriter(param.name,check_box))

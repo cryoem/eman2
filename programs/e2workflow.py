@@ -280,8 +280,8 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		
 		
 		ctf_list = []
-		ctf_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Automatic fitting - e2ctf")))
-		self.launchers["Automatic fitting - e2ctf"] = self.launch_e2ctf_auto_ft
+		ctf_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Automated fitting - e2ctf")))
+		self.launchers["Automated fitting - e2ctf"] = self.launch_e2ctf_auto_ft
 		ctf_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Interactive tuning - e2ctf")))
 		self.launchers["Interactive tuning - e2ctf"] = self.launch_e2ctf_tune
 		ctf_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Generate output - e2ctf")))
@@ -334,7 +334,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.launch_task(E2CTFGeneralTask,"e2ctf general")
 	
 	def launch_e2boxer_output(self):
-		self.launch_task(E2BoxerOutputTask,"e2ctf general")
+		self.launch_task(E2BoxerOutputTask,"e3boxer output")
 	
 	def launch_boxer_general(self):
 		self.launch_task(E2BoxerGeneralTask,"e2boxer general")

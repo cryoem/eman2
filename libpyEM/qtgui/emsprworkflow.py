@@ -337,8 +337,8 @@ class ParticleWorkFlowTask(WorkFlowTask):
 
 class ParticleReportTask(ParticleWorkFlowTask):
 	
-	documentation_string = "This tool is for displaying the particles that are currently associated with this project. This list is generating by inspecting the contents of the project particles directory.\n\nYou can add particles to the project using e2boxer or by importing them directly - see from the list of options associated with this task."
-	warning_string = "\n\n\nNOTE: There are no particles currently associated with the project." 
+	documentation_string = "This tool is for displaying the particles that are currently associated with this project. This list is generating by inspecting the contents of the project particles directory."
+	warning_string = "\n\n\nNOTE: There are no particles currently associated with the project. You can add particles to the project using e2boxer or by importing them directly - see from the list of options associated with this task." 
 	def __init__(self,application):
 		ParticleWorkFlowTask.__init__(self,application)
 		self.window_title = "Project particles"
@@ -724,9 +724,7 @@ class E2BoxerOutputTask(E2BoxerTask):
 			params.append(ParamDef(name="blurb",vartype="text",desc_short="Using e2boxer",desc_long="",property=None,defaultunits=E2BoxerOutputTask.documentation_string,choices=None))
 			params.append(p)
 			self.add_general_params(params)
-	
-#		boxer_project_db = db_open_dict("bdb:e2boxer.project")
-#		params.append(ParamDef(name="boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=boxer_project_db.get("working_boxsize",dfl=128),choices=[]))
+
 		return params
 	
 	def add_general_params(self,params):
@@ -1038,6 +1036,9 @@ class E2BoxerGeneralTask(WorkFlowTask):
 		self.emit(QtCore.SIGNAL("gui_exit"))
 		
 class E2CTFWorkFlowTask(ParticleWorkFlowTask):
+	'''
+	Common functionality for E2CTF Work flow taskss
+	'''
 	def __init__(self,application):
 		ParticleWorkFlowTask.__init__(self,application)
 
@@ -1048,26 +1049,40 @@ class E2CTFWorkFlowTask(ParticleWorkFlowTask):
 		if particle_file_names == None: # just left this here in case anyone is wandering what to do
 			particle_file_names = self.get_particle_db_names(strip_ptcls=False)
 		
-		defocus,dfdiff,dfang,bfactor = self.get_ctf_info(particle_file_names)
+		defocus,dfdiff,dfang,bfactor,noise = self.get_ctf_info(particle_file_names)
 		
 		pnames = ParamDef(name="micrograph_ccd_filenames",vartype="stringlist",desc_short="File names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=None,choices=particle_file_names)
 		pdefocus = ParamDef(name="Defocus",vartype="floatlist",desc_short="Defocus",desc_long="Estimated defocus of the microscope",property=None,defaultunits=None,choices=defocus)
 		pbfactor = ParamDef(name="Bfactor",vartype="floatlist",desc_short="B factor",desc_long="Estimated B factor of the microscope",property=None,defaultunits=None,choices=bfactor)
-		num_phase,num_wiener,num_particles = self.get_ctf_particle_info(particle_file_names)
-		pboxes = ParamDef(name="Num boxes",vartype="intlist",desc_short="Particles",desc_long="The number of particles stored for this image in the database",property=None,defaultunits=None,choices=num_particles)
-		pwiener = ParamDef(name="Num wiener",vartype="intlist",desc_short="Phase flipped",desc_long="The number of Wiener filter particles stored for this image in the database",property=None,defaultunits=None,choices=num_phase)
-		pphase = ParamDef(name="Num phase",vartype="intlist",desc_short="Wienered",desc_long="The number of phase flipped particles stored for this image in the database",property=None,defaultunits=None,choices=num_wiener)
+		pnoise = ParamDef(name="Noise",vartype="intlist",desc_short="Noise profile length",desc_long="The number of entries in the noise profile",property=None,defaultunits=None,choices=noise)
+		
+		num_phase,num_wiener,num_particles,phase_dims,wiener_dims,particle_dims = self.get_ctf_particle_info(particle_file_names)
+		pboxes = ParamDef(name="Num boxes",vartype="intlist",desc_short="Particles on disk",desc_long="The number of particles stored for this image in the database",property=None,defaultunits=None,choices=num_particles)
+		pphase = ParamDef(name="Num phase",vartype="intlist",desc_short="Phase flipped",desc_long="The number of Wiener filter particles stored for this image in the database",property=None,defaultunits=None,choices=num_phase)
+		pwiener = ParamDef(name="Num wiener",vartype="intlist",desc_short="Wienered",desc_long="The number of phase flipped particles stored for this image in the database",property=None,defaultunits=None,choices=num_wiener)
+			
+		pphasedim = ParamDef(name="phase dim",vartype="stringlist",desc_short="Phase ptcl dims",desc_long="The dimensions of the phase flipped images",property=None,defaultunits=None,choices=phase_dims)
+		pwienerdim = ParamDef(name="wiener dim",vartype="stringlist",desc_short="Wiener ptcl dims",desc_long="The dimensions of the Wiener filtered images",property=None,defaultunits=None,choices=wiener_dims)
+		pparticledim = ParamDef(name="particle dim",vartype="stringlist",desc_short="Particle dims",desc_long="The dimensions of the particle images",property=None,defaultunits=None,choices=particle_dims)
+		
+		#print len(num_phase),len(num_wiener),len(num_particles),len(phase_dims),len(wiener_dims),len(particle_dims)
 		
 		p = ParamTable(name="filenames",desc_short="Current CTF parameters",desc_long="")
 		
 		p.append(pnames)
-		if not no_particles: p.append(pboxes)
-		p.append(pwiener)
-		p.append(pphase)
 		p.append(pdefocus)
 		p.append(pbfactor)
+		p.append(pnoise)
+		if not no_particles: 
+			p.append(pboxes)
+			p.append(pparticledim)
+			p.append(pphase)
+			p.append(pphasedim)
+			p.append(pwiener)
+			p.append(pwienerdim)
 		
-		return p
+		
+		return p,len(defocus)
 	
 	def get_ctf_info(self,particle_file_names):
 		if db_check_dict("bdb:e2ctf.parms"):
@@ -1075,28 +1090,30 @@ class E2CTFWorkFlowTask(ParticleWorkFlowTask):
 			dfdiff = []
 			dfang = []
 			bfactor = []
+			noise_profile=[]
 			ctf_db = db_open_dict("bdb:e2ctf.parms")
 			for name in particle_file_names:
 				try:
 					vals = ctf_db[name][0]
 					ctf = EMAN2Ctf()
 					ctf.from_string(vals)
-					vals = [ctf.defocus,ctf.dfdiff,ctf.dfang,ctf.bfactor]
+					vals = [ctf.defocus,ctf.dfdiff,ctf.dfang,ctf.bfactor,len(ctf.background)]
 				except:
-					vals = ["","","",""]  # only need 4 at the moment
+					vals = ["","","","",'']  # only need 5 at the moment
 					
 				defocus.append(vals[0])
 				dfdiff.append(vals[1])
 				dfang.append(vals[2])
 				bfactor.append(vals[3])
+				noise_profile.append(vals[4])
 				
 			db_close_dict("bdb:e2ctf.parms")
 
-			return defocus,dfdiff,dfang,bfactor
+			return defocus,dfdiff,dfang,bfactor,noise_profile
 	
 		else:
 			dummy = ["" for i in range(len(particle_file_names))]
-			return dummy,dummy,dummy,dummy
+			return dummy,dummy,dummy,dummy,dummy
 	def get_ctf_particle_info(self,particle_file_names):
 		'''
 		Returns three string lists containing entries correpsonding to the number of phase corrected, wiener correct, and regular particles in the database
@@ -1116,10 +1133,15 @@ class E2CTFWorkFlowTask(ParticleWorkFlowTask):
 		wiener = []
 		particles = []
 		
+		phase_dims = []
+		wiener_dims = []
+		particle_dims = []
+		
 		for name in particle_file_names:
 			particle_db_name = "bdb:particles#"+name
 			wiener_ptcl_db_name = particle_db_name + "_ctf_wiener"
 			flip_ptcl_db_name = particle_db_name + "_ctf_flip"
+			
 			d = {}
 			d[particle_db_name] = particles
 			d[wiener_ptcl_db_name] = wiener
@@ -1133,8 +1155,25 @@ class E2CTFWorkFlowTask(ParticleWorkFlowTask):
 					else: data_list.append("")
 					db_close_dict(db_name)
 				else: data_list.append("")
+			
+			d = {}
+			d[particle_db_name] = particle_dims
+			d[wiener_ptcl_db_name] = wiener_dims
+			d[flip_ptcl_db_name] = phase_dims
+			
+			for db_name,data_list in d.items():
+				if db_check_dict(db_name):
+					particle_db = db_open_dict(db_name)
+					try:
+						hdr = particle_db.get_header(0)
+						data_list.append(str(hdr["nx"])+'x'+str(hdr["ny"])+'x'+str(hdr["nz"]))
+					except:
+						data_list.append("")
+				else: data_list.append("")
+					
+			
 		
-		return phase,wiener,particles
+		return phase,wiener,particles,phase_dims,wiener_dims,particle_dims
 #		else:
 #			print "no db for particles"
 #			dummy = [-1 for i in range(len(particle_file_names))]
@@ -1157,7 +1196,24 @@ class E2CTFWorkFlowTask(ParticleWorkFlowTask):
 			print "empty, empty"
 			return []
 		
-	def get_names_with_parms(self):
+	def get_project_particle_names_with_ctf(self):
+		'''
+		Get the names of particles in the project db that also have an entry in the e2ctf.parms db
+		This is useful for the E2CTFGui and Output task
+		'''
+		
+		ptcl_names = self.get_particle_db_names(strip_ptcls=False) # particles in the project directory
+		ctf_names = self.get_names_with_ctf_params()
+		ctf_ptcl_names = [l[0] for l in ctf_names]
+		
+		interactable_names = []
+		for name in ptcl_names:
+			if name in ctf_ptcl_names:
+				interactable_names.append(name)
+				
+		return interactable_names
+		
+	def get_names_with_ctf_params(self):
 		'''
 		opens the e2ctf.parms directory and returns all a list of lists like this:
 		[[db_name_key, real_image_name],....]
@@ -1172,6 +1228,28 @@ class E2CTFWorkFlowTask(ParticleWorkFlowTask):
 			ret.append([key,data[-1]]) # parms[-1] should be the original filename
 				
 		return ret
+
+class CTFReportTask(E2CTFWorkFlowTask):
+	
+	documentation_string = "This tool is for displaying the currently determined CTF parameters for the particles associated with the project. It also displays the number of phase flipped and/or wiener filtered images corresponding to each particle set."
+	warning_string = "\n\n\nNOTE: There are no particles currently associated with the project. Please go to the \"Particles\" task and import/box particles first."
+	def __init__(self,application):
+		E2CTFWorkFlowTask.__init__(self,application)
+		self.window_title = "Project particles"
+
+	def get_params(self):
+		params = []
+		p,n = self.get_ctf_param_table(None)
+		
+		if n == 0:
+			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=CTFReportTask.documentation_string+CTFReportTask.warning_string,choices=None))
+		else:
+			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=CTFReportTask.documentation_string,choices=None))
+			params.append(p)
+		return params
+
+	def write_db_entry(self,key,value):
+		pass
 		
 class E2CTFGeneralTask(E2CTFWorkFlowTask):
 	documentation_string = "Fill me in"
@@ -1211,18 +1289,23 @@ class E2CTFGeneralTask(E2CTFWorkFlowTask):
 		pass
 
 class E2CTFAutoFitTask(E2CTFWorkFlowTask):	
-	documentation_string = "Use this tool to use e2ctf to generate ctf parameters for the particles located in the project particle directory"
-	
+	documentation_string = "Select the particles you wish to generate CTF parameters for, enter the appropriate parameters such as microscope voltage etc, and hit OK.\nThis will cause the workflow to spawn processes based on the available CPUs. Once finished the automatically determined CTF parameters will be stored in the EMAN2 database."
+	warning_string = "\n\n\nNOTE: There are no particles currently associated with the project. Please go to the \"Particles\" task and import/box particles first."
+
 	def __init__(self,application):
 		E2CTFWorkFlowTask.__init__(self,application)
 		self.window_title = "e2ctf auto fit"
 
 	def get_params(self):
-		params = []		
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFAutoFitTask.documentation_string,choices=None))
+		params = []
+		p,n= self.get_ctf_param_table(self.get_particle_db_names(strip_ptcls=False),no_particles=True)
 		
-		params.append(self.get_ctf_param_table(self.get_particle_db_names(strip_ptcls=False)))
-		self.add_general_params(params)
+		if n == 0:
+			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFAutoFitTask.documentation_string+E2CTFAutoFitTask.warning_string,choices=None))
+		else:
+			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFAutoFitTask.documentation_string,choices=None))
+			params.append(p)
+			self.add_general_params(params)
 
 		return params
 	
@@ -1237,8 +1320,9 @@ class E2CTFAutoFitTask(E2CTFWorkFlowTask):
 		pncp = ParamDef(name="global.num_cpus",vartype="int",desc_short="Number of CPUs",desc_long="Number of CPUS available for the project to use",property=None,defaultunits=project_db.get("global.num_cpus",dfl=num_cpus()),choices=None)
 		mem = memory_stats()
 		
-		params.append([papix,pvolt,pcs])
-		params.append([pac,pos,pncp])
+		params.append([papix,pvolt])
+		params.append([pcs,pac])
+		params.append([pos,pncp])
 
 		db_close_dict("bdb:project")
 	
@@ -1247,9 +1331,8 @@ class E2CTFAutoFitTask(E2CTFWorkFlowTask):
 		These are the options required to run pspec_and_ctf_fit in e2ctf.py
 		'''
 		
-		if not params.has_key("filenames") and len(params["filenames"]) == 0:
-			print "there is an internal error. You are asking for the default ctf options but there are no filenames" # this shouldn't happen
-			return None
+		if not params.has_key("filenames") or len(params["filenames"]) == 0:
+			return None # this is fine there are no particles assocaited with the project
 		
 		filenames = params["filenames"]
 		
@@ -1398,22 +1481,25 @@ class E2CTFAutoFitTaskGeneral(E2CTFAutoFitTask):
 		return options
 
 class E2CTFOutputTask(E2CTFWorkFlowTask):	
-	documentation_string = "Use this tool to use e2ctf to generate ctf parameters for the particles located in the project particle directory"
-	
+	documentation_string = "Select the particle data for which you wish to generate phase flipped and/or Wiener filtered output and hit OK.\nThis will cause the workflow to spawn processes based on the available CPUs that write the output into a predefined location in the EMAN2 database.\nNote that the Wiener filtered output images are also phase flipped."
+	warning_string = "\n\n\nNOTE: There are no particles associated with the project and/or there are no previously generated CTF parameters for these particles. To establish project particles go to the \"Particles\" task. To generate CTF parameters go to the \"Automated fitting - e2ctf\" task" 
 	def __init__(self,application):
 		E2CTFWorkFlowTask.__init__(self,application)
 		self.window_title = "e2ctf management"
 
 	def get_params(self):
 		params = []		
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFOutputTask.documentation_string,choices=None))
 		
-		params.append(self.get_ctf_param_table(self.get_particle_db_names(strip_ptcls=False)))
-		
-		pwiener = ParamDef(name="wiener",vartype="boolean",desc_short="Wiener + phase flip",desc_long="Wiener filter your particle images using parameters in the database. Phase flipping will also occur",property=None,defaultunits=False,choices=None)
-		pphase = ParamDef(name="phaseflip",vartype="boolean",desc_short="Phase flip",desc_long="Phase flip your particle images using parameters in the database",property=None,defaultunits=False,choices=None)
-		
-		params.append([pphase,pwiener])
+		p,n = self.get_ctf_param_table(self.get_project_particle_names_with_ctf())
+		if n == 0:
+			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFOutputTask.documentation_string+E2CTFOutputTask.warning_string,choices=None))
+		else:
+			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFOutputTask.documentation_string,choices=None))
+			params.append(p)
+			pwiener = ParamDef(name="wiener",vartype="boolean",desc_short="Wiener",desc_long="Wiener filter your particle images using parameters in the database. Phase flipping will also occur",property=None,defaultunits=False,choices=None)
+			pphase = ParamDef(name="phaseflip",vartype="boolean",desc_short="Phase flip",desc_long="Phase flip your particle images using parameters in the database",property=None,defaultunits=False,choices=None)
+			
+			params.append([pphase,pwiener])
 		return params
 
 	def get_default_ctf_options(self,params):
@@ -1421,9 +1507,8 @@ class E2CTFOutputTask(E2CTFWorkFlowTask):
 		These are the options required to run pspec_and_ctf_fit in e2ctf.py, works in e2workflow
 		'''
 		
-		if not params.has_key("filenames") and len(params["filenames"]) == 0:
-			print "there is an internal error. You are asking for the default ctf options but there are no filenames to deduce the bgmask option from" # this shouldn't happen
-			return None
+		if not params.has_key("filenames") or len(params["filenames"]) == 0:
+			return None # this is fine, for example, there were no files to work
 		
 		
 		options = EmptyObject()
@@ -1483,11 +1568,12 @@ class E2CTFOutputTaskGeneral(E2CTFOutputTask):
 		params = []		
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFOutputTaskGeneral.documentation_string,choices=None))
 		
-		names = self.get_names_with_parms()
+		names = self.get_names_with_ctf_params()
 		n = [l[0] for l in names]
-		params.append(self.get_ctf_param_table(n,no_particles=True))
+		p,num = self.get_ctf_param_table(n)
+		params.append(p)
 		
-		pwiener = ParamDef(name="wiener",vartype="boolean",desc_short="Wiener + phase flip",desc_long="Wiener filter your particle images using parameters in the database. Phase flipping will also occur",property=None,defaultunits=False,choices=None)
+		pwiener = ParamDef(name="wiener",vartype="boolean",desc_short="Wiener",desc_long="Wiener filter your particle images using parameters in the database. Phase flipping will also occur",property=None,defaultunits=False,choices=None)
 		pphase = ParamDef(name="phaseflip",vartype="boolean",desc_short="Phase flip",desc_long="Phase flip your particle images using parameters in the database",property=None,defaultunits=False,choices=None)
 		
 		params.append([pphase,pwiener])
@@ -1502,7 +1588,7 @@ class E2CTFOutputTaskGeneral(E2CTFOutputTask):
 		selected_filenames = params["filenames"]
 		
 		filenames = []
-		names = self.get_names_with_parms()
+		names = self.get_names_with_ctf_params()
 		for name in names:
 			if name[0] in selected_filenames:
 				filenames.append(name[1])
@@ -1535,18 +1621,28 @@ class E2CTFOutputTaskGeneral(E2CTFOutputTask):
 			self.emit(QtCore.SIGNAL("task_idle"))
 	
 class E2CTFGuiTask(E2CTFWorkFlowTask):	
-	documentation_string = "Use this tool to use e2ctf to generate ctf parameters for the particles located in the project particle directory"
-	
+	documentation_string = "Select the particle data you wish to evaluate/tweak in the e2ctf interactive interface and hit OK. This will launch e2ctf and the selected images will automatically be loaded for viewing."
+	warning_string = "\n\n\nNOTE: There are no particles associated with the project and/or there are no previously generated CTF parameters for these particles. To establish project particles go to the \"Particles\" task. To generate CTF parameters go to the \"Automated fitting - e2ctf\" task" 
 	def __init__(self,application):
 		E2CTFWorkFlowTask.__init__(self,application)
 		self.window_title = "e2ctf management"
 		self.gui = None # will eventually be a e2ctf gui
 
 	def get_params(self):
-		params = []		
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFGuiTask.documentation_string,choices=None))
 		
-		params.append(self.get_ctf_param_table(self.get_particle_db_names(strip_ptcls=False)))
+		
+		ptcl_names = self.get_particle_db_names(strip_ptcls=False) # particles in the project directory
+		ctf_names = self.get_names_with_ctf_params()
+		ctf_ptcl_names = [l[0] for l in ctf_names]
+		
+		p,n = self.get_ctf_param_table(self.get_project_particle_names_with_ctf(),no_particles=True)
+		
+		params = []		
+		if n == 0:
+			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFGuiTask.documentation_string+E2CTFGuiTask.warning_string,choices=None))
+		else:
+			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFGuiTask.documentation_string,choices=None))
+		  	params.append(p)
 		return params
 	
 	def get_default_ctf_options(self,params):
@@ -1554,8 +1650,8 @@ class E2CTFGuiTask(E2CTFWorkFlowTask):
 		These are the options required to run pspec_and_ctf_fit in e2ctf.py
 		'''
 		
-		if not params.has_key("filenames") and len(params["filenames"]) == 0:
-			print "There are no filenames" # this shouldn't happen
+		if not params.has_key("filenames") or len(params["filenames"]) == 0:
+			#print "There are no filenames" # this shouldn't happen
 			return None
 		
 		
@@ -1615,9 +1711,10 @@ class E2CTFGuiTaskGeneral(E2CTFGuiTask):
 		params = []		
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFGuiTaskGeneral.documentation_string,choices=None))
 		
-		names = self.get_names_with_parms()
+		names = self.get_names_with_ctf_params()
 		n = [l[0] for l in names]
-		params.append(self.get_ctf_param_table(n))
+		p,num = self.get_ctf_param_table(n)
+		params.append(p)
 		return params
 	
 	def get_default_ctf_options(self,params):
@@ -1635,31 +1732,13 @@ class E2CTFGuiTaskGeneral(E2CTFGuiTask):
 		selected_filenames = params["filenames"]
 		
 		filenames = []
-		names = self.get_names_with_parms()
+		names = self.get_names_with_ctf_params()
 		for name in names:
 			if name[0] in selected_filenames:
 				filenames.append(name[1])
 		options.filenames = filenames
 #		
 		return options
-
-class CTFReportTask(E2CTFWorkFlowTask):
-	
-	documentation_string = "This tool is for displaying the currently determined CTF parameters for the particles located in the project particle directory."
-	
-	def __init__(self,application):
-		E2CTFWorkFlowTask.__init__(self,application)
-		self.window_title = "Project particles"
-
-	def get_params(self):
-		params = []
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=CTFReportTask.documentation_string,choices=None))
-		
-		params.append(self.get_ctf_param_table(self.get_ctf_project_names()))
-		return params
-
-	def write_db_entry(self,key,value):
-		pass
 
 
 class MicrographCCDImportTask(WorkFlowTask):	
