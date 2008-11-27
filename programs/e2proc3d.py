@@ -229,7 +229,7 @@ def main():
                 index_d[option1] += 1
 
             elif option1 == "medianshrink":
-                shrink_f = options.shrink[index_d[option1]]
+                shrink_f = options.medianshrink[index_d[option1]]
                 if shrink_f > 1:
                     data.process_inplace("math.medianshrink",{"n":shrink_f})
                     nx = data.get_xsize()
@@ -238,7 +238,7 @@ def main():
                 index_d[option1] += 1
 
             elif option1 == "meanshrink":
-                shrink_f = options.shrink[index_d[option1]]
+                shrink_f = options.meanshrink[index_d[option1]]
                 if shrink_f > 1:
                     data.process_inplace("math.meanshrink",{"n":shrink_f})
                     nx = data.get_xsize()

@@ -139,7 +139,7 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 				
 #				im.rotate_translate(best[3],0,0,best[1],best[2],0)
 
-				im.rotate_translate(Transform({"type":"2d","phi":best[3],"tx":best[1],"ty":best[2],"flip":best[4]}))
+				im.transform(Transform({"type":"2d","phi":best[3],"tx":best[1],"ty":best[2],"flip":best[4]}))
 				
 				# inner loop over the basis images to generate the components of the projection vector
 				for j,b in enumerate(basis):
@@ -168,7 +168,7 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 					if simmx.get(i,j)<best[0] : best=(simmx.get(j,i),simda.get(j,i),simdx.get(j,i),simdy.get(j,i),simflip.get(j,i))
 				
 #				im.rotate_translate(best[1],0,0,best[2],best[3],0)
-				im.rotate_translate(Transform({"type":"2d","phi":best[3],"tx":best[1],"ty":best[2],"flip":best[4]}))
+				im.transform(Transform({"type":"2d","phi":best[3],"tx":best[1],"ty":best[2],"flip":best[4]}))
 				
 				proj=EMData(len(basis),1,1)
 			

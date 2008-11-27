@@ -231,6 +231,7 @@ be classified. """
 		dx.write_image(options.clsmx,2)
 		dy.write_image(options.clsmx,3)
 		dang.write_image(options.clsmx,4)
+		flip.write_image(options.clsmx,5)
 	
 	E2end(logid)
 

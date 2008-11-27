@@ -115,7 +115,7 @@ def main():
 	if options.resume :
 		while "classes_%02d"%fit in dcts: fit+=1
 
-		options.initial="bdb:"+options.path+"#classes_%02d"%fit
+		options.initial=options.path+"#classes_%02d"%fit
 		fit+=1
 		print "starting at iteration ",fit
 
@@ -143,19 +143,18 @@ def main():
 		run("e2classifykmeans.py %s --original=%s --ncls=%d --clsmx=%s#classmx_00 --onein %s"%(inputproj,options.input,options.ncls,options.path,excludestr))
 		
 		# make class-averages
-		run("e2classaverage.py %s %s#classmx_00 %s#classes_init --iter=6 --align=rotate_translate_flip:maxshift=%d --averager=image -vf --bootstrap --keep=.9 --cmp=optvariance --aligncmp=optvariance"%(options.input,options.path,options.path,options.maxshift))
+		run("e2classaverage.py %s %s#classmx_00 %s#classes_init --iter=6 --align=rotate_translate_flip:maxshift=%d --averager=image -vf --bootstrap --keep=.9 --cmp=frc --aligncmp=frc"%(options.input,options.path,options.path,options.maxshift))
 	if not options.initial : options.initial=options.path+"#classes_init"
 		
 	print "Using references from ",options.initial
 	# this is the main refinement loop
 	for it in range(fit,options.iter+1) :		
 		# first we sort and align the class-averages from the last step
-		run("e2stacksort.py %s allrefs.%02d.hdf --simcmp=optvariance:matchfilt=1 --simalign=rotate_translate:maxshift==%d --center --useali --iterative"%(options.initial,it,options.maxshift))
+		run("e2stacksort.py %s %s#allrefs_%02d --simcmp=optvariance:matchfilt=1 --simalign=rotate_translate:maxshift==%d --center --useali --iterative"%
+		    (options.initial,options.path,it,options.maxshift))
 		
 		# Compute a classification basis set
-		try: remove("basis.%02d.hdf"%it)
-		except: pass
-		run("e2msa.py allrefs.%02d.hdf basis.%02d.hdf --nbasis=%d"%(it,it,options.nbasisfp))
+		run("e2msa.py %s#allrefs_%02d %s#basis_%02d --nbasis=%d"%(options.path,it,options.path,it,options.nbasisfp))
 #		run("e2msa.py allrefs.%02d.hdf basis.%02d.hdf --nbasis=%d --varimax"%(it,it,options.nbasisfp))
 		
 		# extract the most different references for alignment
@@ -163,33 +162,24 @@ def main():
 
 		# extract the averages with the most particles
 #		run("e2stacksort.py allrefs.%02d.hdf aliref.%02d.hdf --byptcl --nsort=%d"%(it,it,options.naliref))
-		run("e2stacksort.py allrefs.%02d.hdf aliref.%02d.hdf --reverse --nsort=%d --simcmp=sqeuclidean"%(it,it,options.naliref))
+		run("e2stacksort.py %s#allrefs_%02d %s#aliref_%02d --reverse --nsort=%d --simcmp=sqeuclidean"%(options.path,it,options.path,it,options.naliref))
 		
 		# We use e2simmx to compute the optimal particle orientations
-		try: remove("simmx.%02d.hdf"%it)
-		except: pass
-		e2simmxcmd = "e2simmx.py aliref.%02d.hdf %s simmx.%02d.hdf -f --saveali --cmp=%s --align=%s --aligncmp=%s --verbose=%d %s %s"  %(it, options.input,it,options.simcmp,options.simalign,options.simaligncmp,subverbose,excludestr,parstr)
+		e2simmxcmd = "e2simmx.py %s#aliref_%02d %s %s#simmx_%02d -f --saveali --cmp=%s --align=%s --aligncmp=%s --verbose=%d %s %s"%(options.path,it, options.input,options.path,it,options.simcmp,options.simalign,options.simaligncmp,subverbose,excludestr,parstr)
 		if options.simralign : e2simmxcmd += " --ralign=%s --raligncmp=%s" %(options.simralign,options.simraligncmp)
 		run(e2simmxcmd)
 		
 		# e2basis projectrot here
-		inputproj=options.input[:options.input.rfind(".")]+".%02d.proj.hdf"%it
-		inputproj=inputproj.split("/")[-1]
-		try: remove(inputproj)
-		except: pass
-		run("e2basis.py projectrot basis.%02d.hdf %s simmx.%02d.hdf %s --oneout --verbose=%d %s"%(it,options.input,it,inputproj,subverbose,options.normproj))
+		inputproj=options.path+"#input_%02d_proj"%it
+		run("e2basis.py projectrot %s#basis_%02d %s %s#simmx_%02d %s --oneout --verbose=%d %s"%(options.path,it,options.input,options.path,it,inputproj,subverbose,options.normproj))
 		
 		# classify the subspace vectors
-		try: remove("classmx.%02d.hdf"%it)
-		except: pass
-		run("e2classifykmeans.py %s --original=%s --ncls=%d --clsmx=classmx.%02d.hdf --oneinali %s"%(inputproj,options.input,options.ncls,it,excludestr))
+		run("e2classifykmeans.py %s --original=%s --ncls=%d --clsmx=%s#classmx_%02d --oneinali %s"%(inputproj,options.input,options.ncls,options.path,it,excludestr))
 		
 		# make class-averages
-		try: remove("classes.%02d.hdf"%it)
-		except: pass
-		run("e2classaverage.py %s classmx.%02d.hdf classes.%02d.hdf --iter=%d --align=rotate_translate:maxshift=%d --averager=image -vf  --keep=.9 --cmp=optvariance --aligncmp=optvariance"%(options.input,it,it,options.iterclassav,options.maxshift))
+		run("e2classaverage.py %s %s#classmx_%02d %s#classes_%02d --iter=%d --align=rotate_translate:maxshift=%d --averager=image -vf  --keep=.9 --cmp=optvariance --aligncmp=optvariance"%(options.input,options.path,it,options.path,it,options.iterclassav,options.maxshift))
 		
-		options.initial="classes.%02d.hdf"%it
+		options.initial=options.path+"#classes_%02d"%it
 			
 	E2end(logid)
 	
