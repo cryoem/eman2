@@ -648,7 +648,13 @@ class DBDict:
 			val.write_data(pkey+fkey,n*4*ad["nx"]*ad["ny"]*ad["nz"])
 			
 		else :
-			self.bdb.put(dumps(key,-1),dumps(val,-1),txn=self.txn)
+			try: self.bdb.put(dumps(key,-1),dumps(val,-1),txn=self.txn)
+			except:
+				print "Warning: problem writing ",key," to ",self.name,". Retrying"
+				try: self.bdb.put(dumps(key,-1),dumps(val,-1),txn=self.txn)
+				except: 
+					print "Error: failed a second time. Something is wrong."
+					return
 			if isinstance(key,int) and (not self.has_key("maxrec") or key>self["maxrec"]) : self["maxrec"]=key
 				
 	def __getitem__(self,key):
