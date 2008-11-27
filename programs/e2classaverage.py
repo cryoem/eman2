@@ -139,30 +139,38 @@ def main():
 		print "Error, the number of rows (%d) in the classification matrix (image) does not match the number of particles (%d) in the input image." %(num_part,num_part_check)
 		exit(1)
 	
-	if EMUtil.get_image_count(args[1]) != 6:
-		print "error, the classification matrix is the wrong size"
-		sys.exit(1)
-	
 	# weights contains the weighting of the classification scheme stored in the EMData object "classes" - above
-	# row is particle number, column data contains weights - rows should add to 1, but this is not checked.
-	weights = EMData()
-	weights.read_image(args[1], 1)
 	# dx contains the x translation of the alignment
-	# row is particle number, column is class idx (to class number stored in classes)
-	dx = EMData()
-	dx.read_image(args[1],2)
 	# dy contains the y translation of the alignment
-	# row is particle number, column is class idx (to class number stored in classes)
-	dy = EMData()
-	dy.read_image(args[1],3)
 	# da contains is the azimuthal rotation of the alignment
-	# row is particle number, column is class idx (to class number stored in classes)
-	da = EMData()
-	da.read_image(args[1],4)
-	# dmirror contains is the mirror alignment
-	# row is particle number, column is class idx (to class number stored in classes)
-	dflip = EMData()
-	dflip.read_image(args[1],5)
+	# dflip contains is the mirror alignment
+	# row is particle number, column data contains weights - rows should add to 1, but this is not checked.
+	weights, dx, dy, da, dflip = EMData(),EMData(),EMData(),EMData(),EMData()
+	if options.bootstrap:
+		weights.set_size(classes.get_xsize(),classes.get_ysize())
+		weights.to_zero()
+		dx.set_size(classes.get_xsize(),classes.get_ysize())
+		dx.to_zero()
+		dy.set_size(classes.get_xsize(),classes.get_ysize())
+		dy.to_zero()
+		da.set_size(classes.get_xsize(),classes.get_ysize())
+		da.to_zero()
+		dflip.set_size(classes.get_xsize(),classes.get_ysize())
+		da.to_zero()
+	else:
+		if EMUtil.get_image_count(args[1]) != 6:
+			print "error, the classification matrix is the wrong size, it needs to contain one image for the classes, weights, dx, dy, da, and dflip. You can bypass this requirement if you supply the bootstrap argument"
+			sys.exit(1)
+			
+		else:
+			weights.read_image(args[1], 1)
+			dx.read_image(args[1],2)
+			dy.read_image(args[1],3)
+			da.read_image(args[1],4)
+			dflip.read_image(args[1],5)
+		
+		
+		
 	
 	# empty space for storing x-flipping flags (0s or 1s, if a 1 is stored it will be used at the necessary point to flip prior to adding to the average)
 	# sometimes this will not be used at all (it depends on whether or not the aligners that the user has specified do flipping and set flip flags)
@@ -281,7 +289,10 @@ def main():
 								ta = align(average,image,options)
 								t = ta.get_attr("xform.align2d")
 								t.invert()
-								ta = image.transform(t)
+								ta = image.copy()
+								ta.process_inplace("math.transform",{"transform":(t)})
+								# FIXME this doesn'twork
+#								ta = image.process("math.transform",{"transform":(t)})
 							else:
 								if (options.lowmem): 
 									filt_image = EMData()
@@ -294,11 +305,18 @@ def main():
 								
 								image.process_inplace(options.norm[0],options.norm[1])
 								filt_image.process_inplace(options.norm[0],options.norm[1])
+								
 								ta = align(average,filt_image,options)
 								t = ta.get_attr("xform.align2d")
 								t.invert()
-								ta = image.transform(t)
+								ta = image.copy()
+								ta.process_inplace("math.transform",{"transform":(t)})
+								# FIXME this doesn'twork
+								#ta = image.process("math.transform",{"transform":(t)})
 								
+
+							ta.get_xsize()
+							ta.write_image("tmp.hdf",-1)
 							ta.process_inplace("mask.sharp",{"outer_radius":ta.get_xsize()/2})				
 							np += 1
 							average.add(ta) # now add the image
@@ -313,11 +331,11 @@ def main():
 							#average.add(image) # now add the image
 			
 			#average/=np
-			
-			average.process_inplace(options.norm[0],options.norm[1])
-			average.process_inplace("xform.centeracf")
-			#average.write_image("avg.hdf",-1)
-			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
+			if np != 0:
+				average.process_inplace(options.norm[0],options.norm[1])
+				average.process_inplace("xform.centeracf")
+				#average.write_image("avg.hdf",-1)
+				average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 			#average.process_inplace("normalize.edgemean")
 			#average.write_image("e2_bootstrapped.img",-1)
 		

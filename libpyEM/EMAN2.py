@@ -550,7 +550,8 @@ def num_cpus():
 def gimme_image_dimensions2D( imagefilename ):
 	"""returns the dimensions of the first image in a file (2-D)"""
 	
-	e = EMData(imagefilename,0,1);
+	e = EMData()
+	e.read_image(imagefilename,0,True)
 	return (e.get_xsize(),e.get_ysize())
 
 # get the three dimensions of a an image

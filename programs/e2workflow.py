@@ -295,6 +295,8 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.launchers["Interactive boxing - e2boxer"] = self.launch_e2boxer_gui
 		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Auto boxing - e2boxer")))
 		self.launchers["Auto boxing - e2boxer"] = self.launch_e2boxer_auto
+		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Output - e2boxer")))
+		self.launchers["Output - e2boxer"] = self.launch_e2boxer_output
 		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Particle import")))
 		self.launchers["Particle import"] = self.launch_particle_import
 		ap.addChildren(ap_list)
@@ -331,7 +333,9 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	def launch_ctf_general(self):
 		self.launch_task(E2CTFGeneralTask,"e2ctf general")
 	
-		
+	def launch_e2boxer_output(self):
+		self.launch_task(E2BoxerOuputTask,"e2ctf general")
+	
 	def launch_boxer_general(self):
 		self.launch_task(E2BoxerGeneralTask,"e2boxer general")
 #		module = EMBoxerModule(self.application(),None)
