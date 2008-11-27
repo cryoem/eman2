@@ -116,6 +116,7 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 		simdx=EMData(args[3],1)
 		simdy=EMData(args[3],2)
 		simda=EMData(args[3],3)
+		simflip=EMData(args[3],4)
 		
 		# outer loop over images to be projected
 		n=EMUtil.get_image_count(args[2])
@@ -131,12 +132,14 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 				im=EMData(args[2],i)
 				
 				# find the best orienteation from the similarity matrix, and apply the transformation
-				best=(1.0e23,0,0,0)
+				best=(1.0e23,0,0,0,0)
 				
 				for j in range(simmx.get_xsize()): 
-					if simmx.get(i,j)<best[0] : best=(simmx.get(j,i),simdx.get(j,i),simdy.get(j,i),simda.get(j,i))
+					if simmx.get(i,j)<best[0] : best=(simmx.get(j,i),simdx.get(j,i),simdy.get(j,i),simda.get(j,i),simflip.get(j,i))
 				
-				im.rotate_translate(best[3],0,0,best[1],best[2],0)
+#				im.rotate_translate(best[3],0,0,best[1],best[2],0)
+
+				im.rotate_translate(Transform({"type":"2d","phi":best[3],"tx":best[1],"ty":best[2],"flip":best[4]}))
 				
 				# inner loop over the basis images to generate the components of the projection vector
 				for j,b in enumerate(basis):
@@ -145,6 +148,7 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 				proj.set_value_at(0,i,best[1])
 				proj.set_value_at(1,i,best[2])
 				proj.set_value_at(2,i,best[3])
+				proj.set_value_at(3,i,best[4])
 				
 				proj.write_image(args[4],0)
 		else:
@@ -158,12 +162,13 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 				im=EMData(args[2],i)
 				
 				# find the best orienteation from the similarity matrix, and apply the transformation
-				best=(1.0e23,0,0,0)
+				best=(1.0e23,0,0,0,0)
 				
 				for j in range(simmx.get_xsize()): 
-					if simmx.get(i,j)<best[0] : best=(simmx.get(j,i),simda.get(j,i),simdx.get(j,i),simdy.get(j,i))
+					if simmx.get(i,j)<best[0] : best=(simmx.get(j,i),simda.get(j,i),simdx.get(j,i),simdy.get(j,i),simflip.get(j,i))
 				
-				im.rotate_translate(best[1],0,0,best[2],best[3],0)
+#				im.rotate_translate(best[1],0,0,best[2],best[3],0)
+				im.rotate_translate(Transform({"type":"2d","phi":best[3],"tx":best[1],"ty":best[2],"flip":best[4]}))
 				
 				proj=EMData(len(basis),1,1)
 			
@@ -174,6 +179,7 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 				proj.set_attr("ref_da",best[1])
 				proj.set_attr("ref_dx",best[2])
 				proj.set_attr("ref_dy",best[3])
+				proj.set_attr("ref_flip",best[4])
 				proj.write_image(args[4],i)
 		if options.verbose>1 : print "Projectrot complete"
 	

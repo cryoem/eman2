@@ -58,7 +58,7 @@ be classified. """
 	parser.add_option("--ncls","-N",type="int",help="Number of classes to generate",default=-1)
 	parser.add_option("--average","-A",action="store_true",help="Average the particles within each class",default=False)
 	parser.add_option("--onein",action="store_true",help="Read 1-d input images from a single 2-D image (oneout in e2basis.py)",default=False)
-	parser.add_option("--oneinali",action="store_true",help="Read 1-d input images from a single 2-D image where the first 3 elements on each row are da,dx,dy",default=False)
+	parser.add_option("--oneinali",action="store_true",help="Read 1-d input images from a single 2-D image where the first 4 elements on each row are da,dx,dy,flip",default=False)
 	parser.add_option("--normavg",action="store_true",help="Normalize averages",default=False)
 	parser.add_option("--clsmx",type="string",default=None,help="Standard EMAN2 output suitable for use with e2classaverage, etc.")
 	parser.add_option("--clsfiles","-C",action="store_true",help="Write EMAN 1 style cls files with members of each class",default=False)
@@ -87,6 +87,7 @@ be classified. """
 			data[-1].set_attr("ref_dx",d.get_value_at(0,i))
 			data[-1].set_attr("ref_dy",d.get_value_at(1,i))
 			data[-1].set_attr("ref_da",d.get_value_at(2,i))
+			data[-1].set_attr("ref_flip",d.get_value_at(3,i))
 	else :data=EMData.read_images(args[0])
 	nimg=len(data)						# we need this for the classification matrix when exclude is used
 	filen=range(len(data))				# when exclude is used, this will map to actual file image numbers
@@ -197,7 +198,7 @@ be classified. """
 	
 	# Write an EMAN2 standard classification matrix. Particles run along y
 	# each class a particle is in takes a slot in x. There are then a set of
-	# 5 images containing class #, a weight, and dx,dy,dangle
+	# 6 images containing class #, a weight, and dx,dy,dangle,flip
 	if (options.clsmx) :
 		clsnum=EMData(1,nimg,1)
 		weight=EMData(1,nimg,1)
@@ -207,6 +208,7 @@ be classified. """
 		dx=EMData(1,len(data),1)
 		dy=EMData(1,len(data),1)
 		dang=EMData(1,len(data),1)
+		flip=EMData(1,len(data),1)
 	
 		weight.to_one()
 		dx.to_zero()
@@ -216,10 +218,12 @@ be classified. """
 				dx[filen[n]]=float(i.get_attr("ref_dx"))
 				dy[filen[n]]=float(i.get_attr("ref_dy"))
 				dang[filen[n]]=float(i.get_attr("ref_da"))
+				flip[filen[n]]=float(i.get_attr("ref_flip"))
 			except:
 				dx[filen[n]]=0
 				dy[filen[n]]=0
 				dang[filen[n]]=0
+				flip[filen[n]]=0
 		
 		remove_image(options.clsmx)
 		clsnum.write_image(options.clsmx,0)
