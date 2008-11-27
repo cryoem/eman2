@@ -431,7 +431,7 @@ def plot(data,show=1,size=(800,600),path="plot.png"):
 
 def kill_process(pid):
 	'''
-	platform independent way of kill a process 
+	platform independent way of killing a process 
 	'''
 	import os
 	import platform
@@ -455,6 +455,9 @@ def kill_process(pid):
 			return 0
 
 def process_running(pid):
+	'''
+	Platform independent way of checking if a process is running, based on the pid
+	'''
 	import platform
 	import os
 	platform_string = platform.system()

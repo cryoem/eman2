@@ -307,7 +307,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 		
 		return self.__make_particle_param_table(particle_file_names)
 	
-	def pet_particle_param_table(self):
+	def get_particle_param_table(self):
 		'''
 		Inspects the particle databases in the particles directory, gathering their names, number of particles and dimenions. Puts the information in a ParamTable.
 		'''
@@ -324,21 +324,21 @@ class ParticleWorkFlowTask(WorkFlowTask):
 		dimensions = self.get_particle_dims(particle_file_names)
 		
 		pnames = ParamDef(name="global.micrograph_ccd_filenames",vartype="stringlist",desc_short="File names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=None,choices=particle_file_names)
-		pboxes = ParamDef(name="Num boxes",vartype="intlist",desc_short="Particles",desc_long="The number of box images stored for this image in the database",property=None,defaultunits=None,choices=num_boxes)
-		pdims = ParamDef(name="Dimensions",vartype="stringlist",desc_short="Dimensions",desc_long="The dimensions of the particle images",property=None,defaultunits=None,choices=dimensions)
+		pboxes = ParamDef(name="Num boxes",vartype="intlist",desc_short="Particles on disk",desc_long="The number of box images stored for this image in the database",property=None,defaultunits=None,choices=num_boxes)
+		pdims = ParamDef(name="Dimensions",vartype="stringlist",desc_short="Particle dims",desc_long="The dimensions of the particle images",property=None,defaultunits=None,choices=dimensions)
 		
 		p = ParamTable(name="filenames",desc_short="Choose images to box",desc_long="")
 		p.append(pnames)
 		p.append(pboxes)
 		p.append(pdims)
 		
-		return p
+		return p, len(num_boxes)
 		
 
 class ParticleReportTask(ParticleWorkFlowTask):
 	
-	documentation_string = "This tool is for displaying the particles that are currently associated with this project. You can add particles to the project by importing them or by using e2boxer."
-	
+	documentation_string = "This tool is for displaying the particles that are currently associated with this project. This list is generating by inspecting the contents of the project particles directory.\n\nYou can add particles to the project using e2boxer or by importing them directly - see from the list of options associated with this task."
+	warning_string = "\n\n\nNOTE: There are no particles currently associated with the project." 
 	def __init__(self,application):
 		ParticleWorkFlowTask.__init__(self,application)
 		self.window_title = "Project particles"
@@ -346,10 +346,12 @@ class ParticleReportTask(ParticleWorkFlowTask):
 	def get_params(self):
 		params = []
 		
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=ParticleReportTask.documentation_string,choices=None))
-		
-	   	p = self.pet_particle_param_table()
-		params.append(p)  
+		p,n = self.get_particle_param_table()
+		if n == 0:
+			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=ParticleReportTask.documentation_string+ParticleReportTask.warning_string,choices=None))
+		else:
+			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=ParticleReportTask.documentation_string,choices=None))
+			params.append(p)  
 		
 		return params
 
@@ -408,7 +410,7 @@ class ParticleImportTask(ParticleWorkFlowTask):
 			for i,name in enumerate(v):
 				progress.qt_widget.setValue(i)
 				self.application().processEvents()
-				if os.path.exists(name) or db_check_dict(name):
+				if (os.path.exists(name) or db_check_dict(name)) and is_2d_image_mx(name):
 					
 					try:
 						a.read_image(name,0,read_header_only)
@@ -446,8 +448,17 @@ class E2BoxerTask(ParticleWorkFlowTask):
 		ParticleWorkFlowTask.__init__(self,application)
 		
 	def get_e2boxer_boxes_and_project_particles_table(self):
+		'''
 		
-		p = self.get_project_particle_param_table() # now p is a ParamTable with rows for as many files as there in the project
+		Returns a table like this:
+		
+		|| Project image name || Particles currently in desktop || Dimensions of Particles || Boxes in e2boxer db || Dims of boxes in e2boxer db|
+		
+		Returns the table, and the the number of entries (p,n)
+		if n is zero there are no entries in the table and the calling function can act appropriately
+		'''
+		
+		p,n = self.get_project_particle_param_table() # now p is a ParamTable with rows for as many files as there in the project
 		# also, p contains columns with filename | particle number | particle dimensions
 		 
 		project_db = db_open_dict("bdb:project")	
@@ -458,9 +469,15 @@ class E2BoxerTask(ParticleWorkFlowTask):
 		pboxes = ParamDef(name="Num boxes",vartype="intlist",desc_short="Boxes in DB",desc_long="The number of boxes stored for this image in the database",property=None,defaultunits=None,choices=nboxes)
 		pdims = ParamDef(name="DB Box Dims",vartype="stringlist",desc_short="Dims in DB",desc_long="The dimensions boxes",property=None,defaultunits=None,choices=dimensions)
 		
-		p.append(pboxes)
-		p.append(pdims)
-		return p
+		
+		p_reordered = ParamTable(name="filenames",desc_short="Choose images to box",desc_long="") # because I want the boxes in db to come first
+		p_reordered.append(p[0])
+		p_reordered.append(pboxes)
+		p_reordered.extend(p[1:])
+		
+		
+		#p.append(pdims) # don't think this is really necessary
+		return p_reordered,len(nboxes)
 	
 	def get_project_files_that_have_db_boxes_in_table(self):
 		project_db = db_open_dict("bdb:project")	
@@ -481,16 +498,18 @@ class E2BoxerTask(ParticleWorkFlowTask):
 		
 		
 		pnames = ParamDef(name="global.micrograph_ccd_filenames",vartype="stringlist",desc_short="File names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=None,choices=project_names)
-		pboxes = ParamDef(name="Num boxes",vartype="intlist",desc_short="Particles",desc_long="The number of box images stored for this image in the database",property=None,defaultunits=None,choices=flat_boxes)
-		pdims = ParamDef(name="Dimensions",vartype="stringlist",desc_short="Dimensions",desc_long="The dimensions of the particle images",property=None,defaultunits=None,choices=flat_dims)
-		pdbboxes = ParamDef(name="Num boxes",vartype="intlist",desc_short="Boxes in DB",desc_long="The number of boxes stored for this image in the database",property=None,defaultunits=None,choices=db_boxes)
+		pboxes = ParamDef(name="Particles on disk",vartype="intlist",desc_short="Particles on disk",desc_long="The number of box images stored for this image in the database",property=None,defaultunits=None,choices=flat_boxes)
+		pdims = ParamDef(name="Particle dimensions",vartype="stringlist",desc_short="Particle dims",desc_long="The dimensions of the particle images",property=None,defaultunits=None,choices=flat_dims)
+		pdbboxes = ParamDef(name="Boxes in DB",vartype="intlist",desc_short="Boxes in DB",desc_long="The number of boxes stored for this image in the database",property=None,defaultunits=None,choices=db_boxes)
 		pdvdims = ParamDef(name="DB Box Dims",vartype="stringlist",desc_short="Dims in DB",desc_long="The dimensions boxes",property=None,defaultunits=None,choices=db_dims)
 		
 		p = ParamTable(name="filenames",desc_short="Choose images to box",desc_long="")
 		p.append(pnames)
-		p.append(pboxes)
 		p.append(pdbboxes)
-		p.append(pdvdims)
+		p.append(pboxes)
+		p.append(pdims)
+		
+		#p.append(pdvdims) # decided this wasn't necessary
 		
 		return p,len(db_dims)
 		
@@ -560,7 +579,7 @@ class E2BoxerAutoTask(E2BoxerTask):
 			params.append(ParamDef(name="blurb",vartype="text",desc_short="Using e2boxer",desc_long="",property=None,defaultunits=E2BoxerAutoTask.documentation_string+E2BoxerAutoTask.warning_string,choices=None))
 		else:
 			params.append(ParamDef(name="blurb",vartype="text",desc_short="Using e2boxer",desc_long="",property=None,defaultunits=E2BoxerAutoTask.documentation_string,choices=None))
-			p = self.get_e2boxer_boxes_and_project_particles_table()
+			p,n = self.get_e2boxer_boxes_and_project_particles_table()
 			params.append(p)
 	
 #		boxer_project_db = db_open_dict("bdb:e2boxer.project")
@@ -577,7 +596,7 @@ class E2BoxerAutoTask(E2BoxerTask):
 #		params.append(pop)
 		return params
 			
-	def on_form_ok(self,params):
+	def on_form_ok(self,params): 
 		for k,v in params.items():
 			self.write_db_entry(k,v)
 			
@@ -611,7 +630,9 @@ class E2BoxerAutoTask(E2BoxerTask):
 	
 
 class E2BoxerGuiTask(E2BoxerTask):	
-	documentation_string = "Select the images you want to box, enter your boxsize, and hit ok to launch e2boxer. Choose from the list of images and hit ok. This will lauch e2boxer and automatically load the selected images for boxing. Alternatively you may choose the auto_db option to execute automated boxing using information stored in the e2boxer database."
+	documentation_string = "Select the images you want to box, enter your boxsize, and hit OK. This will lauch e2boxer and automatically load the selected images for boxing."
+	
+	warning_string = "\n\n\nNOTE: There are no images currenty associated with the project. Please import or specify which images you want as part of this project in step 1 of the workflow and try again."
 	
 	def __init__(self,application):
 		E2BoxerTask.__init__(self,application)
@@ -620,12 +641,16 @@ class E2BoxerGuiTask(E2BoxerTask):
 
 	def get_params(self):
 		params = []
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="Using e2boxer",desc_long="",property=None,defaultunits=E2BoxerGuiTask.documentation_string,choices=None))
 		
-		p = self.get_e2boxer_boxes_and_project_particles_table()
-		params.append(p)
-		boxer_project_db = db_open_dict("bdb:e2boxer.project")
-		params.append(ParamDef(name="boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=boxer_project_db.get("working_boxsize",dfl=128),choices=[]))
+		p,n = self.get_e2boxer_boxes_and_project_particles_table()
+		
+		if n == 0:
+			params.append(ParamDef(name="blurb",vartype="text",desc_short="Interactive use of e2boxer",desc_long="",property=None,defaultunits=E2BoxerGuiTask.documentation_string+E2BoxerGuiTask.warning_string,choices=None))
+		else:
+			params.append(ParamDef(name="blurb",vartype="text",desc_short="Interactive use of e2boxer",desc_long="",property=None,defaultunits=E2BoxerGuiTask.documentation_string,choices=None))
+			params.append(p)
+			boxer_project_db = db_open_dict("bdb:e2boxer.project")
+			params.append(ParamDef(name="boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=boxer_project_db.get("working_boxsize",dfl=128),choices=[]))
 		return params
 			
 	def on_form_ok(self,params):

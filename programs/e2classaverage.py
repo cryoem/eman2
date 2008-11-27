@@ -156,7 +156,7 @@ def main():
 		da.set_size(classes.get_xsize(),classes.get_ysize())
 		da.to_zero()
 		dflip.set_size(classes.get_xsize(),classes.get_ysize())
-		da.to_zero()
+		dflip.to_zero()
 	else:
 		if EMUtil.get_image_count(args[1]) != 6:
 			print "error, the classification matrix is the wrong size, it needs to contain one image for the classes, weights, dx, dy, da, and dflip. You can bypass this requirement if you supply the bootstrap argument"

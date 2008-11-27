@@ -365,98 +365,13 @@ def merge_boxes_as_manual_to_db(filenames):
 	
 		if manualboxes == None: manualboxes = []
 		manualboxes.extend(boxes)
-		set_idd_key_entry(filename,"manual_boxes",manualboxes)
-
-
-
-	
-class AutoDBBoxer(QtCore.QObject):
-	'''
-	A class for managing the process of spawning many instances of e2boxer singlefile.mrc --auto=db, using parallelism
-	If one CPU is specified then it still works. Basically the approach is to spawn the number of the processors, then once
-	the process is finished the signal is intercepted and a new process is executed etc.
-	'''
-	def __init__(self,image_names,nproc,options,force=False):
-		QtCore.QObject.__init__(self)
-		self.nproc = nproc
-		self.image_names = image_names
-		self.currentidx = 0	
-		self.force = force
-		self.working = True
-		self.processes = []
-		self.jobsdone = 0
-		self.cps = []
-		self.app = None
-		self.options = options
-		for i in range(0,nproc):
-			self.cps.append(None)
-		
-		for i in range(0,len(self.image_names)):
-			self.processes.append(QtCore.QProcess(self))
-			
-	def print_cp_status(self):
-		for i in self.cps:
-			print i.state(),
-			print i.pid()
-			print kill(i.pid(),signal.SIG_IGN)
-			
-		print ''
-	def go(self,app):
-		self.app = app
-		
-		for i in range(0,self.nproc):
-			self.spawn_process()
-			self.cps[i] = self.processes[i]
-			self.currentidx += 1
-			
-	def spawn_process(self):
-		if self.currentidx >= len(self.image_names) :
-			return
-			
-		#process = self.processes[self.currentidx]
-			
-		program = QtCore.QString("e2boxer.py")
-		args = QtCore.QStringList()
-		args.append(self.image_names[self.currentidx])
-		args.append("--auto=db")
-		if self.options.write_coord_files != False:
-			args.append("--write_coord_file")
-		if self.options.write_box_images != False:
-			args.append("--write_box_images")
-		if self.options.force != False:
-			args.append("--force")
-			
-		
-		if self.force:	args.append("-f")
-		
-		QtCore.QObject.connect(self.processes[self.currentidx], QtCore.SIGNAL("finished(int)"), self.process_finished)
-		#QtCore.QObject.connect(self.processes[self.currentidx], QtCore.SIGNAL("finished(int,QProcess.ExitStatus)"), self.process_finished_status)
-		#QtCore.QObject.connect(self.processes[self.currentidx], QtCore.SIGNAL("error(QProcess.ProcessError)"), self.process_error)
-		#QtCore.QObject.connect(self.processes[self.currentidx], QtCore.SIGNAL("started()"), self.process_start)
-		
-		#self.processes[self.currentidx].setProcessChannelMode(QtCore.QProcess.ForwardedChannels)
-		self.processes[self.currentidx].start(program,args)
-		
-		
-		#self.processes[self.currentidx].waitForStarted()
-		print "executing",
-		for arg in args: print arg,
-		print ''
-	
-	def process_finished(self,int):
-		#print "process finished"
-		self.jobsdone += 1
-		if self.jobsdone == len(self.image_names):
-			self.app.quit()
-		self.spawn_process()
-		self.currentidx += 1
-		
+		set_idd_key_entry(filename,"manual_boxes",manualboxes)	
 		
 	#def process_start(self):
 		#print "process started"
 		
 
-class	EMBoxerModuleMouseEventsObject:
+class EMBoxerModuleMouseEventsObject:
 	'''
 	A base class for objects that handle mouse events in the EMBoxerModule
 	
@@ -834,7 +749,7 @@ class EMBoxerModuleEventsMediator:
 
 class RawDatabaseAutoBoxer:
 	def __init__(self):
-		self.required_options = self.required_options = ["boxsize","write_coord_files","write_box_images","force","normproc","outformat","just_output"]
+		self.required_options = ["boxsize","write_coord_files","write_box_images","force","normproc","outformat","just_output"]
 	
 	def go(self,options):
 		options_ready = True
@@ -846,9 +761,9 @@ class RawDatabaseAutoBoxer:
 					return
 			
 		if options_ready:
-			self.autobox_multi(options)
+			self.autobox_images(options)
 				
-	def autobox_multi(self,options):
+	def autobox_images(self,options):
 		image_names = options.filenames
 		project_db = EMProjectDB()
 		for image_name in image_names:
@@ -895,43 +810,6 @@ class RawDatabaseAutoBoxer:
 		
 		project_db.close()
 
-	def autobox_single(self,image_name,options):
-		
-		project_db = EMProjectDB()
-		try:
-			data = project_db[get_idd_key(image_name)]
-			trim_autoboxer = project_db[data["autoboxer_unique_id"]]["autoboxer"]
-			autoboxer = SwarmAutoBoxer(None)
-			autoboxer.become(trim_autoboxer)
-			print 'using cached autoboxer db'
-		except:
-			try:
-				trim_autoboxer = project_db["current_autoboxer"]
-				autoboxer = SwarmAutoBoxer(None)
-				autoboxer.become(trim_autoboxer)
-			except:
-				print "Error - there seems to be no autoboxing information in the database - autobox interactively first - bailing"
-				project_db.close()
-				return 0
-		
-		boxable = Boxable(image_name,None,autoboxer)
-		if boxable.is_excluded():
-			print "Image",image_name,"is excluded and being ignored"
-			return
-		
-		autoboxer.set_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
-		# Tell the boxer to delete non refs - FIXME - the uniform appraoch needs to occur - see SwarmAutoBoxer.auto_box
-		if not options.just_output: # This is useful if you want to just change the boxsize, or the normalization method
-			autoboxer.auto_box(boxable,False)
-		if options.write_coord_files:
-			print "writing box coordinates"
-			boxable.write_coord_file(-1,options.force)
-		if options.write_box_images:
-			print "writing boxed images"
-			boxable.write_box_images(-1,options.force)
-		
-		project_db.close()
-		return 1
 
 
 class DatabaseAutoBoxer(QtCore.QObject,RawDatabaseAutoBoxer):
@@ -960,7 +838,7 @@ class DatabaseAutoBoxer(QtCore.QObject,RawDatabaseAutoBoxer):
 				return
 			
 		if options_ready:
-			self.autobox_multi(options)
+			self.autobox_images(options)
 
 	def __run_form_initialization(self,options):
 		from emform import EMFormModule
@@ -986,7 +864,7 @@ class DatabaseAutoBoxer(QtCore.QObject,RawDatabaseAutoBoxer):
 				return
 		
 		self.application().close_specific(self.form)
-		self.autobox_multi(options)
+		self.autobox_images(options)
 		
 	def on_form_cancel(self):
 		self.application().close_specific(self.form)
