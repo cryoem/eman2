@@ -329,11 +329,13 @@ def do_gauss_cmd_line_boxing(options):
 			continue
 
 		autoboxer.set_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
-		# Tell the boxer to delete non refs - FIXME - the uniform appraoch needs to occur - see SwarmAutoBoxer.auto_box
-		autoboxer.auto_box(boxable,False)
 		# new method to determine ctf...
+		print "starting ctf determination"
 		autoboxer.auto_ctf(boxable)
-		# XXX: ctf values of particles need to be set somewhere....!
+		# Tell the boxer to delete non refs - FIXME - the uniform appraoch needs to occur - see SwarmAutoBoxer.auto_box
+		print "starting autoboxer"
+		autoboxer.auto_box(boxable,False)
+		
 		if options.write_coord_files:
 			boxable.write_coord_file(-1,options.force)
 		if options.write_box_images:
@@ -3323,6 +3325,10 @@ class EMBoxerModulePanel(QtGui.QWidget):
 
 		# --------------------
 		# XXX CTF button
+		self.ctf_data = None
+		self.i_start = None
+		self.i_stop = None
+		
 		pawel_grid1.addWidget( QtGui.QLabel("Window size:"), 4,0 )
 		self.ctf_window_size = QtGui.QLineEdit("512", self)
 		pawel_grid1.addWidget( self.ctf_window_size , 4,1 )		
@@ -3400,7 +3406,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 	# XXX: calculate ctf and defocus from current image		
 	def inspect_ctf(self):
 		if not(self.ctf_inspector):
-			self.ctf_inspector = CTFInspector(self)
+			self.ctf_inspector = CTFInspector(self,self.ctf_data)
 			self.ctf_inspector.show()
 			self.ctf_inspector_gone=False
 		else:
@@ -3420,7 +3426,6 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		image_name = self.target().boxable.get_image_name()
 		img = BigImageCache.get_image_directly( image_name )
 
-		# XXX: get parameters from gui
 		# conversion from text necessary
 		try:
 			ctf_window_size = int(self.ctf_window_size.text())
@@ -3441,33 +3446,60 @@ class EMBoxerModulePanel(QtGui.QWidget):
 			print self.ctf_edge_size.text()
 			return
 
-		print "determine power spectrum"
+		# print "determine power spectrum"
 		from fundamentals import welch_pw2
 		# XXX: check image dimensions, especially box size for welch_pw2!
 		power_sp = welch_pw2(img,win_size=ctf_window_size,overlp_x=ctf_overlap_size,overlp_y=ctf_overlap_size,
 				     edge_x=ctf_edge_size,edge_y=ctf_edge_size)
-		del img,image_name
-
-		print "averaging power spectrum"
+		
+		# print "averaging power spectrum"
 		from fundamentals import rot_avg_table
 		avg_sp = rot_avg_table(power_sp)
 		del power_sp
 
-		print "determine ctf"
+		# print "determine ctf"
 		from morphology import defocus_gett
-		ctf = defocus_gett(avg_sp,Pixel_size=4.84,f_start=ctf_f_start,f_stop=ctf_f_stop)
+		
+		px_size = float(self.output_pixel_size.text())
+		print px_size
+
+		volt=300.0
+		Cs=2.0
+		
+		defocus = defocus_gett(avg_sp,voltage=volt,Pixel_size=px_size,Cs=Cs,
+				       f_start=ctf_f_start,f_stop=ctf_f_stop,parent=self)
 		del avg_sp
 		
 		print "CTF estimation done"
-		print ctf
+		print defocus
+				
+		# update ctf inspector values
+		if (self.ctf_inspector is not None):
+			self.ctf_inspector.setData(self.ctf_data)
+			self.ctf_inspector.i_start = self.i_start
+			self.ctf_inspector.i_stop = self.i_stop
+			if not(self.ctf_inspector_gone):
+				self.ctf_inspector.update()
 
-		#XXX: insert f_stop & f_start boxes
-		#XXX: update ctf inspector
+		# XXX: wgh?? amp_cont static to 0?
+		# set image properties, in order to save ctf values
+		from utilities import set_ctf
+		set_ctf(img,[defocus,Cs,volt,px_size,0,0])
+		# and rewrite image 
+		img.write_image(image_name)
+		del img,image_name
+		
+	def closeEvent(self,event):
 
+		if ((self.ctf_inspector is not None) and not(self.ctf_inspector_gone)):
+			del self.ctf_inspector
+			self.ctf_inspector = None
 
-
+		event.accept()
+		
 	# XXX
 	# --------------------
+
 
 	def pawel_parm_changed(self, row, col ):
 		from string import atof
@@ -3626,16 +3658,23 @@ class EMBoxerModulePanel(QtGui.QWidget):
 
 class CTFInspector(QtGui.QWidget):
 
-	def __init__(self,parent) :
+	def __init__(self,parent,data=None) :
 		QtGui.QWidget.__init__(self) 
 		# we need to keep track of our parent to signal when we are gone again....
 		self.parent = weakref.ref(parent) # this needs to be a weakref ask David Woolford for details, but otherwise just call self.parent() in place of self.parent
 		self.setGeometry(300, 300, 250, 150)
 		self.setWindowTitle("CTF Inspector")
 
-		# test data, to ensure something is displayed even if no data is set yet. this is
-		#    for development only and can be removed later.....
-		self.data = [80,20,10,9,8,7,6,5,4,3,2,1,0,0,0,0,0]
+		self.i_start = None
+		self.i_stop = None
+
+		if (data is None):
+			# test data, to ensure something is displayed even if no data is set yet. this is
+			#    for development only and can be removed later.....
+			self.data = [[80,20,10,9,8,7,6,5,4,3,2,1,0,0,0,0,0],]
+		else:
+			# assume we got a triple of lists. assign it for now.
+			self.data=data
 
 
 	def setData(self,data):
@@ -3645,16 +3684,20 @@ class CTFInspector(QtGui.QWidget):
 		
 		# free previous and reset our data to the passed list
 		del self.data
-		self.data = [i for i in data]
+		self.data = data
 		# return success
 		return True
+
+	def update(self):
+		QtGui.QWidget.update(self) #self.paintEvent(None)
+		# print "update..."
 		
 	def paintEvent(self,event):
 		h=self.height()
 		w=self.width()
 
-		hborder = int (h / 15.0)
-		wborder = int (w / 15.0)
+		hborder = ( min((h / 15.0),20.0))
+		wborder = ( min((w / 15.0),20.0))
 
 		p=QtGui.QPainter()
 		p.begin(self)
@@ -3662,26 +3705,45 @@ class CTFInspector(QtGui.QWidget):
 		p.eraseRect(0,0,self.width(),self.height())
 		p.setPen(Qt.yellow)
 
-		if not(self.data == []):
+		color = [Qt.yellow,Qt.red,Qt.blue]
+
+		if (not(self.data == []) and not(self.data is None)):
+
 			# scaling factors in x and y, respectively. margins are left around the plot,
 			#    stepw along x and 10% of height in y... explicit conversion is necessary,
-			#    since we are working with ints....
-			stepw = float(w-2*wborder) / float(len(self.data))
-			steph = float(h-2*hborder) / float(max(self.data)) 
-			
-			for index in xrange(len(self.data)):
-				# skip first point, since there is no previous point to connect to
-				if (0 == index):
-					continue
-				else:
-					# determine coords, relative to top left (0,0)
-					#    and margin around the plot itself.
-					oldx = int(wborder+stepw * (index-1))
-					newx = int(wborder+stepw * (index))
-					oldy = int(h-hborder-steph*self.data[index-1])
-					newy = int(h-hborder-steph*self.data[index])
-					
-					p.drawLine(oldx,oldy,newx,newy)
+			#    since we are working with ints....			
+			if ((self.i_start is not None) and (self.i_stop is not None)):
+				sizew = self.i_stop - self.i_start + 1
+			else:
+				sizew = max([len(i) for i in self.data])
+				self.i_start = 0
+				self.i_stop = sizew
+
+			# print "range: ",self.i_start," - ",self.i_stop
+				
+			stepw = float(w-2*wborder) / float(sizew)
+			sizeh = max([max(self.data[i]) for i in xrange(len(self.data))])
+			steph = float(h-2*hborder) / float(sizeh) 
+
+			for list_index in xrange(len(self.data)):
+				# loop over all 3 lists set in data....
+				p.setPen(color[list_index])
+								
+				#for index in xrange(len(self.data[list_index])):
+				for index in xrange(self.i_start,self.i_stop):
+					# skip first point, since there is no previous point to connect to
+					if (0 == index):
+						continue
+					else:
+						# determine coords, relative to top left (0,0)
+						#    and margin around the plot itself.
+						oldx = int(wborder+stepw * (index-1))
+						newx = int(wborder+stepw * (index))
+						oldy = int(h-hborder-steph*self.data[list_index][index-1])
+						newy = int(h-hborder-steph*self.data[list_index][index])
+						
+						p.drawLine(oldx,oldy,newx,newy)
+						
 		p.end()
 
 	# closing the window is tricky: we need to notify the parent window we are gone, but

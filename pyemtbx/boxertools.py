@@ -2872,32 +2872,39 @@ class PawelAutoBoxer(AutoBoxer):
 
         # auto_ctf is meant to be called for batch only...
         def auto_ctf(self,boxable):
-            print "auto ctf"
+            
             # get image
             image_name = boxable.get_image_name()
-            # XXX: cache in batch mode??
             img = BigImageCache.get_image_directly( image_name )
 
-            print "determine power spectrum"
-            from fundamentals import welch_pw2
+	    from fundamentals import welch_pw2
             # XXX: check image dimensions, especially box size for welch_pw2!
             power_sp = welch_pw2(img,win_size=self.ctf_window,overlp_x=self.ctf_overlap,overlp_y=self.ctf_overlap,
                                  edge_x=self.ctf_edge,edge_y=self.ctf_edge)
-            del img,image_name
             
-            print "averaging power spectrum"
             from fundamentals import rot_avg_table
             avg_sp = rot_avg_table(power_sp)
             del power_sp
+
+	    # XXX: avoid static values
+            volt = 300.0
+	    Cs = 2.0
             
-            print "determine ctf"
             from morphology import defocus_gett
             # XXX: self.pixel_output??
-            ctf = defocus_gett(avg_sp,Pixel_size=self.pixel_input,f_start=self.ctf_fstart,f_stop=self.ctf_fstop)
+            defocus = defocus_gett(avg_sp,voltage=volt,Pixel_size=self.pixel_output,Cs=Cs,
+				   f_start=self.ctf_fstart,f_stop=self.ctf_fstop)
+
+	    # set image properties, in order to save ctf values
+	    from utilities import set_ctf
+	    set_ctf(img,[defocus,Cs,volt,self.pixel_output,0,0])
+	    # and rewrite image 
+	    img.write_image(image_name)
+
             del avg_sp
-            
-            print "CTF estimation done:"
-            print ctf
+            del img,image_name
+            #print "CTF estimation done:"
+            #print defocus
             
             
 
@@ -2991,6 +2998,13 @@ class PawelAutoBoxer(AutoBoxer):
 
 	def write_box_images( self, boxable, normalize, norm_method ):
 		image_name = boxable.get_image_name()
+		parent_img = BigImageCache.get_image_directly( image_name )
+		try:
+			ctf_dict = parent_img.get_attr("ctf")
+		except:
+			ctf_dict = EMAN2Ctf()
+		del parent_img
+			
 		file_name = self.get_particle_file_name( image_name )
 		for i in xrange( len(boxable.boxes) ):
 			b = boxable.boxes[i]
@@ -2998,6 +3012,10 @@ class PawelAutoBoxer(AutoBoxer):
 			img.set_attr( "Pixel_size", self.pixel_output )
 			img.set_attr( "Micrograph", image_name )
 			img.set_attr( "Score", b.correlation_score )
+
+			# XXX
+			img.set_attr( "ctf", ctf_dict)
+						
 			img.write_image( file_name, i )
 			
 		print "wrote ", len(boxable.boxes), " particles to file ", file_name
