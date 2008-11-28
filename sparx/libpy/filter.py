@@ -389,7 +389,7 @@ def fit_tanh(dres, low = 0.1):
 			break
 	if freq < 0.0:
 		# the curve never falls below 0.5, most likely something's wrong; however, return reasonable values
-		freq = 0.2
+		freq = 0.15
 		fall_off = 0.1
 		return freq, fall_off
 	

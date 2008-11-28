@@ -2687,6 +2687,7 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	        	delta, an, center, maxit, CTF, snr, ref_a, sym, user_func_name, debug)
 		return
 
+	from alignment      import proj_ali_incore, proj_ali_incore_local
 	from utilities      import model_circle, drop_image, get_image, get_input_from_string
 	from utilities      import get_params_proj
 	from utilities      import estimate_3D_center, rotate_3D_shift
@@ -2710,10 +2711,8 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	delta       = get_input_from_string(delta)
 	lstp = min(len(xrng), len(yrng), len(step), len(delta))
 	if an == "-1":
-		from alignment import proj_ali_incore
 		an = [-1] * lstp
 	else:
-		from alignment import proj_ali_incore_local
 		an = get_input_from_string(an)
 	first_ring  = int(ir)
 	rstep       = int(rs)
@@ -2839,6 +2838,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 	    center = -1, maxit = 5, CTF = False, snr = 1.0,  ref_a = "S", sym = "c1", 
 	    user_func_name = "ref_ali3d", debug = False):
 
+	from alignment      import proj_ali_incore, proj_ali_incore_local
 	from utilities      import model_circle, get_image, drop_image, get_input_from_string
 	from utilities      import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all, reduce_array_to_root 
 	from utilities      import recv_attr_dict, send_attr_dict
@@ -2872,10 +2872,8 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 	delta       = get_input_from_string(delta)
 	lstp = min(len(xrng), len(yrng), len(step), len(delta))
 	if an == "-1":
-		from alignment      import proj_ali_incore
 		an = [-1] * lstp
 	else:
-		from  alignment	    import proj_ali_incore_local
 		an = get_input_from_string(an)
 
 	first_ring  = int(ir)
@@ -4693,7 +4691,6 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou = -1,  delta = 2, center = 
 				drop_image(varf, os.path.join(outdir, "overvarf%03d_%03d.hdf"%(iteration, ic) ))
 				ref_data[2] = vol
 				ref_data[3] = fscc
-				print fscc
 				ref_data[4] = varf
 				#  call user-supplied function to prepare reference image, i.e., center and filter it
 				if center != -1:
