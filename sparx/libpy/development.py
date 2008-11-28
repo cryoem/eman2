@@ -7989,7 +7989,7 @@ def k_means_stab_MPI(stack, maskname, opt_method, K, npart = 5, CTF = False, F =
 		if myid == main_node: logging.info('... Open images')
 		[im_M, mask, ctf, ctf2, LUT, N, N_start, N_stop] = k_means_open_unstable_MPI(stack, maskname, CTF, nb_cpu, main_node, myid)
 		if myid == main_node: logging.info('... %d unstable images found' % N)
-		if N < 2:
+		if N < nb_cpu:
 			logging.info('[STOP] Node %02d - Not enough images' % myid)
 			break
 		if F != 0:
