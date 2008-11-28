@@ -1,38 +1,38 @@
 /**
  * $Id$
  */
- 
+
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
- 
+
 #ifndef eman__emdata_h__
 #define eman__emdata_h__ 1
 
@@ -66,14 +66,14 @@ namespace EMAN
 	class XYData;
 	class Transform3D;
 	class Transform;
-	
+
 	typedef boost::multi_array_ref<float, 2> MArray2D;
 	typedef boost::multi_array_ref<float, 3> MArray3D;
 	typedef boost::multi_array_ref<std::complex<float>, 2> MCArray2D;
 	typedef boost::multi_array_ref<std::complex<float>, 3> MCArray3D;
 	typedef boost::multi_array<int, 2> MIArray2D;
 	typedef boost::multi_array<int, 3> MIArray3D;
-	
+
 	/** @ingroup tested3c */
 	/** EMData stores an image's data and defines core image processing routines.
      * The image is 1D, 2D or 3D, in real space or fourier space (complex image).
@@ -84,19 +84,19 @@ namespace EMAN
 	{
 		/** For all image I/O */
 		#include "emdata_io.h"
-		
+
 		/** For anything read/set image's information */
 		#include "emdata_metadata.h"
-	
+
 		/** For modular class functions, process, align, etc. */
 		#include "emdata_modular.h"
-	
+
 		/** For fft, wavelet, insert data */
 		#include "emdata_transform.h"
-	
+
 		/** For get/set values, basic math operations, operators */
 		#include "emdata_core.h"
-	
+
 		/** This is the header of EMData stay in sparx directory */
 		#include "sparx/emdata_sparx.h"
 
@@ -107,31 +107,31 @@ namespace EMAN
 
 	static int totalalloc;
 	public:
-	
-		
-		
+
+
+
 		enum FFTPLACE { FFT_OUT_OF_PLACE, FFT_IN_PLACE };
 		enum WINDOWPLACE { WINDOW_OUT_OF_PLACE, WINDOW_IN_PLACE };
-		
+
 		/** Construct an empty EMData instance. It has no image data. */
 		EMData();
-		~ EMData();  
+		~ EMData();
 
-		/** Construct from an image file. 
-		 * @param filename the image file name 
+		/** Construct from an image file.
+		 * @param filename the image file name
 		 * @param image_index the image index for stack image file, default 0 */
 		explicit EMData(const string& filename, int image_index=0);
-		
-		/**# makes an image of the specified size, either real or complex. 
-		 * For complex image, the user would specify the real-space dimensions. 
-		 * @param nx size for x dimension 
+
+		/**# makes an image of the specified size, either real or complex.
+		 * For complex image, the user would specify the real-space dimensions.
+		 * @param nx size for x dimension
 		 * @param ny size for y dimension
-		 * @param nz size for z dimension, default 1 
+		 * @param nz size for z dimension, default 1
 		 * @param is_real boolean to specify real(true) or complex(false) image, default real */
 		EMData(int nx, int ny, int nz=1, bool is_real=true);
-		
+
 		/** Construction from a data pointer, dimensions must be supplied.
-		 * Takes possession of the pointer. 
+		 * Takes possession of the pointer.
 		 * data pointer must be allocated using malloc!
 		 * @param data a pointer to the pixel data which is stored in memory. Takes possession
 		 * @param nx the number of pixels in the x direction
@@ -139,19 +139,19 @@ namespace EMAN
 		 * @param nz the number of pixels in the z direction
 		 */
 		EMData(float* data, const int nx, const int ny, const int nz);
-		
+
 		/** Construct from an EMData (copy constructor).
-		 * Performs a deep copy 
-		 * @param that the EMData to copy 
+		 * Performs a deep copy
+		 * @param that the EMData to copy
 		*/
 		EMData(const EMData& that);
-		
+
 		/** EMData assignment operator
-		 * Performs a deep copy 
-		 * @param that the EMData to copy 
+		 * Performs a deep copy
+		 * @param that the EMData to copy
 		*/
 		EMData& operator=(const EMData& that);
-		
+
 		/**  Do the Fourier Harmonic Transform  PRB
 		 * Takes a real image, returns the FH
 		 * Sets the EMDATA_FH switch to indicate that it is an FH image
@@ -159,7 +159,7 @@ namespace EMAN
 		 * @return the FH image.
 		 */
 // 		EMData* do_FH();
-		
+
 		/**   Do the Inverse Fourier Harmonic Transform   PRB
 		 * Takes an FH image, returns a square  complex image with odd sides
 		 * @exception ImageFormatException If the image is not the FH of something
@@ -167,7 +167,7 @@ namespace EMAN
 		 */
 // 		EMData* do_FH2F();
 
-		
+
 
 		/** Caclulates normalization and phase residual for a slice in
 		 * an already existing volume. phase residual is calculated
@@ -206,14 +206,14 @@ namespace EMAN
 		 * @return The clip image.
 		 */
 		EMData *get_clip(const Region & area, const float fill = 0) const;
-		
+
 		/** Clip the image inplace - clipping region must be smaller than the current region
 		 * internally memory is reallocated
 		 * @exception ImageDimensionException if any of the dimensions of the argument region are negative
 		 * @param area The clip area, can be 2D/3D.
 		 */
 		void clip_inplace(const Region & area);
-		
+
 		/** Get the top half of this 3D image.
 		 * @exception ImageDimensionException If this image is not 3D.
 		 * @return The top half of this image.
@@ -231,16 +231,16 @@ namespace EMAN
 		 * @exception ImageFormatException If the slice not complex
 		 */
 		//pair<float, float> get_normalization_and_phaseres( const EMData* const slice, const Transform3D& euler );
-		
-		
+
+
 		/** This will extract an arbitrarily oriented and sized region from the
-		 *  image. 
+		 *  image.
 		 *
 		 *  @param xform The transformation of the region.
 		 *  @param size Size of the clip.
 		 *  @param scale Scaling put on the returned image.
 		 *  @return The clip image.
-		 */ 
+		 */
 		EMData *get_rotated_clip(const Transform & xform, const IntSize &size, float scale=1.0);
 
 		/** Window the center of an image.
@@ -271,28 +271,28 @@ namespace EMAN
 		 * @return The supplementary array.
 		 */
 		float *setup4slice(bool redo = true);
-		
-		
+
+
 		/** scale the image by a factor.
 		 * @param scale_factor scale factor.
 		 */
 		void scale(float scale_factor);
-		
-		
+
+
 		/** Translate this image.
 		 * @param dx Translation distance in x direction.
 		 * @param dy Translation distance in y direction.
 		 * @param dz Translation distance in z direction.
 		 */
 		void translate(float dx, float dy, float dz);
-		
-		
+
+
 		/** Translate this image.
 		 * @param translation The translation distance vector.
 		 */
 		void translate(const Vec3f &translation);
-		
-				
+
+
 		/** Translate this image. integer only translation
 		 *  could be done faster, without interpolation.
 		 * @param dx Translation distance in x direction.
@@ -300,54 +300,54 @@ namespace EMAN
 		 * @param dz Translation distance in z direction.
 		 */
 		void translate(int dx, int dy, int dz);
-		
-				
-		/** Translate this image. integer only translation 
+
+
+		/** Translate this image. integer only translation
 		 *  could be done faster, without interpolation.
 		 * @param translation The translation distance vector.
 		 */
 		void translate(const Vec3i &translation);
-		
-		
+
+
 		/** Rotate this image.
 		 * DEPRECATED USE EMData::Transform
 		 * @param t Transformation rotation.
 		 */
 		void rotate(const Transform3D & t);
-		
-		
+
+
 		/** Rotate this image.
 		 * DEPRECATED USE EMData::Transform
 		 * @param az  Rotation euler angle az  in EMAN convention.
-		 * @param alt Rotation euler angle alt in EMAN convention.		 
+		 * @param alt Rotation euler angle alt in EMAN convention.
 		 * @param phi Rotation euler angle phi in EMAN convention.
 		 */
 		void rotate(float az, float alt, float phi);
-		
-		
+
+
 		/** Rotate then translate the image.
 		 * DEPRECATED USE EMData::Transform
 		 * @param t The rotation and translation transformation to be done.
 		 */
 		void rotate_translate(const Transform3D & t);
-		
+
 		/**  Transform the image
 		 * @param t the transform object that describes the transformation to be applied to the image.
 		 */
 		inline void transform(const Transform& t) {
 			ENTERFUNC;
 			process_inplace("math.transform",Dict("transform",(Transform*)(&t)));
-			EXITFUNC;	
+			EXITFUNC;
 		}
-		
+
 		/** Apply a transformation to the image.
 		 * DEPRECATED USE EMData::Transform
 		 * @param t transform object that describes the transformation to be applied to the image.
 		 */
-		inline void rotate_translate(const Transform & t) { 
-			cout << "Deprecation warning. Please consider using EMData::transform() instead " << endl; 
+		inline void rotate_translate(const Transform & t) {
+			cout << "Deprecation warning. Please consider using EMData::transform() instead " << endl;
 			transform(t); }
-		
+
 		/** Rotate then translate the image.
 		 * DEPRECATED USE EMData::Transform
 		 * @param alt Rotation euler angle alt in EMAN convention.
@@ -358,8 +358,8 @@ namespace EMAN
 		 * @param dz Translation distance in z direction.
 		 */
 		void rotate_translate(float az, float alt, float phi, float dx, float dy, float dz);
-		
-				
+
+
 		/** Rotate then translate the image.
 		 * DEPRECATED USE EMData::Transform
 		 * @param alt Rotation euler angle alt in EMAN convention.
@@ -374,16 +374,16 @@ namespace EMAN
 		 */
 		void rotate_translate(float az, float alt, float phi, float dx, float dy,
 							  float dz, float pdx, float pdy, float pdz);
-		
-			
+
+
 		/** This performs a translation of each line along x with wraparound.
 		 *  This is equivalent to a rotation when performed on 'unwrapped' maps.
 		 *  @param dx Translation distance align x direction.
 		 *  @exception ImageDimensionException If the image is 3D.
 		 */
 		void rotate_x(int dx);
-		
-		
+
+
 		/** Fast rotation by 180 degrees. Square 2D image only.
 		 *  @exception ImageFormatException If the image is not square.
 		 *  @exception ImageDimensionException If the image is not 2D.
@@ -391,12 +391,12 @@ namespace EMAN
 		inline void rotate_180() {
 			ENTERFUNC;
 			process_inplace("math.rotate.180",Dict());
-			EXITFUNC;	
+			EXITFUNC;
 		}
-		
-		
+
+
 		/** dot product of 2 images. Then 'this' image is rotated/translated.
-		 * It is much faster than Rotate/Translate then dot product. 
+		 * It is much faster than Rotate/Translate then dot product.
 		 * 2D images only.
 		 *
 		 * @param with The image used to do the dot product.
@@ -409,21 +409,21 @@ namespace EMAN
 		 * @return
 		 */
 		double dot_rotate_translate(EMData * with, float dx, float dy, float da);
-		
-		
-		/** This does a normalized dot product of a little image with a big image 
-		 * using real-space methods. The result is the same size as 'this', 
-		 * but a border 1/2 the size of 'little_img' will be zero. 
+
+
+		/** This does a normalized dot product of a little image with a big image
+		 * using real-space methods. The result is the same size as 'this',
+		 * but a border 1/2 the size of 'little_img' will be zero.
 		 * This routine is only efficient when 'little_img' is fairly small.
-		 * 
+		 *
 		 * @param little_img A small image.
 		 * @param do_sigma Calculate sigma or not.
 		 * @exception ImageDimensionException If the image is not 1D/2D.
 		 * @return normalized dot product image.
 		 */
 		EMData *little_big_dot(EMData * little_img, bool do_sigma = false);
-		
-		
+
+
 		/** Radon Transform: an algorithm that transforms an original
 		 * image into a series of equiangular projections. When
 		 * applied to a 2D object, the output of the Radon transform is a
@@ -431,14 +431,14 @@ namespace EMAN
 		 *
 		 * Do radon transformation on this image. This image must be
 		 * 2D square.
-		 
+
 		 * @exception ImageFormatException If the image is not square.
 		 * @exception ImageDimensionException If the image is not 2D.
 		 * @return Radon transform image in square.
 		 */
 		EMData *do_radon();
-		
-		
+
+
 		/** Calculate Cross-Correlation Function (CCF).
 		 ** @exception ImageDimensionException if nx > 1 and nx < 2*radius + 1
 		 * Calculate the correlation of two 1-, 2-, or 3-dimensional
@@ -453,7 +453,7 @@ namespace EMAN
 		 * @return Real-space image.
 		 */
 		EMData *calc_ccf(EMData * with, fp_flag fpflag = CIRCULANT);
-		
+
 		/** Zero the pixels in the bottom left corner of the image
 		 *  If radius is greater than 1, than circulant zeroing occurs
 		 *  assuming that the center of operation starts in the bottom left
@@ -467,8 +467,8 @@ namespace EMAN
 		 * @exception ImageDimensionException if nz > 1 and nz < 2*radius + 1
 		 */
 		void zero_corner_circulant(const int radius = 0);
-		
-		/** Calculate Cross-Correlation Function (CCF) in the x-direction 
+
+		/** Calculate Cross-Correlation Function (CCF) in the x-direction
 		 * and adds them up, result in 1D.
 		 * WARNING: this routine will modify the 'this' and 'with' to contain
 		 * 1D fft's without setting some flags. This is an optimization
@@ -487,8 +487,8 @@ namespace EMAN
 		 * @return The result image containing the CCF.
 		 */
 		EMData *calc_ccfx( EMData * const with, int y0 = 0, int y1 = -1, bool nosum = false);
-		
-		
+
+
 		/** Makes a 'rotational footprint', which is an 'unwound'
 		 * autocorrelation function. generally the image should be
 		 * edge-normalized and masked before using this.
@@ -500,7 +500,7 @@ namespace EMAN
 		EMData *make_rotational_footprint(bool unwrap = true);
 		EMData *make_rotational_footprint_e1(bool unwrap = true);
 		EMData *make_rotational_footprint_cmc(bool unwrap = true);
-		
+
 		/** Makes a 'footprint' for the current image. This is another
 		 * image constructed from the 'rotational footprint' to produce
 		 * a rotationally and translationally invariant image.
@@ -509,8 +509,8 @@ namespace EMAN
 		 * @return The footprint image.
 		 */
 		EMData *make_footprint();
-		
-		
+
+
 		/** Calculates mutual correlation function (MCF) between 2 images.
 		 * If 'with' is NULL, this does mirror ACF.
 		 *
@@ -524,8 +524,8 @@ namespace EMAN
 		 * @return Mutual correlation function image.
 		 */
 		EMData *calc_mutual_correlation(EMData * with, bool tocorner = false, EMData * filter = 0);
-		
-		
+
+
 		/** maps polar coordinates to Cartesian coordinates. radially weighted.
 		 * When used with RFP, this provides 1 pixel accuracy at 75% radius.
 		 * 2D only.
@@ -540,11 +540,11 @@ namespace EMAN
 		 * @exception ImageDimensionException If 'this' image is not 2D.
 		 * @exception UnexpectedBehaviorException if the dimension of this image and the function arguments are incompatibale - i.e. the return image is less than 0 in some dimension.
 		 * @return The image in Cartesian coordinates.
-		 */		 
+		 */
 		EMData *unwrap(int r1 = -1, int r2 = -1, int xs = -1, int dx = 0,
 							   int dy = 0, bool do360 = false) const;
-		
-		
+
+
 		/** multiplies by a radial function in fourier space.
 		 *
 		 * @param x0  starting point x coordinate.
@@ -553,22 +553,22 @@ namespace EMAN
 		 * @param interp Do the interpolation or not.
 		 */
 		void apply_radial_func(float x0, float dx, vector < float >array, bool interp = true);
-		
-		
+
+
 		/** calculates radial distribution. works for real and imaginary images.
 		 * Returns mean radial amplitude, or intensity if inten is set. Note that the complex
 		 * origin is at (0,0), with periodic boundaries. Note that the inten option is NOT
 		 * equivalent to returning amplitude and squaring the result.
-		 * 
+		 *
 		 * @param n number of points.
 		 * @param x0 starting point x coordinate.
 		 * @param dx step of x.
 		 * @param inten returns intensity (amp^2) rather than amplitude if set
 		 * @return The radial distribution in an array.
-		 */					
+		 */
 		vector < float >calc_radial_dist(int n, float x0, float dx,bool inten);
-		
-		
+
+
 		/** calculates radial distribution subdivided by angle. works for real and imaginary images.
 		 * 2-D only. The first returns a single vector of n*nwedge points, with radius varying first.
 		 * That is, the first n points represent the radial profile in the first wedge.
@@ -581,7 +581,7 @@ namespace EMAN
 		 * @return nwedge radial distributions packed into a single vector<float>
 		 */
 		vector < float >calc_radial_dist(int n, float x0, float dx, int nwedge,bool inten);
-		
+
 
 		/** Replace the image its complex conjugate.
 		 * @exception ImageFormatException Image must be complex (and RI)
@@ -600,7 +600,7 @@ namespace EMAN
 
 
 		/** Calculates the histogram of 'this' image. The result is
-		 * stored in float array 'hist'. If hist_min = hist_max, use 
+		 * stored in float array 'hist'. If hist_min = hist_max, use
 		 * image data min as hist_min; use image data max as hist_max.
 		 *
 		 * @param hist_size Histogram array's size.
@@ -622,16 +622,16 @@ namespace EMAN
 		 * @exception ImageDimensionException If image is 3D.
 		 * @return Float array to store the data.
 		 */
-		vector<float> calc_az_dist(int n, float a0, float da, float rmin, 
+		vector<float> calc_az_dist(int n, float a0, float da, float rmin,
 								   float rmax);
-								   
+
 #if 0
 		void calc_rcf(EMData * with, vector < float >&sum_array);
 #endif
 		/** Calculates the distance between 2 vectors. 'this' image is
 		 * 1D, which contains a vector; 'second_img' may be nD. One of
 		 * its row is used as the second vector. 'second_img' and
-		 * 'this' must have the same x size. 
+		 * 'this' must have the same x size.
 		 *
 		 * @param second_img The image used to caculate the distance.
 		 * @param y_index Specifies which row in 'second_img' is used to do
@@ -648,7 +648,7 @@ namespace EMAN
 		 * that make use of Fourier convolution and correlation.
 		 * With is the template - the thing that you wish to find in the this image.
 		 * It should not be unecessarily padded. The function uses the size of with
-		 * to determine the extent of the local neighborhood used in the local 
+		 * to determine the extent of the local neighborhood used in the local
 		 * normalization (for technical details, see calc_fast_sigma_image).
 		 * Note that this function circularly masks the template at its radius
 		 * so the calling function need not do this beforehand.
@@ -660,7 +660,7 @@ namespace EMAN
 		 * @date April 2008
 		 */
 		EMData *calc_flcf(EMData * with);
-		
+
 		/** Calculates the local standard deviation (sigma) image using the given
 		 * mask image. The mask image is typically much smaller than this image,
 		 * and consists of ones, or is a small circle consisting of ones. The extent
@@ -668,7 +668,7 @@ namespace EMAN
 		 * the local standard deviation is determined.
 		 * Fourier convolution is used to do the math, ala Roseman (2003, Ultramicroscopy)
 		 * However, Roseman was just working on methods Van Heel had presented earlier.
-		 * The normalize flag causes the mask image to be processed so that it has a 
+		 * The normalize flag causes the mask image to be processed so that it has a
 		 * unit sum.
 		 * Works in 1,2 and 3D
 		 *
@@ -695,7 +695,7 @@ namespace EMAN
 
 		/** @ingroup tested2 */
 		/** Finds common lines between 2 complex images.
-		 * 
+		 *
 		 * This function does not assume any symmetry, just blindly
 		 * compute the "sinogram" and the user has to take care how
 		 * to interpret the returned "sinogram". it only considers
@@ -706,7 +706,7 @@ namespace EMAN
 		 * @param image2 The second complex image.
 		 * @param mode Either 0 or 1 or 2. mode 0 is a summed
 		 *   dot-product, larger value means better match; mode 1 is
-		 *   weighted phase residual, lower value means better match.		 
+		 *   weighted phase residual, lower value means better match.
 		 * @param steps: 1/2 of the resolution of the map.
 		 * @param horizontal In horizontal way or not.
 		 * @exception NullPointerException If 'image1' or 'image2' is NULL.
@@ -758,7 +758,7 @@ namespace EMAN
 		 * @exception ImageFormatException If map is complex
 		 * @author David Woolford (adapted from an original version by Steve Ludtke)
 		 * @date Feb 2008
-		 */		 
+		 */
 		void uncut_slice(EMData * const map, const Transform& tr) const;
 
 		/** function for MarchingCubes, for 3D image display
@@ -771,7 +771,7 @@ namespace EMAN
 				resolution++;
 				num = 1 << resolution;
 			}
-	
+
 			return resolution;
 		}
 
@@ -781,26 +781,20 @@ namespace EMAN
 			for ( Dict::const_iterator it = attr_dict.begin(); it != attr_dict.end(); ++it )
 			{
 				std::cout << (it->first) << " " << (it->second).to_str() << std::endl;
-			}	
+			}
 			std::cout << "Done printing EMData params" << std::endl;
 		}
-		
-		/** Scale the angstrom per pixel of this image by a uniform amount
-		 * Alters the EMData metadata
-		 * I had to make this function public for access from the Processors (David Woolford)
-		 * @author Unknown
-		*/
-		void scale_pixel(float scale_factor) const;
+
 	private:
 		enum EMDataFlags {
 //			EMDATA_COMPLEX = 1 << 1,
 //			EMDATA_RI = 1 << 2,	       // real/imaginary or amp/phase
 			EMDATA_BUSY = 1 << 3,	   // someone is modifying data, NO LONGER USED
 			EMDATA_HASCTFF = 1 << 4,   // has CTF info in the image file
-			EMDATA_NEEDUPD = 1 << 5,   // needs a real update			
+			EMDATA_NEEDUPD = 1 << 5,   // needs a real update
 //			EMDATA_COMPLEXX = 1 << 6,  // 1D fft's in X
 			EMDATA_FLIP = 1 << 7,	   // is the image flipped
-			EMDATA_PAD = 1 << 8,       // is the image fft padded 
+			EMDATA_PAD = 1 << 8,       // is the image fft padded
 			EMDATA_FFTODD = 1 << 9,	   // is the (real-space) nx odd
 			EMDATA_SHUFFLE = 1 << 10,  // fft been shuffled? (so O is centered) PRB
 			EMDATA_FH = 1 << 11        // is the complex image a FH image
@@ -812,32 +806,32 @@ namespace EMAN
 
 	private:
 		/** to store all image header info */
-		mutable Dict attr_dict; 
+		mutable Dict attr_dict;
 		/** image real data */
-		float *rdata;	 
-		/** supplementary data array */       
-		float *supp;    
-		
-		/** CTF data 
-		 * All CTF data become attribute ctf(vector<float>) in attr_dict  --Grant Tang*/        
-		//Ctf *ctf;		   
-		
-		/** flags */  
-		mutable int flags;       
+		float *rdata;
+		/** supplementary data array */
+		float *supp;
+
+		/** CTF data
+		 * All CTF data become attribute ctf(vector<float>) in attr_dict  --Grant Tang*/
+		//Ctf *ctf;
+
+		/** flags */
+		mutable int flags;
 		// Incremented every time the image changes
 		int changecount;
-		/** image size */       
+		/** image size */
 		int nx, ny, nz, nxy;
 		/** array index offsets */
 		int xoff, yoff, zoff;
 
 		/** translation from the original location */
-		Vec3f all_translation; 
+		Vec3f all_translation;
 //		Vec3f all_rotation;    /** rotation (az, alt, phi) from the original locaton*/
 
 		string path;
 		int pathnum;
-		
+
 		/** This is a cached rotational footprint, can save much time */
 		mutable EMData* rot_fp;
 	};
@@ -852,7 +846,7 @@ namespace EMAN
 	EMData * operator-(float n, const EMData & em);
 	EMData * operator*(float n, const EMData & em);
 	EMData * operator/(float n, const EMData & em);
-	
+
 	EMData * rsub(const EMData & em, float n);
 	EMData * rdiv(const EMData & em, float n);
 
@@ -862,28 +856,20 @@ namespace EMAN
 	EMData * operator/(const EMData & a, const EMData & b);
 
 
-	
+
 /*   Next  is Modified by PRB      Transform3D::EMAN,
-	inline Transform3D EMData::get_transform() const 
+	inline Transform3D EMData::get_transform() const
 	{
 		return Transform3D((float)attr_dict["euler_alt"],
 				   (float)attr_dict["euler_az"],
 				   (float)attr_dict["euler_phi"]);
 	}
 */
-	
-	
-	inline void EMData::scale_pixel(float scale) const
-	{
-		attr_dict["apix_x"] = ((float) attr_dict["apix_x"]) * scale;
-		attr_dict["apix_y"] = ((float) attr_dict["apix_y"]) * scale;
-		attr_dict["apix_z"] = ((float) attr_dict["apix_z"]) * scale;
-	}
-			 
-	
+
+
 }
 
-			
+
 #endif
 
 /* vim: set ts=4 noet nospell: */

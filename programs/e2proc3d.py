@@ -272,7 +272,7 @@ def main():
         elif 'mrc16bit' in optionlist:
         	data.write_image(outfile.split('.')[0]+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
         else:
-    	    data.write_image(outfile, -1, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
+    	    data.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
 
 #parse_file() wil read the input image file and return a list of EMData() object
 def parse_infile(infile, first, last):

@@ -1,38 +1,38 @@
 /**
  * $Id$
  */
- 
+
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
- 
+
 #ifndef eman__ctf__h__
 #define eman__ctf__h__ 1
 
@@ -90,7 +90,7 @@ namespace EMAN
 
 		virtual void from_dict(const Dict & dict) = 0;
 		virtual Dict to_dict() const = 0;
-		
+
 		virtual void from_vector(const vector<float>& vctf) = 0;
 		virtual vector<float> to_vector() const = 0;
 
@@ -112,17 +112,17 @@ namespace EMAN
 	class EMAN1Ctf:public Ctf
 	{
 	  public:
-		float defocus;			// 0	Defocus in microns, note that postitive is now underfocus, whereas values in EMAN1 are negative overfocus
-		float bfactor;			// 1	B-factor expressed using the x-ray convention (e^-B/4 s^2 in amplitude space) EMAN1 used E^-B s^2
+//		float defocus;			// 0	Defocus in microns, note that postitive is now underfocus, whereas values in EMAN1 are negative overfocus
+//		float bfactor;			// 1	B-factor expressed using the x-ray convention (e^-B/4 s^2 in amplitude space) EMAN1 used E^-B s^2
 		float amplitude;		// 2
 		float ampcont;			// 3
 		float noise1;			// 4
 		float noise2;			// 5
 		float noise3;			// 6
 		float noise4;			// 7
-		float voltage;			// 8
-		float cs;				// 9
-		float apix;				// 10
+//		float voltage;			// 8
+//		float cs;				// 9
+//		float apix;				// 10
 
 	  public:
 		EMAN1Ctf();
@@ -138,7 +138,7 @@ namespace EMAN
 
 		void from_dict(const Dict & dict);
 		Dict to_dict() const;
-		
+
 		void from_vector(const vector<float>& vctf);
 		vector<float> to_vector() const;
 
@@ -222,18 +222,18 @@ namespace EMAN
 	class EMAN2Ctf:public Ctf
 	{
 	  public:
-		float defocus;		// defocus in microns, positive underfocus
+//		float defocus;		// defocus in microns, positive underfocus
 		float dfdiff;		// defocus difference for astigmatism, defocus is the major elliptical axis
 		float dfang;		// angle of the major elliptical axis in degrees measured counterclockwise from x
-		float bfactor;		// B-factor in 1/A^2 expressed using the x-ray convention (e^-B/4 s^2 in amplitude space) EMAN1 used E^-B s^2
+//		float bfactor;		// B-factor in 1/A^2 expressed using the x-ray convention (e^-B/4 s^2 in amplitude space) EMAN1 used E^-B s^2
 		float ampcont;		// amplitude contrast as a percentage ie- this should be 10 for 10% amp contrast
-		float voltage;		// microscope voltage in kV
-		float cs;			// Cs in mm
-		float apix;			// A/pix value used when generating 2D results
+//		float voltage;		// microscope voltage in kV
+//		float cs;			// Cs in mm
+//		float apix;			// A/pix value used when generating 2D results
 		float dsbg;			// ds value for background and SNR
 		vector<float> background;	// background intensity, 1 value per radial pixel (NX/2, corners ignored)
 		vector<float> snr;			// SNR, 1 value per radial pixel (NX/2, corners assumed 0)
-		
+
 		vector<float> get_snr(){ return snr;}
 		void set_snr(const vector<float>& vf) {snr = vf;}
 		vector<float> get_background(){ return background;}
@@ -253,7 +253,7 @@ namespace EMAN
 
 		void from_dict(const Dict & dict);
 		Dict to_dict() const;
-		
+
 		void from_vector(const vector<float>& vctf);
 		vector<float> to_vector() const;
 

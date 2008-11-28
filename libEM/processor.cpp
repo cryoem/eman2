@@ -5,32 +5,32 @@
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
 
 #include "processor.h"
@@ -59,7 +59,7 @@ template <> Factory < Processor >::Factory()
 	force_add(&LowpassGaussProcessor::NEW);
 	force_add(&HighpassGaussProcessor::NEW);
 	force_add(&LinearRampFourierProcessor::NEW);
-	
+
 	force_add(&LowpassTanhProcessor::NEW);
 	force_add(&HighpassTanhProcessor::NEW);
 	force_add(&HighpassButterworthProcessor::NEW);
@@ -79,7 +79,7 @@ template <> Factory < Processor >::Factory()
 
 	force_add(&ClampingProcessor::NEW);
 	force_add(&NSigmaClampingProcessor::NEW);
-	
+
 	force_add(&ToZeroProcessor::NEW);
 	force_add(&ToMinvalProcessor::NEW);
 	force_add(&CutToZeroProcessor::NEW);
@@ -98,25 +98,25 @@ template <> Factory < Processor >::Factory()
 	force_add(&MaskNoiseProcessor::NEW);
 	force_add(&MaskGaussProcessor::NEW);
 	force_add(&MaskGaussInvProcessor::NEW);
-	
+
 	force_add(&MaxShrinkProcessor::NEW);
 	force_add(&MinShrinkProcessor::NEW);
 	force_add(&MeanShrinkProcessor::NEW);
 	force_add(&MedianShrinkProcessor::NEW);
 	force_add(&FFTShrinkProcessor::NEW);
-	
+
 	force_add(&MakeRadiusSquaredProcessor::NEW);
 	force_add(&MakeRadiusProcessor::NEW);
-	
+
 	force_add(&ComplexNormPixel::NEW);
 
 	force_add(&LaplacianProcessor::NEW);
 	force_add(&ZeroConstantProcessor::NEW);
-	
+
 	force_add(&BoxMedianProcessor::NEW);
 	force_add(&BoxSigmaProcessor::NEW);
 	force_add(&BoxMaxProcessor::NEW);
-	
+
 	force_add(&MinusPeakProcessor::NEW);
 	force_add(&PeakOnlyProcessor::NEW);
 	force_add(&DiffBlockProcessor::NEW);
@@ -138,9 +138,9 @@ template <> Factory < Processor >::Factory()
 	force_add(&ZeroEdgePlaneProcessor::NEW);
 
 	force_add(&BilateralProcessor::NEW);
-	
+
 	force_add(&ConvolutionProcessor::NEW);
-	
+
 	force_add(&NormalizeStdProcessor::NEW);
 	force_add(&NormalizeUnitProcessor::NEW);
 	force_add(&NormalizeUnitSumProcessor::NEW);
@@ -151,9 +151,9 @@ template <> Factory < Processor >::Factory()
 	force_add(&NormalizeMaxMinProcessor::NEW);
 	force_add(&NormalizeRowProcessor::NEW);
 	force_add(&NormalizeRampNormVar::NEW);
-	
+
 	force_add(&HistogramBin::NEW);
-	
+
 	force_add(&NormalizeToStdProcessor::NEW);
 	force_add(&NormalizeToFileProcessor::NEW);
 	force_add(&NormalizeToLeastSquareProcessor::NEW);
@@ -186,7 +186,7 @@ template <> Factory < Processor >::Factory()
 	force_add(&XGradientProcessor::NEW);
 	force_add(&YGradientProcessor::NEW);
 	force_add(&ZGradientProcessor::NEW);
-	
+
 	force_add(&FileFourierProcessor::NEW);
 
 	force_add(&SymSearchProcessor::NEW);
@@ -198,7 +198,7 @@ template <> Factory < Processor >::Factory()
 
 	force_add(&SmartMaskProcessor::NEW);
 	force_add(&IterBinMaskProcessor::NEW);
-	
+
 	force_add(&TestImageGaussian::NEW);
 	force_add(&TestImagePureGaussian::NEW);
 	force_add(&TestImageSinewave::NEW);
@@ -214,10 +214,10 @@ template <> Factory < Processor >::Factory()
 	force_add(&TestImageGradient::NEW);
 	force_add(&TestTomoImage::NEW);
 	force_add(&TestImageLineWave::NEW);
-	
+
 	force_add(&TomoTiltEdgeMaskProcessor::NEW);
 	force_add(&TomoTiltAngleWeightProcessor::NEW);
-	
+
 	force_add(&NewLowpassTopHatProcessor::NEW);
 	force_add(&NewHighpassTopHatProcessor::NEW);
 	force_add(&NewBandpassTopHatProcessor::NEW);
@@ -236,7 +236,7 @@ template <> Factory < Processor >::Factory()
 	force_add(&NewHomomorphicTanhProcessor::NEW);
 	force_add(&NewRadialTableProcessor::NEW);
 	force_add(&InverseKaiserI0Processor::NEW);
-	force_add(&InverseKaiserSinhProcessor::NEW);	 
+	force_add(&InverseKaiserSinhProcessor::NEW);
 	force_add(&CCDNormProcessor::NEW);
 	force_add(&CTF_Processor::NEW);
 	force_add(&SHIFTProcessor::NEW);
@@ -305,7 +305,7 @@ void FourierProcessor::process_inplace(EMData * image)
 
 	int array_size = FFTRADIALOVERSAMPLE * image->get_ysize();
 	float step=0.5f/array_size;
-	
+
 	vector < float >yarray(array_size);
 
 	create_radial_func(yarray);
@@ -376,7 +376,7 @@ void AmpweightFourierProcessor::process_inplace(EMData * image)
 		fftd[i]*=c;
 		fftd[i+1]*=c;
 		if (sumd) { sumd[i]+=c; sumd[i+1]+=0; }
-		
+
 		// debugging
 /*		if (i==290*1+12) {
 			sum1+=fftd[i];
@@ -389,7 +389,7 @@ void AmpweightFourierProcessor::process_inplace(EMData * image)
 			printf("%f\t%f\t%f\t%f\t%f\t%f\n",sum1a,sum2a,fftd[i],fftd[i+1],sumd[i],c);
 	}*/
 	}
-	
+
 	if (f) {
 		fft->update();
 		EMData *ift=fft->do_ift();
@@ -410,7 +410,7 @@ void LinearPyramidProcessor::process_inplace(EMData *image) {
 	float *d=image->get_data();
 	int nx=image->get_xsize();
 	int ny=image->get_ysize();
-	
+
 	for (int y=0; y<ny; y++) {
 		for (int x=0; x<nx; x++) {
 			int l=x+y*nx;
@@ -443,7 +443,7 @@ EMData * Wiener2DAutoAreaProcessor::process(const EMData * image)
 		fft=image;
 		fftd=image->get_data();
 	}
-	
+
 	return ret;
 }
 
@@ -499,7 +499,7 @@ EMData * Wiener2DFourierProcessor::process(const EMData *in)
 	for (int i=0; i<image->get_xsize()*image->get_ysize(); i+=2) {
 		snr=(fftd[i]*fftd[i]+fftd[i+1]*fftd[i+1]-powd[i])/powd[i];
 		if (snr<0) { bad++; snr=0; }
-		
+
 	}
 
 	print("%d bad pixels\n",snr);
@@ -865,7 +865,7 @@ void AreaProcessor::process_inplace(EMData * image)
 		delete[]matrix;
 		matrix = 0;
 	}
-	
+
 	if( kernel )
 	{
 		delete[]kernel;
@@ -1106,7 +1106,7 @@ void CutoffBlockProcessor::process_inplace(EMData * image)
 void MedianShrinkProcessor::process_inplace(EMData * image)
 {
 	if (image->is_complex()) throw ImageFormatException("Error, the median shrink processor does not work on complex images");
-	
+
 	int shrink_factor =  params.set_default("n",0);
 	if (shrink_factor <= 1) {
 		throw InvalidValueException(shrink_factor,
@@ -1138,11 +1138,11 @@ void MedianShrinkProcessor::process_inplace(EMData * image)
 	}
 }
 
-// 		
+//
 EMData* MedianShrinkProcessor::process(const EMData *const image)
 {
 	if (image->is_complex()) throw ImageFormatException("Error, the median shrink processor does not work on complex images");
-	
+
 	int shrink_factor =  params.set_default("n",0);
 	if (shrink_factor <= 1) {
 		throw InvalidValueException(shrink_factor,
@@ -1151,7 +1151,7 @@ EMData* MedianShrinkProcessor::process(const EMData *const image)
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
-		
+
 
 // 	if ((nx % shrink_factor != 0) || (ny % shrink_factor != 0) || (nz > 1 && (nz % shrink_factor != 0))) {
 // 		throw InvalidValueException(shrink_factor, "Image size not divisible by shrink factor");
@@ -1163,7 +1163,10 @@ EMData* MedianShrinkProcessor::process(const EMData *const image)
 	int shrunken_nz = 1;
 	if (nz > 1) shrunken_nz = nz / shrink_factor;
 
-	EMData* ret = new EMData(shrunken_nx, shrunken_ny, shrunken_nz);
+//	EMData* ret = new EMData(shrunken_nx, shrunken_ny, shrunken_nz);
+	EMData *ret = image->copy_head();
+	ret->set_size(shrunken_nx, shrunken_ny, shrunken_nz);
+
 	accrue_median(ret,image,shrink_factor);
 	ret->update();
 	return ret;
@@ -1174,55 +1177,55 @@ void MedianShrinkProcessor::accrue_median(EMData* to, const EMData* const from,c
 
 	int nx_old = from->get_xsize();
 	int ny_old = from->get_ysize();
-	
+
 	int threed_shrink_factor = shrink_factor * shrink_factor;
 	int z_shrink_factor = 1;
 	if (from->get_zsize() > 1) {
 		threed_shrink_factor *= shrink_factor;
 		z_shrink_factor = shrink_factor;
 	}
-	
+
 	float *mbuf = new float[threed_shrink_factor];
-	
-	
+
+
 	int nxy_old = nx_old * ny_old;
-	
+
 	int nx = to->get_xsize();
 	int ny = to->get_ysize();
 	int nz = to->get_zsize();
 	int nxy_new = nx * ny;
-	
+
 	float * rdata = to->get_data();
 	const float *const data_copy = from->get_const_data();
-		
+
 	for (int l = 0; l < nz; l++) {
 		int l_min = l * shrink_factor;
 		int l_max = l * shrink_factor + z_shrink_factor;
 		int cur_l = l * nxy_new;
-	
+
 		for (int j = 0; j < ny; j++) {
 			int j_min = j * shrink_factor;
 			int j_max = (j + 1) * shrink_factor;
 			int cur_j = j * nx + cur_l;
-	
+
 			for (int i = 0; i < nx; i++) {
 				int i_min = i * shrink_factor;
 				int i_max = (i + 1) * shrink_factor;
-	
+
 				int k = 0;
 				for (int l2 = l_min; l2 < l_max; l2++) {
 					int cur_l2 = l2 * nxy_old;
-	
+
 					for (int j2 = j_min; j2 < j_max; j2++) {
 						int cur_j2 = j2 * nx_old + cur_l2;
-	
+
 						for (int i2 = i_min; i2 < i_max; i2++) {
 							mbuf[k] = data_copy[i2 + cur_j2];
 							k++;
 						}
 					}
 				}
-	
+
 				for (k = 0; k < threed_shrink_factor / 2 + 1; k++) {
 					for (int i2 = k + 1; i2 < threed_shrink_factor; i2++) {
 						if (mbuf[i2] < mbuf[k]) {
@@ -1232,26 +1235,26 @@ void MedianShrinkProcessor::accrue_median(EMData* to, const EMData* const from,c
 						}
 					}
 				}
-	
+
 				rdata[i + cur_j] = mbuf[threed_shrink_factor / 2];
 			}
 		}
 	}
-	
+
 	if( mbuf )
 	{
 		delete[]mbuf;
 		mbuf = 0;
 	}
-	
+
 	to->scale_pixel((float)shrink_factor);
 }
 
 EMData* FFTShrinkProcessor::process(const EMData *const image)
 {
 	if (image->is_complex()) throw ImageFormatException("Error, the fft shrink processor does not work on complex images");
-	
-	
+
+
 	float shrink_factor = params.set_default("n",0.0f);
 	if (shrink_factor <= 1.0F  )  {
 		throw InvalidValueException(shrink_factor,	"mean shrink: shrink factor must be >1 ");
@@ -1261,15 +1264,15 @@ EMData* FFTShrinkProcessor::process(const EMData *const image)
 	fft_shrink(result,image,shrink_factor);
 	// The image may have been padded - we should shift it so that the phase origin is where FFTW expects it
 	result->update();
-	
+
 	return result;
 }
 
 void FFTShrinkProcessor::process_inplace(EMData * image)
 {
 	if (image->is_complex()) throw ImageFormatException("Error, the fft shrink processor does not work on complex images");
-	
-	
+
+
 	float shrink_factor = params.set_default("n",0.0f);
 	if (shrink_factor <= 1.0F  )  {
 		throw InvalidValueException(shrink_factor,	"mean shrink: shrink factor must be >1 ");
@@ -1278,56 +1281,56 @@ void FFTShrinkProcessor::process_inplace(EMData * image)
 	fft_shrink(image,image,shrink_factor);
 	// The image may have been padded - we should shift it so that the phase origin is where FFTW expects it
 	image->update();
-	
+
 }
 
 void FFTShrinkProcessor::fft_shrink(EMData* to, const EMData *const from, const float& shrink_factor) {
 	int nx = from->get_xsize();
 	int ny = from->get_ysize();
 	int nz = from->get_zsize();
-	
+
 	int shrunken_nx = static_cast<int>( static_cast<float> (nx) / shrink_factor);
 	int shrunken_ny = static_cast<int>( static_cast<float> (ny) / shrink_factor);
 	int shrunken_nz = static_cast<int>( static_cast<float> (nz) / shrink_factor);
-	
+
 	if (shrunken_nx == 0) throw UnexpectedBehaviorException("The shrink factor cause the pixel dimensions in the x direction to go to zero");
 	if (shrunken_ny == 0) shrunken_ny = 1;
 	if (shrunken_nz == 0) shrunken_nz = 1;
-	
+
 	to->process_inplace("xform.phaseorigin.tocorner");
-	
+
 	to->do_fft_inplace();
-	
+
 	to->process_inplace("xform.fourierorigin.tocenter");
-	
+
 	Region clip((nx-shrunken_nx)/2,(ny-shrunken_ny)/2,(nz-shrunken_nz)/2,shrunken_nx,shrunken_ny,shrunken_nz);
 	to->clip_inplace(clip);
-	
+
 	to->process_inplace("xform.fourierorigin.tocorner");
 	to->do_ift_inplace();
 	to->depad_corner();
 	to->process_inplace("xform.phaseorigin.tocenter");
-	
+
 }
 
 
 EMData* MeanShrinkProcessor::process(const EMData *const image)
 {
 	if (image->is_complex()) throw ImageFormatException("Error, the mean shrink processor does not work on complex images");
-	
-	if (image->get_ndim() == 1) { throw ImageDimensionException("Error, mean shrink works only for 2D & 3D images"); } 
-	
+
+	if (image->get_ndim() == 1) { throw ImageDimensionException("Error, mean shrink works only for 2D & 3D images"); }
+
 	float shrink_factor0 = params.set_default("n",0.0f);
 	int shrink_factor = int(shrink_factor0);
 	if (shrink_factor0 <= 1.0F || ((shrink_factor0 != shrink_factor) && (shrink_factor0 != 1.5F) ) ) {
 		throw InvalidValueException(shrink_factor0,
 									"mean shrink: shrink factor must be >1 integer or 1.5");
 	}
-	
+
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
-	
+
 
 	// here handle the special averaging by 1.5 for 2D case
 	if (shrink_factor0==1.5 ) {
@@ -1342,7 +1345,7 @@ EMData* MeanShrinkProcessor::process(const EMData *const image)
 
 		return result;
 	}
-	
+
 	int shrunken_nx = nx / shrink_factor;
 	int shrunken_ny = ny / shrink_factor;
 	int shrunken_nz = 1;
@@ -1350,22 +1353,24 @@ EMData* MeanShrinkProcessor::process(const EMData *const image)
 	if (nz > 1) {
 		shrunken_nz = nz / shrink_factor;
 	}
-	
-	EMData* result = new EMData(shrunken_nx,shrunken_ny,shrunken_nz);
+
+//	EMData* result = new EMData(shrunken_nx,shrunken_ny,shrunken_nz);
+	EMData* result = image->copy_head();
+	result->set_size(shrunken_nx,shrunken_ny,shrunken_nz);
 
 	accrue_mean(result,image,shrink_factor);
 
 	result->update();
-	
+
 	return result;
 }
 
 void MeanShrinkProcessor::process_inplace(EMData * image)
 {
 	if (image->is_complex()) throw ImageFormatException("Error, the mean shrink processor does not work on complex images");
-	
-	if (image->get_ndim() == 1) { throw ImageDimensionException("Error, mean shrink works only for 2D & 3D images"); } 
-	
+
+	if (image->get_ndim() == 1) { throw ImageDimensionException("Error, mean shrink works only for 2D & 3D images"); }
+
 	float shrink_factor0 = params.set_default("n",0.0f);
 	int shrink_factor = int(shrink_factor0);
 	if (shrink_factor0 <= 1.0F || ((shrink_factor0 != shrink_factor) && (shrink_factor0 != 1.5F) ) ) {
@@ -1394,7 +1399,7 @@ void MeanShrinkProcessor::process_inplace(EMData * image)
 		image->to_zero();
 
 		accrue_mean_one_p_five(image,orig);
-	
+
 		if( orig ) {
 			delete orig;
 			orig = 0;
@@ -1405,33 +1410,32 @@ void MeanShrinkProcessor::process_inplace(EMData * image)
 	}
 
 	accrue_mean(image,image,shrink_factor);
-	
+
 	int shrunken_nx = nx / shrink_factor;
 	int shrunken_ny = ny / shrink_factor;
 	int shrunken_nz = 1;
 	if (nz > 1) shrunken_nz = nz / shrink_factor;
-	
+
 	image->update();
 	image->set_size(shrunken_nx, shrunken_ny, shrunken_nz);
-	image->scale_pixel((float)shrink_factor);
 }
 
 void MeanShrinkProcessor::accrue_mean(EMData* to, const EMData* const from,const int shrink_factor)
 {
 	const float * const data = from->get_const_data();
 	float* rdata = to->get_data();
-	
+
 	int nx = from->get_xsize();
 	int ny = from->get_ysize();
 	int nz = from->get_zsize();
 	int nxy = nx*ny;
-	
-	
+
+
 	int shrunken_nx = nx / shrink_factor;
 	int shrunken_ny = ny / shrink_factor;
 	int shrunken_nz = 1;
 	int shrunken_nxy = shrunken_nx * shrunken_ny;
-	
+
 	int normalize_shrink_factor = shrink_factor * shrink_factor;
 	int z_shrink_factor = 1;
 
@@ -1440,9 +1444,9 @@ void MeanShrinkProcessor::accrue_mean(EMData* to, const EMData* const from,const
 		normalize_shrink_factor *= shrink_factor;
 		z_shrink_factor = shrink_factor;
 	}
-	
+
 	float invnormfactor = 1.0f/(float)normalize_shrink_factor;
-	
+
 	for (int k = 0; k < shrunken_nz; k++) {
 		int k_min = k * shrink_factor;
 		int k_max = k * shrink_factor + z_shrink_factor;
@@ -1472,15 +1476,15 @@ void MeanShrinkProcessor::accrue_mean(EMData* to, const EMData* const from,const
 			}
 		}
 	}
-	
-	to->scale_pixel((float)normalize_shrink_factor);
+
+	to->scale_pixel((float)shrink_factor);
 }
 
 
 void MeanShrinkProcessor::accrue_mean_one_p_five(EMData* to, const EMData * const from)
 {
 	int nx0 = from->get_xsize(), ny0 = from->get_ysize();	// the original size
-	
+
 	int nx = to->get_xsize(), ny = to->get_ysize();
 
 	float *data = to->get_data();
@@ -1525,8 +1529,9 @@ void MeanShrinkProcessor::accrue_mean_one_p_five(EMData* to, const EMData * cons
 			if ( w>0 ) data[j * nx + i] /= w;
 		}
 	}
-	
+
 	to->update();
+	to->scale_pixel((float)1.5);
 }
 
 template<class LogicOp>
@@ -1534,41 +1539,41 @@ EMData* BooleanShrinkProcessor::process(const EMData *const image, Dict& params)
 {
 	// The basic idea of this code is to iterate through each pixel in the output image
 	// determining its value by investigation a region of the input image
-	
+
 	if (!image) throw NullPointerException("Attempt to max shrink a null image");
 
 	if (image->is_complex() ) throw ImageFormatException("Can not max shrink a complex image");
-	
-	
+
+
 	int shrink = params.set_default("n",2);
 	int search = params.set_default("search",2);
-	
+
 	if ( shrink < 0 ) throw InvalidValueException(shrink, "Can not shrink by a value less than 0");
-	
+
 
 	int nz = image->get_zsize();
 	int ny = image->get_ysize();
 	int nx = image->get_xsize();
-	
+
 	if (nx == 1 && ny == 1 && nz == 1 ) return image->copy();
-	
+
 	LogicOp op;
 	EMData* return_image = new EMData();
-	
+
 	int shrinkx = shrink;
 	int shrinky = shrink;
 	int shrinkz = shrink;
-	
+
 	int searchx = search;
 	int searchy = search;
 	int searchz = search;
-		
+
 	// Clamping the shrink values to the dimension lengths
 	// ensures that the return image has non zero dimensions
 	if ( shrinkx > nx ) shrinkx = nx;
 	if ( shrinky > ny ) shrinky = ny;
 	if ( shrinkz > nz ) shrinkz = nz;
-	
+
 	if ( nz == 1 && ny == 1 )
 	{
 		return_image->set_size(nx/shrinkx);
@@ -1584,7 +1589,7 @@ EMData* BooleanShrinkProcessor::process(const EMData *const image, Dict& params)
 				{
 					float val = image->get_value_at(idx);
 					if ( op( val,tmp) ) tmp = val;
-				}	
+				}
 			}
 			return_image->set_value_at(i,tmp);
 		}
@@ -1603,7 +1608,7 @@ EMData* BooleanShrinkProcessor::process(const EMData *const image, Dict& params)
 					for(int sx=0; sx < searchx; ++sx) {
 						int xidx = shrinkx*x+sx;
 						if ( xidx >= nx) break;
-					
+
 						float val = image->get_value_at(xidx,yidx);
 						if ( op( val,tmp) ) tmp = val;
 					}
@@ -1617,21 +1622,21 @@ EMData* BooleanShrinkProcessor::process(const EMData *const image, Dict& params)
 		int tz = nz/shrinkz;
 		int ty = ny/shrinky;
 		int tx = nx/shrinkx;
-		
+
 		return_image->set_size(tx,ty,tz);
 		for(int z = 0; z < tz; ++z) {
 			for(int y = 0; y < ty; ++y) {
 				for(int x = 0; x < tx; ++x) {
 					float tmp = op.get_start_val();
-					
+
 					for(int sz=0; sz < searchz; ++sz) {
 						int zidx = shrinkz*z+sz;
 						if ( zidx >= nz) break;
-						
+
 						for(int sy=0; sy < searchy; ++sy) {
 							int yidx = shrinky*y+sy;
 							if ( yidx >= ny) break;
-							
+
 							for(int sx=0; sx < searchx; ++sx) {
 								int xidx = shrinkx*x+sx;
 								if ( xidx >= nx) break;
@@ -1646,7 +1651,7 @@ EMData* BooleanShrinkProcessor::process(const EMData *const image, Dict& params)
 		}
 	}
 	return_image->update();
-	
+
 	return return_image;
 }
 
@@ -1658,36 +1663,36 @@ void BooleanShrinkProcessor::process_inplace(EMData * image, Dict& params)
 	if (!image) throw NullPointerException("Attempt to max shrink a null image");
 
 	if (image->is_complex() ) throw ImageFormatException("Can not max shrink a complex image");
-	
-	
+
+
 	int shrink = params.set_default("shrink",2);
 	int search = params.set_default("search",2);
-	
+
 	if ( shrink < 0 ) throw InvalidValueException(shrink, "Can not shrink by a value less than 0");
-	
+
 
 	int nz = image->get_zsize();
 	int ny = image->get_ysize();
 	int nx = image->get_xsize();
-	
+
 	LogicOp op;
-	
+
 	int shrinkx = shrink;
 	int shrinky = shrink;
 	int shrinkz = shrink;
-	
+
 	int searchx = search;
 	int searchy = search;
 	int searchz = search;
-		
+
 	// Clamping the shrink values to the dimension lengths
 	// ensures that the return image has non zero dimensions
 	if ( shrinkx > nx ) shrinkx = nx;
 	if ( shrinky > ny ) shrinkx = ny;
 	if ( shrinkz > nz ) shrinkx = nz;
-	
+
 	if (nx == 1 && ny == 1 && nz == 1 ) return;
-	
+
 	if ( nz == 1 && ny == 1 )
 	{
 		for(int i = 0; i < nx/shrink; ++i)
@@ -1701,11 +1706,11 @@ void BooleanShrinkProcessor::process_inplace(EMData * image, Dict& params)
 				{
 					float val = image->get_value_at(idx);
 					if ( op( val,tmp) ) tmp = val;
-				}	
+				}
 			}
 			image->set_value_at(i,tmp);
 		}
-		
+
 		image->set_size(nx/shrinkx);
 	}
 	else if ( nz == 1 )
@@ -1721,7 +1726,7 @@ void BooleanShrinkProcessor::process_inplace(EMData * image, Dict& params)
 					for(int sx=0; sx < searchx; ++sx) {
 						int xidx = shrinkx*x+sx;
 						if ( xidx >= nx) break;
-						
+
 						float val = image->get_value_at(xidx,yidx);
 						if ( op( val,tmp) ) tmp = val;
 					}
@@ -1732,12 +1737,12 @@ void BooleanShrinkProcessor::process_inplace(EMData * image, Dict& params)
 		image->set_size(tx,ty);
 	}
 	else
-	{	
+	{
 		int tnxy = nx/shrinkx*ny/shrinky;
 		int tz = nz/shrinkz;
 		int ty = ny/shrinky;
 		int tx = nx/shrinkx;
-		
+
 		for(int z = 0; z < tz; ++z) {
 			for(int y = 0; y < ty; ++y) {
 				for(int x = 0; x < tx; ++x) {
@@ -1751,7 +1756,7 @@ void BooleanShrinkProcessor::process_inplace(EMData * image, Dict& params)
 							for(int sx=0; sx < shrinkx; ++sx) {
 								int xidx = shrinkx*x+sx;
 								if ( xidx >= nx) break;
-								
+
 								float val = image->get_value_at(xidx,yidx,zidx);
 								if ( op( val,tmp) ) tmp = val;
 							}
@@ -1763,7 +1768,7 @@ void BooleanShrinkProcessor::process_inplace(EMData * image, Dict& params)
 		}
 		image->set_size(tx,ty,tz);
 	}
-	
+
 	image->update();
 }
 
@@ -1811,14 +1816,14 @@ void GradientRemoverProcessor::process_inplace(EMData * image)
 
 void FlattenBackgroundProcessor::process_inplace(EMData * image)
 {
-	
+
 	EMData* mask = params.set_default("mask",(EMData*)0);
 	int radius = params.set_default("radius",0);
-	
+
 	if (radius != 0 && mask != 0) throw InvalidParameterException("Error - the mask and radius parameters are mutually exclusive.");
-	
+
 	if (mask == 0 && radius == 0) throw InvalidParameterException("Error - you must specify either the mask or the radius parameter.");
-	
+
 	// If the radius isn't 0, then turn the mask into the thing we want...
 	bool deletemask = false;
 	if (radius != 0) {
@@ -1835,13 +1840,13 @@ void FlattenBackgroundProcessor::process_inplace(EMData * image)
 		// assuming default behavior is to make a circle/sphere with using the radius of the mask
 		mask->process_inplace("testimage.circlesphere");
 	}
-	
+
 	// Double check that that mask isn't too big
 	int mnx = mask->get_xsize(); int mny = mask->get_ysize(); int mnz = mask->get_zsize();
 	int nx = image->get_xsize(); int ny = image->get_ysize(); int nz = image->get_zsize();
 	if ( mnx > nx || mny > ny || mnz > nz)
 		throw ImageDimensionException("Can not flatten using a mask that is larger than the image.");
-	
+
 	// Get the normalization factor
 	float normfac = 0.0;
 	for (int i=0; i<mask->get_xsize()*mask->get_ysize()*mask->get_zsize(); ++i){
@@ -1852,7 +1857,7 @@ void FlattenBackgroundProcessor::process_inplace(EMData * image)
 	// has a mean of zero.
 	if (normfac == 0) throw InvalidParameterException("Error - the pixels in the mask sum to zero. This breaks the flattening procedure");
 	normfac = 1.0f/normfac;
-	
+
 	// The mask can now be automatically resized to the dimensions of the image
 	bool undoclip = false;
 	if ( mnx < nx || mny < ny || mnz < nz) {
@@ -1860,7 +1865,7 @@ void FlattenBackgroundProcessor::process_inplace(EMData * image)
 		mask->clip_inplace(r);
 		undoclip = true;
 	}
-	
+
 	// Finally do the convolution
 	EMData* m = image->convolute(mask);
 	// Normalize so that m is truly the local mean
@@ -1869,18 +1874,18 @@ void FlattenBackgroundProcessor::process_inplace(EMData * image)
 	m->process_inplace("xform.phaseorigin.tocenter");
 	// Subtract the local mean
 	image->sub(*m); // WE'RE DONE!
-	
+
 	delete m;
-	
+
 	if (deletemask) {
 		delete mask;
 	}
-	
+
 	if ( undoclip ) {
 		Region r((nx-mnx)/2, (ny-mny)/2, (nz-mnz)/2,mnx,mny,mnz);
 		mask->clip_inplace(r);
 	}
-	
+
 }
 
 #include <gsl/gsl_linalg.h>
@@ -1927,7 +1932,7 @@ void GradientPlaneRemoverProcessor::process_inplace(EMData * image)
 	gsl_vector *S=gsl_vector_calloc(3);
 	gsl_matrix *A=gsl_matrix_calloc(count,3);
 	gsl_matrix *V=gsl_matrix_calloc(3,3);
-	
+
 	double m[3] = {0, 0, 0};
 	int index=0;
 	if (dm) {
@@ -1958,9 +1963,9 @@ void GradientPlaneRemoverProcessor::process_inplace(EMData * image)
 			}
 		}
 	}
-	
+
 	for(int i=0; i<3; i++) m[i]/=count;	// compute center of the plane
-	
+
 	index=0;
 	if (dm) {
 		for(int j=0; j<ny; j++){
@@ -1975,7 +1980,7 @@ void GradientPlaneRemoverProcessor::process_inplace(EMData * image)
 				}
 			}
 		}
-		mask->update(); 
+		mask->update();
 	}
 	else {
 		for(int j=0; j<ny; j++){
@@ -1989,13 +1994,13 @@ void GradientPlaneRemoverProcessor::process_inplace(EMData * image)
 			}
 		}
 	}
-	
+
 	// SVD decomposition and use the V vector associated with smallest singular value as the plan normal
 	gsl_linalg_SV_decomp_jacobi(A, V, S);
-	
+
 	double n[3];
 	for(int i=0; i<3; i++) n[i] = gsl_matrix_get(V, i, 2);
-	
+
 	#ifdef DEBUG
 	printf("S=%g,%g,%g\n",gsl_vector_get(S,0), gsl_vector_get(S,1), gsl_vector_get(S,2));
 	printf("V[0,:]=%g,%g,%g\n",gsl_matrix_get(V,0,0), gsl_matrix_get(V,0,1),gsl_matrix_get(V,0,2));
@@ -2003,7 +2008,7 @@ void GradientPlaneRemoverProcessor::process_inplace(EMData * image)
 	printf("V[2,:]=%g,%g,%g\n",gsl_matrix_get(V,2,0), gsl_matrix_get(V,2,1),gsl_matrix_get(V,2,2));
 	printf("Fitted plane: p0=%g,%g,%g\tn=%g,%g,%g\n",m[0],m[1],m[2],n[0],n[1],n[2]);
 	#endif
-	
+
 	int changeZero = 0;
 	if (params.has_key("changeZero")) changeZero = params["changeZero"];
 	if (changeZero) {
@@ -2068,31 +2073,31 @@ void RealToFFTProcessor::process_inplace(EMData *image)
 		LOGWARN("NULL Image");
 		return;
 	}
-	
+
 	//Note : real image only!
 	if(image->is_complex()) {
 		LOGERR("%s Processor only operates on real images", get_name().c_str());
 		throw ImageFormatException("apply to real image only");
 	}
 
-	// Note : 2D only!	
+	// Note : 2D only!
 	int nz = image->get_zsize();
 	if (nz > 1) {
 		LOGERR("%s Processor doesn't support 3D models", get_name().c_str());
 		throw ImageDimensionException("3D model not supported");
 	}
-	
+
 	EMData *ff=image->do_fft();
 	ff->ri2ap();
-	
+
 	int nx=image->get_xsize();
 	int ny=image->get_ysize();
-	
+
 	int x,y;
 	float norm=static_cast<float>(nx*ny);
 
 	for (y=0; y<ny; y++) image->set_value_at(0,y,0);
-	
+
 	for (x=1; x<nx/2; x++) {
 		for (y=0; y<ny; y++) {
 			int y2;
@@ -2102,7 +2107,7 @@ void RealToFFTProcessor::process_inplace(EMData *image)
 			image->set_value_at(x,y,ff->get_value_at(nx-x*2,ny-y2)/norm);
 		}
 	}
-	
+
 	for (x=nx/2; x<nx; x++) {
 		for (y=0; y<ny; y++) {
 			int y2;
@@ -2111,7 +2116,7 @@ void RealToFFTProcessor::process_inplace(EMData *image)
 			image->set_value_at(x,y,ff->get_value_at(x*2-nx,y2)/norm);
 		}
 	}
-	
+
 	image->update();
 	if( ff )
 	{
@@ -2531,14 +2536,14 @@ void ZeroEdgePlaneProcessor::process_inplace(EMData * image)
 	int nz = image->get_zsize();
 
 	float *d = image->get_data();
-	
+
 	int x0=params["x0"];
 	int x1=params["x1"];
 	int y0=params["y0"];
 	int y1=params["y1"];
 	int z0=params["z0"];
 	int z1=params["z1"];
-	
+
 	size_t row_size = nx * sizeof(float);
 	size_t nxy = nx * ny;
 	size_t sec_size = nxy * sizeof(float);
@@ -2547,23 +2552,23 @@ void ZeroEdgePlaneProcessor::process_inplace(EMData * image)
 	int max_y = ny-y1;
 	size_t x0size = x0*sizeof(float);
 	size_t x1size = x1*sizeof(float);
-	
+
 	memset(d,0,z0*sec_size);					// zero -z
 	memset(d+(nxy*(nz-z1)),0,sec_size*z1);	    // zero +z
-	
+
 	for (int z=z0; z<nz-z1; z++) {
 		memset(d+z*nxy,0,y0row);			// zero -y
 		memset(d+z*nxy+(ny-y1)*nx,0,y1row);	// zero +y
 
 		int znxy = z * nxy;
 		int znxy2 = znxy + nx - x1;
-		
+
 		for (int y=y0; y<max_y; y++) {
 			memset(d+znxy+y*nx,0,x0size);	// zero -x
 			memset(d+znxy2+y*nx,0,x1size);	// zero +x
 		}
 	}
-	
+
 	image->update();
 }
 
@@ -2632,7 +2637,7 @@ float NormalizeMaskProcessor::calc_sigma(EMData * image) const
 	}
 	EMData *mask = params["mask"];
 	int no_sigma = params["no_sigma"];
-	
+
 	if(no_sigma == 0) {
 		return 1;
 	}
@@ -2641,14 +2646,14 @@ float NormalizeMaskProcessor::calc_sigma(EMData * image) const
 			LOGERR("normalize.maskProcessor: mask and image must be the same size");
 			throw ImageDimensionException("mask and image must be the same size");
 		}
-	
+
 		float *data = image->get_data();
 		float *mask_data = mask->get_data();
 		size_t size = image->get_xsize() * image->get_ysize() * image->get_zsize();
 		double sum = 0;
 		double sq2 = 0;
 		size_t n_norm = 0;
-	
+
 		for (size_t i = 0; i < size; i++) {
 			if (mask_data[i] > 0.5f) {
 				sum += data[i];
@@ -2713,7 +2718,7 @@ void NormalizeRampNormVar::process_inplace(EMData * image)
 	int nx = image->get_xsize();
 	EMData mask(nx,nx);
 	mask.process_inplace("testimage.circlesphere", Dict("radius",nx/2-2,"fill",1));
-	
+
 	vector<float> rstls = Util::infomask( image, &mask, false);
 	image->add((float)-rstls[0]);
 	image->mult((float)1.0/rstls[1]);
@@ -2989,7 +2994,7 @@ void BilateralProcessor::process_inplace(EMData * image)
 		LOGWARN("NULL Image");
 		return;
 	}
-	
+
 	float distance_sigma = params["distance_sigma"];
 	float value_sigma = params["value_sigma"];
 	int max_iter = params["niter"];
@@ -3014,52 +3019,52 @@ void BilateralProcessor::process_inplace(EMData * image)
 	int nz = image->get_zsize();
 
 	if(nz==1) {	//for 2D image
-		int width=nx, height=ny; 
+		int width=nx, height=ny;
 
 		int i,j,m,n;
-	
+
 		float tempfloat1,tempfloat2,tempfloat3;
 		int   index1,index2,index;
 		int   Iter;
 		int   tempint1,tempint3;
-	
+
 		tempint1=width;
 		tempint3=width+2*half_width;
-	
+
 		float* mask=(float*)calloc((2*half_width+1)*(2*half_width+1),sizeof(float));
 		float* OrgImg=(float*)calloc((2*half_width+width)*(2*half_width+height),sizeof(float));
 		float* NewImg=image->get_data();
-	
+
 		for(m=-(half_width);m<=half_width;m++)
 			for(n=-(half_width);n<=half_width;n++) {
 	       	   index=(m+half_width)*(2*half_width+1)+(n+half_width);
 	       	   mask[index]=exp((float)(-(m*m+n*n)/distance_sigma/2.0));
 	  	}
-	
+
 		//printf("entering bilateral filtering process \n");
-	
+
 		Iter=0;
 		while(Iter<max_iter) {
 			for(i=0;i<height;i++)
 	    		for(j=0;j<width;j++) {
 		    		index1=(i+half_width)*tempint3+(j+half_width);
 					index2=i*tempint1+j;
-	        		OrgImg[index1]=NewImg[index2];      
+	        		OrgImg[index1]=NewImg[index2];
 	   		}
-	
+
 			// Mirror Padding
-			for(i=0;i<height;i++){	
+			for(i=0;i<height;i++){
 				for(j=0;j<half_width;j++) OrgImg[(i+half_width)*tempint3+(j)]=OrgImg[(i+half_width)*tempint3+(2*half_width-j)];
 				for(j=0;j<half_width;j++) OrgImg[(i+half_width)*tempint3+(j+width+half_width)]=OrgImg[(i+half_width)*tempint3+(width+half_width-j-2)];
 	   		}
-			for(i=0;i<half_width;i++){	
+			for(i=0;i<half_width;i++){
 				for(j=0;j<(width+2*half_width);j++) OrgImg[i*tempint3+j]=OrgImg[(2*half_width-i)*tempint3+j];
 				for(j=0;j<(width+2*half_width);j++) OrgImg[(i+height+half_width)*tempint3+j]=OrgImg[(height+half_width-2-i)*tempint3+j];
 			}
-	
+
 			//printf("finish mirror padding process \n");
 			//now mirror padding have been done
-	
+
 			for(i=0;i<height;i++){
 				//printf("now processing the %d th row \n",i);
 				for(j=0;j<width;j++){
@@ -3070,39 +3075,39 @@ void BilateralProcessor::process_inplace(EMData * image)
 							index1=(i+half_width)*tempint3+(j+half_width);
 							index2=(i+half_width+m)*tempint3+(j+half_width+n);
 							tempfloat3=(OrgImg[index1]-OrgImg[index2])*(OrgImg[index1]-OrgImg[index2]);
-	
+
 							tempfloat3=mask[index]*(1.0f/(1+tempfloat3/value_sigma));	// Lorentz kernel
 							//tempfloat3=mask[index]*exp(tempfloat3/Sigma2/(-2.0));	// Guassian kernel
 							tempfloat1+=tempfloat3;
-	
-							tempfloat2+=tempfloat3*OrgImg[(i+half_width+m)*tempint3+(j+half_width+n)];     
+
+							tempfloat2+=tempfloat3*OrgImg[(i+half_width+m)*tempint3+(j+half_width+n)];
 	        			}
 					NewImg[i*width+j]=tempfloat2/tempfloat1;
 				}
 			}
 	   		Iter++;
 	    }
-	
+
 	    //printf("have finished %d  th iteration\n ",Iter);
 //		doneData();
-		free(mask); 
+		free(mask);
 		free(OrgImg);
 		// end of BilaFilter routine
-		
+
 	}
 	else {	//3D case
 		int width = nx;
 		int height = ny;
 		int slicenum = nz;
-	
+
 		int slice_size = width * height;
 		int new_width = width + 2 * half_width;
 		int new_slice_size = (width + 2 * half_width) * (height + 2 * half_width);
-	
+
 		int width1 = 2 * half_width + 1;
 		int mask_size = width1 * width1;
 		int old_img_size = (2 * half_width + width) * (2 * half_width + height);
-	
+
 		int zstart = -half_width;
 		int zend = -half_width;
 		int is_3d = 0;
@@ -3112,35 +3117,35 @@ void BilateralProcessor::process_inplace(EMData * image)
 			zend = half_width;
 			is_3d = 1;
 		}
-	
+
 		float *mask = (float *) calloc(mask_size, sizeof(float));
 		float *old_img = (float *) calloc(old_img_size, sizeof(float));
-	
+
 		float *new_img = image->get_data();
-	
+
 		for (int p = zstart; p <= zend; p++) {
 			int cur_p = (p + half_width) * (2 * half_width + 1) * (2 * half_width + 1);
-	
+
 			for (int m = -half_width; m <= half_width; m++) {
 				int cur_m = (m + half_width) * (2 * half_width + 1) + half_width;
-	
+
 				for (int n = -half_width; n <= half_width; n++) {
 					int l = cur_p + cur_m + n;
 					mask[l] = exp((float) (-(m * m + n * n + p * p * is_3d) / distance_sigma / 2.0f));
 				}
 			}
 		}
-	
+
 		int iter = 0;
 		while (iter < max_iter) {
 			for (int k = 0; k < slicenum; k++) {
 				int cur_k1 = (k + half_width) * new_slice_size * is_3d;
 				int cur_k2 = k * slice_size;
-	
+
 				for (int i = 0; i < height; i++) {
 					int cur_i1 = (i + half_width) * new_width;
 					int cur_i2 = i * width;
-	
+
 					for (int j = 0; j < width; j++) {
 						int k1 = cur_k1 + cur_i1 + (j + half_width);
 						int k2 = cur_k2 + cur_i2 + j;
@@ -3148,27 +3153,27 @@ void BilateralProcessor::process_inplace(EMData * image)
 					}
 				}
 			}
-	
+
 			for (int k = 0; k < slicenum; k++) {
 				int cur_k = (k + half_width) * new_slice_size * is_3d;
-	
+
 				for (int i = 0; i < height; i++) {
 					int cur_i = (i + half_width) * new_width;
-	
+
 					for (int j = 0; j < half_width; j++) {
 						int k1 = cur_k + cur_i + j;
 						int k2 = cur_k + cur_i + (2 * half_width - j);
 						old_img[k1] = old_img[k2];
 					}
-	
+
 					for (int j = 0; j < half_width; j++) {
 						int k1 = cur_k + cur_i + (width + half_width + j);
 						int k2 = cur_k + cur_i + (width + half_width - j - 2);
 						old_img[k1] = old_img[k2];
 					}
 				}
-	
-	
+
+
 				for (int i = 0; i < half_width; i++) {
 					int i2 = i * new_width;
 					int i3 = (2 * half_width - i) * new_width;
@@ -3177,7 +3182,7 @@ void BilateralProcessor::process_inplace(EMData * image)
 						int k2 = cur_k + i3 + j;
 						old_img[k1] = old_img[k2];
 					}
-	
+
 					i2 = (height + half_width + i) * new_width;
 					i3 = (height + half_width - 2 - i) * new_width;
 					for (int j = 0; j < (width + 2 * half_width); j++) {
@@ -3187,37 +3192,37 @@ void BilateralProcessor::process_inplace(EMData * image)
 					}
 				}
 			}
-	
+
 			for (int k = 0; k < slicenum; k++) {
 				int cur_k = (k + half_width) * new_slice_size;
-	
+
 				for (int i = 0; i < height; i++) {
 					int cur_i = (i + half_width) * new_width;
-	
+
 					for (int j = 0; j < width; j++) {
 						float f1 = 0;
 						float f2 = 0;
 						int k1 = cur_k + cur_i + (j + half_width);
-	
+
 						for (int p = zstart; p <= zend; p++) {
 							int cur_p1 = (p + half_width) * (2 * half_width + 1) * (2 * half_width + 1);
 							int cur_p2 = (k + half_width + p) * new_slice_size;
-	
+
 							for (int m = -half_width; m <= half_width; m++) {
 								int cur_m1 = (m + half_width) * (2 * half_width + 1);
 								int cur_m2 = cur_p2 + cur_i + m * new_width + j + half_width;
-	
+
 								for (int n = -half_width; n <= half_width; n++) {
 									int k = cur_p1 + cur_m1 + (n + half_width);
 									int k2 = cur_m2 + n;
 									float f3 = Util::square(old_img[k1] - old_img[k2]);
-	
+
 									f3 = mask[k] * (1.0f / (1 + f3 / value_sigma));
 									f1 += f3;
 									int l1 = cur_m2 + n;
 									f2 += f3 * old_img[l1];
 								}
-	
+
 								new_img[k * height * width + i * width + j] = f2 / f1;
 							}
 						}
@@ -3230,13 +3235,13 @@ void BilateralProcessor::process_inplace(EMData * image)
 			free(mask);
 			mask = 0;
 		}
-	
+
 		if( old_img ) {
 			free(old_img);
 			old_img = 0;
 		}
 	}
-	
+
 	image->update();
 }
 
@@ -3248,7 +3253,7 @@ void RadialAverageProcessor::process_inplace(EMData * image)
 	}
 
 	if (image->get_ndim() <= 0 || image->get_ndim() > 3)	throw ImageDimensionException("radial average processor only works for 2D and 3D images");
-	
+
 	float *rdata = image->get_data();
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
@@ -3267,8 +3272,8 @@ void RadialAverageProcessor::process_inplace(EMData * image)
 	#else
 				float r = (float) hypot(x - midx, y - midy);
 	#endif	//_WIN32
-	
-				
+
+
 				int i = (int) floor(r);
 				r -= i;
 				if (i >= 0 && i < nx / 2 - 1) {
@@ -3321,7 +3326,7 @@ void RadialSubstractProcessor::process_inplace(EMData * image)
 	}
 
 	if (image->get_ndim() != 2) throw ImageDimensionException("This processor works only for 2D images");
-	
+
 	float *rdata = image->get_data();
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
@@ -3335,7 +3340,7 @@ void RadialSubstractProcessor::process_inplace(EMData * image)
 			float r = (float) _hypot(x - nx / 2, y - ny / 2);
 #else
 			float r = (float) hypot(x - nx / 2, y - ny / 2);
-#endif	
+#endif
 			int i = (int) floor(r);
 			r -= i;
 			if (i >= 0 && i < nx / 2 - 1) {
@@ -3358,7 +3363,7 @@ void FlipProcessor::process_inplace(EMData * image)
 		LOGWARN("NULL Image");
 		return;
 	}
-	
+
 	string axis = (const char*)params["axis"];
 
 	float *d = image->get_data();
@@ -3384,7 +3389,7 @@ void FlipProcessor::process_inplace(EMData * image)
 					std::swap(d[z*nxy + y*nx +x], d[z*nxy + (ny -y -1)*nx +x]);
 				}
 			}
-		} 
+		}
 	}
 	else if (axis == "z" || axis == "Z") {		//z axis flip
 		for(int z=0; z<nz/2; ++z) {
@@ -3398,7 +3403,7 @@ void FlipProcessor::process_inplace(EMData * image)
 
 	image->update();
 }
- 
+
 void AddNoiseProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
@@ -3435,26 +3440,26 @@ float AddSigmaNoiseProcessor::get_sigma(EMData * image)
 void FourierToCornerProcessor::process_inplace(EMData * image)
 {
 	if ( !image->is_complex() ) throw ImageFormatException("Can not Fourier origin shift an image that is not complex");
-	
+
 	int nx=image->get_xsize();
 	int ny=image->get_ysize();
 	int nz=image->get_zsize();
-	
+
 	int nxy = nx*ny;
-	
+
 	if ( ny == 1 && nz == 1 ){
 		cout << "Warning- attempted	Fourier origin shift a 1D image - no action taken" << endl;
 		return;
 	}
 	int yodd = (ny%2==1);
 	int zodd = (nz%2==1);
-	
+
 	float* rdata = image->get_data();
-	
+
 	float tmp[2];
 	float* p1;
 	float* p2;
-		
+
 	if (yodd){
 		// Swap the middle slice (with respect to the y direction) with the bottom slice
 		// shifting all slices above the middles slice upwards by one pixel, stopping
@@ -3464,44 +3469,44 @@ void FourierToCornerProcessor::process_inplace(EMData * image)
 		for( int s = 0; s < nz; s++ ) {
 			for( int c =0; c < nx; c += 2 ) {
 				prev[0] = rdata[s*nxy+ny/2*nx+c];
-				prev[1] = rdata[s*nxy+ny/2*nx+c+1];	
+				prev[1] = rdata[s*nxy+ny/2*nx+c+1];
 				for( int r = 0; r <= ny/2; ++r ) {
 					float* p1 = &rdata[s*nxy+r*nx+c];
 					tmp[0] = p1[0];
 					tmp[1] = p1[1];
-						
+
 					p1[0] = prev[0];
 					p1[1] = prev[1];
-						
+
 					prev[0] = tmp[0];
 					prev[1] = tmp[1];
 				}
 			}
 		}
 	}
-		
+
 	// Shift slices (3D) or rows (2D) correctly in the y direction
 	for( int s = 0; s < nz; ++s ) {
 		for( int r = 0 + yodd; r < ny/2+yodd; ++r ) {
 			for( int c =0; c < nx; c += 2 ) {
 				p1 = &rdata[s*nxy+r*nx+c];
 				p2 = &rdata[s*nxy+(r+ny/2)*nx+c];
-					
+
 				tmp[0] = p1[0];
 				tmp[1] = p1[1];
-					
+
 				p1[0] = p2[0];
 				p1[1] = p2[1];
-					
+
 				p2[0] = tmp[0];
 				p2[1] = tmp[1];
 			}
 		}
 	}
-	
+
 	if ( nz != 1 )
 	{
-		
+
 		if (zodd){
 			// Swap the middle slice (with respect to the z direction) and the front slice
 			// shifting all behind the front slice towards the middle a distance of 1 voxel,
@@ -3510,68 +3515,68 @@ void FourierToCornerProcessor::process_inplace(EMData * image)
 			for( int r = 0; r < ny; ++r ) {
 				for( int c =0; c < nx; c += 2 ) {
 					prev[0] = rdata[nz/2*nxy+r*nx+c];
-					prev[1] = rdata[nz/2*nxy+r*nx+c+1];	
+					prev[1] = rdata[nz/2*nxy+r*nx+c+1];
 					for( int s = 0; s <= nz/2; ++s ) {
 						float* p1 = &rdata[s*nxy+r*nx+c];
 						tmp[0] = p1[0];
 						tmp[1] = p1[1];
-					
+
 						p1[0] = prev[0];
 						p1[1] = prev[1];
-					
+
 						prev[0] = tmp[0];
 						prev[1] = tmp[1];
 					}
 				}
 			}
 		}
-		
+
 		// Shift slices correctly in the z direction
 		for( int s = 0+zodd; s < nz/2 + zodd; ++s ) {
 			for( int r = 0; r < ny; ++r ) {
 				for( int c =0; c < nx; c += 2 ) {
 					p1 = &rdata[s*nxy+r*nx+c];
 					p2 = &rdata[(s+nz/2)*nxy+r*nx+c];
-					
+
 					tmp[0] = p1[0];
 					tmp[1] = p1[1];
-					
+
 					p1[0] = p2[0];
 					p1[1] = p2[1];
-					
+
 					p2[0] = tmp[0];
 					p2[1] = tmp[1];
 				}
 			}
 		}
-		
+
 	}
 }
 
 void FourierToCenterProcessor::process_inplace(EMData * image)
 {
 	if ( !image->is_complex() ) throw ImageFormatException("Can not Fourier origin shift an image that is not complex");
-	
+
 	int nx=image->get_xsize();
 	int ny=image->get_ysize();
 	int nz=image->get_zsize();
-	
+
 	int nxy = nx*ny;
-	
+
 	if ( ny == 1 && nz == 1 ){
 		cout << "Warning- attempted	Fourier origin shift a 1D image - no action taken" << endl;
 		return;
 	}
-	
+
 	int yodd = (ny%2==1);
 	int zodd = (nz%2==1);
-	
+
 	float* rdata = image->get_data();
-	
+
 	float tmp[2];
 	float* p1;
 	float* p2;
-		
+
 	if (yodd){
 		// In 3D this is swapping the bottom slice (with respect to the y direction) and the middle slice,
 		// shifting all slices below the middle slice down one. In 2D it is equivalent, but in terms of rows.
@@ -3579,41 +3584,41 @@ void FourierToCenterProcessor::process_inplace(EMData * image)
 		for( int s = 0; s < nz; s++ ) {
 			for( int c =0; c < nx; c += 2 ) {
 				prev[0] = rdata[s*nxy+c];
-				prev[1] = rdata[s*nxy+c+1];	
+				prev[1] = rdata[s*nxy+c+1];
 				for( int r = ny/2; r >= 0; --r ) {
 					float* p1 = &rdata[s*nxy+r*nx+c];
 					tmp[0] = p1[0];
 					tmp[1] = p1[1];
-						
+
 					p1[0] = prev[0];
 					p1[1] = prev[1];
-						
+
 					prev[0] = tmp[0];
 					prev[1] = tmp[1];
 				}
 			}
 		}
 	}
-			
+
 	// 3D - Shift slices correctly in the y direction, 2D - shift rows
 	for( int s = 0; s < nz; ++s ) {
 		for( int r = 0; r < ny/2; ++r ) {
 			for( int c =0; c < nx; c += 2 ) {
 				p1 = &rdata[s*nxy+r*nx+c];
 				p2 = &rdata[s*nxy+(r+ny/2+yodd)*nx+c];
-					
+
 				tmp[0] = p1[0];
 				tmp[1] = p1[1];
-					
+
 				p1[0] = p2[0];
 				p1[1] = p2[1];
-					
+
 				p2[0] = tmp[0];
 				p2[1] = tmp[1];
 			}
 		}
 	}
-	
+
 	if ( nz != 1 )  {
 		if (zodd){
 			// Swap the front slice (with respect to the z direction) and the middle slice
@@ -3622,35 +3627,35 @@ void FourierToCenterProcessor::process_inplace(EMData * image)
 			for( int r = 0; r < ny; ++r ) {
 				for( int c =0; c < nx; c += 2 ) {
 					prev[0] = rdata[r*nx+c];
-					prev[1] = rdata[r*nx+c+1];	
+					prev[1] = rdata[r*nx+c+1];
 					for( int s = nz/2; s >= 0; --s ) {
 						float* p1 = &rdata[s*nxy+r*nx+c];
 						tmp[0] = p1[0];
 						tmp[1] = p1[1];
-					
+
 						p1[0] = prev[0];
 						p1[1] = prev[1];
-					
+
 						prev[0] = tmp[0];
 						prev[1] = tmp[1];
 					}
 				}
 			}
 		}
-		
+
 		// Shift slices correctly in the y direction
 		for( int s = 0; s < nz/2; ++s ) {
 			for( int r = 0; r < ny; ++r ) {
 				for( int c =0; c < nx; c += 2 ) {
 					p1 = &rdata[s*nxy+r*nx+c];
 					p2 = &rdata[(s+nz/2+zodd)*nxy+r*nx+c];
-					
+
 					tmp[0] = p1[0];
 					tmp[1] = p1[1];
-					
+
 					p1[0] = p2[0];
 					p1[1] = p2[1];
-					
+
 					p2[0] = tmp[0];
 					p2[1] = tmp[1];
 				}
@@ -3662,25 +3667,25 @@ void FourierToCenterProcessor::process_inplace(EMData * image)
 void Phase180Processor::fourier_phaseshift180(EMData * image)
 {
 	if ( !image->is_complex() ) throw ImageFormatException("Can not handle images that are not complex in fourier phase shift 180");
-	
+
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
 
 	int nxy = nx * ny;
-	
+
 	float *rdata = image->get_data();
-	
+
 	int of=0;
 	if (((ny/2)%2)+((nz/2)%2)==1) of=1;
-	
+
 	for (int k = 0; k < nz; k++) {
 		int k2 = k * nxy;
-		
+
 		for (int j = 0; j < ny; j++) {
 			int i = ((k+j)%2==of?2:0);
 			int j2 = j * nx + k2;
-			
+
 			for (; i < nx; i += 4) {
 				rdata[i + j2] *= -1.0f;
 				rdata[i + j2 + 1] *= -1.0f;
@@ -3694,20 +3699,20 @@ void Phase180Processor::swap_corners_180(EMData * image)
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
-	
+
 	int xodd = (nx % 2) == 1;
 	int yodd = (ny % 2) == 1;
 	int zodd = (nz % 2) == 1;
-	
+
 	int nxy = nx * ny;
-	
+
 	float *rdata = image->get_data();
-	
+
 	if ( ny == 1 && nz == 1 ){
 		throw ImageDimensionException("Error, cannot handle 1D images. This function should not have been called");
 	}
 	else if ( nz == 1 ) {
-		
+
 		// Swap the bottom left and top right corners
 		for ( int r = 0; r < ny/2; ++r ) {
 			for ( int c = 0; c < nx/2; ++c) {
@@ -3716,9 +3721,9 @@ void Phase180Processor::swap_corners_180(EMData * image)
 				float tmp = rdata[idx1];
 				rdata[idx1] = rdata[idx2];
 				rdata[idx2] = tmp;
-			} 
+			}
 		}
-		
+
 		// Swap the top left and bottom right corners
 		for ( int r = ny-1; r >= (ny/2+yodd); --r ) {
 			for ( int c = 0; c < nx/2; ++c) {
@@ -3789,15 +3794,15 @@ void Phase180Processor::swap_central_slices_180(EMData * image)
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
-	
+
 	int xodd = (nx % 2) == 1;
 	int yodd = (ny % 2) == 1;
 	int zodd = (nz % 2) == 1;
-	
+
 	int nxy = nx * ny;
-	
+
 	float *rdata = image->get_data();
-	
+
 	if ( ny == 1 && nz == 1 ){
 		throw ImageDimensionException("Error, cannot handle 1D images. This function should not have been called");
 	}
@@ -3814,7 +3819,7 @@ void Phase180Processor::swap_central_slices_180(EMData * image)
 				rdata[idx2] = tmp;
 			}
 		}
-		
+
 		if ( xodd )	{
 			// Iterate along the central column, swapping values where appropriate
 			int c = nx/2;
@@ -3842,7 +3847,7 @@ void Phase180Processor::swap_central_slices_180(EMData * image)
 					rdata[idx2] = tmp;
 				}
 			}
-			
+
 			for( int s = nz-1; s >= (nz/2+zodd); --s ) {
 				for ( int r = 0; r < ny/2; ++r ) {
 					int idx1 = s*nxy+r*nx+c;
@@ -3865,7 +3870,7 @@ void Phase180Processor::swap_central_slices_180(EMData * image)
 					rdata[idx2] = tmp;
 				}
 			}
-			
+
 			for( int s = nz-1; s >= (nz/2+zodd); --s ) {
 				for ( int c = 0; c < nx/2; ++c ) {
 					int idx1 = s*nxy+r*nx+c;
@@ -3888,7 +3893,7 @@ void Phase180Processor::swap_central_slices_180(EMData * image)
 					rdata[idx2] = tmp;
 				}
 			}
-			
+
 			for( int r = ny-1; r >= (ny/2+yodd); --r ) {
 				for ( int c = 0; c < nx/2; ++c ) {
 					int idx1 = s*nxy+r*nx+c;
@@ -3916,18 +3921,18 @@ void PhaseToCornerProcessor::process_inplace(EMData * image)
 	int nz = image->get_zsize();
 
 	if ( ny == 1 && nz == 1 && nx == 1) return;
-	
+
 	int nxy = nx * ny;
-	
+
 	float *rdata = image->get_data();
 
 	bool xodd = (nx % 2) == 1;
 	bool yodd = (ny % 2) == 1;
 	bool zodd = (nz % 2) == 1;
-	
+
 	if ( ny == 1 && nz == 1 ){
 		if (xodd){
-			// Put the last pixel in the center, shifting the contents 
+			// Put the last pixel in the center, shifting the contents
 			// to right of the center one step to the right
 			float in_x = rdata[nx-1];
 			float tmp;
@@ -3944,7 +3949,7 @@ void PhaseToCornerProcessor::process_inplace(EMData * image)
 			rdata[i] = rdata[idx];
 			rdata[idx] = tmp;
 		}
-		
+
 	}
 	else if ( nz == 1 ) {
 		if (yodd) {
@@ -3962,7 +3967,7 @@ void PhaseToCornerProcessor::process_inplace(EMData * image)
 				}
 			}
 		}
-		
+
 		if (xodd) {
 			// Transfer the right most column into the center column
 			// Shift all columns right of and including center to the right one pixel
@@ -3981,7 +3986,7 @@ void PhaseToCornerProcessor::process_inplace(EMData * image)
 		swap_central_slices_180(image);
 		// Now the corners of the image can be shifted...
 		swap_corners_180(image);
-		
+
 	}
 	else
 	{
@@ -4047,24 +4052,24 @@ void PhaseToCenterProcessor::process_inplace(EMData * image)
 		fourier_phaseshift180(image);
 		return;
 	}
-	
+
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
 
 	if ( ny == 1 && nz == 1 && nx == 1) return;
-	
+
 	int nxy = nx * ny;
-	
+
 	float *rdata = image->get_data();
 
 	bool xodd = (nx % 2) == 1;
 	bool yodd = (ny % 2) == 1;
 	bool zodd = (nz % 2) == 1;
-	
+
 	if ( ny == 1 && nz == 1 ){
 		if (xodd) {
-			// Put the center pixel at the end, shifting the contents 
+			// Put the center pixel at the end, shifting the contents
 			// to right of the center one step to the left
 			float in_x = rdata[nx/2];
 			float tmp;
@@ -4080,7 +4085,7 @@ void PhaseToCenterProcessor::process_inplace(EMData * image)
 			float tmp = rdata[i];
 			rdata[i] = rdata[idx];
 			rdata[idx] = tmp;
-		}	
+		}
 	}
 	else if ( nz == 1 ){
 		// The order in which these operations occur literally undoes what the
@@ -4089,11 +4094,11 @@ void PhaseToCenterProcessor::process_inplace(EMData * image)
 		swap_corners_180(image);
 		// Second, central pixel lines are swapped
 		swap_central_slices_180(image);
-		
+
 		float tmp;
 		// Third, appropriate sections of the image are cyclically shifted by one pixel
 		if (xodd) {
-			// Transfer the middle column to the far right 
+			// Transfer the middle column to the far right
 			// Shift all from the far right to (but not including the) middle one to the left
 			for ( int r  = 0; r < ny; ++r ) {
 				float last_val = rdata[r*nx+nx/2];
@@ -4104,7 +4109,7 @@ void PhaseToCenterProcessor::process_inplace(EMData * image)
 					last_val = tmp;
 				}
 			}
-		}	
+		}
 		if (yodd) {
 			// Tranfer the middle row to the top,
 			// shifting all pixels from the top row down one, until  but not including the) middle
@@ -4177,8 +4182,8 @@ void PhaseToCenterProcessor::process_inplace(EMData * image)
 				}
 			}
 		}
-		
-		
+
+
 	}
 }
 
@@ -4188,13 +4193,13 @@ void AutoMask2DProcessor::process_inplace(EMData * image)
 		LOGWARN("NULL Image");
 		return;
 	}
-	
+
 	int nz = image->get_zsize();
 	if (nz > 1) {
 		LOGERR("%s Processor doesn't support 3D model", get_name().c_str());
 		throw ImageDimensionException("3D model not supported");
 	}
-	
+
 	float threshold = params["threshold"];
 	float filter = 0.1f;
 	if (params.has_key("filter")) {
@@ -4234,7 +4239,7 @@ void AutoMask2DProcessor::process_inplace(EMData * image)
 			if (_hypot(l - d_ny / 2, j - d_nx / 2) >= d_ny / 2) {
 #else
 			if (hypot(l - d_ny / 2, j - d_nx / 2) >= d_ny / 2) {
-#endif	
+#endif
 				dn[k] = -dn_const;
 			}
 			else if (dd[k] < threshold_sigma) {
@@ -4396,7 +4401,7 @@ void AddRandomNoiseProcessor::process_inplace(EMData * image)
 		LOGWARN("NULL Image");
 		return;
 	}
-	
+
 	if (!image->is_complex()) {
 		LOGERR("AddRandomNoise Processor only works for complex image");
 		throw ImageFormatException("only work for complex image");
@@ -4411,7 +4416,7 @@ void AddRandomNoiseProcessor::process_inplace(EMData * image)
 	if (params.has_key("interpolation")) {
 		interpolation = params["interpolation"];
 	}
-	
+
 	Randnum * randnum = Randnum::Instance();
 	if(params.has_key("seed")) {
 		randnum->set_seed((int)params["seed"]);
@@ -4562,7 +4567,7 @@ void ToMassCenterProcessor::process_inplace(EMData * image)
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
-	
+
 	if (int_shift_only) {
 		int dx = -(int)(floor(com[0] + 0.5f) - nx / 2);
 		int dy = -(int)(floor(com[1] + 0.5f) - ny / 2);
@@ -4596,17 +4601,17 @@ void PhaseToMassCenterProcessor::process_inplace(EMData * image)
 	vector<float> pcog = image->phase_cog();
 
 	int dims = image->get_ndim();
-	
+
 	if (int_shift_only) {
 		int dx=-int(pcog[0]+0.5f),dy=0,dz=0;
 		if ( dims >= 2 ) dy = -int(pcog[1]+0.5);
 		if ( dims == 3 ) dz = -int(pcog[2]+0.5);
-		image->translate(dx,dy,dz);	
+		image->translate(dx,dy,dz);
 	} else  {
 		float dx=-pcog[0],dy=0.0,dz=0.0;
 		if ( dims >= 2 ) dy = -pcog[1];
 		if ( dims == 3 ) dz = -pcog[2];
-		image->translate(dx,dy,dz);	
+		image->translate(dx,dy,dz);
 	}
 }
 
@@ -4616,7 +4621,7 @@ void ACFCenterProcessor::process_inplace(EMData * image)
 		LOGWARN("NULL Image");
 		return;
 	}
-	
+
 	Dict params1;
 	params1["intonly"] = 1;
 	params1["maxshift"] = image->get_xsize() / 2;
@@ -4633,8 +4638,8 @@ void ACFCenterProcessor::process_inplace(EMData * image)
 		Transform* t = aligned->get_attr("xform.align2d");
 		image->translate(t->get_trans());
 	}
-	
-	
+
+
 	delete aligned;
 
 }
@@ -4833,11 +4838,11 @@ void SymSearchProcessor::process_inplace(EMData * image)
 		transforms[i] = sym_transform;
 		symvals[i] = new float[sym_transform.size()]; // new float(nsym);
 	}
-	
+
 	EMData *orig = image->copy();
 
 	image->to_zero();
-	
+
 	int nx= image->get_xsize();
 	int ny= image->get_ysize();
 	int nz= image->get_zsize();
@@ -4852,7 +4857,7 @@ void SymSearchProcessor::process_inplace(EMData * image)
 		symlabel->to_zero();
 		ldata = symlabel->get_data();
 	}
-	
+
 	for (int k = 0; k < nz; k++) {
 		for (int j = 0; j < ny; j++) {
 			for(int i = 0; i < nx; i++) {
@@ -4869,19 +4874,19 @@ void SymSearchProcessor::process_inplace(EMData * image)
 						float x2 = (float)(r[0][0] * (i-nx/2) + r[0][1] * (j-ny/2) + r[0][2] * (k-nz/2) + nx / 2);
 						float y2 = (float)(r[1][0] * (i-nx/2) + r[1][1] * (j-ny/2) + r[1][2] * (k-nz/2) + ny / 2);
 						float z2 = (float)(r[2][0] * (i-nx/2) + r[2][1] * (j-ny/2) + r[2][2] * (k-nz/2) + nz / 2);
-		
+
 						if (x2 >= 0 && y2 >= 0 && z2 >= 0 && x2 < (nx - 1) && y2 < (ny - 1)
 							&& z2 < (nz - 1)) {
 							float x = (float)Util::fast_floor(x2);
 							float y = (float)Util::fast_floor(y2);
 							float z = (float)Util::fast_floor(z2);
-		
+
 							float t = x2 - x;
 							float u = y2 - y;
 							float v = z2 - z;
-		
+
 							int ii = (int) (x + y * nx + z * xy);
-		
+
 							symval[s]=
 								Util::trilinear_interpolate(sdata[ii], sdata[ii + 1], sdata[ii + nx],
 															sdata[ii + nx + 1], sdata[ii + nx * ny],
@@ -5171,7 +5176,7 @@ void AutoMask3DProcessor::search_nearby(float *dat, float *dat2, int nx, int ny,
 	Assert(dat2 != 0);
 	Assert(nx > 0);
 	Assert(ny > 0);
-	
+
 	bool done = false;
 	int nxy = nx * ny;
 
@@ -5203,7 +5208,7 @@ void AutoMask3DProcessor::fill_nearby(float *dat2, int nx, int ny, int nz)
 	Assert(nx > 0);
 	Assert(ny > 0);
 	Assert(nz >= 0);
-	
+
 	int nxy = nx * ny;
 
 	for (int i = 0; i < nx; i++) {
@@ -5449,7 +5454,7 @@ void AutoMask3D2Processor::process_inplace(EMData * image)
 
 	norm->process_inplace("mask.addshells", Dict("nshells", 2));
 	image->process_inplace("normalize.mask", Dict("mask", norm, "no_sigma", 0));
-	
+
 	if( norm )
 	{
 		delete norm;
@@ -5539,7 +5544,7 @@ void TestImageProcessor::preprocess(const EMData * const image)
 		LOGWARN("NULL Image");
 		return;
 	}
-	
+
 	nx = image->get_xsize();
 	ny = image->get_ysize();
 	nz = image->get_zsize();
@@ -5549,10 +5554,10 @@ void TestImageProcessor::preprocess(const EMData * const image)
 void TestImageLineWave::process_inplace(EMData * image)
 {
 	preprocess(image);
-	
+
 	float period = params.set_default("period",10.0f);
 	int n = image->get_xsize()*image->get_ysize()*image->get_zsize();
-	
+
 	for(int i = 0; i < n; ++i) {
 		float x = fmod((float)i,period);
 		x /= period;
@@ -5564,11 +5569,11 @@ void TestImageLineWave::process_inplace(EMData * image)
 void TestImageGaussian::process_inplace(EMData * image)
 {
 	preprocess(image);
-	
+
 	float sigma = params["sigma"];
 	string axis = (const char*)params["axis"];
 	float c = params["c"];
-	
+
 	float *dat = image->get_data();
 	float r; //this is the distance of pixel from the image center(nx/2, ny/2, nz/2)
 	float x2, y2, z2; //this is the coordinates of this pixel from image center
@@ -5578,20 +5583,20 @@ void TestImageGaussian::process_inplace(EMData * image)
 				x2 = (float)( i - nx/2 );
 				y2 = (float)( j - ny/2 );
 				z2 = (float)( k - nz/2 );
-				
+
 				if(axis==""){
 					r = (float)sqrt(x2*x2+y2*y2+z2*z2);
 				}
 				else if(axis == "x"){
 					float lc = -c;
 					float rc = c;
-					r = ( (float)sqrt((x2-lc)*(x2-lc)+y2*y2+z2*z2) + 
+					r = ( (float)sqrt((x2-lc)*(x2-lc)+y2*y2+z2*z2) +
 						  (float)sqrt((x2-rc)*(x2-rc)+y2*y2+z2*z2) ) /2.0f - c;
 				}
 				else if(axis == "y"){
 					float lc = -c;
 					float rc = c;
-					r = ( (float)sqrt(x2*x2+(y2-lc)*(y2-lc)+z2*z2) + 
+					r = ( (float)sqrt(x2*x2+(y2-lc)*(y2-lc)+z2*z2) +
 						  (float)sqrt(x2*x2+(y2-rc)*(y2-rc)+z2*z2) ) /2.0f - c;
 				}
 				else if(axis == "z"){
@@ -5600,32 +5605,32 @@ void TestImageGaussian::process_inplace(EMData * image)
 					}
 					float lc = -c;
 					float rc = c;
-					r = ( (float)sqrt(x2*x2+y2*y2+(z2-lc)*(z2-lc)) + 
+					r = ( (float)sqrt(x2*x2+y2*y2+(z2-lc)*(z2-lc)) +
 						  (float)sqrt(x2*x2+y2*y2+(z2-rc)*(z2-rc)) ) /2.0f - c;
 				}
 				else{
 					throw InvalidValueException(0, "please specify a valid axis for asymmetric features");
 				}
-				//the amplitude of the pixel is proportional to the distance of this pixel from the center 
+				//the amplitude of the pixel is proportional to the distance of this pixel from the center
 				*dat = (float)gsl_ran_gaussian_pdf((double)r,(double)sigma);
 			}
 		}
 	}
-	
+
 	image->update();
 }
 
 void TestImageGradient::process_inplace(EMData * image)
 {
 	string axis = params.set_default("axis", "x");
-	
+
 	float m = params.set_default("m", 1.0f);
 	float b = params.set_default("b", 0.0f);
-	
+
 	if ( axis != "z" && axis != "y" && axis != "x") throw InvalidParameterException("Axis must be x,y or z");
-	
+
 	preprocess(image);
-	
+
 	if ( axis == "x")
 	{
 		for(int k=0; k<nz;++k) {
@@ -5662,13 +5667,13 @@ void TestImageGradient::process_inplace(EMData * image)
 void TestImageAxes::process_inplace(EMData * image)
 {
 	preprocess(image);
-	
+
 	float fill = params.set_default("fill", 1.0f);
 	// get the central coordinates
 	int cx = nx/2;
 	int cy = ny/2;
 	int cz = nz/2;
-	
+
 	// Offsets are used to detect when "the extra pixel" needs to be filled in
 	// They are implemented on the assumption that for odd dimensions
 	// the "center pixel" is the center pixel, but for even dimensions the "center
@@ -5676,12 +5681,12 @@ void TestImageAxes::process_inplace(EMData * image)
 	int xoffset = (nx % 2 == 0? 1:0);
 	int yoffset = (ny % 2 == 0? 1:0);
 	int zoffset = (nz % 2 == 0? 1:0);
-	
+
 	// This should never occur - but if indeed it did occur, the code in this function
 	// would break - the function would proceed into the final "else" and seg fault
 	// It is commented out but left for clarity
 // 	if ( nx < 1 || ny < 1 || nz < 1 ) throw ImageDimensionException("Error: one of the image dimensions was less than zero");
-	
+
 	if ( nx == 1 && ny == 1 && nz == 1 )
 	{
 		(*image)(0) = fill;
@@ -5690,7 +5695,7 @@ void TestImageAxes::process_inplace(EMData * image)
 	{
 		int radius = params.set_default("radius", cx );
 		if ( radius > cx ) radius = cx;
-		
+
 		(*image)(cx) = fill;
 		for ( int i = 1; i <= radius-xoffset; ++i ) (*image)(cx+i) = fill;
 		for ( int i = 1; i <= radius; ++i ) (*image)(cx-i) = fill;
@@ -5699,21 +5704,21 @@ void TestImageAxes::process_inplace(EMData * image)
 	{
 		int min = ( nx < ny ? nx : ny );
 		min /= 2;
-		
+
 		int radius = params.set_default("radius", min );
 		if ( radius > min ) radius = min;
-		
+
 		(*image)(cx,cy) = fill;
-		
+
 		for ( int i = 1; i <= radius-xoffset; ++i ) (*image)(cx+i,cy) = fill;
 		for ( int i = 1; i <= radius-yoffset; ++i )(*image)(cx,cy+i) = fill;
-				
+
 		for ( int i = 1; i <= radius; ++i )
 		{
 			(*image)(cx-i,cy) = fill;
 			(*image)(cx,cy-i) = fill;
 		}
-		
+
 	}
 	else
 	{
@@ -5721,11 +5726,11 @@ void TestImageAxes::process_inplace(EMData * image)
 		int min = ( nx < ny ? nx : ny );
 		if (nz < min ) min = nz;
 		min /= 2;
-		
+
 		int radius = params.set_default("radius", min);
 		if ( radius > min ) radius = min;
 
-		
+
 		(*image)(cx,cy,cz) = fill;
 		for ( int i = 1; i <=radius-xoffset; ++i ) (*image)(cx+i,cy,cz) = fill;
 		for ( int i = 1; i <=radius-yoffset; ++i ) (*image)(cx,cy+i,cz) = fill;
@@ -5737,23 +5742,23 @@ void TestImageAxes::process_inplace(EMData * image)
 			(*image)(cx,cy,cz-i) = fill;
 		}
 	}
-	
+
 	image->update();
 }
 
 void TestImageScurve::process_inplace(EMData * image)
 {
 	preprocess(image);
-	
+
 	int dim_size = image->get_ndim();
 	if( 2 != dim_size ) {
 		throw ImageDimensionException("work for 2D image only");
-	} 
-	
+	}
+
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	image->to_zero();
-	
+
 	for (int i=0; i<100; i++) {
 		int x=static_cast<int>( nx/2+nx/6.0*sin(i*2.0*3.14159/100.0) );
 		int y=ny/4+i*ny/200;
@@ -5767,14 +5772,14 @@ void TestImageScurve::process_inplace(EMData * image)
 			}
 		}
 	}
-	
+
 	image->update();
 }
 
 void TestImagePureGaussian::process_inplace(EMData * image)
 {
 	preprocess(image);
-	
+
 	float x_sigma = params["x_sigma"];
 	float y_sigma = params["y_sigma"];
 	float z_sigma = params["z_sigma"];
@@ -5797,7 +5802,7 @@ void TestImagePureGaussian::process_inplace(EMData * image)
 		norm *= 1.0f/ ( y_sigma*sr2pi );
 		if (nz > 1) norm  *= 1.0f/ ( z_sigma*sr2pi );
 	}
-	
+
 	for (int iz=0; iz < nz; iz++) {
 		float z = static_cast<float>(iz) - z_center;
 		for (int iy=0; iy < ny; iy++) {
@@ -5816,18 +5821,18 @@ void TestImagePureGaussian::process_inplace(EMData * image)
 void TestImageSphericalWave::process_inplace(EMData * image)
 {
 	preprocess(image);
-	
+
 	if(!params.has_key("wavelength")) {
 		LOGERR("%s wavelength is required parameter", get_name().c_str());
 		throw InvalidParameterException("wavelength parameter is required.");
 	}
 	float wavelength = params["wavelength"];
-		
+
 	float phase = 0;
 	if(params.has_key("phase")) {
 		phase = params["phase"];
 	}
-	
+
 	float x = 0;
 	if (params.has_key("x")) x=params["x"];
 	float y = 0;
@@ -5836,7 +5841,7 @@ void TestImageSphericalWave::process_inplace(EMData * image)
 	if (params.has_key("z")) z=params["z"];
 
 	int ndim = image->get_ndim();
-	
+
 	if(ndim==2) {	//2D
 		for(int j=0; j<ny; ++j) {
 			for(int i=0; i<nx; ++i) {
@@ -5846,7 +5851,7 @@ void TestImageSphericalWave::process_inplace(EMData * image)
 			}
 		}
 	}
-	else {	//3D 
+	else {	//3D
 		for(int k=0; k<nz; ++k) {
 			for(int j=0; j<ny; ++j) {
 				for(int i=0; i<nx; ++i) {
@@ -5857,34 +5862,34 @@ void TestImageSphericalWave::process_inplace(EMData * image)
 			}
 		}
 	}
-	
-	image->update();	
+
+	image->update();
 }
 
 
 void TestImageSinewave::process_inplace(EMData * image)
 {
 	preprocess(image);
-	
+
 	if(!params.has_key("wavelength")) {
 		LOGERR("%s wavelength is required parameter", get_name().c_str());
 		throw InvalidParameterException("wavelength parameter is required.");
 	}
 	float wavelength = params["wavelength"];
-	
+
 	string axis = "";
 	if(params.has_key("axis")) {
 		axis = (const char*)params["axis"];
 	}
-	
+
 	float phase = 0;
 	if(params.has_key("phase")) {
 		phase = params["phase"];
 	}
-	
+
 	int ndim = image->get_ndim();
 	float * dat = image->get_data();
-	
+
 	if(ndim==1) {	//1D
 		for(int i=0; i<nx; ++i, ++dat) {
 			*dat = sin(i*(2.0f*M_PI/wavelength) - phase*180/M_PI);
@@ -5898,7 +5903,7 @@ void TestImageSinewave::process_inplace(EMData * image)
 		for(int j=0; j<ny; ++j) {
 			for(int i=0; i<nx; ++i, ++dat) {
 				if(alpha != 0) {
-					*dat = sin((i*sin((180-alpha)*M_PI/180)+j*cos((180-alpha)*M_PI/180))*(2.0f*M_PI/wavelength) - phase*M_PI/180); 
+					*dat = sin((i*sin((180-alpha)*M_PI/180)+j*cos((180-alpha)*M_PI/180))*(2.0f*M_PI/wavelength) - phase*M_PI/180);
 				}
 				else if(axis.compare("y")==0 || axis.compare("Y")==0) {
 					*dat = sin(j*(2.0f*M_PI/wavelength) - phase*M_PI/180);
@@ -5906,10 +5911,10 @@ void TestImageSinewave::process_inplace(EMData * image)
 				else {
 					*dat = sin(i*(2.0f*M_PI/wavelength) - phase*M_PI/180);
 				}
-			} 
+			}
 		}
 	}
-	else {	//3D 
+	else {	//3D
 		float az = 0;
 		if(params.has_key("az")) {
 			az = params["az"];
@@ -5922,7 +5927,7 @@ void TestImageSinewave::process_inplace(EMData * image)
 		if(params.has_key("phi")) {
 			phi = params["phi"];
 		}
-		
+
 		for(int k=0; k<nz; ++k) {
 			for(int j=0; j<ny; ++j) {
 				for(int i=0; i<nx; ++i, ++dat) {
@@ -5938,26 +5943,26 @@ void TestImageSinewave::process_inplace(EMData * image)
 				}
 			}
 		}
-		
+
 		if(az != 0 || alt != 0 || phi != 0) {
 			Dict d("type","eman");
 			d["az"] = az; d["phi"] = phi; d["alt"] = alt;
 			image->transform(Transform(d));
 		}
 	}
-	
-	image->update();	
+
+	image->update();
 }
 
 void TestImageSinewaveCircular::process_inplace(EMData * image)
 {
 	preprocess(image);
-	
+
 	float wavelength = params["wavelength"];
 	string axis = (const char*)params["axis"];
 	float c = params["c"];
 	float phase = params["phase"];
-	
+
 	float *dat = image->get_data();
 	float r; //this is the distance of pixel from the image center(nx/2, ny/2, nz/2)
 	float x2, y2, z2; //this is the coordinates of this pixel from image center
@@ -5973,13 +5978,13 @@ void TestImageSinewaveCircular::process_inplace(EMData * image)
 				else if(axis == "x"){
 					float lc = -c;
 					float rc = c;
-					r = ( (float)sqrt((x2-lc)*(x2-lc)+y2*y2+z2*z2) + 
+					r = ( (float)sqrt((x2-lc)*(x2-lc)+y2*y2+z2*z2) +
 						  (float)sqrt((x2-rc)*(x2-rc)+y2*y2+z2*z2) ) /2.0f - c;
 				}
 				else if(axis == "y"){
 					float lc = -c;
 					float rc = c;
-					r = ( (float)sqrt(x2*x2+(y2-lc)*(y2-lc)+z2*z2) + 
+					r = ( (float)sqrt(x2*x2+(y2-lc)*(y2-lc)+z2*z2) +
 						  (float)sqrt(x2*x2+(y2-rc)*(y2-rc)+z2*z2) ) /2.0f - c;
 				}
 				else if(axis == "z"){
@@ -5988,7 +5993,7 @@ void TestImageSinewaveCircular::process_inplace(EMData * image)
 					}
 					float lc = -c;
 					float rc = c;
-					r = ( (float)sqrt(x2*x2+y2*y2+(z2-lc)*(z2-lc)) + 
+					r = ( (float)sqrt(x2*x2+y2*y2+(z2-lc)*(z2-lc)) +
 						  (float)sqrt(x2*x2+y2*y2+(z2-rc)*(z2-rc)) ) /2.0f - c;
 				}
 				else{
@@ -5998,19 +6003,19 @@ void TestImageSinewaveCircular::process_inplace(EMData * image)
 			}
 		}
 	}
-	
-	image->update();	
+
+	image->update();
 }
 
 void TestImageSquarecube::process_inplace(EMData * image)
 {
 	preprocess(image);
-	
+
 	float edge_length = params["edge_length"];
 	string axis = (const char*)params["axis"];
 	float odd_edge = params["odd_edge"];
 	int fill = (int)params["fill"];
-	
+
 	float *dat = image->get_data();
 	float x2, y2, z2; //this coordinates of this pixel from center
 	float xEdge, yEdge, zEdge; //half of edge length for this cube
@@ -6049,7 +6054,7 @@ void TestImageSquarecube::process_inplace(EMData * image)
 				if( x2<=xEdge && y2<=yEdge && z2<=zEdge ) {
 					if( !fill) {
 						*dat = 0;
-					} 
+					}
 					else {
 						*dat = 1;
 					}
@@ -6065,19 +6070,19 @@ void TestImageSquarecube::process_inplace(EMData * image)
 			}
 		}
 	}
-	
+
 	image->update();
 }
 
 void TestImageCirclesphere::process_inplace(EMData * image)
 {
 	preprocess(image);
-	
+
 	float radius = params.set_default("radius",nx/2.0f);
 	string axis = (const char*)params["axis"];
 	float c =  params.set_default("c",nx/2.0f);
 	int fill = params.set_default("fill",1);
-	
+
 	float *dat = image->get_data();
 	float x2, y2, z2; //this is coordinates of this pixel from center
 	float r = 0.0f;
@@ -6091,16 +6096,16 @@ void TestImageCirclesphere::process_inplace(EMData * image)
 	else if(axis=="z"){
 		if( nz == 1 ){
 			throw InvalidValueException(0, "This is a 2D image, no asymmetric feature for z axis");
-		}			
+		}
 		asy = c;
 	}
 	else{
 		throw InvalidValueException(0, "please specify a valid axis for asymmetric features");
 	}
-	
+
 	for (int k = 0; k < nz; k++) {
 		for (int j = 0; j < ny; j++) {
-			for (int i = 0; i < nx; i++, dat++) {				
+			for (int i = 0; i < nx; i++, dat++) {
 				x2 = fabs((float)i - nx/2);
 				y2 = fabs((float)j - ny/2);
 				z2 = fabs((float)k - nz/2);
@@ -6119,7 +6124,7 @@ void TestImageCirclesphere::process_inplace(EMData * image)
 				if( r<=1 ) {
 					if( !fill) {
 						*dat = 0;
-					} 
+					}
 					else {
 						*dat = 1;
 					}
@@ -6135,60 +6140,60 @@ void TestImageCirclesphere::process_inplace(EMData * image)
 			}
 		}
 	}
-	
+
 	image->update();
 }
 
 void TestImageNoiseUniformRand::process_inplace(EMData * image)
 {
 	preprocess(image);
-	
+
 	Randnum * r = Randnum::Instance();
 	if(params.has_key("seed")) {
 		r->set_seed((int)params["seed"]);
 	}
-	
+
 	float *dat = image->get_data();
 	for (int i=0; i<nx*ny*nz; i++) {
 		dat[i] = r->get_frand();
 	}
-	
+
 	image->update();
 }
 
 void TestImageNoiseGauss::process_inplace(EMData * image)
 {
 	preprocess(image);
-	
+
 	float sigma = params["sigma"];
 	if (sigma<=0) { sigma = 1.0; }
 	float mean = params["mean"];
-	
+
 	Randnum * r = Randnum::Instance();
 	if (params.has_key("seed")) {
 		r->set_seed((int)params["seed"]);
 	}
-	
+
 	float *dat = image->get_data();
 	for (int i=0; i<nx*ny*nz; i++) {
 		dat[i] = r->get_gauss_rand(mean, sigma);
 	}
-	
+
 	image->update();
 }
 
 void TestImageCylinder::process_inplace(EMData * image)
 {
 	preprocess(image);
-	
+
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
-	
+
 	if(nz == 1) {
 		throw ImageDimensionException("This processor only apply to 3D image");
-	} 
-	
+	}
+
 	float radius = params["radius"];
 #ifdef _WIN32
 	if(radius > _cpp_min(nx, ny)/2.0) {
@@ -6197,7 +6202,7 @@ void TestImageCylinder::process_inplace(EMData * image)
 #endif
 		throw InvalidValueException(radius, "radius must be <= min(nx, ny)/2");
 	}
-	
+
 	float height;
 	if(params.has_key("height")) {
 		height = params["height"];
@@ -6208,17 +6213,17 @@ void TestImageCylinder::process_inplace(EMData * image)
 	else {
 		height = static_cast<float>(nz);
 	}
-	
+
 	float *dat = image->get_data();
 	float x2, y2; //this is coordinates of this pixel from center axle
 	float r = 0.0f;
 	for (int k = 0; k < nz; k++) {
 		for (int j = 0; j < ny; j++) {
-			for (int i = 0; i < nx; i++, dat++) {				
+			for (int i = 0; i < nx; i++, dat++) {
 				x2 = fabs((float)i - nx/2);
 				y2 = fabs((float)j - ny/2);
 				r = (x2*x2)/(radius*radius) + (y2*y2)/(radius*radius);
-				
+
 				if(r<=1 && k>=(nz-height)/2 && k<=(nz+height)/2) {
 					*dat = 1;
 				}
@@ -6228,7 +6233,7 @@ void TestImageCylinder::process_inplace(EMData * image)
 			}
 		}
 	}
-	
+
 	image->update();
 }
 
@@ -6248,12 +6253,12 @@ void RampProcessor::process_inplace(EMData * image)
 	int nrow = image->get_ysize();
 	int n1 = nsam / 2;
 	double sx1 = double(n1)*double(nsam+1);
-	if ( nsam % 2 == 1 ) 
+	if ( nsam % 2 == 1 )
 		sx1 += 1 + n1;
 	sx1 *= nrow;
 	int n2 = nrow / 2;
 	double sx2 = double(n2)*double(nrow+1);
-	if ( nrow % 2 == 1 ) 
+	if ( nrow % 2 == 1 )
 		sx2 += 1 + n2;
 	sx2 *= nsam;
 	float *data = image->get_data();
@@ -6309,7 +6314,7 @@ void CCDNormProcessor::process_inplace(EMData * image)
 	}
 	if (image->get_zsize() > 1) {
 	  Log::logger()->set_level(Log::ERROR_LOG);
-	  Log::logger()->error("CCDNorm does not support 3d images\n");	  
+	  Log::logger()->error("CCDNorm does not support 3d images\n");
 	  return;
 	}
 
@@ -6407,28 +6412,28 @@ void CCDNormProcessor::process_inplace(EMData * image)
 
 }
 
-void WaveletProcessor::process_inplace(EMData *image) 
+void WaveletProcessor::process_inplace(EMData *image)
 {
 	if (image->get_zsize() != 1) {
 			LOGERR("%s Processor doesn't support 3D", get_name().c_str());
 			throw ImageDimensionException("3D model not supported");
-	}	
+	}
 
 	int i,nx,ny;
 	const gsl_wavelet_type * T;
 	nx=image->get_xsize();
 	ny=image->get_ysize();
-	
+
 	if (nx != ny && ny!=1) throw ImageDimensionException("Wavelet transform only supports square images");
 //	float l=log((float)nx)/log(2.0f);
 //	if (l!=floor(l)) throw ImageDimensionException("Wavelet transform size must be power of 2");
 	if( !Util::IsPower2(nx) )  throw ImageDimensionException("Wavelet transform size must be power of 2");
-	
+
 	// Unfortunately GSL works only on double() arrays
 	// eventually we should put our own wavelet code in here
 	// but this will work for now
 	double *cpy = (double *)malloc(nx*ny*sizeof(double));
-	
+
 	for (i=0; i<nx*ny; i++) cpy[i]=image->get_value_at(i,0,0);
 
 	string tp = (const char*)params["type"];
@@ -6436,7 +6441,7 @@ void WaveletProcessor::process_inplace(EMData *image)
 	else if (tp=="harr") T=gsl_wavelet_haar;
 	else if (tp=="bspl") T=gsl_wavelet_bspline;
 	else throw InvalidStringException(tp,"Invalid wavelet name, 'daub', 'harr' or 'bspl'");
-	
+
 	int K=(int)params["ord"];
 	gsl_wavelet_direction dir;
 	if ((int)params["dir"]==1) dir=forward;
@@ -6452,7 +6457,7 @@ void WaveletProcessor::process_inplace(EMData *image)
 	gsl_wavelet_free (w);
 
 	for (i=0; i<nx*ny; i++) image->set_value_at_fast(i,0,0,static_cast<float>(cpy[i]));
-	
+
 	free(cpy);
 }
 
@@ -6474,20 +6479,20 @@ void RadialProcessor::process_inplace(EMData * image)
 		LOGWARN("NULL Image");
 		return;
 	}
-	
+
 	//Note : real image only!
 	if(image->is_complex()) {
 		LOGERR("%s Processor only operates on real images", get_name().c_str());
 		throw ImageFormatException("apply to real image only");
 	}
-	
+
 	vector<float> table = params["table"];
 	vector<float>::size_type tsize = table.size();
-	
+
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
-	
+
 	int nx2 = nx / 2;
 	int ny2 = ny / 2;
 	int nz2 = nz / 2;
@@ -6506,7 +6511,7 @@ void RadialProcessor::process_inplace(EMData * image)
 	for(int i=tsize+1; i<maxsize; i++) {
 		table.push_back(0.0f);
 	}
-	
+
 	float dx = 1.0f / (float)nx;
 	float dy = 1.0f / (float)ny;
 	float dz = 1.0f / (float)nz;
@@ -6520,54 +6525,54 @@ void RadialProcessor::process_inplace(EMData * image)
 	for(iz=1; iz<=nz; iz++) {
 		jz = iz - 1;
 		if(jz > nz2) {
-			jz -= nz; 
+			jz -= nz;
 		}
 		argz = float(jz*jz) * dz2;
-		
+
 		for(iy=1; iy<=ny; iy++) {
 			jy = iy - 1;
 			if(jy > ny2) {
 				jy -= ny;
 			}
 			argy = argz + float(jy*jy) * dy2;
-			
+
 			for(ix=1; ix<=nx; ix++) {
 				jx = ix -1;
 				argx = argy + float(jx*jx)*dx2;
-				
+
 				rf = sqrt(argx)*2.0f*nx2;
 				ir = int(rf);
 				df = rf - float(ir);
 				f = table[ir] + df*(table[ir+1]-table[ir]);
-				
+
 				(*image)(ix-1,iy-1,iz-1) *= f;
 			}
 		}
 	}
-	
+
 	image->update();
 }
 
-void MirrorProcessor::process_inplace(EMData *image) 
+void MirrorProcessor::process_inplace(EMData *image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
 		return;
 	}
-	
+
 	string axis = (const char*)params["axis"];
 
 	float* data = image->EMData::get_data();
-	
+
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
-	int nz = image->get_zsize();	 
+	int nz = image->get_zsize();
 	int nxy = nx*ny;
-	
+
 	int x_start = 1-nx%2;
 	int y_start = 1-ny%2;
 	int z_start = 1-nz%2;
-	
+
 	if (axis == "x" || axis == "X") {
  	        for (int iz = 0; iz < nz; iz++)
 			for (int iy = 0; iy < ny; iy++) {
@@ -6575,7 +6580,7 @@ void MirrorProcessor::process_inplace(EMData *image)
                          	 reverse(&data[offset+x_start],&data[offset+nx]);
 		         }
          }
-	 
+
          if (axis == "y" || axis == "Y") {
                 float *tmp = new float[nx];
 	         int nhalf   = ny/2;
@@ -6589,8 +6594,8 @@ void MirrorProcessor::process_inplace(EMData *image)
 			}
 		}
 		delete[] tmp;
-	}			 
-	 
+	}
+
          if (axis == "z" || axis == "Z") {
 	 	if(1-z_start){
 			int nhalf = nz/2;
@@ -6617,16 +6622,16 @@ void MirrorProcessor::process_inplace(EMData *image)
 			delete[] tmp;
 		}
          }
-	 
+
 	 image->update();
 }
 
- 
+
 int EMAN::multi_processors(EMData * image, vector < string > processornames)
 {
 	Assert(image != 0);
 	Assert(processornames.size() > 0);
-	
+
 	for (size_t i = 0; i < processornames.size(); i++) {
 		image->process_inplace(processornames[i]);
 	}
@@ -6635,28 +6640,28 @@ int EMAN::multi_processors(EMData * image, vector < string > processornames)
 
 
 float* TransformProcessor::transform(const EMData* const image, const Transform& t) {
-	
+
 	ENTERFUNC;
 
 	Transform inv = t.inverse();
-	 
-	
+
+
 	const float * const src_data = image->get_const_data();
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
 	int nxy = nx*ny;
-	
+
 	float *des_data = (float *) malloc(nx*ny*nz* sizeof(float));
-	
+
 	if (nz == 1) {
 		Vec2f offset(nx/2,ny/2);
 		for (int j = 0; j < ny; j++) {
-			for (int i = 0; i < nx; i++) {				
+			for (int i = 0; i < nx; i++) {
 				Vec2f coord(i-nx/2,j-ny/2);
 				Vec2f soln = inv*coord;
 				soln += offset;
-					
+
 				float x2 = soln[0];
 				float y2 = soln[1];
 
@@ -6683,7 +6688,7 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 
 					float t = x2 - ii;
 					float u = y2 - jj;
-					
+
 					des_data[i + j * nx] = Util::bilinear_interpolate(src_data[k0],src_data[k1], src_data[k2], src_data[k3],t,u);
 				}
 			}
@@ -6698,7 +6703,7 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 					Vec3f coord(i-nx/2,j-ny/2,k-nz/2);
 					Vec3f soln = inv*coord;
 					soln += offset;
-					
+
 					float x2 = soln[0];
 					float y2 = soln[1];
 					float z2 = soln[2];
@@ -6723,7 +6728,7 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 						int k5 = k1 + nxy;
 						int k6 = k2 + nxy;
 						int k7 = k3 + nxy;
-	
+
 						if (ix == nx - 1) {
 							k1--;
 							k3--;
@@ -6742,7 +6747,7 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 							k6 -= nxy;
 							k7 -= nxy;
 						}
-	
+
 						des_data[l] = Util::trilinear_interpolate(src_data[k0],
 								src_data[k1], src_data[k2], src_data[k3], src_data[k4],
 								src_data[k5], src_data[k6],	src_data[k7], tuvx, tuvy, tuvz);
@@ -6751,7 +6756,7 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			}
 		}
 	}
-	
+
 	EXITFUNC;
 	return des_data;
 }
@@ -6759,22 +6764,22 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 void TransformProcessor::assert_valid_aspect(const EMData* const image) {
 	int ndim = image->get_ndim();
 	if (ndim != 2 && ndim != 3) throw ImageDimensionException("Transforming an EMData only works if it's 2D or 3D");
-	
+
 	Transform* t = params.set_default("transform",(Transform*)0);
 	if (t == 0) throw InvalidParameterException("You must specify a Transform in order to perform this operation");
 }
 
 EMData* TransformProcessor::process(const EMData* const image) {
 	ENTERFUNC;
-	
+
 	assert_valid_aspect(image);
-	
+
 	Transform* t = params["transform"];
-	
+
 	float* des_data = transform(image,*t);
 	EMData* p = new EMData(des_data,image->get_xsize(),image->get_ysize(),image->get_zsize());
 	// 	all_translation += transform.get_trans();
-	
+
 	float scale = t->get_scale();
 	if (scale != 1.0) {
 		Dict attr_dict = image->get_attr_dict();
@@ -6786,7 +6791,7 @@ EMData* TransformProcessor::process(const EMData* const image) {
 	}
 
 	return p;
-	
+
 	EXITFUNC;
 }
 
@@ -6794,15 +6799,15 @@ void TransformProcessor::process_inplace(EMData* image) {
 	ENTERFUNC;
 
 	assert_valid_aspect(image);
-	
+
 	Transform* t = params["transform"];
 
 	float* des_data = transform(image,*t);
-	
+
 	// 	all_translation += transform.get_trans();
-	
+
 	image->set_data(des_data,image->get_xsize(),image->get_ysize(),image->get_zsize());
-	
+
 	float scale = t->get_scale();
 	if (scale != 1.0) {
 		Dict attr = image->get_attr_dict();
@@ -6815,7 +6820,7 @@ void TransformProcessor::process_inplace(EMData* image) {
 	}
 
 	image->update();
-	
+
 	EXITFUNC;
 }
 
@@ -6831,13 +6836,13 @@ void Rotate180Processor::process_inplace(EMData* image) {
 	float *d = image->get_data();
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
-	
+
 	// x and y offsets are used to handle even vs odd cases
 	int x_offset = 0;
 	if (nx % 2 == 1) x_offset=1;
 	int y_offset = 0;
 	if (ny % 2 == 1) y_offset=1;
-	
+
 	bool stop = false;
 	for (int x = 1; x <= (nx/2+x_offset); x++) {
 		int y = 0;
@@ -6868,17 +6873,17 @@ void Rotate180Processor::process_inplace(EMData* image) {
 			image->set_value_at_fast(0,y,image->get_value_at(1,y));
 		}
 	}
-	
+
 	if (y_offset == 0) {
 		for (int x = 0; x < nx; x++) {
 			image->set_value_at_fast(x,0,image->get_value_at(x,1));
 		}
 	}
-	
+
 	if (y_offset == 0 && x_offset == 0) {
 		image->set_value_at_fast(0,0,image->get_value_at(1,1));
 	}
-	
+
 	image->update();
 	EXITFUNC;
 }
@@ -6886,7 +6891,7 @@ void Rotate180Processor::process_inplace(EMData* image) {
 
 void ClampingProcessor::process_inplace( EMData* image )
 {
-	
+
 	if ( image->is_complex() ) throw ImageFormatException("Error: clamping processor does not work on complex images");
 
 	float min = params.set_default("minval",default_min);
@@ -6895,15 +6900,15 @@ void ClampingProcessor::process_inplace( EMData* image )
 	float new_min_vals = min;
 	float new_max_vals = max;
 	if (tomean){
-		
+
 		new_min_vals = image->get_attr("mean");
 		new_max_vals = image->get_attr("mean");
 	}
-	
+
 	// Okay, throwing such an error is probably overkill - but atleast the user will get a loud message
 	// saying what went wrong.
 	if ( max < min ) throw InvalidParameterException("Error: minval was greater than maxval, aborting");
-	
+
 	int size = image->get_xsize()*image->get_ysize()*image->get_zsize();
 	for(int i = 0; i < size; ++i )
 	{
@@ -6919,11 +6924,11 @@ void TestTomoImage::insert_rectangle( EMData* image, const Region& region, const
 	int startx = (int)region.origin[0] - (int)region.size[0]/2;
 	int starty = (int)region.origin[1] - (int)region.size[1]/2;
 	int startz = (int)region.origin[2] - (int)region.size[2]/2;
-	
+
 	int endx  = (int)region.origin[0] + (int)region.size[0]/2;
 	int endy  = (int)region.origin[1] + (int)region.size[1]/2;
 	int endz  = (int)region.origin[2] + (int)region.size[2]/2;
-	
+
 	if ( ! t3d.is_identity() ) {
 		for ( float z = (float)startz; z < (float)endz; z += 0.25f ) {
 			for ( float y = (float)starty; y < (float)endy; y += 0.25f ) {
@@ -6937,7 +6942,7 @@ void TestTomoImage::insert_rectangle( EMData* image, const Region& region, const
 				}
 			}
 		}
-	} else {	
+	} else {
 		for ( int z = startz; z < endz; ++z ) {
 			for ( int y = starty; y < endy; ++y ) {
 				for ( int x = startx; x < endx; ++x ) {
@@ -6953,21 +6958,21 @@ void TestTomoImage::insert_solid_ellipse( EMData* image, const Region& region, c
 	int originx = (int)region.origin[0];
 	int originy = (int)region.origin[1];
 	int originz = (int)region.origin[2];
-	
+
 	int radiusx  = (int)region.size[0];
 	int radiusy  = (int)region.size[1];
 	int radiusz = (int)region.size[2];
-	
+
 	int maxrad = ( radiusx > radiusy ? radiusx : radiusy );
 	maxrad = ( maxrad > radiusz ? maxrad : radiusz );
-	
+
 	float length = (float)(radiusx*radiusx + radiusy*radiusy + radiusz*radiusz);
 	length = sqrtf(length);
-	
+
 	float xinc = radiusx/length/2.0f;
 	float yinc = radiusy/length/2.0f;
 	float zinc = radiusz/length/2.0f;
-	
+
 	for ( float rad = 0; rad <= 2.0*length; rad += 1.0 ) {
 		float rx = xinc + rad*xinc;
 		float ry = yinc + rad*yinc;
@@ -7000,11 +7005,11 @@ void TestTomoImage::insert_hollow_ellipse( EMData* image, const Region& region, 
 	int originx = (int)region.origin[0];
 	int originy = (int)region.origin[1];
 	int originz = (int)region.origin[2];
-	
+
 	int radiusx  = (int)region.size[0];
 	int radiusy  = (int)region.size[1];
 	int radiusz = (int)region.size[2];
-	
+
 	for ( int rad = 0; rad <= radius; ++rad ) {
 		int tmprad = rad - radius/2;
 		int rx = radiusx + tmprad;
@@ -7014,7 +7019,7 @@ void TestTomoImage::insert_hollow_ellipse( EMData* image, const Region& region, 
 			for ( float lambda = -180.0f; lambda <= 180.0f; lambda += 0.2f ) {
 				float b = (float)(deg2rad * beta);
 				float l = (float)(deg2rad * lambda);
-				
+
 				if ( !t3d.is_identity()) {
 					float z = rz * sin(b);
 					float y = ry * cos(b) * sin(l);
@@ -7039,86 +7044,86 @@ void TestTomoImage::process_inplace( EMData* image )
 	float nx = 240;
 	float ny = 240;
 	float nz = 60;
-	
+
 	// This increment is used to simplified positioning
 	// It's an incremental factor that matches the grid size of the paper
 	// that I drew this design on before implementing it in code
 	float inc = 1.0f/22.0f;
-	
+
 	image->set_size((int)nx,(int)ny,(int)nz);
-	
+
 	Region region(nx/2.0,ny/2.,nz/2.,.4*nx,0.4*ny,0.4*nz);
 	insert_solid_ellipse(image, region, 0.1f);
-	insert_hollow_ellipse(image, region, 0.2f, 3);	
-	
+	insert_hollow_ellipse(image, region, 0.2f, 3);
+
 	// Center x, center z, bottom y ellipsoids that grow progessively smaller
 	{
 		Region region(nx/2.,ny*4.*inc,nz/2.,2.*inc*nx,0.5*inc*ny,1.*inc*nz);
 		insert_solid_ellipse(image, region, 0.3f);
 	}
-	
+
 	{
 		Region region(nx/2.,ny*5.5*inc,nz/2.,1.5*inc*nx,.5*inc*ny,1.*inc*nz);
 		insert_solid_ellipse(image, region, 0.0f);
 	}
-	
+
 	{
 		Region region(nx/2.,ny*7.*inc,nz/2.,1.*inc*nx,0.5*inc*ny,1.*inc*nz);
 		insert_solid_ellipse(image, region, 0.3f);
 	}
-	
+
 	{
 		Region region(nx/2.,ny*8.5*inc,nz/2.,0.75*inc*nx,0.5*inc*ny,1.*inc*nz);
 		insert_solid_ellipse(image, region, 0.0f);
 	}
-	
+
 	// Center x, center z, bottom y ellipsoids that grow progessively smaller
 	{
 		Region region(nx/2.,ny*18.*inc,nz/2.,2.*inc*nx,0.5*inc*ny,1.*inc*nz);
 		insert_solid_ellipse(image, region, 0.3f);
 	}
-	
+
 	{
 		Region region(nx/2.,ny*16.5*inc,nz/2.,1.5*inc*nx,.5*inc*ny,1.*inc*nz);
 		insert_solid_ellipse(image, region, 0.3f);
 	}
-	
+
 	{
 		Region region(nx/2.,ny*15.*inc,nz/2.,1.*inc*nx,0.5*inc*ny,1.*inc*nz);
 		insert_solid_ellipse(image, region, 0.3f);
 	}
-	
+
 	{
 		Region region(nx/2.,ny*13.5*inc,nz/2.,0.75*inc*nx,0.5*inc*ny,1.*inc*nz);
 		insert_solid_ellipse(image, region, 0.3f);
 	}
-	
+
 	// Left ellipsoids from the bottom up
 	{
 		Region region(nx*7.*inc,ny*5.*inc,nz/2.,1.*inc*nx,0.75*inc*ny,1.5*inc*nz);
 		insert_solid_ellipse(image, region, 0.25);
 	}
-	
+
 	{
 		Region region(nx*7.*inc,ny*7.*inc,nz/2.,1.5*inc*nx,0.75*inc*ny,1.5*inc*nz);
 		insert_solid_ellipse(image, region, 0.25);
 	}
-	
+
 	{
 		Region region(nx*7.*inc,ny*9.*inc,nz/2.,2.*inc*nx,0.75*inc*ny,1.*inc*nz);
 		insert_solid_ellipse(image, region, 0.25);
 	}
-	
+
 	{
 		Region region(nx*7.*inc,ny*11.*inc,nz/2.,2.5*inc*nx,0.75*inc*ny,1.*inc*nz);
 		insert_solid_ellipse(image, region, 0.25);
 	}
-	
+
 	{
 		Region region(nx*7.*inc,ny*13.*inc,nz/2.,3.*inc*nx,0.75*inc*ny,1.*inc*nz);
 		insert_solid_ellipse(image, region, 0.25);
 	}
-	
+
 	// Right rectangle from the top down
 	{
 		Region region(nx*15.*inc,ny*17.*inc,nz/2.,1.*inc*nx,1.5*inc*ny,1.5*inc*nz);
@@ -7140,14 +7145,14 @@ void TestTomoImage::process_inplace( EMData* image )
 		Region region(nx*15.*inc,ny*9.*inc,nz/2.,3.*inc*nx,1.5*inc*ny,1.5*inc*nz);
 		insert_rectangle(image, region, 0.25);
 	}
-	
+
 	// Center rotated rectangle
 	{
 		Region region(nx/2.,ny/2.,nz/2.,2.*inc*nx,2.5*inc*ny,1.*inc*nz);
 		Transform t3d(Dict("type","eman","az",(float)-25.0));
 		insert_rectangle(image, region, 0.4f, t3d);
 	}
-	
+
 	// Rotated ellipsoids
 	{
 		Region region(nx*6.8*inc,ny*16.*inc,nz/2.,1.5*inc*nx,0.5*inc*ny,0.5*inc*nz);
@@ -7159,7 +7164,7 @@ void TestTomoImage::process_inplace( EMData* image )
 		Transform t3d(Dict("type","eman","az",(float)135.0));
 		insert_solid_ellipse(image, region, 0.3f, t3d);
 	}
-	
+
 	// Dense small ellipsoids
 	{
 		Region region(nx*4.*inc,ny*8.*inc,nz/2.,0.5*inc*nx,0.5*inc*ny,0.5*inc*nz);
@@ -7173,17 +7178,17 @@ void TestTomoImage::process_inplace( EMData* image )
 		Region region(nx*14.*inc,ny*18.2*inc,nz/2.,0.5*inc*nx,0.5*inc*ny,0.5*inc*nz);
 		insert_solid_ellipse(image, region, 2.05f);
 	}
-	
+
 	{
 		Region region(nx*18.*inc,ny*14.*inc,nz/2.,0.5*inc*nx,0.5*inc*ny,0.5*inc*nz);
 		insert_solid_ellipse(image, region, 2.05f);
 	}
-	
+
 	{
 		Region region(nx*17.*inc,ny*7.5*inc,nz/2.,0.5*inc*nx,0.5*inc*ny,0.5*inc*nz);
 		insert_solid_ellipse(image, region, 2.05f);
 	}
-	
+
 	// Dense small rectangles
 	{
 		Region region(nx*18.*inc,ny*11.5*inc,nz/2.,1.*inc*nx,1.*inc*ny,1.*inc*nz);
@@ -7195,7 +7200,7 @@ void TestTomoImage::process_inplace( EMData* image )
 		Transform t3d(Dict("type","eman","az",(float)45.0));
 		insert_rectangle(image, region, 1.45f, t3d);
 	}
-	
+
 	// Insert small cluster of spheres
 	{
 		Region region(nx*14.*inc,ny*7.5*inc,nz/2.,0.5*inc*nx,0.5*inc*ny,0.5*inc*nz);
@@ -7217,7 +7222,7 @@ void TestTomoImage::process_inplace( EMData* image )
 		Region region(nx*15.5*inc,ny*6.5*inc,nz/2.,0.25*inc*nx,0.25*inc*ny,0.25*inc*nz);
 		insert_solid_ellipse(image, region, .35f);
 	}
-	
+
 	{
 		Region region(nx*14.*inc,ny*5.5*inc,nz/2.,0.25*inc*nx,0.25*inc*ny,0.25*inc*nz);
 		insert_solid_ellipse(image, region, .35f);
@@ -7239,7 +7244,7 @@ void TestTomoImage::process_inplace( EMData* image )
 		Region region(nx*15.5*inc,ny*4.5*inc,nz/2.,0.25*inc*nx,0.25*inc*ny,0.25*inc*nz);
 		insert_solid_ellipse(image, region, .35f);
 	}
-	
+
 	// Insert feducials around the outside of the "cell"
 // 	for ( float i = 0.; i < 3.; i += 1. ) {
 // 		for ( float j = 0.; j < 3.; j += 1. ) {
@@ -7247,7 +7252,7 @@ void TestTomoImage::process_inplace( EMData* image )
 // 			insert_solid_ellipse(image, region, 2.0);
 // 		}
 // 	}
-	
+
 }
 
 void NSigmaClampingProcessor::process_inplace(EMData *image)
@@ -7257,7 +7262,7 @@ void NSigmaClampingProcessor::process_inplace(EMData *image)
 	float mean = image->get_attr("mean");
 	params.set_default("minval",mean - nsigma*sigma);
 	params.set_default("maxval",mean + nsigma*sigma);
-				
+
 	ClampingProcessor::process_inplace(image);
 }
 
@@ -7267,40 +7272,40 @@ void HistogramBin::process_inplace(EMData *image)
 	float max = image->get_attr("maximum");
 	float nbins = params.set_default("nbins",default_bins);
 	bool debug = params.set_default("debug",false);
-	
+
 	vector<int> debugscores;
 	if ( debug ) {
 		debugscores = vector<int>((int)nbins, 0);
 	}
-	
+
 	if ( nbins < 0 ) throw InvalidParameterException("nbins must be greater than 0");
-	
+
 	float bin_width = (max-min)/nbins;
 	float bin_val_offset = bin_width/2.0f;
-	
+
 	int size = image->get_xsize()*image->get_ysize()*image->get_zsize();
 	float* dat = image->get_data();
-	
+
 	for(int i = 0; i < size; ++i ) {
 		float val = dat[i];
 		val -= min;
 		int bin = (int) (val/bin_width);
-		
+
 		// This makes the last interval [] and not [)
 		if (bin == nbins) bin -= 1;
-		
+
 		dat[i] = min + bin*bin_width + bin_val_offset;
 		if ( debug ) {
 			debugscores[bin]++;
 		}
 	}
-	
+
 	if ( debug ) {
 		int i = 0;
 		for( vector<int>::const_iterator it = debugscores.begin(); it != debugscores.end(); ++it, ++i)
 			cout << "Bin " << i << " has " << *it << " pixels in it" << endl;
 	}
-	
+
 }
 void ConvolutionProcessor::process_inplace(EMData* image)
 {
@@ -7310,7 +7315,7 @@ void ConvolutionProcessor::process_inplace(EMData* image)
 	if ( with == NULL ) throw InvalidParameterException("Error - the image required for the convolution is null");
 
 	EMData* newimage = fourierproduct(image, with, CIRCULANT, CONVOLUTION, false);
-	
+
 	float* orig = image->get_data();
 	float* work = newimage->get_data();
 	int nx  = image->get_xsize();
@@ -7318,26 +7323,26 @@ void ConvolutionProcessor::process_inplace(EMData* image)
 	int nz  = image->get_zsize();
 	memcpy(orig,work,nx*ny*nz*sizeof(float));
 	image->update();
-	
+
 	delete newimage;
 }
 
 void XGradientProcessor::process_inplace( EMData* image )
 {
 	if (image->is_complex()) throw ImageFormatException("Cannot edge detect a complex image");
-	
+
 	EMData* e = new EMData();
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
-	
+
 	if ( nz == 1 && ny == 1 ) {
 		if ( nx < 3 ) throw ImageDimensionException("Error - cannot edge detect an image with less than three pixels");
-		
+
 		e->set_size(3,1,1);
 		e->set_value_at(0,-1);
 		e->set_value_at(2, 1);
-		
+
 		Region r = Region(-nx/2+1,nx);
 		e->clip_inplace(r);
 	} else if ( nz == 1 ) {
@@ -7346,7 +7351,7 @@ void XGradientProcessor::process_inplace( EMData* image )
 		e->set_value_at(0,0,-1);
 		e->set_value_at(0,1,-2);
 		e->set_value_at(0,2,-1);
-		
+
 		e->set_value_at(2,0,1);
 		e->set_value_at(2,1,2);
 		e->set_value_at(2,2,1);
@@ -7364,7 +7369,7 @@ void XGradientProcessor::process_inplace( EMData* image )
 		e->set_value_at(0,0,2,-1);
 		e->set_value_at(0,1,2,-1);
 		e->set_value_at(0,2,2,-1);
-		
+
 		e->set_value_at(2,0,0,1);
 		e->set_value_at(2,1,0,1);
 		e->set_value_at(2,2,0,1);
@@ -7374,16 +7379,16 @@ void XGradientProcessor::process_inplace( EMData* image )
 		e->set_value_at(2,0,2,1);
 		e->set_value_at(2,1,2,1);
 		e->set_value_at(2,2,2,1);
-		
+
 		Region r = Region(-nx/2+1,-ny/2+1,-nz/2+1,nx,ny,nz);
 		e->clip_inplace(r);
 	}
-	
+
 	Dict conv_parms;
 	conv_parms["with"] = e;
 	image->process_inplace("convolution", conv_parms);
 	image->process_inplace("xform.phaseorigin.tocenter");
-	
+
 	delete e;
 }
 
@@ -7396,7 +7401,7 @@ void TomoTiltAngleWeightProcessor::process_inplace( EMData* image )
 		alt = image->get_attr("euler_alt");
 	}
 	else alt = params.set_default("angle", 0.0f);
-	
+
 	float cosine = cos(alt*M_PI/180.0f);
 	float mult_fac =  1.0f/(cosine);
 	image->mult( mult_fac );
@@ -7408,29 +7413,29 @@ void TomoTiltEdgeMaskProcessor::process_inplace( EMData* image )
 	bool edgemean = params.set_default("edgemean", false);
 	// You can only do one of these - so if someone specifies them both the code complains loudly
 	if (biedgemean && edgemean) throw InvalidParameterException("The edgemean and biedgemean options are mutually exclusive");
-	
+
 	bool fim = params.set_default("angle_fim", false);
 	float alt;
 	if ( fim ) {
 		alt = image->get_attr("euler_alt");
 	}
 	else alt = params.set_default("angle", 0.0f);
-	
-	
+
+
 	float cosine = cos(alt*M_PI/180.0f);
-		
+
 	// Zero the edges
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int x_clip = static_cast<int>( (float) nx * ( 1.0 - cosine ) / 2.0);
-	
+
 	float x1_edge_mean = 0.0;
 	float x2_edge_mean = 0.0;
 
 	if ( biedgemean )
 	{
 		float edge_mean = 0.0;
-			
+
 		// Accrue the pixel densities on the side strips
 		for ( int i = 0; i < ny; ++i ) {
 			edge_mean += image->get_value_at(x_clip, i );
@@ -7438,7 +7443,7 @@ void TomoTiltEdgeMaskProcessor::process_inplace( EMData* image )
 		}
 		// Now make it so the mean is stored
 		edge_mean /= 2*ny;
-		
+
 		// Now shift pixel values accordingly
 		for ( int i = 0; i < ny; ++i ) {
 			for ( int j = nx-1; j >= nx - x_clip; --j) {
@@ -7459,7 +7464,7 @@ void TomoTiltEdgeMaskProcessor::process_inplace( EMData* image )
 		}
 		x1_edge_mean /= ny;
 		x2_edge_mean /= ny;
-		
+
 		for ( int i = 0; i < ny; ++i ) {
 			for ( int j = 0; j < x_clip; ++j) {
 				image->set_value_at(j,i,x1_edge_mean);
@@ -7471,7 +7476,7 @@ void TomoTiltEdgeMaskProcessor::process_inplace( EMData* image )
 	}
 	else
 	{
-		// The edges are just zeroed - 
+		// The edges are just zeroed -
 		Dict zero_dict;
 		zero_dict["x0"] = x_clip;
 		zero_dict["x1"] = x_clip;
@@ -7487,21 +7492,21 @@ void TomoTiltEdgeMaskProcessor::process_inplace( EMData* image )
 		// go beyond the image boundaries. Thus we clamp gauss_rad so this cannot happen.
 		// Therefore, there is potential here for (benevolent) unexpected behavior.
 		if ( gauss_rad > x_clip ) gauss_rad = x_clip;
-		
+
 		float gauss_sigma = params.set_default("gauss_sigma", 3.0f);
 		if ( gauss_sigma < 0 ) throw InvalidParameterException("Error - you must specify a positive, non-zero gauss_sigma");
 		float sigma = (float) gauss_rad/gauss_sigma;
-		
+
 		GaussianFunctoid gf(sigma);
-		
+
 		for ( int i = 0; i < ny; ++i ) {
-			
+
 			float left_value = image->get_value_at(x_clip, i );
 			float scale1 = left_value-x1_edge_mean;
-			
+
 			float right_value = image->get_value_at(nx - x_clip - 1, i );
 			float scale2 = right_value-x2_edge_mean;
-			
+
 			for ( int j = 1; j < gauss_rad; ++j )
 			{
 				image->set_value_at(x_clip-j, i, scale1*gf((float)j)+x1_edge_mean );
@@ -7509,19 +7514,19 @@ void TomoTiltEdgeMaskProcessor::process_inplace( EMData* image )
 			}
 		}
 	}
-	
+
 	image->update();
 }
 
 void YGradientProcessor::process_inplace( EMData* image )
 {
 	if (image->is_complex()) throw ImageFormatException("Cannot edge detect a complex image");
-	
+
 	EMData* e = new EMData();
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
-	
+
 	if ( nz == 1 && ny == 1 ) {
 		throw ImageDimensionException("Error - cannot detect Y edges for an image that that is 1D!");
 	} else if ( nz == 1 ) {
@@ -7530,7 +7535,7 @@ void YGradientProcessor::process_inplace( EMData* image )
 		e->set_value_at(0,0,-1);
 		e->set_value_at(1,0,-2);
 		e->set_value_at(2,0,-1);
-		
+
 		e->set_value_at(0,2,1);
 		e->set_value_at(1,2,2);
 		e->set_value_at(2,2,1);
@@ -7548,7 +7553,7 @@ void YGradientProcessor::process_inplace( EMData* image )
 		e->set_value_at(0,0,2,-1);
 		e->set_value_at(1,0,2,-1);
 		e->set_value_at(2,0,2,-1);
-		
+
 		e->set_value_at(0,2,0,1);
 		e->set_value_at(1,2,0,1);
 		e->set_value_at(2,2,0,1);
@@ -7558,15 +7563,15 @@ void YGradientProcessor::process_inplace( EMData* image )
 		e->set_value_at(0,2,2,1);
 		e->set_value_at(1,2,2,1);
 		e->set_value_at(2,2,2,1);
-		
+
 		Region r = Region(-nx/2+1,-ny/2+1,-nz/2+1,nx,ny,nz);
 		e->clip_inplace(r);
 	}
-	
+
 	Dict conv_parms;
 	conv_parms["with"] = e;
 	image->process_inplace("convolution", conv_parms);
-	
+
 	delete e;
 }
 
@@ -7574,14 +7579,14 @@ void YGradientProcessor::process_inplace( EMData* image )
 void ZGradientProcessor::process_inplace( EMData* image )
 {
 	if (image->is_complex()) throw ImageFormatException("Cannot edge detect a complex image");
-	
+
 	EMData* e = new EMData();
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
-	
+
 	if ( nx < 3 || ny < 3 || nz < 3) throw ImageDimensionException("Error - cannot edge detect in the z direction with any dimension being less than three pixels");
-	
+
 	e->set_size(3,3,3);
 	e->set_value_at(0,0,0,-1);
 	e->set_value_at(1,0,0,-1);
@@ -7592,7 +7597,7 @@ void ZGradientProcessor::process_inplace( EMData* image )
 	e->set_value_at(0,2,0,-1);
 	e->set_value_at(1,2,0,-1);
 	e->set_value_at(2,2,0,-1);
-	
+
 	e->set_value_at(0,0,2,1);
 	e->set_value_at(1,0,2,1);
 	e->set_value_at(2,0,2,1);
@@ -7602,14 +7607,14 @@ void ZGradientProcessor::process_inplace( EMData* image )
 	e->set_value_at(0,2,2,1);
 	e->set_value_at(1,2,2,1);
 	e->set_value_at(2,2,2,1);
-	
+
 	Region r = Region(-nx/2+1,-ny/2+1,-nz/2+1,nx,ny,nz);
 	e->clip_inplace(r);
-	
+
 	Dict conv_parms;
 	conv_parms["with"] = e;
 	image->process_inplace("convolution", conv_parms);
-	
+
 	delete e;
 }
 
@@ -7632,31 +7637,31 @@ map<string, vector<string> > EMAN::group_processors()
 	for (size_t i = 0; i < processornames.size(); i++) {
 		Processor * f = Factory<Processor>::get(processornames[i]);
 		if (dynamic_cast<RealPixelProcessor*>(f) != 0) {
-			processor_groups["RealPixelProcessor"].push_back(f->get_name());				
+			processor_groups["RealPixelProcessor"].push_back(f->get_name());
 		}
 		else if (dynamic_cast<BoxStatProcessor*>(f)  != 0) {
-			processor_groups["BoxStatProcessor"].push_back(f->get_name());				
+			processor_groups["BoxStatProcessor"].push_back(f->get_name());
 		}
 		else if (dynamic_cast<ComplexPixelProcessor*>(f)  != 0) {
-			processor_groups["ComplexPixelProcessor"].push_back(f->get_name());				
+			processor_groups["ComplexPixelProcessor"].push_back(f->get_name());
 		}
 		else if (dynamic_cast<CoordinateProcessor*>(f)  != 0) {
-			processor_groups["CoordinateProcessor"].push_back(f->get_name());				
+			processor_groups["CoordinateProcessor"].push_back(f->get_name());
 		}
 		else if (dynamic_cast<FourierProcessor*>(f)  != 0) {
-			processor_groups["FourierProcessor"].push_back(f->get_name());				
+			processor_groups["FourierProcessor"].push_back(f->get_name());
 		}
 		else if (dynamic_cast<NewFourierProcessor*>(f)  != 0) {
-			processor_groups["FourierProcessor"].push_back(f->get_name());				
+			processor_groups["FourierProcessor"].push_back(f->get_name());
 		}
 		else if (dynamic_cast<NormalizeProcessor*>(f)  != 0) {
-			processor_groups["NormalizeProcessor"].push_back(f->get_name());				
+			processor_groups["NormalizeProcessor"].push_back(f->get_name());
 		}
 		else {
-			processor_groups["Others"].push_back(f->get_name());				
+			processor_groups["Others"].push_back(f->get_name());
 		}
 	}
-		
+
 	return processor_groups;
 }
 

@@ -1,38 +1,38 @@
 /**
  * $Id$
  */
- 
+
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
- 
+
 #include "emdata.h"
 #include "ctf.h"
 #include "portable_fileio.h"
@@ -45,7 +45,7 @@ using std::stringstream;
 using std::setprecision;
 
 using namespace EMAN;
- 
+
 EMData* EMData::get_fft_amplitude2D()
 {
 	ENTERFUNC;
@@ -176,7 +176,7 @@ EMData* EMData::get_fft_phase()
 			}
 		}
 	}
-	
+
 	dat->update();
 	dat->set_complex(false);
 	if(dat->get_ysize()==1 && dat->get_zsize()==1) {
@@ -280,7 +280,7 @@ float EMData::calc_sigma_diff()
 
 }
 
-	
+
 IntPoint EMData::calc_min_location() const
 {
 	ENTERFUNC;
@@ -356,22 +356,22 @@ IntPoint EMData::calc_max_location() const
 }
 
 
-IntPoint EMData::calc_max_location_wrap(const int maxdx, const int maxdy, const int maxdz) 
+IntPoint EMData::calc_max_location_wrap(const int maxdx, const int maxdy, const int maxdz)
 {
 	int maxshiftx = maxdx, maxshifty = maxdy, maxshiftz = maxdz;
 	if (maxdx == -1) maxshiftx = get_xsize()/4;
 	if (maxdy == -1) maxshifty = get_ysize()/4;
 	if (maxdz == -1) maxshiftz = get_zsize()/4;
-	
+
 	float max_value = -FLT_MAX;
-	
+
 	IntPoint peak(0,0,0);
 	for (int k = -maxshiftz; k <= maxshiftz; k++) {
 		for (int j = -maxshifty; j <= maxshifty; j++) {
 			for (int i = -maxshiftx; i <= maxshiftx; i++) {
-				
+
 				float value = get_value_at_wrap(i,j,k);
-	
+
 				if (value > max_value) {
 					max_value = value;
 					peak[0] = i;
@@ -381,18 +381,18 @@ IntPoint EMData::calc_max_location_wrap(const int maxdx, const int maxdy, const 
 			}
 		}
 	}
-	
+
 	return peak;
 }
 
 FloatPoint EMData::calc_center_of_mass()
 {
 	float *rdata = get_data();
-	
+
 	float sigma = get_attr("sigma");
 	float mean = get_attr("mean");
 	float m = 0;
-	
+
 	FloatPoint com(0,0,0);
 	for (int i = 0; i < nx; i++) {
 		for (int j = 0; j < ny; j++) {
@@ -577,7 +577,7 @@ Ctf * EMData::get_ctf() const
 	if(attr_dict.has_key("ctf")) {
 		EMAN1Ctf * ctf = new EMAN1Ctf();
 		ctf->from_vector(attr_dict["ctf"]);
-	
+
 		return dynamic_cast<Ctf *>(ctf);
 	}
 	else {
@@ -611,7 +611,7 @@ void EMData::set_size(int x, int y, int z)
 
 	size_t size = (size_t)(x) * (size_t)y * (size_t)z * sizeof(float);
 	rdata = static_cast < float *>(realloc(rdata, size));
-	
+
 	if ( rdata == 0 )
 	{
 		stringstream ss;
@@ -621,7 +621,7 @@ void EMData::set_size(int x, int y, int z)
 		string message = "Cannot allocate " + megs + " GB - not enough memory.";
 		throw BadAllocException(message);
 	}
-	
+
 	attr_dict["nx"] = x;
 	attr_dict["ny"] = y;
 	attr_dict["nz"] = z;
@@ -630,12 +630,12 @@ void EMData::set_size(int x, int y, int z)
 	if (old_nx == 0) {
 		memset(rdata, 0, size);
 	}
-	
+
 	if (supp) {
 		free(supp);
 		supp = 0;
 	}
-	
+
 	update();
 	EXITFUNC;
 }
@@ -751,7 +751,7 @@ int greaterthan( const void* p1, const void* p2 )
 {
 	float*  v1 = (float*) p1;
 	float*  v2 = (float*) p2;
-	
+
 	if ( *v1 < *v2 )  return 0;
 	else return 1;
 }
@@ -761,7 +761,7 @@ EMObject EMData::get_attr(const string & key) const
 {
 	ENTERFUNC;
 
-	size_t size = nx * ny * nz;	
+	size_t size = nx * ny * nz;
 	update_stat();
 
 	float mean = attr_dict["mean"];
@@ -831,21 +831,21 @@ EMObject EMData::get_attr(const string & key) const
 	else {
 		throw NotExistingObjectException(key, "The requested key does not exist");
 	}
-	
+
 	EXITFUNC;
 }
 
 EMObject EMData::get_attr_default(const string & key, const EMObject & em_obj) const
 {
 	ENTERFUNC;
-	
+
 	if(attr_dict.has_key(key)) {
 		return get_attr(key);
 	}
 	else {
 		return em_obj;
 	}
-	
+
 	EXITFUNC;
 }
 
@@ -856,9 +856,9 @@ Dict EMData::get_attr_dict() const
 }
 
 void EMData::set_attr_dict(const Dict & new_dict)
-{	
+{
 	/*set nx, ny nz may resize the image*/
-	if( ( new_dict.has_key("nx") && nx!=(int)new_dict["nx"] ) 
+	if( ( new_dict.has_key("nx") && nx!=(int)new_dict["nx"] )
 		|| ( new_dict.has_key("ny") && ny!=(int)new_dict["ny"] )
 		|| ( new_dict.has_key("nz") && nz!=(int)new_dict["nz"] ) ) {
 
@@ -866,7 +866,7 @@ void EMData::set_attr_dict(const Dict & new_dict)
 		newx = new_dict.has_key("nx") ? (int)new_dict["nx"] : nx;
 		newy = new_dict.has_key("ny") ? (int)new_dict["ny"] : ny;
 		newz = new_dict.has_key("nz") ? (int)new_dict["nz"] : nz;
-		
+
 		EMData * new_image = get_clip(Region((nx-newx)/2, (ny-newy)/2, (nz=newz)/2, newx, newy, newz));
 		if(new_image) {
 			this->operator=(*new_image);
@@ -874,12 +874,12 @@ void EMData::set_attr_dict(const Dict & new_dict)
 			new_image = 0;
 		}
 	}
-	
+
 	vector<string> new_keys = new_dict.keys();
 	vector<string>::const_iterator it;
 	for(it = new_keys.begin(); it!=new_keys.end(); ++it) {
 			this->set_attr(*it, new_dict[*it]);
-	} 
+	}
 }
 
 void EMData::del_attr(const string & attr_name)
@@ -899,33 +899,33 @@ void EMData::set_attr(const string & key, EMObject val)
 {
 	/* Ignore 'read only' attribute. */
 	if(key == "sigma" ||
-		key == "sigma_nonzero" || 
+		key == "sigma_nonzero" ||
 		key == "square_sum" ||
 		key == "maximum" ||
 		key == "minimum" ||
 		key == "mean" ||
-		key == "mean_nonzero" ) 
+		key == "mean_nonzero" )
 	{
 		LOGWARN("Ignore setting read only attribute %s", key.c_str());
 		return;
 	}
-			
+
 	attr_dict[key] = val;
-	
-	/* reset attribute nx, ny, nz will resize the image */	
-	if(rdata != 0) { 	
+
+	/* reset attribute nx, ny, nz will resize the image */
+	if(rdata != 0) {
 		EMData * new_image =0;
 		if( key == "nx" ) {
-			int nd = (int) val;		
+			int nd = (int) val;
 			if( nx != (int)val ) {
 				new_image = get_clip(Region((nx-nd)/2, 0, 0, nd, ny, nz));
-			} 
+			}
 		}
 		else if( key == "ny" ) {
 			int nd = (int) val;
 			if( ny != (int)val ) {
 				new_image = get_clip(Region(0, (ny-nd)/2, 0, nx, nd, nz));
-			} 
+			}
 		}
 		else if( key == "nz" ) {
 			int nd = (int) val;
@@ -933,10 +933,10 @@ void EMData::set_attr(const string & key, EMObject val)
 				new_image = get_clip(Region(0, 0, (nz-nd)/2, nz, ny, nd));
 			}
 		}
-		
+
 		if(new_image) {
 			this->operator=(*new_image);
-			delete new_image; 
+			delete new_image;
 			new_image = 0;
 		}
 	}
@@ -946,12 +946,12 @@ void EMData::set_attr_python(const string & key, EMObject val)
 {
 	/* Ignore 'read only' attribute. */
 	if(key == "sigma" ||
-		  key == "sigma_nonzero" || 
+		  key == "sigma_nonzero" ||
 		  key == "square_sum" ||
 		  key == "maximum" ||
 		  key == "minimum" ||
 		  key == "mean" ||
-		  key == "mean_nonzero" ) 
+		  key == "mean_nonzero" )
 	{
 		LOGWARN("Ignore setting read only attribute %s", key.c_str());
 		return;
@@ -968,26 +968,26 @@ void EMData::set_attr_python(const string & key, EMObject val)
 		Transform* t = new Transform(*((Transform*) val));
 		EMObject v(t);
 		attr_dict[key] = v;
-		
+
 	} else {
 		attr_dict[key] = val;
 	}
-	
-	
-	/* reset attribute nx, ny, nz will resize the image */	
-	if(rdata != 0) { 	
+
+
+	/* reset attribute nx, ny, nz will resize the image */
+	if(rdata != 0) {
 		EMData * new_image =0;
 		if( key == "nx" ) {
-			int nd = (int) val;		
+			int nd = (int) val;
 			if( nx != (int)val ) {
 				new_image = get_clip(Region((nx-nd)/2, 0, 0, nd, ny, nz));
-			} 
+			}
 		}
 		else if( key == "ny" ) {
 			int nd = (int) val;
 			if( ny != (int)val ) {
 				new_image = get_clip(Region(0, (ny-nd)/2, 0, nx, nd, nz));
-			} 
+			}
 		}
 		else if( key == "nz" ) {
 			int nd = (int) val;
@@ -995,12 +995,24 @@ void EMData::set_attr_python(const string & key, EMObject val)
 				new_image = get_clip(Region(0, 0, (nz-nd)/2, nz, ny, nd));
 			}
 		}
-		
+
 		if(new_image) {
 			this->operator=(*new_image);
-			delete new_image; 
+			delete new_image;
 			new_image = 0;
 		}
+	}
+}
+
+void EMData::scale_pixel(float scale) const
+{
+	attr_dict["apix_x"] = ((float) attr_dict["apix_x"]) * scale;
+	attr_dict["apix_y"] = ((float) attr_dict["apix_y"]) * scale;
+	attr_dict["apix_z"] = ((float) attr_dict["apix_z"]) * scale;
+	if (attr_dict.has_key("ctf")) {
+		Ctf *ctf=(Ctf *)attr_dict["ctf"];
+		ctf->apix*=scale;
+		attr_dict["ctf"]=ctf;
 	}
 }
 
@@ -1013,7 +1025,7 @@ std::string EMData::get_data_pickle() const
 //	std::copy(rdata, rdata+nx*ny*nz, vf.begin());
 
 	std::string vf((const char *)rdata,nx*ny*nz*sizeof(float));
-	
+
 	return vf;
 }
 
@@ -1024,7 +1036,7 @@ void EMData::set_data_pickle(std::string vf)
 //	rdata = (float *)malloc(nx*ny*nz*sizeof(float));
 //	std::copy(vf.begin(), vf.end(), rdata);
 	memcpy(rdata,vf.data(),nx*ny*nz*sizeof(float));
-	
+
 }
 
 int EMData::get_supp_pickle() const

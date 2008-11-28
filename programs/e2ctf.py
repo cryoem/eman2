@@ -87,7 +87,7 @@ images far from focus."""
 	if options.auto_fit:
 		if options.voltage==0 : parser.error("Please specify voltage")
 		if options.cs==0 : parser.error("Please specify Cs")
-		if options.apix==0 : parser.error("Please specify A/Pix")
+	if options.apix==0 : print "Using A/pix from header"
 		
 	debug=options.debug
 
@@ -230,15 +230,17 @@ def pspec_and_ctf_fit(options,debug=False):
 
 		# compute the power spectra
 		if debug : print "Processing ",filename
+		apix=options.apix
+		if apix<=0 : apix=EMData(filename,0,1)["apix_x"] 
 		im_1d,bg_1d,im_2d,bg_2d=powspec_with_bg(filename,radius=options.bgmask,edgenorm=not options.nonorm,oversamp=options.oversamp)
-		ds=1.0/(options.apix*im_2d.get_ysize())
+		ds=1.0/(apix*im_2d.get_ysize())
 		if not options.nosmooth : bg_1d=smooth_bg(bg_1d,ds)
 
 		Util.save_data(0,ds,bg_1d,"ctf.bgb4.txt")
 		
 		# Fit the CTF parameters
 		if debug : print "Fit CTF"
-		ctf=ctf_fit(im_1d,bg_1d,im_2d,bg_2d,options.voltage,options.cs,options.ac,options.apix,bgadj=not options.nosmooth,autohp=options.autohp)
+		ctf=ctf_fit(im_1d,bg_1d,im_2d,bg_2d,options.voltage,options.cs,options.ac,apix,bgadj=not options.nosmooth,autohp=options.autohp)
 		db_parms[name]=[ctf.to_string(),im_1d,bg_1d,im_2d,bg_2d]
 
 		if debug:
@@ -252,7 +254,7 @@ def pspec_and_ctf_fit(options,debug=False):
 	project_db = db_open_dict("bdb:project")
 	project_db["global.microscope_voltage"] = options.voltage
 	project_db["global.microscope_cs"] = options.cs
-	project_db["global.apix"] = options.apix
+	project_db["global.apix"] = apix
 	
 	return img_sets
 

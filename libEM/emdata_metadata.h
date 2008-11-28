@@ -5,40 +5,40 @@
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
 
 /** This file is a part of "emdata.h", to use functions in this file,
  * you should "#include "emdata.h",
- * NEVER directly include this file. */ 
+ * NEVER directly include this file. */
 
 #ifndef emdata__metadata_h__
-#define emdata__metadata_h__ 
+#define emdata__metadata_h__
 
 public:
 /** return the amplitudes of the FFT including the left half
@@ -104,7 +104,7 @@ void write_data(string fsp,size_t loc);
  * @date Mon Jun 23, 2008
 */
 void read_data(string fsp,size_t loc);
- 
+
 
 
 /** Mark EMData as changed, statistics, etc will be updated at need.*/
@@ -123,7 +123,7 @@ inline bool has_ctff() const
 	if ((flags & EMDATA_HASCTFF)) {
 		return true;
 	}
-		
+
 	return false;
 }
 
@@ -147,7 +147,7 @@ float calc_sigma_diff();
  */
 IntPoint calc_min_location() const;
 
-		
+
 /** Calculates the coordinates of the maximum-value pixel.
  * @return The coordinates of the maximum-value pixel.
  */
@@ -183,7 +183,7 @@ int calc_max_index() const;
 
 
 /** Calculate and return a sorted list of pixels whose values
- * are above a specified threshold. The pixels are sorted 
+ * are above a specified threshold. The pixels are sorted
  * from high to low.
  *
  * @param threshold The specified pixel value. Returned pixels
@@ -262,7 +262,7 @@ inline Transform3D get_transform() const
 	return Transform3D( (float)attr_dict["euler_alt"],
 			    (float)attr_dict["euler_az"],
 			    (float)attr_dict["euler_phi"]);
-} 
+}
 
 
 /** Define the 3D orientation of this particle, also
@@ -313,7 +313,7 @@ void set_size(int nx, int ny=1, int nz=1);
  * @param nz  z size of this image.
  */
 void set_complex_size(int nx, int ny=1, int nz=1) {
-	set_size(nx*2, ny, nz); 
+	set_size(nx*2, ny, nz);
 }
 
 
@@ -345,7 +345,7 @@ inline void set_pathnum(int n)
  */
 MArray2D get_2dview() const;
 
-	
+
 /** Get image raw pixel data in a 3D multi-array format. The
  * array shares the memory space with the image data.
  * Notice: the subscription order is d[z][y][x] in Python, it's d[x][y][z] in C++ --grant Tang
@@ -356,8 +356,8 @@ MArray2D get_2dview() const;
  */
 MArray3D get_3dview() const;
 
-		
-/** Get complex image raw pixel data in a 2D multi-array format. 
+
+/** Get complex image raw pixel data in a 2D multi-array format.
  * The array shares the memory space with the image data.
  *
  * It should be used on 2D image only.
@@ -366,8 +366,8 @@ MArray3D get_3dview() const;
  */
 MCArray2D get_2dcview() const;
 
-		
-/** Get complex image raw pixel data in a 3D multi-array format. 
+
+/** Get complex image raw pixel data in a 3D multi-array format.
  * The array shares the memory space with the image data.
  *
  * It should be used on 3D image only.
@@ -376,8 +376,8 @@ MCArray2D get_2dcview() const;
  */
 MCArray3D get_3dcview() const;
 
-		
-/** Get pointer to a complex image raw pixel data in a 3D multi-array format. 
+
+/** Get pointer to a complex image raw pixel data in a 3D multi-array format.
  * The array shares the memory space with the image data.
  *
  * It should be used on 3D image only.
@@ -386,7 +386,7 @@ MCArray3D get_3dcview() const;
  */
 MCArray3D* get_3dcviewptr() const;
 
-		
+
 /** Get image raw pixel data in a 2D multi-array format. The
  * data coordinates is translated by (x0,y0) such that
  * array[y0][x0] points to the pixel at the origin location.
@@ -469,7 +469,7 @@ EMObject get_attr(const string & attr_name) const;
  * @return The attribute value, default to None.
  */
 EMObject get_attr_default(const string & attr_name, const EMObject & em_obj = EMObject()) const;
-		
+
 /** Set a header attribute's value.
  *
  * @param key The header attribute name.
@@ -510,14 +510,14 @@ void set_attr_dict(const Dict & new_dict);
 
 
 /** Delete the attribute from dictionary.
- * 
+ *
  * @param attr_name the attribute name to be removed
  * */
  void del_attr(const string & attr_name);
 
- 
+
  /** Delete the attributes from the dictionary.
-  * 
+  *
   * @param del_keys the attrutes' names to be removed
   * */
  void del_attr_dict(const vector<string> & del_keys);
@@ -531,7 +531,7 @@ inline int get_xsize() const
 	return nx;
 }
 
-		
+
 /** Get the image y-dimensional size.
  * @return Image y-dimensional size.
  */
@@ -540,7 +540,7 @@ inline int get_ysize() const
 	return ny;
 }
 
-		
+
 /** Get the image z-dimensional size.
  * @return Image z-dimensional size.
  */
@@ -549,7 +549,7 @@ inline int get_zsize() const
 	return nz;
 }
 
-		
+
 /** Get the number of allocated floats in the image (nx*ny*nz)
  * @return nx*ny*nz
  */
@@ -599,7 +599,7 @@ inline bool is_shuffled() const
 	}
 }
 
-	
+
 /** Is this a FH image?
  * @return Whether this is a FH image or not.
  */
@@ -613,7 +613,7 @@ inline bool is_FH() const
 	}
 }
 
-		
+
 /** Is this a complex image?
  * @return Whether this is a complex image or not.
  */
@@ -643,7 +643,7 @@ inline bool is_real() const
 
 
 /** Mark this image as a shuffled image.
- * @param is_shuffled If true, a shuffled image. If false, not 
+ * @param is_shuffled If true, a shuffled image. If false, not
  *          a shuffled image.
  */
 inline void set_shuffled(bool is_shuffled)
@@ -659,7 +659,7 @@ inline void set_shuffled(bool is_shuffled)
 
 
 /** Mark this complex image as a FH image.
- * @param is_FH If true, a FH image. If false, 
+ * @param is_FH If true, a FH image. If false,
  *        not a FH image.
  */
 inline void set_FH(bool is_FH)
@@ -760,7 +760,7 @@ inline bool is_ri() const
 {
 	if(attr_dict.has_key("is_complex_ri")) {
 		if (int(attr_dict["is_complex_ri"])) {
-			return true;	
+			return true;
 		}
 		else {
 			return false;
@@ -793,7 +793,7 @@ inline void set_ri(bool is_ri)
 inline bool is_fftpadded() const
 {
 	if (flags & EMDATA_PAD) {
-		return true;	
+		return true;
 	}
 	else {
 		return false;
@@ -824,7 +824,7 @@ inline void set_fftpad(bool is_fftpadded)
 inline bool is_fftodd() const
 {
 	if (flags & EMDATA_FFTODD) {
-		return true;	
+		return true;
 	}
 	else {
 		return false;
@@ -902,6 +902,13 @@ inline void set_xyzoff(int x, int y, int z)
 	yoff = y;
 	zoff = z;
 }
+
+/** Scale the angstrom per pixel of this image by a uniform amount
+ * Alters the EMData metadata
+ * I had to make this function public for access from the Processors (David Woolford)
+ * @author Unknown
+*/
+void scale_pixel(float scale_factor) const;
 
 inline string get_path() const
 {
