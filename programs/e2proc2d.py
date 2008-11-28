@@ -273,6 +273,11 @@ def main():
 				d.set_attr('apix_x', apix)
 				d.set_attr('apix_y', apix)
 				d.set_attr('apix_z', apix)
+				try:
+					if i==n0 and d["ctf"].apix!=apix :
+						print "Warning: A/pix value in CTF was %1.2f, changing to %1.2f. May impact CTF parameters."%(d["ctf"].apix,apix)
+					d["ctf"].apix=apix
+				except: pass
 			
 			if option1 == "process":
 				fi = index_d[option1]

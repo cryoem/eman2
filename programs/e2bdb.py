@@ -67,10 +67,16 @@ Various utilities related to BDB databases."""
 	
 	for path in args:
 		if path.lower()[:4]!="bdb:" : path="bdb:"+path
-		if not '#' in path and path[-1]!='/' : path+='#'
-		if len(args)>1 : print path,":"
-		
-		dbs=db_list_dicts(path)
+		if '#' in path :
+			if len(args)>1 : print "\n",path,":"
+			path,dbs=path.rsplit("#",1)
+			path+="#"
+			dbs=[dbs]
+		else:
+			if not '#' in path and path[-1]!='/' : path+='#'			
+			if len(args)>1 : print "\n",path[:-1],":"
+			dbs=db_list_dicts(path)
+			
 		
 		dbs.sort()
 		if options.filt:
@@ -130,7 +136,7 @@ Various utilities related to BDB databases."""
 				print path+db,
 			print " "
 
-		else :
+		elif not options.makevstack :
 			# Nicely formatted 'ls' style display
 			cols=int(floor(80.0/(maxname+3)))
 			width=80/cols
