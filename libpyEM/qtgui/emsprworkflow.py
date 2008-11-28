@@ -567,7 +567,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 		pboxes = ParamDef(name="Num boxes",vartype="intlist",desc_short="Particles on disk",desc_long="The number of box images stored for this image in the database",property=None,defaultunits=None,choices=num_boxes)
 		pdims = ParamDef(name="Dimensions",vartype="stringlist",desc_short="Particle dims",desc_long="The dimensions of the particle images",property=None,defaultunits=None,choices=dimensions)
 		
-		p = ParamTable(name="filenames",desc_short="Choose images to box",desc_long="")
+		p = ParamTable(name="filenames",desc_short="Choose a subset of these images",desc_long="")
 		p.append(pnames)
 		p.append(pboxes)
 		p.append(pdims)
@@ -807,7 +807,7 @@ class E2BoxerTask(ParticleWorkFlowTask):
 		pdims = ParamDef(name="DB Box Dims",vartype="stringlist",desc_short="Dims in DB",desc_long="The dimensions boxes",property=None,defaultunits=None,choices=dimensions)
 		
 		
-		p_reordered = ParamTable(name="filenames",desc_short="Choose images to box",desc_long="") # because I want the boxes in db to come first
+		p_reordered = ParamTable(name="filenames",desc_short="Choose a subset of these images",desc_long="") # because I want the boxes in db to come first
 		p_reordered.append(p[0])
 		p_reordered.append(pboxes)
 		p_reordered.extend(p[1:])
@@ -840,7 +840,7 @@ class E2BoxerTask(ParticleWorkFlowTask):
 		pdbboxes = ParamDef(name="Boxes in DB",vartype="intlist",desc_short="Boxes in DB",desc_long="The number of boxes stored for this image in the database",property=None,defaultunits=None,choices=db_boxes)
 		pdvdims = ParamDef(name="DB Box Dims",vartype="stringlist",desc_short="Dims in DB",desc_long="The dimensions boxes",property=None,defaultunits=None,choices=db_dims)
 		
-		p = ParamTable(name="filenames",desc_short="Choose images to box",desc_long="")
+		p = ParamTable(name="filenames",desc_short="Choose a subset of these images",desc_long="")
 		p.append(pnames)
 		p.append(pdbboxes)
 		p.append(pboxes)
@@ -1243,7 +1243,7 @@ class E2BoxerOutputTaskGeneral(E2BoxerOutputTask):
 		pboxes = ParamDef(name="Num boxes",vartype="intlist",desc_short="Boxes in DB",desc_long="The number of boxes stored for this image in the database",property=None,defaultunits=None,choices=nboxes)
 		pdims = ParamDef(name="Dimensions",vartype="stringlist",desc_short="Dimensions",desc_long="The dimensions boxes",property=None,defaultunits=None,choices=dimensions)
 		
-		p = ParamTable(name="filenames",desc_short="Choose images to box",desc_long="")
+		p = ParamTable(name="filenames",desc_short="Choose a subset of these images",desc_long="")
 		p.append(pnames)
 		p.append(pboxes)
 		p.append(pdims)
@@ -2056,19 +2056,19 @@ class E2Refine2DCreateDataSetTask(ParticleWorkFlowTask):
 		choice = params["particle_set_choice"]
 		
 		if choice[:9] == "Particles":
-			self.emit(QtCore.SIGNAL("replace_task"),E2Refine2DCreateParticleSetTask,"refine2d particle starting data set")
+			self.emit(QtCore.SIGNAL("replace_task"),E2Refine2DCreateParticleSetTask,"e2refine2d options")
 			self.application().close_specific(self.form)
 			self.form = None
 		elif choice[:5] == "Phase":
-			self.emit(QtCore.SIGNAL("replace_task"),E2Refine2DCreatePhaseParticleSetTask,"e2boxer interface launcher")
+			self.emit(QtCore.SIGNAL("replace_task"),E2Refine2DWithPhasePtclsTask,"e2refine2d options")
 			self.application().close_specific(self.form)
 			self.form = None
 		elif choice[:6] == "Wiener":
-			self.emit(QtCore.SIGNAL("replace_task"),E2Refine2DCreateWienerParticleSetTask,"e2boxer interface launcher")
+			self.emit(QtCore.SIGNAL("replace_task"),E2Refine2DWithWienPtclsTask,"e2refine2d options")
 			self.application().close_specific(self.form)
 			self.form = None
-		elif choice == "Specify file":
-			self.emit(QtCore.SIGNAL("replace_task"),E2BoxerGuiTaskGeneral,"e2boxer interface launcher")
+		elif choice == "Specify files":
+			self.emit(QtCore.SIGNAL("replace_task"),E2Refine2DWithGenericTask,"e2refine2d options")
 			self.application().close_specific(self.form)
 			self.form = None
 		else:
@@ -2088,8 +2088,12 @@ class E2Refine2DCreateParticleSetTask(E2Refine2DTask):
 	def get_params(self):
 		params = []
 		
-		p,n = self.get_particle_selection_table(tag=self.end_tag)
-		
+		if self.end_tag != "generic":
+			p,n = self.get_particle_selection_table(tag=self.end_tag)
+		else:
+			p = ParamDef(name="filenames",vartype="url",desc_short="File names",desc_long="The names of the particle files you want to use as in the input data for e2refine2d.py",property=None,defaultunits=[],choices=[])
+			n = 1 # just to fool the next bit, that's all
+			
 		if n == 0:
 			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2Refine2DCreateParticleSetTask.documentation_string+E2Refine2DCreateParticleSetTask.warning_string,choices=None))
 		else:
@@ -2139,19 +2143,20 @@ class E2Refine2DCreateParticleSetTask(E2Refine2DTask):
 	def write_db_entry(self,key,value):
 		pass
 
-class E2Refine2DCreatePhaseParticleSetTask(E2Refine2DCreateParticleSetTask):
-	documentation_string = "This form enables the user to create starting data sets for e2refine2d.\nChoose from the list of options below in terms of which data you wish to create the initial data set from."
+class E2Refine2DWithPhasePtclsTask(E2Refine2DCreateParticleSetTask):
 	def __init__(self,application):
 		E2Refine2DCreateParticleSetTask.__init__(self,application)
-		self.window_title = "Create refine 2D starting data set"
 		self.end_tag = "_ptcls_ctf_flip"
 		
-class E2Refine2DCreateWienerParticleSetTask(E2Refine2DCreateParticleSetTask):
-	documentation_string = "This form enables the user to create starting data sets for e2refine2d.\nChoose from the list of options below in terms of which data you wish to create the initial data set from."
+class E2Refine2DWithWienPtclsTask(E2Refine2DCreateParticleSetTask):
 	def __init__(self,application):
 		E2Refine2DCreateParticleSetTask.__init__(self,application)
-		self.window_title = "Create refine 2D starting data set"
 		self.end_tag = "_ptcls_ctf_wiener"
+		
+class E2Refine2DWithGenericTask(E2Refine2DCreateParticleSetTask):
+	def __init__(self,application):
+		E2Refine2DCreateParticleSetTask.__init__(self,application)
+		self.end_tag = "generic"
 
 
 if __name__ == '__main__':
