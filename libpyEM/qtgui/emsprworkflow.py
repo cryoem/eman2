@@ -602,7 +602,10 @@ class ParticleWorkFlowTask(WorkFlowTask):
 	
 	def get_total_particles(self,tag="_ptcls"):
 		'''
-		A way to get the total number of particles that have a certain 
+		A way to get the total number of particles that have a certain ending
+		tag = "_ptcls"
+		tag = "_ptcls_ctf_wiener"
+		tag = "_ptcls_ctf_phase" ALL WORK
 		'''
 		particle_names = self.get_particle_db_names_versatile(tag,strip_end=False)
 		
@@ -617,6 +620,46 @@ class ParticleWorkFlowTask(WorkFlowTask):
 						n += val+1 # maxrec is always one less than the actual number stored
 						
 		return n
+	
+	def get_particle_selection_table(self,tag="_ptcls"):
+		'''
+		tag = "_ptcls"
+		tag = "_ptcls_ctf_wiener"
+		tag = "_ptcls_ctf_phase" ALL WORK
+		'''
+		particle_names = self.get_particle_db_names_versatile(tag,strip_end=False)
+		n = []
+		dims = []
+		for name in particle_names:
+			db_name = "bdb:particles#"+name
+			act = True
+			if db_check_dict(db_name):
+				pt_db = db_open_dict(db_name)
+				if pt_db.has_key("maxrec"):
+					val = pt_db["maxrec"]
+					if val != None:
+						n.append(val)
+						hdr = pt_db.get_header(0)
+						dims.append(str(hdr["nx"])+'x'+str(hdr["ny"])+'x'+str(hdr["nz"]))
+						act = False
+						
+			if act:
+				n.append("")
+				dims.append("")
+
+		p = ParamTable(name="filenames",desc_short="Choose images to box",desc_long="")
+			
+		pnames = ParamDef(name="names",vartype="stringlist",desc_short="File names",desc_long="The particles that will be used",property=None,defaultunits=None,choices=particle_names)
+		pboxes = ParamDef(name="Num boxes",vartype="intlist",desc_short="Particles on disk",desc_long="The number of box images stored for this image in the database",property=None,defaultunits=None,choices=n)
+		pdims = ParamDef(name="Dimensions",vartype="stringlist",desc_short="Particle dims",desc_long="The dimensions of the particle images",property=None,defaultunits=None,choices=dims)
+		
+	
+		
+		p.append(pnames)
+		p.append(pboxes)
+		p.append(pdims)
+		
+		return p,len(pnames)
 		
 		
 class ParticleReportTask(ParticleWorkFlowTask):
@@ -1970,11 +2013,11 @@ class E2Refine2DCreateDataSetTask(ParticleWorkFlowTask):
 			self.application().close_specific(self.form)
 			self.form = None
 		elif choice[:5] == "Phase":
-			self.emit(QtCore.SIGNAL("replace_task"),E2BoxerGuiTaskGeneral,"e2boxer interface launcher")
+			self.emit(QtCore.SIGNAL("replace_task"),E2Refine2DCreatePhaseParticleSetTask,"e2boxer interface launcher")
 			self.application().close_specific(self.form)
 			self.form = None
 		elif choice[:6] == "Wiener":
-			self.emit(QtCore.SIGNAL("replace_task"),E2BoxerGuiTaskGeneral,"e2boxer interface launcher")
+			self.emit(QtCore.SIGNAL("replace_task"),E2Refine2DCreateWienerParticleSetTask,"e2boxer interface launcher")
 			self.application().close_specific(self.form)
 			self.form = None
 		elif choice == "Specify file":
@@ -1994,11 +2037,12 @@ class E2Refine2DCreateParticleSetTask(ParticleWorkFlowTask):
 	def __init__(self,application):
 		ParticleWorkFlowTask.__init__(self,application)
 		self.window_title = "Create refine 2D starting data set"
-		
+		self.end_tag = "_ptcls"
 	def get_params(self):
 		params = []
 		
-		p,n = self.get_particle_param_table()
+		p,n = self.get_particle_selection_table(tag=self.end_tag)
+		
 		if n == 0:
 			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2Refine2DCreateParticleSetTask.documentation_string+E2Refine2DCreateParticleSetTask.warning_string,choices=None))
 		else:
@@ -2014,6 +2058,8 @@ class E2Refine2DCreateParticleSetTask(ParticleWorkFlowTask):
 			self.write_db_entry(k,v)
 			
 		
+		
+		
 		if not params.has_key("filenames") or len(params["filenames"]) == 0 or params["shrink"] < 1:
 			print "there was an error, either you didn't choose any filenames or shrink was less than 1. Try again please"
 			self.application().close_specific(self.form)
@@ -2023,17 +2069,19 @@ class E2Refine2DCreateParticleSetTask(ParticleWorkFlowTask):
 		if params["shrink"] == 1:
 			# if shrink is one then we can just make a vstack with e2bdb
 			options = EmptyObject()
-			names = ["bdb:particles#"+name+"_ptcls" for name in params["filenames"]]
+			names = ["bdb:particles#"+name for name in params["filenames"]]
 			options.filenames = names
 			string_args = []
 			bool_args = []
 			additional_args = ["--makevstack=bdb:r2d#"+numbered_path("start_data",True)]
 			temp_file_name = "e2bdb_stdout.txt"
-			self.run_task("e2bdb.py",options,string_args,bool_args,additional_args,temp_file_name)
+			#self.run_task("e2bdb.py",options,string_args,bool_args,additional_args,temp_file_name)
 			self.emit(QtCore.SIGNAL("task_idle"))
 			self.application().close_specific(self.form)
 			self.form = None
-			
+			self.emit(QtCore.SIGNAL("task_idle"))
+			self.application().close_specific(self.form)
+			self.form = None
 		else:
 			pass
 		
@@ -2041,6 +2089,20 @@ class E2Refine2DCreateParticleSetTask(ParticleWorkFlowTask):
 		
 	def write_db_entry(self,key,value):
 		pass
+
+class E2Refine2DCreatePhaseParticleSetTask(E2Refine2DCreateParticleSetTask):
+	documentation_string = "This form enables the user to create starting data sets for e2refine2d.\nChoose from the list of options below in terms of which data you wish to create the initial data set from."
+	def __init__(self,application):
+		E2Refine2DCreateParticleSetTask.__init__(self,application)
+		self.window_title = "Create refine 2D starting data set"
+		self.end_tag = "_ptcls_ctf_flip"
+		
+class E2Refine2DCreateWienerParticleSetTask(E2Refine2DCreateParticleSetTask):
+	documentation_string = "This form enables the user to create starting data sets for e2refine2d.\nChoose from the list of options below in terms of which data you wish to create the initial data set from."
+	def __init__(self,application):
+		E2Refine2DCreateParticleSetTask.__init__(self,application)
+		self.window_title = "Create refine 2D starting data set"
+		self.end_tag = "_ptcls_ctf_wiener"
 
 class E2Refine2DRunTask(ParticleWorkFlowTask):
 	documentation_string = "This form is a way for the user to supply arguments to and execute e2refine2d.py"
@@ -2051,6 +2113,21 @@ class E2Refine2DRunTask(ParticleWorkFlowTask):
 	def get_params(self):
 		params = []		
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2Refine2DRunTask.documentation_string,choices=None))
+		
+		
+		input = ["bdb:image_stacks#01","bdb:image_stacks#02"]
+		if db_check_dict("bdb:image_stacks#"):
+			image_stack_db  = db_open_dict("bdb:image_stacks")
+			for key in image_stack_db.keys():
+				if image_stack_db[key].has_key("maxrec"):
+					input.append("bdb:image_stacks#"+key)
+		
+		if len(input) == 0:
+			print "this is where we should bail"
+					
+		pinput =  ParamDef(name="input",vartype="string",desc_short="Input stack",desc_long="How the output box images should be normalized",property=None,defaultunits=None,choices=input)
+#		piter = ParamDef(name="iter",vartype="int",desc_short="Refinement iterations",desc_long="",property=None,defaultunits=boxer_project_db.get("working_boxsize",dfl=128),choices=[]))
+		params.append(pinput)
 		
 		return params
 			

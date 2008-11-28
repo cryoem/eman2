@@ -387,7 +387,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	def launch_refine2d_report(self): self.launch_task(E2Refine2DReportTask,"refine2d report")
 		
 	def launch_refine2d_exec(self):
-		self.launch_task(E2Refine2DCreateDataSetTask,"e2refine2d params")
+		self.launch_task(E2Refine2DRunTask,"e2refine2d params")
 		
 	def launch_refine2d_create_dataset(self):
 		self.launch_task(E2Refine2DCreateDataSetTask,"refine2d create data set")
