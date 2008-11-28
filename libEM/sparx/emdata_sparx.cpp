@@ -4401,7 +4401,7 @@ float EMData::find_3d_threshold(float mass, float pixel_size)
 vector<float> EMData::peak_ccf(float hf_p)
 {   
 
-  cout << "peak ccf starting up" << endl;
+  // cout << "peak ccf starting up" << endl;
 
   EMData & buf = *this;
   vector<Pixel> peaks;

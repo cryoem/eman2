@@ -325,6 +325,12 @@ def do_gauss_cmd_line_boxing(options):
 	
 	autoboxer = PawelAutoBoxer(None,parm_dict)
 
+	# check whether to merge particles from several images into one file. this has to be
+	#    done manually at the very end of the routine; to do this, set up a list of filenames
+	#    and copy partciles from those at the end. create an empty list here...
+	if (options.out_file):
+		image_list = []
+
 	for image_name in options.filenames:
 		print "cmd autoboxing",image_name
 		boxable = Boxable(image_name,None,autoboxer)
@@ -342,11 +348,30 @@ def do_gauss_cmd_line_boxing(options):
 		autoboxer.auto_box(boxable,False)
 		
 		if options.write_coord_files:
+			print "write coords"
 			boxable.write_coord_file(box_size=-1,force=options.force,imageformat=options.outformat)
 		if options.write_box_images:
+			print "write box images"
 			boxable.write_box_images(box_size=-1,force=options.force,imageformat=options.outformat)
 
+		# check whether we will need to merge particles from a single image into
+		#    one file. if so, append image name to a list
+		if (options.out_file):
+			# need to use get_image_file_name instead of raw name....
+			image_list.append(boxable.get_image_file_name(options.outformat))
+		print "continue"
 		del boxable
+
+	
+	# now check again for output file
+	if (options.out_file):
+		print "merging particles...."
+		image_object=EMData()
+		for single_filename in image_list:
+			# XXX: loop over index to save space. reading the whole list may be faster, though...
+			for image_index in xrange(EMUtil.get_image_count(single_filename)):
+				image_object.read_image(single_filename,image_index)
+				image_object.write_image(options.out_file,-1)
 
 	project_db.close()
 	#done
