@@ -2139,6 +2139,9 @@ class E2Refine2DRunTask(ParticleWorkFlowTask):
 		psimalign =  ParamDef(name="simalign",vartype="string",desc_short="Aligner",desc_long="The aligner being used",property=None,defaultunits="rotate_translate_flip",choices=aligners)
 		psimaligncmp =  ParamDef(name="simaligncmp",vartype="string",desc_short="Comparitor",desc_long="The comparitor being used",property=None,defaultunits="dot",choices=cmps)
 		
+		pnp = ParamDef(name="normproj",vartype="boolean",desc_short="Normalize projection vectors",desc_long="Normalizes each projected vector into the MSA subspace",property=None,defaultunits=False,choices=None)
+		
+		
 		project_db = db_open_dict("bdb:project")
 		pncp = ParamDef(name="parallel",vartype="int",desc_short="Number of CPUs",desc_long="Number of CPUS available for e2refine2d to use",property=None,defaultunits=project_db.get("global.num_cpus",dfl=num_cpus()),choices=None)
 		
@@ -2148,7 +2151,7 @@ class E2Refine2DRunTask(ParticleWorkFlowTask):
 		params.append([piter,piterclassav])
 		params.append([pnaliref,pnbasisfp])
 		params.append([psimalign,psimaligncmp])
-		params.append(pncp)
+		params.append([pncp,pnp])
 		
 		return params
 			
