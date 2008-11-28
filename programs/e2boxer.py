@@ -136,7 +136,7 @@ for single particle analysis."""
 	parser.add_option("--ctf_window",default=False,help="Window size for CTF determination")
 	parser.add_option("--ctf_edge",default=False,help="Edge for CTF determination")
 	parser.add_option("--ctf_overlap",default=False,help="Overlap value for CTF determination")
-	
+	parser.add_option("--out_file",default=False,help="File to write particles to")
 	
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -312,7 +312,12 @@ def do_gauss_cmd_line_boxing(options):
 			except ValueError:
 				print "could not convert overlap value. bad value",options.ctf_overlap,". exiting!"
 				sys.exit(1)
-		
+		if (options.out_file):
+			try:
+				parm_dict["out_file"] = options.out_file
+			except:
+				print "could not set output file. exiting!"
+				sys.exit(1)
 		
 
 	# PawelAutoBoxer is changed to allow passing in of a parameter dictionary
@@ -337,9 +342,11 @@ def do_gauss_cmd_line_boxing(options):
 		autoboxer.auto_box(boxable,False)
 		
 		if options.write_coord_files:
-			boxable.write_coord_file(-1,options.force)
+			boxable.write_coord_file(box_size=-1,force=options.force,imageformat=options.outformat)
 		if options.write_box_images:
-			boxable.write_box_images(-1,options.force)
+			boxable.write_box_images(box_size=-1,force=options.force,imageformat=options.outformat)
+
+		del boxable
 
 	project_db.close()
 	#done
@@ -3339,7 +3346,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		from morphology import defocus_gett
 		
 		px_size = float(self.output_pixel_size.text())
-		print px_size
+		#print px_size
 
 		volt=300.0
 		Cs=2.0
@@ -3349,7 +3356,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		del avg_sp
 		
 		print "CTF estimation done"
-		print defocus
+		#print defocus
 				
 		# update ctf inspector values
 		if (self.ctf_inspector is not None):
@@ -3600,7 +3607,12 @@ class CTFInspector(QtGui.QWidget):
 			# print "range: ",self.i_start," - ",self.i_stop
 				
 			stepw = float(w-2*wborder) / float(sizew)
-			sizeh = max([max(self.data[i]) for i in xrange(len(self.data))])
+
+			if ((self.i_start is not None) and (self.i_stop is not None)):
+				sizeh = max([max(self.data[i][self.i_start:self.i_stop]) for i in xrange(len(self.data))])
+			else:
+				sizeh = max([max(self.data[i]) for i in xrange(len(self.data))])
+
 			steph = float(h-2*hborder) / float(sizeh) 
 
 			for list_index in xrange(len(self.data)):

@@ -2730,7 +2730,8 @@ class PawelAutoBoxer(AutoBoxer):
                 self.ctf_window = 512
                 self.ctf_edge = 0
                 self.ctf_overlap = 50
-
+		self.out_file = None
+		
                 if not(dict is None):
                     # assume the dictionary uses variable names as keys, so we loop over all
                     #    keys
@@ -2856,7 +2857,8 @@ class PawelAutoBoxer(AutoBoxer):
 			self.thr_hgh = new_params[5]
 			self.use_variance = new_params[6]
 			self.invert = new_params[7]
-
+			
+			
 		boxes, trimboxes, ccfs = self.run(boxable.get_image_name(), boxable)
 		if not(self.parent is None):
 			self.parent.guictl.pawel_histogram.set_data( ccfs )
@@ -3004,8 +3006,13 @@ class PawelAutoBoxer(AutoBoxer):
 		except:
 			ctf_dict = EMAN2Ctf()
 		del parent_img
-			
-		file_name = self.get_particle_file_name( image_name )
+
+		# check whether we need to write to a specified file...
+		if not(self.out_file is None):
+			file_name = self.out_file
+		else:
+			file_name = self.get_particle_file_name( image_name )
+
 		for i in xrange( len(boxable.boxes) ):
 			b = boxable.boxes[i]
 			img = b.get_box_image(normalize, norm_method)
@@ -3043,7 +3050,7 @@ class PawelAutoBoxer(AutoBoxer):
 		self.box_size = box_size
 
 	def dynapix_on(self):
-		pass
+		return False
 
 	def write_to_db(self, write_current=False):
 		print "Gauss Auto boxer wrote to db"
