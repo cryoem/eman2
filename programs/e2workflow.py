@@ -274,6 +274,13 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		ctf = QtGui.QTreeWidgetItem(QtCore.QStringList("CTF"))
 		self.launchers["CTF"] = self.launch_ctf_report
 		spr_list.append(ctf)
+		refine2d = QtGui.QTreeWidgetItem(QtCore.QStringList("Refine 2D"))
+		self.launchers["Refine 2D"] = self.launch_refine2d_report
+		spr_list.append(refine2d)
+		init_model = QtGui.QTreeWidgetItem(QtCore.QStringList("Initial Model"))
+		spr_list.append(init_model)
+		refinement = QtGui.QTreeWidgetItem(QtCore.QStringList("3D Refinement"))
+		spr_list.append(refinement)
 		#spr_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Initial model")))
 		#spr_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Refinement")))
 		spr.addChildren(spr_list)
@@ -295,8 +302,8 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.launchers["Interactive boxing - e2boxer"] = self.launch_e2boxer_gui
 		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Auto boxing - e2boxer")))
 		self.launchers["Auto boxing - e2boxer"] = self.launch_e2boxer_auto
-		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Output - e2boxer")))
-		self.launchers["Output - e2boxer"] = self.launch_e2boxer_output
+		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Generate output - e2boxer")))
+		self.launchers["Generate output - e2boxer"] = self.launch_e2boxer_output
 		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Particle import")))
 		self.launchers["Particle import"] = self.launch_particle_import
 		ap.addChildren(ap_list)
@@ -305,6 +312,14 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		rd_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Import micrograph/ccd")))
 		self.launchers["Import micrograph/ccd"] = self.launch_import_mic_ccd
 		rd.addChildren(rd_list)
+		
+		refine2d_list = []
+		refine2d_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Create initial data set")))
+		self.launchers["Create initial data set"] = self.launch_refine2d_create_dataset
+		refine2d_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Generate class averages - e2refine2d")))
+		self.launchers["Generate class averages - e2refine2d"] = self.launch_refine2d_exec
+		refine2d.addChildren(refine2d_list)
+		
 		
 		self.tree_widget.setHeaderLabel("Choose a task")
 		
@@ -331,13 +346,13 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.add_module([str(module),"Browse",module])
 	
 	def launch_ctf_general(self):
-		self.launch_task(E2CTFGeneralTask,"e2ctf general")
+		self.launch_task(E2CTFGenericTask,"e2ctf general")
 	
 	def launch_e2boxer_output(self):
 		self.launch_task(E2BoxerOutputTask,"e3boxer output")
 	
 	def launch_boxer_general(self):
-		self.launch_task(E2BoxerGeneralTask,"e2boxer general")
+		self.launch_task(E2BoxerGenericTask,"e2boxer general")
 #		module = EMBoxerModule(self.application(),None)
 #		self.module.emit(QtCore.SIGNAL("launching_module"),"Boxer",module)
 #		module.show_guis()
@@ -368,6 +383,14 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 				return
 			
 		print "failed to close module?" # this shouldn't happen if I have managed everything correctly
+	
+	def launch_refine2d_report(self): self.launch_task(E2Refine2DReportTask,"refine2d report")
+		
+	def launch_refine2d_exec(self):
+		self.launch_task(E2Refine2DCreateDataSetTask,"e2refine2d params")
+		
+	def launch_refine2d_create_dataset(self):
+		self.launch_task(E2Refine2DCreateDataSetTask,"refine2d create data set")
 	
 	def launch_e2ctf_write_ouptut(self):
 		self.launch_task(E2CTFOutputTask,"e2ctf_wo")
