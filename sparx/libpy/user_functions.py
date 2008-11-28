@@ -189,7 +189,7 @@ def ref_ali3d( ref_data ):
 
 def reference3( ref_data ):
 	from utilities      import print_msg
-	from filter         import fit_tanh, filt_tanl
+	from filter         import fit_tanh1, filt_tanl
 	from fundamentals   import fshift
 	from morphology     import threshold
 	#  Prepare the reference in 3D alignment, i.e., low-pass filter and center.
@@ -209,7 +209,8 @@ def reference3( ref_data ):
 	Util.mul_scalar(volf, 1.0/stat[1])
 	#volf = threshold(volf)
 	Util.mul_img(volf, ref_data[0])
-	fl, aa = fit_tanh(ref_data[3])
+	fl, aa = fit_tanh1(ref_data[3], 0.1)
+	aa= 0.1
 	msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
 	print_msg(msg)
 	volf = filt_tanl(volf, fl, aa)
@@ -234,7 +235,7 @@ def reference4( ref_data ):
 	#  Output: filtered, centered, and masked reference image
 	#  apply filtration (FSC) to reference image:
 
-	print_msg("reference3\n")
+	print_msg("reference4\n")
 	cs = [0.0]*3
 
 	stat = Util.infomask(ref_data[2], ref_data[0], False)

@@ -380,8 +380,6 @@ def fit_tanh(dres, low = 0.1):
 		#print args,v
 		return v
 
-
-
 	freq = -1.0
 	for i in xrange(1,len(dres[0])-1):
 		if ( (2*dres[1][i]/(1.0+dres[1][i]) ) < 0.5):
@@ -430,8 +428,6 @@ def fit_tanh1(dres, low = 0.1):
 			v  -= qt*qt
 		#print args,v
 		return v
-
-
 
 	freq = -1.0
 	for i in xrange(1,len(dres[0])-1):
