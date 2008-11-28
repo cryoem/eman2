@@ -647,7 +647,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 				n.append("")
 				dims.append("")
 
-		p = ParamTable(name="filenames",desc_short="Choose images to box",desc_long="")
+		p = ParamTable(name="filenames",desc_short="Choose a subset of these images",desc_long="")
 			
 		pnames = ParamDef(name="names",vartype="stringlist",desc_short="File names",desc_long="The particles that will be used",property=None,defaultunits=None,choices=particle_names)
 		pboxes = ParamDef(name="Num boxes",vartype="intlist",desc_short="Particles on disk",desc_long="The number of box images stored for this image in the database",property=None,defaultunits=None,choices=n)
@@ -1972,11 +1972,58 @@ class E2Refine2DReportTask(ParticleWorkFlowTask):
 	def write_db_entry(self,key,value):
 		pass
 	
-class E2Refine2DCreateDataSetTask(ParticleWorkFlowTask):
-	documentation_string = "This form enables the user to create starting data sets for e2refine2d.\nChoose from the list of options below in terms of which data you wish to create the initial data set from. If you choose from particles, phase flipped, or Wiener filtered images in the project and hit OK, a second form will appear allowing you to specify images from which to generate the original data set."
+class E2Refine2DTask(ParticleWorkFlowTask):
+	'''
+	Common e2refine2D functionality
+	'''
+	documentation_string = "This form is a way for the user to supply arguments to and execute e2refine2d.py"
 	def __init__(self,application):
 		ParticleWorkFlowTask.__init__(self,application)
-		self.window_title = "Create refine 2D starting data set"
+		self.window_title = "Run e2refine2d"		
+		
+	def get_general_params(self):
+		params = []		
+		piter = ParamDef(name="iter",vartype="int",desc_short="Refinement iterations",desc_long="The number of times the e2refine2d svd-based class averaging procedure is iterated",property=None,defaultunits=0,choices=[])
+		piterclassav = ParamDef(name="iterclassav",vartype="int",desc_short="Class averaging iterations",desc_long="The number of iterative class average steps that occur in e2classaverage",property=None,defaultunits=2,choices=[])
+		pnaliref = ParamDef(name="naliref",vartype="int",desc_short="# alignment references",desc_long="The number of alignment references to use when determining particle orientations",property=None,defaultunits=8,choices=[])
+		pnbasisfp = ParamDef(name="nbasisfp",vartype="int",desc_short="# basis fp",desc_long="The number of MSA basis vectors to use when classifying",property=None,defaultunits=5,choices=[])
+		
+		aligners = dump_aligners_list().keys()
+		aligners.append("None")
+		cmps = dump_cmps_list().keys()
+		cmps.append("None")
+		
+		psimalign =  ParamDef(name="simalign",vartype="string",desc_short="Aligner",desc_long="The aligner being used",property=None,defaultunits="rotate_translate_flip",choices=aligners)
+		psimalignargs =  ParamDef(name="simalignargs",vartype="string",desc_short="",desc_long="Parameters for the aligner, see \"e2help.py aligners\"",property=None,defaultunits="",choices=[])
+		
+		psimaligncmp =  ParamDef(name="simaligncmp",vartype="string",desc_short="Comparitor",desc_long="The comparitor being used",property=None,defaultunits="dot",choices=cmps)
+		psimaligncmpsargs =  ParamDef(name="simaligncmpargs",vartype="string",desc_short="",desc_long="Parameters for the comparitor, see \"e2help.py cmps\"",property=None,defaultunits="",choices=[])	
+		
+		pnp = ParamDef(name="normproj",vartype="boolean",desc_short="Normalize projection vectors",desc_long="Normalizes each projected vector into the MSA subspace",property=None,defaultunits=False,choices=None)
+		
+		
+		project_db = db_open_dict("bdb:project")
+		pncp = ParamDef(name="parallel",vartype="int",desc_short="Number of CPUs",desc_long="Number of CPUS available for e2refine2d to use",property=None,defaultunits=project_db.get("global.num_cpus",dfl=num_cpus()),choices=None)
+
+		
+		params.append([piter,piterclassav])
+		params.append([pnaliref,pnbasisfp])
+		params.append([psimalign,psimalignargs])
+		params.append([psimaligncmp,psimaligncmpsargs])
+		params.append([pncp,pnp])
+		
+		return params
+			
+	def write_db_entry(self,key,value):
+		pass
+		
+	
+class E2Refine2DCreateDataSetTask(ParticleWorkFlowTask):
+	documentation_string = "Choose the data you wish to use for use for running e2refine2d from the list of options below and hit OK. This will pop up a second form asking you to fill in more details.\n\nNote that usually you should have 4 options to choose from below. If you are not seeing all 4 options it means you should go back in the work flow, import particles, and generate phase flipped and Wiener filtered output." 
+	def __init__(self,application):
+		ParticleWorkFlowTask.__init__(self,application)
+		self.window_title = "e2refine2d - getting starting"
+		self.preferred_size = (480,300)
 		
 	def get_params(self):
 		params = []		
@@ -2032,10 +2079,10 @@ class E2Refine2DCreateDataSetTask(ParticleWorkFlowTask):
 	def write_db_entry(self,key,value):
 		pass
 
-class E2Refine2DCreateParticleSetTask(ParticleWorkFlowTask):
+class E2Refine2DCreateParticleSetTask(E2Refine2DTask):
 	documentation_string = "This form enables the user to create starting data sets for e2refine2d.\nChoose from the list of options below in terms of which data you wish to create the initial data set from."
 	def __init__(self,application):
-		ParticleWorkFlowTask.__init__(self,application)
+		E2Refine2DTask.__init__(self,application)
 		self.window_title = "Create refine 2D starting data set"
 		self.end_tag = "_ptcls"
 	def get_params(self):
@@ -2049,8 +2096,10 @@ class E2Refine2DCreateParticleSetTask(ParticleWorkFlowTask):
 			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2Refine2DCreateParticleSetTask.documentation_string,choices=None))
 			params.append(p)  
 			params.append(ParamDef(name="shrink",vartype="int",desc_short="Shrink factor",desc_long="The the downsampling rate used to shrink the data",property=None,defaultunits=1,choices=[]))
-			
 		
+		other_params = self.get_general_params()
+		
+		params.extend(other_params)
 		return params
 
 	def on_form_ok(self,params):
@@ -2104,60 +2153,7 @@ class E2Refine2DCreateWienerParticleSetTask(E2Refine2DCreateParticleSetTask):
 		self.window_title = "Create refine 2D starting data set"
 		self.end_tag = "_ptcls_ctf_wiener"
 
-class E2Refine2DRunTask(ParticleWorkFlowTask):
-	documentation_string = "This form is a way for the user to supply arguments to and execute e2refine2d.py"
-	def __init__(self,application):
-		ParticleWorkFlowTask.__init__(self,application)
-		self.window_title = "Run e2refine2d"		
-		
-	def get_params(self):
-		params = []		
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2Refine2DRunTask.documentation_string,choices=None))
-		
-		
-		input = ["bdb:image_stacks#01","bdb:image_stacks#02"]
-		if db_check_dict("bdb:image_stacks#"):
-			image_stack_db  = db_open_dict("bdb:image_stacks")
-			for key in image_stack_db.keys():
-				if image_stack_db[key].has_key("maxrec"):
-					input.append("bdb:image_stacks#"+key)
-		
-		if len(input) == 0:
-			print "this is where we should bail"
-					
-		pinput =  ParamDef(name="input",vartype="string",desc_short="Input stack",desc_long="How the output box images should be normalized",property=None,defaultunits=None,choices=input)
-		piter = ParamDef(name="iter",vartype="int",desc_short="Refinement iterations",desc_long="The number of times the e2refine2d svd-based class averaging procedure is iterated",property=None,defaultunits=0,choices=[])
-		piterclassav = ParamDef(name="iterclassav",vartype="int",desc_short="Class averaging iterations",desc_long="The number of iterative class average steps that occur in e2classaverage",property=None,defaultunits=2,choices=[])
-		pnaliref = ParamDef(name="naliref",vartype="int",desc_short="# alignment references",desc_long="The number of alignment references to use when determining particle orientations",property=None,defaultunits=8,choices=[])
-		pnbasisfp = ParamDef(name="nbasisfp",vartype="int",desc_short="# basis fp",desc_long="The number of MSA basis vectors to use when classifying",property=None,defaultunits=5,choices=[])
-		
-		aligners = dump_aligners_list().keys()
-		aligners.append("None")
-		cmps = dump_cmps_list().keys()
-		cmps.append("None")
-		
-		psimalign =  ParamDef(name="simalign",vartype="string",desc_short="Aligner",desc_long="The aligner being used",property=None,defaultunits="rotate_translate_flip",choices=aligners)
-		psimaligncmp =  ParamDef(name="simaligncmp",vartype="string",desc_short="Comparitor",desc_long="The comparitor being used",property=None,defaultunits="dot",choices=cmps)
-		
-		pnp = ParamDef(name="normproj",vartype="boolean",desc_short="Normalize projection vectors",desc_long="Normalizes each projected vector into the MSA subspace",property=None,defaultunits=False,choices=None)
-		
-		
-		project_db = db_open_dict("bdb:project")
-		pncp = ParamDef(name="parallel",vartype="int",desc_short="Number of CPUs",desc_long="Number of CPUS available for e2refine2d to use",property=None,defaultunits=project_db.get("global.num_cpus",dfl=num_cpus()),choices=None)
-		
-		
-		params.append(pinput)
-		
-		params.append([piter,piterclassav])
-		params.append([pnaliref,pnbasisfp])
-		params.append([psimalign,psimaligncmp])
-		params.append([pncp,pnp])
-		
-		return params
-			
-	def write_db_entry(self,key,value):
-		pass
-		
+
 if __name__ == '__main__':
 	
 	from emapplication import EMStandAloneApplication

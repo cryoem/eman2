@@ -314,10 +314,8 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		rd.addChildren(rd_list)
 		
 		refine2d_list = []
-		refine2d_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Create initial data set")))
-		self.launchers["Create initial data set"] = self.launch_refine2d_create_dataset
-		refine2d_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Generate class averages - e2refine2d")))
-		self.launchers["Generate class averages - e2refine2d"] = self.launch_refine2d_exec
+		refine2d_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Generate classes - e2refine2d")))
+		self.launchers["Generate classes - e2refine2d"] = self.launch_refine2d_create_dataset
 		refine2d.addChildren(refine2d_list)
 		
 		
