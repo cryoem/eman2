@@ -34,7 +34,7 @@ from emform import EMFormModule,ParamTable
 from emdatastorage import ParamDef
 from PyQt4 import QtGui,QtCore
 from EMAN2db import db_check_dict, db_open_dict,db_remove_dict,db_list_dicts,db_close_dict
-from EMAN2 import EMData,get_file_tag,EMAN2Ctf,num_cpus,memory_stats,check_files_are_2d_images,check_files_are_em_images,numbered_path
+from EMAN2 import EMData,get_file_tag,EMAN2Ctf,num_cpus,memory_stats,check_files_are_2d_images,check_files_are_em_images,numbered_path,dump_aligners_list,dump_cmps_list
 import os
 import copy
 from emapplication import EMProgressDialogModule
@@ -2126,8 +2126,29 @@ class E2Refine2DRunTask(ParticleWorkFlowTask):
 			print "this is where we should bail"
 					
 		pinput =  ParamDef(name="input",vartype="string",desc_short="Input stack",desc_long="How the output box images should be normalized",property=None,defaultunits=None,choices=input)
-#		piter = ParamDef(name="iter",vartype="int",desc_short="Refinement iterations",desc_long="",property=None,defaultunits=boxer_project_db.get("working_boxsize",dfl=128),choices=[]))
+		piter = ParamDef(name="iter",vartype="int",desc_short="Refinement iterations",desc_long="The number of times the e2refine2d svd-based class averaging procedure is iterated",property=None,defaultunits=0,choices=[])
+		piterclassav = ParamDef(name="iterclassav",vartype="int",desc_short="Class averaging iterations",desc_long="The number of iterative class average steps that occur in e2classaverage",property=None,defaultunits=2,choices=[])
+		pnaliref = ParamDef(name="naliref",vartype="int",desc_short="# alignment references",desc_long="The number of alignment references to use when determining particle orientations",property=None,defaultunits=8,choices=[])
+		pnbasisfp = ParamDef(name="nbasisfp",vartype="int",desc_short="# basis fp",desc_long="The number of MSA basis vectors to use when classifying",property=None,defaultunits=5,choices=[])
+		
+		aligners = dump_aligners_list().keys()
+		aligners.append("None")
+		cmps = dump_cmps_list().keys()
+		cmps.append("None")
+		
+		psimalign =  ParamDef(name="simalign",vartype="string",desc_short="Aligner",desc_long="The aligner being used",property=None,defaultunits="rotate_translate_flip",choices=aligners)
+		psimaligncmp =  ParamDef(name="simaligncmp",vartype="string",desc_short="Comparitor",desc_long="The comparitor being used",property=None,defaultunits="dot",choices=cmps)
+		
+		project_db = db_open_dict("bdb:project")
+		pncp = ParamDef(name="parallel",vartype="int",desc_short="Number of CPUs",desc_long="Number of CPUS available for e2refine2d to use",property=None,defaultunits=project_db.get("global.num_cpus",dfl=num_cpus()),choices=None)
+		
+		
 		params.append(pinput)
+		
+		params.append([piter,piterclassav])
+		params.append([pnaliref,pnbasisfp])
+		params.append([psimalign,psimaligncmp])
+		params.append(pncp)
 		
 		return params
 			
