@@ -6489,7 +6489,7 @@ def h_stability(seed_name, nb_part, org):
 ## PCK K-MEANS STABILITY ######################################################################
 
 # K-means SA define the first temperature T0
-def k_means_SA_T0(im_M, mask, K, rand_seed, CTF, F=0):
+def k_means_SA_T0(im_M, mask, K, rand_seed, CTF, F):
 	from utilities 		import model_blank, print_msg
 	from random    		import seed, randint
 	import sys
@@ -6651,7 +6651,7 @@ def k_means_SA_T0(im_M, mask, K, rand_seed, CTF, F=0):
 						else:
 							dJe[k] = 0
 
-					# norm <0 [-1;0], >=0 [0;+1], if just 0 norm to 1
+					# norm <0 [-1;0], >=0 [0;+1], if all 0 norm to 1
 					nbneg  =  0
 					nbpos  =  0
 					minneg =  0
@@ -6727,6 +6727,279 @@ def k_means_SA_T0(im_M, mask, K, rand_seed, CTF, F=0):
 	
 	# return Cls, assign
 	return T0, ct_pert
+
+# K-means SA define the first temperature T0 (MPI version)
+def k_means_SA_T0_MPI(im_M, mask, K, rand_seed, CTF, F, myid, main_node, N_start, N_stop):
+	from utilities 		import model_blank, print_msg, bcast_EMData_to_all, reduce_EMData_to_root
+	from random    		import seed, randint
+	from mpi                import mpi_reduce, mpi_bcast, mpi_barrier, mpi_recv, mpi_send
+	from mpi                import MPI_SUM, MPI_FLOAT, MPI_INT, MPI_LOR, MPI_COMM_WORLD
+	import sys
+	import time
+	if CTF[0]:
+		from filter	        import filt_ctf, filt_table
+		from fundamentals 	import fftip
+
+		ctf  = deepcopy(CTF[1])
+		ctf2 = deepcopy(CTF[2])
+		CTF  = True
+	else:
+		CTF  = False
+
+	SA2 = True # default use the new SA
+
+	from math   import exp
+	from random import random
+
+	if mask != None:
+		if isinstance(mask, basestring):
+			ERROR('Mask must be an image, not a file name!', 'k-means', 1)
+
+	N = len(im_M)
+
+	t_start = time.time()
+		
+	# Informations about images
+	if CTF:
+		nx  = im_M[N_start].get_attr('or_nx')
+		ny  = im_M[N_start].get_attr('or_ny')
+		nz  = im_M[N_start].get_attr('or_nz')
+		buf = model_blank(nx, ny, nz)
+		fftip(buf)		
+		nx   = im_M[N_start].get_xsize()
+		ny   = im_M[N_start].get_ysize()
+		nz   = im_M[N_start].get_zsize()
+		norm = nx * ny * nz
+	else:
+		nx   = im_M[N_start].get_xsize()
+		ny   = im_M[N_start].get_ysize()
+		nz   = im_M[N_start].get_zsize()
+		norm = nx * ny * nz
+		buf  = model_blank(nx, ny, nz)
+
+	# Variables			
+	if rand_seed > 0:  seed(rand_seed)
+	else:              seed()
+	Cls        = {}
+	Cls['n']   = [0]*K   # number of objects in a given cluster
+	Cls['ave'] = [0]*K   # value of cluster average
+	Cls['var'] = [0]*K   # value of cluster variance
+	Cls['Ji']  = [0]*K   # value of Ji
+	Cls['k']   =  K	     # value of number of clusters
+	Cls['N']   =  N
+	assign     = [0]*N 
+	
+	if CTF:
+		Cls_ctf2    = {}
+		len_ctm	    = len(ctf2[0])
+			
+	# Init the cluster by an image empty
+	buf.to_zero()
+	for k in xrange(K):
+		Cls['ave'][k] = buf.copy()
+		Cls['var'][k] = buf.copy()
+		Cls['n'][k]   = 0
+		Cls['Ji'][k]  = 0
+
+	## [main] Random method
+	FLAG_EXIT = 0
+	if myid == main_node:
+		retrial = 20
+		while retrial > 0:
+			retrial -= 1
+			i = 0
+			for im in xrange(N):
+				assign[im] = randint(0, K-1)
+				Cls['n'][assign[im]] += 1
+
+			flag, k = 1, K
+			while k>0 and flag:
+				k -= 1
+				if Cls['n'][k] <= 1:
+					flag = 0
+					if retrial == 0: FLAG_EXIT = 1
+					for k in xrange(K):
+						Cls['n'][k] = 0
+
+			if flag == 1:	retrial = 0
+
+	# if need all node quit
+	mpi_barrier(MPI_COMM_WORLD)
+	FLAG_EXIT = mpi_reduce(FLAG_EXIT, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
+	FLAG_EXIT = mpi_bcast(FLAG_EXIT, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+	FLAG_EXIT = FLAG_EXIT.tolist()[0]
+	mpi_barrier(MPI_COMM_WORLD)
+	if FLAG_EXIT: sys.exit()
+
+	# [sync] waiting assignment
+	assign = mpi_bcast(assign, N, MPI_INT, main_node, MPI_COMM_WORLD)
+	assign = assign.tolist()     # convert array gave by MPI to list
+	Cls['n'] = mpi_bcast(Cls['n'], K, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+	Cls['n'] = Cls['n'].tolist() # convert array gave by MPI to list
+
+	## Calculate averages, if CTF: ave = S CTF.F / S CTF**2
+	if CTF:
+		# first init ctf2
+		for k in xrange(K):	Cls_ctf2[k] = [0] * len_ctm
+
+		for im in xrange(N_start, N_stop):
+			# compute ctf2				
+			for i in xrange(len_ctm):	Cls_ctf2[assign[im]][i] += ctf2[im][i]
+
+			# compute average first step
+			CTFxF = filt_table(im_M[im], ctf[im])
+			Util.add_img(Cls['ave'][assign[im]], CTFxF)
+
+		# sync
+		mpi_barrier(MPI_COMM_WORLD)
+
+		for k in xrange(K):
+			Cls_ctf2[k] = mpi_reduce(Cls_ctf2[k], len_ctm, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
+			Cls_ctf2[k] = mpi_bcast(Cls_ctf2[k],  len_ctm, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+			Cls_ctf2[k] = Cls_ctf2[k].tolist()    # convert array gave by MPI to list
+
+			reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
+			bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
+
+			for i in xrange(len_ctm):	Cls_ctf2[k][i] = 1.0 / float(Cls_ctf2[k][i])
+			Cls['ave'][k] = filt_table(Cls['ave'][k], Cls_ctf2[k])
+	else:
+		# [id] Calculates averages, first calculate local sum
+		for im in xrange(N_start, N_stop):	Util.add_img(Cls['ave'][int(assign[im])], im_M[im])
+
+		# [sync] waiting the result
+		mpi_barrier(MPI_COMM_WORLD)
+
+		# [all] compute global sum, broadcast the results and obtain the average
+		for k in xrange(K):
+			reduce_EMData_to_root(Cls['ave'][k], myid, main_node) 
+			bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
+			Cls['ave'][k] = Util.mult_scalar(Cls['ave'][k], 1.0/float(Cls['n'][k]))
+
+	## Clustering		
+	th = int(float(N)*0.8)
+	T0 = -1
+	lT = []
+	Tm = 40
+	for i in xrange(1, 10): lT.append(i/10.)
+	lT.extend(range(1, 5))
+	lT.extend(range(5, Tm, 2))
+	for T in lT:
+		
+		ct_pert = 0
+		for rep in xrange(2):
+			for im in xrange(N_start, N_stop):
+
+				if CTF:
+					CTFxAVE = []
+					for k in xrange(K): CTFxAVE.append(filt_table(Cls['ave'][k], ctf[im]))
+					res = Util.min_dist(im_M[im], CTFxAVE)
+				else:
+					res = Util.min_dist(im_M[im], Cls['ave'])
+
+				# Simulate annealing
+
+				if SA2:
+					dJe = [0.0] * K
+					ni  = float(Cls['n'][assign[im]])
+					di  = res['dist'][assign[im]]
+
+					for k in xrange(K):
+						if k != assign[im]:
+							nj  = float(Cls['n'][k])
+							dj  = res['dist'][k]
+
+							dJe[k] = -( (nj/(nj+1))*(dj/norm) - (ni/(ni-1))*(di/norm) )
+
+						else:
+							dJe[k] = 0
+
+					# norm <0 [-1;0], >=0 [0;+1], if all 0 norm to 1
+					nbneg  =  0
+					nbpos  =  0
+					minneg =  0
+					maxpos =  0
+					for k in xrange(K):
+						if dJe[k] < 0.0:
+							nbneg += 1
+							if dJe[k] < minneg: minneg = dJe[k]
+						else:
+							nbpos += 1
+							if dJe[k] > maxpos: maxpos = dJe[k]
+					if nbneg != 0:                   dneg = -1.0 / minneg
+					if nbpos != 0 and maxpos != 0:   dpos =  1.0 / maxpos
+					for k in xrange(K):
+						if dJe[k] < 0.0: dJe[k] = dJe[k] * dneg
+						else:
+							if maxpos != 0: dJe[k] = dJe[k] * dpos
+							else:           dJe[k] = 1.0
+
+					# q[k]
+					q      = [0.0] * K
+					arg    = [0.0] * K
+					maxarg = 0
+					for k in xrange(K):
+						arg[k] = dJe[k] / T
+						if arg[k] > maxarg: maxarg = arg[k]
+					limarg = 17
+					if maxarg > limarg:
+						sumarg = float(sum(arg))
+						for k in xrange(K): q[k] = exp(arg[k] * limarg / sumarg)
+					else:
+						for k in xrange(K): q[k] = exp(arg[k])
+
+					# p[k]
+					p = [[0.0, 0] for i in xrange(K)]
+					sumq = float(sum(q))
+					for k in xrange(K):
+						p[k][0] = q[k] / sumq
+						p[k][1] = k
+
+					p.sort()
+					c = [0.0] * K
+					c[0] = p[0][0]
+					for k in xrange(1, K): c[k] = c[k-1] + p[k][0]
+
+					pb = random()
+					select = -1
+					for k in xrange(K):
+						if c[k] > pb:
+							select = p[k][1]
+							break
+
+
+					if select != res['pos']:
+						ct_pert    += 1
+						res['pos']  = select
+
+
+				else:
+					if exp( -(1) / float(T) ) > random():
+						res['pos']  = randint(0, K - 1)
+						ct_pert    += 1
+
+		# sync
+		mpi_barrier(MPI_COMM_WORLD)
+		ct_pert = mpi_reduce(ct_pert, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
+		ct_pert = mpi_bcast(ct_pert, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+		ct_pert = ct_pert.tolist()[0]
+		ct_pert /= 2.0
+
+		# select the first temperature if > th
+		if ct_pert > th:
+			T0 = T
+			break
+
+	# sync
+	mpi_barrier(MPI_COMM_WORLD)
+
+	# if not found, set to the max value
+	if T0 == -1: T0 = Tm
+	
+	return T0, ct_pert
+
+
+
 
 
 '''
@@ -7235,7 +7508,7 @@ def k_means_open_unstable_MPI(stack, maskname, CTF, nb_cpu, main_node, myid):
 	#[im_M, mask, ctf, ctf2, LUT, N] = k_means_open_unstable_MPI(stack, maskname, CTF, nb_cpu, main_node, myid)  ## TODO
 	from utilities    import get_params2D, get_image
 	from fundamentals import rot_shift2D, rot_shift3D
-	from mpi          import mpi_bcast, mpi_barrier, MPI_COMM_WORLD
+	from mpi          import mpi_bcast, mpi_barrier, MPI_COMM_WORLD, MPI_INT
 
 	if CTF:
 		from morphology		import ctf_2, ctf_1d
@@ -7247,6 +7520,7 @@ def k_means_open_unstable_MPI(stack, maskname, CTF, nb_cpu, main_node, myid):
 	if myid == main_node:
 		N    = EMUtil.get_image_count(stack)
 		im   = EMData()
+		lim  = []
 		HEAD = im.read_images(stack, range(N))
 		for n in xrange(N):
 			try:
@@ -7283,7 +7557,58 @@ def k_means_open_unstable_MPI(stack, maskname, CTF, nb_cpu, main_node, myid):
 	else:
 		mask = None
 
+	im_per_node = max(N / nb_cpu, 1)
+	N_start     = myid * im_per_node
+	if myid == (nb_cpu -1):
+		N_stop = N
+	else:
+		N_stop = min(N_start + im_per_node, N)
 
+	# Now each node read his part of data (unsynchronise due to bdb)
+	im_M = [0] * N
+	im   = EMData()
+	for cpu in xrange(nb_cpu):
+		if cpu == myid:
+			for n in xrange(N_start, N_stop):
+				im.read_image(stack, lim[n])
+				# 3D object
+				if nz > 1:
+					try:	phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(im)
+					except:	phi, theta, psi, s3x, s3y, s3z, mirror, scale = 0, 0, 0, 0, 0, 0, 0, 0
+					im = rot_shift3D(im, phi, theta, psi, s3x, s3y, s3z)
+					if mirror: im.process_inplace('mirror', {'axis':'x'})
+				# 2D object
+				elif ny > 1:
+					try:	alpha, sx, sy, mirror, scale = get_params2D(im)
+					except: alpha, sx, sy, mirror, scale  = 0, 0, 0, 0, 0
+					im = rot_shift2D(im, alpha, sx, sy, mirror)
+				# obtain ctf
+				if CTF:
+					ctf_params = im.get_attr('ctf')
+					ctf[i]  = ctf_1d(nx, ctf_params)
+					ctf2[i] = ctf_2(nx, ctf_params)
+
+				# apply mask
+				if mask != None:
+					if CTF: Util.mul_img(im, mask)
+					else: im = Util.compress_image_mask(im, mask)
+
+				# fft
+				if CTF: fftip(im)
+
+				# mem the original size
+				if n == N_start:
+					im.set_attr('or_nx', nx)
+					im.set_attr('or_ny', ny)
+					im.set_attr('or_nz', nz)
+
+				# store image
+				im_M[n] = im.copy()
+
+		mpi_barrier(MPI_COMM_WORLD)
+
+	if CTF: return im_M, mask, ctf, ctf2,  lim, N, N_start, N_stop
+	else:   return im_M, mask, None, None, lim, N, N_start, N_stop
 
 
 # k-means open and prepare images, only unstable objects (active = 1)
@@ -7483,7 +7808,7 @@ def k_means_stab_gather(nb_run, th, maskname):
 # K-means main stability
 def k_means_stab(stack, maskname, opt_method, K, npart = 5, CTF = False, F = 0, maxrun = 50, th_nobj = 0, th_stab = 6.0, th_dec = 5, restart = 1, MPI = False):
 	if MPI:
-		k_means_stab_MPI(stack, maskname, opt_method, K, npart = 5, CTF = False, F = 0, maxrun = 50, th_nobj = 0, th_stab = 6.0, th_dec = 5, restart = 1)
+		k_means_stab_MPI(stack, maskname, opt_method, K, npart, CTF, F, maxrun, th_nobj, th_stab, th_dec, restart)
 		return
 	
 	from utilities 	 import print_begin_msg, print_end_msg, print_msg, file_type
@@ -7617,9 +7942,10 @@ def k_means_stab(stack, maskname, opt_method, K, npart = 5, CTF = False, F = 0, 
 def k_means_stab_MPI(stack, maskname, opt_method, K, npart = 5, CTF = False, F = 0, maxrun = 50, th_nobj = 0, th_stab = 6.0, th_dec = 5, restart = 1):
 	from utilities 	 import print_begin_msg, print_end_msg, print_msg, file_type
 	from statistics  import k_means_criterion, k_means_export, k_means_open_im, k_means_headlog
-	from statistics  import k_means_classical, k_means_SSE
-	from development import k_means_SA_T0
+	from statistics  import k_means_cla_MPI, k_means_SSE_MPI
+	from development import k_means_SA_T0_MPI
 	from mpi         import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier, MPI_COMM_WORLD
+	from mpi         import mpi_bcast, MPI_FLOAT
 	import sys, logging
 
 	sys.argv  = mpi_init(len(sys.argv), sys.argv)
@@ -7638,7 +7964,7 @@ def k_means_stab_MPI(stack, maskname, opt_method, K, npart = 5, CTF = False, F =
 		f = open('main_log.txt', 'w')
 		f.close()
 	logging.basicConfig(filename = 'main_log.txt', format = '%(asctime)s     %(message)s', level = logging.INFO)
-	logging.info('::: Start k-means stability :::')
+	if myid == main_node: logging.info('::: Start k-means stability :::')
 
 	# manage random seed
 	rnd = []
@@ -7646,7 +7972,7 @@ def k_means_stab_MPI(stack, maskname, opt_method, K, npart = 5, CTF = False, F =
 	if myid == main_node: logging.info('Init list random seed: %s' % rnd)
 
 	# init tag to the header for the stack file
-	if restart == 1:
+	if restart == 1 and myid == main_node:
 		logging.info('Init header to the stack file')
 		k_means_stab_init_tag(stack)
 
@@ -7657,42 +7983,49 @@ def k_means_stab_MPI(stack, maskname, opt_method, K, npart = 5, CTF = False, F =
 	while flag_run:
 		flag_cluster = False
 		num_run += 1
-		logging.info('RUN %02d K = %03d %s' % (num_run, K, 40 * '-'))
+		if myid == main_node: logging.info('RUN %02d K = %03d %s' % (num_run, K, 40 * '-'))
 
 		# open unstable images
-		logging.info('... Open images')
-		[im_M, mask, ctf, ctf2, LUT, N] = k_means_open_unstable_MPI(stack, maskname, CTF, nb_cpu, main_node, myid)  ## TODO
-		logging.info('... %d unstable images found' % N)
+		if myid == main_node: logging.info('... Open images')
+		[im_M, mask, ctf, ctf2, LUT, N, N_start, N_stop] = k_means_open_unstable_MPI(stack, maskname, CTF, nb_cpu, main_node, myid)
+		if myid == main_node: logging.info('... %d unstable images found' % N)
 		if N < 2:
-			logging.info('[STOP] Not enough images')
+			logging.info('[STOP] Node %02d - Not enough images' % myid)
 			break
 		if F != 0:
 			try:
-				T0, ct_pert = k_means_SA_T0(im_M, mask, K, rand_seed, [CTF, ctf, ctf2], F)
-				logging.info('... Select first temperature T0: %4.2f (dst %d)' % (T0, ct_pert))
+				T0, ct_pert = k_means_SA_T0_MPI(im_M, mask, K, rand_seed, [CTF, ctf, ctf2], F, myid, main_node, N_start, N_stop)
+				if myid == main_node: logging.info('... Select first temperature T0: %4.2f (dst %d)' % (T0, ct_pert))
 			except SystemExit:
-				logging.info('[STOP] Not enough images')
+				if myid == main_node: logging.info('[STOP] Not enough images')
+				mpi_barrier(MPI_COMM_WORLD)
 				break
 		else: T0 = 0
 
 		# loop over partition
 		ALL_ASG = []
-		print_begin_msg('k-means')
+		if myid == main_node: print_begin_msg('k-means')
 		for n in xrange(npart):
-			logging.info('...... Start partition: %d' % (n + 1))
-			k_means_headlog(stack, 'partition %d' % (n+1), opt_method, N, K, critname, maskname, trials, maxit, CTF, T0, F, rnd[n], 1)
+			if myid == main_node:
+				logging.info('...... Start partition: %d' % (n + 1))
+				k_means_headlog(stack, 'partition %d' % (n+1), opt_method, N, K, critname, maskname, trials, maxit, CTF, T0, F, rnd[n], nb_cpu)
 			if   opt_method == 'cla':
-				try:			[Cls, assign] = k_means_classical(im_M, mask, K, rnd[n], maxit, trials, [CTF, ctf, ctf2], F, T0, False)
-				except SystemExit:	flag_cluster  = True
+				try:			[Cls, assign] = k_means_cla_MPI(im_M, mask, K, rnd[n], maxit, trials, [CTF, ctf, ctf2], myid, main_node, N_start, N_stop, F, T0)
+				except SystemExit:
+					if myid == main_node: logging.info('[WARNING] Empty cluster')
+					mpi_barrier(MPI_COMM_WORLD)
+					flag_cluster = True
+					break
 			elif opt_method == 'SSE':
-				try:			[Cls, assign] = k_means_SSE(im_M, mask, K, rnd[n], maxit, trials, [CTF, ctf, ctf2], F, T0, False)
-				except SystemExit:      flag_cluster  = True
-			if flag_cluster:
-				logging.info('[WARNING] Empty cluster')
-				break
+				try:			[Cls, assign] = k_means_SSE_MPI(im_M, mask, K, rnd[n], maxit, trials, [CTF, ctf, ctf2], myid, main_node, nb_cpu, N_start, N_stop, F, T0)
+				except SystemExit:
+					if myid == main_node: logging.info('[WARNING] Empty cluster')
+					mpi_barrier(MPI_COMM_WORLD)
+					flag_cluster = True
+					break
 			
 			ALL_ASG.append(assign)
-		print_end_msg('k-means')
+		if myid == main_node: print_end_msg('k-means')
 
 		if flag_cluster:
 			num_run -= 1
@@ -7700,19 +8033,26 @@ def k_means_stab_MPI(stack, maskname, opt_method, K, npart = 5, CTF = False, F =
 			if dec < th_dec: K -= th_dec
 			else: 	         K -= dec
 			if K > 1:
-				logging.info('[WARNING] Restart the run with K = %d' % K)
+				if myid == main_node: logging.info('[WARNING] Restart the run with K = %d' % K)
+				mpi_barrier(MPI_COMM_WORLD)
 				continue
 			else:
-				logging.info('[STOP] Not enough number of clusters ')
+				if myid == main_node: logging.info('[STOP] Not enough number of clusters ')
+				mpi_barrier(MPI_COMM_WORLD)
 				break
+	
+		if myid == main_node:
+			# convert local assignment to absolute partition
+			logging.info('... Convert local asign to abs partition')
+			ALL_PART = k_means_stab_asg2part(ALL_ASG, LUT)
 
-		# convert local assignment to absolute partition
-		logging.info('... Convert local asign to abs partition')
-		ALL_PART = k_means_stab_asg2part(ALL_ASG, LUT)
+			# calculate the stability
+			stb, nb_stb, STB_PART = k_means_stab_H(ALL_PART)
+			logging.info('... Stability: %5.2f %% (%d objects)' % (stb, nb_stb))
 
-		# calculate the stability
-		stb, nb_stb, STB_PART = k_means_stab_H(ALL_PART)
-		logging.info('... Stability: %5.2f %% (%d objects)' % (stb, nb_stb))
+		mpi_barrier(MPI_COMM_WORLD)
+		stb = mpi_bcast(stb, 1, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+		stb = stb.tolist()[0]
 
 		# manage the stability
 		if stb < th_stab:
@@ -7720,34 +8060,40 @@ def k_means_stab_MPI(stack, maskname, opt_method, K, npart = 5, CTF = False, F =
 			if dec < th_dec: K -= th_dec
 			else:            K -= dec
 			if K > 1:
-				logging.info('[WARNING] Stability too low, restart the run with K = %d' % K)
+				if myid == main_node: logging.info('[WARNING] Stability too low, restart the run with K = %d' % K)
+				mpi_barrier(MPI_COMM_WORLD)
 				num_run -= 1
 				continue
 			else:
-				logging.info('[STOP] Not enough number of clusters ')
+				if myid == main_node: logging.info('[STOP] Not enough number of clusters ')
+				mpi_barrier(MPI_COMM_WORLD)
 				break
 
-		# export the stable class averages
-		logging.info('... Export stable class averages: average_stb_run%02d.hdf' % num_run)
-		k_means_stab_export(STB_PART, stack, num_run)
+		if myid == main_node:
+			# export the stable class averages
+			logging.info('... Export stable class averages: average_stb_run%02d.hdf' % num_run)
+			k_means_stab_export(STB_PART, stack, num_run)
 
-		# tag informations to the header
-		logging.info('... Update info to the header')
-		k_means_stab_update_tag(stack, ALL_PART, STB_PART, num_run)
+			# tag informations to the header
+			logging.info('... Update info to the header')
+			k_means_stab_update_tag(stack, ALL_PART, STB_PART, num_run)
+
+		mpi_barrier(MPI_COMM_WORLD)
 
 		# stop if max run is reach
 		if num_run >= maxrun:
 			flag_run = False
-			logging.info('[STOP] Max number of runs is reached (%d)' % maxrun)
+			if myid == main_node: logging.info('[STOP] Max number of runs is reached (%d)' % maxrun)
 
-	# merge and clean all stable averages
-	logging.info('Remove class average with nb objs < %d' % th_nobj)
-	ct = k_means_stab_gather(num_run, th_nobj, maskname)
-	logging.info('Gather and normalize all stable class averages: all_stb_ave_run.hdf (%d images)' % ct)
+	if myid == main_node:
+		# merge and clean all stable averages
+		logging.info('Remove class average with nb objs < %d' % th_nobj)
+		ct = k_means_stab_gather(num_run, th_nobj, maskname)
+		logging.info('Gather and normalize all stable class averages: all_stb_ave_run.hdf (%d images)' % ct)
 
-	
-	logging.info('::: END k-means stability :::')
+		logging.info('::: END k-means stability :::')
 
+	mpi_barrier(MPI_COMM_WORLD)
 
 
 ## END K-MEANS STABILITY ######################################################################
