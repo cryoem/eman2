@@ -1356,6 +1356,8 @@ def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF):
 	else:
 		mask = None
 
+	print stack, N_start, N_stop
+
 	DATA = im.read_images(stack, range(N_start, N_stop))
 	ct   = 0
 	for i in xrange(N_start, N_stop):
@@ -1888,7 +1890,7 @@ def k_means_classical(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, D
 							
 			# manage empty cluster
 			for k in xrange(K):
-				if Cls['n'][k] < 1:
+				if Cls['n'][k] <= 1:
 					print_msg('>>> WARNING: Empty cluster, restart with new partition.\n\n')
 					flag_empty = True
 					break
@@ -2364,7 +2366,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 							Cls_ctf2[assign_to][i]   += ctf2[im][i]
 										
 					# empty cluster control
-					if Cls['n'][assign_from] == 1:
+					if Cls['n'][assign_from] <= 1:
 						print_msg('>>> WARNING: Empty cluster, restart with new partition %d.\n\n' % wd_trials)
 						flag_empty = True
 												
@@ -2835,7 +2837,7 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 			
 			# [all] init average and ctf2
 			for k in xrange(K):
-				if Cls['n'][k] < 1:
+				if Cls['n'][k] <= 1:
 					if myid == main_node: print_msg('>>> WARNING: Empty cluster, restart with new partition.\n\n')
 					flag_empty = True
 					break
@@ -3461,7 +3463,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 			
 			# [all] init average, Ji and ctf2, and manage empty cluster
 			for k in xrange(K):
-				if Cls['n'][k] < 1:
+				if Cls['n'][k] <= 1:
 					if myid == main_node: print_msg('>>> WARNING: Empty cluster, restart with new partition.\n\n')
 					flag_empty = True
 					break
