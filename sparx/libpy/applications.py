@@ -8962,7 +8962,7 @@ class file_set :
 
 		return self.files[ifile], imgid - self.fends[ifile-1]
 
-def defvar_mpi(files, nprj, output, fl, fh, radccc, writelp, writestack):
+def defvar_mpi(files, nprj, outdir, fl, fh, radccc, writelp, writestack):
 	from statistics import def_variancer, ccc
 	from string import atoi, replace, split, atof
 	from EMAN2 import EMUtil
@@ -8970,24 +8970,35 @@ def defvar_mpi(files, nprj, output, fl, fh, radccc, writelp, writestack):
 	from filter import filt_btwl, filt_gaussl, filt_tanl
 	from math import sqrt
 	import os
-	from mpi import mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
+	from mpi import mpi_comm_rank, mpi_comm_size,mpi_barrier,MPI_COMM_WORLD
 
         myid = mpi_comm_rank( MPI_COMM_WORLD )
         ncpu = mpi_comm_size( MPI_COMM_WORLD )
         if myid==0:
-		finf = open( "progress.txt", "w" )
-	
+		if not os.path.exists(outdir):
+			os.system( "mkdir " + outdir )
+		finf = open( outdir + "/defvar_progress.txt", "w" )
+
+	mpi_barrier( MPI_COMM_WORLD )
+
+
 	n = get_im(files[0]).get_xsize()
 	all_varer = def_variancer(n,n,n)
 	odd_varer = def_variancer(n,n,n)
 	eve_varer = def_variancer(n,n,n)
  
+	varfile = outdir + "/var.hdf"
+	avgfile = outdir + "/avg.hdf"
+	varstack = outdir + "/varstack.hdf" 
+	oddstack = outdir + "/oddvarstack.hdf"
+	evestack = outdir + "/evevarstack.hdf"
 
-	if os.path.exists(output):		os.system("rm -f "+output)
-	if os.path.exists('stack_'+output):	os.system("rm -f stack_"+output)
-	if os.path.exists('odd_stack_'+output):	os.system("rm -f odd_stack_"+output)
-	if os.path.exists('eve_stack_'+output):	os.system("rm -f eve_stack_"+output)
-	if os.path.exists('avg_'+output):	os.system("rm -f avg_"+output)
+
+	if os.path.exists(varfile):	os.system("rm -f " + varfile)
+	if os.path.exists(avgfile):	os.system("rm -f " + avgfile)
+	if os.path.exists(varstack):	os.system("rm -f " + varstack)
+	if os.path.exists(oddstack):	os.system("rm -f " + oddstack)
+	if os.path.exists(evestack):	os.system("rm -f " + evestack)
 
 	cccmask = model_circle(radccc, n, n, n)
 	scale = sqrt( nprj )
@@ -8997,7 +9008,7 @@ def defvar_mpi(files, nprj, output, fl, fh, radccc, writelp, writestack):
         nimage = mystack.nimg()
         ndump = 10
 
-	lpstack = "btwl_cir_prj%04d.hdf" % myid
+	lpstack = outdir + ("/btwl_cir_prj%04d.hdf" % myid)
 	iwrite = 0
 	istack = 0
 	iprint = 0
@@ -9033,7 +9044,6 @@ def defvar_mpi(files, nprj, output, fl, fh, radccc, writelp, writestack):
 			
 
 			if myid==0 :
-
 				odd_nimg = odd_var.get_attr( "nimg" )
 				eve_nimg = eve_var.get_attr( "nimg" )
 				assert odd_nimg==eve_nimg
@@ -9041,16 +9051,16 @@ def defvar_mpi(files, nprj, output, fl, fh, radccc, writelp, writestack):
 				finf.write( 'ntot, ccc: %6d %10.3f\n' % (all_var.get_attr("nimg"), ccc(odd_var, eve_var, cccmask)) )
 				finf.flush()
 				if writestack:
-					odd_var.write_image( 'odd_stack_' + output, istack )
-					eve_var.write_image( 'eve_stack_' + output, istack )
-					all_var.write_image( 'all_stack_' + output, istack )
+					odd_var.write_image( oddstack, istack )
+					eve_var.write_image( evestack, istack )
+					all_var.write_image( varstack, istack )
 					istack += 1
 		
 
 				if iadded==niter:
-					all_avg.write_image( 'avg_' + output, 0 )
+					all_avg.write_image( avgfile, 0 )
 					#all_var = circumference( all_var, radcir, radcir+1 )
-					all_var.write_image( output, 0 )
+					all_var.write_image( varfile, 0 )
 
 
 

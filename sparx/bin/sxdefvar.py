@@ -15,7 +15,7 @@ def main():
 
 	from   optparse       import OptionParser
 	progname = os.path.basename(arglist[0])
-	usage = progname + " filelist outputfile  --fl=flit_low_value --fh=filt_high_value --radccc=radius_ccc --writelp --writestack --MPI"
+	usage = progname + " filelist outdir  --fl=flit_low_value --fh=filt_high_value --radccc=radius_ccc --writelp --writestack --MPI"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--fl",        type="float",  default=0.2,    help="first parameter for low pass filter")
 	parser.add_option("--fh",        type="float",  default=0.4,    help="second parameter for low pass filter")
@@ -31,10 +31,9 @@ def main():
 	else:
 		if options.MPI:
 			files = args[0:-1]
-			output = args[-1]
-			print 'mpi version of defvar'
+			outdir = args[-1]
 			from applications import defvar_mpi
-			defvar_mpi( files, 10000.0, output, options.fl, options.fh, options.radccc, options.writelp, options.writestack)
+			defvar_mpi( files, 10000.0, outdir, options.fl, options.fh, options.radccc, options.writelp, options.writestack)
 		else:
 			prefix = args[0]
 			nfile = int(args[1])
