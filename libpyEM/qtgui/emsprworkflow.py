@@ -30,12 +30,12 @@
 #
 #
 
-from emform import EMFormModule,ParamTable
+from emform import EMFormModule,ParamTable,EMTableFormModule
 from emdatastorage import ParamDef
 from PyQt4 import QtGui,QtCore
 from PyQt4.QtCore import Qt
 from EMAN2db import db_check_dict, db_open_dict,db_remove_dict,db_list_dicts,db_close_dict
-from EMAN2 import EMData,get_file_tag,EMAN2Ctf,num_cpus,memory_stats,check_files_are_2d_images,check_files_are_em_images,numbered_path,dump_aligners_list,dump_cmps_list,file_exists
+from EMAN2 import *
 import os
 import copy
 from emapplication import EMProgressDialogModule
@@ -2537,10 +2537,324 @@ class ImportInitialModels(ParticleWorkFlowTask):
 		self.application().close_specific(self.form)
 		self.form = None
 	 			
-	 		
-	 				
-	 	
 
+class RefinementReportTask(ParticleWorkFlowTask):
+	documentation_string = "This form displays the models produced at the end of each refinement."
+	warning_string = "\n\n\nNOTE: There are no results available."
+	def __init__(self,application):
+		ParticleWorkFlowTask.__init__(self,application)
+	
+	def get_params(self):
+		params = []
+		
+		p,n = None,0
+		
+		if n == 0:
+			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=RefinementReportTask.documentation_string+RefinementReportTask.warning_string,choices=None))
+		else:
+			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=RefinementReportTask.documentation_string,choices=None))
+			params.append(p)
+		return params
+
+class E2RefineParticlesTask(ParticleWorkFlowTask):
+	'''
+	The mother of all tasks
+	'''
+	 
+	documentation_string = "Enter the parameters of the refinement and hit okay to launch e2rerine."
+	 
+	def __init__(self,application):
+	 	ParticleWorkFlowTask.__init__(self,application)
+	 	self.end_tag = "_ptcls"
+	 	self.window_title = "e2refine parameters"
+	 	
+	def run_form(self):
+		self.form = EMTableFormModule(self.get_params(),self.application())
+		self.form.qt_widget.resize(*self.preferred_size)
+		self.form.setWindowTitle(self.window_title)
+		self.application().show_specific(self.form)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_close"),self.on_form_close)
+
+	def get_params(self):
+	 	params = []
+		
+		params.append(self.get_intro_params())
+		params.append(self.get_main_params())
+		params.append(self.get_project_3d_page())
+		params.append(self.get_simmx_page())
+		params.append(self.get_classaverage_page())
+		
+		return params
+	
+	def get_intro_params(self):
+		'''
+		General/broad refine params
+		'''
+		params = []
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2RefineParticlesTask.documentation_string,choices=None))
+
+	 	
+		return ["Introduction",params]
+	
+	
+	def get_main_params(self):
+		'''
+		General/broad refine params
+		'''
+		params = []
+		
+		
+		if self.end_tag != "generic":
+			p,n = self.get_particle_selection_table(tag=self.end_tag)
+		else:
+			p = ParamDef(name="filenames",vartype="url",desc_short="Input file name(s)",desc_long="The names of the particle files you want to use as in the input data for e2refine2d.py",property=None,defaultunits=[],choices=[])
+			n = 1 # just to fool the next bit, that's all
+			
+		# If we make it here n should be greater than 0, so just continue
+		if n == 0:
+			print "woops didn't think this could happen" # and it shouldn't
+			
+		
+		params.append(p)
+		
+		init_models = self.get_available_initial_models()
+		
+		pinitialmodel =  ParamDef(name="model",vartype="string",desc_short="Starting model",desc_long="The starting 3D model that will be used to seed refinement",property=None,defaultunits=None,choices=init_models)
+		params.append(pinitialmodel)
+		
+		syms = ["icos","oct","tet","d","c","h"]
+		
+		piter = ParamDef(name="iter",vartype="int",desc_short="Refinement iterations",desc_long="The number of times 3D refinement should be iterated",property=None,defaultunits=0,choices=[])
+		plowmem = ParamDef(name="lowmem",vartype="boolean",desc_short="Low mem",desc_long="Causes various programs to restrict memory usage but results in increased CPU time.",property=None,defaultunits=False,choices=None)
+		
+		psym =  ParamDef(name="symname",vartype="string",desc_short="Symmetry",desc_long="Symmetry to be imposed during refinement",property=None,defaultunits=None,choices=syms)
+		psymnum = ParamDef(name="symnumber",vartype="int",desc_short="Symmetry number",desc_long="In C,D and H symmetry, this is the symmetry number",property=None,defaultunits="",choices=None)
+		
+		filt_options = self.get_usefilt_options()
+		
+		if len(filt_options) > 0:
+			filled_out_options = ["None"]
+			filled_out_options.extend(filt_options)
+			filled_out_options.append("Specify")
+			pusefilt = ParamDef(name="usefilt_choice",vartype="choice",desc_short="Usefilt",desc_long="If specified will cause filtered images to be used for alignment of images",property=None,defaultunits="None",choices=filled_out_options)
+			pusefiltentry  =  ParamDef(name="usefilt_string",vartype="string",desc_short="file",desc_long="Specify the file containing the filtered images directly",property=None,defaultunits=None,choices=[])
+			params.append([pusefilt,pusefiltentry])
+		else:
+			pusefiltentry  =  ParamDef(name="usefilt_string",vartype="string",desc_short="Usefilt",desc_long="Specify the file containing the filtered images directly",property=None,defaultunits="",choices=[])
+			params.append(pusefiltentry)
+		
+			
+		
+		params.append([piter,plowmem])
+		params.append([psym,psymnum])
+		
+		
+		return ["General",params]
+	
+	def get_usefilt_options(self):
+		if self.end_tag != "generic":
+			tags = ["_ptcls_ctf_wiener"] # these tags could eventually generalized, such that if the user does their filtering option then their "tag" is included as an option
+			display_names = ["Wiener"]
+			
+			n = self.get_total_particles(self.end_tag)
+			
+			available_filt_files = []
+			number = []
+			for i,tag in enumerate(tags):
+				if tag != self.end_tag:
+					n_ = self.get_total_particles(tag=tag)
+					if n_ > 0 and n_ == n:
+						available_filt_files.append(display_names[i])
+					
+			return available_filt_files
+		else:
+			return []
+
+	def get_available_initial_models(self):
+		if db_check_dict("bdb:initial_models#"):
+			
+			db = "bdb:initial_models#"
+			names = []
+			for d in db_list_dicts("bdb:initial_models#"):
+				if len(d) != 0 and db_check_dict(db+d):
+					model_db = db_open_dict(db+d)
+					if model_db.has_key("maxrec"):
+						hdr = model_db.get_header(0)
+						if hdr["nx"] == hdr["ny"] and hdr["nx"] == hdr["nz"]:
+							names.append(d)
+								
+			return names
+		else:
+			return []
+	
+	def get_project_3d_page(self):
+		params = []
+		
+		projectors = dump_projectors_list().keys()
+		orientgens = dump_orientgens_list().keys()
+			
+		pprojector =  ParamDef(name="projector",vartype="string",desc_short="Projector",desc_long="The method used to generate projections",property=None,defaultunits="standard",choices=projectors)
+		
+		porientgens =  ParamDef(name="orientgen",vartype="string",desc_short="Orientation generator",desc_long="The method of orientation generation",property=None,defaultunits="eman",choices=orientgens)
+		
+		pmirror = ParamDef(name="incmirror",vartype="boolean",desc_short="Include mirror",desc_long="Include the mirror portion of the asymmetric uni",property=None,defaultunits=False,choices=[])
+		
+		
+		orient_options = ["angle based", "number based"]
+		porientoptions = ParamDef(name="orientopt",vartype="choice",desc_short="Method of generating orientation distribution",desc_long="Choose whether you want the orientations generating based on an angle or based on a total number of orientations desired",property=None,defaultunits="angle based",choices=orient_options)
+		porientoptionsentry  =  ParamDef(name="orientopt_entry",vartype="int",desc_short="value",desc_long="Specify the value corresponding to your choice",property=None,defaultunits=5,choices=[])
+		
+		params.append([pprojector,porientgens])
+		params.append([porientoptions,porientoptionsentry])
+		params.append(pmirror)
+		
+		return ["Project 3D",params]
+	
+	def get_simmx_page(self):
+		
+		params = []
+		pshrink = ParamDef(name="shrink",vartype="int",desc_short="Shrink",desc_long="The the downsampling rate used to shrink the data at various stages in refinement, for speed purposes",property=None,defaultunits=1,choices=[])
+		
+		
+		params.append(pshrink)
+		params.extend(self.get_cls_simmx_params(parameter_prefix="simmx_"))
+		
+		
+		return ["Simmx",params]
+	
+	def get_classaverage_page(self):
+		
+		params = []
+		
+		psep = ParamDef(name="sep",vartype="int",desc_short="Class separation",desc_long="The number of classes a particle can contribute towards",property=None,defaultunits=1,choices=[])
+		piter = ParamDef(name="class_iter",vartype="int",desc_short="Averaging iterations",desc_long="The number of class averaging iterations",property=None,defaultunits=0,choices=[])
+		
+		averagers = dump_averagers_list().keys()
+		paverager =  ParamDef("class_averager",vartype="string",desc_short="Averager",desc_long="The method used for generating class averages",property=None,defaultunits="image",choices=averagers)
+		
+		pkeep = ParamDef(name="class_keep",vartype="float",desc_short="keep",desc_long="The fraction of particles to keep in each class average. If sigma based is checked this value is interpreted in standard deviations from the mean instead",property=None,defaultunits=0.8,choices=[])
+		pkeepsig = ParamDef(name="class_keepsig",vartype="boolean",desc_short="Sigma based",desc_long="If checked the keep value is interpreted in standard deviations from the mean instead of basic ratio",property=None,defaultunits=True,choices=[])
+		
+		pnormproc =  ParamDef("class_normproc",vartype="string",desc_short="Normalization processor",desc_long="The normalization method applied to the class averages",property=None,defaultunits="normalize.edgemean",choices=["normalize","normalize.edgemean","None"])
+		
+		
+	
+		params.append([piter,psep])
+		params.append([pkeep,pkeepsig])
+		params.append([paverager,pnormproc])
+		params.extend(self.get_cls_simmx_params(parameter_prefix="class_"))
+
+		return ["Class averaging",params]
+		
+		
+	def get_cls_simmx_params(self,parameter_prefix=""):
+		params = []
+		aligners = dump_aligners_list().keys()
+		cmps = dump_cmps_list().keys()
+		
+		psimalign =  ParamDef(name=parameter_prefix+"simalign",vartype="string",desc_short="Aligner",desc_long="The aligner being used",property=None,defaultunits="rotate_translate_flip",choices=aligners)
+		psimalignargs =  ParamDef(name=parameter_prefix+"simalignargs",vartype="string",desc_short="params",desc_long="Parameters for the aligner, see \"e2help.py aligners\"",property=None,defaultunits="",choices=[])
+		
+		psimaligncmp =  ParamDef(name=parameter_prefix+"simaligncmp",vartype="string",desc_short="Align comparitor",desc_long="The comparitor being used",property=None,defaultunits="dot",choices=cmps)
+		psimaligncmpargs =  ParamDef(name=parameter_prefix+"simaligncmpargs",vartype="string",desc_short="params",desc_long="Parameters for this comparitor, see \"e2help.py cmps\"",property=None,defaultunits="",choices=[])	
+		
+		
+		prsimalign =  ParamDef(name=parameter_prefix+"simralign",vartype="string",desc_short="Refine aligner",desc_long="The refine aligner being used",property=None,defaultunits="None",choices=["None","refine"])
+		prsimalignargs =  ParamDef(name=parameter_prefix+"simralignargs",vartype="string",desc_short="params",desc_long="Parameters for this aligner, see \"e2help.py aligners\"",property=None,defaultunits="",choices=[])
+		
+		prsimaligncmp =  ParamDef(name=parameter_prefix+"simraligncmp",vartype="string",desc_short="Refine align comparitor",desc_long="The comparitor being used for refine alignment",property=None,defaultunits="dot",choices=cmps)
+		prsimaligncmpargs =  ParamDef(name=parameter_prefix+"simraligncmpargs",vartype="string",desc_short="params",desc_long="Parameters for thos comparitor, see \"e2help.py cmps\"",property=None,defaultunits="",choices=[])	
+		
+		pcmp  =  ParamDef(name=parameter_prefix+"cmp",vartype="string",desc_short="Main comparitor",desc_long="The comparitor to determine the final quality metric",defaultunits="dot",choices=cmps)
+		pcmpargs =  ParamDef(name=parameter_prefix+"cmpargs",vartype="string",desc_short="params",desc_long="Parameters for the this comparitor, see \"e2help.py cmps\"",property=None,defaultunits="",choices=[])	
+	
+
+		params.append([pcmp,pcmpargs])
+		params.append([psimalign,psimalignargs])
+		params.append([psimaligncmp,psimaligncmpargs])
+		params.append([prsimalign,prsimalignargs])
+		params.append([prsimaligncmp,prsimaligncmpargs])
+		
+		return params
+
+	 def get_make3d_page(self):
+		
+		params = []
+
+
+class E2RefineGeneralTask(E2RefineParticlesTask):
+	def __init__(self,application):
+		E2RefineParticlesTask.__init__(self,application)
+		self.end_tag = "generic"		 
+		 
+
+class E2RefineChooseDataTask(ParticleWorkFlowTask):
+	'''
+	Yes this is this very similar to E2Refine2DChooseDataTask so I could use inheritance, however this task could, especially to include different sets of images, or reduce by not giving as many choices (as is likely to occur)
+	'''
+	documentation_string = "Choose the data you wish to use for use for running e2refine from the list of options below and hit OK. This will pop up a second form asking you to fill in more details." 
+	def __init__(self,application):
+		ParticleWorkFlowTask.__init__(self,application)
+		self.window_title = "e2refine- getting starting"
+		self.preferred_size = (480,300)
+		
+	def get_params(self):
+		params = []		
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2RefineChooseDataTask.documentation_string,choices=None))
+		
+		
+		n1 = self.get_total_particles(tag="_ptcls")
+		n2 = self.get_total_particles(tag="_ptcls_ctf_flip")
+		n3 = self.get_total_particles(tag="_ptcls_ctf_wiener")
+		
+		choices = []
+		if n1 > 0:
+			choices.append("Particles ("+str(n1)+")")
+		if n2 > 0:
+			choices.append("Phase flipped ptcls ("+str(n2)+")")
+		if n3 > 0:
+			choices.append("Wiener ptcls ("+str(n3)+")")
+			
+		choices.append("Specify files")
+		
+		
+		params.append(ParamDef(name="particle_set_choice",vartype="choice",desc_long="Choose the particle data set you wish to use to generate a starting data for e2refine2d",desc_short="Choose data",property=None,defaultunits=None,choices=choices))
+			
+		return params
+	
+	def on_form_ok(self,params):
+		for k,v in params.items():
+			self.write_db_entry(k,v)
+
+		choice = params["particle_set_choice"]
+		
+		if choice[:9] == "Particles":
+			self.emit(QtCore.SIGNAL("replace_task"),E2RefineParticlesTask,"e2refine params")
+			self.application().close_specific(self.form)
+			self.form = None
+#		elif choice[:5] == "Phase":
+#			self.emit(QtCore.SIGNAL("replace_task"),E2Refine2DWithPhasePtclsTask,"e2refine2d options")
+#			self.application().close_specific(self.form)
+#			self.form = None
+#		elif choice[:6] == "Wiener":
+#			self.emit(QtCore.SIGNAL("replace_task"),E2Refine2DWithWienPtclsTask,"e2refine2d options")
+#			self.application().close_specific(self.form)
+#			self.form = None
+		elif choice == "Specify files":
+			self.emit(QtCore.SIGNAL("replace_task"),E2RefineGeneralTask,"e2refine params")
+			self.application().close_specific(self.form)
+			self.form = None
+		else:
+			print "the code has changed since the original author wrote it, something is wrong!!"
+
+	
+			
+	def write_db_entry(self,key,value):
+		pass
+
+	
 if __name__ == '__main__':
 	
 	from emapplication import EMStandAloneApplication
