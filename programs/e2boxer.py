@@ -341,6 +341,9 @@ def do_gauss_cmd_line_boxing(options):
 	if (options.out_file):
 		image_list = []
 
+	normalize=True
+	norm_method="normalize.edgemean"
+		
 	for image_name in options.filenames:
 		print "cmd autoboxing",image_name
 		boxable = Boxable(image_name,None,autoboxer)
@@ -352,7 +355,7 @@ def do_gauss_cmd_line_boxing(options):
 		autoboxer.set_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
 		# new method to determine ctf...
 		print "starting ctf determination"
-		autoboxer.auto_ctf(boxable)
+		this_ctf=autoboxer.auto_ctf(boxable)
 		# Tell the boxer to delete non refs - FIXME - the uniform appraoch needs to occur - see SwarmAutoBoxer.auto_box
 		print "starting autoboxer"
 		autoboxer.auto_box(boxable,False)
@@ -361,8 +364,41 @@ def do_gauss_cmd_line_boxing(options):
 			print "write coords"
 			boxable.write_coord_file(box_size=-1,force=options.force,imageformat=options.outformat)
 		if options.write_box_images:
-			print "write box images"
-			boxable.write_box_images(box_size=-1,force=options.force,imageformat=options.outformat)
+			# we don't want to use boxable.write_box_images, since these don't store all information.
+			#    do all this manually, then, but the code follows Boxable.write_box_images
+			
+			img_name = boxable.get_image_file_name(options.outformat)
+			print "img_name:",img_name
+			if ("bdb" == options.outformat):
+				if db_check_dict(img_name):
+					if not(options.force):
+						print "db",img_name,"already exists, doing nothing. Use force to override this behavior"
+						return
+					else:
+						db_remove_dict(img_name)
+			elif ("hdf" == options.outformat):	
+				if file_exists(img_name):
+					if not(options.force):
+						print "warning, file already exists - ", img_name, " doing nothing. Use force to override this behavior"
+						return
+					else:
+						remove_file(img_name)
+				
+			print "writing",boxable.num_boxes(),"boxed images to", img_name
+			for single_box in boxable.boxes:
+				img = single_box.get_box_image(normalize,norm_method)
+				# set all necessary attributes....
+				img.set_attr( "ctf" , this_ctf)
+				img.set_attr( "Pixel_size", autoboxer.pixel_output )
+				img.set_attr( "Micrograph", image_name )
+				img.set_attr( "Score", single_box.correlation_score )
+				img.write_image(img_name,-1)
+
+			if ("bdb" == options.outformat):
+				db_close_dict(img_name)
+			
+			#print "write box images"
+			#boxable.write_box_images(box_size=-1,force=options.force,imageformat=options.outformat)
 
 		# check whether we will need to merge particles from a single image into
 		#    one file. if so, append image name to a list
@@ -370,8 +406,7 @@ def do_gauss_cmd_line_boxing(options):
 			# need to use get_image_file_name instead of raw name....
 			image_list.append(boxable.get_image_file_name(options.outformat))
 
-		del boxable
-
+		del boxable,this_ctf
 	
 	# now check again for output file
 	if (options.out_file):

@@ -2900,7 +2900,7 @@ class PawelAutoBoxer(AutoBoxer):
 				   f_start=self.ctf_fstart,f_stop=self.ctf_fstop)
 
 	    # set image properties, in order to save ctf values
-	    from utilities import set_ctf
+	    from utilities import set_ctf,generate_ctf
 	    set_ctf(img,[defocus,Cs,volt,self.pixel_output,0,0])
 	    # and rewrite image 
 	    img.write_image(image_name)
@@ -2909,7 +2909,7 @@ class PawelAutoBoxer(AutoBoxer):
             del img,image_name
             #print "CTF estimation done:"
             #print defocus
-            
+            return generate_ctf([defocus,Cs,volt,self.pixel_output,0,0])
             
 
 	def run(self, imgname, boxable=None):
