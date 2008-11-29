@@ -2903,7 +2903,7 @@ class PawelAutoBoxer(AutoBoxer):
 	    from utilities import set_ctf,generate_ctf
 	    set_ctf(img,[defocus,Cs,volt,self.pixel_output,0,0])
 	    # and rewrite image 
-	    img.write_image(image_name)
+	    img.write_image(image_name,0)
 
             del avg_sp
             del img,image_name
@@ -2929,11 +2929,10 @@ class PawelAutoBoxer(AutoBoxer):
 			boxable.delete_auto_boxes(True)
 			imgname = boxable.get_image_name()
 			img = BigImageCache.get_image_directly(imgname) # change from boxable.image_name, hope you don't mind
-			print "box"
+
 		else:
 			img = get_im( imgname )
-			print "norm"
-			#[avg,sigma,fmin,fmax] = Util.infomask( img, None, True )
+                        #[avg,sigma,fmin,fmax] = Util.infomask( img, None, True )
 			#img /= sigma
 
 		img = SincBlackmanSubsampleCache.get_image(boxable.get_image_name(),self.get_params_mediator())

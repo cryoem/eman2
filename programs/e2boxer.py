@@ -366,9 +366,9 @@ def do_gauss_cmd_line_boxing(options):
 		if options.write_box_images:
 			# we don't want to use boxable.write_box_images, since these don't store all information.
 			#    do all this manually, then, but the code follows Boxable.write_box_images
-			
+			from utilities import set_params2D
 			img_name = boxable.get_image_file_name(options.outformat)
-			print "img_name:",img_name
+			#print "img_name:",img_name
 			if ("bdb" == options.outformat):
 				if db_check_dict(img_name):
 					if not(options.force):
@@ -376,6 +376,7 @@ def do_gauss_cmd_line_boxing(options):
 						return
 					else:
 						db_remove_dict(img_name)
+						db_open_dict(img_name)
 			elif ("hdf" == options.outformat):	
 				if file_exists(img_name):
 					if not(options.force):
@@ -392,6 +393,9 @@ def do_gauss_cmd_line_boxing(options):
 				img.set_attr( "Pixel_size", autoboxer.pixel_output )
 				img.set_attr( "Micrograph", image_name )
 				img.set_attr( "Score", single_box.correlation_score )
+				img.set_attr( "ctf_applied" ,0 )
+				img.set_attr( "active", 1 )
+				set_params2D(img, [0.0, 0.0, 0.0, 0, 1.0])
 				img.write_image(img_name,-1)
 
 			if ("bdb" == options.outformat):
