@@ -894,7 +894,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		print_msg("Translational step          : %s\n"%(step))
 		print_msg("Center type                 : %i\n"%(center))
 		print_msg("Maximum iteration           : %i\n"%(max_iter))
-		print_msg("data with CTF               : %s\n"%(CTF))
+		print_msg("Data with CTF               : %s\n"%(CTF))
 		print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
 		if auto_stop:
 			print_msg("Stop iteration with         : criterion\n")
@@ -1108,7 +1108,7 @@ def ali2d_e(stack, outdir, maskfile = None, ou = -1, br = 1.75, center = 1, eps 
 	print_msg("Center type                 : %i\n"%(center))
 	print_msg("Error tolerance             : %f\n"%(eps))
 	print_msg("Maximum iteration           : %i\n"%(max_iter))
-	print_msg("data with CTF               : %s\n"%(CTF))
+	print_msg("Data with CTF               : %s\n"%(CTF))
 	print_msg("Signal-to-Noise Ratio       : %f\n\n"%(snr))
 	
 	
@@ -1206,12 +1206,12 @@ def ali2d_e(stack, outdir, maskfile = None, ou = -1, br = 1.75, center = 1, eps 
 
 
 def ali2d_m(stack, refim, outdir, maskfile=None, ir=1, ou=-1, rs=1, xrng=0, yrng=0, step=1, center=1, maxit=0, CTF=False, snr=1.0, rand_seed=1000, MPI=False):
-# 2D multi-reference alignment using rotational ccf in polar coords and quadratic interpolation
+# 2D multi-reference alignment using rotational ccf in polar coordinates and quadratic interpolation
 	if MPI:
 		ali2d_m_MPI(stack, refim, outdir, maskfile, ir, ou, rs, xrng, yrng, step, center, maxit, CTF, snr, rand_seed)
 		return
 
-	from utilities      import   model_circle, compose_transform2, combine_params2, drop_image, get_image
+	from utilities      import   model_circle, combine_params2, inverse_transform2, drop_image, get_image
 	from utilities	    import   center_2D, get_im, get_params2D, set_params2D
 	from statistics     import   fsc
 	from alignment      import   Numrinit, ringwe, Applyws, fine_2D_refinement
@@ -1252,7 +1252,7 @@ def ali2d_m(stack, refim, outdir, maskfile=None, ir=1, ou=-1, rs=1, xrng=0, yrng
 	print_msg("Translational step          : %i\n"%(step))
 	print_msg("Center type                 : %i\n"%(center))
 	print_msg("Maximum iteration           : %i\n"%(max_iter))
-	print_msg("data with CTF               : %s\n"%(CTF))
+	print_msg("Data with CTF               : %s\n"%(CTF))
 	print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
 	print_msg("Random seed                 : %i\n\n"%(rand_seed))
 
@@ -1262,10 +1262,10 @@ def ali2d_m(stack, refim, outdir, maskfile=None, ir=1, ou=-1, rs=1, xrng=0, yrng
 	output = sys.stdout
 
 	if maskfile:
-		import  types
+		import types
 		if type(maskfile) is types.StringType:  mask = get_image(maskfile)
 		else: mask = maskfile
-	else : mask = model_circle(last_ring, nx, nx)
+	else: mask = model_circle(last_ring, nx, nx)
 	#  references
 	refi = []
 	numref = EMUtil.get_image_count(refim)
@@ -1302,7 +1302,7 @@ def ali2d_m(stack, refim, outdir, maskfile=None, ir=1, ou=-1, rs=1, xrng=0, yrng
 	a0 = -1.
 	again = True
 	Iter = 0
-	while(Iter < max_iter and again):
+	while Iter < max_iter and again:
 		#again = False
 		ringref = []
 		#print "numref",numref
@@ -1321,8 +1321,9 @@ def ali2d_m(stack, refim, outdir, maskfile=None, ir=1, ou=-1, rs=1, xrng=0, yrng
 					ctf2[j][0][i] = 0.0
 					ctf2[j][1][i] = 0.0
 		assign = [[] for i in xrange(numref)]
+		sx_sum = [0.0]*numref
+		sy_sum = [0.0]*numref
 		for im in xrange(nima):
-			#
 			if CTF:
 				ctf_params = data[im].get_attr("ctf")
 				if data[im].get_attr("ctf_applied") == 0:
@@ -1331,22 +1332,25 @@ def ali2d_m(stack, refim, outdir, maskfile=None, ir=1, ou=-1, rs=1, xrng=0, yrng
 					from filter import filt_ctf
 					data[im] = filt_ctf(data[im], ctf_params)
 					data[im].set_attr('ctf_applied', 1)
-			#normalize
 			alpha, sx, sy, mirror, scale = get_params2D(data[im])
-			# align current image to the reference
+			alphai, sxi, syi, scalei = inverse_transform2(alpha, sx, sy, 1.0)
+			# normalize
 			data[im].process_inplace("normalize.mask", {"mask":mask, "no_sigma":0})
-			[angt, sxst, syst, mirrort, xiref, peakt] = \
-				Util.multiref_polar_ali_2d(data[im], ringref, xrng, yrng, step, mode, numr, cnx-sx, cny-sy)
+			# align current image to the reference
+			[angt, sxst, syst, mirrort, xiref, peakt] = Util.multiref_polar_ali_2d(data[im], 
+				ringref, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
 			iref = int(xiref)
 			# combine parameters and set them to the header, ignore previous angle and mirror
-			[alphan, sxn, syn, mn] = combine_params2(0.0, sx, sy, 0, angt, sxst, syst, mirrort)
-			#print  "combine with previous ",Iter,im,alphan, sxn, syn, mn, iref
+			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
 			set_params2D(data[im], [alphan, sxn, syn, int(mn), scale])
-			data[im].set_attr('assign',iref)
+			if mn == 0: sx_sum[iref] += sxn
+			else: sx_sum[iref] -= sxn
+			sy_sum[iref] += syn
+			data[im].set_attr('assign', iref)
 			# apply current parameters and add to the average
 			temp = rot_shift2D(data[im], alphan, sxn, syn, mn)
 			it = im%2
-			Util.add_img( refi[iref][it], temp)
+			Util.add_img(refi[iref][it], temp)
 			if CTF:
 				ctm = ctf_2(nx, ctf_params)
 				for i in xrange(lctf):  ctf2[iref][it][i] += ctm[i]
@@ -1365,7 +1369,7 @@ def ali2d_m(stack, refim, outdir, maskfile=None, ir=1, ou=-1, rs=1, xrng=0, yrng
 					assign[j].append(randint(0, nima-1))
 					refi[j][0] = data[assign[j][0]].copy()
 				else:
-					max_inter=0  # switch off fine refi.
+					max_inter = 0  # switch off fine refi.
 					br = 1.75
 					#  the loop has to 
 					for INter in xrange(max_inter+1):
@@ -1373,28 +1377,33 @@ def ali2d_m(stack, refim, outdir, maskfile=None, ir=1, ou=-1, rs=1, xrng=0, yrng
 						if CTF:
 							for i in xrange(lctf):  ctm[i] = 1.0 / (ctf2[j][0][i] + 1.0/snr)
 							from filter import filt_table
-							av1 = filt_table( refi[j][0], ctm)
+							av1 = filt_table(refi[j][0], ctm)
 							for i in xrange(lctf):  ctm[i] = 1.0 / (ctf2[j][1][i] + 1.0/snr)
-							av2 = filt_table( refi[j][1], ctm)
+							av2 = filt_table(refi[j][1], ctm)
 							frsc = fsc(av1, av2, 1.0, os.path.join(outdir,"drm_%03d_%04d"%(Iter, j)))
 							#Now the total average
 							for i in xrange(lctf):  ctm[i] = 1.0 / (ctf2[j][0][i] + ctf2[j][1][i] + 1.0/snr)
-							refi[j][0] = filt_table( Util.addn_img( refi[j][0], refi[j][1] ), ctm)
+							refi[j][0] = filt_table(Util.addn_img(refi[j][0], refi[j][1]), ctm)
 						else:
 							frsc = fsc(refi[j][0], refi[j][1], 1.0, os.path.join(outdir,"drm_%03d_%04d"%(Iter, j)))
-							Util.add_img( refi[j][0], refi[j][1] )
-							Util.mul_scalar( refi[j][0], 1.0/float(refi[j][2]) )
+							Util.add_img(refi[j][0], refi[j][1])
+							Util.mul_scalar(refi[j][0], 1.0/float(refi[j][2]))
 						#  low pass filter references
 						lowfq, highfq = filt_params(frsc, low = 0.1)
 						refi[j][0]  = filt_btwl(refi[j][0], lowfq, highfq)
-						refi[j][0], csx, csy = center_2D(refi[j][0], center)
-						msg = "   group #%3d   filter parameters = %6.4f, %6.4f,  center parameters (x,y) = %10.3e, %10.3e\n"%(j, lowfq, highfq, csx,csy)
+						if center == -1:
+							csx = sx_sum[j]/len(assign[j])
+							csy = sy_sum[j]/len(assign[j])
+							refi[j][0] = fshift(refi[j][0], -csx, -csy)
+						else:
+							refi[j][0], csx, csy = center_2D(refi[j][0], center)
+						msg = "   group #%3d   filter parameters = %6.4f, %6.4f,  center parameters (x,y) = %10.3e, %10.3e\n"%(j, lowfq, highfq, csx, csy)
 						print_msg(msg)
 						for i in xrange(len(assign[j])):
 							im = assign[j][i]
 							alpha, sx, sy, mirror, scale =  get_params2D(data[im])
-							alphan, sxn, syn, scale = compose_transform2(alpha, sx, sy, 1.0, 0.0, -csx, -csy, 1.0)
-							set_params2D(data[im], [alphan, sxn, syn, int(mirror), scale])
+							alphan, sxn, syn, mirrorn = combine_params2(alpha, sx, sy, mirror, 0.0, -csx, -csy, 0)
+							set_params2D(data[im], [alphan, sxn, syn, int(mirrorn), scale])
 						# refine images within the group
 						#  Do the refinement only if max_inter>0, but skip it for the last iteration.
 						if INter < max_inter:
@@ -1404,11 +1413,11 @@ def ali2d_m(stack, refim, outdir, maskfile=None, ir=1, ou=-1, rs=1, xrng=0, yrng
 							refi[j][1].to_zero()
 							for i in xrange(len(assign[j])):
 								im = assign[j][i]
-								alpha, sx, sy, mirror, scale =  get_params2D(data[im])
+								alpha, sx, sy, mirror, scale = get_params2D(data[im])
 								# apply current parameters and add to the average
 								temp = rot_shift2D(data[im], alpha, sx, sy, mn)
 								it = im%2
-								Util.add_img( refi[j][it], temp)
+								Util.add_img(refi[j][it], temp)
 
 				# write the current average
 				TMP = []
@@ -1438,9 +1447,9 @@ def ali2d_m(stack, refim, outdir, maskfile=None, ir=1, ou=-1, rs=1, xrng=0, yrng
 
 
 def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yrng=0, step=1, center=1, maxit=10, CTF=False, snr=1.0, rand_seed=1000):
-# 2D multi-reference alignment using rotational ccf in polar coords and quadratic interpolation
+# 2D multi-reference alignment using rotational ccf in polar coordinates and quadratic interpolation
 
-	from utilities      import   model_circle, compose_transform2, combine_params2, drop_image, get_image
+	from utilities      import   model_circle, combine_params2, inverse_transform2, drop_image, get_image
 	from utilities      import   reduce_EMData_to_root, bcast_EMData_to_all, bcast_number_to_all
 	from utilities      import   send_attr_dict, recv_attr_dict
 	from utilities	    import   center_2D
@@ -1505,7 +1514,7 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 		print_msg("Translational step          : %i\n"%(step))
 		print_msg("Center type                 : %i\n"%(center))
 		print_msg("Maximum iteration           : %i\n"%(max_iter))
-		print_msg("data with CTF               : %s\n"%(CTF))
+		print_msg("Data with CTF               : %s\n"%(CTF))
 		print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
 		print_msg("Random seed                 : %i\n\n"%(rand_seed))	
 
@@ -1560,11 +1569,11 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 	again = True
 	Iter = 0
 	
-	while (Iter < max_iter and again):
+	while Iter < max_iter and again:
 		ringref = []
 		for j in xrange(numref):
 			refi[j][0].process_inplace("normalize.mask", {"mask":mask, "no_sigma":1}) # normalize reference images to N(0,1)
-			cimage =Util.Polar2Dm(refi[j][0] , cnx, cny, numr, mode)
+			cimage = Util.Polar2Dm(refi[j][0] , cnx, cny, numr, mode)
 			Util.Frngs(cimage, numr)
 			Applyws(cimage, numr, wr)
 			ringref.append(cimage)
@@ -1576,16 +1585,16 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 		assign = [[] for i in xrange(numref)]
 		# begin MPI section
 		for im in xrange(image_start, image_end):
-			alpha, sx, sy, mirror, scale =  get_params2D(data[im-image_start])
+			alpha, sx, sy, mirror, scale = get_params2D(data[im-image_start])
+			alphai, sxi, syi, scalei = inverse_transform2(alpha, sx, sy, 1.0)
 			# normalize
 			data[im-image_start].process_inplace("normalize.mask", {"mask":mask, "no_sigma":0}) # subtract average under the mask
 			# align current image to the reference
-			[angt, sxst, syst, mirrort, xiref, peakt] = \
-				Util.multiref_polar_ali_2d(data[im-image_start], ringref, xrng, yrng, step, mode, numr, cnx-sx, cny-sy)
+			[angt, sxst, syst, mirrort, xiref, peakt] = Util.multiref_polar_ali_2d(data[im-image_start], 
+				ringref, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
 			iref = int(xiref)
 			# combine parameters and set them to the header, ignore previous angle and mirror
-			[alphan, sxn, syn, mn] = combine_params2(0.0, sx, sy, 0, angt, sxst, syst, mirrort)
-			#print  "combine with previous ",Iter,im,alphan, sxn, syn, mn, iref
+			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
 			set_params2D(data[im-image_start], [alphan, sxn, syn, int(mn), scale])
 			data[im-image_start].set_attr('assign',iref)
 			# apply current parameters and add to the average
@@ -1656,15 +1665,7 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 						Util.mul_scalar( refi[j][0], 1.0/float(refi[j][2]) )
 					#  low pass filter references
 					lowfq, highfq = filt_params(frsc, low = 0.1)
-					#lowfq = max(0.05, lowfq)
-					#highfq = min(0.4,max(highfq,lowfq)+0.1)
-					#from filter import filt_from_fsc, filt_table
-					#filt = filt_from_fsc(frsc, 0.1)
-					#refi[j][0] = filt_table(refi[j][0], filt)
-					#del filt
-					#from morphology import threshold
-					#refi[j][0]  = filt_btwl(threshold(refi[j][0]), lowfq, highfq)
-					refi[j][0]  = filt_btwl(refi[j][0], lowfq, highfq)
+					refi[j][0] = filt_btwl(refi[j][0], lowfq, highfq)
 					refi[j][0], csx, csy = center_2D(refi[j][0], center)
 					msg = "   group #%3d   filter parameters = %6.4f, %6.4f,  center parameters (x,y) = %10.3e, %10.3e\n"%(j, lowfq, highfq, csx, csy)
 					print_msg(msg)
@@ -1743,7 +1744,7 @@ def ali2d_ra(stack, maskfile = None, ir = 1, ou = -1, rs = 1, maxit = 10, check_
 	print_msg("Ring step                   : %i\n"%(rstep))
 	print_msg("Maximum iteration           : %i\n"%(max_iter))
 	print_msg("Consider Mirror             : %s\n"%(check_mirror))	
-	print_msg("data with CTF               : %s\n"%(CTF))
+	print_msg("Data with CTF               : %s\n"%(CTF))
 	print_msg("Random seed                 : %i\n\n"%(rand_seed))
 	
 	# consider mirror
@@ -1901,7 +1902,7 @@ def ali2d_rag(stack, maskfile = None, ir = 1, ou = -1, rs = 1, maxit = 10, check
 	print_msg("Ring step                   : %i\n"%(rstep))
 	print_msg("Maximum iteration           : %i\n"%(max_iter))
 	print_msg("Consider Mirror             : %s\n"%(check_mirror))	
-	print_msg("data with CTF               : %s\n"%(CTF))
+	print_msg("Data with CTF               : %s\n"%(CTF))
 	print_msg("Random seed                 : %i\n\n"%(rand_seed))
 	
 	# consider mirror
@@ -2611,7 +2612,7 @@ def ali3d_a(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	print_msg("Angular search range        : %s\n"%(an))
 	print_msg("Maximum iteration           : %i\n"%(max_iter))
 	print_msg("Center type                 : %i\n"%(center))
-	print_msg("data with CTF               : %s\n"%(CTF))
+	print_msg("Data with CTF               : %s\n"%(CTF))
 	print_msg("Reference projection method : %s\n"%(ref_a))
 	print_msg("Symmetry group              : %s\n\n"%(sym))
 
@@ -2740,7 +2741,7 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	print_msg("Angular search range        : %s\n"%(an))
 	print_msg("Maximum iteration           : %i\n"%(max_iter))
 	print_msg("Center type                 : %i\n"%(center))
-	print_msg("data with CTF               : %s\n"%(CTF))
+	print_msg("Data with CTF               : %s\n"%(CTF))
 	print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
 	print_msg("Reference projection method : %s\n"%(ref_a))
 	print_msg("Symmetry group              : %s\n\n"%(sym))
@@ -2781,15 +2782,20 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	ref_data.append( None )
 	ref_data.append( None )
 
+	cs = [0.0]*3
 	# do the projection matching
 	for N_step in xrange(lstp):
  		for Iter in xrange(max_iter):
 			print_msg("\nITERATION #%3d\n"%(N_step*max_iter+Iter+1))
 			if an[N_step] == -1:	proj_ali_incore(vol, mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], ref_a, sym, finfo = outf, MPI=False)
 			else:	           proj_ali_incore_local(vol, mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], an[N_step], ref_a, sym, finfo = outf, MPI=False)
-			#from alignment import proj_ali_incore_peaks
-			#proj_ali_incore_peaks(vol, mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], an[N_step], ref_a, sym, finfo = outf, MPI=False)
-			#  3D stuff
+
+			if center == -1:
+				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center(data)
+				msg = "Center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
+				print_msg(msg)				
+				rotate_3D_shift(data, cs)
+				
 			if CTF:   vol1 = recons3d_4nn_ctf(data, range(0, nima, 2), snr, 1, sym)
 			else:	   vol1 = recons3d_4nn(data, range(0, nima, 2), sym)
 			if CTF:   vol2 = recons3d_4nn_ctf(data, range(1, nima, 2), snr, 1, sym)
@@ -2808,22 +2814,12 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 			ref_data[3] = fscc
 			
 			#  call user-supplied function to prepare reference image, i.e., center and filter it
-			if center != -1:
-				vol, cs = user_func(ref_data)
-			else:
-				# When center = -1, which is by default, we use the average center method
-				ref_data[1] = 0
-				vol, cs = user_func(ref_data)
-				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center(data)
-				from fundamentals import fshift
-				vol = fshift(vol, -cs[0], -cs[1], -cs[2])
-				msg = "Center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
-				print_msg(msg)				
-
-			if center != 0:	rotate_3D_shift(data, cs)
+			if center == -1:  ref_data[1] = 0
+			vol, cs = user_func(ref_data)
+			if center > 0:	rotate_3D_shift(data, cs)
 			
 			drop_image(vol, os.path.join(outdir, "volf%04d.hdf"%(N_step*max_iter+Iter+1)))
-			#  here we  write header info
+			#  here we write header info
 			if CTF and data_had_ctf == 0:
 				for im in xrange(nima): data[im].set_attr('ctf_applied', 0)
 			from utilities import write_headers
@@ -2906,7 +2902,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 		print_msg("Angular search range        : %s\n"%(an))
 		print_msg("Maximum iteration           : %i\n"%(max_iter))
 		print_msg("Center type                 : %i\n"%(center))
-		print_msg("data with CTF               : %s\n"%(CTF))
+		print_msg("Data with CTF               : %s\n"%(CTF))
 		print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
 		print_msg("Reference projection method : %s\n"%(ref_a))
 		print_msg("Symmetry group              : %s\n\n"%(sym))
@@ -2980,28 +2976,26 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 	
 			if center == -1:
 				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node)				
-
+				if myid == main_node: 
+					msg = "Center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
+					print_msg(msg)
+				cs = mpi_bcast(cs, 3, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+				cs = [float(cs[0]), float(cs[1]), float(cs[2])]
+				rotate_3D_shift(data, cs)
+				
 			if myid == main_node:
 				drop_image(vol, os.path.join(outdir, "vol%04d.hdf"%(N_step*max_iter+Iter+1)))
 				ref_data[2] = vol
 				ref_data[3] = fscc
 				#  call user-supplied function to prepare reference image, i.e., center and filter it
-				if center != -1:
-					vol, cs = user_func(ref_data)
-				else:
-					# When center = -1, which is by default, we use the average center method
-					ref_data[1] = 0
-					vol, dummy = user_func(ref_data)
-					from fundamentals import fshift
-					vol = fshift(vol, -cs[0], -cs[1], -cs[2])
-					msg = "Center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
-					print_msg(msg)
-					
+				if center == -1: ref_data[1] = 0
+				vol, cs = user_func(ref_data)
 				drop_image(vol, os.path.join(outdir, "volf%04d.hdf"%(N_step*max_iter+Iter+1)))
 
-			cs = mpi_bcast(cs, 3, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-			cs = [float(cs[0]), float(cs[1]), float(cs[2])]
-			if center != 0: rotate_3D_shift(data, cs)
+			if center > 0:
+				cs = mpi_bcast(cs, 3, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+				cs = [float(cs[0]), float(cs[1]), float(cs[2])]
+				rotate_3D_shift(data, cs)
 
 			bcast_EMData_to_all(vol, myid, main_node)
 			# write out headers, under MPI writing has to be done sequentially
@@ -3091,7 +3085,7 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 	print_msg("Maximum number of reassignment iterations   : %i\n"%(kmax))
 	print_msg("Maximum number of alignment iterations      : %i\n"%(max_iter))
 	print_msg("Center type                 : %i\n"%(center))
-	print_msg("data with CTF               : %s\n"%(CTF))
+	print_msg("Data with CTF               : %s\n"%(CTF))
 	print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
 	print_msg("Reference projection method : %s\n"%(ref_a))
 	print_msg("Symmetry group              : %s\n\n"%(sym))
@@ -3365,7 +3359,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 		print_msg("Maximum number of reassignment iterations   : %i\n"%(kmax))
 		print_msg("Maximum number of alignment iterations      : %i\n"%(max_iter))
 		print_msg("Center type                 : %i\n"%(center))
-		print_msg("data with CTF               : %s\n"%(CTF))
+		print_msg("Data with CTF               : %s\n"%(CTF))
 		print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
 		print_msg("Reference projection method : %s\n"%(ref_a))
 		print_msg("Symmetry group              : %s\n\n"%(sym))
@@ -4286,7 +4280,7 @@ def ali3d_e(stack, ref_vol, outdir, maskfile = None, ou = -1,  delta = 2, center
 	print_msg("Angular search range        : %s\n"%(delta))
 	print_msg("Maximum iteration           : %i\n"%(max_iter))
 	print_msg("Center type                 : %i\n"%(center))
-	print_msg("data with CTF               : %s\n"%(CTF))
+	print_msg("Data with CTF               : %s\n"%(CTF))
 	print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
 	print_msg("Symmetry group              : %s\n"%(sym))
 	if chunk <= 0.0:  chunk = 1.0
@@ -4525,7 +4519,7 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou = -1,  delta = 2, center = 
 		print_msg("Angular search range        : %s\n"%(delta))
 		print_msg("Maximum iteration           : %i\n"%(max_iter))
 		print_msg("Center type                 : %i\n"%(center))
-		print_msg("data with CTF               : %s\n"%(CTF))
+		print_msg("Data with CTF               : %s\n"%(CTF))
 		print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
 		print_msg("Symmetry group              : %s\n"%(sym))
 		print_msg("Chunk size                  : %f\n\n"%(chunk))
@@ -6688,7 +6682,7 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 	print_msg("initial symmetry - angle                  : %f\n"%(dphi))
 	print_msg("initial symmetry - axial rise             : %f\n"%(dp))
 	print_msg("Maximum iteration                         : %i\n"%(max_iter))
-	print_msg("data with CTF                             : %s\n"%(CTF))
+	print_msg("Data with CTF                             : %s\n"%(CTF))
 	print_msg("Signal-to-Noise Ratio                     : %f\n"%(snr))
 	print_msg("Symmetry group                            : %s\n\n"%(sym))
 	print_msg("symmetry doc file                         : %s\n\n"%(datasym))
@@ -7610,7 +7604,7 @@ def recons3d_n(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, npad=
 	print_msg("Input stack                 : %s\n"%(prj_stack))
 	print_msg("Output volume               : %s\n"%(vol_stack))
 	print_msg("Padding factor              : %i\n"%(npad))
-	print_msg("data with CTF               : %s\n"%(CTF))
+	print_msg("Data with CTF               : %s\n"%(CTF))
 	print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
 	print_msg("CTF sign                    : %i\n"%(sign))
 	print_msg("Symmetry group              : %s\n\n"%(sym))
@@ -7766,7 +7760,7 @@ def ssnr3d(stack, output_volume = None, ssnr_text_file = None, mask = None, refe
 	print_msg("Outer radius                : %i\n"%(ou))
 	print_msg("Ring width                  : %i\n"%(rw))
 	print_msg("Padding factor              : %i\n"%(npad))
-	print_msg("data with CTF               : %s\n"%(CTF))
+	print_msg("Data with CTF               : %s\n"%(CTF))
 	print_msg("CTF sign                    : %i\n"%(sign))
 	print_msg("Symmetry group              : %s\n\n"%(sym))
 	
