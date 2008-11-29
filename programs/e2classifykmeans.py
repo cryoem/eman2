@@ -69,9 +69,8 @@ be classified. """
 
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
-
-	logid=E2init(sys.argv)
 	
+	logid=E2init(sys.argv)
 	if options.onein :
 		d=EMData(args[0],0)
 		xs=d.get_xsize()
@@ -114,12 +113,11 @@ be classified. """
 	maxcls=max(nrep)
 	for n,i in enumerate(nrep):
 		print "%d) %s (%d)"%(n,"#"*int(i*72/maxcls),i)
-	
+		
 	classes=[[] for i in range(options.ncls)]
 	for n,i in enumerate(data):
 		classes[i.get_attr("class_id")].append(n)
 		
-
 	# This is the old python version of the algorithm, functional but slow
 	# left here in case someone needs something they can tweak
 	

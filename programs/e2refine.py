@@ -43,14 +43,13 @@ def main():
 	usage = """%prog [options] 
 	EMAN2 iterative single particle reconstruction"""
 	parser = OptionParser(usage=usage,version=EMANVERSION)
-
-	
+		
 	#options associated with e2refine.py
 	parser.add_option("--iter", dest = "iter", type = "int", default=0, help = "The total number of refinement iterations to perform")
 	parser.add_option("--check", "-c", dest="check", default=False, action="store_true",help="Checks the contents of the current directory to verify that e2refine.py command will work - checks for the existence of the necessary starting files and checks their dimensions. Performs no work ")
 	parser.add_option("--verbose","-v", dest="verbose", default=False, action="store_true",help="Toggle verbose mode - prints extra infromation to the command line while executing")
 	parser.add_option("--nomirror", dest="nomirror", default=False, action="store_true",help="Turn projection over the mirror portion of the asymmetric unit off")
-	parser.add_option("--startimg", dest="startimg", default=None,type="string", help="The name of the image containing the particle data")
+	parser.add_option("--input", dest="input", default=None,type="string", help="The name of the image containing the particle data")
 	parser.add_option("--model", dest="model", default="threed.0a.mrc", help="The name 3D image that will seed the refinement")
 	parser.add_option("--usefilt", dest="usefilt", default=None, help="Specify a particle data file that has been low pass or Wiener filtered. Has a one to one correspondence with your particle data. If specified will be used in projection matching routines, and elsewhere.")
 
@@ -187,7 +186,7 @@ def check_make3d_args(options, nofilecheck=False):
 
 def get_classaverage_cmd(options,check=False,nofilecheck=False):
 	
-	e2cacmd = "e2classaverage.py %s %s %s" %(options.startimg,options.classifyfile,options.cafile)
+	e2cacmd = "e2classaverage.py %s %s %s" %(options.input,options.classifyfile,options.cafile)
 	
 	e2cacmd += " --ref=%s --iter=%d -f" %(options.projfile,options.classiter)
 	
@@ -250,7 +249,7 @@ def get_simmx_cmd(options,check=False,nofilecheck=False):
 	if options.usefilt != None:
 		image = options.usefilt
 	else:
-		image = options.startimg
+		image = options.input
 	
 	e2simmxcmd = "e2simmx.py %s %s %s -f --saveali --cmp=%s --align=%s --aligncmp=%s"  %(options.projfile, image,options.simmxfile,options.simcmp,options.simalign,options.simaligncmp)
 	
@@ -311,8 +310,8 @@ def check(options,verbose=False):
 		print "#### Testing directory contents and command line arguments for e2refine.py"
 	
 	error = False
-	if options.startimg == None or not file_exists(options.startimg):
-		print "Error: failed to find input file %s" %options.startimg
+	if options.input == None or not file_exists(options.input):
+		print "Error: failed to find input file %s" %options.input
 		error = True
 	
 	if options.usefilt != None:
@@ -320,13 +319,13 @@ def check(options,verbose=False):
 			print "Error: failed to find usefilt file %s" %options.usefilt
 			error = True
 		n1 = EMUtil.get_image_count(options.usefilt)
-		n2 = EMUtil.get_image_count(options.startimg)
+		n2 = EMUtil.get_image_count(options.input)
 		if n1 != n2:
 			print "Error, the number of images in the starting particle set:",n2,"does not match the number in the usefilt set:",n1
 			error = True
 		read_header_only=True
 		img1 = EMData()
-		img1.read_image(options.startimg,0,read_header_only)
+		img1.read_image(options.input,0,read_header_only)
 		img2 = EMData()
 		img2.read_image(options.usefilt,0,read_header_only)
 		
@@ -348,12 +347,12 @@ def check(options,verbose=False):
 		print "Error: you must specify the --it argument"
 		error = True
 		
-	if ( file_exists(options.model) and options.startimg != None and file_exists(options.startimg)):
-		(xsize, ysize ) = gimme_image_dimensions2D(options.startimg);
+	if ( file_exists(options.model) and options.input != None and file_exists(options.input)):
+		(xsize, ysize ) = gimme_image_dimensions2D(options.input);
 		(xsize3d,ysize3d,zsize3d) = gimme_image_dimensions3D(options.model)
 		
 		if (verbose):
-			print "%s contains %d images of dimensions %dx%d" %(options.startimg,EMUtil.get_image_count(options.startimg),xsize,ysize)
+			print "%s contains %d images of dimensions %dx%d" %(options.input,EMUtil.get_image_count(options.input),xsize,ysize)
 			print "%s has dimensions %dx%dx%d" %(options.model,xsize3d,ysize3d,zsize3d)
 		
 		if ( xsize != ysize ):
@@ -361,7 +360,7 @@ def check(options,verbose=False):
 				print "Error: it appears as though you are trying to do helical reconstruction. This is not supported"
 				error = True
 			else:
-				print "Error: images dimensions (%d x %d) of %s are not identical. This mode of operation is not supported" %(xsize,ysize,options.startimg)
+				print "Error: images dimensions (%d x %d) of %s are not identical. This mode of operation is not supported" %(xsize,ysize,options.input)
 				error = True
 		
 		if ( xsize3d != ysize3d or ysize3d != zsize3d ):
@@ -369,7 +368,7 @@ def check(options,verbose=False):
 			error = True
 			
 		if ( xsize3d != xsize ) :
-			print "Error: the dimensions of %s (%d) do not match the dimension of %s (%d)" %(options.startimg,xsize,options.model,xsize3d)
+			print "Error: the dimensions of %s (%d) do not match the dimension of %s (%d)" %(options.input,xsize,options.model,xsize3d)
 			error = True
 	
 	if (verbose):

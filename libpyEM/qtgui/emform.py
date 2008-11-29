@@ -51,6 +51,7 @@ class ParamTable(list):
 		self.desc_short = desc_short
 		self.desc_long = desc_long
 		
+		
 class EMFormModule(EMQtWidgetModule):
 	'''
 	params should be a list of ParamDef objects
@@ -65,7 +66,8 @@ class EMFormModule(EMQtWidgetModule):
 		
 	def get_desktop_hint(self):
 		return "form"
-		
+
+
 
 class EMFormWidget(QtGui.QWidget):
 	'''
@@ -82,36 +84,36 @@ class EMFormWidget(QtGui.QWidget):
 		
 		self.setWindowIcon(QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/eman.png"))
 		
-		self.__auto_incorporate = {}
-		self.__auto_incorporate["float"] = self.__incorporate_float
-		self.__auto_incorporate["int"] = self.__incorporate_int
-		self.__auto_incorporate["url"] = self.__incorporate_url
-		self.__auto_incorporate["choice"] = self.__incorporate_choice
-		self.__auto_incorporate["string"] = self.__incorporate_string
-		self.__auto_incorporate["text"] = self.__incorporate_text
-		self.__auto_incorporate["boolean"] = self.__incorporate_boolean
-		self.__auto_incorporate["stringlist"] = self.__incorporate_stringlist
-		self.__auto_incorporate["intlist"] = self.__incorporate_intlist
-		self.__auto_incorporate["floatlist"] = self.__incorporate_floatlist
-		self.__auto_incorporate["paramtable"] = self.__incorporate_paramtable
+		self.auto_incorporate = {}
+		self.auto_incorporate["float"] = self.__incorporate_float
+		self.auto_incorporate["int"] = self.__incorporate_int
+		self.auto_incorporate["url"] = self.__incorporate_url
+		self.auto_incorporate["choice"] = self.__incorporate_choice
+		self.auto_incorporate["string"] = self.__incorporate_string
+		self.auto_incorporate["text"] = self.__incorporate_text
+		self.auto_incorporate["boolean"] = self.__incorporate_boolean
+		self.auto_incorporate["stringlist"] = self.__incorporate_stringlist
+		self.auto_incorporate["intlist"] = self.__incorporate_intlist
+		self.auto_incorporate["floatlist"] = self.__incorporate_floatlist
+		self.auto_incorporate["paramtable"] = self.__incorporate_paramtable
 		
 		self.vbl = QtGui.QVBoxLayout()
-		self.__incorporate_params(self.params,self.vbl)
+		self.incorporate_params(self.params,self.vbl)
 		self.__add_ok_cancel_buttons(self.vbl)
 		self.setLayout(self.vbl)
 		
-	def __incorporate_params(self,params,layout):
+	def incorporate_params(self,params,layout):
 		for param in self.params:
 			try:
 				if len(param) != 1 and not isinstance(param,ParamTable):
 					hbl=QtGui.QHBoxLayout()
 					for iparam in param:
-						self.__auto_incorporate[iparam.vartype](iparam,hbl)
+						self.auto_incorporate[iparam.vartype](iparam,hbl)
 					layout.addLayout(hbl)
 					continue
 					
 			except: pass
-			self.__auto_incorporate[param.vartype](param,layout)
+			self.auto_incorporate[param.vartype](param,layout)
 	
 	def __incorporate_paramtable(self,paramtable,layout):
 		
@@ -624,8 +626,52 @@ class UrlEventHandler:
 	def clear_pressed(self,bool):
 		#self.target().update_texture()# in the desktop the texture would have to be updated
 		self.text_edit.clear()
+		
+class EMTableFormModule(EMQtWidgetModule):
+	def __init__(self,params,application):
+		self.application = weakref.ref(application)
+		self.widget = EMTableFormWidget(self,params)
+		EMQtWidgetModule.__init__(self,self.widget,application)
+		
+	def get_desktop_hint(self):
+		return "form"
+		
+class EMTableFormWidget(EMFormWidget):
+	'''
+	See the example in __main__ below
+	If ok is clicked the "emform_ok" signal is emitted along with a dictionary containing all of the form entries
+	If cancel is clicked the "emform_cancel" signal is emmitted. No extra information is sent in this case
+	'''
+	def __init__(self,parent,params=None):
+		EMFormWidget.__init__(self,parent,params)
+		
+		
+	def incorporate_params(self,params,layout):
+		print "here we are"
+		tabwidget = QtGui.QTabWidget(self)
+		
+		for i,paramlist in enumerate(self.params):
+			widget = QtGui.QWidget(None)
+			vbl =  QtGui.QVBoxLayout(widget)
+			for param in paramlist:
+				
+				try:
+					if len(param) != 1 and not isinstance(param,ParamTable):
+						hbl=QtGui.QHBoxLayout()
+						for iparam in param:
+							self.auto_incorporate[iparam.vartype](iparam,hbl)
+						vbl.addLayout(hbl)
+						continue
+						
+				except: pass
+				self.auto_incorporate[param.vartype](param,vbl)
+			
+			tabwidget.addTab(widget,"Form")
+		
+		layout.addWidget(tabwidget)
+				
 
-def get_example_params():
+def get_example_form_params():
 	params = []
 	params.append(ParamDef(name="box size",vartype="int",desc_short="int",desc_long="An integer value",property=None,defaultunits=128,choices=[]))
 	params.append(ParamDef(name="apix",vartype="float",desc_short="float",desc_long="A floating point value",property=None,defaultunits=1.0,choices=[]))
@@ -655,6 +701,12 @@ def get_example_params():
 	params.append([pil,pfl,a])
 	
 	return params
+def get_example_table_form_params():
+	params = get_example_form_params()
+	p1 = params[0:len(params)/3]
+	p2 = params[len(params)/3:2*len(params)/3]
+	p3 = params[2*len(params)/3:]
+	return [p1,p2,p3]
 
 def on_ok(dict):
 	print "got the ok signal, the return dictionary is",dict
@@ -667,10 +719,15 @@ if __name__ == '__main__':
 	
 	from emapplication import EMStandAloneApplication
 	em_app = EMStandAloneApplication()
-	window = EMFormModule(params=get_example_params(),application=em_app)
+	window = EMFormModule(params=get_example_form_params(),application=em_app)
 	window.setWindowTitle("A test form")
-	QtCore.QObject.connect(window.widget,QtCore.SIGNAL("emform_ok"),on_ok)
-	QtCore.QObject.connect(window.widget,QtCore.SIGNAL("emform_cancel"),on_cancel)
+	QtCore.QObject.connect(window,QtCore.SIGNAL("emform_ok"),on_ok)
+	QtCore.QObject.connect(window,QtCore.SIGNAL("emform_cancel"),on_cancel)
+	
+	window2= EMTableFormModule(params=get_example_table_form_params(),application=em_app)
+	window2.setWindowTitle("A test form")
+	QtCore.QObject.connect(window2,QtCore.SIGNAL("emform_ok"),on_ok)
+	QtCore.QObject.connect(window2,QtCore.SIGNAL("emform_cancel"),on_cancel)
 	
 	em_app.show()
 	em_app.execute()

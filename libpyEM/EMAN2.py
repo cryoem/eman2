@@ -286,7 +286,7 @@ def parsemodopt(optstr):
 			print "\tSpecify parameters using this syntax - optiontype:p1=v1:p2=v2 etc"
 			print "\tThe problems arguments are:"
 			print args
-			exit(1)
+			return (None,None)
 		
 		v = args[1]
 		try: v=int(v)
@@ -313,19 +313,19 @@ def parsemodopt_logical(optstr):
 	if ( len(p_1) != 2 ):
 		print "ERROR: parsemodopt_logical currently only supports single logical expressions"
 		print "Could not handle %s" %optstr
-		exit(1)
+		return (None,None,None)
 	
 	p_2 = re.findall( parseparmobj_logical, optstr )
 	
 	if ( len(p_2) != 1 ):
 		print "ERROR: could not find logical expression in %s" %optstr
-		exit(1)
+		return (None,None,None)
 	
 	
 	if ( p_2[0] not in ["==", "<=", ">=", "!=", "~=", "<", ">"] ):
 		print "ERROR: parsemodopt_logical %s could not extract logical expression" %(p_2[0])
 		print "Must be one of \"==\", \"<=\", \">=\", \"<\", \">\" \"!=\" or \~=\" "
-		exit(1)
+		return (None,None,None)
 
 	return (p_1[0], p_2[0], p_1[1])
 	
@@ -339,18 +339,18 @@ def parsemodopt_operation(optstr):
 	if ( len(p_1) != 2 ):
 		print "ERROR: parsemodopt_logical currently only supports single logical expressions"
 		print "Could not handle %s" %optstr
-		exit(1)
+		return (None,None,None)
 	
 	p_2 = re.findall( parseparmobj_op, optstr )
 	if ( len(p_2) != 1 ):
 		print "ERROR: could not find logical expression in %s" %optstr
-		exit(1)
+		return (None,None,None)
 	
 	
 	if ( p_2[0] not in ["+=", "-=", "*=", "/=", "%="]):
 		print "ERROR: parsemodopt_logical %s could not extract logical expression" %(p_2[0])
 		print "Must be one of", "+=", "-=", "*=", "/=", "%="
-		exit(1)
+		return (None,None,None)
 
 	return (p_1[0], p_2[0], p_1[1])
 
@@ -681,10 +681,14 @@ def check_files_are_em_images(filenames):
 			
 	return True,"images are fine"
 	
-# A function for checking if a file exists
-# basically wraps os.path.exists, but when an img or hed file is the argument, it
-# checks for the existence of both images
+
 def file_exists( file_name ):
+	'''
+	A function for checking if a file exists
+	basically wraps os.path.exists, but when an img or hed file is the argument, it
+	checks for the existence of both images
+	Also checks if the argument is a valid dictionary
+	'''
 	
 	if ( os.path.exists(file_name) ):
 		
@@ -708,9 +712,12 @@ def file_exists( file_name ):
 			else: return True;
 		else:
 			return True
-		
 	else:
-		return False
+		try:
+			if db_check_dict(file_name):
+				return True
+			else: return False
+		except: return False
 	
 # a function for stripping a the file tag from the end of a string.
 # is if given image.mrc this functions strips the '.mrc' and returns 'image'
@@ -795,15 +802,21 @@ def name_has_no_tag(file_name):
 # if not check_eman2_type(options.simalign,Aligners,"Aligner"): exit(1)
 def check_eman2_type(modoptstring, object, objectname, verbose=True):
 	if modoptstring == None:
-		print "Error: expecting a string but got python None, was looking for a type of %s" %objectname
+		if verbose:
+			print "Error: expecting a string but got python None, was looking for a type of %s" %objectname
 		return False
 	 
 	if modoptstring == "":
-		print "Error: expecting a string was not empty, was looking for a type of %s" %objectname
+		if verbose:
+			print "Error: expecting a string was not empty, was looking for a type of %s" %objectname
 		return False
 	
 	try:
 		p = parsemodopt(modoptstring)
+		if p[0] == None:
+			if verbose:
+				print "Error: Can't interpret the construction string %s" %(modoptstring)
+			return False
 		object.get(p[0], p[1])
 	except RuntimeError:
 		if (verbose):

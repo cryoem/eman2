@@ -87,8 +87,10 @@ if (ncls<=1) return vector<EMData *>();
 // These are the class centers, start each with a random image
 int nptcl=images.size();
 centers.resize(ncls);
+
 for (int i=0; i<ncls; i++) {
-	centers[i]=images[Util::get_irand(0,nptcl)]->copy();
+	// Fixed by d.woolford, Util.get_irand is inclusive (added a -1)
+	centers[i]=images[Util::get_irand(0,nptcl-1)]->copy();
 }
 
 for (int i=0; i<maxiter; i++) {

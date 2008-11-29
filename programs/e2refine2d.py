@@ -118,32 +118,43 @@ def main():
 		options.initial=options.path+"#classes_%02d"%fit
 		fit+=1
 		print "starting at iteration ",fit
-
+	
+	total_procs = options.iter*7 + 5 # one for every run command
+	proc_tally = 0.0
 	# if we aren't given starting class-averages, make some
 	if not options.initial and not "classes_init" in dcts:
 		print "Building initial averages"
 		
 		# make footprint images (rotational/translational invariants)
 		fpfile=options.path+"#input_fp"
-		run("e2proc2d.py %s %s --fp --verbose=%d --inplace %s"%(options.input,fpfile,subverbose,parstr))
+		#run("e2proc2d.py %s %s --fp --verbose=%d --inplace %s"%(options.input,fpfile,subverbose,parstr)) # parallel doesn't work in e2proc2d.py as of November 28 2008 - d.woolford
+		run("e2proc2d.py %s %s --fp --verbose=%d --inplace"%(options.input,fpfile,subverbose))
+		proc_tally += 1.0
+		if logid : E2progress(logid,proc_tally/total_procs)
 		
 		# MSA on the footprints
 		fpbasis=options.path+"#input_fp_basis"
 		fpbasis=fpbasis.split("/")[-1]
 		run("e2msa.py %s %s --nbasis=%0d"%(fpfile,fpbasis,options.nbasisfp))
+		proc_tally += 1.0
+		if logid : E2progress(logid,proc_tally/total_procs)
 #			run("e2msa.py %s %s --nbasis=%0d --varimax"%(fpfile,fpbasis,options.nbasisfp))
 	
 		# reproject the particle footprints into the basis subspace
 		inputproj=options.path+"#input_fp_basis_proj"
 		run("e2basis.py project %s %s %s --oneout --verbose=%d %s"%(fpbasis,fpfile,inputproj,subverbose,options.normproj))
-		
+		proc_tally += 1.0
+		if logid : E2progress(logid,proc_tally/total_procs)
 		# classify the subspace vectors
 #		try: db_remove_dict(path+"#classmx_00")
 #		except: pass
 		run("e2classifykmeans.py %s --original=%s --ncls=%d --clsmx=%s#classmx_00 --onein %s"%(inputproj,options.input,options.ncls,options.path,excludestr))
-		
+		proc_tally += 1.0
+		if logid : E2progress(logid,proc_tally/total_procs)
 		# make class-averages
 		run("e2classaverage.py %s %s#classmx_00 %s#classes_init --iter=6 --align=rotate_translate_flip:maxshift=%d --averager=image -vf --bootstrap --keep=.9 --cmp=frc --aligncmp=frc"%(options.input,options.path,options.path,options.maxshift))
+		proc_tally += 1.0
+		if logid : E2progress(logid,proc_tally/total_procs)
 	if not options.initial : options.initial=options.path+"#classes_init"
 		
 	print "Using references from ",options.initial
@@ -152,9 +163,12 @@ def main():
 		# first we sort and align the class-averages from the last step
 		run("e2stacksort.py %s %s#allrefs_%02d --simcmp=optvariance:matchfilt=1 --simalign=rotate_translate:maxshift==%d --center --useali --iterative"%
 		    (options.initial,options.path,it,options.maxshift))
-		
+		proc_tally += 1.0
+		if logid : E2progress(logid,proc_tally/total_procs)
 		# Compute a classification basis set
 		run("e2msa.py %s#allrefs_%02d %s#basis_%02d --nbasis=%d"%(options.path,it,options.path,it,options.nbasisfp))
+		proc_tally += 1.0
+		if logid : E2progress(logid,proc_tally/total_procs)
 #		run("e2msa.py allrefs.%02d.hdf basis.%02d.hdf --nbasis=%d --varimax"%(it,it,options.nbasisfp))
 		
 		# extract the most different references for alignment
@@ -163,11 +177,16 @@ def main():
 		# extract the averages with the most particles
 #		run("e2stacksort.py allrefs.%02d.hdf aliref.%02d.hdf --byptcl --nsort=%d"%(it,it,options.naliref))
 		run("e2stacksort.py %s#allrefs_%02d %s#aliref_%02d --reverse --nsort=%d --simcmp=sqeuclidean"%(options.path,it,options.path,it,options.naliref))
-		
+		proc_tally += 1.0
+		if logid : E2progress(logid,proc_tally/total_procs)
 		# We use e2simmx to compute the optimal particle orientations
-		e2simmxcmd = "e2simmx.py %s#aliref_%02d %s %s#simmx_%02d -f --saveali --cmp=%s --align=%s --aligncmp=%s --verbose=%d %s %s"%(options.path,it, options.input,options.path,it,options.simcmp,options.simalign,options.simaligncmp,subverbose,excludestr,parstr)
+		# ERROR e2simmxy doesn't support parallel
+		#e2simmxcmd = "e2simmx.py %s#aliref_%02d %s %s#simmx_%02d -f --saveali --cmp=%s --align=%s --aligncmp=%s --verbose=%d %s %s"%(options.path,it, options.input,options.path,it,options.simcmp,options.simalign,options.simaligncmp,subverbose,excludestr,parstr) # e2simmx doesn't do parallel
+		e2simmxcmd = "e2simmx.py %s#aliref_%02d %s %s#simmx_%02d -f --saveali --cmp=%s --align=%s --aligncmp=%s --verbose=%d %s"%(options.path,it, options.input,options.path,it,options.simcmp,options.simalign,options.simaligncmp,subverbose,excludestr)
 		if options.simralign : e2simmxcmd += " --ralign=%s --raligncmp=%s" %(options.simralign,options.simraligncmp)
 		run(e2simmxcmd)
+		proc_tally += 1.0
+		if logid : E2progress(logid,proc_tally/total_procs)
 		
 		# e2basis projectrot here
 		inputproj=options.path+"#input_%02d_proj"%it
@@ -175,9 +194,13 @@ def main():
 		
 		# classify the subspace vectors
 		run("e2classifykmeans.py %s --original=%s --ncls=%d --clsmx=%s#classmx_%02d --oneinali %s"%(inputproj,options.input,options.ncls,options.path,it,excludestr))
+		proc_tally += 1.0
+		if logid : E2progress(logid,proc_tally/total_procs)
 		
 		# make class-averages
 		run("e2classaverage.py %s %s#classmx_%02d %s#classes_%02d --iter=%d --align=rotate_translate_flip:maxshift=%d --averager=image -vf  --keep=.9 --cmp=frc --aligncmp=frc"%(options.input,options.path,it,options.path,it,options.iterclassav,options.maxshift))
+		proc_tally += 1.0
+		if logid : E2progress(logid,proc_tally/total_procs)
 		
 		options.initial=options.path+"#classes_%02d"%it
 			
@@ -234,6 +257,52 @@ def get_classaverage_cmd(options,check=False,nofilecheck=False):
 	
 	return e2cacmd
 
-	
+
+def check_e2refin2d_args(options): # this function is required by the workflow, it is a little specialized, but it makes sense to be here
+	'''
+	Returns a list of error messages based on the input options
+	List is empty if there are no messages
+	Currently doesn't check the input file, because it's used from the workflow, not from e2refine2d iteself
+	'''
+	error_message = []
+#	if len(options.filenames) == 0: # this is the specialized part - the workflow creates starting data sets from a list of filenames
+#		error_message.append("Please choose the file(s) that you want to use as as input data for e2refine2d")
+# 		 
+ 	if options.shrink < 1:
+ 		error_message.append("Shrink must be atleast 1")
+ 		 
+  	if options.initial != None and len(options.initial) > 0:
+ 		if not file_exists(options.initial):
+ 			error_message.append("The initial class averages file you specified (%s) does not exist." %(options.initial))
+ 		
+ 	if options.iter < 0:
+ 		error_message.append("The number of e2refine2d iterations must be atleast 0.")
+ 		
+ 	if options.iterclassav < 0:
+ 		error_message.append("The number of class average iterations iteration must be atleast 0.")
+
+  	if options.naliref < 1:
+  		error_message.append("The number alignment references must be atleast 1.")
+  		
+  	if options.nbasisfp < 1:
+  		error_message.append("The number of MSA basis vectors must be atleast 1.")
+  		
+  	if options.parallel < 1:
+  		error_message.append("The number CPUs availables must be atleast 1.")
+  		
+  	if  not check_eman2_type(options.simalign,Aligners,"Aligner",False):
+  		error_message.append("There is problem with the aligner arguments.")
+  		
+  	if not check_eman2_type(options.simaligncmp,Cmps,"Cmp",False):
+  		error_message.append("There is problem with main comparitor arguments.")
+  	
+  	if options.simralign != None and not check_eman2_type(options.simralign,Aligners,"Aligner"):
+  		error_message.append("There is problem with the refine aligner arguments.")
+  		
+  	if options.simraligncmp != None and  not check_eman2_type(options.simraligncmp,Cmps,"Cmps"):
+  		error_message.append("There is problem with the refine aligner comparitor arguments.")
+
+  	return error_message
+
 if __name__ == "__main__":
     main()

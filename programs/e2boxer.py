@@ -139,7 +139,7 @@ for single particle analysis."""
 	parser.add_option("--out_file",default=False,help="File to write particles to")
 	
 	(options, args) = parser.parse_args()
-	logid=E2init(sys.argv)
+	
 	filenames = []
 	for i in range(0,len(args)):
 		filenames.append(args[i])
@@ -158,7 +158,7 @@ for single particle analysis."""
 		print "unknown running mode"
 		# in the new framework there is not need to tell the options parser there is an error, because the boxer module is smart enough to handle it
 	
-	
+	logid=E2init(sys.argv)
 	boxes=[]
 	if len(options.auto)>0:
 		print "Autobox mode ",options.auto[0]
@@ -192,11 +192,12 @@ for single particle analysis."""
 
 	
 	if options.running_mode == "auto_db":
-		dab = RawDatabaseAutoBoxer()
+		dab = RawDatabaseAutoBoxer(logid)
 		dab.go(options)
 	else:
 		application = EMStandAloneApplication()
 		options.boxes = boxes
+		options.logid = logid
 		gui=EMBoxerModule(application,options)
 		gui.show_guis()
 	#	QtCore.QObject.connect(gui, QtCore.SIGNAL("module_idle"), on_idle)
@@ -780,9 +781,10 @@ class EMBoxerModuleEventsMediator:
 
 
 class RawDatabaseAutoBoxer:
-	def __init__(self):
+	def __init__(self,logid=None):
 		self.required_options = ["boxsize","write_coord_files","write_box_images","force","normproc","outformat","just_output"]
-	
+		self.logid = logid
+		
 	def go(self,options):
 		options_ready = True
 		for req_opt in self.required_options:
@@ -798,7 +800,7 @@ class RawDatabaseAutoBoxer:
 	def autobox_images(self,options):
 		image_names = options.filenames
 		project_db = EMProjectDB()
-		for image_name in image_names:
+		for i,image_name in enumerate(image_names):
 			print "autoboxing",image_name
 			
 			try:
@@ -821,7 +823,8 @@ class RawDatabaseAutoBoxer:
 						autoboxer.become(trim_autoboxer)
 				except:
 					print "Error - there seems to be no autoboxing information in the database - autobox interactively first - bailing"
-					continue
+					if self.logid:  E2progress(logid,1.0)
+					return
 			
 			boxable = Boxable(image_name,None,autoboxer)
 			
@@ -840,6 +843,7 @@ class RawDatabaseAutoBoxer:
 				else: normalize=True
 				boxable.write_box_images(options.boxsize,options.force,imageformat=options.outformat,normalize=normalize,norm_method=options.normproc)
 		
+			if self.logid:  E2progress(self.logid,float(i+1)/len(image_names))
 		project_db.close()
 
 
@@ -850,9 +854,9 @@ class DatabaseAutoBoxer(QtCore.QObject,RawDatabaseAutoBoxer):
 	Then call the member function go (with the options)
 	When this object is done it will emit "db_auto_boxing_done"
 	'''
-	def __init__(self,application):
+	def __init__(self,application,logid=None):
 		QtCore.QObject.__init__(self)
-		RawDatabaseAutoBoxer.__init__(self)
+		RawDatabaseAutoBoxer.__init__(self,logid)
 		self.application = weakref.ref(application)
 		
 
@@ -1062,7 +1066,7 @@ class EMBoxerModule(QtCore.QObject):
 	def __auto_box_from_db(self,options):
 		print "auto data base boxing"
 		
-		self.dab = DatabaseAutoBoxer(self.application())
+		self.dab = DatabaseAutoBoxer(self.application(),options.logid)
 		QtCore.QObject.connect(self.dab,QtCore.SIGNAL("db_auto_boxing_done"),self.on_db_autoboxing_done)
 		
 		self.dab.go(options)

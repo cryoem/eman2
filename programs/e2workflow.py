@@ -106,6 +106,7 @@ class EMTaskMonitorWidget(QtGui.QWidget,Animator):
 				try:
 					if HOMEDB.history[j]["pid"] == pid:
 						self.project_db = db_open_dict("bdb:project")
+						print "adding",j
 						self.current_process_info[j] = HOMEDB.history[j]
 						self.history_check.pop(i) # ok what if two are ended at the same time? oh well there is time lag...
 						self.project_db ["workflow.process_ids"] = self.current_process_info
@@ -123,7 +124,10 @@ class EMTaskMonitorWidget(QtGui.QWidget,Animator):
 				self.set_entries(self.entries_dict)
 				self.project_db ["workflow.process_ids"] = self.current_process_info
 				db_close_dict("bdb:project")
+				self.set_entries(self.entries_dict)
 				return True
+			else:
+				self.current_process_info[key] = HOMEDB.history[key]
 			#else:
 				#print "process running",HOMEDB.history[key]["pid"]
 		
@@ -133,6 +137,8 @@ class EMTaskMonitorWidget(QtGui.QWidget,Animator):
 			try:
 				pid,stat = os.waitpid(0,os.WNOHANG)
 			except: pass 
+			
+		self.set_entries(self.entries_dict)
 		return True
 				
 			
@@ -150,8 +156,15 @@ class EMTaskMonitorWidget(QtGui.QWidget,Animator):
 			d = self.current_process_info[key]
 			pid = str(d["pid"])
 			prog = get_file_tag(d["args"][0])
+			progress = "0%"
+			try:
+				progress = str(float(d["progress"])*100)
+				if len(progress) > 4:
+					progress = progress[:4]
+				progress += "%"
+			except: pass
 			t = str(time.ctime(d["start"]))
-			s = pid + "\t" + prog + "\t" + t
+			s = pid + "\t" +progress+"\t"+ prog + "\t" + t
 			
 			a =  QtGui.QListWidgetItem(s,self.list_widget)
 			a.module = "process"
@@ -260,6 +273,8 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.launchers["Boxer"] = self.launch_boxer_general
 		self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("CTF ")))
 		self.launchers["CTF "] = self.launch_ctf_general
+		self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Refine2D ")))
+		self.launchers["Refine2D "] = self.launch_refine2d_general
 		self.tree_widget.insertTopLevelItems(0,self.tree_widget_entries)
 
 		spr_list = []
@@ -278,6 +293,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.launchers["Refine 2D"] = self.launch_refine2d_report
 		spr_list.append(refine2d)
 		init_model = QtGui.QTreeWidgetItem(QtCore.QStringList("Initial Model"))
+		self.launchers["Initial Model"] = self.launch_initmodel_report
 		spr_list.append(init_model)
 		refinement = QtGui.QTreeWidgetItem(QtCore.QStringList("3D Refinement"))
 		spr_list.append(refinement)
@@ -318,6 +334,12 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.launchers["Generate classes - e2refine2d"] = self.launch_refine2d_create_dataset
 		refine2d.addChildren(refine2d_list)
 		
+		init_model_list = []
+		init_model_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Make model- e2makeinitialmodel")))
+		self.launchers["Make model- e2makeinitialmodel"] = self.launch_e2makeinitial
+		init_model_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Import model")))
+		self.launchers["Import model"] = self.launch_import_initial_model
+		init_model.addChildren(init_model_list)
 		
 		self.tree_widget.setHeaderLabel("Choose a task")
 		
@@ -343,8 +365,11 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.application().show_specific(module)
 		self.add_module([str(module),"Browse",module])
 	
+	def launch_refine2d_general(self):
+		self.launch_task(E2Refine2DWithGenericTask,"e2refine2d generic")
+	
 	def launch_ctf_general(self):
-		self.launch_task(E2CTFGenericTask,"e2ctf general")
+		self.launch_task(E2CTFGenericTask,"e2ctf generic")
 	
 	def launch_e2boxer_output(self):
 		self.launch_task(E2BoxerOutputTask,"e3boxer output")
@@ -381,20 +406,14 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 				return
 			
 		print "failed to close module?" # this shouldn't happen if I have managed everything correctly
-	
+	def launch_import_initial_model(self): self.launch_task(ImportInitialModels,"import initial models")
+	def launch_e2makeinitial(self): self.launch_task(E2MakeInitialModel,"e2makeinitialmodel")
+	def launch_initmodel_report(self): self.launch_task(InitialModelReportTask,"initial model report")
 	def launch_refine2d_report(self): self.launch_task(E2Refine2DReportTask,"refine2d report")
-		
-	def launch_refine2d_exec(self):
-		self.launch_task(E2Refine2DRunTask,"e2refine2d params")
-		
-	def launch_refine2d_create_dataset(self):
-		self.launch_task(E2Refine2DCreateDataSetTask,"refine2d create data set")
-	
-	def launch_e2ctf_write_ouptut(self):
-		self.launch_task(E2CTFOutputTask,"e2ctf_wo")
-	
-	def launch_e2ctf_tune(self):
-		self.launch_task(E2CTFGuiTask,"e2ctf_tune")
+	def launch_refine2d_exec(self): self.launch_task(E2Refine2DRunTask,"e2refine2d params")
+	def launch_refine2d_create_dataset(self): self.launch_task(E2Refine2DChooseDataTask,"refine2d create data set")	
+	def launch_e2ctf_write_ouptut(self): self.launch_task(E2CTFOutputTask,"e2ctf_wo")
+	def launch_e2ctf_tune(self): self.launch_task(E2CTFGuiTask,"e2ctf_tune")
 	
 	def launch_e2ctf_auto_ft(self):
 		self.launch_task(E2CTFAutoFitTask,"e2ctf_auto")
