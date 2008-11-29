@@ -8132,7 +8132,7 @@ def varimax(input_stack, imglist, output_stack, mask_radius, verbose ) :
 		vec.write_image( output_stack, iout)
 		iout = iout + 1
 
-def bootstrap_genbuf(prj_stack, buf_prefix, verbose, CTF=False, MPI=False):
+def bootstrap_genbuf(prj_stack, outdir, verbose, CTF=False, MPI=False):
 	from EMAN2 import file_store
 	import string
 	from mpi import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD, mpi_init
@@ -8140,18 +8140,20 @@ def bootstrap_genbuf(prj_stack, buf_prefix, verbose, CTF=False, MPI=False):
 	npad = 4
 
 	if(MPI):
-		sys.argv = mpi_init(len(sys.argv),sys.argv)
 		size = mpi_comm_size(MPI_COMM_WORLD)
 		myid = mpi_comm_rank(MPI_COMM_WORLD)
 	else:
 		size = 1
 		myid = 0
 
+	if not os.path.exists(outdir):
+		os.system( "mkdir " + outdir )
+
+	buf_prefix = outdir + "/tmpslice";
 	store = file_store(buf_prefix, npad, 1, CTF)
 
 	if verbose != 0 :
-		mystatus = "genbuf%4d.txt" % ( myid )
-		mystatus = string.replace( mystatus, ' ', '0' )
+		mystatus = outdir + ("/genbuf%04d.txt" % (myid) )
 		output = open( mystatus, "w" )
 
 	nimage = EMUtil.get_image_count( prj_stack )
@@ -8168,7 +8170,7 @@ def bootstrap_genbuf(prj_stack, buf_prefix, verbose, CTF=False, MPI=False):
 		output.write( "proj %4d done\n" % nimage )
 		output.flush()
  
-def bootstrap_run(prj_stack, media, vol_prefix, nvol, CTF, snr, sym, verbose, MPI=False):
+def bootstrap_run(prj_stack, media, outdir, nvol, CTF, snr, sym, verbose, MPI=False):
 
 	import string
 	from mpi import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD, mpi_init
@@ -8180,11 +8182,9 @@ def bootstrap_run(prj_stack, media, vol_prefix, nvol, CTF, snr, sym, verbose, MP
 		size = 1
 		myid = 0
 
-	myvolume_file = "%s%4d.hdf" % ( vol_prefix, myid )
-	myvolume_file = string.replace( myvolume_file, ' ', '0' )
+	myvolume_file = "%s/bsvol%04d.hdf" % (outdir, myid)
 	if verbose != 0 :
-		mystatus_file = "status%4d.inf" % (myid)
-		mystatus_file = string.replace( mystatus_file, ' ', '0' )
+		mystatus_file = "%s/status%04d.inf" % (outdir, myid)
 		mystatus = open( mystatus_file, 'w' )
 	else:
 		mystatus = None

@@ -508,7 +508,7 @@ def bootstrap_nn(proj_stack, volume_stack, list_proj, niter, media="memory", npa
 
         	r.setup()
         	if not(output is None):
-			output.write( "Iteration %8d " % i )
+			output.write( "Bootstrap volume %8d " % i )
 			output.flush()
 
         	store.restart()
