@@ -2723,7 +2723,9 @@ class PawelAutoBoxer(AutoBoxer):
                 self.gauss_width = 1.0
                 self.use_variance = True
                 self.invert = False
-
+                self.thr_low = None
+                self.thr_hgh = None
+                
                 # default values for ctf:
                 self.ctf_fstart = 80
                 self.ctf_fstop = 8

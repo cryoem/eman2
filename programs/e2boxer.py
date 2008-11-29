@@ -315,7 +315,16 @@ def do_gauss_cmd_line_boxing(options):
 				sys.exit(1)
 		if (options.out_file):
 			try:
-				parm_dict["out_file"] = options.out_file
+				if ("bdb" == options.outformat):
+					if not(options.out_file.startswith("bdb:")):
+						print "outfile format does not match outformat! assuming correct outfile"
+					parm_dict["out_file"] = options.out_file
+
+				elif ("hdf" == options.outformat):
+					if not(options.out_file.endswith(".hdf")):
+						print "outfile format does not match outformat! assuming correct outfile"
+					parm_dict["out_file"] = options.out_file
+					
 			except:
 				print "could not set output file. exiting!"
 				sys.exit(1)
@@ -360,16 +369,42 @@ def do_gauss_cmd_line_boxing(options):
 		if (options.out_file):
 			# need to use get_image_file_name instead of raw name....
 			image_list.append(boxable.get_image_file_name(options.outformat))
-		print "continue"
+
 		del boxable
 
 	
 	# now check again for output file
 	if (options.out_file):
 		print "merging particles...."
+		# check if target file exists already. if so, and if force is set, remove it
+		if parm_dict["out_file"].startswith("bdb:"):
+			# check for existing dict
+			if (db_check_dict(parm_dict["out_file"]) and (options.force)):
+				# remove and create new
+				db_remove_dict(parm_dict["out_file"])
+				db_open_dict(parm_dict["out_file"])
+			# force isn't set, so we can't write....
+			elif (db_check_dict(parm_dict["out_file"])):
+				# set image list to empty, so that nothing is written but program
+				#    exits normally...
+				print "outfile exists. use --force to overwrite!"
+				image_list = [] 
+
+		elif parm_dict["out_file"].endswith(".hdf"):
+			# check for existing file
+			if (file_exists(parm_dict["out_file"]) and options.force):	
+				# remove 
+				remove_file(parm_dict["out_file"])
+			# force isn't set, so we can't write....
+			elif (file_exists(parm_dict["out_file"])):
+				# set image list to empty, so that nothing is written but program
+				#    exits normally...
+				print "outfile exists. use --force to overwrite!"
+				image_list = [] 
+							
 		image_object=EMData()
 		for single_filename in image_list:
-			# XXX: loop over index to save space. reading the whole list may be faster, though...
+			# XXX: we loop over index to save space. reading the whole list may be faster, though...
 			for image_index in xrange(EMUtil.get_image_count(single_filename)):
 				image_object.read_image(single_filename,image_index)
 				image_object.write_image(options.out_file,-1)
