@@ -435,7 +435,7 @@ def kill_process(pid):
 	'''
 	import os
 	import platform
-	platform_string = platform.system()
+	platform_string = get_platform()
 	if platform == "Windows":
 		# taken from http://www.python.org/doc/faq/windows/#how-do-i-emulate-os-kill-in-windows
 		import win32api
@@ -460,7 +460,7 @@ def process_running(pid):
 	'''
 	import platform
 	import os
-	platform_string = platform.system()
+	platform_string = get_platform()
 	if platform == "Windows":
 		# taken from http://www.python.org/doc/faq/windows/#how-do-i-emulate-os-kill-in-windows
 		import win32api
@@ -484,7 +484,7 @@ def memory_stats():
 	if any errors occur while trying to retrieve either of these values their retun value is -1
 	'''
 	import platform
-	platform_string = platform.system()
+	platform_string = get_platform()
 	mem_total = -1
 	mem_avail = -1
 	if platform_string == "Linux":
@@ -510,7 +510,7 @@ def num_cpus():
 	Based on http://mail.python.org/pipermail/python-list/2007-October/460750.html
 	'''
 	import platform
-	platform_string = platform.system()
+	platform_string = get_platform()
 	if platform_string == "Linux":
 		try:
 			f = open("/proc/cpuinfo")
@@ -760,6 +760,18 @@ def strip_after_dot(file_name):
 	idx = str.find(file_name,'.')
 	return file_name[0:idx]
 
+
+def get_platform():
+	'''
+	wraps platform.system but accommodates for its internal bad programming
+	'''
+	import platform
+	while True:
+		try:
+			return platform.system()
+		except:
+			pass
+
 def remove_directories_from_name(file_name):
 	'''
 	Removes the directories from a file name.
@@ -769,7 +781,7 @@ def remove_directories_from_name(file_name):
 	Works on Windows, Linux and Darwin)
 	'''
 	import platform
-	pfm = platform.system() # will be Linux, Darwin or Windows, even Java
+	pfm = get_platform() # will be Linux, Darwin or Windows, even Java
 	if pfm == "Window":
 		idx = file_name.rfind('\\')
 	else:
@@ -1017,12 +1029,13 @@ def get_3d_font_renderer():
 	font_renderer.set_face_size(32)
 	font_renderer.set_using_display_lists(True)
 	font_renderer.set_depth(2)
-	if platform.system() in ["Linux","Darwin"]:
+	pfm = get_platform()
+	if pfm in ["Linux","Darwin"]:
 				font_renderer.set_font_file_name(os.getenv("EMAN2DIR")+"/fonts/DejaVuSerif.ttf")
-	elif platform.system() == "Windows":
+	elif pfm == "Windows":
 			font_renderer.set_font_file_name("C:\\WINDOWS\\Fonts\\arial.ttf")
 	else:
-			print "unknown platform:",platform.system()
+			print "unknown platform:",pfm
 	return font_renderer
 
 class EMAbstractFactory:

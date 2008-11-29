@@ -171,6 +171,9 @@ class EMFormWidget(QtGui.QWidget):
 		groupbox.setLayout(hbl)
 		layout.addWidget(groupbox,1)
 		
+		
+		self.connect(table_widget, QtCore.SIGNAL("itemDoubleClicked(QTableWidgetItem*)"),self.table_item_double_clicked)
+		
 		if len(paramtable[0].choices) > 0:
 			type_of = type(paramtable[0].choices[0])
 		else:
@@ -471,6 +474,11 @@ class EMFormWidget(QtGui.QWidget):
 		self.parent().emit(QtCore.SIGNAL("emform_close"))
 
 		
+	def table_item_double_clicked(self,item):
+		print item.text()
+		self.emit(QtCore.SIGNAL("table_item_double_clicked"),str(item.text()))
+
+		
 class ParamTableWriter:
 	def __init__(self,param_name,table_widget,type_of):
 		self.param_name = param_name
@@ -650,7 +658,8 @@ class EMTableFormWidget(EMFormWidget):
 		print "here we are"
 		tabwidget = QtGui.QTabWidget(self)
 		
-		for i,paramlist in enumerate(self.params):
+		for title,paramlist in params:
+			
 			widget = QtGui.QWidget(None)
 			vbl =  QtGui.QVBoxLayout(widget)
 			for param in paramlist:
@@ -666,7 +675,7 @@ class EMTableFormWidget(EMFormWidget):
 				except: pass
 				self.auto_incorporate[param.vartype](param,vbl)
 			
-			tabwidget.addTab(widget,"Form")
+			tabwidget.addTab(widget,title)
 		
 		layout.addWidget(tabwidget)
 				
@@ -706,7 +715,12 @@ def get_example_table_form_params():
 	p1 = params[0:len(params)/3]
 	p2 = params[len(params)/3:2*len(params)/3]
 	p3 = params[2*len(params)/3:]
-	return [p1,p2,p3]
+	
+	par =[]
+	par.append(["Input", p1])
+	par.append(["This too",p2])
+	par.append(["And also", p3])
+	return par
 
 def on_ok(dict):
 	print "got the ok signal, the return dictionary is",dict

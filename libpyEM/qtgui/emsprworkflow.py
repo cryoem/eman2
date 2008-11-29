@@ -2779,7 +2779,7 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 		
 		return params
 
-	 def get_make3d_page(self):
+	def get_make3d_page(self):
 		
 		params = []
 

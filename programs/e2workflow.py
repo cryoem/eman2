@@ -296,6 +296,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.launchers["Initial Model"] = self.launch_initmodel_report
 		spr_list.append(init_model)
 		refinement = QtGui.QTreeWidgetItem(QtCore.QStringList("3D Refinement"))
+		self.launchers["3D Refinement"] = self.launch_refinement_report
 		spr_list.append(refinement)
 		#spr_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Initial model")))
 		#spr_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Refinement")))
@@ -340,6 +341,11 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		init_model_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Import model")))
 		self.launchers["Import model"] = self.launch_import_initial_model
 		init_model.addChildren(init_model_list)
+		
+		refine_list = []
+		refine_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("run e2refine")))
+		self.launchers["run e2refine"] = self.launch_e2refine
+		refinement.addChildren(refine_list)
 		
 		self.tree_widget.setHeaderLabel("Choose a task")
 		
@@ -406,6 +412,9 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 				return
 			
 		print "failed to close module?" # this shouldn't happen if I have managed everything correctly
+
+	def launch_e2refine(self): self.launch_task(E2RefineChooseDataTask,"e2refine init")
+	def launch_refinement_report(self): self.launch_task(RefinementReportTask,"refinement report")
 	def launch_import_initial_model(self): self.launch_task(ImportInitialModels,"import initial models")
 	def launch_e2makeinitial(self): self.launch_task(E2MakeInitialModel,"e2makeinitialmodel")
 	def launch_initmodel_report(self): self.launch_task(InitialModelReportTask,"initial model report")
