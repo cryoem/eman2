@@ -4221,18 +4221,16 @@ def twoD_fine_search(args, data):
 	return data[0].get_pixel_conv7(args[0]*2, args[1]*2, 0.0, data[1])
 
 
-def ali3d_e(stack, ref_vol, outdir, maskfile = None, ou = -1,  delta = 2, center = -1, maxit = 10, 
-           CTF = False, snr = 1.0, sym = "c1", chunk = -1.0, user_func_name = "ref_ali3d", debug = False, 
-	   MPI = False):
+def ali3d_e(stack, outdir, maskfile = None, ou = -1,  delta = 2, center = -1, maxit = 10, 
+           CTF = False, snr = 1.0, sym = "c1", chunk = -1.0, user_func_name = "ref_ali3d", debug = False, MPI = False):
 	"""
 		
 	"""
 
 	if MPI:
-		ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou, delta, center, maxit, CTF, snr, sym, chunk, user_func_name, debug)
+		ali3d_e_MPI(stack, outdir, maskfile, ou, delta, center, maxit, CTF, snr, sym, chunk, user_func_name, debug)
 		return
 
-	from filter         import filt_ctf
 	from projection     import prep_vol
 	from utilities      import model_circle, get_params_proj, set_params_proj
 	from utilities      import get_image, drop_image
@@ -4253,8 +4251,10 @@ def ali3d_e(stack, ref_vol, outdir, maskfile = None, ou = -1,  delta = 2, center
 		ima = EMData()
 		ima.read_image(stack, 0)
 		ctf_applied = ima.get_attr("ctf_applied")
+		del ima
 		if ctf_applied == 1:  ERROR("ali3d_e does not work for CTF-applied data", "ali3d_e", 1)
 		from reconstruction import recons3d_4nn_ctf
+		from filter         import filt_ctf
 	else   : from reconstruction import recons3d_4nn
 
 	if os.path.exists(outdir): os.system('rm -rf '+outdir)
@@ -4264,16 +4264,15 @@ def ali3d_e(stack, ref_vol, outdir, maskfile = None, ou = -1,  delta = 2, center
 	max_iter    = int(maxit)
 	center      = int(center)
 
-	print_msg("Input stack                 : %s\n"%(stack))
-	print_msg("Reference volume            : %s\n"%(ref_vol))
-	print_msg("Output directory            : %s\n"%(outdir))
-	print_msg("Maskfile                    : %s\n"%(maskfile))
-
-	vol     = EMData()
-	vol.read_image(ref_vol, 0)
-	nx      = vol.get_xsize()
+	ima     = EMData()
+	ima.read_image(stack, 0)
+	nx      = ima.get_xsize()
+	del ima
 	if last_ring == -1:	last_ring = nx//2 - 2
 
+	print_msg("Input stack                 : %s\n"%(stack))
+	print_msg("Output directory            : %s\n"%(outdir))
+	print_msg("Maskfile                    : %s\n"%(maskfile))
 	print_msg("Outer radius                : %i\n"%(last_ring))
 	print_msg("Angular search range        : %s\n"%(delta))
 	print_msg("Maximum iteration           : %i\n"%(max_iter))
@@ -4342,9 +4341,52 @@ def ali3d_e(stack, ref_vol, outdir, maskfile = None, ou = -1,  delta = 2, center
 	data[3] = mask2D
 	cs = [0.0]*3
 
-	for iteration in xrange(maxit):
+	for iteration in xrange(maxit+1):
 		print_msg("ITERATION #%3d\n"%(iteration+1))
 		for ic in xrange(n_of_chunks):
+			# compute updated 3D at the beginning of each chunk
+			#  3D stuff
+			if CTF: vol1 = recons3d_4nn_ctf(dataim, range(0, nima, 2), snr, 1, sym)
+			else:	   vol1 = recons3d_4nn(dataim, range(0, nima, 2), sym)
+
+			if CTF: vol2 = recons3d_4nn_ctf(dataim, range(1, nima, 2), snr, 1, sym)
+			else:	   vol2 = recons3d_4nn(dataim, range(1, nima, 2), sym)
+
+	    		# resolution
+			fscc = fsc_mask(vol1, vol2, mask3D, 1.0, os.path.join(outdir, "resolution%04d"%(iteration*n_of_chunks+ic+1)))
+			del vol1
+			del vol2
+
+			# calculate new and improved 3D
+			if CTF: vol = recons3d_4nn_ctf(dataim, range(nima), snr, 1, sym)
+			else:	   vol = recons3d_4nn(dataim, range(nima), sym)
+
+			# store the reference volume
+			drop_image(vol, os.path.join(outdir, "vol%04d.hdf"%(iteration*n_of_chunks+ic+1)))
+			ref_data[2] = vol
+			ref_data[3] = fscc
+
+			#  call user-supplied function to prepare reference image, i.e., center and filter it
+			if center != -1:
+				vol, cs = user_func(ref_data)
+			else:
+				# When center = -1, which is by default, we use the average center method
+				ref_data[1] = 0
+				vol, cs = user_func(ref_data)
+				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center(dataim)
+				from fundamentals import fshift
+				vol = fshift(vol, -cs[0], -cs[1], -cs[2])
+				msg = "Center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
+				print_msg(msg)				
+
+			if center != 0:	rotate_3D_shift(dataim, cs)
+
+			drop_image(vol, os.path.join(outdir, "volf%04d.hdf"%(iteration*n_of_chunks+ic+1)))
+			if(iteration == maxit):
+				#  in last iteration quit here
+				print_end_msg("ali3d_e")
+				return
+
 			if not CTF:
 				data[0], data[1] = prep_vol(vol)
 
@@ -4399,55 +4441,12 @@ def ali3d_e(stack, ref_vol, outdir, maskfile = None, ou = -1,  delta = 2, center
 
 				set_params_proj(dataim[imn], optm_params[0])
 
-			# compute updated 3D after each chunk
-			if debug:
-				outf.write("\n")
-				outf.flush()
-			#  3D stuff
-			if CTF: vol1 = recons3d_4nn_ctf(dataim, range(0, nima, 2), snr, 1, sym)
-			else:	vol1 = recons3d_4nn(dataim, range(0, nima, 2), sym)
-
-			if CTF: vol2 = recons3d_4nn_ctf(dataim, range(1, nima, 2), snr, 1, sym)
-			else:	vol2 = recons3d_4nn(dataim, range(1, nima, 2), sym)
-
-	    		# resolution
-			fscc = fsc_mask(vol1, vol2, mask3D, 1.0, os.path.join(outdir, "resolution%04d"%(iteration*n_of_chunks+ic+1)))
-			del vol1
-			del vol2
-
-			# calculate new and improved 3D
-			if CTF: vol = recons3d_4nn_ctf(dataim, range(nima), snr, 1, sym)
-			else:	vol = recons3d_4nn(dataim, range(nima), sym)
-
-			# store the reference volume
-			drop_image(vol, os.path.join(outdir, "vol%04d.hdf"%(iteration*n_of_chunks+ic+1)))
-			ref_data[2] = vol
-			ref_data[3] = fscc
-
-			#  call user-supplied function to prepare reference image, i.e., center and filter it
-			if center != -1:
-				vol, cs = user_func(ref_data)
-			else:
-				# When center = -1, which is by default, we use the average center method
-				ref_data[1] = 0
-				vol, cs = user_func(ref_data)
-				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center(dataim)
-				from fundamentals import fshift
-				vol = fshift(vol, -cs[0], -cs[1], -cs[2])
-				msg = "Center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
-				print_msg(msg)				
-
-			if center != 0:	rotate_3D_shift(dataim, cs)
-
-			drop_image(vol, os.path.join(outdir, "volf%04d.hdf"%(iteration*n_of_chunks+ic+1)))
-
 			#  here we write header infomation
 			from utilities import write_headers
 			write_headers(stack, dataim, list_of_particles)
-	print_end_msg("ali3d_e")
 
 
-def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou = -1,  delta = 2, center = -1, maxit = 10, 
+def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, center = -1, maxit = 10, 
                 CTF = False, snr = 1.0, sym = "c1", chunk = -1.0, user_func_name = "ref_ali3d", debug = False):
 	"""
 		
@@ -4483,8 +4482,8 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou = -1,  delta = 2, center = 
 			ima = EMData()
 			ima.read_image(stack, 0)
 			ctf_applied = ima.get_attr("ctf_applied")
-			if ctf_applied == 1:  ERROR("ali3d_e does not work for CTF-applied data", "ali3d_e", 1)
 			del ima
+			if ctf_applied == 1:  ERROR("ali3d_e does not work for CTF-applied data", "ali3d_e", 1)
 	mpi_barrier(MPI_COMM_WORLD)
 	if debug:
 		info_file = outdir+("/progress%04d"%myid)
@@ -4496,9 +4495,10 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou = -1,  delta = 2, center = 
 	max_iter    = int(maxit)
 	center      = int(center)
 
-	vol     = EMData()
-	vol.read_image(ref_vol, 0)
-	nx      = vol.get_xsize()
+	ima     = EMData()
+	ima.read_image(stack, 0)
+	nx      = ima.get_xsize()
+	del ima
 	if last_ring < 0:	last_ring = int(nx/2) - 2
 
 	if chunk <= 0.0:  chunk = 1.0
@@ -4509,7 +4509,6 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou = -1,  delta = 2, center = 
 
 		print_begin_msg("ali3d_e_MPI")
 		print_msg("Input stack                 : %s\n"%(stack))
-		print_msg("Reference volume            : %s\n"%(ref_vol))	
 		print_msg("Output directory            : %s\n"%(outdir))
 		print_msg("Maskfile                    : %s\n"%(maskfile))
 		print_msg("Outer radius                : %i\n"%(last_ring))
@@ -4596,7 +4595,7 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou = -1,  delta = 2, center = 
 	data[3] = mask2D
 	cs = [0.0]*3
 
-	for iteration in xrange(maxit):
+	for iteration in xrange(maxit+1):
 		if myid == main_node:
 			print_msg("ITERATION #%3d\n"%(iteration+1))
 		if debug:
@@ -4604,7 +4603,59 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou = -1,  delta = 2, center = 
 			outf.write("\n")
 			outf.flush()
 		for ic in xrange(n_of_chunks):
+			# compute updated 3D after each chunk
+ 	    		# resolution
+			if debug:
+				outf.write("  begin reconstruction = "+str(image_start))
+				outf.write("\n")
+				outf.flush()
+				
+			if CTF: vol, fscc = rec3D_MPI(dataim, snr, sym, mask3D, os.path.join(outdir, "resolution%03d_%03d"%(iteration, ic)), myid, main_node)
+			else:   vol, fscc = rec3D_MPI_noCTF(dataim, sym, mask3D, os.path.join(outdir, "resolution%03d_%03d"%(iteration, ic)), myid, main_node)
+			
+			if debug:
+				outf.write("  done reconstruction = "+str(image_start))
+				outf.write("\n")
+				outf.flush()
+			#  Insert of the variance
+			varf = varf3d_MPI(dataim, ssnr_text_file = os.path.join(outdir, "ssnr%03d_%03d"%(iteration, ic)), mask2D = None, reference_structure = vol, ou = ou, rw = 1.0, npad = 1, CTF = CTF, sign = 1, sym =sym, myid = myid)
+
+			if center == -1:
+				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center_MPI(dataim, nima, myid, number_of_proc, main_node)				
+
+			if myid == main_node:
+				drop_image(varf, os.path.join(outdir, "varf%03d_%03d.hdf"%(iteration, ic) ))
+				varf = 1.0/varf
+				drop_image(vol, os.path.join(outdir, "vol%03d_%03d.hdf"%(iteration, ic) ))
+				drop_image(varf, os.path.join(outdir, "overvarf%03d_%03d.hdf"%(iteration, ic) ))
+				ref_data[2] = vol
+				ref_data[3] = fscc
+				ref_data[4] = varf
+				#  call user-supplied function to prepare reference image, i.e., center and filter it
+				if center != -1:
+					vol, cs = user_func(ref_data)
+				else:
+					# When center = -1, which is by default, we use the average center method
+					ref_data[1] = 0
+					vol, dummy = user_func(ref_data)
+					from fundamentals import fshift
+					vol = fshift(vol, -cs[0], -cs[1], -cs[2])
+					msg = "Center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
+					print_msg(msg)
+					
+				drop_image(vol, os.path.join(outdir, "volf%03d_%03d.hdf"%(iteration, ic)))
+
+			cs = mpi_bcast(cs, 3, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+			cs = [float(cs[0]), float(cs[1]), float(cs[2])]
+			if center != 0: rotate_3D_shift(dataim, cs)
+
+			del varf
+			# in last iteration return here
+			if(iteration == maxit):
+				if myid == main_node: print_end_msg("ali3d_e_MPI")
+				return
 			bcast_EMData_to_all(vol, myid, main_node)
+
 			if not CTF:
 				data[0], data[1] = prep_vol(vol)
 
@@ -4655,60 +4706,11 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou = -1,  delta = 2, center = 
 
 				set_params_proj(dataim[imn-image_start], optm_params[0])
 
-			# compute updated 3D after each chunk
- 	    		# resolution
-			if debug:
-				outf.write("  begin reconstruction = "+str(image_start))
-				outf.write("\n")
-				outf.flush()
-				
-			if CTF: vol, fscc = rec3D_MPI(dataim, snr, sym, mask3D, os.path.join(outdir, "resolution%03d_%03d"%(iteration, ic)), myid, main_node)
-			else:   vol, fscc = rec3D_MPI_noCTF(dataim, sym, mask3D, os.path.join(outdir, "resolution%03d_%03d"%(iteration, ic)), myid, main_node)
-			
-			if debug:
-				outf.write("  done reconstruction = "+str(image_start))
-				outf.write("\n")
-				outf.flush()
-			#  Insert of the variance
-			varf = varf3d_MPI(dataim, ssnr_text_file = os.path.join(outdir, "ssnr%03d_%03d"%(iteration, ic)), mask2D = None, reference_structure = vol, ou = ou, rw = 1.0, npad = 1, CTF = CTF, sign = 1, sym =sym, myid = myid)
-
-			if center == -1:
-				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center_MPI(dataim, nima, myid, number_of_proc, main_node)				
-
-			if myid == main_node:
-				drop_image(varf, os.path.join(outdir, "varf%03d_%03d.hdf"%(iteration, ic) ))
-				varf = 1.0/varf
-				drop_image(vol, os.path.join(outdir, "vol%03d_%03d.hdf"%(iteration, ic) ))
-				drop_image(varf, os.path.join(outdir, "overvarf%03d_%03d.hdf"%(iteration, ic) ))
-				ref_data[2] = vol
-				ref_data[3] = fscc
-				ref_data[4] = varf
-				#  call user-supplied function to prepare reference image, i.e., center and filter it
-				if center != -1:
-					vol, cs = user_func(ref_data)
-				else:
-					# When center = -1, which is by default, we use the average center method
-					ref_data[1] = 0
-					vol, dummy = user_func(ref_data)
-					from fundamentals import fshift
-					vol = fshift(vol, -cs[0], -cs[1], -cs[2])
-					msg = "Center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
-					print_msg(msg)
-					
-				drop_image(vol, os.path.join(outdir, "volf%03d_%03d.hdf"%(iteration, ic)))
-
-			cs = mpi_bcast(cs, 3, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-			cs = [float(cs[0]), float(cs[1]), float(cs[2])]
-			if center != 0: rotate_3D_shift(dataim, cs)
-
-			del varf
-			bcast_EMData_to_all(vol, myid, main_node)
 			# write out headers, under MPI writing has to be done sequentially
 			mpi_barrier(MPI_COMM_WORLD)
 			par_str = ['xform.proj', 'ID']
 			if myid == main_node: recv_attr_dict(main_node, stack, dataim, par_str, image_start, image_end, number_of_proc)
 			else:                 send_attr_dict(main_node, dataim, par_str, image_start, image_end)
-	if myid == main_node: print_end_msg("ali3d_e_MPI")
 
 def ali3d_eB_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CTF = None, snr=1.0, sym="c1", chunk = -1.0, user_func_name="ref_aliB_cone"):
 	"""
