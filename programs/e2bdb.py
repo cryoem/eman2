@@ -51,6 +51,7 @@ Various utilities related to BDB databases."""
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
+	parser.add_option("--all","-a",action="store_true",help="List per-particle info",default=False)
 	parser.add_option("--long","-l",action="store_true",help="Long listing",default=False)
 	parser.add_option("--short","-s",action="store_true",help="Dense listing of names only",default=False)
 	parser.add_option("--filt",type="string",help="Only include dictionary names containing the specified string",default=None)
@@ -59,9 +60,13 @@ Various utilities related to BDB databases."""
 
 	(options, args) = parser.parse_args()
 
+	if options.all : options.long=1
 	if len(args)==0 : args.append("bdb:.")
 	
-	if options.makevstack : vstack=db_open_dict(options.makevstack)
+	logid=0
+	if options.makevstack : 
+		logid=E2init(sys.argv)
+		vstack=db_open_dict(options.makevstack)
 	else : vstack=None
 	vstackn=0
 	
@@ -120,6 +125,14 @@ Various utilities related to BDB databases."""
 			total=[0,0]
 			for db in dbs:
 				dct=db_open_dict(path+db)
+				if options.all :
+					for i in range(len(dct)):
+						im=dct[i]
+						print "%d. %d x %d x %d\tA/pix=%1.2f\tM=%1.4f\tS=%1.4f"%(i,im["nx"],im["ny"],im["nz"],im["apix_x"],im["mean"],im["sigma"]),
+						try:
+							print "\tdf=%1.3f\tB=%1.1f"%(im["ctf"].defocus,im["ctf"].bfactor)
+						except: print " "
+				
 				first=EMData()
 				try: 
 					first.read_image(path+db,0,True)
@@ -148,6 +161,8 @@ Various utilities related to BDB databases."""
 					try: print fmt%dbs[r+c*rows],
 					except: pass
 				print " "
+
+	if logid : E2end(logid)
 
 def human_size(size):
 	if size>1000000000: return "%1.2f gb"%(size/1000000000)

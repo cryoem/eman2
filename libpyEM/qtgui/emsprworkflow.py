@@ -2224,7 +2224,7 @@ class E2Refine2DTask(ParticleWorkFlowTask):
 	 			cmd += " --process=math.meanshrink:n="+str(options.shrink)
 	 			
 	 			self.application().setOverrideCursor(Qt.BusyCursor)
-	 			success = not os.system(cmd)
+	 			success = not (os.system(cmd) in (0,12))
 	 			self.application().setOverrideCursor(Qt.ArrowCursor)
 	 			
 	 			if not success:
@@ -2249,7 +2249,7 @@ class E2Refine2DTask(ParticleWorkFlowTask):
 	 	cmd += " --makevstack=bdb:"+options.path+"#all"
 	 	
 	 	self.application().setOverrideCursor(Qt.BusyCursor)
-	 	success = not os.system(cmd)
+	 	success = not (os.system(cmd) in (0,12))
 	 	self.application().setOverrideCursor(Qt.ArrowCursor)
 	 	return success,cmd
 	 

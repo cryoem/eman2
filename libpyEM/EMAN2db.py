@@ -197,6 +197,13 @@ EMData.__init__=db_emd_init
 
 
 def db_read_image(self,fsp,*parms):
+	"""read_image(filespec,image #,[header only],[region],[is_3d])
+	
+	This function can be used to read a set of images from a file or bdb: database. Pass in
+	the filename, or bdb: specification, optionally a list of image numbers to read (or None),
+	and a flag indicating that only the image headers should be read in. If only the headers
+	are read, accesses to the image data in the resulting EMData objects will be invalid.
+	Region reading is not supported for bdb:entries yet."""
 	if fsp[:4].lower()=="bdb:" :
 		db,keys=db_open_dict(fsp,True,True)
 		
@@ -216,15 +223,25 @@ EMData.read_image_c=EMData.read_image
 EMData.read_image=db_read_image
 
 def db_read_images(fsp,*parms):
+	"""EMData.read_images(filespec,[image # list],[header only])
+	
+	This function can be used to read a set of images from a file or bdb: database. Pass in
+	the filename, or bdb: specification, optionally a list of image numbers to read (or None),
+	and a flag indicating that only the image headers should be read in. If only the headers
+	are read, accesses to the image data in the resulting EMData objects will be invalid"""
 	if fsp[:4].lower()=="bdb:" :
 		db,keys=db_open_dict(fsp,True,True)
+		if len(parms)>1: nodata=parms[1]
 		if keys:
-			if len(parms)>0 : return [db.get(keys[i]) for i in parms[0]]
-			return [db.get(i) for i in keys]
+			if len(parms)>0 :
+				if not parms[0] or len(parms[0])==0 : parms[0]=keys
+				return [db.get(keys[i]) for i in parms[0]]
+			return [db.get(i,nodata=nodata) for i in keys]
 		else :
 			if len(parms)==0 : keys=range(0,len(db))
 			else : keys=parms[0]
-		return [db.get(i) for i in keys]
+			if not keys or len(keys)==0 : keys=range(len(db))
+		return [db.get(i,nodata=nodata) for i in keys]
 	return EMData.read_images_c(fsp,*parms)
 
 EMData.read_images_c=staticmethod(EMData.read_images)
@@ -232,6 +249,11 @@ EMData.read_images=staticmethod(db_read_images)
 
 
 def db_write_image(self,fsp,*parms):
+	"""write_image(fsp,image #,[image type],[header only],[region],[storage type],[use host endian])
+
+	Writes and image to a file or a bdb: entry. Note that for bdb: specifications, only image # is supported.
+	the remaining options are ignored"
+	"""
 	if fsp[:4].lower()=="bdb:" :
 		db,keys=db_open_dict(fsp,False,True)
 		if keys :			# if the user specifies the key in fsp, we ignore parms
@@ -248,6 +270,9 @@ EMData.write_image_c=EMData.write_image
 EMData.write_image=db_write_image
 
 def db_get_image_count(fsp):
+	"""get_image_count(path)
+
+Takes a path or bdb: specifier and returns the number of images in the referenced stack."""
 	if fsp[:4].lower()=="bdb:" :
 		db,keys=db_open_dict(fsp,True,True)
 		if keys :			# if the user specifies the key in fsp, we ignore parms
@@ -733,7 +758,7 @@ class DBDict:
 			for i in k: ret.set_attr(i,r[i])
 
 			# binary data
-			if not nodata: 
+			if not nodata:
 				if r.has_key("data_path"):
 					p,l=r["data_path"].split("*")
 					ret.read_data(p,int(l))

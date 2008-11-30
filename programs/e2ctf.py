@@ -318,6 +318,7 @@ def process_stack(stackfile,phaseflip=None,wiener=None,edgenorm=True,oversamp=1,
 			out["ctf"]=ctf
 			out.clip_inplace(Region(int(ys2*(oversamp-1)/2.0),int(ys2*(oversamp-1)/2.0),ys2,ys2))
 			if invert: out.mult(-1.0)
+			out.process("normalize.edgemean")
 			out.write_image(phaseflip,i)
 
 		if wiener :
@@ -335,6 +336,7 @@ def process_stack(stackfile,phaseflip=None,wiener=None,edgenorm=True,oversamp=1,
 			out["ctf"]=ctf
 			out.clip_inplace(Region(int(ys2*(oversamp-1)/2.0),int(ys2*(oversamp-1)/2.0),ys2,ys2))
 			if invert : out.mult(-1.0)
+			out.process("normalize.edgemean")
 			try: out.write_image(wiener,i)
 			except: 
 				print wiener,i
