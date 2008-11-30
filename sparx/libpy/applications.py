@@ -8145,8 +8145,10 @@ def bootstrap_genbuf(prj_stack, outdir, verbose, CTF=False, MPI=False):
 		size = 1
 		myid = 0
 
-	if not os.path.exists(outdir):
-		os.system( "mkdir " + outdir )
+	if os.path.exists(outdir):
+		os.system( "rm " + outdir )
+
+	os.system( "mkdir " + outdir )
 
 	buf_prefix = outdir + "/tmpslice";
 	store = file_store(buf_prefix, npad, 1, CTF)
@@ -8172,7 +8174,8 @@ def bootstrap_genbuf(prj_stack, outdir, verbose, CTF=False, MPI=False):
 def bootstrap_run(prj_stack, media, outdir, nvol, CTF, snr, sym, verbose, MPI=False):
 
 	import string
-	from mpi import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD, mpi_init
+	from mpi import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD, mpi_init, mpi_barrier
+	import os
 
 	if MPI:
 		size = mpi_comm_size(MPI_COMM_WORLD)
@@ -8180,6 +8183,14 @@ def bootstrap_run(prj_stack, media, outdir, nvol, CTF, snr, sym, verbose, MPI=Fa
 	else:
 		size = 1
 		myid = 0
+
+	if myid==0:
+		if os.path.exists(outdir):
+			os.system( "rm -rf " + outdir )
+		os.system( "mkdir " + outdir )
+	if MPI:
+		mpi_barrier( MPI_COMM_WORLD )	
+
 
 	myvolume_file = "%s/bsvol%04d.hdf" % (outdir, myid)
 	if verbose != 0 :
@@ -8940,8 +8951,9 @@ def defvar_mpi(files, nprj, outdir, fl, fh, radccc, writelp, writestack):
         myid = mpi_comm_rank( MPI_COMM_WORLD )
         ncpu = mpi_comm_size( MPI_COMM_WORLD )
         if myid==0:
-		if not os.path.exists(outdir):
-			os.system( "mkdir " + outdir )
+		if os.path.exists(outdir):
+			os.system( "rm -rf " + outdir )
+		os.system( "mkdir " + outdir )
 		finf = open( outdir + "/defvar_progress.txt", "w" )
 
 	mpi_barrier( MPI_COMM_WORLD )
