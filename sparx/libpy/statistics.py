@@ -1526,11 +1526,11 @@ def k_means_export(Cls, crit, assign, out_seedname):
 			Cls['var'][k].set_attr('Je', Je)
 
 		if BDB:
-			Cls['ave'][k].write_image(out_seedname + '_ave', k)
-			Cls['var'][k].write_image(out_seedname + '_var', k)
+			Cls['ave'][k].write_image(out_seedname + '_aves', k)
+			Cls['var'][k].write_image(out_seedname + '_vars', k)
 		else:
-			Cls['ave'][k].write_image(out_seedname + "/average.hdf", k)
-			Cls['var'][k].write_image(out_seedname + "/variance.hdf", k)
+			Cls['ave'][k].write_image(out_seedname + "/averages.hdf", k)
+			Cls['var'][k].write_image(out_seedname + "/variances.hdf", k)
 
 
 # K-means compute criterion in order to validate the number of groups
