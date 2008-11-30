@@ -610,8 +610,8 @@ def check(options, verbose=False):
 				if (verbose):
 					print "Error - the dimensions of the reference and particle images do not match"
 
-	if options.align == None:
-		print "Error: you mt specify the align argument"
+	if (options.iter > 1 or options.bootstrap) and options.align == None:
+		print "Error: you must specify the align argument"
 		error = True
 	#if ( options.keep and options.keepsig ):
 		#error = True

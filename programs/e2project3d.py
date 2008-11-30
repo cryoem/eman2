@@ -132,7 +132,7 @@ def main():
 		print "%s...done" %progname
 	
 	E2end(logger)
-	exit(1)
+	exit(0)
 	
 	
 	#TODO - determine whether or not to add this functionality

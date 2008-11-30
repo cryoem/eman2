@@ -143,7 +143,7 @@ def main():
 	logger=E2init(sys.argv)
 	
 	# just remove the output file - if the user didn't specify force then the error should have been found in the check function
-	if os.path.exists(options.outfile):
+	if file_exists(options.outfile):
 		if options.force:
 			remove_file(options.outfile)
 		else: 
@@ -246,7 +246,7 @@ def main():
 				print "warning - application of the post processor",p," failed. Continuing anyway"
 					
 	# write the reconstruction to disk
-	output.write_image(options.outfile)
+	output.write_image(options.outfile,0)
 	if options.verbose:
 			print "Output File: "+options.outfile
 
@@ -614,7 +614,7 @@ def check(options,verbose=False):
 		error = True
 	
 	if ( options.nofilecheck == False ):
-		if not os.path.exists(options.datafile):
+		if not file_exists(options.datafile):
 			if verbose:
 				print  "Error: the 2D image data file (%s) does not exist, cannot run e2make3d.py" %(options.datafile)
 			error = True
@@ -645,7 +645,7 @@ def check(options,verbose=False):
 								print  "Error, you specified a y padding size (%d) that was smaller than the y dimension of the image (%d)"%(ypad,ysize)
 							error = True
 		
-		if ( os.path.exists(options.outfile )):
+		if ( file_exists(options.outfile )):
 			if ( not options.force ):
 				if verbose:
 					print  "Error: The output file exists and will not be written over. Use -f to overwrite"
@@ -654,7 +654,7 @@ def check(options,verbose=False):
 	
 	# if weighting is being used, this code checks to make sure atleast one image has an attribute "ptcl_repr" that is
 	# greater than zero. If this is not the case, the insertion code will think there is nothing to insert...
-	if ( options.no_wt == False ):
+	if ( options.no_wt == False and not options.nofilecheck):
 		total_images=EMUtil.get_image_count(options.input_file)
 		ptcl_repr = False;
 		# A sanity test

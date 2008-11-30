@@ -2617,12 +2617,28 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 			if len(error_message) > 0 :
 				self.display_errors(error_message)
 				return
+			
+		# w'oh if we make it here a lot of checking has occured. Now get the args in order to spawn_single_task
+		string_args = []
+		bool_args = []
 		
+		additional_args = []
 		
-	 	self.emit(QtCore.SIGNAL("task_idle"))
+		for get_args in [self.add_general_args,self.add_project3d_args,self.add_simmx_args,self.add_classaverage_args,self.add_make3d_args]:
+		  	error = get_args(options,string_args,bool_args,additional_args)
+		
+			if error != None: # not too fast, something still could have gone wrong
+				self.display_errors([error])
+				return
+		
+		temp_file_name = "e2refine_stdout.txt"
+		
+		self.spawn_single_task("e2refine.py",options,string_args,bool_args,additional_args,temp_file_name)
+		self.emit(QtCore.SIGNAL("task_idle"))
 		self.application().close_specific(self.form)
 		self.form = None
-	
+		
+
 	def display_errors(self,error_message):
 		'''
 		error_message is a list of strings
@@ -2668,7 +2684,7 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 		
 		syms = ["icos","oct","tet","d","c","h"]
 		
-		piter = ParamDef(name="iter",vartype="int",desc_short="Refinement iterations",desc_long="The number of times 3D refinement should be iterated",property=None,defaultunits=0,choices=[])
+		piter = ParamDef(name="iter",vartype="int",desc_short="Refinement iterations",desc_long="The number of times 3D refinement should be iterated",property=None,defaultunits=3,choices=[])
 		plowmem = ParamDef(name="lowmem",vartype="boolean",desc_short="Low mem",desc_long="Causes various programs to restrict memory usage but results in increased CPU time.",property=None,defaultunits=False,choices=None)
 		
 		psym =  ParamDef(name="symname",vartype="string",desc_short="Symmetry",desc_long="Symmetry to be imposed during refinement",property=None,defaultunits=None,choices=syms)
@@ -2686,14 +2702,97 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 		else:
 			pusefiltentry  =  ParamDef(name="usefilt_string",vartype="string",desc_short="Usefilt",desc_long="Specify the file containing the filtered images directly",property=None,defaultunits="",choices=[])
 			params.append(pusefiltentry)
-		
-			
-		
+
 		params.append([piter,plowmem])
 		params.append([psym,psymnum])
 		
-		
 		return ["General",params]
+	
+	def add_general_args(self,options,string_args,bool_args,additional_args):
+		
+		options.path = numbered_path("refine",True)
+		
+		if self.end_tag != "generic":
+			success,cmd = self.make_v_stack(options.filenames,"all",options,"input")
+			if not success:
+				return cmd + " failed"
+		else:
+			success, cmd = self.make_stack(options.filenames, "all",options,"input")
+			if not success:
+				return cmd + " failed"
+			
+		string_args.append("input")
+		
+		if hasattr(options,"usefilt"):
+			if hasattr(options,"usefilt_names"):
+				success,cmd = self.make_v_stack(options.usefilt_names,"usefilt",options,"usefilt")# sets the attribute for us
+			else:
+				pass
+				# pass it should be fine, the usefilt attr is already set
+			
+			string_args.append("usefilt")
+		
+		options.model = "bdb:initial_models#"+options.model
+		
+		options.filenames = [] # important for this to happen so the argument doesn't have all the filenames as args
+		string_args.extend(["iter","sym","model","path"])
+		bool_args.append("lowmem")
+		
+		return None # returning None is good
+		
+	def make_stack(self,filenames,out_name,options,attr):
+		'''
+		This one's a bit more specialized to handle flat files and avoid massive copying
+		'''
+		if len(filenames) == 1:
+			setattr(options,attr,filenames[0])
+		else:
+			fail = False
+			# check if they're all bdb files, in which case we can make a v stack
+			for name in filenames:
+				if name[0:4] != "bdb:":
+					fail = True
+					break
+				
+			if fail: # we can't make a vstack
+				# potentially lots of e2proc2d
+				progress = EMProgressDialogModule(self.application(),"Importing files into database...", "Abort import", 0, len(filenames),None)
+				progress.qt_widget.show()
+		  	   	i = 0
+		  	   	setattr(options,attr, "bdb:"+options.path+"#"+out_name)
+				for i,name in enumerate(filenames):
+					cmd = "e2proc2d.py"
+		 			cmd += " "+name
+		 			cmd += " "+getattr(options,attr)
+		 			success = not os.system(cmd)
+		 			if not success:
+		 				return False,cmd
+		 			else:
+		 				progress.setValue(i+1)
+				
+				progress.qt_widget.close()	
+			else:
+				return self.make_input_v_stack(filenames,out_names,options,attr)
+
+	
+	def make_v_stack(self,filenames,out_name,options,attr):
+	 	
+	 	cmd = "e2bdb.py"
+	 	for name in filenames:
+	 		cmd += " "+name
+	 	
+	 	cmd += " --makevstack=bdb:"+options.path+"#"+out_name
+	 	
+	 	print "executing cmd", cmd
+	 	
+	 	self.application().setOverrideCursor(Qt.BusyCursor)
+	 	success = not os.system(cmd)
+	 	self.application().setOverrideCursor(Qt.ArrowCursor)
+	 	
+	 	setattr(options,attr,"bdb:"+options.path+"#"+out_name) # Note important 
+	 	
+	 	return success,cmd
+	 
 	
 	def check_main_page(self,params,options):
 		'''
@@ -2793,8 +2892,6 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 		options.model = params["model"] # can't get this one wrong
 		
 		return error_message
-		
-			
 	
 	def get_usefilt_options(self):
 		if self.end_tag != "generic":
@@ -2812,7 +2909,12 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 			return available_filt_files
 		else:
 			return []
-	
+		
+	def add_project3d_args(self,options,string_args,bool_args,additional_args):
+		
+		string_args.extend(["orientgen","projector"])
+		# sym is already taken care of in the main args
+		return None # no error to report
 	def get_project3d_page(self):
 		params = []
 		
@@ -2866,6 +2968,14 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 		
 		return error_message
 		
+	def add_simmx_args(self,options,string_args,bool_args,additional_args):
+		
+		optionals = ["simcmp","simalign","simaligncmp","simralign","simraligncmp"]
+		for opt in optionals:
+			if getattr(options,opt) != None: string_args.append(opt)
+		
+		if options.shrink > 1: string_args.append("shrink") # e2simmx doesn't like it if shrink is 1
+	
 	
 	def check_simmx_page(self,params,options):
 		error_message = []
@@ -2927,6 +3037,15 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 		
 		return ["Simmx",params]
 	
+	def add_classaverage_args(self,options,string_args,bool_args,additional_args):
+		
+		optionals = ["classcmp","classalign","classaligncmp","classralign","classraligncmp"]
+		for opt in optionals:
+			if getattr(options,opt) != None: string_args.append(opt)
+			
+		string_args.extend(["sep","classiter","classkeep","classnormproc"])
+		bool_args.append("classkeepsig")
+	
 	def check_classaverage_page(self,params,options):
 		error_message = []
 		
@@ -2954,7 +3073,6 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 	
 	
 	def get_classaverage_page(self):
-		
 		params = []
 		
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2RefineParticlesTask.class_documentation,choices=None))
@@ -3015,6 +3133,13 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 		
 		return params
 
+	def add_make3d_args(self,options,string_args,bool_args,additional_args):
+		
+		string_args.extend(["m3diter","m3dkeep","recon"])
+		bool_args.append("m3dkeepsig")
+		if hasattr(options,"m3dpreprocess"): string_args.append("m3dpreprocess")
+		if hasattr(options,"pad"): string_args.append("pad")
+
 	def check_make3d_page(self,params,options):
 		error_message = []
 		
@@ -3026,6 +3151,27 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 				error_message.append("The keep parameter in the Make3D page must be between 0 and 1. This does not hold if the \'Sigma based\' option is selected.")
 		
 		if len(error_message) > 0 : return error_message # calling program should discontinue
+		
+		
+		
+		if len(params["pad"]) > 0:
+			try: int(params["pad"])
+			except: error_message.append("The value you entered for padding is nonsensical")
+			pad = int(params["pad"])
+			if params["filenames"] > 0:
+#				try:
+					if self.end_tag != "generic":
+						nx,ny = gimme_image_dimensions2D("bdb:particles#"+params["filenames"][0])
+					else:
+						nx,ny = gimme_image_dimensions2D(params["filenames"][0])
+					if nx >= pad or ny >= pad:
+						error_message.append("You must specify a value for padding that is larger than the image dimensions - the image dimensions are %i x %i and your pad value is %i" %(nx,ny,pad))				
+					else:
+						options.pad = int(params["pad"])
+#				except:
+#					error_message.append("Can't get the dimensions of the first image???")
+			else:
+				pass # the user not entering filenames is an error, so after they've correct that we'll with the issues here
 		
 		options.m3diter = params["m3diter"]
 		options.m3dkeep = params["m3dkeep"]
@@ -3051,14 +3197,14 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 		pnormproc =  ParamDef("m3dpreprocess",vartype="string",desc_short="Normalization processor",desc_long="The normalization method applied to the class averages",property=None,defaultunits="normalize.edgemean",choices=["normalize","normalize.edgemean","None"])
 		
 		precon = ParamDef("recon",vartype="string",desc_short="Reconstruction technique",desc_long="The method used to perform 3D reconstruction",property=None,defaultunits="fourier",choices=["fourier","back_projection"])
-		
+		ppad = ParamDef("pad",vartype="string",desc_short="Pad to",desc_long="The amount to which you want to pad the 3D volume when Fourier inversion is being used. At least 25% is recommended", defaultunits="",choices=[])
 		params = []
 		
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2RefineParticlesTask.make3d_documentation,choices=None))
 
 		
 		params.append([precon,piter])
-		params.append(pnormproc)
+		params.append([pnormproc,ppad])
 		params.append([pkeep,pkeepsig])
 		
 		return ["Make3d", params]
