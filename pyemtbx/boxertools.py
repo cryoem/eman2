@@ -2732,6 +2732,10 @@ class PawelAutoBoxer(AutoBoxer):
                 self.ctf_window = 512
                 self.ctf_edge = 0
                 self.ctf_overlap = 50
+                self.ctf_volt = 300
+                self.ctf_ampcont = 0.1
+                self.ctf_Cs = 2.0
+
 		self.out_file = None
 		
                 if not(dict is None):
@@ -2743,8 +2747,11 @@ class PawelAutoBoxer(AutoBoxer):
                             self.__dict__[key] = dict[key]
                         except:
                             # error. just ignore.
+                            #print "key",key,"skipped"
                             pass
-                    
+                        else:
+                            #print "key",key,"set to ",dict[key]
+                            pass
 
                     
   
@@ -2889,27 +2896,24 @@ class PawelAutoBoxer(AutoBoxer):
             from fundamentals import rot_avg_table
             avg_sp = rot_avg_table(power_sp)
             del power_sp
-
-	    # XXX: avoid static values
-            volt = 300.0
-	    Cs = 2.0
-            
             from morphology import defocus_gett
             # XXX: self.pixel_output??
-            defocus = defocus_gett(avg_sp,voltage=volt,Pixel_size=self.pixel_output,Cs=Cs,
+            defocus = defocus_gett(avg_sp,voltage=self.ctf_volt,Pixel_size=self.pixel_output,Cs=self.ctf_Cs,wgh=self.ctf_ampcont,
 				   f_start=self.ctf_fstart,f_stop=self.ctf_fstop)
 
 	    # set image properties, in order to save ctf values
 	    from utilities import set_ctf,generate_ctf
-	    set_ctf(img,[defocus,Cs,volt,self.pixel_output,0,0])
+            ctf_tuple = [defocus,self.ctf_Cs,self.ctf_volt,self.pixel_output,0,self.ctf_ampcont]
+	    set_ctf(img,ctf_tuple)
 	    # and rewrite image 
 	    img.write_image(image_name,0)
 
             del avg_sp
             del img,image_name
             #print "CTF estimation done:"
-            #print defocus
-            return generate_ctf([defocus,Cs,volt,self.pixel_output,0,0])
+            print ctf_tuple
+            print defocus
+            return generate_ctf(ctf_tuple)
             
 
 	def run(self, imgname, boxable=None):

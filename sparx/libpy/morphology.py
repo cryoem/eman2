@@ -318,7 +318,7 @@ def defocus_L2_euc(v1,v2, ist,istp):
 		res = sqrt(dis)/sqrt(pw_sum)/tfeq	
 		return res
 		
-def defocus_guess(Res_roo, Res_TE, volt, Cs, Pixel_size, wgh, istart=0, istop=-1, defocus_estimation_method=2, round_off=1, dz_low=1000., dz_high=200000., nloop=100):
+def defocus_guess(Res_roo, Res_TE, volt, Cs, Pixel_size, wgh, istart=0, istop=-1, defocus_estimation_method=2, round_off=1, dz_low=1000., dz_high=200000., nloop=100, ampcont=0.0):
 	"""
 		Use specified frequencies area (istart-istop)to estimate defocus
 		1.  The searching range is limited to dz_low (.1um) ~ dz_high (20 um).
@@ -350,7 +350,7 @@ def defocus_guess(Res_roo, Res_TE, volt, Cs, Pixel_size, wgh, istart=0, istop=-1
 			diff   = 0
 			length = len(Res_roo)
 			nx     = int(length*2)
-			ctf    = ctf_2(nx, generate_ctf([dz,Cs,volt,Pixel_size,0.0,wgh]))
+			ctf    = ctf_2(nx, generate_ctf([dz,Cs,volt,Pixel_size,ampcont,wgh]))
 			if defocus_estimation_method == 1:
 	        		for ifreq in xrange(istart, istop, 1):
 	        			diff += (ctf[ifreq]*Res_TE[ifreq] - Res_roo[ifreq])**2

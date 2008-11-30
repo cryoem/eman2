@@ -136,9 +136,12 @@ for single particle analysis."""
 	parser.add_option("--ctf_window",default=False,help="Window size for CTF determination")
 	parser.add_option("--ctf_edge",default=False,help="Edge for CTF determination")
 	parser.add_option("--ctf_overlap",default=False,help="Overlap value for CTF determination")
+	parser.add_option("--ctf_ampcont",default=False,help="Amplitude contrast for CTF")
+	parser.add_option("--ctf_volt",default=False,help="Voltage for CTF")
+	parser.add_option("--ctf_cs",default=False,help="Cs factor for CTF")
 	parser.add_option("--out_file",default=False,help="File to write particles to")
 	parser.add_option("--out_dir",default=False,help="Directory to write particle files to")
-	
+
 	(options, args) = parser.parse_args()
 	
 	filenames = []
@@ -315,6 +318,27 @@ def do_gauss_cmd_line_boxing(options):
 				print "could not convert overlap value. bad value",options.ctf_overlap,". exiting!"
 				sys.exit(1)
 
+		if (options.ctf_ampcont):
+			try:
+				parm_dict["ctf_ampcont"] = float(options.ctf_ampcont)
+			except ValueError:
+				print "could not convert amplitude contrast. bad value",options.ctf_ampcont,". exiting!"
+				sys.exit(1)
+
+		if (options.ctf_cs):
+			try:
+				parm_dict["ctf_Cs"] = float(options.ctf_cs)
+			except ValueError:
+				print "could not convert Cs factor. bad value",options.ctf_cs,". exiting!"
+				sys.exit(1)
+
+		if (options.ctf_volt):
+			try:
+				parm_dict["ctf_volt"] = int(options.ctf_volt)
+			except ValueError:
+				print "could not convert voltage value. bad value",options.ctf_volt,". exiting!"
+				sys.exit(1)
+
 	if (options.out_file):
 		try:
 			if ("bdb" == options.outformat):
@@ -375,9 +399,12 @@ def do_gauss_cmd_line_boxing(options):
 			continue
 
 		autoboxer.set_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
-		# new method to determine ctf...
-		print "starting ctf determination"
-		this_ctf=autoboxer.auto_ctf(boxable)
+
+		if (options.do_ctf):
+			# new method to determine ctf...
+			print "starting ctf determination"
+			this_ctf = autoboxer.auto_ctf(boxable)
+			
 		# Tell the boxer to delete non refs - FIXME - the uniform appraoch needs to occur - see SwarmAutoBoxer.auto_box
 		print "starting autoboxer"
 		autoboxer.auto_box(boxable,False)
