@@ -60,7 +60,7 @@ def main():
 	else:
 		if options.maxit < 1: options.maxit = 1
 		
-		from projection import find_struct
+		from applications import find_struct
 		global_def.BATCH = True
 		find_struct(args[0], args[1], options.ir, options.ou, options.delta, options.dpsi, options.lf, options.hf, options.rand_seed, options.maxit, options.given, options.first_zero, options.weights, options.debug)
 		global_def.BATCH = False

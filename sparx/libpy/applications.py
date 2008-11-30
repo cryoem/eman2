@@ -8235,114 +8235,80 @@ def params_3D_to_2D(stack):
 		ima.write_image(stack, im, EMUtil.ImageType.IMAGE_HDF, True)
 	print_end_msg("params_3D_to_2D")
 
-def find_struct(prj_stack, outdir, delta, ir, ou, Iter, rand_seed, trials, refine, MPI = False, debug = False, given = False):
-	#from projection import cml_voronoi
-	#cml_voronoi(prj_stack, outdir, delta, rand_seed, refine, debug)
-
-	from projection import cml_find_struc, cml_export_struc, cml_open_proj, cml_head_log, cml_end_log
-	from projection import cml_init_rnd
-	from utilities  import print_begin_msg, print_msg, print_end_msg, start_time, running_time
-	from copy       import deepcopy
+# application find structure
+def find_struct(stack, out_seedname, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit, given = False, first_zero = False, flag_weights = False, debug = False):
+	from utilities import print_begin_msg, print_msg, print_end_msg, start_time, running_time
 	import time
-	import os
+	import sys
 
-	if os.path.exists(outdir): os.system( 'rm -rf ' + outdir )
-	os.mkdir(outdir)
+	# logfile
+	t_start = start_time()
+	print_begin_msg('find_struct')
 
-	if MPI:
-		#ERROR('No MPI version yet!', 'find_struct', 1)
-		from projection import cml_init_MPI, cml_end_mpilog
-		from mpi        import mpi_barrier, mpi_reduce, mpi_bcast
-		from mpi        import MPI_COMM_WORLD, MPI_FLOAT, MPI_INT, MPI_SUM
-				
-		main_node, myid, ncpu, loop = cml_init_MPI(trials)
-
-		if myid == main_node:
-			#  what is that ?? PAP
-			try: os.remove('.tmp_txt_1a32b4')
-			except: pass
-			t_start = start_time()
-			print_begin_msg('find_struct_MPI')
-			cml_head_log(prj_stack, outdir, delta, ir, ou, rand_seed, ncpu, refine, loop * ncpu)
-
-		Rnd = cml_init_rnd(loop * ncpu, rand_seed)
-		Prj = cml_open_proj(prj_stack, ir, ou)
-
-		best_val = 1.0e10
-		best_Prj = None
-
-		for i in xrange(loop):
-			newPrj = deepcopy(Prj)
-			newPrj, disc = cml_find_struc(newPrj, delta, outdir, i * ncpu + myid, Iter, Rnd[i * ncpu + myid], refine, False)
-
-			if disc < best_val:
-				best_val = disc
-				best_Prj = deepcopy(newPrj)
-
-			mpi_barrier(MPI_COMM_WORLD)
-
-			for n in xrange(ncpu):
-				if n == myid:
-					f = open('.tmp_txt_1a32b4', 'a')
-					f.write('\ntrials %s______________________________rnd: %d\n' % (str(i * ncpu + n).rjust(3, '0'), Rnd[i * ncpu + n]))
-					f.write('          \__discrepancy: %10.3f\n' % disc)
-					f.write('           \_%s\n' % time.ctime())
-					f.close()
-				
-				mpi_barrier(MPI_COMM_WORLD)
-
-		mpi_barrier(MPI_COMM_WORLD)
-
-		# Which node found the best result?
-		RES       = [0.0] * ncpu
-		RES[myid] = best_val
-		RES       = mpi_reduce(RES, ncpu, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
-		RES       = RES.tolist()
-		best_node = -1
-		if myid  == main_node: best_node = RES.index(min(RES))
-		best_node = mpi_bcast(best_node, 1, MPI_INT, main_node, MPI_COMM_WORLD)
-		best_node = best_node.tolist()[0]
-
-		if myid == best_node:
-			cml_export_struc(prj_stack, outdir, best_Prj)
-			cml_end_mpilog(best_Prj, best_val)
-
-		if myid == main_node:
-			# add txt logfile from the others node
-			txt = open('.tmp_txt_1a32b4', 'r').readlines()
-			for line in txt: print_msg(line)
-			running_time(t_start)
-			print_end_msg('find_struct_MPI')
-			os.remove('.tmp_txt_1a32b4')
-		
+	if out_seedname.split(':')[0] == 'bdb':
+		BDB = True
+		outdir = ''
+		out_seedname = out_seedname[4:]
 	else:
-		from projection import cml_find_struc
-		t_start = start_time()
-		print_begin_msg('find_struct')
-		cml_head_log(prj_stack, outdir, delta, ir, ou, rand_seed, 1, refine, trials)   # 1 is ncpu
+		BDB = False
+		import os
+		if os.path.exists(out_seedname):  os.system('rm -rf ' + out_seedname)
+		os.mkdir(out_seedname)
+		out_seedname += '/'
+		outdir = out_seedname
 
-		Rnd = cml_init_rnd(trials, rand_seed)
-		Prj = cml_open_proj(prj_stack, ir, ou)
+	# import
+	from projection  import cml_open_proj, cml_init_global_var, cml_head_log
+	from projection  import cml_disc, cml_export_txtagls, cml_export_struc
+	from projection  import cml_end_log, cml_find_structure
+	from random      import seed, random
 
-		best_val = 1.0e10
-		best_Prj = None
-		for trial in xrange(trials):
-			newPrj = deepcopy(Prj)
-			print_msg('\ntrials %s______________________________rnd: %d\n' % (str(trial).rjust(3, '0'), Rnd[trial]))
-			#newPrj, disc = cml_find_struc_SA(newPrj, delta, outdir, trial, Iter, Rnd[trial], refine, debug)
-			newPrj, disc = cml_find_struc(newPrj, delta, outdir, trial, Iter, Rnd[trial], refine, debug, given)
-			print_msg('          \__discrepancy: %10.3f\n' % disc)
-			print_msg('           \_%s' % time.ctime())
+	# Open and transform projections
+	Prj, Ori = cml_open_proj(stack, ir, ou, dpsi, lf, hf)
 
-			if disc < best_val:
-				best_val = disc
-				best_Prj = deepcopy(newPrj)
+	# if not angles given select randomly orientation for each projection
+	if not given:
+		if rand_seed > 0: seed(rand_seed)
+		else:             seed()
+		j = 0
+		for n in xrange(len(Prj)):
+			if first_zero and n == 0:
+				Ori[j]   = 0.0
+				Ori[j+1] = 0.0
+				Ori[j+2] = 0.0
+			else:
+				Ori[j]   = random() * 360  # phi
+				Ori[j+1] = random() * 180  # theta
+				Ori[j+2] = random() * 360  # psi
+			j += 4
+
+	# Init the global vars
+	cml_init_global_var(dpsi, delta, len(Prj), debug)
 	
-		cml_export_struc(prj_stack, outdir, best_Prj)
+	# Update logfile
+	cml_head_log(stack, outdir, delta, ir, ou, lf, hf, rand_seed, maxit, given)
 
-		cml_end_log(best_Prj, best_val)
-		running_time(t_start)
-		print_end_msg('find_struct')
+	# Compute the first disc
+	disc = cml_disc(Prj, Ori, flag_weights)
+
+	# Update progress file
+	cml_export_txtagls(outdir, Ori, disc, 'Init')
+
+	# Find structure
+	Ori, disc, ite = cml_find_structure(Prj, Ori, outdir, maxit, first_zero, flag_weights)
+
+	# Export structure
+	cml_export_struc(stack, out_seedname, Ori, BDB)
+
+	# Compute disc without weights
+	disc_now = cml_disc(Prj, Ori, False)
+
+	# Update logfile
+	cml_end_log(Ori, disc, disc_now, ite)
+	running_time(t_start)
+	print_end_msg('find_struct')
+
+	return 1
 
 def extract_value( s ):
 	from string import atoi, atof

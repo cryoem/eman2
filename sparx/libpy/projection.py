@@ -593,12 +593,12 @@ def cml_export_struc(stack, outseed, Ori, BDB):
 	pagls = []
 	data  = EMData()
 	for i in xrange(g_n_prj):
-		data.read_image(stack, i)
+		data.read_image(stack, i, True)
 		p = [Ori[4*i], Ori[4*i+1], Ori[4*i+2], 0.0, 0.0]
 		set_params_proj(data, p)
 		data.set_attr('active', 1)
-		if BDB:	data.write_image('bdb:%s_structure' % outseed, i)
-		else:	data.write_image(outseed + 'structure.hdf', i)
+		if BDB:	data.write_image(stack, i)
+		else:	data.write_image(stack, i)
 
 		# prepare angles to plot
 		pagls.append([Ori[4*i], Ori[4*i+1], Ori[4*i+2]])
@@ -902,81 +902,6 @@ def cml_find_structure(Prj, Ori, outdir, maxit, first_zero, flag_weights):
 
 	return Ori, disc, ite
 	
-# application find structure
-def find_struct(stack, out_seedname, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit, given = False, first_zero = False, flag_weights = False, debug = False):
-	from utilities import print_begin_msg, print_msg, print_end_msg, start_time, running_time
-	import time
-	import sys
-
-	# logfile
-	t_start = start_time()
-	print_begin_msg('find_struct')
-
-	if out_seedname.split(':')[0] == 'bdb':
-		BDB = True
-		outdir = ''
-		out_seedname = out_seedname[4:]
-	else:
-		BDB = False
-		import os
-		if os.path.exists(out_seedname):  os.system('rm -rf ' + out_seedname)
-		os.mkdir(out_seedname)
-		out_seedname += '/'
-		outdir = out_seedname
-
-	# import
-	from projection  import cml_open_proj, cml_init_global_var, cml_head_log
-	from projection  import cml_disc, cml_export_txtagls, cml_export_struc
-	from projection  import cml_end_log
-	from random      import seed, random
-
-	# Open and transform projections
-	Prj, Ori = cml_open_proj(stack, ir, ou, dpsi, lf, hf)
-
-	# if not angles given select randomly orientation for each projection
-	if not given:
-		if rand_seed > 0: seed(rand_seed)
-		else:             seed()
-		j = 0
-		for n in xrange(len(Prj)):
-			if first_zero and n == 0:
-				Ori[j]   = 0.0
-				Ori[j+1] = 0.0
-				Ori[j+2] = 0.0
-			else:
-				Ori[j]   = random() * 360  # phi
-				Ori[j+1] = random() * 180  # theta
-				Ori[j+2] = random() * 360  # psi
-			j += 4
-
-	# Init the global vars
-	cml_init_global_var(dpsi, delta, len(Prj), debug)
-	
-	# Update logfile
-	cml_head_log(stack, outdir, delta, ir, ou, lf, hf, rand_seed, maxit, given)
-
-	# Compute the first disc
-	disc = cml_disc(Prj, Ori, flag_weights)
-
-	# Update progress file
-	cml_export_txtagls(outdir, Ori, disc, 'Init')
-
-	# Find structure
-	Ori, disc, ite = cml_find_structure(Prj, Ori, outdir, maxit, first_zero, flag_weights)
-
-	# Export structure
-	cml_export_struc(stack, out_seedname, Ori, BDB)
-
-	# Compute disc without weights
-	disc_now = cml_disc(Prj, Ori, False)
-
-	# Update logfile
-	cml_end_log(Ori, disc, disc_now, ite)
-	running_time(t_start)
-	print_end_msg('find_struct')
-
-	return 1
-
 # cml init for MPI version
 def cml_init_MPI(trials):
 	from mpi 	  import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier, MPI_COMM_WORLD
