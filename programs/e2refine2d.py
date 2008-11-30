@@ -286,7 +286,10 @@ def check_e2refin2d_args(options): # this function is required by the workflow, 
   		
   	if options.nbasisfp < 1:
   		error_message.append("The number of MSA basis vectors must be atleast 1.")
-  		
+  	
+  	if options.ncls < 2:
+  		error_message.append("The number of classes must be atleast 2.")
+  	
   	if options.parallel < 1:
   		error_message.append("The number CPUs availables must be atleast 1.")
   		

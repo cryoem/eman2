@@ -177,7 +177,7 @@ def main():
 		if ( options.lowmem ):
 			rimg.read_image(args[1],r)
 			if options.shrink != None: # the check function guarantees that shrink is an integer greater than 
-				rimg.process_inplace("math.meanshrink",{n:options.shrink})
+				rimg.process_inplace("math.meanshrink",{"n":options.shrink})
 		else:
 			rimg = rimages[r]
 		

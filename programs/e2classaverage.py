@@ -69,7 +69,7 @@ def main():
 	parser.add_option("--lowmem","-L",action="store_true",help="Causes images to be read from disk as they are needed, as opposed to having them all read from disk and stored in memory for the duration of the program. Saves on memory but causes more disk accesses.",default=False)
 	parser.add_option("--bootstrap",action="store_true",help="Bootstraps iterative alignment by using the first particle in each class to seed the iterative alignment. Only works if the number of iterations is greater than 0.")
 	parser.add_option("--resultmx",type="string",help="Specify an output image to store the result matrix. This contains 5 images where row is particle number. Rows in the first image contain the class numbers and in the second image consist of 1s or 0s indicating whether or not the particle was included in the class. The corresponding rows in the third, fourth and fifth images are the refined x, y and angle (respectively) used in the final alignment, these are updated and accurate, even if the particle was excluded from the class.", default=None)
-	parser.add_option("--norm_proc",type="string",help="The normalization processor. Default is normalize.edgemean.", default="normalize.edgemean")
+	parser.add_option("--normproc",type="string",help="The normalization processor. Default is normalize.edgemean. If you want to turn this option off specify \'None\'", default="normalize.edgemean")
 	parser.add_option("--usefilt", dest="usefilt", default=None, help="Specify a particle data file that has been low pass or Wiener filtered. Has a one to one correspondence with your particle data. If specified will be used to align particles to the running class average, however the original particle will be used to generate the actual class average")
 	parser.add_option("--dbidxcache", default=False, action="store_true", help="Stores the indices of all particles in the given class in the Python list in the e2classaverage.indices database")
 	parser.add_option("--dbdir", default=False, help="Use in conjunction with --dbidxcache to specify a directory where the database entries should be stored, e.g. \"refine_01\" ", default=".")
@@ -174,7 +174,7 @@ def main():
 #	dflip = EMData(da.get_xsize(),da.get_ysize())
 #	dflip.to_zero()
 	
-	options.norm = parsemodopt(options.norm_proc)
+	options.norm = parsemodopt(options.normproc)
 	
 	if (options.iter > 0 or options.bootstrap):
 		set_aligner_params_in_options(options)
@@ -267,7 +267,7 @@ def main():
 								average = images[p].copy()
 								#average.process_inplace("xform.centerofmass")
 								#average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
-							average.process_inplace(options.norm[0],options.norm[1])
+							if str(options.normproc) != "None": average.process_inplace(options.norm[0],options.norm[1])
 							average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 							#average.write_image("ave_.hdf",-1)
 							np = 1
@@ -280,8 +280,7 @@ def main():
 									image = EMData()
 									image.read_image(args[0],p)
 								else: image = images[p].copy()
-								
-								image.process_inplace(options.norm[0],options.norm[1])
+								if str(options.normproc) != "None": image.process_inplace(options.norm[0],options.norm[1])
 								ta = align(average,image,options)
 								t = ta.get_attr("xform.align2d")
 								t.invert()
@@ -298,9 +297,10 @@ def main():
 								else:
 									image = images[p].copy()
 									filt_image = filt_images[p].copy()
-								
-								image.process_inplace(options.norm[0],options.norm[1])
-								filt_image.process_inplace(options.norm[0],options.norm[1])
+									
+								if str(options.normproc) != "None":
+									image.process_inplace(options.norm[0],options.norm[1])
+									filt_image.process_inplace(options.norm[0],options.norm[1])
 								
 								ta = align(average,filt_image,options)
 								t = ta.get_attr("xform.align2d")
@@ -316,7 +316,7 @@ def main():
 			
 			#average/=np
 			if np != 0:
-				average.process_inplace(options.norm[0],options.norm[1])
+				if str(options.normproc) != "None": average.process_inplace(options.norm[0],options.norm[1])
 				average.process_inplace("xform.centeracf")
 				#average.write_image("avg.hdf",-1)
 				average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
@@ -358,7 +358,7 @@ def main():
 					else:
 						image = filt_images[p].copy()
 						
-				image.process_inplace(options.norm[0],options.norm[1])
+				if str(options.normproc) != "None": image.process_inplace(options.norm[0],options.norm[1])
 				ta = align(average,image,options)
 				t = ta.get_attr("xform.align2d")
 				t.invert() # because we aligned the average to the image, and not the other way around
@@ -423,7 +423,7 @@ def main():
 				else:
 					image = images[p].copy()
 				
-				image.process_inplace(options.norm[0],options.norm[1])
+				if str(options.normproc) != "None": image.process_inplace(options.norm[0],options.norm[1])
 
 				t = Transform({"type":"2d","alpha":da.get(c,p)})
 				t.set_trans(dx.get(c,p),dy.get(c,p))
@@ -446,7 +446,7 @@ def main():
 		
 			average = averager.finish()
 			#should this be centeracf?
-			average.process_inplace(options.norm[0],options.norm[1])
+			if str(options.normproc) != "None": average.process_inplace(options.norm[0],options.norm[1])
 			average.process_inplace("xform.centerofmass")
 			average.process_inplace("mask.sharp",{"outer_radius":ta.get_xsize()/2})
 			
@@ -654,8 +654,8 @@ def check(options, verbose=False):
 				
 			if ( check_eman2_type(options.raligncmp,Cmps,"Comparitor") == False ):
 				error = True
-		if ( options.norm_proc != None ):
-			if ( check_eman2_type(options.norm_proc,Processors,"Processor") == False ):
+		if ( str(options.normproc) != "None" ):
+			if ( check_eman2_type(options.normproc,Processors,"Processor") == False ):
 				error = True
 
 	return error

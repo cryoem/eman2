@@ -110,8 +110,7 @@ def main():
 	parser.add_option("--pad", metavar="m or m,n", default=None,type="string", help="This can be a single value or two values. If a single value is specified (m) the input images are padded with zeroes uniformly in both directions so that the dimensions are mxm. If two values are specified (m,n) the images are padded with zeroes such that the dimension are mxn (in x and y, respectively). Padding occurs after preprocessing.")
 
 	(options, args) = parser.parse_args()
-	
-	
+
 	if options.nofilecheck: options.check = True
 	
 	# make sure that the user has atleast specified an input file
@@ -236,6 +235,9 @@ def main():
 			output.clip_inplace(Region((pad-options.xsize)/2,(pad-options.xsize)/2,options.xsize,options.xsize))
 
 	# apply any post processing operations
+		
+	if options.postprocess == None:
+		options.postprocess = ["normalize"]
 	if options.postprocess != None:
 		for p in options.postprocess:
 			try:
@@ -529,13 +531,12 @@ def fourier_reconstruction(options):
 				param = {}
 				param["hard"] = hard
 				recon.insert_params(param)
-				
-				print "using new hard parameter %f" %hard
+				if options.verbose: print "using new hard parameter %f" %hard
 			else:
 				param = {}
 				param["hard"] = 0.0
 				recon.insert_params(param)
-				print "using hard parameter 0.0"
+				if options.verbose: print "using hard parameter 0.0"
 			print " Done"
 			
 		idx = 0	
@@ -683,6 +684,15 @@ def check(options,verbose=False):
 				#if verbose:
 					#print "Error: %s is an invalid symmetry type. You must specify the --sym argument"%options.sym
 				#error = True
+	
+	if options.preprocess != None:
+		for p in options.preprocess:
+			if ( check_eman2_type(p,Processors,"Processor") == False ):
+				error = True
+	if options.postprocess != None:
+		for p in options.postprocess:
+			if ( check_eman2_type(p,Processors,"Processor") == False ):
+				error = True
 	
 	return error
 

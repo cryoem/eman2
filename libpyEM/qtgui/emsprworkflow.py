@@ -1332,7 +1332,7 @@ class E2CTFWorkFlowTask(ParticleWorkFlowTask):
 		num_phase,num_wiener,num_particles,phase_dims,wiener_dims,particle_dims = self.get_ctf_particle_info(project_names)
 		pboxes = ParamDef(name="Num boxes",vartype="intlist",desc_short="Particles on disk",desc_long="The number of particles stored for this image in the database",property=None,defaultunits=None,choices=num_particles)
 		pphase = ParamDef(name="Num phase",vartype="intlist",desc_short="Phase flipped",desc_long="The number of Wiener filter particles stored for this image in the database",property=None,defaultunits=None,choices=num_phase)
-		pwiener = ParamDef(name="Num wiener",vartype="intlist",desc_short="Wienered",desc_long="The number of phase flipped particles stored for this image in the database",property=None,defaultunits=None,choices=num_wiener)
+		pwiener = ParamDef(name="Num wiener",vartype="intlist",desc_short="Wien. filt",desc_long="The number of phase flipped particles stored for this image in the database",property=None,defaultunits=None,choices=num_wiener)
 			
 		pphasedim = ParamDef(name="phase dim",vartype="stringlist",desc_short="Phase ptcl dims",desc_long="The dimensions of the phase flipped images",property=None,defaultunits=None,choices=phase_dims)
 		pwienerdim = ParamDef(name="wiener dim",vartype="stringlist",desc_short="Wiener ptcl dims",desc_long="The dimensions of the Wiener filtered images",property=None,defaultunits=None,choices=wiener_dims)
@@ -2121,10 +2121,11 @@ class E2Refine2DTask(ParticleWorkFlowTask):
 		
 	def get_general_params(self):
 		params = []		
-		piter = ParamDef(name="iter",vartype="int",desc_short="Refinement iterations",desc_long="The number of times the e2refine2d svd-based class averaging procedure is iterated",property=None,defaultunits=0,choices=[])
+		piter = ParamDef(name="iter",vartype="int",desc_short="Refinement iterations",desc_long="The number of times the e2refine2d svd-based class averaging procedure is iterated",property=None,defaultunits=5,choices=[])
 		piterclassav = ParamDef(name="iterclassav",vartype="int",desc_short="Class averaging iterations",desc_long="The number of iterative class average steps that occur in e2classaverage",property=None,defaultunits=2,choices=[])
 		pnaliref = ParamDef(name="naliref",vartype="int",desc_short="# alignment references",desc_long="The number of alignment references to use when determining particle orientations",property=None,defaultunits=8,choices=[])
 		pnbasisfp = ParamDef(name="nbasisfp",vartype="int",desc_short="# basis fp",desc_long="The number of MSA basis vectors to use when classifying",property=None,defaultunits=5,choices=[])
+		pncls = ParamDef(name="ncls",vartype="int",desc_short="# classes",desc_long="The number of classes to produce",property=None,defaultunits=32,choices=[])
 		
 		aligners = dump_aligners_list().keys()
 #		aligners.append("None") I think this is necessary
@@ -2134,21 +2135,25 @@ class E2Refine2DTask(ParticleWorkFlowTask):
 		aligners.sort()
 		cmps.sort()
 		
-		pshrink = ParamDef(name="shrink",vartype="int",desc_short="Shrink factor",desc_long="The the downsampling rate used to shrink the data",property=None,defaultunits=1,choices=[])
+		pshrink = ParamDef(name="shrink",vartype="int",desc_short="Shrink factor",desc_long="The the downsampling rate used to shrink the data",property=None,defaultunits=4,choices=[])
 		
+		
+		pcmp  =  ParamDef(name="cmp",vartype="string",desc_short="Main comparator",desc_long="The comparator to determine the final quality metric",defaultunits="frc",choices=cmps)
+		pcmpargs =  ParamDef(name="cmpargs",vartype="string",desc_short="params",desc_long="Parameters for the this comparator, see \"e2help.py cmps\"",property=None,defaultunits="",choices=[])	
+
 		
 		psimalign =  ParamDef(name="simalign",vartype="string",desc_short="Aligner",desc_long="The aligner being used",property=None,defaultunits="rotate_translate_flip",choices=aligners)
 		psimalignargs =  ParamDef(name="simalignargs",vartype="string",desc_short="params",desc_long="Parameters for the aligner, see \"e2help.py aligners\"",property=None,defaultunits="",choices=[])
 		
-		psimaligncmp =  ParamDef(name="simaligncmp",vartype="string",desc_short="Comparitor",desc_long="The comparitor being used",property=None,defaultunits="dot",choices=cmps)
-		psimaligncmpsargs =  ParamDef(name="simaligncmpargs",vartype="string",desc_short="params",desc_long="Parameters for the comparitor, see \"e2help.py cmps\"",property=None,defaultunits="",choices=[])	
+		psimaligncmp =  ParamDef(name="simaligncmp",vartype="string",desc_short="comparator",desc_long="The comparator being used",property=None,defaultunits="frc",choices=cmps)
+		psimaligncmpsargs =  ParamDef(name="simaligncmpargs",vartype="string",desc_short="params",desc_long="Parameters for the comparator, see \"e2help.py cmps\"",property=None,defaultunits="",choices=[])	
 		
 		
 		prsimalign =  ParamDef(name="simralign",vartype="string",desc_short="Refine aligner",desc_long="The refine aligner being used",property=None,defaultunits="None",choices=["None","refine"])
 		prsimalignargs =  ParamDef(name="simralignargs",vartype="string",desc_short="params",desc_long="Parameters for the aligner, see \"e2help.py aligners\"",property=None,defaultunits="",choices=[])
 		
-		prsimaligncmp =  ParamDef(name="simraligncmp",vartype="string",desc_short="Refine comparitor",desc_long="The comparitor being used for refine alignment",property=None,defaultunits="dot",choices=cmps)
-		prsimaligncmpsargs =  ParamDef(name="simraligncmpargs",vartype="string",desc_short="params",desc_long="Parameters for the comparitor, see \"e2help.py cmps\"",property=None,defaultunits="",choices=[])	
+		prsimaligncmp =  ParamDef(name="simraligncmp",vartype="string",desc_short="Refine comparator",desc_long="The comparator being used for refine alignment",property=None,defaultunits="frc",choices=cmps)
+		prsimaligncmpsargs =  ParamDef(name="simraligncmpargs",vartype="string",desc_short="params",desc_long="Parameters for the comparator, see \"e2help.py cmps\"",property=None,defaultunits="",choices=[])	
 		
 		pnp = ParamDef(name="normproj",vartype="boolean",desc_short="Normalize projection vectors",desc_long="Normalizes each projected vector into the MSA subspace",property=None,defaultunits=False,choices=None)
 		
@@ -2157,9 +2162,11 @@ class E2Refine2DTask(ParticleWorkFlowTask):
 		pinitclasses =  ParamDef(name="initial",vartype="string",desc_short="Initial class averages",desc_long="A file (full path) containing starting class averages. If note specificed will generate starting class averages automatically.",property=None,defaultunits="",choices=[])	
 		
 		
+		params.append(pncls)
 		params.append([pshrink,pnp])
 		params.append([piter,piterclassav])
 		params.append([pnaliref,pnbasisfp])
+		params.append([pcmp,pcmpargs])
 		params.append([psimalign,psimalignargs])
 		params.append([psimaligncmp,psimaligncmpsargs])
 		params.append([prsimalign,prsimalignargs])
@@ -2183,6 +2190,7 @@ class E2Refine2DTask(ParticleWorkFlowTask):
 			options.initial = None
 		
 		vals = []
+		vals.append(["cmp","cmpargs"])
 		vals.append(["simalign","simalignargs"])
 		vals.append(["simralign","simralignargs"])
 		vals.append(["simaligncmp","simaligncmpargs"])
@@ -2430,23 +2438,23 @@ class InitialModelReportTask(ParticleWorkFlowTask):
 							names.append(d)
 							
 							dims.append(str(hdr["nx"])+'x'+str(hdr["ny"])+'x'+str(hdr["nz"]))
-							try: mean.append(hdr["mean"])
+							try: mean.append("%4.3f" %hdr["mean"])
 							except: mean.append("")
-							try: sigma.append(hdr["sigma"])
+							try: sigma.append("%4.3f" %hdr["sigma"])
 							except: sigma.append("")
-							try: max.append(hdr["maximum"])
+							try: max.append("%4.3f" %hdr["maximum"])
 							except: max.append("")
-							try: min.append(hdr["minimum"])
+							try: min.append("%4.3f" %hdr["minimum"])
 							except: min.append("")
 							
 			p = ParamTable(name="filenames",desc_short="Current initial models",desc_long="")
 			pnames = ParamDef(name="Files names",vartype="stringlist",desc_short="Initial model name",desc_long="The name of the initial model in the EMAN2 database",property=None,defaultunits=None,choices=names)
 			pdims = ParamDef(name="dims",vartype="stringlist",desc_short="Dimensions",desc_long="The dimensions of the 3D image",property=None,defaultunits=None,choices=dims)
-			pmax = ParamDef(name="max",vartype="floatlist",desc_short="Maximum",desc_long="The maximum voxel value in this 3D image",property=None,defaultunits=None,choices=max)
-			pmin = ParamDef(name="min",vartype="floatlist",desc_short="Minimum",desc_long="The minimum voxel value in this 3D image",property=None,defaultunits=None,choices=min)
+			pmax = ParamDef(name="max",vartype="stringlist",desc_short="Maximum",desc_long="The maximum voxel value in this 3D image",property=None,defaultunits=None,choices=max)
+			pmin = ParamDef(name="min",vartype="stringlist",desc_short="Minimum",desc_long="The minimum voxel value in this 3D image",property=None,defaultunits=None,choices=min)
 		
-			pmean = ParamDef(name="mean",vartype="floatlist",desc_short="Mean",desc_long="The mean voxel value of this 3D image",property=None,defaultunits=None,choices=mean)
-			psigma = ParamDef(name="sigma",vartype="floatlist",desc_short="Sigma",desc_long="The standard deviation of the voxel values in this 3D image",property=None,defaultunits=None,choices=sigma)
+			pmean = ParamDef(name="mean",vartype="stringlist",desc_short="Mean",desc_long="The mean voxel value of this 3D image",property=None,defaultunits=None,choices=mean)
+			psigma = ParamDef(name="sigma",vartype="stringlist",desc_short="Sigma",desc_long="The standard deviation of the voxel values in this 3D image",property=None,defaultunits=None,choices=sigma)
 			
 			p.append(pnames)
 			p.append(pdims)
@@ -2558,7 +2566,7 @@ class RefinementReportTask(ParticleWorkFlowTask):
 	def get_params(self):
 		params = []
 		
-		p,n = None,0
+		p,n = self.get_last_refinement_models_table()
 		
 		if n == 0:
 			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=RefinementReportTask.documentation_string+RefinementReportTask.warning_string,choices=None))
@@ -2566,6 +2574,99 @@ class RefinementReportTask(ParticleWorkFlowTask):
 			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=RefinementReportTask.documentation_string,choices=None))
 			params.append(p)
 		return params
+	
+	
+	def get_last_refinement_models_table(self):
+		'''
+		Looks for bdb:r2d_??#classes_?? and the bdb:r2d_??#classes_init file, finds the most recent one, then fills in the number of particles in
+		in the class average file and also its dimensions.
+		'''
+		for root, dirs, files in os.walk(os.getcwd()):
+			break
+		
+		dirs.sort()
+		print dirs
+		for i in range(len(dirs)-1,-1,-1):
+			if len(dirs[i]) != 9:
+				dirs.pop(i)
+			elif dirs[i][:7] != "refine_":
+				dirs.pop(i)
+			else:
+				try: int(dirs[i][7:])
+				except: dirs.pop(i)
+		print dirs
+		# allright everything left in dirs is "refine_??" where the ?? is castable to an int, so we should be safe now
+		threed_files = []
+		threed_dims = []
+		threed_mean = []
+		threed_sigma = []
+		threed_max = []
+		threed_min = []
+		for dir in dirs:
+			threed_db = None
+			# check for 00 to 09 but 00 is replaced with "init"
+			db_first_part = "bdb:"+dir+"#threed_"
+			cont = True
+			for i in range(0,9):
+				for j in range(0,9):
+					db_name = db_first_part+str(i)+str(j)
+					print db_name
+					if db_check_dict(db_name):
+						print "success"
+						threed_db = db_name
+					else:
+						if i != 0 or j != 0:
+							cont = False
+							break
+						#else just check for 01 incase the user has specified the --initial arugment
+				if not cont:
+					break
+				
+			if threed_db != None:
+				threed_files.append(threed_db)
+				th_db = db_open_dict(threed_db)
+				dims = ""
+				mean = ""
+				sigma = ""
+				max = ""
+				min = ""
+				try:
+					hdr = th_db.get_header(0)
+					dims = str(hdr["nx"])+'x'+str(hdr["ny"])+'x'+str(hdr["nz"])
+					mean = "%4.3f" %hdr["mean"]
+					sigma = "%4.3f" %hdr["sigma"]
+					min = "%4.3f" %hdr["minimum"]
+					max = "%4.3f" %hdr["maximum"]
+				except: pass
+				
+				
+				threed_dims.append(dims)
+				threed_mean.append(mean)
+				threed_sigma.append(sigma)
+				threed_max.append(max)
+				threed_min.append(min)
+		if len(threed_files) > 0:
+			
+			p = ParamTable(name="filenames",desc_short="Most current 3D reconstructions",desc_long="")
+			pnames = ParamDef(name="Files names",vartype="intlist",desc_short="3D image file",desc_long="The location of 3D reconstructions",property=None,defaultunits=None,choices=threed_files)
+			pmean = ParamDef(name="Mean",vartype="stringlist",desc_short="Mean",desc_long="The mean voxel value",property=None,defaultunits=None,choices=threed_mean)
+			psigma = ParamDef(name="Standard deviation",vartype="stringlist",desc_short="Standard deviation",desc_long="The standard deviation of the voxel values",property=None,defaultunits=None,choices=threed_sigma)
+			pdims = ParamDef(name="Dimensions",vartype="stringlist",desc_short="Dimensions",desc_long="The dimensions of the 3D images",property=None,defaultunits=None,choices=threed_dims)
+			pmax = ParamDef(name="min",vartype="stringlist",desc_short="Minimum",desc_long="The maximum voxel value",property=None,defaultunits=None,choices=threed_max)
+			pmin = ParamDef(name="max",vartype="stringlist",desc_short="Maximum",desc_long="The minimum voxel value",property=None,defaultunits=None,choices=threed_min)
+			
+			p.append(pnames)
+			p.append(pdims)
+			p.append(pmean)
+			p.append(psigma)
+			p.append(pmax)
+			p.append(pmin)
+			
+			
+			return p,len(threed_files)
+		else:
+			return None,0
+			
 
 class E2RefineParticlesTask(ParticleWorkFlowTask):
 	'''
@@ -2574,7 +2675,7 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 	 
 	general_documentation = "These are the general parameters for 3D refinement in EMAN2. Please select which particles you wish to use as part of this process, specify your starting model, and fill in other parameters such as symmetry and whether or not the usefilt option should be used."
 	project3d_documentation = "These  parameters are used by e2project3d. Several orientation generation techniques provide alternative methods for distributing orientations in the asymmetric unit. Orientations can be generated based on your desired angular spacing, or alternatively on the desired total number of projections. In the latter case EMAN2 will generate a number as close as possible to the specified number, but note that there is no guarantee of a perfect match. You can also vary the method by which projections are generated. If you check the \'include mirror\' option you should be sure to use aligners to that do not perform mirror alignment."
-	simmx_documentation = "These  parameters are used by e2simmx, a program that compares each particle to each projection and records quality scores. To do this the particles must first be aligned to the projections using the aligners you specify. Once aligned the \'Main comparitor\' is used to record the quality score. These quality values are recorded to an image matrix on handed on to the next stage in the refinement process.\n\nThe shrink parameter causes all projections and particles to be shrunken by the given amount prior to comparison. This can provide a significant time boost, though at the expense of resolution. Note however that the class averaging stage, which  can involve iterative alignment, does not use shrunken data."
+	simmx_documentation = "These  parameters are used by e2simmx, a program that compares each particle to each projection and records quality scores. To do this the particles must first be aligned to the projections using the aligners you specify. Once aligned the \'Main comparator\' is used to record the quality score. These quality values are recorded to an image matrix on handed on to the next stage in the refinement process.\n\nThe shrink parameter causes all projections and particles to be shrunken by the given amount prior to comparison. This can provide a significant time boost, though at the expense of resolution. Note however that the class averaging stage, which  can involve iterative alignment, does not use shrunken data."
 	class_documentation = "Most of these parameters are for e2classaverage with the exception of the \"Class separation\" parameter which is the solely used by e2classify. Classification is first performed using this latter program and the output from e2simmx. This is followed by the class averaging stage. The critical argument for the class averaging procedure is the number of iterations. In early stages of refinement this should be relatively large and it should gradually be reduced as your model converges to the answer."
 	make3d_documentation = "Iterative Fourier inversion is the preferred method of 3D reconstruction in EMAN2."
 
@@ -3017,7 +3118,7 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 			arg = getattr(options,v[0])
 			if arg != None:
 				if i > 1: # its a cmp, yes a hack but I have no time
-					if not check_eman2_type(arg,Cmps,"Cmp",False): error_message.append("There is problem with the " +v[0]+ " comparitor argument in the "+page+" page.")
+					if not check_eman2_type(arg,Cmps,"Cmp",False): error_message.append("There is problem with the " +v[0]+ " comparator argument in the "+page+" page.")
 				else:
 					if not check_eman2_type(arg,Aligners,"Aligner",False): error_message.append("There is problem with the " +v[0]+ " aligner argument in the "+page+" page.")
   	
@@ -3111,18 +3212,18 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 		psimalign =  ParamDef(name=parameter_prefix+"align",vartype="string",desc_short="Aligner",desc_long="The aligner being used",property=None,defaultunits="rotate_translate_flip",choices=aligners)
 		psimalignargs =  ParamDef(name=parameter_prefix+"alignargs",vartype="string",desc_short="params",desc_long="Parameters for the aligner, see \"e2help.py aligners\"",property=None,defaultunits="",choices=[])
 		
-		psimaligncmp =  ParamDef(name=parameter_prefix+"aligncmp",vartype="string",desc_short="Align comparitor",desc_long="The comparitor being used",property=None,defaultunits="dot",choices=cmps)
-		psimaligncmpargs =  ParamDef(name=parameter_prefix+"aligncmpargs",vartype="string",desc_short="params",desc_long="Parameters for this comparitor, see \"e2help.py cmps\"",property=None,defaultunits="",choices=[])	
+		psimaligncmp =  ParamDef(name=parameter_prefix+"aligncmp",vartype="string",desc_short="Align comparator",desc_long="The comparator being used",property=None,defaultunits="frc",choices=cmps)
+		psimaligncmpargs =  ParamDef(name=parameter_prefix+"aligncmpargs",vartype="string",desc_short="params",desc_long="Parameters for this comparator, see \"e2help.py cmps\"",property=None,defaultunits="",choices=[])	
 		
 		
 		prsimalign =  ParamDef(name=parameter_prefix+"ralign",vartype="string",desc_short="Refine aligner",desc_long="The refine aligner being used",property=None,defaultunits="None",choices=["None","refine"])
 		prsimalignargs =  ParamDef(name=parameter_prefix+"ralignargs",vartype="string",desc_short="params",desc_long="Parameters for this aligner, see \"e2help.py aligners\"",property=None,defaultunits="",choices=[])
 		
-		prsimaligncmp =  ParamDef(name=parameter_prefix+"raligncmp",vartype="string",desc_short="Refine align comparitor",desc_long="The comparitor being used for refine alignment",property=None,defaultunits="dot",choices=cmps)
-		prsimaligncmpargs =  ParamDef(name=parameter_prefix+"raligncmpargs",vartype="string",desc_short="params",desc_long="Parameters for thos comparitor, see \"e2help.py cmps\"",property=None,defaultunits="",choices=[])	
+		prsimaligncmp =  ParamDef(name=parameter_prefix+"raligncmp",vartype="string",desc_short="Refine align comparator",desc_long="The comparator being used for refine alignment",property=None,defaultunits="frc",choices=cmps)
+		prsimaligncmpargs =  ParamDef(name=parameter_prefix+"raligncmpargs",vartype="string",desc_short="params",desc_long="Parameters for thos comparator, see \"e2help.py cmps\"",property=None,defaultunits="",choices=[])	
 		
-		pcmp  =  ParamDef(name=parameter_prefix+"cmp",vartype="string",desc_short="Main comparitor",desc_long="The comparitor to determine the final quality metric",defaultunits="dot",choices=cmps)
-		pcmpargs =  ParamDef(name=parameter_prefix+"cmpargs",vartype="string",desc_short="params",desc_long="Parameters for the this comparitor, see \"e2help.py cmps\"",property=None,defaultunits="",choices=[])	
+		pcmp  =  ParamDef(name=parameter_prefix+"cmp",vartype="string",desc_short="Main comparator",desc_long="The comparator to determine the final quality metric",defaultunits="frc",choices=cmps)
+		pcmpargs =  ParamDef(name=parameter_prefix+"cmpargs",vartype="string",desc_short="params",desc_long="Parameters for the this comparator, see \"e2help.py cmps\"",property=None,defaultunits="",choices=[])	
 	
 
 		params.append([pcmp,pcmpargs])

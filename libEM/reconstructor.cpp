@@ -464,7 +464,8 @@ int FourierReconstructor::insert_slice(const EMData* const input_slice, const Tr
 		slice_agreement_flag = true;
 		slice_insertion_flag = false;
 		
-		if ( prev_quality_scores.size() != 0 ) print_stats( prev_quality_scores );
+		// should be a if verbose here
+		//if ( prev_quality_scores.size() != 0 ) print_stats( prev_quality_scores );
 	}
 	
 	// quality_scores.size() is zero on the first run, so this enforcement of slice quality does not take
@@ -881,7 +882,8 @@ EMData *FourierReconstructor::finish()
 		image->clip_inplace( clip_region );
 	}
 
-	print_stats(quality_scores);
+	// Should be an "if (verbose)" here or something
+	//print_stats(quality_scores);
 	
 	image->update();
 	

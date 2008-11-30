@@ -184,6 +184,9 @@ def get_make3d_cmd(options,check=False,nofilecheck=False):
 	
 	e2make3dcmd += " --recon=%s --out=%s" %(options.recon,options.model)
 
+	if str(options.m3dpreprocess) != "None":
+		e2make3dcmd += " --preprocess=%s" %options.m3dpreprocess
+
 	if (options.m3dkeepsig):
 		e2make3dcmd += " --keepsig=%f" %options.m3dkeepsig
 	elif (options.m3dkeep):
@@ -216,7 +219,7 @@ def get_classaverage_cmd(options,check=False,nofilecheck=False):
 	
 	e2cacmd = "e2classaverage.py %s %s %s" %(options.input,options.classifyfile,options.cafile)
 	
-	e2cacmd += " --ref=%s --iter=%d -f --result=%s" %(options.projfile,options.classiter,options.resultfile)
+	e2cacmd += " --ref=%s --iter=%d -f --result=%s --normproc=%s" %(options.projfile,options.classiter,options.resultfile,options.classnormproc)
 	
 	
 	if (options.classkeep):

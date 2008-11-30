@@ -143,14 +143,28 @@ class EMTaskMonitorWidget(QtGui.QWidget,Animator):
 				
 			
 	def set_entries(self,entries_dict):
+		selected_items = self.list_widget.selectedItems() # need to preserve the selection
+		
+		s_text = None
+		if len(selected_items) == 1 :
+			s = str(selected_items[0].text())
+			if len(s) >= 4:
+				s_text= s[:4]
+		elif len(selected_items) > 1:
+			print "can't handle more than one selection in the task manager" # yes this should work, no time
+		
+		
 		self.entries_dict=entries_dict
 		self.list_widget.clear()
 		for k,val in entries_dict.items():
 			a = QtGui.QListWidgetItem(val,self.list_widget)
+			if s_text != None and len(val) >=4:
+				if val[:4] == s_text:
+					a.setSelected(True)
 			a.module = k
-		self.list_processes()
+		self.list_processes(s_text)
 		
-	def list_processes(self):
+	def list_processes(self,s_text):
 		
 		for key in self.current_process_info.keys():
 			d = self.current_process_info[key]
@@ -167,6 +181,11 @@ class EMTaskMonitorWidget(QtGui.QWidget,Animator):
 			s = pid + "\t" +progress+"\t"+ prog + "\t" + t
 			
 			a =  QtGui.QListWidgetItem(s,self.list_widget)
+			
+			if s_text != None and len(s) >=4:
+				if s[:4] == s_text:
+					a.setSelected(True)
+					
 			a.module = "process"
 			a.pid = pid
 	
@@ -201,7 +220,7 @@ class EMTaskMonitorWidget(QtGui.QWidget,Animator):
 		
 		for item in selected_items:
 			if item.module == "process":
-				if not kill_process(item.pid):
+				if not kill_process(int(item.pid)):
 					print "kill process failed for some reason"
 			else:
 				#print self.entries_dict
