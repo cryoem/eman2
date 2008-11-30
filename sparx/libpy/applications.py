@@ -3354,8 +3354,9 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 		print_msg("Translational step          : %s\n"%(step))
 		print_msg("Angular step                : %s\n"%(delta))
 		print_msg("Angular search range        : %s\n"%(an))
-		print_msg("Maximum number of reassignment iterations   : %i\n"%(kmax))
-		print_msg("Maximum number of alignment iterations      : %i\n"%(max_iter))
+		print_msg("Number of assignment in each iteration   : %i\n"%(nassign))
+		print_msg("Number of alignment in each iteration    : %i\n"%(nrefine))
+		print_msg("Number of iterations                     : %i\n"%(lstp) )
 		print_msg("Center type                 : %i\n"%(center))
 		print_msg("Data with CTF               : %s\n"%(CTF))
 		print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
@@ -3398,8 +3399,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 		parnames = ["defocus", "Cs", "voltage", "Pixel_size", "amp_contrast", "B_factor", "ctf_applied" ]
 		#               0        1        2         3              4              5               6
 		#  ERROR if ctf applied
-		ctf_params = get_arb_params(data[0], parnames)
-		if(ctf_params[6] == 1):  ERROR("ali3d_m does not work for CTF-applied data","ali3d_m",1)
+		if(data[0].get_attr("ctf_applied") > 0.0):  ERROR("ali3d_m does not work for CTF-applied data","ali3d_m",1)
 		from reconstruction import rec3D_MPI
 	else:
 		from reconstruction import rec3D_MPI_noCTF
@@ -3421,7 +3421,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 	tr_dummy = Transform({"type":"spider"})
 
 
-	Niter = lstp * (nassign + nrefine)
+	Niter = int(lstp * (nassign + nrefine) )
 	for Iter in xrange(Niter):
 
 		if Iter%(nassign+nrefine) < nassign:
