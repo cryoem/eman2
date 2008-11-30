@@ -2533,7 +2533,6 @@ class ImportInitialModels(ParticleWorkFlowTask):
 		progress.qt_widget.show()
 		
 		i = 0
-		warning_message = []
 		for file in params["filenames"]:
 			e = EMData(file)
 			i +=1
@@ -2544,15 +2543,7 @@ class ImportInitialModels(ParticleWorkFlowTask):
 			progress.qt_widget.setValue(i)
 		
 		progress.qt_widget.close()
-		if len(warning_message) > 0:
-			msg = ""
-	 		for warn in warning_message:
-	 			msg += warn
-	 			if msg != warning_message[-1]:
-	 				msg += "\n"
-			mesbox.setText(msg)
-	 		mesbox.exec_()
-	 	
+		
 	 	self.emit(QtCore.SIGNAL("task_idle"))
 		self.application().close_specific(self.form)
 		self.form = None
@@ -2591,6 +2582,8 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 	 	ParticleWorkFlowTask.__init__(self,application)
 	 	self.end_tag = "_ptcls"
 	 	self.window_title = "e2refine parameters"
+	 	self.usefilt_tags = ["_ptcls_ctf_wiener"] # these tags could eventually generalized, such that if the user does their filtering option then their "tag" is included as an option
+		self.usefilt_display_names = ["Wiener"]
 	 	
 	def run_form(self):
 		self.form = EMTableFormModule(self.get_params(),self.application())
@@ -2606,22 +2599,46 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 		
 	#	params.append(self.get_intro_params())
 		params.append(self.get_main_params())
-		params.append(self.get_project_3d_page())
+		params.append(self.get_project3d_page())
 		params.append(self.get_simmx_page())
 		params.append(self.get_classaverage_page())
 		params.append(self.get_make3d_page())
 		
 		return params
 	
-	def get_intro_params(self):
-		'''
-		General/broad refine params
-		'''
-		params = []
+	def on_form_ok(self,params):
 		
-	 	
-		return ["Introduction",params]
+		options = EmptyObject()
+		error_message = self.check_main_page(params,options)
+		
+		
+		for checker in [self.check_main_page,self.check_project3d_page,self.check_simmx_page]:
+			error_message = checker(params,options)
+			if len(error_message) > 0 :
+				self.display_errors(error_message)
+				return
+		
+		
+	 	self.emit(QtCore.SIGNAL("task_idle"))
+		self.application().close_specific(self.form)
+		self.form = None
 	
+	def display_errors(self,error_message):
+		'''
+		error_message is a list of strings
+		'''
+		mesbox = QtGui.QMessageBox()
+		mesbox.setWindowTitle("Almost but not quite")
+		
+		if len(error_message) > 0:
+			msg = ""
+			for error in error_message:
+				msg += error
+				if error != error_message[-1]: msg += "\n"
+		
+			mesbox.setText(msg)
+	 		mesbox.exec_()
+	 		
 	
 	def get_main_params(self):
 		'''
@@ -2655,7 +2672,7 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 		plowmem = ParamDef(name="lowmem",vartype="boolean",desc_short="Low mem",desc_long="Causes various programs to restrict memory usage but results in increased CPU time.",property=None,defaultunits=False,choices=None)
 		
 		psym =  ParamDef(name="symname",vartype="string",desc_short="Symmetry",desc_long="Symmetry to be imposed during refinement",property=None,defaultunits=None,choices=syms)
-		psymnum = ParamDef(name="symnumber",vartype="int",desc_short="Symmetry number",desc_long="In C,D and H symmetry, this is the symmetry number",property=None,defaultunits="",choices=None)
+		psymnum = ParamDef(name="symnumber",vartype="string",desc_short="Symmetry number",desc_long="In C,D and H symmetry, this is the symmetry number",property=None,defaultunits="",choices=None)
 		
 		filt_options = self.get_usefilt_options()
 		
@@ -2664,7 +2681,7 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 			filled_out_options.extend(filt_options)
 			filled_out_options.append("Specify")
 			pusefilt = ParamDef(name="usefilt_choice",vartype="choice",desc_short="Usefilt",desc_long="If specified will cause filtered images to be used for alignment of images",property=None,defaultunits="None",choices=filled_out_options)
-			pusefiltentry  =  ParamDef(name="usefilt_string",vartype="string",desc_short="file",desc_long="Specify the file containing the filtered images directly",property=None,defaultunits=None,choices=[])
+			pusefiltentry  =  ParamDef(name="usefilt_string",vartype="string",desc_short="file",desc_long="Specify the file containing the filtered images directly",property=None,defaultunits="",choices=[])
 			params.append([pusefilt,pusefiltentry])
 		else:
 			pusefiltentry  =  ParamDef(name="usefilt_string",vartype="string",desc_short="Usefilt",desc_long="Specify the file containing the filtered images directly",property=None,defaultunits="",choices=[])
@@ -2678,26 +2695,125 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 		
 		return ["General",params]
 	
+	def check_main_page(self,params,options):
+		'''
+		Called internally to check that the user has entered correct parameters in the main page
+		returns a potentially empty list of error messages, if it is empty it means there are no errors
+		Also sets argument attributes of the options object, killing two birds with one stone
+		'''
+		error_message = []
+		#filenames
+		if len(params["filenames"]) == 0:
+			error_message.append("Please choose files to form the input data set.")
+			
+		if self.end_tag != "generic":
+			names = ["bdb:particles#"+name for name in params["filenames"]]
+			options.filenames = names
+			print options.filenames
+		#usefilt
+		check_usefilt_file = False
+		if params.has_key("usefilt_choice"):
+			if params["usefilt_choice"] == "Specify":
+				check_usefilt_file = True
+			elif len(params["usefilt_string"]) != 0:
+				error_message.append("You entered a file name for the usefilt option but did not choose the \'Specify\' option. Please choose what you want to do.")
+		elif len(params["usefilt_string"]) != 0:
+			check_usefilt_file = True
+			
+		
+		if check_usefilt_file:
+			# d'oh this is tiring
+			if params["usefilt_string"] == "None":
+				pass # this is fine do nothing
+			elif len(params["usefilt_string"]) == 0:
+				error_message.append("You chose to specify a usefilt file but did not provide the name")
+			else:
+				fine, message = is_2d_image_mx(params["usefilt_string"])
+				if not fine:
+					error_message.append("The usefilt file you specified is not a 2D matrix." %params["usefilt_string"])
+				else:
+					n = 0
+					for name in options.filenames:
+						n += EMUtil.get_image_count(name)
+						
+					n2 = EMUtil.get_image_count(params["usefilt_string"])
+					
+					if n != n2:
+						error_message.append("The total number of images in the input data ("+str(n)+") does not match the number of images in the usefilt file ("+str(n2)+").")
+						
+					else:
+						options.usefilt=params["usefilt_string"]
+		else:
+			if params["usefilt_choice"] != "None":
+				# If we make it here we're guaranteed to be using images in the database, and they should have a one to one correspondance
+				options.usefilt = params["usefilt_choice"] # the choice should only be there if it is valid
+				
+				i = self.usefilt_display_names.index(params["usefilt_choice"])
+				if i == -1:
+					error_message.append("There is an internal error, please close the workflow and try again. If this message persists contact developers")
+				new_tag = self.usefilt_tags[i]
+				
+				usefilt_names = []
+				l = len(self.end_tag)
+				for name in options.filenames:
+					usefilt_names.append(name[:-l]+new_tag)
+					
+				options.usefilt_names = usefilt_names
+				print options.usefilt_names
+				
+				
+		#symmetry
+		if params["symname"] in ["c","d","h"]:
+			n = params["symnumber"]
+			fail = False
+			if len(n) == 0: fail = True
+			try: int(n)
+			except: fail = True
+			
+			if not fail:
+				if int(n) < 1:
+					fail = True
+					
+			if fail:
+				error_message.append("The symmetry number must be specified for c,d, and h.")
+			else:
+				options.sym=params["symname"]+n
+		elif len(params["symnumber"]) != 0:
+			error_message.append("There is something entered in the symmetry number box but you have not specified c, d or h symmetry.")
+		else:
+			options.sym = params["symname"]	
+		
+		# iterations
+		if params["iter"] < 1:
+			error_message.append("The number of refinement iterations must be atleast 1.")
+		else:
+			options.iter = params["iter"]
+			
+		options.lowmem = params["lowmem"]
+		options.model = params["model"] # can't get this one wrong
+		
+		return error_message
+		
+			
+	
 	def get_usefilt_options(self):
 		if self.end_tag != "generic":
-			tags = ["_ptcls_ctf_wiener"] # these tags could eventually generalized, such that if the user does their filtering option then their "tag" is included as an option
-			display_names = ["Wiener"]
 			
 			n = self.get_total_particles(self.end_tag)
 			
 			available_filt_files = []
 			number = []
-			for i,tag in enumerate(tags):
+			for i,tag in enumerate(self.usefilt_tags):
 				if tag != self.end_tag:
 					n_ = self.get_total_particles(tag=tag)
 					if n_ > 0 and n_ == n:
-						available_filt_files.append(display_names[i])
+						available_filt_files.append(self.usefilt_display_names[i])
 					
 			return available_filt_files
 		else:
 			return []
 	
-	def get_project_3d_page(self):
+	def get_project3d_page(self):
 		params = []
 		
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2RefineParticlesTask.project3d_documentation,choices=None))
@@ -2722,6 +2838,79 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 		params.append(pmirror)
 		
 		return ["Project 3D",params]
+	
+	def check_project3d_page(self,params,options):
+		
+		error_message = []
+		if params["orientopt_entry"] < 0:
+			error_message.append("Please enter a positive non zero value for the angle/number of projections in the Project3D settings")
+		
+		if params["orientgen"] == "rand" and params["orientopt"] == "angle based":
+			error_message.append("The random orientation generator doesn't work with the \'angle based\' argument, please choose \'number based\' instead") 
+		
+		options.orientgen = params["orientgen"]
+		if params["orientopt"] == "angle based":
+			options.orientgen += ":delta="
+		else:
+			options.orientgen += ":n="
+		
+		options.orientgen += str(params["orientopt_entry"])	
+		
+		if params["incmirror"]:
+			options.orientgen += ":inc_mirror=1"
+		else:
+			options.orientgen += ":inc_mirror=0"
+			
+		
+		options.projector = params["projector"]
+		
+		return error_message
+		
+	
+	def check_simmx_page(self,params,options):
+		error_message = []
+		if params["shrink"] <= 0:
+			error_message.append("The shrink argument in the simmx page must be atleast 1")
+		
+		error_message.extend(self.check_aligners_and_cmps(params,options,"sim"))
+		
+		return error_message
+	
+	def check_aligners_and_cmps(self,params,options,parameter_prefix="class"):
+		
+		error_message = []
+		vals = []
+		
+		vals.append(["align","alignargs"])
+		vals.append(["ralign","ralignargs"])
+		vals.append(["aligncmp","aligncmpargs"])
+		vals.append(["raligncmp","raligncmpargs"])
+		vals.append(["cmp","cmpargs"])
+		
+		
+		for v in vals:
+			v[0] = parameter_prefix + v[0]
+			v[1] = parameter_prefix + v[1]
+			print v
+		
+		for v in vals:
+			setattr(options,v[0],params[v[0]])
+			setattr(options,v[1],params[v[1]])
+		
+		for v in vals:
+			if getattr(options,v[0]) == "None": setattr(options,v[0],None)
+			elif len(getattr(options,v[1])) != 0: setattr(options,v[0],getattr(options,v[0])+":"+getattr(options,v[1]))
+		
+		
+		for i,v in enumerate(vals):
+			arg = getattr(options,v[0])
+			if arg != None:
+				if i > 1: # its a cmp, yes a hack but I have no time
+					if not check_eman2_type(arg,Cmps,"Cmp",False): error_message.append("There is problem with the " +v[0]+ "comparitor argument.")
+				else:
+					if not check_eman2_type(arg,Aligners,"Aligner",False): error_message.append("There is problem with the " +v[0]+ "aligner argument.")
+  	
+  		return error_message
 	
 	def get_simmx_page(self):
 		
