@@ -2778,7 +2778,7 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	# initialize data for the reference preparation function
 	ref_data = []
 	ref_data.append( mask3D )
-	ref_data.append( center )
+	ref_data.append( max(center,0) )#  for center -1 switch of centereing by user function
 	ref_data.append( None )
 	ref_data.append( None )
 
@@ -2792,7 +2792,7 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 
 			if center == -1:
 				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center(data)
-				msg = "Center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
+				msg = "Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
 				print_msg(msg)				
 				rotate_3D_shift(data, cs)
 				
@@ -2814,7 +2814,6 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 			ref_data[3] = fscc
 			
 			#  call user-supplied function to prepare reference image, i.e., center and filter it
-			if center == -1:  ref_data[1] = 0
 			vol, cs = user_func(ref_data)
 			if center > 0:	rotate_3D_shift(data, cs)
 			
@@ -2958,7 +2957,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 		# initialize data for the reference preparation function
 		ref_data = []
 		ref_data.append( mask3D )
-		ref_data.append( center )
+		ref_data.append( max(center,0) )  # for method -1, switch off centering in er function
 		ref_data.append( None )
 		ref_data.append( None )
 	
@@ -2977,7 +2976,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 			if center == -1:
 				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node)				
 				if myid == main_node: 
-					msg = "Center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
+					msg = "Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
 					print_msg(msg)
 				cs = mpi_bcast(cs, 3, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 				cs = [float(cs[0]), float(cs[1]), float(cs[2])]
@@ -2988,7 +2987,6 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 				ref_data[2] = vol
 				ref_data[3] = fscc
 				#  call user-supplied function to prepare reference image, i.e., center and filter it
-				if center == -1: ref_data[1] = 0
 				vol, cs = user_func(ref_data)
 				drop_image(vol, os.path.join(outdir, "volf%04d.hdf"%(N_step*max_iter+Iter+1)))
 
@@ -4425,7 +4423,6 @@ def ali3d_e(stack, ref_vol, outdir, maskfile = None, ou = -1,  delta = 2, center
 			drop_image(vol, os.path.join(outdir, "vol%04d.hdf"%(iteration*n_of_chunks+ic+1)))
 			ref_data[2] = vol
 			ref_data[3] = fscc
-			print fscc
 
 			#  call user-supplied function to prepare reference image, i.e., center and filter it
 			if center != -1:
