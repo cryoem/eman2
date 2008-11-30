@@ -182,7 +182,7 @@ class WorkFlowTask(QtCore.QObject):
 	
 	def spawn_single_task(self,program,options,string_args,bool_args,additional_args=[],temp_file_name="e2workflow_tmp.txt"):
 		'''
-		splits the task over the available processors
+		runs a single job
 		example-
 		program="e2ctf.py"
 		options is an object with the filenames, all string args and all bool_args as attributes 
@@ -219,7 +219,32 @@ class WorkFlowTask(QtCore.QObject):
 		self.emit(QtCore.SIGNAL("process_started"),process.pid)
 		
 		db_close_dict("bdb:project")
+		
+	def run_select_files_msg(self):
+		'''
+		Runs a QMessageBox asking for the user to select files for processing
+		'''
+		msg = QtGui.QMessageBox()
+		msg.setWindowTitle("Almost")
+		msg.setText("Please select files for processing")
+		msg.exec_()
 
+	def show_error_message(self,error_message):
+		'''
+		error_message is a list of error messages
+		'''
+		msg = QtGui.QMessageBox()
+		msg.setWindowTitle("Almost")
+		mes = ""
+		for error in error_message:
+			mes += error
+			
+			if len(error) > 0 and error[-1] != '.':
+				# correct my own inconsistencies....AWESOME
+				mes += '.'
+			if error != error_message[-1]: mes += "\n"
+		msg.setText(mes)
+		msg.exec_()
 
 class SPRInitTask(WorkFlowTask):
 	'''
@@ -279,41 +304,88 @@ class MicrographCCDImportTask(WorkFlowTask):
 		return params
 	
 	def on_form_ok(self,params):
+		
+		error_message = self.check_params(params)
+		if len(error_message):
+			mesbox = QtGui.QMessageBox()
+			mesbox.setWindowTitle("Almost but not quite")
+			msg = ""
+			for error in error_message:
+				msg += error
+				if error != error_message[-1]: msg += "\n"
+			
+			mesbox.setText(msg)
+			mesbox.exec_()
+			return
+ 		
 		for k,v in params.items():
 			if k == "import_micrograph_ccd_files":
 				self.do_import(params)
 			else:
 				self.write_db_entry(k,v)
-		
-		
-		
-		
+
 		self.application().close_specific(self.form)
 		self.form = None
 	
 		self.emit(QtCore.SIGNAL("task_idle"))
 
-	def do_import(self,params):
+	def check_params(self,params):
+		error_message = []
 		filenames = params["import_micrograph_ccd_files"]
 		
+		if len(filenames) == 0:
+			error_message.append("Please specify files to import.")
+			return error_message
+		
+		for name in filenames:
+			if not file_exists(name):
+				error_message.append("File %s doesn't exist." %name)
+			else:
+				try:
+					e = EMData()
+					e.read_image(name,0,1)
+					n = EMUtil.get_image_count(name)
+					if n > 1:
+						error_message.append("File %s contains more than 1 image." %name)
+				except:
+					error_message.append("File %s is not a valid EM image." %name)
+				
+				
 			
 		no_dir_names = [get_file_tag(name) for name in filenames]
 		
 		for name in filenames:
 			if name.find("bdb:rawdata#") != -1:
-				print "you can't import files that are already in the project raw data directory,",name,"is invalid"
-				return
+				error_message.append("Can't import files that are already in the project raw data directory : %s is invalid" %name)
 		
 		for name in no_dir_names:
 			if no_dir_names.count(name) > 1:
-				print "you can't use images with the same name (",name,")"
-				return
-		
+				error_message.append("Can't import files with the same name : %s " %name)
+
 		project_db = db_open_dict("bdb:project")
-		
 		current_project_files = project_db.get("global.micrograph_ccd_filenames",dfl=[])
 		cpft = [get_file_tag(file) for file in current_project_files]
 		
+		for name in filenames:
+			
+			tag = get_file_tag(name)
+			if tag in cpft:
+				error_message.append("Can't import images have identical tags to those already in the database, the problem is with %s" %name)
+				
+			
+			db_name = "bdb:raw_data#"+tag
+			if db_check_dict(db_name):
+				error_message.append("There is already a raw_data database entry for %s" %db_name)
+
+		return error_message
+
+	def do_import(self,params):
+		filenames = params["import_micrograph_ccd_files"]
+		
+		project_db = db_open_dict("bdb:project")
+#		
+		current_project_files = project_db.get("global.micrograph_ccd_filenames",dfl=[])
+
 		# get the number of process operation - the progress dialog reflects image copying and image processing operations
 		num_processing_operations = 2 # there is atleast a copy and a disk write
 		if params["invert"]: num_processing_operations += 1
@@ -330,55 +402,47 @@ class MicrographCCDImportTask(WorkFlowTask):
 		for name in filenames:
 			
 			tag = get_file_tag(name)
-			if tag in cpft:
-				print "can't import images have identical tags to those already in the database"
-				continue
-			
-			
 			db_name = "bdb:raw_data#"+tag
-			if db_check_dict(db_name):
-				print "there is already a raw_data database entry for",tag
-				continue
-			else:
-				e = EMData()
-				e.read_image(name,0)
-				i += 1
-				progress.qt_widget.setValue(i)	
-				self.application().processEvents()
-				e.set_attr("disk_file_name",name)
-				
-				if params["invert"]:
-					e.mult(-1)
-					i += 1
-					progress.qt_widget.setValue(i)
-					self.application().processEvents()
-				
-				if params["xraypixel"]:
-					e.process_inplace("threshold.clampminmax.nsigma",{"nsigma":4,"tomean":True})
-					i += 1
-					progress.qt_widget.setValue(i)
-					self.application().processEvents()
-				
-				e.write_image(db_name,0)
-				cancelled_dbs.append(db_name)
+
+			e = EMData()
+			e.read_image(name,0)
+			i += 1
+			progress.qt_widget.setValue(i)	
+			self.application().processEvents()
+			e.set_attr("disk_file_name",name)
+			
+			if params["invert"]:
+				e.mult(-1)
 				i += 1
 				progress.qt_widget.setValue(i)
 				self.application().processEvents()
-				current_project_files.append(db_name)
+			
+			if params["xraypixel"]:
+				e.process_inplace("threshold.clampminmax.nsigma",{"nsigma":4,"tomean":True})
+				i += 1
+				progress.qt_widget.setValue(i)
+				self.application().processEvents()
 				
-				if params["thumbs"]:
-					shrink = self.get_thumb_shrink(e.get_xsize(),e.get_ysize())
-					thumb = e.process("math.meanshrink",{"n":shrink})
-					set_idd_image_entry(db_name,"image_thumb",thumb) # boxer uses the full name
-					i += 1
-					progress.qt_widget.setValue(i)
-					self.application().processEvents()
-					
-				if progress.qt_widget.wasCanceled():
-					cancelled = True
-					for data_db in cancelled_dbs: # policy here is to remove only the raw data dbs - the e2boxer thumbnails are tiny and I don't have time...
-						db_remove_dict(data_db)
-					break
+			e.write_image(db_name,0)
+			cancelled_dbs.append(db_name)
+			i += 1
+			progress.qt_widget.setValue(i)
+			self.application().processEvents()
+			current_project_files.append(db_name)
+				
+			if params["thumbs"]:
+				shrink = self.get_thumb_shrink(e.get_xsize(),e.get_ysize())
+				thumb = e.process("math.meanshrink",{"n":shrink})
+				set_idd_image_entry(db_name,"image_thumb",thumb) # boxer uses the full name
+				i += 1
+				progress.qt_widget.setValue(i)
+				self.application().processEvents()
+				
+			if progress.qt_widget.wasCanceled():
+				cancelled = True
+				for data_db in cancelled_dbs: # policy here is to remove only the raw data dbs - the e2boxer thumbnails are tiny and I don't have time...
+					db_remove_dict(data_db)
+				break
 			
 				
 		progress.qt_widget.setValue(len(filenames))
@@ -765,74 +829,127 @@ class ParticleImportTask(ParticleWorkFlowTask):
 		db_close_dict("bdb:project")
 		return params
 
+	def on_form_ok(self,params):
+		
+		mesbox = QtGui.QMessageBox()
+		mesbox.setWindowTitle("Almost but not quite")
+		
+		error_message = self.check_args(params)
+		if len(error_message) > 0:
+			msg = ""
+			for error in error_message:
+				msg += error
+				if error != error_message[-1]: msg += "\n"
+			mesbox.setText(msg)
+			mesbox.exec_()
+			return
+		
+		v = params["import_particle_files"]
+		progress = EMProgressDialogModule(self.application(),"Importing files into database...", "Abort import", 0, len(v),None)
+		progress.qt_widget.show()
+#			self.application().show_specific(progress)
+	
+		cancelled_dbs = []
+		for i,name in enumerate(v):
+			progress.qt_widget.setValue(i)
+			self.application().processEvents()
 
-	def write_db_entry(self,k,v):
-		if k == "import_particle_files":
-			# first make sure that the file tags that will correspond to the imported file names do not conflict with names in the project files
+			tag = get_file_tag(name)
+			db_name = "bdb:particles#"+tag+"_ptcls"
+			imgs = EMData().read_images(name)
+			cancelled_dbs.append(db_name)
+			for img in imgs: img.write_image(db_name,-1)
+				
+			if progress.qt_widget.wasCanceled():
+				cancelled = True
+				for db_name in cancelled_dbs:
+					db_remove_dict(db_name)
+				break
+		
+				
+		progress.qt_widget.setValue(len(v))
+		#self.application().close_specific(progress)
+		progress.qt_widget.close()
+				
+			
+		for k,v in params.items():
+			self.write_db_entry(k,v)
+			
+		self.application().close_specific(self.form)
+		self.form = None
+	
+		self.emit(QtCore.SIGNAL("task_idle"))
+	
+	def check_args(self,params):
+		error_message = []
+		if len(params["import_particle_files"]) == 0:
+			error_message.append("Please specify files to import")
+		else:
 			project_db = db_open_dict("bdb:project")
 			project_file_names = project_db.get("global.micrograph_ccd_filenames",dfl=[])
 			pfnt = [ get_file_tag(name) for name in project_file_names]
 			
+			v = params["import_particle_files"]
 			for name in v:
 				if get_file_tag(name) in pfnt:
-					print "error, you can't import particles that have the same file name as one of the project files - the problem is with:",get_file_tag(name)
-					db_close_dict("bdb:project")
-					return
+					error_message.append("error, you can't import particles that have the same file name as one of the project files - the problem is with : %s" %get_file_tag(name))
+					
 			# now check to see if there are duplicated filetags in the incoming list
 			# Actually the url form widget may have already dealt with this?
 			nt = [ get_file_tag(name) for name in v]
 			for name in v:
 				if nt.count(get_file_tag(name)) > 1:
-					print "error, you can't import particles that have the same file names! The problem is with:",get_file_tag(name)
-					db_close_dict("bdb:project")
-					return
+					error_message.append("you can't import particles that have the same file names! The problem is with : %s" %get_file_tag(name))
 			
 			# now check to see if there isn't already an entry in the particle directory that corresponds to this name
 			particle_dbs = self.get_particle_db_names()
 			for name in v:
 				if get_file_tag(name) in particle_dbs:
-					print "error, you can't import particles that already have entries in the particle database! The problem is with:",get_file_tag(name)
-					db_close_dict("bdb:project")
-					return
-			# okay if we make it here we're fine, import that particles
-			progress = EMProgressDialogModule(self.application(),"Importing files into database...", "Abort import", 0, len(v),None)
-			progress.qt_widget.show()
-#			self.application().show_specific(progress)
-			read_header_only = True
-			a= EMData()
-			cancelled_dbs = []
-			for i,name in enumerate(v):
-				progress.qt_widget.setValue(i)
-				self.application().processEvents()
-				if (os.path.exists(name) or db_check_dict(name)) and is_2d_image_mx(name):
-					
-					try:
-						a.read_image(name,0,read_header_only)
-					except:
-						print "error,",name,"is not a valid image. Ignoring"
-						continue
-					
-					tag = get_file_tag(name)
-					db_name = "bdb:particles#"+tag+"_ptcls"
-					imgs = EMData().read_images(name)
-					cancelled_dbs.append(db_name)
-					for img in imgs: img.write_image(db_name,-1)
-				else:
-					print "error,",name,"doesn't exist. Ignoring"
-					
-				if progress.qt_widget.wasCanceled():
-					cancelled = True
-					for db_name in cancelled_dbs:
-						db_remove_dict(db_name)
-					break
+					error_message.append("error, you can't import particles that already have entries in the particle database! The problem is with : %s" %get_file_tag(name))
+
 			
-					
-			progress.qt_widget.setValue(len(v))
-			#self.application().close_specific(progress)
-			progress.qt_widget.close()
+			for name in v:
+				fine, message = is_2d_image_mx(name)
+				if not fine:
+					error_message.append(message)
+
+		return error_message
+	
+
+	def write_db_entry(self,k,v):
+		pass
+		#if k == "import_particle_files":
+			# first make sure that the file tags that will correspond to the imported file names do not conflict with names in the project files
+#			project_db = db_open_dict("bdb:project")
+#			project_file_names = project_db.get("global.micrograph_ccd_filenames",dfl=[])
+#			pfnt = [ get_file_tag(name) for name in project_file_names]
+			
+#			for name in v:
+#				if get_file_tag(name) in pfnt:
+#					print "error, you can't import particles that have the same file name as one of the project files - the problem is with:",get_file_tag(name)
+#					db_close_dict("bdb:project")
+#					return
+#			# now check to see if there are duplicated filetags in the incoming list
+#			# Actually the url form widget may have already dealt with this?
+#			nt = [ get_file_tag(name) for name in v]
+#			for name in v:
+#				if nt.count(get_file_tag(name)) > 1:
+#					print "error, you can't import particles that have the same file names! The problem is with:",get_file_tag(name)
+#					db_close_dict("bdb:project")
+#					return
+#			
+#			# now check to see if there isn't already an entry in the particle directory that corresponds to this name
+#			particle_dbs = self.get_particle_db_names()
+#			for name in v:
+#				if get_file_tag(name) in particle_dbs:
+#					print "error, you can't import particles that already have entries in the particle database! The problem is with:",get_file_tag(name)
+#					db_close_dict("bdb:project")
+#					return
+			# okay if we make it here we're fine, import that particles
+			
 				
 			
-			db_close_dict("bdb:project")
+		#	db_close_dict("bdb:project")
 
 		
 
@@ -1024,10 +1141,8 @@ class E2BoxerAutoTask(E2BoxerTask):
 		for k,v in params.items():
 			self.write_db_entry(k,v)
 			
-		if not params.has_key("filenames") or len(params["filenames"]) == 0:
-			self.emit(QtCore.SIGNAL("task_idle"))
-			self.application().close_specific(self.form)
-			self.form = None
+		if  params.has_key("filenames") and len(params["filenames"]) == 0:
+			self.run_select_files_msg()
 			return
 	
 		else:
@@ -1106,12 +1221,13 @@ class E2BoxerGuiTask(E2BoxerTask):
 		for k,v in params.items():
 			self.write_db_entry(k,v)
 			
-		if not params.has_key("filenames") or len(params["filenames"]) == 0:
-			self.emit(QtCore.SIGNAL("task_idle"))
-			self.application().close_specific(self.form)
-			self.form = None
+		if  params.has_key("filenames") and len(params["filenames"]) == 0:
+			self.run_select_files_msg()
 			return
 
+		if params["boxsize"] < 1:
+			self.show_error_message(["Must specify a positive, non zero boxsize."])
+			return
 		else:
 			options = EmptyObject()
 			for key in params.keys():
@@ -1207,17 +1323,28 @@ class E2BoxerOutputTask(E2BoxerTask):
 		params.append(pn)
 		params.append(pop)
 		
-			
+	
+	def check_params(self,params):
+		
+		error_message = []
+		if params["boxsize"] < 1: error_message.append("Boxsize must be greater than 0.")
+		if not params["write_coord_files"] and not params["write_box_images"]: error_message.append("You must choose at least one of the write_coords/write_box_images options")
+	
+		return error_message
+	
 	def on_form_ok(self,params):
 		for k,v in params.items():
 			self.write_db_entry(k,v)
 			
-		if not params.has_key("filenames") or len(params["filenames"]) == 0:
-			self.emit(QtCore.SIGNAL("task_idle"))
-			self.application().close_specific(self.form)
-			self.form = None
+		if  params.has_key("filenames") and len(params["filenames"]) == 0:
+			self.run_select_files_msg()
 			return
-	
+		
+		error_message = self.check_params(params)
+		if len(error_message) >0: 
+			self.show_error_message(error_message)
+			return
+		
 		else:
 			options = EmptyObject()
 			for k,v in params.items():
@@ -1584,11 +1711,16 @@ class E2CTFAutoFitTask(E2CTFWorkFlowTask):
 		pac = ParamDef(name="working_ac",vartype="float",desc_short="Amplitude contrast",desc_long="The amplitude contrast constant. It is recommended that this value is identical in all of your images.",property=None,defaultunits=ctf_misc_db.get("working_ac",dfl=10),choices=None)
 		pos = ParamDef(name="working_oversamp",vartype="int",desc_short="Oversampling",desc_long="If greater than 1, oversampling by this amount will be used when images are being phase flipped and Wiener filtered.",property=None,defaultunits=ctf_misc_db.get("working_oversamp",dfl=1),choices=None)
 		pncp = ParamDef(name="global.num_cpus",vartype="int",desc_short="Number of CPUs",desc_long="Number of CPUS available for the project to use",property=None,defaultunits=project_db.get("global.num_cpus",dfl=num_cpus()),choices=None)
+		pahp = ParamDef(name="autohp",vartype="boolean",desc_short="Auto high pass",desc_long="Automatic high pass filter of the SNR only to remove initial sharp peak, phase-flipped data is not directly affected (default false)",property=None,defaultunits=False,choices=None)
+		pns = ParamDef(name="nosmooth",vartype="boolean",desc_short="No smoothing",desc_long="Disable smoothing of the background (running-average of the log with adjustment at the zeroes of the CTF)",property=None,defaultunits=False,choices=None)
+		
+		
 		mem = memory_stats()
 		
 		params.append([papix,pvolt])
 		params.append([pcs,pac])
 		params.append([pos,pncp])
+		params.append([pahp,pns])
 
 		db_close_dict("bdb:project")
 	
@@ -1597,8 +1729,10 @@ class E2CTFAutoFitTask(E2CTFWorkFlowTask):
 		These are the options required to run pspec_and_ctf_fit in e2ctf.py
 		'''
 		
-		if not params.has_key("filenames") or len(params["filenames"]) == 0:
-			return None # this is fine there are no particles assocaited with the project
+		error_message = []
+		if  params.has_key("filenames") and len(params["filenames"]) == 0:
+			self.run_select_files_msg()
+			return None
 		
 		filenames = params["filenames"]
 		
@@ -1608,8 +1742,7 @@ class E2CTFAutoFitTask(E2CTFWorkFlowTask):
 			db_name="bdb:particles#"+name
 			db_file_names.append(db_name)
 			if not db_check_dict(db_name):
-				print "error, can't particle entry doesn't exist for",name,"aborting."
-				return None
+				error_message.append("error, can't particle entry doesn't exist for %s." %name)
 			
 			if boxsize == None:
 				db = db_open_dict(db_name)
@@ -1621,18 +1754,20 @@ class E2CTFAutoFitTask(E2CTFWorkFlowTask):
 				hdr = db.get_header(0)
 				db_close_dict(db_name)
 				if boxsize != hdr["nx"]: # no consideration is given for non square images
-					print "error, can't run e2ctf on images with different box sizes. Specifically, I can not deduce the bgmask option for the group"
-					return None
+					error_message.append("Can't run e2ctf on images with different box sizes.")
 		
 		if boxsize == None or boxsize < 2:
-			print "error, boxsize is less than 2"
-			return None
+			error_message.append("error, boxsize is less than 2.")
 		
 		
 		options = EmptyObject()
 		options.bgmask = boxsize/2
 		options.filenames = db_file_names
-		self.append_general_options(options,params)
+		error_message.extend(self.append_general_options(options,params))
+		
+		if len(error_message) > 0:
+			self.show_error_message(error_message)
+			return None
 	
 		return options
 	
@@ -1641,15 +1776,26 @@ class E2CTFAutoFitTask(E2CTFWorkFlowTask):
 		This is done in more than one place hence this function
 		'''
 		
-		options.nosmooth = False
+		options.nosmooth = params["nosmooth"]
 		options.nonorm = False
-		options.autohp = False
+		options.autohp = params["autohp"]
 		options.invert = False
 		options.oversamp = params["working_oversamp"]
 		options.ac = params["working_ac"]
 		options.apix = params["global.apix"]
 		options.cs = params["global.microscope_cs"]
 		options.voltage = params["global.microscope_voltage"]
+		
+		
+		error_message = []
+		if options.oversamp < 1:
+			error_message.append("You must specify a value for oversamp that is atleast 1.")
+		if options.apix <= 0:
+			error_message.append("You must specify a positive non zero value for the apix.")
+		if options.voltage <= 0:
+			error_message.append("You must specify a positive non zero value for the voltage.")
+		
+		return error_message
 		
 	def on_form_ok(self,params):
 		for k,v in params.items():
@@ -1668,8 +1814,7 @@ class E2CTFAutoFitTask(E2CTFWorkFlowTask):
 			self.emit(QtCore.SIGNAL("task_idle"))
 			
 		else:
-			self.application().close_specific(self.form)
-			self.emit(QtCore.SIGNAL("task_idle"))
+			return
 		
 	def on_form_close(self):
 		# this is to avoid a task_idle signal, which would be incorrect if e2boxer is running
@@ -1713,7 +1858,7 @@ class E2CTFAutoFitTaskGeneral(E2CTFAutoFitTask):
 		These are the options required to run pspec_and_ctf_fit in e2ctf.py
 		'''
 		
-		if not params.has_key("filenames") or len(params["filenames"]) == 0:
+		if  params.has_key("filenames") and len(params["filenames"]) == 0:
 			return None # this is fine
 		
 		filenames = params["filenames"]
@@ -1758,11 +1903,13 @@ class E2CTFOutputTask(E2CTFWorkFlowTask):
 		if n == 0:
 			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFOutputTask.documentation_string+E2CTFOutputTask.warning_string,choices=None))
 		else:
+			ctf_misc_db = db_open_dict("bdb:e2ctf.misc")
 			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFOutputTask.documentation_string,choices=None))
 			params.append(p)
+			pos = ParamDef(name="working_oversamp",vartype="int",desc_short="Oversampling",desc_long="If greater than 1, oversampling by this amount will be used when images are being phase flipped and Wiener filtered.",property=None,defaultunits=ctf_misc_db.get("working_oversamp",dfl=1),choices=None)
 			pwiener = ParamDef(name="wiener",vartype="boolean",desc_short="Wiener",desc_long="Wiener filter your particle images using parameters in the database. Phase flipping will also occur",property=None,defaultunits=False,choices=None)
 			pphase = ParamDef(name="phaseflip",vartype="boolean",desc_short="Phase flip",desc_long="Phase flip your particle images using parameters in the database",property=None,defaultunits=False,choices=None)
-			
+			params.append(pos)
 			params.append([pphase,pwiener])
 		return params
 
@@ -1771,8 +1918,9 @@ class E2CTFOutputTask(E2CTFWorkFlowTask):
 		These are the options required to run pspec_and_ctf_fit in e2ctf.py, works in e2workflow
 		'''
 		
-		if not params.has_key("filenames") or len(params["filenames"]) == 0:
-			return None # this is fine, for example, there were no files to work
+		error_message = []
+		if  params.has_key("filenames") and len(params["filenames"]) == 0:
+			error_message.append("Please select files to process")
 		
 		
 		options = EmptyObject()
@@ -1784,11 +1932,22 @@ class E2CTFOutputTask(E2CTFWorkFlowTask):
 			db_name="bdb:particles#"+name
 			db_file_names.append(db_name)
 			if not db_check_dict(db_name):
-				print "error, can't particle entry doesn't exist for",name,"aborting."
+				print "error, particle entry doesn't exist for",name,"aborting."
 				return None
+			
 		options.filenames = db_file_names
 		options.wiener = params["wiener"]
 		options.phaseflip = params["phaseflip"]
+		options.oversamp = params["working_oversamp"]
+		if not options.wiener and not options.phaseflip:
+			error_message.append("Please choose at atleast one of the phaseflip or Wiener options.")
+			
+		if options.oversamp < 1:
+			error_message.append("The oversampling factor must be atleast 1")
+			
+		if len(error_message) > 0:
+			self.show_error_message(error_message)
+			return None
 #		
 		return options
 	
@@ -1809,8 +1968,7 @@ class E2CTFOutputTask(E2CTFWorkFlowTask):
 			self.application().close_specific(self.form)
 			self.emit(QtCore.SIGNAL("task_idle"))
 		else:
-			self.application().close_specific(self.form)
-			self.emit(QtCore.SIGNAL("task_idle"))
+			return
 	
 	def on_ctf_closed(self):
 		self.emit(QtCore.SIGNAL("gui_exit")) #
@@ -1852,7 +2010,7 @@ class E2CTFOutputTaskGeneral(E2CTFOutputTask):
 		'''
 		options = EmptyObject()
 		
-		if not params.has_key("filenames") or len(params["filenames"]) == 0:
+		if  params.has_key("filenames") and len(params["filenames"]) == 0:
 			return None # this is fine, for example, there were no files to work
 
 		selected_filenames = params["filenames"]
@@ -1898,8 +2056,7 @@ class E2CTFGuiTask(E2CTFWorkFlowTask):
 		self.gui = None # will eventually be a e2ctf gui
 
 	def get_params(self):
-		
-		
+
 		ptcl_names = self.get_particle_db_names(strip_ptcls=False) # particles in the project directory
 		ctf_names = self.get_names_with_ctf_params()
 		ctf_ptcl_names = [l[0] for l in ctf_names]
@@ -1919,11 +2076,10 @@ class E2CTFGuiTask(E2CTFWorkFlowTask):
 		These are the options required to run pspec_and_ctf_fit in e2ctf.py
 		'''
 		
-		if not params.has_key("filenames") or len(params["filenames"]) == 0:
-			#print "There are no filenames" # this shouldn't happen
+		if  params.has_key("filenames") and len(params["filenames"]) == 0:
+			self.run_select_files_msg()
 			return None
-		
-		
+
 		options = EmptyObject()
 		filenames = params["filenames"]
 #
@@ -1955,8 +2111,7 @@ class E2CTFGuiTask(E2CTFWorkFlowTask):
 			QtCore.QObject.connect(self.gui,QtCore.SIGNAL("module_closed"), self.on_ctf_closed)
 			self.gui.show_guis()
 		else:
-			self.application().close_specific(self.form)
-			self.emit(QtCore.SIGNAL("task_idle"))
+			return
 	
 	def on_ctf_closed(self):
 		if self.gui != None:
@@ -1997,7 +2152,10 @@ class E2CTFGuiTaskGeneral(E2CTFGuiTask):
 		These are the options required to run pspec_and_ctf_fit in e2ctf.py
 		'''
 		
-		if not params.has_key("filenames") or len(params["filenames"]) == 0:
+		
+		
+		if  params.has_key("filenames") and len(params["filenames"]) == 0:
+			self.run_select_files_msg()
 			return None # this is fine
 		
 		

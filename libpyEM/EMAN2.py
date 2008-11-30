@@ -620,11 +620,7 @@ def is_2d_image_mx(filename):
 	'''
 	Returns true if the filename exists, is an EM image type, is 2D, and has more than one image
 	'''
-	if not os.path.exists(filename):
-	  	try:
-	  		is_db = db_check_dict(filename)
-	  		if not is_db: raise
-	  	except: return False, "File doesn't exist:"+filename
+	if not file_exists(filename): return False, "File doesn't exist : "+filename
 	
 	read_header_only = True
 	a = EMData()
