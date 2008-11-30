@@ -2612,7 +2612,7 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 		error_message = self.check_main_page(params,options)
 		
 		
-		for checker in [self.check_main_page,self.check_project3d_page,self.check_simmx_page]:
+		for checker in [self.check_main_page,self.check_project3d_page,self.check_simmx_page,self.check_classaverage_page,self.check_make3d_page]:
 			error_message = checker(params,options)
 			if len(error_message) > 0 :
 				self.display_errors(error_message)
@@ -2871,12 +2871,14 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 		error_message = []
 		if params["shrink"] <= 0:
 			error_message.append("The shrink argument in the simmx page must be atleast 1")
+			
+		options.shrink=params["shrink"]
 		
-		error_message.extend(self.check_aligners_and_cmps(params,options,"sim"))
+		error_message.extend(self.check_aligners_and_cmps(params,options,"sim","Simmx"))
 		
 		return error_message
 	
-	def check_aligners_and_cmps(self,params,options,parameter_prefix="class"):
+	def check_aligners_and_cmps(self,params,options,parameter_prefix="class",page="Class averaging"):
 		
 		error_message = []
 		vals = []
@@ -2891,7 +2893,6 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 		for v in vals:
 			v[0] = parameter_prefix + v[0]
 			v[1] = parameter_prefix + v[1]
-			print v
 		
 		for v in vals:
 			setattr(options,v[0],params[v[0]])
@@ -2906,9 +2907,9 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 			arg = getattr(options,v[0])
 			if arg != None:
 				if i > 1: # its a cmp, yes a hack but I have no time
-					if not check_eman2_type(arg,Cmps,"Cmp",False): error_message.append("There is problem with the " +v[0]+ "comparitor argument.")
+					if not check_eman2_type(arg,Cmps,"Cmp",False): error_message.append("There is problem with the " +v[0]+ " comparitor argument in the "+page+" page.")
 				else:
-					if not check_eman2_type(arg,Aligners,"Aligner",False): error_message.append("There is problem with the " +v[0]+ "aligner argument.")
+					if not check_eman2_type(arg,Aligners,"Aligner",False): error_message.append("There is problem with the " +v[0]+ " aligner argument in the "+page+" page.")
   	
   		return error_message
 	
@@ -2925,6 +2926,32 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 		
 		
 		return ["Simmx",params]
+	
+	def check_classaverage_page(self,params,options):
+		error_message = []
+		
+		if params["sep"] <= 0:
+			error_message.append("The separation argument in the Class average page must be atleast 1")
+		
+		if params["classiter"] < 0:
+			error_message.append("The number of class averaging iterations must be atleast 0")
+		
+		if params["classkeepsig"] == False:
+			if params["classkeep"] < 0 or params["classkeep"] > 1:
+				error_message.append("The keep parameter in the Class average page must be between 0 and 1. This does not hold if the \'Sigma based\' option is selected.")
+		
+		error_message.extend(self.check_aligners_and_cmps(params,options,"class", "Class average"))
+		
+		if len(error_message) > 0: return error_message # calling program should act and discontinue
+		
+		options.sep = params["sep"]
+		options.classkeep = params["classkeep"]
+		options.classkeepsig = params["classkeepsig"]
+		options.classnormproc = params["classnormproc"]
+		options.classiter = params["classiter"]
+		
+		return error_message
+	
 	
 	def get_classaverage_page(self):
 		
@@ -2987,6 +3014,30 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 		params.append([prsimaligncmp,prsimaligncmpargs])
 		
 		return params
+
+	def check_make3d_page(self,params,options):
+		error_message = []
+		
+		if params["m3diter"] < 0:
+			error_message.append("The number of make3d iterations must be atleast 0")
+		
+		if params["m3dkeepsig"] == False:
+			if params["m3dkeep"] < 0 or params["m3dkeep"] > 1:
+				error_message.append("The keep parameter in the Make3D page must be between 0 and 1. This does not hold if the \'Sigma based\' option is selected.")
+		
+		if len(error_message) > 0 : return error_message # calling program should discontinue
+		
+		options.m3diter = params["m3diter"]
+		options.m3dkeep = params["m3dkeep"]
+		options.m3dkeepsig = params["m3dkeepsig"]
+		
+		options.recon = params["recon"]
+		
+		if params["m3dpreprocess"] != "None":
+			options.m3dpreprocess = params["m3dpreprocess"]
+
+			
+		return error_message
 
 	def get_make3d_page(self):
 		
