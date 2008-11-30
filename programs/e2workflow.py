@@ -32,6 +32,7 @@
 
 
 from PyQt4 import QtGui,QtCore
+from PyQt4.QtCore import Qt
 import os
 from emapplication import EMQtWidgetModule,ModuleEventsManager
 from emsprworkflow import *
@@ -39,6 +40,7 @@ from emselector import EMBrowserModule
 from e2boxer import EMBoxerModule
 from EMAN2 import HOMEDB, process_running,kill_process
 from emanimationutil import Animator
+from emimage import EMModuleFromFile
 import time
 import weakref
 
@@ -100,6 +102,7 @@ class EMTaskMonitorWidget(QtGui.QWidget,Animator):
 		self.set_entries(self.entries_dict)
 	
 		QtCore.QObject.connect(self.kill, QtCore.SIGNAL("clicked()"), self.on_kill)
+		
 	def animate(self,time):
 		for i,pid in enumerate(self.history_check):
 			for j in range(self.init_history_db_entries+1,HOMEDB.history["count"]+1):
@@ -384,6 +387,14 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		module.closeEvent(None)
 		self.module().emit(QtCore.SIGNAL("module_closed"),"module_string",module)
 	
+	def display_file(self,filename):
+		self.application().setOverrideCursor(Qt.BusyCursor)
+		module = EMModuleFromFile(filename,self.application())
+		if module != None:
+			self.module().emit(QtCore.SIGNAL("launching_module"),"Browser",module)
+			self.application().show_specific(module)
+			self.add_module([str(module),"Display",module])
+		self.application().setOverrideCursor(Qt.ArrowCursor)
 	def launch_browser(self):
 		module = EMBrowserModule(self.application())
 		self.module().emit(QtCore.SIGNAL("launching_module"),"Browser",module)
@@ -582,33 +593,32 @@ class TaskEventsManager:
 	'''
 	def __init__(self,task,selector,key):
 		self.task = task
-		self.selector = selector
+		self.selector = weakref.ref(selector)
 		self.key = key
 		QtCore.QObject.connect(self.task, QtCore.SIGNAL("task_idle"), self.on_task_idle) # this typically gets emitted when the user hits ok or cancel on the 
 		QtCore.QObject.connect(self.task, QtCore.SIGNAL("gui_running"),self.on_gui_running) # this one 
 		QtCore.QObject.connect(self.task, QtCore.SIGNAL("replace_task"),self.on_replace_task)
 		QtCore.QObject.connect(self.task, QtCore.SIGNAL("gui_exit"),self.on_gui_exit)
 		QtCore.QObject.connect(self.task, QtCore.SIGNAL("process_started"), self.on_process_started)
+		QtCore.QObject.connect(self.task, QtCore.SIGNAL("display_file"), self.selector().display_file)
 #		
 	def on_gui_running(self,module_string_name,module):
 		''' 
 		
 		'''
-		self.selector.gui_running(self.key,module_string_name,module)
+		self.selector().gui_running(self.key,module_string_name,module)
 		
 	def on_gui_exit(self):
-		self.selector.gui_exit(self.task)
+		self.selector().gui_exit(self.task)
 		
 	def on_task_idle(self):
-		self.selector.pop_task_event_pair(self.key)
+		self.selector().pop_task_event_pair(self.key)
 		
 	def on_process_started(self,pid):
-		print "process started"
-		self.selector.task_monitor.add_process(pid)
+		self.selector().task_monitor.add_process(pid)
 	
 	def on_replace_task(self,task,task_name):
-		print "replace task"
-		self.selector.on_replace_task(self.key,task,task_name)
+		self.selector().on_replace_task(self.key,task,task_name)
 
 class EMWorkFlowManager:
 	def __init__(self,application):

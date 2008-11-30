@@ -81,7 +81,7 @@ class EMFormWidget(QtGui.QWidget):
 		self.params = params
 		self.event_handlers = [] # used to keep event handlers in memory
 		self.output_writers = [] # used to register output write objects, for the purpose of returning the results
-		
+		self.__init_icons()
 		self.setWindowIcon(QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/eman.png"))
 		
 		self.auto_incorporate = {}
@@ -101,6 +101,11 @@ class EMFormWidget(QtGui.QWidget):
 		self.incorporate_params(self.params,self.vbl)
 		self.__add_ok_cancel_buttons(self.vbl)
 		self.setLayout(self.vbl)
+	def __init_icons(self):
+		self.emdata_icon = QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/single_image.png")
+		self.emdata_3d_icon = QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/single_image_3d.png")
+		self.emdata_matrix_icon = QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/multiple_images.png")
+		self.plot_icon = QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/plot.png")
 		
 	def incorporate_params(self,params,layout):
 		for param in self.params:
@@ -115,6 +120,16 @@ class EMFormWidget(QtGui.QWidget):
 			except: pass
 			self.auto_incorporate[param.vartype](param,layout)
 	
+	def get_ptable_icon(self,paramtable):
+		if hasattr(paramtable,"icon_type"):
+			icon_type = paramtable.icon_type
+			if icon_type == "single_image": return self.emdata_icon
+			elif icon_type == "matrix_image": return self.emdata_matrix_icon
+			elif icon_type == "3d_image": return self.emdata_3d_icon
+			elif icon_type == "2d_plot{" : return self.plot_icon
+			else: return None
+			
+		return None
 	def __incorporate_paramtable(self,paramtable,layout):
 		
 		num_choices = None
@@ -132,6 +147,9 @@ class EMFormWidget(QtGui.QWidget):
 		hbl.setSpacing(2)
 		
 		table_widget = QtGui.QTableWidget(num_choices, len(paramtable), None)
+		icon = self.get_ptable_icon(paramtable)
+		
+			
 		#self.items = []
 		table_widget.setSortingEnabled(False)
 		max_len_sum = 0
@@ -141,7 +159,8 @@ class EMFormWidget(QtGui.QWidget):
 				str_choice = str(choice)
 				str_len = len(str_choice)
 				if str_len > max_len: max_len = str_len 
-				item = QtGui.QTableWidgetItem(str(choice))
+				if i == 0 and icon != None: item = QtGui.QTableWidgetItem(icon,str(choice))
+				else: item = QtGui.QTableWidgetItem(str(choice))
 				flag2 = Qt.ItemFlags(Qt.ItemIsSelectable)
 				flag3 = Qt.ItemFlags(Qt.ItemIsEnabled)
 				flag4 = Qt.ItemFlags(Qt.ItemIsEditable)
@@ -150,7 +169,7 @@ class EMFormWidget(QtGui.QWidget):
 					item.setFlags(flag2|flag3)
 				else:
 					item.setFlags(flag3)
-				item.setTextAlignment(QtCore.Qt.AlignHCenter)
+				item.setTextAlignment(QtCore.Qt.AlignHCenter&QtCore.Qt.AlignVCenter)
 				table_widget.setItem(j, i, item)
 				
 				
@@ -171,9 +190,10 @@ class EMFormWidget(QtGui.QWidget):
 		groupbox.setLayout(hbl)
 		layout.addWidget(groupbox,10)
 		
-		
-		self.connect(table_widget, QtCore.SIGNAL("itemDoubleClicked(QTableWidgetItem*)"),self.table_item_double_clicked)
-		
+		if hasattr(paramtable,"convert_text"):
+			setattr(table_widget,"convert_text",paramtable.convert_text)
+			
+		self.event_handlers.append(ParamTableEventHandler(self,table_widget))
 		if len(paramtable[0].choices) > 0:
 			type_of = type(paramtable[0].choices[0])
 		else:
@@ -474,9 +494,9 @@ class EMFormWidget(QtGui.QWidget):
 		self.parent().emit(QtCore.SIGNAL("emform_close"))
 
 		
-	def table_item_double_clicked(self,item):
-		print item.text()
-		self.emit(QtCore.SIGNAL("table_item_double_clicked"),str(item.text()))
+	def display_file(self,filename):
+		print "emitting display file"
+		self.parent().emit(QtCore.SIGNAL("display_file"),filename)
 
 		
 class ParamTableWriter:
@@ -589,6 +609,23 @@ class ChoiceParamWriter:
 			if button.isChecked():
 				choice = self.correct_type(str(button.text()))
 		dict[self.param_name] = choice
+
+class ParamTableEventHandler:
+	'''
+	handles events for param tables, atm this is only the double click event, which can
+	be used to trigger image display, for example
+	'''
+	def __init__(self,target,table_widget):
+		self.target = weakref.ref(target)
+		self.table_widget = table_widget
+				
+		QtCore.QObject.connect(table_widget, QtCore.SIGNAL("itemDoubleClicked(QTableWidgetItem*)"),self.table_item_double_clicked)
+		
+	def table_item_double_clicked(self,item):
+		if hasattr(self.table_widget,"convert_text"):
+			self.target().display_file( self.table_widget.convert_text(str(item.text())))
+		else:
+			print "nothing"
 
 class UrlEventHandler:
 	'''

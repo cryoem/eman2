@@ -163,19 +163,29 @@ class EMModuleFromFile(object):
 		file_type = Util.get_filename_ext(filename)
 		em_file_type = EMUtil.get_image_ext_type(file_type)
 		
+		if not file_exists(filename): return None
+		
 		if force_plot and force_2d:
 			# ok this sucks but it suffices for the time being
 			print "Error, the force_plot and force_2d options are mutually exclusive"
 			return None
-		print "force plot is",force_plot
+		
 		if force_plot:
 			if isinstance(old,EMPlot2DModule): module = old
 			else: module = EMPlot2DModule(application=application)
 			module.set_data_from_file(filename)
 			return module
 		
-		if em_file_type != IMAGE_UNKNOWN:
-			data=EMData.read_images(filename)
+		if em_file_type != IMAGE_UNKNOWN or filename[:4] == "bdb:":
+			n = EMUtil.get_image_count(filename)
+			if n > 0:
+				a = EMData()
+				data=a.read_images(filename)
+			else:
+				data = EMData()
+				data.read_image(filename)
+				data = [data]
+				
 			if len(data) == 1: data = data[0]
 			
 			if force_2d or isinstance(data,EMData) and data.get_zsize()==1:

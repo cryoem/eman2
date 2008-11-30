@@ -69,6 +69,10 @@ class WorkFlowTask(QtCore.QObject):
 		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
 		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
 		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_close"),self.on_form_close)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("display_file"),self.on_display_file)
+		
+	def on_display_file(self,filename):
+		self.emit(QtCore.SIGNAL("display_file"),filename)	
 		
 	def on_form_ok(self,params):
 		for k,v in params.items():
@@ -667,17 +671,23 @@ class ParticleWorkFlowTask(WorkFlowTask):
 		'''
 		project_db = db_open_dict("bdb:project")	
 		project_names = project_db.get("global.micrograph_ccd_filenames",dfl=[])
+		print "here we are"
 		
-		return self.__make_particle_param_table(project_names)
-	
+		ptable,n = self.__make_particle_param_table(project_names)
+		setattr(ptable,"convert_text", ptable_convert_2)
+		setattr(ptable,"icon_type","single_image")
+		return ptable,n
+		
 	def get_particle_param_table(self):
 		'''
 		Inspects the particle databases in the particles directory, gathering their names, number of particles and dimenions. Puts the information in a ParamTable.
 		'''
 		project_names = self.get_particle_db_names(strip_ptcls=True)
 		
-		return self.__make_particle_param_table(project_names)
-	
+		ptable,n = self.__make_particle_param_table(project_names)
+		setattr(ptable,"convert_text", ptable_convert)
+		setattr(ptable,"icon_type","matrix_image")
+		return ptable,n
 	def __make_particle_param_table(self,project_names):
 		'''
 		Functionality used in two places (directly above)
@@ -782,8 +792,22 @@ class ParticleWorkFlowTask(WorkFlowTask):
 		p.append(pboxes)
 		p.append(pdims)
 		
-		return p,len(pnames)
+		setattr(p,"convert_text", ptable_convert_3)
+		setattr(p,"icon_type","matrix_image")
 		
+		return p,len(pnames)
+
+def ptable_convert(text):
+	return "bdb:particles#"+text+"_ptcls"
+
+def ptable_convert_2(text):
+	return text
+
+def ptable_convert_3(text):
+	return "bdb:particles#"+text
+
+def ptable_convert_4(text):
+	return "bdb:initial_models#"+text
 		
 class ParticleReportTask(ParticleWorkFlowTask):
 	'''
@@ -988,6 +1012,10 @@ class E2BoxerTask(ParticleWorkFlowTask):
 		p_reordered.append(pboxes)
 		p_reordered.extend(p[1:])
 		
+
+		setattr(p_reordered,"convert_text", ptable_convert_2)
+		setattr(p_reordered,"icon_type","single_image")
+		
 		
 		#p.append(pdims) # don't think this is really necessary
 		return p_reordered,len(nboxes)
@@ -1022,6 +1050,8 @@ class E2BoxerTask(ParticleWorkFlowTask):
 		p.append(pboxes)
 		p.append(pdims)
 		
+		setattr(p,"convert_text", ptable_convert_2)
+		setattr(p,"icon_type","single_image")
 		#p.append(pdvdims) # decided this wasn't necessary
 		
 		return p,len(db_dims)
@@ -1480,6 +1510,9 @@ class E2CTFWorkFlowTask(ParticleWorkFlowTask):
 			p.append(pphasedim)
 			p.append(pwiener)
 			p.append(pwienerdim)
+			
+		setattr(p,"convert_text", ptable_convert_3)
+		setattr(p,"icon_type","matrix_image")
 		
 		
 		return p,len(defocus)
@@ -2262,6 +2295,9 @@ class E2Refine2DReportTask(ParticleWorkFlowTask):
 			p.append(pptcls)
 			p.append(pdims)
 			
+			setattr(p,"convert_text", ptable_convert_2)
+			setattr(p,"icon_type","matrix_image")
+			
 			return p,len(class_files)
 		else:
 			return None,0
@@ -2621,6 +2657,9 @@ class InitialModelReportTask(ParticleWorkFlowTask):
 			p.append(pmean)
 			p.append(psigma)
 			
+			setattr(p,"convert_text", ptable_convert_4)
+			setattr(p,"icon_type","3d_image")
+			
 			return p,len(pnames)
 		else:
 			return None,0
@@ -2743,7 +2782,6 @@ class RefinementReportTask(ParticleWorkFlowTask):
 			break
 		
 		dirs.sort()
-		print dirs
 		for i in range(len(dirs)-1,-1,-1):
 			if len(dirs[i]) != 9:
 				dirs.pop(i)
@@ -2752,7 +2790,6 @@ class RefinementReportTask(ParticleWorkFlowTask):
 			else:
 				try: int(dirs[i][7:])
 				except: dirs.pop(i)
-		print dirs
 		# allright everything left in dirs is "refine_??" where the ?? is castable to an int, so we should be safe now
 		threed_files = []
 		threed_dims = []
@@ -2821,6 +2858,9 @@ class RefinementReportTask(ParticleWorkFlowTask):
 			p.append(pmin)
 			
 			
+			setattr(p,"convert_text", ptable_convert_2)
+			setattr(p,"icon_type","3d_image")
+			
 			return p,len(threed_files)
 		else:
 			return None,0
@@ -2852,7 +2892,8 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
 		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
 		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_close"),self.on_form_close)
-
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("display_file"),self.on_display_file)
+		
 	def get_params(self):
 	 	params = []
 		
