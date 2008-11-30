@@ -516,13 +516,13 @@ def cml_open_proj(stack, ir, ou, d_psi, lf, hf):
 
 	nprj = EMUtil.get_image_count(stack)                # number of projections
 	Prj = []                                            # list of projections
-	Ori = [-1] * 4 * nprj                              # orientation intiale (phi, theta, psi, index) for each projection
+	Ori = [-1] * 4 * nprj                              # orientation intial (phi, theta, psi, index) for each projection
 
 	image = EMData()
 	for i in xrange(nprj):
 		image.read_image(stack, i)
 
-		# read initiale angles if given
+		# read initial angles if given
 		try:	Ori[4*i], Ori[4*i+1], Ori[4*i+2], s2x, s2y = get_params_proj(image)
 		except:	pass
 		

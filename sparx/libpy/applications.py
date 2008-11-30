@@ -8308,7 +8308,7 @@ def find_struct(stack, out_seedname, ir, ou, delta, dpsi, lf, hf, rand_seed, max
 	running_time(t_start)
 	print_end_msg('find_struct')
 
-	return 1
+	return disc_now
 
 def extract_value( s ):
 	from string import atoi, atof
