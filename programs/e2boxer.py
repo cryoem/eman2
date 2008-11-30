@@ -401,6 +401,7 @@ def do_gauss_cmd_line_boxing(options):
 				
 			#print "img_name:",img_name
 			if ("bdb" == options.outformat):
+				img_name = boxable.get_image_file_name(options.outformat)
 				if db_check_dict(img_name):
 					if not(options.force):
 						print "db",img_name,"already exists, doing nothing. Use force to override this behavior"
