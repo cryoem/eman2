@@ -1356,8 +1356,6 @@ def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF):
 	else:
 		mask = None
 
-	print stack, N_start, N_stop
-
 	DATA = im.read_images(stack, range(N_start, N_stop))
 	ct   = 0
 	for i in xrange(N_start, N_stop):
