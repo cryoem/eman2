@@ -214,7 +214,7 @@ def write_e2ctf_output(options):
 			ctf=EMAN2Ctf()
 			ctf.from_string(db_parms[name][0])
 			process_stack(filename,phaseout,wienerout,not options.nonorm,options.oversamp,ctf,invert=options.invert)
-			if logid : E2progress(logid,float(i)/len(options.filenames))
+			if logid : E2progress(logid,float(i+1)/len(options.filenames))
 	
 def pspec_and_ctf_fit(options,debug=False):
 	"Power spectrum and CTF fitting"
@@ -249,7 +249,7 @@ def pspec_and_ctf_fit(options,debug=False):
 			Util.save_data(0,ds,ctf.snr,"ctf.snr.txt")
 			
 		img_sets.append((filename,ctf,im_1d,bg_1d,im_2d,bg_2d))
-		if logid : E2progress(logid,float(i)/len(options.filenames))
+		if logid : E2progress(logid,float(i+1)/len(options.filenames))
 		
 	project_db = db_open_dict("bdb:project")
 	project_db["global.microscope_voltage"] = options.voltage

@@ -169,7 +169,7 @@ class EMFormWidget(QtGui.QWidget):
 		groupbox = QtGui.QGroupBox(paramtable.desc_short)
 		groupbox.setToolTip(paramtable.desc_long)
 		groupbox.setLayout(hbl)
-		layout.addWidget(groupbox,1)
+		layout.addWidget(groupbox,10)
 		
 		
 		self.connect(table_widget, QtCore.SIGNAL("itemDoubleClicked(QTableWidgetItem*)"),self.table_item_double_clicked)
@@ -201,7 +201,7 @@ class EMFormWidget(QtGui.QWidget):
 		groupbox.setToolTip(param.desc_long)
 		groupbox.setLayout(hbl)
 		
-		layout.addWidget(groupbox)
+		layout.addWidget(groupbox,0)
 
 		self.output_writers.append(FloatListParamWriter(param.name,list_widget))
 	
@@ -234,7 +234,7 @@ class EMFormWidget(QtGui.QWidget):
 		groupbox.setToolTip(param.desc_long)
 		groupbox.setLayout(hbl)
 		
-		layout.addWidget(groupbox)
+		layout.addWidget(groupbox,0)
 
 		self.output_writers.append(ListWidgetParamWriter(param.name,list_widget,type_of))
 		#layout.addLayout(hbl)
@@ -246,7 +246,7 @@ class EMFormWidget(QtGui.QWidget):
 		check_box = QtGui.QCheckBox(str(param.desc_short),self)
 		check_box.setChecked(bool(param.defaultunits))
 		check_box.setToolTip(param.desc_long)
-		hbl.addWidget(check_box)
+		hbl.addWidget(check_box,0)
 		layout.addLayout(hbl)
 		self.output_writers.append(BoolParamWriter(param.name,check_box))
 	
@@ -261,7 +261,7 @@ class EMFormWidget(QtGui.QWidget):
 			label.setToolTip(param.desc_long)
 			hbl.addWidget(label)
 			line_edit = QtGui.QLineEdit(str(param.defaultunits),self)
-			hbl.addWidget(line_edit)
+			hbl.addWidget(line_edit,0)
 			hbl.name = param.name
 			layout.addLayout(hbl)
 			self.output_writers.append(StringParamWriter(param.name,line_edit))
@@ -279,7 +279,7 @@ class EMFormWidget(QtGui.QWidget):
 			double_validator = QtGui.QDoubleValidator(self)
 			line_edit = QtGui.QLineEdit(str(param.defaultunits),self)
 			line_edit.setValidator(double_validator)
-			hbl.addWidget(line_edit)
+			hbl.addWidget(line_edit,0)
 			hbl.name = param.name
 			layout.addLayout(hbl)
 			self.output_writers.append(FloatParamWriter(param.name,line_edit))
@@ -297,7 +297,7 @@ class EMFormWidget(QtGui.QWidget):
 			pos_int_validator = QtGui.QIntValidator(self)
 			line_edit = QtGui.QLineEdit(str(param.defaultunits),self)
 			line_edit.setValidator(pos_int_validator)
-			hbl.addWidget(line_edit)
+			hbl.addWidget(line_edit,0)
 			hbl.name = param.name
 			layout.addLayout(hbl)
 			self.output_writers.append(IntParamWriter(param.name,line_edit))
@@ -317,7 +317,7 @@ class EMFormWidget(QtGui.QWidget):
 		groupbox.setToolTip(param.desc_long)
 		groupbox.setLayout(hbl)
 		
-		layout.addWidget(groupbox,0)
+		layout.addWidget(groupbox,1)
 
 		self.output_writers.append(TextParamWriter(param.name,text_edit))	
 	
@@ -336,7 +336,7 @@ class EMFormWidget(QtGui.QWidget):
 		text_edit = QtGui.QTextEdit("",self)
 		text_edit.setWordWrapMode(QtGui.QTextOption.NoWrap)
 		text_edit.setText(defaults)
-		hbl.addWidget(text_edit)
+		hbl.addWidget(text_edit,0)
 		vbl.addLayout(hbl)
 		
 		hbl2=QtGui.QHBoxLayout()
@@ -346,14 +346,14 @@ class EMFormWidget(QtGui.QWidget):
 		browse_button = QtGui.QPushButton("Browse",self)
 		hbl2.addWidget(browse_button)
 		clear_button = QtGui.QPushButton("Clear",self)
-		hbl2.addWidget(clear_button)
+		hbl2.addWidget(clear_button,0)
 		vbl.addLayout(hbl2)
 		
 		groupbox = QtGui.QGroupBox(param.desc_short)
 		groupbox.setToolTip(param.desc_long)
 		groupbox.setLayout(vbl)
 		
-		layout.addWidget(groupbox)
+		layout.addWidget(groupbox,0)
 		
 		self.event_handlers.append(UrlEventHandler(self,text_edit,browse_button,clear_button,self.parent().application(),param.desc_short))
 		self.output_writers.append(UrlParamWriter(param.name,text_edit))
@@ -371,7 +371,7 @@ class EMFormWidget(QtGui.QWidget):
 		groupbox = QtGui.QGroupBox(param.desc_short)
 		groupbox.setToolTip(param.desc_long)
 		groupbox.setLayout(hbl)
-		layout.addWidget(groupbox)
+		layout.addWidget(groupbox,0)
 		self.output_writers.append(ChoiceParamWriter(param.name,buttons,type(param.choices[0])))
 	
 	def __incorporate_float_with_choices(self,param,layout):
@@ -393,7 +393,7 @@ class EMFormWidget(QtGui.QWidget):
 				idx_default = i
 		combo.setCurrentIndex(idx_default)
 
-		hbl.addWidget(combo)
+		hbl.addWidget(combo,0)
 		layout.addLayout(hbl)
 		
 		self.output_writers.append(FloatChoiceParamWriter(param.name,combo))
@@ -416,7 +416,7 @@ class EMFormWidget(QtGui.QWidget):
 				idx_default = i
 		combo.setCurrentIndex(idx_default)
 
-		hbl.addWidget(combo)
+		hbl.addWidget(combo,0)
 		layout.addLayout(hbl)
 		
 		self.output_writers.append(IntChoiceParamWriter(param.name,combo))
@@ -429,7 +429,7 @@ class EMFormWidget(QtGui.QWidget):
 		hbl=QtGui.QHBoxLayout()
 		label = QtGui.QLabel(param.desc_short,self)
 		label.setToolTip(param.desc_long)
-		hbl.addWidget(label)
+		hbl.addWidget(label,0)
 				
 		combo = QtGui.QComboBox(self)
 		idx_default = 0
@@ -439,7 +439,7 @@ class EMFormWidget(QtGui.QWidget):
 				idx_default = i
 		combo.setCurrentIndex(idx_default)
 
-		hbl.addWidget(combo)
+		hbl.addWidget(combo,0)
 		layout.addLayout(hbl)
 		
 		self.output_writers.append(StringChoiceParamWriter(param.name,combo))
@@ -450,10 +450,10 @@ class EMFormWidget(QtGui.QWidget):
 		hbl.addWidget(label)
 		
 		ok_button = QtGui.QPushButton("Ok",self)
-		ok_button.setToolTip("When you click ok the values in the form are sent to the calling program in a dictionary")
+		ok_button.setToolTip("When you click ok the values in the form are sent to the calling program")
 		hbl.addWidget(ok_button)
 		cancel_button = QtGui.QPushButton("Cancel",self)
-		hbl.addWidget(cancel_button)
+		hbl.addWidget(cancel_button,0)
 		layout.addLayout(hbl)
 		QtCore.QObject.connect(ok_button,QtCore.SIGNAL("clicked(bool)"),self.ok_pressed)
 		QtCore.QObject.connect(cancel_button,QtCore.SIGNAL("clicked(bool)"),self.cancel_pressed)

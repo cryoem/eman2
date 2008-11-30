@@ -83,6 +83,7 @@ def main():
 	parser.add_option("--classraligncmp",type="string",help="The comparitor used by the second stage aligner in class averageing. Default is dot:normalize=1.",default="dot:normalize=1")
 	parser.add_option("--classaverager",type="string",help="The averager used to generate the class averages. Default is \'image\'.",default="image")
 	parser.add_option("--classcmp",type="string",help="The name and parameters of the comparitor used to generate similarity scores, when class averaging. Default is \'dot:normalize=1\'", default="dot:normalize=1")
+	parser.add_option("--classnormproc",type="string",default="normalize.edgemean",help="Normalization applied during class averaging")
 	
 	
 	#options associated with e2make3d.py
@@ -91,6 +92,7 @@ def main():
 	parser.add_option("--m3dkeep", type=float, help="The percentage of slices to keep in e2make3d.py")
 	parser.add_option("--m3dkeepsig", type=float, default=1.0, help="The standard deviation alternative to the --m3dkeep argument")
 	parser.add_option("--m3diter", type=int, default=4, help="The number of times the 3D reconstruction should be iterated")
+	parser.add_option("--m3dpreprocess", type=string, default="normalize.edgemean", help="Normalization processor applied before 3D reconstruction")
 	
 	(options, args) = parser.parse_args()
 	
