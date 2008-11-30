@@ -137,7 +137,7 @@ def main():
 					help="Applies the radial structure factor of the 1st image to the 2nd, the 3rd to the 4th, etc") 
 	parser.add_option("--split", metavar="n", type="int",
 					help="Splits the input file into a set of n output files")
-	parser.add_option("--verbose", metavar="n", type="int", help="verbose level [1-4]")
+	parser.add_option("--verbose", metavar="n", type="int", help="verbose level [0-4]",default=1)
 	parser.add_option("--plane", metavar=threedplanes, type="string", default='xy',
                       help="Change the plane of image processing, useful for processing 3D mrcs as 2D images.")
 	parser.add_option("--writejunk", action="store_true", help="Writes the image even if its sigma is 0.", default=False)
@@ -253,8 +253,6 @@ def main():
 				#d.read_image(infile,0, HEADER_AND_DATA, roi)
 				d.set_size(tomo_ny,tomo_nz,1)
 
-		nx = d.get_xsize()
-		ny = d.get_ysize()
 		
 		sigma = d.get_attr("sigma").__float__()
 		if sigma == 0:
@@ -268,6 +266,9 @@ def main():
 
 		for option1 in optionlist:
 			
+			nx = d.get_xsize()
+			ny = d.get_ysize()
+		
 			if option1 == "apix":
 				apix = options.apix
 				d.set_attr('apix_x', apix)

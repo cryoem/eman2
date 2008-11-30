@@ -232,6 +232,7 @@ def db_read_images(fsp,*parms):
 	if fsp[:4].lower()=="bdb:" :
 		db,keys=db_open_dict(fsp,True,True)
 		if len(parms)>1: nodata=parms[1]
+		else: nodata=0
 		if keys:
 			if len(parms)>0 :
 				if not parms[0] or len(parms[0])==0 : parms[0]=keys
