@@ -2220,7 +2220,7 @@ class E2Refine2DTask(ParticleWorkFlowTask):
 	 		mesbox.exec_()
 	 		return None
 	 	
-	 	# if we make it here we are definitely good to go
+	 	# if we make it here we are almost definitely good to go, the only thing that can fail is the e2bdb or e2proc2d commands
 	 	options.path = numbered_path("r2d",True)
 	 	bdb_success, bdb_cmd = self.make_v_stack(options)
 	 	if bdb_success:
@@ -2242,7 +2242,7 @@ class E2Refine2DTask(ParticleWorkFlowTask):
 	 		else: options.input =  "bdb:"+options.path+"#all"
 	 		
 	 		options.filenames = [] # this is so spawn_task doesn't supply args to e2refine2d.py
-	 		return options # THIS IS IS, THE POINT OF SUCCESS - returning this means e2refine2d.py is good to go using the given parameters
+	 		return options # THIS IS IT, THE POINT OF SUCCESS - returning this means e2refine2d.py is good to go using the given parameters
 	 	else:
 	 		mesbox.setText("e2bdb.py command failed. The command was\n" + bdb_cmd +"\nTry again please. If the failure occurs a second time please contact developers")
 	 		mesbox.exec_()
@@ -2865,7 +2865,7 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 					cmd = "e2proc2d.py"
 		 			cmd += " "+name
 		 			cmd += " "+getattr(options,attr)
-		 			success = not os.system(cmd)
+		 			success = not (os.system(cmd) in (0,12))
 		 			if not success:
 		 				return False,cmd
 		 			else:
@@ -2887,7 +2887,7 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 	 	print "executing cmd", cmd
 	 	
 	 	self.application().setOverrideCursor(Qt.BusyCursor)
-	 	success = not os.system(cmd)
+	 	success = not (os.system(cmd) in (0,12))
 	 	self.application().setOverrideCursor(Qt.ArrowCursor)
 	 	
 	 	setattr(options,attr,"bdb:"+options.path+"#"+out_name) # Note important 
