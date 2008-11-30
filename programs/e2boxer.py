@@ -137,6 +137,7 @@ for single particle analysis."""
 	parser.add_option("--ctf_edge",default=False,help="Edge for CTF determination")
 	parser.add_option("--ctf_overlap",default=False,help="Overlap value for CTF determination")
 	parser.add_option("--out_file",default=False,help="File to write particles to")
+	parser.add_option("--out_dir",default=False,help="Directory to write particle files to")
 	
 	(options, args) = parser.parse_args()
 	
@@ -313,22 +314,43 @@ def do_gauss_cmd_line_boxing(options):
 			except ValueError:
 				print "could not convert overlap value. bad value",options.ctf_overlap,". exiting!"
 				sys.exit(1)
-		if (options.out_file):
-			try:
-				if ("bdb" == options.outformat):
-					if not(options.out_file.startswith("bdb:")):
-						print "outfile format does not match outformat! assuming correct outfile"
-					parm_dict["out_file"] = options.out_file
 
-				elif ("hdf" == options.outformat):
-					if not(options.out_file.endswith(".hdf")):
-						print "outfile format does not match outformat! assuming correct outfile"
+	if (options.out_file):
+		try:
+			if ("bdb" == options.outformat):
+				if not(options.out_file.startswith("bdb:")):
+					print "outfile format does not match outformat! assuming correct outfile"
 					parm_dict["out_file"] = options.out_file
-					
-			except:
-				print "could not set output file. exiting!"
-				sys.exit(1)
+				else:
+					parm_dict["out_file"] = options.out_file
+			elif ("hdf" == options.outformat):
+				if not(options.out_file.endswith(".hdf")):
+					print "outfile format does not match outformat! assuming correct outfile"
+					parm_dict["out_file"] = options.out_file
+				else:
+					parm_dict["out_file"] = options.out_file
+			else:
+				parm_dict["out_file"] = options.out_file
+				print "warning: may have unrecognized file format for output file!"
+				
+		except:
+			print "could not set output file. exiting!"
+			sys.exit(1)
 		
+	if (options.out_dir):
+		try:
+			import os.path, os
+			
+			if (os.path.lexists(os.path.abspath(options.out_dir))):
+				parm_dict["out_dir"] = os.path.abspath(options.out_dir)+os.sep
+			else:
+				# make the dir. if this fails, we go to default cwd in the except clause
+				os.mkdir(os.path.abspath(options.out_dir))
+				parm_dict["out_dir"] = os.path.abspath(options.out_dir)+os.sep
+			    
+		except:
+			print "could not set output directory. using cwd!"
+			parm_dict["out_dir"] = os.getcwd() + os.sep
 
 	# PawelAutoBoxer is changed to allow passing in of a parameter dictionary
 	#    as additional argument....
@@ -367,7 +389,16 @@ def do_gauss_cmd_line_boxing(options):
 			# we don't want to use boxable.write_box_images, since these don't store all information.
 			#    do all this manually, then, but the code follows Boxable.write_box_images
 			from utilities import set_params2D
-			img_name = boxable.get_image_file_name(options.outformat)
+			#img_name = boxable.get_image_file_name(options.outformat)
+			if (options.out_dir):
+				img_name = parm_dict["out_dir"] + boxable.get_image_file_name(options.outformat)
+			else:
+				from os import getcwd,mkdir,sep
+				from os.path import abspath, lexists
+				img_name = abspath(getcwd()) + sep + "particles" + sep + boxable.get_image_file_name(options.outformat)
+				if not(lexists(getcwd()+sep+"particles")):
+				       mkdir(getcwd()+sep+"particles")
+				
 			#print "img_name:",img_name
 			if ("bdb" == options.outformat):
 				if db_check_dict(img_name):
