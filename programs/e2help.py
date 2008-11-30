@@ -100,7 +100,7 @@ Interactive help on a variety of topics."""
 			k=l.keys()
 			k.sort()
 			for i in k:
-				print "%s :"%i
+				print "%s : %s"%(i, l[i][0])
 				for j in range(1,len(l[i]),3): 
 					print "\t%s(%s) - %s"%(l[i][j],l[i][j+1],l[i][j+2])
 		else :
