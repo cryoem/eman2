@@ -398,7 +398,7 @@ class EMImage3DModule(EMImage3DGUIModule):
 		
 		self.emit_events = False
 		
-		self.perspective = True
+		self.perspective = False
 		
 	def __del__(self):
 		pass
@@ -450,6 +450,7 @@ class EMImage3DModule(EMImage3DGUIModule):
 		self.vdtools.update(1,1)
 		glPopMatrix()
 		
+		dz = None
 		if not self.perspective:
 			glMatrixMode(GL_PROJECTION)
 			glPushMatrix() 
@@ -457,6 +458,7 @@ class EMImage3DModule(EMImage3DGUIModule):
 			
 			glMatrixMode(GL_MODELVIEW)
 		
+		glPushMatrix()
 		self.cam.position()
 		
 		
@@ -465,6 +467,7 @@ class EMImage3DModule(EMImage3DGUIModule):
 			i.render()
 			glPopMatrix()
 		
+		glPopMatrix()
 		if not self.perspective:
 			glMatrixMode(GL_PROJECTION)
 			glPopMatrix()
@@ -822,8 +825,9 @@ class EM3DAdvancedInspector(QtGui.QWidget):
 		self.vbl.setObjectName("vbl")
 		
 		self.persbut = QtGui.QRadioButton("Perspective")
-		self.persbut.setChecked(True)
+		
 		self.orthbut = QtGui.QRadioButton("Orthographic")
+		self.orthbut.setChecked(True)
 		
 		self.groupbox = QtGui.QVBoxLayout()
 		self.groupbox.addWidget(self.persbut)

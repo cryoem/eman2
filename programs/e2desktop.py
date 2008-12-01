@@ -463,6 +463,7 @@ class Translation:
 			self.translation_animation = None
 	
 	def animation_done_event(self,child):
+		print "animation done event",self
 		self.child.unlock_texture()
 	
 	def get_translation(self):
@@ -489,6 +490,9 @@ class Translation:
 			self.translation_animation = None 
 			return False
 
+	def is_animated(self):
+		return self.translation_animation.is_animated()
+		
 class Rotation:
 	def __init__(self,child,axis=[1,0,0]):
 		self.child = child
@@ -906,6 +910,7 @@ class EMFrame(EMWindowNode,EMRegion):
 		EMRegion.__init__(self,geometry)
 		self.children = []
 		self.current = None
+		self.in_focus = None
 		
 		
 	def updateGL(self):
@@ -921,8 +926,14 @@ class EMFrame(EMWindowNode,EMRegion):
 		if self.current != current:
 			if self.current != None:
 				self.current.leaveEvent(None)
+				
+		else:
+			self.set_no_focus()
 		
 		self.current = current
+		
+		
+	def set_no_focus(self):pass
 	
 	def mousePressEvent(self, event):
 		#this could be optimized
@@ -1080,13 +1091,95 @@ class EMDesktopApplication(EMApplication):
 		owner = EMDesktop.main_widget.get_owner(child)
 		if owner != None: return True
 		else: return False
+
+class FocusAnimation:
+	def __init__(self):
+		self.focus_animation = None
+		self.z = -35
+		self.hold_focus = None
 		
-class EMWorkFlowFrame(EMFrame):
+	def is_focused(self):
+		return self.hold_focus or self.in_focus
+	
+	def new_focus(self):
+		t = Translation(self)
+		old_pos = (0,0,0)
+		new_pos = (0,0,self.z)
+		
+		t.seed_translation_animation(old_pos,new_pos)
+		
+		self.focus_animation = t
+			
+	def lost_focus(self):
+		if self.focus_animation != None:
+			return # no support today
+#			target = self.focus_animation.p2[2]
+#			begin = self.focus_animation.p1[2]
+#			present = self.focus_animation.translation[2]
+#			
+#			if target > begin:
+#				new_target = 0
+#			else:
+#				new_target = self.z
+#			
+#			print "going from ",present,new_target
+#			t = Translation(self)
+#			old_pos = (0,0,present)
+#			new_pos = (0,0,new_target)
+#			
+#			t.seed_translation_animation(old_pos,new_pos)
+#		
+#			print "it is",t
+#			self.focus_animation = t
+		elif self.in_focus != None:
+			t = Translation(self)
+			old_pos = (0,0,self.z)
+			new_pos = (0,0,0)
+		
+			t.seed_translation_animation(old_pos,new_pos)
+		
+			self.focus_animation = t
+			self.hold_focus = self.in_focus
+		else:
+			pass
+#			print "got nothing"
+
+
+	def lock_texture(self):pass # for the Translation animation
+	def unlock_texture(self):
+		self.focus_animation = None
+	
+#		print "in unlock texture"
+#		if self.in_focus == None:
+#			print "set self.focus_animation"
+#			self.focus_animation = None 
+#			#pass # for the Translation animation
+#		else: print "self in focus wasn't none"
+#	
+	def focus_transform(self):
+		if self.focus_animation != None and self.focus_animation.is_animated():
+			self.focus_animation.transform()
+		else:
+			self.focus_animation = None
+			if self.hold_focus != None:
+				self.hold_focus = None
+				return
+			glTranslate(0,0,self.z)
+#			if self.focus_animation.is_animated():
+#				
+#			else:
+#				return
+#				print "set focus animation None"
+#				#self.focus_animation=None
+#				#
+
+class EMWorkFlowFrame(EMFrame,FocusAnimation):
 	'''
 	A special frame that only has a top bar, for managing the workflow stuff
 	'''
 	def __init__(self,parent,geometry=Region(0,0,0,0)):
 		EMFrame.__init__(self,parent,geometry)
+		FocusAnimation.__init__(self)
 		EMDesktop.main_widget.register_resize_aware(self)
 		self.display_frames = []
 		self.top_bar = TopWidgetBar(self)
@@ -1100,6 +1193,7 @@ class EMWorkFlowFrame(EMFrame):
 
 		if hint == "workflow":
 			self.top_bar.attach_child(child.get_gl_widget(EMDesktop.main_widget,EMDesktop.main_widget))
+			QtCore.QObject.connect(child,QtCore.SIGNAL("in_focus"),self.child_in_focus)
 			self.child_mappings[child] = self.top_bar
 		else:
 			print "only workflow hint is understood form the EMWorkFlowFrame"
@@ -1119,11 +1213,30 @@ class EMWorkFlowFrame(EMFrame):
 	
 	def closeEvent(self,event):
 		pass
+
 	
-class EMDesktopFrame(EMFrame):
+	def child_in_focus(self,s):
+		new_focus = None
+		if s == "top":
+			new_focus = self.top_bar
+				
+		if new_focus != self.in_focus:
+			self.in_focus = new_focus
+			self.new_focus()	
+		else:
+			pass
+		
+	def set_no_focus(self):
+		if self.in_focus != None:
+			self.lost_focus()
+			self.in_focus = None
+
+		
+class EMDesktopFrame(EMFrame,FocusAnimation):
 	image = None
 	def __init__(self,parent,geometry=Region(0,0,0,0)):
 		EMFrame.__init__(self,parent,geometry)
+		FocusAnimation.__init__(self)
 		self.display_frames = []
 		
 		EMDesktop.main_widget.register_resize_aware(self)
@@ -1145,7 +1258,8 @@ class EMDesktopFrame(EMFrame):
 		self.frame_dl = 0
 		self.glbasicobjects = EMBasicOpenGLObjects()
 		self.borderwidth=10.0
-		
+	
+		self.temporary_transformer = None # something that I have to do given time constraints
 		self.type_name = None # identifier string
 		self.module = None # identifier module, a Python object of some kind
 	def __del__(self):
@@ -1199,6 +1313,7 @@ class EMDesktopFrame(EMFrame):
 		
 		if hint == "dialog" or hint == "inspector":
 			self.left_side_bar.attach_child(child.get_gl_widget(EMDesktop.main_widget,EMDesktop.main_widget))
+			QtCore.QObject.connect(child,QtCore.SIGNAL("in_focus"),self.child_in_focus)
 			self.child_mappings[child] = self.left_side_bar
 		elif hint == "image" or hint == "plot":
 			self.display_frame.attach_child(child.get_gl_widget(EMDesktop.main_widget,EMDesktop.main_widget))
@@ -1206,18 +1321,43 @@ class EMDesktopFrame(EMFrame):
 		elif hint == "rotor":
 			#print "attaching right side bar"
 			self.right_side_bar.attach_child(child.get_gl_widget(EMDesktop.main_widget,EMDesktop.main_widget))
+			QtCore.QObject.connect(child,QtCore.SIGNAL("in_focus"),self.child_in_focus)
 			self.child_mappings[child] = self.right_side_bar
 		elif hint == "settings":
 			self.bottom_bar.attach_child(child.get_gl_widget(EMDesktop.main_widget,EMDesktop.main_widget))
+			QtCore.QObject.connect(child,QtCore.SIGNAL("in_focus"),self.child_in_focus)
 			self.child_mappings[child] = self.bottom_bar
 		elif hint == "workflow":
 			self.top_bar.attach_child(child.get_gl_widget(EMDesktop.main_widget,EMDesktop.main_widget))
+			QtCore.QObject.connect(child,QtCore.SIGNAL("in_focus"),self.child_in_focus)
 			self.child_mappings[child] = self.top_bar
 		elif hint == "form":
 			self.form_display_frame.attach_child(child.get_gl_widget(EMDesktop.main_widget,EMDesktop.main_widget))
 			self.child_mappings[child] = self.form_display_frame
 		else:
 			print "unsupported",hint
+	
+	def child_in_focus(self,s):
+		new_focus = None
+		if s == "left":
+			new_focus = self.left_side_bar
+		elif s == "right":
+			new_focus = self.right_side_bar
+		elif s == "bottom":
+			new_focus = self.bottom_bar
+		elif s == "top":
+			new_focus = self.top_bar
+			
+		if new_focus != self.in_focus:
+			self.in_focus = new_focus
+			self.new_focus()	
+		else:
+			pass
+		
+	def set_no_focus(self):
+		if self.in_focus != None:
+			self.lost_focus()
+			self.in_focus = None
 	
 	def detach_gl_child(self,child):
 		try:
@@ -1333,7 +1473,23 @@ class EMDesktopFrame(EMFrame):
 
 		glPushMatrix()
 		glTranslatef(0.,0.,self.parent.z_opt)
-		EMFrame.draw(self)
+		if self.temporary_transformer != None:
+			self.temporary_transformer.focus_transform()
+		if self.in_focus == None and self.hold_focus ==None : EMFrame.draw(self)
+		else:
+			glPushMatrix()
+			if self.in_focus != None: self.in_focus.draw()
+			elif self.hold_focus != None: self.hold_focus.draw()
+			glPopMatrix()
+			glPushMatrix()
+			self.focus_transform()
+			for child in self.children:
+				if child == self.in_focus: continue
+				if child == self.hold_focus: continue
+				glPushMatrix()
+				child.draw()
+				glPopMatrix()
+			glPopMatrix()
 		glPopMatrix()
 		
 		
@@ -1560,8 +1716,7 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouterToList,Animator,EMGLProjection
 			browser_settings = EMBrowserSettings(self.current_desktop_frame.display_frame,self.application)
 		
 	def start_frame_entry_exit_animation(self,entry_frame,exit_frame):
-		
-		
+	
 		entry_idx = -1
 		exit_idx = -1
 		for i,frame in enumerate(self.desktop_frames):
@@ -1816,9 +1971,20 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouterToList,Animator,EMGLProjection
 				glPopMatrix()
 		else:
 			normal = True
-		if normal: self.current_desktop_frame.draw()
+		if normal: 
+			if self.work_flow_frame.is_focused():
+				self.current_desktop_frame.temporary_transformer = self.work_flow_frame
+			else:
+				self.current_desktop_frame.temporary_transformer = None
+			self.current_desktop_frame.draw()
 		
-		self.work_flow_frame.draw()
+		if self.current_desktop_frame.is_focused():
+		  	glPushMatrix()
+			self.current_desktop_frame.focus_transform()
+			self.work_flow_frame.draw()
+			glPopMatrix()
+		else:
+			self.work_flow_frame.draw()
 		glPopMatrix()
 		
 	def update(self): self.updateGL()
@@ -1852,13 +2018,14 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouterToList,Animator,EMGLProjection
 		#pass
 		glMatrixMode(GL_PROJECTION)
 		glLoadIdentity()
+		dis = 5000 # this pushes the volume back making it always behind everything else in the desktop
 		self.startz = self.get_z_opt()
 		self.endz = 2*self.get_z_opt()
 		
 		[width,height] = self.get_render_dims_at_depth( -1.*self.get_z_opt())
 		width /= 2
 		height /=2
-		glOrtho(-width,width,-height,height,self.startz,self.endz)
+		glOrtho(-width,width,-height,height,self.startz-dis,self.endz)
 		glMatrixMode(GL_MODELVIEW)
 		
 	def load_perspective(self):
@@ -1868,7 +2035,7 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouterToList,Animator,EMGLProjection
 		glLoadIdentity()
 		self.startz = self.get_z_opt()-500
 		self.endz = 2*self.get_z_opt()
-		gluPerspective(self.fov,self.get_aspect(),self.startz,self.endz)
+		gluPerspective(self.fov,self.get_aspect(),self.startz,self.endz+500)
 		glMatrixMode(GL_MODELVIEW)
 		
 		
@@ -1969,84 +2136,6 @@ class EMBrowserSettingsInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.apply_button, QtCore.SIGNAL("clicked(bool)"), target.apply_row_col)
 		QtCore.QObject.connect(self.clear_button, QtCore.SIGNAL("clicked(bool)"), target.clear_all)
 		QtCore.QObject.connect(self.show_grid, QtCore.SIGNAL("toggled(bool)"), target.show_grid)
-
-class EMDesktopTaskWidget(object):
-	def __new__(cls,parent,application):
-		widget = EMDesktopTaskInspector(parent)
-		widget.show()
-		widget.hide()
-		widget.resize(200,200)
-		#gl_view = EMQtGLView(EMDesktop.main_widget,widget)
-		module = EMQtWidgetModule(widget,application)
-		application.show_specific(module)
-		#desktop_task_widget = EM2DGLWindow(gl_view)
-		return module
-
-class EMDesktopTaskInspector(QtGui.QWidget):
-	def get_desktop_hint(self):
-		return "inspector"
-	
-	def __init__(self,target) :
-		QtGui.QWidget.__init__(self,None)
-		self.target=target
-		
-		
-		self.vbl = QtGui.QVBoxLayout(self)
-		self.vbl.setMargin(0)
-		self.vbl.setSpacing(6)
-		self.vbl.setObjectName("vbl")
-		
-		self.hbl_buttons2 = QtGui.QHBoxLayout()
-		
-		self.tree_widget = QtGui.QTreeWidget(self)
-		self.tree_widget_entries = []
-		
-		spr = QtGui.QTreeWidgetItem(QtCore.QStringList("SPR"))
-		self.tree_widget_entries.append(spr)
-		self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Browse")))
-		self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Boxer")))
-		self.tree_widget.insertTopLevelItems(0,self.tree_widget_entries)
-		
-		
-#		spr_tasks = QtGui.QTreeWidgetItem(spr)
-#		spr_tasks.setText(0,"Acquire Particles")
-#		spr_tasks.setText(1,"CTF correction")
-#		spr_tasks.setText(2,"Initial model")
-#		spr_tasks.setText(3,"Refinement")
-		
-		spr_list = []
-		ap = QtGui.QTreeWidgetItem(QtCore.QStringList("Acquire Particles"))
-		spr_list.append(ap)
-		spr_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("CTF correction")))
-		spr_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Initial model")))
-		spr_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Refinement")))
-		spr.addChildren(spr_list)
-		
-		ap_list = []
-		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Boxer")))
-		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Import")))
-		ap.addChildren(ap_list)
-		
-		self.tree_widget.setHeaderLabel("Choose a task")
-		
-		self.hbl_buttons2.addWidget(self.tree_widget)
-		
-		self.close = QtGui.QPushButton("Close")
-		
-		self.vbl.addLayout(self.hbl_buttons2)
-		self.vbl.addWidget(self.close)
-		
-		QtCore.QObject.connect(self.tree_widget, QtCore.SIGNAL("itemDoubleClicked(QTreeWidgetItem*,int)"), self.tree_widget_double_click)
-		QtCore.QObject.connect(self.close, QtCore.SIGNAL("clicked()"), self.target.close)
-		
-	def tree_widget_double_click(self,tree_item,i):
-		task = tree_item.text(0)
-		if task == "Browse":
-			self.target.add_browser_frame()
-		if task == "Thumb":
-			self.target.add_selector_frame()
-		elif task == "Boxer":
-			self.target.add_boxer_frame()
 		
 class ob2dimage:
 	def __init__(self,target,pixmap):
@@ -2267,11 +2356,12 @@ class SideTransform:
 	INACTIVE = 1
 	ANIMATED = 2
 	def __init__(self,child):
-		self.child = child
+		self.child = weakref.ref(child)
 		self.rotation_animation = None
 		self.scale_animation = None
 		self.state = SideTransform.INACTIVE
 		self.xy_scale = 1.0
+		self.string = "setme"
 		
 		self.rotation = 0 # supply these yourself, probably
 		self.default_rotation = 0 # supply these yourself, probably
@@ -2287,7 +2377,9 @@ class SideTransform:
 	
 	def animation_done_event(self,child):
 		#print "del side transform"
-		self.child.unlock_texture()
+		self.has_focus() # this is more a question
+		self.child().parent().force_texture_update()
+		self.child().unlock_texture()
 
 	def get_xy_scale(self):
 		return self.xy_scale
@@ -2308,7 +2400,7 @@ class SideTransform:
 		animation = XYScaleAnimation(self,self.xy_scale,scale)
 		self.scale_animation = animation
 		EMDesktop.main_widget.register_animatable(animation)
-		self.child.lock_texture()
+		self.child().lock_texture()
 		
 	def seed_rotation_animation_event(self,force_inactive=False,force_active=False):
 		
@@ -2336,7 +2428,7 @@ class SideTransform:
 		self.rotation_animation = animation
 		self.state =  SideTransform.ANIMATED
 		EMDesktop.main_widget.register_animatable(animation)
-		self.child.lock_texture()
+		self.child().lock_texture()
 		
 	def is_animatable(self):
 		if self.rotation_animation != None: return not self.rotation_animation.is_animated()
@@ -2369,20 +2461,24 @@ class SideTransform:
 		#self.child.draw()
 		#glPopMatrix()
 		#glTranslate(0,-self.xy_scale*self.child.height_inc_border(),0)
-	def has_focus(self): raise # must supply this, see how the fun
+	def has_focus(self):
+			focus = self.rotation == self.target_rotation
+			if focus:
+				self.child().emit(QtCore.SIGNAL("in_focus"),self.string)
+			return focus # This seams to be uniform...
+	
 
 class BottomWidgetBar(SideWidgetBar):
 	def __init__(self,parent):
 		SideWidgetBar.__init__(self,parent)
+		
 		
 	def draw(self):
 		if len(self.children) != 1 : 
 			#print len(self.children)
 			return
 		depth_back_on = False
-		if self.transformers[0].has_focus():
-			depth_back_on = glIsEnabled(GL_DEPTH_TEST)
-			glDisable(GL_DEPTH_TEST)
+		if self.transformers[0].has_focus(): pass # still have to call this 
 		child = self.children[0]
 		glPushMatrix()
 		
@@ -2391,9 +2487,6 @@ class BottomWidgetBar(SideWidgetBar):
 		self.transformers[0].transform()
 		child.draw()
 		glPopMatrix()
-		
-		if self.transformers[0].has_focus():
-			if depth_back_on: glEnable(GL_DEPTH_TEST)
 		
 	def attach_child(self,new_child):
 		#print "attached child"
@@ -2412,14 +2505,17 @@ class BottomWidgetBar(SideWidgetBar):
 			self.rotation = -90
 			self.default_rotation = -90
 			self.target_rotation = 0
+			self.string = "bottom"
 			
 		def transform(self):
 			SideTransform.transform(self)
 			glRotate(self.rotation,1,0,0)
 		
-		
 		def has_focus(self):
-			return self.rotation == self.target_rotation
+			focus = self.rotation == self.target_rotation
+			if focus:
+				self.child().emit(QtCore.SIGNAL("in_focus"),"bottom")
+			return focus # This seams to be uniform...
 		
 class TopWidgetBar(SideWidgetBar):
 	def __init__(self,parent):
@@ -2428,25 +2524,18 @@ class TopWidgetBar(SideWidgetBar):
 	def draw(self):
 		if len(self.children) == 0 : 
 			return
-		depth_back_on = False
-
-		#if self.transformers[0].has_focus():
-			#depth_back_on = glIsEnabled(GL_DEPTH_TEST)
-			#glDisable(GL_DEPTH_TEST)
-
+	
 		glPushMatrix()
 		glTranslate(-self.total_width/2,self.parent.height()/2.0-15,0)
 		for i,child in enumerate(self.children):
 			glPushMatrix()
 			child.correct_internal_translations()
 			self.transformers[i].transform()
+			if self.transformers[i].has_focus():pass
 			child.draw()
 			glPopMatrix()
 			glTranslate(child.width_inc_border(),0,0)
 		glPopMatrix()
-		
-		#if self.transformers[0].has_focus():
-			#if depth_back_on: glEnable(GL_DEPTH_TEST)
 		
 	def attach_child(self,new_child):
 		#print "attached child"
@@ -2471,14 +2560,20 @@ class TopWidgetBar(SideWidgetBar):
 			self.rotation = 90
 			self.default_rotation = 90
 			self.target_rotation = 0
+			self.string = "top"
 			
 		def transform(self):
 			SideTransform.transform(self)
 			glRotate(self.rotation,1,0,0)
-			glTranslate(0,-self.child.height(),0)
-		
+			glTranslate(0,-self.child().height(),0)
+			
 		def has_focus(self):
-			return self.rotation == self.target_rotation
+			focus = self.rotation == self.target_rotation
+			if focus:
+				self.child().emit(QtCore.SIGNAL("in_focus"),"top")
+			return focus # This seams to be uniform...
+		
+
 		
 class RightSideWidgetBar(SideWidgetBar):
 	def __init__(self,parent):
@@ -2490,10 +2585,7 @@ class RightSideWidgetBar(SideWidgetBar):
 		glPushMatrix()
 		glTranslate(self.parent.width()/2.0,self.parent.height()/2.0,0)
 		for i,child in enumerate(self.children):
-			depth_back_on = False
-			if self.transformers[i].has_focus():
-				depth_back_on = glIsEnabled(GL_DEPTH_TEST)
-				glDisable(GL_DEPTH_TEST)
+			if self.transformers[i].has_focus(): pass
 			glPushMatrix()
 			self.transformers[i].transform()
 			child.correct_internal_translations()
@@ -2501,8 +2593,6 @@ class RightSideWidgetBar(SideWidgetBar):
 			glPopMatrix()
 			#print child.height_inc_border(), child
 			glTranslate(0,-self.transformers[i].get_xy_scale()*child.height_inc_border(),0)
-			if self.transformers[i].has_focus():
-				if depth_back_on: glEnable(GL_DEPTH_TEST)
 		glPopMatrix()
 		
 	def attach_child(self,new_child):
@@ -2518,17 +2608,22 @@ class RightSideWidgetBar(SideWidgetBar):
 			self.rotation = -90
 			self.default_rotation = -90
 			self.target_rotation = 0
+			self.string = "right"
 			
 		def transform(self):
 			SideTransform.transform(self)
 			
-			glTranslate(0,-self.xy_scale*self.child.height_inc_border(),0)
+			glTranslate(0,-self.xy_scale*self.child().height_inc_border(),0)
 			glRotate(self.rotation,0,1,0)
-			glTranslate(-self.xy_scale*self.child.width()-6,0,0)
+			glTranslate(-self.xy_scale*self.child().width()-6,0,0)
 			glScale(self.xy_scale,self.xy_scale,1.0)
-		
+			
 		def has_focus(self):
-			return self.rotation == self.target_rotation
+			focus = self.rotation == self.target_rotation
+			if focus:
+				self.child().emit(QtCore.SIGNAL("in_focus"),"right")
+			return focus # This seams to be uniform...
+		
 		
 class LeftSideWidgetBar(SideWidgetBar):
 	def __init__(self,parent):
@@ -2538,19 +2633,13 @@ class LeftSideWidgetBar(SideWidgetBar):
 		glPushMatrix()
 		glTranslate(-self.parent.width()/2.0+6,self.parent.height()/2.0,0)
 		for i,child in enumerate(self.children):
-			depth_back_on = False
-			if self.transformers[i].has_focus():
-				#print "disabled depth testing"
-				depth_back_on = glIsEnabled(GL_DEPTH_TEST)
-				#glDisable(GL_DEPTH_TEST)
+			if self.transformers[i].has_focus():pass
 			glPushMatrix()
 			self.transformers[i].transform()
 			child.correct_internal_translations()
 			child.draw()
 			glPopMatrix()
 			glTranslate(0,-self.transformers[i].get_xy_scale()*child.height_inc_border(),0)
-			if self.transformers[i].has_focus():
-				if depth_back_on: glEnable(GL_DEPTH_TEST)
 		glPopMatrix()
 		
 	def attach_child(self,new_child):
@@ -2565,19 +2654,18 @@ class LeftSideWidgetBar(SideWidgetBar):
 			SideTransform.__init__(self,child)
 			self.rotation = 90
 			self.default_rotation = 90
+			self.string = "left"
 
 		def transform(self):
 			SideTransform.transform(self)
 			
-			glTranslate(0,-self.xy_scale*self.child.height_inc_border(),0)
+			glTranslate(0,-self.xy_scale*self.child().height_inc_border(),0)
 			glRotate(self.rotation,0,1,0)
-			#glTranslate(self.xy_scale*self.child.width_inc_border()/2.0,0,0)
+			#glTranslate(self.xy_scale*self.child().width_inc_border()/2.0,0,0)
 			glScale(self.xy_scale,self.xy_scale,1.0)
 			
-		def has_focus(self):
-			return self.rotation == self.target_rotation
-
-	
+		
+		
 	
 
 			

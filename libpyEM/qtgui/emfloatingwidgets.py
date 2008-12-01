@@ -991,7 +991,6 @@ class EMGLWindow:
 		return self.parent().get_gl_context_parent()
 	
 	def emit(self,*args,**kargs):
-		print "drawable emitting",self.drawable
 		self.parent().emit(*args,**kargs)
 	
 	def set_events_master(self,val=True):
@@ -1167,7 +1166,9 @@ class EMGLWindow:
 			self.cam.set_plane('xy')
 			self.cam.mouseMoveEvent(event)
 		elif self.mouse_event_target == self.drawable:
-			l=self.vdtools.mouseinwin(*self.mouse_in_win_args(event))
+			try:
+				l=self.vdtools.mouseinwin(*self.mouse_in_win_args(event))
+			except: return #REMOVE ME
 			qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
 			self.drawable.mouseMoveEvent(qme)
 		else: print "mouse move error" # this shouldn't happen
@@ -1993,6 +1994,10 @@ class EM2DQtGLWindow(EM2DGLWindow):
 		'''
 		:( hack
 		'''
+		if self.parent() == None:
+			#print "this should not hapen"
+			# REMOVE ME
+			return None
 		return [event.x(),self.parent().get_gl_context_parent().viewport_height()-event.y(),self.width(),self.height()]
 	
 	
@@ -2044,8 +2049,10 @@ class EMQtGLView(GLView):
 	
 	def __del__(self):
 		if (self.itex != 0 ):
-			self.parent().deleteTexture(self.itex)
-			self.itex = 0
+			try:
+				self.parent().deleteTexture(self.itex)
+				self.itex = 0
+			except: pass
 		if self.texture_dl != 0:
 			glDeleteLists(self.texture_dl,1)
 			self.texture_dl = 0
@@ -2079,7 +2086,13 @@ class EMQtGLView(GLView):
 			self.refresh_dl = True
 			if (self.itex != 0 ):
 				#passpyth
-				self.parent().get_gl_context_parent().deleteTexture(self.itex)
+				try:
+					self.parent().get_gl_context_parent().deleteTexture(self.itex)
+				except:
+					try:
+						glDeleteTextures(self.itex)
+					except:
+						pass
 			self.gen_texture = False
 			##print "binding texture"
 			#self.qwidget.setVisible(True)
@@ -2090,7 +2103,10 @@ class EMQtGLView(GLView):
 				pixmap = QtGui.QPixmap.grabWidget(self.qwidget.widget())
 			#self.qwidget.setVisible(False)
 			if (pixmap.isNull() == True ): print 'error, the pixmap was null'
-			self.itex = self.parent().get_gl_context_parent().bindTexture(pixmap)
+			try:
+				self.itex = self.parent().get_gl_context_parent().bindTexture(pixmap)
+			except:
+				pass
 			if ( self.itex == 0 ): print 'Error - I could not generate the texture'
 		
 			#self.decoration.set_force_update()

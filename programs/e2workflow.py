@@ -527,6 +527,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		for v in self.tasks.values():
 			v.closeEvent(None)
 			#self.application().close_specific(v)
+		print "clearing taskst",self.tasks
 		self.tasks = {}
 		self.event_managers = {}
 	
