@@ -5,9 +5,10 @@ from sparx import *
 from time import time
 from optparse import OptionParser
 
-def bootstrap_genbuf( prjfile, bufprefix, beg, end, finfo=None ):
+def bootstrap_genbuf( prjfile, bufprefix, beg, end, CTF, finfo=None ):
 	start_time = time()
-	istore = newfile_store( bufprefix, 4 )
+	npad = 4
+	istore = newfile_store( bufprefix, npad, CTF )
 	for i in xrange( beg, end ):
 		prj = get_im( prjfile, i ) 
 		istore.add_image( prj, prj.get_attr("xform.proj") )
@@ -16,8 +17,8 @@ def bootstrap_genbuf( prjfile, bufprefix, beg, end, finfo=None ):
 			finfo.flush()
 
 
-def bootstrap_insert( bufprefix, fftvols, wgtvols, mults, info=None):
-	ostore = newfile_store( bufprefix, 4 )
+def bootstrap_insert( bufprefix, fftvols, wgtvols, mults, CTF, info=None):
+	ostore = newfile_store( bufprefix, 4, CTF )
 	blocksize = 250
 	nvol = len(fftvols)
 	nprj = len(mults[0])
@@ -73,7 +74,7 @@ def bootstrap_finish( rectors, fftvols, wgtvols, volfile, iter, info=None ):
 
 
 
-def bootstrap_prepare( prjfile, nvol, snr ):
+def bootstrap_prepare( prjfile, nvol, snr, CTF ):
 	nx = get_im( prjfile, 0 ).get_xsize()
 	fftvols = [None]*nvol
 	wgtvols = [None]*nvol
@@ -81,8 +82,13 @@ def bootstrap_prepare( prjfile, nvol, snr ):
 	for i in xrange(nvol):
 		fftvols[i] = EMData()
 		wgtvols[i] = EMData()
-		params = {"size":nx, "npad":4, "snr":snr, "weight":wgtvols[i], "fftvol":fftvols[i]}
-		rectors[i] = Reconstructors.get( "nn4_ctf", params )
+		if CTF:
+			params = {"size":nx, "npad":4, "snr":snr, "weight":wgtvols[i], "fftvol":fftvols[i]}
+			rectors[i] = Reconstructors.get( "nn4_ctf", params )
+		else:
+			params = {"size":nx, "npad":4, "weight":wgtvols[i], "fftvol":fftvols[i]}
+			rectors[i] = Reconstructors.get( "nn4", params )
+		
 		rectors[i].setup()
 
 	return rectors, fftvols, wgtvols
@@ -157,9 +163,10 @@ def write_mults( fmults, iter, mults ):
 	fmults.flush()
 
 
-def bootstrap( prjfile, wgts, volprefix, bufprefix, nbufvol, niter, seedbase, nprj, snr, genbuf ) :
-	from mpi import mpi_comm_rank, mpi_comm_size, mpi_comm_split, MPI_COMM_WORLD
+def bootstrap( prjfile, wgts, outdir, bufprefix, nbufvol, niter, seedbase, nprj, snr, genbuf, sharebuf, CTF ) :
+	from mpi import mpi_barrier, mpi_comm_rank, mpi_comm_size, mpi_comm_split, MPI_COMM_WORLD
 	from random import seed
+
 
 	if( nprj==-1) :
 		nprj = EMUtil.get_image_count( prjfile )
@@ -167,15 +174,30 @@ def bootstrap( prjfile, wgts, volprefix, bufprefix, nbufvol, niter, seedbase, np
 	ncpu = mpi_comm_size( MPI_COMM_WORLD )
 	accu_prbs = prepare_wgts( wgts )
 
-	finfo=open( "progress%04d.txt" % myid, "w" )
 
-	if genbuf:
-		bootstrap_genbuf( prjfile, bufprefix, 0, nprj, finfo )
+	if myid==0:
+		import os
+		if os.path.exists(outdir):
+			os.system( "rm -rf " + outdir )
+		os.system( "mkdir " + outdir )
+
+	mpi_barrier( MPI_COMM_WORLD )
+
+
+
+	finfo=open( outdir+("/progress%04d.txt" % myid), "w" )
+
+	if genbuf and (myid==0 or (not sharebuf)):
+		bootstrap_genbuf( prjfile, bufprefix, 0, nprj, CTF, finfo )
 	
+	if genbuf and sharebuf:
+		mpi_barrier( MPI_COMM_WORLD )
+
 	myseed = seedbase + 10*myid
 
 	seed( seedbase + 10*myid )
-	volfile = "%s%04d.hdf" % (volprefix, myid)
+	volfile = outdir + ("/bsvol%04d.hdf" % myid)
+
 	for iter in xrange(niter):
 		finfo.write( "Iteration %d: \n" % iter )
 		finfo.flush()
@@ -184,8 +206,8 @@ def bootstrap( prjfile, wgts, volprefix, bufprefix, nbufvol, niter, seedbase, np
 		mults = bootstrap_mults(accu_prbs, nbufvol, 0, nprj)
 
 		assert len(mults)==nbufvol
-		rectors, fftvols, wgtvols = bootstrap_prepare( prjfile, nbufvol, snr )
-		bootstrap_insert( bufprefix, fftvols, wgtvols, mults, finfo )
+		rectors, fftvols, wgtvols = bootstrap_prepare( prjfile, nbufvol, snr, CTF )
+		bootstrap_insert( bufprefix, fftvols, wgtvols, mults, CTF, finfo )
 		bootstrap_finish( rectors, fftvols, wgtvols, volfile, iter, finfo )
 		
 		finfo.write( "time for iteration: %10.3f\n" % (time() - iter_start) )
@@ -305,7 +327,7 @@ def main():
 	    arglist.append( arg )
 
 	progname = os.path.basename(arglist[0])
-	usage = progname + " prjstack wgtfile [volprefix bufprefix] --niter --nbufvol --nprj --seedbase --snr --genbuf --calcwgts --delta"
+	usage = progname + " prjstack wgtfile [outdir bufprefix] --niter --nbufvol --nprj --seedbase --snr --genbuf --calcwgts --delta"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--nprj", type="int", default=-1, help="  number of projections used by default all projections will be used")
 	parser.add_option("--snr",  type="float", default=1.0, help="signal-to-noise ratio" )
@@ -314,6 +336,8 @@ def main():
 	parser.add_option("--calcwgt", action="store_true", default=False, help="calculate weights or load weights from file" )
 	parser.add_option("--bufprefix", type="string", help="the location of the scratch file" )
 	parser.add_option("--nbufvol", type="int", help="number of fftvol in the memory" )
+	parser.add_option("--sharebuf", action="store_true", default=False, help="whether cpus share a buf file")
+	parser.add_option("--CTF", action="store_true", default=False, help="whether consider CTF" )
 	parser.add_option("--niter", type="int", help="number of iteration. Each iteration, nbufvol of bootstrap volumes will be generated.")
 	parser.add_option("--seedbase", type="int", help="random seed base" )
 
@@ -331,9 +355,9 @@ def main():
 		bootstrap_calcwgts( prjfile, wgtfile, options.delta )
 	else :
 		wgts = read_text_file( args[1], 0 )
-		volprefix = args[2]
+		outdir = args[2]
 		bufprefix = args[3]
-		bootstrap( prjfile, wgts, volprefix, bufprefix, options.nbufvol, options.niter, options.seedbase, options.nprj, options.snr, options.genbuf )
+		bootstrap( prjfile, wgts, outdir, bufprefix, options.nbufvol, options.niter, options.seedbase, options.nprj, options.snr, options.genbuf, options.sharebuf, options.CTF )
 	
 
 if __name__ == "__main__":
