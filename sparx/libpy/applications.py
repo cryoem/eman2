@@ -3423,7 +3423,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 
 	Niter = int(lstp * (nassign + nrefine) )
 	for Iter in xrange(Niter):
-
+		N_step = Iter / (nassign+nrefine)
 		if Iter%(nassign+nrefine) < nassign:
 			runtype = "ASSIGNMENT"
 		else:
