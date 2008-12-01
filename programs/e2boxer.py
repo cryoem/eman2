@@ -448,6 +448,9 @@ def do_gauss_cmd_line_boxing(options):
 			for single_box in boxable.boxes:
 				img = single_box.get_box_image(normalize,norm_method)
 				# set all necessary attributes....
+				img.set_attr( "nx" , img.get_xsize())
+				img.set_attr( "ny" , img.get_ysize())
+				img.set_attr( "nz" , img.get_zsize())
 				img.set_attr( "ctf" , this_ctf)
 				img.set_attr( "Pixel_size", autoboxer.pixel_output )
 				img.set_attr( "Micrograph", image_name )
@@ -3452,6 +3455,8 @@ class EMBoxerModulePanel(QtGui.QWidget):
 	# --------------------
 	# XXX: calculate ctf and defocus from current image		
 	def inspect_ctf(self):
+		#display(self.ctf_data)
+		
 		if not(self.ctf_inspector):
 			self.ctf_inspector = CTFInspector(self,self.ctf_data)
 			self.ctf_inspector.show()
@@ -3462,7 +3467,8 @@ class EMBoxerModulePanel(QtGui.QWidget):
 				self.ctf_inspector_gone=False
 			else:
 				pass
-			
+		
+		
 	def calc_ctf(self):
 		# calculate power spectrum of image with welch method (welch_pw2)
 		# calculate rotational average of power spectrum (rot_avg_table)
@@ -3518,7 +3524,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		del avg_sp
 		
 		print "CTF estimation done"
-		#print defocus
+		print "Defocus: ",defocus
 				
 		# update ctf inspector values
 		if (self.ctf_inspector is not None):
@@ -3746,13 +3752,27 @@ class CTFInspector(QtGui.QWidget):
 		hborder = ( min((h / 15.0),20.0))
 		wborder = ( min((w / 15.0),20.0))
 
+		# accessible height and width....
+		ah = int(h-2*hborder)
+		aw = int(w-2*wborder)
+
 		p=QtGui.QPainter()
 		p.begin(self)
 		p.setBackground(QtGui.QColor(16,16,16))
 		p.eraseRect(0,0,self.width(),self.height())
-		p.setPen(Qt.yellow)
+		p.setPen(Qt.white)
+
+		# labels
+		# spectrum
+		# background
+		# ctf
+
+		# draw axes
+		p.drawLine(int(wborder),int(hborder),int(wborder),int(h-hborder))
+		p.drawLine(int(wborder),int(h-hborder),int(w-wborder),int(h-hborder))
 
 		color = [Qt.yellow,Qt.red,Qt.blue]
+		labels= ["Roo","Back","CTF"]
 
 		if (not(self.data == []) and not(self.data is None)):
 
@@ -3764,7 +3784,8 @@ class CTFInspector(QtGui.QWidget):
 			else:
 				sizew = max([len(i) for i in self.data])
 				self.i_start = 0
-				self.i_stop = sizew
+				self.i_stop = sizew-1
+				sizew=float(sizew)
 
 			# print "range: ",self.i_start," - ",self.i_stop
 				
@@ -3774,27 +3795,41 @@ class CTFInspector(QtGui.QWidget):
 				sizeh = max([max(self.data[i][self.i_start:self.i_stop]) for i in xrange(len(self.data))])
 			else:
 				sizeh = max([max(self.data[i]) for i in xrange(len(self.data))])
-
+				
+			sizeh = float(sizeh)
 			steph = float(h-2*hborder) / float(sizeh) 
 
 			for list_index in xrange(len(self.data)):
-				# loop over all 3 lists set in data....
+				
 				p.setPen(color[list_index])
-								
-				#for index in xrange(len(self.data[list_index])):
+				metrics = p.fontMetrics()
+				fw = metrics.width(str(labels[list_index]))
+				fh = metrics.height()+4
+				p.drawText(w-wborder-fw/2, hborder+(list_index)*fh, str(labels[list_index]))
+				
 				for index in xrange(self.i_start,self.i_stop):
+					p.setPen(color[list_index])
 					# skip first point, since there is no previous point to connect to
 					if (0 == index):
 						continue
 					else:
-						# determine coords, relative to top left (0,0)
-						#    and margin around the plot itself.
-						oldx = int(wborder+stepw * (index-1))
-						newx = int(wborder+stepw * (index))
-						oldy = int(h-hborder-steph*self.data[list_index][index-1])
-						newy = int(h-hborder-steph*self.data[list_index][index])
+						# x is normal, y is flipped (i.e. top left is (0,0))
+						#oldx = int(wborder+ (stepw*(index-1)))
+						oldx=int(wborder + ((w-2*wborder) / sizew * (index-1-self.i_start)))
+						#newx = int(wborder+ (stepw*(index)))
+						newx=int(wborder + ((w-2*wborder) / sizew * (index-self.i_start)))
 						
+						#oldy = int(h-hborder-steph*self.data[list_index][index-1])
+						oldy=int(h-hborder-(h-2*hborder)*self.data[list_index][index-1]/sizeh)
+						#newy = int(h-hborder-steph*self.data[list_index][index])
+						newy=int(h-hborder-(h-2*hborder)*self.data[list_index][index]/sizeh)
 						p.drawLine(oldx,oldy,newx,newy)
+					if (len(self.data)-1 == list_index):
+						p.setPen(Qt.white)
+						p.drawLine(newx, h-hborder, newx, h-hborder-5)
+						metrics = p.fontMetrics()
+						fw = metrics.width(str(index))
+						p.drawText(newx-fw/2, h-hborder-7, str(index))
 						
 		p.end()
 
