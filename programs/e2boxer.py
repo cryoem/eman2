@@ -404,7 +404,9 @@ def do_gauss_cmd_line_boxing(options):
 			# new method to determine ctf...
 			print "starting ctf determination"
 			this_ctf = autoboxer.auto_ctf(boxable)
-			
+		else:
+			# create empty so that del later doesn't raise exceptions
+			this_ctf = None
 		# Tell the boxer to delete non refs - FIXME - the uniform appraoch needs to occur - see SwarmAutoBoxer.auto_box
 		print "starting autoboxer"
 		autoboxer.auto_box(boxable,False)
