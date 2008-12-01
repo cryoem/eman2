@@ -407,6 +407,7 @@ def do_gauss_cmd_line_boxing(options):
 		else:
 			# create empty so that del later doesn't raise exceptions
 			this_ctf = None
+
 		# Tell the boxer to delete non refs - FIXME - the uniform appraoch needs to occur - see SwarmAutoBoxer.auto_box
 		print "starting autoboxer"
 		autoboxer.auto_box(boxable,False)
@@ -450,9 +451,9 @@ def do_gauss_cmd_line_boxing(options):
 			for single_box in boxable.boxes:
 				img = single_box.get_box_image(normalize,norm_method)
 				# set all necessary attributes....
-				img.set_attr( "nx" , img.get_xsize())
-				img.set_attr( "ny" , img.get_ysize())
-				img.set_attr( "nz" , img.get_zsize())
+				#img.set_attr( "nx" , img.get_xsize())
+				#img.set_attr( "ny" , img.get_ysize())
+				#img.set_attr( "nz" , img.get_zsize())
 				img.set_attr( "ctf" , this_ctf)
 				img.set_attr( "Pixel_size", autoboxer.pixel_output )
 				img.set_attr( "Micrograph", image_name )
@@ -3401,6 +3402,18 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.ctf_f_start = QtGui.QLineEdit("80", self)	
 		pawel_grid1.addWidget( self.ctf_f_start , 7,1 )		
 
+		pawel_grid1.addWidget( QtGui.QLabel("Cs:"), 4,2 )
+		self.ctf_cs = QtGui.QLineEdit("2.0", self)
+		pawel_grid1.addWidget( self.ctf_cs , 4,3 )		
+		
+		pawel_grid1.addWidget( QtGui.QLabel("Voltage:"), 5,2 )
+		self.ctf_volt = QtGui.QLineEdit("300", self)
+		pawel_grid1.addWidget( self.ctf_volt , 5,3 )		
+
+		pawel_grid1.addWidget( QtGui.QLabel("Amplitude Contrast:"), 6,2 )
+		self.ctf_ampcont = QtGui.QLineEdit("0.1", self)
+		pawel_grid1.addWidget( self.ctf_ampcont , 6,3 )		
+
 		self.ctf_button =  QtGui.QPushButton("Estimate CTF")
 		pawel_grid1.addWidget( self.ctf_button, 9, 0)
 		self.connect(self.ctf_button,QtCore.SIGNAL("clicked(bool)"), self.calc_ctf)
@@ -3488,6 +3501,9 @@ class EMBoxerModulePanel(QtGui.QWidget):
 			ctf_overlap_size = int(self.ctf_overlap_size.text())
 			ctf_f_start = int(self.ctf_f_start.text())
 			ctf_f_stop = int(self.ctf_f_stop.text())
+			ctf_volt = float(self.ctf_volt.text())
+			ctf_cs = float(self.ctf_cs.text())
+			ctf_ampcont = float(self.ctf_ampcont.text())
 		except ValueError,extras:
 			# conversion of a value failed!
 			print "integer conversion failed."
@@ -3517,11 +3533,8 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		
 		px_size = float(self.output_pixel_size.text())
 		#print px_size
-
-		volt=300.0
-		Cs=2.0
 		
-		defocus = defocus_gett(avg_sp,voltage=volt,Pixel_size=px_size,Cs=Cs,
+		defocus = defocus_gett(avg_sp,voltage=ctf_volt,Pixel_size=px_size,Cs=ctf_cs,wgh=ctf_cs,
 				       f_start=ctf_f_start,f_stop=ctf_f_stop,parent=self)
 		del avg_sp
 		
@@ -3539,7 +3552,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		# XXX: wgh?? amp_cont static to 0?
 		# set image properties, in order to save ctf values
 		from utilities import set_ctf
-		set_ctf(img,[defocus,Cs,volt,px_size,0,0])
+		set_ctf(img,[defocus,ctf_cs,ctf_volt,px_size,0,ctf_ampcont])
 		# and rewrite image 
 		img.write_image(image_name)
 		del img,image_name
