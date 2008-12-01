@@ -31,15 +31,25 @@
 #
 #
 
-# e2dumplog.py   08/08/2005  Steven Ludtke
+# e2history.py   08/08/2005  Steven Ludtke
 # This program will dump the local logfile of all EMAN2 programs run in the current
 # directory. The file is stored as a python 'shelve' file
 
 import shelve
 import sys,os,time
 
+# also defined in EMAN2, but we don't want to have to import it
+def local_datetime(secs):
+	from time import localtime
+	t=localtime(secs)
+	return "%04d/%02d/%02d %02d:%02d:%02d"%t[:6]
+
+def time_diff(secs):
+	if secs<3600 : return "%d:%02d"%(secs/60,secs%60)
+	return "%d:%02d:%02d"%(secs/3600,(secs%3600)/60,secs%60)
+
 if len(sys.argv)>1 and sys.argv[1]=="--help" :
-	print "Usage:\ne2dumplog [--all]\n"
+	print "Usage:\ne2history [--all]\n"
 	sys.exit(1)
 
 try:
@@ -65,13 +75,15 @@ if db:
 		for k in ah.keys():
 			print "---------- ",k
 			for i in ah[k]:
-				print time.ctime(i["start"]),"\t"," ".join(i["args"])
+				if i.has_key("end") : print local_datetime(i["start"]),"\t   ",time_diff(i["end"]-i["start"]),"\t"," ".join(i["args"])
+				else: print local_datetime(i["start"]),"\tincomplete\t"," ".join(i["args"])
 	else:
 		for i in range(n):
 			try: h=db.history[i+1]
 			except: print "Entry ",i," missing"
 			if h["path"]==os.getcwd():
-				print time.ctime(h["start"]),"\t"," ".join(h["args"])
+				if h.has_key("end") :print local_datetime(h["start"]),"\t   ",time_diff(h["end"]-h["start"]),"\t"," ".join(h["args"])
+				else: print local_datetime(h["start"]),"\tincomplete\t"," ".join(h["args"])
 else:
 	db=shelve.open(".eman2log")
 	try:

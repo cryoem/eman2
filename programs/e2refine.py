@@ -166,6 +166,7 @@ def main():
 			exit_refine(1,logid)
 		progress += 1.0
 		E2progress(logid,progress/total_procs)
+	E2end(logid)
 
 def number_options_file(i,file,options,attr):
 	name = "bdb:"+options.path+"#" + file+"_"

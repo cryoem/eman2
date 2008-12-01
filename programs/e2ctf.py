@@ -199,7 +199,9 @@ def write_e2ctf_output(options):
 			if options.phaseflip: phaseout="bdb:particles#"+name+"_ctf_flip"
 			else: phaseout=None
 		
-			if options.wiener: wienerout="bdb:particles#"+name+"_ctf_wiener"
+			if options.wiener:
+				if options.autohp: wienerout="bdb:particles#"+name+"_ctf_wiener_hp"
+				else: wienerout="bdb:particles#"+name+"_ctf_wiener"
 			else : wienerout=None
 
 			#if options.phaseflip: phaseout=name+"_ctf_flip.hed"
