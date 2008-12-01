@@ -311,15 +311,7 @@ class MicrographCCDImportTask(WorkFlowTask):
 		
 		error_message = self.check_params(params)
 		if len(error_message):
-			mesbox = QtGui.QMessageBox()
-			mesbox.setWindowTitle("Almost but not quite")
-			msg = ""
-			for error in error_message:
-				msg += error
-				if error != error_message[-1]: msg += "\n"
-			
-			mesbox.setText(msg)
-			mesbox.exec_()
+			self.show_error_message(error_message)
 			return
  		
 		for k,v in params.items():
@@ -860,12 +852,7 @@ class ParticleImportTask(ParticleWorkFlowTask):
 		
 		error_message = self.check_args(params)
 		if len(error_message) > 0:
-			msg = ""
-			for error in error_message:
-				msg += error
-				if error != error_message[-1]: msg += "\n"
-			mesbox.setText(msg)
-			mesbox.exec_()
+			self.show_error_message(error_message)
 			return
 		
 		v = params["import_particle_files"]
@@ -2404,14 +2391,7 @@ class E2Refine2DTask(ParticleWorkFlowTask):
 		error_message.extend(check_e2refin2d_args(options))
 		
  		if len(error_message) != 0:
- 			msg = ""
- 			for mes in error_message:
- 				msg += mes
- 				if mes != error_message[-1]:
- 					msg+="\n"
- 				
-	 		mesbox.setText(msg)
-	 		mesbox.exec_()
+ 			self.show_error_message(error_message)
 	 		return None
 	 	
 	 	# if we make it here we are almost definitely good to go, the only thing that can fail is the e2bdb or e2proc2d commands
@@ -2722,14 +2702,7 @@ class ImportInitialModels(ParticleWorkFlowTask):
 		 	
 	 			
 	 	if len(error_message) > 0:
-	 		msg = ""
-	 		for error in error_message:
-	 			msg += error
-	 			if msg != error_message[-1]:
-	 				msg += "\n"
-	 		mesbox.setText(msg)
-	 		mesbox.exec_()
-	 		
+	 		self.show_error_message(error_message)
 	 		return
 	 	
 	 	# if we make it here we're all good, 
@@ -2943,17 +2916,9 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 		'''
 		error_message is a list of strings
 		'''
-		mesbox = QtGui.QMessageBox()
-		mesbox.setWindowTitle("Almost but not quite")
 		
 		if len(error_message) > 0:
-			msg = ""
-			for error in error_message:
-				msg += error
-				if error != error_message[-1]: msg += "\n"
-		
-			mesbox.setText(msg)
-	 		mesbox.exec_()
+			self.show_error_message(error_message)
 	 		
 	
 	def get_main_params(self):

@@ -161,78 +161,42 @@ vector<Transform> Symmetry3D::gen_orientations(const string& generatorname, cons
 	return ret;
 }
 
-int EmanOrientationGenerator::get_orientations_tally(const Symmetry3D* const sym, const float& delta) const
+void OrientationGenerator::get_az_max(const Symmetry3D* const sym, const float& altmax, const bool inc_mirror, const float& alt_iterator,const float& h,bool& d_odd_mirror_flag, float& azmax_adjusted) const
 {
-	//FIXME THIS IS SO SIMILAR TO THE gen_orientations function that they should be probably use
-	// a common routine - SAME ISSUE FOR OTHER ORIENTATION GENERATORS
-	bool inc_mirror = params.set_default("inc_mirror",false);
-	Dict delimiters = sym->get_delimiters(inc_mirror);
-	float altmax = delimiters["alt_max"];
-	float azmax = delimiters["az_max"];
-
-	float alt_iterator = 0.0f;
 	
-	// #If it's a h symmetry then the alt iterator starts at very close
-	// #to the altmax... the object is a h symmetry then it knows its alt_min...
-	if (sym->is_h_sym()) alt_iterator = delimiters["alt_min"];
-	
-	int tally = 0;
-	while ( alt_iterator <= altmax ) {
-		float h = get_az_delta(delta,alt_iterator, sym->get_max_csym() );
-
-		// not sure what this does code taken from EMAN1 - FIXME original author add comments
-		if ( (alt_iterator > 0) && ( (azmax/h) < 2.8) ) h = azmax / 2.1f;
-		else if (alt_iterator == 0) h = azmax;
-			
-		float az_iterator = 0.0;
-		
-		float azmax_adjusted = azmax;
-		
-		// if this is odd c symmetry, and we're at the equator, and we're excluding the mirror then
-		// half the equator is redundant (it is the mirror of the other half)
-		if (sym->is_c_sym() && !inc_mirror && alt_iterator == altmax && (sym->get_nsym() % 2 == 1 ) ){
-			azmax_adjusted /= 2.0;
+	if ( sym->is_d_sym() && alt_iterator == altmax && ( (sym->get_nsym())/2 % 2 == 1 )) {
+		if (inc_mirror) {
+			azmax_adjusted /= 4.0;
+			d_odd_mirror_flag = true;
 		}
-		// at the azimuthal boundary in c symmetry and tetrahedral symmetry we have come
-		// full circle, we must not include it
-		else if (sym->is_c_sym() || sym->is_tet_sym() ) {
-			azmax_adjusted -=  h/4.0f;
-		}
-		// If we're including the mirror then in d and icos and oct symmetry the azimuthal
-		// boundary represents coming full circle, so must be careful to exclude it
-		else if (inc_mirror && ( sym->is_d_sym() || sym->is_platonic_sym() ) )  {
-			azmax_adjusted -=  h/4.0f;
-		}
-		// else do nothing - this means that we're including the great arc traversing
-		// the full range of permissable altitude angles at azmax.
-		// This happens in d symmetry, and in the icos and oct symmetries, when the mirror
-		// portion of the asymmetric unit is being excluded
-		
-
-		while ( az_iterator <= azmax_adjusted ) {
-			// FIXME: add an intelligent comment - this was copied from old code	
-			if ( az_iterator > 180.0 && alt_iterator > 180.0/(2.0-0.001) && alt_iterator < 180.0/(2.0+0.001) ) {
-				az_iterator +=  h;
-				continue;
-			}
-			
-			if (sym->is_platonic_sym()) {
-				if ( sym->is_in_asym_unit(alt_iterator, az_iterator,inc_mirror) == false ) {
-					az_iterator += h;
-					continue;
-				}
-			}
-				
-			tally++;
-			if ( sym->is_h_sym() && inc_mirror && alt_iterator != (float) delimiters["alt_min"] ) {
-				tally++;
-			}
-			az_iterator += h;
-		}
-		alt_iterator += delta;
+		else azmax_adjusted /= 2.0;
 	}
-	return tally;
+	else if (sym->is_d_sym() && alt_iterator == altmax && ( (sym->get_nsym())/2 % 2 == 0 ) && inc_mirror) {
+		azmax_adjusted /= 2.0;
+	}
+	// if this is odd c symmetry, and we're at the equator, and we're excluding the mirror then
+	// half the equator is redundant (it is the mirror of the other half)
+	else if (sym->is_c_sym() && !inc_mirror && alt_iterator == altmax && (sym->get_nsym() % 2 == 1 ) ){
+		azmax_adjusted /= 2.0;
+	}
+	// at the azimuthal boundary in c symmetry and tetrahedral symmetry we have come
+	// full circle, we must not include it
+	else if (sym->is_c_sym() || sym->is_tet_sym() ) {
+		azmax_adjusted -=  h/4.0f;
+	}
+	// If we're including the mirror then in d and icos and oct symmetry the azimuthal
+	// boundary represents coming full circle, so must be careful to exclude it
+	else if (inc_mirror && ( sym->is_d_sym() || sym->is_platonic_sym() ) )  {
+		azmax_adjusted -=  h/4.0f;
+	}
+	// else do nothing - this means that we're including the great arc traversing
+	// the full range of permissable altitude angles at azmax.
+	// This happens in d symmetry, and in the icos and oct symmetries, when the mirror
+	// portion of the asymmetric unit is being excluded
+
 }
+
+
 
 float OrientationGenerator::get_optimal_delta(const Symmetry3D* const sym, const int& n) const
 {
@@ -314,6 +278,65 @@ float EmanOrientationGenerator::get_az_delta(const float& delta,const float& alt
 	return (float)(EMConsts::rad2deg*h);
 }
 
+
+int EmanOrientationGenerator::get_orientations_tally(const Symmetry3D* const sym, const float& delta) const
+{
+	//FIXME THIS IS SO SIMILAR TO THE gen_orientations function that they should be probably use
+	// a common routine - SAME ISSUE FOR OTHER ORIENTATION GENERATORS
+	bool inc_mirror = params.set_default("inc_mirror",false);
+	Dict delimiters = sym->get_delimiters(inc_mirror);
+	float altmax = delimiters["alt_max"];
+	float azmax = delimiters["az_max"];
+
+	float alt_iterator = 0.0f;
+	
+	// #If it's a h symmetry then the alt iterator starts at very close
+	// #to the altmax... the object is a h symmetry then it knows its alt_min...
+	if (sym->is_h_sym()) alt_iterator = delimiters["alt_min"];
+	
+	int tally = 0;
+	while ( alt_iterator <= altmax ) {
+		float h = get_az_delta(delta,alt_iterator, sym->get_max_csym() );
+
+		// not sure what this does code taken from EMAN1 - FIXME original author add comments
+		if ( (alt_iterator > 0) && ( (azmax/h) < 2.8) ) h = azmax / 2.1f;
+		else if (alt_iterator == 0) h = azmax;
+			
+		float az_iterator = 0.0;
+		
+		float azmax_adjusted = azmax;
+		bool d_odd_mirror_flag = false;
+		get_az_max(sym,altmax, inc_mirror,alt_iterator, h,d_odd_mirror_flag, azmax_adjusted);
+
+		while ( az_iterator <= azmax_adjusted ) {
+			// FIXME: add an intelligent comment - this was copied from old code	
+			if ( az_iterator > 180.0 && alt_iterator > 180.0/(2.0-0.001) && alt_iterator < 180.0/(2.0+0.001) ) {
+				az_iterator +=  h;
+				continue;
+			}
+			
+			if (sym->is_platonic_sym()) {
+				if ( sym->is_in_asym_unit(alt_iterator, az_iterator,inc_mirror) == false ) {
+					az_iterator += h;
+					continue;
+				}
+			}
+				
+			tally++;
+			if ( sym->is_h_sym() && inc_mirror && alt_iterator != (float) delimiters["alt_min"] ) {
+				tally++;
+			}
+			az_iterator += h;
+			if ( (az_iterator > azmax_adjusted) && d_odd_mirror_flag) {
+				azmax_adjusted = azmax;
+				az_iterator += azmax/2.0;
+			}
+		}
+		alt_iterator += delta;
+	}
+	return tally;
+}
+
 vector<Transform> EmanOrientationGenerator::gen_orientations(const Symmetry3D* const sym) const
 {	
 	float delta = params.set_default("delta", 0.0f);
@@ -351,25 +374,8 @@ vector<Transform> EmanOrientationGenerator::gen_orientations(const Symmetry3D* c
 		
 		float azmax_adjusted = azmax;
 		
-		// if this is odd c symmetry, and we're at the equator, and we're excluding the mirror then
-		// half the equator is redundant (it is the mirror of the other half)
-		if (sym->is_c_sym() && !inc_mirror && alt_iterator == altmax && (sym->get_nsym() % 2 == 1 ) ){
-			azmax_adjusted /= 2.0;
-		}
-		// at the azimuthal boundary in c symmetry and tetrahedral symmetry we have come
-		// full circle, we must not include it
-		else if (sym->is_c_sym() || sym->is_tet_sym() ) {
-			azmax_adjusted -=  h/4.0f;
-		}
-		// If we're including the mirror then in d and icos and oct symmetry the azimuthal
-		// boundary represents coming full circle, so must be careful to exclude it
-		else if (inc_mirror && ( sym->is_d_sym() || sym->is_platonic_sym() ) )  {
-			azmax_adjusted -=  h/4.0f;
-		}
-		// else do nothing - this means that we're including the great arc traversing
-		// the full range of permissable altitude angles at azmax.
-		// This happens in d symmetry, and in the icos and oct symmetries, when the mirror
-		// portion of the asymmetric unit is being excluded
+		bool d_odd_mirror_flag = false;
+		get_az_max(sym,altmax, inc_mirror,alt_iterator, h,d_odd_mirror_flag, azmax_adjusted);
 		
 
 		while ( az_iterator <= azmax_adjusted ) {
@@ -378,6 +384,11 @@ vector<Transform> EmanOrientationGenerator::gen_orientations(const Symmetry3D* c
 // 				az_iterator +=  h;
 // 				continue;
 // 			}
+			
+			if (alt_iterator == 0 && az_iterator > 0){
+				az_iterator += h;
+				continue; // We only ever need to generate on orientation at alt=0
+			}
 // 			// Now that I am handling the boundaries very specifically, I don't think we need
 			// the above if statement. But I am leaving it there in case I need to reconsider.
 			
@@ -407,6 +418,10 @@ vector<Transform> EmanOrientationGenerator::gen_orientations(const Symmetry3D* c
 				add_orientation(ret, az_soln,2.0f*(float)delimiters["alt_min"]-alt_soln);
 			}
 			az_iterator += h;
+			if ( (az_iterator > azmax_adjusted) && d_odd_mirror_flag) {
+				azmax_adjusted = azmax;
+				az_iterator += azmax/2.0;
+			}
 			
 		}
 		alt_iterator += delta;
@@ -486,6 +501,8 @@ int EvenOrientationGenerator::get_orientations_tally(const Symmetry3D* const sym
 			if (lt < 1) lt = 1;
 			detaz = azmax/(float)lt;
 		}
+//		bool d_odd_mirror_flag = false;
+//		get_az_max(sym,altmax, inc_mirror,alt, lt,d_odd_mirror_flag, detaz);
 		for (int i = 0; i < lt; i++) {
 			float az = (float)i*detaz;
 			if (sym->is_platonic_sym()) {
@@ -537,10 +554,16 @@ vector<Transform> EvenOrientationGenerator::gen_orientations(const Symmetry3D* c
 			if (lt < 1) lt = 1;
 			detaz = azmax/(float)lt;
 		}
+//		bool d_odd_mirror_flag = false;
+//		get_az_max(sym,altmax, inc_mirror,alt, lt,d_odd_mirror_flag, detaz);
+		
 		for (int i = 0; i < lt; i++) {
 			float az = (float)i*detaz;
 			if (sym->is_platonic_sym()) {
 				if ( sym->is_in_asym_unit(alt, az,inc_mirror) == false ) continue;
+				else {
+					az += sym->get_az_alignment_offset(); // Align to the symmetry axes
+				}
 			}
 			add_orientation(ret,az,alt);
 			if ( sym->is_h_sym() && inc_mirror && alt != altmin ) {
@@ -640,6 +663,9 @@ vector<Transform> SaffOrientationGenerator::gen_orientations(const Symmetry3D* c
 		float alt = (float)(acos(z)*EMConsts::rad2deg);
 		if (sym->is_platonic_sym()) {
 			if ( sym->is_in_asym_unit(alt,az,inc_mirror) == false ) continue;
+			else {
+				az += sym->get_az_alignment_offset(); // Align to the symmetry axes
+			}
 		}
 		add_orientation(ret,az,alt);
 	}
@@ -721,7 +747,7 @@ vector<Vec3f> OptimumOrientationGenerator::optimize_distances(const vector<Trans
 	}
 	
 	if ( points.size() >= 2 ) {
-		int max_it = 1000;
+		int max_it = 100;
 		float percentage = 0.01f;
 		
 		for ( int i = 0; i < max_it; ++i ){

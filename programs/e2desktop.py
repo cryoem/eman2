@@ -1181,9 +1181,9 @@ class EMDesktopFrame(EMFrame):
 		if len(self.display_frames) != 0:
 			width = int(EMDesktop.main_widget.viewport_width()-200)
 			height = int(EMDesktop.main_widget.viewport_height())-50
-			self.display_frames[0].set_geometry(Region(-width/2,-height/2,-20,width,height,100)) # the depth of the z dimensions doesn't mean a whole lot
+			self.display_frames[0].set_geometry(Region(-width/2,-height/2,0,width,height,100)) # the depth of the z dimensions doesn't mean a whole lot
 		
-		self.form_display_frame.set_geometry(Region(-width/2,-height/2,-20,width,height,100)) # -20 so it's behing the side bars
+		self.form_display_frame.set_geometry(Region(-width/2,-height/2,0,width,height,100)) # -20 so it's behing the side bars
 		
 		if self.frame_dl:
 			glDeleteLists(self.frame_dl,1)

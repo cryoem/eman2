@@ -169,7 +169,7 @@ class EMFormWidget(QtGui.QWidget):
 					item.setFlags(flag2|flag3)
 				else:
 					item.setFlags(flag3)
-				item.setTextAlignment(QtCore.Qt.AlignHCenter&QtCore.Qt.AlignVCenter)
+				item.setTextAlignment(QtCore.Qt.AlignHCenter)
 				table_widget.setItem(j, i, item)
 				
 				

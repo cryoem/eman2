@@ -925,6 +925,9 @@ namespace EMAN {
 		 */
 		virtual int get_orientations_tally(const Symmetry3D* const sym, const float& delta) const = 0;
 
+	protected:
+		void get_az_max(const Symmetry3D* const sym, const float& altmax, const bool inc_mirror, const float& alt_iterator,const float& h,bool& d_odd_mirror_flag, float& azmax_adjusted) const;
+
 };
 	
 	
