@@ -1079,7 +1079,7 @@ namespace EMAN
         class newfile_store
         {
         public:
-		newfile_store( const string& prefix, int npad );
+		newfile_store( const string& prefix, int npad, bool ctf );
 
 		virtual ~newfile_store();
 
@@ -1095,6 +1095,8 @@ namespace EMAN
 
 	private:
 		int m_npad;
+
+		bool m_ctf;
 
 		string m_bin_file;
 		string m_txt_file;

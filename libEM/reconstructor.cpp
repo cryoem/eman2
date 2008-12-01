@@ -3422,11 +3422,12 @@ using std::ofstream;
 using std::ifstream;
 
 
-newfile_store::newfile_store( const string& filename, int npad )
+newfile_store::newfile_store( const string& filename, int npad, bool ctf )
     : m_bin_file( filename + ".bin" ),
       m_txt_file( filename + ".txt" )
 {
     m_npad = npad;
+    m_ctf = ctf;
 }
 
 newfile_store::~newfile_store( )
@@ -3449,14 +3450,19 @@ void newfile_store::add_image( EMData* emdata, const Transform& tf )
     int n2 = ny / 2;
     int n = ny;
 
-    Ctf* ctf = emdata->get_attr( "ctf" );
-    Dict params = ctf->to_dict();
-    float voltage = params["voltage"];
-    float pixel   = params["apix"];
-    float Cs      = params["cs"];
-    float ampcont = params["ampcont"];
-    float bfactor = params["bfactor"];
-    float defocus = params["defocus"];
+    float voltage, pixel, Cs, ampcont, bfactor, defocus;
+
+    if( m_ctf )
+    {
+        Ctf* ctf = emdata->get_attr( "ctf" );
+        Dict params = ctf->to_dict();
+        voltage = params["voltage"];
+        pixel   = params["apix"];
+        Cs      = params["cs"];
+        ampcont = params["ampcont"];
+        bfactor = params["bfactor"];
+        defocus = params["defocus"];
+    }
 
     vector<point_t> points;
     for( int j=-ny/2+1; j <= ny/2; j++ )
@@ -3467,8 +3473,17 @@ void newfile_store::add_image( EMData* emdata, const Transform& tf )
             int r2 = i*i + j*j;
             if( (r2<ny*ny/4) && !( (i==0) && (j<0) ) ) 
             {
-		float ak = std::sqrt( r2/float(ny*ny) )/pixel;
-                float ctf = Util::tf( defocus, ak, voltage, Cs, ampcont, bfactor, 1);
+                float ctf;
+                if( m_ctf )
+                {
+		    float ak = std::sqrt( r2/float(ny*ny) )/pixel;
+                    ctf = Util::tf( defocus, ak, voltage, Cs, ampcont, bfactor, 1);
+                }
+                else
+                {
+                    ctf = 1.0;
+                }
+
                 float xnew = i*tf[0][0] + j*tf[1][0];
                 float ynew = i*tf[0][1] + j*tf[1][1];
                 float znew = i*tf[0][2] + j*tf[1][2];
