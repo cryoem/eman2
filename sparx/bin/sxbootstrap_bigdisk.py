@@ -256,18 +256,21 @@ def bootstrap_calcwgts( prjfile, wgtfile, delta ):
 	from mpi import mpi_comm_rank, mpi_comm_size, mpi_reduce
 	from mpi import MPI_INT, MPI_SUM, MPI_COMM_WORLD
 	
+	verbose = False
 
 	myid = mpi_comm_rank( MPI_COMM_WORLD )
 	ncpu = mpi_comm_size( MPI_COMM_WORLD )
 
-	finf = open( "calcwgts%04d.txt" % myid, "w" )
+	if verbose:
+		finf = open( "calcwgts%04d.txt" % myid, "w" )
 	nprj = EMUtil.get_image_count( prjfile )
 
 	beg, end = MPI_start_end( nprj, ncpu, myid )
-	finf.write( "begin, end: %d %d\n" %(beg, end) )
-	finf.flush()
+	if verbose:
+		finf.write( "begin, end: %d %d\n" %(beg, end) )
+		finf.flush()
 
-	eve_angs = even_angles( delta, 0.0, 90.0 )
+	eve_angs = even_angles( delta, 0.0, 89.99, method='P' )
 	eve_vecs = [None]*len(eve_angs)
 	for i in xrange( len(eve_angs) ):
 		eve_vecs[i] = getvec( eve_angs[i][0], eve_angs[i][1] )
@@ -278,11 +281,12 @@ def bootstrap_calcwgts( prjfile, wgtfile, delta ):
 
 	for iprj in xrange(beg, end):
 		prj = get_im( prjfile, iprj )
-		phi,tht,psi,s2x,s2y = get_params_proj( prj.get_attr( "phi" ) )
+		phi,tht,psi,s2x,s2y = get_params_proj( prj )
 		aid = nearest_ang( eve_vecs, phi, tht )
 
-		finf.write( "prj %6d: %10.3f %10.3f close to ori %6d: %10.3f %10.3f\n" % (iprj, phi, tht, aid, eve_angs[aid][0], eve_angs[aid][1]))
-		finf.flush()
+		if verbose:
+			finf.write( "prj %6d: %10.3f %10.3f close to ori %6d: %10.3f %10.3f\n" % (iprj, phi, tht, aid, eve_angs[aid][0], eve_angs[aid][1]))
+			finf.flush()
 
 		angids[iprj] = aid
 		occurs[aid] += 1
@@ -293,8 +297,9 @@ def bootstrap_calcwgts( prjfile, wgtfile, delta ):
 	if myid==0:
 		sumoccur = 0
 		for i in xrange( nang ):
-			finf.write( "ori %6d: %d\n" % (i, occurs[i]) )
-			finf.flush()
+			if verbose:
+				finf.write( "ori %6d: %d\n" % (i, occurs[i]) )
+				finf.flush()
 			sumoccur += int(occurs[i])
 		assert sumoccur==nprj
 
@@ -333,7 +338,7 @@ def main():
 	parser.add_option("--snr",  type="float", default=1.0, help="signal-to-noise ratio" )
 	parser.add_option("--delta", type="float", default=1.0, help="for weights calculation")
         parser.add_option("--genbuf", action="store_true", default=False, help="whether generating buffer")
-	parser.add_option("--calcwgt", action="store_true", default=False, help="calculate weights or load weights from file" )
+	parser.add_option("--calcwgts", action="store_true", default=False, help="calculate weights or load weights from file" )
 	parser.add_option("--bufprefix", type="string", help="the location of the scratch file" )
 	parser.add_option("--nbufvol", type="int", help="number of fftvol in the memory" )
 	parser.add_option("--sharebuf", action="store_true", default=False, help="whether cpus share a buf file")
@@ -350,7 +355,7 @@ def main():
 	prjfile = args[0]
 
 	
-	if( options.calcwgt ):
+	if( options.calcwgts ):
 		wgtfile = args[1]
 		bootstrap_calcwgts( prjfile, wgtfile, options.delta )
 	else :
