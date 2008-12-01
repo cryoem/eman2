@@ -796,7 +796,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 				cs[1] = sy_sum/float(nima)
 				from fundamentals import fshift
 				tavg = fshift(tavg, -cs[0], -cs[1])
-				msg = "Center x =      %10.3f        Center y       = %10.3f\n"%(cs[0], cs[1])
+				msg = "Average center x =      %10.3f        Center y       = %10.3f\n"%(cs[0], cs[1])
 				print_msg(msg)
 
 			# a0 should increase; stop algorithm when it decreases.    
@@ -1029,7 +1029,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					cs[1] = float(sy_sum)/nima
 					from fundamentals import fshift
 					tavg = fshift(tavg, -cs[0], -cs[1])
-					msg = "Center x =      %10.3f        Center y       = %10.3f\n"%(cs[0], cs[1])
+					msg = "Average center x =      %10.3f        Center y       = %10.3f\n"%(cs[0], cs[1])
 					print_msg(msg)
 
 				# a0 should increase; stop algorithm when it decreases.    
