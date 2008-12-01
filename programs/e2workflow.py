@@ -57,6 +57,7 @@ class EMTaskMonitorWidget(QtGui.QWidget,Animator):
 
 	def __init__(self,module,application):
 		QtGui.QWidget.__init__(self,None)
+		self.setWindowIcon(QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/workflow.png"))
 		Animator.__init__(self)
 		self.module = weakref.ref(module)
 		# animation specific
@@ -266,6 +267,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		task_monitor should probably be supplied, it should be an instance of a EMTaskMonitorWidget
 		'''
 		QtGui.QWidget.__init__(self,None)
+		self.setWindowIcon(QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/workflow.png"))
 		self.application = weakref.ref(application)
 		self.module = weakref.ref(module)
 		self.task_monitor = task_monitor
