@@ -65,7 +65,7 @@ def main():
     parser.add_option("--scale", metavar="n", type="float", action="append",
                                 help="Rescales the image by 'n', generally used with clip option.")
 
-	parser.add_option("--sym", dest = "sym", action="append", help = "Symmetry to impose - choices are: c<n>, d<n>, h<n>, tet, oct, icos")
+    parser.add_option("--sym", dest = "sym", action="append", help = "Symmetry to impose - choices are: c<n>, d<n>, h<n>, tet, oct, icos")
 
     parser.add_option("--clip", metavar="x y z xc yc zc", type="float", nargs=6, action="append",
                                 help="Make the output have this size, no scaling. ")
