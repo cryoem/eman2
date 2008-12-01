@@ -163,15 +163,22 @@ def write_mults( fmults, iter, mults ):
 	fmults.flush()
 
 
-def bootstrap( prjfile, wgts, outdir, bufprefix, nbufvol, niter, seedbase, nprj, snr, genbuf, sharebuf, CTF ) :
-	from mpi import mpi_barrier, mpi_comm_rank, mpi_comm_size, mpi_comm_split, MPI_COMM_WORLD
+def bootstrap( prjfile, wgts, outdir, bufprefix, nbufvol, niter, seedbase, nprj, snr, genbuf, sharebuf, CTF, MPI ) :
 	from random import seed
 
 
 	if( nprj==-1) :
 		nprj = EMUtil.get_image_count( prjfile )
-	myid = mpi_comm_rank( MPI_COMM_WORLD )
-	ncpu = mpi_comm_size( MPI_COMM_WORLD )
+
+
+	if MPI:
+		from mpi import mpi_barrier, mpi_comm_rank, mpi_comm_size, mpi_comm_split, MPI_COMM_WORLD
+		myid = mpi_comm_rank( MPI_COMM_WORLD )
+		ncpu = mpi_comm_size( MPI_COMM_WORLD )
+	else:
+		myid = 0
+		ncpu = 1
+
 	accu_prbs = prepare_wgts( wgts )
 
 
@@ -181,7 +188,8 @@ def bootstrap( prjfile, wgts, outdir, bufprefix, nbufvol, niter, seedbase, nprj,
 			os.system( "rm -rf " + outdir )
 		os.system( "mkdir " + outdir )
 
-	mpi_barrier( MPI_COMM_WORLD )
+	if MPI:
+		mpi_barrier( MPI_COMM_WORLD )
 
 
 
@@ -190,7 +198,7 @@ def bootstrap( prjfile, wgts, outdir, bufprefix, nbufvol, niter, seedbase, nprj,
 	if genbuf and (myid==0 or (not sharebuf)):
 		bootstrap_genbuf( prjfile, bufprefix, 0, nprj, CTF, finfo )
 	
-	if genbuf and sharebuf:
+	if genbuf and sharebuf and MPI:
 		mpi_barrier( MPI_COMM_WORLD )
 
 	myseed = seedbase + 10*myid
@@ -252,14 +260,17 @@ def nearest_ang( vecs, phi, tht ) :
 	return best_i
 
 
-def bootstrap_calcwgts( prjfile, wgtfile, delta ):
-	from mpi import mpi_comm_rank, mpi_comm_size, mpi_reduce
-	from mpi import MPI_INT, MPI_SUM, MPI_COMM_WORLD
-	
-	verbose = False
+def bootstrap_calcwgts( prjfile, wgtfile, delta, MPI ):
+	if MPI:
+		from mpi import mpi_comm_rank, mpi_comm_size, mpi_reduce
+		from mpi import MPI_INT, MPI_SUM, MPI_COMM_WORLD
+		myid = mpi_comm_rank( MPI_COMM_WORLD )
+		ncpu = mpi_comm_size( MPI_COMM_WORLD )
+	else:
+		myid = 0
+		ncpu = 1
 
-	myid = mpi_comm_rank( MPI_COMM_WORLD )
-	ncpu = mpi_comm_size( MPI_COMM_WORLD )
+	verbose = False
 
 	if verbose:
 		finf = open( "calcwgts%04d.txt" % myid, "w" )
@@ -291,8 +302,9 @@ def bootstrap_calcwgts( prjfile, wgtfile, delta ):
 		angids[iprj] = aid
 		occurs[aid] += 1
 
-	occurs = mpi_reduce( occurs, len(occurs), MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD )
-	angids = mpi_reduce( angids, len(angids), MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD )
+	if MPI:
+		occurs = mpi_reduce( occurs, len(occurs), MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD )
+		angids = mpi_reduce( angids, len(angids), MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD )
 
 	if myid==0:
 		sumoccur = 0
@@ -319,20 +331,15 @@ def bootstrap_calcwgts( prjfile, wgtfile, delta ):
 
 
 def main():
-	from mpi import mpi_init, mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
+
 	import sys
-	sys.argv = mpi_init( len(sys.argv), sys.argv )
 
-	myid = mpi_comm_rank( MPI_COMM_WORLD )
-	ncpu = mpi_comm_size( MPI_COMM_WORLD )
-
-	
         arglist = []
         for arg in sys.argv:
 	    arglist.append( arg )
 
 	progname = os.path.basename(arglist[0])
-	usage = progname + " prjstack wgtfile [outdir bufprefix] --niter --nbufvol --nprj --seedbase --snr --genbuf --calcwgts --delta"
+	usage = progname + " prjstack wgtfile [outdir bufprefix] --niter --nbufvol --nprj --seedbase --snr --genbuf --sharebuf --CTF --calcwgts --delta"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--nprj", type="int", default=-1, help="  number of projections used by default all projections will be used")
 	parser.add_option("--snr",  type="float", default=1.0, help="signal-to-noise ratio" )
@@ -345,6 +352,7 @@ def main():
 	parser.add_option("--CTF", action="store_true", default=False, help="whether consider CTF" )
 	parser.add_option("--niter", type="int", help="number of iteration. Each iteration, nbufvol of bootstrap volumes will be generated.")
 	parser.add_option("--seedbase", type="int", help="random seed base" )
+	parser.add_option("--MPI", action="store_true", default=False, help="whether running mpi version")
 
 	(options, args) = parser.parse_args( arglist[1:] )
 
@@ -354,15 +362,18 @@ def main():
 
 	prjfile = args[0]
 
+	if options.MPI:
+		from mpi import mpi_init, mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
+		sys.argv = mpi_init( len(sys.argv), sys.argv )
 	
 	if( options.calcwgts ):
 		wgtfile = args[1]
-		bootstrap_calcwgts( prjfile, wgtfile, options.delta )
+		bootstrap_calcwgts( prjfile, wgtfile, options.delta, options.MPI )
 	else :
 		wgts = read_text_file( args[1], 0 )
 		outdir = args[2]
 		bufprefix = args[3]
-		bootstrap( prjfile, wgts, outdir, bufprefix, options.nbufvol, options.niter, options.seedbase, options.nprj, options.snr, options.genbuf, options.sharebuf, options.CTF )
+		bootstrap( prjfile, wgts, outdir, bufprefix, options.nbufvol, options.niter, options.seedbase, options.nprj, options.snr, options.genbuf, options.sharebuf, options.CTF, options.MPI )
 	
 
 if __name__ == "__main__":
