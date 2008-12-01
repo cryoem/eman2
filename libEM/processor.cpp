@@ -97,6 +97,7 @@ template <> Factory < Processor >::Factory()
 	force_add(&MaskEdgeMeanProcessor::NEW);
 	force_add(&MaskNoiseProcessor::NEW);
 	force_add(&MaskGaussProcessor::NEW);
+	force_add(&MaskGaussNonuniformProcessor::NEW);
 	force_add(&MaskGaussInvProcessor::NEW);
 
 	force_add(&MaxShrinkProcessor::NEW);

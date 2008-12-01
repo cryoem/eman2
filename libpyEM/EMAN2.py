@@ -598,6 +598,12 @@ def remove_file( file_name ):
 		print "Warning, attempt to remove file (%s) that does not exist. No action taken." %file_name
 		return False
 
+# returns the local date and time as a string
+def local_datetime(secs):
+	from time import localtime
+	t=localtime(secs)
+	return "%04d/%02d/%02d %02d:%02d:%02d"%t[:6]
+
 # returns gm time as a string. For example if it's 11:13 pm on the 18th of June 2008 this will return something like
 # '23:13:25.14 18/6/2008'
 def gm_time_string():

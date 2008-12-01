@@ -34,6 +34,7 @@
 
 from EMAN2 import *
 from optparse import OptionParser
+import random
 from math import *
 import os
 import sys
@@ -45,13 +46,22 @@ def main():
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
 	parser.add_option("--input", dest="input", default=None,type="string", help="The name of the image containing the particle data")
-	parser.add_option("--sym", dest = "sym", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos")
+	parser.add_option("--tries", type="int", default=1, help="The number of different initial models to generate in search of a good one")
+	parser.add_option("--sym", dest = "sym", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos",default="c1")
 	parser.add_option("--verbose","-v", dest="verbose", default=False, action="store_true",help="Toggle verbose mode - prints extra infromation to the command line while executing")
 
 	(options, args) = parser.parse_args()
 
 	logid=E2init(sys.argv)
 
+	first=EMData(options.input,0)
+	boxsize=first.get_xsize()
+
+	for i in range(options.tries):
+		start=make_random_map(boxsize)
+		apply_sym(start,options.sym)
+		display(start)
+		
 	E2end(logid)
 
 
@@ -59,7 +69,25 @@ def make_random_map(boxsize):
 	"""This will make a map consisting of random noise, low-pass filtered and center-weighted for use
 	as a random starting model in initial model generation"""
 	
+	ret=EMData(boxsize,boxsize,boxsize)
+	ret.process_inplace("testimage.noise.gauss",{"mean":0.1,"sigma":1.0})
+	ret.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.1})
+#	ret.process_inplace("mask.gaussian",{"inner_radius":boxsize/3.0,"outer_radius":boxsize/12.0})
+	ret.process_inplace("mask.gaussian.nonuniform",{"radius_x":boxsize/random.uniform(2.0,5.0),"radius_y":boxsize/random.uniform(2.0,5.0),"radius_z":boxsize/random.uniform(2.0,5.0)})
 	
+	return ret
+	
+def apply_sym(data,sym):
+	"""applies a symmetry to a 3-D volume in-place"""
+	xf = Transform()
+	xf.to_identity()
+	nsym=xf.get_nsym(sym)
+	ref=data.copy()
+	for i in range(1,nsym):
+		dc=ref.copy()
+		dc.transform(xf.get_sym(sym,i))
+		data.add(dc)
+	data.mult(1.0/nsym)	
 	
 
 if __name__ == "__main__":

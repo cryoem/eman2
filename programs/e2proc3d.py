@@ -65,6 +65,8 @@ def main():
     parser.add_option("--scale", metavar="n", type="float", action="append",
                                 help="Rescales the image by 'n', generally used with clip option.")
 
+	parser.add_option("--sym", dest = "sym", action="append", help = "Symmetry to impose - choices are: c<n>, d<n>, h<n>, tet, oct, icos")
+
     parser.add_option("--clip", metavar="x y z xc yc zc", type="float", nargs=6, action="append",
                                 help="Make the output have this size, no scaling. ")
     
@@ -221,6 +223,18 @@ def main():
                 if x != nx or y != ny or z != nz:
                 	data = data.get_clip(Region(xc-nx/2, yc-ny/2, zc-nz/2, nx, ny, nz))
                 	index_d[option1] += 1
+
+            elif option1 == "sym":
+				sym = options.scale[index_d[option1]]
+				xf = Transform()
+				xf.to_identity()
+				nsym=xf.get_nsym(sym)
+				ref=data.copy()
+				for i in range(1,nsym):
+					dc=ref.copy()
+					dc.transform(xf.get_sym(sym,i))
+					data.add(dc)
+				data.mult(1.0/nsym)	
 
             elif option1 == "scale":
                 scale_f = options.scale[index_d[option1]]

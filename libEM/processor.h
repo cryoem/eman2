@@ -2009,14 +2009,82 @@ The basic design of EMAN Processors: <br>\
 
 		string get_desc() const
 		{
-			return "a gaussian falloff to zero, radius is the 1/e of the width.";
+			return "a gaussian falloff to zero, radius is the 1/e of the width. If inner_radius>0, then \
+outer radius specifies width of Gaussian starting at inner_radius rather than total radius.";
 		}
 
 	  protected:
 		void process_dist_pixel(float *pixel, float dist) const
 		{
-			(*pixel) *= exp(-dist / outer_radius_square);
+			if (inner_radius_square>0) {
+				if (dist>inner_radius_square) 
+					(*pixel) *= exp(-pow(sqrt(dist)-inner_radius,2.0) / outer_radius_square);
+			}
+			else (*pixel) *= exp(-dist / outer_radius_square);
 		}
+	};
+
+	/**a gaussian falloff to zero, with nonisotropic widths along x,y,z
+	 */
+	class MaskGaussNonuniformProcessor:public CoordinateProcessor
+	{
+	  public:
+		MaskGaussNonuniformProcessor():radius_x(0), radius_y(0), radius_z(0), gauss_width(0)
+		{
+		}
+
+		void set_params(const Dict & new_params)
+		{
+			params = new_params;
+
+			if (params.has_key("radius_x")) radius_x=params["radius_x"];
+			else radius_x=5.0;
+
+			if (params.has_key("radius_y")) radius_y=params["radius_y"];
+			else radius_y=5.0;
+
+			if (params.has_key("radius_z")) radius_z=params["radius_z"];
+			else radius_z=5.0;
+
+			if (params.has_key("gauss_width")) gauss_width=params["gauss_width"];
+			else gauss_width=0.05;
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+
+			d.put("radius_x", EMObject::INT, "x-axis radius");
+			d.put("radius_y", EMObject::INT, "y-axis radius");
+			d.put("radius_z", EMObject::INT, "z-axis radius");
+			d.put("gauss_width", EMObject::FLOAT, "Gaussian falloff width, relative to each radius, default 0.05");
+
+			return d;
+		}
+
+		string get_name() const
+		{
+			return "mask.gaussian.nonuniform";
+		}
+		static Processor *NEW()
+		{
+			return new MaskGaussNonuniformProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "A Gaussian falloff to zero. Nonisotropic, specify inner radius for x,y,z and Gaussian falloff width. Falloff \
+width is also nonisotropic and relative to the radii, with 1 being equal to the radius on that axis.";
+		}
+
+	  protected:
+		void process_pixel(float *pixel, int xi, int yi, int zi) const
+		{
+			float dist = pow((xi - nx/2)/radius_x,2.0) + pow((yi - ny/2)/radius_y,2.0) + pow((zi - nz/2)/radius_z,2.0);
+			if (dist>1.0) (*pixel)*=exp(-pow((sqrt(dist)-1.0)/gauss_width,2.0));
+		}
+
+		float radius_x,radius_y,radius_z,gauss_width;
 	};
 
 	/**f(x) = f(x) / exp(-radius*radius * gauss_width / (ny*ny))
