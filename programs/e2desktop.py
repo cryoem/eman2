@@ -164,6 +164,7 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 			glPopMatrix()
 	
 	def set_current(self,current):
+		
 		if self.current != current:
 			if self.current != None:
 				self.current.leaveEvent(None)
@@ -178,11 +179,20 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 			child.set_update_P_inv()
 	
 	def mousePressEvent(self, event):
+		if len(self.children) == 0:
+			self.set_current(None)
+			return
+		
 		children = self.children
 		if self.target != None:
 			children = [self.target]
 		elif self.current != None:
 			children = [self.current]
+			
+		if isinstance(self,EMFormDisplayFrame):
+			print "self",self
+			print self.children
+			print self.target,self.current,children
 		
 			
 		for child in children:
@@ -197,12 +207,18 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 		return False
 	
 	def mouseMoveEvent(self, event):
+		
+		if len(self.children) == 0:
+			self.set_current(None)
+			return
+		
 		children = self.children
+		
 		if self.target != None:
 			children = [self.target]
-		elif self.current != None:
+		elif self.current != None and len(self.children):
 			children = [self.current]
-			
+	
 		for child in children:
 			if ( child.isinwin(event.x(),EMDesktop.main_widget.viewport_height()-event.y()) ):
 				child.mouseMoveEvent(event)
@@ -214,7 +230,13 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 		return False
 		
 	def mouseReleaseEvent(self, event):
+		
+		if len(self.children) == 0:
+			self.set_current(None)
+			return
+		
 		children = self.children
+
 		if self.target != None:
 			children = [self.target]
 		elif self.current != None:
@@ -232,6 +254,10 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 					
 		
 	def mouseDoubleClickEvent(self, event):
+		if len(self.children) == 0:
+			self.set_current(None)
+			return
+		
 		children = self.children
 		if self.target != None:
 			children = [self.target]
@@ -249,7 +275,9 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 		return False
 		
 	def wheelEvent(self, event):
-		
+		if len(self.children) == 0:
+			self.set_current(None)
+			return
 		children = self.children
 		if self.target != None:
 			children = [self.target]
@@ -267,6 +295,10 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 		return False
 		
 	def toolTipEvent(self, event):
+		if len(self.children) == 0:
+			self.set_current(None)
+			return
+		
 		children = self.children
 		if self.target != None:
 			children = [self.target]
@@ -284,6 +316,9 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 		return False
 
 	def keyPressEvent(self,event):
+		if len(self.children) == 0:
+			self.set_current(None)
+			return
 		children = self.children
 		if self.target != None:
 			children = [self.target]
@@ -339,6 +374,10 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 
 	def hoverEvent(self,event):
 		#print "hoverEvent
+		if len(self.children) == 0:
+			self.set_current(None)
+			return
+		
 		children = self.children
 		if self.target != None:
 			children = [self.target]
@@ -587,12 +626,27 @@ class EMFormDisplayFrame(EMGLViewContainer):
 		glTranslate(self.width()/2-self.focus_child.width()/2,self.height()/2-self.focus_child.height()/2,0)
 		self.focus_child.draw()
 		glPopMatrix()
+
 		
+		w = -50
+		d = -50
+		glPushMatrix()
+		glTranslate(*self.get_origin())
+		for i in self.children:
+			if i == self.focus_child: continue
+			glTranslate(self.width()/2-i.width()/2+w,self.height()/2-i.height()/2,0+d)
+			i.draw()
+			w -= 50
+			d -= 50
+				
+		glPopMatrix()
+
 		self.first_draw = []
 	
 	def attach_child(self,child):
 		#  if the EMGLViewContainer has a target then events need only be sent to one thing, and collision detection is minimized
 		self.target = child
+		self.current = child
 		self.focus_child = child
 		EMGLViewContainer.attach_child(self,child)
 		self.first_draw.append(child)
@@ -603,9 +657,11 @@ class EMFormDisplayFrame(EMGLViewContainer):
 		if len(self.children) != 0:
 			self.target = self.children[-1]
 			self.focus_child = self.target
+			self.current = self.target
 		else:
 			self.focus_child = None
 			self.target = None
+			self.current = None
 
 class EMPlainDisplayFrame(EMGLViewContainer):
 	count = 0
@@ -1095,7 +1151,7 @@ class EMDesktopApplication(EMApplication):
 class FocusAnimation:
 	def __init__(self):
 		self.focus_animation = None
-		self.z = -35
+		self.z = -20
 		self.hold_focus = None
 		
 	def is_focused(self):
@@ -1528,7 +1584,8 @@ class EMDesktopFrame(EMFrame,FocusAnimation):
 		return self.parent.get_aspect()
 	
 	def closeEvent(self,event):
-		print "should act on close event"
+		pass
+		#print "should act on close event"
 
 class EMDesktopScreenInfo:
 	"""
@@ -1602,6 +1659,8 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouterToList,Animator,EMGLProjection
 		self.application.set_app(app)
 		if EMDesktop.application == None:
 			EMDesktop.application = self.application
+		
+		self.setWindowIcon(QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/desktop.png"))
 		
 		self.z_opt = -1
 		
@@ -2378,7 +2437,6 @@ class SideTransform:
 	def animation_done_event(self,child):
 		#print "del side transform"
 		self.has_focus() # this is more a question
-		self.child().parent().force_texture_update()
 		self.child().unlock_texture()
 
 	def get_xy_scale(self):
@@ -2524,7 +2582,9 @@ class TopWidgetBar(SideWidgetBar):
 	def draw(self):
 		if len(self.children) == 0 : 
 			return
-	
+		self.total_width=0
+		for child in self.children:
+			self.total_width += child.width_inc_border()
 		glPushMatrix()
 		glTranslate(-self.total_width/2,self.parent.height()/2.0-15,0)
 		for i,child in enumerate(self.children):
@@ -2546,9 +2606,9 @@ class TopWidgetBar(SideWidgetBar):
 		EMWindowNode.attach_child(self,new_child)
 		self.reset_scale_animation()
 		
-		self.total_width=0
-		for child in self.children:
-			self.total_width += child.width_inc_border()
+		#self.total_width=0
+		#for child in self.children:
+			#self.total_width += child.width_inc_border()
 		
 		#print "total width is",self.total_width
 		#print len(self.children)

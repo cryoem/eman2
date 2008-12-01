@@ -425,7 +425,13 @@ class EMQtWidgetModule(EMGUIModule):
 		EMGUIModule.__init__(self,application)
 		
 		self.selected = False
-		
+	
+	#def __del__(self):
+		#print "in qt delete"
+		#if self.qt_widget != None:
+			#print "yo"
+			#self.qt_widget.clear_gl_memory(self)
+	
 	def set_selected(self,bool):
 		self.selected = bool
 		if self.gl_widget != None:self.gl_widget.set_selected(self.selected)
@@ -439,8 +445,8 @@ class EMQtWidgetModule(EMGUIModule):
 		from emfloatingwidgets import EMQtGLView, EM2DQtGLWindow
 		if self.gl_widget == None:
 			self.under_qt_control = False
-			self.qt_context_parent = qt_context_parent
-			self.gl_context_parent = gl_context_parent
+			if qt_context_parent != None: self.qt_context_parent = qt_context_parent
+			if gl_context_parent != None: self.gl_context_parent = gl_context_parent
 			gl_view = EMQtGLView(self,self.qt_widget)
 			gl_view.setQtWidget(self.qt_widget)
 			self.gl_widget = EM2DQtGLWindow(self,gl_view)
@@ -474,10 +480,15 @@ class EMQtWidgetModule(EMGUIModule):
 	def height(self): return self.qt_widget.height()
 	
 	def closeEvent(self,event) :
+		if self.qt_widget != None:
+			self.qt_widget.close()
+		
+		self.qt_widget = None
+		
 		if self.application != None:
 			self.application().close_specific(self)
 		
-		if self.qt_widget != None: self.qt_widget.close()
+		self.gl_widget = None
 		self.qt_widget = None
 		self.emit(QtCore.SIGNAL("module_closed")) # this could be a useful signal, especially for something like the selector module, which can potentially show a lot of images but might want to close them all when it is closed
 		

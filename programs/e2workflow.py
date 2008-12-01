@@ -66,7 +66,7 @@ class EMTaskMonitorWidget(QtGui.QWidget,Animator):
 		# so that keeping track of processes using pids is more efficient
 		try: self.init_history_db_entries = HOMEDB.history["count"]
 		except: self.init_history_db_entries = 0
-		print self.init_history_db_entries
+		#print self.init_history_db_entries
 		self.project_db = db_open_dict("bdb:project")
 		self.current_process_info = self.project_db.get("workflow.process_ids",{})
 		#self.current_process_info = {}
@@ -109,7 +109,7 @@ class EMTaskMonitorWidget(QtGui.QWidget,Animator):
 				try:
 					if HOMEDB.history[j]["pid"] == pid:
 						self.project_db = db_open_dict("bdb:project")
-						print "adding",j
+						#print "adding",j
 						self.current_process_info[j] = HOMEDB.history[j]
 						self.history_check.pop(i) # ok what if two are ended at the same time? oh well there is time lag...
 						self.project_db ["workflow.process_ids"] = self.current_process_info
@@ -211,7 +211,7 @@ class EMTaskMonitorWidget(QtGui.QWidget,Animator):
 			
 		#if val == None:
 			#print "error, this shouldn't happen"
-		print item.module
+		#print item.module
 		self.module().emit(QtCore.SIGNAL("task_selected"),str(item.text()),item.module)
 	
 	def on_kill(self):
@@ -537,7 +537,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		
 	
 	def pop_task_event_pair(self,task):
-		self.tasks.pop(task)
+		old_task = self.tasks.pop(task)
 		self.event_managers.pop(task)
 		self.update_task_list()
 		
@@ -633,8 +633,10 @@ class EMWorkFlowManager:
 	
 	
 	def close(self):
-		self.application().close_specific(self.selector)
-		self.application().close_specific(self.task_monitor)
+		self.selector().closeEvent(None)
+		self.task_monitor.closeEvent(None)
+		#self.application().close_specific(self.selector)
+		#self.application().close_specific(self.task_monitor)
 
 if __name__ == '__main__':
 	

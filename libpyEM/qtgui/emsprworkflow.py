@@ -78,13 +78,13 @@ class WorkFlowTask(QtCore.QObject):
 		for k,v in params.items():
 			self.write_db_entry(k,v)
 			
-		self.application().close_specific(self.form)
+		self.form.closeEvent(None)
 		self.form = None
 	
 		self.emit(QtCore.SIGNAL("task_idle"))
 		
 	def on_form_cancel(self):
-		self.application().close_specific(self.form)
+		self.form.closeEvent(None)
 		self.form = None
 
 		self.emit(QtCore.SIGNAL("task_idle"))
@@ -93,7 +93,7 @@ class WorkFlowTask(QtCore.QObject):
 		self.emit(QtCore.SIGNAL("task_idle"))
 
 	def closeEvent(self,event):
-		self.application().close_specific(self.form)
+		self.form.closeEvent(None)
 		#self.emit(QtCore.SIGNAL("task_idle")
 		
 	def write_db_entry(self,key,value):
@@ -320,7 +320,7 @@ class MicrographCCDImportTask(WorkFlowTask):
 			else:
 				self.write_db_entry(k,v)
 
-		self.application().close_specific(self.form)
+		self.form.closeEvent(None)
 		self.form = None
 	
 		self.emit(QtCore.SIGNAL("task_idle"))
@@ -577,8 +577,10 @@ class ParticleWorkFlowTask(WorkFlowTask):
 				db_name = "bdb:particles#"+name_strip+"_ptcls"
 				if db_check_dict(db_name):
 					db = db_open_dict(db_name)
-					vals.append(db["maxrec"]+1)
-					db_close_dict(db_name)
+					if db.has_key("maxrec") and db["maxrec"] != None:
+						vals.append(db["maxrec"]+1)
+						db_close_dict(db_name)
+					else: vals.append("")
 				else:
 					vals.append("")
 			else:
@@ -595,10 +597,12 @@ class ParticleWorkFlowTask(WorkFlowTask):
 				name_strip = get_file_tag(name)
 				db_name = "bdb:particles#"+name_strip+"_ptcls"
 				if db_check_dict(db_name):
-					db = db_open_dict(db_name)
-					hdr = db.get_header(0)
-					vals.append(str(hdr["nx"])+'x'+str(hdr["ny"])+'x'+str(hdr["nz"]))
-					db_close_dict(db_name)
+					try:
+						db = db_open_dict(db_name)
+						hdr = db.get_header(0)
+						vals.append(str(hdr["nx"])+'x'+str(hdr["ny"])+'x'+str(hdr["nz"]))
+						db_close_dict(db_name)
+					except:vals.append("")
 				else: vals.append("")
 			return vals
 		
@@ -886,7 +890,7 @@ class ParticleImportTask(ParticleWorkFlowTask):
 		for k,v in params.items():
 			self.write_db_entry(k,v)
 			
-		self.application().close_specific(self.form)
+		self.form.closeEvent(None)
 		self.form = None
 	
 		self.emit(QtCore.SIGNAL("task_idle"))
@@ -1102,18 +1106,18 @@ class E2BoxerGenericTask(ParticleWorkFlowTask):
 	def on_form_ok(self,params):
 		if params["running_mode"] == "Interactive boxing":
 			self.emit(QtCore.SIGNAL("replace_task"),E2BoxerGuiTaskGeneral,"e2boxer interface launcher")
-			self.application().close_specific(self.form)
+			self.form.closeEvent(None)
 			self.form = None
 		elif params["running_mode"] == "Autoboxing":
 			self.emit(QtCore.SIGNAL("replace_task"),E2BoxerAutoTaskGeneral,"e2boxer automated boxing")
-			self.application().close_specific(self.form)
+			self.form.closeEvent(None)
 			self.form = None
 		elif params["running_mode"] == "Write output":
 			self.emit(QtCore.SIGNAL("replace_task"),E2BoxerOutputTaskGeneral,"e2boxer write output")
-			self.application().close_specific(self.form)
+			self.form.closeEvent(None)
 			self.form = None	
 		else:
-			self.application().close_specific(self.form)
+			self.form.closeEvent(None)
 			self.form = None
 			self.emit(QtCore.SIGNAL("task_idle"))
 			
@@ -1173,7 +1177,7 @@ class E2BoxerAutoTask(E2BoxerTask):
 			temp_file_name = "e2boxer_autobox_stdout.txt"
 			self.spawn_task("e2boxer.py",options,string_args,bool_args,additional_args,temp_file_name)
 			self.emit(QtCore.SIGNAL("task_idle"))
-			self.application().close_specific(self.form)
+			self.form.closeEvent(None)
 			self.form = None
 
 	def write_db_entry(self,key,value):
@@ -1258,7 +1262,7 @@ class E2BoxerGuiTask(E2BoxerTask):
 			
 			QtCore.QObject.connect(self.boxer_module, QtCore.SIGNAL("module_idle"), self.on_boxer_idle)
 			QtCore.QObject.connect(self.boxer_module, QtCore.SIGNAL("module_closed"), self.on_boxer_closed)
-			self.application().close_specific(self.form)
+			self.form.closeEvent(None)
 			self.boxer_module.show_guis()
 			self.form = None
 			
@@ -1375,7 +1379,7 @@ class E2BoxerOutputTask(E2BoxerTask):
 			temp_file_name = "e2boxer_autobox_stdout.txt"
 			self.spawn_task("e2boxer.py",options,string_args,bool_args,additional_args,temp_file_name)
 			self.emit(QtCore.SIGNAL("task_idle"))
-			self.application().close_specific(self.form)
+			self.form.closeEvent(None)
 			self.form = None
 #	
 	def write_db_entry(self,key,value):
@@ -1683,18 +1687,18 @@ class E2CTFGenericTask(ParticleWorkFlowTask):
 	def on_form_ok(self,params):
 		if params["running_mode"] == "auto params":
 			self.emit(QtCore.SIGNAL("replace_task"),E2CTFAutoFitTaskGeneral,"ctf auto fit")
-			self.application().close_specific(self.form)
+			self.form.closeEvent(None)
 			self.form = None
 		elif params["running_mode"] == "interactively fine tune":
 			self.emit(QtCore.SIGNAL("replace_task"),E2CTFGuiTaskGeneral,"fine tune ctf")
-			self.application().close_specific(self.form)
+			self.form.closeEvent(None)
 			self.form = None
 		elif params["running_mode"] == "write output":
 			self.emit(QtCore.SIGNAL("replace_task"),E2CTFOutputTaskGeneral,"ctf output")
-			self.application().close_specific(self.form)
+			self.form.closeEvent(None)
 			self.form = None	
 		else:
-			self.application().close_specific(self.form)
+			self.form.closeEvent(None)
 			self.form = None
 			self.emit(QtCore.SIGNAL("task_idle"))
 			
@@ -1830,7 +1834,7 @@ class E2CTFAutoFitTask(E2CTFWorkFlowTask):
 			temp_file_name = "e2ctf_autofit_stdout.txt"
 			self.spawn_task("e2ctf.py",options,string_args,bool_args,additional_args,temp_file_name)
 			
-			self.application().close_specific(self.form)
+			self.form.closeEvent(None)
 			self.emit(QtCore.SIGNAL("task_idle"))
 			
 		else:
@@ -1985,7 +1989,7 @@ class E2CTFOutputTask(E2CTFWorkFlowTask):
 			self.spawn_task("e2ctf.py",options,string_args,bool_args,additional_args,temp_file_name)
 			
 
-			self.application().close_specific(self.form)
+			self.form.closeEvent(None)
 			self.emit(QtCore.SIGNAL("task_idle"))
 		else:
 			return
@@ -2061,10 +2065,10 @@ class E2CTFOutputTaskGeneral(E2CTFOutputTask):
 			self.spawn_task("e2ctf.py",options,string_args,bool_args,additional_args,temp_file_name)
 			
 
-			self.application().close_specific(self.form)
+			self.form.closeEvent(None)
 			self.emit(QtCore.SIGNAL("task_idle"))
 		else:
-			self.application().close_specific(self.form)
+			self.form.closeEvent(None)
 			self.emit(QtCore.SIGNAL("task_idle"))
 	
 class E2CTFGuiTask(E2CTFWorkFlowTask):	
@@ -2127,7 +2131,7 @@ class E2CTFGuiTask(E2CTFWorkFlowTask):
 			
 			self.gui=GUIctfModule(self.application(),img_sets)
 			self.emit(QtCore.SIGNAL("gui_running"), "CTF", self.gui) # so the desktop can prepare some space!
-			self.application().close_specific(self.form)
+			self.form.closeEvent(None)
 			QtCore.QObject.connect(self.gui,QtCore.SIGNAL("module_closed"), self.on_ctf_closed)
 			self.gui.show_guis()
 		else:
@@ -2406,7 +2410,7 @@ class E2Refine2DTask(ParticleWorkFlowTask):
 	 			cmd += " --process=math.meanshrink:n="+str(options.shrink)
 	 			
 	 			self.application().setOverrideCursor(Qt.BusyCursor)
-	 			success = not (os.system(cmd) in (0,12))
+	 			success = (os.system(cmd) in (0,12))
 	 			self.application().setOverrideCursor(Qt.ArrowCursor)
 	 			
 	 			if not success:
@@ -2431,7 +2435,7 @@ class E2Refine2DTask(ParticleWorkFlowTask):
 	 	cmd += " --makevstack=bdb:"+options.path+"#all"
 	 	
 	 	self.application().setOverrideCursor(Qt.BusyCursor)
-	 	success = not (os.system(cmd) in (0,12))
+	 	success = (os.system(cmd) in (0,12))
 	 	self.application().setOverrideCursor(Qt.ArrowCursor)
 	 	return success,cmd
 	 
@@ -2448,7 +2452,7 @@ class E2Refine2DTask(ParticleWorkFlowTask):
 		temp_file_name = "e2refine2d_stdout.txt"
 		self.spawn_single_task("e2refine2d.py",options,string_args,bool_args,additional_args,temp_file_name)
 		self.emit(QtCore.SIGNAL("task_idle"))
-		self.application().close_specific(self.form)
+		self.form.closeEvent(None)
 		self.form = None
 		
  		 	
@@ -2491,19 +2495,19 @@ class E2Refine2DChooseDataTask(ParticleWorkFlowTask):
 		
 		if choice[:9] == "Particles":
 			self.emit(QtCore.SIGNAL("replace_task"),E2Refine2DRunTask,"e2refine2d options")
-			self.application().close_specific(self.form)
+			self.form.closeEvent(None)
 			self.form = None
 		elif choice[:5] == "Phase":
 			self.emit(QtCore.SIGNAL("replace_task"),E2Refine2DWithPhasePtclsTask,"e2refine2d options")
-			self.application().close_specific(self.form)
+			self.form.closeEvent(None)
 			self.form = None
 		elif choice[:6] == "Wiener":
 			self.emit(QtCore.SIGNAL("replace_task"),E2Refine2DWithWienPtclsTask,"e2refine2d options")
-			self.application().close_specific(self.form)
+			self.form.closeEvent(None)
 			self.form = None
 		elif choice == "Specify files":
 			self.emit(QtCore.SIGNAL("replace_task"),E2Refine2DWithGenericTask,"e2refine2d options")
-			self.application().close_specific(self.form)
+			self.form.closeEvent(None)
 			self.form = None
 		else:
 			print "the code has changed since the original author wrote it, something is wrong!!"
@@ -2723,7 +2727,7 @@ class ImportInitialModels(ParticleWorkFlowTask):
 		progress.qt_widget.close()
 		
 	 	self.emit(QtCore.SIGNAL("task_idle"))
-		self.application().close_specific(self.form)
+		self.form.closeEvent(None)
 		self.form = None
 	 			
 
@@ -2908,7 +2912,7 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 		
 		self.spawn_single_task("e2refine.py",options,string_args,bool_args,additional_args,temp_file_name)
 		self.emit(QtCore.SIGNAL("task_idle"))
-		self.application().close_specific(self.form)
+		self.form.closeEvent(None)
 		self.form = None
 		
 
@@ -3029,7 +3033,7 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 					cmd = "e2proc2d.py"
 		 			cmd += " "+name
 		 			cmd += " "+getattr(options,attr)
-		 			success = not (os.system(cmd) in (0,12))
+		 			success = (os.system(cmd) in (0,12))
 		 			if not success:
 		 				return False,cmd
 		 			else:
@@ -3051,7 +3055,7 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 	 	print "executing cmd", cmd
 	 	
 	 	self.application().setOverrideCursor(Qt.BusyCursor)
-	 	success = not (os.system(cmd) in (0,12))
+	 	success = (os.system(cmd) in (0,12))
 	 	self.application().setOverrideCursor(Qt.ArrowCursor)
 	 	
 	 	setattr(options,attr,"bdb:"+options.path+"#"+out_name) # Note important 
@@ -3533,7 +3537,7 @@ class E2RefineChooseDataTask(ParticleWorkFlowTask):
 
 
 		if not params.has_key("particle_set_choice"):
-			self.application().close_specific(self.form)
+			self.form.closeEvent(None)
 			self.form = None
 			self.emit(QtCore.SIGNAL("task_idle"))
 			
@@ -3541,23 +3545,23 @@ class E2RefineChooseDataTask(ParticleWorkFlowTask):
 		
 		if choice[:9] == "Particles":
 			self.emit(QtCore.SIGNAL("replace_task"),E2RefineParticlesTask,"e2refine params")
-			self.application().close_specific(self.form)
+			self.form.closeEvent(None)
 			self.form = None
 		elif choice[:5] == "Phase":
 			self.emit(QtCore.SIGNAL("replace_task"),E2RefinePhaseTask,"e2refine params")
-			self.application().close_specific(self.form)
+			self.form.closeEvent(None)
 			self.form = None
 		elif choice[:6] == "Wiener":
 			self.emit(QtCore.SIGNAL("replace_task"),E2RefineWienerTask,"e2refine params")
-			self.application().close_specific(self.form)
+			self.form.closeEvent(None)
 			self.form = None
 		elif choice == "Specify files":
 			self.emit(QtCore.SIGNAL("replace_task"),E2RefineGeneralTask,"e2refine params")
-			self.application().close_specific(self.form)
+			self.form.closeEvent(None)
 			self.form = None
 		else:
 			print "the code has changed since the original author wrote it, something is wrong!!"
-			self.application().close_specific(self.form)
+			self.form.closeEvent(None)
 			self.form = None
 			self.emit(QtCore.SIGNAL("task_idle"))
 	

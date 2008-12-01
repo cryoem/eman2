@@ -1168,6 +1168,10 @@ class EM3DPlainBorderDecoration(EMBorderDecoration):
 		self.vdtools.set_mouse_coords(unprojected[16],unprojected[8],unprojected[11],unprojected[17])
 		self.corner_sets.append( self.vdtools.get_corners() )
 		
+		# the whole thing this can save time
+		self.vdtools.set_mouse_coords(unprojected[0],unprojected[5],unprojected[10],unprojected[15])
+		self.corner_sets.append( self.vdtools.get_corners() )
+		
 	def isinwin(self,x,y):
 		interception = False
 		#print "I have this many corner sets",len(self.corner_sets)
@@ -1178,4 +1182,9 @@ class EM3DPlainBorderDecoration(EMBorderDecoration):
 				break
 		return interception
 
-	
+	def isinwin_broadly(self,x,y):
+		p = self.corner_sets[-1]
+		if self.vdtools.isinwinpoints(x,y,p): return True
+		return False
+		
+		

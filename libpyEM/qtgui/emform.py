@@ -66,6 +66,9 @@ class EMFormModule(EMQtWidgetModule):
 		
 	def get_desktop_hint(self):
 		return "form"
+	
+	#def __del__(self):
+		#EMQtWidgetModule.__del__(self)
 
 
 

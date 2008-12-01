@@ -1166,9 +1166,7 @@ class EMGLWindow:
 			self.cam.set_plane('xy')
 			self.cam.mouseMoveEvent(event)
 		elif self.mouse_event_target == self.drawable:
-			try:
-				l=self.vdtools.mouseinwin(*self.mouse_in_win_args(event))
-			except: return #REMOVE ME
+			l=self.vdtools.mouseinwin(*self.mouse_in_win_args(event))
 			qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
 			self.drawable.mouseMoveEvent(qme)
 		else: print "mouse move error" # this shouldn't happen
@@ -1436,17 +1434,35 @@ class EM3DGLWindow(EMGLWindow,EM3DVolume):
 			self.update_border_flag = False
 	def isinwin(self,x,y):
 		#print "I have this many corner sets",len(self.corner_sets)
-		for i,p in enumerate(self.corner_sets):
-			if self.vdtools.isinwinpoints(x,y,p):
-				interception = True
-				self.mouse_event_target = self.drawable
-				#self.cam.set_plane(self.planes[i])
-				#print "plane is",self.planes[i]
-				self.vdtools.setModelMatrix(self.model_matrices[i])
-				return True
-		if self.decoration.isinwin(x,y):
+		if self.decoration.isinwin_broadly(x,y):
+			for i,p in enumerate(self.corner_sets):
+				if self.vdtools.isinwinpoints(x,y,p):
+					interception = True
+					self.mouse_event_target = self.drawable
+					#self.cam.set_plane(self.planes[i])
+					#print "plane is",self.planes[i]
+					self.vdtools.setModelMatrix(self.model_matrices[i])
+					return True
+				
+			
+			self.decoration.isinwin(x,y) # this sets the correct decoration target or somesuch
 			self.mouse_event_target = self.decoration
 			return True
+		#print self,"no"
+		
+		#self.mouse_event_targe =None
+		#return False
+		#for i,p in enumerate(self.corner_sets):
+			#if self.vdtools.isinwinpoints(x,y,p):
+				#interception = True
+				#self.mouse_event_target = self.drawable
+				##self.cam.set_plane(self.planes[i])
+				##print "plane is",self.planes[i]
+				#self.vdtools.setModelMatrix(self.model_matrices[i])
+				#return True
+		#if self.decoration.isinwin(x,y):
+			#self.mouse_event_target = self.decoration
+			#return True
 		return False
 		
 	
@@ -1839,13 +1855,14 @@ class EM2DGLWindow(EMGLWindow,EM3DVolume):
 		self.drawable.resize_event(self.width(),self.height())
 	
 	def isinwin(self,x,y):
-		
-		if self.vdtools.isinwin(x,y):
-			self.mouse_event_target = self.drawable
+		if self.decoration.isinwin_broadly(x,y):
+			if self.vdtools.isinwin(x,y):
+				self.mouse_event_target = self.drawable
+			else:
+				self.decoration.isinwin(x,y) # this sets the correct decoration target or somesuch
+				self.mouse_event_target = self.decoration
 			return True
-		if self.decoration.isinwin(x,y):
-			self.mouse_event_target = self.decoration
-			return True
+		#print self,"no"
 		
 		self.mouse_event_targe =None
 		return False
@@ -1994,10 +2011,7 @@ class EM2DQtGLWindow(EM2DGLWindow):
 		'''
 		:( hack
 		'''
-		if self.parent() == None:
-			#print "this should not hapen"
-			# REMOVE ME
-			return None
+		
 		return [event.x(),self.parent().get_gl_context_parent().viewport_height()-event.y(),self.width(),self.height()]
 	
 	
@@ -2048,15 +2062,16 @@ class EMQtGLView(GLView):
 		self.texture_lock -= 1
 	
 	def __del__(self):
+		if self.parent() != None: self.clear_gl_memory(self.parent())
+	
+	def clear_gl_memory(self,parent):
 		if (self.itex != 0 ):
-			try:
-				self.parent().deleteTexture(self.itex)
-				self.itex = 0
-			except: pass
+			parent.get_gl_context_parent().deleteTexture(self.itex)
+			self.itex = 0
 		if self.texture_dl != 0:
 			glDeleteLists(self.texture_dl,1)
 			self.texture_dl = 0
-		
+	
 	def set_refresh_dl(self,val=True):
 		self.refresh_dl = val
 	
@@ -2079,6 +2094,9 @@ class EMQtGLView(GLView):
 			self.updateTexture()
 			
 	def updateTexture(self,force=False):
+		if self.parent() == None:
+			return
+		
 		if self.texture_lock > 0:
 			return
 		
