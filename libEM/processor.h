@@ -2018,7 +2018,7 @@ outer radius specifies width of Gaussian starting at inner_radius rather than to
 		{
 			if (inner_radius_square>0) {
 				if (dist>inner_radius_square) 
-					(*pixel) *= exp(-pow(sqrt(dist)-inner_radius,2.0) / outer_radius_square);
+					(*pixel) *= exp(-pow(sqrt(dist)-inner_radius,2.0f) / outer_radius_square);
 			}
 			else (*pixel) *= exp(-dist / outer_radius_square);
 		}
@@ -2080,7 +2080,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	  protected:
 		void process_pixel(float *pixel, int xi, int yi, int zi) const
 		{
-			float dist = pow((xi - nx/2)/radius_x,2.0) + pow((yi - ny/2)/radius_y,2.0) + pow((zi - nz/2)/radius_z,2.0);
+			float dist = pow((xi - nx/2)/radius_x,2.0f) + pow((yi - ny/2)/radius_y,2.0f) + pow((zi - nz/2)/radius_z,2.0f);
 			if (dist>1.0) (*pixel)*=exp(-pow((sqrt(dist)-1.0)/gauss_width,2.0));
 		}
 
