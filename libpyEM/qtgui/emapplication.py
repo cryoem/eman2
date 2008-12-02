@@ -329,8 +329,7 @@ class EMStandAloneApplication(EMApplication):
 			if child == child_:
 				widget = child.get_qt_widget()
 				self.children.pop(i) # need to double check that this is the correct behavior
-				widget.close()
-
+				if widget != None: widget.close() # widget was already closed ?
 				if inspector_too and child.inspector != None:
 					inspector = child.get_inspector()
 					inspector.close()

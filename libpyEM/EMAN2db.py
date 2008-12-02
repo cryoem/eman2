@@ -155,7 +155,8 @@ def db_check_dict(url,readonly=True):
 	"""Checks for the existence of the named dictionary, and whether it can be opened 
 	read/write (or just read). Deals only with bdb: urls. Returns false for other specifiers"""
 
-	path,dictname,keys=db_parse_path(url)
+	if len(url) < 4 or url[:4] != "bdb:": return False
+  	path,dictname,keys=db_parse_path(url)
 	
 	path=path+"/EMAN2DB/"+dictname+".bdb"
 #	print path

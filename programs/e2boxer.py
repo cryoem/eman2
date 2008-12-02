@@ -962,7 +962,7 @@ class RawDatabaseAutoBoxer:
 						autoboxer.become(trim_autoboxer)
 				except:
 					print "Error - there seems to be no autoboxing information in the database - autobox interactively first - bailing"
-					if self.logid:  E2progress(logid,1.0)
+					if self.logid:  E2progress(self.logid,1.0)
 					return
 			
 			boxable = Boxable(image_name,None,autoboxer)
@@ -1110,7 +1110,6 @@ class EmptyObject:
 	
 class EMBoxerModule(QtCore.QObject):
 	'''
-	Cleaning in progress
 	'''
 	REFERENCE_ADDING = 0
 	ERASING = 1
@@ -1136,8 +1135,7 @@ class EMBoxerModule(QtCore.QObject):
 			if not hasattr(options,s):
 				form_init = True
 				break
-			
-		
+
 		if form_init or len(options.filenames) == 0 or options.running_mode not in ["gui","auto_db"]:
 			self.__run_form_initialization(options)
 		elif options.running_mode == "gui":
@@ -1153,7 +1151,7 @@ class EMBoxerModule(QtCore.QObject):
 		Will emit the module_idle signal if no guis/forms currently exist, this can be useful for closing the module.
 		'''
 		something_shown = False
-		for gui in [self.guiim,self.guictl_module,self.guimxit,self.guimx,self.form]:
+		for gui in [self.form,self.guimx,self.guimxit,self.guictl_module,self.guiim]:
 			if gui != None:
 				something_shown = True
 				self.application().show_specific(gui)
@@ -1183,6 +1181,7 @@ class EMBoxerModule(QtCore.QObject):
 			self.application().close_specific(self.form)
 			self.form = None
 			self.__gui_init(options)
+			self.show_guis()
 		elif options.running_mode == "auto_db":
 			self.__disconnect_form_signals()
 			self.application().close_specific(self.form)
@@ -1205,6 +1204,7 @@ class EMBoxerModule(QtCore.QObject):
 	def __auto_box_from_db(self,options):
 		print "auto data base boxing"
 		
+		if not hasattr(options,"logid"): options.logid =None
 		self.dab = DatabaseAutoBoxer(self.application(),options.logid)
 		QtCore.QObject.connect(self.dab,QtCore.SIGNAL("db_auto_boxing_done"),self.on_db_autoboxing_done)
 		
@@ -1420,13 +1420,14 @@ class EMBoxerModule(QtCore.QObject):
 				self.autoboxer.become(trim_autoboxer)
 				self.autoboxer.source = "loaded"
 			if self.box_size==-1: self.box_size = self.autoboxer.get_box_size()
+			else: self.autoboxer.set_box_size(self.box_size,self.image_names)
 		except Exception, inst:
 #			print "exception happen when load image's autoboxer: ", inst
 			try:
 				type_autoboxer = project_db["current_autoboxer_type"]
 				trim_autoboxer = project_db["current_autoboxer"]
 
-				print "Current Autoboxer Type: ", type_autoboxer
+				#print "Current Autoboxer Type: ", type_autoboxer
 
 				if type_autoboxer=="Swarm":
 					self.autoboxer = SwarmAutoBoxer(self)
@@ -1441,8 +1442,10 @@ class EMBoxerModule(QtCore.QObject):
 				self.autoboxer_name = self.autoboxer.get_unique_stamp()
 				self.dynapix = self.autoboxer.dynapix_on()
 				if self.box_size==-1: self.box_size = self.autoboxer.get_box_size()
+				else: self.autoboxer.set_box_size(self.box_size,self.image_names)
+				
 			except Exception, inst:
-				print "exception happend when load current autoboxer: ", inst
+				#print "exception happend when load current autoboxer: ", inst
 
 				
 				if self.box_size == -1: self.box_size = 128
@@ -1454,6 +1457,8 @@ class EMBoxerModule(QtCore.QObject):
 				else:
 					self.autoboxer = PawelAutoBoxer(self)
 					self.autoboxer.source = "new"
+					
+				self.autoboxer.set_box_size(self.box_size,self.image_names)
 
 	def guiim_inspector_requested(self,event):
 		self.ctl_rotor.get_core_object().add_qt_widget(self.guiim.get_core_object().get_inspector())
@@ -2284,8 +2289,6 @@ class EMBoxerModule(QtCore.QObject):
 	def write_all_box_image_files(self,box_size,forceoverwrite=False,imageformat="hdf",normalize=True,norm_method="normalize.edgemean"):
 		self.boxable.cache_exc_to_db()
 		for image_name in self.image_names:
-			print image_name
-
 			try:
 				project_db = EMProjectDB()
 				data = project_db[get_idd_key(image_name)]
@@ -2531,8 +2534,10 @@ class AutoBoxerSelectionsMediator:
 	
 	def remove(self,tag):
 		autoboxer_id = self.__get_autoboxer_id_from_tag(tag)
-		project_db = EMProjectDB()
-		project_db.pop(autoboxer_id)
+		db = db_open_dict("bdb:e2boxer.cache")
+		del(db[autoboxer_id])
+#		project_db = EMProjectDB()
+#		project_db.pop(autoboxer_id)
 		self.dict_data.pop(tag)
 	
 	def __name_not_already_present(self,name):

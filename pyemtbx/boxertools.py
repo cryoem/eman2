@@ -235,7 +235,7 @@ class Box:
 		
 		return 0
 	
-	def update_box_image(self,norm=True,norm_method="normalize.ramp.normvar"):
+	def update_box_image(self,norm=True,norm_method="normalize.edgemean"):
 		image = BigImageCache.image=BigImageCache.get_object(self.image_name).get_image(use_alternate=True)
 		#print "getting ", self.image_name, " region ",self.xcorner,self.ycorner,self.xsize,self.ysize
 		if self.xcorner + self.xsize > image.get_xsize(): self.xcorner = image.get_xsize()-self.xsize
@@ -269,7 +269,7 @@ class Box:
 			self.image = None
 			self.footprint = None
 	
-	def get_box_image(self,norm=True,norm_method="normalize.ramp.normvar",force=False):
+	def get_box_image(self,norm=True,norm_method="normalize.edgemean",force=False):
 		if self.image == None or force:
 			self.update_box_image(norm,norm_method)
 		elif norm and self.image.get_attr("normalization") != norm_method: #normalization attribute should always exist

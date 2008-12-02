@@ -1289,6 +1289,7 @@ class EMImageMXModule(EMGUIModule):
 			event.acceptProposedAction()
 
 	def keyPressEvent(self,event):
+		if self.data == None: return
 		ystep = (self.data[0].get_ysize()*self.scale + 2)/2.0
 		xstep = (self.data[0].get_xsize()*self.scale + 2)/2.0
 		if event.key()==Qt.Key_Up :

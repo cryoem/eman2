@@ -484,14 +484,45 @@ class MicrographCCDTask(WorkFlowTask):
 		db_close_dict("bdb:project")
 		return params
 
+	def on_form_ok(self,params):
+		
+		filenames = params["global.micrograph_ccd_filenames"]
+		s_names =  [get_file_tag(name) for name in filenames]
+		error_message = []
+		for name in s_names:
+			if s_names.count(name) > 1:
+				error_message.append("you can't use images with the same file tag (%s)" %name)
+		
+		for i,name in enumerate(filenames):
+					
+			if os.path.exists(name) or db_check_dict(name):
+				try:
+					e = EMData()
+					e.read_image(name,0,True)
+					if EMUtil.get_image_count(name) > 1: error_message.append("%s contains more than one image" %name)
+				except:
+					error_message.append("%s is not a valid EM image type" %name)
+					continue
+			else:
+				error_message.append("%s doesn't exist please remove it from this list" %name)
+
+		if len(error_message) > 0:
+			self.show_error_message(error_message)
+			return
+		
+		for k,v in params.items():
+			self.write_db_entry(k,v)
+			
+			
+		
+		self.form.closeEvent(None)
+		self.form = None
+	
+		self.emit(QtCore.SIGNAL("task_idle"))
+
 	def write_db_entry(self,key,value):
 		if key == "global.micrograph_ccd_filenames":
 			if value != None:
-				stipped_input = [get_file_tag(name) for name in value]
-				for name in stipped_input:
-					if stipped_input.count(name) > 1:
-						print "you can't use images with the same file tag (",name,")"
-						return
 
 				new_names = []
 		
@@ -499,13 +530,7 @@ class MicrographCCDTask(WorkFlowTask):
 				e = EMData()
 				read_header_only = True
 				for i,name in enumerate(value):
-					
-					if os.path.exists(name) or db_check_dict(name):
-						try:
-							a = e.read_image(name,0,read_header_only)
-						except: continue
-						
-						new_names.append(name)
+					new_names.append(name)
 						
 				project_db = db_open_dict("bdb:project")
 				project_db["global.micrograph_ccd_filenames"] = new_names
@@ -667,7 +692,6 @@ class ParticleWorkFlowTask(WorkFlowTask):
 		'''
 		project_db = db_open_dict("bdb:project")	
 		project_names = project_db.get("global.micrograph_ccd_filenames",dfl=[])
-		print "here we are"
 		
 		ptable,n = self.__make_particle_param_table(project_names)
 		setattr(ptable,"convert_text", ptable_convert_2)
@@ -1652,7 +1676,7 @@ class CTFReportTask(E2CTFWorkFlowTask):
 	warning_string = "\n\n\nNOTE: There are no particles currently associated with the project. Please go to the \"Particles\" task and import/box particles first."
 	def __init__(self,application):
 		E2CTFWorkFlowTask.__init__(self,application)
-		self.window_title = "Project particles"
+		self.window_title = "Particle CTF parameters"
 
 	def get_params(self):
 		params = []

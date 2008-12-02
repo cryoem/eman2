@@ -549,7 +549,6 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		Essentially saying, "make this task disappear, but keep a reference to it until the associated gui ends"
 		'''
 		
-		print "launching module",module_string_name,module
 		self.module().emit(QtCore.SIGNAL("launching_module"),module_string_name,module) # for the desktop to prepare a cube
 		module = [self.tasks.pop(task_key),module_string_name,module]
 		self.gui_modules.append(module)
