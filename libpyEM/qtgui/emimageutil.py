@@ -212,6 +212,7 @@ class EMEventRerouterToList:
 		self.orig_targets  = targets
 		self.selected_object = None
 		self.multi_selected_objects = [] # as grown using "ctrl-click" selection, for event master slave relationships
+		self.last_target = None
 	
 	def lock_target(self,target):
 		self.targets = [target]
@@ -220,48 +221,60 @@ class EMEventRerouterToList:
 		self.targets = self.orig_targets
 
 	def set_target(self,target):
+		print "desktop set target"
 		self.targets = [target]
 		self.orig_targets  = [target]
 		
 	def set_targets(self,targets):
 		self.targets = targets
 		self.orig_targets  = targets
+		
+	def set_last_target(self,target):
+		if self.last_target != target:
+			if self.last_target != None: 
+				self.last_target.leaveEvent(None)
+		self.last_target = target
 
 	def mousePressEvent(self, event):
 		for target in self.targets:
 			if target.mousePressEvent(event):
+				self.set_last_target(target)
 				event.accept()
 				return
-			
+		self.set_last_target(None)
+		
 	def wheelEvent(self,event):
 		for target in self.targets:
 			if target.wheelEvent(event):
+				self.set_last_target(target)
 				event.accept()
 				return
+			
+		self.set_last_target(None)
 	
 	def mouseMoveEvent(self,event):
 		for target in self.targets:
 			if target.mouseMoveEvent(event):
+				self.set_last_target(target)
 				event.accept()
 				return
+		self.set_last_target(None)
 	
 	def mouseReleaseEvent(self,event):
 		for target in self.targets:
 			if target.mouseReleaseEvent(event):
+				self.set_last_target(target)
 				event.accept()
 				return
+		self.set_last_target(None)
 			
 	def mouseDoubleClickEvent(self,event):
 		for target in self.targets:
 			if target.mouseDoubleClickEvent(event):
+				self.set_last_target(target)
 				event.accept()
 				return
-
-	def wheelEvent(self,event):
-		for target in self.targets:
-			if target.wheelEvent(event):
-				event.accept()
-				return
+		self.set_last_target(None)
 			
 	def keyPressEvent(self,event):
 		for target in self.targets:

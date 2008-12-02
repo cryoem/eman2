@@ -1151,7 +1151,9 @@ class EMBoxerModule(QtCore.QObject):
 		Will emit the module_idle signal if no guis/forms currently exist, this can be useful for closing the module.
 		'''
 		something_shown = False
-		for gui in [self.form,self.guimx,self.guimxit,self.guictl_module,self.guiim]:
+		# guiim should be last so that it's at the front
+		# guimx should come after guimit in the desktop, just because it's a better setup
+		for gui in [self.form,self.guimxit,self.guimx,self.guictl_module,self.guiim]:
 			if gui != None:
 				something_shown = True
 				self.application().show_specific(gui)

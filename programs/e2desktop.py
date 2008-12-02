@@ -188,13 +188,7 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 			children = [self.target]
 		elif self.current != None:
 			children = [self.current]
-			
-		if isinstance(self,EMFormDisplayFrame):
-			print "self",self
-			print self.children
-			print self.target,self.current,children
-		
-			
+				
 		for child in children:
 			if ( child.isinwin(event.x(),EMDesktop.main_widget.viewport_height()-event.y()) ):
 				child.mousePressEvent(event)
@@ -982,9 +976,10 @@ class EMFrame(EMWindowNode,EMRegion):
 		if self.current != current:
 			if self.current != None:
 				self.current.leaveEvent(None)
-				
-		else:
-			self.set_no_focus()
+#		else:
+#			if self.current != None:
+#				print "set current set_no_focus"
+#				self.set_no_focus()
 		
 		self.current = current
 		
@@ -1151,13 +1146,17 @@ class EMDesktopApplication(EMApplication):
 class FocusAnimation:
 	def __init__(self):
 		self.focus_animation = None
-		self.z = -20
+		self.z = 0
+		self.present = 0
 		self.hold_focus = None
 		
 	def is_focused(self):
 		return self.hold_focus or self.in_focus
 	
 	def new_focus(self):
+		if self.focus_animation != None: 
+			print "w1"
+#		print "new focus"
 		t = Translation(self)
 		old_pos = (0,0,0)
 		new_pos = (0,0,self.z)
@@ -1165,29 +1164,34 @@ class FocusAnimation:
 		t.seed_translation_animation(old_pos,new_pos)
 		
 		self.focus_animation = t
-			
+		self.present = self.z
 	def lost_focus(self):
+#		print "lost focus"
 		if self.focus_animation != None:
-			return # no support today
-#			target = self.focus_animation.p2[2]
-#			begin = self.focus_animation.p1[2]
-#			present = self.focus_animation.translation[2]
-#			
-#			if target > begin:
-#				new_target = 0
-#			else:
-#				new_target = self.z
-#			
-#			print "going from ",present,new_target
-#			t = Translation(self)
-#			old_pos = (0,0,present)
-#			new_pos = (0,0,new_target)
-#			
-#			t.seed_translation_animation(old_pos,new_pos)
-#		
-#			print "it is",t
-#			self.focus_animation = t
+#			print "seeding in between animation"
+			#return # no support today
+			target = self.focus_animation.p2[2]
+			begin = self.focus_animation.p1[2]
+			present = self.focus_animation.translation[2]
+			
+			if target < begin:
+				new_target = 0
+			else:
+				new_target = self.z
+			
+			#print "going from ",present,new_target
+			t = Translation(self)
+			old_pos = (0,0,present)
+			new_pos = (0,0,new_target)
+			
+			self.present = new_target
+			
+			t.seed_translation_animation(old_pos,new_pos)
+		
+			#self.hold_focus = None
+			self.focus_animation = t
 		elif self.in_focus != None:
+#			print "seeding return animation"
 			t = Translation(self)
 			old_pos = (0,0,self.z)
 			new_pos = (0,0,0)
@@ -1197,12 +1201,15 @@ class FocusAnimation:
 			self.focus_animation = t
 			self.hold_focus = self.in_focus
 		else:
+#			print "twiddling thumbs"
 			pass
 #			print "got nothing"
 
 
 	def lock_texture(self):pass # for the Translation animation
 	def unlock_texture(self):
+		print "animation is done (unlock texture)"
+		self.present = self.z
 		self.focus_animation = None
 	
 #		print "in unlock texture"
@@ -1218,16 +1225,19 @@ class FocusAnimation:
 		else:
 			self.focus_animation = None
 			if self.hold_focus != None:
+				print "losing hold focus"
 				self.hold_focus = None
+				#self.present = 0
 				return
-			glTranslate(0,0,self.z)
+			#print "holding at -z"
+			#glTranslate(0,0,self.z)
 #			if self.focus_animation.is_animated():
 #				
 #			else:
 #				return
 #				print "set focus animation None"
 #				#self.focus_animation=None
-#				#
+				#
 
 class EMWorkFlowFrame(EMFrame,FocusAnimation):
 	'''
@@ -1283,9 +1293,16 @@ class EMWorkFlowFrame(EMFrame,FocusAnimation):
 			pass
 		
 	def set_no_focus(self):
+		print "set no focus"
 		if self.in_focus != None:
 			self.lost_focus()
 			self.in_focus = None
+			
+	def leaveEvent(self,event):
+		self.current = None
+		self.lost_focus()
+		self.in_focus = None
+		self.hold_focus = None
 
 		
 class EMDesktopFrame(EMFrame,FocusAnimation):
@@ -2409,6 +2426,9 @@ class SideWidgetBar(EMGLViewContainer):
 				return
 			
 		print "error, attempt to detach a child that didn't belong to this parent"
+		
+	def leaveEvent(self,event):
+		self.parent.leaveEvent(event)
 
 class SideTransform:
 	ACTIVE = 0
@@ -2425,6 +2445,7 @@ class SideTransform:
 		self.rotation = 0 # supply these yourself, probably
 		self.default_rotation = 0 # supply these yourself, probably
 		self.target_rotation = 0.0
+		self.focus_flag = False
 	def __del__(self):
 		if self.scale_animation != None:
 			self.scale_animation.set_animated(False) # this will cause the EMDesktop to stop animating
@@ -2520,10 +2541,13 @@ class SideTransform:
 		#glPopMatrix()
 		#glTranslate(0,-self.xy_scale*self.child.height_inc_border(),0)
 	def has_focus(self):
-			focus = self.rotation == self.target_rotation
-			if focus:
-				self.child().emit(QtCore.SIGNAL("in_focus"),self.string)
-			return focus # This seams to be uniform...
+		focus = self.rotation == self.target_rotation
+		if focus and not self.focus_flag:
+			self.child().emit(QtCore.SIGNAL("in_focus"),self.string)
+			self.focus_flag = True
+		else:
+			self.focus_flag = False
+		return focus # This seams to be uniform...
 	
 
 class BottomWidgetBar(SideWidgetBar):
@@ -2569,11 +2593,6 @@ class BottomWidgetBar(SideWidgetBar):
 			SideTransform.transform(self)
 			glRotate(self.rotation,1,0,0)
 		
-		def has_focus(self):
-			focus = self.rotation == self.target_rotation
-			if focus:
-				self.child().emit(QtCore.SIGNAL("in_focus"),"bottom")
-			return focus # This seams to be uniform...
 		
 class TopWidgetBar(SideWidgetBar):
 	def __init__(self,parent):
@@ -2626,13 +2645,6 @@ class TopWidgetBar(SideWidgetBar):
 			SideTransform.transform(self)
 			glRotate(self.rotation,1,0,0)
 			glTranslate(0,-self.child().height(),0)
-			
-		def has_focus(self):
-			focus = self.rotation == self.target_rotation
-			if focus:
-				self.child().emit(QtCore.SIGNAL("in_focus"),"top")
-			return focus # This seams to be uniform...
-		
 
 		
 class RightSideWidgetBar(SideWidgetBar):
@@ -2678,11 +2690,6 @@ class RightSideWidgetBar(SideWidgetBar):
 			glTranslate(-self.xy_scale*self.child().width()-6,0,0)
 			glScale(self.xy_scale,self.xy_scale,1.0)
 			
-		def has_focus(self):
-			focus = self.rotation == self.target_rotation
-			if focus:
-				self.child().emit(QtCore.SIGNAL("in_focus"),"right")
-			return focus # This seams to be uniform...
 		
 		
 class LeftSideWidgetBar(SideWidgetBar):
