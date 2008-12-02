@@ -474,6 +474,8 @@ class EMImage2DModule(EMGUIModule):
 		self.parent_geometry = None
 		self.font_renderer = None
 		
+		self.eraser_shape = None # a single circle shape used for erasing in e2boxer
+		
 		self.list_data = None 			# this can be used for viewing lists of data
 		self.list_fft_data = None		# this is used for doing the ffts of list data
 		self.list_idx = 0	# and idx to the list_data
@@ -1293,6 +1295,9 @@ class EMImage2DModule(EMGUIModule):
 			if (depth_testing_was_on):
 				GL.glEnable(GL.GL_DEPTH_TEST)
 				
+		if self.eraser_shape != None:
+			self.eraser_shape.draw()
+				
 		glEndList()
 	
 	def inspector_update(self,use_fourier=False):
@@ -1379,6 +1384,16 @@ class EMImage2DModule(EMGUIModule):
 		
 		"""
 		self.shapes[k]=s
+		self.shapechange=1
+		
+	def add_eraser_shape(self,k,s):
+		"""Add an EMShape object to be overlaid on the image. Each shape is
+		keyed into a dictionary, so different types of shapes for different
+		purposes may be simultaneously displayed.
+		
+		"""
+		if k != "None":self.eraser_shape=s
+		else: self.erase_shape = None
 		self.shapechange=1
 		#self.updateGL()
 	

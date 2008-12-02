@@ -638,25 +638,25 @@ class EMBoxerModuleMouseEraseEvents(EMBoxerModuleMouseEventsObject):
 	
 	def mouse_move(self,event):
 		m = self.get_2d_gui_image().scr_to_img((event.x(),event.y()))
-		self.get_2d_gui_image().add_shape("eraser",EMShape(["circle",.1,.1,.1,m[0],m[1],self.eraseradius,3]))
+		self.get_2d_gui_image().add_eraser_shape("eraser",EMShape(["circle",.1,.1,.1,m[0],m[1],self.eraseradius,3]))
 		self.mediator.update_image_display()
 		
 	def mouse_wheel(self,event):
 		if event.modifiers()&Qt.ShiftModifier:
 			self.get_gui_ctl().adjust_erase_rad(event.delta())
 			m= self.get_2d_gui_image().scr_to_img((event.x(),event.y()))
-			self.get_2d_gui_image().add_shape("eraser",EMShape(["circle",.1,.1,.1,m[0],m[1],self.eraseradius,3]))
+			self.get_2d_gui_image().add_eraser_shape("eraser",EMShape(["circle",.1,.1,.1,m[0],m[1],self.eraseradius,3]))
 			self.mediator.update_image_display()
 	
 	def mouse_down(self,event) :
 		m=self.get_2d_gui_image().scr_to_img((event.x(),event.y()))
 		#self.boxable.add_exclusion_area("circle",m[0],m[1],self.eraseradius)
-		self.get_2d_gui_image().add_shape("eraser",EMShape(["circle",.9,.9,.9,m[0],m[1],self.eraseradius,3]))
+		self.get_2d_gui_image().add_eraser_shape("eraser",EMShape(["circle",.9,.9,.9,m[0],m[1],self.eraseradius,3]))
 		self.mediator.exclusion_area_added("circle",m[0],m[1],self.eraseradius,self.erasemode)	
 
 	def mouse_drag(self,event) :
 		m=self.get_2d_gui_image().scr_to_img((event.x(),event.y()))
-		self.get_2d_gui_image().add_shape("eraser",EMShape(["circle",.9,.9,.9,m[0],m[1],self.eraseradius,3]))
+		self.get_2d_gui_image().add_eraser_shape("eraser",EMShape(["circle",.9,.9,.9,m[0],m[1],self.eraseradius,3]))
 		self.mediator.exclusion_area_added("circle",m[0],m[1],self.eraseradius,self.erasemode)
 		# exclusion_area_added does the OpenGL update calls, so there is no need to do so here
 		
@@ -664,7 +664,7 @@ class EMBoxerModuleMouseEraseEvents(EMBoxerModuleMouseEventsObject):
 		# we have finished erasing
 		
 		# make the eraser shape non visible
-		self.get_2d_gui_image().add_shape("eraser",EMShape(["circle",0,0,0,0,0,0,0.1]))
+		self.get_2d_gui_image().add_eraser_shape("None",None)
 		self.mediator.erasing_done(self.erasemode)
 	
 class EMBoxerModuleParticleManipEvents(EMBoxerModuleMouseEventsObject):
@@ -2261,7 +2261,7 @@ class EMBoxerModule(QtCore.QObject):
 			self.mouse_handlers["erasing"].set_mode(Boxable.ERASE)
 			self.mousehandler = self.mouse_handlers["erasing"]
 		else:
-			self.guiim.add_shape("eraser",EMShape(["circle",0,0,0,0,0,0,0.1]))
+			self.guiim.add_eraser_shape("None",None)
 			self.update_image_display()
 			self.mousehandler = self.mouse_handlers["boxing"]
 			
@@ -2271,7 +2271,7 @@ class EMBoxerModule(QtCore.QObject):
 			self.mouse_handlers["erasing"].set_mode(Boxable.UNERASE)
 			self.mousehandler = self.mouse_handlers["erasing"]
 		else:
-			self.guiim.add_shape("eraser",EMShape(["circle",0,0,0,0,0,0,0.1]))
+			self.guiim.add_eraser_shape("None",None)
 			self.update_image_display()
 			self.mousehandler = self.mouse_handlers["boxing"]
 	
