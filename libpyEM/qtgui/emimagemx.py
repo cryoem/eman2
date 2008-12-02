@@ -52,7 +52,10 @@ from emglobjects import EMOpenGLFlagsAndTools
 from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
 import weakref
 
-#GLUT.glutInit(sys.argv)
+try:
+	get_3d_font_renderer()
+except:
+	if get_platform() != "Darwin": GLUT.glutInit(sys.argv)
 
 class EMImageMXWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 	"""
@@ -132,6 +135,10 @@ class EMImageMXWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		# (because display lists are involved)
 		return self.renderPixmap(0,0,True)
 
+
+	def closeEvent(self,event):
+		self.target().clear_gl_memory()
+		self.target().closeEvent()
 
 
 class EMMXCoreMouseEvents:
@@ -494,7 +501,14 @@ class EMImageMXModule(EMGUIModule):
 		if self.main_display_list != 0:
 			glDeleteLists(self.main_display_list,1)
 			self.main_display_list = 0
+		if self.tex_names != None and ( len(self.tex_names) > 0 ):	
+			glDeleteTextures(self.tex_names)
+			self.tex_names = []	
 	
+	def clear_gl_memory(self):
+		if self.main_display_list != 0:
+			glDeleteLists(self.main_display_list,1)
+			self.main_display_list = 0
 		if self.tex_names != None and ( len(self.tex_names) > 0 ):	
 			glDeleteTextures(self.tex_names)
 			self.tex_names = []	
@@ -609,9 +623,9 @@ class EMImageMXModule(EMGUIModule):
 
 		self.max_idx = len(data)
 
-		if self.font_render_mode == EMGUIModule.FTGL:
-			self.font_size = data[0].get_xsize()/6
-			self.font_renderer.set_face_size(self.font_size)
+#		if self.font_render_mode == EMGUIModule.FTGL:
+#			self.font_size = data[0].get_xsize()/6
+#			self.font_renderer.set_face_size(self.font_size)
 		for i,d in enumerate(data):
 			try:
 				d.set_attr("original_number",i)
@@ -863,15 +877,17 @@ class EMImageMXModule(EMGUIModule):
 			#if len(self.coords)>n : self.coords=self.coords[:n] # dont know what this does? Had to comment out, changing from a list to a dictionary
 			glColor(0.5,1.0,0.5)
 			glLineWidth(2)
-#			try:
-#				# we render the 16x16 corner of the image and decide if it's light or dark to decide the best way to 
-#				# contrast the text labels...
-#				a=self.data[0].render_amp8(0,0,16,16,16,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,4)
-#				ims=[ord(pv) for pv in a]
-#				if sum(ims)>32768 : txtcol=(0.0,0.0,0.0)
-#				else : txtcol=(1,1,1.0)
-#			except: txtcol=(1.0,1.0,1.0)
-			txtcol=(0,1,1) # nice cyan color
+			if self.font_render_mode == EMGUIModule.GLUT:
+				try:
+					# we render the 16x16 corner of the image and decide if it's light or dark to decide the best way to 
+					# contrast the text labels...
+					a=self.data[0].render_amp8(0,0,16,16,16,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,4)
+					ims=[ord(pv) for pv in a]
+					if sum(ims)>32768 : txtcol=(0.0,0.0,0.0)
+					else : txtcol=(1,1,1.0)
+				except: txtcol=(1.0,1.0,1.0)
+			else: txtcol=(1,1,1) # nice cyan color
+			
 			if ( len(self.tex_names) > 0 ):	glDeleteTextures(self.tex_names)
 			self.tex_names = []
 	
@@ -1057,7 +1073,7 @@ class EMImageMXModule(EMGUIModule):
 					try: 
 						self.font_renderer.render_string(str(avs))
 					except:	self.font_renderer.render_string("------")
-				tagy+=self.font_renderer.get_face_size()*self.scale/2.0
+				tagy+=self.font_renderer.get_face_size()
 				glPopMatrix()
 			if not lighting:
 				glDisable(GL_LIGHTING)
@@ -1065,6 +1081,7 @@ class EMImageMXModule(EMGUIModule):
 		elif self.font_render_mode == EMGUIModule.GLUT:
 			tagy = ty
 			glColor(*txtcol)
+			glDisable(GL_LIGHTING)
 			for v in self.valstodisp:
 				if v=="Img #" :
 					idx = i+self.img_num_offset
@@ -1141,7 +1158,6 @@ class EMImageMXModule(EMGUIModule):
 #	     print 'in render Text'
 		glRasterPos(x+2,y+2)
 		for c in s:
-			return
 			GLUT.glutBitmapCharacter(GLUT.GLUT_BITMAP_9_BY_15,ord(c))
 
 	def resize_event(self, width, height):
