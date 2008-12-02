@@ -1060,8 +1060,10 @@ float* Util::getBaldwinGridWeights( const int& freq_cutoff, const float& P, cons
 #ifdef EMAN2_USING_OPENGL
 #ifdef __APPLE__
 	#include "OpenGL/glu.h"
+	#include "OpenGL/gl.h"
 #else // WIN32, LINUX
 	#include "GL/glu.h"
+	#include "GL/gl.h"
 #endif	//__APPLE__
 
 int Util::nearest_projected_points(const vector<float>& model_matrix, const vector<float>& proj_matrix, const vector<int>& view_matrix,
@@ -1109,6 +1111,17 @@ int Util::nearest_projected_points(const vector<float>& model_matrix, const vect
 	
 	
 	return intersection;
+}
+
+void Util::colored_rectangle(const vector<float>& data,const float& alpha){
+	
+	glBegin(GL_LINE_LOOP);
+	glColor4f(data[0],data[1],data[2],alpha);
+	glVertex2f(data[3],data[4]);
+	glVertex2f(data[5],data[4]);
+	glVertex2f(data[5],data[6]);
+	glVertex2f(data[3],data[6]);
+	glEnd();
 }
 #endif
 		

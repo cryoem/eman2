@@ -179,7 +179,7 @@ class WorkFlowTask(QtCore.QObject):
 			#print args
 			file = open(temp_file_name,"w+")
 			process = subprocess.Popen(args,stdout=file,stderr=subprocess.STDOUT)
-			print "started process",process.pid
+			#print "started process",process.pid
 			self.emit(QtCore.SIGNAL("process_started"),process.pid)
 			
 		db_close_dict("bdb:project")
@@ -2348,8 +2348,8 @@ class E2Refine2DTask(ParticleWorkFlowTask):
 		pshrink = ParamDef(name="shrink",vartype="int",desc_short="Shrink factor",desc_long="The the downsampling rate used to shrink the data",property=None,defaultunits=4,choices=[])
 		
 		
-		pcmp  =  ParamDef(name="cmp",vartype="string",desc_short="Main comparator",desc_long="The comparator to determine the final quality metric",defaultunits="frc",choices=cmps)
-		pcmpargs =  ParamDef(name="cmpargs",vartype="string",desc_short="params",desc_long="Parameters for the this comparator, see \"e2help.py cmps\"",property=None,defaultunits="",choices=[])	
+		pcmp  =  ParamDef(name="simcmp",vartype="string",desc_short="Main comparator",desc_long="The comparator to determine the final quality metric",defaultunits="frc",choices=cmps)
+		pcmpargs =  ParamDef(name="simcmpargs",vartype="string",desc_short="params",desc_long="Parameters for the this comparator, see \"e2help.py cmps\"",property=None,defaultunits="",choices=[])	
 
 		
 		psimalign =  ParamDef(name="simalign",vartype="string",desc_short="Aligner",desc_long="The aligner being used",property=None,defaultunits="rotate_translate_flip",choices=aligners)
@@ -2400,7 +2400,7 @@ class E2Refine2DTask(ParticleWorkFlowTask):
 			options.initial = None
 		
 		vals = []
-		vals.append(["cmp","cmpargs"])
+		vals.append(["simcmp","simcmpargs"])
 		vals.append(["simalign","simalignargs"])
 		vals.append(["simralign","simralignargs"])
 		vals.append(["simaligncmp","simaligncmpargs"])
@@ -2469,7 +2469,7 @@ class E2Refine2DTask(ParticleWorkFlowTask):
 		
 		string_args = ["iter","iterclassav","naliref","nbasisfp","path","input","parallel"]
 		bool_args = ["normproj"]
-		optionals = ["simalign","simaligncmp","simralign","simraligncmp","initial"]
+		optionals = ["simalign","simaligncmp","simralign","simraligncmp","simcmp","initial"]
 		for opt in optionals:
 			if getattr(options,opt) != None: string_args.append(opt)
 			

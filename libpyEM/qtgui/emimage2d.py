@@ -1262,9 +1262,37 @@ class EMImage2DModule(EMGUIModule):
 		
 		# make our own cirle rather than use gluDisk or somesuch
 		glNewList(self.shapelist,GL_COMPILE)
+		
+		isanimated = False
+		alpha = 1.0
+		if len(self.shapes) > 0:
+			
+			for k in self.shapes.keys():
+				shape = self.shapes[k]
+				glLineWidth(2)
+				if shape.isanimated: 
+					isanimated = True
+					alpha = shape.blend
+					
+					break
+		
+		if isanimated:
+			GL.glEnable(GL.GL_BLEND);
+			depth_testing_was_on = GL.glIsEnabled(GL.GL_DEPTH_TEST);
+			GL.glDisable(GL.GL_DEPTH_TEST);
+			try:GL.glBlendEquation(GL.GL_FUNC_ADD)
+			except:pass
+			GL.glBlendFunc(GL.GL_SRC_ALPHA,GL.GL_ONE_MINUS_SRC_ALPHA);
+		
+		
 		for k,s in self.shapes.items():
-			if self.active[0]==k: s.draw(None,self.active[1:])
-			else: s.draw()
+			Util.colored_rectangle(s.shape[1:8],alpha)
+			
+		if isanimated:
+			GL.glDisable( GL.GL_BLEND);
+			if (depth_testing_was_on):
+				GL.glEnable(GL.GL_DEPTH_TEST)
+				
 		glEndList()
 	
 	def inspector_update(self,use_fourier=False):

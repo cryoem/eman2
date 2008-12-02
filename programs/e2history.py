@@ -81,7 +81,7 @@ if db:
 		for i in range(n):
 			try: h=db.history[i+1]
 			except: print "Entry ",i," missing"
-			if h["path"]==os.getcwd():
+			if h != None and h.has_key("path") and h["path"]==os.getcwd():
 				if h.has_key("end") :print local_datetime(h["start"]),"\t   ",time_diff(h["end"]-h["start"]),"\t"," ".join(h["args"])
 				else: print local_datetime(h["start"]),"\tincomplete\t"," ".join(h["args"])
 else:

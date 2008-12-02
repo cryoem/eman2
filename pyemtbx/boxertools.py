@@ -1640,7 +1640,7 @@ class Boxable:
 		
 		name,suffix = path.splitext( name )
 		if imageformat == "bdb":
-			return "bdb:particles#"+get_file_tag(name)+"_ptcls"
+			return "bdb:particles#"+get_file_tag(self.image_name)+"_ptcls"
 		else:
 			
 			return name+"_particles."+imageformat

@@ -297,6 +297,9 @@ def check_e2refin2d_args(options): # this function is required by the workflow, 
   		error_message.append("There is problem with the aligner arguments.")
   		
   	if not check_eman2_type(options.simaligncmp,Cmps,"Cmp",False):
+  		error_message.append("There is problem with main aligner comparitor arguments.")
+  	
+  	if not check_eman2_type(options.simcmp,Cmps,"Cmp",False):
   		error_message.append("There is problem with main comparitor arguments.")
   	
   	if options.simralign != None and not check_eman2_type(options.simralign,Aligners,"Aligner"):

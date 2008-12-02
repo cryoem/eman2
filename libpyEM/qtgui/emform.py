@@ -498,7 +498,6 @@ class EMFormWidget(QtGui.QWidget):
 
 		
 	def display_file(self,filename):
-		print "emitting display file"
 		self.parent().emit(QtCore.SIGNAL("display_file"),filename)
 
 		

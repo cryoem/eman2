@@ -323,6 +323,8 @@ BOOST_PYTHON_MODULE(libpyUtils2)
 #ifdef EMAN2_USING_OPENGL
 		.def("nearest_projected_points", &EMAN::Util::nearest_projected_points )
 		.staticmethod("nearest_projected_points")
+		.def("colored_rectangle", &EMAN::Util::colored_rectangle )
+		.staticmethod("colored_rectangle")
 #endif
 		.staticmethod("point_is_in_triangle_2d")
 		.staticmethod("point_is_in_convex_polygon_2d")
