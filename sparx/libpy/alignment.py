@@ -36,8 +36,9 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode
 		single iteration of 2D alignment using ormq
 		if CTF = True, apply CTF to data (not to reference!)
 	"""
-	from utilities import model_circle, compose_transform2, combine_params2, inverse_transform2, get_params2D, set_params2D
+	from utilities import model_circle, combine_params2, inverse_transform2, get_params2D, set_params2D
 	from alignment import Applyws, ormq
+
 	if CTF:
 		from filter       import filt_ctf
 
@@ -66,9 +67,7 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode
 		ima2 = ima.copy()
 			
 		alpha, sx, sy, mirror, dummy = get_params2D(ima)
-		#  add centering from the previous iteration, if image was mirrored, filp the sign of x center
-		if mirror: alpha, sx, sy, scale = compose_transform2(alpha, sx, sy, 1.0, 0.0, cs[0], -cs[1], 1.0)
-		else:      alpha, sx, sy, scale = compose_transform2(alpha, sx, sy, 1.0, 0.0, -cs[0], -cs[1], 1.0)
+		alpha, sx, sy, mirror = combine_params2(alpha, sx, sy, mirror, 0.0, -cs[0], -cs[1], 0)
 		alphai, sxi, syi, scalei = inverse_transform2(alpha, sx, sy, 1.0)
 		if CTF:
 			#Apply CTF to image
@@ -78,8 +77,8 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode
 		# align current image to the reference
 		if random_method == "SA":
 			#peaks = ormq_peaks(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
-			#[angt, sxst, syst, mirrort, peakt, select] = sim_anneal(peaks, Iter, T0, F, SA_stop)
 			peaks, peakm, peaks_major, peakm_major = ormq_peaks_major(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
+			#[angt, sxst, syst, mirrort, peakt, select] = sim_anneal(peaks, Iter, T0, F, SA_stop)
 			[angt, sxst, syst, mirrort, peakt, select] = sim_anneal3(peaks, peakm, peaks_major, peakm_major, Iter, T0, F, SA_stop)
 			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
 			set_params2D(ima2, [alphan, sxn, syn, mn, 1.0])
@@ -327,7 +326,6 @@ def ormq_peaks(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 	quadratic interpolation
 	cnx, cny in FORTRAN convention
 	"""
-	from math import pi, cos, sin
 	from utilities import peak_search
 	
 	ccfs = EMData()
@@ -344,6 +342,19 @@ def ormq_peaks(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 	peaks = process_peak(peaks, step, mode, numr)
 
 	return peaks
+
+
+def process_peak_1d_pad(peaks, step, mode, numr, nx):
+	from math import pi, cos, sin
+	
+	peak_num = len(peaks)
+	maxrin = numr[-1]
+	for i in xrange(peak_num):
+		peaks[i][1]= ang_n(peaks[i][1]+1-nx/2, mode, maxrin)
+	peaks.sort(reverse=True)
+	
+	return peaks
+
 
 
 def process_peak(peaks, step, mode, numr):
@@ -397,7 +408,7 @@ def find_position(list_a, t):
 		return k_min
 
 
-def select_major_peaks(g, max_major_peaks, min_height):
+def select_major_peaks(g, max_major_peaks, min_height, dim):
 
 	from filter import filt_gaussl
 	from fundamentals import fft
@@ -406,7 +417,7 @@ def select_major_peaks(g, max_major_peaks, min_height):
 	G = fft(g)
 	
 	found = False
-	min_fl = 0.005
+	min_fl = 0.001
 	max_fl = 0.5
 	
 	while found == False:
@@ -414,7 +425,7 @@ def select_major_peaks(g, max_major_peaks, min_height):
 		peakg = peak_search(fft(filt_gaussl(G, fl)), 1000)
 		K = len(peakg)
 		list_a = [0.0]*K
-		for i in xrange(K):  list_a[i] = peakg[i][4]
+		for i in xrange(K):  list_a[i] = peakg[i][dim+1]
 		k = find_position(list_a, min_height)
 		if k > max_major_peaks: 
 			max_fl = fl
@@ -427,6 +438,37 @@ def select_major_peaks(g, max_major_peaks, min_height):
 	return peakg[0:k] 
 
 
+def select_major_peaks_Gaussian_fitting(peak):
+
+	# Generate the histogram of the angle
+	ang_bin = [0]*30
+	for i in xrange(len(angle)):
+		#angle.append(peak[i][1])
+		bin_num = int(angle[i]/12)
+		ang_bin[bin_num] += 1
+	ang_bin_index = []
+	for i in xrange(30):
+		ang_bin_index.append([ang_bin[i], i])
+	ang_bin_index.sort(reverse=True)
+	print ang_bin
+	print ang_bin_index
+	
+	K = 5
+	A = [0.0]*K
+	mu = [0.0]*K
+	sigma = [0.0]*K
+	
+	for k in xrange(K):
+		A[k] = ang_bin_index[k][0]
+		mu[k] = ang_bin_index[k][1]*12+6
+		sigma[k] = 5.0
+	
+	print A, mu, sigma 
+	
+	
+	return []
+
+
 def ormq_peaks_major(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 	"""
 	Determine shift and rotation between image and reference image (crefim)
@@ -435,41 +477,76 @@ def ormq_peaks_major(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 	quadratic interpolation
 	cnx, cny in FORTRAN convention
 	"""
-	from math import pi, cos, sin
-	from utilities import peak_search
-	from morphology import threshold_to_minval
+	from utilities import peak_search, pad
 	
 	ccfs = EMData()
 	ccfm = EMData()
-	Util.multiref_peaks_ali2d(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, ccfs, ccfm)
+	ccfs_compress = EMData()
+	ccfm_compress = EMData()
+
+	Util.multiref_peaks_compress_ali2d(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, ccfs, ccfm, ccfs_compress, ccfm_compress)
 	
 	nx = ccfs.get_xsize()
 	ny = ccfs.get_ysize()
 	nz = ccfs.get_zsize()
 
+	peaks = peak_search(ccfs, 1000)
+	peakm = peak_search(ccfm, 1000)
+
+	peaks = process_peak(peaks, step, mode, numr)
+	peakm = process_peak(peakm, step, mode, numr)
+
+	max_major_peaks = 5
+	min_height = 0.7
+	
+	peaks_major = select_major_peaks(pad(ccfs_compress, nx*2), max_major_peaks, min_height, 1)
+	peakm_major = select_major_peaks(pad(ccfm_compress, nx*2), max_major_peaks, min_height, 1)
+
+	peaks_major = process_peak_1d_pad(peaks_major, step, mode, numr, nx)
+	peakm_major = process_peak_1d_pad(peakm_major, step, mode, numr, nx)	
+
+	"""
+	ccfs_compress = EMData(nx, 1, 1, True)
+	ccfm_compress = EMData(nx, 1, 1, True)
+
+	for x in xrange(nx):
+		slices = Util.window(ccfs, 1, ny-2, nz-2, x-nx/2, 0, 0)
+		slicem = Util.window(ccfm, 1, ny-2, nz-2, x-nx/2, 0, 0)
+		
+		[means, dummy, dummy, dummy] = Util.infomask(slices, None, True)
+		[meanm, dummy, dummy, dummy] = Util.infomask(slicem, None, True)
+		
+		ccfs_compress.set_value_at(x, 0, 0, means)
+		ccfm_compress.set_value_at(x, 0, 0, meanm)
+
+	peaks_major = select_major_peaks_Gaussian_fitting(peaks)
+	peakm_major = select_major_peaks_Gaussian_fitting(peakm)
+	
 	fs = Util.window(ccfs, nx, ny-2, nz-2, 0, 0, 0)
 	fm = Util.window(ccfm, nx, ny-2, nz-2, 0, 0, 0)
-	
+
 	dummy1, dummy2, mins, dummy3 = Util.infomask(fs, None, True)
 	dummy1, dummy2, minm, dummy3 = Util.infomask(fm, None, True)
 
 	gs = threshold_to_minval(ccfs, mins)
 	gm = threshold_to_minval(ccfm, minm)
 
-	max_major_peaks = 5
-	min_height = 0.7
-
-	peaks_major = select_major_peaks(gs, max_major_peaks, min_height)
-	peakm_major = select_major_peaks(gm, max_major_peaks, min_height)
-
+	peaks_major = select_major_peaks(gs, max_major_peaks, min_height, 3)
+	peakm_major = select_major_peaks(gm, max_major_peaks, min_height, 3)
+	
+	peaks_major = select_major_peaks(pad(ccfs_compress, nx*2), max_major_peaks, min_height, 1)
+	peakm_major = select_major_peaks(pad(ccfm_compress, nx*2), max_major_peaks, min_height, 1)
+	time4 = time()
 	peaks = peak_search(ccfs, 1000)
 	peakm = peak_search(ccfm, 1000)
-	
+	time5 = time()
 	peaks = process_peak(peaks, step, mode, numr)
 	peakm = process_peak(peakm, step, mode, numr)
-	peaks_major = process_peak(peaks_major, step, mode, numr)
-	peakm_major = process_peak(peakm_major, step, mode, numr)	
-		
+	peaks_major = process_peak_1d_pad(peaks_major, step, mode, numr)
+	peakm_major = process_peak_1d_pad(peakm_major, step, mode, numr)	
+	time6 = time()
+	"""
+	
 	return peaks, peakm, peaks_major, peakm_major
 
 
@@ -524,6 +601,7 @@ def sim_anneal(peaks, Iter, T0, F, SA_stop):
 	T = T0*pow(F, Iter)	
 
 	if T > 0.001 and Iter < SA_stop:
+		K = len(peaks)
 		dJe = [0.0]*K
 		for k in xrange(K): dJe[k] = peaks[k][0]/peaks[0][0]		
 		select = select_k(dJe, T)
@@ -587,24 +665,26 @@ def sim_anneal3(peaks, peakm, peaks_major, peakm_major, Iter, T0, F, SA_stop):
 	max_peak = 5
 	DEG_to_RAD = pi/180.0	
 
+	dim = 1
+
 	if T > 0.001 and Iter < SA_stop:
 	
 		K = len(peaks_major)
 		dJe = [0.0]*K
-		for k in xrange(K):	dJe[k] = peaks_major[k][4]
+		for k in xrange(K):	dJe[k] = peaks_major[k][dim+1]
 		
 		select_major = select_k(dJe, T)
 		
 		ang_m = peaks_major[select_major][1]
-		sx_m = peaks_major[select_major][6]
-		sy_m = peaks_major[select_major][7]
+		#sx_m = peaks_major[select_major][6]
+		#sy_m = peaks_major[select_major][7]
 		
 		neighbor = []
 		for i in xrange(len(peaks)):
 			ang = peaks[i][1]
-			sx = peaks[i][6]
-			sy = peaks[i][7]		
-			dist = 64*abs(sin((ang-ang_m)/2*DEG_to_RAD))+sqrt((sx-sx_m)**2+(sy-sy_m)**2)
+			#sx = peaks[i][6]
+			#sy = peaks[i][7]		
+			dist = 64*abs(sin((ang-ang_m)/2*DEG_to_RAD))#+sqrt((sx-sx_m)**2+(sy-sy_m)**2)
 			neighbor.append([dist, i])
 		neighbor.sort()
 
@@ -616,20 +696,20 @@ def sim_anneal3(peaks, peakm, peaks_major, peakm_major, Iter, T0, F, SA_stop):
 
 		K = len(peakm_major)
 		dJe = [0.0]*K
-		for k in xrange(K): 	dJe[k] = peakm_major[k][4]
+		for k in xrange(K): 	dJe[k] = peakm_major[k][dim+1]
 
 		select_major = select_k(dJe, T)
 				
 		ang_m = peakm_major[select_major][1]
-		sx_m = peakm_major[select_major][6]
-		sy_m = peakm_major[select_major][7]
+		#sx_m = peakm_major[select_major][6]
+		#sy_m = peakm_major[select_major][7]
 		
 		neighbor = []
 		for i in xrange(len(peakm)):
 			ang = peakm[i][1]
-			sx = peakm[i][6]
-			sy = peakm[i][7]		
-			dist = 64*abs(sin((ang-ang_m)/2*DEG_to_RAD))+sqrt((sx-sx_m)**2+(sy-sy_m)**2)
+			#sx = peakm[i][6]
+			#sy = peakm[i][7]		
+			dist = 64*abs(sin((ang-ang_m)/2*DEG_to_RAD))#+sqrt((sx-sx_m)**2+(sy-sy_m)**2)
 			neighbor.append([dist, i])
 		neighbor.sort()
 

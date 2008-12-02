@@ -16968,6 +16968,67 @@ void  Util::multiref_peaks_ali2d(EMData* image, EMData* crefim,
 	}
 	return;
 }
+
+//  ccf1d keeps 1d ccfs stored as (maxrin, -kx-1:kx+1, -ky-1:ky+1)
+//  margin is needed for peak search and both arrays are initialized with -1.0e20
+void  Util::multiref_peaks_compress_ali2d(EMData* image, EMData* crefim, float xrng, float yrng, 
+     float step, string mode, vector<int>numr, float cnx, float cny, EMData *peaks, EMData *peakm, 
+     EMData *peaks_compress, EMData *peakm_compress) {
+
+    // Determine shift and rotation between image and one reference
+    // image (crefim, weights have to be applied) using quadratic
+    // interpolation, return a list of peaks  PAP  07/21/08
+
+	int   maxrin = numr[numr.size()-1];
+	
+	int   ky = int(2*yrng/step+0.5)/2;
+	int   kx = int(2*xrng/step+0.5)/2;
+	
+	peaks->set_size(maxrin, 2*kx+3, 2*ky+3);
+	float *p_ccf1ds = peaks->get_data();
+	
+	peakm->set_size(maxrin, 2*kx+3, 2*ky+3);
+	float *p_ccf1dm = peakm->get_data();
+
+	peaks_compress->set_size(maxrin, 1, 1);
+	float *p_ccf1ds_compress = peaks_compress->get_data();
+
+	peakm_compress->set_size(maxrin, 1, 1);
+	float *p_ccf1dm_compress = peakm_compress->get_data();
+
+	for ( int i = 0; i<maxrin*(2*kx+3)*(2*ky+3); i++) {
+		p_ccf1ds[i] = -1.e20f;
+		p_ccf1dm[i] = -1.e20f;
+	}
+
+	for (int i = -ky; i <= ky; i++) {
+		float iy = i * step;
+		for (int j = -kx; j <= kx; j++) {
+			float ix = j*step;
+			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
+			Frngs(cimage, numr);
+			Crosrng_msg_vec(crefim, cimage, numr,
+			  p_ccf1ds+(j+kx+1+((i+ky+1)*(2*kx+3)))*maxrin,
+			  p_ccf1dm+(j+kx+1+((i+ky+1)*(2*kx+3)))*maxrin);
+			delete cimage; cimage = 0;
+		}
+	}
+	for (int x=0; x<maxrin; x++) {
+		float sums = 0.0;
+		float summ = 0.0;
+		for (int i=1; i<=2*ky+1; i++) {
+			for (int j=1; j<=2*kx+1; j++) {
+				sums += p_ccf1ds[(i*(2*kx+3)+j)*maxrin+x];
+				summ += p_ccf1dm[(i*(2*kx+3)+j)*maxrin+x];
+			}
+		}
+		p_ccf1ds_compress[x] = sums;
+		p_ccf1dm_compress[x] = summ;
+	}
+	return;
+}
+
+
 /*
 void Util::multiref_peaks_ali(EMData* image, const vector< EMData* >& crefim,
 			float xrng, float yrng, float step, string mode,

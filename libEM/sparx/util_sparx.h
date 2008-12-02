@@ -558,7 +558,11 @@ public:
 	static void multiref_peaks_ali2d(EMData* image, EMData* crefim,
                 float xrng, float yrng, float step, string mode,
                 vector< int >numr, float cnx, float cny, EMData* peaks, EMData* peakm);
-/*
+	
+	static void multiref_peaks_compress_ali2d(EMData* image, EMData* crefim, float xrng, float yrng, 
+	     float step, string mode, vector<int>numr, float cnx, float cny, EMData *peaks, EMData *peakm, 
+	     EMData *peaks_compress, EMData *peakm_compress);
+     /*
 	static void multiref_peaks_ali(EMData* image, const vector< EMData* >& crefim,
                 float xrng, float yrng, float step, string mode,
                 vector< int >numr, float cnx, float cny, EMData* peaks, EMData* peakm,
