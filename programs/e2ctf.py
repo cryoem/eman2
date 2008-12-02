@@ -634,7 +634,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 	# this applies to the SNR curve only, downweighting the importance of this section of the spectrum without actually
 	# removing the information by filtering the image data. It will, of course also impact Wiener filters.
 	if autohp:
-		for x in range(1,len(snr)-2):
+		for x in range(2,len(snr)-2):
 			if snr[x]>snr[x+1] and snr[x+1]<snr[x+2] : break	# we find the first minimum
 		
 		snr1max=max(snr[1:x])				# find the intensity of the first peak

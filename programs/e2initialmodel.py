@@ -39,6 +39,11 @@ from math import *
 import os
 import sys
 from e2simmx import cmponetomany
+from e2make3d import fourier_reconstruction
+
+class silly:
+	"""This class exists so we can pass an object in to fourier_reconstruction"""
+	pass
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -58,6 +63,7 @@ def main():
 	ptcls=EMData.read_images(options.input)
 	if not ptcls or len(ptcls)==0 : parser.error("Bad input file")
 	boxsize=ptcls[0].get_xsize()
+	display(ptcls)
 
 	# angles to use for refinement
 	sym_object = parsesym(options.sym)
@@ -72,13 +78,25 @@ def main():
 		
 		# This is the refinement loop
 		for it in range(options.iter):
-			projs=[threed[j].project("standard",ort) for ort in orts]		# projections
+			projs=[threed[it].project("standard",ort) for ort in orts]		# projections
 			
 			for i in range(len(ptcls)):
-				sim=cmponetomany(projs,ptcls[i],align="rotate_translate_flip",alicmp=("frc",{}))
+				sim=cmponetomany(projs,ptcls[i],align=("rotate_translate_flip",{}),alicmp=("frc",{}))
 				n=sim.index(min(sim))
 				ptcls[i]["xform.projection"]=orts[n]	# best orientation set in the original particle
-				
+			
+			opt=silly()
+			opt.images=ptcls
+			opt.recon_type="fourier"
+			opt.pad=(boxsize*3/2)
+			opt.pad-=opt.pad%8
+			opt.sym=options.sym
+			opt.keep=0.8
+			threed.append(fourier_reconstruction(opt))
+			display(threed[0])
+			display(threed[-1])
+			
+#			recon=Reconstructors.get("fourier", {})
 			
 			
 	E2end(logid)

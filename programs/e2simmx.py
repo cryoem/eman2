@@ -213,7 +213,7 @@ def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ral
 			ta=target.align(align[0],r,align[1],alicmp[0],alicmp[1])
 			#ta.debug_print_params()
 			
-			if ralign[0]:
+			if ralign and ralign[0]:
 				ralign[1]["xform.align2d"] = ta.get_attr("xform.align2d")
 				ta = target.align(ralign[0],r,ralign[1],alircmp[0],alircmp[1])
 			

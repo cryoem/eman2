@@ -483,7 +483,8 @@ class EMAN2DB:
 		
 	def close(self):
 		"""close the environment associated with this object"""
-		self.dbenv.close()
+		try: self.dbenv.close()
+		except: pass
 		self.dbenv=None
 
 	def __del__(self):
