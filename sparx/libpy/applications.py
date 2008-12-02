@@ -8959,6 +8959,67 @@ class file_set :
 
 		return self.files[ifile], imgid - self.fends[ifile-1]
 
+def defvar(files, nprj, outdir, fl, fh, radccc, writelp, writestack):
+
+	from math import sqrt
+	import os
+	from utilities import get_im, get_image, circumference
+	from filter import filt_tanl
+
+	if os.path.exists(outdir):
+		os.system( "rm -rf " + outdir )
+	os.system( "mkdir " + outdir )
+
+
+
+	total_img = 0
+
+	scale = sqrt(nprj)
+
+	avgfile = outdir + "/avg.hdf" 
+	varfile = outdir + "/var.hdf"
+	filtered = outdir + "/filtered.hdf" 	
+
+	n = get_image( files[0] ).get_xsize()
+
+	radcir = n/2 - 1
+
+	sum = None
+	for f in files:
+		nimg = EMUtil.get_image_count( f )
+		for i in xrange(nimg):
+			img = get_im( f, i )
+			img *= scale
+			img = circumference( img, radcir, radcir+1 )
+			img = filt_tanl( img, fl, fh )
+			img.write_image( filtered, total_img )
+			
+			if sum is None:
+				sum = img.copy()
+			else:
+				sum += img
+
+			total_img += 1
+
+	avg = sum /total_img
+	
+	var = None
+	for i in xrange(total_img):
+		img = get_im( filtered, i )
+		img -= avg
+		img *= img
+		if var is None:
+			var = img.copy()
+		else:
+			var += img
+
+	var /=(total_img-1)
+
+	avg.write_image( avgfile )
+	var.write_image( varfile )
+
+
+	
 def defvar_mpi(files, nprj, outdir, fl, fh, radccc, writelp, writestack):
 	from statistics import def_variancer, ccc
 	from string import atoi, replace, split, atof

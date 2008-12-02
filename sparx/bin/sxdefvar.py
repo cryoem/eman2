@@ -29,17 +29,15 @@ def main():
 		print "usage: " + usage
 		print "Please run '" + progname + " -h' for detailed options"
 	else:
+		files = args[0:-1]
+		outdir = args[-1]
+
 		if options.MPI:
-			files = args[0:-1]
-			outdir = args[-1]
 			from applications import defvar_mpi
 			defvar_mpi( files, 10000.0, outdir, options.fl, options.fh, options.radccc, options.writelp, options.writestack)
 		else:
-			prefix = args[0]
-			nfile = int(args[1])
-			output = args[2]
-			from applications import incvar
-			incvar( prefix, nfile, 10000.0, output, options.fl, options.fh, options.radccc, options.writelp, options.writestack)
+			from applications import defvar
+			defvar( files, 10000.0, outdir, options.fl, options.fh, options.radccc, options.writelp, options.writestack)
 
 
 if __name__ == "__main__":
