@@ -1115,7 +1115,7 @@ class E2BoxerGenericTask(ParticleWorkFlowTask):
 	documentation_string = "Fill me in"
 	def __init__(self,application):
 		ParticleWorkFlowTask.__init__(self,application)
-		self.window_title = "e2ctf"
+		self.window_title = "e2boxer"
 		self.preferred_size = (480,200)
 		
 		
@@ -1158,7 +1158,7 @@ class E2BoxerAutoTask(E2BoxerTask):
 	
 	def __init__(self,application):
 		E2BoxerTask.__init__(self,application)
-		self.window_title = "e2boxer auto"
+		self.window_title = "e2boxer autobox"
 		self.boxer_module = None # this will actually point to an EMBoxerModule, potentially
 
 	def get_params(self):
@@ -1215,7 +1215,7 @@ class E2BoxerAutoTask(E2BoxerTask):
 class E2BoxerAutoTaskGeneral(E2BoxerAutoTask):
 	def __init__(self,application):
 		E2BoxerAutoTask.__init__(self,application)
-		self.window_title = "e2boxer auto"
+		self.window_title = "e2boxer autobox"
 		self.boxer_module = None # this will actually point to an EMBoxerModule, potentially
 
 	def get_params(self):
@@ -1418,6 +1418,7 @@ class E2BoxerOutputTaskGeneral(E2BoxerOutputTask):
 	documentation_string = "Write me"
 	def __init__(self,application):
 		E2BoxerOutputTask.__init__(self,application)
+		self.window_title = "e2boxer output"
 		
 	def get_params(self):
 		params = []
@@ -1735,7 +1736,7 @@ class E2CTFAutoFitTask(E2CTFWorkFlowTask):
 
 	def __init__(self,application):
 		E2CTFWorkFlowTask.__init__(self,application)
-		self.window_title = "e2ctf auto fit"
+		self.window_title = "e2ctf auto fitting"
 
 	def get_params(self):
 		params = []
@@ -1889,7 +1890,7 @@ class E2CTFAutoFitTaskGeneral(E2CTFAutoFitTask):
 	
 	def __init__(self,application):
 		E2CTFAutoFitTask.__init__(self,application)
-		self.window_title = "e2ctf auto fit"
+		self.window_title = "e2ctf auto fitting"
 		self.file_check = True
 	def get_params(self):
 		params = []		
@@ -1942,7 +1943,7 @@ class E2CTFOutputTask(E2CTFWorkFlowTask):
 	warning_string = "\n\n\nNOTE: There are no particles associated with the project and/or there are no previously generated CTF parameters for these particles. To establish project particles go to the \"Particles\" task. To generate CTF parameters go to the \"Automated fitting - e2ctf\" task" 
 	def __init__(self,application):
 		E2CTFWorkFlowTask.__init__(self,application)
-		self.window_title = "e2ctf management"
+		self.window_title = "e2ctf output"
 
 	def get_params(self):
 		params = []		
@@ -2032,7 +2033,7 @@ class E2CTFOutputTaskGeneral(E2CTFOutputTask):
 	
 	def __init__(self,application):
 		E2CTFOutputTask.__init__(self,application)
-		self.window_title = "e2ctf management"
+		self.window_title = "e2ctf output"
 
 	def get_params(self):
 		params = []
@@ -2100,7 +2101,7 @@ class E2CTFGuiTask(E2CTFWorkFlowTask):
 	warning_string = "\n\n\nNOTE: There are no particles associated with the project and/or there are no previously generated CTF parameters for these particles. To establish project particles go to the \"Particles\" task. To generate CTF parameters go to the \"Automated fitting - e2ctf\" task" 
 	def __init__(self,application):
 		E2CTFWorkFlowTask.__init__(self,application)
-		self.window_title = "e2ctf management"
+		self.window_title = "e2ctf interface"
 		self.gui = None # will eventually be a e2ctf gui
 
 	def get_params(self):
@@ -2545,7 +2546,7 @@ class E2Refine2DRunTask(E2Refine2DTask):
 	documentation_string = "Choose which files you want to be part of the input data set, enter the appropriate e2refine2d input parameters, and hit OK. This will cause the workflow to spawn e2refine2d in a separate process. Output data will automatically be stored in the EMAN2 database."
 	def __init__(self,application):
 		E2Refine2DTask.__init__(self,application)
-		self.window_title = "Create refine 2D starting data set"
+		self.window_title = "run e2refine2d"
 		self.end_tag = "_ptcls"
 	def get_params(self):
 		params = []
@@ -2608,6 +2609,7 @@ class InitialModelReportTask(ParticleWorkFlowTask):
 	warning_string = "\n\n\nNOTE: There are no initial models currently associated with the project."
 	def __init__(self,application):
 		ParticleWorkFlowTask.__init__(self,application)
+		self.window_title = "Project initial models"
 	
 	def get_params(self):
 		params = []
@@ -2677,7 +2679,7 @@ class E2MakeInitialModel(ParticleWorkFlowTask):
 	documentation_string = "Make an initial model with e2initialmodel. This feature is currently not operational."
 	def __init__(self,application):
 		ParticleWorkFlowTask.__init__(self,application)
-
+		self.window_title = "run e2makeinitialmodel"
 	def get_params(self):
 		params = []
 		
@@ -2690,6 +2692,7 @@ class ImportInitialModels(ParticleWorkFlowTask):
 	
 	def __init__(self,application):
 		ParticleWorkFlowTask.__init__(self,application)
+		self.window_title = "Import initial models"
 
 		
 	def get_params(self):
@@ -2760,6 +2763,7 @@ class RefinementReportTask(ParticleWorkFlowTask):
 	warning_string = "\n\n\nNOTE: There are no results available."
 	def __init__(self,application):
 		ParticleWorkFlowTask.__init__(self,application)
+		self.window_title = "Refinement results"
 	
 	def get_params(self):
 		params = []
