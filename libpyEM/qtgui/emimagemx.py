@@ -73,7 +73,8 @@ class EMImageMXWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		self.imagefilename = None
 		
 		#self.resize(480,480)
-		
+	
+	
 	def get_target(self):
 		return self.target()
 	
@@ -135,11 +136,10 @@ class EMImageMXWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		# (because display lists are involved)
 		return self.renderPixmap(0,0,True)
 
-
 	def closeEvent(self,event):
 		self.target().clear_gl_memory()
-		self.target().closeEvent()
-
+		self.target().closeEvent(None)
+		
 
 class EMMXCoreMouseEvents:
 	'''
@@ -323,7 +323,7 @@ class EMImageMXModule(EMGUIModule):
 		try:
 			self.font_render_mode = EMGUIModule.FTGL
 			self.font_renderer = get_3d_font_renderer()
-			self.font_renderer.set_face_size(16)
+			self.font_renderer.set_face_size(self.font_size)
 			self.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
 		except:
 			self.font_render_mode = EMGUIModule.GLUT
@@ -400,7 +400,7 @@ class EMImageMXModule(EMGUIModule):
 		
 		self.inspector=None
 		
-		self.font_size = 0
+		self.font_size = 11
 		self.load_font_renderer()
 		if data:
 			self.set_data(data,False)
@@ -498,12 +498,11 @@ class EMImageMXModule(EMGUIModule):
 		#qt_widget.emit(*args,**kargs)
 	
 	def __del__(self):
-		if self.main_display_list != 0:
-			glDeleteLists(self.main_display_list,1)
-			self.main_display_list = 0
-		if self.tex_names != None and ( len(self.tex_names) > 0 ):	
-			glDeleteTextures(self.tex_names)
-			self.tex_names = []	
+		#handler = QtCore.QObjectCleanupHandler()
+		#handler.add(self)
+		#handler.remove(self)
+		#self.setObjectName("me")
+		self.clear_gl_memory()
 	
 	def clear_gl_memory(self):
 		if self.main_display_list != 0:
@@ -623,9 +622,6 @@ class EMImageMXModule(EMGUIModule):
 
 		self.max_idx = len(data)
 
-#		if self.font_render_mode == EMGUIModule.FTGL:
-#			self.font_size = data[0].get_xsize()/6
-#			self.font_renderer.set_face_size(self.font_size)
 		for i,d in enumerate(data):
 			try:
 				d.set_attr("original_number",i)
@@ -877,6 +873,7 @@ class EMImageMXModule(EMGUIModule):
 			#if len(self.coords)>n : self.coords=self.coords[:n] # dont know what this does? Had to comment out, changing from a list to a dictionary
 			glColor(0.5,1.0,0.5)
 			glLineWidth(2)
+
 			if self.font_render_mode == EMGUIModule.GLUT:
 				try:
 					# we render the 16x16 corner of the image and decide if it's light or dark to decide the best way to 
@@ -1041,42 +1038,42 @@ class EMImageMXModule(EMGUIModule):
 			glEnable(GL_TEXTURE_2D)
 			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
 			lighting = glIsEnabled(GL_LIGHTING)
-			glEnable(GL_LIGHTING)
+			glDisable(GL_LIGHTING)
 			#glEnable(GL_NORMALIZE)
 			tagy = ty
-			glColor(*txtcol)
+			
 			glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,txtcol)
 			glMaterial(GL_FRONT,GL_SPECULAR,txtcol)
 			glMaterial(GL_FRONT,GL_SHININESS,1.0)
 			for v in self.valstodisp:
 				glPushMatrix()
 				glTranslate(tx,tagy,0)
-				glTranslate(4,4,0.2)
-				
-
-				#glTranslate(-(bbox[0]-bbox[3])/2,-(bbox[1]-bbox[4])/2,-(bbox[2]-bbox[5])/2)
-				#glRotate(-10,1,0,0)
-				#glTranslate((bbox[0]-bbox[3])/2,(bbox[1]-bbox[4])/2,(bbox[2]-bbox[5])/2)
-				
-				glScale(self.scale/2.0,self.scale/2.0,1)
-				
-				
+				glTranslate(0,1,0.2)
 				if v=="Img #" : 
 					#print i,self.img_num_offset,self.max_idx,(i+self.img_num_offset)%self.max_idx,
 					idx = i+self.img_num_offset
 					if idx != 0: idx = idx%self.max_idx
-					self.font_renderer.render_string(str(idx))
+					sidx = str(idx)
+					bbox = self.font_renderer.bounding_box(sidx)
+					Util.mx_bbox(bbox,txtcol)
+					self.font_renderer.render_string(sidx)
+					
 				else : 
 					av=self.data[i].get_attr(v)
-					if isinstance(av,float) : avs="%1.4g"%av
-					else: avs=str(av)
-					try: 
-						self.font_renderer.render_string(str(avs))
-					except:	self.font_renderer.render_string("------")
+					try:
+						if isinstance(av,float) : avs="%1.4g"%av
+						else: avs=str(av)
+					except:avs ="---"
+					bbox = self.font_renderer.bounding_box(avs)
+					
+					Util.mx_bbox(bbox,txtcol)
+					self.font_renderer.render_string(avs)
+
 				tagy+=self.font_renderer.get_face_size()
+
 				glPopMatrix()
-			if not lighting:
-				glDisable(GL_LIGHTING)
+			if lighting:
+				glEnable(GL_LIGHTING)
 			glDisable(GL_TEXTURE_2D)
 		elif self.font_render_mode == EMGUIModule.GLUT:
 			tagy = ty
@@ -1308,7 +1305,9 @@ class EMImageMXModule(EMGUIModule):
 		if self.data == None: return
 		ystep = (self.data[0].get_ysize()*self.scale + 2)/2.0
 		xstep = (self.data[0].get_xsize()*self.scale + 2)/2.0
-		if event.key()==Qt.Key_Up :
+		if event.key() == Qt.Key_F1:
+			self.display_web_help()
+		elif event.key()==Qt.Key_Up :
 			self.origin=(self.origin[0],self.origin[1]+ystep)
 			self.updateGL()
 		elif event.key()==Qt.Key_Down :

@@ -232,7 +232,20 @@ class EMTaskMonitorWidget(QtGui.QWidget,Animator):
 				self.module().emit(QtCore.SIGNAL("task_killed"),str(item.text()),item.module)
 				self.set_entries(self.entries_dict)
 			
-			
+	def keyPressEvent(self,event):
+		if event.key() == Qt.Key_F1:
+			try: from PyQt4 import QtWebKit
+			except: return
+			try:
+				try:
+					test = self.browser
+				except: 
+					self.browser = QtWebKit.QWebView()
+					self.browser.load(QtCore.QUrl("http://blake.bcm.edu/emanwiki/e2workflow"))
+					self.browser.resize(800,800)
+				
+				if not self.browser.isVisible(): self.browser.show()
+			except: pass		
 		
 		#self.list_widget.
 			#print "removing item",item
@@ -573,6 +586,21 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		else:
 			if task == "Browse":
 				print "hi"
+				
+	def keyPressEvent(self,event):
+		if event.key() == Qt.Key_F1:
+			try: from PyQt4 import QtWebKit
+			except: return
+			try:
+				try:
+					test = self.browser
+				except: 
+					self.browser = QtWebKit.QWebView()
+					self.browser.load(QtCore.QUrl("http://blake.bcm.edu/emanwiki/e2workflow"))
+					self.browser.resize(800,800)
+				
+				if not self.browser.isVisible(): self.browser.show()
+			except: pass
 	
 #	def tree_widget_double_click(self,tree_item,i):
 #		task = tree_item.text(0)

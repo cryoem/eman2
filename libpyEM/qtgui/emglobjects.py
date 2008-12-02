@@ -44,10 +44,6 @@ import weakref
 from emapplication import EMGUIModule,EMQtWidgetModule
 from emimageutil import EventsEmitterAndReciever
 
-
-try: from PyQt4 import QtWebKit
-except: pass
-
 import numpy
 import sys
 import array
@@ -1974,27 +1970,8 @@ class EMImage3DGUIModule(EMGUIModule):
 	def keyPressEvent(self,event):
 		
 		if event.key() == Qt.Key_F1:
-			if self.help_window == None:
-				try:	
-					help = QtWebKit.QWebView()
-					help.load(QtCore.QUrl("http://blake.bcm.edu/emanwiki/e2display"))
-					
-				except:
-					print "in the middle of getting help working"
-					help = QtGui.QTextBrowser()
-					#url = QtCore.QUrl("http://blake.bcm.edu/emanwiki/e2display")
-					url = QtCore.QUrl("http://www.google.com")
-					url.setPort(80)
-					#print url.port()
-					help.setSource(url)
-					#print browser2.port()
-	
-				self.help_window = EMQtWidgetModule(help,self.application)
-				self.application.show_specific(self.help_window)
-				#help.resize(640,640)
+			self.display_web_help()
 		elif event.key() == Qt.Key_Up:
-			
-			
 			if event.modifiers()&Qt.ShiftModifier: self.cam.explicit_translate(0,0,-1)
 			else: self.cam.explicit_translate(0,1,0)
 			self.updateGL()

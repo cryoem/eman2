@@ -83,6 +83,9 @@ class EMIsosurfaceModule(EMImage3DGUIModule):
 		if image :
 			self.set_data(image)
 	
+	def __del__(self):
+		print "isosurface module"
+	
 	def get_type(self):
 		return "Isosurface"
 	

@@ -2782,7 +2782,20 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.connect(self.thrbut, QtCore.SIGNAL("clicked(bool)"), self.selection_mode_changed)
 	
 #		self.target.connect(self.target,QtCore.SIGNAL("nboxes"),self.num_boxes_changed)
-	
+	def keyPressEvent(self,event):
+		if event.key() == Qt.Key_F1:
+			try: from PyQt4 import QtWebKit
+			except: return
+			try:
+				try:
+					test = self.browser
+				except: 
+					self.browser = QtWebKit.QWebView()
+					self.browser.load(QtCore.QUrl("http://blake.bcm.edu/emanwiki/e2boxer"))
+					self.browser.resize(800,800)
+				
+				if not self.browser.isVisible(): self.browser.show()
+			except: pass
 	#def centerpushed(self,unused):
 		#self.target.center(str(self.centerooptions.currentText()))
 	def get_target(self): return self.target()

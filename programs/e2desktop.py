@@ -2122,6 +2122,30 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouterToList,Animator,EMGLProjection
 		
 	def getStartZ(self):
 		return self.start_z
+	
+	def keyPressEvent(self,event):
+		if event.key() == Qt.Key_F1:
+			try: from PyQt4 import QtWebKit
+			except: return
+			try:
+				try:
+					test = self.browser
+				except: 
+					self.browser = QtWebKit.QWebView()
+					self.browser.load(QtCore.QUrl("http://blake.bcm.edu/emanwiki/e2desktop"))
+					self.browser.resize(800,800)
+				
+				if not self.browser.isVisible(): self.browser.show()
+			except: pass
+				#self.browser2 = QtGui.QTextBrowser()
+				##url = QtCore.QUrl("http://blake.bcm.edu/emanwiki/e2display")
+				#url = QtCore.QUrl("http://www.google.com")
+				#url.setPort(80)
+				##print url.port()
+				#self.browser2.setSource(url)
+				##print browser2.port()
+				#self.browser2.show()
+				#self.browser2.resize(800,800)
 
 class BoxerEventsHandler:
 	def __init__(self,target,boxer_module):

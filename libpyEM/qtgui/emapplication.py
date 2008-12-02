@@ -39,6 +39,10 @@ from emimageutil import EMParentWin,EventsEmitterAndReciever
 from EMAN2 import remove_directories_from_name
 import weakref
 
+
+try: from PyQt4 import QtWebKit
+except: pass
+
 class EMModule:
 	'''
 	An EM module is something that provides a form data (list of ParamdDef objects) in order to gather input
@@ -117,6 +121,9 @@ class EMGUIModule(EventsEmitterAndReciever,QtCore.QObject):
 			application.ensure_gl_context(self)
 			
 		EventsEmitterAndReciever.__init__(self)
+		
+	def __del__(self):
+		pass
 	
 	def updateGL(self):
 		if self.gl_widget != None and self.under_qt_control:
@@ -177,10 +184,9 @@ class EMGUIModule(EventsEmitterAndReciever,QtCore.QObject):
 			self.em_qt_inspector_widget.force_texture_update()
 	
 	def closeEvent(self,event):
-		if self.application != None:
+		if self.application() != None:
 			if self.em_qt_inspector_widget != None: 
 				self.em_qt_inspector_widget.closeEvent(event)
-			
 			self.application().close_specific(self)
 		self.emit(QtCore.SIGNAL("module_closed")) # this could be a useful signal, especially for something like the selector module, which can potentially show a lot of images but might want to close them all when it is closed
 		
@@ -207,6 +213,29 @@ class EMGUIModule(EventsEmitterAndReciever,QtCore.QObject):
 	
 	def set_inspector_selected(self,bool):
 		if self.em_qt_inspector_widget != None: self.em_qt_inspector_widget.set_selected(bool)
+
+	def display_web_help(self):
+	
+		try:
+			try:
+				test = self.browser
+			except: 
+				self.browser = QtWebKit.QWebView()
+				self.browser.load(QtCore.QUrl("http://blake.bcm.edu/emanwiki/e2display"))
+				self.browser.resize(800,800)
+			
+			if not self.browser.isVisible(): self.browser.show()
+		except:
+			pass
+			#self.browser2 = QtGui.QTextBrowser()
+			##url = QtCore.QUrl("http://blake.bcm.edu/emanwiki/e2display")
+			#url = QtCore.QUrl("http://www.google.com")
+			#url.setPort(80)
+			##print url.port()
+			#self.browser2.setSource(url)
+			##print browser2.port()
+			#self.browser2.show()
+			#self.browser2.resize(800,800)
 
 class EMApplication:
 	def __init__(self,qt_application_control=True):

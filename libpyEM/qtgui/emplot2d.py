@@ -99,6 +99,9 @@ class EMPlot2DWidget(QtOpenGL.QGLWidget,EMEventRerouter,):
 		GL.glLoadIdentity()
 		
 		self.target().resize_event(width,height)
+	def closeEvent(self,event):
+		self.target().clear_gl_memory()
+		self.target().closeEvent(None)
 		
 class EMPlot2DModule(EMGUIModule):
 
@@ -146,12 +149,17 @@ class EMPlot2DModule(EMGUIModule):
 		
 		self.tex_name = 0
 		self.main_display_list = 0
-		
-	def __del__(self):
-		if self.tex_name != 0: GL.glDeleteTextures(self.tex_name)
+	
+	def clear_gl_memory(self):
+		if self.tex_name != 0: 
+			GL.glDeleteTextures(self.tex_name)
+			self.tex_name = 0
 		if self.main_display_list != 0:
 			glDeleteLists(self.main_display_list,1)
 			self.main_display_list = 0
+	
+	def __del__(self):
+		self.clear_gl_memory()
 	
 	def set_data(self,key,input_data,replace=False,quiet=False):
 		"""Set a keyed data set. The key should generally be a string describing the data.

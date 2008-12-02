@@ -1123,6 +1123,20 @@ void Util::colored_rectangle(const vector<float>& data,const float& alpha){
 	glVertex2f(data[3],data[6]);
 	glEnd();
 }
+
+void Util::mx_bbox(const vector<float>& data, const vector<float>& text_color) {
+	glColor4f(0,0,0,1);
+	glDisable(GL_TEXTURE_2D);
+	glBegin(GL_QUADS);
+
+	glVertex3f(data[0]-1,data[1]-1,-.1);
+	glVertex3f(data[3]+1,data[1]-1,-.1);
+	glVertex3f(data[3]+1,data[4]+1,-.1);
+	glVertex3f(data[0]-1,data[4]+1,-.1);
+	glEnd();
+	glEnable(GL_TEXTURE_2D);
+	glColor4f(text_color[0],text_color[1],text_color[2],text_color[3]);
+}
 #endif
 		
 

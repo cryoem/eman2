@@ -55,8 +55,6 @@ from emapplication import EMGUIModule
 
 from emanimationutil import SingleValueIncrementAnimation, LineAnimation
 
-try: from PyQt4 import QtWebKit
-except: pass
 import platform
 
 MAG_INC = 1.1
@@ -237,6 +235,10 @@ class EMImage2DMouseEventsMediator:
 		
 	def update_inspector_texture(self):
 		self.target().update_inspector_texture()
+		
+	def closeEvent(self,event):
+		self.target().clear_gl_memory()
+		self.target().closeEvent()
 
 class EMImage2DEmitMouseMode(EMImage2DMouseEvents):
 	def __init__(self,mediator):
@@ -510,12 +512,16 @@ class EMImage2DModule(EMGUIModule):
 		self.mouse_event_handler = self.mouse_event_handlers["emit"]
 		
 	def __del__(self):
+		self.clear_gl_memory()
+	
+	def clear_gl_memory(self):
 		if (self.shapelist != 0):
 			glDeleteLists(self.shapelist,1)
 			self.shapelist = 0
 		if self.main_display_list != 0:
 			glDeleteLists(self.main_display_list,1)
 			self.main_display_list = 0
+	
 	
 	def set_mouse_mode(self,mode):
 		self.mmode = mode
@@ -1531,26 +1537,7 @@ class EMImage2DModule(EMGUIModule):
 
 	def keyPressEvent(self,event):
 		if event.key() == Qt.Key_F1:
-			try:
-				try:
-					test = self.browser
-				except: 
-					self.browser = QtWebKit.QWebView()
-					self.browser.load(QtCore.QUrl("http://blake.bcm.edu/emanwiki/e2display"))
-					self.browser.resize(800,800)
-				
-				if not self.browser.isVisible(): self.browser.show()
-			except:
-				print "in the middle of getting help working"
-				self.browser2 = QtGui.QTextBrowser()
-				#url = QtCore.QUrl("http://blake.bcm.edu/emanwiki/e2display")
-				url = QtCore.QUrl("http://www.google.com")
-				url.setPort(80)
-				#print url.port()
-				self.browser2.setSource(url)
-				#print browser2.port()
-				self.browser2.show()
-				self.browser2.resize(800,800)
+			self.display_web_help()
 				
 		elif event.key() == Qt.Key_Up:
 			self.increment_list_data(1)
