@@ -412,6 +412,7 @@ int main(int argc, char *argv[])
 		printf("An AMD Athlon XP 2400+ (32 bit) 2.0Ghz SF ----------------------- 1010\n");
 		printf("An AMD Athlon XP 2600+ (32 bit) 2.0Ghz SF ----------------------- 1090\n");
 		printf("An AMD Athlon 64 3700+ 2.2Ghz SF -------------------------------- 1530\n");
+		printf("An AMD Athlon 64 X2 3800+ 1.0Ghz SF ----------------------------- 1578\n");
 		printf("An AMD Athlon 64 FX-51 2.2Ghz SF -------------------------------- 1760\n");
 		printf("An AMD Opteron 248 2.2Ghz SF ------------------------------------ 1870\n");
 		printf("An Intel Core2 T7200 2.0Ghz SF ---------------------------------- 1990\n");
