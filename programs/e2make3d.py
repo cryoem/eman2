@@ -472,7 +472,8 @@ def fourier_reconstruction(options):
 	recon.insert_params(params)
 	recon.setup()
 	
-	total_images=EMUtil.get_image_count(options.input_file)
+	try: total_images=EMUtil.get_image_count(options.input_file)
+	except: total_images=len(options.images)
 
 	if (options.verbose):
 		print "Inserting Slices"

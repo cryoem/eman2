@@ -55,48 +55,92 @@ def main():
 	parser.add_option("--iter", type = "int", default=8, help = "The total number of refinement iterations to perform")
 	parser.add_option("--tries", type="int", default=1, help="The number of different initial models to generate in search of a good one")
 	parser.add_option("--sym", dest = "sym", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos",default="c1")
-	parser.add_option("--verbose","-v", dest="verbose", default=False, action="store_true",help="Toggle verbose mode - prints extra infromation to the command line while executing")
+	parser.add_option("--verbose","-v", type="int", default=0,help="Verbosity of output (1-9)",default=0)
 
 	(options, args) = parser.parse_args()
-
+	verbose=options.verbose
 
 	ptcls=EMData.read_images(options.input)
 	if not ptcls or len(ptcls)==0 : parser.error("Bad input file")
 	boxsize=ptcls[0].get_xsize()
-	display(ptcls)
+	if verbose : print "%d particles %dx%d"%(len(ptcls),boxsize,boxsize)
 
 	# angles to use for refinement
 	sym_object = parsesym(options.sym)
-	orts = sym_object.gen_orientations("eman",{"delta":7.5})
+#	orts = sym_object.gen_orientations("eman",{"delta":7.5})
+	orts = sym_object.gen_orientations("eman",{"delta":9.0})
 
 	logid=E2init(sys.argv)
 
 	# We make one new reconstruction for each loop of t 
 	for t in range(options.tries):
+		if verbose: print "Try %d"%t
 		threed=[make_random_map(boxsize)]		# initial model
 		apply_sym(threed[0],options.sym)		# with the correct symmetry
 		
 		# This is the refinement loop
 		for it in range(options.iter):
+			if verbose : print "Iteration %d"%it
 			projs=[threed[it].project("standard",ort) for ort in orts]		# projections
+			if verbose>1: print "%d projections"%len(projs)
 			
+			aptcls=[]
 			for i in range(len(ptcls)):
+				if verbose>1 : print "\ralign %d"%i
 				sim=cmponetomany(projs,ptcls[i],align=("rotate_translate_flip",{}),alicmp=("frc",{}))
 				n=sim.index(min(sim))
+				ptcls[i]["npr"]=n
 				ptcls[i]["xform.projection"]=orts[n]	# best orientation set in the original particle
+				aptcls.append(ptcls[i].align("rotate_translate_flip",projs[n],{},"frc",{}))
 			
-			opt=silly()
-			opt.images=ptcls
-			opt.recon_type="fourier"
-			opt.pad=(boxsize*3/2)
-			opt.pad-=opt.pad%8
-			opt.sym=options.sym
-			opt.keep=0.8
-			threed.append(fourier_reconstruction(opt))
-			display(threed[0])
-			display(threed[-1])
+			# Somehow this isn't working  :^(
+			#if verbose>1 : print "reconstruct"
+			#opt=silly()
+			#opt.images=aptcls
+			#opt.recon_type="fourier"
+			#pad=(boxsize*3/2)
+			#pad-=pad%8
+			#opt.pad=str(pad)
+			#opt.iter=3
+			#opt.lowmem=0
+			#opt.no_wt=1
+			#opt.keepsig=0
+			#opt.sym=options.sym
+			#opt.keep=0.8
+			#opt.ndim=2
+			#if verbose>2 : opt.verbose=verbose-2
+			#else : opt.verbose=0
+			#threed.append(fourier_reconstruction(opt))
+			#threed[-1]=threed[-1].get_clip(Region((pad-boxsize)/2,(pad-boxsize)/2,(pad-boxsize)/2,boxsize,boxsize,boxsize))
+
+			pad=(boxsize*3/2)
+			pad-=pad%8
+			recon=Reconstructors.get("fourier", {"sym":options.sym,"x_in":pad,"y_in":pad})
+			recon.setup()
+			for ri in range(3):
+				if ri>0 :
+					for p in aptcls:
+						p2=p.get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))
+						recon.determine_slice_agreement(p2,p["xform.projection"])
 			
-#			recon=Reconstructors.get("fourier", {})
+				for p in aptcls:
+					p2=p.get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))
+					recon.insert_slice(p2,p["xform.projection"])
+			threed.append(recon.finish())
+			threed[-1]=threed[-1].get_clip(Region((pad-boxsize)/2,(pad-boxsize)/2,(pad-boxsize)/2,boxsize,boxsize,boxsize))
+			threed[-1].process_inplace("normalize.edgemean")
+			threed[-1].process_inplace("mask.gaussian",{"inner_radius":boxsize/3.0,"outer_radius":boxsize/12.0})
+			
+#			display(threed[0])
+#			display(threed[-1])
+		#debugging output
+		#display(aptcls)
+		#for i in range(len(aptcls)):
+			#projs[aptcls[i]["npr"]].write_image("x.hed",i*2) 
+			#aptcls[i].write_image("x.hed",i*2+1)
+		#display(threed[-1])
+		#threed[-1].write_image("x.mrc")
+		threed[-1].write_image("x.%d.mrc"%t)
 			
 			
 	E2end(logid)
