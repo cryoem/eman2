@@ -880,10 +880,10 @@ class EMImageMXModule(EMGUIModule):
 					# contrast the text labels...
 					a=self.data[0].render_amp8(0,0,16,16,16,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,4)
 					ims=[ord(pv) for pv in a]
-					if sum(ims)>32768 : txtcol=(0.0,0.0,0.0)
-					else : txtcol=(1,1,1.0)
-				except: txtcol=(1.0,1.0,1.0)
-			else: txtcol=(1,1,1) # nice cyan color
+					if sum(ims)>32768 : txtcol=(0.0,0.0,0.0,1.0)
+					else : txtcol=(1.0,1.0,1.0,1.0)
+				except: txtcol=(1.0,1.0,1.0,1.0)
+			else: txtcol=(1,1,1,1)
 			
 			if ( len(self.tex_names) > 0 ):	glDeleteTextures(self.tex_names)
 			self.tex_names = []
@@ -1033,6 +1033,7 @@ class EMImageMXModule(EMGUIModule):
 		#glPopMatrix()
 	
 	def __draw_mx_text(self,tx,ty,txtcol,i):
+		bgcol = [1-v for v in txtcol]
 		if self.font_render_mode == EMGUIModule.FTGL:
 			
 			glEnable(GL_TEXTURE_2D)
@@ -1055,7 +1056,7 @@ class EMImageMXModule(EMGUIModule):
 					if idx != 0: idx = idx%self.max_idx
 					sidx = str(idx)
 					bbox = self.font_renderer.bounding_box(sidx)
-					Util.mx_bbox(bbox,txtcol)
+					Util.mx_bbox(bbox,txtcol,bgcol)
 					self.font_renderer.render_string(sidx)
 					
 				else : 

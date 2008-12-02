@@ -1124,8 +1124,8 @@ void Util::colored_rectangle(const vector<float>& data,const float& alpha){
 	glEnd();
 }
 
-void Util::mx_bbox(const vector<float>& data, const vector<float>& text_color) {
-	glColor4f(0,0,0,1);
+void Util::mx_bbox(const vector<float>& data, const vector<float>& text_color, const vector<float>& bg_color) {
+	glColor4f(bg_color[0],bg_color[1],bg_color[2],bg_color[3]);
 	glDisable(GL_TEXTURE_2D);
 	glBegin(GL_QUADS);
 

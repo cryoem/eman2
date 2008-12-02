@@ -915,7 +915,7 @@ namespace EMAN
 		 */
 		static int nearest_projected_points(const vector<float>& model_matrix, const vector<float>& proj_matrix, const vector<int>& view_matrix, const vector<Vec3f>& points, const float mouse_x, const float mouse_y,const float& nearnes);
 		static void colored_rectangle(const vector<float>& data,const float& alpha);
-		static void mx_bbox(const vector<float>& data, const vector<float>& text_color);
+		static void mx_bbox(const vector<float>& data, const vector<float>& text_color, const vector<float>& bg_color);
 #endif
 		/** Determine the equation of a plane that intersects 3 points in 3D space.
 		* Required by Symmetry3D::reduce
