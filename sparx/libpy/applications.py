@@ -1205,10 +1205,10 @@ def ali2d_e(stack, outdir, maskfile = None, ou = -1, br = 1.75, center = 1, eps 
 	print_end_msg("ali2d_e")
 
 
-def ali2d_m(stack, refim, outdir, maskfile=None, ir=1, ou=-1, rs=1, xrng=0, yrng=0, step=1, center=1, maxit=0, CTF=False, snr=1.0, rand_seed=1000, MPI=False):
+def ali2d_m(stack, refim, outdir, maskfile=None, ir=1, ou=-1, rs=1, xrng=0, yrng=0, step=1, center=1, maxit=0, CTF=False, snr=1.0, user_func_name="ref_ali2d", rand_seed=1000, MPI=False):
 # 2D multi-reference alignment using rotational ccf in polar coordinates and quadratic interpolation
 	if MPI:
-		ali2d_m_MPI(stack, refim, outdir, maskfile, ir, ou, rs, xrng, yrng, step, center, maxit, CTF, snr, rand_seed)
+		ali2d_m_MPI(stack, refim, outdir, maskfile, ir, ou, rs, xrng, yrng, step, center, maxit, CTF, snr, user_func_name, rand_seed)
 		return
 
 	from utilities      import   model_circle, combine_params2, inverse_transform2, drop_image, get_image
@@ -1261,6 +1261,9 @@ def ali2d_m(stack, refim, outdir, maskfile=None, ir=1, ou=-1, rs=1, xrng=0, yrng
 	os.mkdir(outdir)
 	output = sys.stdout
 
+	import user_functions
+	user_func = user_functions.factory[user_func_name]
+
 	if maskfile:
 		import types
 		if type(maskfile) is types.StringType:  mask = get_image(maskfile)
@@ -1302,6 +1305,13 @@ def ali2d_m(stack, refim, outdir, maskfile=None, ir=1, ou=-1, rs=1, xrng=0, yrng
 	a0 = -1.
 	again = True
 	Iter = 0
+	
+	ref_data = []
+	ref_data.append(mask)
+	ref_data.append(center)
+	ref_data.append(None)
+	ref_data.append(None)
+	
 	while Iter < max_iter and again:
 		#again = False
 		ringref = []
@@ -1388,21 +1398,18 @@ def ali2d_m(stack, refim, outdir, maskfile=None, ir=1, ou=-1, rs=1, xrng=0, yrng
 							frsc = fsc(refi[j][0], refi[j][1], 1.0, os.path.join(outdir,"drm_%03d_%04d"%(Iter, j)))
 							Util.add_img(refi[j][0], refi[j][1])
 							Util.mul_scalar(refi[j][0], 1.0/float(refi[j][2]))
-						#  low pass filter references
-						lowfq, highfq = filt_params(frsc, low = 0.1)
-						refi[j][0]  = filt_btwl(refi[j][0], lowfq, highfq)
+							
+						ref_data[2] = refi[j][0]
+						ref_data[3] = frsc						
+						refi[j][0], cs = user_func(ref_data)
 						if center == -1:
-							csx = sx_sum[j]/len(assign[j])
-							csy = sy_sum[j]/len(assign[j])
-							refi[j][0] = fshift(refi[j][0], -csx, -csy)
-						else:
-							refi[j][0], csx, csy = center_2D(refi[j][0], center)
-						msg = "   group #%3d   filter parameters = %6.4f, %6.4f,  center parameters (x,y) = %10.3e, %10.3e\n"%(j, lowfq, highfq, csx, csy)
-						print_msg(msg)
+							cs[0] = sx_sum[j]/len(assign[j])
+							cs[1] = sy_sum[j]/len(assign[j])
+							refi[j][0] = fshift(refi[j][0], -cs[0], -cs[1])
 						for i in xrange(len(assign[j])):
 							im = assign[j][i]
 							alpha, sx, sy, mirror, scale =  get_params2D(data[im])
-							alphan, sxn, syn, mirrorn = combine_params2(alpha, sx, sy, mirror, 0.0, -csx, -csy, 0)
+							alphan, sxn, syn, mirrorn = combine_params2(alpha, sx, sy, mirror, 0.0, -cs[0], -cs[1], 0)
 							set_params2D(data[im], [alphan, sxn, syn, int(mirrorn), scale])
 						# refine images within the group
 						#  Do the refinement only if max_inter>0, but skip it for the last iteration.
@@ -1446,7 +1453,7 @@ def ali2d_m(stack, refim, outdir, maskfile=None, ir=1, ou=-1, rs=1, xrng=0, yrng
 	print_end_msg("ali2d_m")
 
 
-def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yrng=0, step=1, center=1, maxit=10, CTF=False, snr=1.0, rand_seed=1000):
+def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yrng=0, step=1, center=1, maxit=10, CTF=False, snr=1.0, user_func_name="ref_ali2d", rand_seed=1000):
 # 2D multi-reference alignment using rotational ccf in polar coordinates and quadratic interpolation
 
 	from utilities      import   model_circle, combine_params2, inverse_transform2, drop_image, get_image
@@ -1518,6 +1525,9 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 		print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
 		print_msg("Random seed                 : %i\n\n"%(rand_seed))	
 
+	import user_functions
+	user_func = user_functions.factory[user_func_name]
+
 	if maskfile:
 		import  types
 		if type(maskfile) is types.StringType:  mask = get_image(maskfile)
@@ -1568,6 +1578,12 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 	a0 = -1.0
 	again = True
 	Iter = 0
+	
+	ref_data = []
+	ref_data.append(mask)
+	ref_data.append(center)
+	ref_data.append(None)
+	ref_data.append(None)
 	
 	while Iter < max_iter and again:
 		ringref = []
@@ -1663,12 +1679,17 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 						frsc = fsc(refi[j][0], refi[j][1], 1.0, os.path.join(outdir,"drm%03d%04d"%(Iter,j)))
 						Util.add_img( refi[j][0], refi[j][1] )
 						Util.mul_scalar( refi[j][0], 1.0/float(refi[j][2]) )
+					"""
 					#  low pass filter references
 					lowfq, highfq = filt_params(frsc, low = 0.1)
 					refi[j][0] = filt_btwl(refi[j][0], lowfq, highfq)
 					refi[j][0], csx, csy = center_2D(refi[j][0], center)
 					msg = "   group #%3d   filter parameters = %6.4f, %6.4f,  center parameters (x,y) = %10.3e, %10.3e\n"%(j, lowfq, highfq, csx, csy)
 					print_msg(msg)
+					"""
+					ref_data[2] = refi[j][0]
+					ref_data[3] = frsc
+					refi[j][0], cs = user_func(ref_data)
 				# write the current average
 				TMP = []
 				for i_tmp in xrange(len(assign[j])): TMP.append(float(assign[j][i_tmp]))

@@ -41,7 +41,7 @@ def main():
         for arg in sys.argv:
         	arglist.append( arg )
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " data_stack reference_stack outdir <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translation_step --center=center_type --maxit=max_iter --CTF --snr=SNR --rand_seed=1000 --MPI"
+	usage = progname + " data_stack reference_stack outdir <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translation_step --center=center_type --maxit=max_iter --CTF --snr=SNR --function=user_function_name --rand_seed=1000 --MPI"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ir", type="float", default=1, help="  inner radius for rotational correlation > 0 (set to 1)")
 	parser.add_option("--ou", type="float", default=-1, help="  outer radius for rotational correlation < int(nx/2)-1 (set to the radius of the particle)")
@@ -53,6 +53,7 @@ def main():
 	parser.add_option("--maxit", type="float", default=10, help="  maximum number of iterations (set to 10) ")
 	parser.add_option("--CTF", action="store_true", default=False, help=" Consider CTF correction during multiple reference alignment")
 	parser.add_option("--snr", type="float",  default= 1.0, help="  Signal-to-Noise Ratio of the data (set to 1.0)")
+	parser.add_option("--function", type="string", default="ref_ali2d", help="  name of the reference preparation function")
 	parser.add_option("--rand_seed", type="int", default=1000, help=" random seed of initial (set to 1000)" )
 	parser.add_option("--MPI", action="store_true", default=False,     help="  whether using MPI version ")
 	(options, args) = parser.parse_args(arglist[1:])
@@ -71,7 +72,7 @@ def main():
 			from mpi import mpi_init
    			sys.argv = mpi_init(len(sys.argv), sys.argv)
 		global_def.BATCH = True
-		ali2d_m(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.center, options.maxit, options.CTF, options.snr, options.rand_seed, options.MPI)
+		ali2d_m(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.center, options.maxit, options.CTF, options.snr, options.function, options.rand_seed, options.MPI)
 		global_def.BATCH = False
 
 
