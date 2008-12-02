@@ -2137,6 +2137,8 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouterToList,Animator,EMGLProjection
 				
 				if not self.browser.isVisible(): self.browser.show()
 			except: pass
+		else:
+			EMEventRerouterToList.keyPressEvent(self,event)
 				#self.browser2 = QtGui.QTextBrowser()
 				##url = QtCore.QUrl("http://blake.bcm.edu/emanwiki/e2display")
 				#url = QtCore.QUrl("http://www.google.com")

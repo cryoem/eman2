@@ -32,6 +32,7 @@
 
 from OpenGL import GL,GLUT
 from math import *
+from EMAN2 import get_3d_font_renderer, FTGLFontMode, Util
 
 def initGL():
 	"""Call this static function once to initialize necessary display lists"""
@@ -66,6 +67,7 @@ class EMShape:
 		"scrcircle"  R  G  B  x0 y0    r     linew
 		"point"  R  G  B  x0 y0 r
 """
+	font_renderer = None
 	def __init__(self,init=None) :
 		"""init is a list/tuple containing the above parameters describing the shape"""
 		if init : self.shape=list(init)
@@ -73,7 +75,13 @@ class EMShape:
 		self.blend = 1.0
 		self.blendinc = 0.2
 		self.isanimated = False
-	
+		if EMShape.font_renderer == None:
+			try:
+				EMShape.font_renderer = get_3d_font_renderer()
+				EMShape.font_renderer.set_face_size(16)
+				EMShape.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
+			except:
+				EMShape.font_renderer = 1
 	dlists=-1
 	
 	
@@ -102,7 +110,6 @@ class EMShape:
 			GL.glBlendFunc(GL.GL_SRC_ALPHA,GL.GL_ONE_MINUS_SRC_ALPHA);
 			
 			col=[self.shape[1],self.shape[2],self.shape[3],self.blend]
-
 		
 		if s[0]=="rect":
 			GL.glLineWidth(s[8])
@@ -245,26 +252,35 @@ class EMShape:
 				GL.glEnd()
 			elif s[0]=="scrlabel":
 				if s[8]<0 :
-					GL.glColor(1.,1.,1.)
-					GL.glTranslate(s[4],s[5],0)
-#					GL.glScalef(s[7]/1500.0/sc,s[7]/1500.0/sc,s[7]/1500.0/sc)
-					GL.glScalef(s[7]/1500.0,s[7]/1500.0,s[7]/1500.0)
-					GL.glLineWidth(-s[8])
-					w=104.76*len(s[6])
-					GL.glBegin(GL.GL_QUADS)
-					GL.glVertex(-10.,-33.0)
-					GL.glVertex(w+10.,-33.0)
-					GL.glVertex(w+10.,119.05)
-					GL.glVertex(-10.,119.05)
-					GL.glEnd()
-					GL.glColor(*col)
-					for i in s[6]:
-						GLUT.glutStrokeCharacter(GLUT.GLUT_STROKE_MONO_ROMAN,ord(i))
+					if EMShape.font_renderer != None and EMShape.font_renderer != 1:
+						
+						GL.glTranslate(s[4],s[5],.2)
+						bbox = self.font_renderer.bounding_box(s[6])
+						Util.mx_bbox(bbox,(1,1,1))
+						GL.glTranslate(0,0,.1)
+						EMShape.font_renderer.render_string(s[6])
+					else:
+						GL.glColor(1.,1.,1.)
+						GL.glTranslate(s[4],s[5],0)
+						#GL.glScalef(s[7]/1500.0/sc,s[7]/1500.0/sc,s[7]/1500.0/sc)
+						GL.glScalef(s[7]/1500.0,s[7]/1500.0,1)
+						GL.glLineWidth(-s[8])
+						w=104.76*len(s[6])
+						GL.glBegin(GL.GL_QUADS)
+						GL.glVertex(-10.,-33.0)
+						GL.glVertex(w+10.,-33.0)
+						GL.glVertex(w+10.,119.05)
+						GL.glVertex(-10.,119.05)
+						GL.glEnd()
+						GL.glTranslate(0,0,.1)
+						GL.glColor(*col)
+						for i in s[6]:
+							GLUT.glutStrokeCharacter(GLUT.GLUT_STROKE_MONO_ROMAN,ord(i))
 				else:
 					GL.glColor(*col)
-					GL.glTranslate(s[4],s[5],0)
+					GL.glTranslate(s[4],s[5],-1)
 	#				GL.glScalef(s[7]/100.0,s[7]/100.0,s[7]/100.0)
-					GL.glScalef(s[7]/1500.0/sc,s[7]/1500.0/sc,s[7]/1500.0/sc)
+					GL.glScalef(s[7]/1500.0/sc,s[7]/1500.0/sc,1)
 					GL.glLineWidth(fabs(s[8]))
 					for i in s[6]:
 						GLUT.glutStrokeCharacter(GLUT.GLUT_STROKE_ROMAN,ord(i))

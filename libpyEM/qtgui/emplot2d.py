@@ -103,6 +103,23 @@ class EMPlot2DWidget(QtOpenGL.QGLWidget,EMEventRerouter,):
 		self.target().clear_gl_memory()
 		self.target().closeEvent(None)
 		
+	def keyPressEvent(self,event):
+		if event.key() == Qt.Key_F1:
+			try: from PyQt4 import QtWebKit
+			except: return
+			try:
+				try:
+					test = self.browser
+				except: 
+					self.browser = QtWebKit.QWebView()
+					self.browser.load(QtCore.QUrl("http://blake.bcm.edu/emanwiki/e2display"))
+					self.browser.resize(800,800)
+				
+				if not self.browser.isVisible(): self.browser.show()
+			except: pass
+		else:
+			EMEventRerouter.keyPressEvent(self,event)
+		
 class EMPlot2DModule(EMGUIModule):
 
 	def get_desktop_hint(self):
@@ -159,6 +176,7 @@ class EMPlot2DModule(EMGUIModule):
 			self.main_display_list = 0
 	
 	def __del__(self):
+
 		self.clear_gl_memory()
 	
 	def set_data(self,key,input_data,replace=False,quiet=False):
@@ -730,10 +748,11 @@ class EMPlot2DInspector(QtGui.QWidget):
 # This is just for testing, of course
 if __name__ == '__main__':
 	
-	try:
-		get_3d_font_renderer()
-	except:
-		if get_platform() != "Darwin": GLUT.glutInit(sys.argv )
+	#try:
+		#get_3d_font_renderer()
+	#except:
+		#if get_platform() != "Darwin": GLUT.glutInit(sys.argv )
+	GLUT.glutInit(sys.argv)
 	app = EMStandAloneApplication()
 	window = EMPlot2DModule(app)
 	if len(sys.argv)==1 : 
