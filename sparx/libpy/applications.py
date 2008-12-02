@@ -3075,8 +3075,6 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 	first_ring  = int(ir)
 	rstep       = int(rs)
 	last_ring   = int(ou)
-	max_iter    = int(maxit)
-	kmax        = int(kmaxi)
 
 	numref = EMUtil.get_image_count(ref_vol)
 	for  iref in xrange(numref):
@@ -3101,8 +3099,8 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 	print_msg("Translational step          : %s\n"%(step))
 	print_msg("Angular step                : %s\n"%(delta))
 	print_msg("Angular search range        : %s\n"%(an))
-	print_msg("Maximum number of reassignment iterations   : %i\n"%(kmax))
-	print_msg("Maximum number of alignment iterations      : %i\n"%(max_iter))
+	print_msg("Maximum number of reassignment iterations   : %i\n"%(nassign))
+	print_msg("Maximum number of alignment iterations      : %i\n"%(nrefine))
 	print_msg("Center type                 : %i\n"%(center))
 	print_msg("Data with CTF               : %s\n"%(CTF))
 	print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
@@ -3147,7 +3145,7 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 	total_iter = 0
 	tr_dummy = Transform({"type":"spider"})
 	for N_step in xrange(lstp):
-		for Iter in xrange(kmax):
+		for Iter in xrange(nassign):
 			total_iter += 1
 			print_msg("ASSIGNMENT ITERATION #%3d\n"%(total_iter))
 			peaks = [-1.0e23]*nima
@@ -3209,7 +3207,7 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 					
 			#  here we  write header info
 			write_headers( stack, data, list_of_particles)
- 		for Iter in xrange(max_iter):
+ 		for Iter in xrange(nrefine):
 			total_iter += 1
 			print_msg("ALIGNMENT ITERATION #%3d\n"%(total_iter))
 
