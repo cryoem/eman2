@@ -85,10 +85,13 @@ def main():
 			if verbose>1: print "%d projections"%len(projs)
 			
 			aptcls=[]
+			bss=0.0
 			for i in range(len(ptcls)):
-				if verbose>1 : print "\ralign %d"%i
 				sim=cmponetomany(projs,ptcls[i],align=("rotate_translate_flip",{}),alicmp=("frc",{}))
-				n=sim.index(min(sim))
+				bs=min(sim)
+				bss+=bs
+				if verbose>1 : print "align %d \y(%1.3f)\t%1.3g"%(i,bs,bss)
+				n=sim.index(bs)
 				ptcls[i]["npr"]=n
 				ptcls[i]["xform.projection"]=orts[n]	# best orientation set in the original particle
 				aptcls.append(ptcls[i].align("rotate_translate_flip",projs[n],{},"frc",{}))
@@ -140,6 +143,7 @@ def main():
 			#aptcls[i].write_image("x.hed",i*2+1)
 		#display(threed[-1])
 		#threed[-1].write_image("x.mrc")
+		if verbose : print "Model %d complete. Quality = %f"%(t,bss)
 		threed[-1].write_image("x.%d.mrc"%t)
 			
 			

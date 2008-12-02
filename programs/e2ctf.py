@@ -36,6 +36,7 @@
 
 from EMAN2 import *
 from optparse import OptionParser
+from OpenGL import GL,GLUT
 from math import *
 import time
 import os
@@ -547,7 +548,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 	ds=1.0/(apix*ys)
 	
 	ctf=EMAN2Ctf()
-	ctf.from_dict({"defocus":1.0,"voltage":voltage,"cs":cs,"ampcont":ac,"apix":apix,"dsbg":ds,"background":bg_1d})
+	ctf.from_dict({"defocus":1.0,"voltage":voltage,"bfactor":0.0,"cs":cs,"ampcont":ac,"apix":apix,"dsbg":ds,"background":bg_1d})
 	
 	sf = [sfact(i*ds) for i in range(ys)]
 	
@@ -642,6 +643,8 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 
 		for xx in range(1,x+1): snr[xx]*=0.5*snr2max/snr1max		# scale the initial peak to 50% of the next highest peak
 
+	
+	# store the final results
 	ctf.snr=snr
 	ctf.defocus=dfbest[0]
 	
@@ -650,10 +653,63 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 	#snr=snr[:len(ctf.snr)]
 	#ctf.snr=snr
 
+	# Last, we try to get a decent B-factor
+	# This is a quick hack and not very efficiently coded
+	bfs=[0.0,50.0,100.0,200.0,400.0,600.0,800.0,1200.0,1800.0,2500.0,4000.0]
+	best=(0,0)
+	s0=int(.04/ds)+1
+	s1=min(int(0.15/ds),len(bg_1d)-1)
+	for b in range(1,len(bfs)-1):
+		ctf.bfactor=bfs[b]
+		cc=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_AMP)
+		cc=[sfact(ds*i)*cc[i]**2 for i in range(len(cc))]
 
-	if 1 : print "Best DF = ",dfbest[0]
-	
-	# Now let's try for a B-factor
+		# adjust the amplitude to match well
+		a0,a1=0,0
+		for s in range(s0,s1): 
+			a0+=cc[s]
+			a1+=fabs(im_1d[s]-bg_1d[s])
+		if a1==0 : a1=1.0
+		a0/=a1
+		cc=[i/a0 for i in cc]
+		
+		er=0
+		# compute the error
+		for s in range(s0,len(bg_1d)-1):
+			er+=(cc[s]-im_1d[s]+bg_1d[s])**2
+
+		if best[0]==0 or er<best[0] : best=(er,b)
+
+	# Stupid replication here, in a hurry
+	bb=best[1]
+	best=(best[0],bfs[best[1]])
+	for b in range(20):
+		ctf.bfactor=bfs[bb-1]*(1.0-b/20.0)+bfs[bb+1]*(b/20.0)
+		cc=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_AMP)
+		cc=[sfact(ds*i)*cc[i]**2 for i in range(len(cc))]
+
+		# adjust the amplitude to match well
+		a0,a1=0,0
+		for s in range(s0,s1): 
+			a0+=cc[s]
+			a1+=fabs(im_1d[s]-bg_1d[s])
+		if a1==0 : a1=1.0
+		a0/=a1
+		cc=[i/a0 for i in cc]
+		
+		er=0
+		# compute the error
+		for s in range(s0,len(bg_1d)-1):
+			er+=(cc[s]-im_1d[s]+bg_1d[s])**2
+
+		if best[0]==0 or er<best[0] : best=(er,ctf.bfactor)
+		
+#		print bfs[b],best
+
+
+	ctf.bfactor=best[1]
+
+	if 1 : print "Best DF = %1.3f   B-factor = %1.0f"%(dfbest[0],ctf.bfactor)
 	
 
 	return ctf
@@ -696,6 +752,8 @@ class GUIctfModule(EMQtWidgetModule):
 		EMQtWidgetModule.__init__(self,self.guictf,application)
 		self.application = weakref.ref(application)
 		self.setWindowTitle("CTF")
+		GLUT.glutInit([])
+
 		
 	def get_desktop_hint(self):
 		return "inspector"
@@ -921,10 +979,14 @@ class GUIctf(QtGui.QWidget):
 
 			# auto-amplitude for b-factor adjustment
 			rto,nrto=0,0
-			for i in range(int(.02/ds)+1,len(s)): 
+			for i in range(int(.04/ds)+1,min(int(0.15/ds),len(s)-1)): 
 				if bgsub[i]>0 : 
-					rto+=fit[i]**2/bgsub[i]
-					nrto+=fit[i]
+					#rto+=fit[i]**2/fabs(bgsub[i])
+					#nrto+=fit[i]
+					#rto+=fit[i]**2
+					#nrto+=bgsub[i]**2
+					rto+=fit[i]
+					nrto+=fabs(bgsub[i])
 			if nrto==0 : rto=1.0
 			else : rto/=nrto
 			fit=[fit[i]/rto for i in range(len(s))]
