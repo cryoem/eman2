@@ -747,12 +747,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 	
 # This is just for testing, of course
 if __name__ == '__main__':
-	
-	#try:
-		#get_3d_font_renderer()
-	#except:
-		#if get_platform() != "Darwin": GLUT.glutInit(sys.argv )
-	GLUT.glutInit(sys.argv)
+
 	app = EMStandAloneApplication()
 	window = EMPlot2DModule(app)
 	if len(sys.argv)==1 : 
