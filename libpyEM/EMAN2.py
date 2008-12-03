@@ -244,6 +244,30 @@ exists will produce refine_02 if makenew is set (and create refine_02) and refin
 		return path
 	return "%s_%02d"%(prefix,n-1)
 
+def get_dtag():
+	pfrm = get_platform()
+	if pfrm == "Windows": return "\\"
+	else: return "/"
+
+def numbered_bdb(bdb_url):
+	'''
+	give something like "bdb:refine_01#class_indices (which means bdb:refine_01#class_indices_??.bdb files exist)
+	
+	will return the next available name bdb:refine_01#class_indices_?? (minus the bdb)
+	'''
+	
+	useful_info = db_parse_path(bdb_url)
+
+	d = get_dtag()
+	file_name_begin = useful_info[0] + d + "EMAN2DB" + d + useful_info[1] + "_"
+	  
+	for i in range(0,9):
+		for j in range(0,9):
+			name = file_name_begin+str(i)+str(j)+".bdb"
+			if os.path.exists(name): continue
+			else: 
+				return "bdb:"+useful_info[0]+"#"+useful_info[1] + "_"+str(i)+str(j)
+
 def remove_image(fsp):
 	"""This will remove the image file pointed to by fsp. The reason for this function
 	to exist is formats like IMAGIC which store data in two files. This insures that

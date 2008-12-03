@@ -95,7 +95,6 @@ def main():
 	parser.add_option("--lowmem", default=False, action="store_true",help="Make limited use of memory when possible - useful on lower end machines")
 	
 	(options, args) = parser.parse_args()
-	
 	error = False
 	if check(options,True) == True : 
 		error = True
@@ -110,14 +109,18 @@ def main():
 	if check_make3d_args(options,True) == True:
 		error = True
 	
+	logid=E2init(sys.argv)
+	
 	if error:
 		print "Error encountered while checking command line, bailing"
 		exit_refine(1,logid)
 	
+	
+	
 	if (options.check):
 		exit_refine(0,logid)
 	
-	logid=E2init(sys.argv)
+	
 	
 	if options.path == None:
 		options.path = numbered_path("refine",True)
@@ -222,13 +225,15 @@ def get_classaverage_cmd(options,check=False,nofilecheck=False):
 	
 	e2cacmd += " --ref=%s --iter=%d -f --result=%s --normproc=%s" %(options.projfile,options.classiter,options.resultfile,options.classnormproc)
 	
+	e2cacmd += " --idxcache --dbpath=%s" %options.path
 	
 	if (options.classkeep):
 		e2cacmd += " --keep=%f" %options.classkeep
+		
 	if (options.classkeepsig):
 		e2cacmd += " --keepsig"
 	
-	if (options.classiter > 1 ):
+	if (options.classiter >= 1 ):
 		e2cacmd += " --cmp=%s --align=%s --aligncmp=%s" %(options.classcmp,options.classalign,options.classaligncmp)
 
 		if (options.classralign != None):

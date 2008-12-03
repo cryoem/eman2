@@ -71,8 +71,8 @@ def main():
 	parser.add_option("--resultmx",type="string",help="Specify an output image to store the result matrix. This contains 5 images where row is particle number. Rows in the first image contain the class numbers and in the second image consist of 1s or 0s indicating whether or not the particle was included in the class. The corresponding rows in the third, fourth and fifth images are the refined x, y and angle (respectively) used in the final alignment, these are updated and accurate, even if the particle was excluded from the class.", default=None)
 	parser.add_option("--normproc",type="string",help="The normalization processor. Default is normalize.edgemean. If you want to turn this option off specify \'None\'", default="normalize.edgemean")
 	parser.add_option("--usefilt", dest="usefilt", default=None, help="Specify a particle data file that has been low pass or Wiener filtered. Has a one to one correspondence with your particle data. If specified will be used to align particles to the running class average, however the original particle will be used to generate the actual class average")
-	parser.add_option("--dbidxcache", default=False, action="store_true", help="Stores the indices of all particles in the given class in the Python list in the e2classaverage.indices database")
-	parser.add_option("--dbdir", default=False, help="Use in conjunction with --dbidxcache to specify a directory where the database entries should be stored, e.g. \"refine_01\" ", default=".")
+	parser.add_option("--idxcache", default=False, action="store_true", help="Stores the indices of all particles in the given class in the Python list in the e2classaverage.indices database")
+	parser.add_option("--dbpath", default=False, help="Use in conjunction with --idxcache to specify a directory where the database entries should be stored, e.g. \"refine_01\" ", default=".")
 	
 	(options, args) = parser.parse_args()
 	
@@ -179,18 +179,19 @@ def main():
 	if (options.iter > 0 or options.bootstrap):
 		set_aligner_params_in_options(options)
 	
-	if options.dbidxcache:
+	if options.idxcache:
 		try:
-			class_db = db_open_dict("bdb:"+options.dbdir+"#e2classaverage.indices")
+			db_name = numbered_bdb("bdb:"+options.dbpath+"#class_indices")
+			class_db = db_open_dict(db_name)
 		except:
-			print "error with db terminology: can't open db:", "bdb:"+options.dbdir+"#classaverage.indices"
+			print "error with db terminology: can't call numbered_bdb with this argument:", "bdb:"+options.dbdir+"#class_indices"
 			sys.exit(1)
 	# do one class at a time
 	for cl in range(class_min,class_max+1):
 		if (options.verbose):
 			ndata = []
 			
-		if options.dbidxcache:
+		if options.idxcache:
 			class_indices = []
 		
 		if (options.iter > 0 or options.verbose): ccache = [] # class cache
@@ -208,7 +209,7 @@ def main():
 			for p in range(0,num_part):
 				for c in range(0,num_classes):
 					if classes.get(c,p) == cl:
-						if options.dbidxcache: class_indices.append(p)
+						if options.idxcache: class_indices.append(p)
 						# cache the hit if necessary - this is if there is more than one iteration, and/or the user has specifed verbose. In the
 						# latter case the class cache is used to print information
 						if (options.iter > 0 or options.verbose): ccache.append((p,c))
@@ -254,7 +255,7 @@ def main():
 			for p in range(0,num_part):
 				for c in range(0,num_classes):
 					if classes.get(c,p) == cl:
-						if options.dbidxcache: class_indices.append(p)
+						if options.idxcache: class_indices.append(p)
 						# cache the hit if necessary - this is if there is more than one iteration, and/or the user has specifed verbose. In the
 						# latter case the class cache is used to print information
 						if (options.iter > 0 or options.verbose): ccache.append((p,c))
@@ -324,7 +325,7 @@ def main():
 			#average.write_image("e2_bootstrapped.img",-1)
 		
 		
-		if options.dbidxcache:
+		if options.idxcache:
 			class_db[str(cl)] = class_indices
 				
 		if np == 0:

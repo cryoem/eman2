@@ -280,7 +280,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		task_monitor should probably be supplied, it should be an instance of a EMTaskMonitorWidget
 		'''
 		QtGui.QWidget.__init__(self,None)
-		self.setWindowIcon(QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/workflow.png"))
+		self.setWindowIcon(QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/desktop.png"))
 		self.application = weakref.ref(application)
 		self.module = weakref.ref(module)
 		self.task_monitor = task_monitor
@@ -317,7 +317,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.tree_widget_entries.append(history)
 		self.launchers["History"] = self.launch_view_history
 		self.directory = QtGui.QTreeWidgetItem(QtCore.QStringList("Directory"))
-		self.directory.setIcon(0,QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/workflow.png"))
+		self.directory.setIcon(0,QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/desktop.png"))
 		self.directory.setToolTip(0,os.getcwd())
 		self.tree_widget_entries.append(self.directory)
 		self.launchers["Directory"] = self.launch_change_directory

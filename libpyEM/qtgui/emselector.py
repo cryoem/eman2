@@ -46,10 +46,6 @@ from emapplication import EMQtWidgetModule, ModuleEventsManager
 import weakref
 
 
-def get_dtag():
-	pfrm = get_platform()
-	if pfrm == "Windows": return "\\"
-	else: return "/"
 
 class EMSelectorModule(EMQtWidgetModule):
 	def __init__(self,application=None):

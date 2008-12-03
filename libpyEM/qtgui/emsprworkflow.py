@@ -147,16 +147,20 @@ class WorkFlowTask(QtCore.QObject):
 		project_db = db_open_dict("bdb:project")
 		ncpu = project_db.get("global.num_cpus",dfl=num_cpus())
 		cf = float(len(options.filenames))/float(ncpu) # common factor
+		
+		files = []
+		for n in range(ncpu):
+			files.append([])
+			
+		# distribute the names into bins
+		for i,f in enumerate(options.filenames):
+			idx = i % ncpu
+			files[idx].append(f) 
+		
 		for n in range(ncpu):
 			#print "n"
-			b = int(n*cf)
-			t = int(n+1*cf)
-			if n == (ncpu-1):
-				t = len(options.filenames) # just make sure of it, round off error could 
-			
-			if b == t:
-				continue # it's okay this happens when there are more cpus than there are filenames	
-			filenames = options.filenames[b:t]
+			filenames = files[n]
+			if len(filenames) == 0: continue # maybe there are more CPUS then filenames
 								
 			args = [program]
 	
@@ -706,21 +710,18 @@ class ParticleWorkFlowTask(WorkFlowTask):
 		return vals
 	
 	def get_available_initial_models(self):
-		if db_check_dict("bdb:initial_models#"):
 			
-			db = "bdb:initial_models#"
-			names = []
-			for d in db_list_dicts("bdb:initial_models#"):
-				if len(d) != 0 and db_check_dict(db+d):
-					model_db = db_open_dict(db+d)
-					if model_db.has_key("maxrec"):
-						hdr = model_db.get_header(0)
-						if hdr["nx"] == hdr["ny"] and hdr["nx"] == hdr["nz"]:
-							names.append(d)
-								
-			return names
-		else:
-			return []
+		db = "bdb:initial_models#"
+		names = []
+		for d in db_list_dicts("bdb:initial_models#"):
+			if len(d) != 0 and db_check_dict(db+d):
+				model_db = db_open_dict(db+d)
+				if model_db.has_key("maxrec"):
+					hdr = model_db.get_header(0)
+					if hdr["nx"] == hdr["ny"] and hdr["nx"] == hdr["nz"]:
+						names.append(d)
+							
+		return names
 
 	def get_project_particle_param_table(self):
 		'''
@@ -1535,9 +1536,9 @@ class E2CTFWorkFlowTask(ParticleWorkFlowTask):
 		defocus,dfdiff,dfang,bfactor,noise = self.get_ctf_info(project_names)
 		
 		pnames = ParamDef(name="micrograph_ccd_filenames",vartype="stringlist",desc_short="File names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=None,choices=project_names)
-		pdefocus = ParamDef(name="Defocus",vartype="floatlist",desc_short="Defocus",desc_long="Estimated defocus of the microscope",property=None,defaultunits=None,choices=defocus)
-		pbfactor = ParamDef(name="Bfactor",vartype="floatlist",desc_short="B factor",desc_long="Estimated B factor of the microscope",property=None,defaultunits=None,choices=bfactor)
-		pnoise = ParamDef(name="Noise",vartype="intlist",desc_short="Noise profile length",desc_long="The number of entries in the noise profile",property=None,defaultunits=None,choices=noise)
+		pdefocus = ParamDef(name="Defocus",vartype="stringlist",desc_short="Defocus",desc_long="Estimated defocus of the microscope",property=None,defaultunits=None,choices=defocus)
+		pbfactor = ParamDef(name="Bfactor",vartype="stringlist",desc_short="B factor",desc_long="Estimated B factor of the microscope",property=None,defaultunits=None,choices=bfactor)
+		pnoise = ParamDef(name="Noise",vartype="intlist",desc_short="Sampling",desc_long="The number of sample points used to generate the parameters and accompanying noise profile",property=None,defaultunits=None,choices=noise)
 		
 		num_phase,num_wiener,num_particles,phase_dims,wiener_dims,particle_dims = self.get_ctf_particle_info(project_names)
 		pboxes = ParamDef(name="Num boxes",vartype="intlist",desc_short="Particles on disk",desc_long="The number of particles stored for this image in the database",property=None,defaultunits=None,choices=num_particles)
@@ -1587,10 +1588,10 @@ class E2CTFWorkFlowTask(ParticleWorkFlowTask):
 				except:
 					vals = ["","","","",'']  # only need 5 at the moment
 					
-				defocus.append(vals[0])
-				dfdiff.append(vals[1])
-				dfang.append(vals[2])
-				bfactor.append(vals[3])
+				defocus.append("%.3f" %vals[0])
+				dfdiff.append("%.3f" %vals[1])
+				dfang.append("%.3f" %vals[2])
+				bfactor.append("%.1f" %vals[3])
 				noise_profile.append(vals[4])
 				
 			db_close_dict("bdb:e2ctf.parms")
@@ -2661,55 +2662,54 @@ class InitialModelReportTask(ParticleWorkFlowTask):
 		return params
 	
 	def get_initial_models_table(self):
-		if db_check_dict("bdb:initial_models#"):
-			
-			db = "bdb:initial_models#"
-			names = []
-			dims = []
-			mean = [] # just for fun
-			sigma = [] # just for fun
-			max = []
-			min = []
-			for d in db_list_dicts("bdb:initial_models#"):
-				if len(d) != 0 and db_check_dict(db+d):
-					model_db = db_open_dict(db+d)
-					if model_db.has_key("maxrec"):
-						hdr = model_db.get_header(0)
-						if hdr["nx"] == hdr["ny"] and hdr["nx"] == hdr["nz"]:
-							names.append(d)
-							
-							dims.append(str(hdr["nx"])+'x'+str(hdr["ny"])+'x'+str(hdr["nz"]))
-							try: mean.append("%4.3f" %hdr["mean"])
-							except: mean.append("")
-							try: sigma.append("%4.3f" %hdr["sigma"])
-							except: sigma.append("")
-							try: max.append("%4.3f" %hdr["maximum"])
-							except: max.append("")
-							try: min.append("%4.3f" %hdr["minimum"])
-							except: min.append("")
-							
-			p = ParamTable(name="filenames",desc_short="Current initial models",desc_long="")
-			pnames = ParamDef(name="Files names",vartype="stringlist",desc_short="Initial model name",desc_long="The name of the initial model in the EMAN2 database",property=None,defaultunits=None,choices=names)
-			pdims = ParamDef(name="dims",vartype="stringlist",desc_short="Dimensions",desc_long="The dimensions of the 3D image",property=None,defaultunits=None,choices=dims)
-			pmax = ParamDef(name="max",vartype="stringlist",desc_short="Maximum",desc_long="The maximum voxel value in this 3D image",property=None,defaultunits=None,choices=max)
-			pmin = ParamDef(name="min",vartype="stringlist",desc_short="Minimum",desc_long="The minimum voxel value in this 3D image",property=None,defaultunits=None,choices=min)
 		
-			pmean = ParamDef(name="mean",vartype="stringlist",desc_short="Mean",desc_long="The mean voxel value of this 3D image",property=None,defaultunits=None,choices=mean)
-			psigma = ParamDef(name="sigma",vartype="stringlist",desc_short="Sigma",desc_long="The standard deviation of the voxel values in this 3D image",property=None,defaultunits=None,choices=sigma)
-			
-			p.append(pnames)
-			p.append(pdims)
-			p.append(pmax)
-			p.append(pmin)
-			p.append(pmean)
-			p.append(psigma)
-			
-			setattr(p,"convert_text", ptable_convert_4)
-			setattr(p,"icon_type","3d_image")
-			
-			return p,len(pnames)
-		else:
-			return None,0
+		db = "bdb:initial_models#"
+		names = []
+		dims = []
+		mean = [] # just for fun
+		sigma = [] # just for fun
+		max = []
+		min = []
+		for d in db_list_dicts("bdb:initial_models#"):
+			print d
+			if len(d) != 0 and db_check_dict(db+d):
+				model_db = db_open_dict(db+d)
+				if model_db.has_key("maxrec"):
+					hdr = model_db.get_header(0)
+					if hdr["nx"] == hdr["ny"] and hdr["nx"] == hdr["nz"]:
+						names.append(d)
+						
+						dims.append(str(hdr["nx"])+'x'+str(hdr["ny"])+'x'+str(hdr["nz"]))
+						try: mean.append("%4.3f" %hdr["mean"])
+						except: mean.append("")
+						try: sigma.append("%4.3f" %hdr["sigma"])
+						except: sigma.append("")
+						try: max.append("%4.3f" %hdr["maximum"])
+						except: max.append("")
+						try: min.append("%4.3f" %hdr["minimum"])
+						except: min.append("")
+						
+		p = ParamTable(name="filenames",desc_short="Current initial models",desc_long="")
+		pnames = ParamDef(name="Files names",vartype="stringlist",desc_short="Initial model name",desc_long="The name of the initial model in the EMAN2 database",property=None,defaultunits=None,choices=names)
+		pdims = ParamDef(name="dims",vartype="stringlist",desc_short="Dimensions",desc_long="The dimensions of the 3D image",property=None,defaultunits=None,choices=dims)
+		pmax = ParamDef(name="max",vartype="stringlist",desc_short="Maximum",desc_long="The maximum voxel value in this 3D image",property=None,defaultunits=None,choices=max)
+		pmin = ParamDef(name="min",vartype="stringlist",desc_short="Minimum",desc_long="The minimum voxel value in this 3D image",property=None,defaultunits=None,choices=min)
+	
+		pmean = ParamDef(name="mean",vartype="stringlist",desc_short="Mean",desc_long="The mean voxel value of this 3D image",property=None,defaultunits=None,choices=mean)
+		psigma = ParamDef(name="sigma",vartype="stringlist",desc_short="Sigma",desc_long="The standard deviation of the voxel values in this 3D image",property=None,defaultunits=None,choices=sigma)
+		
+		p.append(pnames)
+		p.append(pdims)
+		p.append(pmax)
+		p.append(pmin)
+		p.append(pmean)
+		p.append(psigma)
+		
+		setattr(p,"convert_text", ptable_convert_4)
+		setattr(p,"icon_type","3d_image")
+		
+		return p,len(pnames)
+
 	
 
 class E2MakeInitialModel(ParticleWorkFlowTask):
@@ -3177,7 +3177,7 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 					else:
 						options.usefilt=params["usefilt_string"]
 		else:
-			if params["usefilt_choice"] != "None":
+			if params.has_key("usefilt_choice") and params["usefilt_choice"] != "None":
 				# If we make it here we're guaranteed to be using images in the database, and they should have a one to one correspondance
 				options.usefilt = params["usefilt_choice"] # the choice should only be there if it is valid
 				
@@ -3605,6 +3605,7 @@ class E2RefineChooseDataTask(ParticleWorkFlowTask):
 			self.form.closeEvent(None)
 			self.form = None
 			self.emit(QtCore.SIGNAL("task_idle"))
+			return
 			
 		choice = params["particle_set_choice"]
 		
