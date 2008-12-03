@@ -3246,7 +3246,7 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 			
 				# calculate new and improved 3D
 				if(CTF): volref = recons3d_4nn_ctf(data, list_p, snr, 1, sym)
-				else:	   volref = recons3d_4nn(data, list_p, symm)
+				else:	   volref = recons3d_4nn(data, list_p, sym)
 				volref.write_image(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref)
 			del list_p
 
