@@ -76,7 +76,6 @@ def db_parse_path(url):
 
 
 	if url[:4].lower()!="bdb:": raise Exception,"Invalid URL, bdb: only (%s)"%url
-	url=url.replace("~",os.getenv("HOME"))
 	if(sys.platform != 'win32'):
 		url=url.replace("~",os.getenv("HOME"))
 	else:
