@@ -1488,6 +1488,9 @@ class EMImageInspectorMX(QtGui.QWidget):
 
 		self.bsnapshot = QtGui.QPushButton("Snap")
 		self.vbl2.addWidget(self.bsnapshot)
+		if get_platform != "Linux":
+			self.bsnapshot.setEnabled(False)
+			self.bsnapshot.setToolTip("Snap only works on Linux")
 
 		# This shows the mouse mode buttons
 		self.hbl2 = QtGui.QHBoxLayout()
