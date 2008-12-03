@@ -106,7 +106,7 @@ class HistoryForm:
 			cmd = []
 			full_cmd = []
 			
-			#params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits="Use this form to examine the EMAN2 commands that have occurred in this directory.",choices=None))
+			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits="Use this form to examine the EMAN2 commands that have occurred in this directory.",choices=None))
 			p = ParamTable(name="commands",desc_short="Table of EMAN2 historical commands",desc_long="") 
 			
 			for i in range(n):
@@ -138,7 +138,7 @@ class HistoryForm:
 			pstart = ParamDef(name="start",vartype="stringlist",desc_short="Start time",desc_long="The time when the command was first executed",property=None,defaultunits=None,choices=start)
 			pduration = ParamDef(name="duration",vartype="stringlist",desc_short="Duration",desc_long="The time taken to execute this command",property=None,defaultunits=None,choices=duration)
 			pfull_cmd = ParamDef(name="fullcmd",vartype="stringlist",desc_short="File path",desc_long="The location of program on disk",property=None,defaultunits=None,choices=full_cmd)
-			pargs = ParamDef(name="args",vartype="stringlist",desc_short="Program arguments",desc_long="The arguments that were given to the program",property=None,defaultunits=None,choices=prgargs)
+			pargs = ParamDef(name="args",vartype="stringlist",desc_short="Arguments",desc_long="The arguments that were given to the program",property=None,defaultunits=None,choices=prgargs)
 			
 	
 			p.append(pcmd)

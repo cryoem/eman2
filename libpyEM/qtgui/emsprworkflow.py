@@ -268,6 +268,25 @@ class HistoryTask(WorkFlowTask,HistoryForm):
 		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
 		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_close"),self.on_form_close)
 		
+class ChangeDirectoryTask(WorkFlowTask):
+	def __init__(self,application):
+		WorkFlowTask.__init__(self,application)
+		self.window_title = "Change project directory"
+	
+	def run_form(self):	
+		
+		fsp=QtGui.QFileDialog.getExistingDirectory(None, "Choose a directory")
+		
+		if os.path.exists(fsp):
+			os.chdir(fsp)
+			return fsp
+		else: return None
+		
+	def closeEvent(self,event):
+		pass
+		#self.form.closeEvent(None)
+
+		
 class SPRInitTask(WorkFlowTask):
 	'''
 	A class that manages the initialization component of a Single Particle

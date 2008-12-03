@@ -312,8 +312,15 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.launchers["CTF "] = self.launch_ctf_general
 		self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Refine2D ")))
 		self.launchers["Refine2D "] = self.launch_refine2d_general
-		self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("View History")))
-		self.launchers["View History"] = self.launch_view_history
+		history = QtGui.QTreeWidgetItem(QtCore.QStringList("History"))
+		history.setIcon(0,QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/feather.png"))
+		self.tree_widget_entries.append(history)
+		self.launchers["History"] = self.launch_view_history
+		self.directory = QtGui.QTreeWidgetItem(QtCore.QStringList("Directory"))
+		self.directory.setIcon(0,QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/workflow.png"))
+		self.directory.setToolTip(0,os.getcwd())
+		self.tree_widget_entries.append(self.directory)
+		self.launchers["Directory"] = self.launch_change_directory
 		self.tree_widget.insertTopLevelItems(0,self.tree_widget_entries)
 		self.tree_widget.insertTopLevelItems(0,self.tree_widget_entries)
 
@@ -501,10 +508,22 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		
 	def launch_view_history(self):
 		self.launch_task(HistoryTask,"history")
-		
+	
+	
 	def launch_import_mic_ccd(self):
 		self.launch_task(MicrographCCDImportTask,"import_mic_ccd")
 	
+	def launch_change_directory(self):
+		if len(self.tasks) > 0: 
+			self.__clear_tasks()
+			
+		self.module().emit(QtCore.SIGNAL("task_selected"),"Workflow","Workflow")
+		if not self.tasks.has_key("Change directory"):
+			task = ChangeDirectoryTask(self.application())
+			
+			wd = task.run_form()
+			if wd != None: self.directory.setToolTip(0,wd)
+			
 	def launch_task(self,task_type,task_unique_identifier):
 		'''
 		You can only have one of the task forms showing at any time

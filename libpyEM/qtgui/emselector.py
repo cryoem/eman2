@@ -45,6 +45,12 @@ from emplot2d import EMPlot2DModule
 from emapplication import EMQtWidgetModule, ModuleEventsManager
 import weakref
 
+
+def get_dtag():
+	pfrm = get_platform()
+	if pfrm == "Windows": return "\\"
+	else: return "/"
+
 class EMSelectorModule(EMQtWidgetModule):
 	def __init__(self,application=None):
 		self.application = weakref.ref(application)
@@ -265,7 +271,9 @@ class EMSelectorDialog(QtGui.QDialog):
 	
 	def __redo_list_widget_contents(self):
 		self.lock = True
-		directory = self.starting_directory+"/"
+		dag = get_dtag()
+		
+		directory = self.starting_directory+dtag
 		for i,data in  enumerate(self.list_widget_data):
 			
 			if data != None:d = str(data.text())
@@ -274,7 +282,7 @@ class EMSelectorDialog(QtGui.QDialog):
 			self.list_widget_data[i] = self.list_widgets[i].item(old_row)
 			if data == None: return
 			else:
-				directory += '/' + d
+				directory += dtag + d
 	
 		self.lock = False
 	def __add_list_widget(self, list_widget = None):
@@ -309,7 +317,8 @@ class EMSelectorDialog(QtGui.QDialog):
 	
 	def __go_back_a_directory(self):
 		self.lock = True
-		new_dir = self.starting_directory[0:self.starting_directory.rfind('/')]
+		dtag = get_dtag()
+		new_dir = self.starting_directory[0:self.starting_directory.rfind(dtag)]
 		#if  self.db_listing.responsible_for(new_dir):
 			#new_dir = self.db_listing.
 		#print "going back a directory",new_dir
@@ -326,8 +335,8 @@ class EMSelectorDialog(QtGui.QDialog):
 		
 	def __go_forward_a_directory(self):
 		self.lock = True
-		self.starting_directory = self.starting_directory + '/' + str(self.list_widget_data[0].text())
-		
+		self.starting_directory = self.starting_directory + get_dtag() + str(self.list_widget_data[0].text())
+		dtag = get_dtag()
 		directory = self.starting_directory 
 		for i in range(len(self.list_widgets)-1):
 			items = []
@@ -343,7 +352,7 @@ class EMSelectorDialog(QtGui.QDialog):
 			self.list_widgets[i].setCurrentRow(old_row)
 			
 			self.list_widget_data[i] = self.list_widgets[i].item(old_row)
-			directory += '/' + str(self.list_widget_data[i].text())
+			directory += dtag + str(self.list_widget_data[i].text())
 		
 		
 		a = EMSelectionListItem("../",None)
@@ -363,12 +372,13 @@ class EMSelectorDialog(QtGui.QDialog):
 		'''
 		
 		# get the directory 
-		directory = self.starting_directory+"/"
+		dtag = get_dtag()
+		directory = self.starting_directory+dtag
 		idx = 0
 		for i,list_widget in enumerate(self.list_widgets):
 			if list_widget == self.current_list_widget: 
 				break
-			directory += str(self.list_widget_data[i].text()) + "/"
+			directory += str(self.list_widget_data[i].text()) + dtag
 		else:
 			print "no list widget has focus?"
 			return
@@ -398,6 +408,12 @@ class EMSelectorDialog(QtGui.QDialog):
 		pass
 	
 	def list_widget_clicked(self,item):
+		self.list_widget_clickerooni(item,False)
+	
+	def list_widget_dclicked(self,item):
+		self.list_widget_clickerooni(item,True)
+	
+	def list_widget_clickerooni(self,item,allow_preview=True):
 		if self.lock : return
 		if self.current_list_widget == None: return
 
@@ -406,26 +422,26 @@ class EMSelectorDialog(QtGui.QDialog):
 		if item == None: return
 		
 		
-		
+		dtag = get_dtag()
 		if item.text() == "../": 
 			self.__go_back_a_directory()
 			return
 		
-		file = self.starting_directory+"/"
-		directory = self.starting_directory+"/"
+		file = self.starting_directory+dtag
+		directory = self.starting_directory+dtag
 		idx = 0
 		for i,list_widget in enumerate(self.list_widgets):
 			if list_widget == self.current_list_widget: 
 				idx = i
 				file += str(item.text())
 				break
-			file += str(self.list_widget_data[i].text()) + "/"
-			directory += str(self.list_widget_data[i].text()) + "/"
+			file += str(self.list_widget_data[i].text()) + dtag
+			directory += str(self.list_widget_data[i].text()) + dtag
 		else:
 			print "no list widget has focus?"
 			return
 		
-		if self.previews_allowed() and self.set_preview(item):
+		if allow_preview and self.previews_allowed() and self.set_preview(item):
 			
 			for i in range(idx+1,len(self.list_widgets)):
 				self.list_widgets[i].clear()
@@ -440,7 +456,7 @@ class EMSelectorDialog(QtGui.QDialog):
 		if self.current_list_widget  == self.list_widgets[n]:
 				self.list_widget_data[n] = item
 				self.__go_forward_a_directory()
-				self.__load_directory_data(file+'/',self.list_widgets[n],item)
+				self.__load_directory_data(file+dtag,self.list_widgets[n],item)
 				return
 
 		if self.__load_directory_data(file,self.list_widgets[idx+1],item):
@@ -454,27 +470,35 @@ class EMSelectorDialog(QtGui.QDialog):
 			self.list_widgets[i].clear()
 			self.list_widget_data[i] = None
 		
-	def list_widget_dclicked(self,item):
-		
-		file = self.starting_directory+"/"
-		for i,list_widget in enumerate(self.list_widgets):
-			if item.listWidget() == list_widget:
-				file += str(item.text())
-				break
-			file += str(self.list_widget_data[i].text()) + "/"
-	
-		
-		if self.__is_previewable(item):
-			print "Opening ", file
+#	def list_widget_dclicked(self,item):
+#		dtag = get_dtag()
+#		file = self.starting_directory+dtag
+#		for i,list_widget in enumerate(self.list_widgets):
+#			if item.listWidget() == list_widget:
+#				file += str(item.text())
+#				break
+#			file += str(self.list_widget_data[i].text()) + dtag
+#	
+#		
+#		if self.__is_previewable(item):
+#			print "Opening ", file
 	
 	def set_preview(self,item):
 		
-		if self.db_listing.do_preview(item):
-			return True
-		elif self.dir_listing.do_preview(item):
-			return True
-		
-		return False
+		self.application().setOverrideCursor(Qt.BusyCursor)
+		#try/except is only here incase something (unlikely) goes wrong and we're left with a busy cursor
+		try:
+			if self.db_listing.do_preview(item):
+				self.application().setOverrideCursor(Qt.ArrowCursor)
+				return True
+			elif self.dir_listing.do_preview(item):
+				self.application().setOverrideCursor(Qt.ArrowCursor)
+				return True
+			
+			return False
+		except:
+			self.application().setOverrideCursor(Qt.ArrowCursor)
+			return False
 		
 	def check_preview_item_wants_to_list(self,item):
 		if self.db_listing.preview_item_wants_to_list(item):
@@ -691,6 +715,7 @@ class EMDirectoryListing:
 	
 	def load_directory_data(self,directory,list_widget):
 		e = EMData()
+		dtag = get_dtag()
 		read_header_only = True
 		plot = EMPlot2DModule()
 		for root, dirs, files in os.walk(directory):
@@ -706,7 +731,7 @@ class EMDirectoryListing:
 				if i[0] == '.': continue
 				
 				file_length = 0
-				for r, d, f in os.walk(directory+"/"+i):
+				for r, d, f in os.walk(directory+dtag+i):
 					f = self.filter_strings(f)
 					file_length = len(f)
 					if file_length == 0: file_length = len(d)
@@ -728,7 +753,7 @@ class EMDirectoryListing:
 				if file[0] == '.': continue
 				if file[-1] == '~': continue
 				#print EMUtil.get_image_ext_type(Util.get_filename_ext((file)),get_file_tag(file)
-				full_name = directory+"/"+file
+				full_name = directory+dtag+file
 				if EMUtil.get_image_ext_type(Util.get_filename_ext(file)) != IMAGE_UNKNOWN:
 					try:
 						if EMUtil.get_image_count(full_name) > 1:
@@ -920,7 +945,8 @@ class EMBDBListing:
 	def responsible_for(self,file_or_folder):
 		real_name = self.convert_to_absolute_path(file_or_folder)
 		#print file_or_folder,real_name
-		split = real_name.split('/')
+		dtag = get_dtag()
+		split = real_name.split(dtag)
 		split.reverse() # this probably makes things faster
 		for s in split:
 			if s in self.directory_replacements.keys() or (len(s) > 4 and s[-4:] == ".bdb"): return True 
@@ -942,15 +968,16 @@ class EMBDBListing:
 			dirs.pop(r)
 	
 	def convert_to_absolute_path(self,file_or_folder):
+		dtag = get_dtag()
 		ret = file_or_folder
 		found = False
 		for dir_rep in self.directory_replacements.items():
-			if ret.find('/'+dir_rep[1]) != -1:
-				ret = ret.replace('/'+dir_rep[1],'/'+dir_rep[0])
+			if ret.find(dtag+dir_rep[1]) != -1:
+				ret = ret.replace(dtag+dir_rep[1],dtag+dir_rep[0])
 				found = True
 		if not found: return ret
 		if (not os.path.isdir(ret)) and (not os.path.isfile(ret)):
-			if ret[-1] == "/": ret = ret[:-1]
+			if ret[-1] == dtag: ret = ret[:-1]
 			ret += ".bdb"
 			
 		return ret
@@ -972,6 +999,7 @@ class EMBDBListing:
 		if not remove_directories_from_name(directory) in self.directory_replacements.values():
 			 return False
 
+		dtag = get_dtag()
 		real_directory = self.convert_to_absolute_path(directory)
 		for root, dirs, files in os.walk(real_directory):
 			files.sort()
@@ -986,7 +1014,7 @@ class EMBDBListing:
 					continue
 			
 				file_length = 0
-				for r, d, f in os.walk(real_directory+"/"+i):
+				for r, d, f in os.walk(real_directory+dtag+i):
 					file_length = len(f)
 					if file_length == 0: file_length = len(d)
 					break
@@ -1033,6 +1061,7 @@ class EMBDBListing:
 					else:
 						a = EMSelectionListItem(self.target().database_icon,f[0],list_widget)
 						a.type_of_me = "regular"
+					DB.close_dict(f[0])
 				#else:
 					#a = EMSelectionListItem(self.target().key_icon,file,list_widget)
 				
@@ -1100,12 +1129,13 @@ class EMBDBListing:
 				
 	
 	def get_last_directory(self,file):
-		idx1 = file.rfind('/')
+		dtag = get_dtag()
+		idx1 = file.rfind(dtag)
 		if idx1 > 0:
 			ret = file[0:idx1]
 		else: return ret
 		
-		idx2 = ret.rfind('/')
+		idx2 = ret.rfind(dtag)
 		if idx2 > 0:
 			ret = ret[idx2+1:]
 		
@@ -1142,7 +1172,8 @@ class EMBDBListing:
 		
 	
 	def load_database_interrogation(self,file_name,list_widget):
-		split = file_name.split('/')
+		dtag = get_dtag()
+		split = file_name.split(dtag)
 		
 		rm = []
 		for i,s in enumerate(split):
