@@ -54,15 +54,23 @@ def main():
 	(options, args) = parser.parse_args()
 	
 	if options.gui:
-		hist = HistoryForm()
+		from emapplication import EMStandAloneApplication
+		app = EMStandAloneApplication()
+		hist = HistoryForm(app,os.getcwd())
+		app.show()
+		app.execute()
+		
 	else: print_to_std_out()
 
 class HistoryForm:
-	def __init__(self):
-		from emapplication import EMStandAloneApplication
-		self.app = EMStandAloneApplication()
+	def __init__(self,application,wd):
+		'''
+		wd is the working directory
+		'''
+		self.wd = wd
+		
 		from emform import EMFormModule
-		self.form = EMFormModule(params=self.get_history_table(),application=self.app)
+		self.form = EMFormModule(params=self.get_history_table(),application=application)
 		self.form.setWindowTitle("EMAN2 history")
 		
 		from PyQt4 import QtGui,QtCore
@@ -70,8 +78,7 @@ class HistoryForm:
 		self.form.qt_widget.resize(640,480)
 		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_ok"),self.on_ok)
 		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_cancel"),self.on_cancel)
-		self.app.show()
-		self.app.execute()
+		
 		
  	def get_history_table(self):
  		from emdatastorage import ParamDef
@@ -106,7 +113,7 @@ class HistoryForm:
 				try: h=db.history[i+1]
 				except: continue
 				
-				if h != None and h.has_key("path") and h["path"]==os.getcwd():
+				if h != None and h.has_key("path") and h["path"]==self.wd:
 					start.append(local_datetime(h["start"]))
 					if h.has_key("end") :
 						duration.append(time_diff(h["end"]-h["start"]))
