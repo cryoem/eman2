@@ -1069,7 +1069,7 @@ class EMImageMXModule(EMGUIModule):
 					except:avs ="---"
 					bbox = self.font_renderer.bounding_box(avs)
 					
-					Util.mx_bbox(bbox,txtcol)
+					Util.mx_bbox(bbox,txtcol,bgcol)
 					self.font_renderer.render_string(avs)
 
 				tagy+=self.font_renderer.get_face_size()
