@@ -95,7 +95,7 @@ def main():
 	parser.add_option("--recon", dest="recon_type", default="fourier", help="Reconstructor to use see e2help.py reconstructors -v. Default is fourier using mode 2.")
 	parser.add_option("--verbose", "-v",dest="verbose",default=False, action="store_true",help="Toggle verbose mode - prints extra infromation to the command line while executing.")
 	parser.add_option("--keep", type=float, dest="keep", help="The percentage of slices to keep, based on quality scores.")
-	parser.add_option("--keepsig", type=float, dest="keepsig", help="The standard deviation alternative to the --keep argument.")
+	parser.add_option("--keepsig",action="store_true",default=False, dest="keepsig", help="The standard deviation alternative to the --keep argument.")
 	
 	parser.add_option("--no_wt", action="store_true", dest="no_wt", default=False, help="This argument turns automatic weighting off causing all images to be weighted by 1. If this argument is not specified images inserted into the reconstructed volume are weighted by the number of particles that contributed to them (i.e. as in class averages), which is extracted from the image header (as the ptcl_repr attribute).")
 	parser.add_option("--iter", type=int, dest="iter", default=3, help="Set the number of iterations (default is 3). Iterative reconstruction improves the overall normalization of the 2D images as they are inserted into the reconstructed volume, and allows for the exclusion of the poorer quality images.")
