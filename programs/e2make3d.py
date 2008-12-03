@@ -511,7 +511,9 @@ def fourier_reconstruction(options):
 				for i in xrange(0,total_images):
 					if (image.get_attr("ptcl_repr")<=0 and options.no_wt == False):
 						continue
-					fsc_scores.append(-recon.get_score(i))
+					fsc_scores.append(-recon.get_score(idx))
+				print fsc_scores
+					
 					
 				if ( options.keepsig ):
 					a = Util.get_stats_cstyle(fsc_scores)
