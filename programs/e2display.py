@@ -42,7 +42,7 @@ from optparse import OptionParser
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 from OpenGL import GL,GLU,GLUT
-from emapplication import EMStandAloneApplication
+from emapplication import EMStandAloneApplication, EMProgressDialogModule
 from emselector import EMBrowserModule
 
 #from valslider import ValSlider
@@ -109,7 +109,34 @@ def main():
 		display(imgs,app,args[0])
 	else:
 		for i in args:
-			a=EMData.read_images(i)
+			n = EMUtil.get_image_count(i)
+			if n > 1:
+				nx,ny = gimme_image_dimensions2D(i)
+				mx = 256000000# 256Mb
+				a = []
+				if n*nx*ny > mx:
+					new_n = mx/(nx*ny) + 1
+					
+					
+					msg = QtGui.QMessageBox()
+					msg.setWindowTitle("Warning")
+					msg.setText("Image data is more than 256Mb, only showing first %i images" %new_n)
+					msg.exec_()
+					
+					progress = EMProgressDialogModule(app,"Reading files", "abort", 0, new_n,None)
+					progress.qt_widget.show()
+					for j in range(new_n):
+						a.append(EMData(i,j))
+						progress.qt_widget.setValue(j)
+						if progress.qt_widget.wasCanceled():
+							progress.qt_widget.close()
+							return
+					progress.qt_widget.close()
+				else:
+					a=EMData.read_images(i)
+			else:
+				a=EMData.read_images(i)
+					
 			display(a,app,i)
 	
 	
