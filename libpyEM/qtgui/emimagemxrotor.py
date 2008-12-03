@@ -655,6 +655,8 @@ class EMImageMXRotorModule(EMGUIModule):
 			e.get_drawable().set_app(self.application())
 			self.application().register_qt_emitter(e.get_drawable(),self.application().get_qt_emitter(self))
 			x = EM2DGLWindow(self,e)
+			x.decoration.draw_x_enabled = False
+			x.decoration.color_flag = "black"
 			self.rotor.add_widget(x)
 			
 			w = e.get_drawable()
@@ -808,6 +810,7 @@ class EMImageMXRotorModule(EMGUIModule):
 		
 		enable_depth = glIsEnabled(GL_DEPTH_TEST)
 		glDisable(GL_DEPTH_TEST)
+		glEnable(GL_TEXTURE_2D)
 		glColor(1.0,1.0,1.0)
 		glColor(*EMImageMXRotorModule.ligh_yellow_specular)
 		

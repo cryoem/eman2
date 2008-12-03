@@ -89,6 +89,8 @@ class EMBorderDecoration:
 		self.border_width = 7
 		self.border_depth = 6
 		
+		self.draw_x_enabled = True
+		
 		try:
 			from EMAN2 import get_3d_font_renderer,FTGLFontMode
 			self.font_renderer = get_3d_font_renderer()
@@ -832,7 +834,8 @@ class EM3DPlainBorderDecoration(EMBorderDecoration):
 			if not texture_on: glDisable(GL_TEXTURE_2D)
 			if light_on: glEnable(GL_LIGHTING)
 	
-		self.draw_x()
+		if self.draw_x_enabled:
+			self.draw_x()
 		
 	def draw_x(self):
 		dims = self.object().get_lr_bt_nf()

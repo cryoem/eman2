@@ -52,6 +52,8 @@ from emglobjects import EMOpenGLFlagsAndTools
 from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
 import weakref
 
+from emapplication import EMProgressDialogModule
+
 try:
 	get_3d_font_renderer()
 except:
@@ -1239,43 +1241,91 @@ class EMImageMXModule(EMGUIModule):
 			event.accept()
 
 	def save_data(self):
+		msg = QtGui.QMessageBox()
+		msg.setWindowTitle("Woops")
 		if self.data==None or len(self.data)==0:
-			print "there is no data to save"
+			msg.setText("there is no data to save" %fsp)
+			msg.exec_()
 			return
 
 		# Get the output filespec
-		fsp=QtGui.QFileDialog.getSaveFileName(self, "Select File","","","")
+		fsp=QtGui.QFileDialog.getSaveFileName(None, "Specify file name","","*.hdf *.img *.spi *.lst bdb:","")
 		fsp=str(fsp)
 		
-		if fsp != '':
-			for d in self.data:
-				d.write_image(fsp,-1)
 		
-	def save_lst(self):
-		if self.data==None or len(self.data)==0:
-			print "there is not data to write"
-			return
+		bdb_idx = fsp.find("bdb:")
+		if bdb_idx != -1:
+			fsp = fsp[bdb_idx:]
+		
+		
+		
+		if fsp != '':
+			
+			if len(fsp) < 3 or ( fsp[-4:] not in [".hdf",".img",".spi",".hed",".lst"] and fsp[:4] != "bdb:" ):
+				msg.setText("%s is an invalid image name" %fsp)
+				msg.exec_()
+				return
+				
+			if fsp[:4] == "bdb:" and len(fsp) == 4:
+				msg.setText("%s is an invalid bdb name" %fsp)
+				msg.exec_()
+				return
+			elif fsp[-4:] == ".lst":
+				self.save_lst(fsp)
+				return
+				
+			
+			progress = EMProgressDialogModule(self.application(),"Writing files", "abort", 0, len(self.data),None)
+			progress.qt_widget.show()
+			for i,d in enumerate(self.data):
+				try:
+					d.write_image(fsp,-1)
+				except:
+					msg.setText("An exception occured while writing %s, please try again" %fsp)
+					msg.exec_()
+					progress.qt_widget.close()
+					return
+					
+				progress.qt_widget.setValue(i)
+				self.application().processEvents()
+				if progress.qt_widget.wasCanceled():
+					#remove_file(fsp)# we could do this but if they're overwriting the original data then they lose it all
+					progress.qt_widget.close()
+					return
+				
+			
+			#progress.qt_widget.setValue(len(self.data)-1)
+			progress.qt_widget.close()
+		
+	def save_lst(self,fsp):
+		'''
+		If we make it here the dialog has taken care of check whether or not overwrite should occur
+		'''
 		
 		origname = self.get_image_file_name()
-		if origname == None:
-			print "error, origname is none. Either the data is not already on disk or there is a bug"
-			return
 
-		# Get the output filespec
-		fsp=QtGui.QFileDialog.getSaveFileName(self, "Specify lst file to save","","","")
-		fsp=str(fsp)
+		f = file(fsp,'w')
+		f.write('#LST\n')
 		
-		if fsp != '':
-			f = file(fsp,'w')
-			f.write('#LST\n')
-			
-			for d in self.data:
-				#try:
-					f.write(str(d.get_attr('original_number')) +'\t'+origname+'\n')
-				#except:
-					#pass
-						
-			f.close()
+		progress = EMProgressDialogModule(self.application(),"Writing files", "abort", 0, len(self.data),None)
+		progress.qt_widget.show()
+		for i,d in enumerate(self.data):
+			#try:
+			if origname != None:
+				f.write(str(d.get_attr('original_number')) +'\t'+origname+'\n')
+			else:
+				f.write(str(d.get_attr('original_number')) +'\n')
+			#
+			progress.qt_widget.setValue(i)
+			self.application().processEvents()
+			if progress.qt_widget.wasCanceled():
+				#remove_file(fsp)# we could do this but if they're overwriting the original data then they lose it all
+				f.close()
+				progress.qt_widget.close()
+				return
+				#pass
+		progress.qt_widget.close()
+		f.close()
 	
 	def dropEvent(self,event):
 		lc=self.scr_to_img((event.pos().x(),event.pos().y()))
@@ -1432,9 +1482,6 @@ class EMImageInspectorMX(QtGui.QWidget):
 
 		self.bsavedata = QtGui.QPushButton("Save")
 		self.vbl2.addWidget(self.bsavedata)
-		
-		self.bsavelst = QtGui.QPushButton("Save Lst")
-		self.vbl2.addWidget(self.bsavelst)
 
 		if allow_opt_button:
 			self.opt_fit = QtGui.QPushButton("Opt. Fit")
@@ -1589,7 +1636,6 @@ class EMImageInspectorMX(QtGui.QWidget):
 		QtCore.QObject.connect(self.bsavedata, QtCore.SIGNAL("clicked(bool)"), self.save_data)
 		if allow_opt_button:
 			QtCore.QObject.connect(self.opt_fit, QtCore.SIGNAL("clicked(bool)"), self.target().optimize_fit)
-		QtCore.QObject.connect(self.bsavelst, QtCore.SIGNAL("clicked(bool)"), self.save_lst)
 		QtCore.QObject.connect(self.bsnapshot, QtCore.SIGNAL("clicked(bool)"), self.snapShot)
 	
 	def get_desktop_hint(self):

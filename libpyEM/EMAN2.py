@@ -593,7 +593,8 @@ def remove_file( file_name ):
 		else:
 			os.remove(file_name)
 		return True
-		
+	elif db_check_dict(file_name):
+		db_remove_dict(file_name)
 	else:
 		print "Warning, attempt to remove file (%s) that does not exist. No action taken." %file_name
 		return False

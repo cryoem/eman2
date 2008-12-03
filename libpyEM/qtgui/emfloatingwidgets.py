@@ -1434,7 +1434,23 @@ class EM3DGLWindow(EMGLWindow,EM3DVolume):
 			self.update_border_flag = False
 	def isinwin(self,x,y):
 		#print "I have this many corner sets",len(self.corner_sets)
-		if self.decoration.isinwin_broadly(x,y):
+		if self.draw_frame:
+			if self.decoration.isinwin_broadly(x,y):
+				for i,p in enumerate(self.corner_sets):
+					if self.vdtools.isinwinpoints(x,y,p):
+						interception = True
+						self.mouse_event_target = self.drawable
+						#self.cam.set_plane(self.planes[i])
+						#print "plane is",self.planes[i]
+						self.vdtools.setModelMatrix(self.model_matrices[i])
+						return True
+					
+				
+				self.decoration.isinwin(x,y) # this sets the correct decoration target or somesuch
+				self.mouse_event_target = self.decoration
+				return True
+				
+		else:
 			for i,p in enumerate(self.corner_sets):
 				if self.vdtools.isinwinpoints(x,y,p):
 					interception = True
@@ -1443,11 +1459,6 @@ class EM3DGLWindow(EMGLWindow,EM3DVolume):
 					#print "plane is",self.planes[i]
 					self.vdtools.setModelMatrix(self.model_matrices[i])
 					return True
-				
-			
-			self.decoration.isinwin(x,y) # this sets the correct decoration target or somesuch
-			self.mouse_event_target = self.decoration
-			return True
 		#print self,"no"
 		
 		#self.mouse_event_targe =None
@@ -1518,28 +1529,20 @@ class EM3DGLWindowOverride(EM3DGLWindow):
 		return self.drawable.get_lr_bt_nf()
 
 	def draw(self):
-		#clear everything
-		
+
 		if self.init_flag == True:
 			self.update_border_flag = True
-			#self.determine_dimensions()
 			self.init_flag = False
 	
 		self.corner_sets = []
 		self.planes = []
 		self.model_matrices = []
 		
-		#print "in draw",self.width(),self.height()
-		
-		#glTranslatef(0,0,-self.depth()/2.0) # is this necessary?
 		self.cam.position()
 		
 		lighting = glIsEnabled(GL_LIGHTING)
 		glEnable(GL_LIGHTING) # lighting is on to make the borders look nice
-		
-		#lrt = self.get_lr_bt_nf()
-		#print "translating",-(lrt[1]+lrt[0])/2.0,-(lrt[3]+lrt[2])/2.0,-lrt[4]
-		
+
 		
 		p = self.get_lr_bt_nf()
 		points = []
@@ -1553,34 +1556,6 @@ class EM3DGLWindowOverride(EM3DGLWindow):
 		points.append((p[1],p[3],p[5]))
 		unprojected = self.vdtools.unproject_points(points)
 		
-		#print "the unprojected points are"
-		
-		#left zy plane
-		#glPushMatrix()
-		#self.vdtools.set_mouse_coords(unprojected[0],unprojected[1],unprojected[2],unprojected[3])
-		#self.atomic_draw_frame('zy')
-		#glPopMatrix()
-		
-		#glPushMatrix()
-		#self.vdtools.set_mouse_coords(unprojected[5],unprojected[4],unprojected[7],unprojected[6])
-		#self.atomic_draw_frame('yz')
-		#glPopMatrix()
-		
-		#glPushMatrix()
-		#self.vdtools.set_mouse_coords(unprojected[0],unprojected[4],unprojected[5],unprojected[1])
-		#self.atomic_draw_frame('xz')
-		#glPopMatrix()
-		
-		#glPushMatrix()
-		#self.vdtools.set_mouse_coords(unprojected[3],unprojected[2],unprojected[6],unprojected[7])
-		#self.atomic_draw_frame('zx')
-		#glPopMatrix()
-		
-		#glPushMatrix()
-		#self.vdtools.set_mouse_coords(unprojected[0],unprojected[3],unprojected[7],unprojected[4])
-		#self.atomic_draw_frame('yx')
-		#glPopMatrix()
-		
 		glPushMatrix()
 		self.vdtools.set_mouse_coords(unprojected[1],unprojected[5],unprojected[6],unprojected[2])
 		self.atomic_draw_frame('xy')
@@ -1589,9 +1564,6 @@ class EM3DGLWindowOverride(EM3DGLWindow):
 		
 		glPushMatrix()
 		if self.enable_clip:self.decoration.enable_clip_planes()
-		#glTranslate((p[1]+p[0])/2.0,(p[3]+p[2])/2.0,(p[4]+p[5])/2.0)
-		#glTranslate(self.left,self.bottom,self.near)
-		#glTranslate(0,0,-10)
 		self.drawable.render()
 		glPopMatrix()
 		if self.enable_clip: self.decoration.disable_clip_planes()
