@@ -605,14 +605,14 @@ def check(options,verbose=False):
 		if ( check_eman2_type(options.recon_type,Reconstructors,"Reconstructor") == False ):
 			error = True
 	
-	if ( options.keep and options.keepsig ):
-		if verbose:
-			print  "Error: --keep and --keepsig are mutually exclusive"
-		error = True
 	
-	if (options.keep and ( options.keep > 1 or options.keep <= 0)):
+	if options.keepsig and not optios.keep:
+		f verbose:
+			print "Error: the --keepsig can only be supplied in tandem with the --keep= argument"
+		error = True
+	if (options.keep and not options.keepsig and ( options.keep > 1 or options.keep <= 0)):
 		if verbose:
-			print "Error: the --keep option is a percentage expressed as a fraction - it must be between 0 and 1"
+			print "Error: the --keep option is a percentage expressed as a fraction - it must be between 0 and 1. To switch to the sigma based alternative use the keepsig argument."
 		error = True
 	
 	if ( options.nofilecheck == False ):
