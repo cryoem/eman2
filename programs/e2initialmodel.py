@@ -82,20 +82,32 @@ def main():
 		for it in range(options.iter):
 			if verbose : print "Iteration %d"%it
 			projs=[threed[it].project("standard",ort) for ort in orts]		# projections
-			if verbose>1: print "%d projections"%len(projs)
+			if verbose>2: print "%d projections"%len(projs)
 			
-			aptcls=[]
 			bss=0.0
+			bslst=[]
 			for i in range(len(ptcls)):
 				sim=cmponetomany(projs,ptcls[i],align=("rotate_translate_flip",{}),alicmp=("frc",{}))
 				bs=min(sim)
-				bss+=bs
-				if verbose>1 : print "align %d \y(%1.3f)\t%1.3g"%(i,bs,bss)
+				#print bs[0]
+				bss+=bs[0]
+				bslst.append((bs[0],i))
+				if verbose>2 : print "align %d \t(%1.3f)\t%1.3g"%(i,bs[0],bss)
 				n=sim.index(bs)
-				ptcls[i]["npr"]=n
+				ptcls[i]["match_n"]=n
+				ptcls[i]["match_qual"]=bs[0]
 				ptcls[i]["xform.projection"]=orts[n]	# best orientation set in the original particle
-				aptcls.append(ptcls[i].align("rotate_translate_flip",projs[n],{},"frc",{}))
 			
+			bslst.sort()					# sorted list of all particle qualities
+			bslst.reverse()
+			aptcls=[]
+			for i in range(len(ptcls)*3/4):
+				aptcls.append(ptcls[bslst[i][1]].align("rotate_translate_flip",projs[n],{},"frc",{}))
+				if it<2 : aptcls[-1].process_inplace("xform.centerofmass",{})
+			
+			bss/=len(ptcls)
+			if verbose>1 : print "Iter %d \t%1.4g"%(it,bss)
+
 			# Somehow this isn't working  :^(
 			#if verbose>1 : print "reconstruct"
 			#opt=silly()
@@ -118,13 +130,13 @@ def main():
 
 			pad=(boxsize*3/2)
 			pad-=pad%8
-			recon=Reconstructors.get("fourier", {"sym":options.sym,"x_in":pad,"y_in":pad})
+			recon=Reconstructors.get("fourier", {"quiet":True,"sym":options.sym,"x_in":pad,"y_in":pad})
 			recon.setup()
 			for ri in range(3):
 				if ri>0 :
 					for p in aptcls:
 						p2=p.get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))
-						recon.determine_slice_agreement(p2,p["xform.projection"])
+						recon.determine_slice_agreement(p2,p["xform.projection"],1)
 			
 				for p in aptcls:
 					p2=p.get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))
@@ -134,17 +146,19 @@ def main():
 			threed[-1].process_inplace("normalize.edgemean")
 			threed[-1].process_inplace("mask.gaussian",{"inner_radius":boxsize/3.0,"outer_radius":boxsize/12.0})
 			
+#			threed[-1]["quality_projmatch"]=
 #			display(threed[0])
 #			display(threed[-1])
 		#debugging output
-		#display(aptcls)
-		#for i in range(len(aptcls)):
-			#projs[aptcls[i]["npr"]].write_image("x.hed",i*2) 
-			#aptcls[i].write_image("x.hed",i*2+1)
+			for i in range(len(aptcls)):
+				projs[aptcls[i]["match_n"]].write_image("x.hed",i*2) 
+				aptcls[i].write_image("x.hed",i*2+1)
 		#display(threed[-1])
 		#threed[-1].write_image("x.mrc")
 		if verbose : print "Model %d complete. Quality = %f"%(t,bss)
 		threed[-1].write_image("x.%d.mrc"%t)
+		
+#		display(aptcls)
 			
 			
 	E2end(logid)
@@ -156,7 +170,8 @@ def make_random_map(boxsize):
 	
 	ret=EMData(boxsize,boxsize,boxsize)
 	ret.process_inplace("testimage.noise.gauss",{"mean":0.02,"sigma":1.0})
-	ret.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.1})
+	ret.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.05})
+	ret.process_inplace("xform.centerofmass",{})
 #	ret.process_inplace("mask.gaussian",{"inner_radius":boxsize/3.0,"outer_radius":boxsize/12.0})
 	ret.process_inplace("mask.gaussian.nonuniform",{"radius_x":boxsize/random.uniform(2.0,5.0),"radius_y":boxsize/random.uniform(2.0,5.0),"radius_z":boxsize/random.uniform(2.0,5.0)})
 	
