@@ -131,6 +131,7 @@ class EMImageMXWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 	def get_frame_buffer(self):
 		# THIS WILL FAIL ON WINDOWS APPARENTLY, because Windows requires a temporary context - but the True flag is stopping the creation of a temporary context
 		# (because display lists are involved)
+		# December 2008 - tested in MAC it doesn't work,only returns a blank image
 		return self.renderPixmap(0,0,True)
 
 	def closeEvent(self,event):
@@ -1488,7 +1489,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 
 		self.bsnapshot = QtGui.QPushButton("Snap")
 		self.vbl2.addWidget(self.bsnapshot)
-		if get_platform != "Linux":
+		if get_platform() != "Linux":
 			self.bsnapshot.setEnabled(False)
 			self.bsnapshot.setToolTip("Snap only works on Linux")
 

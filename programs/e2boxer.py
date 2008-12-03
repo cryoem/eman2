@@ -145,8 +145,31 @@ for single particle analysis."""
 	(options, args) = parser.parse_args()
 	
 	filenames = []
-	for i in range(0,len(args)):
-		filenames.append(args[i])
+	error_message = []
+	for arg in args:
+		if file_exists(arg):
+			filenames.append(arg)
+			nx,ny,nz = gimme_image_dimensions3D(arg)
+			if nz != 1:
+				error_message.append("%s is 3D!" %arg)
+			elif EMUtil.get_image_count(arg) > 1:
+				error_message.append("%s contains more than one image" %arg)
+			else:
+				filenames.append(arg)
+		else:
+			error_message.append("file %s does not exist" %arg)
+			
+	if options.boxsize > 0 and  len(args) > 0:
+		nx,ny = gimme_image_dimensions2D(arg)
+		if options.boxsize > nx/2 or options.boxsize > ny/2:
+			error_message.append("boxsize can not be greater than half of either of the image dimensions")
+		
+	if len(error_message) > 0:
+		for error in error_message:
+			print error
+		
+		sys.exit(1)
+		
 		
 	options.filenames = filenames
 	
@@ -2988,9 +3011,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.connect(self.normalize_box_images,QtCore.SIGNAL("clicked(bool)"),self.normalize_box_images_toggled)
 
 		QtCore.QObject.connect(self.imagequalities, QtCore.SIGNAL("currentIndexChanged(QString)"), self.image_quality_changed)
-
-	def closeEvent(self,event):
-		self.target().done()
+		
 
 	def normalize_box_images_toggled(self):
 		val = self.normalize_box_images.isChecked()
@@ -3578,11 +3599,12 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		del img,image_name
 		
 	def closeEvent(self,event):
-
+		
 		if ((self.ctf_inspector is not None) and not(self.ctf_inspector_gone)):
 			del self.ctf_inspector
 			self.ctf_inspector = None
-
+		# someone overwrote my closeEvent! oh well gotta do this:
+		self.target().done()
 		event.accept()
 		
 	# XXX
