@@ -504,16 +504,14 @@ def fourier_reconstruction(options):
 				sys.stdout.flush()
 	
 			
-			if ( options.keep != 1.0 or options.keepsig == True ):
+			if ( options.keep != 1.0 or options.keepsig == True  ):
 				idx = 0
 				fsc_scores = []
 				hard = 0.0
 				for i in xrange(0,total_images):
 					if (image.get_attr("ptcl_repr")<=0 and options.no_wt == False):
 						continue
-					fsc_scores.append(-recon.get_score(idx))
-					
-					idx += 1
+					fsc_scores.append(-recon.get_score(i))
 					
 				if ( options.keepsig ):
 					a = Util.get_stats_cstyle(fsc_scores)

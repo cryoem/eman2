@@ -191,10 +191,10 @@ def get_make3d_cmd(options,check=False,nofilecheck=False):
 	if str(options.m3dpreprocess) != "None":
 		e2make3dcmd += " --preprocess=%s" %options.m3dpreprocess
 
-	if (options.m3dkeepsig):
-		e2make3dcmd += " --keepsig=%f" %options.m3dkeepsig
-	elif (options.m3dkeep):
+	
+	if (options.m3dkeep):
 		e2make3dcmd += " --keep=%f" %options.m3dkeep
+		if (options.m3dkeepsig): e2make3dcmd += " --keepsig"
 	
 	if (options.lowmem): e2make3dcmd += " --lowmem"
 
