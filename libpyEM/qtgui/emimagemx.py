@@ -54,10 +54,11 @@ import weakref
 
 from emapplication import EMProgressDialogModule
 
+glut_inited = False
 try:
 	get_3d_font_renderer()
 except:
-	if get_platform() != "Darwin": GLUT.glutInit(sys.argv)
+	if get_platform() != "Darwin": glut_inited = True
 
 class EMImageMXWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 	"""
@@ -877,6 +878,9 @@ class EMImageMXModule(EMGUIModule):
 			glLineWidth(2)
 
 			if self.font_render_mode == EMGUIModule.GLUT:
+				if not glut_inited:
+					GLUT.glutInit(sys.argv)
+					glut_inited = True
 				try:
 					# we render the 16x16 corner of the image and decide if it's light or dark to decide the best way to 
 					# contrast the text labels...

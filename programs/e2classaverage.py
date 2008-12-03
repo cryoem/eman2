@@ -474,7 +474,12 @@ def main():
 		
 		# now write to disk
 		average.set_attr("ptcl_repr",np)
-		average.write_image(args[2],-1)
+		if np == 0:
+			a = average.copy() # get all the attributes
+			a.to_zero()
+			a.write_image(args[2],-1)
+		else:
+			average.write_image(args[2],-1)
 			
 		if options.verbose:
 			sys.stdout.write( "Class %d: particles..%d" %(cl,len(ccache)) )

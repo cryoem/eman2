@@ -364,7 +364,7 @@ def bw_reconstruction(options):
 
 def back_projection_reconstruction(options):
 	
-	if not(options.verbose):
+	if options.verbose:
 		print "Initializing the reconstructor"
 
 	a = parsemodopt(options.recon_type)
@@ -465,10 +465,10 @@ def fourier_reconstruction(options):
 	recon=Reconstructors.get(a[0], a[1])
 	params = recon.get_params()
 	(xsize, ysize) = gimme_image_dimensions2D_consider_pad( options )
-	print xsize,ysize
 	params["x_in"] = xsize;
 	params["y_in"] = ysize;
 	params["sym"] = options.sym
+	params["quiet"] = not options.verbose
 	recon.insert_params(params)
 	recon.setup()
 	
@@ -478,41 +478,44 @@ def fourier_reconstruction(options):
 	if (options.verbose):
 		print "Inserting Slices"
 	
-	for j in xrange(0,options.iter):
+	for j in xrange(0,options.iter+1):
 		removed = 0;
 		
 		if ( j > 0 ):
-			print "Determining slice agreement"
-			for i in xrange(0,total_images):
+			tot = 0
+			if options.verbose: print "Determining slice agreement"
+			ptcl_repr =[]
+			for i in range(total_images):
 				image = get_processed_image(options,i)
 				
-				num_img=image.get_attr("ptcl_repr") 
+				num_img=image.get_attr("ptcl_repr")
+				ptcl_repr.append(num_img) 
 				if (num_img<=0 and options.no_wt == False):
 					continue
 				else:
 					num_img = 1
 				
 				if ( options.no_wt == False ):
-					weight = float (image.get_attr("ptcl_repr"))
+					weight = float (num_img)
 					weight_params = {"weight":weight}
 					recon.insert_params(weight_params)
 				
 				t = image.get_attr("xform.projection")
-				
 				recon.determine_slice_agreement(image,t,num_img)
-				sys.stdout.write(".")
-				sys.stdout.flush()
+				tot += 1
+				if options.verbose:
+					sys.stdout.write(".")
+					sys.stdout.flush()
 	
-			
 			if ( options.keep != 1.0 or options.keepsig == True  ):
 				idx = 0
 				fsc_scores = []
 				hard = 0.0
-				for i in xrange(0,total_images):
-					if (image.get_attr("ptcl_repr")<=0 and options.no_wt == False):
-						continue
-					fsc_scores.append(-recon.get_score(idx))
-				print fsc_scores
+				for i in range(total_images):
+					if (ptcl_repr[i]<=0 and options.no_wt == False): continue
+					else:
+						fsc_scores.append(-recon.get_score(idx))
+						idx += 1
 					
 					
 				if ( options.keepsig ):
@@ -538,10 +541,10 @@ def fourier_reconstruction(options):
 				param["hard"] = 0.0
 				recon.insert_params(param)
 				if options.verbose: print "using hard parameter 0.0"
-			print " Done"
+			if options.verbose: print " Done"
 			
 		idx = 0	
-		for i in xrange(0,total_images):
+		for i in range(total_images):
 			#print i
 			image = get_processed_image(options,i)
 			
@@ -559,7 +562,7 @@ def fourier_reconstruction(options):
 				
 			if (options.verbose):
 				sys.stdout.write( "%2d/%d  %3d\t%5.1f  %5.1f  %5.1f\t\t%6.2f %6.2f" %
-								(i+1,total_images, image.get_attr("ptcl_repr"),
+								(i,total_images, image.get_attr("ptcl_repr"),
 								r["az"],r["alt"],r["phi"],
 								image.get_attr("maximum"),image.get_attr("minimum")))
 				if ( j > 0):
@@ -572,8 +575,8 @@ def fourier_reconstruction(options):
 				sys.stdout.write("\n")
 
 			idx += 1
-			
-		print "Iteration %d excluded %d images " %(j,removed)
+		if options.verbose:	
+			print "Iteration %d excluded %d images " %(j,removed)
 
 	if (options.verbose):
 		print "Inverting 3D Fourier volume to generate the real space reconstruction"
@@ -592,9 +595,9 @@ def check(options,verbose=False):
 			#print  "Error: you must specify the sym argument"
 		#error = True
 	
-	if ( options.iter < 1 ):
+	if ( options.iter < 0 ):
 		if verbose:
-			print  "Error, --iter must be greater than or equal to 1"
+			print  "Error, --iter must be greater than or equal to 0"
 		error = True
 	
 	if ( options.recon_type == None or options.recon_type == ""):
@@ -606,8 +609,8 @@ def check(options,verbose=False):
 			error = True
 	
 	
-	if options.keepsig and not optios.keep:
-		f verbose:
+	if options.keepsig and not options.keep:
+		if verbose:
 			print "Error: the --keepsig can only be supplied in tandem with the --keep= argument"
 		error = True
 	if (options.keep and not options.keepsig and ( options.keep > 1 or options.keep <= 0)):

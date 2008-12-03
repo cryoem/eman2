@@ -429,7 +429,7 @@ namespace EMAN
 		 * @param idx the index of the slice in the quality_scores vector
 		 * @exception GenericException(just throw) when the idx is beyond the range of the quality_scores vector
 		 */
-		virtual float get_score(const unsigned int idx) { if ( quality_scores.size() > idx ) return quality_scores[idx].get_snr_normed_frc_integral(); else throw UnexpectedBehaviorException("Transform3D interface is redundant"); }
+		virtual float get_score(const unsigned int idx) { if ( quality_scores.size() > idx ) return quality_scores[idx].get_snr_normed_frc_integral(); else throw UnexpectedBehaviorException("The requested index was beyond the length of the quality scores vector."); }
 		
 		/** Get the normalization value that has been determined for this slice
 		 * this is used in e2make3d.py to print information to std out
@@ -437,7 +437,7 @@ namespace EMAN
 		 * @param idx the index of the slice in the quality_scores vector
 		 * @exception GenericException(throw) when the idx is beyond the range of the quality_scores vector
 		 */
-		virtual float get_norm(const unsigned int idx) { if ( quality_scores.size() > idx ) return quality_scores[idx].get_norm();  else throw UnexpectedBehaviorException("Transform3D interface is redundant"); }
+		virtual float get_norm(const unsigned int idx) { if ( quality_scores.size() > idx ) return quality_scores[idx].get_norm();  else throw UnexpectedBehaviorException("The requested index was beyond the length of the quality scores vector."); }
 		
 	  protected:
 	  	/** Preprocess the slice prior to insertion into the 3D volume
@@ -467,7 +467,7 @@ namespace EMAN
 			params["mode"] = 2;
 			params["hard"] = 0.05;
 			params["sym"] = "c1";
-			params["quiet"] = false;
+			params["quiet"] = true;
 			params["3damp"] = false;
 		}
 
