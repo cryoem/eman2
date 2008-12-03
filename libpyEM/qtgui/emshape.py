@@ -32,7 +32,10 @@
 
 from OpenGL import GL,GLUT
 from math import *
-from EMAN2 import get_3d_font_renderer, FTGLFontMode, Util
+from EMAN2 import get_3d_font_renderer, Util
+try: from EMAN2 import FTGLFontMode
+except: pass
+
 
 def initGL():
 	"""Call this static function once to initialize necessary display lists"""
