@@ -1374,6 +1374,8 @@ class EMBrowserDialog(EMSelectorDialog):
 		EMSelectorDialog.__init__(self,target,application)
 		self.preview_options.setCurrentIndex(1)
 		self.preview_options_changed(self.preview_options.currentText())
+		self.ok_button.setEnabled(False)
+		self.cancel_button.setEnabled(False)
 
 class EMBrowserModule(EMQtWidgetModule):
 	def __init__(self,application=None):
