@@ -32,9 +32,11 @@
 
 from OpenGL import GL,GLUT
 from math import *
-from EMAN2 import get_3d_font_renderer, Util
+from EMAN2 import get_3d_font_renderer, Util,glut_inited
+import sys
 try: from EMAN2 import FTGLFontMode
 except: pass
+
 
 
 def initGL():
@@ -94,6 +96,7 @@ class EMShape:
 		coordinates. For data coordinate shapes, only the positional information
 		is in data coordinates, font size, line width, etcare in screen units.
 		col can be used to override the current shape's color."""
+		global glut_inited
 		s=self.shape
 		
 		if col==None: col=self.shape[1:4]
@@ -200,6 +203,9 @@ class EMShape:
 			GL.glEnd()
 		
 		elif s[0]=="label":
+			if not glut_inited:
+				GLUT.glutInit(sys.argv)
+				glut_inited = True
 			GL.glPushMatrix()
 			if s[8]<0 :
 				GL.glColor(1.,1.,1.)
@@ -263,6 +269,9 @@ class EMShape:
 						GL.glTranslate(0,0,.1)
 						EMShape.font_renderer.render_string(s[6])
 					else:
+						if not glut_inited:
+							GLUT.glutInit(sys.argv)
+							glut_inited = True
 						GL.glColor(1.,1.,1.)
 						GL.glTranslate(s[4],s[5],0)
 						#GL.glScalef(s[7]/1500.0/sc,s[7]/1500.0/sc,s[7]/1500.0/sc)
@@ -280,6 +289,9 @@ class EMShape:
 						for i in s[6]:
 							GLUT.glutStrokeCharacter(GLUT.GLUT_STROKE_MONO_ROMAN,ord(i))
 				else:
+					if not glut_inited:
+						GLUT.glutInit(sys.argv)
+						glut_inited = True
 					GL.glColor(*col)
 					GL.glTranslate(s[4],s[5],-1)
 	#				GL.glScalef(s[7]/100.0,s[7]/100.0,s[7]/100.0)
@@ -298,8 +310,8 @@ class EMShape:
 		if self.isanimated:
 			GL.glDisable( GL.GL_BLEND);
 			if (depth_testing_was_on):
-				GL.glEnable(GL.GL_DEPTH_TEST)
-
+				GL.glEnable(GL.GL_DEPTH_TEST)			
+	
 	def getShape(self):
 		return self.shape
 	

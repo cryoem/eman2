@@ -64,6 +64,9 @@ GUIMode=0
 app = 0
 GUIbeingdragged=None
 
+glut_inited = False
+
+
 # Aliases
 EMData.get=EMData.get_value_at
 EMData.set=EMData.set_value_at
@@ -798,6 +801,9 @@ def get_platform():
 			return platform.system()
 		except:
 			pass
+	
+if get_platform() == "Darwin": 
+	glut_inited = True # this is a hack for the time being
 
 def remove_directories_from_name(file_name):
 	'''
