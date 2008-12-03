@@ -37,12 +37,136 @@
 
 import shelve
 import sys,os,time
+from optparse import OptionParser
+from EMAN2 import get_file_tag
 
 # also defined in EMAN2, but we don't want to have to import it
+
+def main():
+	progname = os.path.basename(sys.argv[0])
+	usage = progname + """ [options]
+	A tool for displaying EMAN2 history
+	"""
+	
+	parser=OptionParser(usage)
+	parser.add_option("--gui", "-g",default=False, action="store_true",help="Open history in an interface that uses a sortable table.")
+	
+	(options, args) = parser.parse_args()
+	
+	if options.gui:
+		hist = HistoryForm()
+	else: print_to_std_out()
+
+class HistoryForm:
+	def __init__(self):
+		from emapplication import EMStandAloneApplication
+		self.app = EMStandAloneApplication()
+		from emform import EMFormModule
+		self.form = EMFormModule(params=self.get_history_table(),application=self.app)
+		self.form.setWindowTitle("EMAN2 history")
+		
+		from PyQt4 import QtGui,QtCore
+		self.form.qt_widget.setWindowIcon(QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/feather.png"))
+		self.form.qt_widget.resize(640,480)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_ok"),self.on_ok)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_cancel"),self.on_cancel)
+		self.app.show()
+		self.app.execute()
+		
+ 	def get_history_table(self):
+ 		from emdatastorage import ParamDef
+ 		try:
+			import EMAN2db
+			db=EMAN2db.EMAN2DB.open_db()
+			db.open_dict("history")
+		except:
+			db=None
+		
+		params = []
+		
+		try:
+			n=int(db.history["count"])
+		except:
+			n = 0
+		
+		if db == None or n == 0:
+			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits="There appears to be no history in this directory",choices=None))
+		else:
+			from emform import ParamTable
+			start = []
+			duration = []
+			prgargs = []
+			cmd = []
+			full_cmd = []
+			
+			#params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits="Use this form to examine the EMAN2 commands that have occurred in this directory.",choices=None))
+			p = ParamTable(name="commands",desc_short="Table of EMAN2 historical commands",desc_long="") 
+			
+			for i in range(n):
+				try: h=db.history[i+1]
+				except: continue
+				
+				if h != None and h.has_key("path") and h["path"]==os.getcwd():
+					start.append(local_datetime(h["start"]))
+					if h.has_key("end") :
+						duration.append(time_diff(h["end"]-h["start"]))
+					else:
+						duration.append("incomplete")
+					
+					
+					args = h["args"]
+					if len(args) > 0:
+						cmd.append(get_file_tag(args[0]))
+						full_cmd.append(args[0])
+						if len(args) > 1:
+							prgargs.append("".join(args[1:]))
+						else:prgargs.append("")
+					else:
+						cmd.append("")
+						full_cmd.append("")
+						prgargs.append("")
+						
+				
+			pcmd = ParamDef(name="cmd",vartype="stringlist",desc_short="Program",desc_long="A shortened version of the name of a Python program that was executed",property=None,defaultunits=None,choices=cmd)
+			pstart = ParamDef(name="start",vartype="stringlist",desc_short="Start time",desc_long="The time when the command was first executed",property=None,defaultunits=None,choices=start)
+			pduration = ParamDef(name="duration",vartype="stringlist",desc_short="Duration",desc_long="The time taken to execute this command",property=None,defaultunits=None,choices=duration)
+			pfull_cmd = ParamDef(name="fullcmd",vartype="stringlist",desc_short="File path",desc_long="The location of program on disk",property=None,defaultunits=None,choices=full_cmd)
+			pargs = ParamDef(name="args",vartype="stringlist",desc_short="Program arguments",desc_long="The arguments that were given to the program",property=None,defaultunits=None,choices=prgargs)
+			
+	
+			p.append(pcmd)
+			p.append(pstart)
+			p.append(pduration)
+			p.append(pargs)
+			p.append(pfull_cmd)
+			params.append(p)
+	
+	
+ 		return params
+ 	
+ 	def on_ok(self):
+ 		self.form.closeEvent(None)
+ 		
+ 	def on_cancel(self):
+ 		self.form.closeEvent(None)
+ 	
+ 	
+		
+	
 def local_datetime(secs):
 	from time import localtime
 	t=localtime(secs)
 	return "%04d/%02d/%02d %02d:%02d:%02d"%t[:6]
+
+def local_date(secs):
+	from time import localtime
+	t=localtime(secs)
+	return "%04d/%02d/%02d"%t[:3]
+
+def local_time(secs):
+	from time import localtime
+	t=localtime(secs)
+	return "%02d:%02d:%02d"%t[3:6]
 
 def time_diff(secs):
 	if secs<3600 : return "%d:%02d"%(secs/60,secs%60)
@@ -52,45 +176,53 @@ if len(sys.argv)>1 and sys.argv[1]=="--help" :
 	print "Usage:\ne2history [--all]\n"
 	sys.exit(1)
 
-try:
-	import EMAN2db
-	db=EMAN2db.EMAN2DB.open_db()
-	db.open_dict("history")
-except:
-	db=None
 
-if db:
+
+def print_to_std_out():
+
 	try:
-		n=int(db.history["count"])
+		import EMAN2db
+		db=EMAN2db.EMAN2DB.open_db()
+		db.open_dict("history")
 	except:
-		print "no logfile"
-		sys.exit(0)
+		db=None
 	
-	if len(sys.argv)>1 and (sys.argv[1]=="--all" or sys.argv[1]=="-A") :
-		ah={}
-		for i in range(n):
-			try: h=db.history[i+1]
-			except: print "Entry ",i," missing"
-			ah.setdefault(h["path"],[]).append(h)
-		for k in ah.keys():
-			print "---------- ",k
-			for i in ah[k]:
-				if i.has_key("end") : print local_datetime(i["start"]),"\t   ",time_diff(i["end"]-i["start"]),"\t"," ".join(i["args"])
-				else: print local_datetime(i["start"]),"\tincomplete\t"," ".join(i["args"])
+	if db:
+		try:
+			n=int(db.history["count"])
+		except:
+			print "no logfile"
+			sys.exit(0)
+		
+		if len(sys.argv)>1 and (sys.argv[1]=="--all" or sys.argv[1]=="-A") :
+			ah={}
+			for i in range(n):
+				try: h=db.history[i+1]
+				except: print "Entry ",i," missing"
+				ah.setdefault(h["path"],[]).append(h)
+			for k in ah.keys():
+				print "---------- ",k
+				for i in ah[k]:
+					if i.has_key("end") : print local_datetime(i["start"]),"\t   ",time_diff(i["end"]-i["start"]),"\t"," ".join(i["args"])
+					else: print local_datetime(i["start"]),"\tincomplete\t"," ".join(i["args"])
+		else:
+			for i in range(n):
+				try: h=db.history[i+1]
+				except: print "Entry ",i," missing"
+				if h != None and h.has_key("path") and h["path"]==os.getcwd():
+					if h.has_key("end") :print local_datetime(h["start"]),"\t   ",time_diff(h["end"]-h["start"]),"\t"," ".join(h["args"])
+					else: print local_datetime(h["start"]),"\tincomplete\t"," ".join(h["args"])
 	else:
-		for i in range(n):
-			try: h=db.history[i+1]
-			except: print "Entry ",i," missing"
-			if h != None and h.has_key("path") and h["path"]==os.getcwd():
-				if h.has_key("end") :print local_datetime(h["start"]),"\t   ",time_diff(h["end"]-h["start"]),"\t"," ".join(h["args"])
-				else: print local_datetime(h["start"]),"\tincomplete\t"," ".join(h["args"])
-else:
-	db=shelve.open(".eman2log")
-	try:
-		n=int(db["count"])
-	except:
-		print "no logfile"
-		sys.exit(0)
-	
-	for i in range(n-1):
-		print " ".join(db[str(i+1)]["args"])
+		db=shelve.open(".eman2log")
+		try:
+			n=int(db["count"])
+		except:
+			print "no logfile"
+			sys.exit(0)
+		
+		for i in range(n-1):
+			print " ".join(db[str(i+1)]["args"])
+		print "done"
+		
+if __name__ == '__main__':
+	main()

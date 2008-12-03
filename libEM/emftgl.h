@@ -44,7 +44,13 @@ using std::vector;
 #include <map>
 using std::map;
 
-#include <FTGL/FTGL.h>
+#ifdef __APPLE__
+	#include <FTGL/ftgl.h>
+#else // WIN32, LINUX
+	#include <FTGL/FTGL.h>
+#endif	//__APPLE__
+
+
 #include <FTGL/FTFont.h>
 namespace EMAN {
 
