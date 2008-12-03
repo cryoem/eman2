@@ -312,6 +312,9 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.launchers["CTF "] = self.launch_ctf_general
 		self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Refine2D ")))
 		self.launchers["Refine2D "] = self.launch_refine2d_general
+		self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("View History")))
+		self.launchers["View History"] = self.launch_view_history
+		self.tree_widget.insertTopLevelItems(0,self.tree_widget_entries)
 		self.tree_widget.insertTopLevelItems(0,self.tree_widget_entries)
 
 		spr_list = []
@@ -495,6 +498,9 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 			
 	def launch_mic_ccd(self):
 		self.launch_task(MicrographCCDTask,"mic_ccd")
+		
+	def launch_view_history(self):
+		self.launch_task(HistoryTask,"history")
 		
 	def launch_import_mic_ccd(self):
 		self.launch_task(MicrographCCDImportTask,"import_mic_ccd")

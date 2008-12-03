@@ -44,6 +44,7 @@ from e2ctf import pspec_and_ctf_fit,GUIctfModule,write_e2ctf_output,get_gui_arg_
 import subprocess
 from pyemtbx.boxertools import set_idd_image_entry, TrimBox
 import weakref
+from e2history import HistoryForm
 
 class EmptyObject:
 	'''
@@ -249,7 +250,24 @@ class WorkFlowTask(QtCore.QObject):
 			if error != error_message[-1]: mes += "\n"
 		msg.setText(mes)
 		msg.exec_()
-
+		
+class HistoryTask(WorkFlowTask,HistoryForm):
+	def __init__(self,application):
+		WorkFlowTask.__init__(self,application)
+		# don't need HistoryFrom init
+		self.wd = os.getcwd()
+		self.window_title = "History"
+	
+	def run_form(self):	
+		self.form = EMFormModule(self.get_history_table(),self.application())
+		self.form.qt_widget.resize(*self.preferred_size)
+		self.form.setWindowTitle(self.window_title)
+		self.form.qt_widget.setWindowIcon(QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/feather.png"))
+		self.application().show_specific(self.form)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_close"),self.on_form_close)
+		
 class SPRInitTask(WorkFlowTask):
 	'''
 	A class that manages the initialization component of a Single Particle

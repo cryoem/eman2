@@ -156,9 +156,7 @@ class HistoryForm:
  		
  	def on_cancel(self):
  		self.form.closeEvent(None)
- 	
- 	
-		
+ 			
 	
 def local_datetime(secs):
 	from time import localtime
