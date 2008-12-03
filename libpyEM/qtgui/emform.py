@@ -50,6 +50,7 @@ class ParamTable(list):
 		self.name = name
 		self.desc_short = desc_short
 		self.desc_long = desc_long
+		self.enable_multiple_selection = True
 		
 		
 class EMFormModule(EMQtWidgetModule):
@@ -152,6 +153,8 @@ class EMFormWidget(QtGui.QWidget):
 		table_widget = QtGui.QTableWidget(num_choices, len(paramtable), None)
 		icon = self.get_ptable_icon(paramtable)
 		
+		if not paramtable.enable_multiple_selection:
+			table_widget.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
 			
 		#self.items = []
 		table_widget.setSortingEnabled(False)

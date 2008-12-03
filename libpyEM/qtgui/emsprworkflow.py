@@ -255,6 +255,110 @@ class WorkFlowTask(QtCore.QObject):
 		msg.setText(mes)
 		msg.exec_()
 		
+	def get_latest_r2d_classes(self):
+		for root, dirs, files in os.walk(os.getcwd()):
+			break
+		
+		dirs.sort()
+		for i in range(len(dirs)-1,-1,-1):
+			if len(dirs[i]) != 6:
+				dirs.pop(i)
+			elif dirs[i][:4] != "r2d_":
+				dirs.pop(i)
+			else:
+				try: int(dirs[i][4:])
+				except: dirs.pop(i)
+		
+		# allright everything left in dirs is "r2d_??" where the ?? is castable to an int, so we should be safe now
+		class_files = []
+		class_dims = []
+		class_ptcls = []
+		for dir in dirs:
+			classes_db = None
+			# check for 00 to 09 but 00 is replaced with "init"
+			db_first_part = "bdb:"+dir+"#classes_"
+			cont = True
+			for i in range(0,9):
+				for j in range(0,9):
+					if i == 0 and j == 0:
+						db_name = db_first_part+"init"
+					else:
+						db_name = db_first_part+str(i)+str(j)
+						
+					if db_check_dict(db_name):
+						classes_db = db_name
+					else:
+						if i != 0 or j != 0:
+							cont = False
+							break
+						#else just check for 01 incase the user has specified the --initial arugment
+				if not cont:
+					break
+				
+			if classes_db != None:
+				class_files.append(classes_db)
+				cl_db = db_open_dict(classes_db)
+				if cl_db.has_key("maxrec"):
+					class_ptcls.append(cl_db["maxrec"]+1)
+					hdr = cl_db.get_header(0)
+					class_dims.append(str(hdr["nx"])+'x'+str(hdr["ny"])+'x'+str(hdr["nz"]))
+				else:
+					class_ptcls.append("")
+					class_dims.append("")
+					
+		return class_files,class_ptcls,class_dims
+	
+	def get_reference_free_class_averages_table(self):
+		'''
+		Looks for bdb:r2d_??#classes_?? and the bdb:r2d_??#classes_init file, finds the most recent one, then fills in the number of particles in
+		in the class average file and also its dimensions.
+		'''
+
+		class_files,class_ptcls,class_dims = self.get_latest_r2d_classes()
+					
+		if len(class_files) > 0:
+			
+			p = ParamTable(name="filenames",desc_short="Most current reference free class averages",desc_long="")
+			pclassnames = ParamDef(name="Files names",vartype="intlist",desc_short="Class avarerage file",desc_long="The location of the class average files",property=None,defaultunits=None,choices=class_files)
+			pptcls = ParamDef(name="Class averages",vartype="intlist",desc_short="Total class averages",desc_long="The number class averages in the nominated file",property=None,defaultunits=None,choices=class_ptcls)
+			pdims = ParamDef(name="Particle dimensions",vartype="stringlist",desc_short="Dimensions",desc_long="The dimensions of the images in the class averages file",property=None,defaultunits=None,choices=class_dims)
+			
+			p.append(pclassnames)
+			p.append(pptcls)
+			p.append(pdims)
+			
+			setattr(p,"convert_text", ptable_convert_2)
+			setattr(p,"icon_type","matrix_image")
+			
+			return p,len(class_files)
+		else:
+			return None,0
+		
+	def check_sym(self,params,options):
+		error_message = []
+		if params["symname"] in ["c","d","h"]:
+			n = params["symnumber"]
+			fail = False
+			if len(n) == 0: fail = True
+			try: int(n)
+			except: fail = True
+			
+			if not fail:
+				if int(n) < 1:
+					fail = True
+					
+			if fail:
+				error_message.append("The symmetry number must be specified for c,d, and h.")
+			else:
+				options.sym=params["symname"]+n
+		elif len(params["symnumber"]) != 0:
+			error_message.append("There is something entered in the symmetry number box but you have not specified c, d or h symmetry.")
+		else:
+			options.sym = params["symname"]	
+			
+		return error_message
+					
+		
 class HistoryTask(WorkFlowTask,HistoryForm):
 	def __init__(self,application):
 		WorkFlowTask.__init__(self,application)
@@ -2283,78 +2387,31 @@ class E2Refine2DReportTask(ParticleWorkFlowTask):
 	def write_db_entry(self,key,value):
 		pass
 	
-	def get_reference_free_class_averages_table(self):
-		'''
-		Looks for bdb:r2d_??#classes_?? and the bdb:r2d_??#classes_init file, finds the most recent one, then fills in the number of particles in
-		in the class average file and also its dimensions.
-		'''
-		for root, dirs, files in os.walk(os.getcwd()):
-			break
-		
-		dirs.sort()
-		for i in range(len(dirs)-1,-1,-1):
-			if len(dirs[i]) != 6:
-				dirs.pop(i)
-			elif dirs[i][:4] != "r2d_":
-				dirs.pop(i)
-			else:
-				try: int(dirs[i][4:])
-				except: dirs.pop(i)
-		
-		# allright everything left in dirs is "r2d_??" where the ?? is castable to an int, so we should be safe now
-		class_files = []
-		class_dims = []
-		class_ptcls = []
-		for dir in dirs:
-			classes_db = None
-			# check for 00 to 09 but 00 is replaced with "init"
-			db_first_part = "bdb:"+dir+"#classes_"
-			cont = True
-			for i in range(0,9):
-				for j in range(0,9):
-					if i == 0 and j == 0:
-						db_name = db_first_part+"init"
-					else:
-						db_name = db_first_part+str(i)+str(j)
-						
-					if db_check_dict(db_name):
-						classes_db = db_name
-					else:
-						if i != 0 or j != 0:
-							cont = False
-							break
-						#else just check for 01 incase the user has specified the --initial arugment
-				if not cont:
-					break
-				
-			if classes_db != None:
-				class_files.append(classes_db)
-				cl_db = db_open_dict(classes_db)
-				if cl_db.has_key("maxrec"):
-					class_ptcls.append(cl_db["maxrec"]+1)
-					hdr = cl_db.get_header(0)
-					class_dims.append(str(hdr["nx"])+'x'+str(hdr["ny"])+'x'+str(hdr["nz"]))
-				else:
-					class_ptcls.append("")
-					class_dims.append("")
-					
-		if len(class_files) > 0:
-			
-			p = ParamTable(name="filenames",desc_short="Most current reference free class averages",desc_long="")
-			pclassnames = ParamDef(name="Files names",vartype="intlist",desc_short="Class avarerage file",desc_long="The location of the class average files",property=None,defaultunits=None,choices=class_files)
-			pptcls = ParamDef(name="Class averages",vartype="intlist",desc_short="Total class averages",desc_long="The number class averages in the nominated file",property=None,defaultunits=None,choices=class_ptcls)
-			pdims = ParamDef(name="Particle dimensions",vartype="stringlist",desc_short="Dimensions",desc_long="The dimensions of the images in the class averages file",property=None,defaultunits=None,choices=class_dims)
-			
-			p.append(pclassnames)
-			p.append(pptcls)
-			p.append(pdims)
-			
-			setattr(p,"convert_text", ptable_convert_2)
-			setattr(p,"icon_type","matrix_image")
-			
-			return p,len(class_files)
-		else:
-			return None,0
+#	def get_reference_free_class_averages_table(self):
+#		'''
+#		Looks for bdb:r2d_??#classes_?? and the bdb:r2d_??#classes_init file, finds the most recent one, then fills in the number of particles in
+#		in the class average file and also its dimensions.
+#		'''
+#
+#		class_files,class_ptcls,class_dims = self.get_latest_r2d_classes()
+#					
+#		if len(class_files) > 0:
+#			
+#			p = ParamTable(name="filenames",desc_short="Most current reference free class averages",desc_long="")
+#			pclassnames = ParamDef(name="Files names",vartype="intlist",desc_short="Class avarerage file",desc_long="The location of the class average files",property=None,defaultunits=None,choices=class_files)
+#			pptcls = ParamDef(name="Class averages",vartype="intlist",desc_short="Total class averages",desc_long="The number class averages in the nominated file",property=None,defaultunits=None,choices=class_ptcls)
+#			pdims = ParamDef(name="Particle dimensions",vartype="stringlist",desc_short="Dimensions",desc_long="The dimensions of the images in the class averages file",property=None,defaultunits=None,choices=class_dims)
+#			
+#			p.append(pclassnames)
+#			p.append(pptcls)
+#			p.append(pdims)
+#			
+#			setattr(p,"convert_text", ptable_convert_2)
+#			setattr(p,"icon_type","matrix_image")
+#			
+#			return p,len(class_files)
+#		else:
+#			return None,0
 			
 
 	
@@ -2713,17 +2770,74 @@ class InitialModelReportTask(ParticleWorkFlowTask):
 	
 
 class E2MakeInitialModel(ParticleWorkFlowTask):
-	documentation_string = "Make an initial model with e2initialmodel. This feature is currently not operational."
+	documentation_string = "Make an initial model with e2initialmodel."
+	warning_string = "\n\n\nNOTE: there are no reference free classes in the project. Go back a step and try running e2refine2d" 
 	def __init__(self,application):
 		ParticleWorkFlowTask.__init__(self,application)
 		self.window_title = "run e2makeinitialmodel"
 	def get_params(self):
 		params = []
 		
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2MakeInitialModel.documentation_string,choices=None))
+		p,n = self.get_reference_free_class_averages_table()
+		if n == 0: params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2MakeInitialModel.documentation_string+E2MakeInitialModel.warning_string,choices=None))
+		else:
+			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2MakeInitialModel.documentation_string,choices=None))
+			
+			piter = ParamDef(name="iter",vartype="int",desc_short="Iterations",desc_long="The number of times each 3D is iteratively refined",property=None,defaultunits=4,choices=[])
+			ptries = ParamDef(name="tries",vartype="int",desc_short="Tries",desc_long="The number of 3D models to generate",property=None,defaultunits=10,choices=[])
+			syms = ["icos","oct","tet","c","d","h"]
+			psym =  ParamDef(name="symname",vartype="string",desc_short="Symmetry",desc_long="Symmetry to be imposed during refinement",property=None,defaultunits=None,choices=syms)
+			psymnum = ParamDef(name="symnumber",vartype="string",desc_short="Symmetry number",desc_long="In C,D and H symmetry, this is the symmetry number",property=None,defaultunits="",choices=None)
+			
+			p.enable_multiple_selection = False
+			params.append(p)
+			params.append([piter,ptries])
+			params.append([psym,psymnum])
 		
+	
 		return params
-
+	
+	def on_form_ok(self,params):
+		error_message = []
+		
+		if not params.has_key("filenames"):
+			# THERE ARE no classes to choose from and the user has hit ok
+			self.emit(QtCore.SIGNAL("task_idle"))
+			self.form.closeEvent(None)
+			self.form = None
+			return
+		
+		error_message = []
+		if len(params["filenames"]) != 1: error_message.append("Please choose a single file to proceed")
+		
+		if params["iter"] < 0: error_message.append("Please specify an iter value of atleast 0")
+		if params["tries"] < 1: error_message.append("Please specify a number of tries that is atleast 1")
+		
+		
+		# copied from e2refine
+		
+		options = EmptyObject()
+		
+		error_message.extend(self.check_sym(params,options))
+		
+		if len(error_message) > 0:
+			self.show_error_message(error_message)
+			return	
+		else:
+			options.input = params["filenames"][0]
+			options.iter = params["iter"]
+			options.tries = params["tries"]
+			options.filenames = []
+			#options.sym - taken care of by check_sum
+			string_args = ["iter","input","tries","sym"]
+			bool_args = []
+			additional_args = []
+			temp_file_name = "e2initialmodel_stdout.txt"
+			self.spawn_single_task("e2initialmodel.py",options,string_args,bool_args,additional_args,temp_file_name)
+			self.emit(QtCore.SIGNAL("task_idle"))
+			self.form.closeEvent(None)
+			self.form = None
+		
 class ImportInitialModels(ParticleWorkFlowTask):
 	documentation_string = "Import initial models into the EMAN2 database. Browse for the images you wish to import or type them directly into the entry form. If you tick force overwrite initial models in the EMAN2 database with the same name will automatically be over written."
 	
@@ -3196,25 +3310,8 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 				
 				
 		#symmetry
-		if params["symname"] in ["c","d","h"]:
-			n = params["symnumber"]
-			fail = False
-			if len(n) == 0: fail = True
-			try: int(n)
-			except: fail = True
-			
-			if not fail:
-				if int(n) < 1:
-					fail = True
-					
-			if fail:
-				error_message.append("The symmetry number must be specified for c,d, and h.")
-			else:
-				options.sym=params["symname"]+n
-		elif len(params["symnumber"]) != 0:
-			error_message.append("There is something entered in the symmetry number box but you have not specified c, d or h symmetry.")
-		else:
-			options.sym = params["symname"]	
+		error_message.extend(self.check_sym(params,options))
+		
 		
 		# iterations
 		if params["iter"] < 1:
