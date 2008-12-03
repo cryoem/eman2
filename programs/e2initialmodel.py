@@ -71,6 +71,8 @@ def main():
 	orts = sym_object.gen_orientations("eman",{"delta":9.0})
 
 	logid=E2init(sys.argv)
+	results=[]
+	results_name=numbered_bdb("bdb:initial_models#initial_model")
 
 	# We make one new reconstruction for each loop of t 
 	for t in range(options.tries):
@@ -80,6 +82,7 @@ def main():
 		
 		# This is the refinement loop
 		for it in range(options.iter):
+			E2progress(logid,it*t/float(options.tries*options.iter))
 			if verbose : print "Iteration %d"%it
 			projs=[threed[it].project("standard",ort) for ort in orts]		# projections
 			if verbose>2: print "%d projections"%len(projs)
@@ -145,18 +148,26 @@ def main():
 			threed[-1]=threed[-1].get_clip(Region((pad-boxsize)/2,(pad-boxsize)/2,(pad-boxsize)/2,boxsize,boxsize,boxsize))
 			threed[-1].process_inplace("normalize.edgemean")
 			threed[-1].process_inplace("mask.gaussian",{"inner_radius":boxsize/3.0,"outer_radius":boxsize/12.0})
-			
+			threed[-1]["quality"]=bss
 #			threed[-1]["quality_projmatch"]=
 #			display(threed[0])
 #			display(threed[-1])
 		#debugging output
-			for i in range(len(aptcls)):
-				projs[aptcls[i]["match_n"]].write_image("x.hed",i*2) 
-				aptcls[i].write_image("x.hed",i*2+1)
+			#for i in range(len(aptcls)):
+				#projs[aptcls[i]["match_n"]].write_image("x.hed",i*2) 
+				#aptcls[i].write_image("x.hed",i*2+1)
 		#display(threed[-1])
 		#threed[-1].write_image("x.mrc")
 		if verbose : print "Model %d complete. Quality = %f"%(t,bss)
-		threed[-1].write_image("x.%d.mrc"%t)
+
+		results.append((bss,threed[-1]))
+		results.sort()
+		
+		dct=db_open_dict(results_name)
+		for i,j in enumerate(results): dct[i]=j[1]
+		dct.close()
+		
+#		threed[-1].write_image("x.%d.mrc"%t)
 		
 #		display(aptcls)
 			
