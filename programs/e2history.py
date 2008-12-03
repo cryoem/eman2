@@ -49,7 +49,7 @@ def main():
 	"""
 	
 	parser=OptionParser(usage)
-	parser.add_option("--gui", "-g",default=False, action="store_true",help="Open history in an interface that uses a sortable table.")
+	parser.add_option("--gui", "-g",default=False, action="store_true",help="Open history in an interface with a sortable table.")
 	
 	(options, args) = parser.parse_args()
 	
