@@ -1972,7 +1972,10 @@ def k_means_classical(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, D
 			if wd_trials > 10:
 				if trials > 1:
 					MemJe[ntrials-1] = 1e10
-					print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
+					if ntrials == trials:
+						print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
+						sys.exit()
+					else:	print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
 				else:
 					print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
 					sys.exit()
@@ -2464,9 +2467,12 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 			wd_trials  += 1
 			if wd_trials > 10:
 				
-				if trials >1:
+				if trials > 1:
 					MemJe[ntrials-1] = 1e10
-					print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
+					if ntrials == trials:
+						print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
+						sys.exit()
+					else:	print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
 				else:
 					print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
 					sys.exit()
@@ -2964,7 +2970,10 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 			if wd_trials > 10:
 				if trials > 1:
 					MemJe[ntrials-1] = 1e10
-					print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
+					if ntrial == trials:
+						print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
+						sys.exit()
+					else:	print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
 				else:
 					print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
 					sys.exit()
@@ -3604,7 +3613,10 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 			if wd_trials > 10:
 				if trials > 1:
 					MemJe[ntrials-1] = 1e10
-					print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
+					if ntrials == trials:
+						print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
+						sys.exit()
+					else:	print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
 				else:
 					print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
 					sys.exit()
