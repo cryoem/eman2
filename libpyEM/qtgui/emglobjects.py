@@ -1813,8 +1813,8 @@ class EMImage3DGUIModule(EMGUIModule):
 		from emfloatingwidgets import EM3DGLView, EM3DGLWindow
 		if self.gl_widget == None:
 			
-			self.gl_context_parent = gl_context_parent
-			self.qt_context_parent = qt_context_parent
+			if gl_context_parent != None: self.gl_context_parent = gl_context_parent
+			if qt_context_parent != None: self.qt_context_parent = qt_context_parent
 			
 			gl_view = EM3DGLView(self,image=None)
 			self.gl_widget = EM3DGLWindow(self,gl_view)

@@ -53,7 +53,7 @@ from emimage3dvol import EMVolumeModule
 from emimage3dslice import EM3DSliceViewerModule
 from emimage3dsym import EM3DSymViewerModule
 
-from emglobjects import Camera2, EMViewportDepthTools, Camera, EMImage3DGUIModule
+from emglobjects import Camera2, EMViewportDepthTools, Camera, EMImage3DGUIModule,EMGLProjectionViewMatrices
 from emimageutil import EMEventRerouter, EMTransformPanel, EMParentWin
 from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
 
@@ -61,7 +61,7 @@ from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
 MAG_INCREMENT_FACTOR = 1.1
 
 
-class EMImage3DGeneralWidget(QtOpenGL.QGLWidget,EMEventRerouter):
+class EMImage3DGeneralWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMatrices):
 	def __init__(self, em_3d_module):
 		assert(isinstance(em_3d_module,EMImage3DGUIModule))
 		
@@ -71,6 +71,8 @@ class EMImage3DGeneralWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		fmt.setSampleBuffers(True)
 		QtOpenGL.QGLWidget.__init__(self,fmt)
 		EMEventRerouter.__init__(self,em_3d_module)
+		print "inited"
+		EMGLProjectionViewMatrices.__init__(self)
 		
 		self.fov = 50 # field of view angle used by gluPerspective
 		self.startz = 1
@@ -145,7 +147,7 @@ class EMImage3DGeneralWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 		
-		
+		self.set_projection_view_update()
 		self.target().resizeEvent()
 
 	def get_start_z(self):
@@ -167,7 +169,7 @@ class EMImage3DGeneralWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		
 		return [width,height]
 
-class EMImage3DWidget(QtOpenGL.QGLWidget,EMEventRerouter):
+class EMImage3DWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMatrices):
 	""" 
 	A QT widget for rendering 3D EMData objects
 	"""
@@ -180,7 +182,7 @@ class EMImage3DWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		fmt.setSampleBuffers(True)
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
 		EMEventRerouter.__init__(self,image_3d_module)
-		
+		EMGLProjectionViewMatrices.__init__(self)
 		self.aspect=1.0
 		self.fov = 20 # field of view angle used by gluPerspective
 		self.d = 0
@@ -283,7 +285,7 @@ class EMImage3DWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		if (self.target != None):
 			try: self.target().resizeEvent(width,height)
 			except: pass
-		
+		self.set_projection_view_update()
 		self.updateGL()
 
 	def load_orthographic(self):

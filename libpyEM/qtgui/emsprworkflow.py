@@ -3087,12 +3087,23 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 		
 		temp_file_name = "e2refine_stdout.txt"
 		
+		self.write_db_parms(options,string_args,bool_args)
+		
 		self.spawn_single_task("e2refine.py",options,string_args,bool_args,additional_args,temp_file_name)
 		self.emit(QtCore.SIGNAL("task_idle"))
 		self.form.closeEvent(None)
 		self.form = None
 		
-
+	def write_db_parms(self,options,string_args,bool_args):
+		db = db_open_dict("bdb:e2refine.args")
+		
+		for string in string_args:
+			db[string] = getattr(options,string)
+			
+		for string in bool_args:
+			db[string] = getattr(options,string)
+		
+	
 	def display_errors(self,error_message):
 		'''
 		error_message is a list of strings

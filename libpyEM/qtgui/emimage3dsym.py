@@ -49,7 +49,7 @@ from PyQt4.QtCore import QTimer
 
 from time import *
 
-from emglobjects import EMImage3DGUIModule, Camera, Camera2, EMViewportDepthTools
+from emglobjects import EMImage3DGUIModule, Camera, Camera2, EMViewportDepthTools2,EMGLProjectionViewMatrices
 from emimageutil import ImgHistogram, EMEventRerouter, EMTransformPanel
 from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
 import weakref
@@ -68,14 +68,17 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		return self.qt_context_parent
 
 
-	def __init__(self,application=None):
+	def __init__(self,application=None,inspector_go=True):
 		EMImage3DGUIModule.__init__(self,application,ensure_gl_context=True)
-		self.init()
-		self.initialized = True
+		
+		
 		self.eulers = [] # will eventually store Transform objects
 		self.points = [] # will eventually store the points on the asymmetric unit
 		self.point_colors = [] # will eventually store colors for the different points
-		self.get_inspector()
+		self.init()
+		self.initialized = True
+		
+		if inspector_go: self.get_inspector()
 		
 	def get_inspector(self):
 		if not self.inspector : self.inspector=EMSymInspector(self)
@@ -92,7 +95,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 
 		self.mmode=0
 		self.cam = Camera2(self)
-		self.vdtools = EMViewportDepthTools(self)
+		self.vdtools = None # EMViewportDepthTools2(self.get_gl_context_parent())
 		
 		self.cube = False
 		self.inspector=None
@@ -110,15 +113,12 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		self.force_update = False
 		self.force_force_update = False
 		
-		project_db = db_open_dict("bdb:project")
-		self.bdb_sym = project_db.get("global.symmetry",dfl="c1")
-		
-		self.sym = self.bdb_sym
-		self.prop = None
+		self.sym = "icos"
+		self.prop = 5
 		self.perturb = False
 		self.nomirror = True
-		self.angle_label = ''
-		self.strategy = ''
+		self.angle_label = 'delta'
+		self.strategy = 'eman'
 		
 		self.display_euler = True
 		self.display_tri = False
@@ -154,6 +154,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		gluQuadricNormals(self.gq,GLU_SMOOTH)
 		gluQuadricOrientation(self.gq,GLU_OUTSIDE)
 		gluQuadricTexture(self.gq,GL_FALSE)
+		self.regen_dl()
 		
 		
 		#self.glbasicobjects = EMBasicOpenGLObjects()
@@ -344,15 +345,16 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		self.specified_eulers = eulers
 	
 	def generate_current_display_list(self,force=False):
-		sym = self.inspector.get_sym()
-		prop = self.inspector.get_prop()
-		mirror = not self.inspector.get_mirror()
-		perturb = self.inspector.get_perturb()
-		angle_label = self.inspector.get_angle_label()
-		strategy = str(self.inspector.get_orient_label())
+		if self.inspector != None:
+			sym = self.inspector.get_sym()
+			prop = self.inspector.get_prop()
+			mirror = not self.inspector.get_mirror()
+			perturb = self.inspector.get_perturb()
+			angle_label = self.inspector.get_angle_label()
+			strategy = str(self.inspector.get_orient_label())
 		
-		if not force and self.sym == sym and self.prop == prop and self.nomirror == mirror and self.perturb == perturb and self.angle_label == angle_label and self.strategy == strategy and self.force_force_update == False: return
-		else:
+#		if not force and self.sym == sym and self.prop == prop and self.nomirror == mirror and self.perturb == perturb and self.angle_label == angle_label and self.strategy == strategy and self.force_force_update == False: return
+#		else:
 			self.sym = sym
 			self.prop = prop
 			self.nomirror = mirror
@@ -390,7 +392,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 			self.sym = None
 			self.prop = None
 			return #OpenGL is not initialized yet
-		self.sym_object = parsesym(str(sym))
+		self.sym_object = parsesym(str(self.sym))
 		
 		
 		l = dump_orientgens_list()
@@ -402,9 +404,9 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		if (self.angle_label) not in parms:
 			return
 		else:
-			og = self.strategy + ":" + self.angle_label + "=" + str(prop)
+			og = self.strategy + ":" + self.angle_label + "=" + str(self.prop)
 		
-		if mirror == True : val = 0
+		if self.nomirror == True : val = 0
 		else: val = 1
 		self.trace_great_arcs(self.sym_object.get_asym_unit_points(val))
 		self.trace_great_triangles(self.sym_object.get_asym_unit_triangles(val))
@@ -412,7 +414,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 			og += ":inc_mirror=" + str(val)
 			
 		if ('perturb' in parms):
-			if ( perturb == True ) : val = 1
+			if ( self.perturb == True ) : val = 1
 			else: val = 0
 			og += ":perturb="+ str(val)
 		
@@ -618,6 +620,9 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		
 	def render(self):
 		
+		if self.vdtools == None:
+			self.vdtools = EMViewportDepthTools2(self.get_gl_context_parent())
+		
 		if self.update_sym_dl:
 			self.make_sym_dl_list(self.points,self.point_colors,self.eulers)
 			self.update_sym_dl = False
@@ -663,7 +668,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 				dz = 5
 				a["tz"] = dz
 				self.sym_object.insert_params(a)
-			if self.inspector.sym_toggled():
+			if self.inspector != None and self.inspector.sym_toggled():
 				for i in range(1,self.sym_object.get_nsym()):
 					t = self.sym_object.get_sym(i)
 					t.invert()
@@ -682,7 +687,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 			if ( self.sym_object.is_h_sym() != True ):
 				glCallList(self.tri_dl)
 			
-				if self.inspector.sym_toggled():
+				if self.inspector != None and self.inspector.sym_toggled():
 					for i in range(1,self.sym_object.get_nsym()):
 						t = self.sym_object.get_sym(i)
 						t.invert()
@@ -708,7 +713,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 			glCallList(self.sym_dl)
 			glPopMatrix()
 		
-			if self.inspector.sym_toggled():
+			if self.inspector != None and self.inspector.sym_toggled():
 				#for i in range(1,self.sym_object.get_nsym()):
 					#t = self.sym_object.get_sym(i)
 				for t in self.sym_object.get_syms():
@@ -775,7 +780,9 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		self.updateGL()
 			
 	def resizeEvent(self,width=0,height=0):
-		self.vdtools.set_update_P_inv()
+		pass
+	
+		#self.vdtools.set_update_P_inv()
 		
 	def toggle_sym_display(self,bool):
 		self.display_euler = bool
@@ -792,7 +799,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 	def reducetog(self,bool):
 		self.reduce = bool
 
-class EMSymViewerWidget(QtOpenGL.QGLWidget,EMEventRerouter):
+class EMSymViewerWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMatrices):
 	
 	allim=WeakKeyDictionary()
 	def __init__(self, em_slice_viwer):
@@ -807,6 +814,7 @@ class EMSymViewerWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		fmt.setSampleBuffers(True)
 		QtOpenGL.QGLWidget.__init__(self,fmt)
 		EMEventRerouter.__init__(self,em_slice_viwer)
+		EMGLProjectionViewMatrices.__init__(self)
 		
 		
 		self.fov = 50 # field of view angle used by gluPerspective
@@ -866,7 +874,7 @@ class EMSymViewerWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		# switch back to model view mode
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
-		
+		self.set_projection_view_update()
 		self.target().resizeEvent()
 
 	def get_start_z(self):
@@ -1140,7 +1148,7 @@ class EMSymInspector(QtGui.QWidget):
 		self.pos_double_validator.setBottom(0.05)
 		self.prop_text = QtGui.QLineEdit(self)
 		self.prop_text.setValidator(self.pos_double_validator)
-		self.prop_text.setText("2.0")
+		self.prop_text.setText("5.0")
 		self.prop_text.setFixedWidth(50)
 		self.hbl_sym.addWidget(self.prop_text)
 		

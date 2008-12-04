@@ -377,12 +377,10 @@ class ClassOrientationEvents(NavigationEvents,QtCore.QObject):
 class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 	def get_desktop_hint(self): return "image"
 	def __init__(self,application,auto=True):
+		EM3DSymViewerModule.__init__(self,application,inspector_go=False)
+		InputEventsManager.__init__(self)
 		if auto:
 			self.gen_refinement_data()
-		EM3DSymViewerModule.__init__(self,application)
-		InputEventsManager.__init__(self)
-		
-		
 		self.__init_events_handlers()
 		self.projection_file = None
 		self.average_file = None
@@ -404,14 +402,30 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 		self.previous_len = -1
 		
 		
+		if db_check_dict("bdb:e2refine.args"):
+			db = db_open_dict("bdb:e2refine.args")
+			if db.has_key("sym"):
+				sym = db["sym"]
+			else:
+				sym = "icos"
+				
+		else:
+			sym = "icos"
+		
+		self.set_sym(sym)
+		
 		if hasattr(self,"au_data"):
 			combo_entries = self.au_data.keys()
 			combo_entries.sort()
+			combo_entries.reverse()
 		
 			if len(combo_entries) > 0:
 				au = combo_entries[0]
-				cls = self.au_data[au][0]
+				cls = self.au_data[au][0][0]
 				self.au_selected(au,cls)
+				
+		self.regen_dl()
+			
 	
 	def get_data_dims(self):
 		return (2*self.radius,2*self.radius,2*self.radius)
@@ -472,6 +486,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 			self.inspector=EMAsymmetricUnitInspector(self)
 			self.connect(self.inspector,QtCore.SIGNAL("au_selected"),self.au_selected)
 		return self.inspector
+
 	
 	def au_selected(self,au,cls):
 		data = []
@@ -501,7 +516,8 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 		ptcls = get_ptcl_from(self.average_file)
 		self.specify_eulers(eulers)
 		self.specify_colors(get_normalize_colors(ptcls))
-		self.generate_current_display_list(force=True)
+		self.force_update = True
+		#self.generate_current_display_list(force=True)
 		
 		# if we have the same number of Eulers we can update everything
 		if self.previous_len == len(eulers) : self.events_handlers["inspect"].repeat_event()
@@ -656,6 +672,7 @@ class EMAsymmetricUnitInspector(EMSymInspector):
 		self.au_data = self.target().au_data
 		combo_entries = self.au_data.keys()
 		combo_entries.sort()
+		combo_entries.reverse()
 		self.combo = QtGui.QComboBox(self)
 		for e in combo_entries:
 			self.combo.addItem(e)
