@@ -110,7 +110,8 @@ def main():
 	else:
 		for i in args:
 			n = EMUtil.get_image_count(i)
-			if n > 1:
+			nx,ny,nz = gimme_image_dimensions3D(i)
+			if n > 1 and nz == 1:
 				nx,ny = gimme_image_dimensions2D(i)
 				mx = 256000000# 256Mb
 				a = []
@@ -135,7 +136,7 @@ def main():
 				else:
 					a=EMData.read_images(i)
 			else:
-				a=EMData.read_images(i)
+				a=[EMData(i,0)]
 					
 			display(a,app,i)
 	

@@ -178,12 +178,13 @@ class EMModuleFromFile(object):
 		
 		if em_file_type != IMAGE_UNKNOWN or filename[:4] == "bdb:":
 			n = EMUtil.get_image_count(filename)
-			if n > 0:
+			nx,ny,nz = gimme_image_dimensions3D(filename)
+			if n > 0 and nz == 1: 
 				a = EMData()
 				data=a.read_images(filename)
 			else:
 				data = EMData()
-				data.read_image(filename)
+				data.read_image(filename,0)
 				data = [data]
 				
 			if len(data) == 1: data = data[0]

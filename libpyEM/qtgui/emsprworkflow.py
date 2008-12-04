@@ -3180,13 +3180,41 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 			
 			string_args.append("usefilt")
 		
+		error = self.check_model(options)
+		if error != None:
+			return error
+		
 		options.model = "bdb:initial_models#"+options.model
+		
 		
 		options.filenames = [] # important for this to happen so the argument doesn't have all the filenames as args
 		string_args.extend(["iter","sym","model","path"])
 		bool_args.append("lowmem")
 		
 		return None # returning None is good
+	
+	def check_model(self,options):
+		
+		model = "bdb:initial_models#"+options.model
+		if not db_check_dict(model):
+			return "db checked failed for %s, check initial models" %model
+		
+		nx,ny = gimme_image_dimensions2D(options.input)
+		if nx != ny:
+			return "input images aren't square"
+		
+		
+		x,y,z = gimme_image_dimensions3D(model)
+		
+		
+		if x != y or z != y:
+			return "initial model isn't square"
+		
+#		scale = float(nx,x)
+#		if int(scale) == scale and scale != 1:
+			
+		return None
+		
 		
 	def make_stack(self,filenames,out_name,options,attr):
 		'''
