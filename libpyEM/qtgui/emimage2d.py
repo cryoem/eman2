@@ -1010,6 +1010,7 @@ class EMImage2DModule(EMGUIModule):
 		if update:
 			self.update_inspector_texture() # important for this to occur in term of the e2desktop only
 			
+
 		render = False
 		if self.use_display_list:
 			if update:
@@ -1067,6 +1068,7 @@ class EMImage2DModule(EMGUIModule):
 				#	if (depth_testing_was_on):	GL.glEnable(GL.GL_DEPTH_TEST)
 			
 			else:
+				glNewList(self.main_display_list,GL_COMPILE)
 				GL.glRasterPos(0,self.gl_widget.height()-1)
 				GL.glPixelZoom(1.0,-1.0)
 				GL.glDrawPixels(self.gl_widget.width(),self.gl_widget.height(),gl_render_type,GL.GL_UNSIGNED_BYTE,a)
