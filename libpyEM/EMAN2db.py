@@ -65,6 +65,21 @@ atexit.register(DB_cleanup)
 # if we are killed 'nicely', also clean up (assuming someone else doesn't grab this signal)
 signal.signal(2,DB_cleanup)
 
+def e2gethome() :
+	"""platform independent path with '/'"""
+	if(sys.platform != 'win32'):
+		url=os.getenv("HOME")
+	else:
+		url=os.getenv("HOMEPATH")
+		url=url.replace("\\","/")
+	return url
+
+def e2getcwd() :
+	"""platform independent path with '/'"""
+	url=os.getcwd()
+	url=url.replace("\\","/")
+	return url
+
 def db_parse_path(url):
 	"""Takes a bdb: url and splits out (path,dict name,keylist). If keylist is None,
 	implies all of the images in the file. Acceptable urls are of the form:
@@ -76,11 +91,7 @@ def db_parse_path(url):
 
 
 	if url[:4].lower()!="bdb:": raise Exception,"Invalid URL, bdb: only (%s)"%url
-	if(sys.platform != 'win32'):
-		url=url.replace("~",os.getenv("HOME"))
-	else:
-		url=url.replace("~",os.getenv("HOMEPATH"))
-
+	url=url.replace("~",e2gethome())
 	url=url[4:].rsplit('#',1)
 	if len(url)==1 : url=url[0].rsplit("/",1)
 	if len(url)==1 :
@@ -89,8 +100,8 @@ def db_parse_path(url):
 		url.insert(0,".")									# bdb:dictname?keys
 	else :
 		u1=url[1].split("?",1)
-		if url[0][0]!='/' : url[0]=os.getcwd()+"/"+url[0]	# relative path
-		if url[0][:3]=="../": url[0]=os.getcwd().rsplit("/",1)[0]+"/"+url[0]	# find cwd if we start with ../
+		if url[0][0]!='/' : url[0]=e2getcwd()+"/"+url[0]	# relative path
+		if url[0][:3]=="../": url[0]=e2getcwd().rsplit("/",1)[0]+"/"+url[0]	# find cwd if we start with ../
 		if len(u1)==1 : return(url[0],url[1],None)			# bdb:path/to#dictname
 		url=[url[0]]+url[1].split("?")						# bdb:path/to#dictname?keys
 	
@@ -439,9 +450,9 @@ class EMAN2DB:
 		"""This is an alternate constructor which may return a cached (already open)
 		EMAN2DB instance"""
 		# check the cache of opened dbs first
-#		if not path : path=os.getcwd()
-		if not path : path=os.getenv("HOME")+"/.eman2"
-		if path=="." or path=="./" : path=os.getcwd()
+#		if not path : path=e2getcwd()
+		if not path : path=e2gethome()+"/.eman2"
+		if path=="." or path=="./" : path=e2getcwd()
 		if EMAN2DB.opendbs.has_key(path) : return EMAN2DB.opendbs[path]
 		return EMAN2DB(path)
 	
@@ -450,9 +461,9 @@ class EMAN2DB:
 	def __init__(self,path=None):
 		"""path points to the directory containin the EMAN2DB subdirectory. None implies the current working directory"""
 		#if recover: xtraflags=db.DB_RECOVER
-#		if not path : path=os.getcwd()
-		if not path : path=os.getenv("HOME")+"/.eman2"
-		if path=="." or path=="./" : path=os.getcwd()
+#		if not path : path=e2getcwd()
+		if not path : path=e2gethome()+"/.eman2"
+		if path=="." or path=="./" : path=e2getcwd()
 		self.path=path
 		
 		# Keep a cache of opened database environments
@@ -559,7 +570,7 @@ class DBDict:
 		self.name = name
 		self.parent=parent
 		if path : self.path = path
-		else : self.path=os.getcwd()
+		else : self.path=e2getcwd()
 		self.txn=None	# current transaction used for all database operations
 		if ro : self.bdb=db.DB()
 		else : self.bdb=db.DB(dbenv)

@@ -30,11 +30,7 @@
 #
 #
 
-from EMAN2_cppwrap import *
-from pyemtbx.imagetypes import *
-from pyemtbx.box import *
-#from Sparx import *
-from sys import exit
+from sys import exit,platform
 import os
 import time
 import shelve
@@ -42,19 +38,24 @@ import re
 import cPickle
 import zlib
 import socket
+from EMAN2_cppwrap import *
+from pyemtbx.imagetypes import *
+from pyemtbx.box import *
+#from Sparx import *
 
 EMANVERSION="EMAN2 v1.97"
+
 
 # This block attempts to open the standard EMAN2 database interface
 # if it fails, it sets db to None. Applications can then alter their
 # behavior appropriately
-try:
-	import EMAN2db
-	from EMAN2db import EMAN2DB,db_open_dict,db_close_dict,db_remove_dict,db_list_dicts,db_check_dict,db_parse_path
-	HOMEDB=EMAN2db.EMAN2DB.open_db()
-	HOMEDB.open_dict("history")
-except:
-	HOMEDB=None
+#try:
+import EMAN2db
+from EMAN2db import EMAN2DB,db_open_dict,db_close_dict,db_remove_dict,db_list_dicts,db_check_dict,db_parse_path
+HOMEDB=EMAN2db.EMAN2DB.open_db()
+HOMEDB.open_dict("history")
+#except:
+#	HOMEDB=None
 
 Vec3f.__str__=lambda x:"Vec3f"+str(x.as_list())
 
@@ -190,7 +191,7 @@ When settings are read, the local value is checked first, then if necessary, the
 		pass
 
 	try:
-		dir=os.getenv("HOME")
+		dir=e2gethome()
 		dir+="/.eman2"
 		os.mkdir(dir)
 	except:
@@ -224,7 +225,7 @@ This function will get an application default by first checking the local direct
 		pass
 	
 	try:
-		dir=os.getenv("HOME")
+		dir=e2gethome()
 		dir+="/.eman2"
 		db=shelve.open(dir+"/appdefaults")
 		ret=db[app+"."+key]
@@ -395,7 +396,7 @@ def display(img):
 		except: pass
 	else:
 		# In non interactive GUI mode, this will display an image or list of images with e2display
-		fsp="bdb:%s/.eman2dir#tmp"%os.getenv("HOME")
+		fsp="bdb:%s/.eman2dir#tmp"%e2gethome()
 		
 		db_remove_dict(fsp)
 		d=db_open_dict(fsp)
@@ -889,7 +890,20 @@ def error_exit(s) :
 	print s
 	exit(1)
 	
+def e2gethome() :
+	"""platform independent path with '/'"""
+	if(sys.platform != 'win32'):
+		url=os.getenv("HOME")
+	else:
+		url=os.getenv("HOMEPATH")
+		url=url.replace("\\","/")
+	return url
 
+def e2getcwd() :
+	"""platform independent path with '/'"""
+	url=os.getcwd()
+	url=url.replace("\\","/")
+	return url
 
 def write_test_refine_data(num_im=1000):
 	threed = test_image_3d()
