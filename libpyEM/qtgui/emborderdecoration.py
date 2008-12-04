@@ -57,7 +57,7 @@ ligh_yellow_diffuse = (.84,.82,.38,1.0)
 ligh_yellow_ambient = (.83,.83,.38,1.0)
 ligh_yellow_specular = (.76,.75,.39,1.0)
 
-from EMAN2 import Vec3f
+from EMAN2 import Vec3f, get_image_directory
 import weakref
 
 

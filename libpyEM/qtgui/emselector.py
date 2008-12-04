@@ -315,12 +315,14 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.lock = True
 		dtag = get_dtag()
 		new_dir = self.starting_directory[0:self.starting_directory.rfind(dtag)]
+		if len(new_dir) == 0: new_dir = get_dtag()
 		#if  self.db_listing.responsible_for(new_dir):
 			#new_dir = self.db_listing.
 		#print "going back a directory",new_dir
-		#if not os.access(new_dir,os.R_OK):
-			#print "can't go up a directory, don't have read permission"
-			#return
+		if not os.access(new_dir,os.R_OK):
+			print new_dir
+			print "can't go up a directory, don't have read permission"
+			return
 		self.starting_directory = new_dir
 		for j in range(0,len(self.list_widgets)):
 			self.list_widgets[j].clear()
@@ -490,7 +492,7 @@ class EMSelectorDialog(QtGui.QDialog):
 			elif self.dir_listing.do_preview(item):
 				self.application().setOverrideCursor(Qt.ArrowCursor)
 				return True
-			
+			self.application().setOverrideCursor(Qt.ArrowCursor)
 			return False
 		except:
 			self.application().setOverrideCursor(Qt.ArrowCursor)
