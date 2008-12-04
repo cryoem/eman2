@@ -61,6 +61,7 @@ def main():
 	verbose=options.verbose
 
 	ptcls=EMData.read_images(options.input)
+	for i in ptcls: i.process_inplace("normalize.edgemean",{})
 	if not ptcls or len(ptcls)==0 : parser.error("Bad input file")
 	boxsize=ptcls[0].get_xsize()
 	if verbose : print "%d particles %dx%d"%(len(ptcls),boxsize,boxsize)
@@ -72,7 +73,16 @@ def main():
 
 	logid=E2init(sys.argv)
 	results=[]
-	results_name=numbered_bdb("bdb:initial_models#initial_model")
+	
+	try: os.mkdir("initial_models")
+	except: pass
+	dcts=db_list_dicts("bdb:initial_models")
+	for ii in range(1,100):
+		for jj in dcts: 
+			if "model_%02d"%ii in jj : break
+		else: break
+	results_name="bdb:initial_models#model_%02d"%ii
+	print results_name
 
 	# We make one new reconstruction for each loop of t 
 	for t in range(options.tries):
@@ -82,11 +92,13 @@ def main():
 		
 		# This is the refinement loop
 		for it in range(options.iter):
-			E2progress(logid,it*t/float(options.tries*options.iter))
+			E2progress(logid,(it+t*options.iter)/float(options.tries*options.iter))
 			if verbose : print "Iteration %d"%it
 			projs=[threed[it].project("standard",ort) for ort in orts]		# projections
+			for i in projs : i.process_inplace("normalize.edgemean")
 			if verbose>2: print "%d projections"%len(projs)
 			
+			# determine particle orientation
 			bss=0.0
 			bslst=[]
 			for i in range(len(ptcls)):
@@ -109,63 +121,51 @@ def main():
 				if it<2 : aptcls[-1].process_inplace("xform.centerofmass",{})
 			
 			bss/=len(ptcls)
-			if verbose>1 : print "Iter %d \t%1.4g"%(it,bss)
 
-			# Somehow this isn't working  :^(
-			#if verbose>1 : print "reconstruct"
-			#opt=silly()
-			#opt.images=aptcls
-			#opt.recon_type="fourier"
-			#pad=(boxsize*3/2)
-			#pad-=pad%8
-			#opt.pad=str(pad)
-			#opt.iter=3
-			#opt.lowmem=0
-			#opt.no_wt=1
-			#opt.keepsig=0
-			#opt.sym=options.sym
-			#opt.keep=0.8
-			#opt.ndim=2
-			#if verbose>2 : opt.verbose=verbose-2
-			#else : opt.verbose=0
-			#threed.append(fourier_reconstruction(opt))
-			#threed[-1]=threed[-1].get_clip(Region((pad-boxsize)/2,(pad-boxsize)/2,(pad-boxsize)/2,boxsize,boxsize,boxsize))
-
+			# 3-D reconstruction
 			pad=(boxsize*3/2)
 			pad-=pad%8
 			recon=Reconstructors.get("fourier", {"quiet":True,"sym":options.sym,"x_in":pad,"y_in":pad})
 			recon.setup()
+			qual=0
 			for ri in range(3):
 				if ri>0 :
-					for p in aptcls:
+					for i,p in enumerate(aptcls):
 						p2=p.get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))
 						recon.determine_slice_agreement(p2,p["xform.projection"],1)
-			
+						if ri==2 : qual+=recon.get_score(i)
 				for p in aptcls:
 					p2=p.get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))
 					recon.insert_slice(p2,p["xform.projection"])
 			threed.append(recon.finish())
+			
+			if verbose>1 : print "Iter %d \t %1.4g (%1.4g)"%(it,bss,qual)
+			
 			threed[-1]=threed[-1].get_clip(Region((pad-boxsize)/2,(pad-boxsize)/2,(pad-boxsize)/2,boxsize,boxsize,boxsize))
 			threed[-1].process_inplace("normalize.edgemean")
 			threed[-1].process_inplace("mask.gaussian",{"inner_radius":boxsize/3.0,"outer_radius":boxsize/12.0})
-			threed[-1]["quality"]=bss
+#			threed[-1]["quality"]=bss
+			threed[-1]["quality"]=qual
+
 #			threed[-1]["quality_projmatch"]=
 #			display(threed[0])
 #			display(threed[-1])
-		#debugging output
-			#for i in range(len(aptcls)):
-				#projs[aptcls[i]["match_n"]].write_image("x.hed",i*2) 
-				#aptcls[i].write_image("x.hed",i*2+1)
+			#debugging output
+			for i in range(len(aptcls)):
+				projs[aptcls[i]["match_n"]].write_image("x.%d.hed"%t,i*2) 
+				aptcls[i].write_image("x.%d.hed"%t,i*2+1)
 		#display(threed[-1])
 		#threed[-1].write_image("x.mrc")
-		if verbose : print "Model %d complete. Quality = %f"%(t,bss)
+		if verbose : print "Model %d complete. Quality = %1.4f (%1.4f)"%(t,bss,qual)
 
 		results.append((bss,threed[-1]))
 		results.sort()
 		
-		dct=db_open_dict(results_name)
-		for i,j in enumerate(results): dct[i]=j[1]
-		dct.close()
+		#dct=db_open_dict(results_name)
+		#for i,j in enumerate(results): dct[i]=j[1]
+		#dct.close()
+		
+		for i,j in enumerate(results): j[1].write_image(results_name+"_%02d"%i,0)
 		
 #		threed[-1].write_image("x.%d.mrc"%t)
 		

@@ -225,7 +225,7 @@ def main():
                 	index_d[option1] += 1
 
             elif option1 == "sym":
-				sym = options.scale[index_d[option1]]
+				sym = options.sym[index_d[option1]]
 				xf = Transform()
 				xf.to_identity()
 				nsym=xf.get_nsym(sym)
