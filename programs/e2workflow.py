@@ -41,6 +41,7 @@ from e2boxer import EMBoxerModule
 from EMAN2 import HOMEDB, process_running,kill_process
 from emanimationutil import Animator
 from emimage import EMModuleFromFile
+from e2au import EMAsymmetricUnitViewer
 import time
 import weakref
 
@@ -312,6 +313,8 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.launchers["CTF "] = self.launch_ctf_general
 		self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Refine2D ")))
 		self.launchers["Refine2D "] = self.launch_refine2d_general
+		self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("AU")))
+		self.launchers["AU"] = self.launch_asym_unit
 		history = QtGui.QTreeWidgetItem(QtCore.QStringList("History"))
 		history.setIcon(0,QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/feather.png"))
 		self.tree_widget_entries.append(history)
@@ -420,6 +423,13 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 			self.application().show_specific(module)
 			self.add_module([str(module),"Display",module])
 		self.application().setOverrideCursor(Qt.ArrowCursor)
+		
+	def launch_asym_unit(self):
+		module = EMAsymmetricUnitViewer(self.application())
+		self.module().emit(QtCore.SIGNAL("launching_module"),"AU",module)
+		self.application().show_specific(module)
+		self.add_module([str(module),"AU",module])
+		
 	def launch_browser(self):
 		module = EMBrowserModule(self.application())
 		self.module().emit(QtCore.SIGNAL("launching_module"),"Browser",module)

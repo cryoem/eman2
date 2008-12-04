@@ -273,10 +273,33 @@ class InputEventsManager(InputEventsHandler):
 	def wheelEvent(self,event):
 		if self.current_events_handler != None:
 			self.current_events_handler.wheelEvent(event)
-	
-class ClassOrientationEvents(InputEventsHandler,QtCore.QObject): 
+
+
+class NavigationEvents(InputEventsHandler):
 	def __init__(self,parent):
 		InputEventsHandler.__init__(self,parent)
+		
+	def mousePressEvent(self,event):
+		EMImage3DGUIModule.mousePressEvent(self.parent(),event)
+	
+	def mouseReleaseEvent(self,event):
+		EMImage3DGUIModule.mouseReleaseEvent(self.parent(),event)
+	
+	def mouseMoveEvent(self,event):
+		EMImage3DGUIModule.mouseMoveEvent(self.parent(),event)
+	
+	def mouseDoubleClickEvent(self,event):
+		EMImage3DGUIModule.mouseDoubleClickEvent(self.parent(),event)
+	
+	def keyPressEvent(self,event):
+		EMImage3DGUIModule.keyPressEvent(self.parent(),event)
+		
+	def wheelEvent(self,event):
+		EMImage3DGUIModule.wheelEvent(self.parent(),event)
+
+class ClassOrientationEvents(NavigationEvents,QtCore.QObject): 
+	def __init__(self,parent):
+		NavigationEvents.__init__(self,parent)
 		QtCore.QObject.__init__(self)
 		self.old_intersection = -1
 		self.old_color = None
@@ -323,7 +346,9 @@ class ClassOrientationEvents(InputEventsHandler,QtCore.QObject):
 			if self.old_intersection >= 0:
 				new_colors[self.old_intersection] = self.old_color
 				self.old_intersection = -1
-			else: return
+			else: 
+				NavigationEvents.mouseReleaseEvent(self,event)
+				return
 		
 		if len(new_colors) > 0:
 			self.nc = new_colors
@@ -336,38 +361,21 @@ class ClassOrientationEvents(InputEventsHandler,QtCore.QObject):
 			self.nc = None
 			self.intsct = None
 	def repeat_event(self):
+		self.reset()
 		if self.nc != None and self.intsct != None:
 			self.parent().set_point_colors(self.nc)
 			if self.intsct >= 0:self.emit(QtCore.SIGNAL("point_selected"),self.intsct)
+			
+	def reset(self):
+		self.old_intersection = None
+		self.old_color = None
 	
 			
-			
-		
-class NavigationEvents(InputEventsHandler):
-	def __init__(self,parent):
-		InputEventsHandler.__init__(self,parent)
-		
-	def mousePressEvent(self,event):
-		EMImage3DGUIModule.mousePressEvent(self.parent(),event)
-	
-	def mouseReleaseEvent(self,event):
-		EMImage3DGUIModule.mouseReleaseEvent(self.parent(),event)
-	
-	def mouseMoveEvent(self,event):
-		EMImage3DGUIModule.mouseMoveEvent(self.parent(),event)
-	
-	def mouseDoubleClickEvent(self,event):
-		EMImage3DGUIModule.mouseDoubleClickEvent(self.parent(),event)
-	
-	def keyPressEvent(self,event):
-		EMImage3DGUIModule.keyPressEvent(self.parent(),event)
-		
-	def wheelEvent(self,event):
-		EMImage3DGUIModule.wheelEvent(self.parent(),event)
 		
 
 
 class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
+	def get_desktop_hint(self): return "image"
 	def __init__(self,application,auto=True):
 		if auto:
 			self.gen_refinement_data()
@@ -393,6 +401,8 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 		self.projection = None
 		self.class_idx = None
 		
+		self.previous_len = -1
+		
 		
 		if hasattr(self,"au_data"):
 			combo_entries = self.au_data.keys()
@@ -402,7 +412,14 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 				au = combo_entries[0]
 				cls = self.au_data[au][0]
 				self.au_selected(au,cls)
-				
+	
+	def get_data_dims(self):
+		return (2*self.radius,2*self.radius,2*self.radius)
+	
+	def width(self): return 2*self.radius
+	def height(self): return 2*self.radius
+	def depth(self): return 2*self.radius
+	
 	def gen_refinement_data(self):
 		for root, dirs, files in os.walk(os.getcwd()):
 			break
@@ -464,7 +481,8 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 				break
 			
 		if len(data) == 0:
-			print "error, no data for",au,cls,"returning"
+			self.events_handlers["inspect"].reset()
+#			print "error, no data for",au,cls,"returning"
 			return
 
 		self.particle_file = "bdb:"+au+"#all"
@@ -485,7 +503,10 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 		self.specify_colors(get_normalize_colors(ptcls))
 		self.generate_current_display_list(force=True)
 		
-		self.events_handlers["inspect"].repeat_event()
+		# if we have the same number of Eulers we can update everything
+		if self.previous_len == len(eulers) : self.events_handlers["inspect"].repeat_event()
+		else:self.events_handlers["inspect"].reset()
+		self.previous_len = len(eulers)
 		self.updateGL()
 	
 	def __init_events_handlers(self):
@@ -494,7 +515,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 		self.events_handlers["navigate"] = NavigationEvents(self)
 		self.events_handlers["inspect"] = ClassOrientationEvents(self)
 		self.connect(self.events_handlers["inspect"],QtCore.SIGNAL("point_selected"), self.au_point_selected)
-		self.current_events_handler = self.events_handlers["navigate"]
+		self.current_events_handler = self.events_handlers["inspect"]
 	
 	def au_point_selected(self,i):
 		try:
@@ -521,6 +542,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 		if self.mx_viewer == None:
 			first = True
 			self.mx_viewer = EMImageMXModule(data=None,application=self.application())
+			self.connect(self.mx_viewer,QtCore.SIGNAL("module_closed"),self.on_mx_view_closed)
 			self.mx_viewer.set_mouse_mode("app" )
 			self.connect(self.mx_viewer,QtCore.SIGNAL("mx_image_selected"), self.mx_image_selected)
 			self.application().show_specific(self.mx_viewer)
@@ -536,6 +558,12 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 		
 		if self.mx_particle_viewer != None:
 			self.mx_image_selected(None,None)
+			
+	def on_mx_view_closed(self):
+		self.mx_viewer = None
+		
+	def on_particle_mx_view_closed(self):
+		self.mx_particle_viewer = None
 		
 	def mx_image_selected(self,event,lc):
 		if lc != None: self.sel = lc[0]
@@ -551,6 +579,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 			if self.mx_particle_viewer == None:
 				first = True
 				self.mx_particle_viewer = EMImageMXModule(data=None,application=self.application())
+				self.connect(self.mx_particle_viewer,QtCore.SIGNAL("module_closed"),self.on_particle_mx_view_closed)
 				self.application().show_specific(self.mx_particle_viewer)
 			
 			
@@ -603,41 +632,25 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 		else:
 			self.current_events_handler = self.events_handlers[mode]
 			
+	def closeEvent(self,event):
+		self.emit(QtCore.SIGNAL("module_closed")) # this signal is
+		if self.inspector !=None: self.inspector.close()
+		if self.mx_viewer !=None: self.mx_viewer.closeEvent(None)
+		if self.mx_particle_viewer != None: self.mx_particle_viewer.closeEvent(None)
+		self.app().close_specific(self)
 		
 	
 #	def get_inspector(self):
 #		pass
 	
 class EMAsymmetricUnitInspector(EMSymInspector):
+	def get_desktop_hint(self):
+		return "inspector"
 	def __init__(self,target) :
 		EMSymInspector.__init__(self,target)
 		
-		hbl = QtGui.QHBoxLayout()
-		self.mouse_modes = ["navigate","inspect"]
-		buttons = []
-		check_first = True
-		self.mouse_mode_buttons = []
-		for choice in self.mouse_modes:
-			button = QtGui.QRadioButton(str(choice))
-			self.mouse_mode_buttons.append(button) # for determining which button is on
- 			if check_first:
-				button.setChecked(True)
-				check_first = False
-			hbl.addWidget( button)
-			buttons.append(button)
-			self.connect(button,QtCore.SIGNAL("clicked(bool)"),self.on_mouse_mode_clicked)
-		
-		
-		groupbox = QtGui.QGroupBox("Mouse mode")
-		groupbox.setToolTip("Set the current mouse mode")
-		groupbox.setLayout(hbl)
-		
 		if hasattr(self.target(),"au_data") and len(self.target().au_data) > 0:
-			
 			self.init_au_table()
-		
-		self.vbl2.addWidget(groupbox)
-
 
 	def init_au_table(self):
 		self.au_data = self.target().au_data
@@ -695,6 +708,8 @@ class EMAsymmetricUnitInspector(EMSymInspector):
 		for button in self.mouse_mode_buttons:
 			if button.isChecked():
 				self.target().set_events_mode(str(button.text()))
+				
+	
 
 if __name__ == '__main__':
 	main()
