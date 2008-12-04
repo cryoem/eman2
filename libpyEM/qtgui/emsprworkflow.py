@@ -3184,9 +3184,6 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 		if error != None:
 			return error
 		
-		options.model = "bdb:initial_models#"+options.model
-		
-		
 		options.filenames = [] # important for this to happen so the argument doesn't have all the filenames as args
 		string_args.extend(["iter","sym","model","path"])
 		bool_args.append("lowmem")
@@ -3210,8 +3207,31 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 		if x != y or z != y:
 			return "initial model isn't square"
 		
-#		scale = float(nx,x)
-#		if int(scale) == scale and scale != 1:
+		if nx != x:
+			scale = float(nx)/x
+			new_model = "bdb:"+options.path + "#initial_model"
+			
+			db = db_open_dict(model)
+			image = db[0]
+
+			start = (x-nx)/2
+			if scale > 1:
+				image.clip_inplace(Region(start,start,start,nx,nx,nx))
+				t = Transform()
+				t.set_scale(scale)
+				image.transform(t)	
+			else:
+				t = Transform()
+				t.set_scale(scale)
+				image.transform(t)
+				image.clip_inplace(Region(start,start,start,nx,nx,nx))
+				
+			image.write_image(new_model,0) # db got opened here
+
+		 	options.model = new_model
+		 	db_close_dict(new_model) # force synchronization so e2refine.py will definetely run -
+		else:
+			options.model = model # all good
 			
 		return None
 		
