@@ -1068,6 +1068,7 @@ class EMImage2DModule(EMGUIModule):
 				#	if (depth_testing_was_on):	GL.glEnable(GL.GL_DEPTH_TEST)
 			
 			else:
+				self.hist=struct.unpack('256i',a[-1024:])
 				glNewList(self.main_display_list,GL_COMPILE)
 				GL.glRasterPos(0,self.gl_widget.height()-1)
 				GL.glPixelZoom(1.0,-1.0)

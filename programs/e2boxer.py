@@ -148,7 +148,6 @@ for single particle analysis."""
 	error_message = []
 	for arg in args:
 		if file_exists(arg):
-			filenames.append(arg)
 			nx,ny,nz = gimme_image_dimensions3D(arg)
 			if nz != 1:
 				error_message.append("%s is 3D!" %arg)
@@ -182,7 +181,6 @@ for single particle analysis."""
 	elif options.auto: options.running_mode = "auto_db"
 	else: 
 		options.running_mode = None
-		print "unknown running mode"
 		# in the new framework there is not need to tell the options parser there is an error, because the boxer module is smart enough to handle it
 	
 	logid=E2init(sys.argv)
