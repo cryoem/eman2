@@ -318,6 +318,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
 		.def("twoD_fine_ali_SD_G", &EMAN::Util::twoD_fine_ali_SD_G)
 		.def("twoD_to_3D_ali", &EMAN::Util::twoD_to_3D_ali)
 		.def("get_biggest_cluster", &EMAN::Util::get_biggest_cluster, return_value_policy< manage_new_object >())
+		.def("get_slice", &EMAN::Util::get_slice, return_value_policy< manage_new_object >())
 		.def("merge_peaks", &EMAN::Util::merge_peaks )
 		.def("point_is_in_triangle_2d", &EMAN::Util::point_is_in_triangle_2d )
 		.def("point_is_in_convex_polygon_2d", &EMAN::Util::point_is_in_convex_polygon_2d )
@@ -457,6 +458,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
 		.staticmethod("twoD_to_3D_ali")
 		.staticmethod("get_biggest_cluster")
 		.staticmethod("merge_peaks")
+		.staticmethod("get_slice")
 	);
 
     scope* EMAN_Util_sincBlackman_scope = new scope(

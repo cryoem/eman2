@@ -17014,16 +17014,16 @@ void  Util::multiref_peaks_compress_ali2d(EMData* image, EMData* crefim, float x
 		}
 	}
 	for (int x=0; x<maxrin; x++) {
-		float sums = 0.0;
-		float summ = 0.0;
+		float maxs = -1.0e22;
+		float maxm = -1.0e22;
 		for (int i=1; i<=2*ky+1; i++) {
 			for (int j=1; j<=2*kx+1; j++) {
-				sums += p_ccf1ds[(i*(2*kx+3)+j)*maxrin+x];
-				summ += p_ccf1dm[(i*(2*kx+3)+j)*maxrin+x];
+				if (p_ccf1ds[(i*(2*kx+3)+j)*maxrin+x] > maxs) maxs = p_ccf1ds[(i*(2*kx+3)+j)*maxrin+x]; 
+				if (p_ccf1dm[(i*(2*kx+3)+j)*maxrin+x] > maxm) maxm = p_ccf1dm[(i*(2*kx+3)+j)*maxrin+x];
 			}
 		}
-		p_ccf1ds_compress[x] = sums;
-		p_ccf1dm_compress[x] = summ;
+		p_ccf1ds_compress[x] = maxs;
+		p_ccf1dm_compress[x] = maxm;
 	}
 	return;
 }
@@ -18230,3 +18230,57 @@ vector<float> Util::vareas(EMData* d) {
 	return  group;
 }
 #undef data
+
+EMData* Util::get_slice(EMData *vol, int dim, int index) {
+	/*
+		This function returns a 2-D slice from a 3-D EMData object
+		dim denotes the slice is perpendicular to which dimension
+		1 for x-dimension, 2 for y-dimension and 3 for z-dimension
+	*/
+	
+	int nx = vol->get_xsize();
+	int ny = vol->get_ysize();
+	int nz = vol->get_zsize();
+	float *vol_data = vol->get_data();
+	int new_nx, new_ny;
+	
+	if (nz == 1)
+		throw ImageDimensionException("Error: Input must be a 3-D object");
+	if ((dim < 1) or (dim > 3))
+		throw ImageDimensionException("Error: dim must be 1 (x-dimension), 2 (y-dimension) or 3 (z-dimension)");
+	if (((dim == 1) and (index < 0 or index > nx-1)) or 
+	  ((dim == 1) and (index < 0 or index > nx-1)) or 
+	  ((dim == 1) and (index < 0 or index > nx-1)))
+		throw ImageDimensionException("Error: index exceeds the size of the 3-D object");
+		
+	if (dim == 1) {
+		new_nx = ny;
+		new_ny = nz;
+	} else if (dim == 2) {
+		new_nx = nx;
+		new_ny = nz;
+	} else {
+		new_nx = nx;
+		new_ny = ny;
+	}
+	
+	EMData *slice = new EMData();
+	slice->set_size(new_nx, new_ny, 1);
+	float *slice_data = slice->get_data();
+	
+	if (dim == 1) {
+		for (int x=0; x<new_nx; x++)
+			for (int y=0; y<new_ny; y++)
+				slice_data[y*new_nx+x] = vol_data[(y*ny+x)*nx+index];			
+	} else if (dim == 2) {
+		for (int x=0; x<new_nx; x++)
+			for (int y=0; y<new_ny; y++)
+				slice_data[y*new_nx+x] = vol_data[(y*ny+index)*nx+x];
+	} else {
+		for (int x=0; x<new_nx; x++)
+			for (int y=0; y<new_ny; y++)
+				slice_data[y*new_nx+x] = vol_data[(index*ny+y)*nx+x];
+	}
+	  	
+	return slice;
+}

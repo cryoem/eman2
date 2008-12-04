@@ -603,7 +603,7 @@ public:
 	//static vector<float> cluster_equalsize(EMData* d, int m);
 	static vector<float> cluster_equalsize(EMData* d);
 	static vector<float> vareas(EMData* d);
-
+	static EMData* get_slice(EMData *vol, int dim, int index);
 	/*
 			To restrict the value to [0, nx)
 	*/
