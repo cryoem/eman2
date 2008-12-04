@@ -358,7 +358,7 @@ class EMImage3DModule(EMImage3DGUIModule):
 			if isinstance(self.data,EMData):
 				self.gl_context_parent.set_cam_z(self.gl_context_parent.get_fov(),self.data)
 			
-			self.qt_context_parent.setWindowIcon(QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/single_image_3d.png"))
+			self.qt_context_parent.setWindowIcon(QtGui.QIcon(get_image_directory() +"single_image_3d.png"))
 		
 		return self.qt_context_parent
 	

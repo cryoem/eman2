@@ -86,7 +86,7 @@ class EMFormWidget(QtGui.QWidget):
 		self.event_handlers = [] # used to keep event handlers in memory
 		self.output_writers = [] # used to register output write objects, for the purpose of returning the results
 		self.__init_icons()
-		self.setWindowIcon(QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/eman.png"))
+		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "/eman.png"))
 		
 		self.auto_incorporate = {}
 		self.auto_incorporate["float"] = self.__incorporate_float
@@ -106,10 +106,10 @@ class EMFormWidget(QtGui.QWidget):
 		self.__add_ok_cancel_buttons(self.vbl)
 		self.setLayout(self.vbl)
 	def __init_icons(self):
-		self.emdata_icon = QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/single_image.png")
-		self.emdata_3d_icon = QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/single_image_3d.png")
-		self.emdata_matrix_icon = QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/multiple_images.png")
-		self.plot_icon = QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/plot.png")
+		self.emdata_icon = QtGui.QIcon(get_image_directory() + "/single_image.png")
+		self.emdata_3d_icon = QtGui.QIcon(get_image_directory() + "/single_image_3d.png")
+		self.emdata_matrix_icon = QtGui.QIcon(get_image_directory() + "/multiple_images.png")
+		self.plot_icon = QtGui.QIcon(get_image_directory() + "/plot.png")
 		
 	def incorporate_params(self,params,layout):
 		for param in self.params:

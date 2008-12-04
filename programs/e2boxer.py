@@ -2843,12 +2843,12 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.boxinghbl1.setMargin(0)
 		self.boxinghbl1.setSpacing(2)
 		
-		self.refbutton=QtGui.QPushButton( QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/black_box.png"), "Reference")
+		self.refbutton=QtGui.QPushButton( QtGui.QIcon(get_image_directory() +"black_box.png"), "Reference")
 		self.refbutton.setCheckable(1)
 		self.refbutton.setChecked(True)
 		self.boxinghbl1.addWidget(self.refbutton)
 		
-		self.manualbutton=QtGui.QPushButton(QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/white_box.png"), "Manual")
+		self.manualbutton=QtGui.QPushButton(QtGui.QIcon(get_image_directory() +"white_box.png"), "Manual")
 		self.manualbutton.setCheckable(1)
 		self.manualbutton.setChecked(False)
 		self.boxinghbl1.addWidget(self.manualbutton)
@@ -2869,14 +2869,14 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.boxinghbl3.addWidget(self.dynapix)
 
 		self.method=QtGui.QComboBox()
-		self.swarm_icon = QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/swarm_icon.png")
+		self.swarm_icon = QtGui.QIcon(get_image_directory() +"swarm_icon.png")
 		self.method.addItem( self.swarm_icon, "Swarm" )
 		self.setWindowIcon( self.swarm_icon )
-		self.pp_icon = QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/pp_boxer_icon.png");
+		self.pp_icon = QtGui.QIcon(get_image_directory() +"pp_boxer_icon.png");
 		self.method.addItem( self.pp_icon,"Gauss Conv" )
 		self.boxinghbl3.addWidget( self.method )
 
-		self.autobox=QtGui.QPushButton(QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/green_boxes.png"), "Autobox")
+		self.autobox=QtGui.QPushButton(QtGui.QIcon(get_image_directory() +"green_boxes.png"), "Autobox")
 		self.boxinghbl3.addWidget(self.autobox)
 		self.boxingvbl.addLayout(self.boxinghbl3)
 	
@@ -2885,12 +2885,12 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.boxinghbl2.setSpacing(6)
 		#self.vbl.addLayout(self.hbl1)
 		
-		self.erasepic = QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/boxer_erase.png");
+		self.erasepic = QtGui.QIcon(get_image_directory() +"boxer_erase.png");
 		self.erase=QtGui.QPushButton(self.erasepic,Boxable.ERASE)
 		self.erase.setCheckable(1)
 		self.boxinghbl2.addWidget(self.erase)
 		
-		self.unerasepic = QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/boxer_unerase.png");
+		self.unerasepic = QtGui.QIcon(get_image_directory() +"boxer_unerase.png");
 		self.unerase=QtGui.QPushButton(self.unerasepic,Boxable.UNERASE)
 		self.unerase.setCheckable(1)
 		self.boxinghbl2.addWidget(self.unerase)
@@ -2911,7 +2911,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.connect(self.invert_contrast_mic,QtCore.SIGNAL("clicked(bool)"),self.invert_contrast_mic_toggled)
 
 		self.boxinghbl4=QtGui.QHBoxLayout()
-		self.togfreeze=QtGui.QPushButton(QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/freeze_swirl.png"),"Toggle Freeze")
+		self.togfreeze=QtGui.QPushButton(QtGui.QIcon(get_image_directory() +"freeze_swirl.png"),"Toggle Freeze")
 		self.boxinghbl4.addWidget(self.togfreeze)
 		self.clear=QtGui.QPushButton("Clear")
 		self.boxinghbl4.addWidget(self.clear)

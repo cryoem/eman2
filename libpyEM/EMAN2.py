@@ -247,6 +247,10 @@ exists will produce refine_02 if makenew is set (and create refine_02) and refin
 		return path
 	return "%s_%02d"%(prefix,n-1)
 
+def get_image_directory():
+	dtag = get_dtag()
+	return os.getenv("EMAN2DIR")+ dtag + "images" + dtag 
+
 def get_dtag():
 	pfrm = get_platform()
 	if pfrm == "Windows": return "\\"

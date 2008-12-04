@@ -131,7 +131,7 @@ class EMPlot2DModule(EMGUIModule):
 			self.gl_context_parent = EMPlot2DWidget(self)
 			self.qt_context_parent = EMParentWin(self.gl_context_parent)
 			self.gl_widget = self.gl_context_parent
-			self.qt_context_parent.setWindowIcon(QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/plot.png"))
+			self.qt_context_parent.setWindowIcon(QtGui.QIcon(get_image_directory() +"plot.png"))
 		return self.qt_context_parent
 	
 	def get_gl_widget(self,qt_context_parent,gl_context_parent):

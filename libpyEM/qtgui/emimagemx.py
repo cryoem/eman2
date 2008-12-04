@@ -332,7 +332,7 @@ class EMImageMXModule(EMGUIModule):
 			self.gl_context_parent = EMImageMXWidget(self)
 			self.qt_context_parent = EMParentWin(self.gl_context_parent)
 			self.gl_widget = self.gl_context_parent
-			self.qt_context_parent.setWindowIcon(QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/multiple_images.png"))
+			self.qt_context_parent.setWindowIcon(QtGui.QIcon(get_image_directory() +"multiple_images.png"))
 			#self.optimally_resize()
 			#self.qt_context_parent.setAcceptDrops(True)
 		

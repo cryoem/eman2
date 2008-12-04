@@ -361,7 +361,7 @@ class EMImage2DModule(EMGUIModule):
 				self.load_default_scale_origin()
 				
 			self.qt_context_parent.setAcceptDrops(True)
-			self.qt_context_parent.setWindowIcon(QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/single_image.png"))
+			self.qt_context_parent.setWindowIcon(QtGui.QIcon(get_image_directory() +"single_image.png"))
 		
 		return self.qt_context_parent
 	
@@ -1822,7 +1822,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		#self.gammas.setValue(1.0)
 		self.vbl.addWidget(self.gammas)
 
-		self.setWindowIcon(QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/eman.png"))
+		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"eman.png"))
 
 		self.lowlim=0
 		self.highlim=1.0

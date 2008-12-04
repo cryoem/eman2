@@ -393,7 +393,7 @@ class EMBorderDecoration:
 	def init_x_texture(self):
 		if EMBorderDecoration.x_texture_dl == None or EMBorderDecoration.x_texture_dl < 0:
 			#glEnable(GL_TEXTURE_2D)
-			pixmap = QtGui.QPixmap(os.getenv("EMAN2DIR")+"/images/Close.png")
+			pixmap = QtGui.QPixmap(get_image_directory() + "/Close.png")
 			#self.qwidget.setVisible(False)
 			if (pixmap.isNull() == True ): print 'error, the pixmap was null'
 			self.texture = self.object().parent().get_gl_context_parent().bindTexture(pixmap)
