@@ -8555,11 +8555,22 @@ def imgstat_ccc( stacks, rad ):
 	from EMAN2 import EMUtil
 	from utilities import get_im, model_circle
 	from statistics import ccc
+	from projection import prep_vol,prgs
+	from utilities	import get_params_proj
 
 	if len(stacks)>3: ERROR("Error: ccc should be run on two stacks","imgstat",1)
 
 	nimg1 = EMUtil.get_image_count( stacks[0] )
 	nimg2 = EMUtil.get_image_count( stacks[1] )
+
+
+	if nimg2==1 and get_im(stacks[0]).get_zsize()==1 and get_im(stacks[1]).get_zsize() > 1:
+		print "ccc between prj and volume"
+		volccc = True
+		volft,kb = prep_vol( get_im(stacks[1]) )
+	else:
+		volccc = False
+
 
 	
 	nimg = max(nimg1,nimg2)
@@ -8582,14 +8593,17 @@ def imgstat_ccc( stacks, rad ):
 		img1 = get_im( stacks[0], i )
 
 		if nimg2==1:
-			if i==0:
+			if volccc:
+				phi,tht,psi,s2x,s2y = get_params_proj( img1 )
+				img2 = prgs( volft,kb, [phi,tht,psi,-s2x,-s2y] )
+			else:
 				img2 = get_im( stacks[1] )
 		else:
 			img2 = get_im( stacks[1], i )
 
 		val = ccc(img1, img2, mask)
 
-		print "%10.5f" % val
+		print "%6d: %10.5f" % (i, val)
 
 def imgstat_fsc( stacks, fscfile, rad ):
 	from utilities import get_im, model_circle
