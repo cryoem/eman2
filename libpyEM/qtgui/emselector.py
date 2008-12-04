@@ -267,7 +267,7 @@ class EMSelectorDialog(QtGui.QDialog):
 	
 	def __redo_list_widget_contents(self):
 		self.lock = True
-		dag = get_dtag()
+		dtag = get_dtag()
 		
 		directory = self.starting_directory+dtag
 		for i,data in  enumerate(self.list_widget_data):
