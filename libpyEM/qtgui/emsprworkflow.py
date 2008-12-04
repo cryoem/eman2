@@ -162,7 +162,7 @@ class WorkFlowTask(QtCore.QObject):
 			filenames = files[n]
 			if len(filenames) == 0: continue # maybe there are more CPUS then filenames
 								
-			args = [program]
+			args = [os.getenv("EMAN2DIR")+"/bin/"+program]
 	
 			for name in filenames:
 				args.append(name)
@@ -183,7 +183,10 @@ class WorkFlowTask(QtCore.QObject):
 			
 			#print args
 			file = open(temp_file_name,"w+")
-			process = subprocess.Popen(args,stdout=file,stderr=subprocess.STDOUT)
+			args_adjusted = ["python"]
+			args_adjusted.extend(args)
+			print args_adjusted
+			process = subprocess.Popen(args_adjusted,stdout=file,stderr=subprocess.STDOUT)
 			#print "started process",process.pid
 			self.emit(QtCore.SIGNAL("process_started"),process.pid)
 			
@@ -202,8 +205,8 @@ class WorkFlowTask(QtCore.QObject):
 		'''
 		project_db = db_open_dict("bdb:project")	
 								
-		args = [program]
-
+		#args = [program]
+		args = [os.getenv("EMAN2DIR")+"/bin/"+program]
 		for name in options.filenames:
 			args.append(name)
 		
@@ -223,7 +226,10 @@ class WorkFlowTask(QtCore.QObject):
 		
 		#print args
 		file = open(temp_file_name,"w+")
-		process = subprocess.Popen(args,stdout=file,stderr=subprocess.STDOUT)
+		args_adjusted = ["python"]
+		args_adjusted.extend(args)
+		print args_adjusted
+		process = subprocess.Popen(args_adjusted,stdout=file,stderr=subprocess.STDOUT)
 		print "started process",process.pid
 		self.emit(QtCore.SIGNAL("process_started"),process.pid)
 		

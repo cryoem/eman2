@@ -37,7 +37,7 @@ from PyQt4.QtCore import Qt
 import os
 from emselector import EMSelectorModule
 from emapplication import EMQtWidgetModule
-from EMAN2 import Util
+from EMAN2 import Util, get_image_directory	
 import weakref
 
 class ParamTable(list):
