@@ -40,7 +40,7 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 import weakref
 from optparse import OptionParser
-from EMAN2 import Util, E2init, E2end,EMANVERSION,is_2d_image_mx, EMUtil, db_open_dict, EMData, Transform
+from EMAN2 import Util, E2init, E2end,EMANVERSION,is_2d_image_mx, EMUtil, db_open_dict, EMData, Transform, db_check_dict
 from emimagemx import EMImageMXModule
 import os
 import sys
@@ -123,7 +123,9 @@ def get_normalize_colors(ptcls):
 	df = float(mx-mn)
 	colors = []
 	for val in ptcls:
-		val = (val-mn)/(df)
+		if df != 0: val = (val-mn)/(df)
+		else:
+			val = 0.5
 		if val < 0.5:
 			frac = val/0.5
 			colors.append((1.0,frac,frac,1.0))
@@ -201,7 +203,7 @@ e2au.py --averages=classes.hdf --sym=d4 --clsdb=refine_1 --particles=bdb:startin
 	if eulers != None:
 		window.specify_eulers(eulers)
 	else:
-		print "no eulers"
+		pass
 	if ptcls != None:
 		window.specify_colors(get_normalize_colors(ptcls))
 		
@@ -278,6 +280,8 @@ class ClassOrientationEvents(InputEventsHandler,QtCore.QObject):
 		QtCore.QObject.__init__(self)
 		self.old_intersection = -1
 		self.old_color = None
+		self.nc = None
+		self.intsct = None
 		
 	def mouseReleaseEvent(self,event):
 		m,p,v = self.parent().model_matrix.tolist(),self.parent().vdtools.wproj.tolist(),self.parent().vdtools.wview.tolist()
@@ -322,9 +326,22 @@ class ClassOrientationEvents(InputEventsHandler,QtCore.QObject):
 			else: return
 		
 		if len(new_colors) > 0:
+			self.nc = new_colors
+			self.intsct = intersection
 			self.parent().set_point_colors(new_colors)
 			self.parent().updateGL()
-			if intersection >= 0:self.emit(QtCore.SIGNAL("point_selected"),intersection)	
+			if intersection >= 0:self.emit(QtCore.SIGNAL("point_selected"),intersection)
+	
+		else:
+			self.nc = None
+			self.intsct = None
+	def repeat_event(self):
+		if self.nc != None and self.intsct != None:
+			self.parent().set_point_colors(self.nc)
+			if self.intsct >= 0:self.emit(QtCore.SIGNAL("point_selected"),self.intsct)
+	
+			
+			
 		
 class NavigationEvents(InputEventsHandler):
 	def __init__(self,parent):
@@ -351,10 +368,12 @@ class NavigationEvents(InputEventsHandler):
 
 
 class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
-	def __init__(self,application):
-		
+	def __init__(self,application,auto=True):
+		if auto:
+			self.gen_refinement_data()
 		EM3DSymViewerModule.__init__(self,application)
 		InputEventsManager.__init__(self)
+		
 		
 		self.__init_events_handlers()
 		self.projection_file = None
@@ -373,12 +392,101 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 		self.average = None
 		self.projection = None
 		self.class_idx = None
+		
+		
+		if hasattr(self,"au_data"):
+			combo_entries = self.au_data.keys()
+			combo_entries.sort()
+		
+			if len(combo_entries) > 0:
+				au = combo_entries[0]
+				cls = self.au_data[au][0]
+				self.au_selected(au,cls)
+				
+	def gen_refinement_data(self):
+		for root, dirs, files in os.walk(os.getcwd()):
+			break
+		
+		dirs.sort()
+		for i in range(len(dirs)-1,-1,-1):
+			if len(dirs[i]) != 9:
+				dirs.pop(i)
+			elif dirs[i][:7] != "refine_":
+				dirs.pop(i)
+			else:
+				try: int(dirs[i][7:])
+				except: dirs.pop(i)
+		
+		
+		self.dirs = dirs
+		
+		self.au_data = {}
+		for dir in self.dirs:
+			d = self.check_refine_db_dir(dir)
+			if len(d) != 0 and len(d[dir]) != 0: self.au_data.update(d)
+			
+		
+				
 		#self.mousePressEvent = InputEventsManager.mousePressEvent
+		
+	def check_refine_db_dir(self,dir,s1="classes",s2="class_indices",s3="cls_result",s4="threed",s5="projections"):
+		names = [s1,s2,s3,s4,s5]
+		data = {}
+		data[dir] = []
+		for i in range(0,9):
+			for j in range(0,9):
+				last_bit = str(i)+str(j)
+				fail = False
+				r = []
+				for name in names:
+					db_name = "bdb:"+dir+"#"+name+"_"+last_bit
+					if not db_check_dict(db_name):
+						fail= True
+						break
+					else: r.append(db_name)
+					
+				if not fail:
+					data[dir].append(r)
+		return data
 		
 	def set_projection_file(self,projection_file): self.projection_file = projection_file
 	def get_inspector(self):
-		if not self.inspector : self.inspector=EMAsymmetricUnitInspector(self)
+		if not self.inspector : 
+			self.inspector=EMAsymmetricUnitInspector(self)
+			self.connect(self.inspector,QtCore.SIGNAL("au_selected"),self.au_selected)
 		return self.inspector
+	
+	def au_selected(self,au,cls):
+		data = []
+		for d in self.au_data[au]:
+			if d[0] == cls:
+				data = d;
+				break
+			
+		if len(data) == 0:
+			print "error, no data for",au,cls,"returning"
+			return
+
+		self.particle_file = "bdb:"+au+"#all"
+		self.average_file = cls
+		self.projection_file = data[4]
+		self.alignment_file = data[2]
+		self.clsdb = data[1]
+		
+		self.dx = None
+		self.dy = None
+		self.da = None
+		self.dflip = None
+		self.classes = None
+		
+		eulers = get_eulers_from(self.average_file)
+		ptcls = get_ptcl_from(self.average_file)
+		self.specify_eulers(eulers)
+		self.specify_colors(get_normalize_colors(ptcls))
+		self.generate_current_display_list(force=True)
+		
+		self.events_handlers["inspect"].repeat_event()
+		self.updateGL()
 	
 	def __init_events_handlers(self):
 		self.events_mode = "navigate"
@@ -401,11 +509,12 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 				except:
 					self.projection = None
 					
-				try:
-					self.class_idx = self.average.get_attr("projection_image_idx")
-				except:
-					self.class_idx = -1
+			try:
+				self.class_idx = self.average.get_attr("projection_image_idx")
+			except:
+				self.class_idx = -1
 		except: self.average = None
+		
 		if self.projection  == None and self.average == None: return
 		
 		first = False
@@ -431,9 +540,10 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 	def mx_image_selected(self,event,lc):
 		if lc != None: self.sel = lc[0]
 		if self.clsdb != None and self.particle_file != None and self.class_idx > -1:
-			class_db = db_open_dict("bdb:"+self.clsdb+"#e2classaverage.indices")
+			class_db = db_open_dict(self.clsdb)
 			indices = class_db[str(self.class_idx)]
 			mx = []
+			if indices == None: return
 			for val in indices:
 				mx.append(EMData(self.particle_file,val))
 			
@@ -501,6 +611,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 class EMAsymmetricUnitInspector(EMSymInspector):
 	def __init__(self,target) :
 		EMSymInspector.__init__(self,target)
+		
 		hbl = QtGui.QHBoxLayout()
 		self.mouse_modes = ["navigate","inspect"]
 		buttons = []
@@ -521,8 +632,65 @@ class EMAsymmetricUnitInspector(EMSymInspector):
 		groupbox.setToolTip("Set the current mouse mode")
 		groupbox.setLayout(hbl)
 		
+		if hasattr(self.target(),"au_data") and len(self.target().au_data) > 0:
+			
+			self.init_au_table()
+		
 		self.vbl2.addWidget(groupbox)
 
+
+	def init_au_table(self):
+		self.au_data = self.target().au_data
+		combo_entries = self.au_data.keys()
+		combo_entries.sort()
+		self.combo = QtGui.QComboBox(self)
+		for e in combo_entries:
+			self.combo.addItem(e)
+			
+		self.connect(self.combo,QtCore.SIGNAL("currentIndexChanged(QString&)"),self.on_combo_change)
+		self.connect(self.combo,QtCore.SIGNAL("currentIndexChanged(const QString&)"),self.on_combo_change)
+			
+		self.vbl2.addWidget(self.combo)
+		self.au_selection = combo_entries[0]
+		
+		self.list_widget = QtGui.QListWidget(None)
+		
+		self.list_widget.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
+		self.list_widget.setMouseTracking(True)
+		QtCore.QObject.connect(self.list_widget,QtCore.SIGNAL("itemClicked(QListWidgetItem *)"),self.list_widget_item_clicked)
+	
+		self.update_classes_list(first_time=True)
+		self.vbl2.addWidget(self.list_widget)
+	
+	def on_combo_change(self,s):
+		self.au_selection = str(s)
+		self.update_classes_list()
+	
+	def update_classes_list(self,first_time=False):
+		selected_items = self.list_widget.selectedItems() # need to preserve the selection
+		
+		s_text = None
+		if len(selected_items) == 1 :
+			s_text = str(selected_items[0].text())
+			if len(s_text) > 4: s_text = s_text[-4:] 
+			
+		self.list_widget.clear()
+		for i,vals in enumerate(self.au_data[self.au_selection]):
+			choice = vals[0]
+			
+			a = QtGui.QListWidgetItem(str(choice),self.list_widget)
+			if first_time and i == 0:
+				self.list_widget.setItemSelected(a,True)
+			elif len(choice) > 4 and (choice[-4:] == s_text):
+				self.list_widget.setItemSelected(a,True)
+				
+		selected_items = self.list_widget.selectedItems() # need to preserve the selection
+		if len(selected_items) == 1:
+			self.emit(QtCore.SIGNAL("au_selected"),self.au_selection,str(selected_items[0].text()))
+	
+	def list_widget_item_clicked(self,item):
+		self.emit(QtCore.SIGNAL("au_selected"),self.au_selection,str(item.text()))
+	
 	def on_mouse_mode_clicked(self,bool):
 		for button in self.mouse_mode_buttons:
 			if button.isChecked():

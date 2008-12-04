@@ -110,7 +110,10 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		self.force_update = False
 		self.force_force_update = False
 		
-		self.sym = None
+		project_db = db_open_dict("bdb:project")
+		self.bdb_sym = project_db.get("global.symmetry",dfl="c1")
+		
+		self.sym = self.bdb_sym
 		self.prop = None
 		self.perturb = False
 		self.nomirror = True
@@ -340,7 +343,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		self.eulers_specified = True
 		self.specified_eulers = eulers
 	
-	def generate_current_display_list(self):
+	def generate_current_display_list(self,force=False):
 		sym = self.inspector.get_sym()
 		prop = self.inspector.get_prop()
 		mirror = not self.inspector.get_mirror()
@@ -348,7 +351,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		angle_label = self.inspector.get_angle_label()
 		strategy = str(self.inspector.get_orient_label())
 		
-		if self.sym == sym and self.prop == prop and self.nomirror == mirror and self.perturb == perturb and self.angle_label == angle_label and self.strategy == strategy and self.force_force_update == False: return
+		if not force and self.sym == sym and self.prop == prop and self.nomirror == mirror and self.perturb == perturb and self.angle_label == angle_label and self.strategy == strategy and self.force_force_update == False: return
 		else:
 			self.sym = sym
 			self.prop = prop
@@ -472,7 +475,9 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		
 	def set_point_colors(self,new_color_map):
 		for k,v in new_color_map.items():
-			self.point_colors[k] = v
+			try:
+				self.point_colors[k] = v
+			except: pass
 		self.update_sym_dl = True
 		#self.make_sym_dl_list(self.points,self.point_colors)
 			

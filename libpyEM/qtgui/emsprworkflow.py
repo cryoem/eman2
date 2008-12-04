@@ -2961,9 +2961,7 @@ class RefinementReportTask(ParticleWorkFlowTask):
 			for i in range(0,9):
 				for j in range(0,9):
 					db_name = db_first_part+str(i)+str(j)
-					print db_name
 					if db_check_dict(db_name):
-						print "success"
 						threed_db = db_name
 					else:
 						if i != 0 or j != 0:
