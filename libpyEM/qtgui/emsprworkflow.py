@@ -2555,7 +2555,9 @@ class E2Refine2DTask(ParticleWorkFlowTask):
 	 	cmd += " --makevstack=bdb:"+options.path+"#all"
 	 	
 	 	self.application().setOverrideCursor(Qt.BusyCursor)
-	 	success = (os.system(cmd) in (0,12))
+	 	success = os.system(cmd)
+		print "mvs ",success
+		success = (success in (0,12))
 	 	self.application().setOverrideCursor(Qt.ArrowCursor)
 	 	return success,cmd
 	 
@@ -3292,7 +3294,8 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 	 	print "executing cmd", cmd
 	 	
 	 	self.application().setOverrideCursor(Qt.BusyCursor)
-	 	success = (os.system(cmd) in (0,12))
+	 	success = os.system(cmd)
+	 	success = (success in (0,11,12))
 	 	self.application().setOverrideCursor(Qt.ArrowCursor)
 	 	
 	 	setattr(options,attr,"bdb:"+options.path+"#"+out_name) # Note important 

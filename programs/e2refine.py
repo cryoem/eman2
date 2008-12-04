@@ -106,8 +106,8 @@ def main():
 		error = True
 	if check_classaverage_args(options,True) == True :
 		error = True
-	if check_make3d_args(options,True) == True:
-		error = True
+#	if check_make3d_args(options,True) == True:
+#		error = True
 	
 	logid=E2init(sys.argv)
 	

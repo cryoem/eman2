@@ -165,7 +165,7 @@ def main():
 		#for i,j in enumerate(results): dct[i]=j[1]
 		#dct.close()
 		
-		for i,j in enumerate(results): j[1].write_image(results_name+"_%02d"%i,0)
+		for i,j in enumerate(results): j[1].write_image(results_name+"_%02d"%i+1,0)
 		
 #		threed[-1].write_image("x.%d.mrc"%t)
 		
