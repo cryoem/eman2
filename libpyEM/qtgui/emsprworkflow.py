@@ -3135,6 +3135,7 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 		params.append(p)
 		
 		init_models = self.get_available_initial_models()
+		init_models.sort()
 		
 		pinitialmodel =  ParamDef(name="model",vartype="string",desc_short="Starting model",desc_long="The starting 3D model that will be used to seed refinement",property=None,defaultunits=None,choices=init_models)
 		params.append(pinitialmodel)

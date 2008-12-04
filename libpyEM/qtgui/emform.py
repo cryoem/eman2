@@ -697,7 +697,6 @@ class EMTableFormWidget(EMFormWidget):
 		
 		
 	def incorporate_params(self,params,layout):
-		print "here we are"
 		tabwidget = QtGui.QTabWidget(self)
 		
 		for title,paramlist in params:
