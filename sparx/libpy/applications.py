@@ -864,19 +864,14 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		print_msg("Output directory            : %s\n"%(outdir))
 		print_msg("Inner radius                : %i\n"%(first_ring))
 	
-	if ftp == "hdf":
+	nima = 0
+	if myid == main_node:
 		nima = EMUtil.get_image_count(stack)
-	elif ftp == "bdb":
-		#nima = 0
-		#if myid == main_node:
-		nima = EMUtil.get_image_count(stack)
-		#nima = mpi_bcast(nima, 1, MPI_INT, main_node, MPI_COMM_WORLD)
-	else:
-		print "Invalid file type"
-		return
-	
+	nima = mpi_bcast(nima, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+	nima = int(nima)
+
 	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
-	
+
 	ima = EMData()
 	for i in xrange(number_of_proc):
 		if myid == i:
