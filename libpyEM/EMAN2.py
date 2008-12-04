@@ -30,7 +30,8 @@
 #
 #
 
-from sys import exit,platform
+import sys
+from sys import exit
 import os
 import time
 import shelve
