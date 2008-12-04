@@ -1043,6 +1043,7 @@ class EMOpenGLFlagsAndTools:
 			
 		# non power of two
 		def npt_textures_unsupported(self):
+			return True
 			if ( self.force_use_mipmaps ): return True
 			
 			if self.power_of_two_init_check == True:
