@@ -2060,7 +2060,7 @@ class EMBoxerModule(QtCore.QObject):
 	def update_image_display(self):
 		self.guiim.updateGL()
 		
-		if self.guimxit != None: self.guimxit.get_parent()
+		#if self.guimxit != None: self.guimxit.get_parent()
 		
 	def update_mx_display(self):
 		#self.application().get_qt_gl_updategl_target(self.guimx).updateGL()

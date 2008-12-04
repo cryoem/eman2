@@ -188,7 +188,7 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 			children = [self.target]
 		elif self.current != None:
 			children = [self.current]
-				
+		
 		for child in children:
 			if ( child.isinwin(event.x(),EMDesktop.main_widget.viewport_height()-event.y()) ):
 				child.mousePressEvent(event)
@@ -496,7 +496,6 @@ class Translation:
 			self.translation_animation = None
 	
 	def animation_done_event(self,child):
-		print "animation done event",self
 		self.child.unlock_texture()
 	
 	def get_translation(self):
@@ -520,7 +519,7 @@ class Translation:
 			glTranslate(*self.translation)
 			return True
 		else:
-			self.translation_animation = None 
+			self.translation_animation = None
 			return False
 
 	def is_animated(self):
@@ -988,12 +987,11 @@ class EMFrame(EMWindowNode,EMRegion):
 	
 	def mousePressEvent(self, event):
 		#this could be optimized
-		
+
 		for i in self.children:
 			if i.mousePressEvent(event):
 				self.set_current(i) 
 				return True
-			
 		self.set_current(None)
 		
 	
@@ -1046,6 +1044,7 @@ class EMFrame(EMWindowNode,EMRegion):
 	
 	def leaveEvent(self,event):
 		self.current = None
+		self.target = None
 
 class EMDesktopApplication(EMApplication):
 	def __init__(self,target,qt_application_control=True):
@@ -1143,109 +1142,87 @@ class EMDesktopApplication(EMApplication):
 		if owner != None: return True
 		else: return False
 
-class FocusAnimation:
-	def __init__(self):
-		self.focus_animation = None
-		self.z = 0
-		self.present = 0
-		self.hold_focus = None
-		
-	def is_focused(self):
-		return self.hold_focus or self.in_focus
-	
-	def new_focus(self):
-		if self.focus_animation != None: 
-			print "w1"
-#		print "new focus"
-		t = Translation(self)
-		old_pos = (0,0,0)
-		new_pos = (0,0,self.z)
-		
-		t.seed_translation_animation(old_pos,new_pos)
-		
-		self.focus_animation = t
-		self.present = self.z
-	def lost_focus(self):
-#		print "lost focus"
-		if self.focus_animation != None:
-#			print "seeding in between animation"
-			#return # no support today
-			target = self.focus_animation.p2[2]
-			begin = self.focus_animation.p1[2]
-			present = self.focus_animation.translation[2]
-			
-			if target < begin:
-				new_target = 0
-			else:
-				new_target = self.z
-			
-			#print "going from ",present,new_target
-			t = Translation(self)
-			old_pos = (0,0,present)
-			new_pos = (0,0,new_target)
-			
-			self.present = new_target
-			
-			t.seed_translation_animation(old_pos,new_pos)
-		
-			#self.hold_focus = None
-			self.focus_animation = t
-		elif self.in_focus != None:
-#			print "seeding return animation"
-			t = Translation(self)
-			old_pos = (0,0,self.z)
-			new_pos = (0,0,0)
-		
-			t.seed_translation_animation(old_pos,new_pos)
-		
-			self.focus_animation = t
-			self.hold_focus = self.in_focus
-		else:
-#			print "twiddling thumbs"
-			pass
-#			print "got nothing"
-
-
-	def lock_texture(self):pass # for the Translation animation
-	def unlock_texture(self):
-		print "animation is done (unlock texture)"
-		self.present = self.z
-		self.focus_animation = None
-	
-#		print "in unlock texture"
-#		if self.in_focus == None:
-#			print "set self.focus_animation"
-#			self.focus_animation = None 
-#			#pass # for the Translation animation
-#		else: print "self in focus wasn't none"
+#class FocusAnimation:
+#	def __init__(self):
+#		self.focus_animation = None
+#		self.z = -200
+#		self.present = 0
+#		self.hold_focus = None
+#		self.translation = (0,0,0)
+#	def is_focused(self):
+#		return self.hold_focus or self.in_focus
 #	
-	def focus_transform(self):
-		if self.focus_animation != None and self.focus_animation.is_animated():
-			self.focus_animation.transform()
-		else:
-			self.focus_animation = None
-			if self.hold_focus != None:
-				print "losing hold focus"
-				self.hold_focus = None
-				#self.present = 0
-				return
-			#print "holding at -z"
-			#glTranslate(0,0,self.z)
-#			if self.focus_animation.is_animated():
-#				
+#	def new_focus(self):
+#		print "new focus"
+#		if self.focus_animation != None: 
+#			print "wtf"
+##			return
+#			
+#			#return
+##		print "new focus"
+#		
+#		old_pos = (0,0,0)
+#		new_pos = (0,0,self.z)
+#		
+#		self.focus_animation = TranslationAnimation(self,old_pos,new_pos)
+#		EMDesktop.main_widget.register_animatable(self.focus_animation)
+#
+#		self.present = self.z
+#	
+#	def set_translation(self,translation):
+#		self.translation = translation
+#
+#	def lost_focus(self):
+#		if self.focus_animation != None:
+#			#EMDesktop.main_widget.deregister_animatable(self.focus_animation)
+##			print "seeding in between animation"
+#			#return # no support today
+#			start = self.focus_animation.get_start()[2]
+#			end = self.focus_animation.get_end()[2]
+#			current = self.focus_animation.get_current()[2]
+#			print start,end,current
+#			if end == self.z:
+#				print "return"
+#				new_end = 0
 #			else:
-#				return
-#				print "set focus animation None"
-#				#self.focus_animation=None
-				#
+#				print "go in"
+#				new_end = self.z
+#				
+#			print current, "to", new_end
+#			
+#			old_pos = (0,0,current)
+#			new_pos = (0,0,new_end)
+#			
+#			self.focus_animation = TranslationAnimation(self,old_pos,new_pos)
+#			EMDesktop.main_widget.register_animatable(self.focus_animation)
+#
+#			self.hold_focus = self.in_focus
+#			
+#		else:
+#			print "yo"
+#			old_pos = (0,0,self.z)
+#			new_pos = (0,0,0)
+#		
+#			self.focus_animation = TranslationAnimation(self,old_pos,new_pos)
+#			EMDesktop.main_widget.register_animatable(self.focus_animation)
+#
+#			
+#
+#	def animation_done_event(self,child):
+#		print "animation done event"
+#		self.hold_focus = None
+#		
+#		pass
+#	def focus_transform(self):
+#		glTranslate(*self.translation)
 
-class EMWorkFlowFrame(EMFrame,FocusAnimation):
+
+class EMWorkFlowFrame(EMFrame):
 	'''
 	A special frame that only has a top bar, for managing the workflow stuff
 	'''
 	def __init__(self,parent,geometry=Region(0,0,0,0)):
 		EMFrame.__init__(self,parent,geometry)
-		FocusAnimation.__init__(self)
 		EMDesktop.main_widget.register_resize_aware(self)
 		self.display_frames = []
 		self.top_bar = TopWidgetBar(self)
@@ -1270,7 +1247,7 @@ class EMWorkFlowFrame(EMFrame,FocusAnimation):
 		
 	def draw(self):
 		glPushMatrix()
-		glTranslatef(0.,0.,self.get_z_opt())
+		glTranslatef(0.,0.,self.get_z_opt()-12)
 		EMFrame.draw(self)
 		glPopMatrix()
 		
@@ -1282,34 +1259,34 @@ class EMWorkFlowFrame(EMFrame,FocusAnimation):
 
 	
 	def child_in_focus(self,s):
-		new_focus = None
-		if s == "top":
-			new_focus = self.top_bar
-				
-		if new_focus != self.in_focus:
-			self.in_focus = new_focus
-			self.new_focus()	
-		else:
-			pass
+		pass
+#		new_focus = None
+#		if s == "top":
+#			new_focus = self.top_bar
+#				
+#		if new_focus != self.in_focus:
+#			self.in_focus = new_focus
+#			self.new_focus()	
+#		else:
+#			pass
 		
 	def set_no_focus(self):
-		print "set no focus"
-		if self.in_focus != None:
-			self.lost_focus()
-			self.in_focus = None
+		pass
+#		if self.in_focus != None:
+#			self.lost_focus()
+#			self.in_focus = None
 			
-	def leaveEvent(self,event):
-		self.current = None
-		self.lost_focus()
-		self.in_focus = None
-		self.hold_focus = None
+#	def leaveEvent(self,event):
+#		self.current = None
+#		self.in_focus = None
+
 
 		
-class EMDesktopFrame(EMFrame,FocusAnimation):
+class EMDesktopFrame(EMFrame):
 	image = None
 	def __init__(self,parent,geometry=Region(0,0,0,0)):
 		EMFrame.__init__(self,parent,geometry)
-		FocusAnimation.__init__(self)
+		#FocusAnimation.__init__(self)
 		self.display_frames = []
 		
 		EMDesktop.main_widget.register_resize_aware(self)
@@ -1368,9 +1345,9 @@ class EMDesktopFrame(EMFrame,FocusAnimation):
 		if len(self.display_frames) != 0:
 			width = int(EMDesktop.main_widget.viewport_width()-200)
 			height = int(EMDesktop.main_widget.viewport_height())-50
-			self.display_frames[0].set_geometry(Region(-width/2,-height/2,0,width,height,100)) # the depth of the z dimensions doesn't mean a whole lot
+			self.display_frames[0].set_geometry(Region(-width/2,-height/2,-24,width,height,100)) # the depth of the z dimensions doesn't mean a whole lot
 		
-		self.form_display_frame.set_geometry(Region(-width/2,-height/2,0,width,height,100)) # -20 so it's behing the side bars
+		self.form_display_frame.set_geometry(Region(-width/2,-height/2,-24,width,height,100)) # -20 so it's behing the side bars
 		
 		if self.frame_dl:
 			glDeleteLists(self.frame_dl,1)
@@ -1386,7 +1363,7 @@ class EMDesktopFrame(EMFrame,FocusAnimation):
 		
 		if hint == "dialog" or hint == "inspector":
 			self.left_side_bar.attach_child(child.get_gl_widget(EMDesktop.main_widget,EMDesktop.main_widget))
-			QtCore.QObject.connect(child,QtCore.SIGNAL("in_focus"),self.child_in_focus)
+			#QtCore.QObject.connect(child,QtCore.SIGNAL("in_focus"),self.child_in_focus)
 			self.child_mappings[child] = self.left_side_bar
 		elif hint == "image" or hint == "plot":
 			self.display_frame.attach_child(child.get_gl_widget(EMDesktop.main_widget,EMDesktop.main_widget))
@@ -1394,15 +1371,15 @@ class EMDesktopFrame(EMFrame,FocusAnimation):
 		elif hint == "rotor":
 			#print "attaching right side bar"
 			self.right_side_bar.attach_child(child.get_gl_widget(EMDesktop.main_widget,EMDesktop.main_widget))
-			QtCore.QObject.connect(child,QtCore.SIGNAL("in_focus"),self.child_in_focus)
+			#QtCore.QObject.connect(child,QtCore.SIGNAL("in_focus"),self.child_in_focus)
 			self.child_mappings[child] = self.right_side_bar
 		elif hint == "settings":
 			self.bottom_bar.attach_child(child.get_gl_widget(EMDesktop.main_widget,EMDesktop.main_widget))
-			QtCore.QObject.connect(child,QtCore.SIGNAL("in_focus"),self.child_in_focus)
+			#QtCore.QObject.connect(child,QtCore.SIGNAL("in_focus"),self.child_in_focus)
 			self.child_mappings[child] = self.bottom_bar
 		elif hint == "workflow":
 			self.top_bar.attach_child(child.get_gl_widget(EMDesktop.main_widget,EMDesktop.main_widget))
-			QtCore.QObject.connect(child,QtCore.SIGNAL("in_focus"),self.child_in_focus)
+			#QtCore.QObject.connect(child,QtCore.SIGNAL("in_focus"),self.child_in_focus)
 			self.child_mappings[child] = self.top_bar
 		elif hint == "form":
 			self.form_display_frame.attach_child(child.get_gl_widget(EMDesktop.main_widget,EMDesktop.main_widget))
@@ -1411,26 +1388,28 @@ class EMDesktopFrame(EMFrame,FocusAnimation):
 			print "unsupported",hint
 	
 	def child_in_focus(self,s):
-		new_focus = None
-		if s == "left":
-			new_focus = self.left_side_bar
-		elif s == "right":
-			new_focus = self.right_side_bar
-		elif s == "bottom":
-			new_focus = self.bottom_bar
-		elif s == "top":
-			new_focus = self.top_bar
-			
-		if new_focus != self.in_focus:
-			self.in_focus = new_focus
-			self.new_focus()	
-		else:
-			pass
+		pass
+#		new_focus = None
+#		if s == "left":
+#			new_focus = self.left_side_bar
+#		elif s == "right":
+#			new_focus = self.right_side_bar
+#		elif s == "bottom":
+#			new_focus = self.bottom_bar
+#		elif s == "top":
+#			new_focus = self.top_bar
+#			
+#		if new_focus != self.in_focus:
+#			self.in_focus = new_focus
+#			self.new_focus()	
+#		else:
+#			pass
 		
 	def set_no_focus(self):
-		if self.in_focus != None:
-			self.lost_focus()
-			self.in_focus = None
+		pass
+#		if self.in_focus != None:
+#			self.lost_focus()
+#			self.in_focus = None
 	
 	def detach_gl_child(self,child):
 		try:
@@ -1546,23 +1525,24 @@ class EMDesktopFrame(EMFrame,FocusAnimation):
 
 		glPushMatrix()
 		glTranslatef(0.,0.,self.parent.z_opt)
-		if self.temporary_transformer != None:
-			self.temporary_transformer.focus_transform()
-		if self.in_focus == None and self.hold_focus ==None : EMFrame.draw(self)
-		else:
-			glPushMatrix()
-			if self.in_focus != None: self.in_focus.draw()
-			elif self.hold_focus != None: self.hold_focus.draw()
-			glPopMatrix()
-			glPushMatrix()
-			self.focus_transform()
-			for child in self.children:
-				if child == self.in_focus: continue
-				if child == self.hold_focus: continue
-				glPushMatrix()
-				child.draw()
-				glPopMatrix()
-			glPopMatrix()
+		EMFrame.draw(self)
+#		if self.temporary_transformer != None:
+#			self.temporary_transformer.focus_transform()
+#		if self.in_focus == None and self.hold_focus ==None : EMFrame.draw(self)
+#		else:
+#			glPushMatrix()
+#			if self.in_focus != None: self.in_focus.draw()
+#			elif self.hold_focus != None: self.hold_focus.draw()
+#			glPopMatrix()
+#			glPushMatrix()
+#			self.focus_transform()
+#			for child in self.children:
+#				if child == self.in_focus: continue
+#				if child == self.hold_focus: continue
+#				glPushMatrix()
+#				child.draw()
+#				glPopMatrix()
+#			glPopMatrix()
 		glPopMatrix()
 		
 		
@@ -1854,60 +1834,6 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouterToList,Animator,EMGLProjection
 	def detach_gl_child(self,child):
 		self.current_desktop_frame.detach_gl_child(child)
 	
-	
-	#def add_browser_frame(self):
-		#if not self.establish_target_frame("browse"):
-			#return
-		
-		#dialog = EMBrowserDialog(self,EMDesktop.application)
-		#em_qt_widget = EMQtWidgetModule(dialog,EMDesktop.application)
-		#EMDesktop.application.show_specific(em_qt_widget)
-		#self.browser_settings = EMBrowserSettings(self.current_desktop_frame.display_frame,self.application)
-
-		
-	#def establish_target_frame(self,type_name):
-		#for frame in self.desktop_frames:
-			#if frame.get_type() == type_name:
-				#self.application.close_specific(self.task_widget)
-				#self.current_desktop_frame = frame
-				#EMEventRerouterToList.set_target(self,[self.current_desktop_frame])
-				#self.application.show_specific(self.task_widget)
-				#print "that already exists"
-				#print "now animate change"
-				#return False
-	
-		#target_frame = None
-		#if self.current_desktop_frame.get_type() == None:
-			#target_frame = self.current_desktop_frame
-		#else:
-			#self.application.close_specific(self.task_widget)
-			#target_frame = EMDesktopFrame(self)
-			#target_frame.resize_gl()
-			##target_frame.append_task_widget(self.task_widget.gl_widget)
-			#self.desktop_frames.append(target_frame)
-			#self.current_desktop_frame = target_frame
-			#self.application.show_specific(self.task_widget)
-		
-		#EMEventRerouterToList.set_target(self,[self.current_desktop_frame])
-		
-		#target_frame.set_type(type_name)
-		
-		#return True
-		
-	#def add_selector_frame(self):
-		#if not self.establish_target_frame("thumb"): return
-		#dialog = EMSelectorDialog(self,EMDesktop.application)
-		#em_qt_widget = EMQtWidgetModule(dialog,EMDesktop.application)
-		#EMDesktop.application.show_specific(em_qt_widget)
-	
-	#def add_boxer_frame(self):
-		#if not self.establish_target_frame("boxer"): return
-		
-		## must keep a reference in order for signals to work!
-		#boxer_module = EMBoxerModule(EMDesktop.application,None)
-		#self.modules.append(boxer_module)
-		#self.events_handlers.append(BoxerEventsHandler(self,boxer_module))
-	
 	def remove_boxer_module(self,boxer_module,boxer_events_handler):
 		for i, eh in enumerate(self.events_handlers):
 			if eh == boxer_events_handler:
@@ -2048,19 +1974,10 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouterToList,Animator,EMGLProjection
 		else:
 			normal = True
 		if normal: 
-			if self.work_flow_frame.is_focused():
-				self.current_desktop_frame.temporary_transformer = self.work_flow_frame
-			else:
-				self.current_desktop_frame.temporary_transformer = None
 			self.current_desktop_frame.draw()
 		
-		if self.current_desktop_frame.is_focused():
-		  	glPushMatrix()
-			self.current_desktop_frame.focus_transform()
-			self.work_flow_frame.draw()
-			glPopMatrix()
-		else:
-			self.work_flow_frame.draw()
+
+		self.work_flow_frame.draw()
 		glPopMatrix()
 		
 	def update(self): self.updateGL()
@@ -2471,7 +2388,6 @@ class SideTransform:
 		self.rotation = 0 # supply these yourself, probably
 		self.default_rotation = 0 # supply these yourself, probably
 		self.target_rotation = 0.0
-		self.focus_flag = False
 	def __del__(self):
 		if self.scale_animation != None:
 			self.scale_animation.set_animated(False) # this will cause the EMDesktop to stop animating
@@ -2567,12 +2483,8 @@ class SideTransform:
 		#glPopMatrix()
 		#glTranslate(0,-self.xy_scale*self.child.height_inc_border(),0)
 	def has_focus(self):
-		focus = self.rotation == self.target_rotation
-		if focus and not self.focus_flag:
-			self.child().emit(QtCore.SIGNAL("in_focus"),self.string)
-			self.focus_flag = True
-		else:
-			self.focus_flag = False
+		focus = (self.rotation == self.target_rotation and self.rotation_animation == None)
+		if focus: self.child().emit(QtCore.SIGNAL("in_focus"),self.string)
 		return focus # This seams to be uniform...
 	
 

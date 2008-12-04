@@ -953,6 +953,7 @@ class EMGLRotorWidget(EM3DVolume,GLView):
 class EMGLWindow:
 	def __init__(self,parent,drawable):
 		self.parent = weakref.ref(parent)
+		self.keep_parent = parent
 		self.drawable = drawable
 		self.drawable.set_window(self)
 		self.cam = Camera2(self) # a camera/orientation/postion object
@@ -1035,7 +1036,6 @@ class EMGLWindow:
 	def set_selected(self,bool=True):
 		self.decoration.set_selected(bool)
 		self.parent().set_inspector_selected(bool)
-	
 	def get_camera(self):
 		return self.cam
 	
@@ -1120,7 +1120,9 @@ class EMGLWindow:
 		self.decoration.setWindowTitle(title)
 
 	def mousePressEvent(self, event):
-		if self.texture_lock > 0: return
+		if self.texture_lock > 0:
+			print "texture lock"
+			return
 		
 		if self.mouse_event_target == self.decoration:
 			self.decoration.mousePressEvent(event)
