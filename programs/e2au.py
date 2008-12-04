@@ -139,80 +139,79 @@ def get_normalize_colors(ptcls):
 	
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] <class image>
+	usage = """%prog 
 	
-Asymmetric unit viewer for EMAN2.
+Asymmetric unit viewer for EMAN2. Allows the user to inspect the results of refinement in terms of the asymmetric unit.
 
-For example:
+Works if launched in a workflow directory.
 
-e2au.py --averages=classes.hdf --sym=d4 --clsdb=refine_1 --particles=bdb:starting_data#ptcls --alignment=result.hdf
 """
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_option("--sym",type="string",help="Guiding symmetry",default="icos")
-	parser.add_option("--projections",type="string",help="File containing projections",default=None)
-	parser.add_option("--averages",type="string",help="File containing averages",default=None)
-	parser.add_option("--clsdb",type="string",help="Directory containing classification idx information",default=None)
-	parser.add_option("--particles",type="string",help="Particle data file name",default=None)
-	parser.add_option("--alignment",type="string",help="result matrix produced by e2classaverage",default=None)
+#	parser.add_option("--sym",type="string",help="Guiding symmetry",default="icos")
+#	parser.add_option("--projections",type="string",help="File containing projections",default=None)
+#	parser.add_option("--averages",type="string",help="File containing averages",default=None)
+#	parser.add_option("--clsdb",type="string",help="Directory containing classification idx information",default=None)
+#	parser.add_option("--particles",type="string",help="Particle data file name",default=None)
+#	parser.add_option("--alignment",type="string",help="result matrix produced by e2classaverage",default=None)
 	
 	(options, args) = parser.parse_args()
 	
-	eulers = None
-	ptcls = None
-	if options.projections != None and options.averages != None:
-		eulers = check_projections_match_averages(options.projections,options.averages)
-		if eulers == None:
-			print "failed to get eulers from",options.projections,options.averages
-			sys.exit(1)
-
-	elif options.projections != None:
-		fine, message = is_2d_image_mx(options.projections)
-		if not fine:
-			print message
-			sys.exit(1)
-		else: 
-			eulers = get_eulers_from(options.projections)
-			if eulers == None:
-				print "failed to get eulers from",options.projections
-				sys.exit(1)
-	elif options.averages != None:
-		fine, message = is_2d_image_mx(options.averages)
-		if not fine:
-			print message
-			sys.exit(1)
-		else: 
-			eulers = get_eulers_from(options.averages)
-			if eulers == None:
-				print "failed to get eulers from",options.averages
-				sys.exit(1)
-			ptcls = get_ptcl_from(options.averages)
-			if ptcls == None:
-				print "failed to get ptcls from",options.averages
-				sys.exit(1)
-	elif len(args) > 1:
-		print "not supported yet"
-		sys.exit(1)
+#	eulers = None
+#	ptcls = None
+#	if options.projections != None and options.averages != None:
+#		eulers = check_projections_match_averages(options.projections,options.averages)
+#		if eulers == None:
+#			print "failed to get eulers from",options.projections,options.averages
+#			sys.exit(1)
+#
+#	elif options.projections != None:
+#		fine, message = is_2d_image_mx(options.projections)
+#		if not fine:
+#			print message
+#			sys.exit(1)
+#		else: 
+#			eulers = get_eulers_from(options.projections)
+#			if eulers == None:
+#				print "failed to get eulers from",options.projections
+#				sys.exit(1)
+#	elif options.averages != None:
+#		fine, message = is_2d_image_mx(options.averages)
+#		if not fine:
+#			print message
+#			sys.exit(1)
+#		else: 
+#			eulers = get_eulers_from(options.averages)
+#			if eulers == None:
+#				print "failed to get eulers from",options.averages
+#				sys.exit(1)
+#			ptcls = get_ptcl_from(options.averages)
+#			if ptcls == None:
+#				print "failed to get ptcls from",options.averages
+#				sys.exit(1)
+#	elif len(args) > 1:
+#		print "not supported yet"
+#		sys.exit(1)
 	
 	
 	logid=E2init(sys.argv)
 	
 	em_app = EMStandAloneApplication()
 	window = EMAsymmetricUnitViewer(application=em_app)
-	if eulers != None:
-		window.specify_eulers(eulers)
-	else:
-		pass
-	if ptcls != None:
-		window.specify_colors(get_normalize_colors(ptcls))
-		
-	window.projection_file = options.projections
-	window.average_file = options.averages
-	window.particle_file = options.particles
-	window.alignment_file = options.alignment
-	window.clsdb = options.clsdb
-	window.set_sym(options.sym)
+#	if eulers != None:
+#		window.specify_eulers(eulers)
+#	else:
+#		pass
+#	if ptcls != None:
+#		window.specify_colors(get_normalize_colors(ptcls))
+#		
+#	window.projection_file = options.projections
+#	window.average_file = options.averages
+#	window.particle_file = options.particles
+#	window.alignment_file = options.alignment
+#	window.clsdb = options.clsdb
+	#window.set_sym(options.sym)
 	em_app.show()
 	em_app.execute()
 	

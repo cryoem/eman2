@@ -154,7 +154,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		gluQuadricNormals(self.gq,GLU_SMOOTH)
 		gluQuadricOrientation(self.gq,GLU_OUTSIDE)
 		gluQuadricTexture(self.gq,GL_FALSE)
-		self.regen_dl()
+		#self.regen_dl()
 		
 		
 		#self.glbasicobjects = EMBasicOpenGLObjects()
@@ -619,7 +619,6 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		self.updateGL()
 		
 	def render(self):
-		
 		if self.vdtools == None:
 			self.vdtools = EMViewportDepthTools2(self.get_gl_context_parent())
 		
@@ -1123,7 +1122,17 @@ class EMSymInspector(QtGui.QWidget):
 		self.sym_map[" D "] = "d"
 		self.sym_map[" C "] = "c"
 		self.sym_map[" H "] = "h"
-		for i in self.symmetries: self.sym_combo.addItem(i)
+		idx_default = 0
+		
+		default_sym = self.target().sym
+		
+		for idx,i in enumerate(self.symmetries): 
+			
+			self.sym_combo.addItem(i)
+			if self.sym_map[i][0] == default_sym[0]:
+				idx_default = idx
+				
+		self.sym_combo.setCurrentIndex(idx_default)
 		self.hbl_sym.addWidget(self.sym_combo)
 		
 		self.sym_label = QtGui.QLabel()
@@ -1134,7 +1143,7 @@ class EMSymInspector(QtGui.QWidget):
 		self.pos_int_validator.setBottom(1)
 		self.sym_text = QtGui.QLineEdit(self)
 		self.sym_text.setValidator(self.pos_int_validator)
-		self.sym_text.setText("5")
+		self.sym_text.setText(str(self.target().prop))
 		self.sym_text.setFixedWidth(50)
 		self.hbl_sym.addWidget(self.sym_text)
 		self.sym_text.setEnabled(False)
