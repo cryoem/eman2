@@ -162,7 +162,7 @@ class WorkFlowTask(QtCore.QObject):
 			filenames = files[n]
 			if len(filenames) == 0: continue # maybe there are more CPUS then filenames
 								
-			args = [os.getenv("EMAN2DIR")+"/bin/"+program]
+			args = [e2getinstalldir()+"/bin/"+program]
 	
 			for name in filenames:
 				args.append(name)
@@ -183,11 +183,14 @@ class WorkFlowTask(QtCore.QObject):
 			
 			#print args
 			file = open(temp_file_name,"w+")
-			args_adjusted = ["python"]
+			if(sys.platform != 'win32'):
+				args_adjusted = []
+			else:
+				args_adjusted = ["pythonw"]
 			args_adjusted.extend(args)
-			print args_adjusted
+			#print args_adjusted
 			process = subprocess.Popen(args_adjusted,stdout=file,stderr=subprocess.STDOUT)
-			#print "started process",process.pid
+			print "started process",process.pid
 			self.emit(QtCore.SIGNAL("process_started"),process.pid)
 			
 		db_close_dict("bdb:project")
@@ -206,7 +209,7 @@ class WorkFlowTask(QtCore.QObject):
 		project_db = db_open_dict("bdb:project")	
 								
 		#args = [program]
-		args = [os.getenv("EMAN2DIR")+"/bin/"+program]
+		args = [e2getinstalldir()+"/bin/"+program]
 		for name in options.filenames:
 			args.append(name)
 		
@@ -226,9 +229,12 @@ class WorkFlowTask(QtCore.QObject):
 		
 		#print args
 		file = open(temp_file_name,"w+")
-		args_adjusted = ["python"]
+		if(sys.platform != 'win32'):
+			args_adjusted = []
+		else:
+			args_adjusted = ["pythonw"]
 		args_adjusted.extend(args)
-		print args_adjusted
+		#print args_adjusted
 		process = subprocess.Popen(args_adjusted,stdout=file,stderr=subprocess.STDOUT)
 		print "started process",process.pid
 		self.emit(QtCore.SIGNAL("process_started"),process.pid)
@@ -362,7 +368,32 @@ class WorkFlowTask(QtCore.QObject):
 			options.sym = params["symname"]	
 			
 		return error_message
-					
+	
+	def get_cmps_list(self):
+		try: return dump_cmps_list().keys()
+		except:
+			return ['frc','optvariance','xyz','sqeuclidean','quadmindot','ccc','phase','dot']
+			
+	def get_aligners_list(self):
+		try: return dump_aligners_list().keys()
+		except:
+			return ['rotational', 'rotate_precenter', 'xyz', 'rotate_translate', 'rtf_slow_exhaustive', 'rotate_flip', 'refine', 'translational', 'rotate_translate_flip', 'rtf_exhaustive']
+	def get_projectors_list(self):
+		try: return dump_projectors_list().keys()
+		except:
+			return ['xyz', 'gauss_fft', 'chao', 'standard', 'pawel', 'fourier_gridding']
+		
+	def get_orientgens_list(self):
+		try: return dump_orientgens_list().keys()
+		except:
+			return ['even', 'opt', 'saff', 'rand', 'eman']
+		
+	def get_averagers_list(self):
+		try: return dump_orientgens_list().keys()
+		except:
+			return ['ctfcw_auto', 'ctfcw', 'image', 'iteration', 'snr_weight', 'ctfc', 'minmax', 'xyz']
+		
+#		cmps.append("None") I think this is necessary
 		
 class HistoryTask(WorkFlowTask,HistoryForm):
 	def __init__(self,application):
@@ -2436,10 +2467,10 @@ class E2Refine2DTask(ParticleWorkFlowTask):
 		pnaliref = ParamDef(name="naliref",vartype="int",desc_short="# alignment references",desc_long="The number of alignment references to use when determining particle orientations",property=None,defaultunits=8,choices=[])
 		pnbasisfp = ParamDef(name="nbasisfp",vartype="int",desc_short="# basis fp",desc_long="The number of MSA basis vectors to use when classifying",property=None,defaultunits=5,choices=[])
 		pncls = ParamDef(name="ncls",vartype="int",desc_short="# classes",desc_long="The number of classes to produce",property=None,defaultunits=32,choices=[])
-		
-		aligners = dump_aligners_list().keys()
+
+	   	aligners = self.get_aligners_list()
 #		aligners.append("None") I think this is necessary
-		cmps = dump_cmps_list().keys()
+		cmps = self.get_cmps_list()
 #		cmps.append("None") I think this is necessary
 		
 		aligners.sort()
@@ -3419,8 +3450,9 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2RefineParticlesTask.project3d_documentation,choices=None))
 
 		
-		projectors = dump_projectors_list().keys()
-		orientgens = dump_orientgens_list().keys()
+		
+		projectors = self.get_projectors_list()
+		orientgens = self.get_orientgens_list()
 			
 		pprojector =  ParamDef(name="projector",vartype="string",desc_short="Projector",desc_long="The method used to generate projections",property=None,defaultunits="standard",choices=projectors)
 		
@@ -3526,7 +3558,7 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 		params = []
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2RefineParticlesTask.simmx_documentation,choices=None))
 
-		pshrink = ParamDef(name="shrink",vartype="int",desc_short="Shrink",desc_long="The the downsampling rate used to shrink the data at various stages in refinement, for speed purposes",property=None,defaultunits=1,choices=[])
+		pshrink = ParamDef(name="shrink",vartype="int",desc_short="Shrink",desc_long="The the downsampling rate used to shrink the data at various stages in refinement, for speed purposes",property=None,defaultunits=4,choices=[])
 		
 		
 		params.append(pshrink)
@@ -3577,9 +3609,9 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 
 		
 		psep = ParamDef(name="sep",vartype="int",desc_short="Class separation",desc_long="The number of classes a particle can contribute towards",property=None,defaultunits=1,choices=[])
-		piter = ParamDef(name="classiter",vartype="int",desc_short="Averaging iterations",desc_long="The number of class averaging iterations",property=None,defaultunits=0,choices=[])
+		piter = ParamDef(name="classiter",vartype="int",desc_short="Averaging iterations",desc_long="The number of class averaging iterations",property=None,defaultunits=2,choices=[])
 		
-		averagers = dump_averagers_list().keys()
+		averagers = self.get_averagers_list()
 		averagers.sort()
 		paverager =  ParamDef("classaverager",vartype="string",desc_short="Averager",desc_long="The method used for generating class averages",property=None,defaultunits="image",choices=averagers)
 		
@@ -3600,8 +3632,8 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 		
 	def get_cls_simmx_params(self,parameter_prefix=""):
 		params = []
-		aligners = dump_aligners_list().keys()
-		cmps = dump_cmps_list().keys()
+		aligners = self.get_aligners_list()
+		cmps = self.get_cmps_list()
 		
 		aligners.sort()
 		cmps.sort()

@@ -925,7 +925,16 @@ def error_exit(s) :
 	should still remain as a shortcut"""
 	print s
 	exit(1)
-	
+
+def e2getinstalldir() :
+	"""platform independent path with '/'"""
+	if(sys.platform != 'win32'):
+		url=os.getenv("EMAN2DIR")
+	else:
+		url=os.getenv("EMAN2DIR")
+		url=url.replace("\\","/")
+	return url
+
 def e2gethome() :
 	"""platform independent path with '/'"""
 	if(sys.platform != 'win32'):

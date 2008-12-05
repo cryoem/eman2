@@ -599,7 +599,7 @@ class UrlParamWriter:
 		self.text_edit = text_edit
 		
 	def write_data(self,dict):
-		strings = [i for i in str(self.text_edit.toPlainText()).split()]
+		strings = [i for i in str(self.text_edit.toPlainText()).split('\n')]
 		dict[self.param_name] = strings
 
 		
