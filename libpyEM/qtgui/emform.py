@@ -602,8 +602,11 @@ class UrlParamWriter:
 		strings = [i for i in str(self.text_edit.toPlainText()).split('\n') if len(i) != 0]
 		rm = []
 		for s,i in enumerate(strings):
-			if len(s) == 0:
-				rm.append(i)
+			try:
+				if len(s) == 0:
+					rm.append(i)
+			except:
+					rm.append(i)
 				
 		rm.reverse()
 		for i in rm:

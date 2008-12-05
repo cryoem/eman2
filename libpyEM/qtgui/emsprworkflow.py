@@ -2573,7 +2573,7 @@ class E2Refine2DTask(ParticleWorkFlowTask):
 	 			cmd += " bdb:"+options.path+"#all"
 	 			options.input =  "bdb:"+options.path+"#all"+str(options.shrink)
 	 			cmd += " "+options.input
-	 			cmd += " --process=math.meanhrink:n="+str(options.shrink)
+	 			cmd += " --process=math.meanshrink:n="+str(options.shrink)
 	 			
 	 			self.application().setOverrideCursor(Qt.BusyCursor)
 	 			success = (os.system(cmd) in (0,12))
