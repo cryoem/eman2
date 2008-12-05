@@ -2970,7 +2970,7 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 			if wd_trials > 10:
 				if trials > 1:
 					MemJe[ntrials-1] = 1e10
-					if ntrial == trials:
+					if ntrials == trials:
 						print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
 						sys.exit()
 					else:	print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
