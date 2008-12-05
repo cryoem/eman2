@@ -200,6 +200,8 @@ def main():
 	writeListToImage(ReturnTransy, args[1]   ,3,NumPeaks,NumPart)
 	writeListToImage(ReturnRot,    args[1]   ,4,NumPeaks,NumPart)
 	writeListToImage(ReturnMirror, args[1]   ,5,NumPeaks,NumPart)
+	
+	E2end(E2n)
 
 	if ( options.verbose ):
 		print "e2classify...done"

@@ -188,6 +188,7 @@ def main():
 			sys.exit(1)
 	# do one class at a time
 	for cl in range(class_min,class_max+1):
+		E2progress(logger,float(cl-class_min)/(class_max+1-class_min))
 		if (options.verbose):
 			ndata = []
 			
