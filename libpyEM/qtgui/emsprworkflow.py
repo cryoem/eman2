@@ -2770,6 +2770,7 @@ class InitialModelReportTask(ParticleWorkFlowTask):
 		
 		db = "bdb:initial_models#"
 		names = []
+		quality = []
 		dims = []
 		mean = [] # just for fun
 		sigma = [] # just for fun
@@ -2792,6 +2793,8 @@ class InitialModelReportTask(ParticleWorkFlowTask):
 						except: max.append("")
 						try: min.append("%4.3f" %hdr["minimum"])
 						except: min.append("")
+						try: quality.append("%4.3f" %hdr["quality"])
+						except: quality.append("")
 						
 		p = ParamTable(name="filenames",desc_short="Current initial models",desc_long="")
 		pnames = ParamDef(name="Files names",vartype="stringlist",desc_short="Initial model name",desc_long="The name of the initial model in the EMAN2 database",property=None,defaultunits=None,choices=names)
@@ -2802,8 +2805,12 @@ class InitialModelReportTask(ParticleWorkFlowTask):
 		pmean = ParamDef(name="mean",vartype="stringlist",desc_short="Mean",desc_long="The mean voxel value of this 3D image",property=None,defaultunits=None,choices=mean)
 		psigma = ParamDef(name="sigma",vartype="stringlist",desc_short="Sigma",desc_long="The standard deviation of the voxel values in this 3D image",property=None,defaultunits=None,choices=sigma)
 		
+		pquality = ParamDef(name="quality",vartype="stringlist",desc_short="Quality",desc_long="A quality metric which is stored in the image header",property=None,defaultunits=None,choices=sigma)
+		
+		
 		p.append(pnames)
 		p.append(pdims)
+		p.append(pquality)
 		p.append(pmax)
 		p.append(pmin)
 		p.append(pmean)
