@@ -2189,7 +2189,7 @@ def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, 
 			del  dis
 	del  vl
 	for im in xrange(image_start, image_end):
-		data[im-image_start].write_image(stack, get_attr_default('ID', im), EMUtil.ImageType.IMAGE_HDF, True)
+		data[im-image_start].write_image(stack, data[im-image_start].get_attr_default('ID', im), EMUtil.ImageType.IMAGE_HDF, True)
 
 	for n in xrange(len(ldis)):
 		img_beg = ldis[n][0]
@@ -2224,7 +2224,7 @@ def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, 
 			dummy = EMData()
 			dummy.read_image(stack, imm, True)
 			set_arb_params(dummy, nvl, list_params)
-			dummy.write_image(stack, get_attr_default('ID', im), EMUtil.ImageType.IMAGE_HDF, True)
+			dummy.write_image(stack, dummy.get_attr_default('ID', im), EMUtil.ImageType.IMAGE_HDF, True)
 
 def send_attr_dict(main_node, data, list_params, image_start, image_end):
 	import types
