@@ -1402,7 +1402,7 @@ class EMImage2DModule(EMGUIModule):
 		
 		"""
 		if k != "None":self.eraser_shape=s
-		else: self.erase_shape = None
+		else: self.eraser_shape = None
 		self.shapechange=1
 		#self.updateGL()
 	

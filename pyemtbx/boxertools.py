@@ -3810,7 +3810,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		# probably the user has some strange data and the rotational template isn't responding normally. 
 		# correlation peaks aren't where the user thinks they are.
 		if not found:
-			print 'error, there were no parameter data that I could inspect. I cant make the optimal parameters'
+			#print 'error, there were no parameter data that I could inspect. I cant make the optimal parameters'
 			return False
 		
 		# Iterate through the reference boxes and accrue what you can think of

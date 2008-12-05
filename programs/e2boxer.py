@@ -1903,6 +1903,7 @@ class EMBoxerModule(QtCore.QObject):
 				#image = image.process("math.meanshrink",{"n":2})
 				#n /= 2
 			image = image.process("math.meanshrink",{"n":n})
+			image.process_inplace("normalize.edgemean") # if there are lots than they =should all have the same contrast
 			set_idd_image_entry(self.image_names[i],"image_thumb",image)
 		return image
 		
@@ -3251,6 +3252,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 			
 		self.viewhbl2 = QtGui.QHBoxLayout()
 		self.boxdisplay =QtGui.QLabel("Box Display Object:",self)
+		self.boxdisplay.setEnabled(False)
 		self.viewhbl2.addWidget(self.boxdisplay)
 		
 		self.boxformats = QtGui.QComboBox(self)
@@ -3258,6 +3260,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.boxformats.addItem("square")
 		self.boxformats.addItem("circle with central dot")
 		self.boxformats.addItem("circle")
+		self.boxformats.setEnabled(False)
 		self.viewhbl2.addWidget(self.boxformats)
 		
 		self.displayboxes = QtGui.QGroupBox("Displayed Boxes")
@@ -3282,7 +3285,6 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		else: 
 			print "errror, unknown format" 
 			return
-		print "format changed to ", format
 		self.target().change_shapes(format)
 
 	

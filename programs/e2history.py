@@ -108,7 +108,7 @@ class HistoryForm:
 			full_cmd = []
 			
 			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits="Use this form to examine the EMAN2 commands that have occurred in this directory.",choices=None))
-			p = ParamTable(name="commands",desc_short="Historyical table of EMAN2 commands",desc_long="") 
+			p = ParamTable(name="commands",desc_short="Historical table of EMAN2 commands",desc_long="") 
 			
 			for i in range(n):
 				try: h=db.history[i+1]

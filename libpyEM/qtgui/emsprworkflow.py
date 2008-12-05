@@ -438,8 +438,8 @@ class SPRInitTask(WorkFlowTask):
 	'''
 	
 	# stolen from wikipedia
-	documentation_string = "In physics, in the area of microscopy, single particle reconstruction is a technique in which large numbers of images (10,000 - 1,000,000) of ostensibly identical individual molecules or macromolecular assemblies are combined to produce a 3 dimensional reconstruction. This is a complementary technique to crystallography of biological molecules. As molecules/assembies become larger, it becomes more difficult to prepare high resolution crystals. For single particle reconstruction, the opposite is true. Larger objects actually improve the resolution of the final structure. In single particle reconstruction, the molecules/assemblies in solution are prepared in a thin layer of vitreous (glassy) ice, then imaged on an electron cryomicroscope (see Transmission electron microscopy). Images of individual molecules/assemblies are then selected from the micrograph and then a complex series of algorithms is applied to produce a full volumetric reconstruction of the molecule/assembly. In the 1990s this technique was limited to roughly 2 nm resolution, providing only gross features of the objects being studied. However, recent improvements in both microscope technology as well as available computational capabilities now make 0.5 nm resolution possible."
-	
+	Ddocumentation_string = "In physics, in the area of microscopy, single particle reconstruction is a technique in which large numbers of images (10,000 - 1,000,000) of ostensibly identical individual molecules or macromolecular assemblies are combined to produce a 3 dimensional reconstruction. This is a complementary technique to crystallography of biological molecules. As molecules/assembies become larger, it becomes more difficult to prepare high resolution crystals. For single particle reconstruction, the opposite is true. Larger objects actually improve the resolution of the final structure. In single particle reconstruction, the molecules/assemblies in solution are prepared in a thin layer of vitreous (glassy) ice, then imaged on an electron cryomicroscope (see Transmission electron microscopy). Images of individual molecules/assemblies are then selected from the micrograph and then a complex series of algorithms is applied to produce a full volumetric reconstruction of the molecule/assembly. In the 1990s this technique was limited to roughly 2 nm resolution, providing only gross features of the objects being studied. However, recent improvements in both microscope technology as well as available computational capabilities now make 0.5 nm resolution possible."
+	documentation_string = "Welcome to the EMAN2 workflow. Use this tool to step through and manage the process of generating single particle reconstructions. Get started by entering what you can of the parameters in this form and then proceed to the next step task in the workflow."
 	def __init__(self,application):
 		WorkFlowTask.__init__(self,application)
 		self.window_title = "Project information"
@@ -481,9 +481,10 @@ class MicrographCCDImportTask(WorkFlowTask):
 		params.append(ParamDef(name="import_micrograph_ccd_files",vartype="url",desc_short="File names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=[],choices=[]))
 		pinvert = ParamDef(name="invert",vartype="boolean",desc_short="Invert",desc_long="Tick this if you want eman2 to invert your images while importing",property=None,defaultunits=False,choices=None)
 		pxray = ParamDef(name="xraypixel",vartype="boolean",desc_short="X-ray pixel",desc_long="Tick this if you want eman2 to automatically filter out X-ray pixels while importing",property=None,defaultunits=False,choices=None)
+		pnorm = ParamDef(name="norm.edgemean",vartype="boolean",desc_short="Edge norm",desc_long="Tick this if you want eman2 to automatically normalize your images using the edgmean approach",property=None,defaultunits=True,choices=None)
 		pthumbnail = ParamDef(name="thumbs",vartype="boolean",desc_short="Thumbnails",desc_long="Tick this if you want eman2 to automatically generate thumbnails for your images. This will save time at later stages in the project",property=None,defaultunits=True,choices=None)
 		
-		params.append([pinvert,pxray,pthumbnail])
+		params.append([pinvert,pxray,pnorm,pthumbnail])
 		
 		db_close_dict("bdb:project")
 		return params
@@ -568,6 +569,7 @@ class MicrographCCDImportTask(WorkFlowTask):
 		if params["invert"]: num_processing_operations += 1
 		if params["xraypixel"]: num_processing_operations += 1
 		if params["thumbs"]:num_processing_operations += 1
+		if params["norm.edgemean"]:num_processing_operations += 1
 		
 		
 		# now add the files to db (if they don't already exist
@@ -587,6 +589,12 @@ class MicrographCCDImportTask(WorkFlowTask):
 			progress.qt_widget.setValue(i)	
 			self.application().processEvents()
 			e.set_attr("disk_file_name",name)
+			
+			if params["norm.edgemean"]:
+				e.process_inplace("normalize.edgemean")
+				i += 1
+				progress.qt_widget.setValue(i)
+				self.application().processEvents()
 			
 			if params["invert"]:
 				e.mult(-1)
@@ -610,6 +618,7 @@ class MicrographCCDImportTask(WorkFlowTask):
 			if params["thumbs"]:
 				shrink = self.get_thumb_shrink(e.get_xsize(),e.get_ysize())
 				thumb = e.process("math.meanshrink",{"n":shrink})
+				thumb.process_inplace("normalize.edgemean")
 				set_idd_image_entry(db_name,"image_thumb",thumb) # boxer uses the full name
 				i += 1
 				progress.qt_widget.setValue(i)
@@ -2563,7 +2572,7 @@ class E2Refine2DTask(ParticleWorkFlowTask):
 	 			cmd += " bdb:"+options.path+"#all"
 	 			options.input =  "bdb:"+options.path+"#all"+str(options.shrink)
 	 			cmd += " "+options.input
-	 			cmd += " --process=math.meanshrink:n="+str(options.shrink)
+	 			cmd += " --process=math.meanhrink:n="+str(options.shrink)
 	 			
 	 			self.application().setOverrideCursor(Qt.BusyCursor)
 	 			success = (os.system(cmd) in (0,12))
