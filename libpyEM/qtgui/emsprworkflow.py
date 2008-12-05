@@ -3480,7 +3480,7 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 		
 		orient_options = ["angle based", "number based"]
 		porientoptions = ParamDef(name="orientopt",vartype="choice",desc_short="Method of generating orientation distribution",desc_long="Choose whether you want the orientations generating based on an angle or based on a total number of orientations desired",property=None,defaultunits="angle based",choices=orient_options)
-		porientoptionsentry  =  ParamDef(name="orientopt_entry",vartype="int",desc_short="value",desc_long="Specify the value corresponding to your choice",property=None,defaultunits=5,choices=[])
+		porientoptionsentry  =  ParamDef(name="orientopt_entry",vartype="float",desc_short="value",desc_long="Specify the value corresponding to your choice",property=None,defaultunits=5,choices=[])
 		
 		params.append([pprojector,porientgens])
 		params.append([porientoptions,porientoptionsentry])
@@ -3496,6 +3496,9 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 		
 		if params["orientgen"] == "rand" and params["orientopt"] == "angle based":
 			error_message.append("The random orientation generator doesn't work with the \'angle based\' argument, please choose \'number based\' instead") 
+		
+		if int(params["orientopt_entry"]) !=  params["orientopt_entry"] and  params["orientopt"] == "number based":
+			error_message.append("In project3d - for the number based orientation method the number must be an integer")
 		
 		options.orientgen = params["orientgen"]
 		if params["orientopt"] == "angle based":
