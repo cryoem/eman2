@@ -258,22 +258,25 @@ def get_image_directory():
 		return os.getenv("EMAN2DIR")+ dtag + "images" + dtag
 	
 def get_dtag():
-	pfrm = get_platform()
-	if pfrm == "Windows": return "\\"
-	else: return "/"
+#	pfrm = get_platform()
+#	if pfrm == "Windows": return "\\"
+#	else: return "/"
+	return "/"
 
 def get_files_and_directories(path=".",include_hidden=False):
 	if path == ".": l_path = "./"
 	else: l_path = path
+	if len(l_path) == 0: path = get_dtag()
+	elif l_path[-1] not in ["/","\\"]: l_path += get_dtag() 
+	
 	dirs = []
 	files = []
-#	print l_path
 	try:
 		entries = os.listdir(l_path)
 	except: # something is wrong with the path
-#		print "path failed",l_path
+		print "path failed",l_path
 		return dirs,files
-		
+	
 	for name in entries:
 		if len(name) == 0: continue
 		if not include_hidden: 
@@ -281,13 +284,12 @@ def get_files_and_directories(path=".",include_hidden=False):
 				continue
 		
 		try:
-			if os.path.isdir(l_path+get_dtag()+name):
+			if os.path.isdir(l_path+name):
 				dirs.append(name)
 			else:
 				files.append(name)
 		except:
 			pass # something was wrong with the directory
-			
 	return dirs,files
 		
 

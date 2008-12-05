@@ -76,8 +76,8 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.__init_filter_combo()
 		
 		self.first_list_widget = QtGui.QListWidget(None)
-		self.starting_directory = os.getcwd()
-		self.historical_starting_directory = os.getcwd() # just incase anyone ever needs it (True). This should never be changed
+		self.starting_directory = e2getcwd()
+		self.historical_starting_directory = e2getcwd() # just incase anyone ever needs it (True). This should never be changed
 		
 		self.current_force = None # use to keep track of what is currently being forced, either 2D plotting, 2D image showing, or neither
 		self.selections = []
@@ -314,15 +314,25 @@ class EMSelectorDialog(QtGui.QDialog):
 	def __go_back_a_directory(self):
 		self.lock = True
 		dtag = get_dtag()
+		
 		new_dir = self.starting_directory[0:self.starting_directory.rfind(dtag)]
-		if len(new_dir) <= 1 or new_dir[-1] == ":": new_dir = get_dtag()
+#		new_dir.replace("/bdb/","EMAN2DB/") # this works for the time being but needs investigating
+#		if len(new_dir) > 4 and new_dir[-4:] == "/bdb": 
+#			new_dir.replace("/bdb","/EMAN2DB")  # this works for the time being but needs investigating
+#			print "replaced",new_dir
+#		else:
+#			print "no replace"
+		if len(new_dir) == 0: new_dir = get_dtag()
+		elif  new_dir[-1] == ":": new_dir += get_dtag() # C: becomes C:/
+		elif len(new_dir) == 1 and new_dir != get_dtag(): new_dir += ":/"# C becomes C:/
 		#if  self.db_listing.responsible_for(new_dir):
 			#new_dir = self.db_listing.
 		#print "going back a directory",new_dir
-		if not os.access(new_dir,os.R_OK):
-			print new_dir
-			print "can't go up a directory, don't have read permission"
-			return
+#		if not os.access(new_dir,os.R_OK):
+#			print new_dir
+#			print "can't go up a directory, don't have read permission"
+#			self.new_dir = e2gethome() # send the user back to home
+			
 		self.starting_directory = new_dir
 		for j in range(0,len(self.list_widgets)):
 			self.list_widgets[j].clear()
