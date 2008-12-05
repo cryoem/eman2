@@ -820,7 +820,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, CTF=False, snr=1.0, user_func_name="ref_ali2d", rand_alpha=False):
 
 	from utilities    import model_circle, model_blank, drop_image, get_image, get_input_from_string
-	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, recv_attr_dict, file_type
+	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type
 	from statistics   import fsc_mask, add_oe_series
 	from alignment    import Numrinit, ringwe, ali2d_single_iter
 	from filter       import filt_table, filt_ctf
@@ -1047,9 +1047,15 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	mpi_barrier(MPI_COMM_WORLD)
 	if CTF and ctf_applied == 0:
 		for im in xrange(len(data)):  data[im].set_attr('ctf_applied', 0)
-	par_str = ["xform.align2d"]
-	if myid == main_node: recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
-	else: send_attr_dict(main_node, data, par_str, image_start, image_end)
+	par_str = ["xform.align2d", "ID"]
+	if myid == main_node:
+		if(file_type(stack) == "bdb"):
+			from utilities import recv_attr_dict_bdb
+			recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+		else:
+			from utilities import recv_attr_dict
+			recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+	else:           send_attr_dict(main_node, data, par_str, image_start, image_end)
 	if myid == main_node: print_end_msg("ali2d_c_MPI")
 
 

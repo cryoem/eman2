@@ -2159,8 +2159,8 @@ def recv_EMData(src, tag):
 def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, number_of_proc):
 	import types
 	from  utilities import  get_arb_params, set_arb_params
-	from  mpi 	    import mpi_recv
-	from  mpi 	    import MPI_FLOAT, MPI_INT, MPI_TAG_UB, MPI_COMM_WORLD
+	from  mpi 	import mpi_recv
+	from  mpi 	import MPI_FLOAT, MPI_INT, MPI_TAG_UB, MPI_COMM_WORLD
 	TransType = type(Transform())
 	# This is done on the main node, so for images from the main node, simply write headers
 	# prepare keys for float/int
@@ -2236,8 +2236,8 @@ def send_attr_dict(main_node, data, list_params, image_start, image_end):
 	from utilities import get_arb_params
 	from mpi 	   import mpi_send
 	from mpi 	   import MPI_FLOAT, MPI_INT, MPI_TAG_UB, MPI_COMM_WORLD
-	TransType = type(Transform())
 	#  This function is called from a node other than the main node
+	TransType = type(Transform())
 	mpi_send([image_start, image_end], 2, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
 	nvl = []
 	for im in xrange(image_start, image_end):
@@ -2250,6 +2250,70 @@ def send_attr_dict(main_node, data, list_params, image_start, image_end):
 				assert(len(m)==12)
 				for f in m: nvl.append(f)
 	mpi_send(nvl, len(nvl), MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+
+def recv_attr_dict_bdb(main_node, stack, data, list_params, image_start, image_end, number_of_proc):
+	import types
+	from  utilities import  get_arb_params, set_arb_params
+	from  mpi 	import mpi_recv
+	from  mpi 	import MPI_FLOAT, MPI_INT, MPI_TAG_UB, MPI_COMM_WORLD
+	# This is done on the main node, so for images from the main node, simply write headers
+	DB = db_open_dict(stack)
+	TransType = type(Transform())
+	# prepare keys for float/int
+	vl = get_arb_params(data[0], list_params)
+	ink = []
+	lenlis = 0
+	for il in xrange(len(list_params)):
+		if type(vl[il]) is types.IntType:     
+			ink.append(1)
+			lenlis += 1
+		elif type(vl[il]) is types.FloatType:  
+			ink.append(0)
+			lenlis += 1
+		elif type(vl[il]) is TransType:
+			ink.append(2)
+			lenlis += 12
+	ldis = []
+	headers = []
+	for n in xrange(number_of_proc):
+		if(n != main_node):
+			dis = mpi_recv(2, MPI_INT, n, MPI_TAG_UB, MPI_COMM_WORLD)
+			img_beg = int(dis[0])
+			img_end = int(dis[1])
+			header = mpi_recv(lenlis*(img_end-img_beg), MPI_FLOAT, n, MPI_TAG_UB, MPI_COMM_WORLD)
+			for im in xrange(img_beg, img_end):
+				par_beg = (im-img_beg)*lenlis
+				nvl = []
+				ilis = 0
+				for il in xrange(len(list_params)):
+					if(ink[il] == 1):
+						nvl.append(int(header[par_beg+ilis]))
+						ilis += 1
+					elif ink[il]==0:
+						nvl.append(header[par_beg+ilis])
+						ilis += 1
+					else:
+						assert ink[il]==2
+						t = Transform()
+						tmp = []
+						for iii in xrange(par_beg+ilis, par_beg+ilis+12):
+							tmp.append(float(header[iii]))
+						t.set_matrix(tmp)
+						ilis += 12
+						nvl.append(t)
+				ISID = list_params.count('ID')
+				if(ISID == 0):
+					imm = im
+				else:
+					imm = nvl[ISID]
+				for i in xrange(len(list_params)):
+					if(list_params[i] != "ID"):  DB.set_attr(imm, list_params[i], nvl[i])
+			else:
+				for n in xrange(image_start, image_end):
+					ID = data[n-image_start].get_attr_default('ID', n)
+					for param in list_params:
+						if(param != "ID"):  DB.set_attr(ID, param, data[n-image_start].get_attr(param))
+	DB.close()		
 
 def check_attr(ima, num, params, default_value, action="Warning"):
 	from sys import exit
@@ -2396,7 +2460,7 @@ def write_headers(filename, data, lima):
 	from utilities import file_type
 	ftp = file_type(filename)
 	if ftp == "bdb":
-		#  For unknow reasons this does not work on Linux, but works on Mac
+		#  For unknown reasons this does not work on Linux, but works on Mac
 		#DB = db_open_dict(filename)
 		#for i in range(len(lima)):
 		#	DB.set_header(lima[i], data[i])
