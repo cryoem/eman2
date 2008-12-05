@@ -58,7 +58,7 @@ class EMTaskMonitorWidget(QtGui.QWidget,Animator):
 
 	def __init__(self,module,application):
 		QtGui.QWidget.__init__(self,None)
-		self.setWindowIcon(QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/workflow.png"))
+		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "workflow.png"))
 		Animator.__init__(self)
 		self.module = weakref.ref(module)
 		# animation specific
@@ -281,7 +281,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		task_monitor should probably be supplied, it should be an instance of a EMTaskMonitorWidget
 		'''
 		QtGui.QWidget.__init__(self,None)
-		self.setWindowIcon(QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/desktop.png"))
+		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "desktop.png"))
 		self.application = weakref.ref(application)
 		self.module = weakref.ref(module)
 		self.task_monitor = task_monitor
@@ -316,11 +316,11 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Eulers")))
 		self.launchers["Eulers"] = self.launch_asym_unit
 		history = QtGui.QTreeWidgetItem(QtCore.QStringList("History"))
-		history.setIcon(0,QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/feather.png"))
+		history.setIcon(0,QtGui.QIcon(get_image_directory() + "feather.png"))
 		self.tree_widget_entries.append(history)
 		self.launchers["History"] = self.launch_view_history
 		self.directory = QtGui.QTreeWidgetItem(QtCore.QStringList("Directory"))
-		self.directory.setIcon(0,QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/desktop.png"))
+		self.directory.setIcon(0,QtGui.QIcon(get_image_directory() + "desktop.png"))
 		self.directory.setToolTip(0,os.getcwd())
 		self.tree_widget_entries.append(self.directory)
 		self.launchers["Directory"] = self.launch_change_directory

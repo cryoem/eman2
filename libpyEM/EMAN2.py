@@ -252,7 +252,7 @@ exists will produce refine_02 if makenew is set (and create refine_02) and refin
 def get_image_directory():
 	pf = get_platform()
 	dtag = get_dtag()
-	if pf == "Darwin":
+	if pf != "Windows":
 		return os.getenv("EMAN2DIR")+ dtag + "images" + dtag + "macimages" + dtag 
 	else:
 		return os.getenv("EMAN2DIR")+ dtag + "images" + dtag
