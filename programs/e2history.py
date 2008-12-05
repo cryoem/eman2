@@ -50,6 +50,7 @@ def main():
 	
 	parser=OptionParser(usage)
 	parser.add_option("--gui", "-g",default=False, action="store_true",help="Open history in an interface with a sortable table.")
+	parser.add_option("--all", "-a",default=False, action="store_true",help="Show for all directories.")
 	
 	(options, args) = parser.parse_args()
 	
@@ -60,7 +61,7 @@ def main():
 		app.show()
 		app.execute()
 		
-	else: print_to_std_out()
+	else: print_to_std_out(options.all)
 
 class HistoryForm:
 	def __init__(self,application,wd):
@@ -183,7 +184,7 @@ if len(sys.argv)>1 and sys.argv[1]=="--help" :
 
 
 
-def print_to_std_out():
+def print_to_std_out(all):
 
 	try:
 		import EMAN2db
@@ -199,7 +200,7 @@ def print_to_std_out():
 			print "no logfile"
 			sys.exit(0)
 		
-		if len(sys.argv)>1 and (sys.argv[1]=="--all" or sys.argv[1]=="-A") :
+		if all  :
 			ah={}
 			for i in range(n):
 				try: h=db.history[i+1]
@@ -209,6 +210,7 @@ def print_to_std_out():
 				print "---------- ",k
 				for i in ah[k]:
 					if i.has_key("end") : print local_datetime(i["start"]),"\t   ",time_diff(i["end"]-i["start"]),"\t"," ".join(i["args"])
+					elif i.has_key("progress") : print local_datetime(i["start"]),"\t ",int(i["progress"]*100)," % done\t"," ".join(i["args"])
 					else: print local_datetime(i["start"]),"\tincomplete\t"," ".join(i["args"])
 		else:
 			for i in range(n):
@@ -216,6 +218,7 @@ def print_to_std_out():
 				except: print "Entry ",i," missing"
 				if h != None and h.has_key("path") and h["path"]==os.getcwd():
 					if h.has_key("end") :print local_datetime(h["start"]),"\t   ",time_diff(h["end"]-h["start"]),"\t"," ".join(h["args"])
+					elif h.has_key("progress") :print local_datetime(h["start"]),"\t   ",int(h["progress"]*100)," % done\t"," ".join(h["args"])
 					else: print local_datetime(h["start"]),"\tincomplete\t"," ".join(h["args"])
 	else:
 		db=shelve.open(".eman2log")

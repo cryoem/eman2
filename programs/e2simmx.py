@@ -181,6 +181,7 @@ def main():
 		else:
 			rimg = rimages[r]
 		
+		E2progress(E2n,float(r-rrange[0])/(rrange[1]-rrange[0]))
 		row=cmponetomany(cimgs,rimg,options.align,options.aligncmp,options.cmp, options.ralign, options.raligncmp)
 		for c,v in enumerate(row):
 			mxout[0].set_value_at(c,r,0,v[0])
