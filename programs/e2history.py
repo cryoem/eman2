@@ -127,7 +127,7 @@ class HistoryForm:
 						cmd.append(get_file_tag(args[0]))
 						full_cmd.append(args[0])
 						if len(args) > 1:
-							prgargs.append("".join(args[1:]))
+							prgargs.append(" ".join(args[1:]))
 						else:prgargs.append("")
 					else:
 						cmd.append("")
