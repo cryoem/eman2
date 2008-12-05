@@ -3149,7 +3149,6 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 	nima = len(data)
 
 	if CTF :
-		#                  0                  1              2          3              4               5                   6
 		#  ERROR if ctf applied
 		if(data[0].get_attr("ctf_applied") > 0):  ERROR("ali3d_m does not work for CTF-applied data","ali3d_m",1)
 		from reconstruction import recons3d_4nn_ctf
