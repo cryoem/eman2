@@ -516,6 +516,7 @@ class MicrographCCDImportTask(WorkFlowTask):
 			return error_message
 		
 		for name in filenames:
+			if len(name) == 0: continue
 			if not file_exists(name):
 				error_message.append("File %s doesn't exist." %name)
 			else:
