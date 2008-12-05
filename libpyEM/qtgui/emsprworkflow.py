@@ -131,7 +131,7 @@ class WorkFlowTask(QtCore.QObject):
 		Get the working directory, originally introduced to provide a centralized mechanism for accessing the working directory,
 		specificially for the purpose of spawning processes. Could be used more generally, however.
 		'''
-		return os.getcwd()
+		return e2getcwd()
 
 	def spawn_task(self,program,options,string_args,bool_args,additional_args=[],temp_file_name="e2workflow_tmp.txt"):
 		'''
@@ -262,8 +262,7 @@ class WorkFlowTask(QtCore.QObject):
 		msg.exec_()
 		
 	def get_latest_r2d_classes(self):
-		for root, dirs, files in os.walk(os.getcwd()):
-			break
+		dirs, files = get_files_and_directories(e2getcwd())
 		
 		dirs.sort()
 		for i in range(len(dirs)-1,-1,-1):
@@ -390,7 +389,7 @@ class ChangeDirectoryTask(WorkFlowTask):
 	def run_form(self):	
 		
 		fsp=QtGui.QFileDialog.getExistingDirectory(None, "Choose a directory")
-		
+		fsp = str(fsp)
 		if os.path.exists(fsp):
 			os.chdir(fsp)
 			return fsp
@@ -2942,8 +2941,9 @@ class RefinementReportTask(ParticleWorkFlowTask):
 		Looks for bdb:r2d_??#classes_?? and the bdb:r2d_??#classes_init file, finds the most recent one, then fills in the number of particles in
 		in the class average file and also its dimensions.
 		'''
-		for root, dirs, files in os.walk(os.getcwd()):
-			break
+		dirs, files = get_files_and_directories(e2getcwd())
+#		for root, dirs, files in os.walk(os.getcwd()):
+#			break
 		
 		dirs.sort()
 		for i in range(len(dirs)-1,-1,-1):
