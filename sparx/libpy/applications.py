@@ -632,6 +632,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	mpi_barrier(MPI_COMM_WORLD)
 	par_str = ["xform.align2d", "ID"]
 	if myid == main_node:
+		from utilities import file_type
 		if(file_type(stack) == "bdb"):
 			from utilities import recv_attr_dict_bdb
 			recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
@@ -1055,6 +1056,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		for im in xrange(len(data)):  data[im].set_attr('ctf_applied', 0)
 	par_str = ["xform.align2d", "ID"]
 	if myid == main_node:
+		from utilities import file_type
 		if(file_type(stack) == "bdb"):
 			from utilities import recv_attr_dict_bdb
 			recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
@@ -1730,8 +1732,9 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 	mpi_barrier(MPI_COMM_WORLD)
 	if CTF and data_had_ctf == 0:
 		for im in xrange(len(data)): data[im].set_attr('ctf_applied', 0)
-	list_params = ['xform.align2d', 'assign', 'ID']
+	par_str = ['xform.align2d', 'assign', 'ID']
 	if myid == main_node:
+		from utilities import file_type
 		if(file_type(stack) == "bdb"):
 			from utilities import recv_attr_dict_bdb
 			recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
@@ -3036,6 +3039,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 				for im in xrange(len(data)): data[im].set_attr('ctf_applied', 0)
 			par_str = ['xform.proj', 'ID']
 	        	if myid == main_node:
+				from utilities import file_type
 	        		if(file_type(stack) == "bdb"):
 	        			from utilities import recv_attr_dict_bdb
 	        			recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
@@ -3538,6 +3542,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 		mpi_barrier(MPI_COMM_WORLD)
 		par_str = ['xform.proj', 'ID']
 	        if myid == main_node:
+			from utilities import file_type
 	        	if(file_type(stack) == "bdb"):
 	        		from utilities import recv_attr_dict_bdb
 	        		recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
@@ -4032,6 +4037,7 @@ def ali3d_em_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, na
 	par_str = ["xform.proj", "group", "ID"]
 	mpi_barrier(MPI_COMM_WORLD)
 	if myid == main_node:
+		from utilities import file_type
 		if(file_type(stack) == "bdb"):
 			from utilities import recv_attr_dict_bdb
 			recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
@@ -4758,6 +4764,7 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, center = -1, maxit
 			mpi_barrier(MPI_COMM_WORLD)
 			par_str = ['xform.proj', 'ID']
 			if myid == main_node:
+				from utilities import file_type
 				if(file_type(stack) == "bdb"):
 					from utilities import recv_attr_dict_bdb
 					recv_attr_dict_bdb(main_node, stack, dataim, par_str, image_start, image_end, number_of_proc)
@@ -6399,6 +6406,7 @@ def ali3d_f_MPI(stack, ref_vol, outdir, maskfile, ali_maskfile, radius=-1, snr=1
 		for im in xrange(image_start, image_end): data[im-image_start].set_attr('ctf_applied', 0)
 	#  ID should be added
 	if myid == main_node:
+		from utilities import file_type
 		if(file_type(stack) == "bdb"):
 			from utilities import recv_attr_dict_bdb
 			recv_attr_dict_bdb(main_node, stack, dataim, par_str, image_start, image_end, number_of_proc)
