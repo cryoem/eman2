@@ -202,7 +202,7 @@ def filt_ctf(img, ctf, dopad=True, sign=1):
 		"dopad": ip,
 		"sign": sign}
 	tmp = Processor.EMFourierFilter(img, params)
-	tmp.set_attr_dict({"ctf":ctf, "ctf_applied":1})
+	tmp.set_attr_dict({"ctf":ctf})
 	return tmp
 
 def filt_unctf(e, dz, cs, voltage, pixel, wgh=0.1, b_factor=0.0, sign=-1.0):
