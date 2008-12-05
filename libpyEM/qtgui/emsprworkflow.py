@@ -1734,14 +1734,14 @@ class E2CTFWorkFlowTask(ParticleWorkFlowTask):
 					vals = ctf_db[name][0]
 					ctf = EMAN2Ctf()
 					ctf.from_string(vals)
-					vals = [ctf.defocus,ctf.dfdiff,ctf.dfang,ctf.bfactor,len(ctf.background)]
+					vals = ["%.3f" %ctf.defocus,"%.3f" %ctf.dfdiff,"%.3f" %ctf.dfang,"%.1f" %ctf.bfactor,len(ctf.background)]
 				except:
 					vals = ["","","","",'']  # only need 5 at the moment
-					
-				defocus.append("%.3f" %vals[0])
-				dfdiff.append("%.3f" %vals[1])
-				dfang.append("%.3f" %vals[2])
-				bfactor.append("%.1f" %vals[3])
+
+				defocus.append(vals[0])
+				dfdiff.append(vals[1])
+				dfang.append(vals[2])
+				bfactor.append(vals[3])
 				noise_profile.append(vals[4])
 				
 			db_close_dict("bdb:e2ctf.parms")

@@ -601,12 +601,10 @@ class UrlParamWriter:
 	def write_data(self,dict):
 		strings = [i for i in str(self.text_edit.toPlainText()).split('\n') if len(i) != 0]
 		rm = []
-		for s,i in enumerate(strings):
-			try:
-				if len(s) == 0:
-					rm.append(i)
-			except:
-					rm.append(i)
+		for i,s in enumerate(strings):
+			if len(s) == 0:
+				rm.append(i)
+
 				
 		rm.reverse()
 		for i in rm:
