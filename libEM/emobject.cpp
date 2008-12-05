@@ -6,34 +6,34 @@
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Probable contributor: Liwei Peng (what dates?)
  * Contributing author: David Woolford 06/11/2007
- * 
+ *
  * Copyright (c) 2000-2007 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
 
 #include "emobject.h"
@@ -54,9 +54,9 @@ using std::cout;
 using std::cerr;
 using std::endl;
 
-const float EMConsts::I2G = (float) (4.0 / (M_PI*M_PI));  
-const float EMConsts::I3G = (float) (6.4 / (M_PI*M_PI));  
-const float EMConsts::I4G = (float) (8.8 / (M_PI*M_PI)); 
+const float EMConsts::I2G = (float) (4.0 / (M_PI*M_PI));
+const float EMConsts::I3G = (float) (6.4 / (M_PI*M_PI));
+const float EMConsts::I4G = (float) (8.8 / (M_PI*M_PI));
 const float EMConsts::I5G = (float) (10.4 / (M_PI*M_PI));
 // This stolen from wikipedia.org
 const double EMConsts::pi = 3.141592653589793238462643383279502884197169399;
@@ -109,7 +109,7 @@ void EMObject::printInfo() const
 	cout << " Now printing the enumerated values in type_registry " << endl;
 	for( map< ObjectType, string>::const_iterator it = type_registry.begin(); it != type_registry.end(); ++it )
 	{
-		cout << it->first << " " << it->second << endl;	
+		cout << it->first << " " << it->second << endl;
 	}
 	cout << "My type is " << to_str(type) << " and its enumerated value is " << type << endl;
 	cout << "The address of the static type registry is " << &type_registry <<", it should be same for all EMObjects" << endl;
@@ -129,13 +129,13 @@ EMObject::EMObject(bool boolean) :
 	init();
 }
 
-EMObject::EMObject(int num) : 
+EMObject::EMObject(int num) :
 	n(num), type(INT)
 {
 	init();
 }
 
-EMObject::EMObject(unsigned int num) : 
+EMObject::EMObject(unsigned int num) :
 	ui(num), type(UNSIGNEDINT)
 {
 	init();
@@ -182,13 +182,13 @@ EMObject::EMObject(void *v) :
 	init();
 }
 
-EMObject::EMObject(EMData * em)	: 
+EMObject::EMObject(EMData * em)	:
 	emdata(em), type(EMDATA)
 {
 	init();
 }
 
-EMObject::EMObject(XYData * xy) : 
+EMObject::EMObject(XYData * xy) :
 	xydata(xy), type(XYDATA)
 {
 	init();
@@ -204,7 +204,7 @@ EMObject::EMObject(Ctf * ctf) :
 {
 	init();
 }
-	
+
 EMObject::EMObject(const vector< int >& v ) :
 	iarray(v), type(INTARRAY)
 {
@@ -489,7 +489,7 @@ EMObject::operator Ctf* () const
 	Ctf * ctf = 0;
 	if(str[0] == 'O') {
 		ctf = new EMAN1Ctf();
-		ctf->from_string(str); 
+		ctf->from_string(str);
 	}
 	else if(str[0] == 'E') {
 		ctf = new EMAN2Ctf();
@@ -612,20 +612,81 @@ string EMObject::to_str(ObjectType argtype) const
 
 string EMObject::get_object_type_name(ObjectType t)
 {
+#ifdef _WIN32
+	if (t == BOOL) {
+		return "BOOL";
+	}else
+	if ( t == INT){
+		return "INT";
+	}else
+	if ( t == UNSIGNEDINT){
+		return "UNSIGNEDINT";
+	} else
+	if ( t == FLOAT){
+		return "FLOAT";
+	} else
+	if ( t == DOUBLE){
+		return "DOUBLE";
+	}else
+	if ( t == STRING){
+		return "STRING";
+	}else
+	if ( t == EMDATA){
+		return "EMDATA";
+	}
+	else
+	if ( t == XYDATA){
+		return "XYDATA";
+	}else
+	if ( t == INTARRAY){
+		return "INTARRAY";
+	}else
+	if ( t == FLOATARRAY){
+		return "FLOATARRAY";
+	} else
+	if ( t == STRINGARRAY){
+		return "STRINGARRAY";
+	}else
+	if ( t == TRANSFORM){
+		return "TRANSFORM";
+	}else
+	if ( t == CTF){
+		return "CTF";
+	}else
+	if ( t == FLOAT_POINTER){
+		return "FLOAT_POINTER";
+	}else
+	if ( t == INT_POINTER){
+		return "INT_POINTER";
+	}else
+	if ( t == UNKNOWN){
+		return "UNKNOWN";
+	} else
+	if ( t == VOID_POINTER){
+		return "VOID_POINTER";
+	}
+	else {
+		LOGERR("No such EMObject defined");
+		throw NotExistingObjectException("EMObject", "unknown type");
+	}
+
+#else
+
 	if  ( type_registry.find(t) != type_registry.end() )
 		return type_registry[t];
 	else
 		LOGERR("No such EMObject defined");
 		throw NotExistingObjectException("EMObject", "unknown type");
+#endif	//_WIN32
 }
 
 bool EMAN::operator==(const EMObject &e1, const EMObject & e2)
 {
-	
+
 	if (e1.type != e2.type) {
 		return false;
 	}
-	
+
 	switch (e1.type) {
 	case  EMObject::BOOL:
 		return (e1.b == e2.b);
@@ -732,17 +793,17 @@ EMObject::EMObject(const EMObject& that)
 // the concept of an EMObject, which is always of a single type.
 EMObject& EMObject::operator=( const EMObject& that )
 {
-	
+
 	if ( *this != that )
 	{
 		// First store the type of the input, At first I forgot to do this and it was a very
 		// difficult bug to track down
 		type = that.type;
-		
+
 // 		if ( type != this_type ) throw
-		
-		
-		switch (type) 
+
+
+		switch (type)
 		{
 		case BOOL:
 			b = that.b;
@@ -812,15 +873,15 @@ EMObject& EMObject::operator=( const EMObject& that )
 	else
 	{
 //		cerr << "Warning - attempt to assign EMObject onto itself. No action taken" << endl;
-//		cerr << "My type is " << get_object_type_name(type) << endl;		
+//		cerr << "My type is " << get_object_type_name(type) << endl;
 	}
-	
+
 	return *this;
 }
 
 //-------------------------------TypeDict--------------------------------------------
 
-void TypeDict::dump() 
+void TypeDict::dump()
 {
 	map < string, string >::iterator p;
 	for (p = type_dict.begin(); p != type_dict.end(); p++) {
@@ -833,7 +894,7 @@ void TypeDict::dump()
 
 Dict::Dict(const Dict& that)
 {
-	*this = that;	
+	*this = that;
 }
 
 Dict& Dict::operator=(const Dict& that)
@@ -847,9 +908,9 @@ Dict& Dict::operator=(const Dict& that)
 	}
 	else
 	{
-		cerr << "Warning - attempted to assign a Dict object to itself. No action taken" << endl;	
+		cerr << "Warning - attempted to assign a Dict object to itself. No action taken" << endl;
 	}
-	
+
 	return *this;
 }
 
@@ -883,7 +944,7 @@ Dict::const_iterator Dict::begin( void ) const
 // Wraps map.find(const string& key)
 Dict::iterator Dict::find( const string& key )
 {
-	return iterator( dict.find(key) );	
+	return iterator( dict.find(key) );
 }
 
 Dict::iterator Dict::end( void )
@@ -898,13 +959,13 @@ Dict::const_iterator Dict::end( void ) const
 
 Dict::const_iterator Dict::find( const string& key ) const
 {
-	return const_iterator( (map < string, EMObject >::const_iterator)dict.find(key) );	
+	return const_iterator( (map < string, EMObject >::const_iterator)dict.find(key) );
 }
 
 //
 // iterator
 //
-Dict::iterator::iterator( map< string, EMObject >::iterator parent_it  ) : 
+Dict::iterator::iterator( map< string, EMObject >::iterator parent_it  ) :
 	map< string, EMObject >::iterator( parent_it )
 {
 }
@@ -918,7 +979,7 @@ Dict::iterator::iterator( const iterator& that ) :
 
 Dict::iterator& Dict::iterator::operator=( const iterator& that )
 {
-	if( this != &that ) 
+	if( this != &that )
 	{
 		map < string, EMObject >::iterator::operator=( that );
 	}
@@ -946,7 +1007,7 @@ Dict::const_iterator::const_iterator( const const_iterator& it ) :
 
 Dict::const_iterator& Dict::const_iterator::operator=( const const_iterator& that )
 {
-	if( this != &that ) 
+	if( this != &that )
 	{
 		map < string, EMObject >::const_iterator::operator=( that );
 	}
@@ -956,19 +1017,19 @@ Dict::const_iterator& Dict::const_iterator::operator=( const const_iterator& tha
 EMObject Dict::get_ci(const string & key) const
 {
 	string lower_key = Util::str_to_lower(key);
-			
+
 	for (map < string, EMObject >::const_iterator it = dict.begin(); it != dict.end(); ++it ) {
 		string lower = Util::str_to_lower(it->first);
 		if (lower == lower_key) return it->second;
 	}
-			
+
 	throw NotExistingObjectException("EMObject", "Nonexisting key (" + key + ") in Dict");
 }
 
 bool Dict::has_key_ci(const string & key) const
 {
 	string lower_key = Util::str_to_lower(key);
-			
+
 	for (map < string, EMObject >::const_iterator it = dict.begin(); it != dict.end(); ++it ) {
 		string lower = Util::str_to_lower(it->first);
 		if (lower == lower_key) return true;
