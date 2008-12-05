@@ -181,7 +181,7 @@ for single particle analysis."""
 	elif options.auto: options.running_mode = "auto_db"
 	else: 
 		options.running_mode = None
-		print "unknown running mode"
+		#print "unknown running mode"
 		# in the new framework there is not need to tell the options parser there is an error, because the boxer module is smart enough to handle it
 	
 	logid=E2init(sys.argv)
