@@ -1461,7 +1461,8 @@ class Boxable:
 		
 		if oldimage != newimage:
 			print "warning with respect to",self.image_name,"- you are using information in the database that was generated using image",oldimage,"but now you're using", newimage,". This will potentially cause problems if the images are not equivalent. Suggest renaming the image or boxing it in a separate directory"
-			return
+			data["e2boxer_image_name"] = newimage
+			project_db.set_key_entry(self.get_dd_key(),data)
 		else:
 			#print "storing image tag"
 			data["e2boxer_image_name"] = newimage

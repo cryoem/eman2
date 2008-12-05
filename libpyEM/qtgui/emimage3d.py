@@ -53,7 +53,7 @@ from emimage3dvol import EMVolumeModule
 from emimage3dslice import EM3DSliceViewerModule
 from emimage3dsym import EM3DSymViewerModule
 
-from emglobjects import Camera2, EMViewportDepthTools, Camera, EMImage3DGUIModule,EMGLProjectionViewMatrices
+from emglobjects import Camera2, EMViewportDepthTools, Camera, EMImage3DGUIModule,EMGLProjectionViewMatrices,EMOpenGLFlagsAndTools
 from emimageutil import EMEventRerouter, EMTransformPanel, EMParentWin
 from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
 
@@ -709,6 +709,9 @@ class EMImageInspector3D(QtGui.QWidget):
 		
 		self.addVol = QtGui.QPushButton("Volume")
 		self.hbl_buttons.addWidget(self.addVol)
+		
+		glflags = EMOpenGLFlagsAndTools()
+		if glflags.npt_textures_unsupported(): self.addVol.setEnabled(False)
 		
 		self.addSli = QtGui.QPushButton("Slices")
 		self.hbl_buttons2.addWidget(self.addSli)

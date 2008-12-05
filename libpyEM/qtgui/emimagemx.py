@@ -1249,9 +1249,10 @@ class EMImageMXModule(EMGUIModule):
 			return
 
 		# Get the output filespec
-		fsp=QtGui.QFileDialog.getSaveFileName(None, "Specify file name","","*.hdf *.img *.spi *.lst bdb:","")
+		fsp=QtGui.QFileDialog.getSaveFileName(None, "Specify file name",self.file_name,"*.hdf *.img *.spi *.lst bdb:","")
 		fsp=str(fsp)
 		
+		# BDB has issues on Windows and MAC
 		
 		bdb_idx = fsp.find("bdb:")
 		if bdb_idx != -1:
@@ -1273,6 +1274,15 @@ class EMImageMXModule(EMGUIModule):
 			elif fsp[-4:] == ".lst":
 				self.save_lst(fsp)
 				return
+			
+			if db_check_dict(fsp):
+				 msg = QtGui.QMessageBox()
+				 msg.setWindowTitle("Caution")
+				 msg.setText("Are you sure you want to overwrite the bdb file?");
+				 msg.setInformativeText("Clicking ok to remove this file")
+				 msg.setStandardButtons(QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel);
+				 msg.setDefaultButton(QMessageBox.Cancel);
+				 ret = msg.exec_()
 				
 			
 			progress = EMProgressDialogModule(self.application(),"Writing files", "abort", 0, len(self.data),None)

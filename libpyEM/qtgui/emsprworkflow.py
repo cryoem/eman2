@@ -2766,7 +2766,6 @@ class InitialModelReportTask(ParticleWorkFlowTask):
 		max = []
 		min = []
 		for d in db_list_dicts("bdb:initial_models#"):
-			print d
 			if len(d) != 0 and db_check_dict(db+d):
 				model_db = db_open_dict(db+d)
 				if model_db.has_key("maxrec"):
@@ -2803,7 +2802,7 @@ class InitialModelReportTask(ParticleWorkFlowTask):
 		setattr(p,"convert_text", ptable_convert_4)
 		setattr(p,"icon_type","3d_image")
 		
-		return p,len(pnames)
+		return p,len(names)
 
 	
 
@@ -2932,7 +2931,8 @@ class ImportInitialModels(ParticleWorkFlowTask):
 		
 		i = 0
 		for file in params["filenames"]:
-			e = EMData(file)
+			e = EMData()
+			e.read_image(file,0)
 			i +=1
 			progress.qt_widget.setValue(i)
 			output_name = "bdb:initial_models#"+get_file_tag(file)
