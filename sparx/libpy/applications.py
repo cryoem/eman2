@@ -355,7 +355,7 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, CTF=False, user_func_name="ref_ali2d", random_method="", T0=1.0, F=0.996, SA_stop=0):
 
 	from utilities    import model_circle, combine_params2, drop_image, get_image, get_input_from_string
-	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, recv_attr_dict, file_type
+	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type
 	from statistics   import add_ave_varf_MPI, add_ave_varf_ML_MPI
 	from alignment    import Numrinit, ringwe, ali2d_single_iter
 	from filter       import filt_tophatb
@@ -630,9 +630,15 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 
 	# write out headers and STOP, under MPI writing has to be done sequentially
 	mpi_barrier(MPI_COMM_WORLD)
-	par_str = ["xform.align2d"]
-	if myid == main_node: recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
-	else: send_attr_dict(main_node, data, par_str, image_start, image_end)
+	par_str = ["xform.align2d", "ID"]
+	if myid == main_node:
+		if(file_type(stack) == "bdb"):
+			from utilities import recv_attr_dict_bdb
+			recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+		else:
+			from utilities import recv_attr_dict
+			recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+	else:           send_attr_dict(main_node, data, par_str, image_start, image_end)
 	if myid == main_node:  print_end_msg("ali2d_a_MPI")
 
 
@@ -1459,7 +1465,7 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 
 	from utilities      import   model_circle, combine_params2, inverse_transform2, drop_image, get_image
 	from utilities      import   reduce_EMData_to_root, bcast_EMData_to_all, bcast_number_to_all
-	from utilities      import   send_attr_dict, recv_attr_dict
+	from utilities      import   send_attr_dict
 	from utilities	    import   center_2D
 	from statistics     import   fsc_mask
 	from alignment      import   Numrinit, ringwe, Applyws
@@ -1724,9 +1730,15 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 	mpi_barrier(MPI_COMM_WORLD)
 	if CTF and data_had_ctf == 0:
 		for im in xrange(len(data)): data[im].set_attr('ctf_applied', 0)
-	list_params = ['xform.align2d', 'assign']
-	if myid == main_node: recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, number_of_proc)
-	else: send_attr_dict(main_node, data, list_params, image_start, image_end)
+	list_params = ['xform.align2d', 'assign', 'ID']
+	if myid == main_node:
+		if(file_type(stack) == "bdb"):
+			from utilities import recv_attr_dict_bdb
+			recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+		else:
+			from utilities import recv_attr_dict
+			recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+	else:           send_attr_dict(main_node, data, par_str, image_start, image_end)
 
 	if myid == main_node:
 		newrefim = os.path.join(outdir, "multi_ref.hdf")
@@ -2858,7 +2870,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 	from alignment      import proj_ali_incore, proj_ali_incore_local
 	from utilities      import model_circle, get_image, drop_image, get_input_from_string
 	from utilities      import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all, reduce_array_to_root 
-	from utilities      import recv_attr_dict, send_attr_dict
+	from utilities      import send_attr_dict
 	from utilities      import get_params_proj
 	from utilities      import estimate_3D_center_MPI, rotate_3D_shift
 	from fundamentals   import rot_avg_image
@@ -3023,10 +3035,16 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 			if CTF and data_had_ctf == 0:
 				for im in xrange(len(data)): data[im].set_attr('ctf_applied', 0)
 			par_str = ['xform.proj', 'ID']
-			if myid == main_node: recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
-			else:                  send_attr_dict(main_node, data, par_str, image_start, image_end)
-			if CTF and data_had_ctf == 0:
-				for im in xrange(len(data)): data[im].set_attr('ctf_applied', 1)
+	        	if myid == main_node:
+	        		if(file_type(stack) == "bdb"):
+	        			from utilities import recv_attr_dict_bdb
+	        			recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+	        		else:
+	        			from utilities import recv_attr_dict
+	        			recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+	        	else:	       send_attr_dict(main_node, data, par_str, image_start, image_end)
+	        	if CTF and data_had_ctf == 0:
+	        		for im in xrange(len(data)): data[im].set_attr('ctf_applied', 1)
 	if myid == main_node: print_end_msg("ali3d_d_MPI")
 
 
@@ -3292,7 +3310,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 	      user_func_name="ref_ali3d", debug = False):
 	from utilities      import model_circle, reduce_EMData_to_root, bcast_EMData_to_all, bcast_number_to_all, drop_image
 	from utilities      import bcast_string_to_all, bcast_list_to_all, get_image, get_input_from_string, get_im
-	from utilities      import get_arb_params, set_arb_params, drop_spider_doc, recv_attr_dict, send_attr_dict
+	from utilities      import get_arb_params, set_arb_params, drop_spider_doc, send_attr_dict
 	from utilities      import get_params_proj, set_params_proj
 	from filter         import filt_params, filt_btwl, filt_ctf, filt_table, fit_tanh, filt_tanl
 	from alignment      import proj_ali_incore
@@ -3519,8 +3537,14 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 			#  here we  write header info
 		mpi_barrier(MPI_COMM_WORLD)
 		par_str = ['xform.proj', 'ID']
-		if(myid == main_node): recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
-		else:                  send_attr_dict(main_node, data, par_str, image_start, image_end)
+	        if myid == main_node:
+	        	if(file_type(stack) == "bdb"):
+	        		from utilities import recv_attr_dict_bdb
+	        		recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+	        	else:
+	        		from utilities import recv_attr_dict
+	        		recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+	        else:		send_attr_dict(main_node, data, par_str, image_start, image_end)
 	
 	print_end_msg("ali3d_m_MPI")
 
@@ -3533,7 +3557,7 @@ def ali3d_em_MPI_origin(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit
 	from fundamentals   import fshift, rot_avg_image
 	from projection     import prep_vol, prgs
 	from utilities      import amoeba, bcast_string_to_all, model_circle, get_arb_params, set_arb_params, drop_spider_doc
-	from utilities      import get_image, drop_image, bcast_EMData_to_all, send_attr_dict, recv_attr_dict
+	from utilities      import get_image, drop_image, bcast_EMData_to_all, send_attr_dict
 	from utilities      import read_spider_doc, get_im
 	from reconstruction import rec3D_MPI
 	from statistics     import ccc
@@ -3767,7 +3791,7 @@ def ali3d_em_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, na
 	from fundamentals   import fshift, rot_avg_image
 	from projection     import prep_vol, prgs
 	from utilities      import amoeba, bcast_string_to_all, model_circle, get_arb_params, set_arb_params, drop_spider_doc
-	from utilities      import bcast_number_to_all, bcast_list_to_all,get_image, drop_image, bcast_EMData_to_all, send_attr_dict, recv_attr_dict
+	from utilities      import bcast_number_to_all, bcast_list_to_all,get_image, drop_image, bcast_EMData_to_all, send_attr_dict
 	from utilities      import get_params_proj, set_params_proj, print_msg, read_spider_doc, get_im
 	from reconstruction import rec3D_MPI
 	from statistics     import ccc
@@ -4007,8 +4031,14 @@ def ali3d_em_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, na
 	# write out headers  and STOP, under MPI writing has to be done sequentially
 	par_str = ["xform.proj", "group", "ID"]
 	mpi_barrier(MPI_COMM_WORLD)
-	if(myid == main_node): recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
-	else: send_attr_dict(main_node, data, par_str, image_start, image_end)
+	if myid == main_node:
+		if(file_type(stack) == "bdb"):
+			from utilities import recv_attr_dict_bdb
+			recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+		else:
+			from utilities import recv_attr_dict
+			recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+	else:           send_attr_dict(main_node, data, par_str, image_start, image_end)
 
 def ali3d_en_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CTF = None, snr=1.0, sym="c1", chunk=0.101):
 	"""
@@ -4019,7 +4049,7 @@ def ali3d_en_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CT
 	from fundamentals   import fshift, rot_avg_image
 	from projection     import prep_vol, prgs
 	from utilities      import amoeba, bcast_string_to_all, model_circle, get_arb_params, set_arb_params, drop_spider_doc
-	from utilities      import get_image, drop_image, bcast_EMData_to_all, send_attr_dict, recv_attr_dict
+	from utilities      import get_image, drop_image, bcast_EMData_to_all, send_attr_dict
 	from utilities      import read_spider_doc, get_im
 	from reconstruction import rec3D_MPI
 	from statistics     import ccc
@@ -4461,7 +4491,7 @@ def ali3d_e(stack, outdir, maskfile = None, ou = -1,  delta = 2, center = -1, ma
 
 			#  here we write header infomation
 			from utilities import write_headers
-			write_headers(stack, dataim, list_of_particles)
+			#write_headers(stack, dataim, list_of_particles)
 
 
 def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, center = -1, maxit = 10, 
@@ -4472,7 +4502,7 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, center = -1, maxit
 	from filter           import filt_ctf
 	from projection       import prep_vol
 	from utilities        import bcast_string_to_all, bcast_number_to_all, model_circle, get_params_proj, set_params_proj
-	from utilities        import bcast_EMData_to_all, bcast_list_to_all, send_attr_dict, recv_attr_dict
+	from utilities        import bcast_EMData_to_all, bcast_list_to_all, send_attr_dict
 	from utilities        import get_image, drop_image
 	from utilities        import amoeba_multi_level, rotate_3D_shift, estimate_3D_center_MPI
 	from utilities        import print_begin_msg, print_end_msg, print_msg
@@ -4727,8 +4757,14 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, center = -1, maxit
 			# write out headers, under MPI writing has to be done sequentially
 			mpi_barrier(MPI_COMM_WORLD)
 			par_str = ['xform.proj', 'ID']
-			if myid == main_node: recv_attr_dict(main_node, stack, dataim, par_str, image_start, image_end, number_of_proc)
-			else:                 send_attr_dict(main_node, dataim, par_str, image_start, image_end)
+			if myid == main_node:
+				if(file_type(stack) == "bdb"):
+					from utilities import recv_attr_dict_bdb
+					recv_attr_dict_bdb(main_node, stack, dataim, par_str, image_start, image_end, number_of_proc)
+				else:
+					from utilities import recv_attr_dict
+					recv_attr_dict(main_node, stack, dataim, par_str, image_start, image_end, number_of_proc)
+			else:	        send_attr_dict(main_node, dataim, par_str, image_start, image_end)
 
 def ali3d_eB_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CTF = None, snr=1.0, sym="c1", chunk = -1.0, user_func_name="ref_aliB_cone"):
 	"""
@@ -4739,7 +4775,7 @@ def ali3d_eB_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CT
 	from fundamentals   import fshift, rot_avg_image
 	from projection     import prep_vol, prgs
 	from utilities      import amoeba, bcast_string_to_all, model_circle, get_arb_params, set_arb_params, drop_spider_doc
-	from utilities      import get_image, drop_image, bcast_EMData_to_all, send_attr_dict, recv_attr_dict
+	from utilities      import get_image, drop_image, bcast_EMData_to_all, send_attr_dict
 	from utilities      import read_spider_doc, get_im
 	from reconstruction import rec3D_MPI
 	from statistics     import ccc
@@ -5082,7 +5118,7 @@ def ali3d_eB_MPI_select(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit
 	from fundamentals   import fshift, rot_avg_image
 	from projection     import prep_vol, prgs
 	from utilities      import amoeba, bcast_string_to_all, model_circle, get_arb_params, set_arb_params, drop_spider_doc
-	from utilities      import get_image, drop_image, bcast_EMData_to_all, send_attr_dict, recv_attr_dict
+	from utilities      import get_image, drop_image, bcast_EMData_to_all, send_attr_dict
 	from utilities      import read_spider_doc, get_im
 	from reconstruction import rec3D_MPI
 	from statistics     import ccc
@@ -5423,7 +5459,7 @@ def ali3d_eB_MPI_(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, C
 	from fundamentals   import fshift, rot_avg_image
 	from projection     import prep_vol, prgs
 	from utilities      import amoeba, bcast_string_to_all, model_circle, get_arb_params, set_arb_params, drop_spider_doc
-	from utilities      import get_image, drop_image, bcast_EMData_to_all, send_attr_dict, recv_attr_dict
+	from utilities      import get_image, drop_image, bcast_EMData_to_all, send_attr_dict
 	from utilities      import read_spider_doc, get_im
 	from reconstruction import rec3D_MPI
 	from math           import pi
@@ -5514,7 +5550,7 @@ def ali3d_eB_MPI_(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, C
 	print  " MY ID ", myid, recvbuf
 	from sys import exit
 	exit()
-	
+
 	parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
 	#                  0                 1            2            3            4                 5                 6
 	from utilities import read_spider_doc, set_arb_params
@@ -6067,7 +6103,7 @@ def ali3d_f_MPI(stack, ref_vol, outdir, maskfile, ali_maskfile, radius=-1, snr=1
 	from fundamentals   import fshift
 	from projection     import prep_vol
 	from utilities      import amoeba, bcast_string_to_all, model_circle, get_arb_params, set_arb_params, drop_spider_doc
-	from utilities      import get_image, drop_image, bcast_EMData_to_all, send_attr_dict, recv_attr_dict,get_im
+	from utilities      import get_image, drop_image, bcast_EMData_to_all, send_attr_dict, get_im
 	from utilities      import read_spider_doc
 	from reconstruction import rec3D_MPI,rec3D_MPI_index
 	from morphology     import refine_with_mask
@@ -6361,8 +6397,15 @@ def ali3d_f_MPI(stack, ref_vol, outdir, maskfile, ali_maskfile, radius=-1, snr=1
 	mpi_barrier(MPI_COMM_WORLD)
 	if(CTF and data_had_ctf == 0):
 		for im in xrange(image_start, image_end): data[im-image_start].set_attr('ctf_applied', 0)
-	if(myid == main_node): recv_attr_dict(main_node, stack, dataim, par_str, image_start, image_end, number_of_proc)
-	else:                  send_attr_dict(main_node, dataim, par_str, image_start, image_end)
+	#  ID should be added
+	if myid == main_node:
+		if(file_type(stack) == "bdb"):
+			from utilities import recv_attr_dict_bdb
+			recv_attr_dict_bdb(main_node, stack, dataim, par_str, image_start, image_end, number_of_proc)
+		else:
+			from utilities import recv_attr_dict
+			recv_attr_dict(main_node, stack, dataim, par_str, image_start, image_end, number_of_proc)
+	else:           send_attr_dict(main_node, dataim, par_str, image_start, image_end)
 
 def autowin(indir,outdir, noisedoc, noisemic, templatefile, deci, CC_method, p_size, sigma, hf_p, n_peak_max, contrast_invert=1, CTF = False, prm = "micrograph", MPI=False):
 	""" 

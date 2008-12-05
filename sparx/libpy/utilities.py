@@ -2161,8 +2161,9 @@ def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, 
 	from  utilities import  get_arb_params, set_arb_params
 	from  mpi 	import mpi_recv
 	from  mpi 	import MPI_FLOAT, MPI_INT, MPI_TAG_UB, MPI_COMM_WORLD
-	TransType = type(Transform())
+	#   hdf version!
 	# This is done on the main node, so for images from the main node, simply write headers
+	TransType = type(Transform())
 	# prepare keys for float/int
 	vl = get_arb_params(data[0], list_params)
 	ink = []
@@ -2187,15 +2188,9 @@ def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, 
 			headers.append(vl)
 			del  dis
 	del  vl
-	list_of_particles = []
-	for n in xrange(image_start, image_end):
-		list_of_particles.append(data[n-image_start].get_attr_default('ID', n))
-	from utilities import write_headers
-	write_headers(stack, data, list_of_particles)
-	del  list_of_particles
-	#for im in xrange(image_start, image_end):
-	#	data[im-image_start].write_image(stack, im, EMUtil.ImageType.IMAGE_HDF, True)
-	from utilities import write_header
+	for im in xrange(image_start, image_end):
+		data[im-image_start].write_image(stack, get_attr_default('ID', im), EMUtil.ImageType.IMAGE_HDF, True)
+
 	for n in xrange(len(ldis)):
 		img_beg = ldis[n][0]
 		img_end = ldis[n][1]
@@ -2229,7 +2224,7 @@ def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, 
 			dummy = EMData()
 			dummy.read_image(stack, imm, True)
 			set_arb_params(dummy, nvl, list_params)
-			write_header(stack, dummy, imm)
+			dummy.write_image(stack, get_attr_default('ID', im), EMUtil.ImageType.IMAGE_HDF, True)
 
 def send_attr_dict(main_node, data, list_params, image_start, image_end):
 	import types
@@ -2256,6 +2251,7 @@ def recv_attr_dict_bdb(main_node, stack, data, list_params, image_start, image_e
 	from  utilities import  get_arb_params, set_arb_params
 	from  mpi 	import mpi_recv
 	from  mpi 	import MPI_FLOAT, MPI_INT, MPI_TAG_UB, MPI_COMM_WORLD
+	#  bdb version!
 	# This is done on the main node, so for images from the main node, simply write headers
 	DB = db_open_dict(stack)
 	TransType = type(Transform())
