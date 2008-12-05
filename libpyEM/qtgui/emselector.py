@@ -315,7 +315,7 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.lock = True
 		dtag = get_dtag()
 		new_dir = self.starting_directory[0:self.starting_directory.rfind(dtag)]
-		if len(new_dir) == 0: new_dir = get_dtag()
+		if len(new_dir) <= 1 or new_dir[-1] == ":": new_dir = get_dtag()
 		#if  self.db_listing.responsible_for(new_dir):
 			#new_dir = self.db_listing.
 		#print "going back a directory",new_dir
@@ -414,7 +414,7 @@ class EMSelectorDialog(QtGui.QDialog):
 	def list_widget_clickerooni(self,item,allow_preview=True):
 		if self.lock : return
 		if self.current_list_widget == None: return
-
+		if item.type_of_me == "value": return #it's just a value in the db
 		self.__update_selections()
 
 		if item == None: return
@@ -446,7 +446,7 @@ class EMSelectorDialog(QtGui.QDialog):
 				self.list_widget_data[i] = None
 				
 			if not self.check_preview_item_wants_to_list(item):
-				print "nope"
+				print "error 101"
 				return
 		
 	
@@ -611,14 +611,14 @@ class EMSelectorDialog(QtGui.QDialog):
 		Returns true if s is a non empty directory
 		'''
 
-		for root, dirs, files in os.walk(s):
-			files = self.filter_strings(files)
-			file_length = len(files)
-			if file_length == 0: file_length = len(dirs)
+		dirs, files  = get_files_and_directories(s)
+		files = self.filter_strings(files)
+		file_length = len(files)
+		if file_length == 0: file_length = len(dirs)
+	
+		if file_length != 0: return True
 		
-			if file_length != 0: return True
-			
-			return False
+		return False
 	
 	def __load_database_directory(self,database_name,list_widget):
 		
@@ -716,30 +716,31 @@ class EMDirectoryListing:
 		dtag = get_dtag()
 		read_header_only = True
 		plot = EMPlot2DModule()
-		for root, dirs, files in os.walk(directory):
-			files = self.filter_strings(files)
-			filt = self.target().get_file_filter()
+		
+		dirs, files = get_files_and_directories(directory)
+		files = self.filter_strings(files)
+		filt = self.target().get_file_filter()
+		
+		dirs.sort()
+		files.sort()
+		 
+		self.target().make_replacements(dirs,list_widget)
+		 
+		for i in dirs:
+			if i[0] == '.': continue
 			
-			dirs.sort()
-			files.sort()
-			 
-			self.target().make_replacements(dirs,list_widget)
-			 
-			for i in dirs:
-				if i[0] == '.': continue
-				
-				file_length = 0
-				for r, d, f in os.walk(directory+dtag+i):
-					f = self.filter_strings(f)
-					file_length = len(f)
-					if file_length == 0: file_length = len(d)
-					break
-				if file_length != 0:
-					a = EMSelectionListItem(self.target().folder_files_icon,i,list_widget)
-					a.type_of_me = "directory_file"
-				else:
-					a = EMSelectionListItem(self.target().folder_icon,i,list_widget)
-					type_of_me = "directory"
+			file_length = 0
+#			d, f = get_files_and_directories(directory+dtag+i)
+	   	   	d, f = [], []
+			f = self.filter_strings(f)
+			file_length = len(f)
+			if file_length == 0: file_length = len(d)
+			if file_length != 0:
+				a = EMSelectionListItem(self.target().folder_files_icon,i,list_widget)
+				a.type_of_me = "directory_file"
+			else:
+				a = EMSelectionListItem(self.target().folder_icon,i,list_widget)
+				type_of_me = "directory"
 				
 			#for i,file in enumerate(files):
 				#if file[0] == '.': continue
@@ -747,45 +748,44 @@ class EMDirectoryListing:
 					#a = EMSelectionListItem(self.database_icon,file,list_widget)
 					#files.pop(i)
 					
-			for file in files:
-				if file[0] == '.': continue
-				if file[-1] == '~': continue
-				#print EMUtil.get_image_ext_type(Util.get_filename_ext((file)),get_file_tag(file)
-				full_name = directory+dtag+file
-				if EMUtil.get_image_ext_type(Util.get_filename_ext(file)) != IMAGE_UNKNOWN:
-					try:
-						if EMUtil.get_image_count(full_name) > 1:
-							a = EMSelectionListItem(self.target().emdata_matrix_icon,file,list_widget)
-							a.type_of_me = self.emdata_mx
+		for file in files:
+			if file[0] == '.': continue
+			if file[-1] == '~': continue
+			#print EMUtil.get_image_ext_type(Util.get_filename_ext((file)),get_file_tag(file)
+			full_name = directory+dtag+file
+			if EMUtil.get_image_ext_type(Util.get_filename_ext(file)) != IMAGE_UNKNOWN:
+				try:
+					if EMUtil.get_image_count(full_name) > 1:
+						a = EMSelectionListItem(self.target().emdata_matrix_icon,file,list_widget)
+						a.type_of_me = self.emdata_mx
+						a.full_path = full_name
+					else:
+						e.read_image(full_name,0, read_header_only)
+						if e.get_zsize() > 1:
+							a = EMSelectionListItem(self.target().emdata_3d_icon,file,list_widget)
+							a.type_of_me = self.emdata_3d 
 							a.full_path = full_name
 						else:
-							e.read_image(full_name,0, read_header_only)
-							if e.get_zsize() > 1:
-								a = EMSelectionListItem(self.target().emdata_3d_icon,file,list_widget)
-								a.type_of_me = self.emdata_3d 
-								a.full_path = full_name
-							else:
-								a = EMSelectionListItem(self.target().emdata_icon,file,list_widget)
-								a.type_of_me = self.emdata 
-								a.full_path = full_name
-						
-					except:
-						a = EMSelectionListItem(self.target().file_icon,file,list_widget) # this happens when files are corrupted	
-						a.type_of_me = "regular_file"
-				
-				elif plot.is_file_readable(full_name):
-					a = EMSelectionListItem(self.target().plot_icon,file,list_widget)
-					a.type_of_me = self.plot_data
-					a.full_path = full_name
-				else:
-					if filt != "EM types":
-						a = EMSelectionListItem(self.target().file_icon,file,list_widget)
-						a.type_of_me = "regular_file"
-						
-
-			return True
+							a = EMSelectionListItem(self.target().emdata_icon,file,list_widget)
+							a.type_of_me = self.emdata 
+							a.full_path = full_name
+					
+				except:
+					a = EMSelectionListItem(self.target().file_icon,file,list_widget) # this happens when files are corrupted	
+					a.type_of_me = "regular_file"
 			
-		return False
+			elif plot.is_file_readable(full_name):
+				a = EMSelectionListItem(self.target().plot_icon,file,list_widget)
+				a.type_of_me = self.plot_data
+				a.full_path = full_name
+			else:
+				if filt != "EM types":
+					a = EMSelectionListItem(self.target().file_icon,file,list_widget)
+					a.type_of_me = "regular_file"
+					
+
+		return True
+			
 	
 	def do_preview(self,item):
 		
@@ -999,73 +999,71 @@ class EMBDBListing:
 
 		dtag = get_dtag()
 		real_directory = self.convert_to_absolute_path(directory)
-		for root, dirs, files in os.walk(real_directory):
-			files.sort()
-			dirs.sort()
+		dirs,files = get_files_and_directories(real_directory)
+		files.sort()
+		dirs.sort()
+		
+		for i in dirs:
+			if i[0] == '.': continue
 			
-			for i in dirs:
-				if i[0] == '.': continue
+			if i == "EMAN2DB":
+				a = EMSelectionListItem(self.target().database_icon,"bdb",list_widget) # this is something we do not wish to support
+				a.type_of_me = "unwanted" # really haven't accommodated for this...
+				continue
+		
+			file_length = 0
+			#r, d =  get_files_and_directories(real_directory+dtag+i)
+			d,f = [], []
+			file_length = len(f)
+			if file_length == 0: file_length = len(d)
 				
-				if i == "EMAN2DB":
-					a = EMSelectionListItem(self.target().database_icon,"bdb",list_widget) # this is something we do not wish to support
-					a.type_of_me = "unwanted" # really haven't accommodated for this...
-					continue
+			if file_length != 0:
+				a = EMSelectionListItem(self.target().folder_files_icon,i,list_widget)
+				a.type_of_me = "directory_file"
+				#a.full_path = real_directory
+			else:
+				a = EMSelectionListItem(self.target().folder_icon,i,list_widget)
+				a.type_of_me = "directory"
+				a.full_path = real_directory
 			
-				file_length = 0
-				for r, d, f in os.walk(real_directory+dtag+i):
-					file_length = len(f)
-					if file_length == 0: file_length = len(d)
-					break
-					
-				if file_length != 0:
-					a = EMSelectionListItem(self.target().folder_files_icon,i,list_widget)
-					a.type_of_me = "directory_file"
-					#a.full_path = real_directory
-				else:
-					a = EMSelectionListItem(self.target().folder_icon,i,list_widget)
-					a.type_of_me = "directory"
-					a.full_path = real_directory
+		for file in files:
+			if file[len(file)-3:] == "bdb":
+				f = file.rpartition(".bdb")
+				db_directory = self.get_emdatabase_directory(real_directory)
+				DB = EMAN2DB.open_db(db_directory)
+				DB.open_dict(f[0])
 				
-			for file in files:
-				if file[len(file)-3:] == "bdb":
-					f = file.rpartition(".bdb")
-					db_directory = self.get_emdatabase_directory(real_directory)
-					DB = EMAN2DB.open_db(db_directory)
-					DB.open_dict(f[0])
-					
-					if DB[f[0]].has_key("maxrec"):
-						n = DB[f[0]]["maxrec"]
-						if n >= 1:
-							a = EMSelectionListItem(self.target().emdata_matrix_icon,f[0],list_widget)
-							a.type_of_me = self.db_mx
-							a.database_directory = db_directory
-							a.database = f[0]
-						elif n == 0:
-							d = DB[f[0]].get_header(0)
-							if d["nz"] <= 1:
-								a = EMSelectionListItem(self.target().emdata_icon,f[0],list_widget)
-								a.type_of_me = self.emdata_entry
-							else:
-								a = EMSelectionListItem(self.target().emdata_3d_icon,f[0],list_widget)
-								a.type_of_me = self.emdata_3d_entry
-							
-							a.database_directory = db_directory
-							a.database = f[0]
-							a.database_key = 0
-					
+				if DB[f[0]].has_key("maxrec"):
+					n = DB[f[0]]["maxrec"]
+					if n >= 1:
+						a = EMSelectionListItem(self.target().emdata_matrix_icon,f[0],list_widget)
+						a.type_of_me = self.db_mx
+						a.database_directory = db_directory
+						a.database = f[0]
+					elif n == 0:
+						d = DB[f[0]].get_header(0)
+						if d["nz"] <= 1:
+							a = EMSelectionListItem(self.target().emdata_icon,f[0],list_widget)
+							a.type_of_me = self.emdata_entry
 						else:
-							a = EMSelectionListItem(self.target().database_icon,f[0],list_widget)
-							a.type_of_me = "regular"
+							a = EMSelectionListItem(self.target().emdata_3d_icon,f[0],list_widget)
+							a.type_of_me = self.emdata_3d_entry
+						
+						a.database_directory = db_directory
+						a.database = f[0]
+						a.database_key = 0
+				
 					else:
 						a = EMSelectionListItem(self.target().database_icon,f[0],list_widget)
 						a.type_of_me = "regular"
-					DB.close_dict(f[0])
-				#else:
-					#a = EMSelectionListItem(self.target().key_icon,file,list_widget)
-				
-			return True
-				
-		return False
+				else:
+					a = EMSelectionListItem(self.target().database_icon,f[0],list_widget)
+					a.type_of_me = "regular"
+				DB.close_dict(f[0])
+			#else:
+				#a = EMSelectionListItem(self.target().key_icon,file,list_widget)
+			
+		return True
 
 	def is_database_file(self,file_name):
 		file = self.convert_to_absolute_path(file_name)
@@ -1201,8 +1199,10 @@ class EMBDBListing:
 			item = DB[key]
 			
 			#item = item[item_key]
-			for ii in range(j-2,-1,-1):
-				item = item[split[ii]]
+			try:
+				for ii in range(j-2,-1,-1):
+					item = item[split[ii]]
+			except: return False
 			
 			if type(item) == dict:
 				keys = item.keys()
@@ -1220,7 +1220,7 @@ class EMBDBListing:
 						a.type_of_me = "manual_boxes"
 					elif type(i) in [str,float,int,tuple,list,bool]:
 						a = EMSelectionListItem(self.target().basic_python_icon,str(k),list_widget)
-						a.type_of_me = "python_basic"
+						a.type_of_me = "value"
 					elif type(i) == dict:
 						a = EMSelectionListItem(self.target().dict_python_icon,str(k),list_widget)
 						a.type_of_me = "python_dict"
@@ -1233,14 +1233,14 @@ class EMBDBListing:
 						a.database_dictionary_keys.append(k)
 					else:
 						a = EMSelectionListItem(self.target().basic_python_icon,str(k),list_widget)
-						a.type_of_me = "python_basic"
+						a.type_of_me = "value"
 			elif isinstance(item,EMData):
 				print "this shouldn't happen"
 				self.target().preview_data(item)
 				return False
 			else:
 				a = EMSelectionListItem(self.target().basic_python_icon,str(item),list_widget)
-				a.type_of_me = "python_basic"
+				a.type_of_me = "value"
 			return True
 				
 		else: return False 

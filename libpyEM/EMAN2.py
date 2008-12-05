@@ -250,13 +250,46 @@ exists will produce refine_02 if makenew is set (and create refine_02) and refin
 	return "%s_%02d"%(prefix,n-1)
 
 def get_image_directory():
+	pf = get_platform()
 	dtag = get_dtag()
-	return os.getenv("EMAN2DIR")+ dtag + "images" + dtag 
-
+	if pf == "Darwin":
+		return os.getenv("EMAN2DIR")+ dtag + "images" + dtag + "macimages" + dtag 
+	else:
+		return os.getenv("EMAN2DIR")+ dtag + "images" + dtag
+	
 def get_dtag():
 	pfrm = get_platform()
 	if pfrm == "Windows": return "\\"
 	else: return "/"
+
+def get_files_and_directories(path=".",include_hidden=False):
+	if path == ".": l_path = "./"
+	else: l_path = path
+	dirs = []
+	files = []
+#	print l_path
+	try:
+		entries = os.listdir(l_path)
+	except: # something is wrong with the path
+#		print "path failed",l_path
+		return dirs,files
+		
+	for name in entries:
+		if len(name) == 0: continue
+		if not include_hidden: 
+			if name[0] == ".":
+				continue
+		
+		try:
+			if os.path.isdir(l_path+get_dtag()+name):
+				dirs.append(name)
+			else:
+				files.append(name)
+		except:
+			pass # something was wrong with the directory
+			
+	return dirs,files
+		
 
 def numbered_bdb(bdb_url):
 	'''
