@@ -504,7 +504,7 @@ def kill_process(pid):
 	import os
 	import platform
 	platform_string = get_platform()
-	if platform == "Windows":
+	if platform_string == "Windows":
 		# taken from http://www.python.org/doc/faq/windows/#how-do-i-emulate-os-kill-in-windows
 		import win32api
 		try:
@@ -529,7 +529,7 @@ def process_running(pid):
 	import platform
 	import os
 	platform_string = get_platform()
-	if platform == "Windows":
+	if platform_string == "Windows":
 		# taken from http://www.python.org/doc/faq/windows/#how-do-i-emulate-os-kill-in-windows
 		import win32api
 		try:
