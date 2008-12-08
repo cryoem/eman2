@@ -324,7 +324,7 @@ def bootstrap_calcwgts( prjfile, wgtfile, delta, MPI ):
 		os = open( wgtfile, "w" )
 		for i in xrange(nprj):
 			aid = angids[i]
-			wgt = 1.0/int(occurs[aid])/nang
+			wgt = 1.0/int(occurs[aid])
 			print >> os, wgt
 		
 
