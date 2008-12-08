@@ -9537,3 +9537,135 @@ def k_means_groups(stack, out_file, maskname, opt_method, K1, K2, rand_seed, max
 		return rescrit, KK
 	
 # ----------------------------------------------------------------------------------------------
+
+# 2008-12-08 12:46:11 JB
+# Plot angles distribution on a hemisphere from a list of given projection
+def plot_projs_distrib(stack, outplot, mir):
+	from projection import plot_angles
+	from utilities  import get_params_proj
+	import sys
+
+	N    = EMUtil.get_image_count(stack)
+	im   = EMData()
+	agls = []
+	for n in xrange(N):
+		im.read_image(stack, n)
+		try:
+			p = get_params_proj(im)
+		except RuntimeError:
+			print 'Projection #%d from %s has no angles set!' % (n, stack)
+			sys.exit()
+
+		if mir and p[1] > 90.0:
+			phi = (float(p[0]) + 180) % 360
+			the = 180 - float(p[1])
+		else:
+			phi, the = p[:2]
+		agls.append([phi, the])
+
+	im = plot_angles(agls)
+	im.write_image(outplot, 0)
+
+# 2008-12-08 12:46:46 JB
+# Wrap for the HAC part of py_cluster in the statistics.py file
+def HAC_clustering(stack, dendoname, maskname, kind_link, kind_dist, flag_diss):
+	from statistics import ccc, py_cluster_HierarchicalClustering
+	from copy       import deepcopy
+	from utilities  import get_im
+
+	N    = EMUtil.get_image_count(stack)
+	if maskname != None: mask = get_im(maskname)
+	else:                mask = None
+
+	IM   = []
+	im   = EMData() 
+	for n in xrange(N):
+	    im.read_image(stack, n)
+	    if mask != None: Util.mul_img(im, mask)
+	    im.set_attr('ID_hclus', n)
+	    IM.append(im.copy())
+
+	if kind_dist   == 'SqEuc':
+		if flag_diss: cl = py_cluster_HierarchicalClustering(IM, lambda x,y: -x.cmp("SqEuclidean", y), linkage = kind_link)
+		else:        cl = py_cluster_HierarchicalClustering(IM, lambda x,y: x.cmp("SqEuclidean", y), linkage = kind_link)
+	elif kind_dist == 'CCC':
+		if flag_diss: cl = py_cluster_HierarchicalClustering(IM, lambda x,y: -ccc(x, y, mask), linkage = kind_link)
+		else:        cl = py_cluster_HierarchicalClustering(IM, lambda x,y: ccc(x, y, mask), linkage = kind_link)
+
+	k     = N
+	Dendo = {}
+	doc   = open(dendoname + '.txt', 'w')
+	for val in xrange(0, 10000):
+	    if flag_diss: th  = -(val / 1000.0)
+	    else:         th  = val / 1000.0
+
+	    res = cl.getlevel(th)
+
+	    GP = []
+	    for gp in res:
+		OBJ = []
+		for obj in gp:
+		    OBJ.append(obj.get_attr('ID_hclus'))
+		GP.append(OBJ)
+
+	    newk = len(GP)
+	    if newk != k:
+		k = newk
+		doc.write('%7.3f %d\n' % (th, k))
+		Dendo[k] = deepcopy(GP)
+	doc.close()
+
+	import pickle
+	f = open(dendoname + '.dendo', 'w')
+	pickle.dump(Dendo, f)
+	f.close()
+
+# 2008-12-08 15:20:24 JB
+# Compute the averages from the dendogram given by the function HAC_clustering
+def HAC_averages(stack, dendoname, avename, K):
+	from utilities import model_blank
+	import sys
+	
+	N    = EMUtil.get_image_count(stack)
+
+	try:
+		import pickle
+		f = open(dendoname, 'r')
+		Dendo = pickle.load(f)
+		f.close()
+	except:
+		print 'Impossible to read dendogram structure.'
+		sys.exit()
+
+	list_k = Dendo.keys()
+	if K not in list_k:
+		print 'Dendogram not contain the draw for K=%d' % K
+		sys.exit()
+
+	part = Dendo[K]
+	im   = EMData()
+	im.read_image(stack, 0, True)
+	nx   = im.get_xsize()
+	ny   = im.get_ysize()
+	imbk = model_blank(nx, ny)
+	AVE  = []
+	ct   = 0
+	for k in xrange(K):
+		AVE.append(imbk)
+		nobj = len(part[k])
+		if nobj > 1:
+			for ID in part[k]:
+				im.read_image(stack, ID)
+				Util.add_img(AVE[k], im)
+			Util.mul_scalar(AVE[k], 1 / float(len(part[k])))
+			AVE[k].set_attr('nobjects', len(part[k]))
+			AVE[k].set_attr('members',  part[k])
+			AVE[k].write_image(avename, k)
+		else:
+			im.read_image(stack, part[k][0])
+			im.set_attr('nobjects', 1)
+			im.set_attr('members', part[k][0])
+			im.write_image(avename, k)
+
+
+

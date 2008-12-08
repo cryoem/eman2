@@ -3067,7 +3067,7 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 	# [main_node] information display
 	if myid == main_node:
 		running_time(t_start)
-		print_msg('Criterion = %11.4e \n' % Je)
+		print_msg('Criterion = %11.6e \n' % Je)
 		for k in xrange(K):	print_msg('Cls[%i]: %i\n'%(k, Cls['n'][k]))
 
 	# [all] waiting all nodes
@@ -3263,9 +3263,12 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 		sway_ct   = 0
 		change    = 1
 		loc_order = range(N_start, N_stop)
-		if myid == main_node: print_msg('\n__ Trials: %2d _________________________________%s\n'%(ntrials, time.strftime('%a_%d_%b_%Y_%H_%M_%S', time.localtime())))
 		
-		th_update = 200 #N / ncpu / 5
+		if myid == main_node:
+			print_msg('\n__ Trials: %2d _________________________________%s\n'%(ntrials, time.strftime('%a_%d_%b_%Y_%H_%M_%S', time.localtime())))
+		th_update = N // ncpu // 10
+		flag_update = 0
+		
 		while change and watch_dog < maxit:
 			ite       += 1
 			watch_dog += 1
@@ -3277,7 +3280,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 			if SA:
 			   ct_pert = 0
 			shuffle(loc_order)	
-				
+			ct_update = 0	
 			# [id] random number to image
 			for n in xrange(N_start, N_stop):
 				order[n] = loc_order[index]
@@ -3285,7 +3288,6 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 			imn = N_start
 			all_proc_end = 0
 
-			ct_update = 0
 			while imn < N_stop:
 				# to select random image
 				im        = order[imn]
@@ -3387,15 +3389,14 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 				if res['pos'] != assign[im]:
 					assign[im] = res['pos']
 					change     = 1
-				'''
-				# count update
-				ct_update += 1
 
-				# if reach th update all (SSE)
-				if ct_update > th_update:
+				# [all] update to SSE method
+				ct_update += 1
+				if ct_update >= th_update:
 					ct_update = 0
-					
-					# [id] compute the number of objects
+					mpi_barrier(MPI_COMM_WORLD)
+	
+				        # [id] compute the number of objects
 					for k in xrange(K): 		  Cls['n'][k] = 0
 					for n in xrange(N_start, N_stop): Cls['n'][int(assign[n])] += 1			
 
@@ -3454,7 +3455,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 
 					# [all] waiting the result
 					mpi_barrier(MPI_COMM_WORLD)
-				'''		
+	
 														
 			# [sync]
 			mpi_barrier(MPI_COMM_WORLD)
@@ -3745,7 +3746,7 @@ def k_means_groups_serial(stack, out_file, maskname, opt_method, K1, K2, rand_se
 	print_begin_msg('k-means groups')
 	k_means_headlog(stack, '', opt_method, N, [K1, K2], crit_name, maskname, trials, maxit, CTF, T0, F, rand_seed, 1)
 	
-	[im_M, mask, ctf, ctf2] = k_means_open_im(stack, maskname, 0, N, N, CTF, BDB)
+	[im_M, mask, ctf, ctf2] = k_means_open_im(stack, maskname, 0, N, N, CTF)
 	
 	# watch file
 	out = open(out_file + '/WATCH_GRP_KMEANS', 'w')
@@ -3917,7 +3918,10 @@ def k_means_groups_MPI(stack, out_file, maskname, opt_method, K1, K2, rand_seed,
 		out.write('Watch grp k-means ' + time.ctime() +'\n')
 		out.close()
 
-	[im_M, mask, ctf, ctf2] = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, BDB)
+	# Seq reading due to BDB file
+	for i in xrange(ncpu):
+		if myid == i: [im_M, mask, ctf, ctf2] = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF)
+		mpi_barrier(MPI_COMM_WORLD)
 
 	# define the node affected to the numbers tests
 	Crit = {}
@@ -4063,6 +4067,546 @@ def k_means_groups_MPI(stack, out_file, maskname, opt_method, K1, K2, rand_seed,
 	else:                 return None, None
 
 ### END K-MEANS ##############################################################################
+##############################################################################################
+
+##############################################################################################
+### PY CLUSTER ###############################################################################
+# 2008-12-08 12:39:54 JB
+#
+# This is part of "python-cluster". A library to group similar items together.
+# Copyright (C) 2006   Michel Albert
+#
+# This library is free software; you can redistribute it and/or modify it under
+# the terms of the GNU Lesser General Public License as published by the Free
+# Software Foundation; either version 2.1 of the License, or (at your option)
+# any later version.
+# This library is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+# details.
+# You should have received a copy of the GNU Lesser General Public License
+# along with this library; if not, write to the Free Software Foundation, Inc.,
+# 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+#
+
+def py_cluster_median(numbers):
+   """
+   Return the median of the list of numbers.
+   found at: http://mail.python.org/pipermail/python-list/2004-December/253517.html
+   """
+   # Sort the list and take the middle element.
+   n = len(numbers)
+   copy = numbers[:] # So that "numbers" keeps its original order
+   copy.sort()
+   if n & 1:         # There is an odd number of elements
+      return copy[n // 2]
+   else:
+      return (copy[n // 2 - 1] + copy[n // 2]) / 2.0
+
+def py_cluster_mean(numbers):
+   """
+   Returns the arithmetic mean of a numeric list.
+   found at: http://mail.python.org/pipermail/python-list/2004-December/253517.html
+   """
+   return float(sum(numbers)) / float(len(numbers))
+
+def py_cluster_genmatrix(list, combinfunc, symmetric=False, diagonal=None):
+   """
+   Takes a list and generates a 2D-matrix using the supplied combination
+   function to calculate the values.
+
+   PARAMETERS
+      list        - the list of items
+      combinfunc  - the function that is used to calculate teh value in a cell.
+                    It has to cope with two arguments.
+      symmetric   - Whether it will be a symmetric matrix along the diagonal.
+                    For example, it the list contains integers, and the
+                    combination function is abs(x-y), then the matrix will be
+                    symmetric.
+                    Default: False
+      diagonal    - The value to be put into the diagonal. For some functions,
+                    the diagonal will stay constant. An example could be the
+                    function "x-y". Then each diagonal cell will be "0".
+                    If this value is set to None, then the diagonal will be
+                    calculated.
+                    Default: None
+   """
+   matrix = []
+   row_index = 0
+   for item in list:
+      row = []
+      col_index = 0
+      for item2 in list:
+         if diagonal is not None and col_index == row_index:
+            # if this is a cell on the diagonal
+            row.append(diagonal)
+         elif symmetric and col_index < row_index:
+            # if the matrix is symmetric and we are "in the lower left triangle"
+            row.append( matrix[col_index][row_index] )
+         else:
+            # if this cell is not on the diagonal
+            row.append(combinfunc(item, item2))
+         col_index += 1
+      matrix.append(row)
+      row_index += 1
+   return matrix
+
+class py_Cluster:
+   """
+   A collection of items. This is internally used to detect clustered items in
+   the data so we could distinguish other collection types (lists, dicts, ...)
+   from the actual clusters. This means that you could also create clusters of
+   lists with this class.
+   """
+
+   def __str__(self):
+      return "<Cluster@%s(%s)>" % (self.__level, self.__items)
+
+   def __repr__(self):
+      return self.__str__()
+
+   def __init__(self, level, *args):
+      """
+      Constructor
+
+      PARAMETERS
+         level - The level of this cluster. This is used in hierarchical
+                 clustering to retrieve a specific set of clusters. The higher
+                 the level, the smaller the count of clusters returned. The
+                 level depends on the difference function used.
+         *args - every additional argument passed following the level value
+                 will get added as item to the cluster. You could also pass a
+                 list as second parameter to initialise the cluster with that
+                 list as content
+      """
+      self.__level = level
+      if len(args) == 0: self.__items = []
+      else:              self.__items = list(args)
+
+   def append(self, item):
+      """
+      Appends a new item to the cluster
+
+      PARAMETERS
+         item  -  The item that is to be appended
+      """
+      self.__items.append(item)
+
+   def items(self, newItems = None):
+      """
+      Sets or gets the items of the cluster
+
+      PARAMETERS
+         newItems (optional) - if set, the items of the cluster will be
+                               replaced with that argument.
+      """
+      if newItems is None: return self.__items
+      else:                self.__items = newItems
+
+   def fullyflatten(self, *args):
+      """
+      Completely flattens out this cluster and returns a one-dimensional list
+      containing the cluster's items. This is useful in cases where some items
+      of the cluster are clusters in their own right and you only want the
+      items.
+
+      PARAMETERS
+         *args - only used for recursion.
+      """
+      flattened_items = []
+      if len(args) == 0: collection = self.__items
+      else:              collection = args[0].items()
+
+      for item in collection:
+         if isinstance(item, py_Cluster):
+            flattened_items = flattened_items + self.fullyflatten(item)
+         else:
+            flattened_items.append(item)
+
+      return flattened_items
+
+   def level(self):
+      """
+      Returns the level associated with this cluster
+      """
+      return self.__level
+
+   def display(self, depth=0):
+      """
+      Pretty-prints this cluster. Useful for debuging
+      """
+      print depth*"   " + "[level %s]" % self.__level
+      for item in self.__items:
+         if isinstance(item, py_Cluster):
+            item.display(depth+1)
+         else:
+            print depth*"   "+"%s" % item
+
+   def topology(self):
+      """
+      Returns the structure (topology) of the cluster as tuples.
+
+      Output from cl.data:
+          [<Cluster@0.833333333333(['CVS', <Cluster@0.818181818182(['34.xls',
+          <Cluster@0.789473684211([<Cluster@0.555555555556(['0.txt',
+          <Cluster@0.181818181818(['ChangeLog', 'ChangeLog.txt'])>])>,
+          <Cluster@0.684210526316(['20060730.py',
+          <Cluster@0.684210526316(['.cvsignore',
+          <Cluster@0.647058823529(['About.py',
+          <Cluster@0.625(['.idlerc', '.pylint.d'])>])>])>])>])>])>])>]
+
+      Corresponding output from cl.topo():
+          ('CVS', ('34.xls', (('0.txt', ('ChangeLog', 'ChangeLog.txt')),
+          ('20060730.py', ('.cvsignore', ('About.py',
+          ('.idlerc', '.pylint.d')))))))
+      """
+
+      left  = self.__items[0]
+      right = self.__items[1]
+      if isinstance(left, py_Cluster):
+          first = left.topology()
+      else:
+          first = left
+      if isinstance(right, py_Cluster):
+          second = right.topology()
+      else:
+          second = right
+      return first, second
+
+   def getlevel(self, threshold):
+      """
+      Retrieve all clusters up to a specific level threshold. This
+      level-threshold represents the maximum distance between two clusters. So
+      the lower you set this threshold, the more clusters you will receive and
+      the higher you set it, you will receive less but bigger clusters.
+
+      PARAMETERS
+         threshold - The level threshold
+
+      NOTE
+         It is debatable whether the value passed into this method should
+         really be as strongly linked to the real cluster-levels as it is right
+         now. The end-user will not know the range of this value unless s/he
+         first inspects the top-level cluster. So instead you might argue that
+         a value ranging from 0 to 1 might be a more useful approach.
+      """
+
+      left  = self.__items[0]
+      right = self.__items[1]
+
+      # if this object itself is below the threshold value we only need to
+      # return it's contents as a list
+      if self.level() <= threshold:
+         return [self.fullyflatten()]
+
+      # if this cluster's level is higher than the threshold we will investgate
+      # it's left and right part. Their level could be below the threshold
+      if isinstance(left, py_Cluster) and left.level() <= threshold:
+         if isinstance(right, py_Cluster):
+            return [left.fullyflatten()] + right.getlevel(threshold)
+         else:
+            return [left.fullyflatten()] + [[right]]
+      elif isinstance(right, py_Cluster) and right.level() <= threshold:
+         if isinstance(left, py_Cluster):
+            return left.getlevel(threshold) + [right.fullyflatten()]
+         else:
+            return [[left]] + [right.fullyflatten()]
+
+      # Alright. We covered the cases where one of the clusters was below the
+      # threshold value. Now we'll deal with the clusters that are above by
+      # recursively applying the previous cases.
+      if isinstance(left, py_Cluster) and isinstance(right, py_Cluster):
+         return left.getlevel(threshold) + right.getlevel(threshold)
+      elif isinstance(left, py_Cluster):
+         return left.getlevel(threshold) + [[right]]
+      elif isinstance(right, py_Cluster):
+         return [[left]] + right.getlevel(threshold)
+      else:
+         return [[left], [right]]
+
+class py_cluster_BaseClusterMethod:
+   """
+   The base class of all clustering methods.
+   """
+
+   def __init__(self, input, distance_function):
+      """
+      Constructs the object and starts clustering
+
+      PARAMETERS
+         input             - a list of objects
+         distance_function - a function returning the distance - or opposite of
+                             similarity ( distance = -similarity ) - of two
+                             items from the input. In other words, the closer
+                             the two items are related, the smaller this value
+                             needs to be. With 0 meaning they are exactly the
+                             same.
+
+      NOTES
+         The distance function should always return the absolute distance
+         between two given items of the list. Say,
+
+         distance(input[1], input[4]) = distance(input[4], input[1])
+
+         This is very important for the clustering algorithm to work!
+         Naturally, the data returned by the distance function MUST be a
+         comparable datatype, so you can perform arithmetic comparisons on
+         them (< or >)! The simplest examples would be floats or ints. But as
+         long as they are comparable, it's ok.
+      """
+      self.distance = distance_function
+      self._input = input    # the original input
+      self._data  = input[:] # clone the input so we can work with it
+
+   def topo(self):
+      """
+      Returns the structure (topology) of the cluster.
+
+      See Cluster.topology() for information.
+      """
+      return self.data[0].topology()
+
+   def __get_data(self):
+      """
+      Returns the data that is currently in process.
+      """
+      return self._data
+   data = property(__get_data)
+
+   def __get_raw_data(self):
+      """
+      Returns the raw data (data without being clustered).
+      """
+      return self._input
+   raw_data = property(__get_raw_data)
+
+class py_cluster_HierarchicalClustering(py_cluster_BaseClusterMethod):
+   """
+   Implementation of the hierarchical clustering method as explained in
+   http://www.elet.polimi.it/upload/matteucc/Clustering/tutorial_html/hierarchical.html
+
+   USAGE
+      >>> from cluster import HierarchicalClustering
+      >>> # or: from cluster import *
+      >>> cl = HierarchicalClustering([123,334,345,242,234,1,3], lambda x,y: float(abs(x-y)))
+      >>> cl.getlevel(90)
+      [[345, 334], [234, 242], [123], [3, 1]]
+
+      Note that all of the returned clusters are more that 90 apart
+
+   """
+
+   def __init__(self, data, distance_function, linkage='single'):
+      """
+      Constructor
+
+      See BaseClusterMethod.__init__ for more details.
+      """
+      py_cluster_BaseClusterMethod.__init__(self, data, distance_function)
+
+      # set the linkage type to single
+      self.setLinkageMethod(linkage)
+      self.__clusterCreated = False
+
+   def setLinkageMethod(self, method):
+      """
+      Sets the method to determine the distance between two clusters.
+
+      PARAMETERS:
+         method - The name of the method to use. It must be one of 'single',
+                  'complete', 'average' or 'uclus'
+      """
+      if method == 'single':
+         self.linkage = self.singleLinkageDistance
+      elif method == 'complete':
+         self.linkage = self.completeLinkageDistance
+      elif method == 'average':
+         self.linkage = self.averageLinkageDistance
+      elif method == 'uclus':
+         self.linkage = self.uclusDistance
+      else:
+         raise ValueError, 'distance method must be one of single, complete, average of uclus'
+
+   def uclusDistance(self, x, y):
+      """
+      The method to determine the distance between one cluster an another
+      item/cluster. The distance equals to the *average* (median) distance from
+      any member of one cluster to any member of the other cluster.
+
+      PARAMETERS
+         x  -  first cluster/item
+         y  -  second cluster/item
+      """
+      # create a flat list of all the items in <x>
+      if not isinstance(x, py_Cluster): x = [x]
+      else: x = x.fullyflatten()
+
+      # create a flat list of all the items in <y>
+      if not isinstance(y, py_Cluster): y = [y]
+      else: y = y.fullyflatten()
+
+      distances = []
+      for k in x:
+         for l in y:
+            distances.append(self.distance(k,l))
+      return py_cluster_median(distances)
+
+   def averageLinkageDistance(self, x, y):
+      """
+      The method to determine the distance between one cluster an another
+      item/cluster. The distance equals to the *average* (mean) distance from
+      any member of one cluster to any member of the other cluster.
+
+      PARAMETERS
+         x  -  first cluster/item
+         y  -  second cluster/item
+      """
+      # create a flat list of all the items in <x>
+      if not isinstance(x, py_Cluster): x = [x]
+      else: x = x.fullyflatten()
+
+      # create a flat list of all the items in <y>
+      if not isinstance(y, py_Cluster): y = [y]
+      else: y = y.fullyflatten()
+
+      distances = []
+      for k in x:
+         for l in y:
+            distances.append(self.distance(k,l))
+      return py_cluster_mean(distances)
+
+   def completeLinkageDistance(self, x, y):
+      """
+      The method to determine the distance between one cluster an another
+      item/cluster. The distance equals to the *longest* distance from any
+      member of one cluster to any member of the other cluster.
+
+      PARAMETERS
+         x  -  first cluster/item
+         y  -  second cluster/item
+      """
+
+      # create a flat list of all the items in <x>
+      if not isinstance(x, py_Cluster): x = [x]
+      else: x = x.fullyflatten()
+
+      # create a flat list of all the items in <y>
+      if not isinstance(y, py_Cluster): y = [y]
+      else: y = y.fullyflatten()
+
+      # retrieve the minimum distance (single-linkage)
+      maxdist = self.distance(x[0], y[0])
+      for k in x:
+         for l in y:
+            maxdist = max(maxdist, self.distance(k,l))
+
+      return maxdist
+
+   def singleLinkageDistance(self, x, y):
+      """
+      The method to determine the distance between one cluster an another
+      item/cluster. The distance equals to the *shortest* distance from any
+      member of one cluster to any member of the other cluster.
+
+      PARAMETERS
+         x  -  first cluster/item
+         y  -  second cluster/item
+      """
+
+      # create a flat list of all the items in <x>
+      if not isinstance(x, py_Cluster): x = [x]
+      else: x = x.fullyflatten()
+
+      # create a flat list of all the items in <y>
+      if not isinstance(y, py_Cluster): y = [y]
+      else: y = y.fullyflatten()
+
+      # retrieve the minimum distance (single-linkage)
+      mindist = self.distance(x[0], y[0])
+      for k in x:
+         for l in y:
+            mindist = min(mindist, self.distance(k,l))
+
+      return mindist
+
+   def cluster(self, matrix=None, level=None, sequence=None):
+      """
+      Perform hierarchical clustering. This method is automatically called by
+      the constructor so you should not need to call it explicitly.
+
+      PARAMETERS
+         matrix   -  The 2D list that is currently under processing. The matrix
+                     contains the distances of each item with each other
+         level    -  The current level of clustering
+         sequence -  The sequence number of the clustering
+      """
+
+      if matrix is None:
+         # create level 0, first iteration (sequence)
+         level    = 0
+         sequence = 0
+         matrix   = []
+
+      # if the matrix only has two rows left, we are done
+      while len(matrix) > 2 or matrix == []:
+
+         matrix = py_cluster_genmatrix(self._data, self.linkage, True, 0)
+
+         smallestpair = None
+         mindistance  = None
+         rowindex = 0   # keep track of where we are in the matrix
+         # find the minimum distance
+         for row in matrix:
+            cellindex = 0 # keep track of where we are in the matrix
+            for cell in row:
+               # if we are not on the diagonal (which is always 0)
+               # and if this cell represents a new minimum...
+               if (rowindex != cellindex) and ( cell < mindistance or smallestpair is None ):
+                  smallestpair = ( rowindex, cellindex )
+                  mindistance  = cell
+               cellindex += 1
+            rowindex += 1
+
+         sequence += 1
+         level     = matrix[smallestpair[1]][smallestpair[0]]
+         cluster   = py_Cluster(level, self._data[smallestpair[0]], self._data[smallestpair[1]])
+
+         # maintain the data, by combining the the two most similar items in the list
+         # we use the min and max functions to ensure the integrity of the data.
+         # imagine: if we first remove the item with the smaller index, all the
+         # rest of the items shift down by one. So the next index will be
+         # wrong. We could simply adjust the value of the second "remove" call,
+         # but we don't know the order in which they come. The max and min
+         # approach clarifies that
+         self._data.remove(self._data[max(smallestpair[0], smallestpair[1])]) # remove item 1
+         self._data.remove(self._data[min(smallestpair[0], smallestpair[1])]) # remove item 2
+         self._data.append(cluster)               # append item 1 and 2 combined
+
+      # all the data is in one single cluster. We return that and stop
+      self.__clusterCreated = True
+      return
+
+   def getlevel(self, threshold):
+      """
+      Returns all clusters with a maximum distance of <threshold> in between
+      each other
+
+      PARAMETERS
+         threshold - the maximum distance between clusters
+
+      SEE-ALSO
+         Cluster.getlevel(threshold)
+      """
+
+      # if it's not worth clustering, just return the data
+      if len(self._input) <= 1: return self._input
+
+      # initialize the cluster if not yet done
+      if not self.__clusterCreated: self.cluster()
+
+      return self._data[0].getlevel(threshold)
+
+### END PY_CLUSTER ###########################################################################
 ##############################################################################################
 
 # helper functions for ali2d_ra and ali2d_rac
