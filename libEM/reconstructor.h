@@ -479,6 +479,10 @@ namespace EMAN
 		/** Load the pixel inserter based on the information in params
 		 */
 		void load_inserter();
+
+#ifdef _WIN32
+		FourierPixelInserter3D* get_inserter(const string& mode, const Dict& params);
+#endif
 		
 		
 		/** Load the pixel inserter based on the information in params

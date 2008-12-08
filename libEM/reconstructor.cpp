@@ -287,9 +287,51 @@ void FourierReconstructor::load_inserter()
 		delete inserter;
 	}
 	
+#ifdef _WIN32
+	inserter = get_inserter(mode, parms);
+#else
 	inserter = Factory<FourierPixelInserter3D>::get(mode, parms);
+#endif
 	inserter->init();
 }
+
+#ifdef _WIN32
+FourierPixelInserter3D* FourierReconstructor::get_inserter(const string& mode, const Dict& params){
+	
+	FourierPixelInserter3D* inserter = 0;
+	if (mode == "1") {
+		inserter = new FourierPixelInserter3D1();
+	} else 
+	if (mode == "2") {
+		inserter = new FourierPixelInserter3D2();
+	}else 
+	if (mode == "3") {
+		inserter = new FourierPixelInserter3D3();
+	}else 
+	if (mode == "4") {
+		inserter = new FourierPixelInserter3D4();
+	}else 
+	if (mode == "5") {
+		inserter = new FourierPixelInserter3D5();
+	}else 
+	if (mode == "6") {
+		inserter = new FourierPixelInserter3D6();
+	}else 
+	if (mode == "7") {
+		inserter = new FourierPixelInserter3D7();
+	}else 
+	if (mode == "8") {
+		inserter = new FourierPixelInserter3D8();
+	}
+	else {
+		throw NotExistingObjectException(mode, "No such an instance existing");
+	}
+	
+	inserter->set_params(params);
+	return inserter;
+	
+}
+#endif
 
 void FourierReconstructor::load_interpFRC_calculator()
 {
