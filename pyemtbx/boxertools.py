@@ -2189,21 +2189,30 @@ def set_idd_image_entry(image_name,key,image):
 
 	# if we make it here then go ahead and append
 	image.write_image("bdb:e2boxercache#"+key,-1)
+	db_close_dict("bdb:e2boxercache#"+key)
 
 def get_idd_image_entry(image_name,key):
 	'''
 	Using EMAN2 style image dbs has efficiency payoffs in various ways... 
 	'''
-	db = db_open_dict("bdb:e2boxercache#"+key)
+	db_name =  "bdb:e2boxercache#"+key
+	if not db_check_dict(db_name): return None # calling program could have serious problems if this occurs
+	
+	
+		
+	db = db_open_dict(db_name)
 	
 	if db.has_key("maxrec"):
 		for idx in range(0,db["maxrec"]):
 			header = db.get_header(idx)
 			try:
 				if header["e2boxer_image_name"] == image_name:
+					db_close_dict(db_name)
 					return db[idx]
 			except:
 				pass
+			
+	db_close_dict(db_name)
 	return None
 
 def set_idd_key_entry(image_name,key,object):

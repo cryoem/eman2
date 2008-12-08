@@ -218,6 +218,8 @@ def write_e2ctf_output(options):
 			ctf.from_string(db_parms[name][0])
 			process_stack(filename,phaseout,wienerout,not options.nonorm,options.oversamp,ctf,invert=options.invert)
 			if logid : E2progress(logid,float(i+1)/len(options.filenames))
+			
+			
 	
 def pspec_and_ctf_fit(options,debug=False):
 	"Power spectrum and CTF fitting"

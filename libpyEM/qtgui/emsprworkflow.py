@@ -610,6 +610,7 @@ class MicrographCCDImportTask(WorkFlowTask):
 				self.application().processEvents()
 				
 			e.write_image(db_name,0)
+			db_close_dict(db_name)
 			cancelled_dbs.append(db_name)
 			i += 1
 			progress.qt_widget.setValue(i)
@@ -630,6 +631,8 @@ class MicrographCCDImportTask(WorkFlowTask):
 				for data_db in cancelled_dbs: # policy here is to remove only the raw data dbs - the e2boxer thumbnails are tiny and I don't have time...
 					db_remove_dict(data_db)
 				break
+			
+			
 			
 				
 		progress.qt_widget.setValue(len(filenames))

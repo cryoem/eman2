@@ -674,7 +674,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 					d = t.get_rotation("eman")
 					glPushMatrix()
 					if ( self.sym_object.is_h_sym() ):
-						trans = t.get_posttrans()
+						trans = t.get_trans()
 						glTranslatef(trans[0],trans[1],trans[2])
 					glRotate(-d["phi"],0,0,1)
 					glRotate(-d["alt"],1,0,0)
@@ -692,9 +692,6 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 						t.invert()
 						d = t.get_rotation("eman")
 						glPushMatrix()
-						if ( self.sym_object.is_h_sym() ):
-							trans = t.get_posttrans()
-							glTranslatef(trans[0],trans[1],trans[2])
 						glRotate(-d["phi"],0,0,1)
 						glRotate(-d["alt"],1,0,0)
 						glRotate(-d["az"],0,0,1)
@@ -703,14 +700,18 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 	
 		if self.display_euler:
 			glColor(.9,.2,.8)
-			# this is a nice light blue color (when lighting is on)
-			# and is the default color of the frame
 			self.gold()
 			glStencilFunc(GL_EQUAL,self.rank,0)
 			glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE)
 			glPushMatrix()
 			glCallList(self.sym_dl)
 			glPopMatrix()
+			if ( self.sym_object.is_h_sym() ):
+				a = {}
+				a["daz"] = 60
+				dz = 5
+				a["tz"] = dz
+				self.sym_object.insert_params(a)
 		
 			if self.inspector != None and self.inspector.sym_toggled():
 				#for i in range(1,self.sym_object.get_nsym()):
@@ -719,11 +720,15 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 					d = t.get_rotation("eman")
 					glPushMatrix()
 					if ( self.sym_object.is_h_sym() ):
-						#trans = t.get_posttrans()
-						glTranslatef(trans[0],trans[1],trans[2])
-					glRotate(-d["phi"],0,0,1)
-					glRotate(-d["alt"],1,0,0)
-					glRotate(-d["az"],0,0,1)
+						trans = t.get_trans()
+						glTranslatef(trans[0],trans[1],-trans[2])
+						glRotate(d["phi"],0,0,1)
+#						glRotate(d["alt"],1,0,0)
+#						glRotate(d["az"],0,0,1)
+					else:
+						glRotate(-d["phi"],0,0,1)
+						glRotate(-d["alt"],1,0,0)
+						glRotate(-d["az"],0,0,1)
 					glCallList(self.sym_dl)
 					glPopMatrix()
 			
