@@ -762,8 +762,12 @@ class EMDirectoryListing:
 			if file[0] == '.': continue
 			if file[-1] == '~': continue
 			#print EMUtil.get_image_ext_type(Util.get_filename_ext((file)),get_file_tag(file)
+			extension = Util.get_filename_ext(file)
 			full_name = directory+dtag+file
-			if EMUtil.get_image_ext_type(Util.get_filename_ext(file)) != IMAGE_UNKNOWN:
+			# note, if this if statement is allowed to proceed on Windows in the case of a png then the program
+			# crashes. In December of 2008 I thus changed this if statement to automatically exclude unecessary files
+			# such as pngs and jpges...etc.
+			if EMUtil.get_image_ext_type(extension) != IMAGE_UNKNOWN and extension not in ["png","jpeg","jpg","JPG"]:
 				try:
 					if EMUtil.get_image_count(full_name) > 1:
 						a = EMSelectionListItem(self.target().emdata_matrix_icon,file,list_widget)
