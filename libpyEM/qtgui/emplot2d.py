@@ -337,9 +337,16 @@ class EMPlot2DModule(EMGUIModule):
 			self.main_display_list = glGenLists(1)
 			glNewList(self.main_display_list,GL_COMPILE)
 			render = True
-		
+
 		lighting = glIsEnabled(GL_LIGHTING)
 		glDisable(GL_LIGHTING)
+		
+		GL.glPushMatrix()
+		glTranslate(0,0,5)
+		for k,s in self.shapes.items():
+			#print s
+			s.draw(self.scr2plot)
+		GL.glPopMatrix()
 		
 		if render: 
 
@@ -401,12 +408,6 @@ class EMPlot2DModule(EMGUIModule):
 			glEndList()
 			glCallList(self.main_display_list)
 
-		GL.glPushMatrix()
-		glTranslate(0,0,5)
-		for k,s in self.shapes.items():
-			#print s
-			s.draw(self.scr2plot)
-		GL.glPopMatrix()
 		
 		
 		if lighting : glEnable(GL_LIGHTING)
