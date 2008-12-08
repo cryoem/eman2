@@ -5,32 +5,32 @@
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
 
 #ifndef eman_reconstructor_h__
@@ -67,7 +67,7 @@ namespace EMAN
 	 *   - set up.
 	 *   - insert all image slices.
 	 *   - finish up. The last step will return the result.
-	 * 
+	 *
 	 * Reconstructor class is the base class for all reconstructors.
      * Each specific Reconstructor class has a unique ID name. This name
      * is used to create a Reconstructor instance or do a reconstruction.
@@ -78,14 +78,14 @@ namespace EMAN
 	 *   - a static method to register itself in the factory.
 	 *
      * Typical usages of Reconstructors are as follows:
-     * 
+     *
      *  - How to get all the Reconstructor names:
      *@code
      *    vector<string> all_reconstructors = Factory<Reconstructor>::get_list();
      @endcode
 	 *
      *  - How to use a Reconstructor
-     *@code 
+     *@code
      *    Reconstructor* r = Factory<Reconstructor>::get("fourier");
      *    r->setup();
      *    r->insert_slice(slice1, euler1);
@@ -93,7 +93,7 @@ namespace EMAN
      *    EMData* result = r->finish();
      @endcode
 	 *
-     *  - How to define a new Reconstructor type \n     
+     *  - How to define a new Reconstructor type \n
      *    A new XYZReconstructor class must implement the following functions:
      *    (Please replace 'XYZ' with your own class name).
 	 @code
@@ -122,28 +122,28 @@ namespace EMAN
 		 * @return 0 if OK. 1 if error.
 		 */
 		virtual int insert_slice(const EMData* const slice, const Transform3D & euler) {throw;};
-		
-		// This is pure virtual yet, but it should be... changed by Wei 
+
+		// This is pure virtual yet, but it should be... changed by Wei
 		virtual int insert_slice(const EMData* const slice, const Transform & euler) {throw;};
-		
-		/** 
-	  	 * @return 
+
+		/**
+	  	 * @return
 	  	 * @param input_slice
 	  	 * @param arg
 	  	 * @param num_particles_in_slice
-	  	 * @exception 
+	  	 * @exception
 		 */
 		virtual int determine_slice_agreement(const EMData* const, const Transform3D &, const unsigned int)
-		{  
+		{
 			cout << "You called determine slice agreement but nothing happened - there is no functionality for determing slice agreement using this " << get_name() << " reconstructor" << endl;
 			return 0;
 		}
-		
+
 		virtual int determine_slice_agreement(const EMData* const, const Transform &, const unsigned int)
-		{  
+		{
 			throw;
 		}
-		
+
 		/** Finish reconstruction and return the complete model.
 		 * @return The result 3D model.
 		 */
@@ -157,7 +157,7 @@ namespace EMAN
 			for ( Dict::const_iterator it = params.begin(); it != params.end(); ++it )
 			{
 				std::cout << (it->first) << " " << (it->second).to_str() << std::endl;
-			}	
+			}
 			std::cout << "Done printing reconstructor params" << std::endl;
 		}
 
@@ -169,20 +169,20 @@ namespace EMAN
 		// A function used only by the Fourier reconstructor for testing and writing to std out purposes in e2make3d.py
 		virtual float get_norm(const unsigned int) { return 0; }
 
-		
+
 		virtual int insert_slice_weights(const Transform&) {return 0;}
-		
+
 	  private:
 		// Disallow copy construction
 		Reconstructor(const Reconstructor& that);
 		Reconstructor& operator=(const Reconstructor& );
-	
+
 	};
 
 	/** A class object encapsulating the volume data required by Reconstructors
 	 *  It basically stores two (pointers) to EMData objectsd stores the dimensions of the image volume.
 	 *  One EMData object basically stores the real pixel data, the other is used for storing normalization values.
-	 *  This class was originally added simply to encapsulate the 
+	 *  This class was originally added simply to encapsulate the
 	 *  the things common to FourierReconstructor, WienerFourierReconstructor
 	 *  and BackProjectionReconstructor. It was never expected to instantiated on its own,
 	 *  and is intended to be a parent of the Reconstructor class.
@@ -194,33 +194,33 @@ namespace EMAN
 		public:
 			inline ReconstructorVolumeData() : image(0), tmp_data(0), nx(0), ny(0), nz(0) {}
 			virtual ~ReconstructorVolumeData() { free_memory(); }
-		
+
 			const EMData* const get_emdata() { return image; }
-		protected: 
+		protected:
 			EMData* image;
 		//tmp_data is the substitute of misused parent in reconstruction
 		//the memory will be allocated in setup() and released in finish()
 			EMData* tmp_data;
-		
+
 			int nx;
 			int ny;
 			int nz;
-		
+
 		protected:
 			void free_memory()
 			{
-				if (image != 0)  {delete image; image = 0;} 
+				if (image != 0)  {delete image; image = 0;}
 				if ( tmp_data != 0 ) { delete tmp_data; tmp_data = 0; }
 			}
 
 			virtual void normalize_threed();
-		
-			void zero_memory() 
+
+			void zero_memory()
 			{
 				if (tmp_data != 0 ) tmp_data->to_zero();
 				if (image != 0 ) image->to_zero();
 			}
-		
+
 		private:
 		// Disallow copy construction
 			ReconstructorVolumeData(const ReconstructorVolumeData& that);
@@ -228,34 +228,34 @@ namespace EMAN
 			ReconstructorVolumeData& operator=(const ReconstructorVolumeData& );
 
 	};
-	
+
 	class FourierReconstructorSimple2D : public Reconstructor, public ReconstructorVolumeData
 	{
 		public:
 			FourierReconstructorSimple2D() {}
 
 			virtual ~FourierReconstructorSimple2D() { }
-			
+
 			virtual void setup();
-			
+
 			virtual int insert_slice(const EMData* const slice, const Transform3D & euler) {
 				throw UnexpectedBehaviorException("Transform3D interface is redundant");
 			}
-			
+
 			virtual int insert_slice(const EMData* const slice, const Transform & euler);
-		
+
 			virtual EMData *finish();
 
 			virtual string get_name() const { return "fouriersimple2D"; }
 
 			virtual string get_desc() const { return "performs 2D reconstruction"; }
-			
+
 			static Reconstructor *NEW()
 			{
 				return new FourierReconstructorSimple2D();
 			}
 
-			
+
 			virtual TypeDict get_param_types() const
 			{
 				TypeDict d;
@@ -264,18 +264,18 @@ namespace EMAN
 				return d;
 			}
 	};
-	
 
-	
+
+
 	/** Fourier space 3D reconstruction
 	 * The Fourier reconstructor is designed to work in an iterative fashion, where similarity ("quality") metrics
 	 * are used to determine if a slice should be inserted into the 3D in each subsequent iteration.
-	 * The client creates a Fourier reconstructor to insert real images into a 3D volume. The return image is a real space image 
+	 * The client creates a Fourier reconstructor to insert real images into a 3D volume. The return image is a real space image
 	 *
 	 *
 	 * This reconstructor is based on EMAN1's Fourier reconstructor with a handful of modifications including
 	 * 1. - Fourier ring correlation (FRC) as opposed to the mean phase residual is used to estimate slice quality.
-	 *		The FRC of the slice in the 3D volume is determined - but the slice is removed from the 3D volume before 
+	 *		The FRC of the slice in the 3D volume is determined - but the slice is removed from the 3D volume before
 	 * 		doing this so the score reflects the extent to which the slice agrees with the contribution of the other
 	 *		slices in the 3D volume. The FRC is converted to SNR using the relationship described by Penczek
 	 *		( Three-dimensional spectral signal to noise ratio for a class of reconstruction algorithms, JSB 2002 138 (24-46) )
@@ -292,9 +292,9 @@ namespace EMAN
 	 *
 	 * 2 - 	Uses half of the memory used by EMAN1's equivalent reconstruction algorithm
 	 *
-	 * 
-	 * - Fourier reconstructor usage 
-	 *@code 
+	 *
+	 * - Fourier reconstructor usage
+	 *@code
 	 *	Reconstructor* r = Factory<Reconstructor>::get("fourier", params);
 	 *	r->setup();
 	 *	for k in 0:num_iterations-1
@@ -311,7 +311,7 @@ namespace EMAN
 	 *			int failure = r->insert_slice(image[i], image[i].euler_orientation);
 	 *			if ( failure ) cout << "Slice was not inserted due to poor quality" << endl;
 	 *
-	 *	// Get the resulting volume 
+	 *	// Get the resulting volume
 	 *	EMData* result = r->finish();
 	 *	result->write_image("threed.mrc");
 	@endcode
@@ -323,9 +323,9 @@ namespace EMAN
 		* calls load_default_settings()
 		*/
 		FourierReconstructor() : image_idx(0), inserter(0), interpFRC_calculator(0), slice_insertion_flag(true),
-		slice_agreement_flag(false), x_scale_factor(0.0), y_scale_factor(0.0), z_scale_factor(0.0), 
+		slice_agreement_flag(false), x_scale_factor(0.0), y_scale_factor(0.0), z_scale_factor(0.0),
 		max_input_dim(0), output_x(0), output_y(0), output_z(0) { load_default_settings(); }
-		
+
 		/** Deconstructor
 		* calls free_memory()
 		*/
@@ -353,8 +353,8 @@ namespace EMAN
 		* @exception ImageFormatException if the image is complex as opposed to real
 		*/
 		virtual int insert_slice(const EMData* const slice, const Transform & t3d = Transform());
-		
-		
+
+
 		/** Determine slice agreement with the current reconstruction
 		* @return 0 if successful, 1 otherwise
 		* @param input_slice the image slice to compared against the 3D volume
@@ -365,17 +365,17 @@ namespace EMAN
 		*/
 		virtual int determine_slice_agreement(const EMData* const input_slice, const Transform & t3d, const unsigned int  num_particles_in_slice = 1);
 
-		
+
 		virtual int insert_slice(const EMData* const slice, const Transform3D & t3d) {
 			throw UnexpectedBehaviorException("No support for Transform3D in insert_slice, use Transform instead");
 		};
-		
+
 		virtual int determine_slice_agreement(const EMData* const input_slice, const Transform3D & t3d, const unsigned int  num_particles_in_slice = 1) {
 			throw UnexpectedBehaviorException("No support for Transform3D in determine_slice_agreement, use Transform instead");
 		};
-		
+
 		/** Get the reconstructed volume
-		* Peforms Fourier inversion on a potentially large volume and may take 
+		* Peforms Fourier inversion on a potentially large volume and may take
 		* several minutes.
 		* @return The real space reconstructed volume
 		*/
@@ -387,7 +387,7 @@ namespace EMAN
 		{
 			return "fourier";
 		}
-		
+
 		/** Get the one line description of the reconstructor
 		*/
 		virtual string get_desc() const
@@ -430,7 +430,7 @@ namespace EMAN
 		 * @exception GenericException(just throw) when the idx is beyond the range of the quality_scores vector
 		 */
 		virtual float get_score(const unsigned int idx) { if ( quality_scores.size() > idx ) return quality_scores[idx].get_snr_normed_frc_integral(); else throw UnexpectedBehaviorException("The requested index was beyond the length of the quality scores vector."); }
-		
+
 		/** Get the normalization value that has been determined for this slice
 		 * this is used in e2make3d.py to print information to std out
 		 * @return the normalization value
@@ -438,7 +438,7 @@ namespace EMAN
 		 * @exception GenericException(throw) when the idx is beyond the range of the quality_scores vector
 		 */
 		virtual float get_norm(const unsigned int idx) { if ( quality_scores.size() > idx ) return quality_scores[idx].get_norm();  else throw UnexpectedBehaviorException("The requested index was beyond the length of the quality scores vector."); }
-		
+
 	  protected:
 	  	/** Preprocess the slice prior to insertion into the 3D volume
 		 * this Fourier tranforms the slice and make sure all the pixels are in the right position
@@ -454,7 +454,7 @@ namespace EMAN
 		/**Disallow assignment
 		 */
 		FourierReconstructor& operator=( const FourierReconstructor& );
-		
+
 		/** Load default settings
 		*/
 		void load_default_settings()
@@ -475,52 +475,52 @@ namespace EMAN
 		 * Deletes the FourierPixelInserter3D pointer
 		 */
 		void free_memory();
-	
+
 		/** Load the pixel inserter based on the information in params
 		 */
 		void load_inserter();
 
-#ifdef _WIN32
-		FourierPixelInserter3D* get_inserter(const string& mode, const Dict& params);
-#endif
-		
-		
+//#ifdef _WIN32
+//		FourierPixelInserter3D* get_inserter(const string& mode, const Dict& params);
+//#endif
+
+
 		/** Load the pixel inserter based on the information in params
 		 */
 		void load_interpFRC_calculator();
-		
+
 		/** A function to perform the nuts and bolts of inserting an image slice
 		 * @param input_slice the slice to insert into the 3D volume
 		 * @param euler a transform3D storing the slice euler angle
 		 */
 		void do_insert_slice_work(const EMData* const input_slice, const Transform & euler);
-		
+
 		/** print stats is called internally at various points in the reconstruction routine and is for the benefit of people using e2make3d.py
 		 */
 		void print_stats(const vector<QualityScores>& scores);
-		
+
 		/// Quality scores vectors for storing normalization constants, and SNR normalized Fourier ring correlation scores
 		vector<QualityScores> quality_scores, prev_quality_scores;
-		
+
 		/// Index used internally to index into the quality scores vectors at different points ( in insert_slice and determine_slice_agreement)
 		unsigned int image_idx;
-		
+
 		/// A pixel inserter pointer which inserts pixels into the 3D volume using one of a variety of insertion methods
 		FourierPixelInserter3D* inserter;
-		
+
 		/// A pixel inserter pointer which inserts pixels into the 3D volume using one of a variety of insertion methods
 		InterpolatedFRC* interpFRC_calculator;
 
 		/// Internal flags used to perform memory zeroing and normalization transparently
 		bool slice_insertion_flag;
 		bool slice_agreement_flag;
-		
+
 		/// Used for scaling frequency axes when any of the x_out, y_out or z_out parameters are specified
 		float x_scale_factor, y_scale_factor, z_scale_factor;
-		
+
 		/// Keeps track of the maximum dimension size
 		int max_input_dim;
-		
+
 		/// Keeps track of the eventual size of the output real space volume
 		int output_x, output_y, output_z;
 	};
@@ -529,7 +529,7 @@ namespace EMAN
 	{
 		public:
 		BaldwinWoolfordReconstructor() : W(0) {}
-		
+
 		/** Deconstructor
 		 */
 		virtual ~BaldwinWoolfordReconstructor() {
@@ -543,7 +543,7 @@ namespace EMAN
 		{
 			return "baldwinwoolford";
 		}
-		
+
 		/** Get the one line description of the reconstructor
 		 */
 		virtual string get_desc() const
@@ -581,19 +581,19 @@ namespace EMAN
 		 * @return The result 3D model.
 		 */
 		virtual EMData *finish();
-		
+
 		virtual int insert_slice_weights(const Transform& t3d);
-		
+
 		virtual int insert_slice(const EMData* const image, const Transform3D& t3d) {
 			throw UnexpectedBehaviorException("Transform3D interface is redundant");
 		}
 		virtual int insert_slice(const EMData* const image, const Transform& t3d);
 		void insert_pixel(const float& x, const float& y, const float& z, const float dt[2]);
-		
+
 		void insert_density_at(const float& x, const float& y, const float& z);
-		
+
 		virtual void setup();
-		
+
 		protected:
 		/** Load default settings
 		*/
@@ -613,14 +613,14 @@ namespace EMAN
 			params["hard"] = 0.05;
 			params["quiet"] = false;
 		}
-		
+
 		private:
 
 		float* W;
 		float dfreq;
-		
+
 	};
-	
+
 	/** Fourier space 3D reconstruction with slices already Wiener filter processed.
      */
 	class WienerFourierReconstructor:public Reconstructor, public ReconstructorVolumeData
@@ -639,7 +639,7 @@ namespace EMAN
 		{
 			return "wiener_fourier";
 		}
-		
+
 		virtual string get_desc() const
 		{
 			return "Experimental - Direct Fourier reconstruction taking into account the Wiener filtration of the individual images.";
@@ -681,33 +681,33 @@ namespace EMAN
 	};
 
 	/** Real space 3D reconstruction using back projection.
-     * 
+     *
      * Back-projection is a method of 3D reconstruction from 2D
      * projections. It is based on superposing 3D functions
      * ("back-projection bodies") obtained by translating the
-     * 2D projections along the directions of projection. 
+     * 2D projections along the directions of projection.
      */
 	class BackProjectionReconstructor:public Reconstructor, public ReconstructorVolumeData
 	{
 	  public:
 		BackProjectionReconstructor() { load_default_settings();  }
-	
+
 		virtual ~BackProjectionReconstructor() {}
 
 		virtual void setup();
-		
-		virtual int insert_slice(const EMData* const slice, const Transform3D & euler) { 
+
+		virtual int insert_slice(const EMData* const slice, const Transform3D & euler) {
 			throw UnexpectedBehaviorException("Use of Tranform3D with BackProjection is deprecated"); }
-		
+
 		virtual int insert_slice(const EMData* const slice, const Transform & euler);
-		
+
 		virtual EMData *finish();
 
 		virtual string get_name() const
 		{
 			return "back_projection";
 		}
-		
+
 		virtual string get_desc() const
 		{
 			return "Simple (unfiltered) back-projection reconstruction. Weighting by contributing particles in the class average is optional and default behaviour";
@@ -732,22 +732,22 @@ namespace EMAN
 		BackProjectionReconstructor( const BackProjectionReconstructor& that);
 		// Disallow assignment
 		BackProjectionReconstructor& operator=( const BackProjectionReconstructor& );
-		
+
 		void load_default_settings()
 		{
-			params["weight"] = 1.0; 
+			params["weight"] = 1.0;
 			params["use_weights"] = true;
 			params["size"] = 0;
 			params["sym"] = "c1";
 			params["zsample"] = 0;
 		}
-		
+
 		EMData* preprocess_slice(const EMData* const slice, const Transform& t);
 	};
 
 
 	/** Direct Fourier inversion Reconstructor
-     * 
+     *
      */
 	EMData* padfft_slice( const EMData* const slice, const Transform& t, int npad );
 
@@ -770,7 +770,7 @@ namespace EMAN
 		{
 			return "nn4";
 		}
-		
+
 		virtual string get_desc() const
 		{
 			return "Direct Fourier inversion routine";
@@ -845,14 +845,14 @@ namespace EMAN
 		virtual void setup();
 
 		virtual int insert_slice(const EMData* const slice, const Transform & euler);
-		
+
 		virtual EMData* finish();
 
 		virtual string get_name() const
 		{
 			return "nnSSNR";
 		}
-		
+
 		virtual string get_desc() const
 		{
 			return "Reconstruction by nearest neighbor with 3D SSNR";
@@ -905,7 +905,7 @@ namespace EMAN
 
 
 	/** nn4_ctf Direct Fourier Inversion Reconstructor
-     * 
+     *
      */
 	class nn4_ctfReconstructor:public Reconstructor
 	{
@@ -926,7 +926,7 @@ namespace EMAN
 		{
 			return "nn4_ctf";
 		}
-		
+
 		virtual string get_desc() const
 		{
 			return "Direct Fourier inversion reconstruction routine";
@@ -982,7 +982,7 @@ namespace EMAN
 
      /* Fourier Reconstruction by nearest neighbor with 3D SSNR and CTF
         Added by Zhengfan Yang on 04/11/07
-     */        
+     */
 
 	class nnSSNR_ctfReconstructor:public Reconstructor
 	{
@@ -997,7 +997,7 @@ namespace EMAN
 		virtual void setup();
 
 		virtual int insert_slice(const EMData *const slice, const Transform& euler);
-		
+
 
 		virtual EMData* finish();
 
@@ -1005,7 +1005,7 @@ namespace EMAN
 		{
 			return "nnSSNR_ctf";
 		}
-		
+
 		virtual string get_desc() const
 		{
 			return "Reconstruction by nearest neighbor with 3D SSNR with CTF";
@@ -1049,7 +1049,7 @@ namespace EMAN
 		bool m_delete_weight3;
 	        string  m_symmetry;
 		int m_weighting;
-		int m_vnx, m_vny, m_vnz;		
+		int m_vnx, m_vny, m_vnz;
 		int m_npad;
 		int m_nsym;
 		int m_vnzp, m_vnyp, m_vnxp;
@@ -1092,7 +1092,7 @@ namespace EMAN
 		void add_tovol( EMData* fftvol, EMData* wgtvol, const vector<int>& mults, int pbegin, int pend );
 
 		void get_image( int id, EMData* buf );
-	
+
         void read( int nprj );
 
 		void restart( );
@@ -1115,7 +1115,7 @@ namespace EMAN
 
 	class file_store
 	{
-	  public: 
+	  public:
 		file_store(const string& filename, int npad, int write, bool CTF);
 
 		virtual ~file_store();
