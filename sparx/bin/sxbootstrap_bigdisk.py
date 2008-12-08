@@ -317,9 +317,7 @@ def bootstrap_calcwgts( prjfile, wgtfile, delta, MPI ):
 
 		for i in xrange( len(occurs) ):
 			if int(occurs[i])==0:
-				print "Warning: some orientation has not projections. increase delta"
-					
-
+				print "Warning: some orientations have no projections. Increase delta"
 
 		os = open( wgtfile, "w" )
 		for i in xrange(nprj):
