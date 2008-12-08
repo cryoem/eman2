@@ -48,6 +48,7 @@ from weakref import WeakKeyDictionary
 import weakref
 from pickle import dumps,loads
 import struct
+import traceback
 
 import matplotlib
 from matplotlib.backends.backend_agg import FigureCanvasAgg
@@ -462,17 +463,18 @@ class EMPlot2DModule(EMGUIModule):
 		""" converts plot coordinates to screen coordinates """
 		try:
 			if self.axisparms[2]=="linear" : x2=(x-self.plotlim[0])/self.plotlim[2]*self.scrlim[2]+self.scrlim[0]
-			else : x2=(log10(x)-log10(self.plotlim[0]))/(log10(self.plotlim[2]+self.plotlim[0])-log10(self.plotlim[0]))*self.scrlim[2]+self.scrlim[0]
+			else : x2=(-(self.scrlim[2]*log(x)) + (self.scrlim[0] + self.scrlim[2])*log(10)*log10(self.plotlim[0])-self.scrlim[0]*log(10)*log10(self.plotlim[0] +self.plotlim[2])) /(log(10)*(log10(self.plotlim[0]) - log10(self.plotlim[0] + self.plotlim[2])))
 			if self.axisparms[3]=="linear" :y2=(self.height()-y-self.plotlim[1])/self.plotlim[3]*self.scrlim[3]+self.scrlim[1]
-			else : y2=(self.height()-y-self.plotlim[1])/self.plotlim[3]*self.scrlim[3]+self.scrlim[1]
+			else : y2=(self.scrlim[3]*log(y) + self.height()*log(10.0)*log10(self.plotlim[1])-self.scrlim[1]*log(10.0)*log10(self.plotlim[1])-self.scrlim[3]*log(10.0)*log10(self.plotlim[1]) - self.height()*log(10.0)*log10(self.plotlim[1]+self.plotlim[3]) + self.scrlim[1]*log(10)*log10(self.plotlim[1]+self.plotlim[3])) / (log(10)*(log10(self.plotlim[1]) - log10(self.plotlim[1]+self.plotlim[3])))
 			return (x2,y2)
-		except: return (0,0)
+		except: 
+			return (0,0)
 
 	def resize_event(self,width,height):
 		self.needupd=1
 		self.del_shapes(("xcross","ycross","lcross"))
 
-	def setAxisParms(self,xlabel,ylabel,xlog,ylog):
+	def setAxisParms(self,xlabel,ylabel,xlog="linear",ylog="linear"):
 		if self.axisparms==(xlabel,ylabel,xlog,ylog): return
 		self.axisparms=(xlabel,ylabel,xlog,ylog)
 		self.needupd=1

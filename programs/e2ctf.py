@@ -972,6 +972,7 @@ class GUIctf(QtGui.QWidget):
 		if self.plotmode==1:
 			self.guiplot.set_data("fg",(s,self.data[val][2]),True,True)
 			self.guiplot.set_data("bg",(s,self.data[val][3]))
+			self.guiplot.setAxisParms("s (1/A)","Intensity (a.u)")
 		elif self.plotmode==0: 
 			bgsub=[self.data[val][2][i]-self.data[val][3][i] for i in range(len(self.data[val][2]))]
 			self.guiplot.set_data("fg-bg",(s,bgsub),True,True)
@@ -994,19 +995,24 @@ class GUIctf(QtGui.QWidget):
 			fit=[fit[i]/rto for i in range(len(s))]
 
 			self.guiplot.set_data("fit",(s,fit))
+			self.guiplot.setAxisParms("s (1/A)","Intensity (a.u)")
 		elif self.plotmode==2:
 			snr=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_SNR)		# The snr curve
 			self.guiplot.set_data("snr",(s,snr[:len(s)]),True)
+			self.guiplot.setAxisParms("s (1/A)","SNR (intensity ratio)")
 		elif self.plotmode==3:
 			snr=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_SNR)		# The snr curve
 			self.guiplot.set_data("snr",(s,snr[:len(s)]),True)
 			ssnr=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_SNR_SMOOTH)		# The fit curve
 			self.guiplot.set_data("ssnr",(s,ssnr[:len(s)]))
+			self.guiplot.setAxisParms("s (1/A)","SNR (intensity ratio)")
 		elif self.plotmode==4:
 			snr=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_SNR)		# The snr curve
 			for i in range(1,len(snr)): snr[i]=snr[i]*i+snr[i-1]			# integrate SNR*s
-			for i in range(1,len(snr)): snr[i]/=snr[-1]				# normalize
+#			for i in range(1,len(snr)): snr[i]/=snr[-1]				# normalize
+			for i in range(1,len(snr)): snr[i]/=len(snr)			# this way the relative quality of images can be compared
 			self.guiplot.set_data("snr",(s,snr[:len(s)]),True)
+			self.guiplot.setAxisParms("s (1/A)","Integrated SNR")
 
 			
 			#bgsub=[self.data[val][2][i]-self.data[val][3][i] for i in range(len(self.data[val][2]))]
