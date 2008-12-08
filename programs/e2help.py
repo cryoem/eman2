@@ -45,7 +45,7 @@ from sys import exit
 def main():
 	progname = os.path.basename(sys.argv[0])
 	helpstring =  """Help is available on the following topics:
-processors, cmps, aligners, projectors, reconstructors, symmetries, orientgens"""
+processors, cmps, aligners, projectors, reconstructors, symmetries, orientgens, analyzers"""
 	usage = """%prog <topic>
 	
 Interactive help on a variety of topics."""
