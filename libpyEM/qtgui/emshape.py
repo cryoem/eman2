@@ -116,7 +116,7 @@ class EMShape:
 			GL.glBlendFunc(GL.GL_SRC_ALPHA,GL.GL_ONE_MINUS_SRC_ALPHA);
 			
 			col=[self.shape[1],self.shape[2],self.shape[3],self.blend]
-		
+			
 		if s[0]=="rect":
 			GL.glLineWidth(s[8])
 			#if  self.isanimated:

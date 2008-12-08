@@ -160,7 +160,8 @@ class EMPlot2DModule(EMGUIModule):
 		self.shapes={}
 		self.limits=None
 		self.rmousedrag=None
-
+		self.axisparms=(None,None,"Linear","Linear")
+		
 		self.data={}				# List of Lists to plot 
 		self.glflags = EMOpenGLFlagsAndTools() 	# supplies power of two texturing flags
 		
@@ -339,18 +340,14 @@ class EMPlot2DModule(EMGUIModule):
 		
 		lighting = glIsEnabled(GL_LIGHTING)
 		glDisable(GL_LIGHTING)
-		GL.glPushMatrix()
-		glTranslate(0,0,5)
-		for k,s in self.shapes.items():
-			#print s
-			s.draw(self.scr2plot)
-		GL.glPopMatrix()
 		
 		if render: 
 
 			fig=Figure((self.width()/72.0,self.height()/72.0),dpi=72.0)
-			if self.limits :ax=fig.add_axes((.1,.05,.85,.9),autoscale_on=False,xlim=self.limits[0],ylim=self.limits[1])
-			else : ax=fig.add_axes((.1,.05,.85,.9),autoscale_on=True)
+			if self.limits :ax=fig.add_axes((.08,.08,.9,.9),autoscale_on=False,xlim=self.limits[0],ylim=self.limits[1],xscale=self.axisparms[2],yscale=self.axisparms[3])
+			else : ax=fig.add_axes((.08,.08,.9,.9),autoscale_on=True,xscale=self.axisparms[2],yscale=self.axisparms[3])
+			if self.axisparms[0] and len(self.axisparms[0])>0 : ax.set_xlabel(self.axisparms[0],size="xx-large")
+			if self.axisparms[1] and len(self.axisparms[1])>0 : ax.set_ylabel(self.axisparms[1],size="xx-large")
 			canvas=FigureCanvasAgg(fig)
 			
 			for i in self.axes.keys():
@@ -403,6 +400,13 @@ class EMPlot2DModule(EMGUIModule):
 		if render :
 			glEndList()
 			glCallList(self.main_display_list)
+
+		GL.glPushMatrix()
+		glTranslate(0,0,5)
+		for k,s in self.shapes.items():
+			#print s
+			s.draw(self.scr2plot)
+		GL.glPopMatrix()
 		
 		
 		if lighting : glEnable(GL_LIGHTING)
@@ -459,6 +463,12 @@ class EMPlot2DModule(EMGUIModule):
 		self.needupd=1
 		self.del_shapes(("xcross","ycross","lcross"))
 
+	def setAxisParms(self,xlabel,ylabel,xlog,ylog):
+		if self.axisparms==(xlabel,ylabel,xlog,ylog): return
+		self.axisparms=(xlabel,ylabel,xlog,ylog)
+		self.needupd=1
+		self.updateGL()
+		
 	def setAxes(self,key,xa,ya,za):
 		if self.axes[key]==(xa,ya,za) : return
 		self.axes[key]=(xa,ya,za)
@@ -466,6 +476,7 @@ class EMPlot2DModule(EMGUIModule):
 		self.updateGL()
 		
 	def setPlotParms(self,key,color,line,linetype,linewidth,sym,symtype,symsize):
+		if self.pparm[key]==(color,line,linetype,linewidth,sym,symtype,symsize) : return
 		self.pparm[key]=(color,line,linetype,linewidth,sym,symtype,symsize)
 		self.needupd=1
 		self.updateGL()
@@ -580,67 +591,68 @@ class EMPlot2DInspector(QtGui.QWidget):
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
 		self.target=weakref.ref(target)
+		vbl0=QtGui.QVBoxLayout(self)
 		
-		self.hbl = QtGui.QHBoxLayout(self)
-		self.hbl.setMargin(2)
-		self.hbl.setSpacing(6)
-		self.hbl.setObjectName("hbl")
+		hbl = QtGui.QHBoxLayout()
+		hbl.setMargin(2)
+		hbl.setSpacing(6)
+		hbl.setObjectName("hbl")
 		
 		# plot list
 		self.setlist=QtGui.QListWidget(self)
 		self.setlist.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
-		self.hbl.addWidget(self.setlist)
+		hbl.addWidget(self.setlist)
 		
-		self.vbl = QtGui.QVBoxLayout()
-		self.vbl.setMargin(0)
-		self.vbl.setSpacing(6)
-		self.vbl.setObjectName("vbl")
-		self.hbl.addLayout(self.vbl)
+		vbl = QtGui.QVBoxLayout()
+		vbl.setMargin(0)
+		vbl.setSpacing(6)
+		vbl.setObjectName("vbl")
+		hbl.addLayout(vbl)
 		
 		self.color=QtGui.QComboBox(self)
 		self.color.addItem("black")
 		self.color.addItem("blue")
 		self.color.addItem("red")
 		self.color.addItem("green")
-		self.vbl.addWidget(self.color)
+		vbl.addWidget(self.color)
 
-		self.hbl2 = QtGui.QHBoxLayout()
-		self.hbl2.setMargin(0)
-		self.hbl2.setSpacing(6)
-		self.vbl.addLayout(self.hbl2)
+		hbl2 = QtGui.QHBoxLayout()
+		hbl2.setMargin(0)
+		hbl2.setSpacing(6)
+		vbl.addLayout(hbl2)
 				
 		# This is for line parms
-		self.vbl2b = QtGui.QVBoxLayout()
-		self.vbl2b.setMargin(0)
-		self.vbl2b.setSpacing(6)
-		self.hbl2.addLayout(self.vbl2b)
+		vbl2b = QtGui.QVBoxLayout()
+		vbl2b.setMargin(0)
+		vbl2b.setSpacing(6)
+		hbl2.addLayout(vbl2b)
 				
 		self.lintog=QtGui.QPushButton(self)
 		self.lintog.setText("Line")
 		self.lintog.setCheckable(1)
-		self.vbl2b.addWidget(self.lintog)
+		vbl2b.addWidget(self.lintog)
 				
 		self.linsel=QtGui.QComboBox(self)
 		self.linsel.addItem("------")
 		self.linsel.addItem("- - - -")
 		self.linsel.addItem(".......")
 		self.linsel.addItem("-.-.-.-")
-		self.vbl2b.addWidget(self.linsel)
+		vbl2b.addWidget(self.linsel)
 		
 		self.linwid=QtGui.QSpinBox(self)
 		self.linwid.setRange(1,10)
-		self.vbl2b.addWidget(self.linwid)
+		vbl2b.addWidget(self.linwid)
 		
 		# This is for point parms
-		self.vbl2a = QtGui.QVBoxLayout()
-		self.vbl2a.setMargin(0)
-		self.vbl2a.setSpacing(6)
-		self.hbl2.addLayout(self.vbl2a)
+		vbl2a = QtGui.QVBoxLayout()
+		vbl2a.setMargin(0)
+		vbl2a.setSpacing(6)
+		hbl2.addLayout(vbl2a)
 				
 		self.symtog=QtGui.QPushButton(self)
 		self.symtog.setText("Symbol")
 		self.symtog.setCheckable(1)
-		self.vbl2a.addWidget(self.symtog)
+		vbl2a.addWidget(self.symtog)
 
 		self.symsel=QtGui.QComboBox(self)
 		self.symsel.addItem("circle")
@@ -648,35 +660,71 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.symsel.addItem("plus")
 		self.symsel.addItem("triup")
 		self.symsel.addItem("tridown")
-		self.vbl2a.addWidget(self.symsel)
+		vbl2a.addWidget(self.symsel)
 		
 		self.symsize=QtGui.QSpinBox(self)
 		self.symsize.setRange(0,25)
-		self.vbl2a.addWidget(self.symsize)
+		vbl2a.addWidget(self.symsize)
 		
 		# per plot column selectors
+		gl=QtGui.QGridLayout()
+		gl.addWidget(QtGui.QLabel("X Col:",self),0,0,Qt.AlignRight)
 		self.slidex=QtGui.QSpinBox(self)
 		self.slidex.setRange(-1,1)
-		self.vbl.addWidget(self.slidex)
+		gl.addWidget(self.slidex,0,1,Qt.AlignLeft)
+		
 		#self.slidex=ValSlider(self,(-1,1),"X col:",0)
 		#self.slidex.setIntonly(1)
-		#self.vbl.addWidget(self.slidex)
+		#vbl.addWidget(self.slidex)
 		
+		gl.addWidget(QtGui.QLabel("Y Col:",self),1,0,Qt.AlignRight)
 		self.slidey=QtGui.QSpinBox(self)
 		self.slidey.setRange(-1,1)
-		self.vbl.addWidget(self.slidey)
+		gl.addWidget(self.slidey,1,1,Qt.AlignLeft)
 		#self.slidey=ValSlider(self,(-1,1),"Y col:",1)
 		#self.slidey.setIntonly(1)
-		#self.vbl.addWidget(self.slidey)
+		#vbl.addWidget(self.slidey)
 		
+		gl.addWidget(QtGui.QLabel("C Col:",self),2,0,Qt.AlignRight)
 		self.slidec=QtGui.QSpinBox(self)
 		self.slidec.setRange(-1,1)
-		self.vbl.addWidget(self.slidec)
+		gl.addWidget(self.slidec,2,1,Qt.AlignLeft)
+		vbl.addLayout(gl)
 		#self.slidec=ValSlider(self,(-1,1),"C col:",-1)
 		#self.slidec.setIntonly(1)
-		#self.vbl.addWidget(self.slidec)
+		#vbl.addWidget(self.slidec)
 		
-		self.setLayout(self.hbl)
+		
+		hbl2 = QtGui.QHBoxLayout()
+		
+		self.xlogtog=QtGui.QPushButton(self)
+		self.xlogtog.setText("X Log")
+		self.xlogtog.setCheckable(1)
+		hbl2.addWidget(self.xlogtog)
+
+		self.ylogtog=QtGui.QPushButton(self)
+		self.ylogtog.setText("Y Log")
+		self.ylogtog.setCheckable(1)
+		hbl2.addWidget(self.ylogtog)
+		
+		vbl.addLayout(hbl2)
+
+		vbl0.addLayout(hbl)
+		
+		hbl2 = QtGui.QHBoxLayout()	
+		hbl2.addWidget(QtGui.QLabel("X Label:",self))
+		self.xlabel=QtGui.QLineEdit(self)
+		hbl2.addWidget(self.xlabel)
+		vbl0.addLayout(hbl2)
+		
+		hbl2 = QtGui.QHBoxLayout()	
+		hbl2.addWidget(QtGui.QLabel("Y Label:",self))
+		self.ylabel=QtGui.QLineEdit(self)
+		hbl2.addWidget(self.ylabel)
+		vbl0.addLayout(hbl2)
+		
+	
+#		self.setLayout(vbl0)
 
 		self.quiet=0
 		
@@ -688,9 +736,13 @@ class EMPlot2DInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.symtog,QtCore.SIGNAL("clicked()"),self.updPlot)
 		QtCore.QObject.connect(self.symsel,QtCore.SIGNAL("currentIndexChanged(QString)"),self.updPlot)
 		QtCore.QObject.connect(self.symsize,QtCore.SIGNAL("valueChanged(int)"),self.updPlot)
+		QtCore.QObject.connect(self.xlogtog,QtCore.SIGNAL("clicked()"),self.updPlot)
+		QtCore.QObject.connect(self.ylogtog,QtCore.SIGNAL("clicked()"),self.updPlot)
 		QtCore.QObject.connect(self.lintog,QtCore.SIGNAL("clicked()"),self.updPlot)
 		QtCore.QObject.connect(self.linsel,QtCore.SIGNAL("currentIndexChanged(QString)"),self.updPlot)
 		QtCore.QObject.connect(self.linwid,QtCore.SIGNAL("valueChanged(int)"),self.updPlot)
+		QtCore.QObject.connect(self.xlabel,QtCore.SIGNAL("textChanged(QString)"),self.updPlot)
+		QtCore.QObject.connect(self.ylabel,QtCore.SIGNAL("textChanged(QString)"),self.updPlot)
 		self.datachange()
 		
 		
@@ -700,16 +752,20 @@ class EMPlot2DInspector(QtGui.QWidget):
 
 	def updPlot(self,s=None):
 		if self.quiet : return
+		if self.xlogtog.isChecked() : xl="log"
+		else : xl="linear"
+		if self.ylogtog.isChecked() : yl="log"
+		else : yl="linear"
+		self.target().setAxisParms(self.xlabel.text(),self.ylabel.text(),xl,yl)
 		self.target().setPlotParms(str(self.setlist.currentItem().text()),self.color.currentIndex(),self.lintog.isChecked(),
-			self.linsel.currentIndex(),self.linwid.value(),self.symtog.isChecked(),
-			self.symsel.currentIndex(),self.symsize.value())
+			self.linsel.currentIndex(),self.linwid.value(),self.symtog.isChecked(),self.symsel.currentIndex(),self.symsize.value())
 
 	def newSet(self,row):
 		self.quiet=1
 		try:
 			i=str(self.setlist.item(row).text())
 		except: 
-			print "plot error"
+#			print "plot error"
 			return
 		self.slidex.setRange(-1,len(self.target().data[i])-1)
 		self.slidey.setRange(-1,len(self.target().data[i])-1)
@@ -744,7 +800,8 @@ class EMPlot2DInspector(QtGui.QWidget):
 		for i,j in enumerate(keys) :
 			self.setlist.addItem(j)
 
-	
+		if len(keys) > 0 : self.setlist.setCurrentRow(0)
+		
 # This is just for testing, of course
 if __name__ == '__main__':
 
