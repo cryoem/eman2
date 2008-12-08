@@ -41,21 +41,21 @@ def main():
         for arg in sys.argv:
         	arglist.append( arg )
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " data_stack reference_stack outdir <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translation_step --center=center_type --maxit=max_iter --CTF --snr=SNR --function=user_function_name --rand_seed=1000 --MPI"
+	usage = progname + " data_stack reference_stack outdir <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translation_step --center=center_type --maxit=max_iteration --CTF --snr=SNR --function=user_function_name --rand_seed=random_seed --MPI"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ir", type="float", default=1, help="  inner radius for rotational correlation > 0 (set to 1)")
-	parser.add_option("--ou", type="float", default=-1, help="  outer radius for rotational correlation < int(nx/2)-1 (set to the radius of the particle)")
+	parser.add_option("--ou", type="float", default=-1, help="  outer radius for rotational correlation < nx/2-1 (set to the radius of the particle)")
 	parser.add_option("--rs", type="float", default=1, help="  step between rings in rotational correlation > 0 (set to 1)" )
 	parser.add_option("--xr", type="float", default=0, help="  range for translation search in x direction, search is +/-xr ")
 	parser.add_option("--yr", type="float", default=0, help="  range for translation search in y direction, search is +/-yr ")
-	parser.add_option("--ts", type="float", default=1, help="  step of translation search in both directions direction, search is -xr, -xr+ts, 0, xr-ts, xr ")
+	parser.add_option("--ts", type="float", default=1, help="  step of translation search in both directions")
 	parser.add_option("--center", type="float", default=1, help="  0 - if you do not want the average to be centered, 1 - center the average (default=1)")
 	parser.add_option("--maxit", type="float", default=10, help="  maximum number of iterations (set to 10) ")
 	parser.add_option("--CTF", action="store_true", default=False, help=" Consider CTF correction during multiple reference alignment")
-	parser.add_option("--snr", type="float",  default= 1.0, help="  Signal-to-Noise Ratio of the data (set to 1.0)")
+	parser.add_option("--snr", type="float",  default= 1.0, help="  signal-to-noise ratio of the data (set to 1.0)")
 	parser.add_option("--function", type="string", default="ref_ali2d", help="  name of the reference preparation function")
 	parser.add_option("--rand_seed", type="int", default=1000, help=" random seed of initial (set to 1000)" )
-	parser.add_option("--MPI", action="store_true", default=False,     help="  whether using MPI version ")
+	parser.add_option("--MPI", action="store_true", default=False,     help="  whether to use MPI version ")
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 3 or len(args) > 4:
     		print "usage: " + usage
