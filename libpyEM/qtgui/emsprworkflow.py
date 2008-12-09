@@ -39,7 +39,6 @@ from EMAN2 import *
 import os
 import copy
 from emapplication import EMProgressDialogModule
-from e2boxer import EMBoxerModule
 from e2ctf import pspec_and_ctf_fit,GUIctfModule,write_e2ctf_output,get_gui_arg_img_sets
 import subprocess
 from pyemtbx.boxertools import set_idd_image_entry, TrimBox
@@ -1473,7 +1472,7 @@ class E2BoxerGuiTask(E2BoxerTask):
 			options.running_mode = "gui"
 			options.method = "Swarm"
 			
-			
+			from e2boxer import EMBoxerModule
 			self.boxer_module = EMBoxerModule(self.application(),options)
 			self.emit(QtCore.SIGNAL("gui_running"),"Boxer",self.boxer_module) # The controlled program should intercept this signal and keep the E2BoxerTask instance in memory, else signals emitted internally in boxer won't work
 			

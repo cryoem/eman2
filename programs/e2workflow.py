@@ -432,16 +432,20 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.application().setOverrideCursor(Qt.ArrowCursor)
 		
 	def launch_asym_unit(self):
+		self.application().setOverrideCursor(Qt.BusyCursor)
 		module = EMAsymmetricUnitViewer(self.application())
 		self.module().emit(QtCore.SIGNAL("launching_module"),"Eulers",module)
 		self.application().show_specific(module)
 		self.add_module([str(module),"AU",module])
+		self.application().setOverrideCursor(Qt.ArrowCursor)
 		
 	def launch_browser(self):
+		self.application().setOverrideCursor(Qt.BusyCursor)
 		module = EMBrowserModule(self.application())
 		self.module().emit(QtCore.SIGNAL("launching_module"),"Browser",module)
 		self.application().show_specific(module)
 		self.add_module([str(module),"Browse",module])
+		self.application().setOverrideCursor(Qt.ArrowCursor)
 	
 	def launch_refine2d_general(self):
 		self.launch_task(E2Refine2DWithGenericTask,"e2refine2d generic")

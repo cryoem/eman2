@@ -55,6 +55,7 @@ import signal
 from copy import *
 from OpenGL import contextdata
 from emglplot import *
+from emapplication import EMProgressDialogModule
 # import SPARX definitions
 import global_def
 from global_def import *
@@ -1009,6 +1010,51 @@ class RawDatabaseAutoBoxer:
 
 
 
+def gen_thumbs(image_names,application,n):
+
+	nim = len(image_names)
+	thumbs = [None for i in range(nim)]
+	progress = EMProgressDialogModule(application,"Generating thumbnails", "Abort", 0, nim,None)
+	progress.qt_widget.show()
+	prog = 0
+	for i in range(nim):
+		
+#				thumb = self.get_image_thumb(i)
+		thumb = get_idd_image_entry(image_names[i],"image_thumb")
+		if thumb == None:
+			
+			#global BigImageCache
+			thumb=EMData(image_names[i],0)
+			#while n > 1:
+				#image = image.process("math.meanshrink",{"n":2})
+				#n /= 2
+			
+			thumb.process_inplace("math.meanshrink",{"n":n})
+   	   	   	#thumb.process_inplace("testimage.noise.uniform.rand")
+			thumb.process_inplace("normalize.edgemean") # if there are lots than they =should all have the same contrast
+			set_idd_image_entry(image_names[i],"image_thumb",thumb)
+#				image = None
+#					print sys.getrefcount(image)
+#				return thumb
+   	   	#gc.collect()
+   	   	#print "collected"
+		prog += 1
+		progress.qt_widget.setValue(prog)
+		application.processEvents()
+		#print "got thumb",i
+		thumbs[i] = thumb
+			
+		if progress.qt_widget.wasCanceled():
+			progress.qt_widget.setValue(nim)
+			progress.qt_widget.close()
+			self.done()
+			return -1 # woh don't know if this will work
+	progress.qt_widget.setValue(nim)
+	progress.qt_widget.close()
+	
+	return thumbs
+			
+
 class DatabaseAutoBoxer(QtCore.QObject,RawDatabaseAutoBoxer):
 	'''
 	Initialize this with the application
@@ -1388,6 +1434,7 @@ class EMBoxerModule(QtCore.QObject):
 	def __init_guiim(self, image=None, imagename=None):
 		if image == None:
 			imagename = self.image_names[self.current_image_idx]
+			global BigImageCache
 			image=BigImageCache.get_object(imagename).get_image(use_alternate=True)
 		
 		self.guiim= EMImage2DModule(application=self.application())
@@ -1661,6 +1708,7 @@ class EMBoxerModule(QtCore.QObject):
 		else: return None
 	
 	def get_current_image(self):
+		global BigImageCache
 		return BigImageCache.get_image_directly(self.get_current_image_name())
 	
 	def get_image_names(self):
@@ -1739,6 +1787,7 @@ class EMBoxerModule(QtCore.QObject):
 		self.box_display_update() # - the user may still have some manual boxes...
 	
 	def big_image_change(self):
+		global BigImageCache
 		image=BigImageCache.get_object(self.get_current_image_name()).get_image(use_alternate=True)
 		self.guiim.set_data(image)
 		self.guiim.del_shapes()
@@ -1753,7 +1802,7 @@ class EMBoxerModule(QtCore.QObject):
 		#try:
 		debug = False
 		if im != self.current_image_idx:
-			
+			global BigImageCache
 			image=BigImageCache.get_image_directly(self.image_names[im])
 			
 			try: 
@@ -1819,6 +1868,54 @@ class EMBoxerModule(QtCore.QObject):
 		app.setOverrideCursor(Qt.ArrowCursor)
 			
 
+	def gen_thumbs(self):
+		self.imagethumbs = gen_thumbs(self.image_names,self.application(),self.get_image_thumb_shrink())
+#		import gc
+#		try: nim = len(self.image_names)
+#		except: 
+#			# warning - bad hacking going on
+#			print "the image name ", image_name, "probably doesn't exist"
+#			return
+#		progress = EMProgressDialogModule(self.application(),"Generating thumbnails", "Abort", 0, nim,None)
+#		progress.qt_widget.show()
+#		prog = 0
+#		n = self.get_image_thumb_shrink()
+#		for i in range(n):
+#			
+##				thumb = self.get_image_thumb(i)
+#			thumb = get_idd_image_entry(self.image_names[i],"image_thumb")
+#			if thumb == None:
+#				
+#				#global BigImageCache
+#				thumb=EMData(self.image_names[i],0)
+#				#while n > 1:
+#					#image = image.process("math.meanshrink",{"n":2})
+#					#n /= 2
+#				
+#				thumb.process_inplace("math.meanshrink",{"n":n})
+#	   	   	   	#thumb.process_inplace("testimage.noise.uniform.rand")
+#				thumb.process_inplace("normalize.edgemean") # if there are lots than they =should all have the same contrast
+##				#set_idd_image_entry(self.image_names[i],"image_thumb",thumb)
+##				image = None
+##					print sys.getrefcount(image)
+##				return thumb
+#	   	   	gc.collect()
+#	   	   	print "collected"
+#			prog += 1
+#			progress.qt_widget.setValue(prog)
+#			self.application().processEvents()
+#			#print "got thumb",i
+#			self.imagethumbs[i] = thumb
+#				
+#			if progress.qt_widget.wasCanceled():
+#				progress.qt_widget.setValue(nim)
+#				progress.qt_widget.close()
+#				self.done()
+#				return -1 # woh don't know if this will work
+#		progress.qt_widget.setValue(nim)
+#		progress.qt_widget.close()
+				
+
 	def __gen_image_thumbnails_widget(self):
 		'''
 		Generates image thumbnails for a single image name
@@ -1839,83 +1936,79 @@ class EMBoxerModule(QtCore.QObject):
 		app = QtGui.QApplication.instance()
 		app.setOverrideCursor(QtCore.Qt.BusyCursor)
 	
+#		try:
+	#	if True:
+#		n = self.get_image_thumb_shrink()
+#		
+##			a = time()
+#		self.imagethumbs = []
+#		
+#		for i in range(0,nim):
+#			self.imagethumbs.append(None)
+		
+		self.gen_thumbs()
+
+#				
+		
+#		glflags = EMOpenGLFlagsAndTools()
+#		emftgl_supported = True
+#		try: a = EMFTGL()
+#		except: emftgl_supported = False
+		#if not glflags.npt_textures_unsupported() and emftgl_supported:
+			#self.guimxit=EMImageRotorModule(application=self.application)
+		#else:
+		self.guimxit=EMImageMXModule(application=self.application())
+		self.guimxit.desktop_hint = "rotor"
+			
 		try:
-			n = self.get_image_thumb_shrink()
-			self.imagethumbs = []
-			
-			a = time()
-			self.imagethumbs = []
-			
-			for i in range(0,nim):
-				self.imagethumbs.append(None)
-			
-			for i in range(nim-1,-1,-1):
-				
-				thumb = self.get_image_thumb(i)
-				#print "got thumb",i
-				self.imagethumbs[i] = thumb
-			glflags = EMOpenGLFlagsAndTools()
-			emftgl_supported = True
-			try: a = EMFTGL()
-			except: emftgl_supported = False
-			#if not glflags.npt_textures_unsupported() and emftgl_supported:
-				#self.guimxit=EMImageRotorModule(application=self.application)
-			#else:
-			self.guimxit=EMImageMXModule(application=self.application())
-			self.guimxit.desktop_hint = "rotor"
-				
-			try:
-				qt_parent = self.guimxit.get_gl_parent()
-				qt_parent.setWindowTitle("Image Thumbs")
-			except:
-				pass
-			#self.application().show_specific(self.guimxit)
-			self.guimxit.set_data(self.imagethumbs)
-			
-			try:
-				for i in range(0,nim):
-					frozen = get_idd_key_entry(self.image_names[i],"frozen_state")
-					if frozen != None:
-						self.guimxit.set_frozen(frozen,i)
-			except: 
-				pass # this will happen if fancy widgets are being used
-			
-			self.guimxit.set_mouse_mode("app")
-			app = QtGui.QApplication.instance()
-			app.setOverrideCursor(QtCore.Qt.BusyCursor)
-		except: 
-			app.setOverrideCursor(QtCore.Qt.ArrowCursor)
-			return 0
+			self.guimxit.setWindowTitle("Image Thumbs")
+		except:
 			pass
+		#self.application().show_specific(self.guimxit)
+		self.guimxit.set_data(self.imagethumbs)
+		
+		try:
+			for i in range(0,nim):
+				frozen = get_idd_key_entry(self.image_names[i],"frozen_state")
+				if frozen != None:
+					self.guimxit.set_frozen(frozen,i)
+		except: 
+			pass # this will happen if fancy widgets are being used
+		
+		self.guimxit.set_mouse_mode("app")
+		app = QtGui.QApplication.instance()
+			#app.setOverrideCursor(QtCore.Qt.BusyCursor)
+#		except: 
+#			app.setOverrideCursor(QtCore.Qt.ArrowCursor)
+#			return 0
+#			pass
 		
 		app.setOverrideCursor(QtCore.Qt.ArrowCursor)
 		return 1
 		
 	def get_image_thumb(self,i):
 		
-		image = get_idd_image_entry(self.image_names[i],"image_thumb")
-		if image == None:
+		thumb = get_idd_image_entry(self.image_names[i],"image_thumb")
+		if thumb == None:
 			n = self.get_image_thumb_shrink()
-
-			image=BigImageCache.get_image_directly(self.image_names[i])
-			
+			#global BigImageCache
+			image=EMData(self.image_names[i],0)
 			#while n > 1:
 				#image = image.process("math.meanshrink",{"n":2})
 				#n /= 2
-			image = image.process("math.meanshrink",{"n":n})
-			image.process_inplace("normalize.edgemean") # if there are lots than they =should all have the same contrast
-			set_idd_image_entry(self.image_names[i],"image_thumb",image)
-		return image
+			thumb = image.process("math.meanshrink",{"n":n})
+			thumb.process_inplace("normalize.edgemean") # if there are lots than they =should all have the same contrast
+			set_idd_image_entry(self.image_names[i],"image_thumb",thumb)
+			image = None
+			print sys.getrefcount(image)
+		return thumb
 		
 	def get_image_thumb_shrink(self):
 		if self.itshrink == -1:
-			image=BigImageCache.get_image_directly(self.image_names[self.current_image_idx])
-			if image == None:
-				print "error - the image is not set, I need it to calculate the image thumb shrink"
-				exit(1)
 			shrink = 1
-			inx =  image.get_xsize()/2
-			iny =  image.get_ysize()/2
+			inx,iny =  gimme_image_dimensions2D(self.image_names[self.current_image_idx])
+			inx /= 2
+			iny /= 2
 			while ( inx >= 128 and iny >= 128):
 				inx /= 2
 				iny /= 2
@@ -2256,6 +2349,15 @@ class EMBoxerModule(QtCore.QObject):
 		if self.dab != None : self.dab.close()
 		if self.form != None : self.form.closeEvent(None)
 		
+		BigImageCache.clear_cache()
+		ExclusionImageCache.clear_cache()
+		SincBlackmanSubsampleCache.clear_cache()
+		CoarsenedFlattenedImageCache.clear_cache()
+		SubsamplerCache.clear_cache()
+		InverseSigmaImageCache.clear_cache()
+		BinaryCircleImageCache.clear_cache()
+		
+		
 		self.emit(QtCore.SIGNAL("module_closed"))
 
 	def closeEvent(self,event):
@@ -2313,7 +2415,9 @@ class EMBoxerModule(QtCore.QObject):
 		
 	def write_all_box_image_files(self,box_size,forceoverwrite=False,imageformat="hdf",normalize=True,norm_method="normalize.edgemean"):
 		self.boxable.cache_exc_to_db()
-		for image_name in self.image_names:
+		progress = EMProgressDialogModule(self.application(),"Writing boxed images", "Abort", 0, len(self.image_names),None)
+		progress.qt_widget.show()
+		for i,image_name in enumerate(self.image_names):
 			try:
 				project_db = EMProjectDB()
 				data = project_db[get_idd_key(image_name)]
@@ -2342,10 +2446,20 @@ class EMBoxerModule(QtCore.QObject):
 		
 			else: 
 				self.autoboxer.write_box_images(self.boxable, normalize, norm_method)
+				
+			if progress.qt_widget.wasCanceled():
+				# yes we could probably clean up all of the images that were written to disk but not time...
+				return
+				
+			progress.qt_widget.setValue(i+1)
+			self.application().processEvents()
+		progress.qt_widget.close()
  
 	def write_all_coord_files(self,box_size,forceoverwrite=False):
 		self.boxable.cache_exc_to_db()
-		for image_name in self.image_names:
+		progress = EMProgressDialogModule(self.application(),"Writing boxed images", "Abort", 0, len(self.image_names),None)
+		progress.qt_widget.show()
+		for i,image_name in enumerate(self.image_names):
 			
 			try:
 				project_db = EMProjectDB()
@@ -2371,6 +2485,15 @@ class EMBoxerModule(QtCore.QObject):
 				boxable.write_coord_file(box_size,forceoverwrite)
 			else:
 				self.autoboxer.write_box_coords( boxable )
+				
+			if progress.qt_widget.wasCanceled():
+				# yes we could probably clean up all of the images that were written to disk but not time...
+				return
+				
+			progress.qt_widget.setValue(i+1)
+			self.application().processEvents()
+		progress.qt_widget.close()
+ 
 	
 	def center(self,technique):
 		

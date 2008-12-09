@@ -554,7 +554,10 @@ class Cache:
 			self.cache = self.cache[0:size]
 
 		self.maxsize = size
-		
+	
+	def clear_cache(self):
+		self.cache = []
+	
 	def add_to_cache(self,object):
 		'''
 		Add 
@@ -614,6 +617,8 @@ class Cache:
 			encapsulated_image = getattr(Cache.factory,self.accessor_name)(construction_argument)
 			self.add_to_cache(encapsulated_image)
 			
+		
+			
 		image = encapsulated_image.get_image()
 		if image != None:
 			return image
@@ -632,7 +637,7 @@ class ExclusionImage:
 		try:
 			# we may have the image already on disk, if so parse it
 			# the image on disk is likely up to date but not necessarily so
-			self.image = get_image_key_entry(self.image_name,"exclusion_image")
+			self.image = get_idd_image_entry(self.image_name,"exclusion_image")
 			#self.image = EMData(self.ouputimage_name)
 			#print "I read the image",self.ouputimage_name
 		except:
@@ -847,6 +852,7 @@ class CoarsenedFlattenedImage:
 			#print "could not read", self.ouputimage_name 
 			pass
 		
+		
 	def get_image_name(self):
 		return self.image_name
 		
@@ -864,6 +870,7 @@ class CoarsenedFlattenedImage:
 		Updates the image using the function arguments
 		If they match current parameters than nothing happens - the correct image is already cached
 		'''
+		
 		image = BigImageCache.get_image_directly(self.image_name)
 		
 #		tmp = image.process("filter.lowpass.gauss",{"cutoff_abs":0.01})
@@ -897,15 +904,17 @@ class CoarsenedFlattenedImage:
 	def get_image_carefully(self,params_mediator):
 
 		if self.smallimage == None or not self.query_params_match(params_mediator):
-			#print "regenerating cf image"
+#			print "self. small image is", self.smallimage,self.query_params_match(params_mediator)
+#			print "regenerating cf image"
 			self.__update_image(params_mediator)
-		#else: print "cf image is up to date"
+#		else: print "cf image is up to date"
 		
 		return self.get_image()
 	
 	def query_params_match(self,params_mediator):
 		try:
 			if self.get_flatten_radius() != params_mediator.get_template_radius() or self.get_shrink_factor() != params_mediator.get_subsample_rate():
+#				print "parameters dont match"
 				return False
 			else: return True
 		except: return False # exception will be thrown if self.smallimage = None
@@ -1034,7 +1043,7 @@ class BigImage:
 	
 		
 BigImageCache = Cache(BigImage)
-BigImageCache.set_max_size(2)
+BigImageCache.set_max_size(1)
 
 SubsamplerCache = CoarsenedFlattenedImageCache
 #SubsamplerCache = SincBlackmanSubsamplerCache
@@ -1186,12 +1195,16 @@ class Boxable:
 		if debug: tt1 = time()
 		if debug: print tt1
 		#print "reading exclusion image",excimage_name
-		self.exclusionimage = ExclusionImageCache.get_image(self.image_name,self.get_small_image().get_xsize(),self.get_small_image().get_ysize())
+		small_image = self.get_small_image()
+		self.exclusionimage = ExclusionImageCache.get_image(self.image_name,small_image.get_xsize(),small_image.get_ysize())
 		if debug: print "It took this long to get the image from the cache", time()-tt1
 		if debug: print time()
+		
 		#except: pass
 		
 		if debug: print "getting the exclusion image took", time()-tt
+		
+		
 		
 		self.get_db_stamps()
 		self.reload_boxes()
@@ -1199,7 +1212,7 @@ class Boxable:
 		self.get_quality_from_db()
 		self.check_store_image_name_db()	
 		if autoboxer == None: self.get_auto_boxer_from_db()
-	
+		
 	def reload_boxes(self):
 		'''
 		You might call this if the box size was changed in the main interface, or in the constructor
@@ -2173,8 +2186,9 @@ def set_idd_image_entry(image_name,key,image):
 	Using EMAN2 style image dbs has efficiency payoffs in various ways... 
 	'''
 	image.set_attr("e2boxer_image_name",image_name)
+	db_name =  "bdb:e2boxercache#"+key
 	# first have to make sure it's not already there
-	db = db_open_dict("bdb:e2boxercache#"+key)
+	db = db_open_dict(db_name)
 	
 	if db.has_key("maxrec"):
 		for idx in range(0,db["maxrec"]+1):
@@ -2183,32 +2197,34 @@ def set_idd_image_entry(image_name,key,image):
 				if header["e2boxer_image_name"] == image_name:
 					db[idx] = image
 					#image.write_image("bdb:e2boxercache#"+key,idx)
+					db_close_dict(db_name)
 					return
 			except:
 				pass
 
 	# if we make it here then go ahead and append
 	image.write_image("bdb:e2boxercache#"+key,-1)
-	db_close_dict("bdb:e2boxercache#"+key)
+	db_close_dict(db_name)
 
 def get_idd_image_entry(image_name,key):
 	'''
 	Using EMAN2 style image dbs has efficiency payoffs in various ways... 
 	'''
 	db_name =  "bdb:e2boxercache#"+key
-	if not db_check_dict(db_name): return None # calling program could have serious problems if this occurs
+	if not db_check_dict(db_name): 
+#		print "db failed",db_name
+		return None # t
 	
-	
-		
 	db = db_open_dict(db_name)
 	
 	if db.has_key("maxrec"):
-		for idx in range(0,db["maxrec"]):
+		for idx in range(0,db["maxrec"]+1):
 			header = db.get_header(idx)
 			try:
 				if header["e2boxer_image_name"] == image_name:
+					e = db[idx]
 					db_close_dict(db_name)
-					return db[idx]
+					return e
 			except:
 				pass
 			
