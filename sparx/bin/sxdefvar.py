@@ -34,10 +34,10 @@ def main():
 
 		if options.MPI:
 			from applications import defvar_mpi
-			defvar_mpi( files, 10000.0, outdir, options.fl, options.fh, options.radccc, options.writelp, options.writestack)
+			defvar_mpi( files, outdir, options.fl, options.fh, options.radccc, options.writelp, options.writestack)
 		else:
 			from applications import defvar
-			defvar( files, 10000.0, outdir, options.fl, options.fh, options.radccc, options.writelp, options.writestack)
+			defvar( files, outdir, options.fl, options.fh, options.radccc, options.writelp, options.writestack)
 
 
 if __name__ == "__main__":
