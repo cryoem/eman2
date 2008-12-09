@@ -76,6 +76,9 @@ def main():
     parser.add_option("--process", metavar="processor_name:param1=value1:param2=value2", type="string",
                                 action="append", help="apply a processor named 'processorname' with all its parameters/values.")
 
+    parser.add_option("--filter", metavar="processor_name:param1=value1:param2=value2", type="string",
+                                action="append", help="(deprecated) equivalent to '--process'")
+
     parser.add_option("--apix", type="float", help="A/pixel for S scaling")
     
     parser.add_option("--origin", metavar="x y z", type="float", nargs=3,
@@ -114,7 +117,7 @@ def main():
     
     parser.add_option("--swap", action="store_true", help="Swap the byte order", default=False)	
     
-    append_options = ["clip", "fftclip", "process", "meanshrink", "medianshrink", "scale"]
+    append_options = ["clip", "fftclip", "process", "filter", "meanshrink", "medianshrink", "scale"]
     
     optionlist = pyemtbx.options.get_optionlist(sys.argv[1:])
     
@@ -189,6 +192,18 @@ def main():
             elif option1 == "process":
                 fi = index_d[option1]
                 (filtername, param_dict) = parsemodopt(options.process[fi])
+                if(filtername[:2] == "sx"):
+                   qte = "Processor.fourier_filter_types."+filtername[2:]
+                   params = {"filter_type" : eval(qte), "dopad" : False}
+                   for ety in param_dict.keys():  params[ety] = param_dict[ety]
+                   data = Processor.EMFourierFilter(data, params)
+                else:
+                   data.process_inplace(filtername, param_dict)
+                index_d[option1] += 1
+
+            elif option1 == "filter":
+                fi = index_d[option1]
+                (filtername, param_dict) = parsemodopt(options.filter[fi])
                 if(filtername[:2] == "sx"):
                    qte = "Processor.fourier_filter_types."+filtername[2:]
                    params = {"filter_type" : eval(qte), "dopad" : False}

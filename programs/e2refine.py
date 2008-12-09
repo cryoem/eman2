@@ -349,7 +349,7 @@ def check_simmx_args(options, nofilecheck=False):
 
 def get_projection_cmd(options,check=False):
 	
-	e2projcmd = "e2project3d.py %s -f --sym=%s --projector=%s --out=%s --orientgen=%s" %(options.model,options.sym,options.projector,options.projfile,options.orientgen)
+	e2projcmd = "e2project3d.py %s -f --sym=%s --projector=%s --out=%s --orientgen=%s --postprocess=normalize.circlemean" %(options.model,options.sym,options.projector,options.projfile,options.orientgen)
 		
 	if ( check ):
 		e2projcmd += " --check"	

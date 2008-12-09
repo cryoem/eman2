@@ -85,6 +85,7 @@ def main():
 	parser.add_option("--verbose","-v", dest="verbose", default=False, action="store_true",help="Toggle verbose mode - prints extra infromation to the command line while executing")
 	parser.add_option("--check","-c", default=False, action="store_true",help="Checks to see if the command line arguments will work.")
 	parser.add_option("--nofilecheck",action="store_true",help="Turns file checking off in the check functionality - used by e2refine.py.",default=False)
+	parser.add_option("--postprocess", metavar="processor_name(param1=value1:param2=value2)", type="string", action="append", help="postprocessor to be applied to each projection. There can be more than one postprocessor, and they are applied in the order in which they are specified. See e2help.py processors for a complete list of available processors.")
 	
 	(options, args) = parser.parse_args()
 	
@@ -158,6 +159,16 @@ def generate_and_save_projections(options, data, eulers, smear=0):
 				
 				#p.add(ptmp)
 				#smear_iterator +=  deg2rad*phiprop/(smear+1)
+
+		if options.postprocess != None:
+			for proc in options.postprocess:
+				try:
+					(processorname, param_dict) = parsemodopt(proc)
+					if not param_dict : param_dict={}
+					p.process_inplace(str(processorname), param_dict)
+				except:
+					print "warning - application of the post processor",p," failed. Continuing anyway"
+
 		try: 
 			p.write_image(options.outfile,-1)
 		except:
