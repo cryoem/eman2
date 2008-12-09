@@ -3012,7 +3012,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 	
 			if center == -1:
 				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node)				
-				if myid == main_node: 
+				if myid == main_node:
 					msg = "Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
 					print_msg(msg)
 				cs = mpi_bcast(cs, 3, MPI_FLOAT, main_node, MPI_COMM_WORLD)
