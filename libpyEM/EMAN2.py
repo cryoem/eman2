@@ -305,8 +305,8 @@ def numbered_bdb(bdb_url):
 	d = get_dtag()
 	file_name_begin = useful_info[0] + d + "EMAN2DB" + d + useful_info[1] + "_"
 	  
-	for i in range(0,9):
-		for j in range(0,9):
+	for i in range(0,10):
+		for j in range(0,10):
 			name = file_name_begin+str(i)+str(j)+".bdb"
 			if os.path.exists(name): continue
 			else: 

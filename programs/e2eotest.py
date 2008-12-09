@@ -232,10 +232,10 @@ def get_last_class_average_number(options):
 		dir = options.path
 		most_recent = options.iteration
 		if most_recent == None:
-			for i in range(0,9):
-				for j in range(0,9):
+			fail = False
+			for i in range(0,10):
+				for j in range(0,10):
 					end = str(i) + str(j)
-					fail = False
 					for file in nec_files:
 						db_first_part = "bdb:"+dir+"#" + file
 						db_name = db_first_part + end
@@ -244,7 +244,10 @@ def get_last_class_average_number(options):
 							break
 					if not fail:
 						most_recent = end
-					
+					else:
+						break
+				if fail: break
+		
 		if most_recent != None:
 			nx,ny = gimme_image_dimensions2D("bdb:"+dir+"#classify_"+most_recent)
 			np = EMUtil.get_image_count("bdb:"+dir+"#all")

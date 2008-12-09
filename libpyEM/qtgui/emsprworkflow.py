@@ -288,8 +288,8 @@ class WorkFlowTask(QtCore.QObject):
 			# check for 00 to 09 but 00 is replaced with "init"
 			db_first_part = "bdb:"+dir+"#classes_"
 			cont = True
-			for i in range(0,9):
-				for j in range(0,9):
+			for i in range(0,10):
+				for j in range(0,10):
 					if i == 0 and j == 0:
 						db_name = db_first_part+"init"
 					else:
@@ -3018,8 +3018,8 @@ class RefinementReportTask(ParticleWorkFlowTask):
 			# check for 00 to 09 but 00 is replaced with "init"
 			db_first_part = "bdb:"+dir+"#threed_"
 			cont = True
-			for i in range(0,9):
-				for j in range(0,9):
+			for i in range(0,10):
+				for j in range(0,10):
 					db_name = db_first_part+str(i)+str(j)
 					if db_check_dict(db_name):
 						threed_db = db_name

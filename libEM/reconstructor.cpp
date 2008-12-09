@@ -295,17 +295,14 @@ void FourierReconstructor::load_inserter()
 		delete inserter;
 	}
 
-	cout << "FourierPixelInserter3D Factory" << endl;
+//	cout << "FourierPixelInserter3D Factory" << endl;
 
 //#ifdef _WIN32
 //	inserter = get_inserter(mode, parms);
 //#else
 	inserter = Factory<FourierPixelInserter3D>::get(mode, parms);
-
-	cout << "FourierPixelInserter3D before init" << endl;
 //#endif
 	inserter->init();
-	cout << "FourierPixelInserter3D after init" << endl;
 }
 
 //#ifdef _WIN32
