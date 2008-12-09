@@ -44,13 +44,6 @@ Eulerian_Angles = "SPIDER"
 # Instead, the user would add mpi as a parameter for command line, example
 # mpirun -np 10 sxali2d_c.py  ...  --mpi
 
-# Whether to use MPI || version of the program.
-# If True, MPI must be installed and run the program in the following style:
-# mpirun -np 30 sxali2d_c.py .....
-#MPI = False
-#MPI = True
-# if(MPI): from mpi import *
-
 # We read the global seed here. If the user wish to repeat the random results twice,
 # he/she should first set the rand_seed to a fixed number and then run the program twice.
 from   EMAN2   import Util

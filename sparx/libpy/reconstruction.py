@@ -168,7 +168,7 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign=1, symmetry="c1", info=None):
 
 	return vol
 
-def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4,snr=None):
+def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4, snr=None):
 	"""
 	Perform a 3-D reconstruction using Pawel's FFT Back Projection algoritm.
 	   
