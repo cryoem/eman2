@@ -482,6 +482,8 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 		try:
 			self.average = EMData(self.average_file,i)
 			self.projection = EMData(self.projection_file,self.average.get_attr("projection_image_idx"))
+			self.average.process_inplace("normalize.toimage.lsq",{"to":self.projection})
+
 #			 	except: self.projection = None
 #			if self.projection == None:
 #				try:
