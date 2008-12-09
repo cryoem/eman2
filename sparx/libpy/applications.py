@@ -9021,7 +9021,7 @@ class file_set :
 
 		return self.files[ifile], imgid - self.fends[ifile-1]
 
-def defvar(files, nprj, outdir, fl, fh, radccc, writelp, writestack):
+def defvar(files, outdir, fl, fh, radccc, writelp, writestack):
 
 	from math import sqrt
 	import os
@@ -9036,7 +9036,6 @@ def defvar(files, nprj, outdir, fl, fh, radccc, writelp, writestack):
 
 	total_img = 0
 
-	scale = sqrt(nprj)
 
 	avgfile = outdir + "/avg.hdf" 
 	varfile = outdir + "/var.hdf"
@@ -9051,7 +9050,6 @@ def defvar(files, nprj, outdir, fl, fh, radccc, writelp, writestack):
 		nimg = EMUtil.get_image_count( f )
 		for i in xrange(nimg):
 			img = get_im( f, i )
-			img *= scale
 			img = circumference( img, radcir, radcir+1 )
 			img = filt_tanl( img, fl, fh )
 			img.write_image( filtered, total_img )
@@ -9082,7 +9080,7 @@ def defvar(files, nprj, outdir, fl, fh, radccc, writelp, writestack):
 
 
 	
-def defvar_mpi(files, nprj, outdir, fl, fh, radccc, writelp, writestack):
+def defvar_mpi(files, outdir, fl, fh, radccc, writelp, writestack):
 	from statistics import def_variancer, ccc
 	from string import atoi, replace, split, atof
 	from EMAN2 import EMUtil
@@ -9122,7 +9120,6 @@ def defvar_mpi(files, nprj, outdir, fl, fh, radccc, writelp, writestack):
 	if os.path.exists(evestack):	os.system("rm -f " + evestack)
 
 	cccmask = model_circle(radccc, n, n, n)
-	scale = sqrt( nprj )
 	radcir = n/2-1
 
         mystack = file_set( files )
@@ -9141,7 +9138,6 @@ def defvar_mpi(files, nprj, outdir, fl, fh, radccc, writelp, writestack):
 		filename, imgid = mystack.get( i ) 	
 	
 		img = get_im( filename, imgid )
-		img *= scale
 		img = circumference( img, radcir, radcir+1 )
 		img = filt_tanl(img, fl, fh)
 
