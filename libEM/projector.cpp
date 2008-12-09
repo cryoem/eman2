@@ -817,12 +817,6 @@ EMData *PawelProjector::project3d(EMData * image) const
 			}
 		}
 	}
-	// If there is no angle list then it's safe to attach the xform.projection header attribute
-	// This will make this projector usable from the eman2 refinement perspective
-	if (!params.has_key("anglelist")) {
-		Transform* t3d = params["transform"];
-		ret->set_attr("xform.projection",t3d);
-	}
 	ret->update();
 	EMDeleteArray(ipcube);
 	return ret;	
