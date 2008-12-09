@@ -209,7 +209,7 @@ class EMShape:
 			GL.glPushMatrix()
 			if s[8]<0 :
 				GL.glColor(1.,1.,1.)
-				GL.glTranslatef(v[0],v[1],0)
+				GL.glTranslate(v[0],v[1],0)
 				GL.glScalef(s[7]/100.0/sc,s[7]/100.0/sc,s[7]/100.0/sc)
 				GL.glLineWidth(-s[8])
 				w=104.76*len(s[6])

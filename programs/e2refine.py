@@ -162,12 +162,29 @@ def main():
 		progress += 1.0
 		E2progress(logid,progress/total_procs)
 			
-		
+		previous_model = options.model
 		number_options_file(i,"threed",options,"model")
+		new_model = options.model
 		if ( os.system(get_make3d_cmd(options)) != 0 ):
 			print "Failed to execute %s" %get_make3d_cmd(options)
 			exit_refine(1,logid)
 		progress += 1.0
+		
+		
+		a = EMData(previous_model,0)
+		b = EMData(new_model,0)
+		
+		fsc = a.calc_fourier_shell_correlation(b)
+		third = len(fsc)/3
+		xaxis = fsc[0:third]
+		plot = fsc[third:2*third]
+		error = fsc[2*third:]
+		
+		db = db_open_dict("bdb:"+options.path+"#convergence.results")
+		db[str(i)+"_fsc"] = [xaxis,plot]
+		db[str(i)+"_fsc_error"] = [xaxis,error]
+		db_close_dict("bdb:"+options.path+"#convergence.results")
+		
 		E2progress(logid,progress/total_procs)
 	E2end(logid)
 

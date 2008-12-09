@@ -537,6 +537,21 @@ class EMSelectorDialog(QtGui.QDialog):
 			preview.set_data_from_file(filename,self.replace.isChecked())
 			self.application().show_specific(preview)
 			
+	def preview_plot_list(self,title,list_data):
+		if self.single_preview_only():
+			if not isinstance(self.gl_image_preview,EMPlot2DModule):
+				if self.gl_image_preview != None: self.application().close_specific(self.gl_image_preview)
+				self.gl_image_preview = EMPlot2DModule(self.application())
+	
+			self.gl_image_preview.set_data(title,list_data,self.replace.isChecked())
+			self.application().show_specific(self.gl_image_preview)
+			self.gl_image_preview.updateGL()
+			
+		else:
+			preview =EMPlot2DModule(self.application())
+			preview.set_data_from_file(filename,self.replace.isChecked())
+			self.application().show_specific(preview)
+			
 	def preview_data(self,a,filename=""):
 		from emimage import EMImageModule
 		f_2d = self.force_2d.isChecked()
@@ -814,7 +829,7 @@ class EMDirectoryListing:
 			nx,ny = gimme_image_dimensions2D(item.full_path)
 			mx = 256000000# 256Mb
 			a = []
-			if n*nx*ny > mx:
+			if n*nx*ny*4 > mx:
 				new_n = mx/(nx*ny) + 1
 				
 				
@@ -912,8 +927,9 @@ class EMBDBListing:
 		self.emdata_3d_entry = "database_emdata_3d_entry"
 		self.emdata_entry = "database_emdata_entry"
 		self.db_dict_emdata_entry = "database_dictionary_emdata"
+		self.db_list_plot = "list_plot"
 		
-		self.previewable_types = [self.db_mx,self.emdata_3d_entry,self.emdata_entry,self.db_dict_emdata_entry] # add any others as functionality grows
+		self.previewable_types = [self.db_mx,self.emdata_3d_entry,self.emdata_entry,self.db_dict_emdata_entry,self.db_list_plot] # add any others as functionality grows
 	
 	def paths(self,items):
 		if len(items) > 1:
@@ -1105,7 +1121,7 @@ class EMBDBListing:
 		DB.open_dict(key)
 		
 		list_widget.clear()
-		items = DB[key]
+		items = DB[key] # NOTE items should be called "db" or something else
 		keys = items.keys()
 		keys.sort() # puts them alphabetical order
 		for k in keys:
@@ -1128,9 +1144,30 @@ class EMBDBListing:
 					a.database_directory = db_directory
 					a.database = key
 					a.database_key = k
+			elif _type == list and len(items[k]) == 2:
+				try:
+					if isinstance(items[k][0][0],float) and isinstance(items[k][1][0],float):
+						v = items[k]
+				
+						a = EMSelectionListItem(self.target().plot_icon,str(k)+":"+str(v),list_widget)
+						a.type_of_me = self.db_list_plot
+						a.db_dir = db_directory
+						a.db = key
+						a.db_key = k
+					else: raise
+				except:
+					# yes redundant but not time
+					v = items[k]
+				
+					a = EMSelectionListItem(self.target().basic_python_icon,str(k)+":"+str(v),list_widget)
+					a.type_of_me = "key_value"
+					a.key = k
+					a.value = v
+					
 			else:
 				#if type(i) in [str,float,int,tuple,list,bool]:
 				v = items[k]
+				
 				a = EMSelectionListItem(self.target().basic_python_icon,str(k)+":"+str(v),list_widget)
 				a.type_of_me = "key_value"
 				a.key = k
@@ -1245,6 +1282,14 @@ class EMBDBListing:
 						a.database = key
 						a.database_dictionary_keys = [split[jj] for jj in range(j-2,-1,-1)]
 						a.database_dictionary_keys.append(k)
+					elif type(i) == list:
+						if len(i) == 2 and False:
+							# warning - I haven't tested this
+							a = EMSelectionListItem(self.target().plot_icon,str(k),list_widget)
+							a.type_of_me = self.db_list_plot
+						else:
+							a = EMSelectionListItem(self.target().basic_python_icon,str(k),list_widget)
+							a.type_of_me = "value"
 					else:
 						a = EMSelectionListItem(self.target().basic_python_icon,str(k),list_widget)
 						a.type_of_me = "value"
@@ -1284,7 +1329,7 @@ class EMBDBListing:
 			ny = hdr["ny"]
 			
 			mx = 256000000# 256Mb
-			if maxrec*nx*ny > mx:
+			if maxrec*nx*ny*4 > mx:
 				maxrec = mx/(nx*ny) + 1
 				
 				
@@ -1324,6 +1369,16 @@ class EMBDBListing:
 				
 			# db should now be an EMData
 			self.target().preview_data(db)
+			return True
+		
+		elif item.type_of_me == self.db_list_plot:
+			DB = EMAN2DB.open_db(item.db_dir)
+			DB.open_dict(item.db)
+			db = DB[item.db]
+			plot = db[item.db_key]
+				
+			# db should now be an EMData
+			self.target().preview_plot_list(item.db_key,plot)
 			return True
 		
 		

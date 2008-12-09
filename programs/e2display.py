@@ -115,7 +115,7 @@ def main():
 				nx,ny = gimme_image_dimensions2D(i)
 				mx = 256000000# 256Mb
 				a = []
-				if n*nx*ny > mx:
+				if n*nx*ny*4 > mx:
 					new_n = mx/(nx*ny) + 1
 					
 					

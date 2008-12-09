@@ -73,6 +73,9 @@ def main():
 	parser.add_option("--usefilt", dest="usefilt", default=None, help="Specify a particle data file that has been low pass or Wiener filtered. Has a one to one correspondence with your particle data. If specified will be used to align particles to the running class average, however the original particle will be used to generate the actual class average")
 	parser.add_option("--idxcache", default=False, action="store_true", help="Stores the indices of all particles in the given class in the Python list in the e2classaverage.indices database")
 	parser.add_option("--dbpath", default=False, help="Use in conjunction with --idxcache to specify a directory where the database entries should be stored, e.g. \"refine_01\" ", default=".")
+	parser.add_option("--odd", default=False, help="Used by EMAN2 when running eotests. Includes only odd numbered particles in class averages.", action="store_true")
+	parser.add_option("--even", default=False, help="Used by EMAN2 when running eotests. Includes only even numbered particles in class averages.", action="store_true")
+	
 	
 	(options, args) = parser.parse_args()
 	
@@ -181,7 +184,10 @@ def main():
 	
 	if options.idxcache:
 		try:
-			db_name = numbered_bdb("bdb:"+options.dbpath+"#class_indices")
+			name = "bdb:"+options.dbpath+"#class_indices"
+			if options.even: name += "_even"
+			elif options.odd: name += "_odd"
+			db_name = numbered_bdb(name)
 			class_db = db_open_dict(db_name)
 		except:
 			print "error with db terminology: can't call numbered_bdb with this argument:", "bdb:"+options.dbdir+"#class_indices"
@@ -208,6 +214,8 @@ def main():
 			weightsum = 0 # used to normalize the average
 			np = 0 # number of particles in the average
 			for p in range(0,num_part):
+				if options.odd and p % 2 == 0: continue # enforce even/odd constraints
+				if options.even and p % 2 == 1: continue # enforce even/odd constraints
 				for c in range(0,num_classes):
 					if classes.get(c,p) == cl:
 						if options.idxcache: class_indices.append(p)
@@ -254,6 +262,8 @@ def main():
 			average = None
 			np = 0
 			for p in range(0,num_part):
+				if options.odd and p % 2 == 0: continue # enforce even/odd constraints
+				if options.even and p % 2 == 1: continue # enforce even/odd constraints
 				for c in range(0,num_classes):
 					if classes.get(c,p) == cl:
 						if options.idxcache: class_indices.append(p)
@@ -619,6 +629,10 @@ def check(options, verbose=False):
 
 	if (options.iter > 1 or options.bootstrap) and options.align == None:
 		print "Error: you must specify the align argument"
+		error = True
+		
+	if ( options.even and options.odd ):
+		print "Error, the even and odd arguments are mutually exclusive"
 		error = True
 	#if ( options.keep and options.keepsig ):
 		#error = True
