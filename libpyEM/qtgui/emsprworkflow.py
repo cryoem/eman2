@@ -1456,12 +1456,14 @@ class E2BoxerGuiTask(E2BoxerTask):
 	def on_form_ok(self,params):
 		for k,v in params.items():
 			self.write_db_entry(k,v)
-			
+		
+		if not params.has_key("filenames"): return
+		
 		if  params.has_key("filenames") and len(params["filenames"]) == 0:
 			self.run_select_files_msg()
 			return
 
-		if params["boxsize"] < 1:
+		if  params.has_key("boxsize") and params["boxsize"] < 1:
 			self.show_error_message(["Must specify a positive, non zero boxsize."])
 			return
 		else:

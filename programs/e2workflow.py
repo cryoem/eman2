@@ -70,9 +70,11 @@ class EMTaskMonitorWidget(QtGui.QWidget,Animator):
 		try: self.init_history_db_entries = HOMEDB.history["count"]
 		except: self.init_history_db_entries = 0
 		#print self.init_history_db_entries
-		self.project_db = db_open_dict("bdb:project")
-		self.current_process_info = self.project_db.get("workflow.process_ids",{})
-		#self.current_process_info = {}
+		if db_check_dict("bdb:project"):
+			project_db = db_open_dict("bdb:project")
+			self.current_process_info = project_db.get("workflow.process_ids",{})
+		else:
+			self.current_process_info = {}
 		self.entries_dict = {}
 		self.history_check = []
 		
@@ -113,11 +115,12 @@ class EMTaskMonitorWidget(QtGui.QWidget,Animator):
 			for j in range(self.init_history_db_entries+1,HOMEDB.history["count"]+1):
 				try:
 					if HOMEDB.history[j]["pid"] == pid:
-						self.project_db = db_open_dict("bdb:project")
+						project_db = db_open_dict("bdb:project")
 						#print "adding",j
 						self.current_process_info[j] = HOMEDB.history[j]
 						self.history_check.pop(i) # ok what if two are ended at the same time? oh well there is time lag...
-						self.project_db ["workflow.process_ids"] = self.current_process_info
+						project_db ["workflow.process_ids"] = self.current_process_info
+						db_close_dict("bdb:project")
 						self.set_entries(self.entries_dict)
 						return True
 				except:
@@ -127,10 +130,10 @@ class EMTaskMonitorWidget(QtGui.QWidget,Animator):
 		for key in self.current_process_info.keys():
 			#if not process_running(HOMEDB.history[key]["pid"]):
 			if not process_running(HOMEDB.history[key]["pid"]):
-				self.project_db = db_open_dict("bdb:project")
+				project_db = db_open_dict("bdb:project")
 				self.current_process_info.pop(key)
 				self.set_entries(self.entries_dict)
-				self.project_db ["workflow.process_ids"] = self.current_process_info
+				project_db ["workflow.process_ids"] = self.current_process_info
 				db_close_dict("bdb:project")
 				self.set_entries(self.entries_dict)
 				return True
@@ -390,8 +393,8 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		refine2d.addChildren(refine2d_list)
 		
 		init_model_list = []
-		init_model_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Make model- e2makeinitialmodel")))
-		self.launchers["Make model- e2makeinitialmodel"] = self.launch_e2makeinitial
+		init_model_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Make model- e2initialmodel")))
+		self.launchers["Make model- e2initialmodel"] = self.launch_e2makeinitial
 		init_model_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Import model")))
 		self.launchers["Import model"] = self.launch_import_initial_model
 		init_model.addChildren(init_model_list)
@@ -490,42 +493,42 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	def launch_refine2d_report(self): self.launch_task(E2Refine2DReportTask,"refine2d report")
 	def launch_refine2d_exec(self): self.launch_task(E2Refine2DRunTask,"e2refine2d params")
 	def launch_refine2d_create_dataset(self): self.launch_task(E2Refine2DChooseDataTask,"refine2d create data set")	
-	def launch_e2ctf_write_ouptut(self): self.launch_task(E2CTFOutputTask,"e2ctf_wo")
-	def launch_e2ctf_tune(self): self.launch_task(E2CTFGuiTask,"e2ctf_tune")
+	def launch_e2ctf_write_ouptut(self): self.launch_task(E2CTFOutputTask,"e2ctf write output")
+	def launch_e2ctf_tune(self): self.launch_task(E2CTFGuiTask,"e2ctf intreface")
 	
 	def launch_e2ctf_auto_ft(self):
-		self.launch_task(E2CTFAutoFitTask,"e2ctf_auto")
+		self.launch_task(E2CTFAutoFitTask,"e2ctf auto fitting")
 	
-	def launch_e2ctf_management(self):
-		self.launch_task(E2CTFTask,"e2ctf")
+	#def launch_e2ctf_management(self):
+		#self.launch_task(E2CTFTask,"e2ctf interface")
 	
 	def launch_ctf_report(self):
-		self.launch_task(CTFReportTask,"ctf")
+		self.launch_task(CTFReportTask,"CTF report")
 	
 	def launch_particle_report(self):
-		self.launch_task(ParticleReportTask,"particles")
+		self.launch_task(ParticleReportTask,"Particle report")
 	
 	def launch_particle_import(self):
-		self.launch_task(ParticleImportTask,"particle_import")
+		self.launch_task(ParticleImportTask,"Import particles")
 		
 	def launch_e2boxer_auto(self):
-		self.launch_task(E2BoxerAutoTask,"e2boxer_auto")
+		self.launch_task(E2BoxerAutoTask,"e2boxer automated boxing")
 		
 	def launch_e2boxer_gui(self):
-		self.launch_task(E2BoxerGuiTask,"e2boxer_gui")
+		self.launch_task(E2BoxerGuiTask,"e2boxer interface")
 	
 	def launch_spr(self):
 		self.launch_task(SPRInitTask,"spr")
 			
 	def launch_mic_ccd(self):
-		self.launch_task(MicrographCCDTask,"mic_ccd")
+		self.launch_task(MicrographCCDTask,"Micrograph/CCD report")
 		
 	def launch_view_history(self):
 		self.launch_task(HistoryTask,"history")
 	
 	
 	def launch_import_mic_ccd(self):
-		self.launch_task(MicrographCCDImportTask,"import_mic_ccd")
+		self.launch_task(MicrographCCDImportTask,"Import micrographs")
 	
 	def launch_change_directory(self):
 		if len(self.tasks) > 0: 
