@@ -76,10 +76,10 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode
 
 		# align current image to the reference
 		if random_method == "SA":
-			#peaks = ormq_peaks(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
-			peaks, peakm, peaks_major, peakm_major = ormq_peaks_major(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
-			#[angt, sxst, syst, mirrort, peakt, select] = sim_anneal(peaks, Iter, T0, F, SA_stop)
-			[angt, sxst, syst, mirrort, peakt, select] = sim_anneal3(peaks, peakm, peaks_major, peakm_major, Iter, T0, F, SA_stop)
+			peaks = ormq_peaks(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
+			#peaks, peakm, peaks_major, peakm_major = ormq_peaks_major(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
+			[angt, sxst, syst, mirrort, peakt, select] = sim_anneal(peaks, Iter, T0, F, SA_stop)
+			#[angt, sxst, syst, mirrort, peakt, select] = sim_anneal3(peaks, peakm, peaks_major, peakm_major, Iter, T0, F, SA_stop)
 			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
 			set_params2D(ima2, [alphan, sxn, syn, mn, 1.0])
 			ima2.set_attr_dict({'select': select})
@@ -603,7 +603,7 @@ def sim_anneal(peaks, Iter, T0, F, SA_stop):
 	if T > 0.001 and Iter < SA_stop:
 		K = len(peaks)
 		dJe = [0.0]*K
-		for k in xrange(K): dJe[k] = peaks[k][0]/peaks[0][0]		
+		for k in xrange(K): dJe[k] = peaks[k][4]
 		select = select_k(dJe, T)
 	else:
 		select = 0
