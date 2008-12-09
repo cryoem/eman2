@@ -478,18 +478,17 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 		self.current_events_handler = self.events_handlers["inspect"]
 	
 	def au_point_selected(self,i):
-		try:
-			self.projection = EMData(self.projection_file,i)
-		except: self.projection = None
-		
+		self.projection = None
 		try:
 			self.average = EMData(self.average_file,i)
-			if self.projection == None:
-				try:
-					self.projection = EMData(self.average.get_attr("projection_image"),self.average.get_attr("projection_image_idx"))
-				except:
-					self.projection = None
-					
+			self.projection = EMData(self.projection_file,self.average.get_attr("projection_image_idx"))
+#			 	except: self.projection = None
+#			if self.projection == None:
+#				try:
+#					self.projection = EMData(self.average.get_attr("projection_image"),self.average.get_attr("projection_image_idx"))
+#				except:
+#					self.projection = None
+#					
 			try:
 				self.class_idx = self.average.get_attr("projection_image_idx")
 			except:
