@@ -57,7 +57,7 @@ def main():
 	parser.add_option("--path", default=None, type="string",help="The name the e2refine directory that contains the reconstruction data.")
 	parser.add_option("--iteration",default=None,type="string",help="Advanced. Can be used to perform the eotest using data from specific rounds of iterative refinement. In unspecified that most recently generated class data are used.")
 	parser.add_option("--usefilt", dest="usefilt", default=None, help="Specify a particle data file that has been low pass or Wiener filtered. Has a one to one correspondence with your particle data. If specified will be used in projection matching routines, and elsewhere.")
-	parser.add_option("--sym", dest = "sym", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos")
+	parser.add_option("--sym", dest = "sym", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos",default=None)
 	parser.add_option("--verbose","-v", dest="verbose", default=False, action="store_true",help="Toggle verbose mode - prints extra infromation to the command line while executing")
 	parser.add_option("--lowmem", default=False, action="store_true",help="Make limited use of memory when possible - useful on lower end machines")
 	parser.add_option("--force","-f", default=False, action="store_true",help="Force overwrite previously existing files")
@@ -88,7 +88,7 @@ def main():
 	
 	error = False
 	if check(options) == True :
-		# in eotest the first check fills in a lot of hte blanks in the options, so if it fails just exit - it printed error messages for us
+		# in eotest the first check fills in a lot of the blanks in the options, so if it fails just exit - it printed error messages for us
 		exit(1)
 	
 	if check_output_files(options) == True:
@@ -201,7 +201,22 @@ def check(options):
 		if not get_last_class_average_number(options):
 			print "Error: you have specified an invalid path - refinement data is incomplete in %s", options.path
 			error = True
-			
+	
+	if options.sym == None or len(options.sym) == 0:
+		print "Error: you must specify the sym argument"
+		error = True
+	else:
+		if options.sym not in ["icos","tet","oct"]:
+			if options.sym[0] in ["c","d","h"]:
+				try:
+					int(options.sym[1:])
+				except:
+					print "Error:unknown symmetry argument %s" %options.sym
+					error = True
+			else:
+				print "Error:unknown symmetry argument %s" %options.sym
+				error = True
+				
 	return error
 
 	

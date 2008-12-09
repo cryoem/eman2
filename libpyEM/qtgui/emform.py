@@ -185,6 +185,7 @@ class EMFormWidget(QtGui.QWidget):
 			item.setToolTip(param.desc_long)
 			table_widget.setHorizontalHeaderItem(i,item)
 			correct_len = 7.5*max_len # the 7.5 means "string are rendered approximately 7.5 pixels wide"
+			if correct_len > 150: correct_len = 150
 			table_widget.setColumnWidth(i,int(correct_len))
 			
 		table_widget.setSortingEnabled(True)
