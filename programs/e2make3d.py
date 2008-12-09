@@ -237,7 +237,7 @@ def main():
 	# apply any post processing operations
 		
 	if options.postprocess == None:
-		options.postprocess = ["normalize"]
+		options.postprocess = ["normalize.circlemean"]
 	if options.postprocess != None:
 		for p in options.postprocess:
 			try:

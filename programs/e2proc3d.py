@@ -73,8 +73,8 @@ def main():
     parser.add_option("--fftclip", metavar="x y z", type="float", nargs=3, action="append",
                                 help="Make the output have this size, rescaling by padding FFT.")
 
-    parser.add_option("--filter", metavar="filtername:param1=val1:param2=val2", type="string", action="append",
-                                help="Apply a filter named 'filtername' with all its parameters/values.")
+    parser.add_option("--process", metavar="processor_name:param1=value1:param2=value2", type="string",
+                                action="append", help="apply a processor named 'processorname' with all its parameters/values.")
 
     parser.add_option("--apix", type="float", help="A/pixel for S scaling")
     
@@ -114,7 +114,7 @@ def main():
     
     parser.add_option("--swap", action="store_true", help="Swap the byte order", default=False)	
     
-    append_options = ["clip", "fftclip", "filter", "meanshrink", "medianshrink", "scale"]
+    append_options = ["clip", "fftclip", "process", "meanshrink", "medianshrink", "scale"]
     
     optionlist = pyemtbx.options.get_optionlist(sys.argv[1:])
     
@@ -186,9 +186,9 @@ def main():
                 curve = dataf.calc_radial_func(y, 0, 0.5)
                 Util.save_data(0, 1.0/(apix*2.0*y), curve, options.calcsf);
 
-            elif option1 == "filter":
+            elif option1 == "process":
                 fi = index_d[option1]
-                (filtername, param_dict) = parsemodopt(options.filter[fi])
+                (filtername, param_dict) = parsemodopt(options.process[fi])
                 if(filtername[:2] == "sx"):
                    qte = "Processor.fourier_filter_types."+filtername[2:]
                    params = {"filter_type" : eval(qte), "dopad" : False}
@@ -321,7 +321,7 @@ def parse_infile(infile, first, last):
 	else:
 		data = []
 		d = EMData()
-		d.read_image(infile)
+		d.read_image(infile,0)
 		data.append(d)
 		return data
 	
