@@ -102,7 +102,7 @@ def main():
 			bss=0.0
 			bslst=[]
 			for i in range(len(ptcls)):
-				sim=cmponetomany(projs,ptcls[i],align=("rotate_translate_flip",{}),alicmp=("frc",{}))
+				sim=cmponetomany(projs,ptcls[i],align=("rotate_translate_flip",{}),alicmp=("phase",{}))
 				bs=min(sim)
 				#print bs[0]
 				bss+=bs[0]
@@ -117,7 +117,7 @@ def main():
 			bslst.reverse()
 			aptcls=[]
 			for i in range(len(ptcls)*3/4):
-				aptcls.append(ptcls[bslst[i][1]].align("rotate_translate_flip",projs[n],{},"frc",{}))
+				aptcls.append(ptcls[bslst[i][1]].align("rotate_translate_flip",projs[n],{},"phase",{}))
 				if it<2 : aptcls[-1].process_inplace("xform.centerofmass",{})
 			
 			bss/=len(ptcls)
@@ -151,22 +151,27 @@ def main():
 #			display(threed[0])
 #			display(threed[-1])
 			#debugging output
-			for i in range(len(aptcls)):
-				projs[aptcls[i]["match_n"]].write_image("x.%d.hed"%t,i*2) 
-				aptcls[i].write_image("x.%d.hed"%t,i*2+1)
+			#for i in range(len(aptcls)):
+				#projs[aptcls[i]["match_n"]].write_image("x.%d.hed"%t,i*2) 
+				#aptcls[i].write_image("x.%d.hed"%t,i*2+1)
 		#display(threed[-1])
 		#threed[-1].write_image("x.mrc")
 		if verbose : print "Model %d complete. Quality = %1.4f (%1.4f)"%(t,bss,qual)
 
-		results.append((bss,threed[-1]))
+		results.append((bss,threed[-1],aptcls,projs))
 		results.sort()
 		
 		#dct=db_open_dict(results_name)
 		#for i,j in enumerate(results): dct[i]=j[1]
 		#dct.close()
 		
-		for i,j in enumerate(results): j[1].write_image(results_name+"_%02d"%(i+1),0)
-		
+		for i,j in enumerate(results): 
+			j[1].write_image(results_name+"_%02d"%(i+1),0)
+			for k,l in enumerate(j[3]): l.write_image(results_name+"_%02d_proj"%(i+1),k)	# set of projection images
+			for k,l in enumerate(j[2]): 
+				l.write_image(results_name+"_%02d_aptcl"%(i+1),k*2)						# set of aligned particles
+				j[3][l["match_n"]].write_image(results_name+"_%02d_aptcl"%(i+1),k*2+1)	# set of projections matching aligned particles
+			
 #		threed[-1].write_image("x.%d.mrc"%t)
 		
 #		display(aptcls)
