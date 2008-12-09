@@ -180,9 +180,19 @@ def main():
 		plot = fsc[third:2*third]
 		error = fsc[2*third:]
 		
-		db = db_open_dict("bdb:"+options.path+"#convergence.results")
-		db[str(i)+"_fsc"] = [xaxis,plot]
-		db[str(i)+"_fsc_error"] = [xaxis,error]
+		
+		if i == 0:
+			s = "init_00"
+		else:
+			s1 = str(i-1)
+			s2 = str(i)
+			if len(s1) == 1: s1 = "0" + s1
+			if len(s2) == 1: s2 = "0" + s2
+			s = s1 + "_" + s2
+			
+		db = db_open_dict("bdb:"+options.path+"#convergence.results")	
+		db[s+"_fsc"] = [xaxis,plot]
+		db["error_"+s+"_fsc"] = [xaxis,error]
 		db_close_dict("bdb:"+options.path+"#convergence.results")
 		
 		E2progress(logid,progress/total_procs)

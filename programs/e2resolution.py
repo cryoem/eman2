@@ -61,6 +61,9 @@ def main():
 	parser.add_option("--apix", "-A", type="float", help="A/voxel", default=-1.0)
 	#parser.add_option("--box", "-B", type="string", help="Box size in pixels, <xyz> or <x>,<y>,<z>")
 	#parser.add_option("--het", action="store_true", help="Include HET atoms in the map", default=False)
+	
+	parser.add_option("--path", default=None, type="string",help="The name the e2refine directory that contains the reconstruction data. If specified will place curves generated in bdb:path#convergence.results")
+	
 	(options, args) = parser.parse_args()
 	
 	if len(args)<3 : parser.error("Input and output files required")
@@ -70,8 +73,8 @@ def main():
 	#options.align=parsemodopt(options.align)
 
 	print "read models"
-	data=EMData(args[0])
-	mask=EMData(args[1])
+	data=EMData(args[0],0)
+	mask=EMData(args[1],0)
 
 	# inverted mask
 	maski=mask.copy()
@@ -130,6 +133,15 @@ def main():
 	out=file(args[2]+".noi","w")
 	for i in range(len(noisepow)): out.write("%f\t%f\n"%(x[i],noisepow[i]))
 	out.close()
+	
+	if options.path != None:
+		s = get_file_tag(args[0])
+		db = db_open_dict("bdb:"+options.path+"#convergence.results")	
+		db[s+"res_fsc"] = [x,fsc]
+		db[s+"res_datapow"] = [x,datapow]
+		db[s+"res_noisepow"] = [x,noisepow]
+		db_close_dict("bdb:"+options.path+"#convergence.results")
+		
 
 	E2end(E2n)
 	
