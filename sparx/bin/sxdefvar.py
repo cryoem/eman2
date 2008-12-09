@@ -17,8 +17,8 @@ def main():
 	progname = os.path.basename(arglist[0])
 	usage = progname + " filelist outdir  --fl=flit_low_value --fh=filt_high_value --radccc=radius_ccc --writelp --writestack --MPI"
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--fl",        type="float",  default=0.2,    help="first parameter for low pass filter")
-	parser.add_option("--fh",        type="float",  default=0.4,    help="second parameter for low pass filter")
+	parser.add_option("--fl",        type="float",  default=0.2,    help="cutoff frequency of hyperbolic tangent low-pass Fourier filter")
+	parser.add_option("--fh",        type="float",  default=0.4,    help="fall off of hyperbolic tangent low-pass Fourier filter")
 	parser.add_option("--radccc",    type="int",    default=-1,     help="radius for ccc caclualtion")
 	parser.add_option("--writelp",   action="store_true", default=False, help="if write the low pass filtered volume to disk (default is False)" )
 	parser.add_option("--writestack", action="store_true", default=False, help="if write the stack contain all variance map" )
