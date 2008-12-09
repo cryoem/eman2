@@ -102,7 +102,7 @@ def main():
 			bss=0.0
 			bslst=[]
 			for i in range(len(ptcls)):
-				sim=cmponetomany(projs,ptcls[i],align=("rotate_translate_flip",{}),alicmp=("phase",{}))
+				sim=cmponetomany(projs,ptcls[i],align=("rotate_translate_flip",{}),alicmp=("optvariance",{}))
 				bs=min(sim)
 				#print bs[0]
 				bss+=bs[0]
@@ -117,7 +117,7 @@ def main():
 			bslst.reverse()
 			aptcls=[]
 			for i in range(len(ptcls)*3/4):
-				aptcls.append(ptcls[bslst[i][1]].align("rotate_translate_flip",projs[n],{},"phase",{}))
+				aptcls.append(ptcls[bslst[i][1]].align("rotate_translate_flip",projs[n],{},"optvariance",{}))
 				if it<2 : aptcls[-1].process_inplace("xform.centerofmass",{})
 			
 			bss/=len(ptcls)
