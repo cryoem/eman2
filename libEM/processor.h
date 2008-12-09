@@ -402,7 +402,7 @@ The basic design of EMAN Processors: <br>\
 		  
 			string get_name() const
 			{
-				return "convolution";
+				return "math.convolution";
 			}
 		
 			void process_inplace(EMData *image);
@@ -438,7 +438,7 @@ The basic design of EMAN Processors: <br>\
 		  
 		string get_name() const
 		{
-			return "edge.xgradient";
+			return "math.edge.xgradient";
 		}
 		
 		void process_inplace(EMData *image);
@@ -467,7 +467,7 @@ The basic design of EMAN Processors: <br>\
 		  
 			string get_name() const
 			{
-				return "edge.ygradient";
+				return "math.edge.ygradient";
 			}
 		
 			void process_inplace(EMData *image);
@@ -497,7 +497,7 @@ The basic design of EMAN Processors: <br>\
 		  
 			string get_name() const
 			{
-				return "edge.zgradient";
+				return "math.edge.zgradient";
 			}
 		
 			void process_inplace(EMData *image);

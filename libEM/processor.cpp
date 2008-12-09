@@ -7387,7 +7387,7 @@ void XGradientProcessor::process_inplace( EMData* image )
 
 	Dict conv_parms;
 	conv_parms["with"] = e;
-	image->process_inplace("convolution", conv_parms);
+	image->process_inplace("math.convolution", conv_parms);
 	image->process_inplace("xform.phaseorigin.tocenter");
 
 	delete e;
@@ -7571,7 +7571,7 @@ void YGradientProcessor::process_inplace( EMData* image )
 
 	Dict conv_parms;
 	conv_parms["with"] = e;
-	image->process_inplace("convolution", conv_parms);
+	image->process_inplace("math.convolution", conv_parms);
 
 	delete e;
 }
@@ -7614,7 +7614,7 @@ void ZGradientProcessor::process_inplace( EMData* image )
 
 	Dict conv_parms;
 	conv_parms["with"] = e;
-	image->process_inplace("convolution", conv_parms);
+	image->process_inplace("math.convolution", conv_parms);
 
 	delete e;
 }

@@ -522,13 +522,13 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.launch_task(E2BoxerGuiTask,"e2boxer interface")
 	
 	def launch_spr(self):
-		self.launch_task(SPRInitTask,"spr")
+		self.launch_task(SPRInitTask,"SPR")
 			
 	def launch_mic_ccd(self):
 		self.launch_task(MicrographCCDTask,"Micrograph/CCD report")
 		
 	def launch_view_history(self):
-		self.launch_task(HistoryTask,"history")
+		self.launch_task(HistoryTask,"History")
 	
 	
 	def launch_import_mic_ccd(self):
