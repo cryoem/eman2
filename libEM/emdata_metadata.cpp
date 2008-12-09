@@ -543,18 +543,16 @@ float EMData::get_circle_mean()
 		mask->process_inplace("mask.sharp", Dict("inner_radius", radius - 1,
 									   "outer_radius", radius + 1));
 
-		int n = 0;
-		float *d = mask->get_data();
-
-		for (int i = 0; i < nx * ny * nz; i++) {
-			if (d[i]) {
-				n++;
-			}
-		}
-		mask->mult(1.0f / n);
 	}
+	double n = 0,s=0;
+	float *d = mask->get_data();
 
-	float result = dot(mask);
+	for (int i = 0; i < nx * ny * nz; i++) {
+		if (d[i]) { n+=1.0; s+=rdata[i]; }
+	}
+	
+
+	float result = s/n;
 	busy = false;
 
 	EXITFUNC;

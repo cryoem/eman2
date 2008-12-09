@@ -211,7 +211,7 @@ def exit_refine(n,logid):
 	exit(n)
 
 def get_make3d_cmd(options,check=False,nofilecheck=False):
-	e2make3dcmd = "e2make3d.py %s --sym=%s --iter=%d --normout -f" %(options.cafile,options.sym,options.m3diter)
+	e2make3dcmd = "e2make3d.py %s --sym=%s --iter=%d -f" %(options.cafile,options.sym,options.m3diter)
 	
 	e2make3dcmd += " --recon=%s --out=%s" %(options.recon,options.model)
 
