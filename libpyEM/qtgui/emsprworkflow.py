@@ -1687,12 +1687,13 @@ class E2CTFWorkFlowTask(ParticleWorkFlowTask):
 		if project_names == None: # just left this here in case anyone is wandering what to do
 			project_names = self.get_particle_db_names(strip_ptcls=False)
 		
-		defocus,dfdiff,dfang,bfactor,noise = self.get_ctf_info(project_names)
+		defocus,dfdiff,dfang,bfactor,noise,snr = self.get_ctf_info(project_names)
 		
 		pnames = ParamDef(name="micrograph_ccd_filenames",vartype="stringlist",desc_short="File names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=None,choices=project_names)
 		pdefocus = ParamDef(name="Defocus",vartype="stringlist",desc_short="Defocus",desc_long="Estimated defocus of the microscope",property=None,defaultunits=None,choices=defocus)
 		pbfactor = ParamDef(name="Bfactor",vartype="stringlist",desc_short="B factor",desc_long="Estimated B factor of the microscope",property=None,defaultunits=None,choices=bfactor)
 		pnoise = ParamDef(name="Noise",vartype="intlist",desc_short="Sampling",desc_long="The number of sample points used to generate the parameters and accompanying noise profile",property=None,defaultunits=None,choices=noise)
+		psnr = ParamDef(name="SNR",vartype="intlist",desc_short="SNR",desc_long="The average SNR of the radial powever spectrum",property=None,defaultunits=None,choices=snr)
 		
 		num_phase,num_wiener,num_particles,phase_dims,wiener_dims,particle_dims = self.get_ctf_particle_info(project_names)
 		pboxes = ParamDef(name="Num boxes",vartype="intlist",desc_short="Particles on disk",desc_long="The number of particles stored for this image in the database",property=None,defaultunits=None,choices=num_particles)
@@ -1710,6 +1711,7 @@ class E2CTFWorkFlowTask(ParticleWorkFlowTask):
 		p.append(pnames)
 		p.append(pdefocus)
 		p.append(pbfactor)
+		p.append(psnr)
 		p.append(pnoise)
 		if not no_particles: 
 			p.append(pboxes)
@@ -1732,6 +1734,7 @@ class E2CTFWorkFlowTask(ParticleWorkFlowTask):
 			dfang = []
 			bfactor = []
 			noise_profile=[]
+			snrs = []
 			ctf_db = db_open_dict("bdb:e2ctf.parms")
 			for name in project_names:
 				try:
@@ -1739,22 +1742,28 @@ class E2CTFWorkFlowTask(ParticleWorkFlowTask):
 					ctf = EMAN2Ctf()
 					ctf.from_string(vals)
 					vals = ["%.3f" %ctf.defocus,"%.3f" %ctf.dfdiff,"%.3f" %ctf.dfang,"%.1f" %ctf.bfactor,len(ctf.background)]
-				except:
-					vals = ["","","","",'']  # only need 5 at the moment
+					snr = 0
+					try:
+						snr = sum(ctf.snr)/len(ctf.snr)
+					except:pass
+					vals.append("%.3f" %snr)
+ 				except:
+					vals = ["","","","",'',""]  # only need 6 at the moment
 
 				defocus.append(vals[0])
 				dfdiff.append(vals[1])
 				dfang.append(vals[2])
 				bfactor.append(vals[3])
 				noise_profile.append(vals[4])
+				snrs.append(vals[5])
 				
 			db_close_dict("bdb:e2ctf.parms")
 
-			return defocus,dfdiff,dfang,bfactor,noise_profile
+			return defocus,dfdiff,dfang,bfactor,noise_profile,snrs
 	
 		else:
 			dummy = ["" for i in range(len(project_names))]
-			return dummy,dummy,dummy,dummy,dummy
+			return dummy,dummy,dummy,dummy,dummy,dummy
 	def get_ctf_particle_info(self,project_names):
 		'''
 		Returns three string lists containing entries correpsonding to the number of phase corrected, wiener correct, and regular particles in the database
