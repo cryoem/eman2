@@ -2527,7 +2527,7 @@ def set_params3D(ima, p, xform = "xform.align3d"):
 	t = Transform({"type":"spider","phi":p[0],"theta":p[1],"psi":p[2],"tx":p[3],"ty":p[4],"tz":p[5],"mirror":p[6],"scale":p[7]})
 	ima.set_attr(xform, t)
 
-def get_params_proj(ima, xform = "xform.proj"):
+def get_params_proj(ima, xform = "xform.projection"):
 	"""
 	  retrieve projection alignment parameters from the header
 	  phi  theta  psi  s2x  s2y
@@ -2536,7 +2536,7 @@ def get_params_proj(ima, xform = "xform.proj"):
 	d = t.get_params("spider")
 	return  d["phi"],d["theta"],d["psi"],-d["tx"],-d["ty"]
 
-def set_params_proj(ima, p, xform = "xform.proj"):
+def set_params_proj(ima, p, xform = "xform.projection"):
 	"""
 	  set projection alignment parameters in the header
 	  phi  theta  psi  s2x  s2y

@@ -111,13 +111,13 @@ def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 10.0, sign=1, symmetry="c
 			proj.read_image(stack_name, list_proj[i])
 			active = proj.get_attr_default('active', 1)
 			if(active == 1):
-				xform_proj = proj.get_attr( "xform.proj" )
+				xform_proj = proj.get_attr( "xform.projection" )
 				r.insert_slice(proj, xform_proj )
 	else:
 		for i in xrange(len(list_proj)):
 			active = stack_name[list_proj[i]].get_attr_default('active', 1)
 			if(active == 1):
-				xform_proj = stack_name[list_proj[i]].get_attr( "xform.proj" )
+				xform_proj = stack_name[list_proj[i]].get_attr( "xform.projection" )
 				r.insert_slice(stack_name[list_proj[i]], xform_proj )
 	return r.finish()
 
@@ -145,7 +145,7 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign=1, symmetry="c1", info=None):
 
 		active = prj.get_attr_default('active', 1)
 		if(active == 1):
-			xform_proj = prj.get_attr( "xform.proj" )
+			xform_proj = prj.get_attr( "xform.projection" )
 			r.insert_slice(prj, xform_proj )
 		if( not (info is None) ):
 			nimg += 1
@@ -218,13 +218,13 @@ def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4, snr=None):
 			proj.read_image(stack_name, list_proj[i])
 			active = proj.get_attr_default('active', 1)
 			if(active == 1):
-				xform_proj = proj.get_attr( "xform.proj" )
+				xform_proj = proj.get_attr( "xform.projection" )
 				r.insert_slice(proj, xform_proj )
 	else:
 		for i in list_proj:
 			active = stack_name[i].get_attr_default('active', 1)
 			if(active == 1):
-				xform_proj = stack_name[i].get_attr( "xform.proj" )
+				xform_proj = stack_name[i].get_attr( "xform.projection" )
 				r.insert_slice(stack_name[i], xform_proj )
 	return r.finish()
 
@@ -250,7 +250,7 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None):
 
 		active = prj.get_attr_default('active', 1)
 		if(active == 1):
-			xform_proj = prj.get_attr( "xform.proj" )
+			xform_proj = prj.get_attr( "xform.projection" )
 			r.insert_slice(prj, xform_proj )
 		if( not (info is None) ):
 			nimg += 1
@@ -340,12 +340,12 @@ def recons3d_nn_SSNR(stack_name,  mask2D = None, ring_width=1, npad =1, sign=1, 
 				xform_proj = Transform( {"type":"spider", "phi":phi, "theta":theta, "psi":psi, "tx":tx, "ty":ty} )
 			elif(random_angles  == 1):
 				from  random import  random
-				old_xform_proj = proj.get_attr( "xform.proj" )
+				old_xform_proj = proj.get_attr( "xform.projection" )
 				dict = old_xform_proj.get_rotation( "spider" )
 				dict["psi"] = 360.0*random()
 				xform_proj = Transform( dict )
 			else:
-				xform_proj = proj.get_attr( "xform.proj" )
+				xform_proj = proj.get_attr( "xform.projection" )
 
 		 	if mask2D:
 				stats = Util.infomask(proj, mask2D, True)
@@ -403,12 +403,12 @@ def recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, ring_width=1, npad =1, sign=1, s
 				xform_proj = Transform( {"type":"spider", "phi":phi, "theta":theta, "psi":psi, "tx":tx, "ty":ty} )
 			elif(random_angles  == 1):
 				from  random import  random
-				old_xform_proj = prj.get_attr( "xform.proj" )
+				old_xform_proj = prj.get_attr( "xform.projection" )
 				dict = old_xform_proj.get_rotation( "spider" )
 				dict["psi"] = 360.0*random()
 				xform_proj = Transform( dict )
 			else:
-				xform_proj = prj.get_attr( "xform.proj" )
+				xform_proj = prj.get_attr( "xform.projection" )
 			if mask2D:
 				stats = Util.infomask(prj, mask2D, True)
 				prj -= stats[0]
@@ -611,7 +611,7 @@ def recons3d_sirt(stack_name, list_proj, radius, lam=1.0e-4, maxit=100, symmetry
 				stat=Util.infomask(data,mask2d,False)
 				data=data-stat[0]   # subtract the background average in the corners
 				
-				RA = data.get_attr( "xform.proj" )
+				RA = data.get_attr( "xform.projection" )
 
 				angles.append(RA)
 				#ATTENTION
@@ -697,9 +697,9 @@ def recons3d_wbp(stack_name, list_proj, method, const=1.0E4, symmetry="c1"):
 	for i in xrange(nimages):
 		if type(stack_name) == types.StringType:
 			B.read_image(stack_name,list_proj[i], True)
-			RA = B.get_attr( "xform.proj" )
+			RA = B.get_attr( "xform.projection" )
 		else:  
-			RA = stack_name[list_proj[i]].get_attr( "xform.proj" )
+			RA = stack_name[list_proj[i]].get_attr( "xform.projection" )
 		for j in xrange(nsym):
 			Tf = RA.get_sym(symmetry,j) #Tf.get_rotation()
 			angdict = Tf.get_rotation("spider")
@@ -758,7 +758,7 @@ def prepare_recons(data, symmetry, myid, main_node_half, half_start, step, index
 		if(index >-1 ):  group = data[i].get_attr('group')
 		if(group == index):
 			if( data[i].get_attr_default('active',1) == 1):
-				xform_proj = data[i].get_attr( "xform.proj" )
+				xform_proj = data[i].get_attr( "xform.projection" )
 				if not(info is None):
 					info.write( "inserting half %d\n" % i )
 					info.flush()
@@ -804,7 +804,7 @@ def prepare_recons_ctf_fftvol(data, snr, symmetry, myid, main_node_half, pidlist
         
 	for i in pidlist:
 		if( data[i].get_attr_default('active', 1) == 1):
-			xform_proj = data[i].get_attr( "xform.proj" )
+			xform_proj = data[i].get_attr( "xform.projection" )
                 	if not(info is None):
 				info.write( "inserting half %d\n" % i )
                 		info.flush()
@@ -833,7 +833,7 @@ def prepare_recons_ctf(nx, data, snr, symmetry, myid, main_node_half, half_start
         
 	for i in xrange(half_start, len(data), step):
 		if( data[i].get_attr_default('active',1) == 1):
-			xform_proj = data[i].get_attr( "xform.proj" )
+			xform_proj = data[i].get_attr( "xform.projection" )
 			if not(info is None):
 				info.write( "inserting half %d\n" % i )
                 		info.flush()

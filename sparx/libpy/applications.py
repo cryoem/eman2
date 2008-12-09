@@ -570,7 +570,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					for i in xrange(len(rvar)):
 						qt = max(0.0, rsumsq[i]/rvar[i] - 1.0)
 						frsc.append([i/(len(rvar)-1)*0.5, qt/(qt+1)])
-						
+
 					ref_data[2] = tavg
 					ref_data[3] = frsc
 				else:
@@ -3037,7 +3037,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 			mpi_barrier(MPI_COMM_WORLD)
 			if CTF and data_had_ctf == 0:
 				for im in xrange(len(data)): data[im].set_attr('ctf_applied', 0)
-			par_str = ['xform.proj', 'ID']
+			par_str = ['xform.projection', 'ID']
 	        	if myid == main_node:
 				from utilities import file_type
 	        		if(file_type(stack) == "bdb"):
@@ -3241,12 +3241,12 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 					peak = data[im].get_attr('peak')
 					if(peak > peaks[im][0]):
 						peaks[im][0] = peak
-						peaks[im][1] = data[im].get_attr('xform.proj')
+						peaks[im][1] = data[im].get_attr('xform.projection')
 						data[im].set_attr('group', iref)
 
 			for im in xrange(nima):
 				#group = data[im].get_attr('group')  ???
-				data[im].set_attr('xform.proj', peaks[im][1])
+				data[im].set_attr('xform.projection', peaks[im][1])
 			del peaks
 			fscc = []
 			for iref in xrange(numref):
@@ -3505,12 +3505,12 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 					peak = data[im].get_attr('peak')
 					if(peak > peaks[im][0]):
 						peaks[im][0] = peak
-						peaks[im][1] = data[im].get_attr('xform.proj')
+						peaks[im][1] = data[im].get_attr('xform.projection')
 						data[im].set_attr('group', iref)
 
 		if runtype=="REFINEMENT":
 			for im in xrange(nima):
-				data[im].set_attr('xform.proj', peaks[im][1])
+				data[im].set_attr('xform.projection', peaks[im][1])
 	
 		del peaks
 		if CTF: del vol
@@ -3540,7 +3540,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 					
 			#  here we  write header info
 		mpi_barrier(MPI_COMM_WORLD)
-		par_str = ['xform.proj', 'ID']
+		par_str = ['xform.projection', 'ID']
 	        if myid == main_node:
 			from utilities import file_type
 	        	if(file_type(stack) == "bdb"):
@@ -4034,7 +4034,7 @@ def ali3d_em_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, na
 		#exit()
 		#  here we should write header info, just in case the program crashes...
 	# write out headers  and STOP, under MPI writing has to be done sequentially
-	par_str = ["xform.proj", "group", "ID"]
+	par_str = ["xform.projection", "group", "ID"]
 	mpi_barrier(MPI_COMM_WORLD)
 	if myid == main_node:
 		from utilities import file_type
@@ -4762,7 +4762,7 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, center = -1, maxit
 
 			# write out headers, under MPI writing has to be done sequentially
 			mpi_barrier(MPI_COMM_WORLD)
-			par_str = ['xform.proj', 'ID']
+			par_str = ['xform.projection', 'ID']
 			if myid == main_node:
 				from utilities import file_type
 				if(file_type(stack) == "bdb"):
@@ -7936,7 +7936,7 @@ def ssnr3d_MPI(stack, output_volume = None, ssnr_text_file = None, mask = None, 
 					theta	 = 180.0*random()
 					psi	 = 360.0*random()
 					xform_proj = Transform( {"type":"spider", "phi":phi, "theta":theta, "psi":psi} )
-					prj.set_attr( "xform.proj", xform_proj )
+					prj.set_attr( "xform.projection", xform_proj )
 				elif(random_angles  == 3):
 					from  random import  random
 					phi    = 360.0*random()
@@ -7945,14 +7945,14 @@ def ssnr3d_MPI(stack, output_volume = None, ssnr_text_file = None, mask = None, 
 					tx     = 6.0*(random() - 0.5)
 					ty     = 6.0*(random() - 0.5)
 					xform_proj = Transform( {"type":"spider", "phi":phi, "theta":theta, "psi":psi, "tx":tx, "ty":ty} )
-					prj.set_attr( "xform.proj", xform_proj )
+					prj.set_attr( "xform.projection", xform_proj )
 				elif(random_angles  == 1):
 					from  random import  random
-					old_xform_proj = prj.get_attr( "xform.proj" )
+					old_xform_proj = prj.get_attr( "xform.projection" )
 					dict = old_xform_proj.get_rotation( "spider" )
 					dict["psi"] = 360.0*random()
 					xform_proj = Transform( dict )
-					prj.set_attr( "xform.proj", xform_proj )
+					prj.set_attr( "xform.projection", xform_proj )
 		random_angles = 0
 	if myid == 0: [ssnr1, vol_ssnr1] = recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, rw, npad, sign, sym, CTF, random_angles)  
 	else:	                           recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, rw, npad, sign, sym, CTF, random_angles)
@@ -8230,7 +8230,7 @@ def bootstrap_genbuf(prj_stack, outdir, verbose, CTF=False, MPI=False):
 	for i in xrange(nimage):
 		proj = EMData()
 		proj.read_image( prj_stack, i )
-		store.add_image( proj, proj.get_attr("xform.proj") )
+		store.add_image( proj, proj.get_attr("xform.projection") )
 
 		if( verbose !=0 and (i+1) % 100 == 0 ) :
 			output.write( "proj %4d done\n" % (i+1) )
@@ -8456,7 +8456,7 @@ def header(stack, params, zero, one, randomize, fimport, fexport, fprint, backup
 				else:
 					scale = 1.0
 				set_params2D(img, [alpha, sx, sy, mirror, scale], params[0])
-			elif params[0][:10] == "xform.proj":
+			elif params[0][:10] == "xform.projection":
 				if len(parmvalues) < 5:
 					print "Not enough parameters!"
 					return
@@ -8503,7 +8503,7 @@ def header(stack, params, zero, one, randomize, fimport, fexport, fprint, backup
 				if zero:
 					if p[:13] == "xform.align2d":
 						set_params2D(img, [0.0, 0.0, 0.0, 0, 1.0], p)
-					elif p[:10] == "xform.proj":
+					elif p[:10] == "xform.projection":
 						set_params_proj(img, [0.0, 0.0, 0.0, 0.0, 0.0], p)
 					elif p[:13] == "xform.align3d":
 						set_params3D(img, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, 1.0], p)
@@ -8526,7 +8526,7 @@ def header(stack, params, zero, one, randomize, fimport, fexport, fprint, backup
 						mirror = randint(0,1)
 						scale = 1.0
 						set_params2D(img, [alpha, sx, sy, mirror, scale], p)
-					elif p[:10] == "xform.proj":
+					elif p[:10] == "xform.projection":
 						phi = random()*360.0
 						theta = random()*180.0
 						psi = random()*360.0
@@ -8550,7 +8550,7 @@ def header(stack, params, zero, one, randomize, fimport, fexport, fprint, backup
 					if p[:13] == "xform.align2d":
 						alpha, sx, sy, mirror, scale = get_params2D(img, p)
 						fexp.write("%15.5f %15.5f %15.5f %10d %10.3f"%(alpha, sx, sy, mirror, scale))
-					elif p[:10] == "xform.proj":
+					elif p[:10] == "xform.projection":
 						phi, theta, psi, s2x, s2y = get_params_proj(img, p)
 						fexp.write("%15.5f %15.5f %15.5f %15.5f %15.5f"%(phi, theta, psi, s2x, s2y))
 					elif p[:13] == "xform.align3d":
@@ -8565,7 +8565,7 @@ def header(stack, params, zero, one, randomize, fimport, fexport, fprint, backup
 					if p[:13] == "xform.align2d":
 						alpha, sx, sy, mirror, scale = get_params2D(img, p)
 						print "%15.5f %15.5f %15.5f %10d %10.3f"%(alpha, sx, sy, mirror, scale),
-					elif p[:10] == "xform.proj":
+					elif p[:10] == "xform.projection":
 						phi, theta, psi, s2x, s2y = get_params_proj(img, p)
 						print "%15.5f %15.5f %15.5f %15.5f %15.5f"%(phi, theta, psi, s2x, s2y),
 					elif p[:13] == "xform.align3d":
@@ -8580,13 +8580,13 @@ def header(stack, params, zero, one, randomize, fimport, fexport, fprint, backup
 					t = img.get_attr(p)
 					img.set_attr(p+suffix, t)
 				elif restore:
-					if( p == "xform.align2d" or p == "xform.align3d" or p == "xform.proj"):
+					if( p == "xform.align2d" or p == "xform.align3d" or p == "xform.projection"):
 						print  "ERROR, no suffix in xform!"
 						return
 					t = img.get_attr(p)
 					if p[:13] == "xform.align2d":
 						img.set_attr(p[:13], t)
-					elif p[:10] == "xform.proj":
+					elif p[:10] == "xform.projection":
 						img.set_attr(p[:10], t)
 					elif p[:13] == "xform.align3d":
 						img.set_attr(p[:13], t)
