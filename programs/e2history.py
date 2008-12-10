@@ -119,7 +119,12 @@ class HistoryForm:
 					if h.has_key("end") :
 						duration.append(time_diff(h["end"]-h["start"]))
 					else:
-						duration.append("incomplete")
+						if h.has_key("progress"):
+							try:
+								duration.append(str(int(h["progress"]*100))+"%")
+							except:
+								duration.append("incomplete")
+						else: duration.append("incomplete")
 					
 					
 					args = h["args"]

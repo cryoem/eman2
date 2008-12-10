@@ -190,9 +190,30 @@ def main():
 			if len(s2) == 1: s2 = "0" + s2
 			s = s1 + "_" + s2
 			
-		db = db_open_dict("bdb:"+options.path+"#convergence.results")	
+		db = db_open_dict("bdb:"+options.path+"#convergence.results")
+		
+		if db_check_dict("bdb:project"):
+			# this is a temporary workaround to get things working in the workflow
+			db2 = db_open_dict("bdb:project")
+			apix = db2.get("global.apix",dfl=1)
+			if apix == 0: apix = 1
+		else:
+			apix = 1
+			
+		apix = 1/apix
+			
+			
+		tmp_axis = [x*apix for x in xaxis]
+#		# convert the axis so it's readable
+#		for x in xaxis:
+#			if x != 0:
+#				tmp_axis.append(1.0/x*apix)
+#			else:
+#				tmp_axis.append(0.0)
+		xaxis = tmp_axis
+		
 		db[s+"_fsc"] = [xaxis,plot]
-		db["error_"+s+"_fsc"] = [xaxis,error]
+		#db["error_"+s+"_fsc"] = [xaxis,error]
 		db_close_dict("bdb:"+options.path+"#convergence.results")
 		
 		E2progress(logid,progress/total_procs)

@@ -1478,6 +1478,25 @@ class EMDesktopFrame(EMFrame):
 			glPopMatrix()
 			
 			glPushMatrix()
+			#glTranslatef(0,0,0)
+			glTranslate(-self.width()/2.0-self.borderwidth,-self.height()/2.0,0)
+			glRotate(90,0,0,1)
+			glRotate(90,0,1,0)
+			glScaled(self.borderwidth,self.borderwidth,self.height())
+			glCallList(self.glbasicobjects.getCylinderDL())
+			glPopMatrix()
+			
+			glPushMatrix()
+			#glTranslatef(0,0,0)
+			glTranslate(self.width()/2.0+self.borderwidth,-self.height()/2.0,0)
+			glRotate(90,0,0,1)
+			glRotate(90,0,1,0)
+			glScaled(self.borderwidth,self.borderwidth,self.height())
+			glCallList(self.glbasicobjects.getCylinderDL())
+			glPopMatrix()
+			
+			
+			glPushMatrix()
 			glTranslate(-self.width()/2.0-self.borderwidth,-self.height()/2.0-self.borderwidth,0)
 			glScale(3*self.borderwidth,3*self.borderwidth,3*self.borderwidth)
 			glCallList(self.glbasicobjects.getSphereDL())
@@ -1500,6 +1519,8 @@ class EMDesktopFrame(EMFrame):
 			glScale(3*self.borderwidth,3*self.borderwidth,3*self.borderwidth)
 			glCallList(self.glbasicobjects.getSphereDL())
 			glPopMatrix()
+			
+			
 			
 			glEndList()
 			
@@ -1551,10 +1572,10 @@ class EMDesktopFrame(EMFrame):
 		glPopMatrix()
 		
 		#glEnable(GL_FOG)
-#		glPushMatrix()
-#		glScalef(self.height()/2.0,self.height()/2.0,1.0)
-#		self.bgob2.render()
-#		glPopMatrix()
+		glPushMatrix()
+		glScalef(self.height()/2.0,self.height()/2.0,1.0)
+		self.bgob2.render()
+		glPopMatrix()
 	def read_EMAN2_image(self):
 		#self.p = QtGui.QPixmap("EMAN2.0.big2.jpg")
 		if EMDesktopFrame.image == None:

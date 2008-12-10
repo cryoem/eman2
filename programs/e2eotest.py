@@ -141,8 +141,29 @@ def main():
 		error = fsc[2*third:]
 		
 		db = db_open_dict("bdb:"+options.path+"#convergence.results")
+		
+		if db_check_dict("bdb:project"):
+			# this is a temporary workaround to get things working in the workflow
+			db2 = db_open_dict("bdb:project")
+			apix = db2.get("global.apix",dfl=1)
+			if apix == 0: apix = 1
+		else:
+			apix = 1
+			
+		print "apix is",apix
+		apix = 1/apix
+		tmp_axis = [x*apix for x in xaxis]
+#		# convert the axis so it's readable
+#		for x in xaxis:
+#			if x != 0:
+#				tmp_axis.append(1.0/x*apix)
+#			else:
+#				tmp_axis.append(0.0)
+		xaxis = tmp_axis
+		
+		db = db_open_dict("bdb:"+options.path+"#convergence.results")
 		db["even_odd_"+options.iteration+"_fsc"] = [xaxis,plot]
-		db["error_even_odd_"+options.iteration+"_fsc"] = [xaxis,error]
+		#db["error_even_odd_"+options.iteration+"_fsc"] = [xaxis,error]
 		db_close_dict("bdb:"+options.path+"#convergence.results")
 		
 		

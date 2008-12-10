@@ -248,6 +248,15 @@ def main():
 				print "warning - application of the post processor",p," failed. Continuing anyway"
 					
 	# write the reconstruction to disk
+	
+	if db_check_dict("bdb:project"):
+		# this is a temporary workaround to get things working in the workflow
+		db = db_open_dict("bdb:project")
+		apix = db.get("global.apix",dfl=1)
+		output.set_attr("apix_x",apix)
+		output.set_attr("apix_y",apix)
+		output.set_attr("apix_z",apix)
+	
 	output.write_image(options.outfile,0)
 	if options.verbose:
 			print "Output File: "+options.outfile

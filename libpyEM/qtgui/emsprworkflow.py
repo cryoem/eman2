@@ -973,9 +973,12 @@ class ParticleWorkFlowTask(WorkFlowTask):
 		particle_names = self.get_particle_db_names_versatile(tag,strip_end=False)
 		n = []
 		dims = []
+		snr = []
+		defocus = []
 		for name in particle_names:
 			db_name = "bdb:particles#"+name
 			act = True
+			act_d = True
 			if db_check_dict(db_name):
 				pt_db = db_open_dict(db_name)
 				if pt_db.has_key("maxrec"):
@@ -985,21 +988,41 @@ class ParticleWorkFlowTask(WorkFlowTask):
 						hdr = pt_db.get_header(0)
 						dims.append(str(hdr["nx"])+'x'+str(hdr["ny"])+'x'+str(hdr["nz"]))
 						act = False
+					if hdr.has_key("ctf"):
+						ctf = hdr["ctf"]
+						if ctf != None:
+							s = 0.0
+							try:
+								s = sum(ctf.snr)/len(ctf.snr)
+							except: pass
+							
+							snr.append("%.3f" %s )
+							defocus.append("%.3f" %ctf.defocus)
+							act_d = False
+					
 						
 			if act:
 				n.append("")
 				dims.append("")
 
+			if act_d:
+				snr.append("")
+				defocus.append("")
+		
 		p = ParamTable(name="filenames",desc_short="Choose a subset of these images",desc_long="")
 			
 		pnames = ParamDef(name="names",vartype="stringlist",desc_short="File names",desc_long="The particles that will be used",property=None,defaultunits=None,choices=particle_names)
 		pboxes = ParamDef(name="Num boxes",vartype="intlist",desc_short="Particles on disk",desc_long="The number of box images stored for this image in the database",property=None,defaultunits=None,choices=n)
 		pdims = ParamDef(name="Dimensions",vartype="stringlist",desc_short="Particle dims",desc_long="The dimensions of the particle images",property=None,defaultunits=None,choices=dims)
+		psnr = ParamDef(name="SNR",vartype="stringlist",desc_short="SNR",desc_long="The average SNR of the particle images",property=None,defaultunits=None,choices=snr)
+		pdefocus = ParamDef(name="Defocus",vartype="stringlist",desc_short="Defocus",desc_long="The defocus of the particle images",property=None,defaultunits=None,choices=defocus)
 		
 	
 		
 		p.append(pnames)
 		p.append(pboxes)
+		p.append(psnr)
+		p.append(pdefocus)
 		p.append(pdims)
 		
 		setattr(p,"convert_text", ptable_convert_3)
@@ -2326,7 +2349,7 @@ class E2CTFGuiTask(E2CTFWorkFlowTask):
 		These are the options required to run pspec_and_ctf_fit in e2ctf.py
 		'''
 		
-		if  params.has_key("filenames") and len(params["filenames"]) == 0:
+		if  params.has_key("filenames") or len(params["filenames"]) == 0:
 			self.run_select_files_msg()
 			return None
 
