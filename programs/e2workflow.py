@@ -111,7 +111,7 @@ class EMTaskMonitorWidget(QtGui.QWidget,Animator):
 	def animate(self,time):
 		for i,pid in enumerate(self.history_check):
 			try: total = HOMEDB.history["count"]+1
-			except: return
+			except: return True
 			for j in range(self.init_history_db_entries+1,HOMEDB.history["count"]+1):
 				try:
 					if HOMEDB.history[j]["pid"] == pid:
