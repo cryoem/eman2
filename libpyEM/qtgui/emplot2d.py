@@ -189,6 +189,8 @@ class EMPlot2DModule(EMGUIModule):
 		selected by the user. 'data' can also be an EMData object, in which case the entire
 		data array is plotted as if it were 1-D."""
 		
+		self.del_shapes()
+		
 		self.needupd=1
 		
 		if replace: 
@@ -238,6 +240,9 @@ class EMPlot2DModule(EMGUIModule):
 		
 	def set_data_from_file(self,filename,replace=False):
 		"""Reads a keyed data set from a file. Automatically interpret the file contents."""
+		
+		
+		self.del_shapes()
 		
 		if replace: 
 			self.data = {}
@@ -345,7 +350,7 @@ class EMPlot2DModule(EMGUIModule):
 		GL.glPushMatrix()
 		glTranslate(0,0,5)
 		for k,s in self.shapes.items():
-			#print s
+#			print k,s
 			s.draw(self.scr2plot)
 		GL.glPopMatrix()
 		
