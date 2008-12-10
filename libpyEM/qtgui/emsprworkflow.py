@@ -2349,7 +2349,7 @@ class E2CTFGuiTask(E2CTFWorkFlowTask):
 		These are the options required to run pspec_and_ctf_fit in e2ctf.py
 		'''
 		
-		if  params.has_key("filenames") or len(params["filenames"]) == 0:
+		if  params.has_key("filenames") and len(params["filenames"]) == 0:
 			self.run_select_files_msg()
 			return None
 
