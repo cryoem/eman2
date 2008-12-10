@@ -69,6 +69,7 @@ class EMTaskMonitorWidget(QtGui.QWidget,Animator):
 		# so that keeping track of processes using pids is more efficient
 		try: self.init_history_db_entries = HOMEDB.history["count"]
 		except: self.init_history_db_entries = 0
+		if self.init_history_db_entries == None: self.init_history_db_entries = 0
 		#print self.init_history_db_entries
 		if db_check_dict("bdb:project"):
 			project_db = db_open_dict("bdb:project")
