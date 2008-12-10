@@ -2531,6 +2531,11 @@ m
 	b = 1.f;
 	c = slamc3_(&a, &b);
 
+	/**"e2msa.py test.hdf basis.hdf --nbasis=5 --verbose" will occupying 100% 
+	 * cpu and never finish on some platform. This printf statement can fix it.
+	 * Don't now why. --Grant Tang*/
+	printf("\n");	
+	
 /* +       WHILE( C.EQ.A )LOOP */
 L20:
 	if (c == a) {
