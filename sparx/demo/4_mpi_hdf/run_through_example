@@ -25,7 +25,7 @@ mpirun -np 2 sxali2d_m.py data.hdf Kmeans/averages.hdf ali2d_m --ou=30 --xr=3 --
 
 # Determination of the initial structure using class averages and a reference structure
 sxheader.py ali2d_m/multi_ref.hdf --one --params="active"
-sxheader.py ali2d_m/multi_ref.hdf --zero --params="xform.proj"
+sxheader.py ali2d_m/multi_ref.hdf --zero --params="xform.projectio"
 mpirun -np 2 sxali3d_d.py ali2d_m/multi_ref.hdf ../fmodel_structure.hdf abinitio --ou=30 --xr='0' --ts='1' --delta='20' --maxit=1 --ref_a=P  --function=reference3 --MPI
 
 # 3D reconstruction to compute initial structure based on Euler angles determined in the previous step 
