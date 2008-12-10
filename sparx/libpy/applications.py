@@ -8456,7 +8456,7 @@ def header(stack, params, zero, one, randomize, fimport, fexport, fprint, backup
 				else:
 					scale = 1.0
 				set_params2D(img, [alpha, sx, sy, mirror, scale], params[0])
-			elif params[0][:10] == "xform.projection":
+			elif params[0][:16] == "xform.projection":
 				if len(parmvalues) < 5:
 					print "Not enough parameters!"
 					return
@@ -8503,7 +8503,7 @@ def header(stack, params, zero, one, randomize, fimport, fexport, fprint, backup
 				if zero:
 					if p[:13] == "xform.align2d":
 						set_params2D(img, [0.0, 0.0, 0.0, 0, 1.0], p)
-					elif p[:10] == "xform.projection":
+					elif p[:16] == "xform.projection":
 						set_params_proj(img, [0.0, 0.0, 0.0, 0.0, 0.0], p)
 					elif p[:13] == "xform.align3d":
 						set_params3D(img, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, 1.0], p)
@@ -8526,7 +8526,7 @@ def header(stack, params, zero, one, randomize, fimport, fexport, fprint, backup
 						mirror = randint(0,1)
 						scale = 1.0
 						set_params2D(img, [alpha, sx, sy, mirror, scale], p)
-					elif p[:10] == "xform.projection":
+					elif p[:16] == "xform.projection":
 						phi = random()*360.0
 						theta = random()*180.0
 						psi = random()*360.0
@@ -8550,7 +8550,7 @@ def header(stack, params, zero, one, randomize, fimport, fexport, fprint, backup
 					if p[:13] == "xform.align2d":
 						alpha, sx, sy, mirror, scale = get_params2D(img, p)
 						fexp.write("%15.5f %15.5f %15.5f %10d %10.3f"%(alpha, sx, sy, mirror, scale))
-					elif p[:10] == "xform.projection":
+					elif p[:16] == "xform.projection":
 						phi, theta, psi, s2x, s2y = get_params_proj(img, p)
 						fexp.write("%15.5f %15.5f %15.5f %15.5f %15.5f"%(phi, theta, psi, s2x, s2y))
 					elif p[:13] == "xform.align3d":
@@ -8565,7 +8565,7 @@ def header(stack, params, zero, one, randomize, fimport, fexport, fprint, backup
 					if p[:13] == "xform.align2d":
 						alpha, sx, sy, mirror, scale = get_params2D(img, p)
 						print "%15.5f %15.5f %15.5f %10d %10.3f"%(alpha, sx, sy, mirror, scale),
-					elif p[:10] == "xform.projection":
+					elif p[:16] == "xform.projection":
 						phi, theta, psi, s2x, s2y = get_params_proj(img, p)
 						print "%15.5f %15.5f %15.5f %15.5f %15.5f"%(phi, theta, psi, s2x, s2y),
 					elif p[:13] == "xform.align3d":
@@ -8586,7 +8586,7 @@ def header(stack, params, zero, one, randomize, fimport, fexport, fprint, backup
 					t = img.get_attr(p)
 					if p[:13] == "xform.align2d":
 						img.set_attr(p[:13], t)
-					elif p[:10] == "xform.projection":
+					elif p[:16] == "xform.projection":
 						img.set_attr(p[:10], t)
 					elif p[:13] == "xform.align3d":
 						img.set_attr(p[:13], t)
