@@ -342,7 +342,7 @@ def main():
 	parser.add_option("--nprj", type="int", default=-1, help="  number of projections used by default all projections will be used")
 	parser.add_option("--snr",  type="float", default=1.0, help="signal-to-noise ratio" )
 	parser.add_option("--delta", type="float", default=1.0, help="for weights calculation")
-        parser.add_option("--genbuf", action="store_true", default=False, help="whether generating buffer")
+	parser.add_option("--genbuf", action="store_true", default=False, help="whether generate the buffer")
 	parser.add_option("--calcwgts", action="store_true", default=False, help="calculate weights or load weights from file" )
 	parser.add_option("--bufprefix", type="string", help="the location of the scratch file" )
 	parser.add_option("--nbufvol", type="int", help="number of fftvol in the memory" )
@@ -350,7 +350,7 @@ def main():
 	parser.add_option("--CTF", action="store_true", default=False, help="whether consider CTF" )
 	parser.add_option("--niter", type="int", help="number of iteration. Each iteration, nbufvol of bootstrap volumes will be generated.")
 	parser.add_option("--seedbase", type="int", help="random seed base" )
-	parser.add_option("--MPI", action="store_true", default=False, help="whether running mpi version")
+	parser.add_option("--MPI", action="store_true", default=False, help="use MPI")
 
 	(options, args) = parser.parse_args( arglist[1:] )
 
