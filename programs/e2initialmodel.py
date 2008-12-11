@@ -146,6 +146,7 @@ def main():
 			threed[-1]=threed[-1].get_clip(Region((pad-boxsize)/2,(pad-boxsize)/2,(pad-boxsize)/2,boxsize,boxsize,boxsize))
 			threed[-1].process_inplace("normalize.edgemean")
 			threed[-1].process_inplace("mask.gaussian",{"inner_radius":boxsize/3.0,"outer_radius":boxsize/12.0})
+			threed[-1].process_inplace("filter.lowpass.gauss",{"cutoff_abs":.2})
 #			threed[-1]["quality"]=bss
 			threed[-1]["quality"]=qual
 
