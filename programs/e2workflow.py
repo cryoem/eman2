@@ -74,6 +74,15 @@ class EMTaskMonitorWidget(QtGui.QWidget,Animator):
 		if db_check_dict("bdb:project"):
 			project_db = db_open_dict("bdb:project")
 			self.current_process_info = project_db.get("workflow.process_ids",{})
+
+			# If a project is copied from one machine to another while a job is running,
+			# the job table will be corrupt. If we run into this, we clear the table
+			for k in self.current_process_info.keys(): 
+				try: x=HOMEDB.history[k]["pid"]
+				except: 
+					project_db["workflow.process_ids"]={}
+					self.current_process_info = {}
+					break
 		else:
 			self.current_process_info = {}
 		self.entries_dict = {}

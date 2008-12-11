@@ -55,6 +55,7 @@ def main():
 	parser.add_option("--iter", type = "int", default=8, help = "The total number of refinement iterations to perform")
 	parser.add_option("--tries", type="int", default=1, help="The number of different initial models to generate in search of a good one")
 	parser.add_option("--sym", dest = "sym", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos",default="c1")
+	parser.add_option("--savemore",action="store_true",help="Will cause intermediate results to be written to flat files",default=False)
 	parser.add_option("--verbose","-v", type="int", default=0,help="Verbosity of output (1-9)",default=0)
 
 	(options, args) = parser.parse_args()
@@ -69,7 +70,7 @@ def main():
 	# angles to use for refinement
 	sym_object = parsesym(options.sym)
 #	orts = sym_object.gen_orientations("eman",{"delta":7.5})
-	orts = sym_object.gen_orientations("eman",{"delta":9.0})
+   	orts = sym_object.gen_orientations("eman",{"delta":9.0})
 
 	logid=E2init(sys.argv)
 	results=[]
@@ -94,6 +95,7 @@ def main():
 		for it in range(options.iter):
 			E2progress(logid,(it+t*options.iter)/float(options.tries*options.iter))
 			if verbose : print "Iteration %d"%it
+			if options.savemore : threed[it].write_image("imdl.%02d.%02d.mrc"%(t,it))
 			projs=[threed[it].project("standard",ort) for ort in orts]		# projections
 			for i in projs : i.process_inplace("normalize.edgemean")
 			if verbose>2: print "%d projections"%len(projs)
