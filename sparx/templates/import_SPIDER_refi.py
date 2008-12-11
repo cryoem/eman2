@@ -7,6 +7,7 @@ from sparx import *
 
 from sys import  *
 from string import *
+from math import sqrt
 
 doc_home = "/mnt/fast2/username/"
 prj_home = "/mnt/fast2/username/DATA/"
@@ -81,6 +82,9 @@ for ii in xrange(1,696+1) :
 		deci = data
 		set_params_proj(deci, [phi, theta, psi, sxnb, synb])
 		deci.set_attr_dict({'active':1, 'ctf_applied':0})
+
+		# Here, we convert the amp_contrast into the new convention
+		amp_contrast = amp_contrast*100/sqrt(2*amp_contrast**2-2*amp_contrast+1)
 		set_ctf(deci, [defocus, Cs, voltage, pixel, bfactor, amp_contrast])
 
 		deci.write_image( proj_out, total_high_proj )
