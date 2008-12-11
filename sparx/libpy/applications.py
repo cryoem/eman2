@@ -9084,7 +9084,7 @@ def var_mpi(files, outdir, fl, fh, radccc, writelp, writestack, method="inc"):
 	from statistics import inc_variancer, def_variancer, ccc
 	from string import atoi, replace, split, atof
 	from EMAN2 import EMUtil
-	from utilities import get_im, circumference, model_circle, drop_image, info
+	from utilities import memory_usage, get_im, circumference, model_circle, drop_image, info
 	from filter import filt_btwl, filt_gaussl, filt_tanl
 	from math import sqrt
 	import os
@@ -9131,7 +9131,7 @@ def var_mpi(files, outdir, fl, fh, radccc, writelp, writestack, method="inc"):
 
         mystack = file_set( files )
         nimage = mystack.nimg()
-        ndump = 10
+        ndump = 100
 
 	lpstack = outdir + ("/btwl_cir_prj%04d.hdf" % myid)
 	iwrite = 0
@@ -9139,9 +9139,11 @@ def var_mpi(files, outdir, fl, fh, radccc, writelp, writestack, method="inc"):
 	iprint = 0
 	iadded = 0
 
+
 	niter = nimage/(2*ncpu)*2
 	nimage = niter * ncpu
 	for i in xrange(myid, nimage, ncpu):
+
 		filename, imgid = mystack.get( i ) 	
 	
 		img = get_im( filename, imgid )
@@ -9167,7 +9169,7 @@ def var_mpi(files, outdir, fl, fh, radccc, writelp, writestack, method="inc"):
 			eve_var, eve_avg = eve_varer.mpi_getvar(myid, 0)
 			all_var, all_avg = all_varer.mpi_getvar(myid, 0)
 			
-
+	
 			if myid==0 :
 				odd_nimg = odd_var.get_attr( "nimg" )
 				eve_nimg = eve_var.get_attr( "nimg" )

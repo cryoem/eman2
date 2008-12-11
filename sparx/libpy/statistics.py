@@ -5859,54 +5859,67 @@ class def_variancer:
 
 class inc_variancer:
 	def __init__(self, nx, ny, nz):
-		import numpy
+		import Numeric
 		self.nx = nx
 		self.ny = ny
 		self.nz = nz
 		self.ntot = nx*ny*nz
-		self.sum1 = numpy.array( [0.0]*self.ntot )
-		self.sum2 = numpy.array( [0.0]*self.ntot )
+		self.sum1 = Numeric.array( [0.0]*self.ntot )
+		self.sum2 = Numeric.array( [0.0]*self.ntot )
 		self.nimg = 0
 
 	def insert(self, img):
-		import numpy
+		from Numeric import reshape
 		from utilities import get_image_data
-		data = get_image_data( img ).reshape([self.ntot]).astype( numpy.float64 )
+		data = reshape( get_image_data(img), (self.ntot,) )
 		self.sum1 += data
 		self.sum2 += (data*data)
 		self.nimg += 1
+		data = None
+
 
         def mpi_getvar(self, myid, rootid):
-		from utilities import get_image_data, model_blank
+		from utilities import memory_usage, get_image_data, model_blank
 		from mpi import mpi_reduce, MPI_DOUBLE, MPI_INT, MPI_SUM, MPI_COMM_WORLD
+		from Numeric import reshape
 
 		cpy1 = self.sum1.copy()
 		cpy2 = self.sum2.copy()
-
-		cpy1 = mpi_reduce( cpy1, self.ntot, MPI_DOUBLE, MPI_SUM, rootid, MPI_COMM_WORLD )
-		cpy2 = mpi_reduce( cpy2, self.ntot, MPI_DOUBLE, MPI_SUM, rootid, MPI_COMM_WORLD )
+		sum1 = mpi_reduce( cpy1, self.ntot, MPI_DOUBLE, MPI_SUM, rootid, MPI_COMM_WORLD )
+		sum2 = mpi_reduce( cpy2, self.ntot, MPI_DOUBLE, MPI_SUM, rootid, MPI_COMM_WORLD )
 		sum_nimg = mpi_reduce( self.nimg, 1, MPI_INT, MPI_SUM, rootid, MPI_COMM_WORLD)
 		if myid==rootid:
 
-			sum_nimg = int(sum_nimg[0])
+			nimg = int(sum_nimg[0])
 
 			avg = model_blank( self.nx, self.ny, self.nz )
 			var = model_blank( self.nx, self.ny, self.nz )
-			vdata = get_image_data(var).reshape( [self.ntot] )
-			adata = get_image_data(avg).reshape( [self.ntot] )
+			vdata = reshape( get_image_data(var), (self.ntot,) )
+			adata = reshape( get_image_data(avg), (self.ntot,) )
 	
-
+			
 			for i in xrange(self.ntot):
-				t1 = cpy1[i]/sum_nimg
-				t2 = cpy2[i]/sum_nimg
-				t2 = (t2 - t1*t1)*float(sum_nimg)/float(sum_nimg-1)
+				t1 = sum1[i]/nimg
+				t2 = sum2[i]/nimg
+				t2 = (t2 - t1*t1)*float(nimg)/float(nimg-1)
 				adata[i] = t1
 				vdata[i] = t2
+			
+			avg.set_attr( "nimg", nimg )
+			var.set_attr( "nimg", nimg )
 
-			avg.set_attr( "nimg", sum_nimg )
-			var.set_attr( "nimg", sum_nimg )
+			del sum_nimg
+			del sum1
+			del sum2
+			del cpy1
+			del cpy2
 			return var,avg
 
+		del sum_nimg
+		del sum1
+		del sum2
+		del cpy1
+		del cpy2
 		return None,None
 
 
