@@ -23,7 +23,7 @@ def main():
 	parser.add_option("--writelp",   action="store_true", default=False, help="write the low pass filtered volume to disk (default is False)" )
 	parser.add_option("--writestack", action="store_true", default=False, help="write the stack contain all variance map" )
 	parser.add_option("--MPI", action="store_true", default=False, help="use MPI version" )
-	parser.add_option("--method", type="string", default="inc", help="calculation method: def: calculate by definition, inc: use incremental. default is inc"
+	parser.add_option("--method", type="string", default="inc", help="calculation method: def: calculate by definition, inc: use incremental. default is inc")
 	(options, args) = parser.parse_args(arglist[1:])
 
 	if len(args)<2 :
