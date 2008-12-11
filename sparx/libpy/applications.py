@@ -9080,8 +9080,8 @@ def defvar(files, outdir, fl, fh, radccc, writelp, writestack):
 
 
 	
-def defvar_mpi(files, outdir, fl, fh, radccc, writelp, writestack):
-	from statistics import def_variancer, ccc
+def var_mpi(files, outdir, fl, fh, radccc, writelp, writestack, method="inc"):
+	from statistics import inc_variancer, def_variancer, ccc
 	from string import atoi, replace, split, atof
 	from EMAN2 import EMUtil
 	from utilities import get_im, circumference, model_circle, drop_image, info
@@ -9096,16 +9096,23 @@ def defvar_mpi(files, outdir, fl, fh, radccc, writelp, writestack):
 		if os.path.exists(outdir):
 			os.system( "rm -rf " + outdir )
 		os.system( "mkdir " + outdir )
-		finf = open( outdir + "/defvar_progress.txt", "w" )
+		finf = open( outdir + "/var_progress.txt", "w" )
 
 	mpi_barrier( MPI_COMM_WORLD )
 
-
 	n = get_im(files[0]).get_xsize()
-	all_varer = def_variancer(n,n,n)
-	odd_varer = def_variancer(n,n,n)
-	eve_varer = def_variancer(n,n,n)
- 
+
+	if method=="def":
+		all_varer = def_variancer(n,n,n)
+		odd_varer = def_variancer(n,n,n)
+		eve_varer = def_variancer(n,n,n)
+	else:
+		print "incremental variance"
+		all_varer = inc_variancer(n,n,n)
+		odd_varer = inc_variancer(n,n,n)
+		eve_varer = inc_variancer(n,n,n)
+		 
+
 	varfile = outdir + "/var.hdf"
 	avgfile = outdir + "/avg.hdf"
 	varstack = outdir + "/varstack.hdf" 
@@ -9154,6 +9161,7 @@ def defvar_mpi(files, outdir, fl, fh, radccc, writelp, writestack):
 		all_varer.insert(img)
 
 		iadded += 1
+
 		if iadded%ndump==0 or iadded==niter:
 			odd_var, odd_avg = odd_varer.mpi_getvar(myid, 0)
 			eve_var, eve_avg = eve_varer.mpi_getvar(myid, 0)
@@ -9183,8 +9191,8 @@ def defvar_mpi(files, outdir, fl, fh, radccc, writelp, writestack):
 
 
 
-def incvar_mpi(prefix, nfile, nprj, output, fl, fh, radccc, writelp, writestack):
-	from statistics import variancer, ccc
+def incvar_mpi(files, outdir, fl, fh, radccc, writelp, writestack):
+	from statistics import inc_variancer, ccc
 	from string import atoi, replace, split, atof
 	from EMAN2 import EMUtil
 	from utilities import get_im, circumference, model_circle, drop_image, info
@@ -9195,11 +9203,21 @@ def incvar_mpi(prefix, nfile, nprj, output, fl, fh, radccc, writelp, writestack)
 
         myid = mpi_comm_rank( MPI_COMM_WORLD )
         ncpu = mpi_comm_size( MPI_COMM_WORLD )
-        finf = open( "progress%04d.txt" % myid, "w" )
-	
-	all_varer = variancer()
-	odd_varer = variancer()
-	eve_varer = variancer()
+        if myid==0:
+		if os.path.exists(outdir):
+			os.system( "rm -rf " + outdir )
+		os.system( "mkdir " + outdir )
+		finf = open( outdir + "/defvar_progress.txt", "w" )
+
+	mpi_barrier( MPI_COMM_WORLD )
+
+
+
+
+
+	all_varer = inc_variancer()
+	odd_varer = inc_variancer()
+	eve_varer = inc_variancer()
  
 	filname = prefix + "0000.hdf"
 	n = get_im(filname, 0).get_xsize()

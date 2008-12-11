@@ -5858,63 +5858,76 @@ class def_variancer:
 
 
 class inc_variancer:
-	def __init__(self):
+	def __init__(self, nx, ny, nz):
+		import numpy
+		self.nx = nx
+		self.ny = ny
+		self.nz = nz
+		self.ntot = nx*ny*nz
+		self.sum1 = numpy.array( [0.0]*self.ntot )
+		self.sum2 = numpy.array( [0.0]*self.ntot )
 		self.nimg = 0
-		self.sum1 = None
-		self.sum2 = None
 
 	def insert(self, img):
+		import numpy
+		from utilities import get_image_data
+		data = get_image_data( img ).reshape([self.ntot]).astype( numpy.float64 )
+		self.sum1 += data
+		self.sum2 += (data*data)
 		self.nimg += 1
 
-		if self.sum1 is None:
-			assert self.sum2 is None
-			self.sum1 = img.copy()
-			self.sum2 = img.copy()
-			Util.mul_img(self.sum2, img)
-		else:
-			Util.add_img(self.sum1, img)
-			Util.add_img2(self.sum2, img)
-
-
         def mpi_getvar(self, myid, rootid):
-		from utilities import reduce_EMData_to_root
-		from mpi import mpi_reduce, MPI_INT, MPI_SUM, MPI_COMM_WORLD
+		from utilities import get_image_data, model_blank
+		from mpi import mpi_reduce, MPI_DOUBLE, MPI_INT, MPI_SUM, MPI_COMM_WORLD
+
 		cpy1 = self.sum1.copy()
 		cpy2 = self.sum2.copy()
 
-		reduce_EMData_to_root( cpy1, myid, rootid )
-		reduce_EMData_to_root( cpy2, myid, rootid )
+		cpy1 = mpi_reduce( cpy1, self.ntot, MPI_DOUBLE, MPI_SUM, rootid, MPI_COMM_WORLD )
+		cpy2 = mpi_reduce( cpy2, self.ntot, MPI_DOUBLE, MPI_SUM, rootid, MPI_COMM_WORLD )
 		sum_nimg = mpi_reduce( self.nimg, 1, MPI_INT, MPI_SUM, rootid, MPI_COMM_WORLD)
 		if myid==rootid:
 
-   		    sum_nimg = int(sum_nimg[0])
+			sum_nimg = int(sum_nimg[0])
 
+			avg = model_blank( self.nx, self.ny, self.nz )
+			var = model_blank( self.nx, self.ny, self.nz )
+			vdata = get_image_data(var).reshape( [self.ntot] )
+			adata = get_image_data(avg).reshape( [self.ntot] )
+	
 
-		    avg1 = cpy1/sum_nimg
-		    avg2 = cpy2/sum_nimg
+			for i in xrange(self.ntot):
+				t1 = cpy1[i]/sum_nimg
+				t2 = cpy2[i]/sum_nimg
+				t2 = (t2 - t1*t1)*float(sum_nimg)/float(sum_nimg-1)
+				adata[i] = t1
+				vdata[i] = t2
 
+			avg.set_attr( "nimg", sum_nimg )
+			var.set_attr( "nimg", sum_nimg )
+			return var,avg
 
-		    tmp = avg1.copy()
-		    Util.mul_img( tmp, avg1 )
-		    avg2 -= tmp
-		    avg2 *= (float(sum_nimg)/float(sum_nimg-1))
-		    return avg2
-		return None
+		return None,None
 
 
         def mpi_getavg(self, myid, rootid ):
 		from mpi import mpi_reduce, MPI_INT, MPI_SUM, MPI_COMM_WORLD
-		from utilities import reduce_EMData_to_root
+		import numpy
 
 		cpy1 = self.sum1.copy()
-
-		reduce_EMData_to_root( cpy1, myid, rootid )
-		
+		cpy1 = mpi_reduce(cpy1, ntot, MPI_DOUBLE, MPI_SUM, rootid, MPI_COMM_WORLD)
 		sum_nimg = mpi_reduce( self.nimg, 1, MPI_INT, MPI_SUM, rootid, MPI_COMM_WORLD)
 		
 		if myid==rootid:
 			sum_nimg = int( sum_nimg[0] )
-			return cpy1/sum_nimg
+			cpy1 /= sum_nimg
+
+			avg = model_blank( self.nx, self.ny, self.nz )
+			adata = get_image_data(var).reshape( [self.ntot] ).astype( numpy.float32 )
+
+			adata[0:self.ntot] = cpy1[0:self.ntot]
+			avg.set_attr( "nimg", sum_nimg )
+			return avg
 
 		return None
 
