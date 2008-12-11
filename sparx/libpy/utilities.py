@@ -2546,6 +2546,12 @@ def set_params_proj(ima, p, xform = "xform.projection"):
 	ima.set_attr(xform, t)
 
 def get_ctf(ima):
+	"""
+	  recover numerical values of CTF parameters from EMAN2 CTF object stored in a header of the input image
+	  order of returned parameters:
+        [defocus, cs, voltage, apix, bfactor, ampcont]
+	"""
+
 	from EMAN2 import EMAN2Ctf
 	
 	ctf_params = ima.get_attr("ctf")
@@ -2553,6 +2559,11 @@ def get_ctf(ima):
 	return ctf_params.defocus, ctf_params.cs, ctf_params.voltage, ctf_params.apix, ctf_params.bfactor, ctf_params.ampcont
 
 def generate_ctf(p):
+	"""
+	  generate EMAN2 CTF object using values of CTF parameters given in the list p
+	  order of parameters:
+        [defocus, cs, voltage, apix, bfactor, ampcont]
+	"""
 	from EMAN2 import EMAN2Ctf
 
 	defocus = p[0]
@@ -2574,6 +2585,12 @@ def generate_ctf(p):
 	return ctf
 
 def set_ctf(ima, p):
+	"""
+	  set EMAN2 CTF object in the header of input image using values of CTF parameters given in the list p
+	  order of parameters:
+        [defocus, cs, voltage, apix, bfactor, ampcont]
+	"""
+	from utilities import generate_ctf
 	ctf = generate_ctf( p )
 	ima.set_attr( "ctf", ctf )
 
