@@ -290,12 +290,11 @@ if not(numericpath is None):
 
 
 if not(ldlibpath is None) or not(pythonpath is None):
-    print ""
-    print "Bash user: add the following two lines to ~/.bashrc"
+    print "1. Bash user: add the following two lines to ~/.bashrc"
     if not( ldlibpath is None) : print "        export %s=%s:$%s" % ( ldkey, ldlibpath, ldkey )
     if not(pythonpath is None) : print "        export PYTHONPATH=%s:$PYTHONPATH" % (pythonpath)
 
-    print "Csh  user: add the following two lines to ~/.cshrc"
+    print "2. Csh  user: add the following two lines to ~/.cshrc"
     if not( ldlibpath is None) : print "        setenv LD_LIBRARY_PATH %s:$LD_LIBRARY_PATH" % (ldkey, eman2+"/lib", ldkey)
     if not(pythonpath is None) : print "        setenv PYTHONPATH %s:$PYTHONPATH" % (pythonpath)
     print ""
