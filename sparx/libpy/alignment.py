@@ -533,7 +533,8 @@ def ormq_peaks_major(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 	return peaks, peakm, peaks_major, peakm_major
 
 
-def select_k(dJe, T):
+
+def select_k_PAP(dJe, T):
 	"""
 	This routine is used in simulated annealing to select a random path
 	based on the weight of the each path and the temperature.
@@ -542,35 +543,28 @@ def select_k(dJe, T):
 	from random import random
 
 	K = len(dJe)
-	
-	# q[k]
-	q      = [0.0] * K
-	arg    = [0.0] * K
-	maxarg = 0
-	for k in xrange(K):
-		arg[k] = dJe[k] / T
-		if arg[k] > maxarg: maxarg = arg[k]
-	limarg = 500
-	if maxarg > limarg:
-		sumarg = float(sum(arg))
-		for k in xrange(K): q[k] = exp(arg[k] * limarg / sumarg)
-	else:
-		for k in xrange(K): q[k] = exp(arg[k])
 
-	# p[k]
-	p = [0.0] * K
-	sumq = float(sum(q))
+	# q[k]
+	p      = [0.0] * K
+	#maxarg = -1.0
+	#limarg = 500
+	#if maxarg > limarg:
+	#sumarg = float(sum(arg))
+	#for k in xrange(K): p[k] = exp(arg[k] * limarg / sumarg)
+	#else:
+	for k in xrange(K): p[k] = exp(dJe[k] / T)
+
+	sumq = float(sum(p))
 	for k in xrange(K):
-		p[k] = q[k] / sumq
-		
-	c = [0.0] * K
-	c[0] = p[0]
-	for k in xrange(1, K): c[k] = c[k-1] + p[k]
+		p[k] /= sumq
+	#print  p
+
+	for k in xrange(1, K): p[k] += p[k-1]
 
 	pb = random()
 	select = -1
 	for k in xrange(K):
-		if c[k] > pb:
+		if p[k] > pb:
 			select = k
 			break
 	return select
@@ -578,11 +572,12 @@ def select_k(dJe, T):
 
 def sim_anneal(peaks, T, SA_stop):
 
-	if T > 0.001 and SA_stop:
+	if T > 1.0e-3 and SA_stop:
 		K = len(peaks)
 		dJe = [0.0]*K
 		for k in xrange(K): dJe[k] = peaks[k][4]
 		select = select_k(dJe, T)
+		print  T, K, select
 	else:
 		select = 0
 

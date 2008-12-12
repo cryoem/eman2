@@ -388,7 +388,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		os.mkdir(outdir)
 
 	first_ring=int(ir); last_ring=int(ou); rstep=int(rs); max_iter=int(maxit);
-	SA_stop = False#int(SA_stop)
+	SA_stop = True#int(SA_stop)
 	#if SA_stop == 0:  SA_stop = max_iter
 	if max_iter == 0:
 		max_iter = 10
@@ -478,6 +478,8 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	#		data = EMData.read_images(stack, range(image_start, image_end))
 	#	if ftp == "bdb": mpi_barrier(MPI_COMM_WORLD)
 	data = EMData.read_images(stack, range(image_start, image_end))
+	for ima in data:
+		ima.set_attr('select',0)
 
 	if CTF:
 		for im in xrange(image_start, image_end):
@@ -521,15 +523,9 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			#if random_method == "ML": 
 			#	reduce_EMData_to_root(tavg_ML, myid, main_node)
 			#	reduce_EMData_to_root(vav_ML, myid, main_node)			
-
-			attr_list = data[0].get_attr_dict()	
-			if attr_list.has_key("select") == False:
-				select = 0
-			else : 	
-				select = 0
-				for im in xrange(image_start, image_end):
-					this_select = data[im-image_start].get_attr("select")
-					select += this_select
+			select = 0
+			for im in xrange(image_start, image_end):
+				select += data[im-image_start].get_attr("select")
 			select = mpi_reduce(select, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
 
 			total_iter += 1

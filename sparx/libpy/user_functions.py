@@ -491,6 +491,29 @@ def steady( ref_data ):
 	cs = [0.0]*2
 	return  tavg, cs
 
+def constant( ref_data ):
+	from utilities    import print_msg
+	from filter       import fit_tanh, filt_tanl
+	from utilities    import center_2D
+	#  Prepare the reference in 2D alignment, i.e., low-pass filter and center.
+	#  Input: list ref_data
+	#   0 - mask
+	#   1 - center flag
+	#   2 - raw average
+	#   3 - fsc result
+	#  Output: filtered, centered, and masked reference image
+	#  apply filtration (FRC) to reference image:
+	global  ref_ali2d_counter
+	ref_ali2d_counter += 1
+	#print_msg("steady   #%6d\n"%(ref_ali2d_counter))
+	fl = 0.4
+	aa = 0.1
+	#msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
+	#print_msg(msg)
+	tavg = filt_tanl(ref_data[2], fl, aa)
+	cs = [0.0]*2
+	return  tavg, cs
+
 # rewrote factory dict to provide a flexible interface for providing user functions dynamically.
 #    factory is a class that checks how it's called. static labels are rerouted to the original
 #    functions, new are are routed to build_user_function (provided below), to load from file
@@ -514,6 +537,7 @@ class factory_class:
 		self.contents["ref_aliB_cone"]      = ref_aliB_cone
 		self.contents["ref_7grp"]           = ref_7grp
 		self.contents["steady"]             = steady
+		self.contents["constant"]           = constant
 		
 	def __getitem__(self,index):
 
