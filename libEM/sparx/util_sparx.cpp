@@ -38,6 +38,7 @@
 #include <iostream>
 #include <cstdio>
 #include <cstdlib>
+#include <boost/format.hpp>
 #include "emdata.h"
 #include "util.h"
 #include "fundamentals.h"
@@ -3837,58 +3838,106 @@ vector<double> Util::cml_line_in3d_iagl(const vector<float>& Ori, float phi, flo
     return cml;
 }
 
+struct ori_t
+{
+    int iphi;
+    int itht;
+    int id;
+};
+
+
+struct cmpang
+{
+    bool operator()( const ori_t& a, const ori_t& b )
+    {
+        if( a.itht != b.itht )
+        {
+            return a.itht < b.itht;
+        }
+
+        return a.iphi < b.iphi;
+    }
+};
+
 //helper function for the weights calculation by Voronoi to Cml
 vector<double> Util::cml_weights(const vector<float>& cml){
-    int nlines=cml.size()/2;
-    vector<int> ocp_same(nlines);
-    vector<double> weights(nlines);
-    for(int i=0; i<nlines; i++){ocp_same[i] = -1;}
-    int num_agl = 0;
-    double dist = 0;
-    float tol = 3.0;
+    static const int NBIN = 100;
+    int nline=cml.size()/2;
+    vector<double> weights(nline);
 
-    // search closer cml
-    for(int i=0; i<nlines; i++){
-	if(ocp_same[i]==-1){
-	    ocp_same[i] = num_agl;
-	    for(int j=i+1; j<nlines; j++){
-		if(ocp_same[j]==-1){
-		    dist = (cml[2*i]-cml[2*j])*(cml[2*i]-cml[2*j])+(cml[2*i+1]-cml[2*j+1])*(cml[2*i+1]-cml[2*j+1]);
-		    //cout<<i<<" "<<j<<" "<<dist<<endl;
-		    if(dist<tol){ocp_same[j] = num_agl;}
-		}
-	    }
-	    num_agl++;
-	}
+    vector<ori_t> angs(nline);
+    for( int i=0; i < nline; ++i )
+    {
+        angs[i].iphi = int( NBIN*cml[2*i] );
+        angs[i].itht = int( NBIN*cml[2*i+1] );
+        if( angs[i].itht == 180*NBIN ) 
+            angs[i].itht = 0;
+        angs[i].id = i;
     }
 
+    //std::cout << "# of angs: " << angs.size() << std::endl;
+
+    std::sort( angs.begin(), angs.end(), cmpang() );
+
+    vector<float> newphi;
+    vector<float> newtht;
+    vector< vector<int> > indices;
+
+    int curt_iphi = -1;
+    int curt_itht = -1;
+    for( int i=0 ;i < angs.size(); ++i )
+    {
+        if( angs[i].iphi==curt_iphi && angs[i].itht==curt_itht )
+        {
+            assert( indices.size() > 0 );
+            indices.back().push_back(angs[i].id);
+        }
+        else
+        {
+            curt_iphi = angs[i].iphi;
+            curt_itht = angs[i].itht;
+            
+            newphi.push_back( float(curt_iphi)/NBIN );
+            newtht.push_back( float(curt_itht)/NBIN );
+            indices.push_back( vector<int>(1,angs[i].id) );
+        }
+    }
+
+    //std::cout << "# of indpendent ang: " << newphi.size() << std::endl;
+  
+
+    int num_agl = newphi.size();
+  
     if(num_agl>2){
-	// pack closer cml
-	vector<float> newph(num_agl); 
-	vector<float> newth(num_agl);
-	vector<double> w(num_agl);
-	vector<float> nb_same(num_agl);
-	num_agl=0;
-	for(int i=0; i<nlines; i++){
-	    nb_same[ocp_same[i]]++;
-	    if(ocp_same[i]==num_agl){
-		newph[num_agl]=cml[2*i];
-		newth[num_agl]=cml[2*i+1];
-		num_agl++;
-	    }
-	}
-	// Voronoi
-	w=Util::vrdg(newph, newth);
-	// unpack closer cml
-	for(int i=0; i<nlines; i++){
-	    if(nb_same[ocp_same[i]]>1){weights[i]=w[ocp_same[i]]/nb_same[ocp_same[i]];}
-	    else{weights[i]=w[ocp_same[i]];} 
-	}
+	vector<double> w=Util::vrdg(newphi, newtht);
+        assert( w.size()==newphi.size() );
+        assert( indices.size()==newphi.size() );
+
+        for(int i=0; i < newphi.size(); ++i )
+        {
+            /*
+            std::cout << "phi,tht,w,n: ";
+            std::cout << boost::format( "%10.3f" ) % newphi[i] << " ";
+            std::cout << boost::format( "%10.3f" ) % newtht[i] << " ";
+            std::cout << boost::format( "%8.6f"  ) % w[i] << " ";
+            std::cout << indices[i].size() << "(";
+            */
+
+            for( int j=0; j < indices[i].size(); ++j )
+            {
+                int id = indices[i][j];
+                weights[id] = w[i]/indices[i].size();
+                //std::cout << id << " ";
+            }
+ 
+            //std::cout << ")" << std::endl;
+
+        }
     }
     else{
 	cout<<"warning"<<endl;
-	double val = PI2/float(nlines);
-	for(int i=0; i<nlines; i++){weights[i]=val;}
+	double val = PI2/float(nline);
+	for(int i=0; i<nline; i++){weights[i]=val;}
     }
 
     return weights;
