@@ -235,9 +235,10 @@ if numeric is None:
         numeric = install_numeric(pythonroot, pythonver )
         numericpath = numeric + "/lib/python" + pythonver[0:3] + "/site-packages/Numeric"
     else:
-        numericpath = None
         print "Error: cannot find Numeric header file, cannot proceed"
         exit(-3)
+else:
+    numericpath = None
 
 print ""
 print "Builing the mpi python binding"
@@ -266,8 +267,6 @@ myexec(cmd)
 
 print "Installation complete successfully!"
 
-print ""
-print "Setting up your environment"
 if macos():
     ldkey = "DYLD_LIBRARY_PATH"
 else:
@@ -289,11 +288,14 @@ if not(numericpath is None):
 
 
 if not(ldlibpath is None) or not(pythonpath is None):
-    print "1. Bash user: add the following to ~/.bashrc"
+    print ""
+    print "Setting up your environment"
+
+    print "  1. Bash user: add the following to ~/.bashrc"
     if not( ldlibpath is None) : print "        export %s=%s:$%s" % ( ldkey, ldlibpath, ldkey )
     if not(pythonpath is None) : print "        export PYTHONPATH=%s:$PYTHONPATH" % (pythonpath)
 
-    print "2. Csh  user: add the following to ~/.cshrc"
+    print "  2. Csh  user: add the following to ~/.cshrc"
     if not( ldlibpath is None) : print "        setenv LD_LIBRARY_PATH %s:$LD_LIBRARY_PATH" % (ldkey, eman2+"/lib", ldkey)
     if not(pythonpath is None) : print "        setenv PYTHONPATH %s:$PYTHONPATH" % (pythonpath)
     print ""
