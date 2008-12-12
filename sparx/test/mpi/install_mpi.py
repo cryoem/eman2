@@ -8,7 +8,7 @@ def myexec( cmd ):
     if r != 0:
         print "Failed!"
 
-        print "if it is due to no internet connection, try download the file from other machine,"
+        print "if it failed at wget or curl due to no internet connection, try download the file from other machine,"
         print "copy it to the current directory and restart install_mpi.py."
         print "otherwise, check the file log and try to resolve it"
         sys.exit(-1)
@@ -28,9 +28,9 @@ def geturl( url, file ):
     import commands
 
     if macos():
-	myexec( "curl " + url + " -o " + file )
+	myexec( "curl " + url + " -o " + file + " >& log" )
     else:
-        myexec( "wget " + url)
+        myexec( "wget " + url + " >& log" )
     
 
 
@@ -214,7 +214,7 @@ if not os.path.exists( eman2 + "/lib" ):
 pythonroot,pythonver = get_pythonroot( options )
 mpiroot = get_mpiroot( options )
 numeric = get_Numeric( pythonroot, pythonver )
-
+numeric = None
 if pythonroot is None:
      if options.force:
          pythonroot,pythonver = install_python( pythonver )
@@ -289,15 +289,37 @@ if not(numericpath is None):
 
 
 if not(ldlibpath is None) or not(pythonpath is None):
+    import os
     print ""
     print "Setting up your environment"
 
-    print "  1. Bash user: add the following line(s) to ~/.bashrc"
-    if not( ldlibpath is None) : print "        export %s=%s:$%s" % ( ldkey, ldlibpath, ldkey )
-    if not(pythonpath is None) : print "        export PYTHONPATH=%s:$PYTHONPATH" % (pythonpath)
+    print "  1. Bash user: the following line(s) has been added to ~/.bashrc"
+    if not( ldlibpath is None) : 
+        line = "        export %s=%s:$%s" % ( ldkey, ldlibpath, ldkey )
+        print line
+        os.system( "echo '%s' >> ~/.bashrc" % line )
 
-    print "  2. Csh  user: add the following line(s) to ~/.cshrc"
-    if not( ldlibpath is None) : print "        setenv LD_LIBRARY_PATH %s:$LD_LIBRARY_PATH" % (ldkey, eman2+"/lib", ldkey)
-    if not(pythonpath is None) : print "        setenv PYTHONPATH %s:$PYTHONPATH" % (pythonpath)
+    if not(pythonpath is None) : 
+        line = "        export PYTHONPATH=%s:$PYTHONPATH" % (pythonpath)
+        print line
+        os.system( "echo '%s' >> ~/.bashrc" % line )
+
+    print "     Please run"
+    print "           source ~/.bashshrc"
+    print ""
+
+    print "  2. Csh  user: the following line(s) has been added to ~/.cshrc"
+    if not( ldlibpath is None) : 
+        line = "        setenv LD_LIBRARY_PATH %s:$LD_LIBRARY_PATH" % (ldkey, eman2+"/lib", ldkey)
+        print line
+        os.system( "echo '%s' >> ~/.cshrc" % line )
+       
+    if not(pythonpath is None) : 
+        line = "        setenv PYTHONPATH %s:$PYTHONPATH" % (pythonpath)
+        print line
+        os.system( "echo '%s' >> ~/.cshrc" % line )
+
+    print "     Please run"
+    print "           source ~/.cshrc"
     print ""
 
