@@ -212,7 +212,6 @@ if not os.path.exists( eman2 + "/lib" ):
 pythonroot,pythonver = get_pythonroot( options )
 mpiroot = get_mpiroot( options )
 numeric = get_Numeric( pythonroot, pythonver )
-numeric = None
 
 
 if pythonroot is None:
@@ -290,11 +289,11 @@ if not(numericpath is None):
 
 
 if not(ldlibpath is None) or not(pythonpath is None):
-    print "1. Bash user: add the following two lines to ~/.bashrc"
+    print "1. Bash user: add the following to ~/.bashrc"
     if not( ldlibpath is None) : print "        export %s=%s:$%s" % ( ldkey, ldlibpath, ldkey )
     if not(pythonpath is None) : print "        export PYTHONPATH=%s:$PYTHONPATH" % (pythonpath)
 
-    print "2. Csh  user: add the following two lines to ~/.cshrc"
+    print "2. Csh  user: add the following to ~/.cshrc"
     if not( ldlibpath is None) : print "        setenv LD_LIBRARY_PATH %s:$LD_LIBRARY_PATH" % (ldkey, eman2+"/lib", ldkey)
     if not(pythonpath is None) : print "        setenv PYTHONPATH %s:$PYTHONPATH" % (pythonpath)
     print ""
