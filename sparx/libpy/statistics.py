@@ -1780,6 +1780,7 @@ def k_means_classical(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, D
 		if DEBUG: print 'init Je', Je
 		
 		print_msg('\n__ Trials: %2d _________________________________%s\n'%(ntrials, time.strftime('%a_%d_%b_%Y_%H_%M_%S', time.localtime())))
+		print_msg('Criterion: %11.6e \n' % Je)
 		while change and watch_dog < maxit:
 			ite       += 1
 			watch_dog += 1
@@ -1963,6 +1964,7 @@ def k_means_classical(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, D
 				MemCls[ntrials-1]    = deepcopy(Cls)
 				MemJe[ntrials-1]     = deepcopy(Je)
 				MemAssign[ntrials-1] = deepcopy(assign)
+				print_msg('# Criterion: %11.6e \n' % Je)
 
 			# set to zero watch dog trials
 			wd_trials = 0
@@ -2188,7 +2190,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 			Je = 0
 			for n in xrange(N):	Cls['Ji'][assign[n]] += im_M[n].cmp("SqEuclidean",Cls['ave'][assign[n]])/norm
 			for k in xrange(K):	Je += Cls['Ji'][k]	
-				
+	
 		## Clustering		
 		ite       = 0
 		watch_dog = 0
@@ -2197,8 +2199,10 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 		order     = range(N)
 
 		if DEBUG: print 'init Je', Je
+
 		
 		print_msg('\n__ Trials: %2d _________________________________%s\n'%(ntrials, time.strftime('%a_%d_%b_%Y_%H_%M_%S', time.localtime())))
+		print_msg('Criterion: %11.6e \n' % Je)
 
 		while change and watch_dog < maxit:
 			ite       += 1
@@ -2459,6 +2463,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 				MemCls[ntrials-1]    = deepcopy(Cls)
 				MemJe[ntrials-1]     = deepcopy(Je)
 				MemAssign[ntrials-1] = deepcopy(assign)
+				print_msg('# Criterion: %11.6e \n' % Je)
 
 			# set to zero watch dog trials
 			wd_trials = 0
@@ -2717,7 +2722,9 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 		watch_dog = 0
 		old_Je    = 0
 		change    = 1
-		if myid == main_node: print_msg('\n__ Trials: %2d _________________________________%s\n'%(ntrials, time.strftime('%a_%d_%b_%Y_%H_%M_%S', time.localtime())))
+		if myid == main_node:
+			print_msg('\n__ Trials: %2d _________________________________%s\n'%(ntrials, time.strftime('%a_%d_%b_%Y_%H_%M_%S', time.localtime())))
+			print_msg('Criterion: %11.6e \n' % Je)
 		
 		while change and watch_dog < maxit:
 			ite       += 1
@@ -2961,6 +2968,7 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 				MemCls[ntrials-1]    = deepcopy(Cls)
 				MemJe[ntrials-1]     = deepcopy(Je)
 				MemAssign[ntrials-1] = deepcopy(assign)
+				print_msg('# Criterion: %11.6e \n' % Je)
 
 			# set to zero watch dog trials
 			wd_trials = 0
@@ -3077,7 +3085,7 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 	else:                 return None, None
 
 # K-means MPI with SSE method
-def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_node, ncpu, N_start, N_stop, F=0, T0=0):
+def lk_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_node, ncpu, N_start, N_stop, F=0, T0=0):
 	from utilities    import model_blank, get_im
 	from utilities    import bcast_EMData_to_all, reduce_EMData_to_root
 	from utilities    import print_msg, running_time
@@ -3266,6 +3274,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 		
 		if myid == main_node:
 			print_msg('\n__ Trials: %2d _________________________________%s\n'%(ntrials, time.strftime('%a_%d_%b_%Y_%H_%M_%S', time.localtime())))
+			print_msg('Criterion: %11.6e \n' % Je)
 		th_update = N // ncpu // 10
 		flag_update = 0
 		
@@ -3605,6 +3614,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 				MemCls[ntrials-1]    = deepcopy(Cls)
 				MemJe[ntrials-1]     = deepcopy(Je)
 				MemAssign[ntrials-1] = deepcopy(assign)
+				print_msg('Criterion: %11.6e \n' % Je)
 
 			# set to zero watch dog trials
 			wd_trials = 0
