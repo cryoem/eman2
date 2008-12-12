@@ -31,7 +31,7 @@
 from EMAN2_cppwrap import *
 from global_def import *
 	
-def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, list_p=[], CTF=False, random_method="", Iter=0, T0=1.0, F=0.996, SA_stop=0):
+def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, CTF=False, random_method="", T=1.0, SA_stop=False):
 	"""
 		single iteration of 2D alignment using ormq
 		if CTF = True, apply CTF to data (not to reference!)
@@ -46,75 +46,59 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode
 	cimage = Util.Polar2Dm(tavg, cnx, cny, numr, mode)
 	Util.Frngs(cimage, numr)
 	Applyws(cimage, numr, wr)
-	# align all images
-	import  types
-	if (type(data) is types.StringType):	
-		is_string = True
-		if(len(list_p) == 0): list_p = range(EMUtil.get_image_count(data))
-	else:	
-		is_string = False
-		if(len(list_p) == 0): list_p = range(len(data))
 		
 	sx_sum = 0.0
 	sy_sum = 0.0
 	
-	for im in list_p:
-		if is_string:
-			ima = EMImage()
-			ima.read_image(data, im)
-		else:
-			ima = data[im].copy()
-		ima2 = ima.copy()
-
-		alpha, sx, sy, mirror, dummy = get_params2D(ima)
-		alpha, sx, sy, mirror = combine_params2(alpha, sx, sy, mirror, 0.0, -cs[0], -cs[1], 0)
-		alphai, sxi, syi, scalei = inverse_transform2(alpha, sx, sy, 1.0)
+	for im in xrange(len(data)):
 		if CTF:
 			#Apply CTF to image
 			ctf_params = ima.get_attr("ctf")
-			ima = filt_ctf(ima, ctf_params, True)
+			ima = filt_ctf(data[im], ctf_params, True)
+		else:
+			ima = data[im]
+		alpha, sx, sy, mirror, dummy = get_params2D(ima)
+		alpha, sx, sy, mirror = combine_params2(alpha, sx, sy, mirror, 0.0, -cs[0], -cs[1], 0)
+		alphai, sxi, syi, scalei = inverse_transform2(alpha, sx, sy, 1.0)
 
 		# align current image to the reference
 		if random_method == "SA":
 			peaks = ormq_peaks(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
 			#peaks, peakm, peaks_major, peakm_major = ormq_peaks_major(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
-			[angt, sxst, syst, mirrort, peakt, select] = sim_anneal(peaks, Iter, T0, F, SA_stop)
+			[angt, sxst, syst, mirrort, peakt, select] = sim_anneal(peaks, T, SA_stop)
 			#[angt, sxst, syst, mirrort, peakt, select] = sim_anneal3(peaks, peakm, peaks_major, peakm_major, Iter, T0, F, SA_stop)
 			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
-			set_params2D(ima2, [alphan, sxn, syn, mn, 1.0])
-			ima2.set_attr_dict({'select': select})
-		elif random_method == "ML":
-			peaks = ormq_peaks(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
-			alphan = []
-			sxn = []
-			syn = []
-			mn  = []
-			peakt = []
-			for i in xrange(len(peaks)):
-				[alphax, sxx, syx, mnx] = combine_params2(0.0, -sxi, -syi, 0, peaks[i][1], peaks[i][6], peaks[i][7], peaks[i][8])
-				alphan.append(float(alphax))
-				sxn.append(float(sxx))
-				syn.append(float(syx))
-				mn.append(int(mnx))
-				peakt.append(float(peaks[i][0]))					
-			set_params2D(ima2, [alphan[0], sxn[0], syn[0], mn[0], 1.0])
-			ima2.set_attr_dict({'alpha_l':alphan, 'sx_l':sxn, 'sy_l':syn, 'mirror_l':mn})
-			prob = sim_anneal2(peaks, Iter, T0, F, SA_stop)
-			ima2.set_attr_dict({'Prob': prob})
+			set_params2D(data[im], [alphan, sxn, syn, mn, 1.0])
+			data[im].set_attr_dict({'select': select})
+			"""
+			elif random_method == "ML":
+				peaks = ormq_peaks(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
+				alphan = []
+				sxn = []
+				syn = []
+				mn  = []
+				peakt = []
+				for i in xrange(len(peaks)):
+					[alphax, sxx, syx, mnx] = combine_params2(0.0, -sxi, -syi, 0, peaks[i][1], peaks[i][6], peaks[i][7], peaks[i][8])
+					alphan.append(float(alphax))
+					sxn.append(float(sxx))
+					syn.append(float(syx))
+					mn.append(int(mnx))
+					peakt.append(float(peaks[i][0]))					
+				set_params2D(ima2, [alphan[0], sxn[0], syn[0], mn[0], 1.0])
+				ima2.set_attr_dict({'alpha_l':alphan, 'sx_l':sxn, 'sy_l':syn, 'mirror_l':mn})
+				prob = sim_anneal2(peaks, Iter, T0, F, SA_stop)
+				ima2.set_attr_dict({'Prob': prob})
+			"""
 		else:
 			[angt, sxst, syst, mirrort, peakt] = ormq(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
 			# combine parameters and set them to the header, ignore previous angle and mirror
 			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
-			set_params2D(ima2, [alphan, sxn, syn, mn, 1.0])
+			set_params2D(data[im], [alphan, sxn, syn, mn, 1.0])
 
 		if mn == 0: sx_sum += sxn
 		else: sx_sum -= sxn
 		sy_sum += syn
-
-		if is_string:
-			ima2.write_image(data, im, EMUtil.ImageType.IMAGE_HDF, True)
-		else:
-			data[im] = ima2.copy()
 
 	return sx_sum, sy_sum
 
@@ -337,7 +321,7 @@ def ormq_peaks(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 	peakm = peak_search(ccfm, 1000)
 	for i in xrange(len(peakm)):	peakm[i].append(1)
 	peaks += peakm 
-	
+
 	peaks = process_peak(peaks, step, mode, numr)
 
 	return peaks
@@ -592,14 +576,9 @@ def select_k(dJe, T):
 	return select
 
 
-def sim_anneal(peaks, Iter, T0, F, SA_stop):
-	from math import exp, pow
-	from random import random
+def sim_anneal(peaks, T, SA_stop):
 
-	# Determine the current temperature
-	T = T0*pow(F, Iter)	
-
-	if T > 0.001 and Iter < SA_stop:
+	if T > 0.001 and SA_stop:
 		K = len(peaks)
 		dJe = [0.0]*K
 		for k in xrange(K): dJe[k] = peaks[k][4]

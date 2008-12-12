@@ -2064,7 +2064,7 @@ def bcast_number_to_all(number_to_send, source_node = 0):
 	"""
 		number_to_send has to be pre-defined in each node
 	"""
-	from mpi import mpi_bcast, MPI_INT, MPI_COMM_WORLD
+	from mpi import mpi_bcast, MPI_INT, MPI_COMM_WORLD, MPI_FLOAT
 	import types
 	if    type(number_to_send) is types.IntType: 
 		TMP = mpi_bcast(number_to_send, 1, MPI_INT,   source_node, MPI_COMM_WORLD)
@@ -2072,6 +2072,8 @@ def bcast_number_to_all(number_to_send, source_node = 0):
 	elif  type(number_to_send) is types.FloatType:
 		TMP = mpi_bcast(number_to_send, 1, MPI_FLOAT, source_node, MPI_COMM_WORLD)
 		return float(TMP[0])
+	else:
+		print  " ERROR "
 	
 def bcast_list_to_all(list_to_send, source_node = 0):
 	from mpi import mpi_bcast, MPI_INT, MPI_COMM_WORLD, MPI_FLOAT

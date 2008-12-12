@@ -227,6 +227,7 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 		if SA_stop != max_iter: print_msg("SA stop at Iteration        : %i\n"%(SA_stop))
 	if auto_stop:   print_msg("Stop iteration with         : criterion\n")
 	else:           print_msg("Stop iteration with         : maxit\n")
+	print_msg("User function               : %s\n"%(user_func_name))
 
 	if maskfile:
 		import	types
@@ -368,11 +369,12 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	from numpy        import reshape, shape
 	from utilities    import print_msg, print_begin_msg, print_end_msg
 	from fundamentals import fft, rot_avg_table
+	from math         import pow
 	import os
 
 	from mpi 	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
 	from mpi 	  import mpi_reduce, mpi_bcast, mpi_barrier
-	from mpi 	  import MPI_SUM, MPI_FLOAT, MPI_INT
+	from mpi 	  import MPI_FLOAT, MPI_SUM, MPI_INT
 
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
@@ -386,8 +388,8 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		os.mkdir(outdir)
 
 	first_ring=int(ir); last_ring=int(ou); rstep=int(rs); max_iter=int(maxit);
-	SA_stop = int(SA_stop)
-	if SA_stop == 0:  SA_stop = max_iter	
+	SA_stop = False#int(SA_stop)
+	#if SA_stop == 0:  SA_stop = max_iter
 	if max_iter == 0:
 		max_iter = 10
 		auto_stop = True
@@ -414,6 +416,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		if myid == main_node:
 			nima = EMUtil.get_image_count(stack)
 		nima = mpi_bcast(nima, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+		nima = nima[0]
 	else:
 		print "Invalid file type"
 		return
@@ -447,6 +450,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			if SA_stop != max_iter:	print_msg("SA stop at Iteration        : %i\n"%(SA_stop))
 		if auto_stop: print_msg("Stop iteration with         : criterion\n")
 		else:         print_msg("Stop iteration with         : maxit\n")
+		print_msg("User function               : %s\n"%(user_func_name))
 		print_msg("Number of processors used   : %d\n"%(number_of_proc))
 
 	if maskfile:
@@ -507,16 +511,16 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		msg = "\nX range = %5.2f   Y range = %5.2f   Step = %5.2f\n"%(xrng[N_step], yrng[N_step], step[N_step])
 		if myid == main_node: print_msg(msg)
 		for Iter in xrange(max_iter):
-
+			T = T0*pow(F,total_iter)
 			tavg, vav = add_ave_varf_MPI(data, mask, mode="a", CTF=CTF)
 			#if random_method == "ML": 
 			#	tavg_ML, vav_ML = add_ave_varf_ML_MPI(data, mask, mode="a", CTF=CTF)
 			#  bring all partial sums together
 			reduce_EMData_to_root(tavg, myid, main_node)
 			reduce_EMData_to_root(vav, myid, main_node)
-			if random_method == "ML": 
-				reduce_EMData_to_root(tavg_ML, myid, main_node)
-				reduce_EMData_to_root(vav_ML, myid, main_node)			
+			#if random_method == "ML": 
+			#	reduce_EMData_to_root(tavg_ML, myid, main_node)
+			#	reduce_EMData_to_root(vav_ML, myid, main_node)			
 
 			attr_list = data[0].get_attr_dict()	
 			if attr_list.has_key("select") == False:
@@ -559,7 +563,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				#if random_method == "ML":
 				#	Util.mul_scalar(vav_ML, 1.0/float(nima-1))				
 
-				if random_method=="" or total_iter%10 == 0:
+				if random_method=="" or total_iter%1 == 0:
 					drop_image(tavg, os.path.join(outdir, "aqc_%03d.hdf"%(total_iter)))
 					drop_image(vav, os.path.join(outdir, "vav_%03d.hdf"%(total_iter)))
 
@@ -599,22 +603,16 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					# When center = -1, which is by default, we use the average center method
 					ref_data[1] = 0
 					tavg, cs = user_func(ref_data)
-					#cs[0] = float(sx_sum)/nima
-					#cs[1] = float(sy_sum)/nima
-					#from fundamentals import fshift
-					#tavg = fshift(tavg, -cs[0], -cs[1])
-					#msg = "Center x =      %10.3f        Center y       = %10.3f\n"%(cs[0], cs[1])
-					#print_msg(msg)
 
 				Util.div_filter(sumsq, vav)
 				sumsq = filt_tophatb(sumsq, 0.01, 0.49)
 				a1 = Util.infomask(sumsq, None, True)
 				a1 = a1[0]
 
-				msg = "ITERATION   #%5d    criterion = %15.7e    average select = %5.3f\n\n"%(total_iter, a1, float(select)/nima)
+				msg = "ITERATION   #%5d    criterion = %15.7e    average select = %5.3f  T=%12.3e\n\n"%(total_iter, a1, float(select)/nima, T)
 				print_msg(msg)
 				# write the current average
-				if random_method=="" or total_iter%10 == 0:
+				if random_method=="" or total_iter%1 == 0:
 					drop_image(tavg, os.path.join(outdir, "aqf_%03d.hdf"%(total_iter)))
 				# a0 should increase; stop algorithm when it decreases.    
 				if a1 < a0:
@@ -630,25 +628,31 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			if N_step == len(xrng)-1 and Iter == max_iter-1:  break
 			cs = mpi_bcast(cs, 2, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 			cs = [float(cs[0]), float(cs[1])]
-			sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF=CTF, random_method=random_method, Iter=total_iter, T0=T0, F=F, SA_stop=SA_stop)
+			sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF, random_method, T, SA_stop)
 			sx_sum = mpi_reduce(sx_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 			sy_sum = mpi_reduce(sy_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 			if myid == main_node:
-				sx_sum = float(sx_sum)/nima
-				sy_sum = float(sy_sum)/nima
+				sx_sum = float(sx_sum[0])/nima
+				sy_sum = float(sy_sum[0])/nima
 				msg = "Average center x =      %10.3f        Center y       = %10.3f\n"%(sx_sum, sy_sum)
 				print_msg(msg)
+			else:
+				sx_sum = 0.0
+				sy_sum = 0.0
 			sx_sum = bcast_number_to_all(sx_sum, main_node)
 			sy_sum = bcast_number_to_all(sy_sum, main_node)
+			"""
 			ts = Transform({"type":"2D","alpha":0.0,"tx":-sx_sum,"ty":-sy_sum,"mirror":0,"scale":1.0})
 			for ima in data:
-				t = ima.get_attr("xform.align2D")
+				t = ima.get_attr("xform.align2d")
 				t = t*ts
-				ima.set_attr("xform.align2D", t)
+				ima.set_attr("xform.align2d", t)
+			"""
 
 	# write out headers and STOP, under MPI writing has to be done sequentially
 	mpi_barrier(MPI_COMM_WORLD)
-	par_str = ["xform.align2d", "ID"]
+	#par_str = ["xform.align2d", "ID"]
+	par_str = ["xform.align2d"]
 	if myid == main_node:
 		from utilities import file_type
 		if(file_type(stack) == "bdb"):
