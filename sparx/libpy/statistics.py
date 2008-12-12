@@ -3085,7 +3085,7 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 	else:                 return None, None
 
 # K-means MPI with SSE method
-def lk_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_node, ncpu, N_start, N_stop, F=0, T0=0):
+def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_node, ncpu, N_start, N_stop, F=0, T0=0):
 	from utilities    import model_blank, get_im
 	from utilities    import bcast_EMData_to_all, reduce_EMData_to_root
 	from utilities    import print_msg, running_time
