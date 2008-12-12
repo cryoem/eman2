@@ -2968,7 +2968,7 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 				MemCls[ntrials-1]    = deepcopy(Cls)
 				MemJe[ntrials-1]     = deepcopy(Je)
 				MemAssign[ntrials-1] = deepcopy(assign)
-				print_msg('# Criterion: %11.6e \n' % Je)
+				if myid == main_node: print_msg('# Criterion: %11.6e \n' % Je)
 
 			# set to zero watch dog trials
 			wd_trials = 0
@@ -3614,7 +3614,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 				MemCls[ntrials-1]    = deepcopy(Cls)
 				MemJe[ntrials-1]     = deepcopy(Je)
 				MemAssign[ntrials-1] = deepcopy(assign)
-				print_msg('Criterion: %11.6e \n' % Je)
+				if myid == main_node: print_msg('Criterion: %11.6e \n' % Je)
 
 			# set to zero watch dog trials
 			wd_trials = 0
