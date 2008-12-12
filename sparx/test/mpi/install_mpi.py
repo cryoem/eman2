@@ -2,18 +2,36 @@
 
 def myexec( cmd ):
     import os
+    import sys
     print  "         ", cmd
     r = os.system( cmd )
     if r != 0:
-        print "Command: "
-        print "         ", cmd 
         print "Failed!"
 
         print "if it is due to no internet connection, try download the file from other machine,"
         print "copy it to the current directory and restart install_mpi.py."
         print "otherwise, check the file log and try to resolve it"
-        os.exit(-1)
+        sys.exit(-1)
+
+def chdir( dir ):
+    import os
+    print  "          cd ", dir
+    os.chdir(dir)
  
+def macos():
+    import commands
+    r = commands.getoutput( "uname" )
+    return r=="Darwin"
+
+def geturl( url, file ):
+    import os
+    import commands
+
+    if macos():
+	myexec( "curl " + url + " -o " + file )
+    else:
+        myexec( "wget " + url)
+    
 
 
 def get_pythonroot( options ) :
@@ -93,16 +111,18 @@ def install_python( pythonver ):
 
     if pythonver is None:
         pythonver = "2.5.2"
-  
+
+    print ""
     print "Installing python ", pythonver
     file = "Python-" + pythonver + ".tgz"
+    url= "http://www.python.org/ftp/python/" + file
 
     if not( os.path.exists(file) ):
-        myexec( "wget http://www.python.org/ftp/python/" + file )
+        geturl( url, file )
     
     myexec( "tar -zxf " + file )
-    os.chdir( "Python-" + pythonver )
-    myexec( "./configure --enable-shared --preifx=" + root + ">& log" )
+    chdir( "Python-" + pythonver )
+    myexec( "./configure --enable-shared --prefix=" + root + ">& log" )
     myexec( "make >& log" )
     myexec( "make install >& log" )
 
@@ -116,14 +136,16 @@ def install_openmpi( ):
     pwd = os.getcwd()
 
     file = "openmpi-1.2.8.tar.gz"
+    url = "http://www.open-mpi.org/software/ompi/v1.2/downloads/" + file
 
+    print ""
     print "Installing openmpi-1.2.8"
     if not( os.path.exists(file) ):
-        myexec( "wget http://www.open-mpi.org/software/ompi/v1.2/downloads/" + file )
+        geturl( url, file )
     
     myexec( "tar -zxf " + file )
-    os.chdir( "openmpi-1.2.8" )
-    myexec( "./configure --enable-shared --preifx=" + root + ">& log" )
+    chdir( "openmpi-1.2.8" )
+    myexec( "./configure --enable-shared --prefix=" + root + ">& log" )
     myexec( "make >& log" )
     myexec( "make install >& log" )
     os.chdir( pwd )
@@ -135,20 +157,27 @@ def install_numeric(pythonroot, pythonver):
     root = os.environ["HOME"] + "/EMAN2"
     python = pythonroot + "/bin/python"
    
+    pwd = os.getcwd()
     file = "Numeric-24.2.tar.gz"
+    url = "http://internap.dl.sourceforge.net/sourceforge/numpy/" + file
 
+    print ""
     print "Installing Numeric-24.2"
     if not( os.path.exists(file) ):
-        myexec( "wget http://internap.dl.sourceforge.net/sourceforge/numpy/" + file )
+        geturl( url, file )
 
     myexec( "tar -zxf " + file )
-    os.chdir( "Numeric-24.2" )
+    chdir( "Numeric-24.2" )
+
+    if macos():
+        myexec( "patch -p1 < ../Numeric_macos.patch >& log" )
+
 
     if root==pythonroot:
-        myexec( python + " setup.py install --prefix=" )
+        myexec( python + " setup.py install >& log" )
     else:
-        myexec( python + " setup.py install --prefix=" + root )
-        print "Info: please add " + root + "/lib/python" + pythonver[0:3] + "/site-packages/Numeric to you PYTHONPATH"
+        myexec( python + " setup.py install --prefix=" + root  + ">& log")
+
     os.chdir( pwd )
     return root
 
@@ -166,11 +195,26 @@ parser.add_option( "--Numeric", type="string", help="the directory containing Nu
 parser.add_option( "--force", action="store_true", default=False, help="if can't find some packages, install it forcefully" )
 options,args = parser.parse_args()
 
+import os
+import commands
+
+eman2 = os.environ["HOME"] + "/EMAN2"
+if not os.path.exists( eman2 ):
+    myexec( "mkdir " + eman2 )
+
+if not os.path.exists( eman2 + "/src" ):
+    myexec( "mkdir " + eman2 + "/src" )
+
+if not os.path.exists( eman2 + "/lib" ):
+    myexec( "mkdir " + eman2 + "/lib" )
+
 
 pythonroot,pythonver = get_pythonroot( options )
 mpiroot = get_mpiroot( options )
 numeric = get_Numeric( pythonroot, pythonver )
 numeric = None
+
+
 if pythonroot is None:
      if options.force:
          pythonroot,pythonver = install_python( pythonver )
@@ -186,27 +230,17 @@ if mpiroot is None:
         print "Error: cannot find mpi header file, cannot proceed"
         exit(-2)
 
+
 if numeric is None:
-     if options.force:
-         numeric = install_numeric(pythonroot, pythonver )
-     else:
-         print "Error: cannot find Numeric header file, cannot proceed"
-         exit(-3)
+    if options.force:
+        numeric = install_numeric(pythonroot, pythonver )
+        numericpath = numeric + "/lib/python" + pythonver[0:3] + "/site-packages/Numeric"
+    else:
+        numericpath = None
+        print "Error: cannot find Numeric header file, cannot proceed"
+        exit(-3)
 
-import os
-import commands
-
-eman2 = os.environ["HOME"] + "/EMAN2"
-if not os.path.exists( eman2 ):
-    myexec( "mkdir " + eman2 )
-
-if not os.path.exists( eman2 + "/src" ):
-    myexec( "mkdir " + eman2 + "/src" )
-
-if not os.path.exists( eman2 + "/lib" ):
-    myexec( "mkdir " + eman2 + "/lib" )
-
-
+print ""
 print "Builing the mpi python binding"
 pythoninc = pythonroot + "/include/python" + pythonver[0:3] 
 pythonlib = "-lpython" + pythonver[0:3] + " -L" + pythonroot + "/lib/" + " -L" + pythonroot + "/lib64/"
@@ -220,18 +254,49 @@ cmd = "gcc -c -fPIC mympimodule.c -I%s -I%s -I%s >& log" % ( pythoninc,  mpiinc,
 myexec(cmd)
 
 uname = commands.getoutput( "uname" ) 
-if uname == "Darwin":
+if macos():
     cmd = options.cc + " -dynamiclib -single_module -o mpi.so mympimodule.o >& log " + mpilib + " " + pythonlib
 else:
     cmd = options.cc + " -shared -o mpi.so mympimodule.o >& log " + mpilib + " " + pythonlib
 
 myexec(cmd)
 
-cmd = "cp mpi.so " + eman2 + "/lib"
+e2lib = eman2 + "/lib"
+cmd = "cp mpi.so " + e2lib
 myexec(cmd)
 
 print "Installation complete successfully!"
-print "make sure you have %s in your PYTHONPATH" % ( eman2 + "/lib" )
+
+print ""
+print "Setting up your environment"
+if macos():
+    ldkey = "DYLD_LIBRARY_PATH"
+else:
+    ldkey = "LD_LIBRARY_PATH"
+
+ldlibpath = None
+if os.environ[ldkey].find(e2lib) == -1:
+    ldlibpath = e2dir
+
+pythonpath = None
+if os.environ["PYTHONPATH"].find(e2lib) == -1:
+    pythonpath = e2dir
+
+if not(numericpath is None):
+    if pythonpath is None:
+        pythonpath = numericpath
+    else:
+        pythonpath = pythonpath + ":" + numericpath
 
 
+if not(ldlibpath is None) or not(pythonpath is None):
+    print ""
+    print "Bash user: add the following two lines to ~/.bashrc"
+    if not( ldlibpath is None) : print "        export %s=%s:$%s" % ( ldkey, ldlibpath, ldkey )
+    if not(pythonpath is None) : print "        export PYTHONPATH=%s:$PYTHONPATH" % (pythonpath)
+
+    print "Csh  user: add the following two lines to ~/.cshrc"
+    if not( ldlibpath is None) : print "        setenv LD_LIBRARY_PATH %s:$LD_LIBRARY_PATH" % (ldkey, eman2+"/lib", ldkey)
+    if not(pythonpath is None) : print "        setenv PYTHONPATH %s:$PYTHONPATH" % (pythonpath)
+    print ""
 
