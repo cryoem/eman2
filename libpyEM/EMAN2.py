@@ -567,8 +567,33 @@ def memory_stats():
 				mem_avail = float(ma[1])/1000000.0
 		except:
 			pass
+		
+	elif platform_string == "Darwin":
+		import commands
+		status_total, output_total = commands.getstatusoutput("sysctl hw.memsize")
+		status_used, output_used = commands.getstatusoutput("sysctl hw.usermem")
+		total_strings = output_total.split()
+		if len(total_strings) >= 2: # try to make it future proof, the output of sysctl will have to be double checked. Let's put it in a unit test in
+			total_len = len("hw.memsize")
+			if total_strings[0][:total_len] == "hw.memsize":
+				try:
+					mem_total = float(total_strings[1])/1000000000.0 # on Mac the output value is in bytes, not kilobytes (as in Linux)
+				except:pass # mem_total is just -1
+		
+		used_strings = output_used.split()
+		mem_used = -1
+		if len(used_strings) >=2:
+			used_len = len("hw.usermem")
+			if used_strings[0][:used_len] == "hw.usermem":
+				try:
+					mem_used = float(used_strings[1])/1000000000.0 # on Mac the output value is in bytes, not kilobytes (as in Linux)
+				except:pass # mem_used is just -1
+		
+		if mem_used != -1 and mem_total != -1:
+			mem_avail = mem_total - mem_used
 			
 	return [mem_total,mem_avail]
+
 
 def num_cpus():
 	'''
@@ -601,19 +626,22 @@ def num_cpus():
 		except:
 			return 1
 	elif platform_string == "Darwin":
-		import subprocess
-		import os
-		process = subprocess.Popen(["sysctl","hw.logicalcpu"],stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
-		while True:
-			try:
-				os.waitpid(process.pid,0)
-				break
-			except: pass
-		a = process.stdout.readlines()
-		split = a[0].split()
-		cores = int(split[-1])
-		if cores < 1: return 1 # just for safety
-		else: return cores
+		import commands
+		status, output = commands.getstatusoutput("sysctl hw.logicalcpu")
+		strings = output.split()
+		cores = 1 # this has to be true or else it's a really special computer ;)
+		if len(strings) >=2:
+			used_len = len("hw.logicalcpu")
+			if strings[0][:used_len] == "hw.logicalcpu": # this essentially means the system call worked
+				try:
+					cores = int(strings[1])
+				except:pass # mem_used is just -1
+				
+		if cores < 1: 
+			print "warning, the number of cpus was negative (%i), this means the MAC system command (sysctl) has been updated and EMAN2 has not accommodated for this. Returning 1 for the number of cores." %cores
+			cores = 1 # just for safety, something could have gone wrong. Maybe we should raise instead
+		return cores
+
 	else:
 		print "error, in num_cpus - uknown platform string:",platform_string," - returning 1"
 		return 1

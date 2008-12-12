@@ -453,7 +453,7 @@ class SPRInitTask(WorkFlowTask):
 		pcs = ParamDef(name="global.microscope_cs",vartype="float",desc_short="Microscope Cs",desc_long="Microscope spherical aberration constant",property=None,defaultunits=project_db.get("global.microscope_cs",dfl=2.0),choices=None)
 		pncp = ParamDef(name="global.num_cpus",vartype="int",desc_short="Number of CPUs",desc_long="Number of CPUS available for the project to use",property=None,defaultunits=project_db.get("global.num_cpus",dfl=num_cpus()),choices=None)
 		mem = memory_stats()
-		pmem = ParamDef(name="global.memory_available",vartype="float",desc_short="Memory usage ("+str(mem[0])+ " Gb total)",desc_long="The total amount of system memory you want to make available to the project in gigabytes",property=None,defaultunits=project_db.get("global.memory_available",dfl=mem[1]),choices=None)
+		pmem = ParamDef(name="global.memory_available",vartype="float",desc_short="Memory usage (%.2f Gb total)" %mem[0],desc_long="The total amount of system memory you want to make available to the project in gigabytes",property=None,defaultunits=project_db.get("global.memory_available",dfl=mem[1]),choices=None)
 		params.append(papix)
 		params.append(pvolt)
 		params.append(pcs)
@@ -2018,12 +2018,12 @@ class E2CTFAutoFitTask(E2CTFWorkFlowTask):
 				error_message.append("error, can't particle entry doesn't exist for %s." %name)
 			
 			if boxsize == None:
-				db = db_open_dict(db_name)
+				db = db_open_dict(db_name,ro=True)
 				hdr = db.get_header(0)
 				boxsize = hdr["nx"] # no consideration is given for non square images
 				db_close_dict(db_name)
 			else:
-				db = db_open_dict(db_name)
+				db = db_open_dict(db_name,ro=True)
 				hdr = db.get_header(0)
 				db_close_dict(db_name)
 				if boxsize != hdr["nx"]: # no consideration is given for non square images
