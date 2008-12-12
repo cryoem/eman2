@@ -78,7 +78,7 @@ def get_mpiroot(options):
         if result.find( " " ) != -1 :
             print "Error: mpiroot was not given, and mpirun exectuable cannot be found"
             print "       install mpi first. or use the --force the program will install"
-            print "       openmpi for you"
+            print "       openmpi-1.2.8 for you"
             return None
 
         mpiroot = os.path.dirname( os.path.dirname(result) )
@@ -88,8 +88,10 @@ def get_mpiroot(options):
     header = mpiroot + "/include/mpi.h"
     if not os.path.exists(header):
         print "Error: header ", mpiinc + "/mpi.h does not exist"
-        print "This is usually because you did not install mpi development package"
-    
+        print "       This is usually because you did not install mpi development package"
+        print "       You can either install the mpi-devel package by yourself or use "
+        print "       the --force option so that the program install openmpi-1.2.8 for you"
+
     return mpiroot
 
 def get_Numeric(pythonroot, pythonver):
@@ -290,11 +292,11 @@ if not(ldlibpath is None) or not(pythonpath is None):
     print ""
     print "Setting up your environment"
 
-    print "  1. Bash user: add the following to ~/.bashrc"
+    print "  1. Bash user: add the following line(s) to ~/.bashrc"
     if not( ldlibpath is None) : print "        export %s=%s:$%s" % ( ldkey, ldlibpath, ldkey )
     if not(pythonpath is None) : print "        export PYTHONPATH=%s:$PYTHONPATH" % (pythonpath)
 
-    print "  2. Csh  user: add the following to ~/.cshrc"
+    print "  2. Csh  user: add the following line(s) to ~/.cshrc"
     if not( ldlibpath is None) : print "        setenv LD_LIBRARY_PATH %s:$LD_LIBRARY_PATH" % (ldkey, eman2+"/lib", ldkey)
     if not(pythonpath is None) : print "        setenv PYTHONPATH %s:$PYTHONPATH" % (pythonpath)
     print ""
