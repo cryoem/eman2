@@ -2724,7 +2724,7 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 		change    = 1
 		if myid == main_node:
 			print_msg('\n__ Trials: %2d _________________________________%s\n'%(ntrials, time.strftime('%a_%d_%b_%Y_%H_%M_%S', time.localtime())))
-			print_msg('Criterion: %11.6e \n' % Je)
+			#print_msg('Criterion: %11.6e \n' % Je)
 		
 		while change and watch_dog < maxit:
 			ite       += 1
@@ -3274,7 +3274,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 		
 		if myid == main_node:
 			print_msg('\n__ Trials: %2d _________________________________%s\n'%(ntrials, time.strftime('%a_%d_%b_%Y_%H_%M_%S', time.localtime())))
-			print_msg('Criterion: %11.6e \n' % Je)
+			#print_msg('Criterion: %11.6e \n' % Je)
 		th_update = N // ncpu // 10
 		flag_update = 0
 		
