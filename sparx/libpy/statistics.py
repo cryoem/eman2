@@ -848,7 +848,7 @@ def aves_wiener(input_stack, mode="a", SNR=1.0):
 		if mode == "a":
 	 		alpha, sx, sy, mirror, scale = get_params2D(ima)
 		 	ima = rot_shift2D(ima, alpha, sx, sy, mirror)
-		oc = filt_ctf(fft(pad(ima, nx2, ny2, background = 0.0)), ctf_params)
+		oc = filt_ctf(fft(pad(ima, nx2, ny2, background = 0.0)), ctf_params, dopad=False)
 		Util.mul_scalar(oc, SNR)
 		Util.add_img(ave, oc)
 		Util.add_img2(ctf_2_sum, snrsqrt*ctf_img(nx2, ctf_params, ny = ny2, nz = 1))
@@ -864,7 +864,7 @@ def aves_wiener(input_stack, mode="a", SNR=1.0):
 		if mode == "a":
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
  			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
-		oc = filt_ctf(ave, ctf_params, pad= True)
+		oc = filt_ctf(ave, ctf_params, dopad=False)
 		Util.sub_img(ima, Util.window(fft(oc),nx,ny,1,0,0,0))
 		Util.add_img2(var, ima)
 	ave = Util.window(fft(ave),nx,ny,1,0,0,0)
