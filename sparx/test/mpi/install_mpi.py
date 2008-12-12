@@ -214,7 +214,6 @@ if not os.path.exists( eman2 + "/lib" ):
 pythonroot,pythonver = get_pythonroot( options )
 mpiroot = get_mpiroot( options )
 numeric = get_Numeric( pythonroot, pythonver )
-numeric = None
 if pythonroot is None:
      if options.force:
          pythonroot,pythonver = install_python( pythonver )
