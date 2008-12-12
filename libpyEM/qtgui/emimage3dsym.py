@@ -698,7 +698,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 						glCallList(self.tri_dl)
 						glPopMatrix()
 	
-		if self.display_euler:
+		if self.display_euler and self.sym_object != None:
 			glColor(.9,.2,.8)
 			self.gold()
 			glStencilFunc(GL_EQUAL,self.rank,0)

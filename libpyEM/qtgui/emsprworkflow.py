@@ -1853,7 +1853,7 @@ class E2CTFWorkFlowTask(ParticleWorkFlowTask):
 		Inspects the e2ctf.parms database for any images that have ctf parameters
 		'''
 		if db_check_dict("bdb:e2ctf.parms"):
-			ctf_parms_db = db_open_dict("bdb:e2ctf.parms")
+			ctf_parms_db = db_open_dict("bdb:e2ctf.parms",ro=True)
 			vals = ctf_parms_db.keys()
 			#print vals
 			if vals == None: vals = []
@@ -2814,7 +2814,7 @@ class InitialModelReportTask(ParticleWorkFlowTask):
 		min = []
 		for d in db_list_dicts("bdb:initial_models#"):
 			if len(d) != 0 and db_check_dict(db+d):
-				model_db = db_open_dict(db+d)
+				model_db = db_open_dict(db+d,ro=True)
 				if model_db.has_key("maxrec"):
 					hdr = model_db.get_header(0)
 					if hdr["nx"] == hdr["ny"] and hdr["nx"] == hdr["nz"]:
@@ -3065,7 +3065,7 @@ class RefinementReportTask(ParticleWorkFlowTask):
 				
 			if threed_db != None:
 				threed_files.append(threed_db)
-				th_db = db_open_dict(threed_db)
+				th_db = db_open_dict(threed_db,ro=True)
 				dims = ""
 				mean = ""
 				sigma = ""
@@ -3081,6 +3081,7 @@ class RefinementReportTask(ParticleWorkFlowTask):
 				except: pass
 				
 				
+				db_close_dict(threed_db)
 				threed_dims.append(dims)
 				threed_mean.append(mean)
 				threed_sigma.append(sigma)
@@ -3313,7 +3314,7 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 			scale = float(nx)/x
 			new_model = "bdb:"+options.path + "#initial_model"
 			
-			db = db_open_dict(model)
+			db = db_open_dict(model,ro=True)
 			image = db[0]
 
 			start = (x-nx)/2

@@ -53,7 +53,7 @@ import os
 import sys
 import signal
 from copy import *
-from OpenGL import contextdata
+#from OpenGL import contextdata
 from emglplot import *
 from emapplication import EMProgressDialogModule
 # import SPARX definitions
