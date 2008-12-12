@@ -115,7 +115,7 @@ def install_python( pythonver ):
     print ""
     print "Installing python ", pythonver
     file = "Python-" + pythonver + ".tgz"
-    url= "http://www.python.org/ftp/python/" + file
+    url= "http://www.python.org/ftp/python/" + pythonver + "/" + file
 
     if not( os.path.exists(file) ):
         geturl( url, file )
@@ -212,7 +212,6 @@ if not os.path.exists( eman2 + "/lib" ):
 pythonroot,pythonver = get_pythonroot( options )
 mpiroot = get_mpiroot( options )
 numeric = get_Numeric( pythonroot, pythonver )
-
 
 if pythonroot is None:
      if options.force:
