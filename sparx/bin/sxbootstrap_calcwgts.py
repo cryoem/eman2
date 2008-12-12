@@ -85,7 +85,7 @@ def exclude( prjccc, nexclude, bothside ):
 
 
 
-def bootstrap_calcwgts( prjfile, wgtfile, delta, refvol=None, fl=None, fh=None, CTF=False, nexclude=0, bothside=False, MPI=False, verbose=True ):
+def bootstrap_calcwgts( prjfile, wgtfile, voronoi, delta, refvol=None, fl=None, fh=None, CTF=False, nexclude=0, bothside=False, MPI=False, verbose=True ):
 	from projection import prep_vol,prgs
 
 	if MPI:
@@ -97,8 +97,6 @@ def bootstrap_calcwgts( prjfile, wgtfile, delta, refvol=None, fl=None, fh=None, 
 		myid = 0
 		ncpu = 1
 
-	print 'myid,refvol: ', myid,refvol
-
 	if verbose:
 		finf = open( "calcwgts%04d.txt" % myid, "w" )
 	nprj = EMUtil.get_image_count( prjfile )
@@ -108,14 +106,28 @@ def bootstrap_calcwgts( prjfile, wgtfile, delta, refvol=None, fl=None, fh=None, 
 		finf.write( "begin, end: %d %d\n" %(beg, end) )
 		finf.flush()
 
-	eve_angs = even_angles( delta, 0.0, 89.99, method='P' )
-	eve_vecs = [None]*len(eve_angs)
-	for i in xrange( len(eve_angs) ):
-		eve_vecs[i] = getvec( eve_angs[i][0], eve_angs[i][1] )
+	if voronoi:
+		angs = [0.0] * (2*nprj)
+		for iprj in xrange(beg,end):
+			prj = get_im( prjfile, iprj )
+			phi,tht,psi,s2x,s2y = get_params_proj( prj )
+			angs[2*iprj] = phi
+			angs[2*iprj+1] = tht
+		
+		if MPI:
+			angs = mpi_reduce( angs, 2*nprj, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD )
+		if myid == 0:
+			wgts = Util.cml_weights( angs )
+	
+	else:
+		eve_angs = even_angles( delta, 0.0, 89.99, method='P' )
+		eve_vecs = [None]*len(eve_angs)
+		for i in xrange( len(eve_angs) ):
+			eve_vecs[i] = getvec( eve_angs[i][0], eve_angs[i][1] )
 
-	nang = len(eve_angs)
-	occurs = [0]*nang
-	oriids = [0]*nprj
+		nang = len(eve_angs)
+		occurs = [0]*nang
+		oriids = [0]*nprj
 
 
 	if not(refvol is None):
@@ -124,20 +136,21 @@ def bootstrap_calcwgts( prjfile, wgtfile, delta, refvol=None, fl=None, fh=None, 
 
 
 	for iprj in xrange(beg, end):
-		prj = get_im( prjfile, iprj )
-		phi,tht,psi,s2x,s2y = get_params_proj( prj )
-		aid = nearest_ang( eve_vecs, phi, tht )
 
-		if verbose:
-			finf.write( "prj %6d: %10.3f %10.3f close to ori %6d: %10.3f %10.3f\n" % (iprj, phi, tht, aid, eve_angs[aid][0], eve_angs[aid][1]))
-			finf.flush()
+		if not voronoi:
+			prj = get_im( prjfile, iprj )
+			phi,tht,psi,s2x,s2y = get_params_proj( prj )
+			aid = nearest_ang( eve_vecs, phi, tht )
 
-		oriids[iprj] = aid
-		occurs[aid] += 1
+			if verbose:
+				finf.write( "prj %6d: %10.3f %10.3f close to ori %6d: %10.3f %10.3f\n" % (iprj, phi, tht, aid, eve_angs[aid][0], eve_angs[aid][1]))
+				finf.flush()
+
+			oriids[iprj] = aid
+			occurs[aid] += 1
 
 		if not(refvol is None):
 			refprj = prgs( volft, kb, [phi,tht,psi,-s2x,-s2y] )
-			print 'iprj,info: ', iprj, Util.infomask(refprj, None, True)
 			if( fl is None or fh is None ):
 				fltprj = prj
 			else:
@@ -149,8 +162,9 @@ def bootstrap_calcwgts( prjfile, wgtfile, delta, refvol=None, fl=None, fh=None, 
 
 			prjccc[iprj] =  ccc( refprj, fltprj )
 	if MPI:
-		occurs = mpi_reduce( occurs, len(occurs), MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD )
-		oriids = mpi_reduce( oriids, len(oriids), MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD )
+		if not(voronoi):
+			occurs = mpi_reduce( occurs, len(occurs), MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD )
+			oriids = mpi_reduce( oriids, len(oriids), MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD )
 
 		if not(refvol is None):
 			prjccc = mpi_reduce( prjccc, len(prjccc), MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD )
@@ -159,31 +173,39 @@ def bootstrap_calcwgts( prjfile, wgtfile, delta, refvol=None, fl=None, fh=None, 
 
 		if not(refvol is None):
 			exclist = exclude( prjccc, nexclude, bothside )
+
 			for id in exclist:
-				oid = oriids[id]
-				occurs[oid] -= 1
-				oriids[id] = -1
+				if voronoi:
+					wgts[id] = -.0
+				else:
+					oid = oriids[id]
+					occurs[oid] -= 1
+					oriids[id] = -1
 
 
-
-		for i in xrange( nang ):
-			if verbose:
+		if verbose and (not voronoi):
+			for i in xrange( nang ):
 				finf.write( "ori %6d: %d\n" % (i, occurs[i]) )
 				finf.flush()
-
+		'''
 		for i in xrange( len(occurs) ):
 			if int(occurs[i])==0:
 				#print "Warning: at least one orientation has no projections assigned. increase delta"
 				pass
+		'''
 
 		os = open( wgtfile, "w" )
 		for i in xrange(nprj):
-			aid = oriids[i]
 
-			if aid == -1:
-				wgt = 0.0
+			if voronoi:
+				wgt = wgts[i]
 			else:
-				wgt = 1.0/int(occurs[aid])
+				aid = oriids[i]
+
+				if aid == -1:
+					wgt = 0.0
+				else:
+					wgt = 1.0/int(occurs[aid])
 			print >> os, wgt
 		
 
@@ -198,8 +220,9 @@ def main():
 	    arglist.append( arg )
 
 	progname = os.path.basename(arglist[0])
-	usage = progname + " prjstack wgtfile [refvol] --MPI --CTF --delta --fl --fh --nexclude --exclude_bothside"
+	usage = progname + " prjstack wgtfile [refvol] --voronoi --MPI --CTF --delta --fl --fh --nexclude --exclude_bothside"
 	parser = OptionParser(usage,version=SPARXVERSION)
+	parser.add_option("--voronoi", action="store_true", default=False, help="use voronoi diagram to create weights")
 	parser.add_option("--delta", type="float", default=1.0, help="for weights calculation")
 	parser.add_option("--CTF", action="store_true", default=False, help="whether consider CTF" )
 	parser.add_option("--MPI", action="store_true", default=False, help="whether running mpi version")
@@ -226,7 +249,7 @@ def main():
 		from mpi import mpi_init, mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
 		sys.argv = mpi_init( len(sys.argv), sys.argv )
 	
-	bootstrap_calcwgts( prjfile, wgtfile, options.delta,refvol, options.fl, options.fh, options.CTF, options.nexclude, options.exclude_bothside, options.MPI )
+	bootstrap_calcwgts( prjfile, wgtfile, options.voronoi, options.delta,refvol, options.fl, options.fh, options.CTF, options.nexclude, options.exclude_bothside, options.MPI )
 
 
 if __name__ == "__main__":
