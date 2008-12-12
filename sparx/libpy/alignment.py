@@ -40,7 +40,7 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode
 	from alignment import Applyws, ormq
 
 	if CTF:
-		from filter       import filt_ctf
+		from filter  import filt_ctf
 
 	# 2D alignment using rotational ccf in polar coords and quadratic interpolation
 	cimage = Util.Polar2Dm(tavg, cnx, cny, numr, mode)
@@ -65,7 +65,7 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode
 		else:
 			ima = data[im].copy()
 		ima2 = ima.copy()
-			
+
 		alpha, sx, sy, mirror, dummy = get_params2D(ima)
 		alpha, sx, sy, mirror = combine_params2(alpha, sx, sy, mirror, 0.0, -cs[0], -cs[1], 0)
 		alphai, sxi, syi, scalei = inverse_transform2(alpha, sx, sy, 1.0)
@@ -115,9 +115,8 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode
 			ima2.write_image(data, im, EMUtil.ImageType.IMAGE_HDF, True)
 		else:
 			data[im] = ima2.copy()
-	
+
 	return sx_sum, sy_sum
-			
 
 def ang_n(tot, mode, maxrin):
 	"""

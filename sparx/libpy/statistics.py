@@ -144,7 +144,7 @@ def add_ave_varf_MPI(data, mask = None, mode = "a", CTF = False):
 				#    while calculation of average (and in general principle) CTF should be applied before rot/shift
 				#    here we use the first possibility
 			else:
-				ima = data[i].copy()
+				ima = data[i]
 	 		ctf_params = ima.get_attr("ctf")
 	 		oc = filt_ctf(ima, ctf_params, dopad=False)
 			Util.add_img(ave, oc)
@@ -155,7 +155,7 @@ def add_ave_varf_MPI(data, mask = None, mode = "a", CTF = False):
 				alpha, sx, sy, mirror, scale = get_params2D(data[i])
 				ima = rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
 			else:
-				ima = data[i].copy()
+				ima = data[i]
 			Util.add_img(ave, ima)
 			Util.add_img2(var, fft(ima))
 	

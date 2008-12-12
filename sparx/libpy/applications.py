@@ -251,7 +251,7 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 		ctf_2_sum = None
 
 	del ima
-	
+
 	data = EMData.read_images(stack)
 	nima = len(data)
 	for im in xrange(nima):
@@ -273,11 +273,11 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	ref_data.append(center)
 	ref_data.append(None)
 	ref_data.append(None)
-	
+
 	cs = [0.0]*2
 	total_iter = 0
 	a0 = -1.0e22
-	
+
 	sx_sum = 0.0
 	sy_sum = 0.0
 
@@ -285,7 +285,7 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 		msg = "\nX range = %5.2f   Y range = %5.2f   Step = %5.2f\n"%(xrng[N_step], yrng[N_step], step[N_step])
 		print_msg(msg)
 		for Iter in xrange(max_iter):
-					
+
 			tavg, vav, sumsq = add_ave_varf(data, mask, mode="a", CTF=CTF, ctf_2_sum=ctf_2_sum)
 
 			attr_list = data[0].get_attr_dict()	
@@ -298,7 +298,7 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 					select += this_select
 
 			total_iter += 1 
-			
+
 			if random_method=="" or total_iter%10 == 0:
 				drop_image(tavg, os.path.join(outdir, "aqc_%03d.hdf"%(total_iter)))
 				drop_image(vav, os.path.join(outdir, "vav_%03d.hdf"%(total_iter)))
@@ -323,13 +323,9 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 				# When center = -1, which is by default, we use the average center method
 				ref_data[1] = 0
 				tavg, cs = user_func(ref_data)
-				cs[0] = sx_sum/float(nima)
-				cs[1] = sy_sum/float(nima)
-				from fundamentals import fshift
-				tavg = fshift(tavg, -cs[0], -cs[1])
-				msg = "Center x =      %10.3f        Center y       = %10.3f\n"%(cs[0], cs[1])
-				print_msg(msg)
-			
+				#msg = "Center x =      %10.3f        Center y       = %10.3f\n"%(cs[0], cs[1])
+				#print_msg(msg)
+
 			Util.div_filter(sumsq, vav)
 			sumsq = filt_tophatb(sumsq, 0.01, 0.49)
 			a1 = Util.infomask(sumsq, None, True)
@@ -344,18 +340,27 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 			if a1 < a0:
 				if auto_stop == True: break
 			else:	a0 = a1
+			#  Stop here if it is last iteration
 			if N_step == len(xrng)-1 and Iter == max_iter-1:  break
 			sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, range(nima), CTF=CTF, random_method=random_method, Iter=total_iter, T0=T0, F=F, SA_stop=SA_stop)
+			sx_sum /= nima
+			sy_sum /= nima
+			msg = "Average center x =      %10.3f        Center y       = %10.3f\n"%(sx_sum, sy_sum)
+			print_msg(msg)
+			ts = Transform({"type":"2D","alpha":0.0,"tx":-sx_sum,"ty":-sy_sum,"mirror":0,"scale":1.0})
+			for ima in data:
+				t = ima.get_attr("xform.align2D")
+				t = t*ts
+				ima.set_attr("xform.align2D", t)
 	# write out headers
 	from utilities import write_headers
 	write_headers(stack, data, range(nima))
 	print_end_msg("ali2d_a")
 
-
 def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, CTF=False, user_func_name="ref_ali2d", random_method="", T0=1.0, F=0.996, SA_stop=0):
 
 	from utilities    import model_circle, combine_params2, drop_image, get_image, get_input_from_string
-	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type
+	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, bcast_number_to_all, send_attr_dict, file_type
 	from statistics   import add_ave_varf_MPI, add_ave_varf_ML_MPI
 	from alignment    import Numrinit, ringwe, ali2d_single_iter
 	from filter       import filt_tophatb
@@ -412,7 +417,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	else:
 		print "Invalid file type"
 		return
-		
+
 	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)	
 	ima = EMData()
 	for i in xrange(number_of_proc):
@@ -464,10 +469,11 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		from morphology   import ctf_img
 		ctf_2_sum = EMData(nx, nx, 1, False)
 	
-	for i in xrange(number_of_proc):
-		if myid == i:
-			data = EMData.read_images(stack, range(image_start, image_end))
-		if ftp == "bdb": mpi_barrier(MPI_COMM_WORLD)
+	#for i in xrange(number_of_proc):
+	#	if myid == i:
+	#		data = EMData.read_images(stack, range(image_start, image_end))
+	#	if ftp == "bdb": mpi_barrier(MPI_COMM_WORLD)
+	data = EMData.read_images(stack, range(image_start, image_end))
 
 	if CTF:
 		for im in xrange(image_start, image_end):
@@ -475,11 +481,11 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			st = Util.infomask(data[im-image_start], mask, False)
 			data[im-image_start] -= st[0]
 	 		Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
-			
+
 	# precalculate rings
 	numr = Numrinit(first_ring, last_ring, rstep, mode) 
  	wr = ringwe(numr, mode)
-	
+
 	if CTF: reduce_EMData_to_root(ctf_2_sum, myid, main_node)
 	if myid == main_node:
 		# initialize data for the reference preparation function
@@ -493,25 +499,25 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	cs = [0.0]*2
 	total_iter = 0
 	a0 = -1.0e22
-	
+
 	sx_sum = 0.0
 	sy_sum = 0.0
-	
+
 	for N_step in xrange(len(xrng)):
 		msg = "\nX range = %5.2f   Y range = %5.2f   Step = %5.2f\n"%(xrng[N_step], yrng[N_step], step[N_step])
 		if myid == main_node: print_msg(msg)
 		for Iter in xrange(max_iter):
-		
+
 			tavg, vav = add_ave_varf_MPI(data, mask, mode="a", CTF=CTF)
-			if random_method == "ML": 
-				tavg_ML, vav_ML = add_ave_varf_ML_MPI(data, mask, mode="a", CTF=CTF)
+			#if random_method == "ML": 
+			#	tavg_ML, vav_ML = add_ave_varf_ML_MPI(data, mask, mode="a", CTF=CTF)
 			#  bring all partial sums together
 			reduce_EMData_to_root(tavg, myid, main_node)
 			reduce_EMData_to_root(vav, myid, main_node)
 			if random_method == "ML": 
 				reduce_EMData_to_root(tavg_ML, myid, main_node)
 				reduce_EMData_to_root(vav_ML, myid, main_node)			
-			
+
 			attr_list = data[0].get_attr_dict()	
 			if attr_list.has_key("select") == False:
 				select = 0
@@ -521,23 +527,23 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					this_select = data[im-image_start].get_attr("select")
 					select += this_select
 			select = mpi_reduce(select, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
-			
+
 			total_iter += 1
-			
+
 			if myid == main_node:
 				sumsq = fft(tavg)
-				if random_method == "ML":
-					sumsq_ML = fft(tavg_ML)				
+				#if random_method == "ML":
+				#	sumsq_ML = fft(tavg_ML)				
 				if CTF:	
 					tavg = fft(Util.divn_img(sumsq, ctf_2_sum))
 				 	Util.mul_img(sumsq, sumsq.conjg())
 				 	Util.div_img(sumsq, ctf_2_sum)
 			 		Util.sub_img(vav, sumsq)
-					if random_method == "ML":
-						tavg_ML = fft(Util.divn_img(sumsq_ML, ctf_2_sum))
-					 	Util.mul_img(sumsq_ML, sumsq_ML.conjg())
-					 	Util.div_img(sumsq_ML, ctf_2_sum)
-			 			Util.sub_img(vav_ML, sumsq_ML)					
+					#if random_method == "ML":
+					#	tavg_ML = fft(Util.divn_img(sumsq_ML, ctf_2_sum))
+					# 	Util.mul_img(sumsq_ML, sumsq_ML.conjg())
+					# 	Util.div_img(sumsq_ML, ctf_2_sum)
+			 		#	Util.sub_img(vav_ML, sumsq_ML)					
 				else:
 					Util.mul_scalar(tavg, 1.0/float(nima))
 				 	Util.mul_img(sumsq, sumsq.conjg())
@@ -548,19 +554,19 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					 	Util.mul_img(sumsq_ML, sumsq_ML.conjg())
 						Util.mul_scalar(sumsq_ML, 1.0/float(nima))
 						Util.sub_img(vav_ML, sumsq_ML)
-												
+
 				Util.mul_scalar(vav, 1.0/float(nima-1))
-				if random_method == "ML":
-					Util.mul_scalar(vav_ML, 1.0/float(nima-1))				
+				#if random_method == "ML":
+				#	Util.mul_scalar(vav_ML, 1.0/float(nima-1))				
 
 				if random_method=="" or total_iter%10 == 0:
 					drop_image(tavg, os.path.join(outdir, "aqc_%03d.hdf"%(total_iter)))
 					drop_image(vav, os.path.join(outdir, "vav_%03d.hdf"%(total_iter)))
 
 				tavg = fft(Util.divn_img(fft(tavg), vav))
-				if random_method == "ML":
-					tavg_ML = fft(Util.divn_img(fft(tavg_ML), vav_ML))
-					
+				#if random_method == "ML":
+				#	tavg_ML = fft(Util.divn_img(fft(tavg_ML), vav_ML))
+
  				if random_method != "ML":
 					vav_r   = Util.pack_complex_to_real(vav)
 		 		 	sumsq_r = Util.pack_complex_to_real(sumsq)
@@ -576,16 +582,16 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				else:
 					vav_r   = Util.pack_complex_to_real(vav_ML)
 		 		 	sumsq_r = Util.pack_complex_to_real(sumsq_ML)
-					rvar = rot_avg_table(vav_r)
-					rsumsq = rot_avg_table(sumsq_r)
+					rvar    = rot_avg_table(vav_r)
+					rsumsq  = rot_avg_table(sumsq_r)
 					frsc = []
 					for i in xrange(len(rvar)):
 						qt = max(0.0, rsumsq[i]/rvar[i] - 1.0)
 						frsc.append([i/(len(rvar)-1)*0.5, qt/(qt+1)])
-						
+
 					ref_data[2] = tavg_ML
 					ref_data[3] = frsc
-					
+
 				#  call user-supplied function to prepare reference image, i.e., center and filter it
 				if center != -1:
 					tavg, cs = user_func(ref_data)
@@ -593,13 +599,13 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					# When center = -1, which is by default, we use the average center method
 					ref_data[1] = 0
 					tavg, cs = user_func(ref_data)
-					cs[0] = float(sx_sum)/nima
-					cs[1] = float(sy_sum)/nima
-					from fundamentals import fshift
-					tavg = fshift(tavg, -cs[0], -cs[1])
-					msg = "Center x =      %10.3f        Center y       = %10.3f\n"%(cs[0], cs[1])
-					print_msg(msg)
-				
+					#cs[0] = float(sx_sum)/nima
+					#cs[1] = float(sy_sum)/nima
+					#from fundamentals import fshift
+					#tavg = fshift(tavg, -cs[0], -cs[1])
+					#msg = "Center x =      %10.3f        Center y       = %10.3f\n"%(cs[0], cs[1])
+					#print_msg(msg)
+
 				Util.div_filter(sumsq, vav)
 				sumsq = filt_tophatb(sumsq, 0.01, 0.49)
 				a1 = Util.infomask(sumsq, None, True)
@@ -627,6 +633,18 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF=CTF, random_method=random_method, Iter=total_iter, T0=T0, F=F, SA_stop=SA_stop)
 			sx_sum = mpi_reduce(sx_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 			sy_sum = mpi_reduce(sy_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
+			if myid == main_node:
+				sx_sum = float(sx_sum)/nima
+				sy_sum = float(sy_sum)/nima
+				msg = "Average center x =      %10.3f        Center y       = %10.3f\n"%(sx_sum, sy_sum)
+				print_msg(msg)
+			sx_sum = bcast_number_to_all(sx_sum, main_node)
+			sy_sum = bcast_number_to_all(sy_sum, main_node)
+			ts = Transform({"type":"2D","alpha":0.0,"tx":-sx_sum,"ty":-sy_sum,"mirror":0,"scale":1.0})
+			for ima in data:
+				t = ima.get_attr("xform.align2D")
+				t = t*ts
+				ima.set_attr("xform.align2D", t)
 
 	# write out headers and STOP, under MPI writing has to be done sequentially
 	mpi_barrier(MPI_COMM_WORLD)
@@ -699,6 +717,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
 	if auto_stop:  print_msg("Stop iteration with         : criterion\n")
 	else:           print_msg("Stop iteration with         : maxit\n")
+	print_msg("User function               : %s\n"%(user_func_name))
 
 	if maskfile:
 		import	types
@@ -788,7 +807,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 
 			drop_image(tavg, os.path.join(outdir, "aqc_%03d.hdf"%(total_iter)))
 
-			frsc = fsc_mask(av1, av2, ref_data[0], 1.0, os.path.join(outdir, "drc%03d"%(total_iter)))
+			frsc = fsc_mask(av1, av2, ref_data[0], 1.0, os.path.join(outdir, "resolution%03d"%(total_iter)))
 
 			ref_data[2] = tavg
 			ref_data[3] = frsc
@@ -902,6 +921,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			print_msg("Stop iteration with         : criterion\n")
 		else:
 			print_msg("Stop iteration with         : maxit\n")
+		print_msg("User function               : %s\n"%(user_func_name))
 		print_msg("Number of processors used   : %d\n"%(number_of_proc))
 
 		
@@ -1017,7 +1037,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 
 				drop_image(tavg, os.path.join(outdir, "aqc_%03d.hdf"%(total_iter)))
 				
-				frsc = fsc_mask(av1, av2, ref_data[0], 1.0, os.path.join(outdir, "drc%03d"%(total_iter)))
+				frsc = fsc_mask(av1, av2, ref_data[0], 1.0, os.path.join(outdir, "resolution%03d"%(total_iter)))
 				ref_data[2] = tavg
 				ref_data[3] = frsc
 				#  call user-supplied function to prepare reference image, i.e., center and filter it
@@ -2516,7 +2536,7 @@ def ali2d_cross_res(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1
 					tavg[k] = (av1+av2)/len(data[k])
 				drop_image(tavg[k], os.path.join(outdir, "aqc_%03d_%03d.hdf"%(k, total_iter)))
 
-				frsc.append(fsc_mask(av1, av2, ref_data[0], 1.0, os.path.join(outdir, "drc_%03d_%03d"%(k, total_iter))))
+				frsc.append(fsc_mask(av1, av2, ref_data[0], 1.0, os.path.join(outdir, "resolution_%03d_%03d"%(k, total_iter))))
 				#  prepare averages for alignment
 				kref_data = []
 				kref_data.append( mask )
