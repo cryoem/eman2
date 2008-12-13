@@ -690,7 +690,7 @@ def aves(stack, mode="a", i1 = 0, i2 = 0):
 	ima = EMData()
 	ima.read_image(stack, i1)
 	nx  = ima.get_xsize()
-	ny  = ima.get_xsize()
+	ny  = ima.get_ysize()
 	ave = model_blank(nx,ny)
 	var = model_blank(nx,ny)
 	for i in xrange(i1, i2 + 1):
@@ -2733,9 +2733,6 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 			Je         = 0
 			if SA:
 			   ct_pert = 0
-			
-			# [all] init the number of objects
-			for k in xrange(K):	Cls['n'][k]=0
 
 			# [id] assign each images with err_min between all clusters averages
 			for im in xrange(N_start, N_stop):
@@ -2832,11 +2829,12 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 				
 				# [all] move object
 				if res['pos'] != assign[im]:
-					assign[im]  = res['pos']
-					change      = 1
-					
-				# [id] calculate the new local number of objects
-				Cls['n'][int(assign[im])] += 1
+					assign[im] = res['pos']
+					change     = 1
+
+			# [id] compute the number of objects
+			for k in xrange(K): 		  Cls['n'][k] = 0
+			for n in xrange(N_start, N_stop): Cls['n'][int(assign[n])] += 1			
 				
 			# [sync] waiting the result
 			mpi_barrier(MPI_COMM_WORLD)

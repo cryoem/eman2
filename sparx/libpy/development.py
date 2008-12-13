@@ -7788,7 +7788,8 @@ def k_means_stab_update_tag(stack, ALL_PART, STB_PART, num_run):
 # Gather all stable class averages in the same stack
 def k_means_stab_gather(nb_run, th, maskname):
 	from utilities import get_im
-	mask = get_im(maskname, 0)
+	if maskname != None: mask = get_im(maskname, 0)
+	else: mask = None
 	ct   = 0
 	im   = EMData()
 	for nr in xrange(1, nb_run):
