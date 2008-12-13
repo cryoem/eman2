@@ -151,6 +151,8 @@ def main():
     
     datlst = parse_infile(infile, n0, n1)
     
+    logid=E2init(sys.argv)
+
     x = datlst[0].get_xsize()
     y = datlst[0].get_ysize()
     z = datlst[0].get_zsize()
@@ -302,6 +304,9 @@ def main():
         	data.write_image(outfile.split('.')[0]+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
         else:
     	    data.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
+
+	E2end(logid)
+
 
 #parse_file() wil read the input image file and return a list of EMData() object
 def parse_infile(infile, first, last):

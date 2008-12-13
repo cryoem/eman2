@@ -144,9 +144,10 @@ def main():
 			if verbose>1 : print "Iter %d \t %1.4g (%1.4g)"%(it,bss,qual)
 			
 			threed[-1]=threed[-1].get_clip(Region((pad-boxsize)/2,(pad-boxsize)/2,(pad-boxsize)/2,boxsize,boxsize,boxsize))
-			threed[-1].process_inplace("normalize.edgemean")
 			threed[-1].process_inplace("mask.gaussian",{"inner_radius":boxsize/3.0,"outer_radius":boxsize/12.0})
 			threed[-1].process_inplace("filter.lowpass.gauss",{"cutoff_abs":.2})
+			threed[-1].process_inplace("normalize.edgemean")
+			if it>1 : threed[-1].process_inplace("mask.auto3d",{"radius":boxsize/6,"threshold":2.5,"nshells":boxsize/20,"nshellsgauss":boxsize/20})
 #			threed[-1]["quality"]=bss
 			threed[-1]["quality"]=qual
 

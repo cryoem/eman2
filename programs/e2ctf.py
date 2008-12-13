@@ -821,6 +821,7 @@ class GUIctf(QtGui.QWidget):
 		self.splotmode.addItem("SNR")
 		self.splotmode.addItem("Smoothed SNR")
 		self.splotmode.addItem("Integrated SNR")
+		self.splotmode.addItem("Total CTF")
 		self.vbl2.addWidget(self.splotmode)
 		self.hbl.addLayout(self.vbl2)
 		
@@ -1013,8 +1014,16 @@ class GUIctf(QtGui.QWidget):
 			for i in range(1,len(snr)): snr[i]/=len(snr)			# this way the relative quality of images can be compared
 			self.guiplot.set_data("snr",(s,snr[:len(s)]),True)
 			self.guiplot.setAxisParms("s (1/A)","Integrated SNR")
-
-			
+		elif self.plotmode==5:
+			inten=[fabs(i) for i in ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP)]		# The snr curve
+			self.guiplot.set_data("single",(s,inten[:len(s)]),True)
+			all=[0 for i in inten]
+			for st in self.data:
+				print st
+				inten=[fabs(i) for i in st[1].compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP)]
+				for i in range(len(all)): all[i]+=inten[i]
+			self.guiplot.set_data("total",(s,all[:len(s)]))
+						
 			#bgsub=[self.data[val][2][i]-self.data[val][3][i] for i in range(len(self.data[val][2]))]
 			#self.guiplot.set_data("fg-bg",(s,bgsub),True,True)
 			

@@ -5189,7 +5189,7 @@ void AutoMask3DProcessor::search_nearby(float *dat, float *dat2, int nx, int ny,
 				int l = j * nx + k2 + 1;
 
 				for (int i = 1; i < nx - 1; i++) {
-					if (dat[l] >= threshold && dat2[l]) {
+					if (dat[l] >= threshold || dat2[l]) {
 						if (dat2[l - 1] || dat2[l + 1] ||
 							dat2[l - nx] || dat2[l + nx] || dat2[l - nxy] || dat2[l + nxy]) {
 							dat2[l] = 1.0f;
@@ -5396,10 +5396,12 @@ void AutoMask3D2Processor::process_inplace(EMData * image)
 	int radius = params["radius"];
 	float threshold = params["threshold"];
 	int nshells = params["nshells"];
+	int nshellsgauss = params["nshellsgauss"];
 
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
+	int nxy=nx*ny;
 
 	EMData *amask = new EMData();
 	amask->set_size(nx, ny, nz);
@@ -5408,62 +5410,43 @@ void AutoMask3D2Processor::process_inplace(EMData * image)
 	float *dat2 = amask->get_data();
 
 	// start with an initial sphere
-	int l = 0;
-	for (int k = -nz / 2; k < nz / 2; k++) {
-		for (int j = -ny / 2; j < ny / 2; j++) {
-			for (int i = -nx / 2; i < nx / 2; i++) {
-				if (abs(k) > radius || abs(j) > radius || abs(i) > radius) {
-					continue;
-				}
-				if ( (k * k + j * j + i * i) > (radius*radius) || dat[l] < threshold) {
-					continue;
-				}
+	int i,j,k,l = 0;
+	for (k = -nz / 2; k < nz / 2; k++) {
+		for (j = -ny / 2; j < ny / 2; j++) {
+			for (i = -nx / 2; i < nx / 2; i++,l++) {
+				if (abs(k) > radius || abs(j) > radius || abs(i) > radius) continue;
+				if ( (k * k + j * j + i * i) > (radius*radius) || dat[l] < threshold) continue;
 				dat2[l] = 1.0f;
-				l++;
 			}
 		}
 	}
 
-	AutoMask3DProcessor::search_nearby(dat, dat2, nx, ny, nz, threshold);
+	// iteratively 'flood fills' the map... recursion would be better
+	int done=0;
+	while (!done) {
+		done=1;
+		for (k=1; k<nz-1; k++) {
+			for (j=1; j<ny-1; j++) {
+				for (i=1; i<nx-1; i++) {
+					l=i+j*nx+k*nx*ny;
+					if (dat2[l]) continue;
+					if (dat[l]>threshold && (dat2[l-1]||dat2[l+1]||dat2[l+nx]||dat2[l-nx]||dat2[l-nxy]||dat2[l+nxy])) {
+						dat2[l]=1.0;
+						done=0;
+					}
+				}
+			}
+		}
+	}
 
 	amask->update();
-	float val1 = fabs((float)nshells);
-	float val2 = val1 > 2.0f ? 2.0f : 0.0f;
 
-	amask->process_inplace("mask.addshells.gauss", Dict("val1", val1, "val2", val2));
-
-	dat2 = amask->get_data();
-
-	if (nshells < 0) {
-		AutoMask3DProcessor::fill_nearby(dat2, nx, ny, nz);
-	}
-
-	image->update();
-	amask->update();
-
-	EMData *norm = amask->copy();
-	norm->process_inplace("threshold.binary");
-
-	EMData *norm2 = norm->copy();
-	norm->process_inplace("mask.addshells", Dict("nshells", 1));
-	norm->sub(*norm2);
-	if( norm2 )
-	{
-		delete norm2;
-		norm2 = 0;
-	}
-
-	norm->process_inplace("mask.addshells", Dict("nshells", 2));
-	image->process_inplace("normalize.mask", Dict("mask", norm, "no_sigma", 0));
-
-	if( norm )
-	{
-		delete norm;
-		norm = 0;
-	}
+	amask->process_inplace("mask.addshells.gauss", Dict("val1", nshells+nshellsgauss, "val2", nshells));
 
 	image->mult(*amask);
 	amask->write_image("mask.mrc", 0, EMUtil::IMAGE_MRC);
+	
+	delete amask;
 }
 
 void IterBinMaskProcessor::process_inplace(EMData * image)
@@ -5476,35 +5459,31 @@ void IterBinMaskProcessor::process_inplace(EMData * image)
 	float val1 = params["val1"];
 	float val2 = params["val2"];
 
-	float *d = image->get_data();
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
+	EMData *image2 = new EMData(nx,ny,nz);
+
+	float *dat = image->get_data();
+	float *dat2 = image2->get_data();
+
+
+	float *d = image->get_data();
+	float *d2 = image2->get_data();
 
 	const int nxy = nx * ny;
 	size_t size = nx * ny * nz;
-	const float default_val = 100000.0f;
 
-
-	for (size_t i = 0; i < size; i++) {
-		if (d[i] == 0) {
-			d[i] = default_val;
-		}
-	}
-
+	// TODO: THIS IS EXTREMELY INEFFICIENT
 	if (nz != 1) {
 		for (int l = 1; l <= (int) val1; l++) {
+			for (int i=0; i<nx*ny*nz; i++) d2[i]=d[i];
 			for (int k = 1; k < nz - 1; k++) {
-				int k2 = k * nxy;
 				for (int j = 1; j < ny - 1; j++) {
-					int j2 = j * nx + k2;
 					for (int i = 1; i < nx - 1; i++) {
-						int t = i + j2;
-
-						if (d[t - 1] <= l || d[t + 1] <= l || d[t + nx] <= l ||
-							d[t - nx] <= l || d[t + nxy] <= l || d[t - nxy] <= l) {
-							d[t] = (float) l + 1;
-						}
+						int t = i + j*nx+k*nx*ny;
+						if (d[t]) continue;
+						if (d2[t - 1] || d2[t + 1] || d2[t + nx] || d2[t - nx] || d2[t + nxy] || d2[t - nxy]) d[t] = (float) l + 1;
 					}
 				}
 			}
@@ -5512,31 +5491,27 @@ void IterBinMaskProcessor::process_inplace(EMData * image)
 	}
 	else {
 		for (int l = 1; l <= (int) val1; l++) {
+			for (int i=0; i<nx*ny*nz; i++) d2[i]=d[i];
 			for (int j = 1; j < ny - 1; j++) {
 				for (int i = 1; i < nx - 1; i++) {
 					int t = i + j * nx;
-					if (d[t - 1] <= l || d[t + 1] <= l || d[t + nx] <= l || d[t - nx] <= l)
-						d[t] = (float) l + 1;
+					if (d[t]) continue;
+					if (d2[t - 1] || d2[t + 1] || d2[t + nx] || d2[t - nx] || d2[t + nxy] || d2[t - nxy]) d[t] = (float) l + 1;
 				}
 			}
 		}
 	}
 
-	for (size_t i = 0; i < size; i++) {
-		if (d[i] == default_val) {
-			d[i] = 0;
-		}
-		else if (d[i] < val2) {
-			float f1 = -Util::square(d[i] - val2);
-			float f2 = Util::square(2.0f * (val1 - val2));
-			d[i] = exp(f1 / f2);
-		}
-		else {
-			d[i] = 1.0f;
-		}
+	vector<float> vec;
+	for (int i=0; i<val2; i++) vec.push_back(1.0);
+	for (int i=0; i<=val1-val2+2; i++) {
+		vec.push_back(exp(-pow(2.0*i/(val1-val2),2.0)));
+//		printf("%f\n",exp(-pow(2.0*i/(val1-val2),2.0)));
 	}
+	for (size_t i = 0; i < size; i++) if (d[i]) d[i]=vec[(int)d[i]];
 
 	image->update();
+	delete image2;
 }
 
 void TestImageProcessor::preprocess(const EMData * const image)

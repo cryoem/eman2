@@ -4277,6 +4277,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			d.put("radius", EMObject::INT);
 			d.put("threshold", EMObject::FLOAT);
 			d.put("nshells", EMObject::INT);
+			d.put("nshellsgauss", EMObject::INT);
 			return d;
 		}
 	};
