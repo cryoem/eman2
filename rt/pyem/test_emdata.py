@@ -3322,6 +3322,14 @@ class TestEMData(unittest.TestCase):
         self.assertEqual(q.to_string(), q2.to_string())
         self.assertEqual(q.to_dict(), q2.to_dict())
         #testlib.safe_unlink('mydb2')
+        
+    def test_set_xyz_origin(self):
+        """test set_xyz_origin function ....................."""
+        img = test_image()
+        img.set_xyz_origin(1.0, 2.0, 3.0)
+        self.assertAlmostEqual(img.get_attr('origin_row'), 1.0, 3)
+        self.assertAlmostEqual(img.get_attr('origin_col'), 2.0, 3)
+        self.assertAlmostEqual(img.get_attr('origin_sec'), 3.0, 3)
 
 def test_main():
     p = OptionParser()

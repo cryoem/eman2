@@ -107,9 +107,9 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_calc_ccf_overloads_1_2, calc_
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_calc_ccfx_overloads_1_4, calc_ccfx, 1, 4)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_make_rotational_footprint_overloads_0_1, make_rotational_footprint, 0, 1)
-		
+
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_make_rotational_footprint_e1_overloads_0_1, make_rotational_footprint_e1, 0, 1)
-		
+
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_make_rotational_footprint_cmc_overloads_0_1, make_rotational_footprint_cmc, 0, 1)
 
@@ -134,8 +134,8 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_cut_slice_overloads_2_3, cut_
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_get_clip_overloads_1_2, get_clip, 1, 2)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_mult_overloads_1_2, mult, 1, 2)
-		
-}// namespace 
+
+}// namespace
 
 
 // Module ======================================================================
@@ -349,7 +349,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("getconvpt2d_kbi0", &EMAN::EMData::getconvpt2d_kbi0, EMAN_EMData_getconvpt2d_kbi0_overloads_3_4())
 	.def("fft_shuffle", &EMAN::EMData::fft_shuffle)
 	.def("extractpoint", &EMAN::EMData::extractpoint)
-        .def("extract_plane", &EMAN::EMData::extract_plane, return_value_policy< manage_new_object >())
+	.def("extract_plane", &EMAN::EMData::extract_plane, return_value_policy< manage_new_object >())
 	.def("fouriergridrot2d", &EMAN::EMData::fouriergridrot2d, return_value_policy< manage_new_object >())
 	.def("fouriergridrot_shift2d", &EMAN::EMData::fouriergridrot_shift2d, return_value_policy< manage_new_object >())
 	.def("delete_disconnected_regions", &EMAN::EMData::delete_disconnected_regions, return_value_policy< manage_new_object >())
@@ -359,7 +359,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("phase_cog", &EMAN::EMData::phase_cog)
 	.def("find_3d_threshold", &EMAN::EMData::find_3d_threshold)
 	.def("peak_ccf", &EMAN::EMData::peak_ccf)
-	.def("debug_print_params", &EMAN::EMData::debug_print_parms) 
+	.def("debug_print_params", &EMAN::EMData::debug_print_parms)
 	.def("get_pow", &EMAN::EMData::get_pow, return_value_policy< manage_new_object >())
 	.def("conjg", &EMAN::EMData::conjg, return_value_policy< manage_new_object >())
 	.def("extractline", &EMAN::EMData::extractline, return_value_policy< manage_new_object >())
@@ -421,6 +421,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("common_lines_real", &EMAN::EMData::common_lines_real, EMAN_EMData_common_lines_real_overloads_2_4())
 	.def("cut_slice", &EMAN::EMData::cut_slice, EMAN_EMData_cut_slice_overloads_2_3())
 	.def("uncut_slice", &EMAN::EMData::uncut_slice)
+	.def("set_xyz_origin", &EMAN::EMData::set_xyz_origin)
 	.def("__getitem__", &emdata_getitem)
 	.def("__setitem__", &emdata_setitem)
 	.staticmethod("read_images_ext")
@@ -436,7 +437,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("__radd__", (EMAN::EMData* (*)(const EMAN::EMData&, float) )&EMAN::operator+, return_value_policy< manage_new_object >() )
 	.def("__rsub__", (EMAN::EMData* (*)(const EMAN::EMData&, float) )&EMAN::rsub, return_value_policy< manage_new_object >() )
         .def("__rmul__", (EMAN::EMData* (*)(const EMAN::EMData&, float) )&EMAN::operator*, return_value_policy< manage_new_object >() )
-        .def("__rdiv__", (EMAN::EMData* (*)(const EMAN::EMData&, float) )&EMAN::rdiv, return_value_policy< manage_new_object >() )        
+        .def("__rdiv__", (EMAN::EMData* (*)(const EMAN::EMData&, float) )&EMAN::rdiv, return_value_policy< manage_new_object >() )
         .def( self += other< float >() )
         .def( self -= other< float >() )
         .def( self *= other< float >() )
@@ -449,7 +450,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 #ifndef	_WIN32
         .def("__call__", (float& (EMAN::EMData::*)(const int, const int) const )&EMAN::EMData::operator (), return_value_policy< copy_non_const_reference >())
         .def("__call__", (float& (EMAN::EMData::*)(const int) const )&EMAN::EMData::operator (), return_value_policy< copy_non_const_reference >())
-#endif	//_WIN32    
+#endif	//_WIN32
 	);
 
 	enum_< EMAN::EMData::FFTPLACE >("FFTPLACE")

@@ -785,6 +785,7 @@ namespace EMAN
 			std::cout << "Done printing EMData params" << std::endl;
 		}
 
+		void set_xyz_origin(float origin_x, float origin_y, float origin_z);
 	private:
 		enum EMDataFlags {
 //			EMDATA_COMPLEX = 1 << 1,
@@ -801,7 +802,6 @@ namespace EMAN
 		};
 
 		void update_stat() const;
-		void set_xyz_origin(float origin_x, float origin_y, float origin_z);
 		void save_byteorder_to_dict(ImageIO * imageio);
 
 	private:
