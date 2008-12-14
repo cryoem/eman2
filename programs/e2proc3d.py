@@ -95,6 +95,9 @@ def main():
     
     parser.add_option("--calcsf", type="string", metavar="outputfile",
                                 help="Calculate a radial structure factor. Must specify apix.")
+
+    parser.add_option("--setsf", type="string", metavar="inputfile",
+                                help="Set the radial structure factor. Must specify apix.")
     
     parser.add_option("--tophalf", action="store_true",
                                 help="The output only keeps the top half map")
@@ -190,6 +193,15 @@ def main():
                 dataf = data.do_fft()
                 curve = dataf.calc_radial_func(y, 0, 0.5)
                 Util.save_data(0, 1.0/(apix*2.0*y), curve, options.calcsf);
+
+            elif option1 == "setsf":
+            	sf=XYData()
+            	sf.read_file("groel.sm")            	
+                dataf = data.do_fft()
+                curve = dataf.calc_radial_func(y, 0, 0.5)
+                filt=[sf.get_yatx(i/(apix*2*y))/curve[i] for i in range(len(curve))]
+                dataf.apply_radial_func(y,0,0.5)
+                print "untested"
 
             elif option1 == "process":
                 fi = index_d[option1]

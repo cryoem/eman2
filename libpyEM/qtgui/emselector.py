@@ -1146,7 +1146,7 @@ class EMBDBListing:
 					a.database_key = k
 			elif _type == list and len(items[k]) == 2:
 				try:
-					if isinstance(items[k][0][0],float) and isinstance(items[k][1][0],float):
+					if (isinstance(items[k][0][0],float) or isinstance(items[k][0][0],int)) and (isinstance(items[k][1][0],float) or isinstance(items[k][0][0],int)):
 						v = items[k]
 				
 						a = EMSelectionListItem(self.target().plot_icon,str(k)+":"+str(v),list_widget)

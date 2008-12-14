@@ -861,7 +861,7 @@ EMData *StandardProjector::project3d(EMData * image) const
 					/**A "fix" for the segmentation fault when calling initmodel.py with
 					 * standard projector. We'll look into this and make a real fix.
 					 * -- Grant Tang*/
-					printf(" ");
+//					printf(" ");
 
 					float x2 = soln[0];
 					float y2 = soln[1];

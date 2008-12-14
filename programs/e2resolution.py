@@ -98,6 +98,8 @@ def main():
 	x=range(1,len(datapow)+1)
 	if options.apix>0:
 		x=[i/(len(datapow)*options.apix*2.0) for i in x]
+	else:
+		x=[i/(len(datapow)*data["apix_x"]*2.0) for i in x]
 
 	# normalize noise near Nyquist
 	s=0
