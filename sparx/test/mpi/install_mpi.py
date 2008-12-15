@@ -60,10 +60,12 @@ def get_pythonroot( options ) :
 
     header = pythonroot + "/include/python" + pythonver[0:3] + "/Python.h"
     if not os.path.exists(header):
-        print "Error: we cannot find file ", header, "."
-        print "       This usually is because you did not install the python development package."
-        print "       the python itself, you have to install the python development package"
-        print "       such as python-devel."
+        print "Error: python exectable was found but not the header file: ", header, "."
+        if macos():
+            print "       MacOS user: looks likely you did not install the Xcode which contains the header file."
+            print "       you can get it from http://connect.apple.com. You will have to create an account there"
+        else:
+            print "       Linux user: other than package python, you will have to install the python development package"
         return None,pythonver
 
     return pythonroot,pythonver
@@ -87,11 +89,13 @@ def get_mpiroot(options):
 
     header = mpiroot + "/include/mpi.h"
     if not os.path.exists(header):
-        print "Error: header ", mpiinc + "/mpi.h does not exist"
-        print "       This is usually because you did not install mpi development package"
-        print "       You can either install the mpi-devel package by yourself or use "
-        print "       the --force option so that the program install openmpi-1.2.8 for you"
-
+        print "Error: mpirun was found but the header: ", mpiroot + "/include/mpi.h does not exist"
+        if macos():
+            print "       MacOS user: looks likely you did not install Xcode which contains all the header file."
+            print "       you can get it from http://connect.apple.com. You will have to apply for an account there."
+        else:
+            print "       Linux user: other than package mpi, you will have to install the mpi development package."
+ 
     return mpiroot
 
 def get_Numeric(pythonroot, pythonver):
@@ -101,8 +105,6 @@ def get_Numeric(pythonroot, pythonver):
 	return pythonroot 
 
     except Exception, inst:
-        
-        print "problem import Numeric:", inst
         return None
 
 def install_python( pythonver ):
@@ -274,7 +276,7 @@ else:
 
 ldlibpath = None
 if os.environ[ldkey].find(e2lib) == -1:
-    ldlibpath = e2dir
+    ldlibpath = e2lib
 
 pythonpath = None
 if os.environ["PYTHONPATH"].find(e2lib) == -1:
