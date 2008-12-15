@@ -46,7 +46,8 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode
 	cimage = Util.Polar2Dm(tavg, cnx, cny, numr, mode)
 	Util.Frngs(cimage, numr)
 	Applyws(cimage, numr, wr)
-		
+	
+	maxrin = numr[-1]
 	sx_sum = 0.0
 	sy_sum = 0.0
 	
@@ -58,15 +59,13 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode
 		else:
 			ima = data[im]
 		alpha, sx, sy, mirror, dummy = get_params2D(ima)
-		alpha, sx, sy, mirror = combine_params2(alpha, sx, sy, mirror, 0.0, -cs[0], -cs[1], 0)
-		alphai, sxi, syi, scalei = inverse_transform2(alpha, sx, sy, 1.0)
+		alpha, sx, sy, mirror        = combine_params2(alpha, sx, sy, mirror, 0.0, -cs[0], -cs[1], 0)
+		alphai, sxi, syi, scalei     = inverse_transform2(alpha, sx, sy, 1.0)
 
 		# align current image to the reference
 		if random_method == "SA":
 			peaks = ormq_peaks(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
-			#peaks, peakm, peaks_major, peakm_major = ormq_peaks_major(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
-			[angt, sxst, syst, mirrort, peakt, select] = sim_anneal(peaks, T, SA_stop)
-			#[angt, sxst, syst, mirrort, peakt, select] = sim_anneal3(peaks, peakm, peaks_major, peakm_major, Iter, T0, F, SA_stop)
+			[angt, sxst, syst, mirrort, peakt, select] = sim_anneal(peaks, T, step, mode, maxrin)
 			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
 			set_params2D(data[im], [alphan, sxn, syn, mn, 1.0])
 			data[im].set_attr_dict({'select': select})
@@ -97,7 +96,7 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode
 			set_params2D(data[im], [alphan, sxn, syn, mn, 1.0])
 
 		if mn == 0: sx_sum += sxn
-		else: sx_sum -= sxn
+		else:       sx_sum -= sxn
 		sy_sum += syn
 
 	return sx_sum, sy_sum
@@ -322,8 +321,6 @@ def ormq_peaks(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 	for i in xrange(len(peakm)):	peakm[i].append(1)
 	peaks += peakm 
 
-	peaks = process_peak(peaks, step, mode, numr)
-
 	return peaks
 
 
@@ -337,33 +334,6 @@ def process_peak_1d_pad(peaks, step, mode, numr, nx):
 	peaks.sort(reverse=True)
 	
 	return peaks
-
-
-
-def process_peak(peaks, step, mode, numr):
-	from math import pi, cos, sin
-	
-	peak_num = len(peaks)
-	maxrin = numr[-1]
-	for i in xrange(peak_num):
-		peaks[i][1]= ang_n(peaks[i][1]+1, mode, maxrin)
-	peaks.sort(reverse=True)
-	
-	for i in xrange(peak_num):
-		ang = peaks[i][1]
-		sx  = -peaks[i][6]*step
-		sy  = -peaks[i][7]*step
-
-		co =  cos(ang*pi/180.0)
-		so = -sin(ang*pi/180.0)
-		sxs = sx*co - sy*so
-		sys = sx*so + sy*co
-		
-		peaks[i][6] = sxs
-		peaks[i][7] = sys
-		
-	return peaks
-
 
 def find_position(list_a, t):
 	"""
@@ -534,60 +504,57 @@ def ormq_peaks_major(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 
 
 
-def select_k_PAP(dJe, T):
+def select_k(dJe, T):
 	"""
 	This routine is used in simulated annealing to select a random path
 	based on the weight of the each path and the temperature.
 	"""
-	from math import exp
 	from random import random
 
 	K = len(dJe)
 
-	# q[k]
-	p      = [0.0] * K
-	#maxarg = -1.0
-	#limarg = 500
-	#if maxarg > limarg:
-	#sumarg = float(sum(arg))
-	#for k in xrange(K): p[k] = exp(arg[k] * limarg / sumarg)
-	#else:
-	for k in xrange(K): p[k] = exp(dJe[k] / T)
+	p  = [0.0] * K
+	ut = 1.0/T
+	for k in xrange(K): p[k] = dJe[k]**ut
 
 	sumq = float(sum(p))
-	for k in xrange(K):
-		p[k] /= sumq
+	for k in xrange(K): p[k] /= sumq
 	#print  p
 
-	for k in xrange(1, K): p[k] += p[k-1]
-
+	for k in xrange(1, K-1): p[k] += p[k-1]
+	# the next line looks strange, but it assures that at least the lst element is selected
+	p[K-1] = 2.0
 	pb = random()
-	select = -1
-	for k in xrange(K):
-		if p[k] > pb:
-			select = k
-			break
+	select = 0
+	#print  pb,p
+	while(p[select] < pb):  select += 1
 	return select
 
 
-def sim_anneal(peaks, T, SA_stop):
+def sim_anneal(peaks, T, step, mode, maxrin):
+	peaks.sort(reverse=True)
 
-	if T > 1.0e-3 and SA_stop:
-		K = len(peaks)
-		dJe = [0.0]*K
-		for k in xrange(K): dJe[k] = peaks[k][4]
-		select = select_k(dJe, T)
-		print  T, K, select
-	else:
-		select = 0
+	K = len(peaks)
+	dJe = [0.0]*K
+	for k in xrange(K): dJe[k] = peaks[k][4]
+	select = select_k(dJe, T)
+	#print  T, K, select
 
-	ang = peaks[select][1]
-	sx  = peaks[select][6]
-	sy  = peaks[select][7]
+	from math import pi, cos, sin
+	
+	ang = ang_n(peaks[select][1]+1, mode, maxrin)
+	sx  = -peaks[select][6]*step
+	sy  = -peaks[select][7]*step
+
+	co =  cos(ang*pi/180.0)
+	so = -sin(ang*pi/180.0)
+	sxs = sx*co - sy*so
+	sys = sx*so + sy*co
+
 	mirror = peaks[select][8]
-	peak = peaks[select][0]
+	peak   = peaks[select][0]
 		
-	return  ang, sx, sy, mirror, peak, select
+	return  ang, sxs, sys, mirror, peak, select
 
 
 def sim_anneal2(peaks, Iter, T0, F, SA_stop):

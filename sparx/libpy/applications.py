@@ -343,7 +343,7 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 			else:	a0 = a1
 			#  Stop here if it is last iteration
 			if N_step == len(xrng)-1 and Iter == max_iter-1:  break
-			sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, range(nima), CTF=CTF, random_method=random_method, Iter=total_iter, T0=T0, F=F, SA_stop=SA_stop)
+			sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF=CTF, random_method=random_method, Iter=total_iter, T0=T0, F=F, SA_stop=SA_stop)
 			sx_sum /= nima
 			sy_sum /= nima
 			msg = "Average center x =      %10.3f        Center y       = %10.3f\n"%(sx_sum, sy_sum)
@@ -794,8 +794,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 		msg = "\nX range = %5.2f   Y range = %5.2f   Step = %5.2f\n"%(xrng[N_step], yrng[N_step], step[N_step])
 		print_msg(msg)
 		for Iter in xrange(max_iter):
-					
-			sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, range(nima))
+			sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode)
 			av1, av2 = add_oe_series(data)
 			if CTF:
 				tavg = filt_table(Util.addn_img(av1, av2), ctfb2)
@@ -2376,9 +2375,9 @@ def ali2d_cross_res(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1
 	"""
 	import os
 	from utilities 		import model_circle, combine_params2, drop_image
-	from utilities      import get_input_from_string, get_image, get_arb_params, set_arb_params
+	from utilities          import get_input_from_string, get_image, get_arb_params, set_arb_params
 	from fundamentals 	import rot_shift2D
-	from statistics 	import add_oe_series, ave_series_ctf, ave_series, fsc_mask
+	from statistics 	      import add_oe_series, ave_series_ctf, ave_series, fsc_mask
 	from alignment 		import Numrinit, ringwe, ali2d_single_iter, align2d
 	from filter 		import filt_table, filt_ctf
 	from morphology     import ctf_2
@@ -2526,7 +2525,7 @@ def ali2d_cross_res(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1
 			frsc = []
 			ktavg = [None]*NG
 			for k in xrange(NG):
-				ali2d_single_iter(data[k], numr, wr, cs[k], tavg[k], cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, range(len(data[k])))
+				ali2d_single_iter(data[k], numr, wr, cs[k], tavg[k], cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode)
 				av1, av2 = add_oe_series(data[k])
 				if(CTF):
 					tavg[k] = filt_table(Util.addn_img(av1, av2), ctfb2[k])
