@@ -3885,11 +3885,11 @@ vector<double> Util::cml_weights(const vector<float>& cml){
 
     int curt_iphi = -1;
     int curt_itht = -1;
-    for( int i=0 ;i < angs.size(); ++i )
+    for(unsigned int i=0 ;i < angs.size(); ++i )
     {
         if( angs[i].iphi==curt_iphi && angs[i].itht==curt_itht )
         {
-            assert( indices.size() > 0 );
+            Assert( indices.size() > 0 );
             indices.back().push_back(angs[i].id);
         }
         else
@@ -3910,10 +3910,10 @@ vector<double> Util::cml_weights(const vector<float>& cml){
   
     if(num_agl>2){
 	vector<double> w=Util::vrdg(newphi, newtht);
-        assert( w.size()==newphi.size() );
-        assert( indices.size()==newphi.size() );
+        Assert( w.size()==newphi.size() );
+        Assert( indices.size()==newphi.size() );
 
-        for(int i=0; i < newphi.size(); ++i )
+        for(unsigned int i=0; i < newphi.size(); ++i )
         {
             /*
             std::cout << "phi,tht,w,n: ";
@@ -3923,7 +3923,7 @@ vector<double> Util::cml_weights(const vector<float>& cml){
             std::cout << indices[i].size() << "(";
             */
 
-            for( int j=0; j < indices[i].size(); ++j )
+            for(unsigned int j=0; j < indices[i].size(); ++j )
             {
                 int id = indices[i][j];
                 weights[id] = w[i]/indices[i].size();
@@ -5042,11 +5042,11 @@ float Util::tf(float dzz, float ak, float voltage, float cs, float wgh, float b_
 	float phase = atan(wgh/sqrt(1.0f-wgh*wgh));
 	float lambda=12.398f/sqrt(voltage*(1022.f+voltage));
 	float ak2 = ak*ak;
-	float g1 = dzz*1.0e4*lambda*ak2;
-	float g2 = cst*lambda*lambda*lambda*ak2*ak2/2.0;
+	float g1 = dzz*1.0e4f*lambda*ak2;
+	float g2 = cst*lambda*lambda*lambda*ak2*ak2/2.0f;
 
 	float ctfv = static_cast<float>( sin(M_PI*(g1-g2)+phase)*sign );
-	if(b_factor != 0.0f)  ctfv *= exp(-b_factor*ak*ak/4.0);
+	if(b_factor != 0.0f)  ctfv *= exp(-b_factor*ak*ak/4.0f);
 
 	return ctfv;
 }
@@ -17063,8 +17063,8 @@ void  Util::multiref_peaks_compress_ali2d(EMData* image, EMData* crefim, float x
 		}
 	}
 	for (int x=0; x<maxrin; x++) {
-		float maxs = -1.0e22;
-		float maxm = -1.0e22;
+		float maxs = -1.0e22f;
+		float maxm = -1.0e22f;
 		for (int i=1; i<=2*ky+1; i++) {
 			for (int j=1; j<=2*kx+1; j++) {
 				if (p_ccf1ds[(i*(2*kx+3)+j)*maxrin+x] > maxs) maxs = p_ccf1ds[(i*(2*kx+3)+j)*maxrin+x]; 
@@ -18251,7 +18251,7 @@ vector<float> Util::cluster_equalsize(EMData* d) {
 */
 #define data(i,j) group[i*ny+j]
 vector<float> Util::vareas(EMData* d) {
-	const float step=0.001;
+	const float step=0.001f;
 	int ny = d->get_ysize();
 	//  input emdata should have size 2xN, where N is number of points
 	//  output vector should be 2xN, first element is the number of elements

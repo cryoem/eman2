@@ -713,7 +713,7 @@ EMData *RTFExhaustiveAligner::align(EMData * this_img, EMData *to,
 	if (to_flip_unwrapped) { delete to_flip_unwrapped; to_flip_unwrapped = 0; }
 	if (to_flip_unwrapped_copy) { delete to_flip_unwrapped_copy; to_flip_unwrapped_copy = 0;}
 	
-	bestang *= EMConsts::rad2deg;
+	bestang *= (float)EMConsts::rad2deg;
 	Transform * t = new Transform(Dict("type","2d","alpha",(float)bestang));
 	t->set_pre_trans(Vec2f(-bestdx,-bestdy));	
 	if (bestflip) {
@@ -756,7 +756,7 @@ EMData *RTFSlowExhaustiveAligner::align(EMData * this_img, EMData *to,
 	float angle_step =  params.set_default("angstep", 0.0f);
 	if ( angle_step == 0 ) angle_step = atan2(2.0f, (float)nx);
 	else {
-		angle_step *= EMConsts::deg2rad; //convert to radians
+		angle_step *= (float)EMConsts::deg2rad; //convert to radians
 	}
 	float trans_step =  params.set_default("transtep",1.0f);
 	
@@ -872,7 +872,7 @@ EMData *RTFSlowExhaustiveAligner::align(EMData * this_img, EMData *to,
 
 	if (delete_flipped) { delete flipped; flipped = 0; }
 
-	bestang *= EMConsts::rad2deg;
+	bestang *= (float)EMConsts::rad2deg;
 	Transform * t = new Transform(Dict("type","2d","alpha",(float)bestang));
 	t->set_trans(bestdx,bestdy);
 	
@@ -910,7 +910,7 @@ static double refalifn(const gsl_vector * v, void *params)
 // 	Transform3D t3d(Transform3D::EMAN, (float)a, 0.0f, 0.0f);
 // 	t3d.set_posttrans( (float) x, (float) y);
 //	tmp->rotate_translate(t3d);
-	t.set_trans(x,y);
+	t.set_trans((float)x,(float)y);
 	tmp->transform(t);
 	
 	Cmp* c = (Cmp*) ((void*)(*dict)["cmp"]);

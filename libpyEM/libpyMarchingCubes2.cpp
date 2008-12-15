@@ -1,3 +1,36 @@
+/*
+ * Copyright (c) 2000-2006 Baylor College of Medicine
+ *
+ * This software is issued under a joint BSD/GNU license. You may use the
+ * source code in this file under either license. However, note that the
+ * complete EMAN2 and SPARX software packages have some GPL dependencies,
+ * so you are responsible for compliance with the licenses of these packages
+ * if you opt to use BSD licensing. The warranty disclaimer below holds
+ * in either instance.
+ *
+ * This complete copyright notice must be included in any revised version of the
+ * source code. Additional authorship citations may be added, but existing
+ * author citations must be preserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ *
+ * */
+
+#ifdef _WIN32
+	#pragma warning(disable:4819)
+#endif	//_WIN32
 
 // Boost Includes ==============================================================
 #include <boost/python.hpp>
@@ -14,29 +47,29 @@ using namespace boost::python;
 namespace  {
 
 struct EMAN_Isosurface_Wrapper: EMAN::Isosurface, wrapper<EMAN::Isosurface>
-{  
+{
     void default_set_data(EMAN::EMData* p0) {
         EMAN::Isosurface::set_data(p0);
     }
-        
+
 	void set_data(EMAN::EMData* p0) {
         if(override set_data = this->get_override("set_data")) {
         	EMAN::Isosurface::set_data(p0);
         }
     }
-    
+
     void set_surface_value(const float p0) {
         this->get_override("set_surface_value")(p0);
     }
-    
+
     float get_surface_value() {
     	return this->get_override("get_surface_value")();
     }
-    
+
     void set_sampling(float p0) {
         this->get_override("set_sample_density")(p0);
     }
-    
+
     EMAN::Dict get_isosurface() {
        return this->get_override("get_isosurface")();
     }
@@ -45,7 +78,7 @@ struct EMAN_Isosurface_Wrapper: EMAN::Isosurface, wrapper<EMAN::Isosurface>
 		return this->get_override("get_isosurface_dl")();
 	}
 #endif
-	
+
 	int get_sampling_range() {
 		return this->get_override("get_sampling_range")();
 	}
@@ -69,20 +102,20 @@ BOOST_PYTHON_MODULE(libpyMarchingCubes2)
 #endif //EMAN2_USING_OPENGL
 		.def("get_sampling_range", pure_virtual(&EMAN::Isosurface::get_sampling_range))
 		;
-	
-	/* We do not wrap default constructor of MarchingCubes into Python */	
+
+	/* We do not wrap default constructor of MarchingCubes into Python */
 	//class_< EMAN::MarchingCubes, bases<EMAN::Isosurface> >("MarchingCubes", init<  >())
 	class_< EMAN::MarchingCubes, bases<EMAN::Isosurface> >("MarchingCubes", init< EMAN::EMData *>())
 		//.def(init< EMAN::EMData *, optional< bool > >())
 		;
 }
 
-/* 
+/*
 // Module ======================================================================
 BOOST_PYTHON_MODULE(libpyMarchingCubes2)
 {
 	scope* EMAN_MarchingCubes_scope = new scope(
-		
+
 	);
    class_< EMAN::Isosurface, boost::noncopyable, EMAN::MarchingCubes
     		>("Isosurface", init<  >())

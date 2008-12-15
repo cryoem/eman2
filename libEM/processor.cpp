@@ -4676,10 +4676,10 @@ void SNRProcessor::process_inplace(EMData * image)
 
 	vector < float >ctf;
 	if (wiener) {
-		ctf = image_ctf->compute_1d(image->get_ysize(),1.0/(image_ctf->apix*image->get_ysize()), Ctf::CTF_WIENER_FILTER, &sf);
+		ctf = image_ctf->compute_1d(image->get_ysize(),1.0f/(image_ctf->apix*image->get_ysize()), Ctf::CTF_WIENER_FILTER, &sf);
 	}
 	else {
-		ctf = image_ctf->compute_1d(image->get_ysize(),1.0/(image_ctf->apix*image->get_ysize()), Ctf::CTF_SNR, &sf);
+		ctf = image_ctf->compute_1d(image->get_ysize(),1.0f/(image_ctf->apix*image->get_ysize()), Ctf::CTF_SNR, &sf);
 	}
 
 	image->process_inplace("normalize.circlemean");
@@ -5505,7 +5505,7 @@ void IterBinMaskProcessor::process_inplace(EMData * image)
 	vector<float> vec;
 	for (int i=0; i<val2; i++) vec.push_back(1.0);
 	for (int i=0; i<=val1-val2+2; i++) {
-		vec.push_back(exp(-pow(2.0*i/(val1-val2),2.0)));
+		vec.push_back(exp(-pow(2.0f*i/(val1-val2),2.0f)));
 //		printf("%f\n",exp(-pow(2.0*i/(val1-val2),2.0)));
 	}
 	for (size_t i = 0; i < size; i++) if (d[i]) d[i]=vec[(int)d[i]];
@@ -6759,7 +6759,7 @@ EMData* TransformProcessor::process(const EMData* const image) {
 	float scale = t->get_scale();
 	if (scale != 1.0) {
 		Dict attr_dict = image->get_attr_dict();
-		float inv_scale = 1.0/scale;
+		float inv_scale = 1.0f/scale;
 		attr_dict["origin_row"] = (float) attr_dict["origin_row"] * inv_scale;
 		attr_dict["origin_col"] = (float) attr_dict["origin_col"] * inv_scale;
 		attr_dict["origin_sec"] = (float) attr_dict["origin_sec"] * inv_scale;
@@ -6788,7 +6788,7 @@ void TransformProcessor::process_inplace(EMData* image) {
 	if (scale != 1.0) {
 		Dict attr = image->get_attr_dict();
 		Dict attr_dict;
-		float inv_scale = 1.0/scale;
+		float inv_scale = 1.0f/scale;
 		attr_dict["origin_row"] = (float) attr["origin_row"] * inv_scale;
 		attr_dict["origin_col"] = (float) attr["origin_col"] * inv_scale;
 		attr_dict["origin_sec"] = (float) attr["origin_sec"] * inv_scale;

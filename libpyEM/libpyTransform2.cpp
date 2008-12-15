@@ -1,3 +1,36 @@
+/*
+ * Copyright (c) 2000-2006 Baylor College of Medicine
+ *
+ * This software is issued under a joint BSD/GNU license. You may use the
+ * source code in this file under either license. However, note that the
+ * complete EMAN2 and SPARX software packages have some GPL dependencies,
+ * so you are responsible for compliance with the licenses of these packages
+ * if you opt to use BSD licensing. The warranty disclaimer below holds
+ * in either instance.
+ *
+ * This complete copyright notice must be included in any revised version of the
+ * source code. Additional authorship citations may be added, but existing
+ * author citations must be preserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ *
+ * */
+
+#ifdef _WIN32
+	#pragma warning(disable:4819)
+#endif	//_WIN32
 
 // Boost Includes ==============================================================
 #include <boost/python.hpp>
@@ -23,30 +56,30 @@ struct EMAN_Symmetry3D_Wrapper : public EMAN::Symmetry3D
 {
     EMAN_Symmetry3D_Wrapper(PyObject* py_self_):
 			EMAN::Symmetry3D(), py_self(py_self_) {}
-	
+
 	int get_max_csym() const {
 		return call_method< int >(py_self, "get_max_csym");
 	}
-	
+
 	int get_nsym() const {
 		return call_method< int >(py_self, "get_nsym");
 	}
-	
+
 	EMAN::Transform get_sym(const int n) const {
 		return call_method< EMAN::Transform >(py_self, "get_sym", n);
 	}
-	
+
 	EMAN::Dict get_delimiters(const bool b) const {
 		return call_method< EMAN::Dict >(py_self, "get_delimiters",b);
 	}
-	
+
 	std::string get_name() const {
 		return call_method< std::string >(py_self, "get_name");
 	}
 	std::string get_desc() const {
 		return call_method< std::string >(py_self, "get_desc");
 	}
-	
+
 	EMAN::TypeDict get_param_types() const {
 		return call_method< EMAN::TypeDict >(py_self, "get_param_types");
 	}
@@ -54,19 +87,19 @@ struct EMAN_Symmetry3D_Wrapper : public EMAN::Symmetry3D
 	std::vector<EMAN::Vec3f > get_asym_unit_points(bool b) const {
 		return call_method< std::vector<EMAN::Vec3f > >(py_self, "get_asym_unit_points", b);
 	}
-	
+
 	std::vector<std::vector<EMAN::Vec3f > > get_asym_unit_triangles(bool b) const {
 		return call_method< std::vector<std::vector<EMAN::Vec3f > > >(py_self, "get_asym_unit_triangles", b);
 	}
-	
+
 	void insert_params(const EMAN::Dict& d) {
 		return call_method< void >(py_self, "insert_params", d);
 	}
-	
+
 	bool is_in_asym_unit(const float& altitude, const float& azimuth, const bool inc_mirror) const {
 		return call_method< bool >(py_self, "is_in_asymm_init",altitude,azimuth,inc_mirror);
 	}
-	
+
 	PyObject* py_self;
 };
 
@@ -74,7 +107,7 @@ struct EMAN_OrientationGenerator_Wrapper : public EMAN::OrientationGenerator
 {
     EMAN_OrientationGenerator_Wrapper(PyObject* py_self_):
 			EMAN::OrientationGenerator(), py_self(py_self_) {}
-	
+
 	std::vector<EMAN::Transform> gen_orientations(const EMAN::Symmetry3D* const sym) const {
 		return call_method< std::vector<EMAN::Transform> >(py_self, "gen_orientations", sym);
 	}
@@ -85,7 +118,7 @@ struct EMAN_OrientationGenerator_Wrapper : public EMAN::OrientationGenerator
 	std::string get_desc() const {
 		return call_method< std::string >(py_self, "get_desc");
 	}
-	
+
 	EMAN::TypeDict get_param_types() const {
 		return call_method< EMAN::TypeDict >(py_self, "get_param_types");
 	}
@@ -93,7 +126,7 @@ struct EMAN_OrientationGenerator_Wrapper : public EMAN::OrientationGenerator
 	int get_orientations_tally(const EMAN::Symmetry3D* const sym, const float& delta ) const {
 		return call_method< int >(py_self, "get_orientations_tally",sym,delta);
 	}
-	
+
 	PyObject* py_self;
 };
 
@@ -102,10 +135,10 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_get_pretrans_overloads_0
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_get_posttrans_overloads_0_1, get_posttrans, 0, 1)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_set_pretrans_overloads_2_3, set_pretrans, 2, 3)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_set_posttrans_overloads_2_3, set_posttrans, 2, 3)
-		
+
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform_settrans_overloads_2_3, set_trans, 2, 3)
 
-}// namespace 
+}// namespace
 
 
 // Module ======================================================================
@@ -114,15 +147,15 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 {
 	def("dump_orientgens", &EMAN::dump_orientgens);
 	def("dump_orientgens_list", &EMAN::dump_orientgens_list);
-	
+
 	def("dump_symmetries", &EMAN::dump_symmetries);
 	def("dump_symmetries_list", &EMAN::dump_symmetries_list);
-	
+
 	class_< EMAN::Symmetry3D, boost::noncopyable, EMAN_Symmetry3D_Wrapper >("Symmetry3D", init<  >())
 		.def("get_delimiters", pure_virtual(&EMAN::Symmetry3D::get_delimiters))
 		.def("get_sym", pure_virtual(&EMAN::Symmetry3D::get_sym))
 		.def("is_in_asym_unit", pure_virtual(&EMAN::Symmetry3D::is_in_asym_unit))
-		.def("get_asym_unit_triangles", pure_virtual(&EMAN::Symmetry3D::get_asym_unit_triangles))	
+		.def("get_asym_unit_triangles", pure_virtual(&EMAN::Symmetry3D::get_asym_unit_triangles))
 		.def("get_nsym",pure_virtual(&EMAN::Symmetry3D::get_nsym))
 		.def("get_name",pure_virtual(&EMAN::Symmetry3D::get_name))
 		.def("is_platonic_sym",pure_virtual(&EMAN::Symmetry3D::is_platonic_sym))
@@ -140,7 +173,7 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 		.def("get_symmetries", &EMAN::Symmetry3D::get_symmetries)
 		.staticmethod("get_symmetries")
 		;
-		
+
 
 	class_< EMAN::Factory<EMAN::Symmetry3D>, boost::noncopyable >("Symmetries", no_init)
 		.def("get", (EMAN::Symmetry3D* (*)(const std::basic_string<char,std::char_traits<char>,std::allocator<char> >&))&EMAN::Factory<EMAN::Symmetry3D>::get, return_value_policy< manage_new_object >())
@@ -149,19 +182,19 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 		.staticmethod("get_list")
 		.staticmethod("get")
 		;
-	
+
 	class_< EMAN::OrientationGenerator, boost::noncopyable, EMAN_OrientationGenerator_Wrapper >("__OrientationGenerator", init<  >())
 			.def("gen_orientations", pure_virtual(&EMAN::OrientationGenerator::gen_orientations))
 			.def("get_orientations_tally", pure_virtual(&EMAN::OrientationGenerator::get_orientations_tally))
 		;
-	
+
 	class_< EMAN::Factory<EMAN::OrientationGenerator>, boost::noncopyable >("OrientGens", no_init)
 		.def("get", (EMAN::OrientationGenerator* (*)(const std::basic_string<char,std::char_traits<char>,std::allocator<char> >&))&EMAN::Factory<EMAN::OrientationGenerator>::get, return_value_policy< manage_new_object >())
 		.def("get", (EMAN::OrientationGenerator* (*)(const std::basic_string<char,std::char_traits<char>,std::allocator<char> >&, const EMAN::Dict&))&EMAN::Factory<EMAN::OrientationGenerator>::get, return_value_policy< manage_new_object >())
 		.def("get_list", &EMAN::Factory<EMAN::OrientationGenerator>::get_list)
 		.staticmethod("get_list")
 		.staticmethod("get")
-		;	
+		;
 	typedef float (EMAN::Vec3f::*dot_float)(const EMAN::Vec3f&) const;
 	typedef EMAN::Vec3f (EMAN::Vec3f::*cross_float)(const EMAN::Vec3f&) const;
 	typedef void (EMAN::Vec3f::*set_value_at_float)(int, const float&);
@@ -300,7 +333,7 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 		.def( self *= other< float >() )
 		.def( self /= other< float >() )
 	;
-	
+
     class_< EMAN::Quaternion >("Quaternion", init<  >())
         .def(init< const EMAN::Quaternion& >())
         .def(init< float, float, float, float >())
@@ -413,7 +446,7 @@ BOOST_PYTHON_MODULE(libpyTransform2)
         .value("SPIN", EMAN::Transform3D::SPIN)
         .value("EMAN", EMAN::Transform3D::EMAN)
     ;
-	
+
 	delete EMAN_Transform3D_scope;
 
 	class_< EMAN::Transform >("Transform", init<  >())

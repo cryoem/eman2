@@ -329,7 +329,7 @@ int EmanOrientationGenerator::get_orientations_tally(const Symmetry3D* const sym
 			az_iterator += h;
 			if ( (az_iterator > azmax_adjusted) && d_odd_mirror_flag) {
 				azmax_adjusted = azmax;
-				az_iterator += azmax/2.0;
+				az_iterator += azmax/2.0f;
 			}
 		}
 		alt_iterator += delta;
@@ -420,7 +420,7 @@ vector<Transform> EmanOrientationGenerator::gen_orientations(const Symmetry3D* c
 			az_iterator += h;
 			if ( (az_iterator > azmax_adjusted) && d_odd_mirror_flag) {
 				azmax_adjusted = azmax;
-				az_iterator += azmax/2.0;
+				az_iterator += azmax/2.0f;
 			}
 			
 		}

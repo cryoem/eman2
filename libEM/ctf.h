@@ -157,7 +157,7 @@ namespace EMAN
 	  private:
 		inline float calc_amp1()
 		{
-			return (sqrt(1 - ampcont * ampcont/10000.0));
+			return (sqrt(1 - ampcont * ampcont/10000.0f));
 		}
 
 		inline float calc_lambda()
@@ -189,14 +189,14 @@ namespace EMAN
 
 		inline float calc_ctf1(float g, float gamma, float s)
 		{
-			float r = amplitude * exp(-(bfactor/4.0 * s * s)) * (g * sin(gamma) + ampcont/100.0 * cos(gamma));
+			float r = amplitude * exp(-(bfactor/4.0f * s * s)) * (g * sin(gamma) + ampcont/100.0f * cos(gamma));
 			return r;
 		}
 
 		inline float calc_amplitude(float gamma)
 		{
-			float t1 = sqrt(1.0f - ampcont * ampcont/10000.0) * sin(gamma);
-			float v = amplitude * (t1 + ampcont/100.0 * cos(gamma));
+			float t1 = sqrt(1.0f - ampcont * ampcont/10000.0f) * sin(gamma);
+			float v = amplitude * (t1 + ampcont/100.0f * cos(gamma));
 			return v;
 		}
 
@@ -263,7 +263,7 @@ namespace EMAN
 	  private:
 		inline float calc_amp1()
 		{
-			return (sqrt(1 - ampcont * ampcont/10000.0));
+			return (sqrt(1 - ampcont * ampcont/10000.0f));
 		}
 
 		inline float calc_lambda()
@@ -295,14 +295,14 @@ namespace EMAN
 
 		inline float calc_ctf1(float g, float gamma, float s)
 		{
-			float r = exp(-(bfactor/4.0 * s * s)) * (g * sin(gamma) + ampcont/100.0 * cos(gamma));
+			float r = exp(-(bfactor/4.0f * s * s)) * (g * sin(gamma) + ampcont/100.0f * cos(gamma));
 			return r;
 		}
 
 		inline float calc_amplitude(float gamma)
 		{
-			float t1 = sqrt(1.0f - ampcont * ampcont/10000.0) * sin(gamma);
-			float v = (t1 + ampcont/100.0 * cos(gamma));
+			float t1 = sqrt(1.0f - ampcont * ampcont/10000.0f) * sin(gamma);
+			float v = (t1 + ampcont/100.0f * cos(gamma));
 			return v;
 		}
 

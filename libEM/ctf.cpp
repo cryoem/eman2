@@ -610,9 +610,9 @@ vector<float> EMAN2Ctf::to_vector() const
 	vctf.push_back(apix);
 	vctf.push_back(dsbg);
 	vctf.push_back(background.size());
-	for (int i=0; i<background.size(); i++) vctf.push_back(background[i]);
+	for (unsigned int i=0; i<background.size(); i++) vctf.push_back(background[i]);
 	vctf.push_back((float)snr.size());
-	for (int j=0; j<snr.size(); j++) vctf.push_back(snr[j]);
+	for (unsigned int j=0; j<snr.size(); j++) vctf.push_back(snr[j]);
 
 	return vctf;
 }
@@ -680,7 +680,7 @@ vector < float >EMAN2Ctf::compute_1d(int size,float ds, CtfType type, XYData * s
 			int j = (int)floor(f);
 			f-=j;
 			if (j>background.size()-2) r[i]=background.back();
-			else r[i]=background[j]*(1.0-f)+background[j+1]*f;
+			else r[i]=background[j]*(1.0f-f)+background[j+1]*f;
 			s+=ds;
 		}
 		break;
@@ -691,7 +691,7 @@ vector < float >EMAN2Ctf::compute_1d(int size,float ds, CtfType type, XYData * s
 			int j = (int)floor(f);
 			f-=j;
 			if (j>snr.size()-2) r[i]=snr.back();
-			else r[i]=snr[j]*(1.0-f)+snr[j+1]*f;
+			else r[i]=snr[j]*(1.0f-f)+snr[j+1]*f;
 //			printf("%d\t%f\n",j,snr[j]);
 			s+=ds;
 		}
@@ -705,7 +705,7 @@ vector < float >EMAN2Ctf::compute_1d(int size,float ds, CtfType type, XYData * s
 			double sum=0,norm=0; 
 			for (int k=max_int(j-5,1); k<min_int(j+6,np); k++) {
 				float s2=f-k;
-				float e=exp(-14.0*s2*s2/(gamma));
+				float e=exp(-14.0f*s2*s2/(gamma));
 				if (k>snr.size()) break;
 				sum+=e*snr[k];
 				norm+=e;
@@ -734,11 +734,11 @@ vector < float >EMAN2Ctf::compute_1d(int size,float ds, CtfType type, XYData * s
 				r[i]=0;
 			}
 			else {
-				r[i]=snr[j]*(1.0-f)+snr[j+1]*f;
-				bg=background[j]*(1.0-f)+background[j+1]*f;
+				r[i]=snr[j]*(1.0f-f)+snr[j+1]*f;
+				bg=background[j]*(1.0f-f)+background[j+1]*f;
 			}
 			if (r[i]<0) r[i]=0;
-			r[i]=r[i]/(r[i]+1.0);		// Full Wiener filter assuming perfect image with noise
+			r[i]=r[i]/(r[i]+1.0f);		// Full Wiener filter assuming perfect image with noise
 //			r[i]=sqrt(r[i]/bg)/(r[i]+1.0);	// Wiener filter with 1/CTF term (sort of) to restore image then filter
 			s+=ds;
 		}
@@ -875,7 +875,7 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 				int j = (int)floor(f);
 				f-=j;
 				if (j>snr.size()-2) d[x*2+ynx]=snr.back();
-				else d[x*2+ynx]=snr[j]*(1.0-f)+snr[j+1]*f;
+				else d[x*2+ynx]=snr[j]*(1.0f-f)+snr[j+1]*f;
 				d[x * 2 + ynx + 1] = 0;
 			}
 		}
@@ -897,7 +897,7 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 				int j = (int)floor(f);
 				f-=j;
 				if (j>snr.size()-2) d[x*2+ynx]=snr.back();
-				else d[x*2+ynx]=snr[j]*(1.0-f)+snr[j+1]*f;
+				else d[x*2+ynx]=snr[j]*(1.0f-f)+snr[j+1]*f;
 				d[x * 2 + ynx + 1] = 0;
 			}
 		}
@@ -926,8 +926,8 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 					d[x*2+ynx]=0;
 				}
 				else {
-					bg=background[j]*(1.0-f)+background[j+1]*f;
-					snrf=snr[j]*(1.0-f)+snr[j+1]*f;
+					bg=background[j]*(1.0f-f)+background[j+1]*f;
+					snrf=snr[j]*(1.0f-f)+snr[j+1]*f;
 //					d[x*2+ynx]=sqrt(snrf/bg)/(snrf+1.0);	// Note that this is a Wiener filter with a 1/CTF term (sort of) to compensate for the filtration already applied
 					d[x*2+ynx]=snrf/(snrf+1);	// This is just the simple Wiener filter
 				}
@@ -989,10 +989,10 @@ bool EMAN2Ctf::equal(const Ctf * ctf1) const
 			snr.size() != c->snr.size()
 			) return false;
 
-		for (int i=0; i<background.size(); i++) {
+		for (unsigned int i=0; i<background.size(); i++) {
 			if (background[i]!=c->background[i]) return false;
 		}
-		for (int i=0; i<snr.size(); i++) {
+		for (unsigned int i=0; i<snr.size(); i++) {
 			if (snr[i]!=c->snr[i]) return false;
 		}
 		return true;
