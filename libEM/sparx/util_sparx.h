@@ -434,7 +434,11 @@ class FakeKaiserBessel : public KaiserBessel {
 
 	static float ener_tot(const vector<EMData*>& data, vector<int> numr, vector<float> tot);
 
-        static Dict min_dist(EMData* im, const vector<EMData*>& data);
+        static Dict min_dist_real(EMData* image, const vector<EMData*>& data);
+
+        static Dict min_dist_four(EMData* image, const vector<EMData*>& data);
+
+        static float SqEuc_dist(EMData* image, EMData* width);
 
         static vector<float> cml_line_in3d_full(const vector<float>& Ori);
 

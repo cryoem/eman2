@@ -4087,8 +4087,69 @@ vector<int> Util::cml_list_line_pos(vector<float> Ori, float newphi, float newth
 }
 
 
+float Util::SqEuc_dist(EMData* image, EMData* with){
+        ENTERFUNC;
+
+	float *y_data = with->get_data();
+	float *x_data = image->get_data();
+	double result = 0.;
+	float n = 0;
+
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	long totsize = nx * ny;
+	for (long i = 0; i < totsize; i++) {
+	    double temp = x_data[i]- y_data[i];
+	    result += temp*temp;
+	}
+	
+	result/=totsize;
+	
+	EXITFUNC;
+	return static_cast<float>(result);
+
+}
+
+
 // helper function for k-means
-Dict Util::min_dist(EMData* image, const vector<EMData*>& data) {
+Dict Util::min_dist_real(EMData* image, const vector<EMData*>& data) {
+	ENTERFUNC;
+
+	int nima = data.size();	
+	vector<float> res(nima);
+	double result = 0.;
+	double valmin = 1.0e20;
+	int valpos = -1;
+
+	for (int kk=0; kk<nima; kk++){
+	result = 0;
+
+	float *y_data = data[kk]->get_data();
+	float *x_data = image->get_data();
+	long n = 0;
+	long totsize = image->get_xsize()*image->get_ysize();
+	for (long i = 0; i < totsize; i++) {
+	    double temp = x_data[i]- y_data[i];
+	    result += temp*temp;
+	}
+	result /= totsize;
+	res[kk] = (float)result;
+
+	if(result<valmin) {valmin = result; valpos = kk;}
+
+	}
+
+	Dict retvals;
+	retvals["dist"] = res;
+	retvals["pos"]  = valpos;  
+            
+	EXITFUNC;
+	return retvals;
+
+}
+
+// helper function for k-means
+Dict Util::min_dist_four(EMData* image, const vector<EMData*>& data) {
 	ENTERFUNC;
 
 	int nima = data.size();	
@@ -4104,100 +4165,53 @@ Dict Util::min_dist(EMData* image, const vector<EMData*>& data) {
 	float *y_data = data[kk]->get_data();
 	float *x_data = image->get_data();
 	long n = 0;
-	if(image->is_complex() && data[kk]->is_complex()) {
-	// Implemented by PAP  01/09/06 - please do not change.  If in doubts, write/call me.
-		int nx  = data[kk]->get_xsize();
-		int ny  = data[kk]->get_ysize();
-		int nz  = data[kk]->get_zsize();
-		nx = (nx - 2 + data[kk]->is_fftodd()); // nx is the real-space size of the input image
-		int lsd2 = (nx + 2 - nx%2) ; // Extended x-dimension of the complex image
 
-		int ixb = 2*((nx+1)%2);
-		int iyb = ny%2;
-		// 
-		if(nz == 1) {
-		//  it looks like it could work in 3D, but it is not, really.
-		for ( int iz = 0; iz <= nz-1; iz++) {
-			double part = 0.;
-			for ( int iy = 0; iy <= ny-1; iy++) {
-				for ( int ix = 2; ix <= lsd2 - 1 - ixb; ix++) {
-						int ii = ix + (iy  + iz * ny)* lsd2;
-						part += (x_data[ii] - y_data[ii])*double(x_data[ii] - y_data[ii]);
-				}
-			}
-			for ( int iy = 1; iy <= ny/2-1 + iyb; iy++) {
-				int ii = (iy  + iz * ny)* lsd2;
-				part += (x_data[ii] - y_data[ii])*double(x_data[ii] - y_data[ii]);
-				part += (x_data[ii+1] - y_data[ii+1])*double(x_data[ii+1] - y_data[ii+1]);
-			}
-			if(nx%2 == 0) {
-				for ( int iy = 1; iy <= ny/2-1 + iyb; iy++) {
-					int ii = lsd2 - 2 + (iy  + iz * ny)* lsd2;
-					part += (x_data[ii] - y_data[ii])*double(x_data[ii] - y_data[ii]);
-					part += (x_data[ii+1] - y_data[ii+1])*double(x_data[ii+1] - y_data[ii+1]);
-				}
-			
-			}
-			part *= 2;
-			part += (x_data[0] - y_data[0])*double(x_data[0] - y_data[0]);
-			if(ny%2 == 0) {
-				int ii = (ny/2  + iz * ny)* lsd2;
-				part += (x_data[ii] - y_data[ii])*double(x_data[ii] - y_data[ii]);				
-			}
-			if(nx%2 == 0) {
-				int ii = lsd2 - 2 + (0  + iz * ny)* lsd2;
-				part += (x_data[ii] - y_data[ii])*double(x_data[ii] - y_data[ii]);				
-				if(ny%2 == 0) {
-					int ii = lsd2 - 2 +(ny/2  + iz * ny)* lsd2;
-					part += (x_data[ii] - y_data[ii])*double(x_data[ii] - y_data[ii]);				
-				}
-			}
-			result += part;
-		}
-		n = (long int)nx*(long int)ny*(long int)nz*(long int)nx*(long int)ny*(long int)nz;
-		
-		}else{ //This 3D code is incorrect, but it is the best I can do now 01/09/06 PAP
-		int ky, kz;
-		int ny2 = ny/2; int nz2 = nz/2;
-		for ( int iz = 0; iz <= nz-1; iz++) {
-			if(iz>nz2) kz=iz-nz; else kz=iz;
-			for ( int iy = 0; iy <= ny-1; iy++) {
-				if(iy>ny2) ky=iy-ny; else ky=iy;
-				for ( int ix = 0; ix <= lsd2-1; ix++) {
-				// Skip Friedel related values
-				if(ix>0 || (kz>=0 && (ky>=0 || kz!=0))) {
-						int ii = ix + (iy  + iz * ny)* lsd2;
-						result += (x_data[ii] - y_data[ii])*double(x_data[ii] - y_data[ii]);
-					}
-				}
-			}
-		}
-		n = (long int)nx*(long int)ny*(long int)nz*(long int)nx*(long int)ny*(long int)nz/2;
-		}
-	} else {
-		long totsize = image->get_xsize()*image->get_ysize()*image->get_zsize();
-		/*
-		if (params.has_key("mask")) {
-		  EMData* mask;
-		  mask = params["mask"];
-  		  float* dm = mask->get_data();
-		  for (long i = 0; i < totsize; i++) {
-			   if (dm[i] > 0.5) {
-				double temp = x_data[i]- y_data[i];
-				result += temp*temp;
-				n++;
-			   }
-		  }
-		} else {
-		*/
-		  for (long i = 0; i < totsize; i++) {
-				double temp = x_data[i]- y_data[i];
-				result += temp*temp;
-		 // }
-		   n = totsize;
-		}
+	// Implemented by PAP  01/09/06 - please do not change.  If in doubts, write/call me.
+	int nx  = data[kk]->get_xsize();
+	int ny  = data[kk]->get_ysize();
+	int nz  = data[kk]->get_zsize();
+	nx = (nx - 2 + data[kk]->is_fftodd()); // nx is the real-space size of the input image
+	int lsd2 = (nx + 2 - nx%2) ; // Extended x-dimension of the complex image
+	
+	int ixb = 2*((nx+1)%2);
+	int iyb = ny%2;
+	int iz = 0;
+
+	for ( int iy = 0; iy <= ny-1; iy++) {
+	    for ( int ix = 2; ix <= lsd2 - 1 - ixb; ix++) {
+		int ii = ix + (iy  + iz * ny)* lsd2;
+		result += (x_data[ii] - y_data[ii])*double(x_data[ii] - y_data[ii]);
+	    }
 	}
-	result /= n;
+	for ( int iy = 1; iy <= ny/2-1 + iyb; iy++) {
+	    int ii = (iy  + iz * ny)* lsd2;
+	    result += (x_data[ii] - y_data[ii])*double(x_data[ii] - y_data[ii]);
+	    result += (x_data[ii+1] - y_data[ii+1])*double(x_data[ii+1] - y_data[ii+1]);
+	}
+	if(nx%2 == 0) {
+	    for ( int iy = 1; iy <= ny/2-1 + iyb; iy++) {
+		int ii = lsd2 - 2 + (iy  + iz * ny)* lsd2;
+		result += (x_data[ii] - y_data[ii])*double(x_data[ii] - y_data[ii]);
+		result += (x_data[ii+1] - y_data[ii+1])*double(x_data[ii+1] - y_data[ii+1]);
+	    }
+	    
+	}
+	result *= 2;
+	result += (x_data[0] - y_data[0])*double(x_data[0] - y_data[0]);
+	if(ny%2 == 0) {
+	    int ii = (ny/2  + iz * ny)* lsd2;
+	    result += (x_data[ii] - y_data[ii])*double(x_data[ii] - y_data[ii]);				
+	}
+	if(nx%2 == 0) {
+	    int ii = lsd2 - 2 + (0  + iz * ny)* lsd2;
+	    result += (x_data[ii] - y_data[ii])*double(x_data[ii] - y_data[ii]);				
+	    if(ny%2 == 0) {
+		int ii = lsd2 - 2 +(ny/2  + iz * ny)* lsd2;
+		result += (x_data[ii] - y_data[ii])*double(x_data[ii] - y_data[ii]);				
+	    }
+	}
+		
+	result /= (long int)nx*(long int)ny*(long int)nx*(long int)ny;
 	res[kk] = (float)result;
 
 	if(result<valmin) {valmin = result; valpos = kk;}
@@ -4207,13 +4221,10 @@ Dict Util::min_dist(EMData* image, const vector<EMData*>& data) {
 	Dict retvals;
 	retvals["dist"] = res;
 	retvals["pos"]  = valpos;  
-
             
 	EXITFUNC;
 	return retvals;
-	//return static_cast<float>(valmin);
 }
-
 
 
 #define old_ptr(i,j,k)          old_ptr[i+(j+(k*ny))*nx]
