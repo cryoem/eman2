@@ -1628,6 +1628,7 @@ def k_means_classical(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, D
 	from utilities 		import model_blank, get_im, running_time
 	from random    		import seed, randint
 	from utilities 		import print_msg
+	from alignment          import select_k
 	from copy		import deepcopy
 	import sys
 	import time
@@ -1642,9 +1643,8 @@ def k_means_classical(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, D
 		CTF  = False 
 
 	# Simulate annealing use or not
-	if F != 0:
-		SA = SA2 = True # default use the new SA2
-	else:   SA = SA2 = False
+	if F != 0: SA = True
+	else:      SA = False
 
 	if SA:
 		# for simulate annealing
@@ -1702,10 +1702,12 @@ def k_means_classical(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, D
 	flag_empty = False
 	ntrials    = 0
 	wd_trials  = 0
+	SA_run     = SA
 	while ntrials < trials:
 		ntrials  += 1
 
 		# for simulate annealing
+		SA = SA_run
 		if SA: T = T0
 		
 		# Init the cluster by an image empty
@@ -1787,97 +1789,38 @@ def k_means_classical(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, D
 			change     = False
 			Je	   = 0
 			if SA: ct_pert = 0
-		
+
 			for im in xrange(N):
-		
 				if CTF:
 					CTFxAVE = []
 					for k in xrange(K): CTFxAVE.append(filt_table(Cls['ave'][k], ctf[im]))
 					res = Util.min_dist(im_M[im], CTFxAVE)
 				else:
 					res = Util.min_dist(im_M[im], Cls['ave'])
-				
+
 				# Simulate annealing
 				if SA:
-					if SA2:
-						dJe = [0.0] * K
-						ni  = float(Cls['n'][assign[im]])
-						di  = res['dist'][assign[im]]
-											
-						for k in xrange(K):
-							if k != assign[im]:
-								nj  = float(Cls['n'][k])
-								dj  = res['dist'][k]
-								
-								dJe[k] = -( (nj/(nj+1))*(dj/norm) - (ni/(ni-1))*(di/norm) )
-															
-							else:
-								dJe[k] = 0
-
-						# norm <0 [-1;0], >=0 [0;+1], if just 0 norm to 1
-						nbneg  =  0
-						nbpos  =  0
-						minneg =  0
-						maxpos =  0
-						for k in xrange(K):
-							if dJe[k] < 0.0:
-								nbneg += 1
-								if dJe[k] < minneg: minneg = dJe[k]
-							else:
-								nbpos += 1
-								if dJe[k] > maxpos: maxpos = dJe[k]
-						if nbneg != 0:                   dneg = -1.0 / minneg
-						if nbpos != 0 and maxpos != 0:   dpos =  1.0 / maxpos
-						for k in xrange(K):
-							if dJe[k] < 0.0: dJe[k] = dJe[k] * dneg
-							else:
-								if maxpos != 0: dJe[k] = dJe[k] * dpos
-								else:           dJe[k] = 1.0
-
-						# q[k]
-						q      = [0.0] * K
-						arg    = [0.0] * K
-						maxarg = 0
-						for k in xrange(K):
-							arg[k] = dJe[k] / T
-							if arg[k] > maxarg: maxarg = arg[k]
-						limarg = 17
-						if maxarg > limarg:
-							sumarg = float(sum(arg))
-							for k in xrange(K): q[k] = exp(arg[k] * limarg / sumarg)
+					dJe = [0.0] * K
+					ni  = float(Cls['n'][assign[im]])
+					di  = res['dist'][assign[im]]
+					for k in xrange(K):
+						if k != assign[im]:
+							nj     = float(Cls['n'][k])
+							dj     = res['dist'][k]
+							dJe[k] = (ni/(ni-1))*(di/norm) - (nj/(nj+1))*(dj/norm)
 						else:
-							for k in xrange(K): q[k] = exp(arg[k])
-										
-						# p[k]
-						p = [[0.0, 0] for i in xrange(K)]
-						sumq = float(sum(q))
-						for k in xrange(K):
-							p[k][0] = q[k] / sumq
-							p[k][1] = k
-											
-						p.sort()
-						c = [0.0] * K
-						c[0] = p[0][0]
-						for k in xrange(1, K): c[k] = c[k-1] + p[k][0]
+							dJe[k] = 0
 
-						pb = random()
-						select = -1
-						for k in xrange(K):
-							if c[k] > pb:
-								select = p[k][1]
-								break
+					# normalize and select
+					mindJe = min(dJe)
+					scale  = max(dJe) - mindJe
+					for k in xrange(K): dJe[k] = (dJe[k] - mindJe) / scale
+					select = select_k(dJe, T)
 
-
-						if select != res['pos']:
-							ct_pert    += 1
-							res['pos']  = select
-
-
-					else:
-						if exp( -(1) / float(T) ) > random():
-							res['pos']  = randint(0, K - 1)
-							ct_pert    += 1
-
+					if select != res['pos']:
+						ct_pert    += 1
+						res['pos']  = select
+			
 				# update assign
 				if res['pos'] != assign[im]:
 					Cls['n'][assign[im]] -= 1
@@ -1885,8 +1828,7 @@ def k_means_classical(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, D
 					assign[im]            = res['pos']
 					Cls['n'][assign[im]] += 1
 					change                = True
-
-							
+	
 			# manage empty cluster
 			for k in xrange(K):
 				if Cls['n'][k] <= 1:
@@ -1894,14 +1836,13 @@ def k_means_classical(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, D
 					flag_empty = True
 					break
 			if flag_empty: break
-					
 													
 			# Update clusters
 			for k in xrange(K):
 				Cls['ave'][k] = buf.copy()
 				Cls['Ji'][k]  = 0
 				Je = 0
-			
+		
 			if CTF:
 				# first init ctf2
 				for k in xrange(K):	Cls_ctf2[k] = [0] * len_ctm
@@ -1934,29 +1875,23 @@ def k_means_classical(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, D
 				for n in xrange(N):	Cls['Ji'][assign[n]] += im_M[n].cmp("SqEuclidean",Cls['ave'][assign[n]]) / norm
 				for k in xrange(K):	Je += Cls['Ji'][k]	
 									
-				
 			# threshold convergence control
-			if Je != 0:
-				thd = abs(Je - old_Je) / Je
-			else:
-				thd = 0
-			if SA:
-				if thd < 1.0e-12 and ct_pert == 0: watch_dog =maxit
-			else:
-				if thd < 1.0e-8:                   watch_dog = maxit
-			old_Je = Je
+			if Je != 0: thd = abs(Je - old_Je) / Je
+			else:	    thd = 0
 
+			# Simulate annealing, update temperature
 			if SA:
-				# Simulate annealing, update temperature
+				if thd < 1.0e-12 and ct_pert == 0: watch_dog = maxit
 				T *= F
-				if SA2:
-					if T < 0.09: SA = False
-
+				if T < 1.0e-4: SA = False
 				print_msg('> iteration: %5d    criterion: %11.6e    T: %13.8f  ct disturb: %5d\n' % (ite, Je, T, ct_pert))
 				if DEBUG: print '> iteration: %5d    criterion: %11.6e    T: %13.8f  ct disturb: %5d' % (ite, Je, T, ct_pert)
 			else:
+				if thd < 1.0e-8: watch_dog = maxit
 				print_msg('> iteration: %5d    criterion: %11.6e\n' % (ite, Je))
 				if DEBUG: print '> iteration: %5d    criterion: %11.6e' % (ite, Je)
+
+			old_Je = Je
 
 		if not flag_empty:
 			# memorize the result for this trial	
@@ -2051,6 +1986,7 @@ def k_means_classical(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, D
 def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=False):
 	from utilities    import model_blank, get_im, running_time
 	from utilities    import print_begin_msg, print_end_msg, print_msg
+	from alignment    import select_k
 	from random       import seed, randint, shuffle
 	from copy         import deepcopy
 	import sys
@@ -2066,8 +2002,8 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 		CTF  = False
 
 	# Simulate annealing use or not
-	if T0 != 0: SA = SA2 = True # default use the new SA2
-	else:       SA = SA2 = False
+	if T0 != 0: SA = True
+	else:       SA = False
 
 	if SA:
 		# for simulate annealing
@@ -2124,10 +2060,12 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 	flag_empty = False	
 	ntrials    = 0
 	wd_trials  = 0
+	SA_run     = SA
 	while ntrials < trials:
 		ntrials += 1
 
 		# for simulate annealing
+		SA = SA_run
 		if SA: T = T0
 	
 		# Init the cluster by an image empty
@@ -2232,84 +2170,26 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 					
 				# Simulate Annealing
 				if SA:
-					if SA2:
-						dJe = [0.0] * K
-						ni  = float(Cls['n'][assign[im]])
-						di  = res['dist'][assign[im]]
-						for k in xrange(K):
-							if k != assign[im]:
-								nj  = float(Cls['n'][k])
-								dj  = res['dist'][k]
-								
-								dJe[k] = -( (nj/(nj+1))*(dj/norm) - (ni/(ni-1))*(di/norm) )
-															
-							else:
-								dJe[k] = 0
-
-						# norm <0 [-1;0], >=0 [0;+1], if just 0 norm to 1
-						nbneg  =  0
-						nbpos  =  0
-						minneg =  0
-						maxpos =  0
-						for k in xrange(K):
-							if dJe[k] < 0.0:
-								nbneg += 1
-								if dJe[k] < minneg: minneg = dJe[k]
-							else:
-								nbpos += 1
-								if dJe[k] > maxpos: maxpos = dJe[k]
-						if nbneg != 0:                   dneg = -1.0 / minneg
-						if nbpos != 0 and maxpos != 0:   dpos =  1.0 / maxpos
-						for k in xrange(K):
-							if dJe[k] < 0.0: dJe[k] = dJe[k] * dneg
-							else:
-								if maxpos != 0: dJe[k] = dJe[k] * dpos
-								else:           dJe[k] = 1.0
-
-						# q[k]
-						q      = [0.0] * K
-						arg    = [0.0] * K
-						maxarg = 0
-						for k in xrange(K):
-							arg[k] = dJe[k] / T
-							if arg[k] > maxarg: maxarg = arg[k]
-						limarg = 17
-						if maxarg > limarg:
-							sumarg = float(sum(arg))
-							for k in xrange(K): q[k] = exp(arg[k] * limarg / sumarg)
+					dJe = [0.0] * K
+					ni  = float(Cls['n'][assign[im]])
+					di  = res['dist'][assign[im]]
+					for k in xrange(K):
+						if k != assign[im]:
+							nj  = float(Cls['n'][k])
+							dj  = res['dist'][k]
+							dJe[k] =  (ni/(ni-1))*(di/norm) - (nj/(nj+1))*(dj/norm)
 						else:
-							for k in xrange(K): q[k] = exp(arg[k])
-										
-						# p[k]
-						p = [[0.0, 0] for i in xrange(K)]
-						sumq = float(sum(q))
-						for k in xrange(K):
-							p[k][0] = q[k] / sumq
-							p[k][1] = k
-											
-						p.sort()
-						c = [0.0] * K
-						c[0] = p[0][0]
-						for k in xrange(1, K): c[k] = c[k-1] + p[k][0]
+							dJe[k] = 0
 
-						pb = random()
-						select = -1
-						for k in xrange(K):
-							if c[k] > pb:
-								select = p[k][1]
-								break
-					
-
-						if select != res['pos']:
-							ct_pert    += 1
-							res['pos']  = select
-
-						
-					else:
-						if exp( -(1) / float(T) ) > random():
-							res['pos']  = randint(0, K - 1)
-							ct_pert    += 1
-							
+					# normalize and select
+					mindJe = min(dJe)
+					scale  = max(dJe) - mindJe
+					for k in xrange(K): dJe[k] = (dJe[k] - mindJe) / scale
+					select = select_k(dJe, T)
+			
+					if select != res['pos']:
+						ct_pert    += 1
+						res['pos']  = select
 			
 				# moving object and update iteratively
 				if res['pos'] != assign[im]:
@@ -2399,28 +2279,22 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 				for k in xrange(K):	Je += Cls['Ji'][k]
 	
 			# threshold convergence control
-			if Je != 0:
-				thd = abs(Je - old_Je) / Je
-			else:
-				thd = 0
+			if Je != 0: thd = abs(Je - old_Je) / Je
+			else:       thd = 0
 
+			# Simulate annealing, update temperature
 			if SA:
 				if thd < 1e-12 and ct_pert == 0: watch_dog = maxit
-			else:
-				if thd < 1e-8:	                 watch_dog = maxit
-			old_Je = Je
-
-			if SA:
-				# Simulate annealing, update temperature
 				T *= F
-				if SA2:
-					if T < 0.09: SA = False
-
+				if T < 1.0e-4: SA = False
 				print_msg('> iteration: %5d    criterion: %11.6e    T: %13.8f  ct disturb: %5d\n' % (ite, Je, T, ct_pert))
 				if DEBUG: print '> iteration: %5d    criterion: %11.6e    T: %13.8f  ct disturb: %5d' % (ite, Je, T, ct_pert)
 			else:
+				if thd < 1e-8: watch_dog = maxit
 				print_msg('> iteration: %5d    criterion: %11.6e\n'%(ite, Je))
 				if DEBUG: print '> iteration: %5d    criterion: %11.6e'%(ite, Je)
+
+			old_Je = Je
 
 		# if no empty cluster
 		if not flag_empty:
@@ -2550,6 +2424,7 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 	from utilities    import model_blank, get_im
 	from utilities    import bcast_EMData_to_all, reduce_EMData_to_root
 	from utilities    import print_msg, running_time
+	from alignment    import select_k
 	from random       import seed, randint
 	from copy	  import deepcopy
 	from mpi 	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
@@ -2568,8 +2443,8 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 		CTF  = False
 
 	# Simulate annealing
-	if F != 0: SA = SA2 = True # default use the new SA2
-	else:      SA = SA2 = False
+	if F != 0: SA = True
+	else:      SA = False
 
 	if SA:
 		from math   import exp
@@ -2631,10 +2506,12 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 	flag_empty = False
 	ntrials    = 0
 	wd_trials  = 0
+	SA_run     = SA
 	while ntrials < trials:
 		ntrials  += 1
 
 		# Simulate annealing
+		SA = SA_run
 		if SA: T = T0
 		
 		# [all] Init the cluster by an image empty
@@ -2703,6 +2580,11 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 				
 				for i in xrange(len_ctm):	Cls_ctf2[k][i] = 1.0 / Cls_ctf2[k][i]
 				Cls['ave'][k] = filt_table(Cls['ave'][k], Cls_ctf2[k])
+
+			# [id] compute Ji
+			for im in xrange(N_start, N_stop):
+				CTFxAve = filt_table(Cls['ave'][int(assign[im])], ctf[im])
+				Cls['Ji'][int(assign[im])] += CTFxAve.cmp("SqEuclidean", im_M[im]) / norm
 								
 		else:
 			# [id] Calculates averages, first calculate local sum
@@ -2716,6 +2598,21 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 				reduce_EMData_to_root(Cls['ave'][k], myid, main_node) 
 				bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
 				Cls['ave'][k] = Util.mult_scalar(Cls['ave'][k], 1.0/float(Cls['n'][k]))
+
+			# [id] compute Ji
+			for im in xrange(N_start, N_stop): Cls['Ji'][int(assign[im])] += im_M[im].cmp("SqEuclidean", Cls['ave'][int(assign[im])])/norm
+
+		# [all] compute Je
+		Je = 0
+		for k in xrange(K): Je += Cls['Ji'][k]
+
+		# [all] waiting the result
+		mpi_barrier(MPI_COMM_WORLD)
+
+		# [all] calculate Je global sum and broadcast
+		Je = mpi_reduce(Je, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
+		Je = mpi_bcast(Je, 1, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+		Je = Je.tolist()[0]
 		
 		## Clustering		
 		ite       = 0
@@ -2724,7 +2621,7 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 		change    = 1
 		if myid == main_node:
 			print_msg('\n__ Trials: %2d _________________________________%s\n'%(ntrials, time.strftime('%a_%d_%b_%Y_%H_%M_%S', time.localtime())))
-			#print_msg('Criterion: %11.6e \n' % Je)
+			print_msg('Criterion: %11.6e \n' % Je)
 		
 		while change and watch_dog < maxit:
 			ite       += 1
@@ -2749,83 +2646,26 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 
 				# [all] Simulate annealing
 				if SA:
-					if SA2:
-						dJe = [0.0] * K
-						ni  = float(Cls['n'][assign[im]])
-						di  = res['dist'][assign[im]]
-						for k in xrange(K):
-							if k != assign[im]:
-								nj  = float(Cls['n'][k])
-								dj  = res['dist'][k]
-								
-								dJe[k] = -( (nj/(nj+1))*(dj/norm) - (ni/(ni-1))*(di/norm) )
-															
-							else:
-								dJe[k] = 0
-
-						# norm <0 [-1;0], >=0 [0;+1], if just 0 norm to 1
-						nbneg  =  0
-						nbpos  =  0
-						minneg =  0
-						maxpos =  0
-						for k in xrange(K):
-							if dJe[k] < 0.0:
-								nbneg += 1
-								if dJe[k] < minneg: minneg = dJe[k]
-							else:
-								nbpos += 1
-								if dJe[k] > maxpos: maxpos = dJe[k]
-						if nbneg != 0:                   dneg = -1.0 / minneg
-						if nbpos != 0 and maxpos != 0:   dpos =  1.0 / maxpos
-						for k in xrange(K):
-							if dJe[k] < 0.0: dJe[k] = dJe[k] * dneg
-							else:
-								if maxpos != 0: dJe[k] = dJe[k] * dpos
-								else:           dJe[k] = 1.0
-
-						# q[k]
-						q      = [0.0] * K
-						arg    = [0.0] * K
-						maxarg = 0
-						for k in xrange(K):
-							arg[k] = dJe[k] / T
-							if arg[k] > maxarg: maxarg = arg[k]
-						limarg = 17
-						if maxarg > limarg:
-							sumarg = float(sum(arg))
-							for k in xrange(K): q[k] = exp(arg[k] * limarg / sumarg)
+					dJe = [0.0] * K
+					ni  = float(Cls['n'][assign[im]])
+					di  = res['dist'][assign[im]]
+					for k in xrange(K):
+						if k != assign[im]:
+							nj  = float(Cls['n'][k])
+							dj  = res['dist'][k]
+							dJe[k] = (ni/(ni-1))*(di/norm) - (nj/(nj+1))*(dj/norm)
 						else:
-							for k in xrange(K): q[k] = exp(arg[k])
-										
-						# p[k]
-						p = [[0.0, 0] for i in xrange(K)]
-						sumq = float(sum(q))
-						for k in xrange(K):
-							p[k][0] = q[k] / sumq
-							p[k][1] = k
-											
-						p.sort()
-						c = [0.0] * K
-						c[0] = p[0][0]
-						for k in xrange(1, K): c[k] = c[k-1] + p[k][0]
+							dJe[k] = 0
 
-						pb = random()
-						select = -1
-						for k in xrange(K):
-							if c[k] > pb:
-								select = p[k][1]
-								break
-					
+					# normalize and select
+					mindJe = min(dJe)
+					scale  = max(dJe) - mindJe
+					for k in xrange(K): dJe[k] = (dJe[k] - mindJe) / scale
+					select = select_k(dJe, T)
 
-						if select != res['pos']:
-							ct_pert    += 1
-							res['pos']  = select
-
-						
-					else:
-						if exp( -(1) / float(T) ) > random():
-							res['pos']  = randint(0, K - 1)
-							ct_pert    += 1
+					if select != res['pos']:
+						ct_pert    += 1
+						res['pos']  = select
 				
 				# [all] move object
 				if res['pos'] != assign[im]:
@@ -2891,14 +2731,6 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 				for im in xrange(N_start, N_stop):
 					CTFxAve = filt_table(Cls['ave'][int(assign[im])], ctf[im])
 					Cls['Ji'][int(assign[im])] += CTFxAve.cmp("SqEuclidean", im_M[im]) / norm
-
-				# [all] waiting the result
-				mpi_barrier(MPI_COMM_WORLD)
-
-				# [all] global sum Ji
-				Cls['Ji'] = mpi_reduce(Cls['Ji'], K, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
-				Cls['Ji'] = mpi_bcast(Cls['Ji'],  K, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-				Cls['Ji'] = Cls['Ji'].tolist()
 			
 			else:			
 				# [id] Update clusters averages
@@ -2916,7 +2748,6 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 				# [id] compute Ji
 				for im in xrange(N_start, N_stop): Cls['Ji'][int(assign[im])] += im_M[im].cmp("SqEuclidean", Cls['ave'][int(assign[im])])/norm
 
-
 			# [all] compute Je
 			Je = 0
 			for k in xrange(K): Je += Cls['Ji'][k]
@@ -2927,28 +2758,24 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 			# [all] calculate Je global sum and broadcast
 			Je = mpi_reduce(Je, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 			Je = mpi_bcast(Je, 1, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-			Je = Je.tolist()
-			Je = Je[0]
-			
-			if SA:
-				# Simulate annealing, update temperature
-				T *= F
-				if SA2:
-					if T < 0.09: SA = False
+			Je = Je.tolist()[0]
 
-				#[id] informations display
-				if myid == main_node: print_msg('> iteration: %5d    criterion: %11.6e   T: %13.8f  disturb:  %5d\n' % (ite, Je, T, ct_pert))
-			else:
-				# [id] informations display
-				if myid == main_node: print_msg('> iteration: %5d    criterion: %11.6e\n' % (ite, Je))
-						
 			# threshold convergence control
 			if Je != 0: thd = abs(Je - old_Je) / Je
 			else:       thd = 0
+
+			# Simulate annealing, update temperature
 			if SA:
 				if thd < 1e-12 and ct_pert == 0: change = 0
+				T *= F
+				if T < 1e-4: SA = False
+				#[id] informations display
+				if myid == main_node: print_msg('> iteration: %5d    criterion: %11.6e   T: %13.8f  disturb:  %5d\n' % (ite, Je, T, ct_pert))
 			else:
 				if thd < 1e-8:	change = 0
+				# [id] informations display
+				if myid == main_node: print_msg('> iteration: %5d    criterion: %11.6e\n' % (ite, Je))
+				
 			old_Je = Je
 			
 			# [all] Need to broadcast this value because all node must run together
@@ -3036,7 +2863,6 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 		
 		for k in xrange(K): reduce_EMData_to_root(Cls['var'][k], myid, main_node)	
 		
-		
 		# [main] caclculate the variance for each cluster
 		if myid == main_node:
 			for k in xrange(K):
@@ -3087,6 +2913,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 	from utilities    import model_blank, get_im
 	from utilities    import bcast_EMData_to_all, reduce_EMData_to_root
 	from utilities    import print_msg, running_time
+	from alignment    import select_k
 	from random       import seed, randint, shuffle
 	from copy	  import deepcopy
 	from mpi 	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
@@ -3105,8 +2932,8 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 		CTF  = False
 
 	# Simulate annealing
-	if F != 0: SA = SA2 = True  # default use the new SA2
-	else:      SA = SA2 = False
+	if F != 0: SA = True
+	else:      SA = False
 
 	if SA:
 		from math   import exp
@@ -3167,10 +2994,12 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 	flag_empty = False
 	ntrials    = 0
 	wd_trials  = 0
+	SA_run     = SA
 	while ntrials < trials:
 		ntrials += 1
 
 		# Simulate annealing
+		SA = SA_run
 		if SA: T = T0
 		
 		# [all] Init the cluster by an image empty
@@ -3240,13 +3069,15 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 				valCTF = [0] * len_ctm
 				for i in xrange(len_ctm):	valCTF[i] = 1.0 / Cls_ctf2[k][i]
 				Cls['ave'][k] = filt_table(Cls['ave'][k], valCTF)
-			
-			# [all] waiting the result
-			mpi_barrier(MPI_COMM_WORLD)
-										
+
+			# [id] compute Ji
+			for im in xrange(N_start, N_stop):
+				CTFxAve = filt_table(Cls['ave'][int(assign[im])], ctf[im])
+				Cls['Ji'][int(assign[im])] += CTFxAve.cmp("SqEuclidean", im_M[im]) / norm
+											
 		else:
 			# [id] Calculates averages, first calculate local sum
-			for im in xrange(N_start, N_stop):	Util.add_img(Cls['ave'][int(assign[im])], im_M[im])
+			for im in xrange(N_start, N_stop): Util.add_img(Cls['ave'][int(assign[im])], im_M[im])
 
 			# [sync] waiting the result
 			mpi_barrier(MPI_COMM_WORLD)
@@ -3257,9 +3088,20 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 				bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
 				Cls['ave'][k] = Util.mult_scalar(Cls['ave'][k], 1.0/float(Cls['n'][k]))
 
-			# [sync] waiting the result
-			mpi_barrier(MPI_COMM_WORLD)
+			# [id] compute Ji
+			for im in xrange(N_start, N_stop): Cls['Ji'][int(assign[im])] += im_M[im].cmp("SqEuclidean", Cls['ave'][int(assign[im])])/norm
 
+		# [all] compute Je
+		Je = 0
+		for k in xrange(K): Je += Cls['Ji'][k]
+
+		# [all] waiting the result
+		mpi_barrier(MPI_COMM_WORLD)
+
+		# [all] calculate Je global sum and broadcast
+		Je = mpi_reduce(Je, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
+		Je = mpi_bcast(Je, 1, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+		Je = Je.tolist()[0]
 	
 		## Clustering
 		ite       = 0
@@ -3272,7 +3114,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 		
 		if myid == main_node:
 			print_msg('\n__ Trials: %2d _________________________________%s\n'%(ntrials, time.strftime('%a_%d_%b_%Y_%H_%M_%S', time.localtime())))
-			#print_msg('Criterion: %11.6e \n' % Je)
+			print_msg('Criterion: %11.6e \n' % Je)
 		th_update = N // ncpu // 10
 		flag_update = 0
 		
@@ -3310,87 +3152,29 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 					
 				else:
 					res = Util.min_dist(im_M[im], Cls['ave'])
-
 					
 				# [all] Simulate annealing
 				if SA:
-					if SA2:
-						dJe = [0.0] * K
-						ni  = float(Cls['n'][assign[im]])
-						di  = res['dist'][assign[im]]											
-						for k in xrange(K):
-							if k != assign[im]:
-								nj  = float(Cls['n'][k])
-								dj  = res['dist'][k]
-								
-								dJe[k] = -( (nj/(nj+1))*(dj/norm) - (ni/(ni-1))*(di/norm) )
-															
-							else:
-								dJe[k] = 0
-
-						# norm <0 [-1;0], >=0 [0;+1], if just 0 norm to 1
-						nbneg  =  0
-						nbpos  =  0
-						minneg =  0
-						maxpos =  0
-						for k in xrange(K):
-							if dJe[k] < 0.0:
-								nbneg += 1
-								if dJe[k] < minneg: minneg = dJe[k]
-							else:
-								nbpos += 1
-								if dJe[k] > maxpos: maxpos = dJe[k]
-						if nbneg != 0:                   dneg = -1.0 / minneg
-						if nbpos != 0 and maxpos != 0:   dpos =  1.0 / maxpos
-						for k in xrange(K):
-							if dJe[k] < 0.0: dJe[k] = dJe[k] * dneg
-							else:
-								if maxpos != 0: dJe[k] = dJe[k] * dpos
-								else:           dJe[k] = 1.0
-
-						# q[k]
-						q      = [0.0] * K
-						arg    = [0.0] * K
-						maxarg = 0
-						for k in xrange(K):
-							arg[k] = dJe[k] / T
-							if arg[k] > maxarg: maxarg = arg[k]
-						limarg = 17
-						if maxarg > limarg:
-							sumarg = float(sum(arg))
-							for k in xrange(K): q[k] = exp(arg[k] * limarg / sumarg)
+					dJe = [0.0] * K
+					ni  = float(Cls['n'][assign[im]])
+					di  = res['dist'][assign[im]]											
+					for k in xrange(K):
+						if k != assign[im]:
+							nj  = float(Cls['n'][k])
+							dj  = res['dist'][k]
+							dJe[k] = (ni/(ni-1))*(di/norm) - (nj/(nj+1))*(dj/norm)
 						else:
-							for k in xrange(K): q[k] = exp(arg[k])
+							dJe[k] = 0
 
-						# p[k]
-						p = [[0.0, 0] for i in xrange(K)]
-						sumq = float(sum(q))
-						for k in xrange(K):
-							p[k][0] = q[k] / sumq
-							p[k][1] = k
-											
-						p.sort()
-						c = [0.0] * K
-						c[0] = p[0][0]
-						for k in xrange(1, K): c[k] = c[k-1] + p[k][0]
+					# normalize and select
+					mindJe = min(dJe)
+					scale  = max(dJe) - mindJe
+					for k in xrange(K): dJe[k] = (dJe[k] - mindJe) / scale
+					select = select_k(dJe, T)
 
-						pb = random()
-						select = -1
-						for k in xrange(K):
-							if c[k] > pb:
-								select = p[k][1]
-								break
-					
-
-						if select != res['pos']:
-							ct_pert    += 1
-							res['pos']  = select
-
-						
-					else:
-						if exp( -(1) / float(T) ) > random():
-							res['pos']  = randint(0, K - 1)
-							ct_pert    += 1
+					if select != res['pos']:
+						ct_pert    += 1
+						res['pos']  = select
 					
 				# [all] moving object
 				if res['pos'] != assign[im]:
@@ -3462,7 +3246,6 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 
 					# [all] waiting the result
 					mpi_barrier(MPI_COMM_WORLD)
-	
 														
 			# [sync]
 			mpi_barrier(MPI_COMM_WORLD)
@@ -3524,15 +3307,6 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 				for im in xrange(N_start, N_stop):
 					CTFxAve = filt_table(Cls['ave'][int(assign[im])], ctf[im])
 					Cls['Ji'][int(assign[im])] += CTFxAve.cmp("SqEuclidean", im_M[im]) / norm
-
-				# [all] waiting the result
-				mpi_barrier(MPI_COMM_WORLD)
-
-				# [all] global sum Ji
-				Cls['Ji'] = mpi_reduce(Cls['Ji'], K, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
-				Cls['Ji'] = mpi_bcast(Cls['Ji'],  K, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-				Cls['Ji'] = Cls['Ji'].tolist()
-
 				
 			else:			
 				# [id] Update clusters averages
@@ -3562,27 +3336,23 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 			Je = mpi_bcast(Je, 1, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 			Je = Je.tolist()
 			Je = Je[0]
-			
-			if SA:
-				# Simulate annealing, update temperature
-				T *= F
-				if SA2:
-					if T < 0.09: SA = False
-				
-				#[id] informations display
-				if myid == main_node: print_msg('> iteration: %5d    criterion: %11.6e   T: %13.8f  disturb:  %5d\n' % (ite, Je, T, ct_pert))
-			else:
-				#[id] informations display
-				if myid == main_node: print_msg('> iteration: %5d    criterion: %11.6e\n' % (ite, Je))
-			
+
 			# Convergence control: threshold on the criterion value
 			if Je != 0: thd = abs(Je - old_Je) / Je
 			else:       thd = 0
+
+			# Simulate annealing, update temperature
 			if SA:
 				if thd < 1.0e-12 and ct_pert == 0: change = 0
+				T *= F
+				if T < 1e-5: SA = False
+				#[id] informations display
+				if myid == main_node: print_msg('> iteration: %5d    criterion: %11.6e   T: %13.8f  disturb:  %5d\n' % (ite, Je, T, ct_pert))
 			else:
 				if thd < 1.0e-8: change = 0
-
+				#[id] informations display
+				if myid == main_node: print_msg('> iteration: %5d    criterion: %11.6e\n' % (ite, Je))
+		
 			# Convergence control: if Je sway, means clusters unstable, due to the parallel version of k-means
 			# store Je_n, Je_(n-1), Je_(n-2)
 			sway_Je[1] = sway_Je[0]
