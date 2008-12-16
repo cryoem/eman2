@@ -4093,7 +4093,6 @@ float Util::SqEuc_dist(EMData* image, EMData* with){
 	float *y_data = with->get_data();
 	float *x_data = image->get_data();
 	double result = 0.;
-	float n = 0;
 
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
@@ -4126,7 +4125,6 @@ Dict Util::min_dist_real(EMData* image, const vector<EMData*>& data) {
 
 	float *y_data = data[kk]->get_data();
 	float *x_data = image->get_data();
-	long n = 0;
 	long totsize = image->get_xsize()*image->get_ysize();
 	for (long i = 0; i < totsize; i++) {
 	    double temp = x_data[i]- y_data[i];
@@ -4164,12 +4162,10 @@ Dict Util::min_dist_four(EMData* image, const vector<EMData*>& data) {
 
 	float *y_data = data[kk]->get_data();
 	float *x_data = image->get_data();
-	long n = 0;
 
 	// Implemented by PAP  01/09/06 - please do not change.  If in doubts, write/call me.
 	int nx  = data[kk]->get_xsize();
 	int ny  = data[kk]->get_ysize();
-	int nz  = data[kk]->get_zsize();
 	nx = (nx - 2 + data[kk]->is_fftodd()); // nx is the real-space size of the input image
 	int lsd2 = (nx + 2 - nx%2) ; // Extended x-dimension of the complex image
 	
