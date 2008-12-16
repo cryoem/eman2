@@ -6491,6 +6491,7 @@ def h_stability(seed_name, nb_part, org):
 # K-means SA define the first temperature T0
 def k_means_SA_T0(im_M, mask, K, rand_seed, CTF, F):
 	from utilities 		import model_blank, print_msg
+	from alignment          import select_k
 	from random    		import seed, randint
 	import sys
 	import time
@@ -6503,8 +6504,6 @@ def k_means_SA_T0(im_M, mask, K, rand_seed, CTF, F):
 		CTF  = True
 	else:
 		CTF  = False
-
-	SA2 = True # default use the new SA
 
 	from math   import exp
 	from random import random
@@ -6622,98 +6621,37 @@ def k_means_SA_T0(im_M, mask, K, rand_seed, CTF, F):
 	lT.extend(range(1, 5))
 	lT.extend(range(5, Tm, 2))
 	for T in lT:
-		
 		ct_pert = 0
 		for rep in xrange(2):
 			for im in xrange(N):
-
 				if CTF:
 					CTFxAVE = []
 					for k in xrange(K): CTFxAVE.append(filt_table(Cls['ave'][k], ctf[im]))
-					res = Util.min_dist(im_M[im], CTFxAVE)
+					res = Util.min_dist_four(im_M[im], CTFxAVE)
 				else:
-					res = Util.min_dist(im_M[im], Cls['ave'])
-
+					res = Util.min_dist_real(im_M[im], Cls['ave'])
+		
 				# Simulate annealing
-
-				if SA2:
-					dJe = [0.0] * K
-					ni  = float(Cls['n'][assign[im]])
-					di  = res['dist'][assign[im]]
-
-					for k in xrange(K):
-						if k != assign[im]:
-							nj  = float(Cls['n'][k])
-							dj  = res['dist'][k]
-
-							dJe[k] = -( (nj/(nj+1))*(dj/norm) - (ni/(ni-1))*(di/norm) )
-
-						else:
-							dJe[k] = 0
-
-					# norm <0 [-1;0], >=0 [0;+1], if all 0 norm to 1
-					nbneg  =  0
-					nbpos  =  0
-					minneg =  0
-					maxpos =  0
-					for k in xrange(K):
-						if dJe[k] < 0.0:
-							nbneg += 1
-							if dJe[k] < minneg: minneg = dJe[k]
-						else:
-							nbpos += 1
-							if dJe[k] > maxpos: maxpos = dJe[k]
-					if nbneg != 0:                   dneg = -1.0 / minneg
-					if nbpos != 0 and maxpos != 0:   dpos =  1.0 / maxpos
-					for k in xrange(K):
-						if dJe[k] < 0.0: dJe[k] = dJe[k] * dneg
-						else:
-							if maxpos != 0: dJe[k] = dJe[k] * dpos
-							else:           dJe[k] = 1.0
-
-					# q[k]
-					q      = [0.0] * K
-					arg    = [0.0] * K
-					maxarg = 0
-					for k in xrange(K):
-						arg[k] = dJe[k] / T
-						if arg[k] > maxarg: maxarg = arg[k]
-					limarg = 17
-					if maxarg > limarg:
-						sumarg = float(sum(arg))
-						for k in xrange(K): q[k] = exp(arg[k] * limarg / sumarg)
+				dJe = [0.0] * K
+				ni  = float(Cls['n'][assign[im]])
+				di  = res['dist'][assign[im]]											
+				for k in xrange(K):
+					if k != assign[im]:
+						nj  = float(Cls['n'][k])
+						dj  = res['dist'][k]
+						dJe[k] = (ni/(ni-1))*(di/norm) - (nj/(nj+1))*(dj/norm)
 					else:
-						for k in xrange(K): q[k] = exp(arg[k])
+						dJe[k] = 0
 
-					# p[k]
-					p = [[0.0, 0] for i in xrange(K)]
-					sumq = float(sum(q))
-					for k in xrange(K):
-						p[k][0] = q[k] / sumq
-						p[k][1] = k
+				# normalize and select
+				mindJe = min(dJe)
+				scale  = max(dJe) - mindJe
+				for k in xrange(K): dJe[k] = (dJe[k] - mindJe) / scale
+				select = select_k(dJe, T)
 
-					p.sort()
-					c = [0.0] * K
-					c[0] = p[0][0]
-					for k in xrange(1, K): c[k] = c[k-1] + p[k][0]
-
-					pb = random()
-					select = -1
-					for k in xrange(K):
-						if c[k] > pb:
-							select = p[k][1]
-							break
-
-
-					if select != res['pos']:
-						ct_pert    += 1
-						res['pos']  = select
-
-
-				else:
-					if exp( -(1) / float(T) ) > random():
-						res['pos']  = randint(0, K - 1)
-						ct_pert    += 1
+				if select != res['pos']:
+					ct_pert    += 1
+					res['pos']  = select
 
 		ct_pert /= 2.0
 
@@ -6732,6 +6670,7 @@ def k_means_SA_T0(im_M, mask, K, rand_seed, CTF, F):
 def k_means_SA_T0_MPI(im_M, mask, K, rand_seed, CTF, F, myid, main_node, N_start, N_stop):
 	from utilities 		import model_blank, print_msg, bcast_EMData_to_all, reduce_EMData_to_root
 	from random    		import seed, randint
+	from alignment          import select_k
 	from mpi                import mpi_reduce, mpi_bcast, mpi_barrier, mpi_recv, mpi_send
 	from mpi                import MPI_SUM, MPI_FLOAT, MPI_INT, MPI_LOR, MPI_COMM_WORLD
 	import sys
@@ -6745,8 +6684,6 @@ def k_means_SA_T0_MPI(im_M, mask, K, rand_seed, CTF, F, myid, main_node, N_start
 		CTF  = True
 	else:
 		CTF  = False
-
-	SA2 = True # default use the new SA
 
 	from math   import exp
 	from random import random
@@ -6885,98 +6822,37 @@ def k_means_SA_T0_MPI(im_M, mask, K, rand_seed, CTF, F, myid, main_node, N_start
 	lT.extend(range(1, 5))
 	lT.extend(range(5, Tm, 2))
 	for T in lT:
-		
 		ct_pert = 0
 		for rep in xrange(2):
 			for im in xrange(N_start, N_stop):
-
 				if CTF:
 					CTFxAVE = []
 					for k in xrange(K): CTFxAVE.append(filt_table(Cls['ave'][k], ctf[im]))
-					res = Util.min_dist(im_M[im], CTFxAVE)
+					res = Util.min_dist_four(im_M[im], CTFxAVE)
 				else:
-					res = Util.min_dist(im_M[im], Cls['ave'])
+					res = Util.min_dist_real(im_M[im], Cls['ave'])
 
 				# Simulate annealing
-
-				if SA2:
-					dJe = [0.0] * K
-					ni  = float(Cls['n'][assign[im]])
-					di  = res['dist'][assign[im]]
-
-					for k in xrange(K):
-						if k != assign[im]:
-							nj  = float(Cls['n'][k])
-							dj  = res['dist'][k]
-
-							dJe[k] = -( (nj/(nj+1))*(dj/norm) - (ni/(ni-1))*(di/norm) )
-
-						else:
-							dJe[k] = 0
-
-					# norm <0 [-1;0], >=0 [0;+1], if all 0 norm to 1
-					nbneg  =  0
-					nbpos  =  0
-					minneg =  0
-					maxpos =  0
-					for k in xrange(K):
-						if dJe[k] < 0.0:
-							nbneg += 1
-							if dJe[k] < minneg: minneg = dJe[k]
-						else:
-							nbpos += 1
-							if dJe[k] > maxpos: maxpos = dJe[k]
-					if nbneg != 0:                   dneg = -1.0 / minneg
-					if nbpos != 0 and maxpos != 0:   dpos =  1.0 / maxpos
-					for k in xrange(K):
-						if dJe[k] < 0.0: dJe[k] = dJe[k] * dneg
-						else:
-							if maxpos != 0: dJe[k] = dJe[k] * dpos
-							else:           dJe[k] = 1.0
-
-					# q[k]
-					q      = [0.0] * K
-					arg    = [0.0] * K
-					maxarg = 0
-					for k in xrange(K):
-						arg[k] = dJe[k] / T
-						if arg[k] > maxarg: maxarg = arg[k]
-					limarg = 17
-					if maxarg > limarg:
-						sumarg = float(sum(arg))
-						for k in xrange(K): q[k] = exp(arg[k] * limarg / sumarg)
+				dJe = [0.0] * K
+				ni  = float(Cls['n'][assign[im]])
+				di  = res['dist'][assign[im]]											
+				for k in xrange(K):
+					if k != assign[im]:
+						nj  = float(Cls['n'][k])
+						dj  = res['dist'][k]
+						dJe[k] = (ni/(ni-1))*(di/norm) - (nj/(nj+1))*(dj/norm)
 					else:
-						for k in xrange(K): q[k] = exp(arg[k])
+						dJe[k] = 0
 
-					# p[k]
-					p = [[0.0, 0] for i in xrange(K)]
-					sumq = float(sum(q))
-					for k in xrange(K):
-						p[k][0] = q[k] / sumq
-						p[k][1] = k
+				# normalize and select
+				mindJe = min(dJe)
+				scale  = max(dJe) - mindJe
+				for k in xrange(K): dJe[k] = (dJe[k] - mindJe) / scale
+				select = select_k(dJe, T)
 
-					p.sort()
-					c = [0.0] * K
-					c[0] = p[0][0]
-					for k in xrange(1, K): c[k] = c[k-1] + p[k][0]
-
-					pb = random()
-					select = -1
-					for k in xrange(K):
-						if c[k] > pb:
-							select = p[k][1]
-							break
-
-
-					if select != res['pos']:
-						ct_pert    += 1
-						res['pos']  = select
-
-
-				else:
-					if exp( -(1) / float(T) ) > random():
-						res['pos']  = randint(0, K - 1)
-						ct_pert    += 1
+				if select != res['pos']:
+					ct_pert    += 1
+					res['pos']  = select
 
 		# sync
 		mpi_barrier(MPI_COMM_WORLD)
@@ -7807,9 +7683,9 @@ def k_means_stab_gather(nb_run, th, maskname):
 
 
 # K-means main stability
-def k_means_stab(stack, maskname, opt_method, K, npart = 5, CTF = False, F = 0, maxrun = 50, th_nobj = 0, th_stab = 6.0, th_dec = 5, restart = 1, MPI = False):
+def k_means_stab(stack, maskname, opt_method, K, npart = 5, CTF = False, F = 0, maxrun = 50, th_nobj = 0, th_stab = 6.0, th_dec = 5, restart = 1, MPI = False, bck = False):
 	if MPI:
-		k_means_stab_MPI(stack, maskname, opt_method, K, npart, CTF, F, maxrun, th_nobj, th_stab, th_dec, restart)
+		k_means_stab_MPI(stack, maskname, opt_method, K, npart, CTF, F, maxrun, th_nobj, th_stab, th_dec, restart, bck)
 		return
 	
 	from utilities 	 import print_begin_msg, print_end_msg, print_msg, file_type
@@ -7882,6 +7758,12 @@ def k_means_stab(stack, maskname, opt_method, K, npart = 5, CTF = False, F = 0, 
 				break
 			
 			ALL_ASG.append(assign)
+
+			if bck:
+				import pickle
+				f = open('run%02d_part%02d.pck' % (num_run, n), 'w')
+				pickle.dump(assign, f)
+				f.close()
 		print_end_msg('k-means')
 
 		if flag_cluster:
@@ -7940,7 +7822,7 @@ def k_means_stab(stack, maskname, opt_method, K, npart = 5, CTF = False, F = 0, 
 
 
 # K-means main stability
-def k_means_stab_MPI(stack, maskname, opt_method, K, npart = 5, CTF = False, F = 0, maxrun = 50, th_nobj = 0, th_stab = 6.0, th_dec = 5, restart = 1):
+def k_means_stab_MPI(stack, maskname, opt_method, K, npart = 5, CTF = False, F = 0, maxrun = 50, th_nobj = 0, th_stab = 6.0, th_dec = 5, restart = 1, bck = False):
 	from utilities 	 import print_begin_msg, print_end_msg, print_msg, file_type
 	from statistics  import k_means_criterion, k_means_export, k_means_open_im, k_means_headlog
 	from statistics  import k_means_cla_MPI, k_means_SSE_MPI
@@ -8026,6 +7908,13 @@ def k_means_stab_MPI(stack, maskname, opt_method, K, npart = 5, CTF = False, F =
 					break
 			
 			ALL_ASG.append(assign)
+
+			if myid == main_node and bck:
+				import pickle
+				f = open('run%02d_part%02d.pck' % (num_run, part), 'w')
+				pickle.dump(assign, f)
+				f.close()
+				
 		if myid == main_node: print_end_msg('k-means')
 
 		if flag_cluster:

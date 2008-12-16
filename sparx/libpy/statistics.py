@@ -1783,6 +1783,7 @@ def k_means_classical(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, D
 		
 		print_msg('\n__ Trials: %2d _________________________________%s\n'%(ntrials, time.strftime('%a_%d_%b_%Y_%H_%M_%S', time.localtime())))
 		print_msg('Criterion: %11.6e \n' % Je)
+
 		while change and watch_dog < maxit:
 			ite       += 1
 			watch_dog += 1
@@ -1794,9 +1795,9 @@ def k_means_classical(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, D
 				if CTF:
 					CTFxAVE = []
 					for k in xrange(K): CTFxAVE.append(filt_table(Cls['ave'][k], ctf[im]))
-					res = Util.min_dist(im_M[im], CTFxAVE)
+					res = Util.min_dist_four(im_M[im], CTFxAVE)
 				else:
-					res = Util.min_dist(im_M[im], Cls['ave'])
+					res = Util.min_dist_real(im_M[im], Cls['ave'])
 
 				# Simulate annealing
 				if SA:
@@ -1883,7 +1884,7 @@ def k_means_classical(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, D
 			if SA:
 				if thd < 1.0e-12 and ct_pert == 0: watch_dog = maxit
 				T *= F
-				if T < 1.0e-4: SA = False
+				if T < 1.0e-6 and ct_pert < 5: SA = False
 				print_msg('> iteration: %5d    criterion: %11.6e    T: %13.8f  ct disturb: %5d\n' % (ite, Je, T, ct_pert))
 				if DEBUG: print '> iteration: %5d    criterion: %11.6e    T: %13.8f  ct disturb: %5d' % (ite, Je, T, ct_pert)
 			else:
@@ -2162,10 +2163,10 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 					for k in xrange(K):
 						tmp = filt_table(Cls['ave'][k], ctf[im])
 						CTFxAve.append(tmp.copy())
-					res = Util.min_dist(im_M[im], CTFxAve)
+					res = Util.min_dist_four(im_M[im], CTFxAve)
 				else:
 					# compute the minimum distance with centroids
-					res = Util.min_dist(im_M[im], Cls['ave'])
+					res = Util.min_dist_real(im_M[im], Cls['ave'])
 
 					
 				# Simulate Annealing
@@ -2286,7 +2287,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 			if SA:
 				if thd < 1e-12 and ct_pert == 0: watch_dog = maxit
 				T *= F
-				if T < 1.0e-4: SA = False
+				if T < 1.0e-6 and ct_pert < 5: SA = False
 				print_msg('> iteration: %5d    criterion: %11.6e    T: %13.8f  ct disturb: %5d\n' % (ite, Je, T, ct_pert))
 				if DEBUG: print '> iteration: %5d    criterion: %11.6e    T: %13.8f  ct disturb: %5d' % (ite, Je, T, ct_pert)
 			else:
@@ -2640,9 +2641,9 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 					for k in xrange(K):
 						tmp = filt_table(Cls['ave'][k], ctf[im])
 						CTFxAve.append(tmp.copy())
-					res = Util.min_dist(im_M[im], CTFxAve)
+					res = Util.min_dist_four(im_M[im], CTFxAve)
 				else:
-					res = Util.min_dist(im_M[im], Cls['ave'])
+					res = Util.min_dist_real(im_M[im], Cls['ave'])
 
 				# [all] Simulate annealing
 				if SA:
@@ -2768,7 +2769,7 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 			if SA:
 				if thd < 1e-12 and ct_pert == 0: change = 0
 				T *= F
-				if T < 1e-4: SA = False
+				if T < 1e-6 and ct_pert < 5: SA = False
 				#[id] informations display
 				if myid == main_node: print_msg('> iteration: %5d    criterion: %11.6e   T: %13.8f  disturb:  %5d\n' % (ite, Je, T, ct_pert))
 			else:
@@ -3148,10 +3149,10 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 					for k in xrange(K):
 						tmp = filt_table(Cls['ave'][k], ctf[im])
 						CTFxAve.append(tmp.copy())
-					res = Util.min_dist(im_M[im], CTFxAve)
+					res = Util.min_dist_four(im_M[im], CTFxAve)
 					
 				else:
-					res = Util.min_dist(im_M[im], Cls['ave'])
+					res = Util.min_dist_real(im_M[im], Cls['ave'])
 					
 				# [all] Simulate annealing
 				if SA:
@@ -3345,7 +3346,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 			if SA:
 				if thd < 1.0e-12 and ct_pert == 0: change = 0
 				T *= F
-				if T < 1e-5: SA = False
+				if T < 1e-6 and ct_pert < 5: SA = False
 				#[id] informations display
 				if myid == main_node: print_msg('> iteration: %5d    criterion: %11.6e   T: %13.8f  disturb:  %5d\n' % (ite, Je, T, ct_pert))
 			else:

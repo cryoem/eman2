@@ -53,6 +53,7 @@ def main():
 	parser.add_option("--min_dec_K",  type="int",          default=5,         help="Minimum decrement value to K when the stability is to low (default 5)")
 	parser.add_option("--restart",    type="int",          default=1,         help="Restart run n from a previous one, means start without init the header and read the current (default 1)")
 	parser.add_option("--MPI",        action="store_true", default=False,     help="MPI version")
+	parser.add_option("--backup",     action="store_true", default=False,     help="To debug")
 	
 	(options, args) = parser.parse_args()
     	if len(args) < 1 or len(args) > 2:
@@ -75,7 +76,7 @@ def main():
 
 		from  development  import  k_means_stab
 		global_def.BATCH = True
-		k_means_stab(args[0], mask, options.opt_method, options.K, options.nb_part, options.CTF, options.F, options.max_run, options.th_nobj, options.th_stab, options.min_dec_K, options.restart, options.MPI)
+		k_means_stab(args[0], mask, options.opt_method, options.K, options.nb_part, options.CTF, options.F, options.max_run, options.th_nobj, options.th_stab, options.min_dec_K, options.restart, options.MPI, options.backup)
 		global_def.BATCH = False
 
 if __name__ == "__main__":
