@@ -3676,8 +3676,7 @@ def k_means_groups_MPI(stack, out_file, maskname, opt_method, K1, K2, rand_seed,
 	# [sync] synchronise each node
 	# [main] part of code just for the main node
 	# [all]  code write for all node
-	N = EMUtil.get_image_count(stack)
-	main_node, myid, ncpu, N_start, N_stop = k_means_init_MPI(N)
+	main_node, myid, ncpu, N_start, N_stop, N = k_means_init_MPI(stack)
 
 	if myid == main_node:
 		if os.path.exists(out_file): os.system('rm -rf ' + out_file)
