@@ -1851,7 +1851,9 @@ EMData *EMData::make_rotational_footprint( bool unwrap) {
 	EMData* ccf = this->calc_ccf(this);
 	ccf->sub(ccf->get_edge_mean());
 	ccf->process_inplace("xform.phaseorigin.tocenter");
+	cout << "unwrapping" << endl;
 	EMData *result = ccf->unwrap();
+	cout << "done" << endl;
 	delete ccf; ccf = 0;
 
 	EXITFUNC;
@@ -1903,7 +1905,6 @@ EMData *EMData::make_rotational_footprint_e1( bool unwrap)
 	else {
 		r1 = Region(-cs, -cs, -cs, nx + 2 * cs, ny + 2 * cs, nz + 2 * cs);
 	}
-	
 	// It is important to set all newly established pixels around the boundaries to the mean
 	// If this is not done then the associated rotational alignment routine breaks, in fact
 	// everythin just goes foo. 
@@ -1987,7 +1988,11 @@ EMData *EMData::make_footprint()
 //	ccf->process_inplace("xform.phaseorigin.tocenter");
 //	ccf->process_inplace("normalize.edgemean");
 //	EMData *un=ccf->unwrap();
+// This should probably be make_rotational_footprint_e1
 	EMData *un=make_rotational_footprint();
+	if (un->get_ysize() <= 6) {
+		throw UnexpectedBehaviorException("In EMData::make_footprint. The rotational footprint is too small");
+	}
 	EMData *tmp=un->get_clip(Region(0,4,un->get_xsize(),un->get_ysize()-6));	// 4 and 6 are empirical
 	EMData *cx=tmp->calc_ccfx(tmp,0,-1,1);
 	EMData *fp=cx->get_clip(Region(0,0,cx->get_xsize()/2,cx->get_ysize()));

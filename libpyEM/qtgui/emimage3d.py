@@ -219,11 +219,14 @@ class EMImage3DWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMatri
 		glEnable(GL_LIGHT0)
 		glEnable(GL_DEPTH_TEST)
 		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.1, 0.1, 0.1, 1.0])
-		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
+		glLightfv(GL_LIGHT0, GL_DIFFUSE, [0.85,0.85,0.85, 1.0])
 		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_POSITION, [0.1,.1,1.,1.])
 		GL.glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
 		glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_TRUE)
+
+		glLightModelfv(GL_LIGHT_MODEL_AMBIENT, [0.1,0.1,0.1,1.0]);
+		
 		glClearStencil(0)
 		glEnable(GL_STENCIL_TEST)
 		glClearColor(0,0,0,0)

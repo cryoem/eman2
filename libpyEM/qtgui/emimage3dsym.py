@@ -481,8 +481,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 				self.point_colors[k] = v
 			except: pass
 		self.update_sym_dl = True
-		#self.make_sym_dl_list(self.points,self.point_colors)
-			
+		#self.make_sym_dl_list(self.points,self.point_colors)	
 	
 	def angular_deviation(self,t1,t2):
 
@@ -578,7 +577,6 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		self.trace_dl = glGenLists(1)
 		
 		glNewList( self.trace_dl,GL_COMPILE)
-		print "in range",self.lr,self.hr
 		for i in range(self.lr,self.hr):
 			print len(self.tracedata[i])-1
 			for j in range(0,len(self.tracedata[i])-1):

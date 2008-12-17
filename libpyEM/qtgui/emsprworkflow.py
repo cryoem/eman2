@@ -2525,21 +2525,21 @@ class E2Refine2DTask(ParticleWorkFlowTask):
 		pshrink = ParamDef(name="shrink",vartype="int",desc_short="Shrink factor",desc_long="The the downsampling rate used to shrink the data",property=None,defaultunits=4,choices=[])
 		
 		
-		pcmp  =  ParamDef(name="simcmp",vartype="string",desc_short="Main comparator",desc_long="The comparator to determine the final quality metric",defaultunits="frc",choices=cmps)
+		pcmp  =  ParamDef(name="simcmp",vartype="string",desc_short="Main comparator",desc_long="The comparator to determine the final quality metric",defaultunits="phase",choices=cmps)
 		pcmpargs =  ParamDef(name="simcmpargs",vartype="string",desc_short="params",desc_long="Parameters for the this comparator, see \"e2help.py cmps\"",property=None,defaultunits="",choices=[])	
 
 		
 		psimalign =  ParamDef(name="simalign",vartype="string",desc_short="Aligner",desc_long="The aligner being used",property=None,defaultunits="rotate_translate_flip",choices=aligners)
 		psimalignargs =  ParamDef(name="simalignargs",vartype="string",desc_short="params",desc_long="Parameters for the aligner, see \"e2help.py aligners\"",property=None,defaultunits="",choices=[])
 		
-		psimaligncmp =  ParamDef(name="simaligncmp",vartype="string",desc_short="comparator",desc_long="The comparator being used",property=None,defaultunits="frc",choices=cmps)
+		psimaligncmp =  ParamDef(name="simaligncmp",vartype="string",desc_short="comparator",desc_long="The comparator being used",property=None,defaultunits="phase",choices=cmps)
 		psimaligncmpsargs =  ParamDef(name="simaligncmpargs",vartype="string",desc_short="params",desc_long="Parameters for the comparator, see \"e2help.py cmps\"",property=None,defaultunits="",choices=[])	
 		
 		
 		prsimalign =  ParamDef(name="simralign",vartype="string",desc_short="Refine aligner",desc_long="The refine aligner being used",property=None,defaultunits="None",choices=["None","refine"])
 		prsimalignargs =  ParamDef(name="simralignargs",vartype="string",desc_short="params",desc_long="Parameters for the aligner, see \"e2help.py aligners\"",property=None,defaultunits="",choices=[])
 		
-		prsimaligncmp =  ParamDef(name="simraligncmp",vartype="string",desc_short="Refine comparator",desc_long="The comparator being used for refine alignment",property=None,defaultunits="frc",choices=cmps)
+		prsimaligncmp =  ParamDef(name="simraligncmp",vartype="string",desc_short="Refine comparator",desc_long="The comparator being used for refine alignment",property=None,defaultunits="phase",choices=cmps)
 		prsimaligncmpsargs =  ParamDef(name="simraligncmpargs",vartype="string",desc_short="params",desc_long="Parameters for the comparator, see \"e2help.py cmps\"",property=None,defaultunits="",choices=[])	
 		
 		pnp = ParamDef(name="normproj",vartype="boolean",desc_short="Normalize projection vectors",desc_long="Normalizes each projected vector into the MSA subspace",property=None,defaultunits=False,choices=None)
@@ -2602,31 +2602,35 @@ class E2Refine2DTask(ParticleWorkFlowTask):
 	 	
 	 	# if we make it here we are almost definitely good to go, the only thing that can fail is the e2bdb or e2proc2d commands
 	 	options.path = numbered_path("r2d",True)
-	 	bdb_success, bdb_cmd = self.make_v_stack(options)
-	 	if bdb_success:
-	 		if options.shrink > 1:
-	 			cmd = "e2proc2d.py"
-	 			cmd += " bdb:"+options.path+"#all"
-	 			options.input =  "bdb:"+options.path+"#all"+str(options.shrink)
-	 			cmd += " "+options.input
-	 			cmd += " --process=math.meanshrink:n="+str(options.shrink)
-	 			
-	 			self.application().setOverrideCursor(Qt.BusyCursor)
-	 			success = (os.system(cmd) in (0,12))
-	 			self.application().setOverrideCursor(Qt.ArrowCursor)
-	 			
-	 			if not success:
-	 				mesbox.setText("e2proc2d.py shrinking command failed. This command was\n" + cmd +"\nTry again please. If the failure occurs a second time please contact developers.")
-	 			   	mesbox.exec_()
-	 				return None
-	 		else: options.input =  "bdb:"+options.path+"#all"
-	 		
-	 		options.filenames = [] # this is so spawn_task doesn't supply args to e2refine2d.py
-	 		return options # THIS IS IT, THE POINT OF SUCCESS - returning this means e2refine2d.py is good to go using the given parameters
-	 	else:
-	 		mesbox.setText("e2bdb.py command failed. The command was\n" + bdb_cmd +"\nTry again please. If the failure occurs a second time please contact developers")
-	 		mesbox.exec_()
-	 		return None 
+	 	if self.end_tag != "generic": 
+	 		bdb_success, bdb_cmd = self.make_v_stack(options)
+		 	if bdb_success:
+		 		if options.shrink > 1:
+		 			cmd = "e2proc2d.py"
+		 			cmd += " bdb:"+options.path+"#all"
+		 			options.input =  "bdb:"+options.path+"#all"+str(options.shrink)
+		 			cmd += " "+options.input
+		 			cmd += " --process=math.meanshrink:n="+str(options.shrink)
+		 			
+		 			self.application().setOverrideCursor(Qt.BusyCursor)
+		 			success = (os.system(cmd) in (0,12))
+		 			self.application().setOverrideCursor(Qt.ArrowCursor)
+		 			
+		 			if not success:
+		 				mesbox.setText("e2proc2d.py shrinking command failed. This command was\n" + cmd +"\nTry again please. If the failure occurs a second time please contact developers.")
+		 			   	mesbox.exec_()
+		 				return None
+		 		else: options.input =  "bdb:"+options.path+"#all"
+		 		
+		 		options.filenames = [] # this is so spawn_task doesn't supply args to e2refine2d.py
+		 		return options # THIS IS IT, THE POINT OF SUCCESS - returning this means e2refine2d.py is good to go using the given parameters
+		 	else:
+		 		mesbox.setText("e2bdb.py command failed. The command was\n" + bdb_cmd +"\nTry again please. If the failure occurs a second time please contact developers")
+		 		mesbox.exec_()
+		 		return None
+		else:
+			return self.process_specified_files(options,params)
+		 	
 	 		  
 	def make_v_stack(self,options):
 	 	
@@ -2646,7 +2650,7 @@ class E2Refine2DTask(ParticleWorkFlowTask):
 	def run_e2refine2d(self,options):
 		
 		
-		string_args = ["iter","iterclassav","naliref","nbasisfp","path","input","parallel"]
+		string_args = ["iter","iterclassav","naliref","nbasisfp","path","input","parallel","ncls"]
 		bool_args = ["normproj"]
 		optionals = ["simalign","simaligncmp","simralign","simraligncmp","simcmp","initial"]
 		for opt in optionals:
@@ -2782,6 +2786,86 @@ class E2Refine2DWithGenericTask(E2Refine2DRunTask):
 		E2Refine2DRunTask.__init__(self,application)
 		self.end_tag = "generic"
 
+
+	def process_specified_files(self,options,params):
+		error_message = []
+		if not params.has_key("filenames"):
+			error_message.append("Please specify files to process")
+			self.show_error_message(error_message)
+			return None
+		
+		rx = -1
+		a = EMData()
+		for file in params["filenames"]:
+			if not file_exists(file): error_message.append("%s does not exist" %s)
+			else:
+				try:
+					a.read_image(file,0,True)
+				except:
+					error_message.append("%s is not a valid EM image" %file)
+					continue
+				
+				nx,ny,nz = gimme_image_dimensions3D(file)
+				if nz > 1:
+					error_message.append("%s is 3D, refine2d works on 2D images only" &file)
+				else:
+					if nx != ny:
+						error_message.append("%s contains images that are not square. Refine2d requires square images" %file)
+						
+					if rx == -1:
+						rx = nx
+					elif nx != rx:
+						error_message.append("The dimensions of the image files you specified are not uniform")
+						
+		if rx == -1:
+			error_message.append("Couldn't determine image dimensions")
+		
+		if len(error_message) != 0:
+			self.show_error_message(error_message)
+			return None
+		
+		# if we make it here we are good to go
+		options.input = None
+		options.filenames = [] # important - makes the spawn_process task work
+		if len(params["filenames"]) > 1 or options.shrink > 1:
+			progress = EMProgressDialogModule(self.application(),"Processing files...", "Abort import", 0, len(params["filenames"]),None)
+			progress.qt_widget.show()
+		
+			for i,file in enumerate(params["filenames"]):
+				cmd = "e2proc2d.py"
+				cmd += " %s" %file # the input name
+				
+				if options.shrink > 1: out_name = "bdb:"+options.path+"#all"+str(options.shrink)
+				else: out_name = " bdb:"+options.path+"#all"
+				
+				if options.input == None: options.input = out_name
+	 			
+	 			cmd += " %s" %out_name # the output name
+	 			
+	 			if options.shrink > 1: 
+	 				cmd += " --process=math.meanshrink:n="+str(options.shrink)
+	 			
+	 			self.application().setOverrideCursor(Qt.BusyCursor)
+	 			success = (os.system(cmd) in (0,12))
+	 			self.application().setOverrideCursor(Qt.ArrowCursor)
+	 			
+	 			progress.qt_widget.setValue(i+1)
+	 			self.application().processEvents()
+	 			if progress.qt_widget.wasCanceled():
+	 				db_remove_dict(options.input)
+	 				progress.qt_widget.close()
+	 				return None
+	 			
+	 		progress.qt_widget.close()
+	 		
+	 	else:
+	 		options.input = params["filenames"][0]
+	 	
+	 	
+	 	return options
+			
+							
+				
 
 class InitialModelReportTask(ParticleWorkFlowTask):
 	documentation_string = "This form displays the initial models currently associated with the project. You can associate initial models with the project using e2makeinitialmodel or by importing them directly, see the options below."
@@ -3698,17 +3782,17 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 		psimalign =  ParamDef(name=parameter_prefix+"align",vartype="string",desc_short="Aligner",desc_long="The aligner being used",property=None,defaultunits="rotate_translate_flip",choices=aligners)
 		psimalignargs =  ParamDef(name=parameter_prefix+"alignargs",vartype="string",desc_short="params",desc_long="Parameters for the aligner, see \"e2help.py aligners\"",property=None,defaultunits="",choices=[])
 		
-		psimaligncmp =  ParamDef(name=parameter_prefix+"aligncmp",vartype="string",desc_short="Align comparator",desc_long="The comparator being used",property=None,defaultunits="frc",choices=cmps)
+		psimaligncmp =  ParamDef(name=parameter_prefix+"aligncmp",vartype="string",desc_short="Align comparator",desc_long="The comparator being used",property=None,defaultunits="phase",choices=cmps)
 		psimaligncmpargs =  ParamDef(name=parameter_prefix+"aligncmpargs",vartype="string",desc_short="params",desc_long="Parameters for this comparator, see \"e2help.py cmps\"",property=None,defaultunits="",choices=[])	
 		
 		
 		prsimalign =  ParamDef(name=parameter_prefix+"ralign",vartype="string",desc_short="Refine aligner",desc_long="The refine aligner being used",property=None,defaultunits="None",choices=["None","refine"])
 		prsimalignargs =  ParamDef(name=parameter_prefix+"ralignargs",vartype="string",desc_short="params",desc_long="Parameters for this aligner, see \"e2help.py aligners\"",property=None,defaultunits="",choices=[])
 		
-		prsimaligncmp =  ParamDef(name=parameter_prefix+"raligncmp",vartype="string",desc_short="Refine align comparator",desc_long="The comparator being used for refine alignment",property=None,defaultunits="frc",choices=cmps)
+		prsimaligncmp =  ParamDef(name=parameter_prefix+"raligncmp",vartype="string",desc_short="Refine align comparator",desc_long="The comparator being used for refine alignment",property=None,defaultunits="phase",choices=cmps)
 		prsimaligncmpargs =  ParamDef(name=parameter_prefix+"raligncmpargs",vartype="string",desc_short="params",desc_long="Parameters for thos comparator, see \"e2help.py cmps\"",property=None,defaultunits="",choices=[])	
 		
-		pcmp  =  ParamDef(name=parameter_prefix+"cmp",vartype="string",desc_short="Main comparator",desc_long="The comparator to determine the final quality metric",defaultunits="frc",choices=cmps)
+		pcmp  =  ParamDef(name=parameter_prefix+"cmp",vartype="string",desc_short="Main comparator",desc_long="The comparator to determine the final quality metric",defaultunits="phase",choices=cmps)
 		pcmpargs =  ParamDef(name=parameter_prefix+"cmpargs",vartype="string",desc_short="params",desc_long="Parameters for the this comparator, see \"e2help.py cmps\"",property=None,defaultunits="",choices=[])	
 	
 
