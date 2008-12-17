@@ -9410,7 +9410,7 @@ def var_mpi(files, outdir, fl, fh, radccc, writelp, writestack, method="inc"):
         nimage = mystack.nimg()
         ndump = 100
 
-	lpstack = outdir + ("/btwl_cir_prj%04d.hdf" % myid)
+	lpstack = outdir + ("/tanl_prj%04d.hdf" % myid)
 	iwrite = 0
 	istack = 0
 	iprint = 0
