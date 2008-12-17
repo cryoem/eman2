@@ -22,7 +22,7 @@ def main():
 	(options, args) = parser.parse_args()
 
 	input_stacks = args[0:-1]
-	output_stack = args[1-]
+	output_stack = args[-1]
 
 	if options.nvec is None:
 		print "Error: number of components is not given"
