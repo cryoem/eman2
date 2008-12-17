@@ -8306,26 +8306,27 @@ def ssnr3d_MPI(stack, output_volume = None, ssnr_text_file = None, mask = None, 
 		vol_ssnr2, output_volume+"2.spi", "s")
 		"""
 
-def pca( input_stack, output_stack, imglist, nfile, subavg, mask_radius, nvec, type="out_of_core", maskfile="",verbose=False ) :
+def pca( input_stacks, output_stack, subavg, mask_radius, nvec, type="out_of_core", maskfile="",verbose=False ) :
 	from utilities import get_image, get_im, model_circle, model_blank
 	from EMAN2 import Analyzers
+
+	if len(input_stacks)==0:
+		print "Error: no input file."
+		return
+
 
 	if mask_radius > 0 and maskfile !="":
 		print "Error: mask radius and mask file cannot be used at the same time"
 		return
 
 	if mask_radius >0:
-		if(verbose):
-			print 'maskfile: ', maskfile
-		assert maskfile==""
+
 		if(verbose):
 			print "Using spherical mask, rad=", mask_radius
-		data = EMData()
-		if nfile == 1:
-			data.read_image( input_stack, 0, True)
-		else:
-			data.read_image( input_stack + "0000.hdf", 0, True)
+
+		data = get_im( input_stacks[0] )
 		mask = model_circle(mask_radius, data.get_xsize(), data.get_ysize(), data.get_zsize())
+
 	elif(maskfile!="") :
 		if(verbose):
 			print "Using mask: ", maskfile
@@ -8345,25 +8346,17 @@ def pca( input_stack, output_stack, imglist, nfile, subavg, mask_radius, nvec, t
 	else :                     ana = Analyzers.get( "pca", {"mask":mask, "nvec":nvec} )
 
 	totimg = 0
-	for j in xrange(nfile):
+	for j in xrange( len(input_stacks) ):
 		
-		if nfile==1:
-			curt_input_stack = input_stack
-		else:
-			curt_input_stack = input_stack + ("%04d.hdf" % j)
-			nimage = EMUtil.get_image_count( curt_input_stack )
-			imglist = xrange(nimage)
+		curt_input_stack = input_stacks[i]
+		nimage = EMUtil.get_image_count( curt_input_stack )
 
 		if(verbose):
 			print "loading file ", curt_input_stack
-		for i in imglist:
+		for i in xrange(nimage):
 			data = get_im( curt_input_stack, i)
 			if not(avg is None):
-				# the folllowing is incerrect!
-				#ERROR("DO NOT USE THIS OPTION","pca",1)
-				[avg1,sigma,fmin,fmax]=Util.infomask(data, None,True)
 				data -= avg
-				[avg2,sigma,fmin,fmax]=Util.infomask(data, None,True)
 			ana.insert_image( data )
 			if(verbose):
 				 print "Inserting image %4d" % totimg
