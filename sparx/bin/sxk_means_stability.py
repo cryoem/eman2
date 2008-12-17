@@ -40,7 +40,7 @@ import sys
 def main():
 	
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack <maskfile> --K=2 --nb_part=5 --opt_method='SSE' --CTF --F=0.9 --max_run=10 --th_nboj=10 --th_stab=6.0 --min_dec_K=5 --restart=5 --MPI"
+	usage = progname + " stack outdir <maskfile> --K=2 --nb_part=5 --opt_method='SSE' --CTF --F=0.9 --max_run=10 --th_nobj=10 --th_stab=6.0 --min_dec_K=5 --restart=5 --MPI"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--K",          type="int",          default=2,         help="Number of classes for k-means (default 2)")
 	parser.add_option("--nb_part",    type="int",          default=5,         help="Number of partitions used to calculate the stability (default 5)")
@@ -56,15 +56,15 @@ def main():
 	parser.add_option("--backup",     action="store_true", default=False,     help="To debug")
 	
 	(options, args) = parser.parse_args()
-    	if len(args) < 1 or len(args) > 2:
+    	if len(args) < 2 or len(args) > 3:
 				print "usage: " + usage
         			print "Please run '" + progname + " -h' for detailed options"
 	elif(options.opt_method != "cla"  and options.opt_method != "SSE"):
 			sys.stderr.write("ERROR: unknown method\n\n")
 			sys.exit()
 	else:
-		if len(args) == 1: mask = None
-		else:              mask = args[1]
+		if len(args) == 2: mask = None
+		else:              mask = args[2]
 
 		if options.K < 2:
 			sys.stderr.write('ERROR: K must be > 1 group\n\n')
@@ -76,7 +76,7 @@ def main():
 
 		from  development  import  k_means_stab
 		global_def.BATCH = True
-		k_means_stab(args[0], mask, options.opt_method, options.K, options.nb_part, options.CTF, options.F, options.max_run, options.th_nobj, options.th_stab, options.min_dec_K, options.restart, options.MPI, options.backup)
+		k_means_stab(args[0], args[1], mask, options.opt_method, options.K, options.nb_part, options.CTF, options.F, options.max_run, options.th_nobj, options.th_stab, options.min_dec_K, options.restart, options.MPI, options.backup)
 		global_def.BATCH = False
 
 if __name__ == "__main__":

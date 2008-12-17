@@ -7333,11 +7333,13 @@ def k_means_stab_H(ALL_PART):
 	return stability, nb_stb, ALL_PART[0]
 
 # Build and export the stable class averages 
-def k_means_stab_export(PART, stack, num_run):
-	from utilities import model_blank
+def k_means_stab_export(PART, stack, num_run, outdir):
+	from utilities    import model_blank, get_params2D
+	from fundamentals import rot_shift2D
 	K    = len(PART)
 	im   = EMData()
-	im.read_image(stack, 0, True)
+	#im.read_image(stack, 0, True)  # Sometime this line not works for bdb
+	im.read_image(stack, 0)
 	nx   = im.get_xsize()
 	ny   = im.get_ysize()
 	imbk = model_blank(nx, ny)
@@ -7348,6 +7350,11 @@ def k_means_stab_export(PART, stack, num_run):
 		if nobjs > 0:
 			for ID in PART[k]:
 				im.read_image(stack, int(ID))
+				try:
+					alpha, sx, sy, mirror, scale = get_params2D(im)
+					im = rot_shift2D(im, alpha, sx, sy, mirror)
+				except: pass
+				
 				Util.add_img(AVE[k], im)
 			Util.mul_scalar(AVE[k], 1.0 / float(nobjs))
 
@@ -7359,7 +7366,7 @@ def k_means_stab_export(PART, stack, num_run):
 			AVE[k].set_attr('nobjects', 0)
 			AVE[k].set_attr('members', -1)
 
-		AVE[k].write_image('average_stb_run%02d.hdf' % num_run, k)
+		AVE[k].write_image(outdir + '/average_stb_run%02d.hdf' % num_run, k)
 
 # Init the header for the stack file
 def k_means_stab_init_tag(stack):
@@ -7367,11 +7374,11 @@ def k_means_stab_init_tag(stack):
 	N   = EMUtil.get_image_count(stack)
 	ext = file_type(stack)
 	if ext == 'bdb':
-		IM = EMData.read_images(stack, range(N), True)
+		DB = db_open_dict(stack)
 		for n in xrange(N):
-			IM[n].set_attr('stab_active', 1)
-			IM[n].set_attr('stab_part', -2)
-		write_headers(stack, IM, range(N))
+			DB.set_attr(n, 'stab_active', 1)
+			DB.set_attr(n, 'stab_part',  -2)
+		DB.close()
 	else:
 		im = EMData()
 		for n in xrange(N):
@@ -7381,8 +7388,7 @@ def k_means_stab_init_tag(stack):
 			write_header(stack, im, n)     # TOCHECK used read_images(True) and write_headers with hdf => segmentation fault
 
 def k_means_open_unstable_MPI(stack, maskname, CTF, nb_cpu, main_node, myid):
-	#[im_M, mask, ctf, ctf2, LUT, N] = k_means_open_unstable_MPI(stack, maskname, CTF, nb_cpu, main_node, myid)  ## TODO
-	from utilities    import get_params2D, get_image
+	from utilities    import get_params2D, get_image, file_type
 	from fundamentals import rot_shift2D, rot_shift3D
 	from mpi          import mpi_bcast, mpi_barrier, MPI_COMM_WORLD, MPI_INT
 
@@ -7395,15 +7401,18 @@ def k_means_open_unstable_MPI(stack, maskname, CTF, nb_cpu, main_node, myid):
 	N = 0
 	if myid == main_node:
 		N    = EMUtil.get_image_count(stack)
-		im   = EMData()
 		lim  = []
-		HEAD = im.read_images(stack, range(N))
-		for n in xrange(N):
-			try:
-				if HEAD[n].get_attr('stab_active'): lim.append(n)
-			except AttributeError:
-				import sys
-				sys.exit()
+		ext  = file_type(stack)
+		if ext == 'bdb':
+			DB = db_open_dict(stack)
+			for n in xrange(N):
+				if DB.get_attr(n, 'stab_active'): lim.append(n)
+			DB.close()
+		else:
+			im = EMData()
+			for n in xrange(N):
+				im.read_image(stack, n, True)
+				if im.get_attr('stab_active'): lim.append(n)
 
 		N = len(lim)
 
@@ -7489,7 +7498,7 @@ def k_means_open_unstable_MPI(stack, maskname, CTF, nb_cpu, main_node, myid):
 
 # k-means open and prepare images, only unstable objects (active = 1)
 def k_means_open_unstable(stack, maskname, CTF):
-	from utilities     import get_params2D, get_image
+	from utilities     import get_params2D, get_image, file_type
 	from fundamentals  import rot_shift2D, rot_shift3D
 	
 	if CTF:
@@ -7498,34 +7507,34 @@ def k_means_open_unstable(stack, maskname, CTF):
 		from fundamentals 	import fftip
 		from utilities          import get_arb_params
 
-	# create list of unstable images
 	N    = EMUtil.get_image_count(stack)
-	im   = EMData()
-	HEAD = im.read_images(stack, range(N))
-	lim = [] 
-	for n in xrange(N):
-		try:
-			if HEAD[n].get_attr('stab_active'): lim.append(n)
-		except AttributeError:
-			for n in xrange(N):
-				if HEAD[n] == None:
-					print n, ':', n-1, HEAD[n], n+1
-			import sys
-			sys.exit()
+	lim  = []
+	ext  = file_type(stack)
+	if ext == 'bdb':
+		DB = db_open_dict(stack)
+		for n in xrange(N):
+			if DB.get_attr(n, 'stab_active'): lim.append(n)
+		DB.close()
+	else:
+		im = EMData()
+		for n in xrange(N):
+			im.read_image(stack, n, True)
+			if im.get_attr('stab_active'): lim.append(n)
 
 	N = len(lim)
 	im_M = [0] * N
 
-	nx = HEAD[0].get_xsize()
-	ny = HEAD[0].get_ysize()
-	nz = HEAD[0].get_zsize()
+	im = EMData()
+	im.read_image(stack, 0, True)
+	nx = im.get_xsize()
+	ny = im.get_ysize()
+	nz = im.get_zsize()
 	
 	if CTF:
 		ctf	   = [[] for i in xrange(N)]
 		ctf2       = [[] for i in xrange(N)]
-		ctf_params = HEAD[0].get_attr('ctf')
-		if HEAD[0].get_attr('ctf_applied'): ERROR('K-means cannot be performed on CTF-applied images', 'k_means', 1)
-	del HEAD, im
+		ctf_params = im.get_attr('ctf')
+		if im.get_attr('ctf_applied'): ERROR('K-means cannot be performed on CTF-applied images', 'k_means', 1)
 
 	if maskname != None:
 		if isinstance(maskname, basestring):
@@ -7533,7 +7542,6 @@ def k_means_open_unstable(stack, maskname, CTF):
 	else:
 		mask = None
 
-	im = EMData()
 	ct   = 0
 	for ID in lim:
 		im.read_image(stack, ID)
@@ -7592,7 +7600,6 @@ def k_means_stab_update_tag(stack, ALL_PART, STB_PART, num_run):
 	from utilities import write_headers, file_type, write_header
 
 	N  = EMUtil.get_image_count(stack)
-	
 
 	# prepare partitions given by the run
 	nb_part = len(ALL_PART)
@@ -7615,27 +7622,24 @@ def k_means_stab_update_tag(stack, ALL_PART, STB_PART, num_run):
 
 	ext = file_type(stack)
 	if ext == 'bdb':
-		IM = EMData.read_images(stack, range(N), True)
-		
-		# set headers
+		DB = db_open_dict(stack)
+		N = 1
 		for n in xrange(N):
-			# run partitions    FIXME for bdb
-			#vec = []
-			#for i in xrange(nb_part): vec.append(ALL_ASG[i][n])
-			#IM[n].set_attr('stab_run%02d' % num_run, vec)
-
-			# stab partitions
-			val = IM[n].get_attr('stab_part')
+			# run partitions
+			vec = []
+			for i in xrange(nb_part): vec.append(ALL_ASG[i][n])
+			DB.set_attr(n, 'stab_run%02d' % num_run, vec)
+			# stable partition
+			val = DB.get_attr(n, 'stab_part')
 			if isinstance(val, list): val.append(STB_ASG[n]) # if n-ieme run (list of value)
 			elif  val == -2: val = [STB_ASG[n]]              # if first run  (no value define by -2)
-			else: val = [val, STB_ASG[n]]                    # if second run (scalar)
-			IM[n].set_attr('stab_part', val)
+			else: val == [val, STB_ASG[n]]                   # if second run (scalar)
+			DB.set_attr(n, 'stab_part', val)
 
 		# active or not (unstable or not)
-		for ID in list_stb: IM[ID].set_attr('stab_active', 0)
+		for ID in list_stb: DB.set_attr(ID, 'stab_active', 0)
 
-		# write headers
-		write_headers(stack, IM, range(N))
+		DB.close()
 	else:
 		# TOCHECK can't use read_images and write_headers with hdf => segmentation fault
 		im = EMData()
@@ -7662,48 +7666,51 @@ def k_means_stab_update_tag(stack, ALL_PART, STB_PART, num_run):
 			write_header(stack, im, ID)
 
 # Gather all stable class averages in the same stack
-def k_means_stab_gather(nb_run, th, maskname):
+def k_means_stab_gather(nb_run, th, maskname, outdir):
 	from utilities import get_im
 	if maskname != None: mask = get_im(maskname, 0)
 	else: mask = None
 	ct   = 0
 	im   = EMData()
 	for nr in xrange(1, nb_run):
-		name = 'average_stb_run%02d.hdf' % nr
+		name = outdir + '/average_stb_run%02d.hdf' % nr
 		N = EMUtil.get_image_count(name)
 		for n in xrange(N):
 			im.read_image(name, n)
 			if im.get_attr('nobjects') > th:
 				ret = Util.infomask(im, mask, True) # 
 				im  = (im - ret[0]) / ret[1]        # normalize
-				im.write_image('all_stb_ave_run.hdf', ct)
+				im.write_image(outdir + '/averages.hdf', ct)
 				ct += 1
 
 	return ct
 
 
 # K-means main stability
-def k_means_stab(stack, maskname, opt_method, K, npart = 5, CTF = False, F = 0, maxrun = 50, th_nobj = 0, th_stab = 6.0, th_dec = 5, restart = 1, MPI = False, bck = False):
+def k_means_stab(stack, outdir, maskname, opt_method, K, npart = 5, CTF = False, F = 0, maxrun = 50, th_nobj = 0, th_stab = 6.0, th_dec = 5, restart = 1, MPI = False, bck = False):
 	if MPI:
-		k_means_stab_MPI(stack, maskname, opt_method, K, npart, CTF, F, maxrun, th_nobj, th_stab, th_dec, restart, bck)
+		k_means_stab_MPI(stack, outdir, maskname, opt_method, K, npart, CTF, F, maxrun, th_nobj, th_stab, th_dec, restart, bck)
 		return
 	
 	from utilities 	 import print_begin_msg, print_end_msg, print_msg, file_type
 	from statistics  import k_means_criterion, k_means_export, k_means_open_im, k_means_headlog
 	from statistics  import k_means_classical, k_means_SSE
 	from development import k_means_SA_T0
-	import sys, logging
+	import sys, logging, os
 
 	# set params
 	trials   = 1
-	maxit    = 1000000
+	maxit    = 1e9
 	critname = ''
+
+	if os.path.exists(outdir):  os.system('rm -rf ' + outdir)
+	os.mkdir(outdir)
 
 	# create main log
 	if restart == 1:
-		f = open('main_log.txt', 'w')
+		f = open(outdir + '/main_log.txt', 'w')
 		f.close()
-	logging.basicConfig(filename = 'main_log.txt', format = '%(asctime)s     %(message)s', level = logging.INFO)
+	logging.basicConfig(filename = outdir + '/main_log.txt', format = '%(asctime)s     %(message)s', level = logging.INFO)
 	logging.info('::: Start k-means stability :::')
 
 	# manage random seed
@@ -7779,7 +7786,7 @@ def k_means_stab(stack, maskname, opt_method, K, npart = 5, CTF = False, F = 0, 
 				break
 
 		# convert local assignment to absolute partition
-		logging.info('... Convert local asign to abs partition')
+		logging.info('... Convert local assign to abs partition')
 		ALL_PART = k_means_stab_asg2part(ALL_ASG, LUT)
 
 		# calculate the stability
@@ -7801,7 +7808,7 @@ def k_means_stab(stack, maskname, opt_method, K, npart = 5, CTF = False, F = 0, 
 
 		# export the stable class averages
 		logging.info('... Export stable class averages: average_stb_run%02d.hdf' % num_run)
-		k_means_stab_export(STB_PART, stack, num_run)
+		k_means_stab_export(STB_PART, stack, num_run, outdir)
 
 		# tag informations to the header
 		logging.info('... Update info to the header')
@@ -7814,22 +7821,21 @@ def k_means_stab(stack, maskname, opt_method, K, npart = 5, CTF = False, F = 0, 
 
 	# merge and clean all stable averages
 	logging.info('Remove class average with nb objs < %d' % th_nobj)
-	ct = k_means_stab_gather(num_run, th_nobj, maskname)
-	logging.info('Gather and normalize all stable class averages: all_stb_ave_run.hdf (%d images)' % ct)
-
+	ct = k_means_stab_gather(num_run, th_nobj, maskname, outdir)
+	logging.info('Gather and normalize all stable class averages: averages.hdf (%d images)' % ct)
 	
 	logging.info('::: END k-means stability :::')
 
 
 # K-means main stability
-def k_means_stab_MPI(stack, maskname, opt_method, K, npart = 5, CTF = False, F = 0, maxrun = 50, th_nobj = 0, th_stab = 6.0, th_dec = 5, restart = 1, bck = False):
+def k_means_stab_MPI(stack, outdir, maskname, opt_method, K, npart = 5, CTF = False, F = 0, maxrun = 50, th_nobj = 0, th_stab = 6.0, th_dec = 5, restart = 1, bck = False):
 	from utilities 	 import print_begin_msg, print_end_msg, print_msg, file_type
 	from statistics  import k_means_criterion, k_means_export, k_means_open_im, k_means_headlog
 	from statistics  import k_means_cla_MPI, k_means_SSE_MPI
 	from development import k_means_SA_T0_MPI
 	from mpi         import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier, MPI_COMM_WORLD
 	from mpi         import mpi_bcast, MPI_FLOAT
-	import sys, logging
+	import sys, logging, os
 
 	sys.argv  = mpi_init(len(sys.argv), sys.argv)
 	nb_cpu    = mpi_comm_size(MPI_COMM_WORLD)
@@ -7839,14 +7845,16 @@ def k_means_stab_MPI(stack, maskname, opt_method, K, npart = 5, CTF = False, F =
 
 	# set params
 	trials   = 1
-	maxit    = 1000000
+	maxit    = 1e9
 	critname = ''
 
-	# create main log
 	if myid == main_node and restart == 1:
-		f = open('main_log.txt', 'w')
-		f.close()
-	logging.basicConfig(filename = 'main_log.txt', format = '%(asctime)s     %(message)s', level = logging.INFO)
+		if os.path.exists(outdir): os.system('rm -rf ' + outdir)
+		os.mkdir(outdir)
+
+	mpi_barrier(MPI_COMM_WORLD)
+		
+	logging.basicConfig(filename = outdir + '/main_log.txt', format = '%(asctime)s     %(message)s', level = logging.INFO)
 	if myid == main_node: logging.info('::: Start k-means stability :::')
 
 	# manage random seed
@@ -7933,7 +7941,7 @@ def k_means_stab_MPI(stack, maskname, opt_method, K, npart = 5, CTF = False, F =
 	
 		if myid == main_node:
 			# convert local assignment to absolute partition
-			logging.info('... Convert local asign to abs partition')
+			logging.info('... Convert local assign to abs partition')
 			ALL_PART = k_means_stab_asg2part(ALL_ASG, LUT)
 
 			# calculate the stability
@@ -7962,7 +7970,7 @@ def k_means_stab_MPI(stack, maskname, opt_method, K, npart = 5, CTF = False, F =
 		if myid == main_node:
 			# export the stable class averages
 			logging.info('... Export stable class averages: average_stb_run%02d.hdf' % num_run)
-			k_means_stab_export(STB_PART, stack, num_run)
+			k_means_stab_export(STB_PART, stack, num_run, outdir)
 
 			# tag informations to the header
 			logging.info('... Update info to the header')
@@ -7978,8 +7986,8 @@ def k_means_stab_MPI(stack, maskname, opt_method, K, npart = 5, CTF = False, F =
 	if myid == main_node:
 		# merge and clean all stable averages
 		logging.info('Remove class average with nb objs < %d' % th_nobj)
-		ct = k_means_stab_gather(num_run, th_nobj, maskname)
-		logging.info('Gather and normalize all stable class averages: all_stb_ave_run.hdf (%d images)' % ct)
+		ct = k_means_stab_gather(num_run, th_nobj, maskname, outdir)
+		logging.info('Gather and normalize all stable class averages: averages.hdf (%d images)' % ct)
 
 		logging.info('::: END k-means stability :::')
 
