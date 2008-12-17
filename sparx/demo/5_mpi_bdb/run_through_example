@@ -18,7 +18,7 @@ e2boxer.py --method=Gauss -A cmd -B 64 --write_box_images --var --pix_in=5.2 --p
 mpirun -np 2 sxali2d_c.py bdb:data ali2d_c --ou=30 --xr=3 --yr=3 --ts=1 --maxit=5 --MPI || exit
 
 # K-mean clustering of the 2D dataset
-mpirun -np 2 sxk_means.py bdb:data Kmeans --K=12 --trials=3 --opt_method=cla --maxit=100 --rand_seed=10  --MPI || exit
+mpirun -np 2 sxk_means_stability.py bdb:data Kmeans --K=20 --nb_part=5 --opt_method="SSE" --max_run=10 --th_nobj=5 --th_stab=6.0 --min_dec_K=2 --MPI || exit
 
 # Multireference alignment of the 2D dataset
 mpirun -np 2 sxali2d_m.py bdb:data Kmeans/averages.hdf ali2d_m --ou=30 --xr=3 --yr=3 --ts=1 --center=1 --maxit=5 --function="ref_ali2d_m" --rand_seed=10 --MPI || exit
