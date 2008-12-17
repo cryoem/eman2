@@ -459,7 +459,7 @@ void Wiener2DAutoAreaProcessor::process_inplace(EMData *image) {
 
 EMData * Wiener2DFourierProcessor::process(const EMData *in)
 {
-	const EMData *in2;
+	const EMData *in2 = 0;
 	if (in->is_complex()) in2=in;
 	else in=in->do_fft();
 

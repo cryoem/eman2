@@ -768,7 +768,7 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 	vector<float> amp;
 	if (ampweight) amp=image->calc_radial_dist(ny/2,0,1,0);
 
-	double sum,norm;
+	double sum=0.0, norm=0.0;
 	
 	for (int i=0; i<ny/2; i++) {
 		double weight=1.0;

@@ -991,7 +991,18 @@ namespace EMAN
 		 * @exception ImageDimensionException 3D image only
 		 * */
 //		static Dict get_isosurface(EMData * image, float surface_value, bool smooth);
-
+		
+		/** Get the isosurface value for 3D image.
+		 *
+		 * @param[in] freq_cutoff 
+		 * @param[in] P
+		 * @param[in] r
+		 * @param[in] dfreq
+		 * @param[in] alpha
+		 * @param[in] beta
+		 *
+		 * @return float*
+		 * */
 		static float* getBaldwinGridWeights( const int& freq_cutoff, const float& P, const float& r, const float& dfreq = 1, const float& alpha=0.5, const float& beta = 0.2);
 
 		/** Return true if an integer is positive and is power of 2

@@ -3504,7 +3504,7 @@ void newfile_store::add_image( EMData* emdata, const Transform& tf )
     int n2 = ny / 2;
     int n = ny;
 
-    float voltage, pixel, Cs, ampcont, bfactor, defocus;
+    float voltage=0.0f, pixel=0.0f, Cs=0.0f, ampcont=0.0f, bfactor=0.0f, defocus=0.0f;
 
     if( m_ctf )
     {
