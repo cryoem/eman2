@@ -5,9 +5,8 @@ from sparx import *
 from time import time
 from optparse import OptionParser
 
-def bootstrap_genbuf( prjfile, bufprefix, beg, end, CTF, finfo=None ):
+def bootstrap_genbuf( prjfile, bufprefix, beg, end, CTF, npad, finfo=None ):
 	start_time = time()
-	npad = 4
 	istore = newfile_store( bufprefix, npad, CTF )
 	for i in xrange( beg, end ):
 		prj = get_im( prjfile, i ) 
@@ -17,8 +16,8 @@ def bootstrap_genbuf( prjfile, bufprefix, beg, end, CTF, finfo=None ):
 			finfo.flush()
 
 
-def bootstrap_insert( bufprefix, fftvols, wgtvols, mults, CTF, info=None):
-	ostore = newfile_store( bufprefix, 4, CTF )
+def bootstrap_insert( bufprefix, fftvols, wgtvols, mults, CTF, npad, info=None):
+	ostore = newfile_store( bufprefix, npad, CTF )
 	blocksize = 250
 	nvol = len(fftvols)
 	nprj = len(mults[0])
@@ -74,7 +73,7 @@ def bootstrap_finish( rectors, fftvols, wgtvols, volfile, iter, info=None ):
 
 
 
-def bootstrap_prepare( prjfile, nvol, snr, CTF ):
+def bootstrap_prepare( prjfile, nvol, snr, CTF, npad ):
 	nx = get_im( prjfile, 0 ).get_xsize()
 	fftvols = [None]*nvol
 	wgtvols = [None]*nvol
@@ -83,10 +82,10 @@ def bootstrap_prepare( prjfile, nvol, snr, CTF ):
 		fftvols[i] = EMData()
 		wgtvols[i] = EMData()
 		if CTF:
-			params = {"size":nx, "npad":4, "snr":snr, "weight":wgtvols[i], "fftvol":fftvols[i]}
+			params = {"size":nx, "npad":npad, "snr":snr, "weight":wgtvols[i], "fftvol":fftvols[i]}
 			rectors[i] = Reconstructors.get( "nn4_ctf", params )
 		else:
-			params = {"size":nx, "npad":4, "weight":wgtvols[i], "fftvol":fftvols[i]}
+			params = {"size":nx, "npad":npad, "weight":wgtvols[i], "fftvol":fftvols[i]}
 			rectors[i] = Reconstructors.get( "nn4", params )
 		
 		rectors[i].setup()
@@ -163,13 +162,10 @@ def write_mults( fmults, iter, mults ):
 	fmults.flush()
 
 
-def bootstrap( prjfile, wgts, outdir, bufprefix, nbufvol, niter, seedbase, nprj, snr, genbuf, sharebuf, CTF, MPI ) :
+def bootstrap( prjfile, wgts, outdir, bufprefix, nbufvol, nvol, seedbase, snr, genbuf, ngroup, CTF, npad, MPI ) :
 	from random import seed
 
-
-	if( nprj==-1) :
-		nprj = EMUtil.get_image_count( prjfile )
-
+	nprj = EMUtil.get_image_count( prjfile )
 
 	if MPI:
 		from mpi import mpi_barrier, mpi_comm_rank, mpi_comm_size, mpi_comm_split, MPI_COMM_WORLD
@@ -195,8 +191,10 @@ def bootstrap( prjfile, wgts, outdir, bufprefix, nbufvol, niter, seedbase, nprj,
 
 	finfo=open( outdir+("/progress%04d.txt" % myid), "w" )
 
-	if genbuf and (myid==0 or (not sharebuf)):
-		bootstrap_genbuf( prjfile, bufprefix, 0, nprj, CTF, finfo )
+
+	groupsize = ncpu/ngroup
+	if genbuf and (myid%groupsize==0):
+		bootstrap_genbuf( prjfile, bufprefix, 0, nprj, CTF, npad, finfo )
 	
 	if genbuf and sharebuf and MPI:
 		mpi_barrier( MPI_COMM_WORLD )
@@ -206,6 +204,8 @@ def bootstrap( prjfile, wgts, outdir, bufprefix, nbufvol, niter, seedbase, nprj,
 	seed( seedbase + 10*myid )
 	volfile = outdir + ("/bsvol%04d.hdf" % myid)
 
+
+	niter = nvol/ncpu/nbufvol
 	for iter in xrange(niter):
 		finfo.write( "Iteration %d: \n" % iter )
 		finfo.flush()
@@ -214,119 +214,12 @@ def bootstrap( prjfile, wgts, outdir, bufprefix, nbufvol, niter, seedbase, nprj,
 		mults = bootstrap_mults(accu_prbs, nbufvol, 0, nprj)
 
 		assert len(mults)==nbufvol
-		rectors, fftvols, wgtvols = bootstrap_prepare( prjfile, nbufvol, snr, CTF )
-		bootstrap_insert( bufprefix, fftvols, wgtvols, mults, CTF, finfo )
+		rectors, fftvols, wgtvols = bootstrap_prepare( prjfile, nbufvol, snr, CTF, npad )
+		bootstrap_insert( bufprefix, fftvols, wgtvols, mults, CTF, npad, finfo )
 		bootstrap_finish( rectors, fftvols, wgtvols, volfile, iter, finfo )
 		
 		finfo.write( "time for iteration: %10.3f\n" % (time() - iter_start) )
 		finfo.flush()
-
-from math import pi,sin,cos
-
-angle_to_rad = pi/180.0
-
-def getvec( phi, tht ):
-
-	if tht > 180.0:
-		tht = tht - 180.0
-		phi = phi + 180.0
-	elif tht > 90.0:
-		tht = 180.0 - tht
-		phi = phi + 180.0
-
-	assert tht <=90.0
-
-	tht *= angle_to_rad
-	phi *= angle_to_rad
-
-	x = sin(tht)*cos(phi) 
-	y = sin(tht)*sin(phi)
-	z = cos(tht)
-
-	return (x,y,z)
-
-def nearest_ang( vecs, phi, tht ) :
-	vec = getvec( phi, tht )
-
-	best_s = -1.0
-	best_i = -1
-
-	for i in xrange( len(vecs) ):
-		s = vecs[i][0]*vec[0] + vecs[i][1]*vec[1] + vecs[i][2]*vec[2]
-		if s > best_s:
-			best_s = s
-			best_i = i
-
-	return best_i
-
-
-def bootstrap_calcwgts( prjfile, wgtfile, delta, MPI ):
-	if MPI:
-		from mpi import mpi_comm_rank, mpi_comm_size, mpi_reduce
-		from mpi import MPI_INT, MPI_SUM, MPI_COMM_WORLD
-		myid = mpi_comm_rank( MPI_COMM_WORLD )
-		ncpu = mpi_comm_size( MPI_COMM_WORLD )
-	else:
-		myid = 0
-		ncpu = 1
-
-	verbose = False
-
-	if verbose:
-		finf = open( "calcwgts%04d.txt" % myid, "w" )
-	nprj = EMUtil.get_image_count( prjfile )
-
-	beg, end = MPI_start_end( nprj, ncpu, myid )
-	if verbose:
-		finf.write( "begin, end: %d %d\n" %(beg, end) )
-		finf.flush()
-
-	eve_angs = even_angles( delta, 0.0, 89.99, method='P' )
-	eve_vecs = [None]*len(eve_angs)
-	for i in xrange( len(eve_angs) ):
-		eve_vecs[i] = getvec( eve_angs[i][0], eve_angs[i][1] )
-
-	nang = len(eve_angs)
-	occurs = [0]*nang
-	angids = [0]*nprj
-
-	for iprj in xrange(beg, end):
-		prj = get_im( prjfile, iprj )
-		phi,tht,psi,s2x,s2y = get_params_proj( prj )
-		aid = nearest_ang( eve_vecs, phi, tht )
-
-		if verbose:
-			finf.write( "prj %6d: %10.3f %10.3f close to ori %6d: %10.3f %10.3f\n" % (iprj, phi, tht, aid, eve_angs[aid][0], eve_angs[aid][1]))
-			finf.flush()
-
-		angids[iprj] = aid
-		occurs[aid] += 1
-
-	if MPI:
-		occurs = mpi_reduce( occurs, len(occurs), MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD )
-		angids = mpi_reduce( angids, len(angids), MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD )
-
-	if myid==0:
-		sumoccur = 0
-		for i in xrange( nang ):
-			if verbose:
-				finf.write( "ori %6d: %d\n" % (i, occurs[i]) )
-				finf.flush()
-			sumoccur += int(occurs[i])
-		assert sumoccur==nprj
-
-		for i in xrange( len(occurs) ):
-			if int(occurs[i])==0:
-				print "Warning: some orientations have no projections. Increase delta"
-
-		os = open( wgtfile, "w" )
-		for i in xrange(nprj):
-			aid = angids[i]
-			wgt = 1.0/int(occurs[aid])
-			print >> os, wgt
-		
-
-
 
 def main():
 
@@ -337,18 +230,15 @@ def main():
 	    arglist.append( arg )
 
 	progname = os.path.basename(arglist[0])
-	usage = progname + " prjstack wgtfile [outdir bufprefix] --niter --nbufvol --nprj --seedbase --snr --genbuf --sharebuf --CTF --calcwgts --delta"
+	usage = progname + " prjstack wgtfile outdir bufprefix --nvol --nbufvol --seedbase --snr --genbuf --ngroup --npad --CTF"
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--nprj", type="int", default=-1, help="  number of projections used by default all projections will be used")
-	parser.add_option("--snr",  type="float", default=1.0, help="signal-to-noise ratio" )
-	parser.add_option("--delta", type="float", default=1.0, help="for weights calculation")
-	parser.add_option("--genbuf", action="store_true", default=False, help="whether generate the buffer")
-	parser.add_option("--calcwgts", action="store_true", default=False, help="calculate weights or load weights from file" )
-	parser.add_option("--bufprefix", type="string", help="the location of the scratch file" )
+	parser.add_option("--nvol", type="int", help="number of bootstrap volumes to be generated.")
 	parser.add_option("--nbufvol", type="int", help="number of fftvol in the memory" )
-	parser.add_option("--sharebuf", action="store_true", default=False, help="whether cpus share a buf file")
+	parser.add_option("--genbuf", action="store_true", default=False, help="whether generate the buffer")
+	parser.add_option("--ngroup", type="int", default=1, help="how many groups used (each group will share a buffer)")
 	parser.add_option("--CTF", action="store_true", default=False, help="whether consider CTF" )
-	parser.add_option("--niter", type="int", help="number of iteration. Each iteration, nbufvol of bootstrap volumes will be generated.")
+	parser.add_option("--snr",  type="float", default=1.0, help="signal-to-noise ratio" )
+	parser.add_option("--npad", type="int", default=4, help="times of padding" )
 	parser.add_option("--seedbase", type="int", help="random seed base" )
 	parser.add_option("--MPI", action="store_true", default=False, help="use MPI")
 
@@ -364,14 +254,10 @@ def main():
 		from mpi import mpi_init, mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
 		sys.argv = mpi_init( len(sys.argv), sys.argv )
 	
-	if( options.calcwgts ):
-		wgtfile = args[1]
-		bootstrap_calcwgts( prjfile, wgtfile, options.delta, options.MPI )
-	else :
-		wgts = read_text_file( args[1], 0 )
-		outdir = args[2]
-		bufprefix = args[3]
-		bootstrap( prjfile, wgts, outdir, bufprefix, options.nbufvol, options.niter, options.seedbase, options.nprj, options.snr, options.genbuf, options.sharebuf, options.CTF, options.MPI )
+	wgts = read_text_file( args[1], 0 )
+	outdir = args[2]
+	bufprefix = args[3]
+	bootstrap( prjfile, wgts, outdir, bufprefix, options.nbufvol, options.nvol, options.seedbase, options.snr, options.genbuf, options.ngroup, options.CTF, options.npad, options.MPI )
 	
 
 if __name__ == "__main__":
