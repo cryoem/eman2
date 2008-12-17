@@ -511,14 +511,18 @@ EMData* mult_radial(EMData* radial);
 
 		/** Search specified number peaks in 1D, 2D, or 3D real images.
 		* and output the peaks in descendent order: 
-		  The numbers coming out are: image dimension, then
-		  1D: pixel value, x coord, relative peak value, x coord( NX/2 center),
-		  ...
-		  2D: pixel value, x coord, y coord, realative peak value, x coord(NX/2 center) y coord(NY/2 center) 
-		  ...
-		  3D  pixel value, x coord, y coord, z coord, realative peak value, x coord(NX/2 center) y coord(NY/2 center) z coord(NZ/2 center)
-		  The function is supposed to return 0 dimension and first pixel value (0,0,0) when the image is constant.
-		  ...			*/
+		* The numbers coming out are: image dimension, then
+		* 1D: pixel value, x coord, relative peak value, x coord( NX/2 center),
+		* ...
+		* 2D: pixel value, x coord, y coord, realative peak value, x coord(NX/2 center) y coord(NY/2 center) 
+		* ...
+		* 3D  pixel value, x coord, y coord, z coord, realative peak value, x coord(NX/2 center) y coord(NY/2 center) z coord(NZ/2 center)
+		* The function is supposed to return 0 dimension and first pixel value (0,0,0) when the image is constant.
+		* ...
+		* 
+		* @param[in] ml
+		* @param[in] invert
+		* */
 		vector<float> peak_search(int ml, float invert);
 
 		/** Calculate the Phase approximation to center of gravity
@@ -581,10 +585,6 @@ EMData* mult_radial(EMData* radial);
 	 * @par Method: Remove padding and extension along x for fft,
 	 *      and return the new  image.
 	 *
-	 *  @param[in] f Real-space image object.
-	 *               Image may be 1-, 2-,
-	 *               or 3-dimensional.  Image f is not changed.
-	 *
 	 *  @return depadded input image.
 	 */
 	void depad();
@@ -595,10 +595,6 @@ EMData* mult_radial(EMData* radial);
 	 *
 	 * @par Method: Remove padding and extension along x for fft,
 	 *      and return the new  image.
-	 *
-	 *  @param[in] f Real-space image object.
-	 *               Image may be 1-, 2-,
-	 *               or 3-dimensional.  Image f is not changed.
 	 *
 	 *  @return depadded input image.
 	 */
@@ -612,11 +608,7 @@ EMData* mult_radial(EMData* radial);
 	 *      requested), extend along x for fft,
 	 *      and return the new  image.
 	 *
-	 *  @param[in] f Real-space image object.
-	 *               Image may be 1-, 2-,
-	 *               or 3-dimensional.  Image f is not changed.
 	 *  @param[in] do_norm If true then perform normalization.
-	 *  @param[in] do_pad If true then perform zero-padding.
 	 *  @param[in] npad   Amount of zero-padding to use (defaults to 2 if do_pad is true).
 	 *
 	 *  @return [normalized,] [zero-padded,] [ft-extended] input image.
