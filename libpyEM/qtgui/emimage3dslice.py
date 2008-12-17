@@ -367,7 +367,7 @@ class EM3DSliceViewerModule(EMImage3DGUIModule):
 		#z = self.parent.get_start_z()
 		#glTranslate(-width/2.0,-height/2.0,-z-0.01)
 		#glScalef(width,height,1.0)
-		#self.draw_bc_screen()
+		self.draw_bc_screen()
 		#glPopMatrix()
 		
 		glStencilFunc(GL_ALWAYS,1,1)

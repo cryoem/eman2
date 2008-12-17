@@ -1572,7 +1572,7 @@ class E2BoxerOutputTask(E2BoxerTask):
 		Functionality used in several places
 		'''
 		boxer_project_db = db_open_dict("bdb:e2boxer.project")
-		pbox = ParamDef(name="boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=boxer_project_db.get("working_boxsize",dfl=128),choices=[])	
+		pbox = ParamDef(name="boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=boxer_project_db.get("output_boxsize",dfl=128),choices=[])	
 		pfo = ParamDef(name="force",vartype="boolean",desc_short="Force overwrite",desc_long="Whether or not to force overwrite files that already exist",property=None,defaultunits=False,choices=None)
 		pwc = ParamDef(name="write_coord_files",vartype="boolean",desc_short="Write box db files",desc_long="Whether or not box db files should be written",property=None,defaultunits=False,choices=None)
 		pwb = ParamDef(name="write_box_images",vartype="boolean",desc_short="Write box image files",desc_long="Whether or not box images should be written",property=None,defaultunits=True,choices=None)
@@ -1624,7 +1624,7 @@ class E2BoxerOutputTask(E2BoxerTask):
 	def write_db_entry(self,key,value):
 		if key == "boxsize":
 			boxer_project_db = db_open_dict("bdb:e2boxer.project")
-			boxer_project_db["working_boxsize"] = value
+			boxer_project_db["output_boxsize"] = value
 			db_close_dict("bdb:e2boxer.project")
 		else:
 			pass

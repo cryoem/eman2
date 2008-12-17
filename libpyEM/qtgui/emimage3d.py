@@ -71,7 +71,6 @@ class EMImage3DGeneralWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionVi
 		fmt.setSampleBuffers(True)
 		QtOpenGL.QGLWidget.__init__(self,fmt)
 		EMEventRerouter.__init__(self,em_3d_module)
-		print "inited"
 		EMGLProjectionViewMatrices.__init__(self)
 		
 		self.fov = 50 # field of view angle used by gluPerspective

@@ -1783,6 +1783,8 @@ class EMImage3DGUIModule(EMGUIModule):
 		self.help_window = None # eventually will become a Qt help widget of some kind
 		EMGUIModule.__init__(self,application,ensure_gl_context)
 	
+	
+		self.rank = 0 # rank is to do with shading and using the stencil buffer. Each object should have a unique rank... if it is using the OpenGL contrast enhancement stuff
 	def render(self): pass # should do the main drawing
 			
 	def get_type(self): pass #should return a unique string
@@ -1846,7 +1848,7 @@ class EMImage3DGUIModule(EMGUIModule):
 
 	def get_translate_scale(self):
 	
-		[rx,ry] = self.gl_parent.get_render_dims_at_depth(self.cam.cam_z)
+		[rx,ry] = self.gl_context_parent.get_render_dims_at_depth(self.cam.cam_z)
 		
 		#print "render area is %f %f " %(xx,yy)
 		xscale = rx/float(self.get_parent().width())
@@ -1897,7 +1899,35 @@ class EMImage3DGUIModule(EMGUIModule):
 		else: self.inspector.set_translate_scale(xscale,yscale,xscale)
 		
 	def draw_bc_screen(self):
+		'''
+		Assumes the gl_context_parent is an EMGLProjectionViewMatrices instance
+		'''
+		
+		vh = self.gl_context_parent.viewport_height()
+		vw = self.gl_context_parent.viewport_width()
+		glMatrixMode(GL_PROJECTION)
+		glPushMatrix()
+		glLoadIdentity()
+		glOrtho(0,vw,0,vh,-1,1)
+
+		glMatrixMode(GL_MODELVIEW)
+		glPushMatrix()
+		glLoadIdentity()
+		
+		glStencilFunc(GL_EQUAL,self.rank,self.rank)
+		glStencilOp(GL_KEEP,GL_KEEP,GL_KEEP)
+		
+		glScalef(vw,vh,1)
 		self.bcscreen.draw_bc_screen()
+		
+		glPopMatrix()
+		
+		glStencilFunc(GL_ALWAYS,1,1)
+		
+		glMatrixMode(GL_PROJECTION)
+		glPopMatrix()
+		
+		glMatrixMode(GL_MODELVIEW)
 
 	def set_GL_contrast(self,val):
 		self.bcscreen.set_GL_contrast(val)

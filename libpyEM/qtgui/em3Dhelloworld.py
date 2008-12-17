@@ -49,13 +49,16 @@ from PyQt4.QtCore import QTimer
 
 from time import *
 
-from emglobjects import EMImage3DGUIModule, Camera2
+from emglobjects import EMImage3DGUIModule, Camera2,get_default_gl_colors,EMViewportDepthTools2
 
 MAG_INCREMENT_FACTOR = 1.1
 
 class EM3DHelloWorld(EMImage3DGUIModule):
-	def __init__(self, parent=None):
-		EMImage3DGUIModule.__init__(self)
+	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
+		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
+	
+	def __init__(self, application,parent=None):
+		EMImage3DGUIModule.__init__(self,application)
 		self.parent = parent
 		
 		self.init()
@@ -69,13 +72,18 @@ class EM3DHelloWorld(EMImage3DGUIModule):
 		self.glbrightness = 0.0
 		self.rank = 1
 		self.inspector=None
-
+		self.colors = get_default_gl_colors()
+		self.currentcolor = "bluewhite"
+		
+		self.vdtools = EMViewportDepthTools2(self.gl_context_parent)
+		
+		self.gl_context_parent.cam.default_z = -1.25*50 # this is me hacking
+		self.gl_context_parent.cam.cam_z = -1.25*50 # this is me hacking
+	
+	
 	def get_type(self):
 		return "helloworld"
 	
-	def updateGL(self):
-		self.parent.updateGL()
-
 	def render(self):
 		#if (not isinstance(self.data,EMData)): return
 		lighting = glIsEnabled(GL_LIGHTING)
@@ -127,49 +135,20 @@ class EM3DHelloWorld(EMImage3DGUIModule):
 				d1 = d*(j**2)
 				d2 = d*((j+1)**2)
 				glNormal(j*d,0,1)
-				#glMaterial(GL_FRONT, GL_AMBIENT, self.colors[self.currentcolor]["ambient"])
-				#glMaterial(GL_FRONT, GL_DIFFUSE, self.colors[self.currentcolor]["diffuse"])
-				#glMaterial(GL_FRONT, GL_SPECULAR, self.colors[self.currentcolor]["specular"])
-				#glMaterial(GL_FRONT, GL_SHININESS, self.colors[self.currentcolor]["shininess"])
-				#glColor(self.colors[self.currentcolor]["ambient"])
 				glVertex(x1,y1,d1)
-				#self.currentcolor="turquoise"
-				#glMaterial(GL_FRONT, GL_AMBIENT, self.colors[self.currentcolor]["ambient"])
-				#glMaterial(GL_FRONT, GL_DIFFUSE, self.colors[self.currentcolor]["diffuse"])
-				#glMaterial(GL_FRONT, GL_SPECULAR, self.colors[self.currentcolor]["specular"])
-				#glMaterial(GL_FRONT, GL_SHININESS, self.colors[self.currentcolor]["shininess"])
 				glNormal((j+1)*d,.01,1)
 				glVertex(x2,y1,d2)
-				#self.currentcolor="obsidian"
-				#glMaterial(GL_FRONT, GL_AMBIENT, self.colors[self.currentcolor]["ambient"])
-				#glMaterial(GL_FRONT, GL_DIFFUSE, self.colors[self.currentcolor]["diffuse"])
-				#glMaterial(GL_FRONT, GL_SPECULAR, self.colors[self.currentcolor]["specular"])
-				#glMaterial(GL_FRONT, GL_SHININESS, self.colors[self.currentcolor]["shininess"])
 				glNormal((j+1)*d,.01,1)
 				glVertex(x2,y2,d2)
-				#self.currentcolor="obsidian"
-				#glMaterial(GL_FRONT, GL_AMBIENT, self.colors[self.currentcolor]["ambient"])
-				#glMaterial(GL_FRONT, GL_DIFFUSE, self.colors[self.currentcolor]["diffuse"])
-				#glMaterial(GL_FRONT, GL_SPECULAR, self.colors[self.currentcolor]["specular"])
-				#glMaterial(GL_FRONT, GL_SHININESS, self.colors[self.currentcolor]["shininess"])
 				glNormal(j*d,-.01,1)
 				glVertex(x1,y2,d1)
 			
 		glEnd()
 		glPopMatrix()
 		
-		glStencilFunc(GL_EQUAL,self.rank,self.rank)
-		glStencilOp(GL_KEEP,GL_KEEP,GL_KEEP)
-		glPushMatrix()
-		glLoadIdentity()
-		glScalef(10,10,1)
-		glTranslate(-0.5,-0.5,-1)
 		self.draw_bc_screen()
-		glPopMatrix()
-		
-		glStencilFunc(GL_ALWAYS,1,1)
 
-			
+
 		if ( lighting ): glEnable(GL_LIGHTING)
 		else: glDisable(GL_LIGHTING)
 		if ( cull ): glEnable(GL_CULL_FACE)
@@ -197,86 +176,19 @@ class EM3DHelloWorld(EMImage3DGUIModule):
 		
 		self.load_colors()
 		self.inspector.setColors(self.colors,self.currentcolor)
-	def load_colors(self):
-		ruby = {}
-		ruby["ambient"] = [0.1745, 0.01175, 0.01175,1.0]
-		ruby["diffuse"] = [0.61424, 0.04136, 0.04136,1.0]
-		ruby["specular"] = [0.927811, 0.826959, 0.826959,1.0]
-		ruby["shininess"] = 128.0
-		
-		emerald = {}
-		emerald["ambient"] = [0.0215, 0.1745, 0.0215,1.0]
-		emerald["diffuse"] = [0.07568, 0.61424,  0.07568,1.0]
-		emerald["specular"] = [0.833, 0.927811, 0.833,1.0]
-		emerald["shininess"] = 128.0
-		
-		pearl = {}
-		pearl["ambient"] = [0.25, 0.20725, 0.20725,1.0]
-		pearl["diffuse"] = [1.0, 0.829, 0.829,1.0]
-		pearl["specular"] = [0.296648, 0.296648, 0.296648,1.0]
-		pearl["shininess"] = 128.0
-		
-		silver = {}
-		silver["ambient"] = [0.25, 0.25, 0.25,1.0]
-		silver["diffuse"] = [0.4, 0.4, 0.4,1.0]
-		silver["specular"] = [0.974597, 0.974597, 0.974597,1.0]
-		silver["shininess"] = 128.0
-		
-		gold = {}
-		gold["ambient"] = [0.24725, 0.2245, 0.0645,1.0]
-		gold["diffuse"] = [0.34615, 0.3143, 0.0903,1.0]
-		gold["specular"] = [1.000, 0.9079885, 0.26086934,1.0]
-		gold["shininess"] = 128.0
-		
-		copper = {}
-		copper["ambient"] = [0.2295, 0.08825, 0.0275,1.0]
-		copper["diffuse"] = [0.5508, 0.2118, 0.066,1.0]
-		copper["specular"] = [0.9, 0.5, 0.2,1.0]
-		copper["shininess"] = 128.0
-		
-		obsidian = {}
-		obsidian["ambient"] = [0.05375,  0.05,     0.06625 ,1.0]
-		obsidian["diffuse"] = [0.18275,  0.17,     0.22525,1.0]
-		obsidian["specular"] = [0.66, 0.65, 0.69]
-		obsidian["shininess"] = 128.0
-		
-		turquoise = {}
-		turquoise["ambient"] = [0.1, 0.18725, 0.1745 ,1.0]
-		turquoise["diffuse"] = [0.396, 0.74151, 0.69102,1.0]
-		turquoise["specular"] = [0.297254, 0.30829, 0.306678]
-		turquoise["shininess"] = 128.0
-		
-		yellow = {}
-		yellow["ambient"] = [0.3, 0.3, 0.0,1]
-		yellow["diffuse"] = [0.5, 0.5, 0.0,1]
-		yellow["specular"] = [0.7, 0.7, 0.0,1]
-		yellow["shininess"] =  60
-		
-		self.colors = {}
-		self.colors["ruby"] = ruby
-		self.colors["emerald"] = emerald
-		self.colors["pearl"] = pearl
-		self.colors["silver"] = silver
-		self.colors["gold"] = gold
-		self.colors["copper"] = copper
-		self.colors["obsidian"] = obsidian
-		self.colors["turquoise"] = turquoise
-		self.colors["yellow"] = yellow
-		
-		self.currentcolor = "obsidian"
 	
 	def setColor(self,val):
 		#print val
 		self.currentcolor = str(val)
-		self.parent.updateGL()
+		self.updateGL()
 	
 	def toggle_wire(self,val):
 		self.wire = not self.wire
-		self.parent.updateGL()
+		self.updateGL()
 		
 	def toggle_light(self,val):
 		self.light = not self.light
-		self.parent.updateGL()
+		self.updateGL()
 	
 	def update_inspector(self,t3d):
 		if not self.inspector or self.inspector ==None:
@@ -288,13 +200,9 @@ class EM3DHelloWorld(EMImage3DGUIModule):
 		return self.inspector
 		
 	def mousePressEvent(self, event):
-#		lc=self.scrtoimg((event.x(),event.y()))
 		if event.button()==Qt.MidButton:
-			if not self.inspector or self.inspector ==None:
-				return
-			self.inspector.update_rotations(self.cam.t3d_stack[len(self.cam.t3d_stack)-1])
-			self.resizeEvent()
-			self.show_inspector(1)
+			self.get_inspector()
+			self.show_inspector()
 		else:
 			self.cam.mousePressEvent(event)
 		
@@ -313,108 +221,6 @@ class EM3DHelloWorld(EMImage3DGUIModule):
 		self.updateGL()
 		
 		
-class EM3DHelloWorldWidget(QtOpenGL.QGLWidget):
-	""" This class is not yet complete.
-	A QT widget for rendering 3D EMData objects.
-	"""
-	allim=WeakKeyDictionary()
-	def __init__(self, parent=None):
-		fmt=QtOpenGL.QGLFormat()
-		fmt.setDoubleBuffer(True)
-		fmt.setDepth(1)
-		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
-		
-
-		EM3DHelloWorldWidget.allim[self]=0
-		self.helloworld = EM3DHelloWorld(self)
-		self.timer = QTimer()
-		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
-
-		self.aspect=1.0
-		self.fov = 50 # field of view angle used by gluPerspective
-	def timeout(self):
-		self.updateGL()
-		
-	def initializeGL(self):
-		
-		glEnable(GL_NORMALIZE)
-		
-		glEnable(GL_LIGHTING)
-		glEnable(GL_LIGHT0)
-		glEnable(GL_DEPTH_TEST)
-		#print "Initializing"
-		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.9, 0.9, 0.9, 1.0])
-		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_POSITION, [0.5,0.7,11.,0.])
-
-		GL.glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
-		
-		GL.glClearColor(0,0,0,0)
-		
-		# For the time being
-		
-	def paintGL(self):
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-		
-		glMatrixMode(GL_MODELVIEW)
-		glLoadIdentity()
-		
-		
-		glPushMatrix()
-		self.helloworld.render()
-		glPopMatrix()
-
-	def resizeGL(self, width, height):
-		if width<=0 or height<=0 : 
-			print "bad size"
-			return
-		# just use the whole window for rendering
-		glViewport(0,0,self.width(),self.height())
-		
-		# maintain the aspect ratio of the window we have
-		self.aspect = float(self.width())/float(self.height())
-		
-		glMatrixMode(GL_PROJECTION)
-		glLoadIdentity()
-		# using gluPerspective for simplicity
-		gluPerspective(self.fov,self.aspect,1,5000)
-		
-		# switch back to model view mode
-		glMatrixMode(GL_MODELVIEW)
-		glLoadIdentity()
-		
-		self.helloworld.resizeEvent()
-
-	def setInit(self):
-		self.helloworld.setInit()
-
-	def show_inspector(self,force=0):
-		self.helloworld.show_inspector()
-	
-	def closeEvent(self,event) :
-		self.helloworld.closeEvent(event)
-		
-	def mousePressEvent(self, event):
-		self.helloworld.mousePressEvent(event)
-		self.updateGL()
-		
-	def mouseMoveEvent(self, event):
-		self.helloworld.mouseMoveEvent(event)
-	
-	def mouseReleaseEvent(self, event):
-		self.helloworld.mouseReleaseEvent(event)
-		
-	def wheelEvent(self, event):
-		self.helloworld.wheelEvent(event)
-
-	def get_render_dims_at_depth(self, depth):
-		# This function returns the width and height of the renderable 
-		# area at the origin of the data volume
-		height = -2*tan(self.fov/2.0*pi/180.0)*(depth)
-		width = self.aspect*height
-		
-		return [width,height]
 
 class EMHelloWorldInspector(QtGui.QWidget):
 	def __init__(self,target) :
@@ -723,10 +529,9 @@ class EMHelloWorldInspector(QtGui.QWidget):
 		
 # This is just for testing, of course
 if __name__ == '__main__':
-	app = QtGui.QApplication(sys.argv)
-	window = EM3DHelloWorldWidget()
-	window.setInit()
-	window2=EMParentWin(window)
-	window2.show()
+	from emapplication import EMStandAloneApplication
+	em_app = EMStandAloneApplication()
+	window = EM3DHelloWorld(application=em_app)
+	em_app.show()
+	em_app.execute()
 	
-	sys.exit(app.exec_())
