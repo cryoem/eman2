@@ -2306,11 +2306,11 @@ def recv_attr_dict_bdb(main_node, stack, data, list_params, image_start, image_e
 					imm = nvl[ISID]
 				for i in xrange(len(list_params)):
 					if(list_params[i] != "ID"):  DB.set_attr(imm, list_params[i], nvl[i])
-			else:
-				for n in xrange(image_start, image_end):
-					ID = data[n-image_start].get_attr_default('ID', n)
-					for param in list_params:
-						if(param != "ID"):  DB.set_attr(ID, param, data[n-image_start].get_attr(param))
+		else:
+			for n in xrange(image_start, image_end):
+				ID = data[n-image_start].get_attr_default('ID', n)
+				for param in list_params:
+					if(param != "ID"):  DB.set_attr(ID, param, data[n-image_start].get_attr(param))
 	DB.close()		
 
 def check_attr(ima, num, params, default_value, action="Warning"):
