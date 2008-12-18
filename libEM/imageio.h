@@ -338,7 +338,9 @@ namespace EMAN
 		 * @param[in] nx x dimension size
 		 * @param[in] ny y dimension size
 		 * @param[out] rendermin the minmal value for normalization
-		 * @param[out] rendermax the maximum value for normalization*/
+		 * @param[out] rendermax the maximum value for normalization
+		 * @param[in] nz z dimension size
+		 * */
 		void getRenderMinMax(float * data, const int nx, const int ny, float& rendermin, float& rendermax, const int nz = 1);
 	};
 

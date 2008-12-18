@@ -2670,7 +2670,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		protected:
 			/** Boolean shrink an image, returning the processed image
 			* @param image the image to operate on
-			* @param LogicOp a logical operator class
+			* @param params parameter dictionary
 			* @exception ImageFormatException if the image is complex
 			* @exception NullPointerException if the image pointer is null
 			* @return the image that results from the operation
@@ -2680,7 +2680,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			
 			/** Boolean shrink an image inplace
 			 * @param image the image to operate on
-			 * @param LogicOp a logical operator class
+			 * @param params parameter dictionary
 			 * @exception ImageFormatException if the image is complex
 			 * @exception NullPointerException if the image pointer is null
 			 */
@@ -2921,7 +2921,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		* process inplace
 		* @param to the smaller image that will store the calculated median values
 		* @param from the larger image that will be used to calculate the median values
-		* @param shrinkfactor the shrink amount
+		* @param shrink_factor the shrink amount
 			*/
 		void accrue_median(EMData* to, const EMData* const from,const int shrink_factor);
 	};

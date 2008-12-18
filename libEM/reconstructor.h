@@ -444,7 +444,7 @@ namespace EMAN
 		 * this Fourier tranforms the slice and make sure all the pixels are in the right position
 	  	 * @return the processed slice
 	  	 * @param slice the slice to be prepocessed
-	  	 * @param transform
+	  	 * @param t transform
 	  	 * @exception InvalidValueException when the specified padding value is less than the size of the images
 		 */
 		EMData* preprocess_slice( const EMData* const slice, const Transform& t = Transform() );

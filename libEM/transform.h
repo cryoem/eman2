@@ -78,7 +78,7 @@ namespace EMAN
 			Transform& operator=(const Transform& that);
 			
 			/** Construction using a dictionary
-			 * @param dict the dictionary containing the parameters
+			 * @param d the dictionary containing the parameters
 			 */
 			Transform(const Dict& d);
 			
@@ -116,7 +116,7 @@ namespace EMAN
 			/** Set the parameters of the entire transform.
 			 * keys acted upon are "type" - if this exists then the correct euler angles need to be included -
 			 * also "tx","ty","tz", "scale", and "mirror"
-			 *  @param dict the dictionary containing the parameters
+			 * @param d the dictionary containing the parameters
 			 */
 			void set_params(const Dict& d);
 			
@@ -124,7 +124,7 @@ namespace EMAN
 
 			 * in other words, calling set_params_inverse(get_params_inverse()) should essentially leave
 			 * the object unchanged.
-			 *  @param dict the dictionary containing the inverse parameters
+			 *  @param d the dictionary containing the inverse parameters
 			 */
 			void set_params_inverse(const Dict& d);
 			
@@ -322,6 +322,7 @@ namespace EMAN
 			/** Transform 3D coordinates using the internal transformation matrix
 			 * @param x the x coordinate of the transformed point
 			 * @param y the y coordinate of the transformed point
+			 * @param z the z coordinate of the transformed point
 			 * @return the transformed vector
 			 */
 			inline Vec3f transform(const float& x, const float& y, const float& z) const {

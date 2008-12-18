@@ -128,7 +128,7 @@ class EMFTGL
 		vector<float> bounding_box(const string& message);
 		
 		/** Set the font file name - should be a .ttf file
-		 * @param the font file name - should be a .ttf file
+		 * @param file_name the font file name - should be a .ttf file
 		 */
 		void set_font_file_name(const string& file_name) { font_file_name = file_name; }
 		

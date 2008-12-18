@@ -266,7 +266,7 @@ namespace EMAN
 		* To start the process of generate triangles call with draw_cube(0,0,0,minvals.size()-1)
 		* Once cur_level becomes drawing_level marching_cube is called
 		* @param x the current x value, relative to cur_level
-		* @param x the current y value, relative to cur_level
+		* @param y the current y value, relative to cur_level
 		* @param z the current z value, relative to cur_level
 		* @param cur_level the current tree traversal level
 		* 
@@ -279,6 +279,7 @@ namespace EMAN
 		* @param fX the current x coordinate, relative to cur_level
 		* @param fY the current y coordinate, relative to cur_level
 		* @param fZ the current z coordinate, relative to cur_level
+		* @param cur_level
 		*/
 		void marching_cube(int fX, int fY, int fZ, const int cur_level);
 		

@@ -673,7 +673,6 @@ namespace EMAN
 		 * Works in 1,2 and 3D
 		 *
 		 * @param mask the image that will be used to define the neighborhood for determine the local standard deviation
-		 * @param normalize whether the mask image should be normalized so that the sum of its pixels is one
 		 * @return the sigma image, the phase origin is at the corner (not the center)
 		 * @exception ImageDimensionException if the dimensions of with do not match those of this
 		 * @exception ImageDimensionException if any of the dimensions sizes of with exceed of this image's.
@@ -750,7 +749,7 @@ namespace EMAN
 		 * the nearest neighbor.
 		 *
 		 * @param map  The real 3D map.
-		 * @param orientation Orientation of the slice.
+		 * @param tr Orientation of the slice.
 		 * @exception NullPointerException If map is NULL.
 		 * @exception ImageDimensionException If this image is not 2D.
 		 * @exception ImageDimensionException If map image is not 3D.

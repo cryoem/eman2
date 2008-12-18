@@ -602,7 +602,6 @@ namespace EMAN
 		/** Set new values to this vector object.
 		 * @param x Value of the first item.
 		 * @param y Value of the second item.
-		 * @param z Value of the third item.
 		 */
 		void set_value(const Type& x, const Type& y)
 		{
