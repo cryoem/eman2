@@ -82,7 +82,7 @@ namespace EMAN
 		 * @param x the x coordinate of the candidate pixel maximum 
 		 * @param y the y coordinate of the candidate pixel maximum 
 		 * @param radius the constraining radius of the local neighborhood
-		 * @param exclusion an EMData object with the same dimensions as the main image. If a local maximum is found, the pixels in the radial neighborhood that was queried are set to 0. This can be exploited by the calling function to minimize queries. 
+		 * @param exclusion_map an EMData object with the same dimensions as the main image. If a local maximum is found, the pixels in the radial neighborhood that was queried are set to 0. This can be exploited by the calling function to minimize queries. 
 		 * @author David Woolford
 		 * @date April 2008
 		 */
