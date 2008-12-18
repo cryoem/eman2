@@ -40,9 +40,8 @@ import sys
 def main():
 	
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " projection plot_output --mirror"
+	usage = progname + " projection plot_output"
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--mirror",     action="store_true", default=False,     help="Angles with theta >90 is mirror to map only on the top hemisphere (default False)")
 	
 	(options, args) = parser.parse_args()
     	if len(args) != 2:
@@ -51,7 +50,7 @@ def main():
 	else:
 		from applications import plot_projs_distrib
 		global_def.BATCH = True
-		plot_projs_distrib(args[0], args[1], options.mirror)
+		plot_projs_distrib(args[0], args[1])
 		global_def.BATCH = False
 
 if __name__ == "__main__":

@@ -74,7 +74,7 @@ def main():
 			sys.stderr.write('ERROR: nb_part must be > 1 partition\n\n')
 			sys.exit()
 
-		from  development  import  k_means_stab
+		from  applications  import  k_means_stab
 		global_def.BATCH = True
 		k_means_stab(args[0], args[1], mask, options.opt_method, options.K, options.nb_part, options.CTF, options.F, options.max_run, options.th_nobj, options.th_stab, options.min_dec_K, options.restart, options.MPI, options.backup)
 		global_def.BATCH = False

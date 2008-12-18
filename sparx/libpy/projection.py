@@ -258,6 +258,10 @@ def plot_angles(agls):
 	# for each angles plot on circle area
 	# agsl: [phi, theta, phi]
 	for i in xrange(len(agls)):
+		if agls[i][1] > 90:
+			agls[i][0] = (float(agls[i][0]) + 180) % 360
+			agls[i][1] = 180 - float(agls[i][1])
+		
 		rc  = sin((agls[i][1] / 180.0) * pi)
 		rc *= ((nx - 1) / 2)
 	
@@ -272,9 +276,9 @@ def plot_angles(agls):
 		if py < 0:  py = 0
 		py = int(py)
 
-		if agls[i][1] > 90: style = 2
-		else:               style = 1
-		
+		#if agls[i][1] > 90: style = 2
+		#else:               style = 1
+		style = 1
 	
 		for cx in xrange(px - c, px + c + 1, style):
 			if cx > nx - 1: cx = nx - 1

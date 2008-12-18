@@ -1327,7 +1327,7 @@ def im_diff(im1, im2, mask = None):
 ### K-MEANS ##################################################################################
 
 # k-means open and prepare images
-def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF):
+def k_means_open_im_(stack, maskname, N_start, N_stop, N, CTF):
 	from utilities     import get_params2D, get_image
 	from fundamentals  import rot_shift2D, rot_shift3D
 	
@@ -1385,6 +1385,80 @@ def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF):
 		# fft
 		if CTF: fftip(image)
 
+		# mem the original size
+		if i == N_start:
+			image.set_attr('or_nx', nx)
+			image.set_attr('or_ny', ny)
+			image.set_attr('or_nz', nz)
+
+		# store image
+		im_M[i] = image.copy()
+		ct += 1
+
+	if CTF: return im_M, mask, ctf, ctf2
+	else:   return im_M, mask, None, None
+
+# k-means open and prepare images
+def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, listID = None):
+	from utilities     import get_params2D, get_image
+	from fundamentals  import rot_shift2D, rot_shift3D
+	
+	if CTF:
+		from morphology		import ctf_2, ctf_1d
+		from filter		import filt_ctf, filt_table
+		from fundamentals 	import fftip
+		from utilities          import get_arb_params
+
+	im_M = [0] * N
+	im   = EMData()
+	im.read_image(stack, N_start, True)
+	nx = im.get_xsize()
+	ny = im.get_ysize()
+	nz = im.get_zsize()
+	
+	if CTF:
+		ctf	    = [[] for i in xrange(N)]
+		ctf2        = [[] for i in xrange(N)]
+		ctf_params  = im.get_attr( "ctf" )
+		if im.get_attr("ctf_applied")>0.0: ERROR('K-means cannot be performed on CTF-applied images', 'k_means', 1)
+
+	if maskname != None:
+		if isinstance(maskname, basestring):
+			mask = get_image(maskname)
+	else:
+		mask = None
+
+	if listID is None: listim = range(N_start, N_stop)
+	else:              listim = listID[N_start:N_stop]
+	DATA = im.read_images(stack, listim)
+	ct   = 0
+	for i in xrange(N_start, N_stop):
+		image = DATA[ct].copy()
+		# 3D object
+		if nz > 1:
+			try:	phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(image)
+			except:	phi, theta, psi, s3x, s3y, s3z, mirror, scale = 0, 0, 0, 0, 0, 0, 0, 0
+			image  = rot_shift3D(image, phi, theta, psi, s3x, s3y, s3z)
+			if mirror: image.process_inplace('mirror', {'axis':'x'})
+		# 2D object
+		elif ny > 1:
+			try:	alpha, sx, sy, mirror, scale = get_params2D(image)
+			except: alpha, sx, sy, mirror, scale  = 0, 0, 0, 0, 0
+			image = rot_shift2D(image, alpha, sx, sy, mirror)
+		# obtain ctf
+		if CTF:
+			ctf_params = image.get_attr( "ctf" )
+			ctf[i]  = ctf_1d(nx, ctf_params)
+			ctf2[i] = ctf_2(nx, ctf_params)
+
+		# apply mask
+		if mask != None:
+			if CTF: Util.mul_img(image, mask)
+			else: image = Util.compress_image_mask(image, mask)
+
+		# fft
+		if CTF: fftip(image)
+ 
 		# mem the original size
 		if i == N_start:
 			image.set_attr('or_nx', nx)
@@ -3503,6 +3577,10 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 	if myid == main_node: return Cls, assign
 	else:                 return None, None
 
+
+## K-MEANS GROUPS ######################################################################
+
+
 # to figure out the number of clusters
 def k_means_groups_serial(stack, out_file, maskname, opt_method, K1, K2, rand_seed, maxit, trials, crit_name, CTF, F, T0, DEBUG=False):
 	from utilities   import print_begin_msg, print_end_msg, print_msg, running_time
@@ -3843,6 +3921,1081 @@ def k_means_groups_MPI(stack, out_file, maskname, opt_method, K1, K2, rand_seed,
 
 	if myid == main_node: return Crit, KK
 	else:                 return None, None
+
+
+## K-MEANS STABILITY ######################################################################
+# 2008-12-18 11:35:11 
+
+# K-means SA define the first temperature T0
+def k_means_SA_T0(im_M, mask, K, rand_seed, CTF, F):
+	from utilities 		import model_blank, print_msg
+	from alignment          import select_k
+	from random    		import seed, randint
+	import sys
+	import time
+	if CTF[0]:
+		from filter	        import filt_ctf, filt_table
+		from fundamentals 	import fftip
+
+		ctf  = deepcopy(CTF[1])
+		ctf2 = deepcopy(CTF[2])
+		CTF  = True
+	else:
+		CTF  = False
+
+	from math   import exp
+	from random import random
+
+	if mask != None:
+		if isinstance(mask, basestring):
+			ERROR('Mask must be an image, not a file name!', 'k-means', 1)
+
+	N = len(im_M)
+
+	t_start = time.time()
+		
+	# Informations about images
+	if CTF:
+		nx  = im_M[0].get_attr('or_nx')
+		ny  = im_M[0].get_attr('or_ny')
+		nz  = im_M[0].get_attr('or_nz')
+		buf = model_blank(nx, ny, nz)
+		fftip(buf)		
+		nx   = im_M[0].get_xsize()
+		ny   = im_M[0].get_ysize()
+		nz   = im_M[0].get_zsize()
+		norm = nx * ny * nz
+	else:
+		nx   = im_M[0].get_xsize()
+		ny   = im_M[0].get_ysize()
+		nz   = im_M[0].get_zsize()
+		norm = nx * ny * nz
+		buf  = model_blank(nx, ny, nz)
+
+	# Variables			
+	if rand_seed > 0:  seed(rand_seed)
+	else:              seed()
+	Cls        = {}
+	Cls['n']   = [0]*K   # number of objects in a given cluster
+	Cls['ave'] = [0]*K   # value of cluster average
+	Cls['var'] = [0]*K   # value of cluster variance
+	Cls['Ji']  = [0]*K   # value of Ji
+	Cls['k']   =  K	     # value of number of clusters
+	Cls['N']   =  N
+	assign     = [0]*N 
+	
+	if CTF:
+		Cls_ctf2    = {}
+		len_ctm	    = len(ctf2[0])
+			
+	# Init the cluster by an image empty
+	buf.to_zero()
+	for k in xrange(K):
+		Cls['ave'][k] = buf.copy()
+		Cls['var'][k] = buf.copy()
+		Cls['n'][k]   = 0
+		Cls['Ji'][k]  = 0
+
+	## Random method
+	retrial = 20
+	while retrial > 0:
+		retrial -= 1
+		i = 0
+		for im in xrange(N):
+			assign[im] = randint(0, K-1)
+			Cls['n'][assign[im]] += 1
+
+		flag, k = 1, K
+		while k>0 and flag:
+			k -= 1
+			if Cls['n'][k] <= 1:
+				flag = 0
+				if retrial == 0: sys.exit()
+				for k in xrange(K):
+					Cls['n'][k] = 0
+
+		if flag == 1:	retrial = 0
+
+	## Calculate averages, if CTF: ave = S CTF.F / S CTF**2
+	if CTF:
+		# first init ctf2
+		for k in xrange(K):	Cls_ctf2[k] = [0] * len_ctm
+
+		for im in xrange(N):
+			# compute ctf2				
+			for i in xrange(len_ctm):	Cls_ctf2[assign[im]][i] += ctf2[im][i]
+
+			# compute average first step
+			CTFxF = filt_table(im_M[im], ctf[im])
+			Util.add_img(Cls['ave'][assign[im]], CTFxF)
+
+		for k in xrange(K):
+			for i in xrange(len_ctm):	Cls_ctf2[k][i] = 1.0 / float(Cls_ctf2[k][i])
+			Cls['ave'][k] = filt_table(Cls['ave'][k], Cls_ctf2[k])
+
+		# compute Ji and Je
+		for n in xrange(N):
+			CTFxAve               = filt_table(Cls['ave'][assign[n]], ctf[n])
+			Cls['Ji'][assign[n]] += CTFxAve.cmp("SqEuclidean", im_M[n]) / norm
+		Je = 0
+		for k in xrange(K):        Je = Cls['Ji'][k]
+
+	else:
+		# compute average
+		for im in xrange(N):	Util.add_img(Cls['ave'][assign[im]], im_M[im])
+		for k in xrange(K):	Cls['ave'][k] = Util.mult_scalar(Cls['ave'][k], 1.0 / float(Cls['n'][k]))
+
+		# compute Ji and Je
+		Je = 0
+		for n in xrange(N):	Cls['Ji'][assign[n]] += im_M[n].cmp("SqEuclidean",Cls['ave'][assign[n]])/norm
+		for k in xrange(K):	Je += Cls['Ji'][k]	
+
+	## Clustering		
+	th = int(float(N)*0.8)
+	T0 = -1
+	lT = []
+	Tm = 40
+	for i in xrange(1, 10): lT.append(i/10.)
+	lT.extend(range(1, 5))
+	lT.extend(range(5, Tm, 2))
+	for T in lT:
+		ct_pert = 0
+		for rep in xrange(2):
+			for im in xrange(N):
+				if CTF:
+					CTFxAVE = []
+					for k in xrange(K): CTFxAVE.append(filt_table(Cls['ave'][k], ctf[im]))
+					res = Util.min_dist_four(im_M[im], CTFxAVE)
+				else:
+					res = Util.min_dist_real(im_M[im], Cls['ave'])
+		
+				# Simulate annealing
+				dJe = [0.0] * K
+				ni  = float(Cls['n'][assign[im]])
+				di  = res['dist'][assign[im]]											
+				for k in xrange(K):
+					if k != assign[im]:
+						nj  = float(Cls['n'][k])
+						dj  = res['dist'][k]
+						dJe[k] = (ni/(ni-1))*(di/norm) - (nj/(nj+1))*(dj/norm)
+					else:
+						dJe[k] = 0
+
+				# normalize and select
+				mindJe = min(dJe)
+				scale  = max(dJe) - mindJe
+				for k in xrange(K): dJe[k] = (dJe[k] - mindJe) / scale
+				select = select_k(dJe, T)
+
+				if select != res['pos']:
+					ct_pert    += 1
+					res['pos']  = select
+
+		ct_pert /= 2.0
+
+		# select the first temperature if > th
+		if ct_pert > th:
+			T0 = T
+			break
+
+	# if not found, set to the max value
+	if T0 == -1: T0 = Tm
+	
+	# return Cls, assign
+	return T0, ct_pert
+
+# K-means SA define the first temperature T0 (MPI version)
+def k_means_SA_T0_MPI(im_M, mask, K, rand_seed, CTF, F, myid, main_node, N_start, N_stop):
+	from utilities 		import model_blank, print_msg, bcast_EMData_to_all, reduce_EMData_to_root
+	from random    		import seed, randint
+	from alignment          import select_k
+	from mpi                import mpi_reduce, mpi_bcast, mpi_barrier, mpi_recv, mpi_send
+	from mpi                import MPI_SUM, MPI_FLOAT, MPI_INT, MPI_LOR, MPI_COMM_WORLD
+	import sys
+	import time
+	if CTF[0]:
+		from filter	        import filt_ctf, filt_table
+		from fundamentals 	import fftip
+
+		ctf  = deepcopy(CTF[1])
+		ctf2 = deepcopy(CTF[2])
+		CTF  = True
+	else:
+		CTF  = False
+
+	from math   import exp
+	from random import random
+
+	if mask != None:
+		if isinstance(mask, basestring):
+			ERROR('Mask must be an image, not a file name!', 'k-means', 1)
+
+	N = len(im_M)
+
+	t_start = time.time()
+		
+	# Informations about images
+	if CTF:
+		nx  = im_M[N_start].get_attr('or_nx')
+		ny  = im_M[N_start].get_attr('or_ny')
+		nz  = im_M[N_start].get_attr('or_nz')
+		buf = model_blank(nx, ny, nz)
+		fftip(buf)		
+		nx   = im_M[N_start].get_xsize()
+		ny   = im_M[N_start].get_ysize()
+		nz   = im_M[N_start].get_zsize()
+		norm = nx * ny * nz
+	else:
+		nx   = im_M[N_start].get_xsize()
+		ny   = im_M[N_start].get_ysize()
+		nz   = im_M[N_start].get_zsize()
+		norm = nx * ny * nz
+		buf  = model_blank(nx, ny, nz)
+
+	# Variables			
+	if rand_seed > 0:  seed(rand_seed)
+	else:              seed()
+	Cls        = {}
+	Cls['n']   = [0]*K   # number of objects in a given cluster
+	Cls['ave'] = [0]*K   # value of cluster average
+	Cls['var'] = [0]*K   # value of cluster variance
+	Cls['Ji']  = [0]*K   # value of Ji
+	Cls['k']   =  K	     # value of number of clusters
+	Cls['N']   =  N
+	assign     = [0]*N 
+	
+	if CTF:
+		Cls_ctf2    = {}
+		len_ctm	    = len(ctf2[0])
+			
+	# Init the cluster by an image empty
+	buf.to_zero()
+	for k in xrange(K):
+		Cls['ave'][k] = buf.copy()
+		Cls['var'][k] = buf.copy()
+		Cls['n'][k]   = 0
+		Cls['Ji'][k]  = 0
+
+	## [main] Random method
+	FLAG_EXIT = 0
+	if myid == main_node:
+		retrial = 20
+		while retrial > 0:
+			retrial -= 1
+			i = 0
+			for im in xrange(N):
+				assign[im] = randint(0, K-1)
+				Cls['n'][assign[im]] += 1
+
+			flag, k = 1, K
+			while k>0 and flag:
+				k -= 1
+				if Cls['n'][k] <= 1:
+					flag = 0
+					if retrial == 0: FLAG_EXIT = 1
+					for k in xrange(K):
+						Cls['n'][k] = 0
+
+			if flag == 1:	retrial = 0
+
+	# if need all node quit
+	mpi_barrier(MPI_COMM_WORLD)
+	FLAG_EXIT = mpi_reduce(FLAG_EXIT, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
+	FLAG_EXIT = mpi_bcast(FLAG_EXIT, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+	FLAG_EXIT = FLAG_EXIT.tolist()[0]
+	mpi_barrier(MPI_COMM_WORLD)
+	if FLAG_EXIT: sys.exit()
+
+	# [sync] waiting assignment
+	assign = mpi_bcast(assign, N, MPI_INT, main_node, MPI_COMM_WORLD)
+	assign = assign.tolist()     # convert array gave by MPI to list
+	Cls['n'] = mpi_bcast(Cls['n'], K, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+	Cls['n'] = Cls['n'].tolist() # convert array gave by MPI to list
+
+	## Calculate averages, if CTF: ave = S CTF.F / S CTF**2
+	if CTF:
+		# first init ctf2
+		for k in xrange(K):	Cls_ctf2[k] = [0] * len_ctm
+
+		for im in xrange(N_start, N_stop):
+			# compute ctf2				
+			for i in xrange(len_ctm):	Cls_ctf2[assign[im]][i] += ctf2[im][i]
+
+			# compute average first step
+			CTFxF = filt_table(im_M[im], ctf[im])
+			Util.add_img(Cls['ave'][assign[im]], CTFxF)
+
+		# sync
+		mpi_barrier(MPI_COMM_WORLD)
+
+		for k in xrange(K):
+			Cls_ctf2[k] = mpi_reduce(Cls_ctf2[k], len_ctm, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
+			Cls_ctf2[k] = mpi_bcast(Cls_ctf2[k],  len_ctm, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+			Cls_ctf2[k] = Cls_ctf2[k].tolist()    # convert array gave by MPI to list
+
+			reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
+			bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
+
+			for i in xrange(len_ctm):	Cls_ctf2[k][i] = 1.0 / float(Cls_ctf2[k][i])
+			Cls['ave'][k] = filt_table(Cls['ave'][k], Cls_ctf2[k])
+	else:
+		# [id] Calculates averages, first calculate local sum
+		for im in xrange(N_start, N_stop):	Util.add_img(Cls['ave'][int(assign[im])], im_M[im])
+
+		# [sync] waiting the result
+		mpi_barrier(MPI_COMM_WORLD)
+
+		# [all] compute global sum, broadcast the results and obtain the average
+		for k in xrange(K):
+			reduce_EMData_to_root(Cls['ave'][k], myid, main_node) 
+			bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
+			Cls['ave'][k] = Util.mult_scalar(Cls['ave'][k], 1.0/float(Cls['n'][k]))
+
+	## Clustering		
+	th = int(float(N)*0.8)
+	T0 = -1
+	lT = []
+	Tm = 40
+	for i in xrange(1, 10): lT.append(i/10.)
+	lT.extend(range(1, 5))
+	lT.extend(range(5, Tm, 2))
+	for T in lT:
+		ct_pert = 0
+		for rep in xrange(2):
+			for im in xrange(N_start, N_stop):
+				if CTF:
+					CTFxAVE = []
+					for k in xrange(K): CTFxAVE.append(filt_table(Cls['ave'][k], ctf[im]))
+					res = Util.min_dist_four(im_M[im], CTFxAVE)
+				else:
+					res = Util.min_dist_real(im_M[im], Cls['ave'])
+
+				# Simulate annealing
+				dJe = [0.0] * K
+				ni  = float(Cls['n'][assign[im]])
+				di  = res['dist'][assign[im]]											
+				for k in xrange(K):
+					if k != assign[im]:
+						nj  = float(Cls['n'][k])
+						dj  = res['dist'][k]
+						dJe[k] = (ni/(ni-1))*(di/norm) - (nj/(nj+1))*(dj/norm)
+					else:
+						dJe[k] = 0
+
+				# normalize and select
+				mindJe = min(dJe)
+				scale  = max(dJe) - mindJe
+				for k in xrange(K): dJe[k] = (dJe[k] - mindJe) / scale
+				select = select_k(dJe, T)
+
+				if select != res['pos']:
+					ct_pert    += 1
+					res['pos']  = select
+
+		# sync
+		mpi_barrier(MPI_COMM_WORLD)
+		ct_pert = mpi_reduce(ct_pert, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
+		ct_pert = mpi_bcast(ct_pert, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+		ct_pert = ct_pert.tolist()[0]
+		ct_pert /= 2.0
+
+		# select the first temperature if > th
+		if ct_pert > th:
+			T0 = T
+			break
+
+	# sync
+	mpi_barrier(MPI_COMM_WORLD)
+
+	# if not found, set to the max value
+	if T0 == -1: T0 = Tm
+	
+	return T0, ct_pert
+
+'''
+-- Munkres algorithm (or Hungarian algorithm) ----------------------------------
+
+Copyright and License
+=====================
+
+Copyright (c) 2008 Brian M. Clapper
+
+This is free software, released under the following BSD-like license:
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+  1. Redistributions of source code must retain the above copyright notice,
+     this list of conditions and the following disclaimer.
+
+  2. The end-user documentation included with the redistribution, if any,
+     must include the following acknowlegement:
+
+     This product includes software developed by Brian M. Clapper
+     (bmc@clapper.org, http://www.clapper.org/bmc/). That software is
+     copyright (c) 2008 Brian M. Clapper.
+
+     Alternately, this acknowlegement may appear in the software itself, if
+     and wherever such third-party acknowlegements normally appear.
+
+THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
+WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+EVENT SHALL BRIAN M. CLAPPER BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
+
+
+'''
+import sys
+class Munkres:
+    """
+Calculate the Munkres solution to the classical assignment problem.
+See the module documentation for usage.
+    """   
+    def __init__(self):
+        """Create a new instance"""
+        self.C = None
+        self.row_covered = []
+        self.col_covered = []
+        self.n = 0
+        self.Z0_r = 0
+        self.Z0_c = 0
+        self.marked = None
+        self.path = None
+
+    def make_cost_matrix(profit_matrix, inversion_function):
+        """
+        Create a cost matrix from a profit matrix by calling
+        'inversion_function' to invert each value. The inversion
+        function must take one numeric argument (of any type) and return
+        another numeric argument which is presumed to be the cost inverse
+        of the original profit.
+
+        This is a static method. Call it like this:
+
+        cost_matrix = Munkres.make_cost_matrix(matrix, inversion_func)
+
+        For example:
+
+        cost_matrix = Munkres.make_cost_matrix(matrix, lambda x : sys.maxint - x)
+        """
+        cost_matrix = []
+        for row in profit_matrix:
+            cost_row = []
+            for value in row:
+                cost_row += [inversion_function(value)]
+            cost_matrix += [cost_row]
+        return cost_matrix
+
+    make_cost_matrix = staticmethod(make_cost_matrix)
+
+    def compute(self, cost_matrix):
+        """
+        Compute the indexes for the lowest-cost pairings between rows and
+        columns in the database. Returns a list of (row, column) tuples
+        that can be used to traverse the matrix.
+
+        The matrix must be square.
+        """
+        self.C = self.__copy_matrix(cost_matrix)
+        self.n = len(cost_matrix)
+        self.row_covered = [False for i in range(self.n)]
+        self.col_covered = [False for i in range(self.n)]
+        self.Z0_r = 0
+        self.Z0_c = 0
+        self.path = self.__make_matrix(self.n * 2, 0)
+        self.marked = self.__make_matrix(self.n, 0)
+
+        done = False
+        step = 1
+
+        steps = { 1 : self.__step1,
+                  2 : self.__step2,
+                  3 : self.__step3,
+                  4 : self.__step4,
+                  5 : self.__step5,
+                  6 : self.__step6 }
+
+        while not done:
+            try:
+                func = steps[step]
+                #print 'calling ' + str(func)
+                step = func()
+            except KeyError:
+                done = True
+
+        # Look for the starred columns
+        results = []
+        for i in range(self.n):
+            for j in range(self.n):
+                if self.marked[i][j] == 1:
+                    results += [(i, j)]
+        assert(len(results) == self.n)
+
+        return results
+
+    def __copy_matrix(self, matrix):
+        """Return an exact copy of the supplied matrix"""
+        copy = []
+        for row in matrix:
+            new_row = []
+            for item in row:
+                new_row += [item]
+            copy += [new_row]
+        return copy
+
+    def __make_matrix(self, n, val):
+        """Create an NxN matrix, populating it with the specific value."""
+        matrix = []
+        for i in range(n):
+            matrix += [[val for j in range(n)]]
+        return matrix
+
+    def __step1(self):
+        """
+        For each row of the matrix, find the smallest element and
+        subtract it from every element in its row. Go to Step 2.
+        """
+        C = self.C
+        n = self.n
+        for i in range(n):
+            minval = self.C[i][0]
+            # Find the minimum value for this row
+            for j in range(n):
+                if minval > self.C[i][j]:
+                    minval = self.C[i][j]
+
+            # Subtract that minimum from every element in the row.
+            for j in range(n):
+                self.C[i][j] -= minval
+
+        return 2
+
+    def __step2(self):
+        """
+        Find a zero (Z) in the resulting matrix. If there is no starred
+        zero in its row or column, star Z. Repeat for each element in the
+        matrix. Go to Step 3.
+        """
+        n = self.n
+        for i in range(n):
+            for j in range(n):
+                if (self.C[i][j] == 0) and \
+                   (not self.col_covered[j]) and \
+                   (not self.row_covered[i]):
+                    self.marked[i][j] = 1
+                    self.col_covered[j] = True
+                    self.row_covered[i] = True
+
+        self.__clear_covers()
+        return 3
+
+    def __step3(self):
+        """
+        Cover each column containing a starred zero. If K columns are
+        covered, the starred zeros describe a complete set of unique
+        assignments. In this case, Go to DONE, otherwise, Go to Step 4.
+        """
+        n = self.n
+        count = 0
+        for i in range(n):
+            for j in range(n):
+                if self.marked[i][j] == 1:
+                    self.col_covered[j] = True
+                    count += 1
+
+        if count >= n:
+            step = 7 # done
+        else:
+            step = 4
+
+        return step
+
+    def __step4(self):
+        """
+        Find a noncovered zero and prime it. If there is no starred zero
+        in the row containing this primed zero, Go to Step 5. Otherwise,
+        cover this row and uncover the column containing the starred
+        zero. Continue in this manner until there are no uncovered zeros
+        left. Save the smallest uncovered value and Go to Step 6.
+        """
+        step = 0
+        done = False
+        row = -1
+        col = -1
+        star_col = -1
+        while not done:
+            (row, col) = self.__find_a_zero()
+            if row < 0:
+                done = True
+                step = 6
+            else:
+                self.marked[row][col] = 2
+                star_col = self.__find_star_in_row(row)
+                if star_col >= 0:
+                    col = star_col
+                    self.row_covered[row] = True
+                    self.col_covered[col] = False
+                else:
+                    done = True
+                    self.Z0_r = row
+                    self.Z0_c = col
+                    step = 5
+
+        return step
+
+    def __step5(self):
+        """
+        Construct a series of alternating primed and starred zeros as
+        follows. Let Z0 represent the uncovered primed zero found in Step 4.
+        Let Z1 denote the starred zero in the column of Z0 (if any).
+        Let Z2 denote the primed zero in the row of Z1 (there will always
+        be one). Continue until the series terminates at a primed zero
+        that has no starred zero in its column. Unstar each starred zero
+        of the series, star each primed zero of the series, erase all
+        primes and uncover every line in the matrix. Return to Step 3
+        """
+        count = 0
+        path = self.path
+        path[count][0] = self.Z0_r
+        path[count][1] = self.Z0_c
+        done = False
+        while not done:
+            row = self.__find_star_in_col(path[count][1])
+            if row >= 0:
+                count += 1
+                path[count][0] = row
+                path[count][1] = path[count-1][1]
+            else:
+                done = True
+
+            if not done:
+                col = self.__find_prime_in_row(path[count][0])
+                count += 1
+                path[count][0] = path[count-1][0]
+                path[count][1] = col
+
+        self.__convert_path(path, count)
+        self.__clear_covers()
+        self.__erase_primes()
+        return 3
+
+    def __step6(self):
+        """
+        Add the value found in Step 4 to every element of each covered
+        row, and subtract it from every element of each uncovered column.
+        Return to Step 4 without altering any stars, primes, or covered
+        lines.
+        """
+        minval = self.__find_smallest()
+        for i in range(self.n):
+            for j in range(self.n):
+                if self.row_covered[i]:
+                    self.C[i][j] += minval
+                if not self.col_covered[j]:
+                    self.C[i][j] -= minval
+        return 4
+
+    def __find_smallest(self):
+        """Find the smallest uncovered value in the matrix."""
+        minval = sys.maxint
+        for i in range(self.n):
+            for j in range(self.n):
+                if (not self.row_covered[i]) and (not self.col_covered[j]):
+                    if minval > self.C[i][j]:
+                        minval = self.C[i][j]
+        return minval
+
+    def __find_a_zero(self):
+        """Find the first uncovered element with value 0"""
+        row = -1
+        col = -1
+        i = 0
+        n = self.n
+        done = False
+
+        while not done:
+            j = 0
+            while True:
+                if (self.C[i][j] == 0) and \
+                   (not self.row_covered[i]) and \
+                   (not self.col_covered[j]):
+                    row = i
+                    col = j
+                    done = True
+                j += 1
+                if j >= n:
+                    break
+            i += 1
+            if i >= n:
+                done = True
+
+        return (row, col)
+
+    def __find_star_in_row(self, row):
+        """
+        Find the first starred element in the specified row. Returns
+        the column index, or -1 if no starred element was found.
+        """
+        col = -1
+        for j in range(self.n):
+            if self.marked[row][j] == 1:
+                col = j
+                break
+
+        return col
+
+    def __find_star_in_col(self, col):
+        """
+        Find the first starred element in the specified row. Returns
+        the row index, or -1 if no starred element was found.
+        """
+        row = -1
+        for i in range(self.n):
+            if self.marked[i][col] == 1:
+                row = i
+                break
+
+        return row
+
+    def __find_prime_in_row(self, row):
+        """
+        Find the first prime element in the specified row. Returns
+        the column index, or -1 if no starred element was found.
+        """
+        col = -1
+        for j in range(self.n):
+            if self.marked[row][j] == 2:
+                col = j
+                break
+
+        return col
+
+    def __convert_path(self, path, count):
+        for i in range(count+1):
+            if self.marked[path[i][0]][path[i][1]] == 1:
+                self.marked[path[i][0]][path[i][1]] = 0
+            else:
+                self.marked[path[i][0]][path[i][1]] = 1
+
+    def __clear_covers(self):
+        """Clear all covered matrix cells"""
+        for i in range(self.n):
+            self.row_covered[i] = False
+            self.col_covered[i] = False
+
+    def __erase_primes(self):
+        """Erase all prime markings"""
+        for i in range(self.n):
+            for j in range(self.n):
+                if self.marked[i][j] == 2:
+                    self.marked[i][j] = 0
+
+
+# Match two partitions asignment with hungarian algorithm
+def k_means_match_clusters_asg(asg1, asg2):
+	from statistics import Munkres
+	import sys
+	
+	K   = len(asg1)
+	MAT = [[0] * K for i in xrange(K)]
+
+	# prepare matrix
+	for k1 in xrange(K):
+		for k2 in xrange(K):
+			for index in asg1[k1]:
+				if index in asg2[k2]:
+					MAT[k1][k2] += 1
+	cost_MAT = []
+	for row in MAT:
+		cost_row = []
+		for col in row:
+			cost_row += [sys.maxint - col]
+		cost_MAT += [cost_row]
+
+	m = Munkres()
+	indexes = m.compute(cost_MAT)
+
+	list_stable = []
+	list_objs   = []
+	nb_tot_objs = 0
+	for r, c in indexes:
+		list_in  = []
+		list_out = []
+		for index1 in asg1[r]:
+			if index1 in asg2[c]:
+				list_in.append(index1)
+			else:
+				list_out.append(index1)
+
+		nb_tot_objs += len(list_in)
+		nb_tot_objs += len(list_out)
+
+		list_stable.append(list_in)
+
+	return list_stable, nb_tot_objs
+
+# Hierarchical stability between partitions given by k-means
+def k_means_stab_H(ALL_PART):
+	from copy       import deepcopy
+	from statistics import k_means_match_clusters_asg
+
+	nb_part = len(ALL_PART)
+	K       = len(ALL_PART[0])
+	tot_gbl = 0
+	for i in xrange(K): tot_gbl += len(ALL_PART[0][i])
+	
+	for h in xrange(0, nb_part - 1):
+		newPART = []
+		for n in xrange(1, nb_part - h):
+			LIST_stb, tot_n = k_means_match_clusters_asg(ALL_PART[0], ALL_PART[n])
+			newPART.append(LIST_stb)
+
+			nb_stb = 0
+			for i in xrange(K): nb_stb += len(LIST_stb[i])
+
+		ALL_PART = []
+		ALL_PART = deepcopy(newPART)
+
+	nb_stb = 0
+	for i in xrange(K): nb_stb += len(ALL_PART[0][i])
+	stability = (float(nb_stb) / float(tot_gbl)) * 100
+
+	return stability, nb_stb, ALL_PART[0]
+
+# Build and export the stable class averages 
+def k_means_stab_export(PART, stack, num_run, outdir):
+	from utilities    import model_blank, get_params2D
+	from fundamentals import rot_shift2D
+	
+	K    = len(PART)
+	im   = EMData()
+	#im.read_image(stack, 0, True)  # Sometime this line not works for bdb
+	im.read_image(stack, 0)
+	nx   = im.get_xsize()
+	ny   = im.get_ysize()
+	imbk = model_blank(nx, ny)
+	AVE  = []
+	for k in xrange(K): AVE.append(imbk.copy())
+	for k in xrange(K):
+		nobjs = len(PART[k])
+		if nobjs > 0:
+			for ID in PART[k]:
+				im.read_image(stack, int(ID))
+				try:
+					alpha, sx, sy, mirror, scale = get_params2D(im)
+					im = rot_shift2D(im, alpha, sx, sy, mirror)
+				except: pass
+				
+				Util.add_img(AVE[k], im)
+			Util.mul_scalar(AVE[k], 1.0 / float(nobjs))
+
+			AVE[k].set_attr('Class_average', 1.0)
+			AVE[k].set_attr('nobjects', nobjs)
+			AVE[k].set_attr('members', PART[k])
+		else:
+			AVE[k].set_attr('Class_average', 1.0)
+			AVE[k].set_attr('nobjects', 0)
+			AVE[k].set_attr('members', -1)
+
+		AVE[k].write_image(outdir + '/average_stb_run%02d.hdf' % num_run, k)
+
+# Init the header for the stack file
+def k_means_stab_init_tag(stack):
+	from utilities import file_type, write_header
+	
+	N   = EMUtil.get_image_count(stack)
+	ext = file_type(stack)
+	if ext == 'bdb':
+		DB = db_open_dict(stack)
+		for n in xrange(N):
+			DB.set_attr(n, 'stab_active', 1)
+			DB.set_attr(n, 'stab_part',  -2)
+		DB.close()
+	else:
+		im = EMData()
+		for n in xrange(N):
+			im.read_image(stack, n, True)
+			im.set_attr('stab_active', 1)
+			im.set_attr('stab_part',  -2)
+			write_header(stack, im, n) 
+
+# k-means open and prepare images MPI version, only unstable objects (active = 1)
+def k_means_open_unstable_MPI(stack, maskname, CTF, nb_cpu, main_node, myid):
+	from utilities    import file_type
+	from mpi          import mpi_bcast, mpi_barrier, MPI_COMM_WORLD, MPI_INT
+	from statistics   import k_means_open_im
+
+	N = 0
+	if myid == main_node:
+		N    = EMUtil.get_image_count(stack)
+		lim  = []
+		ext  = file_type(stack)
+		if ext == 'bdb':
+			DB = db_open_dict(stack)
+			for n in xrange(N):
+				if DB.get_attr(n, 'stab_active'): lim.append(n)
+			DB.close()
+		else:
+			im = EMData()
+			for n in xrange(N):
+				im.read_image(stack, n, True)
+				if im.get_attr('stab_active'): lim.append(n)
+
+		N = len(lim)
+
+	mpi_barrier(MPI_COMM_WORLD)
+	N = mpi_bcast(N, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+	N = N.tolist()[0]
+	if myid != main_node: lim = [0] * N
+	mpi_barrier(MPI_COMM_WORLD)
+	lim = mpi_bcast(lim, N, MPI_INT, main_node, MPI_COMM_WORLD)
+	lim = lim.tolist()
+
+	im_per_node = max(N / nb_cpu, 1)
+	N_start     = myid * im_per_node
+	if myid == (nb_cpu -1):
+		N_stop = N
+	else:
+		N_stop = min(N_start + im_per_node, N)
+
+	# Now each node read his part of data (unsynchronise due to bdb)
+	for cpu in xrange(nb_cpu):
+		if cpu == myid: im_M, mask, ctf, ctf2 = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, lim)
+		mpi_barrier(MPI_COMM_WORLD)
+
+	return im_M, mask, ctf, ctf2, lim, N, N_start, N_stop
+
+# k-means open and prepare images, only unstable objects (active = 1)
+def k_means_open_unstable(stack, maskname, CTF):
+	from utilities     import file_type
+	from statistics    import k_means_open_im
+	
+	N    = EMUtil.get_image_count(stack)
+	lim  = []
+	ext  = file_type(stack)
+	if ext == 'bdb':
+		DB = db_open_dict(stack)
+		for n in xrange(N):
+			if DB.get_attr(n, 'stab_active'): lim.append(n)
+		DB.close()
+	else:
+		im = EMData()
+		for n in xrange(N):
+			im.read_image(stack, n, True)
+			if im.get_attr('stab_active'): lim.append(n)
+
+	N = len(lim)
+	im_M, mask, ctf, ctf2 = k_means_open_im(stack, maskname, 0, N, N, CTF, lim)
+
+	return im_M, mask, ctf, ctf2, lim, N
+
+# Convert local assignment to absolute partition
+def k_means_stab_asg2part(ALL_ASG, LUT):
+	K = max(ALL_ASG[0]) + 1
+	N = len(ALL_ASG[0])
+	ALL_PART = []
+	for ASG in ALL_ASG:
+		PART = [[] for i in xrange(K)]
+		for n in xrange(N): PART[ASG[n]].append(LUT[n])
+		ALL_PART.append(PART)
+
+	return ALL_PART
+
+# Update information to the header of the stack file
+def k_means_stab_update_tag(stack, ALL_PART, STB_PART, num_run):
+	from utilities import file_type, write_header
+
+	N  = EMUtil.get_image_count(stack)
+
+	# prepare partitions given by the run
+	nb_part = len(ALL_PART)
+	K       = len(ALL_PART[0])
+	ALL_ASG = []
+	for PART in ALL_PART:
+		ASG = [-1] * N
+		for k in xrange(K):
+			for ID in PART[k]: ASG[ID] = k
+		ALL_ASG.append(ASG)
+
+	# prepare partition stable
+	STB_ASG = [-1] * N
+	for k in xrange(K):
+		for ID in STB_PART[k]: STB_ASG[ID] = k
+
+	# prepare for active images
+	list_stb = []
+	for part in STB_PART: list_stb.extend(part)
+
+	ext = file_type(stack)
+	if ext == 'bdb':
+		DB = db_open_dict(stack)
+		N = 1
+		for n in xrange(N):
+			# run partitions
+			vec = []
+			for i in xrange(nb_part): vec.append(ALL_ASG[i][n])
+			DB.set_attr(n, 'stab_run%02d' % num_run, vec)
+			# stable partition
+			val = DB.get_attr(n, 'stab_part')
+			if isinstance(val, list): val.append(STB_ASG[n]) # if n-ieme run (list of value)
+			elif  val == -2: val = [STB_ASG[n]]              # if first run  (no value define by -2)
+			else: val == [val, STB_ASG[n]]                   # if second run (scalar)
+			DB.set_attr(n, 'stab_part', val)
+
+		# active or not (unstable or not)
+		for ID in list_stb: DB.set_attr(ID, 'stab_active', 0)
+
+		DB.close()
+	else:
+		im = EMData()
+		for n in xrange(N):
+			im.read_image(stack, n, True)
+
+			vec = []
+			for i in xrange(nb_part): vec.append(ALL_ASG[i][n])
+			im.set_attr('stab_run%02d' % num_run, vec)
+
+			# stab partitions
+			val = im.get_attr('stab_part')
+			if isinstance(val, list): val.append(STB_ASG[n]) # if n-ieme run (list of value)
+			elif  val == -2: val = [STB_ASG[n]]              # if first run  (no value define by -2)
+			else: val = [val, STB_ASG[n]]                    # if second run (scalar)
+			im.set_attr('stab_part', val)
+
+			write_header(stack, im, n)
+
+		# active or not (unstable or not)
+		for ID in list_stb:
+			im.read_image(stack, ID, True)
+			im.set_attr('stab_active', 0)
+			write_header(stack, im, ID)
+
+# Gather all stable class averages in the same stack
+def k_means_stab_gather(nb_run, th, maskname, outdir):
+	from utilities import get_im
+	
+	if maskname != None: mask = get_im(maskname, 0)
+	else: mask = None
+	ct   = 0
+	im   = EMData()
+	for nr in xrange(1, nb_run):
+		name = outdir + '/average_stb_run%02d.hdf' % nr
+		N = EMUtil.get_image_count(name)
+		for n in xrange(N):
+			im.read_image(name, n)
+			if im.get_attr('nobjects') > th:
+				ret = Util.infomask(im, mask, True) # 
+				im  = (im - ret[0]) / ret[1]        # normalize
+				im.write_image(outdir + '/averages.hdf', ct)
+				ct += 1
+
+	return ct
 
 ### END K-MEANS ##############################################################################
 ##############################################################################################
