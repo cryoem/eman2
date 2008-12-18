@@ -49,7 +49,7 @@ from PyQt4.QtCore import QTimer
 
 from time import *
 
-from emglobjects import EMImage3DGUIModule, Camera2,get_default_gl_colors,EMViewportDepthTools2
+from emglobjects import EMImage3DGUIModule, Camera2,get_default_gl_colors,EMViewportDepthTools2,get_RGB_tab
 
 MAG_INCREMENT_FACTOR = 1.1
 
@@ -77,13 +77,18 @@ class EM3DHelloWorld(EMImage3DGUIModule):
 		
 		self.vdtools = EMViewportDepthTools2(self.gl_context_parent)
 		
-		self.gl_context_parent.cam.default_z = -1.25*50 # this is me hacking
-		self.gl_context_parent.cam.cam_z = -1.25*50 # this is me hacking
+		self.gl_context_parent.cam.default_z = -1.25*10	 # this is me hacking
+		self.gl_context_parent.cam.cam_z = -1.25*10 # this is me hacking
 	
-		self.dl = None # display list id
+		self.highresspheredl = 0 # display list id
+		self.gq=gluNewQuadric()
+		gluQuadricDrawStyle(self.gq,GLU_FILL)
+		gluQuadricNormals(self.gq,GLU_SMOOTH)
+		gluQuadricOrientation(self.gq,GLU_OUTSIDE)
+		gluQuadricTexture(self.gq,GL_FALSE)
 	
 	def get_type(self):
-		return "helloworld"
+		return "lights"
 	
 	def render(self):
 		#if (not isinstance(self.data,EMData)): return
@@ -120,42 +125,26 @@ class EM3DHelloWorld(EMImage3DGUIModule):
 		glEnable(GL_NORMALIZE)
 		#HERE
 		
-		if self.dl == None:
-			self.dl = glGenLists(1)
-			glNewList(self.dl,GL_COMPILE)
-		
-			glPushMatrix()
-			glScalef(10,10,1)
-			
-			glBegin(GL_QUADS)
-			
-			n = 15.0
-			d = 2.0/(n+1)
-			for i in range(0,int(n)):
-				for j in range(0,int(n)):
-					
-					x1 = -1.0 + j*d
-					x2 = -1.0 + (j+1)*d
-					y1 = -1.0 + i*d
-					y2 = -1.0 + (i+1)*d
-					d1 = d*(j**2)
-					d2 = d*((j+1)**2)
-					glNormal(j*d,0,1)
-					glVertex(x1,y1,d1)
-					glNormal((j+1)*d,.01,1)
-					glVertex(x2,y1,d2)
-					glNormal((j+1)*d,.01,1)
-					glVertex(x2,y2,d2)
-					glNormal(j*d,-.01,1)
-					glVertex(x1,y2,d1)
+		if self.highresspheredl == 0:
+			self.highresspheredl=glGenLists(1)
 				
-			glEnd()
-			glPopMatrix()
-			
+			glNewList(self.highresspheredl,GL_COMPILE)
+			gluSphere(self.gq,.5,32,32)
 			glEndList()
+		
+		glScale(2,2,2)
+		
+		z = [-10,-4,-2,2,4,10]
+		t = [[2,0,0],[-2,0,0],[0,2,0],[0,-2,0],[0,0,0]]
+		for r in z:
 			
-		glCallList(self.dl)
-			
+			for s in t:
+				glPushMatrix()
+				glTranslate(0,0,r)
+				glTranslate(*s)
+				glCallList(self.highresspheredl)
+				glPopMatrix()
+		
 		self.draw_bc_screen()
 
 
@@ -182,7 +171,7 @@ class EM3DHelloWorld(EMImage3DGUIModule):
 		self.cam.cam_z = -1.25*32
 		
 		if not self.inspector or self.inspector ==None:
-			self.inspector=EMHelloWorldInspector(self)
+			self.inspector=EMLightsInspector(self)
 		
 		self.load_colors()
 		self.inspector.setColors(self.colors,self.currentcolor)
@@ -202,15 +191,15 @@ class EM3DHelloWorld(EMImage3DGUIModule):
 	
 	def update_inspector(self,t3d):
 		if not self.inspector or self.inspector ==None:
-			self.inspector=EMHelloWorldInspector(self)
+			self.inspector=EMLightsInspector(self)
 		self.inspector.update_rotations(t3d)
 	
 	def get_inspector(self):
-		if not self.inspector : self.inspector=EMHelloWorldInspector(self)
+		if not self.inspector : self.inspector=EMLightsInspector(self)
 		return self.inspector
 		
 
-class EMHelloWorldInspector(QtGui.QWidget):
+class EMLightsInspector(QtGui.QWidget):
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
 		self.target=target
@@ -225,7 +214,7 @@ class EMHelloWorldInspector(QtGui.QWidget):
 		self.hbl.setSpacing(6)
 		self.hbl.setObjectName("hbl")
 		self.vbl.addLayout(self.hbl)
-		
+
 		self.vbl2 = QtGui.QVBoxLayout()
 		self.vbl2.setMargin(0)
 		self.vbl2.setSpacing(6)
@@ -242,7 +231,8 @@ class EMHelloWorldInspector(QtGui.QWidget):
 		
 		self.tabwidget = QtGui.QTabWidget()
 		self.maintab = None
-		self.tabwidget.addTab(self.get_main_tab(), "Main")
+		self.tabwidget.addTab(self.get_light_tab(), "Lights")
+		self.tabwidget.addTab(self.get_main_tab(), "Transform")
 		self.tabwidget.addTab(self.get_GL_tab(),"GL")
 		self.vbl.addWidget(self.tabwidget)
 		self.n3_showing = False
@@ -260,6 +250,144 @@ class EMHelloWorldInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.lighttog, QtCore.SIGNAL("toggled(bool)"), target.toggle_light)
 		QtCore.QObject.connect(self.glcontrast, QtCore.SIGNAL("valueChanged"), target.set_GL_contrast)
 		QtCore.QObject.connect(self.glbrightness, QtCore.SIGNAL("valueChanged"), target.set_GL_brightness)
+	
+	def update_light(self):
+		attribs = ["r","g","b"]
+		amb = [ getattr(self.light_ambient, a).getValue() for a in attribs]
+		amb.append(1.0) # alpha
+		dif = [ getattr(self.light_diffuse, a).getValue() for a in attribs]
+		dif.append(1.0) # alpha
+		spec = [ getattr(self.light_specular, a).getValue() for a in attribs]
+		spec.append(1.0) # alpha
+		
+		#print self.light_x_trans.value()
+		p = [self.light_x_trans,self.light_y_trans,self.light_z_trans]
+		pos = [a.value() for a in p]
+		
+		glLightfv(GL_LIGHT0, GL_AMBIENT, amb)
+		glLightfv(GL_LIGHT0, GL_DIFFUSE, dif)
+		glLightfv(GL_LIGHT0, GL_SPECULAR, dif)
+		glLightfv(GL_LIGHT0, GL_POSITION, pos)
+		
+		self.target.updateGL()
+		
+	def get_light_tab(self):
+		self.light_tab = QtGui.QWidget()
+		light_tab = self.light_tab
+		
+		vbl = QtGui.QVBoxLayout(self.light_tab )
+		vbl.setMargin(0)
+		vbl.setSpacing(6)
+		vbl.setObjectName("Lights")
+		
+		hbl = QtGui.QHBoxLayout()
+		hbl.setMargin(0)
+		hbl.setSpacing(6)
+		hbl.setObjectName("hbl")
+		vbl.addLayout(hbl)
+
+		self.light_list = QtGui.QListWidget(None)
+		a = QtGui.QListWidgetItem(str("Light 0"),self.light_list)
+		a.setSelected(True)
+		hbl.addWidget(self.light_list)
+
+		vbl2 = QtGui.QVBoxLayout()
+		vbl2.setMargin(0)
+		vbl2.setSpacing(6)
+		vbl2.setObjectName("vbl2")
+		hbl.addLayout(vbl2)
+		
+		new_light = QtGui.QPushButton("New")
+		vbl2.addWidget(new_light)
+		copy_light = QtGui.QPushButton("Copy")
+		vbl2.addWidget(copy_light)
+		del_light = QtGui.QPushButton("Delete")
+		vbl2.addWidget(del_light)
+		
+		
+		x_label = QtGui.QLabel()
+		x_label.setText('x')
+		
+		self.light_x_trans = QtGui.QDoubleSpinBox(self)
+		self.light_x_trans.setMinimum(-100000)
+		self.light_x_trans.setMaximum(100000)
+		self.light_x_trans.setValue(0.0)
+	
+		y_label = QtGui.QLabel()
+		y_label.setText('y')
+		
+		self.light_y_trans = QtGui.QDoubleSpinBox(self)
+		self.light_y_trans.setMinimum(-100000)
+		self.light_y_trans.setMaximum(100000)
+		self.light_y_trans.setValue(0.0)
+		
+		z_label = QtGui.QLabel()
+		z_label.setText('z')
+		
+		self.light_z_trans = QtGui.QDoubleSpinBox(self)
+		self.light_z_trans.setMinimum(-100000)
+		self.light_z_trans.setMaximum(100000)
+		self.light_z_trans.setValue(0.0)
+		
+		hbl_trans = QtGui.QHBoxLayout()
+		hbl_trans.setMargin(0)
+		hbl_trans.setSpacing(6)
+		hbl_trans.setObjectName("Trans")
+		hbl_trans.addWidget(x_label)
+		hbl_trans.addWidget(self.light_x_trans)
+		hbl_trans.addWidget(y_label)
+		hbl_trans.addWidget(self.light_y_trans)
+		hbl_trans.addWidget(z_label)
+		hbl_trans.addWidget(self.light_z_trans)
+		
+		vbl.addLayout(hbl_trans)
+		
+		
+		light_material_tab_widget = QtGui.QTabWidget()
+		self.light_ambient = get_RGB_tab(self,"ambient")
+		light_material_tab_widget.addTab(self.light_ambient, "Ambient")
+		self.light_diffuse = get_RGB_tab(self,"diffuse")
+		light_material_tab_widget.addTab(self.light_diffuse, "Diffuse")
+		self.light_specular = get_RGB_tab(self,"specular")
+		light_material_tab_widget.addTab(self.light_specular, "Specular")
+		
+		amb = glGetLightfv(GL_LIGHT0,GL_AMBIENT)
+		dif =  glGetLightfv(GL_LIGHT0,GL_DIFFUSE)
+		spec = glGetLightfv(GL_LIGHT0,GL_SPECULAR)
+		self.light_ambient.r.setValue(amb[0])
+		self.light_ambient.g.setValue(amb[1])
+		self.light_ambient.b.setValue(amb[2])
+		
+		self.light_diffuse.r.setValue(dif[0])
+		self.light_diffuse.g.setValue(dif[1])
+		self.light_diffuse.b.setValue(dif[2])
+		
+		self.light_specular.r.setValue(spec[0])
+		self.light_specular.g.setValue(spec[1])
+		self.light_specular.b.setValue(spec[2])
+		
+		pos = glGetLightfv(GL_LIGHT0,GL_POSITION)
+		self.light_x_trans.setValue(pos[0])
+		self.light_y_trans.setValue(pos[1])
+		self.light_z_trans.setValue(pos[2])
+		
+		
+		vbl.addWidget(light_material_tab_widget)
+
+		QtCore.QObject.connect(self.light_ambient.r, QtCore.SIGNAL("valueChanged"), self.update_light)
+		QtCore.QObject.connect(self.light_ambient.g, QtCore.SIGNAL("valueChanged"), self.update_light)
+		QtCore.QObject.connect(self.light_ambient.b, QtCore.SIGNAL("valueChanged"), self.update_light)
+		QtCore.QObject.connect(self.light_diffuse.r, QtCore.SIGNAL("valueChanged"), self.update_light)
+		QtCore.QObject.connect(self.light_diffuse.g, QtCore.SIGNAL("valueChanged"), self.update_light)
+		QtCore.QObject.connect(self.light_diffuse.b, QtCore.SIGNAL("valueChanged"), self.update_light)
+		QtCore.QObject.connect(self.light_specular.r, QtCore.SIGNAL("valueChanged"), self.update_light)
+		QtCore.QObject.connect(self.light_specular.g, QtCore.SIGNAL("valueChanged"), self.update_light)
+		QtCore.QObject.connect(self.light_specular.b, QtCore.SIGNAL("valueChanged"), self.update_light)
+		QtCore.QObject.connect(self.light_x_trans, QtCore.SIGNAL("valueChanged(double)"), self.update_light)
+		QtCore.QObject.connect(self.light_y_trans, QtCore.SIGNAL("valueChanged(double)"), self.update_light)
+		QtCore.QObject.connect(self.light_z_trans, QtCore.SIGNAL("valueChanged(double)"), self.update_light)
+	 
+		return light_tab
 	
 	def get_GL_tab(self):
 		self.gltab = QtGui.QWidget()

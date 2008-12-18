@@ -2029,7 +2029,31 @@ class EMImage3DGUIModule(EMGUIModule):
 		# redefine this if you want to do any OpenGL specific initialization
 		pass
 				
-		
+
+def get_RGB_tab(parent, name=""):
+	rgbtab = QtGui.QWidget(parent)
+	rgbtab.vbl = QtGui.QVBoxLayout(rgbtab)
+	rgbtab.vbl.setMargin(0)
+	rgbtab.vbl.setSpacing(6)
+	rgbtab.vbl.setObjectName(name)
+	
+	rgbtab.r = ValSlider(rgbtab,(0.0,1.0),"R:")
+	rgbtab.r.setObjectName("R")
+	rgbtab.r.setValue(0.5)
+	rgbtab.vbl.addWidget(rgbtab.r)
+	
+	rgbtab.g = ValSlider(rgbtab,(0.0,1.0),"G:")
+	rgbtab.g.setObjectName("G")
+	rgbtab.g.setValue(0.5)
+	rgbtab.vbl.addWidget(rgbtab.g)
+	
+	rgbtab.b = ValSlider(rgbtab,(0.0,1.0),"B:")
+	rgbtab.b.setObjectName("B")
+	rgbtab.b.setValue(0.5)
+	rgbtab.vbl.addWidget(rgbtab.b)
+	
+	return rgbtab
+
 def get_default_gl_colors():
 	ruby = {}
 	ruby["ambient"] = [0.1745, 0.01175, 0.01175,1.0]

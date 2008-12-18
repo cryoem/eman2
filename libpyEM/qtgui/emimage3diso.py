@@ -48,7 +48,7 @@ from PyQt4.QtCore import QTimer
 import weakref
 from time import *
 
-from emglobjects import Camera2, EMImage3DGUIModule, EMViewportDepthTools, Camera2, Camera,get_default_gl_colors
+from emglobjects import Camera2, EMImage3DGUIModule, EMViewportDepthTools, Camera2, Camera,get_default_gl_colors,get_RGB_tab
 from emimageutil import ImgHistogram,EMEventRerouter,EMTransformPanel
 from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
 
@@ -470,28 +470,29 @@ class EMIsoInspector(QtGui.QWidget):
 		self.shininess.setValue(material["shininess"])
 	
 	def get_RGB_tab(self, name=""):
-		rgbtab = QtGui.QWidget(self)
-		rgbtab.vbl = QtGui.QVBoxLayout(rgbtab)
-		rgbtab.vbl.setMargin(0)
-		rgbtab.vbl.setSpacing(6)
-		rgbtab.vbl.setObjectName(name)
+		return get_RGB_tab(self,name)
+		#rgbtab = QtGui.QWidget(self)
+		#rgbtab.vbl = QtGui.QVBoxLayout(rgbtab)
+		#rgbtab.vbl.setMargin(0)
+		#rgbtab.vbl.setSpacing(6)
+		#rgbtab.vbl.setObjectName(name)
 		
-		rgbtab.r = ValSlider(rgbtab,(0.0,1.0),"R:")
-		rgbtab.r.setObjectName("R")
-		rgbtab.r.setValue(0.5)
-		rgbtab.vbl.addWidget(rgbtab.r)
+		#rgbtab.r = ValSlider(rgbtab,(0.0,1.0),"R:")
+		#rgbtab.r.setObjectName("R")
+		#rgbtab.r.setValue(0.5)
+		#rgbtab.vbl.addWidget(rgbtab.r)
 		
-		rgbtab.g = ValSlider(rgbtab,(0.0,1.0),"G:")
-		rgbtab.g.setObjectName("G")
-		rgbtab.g.setValue(0.5)
-		rgbtab.vbl.addWidget(rgbtab.g)
+		#rgbtab.g = ValSlider(rgbtab,(0.0,1.0),"G:")
+		#rgbtab.g.setObjectName("G")
+		#rgbtab.g.setValue(0.5)
+		#rgbtab.vbl.addWidget(rgbtab.g)
 		
-		rgbtab.b = ValSlider(rgbtab,(0.0,1.0),"B:")
-		rgbtab.b.setObjectName("B")
-		rgbtab.b.setValue(0.5)
-		rgbtab.vbl.addWidget(rgbtab.b)
+		#rgbtab.b = ValSlider(rgbtab,(0.0,1.0),"B:")
+		#rgbtab.b.setObjectName("B")
+		#rgbtab.b.setValue(0.5)
+		#rgbtab.vbl.addWidget(rgbtab.b)
 		
-		return rgbtab
+		#return rgbtab
 	
 	def get_GL_tab(self):
 		self.gltab = QtGui.QWidget()
