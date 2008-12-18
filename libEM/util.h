@@ -389,7 +389,7 @@ namespace EMAN
 		static unsigned long int get_randnum_seed();
 
 		/** Set the seed for Randnum class
-		 * @param[in]	the seed for current random number generator
+		 * @param[in] seed the seed for current random number generator
 		 * */
 		static void set_randnum_seed(unsigned long int seed);
 
@@ -980,19 +980,19 @@ namespace EMAN
 			return (val > 0) ? T(+1) : T(-1);
 		}
 
-		/** Get the isosurface value for 3D image.
-		 *
-		 * @param[in] image 3D image data
-		 * @param[in] surface_value threshhold for isosurface valuse
-		 * @param[in] smooth boolean to specify whether the smooth value needed
-		 *
-		 * @return Dict to wrap the points(float array), and triangles(int array)
-		 *
-		 * @exception ImageDimensionException 3D image only
-		 * */
+//		/** Get the isosurface value for 3D image.
+//		 *
+//		 * @param[in] image 3D image data
+//		 * @param[in] surface_value threshhold for isosurface valuse
+//		 * @param[in] smooth boolean to specify whether the smooth value needed
+//		 *
+//		 * @return Dict to wrap the points(float array), and triangles(int array)
+//		 *
+//		 * @exception ImageDimensionException 3D image only
+//		 * */
 //		static Dict get_isosurface(EMData * image, float surface_value, bool smooth);
 		
-		/** Get the isosurface value for 3D image.
+		/** 
 		 *
 		 * @param[in] freq_cutoff 
 		 * @param[in] P
@@ -1007,7 +1007,7 @@ namespace EMAN
 
 		/** Return true if an integer is positive and is power of 2
 		 *
-		 * @param[in] integer to be checked
+		 * @param[in] x integer to be checked
 		 *
 		 * @return true if the integer is positive and is power of 2
 		 * */

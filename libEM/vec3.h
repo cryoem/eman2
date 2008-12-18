@@ -484,7 +484,6 @@ namespace EMAN
 		/** contruct a Vec2 object given (x,y) or (x,y,z) values.
 		* @param x  Value of the first item.
 		* @param y  Value of the second item.
-		* @param z  Value of the third item. If not specified,
 		* default to 0.
 		 */
 		template<typename Type2, typename Type3>
@@ -495,8 +494,8 @@ namespace EMAN
 		}
 
 		/** Construct a Vec2 object given a std::vector object. The
-					 * std::vector object should have at least 3 items.
-					 * @param v The std::vector object. It should have at least 3 items.
+		* std::vector object should have at least 3 items.
+		* @param v The std::vector object. It should have at least 3 items.
 		 */
 		template<typename Type2>
 		Vec2(const vector < Type2 > &v) 
