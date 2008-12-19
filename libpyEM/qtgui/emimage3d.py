@@ -238,7 +238,7 @@ class EMImage3DWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMatri
 		
 		
 	def paintGL(self):
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT )
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT )
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 		try:
@@ -252,6 +252,7 @@ class EMImage3DWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMatri
 
 	def resizeGL(self, width, height):
 		# just use the whole window for rendering
+		
 		glViewport(0,0,self.width(),self.height())
 		
 		# maintain the aspect ratio of the window we have
@@ -297,6 +298,8 @@ class EMImage3DWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMatri
 		glLoadIdentity()
 		self.aspect = float(self.width())/float(self.height())
 		self.xwidth = self.aspect*self.yheight
+		if self.xwidth == 0 or self.yheight == 0: return # probably startup
+		
 		glOrtho(-self.xwidth/2.0,self.xwidth/2.0,-self.yheight/2.0,self.yheight/2.0,self.startz,self.endz)
 		glMatrixMode(GL_MODELVIEW)
 		

@@ -1908,9 +1908,12 @@ class EMImage3DGUIModule(EMGUIModule):
 		
 		vh = self.gl_context_parent.viewport_height()
 		vw = self.gl_context_parent.viewport_width()
+		
+		if vh == 0 or vw == 0: return
 		glMatrixMode(GL_PROJECTION)
 		glPushMatrix()
 		glLoadIdentity()
+		
 		glOrtho(0,vw,0,vh,-1,1)
 
 		glMatrixMode(GL_MODELVIEW)
