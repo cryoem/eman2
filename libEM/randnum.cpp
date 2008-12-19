@@ -61,7 +61,7 @@ namespace {
 		struct timeval tv;
 		FILE *devrandom;
 	
-		if ((devrandom = fopen("/dev/random","r")) == NULL) {
+		if ((devrandom = fopen("/dev/urandom","r")) == NULL) {
 			gettimeofday(&tv,0);
 			seed = tv.tv_sec + tv.tv_usec;
 			//printf("Got seed %u from gettimeofday()\n",seed);
