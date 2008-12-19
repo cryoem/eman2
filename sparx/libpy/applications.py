@@ -637,7 +637,6 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				av = float(av)/nima
 				if(total_iter>0 and sa < 0.05 and std <1.0):
 					method = 0
-					#msg = "ITERATION   #%5d    criterion = %15.7e    average select = %5.3f  stdv(select) = %12.3e   T=%12.3e\n"%(total_iter, a1, sa, std, T)
 					msg = "ITERATION   #%5d    criterion = %15.7e \n"%(total_iter, a1)
 				else:
 					method = 1
@@ -657,12 +656,14 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				method = 1
 
 			again = mpi_bcast(again, 1, MPI_INT, main_node, MPI_COMM_WORLD)
-			method = mpi_bcast(method, 1, MPI_INT, main_node, MPI_COMM_WORLD)
-			if(method == 0):  method = " "
-			else:   method = "SA"
-			bcast_EMData_to_all(tavg, myid, main_node)
 			if(int(again) == 0): break
 			if N_step == len(xrng)-1 and Iter == max_iter-1:  break
+			method = mpi_bcast(method, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+			if(method == 0):
+				method = " "
+				knp = 1
+			else:   method = "SA"
+			bcast_EMData_to_all(tavg, myid, main_node)
 			total_iter += 1
 			T = max(T*F,1.0e-8)
 

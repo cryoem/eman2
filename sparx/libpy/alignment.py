@@ -521,36 +521,13 @@ def select_k(dJe, T):
 
 def sim_anneal(peaks, T, step, mode, maxrin):
 	from random import random
+	from math import pi, cos, sin
+
 	peaks.sort(reverse=True)
 
-	K = len(peaks)
-
-	#for k in xrange(min(5,K)):  print  peaks[k]
-
-	#select = select_k(dJe, T)
-	qt = peaks[0][0]
-	p  = [0.0] * K
-	ut = 1.0/T
-	for k in xrange(K): p[k] = (peaks[k][0]/qt)**ut
-
-	sumq = float(sum(p))
-	cp  = [0.0] * K
-	for k in xrange(K):
-		p[k] /= sumq
-		cp[k] = p[k]
-	#print  p
-
-	for k in xrange(1, K-1): cp[k] += cp[k-1]
-	# the next line looks strange, but it assures that at least the lst element is selected
-	cp[K-1] = 2.0
-
-	rosi = []
-	for np in xrange(5):
-		pb = random()
+	if(T == 0.0):
 		select = 0
-		while(cp[select] < pb):  select += 1
-
-		from math import pi, cos, sin
+		rosi = []
 	
 		ang = ang_n(peaks[select][1]+1, mode, maxrin)
 		sx  = -peaks[select][6]*step
@@ -563,7 +540,45 @@ def sim_anneal(peaks, T, step, mode, maxrin):
 
 		mirror = peaks[select][8]
 		peak   = p[select]
-		rosi.append([ang, sxs, sys, mirror, peak, select])
+		rosi = [ang, sxs, sys, mirror, peak, select]
+	else:
+		K = len(peaks)
+		qt = peaks[0][0]
+		p  = [0.0] * K
+		ut = 1.0/T
+		for k in xrange(K): p[k] = (peaks[k][0]/qt)**ut
+
+		sumq = float(sum(p))
+		cp  = [0.0] * K
+		for k in xrange(K):
+			p[k] /= sumq
+			cp[k] = p[k]
+		#print  p
+
+		for k in xrange(1, K-1): cp[k] += cp[k-1]
+		# the next line looks strange, but it assures that at least the lst element is selected
+		cp[K-1] = 2.0
+
+		rosi = []
+		for np in xrange(5):
+			pb = random()
+			select = 0
+			while(cp[select] < pb):  select += 1
+
+			from math import pi, cos, sin
+	
+			ang = ang_n(peaks[select][1]+1, mode, maxrin)
+			sx  = -peaks[select][6]*step
+			sy  = -peaks[select][7]*step
+
+			co =  cos(ang*pi/180.0)
+			so = -sin(ang*pi/180.0)
+			sxs = sx*co - sy*so
+			sys = sx*so + sy*co
+
+			mirror = peaks[select][8]
+			peak   = p[select]
+			rosi.append([ang, sxs, sys, mirror, peak, select])
 		
 	return  rosi
 
