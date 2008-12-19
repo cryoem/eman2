@@ -114,7 +114,9 @@ void TiffIO::init()
 
 		TIFFGetField(tiff_file, TIFFTAG_BITSPERSAMPLE, &bitspersample);
 
-		if (bitspersample != CHAR_BIT && bitspersample != (CHAR_BIT * sizeof(short))) {
+		if (bitspersample != CHAR_BIT && 
+				bitspersample != (CHAR_BIT * sizeof(short)) && 
+				bitspersample != (CHAR_BIT * sizeof(float)) ) {
 			char desc[256];
 			sprintf(desc, "invalid %d bits. only %d-bit and %d-bit TIFF are supported",
 					bitspersample, CHAR_BIT, (int)(CHAR_BIT * sizeof(short)));
@@ -195,6 +197,9 @@ int TiffIO::read_header(Dict & dict, int img_index, const Region * area, bool)
 	}
 	else if (bitspersample == sizeof(unsigned short) * CHAR_BIT) {
 		dict["datatype"] = EMUtil::EM_USHORT;
+	}
+	else if (bitspersample == sizeof(float) * CHAR_BIT) {
+		dict["datatype"] = EMUtil::EM_FLOAT;
 	}
 
 	dict["bitspersample"] = bitspersample;
