@@ -2573,12 +2573,9 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 		len_ctm	    = len(ctf2[N_start])
 	
 	# TRIALS
-	if trials > 1:
-		MemCls, MemJe, MemAssign = {}, {}, {}
-	else:
-		trials = 1
+	if trials > 1: MemCls, MemJe, MemAssign = {}, {}, {}
+	else: trials = 1
 
-	flag_empty = False
 	ntrials    = 0
 	wd_trials  = 0
 	SA_run     = SA
@@ -2599,6 +2596,7 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 			OldClsn       = [0] * K
 
 		## [main] Random method
+		FLAG_EXIT = 0
 		if myid == main_node:
 			retrial = 20
 			while retrial > 0:
@@ -2612,7 +2610,9 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 					if Cls['n'][k] <= 1:
 						flag = 0
 						if retrial == 0:
-							ERROR('Empty class in the initialization', 'k_means_cla_MPI', 1)
+							print_msg('Empty class in the initialization k_means_cla_MPI\n')
+							FLAG_EXIT = 1
+							flag      = 1
 						for k in xrange(K):
 							Cls['n'][k] = 0
 					k += 1
@@ -2620,6 +2620,12 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 
 		# [sync] waiting the assign is finished
 		mpi_barrier(MPI_COMM_WORLD)
+
+		# [all] check if need to exit due to initialization
+		FLAG_EXIT = mpi_reduce(FLAG_EXIT, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
+		FLAG_EXIT = mpi_bcast(FLAG_EXIT, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+		FLAG_EXIT = FLAG_EXIT.tolist()[0]
+		if FLAG_EXIT: sys.exit()
 
 		# [all] send assign to the others proc and the number of objects in each clusters
 		assign = mpi_bcast(assign, N, MPI_INT, main_node, MPI_COMM_WORLD)
@@ -2760,10 +2766,11 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 			Cls['n'] = Cls['n'].tolist() # convert array gave by MPI to list
 			
 			# [all] init average and ctf2
+			FLAG_EMPTY = 0
 			for k in xrange(K):
 				if Cls['n'][k] <= 1:
 					if myid == main_node: print_msg('>>> WARNING: Empty cluster, restart with new partition.\n\n')
-					flag_empty = True
+					FLAG_EMPTY = 1
 					break
 				
 				Cls['ave'][k].to_zero()
@@ -2772,10 +2779,10 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 
 			# [all] broadcast empty cluster information
 			mpi_barrier(MPI_COMM_WORLD)
-			flag_empty = mpi_reduce(flag_empty, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
-			flag_empty = mpi_bcast(flag_empty, 1, MPI_INT, main_node, MPI_COMM_WORLD)
-			flag_empty = flag_empty.tolist()[0]
-			if flag_empty: break
+			FLAG_EMPTY = mpi_reduce(FLAG_EMPTY, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
+			FLAG_EMPTY = mpi_bcast(FLAG_EMPTY, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+			FLAG_EMPTY = FLAG_EMPTY.tolist()[0]
+			if FLAG_EMPTY: break
 			
 			if CTF:
 				# [id] compute local S ctf2 and local S ave	
@@ -2862,7 +2869,7 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 		# [all] waiting the result
 		mpi_barrier(MPI_COMM_WORLD)
 
-		if not flag_empty:
+		if not FLAG_EMPTY:
 			# [id] memorize the result for this trial	
 			if trials > 1:
 				MemCls[ntrials-1]    = deepcopy(Cls)
@@ -2873,17 +2880,19 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 			# set to zero watch dog trials
 			wd_trials = 0
 		else:
-			flag_empty  = False
+			FLAG_EMPTY  = 0
 			wd_trials  += 1
 			if wd_trials > 10:
 				if trials > 1:
 					MemJe[ntrials-1] = 1e10
 					if ntrials == trials:
-						print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
+						if myid == main_node: print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
 						sys.exit()
-					else:	print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
+					else:
+						if myid == main_node: print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
 				else:
-					print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
+					
+					if myid == main_node: print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
 					sys.exit()
 				wd_trials = 0
 			else:
@@ -3062,11 +3071,8 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 		len_ctm	    = len(ctf2[N_start])
 	
 	# TRIALS
-	if trials > 1:
-		MemCls, MemJe, MemAssign = {}, {}, {}
-	else:
-		trials = 1
-	flag_empty = False
+	if trials > 1: MemCls, MemJe, MemAssign = {}, {}, {}
+	else: trials = 1
 	ntrials    = 0
 	wd_trials  = 0
 	SA_run     = SA
@@ -3087,6 +3093,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 			OldClsn       = [0] * K
 		
 		## [main] Random method
+		FLAG_EXIT = 0
 		if myid == main_node:
 			retrial = 20
 			while retrial > 0:
@@ -3100,7 +3107,9 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 					if Cls['n'][k] <= 1:
 						flag = 0
 						if retrial == 0:
-							ERROR('Empty class in the initialization', 'k_means_SSE_MPI', 1)
+							print_msg('Empty class in the initialization k_means_SSE_MPI \n')
+							FLAG_EXIT = 1
+							flag      = 1
 						for k in xrange(K):
 							Cls['n'][k] = 0
 					k += 1
@@ -3108,6 +3117,12 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 		
 		# [sync] waiting the assign is finished
 		mpi_barrier(MPI_COMM_WORLD)
+
+		# [all] check if need to exit due to initialization
+		FLAG_EXIT = mpi_reduce(FLAG_EXIT, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
+		FLAG_EXIT = mpi_bcast(FLAG_EXIT, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+		FLAG_EXIT = FLAG_EXIT.tolist()[0]
+		if FLAG_EXIT: sys.exit()
 		
 		# [all] send assign to the others proc and the number of objects in each cluster
 		assign   = mpi_bcast(assign, N, MPI_INT, main_node, MPI_COMM_WORLD)
@@ -3190,7 +3205,8 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 		if myid == main_node:
 			print_msg('\n__ Trials: %2d _________________________________%s\n'%(ntrials, time.strftime('%a_%d_%b_%Y_%H_%M_%S', time.localtime())))
 			print_msg('Criterion: %11.6e \n' % Je)
-		th_update = N // ncpu // 10
+		th_update   = max(N // ncpu // 10, 10)
+		nb_update   = N // ncpu // th_update
 		flag_update = 0
 		
 		while change and watch_dog < maxit:
@@ -3204,7 +3220,8 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 			if SA:
 			   ct_pert = 0
 			shuffle(loc_order)	
-			ct_update = 0	
+			ct_update  = 0
+			ct_nupdate = 0
 			# [id] random number to image
 			for n in xrange(N_start, N_stop):
 				order[n] = loc_order[index]
@@ -3212,11 +3229,12 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 			imn = N_start
 			all_proc_end = 0
 
+			toto = 1
 			while imn < N_stop:
 				# to select random image
 				im        = order[imn]
 				imn      +=  1
-				
+					
 				# [all] compute min dist between object and centroids
 				if CTF:
 					CTFxAve = []
@@ -3256,9 +3274,12 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 					assign[im] = res['pos']
 					change     = 1
 
+				'''
+				JB: Need to check
 				# [all] update to SSE method
 				ct_update += 1
-				if ct_update >= th_update:
+				if ct_update >= th_update and ct_nupdate <= nb_update:
+					ct_nupdate += 1
 					ct_update = 0
 					mpi_barrier(MPI_COMM_WORLD)
 	
@@ -3272,13 +3293,22 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 					Cls['n'] = Cls['n'].tolist() # convert array gave by MPI to list
 
 					# [all] init average, Ji and ctf2
+					FLAG_EXIT_UPDATE  = 0
 					for k in xrange(K):
-						if Cls['n'][k] < 2:
-							ERROR('Empty groups in kmeans_classical', 'k_means_SSE_MPI', 1)
-							exit()	
+						if Cls['n'][k] <= 1:
+							FLAG_EXIT_UPDATE = 1
+							break
 
 						Cls['ave'][k].to_zero()
-						if CTF:	Cls_ctf2[k] = [0] * len_ctm	
+						if CTF:	Cls_ctf2[k] = [0] * len_ctm
+
+					mpi_barrier(MPI_COMM_WORLD)
+
+					# [all] check if need to exit due to initialization
+					FLAG_EXIT_UPDATE = mpi_reduce(FLAG_EXIT_UPDATE, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
+					FLAG_EXIT_UPDATE = mpi_bcast(FLAG_EXIT_UPDATE, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+					FLAG_EXIT_UPDATE = FLAG_EXIT_UPDATE.tolist()[0]
+					if FLAG_EXIT_UPDATE: break
 
 					if CTF:
 						# [id] compute local S ctf2 and local S ave	
@@ -3321,6 +3351,9 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 
 					# [all] waiting the result
 					mpi_barrier(MPI_COMM_WORLD)
+
+				toto += 1
+				'''
 														
 			# [sync]
 			mpi_barrier(MPI_COMM_WORLD)
@@ -3335,10 +3368,11 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 			Cls['n'] = Cls['n'].tolist() # convert array gave by MPI to list
 			
 			# [all] init average, Ji and ctf2, and manage empty cluster
+			FLAG_EMPTY = 0
 			for k in xrange(K):
 				if Cls['n'][k] <= 1:
 					if myid == main_node: print_msg('>>> WARNING: Empty cluster, restart with new partition.\n\n')
-					flag_empty = True
+					FLAG_EMPTY = 1
 					break
 				
 				Cls['ave'][k].to_zero()
@@ -3347,10 +3381,10 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 
 			# [all] broadcast empty cluster information
 			mpi_barrier(MPI_COMM_WORLD)
-			flag_empty = mpi_reduce(flag_empty, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
-			flag_empty = mpi_bcast(flag_empty, 1, MPI_INT, main_node, MPI_COMM_WORLD)
-			flag_empty = flag_empty.tolist()[0]
-			if flag_empty: break
+			FLAG_EMPTY = mpi_reduce(FLAG_EMPTY, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
+			FLAG_EMPTY = mpi_bcast(FLAG_EMPTY, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+			FLAG_EMPTY = FLAG_EMPTY.tolist()[0]
+			if FLAG_EMPTY: break
 			
 			if CTF:
 				# [id] compute local S ctf2 and local S ave	
@@ -3445,13 +3479,12 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 			# [all] Need to broadcast this value because all node must run together
 			change = mpi_reduce(change, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
 			change = mpi_bcast(change, 1, MPI_INT, main_node, MPI_COMM_WORLD)
-			change = change.tolist()
-			change = change[0]
+			change = change.tolist()[0]
 			
 		# [all] waiting the result
 		mpi_barrier(MPI_COMM_WORLD)
 				
-		if not flag_empty:
+		if not FLAG_EMPTY:
 			# [id] memorize the result for this trial	
 			if trials > 1:
 				MemCls[ntrials-1]    = deepcopy(Cls)
@@ -3462,17 +3495,18 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 			# set to zero watch dog trials
 			wd_trials = 0
 		else:
-			flag_empty  = False
+			FLAG_EMPTY  = 0
 			wd_trials  += 1
 			if wd_trials > 10:
 				if trials > 1:
 					MemJe[ntrials-1] = 1e10
 					if ntrials == trials:
-						print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
+						if myid == main_node: print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
 						sys.exit()
-					else:	print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
+					else:
+						if myid == main_node: print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
 				else:
-					print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
+					if myid == main_node: print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
 					sys.exit()
 				wd_trials = 0
 			else:

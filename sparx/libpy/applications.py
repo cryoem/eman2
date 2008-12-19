@@ -10075,14 +10075,14 @@ def k_means_stab_MPI(stack, outdir, maskname, opt_method, K, npart = 5, CTF = Fa
 				logging.info('...... Start partition: %d' % (n + 1))
 				k_means_headlog(stack, 'partition %d' % (n+1), opt_method, N, K, critname, maskname, trials, maxit, CTF, T0, F, rnd[n], nb_cpu)
 			if   opt_method == 'cla':
-				try:			[Cls, assign] = k_means_cla_MPI(im_M, mask, K, rnd[n], maxit, trials, [CTF, ctf, ctf2], myid, main_node, N_start, N_stop, F, T0)
+				try: [Cls, assign] = k_means_cla_MPI(im_M, mask, K, rnd[n], maxit, trials, [CTF, ctf, ctf2], myid, main_node, N_start, N_stop, F, T0)
 				except SystemExit:
 					if myid == main_node: logging.info('[WARNING] Empty cluster')
 					mpi_barrier(MPI_COMM_WORLD)
 					flag_cluster = True
 					break
 			elif opt_method == 'SSE':
-				try:			[Cls, assign] = k_means_SSE_MPI(im_M, mask, K, rnd[n], maxit, trials, [CTF, ctf, ctf2], myid, main_node, nb_cpu, N_start, N_stop, F, T0)
+				try: [Cls, assign] = k_means_SSE_MPI(im_M, mask, K, rnd[n], maxit, trials, [CTF, ctf, ctf2], myid, main_node, nb_cpu, N_start, N_stop, F, T0)
 				except SystemExit:
 					if myid == main_node: logging.info('[WARNING] Empty cluster')
 					mpi_barrier(MPI_COMM_WORLD)
