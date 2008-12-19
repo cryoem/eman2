@@ -52,6 +52,7 @@ from emimage3diso import EMIsosurfaceModule
 from emimage3dvol import EMVolumeModule
 from emimage3dslice import EM3DSliceViewerModule
 from emimage3dsym import EM3DSymViewerModule
+from emlights import EMLightsInspectorBase,EMLightsDrawer
 
 from emglobjects import Camera2, EMViewportDepthTools, Camera, EMImage3DGUIModule,EMGLProjectionViewMatrices,EMOpenGLFlagsAndTools
 from emimageutil import EMEventRerouter, EMTransformPanel, EMParentWin
@@ -91,15 +92,16 @@ class EMImage3DGeneralWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionVi
 		self.target().set_data(data)
 		self.set_camera_defaults(data)
 		
+		
 	def initializeGL(self):
 		glEnable(GL_NORMALIZE)
 		glEnable(GL_LIGHT0)
 		glEnable(GL_DEPTH_TEST)
 		#print "Initializing"
-		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.1, 0.1, 0.1, 1.0])
+		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.0, 0.0, 0.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_POSITION, [0.1,.1,1.,1.])
+		glLightfv(GL_LIGHT0, GL_POSITION, [-4,.1,1.,0.])
 		GL.glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
 		glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_TRUE)
 		GL.glClearColor(0,0,0,0)
@@ -217,10 +219,10 @@ class EMImage3DWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMatri
 		glEnable(GL_LIGHTING)
 		glEnable(GL_LIGHT0)
 		glEnable(GL_DEPTH_TEST)
-		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.1, 0.1, 0.1, 1.0])
-		glLightfv(GL_LIGHT0, GL_DIFFUSE, [0.85,0.85,0.85, 1.0])
+		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.0, 0.0, 0.0, 1.0])
+		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0,1.0,1.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_POSITION, [0.1,.1,1.,1.])
+		glLightfv(GL_LIGHT0, GL_POSITION, [0.1,.1,1.,0.])
 		GL.glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
 		glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_TRUE)
 
@@ -341,7 +343,7 @@ class EMImage3DWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMatri
 		width = self.aspect*height
 		return [width,height]		
 		
-class EMImage3DModule(EMImage3DGUIModule):
+class EMImage3DModule(EMLightsDrawer,EMImage3DGUIModule):
 	
 	def get_qt_widget(self):
 		if self.qt_context_parent == None:	
@@ -377,6 +379,7 @@ class EMImage3DModule(EMImage3DGUIModule):
 	def __init__(self, image=None,application=None):
 		self.viewables = []
 		EMImage3DGUIModule.__init__(self,application,ensure_gl_context=True)
+		EMLightsDrawer.__init__(self)
 		EMImage3DModule.allim[self] = 0
 		self.currentselection = -1
 		self.inspector = None
@@ -470,8 +473,16 @@ class EMImage3DModule(EMImage3DGUIModule):
 			glPushMatrix()
 			i.render()
 			glPopMatrix()
-		
 		glPopMatrix()
+		
+		
+		glPushMatrix()
+		self.cam.translate_only()
+		EMLightsDrawer.draw(self)
+		glPopMatrix()
+		
+		
+		
 		if not self.perspective:
 			glMatrixMode(GL_PROJECTION)
 			glPopMatrix()
@@ -492,6 +503,7 @@ class EMImage3DModule(EMImage3DGUIModule):
 			self.gl_widget.setWindowTitle(remove_directories_from_name(self.file_name))
 		if data == None: return
 		self.data = data
+		self.radius = data.get_zsize()/2.0
 		#for i in self.viewables:
 			#i.set_data(data)
 		
@@ -667,6 +679,8 @@ class EMImageInspector3D(QtGui.QWidget):
 	def get_desktop_hint(self):
 		return "inspector"
 	
+	def set_directional_light_dir(self,d):
+		self.advanced_tab.set_directional_light_dir(d)
 	
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
@@ -811,11 +825,12 @@ class EMImageInspector3D(QtGui.QWidget):
 	
 
 
-class EM3DAdvancedInspector(QtGui.QWidget):
+class EM3DAdvancedInspector(QtGui.QWidget,EMLightsInspectorBase):
 	
 	
 	def __init__(self,target,parent=None):
 		QtGui.QWidget.__init__(self,None)
+		EMLightsInspectorBase.__init__(self)
 		self.target=weakref.ref(target)
 		self.parent=weakref.ref(parent)
 		
@@ -847,10 +862,28 @@ class EM3DAdvancedInspector(QtGui.QWidget):
 		
 		self.vbl.addLayout(self.hbl)
 		
-		self.rotation_sliders.addWidgets(self.vbl)
+		
+		self.tabwidget = QtGui.QTabWidget()
+		self.tabwidget.addTab(self.get_main_tab(), "Transform")
+		self.tabwidget.addTab(self.get_light_tab(), "Lights")
+		
+		#self.tabwidget.addTab(self.get_GL_tab(),"GL")
+		
+		self.vbl.addWidget(self.tabwidget)
+		
+		
+		
 		
 		QtCore.QObject.connect(self.persbut, QtCore.SIGNAL("pressed()"), self.perspective_clicked)
 		QtCore.QObject.connect(self.orthbut, QtCore.SIGNAL("pressed()"), self.ortho_clicked)
+	
+	
+	def get_main_tab(self):
+		self.maintab = QtGui.QWidget()
+		maintab = self.maintab
+		maintab.vbl = QtGui.QVBoxLayout(self.maintab)
+		self.rotation_sliders.addWidgets(maintab.vbl)
+		return self.maintab
 		
 	def get_transform_layout(self):
 		return self.vbl

@@ -101,6 +101,13 @@ namespace EMAN
 			*/
 			void set_rotation( const Dict &rotation );
 			
+			/** Determine the rotation that would transform a vector pointing in the Z direction 
+			 * so that it points in the direction of the argument vector
+			 * Automatically normalizes the vector
+			 * @param v the direction you want to solve for
+			 */
+			void set_rotation(const Vec3f & v);
+			
 			/** Get a rotation in any Euler format
 			 * @param euler_type the requested Euler type
 			 * @return a dictionary containing the key-entry pairs describing the rotations in terms of the requested Euler type

@@ -138,7 +138,6 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		
 		self.reduce = False
 		
-		
 		self.eulers_specified = False # from e2au.py = if you want to specify a specific set of eulers this is required
 		self.specified_eulers = None # from e2au.py = if you want to specify a specific set of eulers this is required
 		self.colors_specified = False # as above

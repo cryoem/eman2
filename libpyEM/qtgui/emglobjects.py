@@ -1221,6 +1221,9 @@ class Camera2(EventsEmitterAndReciever):
 			glRotate(-float(rot["phi"]),0,0,1)
 		
 	
+	def translate_only(self):
+		glTranslate(self.cam_x, self.cam_y, self.cam_z)
+	
 	def position(self,norot=False):
 		# position the camera, regualar OpenGL movement.
 		if (self.debug):
@@ -2053,6 +2056,37 @@ def get_RGB_tab(parent, name=""):
 	rgbtab.vbl.addWidget(rgbtab.b)
 	
 	return rgbtab
+
+def get_gl_lights_vector():
+	'''
+	Returns a vector containing the opengl light constants, e.g.
+	[GL_LIGHT0,G_LIGHT1,...]
+	All the way up to the number of available lights
+	
+	'''
+	n = glGetInteger(GL_MAX_LIGHTS)
+	lights = []
+	if n > 0: lights.append(GL_LIGHT0)
+	if n > 1: lights.append(GL_LIGHT1)
+	if n > 2: lights.append(GL_LIGHT2)
+	if n > 3: lights.append(GL_LIGHT3)
+	if n > 4: lights.append(GL_LIGHT4)
+	if n > 5: lights.append(GL_LIGHT5)
+	if n > 6: lights.append(GL_LIGHT6)
+	if n > 7: lights.append(GL_LIGHT7)
+	if n > 8: lights.append(GL_LIGHT8)
+	if n > 9: lights.append(GL_LIGHT9)
+	if n > 10: lights.append(GL_LIGHT10)
+	if n > 11: lights.append(GL_LIGHT11)
+	if n > 12: lights.append(GL_LIGHT12)
+	if n > 13: lights.append(GL_LIGHT13)
+	if n > 14: lights.append(GL_LIGHT14)
+	if n > 15: lights.append(GL_LIGHT15)
+	if n > 16: 
+		print "warning, more than 16 lights is unhandled but probably harmless"
+		
+	return lights
+
 
 def get_default_gl_colors():
 	ruby = {}

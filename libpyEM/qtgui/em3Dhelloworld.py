@@ -206,7 +206,9 @@ class EM3DHelloWorld(EMImage3DGUIModule):
 		self.inspector.update_rotations(t3d)
 	
 	def get_inspector(self):
-		if not self.inspector : self.inspector=EMHelloWorldInspector(self)
+		if not self.inspector : 
+			self.inspector=EMHelloWorldInspector(self)
+			self.inspector.setColors(self.colors,self.currentcolor)
 		return self.inspector
 		
 

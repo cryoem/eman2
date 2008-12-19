@@ -439,6 +439,29 @@ Transform Transform::get_rotation_transform() const
 	return ret;
 }
 
+void Transform::set_rotation(const Vec3f & v)
+{
+	
+	if ( v[0] == 0 && v[1] == 0 && v[2] == 0 )
+		throw UnexpectedBehaviorException("Can't set rotation for the null vector");
+	
+	Vec3f v1(v);
+	v1.normalize();
+	
+	float theta = acos(v1[2]); // in radians
+	float psi = atan2(v1[1],v1[0]);
+// 	if (v1[1] != 0) psi = asin(v1[1]/sin(theta)); // in radians
+	
+	Dict d;
+	d["theta"] = (float)EMConsts::rad2deg*theta;
+	d["psi"] = (float)EMConsts::rad2deg*psi;
+	d["phi"] = (float)0.0;
+	d["type"] = "spider";
+	
+	set_rotation(d);
+	
+}
+
 Dict Transform::get_rotation(const string& euler_type) const
 {
 	Dict result;

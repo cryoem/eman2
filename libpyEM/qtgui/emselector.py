@@ -68,8 +68,6 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.hbl.setMargin(0)
 		self.hbl.setSpacing(6)
 		self.hbl.setObjectName("hbl")
-	
-		self.list_hdl = QtGui.QHBoxLayout()
 		
 		self.__init_icons()
 		
@@ -87,14 +85,15 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.previews = [] # keeps track of all of the preview windows
 		self.module_events = [] # used to coordinate signals from the modules, especially close events, to free memory
 		self.list_widget_data= [] # entries should be tuples containing (current folder item)
+		self.splitter = QtGui.QSplitter()
 		self.__add_list_widget(self.first_list_widget)
 		self.__add_list_widget()
 		self.__add_list_widget()
 		
+		self.hbl.addWidget(self.splitter,1)
+		
 		self.__load_directory_data(self.starting_directory,self.first_list_widget)
 		#self.first_list_widget.setCurrentRow(-1)
-		
-		self.hbl.addLayout(self.list_hdl)
 
 		self.bottom_hbl = QtGui.QHBoxLayout()
 		self.bottom_hbl.addWidget(self.filter_text,0)
@@ -287,7 +286,7 @@ class EMSelectorDialog(QtGui.QDialog):
 		list_widget.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
 		list_widget.setMouseTracking(True)	
 		self.list_widgets.append(list_widget)
-		self.list_hdl.addWidget(list_widget)
+		self.splitter.addWidget(list_widget)
 		self.list_widget_data.append(None)
 		
 		QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemDoubleClicked(QListWidgetItem*)"),self.list_widget_dclicked)
