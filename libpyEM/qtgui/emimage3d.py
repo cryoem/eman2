@@ -685,6 +685,12 @@ class EMImageInspector3D(QtGui.QWidget):
 	def set_directional_light_dir(self,d):
 		self.advanced_tab.set_directional_light_dir(d)
 	
+	def set_positional_light_pos(self,d):
+		self.advanced_tab.set_positional_light_pos(d)
+		
+	def set_positional_light_dir(self,d):
+		self.advanced_tab.set_positional_light_dir(d)
+	
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
 		self.target=weakref.ref(target)
@@ -836,18 +842,34 @@ class EM3DAdvancedInspector(QtGui.QWidget,EMLightsInspectorBase):
 		EMLightsInspectorBase.__init__(self)
 		self.target=weakref.ref(target)
 		self.parent=weakref.ref(parent)
+
+		self.vbl = QtGui.QVBoxLayout(self)
+		self.vbl.setMargin(0)
+		self.vbl.setSpacing(6)
+		self.vbl.setObjectName("vbl")
+
+		self.tabwidget = QtGui.QTabWidget()
+		self.tabwidget.addTab(self.get_main_tab(), "Transform")
+		self.tabwidget.addTab(self.get_light_tab(), "Lights")
 		
-		self.rotation_sliders = EMTransformPanel(self.target(),self)
+		#self.tabwidget.addTab(self.get_GL_tab(),"GL")
+		
+		self.vbl.addWidget(self.tabwidget)
+		
+
+		QtCore.QObject.connect(self.persbut, QtCore.SIGNAL("pressed()"), self.perspective_clicked)
+		QtCore.QObject.connect(self.orthbut, QtCore.SIGNAL("pressed()"), self.ortho_clicked)
+	
+	
+	def get_main_tab(self):
+		self.maintab = QtGui.QWidget()
+		maintab = self.maintab
+		maintab.vbl = QtGui.QVBoxLayout(self.maintab)
 		
 		self.hbl = QtGui.QHBoxLayout()
 		self.hbl.setMargin(2)
 		self.hbl.setSpacing(6)
 		self.hbl.setObjectName("hbl")
-		
-		self.vbl = QtGui.QVBoxLayout(self)
-		self.vbl.setMargin(0)
-		self.vbl.setSpacing(6)
-		self.vbl.setObjectName("vbl")
 		
 		self.persbut = QtGui.QRadioButton("Perspective")
 		
@@ -863,29 +885,12 @@ class EM3DAdvancedInspector(QtGui.QWidget,EMLightsInspectorBase):
 		
 		self.hbl.addWidget(self.viewingvol)
 		
-		self.vbl.addLayout(self.hbl)
+		maintab.vbl.addLayout(self.hbl)
 		
-		
-		self.tabwidget = QtGui.QTabWidget()
-		self.tabwidget.addTab(self.get_main_tab(), "Transform")
-		self.tabwidget.addTab(self.get_light_tab(), "Lights")
-		
-		#self.tabwidget.addTab(self.get_GL_tab(),"GL")
-		
-		self.vbl.addWidget(self.tabwidget)
-		
-		
-		
-		
-		QtCore.QObject.connect(self.persbut, QtCore.SIGNAL("pressed()"), self.perspective_clicked)
-		QtCore.QObject.connect(self.orthbut, QtCore.SIGNAL("pressed()"), self.ortho_clicked)
-	
-	
-	def get_main_tab(self):
-		self.maintab = QtGui.QWidget()
-		maintab = self.maintab
-		maintab.vbl = QtGui.QVBoxLayout(self.maintab)
+		self.rotation_sliders = EMTransformPanel(self.target(),self)
 		self.rotation_sliders.addWidgets(maintab.vbl)
+		
+		
 		return self.maintab
 		
 	def get_transform_layout(self):

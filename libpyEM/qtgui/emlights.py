@@ -84,7 +84,12 @@ class EMLightsDrawer:
 		#print "setting current light",light
 		self.current_light = light
 		if self.mouse_target != None:
-			self.mouse_target =  DirectionalLightMouseEvents(self.current_light,self.inspector)\
+			pos = glGetLightfv(self.current_light,GL_POSITION)
+			if pos[3] == 0:
+				self.mouse_target = DirectionalLightMouseEvents(self.current_light,self.inspector)
+			else:
+				self.mouse_target = PointSourceLightMouseEvents(self.current_light,self.inspector)
+			#self.mouse_target =  DirectionalLightMouseEvents(self.current_light,self.inspector)\
 			
 	def generate_arcs(self,points,n,halt=0):
 		for i in range(0,n-halt):
@@ -235,6 +240,9 @@ class EMLightsDrawer:
 				#print sc
 			
 				v = Vec3f(-float(sp[0]),float(sp[1]),float(sp[2]))
+				if v.length() == 0:
+					glPopMatrix()
+					return
 				t = Transform()
 				t.set_rotation(v)
 				d = t.get_rotation("eman")
@@ -375,7 +383,11 @@ class EMLightsDrawer:
 	def light_manipulation_toggled(self,state):
 		self.light_manip = state
 		if state:
-			self.mouse_target = DirectionalLightMouseEvents(self.current_light,self.inspector)
+			pos = glGetLightfv(self.current_light,GL_POSITION)
+			if pos[3] == 0:
+				self.mouse_target = DirectionalLightMouseEvents(self.current_light,self.inspector)
+			else:
+				self.mouse_target = PointSourceLightMouseEvents(self.current_light,self.inspector)
 		else:
 			self.mouse_target = None
 			
@@ -438,12 +450,9 @@ class EMLights(EMLightsDrawer,EMImage3DGUIModule):
 		self.highresspheredl = 0 # display list id
 
 		self.draw_dl = 0
-		
-	
+
 	def get_type(self):
 		return "lights"
-	
-
 
 	def render(self):
 		#if (not isinstance(self.data,EMData)): return
@@ -581,27 +590,79 @@ class EMLights(EMLightsDrawer,EMImage3DGUIModule):
 			self.inspector=EMLightsInspector(self)
 			self.inspector.setColors(self.colors,self.currentcolor)
 		return self.inspector
-		
-class DirectionalLightMouseEvents:
+
+
+class PointSourceLightMouseEvents:
 	def __init__(self,current_light,inspector):
 		self.current_light = current_light
 		self.inspector = inspector
 		self.mpressx = None
 		self.mpressy = None
+		
 	def mousePressEvent(self,event):
 		self.mpressx = event.x()
 		self.mpressy = event.y()
 
-		
 	def mouseMoveEvent(self,event):
-		self.motion_rotate(self.mpressx - event.x(), self.mpressy - event.y())
-		self.mpressx = event.x()
-		self.mpressy = event.y()
+		if event.buttons()&Qt.RightButton and event.modifiers()&Qt.ShiftModifier:
+					
+			self.motion_translate_z_only(self.mpressx, self.mpressy,event)
+			self.mpressx = event.x()
+			self.mpressy = event.y()
+
+		elif event.buttons()&Qt.RightButton:
+			self.motion_translate(self.mpressx, self.mpressy,event)
+				
+			self.mpressx = event.x()
+			self.mpressy = event.y()
+		else:
+			self.motion_rotate(self.mpressx - event.x(), self.mpressy - event.y())
+			self.mpressx = event.x()
+			self.mpressy = event.y()
 
 	def mouseReleaseEvent(self,event):
 		pass
+	
+	def motion_translate_z_only(self,prev_x,prev_y,event):
+		[dx,dy] = [event.x()-prev_x,prev_y-event.y()]
+		dx /= 10.0
+		dy /= 10.0
+		d = abs(dx) + abs(dy)
+		if dy > 0: d = -d 
 		
+		pos = glGetLightfv(self.current_light,GL_POSITION)
+		
+		test_pos = [0,0,0,1]
+		glLightfv(self.current_light,GL_POSITION,test_pos)
+		test_pos_out = glGetLightfv(self.current_light,GL_POSITION)
+		# reset to the correction position
+		pos = [ (pos[i] - test_pos_out[i]) for i in range(3)]
+		pos[2] += d
 
+		pos.append(1)
+		glLightfv(self.current_light,GL_POSITION,pos)
+
+		self.inspector.set_positional_light_pos(pos)
+		
+	def motion_translate(self,prev_x,prev_y,event):
+		[dx,dy] = [event.x()-prev_x,prev_y-event.y()]
+		dx /= 10.0
+		dy /= 10.0
+		pos = glGetLightfv(self.current_light,GL_POSITION)
+		
+		test_pos = [0,0,0,1]
+		glLightfv(self.current_light,GL_POSITION,test_pos)
+		test_pos_out = glGetLightfv(self.current_light,GL_POSITION)
+		# reset to the correction position
+		pos = [ (pos[i] - test_pos_out[i]) for i in range(3)]
+		pos[0] += dx
+		pos[1] += dy
+		
+		pos.append(1)
+		glLightfv(self.current_light,GL_POSITION,pos)
+
+		self.inspector.set_positional_light_pos(pos)
+		
 	def motion_rotate(self,x,y,fac=1.0):
 		# this function implements mouse interactive rotation
 		# [x,y] is the vector generating by the mouse movement (in the plane of the screen)
@@ -618,7 +679,72 @@ class DirectionalLightMouseEvents:
 		length = sqrt(x*x + y*y)
 		# motiondull is a magic number - things rotate more if they are closer and slower if they are far away in this appproach
 		# This magic number could be overcome using a strategy based on the results of get_render_dims_at_depth
-		angle = fac*length/pi
+		angle = 4*fac*length/pi # the four is just because I liked the feel of it
+		
+		t = Transform()
+		quaternion = {}
+		quaternion["Omega"] = angle
+		quaternion["n1"] = rotaxis_x
+		quaternion["n2"] = rotaxis_y
+		quaternion["n3"] = rotaxis_z
+		quaternion["type"] = "spin"
+		
+		t.set_rotation( quaternion )
+		
+		dr = glGetLightfv(self.current_light,GL_SPOT_DIRECTION)
+		v = Vec3f(-float(dr[0]),float(dr[1]),float(dr[2]))
+		torig = Transform()
+		torig.set_rotation(v)
+		
+		
+		t2 = t*torig
+		
+		new_dr = t2*Vec3f(0,0,1)
+		new_dr_list = [new_dr[i] for i in range(3)]
+
+		glLightfv(self.current_light,GL_SPOT_DIRECTION,new_dr_list)
+		if self.inspector != None: self.inspector.set_positional_light_dir(new_dr_list)
+		#self.light_x_dir.setValue(pos[0])
+		#self.light_y_dir.setValue(pos[1])
+		#self.light_z_dir.setValue(pos[2])
+
+
+class DirectionalLightMouseEvents:
+	def __init__(self,current_light,inspector):
+		self.current_light = current_light
+		self.inspector = inspector
+		self.mpressx = None
+		self.mpressy = None
+	
+	def mousePressEvent(self,event):
+		self.mpressx = event.x()
+		self.mpressy = event.y()
+
+	def mouseMoveEvent(self,event):
+		self.motion_rotate(self.mpressx - event.x(), self.mpressy - event.y())
+		self.mpressx = event.x()
+		self.mpressy = event.y()
+
+	def mouseReleaseEvent(self,event):
+		pass
+		
+	def motion_rotate(self,x,y,fac=1.0):
+		# this function implements mouse interactive rotation
+		# [x,y] is the vector generating by the mouse movement (in the plane of the screen)
+		# Rotation occurs about the vector 90 degrees to [x,y,0]
+		# The amount of rotation is linealy proportional to the length of [x,y]
+		
+		if ( x == 0 and y == 0): return
+		
+		theta = atan2(-y,x)
+
+		rotaxis_x = -sin(theta)
+		rotaxis_y = cos(theta)
+		rotaxis_z = 0
+		length = sqrt(x*x + y*y)
+		# motiondull is a magic number - things rotate more if they are closer and slower if they are far away in this appproach
+		# This magic number could be overcome using a strategy based on the results of get_render_dims_at_depth
+		angle = 4*fac*length/pi # the four is just because I liked the feel of it
 		
 		t = Transform()
 		quaternion = {}
@@ -641,7 +767,7 @@ class DirectionalLightMouseEvents:
 		new_pos = t2*Vec3f(0,0,1)
 		new_pos_list = [new_pos[i] for i in range(3)]
 		new_pos_list.append(0)
-		new_pos_list[0] = new_pos_list[0]
+		#new_pos_list[0] = new_pos_list[0]
 		#print self.current_light
 		glLightfv(self.current_light,GL_POSITION,new_pos_list)
 		if self.inspector != None: self.inspector.set_directional_light_dir(new_pos_list)
@@ -659,6 +785,23 @@ class EMLightsInspectorBase:
 		self.gl_lights = get_gl_lights_vector()
 		self.quiet = False
 
+
+	def set_positional_light_pos(self,pos):
+		self.quiet = True
+		p = [self.light_x_pos,self.light_y_pos,self.light_z_pos]
+		for i,w in enumerate(p):
+			w.setValue(pos[i])
+		
+		self.quiet = False
+
+	def set_positional_light_dir(self,direction):
+		self.quiet = True
+		p = [self.light_ps_xdir,self.light_ps_ydir,self.light_ps_zdir]
+		for i,w in enumerate(p):
+			w.setValue(direction[i])
+		
+		self.quiet = False
+
 	def set_directional_light_dir(self,direction):
 		
 		self.quiet = True
@@ -672,6 +815,8 @@ class EMLightsInspectorBase:
 		if self.quiet: return
 		
 		l = self.get_current_light()
+		if l == None: return
+		
 		attribs = ["r","g","b"]
 		amb = [ getattr(self.light_ambient, a).getValue() for a in attribs]
 		amb.append(1.0) # alpha
@@ -680,16 +825,34 @@ class EMLightsInspectorBase:
 		spec = [ getattr(self.light_specular, a).getValue() for a in attribs]
 		spec.append(1.0) # alpha
 		
-		#print self.light_x_dir.value()
-		p = [self.light_x_dir,self.light_y_dir,self.light_z_dir,self.light_w_pos]
-		pos = [float(a.value()) for a in p]
-		
 		
 		glLightfv(l, GL_AMBIENT, amb)
 		glLightfv(l, GL_DIFFUSE, dif)
 		glLightfv(l, GL_SPECULAR, spec)
-		glLightfv(l, GL_POSITION, pos) # note that if you set a positional light source's position it gets transformed to eye coordinates internally
-	
+		
+		pos = glGetLightfv(l,GL_POSITION)
+		if pos[3] == 0:
+			# directional light
+			p = [self.light_x_dir,self.light_y_dir,self.light_z_dir]
+			pos = [float(a.value()) for a in p]
+			pos.append(0) # i.e. directional light
+			glLightfv(l, GL_POSITION, pos)
+		else:
+			p = [self.light_x_pos,self.light_y_pos,self.light_z_pos]
+			pos = [float(a.value()) for a in p]
+			pos.append(1) # i.e.point light
+			glLightfv(l, GL_POSITION, pos)
+			
+			d = [self.light_ps_xdir,self.light_ps_ydir,self.light_ps_zdir]
+			dr = [float(a.value()) for a in d]
+			glLightfv(l, GL_SPOT_DIRECTION, dr)
+			
+			glLightfv(l,GL_CONSTANT_ATTENUATION,self.const_atten.getValue())
+			glLightfv(l,GL_LINEAR_ATTENUATION,self.linear_atten.getValue())
+			glLightfv(l,GL_QUADRATIC_ATTENUATION,self.quad_atten.getValue())
+			glLightfv(l,GL_SPOT_CUTOFF,self.spot_cutoff.getValue())
+			glLightfv(l,GL_SPOT_EXPONENT,self.spot_exponent.getValue())
+
 		
 		self.target().updateGL()
 		
@@ -725,7 +888,7 @@ class EMLightsInspectorBase:
 		
 		
 		self.light_tab_widget.addTab(self.get_directional_light_tab(), "Directional")
-		self.light_tab_widget.addTab(self.get_pointsource_light_tab(), "Point")
+		self.light_tab_widget.addTab(self.get_pointsource_light_tab(), "Point source")
 		
 		vbl.addWidget(self.light_tab_widget)
 		
@@ -764,6 +927,8 @@ class EMLightsInspectorBase:
 	
 	def get_current_light(self):
 		selected_items = self.light_list.selectedItems()
+		if len(selected_items) == 0: selected_items = self.point_light_list.selectedItems()
+			
 		if len(selected_items) == 0:
 			return None
 		if len(selected_items) > 1:
@@ -780,28 +945,60 @@ class EMLightsInspectorBase:
 	def refresh_light_states(self):
 		self.quiet = True
 		l = self.get_current_light()
-		self.target().set_current_light(l)
+		if l == None: return
 		
+		self.target().set_current_light(l)
 		amb = glGetLightfv(l,GL_AMBIENT)
 		dif =  glGetLightfv(l,GL_DIFFUSE)
 		spec = glGetLightfv(l,GL_SPECULAR)
-		self.light_ambient.r.setValue(amb[0])
-		self.light_ambient.g.setValue(amb[1])
-		self.light_ambient.b.setValue(amb[2])
+		self.light_ambient.r.setValue(float(amb[0]))
+		self.light_ambient.g.setValue(float(amb[1]))
+		self.light_ambient.b.setValue(float(amb[2]))
 		
-		self.light_diffuse.r.setValue(dif[0])
-		self.light_diffuse.g.setValue(dif[1])
-		self.light_diffuse.b.setValue(dif[2])
+		self.light_diffuse.r.setValue(float(dif[0]))
+		self.light_diffuse.g.setValue(float(dif[1]))
+		self.light_diffuse.b.setValue(float(dif[2]))
 		
-		self.light_specular.r.setValue(spec[0])
-		self.light_specular.g.setValue(spec[1])
-		self.light_specular.b.setValue(spec[2])
+		self.light_specular.r.setValue(float(spec[0]))
+		self.light_specular.g.setValue(float(spec[1]))
+		self.light_specular.b.setValue(float(spec[2]))
 		
 		pos = glGetLightfv(l,GL_POSITION)
-		self.light_x_dir.setValue(pos[0])
-		self.light_y_dir.setValue(pos[1])
-		self.light_z_dir.setValue(pos[2])
-	
+		if pos[3] == 0:
+			self.light_x_dir.setValue(float(pos[0]))
+			self.light_y_dir.setValue(float(pos[1]))
+			self.light_z_dir.setValue(float(pos[2]))
+		else:
+			# it's a point source
+			
+			# have to figure out the model coordinates, do this
+			# by setting the light position to zero and then 
+			# getting the light position. Calculate the difference...
+			test_pos = [0,0,0,1]
+			glLightfv(l,GL_POSITION,test_pos)
+			test_pos_out = glGetLightfv(l,GL_POSITION)
+			# reset to the correction position
+			pos = [ (pos[i] - test_pos_out[i]) for i in range(3)]
+			pos.append(1)
+			glLightfv(l,GL_POSITION,pos)
+			
+			self.light_x_pos.setValue(float(pos[0]))
+			self.light_y_pos.setValue(float(pos[1]))
+			self.light_z_pos.setValue(float(pos[2]))
+			
+			dr = glGetLightfv(l,GL_SPOT_DIRECTION)
+			self.light_ps_xdir.setValue(float(dr[0]))
+			self.light_ps_ydir.setValue(float(dr[1]))
+			self.light_ps_zdir.setValue(float(dr[2]))
+			
+			self.const_atten.setValue(float(glGetLightfv(l,GL_CONSTANT_ATTENUATION)))
+			self.linear_atten.setValue(float(glGetLightfv(l,GL_LINEAR_ATTENUATION)))
+			self.quad_atten.setValue(float(glGetLightfv(l,GL_QUADRATIC_ATTENUATION)))
+			
+			self.spot_cutoff.setValue(float(glGetLightfv(l,GL_SPOT_CUTOFF)))
+			self.spot_exponent.setValue(float(glGetLightfv(l,GL_SPOT_EXPONENT)))
+			
+			
 		self.target().updateGL()
 		self.quiet = False
 	def local_viewer_checked(self,i):
@@ -814,7 +1011,13 @@ class EMLightsInspectorBase:
 		self.redo_directional_light_list()
 		
 		self.refresh_light_states()
-		#self.target().updateGL()
+		self.target().updateGL()
+		
+	def del_pointsource_light(self):
+		glDisable(self.get_current_light())
+		self.redo_pointsource_light_list()
+		self.refresh_light_states()
+		self.target().updateGL()
 		
 	def redo_directional_light_list(self):
 		self.light_list.clear()
@@ -825,9 +1028,62 @@ class EMLightsInspectorBase:
 					a = QtGui.QListWidgetItem("Light "+str(i),self.light_list)
 					if len(self.light_list.selectedItems()) == 0:
 						a.setSelected(True)
-			
-		#self.light_list.removeItemWidget(item)
+						
+	def redo_pointsource_light_list(self):
+		self.point_light_list.clear()
+		for i,l in enumerate(self.gl_lights):
+			if glIsEnabled(l):
+				pos = glGetLightfv(l,GL_POSITION)
+				if pos[3] == 1:
+					a = QtGui.QListWidgetItem("Light "+str(i),self.light_list)
+					if len(self.light_list.selectedItems()) == 0 and len(self.point_light_list.selectedItems()) == 0:
+						a.setSelected(True)
+		
+	
 	def new_directional_light(self):
+		self.new_light()
+	
+	def new_pointsource_light(self):
+		self.new_light(point_source=True)
+		
+	def new_light(self,point_source=False):
+		for i,l in enumerate(self.gl_lights):
+			if not glIsEnabled(l):
+				glEnable(l)
+				pos = glGetLightfv(l,GL_POSITION)
+				
+				if point_source:
+					# make sure that it's a point source
+					if pos[3] != 1:
+						pos[3] = 1
+						glLightfv(l,GL_POSITION,pos)
+					
+					spot_cutoff = glGetLightfv(l,GL_SPOT_CUTOFF)
+					if spot_cutoff > 90: glLightfv(l,GL_SPOT_CUTOFF,90)
+				else:
+					# make sure that it's directionaly
+					if pos[3] != 0:
+						pos[3] = 0
+						glLightfv(l,GL_POSITION,pos)
+						
+					
+				new_label = "Light "+str(i)
+				
+				if not point_source: 
+					a = QtGui.QListWidgetItem(new_label,self.light_list)
+					for item in self.point_light_list.selectedItems(): item.setSelected(False)
+						
+				else:
+					a = QtGui.QListWidgetItem(new_label,self.point_light_list)
+					for item in self.light_list.selectedItems(): item.setSelected(False)
+					
+				a.setSelected(True)
+				self.refresh_light_states()
+				break
+		else:
+			print "write a message box to say that there are no available lights!"
+	
+	def new_point_source_light(self):
 		for i,l in enumerate(self.gl_lights):
 			if not glIsEnabled(l):
 				glEnable(l)
@@ -835,6 +1091,7 @@ class EMLightsInspectorBase:
 				
 				a = QtGui.QListWidgetItem(new_label,self.light_list)
 				a.setSelected(True)
+				
 				self.refresh_light_states()
 				break
 		else:
@@ -846,7 +1103,11 @@ class EMLightsInspectorBase:
 			#if glIsEnabled(
 	
 	def light_list_clicked(self,item):
-
+		for item in self.point_light_list.selectedItems(): item.setSelected(False)
+		self.refresh_light_states()
+		
+	def point_light_list_clicked(self,item):
+		for item in self.light_list.selectedItems(): item.setSelected(False)
 		self.refresh_light_states()
 		
 	
@@ -879,8 +1140,8 @@ class EMLightsInspectorBase:
 		
 		new_light = QtGui.QPushButton("New")
 		vbl2.addWidget(new_light)
-		copy_light = QtGui.QPushButton("Copy")
-		vbl2.addWidget(copy_light)
+		#copy_light = QtGui.QPushButton("Copy")
+		#vbl2.addWidget(copy_light)
 		del_light = QtGui.QPushButton("Delete")
 		vbl2.addWidget(del_light)
 		
@@ -948,13 +1209,7 @@ class EMLightsInspectorBase:
 		self.point_light_list = QtGui.QListWidget(None)
 		self.point_light_list.setMouseTracking(True)
 		
-		for i,l in enumerate(self.gl_lights):
-			if glIsEnabled(l):
-				pos = glGetLightfv(l,GL_POSITION)
-				if pos[3] == 1:
-					a = QtGui.QListWidgetItem("Light "+str(i),self.light_list)
-					if len(self.light_list.selectedItems()) == 0 and len(self.point_light_list.selectedItems()) == 0:
-						a.setSelected(True)
+		self.redo_pointsource_light_list()
 		#a = QtGui.QListWidgetItem(str("Light 0"),self.light_list)
 		#a.setSelected(True)
 		hbl.addWidget(self.point_light_list)
@@ -967,11 +1222,14 @@ class EMLightsInspectorBase:
 		
 		new_light = QtGui.QPushButton("New")
 		vbl2.addWidget(new_light)
-		copy_light = QtGui.QPushButton("Copy")
-		vbl2.addWidget(copy_light)
+		#copy_light = QtGui.QPushButton("Copy")
+		#vbl2.addWidget(copy_light)
 		del_light = QtGui.QPushButton("Delete")
 		vbl2.addWidget(del_light)
 		
+		
+		pos_label = QtGui.QLabel()
+		pos_label.setText('Pos: ')
 		
 		x_label = QtGui.QLabel()
 		x_label.setText('x')
@@ -997,28 +1255,101 @@ class EMLightsInspectorBase:
 		self.light_z_pos.setMaximum(100000)
 		self.light_z_pos.setValue(0.0)
 		
-		w_label = QtGui.QLabel()
-		w_label.setText('w')
-		
-		self.light_w_pos = QtGui.QSpinBox(self)
-		self.light_w_pos.setMinimum(0)
-		self.light_w_pos.setMaximum(1)
-		self.light_w_pos.setValue(0)
 		
 		hbl_trans = QtGui.QHBoxLayout()
 		hbl_trans.setMargin(0)
 		hbl_trans.setSpacing(6)
 		hbl_trans.setObjectName("Trans")
+		hbl_trans.addWidget(pos_label)
 		hbl_trans.addWidget(x_label)
 		hbl_trans.addWidget(self.light_x_pos)
 		hbl_trans.addWidget(y_label)
 		hbl_trans.addWidget(self.light_y_pos)
 		hbl_trans.addWidget(z_label)
 		hbl_trans.addWidget(self.light_z_pos)
-		hbl_trans.addWidget(w_label)
-		hbl_trans.addWidget(self.light_w_pos)
 		
 		vbl.addLayout(hbl_trans)
+	
+		
+		self.const_atten = ValSlider(self.pointsource_light_widget,(0.0,5.0),"Const atten.:")
+		self.const_atten.setValue(1.0)
+		vbl.addWidget(self.const_atten)
+		
+		self.linear_atten = ValSlider(self.pointsource_light_widget,(0.0,0.5),"Linear atten.:")
+		self.linear_atten.setValue(1.0)# why o why?
+		self.linear_atten.setValue(0.0)
+		vbl.addWidget(self.linear_atten)
+		
+		self.quad_atten = ValSlider(self.pointsource_light_widget,(0.0,0.05),"Quad. atten.:")
+		self.quad_atten.setValue(1.0) # why o why?
+		self.quad_atten.setValue(0.0)
+		vbl.addWidget(self.quad_atten)
+		
+		
+		dir_label = QtGui.QLabel()
+		dir_label.setText('Dir: ')
+		
+		self.light_ps_xdir = QtGui.QDoubleSpinBox(self)
+		self.light_ps_xdir.setMinimum(-100000)
+		self.light_ps_xdir.setMaximum(100000)
+		self.light_ps_xdir.setValue(0.0)
+	
+		y_label = QtGui.QLabel()
+		y_label.setText('y')
+		
+		self.light_ps_ydir = QtGui.QDoubleSpinBox(self)
+		self.light_ps_ydir.setMinimum(-100000)
+		self.light_ps_ydir.setMaximum(100000)
+		self.light_ps_ydir.setValue(0.0)
+		
+		z_label = QtGui.QLabel()
+		z_label.setText('z')
+		
+		self.light_ps_zdir = QtGui.QDoubleSpinBox(self)
+		self.light_ps_zdir.setMinimum(-100000)
+		self.light_ps_zdir.setMaximum(100000)
+		self.light_ps_zdir.setValue(0.0)
+		
+		hbl_trans2 = QtGui.QHBoxLayout()
+		hbl_trans2.setMargin(0)
+		hbl_trans2.setSpacing(6)
+		hbl_trans2.setObjectName("Trans")
+		hbl_trans2.addWidget(dir_label)
+		hbl_trans2.addWidget(x_label)
+		hbl_trans2.addWidget(self.light_ps_xdir)
+		hbl_trans2.addWidget(y_label)
+		hbl_trans2.addWidget(self.light_ps_ydir)
+		hbl_trans2.addWidget(z_label)
+		hbl_trans2.addWidget(self.light_ps_zdir)
+		
+		vbl.addLayout(hbl_trans2)
+		
+			
+		self.spot_cutoff = ValSlider(self.pointsource_light_widget,(0.0,90.0),"Spot cutoff:")
+		self.spot_cutoff.setValue(90)
+		vbl.addWidget(self.spot_cutoff)
+		
+		self.spot_exponent = ValSlider(self.pointsource_light_widget,(0,10.0),"Spot exponent:")
+		self.spot_exponent.setValue(1.0) # why o why?
+		self.spot_exponent.setValue(0.0)
+		vbl.addWidget(self.spot_exponent)
+		
+		
+		QtCore.QObject.connect(new_light, QtCore.SIGNAL("clicked()"), self.new_pointsource_light)
+		QtCore.QObject.connect(self.point_light_list, QtCore.SIGNAL("itemPressed(QListWidgetItem*)"), self.point_light_list_clicked)
+		QtCore.QObject.connect(self.light_x_pos, QtCore.SIGNAL("valueChanged(double)"), self.update_light)
+		QtCore.QObject.connect(self.light_y_pos, QtCore.SIGNAL("valueChanged(double)"), self.update_light)
+		QtCore.QObject.connect(self.light_z_pos, QtCore.SIGNAL("valueChanged(double)"), self.update_light)
+		QtCore.QObject.connect(self.light_ps_xdir, QtCore.SIGNAL("valueChanged(double)"), self.update_light)
+		QtCore.QObject.connect(self.light_ps_ydir, QtCore.SIGNAL("valueChanged(double)"), self.update_light)
+		QtCore.QObject.connect(self.light_ps_zdir, QtCore.SIGNAL("valueChanged(double)"), self.update_light)
+		QtCore.QObject.connect(self.spot_cutoff, QtCore.SIGNAL("valueChanged"), self.update_light)
+		QtCore.QObject.connect(self.spot_exponent, QtCore.SIGNAL("valueChanged"), self.update_light)
+		QtCore.QObject.connect(self.const_atten, QtCore.SIGNAL("valueChanged"), self.update_light)
+		QtCore.QObject.connect(self.linear_atten, QtCore.SIGNAL("valueChanged"), self.update_light)
+		QtCore.QObject.connect(self.quad_atten, QtCore.SIGNAL("valueChanged"), self.update_light)
+
+		QtCore.QObject.connect(del_light, QtCore.SIGNAL("clicked()"), self.del_pointsource_light)
 		
 		return self.pointsource_light_widget
 	
