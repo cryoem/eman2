@@ -31,7 +31,7 @@
 from EMAN2_cppwrap import *
 from global_def import *
 	
-def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, CTF=False, random_method="", T=1.0, SA_stop=False):
+def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, CTF=False, random_method="", T=1.0):
 	"""
 		single iteration of 2D alignment using ormq
 		if CTF = True, apply CTF to data (not to reference!)
@@ -50,7 +50,7 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode
 	maxrin = numr[-1]
 	sx_sum = 0.0
 	sy_sum = 0.0
-	
+
 	for im in xrange(len(data)):
 		if CTF:
 			#Apply CTF to image
@@ -65,30 +65,17 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode
 		# align current image to the reference
 		if random_method == "SA":
 			peaks = ormq_peaks(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
-			[angt, sxst, syst, mirrort, peakt, select] = sim_anneal(peaks, T, step, mode, maxrin)
-			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
-			set_params2D(data[im], [alphan, sxn, syn, mn, 1.0])
-			data[im].set_attr_dict({'select': select})
-			"""
-			elif random_method == "ML":
-				peaks = ormq_peaks(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
-				alphan = []
-				sxn = []
-				syn = []
-				mn  = []
-				peakt = []
-				for i in xrange(len(peaks)):
-					[alphax, sxx, syx, mnx] = combine_params2(0.0, -sxi, -syi, 0, peaks[i][1], peaks[i][6], peaks[i][7], peaks[i][8])
-					alphan.append(float(alphax))
-					sxn.append(float(sxx))
-					syn.append(float(syx))
-					mn.append(int(mnx))
-					peakt.append(float(peaks[i][0]))					
-				set_params2D(ima2, [alphan[0], sxn[0], syn[0], mn[0], 1.0])
-				ima2.set_attr_dict({'alpha_l':alphan, 'sx_l':sxn, 'sy_l':syn, 'mirror_l':mn})
-				prob = sim_anneal2(peaks, Iter, T0, F, SA_stop)
-				ima2.set_attr_dict({'Prob': prob})
-			"""
+			#[angt, sxst, syst, mirrort, peakt, select] = sim_anneal(peaks, T, step, mode, maxrin)
+			#[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
+			#set_params2D(data[im], [alphan, sxn, syn, mn, 1.0])
+			#data[im].set_attr_dict({'select': select, 'peak':peakt})
+			rosi = sim_anneal(peaks, T, step, mode, maxrin)
+			data[im].set_attr("npeaks",len(rosi))
+			for np in xrange(len(rosi)):
+				[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, rosi[np][0], rosi[np][1], rosi[np][2], rosi[np][3])
+				set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], "xform.align2d%01d"%(np))
+				data[im].set_attr_dict({"select%01d"%(np): rosi[np][5], "peak%01d"%(np):rosi[np][4]})
+				if(np == 0):  set_params2D(data[im], [alphan, sxn, syn, mn, 1.0])
 		else:
 			[angt, sxst, syst, mirrort, peakt] = ormq(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
 			# combine parameters and set them to the header, ignore previous angle and mirror
@@ -309,17 +296,17 @@ def ormq_peaks(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 	cnx, cny in FORTRAN convention
 	"""
 	from utilities import peak_search
-	
+
 	ccfs = EMData()
 	ccfm = EMData()
 	Util.multiref_peaks_ali2d(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, ccfs, ccfm)
-	
+
 	peaks = peak_search(ccfs, 1000)
 	for i in xrange(len(peaks)):	peaks[i].append(0)
-	
+
 	peakm = peak_search(ccfm, 1000)
 	for i in xrange(len(peakm)):	peakm[i].append(1)
-	peaks += peakm 
+	peaks += peakm
 
 	return peaks
 
@@ -524,37 +511,61 @@ def select_k(dJe, T):
 	for k in xrange(1, K-1): p[k] += p[k-1]
 	# the next line looks strange, but it assures that at least the lst element is selected
 	p[K-1] = 2.0
+
 	pb = random()
 	select = 0
-	#print  pb,p
+
 	while(p[select] < pb):  select += 1
+	#select = 0
 	return select
 
-
 def sim_anneal(peaks, T, step, mode, maxrin):
+	from random import random
 	peaks.sort(reverse=True)
 
 	K = len(peaks)
-	dJe = [0.0]*K
-	for k in xrange(K): dJe[k] = peaks[k][4]
-	select = select_k(dJe, T)
-	#print  T, K, select
 
-	from math import pi, cos, sin
+	#for k in xrange(min(5,K)):  print  peaks[k]
+
+	#select = select_k(dJe, T)
+	qt = peaks[0][0]
+	p  = [0.0] * K
+	ut = 1.0/T
+	for k in xrange(K): p[k] = (peaks[k][0]/qt)**ut
+
+	sumq = float(sum(p))
+	cp  = [0.0] * K
+	for k in xrange(K):
+		p[k] /= sumq
+		cp[k] = p[k]
+	#print  p
+
+	for k in xrange(1, K-1): cp[k] += cp[k-1]
+	# the next line looks strange, but it assures that at least the lst element is selected
+	cp[K-1] = 2.0
+
+	rosi = []
+	for np in xrange(5):
+		pb = random()
+		select = 0
+		while(cp[select] < pb):  select += 1
+
+		from math import pi, cos, sin
 	
-	ang = ang_n(peaks[select][1]+1, mode, maxrin)
-	sx  = -peaks[select][6]*step
-	sy  = -peaks[select][7]*step
+		ang = ang_n(peaks[select][1]+1, mode, maxrin)
+		sx  = -peaks[select][6]*step
+		sy  = -peaks[select][7]*step
 
-	co =  cos(ang*pi/180.0)
-	so = -sin(ang*pi/180.0)
-	sxs = sx*co - sy*so
-	sys = sx*so + sy*co
+		co =  cos(ang*pi/180.0)
+		so = -sin(ang*pi/180.0)
+		sxs = sx*co - sy*so
+		sys = sx*so + sy*co
 
-	mirror = peaks[select][8]
-	peak   = peaks[select][0]
+		mirror = peaks[select][8]
+		peak   = p[select]
+		rosi.append([ang, sxs, sys, mirror, peak, select])
 		
-	return  ang, sxs, sys, mirror, peak, select
+	return  rosi
 
 
 def sim_anneal2(peaks, Iter, T0, F, SA_stop):

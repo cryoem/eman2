@@ -259,7 +259,7 @@ def add_oe(data):
 		else:        Util.add_img(ave2, data[i])
 	return ave1, ave2
 
-def ave_series(data):
+def ave_series(data, pave = True):
 	"""
 		Calculate average of a image series using current alignment parameters
 		data - real space image series
@@ -274,8 +274,8 @@ def ave_series(data):
 	 	alpha, sx, sy, mirror, scale = get_params2D(data[i])
 		temp = rot_shift2D(data[i], alpha, sx, sy, mirror)
 		Util.add_img(ave, temp)
-
-	return ave/n
+	if pave:  Util.mul_scalar(ave, 1.0/float(n))
+	return ave
 
 def ave_series_ctf(data, ctf2):
 	"""

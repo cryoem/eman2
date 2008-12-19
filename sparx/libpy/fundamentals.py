@@ -470,9 +470,7 @@ def rot_shift2D(img, angle = 0.0, sx = 0.0, sy = 0.0, mirror = 0, scale = 1.0, i
 	else:  use_method = interpolation_method_2D
 
 	if(use_method == "linear"):
-		T1  = Transform({'scale':scale})
-		T2  = Transform({'type': 'SPIDER', 'psi': psi, 'tx': sx, 'ty': sy})
-		T   = T1*T2
+		T  = Transform({'type': 'SPIDER', 'psi': angle, 'tx': sx, 'ty': sy, 'scale':scale})
 		img = img.rot_scale_trans(T)
 		if  mirror: img.process_inplace("mirror", {"axis":'x'})
 		return img

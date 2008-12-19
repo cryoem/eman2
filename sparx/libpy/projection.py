@@ -264,10 +264,10 @@ def plot_angles(agls):
 		
 		rc  = sin((agls[i][1] / 180.0) * pi)
 		rc *= ((nx - 1) / 2)
-	
+
 		px  = nx / 2.0 + rc * cos((fmod(agls[i][0], 360.0) / 180.0) * pi)
 		py  = nx / 2.0 + rc * sin((fmod(agls[i][0], 360.0) / 180.0) * pi)
-	
+
 		if px > nx - 1: px = nx - 1
 		if px < 0:  px = 0
 		px = int(px)
@@ -284,7 +284,7 @@ def plot_angles(agls):
 			if cx > nx - 1: cx = nx - 1
 			if cx < 0:  cx = 0
 			im.set_value_at(cx, py, 1.0)
-			
+
 		for cy in xrange(py - c, py + c + 1, style):
 			if cy > nx - 1: cy = nx - 1
 			if cy < 0:  cy = 0
