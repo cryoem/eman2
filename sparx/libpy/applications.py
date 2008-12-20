@@ -477,6 +477,8 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	reduce_EMData_to_root(tavg, myid, main_node)
 	if myid == main_node:
 		Util.mul_scalar(tavg, 1.0/float(nima))
+		a0 = tavg.cmp("dot", tavg, dict(negative = 0, mask = mask))
+		print_msg("Initial criterion  : %12.3e\n"%(a0))
 	bcast_EMData_to_all(tavg, myid, main_node)
 	if CTF:
 		for im in xrange(image_start, image_end):
