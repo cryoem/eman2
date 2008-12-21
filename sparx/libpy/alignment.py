@@ -525,9 +525,22 @@ def sim_anneal(peaks, T, step, mode, maxrin):
 
 	peaks.sort(reverse=True)
 
-	if(T == 0.0):
+	if(T < 0.0):
+		select = int(-T)
+		ang = ang_n(peaks[select][1]+1, mode, maxrin)
+		sx  = -peaks[select][6]*step
+		sy  = -peaks[select][7]*step
+
+		co =  cos(ang*pi/180.0)
+		so = -sin(ang*pi/180.0)
+		sxs = sx*co - sy*so
+		sys = sx*so + sy*co
+
+		mirror = peaks[select][8]
+		peak   = peaks[select][0]/peaks[0][0]
+		rosi = [[ang, sxs, sys, mirror, peak, select]]
+	elif(T == 0.0):
 		select = 0
-		rosi = []
 	
 		ang = ang_n(peaks[select][1]+1, mode, maxrin)
 		sx  = -peaks[select][6]*step
@@ -539,10 +552,10 @@ def sim_anneal(peaks, T, step, mode, maxrin):
 		sys = sx*so + sy*co
 
 		mirror = peaks[select][8]
-		peak   = p[select]
-		rosi = [ang, sxs, sys, mirror, peak, select]
+		peak   = peaks[select][0]/peaks[0][0]
+		rosi = [[ang, sxs, sys, mirror, peak, select]]
 	else:
-		K = len(peaks)
+		K = 3#len(peaks)
 		qt = peaks[0][0]
 		p  = [0.0] * K
 		ut = 1.0/T
@@ -560,7 +573,7 @@ def sim_anneal(peaks, T, step, mode, maxrin):
 		cp[K-1] = 2.0
 
 		rosi = []
-		for np in xrange(5):
+		for np in xrange(1):
 			pb = random()
 			select = 0
 			while(cp[select] < pb):  select += 1
@@ -629,12 +642,12 @@ def sim_anneal3(peaks, peakm, peaks_major, peakm_major, Iter, T0, F, SA_stop):
 	# Determine the current temperature
 	T = T0*pow(F, Iter)
 	max_peak = 5
-	DEG_to_RAD = pi/180.0	
+	DEG_to_RAD = pi/180.0
 
 	dim = 1
 
 	if T > 0.001 and Iter < SA_stop:
-	
+
 		K = len(peaks_major)
 		dJe = [0.0]*K
 		for k in xrange(K):	dJe[k] = peaks_major[k][dim+1]
