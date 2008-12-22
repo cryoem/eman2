@@ -468,17 +468,26 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		from morphology   import ctf_img
 		ctf_2_sum = EMData(nx, nx, 1, False)
 	data = EMData.read_images(stack, range(image_start, image_end))
+	from random import randint
+	knp = 1
+	nsav = 10
+	N_step = 0
+	tnull = Transform({"type":"2D"})
+	savg = []
+	from utilities import set_params2D
+	for i in xrange(nsav):
+		for im in data:
+			set_params2D(im, [randint(0,359), randint(-2,2), randint(-2,2), randint(0,1),1.0])
+		tavg = ave_series(data, False)
+		reduce_EMData_to_root(tavg, myid, main_node)
+		if myid == main_node:
+		      Util.mul_scalar(tavg, 1.0/float(nima))
+		      a0 = tavg.cmp("dot", tavg, dict(negative = 0, mask = mask))
+		      print_msg("Initial criterion  : %12.3e\n"%(a0))
+		bcast_EMData_to_all(tavg, myid, main_node)
+		savg.append(tavg.copy())
 	for im in data:
-		t = im.get_attr("xform.align2d")
-		im.set_attr('xform.align2d0',t)
-		im.set_attr("select0",0)
-	tavg = ave_series(data, False)
-	reduce_EMData_to_root(tavg, myid, main_node)
-	if myid == main_node:
-		Util.mul_scalar(tavg, 1.0/float(nima))
-		a0 = tavg.cmp("dot", tavg, dict(negative = 0, mask = mask))
-		print_msg("Initial criterion  : %12.3e\n"%(a0))
-	bcast_EMData_to_all(tavg, myid, main_node)
+		im.set_attr_dict({'xform.align2d':tnull, 'xform.align2d0':tnull, "select0":0})
 	if CTF:
 		for im in xrange(image_start, image_end):
 			ctf_params = data[im-image_start].get_attr("ctf")
@@ -505,13 +514,6 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	sx_sum = 0.0
 	sy_sum = 0.0
 	method = random_method
-	knp = 1
-	nsav = 10
-	savg = []
-	tnull = Transform({"type":"2D"})
-	for i in xrange(nsav):
-		savg.append(tavg.copy())
-	N_step = 0
 	if myid == main_node:
 		msg = "\nX range = %5.2f   Y range = %5.2f   Step = %5.2f\n"%(xrng[N_step], yrng[N_step], step[N_step])
 		print_msg(msg)
