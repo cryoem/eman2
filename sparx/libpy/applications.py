@@ -367,6 +367,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	from numpy        import reshape, shape
 	from utilities    import print_msg, print_begin_msg, print_end_msg
 	from fundamentals import fft, rot_avg_table, rot_shift2D
+	from random       import seed, randint, random
 	from math         import sqrt
 	import os
 
@@ -468,7 +469,8 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		from morphology   import ctf_img
 		ctf_2_sum = EMData(nx, nx, 1, False)
 	data = EMData.read_images(stack, range(image_start, image_end))
-	from random import randint
+
+	seed(5127 + myid*5341)
 	knp = 1
 	nsav = 10
 	N_step = 0
@@ -481,9 +483,10 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		tavg = ave_series(data, False)
 		reduce_EMData_to_root(tavg, myid, main_node)
 		if myid == main_node:
-		      Util.mul_scalar(tavg, 1.0/float(nima))
-		      a0 = tavg.cmp("dot", tavg, dict(negative = 0, mask = mask))
-		      print_msg("Initial criterion  : %12.3e\n"%(a0))
+			Util.mul_scalar(tavg, 1.0/float(nima))
+			drop_image(tavg, os.path.join(outdir, "initial%05d.hdf"%(i)))
+			a0 = tavg.cmp("dot", tavg, dict(negative = 0, mask = mask))
+			print_msg("Initial criterion  : %12.3e\n"%(a0))
 		bcast_EMData_to_all(tavg, myid, main_node)
 		savg.append(tavg.copy())
 	for im in data:
@@ -525,6 +528,8 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			T = T0
 			for im in data:
 				im.set_attr_dict({'xform.align2d':tnull})
+			if myid == main_node:
+				drop_image(tavg, os.path.join(outdir, "itavg%05d.hdf"%(isav)))
 			for Iter in xrange(max_iter):
 				if(total_iter%15 == 0):
 					T = -4.0
@@ -539,7 +544,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					npeaks = im.get_attr("npeaks")
 					for np in xrange(min(knp,npeaks)):
 						alphan, sxn, syn, mirror, scale = get_params2D(im, "xform.align2d%01d"%(np))
-						sel = im.get_attr("select%01d"%(np))
+						#sel = im.get_attr("select%01d"%(np))
 						Util.add_img(tavg, rot_shift2D(im, alphan, sxn, syn, mirror))
 				#  bring all partial sums together
 				reduce_EMData_to_root(tavg, myid, main_node)
@@ -547,6 +552,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 
 				if myid == main_node:
 					Util.mul_scalar(tavg, 1.0/float(nima))
+					#drop_image(tavg, os.path.join(outdir, "aaa%05d.hdf"%(ipt*1000+isav*100+Iter)))
 					ref_data[2] = tavg
 
 					#  call user-supplied function to prepare reference image, i.e., center and filter it
@@ -563,8 +569,8 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 						msg = "Average center x =	 %10.3f	   Center y 	= %10.3f\n"%(cs[0], cs[1])
 						print_msg(msg)
 					if(Iter == max_iter-1):
-						drop_image(tavg, os.path.join(outdir, "aqc_%05d.hdf"%(ipt*1000+isav)))
-						drop_image(tavg, os.path.join(outdir, "aqf_%05d.hdf"%(ipt*1000+isav)))
+						drop_image(tavg, os.path.join(outdir, "aqc_%05d.hdf"%(ipt*1000+isav*100+Iter)))
+						#drop_image(tavg, os.path.join(outdir, "aqf_%05d.hdf"%(ipt*1000+isav)))
 					a1 = tavg.cmp("dot", tavg, dict(negative = 0, mask = ref_data[0]))
 					msg = "MERGE  #%3d  ITERATION   #%5d    average #%4d  criterion = %15.7e\n"%(ipt, Iter, isav, a1)
 					print_msg(msg)
@@ -576,6 +582,8 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				total_iter += 1
 				if(total_iter%5 == 0): T = max(T*F,1.0e-8)
 			savg[isav] = tavg.copy()
+			if myid == main_node:
+				drop_image(savg[isav], os.path.join(outdir, "isavg%05d.hdf"%(isav)))
 		if myid == main_node:
 			for i in xrange(nsav-1):
 				Util.add_img(tavg, savg[isav])
@@ -595,13 +603,12 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			tsavg = []
 			for i1 in xrange(nsav//2-1):
 				for i2 in xrange(i1+1, nsav//2):
-					tsavg.append(Util.addn_img(savg[qtp[i1][1]], savg[qtp[i2][1]]))
+					tsavg.append(Util.addn_img(savg[qt[i1][1]], savg[qt[i2][1]]))
 					itp += 1
 					if(itp == nsav): break
 			for i1 in xrange(nsav):
 				savg[i1] = tsavg[i1].copy()
 			del tsavg
-			
 			
 	# write out headers and STOP, under MPI writing has to be done sequentially
 	mpi_barrier(MPI_COMM_WORLD)
