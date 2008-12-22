@@ -560,7 +560,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 						tavg = fshift(tavg, -cs[0], -cs[1])
 						msg = "Average center x =	 %10.3f	   Center y 	= %10.3f\n"%(cs[0], cs[1])
 						print_msg(msg)
-					if(Iter == max_iter):
+					if(Iter == max_iter-1):
 						drop_image(tavg, os.path.join(outdir, "aqc_%05d.hdf"%(ipt*1000+isav)))
 						drop_image(tavg, os.path.join(outdir, "aqf_%05d.hdf"%(ipt*1000+isav)))
 					a1 = tavg.cmp("dot", tavg, dict(negative = 0, mask = ref_data[0]))
