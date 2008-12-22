@@ -563,9 +563,9 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					if(Iter == max_iter):
 						drop_image(tavg, os.path.join(outdir, "aqc_%05d.hdf"%(ipt*1000+isav)))
 						drop_image(tavg, os.path.join(outdir, "aqf_%05d.hdf"%(ipt*1000+isav)))
-						a1 = tavg.cmp("dot", tavg, dict(negative = 0, mask = ref_data[0]))
-						msg = "ITERATION   #%5d    average #%4d  criterion = %15.7e\n"%(ipt, isav, a1)
-						print_msg(msg)
+					a1 = tavg.cmp("dot", tavg, dict(negative = 0, mask = ref_data[0]))
+					msg = "MERGE  #%3d  ITERATION   #%5d    average #%4d  criterion = %15.7e\n"%(ipt, Iter, isav, a1)
+					print_msg(msg)
 				else:
 					tavg = EMData(nx, nx, 1, True)
 					cs = [0.0]*2
