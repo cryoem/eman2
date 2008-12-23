@@ -263,16 +263,21 @@ int TiffIO::read_data(float *rdata, int img_index, const Region * area, bool)
 							if(bitspersample == CHAR_BIT) {
 								if(xpos<nx && ypos<ny) {	//discard those pixel in tile which is out of actual image's boundary
 									photometric == PHOTOMETRIC_MINISWHITE ? 
-											rdata[nx*(ny-1)-(ypos*nx)+xpos] = -(float) ((unsigned char*)cdata)[i*tileWidth+j] :
-											rdata[nx*(ny-1)-(ypos*nx)+xpos] = (float) ((unsigned char*)cdata)[i*tileWidth+j];
+										rdata[nx*(ny-1)-(ypos*nx)+xpos] = -(float) ((unsigned char*)cdata)[i*tileWidth+j] :
+										rdata[nx*(ny-1)-(ypos*nx)+xpos] = (float) ((unsigned char*)cdata)[i*tileWidth+j];
 								}
 							}
 							else if(bitspersample == sizeof(unsigned short) * CHAR_BIT) {
 								if(xpos<nx && ypos<ny) {	//discard those pixel in tile which is out of actual image's boundary
 									photometric == PHOTOMETRIC_MINISWHITE ?
-											rdata[nx*(ny-1)-(ypos*nx)+xpos] = -(float) ((unsigned short*)cdata)[i*tileWidth+j] :
-											rdata[nx*(ny-1)-(ypos*nx)+xpos] = (float) ((unsigned short*)cdata)[i*tileWidth+j];
+										rdata[nx*(ny-1)-(ypos*nx)+xpos] = -(float) ((unsigned short*)cdata)[i*tileWidth+j] :
+										rdata[nx*(ny-1)-(ypos*nx)+xpos] = (float) ((unsigned short*)cdata)[i*tileWidth+j];
 								}
+							}
+							else if (bitspersample == sizeof(float) * CHAR_BIT) {
+								photometric == PHOTOMETRIC_MINISWHITE ?
+										rdata[nx*(ny-1)-(ypos*nx)+xpos] = -(float) ((float*)cdata)[i*tileWidth+j] :
+										rdata[nx*(ny-1)-(ypos*nx)+xpos] = (float) ((float*)cdata)[i*tileWidth+j];
 							}
 							else {
 								fprintf(stderr,"BAILING OUT:Allow only 8- or 16-bits image\n");
@@ -341,6 +346,11 @@ int TiffIO::read_data(float *rdata, int img_index, const Region * area, bool)
 								rdata[k] = -(float)((unsigned short*)cdata)[l * nx + j] :
 								rdata[k] = (float)((unsigned short*)cdata)[l * nx + j];
 						}
+						else if (bitspersample == sizeof(float) * CHAR_BIT) {
+							photometric == PHOTOMETRIC_MINISWHITE ?
+								rdata[k] = -(float)((float*)cdata)[l * nx + j] :
+								rdata[k] = (float)((float*)cdata)[l * nx + j];
+						}
 						k++;
 					}
 				}
@@ -398,6 +408,9 @@ int TiffIO::write_header(const Dict & dict, int image_index, const Region*, EMUt
 	else if(datatype == EMUtil::EM_USHORT) {
 		bitspersample = CHAR_BIT * sizeof(short);
 	}
+	else if(datatype == EMUtil::EM_FLOAT) {
+		bitspersample = CHAR_BIT * sizeof(float);
+	}
 	else {
 		LOGWARN("Don't support data type '%s' in TIFF. Convert to '%s'.",
 				EMUtil::get_datatype_string(datatype),
@@ -441,7 +454,7 @@ int TiffIO::write_data(float * data, int, const Region* , EMUtil::EMDataType, bo
 					cdata[dst_idx] = UCHAR_MAX;
 				}
 				else {
-					cdata[dst_idx] = (unsigned char)((data[src_idx] - rendermin) / (rendermax - rendermin) * 256);
+					cdata[dst_idx] = (unsigned char)((data[src_idx] - rendermin) / (rendermax - rendermin) * UCHAR_MAX);
 				}
 			}
 		}
@@ -466,7 +479,7 @@ int TiffIO::write_data(float * data, int, const Region* , EMUtil::EMDataType, bo
 					sdata[dst_idx] = USHRT_MAX;
 				}
 				else {
-					sdata[dst_idx] = (unsigned short)((data[src_idx] - rendermin) / (rendermax - rendermin) * 65536);
+					sdata[dst_idx] = (unsigned short)((data[src_idx] - rendermin) / (rendermax - rendermin) * USHRT_MAX);
 				}
 			}
 		}
@@ -475,6 +488,28 @@ int TiffIO::write_data(float * data, int, const Region* , EMUtil::EMDataType, bo
 			{ printf("Fail to write tiff file.\n"); return -1; }	 	
 		
 		if( sdata )	{ delete[] sdata; sdata = 0; }	
+	}
+	else if(bitspersample == CHAR_BIT*sizeof(float)) {
+		float *fdata = new float[nx*ny];
+		
+		int src_idx, dst_idx;
+		for (unsigned int i = 0; i < ny; ++i) {
+			for (unsigned int j = 0; j < nx; ++j) {
+				src_idx = i*nx+j;
+				dst_idx = nx*(ny-1) - (i*nx) +j;
+				if(data[src_idx] < rendermin){
+					fdata[dst_idx] = 0.0f;
+				}
+				else if(data[src_idx] > rendermax) {
+					fdata[dst_idx] = (float)INT_MAX;
+				}
+				else {
+					fdata[dst_idx] = (unsigned short)((data[src_idx] - rendermin) / (rendermax - rendermin) * INT_MAX);
+				}
+			}
+		}
+		
+		if( fdata )	{ delete[] fdata; fdata = 0; }
 	}
 	else {
 		LOGWARN("TIFF in EMAN2 only support data type 8 bit or 16 bit.");
