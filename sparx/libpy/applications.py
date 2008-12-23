@@ -8652,7 +8652,7 @@ def pca( input_stacks, output_stack, subavg, mask_radius, nvec, type="out_of_cor
 	totimg = 0
 	for j in xrange( len(input_stacks) ):
 		
-		curt_input_stack = input_stacks[i]
+		curt_input_stack = input_stacks[j]
 		nimage = EMUtil.get_image_count( curt_input_stack )
 
 		if(verbose):
