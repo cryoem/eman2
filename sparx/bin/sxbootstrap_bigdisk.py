@@ -196,7 +196,7 @@ def bootstrap( prjfile, wgts, outdir, bufprefix, nbufvol, nvol, seedbase, snr, g
 	if genbuf and (myid%groupsize==0):
 		bootstrap_genbuf( prjfile, bufprefix, 0, nprj, CTF, npad, finfo )
 	
-	if genbuf and sharebuf and MPI:
+	if genbuf and MPI:
 		mpi_barrier( MPI_COMM_WORLD )
 
 	myseed = seedbase + 10*myid
