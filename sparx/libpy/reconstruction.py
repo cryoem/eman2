@@ -502,7 +502,7 @@ def bootstrap_nn(proj_stack, volume_stack, list_proj, niter, media="memory", npa
         		params = {"size":size, "npad":npad, "symmetry":symmetry, "snr":snr, "sign":sign}
         		r = Reconstructors.get("nn4_ctf", params);
 		else:
-			params = {"size":size, "npad":npad, "symmetry":symmetry}
+			params = {"size":size, "npad":npad, "symmetry":symmetry, "snr":snr}
 			r = Reconstructors.get("nn4", params);
         	
 

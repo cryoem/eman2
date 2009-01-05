@@ -85,7 +85,7 @@ def bootstrap_prepare( prjfile, nvol, snr, CTF, npad ):
 			params = {"size":nx, "npad":npad, "snr":snr, "weight":wgtvols[i], "fftvol":fftvols[i]}
 			rectors[i] = Reconstructors.get( "nn4_ctf", params )
 		else:
-			params = {"size":nx, "npad":npad, "weight":wgtvols[i], "fftvol":fftvols[i]}
+			params = {"size":nx, "npad":npad, "snr":snr, "weight":wgtvols[i], "fftvol":fftvols[i]}
 			rectors[i] = Reconstructors.get( "nn4", params )
 		
 		rectors[i].setup()
