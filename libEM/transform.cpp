@@ -939,7 +939,7 @@ void Transform::assert_valid_2d() const {
 
 Transform Transform::get_sym(const string & sym_name, int n) const
 {
-	Symmetry3D* sym = Factory<Symmetry3D>::get(Util::str_to_lower(sym_name));
+	Symmetry3D* sym = Factory<Symmetry3D>::get(sym_name);
 	Transform ret;
 	ret = (*this) * sym->get_sym(n);
 	delete sym;
@@ -948,7 +948,7 @@ Transform Transform::get_sym(const string & sym_name, int n) const
 
 int Transform::get_nsym(const string & sym_name)
 {
-	Symmetry3D* sym = Factory<Symmetry3D>::get(Util::str_to_lower(sym_name));
+	Symmetry3D* sym = Factory<Symmetry3D>::get(sym_name);
 	int nsym = sym->get_nsym();
 	delete sym;
 	return nsym;

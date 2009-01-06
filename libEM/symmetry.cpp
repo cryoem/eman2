@@ -70,9 +70,11 @@ map<string, vector<string> > EMAN::dump_symmetries_list()
 }
 
 template <>
-		Symmetry3D* Factory < Symmetry3D >::get(const string & instancename)
+		Symmetry3D* Factory < Symmetry3D >::get(const string & instancename_)
 {
 	init();
+	
+	const string instancename = Util::str_to_lower(instancename_); 
 	
 	unsigned int n = instancename.size();
 	if ( n == 0 ) throw NotExistingObjectException(instancename, "Empty instance name!");
@@ -145,7 +147,7 @@ vector<Transform> Symmetry3D::gen_orientations(const string& generatorname, cons
 {
 	ENTERFUNC;
 	vector<Transform> ret;
-	OrientationGenerator *g = Factory < OrientationGenerator >::get(generatorname, parms);
+	OrientationGenerator *g = Factory < OrientationGenerator >::get(Util::str_to_lower(generatorname), parms);
 	if (g) {
 		ret = g->gen_orientations(this);
 		if( g )
@@ -1072,7 +1074,7 @@ vector<Transform> Symmetry3D::get_syms() const
 
 vector<Transform> Symmetry3D::get_symmetries(const string& symmetry)
 {
-	Symmetry3D* sym = Factory<Symmetry3D>::get(symmetry);
+	Symmetry3D* sym = Factory<Symmetry3D>::get(Util::str_to_lower(symmetry));
 	vector<Transform> ret = sym->get_syms();
 	delete sym;
 	return ret;
