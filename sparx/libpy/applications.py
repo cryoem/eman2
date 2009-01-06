@@ -544,10 +544,12 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					npeaks = im.get_attr("npeaks")
 					for np in xrange(min(knp,npeaks)):
 						alphan, sxn, syn, mirror, scale = get_params2D(im, "xform.align2d%01d"%(np))
-						#sel = im.get_attr("select%01d"%(np))
+						sel = im.get_attr("select%01d"%(np))
+						select += sel
 						Util.add_img(tavg, rot_shift2D(im, alphan, sxn, syn, mirror))
 				#  bring all partial sums together
 				reduce_EMData_to_root(tavg, myid, main_node)
+				select = mpi_reduce(select, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
 				#reduce_EMData_to_root(vav, myid, main_node)
 
 				if myid == main_node:
@@ -572,7 +574,8 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 						drop_image(tavg, os.path.join(outdir, "aqc_%05d.hdf"%(ipt*1000+isav*100+Iter)))
 						#drop_image(tavg, os.path.join(outdir, "aqf_%05d.hdf"%(ipt*1000+isav)))
 					a1 = tavg.cmp("dot", tavg, dict(negative = 0, mask = ref_data[0]))
-					msg = "MERGE  #%3d  ITERATION   #%5d    average #%4d  criterion = %15.7e\n"%(ipt, Iter, isav, a1)
+					select = float(select)/float(knp*nima)
+					msg = "MERGE  #%3d  ITERATION   #%5d    average #%4d  criterion = %15.7e     %12.3e    %12.3e\n"%(ipt, Iter, isav, a1, select,T)
 					print_msg(msg)
 				else:
 					tavg = EMData(nx, nx, 1, True)
