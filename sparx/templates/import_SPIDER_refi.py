@@ -57,10 +57,10 @@ for ii in xrange(1,696+1) :
 		# Here one can have a problem because sometimes in trans doc two numbers
 		# are connected together like "8.1753E-02-3.1129", readSpiderDoc can not handle this.
 		psi	= angl[i][2]
-		theta = angl[i][3]
+		theta   = angl[i][3]
 		phi	= angl[i][4]
 
-		alpha = trans[i][2]
+		alpha   = trans[i][2]
 		sx	= trans[i][3]
 		sy	= trans[i][4]
 		mir	= trans[i][5]
@@ -68,9 +68,9 @@ for ii in xrange(1,696+1) :
 
 		assb, sxnb, synb, sc = compose_transform2(0.0, sx, sy, 1,  -alpha, 0.,0.,1)
 		if( mir > 0.5 ) :
-			phi = (540.0 + phi)%360.0
+			phi   = (540.0 + phi)%360.0
 			theta = 180.0 - theta
-			psi = (540.0 - psi + assb)%360.0
+			psi   = (540.0 - psi + assb)%360.0
 		else :
 			psi = (psi + assb)%360.0
 
