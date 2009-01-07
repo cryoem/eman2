@@ -355,7 +355,7 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	from utilities import write_headers
 	write_headers(stack, data, range(nima))
 	print_end_msg("ali2d_a")
-
+'''
 def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, CTF=False, user_func_name="ref_ali2d", random_method="SA", T0=1.0, F=0.996):
 
 	from utilities    import model_circle, combine_params2, drop_image, get_image, get_input_from_string, model_blank, get_params2D
@@ -625,9 +625,8 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 	else:           send_attr_dict(main_node, data, par_str, image_start, image_end)
 	if myid == main_node:  print_end_msg("ali2d_a_MPI")
-
-
 '''
+
 def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, CTF=False, user_func_name="ref_ali2d", random_method="SA", T0=1.0, F=0.996):
 
 	from utilities    import model_circle, combine_params2, drop_image, get_image, get_input_from_string, model_blank, get_params2D
@@ -961,8 +960,6 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	else:           send_attr_dict(main_node, data, par_str, image_start, image_end)
 	if myid == main_node:  print_end_msg("ali2d_a_MPI")
 '''
-	
-	
 
 def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, CTF=False, user_func_name="ref_ali2d", random_method="SA", T0=1.0, F=0.996):
 
@@ -1102,9 +1099,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		
 		cs = [0.0]*2
 
-
-		a1 = Util.infomask(square(filt_tophatb(tavg, 0.01, 0.49)), mask, True)
-		a0 = a1[0]
+		a0 = tavg.cmp("dot", tavg, dict(negative = 0, mask = mask))
 
 		msg = "Initial criterion = %15.7e \n\n"%(a0)
 		print_msg(msg)
@@ -1228,7 +1223,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 	else:           send_attr_dict(main_node, data, par_str, image_start, image_end)
 	if myid == main_node:  print_end_msg("ali2d_a_MPI")
-
+'''
 
 
 def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, CTF=False, snr=1.0, user_func_name="ref_ali2d", rand_alpha = False, MPI=False):
