@@ -356,6 +356,7 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	write_headers(stack, data, range(nima))
 	print_end_msg("ali2d_a")
 
+'''
 def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, CTF=False, user_func_name="ref_ali2d", random_method="SA", T0=1.0, F=0.996):
 
 	from utilities    import model_circle, combine_params2, drop_image, get_image, get_input_from_string, model_blank, get_params2D
@@ -627,6 +628,9 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 	else:           send_attr_dict(main_node, data, par_str, image_start, image_end)
 	if myid == main_node:  print_end_msg("ali2d_a_MPI")
+'''
+
+
 '''
 def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, CTF=False, user_func_name="ref_ali2d", random_method="SA", T0=1.0, F=0.996):
 
@@ -960,8 +964,9 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 	else:           send_attr_dict(main_node, data, par_str, image_start, image_end)
 	if myid == main_node:  print_end_msg("ali2d_a_MPI")
-
-
+'''
+	
+	
 
 def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, CTF=False, user_func_name="ref_ali2d", random_method="SA", T0=1.0, F=0.996):
 
@@ -1083,7 +1088,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		alpha, sx, sy, mirror, scale = get_params2D(data[it])
 		data[it] = rot_shift2D(data[it], alpha, sx, sy, mirror, 1.0, interpolation)
 		set_params2D(data[it], [0.0, 0.0, 0.0, 0, 1.0])
-		dali[it] = data[i].copy()
+		dali[it] = data[it].copy()
 		Util.add_img(tavg, dali[it])
 	reduce_EMData_to_root(tavg, myid, main_node)
 	total_iter=0
@@ -1160,7 +1165,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				if(dc > 0.0):
 					dali[it] = timg.copy()
 					set_params2D(dali[it], [ang, sx, sy, mirror, 1.0])
-					print  " IMPROVED ",it, dc
+					#print  " IMPROVED ",it, dc
 					tavg = Util.addn_img(subn, dali[it])
 				else:
 					qt = random()
@@ -1168,7 +1173,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					if(qt < exp(dc/T)):
 						dali[it] = timg.copy()
 						set_params2D(dali[it], [ang, sx, sy, mirror, 1.0])
-						print  " ACCEPTED ",it, dc
+						#print  " ACCEPTED ",it, dc
 						tavg = Util.addn_img(subn, dali[it])
 				
 				#  This looks like a duplication, but it is to reduce interpolation errors, eventually btavg will replace tavg
@@ -1190,10 +1195,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 
 
 				if(total_iter%100 == 0):  drop_image(tavg, os.path.join(outdir, "aqc_%06d.hdf"%(total_iter)))
-				from morphology import square
-				a1 = Util.infomask(square(filt_tophatb(tavg, 0.01, 0.49)), mask, True)
-				a1 = a1[0]
-
+				a1 = tavg.cmp("dot", tavg, dict(negative = 0, mask = mask))
 				msg = "ITERATION   #%7d    criterion = %15.7e    T = %12.3e\n"%(total_iter, a1, T)
 				print_msg(msg)
 				# write the current average
@@ -1230,7 +1232,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 	else:           send_attr_dict(main_node, data, par_str, image_start, image_end)
 	if myid == main_node:  print_end_msg("ali2d_a_MPI")
-'''
+
 
 
 def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, CTF=False, snr=1.0, user_func_name="ref_ali2d", rand_alpha = False, MPI=False):
