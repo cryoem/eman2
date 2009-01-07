@@ -788,11 +788,11 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		for Iter in xrange(max_iter):
 			#cs = mpi_bcast(cs, 2, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 			#cs = [float(cs[0]), float(cs[1])]
-			if(total_iter%1500 == 0):
-				T = -4.0
+			#if(total_iter%1500 == 0):
+			#	T = -4.0
 			sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF, method, T)
-			if(total_iter%15 == 0):
-				T = T0
+			#if(total_iter%15 == 0):
+			#	T = T0
 			"""
 
 			sx_sum = mpi_reduce(sx_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)

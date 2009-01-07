@@ -554,7 +554,7 @@ def sim_anneal(peaks, T, step, mode, maxrin):
 		peak   = peaks[select][0]/peaks[0][0]
 		rosi = [[ang, sxs, sys, mirror, peak, select]]
 	else:
-		K = 3#len(peaks)
+		K = len(peaks)
 		qt = peaks[0][0]
 		p  = [0.0] * K
 		ut = 1.0/T
