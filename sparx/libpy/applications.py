@@ -356,7 +356,6 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	write_headers(stack, data, range(nima))
 	print_end_msg("ali2d_a")
 
-'''
 def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, CTF=False, user_func_name="ref_ali2d", random_method="SA", T0=1.0, F=0.996):
 
 	from utilities    import model_circle, combine_params2, drop_image, get_image, get_input_from_string, model_blank, get_params2D
@@ -517,7 +516,6 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 
 	sx_sum = 0.0
 	sy_sum = 0.0
-	method = random_method
 	if myid == main_node:
 		msg = "\nX range = %5.2f   Y range = %5.2f   Step = %5.2f\n"%(xrng[N_step], yrng[N_step], step[N_step])
 		print_msg(msg)
@@ -534,7 +532,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			for Iter in xrange(max_iter):
 				if(total_iter%15 == 0):
 					T = -4.0
-				sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF, method, T)
+				sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF, random_method, T)
 				if(total_iter%15 == 0):
 					T = T0
 				tavg = model_blank(nx,nx)
@@ -581,7 +579,6 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				else:
 					tavg = EMData(nx, nx, 1, True)
 					cs = [0.0]*2
-					method = 1
 				bcast_EMData_to_all(tavg, myid, main_node)
 				total_iter += 1
 				if(total_iter%5 == 0): T = max(T*F,1.0e-8)
@@ -628,7 +625,6 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 	else:           send_attr_dict(main_node, data, par_str, image_start, image_end)
 	if myid == main_node:  print_end_msg("ali2d_a_MPI")
-'''
 
 
 '''

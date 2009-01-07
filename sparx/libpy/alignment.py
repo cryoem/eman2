@@ -50,7 +50,6 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode
 	maxrin = numr[-1]
 	sx_sum = 0.0
 	sy_sum = 0.0
-
 	for im in xrange(len(data)):
 		if CTF:
 			#Apply CTF to image
@@ -592,7 +591,7 @@ def sim_anneal(peaks, T, step, mode, maxrin):
 			mirror = peaks[select][8]
 			peak   = p[select]
 			rosi.append([ang, sxs, sys, mirror, peak, select])
-		
+	
 	return  rosi
 
 
