@@ -86,6 +86,74 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode
 		sy_sum += syn
 
 	return sx_sum, sy_sum
+	
+def ali2d_random_ccf(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, CTF=False, random_method="", T=1.0):
+	"""
+		single iteration of 2D alignment using ormq
+		if CTF = True, apply CTF to data (not to reference!)
+	"""
+	from utilities import model_circle, combine_params2, inverse_transform2, get_params2D, set_params2D
+	from alignment import Applyws, ormq
+
+	if CTF:
+		from filter  import filt_ctf
+
+	from time import time
+	start_time = time()
+	# 2D alignment using rotational ccf in polar coords and quadratic interpolation
+	cimage = Util.Polar2Dm(tavg, cnx, cny, numr, mode)
+	print  "prep1   ",time() - start_time
+	start_time = time()
+	Util.Frngs(cimage, numr)
+	Applyws(cimage, numr, wr)
+	print  "prep2   ",time() - start_time
+	start_time = time()
+	
+	maxrin = numr[-1]
+	sx_sum = 0.0
+	sy_sum = 0.0
+	for im in xrange(len(data)):
+		if CTF:
+			#Apply CTF to image
+			ctf_params = ima.get_attr("ctf")
+			ima = filt_ctf(data[im], ctf_params, True)
+		else:
+			ima = data[im]
+		alpha, sx, sy, mirror, dummy = get_params2D(ima)
+		alpha, sx, sy, mirror        = combine_params2(alpha, sx, sy, mirror, 0.0, -cs[0], -cs[1], 0)
+		alphai, sxi, syi, scalei     = inverse_transform2(alpha, sx, sy, 1.0)
+
+		# align current image to the reference
+		if random_method == "SA":
+			from time import time
+			start_time = time()
+			peaks = ormq_ccf(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
+			print  "ormq   ",time() - start_time
+			start_time = time()
+			#[angt, sxst, syst, mirrort, peakt, select] = sim_anneal(peaks, T, step, mode, maxrin)
+			#[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
+			#set_params2D(data[im], [alphan, sxn, syn, mn, 1.0])
+			#data[im].set_attr_dict({'select': select, 'peak':peakt})
+			rosi = sim_ccf(peaks, T, step, mode, maxrin)
+			print  "sim    ",time() - start_time
+			start_time = time()
+			data[im].set_attr("npeaks",len(rosi))
+			for np in xrange(len(rosi)):
+				[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, rosi[np][0], rosi[np][1], rosi[np][2], rosi[np][3])
+				set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], "xform.align2d%01d"%(np))
+				data[im].set_attr_dict({"select%01d"%(np): rosi[np][5], "peak%01d"%(np):rosi[np][4]})
+				if(np == 0):  set_params2D(data[im], [alphan, sxn, syn, mn, 1.0])
+		else:
+			[angt, sxst, syst, mirrort, peakt] = ormq(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
+			# combine parameters and set them to the header, ignore previous angle and mirror
+			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
+			set_params2D(data[im], [alphan, sxn, syn, mn, 1.0])
+
+		if mn == 0: sx_sum += sxn
+		else:       sx_sum -= sxn
+		sy_sum += syn
+
+	return sx_sum, sy_sum
 
 def ang_n(tot, mode, maxrin):
 	"""
@@ -307,6 +375,43 @@ def ormq_peaks(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 	for i in xrange(len(peakm)):	peakm[i].append(1)
 	peaks += peakm
 
+	return peaks
+
+def ormq_ccf(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
+	"""
+	Determine shift and rotation between image and reference image (crefim)
+	crefim should be as FT of polar coords with applied weights
+	consider mirror
+	quadratic interpolation
+	cnx, cny in FORTRAN convention
+	"""
+	from utilities import peak_search
+
+	from time import time
+	start_time = time()
+	ccfs = EMData()
+	ccfm = EMData()
+	Util.multiref_peaks_ali2d(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, ccfs, ccfm)
+	print  "mrf    ",time() - start_time
+	start_time = time()
+
+	peaks = []
+	# keeps 1d ccfs stored as (maxrin, -kx-1:kx+1, -ky-1:ky+1)
+	nx = ccfs.get_xsize()
+	ny = ccfs.get_ysize()
+	nz = ccfs.get_zsize()
+	nyc = ny//2
+	nzc = nz//2
+	for i in xrange(nx):
+		for j in xrange(1,ny-1):
+			for k in xrange(1,nz-1):
+				qt = ccfs[i,j,k]
+				peaks.append([qt,i,j-nyc,k-nzc,0])
+				qt = ccfm[i,j,k]
+				peaks.append([qt,i,j-nyc,k-nzc,1])
+
+	print  "pks    ",time() - start_time
+	start_time = time()
 	return peaks
 
 
@@ -593,6 +698,90 @@ def sim_anneal(peaks, T, step, mode, maxrin):
 			peak   = p[select]
 			rosi.append([ang, sxs, sys, mirror, peak, select])
 	
+	return  rosi
+
+def sim_ccf(peaks, T, step, mode, maxrin):
+	from random import random
+	from math import pi, cos, sin
+
+	from time import time
+	start_time = time()
+	peaks.sort(reverse=True)
+	print  "sort    ",time() - start_time
+	start_time = time()
+
+	if(T < 0.0):
+		select = int(-T)
+		ang = ang_n(peaks[select][1]+1, mode, maxrin)
+		sx  = -peaks[select][2]*step
+		sy  = -peaks[select][3]*step
+
+		co =  cos(ang*pi/180.0)
+		so = -sin(ang*pi/180.0)
+		sxs = sx*co - sy*so
+		sys = sx*so + sy*co
+
+		mirror = peaks[select][4]
+		peak   = peaks[select][0]/peaks[0][0]
+		rosi = [[ang, sxs, sys, mirror, peak, select]]
+	elif(T == 0.0):
+		select = 0
+	
+		ang = ang_n(peaks[select][1]+1, mode, maxrin)
+		sx  = -peaks[select][2]*step
+		sy  = -peaks[select][3]*step
+
+		co =  cos(ang*pi/180.0)
+		so = -sin(ang*pi/180.0)
+		sxs = sx*co - sy*so
+		sys = sx*so + sy*co
+
+		mirror = peaks[select][4]
+		peak   = peaks[select][0]/peaks[0][0]
+		rosi = [[ang, sxs, sys, mirror, peak, select]]
+	else:
+		K = len(peaks)
+		qt = peaks[0][0]
+		p  = [0.0] * K
+		ut = 1.0/T
+		for k in xrange(K): p[k] = (peaks[k][0]/qt)**ut
+		print  "norm    ",time() - start_time
+		start_time = time()
+
+		sumq = float(sum(p))
+		cp  = [0.0] * K
+		for k in xrange(K):
+			p[k] /= sumq
+			cp[k] = p[k]
+		#print  p
+
+		for k in xrange(1, K-1): cp[k] += cp[k-1]
+		# the next line looks strange, but it assures that at least the lst element is selected
+		cp[K-1] = 2.0
+		print  "cuma    ",time() - start_time
+		start_time = time()
+
+		rosi = []
+		for np in xrange(1):
+			pb = random()
+			select = 0
+			while(cp[select] < pb):  select += 1
+
+			from math import pi, cos, sin
+	
+			ang = ang_n(peaks[select][1]+1, mode, maxrin)
+			sx  = -peaks[select][2]*step
+			sy  = -peaks[select][3]*step
+
+			co =  cos(ang*pi/180.0)
+			so = -sin(ang*pi/180.0)
+			sxs = sx*co - sy*so
+			sys = sx*so + sy*co
+
+			mirror = peaks[select][4]
+			peak   = p[select]
+			rosi.append([ang, sxs, sys, mirror, peak, select])
+
 	return  rosi
 
 

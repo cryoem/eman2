@@ -1971,16 +1971,16 @@ def ttime():
 
 def running_time(start_time):
 	from utilities import print_msg
-	import time
-	time_run = int(time.time() - start_time)
+	from time import time
+	time_run = int(time() - start_time)
 	time_h   = time_run / 3600
 	time_m   = (time_run % 3600) / 60
 	time_s   = (time_run % 3600) % 60
 	print_msg('\nRunning time is: %s h %s min %s s\n\n' % (str(time_h).rjust(2, '0'), str(time_m).rjust(2, '0'), str(time_s).rjust(2, '0')))
 
 def running_time_txt(start_time):
-	import time
-	time_run = int(time.time() - start_time)
+	from time import time
+	time_run = int(time() - start_time)
 	time_h   = time_run / 3600
 	time_m   = (time_run % 3600) / 60
 	time_s   = (time_run % 3600) % 60
