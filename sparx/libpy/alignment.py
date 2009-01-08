@@ -69,12 +69,12 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode
 			#set_params2D(data[im], [alphan, sxn, syn, mn, 1.0])
 			#data[im].set_attr_dict({'select': select, 'peak':peakt})
 			rosi = sim_anneal(peaks, T, step, mode, maxrin)
-			data[im].set_attr("npeaks",len(rosi))
+			data[im].set_attr("npeaks", len(rosi))
 			for np in xrange(len(rosi)):
 				[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, rosi[np][0], rosi[np][1], rosi[np][2], rosi[np][3])
 				set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], "xform.align2d%01d"%(np))
 				data[im].set_attr_dict({"select%01d"%(np): rosi[np][5], "peak%01d"%(np):rosi[np][4]})
-				if(np == 0):  set_params2D(data[im], [alphan, sxn, syn, mn, 1.0])
+				if np == 0:  set_params2D(data[im], [alphan, sxn, syn, mn, 1.0])
 		else:
 			[angt, sxst, syst, mirrort, peakt] = ormq(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
 			# combine parameters and set them to the header, ignore previous angle and mirror
@@ -310,6 +310,7 @@ def ormq_peaks(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 	return peaks
 
 
+'''
 def process_peak_1d_pad(peaks, step, mode, numr, nx):
 	from math import pi, cos, sin
 	
@@ -487,7 +488,7 @@ def ormq_peaks_major(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 	"""
 	
 	return peaks, peakm, peaks_major, peakm_major
-
+'''
 
 
 def select_k(dJe, T):
