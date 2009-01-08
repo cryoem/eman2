@@ -748,7 +748,11 @@ class ParticleWorkFlowTask(WorkFlowTask):
 			dbs = db_list_dicts("bdb:particles#")
 			ptcl_dbs = []
 			for db in dbs:
-				db_strip = get_file_tag(db)
+				# why did I use strip?
+				#db_strip = get_file_tag(db)
+				#print db,db_strip
+				# I think it can be removed (d.woolford)
+				db_strip = db
 				if len(db_strip) > len(end_string)-1:
 					if db_strip[-len(end_string):] == end_string:
 						if strip_end:
@@ -893,7 +897,6 @@ class ParticleWorkFlowTask(WorkFlowTask):
 		Inspects the particle databases in the particles directory, gathering their names, number of particles and dimenions. Puts the information in a ParamTable.
 		'''
 		project_names = self.get_particle_db_names(strip_ptcls=True)
-		
 		ptable,n = self.__make_particle_param_table(project_names)
 		setattr(ptable,"convert_text", ptable_convert)
 		setattr(ptable,"icon_type","matrix_image")

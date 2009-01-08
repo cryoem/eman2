@@ -1989,7 +1989,8 @@ EMData *EMData::make_footprint()
 //	ccf->process_inplace("normalize.edgemean");
 //	EMData *un=ccf->unwrap();
 // This should probably be make_rotational_footprint_e1
-	EMData *un=make_rotational_footprint();
+// 	EMData *un=make_rotational_footprint();
+	EMData *un=make_rotational_footprint_e1(); // Use EMAN1's footprint strategy
 	if (un->get_ysize() <= 6) {
 		throw UnexpectedBehaviorException("In EMData::make_footprint. The rotational footprint is too small");
 	}

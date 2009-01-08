@@ -239,7 +239,7 @@ class EMLightsDrawer:
 				#print sp
 				#print sc
 			
-				v = Vec3f(-float(sp[0]),float(sp[1]),float(sp[2]))
+				v = Vec3f(float(sp[0]),float(sp[1]),float(sp[2]))
 				if v.length() == 0:
 					glPopMatrix()
 					return
@@ -260,7 +260,7 @@ class EMLightsDrawer:
 				
 			else:
 				
-				v = Vec3f(-float(pos[0]),float(pos[1]),float(pos[2]))
+				v = Vec3f(float(pos[0]),float(pos[1]),float(pos[2]))
 				t = Transform()
 				t.set_rotation(v)
 				d = t.get_rotation("eman")
@@ -692,7 +692,7 @@ class PointSourceLightMouseEvents:
 		t.set_rotation( quaternion )
 		
 		dr = glGetLightfv(self.current_light,GL_SPOT_DIRECTION)
-		v = Vec3f(-float(dr[0]),float(dr[1]),float(dr[2]))
+		v = Vec3f(float(dr[0]),float(dr[1]),float(dr[2]))
 		torig = Transform()
 		torig.set_rotation(v)
 		
@@ -757,7 +757,7 @@ class DirectionalLightMouseEvents:
 		t.set_rotation( quaternion )
 		
 		pos = glGetLightfv(self.current_light,GL_POSITION)
-		v = Vec3f(-float(pos[0]),float(pos[1]),float(pos[2]))
+		v = Vec3f(float(pos[0]),float(pos[1]),float(pos[2]))
 		torig = Transform()
 		torig.set_rotation(v)
 		

@@ -449,7 +449,7 @@ void Transform::set_rotation(const Vec3f & v)
 	v1.normalize();
 	
 	float theta = acos(v1[2]); // in radians
-	float psi = atan2(v1[1],v1[0]);
+	float psi = atan2(v1[1],-v1[0]);
 // 	if (v1[1] != 0) psi = asin(v1[1]/sin(theta)); // in radians
 	
 	Dict d;
@@ -460,6 +460,45 @@ void Transform::set_rotation(const Vec3f & v)
 	
 	set_rotation(d);
 	
+}
+
+Transform Transform::get_hflip_transform() const {
+	
+	Dict rot = get_rotation("eman");
+	rot["alt"] = 180.0f + static_cast<float>(rot["alt"]);
+	rot["phi"] = 180.0f - static_cast<float>(rot["phi"]);
+	
+	
+	
+	Transform ret(*this); // Is the identity
+	ret.set_rotation(rot);
+	
+	Vec3f trans = get_trans();
+	trans[0] = -trans[0];
+	ret.set_trans(trans);
+	
+// 	ret.set_mirror(self.get_mirror());
+	
+	return ret;
+}
+
+Transform Transform::get_vflip_transform() const {
+	
+	Dict rot = get_rotation("eman");
+	rot["alt"] = 180.0f + static_cast<float>(rot["alt"]);
+	rot["phi"] = - static_cast<float>(rot["phi"]);
+	
+	Transform ret(*this); // Is the identity
+	ret.set_rotation(rot);
+	
+	Vec3f trans = get_trans();
+	trans[1] = -trans[1];
+	ret.set_trans(trans);
+	
+// 	ret.set_mirror(self.get_mirror());
+	
+	
+	return ret;
 }
 
 Dict Transform::get_rotation(const string& euler_type) const

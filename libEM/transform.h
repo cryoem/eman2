@@ -120,6 +120,16 @@ namespace EMAN
 			 */
 			Transform get_rotation_transform() const;
 			
+			/** How do I get the transform that will yield the horizontally flipped projection?
+			 * @return the transform that will yield the horizontally flipped projection
+			 */
+			Transform get_hflip_transform() const;
+			
+			/** How do I get the transform that will yield the vertically flipped projection?
+			 * @return the transform that will yield the vertically flipped projection
+			 */
+			Transform get_vflip_transform() const;
+			
 			/** Set the parameters of the entire transform.
 			 * keys acted upon are "type" - if this exists then the correct euler angles need to be included -
 			 * also "tx","ty","tz", "scale", and "mirror"

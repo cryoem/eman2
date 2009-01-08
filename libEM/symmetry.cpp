@@ -70,7 +70,7 @@ map<string, vector<string> > EMAN::dump_symmetries_list()
 }
 
 template <>
-		Symmetry3D* Factory < Symmetry3D >::get(const string & instancename_)
+Symmetry3D* Factory < Symmetry3D >::get(const string & instancename_)
 {
 	init();
 	
