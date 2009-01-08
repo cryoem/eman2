@@ -943,7 +943,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			else:   method = "SA"
 			bcast_EMData_to_all(tavg, myid, main_node)
 			total_iter += 1
-			if(total_iter%5 == 0): T = max(T*F,1.0e-8)
+			T = max(T*F,1.0e-8)
 
 	# write out headers and STOP, under MPI writing has to be done sequentially
 	mpi_barrier(MPI_COMM_WORLD)
@@ -959,8 +959,8 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 	else:           send_attr_dict(main_node, data, par_str, image_start, image_end)
 	if myid == main_node:  print_end_msg("ali2d_a_MPI")
-'''
 
+'''
 def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, CTF=False, user_func_name="ref_ali2d", random_method="SA", T0=1.0, F=0.996):
 
 	from utilities    import model_circle, combine_params2, drop_image, get_image, get_input_from_string, get_params2D, set_params2D, model_blank
@@ -1332,19 +1332,10 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 			for k in xrange(2):
 				ctf2[k][i] = 1.0/(ctf2[k][i] + 1.0/snr)
 
-	#** startup
+	# startup
 	numr = Numrinit(first_ring, last_ring, rstep, mode) 	#precalculate rings
  	wr = ringwe(numr, mode)
 	
-	av1, av2 = add_oe_series(data)
-	Util.add_img(av1, av2)
-	if CTF:  tavg = filt_table(av1, ctfb2)
-	else:     tavg = av1/nima
-	a0 = tavg.cmp("dot", tavg, dict(negative = 0, mask = mask))
-	a0 = 0.0
-	msg = "Initial criterion = %-20.7e\n"%(a0)
-	print_msg(msg)
-
 	# initialize data for the reference preparation function
 	#  mask can be modified in user_function
 	ref_data = []
@@ -1353,13 +1344,17 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	ref_data.append( None )
 	ref_data.append( None )
 	cs = [0.0]*2
-	#** iterate
+	# iterate
 	total_iter = 0
+	a0 = -1e22
+	sx_sum = 0.0
+	sy_sum = 0.0
 	for N_step in xrange(len(xrng)):
 		msg = "\nX range = %5.2f   Y range = %5.2f   Step = %5.2f\n"%(xrng[N_step], yrng[N_step], step[N_step])
 		print_msg(msg)
 		for Iter in xrange(max_iter):
-			sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode)
+			total_iter += 1 
+
 			av1, av2 = add_oe_series(data)
 			if CTF:
 				tavg = filt_table(Util.addn_img(av1, av2), ctfb2)
@@ -1367,8 +1362,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 				av2  = filt_table(av2, ctf2[1])
 			else:
 				tavg = (av1+av2)/nima
-			total_iter += 1 
-
+			# write the current average
 			drop_image(tavg, os.path.join(outdir, "aqc_%03d.hdf"%(total_iter)))
 
 			frsc = fsc_mask(av1, av2, ref_data[0], 1.0, os.path.join(outdir, "resolution%03d"%(total_iter)))
@@ -1376,9 +1370,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 			ref_data[2] = tavg
 			ref_data[3] = frsc
 			#  call user-supplied function to prepare reference image, i.e., center and filter it
-			if center != -1:
-				tavg, cs = user_func(ref_data)
-			else:
+			if center == -1:
 				# When center = -1, which is by default, we use the average center method
 				ref_data[1] = 0
 				tavg, cs = user_func(ref_data)
@@ -1388,16 +1380,22 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 				tavg = fshift(tavg, -cs[0], -cs[1])
 				msg = "Average center x =      %10.3f        Center y       = %10.3f\n"%(cs[0], cs[1])
 				print_msg(msg)
+			else:
+				tavg, cs = user_func(ref_data)
+
+			# write the current filtered average
+			drop_image(tavg, os.path.join(outdir, "aqf_%03d.hdf"%(total_iter)))
 
 			# a0 should increase; stop algorithm when it decreases.    
 			a1 = tavg.cmp("dot", tavg, dict(negative = 0, mask = ref_data[0]))
-			msg = "ITERATION   #%5d	     criterion = %20.7e\n"%(total_iter,a1)
+			msg = "Iteration   #%5d	     criterion = %20.7e\n"%(total_iter,a1)
 			print_msg(msg)
-			# write the current average
-			drop_image(tavg, os.path.join(outdir, "aqf_%03d.hdf"%(total_iter)))
+			if total_iter == len(xrng)*max_iter: break
 			if a1 < a0:
 				if auto_stop == True: break
 			else:	a0 = a1
+			sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode)
+			
 	drop_image(tavg, os.path.join(outdir, "aqfinal.hdf"))
 	# write out headers
 	if CTF and ctf_applied == 0:
@@ -1555,37 +1553,28 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	numr = Numrinit(first_ring, last_ring, rstep, mode) 	#precalculate rings
  	wr = ringwe(numr, mode)
 	
-	av1, av2 = add_oe_series(data)
-	Util.add_img(av1, av2)
-	tavg = model_blank(nx, nx)
-	#  get the total sum
-	reduce_EMData_to_root(av1, myid, main_node)
-
 	if myid == main_node:
-		if CTF: tavg = filt_table(av1, ctfb2)
-		else:    tavg = av1/nima
-		a0 = tavg.cmp("dot", tavg, {"negative":0, "mask":mask})
-		msg = "Initial criterion = %-20.7e\n"%(a0)
-		print_msg(msg)
 		# initialize data for the reference preparation function
 		ref_data = []
 		ref_data.append( mask )
 		ref_data.append( center )
 		ref_data.append( None )
 		ref_data.append( None )
-
-	bcast_EMData_to_all(tavg, myid, main_node)
-
+		sx_sum = 0.0
+		sy_sum = 0.0
+		a0 = -1.0e22
+		
 	again = True
-	cs = [0.0]*2
 	total_iter = 0
+	cs = [0.0]*2
+	tavg = model_blank(nx, nx)
+
 	for N_step in xrange(len(xrng)):
 		msg = "\nX range = %5.2f   Y range = %5.2f   Step = %5.2f\n"%(xrng[N_step], yrng[N_step], step[N_step])
 		if myid == main_node: print_msg(msg)
 		for Iter in xrange(max_iter):
-			sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode)
-			sx_sum = mpi_reduce(sx_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
-			sy_sum = mpi_reduce(sy_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
+			total_iter += 1
+
 			av1, av2 = add_oe_series(data)
 			#  bring all partial sums together
 			reduce_EMData_to_root(av1, myid, main_node)
@@ -1597,17 +1586,16 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					av2  = filt_table(av2, ctf2n[1])
 				else:
 					tavg = (av1 + av2)/nima
-				total_iter += 1
 
+				# write the current average
 				drop_image(tavg, os.path.join(outdir, "aqc_%03d.hdf"%(total_iter)))
 				
 				frsc = fsc_mask(av1, av2, ref_data[0], 1.0, os.path.join(outdir, "resolution%03d"%(total_iter)))
 				ref_data[2] = tavg
 				ref_data[3] = frsc
+
 				#  call user-supplied function to prepare reference image, i.e., center and filter it
-				if center != -1:
-					tavg, cs = user_func(ref_data)
-				else:
+				if center == -1:
 					# When center = -1, which is by default, we use the average center method
 					ref_data[1] = 0
 					tavg, cs = user_func(ref_data)
@@ -1617,15 +1605,20 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					tavg = fshift(tavg, -cs[0], -cs[1])
 					msg = "Average center x =      %10.3f        Center y       = %10.3f\n"%(cs[0], cs[1])
 					print_msg(msg)
+				else:
+					tavg, cs = user_func(ref_data)
 
 				# a0 should increase; stop algorithm when it decreases.    
 				a1 = tavg.cmp("dot", tavg, dict(negative = 0, mask = ref_data[0]))
-				msg = "ITERATION   #%5d	     criterion = %20.7e\n"%(total_iter,a1)
+				msg = "Iteration   #%5d	     criterion = %20.7e\n"%(total_iter, a1)
 				print_msg(msg)
-				# write the current average
+				
+				# write the current filtered average
 				drop_image(tavg, os.path.join(outdir, "aqf_%03d.hdf"%(total_iter)))
 				if a1 < a0:
-					if auto_stop == True: break
+					if auto_stop == True: 
+						again = False
+						break
 				else:	a0 = a1
 
 			again = mpi_bcast(again, 1, MPI_INT, main_node, MPI_COMM_WORLD)
@@ -1633,6 +1626,12 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			cs = mpi_bcast(cs, 2, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 			cs = [float(cs[0]), float(cs[1])]
 			if not again: break
+			if total_iter == len(xrng)*Iter: break 
+
+			sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode)
+			sx_sum = mpi_reduce(sx_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
+			sy_sum = mpi_reduce(sy_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
+
 	if myid == main_node:  drop_image(tavg, os.path.join(outdir, "aqfinal.hdf"))
 	# write out headers  and STOP, under MPI writing has to be done sequentially
 	mpi_barrier(MPI_COMM_WORLD)
