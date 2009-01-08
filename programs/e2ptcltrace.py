@@ -216,8 +216,8 @@ def angular_deviation_from_orient(o1,o2):
 
 def angular_deviation(t1,t2):
 
-	v1 = Vec3f([0,0,1]*t1)
-	v2 = Vec3f([0,0,1]*t2)
+	v1 = Vec3f([0,0,1])*t1
+	v2 = Vec3f([0,0,1])*t2
 	t = v2.dot(v1)
 	#print t
 	if t > 1: 
