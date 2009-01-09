@@ -913,7 +913,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				std = sqrt((s2 - float(select)**2/(knp*nima))/(knp*nima-1))
 				sa = float(select)/(knp*nima)
 				av = float(av)/nima
-				if(total_iter<0 and sa < 0.05 and std <1.0):
+				if(total_iter>0 and sa < 0.2 and std <1.0):
 					method = 0
 					msg = "ITERATION   #%5d    criterion = %15.7e \n"%(total_iter, a1)
 				else:
