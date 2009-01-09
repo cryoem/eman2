@@ -17172,15 +17172,13 @@ vector<float>  Util::ali2d_ccf_list(EMData* image, EMData* crefim,
 	int select = 0;
 	while (p[select] < t)	select += 1;
 
-	vector<float> a(vol*2*5+1);
-	for (int i=0; i<2*vol; i++) {
-		a[i*5] = ccf[i].value;
-		a[i*5+1] = ccf[i].i;
-		a[i*5+2] = ccf[i].j;
-		a[i*5+3] = ccf[i].k;
-		a[i*5+4] = ccf[i].mirror;
-	}
-	a[vol*2*5] = select;
+	vector<float> a(6);
+	a[0] = ccf[select].value;
+	a[1] = ccf[select].i;
+	a[2] = ccf[select].j;
+	a[3] = ccf[select].k;
+	a[4] = ccf[select].mirror;
+	a[5] = select;
 	return a;
 }
 

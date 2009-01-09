@@ -696,18 +696,18 @@ def sim_ccf(peaks, T, step, mode, maxrin):
 		rosi = []
 		for np in xrange(1):
 			from math import pi, cos, sin
-			select = int(peaks[-1])
-			ang = ang_n(peaks[select*5+1]+1, mode, maxrin)
-			sx  = -peaks[select*5+2]*step
-			sy  = -peaks[select*5+3]*step
+			select = int(peaks[5])
+			ang = ang_n(peaks[1]+1, mode, maxrin)
+			sx  = -peaks[2]*step
+			sy  = -peaks[3]*step
 
 			co =  cos(ang*pi/180.0)
 			so = -sin(ang*pi/180.0)
 			sxs = sx*co - sy*so
 			sys = sx*so + sy*co
 
-			mirror = int(peaks[select*5+4])
-			peak   = peaks[select*5]
+			mirror = int(peaks[4])
+			peak   = peaks[0]
 			rosi.append([ang, sxs, sys, mirror, peak, select])
 
 	return  rosi
