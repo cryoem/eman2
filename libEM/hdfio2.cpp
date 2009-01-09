@@ -166,13 +166,13 @@ EMObject HdfIO2::read_attr(hid_t attr) {
 		s=(char *)malloc(sz+1);
 		H5Aread(attr,type,s);
 //		H5Aread(attr,H5T_NATIVE_CHAR,s);
-		if(s[0] == 'O') {
+		if(s[0] == 'O' && isdigit(s[1])) {
 			ctf = new EMAN1Ctf();
 			ctf->from_string(string(s));
 			ret = EMObject(ctf);
 			delete ctf;
 		}
-		else if(s[0] == 'E') {
+		else if(s[0] == 'E' && isdigit(s[1])) {
 			ctf = new EMAN2Ctf();
 			ctf->from_string(string(s));
 			ret = EMObject(ctf);
