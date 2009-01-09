@@ -17174,7 +17174,7 @@ vector<float>  Util::ali2d_ccf_list(EMData* image, EMData* crefim,
 
 	vector<float> a(vol*2*5+1);
 	for (int i=0; i<2*vol; i++) {
-		a[i*5] = p[i];
+		a[i*5] = ccf[i].value;
 		a[i*5+1] = ccf[i].i;
 		a[i*5+2] = ccf[i].j;
 		a[i*5+3] = ccf[i].k;
