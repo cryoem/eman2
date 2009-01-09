@@ -86,7 +86,8 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode
 		sy_sum += syn
 
 	return sx_sum, sy_sum
-	
+
+
 def ali2d_random_ccf(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, CTF=False, random_method="", T=1.0):
 	"""
 		single iteration of 2D alignment using ormq
@@ -694,12 +695,8 @@ def sim_ccf(peaks, T, step, mode, maxrin):
 
 		rosi = []
 		for np in xrange(1):
-			pb = random()
-			select = 0
-			while peaks[select*5] < pb:  select += 1
-
 			from math import pi, cos, sin
-	
+			select = int(peaks[-1])
 			ang = ang_n(peaks[select*5+1]+1, mode, maxrin)
 			sx  = -peaks[select*5+2]*step
 			sy  = -peaks[select*5+3]*step

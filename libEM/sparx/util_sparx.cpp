@@ -47,6 +47,7 @@
 using namespace EMAN;
 #include "steepest.h"
 #include "emassert.h"
+#include "randnum.h"
 
 #include <gsl/gsl_sf_bessel.h>
 #include <gsl/gsl_sf_bessel.h>
@@ -17166,8 +17167,12 @@ vector<float>  Util::ali2d_ccf_list(EMData* image, EMData* crefim,
 		p[i] += p[i-1];
 	}
 	p[2*vol-1] = 2.0;
+	
+	float t = get_frand(0, 1);
+	int select = 0;
+	while (p[select] < t)	select += 1;
 
-	vector<float> a(vol*2*5);
+	vector<float> a(vol*2*5+1);
 	for (int i=0; i<2*vol; i++) {
 		a[i*5] = p[i];
 		a[i*5+1] = ccf[i].i;
@@ -17175,6 +17180,7 @@ vector<float>  Util::ali2d_ccf_list(EMData* image, EMData* crefim,
 		a[i*5+3] = ccf[i].k;
 		a[i*5+4] = ccf[i].mirror;
 	}
+	a[vol*2*5] = select;
 	return a;
 }
 
