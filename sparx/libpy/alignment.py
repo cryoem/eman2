@@ -98,16 +98,10 @@ def ali2d_random_ccf(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode,
 	if CTF:
 		from filter  import filt_ctf
 
-	from time import time
-	start_time = time()
 	# 2D alignment using rotational ccf in polar coords and quadratic interpolation
 	cimage = Util.Polar2Dm(tavg, cnx, cny, numr, mode)
-	print  "prep1   ",time() - start_time
-	start_time = time()
 	Util.Frngs(cimage, numr)
 	Applyws(cimage, numr, wr)
-	print  "prep2   ",time() - start_time
-	start_time = time()
 	
 	maxrin = numr[-1]
 	sx_sum = 0.0
