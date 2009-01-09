@@ -918,16 +918,11 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					msg = "ITERATION   #%5d    criterion = %15.7e \n"%(total_iter, a1)
 				else:
 					method = 1
-					msg = "ITERATION   #%5d    criterion = %15.7e    average select = %5.3f  stdv(select) = %12.3e   av(stdv) = %12.3e  T=%12.3e\n"%(total_iter, a1, sa, std, av, T)
+					msg = "ITERATION   #%5d    criterion = %15.7e    average select = %5.3f  stdv(select) = %12.3e   T=%12.3e\n"%(total_iter, a1, sa, std, T)
 				print_msg(msg)
 				# write the current average
 				if random_method=="" or total_iter%1 == 0:
 					drop_image(tavg, os.path.join(outdir, "aqf_%04d.hdf"%(total_iter)))
-				# a0 should increase; stop algorithm when it decreases.
-				if a1 == a0:
-					#if (auto_stop == True): break
-					again = 0
-				else:	a0 = a1
 			else:
 				tavg = EMData(nx, nx, 1, True)
 				cs = [0.0]*2
