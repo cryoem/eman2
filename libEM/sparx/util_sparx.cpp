@@ -3081,10 +3081,10 @@ c
 	}
 
 	// interpolate
-	prb1d(t7,7,&pos);
-	tot = (float)(jtot)+pos;
+	//prb1d(t7,7,&pos);
+	//tot = (float)(jtot)+pos;
 	// Do not interpolate
-	// tot = (float)(jtot);
+	tot = (float)(jtot);
 
 	// mirrored
 	fftr_d(t,ip);
@@ -3105,10 +3105,10 @@ c
 
 	// interpolate
 
-	prb1d(t7,7,&pos);
-	tmt = float(jtot) + pos;
+	//prb1d(t7,7,&pos);
+	//tmt = float(jtot) + pos;
 	// Do not interpolate
-	// tmt = float(jtot);
+	tmt = float(jtot);
 
 	free(t);
 	free(q);
@@ -17151,7 +17151,7 @@ vector<float>  Util::ali2d_ccf_list(EMData* image, EMData* crefim,
 	delete p_ccf1ds;
 	delete p_ccf1dm;
 	std::sort(ccf.begin(), ccf.end(), ccf_value());
-	
+
 	double qt = (double)ccf[0].value;
 	vector <double> p(2*vol), cp(2*vol);
 
