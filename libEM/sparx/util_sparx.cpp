@@ -17084,6 +17084,100 @@ void  Util::multiref_peaks_compress_ali2d(EMData* image, EMData* crefim, float x
 	return;
 }
 
+struct ccf_point
+{
+    float value;
+    int i;
+    int j;
+    int k;
+    int mirror;
+};
+
+
+struct ccf_value
+{
+    bool operator()( const ccf_point& a, const ccf_point& b )
+    {
+        return a.value > b.value;
+    }
+};
+
+
+vector<float>  Util::ali2d_ccf_list(EMData* image, EMData* crefim,
+			float xrng, float yrng, float step, string mode,
+			vector< int >numr, float cnx, float cny, double T) {
+
+    // Determine shift and rotation between image and one reference
+    // image (crefim, weights have to be applied) using quadratic
+    // interpolation
+
+	int   maxrin = numr[numr.size()-1];
+	
+	int   ky = int(2*yrng/step+0.5)/2;
+	int   kx = int(2*xrng/step+0.5)/2;
+	
+	float *p_ccf1ds = (float *)malloc(maxrin*sizeof(float));
+	float *p_ccf1dm = (float *)malloc(maxrin*sizeof(float));
+	int vol = maxrin*(2*kx+1)*(2*ky+1);
+	vector<ccf_point> ccf(2*vol);
+	ccf_point temp;
+
+	int index = 0;
+	for (int i = -ky; i <= ky; i++) {
+		float iy = i * step;
+		for (int j = -kx; j <= kx; j++) {
+			float ix = j*step;
+			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
+			Frngs(cimage, numr);
+			Crosrng_msg_vec(crefim, cimage, numr, p_ccf1ds, p_ccf1dm);
+			for (int k=0; k<maxrin; k++) {
+				temp.value = p_ccf1ds[k];
+				temp.i = k;
+				temp.j = j;
+				temp.k = i;
+				temp.mirror = 0;
+				ccf[index] = temp;
+				index++;
+				temp.value = p_ccf1dm[k];
+				temp.mirror = 1;
+				ccf[index] = temp;
+				index++;
+			}	
+			delete cimage; cimage = 0;
+		}
+	}
+
+	delete p_ccf1ds;
+	delete p_ccf1dm;
+	std::sort(ccf.begin(), ccf.end(), ccf_value());
+	
+	double qt = (double)ccf[0].value;
+	vector <double> p(2*vol), cp(2*vol);
+
+	double sump = 0.0;
+	for (int i=0; i<2*vol; i++) {
+		p[i] = pow(double(ccf[i].value)/qt, 1.0/T);
+		sump += p[i];
+	}
+	for (int i=0; i<2*vol; i++) {
+		p[i] /= sump;
+	} 
+	for (int i=1; i<2*vol; i++) {
+		p[i] += p[i-1];
+	}
+	p[2*vol-1] = 2.0;
+
+	vector<float> a(vol*2*5);
+	for (int i=0; i<2*vol; i++) {
+		a[i*5] = p[i];
+		a[i*5+1] = ccf[i].i;
+		a[i*5+2] = ccf[i].j;
+		a[i*5+3] = ccf[i].k;
+		a[i*5+4] = ccf[i].mirror;
+	}
+	return a;
+}
+
 
 /*
 void Util::multiref_peaks_ali(EMData* image, const vector< EMData* >& crefim,
