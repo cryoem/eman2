@@ -61,7 +61,7 @@ class EMLightsDrawer:
 	'''
 	def __init__(self):
 		global glut_inited
-		if not glut_inited and not get_platform() == "Darwin":
+		if not glut_inited:  #and not get_platform() == "Darwin":
 			GLUT.glutInit("")
 			glut_inited = True
 		self.gl_lights = get_gl_lights_vector()
