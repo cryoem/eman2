@@ -781,11 +781,6 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 //		printf("%d\t%f\t%f\n",i,weight,fsc[ny/2+1+i]);
 	}
 
-	if (image->has_attr("free_me")) delete image;
-	if (with->has_attr("free_me")) delete with;
-
-	EXITFUNC;
-	
 	// This performs a weighting that tries to normalize FRC by correcting from the number of particles represented by the average
 	sum/=norm;
 	if (nweight && with->get_attr_default("ptcl_repr",0) && sum>=0 && sum<1.0) {
@@ -793,6 +788,12 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 		sum/=(float)with->get_attr_default("ptcl_repr",0);	// divide by ptcl represented
 		sum=sum/(1.0+sum);							// convert back to correlation
 	}
+
+	if (image->has_attr("free_me")) delete image;
+	if (with->has_attr("free_me")) delete with;
+
+	EXITFUNC;
+	
 	
 	//.Note the negative! This is because EMAN2 follows the convention that
 	// smaller return values from comparitors indicate higher similarity -
