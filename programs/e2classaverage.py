@@ -72,7 +72,7 @@ def main():
 	parser.add_option("--normproc",type="string",help="The normalization processor. Default is normalize.edgemean. If you want to turn this option off specify \'None\'", default="normalize.edgemean")
 	parser.add_option("--usefilt", dest="usefilt", default=None, help="Specify a particle data file that has been low pass or Wiener filtered. Has a one to one correspondence with your particle data. If specified will be used to align particles to the running class average, however the original particle will be used to generate the actual class average")
 	parser.add_option("--idxcache", default=False, action="store_true", help="Stores the indices of all particles in the given class in the Python list in the e2classaverage.indices database")
-	parser.add_option("--dbpath", default=False, help="Use in conjunction with --idxcache to specify a directory where the database entries should be stored, e.g. \"refine_01\" ", default=".")
+	parser.add_option("--dbpath", help="Use in conjunction with --idxcache to specify a directory where the database entries should be stored, e.g. \"refine_01\" ", default=".")
 	parser.add_option("--odd", default=False, help="Used by EMAN2 when running eotests. Includes only odd numbered particles in class averages.", action="store_true")
 	parser.add_option("--even", default=False, help="Used by EMAN2 when running eotests. Includes only even numbered particles in class averages.", action="store_true")
 	
