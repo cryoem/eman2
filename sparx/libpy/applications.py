@@ -833,16 +833,14 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			for im in data:
 				pka = 0.0
 				pkv = 0.0
-				npeaks = im.get_attr("npeaks")
-				for np in xrange(min(knp,npeaks)):
-					alphan, sxn, syn, mirror, scale = get_params2D(im, "xform.align2d%01d"%(np))
-					sel = float(im.get_attr("select%01d"%(np)))
-					peak = 1.0#im.get_attr("peak%01d"%(np))
-					#Util.add_img(tavg, Util.mult_scalar(rot_shift2D(im, alphan, sxn, syn, mirror), peak))
-					Util.add_img(tavg, rot_shift2D(im, alphan, sxn, syn, mirror))
-					pksa += peak
-					pka  += sel
-					pkv  += sel*sel
+				alphan, sxn, syn, mirror, scale = get_params2D(im)
+				sel = float(im.get_attr("select"))
+				peak = 1.0 #im.get_attr("peak%01d"%(np))
+				#Util.add_img(tavg, Util.mult_scalar(rot_shift2D(im, alphan, sxn, syn, mirror), peak))
+				Util.add_img(tavg, rot_shift2D(im, alphan, sxn, syn, mirror))
+				pksa += peak
+				pka  += sel
+				pkv  += sel*sel
 				s2 += pkv
 				select += sel
 				av += sqrt((pkv - float(pka)**2/knp)/(knp))

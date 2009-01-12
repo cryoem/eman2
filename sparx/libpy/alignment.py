@@ -129,15 +129,13 @@ def ali2d_random_ccf(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode,
 			#[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
 			#set_params2D(data[im], [alphan, sxn, syn, mn, 1.0])
 			#data[im].set_attr_dict({'select': select, 'peak':peakt})
-			rosi = sim_ccf(p, T, step, mode, maxrin)
+			[angt, sxst, syst, mirrort, peakt, select] = sim_ccf(p, T, step, mode, maxrin)
 			#print  "sim    ",time() - start_time
 			#start_time = time()
-			data[im].set_attr("npeaks",len(rosi))
-			for np in xrange(len(rosi)):
-				[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, rosi[np][0], rosi[np][1], rosi[np][2], rosi[np][3])
-				set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], "xform.align2d%01d"%(np))
-				data[im].set_attr_dict({"select%01d"%(np): rosi[np][5], "peak%01d"%(np):rosi[np][4]})
-				if(np == 0):  set_params2D(data[im], [alphan, sxn, syn, mn, 1.0])
+			#data[im].set_attr("npeaks",len(rosi))
+			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
+			data[im].set_attr_dict({"select":select, "peak":peakt})
+			set_params2D(data[im], [alphan, sxn, syn, mn, 1.0])
 		else:
 			[angt, sxst, syst, mirrort, peakt] = ormq(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
 			# combine parameters and set them to the header, ignore previous angle and mirror
@@ -588,7 +586,7 @@ def sim_anneal(peaks, T, step, mode, maxrin):
 
 	peaks.sort(reverse=True)
 
-	if(T < 0.0):
+	if T < 0.0:
 		select = int(-T)
 		ang = ang_n(peaks[select][1]+1, mode, maxrin)
 		sx  = -peaks[select][6]*step
@@ -601,8 +599,7 @@ def sim_anneal(peaks, T, step, mode, maxrin):
 
 		mirror = peaks[select][8]
 		peak   = peaks[select][0]/peaks[0][0]
-		rosi = [[ang, sxs, sys, mirror, peak, select]]
-	elif(T == 0.0):
+	elif T == 0.0:
 		select = 0
 	
 		ang = ang_n(peaks[select][1]+1, mode, maxrin)
@@ -616,7 +613,6 @@ def sim_anneal(peaks, T, step, mode, maxrin):
 
 		mirror = peaks[select][8]
 		peak   = peaks[select][0]/peaks[0][0]
-		rosi = [[ang, sxs, sys, mirror, peak, select]]
 	else:
 		K = len(peaks)
 		qt = peaks[0][0]
@@ -635,34 +631,29 @@ def sim_anneal(peaks, T, step, mode, maxrin):
 		# the next line looks strange, but it assures that at least the lst element is selected
 		cp[K-1] = 2.0
 
-		rosi = []
-		for np in xrange(1):
-			pb = random()
-			select = 0
-			while(cp[select] < pb):  select += 1
+		pb = random()
+		select = 0
+		while(cp[select] < pb):  select += 1
 
-			from math import pi, cos, sin
-	
-			ang = ang_n(peaks[select][1]+1, mode, maxrin)
-			sx  = -peaks[select][6]*step
-			sy  = -peaks[select][7]*step
+		ang = ang_n(peaks[select][1]+1, mode, maxrin)
+		sx  = -peaks[select][6]*step
+		sy  = -peaks[select][7]*step
 
-			co =  cos(ang*pi/180.0)
-			so = -sin(ang*pi/180.0)
-			sxs = sx*co - sy*so
-			sys = sx*so + sy*co
+		co =  cos(ang*pi/180.0)
+		so = -sin(ang*pi/180.0)
+		sxs = sx*co - sy*so
+		sys = sx*so + sy*co
 
-			mirror = peaks[select][8]
-			peak   = p[select]
-			rosi.append([ang, sxs, sys, mirror, peak, select])
-	
-	return  rosi
+		mirror = peaks[select][8]
+		peak   = p[select]
+		
+	return  ang, sxs, sys, mirror, peak, select
 
 def sim_ccf(peaks, T, step, mode, maxrin):
 	from random import random
 	from math import pi, cos, sin
 
-	if(T < 0.0):
+	if T < 0.0:
 		select = int(-T)
 		ang = ang_n(peaks[select][1]+1, mode, maxrin)
 		sx  = -peaks[select][2]*step
@@ -675,8 +666,7 @@ def sim_ccf(peaks, T, step, mode, maxrin):
 
 		mirror = peaks[select][4]
 		peak   = peaks[select][0]/peaks[0][0]
-		rosi = [[ang, sxs, sys, mirror, peak, select]]
-	elif(T == 0.0):
+	elif T == 0.0:
 		select = 0
 	
 		ang = ang_n(peaks[select][1]+1, mode, maxrin)
@@ -690,27 +680,21 @@ def sim_ccf(peaks, T, step, mode, maxrin):
 
 		mirror = peaks[select][4]
 		peak   = peaks[select][0]/peaks[0][0]
-		rosi = [[ang, sxs, sys, mirror, peak, select]]
 	else:
+		select = int(peaks[5])
+		ang = ang_n(peaks[1]+1, mode, maxrin)
+		sx  = -peaks[2]*step
+		sy  = -peaks[3]*step
 
-		rosi = []
-		for np in xrange(1):
-			from math import pi, cos, sin
-			select = int(peaks[5])
-			ang = ang_n(peaks[1]+1, mode, maxrin)
-			sx  = -peaks[2]*step
-			sy  = -peaks[3]*step
+		co =  cos(ang*pi/180.0)
+		so = -sin(ang*pi/180.0)
+		sxs = sx*co - sy*so
+		sys = sx*so + sy*co
 
-			co =  cos(ang*pi/180.0)
-			so = -sin(ang*pi/180.0)
-			sxs = sx*co - sy*so
-			sys = sx*so + sy*co
+		mirror = int(peaks[4])
+		peak   = peaks[0]
 
-			mirror = int(peaks[4])
-			peak   = peaks[0]
-			rosi.append([ang, sxs, sys, mirror, peak, select])
-
-	return  rosi
+	return  ang, sxs, sys, mirror, peak, select
 
 
 def sim_anneal2(peaks, Iter, T0, F, SA_stop):
