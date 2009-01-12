@@ -743,6 +743,7 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 	int snrweight = params.set_default("snrweight", 0);
 	int ampweight = params.set_default("ampweight", 1);
 	int sweight = params.set_default("sweight", 1);
+	int nweight = params.set_default("nweight", 0);
 
 	static vector < float >default_snr;
 
@@ -785,10 +786,18 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 
 	EXITFUNC;
 	
+	// This performs a weighting that tries to normalize FRC by correcting from the number of particles represented by the average
+	sum/=norm;
+	if (nweight && with->get_attr_default("ptcl_repr",0) && sum>=0 && sum<1.0) {
+		sum=sum/(1.0-sum);							// convert to SNR
+		sum/=(float)with->get_attr_default("ptcl_repr",0);	// divide by ptcl represented
+		sum=sum/(1.0+sum);							// convert back to correlation
+	}
+	
 	//.Note the negative! This is because EMAN2 follows the convention that
 	// smaller return values from comparitors indicate higher similarity -
 	// this enables comparitors to be used in a generic fashion.
-	return -(float)(sum / norm);
+	return (float)-sum;
 }
 
 void EMAN::dump_cmps()

@@ -189,11 +189,14 @@ def sortstackrev(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali,cente
 	
 	ret=[stack[0]]
 	rets=[stackshrink[0]]
+	if stack[0].get_attr_default("ptcl_repr",0)>0 : check_rep=1    # if the images have ptcl_repr, then we want to ignore those with 0 images represented
+	else : check_rep=0
 	del stack[0]
 	del stackshrink[0]
 	while (len(stack)>0 and len(ret)<nsort) :
 		best=(0,-1)
 		for i in range(len(stackshrink)):
+			if check_rep and stackshrink[i].get_attr_default("ptcl_repr",1)<=0 : continue
 			c=1.0e38
 			cj=-1
 			ci=None

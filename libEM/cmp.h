@@ -1,38 +1,38 @@
 /**
  * $Id$
  */
- 
+
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
- 
+
 #ifndef eman_cmp__h__
 #define eman_cmp__h__ 1
 
@@ -50,7 +50,7 @@ namespace EMAN
      * comparison class is a subclass of Cmp, and must have a unique
      * name. The name is used to  create a new Cmp instance or call a Cmp.
 	 *
-	 * All Cmp classes in EMAN are managed by a Factory pattern. So 
+	 * All Cmp classes in EMAN are managed by a Factory pattern. So
 	 * each Cmp class must define:
 	 *   - a unique name to idenfity itself in the factory.
 	 *   - a static method to register itself in the factory.
@@ -88,7 +88,7 @@ namespace EMAN
 		virtual ~ Cmp()
 		{
 		}
-		
+
 		/** To compare 'image' with another image passed in through
 		 * its parameters. An optional transformation may be used
 		 * to transform the 2 images.
@@ -96,9 +96,9 @@ namespace EMAN
 		 * @param image The first image to be compared.
 		 * @param with The second image to be comppared.
 		 * @return The comparison result. Smaller better by default
-		 */			
+		 */
 		virtual float cmp(EMData * image, EMData * with) const = 0;
-		
+
 		/** Get the Cmp's name. Each Cmp is identified by a unique name.
 		 * @return The Cmp's name.
 		 */
@@ -127,12 +127,12 @@ namespace EMAN
 		 * contains its name, data-type, and description.
 		 *
 		 * @return A dictionary containing the parameter info.
-		 */	 
+		 */
 		virtual TypeDict get_param_types() const = 0;
-		
+
 	protected:
 		void validate_input_args(const EMData * image, const EMData *with) const;
-		
+
 		mutable Dict params;
 	};
 
@@ -143,12 +143,12 @@ namespace EMAN
 	 * CCC = -------------
 	 *       sig(A)sig(B)
 	 *
-	 * where the angle brackets denote averages and "sig" is the 
-	 * standard deviation.  In the case of a mask, only pixels under 
+	 * where the angle brackets denote averages and "sig" is the
+	 * standard deviation.  In the case of a mask, only pixels under
 	 * the mask are included in the calculation of averages.
 	 *
 	 * For complex images, this routine currently bails.
-	 * @author Grant Goodyear (grant.goodyear@uth.tmc.edu) 
+	 * @author Grant Goodyear (grant.goodyear@uth.tmc.edu)
 	 * @date 2005-10-03
 	 * @param negative Returns -1 * ccc, default true
 	 */
@@ -171,7 +171,7 @@ namespace EMAN
 		{
 			return new CccCmp();
 		}
-		
+
 		//param mask Image mask
 		TypeDict get_param_types() const
 		{
@@ -182,17 +182,17 @@ namespace EMAN
 		}
 
 	};
-	
+
 	/** Squared Euclidean distance normalized by n between 'this' and 'with'*/
-	//  I corrected this as there is no such thing as "variance between two images" 
+	//  I corrected this as there is no such thing as "variance between two images"
 	//  I corrected naive coding to avoid square
-	//  Also, the equation in return statement was incorrect, grrrr!!! 
+	//  Also, the equation in return statement was incorrect, grrrr!!!
 	//  Finally, I added mask option  PAP 04/23/06
 	class SqEuclideanCmp:public Cmp
 	{
 	  public:
 		SqEuclideanCmp() {}
-		
+
 		float cmp(EMData * image, EMData * with) const;
 
 		string get_name() const
@@ -223,7 +223,7 @@ namespace EMAN
 
 	/** Use dot product of 2 same-size images to do the comparison.  // Added mask option PAP 04/23/06
 	* For complex images, it does not check r/i vs a/p.
-	* @author Steve Ludtke (sludtke@bcm.tmc.edu) 
+	* @author Steve Ludtke (sludtke@bcm.tmc.edu)
 	* @date 2005-07-13
 	* @param negative Returns -1 * dot product, default true
 	* @param normalize Returns normalized dot product -1.0 - 1.0
@@ -261,7 +261,7 @@ namespace EMAN
 
 	/** This will calculate the dot product for each quadrant of the image and
 	* return the worst value
-	* @author Steve Ludtke (sludtke@bcm.tmc.edu) 
+	* @author Steve Ludtke (sludtke@bcm.tmc.edu)
 	* @date 2005-07-13
 	* @param negative Returns -1 * dot product, default true
 	* @param normalize Returns normalized dot product -1.0 - 1.0
@@ -296,24 +296,24 @@ namespace EMAN
 
 	};
 
-	
-	/** Variance between two data sets after various modifications. 
-	* Generally, 'this' should be noisy and 'with' should be less noisy. 
-	* linear scaling (mx + b) of the densities in 'this' is performed 
-	* to produce the smallest possible variance between images. 
+
+	/** Variance between two data sets after various modifications.
+	* Generally, 'this' should be noisy and 'with' should be less noisy.
+	* linear scaling (mx + b) of the densities in 'this' is performed
+	* to produce the smallest possible variance between images.
 	*
 	* If keepzero is set, then zero pixels are left at zero (b is not added).
 	* if matchfilt is set, then 'with' is filtered so its radial power spectrum matches 'this'
 	* If invert is set, then (y-b)/m is applied to the second image rather than mx+b to the first.
 	*
-	* To modify 'this' to match the operation performed here, scale 
+	* To modify 'this' to match the operation performed here, scale
 	* should be applied first, then b should be added
 	*/
 	class OptVarianceCmp:public Cmp
 	{
 	  public:
 		OptVarianceCmp() : scale(0), shift(0) {}
-		
+
 		float cmp(EMData * image, EMData * with) const;
 
 		string get_name() const
@@ -352,20 +352,20 @@ namespace EMAN
 		{
 			return shift;
 		}
-		
+
 	private:
 		mutable float scale;
 		mutable float shift;
 	};
 	/** Amplitude weighted mean phase difference (radians) with optional
      * SNR weight. SNR should be an array as returned by ctfcurve()
-     * 'data' should be the less noisy image, since it's amplitudes 
+     * 'data' should be the less noisy image, since it's amplitudes
      * will be used to weight the phase residual. 2D only.
 	 *
      * Use Phase Residual as a measure of similarity
      * Differential phase residual (DPR) is a measure of statistical
      * dependency between two averages, computed over rings in Fourier
-     * space as a function of ring radius (= spatial frequency, or resolution) 
+     * space as a function of ring radius (= spatial frequency, or resolution)
      */
 	class PhaseCmp:public Cmp
 	{
@@ -398,7 +398,7 @@ namespace EMAN
      *  Fourier ring correlation (FRC) is a measure of statistical
      * dependency between two averages, computed by comparison of
      * rings in Fourier space. 1 means prefect agreement. 0 means no
-     * correlation.    
+     * correlation.
      */
 	class FRCCmp:public Cmp
 	{
@@ -412,7 +412,7 @@ namespace EMAN
 
 		string get_desc() const
 		{
-			return "Computes a Fourier Ring Correlation between the images, and average (with optional weighting factors).";
+			return "Computes the mean Fourier Ring Correlation between the image and reference (with optional weighting factors).";
 		}
 
 		static Cmp *NEW()
@@ -425,7 +425,8 @@ namespace EMAN
 			TypeDict d;
 			d.put("snrweight", EMObject::INT, "If set, the SNR of 'this' will be used to weight the result (default=0)");
 			d.put("ampweight", EMObject::INT, "If set, the amplitude of 'this' will be used to weight the result (default=1)");
-			d.put("sweight", EMObject::INT, "If set, weight the (1-D) average by the spatial frequency (default=1)");
+			d.put("sweight", EMObject::INT, "If set, weight the (1-D) average by the number of pixels in each ring (default=1)");
+			d.put("nweight", EMObject::INT, "Downweight similarity based on number of particles in reference (default=0)");
 			return d;
 		}
 	};
