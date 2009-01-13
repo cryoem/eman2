@@ -5449,6 +5449,48 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, center = -1, maxit
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
 
+
+	if debug:
+		info_file = outdir+("/progress%04d"%myid)
+		outf = open(info_file, 'w')
+	else:
+		outf = None
+
+	if myid == main_node:
+		active = EMUtil.get_all_attributes(stack, 'active')
+		list_of_particles = []
+		for im in xrange(len(active)):
+			if(active[im]):  list_of_particles.append(im)
+		del active
+		nima = len(list_of_particles)
+	else:
+		nima = 0
+	nima = bcast_number_to_all(nima, source_node = main_node)
+	
+	if myid != main_node:
+		list_of_particles = [-1]*nima
+	list_of_particles = bcast_list_to_all(list_of_particles, source_node = main_node)
+
+	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
+	# create a list of images for each node
+	list_of_particles = list_of_particles[image_start: image_end]
+	if debug:
+		outf.write( "image_start, image_end: %d %d\n" %(image_start, image_end) )
+		outf.flush()
+
+	n_in_chunk  = max(int(chunk*(image_end-image_start)), 1)
+	n_of_chunks = (image_end-image_start)//n_in_chunk + min((image_end-image_start)%n_in_chunk, 1)
+
+	if debug:
+		outf.write("  chunk = "+str(chunk)+"   ")
+		outf.write("\n")
+		outf.flush()
+		outf.write("  Number of images in a chunk = "+str(n_in_chunk)+"   ")
+		outf.write("  Number of chunks = "+str(n_of_chunks)+"   ")
+		outf.write("\n")
+		outf.flush()
+
+
 	if CTF:
 		from filter import filt_ctf
 
@@ -5465,11 +5507,6 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, center = -1, maxit
 			del ima
 			if ctf_applied == 1:  ERROR("ali3d_e does not work for CTF-applied data", "ali3d_e", 1)
 	mpi_barrier(MPI_COMM_WORLD)
-	if debug:
-		info_file = outdir+("/progress%04d"%myid)
-		outf = open(info_file, 'w')
-	else:
-		outf = None
 
 	last_ring   = int(ou)
 	max_iter    = int(maxit)
@@ -5507,40 +5544,6 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, center = -1, maxit
 	else:
 		mask3D = model_circle(last_ring, nx, nx, nx)
 	mask2D = model_circle(last_ring, nx, nx)
-
-	if myid == main_node:
-		active = EMUtil.get_all_attributes(stack, 'active')
-		list_of_particles = []
-		for im in xrange(len(active)):
-			if(active[im]):  list_of_particles.append(im)
-		del active
-		nima = len(list_of_particles)
-	else:
-		nima = 0
-	nima = bcast_number_to_all(nima, source_node = main_node)
-	
-	if myid != main_node:
-		list_of_particles = [-1]*nima
-	list_of_particles = bcast_list_to_all(list_of_particles, source_node = main_node)
-
-	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
-	# create a list of images for each node
-	list_of_particles = list_of_particles[image_start: image_end]
-	if debug:
-		outf.write( "image_start, image_end: %d %d\n" %(image_start, image_end) )
-		outf.flush()
-
-	n_in_chunk  = max(int(chunk*(image_end-image_start)), 1)
-	n_of_chunks = (image_end-image_start)//n_in_chunk + min((image_end-image_start)%n_in_chunk, 1)
-
-	if debug:
-		outf.write("  chunk = "+str(chunk)+"   ")
-		outf.write("\n")
-		outf.flush()
-		outf.write("  Number of images in a chunk = "+str(n_in_chunk)+"   ")
-		outf.write("  Number of chunks = "+str(n_of_chunks)+"   ")
-		outf.write("\n")
-		outf.flush()
 
 	dataim = EMData.read_images(stack, list_of_particles)
 	for im in xrange(len(dataim)):
