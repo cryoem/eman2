@@ -5461,6 +5461,7 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, center = -1, maxit
 		outf = open(info_file, 'w')
 	else:
 		outf = None
+	mpi_barrier(MPI_COMM_WORLD)
 
 	if myid == main_node:
 		active = EMUtil.get_all_attributes(stack, 'active')
