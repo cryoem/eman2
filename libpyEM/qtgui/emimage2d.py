@@ -122,6 +122,7 @@ class EMImage2DWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		glPopMatrix()
 		
 	def resizeGL(self, width, height):
+		if width == 0 or height == 0: return # this is okay, nothing needs to be drawn
 		side = min(width, height)
 		GL.glViewport(0,0,width,height)
 	

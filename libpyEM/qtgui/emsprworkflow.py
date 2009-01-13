@@ -60,6 +60,8 @@ class WorkFlowTask(QtCore.QObject):
 		self.application = weakref.ref(application)
 		self.window_title = "Set me please"
 		self.preferred_size = (480,640)
+		self.form_db_name = None # specify this to make use of automated parameter storage (see write_db_entries(self,...) ) - don't forget the "bdb:"
+		self.project_db_entries = ["global.num_cpus","global.apix","global.microscope_voltage","global.microscope_cs","global.memory_available"] # used to write entries to a specific db
 	
 	def run_form(self):
 		self.form = EMFormModule(self.get_params(),self.application())
@@ -96,9 +98,44 @@ class WorkFlowTask(QtCore.QObject):
 		self.form.closeEvent(None)
 		#self.emit(QtCore.SIGNAL("task_idle")
 		
+	def write_db_entries(self,dictionary):
+		'''
+		Write the dictionary key/entries into the database using self.form_db_name
+		Writes all keys except for "blurb" - note the the "blurb" key is mostly used in the context
+		of these forms to display helpful information to the user - it doesn't need to be stored in the
+		database 
+		'''
+		if self.form_db_name != None: db = db_open_dict(self.form_db_name)
+		else: db = None
+		
+		project_db = db_open_dict("bdb:project")
+		for k,v in dictionary.items():
+			if k == "blurb": continue
+			
+			if k in self.project_db_entries: project_db[k] = v
+			else:
+				if db != None: db[k] = v
+		
+		if self.form_db_name != None: db_close_dict(self.form_db_name)
+		db_close_dict("bdb:project")
+		
+	def get_default_filenames_from_form_db(self):
+		'''
+		Opens the self.form_db_name database and retrieves the filenames entry
+		Returns None if self.form_db_name is None
+		Returns an empty list if the "filenames" entry doesn't exist in the existing database
+		'''
+		default_selections = None
+		if self.form_db_name != None:
+			db = db_open_dict(self.form_db_name)
+			default_selections = db.get("filenames",dfl=[])
+			db_close_dict(self.form_db_name)
+			
+		return default_selections
+	
 	def write_db_entry(self,key,value):
 		'''
-		Call this function if you need to
+		This function is becoming deprecated, used write_db_entries instead
 		'''
 		db = db_open_dict("bdb:project")
 		if key == "global.apix":
@@ -329,7 +366,9 @@ class WorkFlowTask(QtCore.QObject):
 		if len(class_files) > 0:
 			
 			p = ParamTable(name="filenames",desc_short="Most current reference free class averages",desc_long="")
-			pclassnames = ParamDef(name="Files names",vartype="intlist",desc_short="Class avarerage file",desc_long="The location of the class average files",property=None,defaultunits=None,choices=class_files)
+			
+			default_filenames = self.get_default_filenames_from_form_db()
+			pclassnames = ParamDef(name="Files names",vartype="intlist",desc_short="Class avarerage file",desc_long="The location of the class average files",property=None,defaultunits=default_filenames,choices=class_files)
 			pptcls = ParamDef(name="Class averages",vartype="intlist",desc_short="Total class averages",desc_long="The number class averages in the nominated file",property=None,defaultunits=None,choices=class_ptcls)
 			pdims = ParamDef(name="Particle dimensions",vartype="stringlist",desc_short="Dimensions",desc_long="The dimensions of the images in the class averages file",property=None,defaultunits=None,choices=class_dims)
 			
@@ -388,7 +427,7 @@ class WorkFlowTask(QtCore.QObject):
 			return ['even', 'opt', 'saff', 'rand', 'eman']
 		
 	def get_averagers_list(self):
-		try: return dump_orientgens_list().keys()
+		try: return dump_averages_list().keys()
 		except:
 			return ['ctfcw_auto', 'ctfcw', 'image', 'iteration', 'snr_weight', 'ctfc', 'minmax', 'xyz']
 		
@@ -973,6 +1012,8 @@ class ParticleWorkFlowTask(WorkFlowTask):
 		tag = "_ptcls_ctf_wiener"
 		tag = "_ptcls_ctf_phase" ALL WORK
 		'''
+		
+		
 		particle_names = self.get_particle_db_names_versatile(tag,strip_end=False)
 		n = []
 		dims = []
@@ -1002,8 +1043,6 @@ class ParticleWorkFlowTask(WorkFlowTask):
 							snr.append("%.3f" %s )
 							defocus.append("%.3f" %ctf.defocus)
 							act_d = False
-					
-						
 			if act:
 				n.append("")
 				dims.append("")
@@ -1013,8 +1052,11 @@ class ParticleWorkFlowTask(WorkFlowTask):
 				defocus.append("")
 		
 		p = ParamTable(name="filenames",desc_short="Choose a subset of these images",desc_long="")
-			
-		pnames = ParamDef(name="names",vartype="stringlist",desc_short="File names",desc_long="The particles that will be used",property=None,defaultunits=None,choices=particle_names)
+		
+		
+		default_selections = self.get_default_filenames_from_form_db()
+		
+		pnames = ParamDef(name="names",vartype="stringlist",desc_short="File names",desc_long="The particles that will be used",property=None,defaultunits=default_selections,choices=particle_names)
 		pboxes = ParamDef(name="Num boxes",vartype="intlist",desc_short="Particles on disk",desc_long="The number of box images stored for this image in the database",property=None,defaultunits=None,choices=n)
 		pdims = ParamDef(name="Dimensions",vartype="stringlist",desc_short="Particle dims",desc_long="The dimensions of the particle images",property=None,defaultunits=None,choices=dims)
 		psnr = ParamDef(name="SNR",vartype="stringlist",desc_short="SNR",desc_long="The average SNR of the particle images",property=None,defaultunits=None,choices=snr)
@@ -1033,6 +1075,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 		
 		return p,len(pnames)
 
+# these ptable functions are used by the ParamTable class for converting entries into absolute file paths, for the purpose of displaying things (like 2D images and plots etc)
 def ptable_convert(text):
 	return "bdb:particles#"+text+"_ptcls"
 
@@ -1214,6 +1257,7 @@ class E2BoxerTask(ParticleWorkFlowTask):
 	'''
 	def __init__(self,application):
 		ParticleWorkFlowTask.__init__(self,application)
+		self.form_db_name = "bdb:emform.e2boxer"
 		
 	def get_e2boxer_boxes_and_project_particles_table(self):
 		'''
@@ -1333,14 +1377,14 @@ class E2BoxerGenericTask(ParticleWorkFlowTask):
 		ParticleWorkFlowTask.__init__(self,application)
 		self.window_title = "e2boxer"
 		self.preferred_size = (480,200)
-		
+		self.form_db_name = "bdb:emform.e2boxer"
 		
 	def get_params(self):
 		params = []		
 #		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFGenericTask.documentation_string,choices=None))
-		
-		params.append(ParamDef(name="running_mode",vartype="choice",desc_short="Choose your running mode",desc_long="There are three Boxer related task which are generally run in order",property=None,defaultunits="auto",choices=["Interactive boxing", "Autoboxing", "Write output"]))
-		
+		db = db_open_dict(self.form_db_name)
+		params.append(ParamDef(name="running_mode",vartype="choice",desc_short="Choose your running mode",desc_long="There are three Boxer related task which are generally run in order",property=None,defaultunits=db.get("running_mode",dfl="Interactive boxing"),choices=["Interactive boxing", "Autoboxing", "Write output"]))
+		db_close_dict(self.form_db_name)
 		return params
 
 	def on_form_ok(self,params):
@@ -1360,7 +1404,9 @@ class E2BoxerGenericTask(ParticleWorkFlowTask):
 			self.form.closeEvent(None)
 			self.form = None
 			self.emit(QtCore.SIGNAL("task_idle"))
-			
+			return
+		
+		self.write_db_entries(params)
 	def write_db_entry(self,key,value):
 		pass
 
@@ -1705,7 +1751,8 @@ class E2CTFWorkFlowTask(ParticleWorkFlowTask):
 	'''
 	def __init__(self,application):
 		ParticleWorkFlowTask.__init__(self,application)
-
+		self.form_db_name = "bdb:emform.e2ctf"
+		
 	def get_ctf_param_table(self,project_names=None,no_particles=False):
 		'''
 		particle_files_names should be the return variable of self.get_particle_db_names(strip_ptcls=False), or get_ctf_project_names
@@ -1774,7 +1821,7 @@ class E2CTFWorkFlowTask(ParticleWorkFlowTask):
 					except:pass
 					vals.append("%.3f" %snr)
  				except:
-					vals = ["","","","",'',""]  # only need 6 at the moment
+					vals = ["","","","","",""]  # only need 6 at the moment
 
 				defocus.append(vals[0])
 				dfdiff.append(vals[1])
@@ -1890,12 +1937,13 @@ class E2CTFWorkFlowTask(ParticleWorkFlowTask):
 		[[neg_001,neg_001.hdf],[ptcls_01,bdb:particles#ptcls_01_ptcls],...] etc
 		e2ctf is responsible for making sure the last data entry for each image is the original image name (this was first enforced by d.woolford)
 		'''
-		parms_db = db_open_dict("bdb:e2ctf.parms")
+		parms_db = db_open_dict("bdb:e2ctf.parms",ro=True)
 		
 		ret = []
 		for key,data in parms_db.items():
 			ret.append([key,data[-1]]) # parms[-1] should be the original filename
-				
+		
+		db_close_dict("bdb:e2ctf.parms")
 		return ret
 
 class CTFReportTask(E2CTFWorkFlowTask):
@@ -1926,14 +1974,15 @@ class E2CTFGenericTask(ParticleWorkFlowTask):
 		ParticleWorkFlowTask.__init__(self,application)
 		self.window_title = "e2ctf"
 		self.preferred_size = (480,200)
+		self.form_db_name = "bdb:emform.e2ctf"
 		
 		
 	def get_params(self):
 		params = []		
 #		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFGenericTask.documentation_string,choices=None))
-		
-		params.append(ParamDef(name="running_mode",vartype="choice",desc_short="Choose your running mode",desc_long="There are three CTF related task which are generally run in order",property=None,defaultunits="auto",choices=["auto params", "interactively fine tune", "write output"]))
-		
+		db = db_open_dict(self.form_db_name)
+		params.append(ParamDef(name="running_mode",vartype="choice",desc_short="Choose your running mode",desc_long="There are three CTF related task which are generally run in order",property=None,defaultunits=db.get("running_mode",dfl="auto params"),choices=["auto params", "interactively fine tune", "write output"]))
+		db_close_dict(self.form_db_name)
 		return params
 
 	def on_form_ok(self,params):
@@ -1953,10 +2002,10 @@ class E2CTFGenericTask(ParticleWorkFlowTask):
 			self.form.closeEvent(None)
 			self.form = None
 			self.emit(QtCore.SIGNAL("task_idle"))
+			return
+		
+		self.write_db_entries(params)
 			
-	def write_db_entry(self,key,value):
-		pass
-
 class E2CTFAutoFitTask(E2CTFWorkFlowTask):	
 	documentation_string = "Select the particles you wish to generate CTF parameters for, enter the appropriate parameters such as microscope voltage etc, and hit OK.\nThis will cause the workflow to spawn processes based on the available CPUs. Once finished the automatically determined CTF parameters will be stored in the EMAN2 database."
 	warning_string = "\n\n\nNOTE: There are no particles currently associated with the project. Please go to the \"Particles\" task and import/box particles first."
@@ -1980,18 +2029,16 @@ class E2CTFAutoFitTask(E2CTFWorkFlowTask):
 	
 	def add_general_params(self,params):
 		project_db = db_open_dict("bdb:project")
-		ctf_misc_db = db_open_dict("bdb:e2ctf.misc")
+		db = db_open_dict(self.form_db_name)
 		papix = ParamDef(name="global.apix",vartype="float",desc_short="A/pix for project",desc_long="The physical distance represented by the pixel spacing",property=None,defaultunits=project_db.get("global.apix",dfl=1.1),choices=None)
 		pvolt = ParamDef(name="global.microscope_voltage",vartype="float",desc_short="Microscope voltage",desc_long="The operating voltage of the microscope in kilo volts",property=None,defaultunits=project_db.get("global.microscope_voltage",dfl=300),choices=None)
 		pcs = ParamDef(name="global.microscope_cs",vartype="float",desc_short="Microscope Cs",desc_long="Microscope spherical aberration constant",property=None,defaultunits=project_db.get("global.microscope_cs",dfl=2.0),choices=None)
-		pac = ParamDef(name="working_ac",vartype="float",desc_short="Amplitude contrast",desc_long="The amplitude contrast constant. It is recommended that this value is identical in all of your images.",property=None,defaultunits=ctf_misc_db.get("working_ac",dfl=10),choices=None)
-		pos = ParamDef(name="working_oversamp",vartype="int",desc_short="Oversampling",desc_long="If greater than 1, oversampling by this amount will be used when images are being phase flipped and Wiener filtered.",property=None,defaultunits=ctf_misc_db.get("working_oversamp",dfl=1),choices=None)
+		pac = ParamDef(name="ac",vartype="float",desc_short="Amplitude contrast",desc_long="The amplitude contrast constant. It is recommended that this value is identical in all of your images.",property=None,defaultunits=db.get("ac",dfl=10),choices=None)
+		pos = ParamDef(name="oversamp",vartype="int",desc_short="Oversampling",desc_long="If greater than 1, oversampling by this amount will be used when images are being phase flipped and Wiener filtered.",property=None,defaultunits=db.get("oversamp",dfl=1),choices=None)
 		pncp = ParamDef(name="global.num_cpus",vartype="int",desc_short="Number of CPUs",desc_long="Number of CPUS available for the project to use",property=None,defaultunits=project_db.get("global.num_cpus",dfl=num_cpus()),choices=None)
-		pahp = ParamDef(name="autohp",vartype="boolean",desc_short="Auto high pass",desc_long="Automatic high pass filter of the SNR only to remove initial sharp peak, phase-flipped data is not directly affected (default false)",property=None,defaultunits=False,choices=None)
-		pns = ParamDef(name="nosmooth",vartype="boolean",desc_short="No smoothing",desc_long="Disable smoothing of the background (running-average of the log with adjustment at the zeroes of the CTF)",property=None,defaultunits=False,choices=None)
-		
-		
-		mem = memory_stats()
+		pahp = ParamDef(name="autohp",vartype="boolean",desc_short="Auto high pass",desc_long="Automatic high pass filter of the SNR only to remove initial sharp peak, phase-flipped data is not directly affected (default false)",property=None,defaultunits=db.get("autohp",dfl=False),choices=None)
+		pns = ParamDef(name="nosmooth",vartype="boolean",desc_short="No smoothing",desc_long="Disable smoothing of the background (running-average of the log with adjustment at the zeroes of the CTF)",property=None,defaultunits=db.get("nosmooth",dfl=False),choices=None)
+		db_close_dict(self.form_db_name)
 		
 		params.append([papix,pvolt])
 		params.append([pcs,pac])
@@ -2056,8 +2103,8 @@ class E2CTFAutoFitTask(E2CTFWorkFlowTask):
 		options.nonorm = False
 		options.autohp = params["autohp"]
 		options.invert = False
-		options.oversamp = params["working_oversamp"]
-		options.ac = params["working_ac"]
+		options.oversamp = params["oversamp"]
+		options.ac = params["ac"]
 		options.apix = params["global.apix"]
 		options.cs = params["global.microscope_cs"]
 		options.voltage = params["global.microscope_voltage"]
@@ -2074,11 +2121,10 @@ class E2CTFAutoFitTask(E2CTFWorkFlowTask):
 		return error_message
 		
 	def on_form_ok(self,params):
-		for k,v in params.items():
-			self.write_db_entry(k,v)
 		
 		options = self.get_default_ctf_options(params)
 		if options != None:
+			self.write_db_entries(params)
 			
 			string_args = ["bgmask","oversamp","ac","apix","cs","voltage"]
 			bool_args = ["nosmooth","nonorm","autohp","invert"]
@@ -2095,19 +2141,6 @@ class E2CTFAutoFitTask(E2CTFWorkFlowTask):
 	def on_form_close(self):
 		# this is to avoid a task_idle signal, which would be incorrect if e2boxer is running
 		self.emit(QtCore.SIGNAL("task_idle"))
-
-	def write_db_entry(self,key,value):
-		if key == "working_ac":
-			ctf_misc_db = db_open_dict("bdb:e2ctf.misc")
-			ctf_misc_db["working_ac"] = value
-			db_close_dict("bdb:e2ctf.misc")
-		elif key == "working_oversamp":
-			ctf_misc_db = db_open_dict("bdb:e2ctf.misc")
-			ctf_misc_db["working_oversamp"] = value
-			db_close_dict("bdb:e2ctf.misc")
-		else:
-			# there are some general parameters that need writing:
-			WorkFlowTask.write_db_entry(self,key,value)
 			
 class E2CTFAutoFitTaskGeneral(E2CTFAutoFitTask):
 	'''
@@ -2179,14 +2212,15 @@ class E2CTFOutputTask(E2CTFWorkFlowTask):
 		if n == 0:
 			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFOutputTask.documentation_string+E2CTFOutputTask.warning_string,choices=None))
 		else:
-			ctf_misc_db = db_open_dict("bdb:e2ctf.misc")
+			db = db_open_dict(self.form_db_name)
 			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFOutputTask.documentation_string,choices=None))
 			params.append(p)
-			pos = ParamDef(name="working_oversamp",vartype="int",desc_short="Oversampling",desc_long="If greater than 1, oversampling by this amount will be used when images are being phase flipped and Wiener filtered.",property=None,defaultunits=ctf_misc_db.get("working_oversamp",dfl=1),choices=None)
-			pwiener = ParamDef(name="wiener",vartype="boolean",desc_short="Wiener",desc_long="Wiener filter your particle images using parameters in the database. Phase flipping will also occur",property=None,defaultunits=False,choices=None)
-			pphase = ParamDef(name="phaseflip",vartype="boolean",desc_short="Phase flip",desc_long="Phase flip your particle images using parameters in the database",property=None,defaultunits=False,choices=None)
+			pos = ParamDef(name="oversamp",vartype="int",desc_short="Oversampling",desc_long="If greater than 1, oversampling by this amount will be used when images are being phase flipped and Wiener filtered.",property=None,defaultunits=db.get("oversamp",dfl=1),choices=None)
+			pwiener = ParamDef(name="wiener",vartype="boolean",desc_short="Wiener",desc_long="Wiener filter your particle images using parameters in the database. Phase flipping will also occur",property=None,defaultunits=db.get("wiener",dfl=False),choices=None)
+			pphase = ParamDef(name="phaseflip",vartype="boolean",desc_short="Phase flip",desc_long="Phase flip your particle images using parameters in the database",property=None,defaultunits=db.get("phaseflip",dfl=False),choices=None)
 			params.append(pos)
 			params.append([pphase,pwiener])
+			db_close_dict(self.form_db_name)
 		return params
 
 	def get_default_ctf_options(self,params):
@@ -2228,12 +2262,10 @@ class E2CTFOutputTask(E2CTFWorkFlowTask):
 		return options
 	
 	def on_form_ok(self,params):
-		for k,v in params.items():
-			self.write_db_entry(k,v)
 
 		options = self.get_default_ctf_options(params)
 		if options != None and len(options.filenames) > 0 and (options.wiener or options.phaseflip):
-
+			self.write_db_entries(params)
 			string_args = []
 			bool_args = ["wiener","phaseflip"]
 			additional_args = []
@@ -2427,9 +2459,7 @@ class E2CTFGuiTaskGeneral(E2CTFGuiTask):
 		'''
 		These are the options required to run pspec_and_ctf_fit in e2ctf.py
 		'''
-		
-		
-		
+	
 		if  params.has_key("filenames") and len(params["filenames"]) == 0:
 			self.run_select_files_msg()
 			return None # this is fine
@@ -2468,36 +2498,6 @@ class E2Refine2DReportTask(ParticleWorkFlowTask):
 			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2Refine2DReportTask.documentation_string,choices=None))
 			params.append(p)
 		return params
-			
-	def write_db_entry(self,key,value):
-		pass
-	
-#	def get_reference_free_class_averages_table(self):
-#		'''
-#		Looks for bdb:r2d_??#classes_?? and the bdb:r2d_??#classes_init file, finds the most recent one, then fills in the number of particles in
-#		in the class average file and also its dimensions.
-#		'''
-#
-#		class_files,class_ptcls,class_dims = self.get_latest_r2d_classes()
-#					
-#		if len(class_files) > 0:
-#			
-#			p = ParamTable(name="filenames",desc_short="Most current reference free class averages",desc_long="")
-#			pclassnames = ParamDef(name="Files names",vartype="intlist",desc_short="Class avarerage file",desc_long="The location of the class average files",property=None,defaultunits=None,choices=class_files)
-#			pptcls = ParamDef(name="Class averages",vartype="intlist",desc_short="Total class averages",desc_long="The number class averages in the nominated file",property=None,defaultunits=None,choices=class_ptcls)
-#			pdims = ParamDef(name="Particle dimensions",vartype="stringlist",desc_short="Dimensions",desc_long="The dimensions of the images in the class averages file",property=None,defaultunits=None,choices=class_dims)
-#			
-#			p.append(pclassnames)
-#			p.append(pptcls)
-#			p.append(pdims)
-#			
-#			setattr(p,"convert_text", ptable_convert_2)
-#			setattr(p,"icon_type","matrix_image")
-#			
-#			return p,len(class_files)
-#		else:
-#			return None,0
-			
 
 	
 class E2Refine2DTask(ParticleWorkFlowTask):
@@ -2507,15 +2507,18 @@ class E2Refine2DTask(ParticleWorkFlowTask):
 	documentation_string = "This form is a way for the user to supply arguments to and execute e2refine2d.py"
 	def __init__(self,application):
 		ParticleWorkFlowTask.__init__(self,application)
-		self.window_title = "Run e2refine2d"		
+		self.window_title = "Run e2refine2d"
+		self.form_db_name = "bdb:emform.e2refine2d"
 		
 	def get_general_params(self):
+		db = db_open_dict(self.form_db_name)
+		
 		params = []		
-		piter = ParamDef(name="iter",vartype="int",desc_short="Refinement iterations",desc_long="The number of times the e2refine2d svd-based class averaging procedure is iterated",property=None,defaultunits=5,choices=[])
-		piterclassav = ParamDef(name="iterclassav",vartype="int",desc_short="Class averaging iterations",desc_long="The number of iterative class average steps that occur in e2classaverage",property=None,defaultunits=2,choices=[])
-		pnaliref = ParamDef(name="naliref",vartype="int",desc_short="# alignment references",desc_long="The number of alignment references to use when determining particle orientations",property=None,defaultunits=8,choices=[])
-		pnbasisfp = ParamDef(name="nbasisfp",vartype="int",desc_short="# basis fp",desc_long="The number of MSA basis vectors to use when classifying",property=None,defaultunits=5,choices=[])
-		pncls = ParamDef(name="ncls",vartype="int",desc_short="# classes",desc_long="The number of classes to produce",property=None,defaultunits=32,choices=[])
+		piter = ParamDef(name="iter",vartype="int",desc_short="Refinement iterations",desc_long="The number of times the e2refine2d svd-based class averaging procedure is iterated",property=None,defaultunits=db.get("iter",dfl=5),choices=[])
+		piterclassav = ParamDef(name="iterclassav",vartype="int",desc_short="Class averaging iterations",desc_long="The number of iterative class average steps that occur in e2classaverage",property=None,defaultunits=db.get("iterclassav",dfl=2),choices=[])
+		pnaliref = ParamDef(name="naliref",vartype="int",desc_short="# alignment references",desc_long="The number of alignment references to use when determining particle orientations",property=None,defaultunits=db.get("naliref",dfl=8),choices=[])
+		pnbasisfp = ParamDef(name="nbasisfp",vartype="int",desc_short="# basis fp",desc_long="The number of MSA basis vectors to use when classifying",property=None,defaultunits=db.get("nbasisfp",dfl=5),choices=[])
+		pncls = ParamDef(name="ncls",vartype="int",desc_short="# classes",desc_long="The number of classes to produce",property=None,defaultunits=db.get("ncls",dfl=32),choices=[])
 
 	   	aligners = self.get_aligners_list()
 #		aligners.append("None") I think this is necessary
@@ -2525,32 +2528,33 @@ class E2Refine2DTask(ParticleWorkFlowTask):
 		aligners.sort()
 		cmps.sort()
 		
-		pshrink = ParamDef(name="shrink",vartype="int",desc_short="Shrink factor",desc_long="The the downsampling rate used to shrink the data",property=None,defaultunits=4,choices=[])
+		pshrink = ParamDef(name="shrink",vartype="int",desc_short="Shrink factor",desc_long="The the downsampling rate used to shrink the data",property=None,defaultunits=db.get("shrink",dfl=4),choices=[])
 		
 		
-		pcmp  =  ParamDef(name="simcmp",vartype="string",desc_short="Main comparator",desc_long="The comparator to determine the final quality metric",defaultunits="phase",choices=cmps)
-		pcmpargs =  ParamDef(name="simcmpargs",vartype="string",desc_short="params",desc_long="Parameters for the this comparator, see \"e2help.py cmps\"",property=None,defaultunits="",choices=[])	
+		pcmp  =  ParamDef(name="simcmp",vartype="string",desc_short="Main comparator",desc_long="The comparator to determine the final quality metric",defaultunits=db.get("simcmp",dfl="phase"),choices=cmps)
+		pcmpargs =  ParamDef(name="simcmpargs",vartype="string",desc_short="params",desc_long="Parameters for the this comparator, see \"e2help.py cmps\"",property=None,defaultunits=db.get("simcmpargs",dfl=""),choices=[])	
 
+		psimalign =  ParamDef(name="simalign",vartype="string",desc_short="Aligner",desc_long="The aligner being used",property=None,defaultunits=db.get("simalign",dfl="rotate_translate_flip"),choices=aligners)
+		psimalignargs =  ParamDef(name="simalignargs",vartype="string",desc_short="params",desc_long="Parameters for the aligner, see \"e2help.py aligners\"",property=None,defaultunits=db.get("simalignargs",dfl=""),choices=[])
 		
-		psimalign =  ParamDef(name="simalign",vartype="string",desc_short="Aligner",desc_long="The aligner being used",property=None,defaultunits="rotate_translate_flip",choices=aligners)
-		psimalignargs =  ParamDef(name="simalignargs",vartype="string",desc_short="params",desc_long="Parameters for the aligner, see \"e2help.py aligners\"",property=None,defaultunits="",choices=[])
-		
-		psimaligncmp =  ParamDef(name="simaligncmp",vartype="string",desc_short="comparator",desc_long="The comparator being used",property=None,defaultunits="phase",choices=cmps)
-		psimaligncmpsargs =  ParamDef(name="simaligncmpargs",vartype="string",desc_short="params",desc_long="Parameters for the comparator, see \"e2help.py cmps\"",property=None,defaultunits="",choices=[])	
+		psimaligncmp =  ParamDef(name="simaligncmp",vartype="string",desc_short="comparator",desc_long="The comparator being used",property=None,defaultunits=db.get("simaligncmp",dfl="phase"),choices=cmps)
+		psimaligncmpsargs =  ParamDef(name="simaligncmpargs",vartype="string",desc_short="params",desc_long="Parameters for the comparator, see \"e2help.py cmps\"",property=None,defaultunits=db.get("simaligncmpargs",dfl=""),choices=[])	
 		
 		
-		prsimalign =  ParamDef(name="simralign",vartype="string",desc_short="Refine aligner",desc_long="The refine aligner being used",property=None,defaultunits="None",choices=["None","refine"])
-		prsimalignargs =  ParamDef(name="simralignargs",vartype="string",desc_short="params",desc_long="Parameters for the aligner, see \"e2help.py aligners\"",property=None,defaultunits="",choices=[])
+		prsimalign =  ParamDef(name="simralign",vartype="string",desc_short="Refine aligner",desc_long="The refine aligner being used",property=None,defaultunits=db.get("simralign",dfl="None"),choices=["None","refine"])
+		prsimalignargs =  ParamDef(name="simralignargs",vartype="string",desc_short="params",desc_long="Parameters for the aligner, see \"e2help.py aligners\"",property=None,defaultunits=db.get("simralignargs",dfl=""),choices=[])
 		
-		prsimaligncmp =  ParamDef(name="simraligncmp",vartype="string",desc_short="Refine comparator",desc_long="The comparator being used for refine alignment",property=None,defaultunits="phase",choices=cmps)
-		prsimaligncmpsargs =  ParamDef(name="simraligncmpargs",vartype="string",desc_short="params",desc_long="Parameters for the comparator, see \"e2help.py cmps\"",property=None,defaultunits="",choices=[])	
+		prsimaligncmp =  ParamDef(name="simraligncmp",vartype="string",desc_short="Refine comparator",desc_long="The comparator being used for refine alignment",property=None,defaultunits=db.get("simraligncmp",dfl="phase"),choices=cmps)
+		prsimaligncmpsargs =  ParamDef(name="simraligncmpargs",vartype="string",desc_short="params",desc_long="Parameters for the comparator, see \"e2help.py cmps\"",property=None,defaultunits=db.get("simraligncmpargs",dfl=""),choices=[])	
 		
-		pnp = ParamDef(name="normproj",vartype="boolean",desc_short="Normalize projection vectors",desc_long="Normalizes each projected vector into the MSA subspace",property=None,defaultunits=False,choices=None)
+		pnp = ParamDef(name="normproj",vartype="boolean",desc_short="Normalize projection vectors",desc_long="Normalizes each projected vector into the MSA subspace",property=None,defaultunits=db.get("normproj",dfl=False),choices=None)
 		
 		project_db = db_open_dict("bdb:project")
 		pncp = ParamDef(name="parallel",vartype="int",desc_short="Number of CPUs",desc_long="Number of CPUS available for e2refine2d to use",property=None,defaultunits=project_db.get("global.num_cpus",dfl=num_cpus()),choices=None)
-		pinitclasses =  ParamDef(name="initial",vartype="string",desc_short="Initial class averages",desc_long="A file (full path) containing starting class averages. If note specificed will generate starting class averages automatically.",property=None,defaultunits="",choices=[])	
+		pinitclasses =  ParamDef(name="initial",vartype="string",desc_short="Initial class averages",desc_long="A file (full path) containing starting class averages. If note specificed will generate starting class averages automatically.",property=None,defaultunits=db.get("initial",dfl=""),choices=[])	
 		
+		db_close_dict(self.form_db_name)
+		db_close_dict("bdb:project")
 		
 		params.append(pncls)
 		params.append([pshrink,pnp])
@@ -2564,9 +2568,17 @@ class E2Refine2DTask(ParticleWorkFlowTask):
 		params.append([pncp,pinitclasses])
 		
 		return params
+	
+	def write_db_entries(self,dictionary):
+		'''
+		Had to specialize this function because of the parallel parameter, could potentially be generalized (into ParticleWorkFlowTask.write_db_entries) if other forms use the parallel key
+		'''
+		if dictionary.has_key("parallel"):
+			p_db =  db_open_dict("bdb:project")
+			p_db["global.num_cpus"] = dictionary["parallel"] # check_refine2d_args will have already verified that parallel is sensible (greater than 0)
+			db_close_dict("bdb:project")
 			
-	def write_db_entry(self,key,value):
-		pass
+		ParticleWorkFlowTask.write_db_entries(self,dictionary)
 	
 	def get_parms(self,params):
 		mesbox = QtGui.QMessageBox()
@@ -2672,6 +2684,7 @@ class E2Refine2DChooseDataTask(ParticleWorkFlowTask):
 	def __init__(self,application):
 		ParticleWorkFlowTask.__init__(self,application)
 		self.window_title = "e2refine2d - getting starting"
+		self.form_db_name = "bdb:emform.e2refine2d"
 		self.preferred_size = (480,300)
 		
 	def get_params(self):
@@ -2693,14 +2706,12 @@ class E2Refine2DChooseDataTask(ParticleWorkFlowTask):
 			
 		choices.append("Specify files")
 		
-		
-		params.append(ParamDef(name="particle_set_choice",vartype="choice",desc_long="Choose the particle data set you wish to use to generate a starting data for e2refine2d",desc_short="Choose data",property=None,defaultunits=None,choices=choices))
-			
+		db = db_open_dict(self.form_db_name)
+		params.append(ParamDef(name="particle_set_choice",vartype="choice",desc_long="Choose the particle data set you wish to use to generate a starting data for e2refine2d",desc_short="Choose data",property=None,defaultunits=db.get("particle_set_choice",dfl=""),choices=choices))
+		db_close_dict(self.form_db_name)
 		return params
 	
 	def on_form_ok(self,params):
-		for k,v in params.items():
-			self.write_db_entry(k,v)
 
 		choice = params["particle_set_choice"]
 		
@@ -2722,11 +2733,9 @@ class E2Refine2DChooseDataTask(ParticleWorkFlowTask):
 			self.form = None
 		else:
 			print "the code has changed since the original author wrote it, something is wrong!!"
-
-	
-			
-	def write_db_entry(self,key,value):
-		pass
+			return
+		
+		self.write_db_entries(params)
 
 class E2Refine2DRunTask(E2Refine2DTask):
 	documentation_string = "Choose which files you want to be part of the input data set, enter the appropriate e2refine2d input parameters, and hit OK. This will cause the workflow to spawn e2refine2d in a separate process. Output data will automatically be stored in the EMAN2 database."
@@ -2756,6 +2765,8 @@ class E2Refine2DRunTask(E2Refine2DTask):
 
 	def on_form_ok(self,params):
 		
+		self.write_db_entries(params) # I wrote the entries here so that the filenames entry is not altered, allowing the form parameters to be correctly memorized. This breaks a general pattern I am following. It probably doesn't matter at all.
+		
 		if self.end_tag != "generic":
 			names = ["bdb:particles#"+name for name in params["filenames"]]
 			params["filenames"] = names 
@@ -2765,14 +2776,8 @@ class E2Refine2DRunTask(E2Refine2DTask):
 			return
 		
 		else:
-			for k,v in params.items():
-				self.write_db_entry(k,v)
-			
 			self.run_e2refine2d(options) # this does everything, even close the form
 			
-		
-	def write_db_entry(self,key,value):
-		pass
 
 class E2Refine2DWithPhasePtclsTask(E2Refine2DRunTask):
 	def __init__(self,application):
@@ -2952,6 +2957,8 @@ class E2MakeInitialModel(ParticleWorkFlowTask):
 	def __init__(self,application):
 		ParticleWorkFlowTask.__init__(self,application)
 		self.window_title = "run e2makeinitialmodel"
+		self.form_db_name = "bdb:emform.e2initialmodel"
+		
 	def get_params(self):
 		params = []
 		
@@ -2960,11 +2967,13 @@ class E2MakeInitialModel(ParticleWorkFlowTask):
 		else:
 			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2MakeInitialModel.documentation_string,choices=None))
 			
-			piter = ParamDef(name="iter",vartype="int",desc_short="Iterations",desc_long="The number of times each 3D is iteratively refined",property=None,defaultunits=4,choices=[])
-			ptries = ParamDef(name="tries",vartype="int",desc_short="Tries",desc_long="The number of 3D models to generate",property=None,defaultunits=10,choices=[])
+			db = db_open_dict(self.form_db_name)
+			piter = ParamDef(name="iter",vartype="int",desc_short="Iterations",desc_long="The number of times each 3D is iteratively refined",property=None,defaultunits=db.get("iter",dfl=4),choices=[])
+			ptries = ParamDef(name="tries",vartype="int",desc_short="Tries",desc_long="The number of 3D models to generate",property=None,defaultunits=db.get("tries",dfl=10),choices=[])
 			syms = ["icos","oct","tet","c","d","h"]
-			psym =  ParamDef(name="symname",vartype="string",desc_short="Symmetry",desc_long="Symmetry to be imposed during refinement",property=None,defaultunits=None,choices=syms)
-			psymnum = ParamDef(name="symnumber",vartype="string",desc_short="Symmetry number",desc_long="In C,D and H symmetry, this is the symmetry number",property=None,defaultunits="",choices=None)
+			psym =  ParamDef(name="symname",vartype="string",desc_short="Symmetry",desc_long="Symmetry to be imposed during refinement",property=None,defaultunits=db.get("symname",dfl="c"),choices=syms)
+			psymnum = ParamDef(name="symnumber",vartype="string",desc_short="Symmetry number",desc_long="In C,D and H symmetry, this is the symmetry number",property=None,defaultunits=db.get("symnumber",dfl=""),choices=None)
+			db_close_dict(self.form_db_name)
 			
 			p.enable_multiple_selection = False
 			params.append(p)
@@ -2975,6 +2984,7 @@ class E2MakeInitialModel(ParticleWorkFlowTask):
 		return params
 	
 	def on_form_ok(self,params):
+		
 		error_message = []
 		
 		if not params.has_key("filenames"):
@@ -2983,6 +2993,8 @@ class E2MakeInitialModel(ParticleWorkFlowTask):
 			self.form.closeEvent(None)
 			self.form = None
 			return
+		
+		
 		
 		error_message = []
 		if len(params["filenames"]) != 1: error_message.append("Please choose a single file to proceed")
@@ -3001,6 +3013,9 @@ class E2MakeInitialModel(ParticleWorkFlowTask):
 			self.show_error_message(error_message)
 			return	
 		else:
+			# obviously if we make it here the parameters are sensible so we can store them (and later use them again for the user's convenience)
+			self.write_db_entries(params)
+			
 			options.input = params["filenames"][0]
 			options.iter = params["iter"]
 			options.tries = params["tries"]
@@ -3021,15 +3036,19 @@ class ImportInitialModels(ParticleWorkFlowTask):
 	def __init__(self,application):
 		ParticleWorkFlowTask.__init__(self,application)
 		self.window_title = "Import initial models"
-
+		self.form_db_name = "bdb:emform.e2initialmodel"
 		
 	def get_params(self):
 		params = []
 		
+		db = db_open_dict(self.form_db_name)
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=ImportInitialModels.documentation_string,choices=None))
 		params.append(ParamDef(name="filenames",vartype="url",desc_short="Import models",desc_long="A list of 3D images that you wish to import into the EMAN2 database scheme.",property=None,defaultunits=[],choices=[]))
-		pfo = ParamDef(name="force",vartype="boolean",desc_short="Force overwrite",desc_long="Whether or not to force overwrite files that already exist",property=None,defaultunits=False,choices=None)
+		pfo = ParamDef(name="force",vartype="boolean",desc_short="Force overwrite",desc_long="Whether or not to force overwrite files that already exist",property=None,defaultunits=db.get("force",dfl=False),choices=None)
 		params.append(pfo)
+		
+		db_close_dict(self.form_db_name)
+		
 		return params
 	
 	def on_form_ok(self,params):
@@ -3065,6 +3084,7 @@ class ImportInitialModels(ParticleWorkFlowTask):
 	 		return
 	 	
 	 	# if we make it here we're all good, 
+	 	self.write_db_entries(params) # so store the parameters for recollection later
 	 	num_processing_operations = 2 # one read and one write
 	 	progress = EMProgressDialogModule(self.application(),"Importing files into database...", "Abort import", 0, len(params["filenames"])*num_processing_operations,None)
 		progress.qt_widget.show()
@@ -3215,6 +3235,7 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 	 	ParticleWorkFlowTask.__init__(self,application)
 	 	self.end_tag = "_ptcls"
 	 	self.window_title = "e2refine parameters"
+	 	self.form_db_name = "bdb:emform.e2refine"
 	 	self.usefilt_tags = ["_ptcls_ctf_wiener"] # these tags could eventually generalized, such that if the user does their filtering option then their "tag" is included as an option
 		self.usefilt_display_names = ["Wiener"]
 	 	
@@ -3252,6 +3273,7 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 				self.display_errors(error_message)
 				return
 			
+		self.write_db_entries(params)
 		# w'oh if we make it here a lot of checking has occured. Now get the args in order to spawn_single_task
 		string_args = []
 		bool_args = []
@@ -3273,7 +3295,7 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 		self.emit(QtCore.SIGNAL("task_idle"))
 		self.form.closeEvent(None)
 		self.form = None
-		
+	
 	def write_db_parms(self,options,string_args,bool_args):
 		db = db_open_dict("bdb:e2refine.args")
 		
@@ -3282,6 +3304,8 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 			
 		for string in bool_args:
 			db[string] = getattr(options,string)
+			
+		db_close_dict("bdb:e2refine.args")
 		
 	
 	def display_errors(self,error_message):
@@ -3305,28 +3329,31 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 			p,n = self.get_particle_selection_table(tag=self.end_tag)
 		else:
 			p = ParamDef(name="filenames",vartype="url",desc_short="Input file name(s)",desc_long="The names of the particle files you want to use as in the input data for e2refine2d.py",property=None,defaultunits=[],choices=[])
-			n = 1 # just to fool the next bit, that's all
-			
-		# If we make it here n should be greater than 0, so just continue
-		if n == 0:
-			print "woops didn't think this could happen" # and it shouldn't
-			
+			n = 1
+		
+		# I could check to see if the database exists but it seems unnecessary
+		# In the event that the database doesn't exist it is created and 
+		# a new entry is created on disk. The only inconvenient aspect of this comes
+		# if the user hits cancel - then there is a file on disk even though
+		# the user never agreed to anything
+		db = db_open_dict(self.form_db_name) # see eman wiki for a list of what args are kept in this db
+		
 		
 		params.append(p)
 		
 		init_models = self.get_available_initial_models()
 		init_models.sort()
 		
-		pinitialmodel =  ParamDef(name="model",vartype="string",desc_short="Starting model",desc_long="The starting 3D model that will be used to seed refinement",property=None,defaultunits=None,choices=init_models)
+		pinitialmodel =  ParamDef(name="model",vartype="string",desc_short="Starting model",desc_long="The starting 3D model that will be used to seed refinement",property=None,defaultunits=db.get("model",dfl=None),choices=init_models)
 		params.append(pinitialmodel)
+		
+		piter = ParamDef(name="iter",vartype="int",desc_short="Refinement iterations",desc_long="The number of times 3D refinement should be iterated",property=None,defaultunits=db.get("iter",dfl=3),choices=[])
+		plowmem = ParamDef(name="lowmem",vartype="boolean",desc_short="Low mem",desc_long="Causes various programs to restrict memory usage but results in increased CPU time.",property=None,defaultunits=db.get("lowmem",dfl=False),choices=None)
 		
 		syms = ["icos","oct","tet","d","c","h"]
 		
-		piter = ParamDef(name="iter",vartype="int",desc_short="Refinement iterations",desc_long="The number of times 3D refinement should be iterated",property=None,defaultunits=3,choices=[])
-		plowmem = ParamDef(name="lowmem",vartype="boolean",desc_short="Low mem",desc_long="Causes various programs to restrict memory usage but results in increased CPU time.",property=None,defaultunits=False,choices=None)
-		
-		psym =  ParamDef(name="symname",vartype="string",desc_short="Symmetry",desc_long="Symmetry to be imposed during refinement",property=None,defaultunits=None,choices=syms)
-		psymnum = ParamDef(name="symnumber",vartype="string",desc_short="Symmetry number",desc_long="In C,D and H symmetry, this is the symmetry number",property=None,defaultunits="",choices=None)
+		psym =  ParamDef(name="symname",vartype="string",desc_short="Symmetry",desc_long="Symmetry to be imposed during refinement",property=None,defaultunits=db.get("symname",dfl="c"),choices=syms)
+		psymnum = ParamDef(name="symnumber",vartype="string",desc_short="Symmetry number",desc_long="In C,D and H symmetry, this is the symmetry number",property=None,defaultunits=db.get("symnumber",dfl="1"),choices=None)
 		
 		filt_options = self.get_usefilt_options()
 		
@@ -3334,15 +3361,18 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 			filled_out_options = ["None"]
 			filled_out_options.extend(filt_options)
 			filled_out_options.append("Specify")
-			pusefilt = ParamDef(name="usefilt_choice",vartype="choice",desc_short="Usefilt",desc_long="If specified will cause filtered images to be used for alignment of images",property=None,defaultunits="None",choices=filled_out_options)
-			pusefiltentry  =  ParamDef(name="usefilt_string",vartype="string",desc_short="file",desc_long="Specify the file containing the filtered images directly",property=None,defaultunits="",choices=[])
+			pusefilt = ParamDef(name="usefilt_choice",vartype="choice",desc_short="Usefilt",desc_long="If specified will cause filtered images to be used for alignment of images",property=None,defaultunits=db.get("usefilt_choice",dfl="None"),choices=filled_out_options)
+			pusefiltentry  =  ParamDef(name="usefilt_string",vartype="string",desc_short="file",desc_long="Specify the file containing the filtered images directly",property=None,defaultunits=db.get("usefilt_string",dfl=""),choices=[])
 			params.append([pusefilt,pusefiltentry])
 		else:
-			pusefiltentry  =  ParamDef(name="usefilt_string",vartype="string",desc_short="Usefilt",desc_long="Specify the file containing the filtered images directly",property=None,defaultunits="",choices=[])
+			pusefiltentry  =  ParamDef(name="usefilt_string",vartype="string",desc_short="Usefilt",desc_long="Specify the file containing the filtered images directly",property=None,defaultunits=db.get("usefilt_string",dfl=""),choices=[])
 			params.append(pusefiltentry)
 
 		params.append([piter,plowmem])
 		params.append([psym,psymnum])
+		
+		
+		db_close_dict(self.form_db_name)
 		
 		return ["General",params]
 	
@@ -3590,25 +3620,27 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 		
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2RefineParticlesTask.project3d_documentation,choices=None))
 
-		
+		db = db_open_dict(self.form_db_name)
 		
 		projectors = self.get_projectors_list()
 		orientgens = self.get_orientgens_list()
 			
-		pprojector =  ParamDef(name="projector",vartype="string",desc_short="Projector",desc_long="The method used to generate projections",property=None,defaultunits="standard",choices=projectors)
+		pprojector =  ParamDef(name="projector",vartype="string",desc_short="Projector",desc_long="The method used to generate projections",property=None,defaultunits=db.get("projector",dfl="standard"),choices=projectors)
 		
-		porientgens =  ParamDef(name="orientgen",vartype="string",desc_short="Orientation generator",desc_long="The method of orientation generation",property=None,defaultunits="eman",choices=orientgens)
+		porientgens =  ParamDef(name="orientgen",vartype="string",desc_short="Orientation generator",desc_long="The method of orientation generation",property=None,defaultunits=db.get("orientgen",dfl="eman"),choices=orientgens)
 		
-		pmirror = ParamDef(name="incmirror",vartype="boolean",desc_short="Include mirror",desc_long="Include the mirror portion of the asymmetric uni",property=None,defaultunits=False,choices=[])
+		pmirror = ParamDef(name="incmirror",vartype="boolean",desc_short="Include mirror",desc_long="Include the mirror portion of the asymmetric uni",property=None,defaultunits=db.get("incmirror",False),choices=[])
 		
 		
 		orient_options = ["angle based", "number based"]
-		porientoptions = ParamDef(name="orientopt",vartype="choice",desc_short="Method of generating orientation distribution",desc_long="Choose whether you want the orientations generating based on an angle or based on a total number of orientations desired",property=None,defaultunits="angle based",choices=orient_options)
-		porientoptionsentry  =  ParamDef(name="orientopt_entry",vartype="float",desc_short="value",desc_long="Specify the value corresponding to your choice",property=None,defaultunits=5,choices=[])
+		porientoptions = ParamDef(name="orientopt",vartype="choice",desc_short="Method of generating orientation distribution",desc_long="Choose whether you want the orientations generating based on an angle or based on a total number of orientations desired",property=None,defaultunits=db.get("orientopt",dfl=orient_options[0]),choices=orient_options)
+		porientoptionsentry  =  ParamDef(name="orientopt_entry",vartype="float",desc_short="value",desc_long="Specify the value corresponding to your choice",property=None,defaultunits=db.get("orientgen_entry",dfl=5),choices=[])
 		
 		params.append([pprojector,porientgens])
 		params.append([porientoptions,porientoptionsentry])
 		params.append(pmirror)
+		
+		db_close_dict(self.form_db_name)
 		
 		return ["Project 3D",params]
 	
@@ -3702,13 +3734,14 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 		params = []
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2RefineParticlesTask.simmx_documentation,choices=None))
 
-		pshrink = ParamDef(name="shrink",vartype="int",desc_short="Shrink",desc_long="The the downsampling rate used to shrink the data at various stages in refinement, for speed purposes",property=None,defaultunits=4,choices=[])
+		db = db_open_dict(self.form_db_name)
+		pshrink = ParamDef(name="shrink",vartype="int",desc_short="Shrink",desc_long="The the downsampling rate used to shrink the data at various stages in refinement, for speed purposes",property=None,defaultunits=db.get("shrink",dfl=4),choices=[])
 		
 		
 		params.append(pshrink)
 		params.extend(self.get_cls_simmx_params(parameter_prefix="sim"))
 		
-		
+		db_close_dict(self.form_db_name)
 		return ["Simmx",params]
 	
 	def add_classaverage_args(self,options,string_args,bool_args,additional_args):
@@ -3748,24 +3781,24 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 	
 	def get_classaverage_page(self):
 		params = []
-		
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2RefineParticlesTask.class_documentation,choices=None))
 
+		db = db_open_dict(self.form_db_name)
 		
-		psep = ParamDef(name="sep",vartype="int",desc_short="Class separation",desc_long="The number of classes a particle can contribute towards",property=None,defaultunits=1,choices=[])
-		piter = ParamDef(name="classiter",vartype="int",desc_short="Averaging iterations",desc_long="The number of class averaging iterations",property=None,defaultunits=2,choices=[])
+		psep = ParamDef(name="sep",vartype="int",desc_short="Class separation",desc_long="The number of classes a particle can contribute towards",property=None,defaultunits=db.get("sep",dfl=1),choices=[])
+		piter = ParamDef(name="classiter",vartype="int",desc_short="Averaging iterations",desc_long="The number of class averaging iterations",property=None,defaultunits=db.get("classiter",dfl=2),choices=[])
 		
 		averagers = self.get_averagers_list()
 		averagers.sort()
-		paverager =  ParamDef("classaverager",vartype="string",desc_short="Averager",desc_long="The method used for generating class averages",property=None,defaultunits="image",choices=averagers)
+		paverager =  ParamDef("classaverager",vartype="string",desc_short="Averager",desc_long="The method used for generating class averages",property=None,defaultunits=db.get("classaverager",dfl="image"),choices=averagers)
 		
-		pkeep = ParamDef(name="classkeep",vartype="float",desc_short="keep",desc_long="The fraction of particles to keep in each class average. If sigma based is checked this value is interpreted in standard deviations from the mean instead",property=None,defaultunits=0.8,choices=[])
-		pkeepsig = ParamDef(name="classkeepsig",vartype="boolean",desc_short="Sigma based",desc_long="If checked the keep value is interpreted in standard deviations from the mean instead of basic ratio",property=None,defaultunits=True,choices=[])
+		pkeep = ParamDef(name="classkeep",vartype="float",desc_short="keep",desc_long="The fraction of particles to keep in each class average. If sigma based is checked this value is interpreted in standard deviations from the mean instead",property=None,defaultunits=db.get("classkeep",dfl=0.8),choices=[])
+		pkeepsig = ParamDef(name="classkeepsig",vartype="boolean",desc_short="Sigma based",desc_long="If checked the keep value is interpreted in standard deviations from the mean instead of basic ratio",property=None,defaultunits=db.get("classkeepsig",dfl=True),choices=[])
 		
-		pnormproc =  ParamDef("classnormproc",vartype="string",desc_short="Normalization processor",desc_long="The normalization method applied to the class averages",property=None,defaultunits="normalize.edgemean",choices=["normalize","normalize.edgemean","None"])
+		pnormproc =  ParamDef("classnormproc",vartype="string",desc_short="Normalization processor",desc_long="The normalization method applied to the class averages",property=None,defaultunits=db.get("classnormproc",dfl="normalize.edgemean"),choices=["normalize","normalize.edgemean","None"])
 		
+		db_close_dict(self.form_db_name)
 		
-	
 		params.append([piter,psep])
 		params.append([pkeep,pkeepsig])
 		params.append([paverager,pnormproc])
@@ -3782,28 +3815,31 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 		aligners.sort()
 		cmps.sort()
 		
-		psimalign =  ParamDef(name=parameter_prefix+"align",vartype="string",desc_short="Aligner",desc_long="The aligner being used",property=None,defaultunits="rotate_translate_flip",choices=aligners)
-		psimalignargs =  ParamDef(name=parameter_prefix+"alignargs",vartype="string",desc_short="params",desc_long="Parameters for the aligner, see \"e2help.py aligners\"",property=None,defaultunits="",choices=[])
+		db = db_open_dict(self.form_db_name)
 		
-		psimaligncmp =  ParamDef(name=parameter_prefix+"aligncmp",vartype="string",desc_short="Align comparator",desc_long="The comparator being used",property=None,defaultunits="phase",choices=cmps)
-		psimaligncmpargs =  ParamDef(name=parameter_prefix+"aligncmpargs",vartype="string",desc_short="params",desc_long="Parameters for this comparator, see \"e2help.py cmps\"",property=None,defaultunits="",choices=[])	
+		palign =  ParamDef(name=parameter_prefix+"align",vartype="string",desc_short="Aligner",desc_long="The aligner being used",property=None,defaultunits=db.get(parameter_prefix+"align",dfl="rotate_translate_flip"),choices=aligners)
+		palignargs =  ParamDef(name=parameter_prefix+"alignargs",vartype="string",desc_short="params",desc_long="Parameters for the aligner, see \"e2help.py aligners\"",property=None,defaultunits=db.get(parameter_prefix+"alignargs",dfl=""),choices=[])
+		
+		paligncmp =  ParamDef(name=parameter_prefix+"aligncmp",vartype="string",desc_short="Align comparator",desc_long="The comparator being used",property=None,defaultunits=db.get(parameter_prefix+"aligncmp",dfl="phase"),choices=cmps)
+		paligncmpargs =  ParamDef(name=parameter_prefix+"aligncmpargs",vartype="string",desc_short="params",desc_long="Parameters for this comparator, see \"e2help.py cmps\"",property=None,defaultunits=db.get(parameter_prefix+"aligncmpargs",dfl=""),choices=[])	
 		
 		
-		prsimalign =  ParamDef(name=parameter_prefix+"ralign",vartype="string",desc_short="Refine aligner",desc_long="The refine aligner being used",property=None,defaultunits="None",choices=["None","refine"])
-		prsimalignargs =  ParamDef(name=parameter_prefix+"ralignargs",vartype="string",desc_short="params",desc_long="Parameters for this aligner, see \"e2help.py aligners\"",property=None,defaultunits="",choices=[])
+		pralign =  ParamDef(name=parameter_prefix+"ralign",vartype="string",desc_short="Refine aligner",desc_long="The refine aligner being used",property=None,defaultunits=db.get(parameter_prefix+"ralign",dfl="None"),choices=["None","refine"])
+		pralignargs =  ParamDef(name=parameter_prefix+"ralignargs",vartype="string",desc_short="params",desc_long="Parameters for this aligner, see \"e2help.py aligners\"",property=None,defaultunits=db.get(parameter_prefix+"ralignargs",dfl=""),choices=[])
 		
-		prsimaligncmp =  ParamDef(name=parameter_prefix+"raligncmp",vartype="string",desc_short="Refine align comparator",desc_long="The comparator being used for refine alignment",property=None,defaultunits="phase",choices=cmps)
-		prsimaligncmpargs =  ParamDef(name=parameter_prefix+"raligncmpargs",vartype="string",desc_short="params",desc_long="Parameters for thos comparator, see \"e2help.py cmps\"",property=None,defaultunits="",choices=[])	
+		praligncmp =  ParamDef(name=parameter_prefix+"raligncmp",vartype="string",desc_short="Refine align comparator",desc_long="The comparator being used for refine alignment",property=None,defaultunits=db.get(parameter_prefix+"raligncmp",dfl="phase"),choices=cmps)
+		praligncmpargs =  ParamDef(name=parameter_prefix+"raligncmpargs",vartype="string",desc_short="params",desc_long="Parameters for thos comparator, see \"e2help.py cmps\"",property=None,defaultunits=db.get(parameter_prefix+"raligncmpargs",dfl=""),choices=[])	
 		
-		pcmp  =  ParamDef(name=parameter_prefix+"cmp",vartype="string",desc_short="Main comparator",desc_long="The comparator to determine the final quality metric",defaultunits="phase",choices=cmps)
-		pcmpargs =  ParamDef(name=parameter_prefix+"cmpargs",vartype="string",desc_short="params",desc_long="Parameters for the this comparator, see \"e2help.py cmps\"",property=None,defaultunits="",choices=[])	
+		pcmp  =  ParamDef(name=parameter_prefix+"cmp",vartype="string",desc_short="Main comparator",desc_long="The comparator to determine the final quality metric",defaultunits=db.get(parameter_prefix+"cmp",dfl="phase"),choices=cmps)
+		pcmpargs =  ParamDef(name=parameter_prefix+"cmpargs",vartype="string",desc_short="params",desc_long="Parameters for the this comparator, see \"e2help.py cmps\"",property=None,defaultunits=db.get(parameter_prefix+"cmpargs",dfl=""),choices=[])	
 	
+		db_close_dict(self.form_db_name)
 
 		params.append([pcmp,pcmpargs])
-		params.append([psimalign,psimalignargs])
-		params.append([psimaligncmp,psimaligncmpargs])
-		params.append([prsimalign,prsimalignargs])
-		params.append([prsimaligncmp,prsimaligncmpargs])
+		params.append([palign,palignargs])
+		params.append([paligncmp,paligncmpargs])
+		params.append([pralign,pralignargs])
+		params.append([praligncmp,praligncmpargs])
 		
 		return params
 
@@ -3861,18 +3897,19 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 
 	def get_make3d_page(self):
 		
+		db = db_open_dict(self.form_db_name)
+		pkeep = ParamDef(name="m3dkeep",vartype="float",desc_short="keep",desc_long="The fraction of particles to keep in each class average. If sigma based is checked this value is interpreted in standard deviations from the mean instead",property=None,defaultunits=db.get("m3dkeep",dfl=0.8),choices=[])
+		pkeepsig = ParamDef(name="m3dkeepsig",vartype="boolean",desc_short="Sigma based",desc_long="If checked the keep value is interpreted in standard deviations from the mean instead of basic ratio",property=None,defaultunits=db.get("m3dkeepsig",dfl=True),choices=[])
 		
-		pkeep = ParamDef(name="m3dkeep",vartype="float",desc_short="keep",desc_long="The fraction of particles to keep in each class average. If sigma based is checked this value is interpreted in standard deviations from the mean instead",property=None,defaultunits=0.8,choices=[])
-		pkeepsig = ParamDef(name="m3dkeepsig",vartype="boolean",desc_short="Sigma based",desc_long="If checked the keep value is interpreted in standard deviations from the mean instead of basic ratio",property=None,defaultunits=True,choices=[])
-		
-		piter = ParamDef(name="m3diter",vartype="int",desc_short="Reconstruction iterations",desc_long="The number of times the reconstruction algorithm is iterated",property=None,defaultunits=3,choices=[])
+		piter = ParamDef(name="m3diter",vartype="int",desc_short="Reconstruction iterations",desc_long="The number of times the reconstruction algorithm is iterated",property=None,defaultunits=db.get("m3diter",dfl=3),choices=[])
 	
+		pnormproc =  ParamDef("m3dpreprocess",vartype="string",desc_short="Normalization processor",desc_long="The normalization method applied to the class averages",property=None,defaultunits=db.get("m3dpreprocess",dfl="normalize.edgemean"),choices=["normalize","normalize.edgemean","None"])
 		
-		pnormproc =  ParamDef("m3dpreprocess",vartype="string",desc_short="Normalization processor",desc_long="The normalization method applied to the class averages",property=None,defaultunits="normalize.edgemean",choices=["normalize","normalize.edgemean","None"])
-		
-		precon = ParamDef("recon",vartype="string",desc_short="Reconstruction technique",desc_long="The method used to perform 3D reconstruction",property=None,defaultunits="fourier",choices=["fourier","back_projection"])
-		ppad = ParamDef("pad",vartype="string",desc_short="Pad to",desc_long="The amount to which you want to pad the 3D volume when Fourier inversion is being used. At least 25% is recommended", defaultunits="",choices=[])
+		precon = ParamDef("recon",vartype="string",desc_short="Reconstruction technique",desc_long="The method used to perform 3D reconstruction",property=None,defaultunits=db.get("recon",dfl="fourier"),choices=["fourier","back_projection"])
+		ppad = ParamDef("pad",vartype="string",desc_short="Pad to",desc_long="The amount to which you want to pad the 3D volume when Fourier inversion is being used. At least 25% is recommended", defaultunits=db.get("pad",dfl=""),choices=[])
 		params = []
+		
+		db_close_dict(self.form_db_name)
 		
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2RefineParticlesTask.make3d_documentation,choices=None))
 
@@ -3907,6 +3944,7 @@ class E2RefineChooseDataTask(ParticleWorkFlowTask):
 		ParticleWorkFlowTask.__init__(self,application)
 		self.window_title = "e2refine- getting starting"
 		self.preferred_size = (480,300)
+		self.form_db_name = "bdb:emform.e2refine"
 		
 	def get_params(self):
 		params = []		
@@ -3932,15 +3970,13 @@ class E2RefineChooseDataTask(ParticleWorkFlowTask):
 			choices.append("Specify files")
 		
 			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2RefineChooseDataTask.documentation_string,choices=None))
-			params.append(ParamDef(name="particle_set_choice",vartype="choice",desc_long="Choose the particle data set you wish to use to generate a starting data for e2refine2d",desc_short="Choose data",property=None,defaultunits=None,choices=choices))
-			
+			db = db_open_dict(self.form_db_name)
+			params.append(ParamDef(name="particle_set_choice",vartype="choice",desc_long="Choose the particle data set you wish to use to generate a starting data for e2refine2d",desc_short="Choose data",property=None,defaultunits=db.get("particle_set_choice",dfl=None),choices=choices))
+			db_close_dict(self.form_db_name)
 		return params
 	
 	def on_form_ok(self,params):
-		for k,v in params.items():
-			self.write_db_entry(k,v)
-
-
+		self.write_db_entries(params)
 		if not params.has_key("particle_set_choice"):
 			self.form.closeEvent(None)
 			self.form = None

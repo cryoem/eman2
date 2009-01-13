@@ -63,7 +63,7 @@ class EMImageMXWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True)
-		fmt.setSampleBuffers(True)
+		#fmt.setSampleBuffers(True)
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
 		EMEventRerouter.__init__(self,em_mx_module)
 		
@@ -113,7 +113,7 @@ class EMImageMXWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 
 	
 	def resizeGL(self, width, height):
-		if width <= 0 or height <= 0: return None
+		if width <= 0 or height <= 0: return
 		GL.glViewport(0,0,width,height)
 	
 		GL.glMatrixMode(GL.GL_PROJECTION)

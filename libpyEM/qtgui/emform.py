@@ -156,7 +156,7 @@ class EMFormWidget(QtGui.QWidget):
 		if not paramtable.enable_multiple_selection:
 			table_widget.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
 			
-		#self.items = []
+		selected_items = [] # used to ensure default selection is correct
 		table_widget.setSortingEnabled(False)
 		max_len_sum = 0
 		for i,param in enumerate(paramtable):
@@ -173,10 +173,17 @@ class EMFormWidget(QtGui.QWidget):
 				#flags = flags.
 				if i == 0:
 					item.setFlags(flag2|flag3)
+					if param.defaultunits != None and len(param.defaultunits) > 0:
+						if choice in param.defaultunits:
+							selected_items.append(item)
 				else:
 					item.setFlags(flag3)
 				item.setTextAlignment(QtCore.Qt.AlignHCenter)
+				
+				
+				
 				table_widget.setItem(j, i, item)
+				
 				
 				
 			item = QtGui.QTableWidgetItem(param.desc_short)
@@ -206,6 +213,8 @@ class EMFormWidget(QtGui.QWidget):
 		else:
 			type_of = type(str) # this really doesn't matter
 	
+		for item in selected_items: 
+			item.setSelected(True)
 		self.output_writers.append(ParamTableWriter(paramtable.name,table_widget,type_of))
 		
 	def __incorporate_floatlist(self,param,layout):

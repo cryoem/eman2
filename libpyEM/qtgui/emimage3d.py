@@ -130,9 +130,7 @@ class EMImage3DGeneralWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionVi
 		#glAccum(GL_RETURN, 1.0)
 		
 	def resizeGL(self, width, height):
-		if width<=0 or height<=0 : 
-			print "bad size"
-			return
+		if width<=0 or height<=0 : return # this is fine, the window has be size interactively to zero, for example
 		# just use the whole window for rendering
 		glViewport(0,0,self.width(),self.height())
 		
@@ -252,6 +250,8 @@ class EMImage3DWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMatri
 
 	def resizeGL(self, width, height):
 		# just use the whole window for rendering
+		
+		if width == 0 or height == 0: return # this is fine
 		
 		glViewport(0,0,self.width(),self.height())
 		
