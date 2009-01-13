@@ -530,22 +530,17 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			if myid == main_node:
 				drop_image(tavg, os.path.join(outdir, "itavg%05d.hdf"%(isav)))
 			for Iter in xrange(max_iter):
-				if(total_iter%15 == 0):
-					T = -4.0
-				sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF, random_method, T)
-				if(total_iter%15 == 0):
-					T = T0
+				sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF, method, T)
+				# above, check variable method, or should it be random_method??
 				tavg = model_blank(nx,nx)
 				select = 0
 				for im in data:
 					pka = 0.0
 					pkv = 0.0
-					npeaks = im.get_attr("npeaks")
-					for np in xrange(min(knp,npeaks)):
-						alphan, sxn, syn, mirror, scale = get_params2D(im, "xform.align2d%01d"%(np))
-						sel = im.get_attr("select%01d"%(np))
-						select += sel
-						Util.add_img(tavg, rot_shift2D(im, alphan, sxn, syn, mirror))
+					alphan, sxn, syn, mirror, scale = get_params2D(im)
+					sel = im.get_attr("select")
+					select += sel
+					Util.add_img(tavg, rot_shift2D(im, alphan, sxn, syn, mirror))
 				#  bring all partial sums together
 				reduce_EMData_to_root(tavg, myid, main_node)
 				select = mpi_reduce(select, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
@@ -554,6 +549,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				if myid == main_node:
 					Util.mul_scalar(tavg, 1.0/float(nima))
 					#drop_image(tavg, os.path.join(outdir, "aaa%05d.hdf"%(ipt*1000+isav*100+Iter)))
+					#  Yang, can you please fix the centering?  I did not use it and it is incorrect here.
 					ref_data[2] = tavg
 
 					#  call user-supplied function to prepare reference image, i.e., center and filter it
