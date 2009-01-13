@@ -5449,6 +5449,8 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, center = -1, maxit
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
 
+	if CTF:
+		from filter import filt_ctf
 
 	main_node = 0
 	if myid == main_node:
@@ -5456,12 +5458,22 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, center = -1, maxit
 		os.mkdir(outdir)
 		import user_functions
 		user_func = user_functions.factory[user_func_name]
+		if CTF:
+			ima = EMData()
+			ima.read_image(stack, 0)
+			ctf_applied = ima.get_attr("ctf_applied")
+			del ima
+			if ctf_applied == 1:  ERROR("ali3d_e does not work for CTF-applied data", "ali3d_e", 1)
+	mpi_barrier(MPI_COMM_WORLD)
 	if debug:
 		info_file = outdir+("/progress%04d"%myid)
 		outf = open(info_file, 'w')
 	else:
 		outf = None
-	mpi_barrier(MPI_COMM_WORLD)
+
+	last_ring   = int(ou)
+	max_iter    = int(maxit)
+	center      = int(center)
 
 	if myid == main_node:
 		active = EMUtil.get_all_attributes(stack, 'active')
@@ -5470,10 +5482,16 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, center = -1, maxit
 			if(active[im]):  list_of_particles.append(im)
 		del active
 		nima = len(list_of_particles)
+		ima     = EMData()
+		ima.read_image(stack, 0)
+		nx      = ima.get_xsize()
+		del ima
 	else:
 		nima = 0
+		nx = 0
 	nima = bcast_number_to_all(nima, source_node = main_node)
-	
+	nx = bcast_number_to_all(nx, source_node = main_node)
+
 	if myid != main_node:
 		list_of_particles = [-1]*nima
 	list_of_particles = bcast_list_to_all(list_of_particles, source_node = main_node)
@@ -5481,43 +5499,12 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, center = -1, maxit
 	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
 	# create a list of images for each node
 	list_of_particles = list_of_particles[image_start: image_end]
-	if debug:
-		outf.write( "image_start, image_end: %d %d\n" %(image_start, image_end) )
-		outf.flush()
-
-	n_in_chunk  = max(int(chunk*(image_end-image_start)), 1)
-	n_of_chunks = (image_end-image_start)//n_in_chunk + min((image_end-image_start)%n_in_chunk, 1)
-
-	if debug:
-		outf.write("  chunk = "+str(chunk)+"   ")
-		outf.write("\n")
-		outf.flush()
-		outf.write("  Number of images in a chunk = "+str(n_in_chunk)+"   ")
-		outf.write("  Number of chunks = "+str(n_of_chunks)+"   ")
-		outf.write("\n")
-		outf.flush()
 
 
-	if CTF:
-		from filter import filt_ctf
 
-	if myid == main_node:
-		if CTF:
-			ima = EMData()
-			ima.read_image(stack, 0)
-			ctf_applied = ima.get_attr("ctf_applied")
-			del ima
-			if ctf_applied == 1:  ERROR("ali3d_e does not work for CTF-applied data", "ali3d_e", 1)
-	mpi_barrier(MPI_COMM_WORLD)
 
-	last_ring   = int(ou)
-	max_iter    = int(maxit)
-	center      = int(center)
 
-	ima     = EMData()
-	ima.read_image(stack, 0)
-	nx      = ima.get_xsize()
-	del ima
+
 	if last_ring < 0:	last_ring = int(nx/2) - 2
 
 	if chunk <= 0.0:  chunk = 1.0
@@ -5546,6 +5533,25 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, center = -1, maxit
 	else:
 		mask3D = model_circle(last_ring, nx, nx, nx)
 	mask2D = model_circle(last_ring, nx, nx)
+
+
+
+
+	if debug:
+		outf.write( "image_start, image_end: %d %d\n" %(image_start, image_end) )
+		outf.flush()
+
+	n_in_chunk  = max(int(chunk*(image_end-image_start)), 1)
+	n_of_chunks = (image_end-image_start)//n_in_chunk + min((image_end-image_start)%n_in_chunk, 1)
+
+	if debug:
+		outf.write("  chunk = "+str(chunk)+"   ")
+		outf.write("\n")
+		outf.flush()
+		outf.write("  Number of images in a chunk = "+str(n_in_chunk)+"   ")
+		outf.write("  Number of chunks = "+str(n_of_chunks)+"   ")
+		outf.write("\n")
+		outf.flush()
 
 	dataim = EMData.read_images(stack, list_of_particles)
 	for im in xrange(len(dataim)):
