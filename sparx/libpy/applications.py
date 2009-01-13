@@ -355,6 +355,7 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	from utilities import write_headers
 	write_headers(stack, data, range(nima))
 	print_end_msg("ali2d_a")
+
 '''
 def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, CTF=False, user_func_name="ref_ali2d", random_method="SA", T0=1.0, F=0.996):
 
@@ -725,7 +726,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			mask = maskfile
 	else : 
 		if myid==main_node: 	print_msg("Maskfile                    : default, a circle with radius %i\n\n"%(last_ring))
-		mask = model_circle(last_ring,nx,nx)
+		mask = model_circle(last_ring, nx, nx)
 
 	cnx  = nx/2+1
  	cny  = cnx
@@ -735,10 +736,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		from morphology   import ctf_img
 		ctf_2_sum = EMData(nx, nx, 1, False)
 	data = EMData.read_images(stack, range(image_start, image_end))
-	for im in data:
-		t = im.get_attr("xform.align2d")
-		im.set_attr('xform.align2d0',t)
-		im.set_attr("select0",0)
+
 	tavg = model_blank(nx, nx)
 	tavg = ave_series(data, False)
 	reduce_EMData_to_root(tavg, myid, main_node)
@@ -886,9 +884,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				#ref_data[3] = frsc
 
 				#  call user-supplied function to prepare reference image, i.e., center and filter it
-				if center != -1:
-					tavg, cs = user_func(ref_data)
-				else:
+				if center == -1:
 					# When center = -1, which is by default, we use the average center method
 					ref_data[1] = 0
 					tavg, cs = user_func(ref_data)
@@ -898,6 +894,8 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					tavg = fshift(tavg, -cs[0], -cs[1])
 					msg = "Average center x =      %10.3f        Center y       = %10.3f\n"%(cs[0], cs[1])
 					print_msg(msg)
+				else:
+					tavg, cs = user_func(ref_data)
 
 				#Util.div_filter(sumsq, vav)
 				#sumsq = filt_tophatb(sumsq, 0.01, 0.49)
@@ -907,7 +905,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				std = sqrt((s2 - float(select)**2/(knp*nima))/(knp*nima-1))
 				sa = float(select)/(knp*nima)
 				av = float(av)/nima
-				if(total_iter>0 and sa < 0.2 and std <1.0):
+				if total_iter>0 and sa < 0.2 and std <1.0:
 					method = 0
 					msg = "ITERATION   #%5d    criterion = %15.7e \n"%(total_iter, a1)
 				else:
