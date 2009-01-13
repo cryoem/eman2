@@ -1059,18 +1059,21 @@ class EMBDBListing:
 			if file[len(file)-3:] == "bdb":
 				f = file.rpartition(".bdb")
 				db_directory = self.get_emdatabase_directory(real_directory)
-				DB = EMAN2DB.open_db(db_directory)
-				DB.open_dict(f[0])
 				
-				if DB[f[0]].has_key("maxrec"):
-					n = DB[f[0]]["maxrec"]
+				db_name = "bdb:"+db_directory+"#"+f[0]
+				db = db_open_dict(db_name,ro=True)
+				
+				if db.has_key("maxrec"):
+					#n = DB[f[0]]["maxrec"]
+					n = db["maxrec"]
 					if n >= 1:
 						a = EMSelectionListItem(self.target().emdata_matrix_icon,f[0],list_widget)
 						a.type_of_me = self.db_mx
 						a.database_directory = db_directory
 						a.database = f[0]
 					elif n == 0:
-						d = DB[f[0]].get_header(0)
+						#d = DB[f[0]].get_header(0)
+						d = db.get_header(0)
 						if d["nz"] <= 1:
 							a = EMSelectionListItem(self.target().emdata_icon,f[0],list_widget)
 							a.type_of_me = self.emdata_entry
@@ -1088,7 +1091,8 @@ class EMBDBListing:
 				else:
 					a = EMSelectionListItem(self.target().database_icon,f[0],list_widget)
 					a.type_of_me = "regular"
-				DB.close_dict(f[0])
+					
+				db_close_dict(db_name)
 			#else:
 				#a = EMSelectionListItem(self.target().key_icon,file,list_widget)
 			
@@ -1111,26 +1115,26 @@ class EMBDBListing:
 		file = self.convert_to_absolute_path(directory)
  
 		db_directory = self.get_emdatabase_directory(file)
-		DB = EMAN2DB.open_db(db_directory)
-		
-		
-		#print "the database directory is",db_directory
+
 		key = remove_directories_from_name(file)
 		key = strip_file_tag(key)
-		DB.open_dict(key)
+		
+		db_name = "bdb:"+db_directory+"#"+key
+		db = db_open_dict(db_name,ro=True)
 		
 		list_widget.clear()
-		items = DB[key] # NOTE items should be called "db" or something else
+		#items = DB[key] # NOTE items should be called "db" or something else
+		items = db
 		keys = items.keys()
 		keys.sort() # puts them alphabetical order
 		for k in keys:
 			if k == '': continue
-			_type =items.item_type(k)
+			_type =db.item_type(k)
 			if _type == dict:
 				a = EMSelectionListItem(self.target().database_icon,str(k),list_widget)
 				a.type_of_me = "database_dict"
 			elif _type == EMData:
-				data = items.get_header(k)
+				data = db.get_header(k)
 				if data["nz"] > 1:
 					a = EMSelectionListItem(self.target().emdata_3d_icon,str(k),list_widget)
 					a.type_of_me = self.emdata_3d_entry
@@ -1143,10 +1147,10 @@ class EMBDBListing:
 					a.database_directory = db_directory
 					a.database = key
 					a.database_key = k
-			elif _type == list and len(items[k]) == 2:
+			elif _type == list and len(db[k]) == 2:
 				try:
-					if (isinstance(items[k][0][0],float) or isinstance(items[k][0][0],int)) and (isinstance(items[k][1][0],float) or isinstance(items[k][0][0],int)):
-						v = items[k]
+					if (isinstance(db[k][0][0],float) or isinstance(db[k][0][0],int)) and (isinstance(db[k][1][0],float) or isinstance(db[k][0][0],int)):
+						v = db[k]
 				
 						a = EMSelectionListItem(self.target().plot_icon,str(k)+":"+str(v),list_widget)
 						a.type_of_me = self.db_list_plot
@@ -1156,7 +1160,7 @@ class EMBDBListing:
 					else: raise
 				except:
 					# yes redundant but not time
-					v = items[k]
+					v = db[k]
 				
 					a = EMSelectionListItem(self.target().basic_python_icon,str(k)+":"+str(v),list_widget)
 					a.type_of_me = "key_value"
@@ -1165,12 +1169,14 @@ class EMBDBListing:
 					
 			else:
 				#if type(i) in [str,float,int,tuple,list,bool]:
-				v = items[k]
+				v = db[k]
 				
 				a = EMSelectionListItem(self.target().basic_python_icon,str(k)+":"+str(v),list_widget)
 				a.type_of_me = "key_value"
 				a.key = k
 				a.value = v
+				
+		db_close_dict(db_name)
 		return True
 				
 	
@@ -1195,7 +1201,7 @@ class EMBDBListing:
 		
 		idx1 = file.find("EMAN2DB")
 		if idx1 > 0:
-			return file[0:idx1]
+			return file[0:idx1-1]
 		else: return None
 		
 	
@@ -1240,25 +1246,27 @@ class EMBDBListing:
 			db_directory = self.get_emdatabase_directory(real_name)
 
 			#db_open_dict
-			DB = EMAN2DB.open_db(db_directory)
+			#DB = EMAN2DB.open_db(db_directory)
 			
 			key = split[j-1]
 			item_key = split[j-2]
 			
-			DB.open_dict(key)
-			item = DB[key]
+			#DB.open_dict(key)
+			db_name = "bdb:"+item.db_directory+"#"+item.key
+			db = db_open_dict(db_name,ro=True)
+			#item = DB[key]
 			
-			#item = item[item_key]
+			#db = db[db_key]
 			try:
 				for ii in range(j-2,-1,-1):
-					item = item[split[ii]]
+					db = db[split[ii]]
 			except: return False
 			
-			if type(item) == dict:
-				keys = item.keys()
+			if type(db) == dict:
+				keys = db.keys()
 				keys.sort() # puts them alphabetical order
 				for k in keys:
-					i = item[k]
+					i = db[k]
 					if k == "auto_boxes":
 						a = EMSelectionListItem(self.target().ab_autoboxes_icon,str(k),list_widget)
 						a.type_of_me = "auto_boxes"
@@ -1292,16 +1300,20 @@ class EMBDBListing:
 					else:
 						a = EMSelectionListItem(self.target().basic_python_icon,str(k),list_widget)
 						a.type_of_me = "value"
-			elif isinstance(item,EMData):
+			elif isinstance(db,EMData):
 				print "this shouldn't happen"
-				self.target().preview_data(item)
+				db_close_dict(db_name)
+				self.target().preview_data(db)
 				return False
 			else:
-				a = EMSelectionListItem(self.target().basic_python_icon,str(item),list_widget)
+				a = EMSelectionListItem(self.target().basic_python_icon,str(db),list_widget)
 				a.type_of_me = "value"
+			db_close_dict(db_name)
 			return True
 				
-		else: return False 
+		else:
+			db_close_dict(db_name)
+			return False 
 	
 	#def is_previewable(self,file_name):
 		#return self.do_preview(file_name,fake_it=True)
@@ -1320,13 +1332,14 @@ class EMBDBListing:
 		#if not os.path.isfile(item.full_path): return False
 		
 		if item.type_of_me == self.db_mx:
-			DB = EMAN2DB.open_db(item.database_directory)
-			DB.open_dict(item.database)
-			maxrec = DB[item.database]["maxrec"]+1
-			hdr = DB[item.database].get_header(0)
+			db_name = "bdb:"+item.database_directory+"#"+item.database
+			db = db_open_dict(db_name,ro=True)
+			
+			maxrec = db["maxrec"]+1
+
+			hdr = db.get_header(0)
 			nx = hdr["nx"]
 			ny = hdr["ny"]
-			
 			mx = 256000000# 256Mb
 			if maxrec*nx*ny*4 > mx:
 				maxrec = mx/(nx*ny) + 1
@@ -1342,39 +1355,44 @@ class EMBDBListing:
 			progress.qt_widget.show()
 			data = []
 			for i in range(maxrec):
-				data.append(DB[item.database][i])
+				data.append(db[i])
 				progress.qt_widget.setValue(i)
 				if progress.qt_widget.wasCanceled():
+					db_close_dict(db_name)
 					progress.qt_widget.close()
 					return False
+			db_close_dict(db_name)
 			progress.qt_widget.close()
 			self.target().preview_data(data)	
 			return True
 				
 		elif item.type_of_me in [self.emdata_3d_entry,self.emdata_entry]:
+			db_name = "bdb:"+item.database_directory+"#"+item.database
+			db = db_open_dict(db_name,ro=True)
 			
-			DB = EMAN2DB.open_db(item.database_directory)
-			DB.open_dict(item.database)
-			data = DB[item.database][item.database_key]
+			data = db[item.database_key]
+			db_close_dict(db_name)
 			self.target().preview_data(data)
 			return True
 
 		elif item.type_of_me == self.db_dict_emdata_entry:
-			DB = EMAN2DB.open_db(item.database_directory)
-			DB.open_dict(item.database)
-			db = DB[item.database]
+			db_name = "bdb:"+item.database_directory+"#"+item.database
+			db = db_open_dict(db_name,ro=True)
+
 			for key in item.database_dictionary_keys:
 				db = db[key]
 				
+			db_close_dict(db_name)
 			# db should now be an EMData
 			self.target().preview_data(db)
 			return True
 		
 		elif item.type_of_me == self.db_list_plot:
-			DB = EMAN2DB.open_db(item.db_dir)
-			DB.open_dict(item.db)
-			db = DB[item.db]
+			db_name = "bdb:"+item.db_dir+"#"+item.db
+			db = db_open_dict(db_name,ro=True)
+
 			plot = db[item.db_key]
+			db_close_dict(db_name)
 				
 			# db should now be an EMData
 			self.target().preview_plot_list(item.db_key,plot)
@@ -1389,18 +1407,25 @@ class EMBDBListing:
 				
 		if item.type_of_me == self.emdata_3d_entry or item.type_of_me == self.emdata_entry:
 			
-			DB = EMAN2DB.open_db(item.database_directory)
-			DB.open_dict(item.database)
-			return DB[item.database].get_header(item.database_key)
-
+			#DB = EMAN2DB.open_db(item.database_directory)
+			#DB.open_dict(item.database)
+			db_name = "bdb:"+item.database_directory+"#"+item.database
+			db = db_open_dict(db_name,ro=True)
+			value = db.get_header(item.database_key)
+			db_close_dict(db_name)
+			#return DB[item.database].get_header(item.database_key)
+			return value
 		elif item.type_of_me == self.db_dict_emdata_entry:
 			#this is really inefficient seeing as the whole image has to be read
-			DB = EMAN2DB.open_db(item.database_directory)
-			DB.open_dict(item.database)
-			db = DB[item.database]
+			db_name = "bdb:"+item.database_directory+"#"+item.database
+			#DB = EMAN2DB.open_db(item.database_directory)
+			#DB.open_dict(item.database)
+			#db = DB[item.database]
+			db = db_open_dict(db_name,ro=True)
 			for key in item.database_dictionary_keys:
 				db = db[key]
-				
+			
+			db_close_dict(db_name)
 			return db.get_attr_dict()
 			
 		else: return None
