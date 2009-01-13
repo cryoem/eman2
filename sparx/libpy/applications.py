@@ -3879,6 +3879,8 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 	else:	from reconstruction import rec3D_MPI_noCTF
 
 	if myid == main_node:
+		from EMAN2db import db_open_dict
+		dummy = db_open_dict(stack)
 		active = EMUtil.get_all_attributes(stack, 'active')
 		list_of_particles = []
 		for im in xrange(len(active)):
@@ -4336,6 +4338,8 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 	mask = model_circle(last_ring, nx, nx)
 
 	if(myid == main_node):
+		from EMAN2db import db_open_dict
+		dummy = db_open_dict(stack)
 		active = EMUtil.get_all_attributes(stack, 'active')
 		list_of_particles = []
 		for im in xrange(len(active)):
@@ -4784,6 +4788,8 @@ def ali3d_em_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, na
 
 
 	if(myid == main_node):
+		from EMAN2db import db_open_dict
+		dummy = db_open_dict(stack)
 		active = EMUtil.get_all_attributes(stack, "active")
 		list_of_particles = []
 		for im in xrange( len(active) ):
@@ -5476,6 +5482,8 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, center = -1, maxit
 	center      = int(center)
 
 	if myid == main_node:
+		from EMAN2db import db_open_dict
+		dummy = db_open_dict(stack)
 		active = EMUtil.get_all_attributes(stack, 'active')
 		list_of_particles = []
 		for im in xrange(len(active)):
