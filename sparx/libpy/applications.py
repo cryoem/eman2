@@ -356,7 +356,7 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	write_headers(stack, data, range(nima))
 	print_end_msg("ali2d_a")
 
-'''
+
 def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, CTF=False, user_func_name="ref_ali2d", random_method="SA", T0=1.0, F=0.996):
 
 	from utilities    import model_circle, combine_params2, drop_image, get_image, get_input_from_string, model_blank, get_params2D
@@ -473,7 +473,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 
 	seed(5127 + myid*5341)
 	knp = 1
-	nsav = 10
+	nsav = 5
 	N_step = 0
 	tnull = Transform({"type":"2D"})
 	savg = []
@@ -521,6 +521,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		msg = "\nX range = %5.2f   Y range = %5.2f   Step = %5.2f\n"%(xrng[N_step], yrng[N_step], step[N_step])
 		print_msg(msg)
 	for ipt in xrange(10):
+		if ipt !=0 : T0 = T
 		for isav in xrange(nsav):
 			tavg = savg[isav].copy()
 			total_iter = 0
@@ -531,6 +532,8 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			if myid == main_node:
 				drop_image(tavg, os.path.join(outdir, "itavg%05d.hdf"%(isav)))
 			for Iter in xrange(max_iter):
+				cs = mpi_bcast(cs, 2, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+				cs = [float(cs[0]), float(cs[1])]
 				sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF, random_method, T)
 				sx_sum = mpi_reduce(sx_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 				sy_sum = mpi_reduce(sy_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
@@ -572,7 +575,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 						#drop_image(tavg, os.path.join(outdir, "aqf_%05d.hdf"%(ipt*1000+isav)))
 					a1 = tavg.cmp("dot", tavg, dict(negative = 0, mask = ref_data[0]))
 					select = float(select)/float(knp*nima)
-					msg = "MERGE  #%3d  ITERATION   #%5d    average #%4d  criterion = %15.7e     %12.3e    %12.3e\n"%(ipt, Iter, isav, a1, select, T)
+					msg = "MERGE #%2d     Average #%2d     ITERATION #%3d     average select = %4d     criterion = %15.7e     T = %12.3e\n"%(ipt, isav, Iter, select, a1, T)
 					print_msg(msg)
 				else:
 					tavg = EMData(nx, nx, 1, True)
@@ -584,12 +587,12 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			if myid == main_node:
 				drop_image(savg[isav], os.path.join(outdir, "isavg%05d.hdf"%(isav)))
 		if myid == main_node:
-			for i in xrange(nsav-1):
+			for isav in xrange(nsav-1):
 				Util.add_img(tavg, savg[isav])
 			for im in savg:
 				im.set_attr_dict({'xform.align2d':tnull, 'active':1})
 			for inp in xrange(5):
-				sx_sum, sy_sum = ali2d_single_iter(savg, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, False)
+				sx_sum, sy_sum = ali2d_single_iter(savg, numr, wr, [0.0, 0.0], tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, False)
 				tavg = ave_series(savg)
 			qt = [[None, None] for inp in xrange(nsav)]
 			for inp in xrange(nsav):
@@ -600,11 +603,16 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			qt.sort(reverse = True)
 			itp = 0
 			tsavg = []
-			for i1 in xrange(nsav//2-1):
-				for i2 in xrange(i1+1, nsav//2):
-					tsavg.append(Util.addn_img(savg[qt[i1][1]], savg[qt[i2][1]]))
-					itp += 1
-					if(itp == nsav): break
+			i1 = 0
+			i2 = 1
+			while itp < nsav:
+				tsavg.append(Util.addn_img(savg[qt[i1][1]], savg[qt[i2][1]]))
+				itp += 1
+				if i2-i1==1:
+					i2 += 1
+					i1 = 0
+				else:
+					i1 += 1
 			for i1 in xrange(nsav):
 				savg[i1] = tsavg[i1].copy()
 			del tsavg
@@ -623,9 +631,9 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 	else:           send_attr_dict(main_node, data, par_str, image_start, image_end)
 	if myid == main_node:  print_end_msg("ali2d_a_MPI")
+
+
 '''
-
-
 def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, CTF=False, user_func_name="ref_ali2d", random_method="SA", T0=1.0, F=0.996):
 
 	from utilities    import model_circle, combine_params2, drop_image, get_image, get_input_from_string, model_blank, get_params2D
@@ -953,7 +961,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 	else:           send_attr_dict(main_node, data, par_str, image_start, image_end)
 	if myid == main_node:  print_end_msg("ali2d_a_MPI")
-
+'''
 
 '''
 # working version of all peaks
