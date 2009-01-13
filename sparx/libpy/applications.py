@@ -5450,6 +5450,12 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, center = -1, maxit
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
 
 
+	main_node = 0
+	if myid == main_node:
+		if os.path.exists(outdir):  os.system('rm -rf '+outdir)
+		os.mkdir(outdir)
+		import user_functions
+		user_func = user_functions.factory[user_func_name]
 	if debug:
 		info_file = outdir+("/progress%04d"%myid)
 		outf = open(info_file, 'w')
@@ -5494,12 +5500,7 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, center = -1, maxit
 	if CTF:
 		from filter import filt_ctf
 
-	main_node = 0
 	if myid == main_node:
-		if os.path.exists(outdir):  os.system('rm -rf '+outdir)
-		os.mkdir(outdir)
-		import user_functions
-		user_func = user_functions.factory[user_func_name]
 		if CTF:
 			ima = EMData()
 			ima.read_image(stack, 0)
