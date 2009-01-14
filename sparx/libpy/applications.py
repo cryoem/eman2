@@ -362,14 +362,14 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	from utilities    import model_circle, combine_params2, drop_image, get_image, get_input_from_string, model_blank, get_params2D
 	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, bcast_number_to_all, send_attr_dict, file_type
 	from statistics   import add_ave_varf_MPI, add_ave_varf_ML_MPI, ave_series
-	from alignment    import Numrinit, ringwe, ali2d_single_iter
+	from alignment    import Numrinit, ringwe, ali2d_random_ccf
 	from filter       import filt_tophatb
 	from morphology   import ctf_2
 	from numpy        import reshape, shape
 	from utilities    import print_msg, print_begin_msg, print_end_msg
 	from fundamentals import fft, rot_avg_table, rot_shift2D
 	from random       import seed, randint, random
-	from math         import sqrt
+	from math         import sqrt, sin, pi
 	import os
 
 	from mpi 	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
@@ -472,8 +472,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	data = EMData.read_images(stack, range(image_start, image_end))
 
 	seed(5127 + myid*5341)
-	knp = 1
-	nsav = 5
+	nsav = 1
 	N_step = 0
 	tnull = Transform({"type":"2D"})
 	savg = []
@@ -521,7 +520,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		msg = "\nX range = %5.2f   Y range = %5.2f   Step = %5.2f\n"%(xrng[N_step], yrng[N_step], step[N_step])
 		print_msg(msg)
 	for ipt in xrange(10):
-		if ipt !=0 : T0 = T
+		if ipt !=0 : T0 = T0*0.5
 		for isav in xrange(nsav):
 			tavg = savg[isav].copy()
 			total_iter = 0
@@ -534,21 +533,36 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			for Iter in xrange(max_iter):
 				cs = mpi_bcast(cs, 2, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 				cs = [float(cs[0]), float(cs[1])]
-				sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF, random_method, T)
+				old_ali = []
+				for im in data:
+					alphan, sxn, syn, mirror, scale = get_params2D(im)
+					old_ali.append([alphan, sxn, syn, mirror, scale])
+				sx_sum, sy_sum = ali2d_random_ccf(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF, random_method, T)
 				sx_sum = mpi_reduce(sx_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 				sy_sum = mpi_reduce(sy_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 				tavg = model_blank(nx, nx)
 				select = 0
+				pixel_error = 0.0
+				mirror_change = 0
+				tt = 0
 				for im in data:
 					pka = 0.0
 					pkv = 0.0
 					alphan, sxn, syn, mirror, scale = get_params2D(im)
+					if old_ali[tt][3] == mirror:
+						this_error = abs(sin((old_ali[tt][0]-alphan)/180.0*pi/2))*(last_ring*2)+sqrt((old_ali[tt][1]-sxn)**2+(old_ali[tt][2]-syn)**2)
+						pixel_error += this_error
+					else:
+						mirror_change += 1
+					tt += 1
 					sel = im.get_attr("select")
 					select += sel
 					Util.add_img(tavg, rot_shift2D(im, alphan, sxn, syn, mirror))
 				#  bring all partial sums together
 				reduce_EMData_to_root(tavg, myid, main_node)
 				select = mpi_reduce(select, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
+				mirror_change = mpi_reduce(mirror_change, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
+				pixel_error = mpi_reduce(pixel_error, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 				#reduce_EMData_to_root(vav, myid, main_node)
 
 				if myid == main_node:
@@ -563,9 +577,13 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 						tavg, cs = user_func(ref_data)
 						cs[0] = float(sx_sum[0])/nima
 						cs[1] = float(sy_sum[0])/nima
+						pixel_error = float(pixel_error[0])/nima
+						mirror_change = float(mirror_change[0])/nima
 						from fundamentals import fshift
 						tavg = fshift(tavg, -cs[0], -cs[1])
 						msg = "Average center x =	 %10.3f	   Center y 	= %10.3f\n"%(cs[0], cs[1])
+						print_msg(msg)
+						msg = "Mirror change x =   	 %10.3f	   Pixel error 	= %10.3f\n"%(mirror_change, pixel_error)
 						print_msg(msg)
 					else:
 						tavg, cs = user_func(ref_data)
@@ -574,8 +592,8 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 						drop_image(tavg, os.path.join(outdir, "aqc_%05d.hdf"%(ipt*1000+isav*100+Iter)))
 						#drop_image(tavg, os.path.join(outdir, "aqf_%05d.hdf"%(ipt*1000+isav)))
 					a1 = tavg.cmp("dot", tavg, dict(negative = 0, mask = ref_data[0]))
-					select = float(select)/float(knp*nima)
-					msg = "MERGE #%2d     Average #%2d     ITERATION #%3d     average select = %4d     criterion = %15.7e     T = %12.3e\n"%(ipt, isav, Iter, select, a1, T)
+					select = float(select)/float(nima)
+					msg = "MERGE #%2d     Average #%2d     ITERATION #%3d     average select = %4d     criterion = %15.7e     T = %12.3e\n\n"%(ipt, isav, Iter, select, a1, T)
 					print_msg(msg)
 				else:
 					tavg = EMData(nx, nx, 1, True)
@@ -590,7 +608,9 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			for isav in xrange(nsav-1):
 				Util.add_img(tavg, savg[isav])
 			for im in savg:
+				im = rot_shift2D(im, randint(0, 360), randint(-2, 2), randint(-2, 2), randint(0,1))
 				im.set_attr_dict({'xform.align2d':tnull, 'active':1})
+			"""
 			for inp in xrange(5):
 				sx_sum, sy_sum = ali2d_single_iter(savg, numr, wr, [0.0, 0.0], tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, False)
 				tavg = ave_series(savg)
@@ -616,7 +636,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			for i1 in xrange(nsav):
 				savg[i1] = tsavg[i1].copy()
 			del tsavg
-			
+			"""
 	# write out headers and STOP, under MPI writing has to be done sequentially
 	mpi_barrier(MPI_COMM_WORLD)
 	#par_str = ["xform.align2d", "ID"]
