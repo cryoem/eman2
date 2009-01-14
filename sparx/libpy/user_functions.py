@@ -421,7 +421,7 @@ def spruce_up( ref_data ):
 
 def spruce_up_variance( ref_data ):
 	from utilities      import print_msg
-	from filter         import filt_tanl, fit_tanh
+	from filter         import filt_tanl, fit_tanh, filt_gaussl
 	from morphology     import threshold
 	#  Prepare the reference in 3D alignment, i.e., low-pass filter and center.
 	#  Input: list ref_data
