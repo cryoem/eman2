@@ -1212,43 +1212,6 @@ class ParticleImportTask(ParticleWorkFlowTask):
 					error_message.append(message)
 
 		return error_message
-	
-
-	def write_db_entry(self,k,v):
-		pass
-		#if k == "import_particle_files":
-			# first make sure that the file tags that will correspond to the imported file names do not conflict with names in the project files
-#			project_db = db_open_dict("bdb:project")
-#			project_file_names = project_db.get("global.micrograph_ccd_filenames",dfl=[])
-#			pfnt = [ get_file_tag(name) for name in project_file_names]
-			
-#			for name in v:
-#				if get_file_tag(name) in pfnt:
-#					print "error, you can't import particles that have the same file name as one of the project files - the problem is with:",get_file_tag(name)
-#					db_close_dict("bdb:project")
-#					return
-#			# now check to see if there are duplicated filetags in the incoming list
-#			# Actually the url form widget may have already dealt with this?
-#			nt = [ get_file_tag(name) for name in v]
-#			for name in v:
-#				if nt.count(get_file_tag(name)) > 1:
-#					print "error, you can't import particles that have the same file names! The problem is with:",get_file_tag(name)
-#					db_close_dict("bdb:project")
-#					return
-#			
-#			# now check to see if there isn't already an entry in the particle directory that corresponds to this name
-#			particle_dbs = self.get_particle_db_names()
-#			for name in v:
-#				if get_file_tag(name) in particle_dbs:
-#					print "error, you can't import particles that already have entries in the particle database! The problem is with:",get_file_tag(name)
-#					db_close_dict("bdb:project")
-#					return
-			# okay if we make it here we're fine, import that particles
-			
-				
-			
-		#	db_close_dict("bdb:project")
-
 		
 
 class E2BoxerTask(ParticleWorkFlowTask):
@@ -1445,14 +1408,12 @@ class E2BoxerAutoTask(E2BoxerTask):
 		return params
 			
 	def on_form_ok(self,params): 
-		for k,v in params.items():
-			self.write_db_entry(k,v)
-			
 		if  params.has_key("filenames") and len(params["filenames"]) == 0:
 			self.run_select_files_msg()
 			return
 	
 		else:
+			self.write_db_entries(params) # will only write filenames
 			options = EmptyObject()
 			for k,v in params.items():
 				setattr(options,k,v)
@@ -1466,14 +1427,6 @@ class E2BoxerAutoTask(E2BoxerTask):
 			self.form.closeEvent(None)
 			self.form = None
 
-	def write_db_entry(self,key,value):
-		if key == "boxsize":
-			boxer_project_db = db_open_dict("bdb:e2boxer.project")
-			boxer_project_db["working_boxsize"] = value
-			db_close_dict("bdb:e2boxer.project")
-		else:
-			pass
-	
 class E2BoxerAutoTaskGeneral(E2BoxerAutoTask):
 	def __init__(self,application):
 		E2BoxerAutoTask.__init__(self,application)
@@ -1520,13 +1473,12 @@ class E2BoxerGuiTask(E2BoxerTask):
 		else:
 			params.append(ParamDef(name="blurb",vartype="text",desc_short="Interactive use of e2boxer",desc_long="",property=None,defaultunits=E2BoxerGuiTask.documentation_string,choices=None))
 			params.append(p)
-			boxer_project_db = db_open_dict("bdb:e2boxer.project")
-			params.append(ParamDef(name="boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=boxer_project_db.get("working_boxsize",dfl=128),choices=[]))
+			db = db_open_dict(self.form_db_name)
+			params.append(ParamDef(name="interface_boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=db.get("interface_boxsize",dfl=128),choices=[]))
+			db_close_dict(self.form_db_name)
 		return params
 			
 	def on_form_ok(self,params):
-		for k,v in params.items():
-			self.write_db_entry(k,v)
 		
 		if not params.has_key("filenames"): return
 		
@@ -1534,13 +1486,15 @@ class E2BoxerGuiTask(E2BoxerTask):
 			self.run_select_files_msg()
 			return
 
-		if  params.has_key("boxsize") and params["boxsize"] < 1:
+		if  params.has_key("interface_boxsize") and params["interface_boxsize"] < 1:
 			self.show_error_message(["Must specify a positive, non zero boxsize."])
 			return
 		else:
+			self.write_db_entries(params)
 			options = EmptyObject()
 			for key in params.keys():
 				setattr(options,key,params[key])
+			options.boxsize = params["interface_boxsize"]
 			options.running_mode = "gui"
 			options.method = "Swarm"
 			
@@ -1572,14 +1526,6 @@ class E2BoxerGuiTask(E2BoxerTask):
 		self.boxer_module = None
 		self.emit(QtCore.SIGNAL("gui_exit"))
 
-	def write_db_entry(self,key,value):
-		if key == "boxsize":
-			boxer_project_db = db_open_dict("bdb:e2boxer.project")
-			boxer_project_db["working_boxsize"] = value
-			db_close_dict("bdb:e2boxer.project")
-		else:
-			pass
-
 class E2BoxerGuiTaskGeneral(E2BoxerGuiTask):	
 	def __init__(self,application):
 		E2BoxerTask.__init__(self,application)
@@ -1590,9 +1536,9 @@ class E2BoxerGuiTaskGeneral(E2BoxerGuiTask):
 		params = []
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="Using e2boxer",desc_long="",property=None,defaultunits=E2BoxerGuiTask.documentation_string,choices=None))
 		params.append(ParamDef(name="filenames",vartype="url",desc_short="File names",desc_long="The names of the particle files you want to interactively box using e2boxer",property=None,defaultunits=[],choices=[]))
-		boxer_project_db = db_open_dict("bdb:e2boxer.project")
-		params.append(ParamDef(name="boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=boxer_project_db.get("working_boxsize",dfl=128),choices=[]))
-		
+		db = db_open_dict(self.form_db_name)
+		params.append(ParamDef(name="interface_boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=db.get("interface_boxsize",dfl=128),choices=[]))
+		db_close_dict()
 		return params
 	
 	
@@ -1620,13 +1566,14 @@ class E2BoxerOutputTask(E2BoxerTask):
 		'''
 		Functionality used in several places
 		'''
-		boxer_project_db = db_open_dict("bdb:e2boxer.project")
-		pbox = ParamDef(name="boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=boxer_project_db.get("output_boxsize",dfl=128),choices=[])	
-		pfo = ParamDef(name="force",vartype="boolean",desc_short="Force overwrite",desc_long="Whether or not to force overwrite files that already exist",property=None,defaultunits=False,choices=None)
-		pwc = ParamDef(name="write_coord_files",vartype="boolean",desc_short="Write box db files",desc_long="Whether or not box db files should be written",property=None,defaultunits=False,choices=None)
-		pwb = ParamDef(name="write_box_images",vartype="boolean",desc_short="Write box image files",desc_long="Whether or not box images should be written",property=None,defaultunits=True,choices=None)
-		pn =  ParamDef(name="normproc",vartype="string",desc_short="Normalize images",desc_long="How the output box images should be normalized",property=None,defaultunits="normalize.edgemean",choices=["normalize","normalize.edgemean","none"])
-		pop = ParamDef(name="outformat",vartype="string",desc_short="Output image format",desc_long="The format of the output box images",property=None,defaultunits="bdb",choices=["bdb","img","hdf"])
+		db = db_open_dict(self.form_db_name)
+		pbox = ParamDef(name="output_boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=db.get("output_boxsize",dfl=128),choices=[])	
+		pfo = ParamDef(name="force",vartype="boolean",desc_short="Force overwrite",desc_long="Whether or not to force overwrite files that already exist",property=None,defaultunits=db.get("force",dfl=False),choices=None)
+		pwc = ParamDef(name="write_coord_files",vartype="boolean",desc_short="Write box db files",desc_long="Whether or not box db files should be written",property=None,defaultunits=db.get("write_coord_files",dfl=False),choices=None)
+		pwb = ParamDef(name="write_box_images",vartype="boolean",desc_short="Write box image files",desc_long="Whether or not box images should be written",property=None,defaultunits=db.get("write_box_images",dfl=True),choices=None)
+		pn =  ParamDef(name="normproc",vartype="string",desc_short="Normalize images",desc_long="How the output box images should be normalized",property=None,defaultunits=db.get("normproc",dfl="normalize.edgemean"),choices=["normalize","normalize.edgemean","none"])
+		pop = ParamDef(name="outformat",vartype="string",desc_short="Output image format",desc_long="The format of the output box images",property=None,defaultunits=db.get("outformat",dfl="bdb"),choices=["bdb","img","hdf"])
+		db_close_dict(self.form_db_name)
 		params.append([pbox,pfo])
 		params.append([pwc,pwb])
 		params.append(pn)
@@ -1636,15 +1583,12 @@ class E2BoxerOutputTask(E2BoxerTask):
 	def check_params(self,params):
 		
 		error_message = []
-		if params["boxsize"] < 1: error_message.append("Boxsize must be greater than 0.")
+		if params["output_boxsize"] < 1: error_message.append("Boxsize must be greater than 0.")
 		if not params["write_coord_files"] and not params["write_box_images"]: error_message.append("You must choose at least one of the write_coords/write_box_images options")
 	
 		return error_message
 	
-	def on_form_ok(self,params):
-		for k,v in params.items():
-			self.write_db_entry(k,v)
-			
+	def on_form_ok(self,params):	
 		if  params.has_key("filenames") and len(params["filenames"]) == 0:
 			self.run_select_files_msg()
 			return
@@ -1655,10 +1599,12 @@ class E2BoxerOutputTask(E2BoxerTask):
 			return
 		
 		else:
+			self.write_db_entries(params)
 			options = EmptyObject()
 			for k,v in params.items():
-				setattr(options,k,v)
-				
+				setattr(options,k,v)	
+			options.boxsize = params["output_boxsize"]
+			
 			options.just_output=True # this is implicit, it has to happen
 			
 			string_args = ["normproc","outformat","boxsize"]
@@ -1669,14 +1615,6 @@ class E2BoxerOutputTask(E2BoxerTask):
 			self.emit(QtCore.SIGNAL("task_idle"))
 			self.form.closeEvent(None)
 			self.form = None
-#	
-	def write_db_entry(self,key,value):
-		if key == "boxsize":
-			boxer_project_db = db_open_dict("bdb:e2boxer.project")
-			boxer_project_db["output_boxsize"] = value
-			db_close_dict("bdb:e2boxer.project")
-		else:
-			pass
 
 class E2BoxerOutputTaskGeneral(E2BoxerOutputTask):
 	documentation_string = "Write me"
@@ -1694,7 +1632,7 @@ class E2BoxerOutputTaskGeneral(E2BoxerOutputTask):
 		self.add_general_params(params)
 	
 #		boxer_project_db = db_open_dict("bdb:e2boxer.project")
-#		params.append(ParamDef(name="boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=boxer_project_db.get("working_boxsize",dfl=128),choices=[]))
+#		params.append(ParamDef(name="boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=boxer_project_db.get("interface_boxsize",dfl=128),choices=[]))
 		return params
 	
 	def get_e2boxer_boxes_table(self,project_check=True):

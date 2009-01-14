@@ -216,11 +216,22 @@ class EMImage3DWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMatri
 	def initializeGL(self):
 		glEnable(GL_LIGHTING)
 		glEnable(GL_LIGHT0)
+		glEnable(GL_LIGHT1)
 		glEnable(GL_DEPTH_TEST)
 		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.0, 0.0, 0.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0,1.0,1.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_POSITION, [0.1,.1,1.,0.])
+		
+#		glLightfv(GL_LIGHT1, GL_AMBIENT, [0.2, 0.2, 0.0, 1.0])
+#		glLightfv(GL_LIGHT1, GL_DIFFUSE, [0.8,0.8,0.8, 1.0])
+#		glLightfv(GL_LIGHT1, GL_SPECULAR, [0.0, 0.0, 0.0, 1.0])
+#		glLightfv(GL_LIGHT1, GL_POSITION, [0,0,1,1]) # set the is self.radius when it's known
+#		glLightfv(GL_LIGHT1, GL_SPOT_DIRECTION, [0,0,-1])
+#		glLightfv(GL_LIGHT1, GL_QUADRATIC_ATTENUATION,0.0037)
+		GL_SPOT_DIRECTION,GL_SPOT_CUTOFF,GL_QUADRATIC_ATTENUATION
+		
+		
 		GL.glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
 		glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_TRUE)
 
