@@ -511,7 +511,6 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		ref_data.append(None)
 		ref_data.append(None)
 
-	again = 1
 	cs = [0.0]*2
 
 	sx_sum = 0.0
@@ -524,7 +523,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		for isav in xrange(nsav):
 			tavg = savg[isav].copy()
 			total_iter = 0
-			a0 = -1.0e22
+			again = 1
 			T = T0
 			for im in data:
 				im.set_attr_dict({'xform.align2d':tnull})
@@ -585,6 +584,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 						print_msg(msg)
 						msg = "Mirror change x =   	 %10.3f	   Pixel error 	= %10.3f\n"%(mirror_change, pixel_error)
 						print_msg(msg)
+						if mirror_change < 0.005 and pixel_error < 0.2: again = 0
 					else:
 						tavg, cs = user_func(ref_data)
 						
@@ -601,6 +601,8 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				bcast_EMData_to_all(tavg, myid, main_node)
 				total_iter += 1
 				T = max(T*F, 1.0e-8)
+				again = mpi_bcast(again, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+				if again == 0: break
 			savg[isav] = tavg.copy()
 			if myid == main_node:
 				drop_image(savg[isav], os.path.join(outdir, "isavg%05d.hdf"%(isav)))
