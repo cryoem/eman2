@@ -525,6 +525,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			total_iter = 0
 			again = 1
 			T = T0
+			
 			for im in data:
 				im.set_attr_dict({'xform.align2d':tnull})
 			if myid == main_node:
@@ -545,8 +546,6 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				mirror_change = 0
 				tt = 0
 				for im in data:
-					pka = 0.0
-					pkv = 0.0
 					alphan, sxn, syn, mirror, scale = get_params2D(im)
 					if old_ali[tt][3] == mirror:
 						this_error = abs(sin((old_ali[tt][0]-alphan)/180.0*pi/2))*(last_ring*2)+sqrt((old_ali[tt][1]-sxn)**2+(old_ali[tt][2]-syn)**2)
@@ -576,15 +575,15 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 						tavg, cs = user_func(ref_data)
 						cs[0] = float(sx_sum[0])/nima
 						cs[1] = float(sy_sum[0])/nima
-						pixel_error = float(pixel_error[0])/nima
+						pixel_error = float(pixel_error[0])/(nima-mirror_change)
 						mirror_change = float(mirror_change[0])/nima
 						from fundamentals import fshift
 						tavg = fshift(tavg, -cs[0], -cs[1])
 						msg = "Average center x =	 %10.3f	   Center y 	= %10.3f\n"%(cs[0], cs[1])
 						print_msg(msg)
-						msg = "Mirror change x =   	 %10.3f	   Pixel error 	= %10.3f\n"%(mirror_change, pixel_error)
+						msg = "Mirror change =   	 %10.3f	   Pixel error 	= %10.3f\n"%(mirror_change, pixel_error)
 						print_msg(msg)
-						if mirror_change < 0.005 and pixel_error < 0.2: again = 0
+						if mirror_change < 0.005 and pixel_error < 0.3: again = 0
 					else:
 						tavg, cs = user_func(ref_data)
 						
@@ -593,7 +592,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 						#drop_image(tavg, os.path.join(outdir, "aqf_%05d.hdf"%(ipt*1000+isav)))
 					a1 = tavg.cmp("dot", tavg, dict(negative = 0, mask = ref_data[0]))
 					select = float(select)/float(nima)
-					msg = "MERGE #%2d     Average #%2d     ITERATION #%3d     average select = %4d     criterion = %15.7e     T = %12.3e\n\n"%(ipt, isav, Iter, select, a1, T)
+					msg = "MERGE #%2d     Average #%2d     ITERATION #%4d     average select = %4d     criterion = %15.7e     T = %12.3e\n\n"%(ipt, isav, Iter, select, a1, T)
 					print_msg(msg)
 				else:
 					tavg = EMData(nx, nx, 1, True)
@@ -806,7 +805,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	sy_sum = 0.0
 	method = random_method
 	T = T0
-	knp = 1
+
 	for N_step in xrange(len(xrng)):
 		if myid == main_node:
 			msg = "\nX range = %5.2f   Y range = %5.2f   Step = %5.2f\n"%(xrng[N_step], yrng[N_step], step[N_step])
@@ -856,19 +855,14 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			av = 0.0
 			pksa = 0.0
 			for im in data:
-				pka = 0.0
-				pkv = 0.0
 				alphan, sxn, syn, mirror, scale = get_params2D(im)
 				sel = float(im.get_attr("select"))
-				peak = 1.0 #im.get_attr("peak%01d"%(np))
-				#Util.add_img(tavg, Util.mult_scalar(rot_shift2D(im, alphan, sxn, syn, mirror), peak))
+				peak = 1.0 
 				Util.add_img(tavg, rot_shift2D(im, alphan, sxn, syn, mirror))
 				pksa += peak
-				pka  += sel
-				pkv  += sel*sel
-				s2 += pkv
+				s2 += sel*sel
 				select += sel
-				av += sqrt((pkv - float(pka)**2/knp)/(knp))
+				av += sqrt(sel*sel - float(sel)**2)
 			select = mpi_reduce(select, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 			s2     = mpi_reduce(s2, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 			av     = mpi_reduce(av, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
