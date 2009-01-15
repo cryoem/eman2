@@ -608,9 +608,9 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		if myid == main_node:
 			for isav in xrange(nsav-1):
 				Util.add_img(tavg, savg[isav])
-			for im in savg:
-				im = rot_shift2D(im, randint(0, 360), randint(-2, 2), randint(-2, 2), randint(0,1))
-				im.set_attr_dict({'xform.align2d':tnull, 'active':1})
+			for isav in xrange(nsav):
+				savg[isav] = rot_shift2D(savg[isav], randint(0, 360), randint(-2, 2), randint(-2, 2), randint(0,1))
+				savg[isav].set_attr_dict({'xform.align2d':tnull, 'active':1})
 			"""
 			for inp in xrange(5):
 				sx_sum, sy_sum = ali2d_single_iter(savg, numr, wr, [0.0, 0.0], tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, False)
