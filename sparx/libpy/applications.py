@@ -592,7 +592,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 						#drop_image(tavg, os.path.join(outdir, "aqf_%05d.hdf"%(ipt*1000+isav)))
 					a1 = tavg.cmp("dot", tavg, dict(negative = 0, mask = ref_data[0]))
 					select = float(select)/float(nima)
-					msg = "MERGE #%2d     Average #%2d     ITERATION #%4d     average select = %4d     criterion = %15.7e     T = %12.3e\n\n"%(ipt, isav, Iter, select, a1, T)
+					msg = "MERGE # %2d     Average # %2d     ITERATION # %4d     average select = %6.2f     criterion = %15.7e     T = %12.3e\n\n"%(ipt, isav, Iter, select, a1, T)
 					print_msg(msg)
 				else:
 					tavg = EMData(nx, nx, 1, True)
