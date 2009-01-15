@@ -529,7 +529,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			for im in data:
 				im.set_attr_dict({'xform.align2d':tnull})
 			if myid == main_node:
-				drop_image(tavg, os.path.join(outdir, "itavg%05d.hdf"%(isav)))
+				drop_image(tavg, os.path.join(outdir, "itavg%02d_%02d.hdf"%(ipt, isav)))
 			for Iter in xrange(max_iter):
 				cs = mpi_bcast(cs, 2, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 				cs = [float(cs[0]), float(cs[1])]
@@ -583,12 +583,12 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 						print_msg(msg)
 						msg = "Mirror change =   	 %10.3f	   Pixel error 	= %10.3f\n"%(mirror_change, pixel_error)
 						print_msg(msg)
-						if mirror_change < 0.005 and pixel_error < 0.3: again = 0
+						if mirror_change < 0.004 and pixel_error < 0.2: again = 0
 					else:
 						tavg, cs = user_func(ref_data)
 						
 					if Iter == max_iter-1:
-						drop_image(tavg, os.path.join(outdir, "aqc_%05d.hdf"%(ipt*1000+isav*100+Iter)))
+						drop_image(tavg, os.path.join(outdir, "aqc%02d_%02d_%04d.hdf"%(ipt, isav, Iter)))
 						#drop_image(tavg, os.path.join(outdir, "aqf_%05d.hdf"%(ipt*1000+isav)))
 					a1 = tavg.cmp("dot", tavg, dict(negative = 0, mask = ref_data[0]))
 					select = float(select)/float(nima)
@@ -604,7 +604,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				if again == 0: break
 			savg[isav] = tavg.copy()
 			if myid == main_node:
-				drop_image(savg[isav], os.path.join(outdir, "isavg%05d.hdf"%(isav)))
+				drop_image(savg[isav], os.path.join(outdir, "isavg%02d_%02d.hdf"%(ipt, isav)))
 		if myid == main_node:
 			for isav in xrange(nsav-1):
 				Util.add_img(tavg, savg[isav])
