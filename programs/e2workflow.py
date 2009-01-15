@@ -365,6 +365,9 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		refinement = QtGui.QTreeWidgetItem(QtCore.QStringList("3D Refinement"))
 		self.launchers["3D Refinement"] = self.launch_refinement_report
 		spr_list.append(refinement)
+		resolution = QtGui.QTreeWidgetItem(QtCore.QStringList("Resolution"))
+		self.launchers["Resolution"] = self.launch_resolution_report
+		spr_list.append(resolution)
 		#spr_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Initial model")))
 		#spr_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Refinement")))
 		spr.addChildren(spr_list)
@@ -434,11 +437,28 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	
 	def display_file(self,filename):
 		self.application().setOverrideCursor(Qt.BusyCursor)
-		module = EMModuleFromFile(filename,self.application())
-		if module != None:
-			self.module().emit(QtCore.SIGNAL("launching_module"),"Browser",module)
+		
+		if len(filename) > 18 and filename[-19:] == "convergence.results":
+			
+			db = db_open_dict(filename,ro=True)
+			keys = db.keys()
+			res = get_e2resolution_results_list(keys)
+			eo = get_e2eotest_results_list(keys)
+			conv = get_convergence_results_list(keys)
+			from emplot2d import EMPlot2DModule
+			module = EMPlot2DModule(self.application())
+			for plot in [conv,eo,res]:
+				for k in plot:
+					module.set_data(k,db[k])
+
 			self.application().show_specific(module)
 			self.add_module([str(module),"Display",module])
+		else:
+			module = EMModuleFromFile(filename,self.application())
+			if module != None:
+				self.module().emit(QtCore.SIGNAL("launching_module"),"Browser",module)
+				self.application().show_specific(module)
+				self.add_module([str(module),"Display",module])
 		self.application().setOverrideCursor(Qt.ArrowCursor)
 		
 	def launch_asym_unit(self):
@@ -499,6 +519,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 			
 		print "failed to close module?" # this shouldn't happen if I have managed everything correctly
 
+	def launch_resolution_report(self): self.launch_task(ResolutionReportTask,"resolution report")
 	def launch_e2refine(self): self.launch_task(E2RefineChooseDataTask,"e2refine init")
 	def launch_refinement_report(self): self.launch_task(RefinementReportTask,"refinement report")
 	def launch_import_initial_model(self): self.launch_task(ImportInitialModels,"import initial models")

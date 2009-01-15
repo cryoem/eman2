@@ -100,6 +100,7 @@ class EMPlot2DWidget(QtOpenGL.QGLWidget,EMEventRerouter,):
 		GL.glLoadIdentity()
 		
 		self.target().resize_event(width,height)
+		
 	def closeEvent(self,event):
 		self.target().clear_gl_memory()
 		self.target().closeEvent(None)
@@ -164,6 +165,7 @@ class EMPlot2DModule(EMGUIModule):
 		self.axisparms=(None,None,"linear","linear")
 		
 		self.data={}				# List of Lists to plot 
+		self.visibility = {}  	   	# Same entries as in self.data, but entries are true or False to indicate visibility
 		self.glflags = EMOpenGLFlagsAndTools() 	# supplies power of two texturing flags
 		
 		self.tex_name = 0
@@ -196,6 +198,8 @@ class EMPlot2DModule(EMGUIModule):
 		if replace: 
 			self.data = {}
 			self.axes = {}
+			self.visibility = {}
+			
 		if isinstance(input_data,EMData):
 			data = input_data.get_data_as_vector()
 		else: data = input_data
@@ -211,9 +215,15 @@ class EMPlot2DModule(EMGUIModule):
 			x_axis = [i for i in range(len(data))]
 			rdata = [ x_axis,data ]
 			self.data[key]= rdata
+			self.visibility[key] = True
 		else:
-			if data : self.data[key]=data
-			else : del self.data[key]
+			if data : 
+				self.data[key]=data
+				self.visibility[key] = True
+			else : 
+				#del self.data[key] why del?
+				self.data.pop(key)
+				self.visibility.pop(key)
 		
 		
 		if self.inspector: self.inspector.datachange()
@@ -247,6 +257,7 @@ class EMPlot2DModule(EMGUIModule):
 		if replace: 
 			self.data = {}
 			self.axes = {}
+			self.visibility = {}
 		
 		file_type = Util.get_filename_ext(filename)
 		em_file_type = EMUtil.get_image_ext_type(file_type)
@@ -364,6 +375,7 @@ class EMPlot2DModule(EMGUIModule):
 			canvas=FigureCanvasAgg(fig)
 			
 			for i in self.axes.keys():
+				if not self.visibility[i]: continue
 				j=self.axes[i]
 				if j[0]==-1 : x=range(len(self.data[i][0]))
 				else : x=self.data[i][self.axes[i][0]]
@@ -399,7 +411,6 @@ class EMPlot2DModule(EMGUIModule):
 			if not self.glflags.npt_textures_unsupported():
 				self.__texture_plot(self.plotimg)
 			else:
-				print "rastering"
 				GL.glRasterPos(0,self.height()-1)
 				GL.glPixelZoom(1.0,-1.0)
 		#		print "paint ",self.width(),self.height(), self.width()*self.height(),len(a)
@@ -476,6 +487,12 @@ class EMPlot2DModule(EMGUIModule):
 			return (0,0)
 
 	def resize_event(self,width,height):
+		self.full_refresh()
+
+	def full_refresh(self):
+		'''
+		This function is called from resizeGL and from the inspector when somebody toggles the display of a line
+		'''
 		self.needupd=1
 		self.del_shapes(("xcross","ycross","lcross"))
 
@@ -748,6 +765,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.slidey, QtCore.SIGNAL("valueChanged(int)"), self.newCols)
 		QtCore.QObject.connect(self.slidec, QtCore.SIGNAL("valueChanged(int)"), self.newCols)
 		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("currentRowChanged(int)"),self.newSet)
+		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("itemChanged(QListWidgetItem*)"),self.list_item_changed)
 		QtCore.QObject.connect(self.color,QtCore.SIGNAL("currentIndexChanged(QString)"),self.updPlot)
 		QtCore.QObject.connect(self.symtog,QtCore.SIGNAL("clicked()"),self.updPlot)
 		QtCore.QObject.connect(self.symsel,QtCore.SIGNAL("currentIndexChanged(QString)"),self.updPlot)
@@ -810,14 +828,36 @@ class EMPlot2DInspector(QtGui.QWidget):
 		
 		self.setlist.clear()
 		
+		#flag1 = Qt.ItemFlags(Qt.ItemIsTristate)
+		flag2 = Qt.ItemFlags(Qt.ItemIsSelectable)
+		flag3 = Qt.ItemFlags(Qt.ItemIsEnabled)
+		flag4 = Qt.ItemFlags(Qt.ItemIsUserCheckable)
+		
 		keys=self.target().data.keys()
+		visible = self.target().visibility
 		keys.sort()
 		
 		for i,j in enumerate(keys) :
-			self.setlist.addItem(j)
+			a = QtGui.QListWidgetItem(j)
+			a.setFlags(flag2|flag3|flag4)
+			if visible[j]: a.setCheckState(Qt.Checked)
+			else: a.setCheckState(Qt.Unchecked)
+			
+			self.setlist.addItem(a)
 
 		if len(keys) > 0 : self.setlist.setCurrentRow(0)
 		
+	def list_item_changed(self,item):
+		checked = False
+		if item.checkState() == Qt.Checked: checked = True
+		
+		name = str(item.text())
+		if self.target().visibility[name] != checked:
+			self.target().visibility[name] = checked
+			self.target().full_refresh()
+			self.target().updateGL()
+
+
 # This is just for testing, of course
 if __name__ == '__main__':
 

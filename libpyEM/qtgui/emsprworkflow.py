@@ -3949,6 +3949,191 @@ class E2RefineChooseDataTask(ParticleWorkFlowTask):
 	def write_db_entry(self,key,value):
 		pass
 
+
+class ResolutionReportTask(ParticleWorkFlowTask):
+	documentation_string = "This form displays information related to the estimated resolution of refinement results.\nIf you double click on any of the entries in the table you will see the convergence plot and any associated resolution curves."
+	warning_string = "\n\n\nNOTE: There are no results available."
+	def __init__(self,application):
+		ParticleWorkFlowTask.__init__(self,application)
+		self.window_title = "Resolution estimation"
+	
+	def get_params(self):
+		params = []
+		
+		p,n = self.get_resolution_table()
+		
+		if n == 0:
+			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=ResolutionReportTask.documentation_string+ResolutionReportTask.warning_string,choices=None))
+		else:
+			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=ResolutionReportTask.documentation_string,choices=None))
+			params.append(p)
+		return params
+	
+	def find_first_point_5_crossing(self,xaxis,yaxis):
+		'''
+		Find the first 0.5 crossing in the FSC - interpolate and try to return an accurate estimate
+		Disregards the first five entries
+		Assumes the Nyquist frequency is correct
+		'''
+		idx = 0
+		if len(yaxis) > 5:
+			idx = 6
+		
+		soln = -1
+		while (idx < len(yaxis)-1 ):
+			if yaxis[idx] >= 0.5 and yaxis[idx+1] <= 0.5:
+				v1 = yaxis[idx]
+				v2 = yaxis[idx+1]
+				if v1 != v2:
+					d = v1-v2
+					offset = v1-0.5
+					interp = offset/d
+					soln = idx+interp
+				else: soln = idx
+				break
+			else:
+				idx += 1
+		
+		if soln == -1:
+			return ""
+		elif int(soln) == soln:
+			return "%.1f" %(1.0/xaxis(soln))
+		else:
+			# interpolated frequency
+			return "%.1f" %(1.0/(soln/len(yaxis)*xaxis[-1]))
+				
+		
+				
+	def get_resolution_table(self):
+		'''
+		Looks for bdb:r2d_??#classes_?? and the bdb:r2d_??#classes_init file, finds the most recent one, then fills in the number of particles in
+		in the class average file and also its dimensions.
+		'''
+		dirs, files = get_files_and_directories(e2getcwd())
+#		for root, dirs, files in os.walk(os.getcwd()):
+#			break
+		
+		dirs.sort()
+		for i in range(len(dirs)-1,-1,-1):
+			if len(dirs[i]) != 9:
+				dirs.pop(i)
+			elif dirs[i][:7] != "refine_":
+				dirs.pop(i)
+			else:
+				try: int(dirs[i][7:])
+				except: dirs.pop(i)
+		# allright everything left in dirs is "refine_??" where the ?? is castable to an int, so we should be safe now
+		available_dirs = []
+		total_iterations = []
+		eotest_res = []
+		e2resolution_res = []
+		for dir in dirs:
+			db_name = "bdb:"+dir+"#convergence.results"
+			if db_check_dict(db_name):
+				db = db_open_dict(db_name,ro=True)
+				keys = db.keys()
+				if len(keys) > 0:
+					available_dirs.append(dir)
+					
+					res = get_e2resolution_results_list(keys)
+					eo = get_e2eotest_results_list(keys)
+					conv = get_convergence_results_list(keys)
+					
+					total_iterations.append(len(conv))
+					
+					if len(res) > 0:
+						# get the latest one, this will be the last as guaranteed by sorted results
+						last_res = res[-1]
+						[xaxis,yaxis] = db[last_res]
+						resolution = self.find_first_point_5_crossing(xaxis,yaxis)
+						e2resolution_res.append(resolution)
+					else:
+						e2resolution_res.append("")
+						
+					if len(eo) > 0:
+						last_res = eo[-1]
+						[xaxis,yaxis] = db[last_res]
+						resolution = self.find_first_point_5_crossing(xaxis,yaxis)
+						eotest_res.append(resolution)
+					else:
+						eotest_res.append("")
+				
+				db_close_dict(db_name)
+
+		if len(available_dirs) > 0:
+			p = ParamTable(name="filenames",desc_short="Resolution evaluation",desc_long="")
+			pnames = ParamDef(name="Dirs",vartype="stringlist",desc_short="Refinement directory", desc_long="EMAN2 refinement directory", property=None,defaultunits=None,choices=available_dirs)
+			piter = ParamDef(name="Iterations",vartype="intlist",desc_short="Total iterations",desc_long="The number of 3D refinement iterations that have occured in this directory",property=None,defaultunits=None,choices=total_iterations)
+			peo = ParamDef(name="eo",vartype="stringlist",desc_short="e2eotest",desc_long="0.5 e2eotest resolution estimate",property=None,defaultunits=None,choices=eotest_res)
+			pres = ParamDef(name="res",vartype="stringlist",desc_short="e2resolution",desc_long="0.5 e2resolution resolution estimate",property=None,defaultunits=None,choices=e2resolution_res)
+			
+			p.append(pnames)
+			p.append(piter)
+			p.append(peo)
+			p.append(pres)
+			
+			setattr(p,"convert_text", resolution_display_convert)
+			setattr(p,"icon_type","2d_plot")
+			
+			return p,len(available_dirs)
+		else:
+			return None,0
+		
+def resolution_display_convert(dir):
+	'''
+	This "display_convert" function breaks the mold a little in that it returns the name of a database that has plots in it
+	'''
+	return "bdb:"+dir+"#convergence.results"
+
+
+def get_e2resolution_results_list(keys):
+		'''
+		Extract the names from the keys that match the e2resolution.py output naming convention
+		(keys is a list of keys in the convergence.results dictionary, in a refinement directory)
+		'''
+		solns = []
+		for k in keys:
+			if len(k) > 6 and k[-7:] == "res_fsc":
+				solns.append(k)
+		solns.sort()
+		return solns
+	
+def get_e2eotest_results_list(keys):
+	'''
+	Extract the names from the keys that match the e2eotest.py output naming convention
+	(keys is a list of keys in the convergence.results dictionary, in a refinement directory)
+	'''
+	solns = []
+	for k in keys:
+		if len(k) > 7 and k[0:8] == "even_odd":
+			solns.append(k)
+	solns.sort()
+	return solns
+
+def get_convergence_results_list(keys):
+	'''
+	Extract the names from the keys that match the e2refine.py convergence plot output naming convention
+	(keys is a list of keys in the convergence.results dictionary, in a refinement directory)
+	'''
+	solns = []
+	if "init_00_fsc" in keys:
+		solns.append("init_00_fsc")
+		
+	i = 0
+	while True:
+		s1 = str(i)
+		s2 = str(i+1)
+		if len(s1) == 1: s1 = "0"+s1
+		if len(s2) == 1: s2 = "0"+s2
+		k = s1+"_"+s2+"_fsc"
+		if k in keys:
+			solns.append(k)
+		else:
+			break
+
+		i += 1
+	
+	return solns
 	
 if __name__ == '__main__':
 	

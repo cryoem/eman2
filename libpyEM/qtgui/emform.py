@@ -130,7 +130,7 @@ class EMFormWidget(QtGui.QWidget):
 			if icon_type == "single_image": return self.emdata_icon
 			elif icon_type == "matrix_image": return self.emdata_matrix_icon
 			elif icon_type == "3d_image": return self.emdata_3d_icon
-			elif icon_type == "2d_plot{" : return self.plot_icon
+			elif icon_type == "2d_plot" : return self.plot_icon
 			else: return None
 			
 		return None
@@ -180,11 +180,7 @@ class EMFormWidget(QtGui.QWidget):
 					item.setFlags(flag3)
 				item.setTextAlignment(QtCore.Qt.AlignHCenter)
 				
-				
-				
 				table_widget.setItem(j, i, item)
-				
-				
 				
 			item = QtGui.QTableWidgetItem(param.desc_short)
 			if len(param.desc_short) > max_len: max_len = len(param.desc_short)

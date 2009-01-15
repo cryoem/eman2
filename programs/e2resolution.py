@@ -139,7 +139,7 @@ def main():
 	if options.path != None:
 		s = get_file_tag(args[0])
 		db = db_open_dict("bdb:"+options.path+"#convergence.results")	
-		db[s+"res_fsc"] = [x,fsc]
+		db[s+"res_fsc"] = [x,fsc] # warning, changing this naming convention will disrupt forms in the workflow (make them fail)
 		db[s+"res_datapow"] = [x,datapow]
 		db[s+"res_noisepow"] = [x,noisepow]
 		db_close_dict("bdb:"+options.path+"#convergence.results")

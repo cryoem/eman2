@@ -162,7 +162,7 @@ def main():
 		xaxis = tmp_axis
 		
 		db = db_open_dict("bdb:"+options.path+"#convergence.results")
-		db["even_odd_"+options.iteration+"_fsc"] = [xaxis,plot]
+		db["even_odd_"+options.iteration+"_fsc"] = [xaxis,plot] # warning, changing this naming convention will disrupt forms in the workflow (make them fail)
 		#db["error_even_odd_"+options.iteration+"_fsc"] = [xaxis,error]
 		db_close_dict("bdb:"+options.path+"#convergence.results")
 		
