@@ -1327,78 +1327,6 @@ def im_diff(im1, im2, mask = None):
 ### K-MEANS ##################################################################################
 
 # k-means open and prepare images
-def k_means_open_im_(stack, maskname, N_start, N_stop, N, CTF):
-	from utilities     import get_params2D, get_image
-	from fundamentals  import rot_shift2D, rot_shift3D
-	
-	if CTF:
-		from morphology		import ctf_2, ctf_1d
-		from filter		import filt_ctf, filt_table
-		from fundamentals 	import fftip
-		from utilities          import get_arb_params
-
-	im_M = [0] * N
-	im   = EMData()
-	im.read_image(stack, N_start, True)
-	nx = im.get_xsize()
-	ny = im.get_ysize()
-	nz = im.get_zsize()
-	
-	if CTF:
-		ctf	    = [[] for i in xrange(N)]
-		ctf2        = [[] for i in xrange(N)]
-		ctf_params  = im.get_attr( "ctf" )
-		if im.get_attr("ctf_applied")>0.0: ERROR('K-means cannot be performed on CTF-applied images', 'k_means', 1)
-
-	if maskname != None:
-		if isinstance(maskname, basestring):
-			mask = get_image(maskname)
-	else:
-		mask = None
-
-	DATA = im.read_images(stack, range(N_start, N_stop))
-	ct   = 0
-	for i in xrange(N_start, N_stop):
-		image = DATA[ct].copy()
-		# 3D object
-		if nz > 1:
-			try:	phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(image)
-			except:	phi, theta, psi, s3x, s3y, s3z, mirror, scale = 0, 0, 0, 0, 0, 0, 0, 0
-			image  = rot_shift3D(image, phi, theta, psi, s3x, s3y, s3z)
-			if mirror: image.process_inplace('mirror', {'axis':'x'})
-		# 2D object
-		elif ny > 1:
-			try:	alpha, sx, sy, mirror, scale = get_params2D(image)
-			except: alpha, sx, sy, mirror, scale  = 0, 0, 0, 0, 0
-			image = rot_shift2D(image, alpha, sx, sy, mirror)
-		# obtain ctf
-		if CTF:
-			ctf_params = image.get_attr( "ctf" )
-			ctf[i]  = ctf_1d(nx, ctf_params)
-			ctf2[i] = ctf_2(nx, ctf_params)
-
-		# apply mask
-		if mask != None:
-			if CTF: Util.mul_img(image, mask)
-			else: image = Util.compress_image_mask(image, mask)
-
-		# fft
-		if CTF: fftip(image)
-
-		# mem the original size
-		if i == N_start:
-			image.set_attr('or_nx', nx)
-			image.set_attr('or_ny', ny)
-			image.set_attr('or_nz', nz)
-
-		# store image
-		im_M[i] = image.copy()
-		ct += 1
-
-	if CTF: return im_M, mask, ctf, ctf2
-	else:   return im_M, mask, None, None
-
-# k-means open and prepare images
 def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, listID = None):
 	from utilities     import get_params2D, get_image
 	from fundamentals  import rot_shift2D, rot_shift3D
@@ -1697,6 +1625,34 @@ def k_means_criterion(Cls, crit_name=''):
 	# return the results
 	return Crit
 
+# K-means SA selection, modification of the function alignment.py/select_K which don't work
+# very well for k-means, error of selection, not enough smooth, ... JB 2009-01-16 12:30:43
+def select_kmeans(dJe, T):
+	from random import random
+	from math   import exp
+
+	K    = len(dJe)
+	p    = [[0.0, k] for k in xrange(K)]
+	pw   = 1.0 / T
+	sump = 0.0
+	for k in xrange(K):
+	    arg = -dJe[k] * pw
+	    if arg < -30: arg = -30
+	    if arg >  30: arg =  30
+	    p[k][0] = exp(arg)
+	    sump    += p[k][0]
+
+	for k in xrange(K): p[k][0] /= sump
+	p.sort()
+	for k in xrange(1, K): p[k][0] += p[k - 1][0]
+	rnd = random()
+	s   = 0
+	while p[s][0] < rnd: s += 1
+	s   = p[s][1]
+
+	return s
+
+
 # K-means with classical method
 def k_means_classical(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=False):
 	from utilities 		import model_blank, get_im, running_time
@@ -1889,7 +1845,7 @@ def k_means_classical(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, D
 					# normalize and select
 					mindJe = min(dJe)
 					scale  = max(dJe) - mindJe
-					for k in xrange(K): dJe[k] = (dJe[k] - mindJe) / scale
+					for k in xrange(K): dJe[k] = 1 - (dJe[k] - mindJe) / scale
 					select = select_k(dJe, T)
 
 					if select != res['pos']:
@@ -1958,7 +1914,7 @@ def k_means_classical(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, D
 			if SA:
 				if thd < 1.0e-12 and ct_pert == 0: watch_dog = maxit
 				T *= F
-				if T < 1.0e-6 and ct_pert < 5: SA = False
+				if T < 0.009 and ct_pert < 5: SA = False
 				print_msg('> iteration: %5d    criterion: %11.6e    T: %13.8f  ct disturb: %5d\n' % (ite, Je, T, ct_pert))
 				if DEBUG: print '> iteration: %5d    criterion: %11.6e    T: %13.8f  ct disturb: %5d' % (ite, Je, T, ct_pert)
 			else:
@@ -2255,13 +2211,13 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 							dJe[k] =  (ni/(ni-1))*(di/norm) - (nj/(nj+1))*(dj/norm)
 						else:
 							dJe[k] = 0
-
+					
 					# normalize and select
 					mindJe = min(dJe)
 					scale  = max(dJe) - mindJe
-					for k in xrange(K): dJe[k] = (dJe[k] - mindJe) / scale
-					select = select_k(dJe, T)
-			
+					for k in xrange(K): dJe[k] = 1 - (dJe[k] - mindJe) / scale
+					select = select_kmeans(dJe, T)
+					
 					if select != res['pos']:
 						ct_pert    += 1
 						res['pos']  = select
@@ -2361,7 +2317,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 			if SA:
 				if thd < 1e-12 and ct_pert == 0: watch_dog = maxit
 				T *= F
-				if T < 1.0e-6 and ct_pert < 5: SA = False
+				if T < 0.009: SA = False
 				print_msg('> iteration: %5d    criterion: %11.6e    T: %13.8f  ct disturb: %5d\n' % (ite, Je, T, ct_pert))
 				if DEBUG: print '> iteration: %5d    criterion: %11.6e    T: %13.8f  ct disturb: %5d' % (ite, Je, T, ct_pert)
 			else:
@@ -2741,7 +2697,7 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 					# normalize and select
 					mindJe = min(dJe)
 					scale  = max(dJe) - mindJe
-					for k in xrange(K): dJe[k] = (dJe[k] - mindJe) / scale
+					for k in xrange(K): dJe[k] = 1 - (dJe[k] - mindJe) / scale
 					select = select_k(dJe, T)
 
 					if select != res['pos']:
@@ -2850,7 +2806,7 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 			if SA:
 				if thd < 1e-12 and ct_pert == 0: change = 0
 				T *= F
-				if T < 1e-6 and ct_pert < 5: SA = False
+				if T < 0.009 and ct_pert < 5: SA = False
 				#[id] informations display
 				if myid == main_node: print_msg('> iteration: %5d    criterion: %11.6e   T: %13.8f  disturb:  %5d\n' % (ite, Je, T, ct_pert))
 			else:
@@ -3262,7 +3218,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 					# normalize and select
 					mindJe = min(dJe)
 					scale  = max(dJe) - mindJe
-					for k in xrange(K): dJe[k] = (dJe[k] - mindJe) / scale
+					for k in xrange(K): dJe[k] = 1 - (dJe[k] - mindJe) / scale
 					select = select_k(dJe, T)
 
 					if select != res['pos']:
@@ -3454,7 +3410,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 			if SA:
 				if thd < 1.0e-12 and ct_pert == 0: change = 0
 				T *= F
-				if T < 1e-6 and ct_pert < 5: SA = False
+				if T < 0.009 and ct_pert < 5: SA = False
 				#[id] informations display
 				if myid == main_node: print_msg('> iteration: %5d    criterion: %11.6e   T: %13.8f  disturb:  %5d\n' % (ite, Je, T, ct_pert))
 			else:
