@@ -472,7 +472,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	data = EMData.read_images(stack, range(image_start, image_end))
 
 	seed(5127 + myid*5341)
-	nsav = 1
+	nsav = 5
 	N_step = 0
 	tnull = Transform({"type":"2D"})
 	savg = []
@@ -608,6 +608,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		if myid == main_node:
 			for isav in xrange(nsav-1):
 				Util.add_img(tavg, savg[isav])
+			"""
 			for isav in xrange(nsav):
 				savg[isav] = rot_shift2D(savg[isav], randint(0, 360), randint(-2, 2), randint(-2, 2), randint(0,1))
 				savg[isav].set_attr_dict({'xform.align2d':tnull, 'active':1})
@@ -636,8 +637,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					i1 += 1
 			for i1 in xrange(nsav):
 				savg[i1] = tsavg[i1].copy()
-			del tsavg
-			"""
+			del tsavg			
 		for isav in xrange(nsav):
 			bcast_EMData_to_all(savg[isav], myid, main_node)
 	# write out headers and STOP, under MPI writing has to be done sequentially
