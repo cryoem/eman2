@@ -638,6 +638,8 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				savg[i1] = tsavg[i1].copy()
 			del tsavg
 			"""
+		for isav in xrange(nsav):
+			bcast_EMData_to_all(savg[isav], myid, main_node)
 	# write out headers and STOP, under MPI writing has to be done sequentially
 	mpi_barrier(MPI_COMM_WORLD)
 	#par_str = ["xform.align2d", "ID"]
