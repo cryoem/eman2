@@ -413,9 +413,17 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		init_model.addChildren(init_model_list)
 		
 		refine_list = []
-		refine_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("run e2refine")))
-		self.launchers["run e2refine"] = self.launch_e2refine
+		refine_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Run e2refine")))
+		self.launchers["Run e2refine"] = self.launch_e2refine
 		refinement.addChildren(refine_list)
+		
+		resolution_list = []
+		resolution_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Run e2eotest")))
+		self.launchers["Run e2eotest"] = self.launch_e2eotest
+		resolution_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Run e2resolution")))
+		self.launchers["Run e2resolution"] = self.launch_e2resolution
+		resolution.addChildren(resolution_list)
+		
 		
 		self.tree_widget.setHeaderLabel("Choose a task")
 		
@@ -519,6 +527,8 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 			
 		print "failed to close module?" # this shouldn't happen if I have managed everything correctly
 
+	def launch_e2resolution(self): self.launch_task(E2ResolutionTask,"e2resolution form")
+	def launch_e2eotest(self): self.launch_task(E2EotestTask,"e2eotest form")
 	def launch_resolution_report(self): self.launch_task(ResolutionReportTask,"resolution report")
 	def launch_e2refine(self): self.launch_task(E2RefineChooseDataTask,"e2refine init")
 	def launch_refinement_report(self): self.launch_task(RefinementReportTask,"refinement report")

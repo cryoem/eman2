@@ -99,6 +99,7 @@ class EMFormWidget(QtGui.QWidget):
 		self.auto_incorporate["stringlist"] = self.__incorporate_stringlist
 		self.auto_incorporate["intlist"] = self.__incorporate_intlist
 		self.auto_incorporate["floatlist"] = self.__incorporate_floatlist
+		self.auto_incorporate["dict"] = self.__incorporate_dict
 		self.auto_incorporate["paramtable"] = self.__incorporate_paramtable
 		
 		self.vbl = QtGui.QVBoxLayout()
@@ -213,30 +214,31 @@ class EMFormWidget(QtGui.QWidget):
 			item.setSelected(True)
 		self.output_writers.append(ParamTableWriter(paramtable.name,table_widget,type_of))
 		
-	def __incorporate_floatlist(self,param,layout):
-		hbl=QtGui.QHBoxLayout()
-		hbl.setMargin(0)
-		hbl.setSpacing(2)
-		
-		list_widget = QtGui.QListWidget(None)
-		
-		list_widget.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
-		list_widget.setMouseTracking(True)	
-	
-		for choice in param.choices:
-			a = QtGui.QListWidgetItem(str(choice),list_widget)
-			if choice in param.defaultunits:
-				list_widget.setItemSelected(a,True)
-			
-		hbl.addWidget(list_widget)
-		groupbox = QtGui.QGroupBox(param.desc_short)
-		groupbox.setToolTip(param.desc_long)
-		groupbox.setLayout(hbl)
-		
-		layout.addWidget(groupbox,0)
-
-		self.output_writers.append(FloatListParamWriter(param.name,list_widget))
-	
+# this is commented out because it was obviously redundant, I found out a few months after changes - leaving it for a little while to make sure there isn't something necessary about it	
+#	def __incorporate_floatlist(self,param,layout):
+#		hbl=QtGui.QHBoxLayout()
+#		hbl.setMargin(0)
+#		hbl.setSpacing(2)
+#		
+#		list_widget = QtGui.QListWidget(None)
+#		
+#		list_widget.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
+#		list_widget.setMouseTracking(True)	
+#	
+#		for choice in param.choices:
+#			a = QtGui.QListWidgetItem(str(choice),list_widget)
+#			if choice in param.defaultunits:
+#				list_widget.setItemSelected(a,True)
+#			
+#		hbl.addWidget(list_widget)
+#		groupbox = QtGui.QGroupBox(param.desc_short)
+#		groupbox.setToolTip(param.desc_long)
+#		groupbox.setLayout(hbl)
+#		
+#		layout.addWidget(groupbox,0)
+#
+#		self.output_writers.append(FloatListParamWriter(param.name,list_widget))
+#	
 	def __incorporate_stringlist(self,param,layout):
 		return self.__incorporate_list(param,layout,str)
 	
@@ -389,6 +391,46 @@ class EMFormWidget(QtGui.QWidget):
 		
 		self.event_handlers.append(UrlEventHandler(self,text_edit,browse_button,clear_button,self.parent().application(),param.desc_short))
 		self.output_writers.append(UrlParamWriter(param.name,text_edit))
+
+	def __incorporate_dict(self,param,layout):
+		'''
+		A dictionary is turned into two combo boxes - An event handler recognises when the first combo value changes (the dictionary keys), and if so
+		changes the entries in the second combo to values in the dictionary corresponding to the keys
+		'''
+		# hbl - tht
+		hbl=QtGui.QHBoxLayout()
+		hbl.setMargin(0)
+		hbl.setSpacing(2)
+		
+		keys = param.choices.keys()
+		keys.sort() # yes this is somewhat restrictive but it was my only way around something
+		label = QtGui.QLabel(param.desc_short+":",self)
+		label.setToolTip(param.desc_long)
+		hbl.addWidget(label)
+		
+		combo = QtGui.QComboBox(self)
+		idx_default = 0
+		for i,k in enumerate(keys):
+			combo.addItem(str(k))
+			
+			if str(k) == str(param.defaultunits):
+				idx_default = i
+				
+		combo.setCurrentIndex(idx_default)
+		combo_default = keys[idx_default]
+		hbl.addWidget(combo)
+		
+		
+		combo2 = QtGui.QComboBox(self)
+		for v in param.choices[combo_default]:
+			combo2.addItem(str(v))
+			
+		hbl.addWidget(combo2)
+		layout.addLayout(hbl)
+		
+		self.output_writers.append(DictParamWriter(param,combo,combo2))
+		self.event_handlers.append(DictEventHandler(param.choices,combo,combo2))
+		
 
 	def __incorporate_choice(self,param,layout):
 		
@@ -617,6 +659,41 @@ class UrlParamWriter:
 			strings.pop(i)
 		dict[self.param_name] = strings
 
+class DictParamWriter:
+	def __init__(self,param,combo1,combo2):
+		self.param = param
+		self.combo1 = combo1
+		self.combo2 = combo2
+		
+	def write_data(self,dict):
+		'''
+		Here I do my best to preserve the type - the combo converted the keys and values into strings. Now I try to convert them back
+		Also there are two keys entered into the dictionary, these keys are extracted based on the param.name parameter, which is split - if the returning list
+		has more than 1 entry than the first and the last are the keys, respectively. Else if the list has only one entry, it becomes the first key, and the string "_selection" is appended
+		to this to make the second key
+		
+		'''
+		return_keys = self.param.name.split()
+		if len(return_keys) == 0: raise # there is no generic mechanism - in addition, what if there is more than one dictionary in the form?
+		elif len(return_keys) == 1:
+			key1 = return_keys[0]
+			key2 = key1+"_selection"
+		else:
+			key1 = return_keys[0]
+			key2 = return_keys[-1]
+	
+		# get value1
+		idx1 = self.combo1.currentIndex()
+		keys = self.param.choices.keys()
+		keys.sort() # because it was sorted above 
+		value1 = keys[idx1] # this preserves the type - overkill, well, foolproof, yes a bit more so
+		
+		# get value2
+		idx2 = self.combo2.currentIndex()
+		value2 = self.param.choices[value1][idx2] # type preserving again
+		
+		dict[key1] = value1
+		dict[key2] = value2
 		
 class ChoiceParamWriter:
 	def __init__(self,param_name,list_radio_buttons,correct_type):
@@ -692,6 +769,32 @@ class UrlEventHandler:
 		#self.target().update_texture()# in the desktop the texture would have to be updated
 		self.text_edit.clear()
 		
+class DictEventHandler:
+	'''
+	Dictionaries are presented as two combo boxes - when the first combo box changes the values in the second box are updated (according to what is in the dictionary)
+	'''
+	def __init__(self,dict,combo1,combo2):
+		self.dict = dict
+		self.combo1 = combo1
+		self.combo2 = combo2
+		
+		QtCore.QObject.connect(self.combo1, QtCore.SIGNAL("currentIndexChanged(int)"),self.combo1_index_changed)
+	
+
+	def combo1_index_changed(self,i):
+		
+		keys = self.dict.keys()
+		keys.sort() # because the keys are sorted in the display
+		key = keys[i]
+		values = self.dict[key]
+		
+		self.combo2.clear()
+		for v in values:
+			self.combo2.addItem(str(v))
+			
+	
+
+		
 class EMTableFormModule(EMQtWidgetModule):
 	def __init__(self,params,application):
 		self.application = weakref.ref(application)
@@ -751,12 +854,14 @@ def get_example_form_params():
 	pf = ParamDef(name="Float 1 to 10",vartype="float",desc_short="float",desc_long="Choose from a list of floats",property=None,defaultunits=2.1,choices=[1.1,2.1,3.1,4.1,5.1,6.1,7.1,8.1,9.1,10.1])
 	params.append([pi,pf])
 	params.append(ParamDef(name="file_names",vartype="url",desc_short="url",desc_long="This is an editable list of file names with convenient browse and clear buttons",property=None,defaultunits=["tmp.txt","other.mrc"],choices=[]))
-	params.append(ParamDef(name="comparitor",vartype="choice",desc_short="choice",desc_long="This is a string choice",property=None,defaultunits="frc",choices=["frc","phase","sqeuclidean"]))
+	params.append(ParamDef(name="comparator",vartype="choice",desc_short="choice",desc_long="This is a string choice",property=None,defaultunits="frc",choices=["frc","phase","sqeuclidean"]))
 	params.append(ParamDef(name="lucky number",vartype="choice",desc_short="choice",desc_long="This is to demonstrate that the type of choice is preserved. When you click ok the value in the return dictionary corresponding to this form entry will be an integer",property=None,defaultunits=3,choices=[1,2,3,98]))
 	
 	params.append(ParamDef(name="song",vartype="text",desc_short="text",desc_long="A potentially very long description",property=None,defaultunits="Jack and Jill went up the hill\nTo fetch a pail of water.\nJack fell down and broke his crown,\nAnd Jill came tumbling after.",choices=None))
 	
 	params.append(ParamDef(name="Selected Files",vartype="stringlist",desc_short="stringlist",desc_long="Choose from a list of strings",property=None,defaultunits=["C.mrc","E.mrc"],choices=[chr(i)+".mrc" for i in range(65,91)]))
+	
+	params.append(ParamDef(name="Combo1 and combo2", vartype="dict",desc_short="dict",desc_long="Choose from the combo on the left and the combo box on the right will be updated. The 'and' in the the name differentiates the key in the return dictionary", property=None, defaultunits="reconstructors", choices={"reconstructors":["a","b","c"],"processors":["1","2","3"]} ))
 	
 	pil = ParamDef(name="Int 1 to 10 from a list",vartype="intlist",desc_short="intlist",desc_long="Choose from a list of ints",property=None,defaultunits=[5],choices=[1,2,3,4,5,6,7,8,9,10])
 	pfl = ParamDef(name="Float 1 to 10 from a list",vartype="floatlist",desc_short="floatlist",desc_long="Choose from a list of floats",property=None,defaultunits=[2.1],choices=[1.1,2.1,3.1,4.1,5.1,6.1,7.1,8.1,9.1,10.11111111111111111111111111111])

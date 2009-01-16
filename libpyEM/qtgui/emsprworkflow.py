@@ -304,17 +304,18 @@ class WorkFlowTask(QtCore.QObject):
 		msg.exec_()
 		
 	def get_latest_r2d_classes(self):
-		dirs, files = get_files_and_directories(e2getcwd())
-		
-		dirs.sort()
-		for i in range(len(dirs)-1,-1,-1):
-			if len(dirs[i]) != 6:
-				dirs.pop(i)
-			elif dirs[i][:4] != "r2d_":
-				dirs.pop(i)
-			else:
-				try: int(dirs[i][4:])
-				except: dirs.pop(i)
+		dirs = get_numbered_directories("r2d_")
+#		dirs, files = get_files_and_directories(e2getcwd())
+#		
+#		dirs.sort()
+#		for i in range(len(dirs)-1,-1,-1):
+#			if len(dirs[i]) != 6:
+#				dirs.pop(i)
+#			elif dirs[i][:4] != "r2d_":
+#				dirs.pop(i)
+#			else:
+#				try: int(dirs[i][4:])
+#				except: dirs.pop(i)
 		
 		# allright everything left in dirs is "r2d_??" where the ?? is castable to an int, so we should be safe now
 		class_files = []
@@ -3070,19 +3071,20 @@ class RefinementReportTask(ParticleWorkFlowTask):
 		Looks for bdb:r2d_??#classes_?? and the bdb:r2d_??#classes_init file, finds the most recent one, then fills in the number of particles in
 		in the class average file and also its dimensions.
 		'''
-		dirs, files = get_files_and_directories(e2getcwd())
-#		for root, dirs, files in os.walk(os.getcwd()):
-#			break
-		
-		dirs.sort()
-		for i in range(len(dirs)-1,-1,-1):
-			if len(dirs[i]) != 9:
-				dirs.pop(i)
-			elif dirs[i][:7] != "refine_":
-				dirs.pop(i)
-			else:
-				try: int(dirs[i][7:])
-				except: dirs.pop(i)
+		dirs = get_numbered_directories("refine_")
+#		dirs, files = get_files_and_directories(e2getcwd())
+##		for root, dirs, files in os.walk(os.getcwd()):
+##			break
+#		
+#		dirs.sort()
+#		for i in range(len(dirs)-1,-1,-1):
+#			if len(dirs[i]) != 9:
+#				dirs.pop(i)
+#			elif dirs[i][:7] != "refine_":
+#				dirs.pop(i)
+#			else:
+#				try: int(dirs[i][7:])
+#				except: dirs.pop(i)
 		# allright everything left in dirs is "refine_??" where the ?? is castable to an int, so we should be safe now
 		threed_files = []
 		threed_dims = []
@@ -3202,8 +3204,7 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 	def on_form_ok(self,params):
 		
 		options = EmptyObject()
-		error_message = self.check_main_page(params,options)
-		
+#		error_message = self.check_main_page(params,options)
 		
 		for checker in [self.check_main_page,self.check_project3d_page,self.check_simmx_page,self.check_classaverage_page,self.check_make3d_page]:
 			error_message = checker(params,options)
@@ -3227,24 +3228,26 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 		
 		temp_file_name = "e2refine_stdout.txt"
 		
-		self.write_db_parms(options,string_args,bool_args)
+		# Steve is rethinking how we remember programs arguments
+		#self.write_db_parms(options,string_args,bool_args)
 		
 		self.spawn_single_task("e2refine.py",options,string_args,bool_args,additional_args,temp_file_name)
 		self.emit(QtCore.SIGNAL("task_idle"))
 		self.form.closeEvent(None)
 		self.form = None
-	
-	def write_db_parms(self,options,string_args,bool_args):
-		db = db_open_dict("bdb:e2refine.args")
-		
-		for string in string_args:
-			db[string] = getattr(options,string)
-			
-		for string in bool_args:
-			db[string] = getattr(options,string)
-			
-		db_close_dict("bdb:e2refine.args")
-		
+
+# This functionality is being redesigned and pends a discussion with Steve ludtke with respect to the history mechanism
+#	def write_db_parms(self,options,string_args,bool_args):
+#		db = db_open_dict("bdb:e2refine.args")
+#		
+#		for string in string_args:
+#			db[string] = getattr(options,string)
+#			
+#		for string in bool_args:
+#			db[string] = getattr(options,string)
+#			
+#		db_close_dict("bdb:e2refine.args")
+#		
 	
 	def display_errors(self,error_message):
 		'''
@@ -3682,19 +3685,20 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 		db_close_dict(self.form_db_name)
 		return ["Simmx",params]
 	
-	def add_classaverage_args(self,options,string_args,bool_args,additional_args):
+	def add_classaverage_args(self,options,string_args,bool_args,additional_args,include_sep=True):
 		
 		optionals = ["classcmp","classalign","classaligncmp","classralign","classraligncmp"]
 		for opt in optionals:
 			if getattr(options,opt) != None: string_args.append(opt)
 			
-		string_args.extend(["sep","classiter","classkeep","classnormproc"])
+		string_args.extend(["classiter","classkeep","classnormproc"])
+		if include_sep: string_args.extend("sep")
 		bool_args.append("classkeepsig")
 	
 	def check_classaverage_page(self,params,options):
 		error_message = []
 		
-		if params["sep"] <= 0:
+		if params.has_key("sep") and params["sep"] <= 0: # sometimes this key is absent (from the e2eotest form)
 			error_message.append("The separation argument in the Class average page must be atleast 1")
 		
 		if params["classiter"] < 0:
@@ -3708,7 +3712,7 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 		
 		if len(error_message) > 0: return error_message # calling program should act and discontinue
 		
-		options.sep = params["sep"]
+		if params.has_key("sep"): options.sep = params["sep"] # sometimes this key is absent (from the e2eotest form)
 		options.classkeep = params["classkeep"]
 		options.classkeepsig = params["classkeepsig"]
 		options.classnormproc = params["classnormproc"]
@@ -3717,7 +3721,7 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 		return error_message
 	
 	
-	def get_classaverage_page(self):
+	def get_classaverage_page(self,include_sep=True):
 		params = []
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2RefineParticlesTask.class_documentation,choices=None))
 
@@ -3737,8 +3741,12 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 		
 		db_close_dict(self.form_db_name)
 		
-		params.append([piter,psep])
-		params.append([pkeep,pkeepsig])
+		if include_sep: 
+			params.append([piter,psep])
+			params.append([pkeep,pkeepsig])
+		else: # this happens in the eotest
+			# I made the next row longer because it seemed like there was room
+			params.append([piter,pkeep,pkeepsig])
 		params.append([paverager,pnormproc])
 		params.extend(self.get_cls_simmx_params(parameter_prefix="class"))
 
@@ -3995,7 +4003,7 @@ class ResolutionReportTask(ParticleWorkFlowTask):
 				idx += 1
 		
 		if soln == -1:
-			return ""
+			return "invalid"
 		elif int(soln) == soln:
 			return "%.1f" %(1.0/xaxis(soln))
 		else:
@@ -4009,20 +4017,8 @@ class ResolutionReportTask(ParticleWorkFlowTask):
 		Looks for bdb:r2d_??#classes_?? and the bdb:r2d_??#classes_init file, finds the most recent one, then fills in the number of particles in
 		in the class average file and also its dimensions.
 		'''
-		dirs, files = get_files_and_directories(e2getcwd())
-#		for root, dirs, files in os.walk(os.getcwd()):
-#			break
+		dirs = get_numbered_directories("refine_")
 		
-		dirs.sort()
-		for i in range(len(dirs)-1,-1,-1):
-			if len(dirs[i]) != 9:
-				dirs.pop(i)
-			elif dirs[i][:7] != "refine_":
-				dirs.pop(i)
-			else:
-				try: int(dirs[i][7:])
-				except: dirs.pop(i)
-		# allright everything left in dirs is "refine_??" where the ?? is castable to an int, so we should be safe now
 		available_dirs = []
 		total_iterations = []
 		eotest_res = []
@@ -4038,7 +4034,6 @@ class ResolutionReportTask(ParticleWorkFlowTask):
 					res = get_e2resolution_results_list(keys)
 					eo = get_e2eotest_results_list(keys)
 					conv = get_convergence_results_list(keys)
-					
 					total_iterations.append(len(conv))
 					
 					if len(res) > 0:
@@ -4081,7 +4076,7 @@ class ResolutionReportTask(ParticleWorkFlowTask):
 		
 def resolution_display_convert(dir):
 	'''
-	This "display_convert" function breaks the mold a little in that it returns the name of a database that has plots in it
+	This "display_convert" function breaks the mold a little in that it returns the name of a database that has plots in it. It's handled in e2workflow.py
 	'''
 	return "bdb:"+dir+"#convergence.results"
 
@@ -4134,6 +4129,228 @@ def get_convergence_results_list(keys):
 		i += 1
 	
 	return solns
+
+class E2EotestTask(E2RefineParticlesTask):
+	'''
+	Run e2eotest from the workflow setting
+	Inherits from E2RefineParticlesTask because it uses some forms that are/almost identical
+	'''
+	 
+	general_documentation = "These are parameters required to run an even-odd test in EMAN2"
+	
+	def __init__(self,application):
+	 	E2RefineParticlesTask.__init__(self,application)
+	 	self.window_title = "e2eotest parameters"
+	 	self.form_db_name = "bdb:emform.e2eotest"
+	 	
+#	def run_form(self):
+#		self.form = EMTableFormModule(self.get_params(),self.application())
+#		self.form.qt_widget.resize(*self.preferred_size)
+#		self.form.setWindowTitle(self.window_title)
+#		self.application().show_specific(self.form)
+#		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
+#		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
+#		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_close"),self.on_form_close)
+#		QtCore.QObject.connect(self.form,QtCore.SIGNAL("display_file"),self.on_display_file)
+		
+	def get_params(self):
+	 	params = []
+		
+		params.append(self.get_main_params())
+		params.append(self.get_classaverage_page(include_sep=False))
+		params.append(self.get_make3d_page())
+		
+		return params
+	
+	def get_main_params(self):
+		'''
+		General/broad refine params
+		'''
+		# have to get the directories 
+		dirs = get_numbered_directories("refine_")
+		dirs.sort()
+		
+		nec_files = [ "classes_", "classify_","projections_"]
+		
+		dir_and_iter = {}
+		for dir in dirs:
+			fail = False
+			available_iters = []
+			for i in range(0,10):
+				for j in range(0,10):
+					end = str(i) + str(j)
+					for file in nec_files:
+						db_first_part = "bdb:"+dir+"#" + file
+						db_name = db_first_part + end
+						if not db_check_dict(db_name):
+							fail = True
+							break
+					if not fail:
+						available_iters.append(end)
+					else:
+						break
+				if fail: break
+			
+			# might be some empyt ones so just forget those
+			if len(available_iters) > 0: 
+				available_iters.reverse()
+				dir_and_iter[dir] = available_iters
+	
+		params = []
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2EotestTask.general_documentation,choices=None))
+		
+		# I could check to see if the database exists but it seems unnecessary
+		# In the event that the database doesn't exist it is created and 
+		# a new entry is created on disk. The only inconvenient aspect of this comes
+		# if the user hits cancel - then there is a file on disk even though
+		# the user never agreed to anything
+		db = db_open_dict(self.form_db_name) # see eman wiki for a list of what args are kept in this db
+		
+		params.append(ParamDef(name="path and iteration", vartype="dict",desc_short="Directory and iteration",desc_long="Select the directory containing the refinement and the iteration you wish to use as the input", property=None, defaultunits="",choices=dir_and_iter  ))
+	
+		
+		plowmem = ParamDef(name="lowmem",vartype="boolean",desc_short="Low mem",desc_long="Causes various programs to restrict memory usage but results in increased CPU time.",property=None,defaultunits=db.get("lowmem",dfl=False),choices=None)
+		pusefilt = ParamDef(name="usefilt",vartype="boolean",desc_short="Usefilt",desc_long="Will use the 'usefilt' data for class alignment if it exists in the refinement directory",property=None,defaultunits=db.get("usefilt",dfl=False),choices=None)
+		
+		syms = ["icos","oct","tet","d","c","h"]
+		
+		psym =  ParamDef(name="symname",vartype="string",desc_short="Symmetry",desc_long="Symmetry to be imposed during refinement",property=None,defaultunits=db.get("symname",dfl="c"),choices=syms)
+		psymnum = ParamDef(name="symnumber",vartype="string",desc_short="Symmetry number",desc_long="In C,D and H symmetry, this is the symmetry number",property=None,defaultunits=db.get("symnumber",dfl="1"),choices=None)
+		
+
+		params.append([plowmem,pusefilt])
+		params.append([psym,psymnum])
+		
+		
+		db_close_dict(self.form_db_name)
+		
+		return ["General",params]
+	
+	
+	def check_main_page(self,params,options):
+		error_message = []
+		
+		options.path = params["path"]
+		options.iteration = params["iteration"]
+		options.lowmem = params["lowmem"]
+		
+		if params["usefilt"] == True:
+			file = "bdb:"+params["path"]+"#usefilt" # note that the naming convention is assumed
+			if not file_exists(file):
+				error_message.append("You have checked usefilt but there is not usefilt file in the chosen refinement directory")
+			else:
+				options.usefilt = file
+		
+		error_message.extend(self.check_sym(params,options))
+		
+		return error_message
+		
+	def add_general_args(self,options,string_args,bool_args,additional_args):
+		
+		
+		if hasattr(options,"usefilt"): string_args.append("usefilt")
+		string_args.extend(["path","iteration","sym"])
+		bool_args.append("lowmem")
+		
+		return None # returning None is good
+		
+	
+	def on_form_ok(self,params):
+
+		options = EmptyObject()
+		
+		for checker in [self.check_main_page,self.check_classaverage_page,self.check_make3d_page]:
+			error_message = checker(params,options)
+			if len(error_message) > 0 :
+				self.display_errors(error_message)
+				return
+			
+
+		self.write_db_entries(params)
+#		# w'oh if we make it here a lot of checking has occured. Now get the args in order to spawn_single_task
+		string_args = []
+		bool_args = []
+		
+		additional_args = ["--force"]
+#		
+		for get_args in [self.add_general_args,self.add_classaverage_args,self.add_make3d_args]:
+			if get_args == self.add_classaverage_args:
+				error = get_args(options,string_args,bool_args,additional_args,include_sep=False)
+			else:
+				error = get_args(options,string_args,bool_args,additional_args)
+		
+			if error != None: # not too fast, something still could have gone wrong
+				self.display_errors([error])
+				return
+			
+		temp_file_name = "e2eotest_stdout.txt"
+#		
+#		self.write_db_parms(options,string_args,bool_args)
+#		
+	   	options.filenames = [] # spawn single task expects a filenames attribute
+		self.spawn_single_task("e2eotest.py",options,string_args,bool_args,additional_args,temp_file_name)
+		self.emit(QtCore.SIGNAL("task_idle"))
+		self.form.closeEvent(None)
+		self.form = None
+#	
+class E2ResolutionTask(WorkFlowTask):
+	'''
+	Run e2eotest from the workflow setting
+	Inherits from E2RefineParticlesTask because it uses some forms that are/almost identical
+	'''
+	 
+	general_documentation = "These are parameters required to run an e2resolutions.\n\n THIS DOES NOT WORK YET"
+	
+	def __init__(self,application):
+	 	WorkFlowTask.__init__(self,application)
+	 	self.window_title = "e2resolution parameters"
+
+		
+	def get_params(self):
+		'''
+		General/broad refine params
+		'''
+		# have to get the directories 
+		dirs = get_numbered_directories("refine_")
+		dirs.sort()
+		
+		nec_files = [ "classes_", "classify_","projections_"]
+		
+		dir_and_iter = {}
+		for dir in dirs:
+			fail = False
+			available_iters = []
+			for i in range(0,10):
+				for j in range(0,10):
+					end = str(i) + str(j)
+					for file in nec_files:
+						db_first_part = "bdb:"+dir+"#" + file
+						db_name = db_first_part + end
+						if not db_check_dict(db_name):
+							fail = True
+							break
+					if not fail:
+						available_iters.append(end)
+					else:
+						break
+				if fail: break
+			
+			# might be some empyt ones so just forget those
+			if len(available_iters) > 0: 
+				available_iters.reverse()
+				dir_and_iter[dir] = available_iters
+	
+		params = []
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2ResolutionTask.general_documentation,choices=None))
+		
+	
+		params.append(ParamDef(name="path and iteration", vartype="dict",desc_short="Directory and iteration",desc_long="Select the directory containing the refinement and the iteration you wish to use as the input", property=None, defaultunits="",choices=dir_and_iter  ))
+	
+		
+		return params
+	
+	
+
 	
 if __name__ == '__main__':
 	

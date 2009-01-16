@@ -237,6 +237,31 @@ This function will get an application default by first checking the local direct
 	
 	return None
 
+
+def e2getinstalldir() :
+	"""platform independent path with '/'"""
+	if(sys.platform != 'win32'):
+		url=os.getenv("EMAN2DIR")
+	else:
+		url=os.getenv("EMAN2DIR")
+		url=url.replace("\\","/")
+	return url
+
+def e2gethome() :
+	"""platform independent path with '/'"""
+	if(sys.platform != 'win32'):
+		url=os.getenv("HOME")
+	else:
+		url=os.getenv("HOMEPATH")
+		url=url.replace("\\","/")
+	return url
+
+def e2getcwd() :
+	"""platform independent path with '/'"""
+	url=os.getcwd()
+	url=url.replace("\\","/")
+	return url
+
 def numbered_path(prefix,makenew):
 	"""Finds the next numbered path to use for a given prefix. ie- prefix='refine' if refine_01/EMAN2DB 
 exists will produce refine_02 if makenew is set (and create refine_02) and refine_01 if not"""
@@ -248,6 +273,27 @@ exists will produce refine_02 if makenew is set (and create refine_02) and refin
 		except: pass
 		return path
 	return "%s_%02d"%(prefix,n-1)
+
+def get_numbered_directories(prefix,wd=e2getcwd()):
+	'''
+	Gets the numbered directories starting with prefix in the given working directory (wd)
+	A prefix example would be "refine_" or "r2d_" etc. Used originally form within the workflow context
+	'''
+	dirs, files = get_files_and_directories(wd)
+	dirs.sort()
+	l = len(prefix)+2 # plus to because we only check for two numbered directories
+	for i in range(len(dirs)-1,-1,-1):
+		if len(dirs[i]) != 9:
+			dirs.pop(i)
+		elif dirs[i][:7] != prefix:
+			dirs.pop(i)
+		else:
+			try: int(dirs[i][7:])
+			except: dirs.pop(i)
+	
+	# allright everything left in dirs is "refine_??" where the ?? is castable to an int, so we should be safe now
+	
+	return dirs
 
 def get_image_directory():
 	pf = get_platform()
@@ -954,29 +1000,6 @@ def error_exit(s) :
 	print s
 	exit(1)
 
-def e2getinstalldir() :
-	"""platform independent path with '/'"""
-	if(sys.platform != 'win32'):
-		url=os.getenv("EMAN2DIR")
-	else:
-		url=os.getenv("EMAN2DIR")
-		url=url.replace("\\","/")
-	return url
-
-def e2gethome() :
-	"""platform independent path with '/'"""
-	if(sys.platform != 'win32'):
-		url=os.getenv("HOME")
-	else:
-		url=os.getenv("HOMEPATH")
-		url=url.replace("\\","/")
-	return url
-
-def e2getcwd() :
-	"""platform independent path with '/'"""
-	url=os.getcwd()
-	url=url.replace("\\","/")
-	return url
 
 def write_test_refine_data(num_im=1000):
 	threed = test_image_3d()

@@ -56,8 +56,8 @@ def main():
 	
 	parser.add_option("--path", default=None, type="string",help="The name the e2refine directory that contains the reconstruction data.")
 	parser.add_option("--iteration",default=None,type="string",help="Advanced. Can be used to perform the eotest using data from specific rounds of iterative refinement. In unspecified that most recently generated class data are used.")
-	parser.add_option("--usefilt", dest="usefilt", default=None, help="Specify a particle data file that has been low pass or Wiener filtered. Has a one to one correspondence with your particle data. If specified will be used in projection matching routines, and elsewhere.")
-	parser.add_option("--sym", dest = "sym", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos",default=None)
+	parser.add_option("--usefilt", dest="usefilt", type="string",default=None, help="Specify a particle data file that has been low pass or Wiener filtered. Has a one to one correspondence with your particle data. If specified will be used for class alignment (but not averaging).")
+	parser.add_option("--sym", dest = "sym", type="string", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos",default=None)
 	parser.add_option("--verbose","-v", dest="verbose", default=False, action="store_true",help="Toggle verbose mode - prints extra infromation to the command line while executing")
 	parser.add_option("--lowmem", default=False, action="store_true",help="Make limited use of memory when possible - useful on lower end machines")
 	parser.add_option("--force","-f", default=False, action="store_true",help="Force overwrite previously existing files")
@@ -150,7 +150,6 @@ def main():
 		else:
 			apix = 1
 			
-		print "apix is",apix
 		apix = 1/apix
 		tmp_axis = [x*apix for x in xaxis]
 #		# convert the axis so it's readable
@@ -162,6 +161,7 @@ def main():
 		xaxis = tmp_axis
 		
 		db = db_open_dict("bdb:"+options.path+"#convergence.results")
+		print "bdb:"+options.path+"#convergence.results"
 		db["even_odd_"+options.iteration+"_fsc"] = [xaxis,plot] # warning, changing this naming convention will disrupt forms in the workflow (make them fail)
 		#db["error_even_odd_"+options.iteration+"_fsc"] = [xaxis,error]
 		db_close_dict("bdb:"+options.path+"#convergence.results")
@@ -289,79 +289,6 @@ def get_last_class_average_number(options):
 						
 		return most_recent	
 					
-	
-#	
-#def get_make3d_cmd(options,check=False,nofilecheck=False):
-#	e2make3dcmd = "e2make3d.py %s --sym=%s --iter=%d -f" %(options.cafile,options.sym,options.m3diter)
-#	
-#	e2make3dcmd += " --recon=%s --out=%s" %(options.recon,options.model)
-#
-#	if str(options.m3dpreprocess) != "None":
-#		e2make3dcmd += " --preprocess=%s" %options.m3dpreprocess
-#
-#	
-#	if (options.m3dkeep):
-#		e2make3dcmd += " --keep=%f" %options.m3dkeep
-#		if (options.m3dkeepsig): e2make3dcmd += " --keepsig"
-#	
-#	if (options.lowmem): e2make3dcmd += " --lowmem"
-#
-#	if (options.pad != 0):
-#		e2make3dcmd += " --pad=%d" %options.pad
-#		
-#	if (options.verbose):
-#		e2make3dcmd += " -v"
-#	
-#	if ( check ):
-#		e2make3dcmd += " --check"	
-#			
-#	if ( nofilecheck ):
-#		e2make3dcmd += " --nofilecheck"
-#	
-#	return e2make3dcmd
-#
-#def check_make3d_args(options, nofilecheck=False):
-#	
-#	cmd = get_make3d_cmd(options,True,nofilecheck)
-#	print ""
-#	print "#### Test executing make3d command: %s" %cmd
-#	return ( os.system(cmd) != 0)
-#
-#def get_classaverage_cmd(options,check=False,nofilecheck=False):
-#	
-#	e2cacmd = "e2classaverage.py %s %s %s" %(options.input,options.classifyfile,options.cafile)
-#	
-#	e2cacmd += " --ref=%s --iter=%d -f --result=%s --normproc=%s" %(options.projfile,options.classiter,options.resultfile,options.classnormproc)
-#	
-#	e2cacmd += " --idxcache --dbpath=%s" %options.path
-#	
-#	if (options.classkeep):
-#		e2cacmd += " --keep=%f" %options.classkeep
-#		
-#	if (options.classkeepsig):
-#		e2cacmd += " --keepsig"
-#	
-#	if (options.classiter >= 1 ):
-#		e2cacmd += " --cmp=%s --align=%s --aligncmp=%s" %(options.classcmp,options.classalign,options.classaligncmp)
-#
-#		if (options.classralign != None):
-#			e2cacmd += " --ralign=%s --raligncmp=%s" %(options.classralign,options.classraligncmp)
-#	
-#	if options.usefilt != None:
-#		e2cacmd += " --usefilt=%s" %options.usefilt
-#	
-#	if (options.verbose):
-#		e2cacmd += " -v"
-#		
-#	if (options.lowmem): e2cacmd += " --lowmem"
-#	
-#	if ( check ):
-#		e2cacmd += " --check"	
-#			
-#	if ( nofilecheck ):
-#		e2cacmd += " --nofilecheck"
-#	
-#	return e2cacmd
 
 if __name__ == "__main__":
     main()

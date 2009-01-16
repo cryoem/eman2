@@ -50,9 +50,9 @@ def main():
 	parser.add_option("--verbose","-v", dest="verbose", default=False, action="store_true",help="Toggle verbose mode - prints extra infromation to the command line while executing")
 	parser.add_option("--nomirror", dest="nomirror", default=False, action="store_true",help="Turn projection over the mirror portion of the asymmetric unit off")
 	parser.add_option("--input", dest="input", default=None,type="string", help="The name of the image containing the particle data")
-	parser.add_option("--model", dest="model", default="threed.0a.mrc", help="The name 3D image that will seed the refinement")
-	parser.add_option("--usefilt", dest="usefilt", default=None, help="Specify a particle data file that has been low pass or Wiener filtered. Has a one to one correspondence with your particle data. If specified will be used in projection matching routines, and elsewhere.")
-	parser.add_option("--path", default=None, help="The name of a directory where results are placed. If unspecified will generate one automatically of type refine_??.")
+	parser.add_option("--model", dest="model", type="string",default="threed.0a.mrc", help="The name 3D image that will seed the refinement")
+	parser.add_option("--usefilt", dest="usefilt", type="string",default=None, help="Specify a particle data file that has been low pass or Wiener filtered. Has a one to one correspondence with your particle data. If specified will be used in projection matching routines, and elsewhere.")
+	parser.add_option("--path", default=None, type="string",help="The name of a directory where results are placed. If unspecified will generate one automatically of type refine_??.")
 
 	# options associated with e2project3d.py
 	parser.add_option("--sym", dest = "sym", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos")

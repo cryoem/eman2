@@ -175,12 +175,12 @@ namespace EMAN
 		
 		string get_name() const
 		{
-			return "image";
+			return "mean";
 		}
 
 		string get_desc() const
 		{
-			return "Simple average of images";
+			return "Simple mean average of images";
 		}
 
 		static Averager *NEW()
