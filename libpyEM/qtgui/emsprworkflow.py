@@ -4349,7 +4349,36 @@ class E2ResolutionTask(WorkFlowTask):
 		
 		return params
 	
-	
+	def on_form_ok(self,params):
+
+		options = EmptyObject()			
+
+#		# w'oh if we make it here a lot of checking has occured. Now get the args in order to spawn_single_task
+		string_args = []
+		bool_args = []
+		
+		additional_args = []
+		
+#		for get_args in [self.add_general_args,self.add_classaverage_args,self.add_make3d_args]:
+#			if get_args == self.add_classaverage_args:
+#				error = get_args(options,string_args,bool_args,additional_args,include_sep=False)
+#			else:
+#				error = get_args(options,string_args,bool_args,additional_args)
+#		
+#			if error != None: # not too fast, something still could have gone wrong
+#				self.display_errors([error])
+#				return
+#			
+#		temp_file_name = "e2eotest_stdout.txt"
+#		
+#		self.write_db_parms(options,string_args,bool_args)
+#		
+#	   	options.filenames = [] # spawn single task expects a filenames attribute
+#		self.spawn_single_task("e2eotest.py",options,string_args,bool_args,additional_args,temp_file_name)
+#		self.emit(QtCore.SIGNAL("task_idle"))
+#		self.form.closeEvent(None)
+#		self.form = None
+#	
 
 	
 if __name__ == '__main__':

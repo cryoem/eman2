@@ -3529,10 +3529,10 @@ class SwarmAutoBoxer(AutoBoxer):
 			print 'error, unknown mode in SwarmAutoBoxer'
 		
 	def get_search_radius(self):
-		return int(0.6*(self.box_size)/float(self.get_subsample_rate()))
+		return int(0.9*(self.box_size)/float(self.get_subsample_rate()))
 	
 	def get_constraining_radius(self):
-		return int(0.5*(self.box_size)/float(self.get_subsample_rate()))
+		return int(0.8*(self.box_size)/float(self.get_subsample_rate()))
 	
 	def get_subsample_rate(self,force=True):	
 		if self.box_size == -1:

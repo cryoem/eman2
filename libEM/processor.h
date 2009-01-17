@@ -3526,8 +3526,11 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		float calc_mean(EMData * image) const;
 	};
 
-	/**Normalize an image so its vector length is 1.0.
-		*/
+	/**Normalize the image whilst also removing any ramps. Ramps are removed first, then mean and sigma becomes 0 and 1 respectively
+	* This is essential Pawel Penczek's preferred method of particle normalization
+	* @author David Woolford
+	* @date Mid 2008
+	*/
 	class NormalizeRampNormVar: public Processor
 	{
 		public:
@@ -3544,6 +3547,39 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			string get_desc() const
 			{
 				return "First call filter.ramp on the image, then make the mean 0 and norm 1";
+			}
+			
+			void process_inplace(EMData * image);
+	};
+	
+	/** Normalize the mass of the image assuming a density of 1.35 g/ml (0.81 Da/A^3). 
+	 * Only works for 3D images. Essentially a replica of Volume.C in EMAN1.
+	 */
+	class NormalizeMassProcessor: public Processor
+	{
+		public:
+			string get_name() const
+			{
+				return "normalize.mass";
+			}
+
+			static Processor *NEW()
+			{
+				return new NormalizeMassProcessor();
+			}
+
+			string get_desc() const
+			{
+				return "Normalize the mass of the image assuming a density of 1.35 g/ml (0.81 Da/A^3) (3D only)";
+			}
+			
+			TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("apix", EMObject::FLOAT,"Angstrom per pixel of the image. If not set will use the apix_x attribute of the image");
+				d.put("mass", EMObject::FLOAT,"The approximate mass of protein/structure in kilodaltons");
+				d.put("thr", EMObject::FLOAT,"The isosurface threshold which encapsulates the structure");
+				return d;
 			}
 			
 			void process_inplace(EMData * image);

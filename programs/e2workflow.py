@@ -453,12 +453,20 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 			res = get_e2resolution_results_list(keys)
 			eo = get_e2eotest_results_list(keys)
 			conv = get_convergence_results_list(keys)
-			from emplot2d import EMPlot2DModule
+			from emplot2d import EMPlot2DModule,colortypes
 			module = EMPlot2DModule(self.application())
-			for plot in [conv,eo,res]:
+			i = 0
+			max = len(colortypes)
+			
+			for k in conv:
+				module.set_data(k,db[k],color=(i%max),linewidth=1) # there are only a ceratin number of  colors
+				i += 1
+			
+			for plot in [eo,res]:
 				for k in plot:
-					module.set_data(k,db[k])
-
+					module.set_data(k,db[k],color=(i%max),linewidth=3) # there are only a ceratin number of  colors
+					i += 1
+					
 			self.application().show_specific(module)
 			self.add_module([str(module),"Display",module])
 		else:

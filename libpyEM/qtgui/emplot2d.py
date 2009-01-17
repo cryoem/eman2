@@ -61,8 +61,15 @@ from emglobjects import EMOpenGLFlagsAndTools
 
 linetypes=["-","--",":","-."]
 symtypes=["o","s","+","2","1"]
-colortypes=["k","b","r","g"]
-
+colortypes=["k","b","r","g","y","c","m"]
+qt_color_map = {}
+qt_color_map["k"] = QtGui.QColor(0,0,0)
+qt_color_map["b"] = QtGui.QColor(0,0,255)
+qt_color_map["r"] = QtGui.QColor(255,0,0)
+qt_color_map["g"] = QtGui.QColor(0,255,0)
+qt_color_map["y"] = QtGui.QColor(255,255,0)
+qt_color_map["c"] = QtGui.QColor(0,255,255)
+qt_color_map["m"] = QtGui.QColor(255,0,255)
 
 class EMPlot2DWidget(QtOpenGL.QGLWidget,EMEventRerouter,):
 	"""A QT widget for drawing 2-D plots using matplotlib
@@ -183,7 +190,7 @@ class EMPlot2DModule(EMGUIModule):
 
 		self.clear_gl_memory()
 	
-	def set_data(self,key,input_data,replace=False,quiet=False):
+	def set_data(self,key,input_data,replace=False,quiet=False,color=0,linewidth=1):
 		"""Set a keyed data set. The key should generally be a string describing the data.
 		'data' is a tuple/list of tuples/list representing all values for a particular
 		axis. eg - the points: 1,5; 2,7; 3,9 would be represented as ((1,2,3),(5,7,9)).
@@ -209,7 +216,8 @@ class EMPlot2DModule(EMGUIModule):
 			else : self.axes[key]=(-1,0,-1)
 		except: return
 		
-		self.pparm[key]=(0,1,0,1,0,0,5)
+		if color not in range(len(colortypes)): color = 0 # we are only a certain number of colors
+		self.pparm[key]=(color,1,0,linewidth,0,0,5)
 		
 		if not isinstance(data[0],list):
 			x_axis = [i for i in range(len(data))]
@@ -250,8 +258,6 @@ class EMPlot2DModule(EMGUIModule):
 		
 	def set_data_from_file(self,filename,replace=False):
 		"""Reads a keyed data set from a file. Automatically interpret the file contents."""
-		
-		
 		self.del_shapes()
 		
 		if replace: 
@@ -647,6 +653,9 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.color.addItem("blue")
 		self.color.addItem("red")
 		self.color.addItem("green")
+		self.color.addItem("yellow")
+		self.color.addItem("cyan")
+		self.color.addItem("magenta	")
 		vbl.addWidget(self.color)
 
 		hbl2 = QtGui.QHBoxLayout()
@@ -792,7 +801,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 		else : yl="linear"
 		self.target().setAxisParms(self.xlabel.text(),self.ylabel.text(),xl,yl)
 		self.target().setPlotParms(str(self.setlist.currentItem().text()),self.color.currentIndex(),self.lintog.isChecked(),
-			self.linsel.currentIndex(),self.linwid.value(),self.symtog.isChecked(),self.symsel.currentIndex(),self.symsize.value())
+				self.linsel.currentIndex(),self.linwid.value(),self.symtog.isChecked(),self.symsel.currentIndex(),self.symsize.value())
 
 	def newSet(self,row):
 		self.quiet=1
@@ -836,10 +845,13 @@ class EMPlot2DInspector(QtGui.QWidget):
 		keys=self.target().data.keys()
 		visible = self.target().visibility
 		keys.sort()
+		parms = self.target().pparm # get the colors from this
+		
 		
 		for i,j in enumerate(keys) :
 			a = QtGui.QListWidgetItem(j)
 			a.setFlags(flag2|flag3|flag4)
+			a.setTextColor(qt_color_map[colortypes[parms[j][0]]])
 			if visible[j]: a.setCheckState(Qt.Checked)
 			else: a.setCheckState(Qt.Unchecked)
 			

@@ -150,6 +150,7 @@ template <> Factory < Processor >::Factory()
 	force_add(&NormalizeCircleMeanProcessor::NEW);
 	force_add(&NormalizeLREdgeMeanProcessor::NEW);
 	force_add(&NormalizeMaxMinProcessor::NEW);
+	force_add(&NormalizeMassProcessor::NEW);
 	force_add(&NormalizeRowProcessor::NEW);
 	force_add(&NormalizeRampNormVar::NEW);
 
@@ -2723,6 +2724,61 @@ void NormalizeRampNormVar::process_inplace(EMData * image)
 	vector<float> rstls = Util::infomask( image, &mask, false);
 	image->add((float)-rstls[0]);
 	image->mult((float)1.0/rstls[1]);
+	image->update();
+}
+
+void NormalizeMassProcessor::process_inplace(EMData * image)
+{
+	float mass = params.set_default("mass",-1.0f);
+	
+	if (mass <= 0) throw InvalidParameterException("You must specify a positive non zero mass");
+	
+	float thr = params.set_default("thr",(float)image->get_attr("mean")+(float)image->get_attr("sigma"));
+	
+	float apix = params.set_default("apix",-1.123456789);
+	if (apix == -1.123456789 ) {
+		if (image->has_attr("apix_x")) {
+			apix = image->get_attr("apix_x");
+		}
+	}
+	
+	if (apix <= 0) throw InvalidParameterException("You must specify a positive non zero apix");
+	
+	float step = ((float)image->get_attr("sigma"))/2.0f;
+	
+	int count=0;
+	int n = image->get_size();
+	float* d = image->get_data();
+	
+	for (int i=0; i<n; i++) {
+		if (d[i]>=thr) count++;
+	}
+
+	float max = image->get_attr("maximum");
+	float min = image->get_attr("minimum");
+	for (int j=0; j<4; j++) {
+		while (thr<max && count*apix*apix*apix*.81/1000.0>mass) {
+			thr+=step;
+			count=0;
+			for (int i=0; i<n; i++) {
+				if (d[i]>=thr) count++;
+			}
+		}
+		
+		step/=4.0;
+	
+		while (thr>min && count*apix*apix*apix*.81/1000.0<mass) {
+			thr-=step;
+			count=0;
+			for (int i=0; i<n; i++) {
+				if (d[i]>=thr) count++;
+			}
+		}
+		
+		step/=4.0;
+	}
+	
+	image->mult((float)1.0/thr);
 	image->update();
 }
 
