@@ -1107,6 +1107,65 @@ def varfctf(data, mask = None, mode=""):
 
 	return var, rot_avg_table(Util.pack_complex_to_real(var))
 
+def varf3d(prjlist,ssnr_text_file = None, mask2D = None, reference_structure = None, ou = -1, rw = 1.0, npad = 1, CTF = False, sign = 1, sym ="c1"):
+	"""
+	  Calculate variance in Fourier space of an object reconstructed from projections
+	  
+	  Known problems: properly speaking, the SSNR has to be calculated using snr=inf and this is what recons3d_nn_SSNR_MPI does.
+	  So, when one computes reference structure, snr should be 1.0e20.  However, when the reference structure is passed
+	  from the reconstruction program, it was computed using different snr.  I tested it and in practice there is no difference,
+	  as this only changes the background variance due to reconstruction algorithm, which is much lower anyway.  PAP.
+	"""
+	from reconstruction import   recons3d_nn_SSNR, recons3d_4nn, recons3d_4nn_ctf
+	from utilities      import   model_blank
+	from projection     import   prep_vol, prgs
+
+	[ssnr1, vol_ssnr1] = recons3d_nn_SSNR(prjlist, mask2D, rw, npad, sign, sym, CTF)
+
+	nx  = prjlist[0].get_xsize()
+	if ou == -1: radius = int(nx/2) - 1
+	else:        radius = int(ou)
+	if(reference_structure == None):
+		if CTF :
+			snr = 1.0#e20
+			reference_structure = recons3d_4nn_ctf(prjlist, range(prjlist), snr, sign, sym, 0, npad)
+		else  :
+			reference_structure = recons3d_4nn(prjlist, range(prjlist), sym, npad)
+
+	volft,kb = prep_vol(reference_structure)
+	del reference_structure
+	from utilities import get_params_proj
+	if CTF: from filter import filt_ctf
+	re_prjlist = []
+	for prj in prjlist:
+		phi,theta,psi,tx,ty = get_params_proj(prj)
+		proj = prgs(volft, kb, [phi,theta,psi,-tx,-ty])
+		if CTF:
+			ctf_params = prj.get_attr("ctf")			
+			proj = filt_ctf(proj, ctf_params)
+			proj.set_attr('sign', 1)
+		re_prjlist.append(proj)
+	del volft
+	[ssnr2, vol_ssnr2] = recons3d_nn_SSNR(re_prjlist, mask2D, rw, npad, sign, sym, CTF)
+
+	outf = file(ssnr_text_file, "w")
+	for i in xrange(len(ssnr2[0])):
+		datstrings = []
+		datstrings.append("  %15f" % ssnr1[0][i])    #  have to subtract 0.5 as in C code there is round.
+		datstrings.append("  %15e" % ssnr1[1][i])    # SSNR
+		datstrings.append("  %15e" % ssnr1[2][i])    # variance
+		datstrings.append("  %15f" % ssnr1[3][i])    # number of points in the shell
+		datstrings.append("  %15f" % ssnr1[4][i])    # number of added Fourier points
+		datstrings.append("  %15e" % ssnr1[5][i])    # square of signal
+		datstrings.append("  %15e" % ssnr2[1][i])    # SSNR
+		datstrings.append("  %15e" % ssnr2[2][i])    # variance
+		datstrings.append("  %15e" % ssnr2[5][i])    # square of signal
+		datstrings.append("\n")
+		outf.write("".join(datstrings))
+	outf.close()
+	from morphology import threshold_to_minval
+	return  threshold_to_minval(Util.subn_img(Util.pack_complex_to_real(vol_ssnr1), Util.pack_complex_to_real(vol_ssnr2)), 1.0)
+
 def varf3d_MPI(prjlist,ssnr_text_file = None, mask2D = None, reference_structure = None, ou = -1, rw = 1.0, npad = 1, CTF = False, sign = 1, sym ="c1", myid = 0):
 	"""
 	  Calculate variance in Fourier space of an object reconstructed from projections

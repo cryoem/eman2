@@ -58,6 +58,7 @@ def main():
 	parser.add_option("--function", type="string", default="ref_ali3d",help="name of the user-supplied reference preparation function")
 	parser.add_option("--debug",  action="store_true", default=False, help="Debug printout")
 	parser.add_option("--MPI",    action="store_true", default=False, help="use MPI version")
+	parser.add_option("--Fourvar",action="store_true", default=True,  help="compute Fourier variance")
 	(options, args) = parser.parse_args(arglist[1:])
 	if(len(args) < 2 or len(args) > 3):
     		print "usage: " + usage
@@ -74,7 +75,7 @@ def main():
 	   		sys.argv = mpi_init(len(sys.argv), sys.argv)
 		from applications import ali3d_e
 		global_def.BATCH = True
-		ali3d_e(args[0], args[1], mask, options.ou, options.delta, options.center, options.maxit, options.CTF, options.snr, options.sym, options.chunk, parse_user_function(options.function), options.debug, options.MPI)
+		ali3d_e(args[0], args[1], mask, options.ou, options.delta, options.center, options.maxit, options.CTF, options.snr, options.sym, options.chunk, parse_user_function(options.function), options.Fourvar, options.debug, options.MPI)
 		global_def.BATCH = False
 
 if __name__ == "__main__":

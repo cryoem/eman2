@@ -411,12 +411,6 @@ def spruce_up( ref_data ):
 	msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
 	print_msg(msg)
 	volf = filt_tanl(volf, fl, aa)
-	if(ref_data[1] == 1):
-		from fundamentals   import fshift
-		cs    = volf.phase_cog()
-		msg = "Center x =	%10.3f  y = %10.3f  z = %10.3f\n"%(cs[0], cs[1], cs[2])
-		print_msg(msg)
-		volf  = fshift(volf, -cs[0], -cs[1], -cs[2])
 	return  volf, cs
 
 def spruce_up_variance( ref_data ):

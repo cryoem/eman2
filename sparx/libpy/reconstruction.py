@@ -189,8 +189,7 @@ def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4, snr=None):
 	     vol = recons3d_4nn(filepattern, list_proj, symmetry)
 	"""
 	import types
-	# Yang add a safety on 05/22/07
-	if list_proj == []:	
+	if list_proj == []:
 		if type(stack_name) == types.StringType: nima = EMUtil.get_image_count(stack_name)
 		else : nima = len(stack_name)
 		list_proj = xrange(nima) 
@@ -276,7 +275,7 @@ def recons3d_nn_SSNR(stack_name,  mask2D = None, ring_width=1, npad =1, sign=1, 
 	
 	"""
 	Perform a 3-D reconstruction using nearest neighbor interpolation and 
-	calculate 3D spectrum signal-to-noise ratio (SSNR)	   
+	calculate 3D spectral signal-to-noise ratio (SSNR)	   
 	Input : stack_name - Name of the file with projection data.
 		CTF        - 
 	        symmetry   - Point group of the target molecule (default "c1")
@@ -356,16 +355,20 @@ def recons3d_nn_SSNR(stack_name,  mask2D = None, ring_width=1, npad =1, sign=1, 
 	outlist = [[] for i in xrange(6)]
 	nn = SSNR.get_xsize()
 	for i in xrange(1,nn): outlist[0].append((float(i)-0.5)/(float(nn-1)*2))
-	for i in xrange(1,nn): outlist[1].append(max(0.0,(SSNR(i,0,0)/SSNR(i,1,0)-1.)))   # SSNR
+	for i in xrange(1,nn):
+		if(SSNR(i,1,0) > 0.0):
+			outlist[1].append(max(0.0,(SSNR(i,0,0)/SSNR(i,1,0)-1.)))      # SSNR
+		else:
+			outlist[1].append(0.0)
 	for i in xrange(1,nn): outlist[2].append(SSNR(i,1,0)/SSNR(i,2,0))	          # variance
-	#for i in xrange(1,nn): outlist[2].append(SSNR(i,1,0)/SSNR(i,2,0)/SSNR(i,3,0))	  # variance divided by two numbers
 	for i in xrange(1,nn): outlist[3].append(SSNR(i,2,0))				  # number of points in the shell
 	for i in xrange(1,nn): outlist[4].append(SSNR(i,3,0))				  # number of added Fourier points
 	for i in xrange(1,nn): outlist[5].append(SSNR(i,0,0))				  # square of signal
 	return [outlist, vol_ssnr]
 
 def recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, ring_width=1, npad =1, sign=1, symmetry="c1", CTF = False, random_angles = 0):
-	from utilities import reduce_EMData_to_root,bcast_EMData_to_all, bcast_number_to_all
+	from utilities import reduce_EMData_
+	to_root,bcast_EMData_to_all, bcast_number_to_all
 	if( len(prjlist) == 0 ):    ERROR("empty input list","recons3d_nn_SSNR_MPI",1)
 	imgsize = prjlist[0].get_xsize()
 	if prjlist[0].get_ysize() != imgsize:  ERROR("input data has to be square","recons3d_nn_SSNR_MPI",1)
@@ -427,10 +430,10 @@ def recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, ring_width=1, npad =1, sign=1, s
 		for i in xrange(1,nn): outlist[0].append((float(i)-0.5)/(float(nn-1)*2))
 		for i in xrange(1,nn):
 			if(SSNR(i,1,0) > 0.0):
-				outlist[1].append(max(0.0,(SSNR(i,0,0)/SSNR(i,1,0)-1.)))   # SSNR
+				outlist[1].append(max(0.0,(SSNR(i,0,0)/SSNR(i,1,0)-1.)))     # SSNR
 			else:
 				outlist[1].append(0.0)
-		for i in xrange(1,nn): outlist[2].append(SSNR(i,1,0)/SSNR(i,2,0))	          # variance
+		for i in xrange(1,nn): outlist[2].append(SSNR(i,1,0)/SSNR(i,2,0))	         # variance
 		for i in xrange(1,nn): outlist[3].append(SSNR(i,2,0))				  # number of points in the shell
 		for i in xrange(1,nn): outlist[4].append(SSNR(i,3,0))				  # number of added Fourier points
 		for i in xrange(1,nn): outlist[5].append(SSNR(i,0,0))				  # square of signal
