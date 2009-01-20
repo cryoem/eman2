@@ -362,7 +362,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	from utilities    import model_circle, combine_params2, drop_image, get_image, get_input_from_string, model_blank, get_params2D
 	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, bcast_number_to_all, send_attr_dict, file_type
 	from statistics   import add_ave_varf_MPI, add_ave_varf_ML_MPI, ave_series
-	from alignment    import Numrinit, ringwe, ali2d_random_ccf
+	from alignment    import Numrinit, ringwe, ali2d_random_ccf, ali2d_single_iter
 	from filter       import filt_tophatb
 	from morphology   import ctf_2
 	from numpy        import reshape, shape
@@ -613,6 +613,8 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				savg[isav] = rot_shift2D(savg[isav], randint(0, 360), randint(-2, 2), randint(-2, 2), randint(0,1))
 				savg[isav].set_attr_dict({'xform.align2d':tnull, 'active':1})
 			"""
+			for isav in xrange(nsav):
+				savg[isav].set_attr_dict({'xform.align2d':tnull, 'active':1})
 			for inp in xrange(5):
 				sx_sum, sy_sum = ali2d_single_iter(savg, numr, wr, [0.0, 0.0], tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, False)
 				tavg = ave_series(savg)
