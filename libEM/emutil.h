@@ -149,6 +149,14 @@ namespace EMAN
 		 * @return image format type.
 		 */
 		static ImageType get_image_type(const string & filename);
+		
+		/** Ask whether or not the given filename is a valid EM image filename
+		 * This is the same thing as checking whether or not the return value of EMUtil.get_image_ext_type 
+		 * is IMAGE_UNKNOWN
+		 * @param filename Image file name.
+		 * @return whether or not it is a valid filename
+		 */
+		static bool is_valid_filename(const string & filename);
 
 		/** Get the number of images in an image file.
 		 * @param filename Image file name.

@@ -61,7 +61,7 @@ class WorkFlowTask(QtCore.QObject):
 		self.window_title = "Set me please"
 		self.preferred_size = (480,640)
 		self.form_db_name = None # specify this to make use of automated parameter storage (see write_db_entries(self,...) ) - don't forget the "bdb:"
-		self.project_db_entries = ["global.num_cpus","global.apix","global.microscope_voltage","global.microscope_cs","global.memory_available"] # used to write entries to a specific db
+		self.project_db_entries = ["global.num_cpus","global.apix","global.microscope_voltage","global.microscope_cs","global.memory_available","global.particle_mass"] # used to write entries to a specific db
 	
 	def run_form(self):
 		self.form = EMFormModule(self.get_params(),self.application())
@@ -138,26 +138,8 @@ class WorkFlowTask(QtCore.QObject):
 		This function is becoming deprecated, used write_db_entries instead
 		'''
 		db = db_open_dict("bdb:project")
-		if key == "global.apix":
-			db["global.apix"] = value
-		elif key == "global.microscope_voltage":
-			db["global.microscope_voltage"] = value
-		elif key == "global.microscope_cs":
-			db["global.microscope_cs"] = value
-		elif key == "global.memory_available":
-			#mem = memory_stats()
-			#if value > mem[0]:
-				#print "error, memory usage is beyond the total amount available"
-			#else:
-			# we're avoiding validation because users have peculiar reasons some times
-			db["global.memory_available"] = value
-		elif key == "global.num_cpus":
-			#n = num_cpus()
-			#if value > n:
-				#print "error, num_cpus more than the available cpus"
-			#else:
-			#  we're avoiding validation because users have peculiar reasons some times
-			db["global.num_cpus"] = value
+		if len(key) > 5 and key[:6] == "global":
+			db[key] = value
 		else:
 			pass
 		
@@ -248,7 +230,7 @@ class WorkFlowTask(QtCore.QObject):
 		args = [e2getinstalldir()+"/bin/"+program]
 		for name in options.filenames:
 			args.append(name)
-		
+
 		for string in string_args:
 			args.append("--"+string+"="+str(getattr(options,string)))
 
@@ -305,18 +287,6 @@ class WorkFlowTask(QtCore.QObject):
 		
 	def get_latest_r2d_classes(self):
 		dirs = get_numbered_directories("r2d_")
-#		dirs, files = get_files_and_directories(e2getcwd())
-#		
-#		dirs.sort()
-#		for i in range(len(dirs)-1,-1,-1):
-#			if len(dirs[i]) != 6:
-#				dirs.pop(i)
-#			elif dirs[i][:4] != "r2d_":
-#				dirs.pop(i)
-#			else:
-#				try: int(dirs[i][4:])
-#				except: dirs.pop(i)
-		
 		# allright everything left in dirs is "r2d_??" where the ?? is castable to an int, so we should be safe now
 		class_files = []
 		class_dims = []
@@ -345,7 +315,7 @@ class WorkFlowTask(QtCore.QObject):
 				
 			if classes_db != None:
 				class_files.append(classes_db)
-				cl_db = db_open_dict(classes_db)
+				cl_db = db_open_dict(classes_db,ro=True)
 				if cl_db.has_key("maxrec"):
 					class_ptcls.append(cl_db["maxrec"]+1)
 					hdr = cl_db.get_header(0)
@@ -353,6 +323,8 @@ class WorkFlowTask(QtCore.QObject):
 				else:
 					class_ptcls.append("")
 					class_dims.append("")
+					
+				db_close_dict(classes_db)
 					
 		return class_files,class_ptcls,class_dims
 	
@@ -489,11 +461,14 @@ class SPRInitTask(WorkFlowTask):
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="SPR",desc_long="Information regarding this task",property=None,defaultunits=SPRInitTask.documentation_string,choices=None))
 		
 		papix = ParamDef(name="global.apix",vartype="float",desc_short="A/pix for project",desc_long="The physical distance represented by the pixel spacing",property=None,defaultunits=project_db.get("global.apix",dfl=1.1),choices=None)
+		pmass = ParamDef(name="global.particle_mass",vartype="float",desc_short="Particle mass (kda)",desc_long="The mass of the particle in kilodaltons",property=None,defaultunits=project_db.get("global.particle_mass",dfl=800),choices=None)
+		
 		pvolt = ParamDef(name="global.microscope_voltage",vartype="float",desc_short="Microscope voltage",desc_long="The operating voltage of the microscope in kilo volts",property=None,defaultunits=project_db.get("global.microscope_voltage",dfl=300),choices=None)
 		pcs = ParamDef(name="global.microscope_cs",vartype="float",desc_short="Microscope Cs",desc_long="Microscope spherical aberration constant",property=None,defaultunits=project_db.get("global.microscope_cs",dfl=2.0),choices=None)
 		pncp = ParamDef(name="global.num_cpus",vartype="int",desc_short="Number of CPUs",desc_long="Number of CPUS available for the project to use",property=None,defaultunits=project_db.get("global.num_cpus",dfl=num_cpus()),choices=None)
 		mem = memory_stats()
 		pmem = ParamDef(name="global.memory_available",vartype="float",desc_short="Memory usage (%.2f Gb total)" %mem[0],desc_long="The total amount of system memory you want to make available to the project in gigabytes",property=None,defaultunits=project_db.get("global.memory_available",dfl=mem[1]),choices=None)
+		params.append(pmass)
 		params.append(papix)
 		params.append(pvolt)
 		params.append(pcs)
@@ -2469,7 +2444,6 @@ class E2Refine2DTask(ParticleWorkFlowTask):
 		
 		pshrink = ParamDef(name="shrink",vartype="int",desc_short="Shrink factor",desc_long="The the downsampling rate used to shrink the data",property=None,defaultunits=db.get("shrink",dfl=4),choices=[])
 		
-		
 		pcmp  =  ParamDef(name="simcmp",vartype="string",desc_short="Main comparator",desc_long="The comparator to determine the final quality metric",defaultunits=db.get("simcmp",dfl="phase"),choices=cmps)
 		pcmpargs =  ParamDef(name="simcmpargs",vartype="string",desc_short="params",desc_long="Parameters for the this comparator, see \"e2help.py cmps\"",property=None,defaultunits=db.get("simcmpargs",dfl=""),choices=[])	
 
@@ -2489,7 +2463,7 @@ class E2Refine2DTask(ParticleWorkFlowTask):
 		pnp = ParamDef(name="normproj",vartype="boolean",desc_short="Normalize projection vectors",desc_long="Normalizes each projected vector into the MSA subspace",property=None,defaultunits=db.get("normproj",dfl=False),choices=None)
 		
 		project_db = db_open_dict("bdb:project")
-		pncp = ParamDef(name="parallel",vartype="int",desc_short="Number of CPUs",desc_long="Number of CPUS available for e2refine2d to use",property=None,defaultunits=project_db.get("global.num_cpus",dfl=num_cpus()),choices=None)
+		pncp = ParamDef(name="global.num_cpus",vartype="int",desc_short="Number of CPUs",desc_long="Number of CPUS available for e2refine2d to use",property=None,defaultunits=project_db.get("global.num_cpus",dfl=num_cpus()),choices=None)
 		pinitclasses =  ParamDef(name="initial",vartype="string",desc_short="Initial class averages",desc_long="A file (full path) containing starting class averages. If note specificed will generate starting class averages automatically.",property=None,defaultunits=db.get("initial",dfl=""),choices=[])	
 		
 		db_close_dict(self.form_db_name)
@@ -2507,19 +2481,8 @@ class E2Refine2DTask(ParticleWorkFlowTask):
 		params.append([pncp,pinitclasses])
 		
 		return params
-	
-	def write_db_entries(self,dictionary):
-		'''
-		Had to specialize this function because of the parallel parameter, could potentially be generalized (into ParticleWorkFlowTask.write_db_entries) if other forms use the parallel key
-		'''
-		if dictionary.has_key("parallel"):
-			p_db =  db_open_dict("bdb:project")
-			p_db["global.num_cpus"] = dictionary["parallel"] # check_refine2d_args will have already verified that parallel is sensible (greater than 0)
-			db_close_dict("bdb:project")
-			
-		ParticleWorkFlowTask.write_db_entries(self,dictionary)
-	
-	def get_parms(self,params):
+
+	def get_cmd_line_options(self,params):
 		mesbox = QtGui.QMessageBox()
 		mesbox.setWindowTitle("Almost but not quite")
 		
@@ -2547,7 +2510,7 @@ class E2Refine2DTask(ParticleWorkFlowTask):
 
 		
 		from e2refine2d import check_e2refin2d_args
-		
+		options.parallel = params["global.num_cpus"]
 		error_message.extend(check_e2refin2d_args(options))
 		
  		if len(error_message) != 0:
@@ -2709,7 +2672,7 @@ class E2Refine2DRunTask(E2Refine2DTask):
 		if self.end_tag != "generic":
 			names = ["bdb:particles#"+name for name in params["filenames"]]
 			params["filenames"] = names 
-		options = self.get_parms(params)
+		options = self.get_cmd_line_options(params)
 		
 		if options == None:
 			return
@@ -3162,7 +3125,7 @@ class RefinementReportTask(ParticleWorkFlowTask):
 
 class E2RefineParticlesTask(ParticleWorkFlowTask):
 	'''
-	The mother of all tasks
+	This task will harness the parameters for, and launch, e2refine.py
 	'''
 	 
 	general_documentation = "These are the general parameters for 3D refinement in EMAN2. Please select which particles you wish to use as part of this process, specify your starting model, and fill in other parameters such as symmetry and whether or not the usefilt option should be used."
@@ -3278,16 +3241,18 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 		# if the user hits cancel - then there is a file on disk even though
 		# the user never agreed to anything
 		db = db_open_dict(self.form_db_name) # see eman wiki for a list of what args are kept in this db
-		
+		project_db = db_open_dict("bdb:project")
 		
 		params.append(p)
+		pmass = ParamDef(name="global.particle_mass",vartype="float",desc_short="Particle mass (kda)",desc_long="The mass of the particle in kilodaltons",property=None,defaultunits=project_db.get("global.particle_mass",dfl=800),choices=None)
+		papix = ParamDef(name="global.apix",vartype="float",desc_short="A/pix for project",desc_long="The physical distance represented by the pixel spacing",property=None,defaultunits=project_db.get("global.apix",dfl=1.1),choices=None)
 		
 		init_models = self.get_available_initial_models()
 		init_models.sort()
 		
 		pinitialmodel =  ParamDef(name="model",vartype="string",desc_short="Starting model",desc_long="The starting 3D model that will be used to seed refinement",property=None,defaultunits=db.get("model",dfl=None),choices=init_models)
-		params.append(pinitialmodel)
-		
+		params.append([papix,pmass,pinitialmodel])
+
 		piter = ParamDef(name="iter",vartype="int",desc_short="Refinement iterations",desc_long="The number of times 3D refinement should be iterated",property=None,defaultunits=db.get("iter",dfl=3),choices=[])
 		plowmem = ParamDef(name="lowmem",vartype="boolean",desc_short="Low mem",desc_long="Causes various programs to restrict memory usage but results in increased CPU time.",property=None,defaultunits=db.get("lowmem",dfl=False),choices=None)
 		
@@ -3314,6 +3279,7 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 		
 		
 		db_close_dict(self.form_db_name)
+		db_close_dict("bdb:project")
 		
 		return ["General",params]
 	
@@ -3342,11 +3308,12 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 			string_args.append("usefilt")
 		
 		error = self.check_model(options)
+		
 		if error != None:
 			return error
 		
 		options.filenames = [] # important for this to happen so the argument doesn't have all the filenames as args
-		string_args.extend(["iter","sym","model","path"])
+		string_args.extend(["iter","sym","model","path","mass","apix"])
 		bool_args.append("lowmem")
 		
 		return None # returning None is good
@@ -3517,11 +3484,16 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 					
 				options.usefilt_names = usefilt_names
 				print options.usefilt_names
-				
-				
+		
+		if params["global.particle_mass"] <= 0:
+			error_message.append("The particle mass must be greater than 0")
+		if params["global.apix"] <= 0:
+			error_message.append("The angstrom per pixel must be greater than  0")
+		
+		options.apix = params["global.apix"]
+		options.mass = params["global.particle_mass"]	
 		#symmetry
 		error_message.extend(self.check_sym(params,options))
-		
 		
 		# iterations
 		if params["iter"] < 1:
@@ -3692,7 +3664,7 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 			if getattr(options,opt) != None: string_args.append(opt)
 			
 		string_args.extend(["classiter","classkeep","classnormproc"])
-		if include_sep: string_args.extend("sep")
+		if include_sep: string_args.append("sep")
 		bool_args.append("classkeepsig")
 	
 	def check_classaverage_page(self,params,options):
@@ -3719,8 +3691,6 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 		options.classiter = params["classiter"]
 		
 		return error_message
-	
-	
 	def get_classaverage_page(self,include_sep=True):
 		params = []
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2RefineParticlesTask.class_documentation,choices=None))
@@ -3751,7 +3721,6 @@ class E2RefineParticlesTask(ParticleWorkFlowTask):
 		params.extend(self.get_cls_simmx_params(parameter_prefix="class"))
 
 		return ["Class averaging",params]
-		
 		
 	def get_cls_simmx_params(self,parameter_prefix=""):
 		params = []
@@ -4358,7 +4327,6 @@ class E2ResolutionTask(WorkFlowTask):
 		bool_args = []
 		
 		additional_args = []
-		
 #		for get_args in [self.add_general_args,self.add_classaverage_args,self.add_make3d_args]:
 #			if get_args == self.add_classaverage_args:
 #				error = get_args(options,string_args,bool_args,additional_args,include_sep=False)

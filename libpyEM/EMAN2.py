@@ -281,14 +281,14 @@ def get_numbered_directories(prefix,wd=e2getcwd()):
 	'''
 	dirs, files = get_files_and_directories(wd)
 	dirs.sort()
-	l = len(prefix)+2 # plus to because we only check for two numbered directories
+	l = len(prefix) 
 	for i in range(len(dirs)-1,-1,-1):
-		if len(dirs[i]) != 9:
+		if len(dirs[i]) != l+2:# plus two because we only check for two numbered directories
 			dirs.pop(i)
-		elif dirs[i][:7] != prefix:
+		elif dirs[i][:l] != prefix:
 			dirs.pop(i)
 		else:
-			try: int(dirs[i][7:])
+			try: int(dirs[i][l:])
 			except: dirs.pop(i)
 	
 	# allright everything left in dirs is "refine_??" where the ?? is castable to an int, so we should be safe now
@@ -1000,7 +1000,6 @@ def error_exit(s) :
 	print s
 	exit(1)
 
-
 def write_test_refine_data(num_im=1000):
 	threed = test_image_3d()
 	sym = Symmetries.get("c1")
@@ -1015,10 +1014,6 @@ def write_test_refine_data(num_im=1000):
 	
 	threed.write_image("bdb:refine_1#starting_model",-1)
 	
-	
-	
-
-
 def write_test_boxing_images(name="test_box",num_im=10,type=0,n=100):
 	
 	if type == 0:
@@ -1034,9 +1029,6 @@ def write_test_boxing_images(name="test_box",num_im=10,type=0,n=100):
 	for i in range(num_im):
 		im = test_boxing_image(window_size,image_size,n)
 		im.write_image(name+"_"+str(i)+".mrc",0,EMUtil.ImageType.IMAGE_UNKNOWN, False,None,EMUtil.EMDataType.EM_SHORT)
-
-		
-
 
 def test_boxing_image(window_size=(128,128),image_size=(4096,4096),n=100):
 	'''

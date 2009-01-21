@@ -3554,13 +3554,15 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	
 	/** Normalize the mass of the image assuming a density of 1.35 g/ml (0.81 Da/A^3). 
 	 * Only works for 3D images. Essentially a replica of Volume.C in EMAN1.
+	 * @author David Woolford (a direct port of Steve Ludtke's code)
+	 * @date 01/17/09
 	 */
 	class NormalizeMassProcessor: public Processor
 	{
 		public:
 			string get_name() const
 			{
-				return "normalize.mass";
+				return "normalize.bymass";
 			}
 
 			static Processor *NEW()
@@ -4304,17 +4306,20 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 
 		virtual string get_desc() const
 		{
-			return "Tries to mask out only interesting density";
+			return "Tries to mask out only interesting density using something akin to a flood file approach.";
 		}
 
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("radius", EMObject::INT);
-			d.put("threshold", EMObject::FLOAT);
-			d.put("nshells", EMObject::INT);
+			d.put("radius", EMObject::INT,"Pixel radius of a ball which is used to seed the flood filling operation.");
+			d.put("threshold", EMObject::FLOAT, "An isosurface threshold that suitably encases the mass.");
+			d.put("nshells", EMObject::INT, "The number of dilation operations");
 			d.put("nshellsgauss", EMObject::INT);
+			d.put("return_mask", EMObject::BOOL, "If true the result of the operation will produce the mask, not the masked volume.");
+			d.put("write_mask", EMObject::STRING, "If specified will write the mask image to disk using this parameter as the file name. If the file exists will throw.");
 			return d;
+			
 		}
 	};
 

@@ -174,6 +174,12 @@ EMUtil::ImageType EMUtil::get_image_ext_type(const string & file_ext)
 }
 
 
+
+bool EMUtil::is_valid_filename(const string & filename) {
+	ImageType type = get_image_ext_type(Util::get_filename_ext(filename));
+	return (type != IMAGE_UNKNOWN);
+}
+
 EMUtil::ImageType EMUtil::fast_get_image_type(const string & filename,
 											  const void *first_block,
 											  off_t file_size)

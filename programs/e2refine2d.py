@@ -153,7 +153,7 @@ def main():
 		proc_tally += 1.0
 		if logid : E2progress(logid,proc_tally/total_procs)
 		# make class-averages
-		run("e2classaverage.py %s %s#classmx_00 %s#classes_init --iter=6 --align=rotate_translate_flip:maxshift=%d --averager=image -vf --bootstrap --keep=.75 --cmp=frc --aligncmp=frc"%(options.input,options.path,options.path,options.maxshift))
+		run("e2classaverage.py %s %s#classmx_00 %s#classes_init --iter=6 --align=rotate_translate_flip:maxshift=%d --averager=mean -vf --bootstrap --keep=.75 --cmp=frc --aligncmp=frc"%(options.input,options.path,options.path,options.maxshift))
 		proc_tally += 1.0
 		if logid : E2progress(logid,proc_tally/total_procs)
 	if not options.initial : options.initial=options.path+"#classes_init"
@@ -200,7 +200,7 @@ def main():
 		if logid : E2progress(logid,proc_tally/total_procs)
 		
 		# make class-averages
-		run("e2classaverage.py %s %s#classmx_%02d %s#classes_%02d --iter=%d --align=rotate_translate_flip:maxshift=%d --averager=image -vf  --keep=.75 --cmp=frc --aligncmp=frc"%(options.input,options.path,it,options.path,it,options.iterclassav,options.maxshift))
+		run("e2classaverage.py %s %s#classmx_%02d %s#classes_%02d --iter=%d --align=rotate_translate_flip:maxshift=%d --averager=mean -vf  --keep=.75 --cmp=frc --aligncmp=frc"%(options.input,options.path,it,options.path,it,options.iterclassav,options.maxshift))
 		proc_tally += 1.0
 		if logid : E2progress(logid,proc_tally/total_procs)
 		

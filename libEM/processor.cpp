@@ -5448,6 +5448,16 @@ void AutoMask3D2Processor::process_inplace(EMData * image)
 		LOGWARN("NULL Image");
 		return;
 	}
+	
+	if (image->get_ndim() != 3) {
+		throw ImageDimensionException("This processor was only ever designed to work on 3D images.");
+	}
+	
+	string mask_output = params.set_default("write_mask", "");
+	if ( mask_output != "") {
+		if (Util::is_file_exist(mask_output) ) throw InvalidParameterException("The mask output file name already exists. Please remove it if you don't need it.");
+		if (!EMUtil::is_valid_filename(mask_output)) throw InvalidParameterException("The mask output file name type is invalid or unrecognized");
+	}
 
 	int radius = params["radius"];
 	float threshold = params["threshold"];
@@ -5499,8 +5509,20 @@ void AutoMask3D2Processor::process_inplace(EMData * image)
 
 	amask->process_inplace("mask.addshells.gauss", Dict("val1", nshells+nshellsgauss, "val2", nshells));
 
-	image->mult(*amask);
-	amask->write_image("mask.mrc", 0, EMUtil::IMAGE_MRC);
+	bool return_mask = params.set_default("return_mask",false);
+	if (return_mask) {
+		// Yes there is probably a much more efficient way of getting the mask itself, but I am only providing a stop gap at the moment.
+		memcpy(dat,dat2,image->get_size()*sizeof(float));
+	} else {
+		image->mult(*amask);
+		// I commented this out (d.woolford) - apologies if there is a problem - but there's a way around this now anyway. Use the return_mask parameter
+		//amask->write_image("mask.mrc", 0, EMUtil::IMAGE_MRC);
+	}
+	
+	if (mask_output != "") {
+		amask->write_image(mask_output);
+	}
+	
 	
 	delete amask;
 }
@@ -5520,8 +5542,9 @@ void IterBinMaskProcessor::process_inplace(EMData * image)
 	int nz = image->get_zsize();
 	EMData *image2 = new EMData(nx,ny,nz);
 
-	float *dat = image->get_data();
-	float *dat2 = image2->get_data();
+	// Got a compile warning complaining that these things were never used. Hope I didn't break anything - apologies if so (d.woolford)
+//	float *dat = image->get_data();
+//	float *dat2 = image2->get_data();
 
 
 	float *d = image->get_data();
