@@ -274,11 +274,11 @@ else:
 
 ldlibpath = None
 if not os.environ.has_key(ldkey) or os.environ[ldkey].find(e2lib) == -1:
-    ldlibpath = e2dir
+    ldlibpath = e2lib
 
 pythonpath = None
 if not os.environ.has_key("PYTHONPATH") or os.environ["PYTHONPATH"].find(e2lib) == -1:
-    pythonpath = e2dir
+    pythonpath = e2lib
 
 if not(numericpath is None):
     if pythonpath is None:
