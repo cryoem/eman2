@@ -51,7 +51,12 @@ the dimensionality of a data set (noise reduction). Typically this
 basis set is then used to reproject the data (e2basis.py) and
 classify the data based on the projected vectors. If the
 output file supports arbitrary metadata (like HDF), Eigenvalues
-are stored as a parameter of each image."""
+are stored in the 'eigval' parameter in each image.
+
+Note: The mean value is subtracted from each image prior to Eigenimage
+calculation. The mean image is stored as the first image in the output
+file, though it is not directly part of the orthonormal basis when
+handled this way."""
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
