@@ -150,7 +150,7 @@ template <> Factory < Processor >::Factory()
 	force_add(&NormalizeCircleMeanProcessor::NEW);
 	force_add(&NormalizeLREdgeMeanProcessor::NEW);
 	force_add(&NormalizeMaxMinProcessor::NEW);
-	force_add(&NormalizeMassProcessor::NEW);
+	force_add(&NormalizeByMassProcessor::NEW);
 	force_add(&NormalizeRowProcessor::NEW);
 	force_add(&NormalizeRampNormVar::NEW);
 
@@ -2727,7 +2727,7 @@ void NormalizeRampNormVar::process_inplace(EMData * image)
 	image->update();
 }
 
-void NormalizeMassProcessor::process_inplace(EMData * image)
+void NormalizeByMassProcessor::process_inplace(EMData * image)
 {
 	float mass = params.set_default("mass",-1.0f);
 	
@@ -5453,11 +5453,15 @@ void AutoMask3D2Processor::process_inplace(EMData * image)
 		throw ImageDimensionException("This processor was only ever designed to work on 3D images.");
 	}
 	
+	/*
+	 The mask writing functionality was removed to comply with an EMAN2 policy which dictates that file io is not allowed from within a processor
+	 To get around this just use the return_mask parameter.
 	string mask_output = params.set_default("write_mask", "");
 	if ( mask_output != "") {
 		if (Util::is_file_exist(mask_output) ) throw InvalidParameterException("The mask output file name already exists. Please remove it if you don't need it.");
 		if (!EMUtil::is_valid_filename(mask_output)) throw InvalidParameterException("The mask output file name type is invalid or unrecognized");
 	}
+	*/
 
 	int radius = params["radius"];
 	float threshold = params["threshold"];
@@ -5515,13 +5519,12 @@ void AutoMask3D2Processor::process_inplace(EMData * image)
 		memcpy(dat,dat2,image->get_size()*sizeof(float));
 	} else {
 		image->mult(*amask);
-		// I commented this out (d.woolford) - apologies if there is a problem - but there's a way around this now anyway. Use the return_mask parameter
-		//amask->write_image("mask.mrc", 0, EMUtil::IMAGE_MRC);
 	}
 	
-	if (mask_output != "") {
-		amask->write_image(mask_output);
-	}
+	// EMAN2 policy is not to allow file io from with a processor
+	//if (mask_output != "") {
+	//	amask->write_image(mask_output);
+	//}
 	
 	
 	delete amask;

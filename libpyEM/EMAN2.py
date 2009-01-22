@@ -1104,8 +1104,11 @@ def test_image(type=0,size=(128,128)):
 	elif type==3:
 		ret.process_inplace("testimage.squarecube",{"fill":1,"edge_length":size[0]/2})
 	elif type==4:
-		ret.process_inplace("testimage.sinewave.circular")
-		ret.process_inplace("testimage.linewave",{"period":Util.get_irand(43,143)})
+		ret.process_inplace("testimage.scurve")
+		t = EMData()
+		t.set_size(*size)
+		t.process_inplace("testimage.linewave",{"period":Util.get_irand(43,143)})
+		ret.add(t)
 	elif type==5:
 		ret.process_inplace("testimage.axes")
 	elif type==6:

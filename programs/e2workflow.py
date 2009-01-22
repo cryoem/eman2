@@ -322,7 +322,9 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.launchers["SPR"] = self.launch_spr
 		
 		self.tree_widget_entries.append(spr)
-		self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Browse")))
+		browser_entry = QtGui.QTreeWidgetItem(QtCore.QStringList("Browse"))
+		browser_entry.setIcon(0,QtGui.QIcon(get_image_directory() + "/display_icon.png"))
+		self.tree_widget_entries.append(browser_entry)
 		self.launchers["Browse"] = self.launch_browser
 		self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Boxer")))
 		self.launchers["Boxer"] = self.launch_boxer_general

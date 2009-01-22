@@ -209,7 +209,7 @@ def main():
 		convergence_db_name = "bdb:"+options.path+"#convergence.results"
 		db = db_open_dict(convergence_db_name)
 		
-		tmpaxis = [x*apix for x in xaxis]
+		tmpaxis = [x/apix for x in xaxis]
 		db[s+"_fsc"] = [tmpaxis,plot]
 		#db["error_"+s+"_fsc"] = [xaxis,error] #we're not plotting the errors
 		db_close_dict(convergence_db_name)
@@ -287,7 +287,7 @@ def get_classaverage_cmd(options,check=False,nofilecheck=False):
 	
 	e2cacmd = "e2classaverage.py %s %s %s" %(options.input,options.classifyfile,options.cafile)
 	
-	e2cacmd += " --ref=%s --iter=%d -f --result=%s --normproc=%s" %(options.projfile,options.classiter,options.resultfile,options.classnormproc)
+	e2cacmd += " --ref=%s --iter=%d -f --result=%s --normproc=%s --averager=%s" %(options.projfile,options.classiter,options.resultfile,options.classnormproc,options.classaverager)
 	
 	e2cacmd += " --idxcache --dbpath=%s" %options.path
 	
@@ -461,7 +461,7 @@ def check(options,verbose=False):
 		
 	if options.automask3d:
 		vals = options.automask3d.split(",")
-		mapping = ["threshold","radius","nshells","ngaussshells"]
+		mapping = ["threshold","radius","nshells","nshellsgauss"]
 		if len(vals) != 4:
 			print "If specified, the automask3d options must provide 4 parameters, for example --automask3d=1.7,30,5,5"
 			error = True
@@ -470,12 +470,12 @@ def check(options,verbose=False):
 			# e.g. --automask3d=mask.auto3d:threshold=1.7:radi.... etc. I also add the return_mask=1 parameters - this could be misleading for future
 			# programmers, who will potentially wander where it came from
 			s = "mask.auto3d"
-			for i,p in mapping:
+			for i,p in enumerate(mapping):
 				s += ":"+p+"="+vals[i]
 			s+= ":return_mask=1"
 			options.automask3d = s
 			
-			if check_eman2_type(options.automask3d,Processors,"Processors"): error = True
+			if not check_eman2_type(options.automask3d,Processors,"Processors"): error = True
 	
 	if not options.iter:
 		print "Error: you must specify the --it argument"

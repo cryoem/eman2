@@ -294,7 +294,12 @@ class ParamDef(DictMixin) :
 	Field definitions are related in a tree, with arbitrary lateral linkages for
 	conceptual relationships. The relationships are handled externally by the
 	Database object. Fields may only be modified by the administrator once
-	created, and then, they should only be modified for clarification""" 
+	created, and then, they should only be modified for clarification
+	
+	Note that if the vartype is boolean then sometimes the attribute "dependents" will be assigned, for example in emsprworkflow.py.
+	This is just so dependent widgets can be automatically disabled/enabled in emform.py
+	
+	""" 
 	
 	# non-admin users may only update descs and choices
 	attr_user = set(["desc_long","desc_short","choices"])

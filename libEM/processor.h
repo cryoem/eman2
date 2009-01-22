@@ -3557,7 +3557,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	 * @author David Woolford (a direct port of Steve Ludtke's code)
 	 * @date 01/17/09
 	 */
-	class NormalizeMassProcessor: public Processor
+	class NormalizeByMassProcessor: public Processor
 	{
 		public:
 			string get_name() const
@@ -3567,7 +3567,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 
 			static Processor *NEW()
 			{
-				return new NormalizeMassProcessor();
+				return new NormalizeByMassProcessor();
 			}
 
 			string get_desc() const
@@ -4288,6 +4288,8 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	 * @param radius 
 	 * @param threshold 
 	 * @param nshells 
+	 * @param nshellsgauss
+	 * @return_mask
 	 */
 	class AutoMask3D2Processor:public Processor
 	{
@@ -4317,7 +4319,6 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			d.put("nshells", EMObject::INT, "The number of dilation operations");
 			d.put("nshellsgauss", EMObject::INT);
 			d.put("return_mask", EMObject::BOOL, "If true the result of the operation will produce the mask, not the masked volume.");
-			d.put("write_mask", EMObject::STRING, "If specified will write the mask image to disk using this parameter as the file name. If the file exists will throw.");
 			return d;
 			
 		}
