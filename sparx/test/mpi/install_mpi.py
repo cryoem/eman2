@@ -304,12 +304,12 @@ if not(ldlibpath is None) or not(pythonpath is None):
         os.system( "echo '%s' >> ~/.bashrc" % line )
 
     print "     Please run"
-    print "           source ~/.bashshrc"
+    print "           source ~/.bashrc"
     print ""
 
     print "  2. Csh  user: the following line(s) has been added to ~/.cshrc"
     if not( ldlibpath is None) : 
-        line = "        setenv LD_LIBRARY_PATH %s:$LD_LIBRARY_PATH" % (ldkey, eman2+"/lib", ldkey)
+        line = "        setenv %s %s:$%s" % (ldkey, ldlibpath, ldkey)
         print line
         os.system( "echo '%s' >> ~/.cshrc" % line )
        
