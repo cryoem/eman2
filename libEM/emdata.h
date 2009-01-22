@@ -408,7 +408,7 @@ namespace EMAN
 		 * @exception ImageDimensionException If the image is 3D.
 		 * @return
 		 */
-		double dot_rotate_translate(EMData * with, float dx, float dy, float da);
+		double dot_rotate_translate(EMData * with, float dx, float dy, float da,const bool mirror=false);
 
 
 		/** This does a normalized dot product of a little image with a big image

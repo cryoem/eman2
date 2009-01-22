@@ -1348,7 +1348,7 @@ void EMData::rotate_x(int dx)
 	EXITFUNC;
 }
 
-double EMData::dot_rotate_translate(EMData * with, float dx, float dy, float da)
+double EMData::dot_rotate_translate(EMData * with, float dx, float dy, float da, const bool mirror)
 {
 	ENTERFUNC;
 
@@ -1417,9 +1417,10 @@ double EMData::dot_rotate_translate(EMData * with, float dx, float dy, float da)
 
 				float tt = 1 - t;
 				float uu = 1 - u;
-
+				int idx = i + j * nx;
+				if (mirror) idx = nx-1-i+j*nx; // mirroring of Transforms is always about the y axis
 				result += (this_data[k0] * tt * uu + this_data[k1] * t * uu +
-						   this_data[k2] * t * u + this_data[k3] * tt * u) * with_data[i + j * nx];
+						   this_data[k2] * t * u + this_data[k3] * tt * u) * with_data[idx];
 			}
 		}
 		y += 1.0f;

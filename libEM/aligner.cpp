@@ -898,6 +898,7 @@ static double refalifn(const gsl_vector * v, void *params)
 
 	EMData *this_img = (*dict)["this"];
 	EMData *with = (*dict)["with"];
+	bool mirror = (*dict)["mirror"];
 	
 	EMData *tmp = this_img->copy();
 	
@@ -911,6 +912,7 @@ static double refalifn(const gsl_vector * v, void *params)
 // 	t3d.set_posttrans( (float) x, (float) y);
 //	tmp->rotate_translate(t3d);
 	t.set_trans((float)x,(float)y);
+	t.set_mirror(mirror);
 	tmp->transform(t);
 	
 	Cmp* c = (Cmp*) ((void*)(*dict)["cmp"]);
@@ -946,12 +948,13 @@ static double refalifnfast(const gsl_vector * v, void *params)
 	Dict *dict = (Dict *) params;
 	EMData *this_img = (*dict)["this"];
 	EMData *img_to = (*dict)["with"];
+	bool mirror = (*dict)["mirror"];
 
 	double x = gsl_vector_get(v, 0);
 	double y = gsl_vector_get(v, 1);
 	double a = gsl_vector_get(v, 2);
 
-	double r = this_img->dot_rotate_translate(img_to, (float)x, (float)y, (float)a);
+	double r = this_img->dot_rotate_translate(img_to, (float)x, (float)y, (float)a, mirror);
 	int nsec = this_img->get_xsize() * this_img->get_ysize();
 	double result = 1.0 - r / nsec;
 
@@ -974,12 +977,16 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 	float saz = 0.0;
 	float sdx = 0.0;
 	float sdy = 0.0;
-	if (this_img->has_attr("xform.align2d")) {
-		Transform* t = this_img->get_attr("xform.align2d");
+	bool mirror = false;
+	
+	Transform* t = params.set_default("xform.align2d", (Transform*) 0);
+	if ( t != 0 ) {
+		//Transform* t = this_img->get_attr("xform.align2d");
 		Dict params = t->get_params("2d");
 		saz = params["alpha"];
 		sdx = params["tx"];
 		sdy = params["ty"];
+		mirror = params["mirror"];
 	}
 	
 	int np = 3;
@@ -987,6 +994,7 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 	gsl_params["this"] = this_img;
 	gsl_params["with"] = to;
 	gsl_params["snr"]  = params["snr"];
+	gsl_params["mirror"] = mirror;
 	
 	const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex;
 	gsl_vector *ss = gsl_vector_alloc(np);
@@ -1039,10 +1047,11 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 		rval = gsl_multimin_test_size(gsl_multimin_fminimizer_size(s), precision);
 	}
 
-	Transform * t = new Transform(Dict("type","2d","alpha",(float)gsl_vector_get(s->x, 2)));
-	t->set_trans((float)gsl_vector_get(s->x, 0),(float)gsl_vector_get(s->x, 1));
-	result->set_attr("xform.align2d",t);
-	result->transform(*t);
+	Transform * tsoln = new Transform(Dict("type","2d","alpha",(float)gsl_vector_get(s->x, 2)));
+	tsoln->set_mirror(mirror);
+	tsoln->set_trans((float)gsl_vector_get(s->x, 0),(float)gsl_vector_get(s->x, 1));
+	result->set_attr("xform.align2d",tsoln);
+	result->transform(*tsoln);
 	
 	gsl_vector_free(x);
 	gsl_vector_free(ss);

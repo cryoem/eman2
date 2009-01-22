@@ -2960,7 +2960,8 @@ class E2Refine2DRunTask(E2Refine2DTask):
 		for checker in [self.check_classaverage_page,self.check_simmx_page,self.check_main_page]: # check main page needs the shrink parameter to be checked first
 			error_message = checker(params,options)
 			if len(error_message) > 0 :
-				self.display_errors(error_message)
+				self.show_error_message(error_message)
+#				self.display_errors(error_message)
 				return
 		# w'oh if we make it here a lot of checking has occured. Now get the args in order to spawn_single_task
 		string_args = []
@@ -2977,7 +2978,8 @@ class E2Refine2DRunTask(E2Refine2DTask):
 		  	#error = get_args(options,string_args,bool_args,additional_args)
 		
 			if error != None: # not too fast, something still could have gone wrong
-				self.display_errors([error])
+				#self.display_errors([error])
+				self.show_error_message([error])
 				return
 		print "launching"
 		

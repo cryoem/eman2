@@ -80,9 +80,9 @@ def main():
 	parser.add_option("--classalign",type="string",help="If doing more than one iteration, this is the name and parameters of the 'aligner' used to align particles to the previous class average.", default="rotate_translate_flip")
 	parser.add_option("--classaligncmp",type="string",help="This is the name and parameters of the comparitor used by the fist stage aligner  Default is dot.",default="frc")
 	parser.add_option("--classralign",type="string",help="The second stage aligner which refines the results of the first alignment in class averaging. Default is None.", default=None)
-	parser.add_option("--classraligncmp",type="string",help="The comparitor used by the second stage aligner in class averageing. Default is dot:normalize=1.",default="dot:normalize=1")
+	parser.add_option("--classraligncmp",type="string",help="The comparitor used by the second stage aligner in class averageing. Default is dot:normalize=1.",default="frc")
 	parser.add_option("--classaverager",type="string",help="The averager used to generate the class averages. Default is \'mean\'.",default="mean")
-	parser.add_option("--classcmp",type="string",help="The name and parameters of the comparitor used to generate similarity scores, when class averaging. Default is \'dot:normalize=1\'", default="frc")
+	parser.add_option("--classcmp",type="string",help="The name and parameters of the comparitor used to generate similarity scores, when class averaging. Default is frc'", default="frc")
 	parser.add_option("--classnormproc",type="string",default="normalize.edgemean",help="Normalization applied during class averaging")
 	
 	 
@@ -167,8 +167,12 @@ def main():
 		if logid : E2progress(logid,proc_tally/total_procs)
 		# make class-averages
 		#run("e2classaverage.py %s %s#classmx_%02d %s#classes_%02d --iter=%d --align=%s:maxshift=%d --averager=%s -vf  --keep=%f --cmp=%s --aligncmp=%s"%(options.input,options.path,it,options.path,it,options.classiter,options.classalign,options.maxshift,options.classaverager,options.classkeep,options.classcmp,options.classaligncmp))
-		run("e2classaverage.py %s %s#classmx_00 %s#classes_init --iter=6 --align=%s:maxshift=%d --averager=%s -vf --bootstrap --keep=%f --cmp=%s --aligncmp=%s"%(options.input,options.path,options.path,options.classalign,options.maxshift,options.classaverager,options.classkeep,options.classcmp,options.classaligncmp))
 		
+		cls_cmd = "e2classaverage.py %s %s#classmx_00 %s#classes_init --iter=6 " %(options.input,options.path,options.path)
+		cls_cmd += get_classaverage_extras(options)
+		
+		#run("e2classaverage.py %s %s#classmx_00 %s#classes_init --iter=6 --align=%s:maxshift=%d --averager=%s -vf --bootstrap --keep=%f --cmp=%s --aligncmp=%s --normproc=%s"%(options.input,options.path,options.path,options.classalign,options.maxshift,options.classaverager,options.classkeep,options.classcmp,options.classaligncmp,options.classnormproc))
+		run (cls_cmd)
 		proc_tally += 1.0
 		if logid : E2progress(logid,proc_tally/total_procs)
 	if not options.initial : options.initial=options.path+"#classes_init"
@@ -215,8 +219,10 @@ def main():
 		if logid : E2progress(logid,proc_tally/total_procs)
 		
 		# make class-averages
-		run("e2classaverage.py %s %s#classmx_%02d %s#classes_%02d --iter=%d --align=%s:maxshift=%d --averager=%s -vf  --keep=%f --cmp=%s --aligncmp=%s"%(options.input,options.path,it,options.path,it,options.classiter,options.classalign,options.maxshift,options.classaverager,options.classkeep,options.classcmp,options.classaligncmp))
-		
+		cls_cmd = "e2classaverage.py %s %s#classmx_%02d %s#classes_%02d --iter=%d " %(options.input,options.path,it,options.path,it,options.classiter)
+		cls_cmd += get_classaverage_extras(options)
+		#run("e2classaverage.py %s %s#classmx_%02d %s#classes_%02d --iter=%d --align=%s:maxshift=%d --averager=%s -vf  --keep=%f --cmp=%s --aligncmp=%s"%(options.input,options.path,it,options.path,it,options.classiter,options.classalign,options.maxshift,options.classaverager,options.classkeep,options.classcmp,options.classaligncmp))
+		run(cls_cmd)
 		
 		proc_tally += 1.0
 		if logid : E2progress(logid,proc_tally/total_procs)
@@ -225,7 +231,15 @@ def main():
 			
 	E2end(logid)
 	
+
+def get_classaverage_extras(options):
+	s = " --align=%s:maxshift=%d --averager=%s -vf  --keep=%f --cmp=%s --aligncmp=%s --normproc=%s" %(options.classalign,options.maxshift,options.classaverager,options.classkeep,options.classcmp,options.classaligncmp,options.classnormproc)
+	if options.classkeepsig:
+		s += " --keepsig"
+	if options.classralign != None:
+		s += " --ralign=%s --raligncmp=%s" %(options.classralign,options.classraligncmp)
 	
+	return s
 def run(command):
 	"Execute a command with optional verbose output"
 	global options
