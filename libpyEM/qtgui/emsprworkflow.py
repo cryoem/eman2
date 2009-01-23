@@ -1141,11 +1141,12 @@ def image_db_save_as(text,application):
 		
 		file_filt_string = ""
 		for f in file_filt:
-			if f != f[0]:
+			if f != file_filt[0]:
 				file_filt_string += " "
 			file_filt_string += "*"+f
+		print file_filt_string
 			
-		fsp=QtGui.QFileDialog.getSaveFileName(None, "Specify file name",get_file_tag(text)+".hdf","file_filt_string","")
+		fsp=QtGui.QFileDialog.getSaveFileName(None, "Specify file name",get_file_tag(text)+".hdf",file_filt_string,"")
 		fsp=str(fsp)
 		
 		# BDB works but it's not advertised as working
