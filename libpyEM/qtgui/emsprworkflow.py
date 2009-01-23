@@ -1696,7 +1696,7 @@ class E2BoxerGuiTaskGeneral(E2BoxerGuiTask):
 		params.append(ParamDef(name="filenames",vartype="url",desc_short="File names",desc_long="The names of the particle files you want to interactively box using e2boxer",property=None,defaultunits=[],choices=[]))
 		db = db_open_dict(self.form_db_name)
 		params.append(ParamDef(name="interface_boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=db.get("interface_boxsize",dfl=128),choices=[]))
-		db_close_dict()
+		db_close_dict(self.form_db_name)
 		return params
 	
 	
@@ -2018,12 +2018,16 @@ class E2CTFWorkFlowTask(ParticleWorkFlowTask):
 		
 		ptcl_names = self.get_particle_db_names(strip_ptcls=False) # particles in the project directory
 		ctf_names = self.get_names_with_ctf_params()
-		ctf_ptcl_names = [l[0] for l in ctf_names]
+		
 		
 		interactable_names = []
-		for name in ptcl_names:
-			if name in ctf_ptcl_names:
-				interactable_names.append(name)
+		
+		
+		if ctf_names != None:
+			ctf_ptcl_names = [l[0] for l in ctf_names]
+			for name in ptcl_names:
+				if name in ctf_ptcl_names:
+					interactable_names.append(name)
 				
 		return interactable_names
 		
@@ -2035,6 +2039,7 @@ class E2CTFWorkFlowTask(ParticleWorkFlowTask):
 		[[neg_001,neg_001.hdf],[ptcls_01,bdb:particles#ptcls_01_ptcls],...] etc
 		e2ctf is responsible for making sure the last data entry for each image is the original image name (this was first enforced by d.woolford)
 		'''
+		if not db_check_dict("bdb:e2ctf.parms"): return None
 		parms_db = db_open_dict("bdb:e2ctf.parms",ro=True)
 		
 		ret = []
@@ -2151,6 +2156,9 @@ class E2CTFAutoFitTask(E2CTFWorkFlowTask):
 		'''
 		
 		error_message = []
+		
+		if not params.has_key("filenames"): return None # this is fine
+		
 		if  params.has_key("filenames") and len(params["filenames"]) == 0:
 			self.run_select_files_msg()
 			return None
@@ -2265,8 +2273,11 @@ class E2CTFAutoFitTaskGeneral(E2CTFAutoFitTask):
 		These are the options required to run pspec_and_ctf_fit in e2ctf.py
 		'''
 		
+		if not params.has_key("filenames"): return None # this is fine
+		
 		if  params.has_key("filenames") and len(params["filenames"]) == 0:
 			return None # this is fine
+		
 		
 		filenames = params["filenames"]
 		fine,message = check_files_are_em_images(filenames)
@@ -2327,8 +2338,9 @@ class E2CTFOutputTask(E2CTFWorkFlowTask):
 		'''
 		
 		error_message = []
-		if  params.has_key("filenames") and len(params["filenames"]) == 0:
+		if  not params.has_key("filenames") or (params.has_key("filenames") and len(params["filenames"]) == 0):
 			error_message.append("Please select files to process")
+			return None
 		
 		
 		options = EmptyObject()
@@ -2465,10 +2477,12 @@ class E2CTFGuiTask(E2CTFWorkFlowTask):
 
 		ptcl_names = self.get_particle_db_names(strip_ptcls=False) # particles in the project directory
 		ctf_names = self.get_names_with_ctf_params()
-		ctf_ptcl_names = [l[0] for l in ctf_names]
-		
-		p,n = self.get_ctf_param_table(self.get_project_particle_names_with_ctf(),no_particles=True)
-		
+		if ctf_names != None: 
+			ctf_ptcl_names = [l[0] for l in ctf_names]
+			
+			p,n = self.get_ctf_param_table(self.get_project_particle_names_with_ctf(),no_particles=True)
+		else:
+			n = 0
 		params = []		
 		if n == 0:
 			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFGuiTask.documentation_string+E2CTFGuiTask.warning_string,choices=None))
@@ -3010,6 +3024,8 @@ class E2Refine2DChooseDataTask(ParticleWorkFlowTask):
 	def on_form_ok(self,params):
 
 		choice = params["particle_set_choice"]
+		
+		if choice == None: return # the user has selected anything but they hit ok 
 		
 		if choice[:9] == "Particles":
 			self.emit(QtCore.SIGNAL("replace_task"),E2Refine2DRunTask,"e2refine2d options")
@@ -4404,11 +4420,13 @@ class E2EotestTask(E2RefineParticlesTask):
 	'''
 	 
 	general_documentation = "These are parameters required to run an even-odd test in EMAN2"
-	
+	documentation_string = "This form is used to run e2eotest."
+	warning_string = "\n\n\nThere are no refinement results available to use as the basis of running e2eotest"
 	def __init__(self,application):
 	 	E2RefineParticlesTask.__init__(self,application)
 	 	self.window_title = "e2eotest parameters"
 	 	self.form_db_name = "bdb:emform.e2eotest"
+	 	self.dir_and_iter = {} # will eventually be useful information about directories that will work for e2eotest
 	 	
 #	def run_form(self):
 #		self.form = EMTableFormModule(self.get_params(),self.application())
@@ -4423,23 +4441,36 @@ class E2EotestTask(E2RefineParticlesTask):
 	def get_params(self):
 	 	params = []
 		
+		# do this so that we have 
+		self.__set_available_iteration_data()
+		
+		
+		if len(self.dir_and_iter) == 0:
+			params.append(self.get_cant_proceed_page())
+			return params
+		
 		params.append(self.get_main_params())
 		params.append(self.get_classaverage_page(include_sep=False))
 		params.append(self.get_make3d_page())
 		
 		return params
 	
-	def get_main_params(self):
+	def get_cant_proceed_page(self):
+		params = []		
+
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2EotestTask.documentation_string+E2EotestTask.warning_string,choices=None))
+
+		return ["Can't proceed",params]
+	def __set_available_iteration_data(self):
 		'''
-		General/broad refine params
+		This function is called in get_params to accrue the directory data
 		'''
-		# have to get the directories 
 		dirs = get_numbered_directories("refine_")
 		dirs.sort()
 		
 		nec_files = [ "classes_", "classify_","projections_"]
 		
-		dir_and_iter = {}
+		self.dir_and_iter = {}
 		for dir in dirs:
 			fail = False
 			available_iters = []
@@ -4461,8 +4492,13 @@ class E2EotestTask(E2RefineParticlesTask):
 			# might be some empyt ones so just forget those
 			if len(available_iters) > 0: 
 				available_iters.reverse()
-				dir_and_iter[dir] = available_iters
+				self.dir_and_iter[dir] = available_iters
 	
+	def get_main_params(self):
+		'''
+		General/broad refine params
+		'''
+		# have to get the directories 
 		params = []
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2EotestTask.general_documentation,choices=None))
 		
@@ -4473,7 +4509,7 @@ class E2EotestTask(E2RefineParticlesTask):
 		# the user never agreed to anything
 		db = db_open_dict(self.form_db_name) # see eman wiki for a list of what args are kept in this db
 		
-		params.append(ParamDef(name="path and iteration", vartype="dict",desc_short="Directory and iteration",desc_long="Select the directory containing the refinement and the iteration you wish to use as the input", property=None, defaultunits="",choices=dir_and_iter  ))
+		params.append(ParamDef(name="path and iteration", vartype="dict",desc_short="Directory and iteration",desc_long="Select the directory containing the refinement and the iteration you wish to use as the input", property=None, defaultunits="",choices=self.dir_and_iter  ))
 	
 		
 		plowmem = ParamDef(name="lowmem",vartype="boolean",desc_short="Low mem",desc_long="Causes various programs to restrict memory usage but results in increased CPU time.",property=None,defaultunits=db.get("lowmem",dfl=False),choices=None)
@@ -4524,6 +4560,8 @@ class E2EotestTask(E2RefineParticlesTask):
 	
 	def on_form_ok(self,params):
 
+		if len(self.dir_and_iter) == 0: return # The user has the can't proceed page
+
 		options = EmptyObject()
 		
 		for checker in [self.check_main_page,self.check_classaverage_page,self.check_make3d_page]:
@@ -4567,11 +4605,12 @@ class E2ResolutionTask(WorkFlowTask):
 	'''
 	 
 	general_documentation = "These are parameters required to run an e2resolutions.\n\n THIS DOES NOT WORK YET"
-	
+	warning_string = "\n\n\nThere are no refinement results available to use as the basis of running e2resolution"
 	def __init__(self,application):
 	 	WorkFlowTask.__init__(self,application)
 	 	self.window_title = "e2resolution parameters"
-
+	 	self.dir_and_iter = {} # will eventually be useful information about directories that will work for e2eotest
+	 	
 		
 	def get_params(self):
 		'''
@@ -4583,7 +4622,7 @@ class E2ResolutionTask(WorkFlowTask):
 		
 		nec_files = ["threed_filt_","threed_mask_"]
 		
-		dir_and_iter = {}
+		self.dir_and_iter = {}
 		for dir in dirs:
 			fail = False
 			available_iters = []
@@ -4605,13 +4644,18 @@ class E2ResolutionTask(WorkFlowTask):
 			# might be some empyt ones so just forget those
 			if len(available_iters) > 0: 
 				available_iters.reverse()
-				dir_and_iter[dir] = available_iters
+				self.dir_and_iter[dir] = available_iters
 	
+		params = []
+		if len(self.dir_and_iter) == 0:
+			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2ResolutionTask.general_documentation+ E2ResolutionTask.warning_string,choices=None))
+			return params
+		
 		params = []
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2ResolutionTask.general_documentation,choices=None))
 		
 	
-		params.append(ParamDef(name="path and iteration", vartype="dict",desc_short="Directory and iteration",desc_long="Select the directory containing the refinement and the iteration you wish to use as the input", property=None, defaultunits="",choices=dir_and_iter  ))
+		params.append(ParamDef(name="path and iteration", vartype="dict",desc_short="Directory and iteration",desc_long="Select the directory containing the refinement and the iteration you wish to use as the input", property=None, defaultunits="",choices=self.dir_and_iter  ))
 		
 		project_db = db_open_dict("bdb:project")
 		papix = ParamDef(name="global.apix",vartype="float",desc_short="Angtsrom per pixel",desc_long="The physical distance represented by the pixel spacing",property=None,defaultunits=project_db.get("global.apix",dfl=1.1),choices=None)
@@ -4622,6 +4666,8 @@ class E2ResolutionTask(WorkFlowTask):
 		return params
 	
 	def on_form_ok(self,params):
+
+		if len(self.dir_and_iter) == 0: return # the user has been issued a warning about data lacking, ok does nothing
 
 		if  params.has_key("global.apix") and params["global.apix"] <= 0:
 			self.show_error_message(["Apix must be greater than  zero"])
