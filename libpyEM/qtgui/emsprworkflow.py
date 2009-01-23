@@ -351,6 +351,8 @@ class WorkFlowTask(QtCore.QObject):
 			p.append(pdims)
 			
 			setattr(p,"convert_text", ptable_convert_2)
+			context_menu_dict = {"Save as":image_db_save_as}
+			setattr(p,"context_menu", context_menu_dict)
 			setattr(p,"icon_type","matrix_image")
 			
 			return p,len(class_files)
@@ -898,6 +900,8 @@ class ParticleWorkFlowTask(WorkFlowTask):
 		
 		ptable,n = self.__make_particle_param_table(project_names)
 		setattr(ptable,"convert_text", ptable_convert_2)
+		context_menu_dict = {"Save as":image_db_save_as}
+		setattr(ptable,"context_menu", context_menu_dict)
 		setattr(ptable,"icon_type","single_image")
 		return ptable,n
 		
@@ -908,6 +912,8 @@ class ParticleWorkFlowTask(WorkFlowTask):
 		project_names = self.get_particle_db_names(strip_ptcls=True)
 		ptable,n = self.__make_particle_param_table(project_names)
 		setattr(ptable,"convert_text", ptable_convert)
+		context_menu_dict = {"Save as":image_db_save_as}
+		setattr(ptable,"context_menu", context_menu_dict)
 		setattr(ptable,"icon_type","matrix_image")
 		return ptable,n
 	def __make_particle_param_table(self,project_names):
@@ -1041,6 +1047,8 @@ class ParticleWorkFlowTask(WorkFlowTask):
 		p.append(pdims)
 		
 		setattr(p,"convert_text", ptable_convert_3)
+		context_menu_dict = {"Save as":image_db_save_as}
+		setattr(p,"context_menu", context_menu_dict)
 		setattr(p,"icon_type","matrix_image")
 		
 		return p,len(pnames)
@@ -1100,6 +1108,8 @@ class ParticleWorkFlowTask(WorkFlowTask):
 		p.append(psigma)
 		
 		setattr(p,"convert_text", ptable_convert_4)
+		context_menu_dict = {"Save as":image_db_save_as}
+		setattr(p,"context_menu", context_menu_dict)
 		setattr(p,"icon_type","3d_image")
 		
 		return p,len(names)
@@ -1107,6 +1117,91 @@ class ParticleWorkFlowTask(WorkFlowTask):
 # these ptable functions are used by the ParamTable class for converting entries into absolute file paths, for the purpose of displaying things (like 2D images and plots etc)
 def ptable_convert(text):
 	return "bdb:particles#"+text+"_ptcls"
+
+def image_db_save_as(text,application):
+	msg = QtGui.QMessageBox()
+	msg.setWindowTitle("Woops")
+	if not db_check_dict(text):
+		msg.setText("The database (%s) does not exist" %text) # this is a disturbing scenario, it should never happen
+		msg.exec_()
+		return
+	else:
+		db = db_open_dict(text,ro=True)
+		if not db.has_key("maxrec") or db["maxrec"] ==None:
+			msg.setText("The database (%s) has no particles in it" %text) # this could happen in funny situations
+			msg.exec_()
+			return
+		else: total_images = db["maxrec"]+1
+
+		# Get the output filespec
+		if total_images == 1:
+			file_filt = [".hdf", ".img", ".spi", ".mrc", ".dm3", ".pgm", ".pif"]
+		else: # logic dictates that total_images > 1
+			file_filt = [".hdf", ".img", ".spi"]
+		
+		file_filt_string = ""
+		for f in file_filt:
+			if f != f[0]:
+				file_filt_string += " "
+			file_filt_string += "*"+f
+			
+		fsp=QtGui.QFileDialog.getSaveFileName(None, "Specify file name",get_file_tag(text)+".hdf","file_filt_string","")
+		fsp=str(fsp)
+		
+		# BDB works but it's not advertised as working
+		# BDB has issues on Windows and MAC
+		bdb_idx = fsp.find("bdb:")
+		if bdb_idx != -1:
+			fsp = fsp[bdb_idx:]
+	
+		if fsp != '':
+			
+			# remove the file if it exists - the save file dialog already made sure the user wanted to overwrite the file
+			if file_exists(fsp):
+				remove_file(fsp)
+			
+			if len(fsp) < 3 or ( fsp[-4:] not in file_filt and fsp[:4] != "bdb:" ):
+				msg.setText("%s is an invalid image name" %fsp)
+				msg.exec_()
+				return
+				
+			if fsp[:4] == "bdb:" and len(fsp) == 4:
+				msg.setText("%s is an invalid bdb name" %fsp)
+				msg.exec_()
+				return
+			
+			if db_check_dict(fsp):
+				 msg = QtGui.QMessageBox()
+				 msg.setWindowTitle("Caution")
+				 msg.setText("Are you sure you want to overwrite the bdb file?");
+				 msg.setInformativeText("Clicking ok to remove this file")
+				 msg.setStandardButtons(QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel);
+				 msg.setDefaultButton(QMessageBox.Cancel);
+				 ret = msg.exec_()
+				
+			progress = EMProgressDialogModule(application,"Writing files", "abort", 0, total_images,None)
+			progress.qt_widget.show()
+			for i in range(total_images):
+				d = db[i]
+				try:
+					d.write_image(fsp,-1)
+				except:
+					msg.setText("An exception occured while writing %s, please try again" %fsp)
+					msg.exec_()
+					progress.qt_widget.close()
+					return
+					
+				progress.qt_widget.setValue(i)
+				application.processEvents()
+				if progress.qt_widget.wasCanceled():
+					remove_file(fsp)
+					progress.qt_widget.close()
+					return
+					
+				
+			#progress.qt_widget.setValue(len(self.data)-1)
+			progress.qt_widget.close()
+
 
 def ptable_convert_2(text):
 	return text
@@ -1281,6 +1376,8 @@ class E2BoxerTask(ParticleWorkFlowTask):
 		
 
 		setattr(p_reordered,"convert_text", ptable_convert_2)
+		context_menu_dict = {"Save as":image_db_save_as}
+		setattr(p_reordered,"context_menu", context_menu_dict)
 		setattr(p_reordered,"icon_type","single_image")
 		
 		
@@ -1318,6 +1415,8 @@ class E2BoxerTask(ParticleWorkFlowTask):
 		p.append(pdims)
 		
 		setattr(p,"convert_text", ptable_convert_2)
+		context_menu_dict = {"Save as":image_db_save_as}
+		setattr(p,"context_menu", context_menu_dict)
 		setattr(p,"icon_type","single_image")
 		#p.append(pdvdims) # decided this wasn't necessary
 		
@@ -1762,8 +1861,9 @@ class E2CTFWorkFlowTask(ParticleWorkFlowTask):
 			p.append(pwienerdim)
 			
 		setattr(p,"convert_text", ptable_convert_3)
+		context_menu_dict = {"Save as":image_db_save_as}
+		setattr(p,"context_menu", context_menu_dict)
 		setattr(p,"icon_type","matrix_image")
-		
 		
 		return p,len(defocus)
 	
@@ -3380,6 +3480,8 @@ class RefinementReportTask(ParticleWorkFlowTask):
 			
 			
 			setattr(p,"convert_text", ptable_convert_2)
+			context_menu_dict = {"Save as":image_db_save_as}
+			setattr(p,"context_menu", context_menu_dict)
 			setattr(p,"icon_type","3d_image")
 			
 			return p,len(threed_files)

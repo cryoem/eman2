@@ -208,8 +208,12 @@ class EMFormWidget(QtGui.QWidget):
 		groupbox.setLayout(hbl)
 		layout.addWidget(groupbox,10)
 		
-		if hasattr(paramtable,"convert_text"):
-			setattr(table_widget,"convert_text",paramtable.convert_text)
+		optional_attr = ["convert_text","context_menu"]
+		for opt in optional_attr:
+			if hasattr(paramtable,opt):
+				setattr(table_widget,opt,getattr(paramtable,opt))
+#		if hasattr(paramtable,"convert_menu"):
+#			setattr(table_widget,"convert_text",paramtable.convert_text)
 			
 		self.event_handlers.append(ParamTableEventHandler(self,table_widget))
 		if len(paramtable[0].choices) > 0:
@@ -730,15 +734,33 @@ class ParamTableEventHandler:
 	def __init__(self,target,table_widget):
 		self.target = weakref.ref(target)
 		self.table_widget = table_widget
+		table_widget.contextMenuEvent = self.contextMenuEvent
 				
 		QtCore.QObject.connect(table_widget, QtCore.SIGNAL("itemDoubleClicked(QTableWidgetItem*)"),self.table_item_double_clicked)
 		
 	def table_item_double_clicked(self,item):
 		if hasattr(self.table_widget,"convert_text"):
 			self.target().display_file( self.table_widget.convert_text(str(item.text())))
-		else:
-			print "nothing"
-
+		else: pass
+	
+	def contextMenuEvent(self,event):
+		print "context"
+		if hasattr(self.table_widget,"context_menu"):
+			menu = QtGui.QMenu()
+			for k in self.table_widget.context_menu.keys():
+				menu.addAction(k)
+			QtCore.QObject.connect(menu,QtCore.SIGNAL("triggered(QAction*)"),self.menu_action_triggered)
+			menu.exec_(event.globalPos())
+	
+	def menu_action_triggered(self,action):
+		items = self.table_widget.selectedItems()
+		for item in items:
+			text = self.table_widget.convert_text(str(item.text()))
+			self.table_widget.context_menu[str(action.text())](text,self.target().parent().application())
+	
+	def table_item_clicked(self,item):
+		#
+		pass
 class UrlEventHandler:
 	'''
 	The browse and cancel events have to be sent to the correct line edit, so this handles it
@@ -767,6 +789,7 @@ class UrlEventHandler:
 	def on_browser_cancel(self):
 		self.application().close_specific(self.browser)
 		self.browser = None
+		
 	def on_browser_ok(self,stringlist):
 		new_string = str(self.text_edit.toPlainText())
 		present_files = new_string.split() # this is to avoid redundancies
@@ -795,7 +818,6 @@ class DictEventHandler:
 		
 		QtCore.QObject.connect(self.combo1, QtCore.SIGNAL("currentIndexChanged(int)"),self.combo1_index_changed)
 	
-
 	def combo1_index_changed(self,i):
 		
 		keys = self.dict.keys()
@@ -807,7 +829,6 @@ class DictEventHandler:
 		for v in values:
 			self.combo2.addItem(str(v))
 			
-	
 class BoolDependentsEventHandler:
 	'''
 	This event handler works on the assumption that a boolean type is always a checkbox.
