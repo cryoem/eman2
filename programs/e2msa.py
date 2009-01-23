@@ -102,7 +102,9 @@ def msa(images,mask,nbasis,varimax,mode):
 	"""Perform principle component analysis (in this context similar to Multivariate Statistical Analysis (MSA) or
 Singular Value Decomposition (SVD). 'images' is either a list of EMImages or a filename containing a stack of images
 to analyze. 'mask' is an EMImage with a binary mask defining the region to analyze (must be the same size as the input
-images. If 'varimax' is set, the final basis set will be 'rotated' to produce a varimax basis. Mode must be one of
+images. input images will be masked and normalized in-place. The mean value is subtracted from each image prior to
+calling the PCA routine. The first returned image is the mean value, and not an Eigenvector. It will have an
+'eigval' of 0.  If 'varimax' is set, the final basis set will be 'rotated' to produce a varimax basis. Mode must be one of
 pca,pca_large or svd_gsl"""
 	
 	
@@ -110,15 +112,34 @@ pca,pca_large or svd_gsl"""
 		n=EMUtil.get_image_count(images)
 		if mode=="svd_gsl" : pca=Analyzers.get(mode,{"mask":mask,"nvec":nbasis,"nimg":n})
 		else : pca=Analyzers.get(mode,{"mask":mask,"nvec":nbasis})
+
+		mean=EMData(images,0)
+		for i in range(1,n):
+			im=EMData(images,i)
+			im*=mask
+			im.process_inplace("normalize.unitlen")
+			mean+=im
+		mean/=float(n)
 		
 		for i in range(n):
 			im=EMData(images,i)
+			im*=mask
+			im.process_inplace("normalize.unitlen")
+			im-=mean
 			pca.insert_image(im)
 	else:
 		if mode=="svd_gsl" : pca=Analyzers.get(mode,{"mask":mask,"nvec":nbasis,"nimg":len(images)})
 		else : pca=Analyzers.get(mode,{"mask":mask,"nvec":nbasis})
 		
+		mean=images[0]
+		for im in images[1:]:
+			im*=mask
+			im.process_inplace("normalize.unitlen")
+			mean+=im
+		mean/=float(n)		
+		
 		for im in images:
+			im-=mean
 			pca.insert_image(im)
 			
 	results=pca.analyze()
@@ -131,6 +152,11 @@ pca,pca_large or svd_gsl"""
 		
 		results=pca.analyze()
 
+	for im in results:
+		if im["mean"]<0 : im.mult(-1.0)
+
+	mean["eigval"]=0
+	results.insert(0,mean)
 	return results 
 
 if __name__== "__main__":

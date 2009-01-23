@@ -1,0 +1,3 @@
+The code in this directory is deprecated. It was part of an early GUI design using wxpython
+instead of pyqt/opengl. The code may still be useful as examples, though it is unlikely to 
+actually run due to many changes to the base objects.

@@ -60,8 +60,11 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
 	parser.add_option("--normproj",action="store_true",help="Normalize the projections resulting from 'project', such that the length of each vector is 1",default=False)
+	parser.add_option("--normalize",type="string",help="Normalize the input images using the named processor",default="normalize.unitlen")
+	parser.add_option("--maskfile","-M",type="string",help="File containing a mask to apply to the particles before normalization", default=None)
+	parser.add_option("--mean1",action="store_true",help="Indicates that the first image in the basis set is actually the mean image, which should be subtracted prior to projection. Output from e2msa requires this flag.")
 	parser.add_option("--oneout",action="store_true",help="Output is a single 2-D image rather than a set of 1-D images",default=False)
-	parser.add_option("--nbasis","-n",type="int",help="Will use the first n basis images from the input",default=-1)
+	parser.add_option("--nbasis","-n",type="int",help="Will use the first n basis images from the input, excluding the mean if present",default=-1)
 	parser.add_option("--verbose", metavar="n", type="int", help="Give verbose output, higher numbers = more detail")
 	
 	#parser.add_option("--gui",action="store_true",help="Start the GUI for interactive boxing",default=False)
@@ -74,8 +77,18 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 	logid=E2init(sys.argv)
 	
 	# second parameter is always the input basis set
-	if options.nbasis>1 : basis=EMData.read_images(args[1],(0,options.nbasis-1))
+	if options.nbasis>1 : basis=EMData.read_images(args[1],(0,options.nbasis))
 	else :basis=EMData.read_images(args[1])
+	
+	if options.mean1 : 
+		mean=basis[0]
+		del basis[0]
+	else : 
+		if options.nbasis>1 : del basis[-1]
+		mean=None
+	
+	if options.maskfile : maskfile=EMData("options.maskfile",0)
+	else : maskfile=None
 	
 	# Project an image stack into a basis subspace
 	if args[0]=="project" :
@@ -90,6 +103,10 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 			
 			for i in range(n):
 				im=EMData(args[2],i)
+				if maskfile : im*=maskfile
+				try: im.process_inplace(options.normalize)
+				except: print "Warning: Normalization failed"
+				if mean : im-=mean
 			
 				# inner loop over the basis images
 				for j,b in enumerate(basis):
@@ -99,6 +116,11 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 		else:
 			for i in range(n):
 				im=EMData(args[2],i)
+				if maskfile : im*=maskfile
+				try: im.process_inplace(options.normalize)
+				except: print "Warning: Normalization failed"
+				if mean : im-=mean
+
 				proj=EMData(len(basis),1,1)
 			
 				# inner loop over the basis images
@@ -140,6 +162,11 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 #				im.rotate_translate(best[3],0,0,best[1],best[2],0)
 
 				im.transform(Transform({"type":"2d","phi":best[3],"tx":best[1],"ty":best[2],"flip":best[4]}))
+
+				if maskfile : im*=maskfile
+				try: im.process_inplace(options.normalize)
+				except: print "Warning: Normalization failed"
+				if mean : im-=mean
 				
 				# inner loop over the basis images to generate the components of the projection vector
 				for j,b in enumerate(basis):
@@ -169,6 +196,11 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 				
 #				im.rotate_translate(best[1],0,0,best[2],best[3],0)
 				im.transform(Transform({"type":"2d","phi":best[3],"tx":best[1],"ty":best[2],"flip":best[4]}))
+
+				if maskfile : im*=maskfile
+				try: im.process_inplace(options.normalize)
+				except: print "Warning: Normalization failed"
+				if mean : im-=mean
 				
 				proj=EMData(len(basis),1,1)
 			

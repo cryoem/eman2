@@ -186,7 +186,7 @@ def main():
 		proc_tally += 1.0
 		if logid : E2progress(logid,proc_tally/total_procs)
 		# Compute a classification basis set
-		run("e2msa.py %s#allrefs_%02d %s#basis_%02d --nbasis=%d"%(options.path,it,options.path,it,options.nbasisfp))
+		run("e2msa.py %s#allrefs_%02d %s#basis_%02d --nbasis=%d "%(options.path,it,options.path,it,options.nbasisfp))
 		proc_tally += 1.0
 		if logid : E2progress(logid,proc_tally/total_procs)
 #		run("e2msa.py allrefs.%02d.hdf basis.%02d.hdf --nbasis=%d --varimax"%(it,it,options.nbasisfp))
@@ -211,7 +211,7 @@ def main():
 		
 		# e2basis projectrot here
 		inputproj=options.path+"#input_%02d_proj"%it
-		run("e2basis.py projectrot %s#basis_%02d %s %s#simmx_%02d %s --oneout --verbose=%d %s"%(options.path,it,options.input,options.path,it,inputproj,subverbose,options.normproj))
+		run("e2basis.py projectrot %s#basis_%02d %s %s#simmx_%02d %s --oneout --normproj --verbose=%d %s"%(options.path,it,options.input,options.path,it,inputproj,subverbose,options.normproj))
 		
 		# classify the subspace vectors
 		run("e2classifykmeans.py %s --original=%s --ncls=%d --clsmx=%s#classmx_%02d --oneinali %s"%(inputproj,options.input,options.ncls,options.path,it,excludestr))
