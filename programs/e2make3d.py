@@ -415,9 +415,9 @@ def back_projection_reconstruction(options):
 		r = t.get_params("eman")
 		recon.insert_slice(d, t)
 
-		if not(options.verbose):
+		if options.verbose:
 			print "%2d/%d  %3d\t%5.1f  %5.1f  %5.1f\t\t%6.2g %6.2g" %(
-					(i+1,total_images,d.get_attr("IMAGIC.imgnum"),
+					(i+1,total_images,d.get_attr("ptcl_repr"),
 					r["alt"], r["az"],r["phi"],
 					d.get_attr("maximum"),d.get_attr("minimum")))
 	
