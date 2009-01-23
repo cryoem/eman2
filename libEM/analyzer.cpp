@@ -6,32 +6,32 @@
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
 
 #include <ctime>
@@ -75,6 +75,7 @@ void KMeansAnalyzer::set_params(const Dict & new_params)
 	if (params.has_key("maxiter"))maxiter = params["maxiter"];
 	if (params.has_key("minchange"))minchange = params["minchange"];
 	if (params.has_key("mininclass"))mininclass = params["mininclass"];
+	if (params.has_key("slowseed"))slowseed = params["slowseed"];
 	if (params.has_key("verbose"))verbose = params["verbose"];
 
 }
@@ -86,7 +87,13 @@ if (ncls<=1) return vector<EMData *>();
 
 // These are the class centers, start each with a random image
 int nptcl=images.size();
+int nclstot=ncls;
 centers.resize(ncls);
+
+if (slowseed) {
+	ncls=2;
+	if (maxiter<ncls*3+20) maxiter=ncls*3+20;	// We need to make sure we have enough iterations to seed all of the classes
+}
 
 for (int i=0; i<ncls; i++) {
 	// Fixed by d.woolford, Util.get_irand is inclusive (added a -1)
@@ -99,6 +106,10 @@ for (int i=0; i<maxiter; i++) {
 	if (verbose) printf("iter %d>  %d\n",i,nchanged);
 	if (nchanged<minchange) break;
 	update_centers();
+
+	if (slowseed && i%3==2) {
+
+	}
 }
 
 return centers;
@@ -120,14 +131,19 @@ for (int i=0; i<nptcl; i++) {
 	repr[cid]++;
 }
 
+//images[Util::get_irand(0,nptcl-1)]->copy()
+
 for (int i=0; i<ncls; i++) {
 	if (repr[i]==0) {
 		delete centers[i];
-		centers[i]=images[Util::get_irand(0,nptcl)]->copy();
-		repr[i]=1;
+		centers[i]=None;
+		repr[i]=0;
+		printf("kmeans broken. fixed soon !!!\n");
 	}
-	else centers[i]->mult((float)1.0/(float)(repr[i]));
-	centers[i]->set_attr("ptcl_repr",repr[i]);
+	else {
+		centers[i]->mult((float)1.0/(float)(repr[i]));
+		centers[i]->set_attr("ptcl_repr",repr[i]);
+	}
 	if (verbose>1) printf("%d(%d)\t",i,(int)repr[i]);
 }
 if (verbose>1) printf("\n");
@@ -160,7 +176,7 @@ int PCAsmall::insert_image(EMData * image)
 {
 	if(mask==0)
 		throw NullPointerException("Null mask image pointer, set_params() first");
-	
+
    EMData *maskedimage = Util::compress_image_mask(image,mask);
 
    int nx = maskedimage->get_xsize();
@@ -170,12 +186,12 @@ int PCAsmall::insert_image(EMData * image)
       exit(1);
    }
 
-   // there is a faster version of the following rank-1 update 
+   // there is a faster version of the following rank-1 update
    nimages++;
    for (int j = 1; j <= nx; j++)
        for (int i = 1; i<=nx; i++) {
            covmat(i,j) += imgdata(i)*imgdata(j);
-   }   
+   }
 
    EMDeletePtr(maskedimage);
    return 0;
@@ -191,7 +207,7 @@ vector<EMData*> PCAsmall::analyze()
         eigval = (float*)calloc(ncov,sizeof(float));
         eigvec = (float*)calloc(ncov*ncov,sizeof(float));
         status = Util::coveig(ncov, covmat, eigval, eigvec);
-//       for (int i=1; i<=nvec; i++) printf("eigval = %11.4e\n", 
+//       for (int i=1; i<=nvec; i++) printf("eigval = %11.4e\n",
 //            eigval[ncov-i]);
 
         // pack eigenvectors into the return imagelist
@@ -207,7 +223,7 @@ vector<EMData*> PCAsmall::analyze()
         }
 
         free(eigvec);
-        EMDeletePtr(eigenimage); 
+        EMDeletePtr(eigenimage);
 
 	return images;
 }
@@ -246,7 +262,7 @@ int PCAlarge::insert_image(EMData * image)
 {
 	if(mask==0)
 		throw NullPointerException("Null mask image pointer, set_params() first");
-	
+
    EMData *maskedimage = Util::compress_image_mask(image,mask);
 
    FILE *fp;
@@ -301,7 +317,7 @@ void PCAlarge::set_params(const Dict & new_params)
 vector<EMData*> PCAlarge::analyze()
 {
 	int status = 0;
-	int ione = 1; 
+	int ione = 1;
 	float one = 1.0, zero = 0.0;
 	char trans;
         float *eigvec;
@@ -324,7 +340,7 @@ vector<EMData*> PCAlarge::analyze()
 	float *vmat    = new float[nx*kstep];
 
         // run kstep-step Lanczos factorization
-	status = Lanczos(scratchfile, &kstep, diag, subdiag, 
+	status = Lanczos(scratchfile, &kstep, diag, subdiag,
                          vmat, &resnrm);
 
         // remove scratch file
@@ -341,7 +357,7 @@ vector<EMData*> PCAlarge::analyze()
 	int   liwork = 3+5*kstep;
 
 	float *work  = new float[lwork];
-	int   *iwork = new int[liwork]; 
+	int   *iwork = new int[liwork];
 	int   info = 0;
 
         // call LAPACK tridiagonal eigensolver
@@ -356,14 +372,14 @@ vector<EMData*> PCAlarge::analyze()
             eigval[j] = diag(kstep-j);
         }
 
-//         for (int i=0; i<nvec; i++) printf("eigval = %11.4e\n", 
+//         for (int i=0; i<nvec; i++) printf("eigval = %11.4e\n",
 //             eigval[i]);
 
         // compute eigenvectors
         for (int j=1; j<=nvec; j++) {
             trans = 'N';
-            sgemv_(&trans, &nx,  &kstep, &one, vmat, &nx, &qmat(1,kstep-j+1), 
-                   &ione, &zero, &eigvec(1,j), &ione);  
+            sgemv_(&trans, &nx,  &kstep, &one, vmat, &nx, &qmat(1,kstep-j+1),
+                   &ione, &zero, &eigvec(1,j), &ione);
         }
 
         // pack eigenvectors into the return imagelist
@@ -373,7 +389,7 @@ vector<EMData*> PCAlarge::analyze()
         for (int j = 1; j<= nvec; j++) {
 	    for (int i = 1; i <= ncov; i++)
 		rdata(i) = eigvec(i,j);
-  
+
             EMData* recons_eigvec = Util::reconstitute_image_mask(eigenimage,mask);
 
             recons_eigvec->set_attr( "eigval", eigval[j-1] );
@@ -382,7 +398,7 @@ vector<EMData*> PCAlarge::analyze()
         }
 
         free(eigvec);
-        EMDeletePtr(eigenimage); 
+        EMDeletePtr(eigenimage);
 
 	return images;
 }
@@ -400,77 +416,77 @@ vector<EMData*> PCAlarge::analyze()
 #define diag(i)     diag[(i)-1]
 #define hvec(i)     hvec[(i)-1]
 
-int PCAlarge::Lanczos(const string &maskedimages, int *kstep, 
-                      float  *diag, float *subdiag, float *V, 
+int PCAlarge::Lanczos(const string &maskedimages, int *kstep,
+                      float  *diag, float *subdiag, float *V,
                       float  *beta)
 {
     /*
         Purpose: Compute a kstep-step Lanczos factorization
-                 on the covariant matrix X*trans(X), where 
+                 on the covariant matrix X*trans(X), where
                  X (imgstack) contains a set of images;
 
-        Input: 
-           imgstack (vector <EMData*>) a set of images on which PCA is 
+        Input:
+           imgstack (vector <EMData*>) a set of images on which PCA is
                                        to be performed;
-           
+
            kstep (int*) The maximum number of Lanczos iterations allowed.
                           If Lanczos terminates before kstep steps
-                          is reached (an invariant subspace is found), 
+                          is reached (an invariant subspace is found),
                           kstep returns the number of steps taken;
-      
+
         Output:
            diag (float *) The projection of the covariant matrix into a
                           Krylov subspace of dimension at most kstep.
                           The projection is a tridiagonal matrix. The
-                          diagonal elements of this matrix is stored in 
+                          diagonal elements of this matrix is stored in
                           the diag array.
 
            subdiag (float*) The subdiagonal elements of the projection
                             is stored here.
 
-           V (float *)    an imgsize by kstep array that contains a 
+           V (float *)    an imgsize by kstep array that contains a
                           set of orthonormal Lanczos basis vectors;
 
            beta (float *) the residual norm of the factorization;
     */
     int i, iter;
-    
+
     float alpha;
     int   ione = 1;
     float zero = 0.0, one = 1.0, mone = -1.0;
     int   status = 0;
-    
+
     char trans;
-    int  imgsize = 0; 
+    int  imgsize = 0;
     float *v0, *Av, *hvec, *htmp, *imgdata;
     FILE  *fp=NULL;
 
     if (nimages <= 0) {
 	status = 2; // no image in the stack
-        goto EXIT; 
+        goto EXIT;
     }
 
     imgsize = ncov;
     if (nimages <= 0) {
 	status = 3; // no image in the stack
-        goto EXIT; 
+        goto EXIT;
     }
-     
+
     v0   = new float[imgsize];
     Av   = new float[imgsize];
     hvec = new float[*kstep];
     htmp = new float[*kstep];
     imgdata = new float[imgsize];
 
-    if (v0 == NULL || Av == NULL || hvec == NULL || 
+    if (v0 == NULL || Av == NULL || hvec == NULL ||
         htmp == NULL || imgdata == NULL) {
-        fprintf(stderr, "Lanczos: failed to allocate v0,Av,hvec,htmp\n"); 
+        fprintf(stderr, "Lanczos: failed to allocate v0,Av,hvec,htmp\n");
 	status = -1;
         goto EXIT;
     }
 
-    // may choose a random starting guess here     
-    for ( i = 1; i <= imgsize; i++) 
+    // may choose a random starting guess here
+    for ( i = 1; i <= imgsize; i++)
     {
         v0(i) = 1.0;
         Av(i) = 0.0;
@@ -488,18 +504,18 @@ int PCAlarge::Lanczos(const string &maskedimages, int *kstep,
     }
     for (i = 0; i < nimages; i++) {
        fread(imgdata, sizeof(float), imgsize, fp);
-       alpha = sdot_(&imgsize, imgdata, &ione, V, &ione); 
+       alpha = sdot_(&imgsize, imgdata, &ione, V, &ione);
        saxpy_(&imgsize, &alpha, imgdata, &ione, Av, &ione);
     }
     fclose(fp);
 
 
-    // Av <--- Av - V(:,1)*V(:,1)'*Av 
-    diag(1) = sdot_(&imgsize, V, &ione, Av, &ione); 
+    // Av <--- Av - V(:,1)*V(:,1)'*Av
+    diag(1) = sdot_(&imgsize, V, &ione, Av, &ione);
     alpha   = -diag(1);
     saxpy_(&imgsize, &alpha, V, &ione, Av, &ione);
 
-    // main loop 
+    // main loop
     for ( iter = 2 ; iter <= *kstep ; iter++ ) {
         *beta = snrm2_(&imgsize, Av, &ione);
 
@@ -508,37 +524,37 @@ int PCAlarge::Lanczos(const string &maskedimages, int *kstep,
             *kstep = iter;
             break;
         }
- 
+
         subdiag(iter-1) = *beta;
 	for ( i = 1 ; i <= imgsize ; i++ ) {
 	    V(i,iter) = Av(i) / (*beta);
-	}	
+	}
 
         // do Av <-- A*V(:,iter), where A is a cov matrix
         for (i = 0; i < imgsize; i++) Av[i] = 0;
         fp = fopen(maskedimages.c_str(),"r");
         for (i = 0; i < nimages; i++) {
            fread(imgdata, sizeof(float), imgsize, fp);
-           alpha = sdot_(&imgsize, imgdata, &ione, &V(1,iter), &ione); 
+           alpha = sdot_(&imgsize, imgdata, &ione, &V(1,iter), &ione);
            saxpy_(&imgsize, &alpha, imgdata, &ione, Av, &ione);
         }
-        fclose(fp); 
-	
+        fclose(fp);
+
         // f <--- Av - V(:,1:iter)*V(:,1:iter)'*Av
         trans = 'T';
         status = sgemv_(&trans, &imgsize, &iter, &one, V, &imgsize, Av, &ione,
-                        &zero , hvec    , &ione); 
+                        &zero , hvec    , &ione);
         trans = 'N';
-        status = sgemv_(&trans, &imgsize, &iter, &mone, V, &imgsize, hvec, 
+        status = sgemv_(&trans, &imgsize, &iter, &mone, V, &imgsize, hvec,
                         &ione , &one    , Av, &ione);
 
         // one step of reorthogonalization
         trans = 'T';
         status = sgemv_(&trans, &imgsize, &iter, &one, V, &imgsize, Av, &ione,
-                        &zero , htmp    , &ione); 
-        saxpy_(&iter, &one, htmp, &ione, hvec, &ione); 
+                        &zero , htmp    , &ione);
+        saxpy_(&iter, &one, htmp, &ione, hvec, &ione);
         trans = 'N';
-        status = sgemv_(&trans, &imgsize, &iter, &mone, V, &imgsize, htmp, 
+        status = sgemv_(&trans, &imgsize, &iter, &mone, V, &imgsize, htmp,
                         &ione , &one    , Av, &ione);
         diag(iter) = hvec(iter);
     }
@@ -589,7 +605,7 @@ int varimax::insert_image(EMData* image)
 {
 	if(m_mask==0)
 		throw NullPointerException("Null mask image pointer, set_params() first");
-	
+
     EMData* img1d = Util::compress_image_mask(image,m_mask);
 
     m_data.insert( m_data.end(), img1d->get_data(), img1d->get_data() + m_nlen );
@@ -597,7 +613,7 @@ int varimax::insert_image(EMData* image)
     m_nfac++;
 
     Assert( (int)m_data.size() == m_nfac*m_nlen);
-    
+
     return 0;
 }
 
@@ -637,7 +653,7 @@ int SVDAnalyzer::insert_image(EMData * image)
 {
 	if (mask==0)
 		throw NullPointerException("Null mask image pointer, set_params() first");
-	
+
 	// count pixels under mask
 	int totpix=mask->get_xsize()*mask->get_ysize()*mask->get_zsize();
 	float  *d=image->get_data();
@@ -711,7 +727,7 @@ void SVDAnalyzer::set_params(const Dict & new_params)
 	int totpix=mask->get_xsize()*mask->get_ysize()*mask->get_zsize();
 	float *d=mask->get_data();
 	for (int i=0; i<totpix; i++) if (d[i]) pixels++;
-	
+
 	printf("%d,%d\n",pixels,nimg);
 	A=gsl_matrix_alloc(pixels,nimg);
 	nsofar=0;
