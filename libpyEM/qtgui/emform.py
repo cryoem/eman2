@@ -744,7 +744,6 @@ class ParamTableEventHandler:
 		else: pass
 	
 	def contextMenuEvent(self,event):
-		print "context"
 		if hasattr(self.table_widget,"context_menu"):
 			menu = QtGui.QMenu()
 			for k in self.table_widget.context_menu.keys():
@@ -754,9 +753,8 @@ class ParamTableEventHandler:
 	
 	def menu_action_triggered(self,action):
 		items = self.table_widget.selectedItems()
-		for item in items:
-			text = self.table_widget.convert_text(str(item.text()))
-			self.table_widget.context_menu[str(action.text())](text,self.target().parent().application())
+		names = [self.table_widget.convert_text(str(item.text())) for item in items]
+		self.table_widget.context_menu[str(action.text())](names,self.target().parent().application())
 	
 	def table_item_clicked(self,item):
 		#
