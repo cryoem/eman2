@@ -136,7 +136,7 @@ for (int i=0; i<nptcl; i++) {
 for (int i=0; i<ncls; i++) {
 	if (repr[i]==0) {
 		delete centers[i];
-		centers[i]=None;
+		centers[i]=0;
 		repr[i]=0;
 		printf("kmeans broken. fixed soon !!!\n");
 	}
