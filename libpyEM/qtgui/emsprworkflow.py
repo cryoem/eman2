@@ -58,8 +58,8 @@ class WorkFlowTask(QtCore.QObject):
 	def __init__(self,application):
 		QtCore.QObject.__init__(self)
 		self.application = weakref.ref(application)
-		self.window_title = "Set me please"
-		self.preferred_size = (480,640)
+		self.window_title = "Set me please" # inheriting classes should set this
+		self.preferred_size = (480,640) # inheriting classes can change this if they choose
 		self.form_db_name = None # specify this to make use of automated parameter storage (see write_db_entries(self,...) ) - don't forget the "bdb:"
 		self.project_db_entries = ["global.num_cpus","global.apix","global.microscope_voltage","global.microscope_cs","global.memory_available","global.particle_mass"] # used to write entries to a specific db
 	
@@ -2044,6 +2044,9 @@ class E2CTFWorkFlowTask(ParticleWorkFlowTask):
 		
 		ret = []
 		for key,data in parms_db.items():
+			if data == None:
+				print "error?",key
+				continue
 			ret.append([key,data[-1]]) # parms[-1] should be the original filename
 		
 		db_close_dict("bdb:e2ctf.parms")
@@ -2358,7 +2361,7 @@ class E2CTFOutputTask(E2CTFWorkFlowTask):
 		options.filenames = db_file_names
 		options.wiener = params["wiener"]
 		options.phaseflip = params["phaseflip"]
-		options.oversamp = params["working_oversamp"]
+		options.oversamp = params["oversamp"]
 		if not options.wiener and not options.phaseflip:
 			error_message.append("Please choose at atleast one of the phaseflip or Wiener options.")
 			

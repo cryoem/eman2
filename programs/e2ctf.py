@@ -139,6 +139,7 @@ images far from focus."""
 		
 		db_misc=db_open_dict("bdb:e2ctf.misc")
 		db_misc["envelope"]=envelope
+		db_close_dict("bdb:e2ctf.misc")
 		
 		#out=file("envelope.txt","w")
 		#for i in envelope: out.write("%f\t%f\n"%(i[0],i[1]))
@@ -163,6 +164,11 @@ images far from focus."""
 	# write wiener filtered and/or phase flipped particle data to the local database
 	if options.phaseflip or options.wiener: # only put this if statement here to make the program flow obvious
 		write_e2ctf_output(options) # converted to a function so to work with the workflow
+
+	# David Woolford did this - they should just be flushed, but I can't find the flush functionality
+	db_close_dict("bdb:project")
+	db_close_dict("bdb:e2ctf.parms")
+	db_close_dict("bdb:e2ctf.misc")
 
 	E2end(logid)
 
