@@ -89,6 +89,7 @@ if (ncls<=1) return vector<EMData *>();
 int nptcl=images.size();
 int nclstot=ncls;
 centers.resize(ncls);
+if (mininclass<1) mininclass=1;
 
 if (slowseed) {
 	ncls=2;
@@ -136,20 +137,72 @@ for (int i=0; i<nptcl; i++) {
 for (int i=0; i<ncls; i++) {
 	if (repr[i]==0) {
 		delete centers[i];
-		centers[i]=0;
-		repr[i]=0;
-		printf("kmeans broken. fixed soon !!!\n");
+		centers[i]=images[Util::get_irand(0,nptcl)]->copy();
+		repr[i]=1;
 	}
-	else {
-		centers[i]->mult((float)1.0/(float)(repr[i]));
-		centers[i]->set_attr("ptcl_repr",repr[i]);
-	}
+	else centers[i]->mult((float)1.0/(float)(repr[i]));
+	centers[i]->set_attr("ptcl_repr",repr[i]);
 	if (verbose>1) printf("%d(%d)\t",i,(int)repr[i]);
 }
+
+//for (int i=0; i<ncls; i++) {
+//	if (repr[i]<mininclass) {
+//		delete centers[i];
+//		centers[i]=0;
+//		repr[i]=0;
+//	}
+//	else {
+//		centers[i]->mult((float)1.0/(float)(repr[i]));
+//		centers[i]->set_attr("ptcl_repr",repr[i]);
+//	}
+//	if (verbose>1) printf("%d(%d)\t",i,(int)repr[i]);
+//}
+
 if (verbose>1) printf("\n");
+
+reseed();
 
 delete [] repr;
 }
+
+// This will look for any unassigned points and reseed each inside the class with the broadest distribution widely distributed
+void KMeansAnalyzer::reseed() { }
+//// if no classes need reseeding just return
+//for (int i=0; i<ncls; i++) {
+//	if (!centers[i]) break;
+//}
+//if (i!=ncls) return;
+//
+//int * repr = new int[ncls];	// particles in the average
+//float *sigmas = new int[ncls]; // array of deviations
+//
+//for (int i=0; i<ncls; i++) { sigmas[i]=0; repr[i]=0; }
+//
+//// compute the deviation of each class
+//for (int i=0; i<nptcl; i++) {
+//	EMData *imc=images[i]->copy();
+//	int cid=images[i]->get_attr("class_id");
+//	imc-=centers[cid];
+//	sigmas[cid]+=imc.get_attr("square_sum");
+//	repr[cid]++;
+//}
+//
+//for (int i=0; i<ncls; i++) sigmas[i]/=repr[cid];
+//
+////we could sort the list, but for this use we just search
+//for (int i=0; i<ncls; i++) {
+//	if (centers[i]) continue;
+//
+//	float maxsig=0;
+//	int maxi=0;
+//	for (int i=0; i<ncls; i++)
+//}
+//
+//
+//delete [] sigmas;
+//delete [] repr;
+//}
+
 
 void KMeansAnalyzer::reclassify() {
 int nptcl=images.size();

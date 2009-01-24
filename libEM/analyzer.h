@@ -172,6 +172,7 @@ namespace EMAN
 		protected:
 		void update_centers();
 		void reclassify();
+		void reseed();
 
 		vector<EMData *> centers;
 		int ncls;	//number of desired classes
