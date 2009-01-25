@@ -92,8 +92,8 @@ centers.resize(ncls);
 if (mininclass<1) mininclass=1;
 
 if (slowseed) {
-	ncls=2;
 	if (maxiter<ncls*3+20) maxiter=ncls*3+20;	// We need to make sure we have enough iterations to seed all of the classes
+	ncls=2;
 }
 
 for (int i=0; i<ncls; i++) {
@@ -104,12 +104,14 @@ for (int i=0; i<ncls; i++) {
 for (int i=0; i<maxiter; i++) {
 	nchanged=0;
 	reclassify();
-	if (verbose) printf("iter %d>  %d\n",i,nchanged);
-	if (nchanged<minchange) break;
+	if (verbose) printf("iter %d>  %d (%d)\n",i,nchanged,ncls);
+	if (nchanged<minchange && ncls==nclstot) break;
 	update_centers();
 
-	if (slowseed && i%3==2) {
-
+	if (slowseed && i%3==2 && ncls<nclstot) {
+		centers[ncls]=0;
+		ncls++;
+		reseed();
 	}
 }
 
@@ -132,31 +134,18 @@ for (int i=0; i<nptcl; i++) {
 	repr[cid]++;
 }
 
-//images[Util::get_irand(0,nptcl-1)]->copy()
-
 for (int i=0; i<ncls; i++) {
-	if (repr[i]==0) {
+	if (repr[i]<mininclass) {
 		delete centers[i];
-		centers[i]=images[Util::get_irand(0,nptcl)]->copy();
-		repr[i]=1;
+		centers[i]=0;
+		repr[i]=0;
 	}
-	else centers[i]->mult((float)1.0/(float)(repr[i]));
-	centers[i]->set_attr("ptcl_repr",repr[i]);
+	else {
+		centers[i]->mult((float)1.0/(float)(repr[i]));
+		centers[i]->set_attr("ptcl_repr",repr[i]);
+	}
 	if (verbose>1) printf("%d(%d)\t",i,(int)repr[i]);
 }
-
-//for (int i=0; i<ncls; i++) {
-//	if (repr[i]<mininclass) {
-//		delete centers[i];
-//		centers[i]=0;
-//		repr[i]=0;
-//	}
-//	else {
-//		centers[i]->mult((float)1.0/(float)(repr[i]));
-//		centers[i]->set_attr("ptcl_repr",repr[i]);
-//	}
-//	if (verbose>1) printf("%d(%d)\t",i,(int)repr[i]);
-//}
 
 if (verbose>1) printf("\n");
 
@@ -166,42 +155,58 @@ delete [] repr;
 }
 
 // This will look for any unassigned points and reseed each inside the class with the broadest distribution widely distributed
-void KMeansAnalyzer::reseed() { }
-//// if no classes need reseeding just return
-//for (int i=0; i<ncls; i++) {
-//	if (!centers[i]) break;
-//}
-//if (i!=ncls) return;
-//
-//int * repr = new int[ncls];	// particles in the average
-//float *sigmas = new int[ncls]; // array of deviations
-//
-//for (int i=0; i<ncls; i++) { sigmas[i]=0; repr[i]=0; }
-//
-//// compute the deviation of each class
-//for (int i=0; i<nptcl; i++) {
-//	EMData *imc=images[i]->copy();
-//	int cid=images[i]->get_attr("class_id");
-//	imc-=centers[cid];
-//	sigmas[cid]+=imc.get_attr("square_sum");
-//	repr[cid]++;
-//}
-//
-//for (int i=0; i<ncls; i++) sigmas[i]/=repr[cid];
-//
-////we could sort the list, but for this use we just search
-//for (int i=0; i<ncls; i++) {
-//	if (centers[i]) continue;
-//
-//	float maxsig=0;
-//	int maxi=0;
-//	for (int i=0; i<ncls; i++)
-//}
-//
-//
-//delete [] sigmas;
-//delete [] repr;
-//}
+void KMeansAnalyzer::reseed() {
+// if no classes need reseeding just return
+int nptcl=images.size();
+int i,j;
+for (i=0; i<ncls; i++) {
+	if (!centers[i]) break;
+}
+if (i==ncls) return;
+
+int * best = new int[ncls];	// particles in the average
+float *sigmas = new float[ncls]; // array of deviations
+
+for (int i=0; i<ncls; i++) { sigmas[i]=0; best[i]=0; }
+
+// compute the deviation of each class
+Cmp *c = Factory < Cmp >::get("sqeuclidean");
+for (int i=0; i<nptcl; i++) {
+	int cid=images[i]->get_attr("class_id");
+	if (!centers[cid]) continue;
+//	sigmas[cid]+=(float)imc->get_attr("square_sum");
+	float d=c->cmp(images[i],centers[cid]);
+	if (d>sigmas[cid]) {
+		sigmas[cid]=d;	// Instead of using sigma, use the largest distance in the class
+		best[cid]=i;
+	}
+}
+delete c;
+//for (i=0; i<ncls; i++) sigmas[i]/=repr[i];	//since we aren't doing a sigma now...
+
+//we could sort the list, but for this use we just search
+for (i=0; i<ncls; i++) {
+	if (centers[i]) continue;
+
+	float maxsig=0;
+	int maxi=0;
+	// find the class with the largest sigma
+	for (j=0; j<ncls; j++) {
+		if (sigmas[j]>maxsig) { maxsig=sigmas[j]; maxi=j; }
+	}
+
+	// find an image in that class
+	for (j=0; j<ncls; j++) if ((int)images[j]->get_attr("class_id")==maxi) break;
+	if (Util::get_irand(0,1)==0) centers[i]=images[best[maxi]]->copy();
+	else centers[i]=images[j]->copy();
+	centers[i]->set_attr("ptcl_repr",1);
+	sigmas[maxi]=0;		// if we get another one to reseed, pick the next largest set (zero out the current one)
+	printf("reseed %d -> %d (%d or %d)\n",i,maxi,best[maxi],j);
+}
+
+delete [] sigmas;
+delete [] best;
+}
 
 
 void KMeansAnalyzer::reclassify() {

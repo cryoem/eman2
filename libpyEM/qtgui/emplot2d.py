@@ -276,6 +276,16 @@ class EMPlot2DModule(EMGUIModule):
 				l = [i for i in range(im.get_size())]
 				k = im.get_data_as_vector()
 				self.set_data(filename,[l,k])
+			elif im[0].get_attr_default("isvector",0):
+#				all=[i.get_data_as_vector() for i in im]
+
+				all=[]
+				for j in range(im[0].get_xsize()):
+					r=[]
+					for i in range(len(im)):
+						r.append(im[i][j,0])
+					all.append(r)
+				self.set_data("Vecset",all)
 			else:
 				for idx,image in enumerate(im):
 					l = [i for i in range(image.get_size())]

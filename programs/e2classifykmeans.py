@@ -104,7 +104,7 @@ be classified. """
 	print len(data)," images to classify."
 
 	an=Analyzers.get("kmeans")
-	an.set_params({"ncls":options.ncls,"minchange":len(data)/(options.ncls*25)+1,"verbose":1})
+	an.set_params({"ncls":options.ncls,"minchange":len(data)/(options.ncls*25)+1,"verbose":1,"slowseed":1})
 	
 	an.insert_images_list(data)
 	centers=an.analyze()

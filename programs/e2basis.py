@@ -111,7 +111,8 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 				# inner loop over the basis images
 				for j,b in enumerate(basis):
 					proj.set_value_at(j,i,0,im.cmp("dot",b,{"normalize":options.normproj,"negative":0}))
-					
+			
+			proj["isvector"]=1
 			proj.write_image(args[3],0)
 		else:
 			for i in range(n):
@@ -127,6 +128,7 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 				for j,b in enumerate(basis):
 					proj.set_value_at(j,0,0,im.cmp("dot",b,{"normalize":options.normproj,"negative":0}))
 					
+				proj["isvector"]=1
 				proj.write_image(args[3],i)
 	
 	# Project rotated images into a basis subspace
@@ -177,6 +179,7 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 				proj.set_value_at(2,i,best[3])
 				proj.set_value_at(3,i,best[4])
 				
+				proj["isvector"]=1
 				proj.write_image(args[4],0)
 		else:
 			for i in range(n):
@@ -212,6 +215,7 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 				proj.set_attr("ref_dx",best[2])
 				proj.set_attr("ref_dy",best[3])
 				proj.set_attr("ref_flip",best[4])
+				proj["isvector"]=1
 				proj.write_image(args[4],i)
 		if options.verbose>1 : print "Projectrot complete"
 	
