@@ -155,7 +155,7 @@ def main():
 	
 		# reproject the particle footprints into the basis subspace
 		inputproj=options.path+"#input_fp_basis_proj"
-		run("e2basis.py project %s %s %s --oneout --verbose=%d %s"%(fpbasis,fpfile,inputproj,subverbose,options.normproj))
+		run("e2basis.py project %s %s %s --oneout --mean1 --verbose=%d %s"%(fpbasis,fpfile,inputproj,subverbose,options.normproj))
 		proc_tally += 1.0
 		if logid : E2progress(logid,proc_tally/total_procs)
 		# classify the subspace vectors
@@ -211,7 +211,7 @@ def main():
 		
 		# e2basis projectrot here
 		inputproj=options.path+"#input_%02d_proj"%it
-		run("e2basis.py projectrot %s#basis_%02d %s %s#simmx_%02d %s --oneout --normproj --verbose=%d %s"%(options.path,it,options.input,options.path,it,inputproj,subverbose,options.normproj))
+		run("e2basis.py projectrot %s#basis_%02d %s %s#simmx_%02d %s --oneout --mean1 --normproj --verbose=%d %s"%(options.path,it,options.input,options.path,it,inputproj,subverbose,options.normproj))
 		
 		# classify the subspace vectors
 		run("e2classifykmeans.py %s --original=%s --ncls=%d --clsmx=%s#classmx_%02d --oneinali %s"%(inputproj,options.input,options.ncls,options.path,it,excludestr))

@@ -145,7 +145,7 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 		# outer loop over images to be projected
 		n=EMUtil.get_image_count(args[2])
 		if options.oneout:
-			proj=EMData(len(basis)+3,n,1)
+			proj=EMData(len(basis)+4,n,1)
 			for i in range(n):
 				if options.verbose >1 : 
 					print "  %5d\r"%i,
@@ -172,15 +172,18 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 				
 				# inner loop over the basis images to generate the components of the projection vector
 				for j,b in enumerate(basis):
-					proj.set_value_at(j+3,i,0,im.cmp("dot",b,{"normalize":options.normproj,"negative":0}))
-				
+					proj.set_value_at(j+4,i,0,im.cmp("dot",b,{"normalize":options.normproj,"negative":0}))
+#					im["dot"]=proj[j+4,i]
+#					im.write_image("dbug.hdf",-1)
+#					b["dot"]=proj[j+4,i]
+#					b.write_image("dbug.hdf",-1)
 				proj.set_value_at(0,i,best[1])
 				proj.set_value_at(1,i,best[2])
 				proj.set_value_at(2,i,best[3])
 				proj.set_value_at(3,i,best[4])
 				
 				proj["isvector"]=1
-				proj.write_image(args[4],0)
+			proj.write_image(args[4],0)
 		else:
 			for i in range(n):
 				if options.verbose >1 : 

@@ -79,15 +79,15 @@ be classified. """
 			data.append(d.get_clip(Region(0,i,xs,1)))
 	elif options.oneinali :
 		d=EMData(args[0],0)
-		xs=d.get_xsize()-3
+		xs=d.get_xsize()-4
 		data=[]
 		for i in range(d.get_ysize()):
-			data.append(d.get_clip(Region(3,i,xs,1)))
+			data.append(d.get_clip(Region(4,i,xs,1)))
 			data[-1].set_attr("ref_dx",d.get_value_at(0,i))
 			data[-1].set_attr("ref_dy",d.get_value_at(1,i))
 			data[-1].set_attr("ref_da",d.get_value_at(2,i))
 			data[-1].set_attr("ref_flip",d.get_value_at(3,i))
-	else :data=EMData.read_images(args[0])
+	else: data=EMData.read_images(args[0])
 	nimg=len(data)						# we need this for the classification matrix when exclude is used
 	filen=range(len(data))				# when exclude is used, this will map to actual file image numbers
 
