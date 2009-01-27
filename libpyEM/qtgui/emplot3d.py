@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
-# and David Woolford 10/26/2007 (woolford@bcm.edu)
+# Author: David Woolford 10/26/2007 (woolford@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -50,385 +49,27 @@ from time import time
 from PyQt4.QtCore import QTimer
 
 from time import *
+import copy
 
-from emglobjects import EMImage3DGUIModule, Camera2,get_default_gl_colors,EMViewportDepthTools2,get_RGB_tab,get_gl_lights_vector
+from emglobjects import EMImage3DGUIModule, Camera2,get_default_gl_colors,EMViewportDepthTools2,get_RGB_tab,get_gl_lights_vector,draw_volume_bounds
+from emlights import *
+from emimageutil import EMTransformPanel
 
 MAG_INCREMENT_FACTOR = 1.1
 
-class EMLightsDrawer:
-	'''
-	Base clase, works with EMLightsInspectorBase
-	'''
-	def __init__(self):
-		global glut_inited
-		if not glut_inited:  #and not get_platform() == "Darwin":
-			GLUT.glutInit("")
-			glut_inited = True
-		self.gl_lights = get_gl_lights_vector()
-		self.colors = get_default_gl_colors()
-		self.mouse_target = None
-		self.current_light = GL_LIGHT0 # change this to change which light is drawn
-		self.display_lights = False
-		self.ball_dl = 0 # makes a funny kind of ball
-		self.light_dl = 0
-		self.cylinderdl = 0
-		self.arc_t = 16
-		self.radius = 10
-		self.gq=gluNewQuadric()
-		gluQuadricDrawStyle(self.gq,GLU_FILL)
-		gluQuadricNormals(self.gq,GLU_SMOOTH)
-		gluQuadricOrientation(self.gq,GLU_OUTSIDE)
-		gluQuadricTexture(self.gq,GL_FALSE)
-		
-	def set_current_light(self,light):
-		#print "setting current light",light
-		self.current_light = light
-		if self.mouse_target != None:
-			pos = glGetLightfv(self.current_light,GL_POSITION)
-			if pos[3] == 0:
-				self.mouse_target = DirectionalLightMouseEvents(self.current_light,self.inspector)
-			else:
-				self.mouse_target = PointSourceLightMouseEvents(self.current_light,self.inspector)
-			#self.mouse_target =  DirectionalLightMouseEvents(self.current_light,self.inspector)\
-			
-	def generate_arcs(self,points,n,halt=0):
-		for i in range(0,n-halt):
-			p1 = points[i]
-			if ( i == n-1 ): p2 = points[0]
-			else: p2 = points[i+1]
-			angle = acos(p2.dot(p1))
-			sinangle = sin(angle)
-			prev = self.radius*Vec3f(p1[0],p1[1],p1[2])
-			for t in range(1, self.arc_t+1):
-				timeangle = float(t)/float(self.arc_t)*angle
-				p1Copy = self.radius*Vec3f(p1[0],p1[1],p1[2])
-				p2Copy = self.radius*Vec3f(p2[0],p2[1],p2[2])
-				next = (sin(angle-timeangle)*p1Copy + sin(timeangle)*p2Copy)/sinangle
-				
-				self.cylinder_to_from(next,prev)
-				prev = Vec3f(next[0],next[1],next[2])
-				
 	
-	def cylinder_to_from(self,next,prev):
-		dx = next[0] - prev[0]
-		dy = next[1] - prev[1]
-		dz = next[2] - prev[2]
-		
-		length = sqrt(dx**2 + dy**2 + dz**2)
-		
-		if length == 0: return
-		
-		alt = acos(dz/length)*180.0/pi
-		phi = atan2(dy,dx)*180.0/pi
-		
-		glPushMatrix()
-		glTranslatef(prev[0],prev[1],prev[2] )
-		#print "positioned at", prev[0],prev[1],prev[2]
-		glRotatef(90+phi,0,0,1)
-		glRotatef(alt,1,0,0)
-		
-		glMaterial(GL_FRONT, GL_AMBIENT, self.colors["emerald"]["ambient"])
-		glMaterial(GL_FRONT, GL_DIFFUSE, self.colors["emerald"]["diffuse"])
-		glMaterial(GL_FRONT, GL_SPECULAR, self.colors["emerald"]["specular"])
-		glMaterial(GL_FRONT, GL_SHININESS, self.colors["emerald"]["shininess"])
-		glutSolidTorus(.05,0.25,16,16)
-		glScalef(0.2,0.2,length)
-		glMaterial(GL_FRONT, GL_AMBIENT, self.colors["ruby"]["ambient"])
-		glMaterial(GL_FRONT, GL_DIFFUSE, self.colors["ruby"]["diffuse"])
-		glMaterial(GL_FRONT, GL_SPECULAR, self.colors["ruby"]["specular"])
-		glMaterial(GL_FRONT, GL_SHININESS, self.colors["ruby"]["shininess"])
-		glCallList(self.cylinderdl)
-		glPopMatrix()
-
-	
-	
-	
-	def draw_lights(self):
-		if ( self.cylinderdl == 0 ):
-			self.cylinderdl=glGenLists(1)
-				
-			glNewList(self.cylinderdl,GL_COMPILE)
-			glPushMatrix()
-			gluCylinder(self.gq,1.0,1.0,1.0,12,2)
-			glPopMatrix()
-				
-			glEndList()
-			
-		if self.ball_dl == 0:
-			self.ball_dl = glGenLists(1)
-			glNewList(self.ball_dl,GL_COMPILE)
-			glPushMatrix()
-			glScale(self.radius/10.0,self.radius/10.0,self.radius/10.0)
-			self.draw_light_cacoon()
-			self.draw_inside_light()
-			glPopMatrix()
-			
-			glMaterial(GL_FRONT, GL_AMBIENT, self.colors["obsidian"]["ambient"])
-			glMaterial(GL_FRONT, GL_DIFFUSE, self.colors["obsidian"]["diffuse"])
-			glMaterial(GL_FRONT, GL_SPECULAR, self.colors["obsidian"]["specular"])
-			glMaterial(GL_FRONT, GL_EMISSION, self.colors["obsidian"]["emission"])
-			glMaterial(GL_FRONT, GL_SHININESS, self.colors["obsidian"]["shininess"])
-			
-			glPushMatrix()
-			n = 12
-			
-			for i in range(n):
-				if i % 2 == 0: color = "gold"
-				else: color = "silver"
-				
-				glMaterial(GL_FRONT, GL_AMBIENT, self.colors[color]["ambient"])
-				glMaterial(GL_FRONT, GL_DIFFUSE, self.colors[color]["diffuse"])
-				glMaterial(GL_FRONT, GL_SPECULAR, self.colors[color]["specular"])
-				glMaterial(GL_FRONT, GL_EMISSION, self.colors[color]["emission"])
-				glMaterial(GL_FRONT, GL_SHININESS, self.colors[color]["shininess"])
-				rot = 180.0*i/(n-1)
-				glPushMatrix()
-				glTranslate(0,0,-.5)
-				glRotate(rot,0,0,1)
-				glRotate(90,0,1,0)
-				glScale(self.radius/10.0,self.radius/10.0,self.radius/10.0)
-				glutSolidTorus(.1,0.71,32,32)
-				glPopMatrix()
-			
-			glPopMatrix()
-			
-			glEndList()
-			
-			
-		if self.light_dl == 0:
-			self.light_dl = glGenLists(1)
-			glNewList(self.light_dl,GL_COMPILE)
-			glPushMatrix()
-			glTranslate(0,0,self.radius-1.42)
-			glRotate(180,1,0,0)
-			
-			glCallList(self.ball_dl)
-			
-			glPopMatrix()
-			
-			glPushMatrix()
-			points = [Vec3f(1,0,0),Vec3f(0,1,0),Vec3f(-1,0,0),Vec3f(0,-1,0)]
-			self.generate_arcs(points,len(points))
-			glPopMatrix()
-			
-			glPushMatrix()
-			points = [Vec3f(1,0,0),Vec3f(0,1,0),Vec3f(-1,0,0)]
-			glRotate(90,1,0,0)
-			self.generate_arcs(points,len(points),1)
-			glPopMatrix()
-			glEndList()
-		
-		
-		glPushMatrix()
-		#glLoadIdentity()
-		self.position_light()
-		
-		glPopMatrix()
-	
-	def position_light(self):
-		
-		for light in self.gl_lights:
-			
-			if not glIsEnabled(light):continue
-			pos = glGetLightfv(light,GL_POSITION)
-			glPushMatrix()
-			if pos[3] == 1:
-				glLoadIdentity() # The position of a point source is stored in eye coordinates!
-				sp = glGetLightfv(light,GL_SPOT_DIRECTION)
-				sc = glGetLightfv(light,GL_SPOT_CUTOFF)
-				#print sp
-				#print sc
-			
-				v = Vec3f(float(sp[0]),float(sp[1]),float(sp[2]))
-				if v.length() == 0:
-					glPopMatrix()
-					return
-				t = Transform()
-				t.set_rotation(v)
-				d = t.get_rotation("eman")
-				
-				glTranslate(pos[0],pos[1],pos[2])
-				#print pos[0],pos[1],pos[2]
-				#print d
-				#print d
-				glRotate(-d["phi"],0,0,1)
-				glRotate(-d["alt"],1,0,0)
-				glRotate(-d["az"],0,0,1)
-				
-				glCallList(self.ball_dl)
-				
-				
-			else:
-				
-				v = Vec3f(float(pos[0]),float(pos[1]),float(pos[2]))
-				t = Transform()
-				t.set_rotation(v)
-				d = t.get_rotation("eman")
-				
-				#print d
-				glRotate(-d["phi"],0,0,1)
-				glRotate(-d["alt"],1,0,0)
-				glRotate(-d["az"],0,0,1)
-			
-		
-				glCallList(self.light_dl)
-		
-			glPopMatrix()
-	def draw_light_cacoon(self):
-		'''
-		draw a nice looking torch
-		'''
-		
-		n = 20 # height discretizations
-		bot = 0.5 # square width at bottom
-		top = 1.0 # square width at top
-		
-		dz = (top-bot)/(n-1)
-		yellow = [1,1,0,0.5]
-		glMaterial(GL_FRONT, GL_AMBIENT, yellow)
-		glMaterial(GL_FRONT, GL_DIFFUSE, yellow)
-		glMaterial(GL_FRONT, GL_SPECULAR, yellow)
-		glMaterial(GL_FRONT, GL_EMISSION, [0,0,0,0])
-		glMaterial(GL_FRONT, GL_SHININESS, 32)
-		glColor(*yellow)
-		
-		glEnable(GL_BLEND)
-		glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA)
-		
-		glPushMatrix()
-		self.square_from_points([bot,bot,0],[top,top,1],[top,-top,1],[bot,-bot,0])
-		glPopMatrix()
-		glPushMatrix()
-		glRotate(90,0,0,1)
-		self.square_from_points([bot,bot,0],[top,top,1],[top,-top,1],[bot,-bot,0])
-		glPopMatrix()
-		glPushMatrix()
-		glRotate(180,0,0,1)
-		self.square_from_points([bot,bot,0],[top,top,1],[top,-top,1],[bot,-bot,0])
-		glPopMatrix()
-		glPushMatrix()
-		glRotate(270,0,0,1)
-		self.square_from_points([bot,bot,0],[top,top,1],[top,-top,1],[bot,-bot,0])
-		glPopMatrix()
-		glDisable(GL_BLEND)
-		
-	def square_from_points(self,p1,p2,p3,p4):
-		'''
-		draws a square from the given points, calculates the normal automatically
-		assumes counter clockwise direction
-		'''
-		
-		v1 = Vec3f(p1)
-		v1.normalize()
-		v2 = Vec3f(p2)
-		v2.normalize()
-		v3 = Vec3f(p4)
-		v3.normalize()
-		
-		normal = (v2-v1).cross(v3-v1)
-		
-		glBegin(GL_QUADS)
-		glNormal(normal[0],normal[1],normal[2])
-		glVertex(*p1)
-		glVertex(*p2)
-		glVertex(*p3)
-		glVertex(*p4)
-		glEnd()
-	
-	
-	def draw_inside_light(self):
-		'''
-		draw a nice looking torch
-		'''
-		
-		n = 20 # height discretizations
-		bot = 0.5 # square width at bottom
-		top = 1.0 # square width at top
-		
-		dz = (top-bot)/(n-1)
-		yellow = [1,1,0,1.0/n]
-		glMaterial(GL_FRONT, GL_AMBIENT, yellow)
-		glMaterial(GL_FRONT, GL_DIFFUSE, yellow)
-		glMaterial(GL_FRONT, GL_SPECULAR, yellow)
-		glMaterial(GL_FRONT, GL_EMISSION, [0,0,0,0])
-		glMaterial(GL_FRONT, GL_SHININESS, 32)
-		glColor(*yellow)
-		
-		glEnable(GL_BLEND)
-		glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA)
-		
-		
-		for i in range(n):
-			width = i*dz + bot
-			glPushMatrix()
-			glTranslate(0,0,2*(width-bot))
-			glScale(2*width,2*width,1)
-			self.square()
-			glPopMatrix()
-		
-		glDisable(GL_BLEND)
-	
-	def square(self):
-		'''
-		a 1x1 square centered on the origin looking along positive z
-		'''
-		glBegin(GL_QUADS)
-		glNormal(0,0,1)
-		glVertex(-0.5,-0.5,0)
-		glVertex(0.5,-0.5,0)
-		glVertex(0.5,0.5,0)
-		glVertex(-0.5,0.5,0)
-		glEnd()
-		
-	def light_manipulation_toggled(self,state):
-		self.light_manip = state
-		if state:
-			pos = glGetLightfv(self.current_light,GL_POSITION)
-			if pos[3] == 0:
-				self.mouse_target = DirectionalLightMouseEvents(self.current_light,self.inspector)
-			else:
-				self.mouse_target = PointSourceLightMouseEvents(self.current_light,self.inspector)
-		else:
-			self.mouse_target = None
-			
-	def show_lights(self,state):
-		self.display_lights = state
-		self.updateGL()
-		
-	def draw(self):
-		if self.display_lights:
-			self.draw_lights()
-			
-	def mousePressEvent(self,event):
-		if self.mouse_target != None:
-			self.mouse_target.mousePressEvent(event)
-			self.updateGL()
-		else: EMImage3DGUIModule.mousePressEvent(self,event)
-	
-	def mouseMoveEvent(self,event):
-		if self.mouse_target != None:
-			self.mouse_target.mouseMoveEvent(event)
-			self.updateGL()
-		else: EMImage3DGUIModule.mouseMoveEvent(self,event)
-	
-	def mouseReleaseEvent(self,event):
-		if self.mouse_target != None:
-			self.mouse_target.mouseReleaseEvent(event)
-			self.updateGL()
-		else: EMImage3DGUIModule.mouseReleaseEvent(self,event)
-	
-class EMLights(EMLightsDrawer,EMImage3DGUIModule):
+class EMPlot3D(EMLightsDrawer,EMImage3DGUIModule):
 	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
 		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
 	
 	def __init__(self, application,parent=None):
 		EMImage3DGUIModule.__init__(self,application)
 		EMLightsDrawer.__init__(self)
-		self.display_lights = True
 		self.parent = parent
 		
-		self.init()
-		self.initialized = True
+		self.mmode = 0
+		self.wire = False
+		self.light = True
 		
 		self.cam=Camera2(self)
 		
@@ -447,12 +88,73 @@ class EMLights(EMLightsDrawer,EMImage3DGUIModule):
 		self.gl_context_parent.cam.default_z = -25	 # this is me hacking
 		self.gl_context_parent.cam.cam_z = -25 # this is me hacking
 	
-		self.highresspheredl = 0 # display list id
-
+		self.highresspheredl = 0 # display list i
 		self.draw_dl = 0
-
+		self.clear_data() # use this so there's only one function
+		self.init_plot_lights()
+		glClearColor(1,1,1,1)
+		
+		self.draw_data_cube = True
+	
+	def init_plot_lights(self):
+		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.5, 0.5, 0.5, 1.0])
+		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
+		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
+		glLightfv(GL_LIGHT0, GL_POSITION, [0.02,-0.02,1.,0.])
+		 
 	def get_type(self):
 		return "lights"
+	
+	def clear_data(self):
+		self.data = {} # this is the data sets
+		self.ndata = {} # this is the normalized data sets (values go from 0 to 1)
+		self.visibility = {} # this is the visibility of the each of the data sets
+		self.axes = {} # This stores which axes are currently being viewed, for each data set
+		self.axis_colors = {} # Stores colors assigned to axes
+		self.plot_type = {} # This stores whether the plot is being treated as 2D
+		self.min = {} # Stores the minimum value in each data set
+		self.max = {} # Stores the maximum value in each data set
+		
+	
+	def set_data(self,key,data,clear_current=False):
+		'''
+		
+		'''
+		
+		if len(data) < 2:
+			print "error, the length of the input data must be atleast 2"
+			return
+		l = -1
+		for d in data:
+			if l == -1: l = len(d)
+			else:
+				if l != len(d):
+					print "error, the axis data must all be the same length"
+					return
+		
+		if clear_current: 
+			self.clear_data() # use this so there's only one function
+		
+		# note no checking, if the old data exists it is simply replaced
+		self.data[key] = data
+		self.visibility[key] = True
+		if len(data) == 2:
+			self.axes[key] = [0,1]
+			
+		else: # the data must have atleast 3 axes, this is guaranteed by the checking functions at the entry point into this function 
+			self.axes[key] = [0,1,2]
+			self.axis_colors[key] = ["red","green","blue"]
+			
+		min  = []
+		max = []
+		for d in data:
+			s = copy.copy(d)
+			s.sort()
+			min.append(s[0])
+			max.append(s[-1])
+		self.min[key] = min
+		self.max[key] = max
+
 
 	def render(self):
 		#if (not isinstance(self.data,EMData)): return
@@ -463,6 +165,12 @@ class EMLights(EMLightsDrawer,EMImage3DGUIModule):
 
 		glDisable(GL_CULL_FACE)
 		glEnable(GL_DEPTH_TEST)
+		
+		glShadeModel(GL_SMOOTH)
+
+		glStencilFunc(GL_EQUAL,self.rank,0)
+		glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE)
+		
 		
 		if ( self.wire ):
 			glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
@@ -477,58 +185,22 @@ class EMLights(EMLightsDrawer,EMImage3DGUIModule):
 		glPushMatrix()
 		self.cam.position()
 			
-		glShadeModel(GL_SMOOTH)
-
-		glStencilFunc(GL_EQUAL,self.rank,0)
-		glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE)
-		glMaterial(GL_FRONT, GL_AMBIENT, self.colors[self.currentcolor]["ambient"])
-		glMaterial(GL_FRONT, GL_DIFFUSE, self.colors[self.currentcolor]["diffuse"])
-		glMaterial(GL_FRONT, GL_SPECULAR, self.colors[self.currentcolor]["specular"])
-		glMaterial(GL_FRONT, GL_EMISSION, self.colors[self.currentcolor]["emission"])
-		glMaterial(GL_FRONT, GL_SHININESS, self.colors[self.currentcolor]["shininess"])
-		glColor(self.colors[self.currentcolor]["ambient"])
 		
 		glEnable(GL_NORMALIZE)
 		#HERE
 		
 		if self.highresspheredl == 0:
 			self.highresspheredl=glGenLists(1)
-				
 			glNewList(self.highresspheredl,GL_COMPILE)
-			gluSphere(self.gq,.5,16,16)
+			gluSphere(self.gq,.5,12,8)
 			glEndList()
-		
-		glScale(2,2,2)
 		
 		if ( self.draw_dl == 0 ):
 			self.draw_dl=glGenLists(1)
 				
 			glNewList(self.draw_dl,GL_COMPILE)
-			z = [-10,-4,-2,2,4,10]
-			t = [[2,0,0],[-2,0,0],[0,2,0],[0,-2,0],[0,0,0]]
-			for r in z:
-				
-				for s in t:
-					glPushMatrix()
-					glTranslate(0,0,r)
-					glTranslate(*s)
-					v = Util.get_irand(0,4)
-					if v == 0:
-						glCallList(self.highresspheredl)
-					elif v == 1:
-						pass
-						#glutSolidRhombicDodecahedron()
-					elif v == 2:
-						glScale(0.5,0.5,0.5)
-						glutSolidDodecahedron()
-					elif v == 3:
-						#glScale(0.5,0.5,0.5)
-						glutSolidIcosahedron()
-					elif v == 4:
-						#glScale(0.5,0.5,0.5)
-						glutSolidTetrahedron()
-					
-					glPopMatrix()
+			self.scatter_plot()
+							
 			glEndList(self.draw_dl)
 			
 		glCallList(self.draw_dl)
@@ -551,10 +223,110 @@ class EMLights(EMLightsDrawer,EMImage3DGUIModule):
 		if ( polygonmode[1] == GL_LINE ): glPolygonMode(GL_BACK, GL_LINE)
 		else: glPolygonMode(GL_BACK, GL_FILL)
 		
-	def init(self):
-		self.mmode = 0
-		self.wire = False
-		self.light = True
+	def full_refresh(self):
+		glDeleteLists(self.draw_dl,1)
+		self.draw_dl = 0
+		
+	def scatter_plot(self):
+		'''
+		Will do a scatter plot using the available data
+		If any data is 2D it will simply ignore it
+		'''
+		minx,miny,minz,maxx,maxy,maxz = None,None,None,None,None,None
+		mins = [None,None,None]
+		maxs = [None,None,None]
+	
+		keys = self.data.keys()
+		vis_keys = []
+		for key in keys:
+			if self.visibility[key]:
+				min = self.min[key]
+				max = self.max[key]
+				
+				for i,m in enumerate(mins):
+					if m == None or min[i] < m: mins[i] = min[i]
+					
+				for i,m in enumerate(maxs):
+					if m == None or max[i] >  m: maxs[i] = max[i]
+				vis_keys.append(key)
+				
+		if len(vis_keys) == 0: return # there are no visible plots
+		
+		minx,miny,minz = mins[0],mins[1],mins[2]
+		maxx,maxy,maxz = maxs[0],maxs[1],maxs[2]
+		
+		width = maxx-minx
+		height = maxy-miny
+		depth = maxz-minz
+		glPushMatrix()
+		glTranslate(-(maxx+minx)/2,-(maxy+miny)/2,-(maxz+minz)/2) # centers the plot
+		
+		for key in vis_keys:
+			d = self.data[key]
+			a = self.axes[key]
+			x = d[a[0]]
+			y = d[a[1]]
+			if len(a) == 3: z = d[a[2]]
+			else: z = None
+
+			if z != None:
+				xcolor = self.colors[self.axis_colors[key][0]]
+				ycolor = self.colors[self.axis_colors[key][1]]
+				zcolor = self.colors[self.axis_colors[key][2]]
+				
+				for i in range(len(x)):
+					
+					color = self.get_color(xcolor,ycolor,zcolor,(x[i]-minx)/float(width), (y[i]-miny)/float(height),(z[i]-minz)/float(depth))
+					glMaterial(GL_FRONT, GL_AMBIENT, color["ambient"])
+					glMaterial(GL_FRONT, GL_DIFFUSE, color["diffuse"])
+					glMaterial(GL_FRONT, GL_SPECULAR, color["specular"])
+					glMaterial(GL_FRONT, GL_EMISSION, color["emission"])
+					glMaterial(GL_FRONT, GL_SHININESS, color["shininess"])
+					glColor(color["ambient"])
+					
+					
+					glPushMatrix()
+					glTranslate(x[i],y[i],z[i])
+					glScale(5,5,5)
+					glCallList(self.highresspheredl)
+					glPopMatrix()
+					
+			if self.draw_data_cube:
+				
+				glPushMatrix()
+				glTranslate(minx,miny,minz)
+				draw_volume_bounds(maxx-minx,maxy-miny,maxz-minz)
+				glPopMatrix()
+							
+							
+		glPopMatrix()
+	
+	def get_color(self,xcolor,ycolor,zcolor,x,y,z):
+		
+		result = {}
+		t = ["ambient","diffuse","specular","emission","shininess"]
+		colors = [xcolor,ycolor,zcolor]
+		coord = [x,y,z]
+		for c in t:
+			r = []
+			if c != "shininess":
+				n = len(colors[0][c])
+				for j in range(n):
+					v = 0
+					for i,color in enumerate(colors):
+						v += (coord[i]*color[c][j])/float(len(colors))
+					
+					r.append(v)
+				result[c] = r
+			else:
+				v = 0
+				for i,color in enumerate(colors):
+					v += (coord[i]*color[c])/float(len(colors))
+			
+				result[c] = v
+
+		#print result
+		return result
 	
 	def setInit(self):
 
@@ -562,7 +334,7 @@ class EMLights(EMLightsDrawer,EMImage3DGUIModule):
 		#self.cam.cam_z = -1.25*32
 		
 		if not self.inspector or self.inspector ==None:
-			self.inspector=EMLightsInspector(self)
+			self.inspector=EMPlot3DInspector(self)
 		
 		self.load_colors()
 		
@@ -582,779 +354,265 @@ class EMLights(EMLightsDrawer,EMImage3DGUIModule):
 	
 	def update_inspector(self,t3d):
 		if not self.inspector or self.inspector ==None:
-			self.inspector=EMLightsInspector(self)
+			self.inspector=EMPlot3DInspector(self)
 		self.inspector.update_rotations(t3d)
 	
 	def get_inspector(self):
 		if not self.inspector : 
-			self.inspector=EMLightsInspector(self)
-			self.inspector.setColors(self.colors,self.currentcolor)
+			self.inspector=EMPlot3DInspector(self)
+			self.inspector.set_colors(self.colors,self.currentcolor)
 		return self.inspector
 
 
-class PointSourceLightMouseEvents:
-	def __init__(self,current_light,inspector):
-		self.current_light = current_light
-		self.inspector = inspector
-		self.mpressx = None
-		self.mpressy = None
-		
-	def mousePressEvent(self,event):
-		self.mpressx = event.x()
-		self.mpressy = event.y()
 
-	def mouseMoveEvent(self,event):
-		if event.buttons()&Qt.RightButton and event.modifiers()&Qt.ShiftModifier:
-					
-			self.motion_translate_z_only(self.mpressx, self.mpressy,event)
-			self.mpressx = event.x()
-			self.mpressy = event.y()
-
-		elif event.buttons()&Qt.RightButton:
-			self.motion_translate(self.mpressx, self.mpressy,event)
-				
-			self.mpressx = event.x()
-			self.mpressy = event.y()
-		else:
-			self.motion_rotate(self.mpressx - event.x(), self.mpressy - event.y())
-			self.mpressx = event.x()
-			self.mpressy = event.y()
-
-	def mouseReleaseEvent(self,event):
-		pass
+class EMPlot2DInspector(QtGui.QWidget):
+	def get_desktop_hint(self):
+		return "inspector"
 	
-	def motion_translate_z_only(self,prev_x,prev_y,event):
-		[dx,dy] = [event.x()-prev_x,prev_y-event.y()]
-		dx /= 10.0
-		dy /= 10.0
-		d = abs(dx) + abs(dy)
-		if dy > 0: d = -d 
-		
-		pos = glGetLightfv(self.current_light,GL_POSITION)
-		
-		test_pos = [0,0,0,1]
-		glLightfv(self.current_light,GL_POSITION,test_pos)
-		test_pos_out = glGetLightfv(self.current_light,GL_POSITION)
-		# reset to the correction position
-		pos = [ (pos[i] - test_pos_out[i]) for i in range(3)]
-		pos[2] += d
-
-		pos.append(1)
-		glLightfv(self.current_light,GL_POSITION,pos)
-
-		self.inspector.set_positional_light_pos(pos)
-		
-	def motion_translate(self,prev_x,prev_y,event):
-		[dx,dy] = [event.x()-prev_x,prev_y-event.y()]
-		dx /= 10.0
-		dy /= 10.0
-		pos = glGetLightfv(self.current_light,GL_POSITION)
-		
-		test_pos = [0,0,0,1]
-		glLightfv(self.current_light,GL_POSITION,test_pos)
-		test_pos_out = glGetLightfv(self.current_light,GL_POSITION)
-		# reset to the correction position
-		pos = [ (pos[i] - test_pos_out[i]) for i in range(3)]
-		pos[0] += dx
-		pos[1] += dy
-		
-		pos.append(1)
-		glLightfv(self.current_light,GL_POSITION,pos)
-
-		self.inspector.set_positional_light_pos(pos)
-		
-	def motion_rotate(self,x,y,fac=1.0):
-		# this function implements mouse interactive rotation
-		# [x,y] is the vector generating by the mouse movement (in the plane of the screen)
-		# Rotation occurs about the vector 90 degrees to [x,y,0]
-		# The amount of rotation is linealy proportional to the length of [x,y]
-		
-		if ( x == 0 and y == 0): return
-		
-		theta = atan2(-y,x)
-
-		rotaxis_x = -sin(theta)
-		rotaxis_y = cos(theta)
-		rotaxis_z = 0
-		length = sqrt(x*x + y*y)
-		# motiondull is a magic number - things rotate more if they are closer and slower if they are far away in this appproach
-		# This magic number could be overcome using a strategy based on the results of get_render_dims_at_depth
-		angle = 4*fac*length/pi # the four is just because I liked the feel of it
-		
-		t = Transform()
-		quaternion = {}
-		quaternion["Omega"] = angle
-		quaternion["n1"] = rotaxis_x
-		quaternion["n2"] = rotaxis_y
-		quaternion["n3"] = rotaxis_z
-		quaternion["type"] = "spin"
-		
-		t.set_rotation( quaternion )
-		
-		dr = glGetLightfv(self.current_light,GL_SPOT_DIRECTION)
-		v = Vec3f(float(dr[0]),float(dr[1]),float(dr[2]))
-		torig = Transform()
-		torig.set_rotation(v)
-		
-		
-		t2 = t*torig
-		
-		new_dr = t2*Vec3f(0,0,1)
-		new_dr_list = [new_dr[i] for i in range(3)]
-
-		glLightfv(self.current_light,GL_SPOT_DIRECTION,new_dr_list)
-		if self.inspector != None: self.inspector.set_positional_light_dir(new_dr_list)
-		#self.light_x_dir.setValue(pos[0])
-		#self.light_y_dir.setValue(pos[1])
-		#self.light_z_dir.setValue(pos[2])
-
-
-class DirectionalLightMouseEvents:
-	def __init__(self,current_light,inspector):
-		self.current_light = current_light
-		self.inspector = inspector
-		self.mpressx = None
-		self.mpressy = None
-	
-	def mousePressEvent(self,event):
-		self.mpressx = event.x()
-		self.mpressy = event.y()
-
-	def mouseMoveEvent(self,event):
-		self.motion_rotate(self.mpressx - event.x(), self.mpressy - event.y())
-		self.mpressx = event.x()
-		self.mpressy = event.y()
-
-	def mouseReleaseEvent(self,event):
-		pass
-		
-	def motion_rotate(self,x,y,fac=1.0):
-		# this function implements mouse interactive rotation
-		# [x,y] is the vector generating by the mouse movement (in the plane of the screen)
-		# Rotation occurs about the vector 90 degrees to [x,y,0]
-		# The amount of rotation is linealy proportional to the length of [x,y]
-		
-		if ( x == 0 and y == 0): return
-		
-		theta = atan2(-y,x)
-
-		rotaxis_x = -sin(theta)
-		rotaxis_y = cos(theta)
-		rotaxis_z = 0
-		length = sqrt(x*x + y*y)
-		# motiondull is a magic number - things rotate more if they are closer and slower if they are far away in this appproach
-		# This magic number could be overcome using a strategy based on the results of get_render_dims_at_depth
-		angle = 4*fac*length/pi # the four is just because I liked the feel of it
-		
-		t = Transform()
-		quaternion = {}
-		quaternion["Omega"] = angle
-		quaternion["n1"] = rotaxis_x
-		quaternion["n2"] = rotaxis_y
-		quaternion["n3"] = rotaxis_z
-		quaternion["type"] = "spin"
-		
-		t.set_rotation( quaternion )
-		
-		pos = glGetLightfv(self.current_light,GL_POSITION)
-		v = Vec3f(float(pos[0]),float(pos[1]),float(pos[2]))
-		torig = Transform()
-		torig.set_rotation(v)
-		
-		
-		t2 = t*torig
-		
-		new_pos = t2*Vec3f(0,0,1)
-		new_pos_list = [new_pos[i] for i in range(3)]
-		new_pos_list.append(0)
-		#new_pos_list[0] = new_pos_list[0]
-		#print self.current_light
-		glLightfv(self.current_light,GL_POSITION,new_pos_list)
-		if self.inspector != None: self.inspector.set_directional_light_dir(new_pos_list)
-		#self.light_x_dir.setValue(pos[0])
-		#self.light_y_dir.setValue(pos[1])
-		#self.light_z_dir.setValue(pos[2])
-
-
-class EMLightsInspectorBase:
-	'''
-	Inherit from this if you want its functionality
-	'''
-
-	def __init__(self):
-		self.gl_lights = get_gl_lights_vector()
-		self.quiet = False
-
-
-	def set_positional_light_pos(self,pos):
-		self.quiet = True
-		p = [self.light_x_pos,self.light_y_pos,self.light_z_pos]
-		for i,w in enumerate(p):
-			w.setValue(pos[i])
-		
-		self.quiet = False
-
-	def set_positional_light_dir(self,direction):
-		self.quiet = True
-		p = [self.light_ps_xdir,self.light_ps_ydir,self.light_ps_zdir]
-		for i,w in enumerate(p):
-			w.setValue(direction[i])
-		
-		self.quiet = False
-
-	def set_directional_light_dir(self,direction):
-		
-		self.quiet = True
-		p = [self.light_x_dir,self.light_y_dir,self.light_z_dir]
-		for i,w in enumerate(p):
-			w.setValue(direction[i])
-		
-		self.quiet = False
-	
-	def update_light(self):
-		if self.quiet: return
-		
-		l = self.get_current_light()
-		if l == None: return
-		
-		attribs = ["r","g","b"]
-		amb = [ getattr(self.light_ambient, a).getValue() for a in attribs]
-		amb.append(1.0) # alpha
-		dif = [ getattr(self.light_diffuse, a).getValue() for a in attribs]
-		dif.append(1.0) # alpha
-		spec = [ getattr(self.light_specular, a).getValue() for a in attribs]
-		spec.append(1.0) # alpha
-		
-		
-		glLightfv(l, GL_AMBIENT, amb)
-		glLightfv(l, GL_DIFFUSE, dif)
-		glLightfv(l, GL_SPECULAR, spec)
-		
-		pos = glGetLightfv(l,GL_POSITION)
-		if pos[3] == 0:
-			# directional light
-			p = [self.light_x_dir,self.light_y_dir,self.light_z_dir]
-			pos = [float(a.value()) for a in p]
-			pos.append(0) # i.e. directional light
-			glLightfv(l, GL_POSITION, pos)
-		else:
-			p = [self.light_x_pos,self.light_y_pos,self.light_z_pos]
-			pos = [float(a.value()) for a in p]
-			pos.append(1) # i.e.point light
-			glLightfv(l, GL_POSITION, pos)
-			
-			d = [self.light_ps_xdir,self.light_ps_ydir,self.light_ps_zdir]
-			dr = [float(a.value()) for a in d]
-			glLightfv(l, GL_SPOT_DIRECTION, dr)
-			
-			glLightfv(l,GL_CONSTANT_ATTENUATION,self.const_atten.getValue())
-			glLightfv(l,GL_LINEAR_ATTENUATION,self.linear_atten.getValue())
-			glLightfv(l,GL_QUADRATIC_ATTENUATION,self.quad_atten.getValue())
-			glLightfv(l,GL_SPOT_CUTOFF,self.spot_cutoff.getValue())
-			glLightfv(l,GL_SPOT_EXPONENT,self.spot_exponent.getValue())
-
-		
-		self.target().updateGL()
-		
-	def get_light_tab(self):
-		self.light_tab = QtGui.QWidget()
-		light_tab = self.light_tab
-		
-		vbl = QtGui.QVBoxLayout(self.light_tab )
-		vbl.setMargin(0)
-		vbl.setSpacing(6)
-		vbl.setObjectName("Lights")
-		
-		self.light_manip_check = QtGui.QCheckBox("Mouse moves lights")
-		self.local_viewer_check = QtGui.QCheckBox("Local light model")
-		self.local_viewer_check.setChecked(glGetInteger(GL_LIGHT_MODEL_LOCAL_VIEWER))
-		show_lights = QtGui.QCheckBox("Show lights")
-		show_lights.setChecked(self.target().display_lights)
-		max_lights_label = QtGui.QLabel()
-		max_lights_label.setText("Max lights : " + str(glGetInteger(GL_MAX_LIGHTS)))
-		
-		hdl_l = QtGui.QHBoxLayout()
-		hdl_t = QtGui.QHBoxLayout()
-		
-		hdl_l.addWidget(self.light_manip_check)
-		hdl_l.addWidget(self.local_viewer_check)
-		hdl_t.addWidget(show_lights)
-		hdl_t.addWidget(max_lights_label)
-		
-		vbl.addLayout(hdl_l)
-		vbl.addLayout(hdl_t)
-		
-		self.light_tab_widget = QtGui.QTabWidget()
-		
-		
-		self.light_tab_widget.addTab(self.get_directional_light_tab(), "Directional")
-		self.light_tab_widget.addTab(self.get_pointsource_light_tab(), "Point source")
-		
-		vbl.addWidget(self.light_tab_widget)
-		
-		light_material_tab_widget = QtGui.QTabWidget()
-		self.light_ambient = get_RGB_tab(self,"ambient")
-		light_material_tab_widget.addTab(self.light_ambient, "Ambient")
-		self.light_diffuse = get_RGB_tab(self,"diffuse")
-		light_material_tab_widget.addTab(self.light_diffuse, "Diffuse")
-		self.light_specular = get_RGB_tab(self,"specular")
-		light_material_tab_widget.addTab(self.light_specular, "Specular")
-		
-		
-		self.refresh_light_states()
-		
-		vbl.addWidget(light_material_tab_widget)
-
-		QtCore.QObject.connect(self.light_ambient.r, QtCore.SIGNAL("valueChanged"), self.update_light)
-		QtCore.QObject.connect(self.light_ambient.g, QtCore.SIGNAL("valueChanged"), self.update_light)
-		QtCore.QObject.connect(self.light_ambient.b, QtCore.SIGNAL("valueChanged"), self.update_light)
-		QtCore.QObject.connect(self.light_diffuse.r, QtCore.SIGNAL("valueChanged"), self.update_light)
-		QtCore.QObject.connect(self.light_diffuse.g, QtCore.SIGNAL("valueChanged"), self.update_light)
-		QtCore.QObject.connect(self.light_diffuse.b, QtCore.SIGNAL("valueChanged"), self.update_light)
-		QtCore.QObject.connect(self.light_specular.r, QtCore.SIGNAL("valueChanged"), self.update_light)
-		QtCore.QObject.connect(self.light_specular.g, QtCore.SIGNAL("valueChanged"), self.update_light)
-		QtCore.QObject.connect(self.light_specular.b, QtCore.SIGNAL("valueChanged"), self.update_light)
-		QtCore.QObject.connect(self.light_x_dir, QtCore.SIGNAL("valueChanged(double)"), self.update_light)
-		QtCore.QObject.connect(self.light_y_dir, QtCore.SIGNAL("valueChanged(double)"), self.update_light)
-		QtCore.QObject.connect(self.light_z_dir, QtCore.SIGNAL("valueChanged(double)"), self.update_light)
-		QtCore.QObject.connect(self.light_manip_check, QtCore.SIGNAL("valueChanged(double)"), self.update_light)
-		QtCore.QObject.connect(self.light_manip_check, QtCore.SIGNAL("stateChanged(int)"), self.target().light_manipulation_toggled)
-		QtCore.QObject.connect(show_lights, QtCore.SIGNAL("stateChanged(int)"), self.target().show_lights)
-		QtCore.QObject.connect(self.local_viewer_check, QtCore.SIGNAL("stateChanged(int)"), self.local_viewer_checked)
-		#QtCore.QObject.connect(self.light_w_pos, QtCore.SIGNAL("valueChanged(int)"), self.update_light)
-	 
-		return light_tab
-	
-	def get_current_light(self):
-		selected_items = self.light_list.selectedItems()
-		if len(selected_items) == 0: selected_items = self.point_light_list.selectedItems()
-			
-		if len(selected_items) == 0:
-			return None
-		if len(selected_items) > 1:
-			print "write a message box to say there is a function that assumes only one light is selected"
-			return None
-		
-		item = selected_items[0]
-
-		#print "selected lights is",item.text()
-		idx = int(str(item.text())[-1]) # this shouldn't really ever fail
-		return self.gl_lights[idx]
-	
-	
-	def refresh_light_states(self):
-		self.quiet = True
-		l = self.get_current_light()
-		if l == None: return
-		
-		self.target().set_current_light(l)
-		amb = glGetLightfv(l,GL_AMBIENT)
-		dif =  glGetLightfv(l,GL_DIFFUSE)
-		spec = glGetLightfv(l,GL_SPECULAR)
-		self.light_ambient.r.setValue(float(amb[0]))
-		self.light_ambient.g.setValue(float(amb[1]))
-		self.light_ambient.b.setValue(float(amb[2]))
-		
-		self.light_diffuse.r.setValue(float(dif[0]))
-		self.light_diffuse.g.setValue(float(dif[1]))
-		self.light_diffuse.b.setValue(float(dif[2]))
-		
-		self.light_specular.r.setValue(float(spec[0]))
-		self.light_specular.g.setValue(float(spec[1]))
-		self.light_specular.b.setValue(float(spec[2]))
-		
-		pos = glGetLightfv(l,GL_POSITION)
-		if pos[3] == 0:
-			self.light_x_dir.setValue(float(pos[0]))
-			self.light_y_dir.setValue(float(pos[1]))
-			self.light_z_dir.setValue(float(pos[2]))
-		else:
-			# it's a point source
-			
-			# have to figure out the model coordinates, do this
-			# by setting the light position to zero and then 
-			# getting the light position. Calculate the difference...
-			test_pos = [0,0,0,1]
-			glLightfv(l,GL_POSITION,test_pos)
-			test_pos_out = glGetLightfv(l,GL_POSITION)
-			# reset to the correction position
-			pos = [ (pos[i] - test_pos_out[i]) for i in range(3)]
-			pos.append(1)
-			glLightfv(l,GL_POSITION,pos)
-			
-			self.light_x_pos.setValue(float(pos[0]))
-			self.light_y_pos.setValue(float(pos[1]))
-			self.light_z_pos.setValue(float(pos[2]))
-			
-			dr = glGetLightfv(l,GL_SPOT_DIRECTION)
-			self.light_ps_xdir.setValue(float(dr[0]))
-			self.light_ps_ydir.setValue(float(dr[1]))
-			self.light_ps_zdir.setValue(float(dr[2]))
-			
-			self.const_atten.setValue(float(glGetLightfv(l,GL_CONSTANT_ATTENUATION)))
-			self.linear_atten.setValue(float(glGetLightfv(l,GL_LINEAR_ATTENUATION)))
-			self.quad_atten.setValue(float(glGetLightfv(l,GL_QUADRATIC_ATTENUATION)))
-			
-			self.spot_cutoff.setValue(float(glGetLightfv(l,GL_SPOT_CUTOFF)))
-			self.spot_exponent.setValue(float(glGetLightfv(l,GL_SPOT_EXPONENT)))
-			
-			
-		self.target().updateGL()
-		self.quiet = False
-	def local_viewer_checked(self,i):
-		glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,i)
-		self.target().updateGL()
-	
-	
-	def del_directional_light(self):
-		glDisable(self.get_current_light())
-		self.redo_directional_light_list()
-		
-		self.refresh_light_states()
-		self.target().updateGL()
-		
-	def del_pointsource_light(self):
-		glDisable(self.get_current_light())
-		self.redo_pointsource_light_list()
-		self.refresh_light_states()
-		self.target().updateGL()
-		
-	def redo_directional_light_list(self):
-		self.light_list.clear()
-		for i,l in enumerate(self.gl_lights):
-			if glIsEnabled(l):
-				pos = glGetLightfv(l,GL_POSITION)
-				if pos[3] == 0:
-					a = QtGui.QListWidgetItem("Light "+str(i),self.light_list)
-					if len(self.light_list.selectedItems()) == 0:
-						a.setSelected(True)
-						
-	def redo_pointsource_light_list(self):
-		self.point_light_list.clear()
-		for i,l in enumerate(self.gl_lights):
-			if glIsEnabled(l):
-				pos = glGetLightfv(l,GL_POSITION)
-				if pos[3] == 1:
-					a = QtGui.QListWidgetItem("Light "+str(i),self.light_list)
-					if len(self.light_list.selectedItems()) == 0 and len(self.point_light_list.selectedItems()) == 0:
-						a.setSelected(True)
-		
-	
-	def new_directional_light(self):
-		self.new_light()
-	
-	def new_pointsource_light(self):
-		self.new_light(point_source=True)
-		
-	def new_light(self,point_source=False):
-		for i,l in enumerate(self.gl_lights):
-			if not glIsEnabled(l):
-				glEnable(l)
-				pos = glGetLightfv(l,GL_POSITION)
-				
-				if point_source:
-					# make sure that it's a point source
-					if pos[3] != 1:
-						pos[3] = 1
-						glLightfv(l,GL_POSITION,pos)
-					
-					spot_cutoff = glGetLightfv(l,GL_SPOT_CUTOFF)
-					if spot_cutoff > 90: glLightfv(l,GL_SPOT_CUTOFF,90)
-				else:
-					# make sure that it's directionaly
-					if pos[3] != 0:
-						pos[3] = 0
-						glLightfv(l,GL_POSITION,pos)
-						
-					
-				new_label = "Light "+str(i)
-				
-				if not point_source: 
-					a = QtGui.QListWidgetItem(new_label,self.light_list)
-					for item in self.point_light_list.selectedItems(): item.setSelected(False)
-						
-				else:
-					a = QtGui.QListWidgetItem(new_label,self.point_light_list)
-					for item in self.light_list.selectedItems(): item.setSelected(False)
-					
-				a.setSelected(True)
-				self.refresh_light_states()
-				break
-		else:
-			print "write a message box to say that there are no available lights!"
-	
-	def new_point_source_light(self):
-		for i,l in enumerate(self.gl_lights):
-			if not glIsEnabled(l):
-				glEnable(l)
-				new_label = "Light "+str(i)
-				
-				a = QtGui.QListWidgetItem(new_label,self.light_list)
-				a.setSelected(True)
-				
-				self.refresh_light_states()
-				break
-		else:
-			print "write a message box to say that there are no available lights!"
-			
-		#print "new directional",glGetInteger(GL_MAX_LIGHTS)
-		#for i in range(glGetInteger(GL_MAX_LIGHTS)):
-			
-			#if glIsEnabled(
-	
-	def light_list_clicked(self,item):
-		for item in self.point_light_list.selectedItems(): item.setSelected(False)
-		self.refresh_light_states()
-		
-	def point_light_list_clicked(self,item):
-		for item in self.light_list.selectedItems(): item.setSelected(False)
-		self.refresh_light_states()
-		
-	
-	def get_directional_light_tab(self):
-		
-		self.directional_light_widget = QtGui.QWidget()
-		
-		vbl = QtGui.QVBoxLayout(self.directional_light_widget)
-		vbl.setMargin(0)
-		vbl.setSpacing(6)
-		vbl.setObjectName("Lights")
+	def __init__(self,target) :
+		QtGui.QWidget.__init__(self,None)
+		self.target=weakref.ref(target)
+		vbl0=QtGui.QVBoxLayout(self)
 		
 		hbl = QtGui.QHBoxLayout()
-		hbl.setMargin(0)
+		hbl.setMargin(2)
 		hbl.setSpacing(6)
 		hbl.setObjectName("hbl")
-		vbl.addLayout(hbl)
-
-		self.light_list = QtGui.QListWidget(None)
-		self.light_list.setMouseTracking(True)
-		self.redo_directional_light_list()
-
-		hbl.addWidget(self.light_list)
-
-		vbl2 = QtGui.QVBoxLayout()
-		vbl2.setMargin(0)
-		vbl2.setSpacing(6)
-		vbl2.setObjectName("vbl2")
-		hbl.addLayout(vbl2)
 		
-		new_light = QtGui.QPushButton("New")
-		vbl2.addWidget(new_light)
-		#copy_light = QtGui.QPushButton("Copy")
-		#vbl2.addWidget(copy_light)
-		del_light = QtGui.QPushButton("Delete")
-		vbl2.addWidget(del_light)
+		# plot list
+		self.setlist=QtGui.QListWidget(self)
+		self.setlist.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
+		hbl.addWidget(self.setlist)
 		
-		
-		x_label = QtGui.QLabel()
-		x_label.setText('x')
-		
-		self.light_x_dir = QtGui.QDoubleSpinBox(self)
-		self.light_x_dir.setMinimum(-100000)
-		self.light_x_dir.setMaximum(100000)
-		self.light_x_dir.setValue(0.0)
-	
-		y_label = QtGui.QLabel()
-		y_label.setText('y')
-		
-		self.light_y_dir = QtGui.QDoubleSpinBox(self)
-		self.light_y_dir.setMinimum(-100000)
-		self.light_y_dir.setMaximum(100000)
-		self.light_y_dir.setValue(0.0)
-		
-		z_label = QtGui.QLabel()
-		z_label.setText('z')
-		
-		self.light_z_dir = QtGui.QDoubleSpinBox(self)
-		self.light_z_dir.setMinimum(-100000)
-		self.light_z_dir.setMaximum(100000)
-		self.light_z_dir.setValue(0.0)
-		
-		
-		hbl_trans = QtGui.QHBoxLayout()
-		hbl_trans.setMargin(0)
-		hbl_trans.setSpacing(6)
-		hbl_trans.setObjectName("Trans")
-		hbl_trans.addWidget(x_label)
-		hbl_trans.addWidget(self.light_x_dir)
-		hbl_trans.addWidget(y_label)
-		hbl_trans.addWidget(self.light_y_dir)
-		hbl_trans.addWidget(z_label)
-		hbl_trans.addWidget(self.light_z_dir)
-		
-		vbl.addLayout(hbl_trans)
-		
-		QtCore.QObject.connect(new_light, QtCore.SIGNAL("clicked()"), self.new_directional_light)
-		QtCore.QObject.connect(del_light, QtCore.SIGNAL("clicked()"), self.del_directional_light)
-		QtCore.QObject.connect(self.light_list, QtCore.SIGNAL("itemPressed(QListWidgetItem*)"), self.light_list_clicked)
-		
-		return self.directional_light_widget
-	
-	
-	def get_pointsource_light_tab(self):
-		
-		self.pointsource_light_widget = QtGui.QWidget()
-		
-		vbl = QtGui.QVBoxLayout(self.pointsource_light_widget)
+		vbl = QtGui.QVBoxLayout()
 		vbl.setMargin(0)
 		vbl.setSpacing(6)
-		vbl.setObjectName("Lights")
+		vbl.setObjectName("vbl")
+		hbl.addLayout(vbl)
 		
-		hbl = QtGui.QHBoxLayout()
-		hbl.setMargin(0)
-		hbl.setSpacing(6)
-		hbl.setObjectName("hbl")
-		vbl.addLayout(hbl)
+		self.color=QtGui.QComboBox(self)
+		self.color.addItem("black")
+		self.color.addItem("blue")
+		self.color.addItem("red")
+		self.color.addItem("green")
+		self.color.addItem("yellow")
+		self.color.addItem("cyan")
+		self.color.addItem("magenta	")
+		vbl.addWidget(self.color)
 
-		self.point_light_list = QtGui.QListWidget(None)
-		self.point_light_list.setMouseTracking(True)
+		hbl2 = QtGui.QHBoxLayout()
+		hbl2.setMargin(0)
+		hbl2.setSpacing(6)
+		vbl.addLayout(hbl2)
+				
+		# This is for line parms
+		vbl2b = QtGui.QVBoxLayout()
+		vbl2b.setMargin(0)
+		vbl2b.setSpacing(6)
+		hbl2.addLayout(vbl2b)
+				
+		self.lintog=QtGui.QPushButton(self)
+		self.lintog.setText("Line")
+		self.lintog.setCheckable(1)
+		vbl2b.addWidget(self.lintog)
+				
+		self.linsel=QtGui.QComboBox(self)
+		self.linsel.addItem("------")
+		self.linsel.addItem("- - - -")
+		self.linsel.addItem(".......")
+		self.linsel.addItem("-.-.-.-")
+		vbl2b.addWidget(self.linsel)
 		
-		self.redo_pointsource_light_list()
-		#a = QtGui.QListWidgetItem(str("Light 0"),self.light_list)
-		#a.setSelected(True)
-		hbl.addWidget(self.point_light_list)
+		self.linwid=QtGui.QSpinBox(self)
+		self.linwid.setRange(1,10)
+		vbl2b.addWidget(self.linwid)
+		
+		# This is for point parms
+		vbl2a = QtGui.QVBoxLayout()
+		vbl2a.setMargin(0)
+		vbl2a.setSpacing(6)
+		hbl2.addLayout(vbl2a)
+				
+		self.symtog=QtGui.QPushButton(self)
+		self.symtog.setText("Symbol")
+		self.symtog.setCheckable(1)
+		vbl2a.addWidget(self.symtog)
 
-		vbl2 = QtGui.QVBoxLayout()
-		vbl2.setMargin(0)
-		vbl2.setSpacing(6)
-		vbl2.setObjectName("vbl2")
-		hbl.addLayout(vbl2)
+		self.symsel=QtGui.QComboBox(self)
+		self.symsel.addItem("circle")
+		self.symsel.addItem("square")
+		self.symsel.addItem("plus")
+		self.symsel.addItem("triup")
+		self.symsel.addItem("tridown")
+		vbl2a.addWidget(self.symsel)
 		
-		new_light = QtGui.QPushButton("New")
-		vbl2.addWidget(new_light)
-		#copy_light = QtGui.QPushButton("Copy")
-		#vbl2.addWidget(copy_light)
-		del_light = QtGui.QPushButton("Delete")
-		vbl2.addWidget(del_light)
+		self.symsize=QtGui.QSpinBox(self)
+		self.symsize.setRange(0,25)
+		vbl2a.addWidget(self.symsize)
+		
+		# per plot column selectors
+		gl=QtGui.QGridLayout()
+		gl.addWidget(QtGui.QLabel("X Col:",self),0,0,Qt.AlignRight)
+		self.slidex=QtGui.QSpinBox(self)
+		self.slidex.setRange(-1,1)
+		gl.addWidget(self.slidex,0,1,Qt.AlignLeft)
+		
+		#self.slidex=ValSlider(self,(-1,1),"X col:",0)
+		#self.slidex.setIntonly(1)
+		#vbl.addWidget(self.slidex)
+		
+		gl.addWidget(QtGui.QLabel("Y Col:",self),1,0,Qt.AlignRight)
+		self.slidey=QtGui.QSpinBox(self)
+		self.slidey.setRange(-1,1)
+		gl.addWidget(self.slidey,1,1,Qt.AlignLeft)
+		#self.slidey=ValSlider(self,(-1,1),"Y col:",1)
+		#self.slidey.setIntonly(1)
+		#vbl.addWidget(self.slidey)
+		
+		gl.addWidget(QtGui.QLabel("C Col:",self),2,0,Qt.AlignRight)
+		self.slidec=QtGui.QSpinBox(self)
+		self.slidec.setRange(-1,1)
+		gl.addWidget(self.slidec,2,1,Qt.AlignLeft)
+		vbl.addLayout(gl)
+		#self.slidec=ValSlider(self,(-1,1),"C col:",-1)
+		#self.slidec.setIntonly(1)
+		#vbl.addWidget(self.slidec)
 		
 		
-		pos_label = QtGui.QLabel()
-		pos_label.setText('Pos: ')
+		hbl2 = QtGui.QHBoxLayout()
 		
-		x_label = QtGui.QLabel()
-		x_label.setText('x')
+		self.xlogtog=QtGui.QPushButton(self)
+		self.xlogtog.setText("X Log")
+		self.xlogtog.setCheckable(1)
+		hbl2.addWidget(self.xlogtog)
+
+		self.ylogtog=QtGui.QPushButton(self)
+		self.ylogtog.setText("Y Log")
+		self.ylogtog.setCheckable(1)
+		hbl2.addWidget(self.ylogtog)
 		
-		self.light_x_pos = QtGui.QDoubleSpinBox(self)
-		self.light_x_pos.setMinimum(-100000)
-		self.light_x_pos.setMaximum(100000)
-		self.light_x_pos.setValue(0.0)
+		vbl.addLayout(hbl2)
+
+		vbl0.addLayout(hbl)
+		
+		hbl2 = QtGui.QHBoxLayout()	
+		hbl2.addWidget(QtGui.QLabel("X Label:",self))
+		self.xlabel=QtGui.QLineEdit(self)
+		hbl2.addWidget(self.xlabel)
+		vbl0.addLayout(hbl2)
+		
+		hbl2 = QtGui.QHBoxLayout()	
+		hbl2.addWidget(QtGui.QLabel("Y Label:",self))
+		self.ylabel=QtGui.QLineEdit(self)
+		hbl2.addWidget(self.ylabel)
+		vbl0.addLayout(hbl2)
+		
 	
-		y_label = QtGui.QLabel()
-		y_label.setText('y')
+#		self.setLayout(vbl0)
+
+		self.quiet=0
 		
-		self.light_y_pos = QtGui.QDoubleSpinBox(self)
-		self.light_y_pos.setMinimum(-100000)
-		self.light_y_pos.setMaximum(100000)
-		self.light_y_pos.setValue(0.0)
+		QtCore.QObject.connect(self.slidex, QtCore.SIGNAL("valueChanged(int)"), self.newCols)
+		QtCore.QObject.connect(self.slidey, QtCore.SIGNAL("valueChanged(int)"), self.newCols)
+		QtCore.QObject.connect(self.slidec, QtCore.SIGNAL("valueChanged(int)"), self.newCols)
+		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("currentRowChanged(int)"),self.newSet)
+		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("itemChanged(QListWidgetItem*)"),self.list_item_changed)
+		QtCore.QObject.connect(self.color,QtCore.SIGNAL("currentIndexChanged(QString)"),self.updPlot)
+		QtCore.QObject.connect(self.symtog,QtCore.SIGNAL("clicked()"),self.updPlot)
+		QtCore.QObject.connect(self.symsel,QtCore.SIGNAL("currentIndexChanged(QString)"),self.updPlot)
+		QtCore.QObject.connect(self.symsize,QtCore.SIGNAL("valueChanged(int)"),self.updPlot)
+		QtCore.QObject.connect(self.xlogtog,QtCore.SIGNAL("clicked()"),self.updPlot)
+		QtCore.QObject.connect(self.ylogtog,QtCore.SIGNAL("clicked()"),self.updPlot)
+		QtCore.QObject.connect(self.lintog,QtCore.SIGNAL("clicked()"),self.updPlot)
+		QtCore.QObject.connect(self.linsel,QtCore.SIGNAL("currentIndexChanged(QString)"),self.updPlot)
+		QtCore.QObject.connect(self.linwid,QtCore.SIGNAL("valueChanged(int)"),self.updPlot)
+		QtCore.QObject.connect(self.xlabel,QtCore.SIGNAL("textChanged(QString)"),self.updPlot)
+		QtCore.QObject.connect(self.ylabel,QtCore.SIGNAL("textChanged(QString)"),self.updPlot)
+		self.datachange()
 		
-		z_label = QtGui.QLabel()
-		z_label.setText('z')
 		
-		self.light_z_pos = QtGui.QDoubleSpinBox(self)
-		self.light_z_pos.setMinimum(-100000)
-		self.light_z_pos.setMaximum(100000)
-		self.light_z_pos.setValue(0.0)
+		#QtCore.QObject.connect(self.gammas, QtCore.SIGNAL("valueChanged"), self.newGamma)
+		#QtCore.QObject.connect(self.invtog, QtCore.SIGNAL("toggled(bool)"), target.set_invert)
+		#QtCore.QObject.connect(self.mmode, QtCore.SIGNAL("buttonClicked(int)"), target.set_mouse_mode)
+
+	def updPlot(self,s=None):
+		if self.quiet : return
+		if self.xlogtog.isChecked() : xl="log"
+		else : xl="linear"
+		if self.ylogtog.isChecked() : yl="log"
+		else : yl="linear"
+		self.target().setAxisParms(self.xlabel.text(),self.ylabel.text(),xl,yl)
+		self.target().setPlotParms(str(self.setlist.currentItem().text()),self.color.currentIndex(),self.lintog.isChecked(),
+				self.linsel.currentIndex(),self.linwid.value(),self.symtog.isChecked(),self.symsel.currentIndex(),self.symsize.value())
+
+	def newSet(self,row):
+		self.quiet=1
+		try:
+			i=str(self.setlist.item(row).text())
+		except: 
+#			print "plot error"
+			return
+		self.slidex.setRange(-1,len(self.target().data[i])-1)
+		self.slidey.setRange(-1,len(self.target().data[i])-1)
+		self.slidec.setRange(-1,len(self.target().data[i])-1)
+		self.slidex.setValue(self.target().axes[i][0])
+		self.slidey.setValue(self.target().axes[i][1])
+		self.slidec.setValue(self.target().axes[i][2])
 		
+		pp=self.target().pparm[i]
+		self.color.setCurrentIndex(pp[0])
 		
-		hbl_trans = QtGui.QHBoxLayout()
-		hbl_trans.setMargin(0)
-		hbl_trans.setSpacing(6)
-		hbl_trans.setObjectName("Trans")
-		hbl_trans.addWidget(pos_label)
-		hbl_trans.addWidget(x_label)
-		hbl_trans.addWidget(self.light_x_pos)
-		hbl_trans.addWidget(y_label)
-		hbl_trans.addWidget(self.light_y_pos)
-		hbl_trans.addWidget(z_label)
-		hbl_trans.addWidget(self.light_z_pos)
+		self.lintog.setChecked(pp[1])
+		self.linsel.setCurrentIndex(pp[2])
+		self.linwid.setValue(pp[3])
 		
-		vbl.addLayout(hbl_trans)
+		self.symtog.setChecked(pp[4])
+		self.symsel.setCurrentIndex(pp[5])
+		self.symsize.setValue(pp[6])
+		self.quiet=0
+
+	def newCols(self,val):
+		if self.target: 
+			self.target().setAxes(str(self.setlist.currentItem().text()),self.slidex.value(),self.slidey.value(),self.slidec.value())
 	
+	def datachange(self):
 		
-		self.const_atten = ValSlider(self.pointsource_light_widget,(0.0,5.0),"Const atten.:")
-		self.const_atten.setValue(1.0)
-		vbl.addWidget(self.const_atten)
+		self.setlist.clear()
 		
-		self.linear_atten = ValSlider(self.pointsource_light_widget,(0.0,0.5),"Linear atten.:")
-		self.linear_atten.setValue(1.0)# why o why?
-		self.linear_atten.setValue(0.0)
-		vbl.addWidget(self.linear_atten)
+		#flag1 = Qt.ItemFlags(Qt.ItemIsTristate)
+		flag2 = Qt.ItemFlags(Qt.ItemIsSelectable)
+		flag3 = Qt.ItemFlags(Qt.ItemIsEnabled)
+		flag4 = Qt.ItemFlags(Qt.ItemIsUserCheckable)
 		
-		self.quad_atten = ValSlider(self.pointsource_light_widget,(0.0,0.05),"Quad. atten.:")
-		self.quad_atten.setValue(1.0) # why o why?
-		self.quad_atten.setValue(0.0)
-		vbl.addWidget(self.quad_atten)
+		keys=self.target().data.keys()
+		visible = self.target().visibility
+		keys.sort()
+		parms = self.target().pparm # get the colors from this
 		
 		
-		dir_label = QtGui.QLabel()
-		dir_label.setText('Dir: ')
-		
-		self.light_ps_xdir = QtGui.QDoubleSpinBox(self)
-		self.light_ps_xdir.setMinimum(-100000)
-		self.light_ps_xdir.setMaximum(100000)
-		self.light_ps_xdir.setValue(0.0)
-	
-		y_label = QtGui.QLabel()
-		y_label.setText('y')
-		
-		self.light_ps_ydir = QtGui.QDoubleSpinBox(self)
-		self.light_ps_ydir.setMinimum(-100000)
-		self.light_ps_ydir.setMaximum(100000)
-		self.light_ps_ydir.setValue(0.0)
-		
-		z_label = QtGui.QLabel()
-		z_label.setText('z')
-		
-		self.light_ps_zdir = QtGui.QDoubleSpinBox(self)
-		self.light_ps_zdir.setMinimum(-100000)
-		self.light_ps_zdir.setMaximum(100000)
-		self.light_ps_zdir.setValue(0.0)
-		
-		hbl_trans2 = QtGui.QHBoxLayout()
-		hbl_trans2.setMargin(0)
-		hbl_trans2.setSpacing(6)
-		hbl_trans2.setObjectName("Trans")
-		hbl_trans2.addWidget(dir_label)
-		hbl_trans2.addWidget(x_label)
-		hbl_trans2.addWidget(self.light_ps_xdir)
-		hbl_trans2.addWidget(y_label)
-		hbl_trans2.addWidget(self.light_ps_ydir)
-		hbl_trans2.addWidget(z_label)
-		hbl_trans2.addWidget(self.light_ps_zdir)
-		
-		vbl.addLayout(hbl_trans2)
-		
+		for i,j in enumerate(keys) :
+			a = QtGui.QListWidgetItem(j)
+			a.setFlags(flag2|flag3|flag4)
+			a.setTextColor(qt_color_map[colortypes[parms[j][0]]])
+			if visible[j]: a.setCheckState(Qt.Checked)
+			else: a.setCheckState(Qt.Unchecked)
 			
-		self.spot_cutoff = ValSlider(self.pointsource_light_widget,(0.0,90.0),"Spot cutoff:")
-		self.spot_cutoff.setValue(90)
-		vbl.addWidget(self.spot_cutoff)
-		
-		self.spot_exponent = ValSlider(self.pointsource_light_widget,(0,10.0),"Spot exponent:")
-		self.spot_exponent.setValue(1.0) # why o why?
-		self.spot_exponent.setValue(0.0)
-		vbl.addWidget(self.spot_exponent)
-		
-		
-		QtCore.QObject.connect(new_light, QtCore.SIGNAL("clicked()"), self.new_pointsource_light)
-		QtCore.QObject.connect(self.point_light_list, QtCore.SIGNAL("itemPressed(QListWidgetItem*)"), self.point_light_list_clicked)
-		QtCore.QObject.connect(self.light_x_pos, QtCore.SIGNAL("valueChanged(double)"), self.update_light)
-		QtCore.QObject.connect(self.light_y_pos, QtCore.SIGNAL("valueChanged(double)"), self.update_light)
-		QtCore.QObject.connect(self.light_z_pos, QtCore.SIGNAL("valueChanged(double)"), self.update_light)
-		QtCore.QObject.connect(self.light_ps_xdir, QtCore.SIGNAL("valueChanged(double)"), self.update_light)
-		QtCore.QObject.connect(self.light_ps_ydir, QtCore.SIGNAL("valueChanged(double)"), self.update_light)
-		QtCore.QObject.connect(self.light_ps_zdir, QtCore.SIGNAL("valueChanged(double)"), self.update_light)
-		QtCore.QObject.connect(self.spot_cutoff, QtCore.SIGNAL("valueChanged"), self.update_light)
-		QtCore.QObject.connect(self.spot_exponent, QtCore.SIGNAL("valueChanged"), self.update_light)
-		QtCore.QObject.connect(self.const_atten, QtCore.SIGNAL("valueChanged"), self.update_light)
-		QtCore.QObject.connect(self.linear_atten, QtCore.SIGNAL("valueChanged"), self.update_light)
-		QtCore.QObject.connect(self.quad_atten, QtCore.SIGNAL("valueChanged"), self.update_light)
+			self.setlist.addItem(a)
 
-		QtCore.QObject.connect(del_light, QtCore.SIGNAL("clicked()"), self.del_pointsource_light)
+		if len(keys) > 0 : self.setlist.setCurrentRow(0)
 		
-		return self.pointsource_light_widget
-	
+	def list_item_changed(self,item):
+		checked = False
+		if item.checkState() == Qt.Checked: checked = True
+		
+		name = str(item.text())
+		if self.target().visibility[name] != checked:
+			self.target().visibility[name] = checked
+			self.target().full_refresh()
+			self.target().updateGL()
 
-class EMLightsInspector(QtGui.QWidget,EMLightsInspectorBase):
+
+class EMPlot3DInspector(QtGui.QWidget,EMLightsInspectorBase):
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
 		EMLightsInspectorBase.__init__(self)
@@ -1388,29 +646,80 @@ class EMLightsInspector(QtGui.QWidget,EMLightsInspectorBase):
 		
 		self.tabwidget = QtGui.QTabWidget()
 		self.maintab = None
-		self.tabwidget.addTab(self.get_light_tab(), "Lights")
+		self.tabwidget.addTab(self.get_plot_tab(), "Plot")
 		self.tabwidget.addTab(self.get_main_tab(), "Transform")
+		self.tabwidget.addTab(self.get_light_tab(), "Lights")
 		self.tabwidget.addTab(self.get_GL_tab(),"GL")
 		self.vbl.addWidget(self.tabwidget)
 		self.n3_showing = False
 		self.quiet = False
 		
-		
-		
-		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.set_scale)
-		QtCore.QObject.connect(self.az, QtCore.SIGNAL("valueChanged"), self.slider_rotate)
-		QtCore.QObject.connect(self.alt, QtCore.SIGNAL("valueChanged"), self.slider_rotate)
-		QtCore.QObject.connect(self.phi, QtCore.SIGNAL("valueChanged"), self.slider_rotate)
+		self.data_change()
+
 		QtCore.QObject.connect(self.cbb, QtCore.SIGNAL("currentIndexChanged(QString)"), target.setColor)
-		QtCore.QObject.connect(self.src, QtCore.SIGNAL("currentIndexChanged(QString)"), self.set_src)
-		QtCore.QObject.connect(self.x_trans, QtCore.SIGNAL("valueChanged(double)"), target.set_cam_x)
-		QtCore.QObject.connect(self.y_trans, QtCore.SIGNAL("valueChanged(double)"), target.set_cam_y)
-		QtCore.QObject.connect(self.z_trans, QtCore.SIGNAL("valueChanged(double)"), target.set_cam_z)
 		QtCore.QObject.connect(self.wiretog, QtCore.SIGNAL("toggled(bool)"), target.toggle_wire)
 		QtCore.QObject.connect(self.lighttog, QtCore.SIGNAL("toggled(bool)"), target.toggle_light)
 		QtCore.QObject.connect(self.glcontrast, QtCore.SIGNAL("valueChanged"), target.set_GL_contrast)
 		QtCore.QObject.connect(self.glbrightness, QtCore.SIGNAL("valueChanged"), target.set_GL_brightness)
+		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("itemChanged(QListWidgetItem*)"),self.list_item_changed)
+
+	def update_rotations(self,t3d):
+		self.rotation_sliders.update_rotations(t3d)
 	
+	def set_scale(self,val):
+		self.rotation_sliders.set_scale(val)
+	
+	def set_xy_trans(self, x, y):
+		self.rotation_sliders.set_xy_trans(x,y)
+	
+	def set_xyz_trans(self,x,y,z):
+		self.rotation_sliders.set_xyz_trans(x,y,z)
+		#return self.advanced_tab
+		
+	def get_plot_tab(self):
+		self.plot_tab = QtGui.QWidget()
+		plot_tab = self.plot_tab
+		
+		self.setlist=QtGui.QListWidget(self)
+		self.setlist.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
+		
+		hbl = QtGui.QHBoxLayout(self.plot_tab)
+		hbl.addWidget(self.setlist)
+		
+		return plot_tab
+	
+	def data_change(self):
+		
+		self.setlist.clear()
+		
+		#flag1 = Qt.ItemFlags(Qt.ItemIsTristate)
+		flag2 = Qt.ItemFlags(Qt.ItemIsSelectable)
+		flag3 = Qt.ItemFlags(Qt.ItemIsEnabled)
+		flag4 = Qt.ItemFlags(Qt.ItemIsUserCheckable)
+		
+		keys=self.target().data.keys()
+		visible = self.target().visibility
+		keys.sort()
+				
+		for i,j in enumerate(keys) :
+			a = QtGui.QListWidgetItem(j)
+			a.setFlags(flag2|flag3|flag4)
+			if visible[j]: a.setCheckState(Qt.Checked)
+			else: a.setCheckState(Qt.Unchecked)
+			
+			self.setlist.addItem(a)
+
+		if len(keys) > 0 : self.setlist.setCurrentRow(0)
+		
+	def list_item_changed(self,item):
+		checked = False
+		if item.checkState() == Qt.Checked: checked = True
+		
+		name = str(item.text())
+		if self.target().visibility[name] != checked:
+			self.target().visibility[name] = checked
+			self.target().full_refresh()
+			self.target().updateGL()
 	
 	
 	def get_GL_tab(self):
@@ -1421,6 +730,18 @@ class EMLightsInspector(QtGui.QWidget,EMLightsInspectorBase):
 		gltab.vbl.setMargin(0)
 		gltab.vbl.setSpacing(6)
 		gltab.vbl.setObjectName("Main")
+		
+		self.hbl_color = QtGui.QHBoxLayout()
+		self.hbl_color.setMargin(0)
+		self.hbl_color.setSpacing(6)
+		gltab.vbl.addLayout(self.hbl_color)
+
+		self.color_label = QtGui.QLabel()
+		self.color_label.setText('Material')
+		self.hbl_color.addWidget(self.color_label)
+		
+		self.cbb = QtGui.QComboBox(gltab)
+		self.hbl_color.addWidget(self.cbb)
 		
 		self.glcontrast = ValSlider(gltab,(1.0,5.0),"GLShd:")
 		self.glcontrast.setObjectName("GLShade")
@@ -1444,220 +765,12 @@ class EMLightsInspector(QtGui.QWidget,EMLightsInspectorBase):
 			maintab.vbl.setSpacing(6)
 			maintab.vbl.setObjectName("Main")
 			
-			self.scale = ValSlider(maintab,(0.01,30.0),"Zoom:")
-			self.scale.setObjectName("scale")
-			self.scale.setValue(1.0)
-			maintab.vbl.addWidget(self.scale)
-			
-			self.hbl_color = QtGui.QHBoxLayout()
-			self.hbl_color.setMargin(0)
-			self.hbl_color.setSpacing(6)
-			self.hbl_color.setObjectName("Material")
-			maintab.vbl.addLayout(self.hbl_color)
-			
-			self.color_label = QtGui.QLabel()
-			self.color_label.setText('Material')
-			self.hbl_color.addWidget(self.color_label)
-			
-			self.cbb = QtGui.QComboBox(maintab)
-			self.hbl_color.addWidget(self.cbb)
-	
-			self.hbl_trans = QtGui.QHBoxLayout()
-			self.hbl_trans.setMargin(0)
-			self.hbl_trans.setSpacing(6)
-			self.hbl_trans.setObjectName("Trans")
-			maintab.vbl.addLayout(self.hbl_trans)
-			
-			self.x_label = QtGui.QLabel()
-			self.x_label.setText('x')
-			self.hbl_trans.addWidget(self.x_label)
-			
-			self.x_trans = QtGui.QDoubleSpinBox(self)
-			self.x_trans.setMinimum(-10000)
-			self.x_trans.setMaximum(10000)
-			self.x_trans.setValue(0.0)
-			self.hbl_trans.addWidget(self.x_trans)
-			
-			self.y_label = QtGui.QLabel()
-			self.y_label.setText('y')
-			self.hbl_trans.addWidget(self.y_label)
-			
-			self.y_trans = QtGui.QDoubleSpinBox(maintab)
-			self.y_trans.setMinimum(-10000)
-			self.y_trans.setMaximum(10000)
-			self.y_trans.setValue(0.0)
-			self.hbl_trans.addWidget(self.y_trans)
-			
-			
-			self.z_label = QtGui.QLabel()
-			self.z_label.setText('z')
-			self.hbl_trans.addWidget(self.z_label)
-			
-			self.z_trans = QtGui.QDoubleSpinBox(maintab)
-			self.z_trans.setMinimum(-10000)
-			self.z_trans.setMaximum(10000)
-			self.z_trans.setValue(0.0)
-			self.hbl_trans.addWidget(self.z_trans)
-			
-			self.hbl_src = QtGui.QHBoxLayout()
-			self.hbl_src.setMargin(0)
-			self.hbl_src.setSpacing(6)
-			self.hbl_src.setObjectName("hbl")
-			maintab.vbl.addLayout(self.hbl_src)
-			
-			self.label_src = QtGui.QLabel()
-			self.label_src.setText('Rotation Convention')
-			self.hbl_src.addWidget(self.label_src)
-			
-			self.src = QtGui.QComboBox(maintab)
-			self.load_src_options(self.src)
-			self.hbl_src.addWidget(self.src)
-			
-			# set default value -1 ensures that the val slider is updated the first time it is created
-			self.az = ValSlider(self,(-360.0,360.0),"az",-1)
-			self.az.setObjectName("az")
-			maintab.vbl.addWidget(self.az)
-			
-			self.alt = ValSlider(self,(-180.0,180.0),"alt",-1)
-			self.alt.setObjectName("alt")
-			maintab.vbl.addWidget(self.alt)
-			
-			self.phi = ValSlider(self,(-360.0,360.0),"phi",-1)
-			self.phi.setObjectName("phi")
-			maintab.vbl.addWidget(self.phi)
-		
-			self.current_src = EULER_EMAN
+			self.rotation_sliders = EMTransformPanel(self.target(),self)
+			self.rotation_sliders.addWidgets(maintab.vbl)
 		
 		return self.maintab
-
-	def set_xy_trans(self, x, y):
-		self.x_trans.setValue(x)
-		self.y_trans.setValue(y)
 	
-	def set_xyz_trans(self,x,y,z):
-		self.x_trans.setValue(x)
-		self.y_trans.setValue(y)
-		self.z_trans.setValue(z)
-		
-	def set_translate_scale(self, xscale,yscale,zscale):
-		self.x_trans.setSingleStep(xscale)
-		self.y_trans.setSingleStep(yscale)
-		self.z_trans.setSingleStep(zscale)
-
-	def update_rotations(self,t3d):
-		rot = t3d.get_rotation(self.src_map[str(self.src.itemText(self.src.currentIndex()))])
-		
-		convention = self.src.currentText()
-		if ( self.src_map[str(convention)] == EULER_SPIN ):
-			self.n3.setValue(rot[self.n3.getLabel()],True)
-		
-		self.az.setValue(rot[self.az.getLabel()],True)
-		self.alt.setValue(rot[self.alt.getLabel()],True)
-		self.phi.setValue(rot[self.phi.getLabel()],True)
-	
-	def slider_rotate(self):
-		self.target().load_rotation(self.get_current_rotation())
-	
-	def get_current_rotation(self):
-		convention = self.src.currentText()
-		rot = {}
-		if ( self.current_src == EULER_SPIN ):
-			rot[self.az.getLabel()] = self.az.getValue()
-			
-			n1 = self.alt.getValue()
-			n2 = self.phi.getValue()
-			n3 = self.n3.getValue()
-			
-			norm = sqrt(n1*n1 + n2*n2 + n3*n3)
-			
-			n1 /= norm
-			n2 /= norm
-			n3 /= norm
-			
-			rot[self.alt.getLabel()] = n1
-			rot[self.phi.getLabel()] = n2
-			rot[self.n3.getLabel()] = n3
-			
-		else:
-			rot[self.az.getLabel()] = self.az.getValue()
-			rot[self.alt.getLabel()] = self.alt.getValue()
-			rot[self.phi.getLabel()] = self.phi.getValue()
-		
-		return Transform3D(self.current_src, rot)
-	
-	def set_src(self, val):
-		t3d = self.get_current_rotation()
-		
-		if (self.n3_showing) :
-			self.vbl.removeWidget(self.n3)
-			self.n3.deleteLater()
-			self.n3_showing = False
-			self.az.setRange(-360,360)
-			self.alt.setRange(-180,180)
-			self.phi.setRange(-360,660)
-		
-		if ( self.src_map[str(val)] == EULER_SPIDER ):
-			self.az.setLabel('phi')
-			self.alt.setLabel('theta')
-			self.phi.setLabel('psi')
-		elif ( self.src_map[str(val)] == EULER_EMAN ):
-			self.az.setLabel('az')
-			self.alt.setLabel('alt')
-			self.phi.setLabel('phi')
-		elif ( self.src_map[str(val)] == EULER_IMAGIC ):
-			self.az.setLabel('alpha')
-			self.alt.setLabel('beta')
-			self.phi.setLabel('gamma')
-		elif ( self.src_map[str(val)] == EULER_XYZ ):
-			self.az.setLabel('xtilt')
-			self.alt.setLabel('ytilt')
-			self.phi.setLabel('ztilt')
-		elif ( self.src_map[str(val)] == EULER_MRC ):
-			self.az.setLabel('phi')
-			self.alt.setLabel('theta')
-			self.phi.setLabel('omega')
-		elif ( self.src_map[str(val)] == EULER_SPIN ):
-			self.az.setLabel('Omega')
-			self.alt.setRange(-1,1)
-			self.phi.setRange(-1,1)
-			
-			self.alt.setLabel('n1')
-			self.phi.setLabel('n2')
-			
-			self.n3 = ValSlider(self,(-360.0,360.0),"n3",-1)
-			self.n3.setRange(-1,1)
-			self.n3.setObjectName("n3")
-			self.vbl.addWidget(self.n3)
-			QtCore.QObject.connect(self.n3, QtCore.SIGNAL("valueChanged"), self.slider_rotate)
-			self.n3_showing = True
-		
-		self.current_src = self.src_map[str(val)]
-		self.update_rotations(t3d)
-	
-	def load_src_options(self,widgit):
-		self.load_src()
-		for i in self.src_strings:
-			widgit.addItem(i)
-	
-	# read src as 'supported rotation conventions'
-	def load_src(self):
-		# supported_rot_conventions
-		src_flags = []
-		src_flags.append(EULER_EMAN)
-		src_flags.append(EULER_SPIDER)
-		src_flags.append(EULER_IMAGIC)
-		src_flags.append(EULER_MRC)
-		src_flags.append(EULER_SPIN)
-		src_flags.append(EULER_XYZ)
-		
-		self.src_strings = []
-		self.src_map = {}
-		for i in src_flags:
-			self.src_strings.append(str(i))
-			self.src_map[str(i)] = i
-		
-	
-	def setColors(self,colors,current_color):
+	def set_colors(self,colors,current_color):
 		a = 0
 		for i in colors:
 			self.cbb.addItem(i)
@@ -1665,14 +778,50 @@ class EMLightsInspector(QtGui.QWidget,EMLightsInspectorBase):
 				self.cbb.setCurrentIndex(a)
 			a += 1
 
-	def set_scale(self,newscale):
-		self.scale.setValue(newscale)
-		
+def get_test_data():
+	'''
+	Returns a test data in a format suitable for the 3D plotter
+	'''
+	data = []
+	n = 50
+	r = range(n)
+	data.append([i for i in r])
+	#data.append([n-i-1 for i in r])
+	#data.append([i**2 for i in r])
+	data.append([n/2.0*sin(i*pi/5) for i in r])
+	
+	#data.append([sqrt(i) for i in r])
+	data.append([Util.get_frand(-n/2.0,n/2.0) for i in r])
+	data.append([n/2.0*cos(i*pi/10) for i in r])
+	
+	return data
+
+
+def get_other_test_data():
+	'''
+	Returns a test data in a format suitable for the 3D plotter
+	'''
+	data = []
+	n = 50
+	r = range(n)
+	data.append([i+n*1.2 for i in r])
+	#data.append([n-i-1 for i in r])
+	#data.append([i**2 for i in r])
+	data.append([n/2.0*sin(i*pi/5) for i in r])
+	
+	#data.append([sqrt(i) for i in r])
+	#data.append([Util.get_frand(-n/2.0,n/2.0) for i in r])
+	data.append([n/2.0*cos(i*pi/10) for i in r])
+	
+	return data
+
 # This is just for testing, of course
 if __name__ == '__main__':
 	from emapplication import EMStandAloneApplication
 	em_app = EMStandAloneApplication()
-	window = EMLights(application=em_app)
+	window = EMPlot3D(application=em_app)
+	window.set_data("test data",get_test_data())
+	window.set_data("other data",get_other_test_data())
 	em_app.show()
 	em_app.execute()
 	

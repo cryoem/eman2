@@ -101,7 +101,6 @@ images far from focus."""
 
 #	if options.oversamp>1 : options.apix/=float(options.oversamp)
 
-	
 	db_project=db_open_dict("bdb:project")
 	db_parms=db_open_dict("bdb:e2ctf.parms")
 	db_misc=db_open_dict("bdb:e2ctf.misc")

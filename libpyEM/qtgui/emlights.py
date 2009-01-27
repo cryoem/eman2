@@ -52,6 +52,7 @@ from PyQt4.QtCore import QTimer
 from time import *
 
 from emglobjects import EMImage3DGUIModule, Camera2,get_default_gl_colors,EMViewportDepthTools2,get_RGB_tab,get_gl_lights_vector
+from emimageutil import EMTransformPanel
 
 MAG_INCREMENT_FACTOR = 1.1
 
@@ -588,7 +589,7 @@ class EMLights(EMLightsDrawer,EMImage3DGUIModule):
 	def get_inspector(self):
 		if not self.inspector : 
 			self.inspector=EMLightsInspector(self)
-			self.inspector.setColors(self.colors,self.currentcolor)
+			self.inspector.set_colors(self.colors,self.currentcolor)
 		return self.inspector
 
 
@@ -1394,24 +1395,25 @@ class EMLightsInspector(QtGui.QWidget,EMLightsInspectorBase):
 		self.vbl.addWidget(self.tabwidget)
 		self.n3_showing = False
 		self.quiet = False
-		
-		
-		
-		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.set_scale)
-		QtCore.QObject.connect(self.az, QtCore.SIGNAL("valueChanged"), self.slider_rotate)
-		QtCore.QObject.connect(self.alt, QtCore.SIGNAL("valueChanged"), self.slider_rotate)
-		QtCore.QObject.connect(self.phi, QtCore.SIGNAL("valueChanged"), self.slider_rotate)
+
 		QtCore.QObject.connect(self.cbb, QtCore.SIGNAL("currentIndexChanged(QString)"), target.setColor)
-		QtCore.QObject.connect(self.src, QtCore.SIGNAL("currentIndexChanged(QString)"), self.set_src)
-		QtCore.QObject.connect(self.x_trans, QtCore.SIGNAL("valueChanged(double)"), target.set_cam_x)
-		QtCore.QObject.connect(self.y_trans, QtCore.SIGNAL("valueChanged(double)"), target.set_cam_y)
-		QtCore.QObject.connect(self.z_trans, QtCore.SIGNAL("valueChanged(double)"), target.set_cam_z)
 		QtCore.QObject.connect(self.wiretog, QtCore.SIGNAL("toggled(bool)"), target.toggle_wire)
 		QtCore.QObject.connect(self.lighttog, QtCore.SIGNAL("toggled(bool)"), target.toggle_light)
 		QtCore.QObject.connect(self.glcontrast, QtCore.SIGNAL("valueChanged"), target.set_GL_contrast)
 		QtCore.QObject.connect(self.glbrightness, QtCore.SIGNAL("valueChanged"), target.set_GL_brightness)
+
+	def update_rotations(self,t3d):
+		self.rotation_sliders.update_rotations(t3d)
 	
+	def set_scale(self,val):
+		self.rotation_sliders.set_scale(val)
 	
+	def set_xy_trans(self, x, y):
+		self.rotation_sliders.set_xy_trans(x,y)
+	
+	def set_xyz_trans(self,x,y,z):
+		self.rotation_sliders.set_xyz_trans(x,y,z)
+		#return self.advanced_tab
 	
 	def get_GL_tab(self):
 		self.gltab = QtGui.QWidget()
@@ -1421,6 +1423,18 @@ class EMLightsInspector(QtGui.QWidget,EMLightsInspectorBase):
 		gltab.vbl.setMargin(0)
 		gltab.vbl.setSpacing(6)
 		gltab.vbl.setObjectName("Main")
+		
+		self.hbl_color = QtGui.QHBoxLayout()
+		self.hbl_color.setMargin(0)
+		self.hbl_color.setSpacing(6)
+		gltab.vbl.addLayout(self.hbl_color)
+
+		self.color_label = QtGui.QLabel()
+		self.color_label.setText('Material')
+		self.hbl_color.addWidget(self.color_label)
+		
+		self.cbb = QtGui.QComboBox(gltab)
+		self.hbl_color.addWidget(self.cbb)
 		
 		self.glcontrast = ValSlider(gltab,(1.0,5.0),"GLShd:")
 		self.glcontrast.setObjectName("GLShade")
@@ -1444,220 +1458,12 @@ class EMLightsInspector(QtGui.QWidget,EMLightsInspectorBase):
 			maintab.vbl.setSpacing(6)
 			maintab.vbl.setObjectName("Main")
 			
-			self.scale = ValSlider(maintab,(0.01,30.0),"Zoom:")
-			self.scale.setObjectName("scale")
-			self.scale.setValue(1.0)
-			maintab.vbl.addWidget(self.scale)
-			
-			self.hbl_color = QtGui.QHBoxLayout()
-			self.hbl_color.setMargin(0)
-			self.hbl_color.setSpacing(6)
-			self.hbl_color.setObjectName("Material")
-			maintab.vbl.addLayout(self.hbl_color)
-			
-			self.color_label = QtGui.QLabel()
-			self.color_label.setText('Material')
-			self.hbl_color.addWidget(self.color_label)
-			
-			self.cbb = QtGui.QComboBox(maintab)
-			self.hbl_color.addWidget(self.cbb)
-	
-			self.hbl_trans = QtGui.QHBoxLayout()
-			self.hbl_trans.setMargin(0)
-			self.hbl_trans.setSpacing(6)
-			self.hbl_trans.setObjectName("Trans")
-			maintab.vbl.addLayout(self.hbl_trans)
-			
-			self.x_label = QtGui.QLabel()
-			self.x_label.setText('x')
-			self.hbl_trans.addWidget(self.x_label)
-			
-			self.x_trans = QtGui.QDoubleSpinBox(self)
-			self.x_trans.setMinimum(-10000)
-			self.x_trans.setMaximum(10000)
-			self.x_trans.setValue(0.0)
-			self.hbl_trans.addWidget(self.x_trans)
-			
-			self.y_label = QtGui.QLabel()
-			self.y_label.setText('y')
-			self.hbl_trans.addWidget(self.y_label)
-			
-			self.y_trans = QtGui.QDoubleSpinBox(maintab)
-			self.y_trans.setMinimum(-10000)
-			self.y_trans.setMaximum(10000)
-			self.y_trans.setValue(0.0)
-			self.hbl_trans.addWidget(self.y_trans)
-			
-			
-			self.z_label = QtGui.QLabel()
-			self.z_label.setText('z')
-			self.hbl_trans.addWidget(self.z_label)
-			
-			self.z_trans = QtGui.QDoubleSpinBox(maintab)
-			self.z_trans.setMinimum(-10000)
-			self.z_trans.setMaximum(10000)
-			self.z_trans.setValue(0.0)
-			self.hbl_trans.addWidget(self.z_trans)
-			
-			self.hbl_src = QtGui.QHBoxLayout()
-			self.hbl_src.setMargin(0)
-			self.hbl_src.setSpacing(6)
-			self.hbl_src.setObjectName("hbl")
-			maintab.vbl.addLayout(self.hbl_src)
-			
-			self.label_src = QtGui.QLabel()
-			self.label_src.setText('Rotation Convention')
-			self.hbl_src.addWidget(self.label_src)
-			
-			self.src = QtGui.QComboBox(maintab)
-			self.load_src_options(self.src)
-			self.hbl_src.addWidget(self.src)
-			
-			# set default value -1 ensures that the val slider is updated the first time it is created
-			self.az = ValSlider(self,(-360.0,360.0),"az",-1)
-			self.az.setObjectName("az")
-			maintab.vbl.addWidget(self.az)
-			
-			self.alt = ValSlider(self,(-180.0,180.0),"alt",-1)
-			self.alt.setObjectName("alt")
-			maintab.vbl.addWidget(self.alt)
-			
-			self.phi = ValSlider(self,(-360.0,360.0),"phi",-1)
-			self.phi.setObjectName("phi")
-			maintab.vbl.addWidget(self.phi)
-		
-			self.current_src = EULER_EMAN
+			self.rotation_sliders = EMTransformPanel(self.target(),self)
+			self.rotation_sliders.addWidgets(maintab.vbl)
 		
 		return self.maintab
-
-	def set_xy_trans(self, x, y):
-		self.x_trans.setValue(x)
-		self.y_trans.setValue(y)
 	
-	def set_xyz_trans(self,x,y,z):
-		self.x_trans.setValue(x)
-		self.y_trans.setValue(y)
-		self.z_trans.setValue(z)
-		
-	def set_translate_scale(self, xscale,yscale,zscale):
-		self.x_trans.setSingleStep(xscale)
-		self.y_trans.setSingleStep(yscale)
-		self.z_trans.setSingleStep(zscale)
-
-	def update_rotations(self,t3d):
-		rot = t3d.get_rotation(self.src_map[str(self.src.itemText(self.src.currentIndex()))])
-		
-		convention = self.src.currentText()
-		if ( self.src_map[str(convention)] == EULER_SPIN ):
-			self.n3.setValue(rot[self.n3.getLabel()],True)
-		
-		self.az.setValue(rot[self.az.getLabel()],True)
-		self.alt.setValue(rot[self.alt.getLabel()],True)
-		self.phi.setValue(rot[self.phi.getLabel()],True)
-	
-	def slider_rotate(self):
-		self.target().load_rotation(self.get_current_rotation())
-	
-	def get_current_rotation(self):
-		convention = self.src.currentText()
-		rot = {}
-		if ( self.current_src == EULER_SPIN ):
-			rot[self.az.getLabel()] = self.az.getValue()
-			
-			n1 = self.alt.getValue()
-			n2 = self.phi.getValue()
-			n3 = self.n3.getValue()
-			
-			norm = sqrt(n1*n1 + n2*n2 + n3*n3)
-			
-			n1 /= norm
-			n2 /= norm
-			n3 /= norm
-			
-			rot[self.alt.getLabel()] = n1
-			rot[self.phi.getLabel()] = n2
-			rot[self.n3.getLabel()] = n3
-			
-		else:
-			rot[self.az.getLabel()] = self.az.getValue()
-			rot[self.alt.getLabel()] = self.alt.getValue()
-			rot[self.phi.getLabel()] = self.phi.getValue()
-		
-		return Transform3D(self.current_src, rot)
-	
-	def set_src(self, val):
-		t3d = self.get_current_rotation()
-		
-		if (self.n3_showing) :
-			self.vbl.removeWidget(self.n3)
-			self.n3.deleteLater()
-			self.n3_showing = False
-			self.az.setRange(-360,360)
-			self.alt.setRange(-180,180)
-			self.phi.setRange(-360,660)
-		
-		if ( self.src_map[str(val)] == EULER_SPIDER ):
-			self.az.setLabel('phi')
-			self.alt.setLabel('theta')
-			self.phi.setLabel('psi')
-		elif ( self.src_map[str(val)] == EULER_EMAN ):
-			self.az.setLabel('az')
-			self.alt.setLabel('alt')
-			self.phi.setLabel('phi')
-		elif ( self.src_map[str(val)] == EULER_IMAGIC ):
-			self.az.setLabel('alpha')
-			self.alt.setLabel('beta')
-			self.phi.setLabel('gamma')
-		elif ( self.src_map[str(val)] == EULER_XYZ ):
-			self.az.setLabel('xtilt')
-			self.alt.setLabel('ytilt')
-			self.phi.setLabel('ztilt')
-		elif ( self.src_map[str(val)] == EULER_MRC ):
-			self.az.setLabel('phi')
-			self.alt.setLabel('theta')
-			self.phi.setLabel('omega')
-		elif ( self.src_map[str(val)] == EULER_SPIN ):
-			self.az.setLabel('Omega')
-			self.alt.setRange(-1,1)
-			self.phi.setRange(-1,1)
-			
-			self.alt.setLabel('n1')
-			self.phi.setLabel('n2')
-			
-			self.n3 = ValSlider(self,(-360.0,360.0),"n3",-1)
-			self.n3.setRange(-1,1)
-			self.n3.setObjectName("n3")
-			self.vbl.addWidget(self.n3)
-			QtCore.QObject.connect(self.n3, QtCore.SIGNAL("valueChanged"), self.slider_rotate)
-			self.n3_showing = True
-		
-		self.current_src = self.src_map[str(val)]
-		self.update_rotations(t3d)
-	
-	def load_src_options(self,widgit):
-		self.load_src()
-		for i in self.src_strings:
-			widgit.addItem(i)
-	
-	# read src as 'supported rotation conventions'
-	def load_src(self):
-		# supported_rot_conventions
-		src_flags = []
-		src_flags.append(EULER_EMAN)
-		src_flags.append(EULER_SPIDER)
-		src_flags.append(EULER_IMAGIC)
-		src_flags.append(EULER_MRC)
-		src_flags.append(EULER_SPIN)
-		src_flags.append(EULER_XYZ)
-		
-		self.src_strings = []
-		self.src_map = {}
-		for i in src_flags:
-			self.src_strings.append(str(i))
-			self.src_map[str(i)] = i
-		
-	
-	def setColors(self,colors,current_color):
+	def set_colors(self,colors,current_color):
 		a = 0
 		for i in colors:
 			self.cbb.addItem(i)
@@ -1665,8 +1471,6 @@ class EMLightsInspector(QtGui.QWidget,EMLightsInspectorBase):
 				self.cbb.setCurrentIndex(a)
 			a += 1
 
-	def set_scale(self,newscale):
-		self.scale.setValue(newscale)
 		
 # This is just for testing, of course
 if __name__ == '__main__':

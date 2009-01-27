@@ -50,7 +50,7 @@ def main():
 	"""
 		
 	parser = OptionParser(usage=usage,version=EMANVERSION)
-
+	
 	parser.add_option("--iter", type="int", help="The number of iterations to perform. Default is 0.", default=0)
 	parser.add_option("--ref", type="string", help="Reference image. If specified, the metadata in this image is used to assign euler angles to the generated classes. This is typically the projections that were used for the classification.", default=None)
 	parser.add_option("--align",type="string",help="This is the aligner used to align particles to the previous class average. Default is None.", default=None)

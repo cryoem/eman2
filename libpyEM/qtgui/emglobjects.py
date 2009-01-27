@@ -2069,25 +2069,10 @@ def get_gl_lights_vector():
 	'''
 	n = glGetInteger(GL_MAX_LIGHTS)
 	lights = []
-	if n > 0: lights.append(GL_LIGHT0)
-	if n > 1: lights.append(GL_LIGHT1)
-	if n > 2: lights.append(GL_LIGHT2)
-	if n > 3: lights.append(GL_LIGHT3)
-	if n > 4: lights.append(GL_LIGHT4)
-	if n > 5: lights.append(GL_LIGHT5)
-	if n > 6: lights.append(GL_LIGHT6)
-	if n > 7: lights.append(GL_LIGHT7)
-	if n > 8: lights.append(GL_LIGHT8)
-	if n > 9: lights.append(GL_LIGHT9)
-	if n > 10: lights.append(GL_LIGHT10)
-	if n > 11: lights.append(GL_LIGHT11)
-	if n > 12: lights.append(GL_LIGHT12)
-	if n > 13: lights.append(GL_LIGHT13)
-	if n > 14: lights.append(GL_LIGHT14)
-	if n > 15: lights.append(GL_LIGHT15)
-	if n > 16: 
-		print "warning, more than 16 lights is unhandled but probably harmless"
-		
+	for i in range(n):
+		s = "GL_LIGHT"+str(i)
+		v = getattr(GL,s)
+		lights.append(v)		
 	return lights
 
 
@@ -2149,11 +2134,55 @@ def get_default_gl_colors():
 	turquoise["emission"] = [0,0,0]
 	
 	yellow = {}
-	yellow["ambient"] = [0.3, 0.3, 0.0,1]
-	yellow["diffuse"] = [0.5, 0.5, 0.0,1]
-	yellow["specular"] = [0.7, 0.7, 0.0,1]
-	yellow["shininess"] =  60
+	yellow["ambient"] = [0.8, 0.8, 0.0,1]
+	yellow["diffuse"] = [0.8, 0.8, 0.0,1]
+	yellow["specular"] = [0.8, 0.8, 0.0,1]
+	yellow["shininess"] =  16
 	yellow["emission"] = [0,0,0]
+
+	cyan = {}
+	cyan["ambient"] = [0.0,0.8,0.8,1]
+	cyan["diffuse"] = [0.0,0.8,0.8,1]
+	cyan["specular"] = [0.0,0.8,0.8,1]
+	cyan["shininess"] =  16
+	cyan["emission"] = [0,0,0]
+	
+	
+	purple = {}
+	purple["ambient"] = [0.8,0.0,0.8,1]
+	purple["diffuse"] = [0.8,0.0,0.8,1]
+	purple["specular"] = [0.8,0.0,0.8,1]
+	purple["shininess"] =  16
+	purple["emission"] = [0,0,0]
+	
+	red = {}
+	red["ambient"] = [1,0.0,0.0,1]
+	red["diffuse"] = [1,0.0,0.0,1]
+	red["specular"] = [1,0.0,0.0,1]
+	red["shininess"] =  16
+	red["emission"] = [0,0,0]
+	
+	green = {}
+	green["ambient"] = [0.0,1,0.0,1]
+	green["diffuse"] = [0.0,1,0.0,1]
+	green["specular"] = [0.0,1,0.0,1]
+	green["shininess"] =  16
+	green["emission"] = [0,0,0]
+	
+	
+	blue = {}
+	blue["ambient"] = [0.0,0.0,1,1]
+	blue["diffuse"] = [0.0,0.0,1,1]
+	blue["specular"] = [0.0,0.0,1,1]
+	blue["shininess"] =  16
+	blue["emission"] = [0,0,0]
+	
+	black = {}
+	black["ambient"] = [0.0,0.0,0.0,1]
+	black["diffuse"] = [0.0,0.0,0.0,1]
+	black["specular"] = [0.0,0.0,0.0,1]
+	black["shininess"] =  16
+	black["emission"] = [0,0,0]
 	
 	bluewhite = {}
 	bluewhite["ambient"] = [0.66, 0.95,0.62,1]
@@ -2163,10 +2192,10 @@ def get_default_gl_colors():
 	bluewhite["emission"] = [0.0, 0.0,0.368]
 	
 	custom = {}
-	custom["custom"] = [0.3, 0.3, 0.0,1]
-	custom["custom"] = [0.5, 0.5, 0.0,1]
-	custom["custom"] = [0.7, 0.7, 0.0,1]
-	custom["custom"] =  60
+	custom["ambient"] = [0.3, 0.3, 0.0,1]
+	custom["diffuse"] = [0.5, 0.5, 0.0,1]
+	custom["specular"] = [0.7, 0.7, 0.0,1]
+	custom["shininess"] =  60
 	custom["emission"] = [0,0,0]
 	
 	colors = {}
@@ -2179,6 +2208,12 @@ def get_default_gl_colors():
 	colors["obsidian"] = obsidian
 	colors["turquoise"] = turquoise
 	colors["yellow"] = yellow
+	colors["cyan"] = cyan
+	colors["purple"] = purple
+	colors["red"] = red
+	colors["green"] = green
+	colors["blue"] = blue
+	colors["black"] = black
 	colors["bluewhite"] = bluewhite
 	colors["custom"] = custom
 	
