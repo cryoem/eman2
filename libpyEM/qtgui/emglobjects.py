@@ -1734,15 +1734,19 @@ class EMBrightContrastScreen:
 		if ( polygonmode[0] == GL_LINE ): glPolygonMode(GL_FRONT, GL_LINE)
 		if ( polygonmode[1] == GL_LINE ): glPolygonMode(GL_BACK, GL_LINE)
 
-def draw_volume_bounds(width,height,depth):
+def draw_volume_bounds(width,height,depth,color=True):
 	glLineWidth(0.2)
+	
+	#glColor(.2,.1,0.4,1.0)
+	
+	if color:
+		glColor(1,1,1,1.0)
+		glMaterial(GL_FRONT, GL_AMBIENT, [1, 1, 1,1.0])
+		glMaterial(GL_FRONT, GL_DIFFUSE, [1, 1, 1,1.0])
+		glMaterial(GL_FRONT, GL_SPECULAR, [0.774597, 0.774597, 0.774597,1.0])
+		glMaterial(GL_FRONT, GL_SHININESS, 128.0)
+
 	glNormal(0,1,0)
-	glColor(.2,.1,0.4,1.0)
-	glColor(1,1,1,1.0)
-	glMaterial(GL_FRONT, GL_AMBIENT, [1, 1, 1,1.0])
-	glMaterial(GL_FRONT, GL_DIFFUSE, [1, 1, 1,1.0])
-	glMaterial(GL_FRONT, GL_SPECULAR, [0.774597, 0.774597, 0.774597,1.0])
-	glMaterial(GL_FRONT, GL_SHININESS, 128.0)
 
 	glBegin(GL_LINE_STRIP)
 	glVertex(0,0,0)

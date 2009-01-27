@@ -72,6 +72,7 @@ def main():
 	parser.add_option("--classmx",type="string",help="<classmx>,<#> Show particles in one class from a classification matrix. Pass raw particle file as first argument to command.")
 	parser.add_option("--classes",type="string",help="<rawptcl>,<classmx> Show particles associated class-averages")
 	parser.add_option("--plot",action="store_true",default=False,help="Data file(s) should be plotted rather than displayed in 2-D")
+	parser.add_option("--plot3",action="store_true",default=False,help="Data file(s) should be plotted rather than displayed in 3-D")
 	
 	(options, args) = parser.parse_args()
 	
@@ -91,6 +92,8 @@ def main():
 		app.show()
 	elif options.plot:
 		plot(args,app)
+	elif options.plot3:
+		plot_3d(args,app)
 	elif options.classes:
 		options.classes=options.classes.split(",")
 		imgs=EMData.read_images(args[0])
@@ -212,6 +215,15 @@ def plot(files,app):
 	for f in files:
 		plotw.set_data_from_file(f)
 	plotw.get_qt_widget().setWindowTitle("2D Plot")
+	app.show_specific(plotw)
+	return plotw
+
+def plot_3d(files,app):
+	from emplot3d import EMPlot3D
+	plotw=EMPlot3D(application=app)
+	for f in files:
+		plotw.set_data_from_file(f)
+	plotw.get_qt_widget().setWindowTitle("3D Plot")
 	app.show_specific(plotw)
 	return plotw
 

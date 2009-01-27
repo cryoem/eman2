@@ -95,6 +95,14 @@ class EMPlot3D(EMLightsDrawer,EMImage3DGUIModule):
 		glClearColor(1,1,1,1)
 		
 		self.draw_data_cube = True
+		
+		self.sphere_scale = 1
+		
+	def set_sphere_scale(self,value):
+		if value != 0:
+			self.sphere_scale = value
+			self.full_refresh()
+			self.updateGL()
 	
 	def init_plot_lights(self):
 		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.5, 0.5, 0.5, 1.0])
@@ -115,6 +123,81 @@ class EMPlot3D(EMLightsDrawer,EMImage3DGUIModule):
 		self.min = {} # Stores the minimum value in each data set
 		self.max = {} # Stores the maximum value in each data set
 		
+	
+	
+	def set_data_from_file(self,filename,clear_current=False):
+		"""Reads a keyed data set from a file. Automatically interpret the file contents."""
+#		self.del_shapes()
+		
+		if clear_current: 
+			self.data = {}
+			self.axes = {}
+			self.visibility = {}
+		
+		file_type = Util.get_filename_ext(filename)
+		em_file_type = EMUtil.get_image_ext_type(file_type)
+		
+		if em_file_type != IMAGE_UNKNOWN:
+			
+			im=EMData.read_images(filename)
+			if len(im) == 1:
+				im = im[0]
+				l = [[i for i in range(im.get_xsize())]]
+				k = im.get_data_as_vector()
+				i = 0
+				while i < len(k):
+					l.append(k[i:i+im.get_xsize()])
+					i += im.get_xsize()
+				self.set_data(filename,l)
+			elif im[0].get_attr_default("isvector",0):
+#				all=[i.get_data_as_vector() for i in im]
+
+				all=[]
+				for j in range(im[0].get_xsize()):
+					r=[]
+					for i in range(len(im)):
+						r.append(im[i][j,0])
+					all.append(r)
+				self.set_data("Vecset",all)
+			else:
+				for idx,image in enumerate(im):
+					l = [i for i in range(image.get_size())]
+					k = image.get_data_as_vector()
+					i = 0
+					while i < len(k):
+						l.append(k[i:i+image.get_xsize()])
+						i += image.get_xsize() 
+					self.set_data("Image "+str(idx),l)
+				
+		elif file_type == 'fp':
+			fin=file(filename)
+			fph=struct.unpack("120sII",fin.read(128))
+			ny=fph[1]
+			nx=fph[2]
+			data=[]
+			for i in range(nx):
+				data.append(struct.unpack("%df"%ny,fin.read(4*ny)))
+				
+			self.set_data(filename,data)
+		else:
+			try:
+				fin=file(filename)
+				fin.seek(0)
+				rdata=fin.readlines()
+				rdata=[i for i in rdata if i[0]!='#']
+				if ',' in rdata[0]: rdata=[[float(j) for j in i.split(',')] for i in rdata]
+				else : rdata=[[float(j) for j in i.split()] for i in rdata]
+				nx=len(rdata[0])
+				ny=len(rdata)
+				data=[[rdata[j][i] for j in range(ny)] for i in range(nx)]
+					
+				self.set_data(remove_directories_from_name(filename),data)
+			except:
+				print "couldn't read",filename
+				return False
+				
+		return True
+
 	
 	def set_data(self,key,data,clear_current=False):
 		'''
@@ -242,12 +325,13 @@ class EMPlot3D(EMLightsDrawer,EMImage3DGUIModule):
 			if self.visibility[key]:
 				min = self.min[key]
 				max = self.max[key]
+				axes = self.axes[key]
 				
 				for i,m in enumerate(mins):
-					if m == None or min[i] < m: mins[i] = min[i]
+					if m == None or min[axes[i]] < m: mins[i] = min[axes[i]]
 					
 				for i,m in enumerate(maxs):
-					if m == None or max[i] >  m: maxs[i] = max[i]
+					if m == None or max[axes[i]] >  m: maxs[i] = max[axes[i]]
 				vis_keys.append(key)
 				
 		if len(vis_keys) == 0: return # there are no visible plots
@@ -258,6 +342,10 @@ class EMPlot3D(EMLightsDrawer,EMImage3DGUIModule):
 		width = maxx-minx
 		height = maxy-miny
 		depth = maxz-minz
+		
+		if width == 0: width = 1
+		if height == 0: height = 1
+		if depth == 0: depth = 1
 		glPushMatrix()
 		glTranslate(-(maxx+minx)/2,-(maxy+miny)/2,-(maxz+minz)/2) # centers the plot
 		
@@ -287,16 +375,21 @@ class EMPlot3D(EMLightsDrawer,EMImage3DGUIModule):
 					
 					glPushMatrix()
 					glTranslate(x[i],y[i],z[i])
-					glScale(5,5,5)
+					if self.sphere_scale != 0:
+						glScale(self.sphere_scale,self.sphere_scale,self.sphere_scale)
 					glCallList(self.highresspheredl)
 					glPopMatrix()
 					
 			if self.draw_data_cube:
 				
+				light_on = glIsEnabled(GL_LIGHTING)
+				glDisable(GL_LIGHTING)
 				glPushMatrix()
 				glTranslate(minx,miny,minz)
-				draw_volume_bounds(maxx-minx,maxy-miny,maxz-minz)
+				glColor(0,0,0,1)
+				draw_volume_bounds(width,height,depth,False)
 				glPopMatrix()
+				if light_on: glEnable(GL_LIGHTING)
 							
 							
 		glPopMatrix()
@@ -339,7 +432,7 @@ class EMPlot3D(EMLightsDrawer,EMImage3DGUIModule):
 		self.load_colors()
 		
 	
-	def setColor(self,val):
+	def set_color(self,val):
 		#print val
 		self.currentcolor = str(val)
 		self.updateGL()
@@ -365,251 +458,251 @@ class EMPlot3D(EMLightsDrawer,EMImage3DGUIModule):
 
 
 
-class EMPlot2DInspector(QtGui.QWidget):
-	def get_desktop_hint(self):
-		return "inspector"
-	
-	def __init__(self,target) :
-		QtGui.QWidget.__init__(self,None)
-		self.target=weakref.ref(target)
-		vbl0=QtGui.QVBoxLayout(self)
-		
-		hbl = QtGui.QHBoxLayout()
-		hbl.setMargin(2)
-		hbl.setSpacing(6)
-		hbl.setObjectName("hbl")
-		
-		# plot list
-		self.setlist=QtGui.QListWidget(self)
-		self.setlist.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
-		hbl.addWidget(self.setlist)
-		
-		vbl = QtGui.QVBoxLayout()
-		vbl.setMargin(0)
-		vbl.setSpacing(6)
-		vbl.setObjectName("vbl")
-		hbl.addLayout(vbl)
-		
-		self.color=QtGui.QComboBox(self)
-		self.color.addItem("black")
-		self.color.addItem("blue")
-		self.color.addItem("red")
-		self.color.addItem("green")
-		self.color.addItem("yellow")
-		self.color.addItem("cyan")
-		self.color.addItem("magenta	")
-		vbl.addWidget(self.color)
-
-		hbl2 = QtGui.QHBoxLayout()
-		hbl2.setMargin(0)
-		hbl2.setSpacing(6)
-		vbl.addLayout(hbl2)
-				
-		# This is for line parms
-		vbl2b = QtGui.QVBoxLayout()
-		vbl2b.setMargin(0)
-		vbl2b.setSpacing(6)
-		hbl2.addLayout(vbl2b)
-				
-		self.lintog=QtGui.QPushButton(self)
-		self.lintog.setText("Line")
-		self.lintog.setCheckable(1)
-		vbl2b.addWidget(self.lintog)
-				
-		self.linsel=QtGui.QComboBox(self)
-		self.linsel.addItem("------")
-		self.linsel.addItem("- - - -")
-		self.linsel.addItem(".......")
-		self.linsel.addItem("-.-.-.-")
-		vbl2b.addWidget(self.linsel)
-		
-		self.linwid=QtGui.QSpinBox(self)
-		self.linwid.setRange(1,10)
-		vbl2b.addWidget(self.linwid)
-		
-		# This is for point parms
-		vbl2a = QtGui.QVBoxLayout()
-		vbl2a.setMargin(0)
-		vbl2a.setSpacing(6)
-		hbl2.addLayout(vbl2a)
-				
-		self.symtog=QtGui.QPushButton(self)
-		self.symtog.setText("Symbol")
-		self.symtog.setCheckable(1)
-		vbl2a.addWidget(self.symtog)
-
-		self.symsel=QtGui.QComboBox(self)
-		self.symsel.addItem("circle")
-		self.symsel.addItem("square")
-		self.symsel.addItem("plus")
-		self.symsel.addItem("triup")
-		self.symsel.addItem("tridown")
-		vbl2a.addWidget(self.symsel)
-		
-		self.symsize=QtGui.QSpinBox(self)
-		self.symsize.setRange(0,25)
-		vbl2a.addWidget(self.symsize)
-		
-		# per plot column selectors
-		gl=QtGui.QGridLayout()
-		gl.addWidget(QtGui.QLabel("X Col:",self),0,0,Qt.AlignRight)
-		self.slidex=QtGui.QSpinBox(self)
-		self.slidex.setRange(-1,1)
-		gl.addWidget(self.slidex,0,1,Qt.AlignLeft)
-		
-		#self.slidex=ValSlider(self,(-1,1),"X col:",0)
-		#self.slidex.setIntonly(1)
-		#vbl.addWidget(self.slidex)
-		
-		gl.addWidget(QtGui.QLabel("Y Col:",self),1,0,Qt.AlignRight)
-		self.slidey=QtGui.QSpinBox(self)
-		self.slidey.setRange(-1,1)
-		gl.addWidget(self.slidey,1,1,Qt.AlignLeft)
-		#self.slidey=ValSlider(self,(-1,1),"Y col:",1)
-		#self.slidey.setIntonly(1)
-		#vbl.addWidget(self.slidey)
-		
-		gl.addWidget(QtGui.QLabel("C Col:",self),2,0,Qt.AlignRight)
-		self.slidec=QtGui.QSpinBox(self)
-		self.slidec.setRange(-1,1)
-		gl.addWidget(self.slidec,2,1,Qt.AlignLeft)
-		vbl.addLayout(gl)
-		#self.slidec=ValSlider(self,(-1,1),"C col:",-1)
-		#self.slidec.setIntonly(1)
-		#vbl.addWidget(self.slidec)
-		
-		
-		hbl2 = QtGui.QHBoxLayout()
-		
-		self.xlogtog=QtGui.QPushButton(self)
-		self.xlogtog.setText("X Log")
-		self.xlogtog.setCheckable(1)
-		hbl2.addWidget(self.xlogtog)
-
-		self.ylogtog=QtGui.QPushButton(self)
-		self.ylogtog.setText("Y Log")
-		self.ylogtog.setCheckable(1)
-		hbl2.addWidget(self.ylogtog)
-		
-		vbl.addLayout(hbl2)
-
-		vbl0.addLayout(hbl)
-		
-		hbl2 = QtGui.QHBoxLayout()	
-		hbl2.addWidget(QtGui.QLabel("X Label:",self))
-		self.xlabel=QtGui.QLineEdit(self)
-		hbl2.addWidget(self.xlabel)
-		vbl0.addLayout(hbl2)
-		
-		hbl2 = QtGui.QHBoxLayout()	
-		hbl2.addWidget(QtGui.QLabel("Y Label:",self))
-		self.ylabel=QtGui.QLineEdit(self)
-		hbl2.addWidget(self.ylabel)
-		vbl0.addLayout(hbl2)
-		
-	
-#		self.setLayout(vbl0)
-
-		self.quiet=0
-		
-		QtCore.QObject.connect(self.slidex, QtCore.SIGNAL("valueChanged(int)"), self.newCols)
-		QtCore.QObject.connect(self.slidey, QtCore.SIGNAL("valueChanged(int)"), self.newCols)
-		QtCore.QObject.connect(self.slidec, QtCore.SIGNAL("valueChanged(int)"), self.newCols)
-		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("currentRowChanged(int)"),self.newSet)
-		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("itemChanged(QListWidgetItem*)"),self.list_item_changed)
-		QtCore.QObject.connect(self.color,QtCore.SIGNAL("currentIndexChanged(QString)"),self.updPlot)
-		QtCore.QObject.connect(self.symtog,QtCore.SIGNAL("clicked()"),self.updPlot)
-		QtCore.QObject.connect(self.symsel,QtCore.SIGNAL("currentIndexChanged(QString)"),self.updPlot)
-		QtCore.QObject.connect(self.symsize,QtCore.SIGNAL("valueChanged(int)"),self.updPlot)
-		QtCore.QObject.connect(self.xlogtog,QtCore.SIGNAL("clicked()"),self.updPlot)
-		QtCore.QObject.connect(self.ylogtog,QtCore.SIGNAL("clicked()"),self.updPlot)
-		QtCore.QObject.connect(self.lintog,QtCore.SIGNAL("clicked()"),self.updPlot)
-		QtCore.QObject.connect(self.linsel,QtCore.SIGNAL("currentIndexChanged(QString)"),self.updPlot)
-		QtCore.QObject.connect(self.linwid,QtCore.SIGNAL("valueChanged(int)"),self.updPlot)
-		QtCore.QObject.connect(self.xlabel,QtCore.SIGNAL("textChanged(QString)"),self.updPlot)
-		QtCore.QObject.connect(self.ylabel,QtCore.SIGNAL("textChanged(QString)"),self.updPlot)
-		self.datachange()
-		
-		
-		#QtCore.QObject.connect(self.gammas, QtCore.SIGNAL("valueChanged"), self.newGamma)
-		#QtCore.QObject.connect(self.invtog, QtCore.SIGNAL("toggled(bool)"), target.set_invert)
-		#QtCore.QObject.connect(self.mmode, QtCore.SIGNAL("buttonClicked(int)"), target.set_mouse_mode)
-
-	def updPlot(self,s=None):
-		if self.quiet : return
-		if self.xlogtog.isChecked() : xl="log"
-		else : xl="linear"
-		if self.ylogtog.isChecked() : yl="log"
-		else : yl="linear"
-		self.target().setAxisParms(self.xlabel.text(),self.ylabel.text(),xl,yl)
-		self.target().setPlotParms(str(self.setlist.currentItem().text()),self.color.currentIndex(),self.lintog.isChecked(),
-				self.linsel.currentIndex(),self.linwid.value(),self.symtog.isChecked(),self.symsel.currentIndex(),self.symsize.value())
-
-	def newSet(self,row):
-		self.quiet=1
-		try:
-			i=str(self.setlist.item(row).text())
-		except: 
-#			print "plot error"
-			return
-		self.slidex.setRange(-1,len(self.target().data[i])-1)
-		self.slidey.setRange(-1,len(self.target().data[i])-1)
-		self.slidec.setRange(-1,len(self.target().data[i])-1)
-		self.slidex.setValue(self.target().axes[i][0])
-		self.slidey.setValue(self.target().axes[i][1])
-		self.slidec.setValue(self.target().axes[i][2])
-		
-		pp=self.target().pparm[i]
-		self.color.setCurrentIndex(pp[0])
-		
-		self.lintog.setChecked(pp[1])
-		self.linsel.setCurrentIndex(pp[2])
-		self.linwid.setValue(pp[3])
-		
-		self.symtog.setChecked(pp[4])
-		self.symsel.setCurrentIndex(pp[5])
-		self.symsize.setValue(pp[6])
-		self.quiet=0
-
-	def newCols(self,val):
-		if self.target: 
-			self.target().setAxes(str(self.setlist.currentItem().text()),self.slidex.value(),self.slidey.value(),self.slidec.value())
-	
-	def datachange(self):
-		
-		self.setlist.clear()
-		
-		#flag1 = Qt.ItemFlags(Qt.ItemIsTristate)
-		flag2 = Qt.ItemFlags(Qt.ItemIsSelectable)
-		flag3 = Qt.ItemFlags(Qt.ItemIsEnabled)
-		flag4 = Qt.ItemFlags(Qt.ItemIsUserCheckable)
-		
-		keys=self.target().data.keys()
-		visible = self.target().visibility
-		keys.sort()
-		parms = self.target().pparm # get the colors from this
-		
-		
-		for i,j in enumerate(keys) :
-			a = QtGui.QListWidgetItem(j)
-			a.setFlags(flag2|flag3|flag4)
-			a.setTextColor(qt_color_map[colortypes[parms[j][0]]])
-			if visible[j]: a.setCheckState(Qt.Checked)
-			else: a.setCheckState(Qt.Unchecked)
-			
-			self.setlist.addItem(a)
-
-		if len(keys) > 0 : self.setlist.setCurrentRow(0)
-		
-	def list_item_changed(self,item):
-		checked = False
-		if item.checkState() == Qt.Checked: checked = True
-		
-		name = str(item.text())
-		if self.target().visibility[name] != checked:
-			self.target().visibility[name] = checked
-			self.target().full_refresh()
-			self.target().updateGL()
+#class EMPlot2DInspector(QtGui.QWidget):
+#	def get_desktop_hint(self):
+#		return "inspector"
+#	
+#	def __init__(self,target) :
+#		QtGui.QWidget.__init__(self,None)
+#		self.target=weakref.ref(target)
+#		vbl0=QtGui.QVBoxLayout(self)
+#		
+#		hbl = QtGui.QHBoxLayout()
+#		hbl.setMargin(2)
+#		hbl.setSpacing(6)
+#		hbl.setObjectName("hbl")
+#		
+#		# plot list
+#		self.setlist=QtGui.QListWidget(self)
+#		self.setlist.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
+#		hbl.addWidget(self.setlist)
+#		
+#		vbl = QtGui.QVBoxLayout()
+#		vbl.setMargin(0)
+#		vbl.setSpacing(6)
+#		vbl.setObjectName("vbl")
+#		hbl.addLayout(vbl)
+#		
+#		self.color=QtGui.QComboBox(self)
+#		self.color.addItem("black")
+#		self.color.addItem("blue")
+#		self.color.addItem("red")
+#		self.color.addItem("green")
+#		self.color.addItem("yellow")
+#		self.color.addItem("cyan")
+#		self.color.addItem("magenta	")
+#		vbl.addWidget(self.color)
+#
+#		hbl2 = QtGui.QHBoxLayout()
+#		hbl2.setMargin(0)
+#		hbl2.setSpacing(6)
+#		vbl.addLayout(hbl2)
+#				
+#		# This is for line parms
+#		vbl2b = QtGui.QVBoxLayout()
+#		vbl2b.setMargin(0)
+#		vbl2b.setSpacing(6)
+#		hbl2.addLayout(vbl2b)
+#				
+#		self.lintog=QtGui.QPushButton(self)
+#		self.lintog.setText("Line")
+#		self.lintog.setCheckable(1)
+#		vbl2b.addWidget(self.lintog)
+#				
+#		self.linsel=QtGui.QComboBox(self)
+#		self.linsel.addItem("------")
+#		self.linsel.addItem("- - - -")
+#		self.linsel.addItem(".......")
+#		self.linsel.addItem("-.-.-.-")
+#		vbl2b.addWidget(self.linsel)
+#		
+#		self.linwid=QtGui.QSpinBox(self)
+#		self.linwid.setRange(1,10)
+#		vbl2b.addWidget(self.linwid)
+#		
+#		# This is for point parms
+#		vbl2a = QtGui.QVBoxLayout()
+#		vbl2a.setMargin(0)
+#		vbl2a.setSpacing(6)
+#		hbl2.addLayout(vbl2a)
+#				
+#		self.symtog=QtGui.QPushButton(self)
+#		self.symtog.setText("Symbol")
+#		self.symtog.setCheckable(1)
+#		vbl2a.addWidget(self.symtog)
+#
+#		self.symsel=QtGui.QComboBox(self)
+#		self.symsel.addItem("circle")
+#		self.symsel.addItem("square")
+#		self.symsel.addItem("plus")
+#		self.symsel.addItem("triup")
+#		self.symsel.addItem("tridown")
+#		vbl2a.addWidget(self.symsel)
+#		
+#		self.symsize=QtGui.QSpinBox(self)
+#		self.symsize.setRange(0,25)
+#		vbl2a.addWidget(self.symsize)
+#		
+#		# per plot column selectors
+#		gl=QtGui.QGridLayout()
+#		gl.addWidget(QtGui.QLabel("X Col:",self),0,0,Qt.AlignRight)
+#		self.slidex=QtGui.QSpinBox(self)
+#		self.slidex.setRange(-1,1)
+#		gl.addWidget(self.slidex,0,1,Qt.AlignLeft)
+#		
+#		#self.slidex=ValSlider(self,(-1,1),"X col:",0)
+#		#self.slidex.setIntonly(1)
+#		#vbl.addWidget(self.slidex)
+#		
+#		gl.addWidget(QtGui.QLabel("Y Col:",self),1,0,Qt.AlignRight)
+#		self.slidey=QtGui.QSpinBox(self)
+#		self.slidey.setRange(-1,1)
+#		gl.addWidget(self.slidey,1,1,Qt.AlignLeft)
+#		#self.slidey=ValSlider(self,(-1,1),"Y col:",1)
+#		#self.slidey.setIntonly(1)
+#		#vbl.addWidget(self.slidey)
+#		
+#		gl.addWidget(QtGui.QLabel("C Col:",self),2,0,Qt.AlignRight)
+#		self.slidec=QtGui.QSpinBox(self)
+#		self.slidec.setRange(-1,1)
+#		gl.addWidget(self.slidec,2,1,Qt.AlignLeft)
+#		vbl.addLayout(gl)
+#		#self.slidec=ValSlider(self,(-1,1),"C col:",-1)
+#		#self.slidec.setIntonly(1)
+#		#vbl.addWidget(self.slidec)
+#		
+#		
+#		hbl2 = QtGui.QHBoxLayout()
+#		
+#		self.xlogtog=QtGui.QPushButton(self)
+#		self.xlogtog.setText("X Log")
+#		self.xlogtog.setCheckable(1)
+#		hbl2.addWidget(self.xlogtog)
+#
+#		self.ylogtog=QtGui.QPushButton(self)
+#		self.ylogtog.setText("Y Log")
+#		self.ylogtog.setCheckable(1)
+#		hbl2.addWidget(self.ylogtog)
+#		
+#		vbl.addLayout(hbl2)
+#
+#		vbl0.addLayout(hbl)
+#		
+#		hbl2 = QtGui.QHBoxLayout()	
+#		hbl2.addWidget(QtGui.QLabel("X Label:",self))
+#		self.xlabel=QtGui.QLineEdit(self)
+#		hbl2.addWidget(self.xlabel)
+#		vbl0.addLayout(hbl2)
+#		
+#		hbl2 = QtGui.QHBoxLayout()	
+#		hbl2.addWidget(QtGui.QLabel("Y Label:",self))
+#		self.ylabel=QtGui.QLineEdit(self)
+#		hbl2.addWidget(self.ylabel)
+#		vbl0.addLayout(hbl2)
+#		
+#	
+##		self.setLayout(vbl0)
+#
+#		self.quiet=0
+#		
+#		QtCore.QObject.connect(self.slidex, QtCore.SIGNAL("valueChanged(int)"), self.newCols)
+#		QtCore.QObject.connect(self.slidey, QtCore.SIGNAL("valueChanged(int)"), self.newCols)
+#		QtCore.QObject.connect(self.slidec, QtCore.SIGNAL("valueChanged(int)"), self.newCols)
+#		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("currentRowChanged(int)"),self.newSet)
+#		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("itemChanged(QListWidgetItem*)"),self.list_item_changed)
+#		QtCore.QObject.connect(self.color,QtCore.SIGNAL("currentIndexChanged(QString)"),self.updPlot)
+#		QtCore.QObject.connect(self.symtog,QtCore.SIGNAL("clicked()"),self.updPlot)
+#		QtCore.QObject.connect(self.symsel,QtCore.SIGNAL("currentIndexChanged(QString)"),self.updPlot)
+#		QtCore.QObject.connect(self.symsize,QtCore.SIGNAL("valueChanged(int)"),self.updPlot)
+#		QtCore.QObject.connect(self.xlogtog,QtCore.SIGNAL("clicked()"),self.updPlot)
+#		QtCore.QObject.connect(self.ylogtog,QtCore.SIGNAL("clicked()"),self.updPlot)
+#		QtCore.QObject.connect(self.lintog,QtCore.SIGNAL("clicked()"),self.updPlot)
+#		QtCore.QObject.connect(self.linsel,QtCore.SIGNAL("currentIndexChanged(QString)"),self.updPlot)
+#		QtCore.QObject.connect(self.linwid,QtCore.SIGNAL("valueChanged(int)"),self.updPlot)
+#		QtCore.QObject.connect(self.xlabel,QtCore.SIGNAL("textChanged(QString)"),self.updPlot)
+#		QtCore.QObject.connect(self.ylabel,QtCore.SIGNAL("textChanged(QString)"),self.updPlot)
+#		self.datachange()
+#		
+#		
+#		#QtCore.QObject.connect(self.gammas, QtCore.SIGNAL("valueChanged"), self.newGamma)
+#		#QtCore.QObject.connect(self.invtog, QtCore.SIGNAL("toggled(bool)"), target.set_invert)
+#		#QtCore.QObject.connect(self.mmode, QtCore.SIGNAL("buttonClicked(int)"), target.set_mouse_mode)
+#
+#	def updPlot(self,s=None):
+#		if self.quiet : return
+#		if self.xlogtog.isChecked() : xl="log"
+#		else : xl="linear"
+#		if self.ylogtog.isChecked() : yl="log"
+#		else : yl="linear"
+#		self.target().setAxisParms(self.xlabel.text(),self.ylabel.text(),xl,yl)
+#		self.target().setPlotParms(str(self.setlist.currentItem().text()),self.color.currentIndex(),self.lintog.isChecked(),
+#				self.linsel.currentIndex(),self.linwid.value(),self.symtog.isChecked(),self.symsel.currentIndex(),self.symsize.value())
+#
+#	def newSet(self,row):
+#		self.quiet=1
+#		try:
+#			i=str(self.setlist.item(row).text())
+#		except: 
+##			print "plot error"
+#			return
+#		self.slidex.setRange(-1,len(self.target().data[i])-1)
+#		self.slidey.setRange(-1,len(self.target().data[i])-1)
+#		self.slidec.setRange(-1,len(self.target().data[i])-1)
+#		self.slidex.setValue(self.target().axes[i][0])
+#		self.slidey.setValue(self.target().axes[i][1])
+#		self.slidec.setValue(self.target().axes[i][2])
+#		
+#		pp=self.target().pparm[i]
+#		self.color.setCurrentIndex(pp[0])
+#		
+#		self.lintog.setChecked(pp[1])
+#		self.linsel.setCurrentIndex(pp[2])
+#		self.linwid.setValue(pp[3])
+#		
+#		self.symtog.setChecked(pp[4])
+#		self.symsel.setCurrentIndex(pp[5])
+#		self.symsize.setValue(pp[6])
+#		self.quiet=0
+#
+#	def newCols(self,val):
+#		if self.target: 
+#			self.target().setAxes(str(self.setlist.currentItem().text()),self.slidex.value(),self.slidey.value(),self.slidec.value())
+#	
+#	def datachange(self):
+#		
+#		self.setlist.clear()
+#		
+#		#flag1 = Qt.ItemFlags(Qt.ItemIsTristate)
+#		flag2 = Qt.ItemFlags(Qt.ItemIsSelectable)
+#		flag3 = Qt.ItemFlags(Qt.ItemIsEnabled)
+#		flag4 = Qt.ItemFlags(Qt.ItemIsUserCheckable)
+#		
+#		keys=self.target().data.keys()
+#		visible = self.target().visibility
+#		keys.sort()
+#		parms = self.target().pparm # get the colors from this
+#		
+#		
+#		for i,j in enumerate(keys) :
+#			a = QtGui.QListWidgetItem(j)
+#			a.setFlags(flag2|flag3|flag4)
+#			a.setTextColor(qt_color_map[colortypes[parms[j][0]]])
+#			if visible[j]: a.setCheckState(Qt.Checked)
+#			else: a.setCheckState(Qt.Unchecked)
+#			
+#			self.setlist.addItem(a)
+#
+#		if len(keys) > 0 : self.setlist.setCurrentRow(0)
+#		
+#	def list_item_changed(self,item):
+#		checked = False
+#		if item.checkState() == Qt.Checked: checked = True
+#		
+#		name = str(item.text())
+#		if self.target().visibility[name] != checked:
+#			self.target().visibility[name] = checked
+#			self.target().full_refresh()
+#			self.target().updateGL()
 
 
 class EMPlot3DInspector(QtGui.QWidget,EMLightsInspectorBase):
@@ -656,12 +749,12 @@ class EMPlot3DInspector(QtGui.QWidget,EMLightsInspectorBase):
 		
 		self.data_change()
 
-		QtCore.QObject.connect(self.cbb, QtCore.SIGNAL("currentIndexChanged(QString)"), target.setColor)
+		QtCore.QObject.connect(self.cbb, QtCore.SIGNAL("currentIndexChanged(QString)"), target.set_color)
 		QtCore.QObject.connect(self.wiretog, QtCore.SIGNAL("toggled(bool)"), target.toggle_wire)
 		QtCore.QObject.connect(self.lighttog, QtCore.SIGNAL("toggled(bool)"), target.toggle_light)
 		QtCore.QObject.connect(self.glcontrast, QtCore.SIGNAL("valueChanged"), target.set_GL_contrast)
 		QtCore.QObject.connect(self.glbrightness, QtCore.SIGNAL("valueChanged"), target.set_GL_brightness)
-		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("itemChanged(QListWidgetItem*)"),self.list_item_changed)
+		
 
 	def update_rotations(self,t3d):
 		self.rotation_sliders.update_rotations(t3d)
@@ -683,11 +776,65 @@ class EMPlot3DInspector(QtGui.QWidget,EMLightsInspectorBase):
 		self.setlist=QtGui.QListWidget(self)
 		self.setlist.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
 		
-		hbl = QtGui.QHBoxLayout(self.plot_tab)
-		hbl.addWidget(self.setlist)
+		vbl = QtGui.QVBoxLayout(self.plot_tab)
+		vbl.addWidget(self.setlist)
+		
+		gl=QtGui.QGridLayout()
+		gl.addWidget(QtGui.QLabel("X Col:",self),0,0,Qt.AlignRight)
+		self.slidex=QtGui.QSpinBox(self)
+		self.slidex.setRange(-1,1)
+		gl.addWidget(self.slidex,0,1,Qt.AlignLeft)
+		
+		gl.addWidget(QtGui.QLabel("Y Col:",self),0,2,Qt.AlignRight)
+		self.slidey=QtGui.QSpinBox(self)
+		self.slidey.setRange(-1,1)
+		gl.addWidget(self.slidey,0,3,Qt.AlignLeft)
+		
+		gl.addWidget(QtGui.QLabel("Z Col:",self),0,4,Qt.AlignRight)
+		self.slidez=QtGui.QSpinBox(self)
+		self.slidez.setRange(-1,1)
+		gl.addWidget(self.slidez,0,5,Qt.AlignLeft)
+		vbl.addLayout(gl)
+		
+		self.sphere_scale = ValSlider(self.plot_tab,(0.05,5.0),"Sphere scale.:")
+		self.sphere_scale.setValue(self.target().sphere_scale)
+		vbl.addWidget(self.sphere_scale)
+		
+		
+		QtCore.QObject.connect(self.slidex, QtCore.SIGNAL("valueChanged(int)"), self.new_data_cols)
+		QtCore.QObject.connect(self.slidey, QtCore.SIGNAL("valueChanged(int)"), self.new_data_cols)
+		QtCore.QObject.connect(self.slidez, QtCore.SIGNAL("valueChanged(int)"), self.new_data_cols)
+		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("itemChanged(QListWidgetItem*)"),self.list_item_changed)
+		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("currentRowChanged(int)"),self.plot_data_selected)
+		QtCore.QObject.connect(self.sphere_scale, QtCore.SIGNAL("valueChanged"), self.target().set_sphere_scale)
 		
 		return plot_tab
 	
+	def plot_data_selected(self,row):
+		self.quiet=1
+		try:
+			i=str(self.setlist.item(row).text())
+		except: 
+#			print "plot error"
+			return
+		n = len(self.target().data[i])-1
+		axes = self.target().axes[i]
+		self.slidex.setRange(0,n)
+		self.slidey.setRange(0,n)
+		self.slidez.setRange(0,n)
+		self.slidex.setValue(axes[0])
+		self.slidey.setValue(axes[1])
+		self.slidez.setValue(axes[2])
+		self.quiet=0
+
+	
+	def new_data_cols(self,i):
+		if self.quiet: return
+		if self.target(): 
+			self.target().axes[str(self.setlist.currentItem().text())] = [int(self.slidex.value()),int(self.slidey.value()),int(self.slidez.value())]
+			self.target().full_refresh()
+			self.target().updateGL()
+			
 	def data_change(self):
 		
 		self.setlist.clear()
@@ -786,13 +933,16 @@ def get_test_data():
 	n = 50
 	r = range(n)
 	data.append([i for i in r])
-	#data.append([n-i-1 for i in r])
-	#data.append([i**2 for i in r])
+	
 	data.append([n/2.0*sin(i*pi/5) for i in r])
 	
-	#data.append([sqrt(i) for i in r])
+	#
 	data.append([Util.get_frand(-n/2.0,n/2.0) for i in r])
 	data.append([n/2.0*cos(i*pi/10) for i in r])
+	
+	data.append([n-i-1 for i in r])
+	data.append([i**2 for i in r])
+	data.append([sqrt(i) for i in r])
 	
 	return data
 
@@ -809,9 +959,11 @@ def get_other_test_data():
 	#data.append([i**2 for i in r])
 	data.append([n/2.0*sin(i*pi/5) for i in r])
 	
-	#data.append([sqrt(i) for i in r])
-	#data.append([Util.get_frand(-n/2.0,n/2.0) for i in r])
+	
 	data.append([n/2.0*cos(i*pi/10) for i in r])
+	
+	data.append([sqrt(i) for i in r])
+	data.append([Util.get_frand(-n/2.0,n/2.0) for i in r])
 	
 	return data
 

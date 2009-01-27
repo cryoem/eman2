@@ -1277,12 +1277,12 @@ class EMLightsInspectorBase:
 		vbl.addWidget(self.const_atten)
 		
 		self.linear_atten = ValSlider(self.pointsource_light_widget,(0.0,0.5),"Linear atten.:")
-		self.linear_atten.setValue(1.0)# why o why?
+		self.linear_atten.setValue(0.5)# why o why?
 		self.linear_atten.setValue(0.0)
 		vbl.addWidget(self.linear_atten)
 		
 		self.quad_atten = ValSlider(self.pointsource_light_widget,(0.0,0.05),"Quad. atten.:")
-		self.quad_atten.setValue(1.0) # why o why?
+		self.quad_atten.setValue(0.05) # why o why?
 		self.quad_atten.setValue(0.0)
 		vbl.addWidget(self.quad_atten)
 		
