@@ -58,7 +58,7 @@ from emimageutil import EMTransformPanel
 MAG_INCREMENT_FACTOR = 1.1
 
 	
-class EMPlot3D(EMLightsDrawer,EMImage3DGUIModule):
+class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
 		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
 	
@@ -80,9 +80,6 @@ class EMPlot3D(EMLightsDrawer,EMImage3DGUIModule):
 		self.rank = 1
 		self.inspector=None
 		
-		self.currentcolor = "emerald"
-		
-		
 		self.vdtools = EMViewportDepthTools2(self.gl_context_parent)
 		
 		self.gl_context_parent.cam.default_z = -25	 # this is me hacking
@@ -96,7 +93,10 @@ class EMPlot3D(EMLightsDrawer,EMImage3DGUIModule):
 		
 		self.draw_data_cube = True
 		
-		self.sphere_scale = 1
+		self.sphere_scale = 5
+		
+		self.allowable_shapes =  ["Sphere","Cube","Dodecahedron","Icosahedron","Tetrahedron","Cone","Octahedron","Teapot"]
+		self.init_color_themes()
 		
 	def set_sphere_scale(self,value):
 		if value != 0:
@@ -105,7 +105,7 @@ class EMPlot3D(EMLightsDrawer,EMImage3DGUIModule):
 			self.updateGL()
 	
 	def init_plot_lights(self):
-		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.5, 0.5, 0.5, 1.0])
+		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.1, 0.1, 0.1, 1.0])
 		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_POSITION, [0.02,-0.02,1.,0.])
@@ -119,6 +119,7 @@ class EMPlot3D(EMLightsDrawer,EMImage3DGUIModule):
 		self.visibility = {} # this is the visibility of the each of the data sets
 		self.axes = {} # This stores which axes are currently being viewed, for each data set
 		self.axis_colors = {} # Stores colors assigned to axes
+		self.shapes = {} # Stores the shapes used draw scatter plots
 		self.plot_type = {} # This stores whether the plot is being treated as 2D
 		self.min = {} # Stores the minimum value in each data set
 		self.max = {} # Stores the maximum value in each data set
@@ -199,7 +200,7 @@ class EMPlot3D(EMLightsDrawer,EMImage3DGUIModule):
 		return True
 
 	
-	def set_data(self,key,data,clear_current=False):
+	def set_data(self,key,data,clear_current=False,shape="Sphere"):
 		'''
 		
 		'''
@@ -223,10 +224,15 @@ class EMPlot3D(EMLightsDrawer,EMImage3DGUIModule):
 		self.visibility[key] = True
 		if len(data) == 2:
 			self.axes[key] = [0,1]
-			
 		else: # the data must have atleast 3 axes, this is guaranteed by the checking functions at the entry point into this function 
 			self.axes[key] = [0,1,2]
-			self.axis_colors[key] = ["red","green","blue"]
+			
+			keys = self.colors.keys()
+			n = len(keys)
+			
+			
+			self.axis_colors[key] = "Color cube"
+			self.shapes[key] = shape
 			
 		min  = []
 		max = []
@@ -238,6 +244,25 @@ class EMPlot3D(EMLightsDrawer,EMImage3DGUIModule):
 		self.min[key] = min
 		self.max[key] = max
 
+
+	def init_color_themes(self):
+		self.color_themes = {}
+		self.color_themes["Splash"] = ["bluewhite","green","blue","cyan","purple","yellow","black","white"]
+		self.color_themes["Color cube"] = ["black","blue","green","cyan","red","purple","yellow","white"]
+		self.color_themes["Pastel"] = ["yellow","red","orange","pearl","green","blue","bluewhite","purple"]
+		self.color_themes["Pluto"] = ["red","pearl","blue","cyan","white","black","pearl","white"]
+		self.color_themes["Indigo"] = ["black","purple","blue","green","turquoise","bluewhite","cyan","white"]
+		self.color_themes["Sun rise"] = ["blue","gold","orange","bluewhite","silver","red","pearl","white"]
+		
+		self.basic_color_themes = ["red","blue","green","purple","cyan","yellow","black","orange","white"]
+		
+		keys = self.colors.keys()
+		n = len(keys)
+		
+		self.color_themes["Random"] = [keys[Util.get_irand(0,n-1)] for i in range(8) ]
+		
+		self.global_theme = "Color cube"
+		self.using_global_theme = False
 
 	def render(self):
 		#if (not isinstance(self.data,EMData)): return
@@ -349,22 +374,27 @@ class EMPlot3D(EMLightsDrawer,EMImage3DGUIModule):
 		glPushMatrix()
 		glTranslate(-(maxx+minx)/2,-(maxy+miny)/2,-(maxz+minz)/2) # centers the plot
 		
+		f = 1/(2.0*sqrt(3.0))
+		g = 1/(sqrt(3.0))
 		for key in vis_keys:
 			d = self.data[key]
 			a = self.axes[key]
+			mn = self.min[key]
+			mx = self.max[key]
 			x = d[a[0]]
 			y = d[a[1]]
 			if len(a) == 3: z = d[a[2]]
 			else: z = None
 
 			if z != None:
-				xcolor = self.colors[self.axis_colors[key][0]]
-				ycolor = self.colors[self.axis_colors[key][1]]
-				zcolor = self.colors[self.axis_colors[key][2]]
-				
+				#
 				for i in range(len(x)):
 					
-					color = self.get_color(xcolor,ycolor,zcolor,(x[i]-minx)/float(width), (y[i]-miny)/float(height),(z[i]-minz)/float(depth))
+					if not self.using_global_theme:
+						color = self.get_color_interp(self.axis_colors[key],(x[i]-mn[0])/float(mx[0]-mn[0]), (y[i]-mn[1])/float(mx[1]-mn[1]),(z[i]-mn[2])/float(mx[2]-mn[2]))
+					else:
+						color = self.get_color_interp(self.global_theme,(x[i]-minx)/float(width), (y[i]-miny)/float(height),(z[i]-minz)/float(depth))
+			
 					glMaterial(GL_FRONT, GL_AMBIENT, color["ambient"])
 					glMaterial(GL_FRONT, GL_DIFFUSE, color["diffuse"])
 					glMaterial(GL_FRONT, GL_SPECULAR, color["specular"])
@@ -375,9 +405,35 @@ class EMPlot3D(EMLightsDrawer,EMImage3DGUIModule):
 					
 					glPushMatrix()
 					glTranslate(x[i],y[i],z[i])
-					if self.sphere_scale != 0:
-						glScale(self.sphere_scale,self.sphere_scale,self.sphere_scale)
-					glCallList(self.highresspheredl)
+					glScale(self.sphere_scale,self.sphere_scale,self.sphere_scale)
+						
+					shape = self.shapes[key]
+						
+					if shape == "Sphere":
+						glCallList(self.highresspheredl)
+					elif shape == "Dodecahedron":
+						glScale(f,f,f)
+						glutSolidDodecahedron()
+					elif shape == "Icosahedron":
+						glScale(0.5,0.5,0.5)
+						glutSolidIcosahedron()
+					elif shape ==  "Cube":
+						glutSolidCube(1.0)
+					elif shape == "Tetrahedron":
+						glScale(g,g,g)
+						glutSolidTetrahedron()
+					elif shape == "Cone":
+						glutSolidCone(0.5,0.5,12,6)
+						glRotate(180,1,0,0)
+						glutSolidCone(0.5,0.5,12,6)
+					elif shape == "Octahedron":
+						glScale(0.5,0.5,0.5)
+						glutSolidOctahedron()
+					elif shape == "Teapot":
+						glutSolidTeapot(.5)
+					else:
+						print "Unknown shape:", shape 
+					
 					glPopMatrix()
 					
 			if self.draw_data_cube:
@@ -393,13 +449,53 @@ class EMPlot3D(EMLightsDrawer,EMImage3DGUIModule):
 							
 							
 		glPopMatrix()
-	
-	def get_color(self,xcolor,ycolor,zcolor,x,y,z):
+		
+	def get_color_interp(self,theme,x,y,z):
+		types = ["ambient","diffuse","specular","emission","shininess"]
+		p = [x,y,z]
+		q = [1-c for c in p]
+		
+		if theme in self.colors.keys():
+			return self.colors[theme]
+		
+		colors = [self.colors[v] for v in self.color_themes[theme]]
+		#[c000,c100,c010,c110,c001,c101,c011,c111]
+		factors = [q[0]*q[1]*q[2],p[0]*q[1]*q[2],q[0]*p[1]*q[2],p[0]*p[1]*q[2]]
+		factors.extend([q[0]*q[1]*p[2],p[0]*q[1]*p[2],q[0]*p[1]*p[2],p[0]*p[1]*p[2]])
+		
+		result = {}
+		for gl_color_type in types:
+			r = []
+			if gl_color_type != "shininess":
+				n = len(colors[0][gl_color_type])
+				for j in range(n):
+					v = 0
+					for i,color in enumerate(colors):
+						v += factors[i]*color[gl_color_type][j]
+					
+					r.append(v)
+				result[gl_color_type] = r
+			else:
+				v = 0
+				for i,color in enumerate(colors):
+					v += factors[i]*color[gl_color_type]
+			
+				result[gl_color_type] = v
+
+		#print result
+		return result
+					
+	def get_color(self,xcolor,ycolor,zcolor,xcolor_begin,ycolor_begin,zcolor_begin,x,y,z):
 		
 		result = {}
 		t = ["ambient","diffuse","specular","emission","shininess"]
 		colors = [xcolor,ycolor,zcolor]
+		begin_colors = [xcolor_begin,ycolor_begin,zcolor_begin]
 		coord = [x,y,z]
+		inv_coord = [1-c or c in coord]
+		
+		
+		fact = 1/3.0
 		for c in t:
 			r = []
 			if c != "shininess":
@@ -407,9 +503,9 @@ class EMPlot3D(EMLightsDrawer,EMImage3DGUIModule):
 				for j in range(n):
 					v = 0
 					for i,color in enumerate(colors):
-						v += (coord[i]*color[c][j])/float(len(colors))
+						v += coord[i]*color[c][j] +(1-coord[i])*begin_colors[i][c][j]
 					
-					r.append(v)
+					r.append(v*fact)
 				result[c] = r
 			else:
 				v = 0
@@ -430,12 +526,6 @@ class EMPlot3D(EMLightsDrawer,EMImage3DGUIModule):
 			self.inspector=EMPlot3DInspector(self)
 		
 		self.load_colors()
-		
-	
-	def set_color(self,val):
-		#print val
-		self.currentcolor = str(val)
-		self.updateGL()
 	
 	def toggle_wire(self,val):
 		self.wire = not self.wire
@@ -453,7 +543,6 @@ class EMPlot3D(EMLightsDrawer,EMImage3DGUIModule):
 	def get_inspector(self):
 		if not self.inspector : 
 			self.inspector=EMPlot3DInspector(self)
-			self.inspector.set_colors(self.colors,self.currentcolor)
 		return self.inspector
 
 
@@ -749,7 +838,6 @@ class EMPlot3DInspector(QtGui.QWidget,EMLightsInspectorBase):
 		
 		self.data_change()
 
-		QtCore.QObject.connect(self.cbb, QtCore.SIGNAL("currentIndexChanged(QString)"), target.set_color)
 		QtCore.QObject.connect(self.wiretog, QtCore.SIGNAL("toggled(bool)"), target.toggle_wire)
 		QtCore.QObject.connect(self.lighttog, QtCore.SIGNAL("toggled(bool)"), target.toggle_light)
 		QtCore.QObject.connect(self.glcontrast, QtCore.SIGNAL("valueChanged"), target.set_GL_contrast)
@@ -796,17 +884,52 @@ class EMPlot3DInspector(QtGui.QWidget,EMLightsInspectorBase):
 		gl.addWidget(self.slidez,0,5,Qt.AlignLeft)
 		vbl.addLayout(gl)
 		
-		self.sphere_scale = ValSlider(self.plot_tab,(0.05,5.0),"Sphere scale.:")
+		
+	
+		
+		self.sphere_scale = ValSlider(self.plot_tab,(0.05,10.0),"Shape scale:")
 		self.sphere_scale.setValue(self.target().sphere_scale)
 		vbl.addWidget(self.sphere_scale)
 		
+		hbl1 = QtGui.QHBoxLayout()
+		self.shape=QtGui.QComboBox(self)
+		items = self.target().allowable_shapes
+		for k in items: self.shape.addItem(k)
 		
+		hbl1.addWidget(QtGui.QLabel("Shape:",self))
+		hbl1.addWidget(self.shape)
+		vbl.addLayout(hbl1)
+		
+		
+		hbl = QtGui.QHBoxLayout()
+		self.theme=QtGui.QComboBox(self)
+		keys = self.target().color_themes.keys()
+		keys.sort()
+		for k in keys: self.theme.addItem(k)
+		self.theme.insertSeparator(len(keys))
+		keys = self.target().colors.keys()
+		for k in keys: self.theme.addItem(k)
+		
+		self.global_theme = QtGui.QCheckBox("Global theme")
+		self.global_theme.setChecked(self.target().using_global_theme)
+		
+		
+		hbl.addWidget(QtGui.QLabel("Color theme:",self))
+		hbl.addWidget(self.theme)
+		hbl.addWidget(self.global_theme)
+		
+		
+		vbl.addLayout(hbl)
+#
 		QtCore.QObject.connect(self.slidex, QtCore.SIGNAL("valueChanged(int)"), self.new_data_cols)
 		QtCore.QObject.connect(self.slidey, QtCore.SIGNAL("valueChanged(int)"), self.new_data_cols)
 		QtCore.QObject.connect(self.slidez, QtCore.SIGNAL("valueChanged(int)"), self.new_data_cols)
 		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("itemChanged(QListWidgetItem*)"),self.list_item_changed)
 		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("currentRowChanged(int)"),self.plot_data_selected)
 		QtCore.QObject.connect(self.sphere_scale, QtCore.SIGNAL("valueChanged"), self.target().set_sphere_scale)
+		QtCore.QObject.connect(self.theme,QtCore.SIGNAL("currentIndexChanged(int)"),self.theme_changed)
+		QtCore.QObject.connect(self.shape,QtCore.SIGNAL("currentIndexChanged(int)"),self.shape_changed)
+		QtCore.QObject.connect(self.global_theme, QtCore.SIGNAL("stateChanged(int)"), self.global_theme_checked)
 		
 		return plot_tab
 	
@@ -825,8 +948,31 @@ class EMPlot3DInspector(QtGui.QWidget,EMLightsInspectorBase):
 		self.slidex.setValue(axes[0])
 		self.slidey.setValue(axes[1])
 		self.slidez.setValue(axes[2])
+		
+		self.__set_theme()
+			
+		shape = self.target().shapes[i]
+		for j in range(self.shape.count()):
+			if str(self.shape.itemText(j)) == shape:
+				self.shape.setCurrentIndex(j)
+				break
+
 		self.quiet=0
 
+	def __set_theme(self):
+		if self.target().using_global_theme: theme = self.target().global_theme
+		else: 
+			items = self.setlist.selectedItems()
+			if len(items) != 1:
+				print "error, set list does not have a single selection. This should not happen"
+			else:
+				theme = self.target().axis_colors[str(items[0].text())]
+		
+		for j in range(self.theme.count()):
+			if str(self.theme.itemText(j)) == theme:
+				self.theme.setCurrentIndex(j)
+				break
+		
 	
 	def new_data_cols(self,i):
 		if self.quiet: return
@@ -835,6 +981,34 @@ class EMPlot3DInspector(QtGui.QWidget,EMLightsInspectorBase):
 			self.target().full_refresh()
 			self.target().updateGL()
 			
+	def theme_changed(self,i):
+		if self.quiet: return
+		if self.target(): 
+			if self.target().using_global_theme:
+				self.target().global_theme = str(self.theme.itemText(i))
+			else:
+				self.target().axis_colors[str(self.setlist.currentItem().text())] = str(self.theme.itemText(i))
+			
+			self.target().full_refresh()
+			self.target().updateGL()
+			
+	def global_theme_checked(self,i):
+		self.target().using_global_theme = self.global_theme.isChecked()
+		self.quiet = 1
+		self.__set_theme()
+		self.quiet = 0
+		self.target().full_refresh()
+		self.target().updateGL()
+		
+	
+	def shape_changed(self,i):
+		if self.quiet: return
+		if self.target(): 
+			self.target().shapes[str(self.setlist.currentItem().text())] = str(self.shape.itemText(i))
+			self.target().full_refresh()
+			self.target().updateGL()
+			
+	
 	def data_change(self):
 		
 		self.setlist.clear()
@@ -882,13 +1056,6 @@ class EMPlot3DInspector(QtGui.QWidget,EMLightsInspectorBase):
 		self.hbl_color.setMargin(0)
 		self.hbl_color.setSpacing(6)
 		gltab.vbl.addLayout(self.hbl_color)
-
-		self.color_label = QtGui.QLabel()
-		self.color_label.setText('Material')
-		self.hbl_color.addWidget(self.color_label)
-		
-		self.cbb = QtGui.QComboBox(gltab)
-		self.hbl_color.addWidget(self.cbb)
 		
 		self.glcontrast = ValSlider(gltab,(1.0,5.0),"GLShd:")
 		self.glcontrast.setObjectName("GLShade")
@@ -916,14 +1083,6 @@ class EMPlot3DInspector(QtGui.QWidget,EMLightsInspectorBase):
 			self.rotation_sliders.addWidgets(maintab.vbl)
 		
 		return self.maintab
-	
-	def set_colors(self,colors,current_color):
-		a = 0
-		for i in colors:
-			self.cbb.addItem(i)
-			if ( i == current_color):
-				self.cbb.setCurrentIndex(a)
-			a += 1
 
 def get_test_data():
 	'''
@@ -971,9 +1130,9 @@ def get_other_test_data():
 if __name__ == '__main__':
 	from emapplication import EMStandAloneApplication
 	em_app = EMStandAloneApplication()
-	window = EMPlot3D(application=em_app)
+	window = EMPlot3DModule(application=em_app)
 	window.set_data("test data",get_test_data())
-	window.set_data("other data",get_other_test_data())
+	window.set_data("other data",get_other_test_data(),shape="Cube")
 	em_app.show()
 	em_app.execute()
 	

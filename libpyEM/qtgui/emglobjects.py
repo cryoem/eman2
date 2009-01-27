@@ -2126,36 +2126,43 @@ def get_default_gl_colors():
 	obsidian = {}
 	obsidian["ambient"] = [0.05375,  0.05,     0.06625 ,1.0]
 	obsidian["diffuse"] = [0.18275,  0.17,     0.22525,1.0]
-	obsidian["specular"] = [0.66, 0.65, 0.69]
+	obsidian["specular"] = [0.66, 0.65, 0.69,1.0]
 	obsidian["shininess"] = 128.0
 	obsidian["emission"] = [0,0,0]
 	
 	turquoise = {}
 	turquoise["ambient"] = [0.1, 0.18725, 0.1745 ,1.0]
 	turquoise["diffuse"] = [0.396, 0.74151, 0.69102,1.0]
-	turquoise["specular"] = [0.297254, 0.30829, 0.306678]
+	turquoise["specular"] = [0.297254, 0.30829, 0.306678,1.0]
 	turquoise["shininess"] = 128.0
 	turquoise["emission"] = [0,0,0]
 	
 	yellow = {}
-	yellow["ambient"] = [0.8, 0.8, 0.0,1]
-	yellow["diffuse"] = [0.8, 0.8, 0.0,1]
-	yellow["specular"] = [0.8, 0.8, 0.0,1]
+	yellow["ambient"] = [1,1,0.0,1]
+	yellow["diffuse"] = [1,1,0.0,1]
+	yellow["specular"] = [1,1,0.0,1]
 	yellow["shininess"] =  16
 	yellow["emission"] = [0,0,0]
+	
+	orange = {}
+	orange["ambient"] = [1,0.5,0.0,1]
+	orange["diffuse"] = [1.0,0.5,0.0,1]
+	orange["specular"] = [1.0,0.5,0.0,1]
+	orange["shininess"] =  16
+	orange["emission"] = [0,0,0]
 
 	cyan = {}
-	cyan["ambient"] = [0.0,0.8,0.8,1]
-	cyan["diffuse"] = [0.0,0.8,0.8,1]
-	cyan["specular"] = [0.0,0.8,0.8,1]
+	cyan["ambient"] = [0.0,1,1,1]
+	cyan["diffuse"] = [0.0,1,1,1]
+	cyan["specular"] = [0.0,1,1,1]
 	cyan["shininess"] =  16
 	cyan["emission"] = [0,0,0]
 	
 	
 	purple = {}
-	purple["ambient"] = [0.8,0.0,0.8,1]
-	purple["diffuse"] = [0.8,0.0,0.8,1]
-	purple["specular"] = [0.8,0.0,0.8,1]
+	purple["ambient"] = [1,0.0,1,1]
+	purple["diffuse"] = [1,0.0,1,1]
+	purple["specular"] = [1,0.0,1,1]
 	purple["shininess"] =  16
 	purple["emission"] = [0,0,0]
 	
@@ -2188,6 +2195,13 @@ def get_default_gl_colors():
 	black["shininess"] =  16
 	black["emission"] = [0,0,0]
 	
+	white = {}
+	white["ambient"] = [1.0,1.0,1.0,1]
+	white["diffuse"] = [1.0,1.0,1.0,1]
+	white["specular"] = [1.0,1.0,1.0,1]
+	white["shininess"] =  16
+	white["emission"] = [0,0,0]
+	
 	bluewhite = {}
 	bluewhite["ambient"] = [0.66, 0.95,0.62,1]
 	bluewhite["diffuse"] = [0.80, 0.92, 0.56,1]
@@ -2218,6 +2232,8 @@ def get_default_gl_colors():
 	colors["green"] = green
 	colors["blue"] = blue
 	colors["black"] = black
+	colors["white"] = white
+	colors["orange"] = orange
 	colors["bluewhite"] = bluewhite
 	colors["custom"] = custom
 	

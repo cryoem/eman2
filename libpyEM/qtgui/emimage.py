@@ -36,6 +36,7 @@ from PyQt4.QtCore import Qt
 from emimage2d import *
 from emimagemx import *
 from emplot2d import *
+from emplot3d import EMPlot3DModule
 #from emimagemxrotor import *
 from emimage3d import *
 from emimageutil import EMParentWin
@@ -143,13 +144,22 @@ class EMImageModule(object):
 			module.set_data(data,filename)
 			return module
 		elif isinstance(data,list):
-			if old:
-				if isinstance(old,EMPlot2DModule) :
-					old.set_data(remove_directories_from_name(filename),data,replace)
-					return old
-			module = EMPlot2DModule(application=app)
-			module.set_data(remove_directories_from_name(filename),data,replace)
-			return module	
+			if len(data) > 2:
+				if old:
+					if isinstance(old,EMPlot3DModule) :
+						old.set_data(remove_directories_from_name(filename),data,replace)
+						return old
+				module = EMPlot3DModule(application=app)
+				module.set_data(remove_directories_from_name(filename),data,replace)
+				return module	
+			else:
+				if old:
+					if isinstance(old,EMPlot2DModule) :
+						old.set_data(remove_directories_from_name(filename),data,replace)
+						return old
+				module = EMPlot2DModule(application=app)
+				module.set_data(remove_directories_from_name(filename),data,replace)
+				return module	
 		else:
 			raise Exception,"data must be a single EMData object or a list of EMData objects"
 

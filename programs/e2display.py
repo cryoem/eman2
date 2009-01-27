@@ -219,8 +219,8 @@ def plot(files,app):
 	return plotw
 
 def plot_3d(files,app):
-	from emplot3d import EMPlot3D
-	plotw=EMPlot3D(application=app)
+	from emplot3d import EMPlot3DModule
+	plotw=EMPlot3DModule(application=app)
 	for f in files:
 		plotw.set_data_from_file(f)
 	plotw.get_qt_widget().setWindowTitle("3D Plot")
