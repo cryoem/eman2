@@ -87,10 +87,11 @@ def get_mpiroot(options):
 
     header = mpiroot + "/include/mpi.h"
     if not os.path.exists(header):
-        print "Error: header ", mpiinc + "/mpi.h does not exist"
+        print "Error: header ", mpiroot + "/include/mpi.h does not exist"
         print "       This is usually because you did not install mpi development package"
         print "       You can either install the mpi-devel package by yourself or use "
         print "       the --force option so that the program install openmpi-1.2.8 for you"
+	return None
 
     return mpiroot
 
@@ -243,7 +244,7 @@ else:
 print ""
 print "Builing the mpi python binding"
 pythoninc = pythonroot + "/include/python" + pythonver[0:3] 
-pythonlib = "-lpython" + pythonver[0:3] + " -L" + pythonroot + "/lib/" + " -L" + pythonroot + "/lib64/"
+pythonlib = "-lpython" + pythonver[0:3] + " -L" + pythonroot + "/lib/" + " -L" + pythonroot + "/lib64/" + " -L" + pythonroot+"/lib/python2.4/config"
 
 mpiinc = mpiroot + "/include/"
 mpilib = "-lmpi -L" + mpiroot + "/lib"
@@ -255,9 +256,9 @@ myexec(cmd)
 
 uname = commands.getoutput( "uname" ) 
 if macos():
-    cmd = options.cc + " -dynamiclib -single_module -o mpi.so mympimodule.o >& log " + mpilib + " " + pythonlib
+    cmd = options.cc + " -dynamiclib -single_module -o mpi.so mympimodule.o " + mpilib + " " + pythonlib  + ">& log"
 else:
-    cmd = options.cc + " -shared -o mpi.so mympimodule.o >& log " + mpilib + " " + pythonlib
+    cmd = options.cc + " -shared -o mpi.so mympimodule.o " + mpilib + " " + pythonlib + ">& log"
 
 myexec(cmd)
 
