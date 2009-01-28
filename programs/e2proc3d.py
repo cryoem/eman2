@@ -339,7 +339,6 @@ def parse_infile(infile, first, last):
 			return_data.set_size(x, y, nimg)
 			for i in range(0, nimg):
 				d.read_image(infile, i)
-				print i, nimg
 				return_data.insert_clip(d, (0, 0, i))
 			data.append(return_data)	
 			return data
