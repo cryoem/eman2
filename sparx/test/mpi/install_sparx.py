@@ -113,7 +113,7 @@ def install_plib( name ):
 	myexec( install )
 	chdir( ".." )
 
-
+chdir( ROOT+"/src" )
 install_clib( "python", "--enable-shared" )
 install_clib( "fftw", "--enable-float --enable-shared" )
 install_clib( "gsl" )
