@@ -2835,8 +2835,7 @@ void nn4_ctfReconstructor::setup()
 	if( ! params.has_key("size") ) throw std::logic_error("Error: image size is not given");
 
 	int size = params["size"];
-
-	int npad = 4;
+	int npad = params.has_key("npad") ? int(params["npad"]) : 4;
 	// int sign = params.has_key("sign") ? int(params["sign"]) : 1;
 	int sign = 1;
 	string symmetry = params.has_key("symmetry")? params["symmetry"].to_str() : "c1";
@@ -3683,7 +3682,14 @@ void newfile_store::read( int nprj )
     int npoint = m_offsets[0]/sizeof(point_t);
     std::ios::off_type prjsize = m_offsets[0];
 
-    m_points.resize(nprj * npoint);
+    try
+    {
+        m_points.resize(nprj * npoint);
+    }
+    catch( std::exception& e )
+    {
+        std::cout << "Error: " << e.what() << std::endl;
+    }
 
     int ip = 0;
     for( int i=0; i < nprj; ++i )
@@ -3717,6 +3723,13 @@ void newfile_store::add_tovol( EMData* fftvol, EMData* wgtvol, const vector<int>
         {
             int pos2 = m_points[ipt].pos2;
             int pos1 = pos2*2;
+
+            std::cout << "ipt,pos1,pos2,ctf2,real,imag: ";
+            std::cout << ipt << " ";
+            std::cout << pos1 << " ";
+            std::cout << m_points[ipt].real << " " << m_points[ipt].imag;
+            std::cout << pos2 << " ";
+            std::cout << m_points[ipt].ctf2 << std::endl;
             wdata[pos2] += m_points[ipt].ctf2*m;
             vdata[pos1] += m_points[ipt].real*m;
             vdata[pos1+1]+= m_points[ipt].imag*m;
