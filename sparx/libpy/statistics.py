@@ -1713,6 +1713,7 @@ def select_kmeans(dJe, T):
 
 
 # K-means with classical method
+# test cvs
 def k_means_classical(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=False):
 	from utilities 		import model_blank, get_im, running_time
 	from random    		import seed, randint
