@@ -81,6 +81,7 @@ BOOST_PYTHON_MODULE(libpyTypeConverter2)
 //	EMAN::vector_from_python<EMAN::Transform3D>();
 	EMAN::vector_from_python<EMAN::Ctf*>();
 	EMAN::vector_from_python<EMAN::Transform>();
+	//EMAN::vector_from_python<EMAN::Transform*>();
 	EMAN::vector_from_python<EMAN::EMAN1Ctf>();
 	EMAN::vector_from_python<EMAN::EMAN2Ctf>();
 	EMAN::vector_from_python<std::string>();

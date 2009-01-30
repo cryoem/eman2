@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <?fileVersion 4.0.0?>
 
 <cproject>
@@ -8,6 +8,8 @@
 <externalSettings/>
 <extensions/>
 </storageModule>
+<storageModule moduleId="scannerConfiguration"/>
+<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
 </cconfiguration>
 <cconfiguration id="preference.org.eclipse.cdt.managedbuilder.core.configurationDataProvider.1551100337">
 <storageModule moduleId="cdtBuildSystem" version="4.0.0">

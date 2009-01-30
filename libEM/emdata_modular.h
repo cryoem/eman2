@@ -112,6 +112,8 @@ EMData *project(const string & projector_name, const Transform & t3d);
  */
 EMData *backproject(const string & projector_name, const Dict & params = Dict());
 
+vector<EMData*> cuda_project(const vector<Transform> transforms);
+
 
 #endif	//emdata__modular_h__
 

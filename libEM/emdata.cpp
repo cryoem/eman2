@@ -266,12 +266,13 @@ EMData::EMData(int nx, int ny, int nz, bool is_real)
 }
 
 
-EMData::EMData(float* data, const int x, const int y, const int z)
+EMData::EMData(float* data, const int x, const int y, const int z) :
+	rdata(data), nx(x), ny(y), nz(z)
 {
 	ENTERFUNC;
 	
 	rot_fp = 0;
-	rdata = 0;
+	//rdata = 0;
 	supp = 0;
 
 	flags =0;
@@ -283,11 +284,14 @@ EMData::EMData(float* data, const int x, const int y, const int z)
 
 	changecount=0;
 	
+	/*
 	rdata = data;
 	nx = x; ny = y; nz = z;
-	
+	*/
+	nxy = nx*ny;
 	EMData::totalalloc++;
 	
+	update();
 	EXITFUNC;
 }
 

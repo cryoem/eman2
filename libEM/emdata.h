@@ -67,13 +67,14 @@ namespace EMAN
 	class Transform3D;
 	class Transform;
 
+	
 	typedef boost::multi_array_ref<float, 2> MArray2D;
 	typedef boost::multi_array_ref<float, 3> MArray3D;
 	typedef boost::multi_array_ref<std::complex<float>, 2> MCArray2D;
 	typedef boost::multi_array_ref<std::complex<float>, 3> MCArray3D;
 	typedef boost::multi_array<int, 2> MIArray2D;
 	typedef boost::multi_array<int, 3> MIArray3D;
-
+	
 	/** @ingroup tested3c */
 	/** EMData stores an image's data and defines core image processing routines.
      * The image is 1D, 2D or 3D, in real space or fourier space (complex image).
@@ -99,6 +100,9 @@ namespace EMAN
 
 		/** This is the header of EMData stay in sparx directory */
 		#include "sparx/emdata_sparx.h"
+		
+		/** This is for CUDA related functionality */
+		#include "emdata_cuda.h"
 
 #ifdef EMAN2_USING_OPENGL
 		/** GL Texturing */
@@ -687,6 +691,7 @@ namespace EMAN
 		 * @return The result image.
 		 */
 		EMData *convolute(EMData * with);
+		
 #if 0
 		void create_ctf_map(CtfMapType type, XYData * sf = 0);
 #endif
