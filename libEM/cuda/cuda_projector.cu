@@ -6,17 +6,21 @@
 #include <string.h>
 #include <math.h>
 #include <cuda.h>
+#include "cutil.h"
 #include "cuda_util.h"
+
+// Global texture
+extern texture<float, 3, cudaReadModeElementType> tex;
 
 typedef unsigned int uint;
 __global__ void proj_kernel(float *out,float size,float3 mxx,float3 mxy, float3 mxz)
 {
 //	uint x=(threadIdx.x&0xfffe)+(blockIdx.x&1);
 //	uint y=(blockIdx.x&0xfffe)+(threadIdx.x&1);
-	uint x=(threadIdx.x>>1)+((blockIdx.x&1)<<7);
-	uint y=(blockIdx.x&0xfffe)+(threadIdx.x&1);
-//	uint x=threadIdx.x;
-//	uint y=blockIdx.x;
+//	uint x=(threadIdx.x>>1)+((blockIdx.x&1)<<7);
+//	uint y=(blockIdx.x&0xfffe)+(threadIdx.x&1);
+	uint x=threadIdx.x;
+	uint y=blockIdx.x;
 	float fx=x-size/2;
 	float fy=y-size/2;
 
@@ -27,7 +31,7 @@ __global__ void proj_kernel(float *out,float size,float3 mxx,float3 mxy, float3 
 		tx=fx*mxx.x+fy*mxx.y+fz*mxx.z+size/2.0;
 		ty=fx*mxy.x+fy*mxy.y+fz*mxy.z+size/2.0;
 		tz=fx*mxz.x+fy*mxz.y+fz*mxz.z+size/2.0;
-		sum += tex3D(tex, tx,ty,tz);
+		sum += CUDA_SAFE_CALL(tex3D(tex, tx,ty,tz));
 	}
 
 	out[x+y*(int)size]=sum;
@@ -35,9 +39,6 @@ __global__ void proj_kernel(float *out,float size,float3 mxx,float3 mxy, float3 
 
 float** main_t(const float* rdata, const int nx, const int ny, const int nz) 
 {
-	//const int size=256;
-	cudaExtent VS = make_cudaExtent(nx, ny, nz);
-
 	device_init();
 		
 	printf("read angles\n");
@@ -55,7 +56,7 @@ float** main_t(const float* rdata, const int nx, const int ny, const int nz)
 	const dim3 gridSize(nx,1,1);
 
 	float *memout=0;
-	cudaMalloc((void **)&memout, nx*ny*sizeof(float));
+	CUDA_SAFE_CALL(cudaMalloc((void **)&memout, nx*ny*sizeof(float)));
 	
 	float3 mxx,mxy,mxz;
 
@@ -64,7 +65,7 @@ float** main_t(const float* rdata, const int nx, const int ny, const int nz)
 	for (int i=0; i<neul; i++) {
 		printf("%d %f %f %f\n",i,alts[i],azs[i],phis[i]);
 		float *memout2=0;
-		cudaMallocHost((void **)&memout2, nx*ny*sizeof(float));
+		CUDA_SAFE_CALL(cudaMallocHost((void **)&memout2, nx*ny*sizeof(float)));
 		
 		float alt=alts[i]*.017453292;
 		float az =azs[i]*.017453292;
@@ -81,51 +82,47 @@ float** main_t(const float* rdata, const int nx, const int ny, const int nz)
 		mxz.z=cos(alt)/scale;
 		
 		proj_kernel<<<blockSize,gridSize>>>(memout,(float)nx,mxx,mxy,mxz);
-		cuCtxSynchronize();
-		cudaMemcpy(memout2, memout, nx*ny*sizeof(float), cudaMemcpyDeviceToHost);
+		CUDA_SAFE_CALL(cuCtxSynchronize());
+		CUDA_SAFE_CALL(cudaMemcpy(memout2, memout, nx*ny*sizeof(float), cudaMemcpyDeviceToHost));
 		ret[i] = memout2;
 	}
 	//cudaFreeHost(memout2);
-	cudaFree(memout);
+	CUDA_SAFE_CALL(cudaFree(memout));
 	
 	//return soln;
 	return ret;
 }
 
-float* standard_project(const float* const matrix, const int nx, const int ny) 
+void standard_project(const float* const matrix,const float* const rdata, const int nx, const int ny, const int nz, float*const d) 
 {
-	device_init();
+	//device_init();
 	
-	/*
-	int idx = stored_cuda_array(rdata,nx,ny,nz);
-	bind_cuda_texture(idx);
-	*/
+	//int idx = stored_cuda_array(rdata,nx,ny,nz);
+	//bind_cuda_texture(idx);
+	
 	const dim3 blockSize(nx,1, 1);
 	const dim3 gridSize(nx,1,1);
 
 	float *memout=0;
-	cudaMalloc((void **)&memout, nx*ny*sizeof(float));
+	CUDA_SAFE_CALL(cudaMalloc((void **)&memout, nx*ny*sizeof(float)));
 	
 	float3 mxx,mxy,mxz;
-
-	float *memout2=0;
-	cudaMallocHost((void **)&memout2, nx*ny*sizeof(float));
 	
 	mxx.x=matrix[0];
-	mxx.y=matrix[1];
-	mxx.z=matrix[2];
-	mxy.x=matrix[4];
+	mxx.y=matrix[4];
+	mxx.z=matrix[8];
+	mxy.x=matrix[1];
 	mxy.y=matrix[5];
-	mxy.z=matrix[6];
-	mxz.x=matrix[8];
-	mxz.y=matrix[9];
+	mxy.z=matrix[9];
+	mxz.x=matrix[2];
+	mxz.y=matrix[6];
 	mxz.z=matrix[10];
 		
 	proj_kernel<<<blockSize,gridSize>>>(memout,(float)nx,mxx,mxy,mxz);
-	cuCtxSynchronize();
-	cudaMemcpy(memout2, memout, nx*ny*sizeof(float), cudaMemcpyDeviceToHost);
-	cudaFree(memout);
+	CUDA_SAFE_CALL(cuCtxSynchronize());
+	CUDA_SAFE_CALL(cudaMemcpy(d, memout, nx*ny*sizeof(float), cudaMemcpyDeviceToHost));
+	CUDA_SAFE_CALL(cudaFree(memout));
 	
-	return memout2;
+	//return memout2;
 }
 

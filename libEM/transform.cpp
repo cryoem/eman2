@@ -104,7 +104,7 @@ void Transform::set_matrix(const vector<float>& v)
 	}
 }
 
-void Transform::copy_matrix_into_array(float* array) {
+void Transform::copy_matrix_into_array(float* const array) const {
 	
 	int idx = 0;
 	for(int i=0; i<3; ++i) {

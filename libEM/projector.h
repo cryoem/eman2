@@ -291,6 +291,42 @@ namespace EMAN
 				       int& nn, IPCube* ipcube=NULL) const;
 	};
 
+#ifdef EMAN2_USING_CUDA
+	/** Fast real-space 3D projection.
+	     */
+		class CudaStandardProjector:public Projector
+		{
+		  public:
+			TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("transform", EMObject::TRANSFORM);
+				return d;
+			}
+
+			EMData * project3d(EMData * image) const;
+	         // no implementation yet
+			EMData * backproject3d(EMData * image) const;
+
+			string get_name() const
+			{
+				return "cuda_standard";
+			}
+
+			string get_desc() const
+			{
+				return "Simple real-space projection using the GPU. Most accurate.";
+			}
+
+			static Projector *NEW()
+			{
+				return new CudaStandardProjector();
+			}
+		  private:
+			  float matrix[12];
+		};
+#endif // EMAN2_USING_CUDA
+
 	/** Fast real-space 3D projection.
      */
 	class StandardProjector:public Projector

@@ -381,7 +381,7 @@ namespace EMAN
 			 */
 			Transform get_sym(const string & sym, int n) const;
 			
-			void copy_matrix_into_array(float*);
+			void copy_matrix_into_array(float* const) const;
 			
 		private:
 			float matrix[3][4];

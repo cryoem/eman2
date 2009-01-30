@@ -4,6 +4,6 @@
 
 float** main_t(const float* ,const int,const int,const int);
 
-float* standard_project(const float* const, const int nx, const int ny);
+void standard_project(const float* const, const float* const, const int nx, const int ny, const int nz, float* const);
 
 #endif //  cuda_project_h__ 1

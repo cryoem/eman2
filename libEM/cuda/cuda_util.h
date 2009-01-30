@@ -2,10 +2,6 @@
 #ifndef eman__cuda_util_h__
 #define eman__cuda_util_h__ 1
 
-
-// Global texture
-extern texture<float, 3, cudaReadModeElementType> tex;
-
 // Various utility functions
 /** Initialize the cuda device
  * Can be called any number of times but the actual initialization occurs only the first time
