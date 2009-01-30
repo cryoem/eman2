@@ -2,7 +2,7 @@
 #include <cuda.h>
 #include <stdio.h>
 
-#include "cutil.h"
+#include "cuda_defs.h"
 texture<float, 3, cudaReadModeElementType> tex;
 
 void cudaBindTexture(texture<float, 3, cudaReadModeElementType> &tex,cudaArray *array) {

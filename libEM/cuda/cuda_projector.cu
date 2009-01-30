@@ -6,7 +6,7 @@
 #include <string.h>
 #include <math.h>
 #include <cuda.h>
-#include "cutil.h"
+#include "cuda_defs.h"
 #include "cuda_util.h"
 
 // Global texture
