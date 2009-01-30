@@ -5,9 +5,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <cuda.h>
 #include "cuda_util.h"
-
-
 
 typedef unsigned int uint;
 __global__ void proj_kernel(float *out,float size,float3 mxx,float3 mxy, float3 mxz)

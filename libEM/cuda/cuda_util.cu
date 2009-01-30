@@ -1,8 +1,8 @@
 
-#include "cuda_util.h"
+#include <cuda.h>
 #include <stdio.h>
 
-//texture<float, 3, cudaReadModeElementType> tex;
+texture<float, 3, cudaReadModeElementType> tex;
 
 void cudaBindTexture(texture<float, 3, cudaReadModeElementType> &tex,cudaArray *array) {
 	

@@ -2,7 +2,6 @@
 #ifndef eman__cuda_util_h__
 #define eman__cuda_util_h__ 1
 
-#include <cuda.h>
 
 // Global texture
 extern texture<float, 3, cudaReadModeElementType> tex;
