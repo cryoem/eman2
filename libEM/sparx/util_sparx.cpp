@@ -33,6 +33,10 @@
  *
  */
 
+#ifdef _WIN32
+	#pragma warning(disable:4819)
+#endif	//_WIN32
+
 #include <cstring>
 #include <ctime>
 #include <iostream>
@@ -64,7 +68,7 @@ vector<float> Util::infomask(EMData* Vol, EMData* mask, bool flip = false)
 	float *Volptr, *maskptr,MAX,MIN;
 	long double Sum1,Sum2;
 	long count;
-	
+
 	MAX = -FLT_MAX;
 	MIN =  FLT_MAX;
 	count = 0L;
@@ -72,31 +76,31 @@ vector<float> Util::infomask(EMData* Vol, EMData* mask, bool flip = false)
 	Sum2 = 0.0L;
 
 	if (mask == NULL) {
-	   //Vol->update_stat();	
+	   //Vol->update_stat();
 	   stats.push_back(Vol->get_attr("mean"));
 	   stats.push_back(Vol->get_attr("sigma"));
 	   stats.push_back(Vol->get_attr("minimum"));
 	   stats.push_back(Vol->get_attr("maximum"));
 	   return stats;
-	} 
-	
+	}
+
 	/* Check if the sizes of the mask and image are same */
-		
+
 	size_t nx = Vol->get_xsize();
 	size_t ny = Vol->get_ysize();
-	size_t nz = Vol->get_zsize();		
+	size_t nz = Vol->get_zsize();
 
 	size_t mask_nx = mask->get_xsize();
 	size_t mask_ny = mask->get_ysize();
-	size_t mask_nz = mask->get_zsize();	
-	
+	size_t mask_nz = mask->get_zsize();
+
 	if  (nx != mask_nx || ny != mask_ny || nz != mask_nz )
 		throw ImageDimensionException("The dimension of the image does not match the dimension of the mask!");
 
  /*       if (nx != mask_nx ||
             ny != mask_ny ||
             nz != mask_nz  ) {
-           // should throw an exception here!!! (will clean it up later CY) 
+           // should throw an exception here!!! (will clean it up later CY)
            fprintf(stderr, "The dimension of the image does not match the dimension of the mask!\n");
            fprintf(stderr, " nx = %d, mask_nx = %d\n", nx, mask_nx);
            fprintf(stderr, " ny = %d, mask_ny = %d\n", ny, mask_ny);
@@ -105,7 +109,7 @@ vector<float> Util::infomask(EMData* Vol, EMData* mask, bool flip = false)
         }
  */
 	Volptr = Vol->get_data();
-	maskptr = mask->get_data();		 
+	maskptr = mask->get_data();
 
 	for (size_t i = 0; i < nx*ny*nz; i++) {
 	      if (maskptr[i]>0.5f == flip) {
@@ -125,7 +129,7 @@ vector<float> Util::infomask(EMData* Vol, EMData* mask, bool flip = false)
        float avg = static_cast<float>(Sum1/count);
        float sig2 = static_cast<float>(Sum2 - count*avg*avg)/(count-1);
        float sig = sqrt(sig2);
-                            
+
        stats.push_back(avg);
        stats.push_back(sig);
        stats.push_back(MIN);
@@ -133,75 +137,75 @@ vector<float> Util::infomask(EMData* Vol, EMData* mask, bool flip = false)
 
        return stats;
 }
- 
- 
-//---------------------------------------------------------------------------------------------------------- 
- 
+
+
+//----------------------------------------------------------------------------------------------------------
+
 Dict Util::im_diff(EMData* V1, EMData* V2, EMData* mask)
 {
 	ENTERFUNC;
-	
+
 	if (!EMUtil::is_same_size(V1, V2)) {
 		LOGERR("images not same size");
 		throw ImageFormatException( "images not same size");
 	}
-	
+
 	size_t nx = V1->get_xsize();
 	size_t ny = V1->get_ysize();
 	size_t nz = V1->get_zsize();
 	size_t size = nx*ny*nz;
-	
+
 	EMData *BD = new EMData();
  	BD->set_size(nx, ny, nz);
-	
-	float *params = new float[2];	 	 
-  	
-	float *V1ptr, *V2ptr, *MASKptr, *BDptr, A, B; 
+
+	float *params = new float[2];
+
+	float *V1ptr, *V2ptr, *MASKptr, *BDptr, A, B;
 	long double S1=0.L,S2=0.L,S3=0.L,S4=0.L;
 	int nvox = 0L;
-	
+
    	V1ptr = V1->get_data();
 	V2ptr = V2->get_data();
 	BDptr = BD->get_data();
-	
-	
+
+
 	if(!mask){
 		EMData * Mask = new EMData();
 		Mask->set_size(nx,ny,nz);
 		Mask->to_one();
-		MASKptr = Mask->get_data();	
+		MASKptr = Mask->get_data();
 	} else {
 		if (!EMUtil::is_same_size(V1, mask)) {
 			LOGERR("mask not same size");
 			throw ImageFormatException( "mask not same size");
 		}
-		
+
 		MASKptr = mask->get_data();
 	}
-	
-	
-	
+
+
+
 //	 calculation of S1,S2,S3,S3,nvox
-			       
+
 	for (size_t i = 0L;i < size; i++) {
 	      if (MASKptr[i]>0.5f) {
 	       S1 += V1ptr[i]*V2ptr[i];
 	       S2 += V1ptr[i]*V1ptr[i];
-	       S3 += V2ptr[i]; 
+	       S3 += V2ptr[i];
 	       S4 += V1ptr[i];
 	       nvox ++;
 	      }
-	}       
-	 
-	if ((nvox*S1 - S3*S4) == 0. || (nvox*S2 - S4*S4) == 0) { 		
+	}
+
+	if ((nvox*S1 - S3*S4) == 0. || (nvox*S2 - S4*S4) == 0) {
 		A =1.0f ;
-	} else { 
+	} else {
 		A = static_cast<float>( (nvox*S1 - S3*S4)/(nvox*S2 - S4*S4) );
-	}		
+	}
 	B = static_cast<float> (A*S4  -  S3)/nvox;
-        
+
 	// calculation of the difference image
-	
+
 	for (size_t i = 0L;i < size; i++) {
 	     if (MASKptr[i]>0.5f) {
 	       BDptr[i] = A*V1ptr[i] -  B  - V2ptr[i];
@@ -209,18 +213,18 @@ Dict Util::im_diff(EMData* V1, EMData* V2, EMData* mask)
                BDptr[i] = 0.f;
 	     }
 	}
-	
+
 	BD->update();
- 
+
 	params[0] = A;
 	params[1] = B;
-	
+
 	Dict BDnParams;
 	BDnParams["imdiff"] = BD;
 	BDnParams["A"] = params[0];
 	BDnParams["B"] = params[1];
-	
-	EXITFUNC;	
+
+	EXITFUNC;
 	return BDnParams;
  }
 
@@ -230,17 +234,17 @@ Dict Util::im_diff(EMData* V1, EMData* V2, EMData* mask)
 
 EMData *Util::TwoDTestFunc(int Size, float p, float q,  float a, float b, int flag, float alphaDeg) //PRB
 {
-	ENTERFUNC;	
+	ENTERFUNC;
     	int Mid= (Size+1)/2;
 
     	if (flag==0) { // This is the real function
 		EMData* ImBW = new EMData();
 	   	ImBW->set_size(Size,Size,1);
 	   	ImBW->to_zero();
-	   
+
 	   	float tempIm;
 	   	float x,y;
-	
+
 	   	for (int ix=(1-Mid);  ix<Mid; ix++){
 	        	for (int iy=(1-Mid);  iy<Mid; iy++){
 		  		x = (float)ix;
@@ -252,16 +256,16 @@ EMData *Util::TwoDTestFunc(int Size, float p, float q,  float a, float b, int fl
 	   	ImBW->update();
 	   	ImBW->set_complex(false);
 	   	ImBW->set_ri(true);
-	
+
 	   	return ImBW;
    	}
 	else if (flag==1) {  // This is the Fourier Transform
 		EMData* ImBWFFT = new EMData();
 	   	ImBWFFT ->set_size(2*Size,Size,1);
 	   	ImBWFFT ->to_zero();
-	   
+
 	   	float r,s;
-	
+
 	   	for (int ir=(1-Mid);  ir<Mid; ir++){
 	        	for (int is=(1-Mid);  is<Mid; is++){
 		   		r = (float)ir;
@@ -275,16 +279,16 @@ EMData *Util::TwoDTestFunc(int Size, float p, float q,  float a, float b, int fl
 	   	ImBWFFT->set_ri(true);
 	   	ImBWFFT->set_shuffled(true);
 	   	ImBWFFT->set_fftodd(true);
-	
+
 	   	return ImBWFFT;
-   	}   		
+   	}
    	else if (flag==2 || flag==3) { //   This is the projection in Real Space
 		float alpha = static_cast<float>( alphaDeg*M_PI/180.0 );
 		float C=cos(alpha);
 		float S=sin(alpha);
 		float D= sqrt(S*S*b*b + C*C*a*a);
 		//float D2 = D*D;   PAP - to get rid of warning
-			
+
 		float P = p * C *a*a/D ;
 		float Q = q * S *b*b/D ;
 
@@ -308,14 +312,14 @@ EMData *Util::TwoDTestFunc(int Size, float p, float q,  float a, float b, int fl
 			pofalpha-> set_ri(true);
 
 			return pofalpha;
-		}   		
+		}
 		if (flag==3) { // This is the projection in Fourier Space
 			float vD;
-		
+
 			EMData* pofalphak = new EMData();
 			pofalphak ->set_size(2*Size,1,1);
 			pofalphak ->to_zero();
-		
+
 			for (int iv=(1-Mid);  iv<Mid; iv++){
 				vD = iv*D ;
 		 		(*pofalphak)(2*(iv+Mid-1)) =  exp(-.5f*vD*vD)*(cosh(vD*(P+Q)) + cosh(vD*(P-Q)) );
@@ -323,10 +327,10 @@ EMData *Util::TwoDTestFunc(int Size, float p, float q,  float a, float b, int fl
 			pofalphak-> update();
 			pofalphak-> set_complex(false);
 			pofalphak-> set_ri(true);
-		
+
 			return pofalphak;
    		}
-   	}   		
+   	}
     	else if (flag==4) {
 		cout <<" FH under construction";
    		EMData* OutFT= TwoDTestFunc(Size, p, q, a, b, 1);
@@ -335,9 +339,9 @@ EMData *Util::TwoDTestFunc(int Size, float p, float q,  float a, float b, int fl
    	} else {
     		cout <<" flag must be 0,1,2,3, or 4";
     	}
-	
+
 	EXITFUNC;
-	return 0;	
+	return 0;
 }
 
 
@@ -489,7 +493,7 @@ void Util::Radialize(int *PermMatTr, float *kValsSorted,   // PRB
 	    		}
 		}
 	}
-	
+
 
 	for (int CountD=0; CountD < CountMax; CountD++) {
 	    newInd = PermMatTr[CountD];
@@ -541,7 +545,7 @@ Util::even_angles(float delta, float t1, float t2, float p1, float p2)
 /*float Util::quadri(float xx, float yy, int nxdata, int nydata, float* fdata)
 {
 
-//  purpose: quadratic interpolation 
+//  purpose: quadratic interpolation
 //
 //  parameters:       xx,yy treated as circularly closed.
 //                    fdata - image 1..nxdata, 1..nydata
@@ -586,12 +590,12 @@ c
     float x, y, dx0, dy0, f0, c1, c2, c3, c4, c5, dxb, dyb;
     float quadri;
     int   i, j, ip1, im1, jp1, jm1, ic, jc, hxc, hyc;
-    
+
     x = xx;
     y = yy;
 
     // circular closure
-	while ( x < 1.0 ) x += nxdata; 
+	while ( x < 1.0 ) x += nxdata;
 	while ( x >= (float)(nxdata+1) )  x -= nxdata;
 	while ( y < 1.0 ) y += nydata;
 	while ( y >= (float)(nydata+1) )  y -= nydata;
@@ -625,19 +629,19 @@ c
     // hxc & hyc are either 1 or -1
     if (dx0 >= 0) { hxc = 1; } else { hxc = -1; }
     if (dy0 >= 0) { hyc = 1; } else { hyc = -1; }
- 
+
     ic  = i + hxc;
     jc  = j + hyc;
 
     if (ic > nxdata) { ic = ic - nxdata; }  else if (ic < 1) { ic = ic + nxdata; }
     if (jc > nydata) { jc = jc - nydata; } else if (jc < 1) { jc = jc + nydata; }
 
-    c5  =  ( (fdata(ic,jc) - f0 - hxc * c1 - (hxc * (hxc - 1.0)) * c2 
+    c5  =  ( (fdata(ic,jc) - f0 - hxc * c1 - (hxc * (hxc - 1.0)) * c2
             - hyc * c3 - (hyc * (hyc - 1.0)) * c4) * (hxc * hyc));
 
     quadri = f0 + dx0 * (c1 + dxb * c2 + dy0 * c5) + dy0 * (c3 + dyb * c4);
 
-    return quadri; 
+    return quadri;
 }*/
 float Util::quadri(float xx, float yy, int nxdata, int nydata, float* fdata)
 {
@@ -649,9 +653,9 @@ float Util::quadri(float xx, float yy, int nxdata, int nydata, float* fdata)
 
 	x = xx;
 	y = yy;
-	
+
 	//     any xx and yy
-	while ( x < 1.0 )                 x += nxdata; 
+	while ( x < 1.0 )                 x += nxdata;
 	while ( x >= (float)(nxdata+1) )  x -= nxdata;
 	while ( y < 1.0 )                 y += nydata;
 	while ( y >= (float)(nydata+1) )  y -= nydata;
@@ -691,19 +695,19 @@ float Util::quadri(float xx, float yy, int nxdata, int nydata, float* fdata)
 	if (ic > nxdata) ic -= nxdata;  else if (ic < 1) ic += nxdata;
 	if (jc > nydata) jc -= nydata;  else if (jc < 1) jc += nydata;
 
-	c5  =  ( (fdata(ic,jc) - f0 - hxc * c1 - (hxc * (hxc - 1.0f)) * c2 
+	c5  =  ( (fdata(ic,jc) - f0 - hxc * c1 - (hxc * (hxc - 1.0f)) * c2
 		- hyc * c3 - (hyc * (hyc - 1.0f)) * c4) * (hxc * hyc));
 
 
 	quadri = f0 + dx0 * (c1 + dxb * c2 + dy0 * c5) + dy0 * (c3 + dyb * c4);
 
-	return quadri; 
+	return quadri;
 }
 
 #undef fdata
 
 float  Util::get_pixel_conv_new(int nx, int ny, int nz, float delx, float dely, float delz, float* data, Util::KaiserBessel& kb) {
-// Here counting is in C style, so coordinates of the pixel delx should be [0-nx-1] 
+// Here counting is in C style, so coordinates of the pixel delx should be [0-nx-1]
 
 /* Commented by Zhengfan Yang on 04/20/07
 This function is written to replace get_pixel_conv(), which is too slow to use in practice.
@@ -723,7 +727,7 @@ size, say N=5, you can easily modify it by referring my code.
 
 	float pixel =0.0f;
 	float w=0.0f;
-	
+
 	delx = restrict1(delx, nx);
 	int inxold = int(round(delx));
 	if ( ny < 2 ) {  //1D
@@ -734,9 +738,9 @@ size, say N=5, you can easily modify it by referring my code.
 		float tablex5 = kb.i0win_tab(delx-inxold-1);
 		float tablex6 = kb.i0win_tab(delx-inxold-2);
 		float tablex7 = kb.i0win_tab(delx-inxold-3);
-			
+
 		int x1, x2, x3, x4, x5, x6, x7;
-			
+
 	 	if ( inxold <= kbc || inxold >=nx-kbc-2 )  {
 			x1 = (inxold-3+nx)%nx;
 			x2 = (inxold-2+nx)%nx;
@@ -744,7 +748,7 @@ size, say N=5, you can easily modify it by referring my code.
 			x4 = (inxold  +nx)%nx;
 			x5 = (inxold+1+nx)%nx;
 			x6 = (inxold+2+nx)%nx;
-			x7 = (inxold+3+nx)%nx;			
+			x7 = (inxold+3+nx)%nx;
 	 	} else {
 			x1 = inxold-3;
 			x2 = inxold-2;
@@ -752,13 +756,13 @@ size, say N=5, you can easily modify it by referring my code.
 			x4 = inxold;
 			x5 = inxold+1;
 			x6 = inxold+2;
-			x7 = inxold+3;			 
+			x7 = inxold+3;
 	 	}
-			
+
 		pixel = data[x1]*tablex1 + data[x2]*tablex2 + data[x3]*tablex3 +
 			data[x4]*tablex4 + data[x5]*tablex5 + data[x6]*tablex6 +
 			data[x7]*tablex7 ;
-			     
+
 		w = tablex1+tablex2+tablex3+tablex4+tablex5+tablex6+tablex7;
 	} else if ( nz < 2 ) {  // 2D
 		dely = restrict1(dely, ny);
@@ -777,10 +781,10 @@ size, say N=5, you can easily modify it by referring my code.
 		float tabley4 = kb.i0win_tab(dely-inyold);
 		float tabley5 = kb.i0win_tab(dely-inyold-1);
 		float tabley6 = kb.i0win_tab(dely-inyold-2);
-		float tabley7 = kb.i0win_tab(dely-inyold-3); 
-			
+		float tabley7 = kb.i0win_tab(dely-inyold-3);
+
 		int x1, x2, x3, x4, x5, x6, x7, y1, y2, y3, y4, y5, y6, y7;
-			
+
 	 	if ( inxold <= kbc || inxold >=nx-kbc-2 || inyold <= kbc || inyold >=ny-kbc-2 )  {
 			x1 = (inxold-3+nx)%nx;
 			x2 = (inxold-2+nx)%nx;
@@ -789,7 +793,7 @@ size, say N=5, you can easily modify it by referring my code.
 			x5 = (inxold+1+nx)%nx;
 			x6 = (inxold+2+nx)%nx;
 			x7 = (inxold+3+nx)%nx;
-			
+
 			y1 = ((inyold-3+ny)%ny)*nx;
 			y2 = ((inyold-2+ny)%ny)*nx;
 			y3 = ((inyold-1+ny)%ny)*nx;
@@ -805,7 +809,7 @@ size, say N=5, you can easily modify it by referring my code.
 			x5 = inxold+1;
 			x6 = inxold+2;
 			x7 = inxold+3;
-			
+
 			y1 = (inyold-3)*nx;
 			y2 = (inyold-2)*nx;
 			y3 = (inyold-1)*nx;
@@ -814,7 +818,7 @@ size, say N=5, you can easily modify it by referring my code.
 			y6 = (inyold+2)*nx;
 			y7 = (inyold+3)*nx;
 		}
-				
+
 		pixel    = ( data[x1+y1]*tablex1 + data[x2+y1]*tablex2 + data[x3+y1]*tablex3 +
 		             data[x4+y1]*tablex4 + data[x5+y1]*tablex5 + data[x6+y1]*tablex6 +
 		   	     data[x7+y1]*tablex7 ) * tabley1 +
@@ -836,15 +840,15 @@ size, say N=5, you can easily modify it by referring my code.
 		   	   ( data[x1+y7]*tablex1 + data[x2+y7]*tablex2 + data[x3+y7]*tablex3 +
 		   	     data[x4+y7]*tablex4 + data[x5+y7]*tablex5 + data[x6+y7]*tablex6 +
 		   	     data[x7+y7]*tablex7 ) * tabley7;
-			     
+
 		w = (tablex1+tablex2+tablex3+tablex4+tablex5+tablex6+tablex7) *
-		    (tabley1+tabley2+tabley3+tabley4+tabley5+tabley6+tabley7);	
+		    (tabley1+tabley2+tabley3+tabley4+tabley5+tabley6+tabley7);
 	} else {  //  3D
 		dely = restrict1(dely, ny);
 		int inyold = int(Util::round(dely));
 		delz = restrict1(delz, nz);
 		int inzold = int(Util::round(delz));
-		
+
 		float tablex1 = kb.i0win_tab(delx-inxold+3);
 		float tablex2 = kb.i0win_tab(delx-inxold+2);
 		float tablex3 = kb.i0win_tab(delx-inxold+1);
@@ -859,18 +863,18 @@ size, say N=5, you can easily modify it by referring my code.
 		float tabley4 = kb.i0win_tab(dely-inyold);
 		float tabley5 = kb.i0win_tab(dely-inyold-1);
 		float tabley6 = kb.i0win_tab(dely-inyold-2);
-		float tabley7 = kb.i0win_tab(dely-inyold-3); 
-			
+		float tabley7 = kb.i0win_tab(dely-inyold-3);
+
 		float tablez1 = kb.i0win_tab(delz-inzold+3);
 		float tablez2 = kb.i0win_tab(delz-inzold+2);
 		float tablez3 = kb.i0win_tab(delz-inzold+1);
 		float tablez4 = kb.i0win_tab(delz-inzold);
 		float tablez5 = kb.i0win_tab(delz-inzold-1);
 		float tablez6 = kb.i0win_tab(delz-inzold-2);
-		float tablez7 = kb.i0win_tab(delz-inzold-3); 
-		
+		float tablez7 = kb.i0win_tab(delz-inzold-3);
+
 		int x1, x2, x3, x4, x5, x6, x7, y1, y2, y3, y4, y5, y6, y7, z1, z2, z3, z4, z5, z6, z7;
-		
+
 		if ( inxold <= kbc || inxold >=nx-kbc-2 || inyold <= kbc || inyold >=ny-kbc-2 || inzold <= kbc || inzold >= nz-kbc-2 )  {
 			x1 = (inxold-3+nx)%nx;
 			x2 = (inxold-2+nx)%nx;
@@ -879,7 +883,7 @@ size, say N=5, you can easily modify it by referring my code.
 			x5 = (inxold+1+nx)%nx;
 			x6 = (inxold+2+nx)%nx;
 			x7 = (inxold+3+nx)%nx;
-			
+
 			y1 = ((inyold-3+ny)%ny)*nx;
 			y2 = ((inyold-2+ny)%ny)*nx;
 			y3 = ((inyold-1+ny)%ny)*nx;
@@ -903,7 +907,7 @@ size, say N=5, you can easily modify it by referring my code.
 			x5 = inxold+1;
 			x6 = inxold+2;
 			x7 = inxold+3;
-			
+
 			y1 = (inyold-3)*nx;
 			y2 = (inyold-2)*nx;
 			y3 = (inyold-1)*nx;
@@ -917,10 +921,10 @@ size, say N=5, you can easily modify it by referring my code.
 			z3 = (inzold-1)*nx*ny;
 			z4 = inzold*nx*ny;
 			z5 = (inzold+1)*nx*ny;
-			z6 = (inzold+2)*nx*ny;		
+			z6 = (inzold+2)*nx*ny;
 			z7 = (inzold+3)*nx*ny;
 	 	}
-		
+
 		pixel  = ( ( data[x1+y1+z1]*tablex1 + data[x2+y1+z1]*tablex2 + data[x3+y1+z1]*tablex3 +
 		             data[x4+y1+z1]*tablex4 + data[x5+y1+z1]*tablex5 + data[x6+y1+z1]*tablex6 +
 		   	     data[x7+y1+z1]*tablex7 ) * tabley1 +
@@ -1068,10 +1072,10 @@ size, say N=5, you can easily modify it by referring my code.
 		   	   ( data[x1+y7+z7]*tablex1 + data[x2+y7+z7]*tablex2 + data[x3+y7+z7]*tablex3 +
 		   	     data[x4+y7+z7]*tablex4 + data[x5+y7+z7]*tablex5 + data[x6+y7+z7]*tablex6 +
 		   	     data[x7+y7+z7]*tablex7 ) * tabley7 ) *tablez7;
-			     
+
 		w = (tablex1+tablex2+tablex3+tablex4+tablex5+tablex6+tablex7) *
 		    (tabley1+tabley2+tabley3+tabley4+tabley5+tabley6+tabley7) *
-		    (tablez1+tablez2+tablez3+tablez4+tablez5+tablez6+tablez7);	
+		    (tablez1+tablez2+tablez3+tablez4+tablez5+tablez6+tablez7);
 	}
         return pixel/w;
 }
@@ -1082,7 +1086,7 @@ complex<float> Util::extractpoint2(int nx, int ny, float nuxnew, float nuynew, E
 	int nxreal = nx - 2;
 	if (nxreal != ny)
 		throw ImageDimensionException("extractpoint requires ny == nx");
-	int nhalf = nxreal/2; 
+	int nhalf = nxreal/2;
 	int kbsize = kb.get_window_size();
 	int kbmin = -kbsize/2;
 	int kbmax = -kbmin;
@@ -1140,7 +1144,7 @@ complex<float> Util::extractpoint2(int nx, int ny, float nuxnew, float nuynew, E
 	for (int iy = iymin; iy <= iymax; iy++)
 		for (int ix = ixmin; ix <= ixmax; ix++)
 			wsum += wx[ix]*wy[iy];
-			
+
 	complex<float> result(0.f,0.f);
 	if ((ixn >= -kbmin) && (ixn <= nhalf-1-kbmax) && (iyn >= -nhalf-kbmin) && (iyn <= nhalf-1-kbmax)) {
 		// (xin,yin) not within window border from the edge
@@ -1193,19 +1197,19 @@ complex<float> Util::extractpoint2(int nx, int ny, float nuxnew, float nuynew, E
 	int nxreal = nx - 2;
 	if (nxreal != ny)
 		throw ImageDimensionException("extractpoint requires ny == nx");
-	int nhalf = nxreal/2; 
+	int nhalf = nxreal/2;
 	bool flip = false;
 	if (nuxnew < 0.f) {
 		nuxnew *= -1;
 		nuynew *= -1;
 		flip = true;
 	}
-	if (nuynew >= nhalf-0.5)  { 
-		nuynew -= nxreal; 
+	if (nuynew >= nhalf-0.5)  {
+		nuynew -= nxreal;
 	} else if (nuynew < -nhalf-0.5) {
-		nuynew += nxreal; 
+		nuynew += nxreal;
 	}
-	
+
 	// put (xnew,ynew) on a grid.  The indices will be wrong for
 	// the Fourier elements in the image, but the grid sizing will
 	// be correct.
@@ -1239,7 +1243,7 @@ complex<float> Util::extractpoint2(int nx, int ny, float nuxnew, float nuynew, E
 	complex<float> result(0.f,0.f);
 	for (int iy = 0; iy < 7; iy++) {
 		int iyp = iyn + iy - 3 ;
-		for (int ix = 0; ix < 7; ix++) { 
+		for (int ix = 0; ix < 7; ix++) {
 			int ixp = ixn + ix - 3;
 			float w = wx[ix]*wy[iy];
 			complex<float> val = fimage->cmplx(ixp,iyp);
@@ -1249,7 +1253,7 @@ complex<float> Util::extractpoint2(int nx, int ny, float nuxnew, float nuynew, E
 
 	if (flip)  result = conj(result)/wsum;
 	else result /= wsum;
-	
+
 	return result;
 }*/
 
@@ -1259,18 +1263,18 @@ complex<float> Util::extractpoint2(int nx, int ny, float nuxnew, float nuynew, E
 	int nxreal = nx - 2;
 	if (nxreal != ny)
 		throw ImageDimensionException("extractpoint requires ny == nx");
-	int nhalf = nxreal/2; 
+	int nhalf = nxreal/2;
 	bool flip = (nuxnew < 0.f);
 	if (flip) {
 		nuxnew *= -1;
 		nuynew *= -1;
 	}
-	if (nuynew >= nhalf-0.5)  { 
-		nuynew -= nxreal; 
+	if (nuynew >= nhalf-0.5)  {
+		nuynew -= nxreal;
 	} else if (nuynew < -nhalf-0.5) {
-		nuynew += nxreal; 
+		nuynew += nxreal;
 	}
-	
+
 	// put (xnew,ynew) on a grid.  The indices will be wrong for
 	// the Fourier elements in the image, but the grid sizing will
 	// be correct.
@@ -1332,13 +1336,13 @@ complex<float> Util::extractpoint2(int nx, int ny, float nuxnew, float nuynew, E
 					mirror = !mirror;
 				}
 				if (iyt > nhalf-1)  iyt -= nxreal;
-				if (iyt < -nhalf)   iyt += nxreal; 
-				float w = wx[ix]*wy[iy]; 
+				if (iyt < -nhalf)   iyt += nxreal;
+				float w = wx[ix]*wy[iy];
 				complex<float> val = fimage->cmplx(ixt,iyt);
 				if (mirror)  result += conj(val)*w;
 				else         result += val*w;
 			}
-		} 
+		}
 	}
 	if (flip)  result = conj(result)/wsum;
 	else result /= wsum;
@@ -1351,7 +1355,7 @@ complex<float> Util::extractpoint2(int nx, int ny, float nuxnew, float nuynew, E
 	int nxreal = nx - 2;
 	if (nxreal != ny)
 		throw ImageDimensionException("extractpoint requires ny == nx");
-	int nhalf = nxreal/2; 
+	int nhalf = nxreal/2;
 	bool flip = (nuxnew < 0.f);
 	if (flip) {
 		nuxnew *= -1;
@@ -1363,9 +1367,9 @@ complex<float> Util::extractpoint2(int nx, int ny, float nuxnew, float nuynew, E
 	int ixn = int(Util::round(nuxnew));
 	int iyn = int(Util::round(nuynew));
 	// set up some temporary weighting arrays
-	static float wy[7]; 
+	static float wy[7];
 	static float wx[7];
-	
+
 	float iynn = nuynew - iyn;
 	wy[0] = kb.i0win_tab(iynn+3);
 	wy[1] = kb.i0win_tab(iynn+2);
@@ -1375,7 +1379,7 @@ complex<float> Util::extractpoint2(int nx, int ny, float nuxnew, float nuynew, E
 	wy[5] = kb.i0win_tab(iynn-2);
 	wy[6] = kb.i0win_tab(iynn-3);
 
-	float ixnn = nuxnew - ixn;		
+	float ixnn = nuxnew - ixn;
 	wx[0] = kb.i0win_tab(ixnn+3);
 	wx[1] = kb.i0win_tab(ixnn+2);
 	wx[2] = kb.i0win_tab(ixnn+1);
@@ -1385,7 +1389,7 @@ complex<float> Util::extractpoint2(int nx, int ny, float nuxnew, float nuynew, E
 	wx[6] = kb.i0win_tab(ixnn-3);
 
 	float wsum = (wx[0]+wx[1]+wx[2]+wx[3]+wx[4]+wx[5]+wx[6])*(wy[0]+wy[1]+wy[2]+wy[3]+wy[4]+wy[5]+wy[6]);
-			
+
 	complex<float> result(0.f,0.f);
 
 	if ((ixn >= 3) && (ixn <= nhalf-3) && (iyn >= -nhalf+3) && (iyn <= nhalf-4)) {
@@ -1497,8 +1501,8 @@ float Util::triquad(float R, float S, float T, float* fdata)
     float  SP1  = (1+S);
     float  TP1  = (1+T);
 
-    float triquad =   
-    (-C8) * RST * RM1  * SM1  * TM1 * fdata[0] + 
+    float triquad =
+    (-C8) * RST * RM1  * SM1  * TM1 * fdata[0] +
 	( C4) * ST  * RSQ  * SM1  * TM1 * fdata[1] +
 	( C8) * RST * RP1  * SM1  * TM1 * fdata[2] +
 	( C4) * RT  * RM1  * SSQ  * TM1 * fdata[3] +
@@ -1530,7 +1534,7 @@ float Util::triquad(float R, float S, float T, float* fdata)
      return triquad;
 }
 
-Util::sincBlackman::sincBlackman(int M_, float fc_, int ntable_) 
+Util::sincBlackman::sincBlackman(int M_, float fc_, int ntable_)
 		: M(M_), fc(fc_), ntable(ntable_) {
 	// Sinc-Blackman kernel
 	build_sBtable();
@@ -1552,8 +1556,8 @@ void Util::sincBlackman::build_sBtable() {
 }
 
 Util::KaiserBessel::KaiserBessel(float alpha_, int K_, float r_, float v_,
-		                         int N_, float vtable_, int ntable_) 
-		: alpha(alpha_), v(v_), r(r_), N(N_), K(K_), vtable(vtable_), 
+		                         int N_, float vtable_, int ntable_)
+		: alpha(alpha_), v(v_), r(r_), N(N_), K(K_), vtable(vtable_),
 		  ntable(ntable_) {
 	// Default values are alpha=1.25, K=6, r=0.5, v = K/2
 	if (0.f == v) v = float(K)/2;
@@ -1722,12 +1726,12 @@ EMData* Util::Polar2D(EMData* image, vector<int> numr, string cmode){
 void Util::alrq(float *xim,  int nsam , int nrow , int *numr,
           float *circ, int lcirc, int nring, char mode)
 {*/
-/* 
-c                                                                     
-c  purpose:                                                          
-c                                                                   
+/*
+c
+c  purpose:
+c
 c  resmaple to polar coordinates
-c                                                                  
+c
 */
 	//  dimension	      xim(nsam,nrow),circ(lcirc)
 	//  integer	      numr(3,nring)
@@ -1823,7 +1827,7 @@ EMData* Util::Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, 
 	     	     float a=quadri(xold,yold,nsam,nrow,xim);
 	     	     b = b + a + iii - jjj;
 	     }
-	} 
+	}
 	end_time = clock();
 	std::cout << "Elapsed time for 10^10 quadri is " << (double(end_time)-double(start_time))/CLOCKS_PER_SEC << " seconds. Results is " << b << std::endl;
 	exit(0); */
@@ -1833,7 +1837,7 @@ EMData* Util::Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, 
 
 		// "F" means a full circle interpolation
 		// "H" means a half circle interpolation
-		 
+
 		l = numr(3,it);
 		if ( mode == 'h' || mode == 'H' ) lt = l / 2;
 		else                              lt = l / 4;
@@ -1863,7 +1867,7 @@ EMData* Util::Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, 
 			Assert(lt+lt+lt+kcirc <= lcirc );
 			circ(lt+lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim); // Sampling on 180 degree
 		}
-	
+
 		for (jt=1; jt<=nsim; jt++) {
 			fi   = static_cast<float>(dfi * jt);
 			x    = sin(fi) * inr;
@@ -1873,7 +1877,7 @@ EMData* Util::Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, 
 			yold = y+cnr2;
 
 			Assert( jt+kcirc <= lcirc );
-			circ(jt+kcirc) = quadri(xold,yold,nsam,nrow,xim);      // Sampling on the first 
+			circ(jt+kcirc) = quadri(xold,yold,nsam,nrow,xim);      // Sampling on the first
 
 			xold = y+cns2;
 			yold = -x+cnr2;
@@ -1924,10 +1928,10 @@ c  purpose: linear interpolation
 //                 RBUF(K) = YDIF*(BUF(NADDR+NSAM)*XREM
 //     &                    +BUF(NADDR+NSAM+1)*XDIF)
 //     &                    +YREM*(BUF(NADDR)*XREM + BUF(NADDR+1)*XDIF)
-	bilinear = ydif*(xim(ixold,iyold+1)*xrem + xim(ixold+1,iyold+1)*xdif) + 
+	bilinear = ydif*(xim(ixold,iyold+1)*xrem + xim(ixold+1,iyold+1)*xdif) +
 	  				yrem*(xim(ixold,iyold)*xrem+xim(ixold+1,iyold)*xdif);
 
-    return bilinear; 
+    return bilinear;
 }
 */
 	float xdif, ydif;
@@ -1970,8 +1974,8 @@ void Util::alrl_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
 		nsim  = lt - 1;
 		dfi   = dpi / (nsim+1);
 		kcirc = numr(2,it);
-		    
-		    
+
+
 		xold  = 0.0f+cns2;
 		yold  = inr+cnr2;
 
@@ -2011,7 +2015,7 @@ void Util::alrl_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
 
 				xold = -y+cns2;
 				yold = x+cnr2;
-				circ(jt+lt+lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);  
+				circ(jt+lt+lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);
 			}
 		} // end for jt
 	} //end for it
@@ -2034,18 +2038,18 @@ void Util::alrl_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
       yq  = inr;
 
       l = numr(3,it);
-      if ( mode == 'h' || mode == 'H' ) { 
+      if ( mode == 'h' || mode == 'H' ) {
          lt = l / 2;
       }
       else { // if ( mode == 'f' || mode == 'F' )
          lt = l / 4;
-      } 
+      }
 
       nsim  = lt - 1;
       dfi   = dpi / (nsim+1);
       kcirc = numr(2,it);
-	  
-	  
+
+
 	xold = (int) (0.0+cns2);
 	yold = (int) (inr+cnr2);
 
@@ -2064,7 +2068,7 @@ void Util::alrl_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
          yold = (int) (0.0+cnr2);
          circ(lt+lt+lt+kcirc) = xim(xold, yold);
       }
-      
+
       for (jt=1; jt<=nsim; jt++) {
          fi   = dfi * jt;
          x    = sin(fi) * yq;
@@ -2085,7 +2089,7 @@ void Util::alrl_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
 
             xold  = (int) (-y+cns2);
             yold = (int) (x+cnr2);
-            circ(jt+lt+lt+lt+kcirc) = xim(xold, yold);  
+            circ(jt+lt+lt+lt+kcirc) = xim(xold, yold);
          }
       } // end for jt
    } //end for it
@@ -2130,7 +2134,7 @@ EMData* Util::Polar2Dmi(EMData* image, float cns2, float cnr2, vector<int> numr,
 		yold  = static_cast<float>(inr);
 		circ(kcirc) = get_pixel_conv_new(nx,ny,nz,2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,fimage,kb);
 //      circ(kcirc) = image->get_pixel_conv(2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,kb);
-      
+
 		xold  = static_cast<float>(inr);
 		yold  = 0.0f;
 		circ(lt+kcirc) = get_pixel_conv_new(nx,ny,nz,2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,fimage,kb);
@@ -2147,7 +2151,7 @@ EMData* Util::Polar2Dmi(EMData* image, float cns2, float cnr2, vector<int> numr,
 		circ(lt+lt+lt+kcirc) = get_pixel_conv_new(nx,ny,nz,2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,fimage,kb);
 //         circ(lt+lt+lt+kcirc) = image->get_pixel_conv(2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,kb);
 	}
-      
+
 	for (jt=1;jt<=nsim;jt++) {
 		fi   = static_cast<float>(dfi * jt);
 		x    = sin(fi) * yq;
@@ -2183,7 +2187,7 @@ EMData* Util::Polar2Dmi(EMData* image, float cns2, float cnr2, vector<int> numr,
 
         A set of 1-D power-of-two FFTs
 	Pawel & Chao 01/20/06
-	
+
 fftr_q(xcmplx,nv)
   single precision
 
@@ -2369,7 +2373,7 @@ void Util::fftc_q(float *br, float *bi, int ln, int ks)
 	//  dimension  br(1),bi(1)
 
 	int b3,b4,b5,b6,b7,b56;
-	int n, k, l, j, i, ix0, ix1; 
+	int n, k, l, j, i, ix0, ix1;
 	float rni, tr1, ti1, tr2, ti2, cc, c, ss, s, t, x2, x3, x4, x5, sgn;
 	int status=0;
 
@@ -2438,7 +2442,7 @@ L14:
    l++;
    ss=sgn*tab1(l);
    s=ss;
-L16: 
+L16:
    b5=b6+b4;
    b4=2*b6;
    b56=b5-b6;
@@ -2511,10 +2515,10 @@ L26:
    if (b5 >= b4)  goto  L22;
    if (b4 < b6)   goto  L24;
 EXIT:
-   status = 0; 
+   status = 0;
 }
 
-void  Util::fftr_q(float *xcmplx, int nv) 
+void  Util::fftr_q(float *xcmplx, int nv)
 {
    // dimension xcmplx(2,1); xcmplx(1,i) --- real, xcmplx(2,i) --- imaginary
 
@@ -2596,7 +2600,7 @@ void  Util::fftr_q(float *xcmplx, int nv)
 }
 
 // -------------------------------------------
-void  Util::fftr_d(double *xcmplx, int nv) 
+void  Util::fftr_d(double *xcmplx, int nv)
 {
 	// double precision  x(2,1)
 	int    i1, i2,  nu, inv, nu1, n, isub, n2, i;
@@ -2671,10 +2675,10 @@ void  Util::fftr_d(double *xcmplx, int nv)
 			xcmplx(1,i2)=0.5*((tr1+tr2)+(tr1-tr2)*s+(ti1+ti2)*c);
 			xcmplx(2,i1)=0.5*((ti1-ti2)+(tr1-tr2)*c-(ti1+ti2)*s);
 			xcmplx(2,i2)=0.5*(-(ti1-ti2)+(tr1-tr2)*c-(ti1+ti2)*s);
-		} 
+		}
 		fftc_d(&xcmplx(1,1),&xcmplx(2,1),nu1,-2);
-	} 
-} 
+	}
+}
 #undef  tab1
 #undef  xcmplx
 #undef  br
@@ -2684,7 +2688,7 @@ void  Util::fftr_d(double *xcmplx, int nv)
 void Util::Frngs(EMData* circp, vector<int> numr){
 	int nring = numr.size()/3;
 	float *circ = circp->get_data();
-	int i, l; 
+	int i, l;
 	for (i=1; i<=nring;i++) {
 
 #ifdef _WIN32
@@ -2700,7 +2704,7 @@ void Util::Frngs(EMData* circp, vector<int> numr){
 void Util::Frngs_inv(EMData* circp, vector<int> numr){
 	int nring = numr.size()/3;
 	float *circ = circp->get_data();
-	int i, l; 
+	int i, l;
 	for (i=1; i<=nring;i++) {
 
 #ifdef _WIN32
@@ -2726,7 +2730,7 @@ void Util::prb1d(double *b, int npoint, float *pos) {
 		c2 = 49.*b(1) + 6.*b(2) - 21.*b(3) - 32.*b(4) - 27.*b(5)
 		     - 6.*b(6) + 31.*b(7);
 		c3 = 5.*b(1) - 3.*b(3) - 4.*b(4) - 3.*b(5) + 5.*b(7);
-	} 
+	}
 	else if (npoint == 5) {
 		c2 = (74.*b(1) - 23.*b(2) - 60.*b(3) - 37.*b(4)
 		   + 46.*b(5) ) / (-70.);
@@ -2786,7 +2790,7 @@ c       automatic arrays
 
 	q = (double*)calloc(maxrin, sizeof(double));
 	t = (float*)calloc(maxrin, sizeof(float));
-     
+
 //   cout << *qn <<"  " <<*tot<<"  "<<ip<<endl;
 	for (i=1; i<=nring; i++) {
 		numr3i = numr(3,i);
@@ -2805,7 +2809,7 @@ c       automatic arrays
 					jc = j+numr2i-1;
 					t(j) =(circ1(jc))*circ2(jc)-(circ1(jc+1))*circ2(jc+1);
 					t(j+1) = -(circ1(jc))*circ2(jc+1)-(circ1(jc+1))*circ2(jc);
-				} 
+				}
 			} else {
 				for (j=3;j<=numr3i;j=j+2) {
 					jc = j+numr2i-1;
@@ -2828,7 +2832,7 @@ c       automatic arrays
 					jc = j+numr2i-1;
 					t(j) = (circ1(jc))*circ2(jc) + (circ1(jc+1))*circ2(jc+1);
 					t(j+1) = -(circ1(jc))*circ2(jc+1) + (circ1(jc+1))*circ2(jc);
-				} 
+				}
 			}
 			for (j = 1; j <= maxrin; j++) q(j) += t(j);
 		}
@@ -2841,7 +2845,7 @@ c       automatic arrays
 	   if (q(j) >= qn) {
 		  qn = q(j); jtot = j;
 	   }
-	} 
+	}
 
 	for (k=-3; k<=3; k++) {
 		j = (jtot+k+maxrin-1)%maxrin + 1;
@@ -2893,12 +2897,12 @@ c       automatic arrays
 
 	q = (double*)calloc(maxrin, sizeof(double));
 	t = (float*)calloc(maxrin, sizeof(float));
-     
+
 //   cout << *qn <<"  " <<*tot<<"  "<<ip<<endl;
 	for (i=1;i<=nring;i++) {
 		numr3i = numr(3,i);
 		numr2i = numr(2,i);
-	
+
 		t(1) = circ1(numr2i) * circ2(numr2i);
 
 		if (numr3i != maxrin) {
@@ -2935,7 +2939,7 @@ c       automatic arrays
 			    	jc = j+numr2i-1;
 			    	t(j) = (circ1(jc))*circ2(jc) + (circ1(jc+1))*circ2(jc+1);
 			    	t(j+1) = -(circ1(jc))*circ2(jc+1) + (circ1(jc+1))*circ2(jc);
-				} 
+				}
 			}
 			for (j = 1; j <= maxrin; j++) q(j) += t(j)*w[i-1];
 		}
@@ -2950,7 +2954,7 @@ c       automatic arrays
 			qn = q(j);
 			jtot = j;
 		}
-	} 
+	}
 
 	for (k=-3; k<=3; k++) {
 		j = (jtot+k+maxrin-1)%maxrin + 1;
@@ -3013,7 +3017,7 @@ c
 	//  c - straight  = circ1 * conjg(circ2)
 	//  zero q array
 
-	q = (double*)calloc(maxrin,sizeof(double));  
+	q = (double*)calloc(maxrin,sizeof(double));
 
 	//   t - mirrored  = conjg(circ1) * conjg(circ2)
 	//   zero t array
@@ -3022,7 +3026,7 @@ c
    //   premultiply  arrays ie( circ12 = circ1 * circ2) much slower
 	for (i=1; i<=nring; i++) {
 
-		numr3i = numr(3,i);   // Number of samples of this ring 
+		numr3i = numr(3,i);   // Number of samples of this ring
 		numr2i = numr(2,i);   // The beginning point of this ring
 
 		t1   = circ1(numr2i) * circ2(numr2i);
@@ -3043,10 +3047,10 @@ c
 
 // Here, (c1+c2i)*conj(d1+d2i) = (c1*d1+c2*d2)+(-c1*d2+c2*d1)i
 //   			          ----- -----    ----- -----
-//      			   t1     t2      t3    t4 	
+//      			   t1     t2      t3    t4
 // Here, conj(c1+c2i)*conj(d1+d2i) = (c1*d1-c2*d2)+(-c1*d2-c2*d1)i
 //     		                      ----- -----    ----- -----
-//     			               t1    t2       t3    t4 	
+//     			               t1    t2       t3    t4
 
 			c1     = circ1(jc);
 			c2     = circ1(jc+1);
@@ -3062,7 +3066,7 @@ c
 			q(j+1) += -t3 + t4;
 			t(j)   += t1 - t2;
 			t(j+1) += -t3 - t4;
-		} 
+		}
 	}
 	//for (j=1; j<=maxrin; j++) cout <<"  "<<j<<"   "<<q(j) <<"   "<<t(j) <<endl;
 	fftr_d(q,ip);
@@ -3157,12 +3161,12 @@ c
 	//  c - straight  = circ1 * conjg(circ2)
 	//  zero q array
 
-	q = (double*)calloc(maxrin,sizeof(double));  
+	q = (double*)calloc(maxrin,sizeof(double));
 
 			//   premultiply  arrays ie( circ12 = circ1 * circ2) much slower
 	for (i=1; i<=nring; i++) {
 
-		numr3i = numr(3,i);   // Number of samples of this ring 
+		numr3i = numr(3,i);   // Number of samples of this ring
 		numr2i = numr(2,i);   // The beginning point of this ring
 
 		q(1) += circ1(numr2i) * circ2(numr2i);
@@ -3175,8 +3179,8 @@ c
 
 // Here, (c1+c2i)*conj(d1+d2i) = (c1*d1+c2*d2)+(-c1*d2+c2*d1)i
 //   			          ----- -----    ----- -----
-//      			   t1     t2      t3    t4 	
-	
+//      			   t1     t2      t3    t4
+
 			c1     = circ1(jc);
 			c2     = circ1(jc+1);
 			d1     = circ2(jc);
@@ -3255,7 +3259,7 @@ c
 #else
 	ip = -(int)(log2(maxrin));
 #endif	//_WIN32
-	
+
 	//  q - straight  = circ1 * conjg(circ2)
 
 	//   t - mirrored  = conjg(circ1) * conjg(circ2)
@@ -3263,7 +3267,7 @@ c
 	//   premultiply  arrays ie( circ12 = circ1 * circ2) much slower
 
 	for (i=1; i<=nring; i++) {
-	
+
 		numr3i = numr(3,i);
 		numr2i = numr(2,i);
 
@@ -3297,9 +3301,9 @@ c
 			q(j+1) += - t3 + t4;
 			t(j)   += t1 - t2;
 			t(j+1) += - t3 - t4;
-		} 
+		}
 	}
-	
+
 	// straight
 	fftr_d(q,ip);
 
@@ -3353,13 +3357,13 @@ c
 	ip = -(int)(log2(maxrin));
 #endif	//_WIN32
 	for (int i=1; i<=maxrin; i++)  {q(i) = 0.0f; t(i) = 0.0f;}
-	
+
 	//  q - straight  = circ1 * conjg(circ2)
 
 	//   t - mirrored  = conjg(circ1) * conjg(circ2)
 
 	for (i=1; i<=nring; i++) {
-	
+
 		numr3i = numr(3,i);
 		numr2i = numr(2,i);
 
@@ -3393,7 +3397,7 @@ c
 			q(j+1) += -t3 + t4;
 			t(j)   += t1 - t2;
 			t(j+1) += -t3 - t4;
-		} 
+		}
 	}
 	// straight
 	fftr_q(q,ip);
@@ -3434,11 +3438,11 @@ EMData* Util::Crosrng_msg_s(EMData* circ1, EMData* circ2, vector<int> numr)
 #else
 	ip = -(int)(log2(maxrin));
 #endif	//_WIN32
-	
+
 	 //  q - straight  = circ1 * conjg(circ2)
 
 	for (i=1;i<=nring;i++) {
-		 
+
 		numr3i = numr(3,i);
 		numr2i = numr(2,i);
 
@@ -3468,7 +3472,7 @@ EMData* Util::Crosrng_msg_s(EMData* circ1, EMData* circ2, vector<int> numr)
 
 			q(j)   = q(j)	+ t1 + t2;
 			q(j+1) = q(j+1) - t3 + t4;
-		} 
+		}
 	}
 
 	// straight
@@ -3514,11 +3518,11 @@ EMData* Util::Crosrng_msg_m(EMData* circ1, EMData* circ2, vector<int> numr)
 #else
 	ip = -(int)(log2(maxrin));
 #endif	//_WIN32
-	
+
 	 //   t - mirrored  = conjg(circ1) * conjg(circ2)
 
 	for (i=1;i<=nring;i++) {
-		
+
 		numr3i = numr(3,i);
 		numr2i = numr(2,i);
 
@@ -3545,7 +3549,7 @@ EMData* Util::Crosrng_msg_m(EMData* circ1, EMData* circ2, vector<int> numr)
 
 			t(j)   = t(j)	+ t1 - t2;
 			t(j+1) = t(j+1) - t3 - t4;
-		} 
+		}
 	}
 
 	// mirrored
@@ -3579,8 +3583,8 @@ EMData* Util::Crosrng_msg_m(EMData* circ1, EMData* circ2, vector<int> numr)
 
 float Util::ener(EMData* ave, vector<int> numr) {
 	ENTERFUNC;
-	long double ener,en;	
-		
+	long double ener,en;
+
 	int nring = numr.size()/3;
 	float *aveptr = ave->get_data();
 
@@ -3592,7 +3596,7 @@ float Util::ener(EMData* ave, vector<int> numr) {
 		en = tq*(aveptr[np]*aveptr[np]+aveptr[np+1]*aveptr[np+1])*0.5;
 		for (int j=np+2; j<np+numr3i-1; j++) en += tq*aveptr[j]*aveptr[j];
 		ener += en/numr3i;
-	}            
+	}
 	EXITFUNC;
 	return static_cast<float>(ener);
 }
@@ -3601,15 +3605,15 @@ float Util::ener_tot(const vector<EMData*>& data, vector<int> numr, vector<float
 	ENTERFUNC;
 	long double ener, en;
 	float arg, cs, si;
-	
-	int nima = data.size();	
+
+	int nima = data.size();
 	int nring = numr.size()/3;
 	int maxrin = numr(3,nring);
 
 	ener = 0.0;
 	for (int i=1; i<=nring; i++) {
 		int numr3i = numr(3,i);
-		int np     = numr(2,i)-1;		
+		int np     = numr(2,i)-1;
 		float tq = static_cast<float>(PI2*numr(1,i)/numr3i);
 		float temp1 = 0.0, temp2 = 0.0;
 		for (int kk=0; kk<nima; kk++) {
@@ -3621,7 +3625,7 @@ float Util::ener_tot(const vector<EMData*>& data, vector<int> numr, vector<float
 		for (int j=2; j<numr3i; j+=2) {
 			float tempr = 0.0, tempi = 0.0;
 			for (int kk=0; kk<nima; kk++) {
-				float *ptr = data[kk]->get_data();		
+				float *ptr = data[kk]->get_data();
 				arg = static_cast<float>( PI2*(tot[kk]-1.0)*(j/2)/maxrin );
 				cs = cos(arg);
 				si = sin(arg);
@@ -3629,9 +3633,9 @@ float Util::ener_tot(const vector<EMData*>& data, vector<int> numr, vector<float
 				tempi += ptr[np + j]*si + ptr[np + j +1]*cs;
 			}
 			en += tq*(tempr*tempr+tempi*tempi);
-		} 
+		}
 		ener += en/numr3i;
-	}            
+	}
 	EXITFUNC;
 	return static_cast<float>(ener);
 }
@@ -3871,7 +3875,7 @@ vector<double> Util::cml_weights(const vector<float>& cml){
     {
         angs[i].iphi = int( NBIN*cml[2*i] );
         angs[i].itht = int( NBIN*cml[2*i+1] );
-        if( angs[i].itht == 180*NBIN ) 
+        if( angs[i].itht == 180*NBIN )
             angs[i].itht = 0;
         angs[i].id = i;
     }
@@ -3897,7 +3901,7 @@ vector<double> Util::cml_weights(const vector<float>& cml){
         {
             curt_iphi = angs[i].iphi;
             curt_itht = angs[i].itht;
-            
+
             newphi.push_back( float(curt_iphi)/NBIN );
             newtht.push_back( float(curt_itht)/NBIN );
             indices.push_back( vector<int>(1,angs[i].id) );
@@ -3905,10 +3909,10 @@ vector<double> Util::cml_weights(const vector<float>& cml){
     }
 
     //std::cout << "# of indpendent ang: " << newphi.size() << std::endl;
-  
+
 
     int num_agl = newphi.size();
-  
+
     if(num_agl>2){
 	vector<double> w=Util::vrdg(newphi, newtht);
         Assert( w.size()==newphi.size() );
@@ -3930,7 +3934,7 @@ vector<double> Util::cml_weights(const vector<float>& cml){
                 weights[id] = w[i]/indices[i].size();
                 //std::cout << id << " ";
             }
- 
+
             //std::cout << ")" << std::endl;
 
         }
@@ -3952,7 +3956,7 @@ vector<double> Util::cml_weights(const vector<float>& cml){
 
 //helper function for Cml
 vector<float> Util::cml_spin(int n_psi, int i_prj, int n_prj, vector<float> weights, vector<int> com, const vector<EMData*>& data){
-   
+
     vector<float> res(2);    // [best_disc, best_ipsi]
     double best_disc=1.0e20;
     int best_psi=-1;
@@ -3975,7 +3979,7 @@ vector<float> Util::cml_spin(int n_psi, int i_prj, int n_prj, vector<float> weig
 	double L_tot=0.0;
 	for(int i=0; i<=n_prj-2; i++){
 	    for(int j=i+1; j<=n_prj-1; j++){
-		if(i==i_prj||j==i_prj){L_tot = L_tot + data[i]->cm_euc(data[j], com[n], com[n+1]) * weights[int(n/2)];}   
+		if(i==i_prj||j==i_prj){L_tot = L_tot + data[i]->cm_euc(data[j], com[n], com[n+1]) * weights[int(n/2)];}
 		n+=2;
 	    }
 
@@ -3994,7 +3998,7 @@ vector<float> Util::cml_spin(int n_psi, int i_prj, int n_prj, vector<float> weig
 
 //helper function for Cml
 vector<int> Util::cml_line_pos(float phi1, float theta1, float psi1, float phi2, float theta2, float psi2, int nangle){
-    
+
     vector<int> Res(2);
     Dict d1;
     Dict d2;
@@ -4102,9 +4106,9 @@ float Util::SqEuc_dist(EMData* image, EMData* with){
 	    double temp = x_data[i]- y_data[i];
 	    result += temp*temp;
 	}
-	
+
 	result/=totsize;
-	
+
 	EXITFUNC;
 	return static_cast<float>(result);
 
@@ -4115,7 +4119,7 @@ float Util::SqEuc_dist(EMData* image, EMData* with){
 Dict Util::min_dist_real(EMData* image, const vector<EMData*>& data) {
 	ENTERFUNC;
 
-	int nima = data.size();	
+	int nima = data.size();
 	vector<float> res(nima);
 	double result = 0.;
 	double valmin = 1.0e20;
@@ -4140,8 +4144,8 @@ Dict Util::min_dist_real(EMData* image, const vector<EMData*>& data) {
 
 	Dict retvals;
 	retvals["dist"] = res;
-	retvals["pos"]  = valpos;  
-            
+	retvals["pos"]  = valpos;
+
 	EXITFUNC;
 	return retvals;
 
@@ -4151,7 +4155,7 @@ Dict Util::min_dist_real(EMData* image, const vector<EMData*>& data) {
 Dict Util::min_dist_four(EMData* image, const vector<EMData*>& data) {
 	ENTERFUNC;
 
-	int nima = data.size();	
+	int nima = data.size();
 	vector<float> res(nima);
 	double result = 0.;
 	double valmin = 1.0e20;
@@ -4169,7 +4173,7 @@ Dict Util::min_dist_four(EMData* image, const vector<EMData*>& data) {
 	int ny  = data[kk]->get_ysize();
 	nx = (nx - 2 + data[kk]->is_fftodd()); // nx is the real-space size of the input image
 	int lsd2 = (nx + 2 - nx%2) ; // Extended x-dimension of the complex image
-	
+
 	int ixb = 2*((nx+1)%2);
 	int iyb = ny%2;
 	int iz = 0;
@@ -4191,23 +4195,23 @@ Dict Util::min_dist_four(EMData* image, const vector<EMData*>& data) {
 		result += (x_data[ii] - y_data[ii])*double(x_data[ii] - y_data[ii]);
 		result += (x_data[ii+1] - y_data[ii+1])*double(x_data[ii+1] - y_data[ii+1]);
 	    }
-	    
+
 	}
 	result *= 2;
 	result += (x_data[0] - y_data[0])*double(x_data[0] - y_data[0]);
 	if(ny%2 == 0) {
 	    int ii = (ny/2  + iz * ny)* lsd2;
-	    result += (x_data[ii] - y_data[ii])*double(x_data[ii] - y_data[ii]);				
+	    result += (x_data[ii] - y_data[ii])*double(x_data[ii] - y_data[ii]);
 	}
 	if(nx%2 == 0) {
 	    int ii = lsd2 - 2 + (0  + iz * ny)* lsd2;
-	    result += (x_data[ii] - y_data[ii])*double(x_data[ii] - y_data[ii]);				
+	    result += (x_data[ii] - y_data[ii])*double(x_data[ii] - y_data[ii]);
 	    if(ny%2 == 0) {
 		int ii = lsd2 - 2 +(ny/2  + iz * ny)* lsd2;
-		result += (x_data[ii] - y_data[ii])*double(x_data[ii] - y_data[ii]);				
+		result += (x_data[ii] - y_data[ii])*double(x_data[ii] - y_data[ii]);
 	    }
 	}
-		
+
 	result /= (long int)nx*(long int)ny*(long int)nx*(long int)ny;
 	res[kk] = (float)result;
 
@@ -4217,8 +4221,8 @@ Dict Util::min_dist_four(EMData* image, const vector<EMData*>& data) {
 
 	Dict retvals;
 	retvals["dist"] = res;
-	retvals["pos"]  = valpos;  
-            
+	retvals["pos"]  = valpos;
+
 	EXITFUNC;
 	return retvals;
 }
@@ -4233,26 +4237,26 @@ EMData* Util::decimate(EMData* img, int x_step, int y_step, int z_step)
 		throw NullPointerException("NULL input image");
 	}
 	/* ============================== */
-	
+
 	// Get the size of the input image
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	/* ============================== */
-	
-	
+
+
 	/* Exception Handle */
 	if ((x_step-1 > nx/2 || y_step-1 > ny/2 || z_step-1 > nz/2) || (x_step-1)<0 || (y_step-1)<0 || (z_step-1)<0)
 	{
 		LOGERR("Parameters for decimation cannot exceed the center of the image.");
-		throw ImageDimensionException("Parameters for decimation cannot exceed the center of the image.");	 
+		throw ImageDimensionException("Parameters for decimation cannot exceed the center of the image.");
 	}
 	/* ============================== */
-	
-	
+
+
 	/*    Calculation of the start point */
 	int new_st_x=(nx/2)%x_step, new_st_y=(ny/2)%y_step, new_st_z=(nz/2)%z_step;
 	/* ============================*/
-	
-	
+
+
 	/* Calculation of the size of the decimated image */
 	int rx=2*(nx/(2*x_step)), ry=2*(ny/(2*y_step)), rz=2*(nz/(2*z_step));
 	int r1=int(ceil((nx-(x_step*rx))/(1.f*x_step))), r2=int(ceil((ny-(y_step*ry))/(1.f*y_step)));
@@ -4262,8 +4266,8 @@ EMData* Util::decimate(EMData* img, int x_step, int y_step, int z_step)
 	if(r3>1){r3=1;}
 	int new_nx=rx+r1, new_ny=ry+r2, new_nz=rz+r3;
 	/* ===========================================*/
-	
-	
+
+
 	EMData* img2 = new EMData();
 	img2->set_size(new_nx,new_ny,new_nz);
 	float *new_ptr = img2->get_data();
@@ -4271,7 +4275,7 @@ EMData* Util::decimate(EMData* img, int x_step, int y_step, int z_step)
 	int iptr, jptr, kptr = 0;
 	for (int k=new_st_z; k<nz; k+=z_step) {jptr=0;
 		for (int j=new_st_y; j<ny; j+=y_step) {iptr=0;
-			for (int i=new_st_x; i<nx; i+=x_step) {				
+			for (int i=new_st_x; i<nx; i+=x_step) {
 				new_ptr(iptr,jptr,kptr) = old_ptr(i,j,k);
 			iptr++;}
 		jptr++;}
@@ -4289,11 +4293,11 @@ EMData* Util::window(EMData* img,int new_nx,int new_ny, int new_nz, int x_offset
 	/* Exception Handle */
 	if (!img) throw NullPointerException("NULL input image");
 	/* ============================== */
-	
+
 	// Get the size of the input image
 	int nx=img->get_xsize(), ny=img->get_ysize(), nz=img->get_zsize();
 	/* ============================== */
-	
+
 	/* Exception Handle */
 	if(new_nx>nx || new_ny>ny || new_nz>nz)
 		throw ImageDimensionException("The size of the windowed image cannot exceed the input image size.");
@@ -4305,7 +4309,7 @@ EMData* Util::window(EMData* img,int new_nx,int new_ny, int new_nz, int x_offset
 
 	/*    Calculation of the start point */
 	int  new_st_x = nx/2-new_nx/2 + x_offset,
-	     new_st_y = ny/2-new_ny/2 + y_offset,  
+	     new_st_y = ny/2-new_ny/2 + y_offset,
 	     new_st_z = nz/2-new_nz/2 + z_offset;
 	/* ============================== */
 
@@ -4356,10 +4360,10 @@ EMData *Util::pad(EMData* img,int new_nx, int new_ny, int new_nz, int x_offset, 
 	float *outp = pading->get_data();
 
 
-	/* Calculation of the average and the circumference values for background substitution 
+	/* Calculation of the average and the circumference values for background substitution
 	=======================================================================================*/
 	float background;
-	
+
 	if (strcmp(params,"average")==0) background = img->get_attr("mean");
 	else if (strcmp(params,"circumference")==0) {
 		float sum1=0.0f;
@@ -4382,7 +4386,7 @@ EMData *Util::pad(EMData* img,int new_nx, int new_ny, int new_nz, int x_offset, 
 			}
 		}
 		background = sum1/cnt;
-	} else {	
+	} else {
 		background = static_cast<float>( atof( params ) );
 	}
 	/*=====================================================================================*/
@@ -4399,12 +4403,12 @@ EMData *Util::pad(EMData* img,int new_nx, int new_ny, int new_nz, int x_offset, 
 	new_st_x=int((new_nx/2-nx/2)  + x_offset);
 	new_st_y=int((new_ny/2-ny/2)  + y_offset);
 	new_st_z=int((new_nz/2-nz/2)  + z_offset);
-	/* ============================== */					
+	/* ============================== */
 
 	for (int k=0;k<nz;k++)
 		for(int j=0;j<ny;j++)
 			for(int i=0;i<nx;i++)
-				outp(i,j,k)=inp(i,j,k); 
+				outp(i,j,k)=inp(i,j,k);
 	pading->update();
 	return pading;
 }
@@ -4425,10 +4429,10 @@ void Util::colreverse(float* beg, float* end, int nx) {
 	delete[] tmp;
 }
 
-void Util::slicereverse(float *beg, float *end, int nx,int ny) 
+void Util::slicereverse(float *beg, float *end, int nx,int ny)
 {
         int nxy = nx*ny;
-	colreverse(beg, end, nxy);	 
+	colreverse(beg, end, nxy);
 }
 
 
@@ -4437,8 +4441,8 @@ void Util::cyclicshift(EMData *image, Dict params) {
  Performs inplace integer cyclic shift as specified by the "dx","dy","dz" parameters on a 3d volume.
  Implements the inplace swapping using reversals as descibed in  also:
     http://www.csse.monash.edu.au/~lloyd/tildeAlgDS/Intro/Eg01/
-    
- 
+
+
 * @author  Phani Ivatury
 * @date 18-2006
 * @see http://www.csse.monash.edu.au/~lloyd/tildeAlgDS/Intro/Eg01/
@@ -4451,17 +4455,17 @@ void Util::cyclicshift(EMData *image, Dict params) {
 *    m = 3 (shift left three places)
 *
 * Reverse the items from 0..m-1 and m..N-1:
-* 
+*
 * 30   20   10   100  90   80   70   60   50   40
 *
 * Now reverse the entire sequence:
 *
 * 40   50   60   70   80   90   100  10   20   30
 
-    
+
     cycl_shift() in libpy/fundementals.py calls this function
-    
-    Usage: 
+
+    Usage:
     EMData *im1 = new EMData();
     im1->set_size(70,80,85);
     im1->to_one();
@@ -4471,7 +4475,7 @@ void Util::cyclicshift(EMData *image, Dict params) {
 */
 
 	if (image->is_complex()) throw ImageFormatException("Real image required for IntegerCyclicShift2DProcessor");
- 
+
 	int dx = params["dx"];
 	int dy = params["dy"];
 	int dz = params["dz"];
@@ -4485,12 +4489,12 @@ void Util::cyclicshift(EMData *image, Dict params) {
 	if (dy < 0) dy += ny;
 	int nz = image->get_zsize();
 	dz %= nz;
-	if (dz < 0) dz += nz;	
+	if (dz < 0) dz += nz;
 
 	int mx = -(dx - nx);
 	int my = -(dy - ny);
 	int mz = -(dz - nz);
-	
+
 	float* data = image->get_data();
 	// x-reverses
 	if (mx != 0) {
@@ -4504,7 +4508,7 @@ void Util::cyclicshift(EMData *image, Dict params) {
 	        	}
 	}
 	// y-reverses
-	if (my != 0) {  
+	if (my != 0) {
 		for (int iz = 0; iz < nz; iz++) {
 	        	int offset = nx*ny*iz;
 			colreverse(&data[offset], &data[offset + my*nx], nx);
@@ -4517,7 +4521,7 @@ void Util::cyclicshift(EMData *image, Dict params) {
 		slicereverse(&data[mz*ny*nx], &data[nz*ny*nx], nx, ny);
 		slicereverse(&data[0], &data[nz*ny*nx], nx ,ny);
 	}
-	image->update();	 
+	image->update();
 }
 
 //-----------------------------------------------------------------------------------------------------------------------
@@ -4580,23 +4584,23 @@ vector<float> Util::histogram(EMData* image, EMData* mask, int nbins, float hmin
 	}
 	return freq;
 }
-		
+
 Dict Util::histc(EMData *ref,EMData *img, EMData *mask)
 {
 	/* Exception Handle */
 	if (img->is_complex() || ref->is_complex())
                 throw ImageFormatException("Cannot do Histogram on Fourier Image");
-	
+
 	if(mask != NULL){
 		if(img->get_xsize() != mask->get_xsize() || img->get_ysize() != mask->get_ysize() || img->get_zsize() != mask->get_zsize())
 			throw ImageDimensionException("The size of mask image should be of same size as the input image"); }
 	/* ===================================================== */
-	
+
 	/* Image size calculation */
 	int size_ref = ((ref->get_xsize())*(ref->get_ysize())*(ref->get_zsize()));
 	int size_img = ((img->get_xsize())*(img->get_ysize())*(img->get_zsize()));
 	/* ===================================================== */
-	
+
 	/* The reference image attributes */
 	float *ref_ptr = ref->get_data();
 	float ref_h_min = ref->get_attr("minimum");
@@ -4604,62 +4608,62 @@ Dict Util::histc(EMData *ref,EMData *img, EMData *mask)
 	float ref_h_avg = ref->get_attr("mean");
 	float ref_h_sig = ref->get_attr("sigma");
 	/* ===================================================== */
-	
+
 	/* Input image under mask attributes */
 	float *mask_ptr = (mask == NULL)?img->get_data():mask->get_data();
-	
+
 	vector<float> img_data = Util::infomask(img, mask);
 	float img_avg = img_data[0];
 	float img_sig = img_data[1];
-	
+
 	/* The image under mask -- size calculation */
 	int cnt=0;
 	for(int i=0;i<size_img;i++)
 		if (mask_ptr[i]>0.5f)
 				cnt++;
 	/* ===================================================== */
-	
+
 	/* Histogram of reference image calculation */
 	float ref_h_diff = ref_h_max - ref_h_min;
-		
+
 	#ifdef _WIN32
 		int hist_len = _MIN((int)size_ref/16,_MIN((int)size_img/16,256));
 	#else
 		int hist_len = std::min((int)size_ref/16,std::min((int)size_img/16,256));
 	#endif	//_WIN32
-	
+
 	float *ref_freq_bin = new float[3*hist_len];
 
-	//initialize value in each bin to zero 
+	//initialize value in each bin to zero
 	for (int i = 0;i < (3*hist_len);i++) ref_freq_bin[i] = 0.f;
-		
+
 	for (int i = 0;i < size_ref;i++) {
 		int L = static_cast<int>(((ref_ptr[i] - ref_h_min)/ref_h_diff) * (hist_len-1) + hist_len+1);
 		ref_freq_bin[L]++;
 	}
 	for (int i = 0;i < (3*hist_len);i++) ref_freq_bin[i] *= static_cast<float>(cnt)/static_cast<float>(size_ref);
-		
-	//Parameters Calculation (i.e) 'A' x + 'B' 
+
+	//Parameters Calculation (i.e) 'A' x + 'B'
 	float A = ref_h_sig/img_sig;
 	float B = ref_h_avg - (A*img_avg);
-	
+
 	vector<float> args;
 	args.push_back(A);
 	args.push_back(B);
-	
+
 	vector<float> scale;
 	scale.push_back(1.e-7f*A);
 	scale.push_back(-1.e-7f*B);
-	
+
 	vector<float> ref_freq_hist;
 	for(int i = 0;i < (3*hist_len);i++) ref_freq_hist.push_back((int)ref_freq_bin[i]);
-		
+
 	vector<float> data;
 	data.push_back(ref_h_diff);
 	data.push_back(ref_h_min);
-	
+
 	Dict parameter;
-	
+
 	/* Parameters displaying the arguments A & B, and the scaling function and the data's */
 	parameter["args"] = args;
 	parameter["scale"]= scale;
@@ -4668,16 +4672,16 @@ Dict Util::histc(EMData *ref,EMData *img, EMData *mask)
 	parameter["size_img"]=size_img;
 	parameter["hist_len"]=hist_len;
 	/* ===================================================== */
-	
-	return parameter;	
+
+	return parameter;
 }
-	
-	
+
+
 float Util::hist_comp_freq(float PA,float PB,int size_img, int hist_len, EMData *img, vector<float> ref_freq_hist, EMData *mask, float ref_h_diff, float ref_h_min)
 {
 	float *img_ptr = img->get_data();
 	float *mask_ptr = (mask == NULL)?img->get_data():mask->get_data();
-		
+
 	int *img_freq_bin = new int[3*hist_len];
 	for(int i = 0;i < (3*hist_len);i++) img_freq_bin[i] = 0;
 	for(int i = 0;i < size_img;i++) {
@@ -4696,7 +4700,7 @@ float Util::hist_comp_freq(float PA,float PB,int size_img, int hist_len, EMData 
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------
 #define    QUADPI      		        3.141592653589793238462643383279502884197
 #define    DGR_TO_RAD    		QUADPI/180
-#define    DM(I)         		DM	    [I-1]   
+#define    DM(I)         		DM	    [I-1]
 #define    SS(I)         		SS	    [I-1]
 Dict Util::CANG(float PHI,float THETA,float PSI)
 {
@@ -4704,23 +4708,23 @@ Dict Util::CANG(float PHI,float THETA,float PSI)
 	vector<float>	DM,SS;
 
 	for(int i =0;i<9;i++) DM.push_back(0);
-	    
-	for(int i =0;i<6;i++) SS.push_back(0);   
-	 
+
+	for(int i =0;i<6;i++) SS.push_back(0);
+
 	CPHI = cos(double(PHI)*DGR_TO_RAD);
 	SPHI = sin(double(PHI)*DGR_TO_RAD);
 	CTHE = cos(double(THETA)*DGR_TO_RAD);
 	STHE = sin(double(THETA)*DGR_TO_RAD);
 	CPSI = cos(double(PSI)*DGR_TO_RAD);
 	SPSI = sin(double(PSI)*DGR_TO_RAD);
-	 
+
 	SS(1) = float(CPHI);
 	SS(2) = float(SPHI);
 	SS(3) = float(CTHE);
 	SS(4) = float(STHE);
 	SS(5) = float(CPSI);
 	SS(6) = float(SPSI);
-	  
+
 	DM(1) = float(CPHI*CTHE*CPSI-SPHI*SPSI);
 	DM(2) = float(SPHI*CTHE*CPSI+CPHI*SPSI);
 	DM(3) = float(-STHE*CPSI);
@@ -4736,20 +4740,20 @@ Dict Util::CANG(float PHI,float THETA,float PSI)
 	DMnSS["SS"] = SS;
 
 	return(DMnSS);
-} 
+}
 #undef SS
 #undef DM
 #undef QUADPI
 #undef DGR_TO_RAD
 //-----------------------------------------------------------------------------------------------------------------------
-#define    DM(I)         		DM[I-1]  
-#define    B(i,j) 			Bptr[i-1+((j-1)*NSAM)] 
+#define    DM(I)         		DM[I-1]
+#define    B(i,j) 			Bptr[i-1+((j-1)*NSAM)]
 #define    CUBE(i,j,k)                  CUBEptr[(i-1)+((j-1)+((k-1)*NY3D))*NX3D]
 
 void Util::BPCQ(EMData *B,EMData *CUBE, vector<float> DM)
 {
 
-	float  *Bptr = B->get_data(); 
+	float  *Bptr = B->get_data();
 	float  *CUBEptr = CUBE->get_data();
 
 	int NSAM,NROW,NX3D,NY3D,NZC,KZ,IQX,IQY,LDPX,LDPY,LDPZ,LDPNMX,LDPNMY,NZ1;
@@ -4770,8 +4774,8 @@ void Util::BPCQ(EMData *B,EMData *CUBE, vector<float> DM)
 	LDPZ   = NZC/2 +1;
 	LDPNMX = NSAM/2 +1;
 	LDPNMY = NROW/2 +1;
-	NZ1    = 1; 
-	 
+	NZ1    = 1;
+
 	for(int K=1;K<=NZC;K++) {
 		KZ=K-1+NZ1;
 		for(int J=1;J<=NY3D;J++) {
@@ -4789,17 +4793,17 @@ void Util::BPCQ(EMData *B,EMData *CUBE, vector<float> DM)
 
 				CUBE(I,J,K) = CUBE(I,J,K)+B(IQX,IQY)+DIPY*(B(IQX,IQY+1)-B(IQX,IQY))+DIPX*(B(IQX+1,IQY)-B(IQX,IQY)+DIPY*(B(IQX+1,IQY+1)-B(IQX+1,IQY)-B(IQX,IQY+1)+B(IQX,IQY)));
 			}
-		} 
-	} 
-} 
+		}
+	}
+}
 
 #undef DM
 #undef B
 #undef CUBE
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-#define    W(i,j) 			Wptr        [i-1+((j-1)*Wnx)] 
-#define    PROJ(i,j) 		        PROJptr     [i-1+((j-1)*NNNN)] 
+#define    W(i,j) 			Wptr        [i-1+((j-1)*Wnx)]
+#define    PROJ(i,j) 		        PROJptr     [i-1+((j-1)*NNNN)]
 #define    SS(I,J)         		SS	    [I-1 + (J-1)*6]
 
 void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K,vector<float> exptable)
@@ -4808,18 +4812,18 @@ void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K,vector<float> expta
 	float WW,OX,OY,Y;
 
 	NSAM = PROJ->get_xsize();
-	NROW = PROJ->get_ysize(); 
+	NROW = PROJ->get_ysize();
 	NNNN = NSAM+2-(NSAM%2);
 	NR2  = NROW/2;
 
-	NANG = int(SS.size())/6; 
-	 
+	NANG = int(SS.size())/6;
+
 	EMData* W = new EMData();
 	int Wnx = NNNN/2;
 	W->set_size(Wnx,NROW,1);
 	W->to_zero();
 	float *Wptr = W->get_data();
-	float *PROJptr = PROJ->get_data(); 
+	float *PROJptr = PROJ->get_data();
 	float indcnst = 1000/2.0;
 	// we create look-up table for 1001 uniformly distributed samples [0,2];
 
@@ -4827,18 +4831,18 @@ void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K,vector<float> expta
 		OX = SS(6,K)*SS(4,L)*(-SS(1,L)*SS(2,K)+ SS(1,K)*SS(2,L)) + SS(5,K)*(-SS(3,L)*SS(4,K)+SS(3,K)*SS(4,L)*(SS(1,K)*SS(1,L) + SS(2,K)*SS(2,L)));
 		OY = SS(5,K)*SS(4,L)*(-SS(1,L)*SS(2,K)+ SS(1,K)*SS(2,L)) - SS(6,K)*(-SS(3,L)*SS(4,K)+SS(3,K)*SS(4,L)*(SS(1,K)*SS(1,L) + SS(2,K)*SS(2,L)));
 
-		if(OX != 0.0f || OY!=0.0f) { 
+		if(OX != 0.0f || OY!=0.0f) {
 			//int count = 0;
 			for(int J=1;J<=NROW;J++) {
 				JY = (J-1);
-				if(JY > NR2) JY=JY-NROW;	 
+				if(JY > NR2) JY=JY-NROW;
 				for(int I=1;I<=NNNN/2;I++) {
 					Y =  fabs(OX * (I-1) + OY * JY);
 					if(Y < 2.0f) W(I,J) += exptable[int(Y*indcnst)];//exp(-4*Y*Y);//
 				    //if(Y < 2.0f) Wptr[count++] += exp(-4*Y*Y);//exptable[int(Y*indcnst)];//
-				}	
+				}
 			}
-		} else { 
+		} else {
 			for(int J=1;J<=NROW;J++) for(int I=1;I<=NNNN/2;I++)  W(I,J) += 1.0f;
 		}
 	}
@@ -4860,7 +4864,7 @@ void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K,vector<float> expta
 			WW  	= temp/(temp*temp + osnr);
 			PROJ(I,J)	*= WW;
 			PROJ(I+1,J) *= WW;
-		}  
+		}
 	delete W; W = 0;
 	PROJ->do_ift_inplace();
 	PROJ->depad();
@@ -4883,26 +4887,26 @@ void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K,vector<float> expta
 #undef W
 #undef SS
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-#define    W(i,j) 			Wptr        [i-1+((j-1)*Wnx)] 
-#define    PROJ(i,j) 			PROJptr     [i-1+((j-1)*NNNN)] 
+#define    W(i,j) 			Wptr        [i-1+((j-1)*Wnx)]
+#define    PROJ(i,j) 			PROJptr     [i-1+((j-1)*NNNN)]
 #define    SS(I,J)         		SS	    [I-1 + (J-1)*6]
 #define    RI(i,j)                      RI          [(i-1) + ((j-1)*3)]
 #define    CC(i)                        CC          [i-1]
-#define    CP(i)                        CP          [i-1]  
-#define    VP(i)                        VP          [i-1]  
-#define    VV(i)                        VV          [i-1]  
+#define    CP(i)                        CP          [i-1]
+#define    VP(i)                        VP          [i-1]
+#define    VV(i)                        VV          [i-1]
 #define    AMAX1(i,j)                   i>j?i:j
-#define    AMIN1(i,j)                   i<j?i:j 
-  
+#define    AMIN1(i,j)                   i<j?i:j
+
 void Util::WTM(EMData *PROJ,vector<float>SS, int DIAMETER,int NUMP)
 {
 	float rad2deg =(180.0f/3.1415926f);
 	float deg2rad = (3.1415926f/180.0f);
 
 	int NSAM,NROW,NNNN,NR2,NANG,L,JY;
-	 
+
 	NSAM = PROJ->get_xsize();
-	NROW = PROJ->get_ysize(); 
+	NROW = PROJ->get_ysize();
 	NNNN = NSAM+2-(NSAM%2);
 	NR2  = NROW/2;
 	NANG = int(SS.size())/6;
@@ -4924,17 +4928,17 @@ void Util::WTM(EMData *PROJ,vector<float>SS, int DIAMETER,int NUMP)
 	int Wnx = NNNN/2;
 	W->set_size(NNNN/2,NROW,1);
 	W->to_one();
-	float *Wptr = W->get_data(); 
-	 
-	float ALPHA,TMP,FV,RT,FM,CCN,CC[3],CP[2],VP[2],VV[3]; 
-	 
+	float *Wptr = W->get_data();
+
+	float ALPHA,TMP,FV,RT,FM,CCN,CC[3],CP[2],VP[2],VV[3];
+
 	for (L=1; L<=NANG; L++) {
 		if (L != NUMP) {
 			CC(1)=SS(2,L)*SS(4,L)*SS(3,NUMP)-SS(3,L)*SS(2,NUMP)*SS(4,NUMP);
 			CC(2)=SS(3,L)*SS(1,NUMP)*SS(4,NUMP)-SS(1,L)*SS(4,L)*SS(3,NUMP);
 			CC(3)=SS(1,L)*SS(4,L)*SS(2,NUMP)*SS(4,NUMP)-SS(2,L)*SS(4,L)*SS(1,NUMP)*SS(4,NUMP);
 
-			TMP = sqrt(CC(1)*CC(1) +  CC(2)*CC(2) + CC(3)*CC(3)); 
+			TMP = sqrt(CC(1)*CC(1) +  CC(2)*CC(2) + CC(3)*CC(3));
 			CCN=static_cast<float>( AMAX1( AMIN1(TMP,1.0) ,-1.0) );
 			ALPHA=rad2deg*float(asin(CCN));
 			if (ALPHA>180.0f) ALPHA=ALPHA-180.0f;
@@ -4949,27 +4953,27 @@ void Util::WTM(EMData *PROJ,vector<float>SS, int DIAMETER,int NUMP)
 				VV(3)= SS(1,L)*SS(4,L)*CC(2)-SS(2,L)*SS(4,L)*CC(1);
 				CP(1)	= 0.0;CP(2) = 0.0;
 				VP(1)	= 0.0;VP(2) = 0.0;
-	
+
 				CP(1) = CP(1) + RI(1,1)*CC(1) + RI(1,2)*CC(2) + RI(1,3)*CC(3);
 				CP(2) = CP(2) + RI(2,1)*CC(1) + RI(2,2)*CC(2) + RI(2,3)*CC(3);
 				VP(1) = VP(1) + RI(1,1)*VV(1) + RI(1,2)*VV(2) + RI(1,3)*VV(3);
-				VP(2) = VP(2) + RI(2,1)*VV(1) + RI(2,2)*VV(2) + RI(2,3)*VV(3);  					     
-	
+				VP(2) = VP(2) + RI(2,1)*VV(1) + RI(2,2)*VV(2) + RI(2,3)*VV(3);
+
 				TMP = CP(1)*VP(2)-CP(2)*VP(1);
 
 				//     PREVENT TMP TO BE TOO SMALL, SIGN IS IRRELEVANT
 				TMP = AMAX1(1.0E-4f,fabs(TMP));
-				float tmpinv = 1/TMP;	
+				float tmpinv = 1/TMP;
 				for(int J=1;J<=NROW;J++) {
 					JY = (J-1);
 					if (JY>NR2)  JY=JY-NROW;
 					for(int I=1;I<=NNNN/2;I++) {
 						FV     = fabs((JY*CP(1)-(I-1)*CP(2))*tmpinv);
 						RT     = 1.0f-FV/FM;
-						W(I,J) += ((RT>0.0f)*RT);		 
+						W(I,J) += ((RT>0.0f)*RT);
 					}
 				}
-			} 
+			}
 		}
 	}
 
@@ -4979,7 +4983,7 @@ void Util::WTM(EMData *PROJ,vector<float>SS, int DIAMETER,int NUMP)
 	PROJ->do_fft_inplace();
 	PROJ->update();
 	float *PROJptr = PROJ->get_data();
-	 
+
 	int KX;
 	float WW;
 	for(int J=1; J<=NROW; J++)
@@ -5004,17 +5008,17 @@ void Util::WTM(EMData *PROJ,vector<float>SS, int DIAMETER,int NUMP)
 
         proj_in->update();
 	delete PROJ;
-}	
-	
-#undef   AMAX1	
+}
+
+#undef   AMAX1
 #undef   AMIN1
 #undef   RI
 #undef   CC
 #undef   CP
 #undef   VV
 #undef   VP
-	 
- 
+
+
 #undef   W
 #undef   SS
 #undef   PROJ
@@ -5029,7 +5033,7 @@ Dict Util::ExpMinus4YSqr(float ymax,int nsamples)
 	double temp;
 	for(int i =0;i<nsamples;i++) {
 		temp = exp((-4*(i*inc)*(i*inc)));
-		expvect.push_back(float(temp));  
+		expvect.push_back(float(temp));
 	}
 	expvect.push_back(0.0);
 	Dict lookupdict;
@@ -5037,12 +5041,12 @@ Dict Util::ExpMinus4YSqr(float ymax,int nsamples)
 	lookupdict["ymax"]     = ymax;
 	lookupdict["nsamples"] = nsamples;
 
-	return lookupdict;  
+	return lookupdict;
 }
 
-//------------------------------------------------------------------------------------------------------------------------- 
+//-------------------------------------------------------------------------------------------------------------------------
 
-float Util::tf(float dzz, float ak, float voltage, float cs, float wgh, float b_factor, float sign)  
+float Util::tf(float dzz, float ak, float voltage, float cs, float wgh, float b_factor, float sign)
 {
 	float cst  = cs*1.0e7f;
 
@@ -5066,13 +5070,13 @@ EMData* Util::compress_image_mask(EMData* image, EMData* mask)
 	**************/
 	int nx = image->get_xsize(),ny = image->get_ysize(),nz = image->get_zsize();  //Aren't  these  implied?  Please check and let me know, PAP.
 	/********
-	***Exception Handle 
+	***Exception Handle
 	*************/
 	if(nx != mask->get_xsize() || ny != mask->get_ysize() || nz != mask->get_zsize())
 		throw ImageDimensionException("The dimension of the image does not match the dimension of the mask!");
 
 	int i, size = nx*ny*nz;
-		
+
 	float* img_ptr = image->get_data();
 	float* mask_ptr = mask->get_data();
 
@@ -5098,11 +5102,11 @@ EMData* Util::compress_image_mask(EMData* image, EMData* mask)
 EMData *Util::reconstitute_image_mask(EMData* image, EMData *mask )
 {
 	/********
-	***Exception Handle 
+	***Exception Handle
 	*************/
 	if(mask == NULL)
 		throw ImageDimensionException("The mask cannot be an null image");
-	
+
 	/***********
 	***get the size of the mask
 	**************/
@@ -5138,12 +5142,12 @@ EMData *Util::reconstitute_image_mask(EMData* image, EMData *mask )
 	}
 	new_image->update();
 	return new_image;
-}	
+}
 
 
 
 vector<float> Util::merge_peaks(vector<float> peak1, vector<float> peak2,float p_size)
-{	
+{
 	vector<float>new_peak;
 	int n1=peak1.size()/3;
 	float p_size2=p_size*p_size;
@@ -5157,13 +5161,13 @@ vector<float> Util::merge_peaks(vector<float> peak1, vector<float> peak2,float p
 			new_peak.push_back(*it2);
 			new_peak.push_back(*(it2+1));
 			new_peak.push_back(*(it2+2));
-		} else  {						
-			int j=0;					
-			while (j< n2-1 ) {								
+		} else  {
+			int j=0;
+			while (j< n2-1 ) {
 				vector<float>::iterator it3= peak2.begin()+3*j;
-				float d2=((*(it2+1))-(*(it3+1)))*((*(it2+1))-(*(it3+1)))+((*(it2+2))-(*(it3+2)))*((*(it2+2))-(*(it3+2)));							
-				if(d2< p_size2 ) { 	
-					if( (*it2)<(*it3) ) {	
+				float d2=((*(it2+1))-(*(it3+1)))*((*(it2+1))-(*(it3+1)))+((*(it2+2))-(*(it3+2)))*((*(it2+2))-(*(it3+2)));
+				if(d2< p_size2 ) {
+					if( (*it2)<(*it3) ) {
 						new_peak.push_back(*it3);
 						new_peak.push_back(*(it3+1));
 						new_peak.push_back(*(it3+2));
@@ -5175,9 +5179,9 @@ vector<float> Util::merge_peaks(vector<float> peak1, vector<float> peak2,float p
 						peak2.erase(it3);
 						peak2.erase(it3);
 						peak2.erase(it3);
-					}	
+					}
 				} else  j=j+1;
-				n2=peak2.size()/3;						
+				n2=peak2.size()/3;
 			}
 			if(push_back1) {
 				new_peak.push_back(*it2);
@@ -5185,9 +5189,9 @@ vector<float> Util::merge_peaks(vector<float> peak1, vector<float> peak2,float p
 				new_peak.push_back(*(it2+2));
 			}
 		}
-	}				
+	}
 	return new_peak;
-}	
+}
 
 int Util::coveig(int n, float *covmat, float *eigval, float *eigvec)
 {
@@ -5201,7 +5205,7 @@ int Util::coveig(int n, float *covmat, float *eigval, float *eigvec)
 	int i;
 
 	// make a copy of covmat so that it will not be overwritten
-	for ( i = 0 ; i < n * n ; i++ )   eigvec[i] = covmat[i];  
+	for ( i = 0 ; i < n * n ; i++ )   eigvec[i] = covmat[i];
 
 	char NEEDV = 'V';
 	char UPLO = 'U';
@@ -5223,7 +5227,7 @@ int Util::coveig(int n, float *covmat, float *eigval, float *eigvec)
 
 // same function than Util::coveig but wrappe to use directly in python code
 Dict Util::coveig_for_py(int ncov, const vector<float>& covmatpy)
-{ 
+{
 
 	ENTERFUNC;
 	int len = covmatpy.size();
@@ -5260,7 +5264,7 @@ Dict Util::coveig_for_py(int ncov, const vector<float>& covmatpy)
         Dict res;
         res["eigval"] = eigval_py;
         res["eigvec"] = eigvec_py;
-	
+
 	EXITFUNC;
 	return res;
 }
@@ -5268,7 +5272,7 @@ Dict Util::coveig_for_py(int ncov, const vector<float>& covmatpy)
 vector<float> Util::pw_extract(vector<float>pw, int n, int iswi, float ps)
 {
 	int k,m,n1,klmd,klm2d,nklmd,n2d,n_larg,l, n2;
-			
+
 	k=(int)pw.size();
 	l=0;
 	m=k;
@@ -5277,14 +5281,14 @@ vector<float> Util::pw_extract(vector<float>pw, int n, int iswi, float ps)
 	klmd=k+l+m;
 	klm2d= k+l+m+2;
 	nklmd=k+l+m+n;
-	n2d=n+2;	
-	/*size has to be increased when N is large*/	
+	n2d=n+2;
+	/*size has to be increased when N is large*/
 	n_larg=klmd*2;
 	klm2d=n_larg+klm2d;
 	klmd=n_larg+klmd;
 	nklmd=n_larg+nklmd;
 	int size_q=klm2d*n2d;
-	int size_cu=nklmd*2;				
+	int size_cu=nklmd*2;
 	static int i__;
 
 	 double *q ;
@@ -5296,22 +5300,22 @@ vector<float> Util::pw_extract(vector<float>pw, int n, int iswi, float ps)
 	 long int *iu;
 	 double *s;
 	 q = (double*)calloc(size_q,sizeof(double));
-	 x = (double*)calloc(n2d,sizeof(double)); 
+	 x = (double*)calloc(n2d,sizeof(double));
 	 res = (double*)calloc(klmd,sizeof(double));
 	 cu =(double*)calloc(size_cu,sizeof(double));
 	 s = (double*)calloc(klmd,sizeof(double));
 	 q2 = (float*)calloc(size_q,sizeof(float));
 	 iu = (long int*)calloc(size_cu,sizeof(long int));
 	 pw_ = (float*)calloc(k,sizeof(float));
-	
+
 	for( i__ =0;i__<k;++i__)
-		{ 
-		pw_[i__]=log(pw[i__]); } 
+		{
+		pw_[i__]=log(pw[i__]); }
 	long int l_k=k;
 	long int l_n=n;
 	long int l_iswi=iswi;
 	vector<float> cl1_res;
-	cl1_res=Util::call_cl1(&l_k, &l_n, &ps, &l_iswi, pw_, q2, q, x, res, cu, s, iu);		
+	cl1_res=Util::call_cl1(&l_k, &l_n, &ps, &l_iswi, pw_, q2, q, x, res, cu, s, iu);
 	free(q);
 	free(x);
 	free(res);
@@ -5320,7 +5324,7 @@ vector<float> Util::pw_extract(vector<float>pw, int n, int iswi, float ps)
 	free(q2);
 	free(iu);
 	free(pw_);
-	return cl1_res;		
+	return cl1_res;
 }
 vector<float> Util::call_cl1(long int *k, long int *n, float *ps, long int *iswi, float *pw, float *q2,double *q, double *x, double *res, double *cu, double *s, long int *iu)
 {
@@ -5333,7 +5337,7 @@ vector<float> Util::call_cl1(long int *k, long int *n, float *ps, long int *iswi
     iu -= 3;
     cu -= 3;
     --x;
-    long int klm2d;    
+    long int klm2d;
     klm2d= *k+*k+2;
     klm2d=klm2d+klm2d;
     q_dim1 = klm2d;
@@ -5351,7 +5355,7 @@ vector<float> Util::call_cl1(long int *k, long int *n, float *ps, long int *iswi
 	for (i__ = 1; i__ <= i__2; ++i__) {
 	    r__1 = float(i__ - 1) /(float) *k / (*ps * 2);
 	    q2[i__ + j * q2_dim1] = pow(r__1, tmp__i);
-	}	 		
+	}
     }
     for  (i__ = 1; i__ <= i__2; ++i__)
       { q2[i__ + *n * q2_dim1] = 1.f;
@@ -5368,7 +5372,7 @@ vector<float> Util::lsfit(long int *ks,long int *n, long int *klm2d, long int *i
 
     /* Local variables */
     long int i__, j, m, n1, ii, jj;
-    double tmp; 
+    double tmp;
     vector<float> p;
     --x;
     q_dim1 = *klm2d;
@@ -5381,10 +5385,10 @@ vector<float> Util::lsfit(long int *ks,long int *n, long int *klm2d, long int *i
     --res;
     iu -= 3;
     cu -= 3;
-    
+
     /* Function Body */
     long int l = 0;
-   
+
 /* C==ZHONG HUANG,JULY,12,02;L=0,1,2,3,4,5,6 correspond to different equality constraints */
     m = *ks;
     n1 = *n + 1;
@@ -5394,7 +5398,7 @@ vector<float> Util::lsfit(long int *ks,long int *n, long int *klm2d, long int *i
 	    i__2 = *ks;
 	    for (ii = 1; ii <= i__2; ++ii) {
 	/*	q[ii + jj * q_dim1] = (double) q1[ii + jj * q1_dim1];*/
-		
+
 		q[*ks + ii + jj * q_dim1] = (double) q1[ii + jj * q1_dim1]
 			;
 	    }
@@ -5404,7 +5408,7 @@ vector<float> Util::lsfit(long int *ks,long int *n, long int *klm2d, long int *i
 	for (ii = 1; ii <= i__1; ++ii) {
 	    i__2 = n1;
 	    for (jj = 1; jj <= i__2; ++jj) {
-		q[ii + jj * q_dim1] = (double) q1[ii + jj * q1_dim1];		
+		q[ii + jj * q_dim1] = (double) q1[ii + jj * q1_dim1];
 		q[*ks + ii + jj * q_dim1] = -((double) q1[ii + jj * q1_dim1]);
 	    }
 	}
@@ -5487,7 +5491,7 @@ vector<float> Util::lsfit(long int *ks,long int *n, long int *klm2d, long int *i
 	    }
 	}
     }
-    
+
     Util::cl1(ks, &l, &m, n, klm2d, &q[q_offset], &x[1], &res[1], &cu[3], &iu[3], &s[1]);
     i__1 = *ks;
     int tmp__j=0;
@@ -5496,21 +5500,21 @@ vector<float> Util::lsfit(long int *ks,long int *n, long int *klm2d, long int *i
 	i__2 = *n - 1;
 	for (j = 1; j <= i__2; ++j) {
 	tmp__j=j;
-	    tmp += pow(q1[i__ + q1_dim1], tmp__j) * x[j];	 
+	    tmp += pow(q1[i__ + q1_dim1], tmp__j) * x[j];
 	}
 	tmp += x[*n];
 	p.push_back(static_cast<float>(exp(tmp)));
-	p.push_back(q1[i__ + q1_dim1]);	 
+	p.push_back(q1[i__ + q1_dim1]);
     }
     i__2=*n;
     for (i__=1;i__<=i__2;++i__)
-    	{ p.push_back(static_cast<float>(x[i__]));}	
+    	{ p.push_back(static_cast<float>(x[i__]));}
     return p;
 }
 void Util::cl1(long int *k, long int *l, long int *m, long int *n, long int *klm2d,
 	double *q, double *x, double *res, double *cu, long int *iu, double *s)
 {
-         
+
     long int q_dim1, q_offset, i__1, i__2;
     double d__1;
 
@@ -6056,14 +6060,14 @@ float Util::eval(char * images,EMData * img, vector<int> S,int N, int ,int size)
 			SSE += ((eptr[d] - imgptr[d])*(eptr[d] - imgptr[d]));}
 		}
 	delete e;
-	return SSE;	
+	return SSE;
 }
-	
+
 
 #define		mymax(x,y)		(((x)>(y))?(x):(y))
 #define 	mymin(x,y)		(((x)<(y))?(x):(y))
 #define		sign(x,y)		(((((y)>0)?(1):(-1))*(y!=0))*(x))
-  
+
 
 #define		quadpi	 	 	3.141592653589793238462643383279502884197
 #define		dgr_to_rad		quadpi/180
@@ -6079,12 +6083,12 @@ float Util::eval(char * images,EMData * img, vector<int> S,int N, int ,int size)
 #define weight(i)		weight	[i-1]
 #define lband(i)		lband	[i-1]
 #define ts(i)			ts	[i-1]
-#define	thetast(i)		thetast	[i-1]  
+#define	thetast(i)		thetast	[i-1]
 #define key(i)			key     [i-1]
 
 
 vector<double> Util::vrdg(const vector<float>& ph, const vector<float>& th)
-{ 
+{
 
 	ENTERFUNC;
 
@@ -6095,7 +6099,7 @@ vector<double> Util::vrdg(const vector<float>& ph, const vector<float>& th)
 
 	// rand_seed
 	srand(10);
-	
+
 	int i,*key;
 	int len = th.size();
 	double *theta,*phi,*weight;
@@ -6122,7 +6126,7 @@ vector<double> Util::vrdg(const vector<float>& ph, const vector<float>& th)
 
 	//Util::voronoidiag(theta,phi, weight, len);
  	Util::voronoi(phi, theta, weight, len);
-	
+
 	//sort by key
 	Util::hsortd(weight, weight, key, len, 2);
 
@@ -6137,7 +6141,7 @@ vector<double> Util::vrdg(const vector<float>& ph, const vector<float>& th)
 		count += weight(i);
 	}
 
-	//if( abs(count-6.28) > 0.1 ) 
+	//if( abs(count-6.28) > 0.1 )
 	//{
 	//    printf("Warning: SUM OF VORONOI CELLS AREAS IS %lf, should 2*PI\n", count);
 	//}
@@ -6146,8 +6150,8 @@ vector<double> Util::vrdg(const vector<float>& ph, const vector<float>& th)
 
 	EXITFUNC;
 	return wt;
-	
-}	 
+
+}
 
 struct	tmpstruct{
 	double theta1,phi1;
@@ -6177,7 +6181,7 @@ void Util::hsortd(double *theta,double *phi,int *key,int len,int option)
 	}
 	EXITFUNC;
 }
-	
+
 bool Util::cmp1(tmpstruct tmp1,tmpstruct tmp2)
 {
  	return(tmp1.theta1 < tmp2.theta1);
@@ -6191,30 +6195,30 @@ bool Util::cmp2(tmpstruct tmp1,tmpstruct tmp2)
 /******************  VORONOI DIAGRAM **********************************/
 /*
 void Util::voronoidiag(double *theta,double *phi,double* weight,int n)
-{	
+{
 	ENTERFUNC;
-	
+
 	int	*lband;
-	double	aat=0.0f,*ts; 
+	double	aat=0.0f,*ts;
 	double	aa,acum,area;
 	int	last;
 	int numth 	= 	1;
 	int nbt		=	1;//mymax((int)(sqrt((n/500.0))) , 3);
-	
+
 	int i,it,l,k;
 	int nband,lb,low,medium,lhigh,lbw,lenw;
 
-	
+
 	lband 	=	(int*)calloc(nbt,sizeof(int));
 	ts 	=	(double*)calloc(nbt,sizeof(double));
-	
+
 	if(lband == NULL || ts == NULL ){
        		fprintf(stderr,"memory allocation failure!\n");
 		exit(1);
 	}
 
 	nband=nbt;
-	
+
 	while(nband>0){
 		Util::angstep(ts,nband);
 
@@ -6235,7 +6239,7 @@ void Util::voronoidiag(double *theta,double *phi,double* weight,int n)
 				if(l>nband)  exit(1);
 			}
 		}
-		
+
 		lband(l)=n+1;
  		acum=0.0;
 		for(it=l;it>=1;it-=numth){
@@ -6248,8 +6252,8 @@ void Util::voronoidiag(double *theta,double *phi,double* weight,int n)
 				low=1;
 				medium=n+1;
 				lhigh=n-lb+1;
-				lbw=1;					
-			} 				
+				lbw=1;
+			}
 			else if(i==1){
 				lb=1;
 				low=1;
@@ -6274,12 +6278,12 @@ void Util::voronoidiag(double *theta,double *phi,double* weight,int n)
 				lbw=lband(i-1);
 			}
 			lenw=medium-low;
-			
-			
- 			Util::voronoi(&phi(lb),&theta(lb),&weight(lbw),lenw,low,medium,lhigh,last); 
-			
 
-			if(nband>1){ 
+
+ 			Util::voronoi(&phi(lb),&theta(lb),&weight(lbw),lenw,low,medium,lhigh,last);
+
+
+			if(nband>1){
 				if(i==1)	area=quadpi*2.0*(1.0-cos(ts(1)*dgr_to_rad));
 				else		area=quadpi*2.0*(cos(ts(i-1)*dgr_to_rad)-cos(ts(i)*dgr_to_rad));
 
@@ -6298,46 +6302,46 @@ void Util::voronoidiag(double *theta,double *phi,double* weight,int n)
 				goto  label2;
 				}
 			}
-		acum=acum/quadpi/2.0; 
+		acum=acum/quadpi/2.0;
 		exit(1);
 label2:
-	 	 
+
 		continue;
 		}
-	
+
 	free(ts);
 	free(lband);
 
 	}
-	
+
 	EXITFUNC;
 }
 
 
 void Util::angstep(double* thetast,int len){
-	
+
 	ENTERFUNC;
-	
+
 	double t1,t2,tmp;
 	int i;
  	if(len>1){
 		t1=0;
 		for(i=1;i<=len-1;i++){
-			tmp=cos(t1)-1.0/((float)len);	
+			tmp=cos(t1)-1.0/((float)len);
 			t2=acos(sign(mymin(1.0,fabs(tmp)),tmp));
 			thetast(i)=t2 * rad_to_deg;
 			t1=t2;
-		} 
+		}
 	}
 	thetast(len)=90.0;
-	
+
 	EXITFUNC;
 }
 */
 /*
 void Util::voronoi(double *phi, double *theta, double *weight, int lenw, int low, int medium, int nt, int last)
 {
-	
+
 	ENTERFUNC;
 	int *list, *lptr, *lend, *iwk, *key,*lcnt,*indx,*good;
 	int nt6, n, ier,nout,lnew,mdup,nd;
@@ -6351,26 +6355,26 @@ void Util::voronoi(double *phi, double *theta, double *weight, int lenw, int low
 	if(last){
 		if(medium>nt)  n = nt+nt;
 		else           n = nt+nt-medium+1;
-	} 
+	}
 	else{
 		n=nt;
 	}
 
 	nt6 = n*6;
 
-	list = (int*)calloc(nt6,sizeof(int));  
-	lptr = (int*)calloc(nt6,sizeof(int));  
-	lend = (int*)calloc(n  ,sizeof(int));  
-	iwk  = (int*)calloc(n  ,sizeof(int));  
-	good = (int*)calloc(n  ,sizeof(int));  
-	key  = (int*)calloc(n  ,sizeof(int));  
-	indx = (int*)calloc(n  ,sizeof(int)); 
-	lcnt = (int*)calloc(n  ,sizeof(int)); 
+	list = (int*)calloc(nt6,sizeof(int));
+	lptr = (int*)calloc(nt6,sizeof(int));
+	lend = (int*)calloc(n  ,sizeof(int));
+	iwk  = (int*)calloc(n  ,sizeof(int));
+	good = (int*)calloc(n  ,sizeof(int));
+	key  = (int*)calloc(n  ,sizeof(int));
+	indx = (int*)calloc(n  ,sizeof(int));
+	lcnt = (int*)calloc(n  ,sizeof(int));
 
-	ds	= 	(double*) calloc(n,sizeof(double)); 
-	x	= 	(double*) calloc(n,sizeof(double)); 
-	y	= 	(double*) calloc(n,sizeof(double)); 
-	z	= 	(double*) calloc(n,sizeof(double)); 
+	ds	= 	(double*) calloc(n,sizeof(double));
+	x	= 	(double*) calloc(n,sizeof(double));
+	y	= 	(double*) calloc(n,sizeof(double));
+	z	= 	(double*) calloc(n,sizeof(double));
 
 	if (list == NULL ||
 	lptr == NULL ||
@@ -6397,8 +6401,8 @@ void Util::voronoi(double *phi, double *theta, double *weight, int lenw, int low
 
 
 
-	if (last) { 
-		for(i=nt+1;i<=n;i++){			
+	if (last) {
+		for(i=nt+1;i<=n;i++){
 			x[i-1]=180.0-x[2*nt-i];
 			y[i-1]=180.0+y[2*nt-i];
 		}
@@ -6417,7 +6421,7 @@ void Util::voronoi(double *phi, double *theta, double *weight, int lenw, int low
 			if(  x[i]*x[k]+y[i]*y[k]+z[i]*z[k] > 1.0-tol){
 				Util::flip23(x, y, z, key, k, n);
 				goto label1;
-			} 
+			}
 		}
 	}
 
@@ -6495,7 +6499,7 @@ void Util::voronoi(double *phi, double *theta, double *weight, int lenw, int low
 	free(lend);
 	free(iwk);
 	free(good);
-	free(key); 
+	free(key);
 
 	free(indx);
 	free(lcnt);
@@ -6508,7 +6512,7 @@ void Util::voronoi(double *phi, double *theta, double *weight, int lenw, int low
 */
 void Util::voronoi(double *phi, double *theta, double *weight, int nt)
 {
-	
+
 	ENTERFUNC;
 
 	int *list, *lptr, *lend, *iwk, *key,*lcnt,*indx,*good;
@@ -6518,13 +6522,13 @@ void Util::voronoi(double *phi, double *theta, double *weight, int nt)
 
 	double *ds, *x, *y, *z;
 	double tol  = 1.0e-8;
-	double dtol = 15; 
+	double dtol = 15;
 	double a;
 
 	/*if(last){
 		if(medium>nt)  n = nt+nt;
 		else           n = nt+nt-medium+1;
-	} 
+	}
 	else{
 		n=nt;
 	}*/
@@ -6533,19 +6537,19 @@ void Util::voronoi(double *phi, double *theta, double *weight, int nt)
 
 	nt6 = n*6;
 
-	list = (int*)calloc(nt6,sizeof(int));  
-	lptr = (int*)calloc(nt6,sizeof(int));  
-	lend = (int*)calloc(n  ,sizeof(int));  
-	iwk  = (int*)calloc(n  ,sizeof(int));  
-	good = (int*)calloc(n  ,sizeof(int));  
-	key  = (int*)calloc(n  ,sizeof(int));  
-	indx = (int*)calloc(n  ,sizeof(int)); 
-	lcnt = (int*)calloc(n  ,sizeof(int)); 
+	list = (int*)calloc(nt6,sizeof(int));
+	lptr = (int*)calloc(nt6,sizeof(int));
+	lend = (int*)calloc(n  ,sizeof(int));
+	iwk  = (int*)calloc(n  ,sizeof(int));
+	good = (int*)calloc(n  ,sizeof(int));
+	key  = (int*)calloc(n  ,sizeof(int));
+	indx = (int*)calloc(n  ,sizeof(int));
+	lcnt = (int*)calloc(n  ,sizeof(int));
 
-	ds	= 	(double*) calloc(n,sizeof(double)); 
-	x	= 	(double*) calloc(n,sizeof(double)); 
-	y	= 	(double*) calloc(n,sizeof(double)); 
-	z	= 	(double*) calloc(n,sizeof(double)); 
+	ds	= 	(double*) calloc(n,sizeof(double));
+	x	= 	(double*) calloc(n,sizeof(double));
+	y	= 	(double*) calloc(n,sizeof(double));
+	z	= 	(double*) calloc(n,sizeof(double));
 
 	if (list == NULL ||
 	lptr == NULL ||
@@ -6576,7 +6580,7 @@ void Util::voronoi(double *phi, double *theta, double *weight, int nt)
 	    }
 
 	    Util::disorder2(x, y, key, n);
-	  
+
 	    // check if the first three angles are not close, else shuffle
 	    double val;
             for(k=0; k<2; k++){
@@ -6584,10 +6588,10 @@ void Util::voronoi(double *phi, double *theta, double *weight, int nt)
 		    val = (x[i]-x[k])*(x[i]-x[k]) + (y[i]-y[k])*(y[i]-y[k]);
 		    if( val  < dtol) {
 			goto L1;
-		    } 
+		    }
 		}
 	    }
-	   	   	    
+
 	    Util::ang_to_xyz(x, y, z, n);
 
 	    //  Make sure that first three has no duplication
@@ -6600,17 +6604,17 @@ void Util::voronoi(double *phi, double *theta, double *weight, int nt)
 			if(  x[i]*x[k]+y[i]*y[k]+z[i]*z[k] > 1.0-tol) {
 				Util::flip23(x, y, z, key, k, n);
 				continue;
-			} 
+			}
 		    }
 	        }
 	        dupnode = false;
 	    }
 
-	    
+
        	    ier = 0;
-	   
+
 	    status = Util::trmsh3_(&n,&tol,x,y,z,&nout,list,lptr,lend,&lnew, indx, lcnt, iwk, good, ds, &ier);
-	 	 	    
+
 	    if (status != 0) {
 	 	printf(" error in trmsh3 \n");
 		exit(1);
@@ -6625,13 +6629,13 @@ void Util::voronoi(double *phi, double *theta, double *weight, int nt)
 	    if (ier == -2) {
 		//printf("in TRMESH:the first three nodes are colinear*** disorder again\n");
 	    }
-	    else 
+	    else
 	    {
 	        colinear=false;
 	    }
         }
-	
-	
+
+
 	Assert( ier != -2 );
 //  Create a list of unique nodes GOOD, the numbers refer to locations on the full list
 //  INDX contains node numbers from the squeezed list
@@ -6681,7 +6685,7 @@ void Util::voronoi(double *phi, double *theta, double *weight, int nt)
 	free(lend);
 	free(iwk);
 	free(good);
-	free(key); 
+	free(key);
 
 	free(indx);
 	free(lcnt);
@@ -6696,7 +6700,7 @@ void Util::voronoi(double *phi, double *theta, double *weight, int nt)
 
 void Util::disorder2(double *x,double *y, int *key, int len)
 {
-	ENTERFUNC;	
+	ENTERFUNC;
 	int k, i;
 	for(i=0; i<len; i++) key[i]=i+1;
 
@@ -6711,9 +6715,9 @@ void Util::disorder2(double *x,double *y, int *key, int len)
 
 void Util::ang_to_xyz(double *x,double *y,double *z,int len)
 {
-	ENTERFUNC;   
+	ENTERFUNC;
 	double costheta,sintheta,cosphi,sinphi;
-	for(int i = 0;  i<len;  i++) 
+	for(int i = 0;  i<len;  i++)
 	{
 		cosphi = cos(y[i]*dgr_to_rad);
 		sinphi = sin(y[i]*dgr_to_rad);
@@ -6730,7 +6734,7 @@ void Util::ang_to_xyz(double *x,double *y,double *z,int len)
 			z[i] = costheta;
 		}
 	}
-	EXITFUNC;	 
+	EXITFUNC;
 }
 
 void Util::flip23(double *x,double *y,double *z,int *key, int k, int len)
@@ -6743,26 +6747,26 @@ void Util::flip23(double *x,double *y,double *z,int *key, int k, int len)
 	std::swap(y[i], y[k]);
 	std::swap(z[i], z[k]);
 	EXITFUNC;
-} 
+}
 
 
 #undef	mymax
 #undef	mymin
 #undef	sign
-#undef	quadpi	 	 
+#undef	quadpi
 #undef	dgr_to_rad
 #undef	deg_to_rad
-#undef	rad_to_deg	
+#undef	rad_to_deg
 #undef	rad_to_dgr
 #undef	TRUE
 #undef	FALSE
-#undef 	theta		     
-#undef 	phi	     
+#undef 	theta
+#undef 	phi
 #undef 	weight
 #undef 	lband
-#undef 	ts     
+#undef 	ts
 #undef  thetast
-#undef 	key	     
+#undef 	key
 
 
 /*################################################################################################
@@ -6796,9 +6800,9 @@ int i_dnnt(double *x)
 
 
 /* ____________________STRID______________________________________ */
-/* Subroutine */ int Util::trmsh3_(int *n0, double *tol, double *x, 
+/* Subroutine */ int Util::trmsh3_(int *n0, double *tol, double *x,
 	double *y, double *z__, int *n, int *list, int *
-	lptr, int *lend, int *lnew, int *indx, int *lcnt, 
+	lptr, int *lend, int *lnew, int *indx, int *lcnt,
 	int *near__, int *next, double *dist, int *ier)
 {
     /* System generated locals */
@@ -6809,12 +6813,12 @@ int i_dnnt(double *x)
     static int i__, j;
     static double d1, d2, d3;
     static int i0, lp, kt, ku, lpl, nku;
-    extern long int left_(double *, double *, double *, double 
-	    *, double *, double *, double *, double *, 
+    extern long int left_(double *, double *, double *, double
+	    *, double *, double *, double *, double *,
 	    double *);
     static int nexti;
-    extern /* Subroutine */ int addnod_(int *, int *, double *, 
-	    double *, double *, int *, int *, int *, 
+    extern /* Subroutine */ int addnod_(int *, int *, double *,
+	    double *, double *, int *, int *, int *,
 	    int *, int *);
 
 
@@ -7036,7 +7040,7 @@ int i_dnnt(double *x)
 	lptr[6] = 5;
 	lend[3] = 6;
 
-	
+
     } else {
 
 /*   The first three nodes are collinear. */
@@ -7086,7 +7090,7 @@ int i_dnnt(double *x)
 /*   set are initially ordered by increasing indexes (which */
 /*   maximizes efficiency) but that ordering is not main- */
 /*   tained as the data structure is updated. */
-    
+
 /* Initialize the data structure for the single triangle. */
 
     near__[1] = 0;
@@ -7139,7 +7143,7 @@ L2:
 	    next[i0] = next[ku];
 	}
 	near__[ku] = 0;
-	
+
 /* Bypass duplicate nodes. */
 
 	if (dist[ku] <= *tol - 1.) {
@@ -7163,7 +7167,7 @@ L2:
 	    *ier = -3;
 	    return 0;
 	}
-	
+
 /* Loop on neighbors J of node KT. */
 
 	lpl = lend[kt];
@@ -7228,8 +7232,8 @@ L6:
 } /* trmsh3_ */
 
 /* stripack.dbl sent by Robert on 06/03/03 */
-/* Subroutine */ int addnod_(int *nst, int *k, double *x, 
-	double *y, double *z__, int *list, int *lptr, int 
+/* Subroutine */ int addnod_(int *nst, int *k, double *x,
+	double *y, double *z__, int *list, int *lptr, int
 	*lend, int *lnew, int *ier)
 {
     /* Initialized data */
@@ -7243,19 +7247,19 @@ L6:
     static int l;
     static double p[3], b1, b2, b3;
     static int i1, i2, i3, kk, lp, in1, io1, io2, km1, lpf, ist, lpo1;
-    extern /* Subroutine */ int swap_(int *, int *, int *, 
+    extern /* Subroutine */ int swap_(int *, int *, int *,
 	    int *, int *, int *, int *, int *);
     static int lpo1s;
-    extern /* Subroutine */ int bdyadd_(int *, int *, int *, 
-	    int *, int *, int *, int *), intadd_(int *, 
-	    int *, int *, int *, int *, int *, int *, 
-	    int *), trfind_(int *, double *, int *, 
-	    double *, double *, double *, int *, int *, 
-	    int *, double *, double *, double *, int *, 
-	    int *, int *), covsph_(int *, int *, int *, 
+    extern /* Subroutine */ int bdyadd_(int *, int *, int *,
+	    int *, int *, int *, int *), intadd_(int *,
+	    int *, int *, int *, int *, int *, int *,
+	    int *), trfind_(int *, double *, int *,
+	    double *, double *, double *, int *, int *,
+	    int *, double *, double *, double *, int *,
+	    int *, int *), covsph_(int *, int *, int *,
 	    int *, int *, int *);
     extern int lstptr_(int *, int *, int *, int *);
-    extern long int swptst_(int *, int *, int *, int *, 
+    extern long int swptst_(int *, int *, int *, int *,
 	    double *, double *, double *);
 
 
@@ -7386,7 +7390,7 @@ L6:
 /* Find a triangle (I1,I2,I3) containing K or the rightmost */
 /*   (I1) and leftmost (I2) visible boundary nodes as viewed */
 /*   from node K. */
-    trfind_(&ist, p, &km1, &x[1], &y[1], &z__[1], &list[1], &lptr[1], &lend[1]  
+    trfind_(&ist, p, &km1, &x[1], &y[1], &z__[1], &list[1], &lptr[1], &lend[1]
 	    , &b1, &b2, &b3, &i1, &i2, &i3);
 
 /*   Test for collinear or (nearly) duplicate nodes. */
@@ -7499,8 +7503,8 @@ double angle_(double *v1, double *v2, double *v3)
     static double a;
     static int i__;
     static double ca, s21, s23, u21[3], u23[3];
-    extern long int left_(double *, double *, double *, double 
-	    *, double *, double *, double *, double *, 
+    extern long int left_(double *, double *, double *, double
+	    *, double *, double *, double *, double *,
 	    double *);
 
 
@@ -7633,7 +7637,7 @@ double areas_(double *v1, double *v2, double *v3)
 
     /* Local variables */
     static int i__;
-    static double a1, a2, a3, s12, s31, s23, u12[3], u23[3], u31[3], ca1, 
+    static double a1, a2, a3, s12, s31, s23, u12[3], u23[3], u31[3], ca1,
 	    ca2, ca3;
 
 
@@ -7774,8 +7778,8 @@ double areas_(double *v1, double *v2, double *v3)
     return ret_val;
 } /* areas_ */
 
-double Util::areav_(int *k, int *n, double *x, double *y, 
-	double *z__, int *list, int *lptr, int *lend, int 
+double Util::areav_(int *k, int *n, double *x, double *y,
+	double *z__, int *list, int *lptr, int *lend, int
 	*ier)
 {
     /* Initialized data */
@@ -7793,7 +7797,7 @@ double Util::areav_(int *k, int *n, double *x, double *y,
     static double asum;
     extern double areas_(double *, double *, double *);
     static long int first;
-    extern /* Subroutine */ int circum_(double *, double *, 
+    extern /* Subroutine */ int circum_(double *, double *,
 	    double *, double *, int *);
 
 
@@ -7978,8 +7982,8 @@ L14:
     return ret_val;
 } /* areav_ */
 
-double areav_new__(int *k, int *n, double *x, double *y, 
-	double *z__, int *list, int *lptr, int *lend, int 
+double areav_new__(int *k, int *n, double *x, double *y,
+	double *z__, int *list, int *lptr, int *lend, int
 	*ier)
 {
     /* System generated locals */
@@ -7999,7 +8003,7 @@ double areav_new__(int *k, int *n, double *x, double *y,
     static double asum;
     extern double angle_(double *, double *, double *);
     static float areav;
-    extern /* Subroutine */ int circum_(double *, double *, 
+    extern /* Subroutine */ int circum_(double *, double *,
 	    double *, double *, int *);
 
 
@@ -8195,7 +8199,7 @@ L13:
 	list, int *lptr, int *lend, int *lnew)
 {
     static int k, n1, n2, lp, lsav, nsav, next;
-    extern /* Subroutine */ int insert_(int *, int *, int *, 
+    extern /* Subroutine */ int insert_(int *, int *, int *,
 	    int *, int *);
 
 
@@ -8325,7 +8329,7 @@ L4:
     return 0;
 } /* bdyadd_ */
 
-/* Subroutine */ int bnodes_(int *n, int *list, int *lptr, 
+/* Subroutine */ int bnodes_(int *n, int *list, int *lptr,
 	int *lend, int *nodes, int *nb, int *na, int *nt)
 {
     /* System generated locals */
@@ -8449,7 +8453,7 @@ L4:
     return 0;
 } /* bnodes_ */
 
-/* Subroutine */ int circle_(int *k, double *xc, double *yc, 
+/* Subroutine */ int circle_(int *k, double *xc, double *yc,
 	int *ier)
 {
     /* System generated locals */
@@ -8587,7 +8591,7 @@ L2:
     return 0;
 } /* circle_ */
 
-/* Subroutine */ int circum_(double *v1, double *v2, double *v3, 
+/* Subroutine */ int circum_(double *v1, double *v2, double *v3,
 	double *c__, int *ier)
 {
     /* Builtin functions */
@@ -8704,11 +8708,11 @@ L2:
     return 0;
 } /* circum_ */
 
-/* Subroutine */ int covsph_(int *kk, int *n0, int *list, int 
+/* Subroutine */ int covsph_(int *kk, int *n0, int *list, int
 	*lptr, int *lend, int *lnew)
 {
     static int k, lp, nst, lsav, next;
-    extern /* Subroutine */ int insert_(int *, int *, int *, 
+    extern /* Subroutine */ int insert_(int *, int *, int *,
 	    int *, int *);
 
 
@@ -8808,10 +8812,10 @@ L2:
     return 0;
 } /* covsph_ */
 
-/* Subroutine */ int crlist_(int *n, int *ncol, double *x, 
-	double *y, double *z__, int *list, int *lend, int 
-	*lptr, int *lnew, int *ltri, int *listc, int *nb, 
-	double *xc, double *yc, double *zc, double *rc, 
+/* Subroutine */ int crlist_(int *n, int *ncol, double *x,
+	double *y, double *z__, int *list, int *lend, int
+	*lptr, int *lnew, int *ltri, int *listc, int *nb,
+	double *xc, double *yc, double *zc, double *rc,
 	int *ier)
 {
     /* System generated locals */
@@ -8828,10 +8832,10 @@ L2:
 	     lpn;
     static long int swp;
     static int ierr;
-    extern /* Subroutine */ int circum_(double *, double *, 
+    extern /* Subroutine */ int circum_(double *, double *,
 	    double *, double *, int *);
     extern int lstptr_(int *, int *, int *, int *);
-    extern long int swptst_(int *, int *, int *, int *, 
+    extern long int swptst_(int *, int *, int *, int *,
 	    double *, double *, double *);
 
 
@@ -9446,7 +9450,7 @@ L23:
 
     /* Local variables */
     static int n1, n2, n3, lp, lph, lpl;
-    extern /* Subroutine */ int delnb_(int *, int *, int *, 
+    extern /* Subroutine */ int delnb_(int *, int *, int *,
 	    int *, int *, int *, int *, int *);
     extern int lstptr_(int *, int *, int *, int *);
 
@@ -9766,8 +9770,8 @@ L5:
     return 0;
 } /* delnb_ */
 
-/* Subroutine */ int delnod_(int *k, int *n, double *x, 
-	double *y, double *z__, int *list, int *lptr, int 
+/* Subroutine */ int delnod_(int *k, int *n, double *x,
+	double *y, double *z__, int *list, int *lptr, int
 	*lend, int *lnew, int *lwk, int *iwk, int *ier)
 {
     /* System generated locals */
@@ -9779,18 +9783,18 @@ L5:
     static int nl, lp, nn, nr;
     static double xl, yl, zl, xr, yr, zr;
     static int nnb, lp21, lpf, lph, lpl, lpn, iwl, nit, lnw, lpl2;
-    extern long int left_(double *, double *, double *, double 
-	    *, double *, double *, double *, double *, 
+    extern long int left_(double *, double *, double *, double
+	    *, double *, double *, double *, double *,
 	    double *);
     static long int bdry;
     static int ierr, lwkl;
-    extern /* Subroutine */ int swap_(int *, int *, int *, 
+    extern /* Subroutine */ int swap_(int *, int *, int *,
 	    int *, int *, int *, int *, int *), delnb_(
-	    int *, int *, int *, int *, int *, int *, 
+	    int *, int *, int *, int *, int *, int *,
 	    int *, int *);
     extern int nbcnt_(int *, int *);
-    extern /* Subroutine */ int optim_(double *, double *, double 
-	    *, int *, int *, int *, int *, int *, int 
+    extern /* Subroutine */ int optim_(double *, double *, double
+	    *, int *, int *, int *, int *, int *, int
 	    *, int *);
     static int nfrst;
     extern int lstptr_(int *, int *, int *, int *);
@@ -10306,7 +10310,7 @@ L26:
     return 0;
 } /* delnod_ */
 
-/* Subroutine */ int drwarc_(int *, double *p, double *q, 
+/* Subroutine */ int drwarc_(int *, double *p, double *q,
 	double *tol, int *nseg)
 {
     /* System generated locals */
@@ -10496,7 +10500,7 @@ L5:
     return 0;
 } /* drwarc_ */
 
-/* Subroutine */ int edge_(int *in1, int *in2, double *x, 
+/* Subroutine */ int edge_(int *in1, int *in2, double *x,
 	double *y, double *z__, int *lwk, int *iwk, int *
 	list, int *lptr, int *lend, int *ier)
 {
@@ -10510,15 +10514,15 @@ L5:
     static double dp12;
     static int lp21, iwc, iwf, lft, lpl, iwl, nit;
     static double dp1l, dp2l, dp1r, dp2r;
-    extern long int left_(double *, double *, double *, double 
-	    *, double *, double *, double *, double *, 
+    extern long int left_(double *, double *, double *, double
+	    *, double *, double *, double *, double *,
 	    double *);
     static int ierr;
-    extern /* Subroutine */ int swap_(int *, int *, int *, 
+    extern /* Subroutine */ int swap_(int *, int *, int *,
 	    int *, int *, int *, int *, int *);
     static int next, iwcp1, n1lst, iwend;
-    extern /* Subroutine */ int optim_(double *, double *, double 
-	    *, int *, int *, int *, int *, int *, int 
+    extern /* Subroutine */ int optim_(double *, double *, double
+	    *, int *, int *, int *, int *, int *, int
 	    *, int *);
     static int n1frst;
 
@@ -10758,7 +10762,7 @@ L4:
 	dp2l = x2 * x[nl] + y2 * y[nl] + z2 * z__[nl];
 	dp1r = x1 * x[nr] + y1 * y[nr] + z1 * z__[nr];
 	dp2r = x2 * x[nr] + y2 * y[nr] + z2 * z__[nr];
-	if ((dp2l - dp12 * dp1l >= 0. || dp2r - dp12 * dp1r >= 0.) && (dp1l - 
+	if ((dp2l - dp12 * dp1l >= 0. || dp2r - dp12 * dp1r >= 0.) && (dp1l -
 		dp12 * dp2l >= 0. || dp1r - dp12 * dp2r >= 0.)) {
 	    goto L6;
 	}
@@ -11146,7 +11150,7 @@ L35:
     return 0;
 } /* edge_ */
 
-/* Subroutine */ int getnp_(double *x, double *y, double *z__, 
+/* Subroutine */ int getnp_(double *x, double *y, double *z__,
 	int *list, int *lptr, int *lend, int *l, int *
 	npts, double *df, int *ier)
 {
@@ -11383,7 +11387,7 @@ L6:
     return 0;
 } /* insert_ */
 
-long int inside_(double *p, int *lv, double *xv, double *yv, 
+long int inside_(double *p, int *lv, double *xv, double *yv,
 	double *zv, int *nv, int *listv, int *ier)
 {
     /* Initialized data */
@@ -11410,7 +11414,7 @@ long int inside_(double *p, int *lv, double *xv, double *yv,
     static int ierr;
     static long int pinr, qinr;
     static double qnrm, vnrm;
-    extern /* Subroutine */ int intrsc_(double *, double *, 
+    extern /* Subroutine */ int intrsc_(double *, double *,
 	    double *, double *, int *);
 
 
@@ -11679,7 +11683,7 @@ L1:
 /*     B Forward Q->P and B Forward P->Q       iff */
 /*     <B,QN> > 0 and <B,PN> > 0. */
 
-	if (b[0] * qn[0] + b[1] * qn[1] + b[2] * qn[2] > 0. && b[0] * pn[0] + 
+	if (b[0] * qn[0] + b[1] * qn[1] + b[2] * qn[2] > 0. && b[0] * pn[0] +
 		b[1] * pn[1] + b[2] * pn[2] > 0.) {
 
 /*   Update EVEN, BQ, QINR, BP, and PINR. */
@@ -11748,7 +11752,7 @@ L14:
 	i3, int *list, int *lptr, int *lend, int *lnew)
 {
     static int k, n1, n2, n3, lp;
-    extern /* Subroutine */ int insert_(int *, int *, int *, 
+    extern /* Subroutine */ int insert_(int *, int *, int *,
 	    int *, int *);
     extern int lstptr_(int *, int *, int *, int *);
 
@@ -11843,7 +11847,7 @@ L14:
     return 0;
 } /* intadd_ */
 
-/* Subroutine */ int intrsc_(double *p1, double *p2, double *cn, 
+/* Subroutine */ int intrsc_(double *p1, double *p2, double *cn,
 	double *p, int *ier)
 {
     /* Builtin functions */
@@ -12026,15 +12030,15 @@ int jrand_(int *n, int *ix, int *iy, int *iz)
     *ix = *ix * 171 % 30269;
     *iy = *iy * 172 % 30307;
     *iz = *iz * 170 % 30323;
-    x = (float) (*ix) / 30269.f + (float) (*iy) / 30307.f + (float) (*iz) / 
+    x = (float) (*ix) / 30269.f + (float) (*iy) / 30307.f + (float) (*iz) /
 	    30323.f;
     u = x - (int) x;
     ret_val = (int) ((float) (*n) * u + 1.f);
     return ret_val;
 } /* jrand_ */
 
-long int left_(double *x1, double *y1, double *z1, double *x2, 
-	double *y2, double *z2, double *x0, double *y0, 
+long int left_(double *x1, double *y1, double *z1, double *x2,
+	double *y2, double *z2, double *x0, double *y0,
 	double *z0)
 {
     /* System generated locals */
@@ -12077,10 +12081,10 @@ long int left_(double *x1, double *y1, double *z1, double *x2,
 
 /* LEFT = TRUE iff <N0,N1 X N2> = det(N0,N1,N2) .GE. 0. */
 
-    ret_val = *x0 * (*y1 * *z2 - *y2 * *z1) - *y0 * (*x1 * *z2 - *x2 * *z1) + 
+    ret_val = *x0 * (*y1 * *z2 - *y2 * *z1) - *y0 * (*x1 * *z2 - *x2 * *z1) +
     	    *z0 * (*x1 * *y2 - *x2 * *y1) >= -0.000001;
 
- 
+
     return ret_val;
 } /* left_ */
 
@@ -12226,8 +12230,8 @@ L2:
     return ret_val;
 } /* nbcnt_ */
 
-int nearnd_(double *p, int *ist, int *n, double *x, 
-	double *y, double *z__, int *list, int *lptr, int 
+int nearnd_(double *p, int *ist, int *n, double *x,
+	double *y, double *z__, int *list, int *lptr, int
 	*lend, double *al)
 {
     /* System generated locals */
@@ -12246,9 +12250,9 @@ int nearnd_(double *p, int *ist, int *n, double *x,
     static int lpl;
     static double dsr;
     static int nst, listp[25], lptrp[25];
-    extern /* Subroutine */ int trfind_(int *, double *, int *, 
-	    double *, double *, double *, int *, int *, 
-	    int *, double *, double *, double *, int *, 
+    extern /* Subroutine */ int trfind_(int *, double *, int *,
+	    double *, double *, double *, int *, int *,
+	    int *, double *, double *, double *, int *,
 	    int *, int *);
     extern int lstptr_(int *, int *, int *, int *);
 
@@ -12453,7 +12457,7 @@ L2:
     dx3 = x[n3] - p[1];
     dy3 = y[n3] - p[2];
     dz3 = z__[n3] - p[3];
-    if (dx3 * (dy2 * dz1 - dy1 * dz2) - dy3 * (dx2 * dz1 - dx1 * dz2) + dz3 * 
+    if (dx3 * (dy2 * dz1 - dy1 * dz2) - dy3 * (dx2 * dz1 - dx1 * dz2) + dz3 *
 	    (dx2 * dy1 - dx1 * dy2) <= 0.) {
 	goto L3;
     }
@@ -12521,7 +12525,7 @@ L6:
     return ret_val;
 } /* nearnd_ */
 
-/* Subroutine */ int optim_(double *x, double *y, double *z__, 
+/* Subroutine */ int optim_(double *x, double *y, double *z__,
 	int *na, int *list, int *lptr, int *lend, int *
 	nit, int *iwk, int *ier)
 {
@@ -12532,10 +12536,10 @@ L6:
     static int i__, n1, n2, lp, io1, io2, nna, lp21, lpl, lpp;
     static long int swp;
     static int iter;
-    extern /* Subroutine */ int swap_(int *, int *, int *, 
+    extern /* Subroutine */ int swap_(int *, int *, int *,
 	    int *, int *, int *, int *, int *);
     static int maxit;
-    extern long int swptst_(int *, int *, int *, int *, 
+    extern long int swptst_(int *, int *, int *, int *,
 	    double *, double *, double *);
 
 
@@ -12769,17 +12773,17 @@ L9:
     return 0;
 } /* optim_ */
 
-/* Subroutine */ int projct_(double *px, double *py, double *pz, 
-	double *ox, double *oy, double *oz, double *ex, 
-	double *ey, double *ez, double *vx, double *vy, 
-	double *vz, long int *init, double *x, double *y, 
+/* Subroutine */ int projct_(double *px, double *py, double *pz,
+	double *ox, double *oy, double *oz, double *ex,
+	double *ey, double *ez, double *vx, double *vy,
+	double *vz, long int *init, double *x, double *y,
 	double *z__, int *ier)
 {
     /* Builtin functions */
     //double sqrt(double);
 
     /* Local variables */
-    static double s, sc, xe, ye, ze, xh, yh, zh, xv, yv, zv, xw, yw, zw, 
+    static double s, sc, xe, ye, ze, xh, yh, zh, xv, yv, zv, xw, yw, zw,
 	    oes, xoe, yoe, zoe, xep, yep, zep;
 
 
@@ -12988,7 +12992,7 @@ L2:
     return 0;
 } /* projct_ */
 
-/* Subroutine */ int scoord_(double *px, double *py, double *pz, 
+/* Subroutine */ int scoord_(double *px, double *py, double *pz,
 	double *plat, double *plon, double *pnrm)
 {
     /* Builtin functions */
@@ -13216,7 +13220,7 @@ double store_(double *x)
     return 0;
 } /* swap_ */
 
-long int swptst_(int *n1, int *n2, int *n3, int *n4, 
+long int swptst_(int *n1, int *n2, int *n3, int *n4,
 	double *x, double *y, double *z__)
 {
     /* System generated locals */
@@ -13302,12 +13306,12 @@ long int swptst_(int *n1, int *n2, int *n3, int *n4,
 /*   the plane of (N2,N1,N4) iff Det(N3-N4,N2-N4,N1-N4) = */
 /*   (N3-N4,N2-N4 X N1-N4) > 0. */
 
-    ret_val = dx3 * (dy2 * dz1 - dy1 * dz2) - dy3 * (dx2 * dz1 - dx1 * dz2) + 
+    ret_val = dx3 * (dy2 * dz1 - dy1 * dz2) - dy3 * (dx2 * dz1 - dx1 * dz2) +
 	    dz3 * (dx2 * dy1 - dx1 * dy2) > 0.;
     return ret_val;
 } /* swptst_ */
 
-/* Subroutine */ int trans_(int *n, double *rlat, double *rlon, 
+/* Subroutine */ int trans_(int *n, double *rlat, double *rlon,
 	double *x, double *y, double *z__)
 {
     /* System generated locals */
@@ -13394,9 +13398,9 @@ long int swptst_(int *n1, int *n2, int *n3, int *n4,
     return 0;
 } /* trans_ */
 
-/* Subroutine */ int trfind_(int *nst, double *p, int *n, 
-	double *x, double *y, double *z__, int *list, int 
-	*lptr, int *lend, double *b1, double *b2, double *b3, 
+/* Subroutine */ int trfind_(int *nst, double *p, int *n,
+	double *x, double *y, double *z__, int *list, int
+	*lptr, int *lend, double *b1, double *b2, double *b3,
 	int *i1, int *i2, int *i3)
 {
     /* Initialized data */
@@ -13583,8 +13587,8 @@ L2:
 /*   N0 is an interior node.  Find N1. */
 
 L3:
-	if (xp * (y[n0] * z__[n1] - y[n1] * z__[n0]) - yp * (x[n0] * z__[n1] 
-		- x[n1] * z__[n0]) + zp * (x[n0] * y[n1] - x[n1] * y[n0]) < 
+	if (xp * (y[n0] * z__[n1] - y[n1] * z__[n0]) - yp * (x[n0] * z__[n1]
+		- x[n1] * z__[n0]) + zp * (x[n0] * y[n1] - x[n1] * y[n0]) <
 		-1e-10) {
 	    lp = lptr[lp];
 	    n1 = list[lp];
@@ -13598,8 +13602,8 @@ L3:
 /*   N0 is a boundary node.  Test for P exterior. */
 
 	nl = -nl;
-	if (xp * (y[n0] * z__[nf] - y[nf] * z__[n0]) - yp * (x[n0] * z__[nf] 
-		- x[nf] * z__[n0]) + zp * (x[n0] * y[nf] - x[nf] * y[n0]) < 
+	if (xp * (y[n0] * z__[nf] - y[nf] * z__[n0]) - yp * (x[n0] * z__[nf]
+		- x[nf] * z__[n0]) + zp * (x[n0] * y[nf] - x[nf] * y[n0]) <
 		-1e-10) {
 
 /*   P is to the right of the boundary edge N0->NF. */
@@ -13608,8 +13612,8 @@ L3:
 	    n2 = nf;
 	    goto L9;
 	}
-	if (xp * (y[nl] * z__[n0] - y[n0] * z__[nl]) - yp * (x[nl] * z__[n0] 
-		- x[n0] * z__[nl]) + zp * (x[nl] * y[n0] - x[n0] * y[nl]) < 
+	if (xp * (y[nl] * z__[n0] - y[n0] * z__[nl]) - yp * (x[nl] * z__[n0]
+		- x[n0] * z__[nl]) + zp * (x[nl] * y[n0] - x[n0] * y[nl]) <
 		-1e-10) {
 
 /*   P is to the right of the boundary edge NL->N0. */
@@ -13650,8 +13654,8 @@ L4:
 /*     Note:  N1 = NL and LP points to NL. */
 
 L5:
-	if (xp * (y[n1] * z__[n0] - y[n0] * z__[n1]) - yp * (x[n1] * z__[n0] 
-		- x[n0] * z__[n1]) + zp * (x[n1] * y[n0] - x[n0] * y[n1]) > 
+	if (xp * (y[n1] * z__[n0] - y[n0] * z__[n1]) - yp * (x[n1] * z__[n0]
+		- x[n0] * z__[n1]) + zp * (x[n1] * y[n0] - x[n0] * y[n1]) >
 		-1e-10) {
 	    lp = lptr[lp];
 	    n1 = (i__1 = list[lp], abs(i__1));
@@ -13685,8 +13689,8 @@ L7:
 /* Top of edge-hopping loop: */
 
 L8:
-    
-    *b3 = xp * (y[n1] * z__[n2] - y[n2] * z__[n1]) - yp * (x[n1] * z__[n2] - 
+
+    *b3 = xp * (y[n1] * z__[n2] - y[n2] * z__[n1]) - yp * (x[n1] * z__[n2] -
 	    x[n2] * z__[n1]) + zp * (x[n1] * y[n2] - x[n2] * y[n1]);
      if (*b3 < -1e-10) {
 
@@ -13702,8 +13706,8 @@ L8:
 
 /*   Define a new arc N1->N2 which intersects the geodesic */
 /*     N0-P. */
-	if (xp * (y[n0] * z__[n4] - y[n4] * z__[n0]) - yp * (x[n0] * z__[n4] 
-		- x[n4] * z__[n0]) + zp * (x[n0] * y[n4] - x[n4] * y[n0]) < 
+	if (xp * (y[n0] * z__[n4] - y[n4] * z__[n0]) - yp * (x[n0] * z__[n4]
+		- x[n4] * z__[n0]) + zp * (x[n0] * y[n4] - x[n4] * y[n0]) <
 		-1e-10) {
 	    n3 = n2;
 	    n2 = n4;
@@ -13791,12 +13795,12 @@ L9:
 /*           Counterclockwise Boundary Traversal: */
 
 L10:
-    
+
     lp = lend[n2];
     lp = lptr[lp];
     next = list[lp];
      if (xp * (y[n2] * z__[next] - y[next] * z__[n2]) - yp * (x[n2] * z__[next]
-	     - x[next] * z__[n2]) + zp * (x[n2] * y[next] - x[next] * y[n2]) 
+	     - x[next] * z__[n2]) + zp * (x[n2] * y[next] - x[next] * y[n2])
 	    >= -1e-10) {
 
 /*   N2 is the rightmost visible node if P Forward N2->N1 */
@@ -13851,7 +13855,7 @@ L11:
 L12:
 	lp = lend[n1];
 	next = -list[lp];
-	if (xp * (y[next] * z__[n1] - y[n1] * z__[next]) - yp * (x[next] * 
+	if (xp * (y[next] * z__[n1] - y[n1] * z__[next]) - yp * (x[next] *
 		z__[n1] - x[n1] * z__[next]) + zp * (x[next] * y[n1] - x[n1] *
 		 y[next]) >= -1e-10) {
 
@@ -13912,7 +13916,7 @@ L14:
     return 0;
 } /* trfind_ */
 
-/* Subroutine */ int trlist_(int *n, int *list, int *lptr, 
+/* Subroutine */ int trlist_(int *n, int *list, int *lptr,
 	int *lend, int *nrow, int *nt, int *ltri, int *
 	ier)
 {
@@ -13920,7 +13924,7 @@ L14:
     int ltri_dim1, ltri_offset, i__1, i__2;
 
     /* Local variables */
-    static int i__, j, i1, i2, i3, n1, n2, n3, ka, kn, lp, kt, nm2, lp2, 
+    static int i__, j, i1, i2, i3, n1, n2, n3, ka, kn, lp, kt, nm2, lp2,
 	    lpl, isv;
     static long int arcs;
     static int lpln1;
@@ -14215,7 +14219,7 @@ L12:
     return 0;
 } /* trlist_ */
 
-/* Subroutine */ int trlprt_(int *n, double *x, double *y, 
+/* Subroutine */ int trlprt_(int *n, double *x, double *y,
 	double *z__, int *iflag, int *nrow, int *nt, int *
 	ltri, int *lout)
 {
@@ -14333,7 +14337,7 @@ L12:
 
 /*      WRITE (LUN,100) N */
     nl = 3;
-    if (*n < 3 || *n > nmax || *nrow != 6 && *nrow != 9 || *nt < 1 || *nt > 
+    if (*n < 3 || *n > nmax || *nrow != 6 && *nrow != 9 || *nt < 1 || *nt >
 	    nmax) {
 
 /* Print an error message and exit. */
@@ -14435,8 +14439,8 @@ L12:
 /*     .        ', NROW =',I5,', NT =',I5,' ***') */
 } /* trlprt_ */
 
-/* Subroutine */ int trmesh_(int *n, double *x, double *y, 
-	double *z__, int *list, int *lptr, int *lend, int 
+/* Subroutine */ int trmesh_(int *n, double *x, double *y,
+	double *z__, int *list, int *lptr, int *lend, int
 	*lnew, int *near__, int *next, double *dist, int *ier)
 {
     /* System generated locals */
@@ -14447,12 +14451,12 @@ L12:
     static int i__, j, k;
     static double d1, d2, d3;
     static int i0, lp, nn, lpl;
-    extern long int left_(double *, double *, double *, double 
-	    *, double *, double *, double *, double *, 
+    extern long int left_(double *, double *, double *, double
+	    *, double *, double *, double *, double *,
 	    double *);
     static int nexti;
-    extern /* Subroutine */ int addnod_(int *, int *, double *, 
-	    double *, double *, int *, int *, int *, 
+    extern /* Subroutine */ int addnod_(int *, int *, double *,
+	    double *, double *, int *, int *, int *,
 	    int *, int *);
 
 
@@ -14904,8 +14908,8 @@ L5:
 } /* trmesh_ */
 
 /* Subroutine */ int trplot_(int *lun, double *pltsiz, double *
-	elat, double *elon, double *a, int *n, double *x, 
-	double *y, double *z__, int *list, int *lptr, int 
+	elat, double *elon, double *a, int *n, double *x,
+	double *y, double *z__, int *list, int *lptr, int
 	*lend, char *, long int *numbr, int *ier, short )
 {
     /* Initialized data */
@@ -15395,8 +15399,8 @@ L12:
     return 0;
 } /* trplot_ */
 
-/* Subroutine */ int trprnt_(int *n, double *x, double *y, 
-	double *z__, int *iflag, int *list, int *lptr, 
+/* Subroutine */ int trprnt_(int *n, double *x, double *y,
+	double *z__, int *iflag, int *list, int *lptr,
 	int *lend, int *lout)
 {
     /* Initialized data */
@@ -15695,9 +15699,9 @@ L5:
 } /* trprnt_ */
 
 /* Subroutine */ int vrplot_(int *lun, double *pltsiz, double *
-	elat, double *elon, double *a, int *n, double *x, 
+	elat, double *elon, double *a, int *n, double *x,
 	double *y, double *z__, int *nt, int *listc, int *
-	lptr, int *lend, double *xc, double *yc, double *zc, 
+	lptr, int *lend, double *xc, double *yc, double *zc,
 	char *, long int *numbr, int *ier, short)
 {
     /* Initialized data */
@@ -15719,7 +15723,7 @@ L5:
     /* Local variables */
     static double t;
     static int n0;
-    static double p1[3], p2[3], x0, y0, cf, r11, r12, r21, ct, r22, r23, 
+    static double p1[3], p2[3], x0, y0, cf, r11, r12, r21, ct, r22, r23,
 	    sf;
     static int ir, lp;
     static double ex, ey, ez, wr, tx, ty;
@@ -16242,7 +16246,7 @@ L12:
     return 0;
 } /* vrplot_ */
 
-/* Subroutine */ int random_(int *ix, int *iy, int *iz, 
+/* Subroutine */ int random_(int *ix, int *iy, int *iz,
 	double *rannum)
 {
     static double x;
@@ -16270,7 +16274,7 @@ L12:
     return 0;
 } /* random_ */
 
-#undef TRUE_ 
+#undef TRUE_
 #undef FALSE_
 #undef abs
 
@@ -16290,7 +16294,7 @@ EMData* Util::mult_scalar(EMData* img, float scalar)
 		throw NullPointerException("NULL input image");
 	}
 	/* ============  output = scalar*input  ================== */
-	
+
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	int size = nx*ny*nz;
 	EMData * img2 = img->copy_head();
@@ -16315,7 +16319,7 @@ EMData* Util::madn_scalar(EMData* img, EMData* img1, float scalar)
 		throw NullPointerException("NULL input image");
 	}
 	/* ==============   output = img + scalar*img1   ================ */
-	
+
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	int size = nx*ny*nz;
 	EMData * img2 = img->copy_head();
@@ -16328,7 +16332,7 @@ EMData* Util::madn_scalar(EMData* img, EMData* img1, float scalar)
 		img2->set_complex(true);
 		if(img->is_fftodd()) img2->set_fftodd(true); else img2->set_fftodd(false);
 	}
-	
+
 	EXITFUNC;
 	return img2;
 }
@@ -16341,7 +16345,7 @@ EMData* Util::addn_img(EMData* img, EMData* img1)
 		throw NullPointerException("NULL input image");
 	}
 	/* ==============   output = img + img1   ================ */
-	
+
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	int size = nx*ny*nz;
 	EMData * img2 = img->copy_head();
@@ -16354,7 +16358,7 @@ EMData* Util::addn_img(EMData* img, EMData* img1)
 		img2->set_complex(true);
 		if(img->is_fftodd()) img2->set_fftodd(true); else img2->set_fftodd(false);
 	}
-	
+
 	EXITFUNC;
 	return img2;
 }
@@ -16367,7 +16371,7 @@ EMData* Util::subn_img(EMData* img, EMData* img1)
 		throw NullPointerException("NULL input image");
 	}
 	/* ==============   output = img - img1   ================ */
-	
+
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	int size = nx*ny*nz;
 	EMData * img2 = img->copy_head();
@@ -16380,7 +16384,7 @@ EMData* Util::subn_img(EMData* img, EMData* img1)
 		img2->set_complex(true);
 		if(img->is_fftodd()) img2->set_fftodd(true); else img2->set_fftodd(false);
 	}
-	
+
 	EXITFUNC;
 	return img2;
 }
@@ -16393,7 +16397,7 @@ EMData* Util::muln_img(EMData* img, EMData* img1)
 		throw NullPointerException("NULL input image");
 	}
 	/* ==============   output = img * img1   ================ */
-	
+
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	int size = nx*ny*nz;
 	EMData * img2 = img->copy_head();
@@ -16411,7 +16415,7 @@ EMData* Util::muln_img(EMData* img, EMData* img1)
 		for (int i=0; i<size; i++) img2_ptr[i] = img_ptr[i] * img1_ptr[i];
 		img2->update();
 	}
-	
+
 	EXITFUNC;
 	return img2;
 }
@@ -16424,7 +16428,7 @@ EMData* Util::divn_img(EMData* img, EMData* img1)
 		throw NullPointerException("NULL input image");
 	}
 	/* ==============   output = img / img1   ================ */
-	
+
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	int size = nx*ny*nz;
 	EMData * img2 = img->copy_head();
@@ -16444,7 +16448,7 @@ EMData* Util::divn_img(EMData* img, EMData* img1)
 		for (int i=0; i<size; i++) img2_ptr[i] = img_ptr[i] / img1_ptr[i];
 		img2->update();
 	}
-	
+
 	EXITFUNC;
 	return img2;
 }
@@ -16457,7 +16461,7 @@ EMData* Util::divn_filter(EMData* img, EMData* img1)
 		throw NullPointerException("NULL input image");
 	}
 	/* ========= img /= img1 ===================== */
-	
+
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	int size = nx*ny*nz;
 	EMData * img2 = img->copy_head();
@@ -16474,7 +16478,7 @@ EMData* Util::divn_filter(EMData* img, EMData* img1)
 	} else  throw ImageFormatException("Only Fourier image allowed");
 
 	img->update();
-	
+
 	EXITFUNC;
 	return img2;
 }
@@ -16487,13 +16491,13 @@ void Util::mul_scalar(EMData* img, float scalar)
 		throw NullPointerException("NULL input image");
 	}
 	/* ============  output = scalar*input  ================== */
-	
+
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	int size = nx*ny*nz;
 	float *img_ptr  =img->get_data();
 	for (int i=0;i<size;i++) img_ptr[i] *= scalar;
 	img->update();
-	
+
 	EXITFUNC;
 }
 
@@ -16505,14 +16509,14 @@ void Util::mad_scalar(EMData* img, EMData* img1, float scalar)
 		throw NullPointerException("NULL input image");
 	}
 	/* ==============   img += scalar*img1   ================ */
-	
+
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	int size = nx*ny*nz;
 	float *img_ptr  =img->get_data();
 	float *img1_ptr = img1->get_data();
 	for (int i=0;i<size;i++)img_ptr[i] += img1_ptr[i]*scalar;
 	img1->update();
-	
+
 	EXITFUNC;
 }
 
@@ -16524,14 +16528,14 @@ void Util::add_img(EMData* img, EMData* img1)
 		throw NullPointerException("NULL input image");
 	}
 	/* ========= img += img1 ===================== */
-	
+
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	int size = nx*ny*nz;
 	float *img_ptr  = img->get_data();
 	float *img1_ptr = img1->get_data();
 	for (int i=0;i<size;i++) img_ptr[i] += img1_ptr[i];
 	img->update();
-	
+
 	EXITFUNC;
 }
 
@@ -16543,7 +16547,7 @@ void Util::add_img2(EMData* img, EMData* img1)
 		throw NullPointerException("NULL input image");
 	}
 	/* ========= img += img1**2 ===================== */
-	
+
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	int size = nx*ny*nz;
 	float *img_ptr  = img->get_data();
@@ -16554,7 +16558,7 @@ void Util::add_img2(EMData* img, EMData* img1)
 		for (int i=0;i<size;i++) img_ptr[i] += img1_ptr[i]*img1_ptr[i];
 	}
 	img->update();
-	
+
 	EXITFUNC;
 }
 
@@ -16566,14 +16570,14 @@ void Util::sub_img(EMData* img, EMData* img1)
 		throw NullPointerException("NULL input image");
 	}
 	/* ========= img -= img1 ===================== */
-	
+
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	int size = nx*ny*nz;
 	float *img_ptr  = img->get_data();
 	float *img1_ptr = img1->get_data();
 	for (int i=0;i<size;i++) img_ptr[i] -= img1_ptr[i];
 	img->update();
-	
+
 	EXITFUNC;
 }
 
@@ -16585,7 +16589,7 @@ void Util::mul_img(EMData* img, EMData* img1)
 		throw NullPointerException("NULL input image");
 	}
 	/* ========= img *= img1 ===================== */
-	
+
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	int size = nx*ny*nz;
 	float *img_ptr  = img->get_data();
@@ -16595,13 +16599,13 @@ void Util::mul_img(EMData* img, EMData* img1)
 			float tmp     = img_ptr[i] * img1_ptr[i]   - img_ptr[i+1] * img1_ptr[i+1] ;
 			img_ptr[i+1] = img_ptr[i] * img1_ptr[i+1] + img_ptr[i+1] * img1_ptr[i] ;
 			img_ptr[i]   = tmp;
-			
+
 		}
 	} else {
 		for (int i=0;i<size;i++) img_ptr[i] *= img1_ptr[i];
 	}
 	img->update();
-	
+
 	EXITFUNC;
 }
 
@@ -16613,7 +16617,7 @@ void Util::div_img(EMData* img, EMData* img1)
 		throw NullPointerException("NULL input image");
 	}
 	/* ========= img /= img1 ===================== */
-	
+
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	int size = nx*ny*nz;
 	float *img_ptr  = img->get_data();
@@ -16630,7 +16634,7 @@ void Util::div_img(EMData* img, EMData* img1)
 		for (int i=0; i<size; i++) img_ptr[i] /= img1_ptr[i];
 	}
 	img->update();
-	
+
 	EXITFUNC;
 }
 
@@ -16642,7 +16646,7 @@ void Util::div_filter(EMData* img, EMData* img1)
 		throw NullPointerException("NULL input image");
 	}
 	/* ========= img /= img1 ===================== */
-	
+
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	int size = nx*ny*nz;
 	float *img_ptr  = img->get_data();
@@ -16657,7 +16661,7 @@ void Util::div_filter(EMData* img, EMData* img1)
 	} else throw ImageFormatException("Only Fourier image allowed");
 
 	img->update();
-	
+
 	EXITFUNC;
 }
 
@@ -16670,9 +16674,9 @@ EMData* Util::pack_complex_to_real(EMData* img)
 	if (!img) {
 		throw NullPointerException("NULL input image");
 	}
-	/* ==============   img is modulus of a complex image in FFT format (so its imaginary parts are zero), 
+	/* ==============   img is modulus of a complex image in FFT format (so its imaginary parts are zero),
 	                      output is img packed into real image with Friedel part added,   ================ */
-	
+
 	int nxo=img->get_xsize(), ny=img->get_ysize(), nz=img->get_zsize();
 	int nx = nxo - 2 + img->is_fftodd();
 	int lsd2 = (nx + 2 - nx%2) / 2; // Extended x-dimension of the complex image
@@ -16689,10 +16693,10 @@ EMData* Util::pack_complex_to_real(EMData* img)
 	//img->set_array_offsets(1,1,1);
 	float *img_ptr  = img->get_data();
 	for (int iz = 1; iz <= nz; iz++) {
-		int jz=iz-1; 
+		int jz=iz-1;
 		if(jz>=nz2p) jz=jz-nzt;
 		for (int iy = 1; iy <= ny; iy++) {
-			int jy=iy-1; 
+			int jy=iy-1;
 			if(jy>=ny2p) jy=jy-nyt;
 			for (int ix = 1; ix <= lsd2; ix++) {
 				int jx=ix-1;
@@ -16718,12 +16722,12 @@ EMData* Util::pack_complex_to_real(EMData* img)
 		if(nz2 != 0)  {
 			if(nz%2 == 0) {  //if nz even, fix the first slice
 				for (int iy = nyb; iy <= nye; iy++) {
-					for (int ix = nxb; ix <= -1; ix++) { 
+					for (int ix = nxb; ix <= -1; ix++) {
 						power(ix,iy,-nz2) = power(-ix,-iy,-nz2);
 					}
 				}
 				if(ny%2 == 0) {  //if ny even, fix the first line
-					for (int ix = nxb; ix <= -1; ix++) { 
+					for (int ix = nxb; ix <= -1; ix++) {
 						power(ix,-ny2,-nz2) = power(-ix,-ny2,-nz2);
 					}
 				}
@@ -16736,7 +16740,7 @@ EMData* Util::pack_complex_to_real(EMData* img)
 				}
 			}
 		}
-		
+
 	}
 	power.update();
 	power.set_array_offsets(0,0,0);
@@ -16759,9 +16763,9 @@ vector<float> Util::multiref_polar_ali_2d(EMData* image, const vector< EMData* >
 // formerly known as apmq
     // Determine shift and rotation between image and many reference
     // images (crefim, weights have to be applied) quadratic
-    // interpolation  
-    
-    
+    // interpolation
+
+
     // Manually extract.
 /*    vector< EMAN::EMData* > crefim;
     std::size_t crefim_len = PyObject_Length(crefim_list.ptr());
@@ -16774,17 +16778,17 @@ vector<float> Util::multiref_polar_ali_2d(EMData* image, const vector< EMData* >
 */
 
 	size_t crefim_len = crefim.size();
-	
-	int   ky = int(2*yrng/step+0.5)/2; 
+
+	int   ky = int(2*yrng/step+0.5)/2;
 	int   kx = int(2*xrng/step+0.5)/2;
-	int   iref, nref=0, mirror=0; 
+	int   iref, nref=0, mirror=0;
 	float iy, ix, sx=0, sy=0;
 	float peak = -1.0E23f;
 	float ang=0.0f;
 	for (int i = -ky; i <= ky; i++) {
 		iy = i * step ;
 		for (int j = -kx; j <= kx; j++) {
-			ix = j*step ; 
+			ix = j*step ;
 			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 
 			Frngs(cimage, numr);
@@ -16834,8 +16838,8 @@ vector<float> Util::multiref_polar_ali_2d_nom(EMData* image, const vector< EMDat
     // Determine shift and rotation between image and many reference
     // images (crefim, weights have to be applied) quadratic
     // interpolation
-    
-    
+
+
     // Manually extract.
 /*    vector< EMAN::EMData* > crefim;
     std::size_t crefim_len = PyObject_Length(crefim_list.ptr());
@@ -16848,20 +16852,20 @@ vector<float> Util::multiref_polar_ali_2d_nom(EMData* image, const vector< EMDat
 */
 	size_t crefim_len = crefim.size();
 
-	int   ky = int(2*yrng/step+0.5)/2; 
+	int   ky = int(2*yrng/step+0.5)/2;
 	int   kx = int(2*xrng/step+0.5)/2;
-	int   iref, nref=0; 
+	int   iref, nref=0;
 	float iy, ix, sx=0, sy=0;
 	float peak = -1.0E23f;
 	float ang=0.0f;
 	for (int i = -ky; i <= ky; i++) {
 		iy = i * step ;
 		for (int j = -kx; j <= kx; j++) {
-			ix = j*step ; 
+			ix = j*step ;
 			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 			Frngs(cimage, numr);
 			//  compare with all reference images
-			// for iref in xrange(len(crefim)): 
+			// for iref in xrange(len(crefim)):
 			for ( iref = 0; iref < (int)crefim_len; iref++) {
 				Dict retvals = Crosrng_ns(crefim[iref], cimage, numr);
 				double qn = retvals["qn"];
@@ -16896,9 +16900,9 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 // formerly known as apmq
     // Determine shift and rotation between image and many reference
     // images (crefim, weights have to be applied) quadratic
-    // interpolation  
-    
-    
+    // interpolation
+
+
     // Manually extract.
 /*    vector< EMAN::EMData* > crefim;
     std::size_t crefim_len = PyObject_Length(crefim_list.ptr());
@@ -16916,9 +16920,9 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 	Dict d = t->get_params("spider");
 	float phi = d["phi"];
 	float theta = d["theta"];
-	int   ky = int(2*yrng/step+0.5)/2; 
+	int   ky = int(2*yrng/step+0.5)/2;
 	int   kx = int(2*xrng/step+0.5)/2;
-	int   iref, nref=0, mirror=0; 
+	int   iref, nref=0, mirror=0;
 	float iy, ix, sx=0, sy=0;
 	float peak = -1.0E23f;
 	float ang=0.0f;
@@ -16996,13 +17000,13 @@ void  Util::multiref_peaks_ali2d(EMData* image, EMData* crefim,
     // interpolation, return a list of peaks  PAP  07/21/08
 
 	int   maxrin = numr[numr.size()-1];
-	
+
 	int   ky = int(2*yrng/step+0.5)/2;
 	int   kx = int(2*xrng/step+0.5)/2;
-	
+
 	peaks->set_size(maxrin, 2*kx+3, 2*ky+3);
 	float *p_ccf1ds = peaks->get_data();
-	
+
 	peakm->set_size(maxrin, 2*kx+3, 2*ky+3);
 	float *p_ccf1dm = peakm->get_data();
 
@@ -17028,8 +17032,8 @@ void  Util::multiref_peaks_ali2d(EMData* image, EMData* crefim,
 
 //  ccf1d keeps 1d ccfs stored as (maxrin, -kx-1:kx+1, -ky-1:ky+1)
 //  margin is needed for peak search and both arrays are initialized with -1.0e20
-void  Util::multiref_peaks_compress_ali2d(EMData* image, EMData* crefim, float xrng, float yrng, 
-     float step, string mode, vector<int>numr, float cnx, float cny, EMData *peaks, EMData *peakm, 
+void  Util::multiref_peaks_compress_ali2d(EMData* image, EMData* crefim, float xrng, float yrng,
+     float step, string mode, vector<int>numr, float cnx, float cny, EMData *peaks, EMData *peakm,
      EMData *peaks_compress, EMData *peakm_compress) {
 
     // Determine shift and rotation between image and one reference
@@ -17037,13 +17041,13 @@ void  Util::multiref_peaks_compress_ali2d(EMData* image, EMData* crefim, float x
     // interpolation, return a list of peaks  PAP  07/21/08
 
 	int   maxrin = numr[numr.size()-1];
-	
+
 	int   ky = int(2*yrng/step+0.5)/2;
 	int   kx = int(2*xrng/step+0.5)/2;
-	
+
 	peaks->set_size(maxrin, 2*kx+3, 2*ky+3);
 	float *p_ccf1ds = peaks->get_data();
-	
+
 	peakm->set_size(maxrin, 2*kx+3, 2*ky+3);
 	float *p_ccf1dm = peakm->get_data();
 
@@ -17075,7 +17079,7 @@ void  Util::multiref_peaks_compress_ali2d(EMData* image, EMData* crefim, float x
 		float maxm = -1.0e22f;
 		for (int i=1; i<=2*ky+1; i++) {
 			for (int j=1; j<=2*kx+1; j++) {
-				if (p_ccf1ds[(i*(2*kx+3)+j)*maxrin+x] > maxs) maxs = p_ccf1ds[(i*(2*kx+3)+j)*maxrin+x]; 
+				if (p_ccf1ds[(i*(2*kx+3)+j)*maxrin+x] > maxs) maxs = p_ccf1ds[(i*(2*kx+3)+j)*maxrin+x];
 				if (p_ccf1dm[(i*(2*kx+3)+j)*maxrin+x] > maxm) maxm = p_ccf1dm[(i*(2*kx+3)+j)*maxrin+x];
 			}
 		}
@@ -17113,10 +17117,10 @@ vector<float>  Util::ali2d_ccf_list(EMData* image, EMData* crefim,
     // interpolation
 
 	int   maxrin = numr[numr.size()-1];
-	
+
 	int   ky = int(2*yrng/step+0.5)/2;
 	int   kx = int(2*xrng/step+0.5)/2;
-	
+
 	float *p_ccf1ds = (float *)malloc(maxrin*sizeof(float));
 	float *p_ccf1dm = (float *)malloc(maxrin*sizeof(float));
 	int vol = maxrin*(2*kx+1)*(2*ky+1);
@@ -17143,7 +17147,7 @@ vector<float>  Util::ali2d_ccf_list(EMData* image, EMData* crefim,
 				temp.mirror = 1;
 				ccf[index] = temp;
 				index++;
-			}	
+			}
 			delete cimage; cimage = 0;
 		}
 	}
@@ -17162,12 +17166,12 @@ vector<float>  Util::ali2d_ccf_list(EMData* image, EMData* crefim,
 	}
 	for (int i=0; i<2*vol; i++) {
 		p[i] /= sump;
-	} 
+	}
 	for (int i=1; i<2*vol; i++) {
 		p[i] += p[i-1];
 	}
 	p[2*vol-1] = 2.0;
-	
+
 	float t = get_frand(0, 1);
 	int select = 0;
 	while (p[select] < t)	select += 1;
@@ -17192,9 +17196,9 @@ void Util::multiref_peaks_ali(EMData* image, const vector< EMData* >& crefim,
 // formerly known as apmq
     // Determine shift and rotation between image and many reference
     // images (crefim, weights have to be applied) quadratic
-    // interpolation  
-    
-    
+    // interpolation
+
+
     // Manually extract.
 *//*    vector< EMAN::EMData* > crefim;
     std::size_t crefim_len = PyObject_Length(crefim_list.ptr());
@@ -17211,7 +17215,7 @@ void Util::multiref_peaks_ali(EMData* image, const vector< EMData* >& crefim,
 	size_t crefim_len = crefim.size();
 
 	int   iref;
-	int   ky = int(2*yrng/step+0.5)/2; 
+	int   ky = int(2*yrng/step+0.5)/2;
 	int   kx = int(2*xrng/step+0.5)/2;
 	int   tkx = 2*kx+3;
 	int   tky = 2*ky+3;
@@ -17233,7 +17237,7 @@ void Util::multiref_peaks_ali(EMData* image, const vector< EMData* >& crefim,
 	for (int i = -ky; i <= ky; i++) {
 		iy = i * step ;
 		for (int j = -kx; j <= kx; j++) {
-			ix = j*step ; 
+			ix = j*step ;
 			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 			Frngs(cimage, numr);
 			//  compare with all reference images
@@ -17250,7 +17254,7 @@ void Util::multiref_peaks_ali(EMData* image, const vector< EMData* >& crefim,
 }
 */
 vector<float> Util::twoD_fine_ali(EMData* image, EMData *refim, EMData* mask, float ang, float sxs, float sys) {
-	
+
 	EMData *rot;
 
 	const int nmax=3, mmax=3;
@@ -17272,10 +17276,10 @@ vector<float> Util::twoD_fine_ali(EMData* image, EMData *refim, EMData* mask, fl
 	//        exceed the limits nmax and mmax respectively.)
 	n=3;
 	m=3;
- 
+
 	//     We now provide nbd which defines the bounds on the variables:
 	//                    l   specifies the lower bounds,
-	//                    u   specifies the upper bounds. 
+	//                    u   specifies the upper bounds.
  	//		      x   specifies the initial guess
 	x[0] = ang; nbd[0] = 2; l[0] = ang-2.0; u[0] = ang+2.0;
 	x[1] = sxs; nbd[1] = 2; l[1] = sxs-1.5; u[1] = sxs+1.5;
@@ -17305,7 +17309,7 @@ vector<float> Util::twoD_fine_ali(EMData* image, EMData *refim, EMData* mask, fl
 		f = rot->cmp("sqeuclidean", refim, Dict("mask", mask));
 		//f = -f;
 		delete rot;
-		
+
 	      	//        Compute gradient g for the sample problem.
 		float dt = 1.0e-3f;
 		rot = new EMData();
@@ -17318,35 +17322,35 @@ vector<float> Util::twoD_fine_ali(EMData* image, EMData *refim, EMData* mask, fl
 		dt = 1.0e-2f;
 		rot = new EMData();
 		rot = image->rot_scale_trans2D((float)x[0], (float)x[1]+dt, (float)x[2], 1.0f);
-		f2 = rot->cmp("sqeuclidean", refim, Dict("mask", mask));		
+		f2 = rot->cmp("sqeuclidean", refim, Dict("mask", mask));
 		//f2 = -f2;
 		g[1] = (f2-f)/dt;
 		delete rot;
-		
+
 		rot = new EMData();
 		rot = image->rot_scale_trans2D((float)x[0], (float)x[1], (float)x[2]+dt, 1.0f);
 		f3 = rot->cmp("sqeuclidean", refim, Dict("mask", mask));
 		//f3 = -f3;
 		g[2] = (f3-f)/dt;
 		delete rot;
-   		} 
-		
+   		}
+
 		//c          go back to the minimization routine.
 		setulb_(&n,&m,x,l,u,nbd,&f,g,&factr,&pgtol,wa,iwa,task,&iprint,csave,lsave,isave,dsave,SIXTY,SIXTY);
 		//step++;
   	}
-	
+
 	//printf("Total step is %d\n", step);
 	vector<float> res;
 	res.push_back(static_cast<float>(x[0]));
 	res.push_back(static_cast<float>(x[1]));
-	res.push_back(static_cast<float>(x[2]));	
+	res.push_back(static_cast<float>(x[2]));
 	//res.push_back(step);
 	return res;
 }
 
 vector<float> Util::twoD_fine_ali_G(EMData* image, EMData *refim, EMData* mask, Util::KaiserBessel& kb, float ang, float sxs, float sys) {
-	
+
 	EMData *rot;
 
 	const int nmax=3, mmax=3;
@@ -17368,10 +17372,10 @@ vector<float> Util::twoD_fine_ali_G(EMData* image, EMData *refim, EMData* mask, 
 	//        exceed the limits nmax and mmax respectively.)
 	n=3;
 	m=3;
- 
+
 	//     We now provide nbd which defines the bounds on the variables:
 	//                    l   specifies the lower bounds,
-	//                    u   specifies the upper bounds. 
+	//                    u   specifies the upper bounds.
  	//		      x   specifies the initial guess
 	x[0] = ang; nbd[0] = 2; l[0] = ang-2.0; u[0] = ang+2.0;
 	x[1] = sxs; nbd[1] = 2; l[1] = sxs-1.5; u[1] = sxs+1.5;
@@ -17401,7 +17405,7 @@ vector<float> Util::twoD_fine_ali_G(EMData* image, EMData *refim, EMData* mask, 
 		f = rot->cmp("sqeuclidean", refim, Dict("mask", mask));
 		//f = -f;
 		delete rot;
-		
+
 	      	//        Compute gradient g for the sample problem.
 		float dt = 1.0e-3f;
 		rot = new EMData();
@@ -17413,35 +17417,35 @@ vector<float> Util::twoD_fine_ali_G(EMData* image, EMData *refim, EMData* mask, 
 
 		rot = new EMData();
 		rot = image->rot_scale_conv7((float)(x[0]*pi/180), (float)x[1]+dt, (float)x[2], kb, 1.0);
-		f2 = rot->cmp("sqeuclidean", refim, Dict("mask", mask));		
+		f2 = rot->cmp("sqeuclidean", refim, Dict("mask", mask));
 		//f2 = -f2;
 		g[1] = (f2-f)/dt;
 		delete rot;
-		
+
 		rot = new EMData();
 		rot = image->rot_scale_conv7((float)(x[0]*pi/180), (float)x[1], (float)x[2]+dt, kb, 1.0f);
 		f3 = rot->cmp("sqeuclidean", refim, Dict("mask", mask));
 		//f3 = -f3;
 		g[2] = (f3-f)/dt;
 		delete rot;
-   		} 
-		
+   		}
+
 		//c          go back to the minimization routine.
 		setulb_(&n,&m,x,l,u,nbd,&f,g,&factr,&pgtol,wa,iwa,task,&iprint,csave,lsave,isave,dsave,SIXTY,SIXTY);
 		//step++;
   	}
-	
+
 	//printf("Total step is %d\n", step);
 	vector<float> res;
 	res.push_back(static_cast<float>(x[0]));
 	res.push_back(static_cast<float>(x[1]));
 	res.push_back(static_cast<float>(x[2]));
-	//res.push_back(step);	
+	//res.push_back(step);
 	return res;
 }
 
 vector<float> Util::twoD_to_3D_ali(EMData* volft, Util::KaiserBessel& kb, EMData *refim, EMData* mask, float phi, float theta, float psi, float sxs, float sys) {
-	
+
 	EMData *proj, *proj2;
 
 	const int nmax=5, mmax=5;
@@ -17463,10 +17467,10 @@ vector<float> Util::twoD_to_3D_ali(EMData* volft, Util::KaiserBessel& kb, EMData
 	//        exceed the limits nmax and mmax respectively.)
 	n=5;
 	m=5;
- 
+
 	//     We now provide nbd which defines the bounds on the variables:
 	//                    l   specifies the lower bounds,
-	//                    u   specifies the upper bounds. 
+	//                    u   specifies the upper bounds.
  	//		      x   specifies the initial guess
 	x[0] = phi; 	nbd[0] = 2; 	l[0] = phi-2.0; 	u[0] = phi+2.0;
 	x[1] = theta; 	nbd[1] = 2; 	l[1] = theta-2.0;	u[1] = theta+2.0;
@@ -17506,7 +17510,7 @@ vector<float> Util::twoD_to_3D_ali(EMData* volft, Util::KaiserBessel& kb, EMData
 		//f = -f;
 		delete proj;
 		delete proj2;
-		
+
 	      	//        Compute gradient g for the sample problem.
 		float dt = 1.0e-3f;
 		proj = new EMData();
@@ -17578,13 +17582,13 @@ vector<float> Util::twoD_to_3D_ali(EMData* volft, Util::KaiserBessel& kb, EMData
 		delete proj;
 		delete proj2;
 		g[4] = (ft-f)/dt;
-   		} 
-		
+   		}
+
 		//c          go back to the minimization routine.
 		setulb_(&n,&m,x,l,u,nbd,&f,g,&factr,&pgtol,wa,iwa,task,&iprint,csave,lsave,isave,dsave,SIXTY,SIXTY);
 		step++;
   	}
-	
+
 	printf("Total step is %d\n", step);
 	vector<float> res;
 	res.push_back(static_cast<float>(x[0]));
@@ -17592,21 +17596,21 @@ vector<float> Util::twoD_to_3D_ali(EMData* volft, Util::KaiserBessel& kb, EMData
 	res.push_back(static_cast<float>(x[2]));
 	res.push_back(static_cast<float>(x[3]));
 	res.push_back(static_cast<float>(x[4]));
-	//res.push_back(step);	
+	//res.push_back(step);
 	return res;
 }
 
 
 vector<float> Util::twoD_fine_ali_SD(EMData* image, EMData *refim, EMData* mask, float ang, float sxs, float sys) {
-	
+
 	double  x[4];
 	int n;
 	int l = 3;
 	int m = 200;
 	double e = 1e-9;
-	double step = 0.01;  
+	double step = 0.01;
 	float (*my_func)(EMData* , EMData* , EMData* , float , float , float) = ccc_images;
-	
+
 	x[1] = ang;
 	x[2] = sxs;
 	x[3] = sys;
@@ -17618,7 +17622,7 @@ vector<float> Util::twoD_fine_ali_SD(EMData* image, EMData *refim, EMData* mask,
 	res.push_back(static_cast<float>(x[1]));
 	res.push_back(static_cast<float>(x[2]));
 	res.push_back(static_cast<float>(x[3]));
-	res.push_back(static_cast<float>(n));	
+	res.push_back(static_cast<float>(n));
 	return res;
 }
 
@@ -17627,7 +17631,7 @@ float Util::ccc_images(EMData* image, EMData* refim, EMData* mask, float ang, fl
 
 	EMData *rot= new EMData();
 	float ccc;
-	
+
 	rot = image->rot_scale_trans2D(ang, sx, sy, 1.0);
 	ccc = -rot->cmp("sqeuclidean", refim, Dict("mask", mask));
 	delete rot;
@@ -17635,15 +17639,15 @@ float Util::ccc_images(EMData* image, EMData* refim, EMData* mask, float ang, fl
 }
 
 vector<float> Util::twoD_fine_ali_SD_G(EMData* image, EMData *refim, EMData* mask, Util::KaiserBessel& kb, float ang, float sxs, float sys) {
-	
+
 	double  x[4];
 	int n;
 	int l = 3;
 	int m = 200;
 	double e = 1e-9;
-	double step = 0.001;  
+	double step = 0.001;
 	float (*my_func)(EMData* , EMData* , EMData* , Util::KaiserBessel&, float , float , float) = ccc_images_G;
-	
+
 	x[1] = ang;
 	x[2] = sxs;
 	x[3] = sys;
@@ -17655,7 +17659,7 @@ vector<float> Util::twoD_fine_ali_SD_G(EMData* image, EMData *refim, EMData* mas
 	res.push_back(static_cast<float>(x[1]));
 	res.push_back(static_cast<float>(x[2]));
 	res.push_back(static_cast<float>(x[3]));
-	res.push_back(static_cast<float>(n));	
+	res.push_back(static_cast<float>(n));
 	return res;
 }
 
@@ -17664,7 +17668,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 
 	EMData *rot= new EMData();
 	float ccc;
-	
+
 	rot = image->rot_scale_conv7(static_cast<float>(ang*pi/180.0), sx, sy, kb, 1.0f);
 	ccc = -rot->cmp("sqeuclidean", refim, Dict("mask", mask));
 	delete rot;
@@ -17737,9 +17741,9 @@ EMData* Util::move_points(EMData* img, float qprob, int ri, int ro)
 								if(Util::get_frand(0.0,1.0) > qprob) {
 									//  find out the number of neighbors
 									float  numn = -1.0f;  // we already know the central one is 1
-									for (newz = -1; newz <= 1; newz++) 
-										for (newy = -1; newy <= 1; newy++) 
-											for (newx = -1; newx <= 1; newx++) 
+									for (newz = -1; newz <= 1; newz++)
+										for (newy = -1; newy <= 1; newy++)
+											for (newx = -1; newx <= 1; newx++)
 												numn += img_ptr(ib+newx,jb+newy,kb+newz);
 									img2_ptr(ib,jb,kb) = 0.0;
 									if(numn == 26.0f) {
@@ -17770,7 +17774,7 @@ EMData* Util::move_points(EMData* img, float qprob, int ri, int ro)
 												for (newx = -1; newx <= 1; newx++) {
 													if( newx != 0 && newy != 0 && newz != 0) {
 														if(img_ptr(newx+ib,newy+jb,newz+kb) == 0.0f) {
-															img2_ptr(newx+ib,newy+jb,newz+kb) = 1.0f; 
+															img2_ptr(newx+ib,newy+jb,newz+kb) = 1.0f;
 															}
 													}
 												}
@@ -17918,11 +17922,11 @@ EMData* Util::get_biggest_cluster( EMData* mg )
 	Assert( npoint==maxsize );
 	delete visited;
 	return result;
-   
+
 }
 
 EMData* Util::ctf_img(int nx, int ny, int nz, float dz,float ps,float voltage,float cs, float wgh,float b_factor,float dza, float azz, float sign)
-{               
+{
 	int   ix, iy, iz;
 	int   i,  j, k;
 	int   nr2, nl2;
@@ -17932,7 +17936,7 @@ EMData* Util::ctf_img(int nx, int ny, int nz, float dz,float ps,float voltage,fl
 	int lsm = nx + offset;
 	EMData* ctf_img1 = new EMData();
 	ctf_img1->set_size(lsm, ny, nz);
-	float freq = 1.0f/(2.0f*ps);		    
+	float freq = 1.0f/(2.0f*ps);
 	scx = 2.0f/float(nx);
 	if(ny>=1) scy = 2.0f/float(ny); else scy=0.0f;
 	if(nz>=1) scz = 2.0f/float(nz); else scz=0.0f;
@@ -17957,7 +17961,7 @@ EMData* Util::ctf_img(int nx, int ny, int nz, float dz,float ps,float voltage,fl
 	ctf_img1->set_ri(true);
 	//ctf_img1->attr_dict["is_complex"] = 1;
 	//ctf_img1->attr_dict["is_ri"] = 1;
-	if(nx%2==0) ctf_img1->set_fftodd(false); else ctf_img1->set_fftodd(true);		
+	if(nx%2==0) ctf_img1->set_fftodd(false); else ctf_img1->set_fftodd(true);
 	return ctf_img1;
 }
 /*
@@ -18049,7 +18053,7 @@ vector<float> Util::cluster_pairwise(EMData* d, int K) {
 */
 #define  cent(i)     out[i+N]
 #define  assign(i)   out[i]
-vector<float> Util::cluster_pairwise(EMData* d, int K, float T, float F) {     
+vector<float> Util::cluster_pairwise(EMData* d, int K, float T, float F) {
 	int nx = d->get_xsize();
 	int N = 1 + int((sqrt(1.0 + 8.0*nx)-1.0)/2.0);
 	vector<float> out(N+K+2);
@@ -18078,7 +18082,7 @@ vector<float> Util::cluster_pairwise(EMData* d, int K, float T, float F) {
 		change = false;
 		dispold = disp;
 		it++;
-		
+
 		// dispersion is a sum of distance from objects to object center
 		disp = 0.0f;
 		ct = 0;
@@ -18096,7 +18100,7 @@ vector<float> Util::cluster_pairwise(EMData* d, int K, float T, float F) {
 					}
 				}
 			}
-			
+
 
 			// Simulated annealing
 			if(exp(-1.0/float(T)) > Util::get_irand(1,1000)/1000.0) {
@@ -18106,7 +18110,7 @@ vector<float> Util::cluster_pairwise(EMData* d, int K, float T, float F) {
 			}
 
 			disp += qm;
-			
+
 			if(na != assign(i)) {
 				assign(i) = na;
 				change = true;
@@ -18391,22 +18395,22 @@ EMData* Util::get_slice(EMData *vol, int dim, int index) {
 		dim denotes the slice is perpendicular to which dimension
 		1 for x-dimension, 2 for y-dimension and 3 for z-dimension
 	*/
-	
+
 	int nx = vol->get_xsize();
 	int ny = vol->get_ysize();
 	int nz = vol->get_zsize();
 	float *vol_data = vol->get_data();
 	int new_nx, new_ny;
-	
+
 	if (nz == 1)
 		throw ImageDimensionException("Error: Input must be a 3-D object");
 	if ((dim < 1) || (dim > 3))
 		throw ImageDimensionException("Error: dim must be 1 (x-dimension), 2 (y-dimension) or 3 (z-dimension)");
-	if (((dim == 1) && (index < 0 || index > nx-1)) || 
-	  ((dim == 1) && (index < 0 || index > nx-1)) || 
+	if (((dim == 1) && (index < 0 || index > nx-1)) ||
+	  ((dim == 1) && (index < 0 || index > nx-1)) ||
 	  ((dim == 1) && (index < 0 || index > nx-1)))
 		throw ImageDimensionException("Error: index exceeds the size of the 3-D object");
-		
+
 	if (dim == 1) {
 		new_nx = ny;
 		new_ny = nz;
@@ -18417,15 +18421,15 @@ EMData* Util::get_slice(EMData *vol, int dim, int index) {
 		new_nx = nx;
 		new_ny = ny;
 	}
-	
+
 	EMData *slice = new EMData();
 	slice->set_size(new_nx, new_ny, 1);
 	float *slice_data = slice->get_data();
-	
+
 	if (dim == 1) {
 		for (int x=0; x<new_nx; x++)
 			for (int y=0; y<new_ny; y++)
-				slice_data[y*new_nx+x] = vol_data[(y*ny+x)*nx+index];			
+				slice_data[y*new_nx+x] = vol_data[(y*ny+x)*nx+index];
 	} else if (dim == 2) {
 		for (int x=0; x<new_nx; x++)
 			for (int y=0; y<new_ny; y++)
@@ -18435,6 +18439,6 @@ EMData* Util::get_slice(EMData *vol, int dim, int index) {
 			for (int y=0; y<new_ny; y++)
 				slice_data[y*new_nx+x] = vol_data[(index*ny+y)*nx+x];
 	}
-	  	
+
 	return slice;
 }
