@@ -21,4 +21,4 @@ int stored_cuda_array(const float* ,const int,const int,const int);
  */
 void bind_cuda_texture(const int);
 
-#endif eman__cuda_util_h__
+#endif // eman__cuda_util_h__
