@@ -5539,7 +5539,7 @@ void IterBinMaskProcessor::process_inplace(EMData * image)
 
 	float val1 = params["val1"];
 	float val2 = params["val2"];
-
+	
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
@@ -5558,7 +5558,7 @@ void IterBinMaskProcessor::process_inplace(EMData * image)
 
 	// TODO: THIS IS EXTREMELY INEFFICIENT
 	if (nz != 1) {
-		for (int l = 1; l <= (int) val1; l++) {
+		for (int l = 1; l <= (int) val1+val2; l++) {
 			for (int i=0; i<nx*ny*nz; i++) d2[i]=d[i];
 			for (int k = 1; k < nz - 1; k++) {
 				for (int j = 1; j < ny - 1; j++) {
@@ -5572,22 +5572,22 @@ void IterBinMaskProcessor::process_inplace(EMData * image)
 		}
 	}
 	else {
-		for (int l = 1; l <= (int) val1; l++) {
+		for (int l = 1; l <= (int) val1+val2; l++) {
 			for (int i=0; i<nx*ny*nz; i++) d2[i]=d[i];
 			for (int j = 1; j < ny - 1; j++) {
 				for (int i = 1; i < nx - 1; i++) {
 					int t = i + j * nx;
 					if (d[t]) continue;
-					if (d2[t - 1] || d2[t + 1] || d2[t + nx] || d2[t - nx] || d2[t + nxy] || d2[t - nxy]) d[t] = (float) l + 1;
+					if (d2[t - 1] || d2[t + 1] || d2[t + nx] || d2[t - nx]) d[t] = (float) l + 1;
 				}
 			}
 		}
 	}
 
 	vector<float> vec;
-	for (int i=0; i<val2; i++) vec.push_back(1.0);
-	for (int i=0; i<=val1-val2+2; i++) {
-		vec.push_back(exp(-pow(2.0f*i/(val1-val2),2.0f)));
+	for (int i=0; i<val1+2; i++) vec.push_back(1.0);
+	for (int i=0; i<val2; i++) {
+		vec.push_back(exp(-pow(2.0f*i/(val2),2.0f)));
 //		printf("%f\n",exp(-pow(2.0*i/(val1-val2),2.0)));
 	}
 	for (size_t i = 0; i < size; i++) if (d[i]) d[i]=vec[(int)d[i]];
