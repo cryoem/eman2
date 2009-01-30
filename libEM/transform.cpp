@@ -103,6 +103,18 @@ void Transform::set_matrix(const vector<float>& v)
 		}
 	}
 }
+
+void Transform::copy_matrix_into_array(float* array) {
+	
+	int idx = 0;
+	for(int i=0; i<3; ++i) {
+		for(int j=0; j<4; ++j) {
+			array[idx] = matrix[i][j];
+			idx ++;
+		}
+	}
+}
+
 vector<float> Transform::get_matrix() const
 {
 	vector<float> ret(12);

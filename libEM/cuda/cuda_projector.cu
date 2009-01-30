@@ -8,10 +8,6 @@
 #include "cuda_util.h"
 
 
-#include "transform.h"
-using namespace EMAN;
-
-
 
 typedef unsigned int uint;
 __global__ void proj_kernel(float *out,float size,float3 mxx,float3 mxy, float3 mxz)
@@ -97,7 +93,7 @@ float** main_t(const float* rdata, const int nx, const int ny, const int nz)
 	return ret;
 }
 
-float* standard_project(const Transform* const t, const int nx, const int ny) 
+float* standard_project(const float* const matrix, const int nx, const int ny) 
 {
 	device_init();
 	
@@ -113,19 +109,18 @@ float* standard_project(const Transform* const t, const int nx, const int ny)
 	
 	float3 mxx,mxy,mxz;
 
-	t->printme();
 	float *memout2=0;
 	cudaMallocHost((void **)&memout2, nx*ny*sizeof(float));
 	
-	mxx.x=t->at(0,0);
-	mxx.y=t->at(0,0);
-	mxx.z=t->at(0,0);
-	mxy.x=t->at(0,0);
-	mxy.y=t->at(0,0);
-	mxy.z=t->at(0,0);
-	mxz.x=t->at(0,0);
-	mxz.y=t->at(0,0);
-	mxz.z=t->at(0,0);
+	mxx.x=matrix[0];
+	mxx.y=matrix[1];
+	mxx.z=matrix[2];
+	mxy.x=matrix[4];
+	mxy.y=matrix[5];
+	mxy.z=matrix[6];
+	mxz.x=matrix[8];
+	mxz.y=matrix[9];
+	mxz.z=matrix[10];
 		
 	proj_kernel<<<blockSize,gridSize>>>(memout,(float)nx,mxx,mxy,mxz);
 	cuCtxSynchronize();
