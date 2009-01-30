@@ -196,6 +196,7 @@ EMData *EMData::backproject(const string & projector_name, const Dict & params)
 	return result;
 }
 
+#ifdef EMAN2_USING_CUDA
 vector<EMData*> EMData::cuda_project(const vector<Transform> transforms)
 {	
 	float** data = main_t(rdata,nx,ny,nz);
@@ -212,4 +213,4 @@ vector<EMData*> EMData::cuda_project(const vector<Transform> transforms)
 	return s;
 }
 
-
+#endif // EMAN2_USING_CUDA

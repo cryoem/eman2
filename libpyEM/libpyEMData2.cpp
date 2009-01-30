@@ -207,7 +207,9 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("get_circle_mean", &EMAN::EMData::get_circle_mean)
 	.def("get_ctf", &EMAN::EMData::get_ctf, return_value_policy< manage_new_object >())
 	.def("set_ctf", &EMAN::EMData::set_ctf)
+#ifdef EMAN2_USING_CUDA
 	.def("cuda_project", &EMAN::EMData::cuda_project)
+#endif
 	.def("get_translation", &EMAN::EMData::get_translation)
 	.def("set_translation", (void (EMAN::EMData::*)(const EMAN::Vec3f&) )&EMAN::EMData::set_translation)
 	.def("set_translation", (void (EMAN::EMData::*)(float, float, float) )&EMAN::EMData::set_translation)
