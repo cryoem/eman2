@@ -986,8 +986,7 @@ EMData *CudaStandardProjector::project3d(EMData * image) const
 	if ( t3d == NULL ) throw NullPointerException("The transform object containing the angles(required for projection), was not specified");
 	float * m = new float[12];
 	t3d->copy_matrix_into_array(m);
-	int idx = stored_cuda_array(image->get_data(),image->get_xsize(),image->get_ysize(),image->get_zsize());
-	bind_cuda_texture(idx);
+	image->bind_cuda_array();
 	EMData* e = new EMData(image->get_xsize(),image->get_ysize());
 	standard_project(m,image->get_data(),image->get_xsize(),image->get_ysize(),image->get_zsize(),e->get_data());
 	delete [] m;

@@ -49,7 +49,9 @@
 #include "sparx/emarray.h"
 #include "geometry.h"
 #include "transform.h"
-
+#ifdef EMAN2_USING_CUDA
+#include "cuda/cuda_util.h"
+#endif // EMAN2_USING_CUDA
 using std::string;
 using std::vector;
 using std::map;
@@ -100,10 +102,10 @@ namespace EMAN
 
 		/** This is the header of EMData stay in sparx directory */
 		#include "sparx/emdata_sparx.h"
-		
+#ifdef EMAN2_USING_CUDA
 		/** This is for CUDA related functionality */
 		#include "emdata_cuda.h"
-
+#endif // EMAN2_USING_CUDA
 #ifdef EMAN2_USING_OPENGL
 		/** GL Texturing */
 		#include  "emdata_gl.h"

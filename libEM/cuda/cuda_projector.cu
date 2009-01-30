@@ -122,7 +122,5 @@ void standard_project(const float* const matrix,const float* const rdata, const 
 	CUDA_SAFE_CALL(cuCtxSynchronize());
 	CUDA_SAFE_CALL(cudaMemcpy(d, memout, nx*ny*sizeof(float), cudaMemcpyDeviceToHost));
 	CUDA_SAFE_CALL(cudaFree(memout));
-	
-	//return memout2;
 }
 

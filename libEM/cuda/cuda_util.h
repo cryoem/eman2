@@ -12,6 +12,8 @@ void device_init();
  */
 int stored_cuda_array(const float* ,const int,const int,const int);
 
+int delete_cuda_array(const int idx);
+
 /** Texture binding
  */
 void bind_cuda_texture(const int);

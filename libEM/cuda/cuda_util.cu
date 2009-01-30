@@ -6,8 +6,6 @@
 texture<float, 3, cudaReadModeElementType> tex;
 
 void cudaBindTexture(texture<float, 3, cudaReadModeElementType> &tex,cudaArray *array) {
-	
-
 	tex.normalized = false;
 	tex.filterMode = cudaFilterModeLinear;
 	tex.addressMode[0] = cudaAddressModeClamp;
@@ -63,6 +61,17 @@ int stored_cuda_array(const float * data,const int nx, const int ny, const int n
 	cuda_arrays[num_cuda_arrays].array = array;
 	num_cuda_arrays++;
 	return num_cuda_arrays-1;
+}
+
+int delete_cuda_array(const int idx) {
+	CUDA_SAFE_CALL(cudaFree(cuda_arrays[idx].array));
+	cuda_arrays[idx].array = 0;
+	/*
+	for (int i = idx; i < num_cuda_arrays-1; ++i ) {
+		
+	}
+	*/
+	return 0;
 }
 
 void bind_cuda_texture(const int idx) {

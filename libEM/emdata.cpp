@@ -93,6 +93,9 @@ EMData::EMData()
 #ifdef MEMDEBUG
 	printf("EMDATA+  %4d    %p\n",EMData::totalalloc,this);
 #endif
+#ifdef EMAN2_USING_CUDA
+	cuda_array_idx = -1;
+#endif //EMAN2_USING_CUDA
 	EXITFUNC;
 }
 
@@ -121,6 +124,10 @@ EMData::EMData(const string& filename, int image_index) :
 	xoff = yoff = zoff = 0;
 	
 	this->read_image(filename, image_index);
+	
+#ifdef EMAN2_USING_CUDA
+	cuda_array_idx = -1;
+#endif //EMAN2_USING_CUDA
 	
 	EMData::totalalloc++;
 	
@@ -162,6 +169,10 @@ EMData::EMData(const EMData& that) :
 	if (that.rot_fp != 0) rot_fp = new EMData(*(that.rot_fp));
 	else rot_fp = 0;
 	
+#ifdef EMAN2_USING_CUDA
+	cuda_array_idx = -1;
+#endif //EMAN2_USING_CUDA
+	
 	EMData::totalalloc++;
 	
 	ENTERFUNC;	
@@ -200,6 +211,9 @@ EMData& EMData::operator=(const EMData& that)
 		xoff = that.xoff;
 		yoff = that.yoff;
 		zoff = that.zoff;
+#ifdef EMAN2_USING_CUDA
+		free_cuda_array();
+#endif //EMAN2_USING_CUDA
 
 		changecount = that.changecount;
 
@@ -259,6 +273,9 @@ EMData::EMData(int nx, int ny, int nz, bool is_real)
 	}
 	
 	this->to_zero();
+#ifdef EMAN2_USING_CUDA
+	cuda_array_idx = -1;
+#endif //EMAN2_USING_CUDA
 	
 	EMData::totalalloc++;
 	
@@ -289,6 +306,10 @@ EMData::EMData(float* data, const int x, const int y, const int z) :
 	nx = x; ny = y; nz = z;
 	*/
 	nxy = nx*ny;
+	
+#ifdef EMAN2_USING_CUDA
+	cuda_array_idx = -1;
+#endif //EMAN2_USING_CUDA
 	EMData::totalalloc++;
 	
 	update();
@@ -303,7 +324,9 @@ EMData::~EMData()
 	ENTERFUNC;
 	
 	free_memory();
-
+#ifdef EMAN2_USING_CUDA
+	free_cuda_array();
+#endif // EMAN2_USING_CUDA
 	EMData::totalalloc--;
 #ifdef MEMDEBUG
 	printf("EMDATA-  %4d    %p\n",EMData::totalalloc,this);
@@ -2758,6 +2781,10 @@ void EMData::update_stat() const
 	{
 		delete rot_fp; rot_fp = NULL;
 	}
+	
+#ifdef EMAN2_USING_CUDA
+	free_cuda_array();
+#endif // EMAN2_USING_CUDA
 	
 	EXITFUNC;
 }
