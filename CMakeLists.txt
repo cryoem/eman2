@@ -25,6 +25,7 @@ MARK_AS_ADVANCED(ENABLE_AUTODOC)
 
 OPTION(ENABLE_FFTW2 "enable fftw 2 support" OFF)
 OPTION(ENABLE_FFTW3 "enable fftw 3 support" ON)
+OPTION(ENABLE_CUDA_FFT "enable cuda fftw support" OFF)
 OPTION(ENABLE_FFTW_PLAN_CACHING "enable fftw caching" ON)
 OPTION(ENABLE_NATIVE_FFT "enable native fft support" OFF)
 OPTION(ENABLE_ACML_FFT "enable AMD Core Math Library fft support" OFF)
