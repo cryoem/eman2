@@ -99,6 +99,7 @@ EMData *EMData::do_fft_inplace()
 		else             set_fftodd(false);
 		int nxnew = nx + offset;
 		set_size(nxnew, ny, nz);
+
 		for (int iz = nz-1; iz >= 0; iz--) {
 			for (int iy = ny-1; iy >= 0; iy--) {
 				for (int ix = nxreal-1; ix >= 0; ix--) {
@@ -151,19 +152,22 @@ EMData *EMData::do_ift()
 	memcpy((char *) d, (char *) rdata, nx * ny * nz * sizeof(float));
 
 	int offset = is_fftodd() ? 1 : 2;
+	//cout << "Sending offset " << offset << " " << nx-offset << endl;
 	if (ndim == 1) {
 		EMfft::complex_to_real_nd(d, d, nx - offset, ny, nz);
 	} else {
 		EMfft::complex_to_real_nd(d, d, nx - offset, ny, nz);
 
+#ifndef CUDA_FFT
 		size_t row_size = (nx - offset) * sizeof(float);
 		for (int i = 1; i < ny * nz; i++) {
 			memmove((char *) &d[i * (nx - offset)], (char *) &d[i * nx], row_size);
 		}
+#endif
 	}
 
 	dat->set_size(nx - offset, ny, nz);	//remove the padding
-#if defined	FFTW2 || defined FFTW3	//native fft and ACML already done normalization
+#if defined	FFTW2 || defined FFTW3	|| defined CUDA_FFT //native fft and ACML already done normalization
 	// SCALE the inverse FFT
 	float scale = 1.0f / ((nx - offset) * ny * nz);
 	dat->mult(scale);
@@ -200,14 +204,18 @@ EMData *EMData::do_ift_inplace()
 	int offset = is_fftodd() ? 1 : 2;
 	EMfft::complex_to_real_nd(rdata, rdata, nx - offset, ny, nz);
 
-#if defined	FFTW2 || defined FFTW3	//native fft and ACML already done normalization
+#if defined	FFTW2 || defined FFTW3 || defined CUDA_FFT	//native fft and ACML already done normalization
 	// SCALE the inverse FFT
 	int nxo = nx - offset;
 	float scale = 1.0f / (nxo * ny * nz);
 	mult(scale);
 #endif //FFTW2 || FFTW3
 
+#ifndef CUDA_FFT
 	set_fftpad(true);
+#else
+	set_size(nx - offset, ny, nz);
+#endif 
 	set_complex(false);
 	if(ny==1 && nz==1) set_complex_x(false);
 	set_ri(false);

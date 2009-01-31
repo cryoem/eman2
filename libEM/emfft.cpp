@@ -44,6 +44,9 @@ using std::endl;
 
 #include "util.h"
 
+#ifdef CUDA_FFT
+#include "cuda/cuda_emfft.h"
+#endif //CUDA_FFT
 
 #ifdef DJBFFT
 extern "C" {
@@ -77,7 +80,7 @@ const int EMfft::EMAN2_FFTW2_INPLACE = 1;
 const int EMfft::EMAN2_FFTW2_OUT_OF_PLACE=0;
 
 
-#ifdef CUDA_FFT
+#ifdef CUDA_FFT_OLD
 // This is experimental code by d.woolford
 // it does not work. If it ends up that we do not incorporate CUDA based stuff I will remove this code.
 // That decision has not yet been made, so this code currently serves as a starting reference.
@@ -231,7 +234,7 @@ cufftHandle EMfft::EMcuda_fftw_cache::get_plan(const int rank_in, const int x, c
 // Static init
 EMfft::EMcuda_fftw_cache EMfft::plan_cache;
 
-#endif // CUDA_FFT
+#endif // CUDA_FFT_OLD
 
 #ifdef FFTW3
 EMfft::EMfftw3_cache::EMfftw3_cache() :
@@ -868,6 +871,29 @@ int EMfft::complex_to_real_nd(float *complex_data, float *real_data, int nx, int
 #endif	//FFTW2
 
 #ifdef CUDA_FFT
+int EMfft::real_to_complex_1d(float *real_data, float *complex_data, int n)
+{
+	return  cuda_fft_real_to_complex_1d(real_data,complex_data,n);
+}
+
+int EMfft::complex_to_real_1d(float *complex_data, float *real_data, int n)
+{
+	return cuda_fft_complex_to_real_1d(complex_data,real_data,n);
+}
+
+int EMfft::real_to_complex_nd(float *real_data, float *complex_data, int nx, int ny, int nz)
+{
+	return cuda_fft_real_to_complex_nd(real_data,complex_data,nx,ny,nz);
+}
+
+int EMfft::complex_to_real_nd(float *complex_data, float *real_data, int nx, int ny, int nz)
+{
+	return cuda_fft_complex_to_real_nd(complex_data,real_data,nx,ny,nz);
+}
+
+#endif
+
+#ifdef CUDA_FFT_OLD
 // This is experimental code by d.woolford
 // it does not work. If it ends up that we do not incorporate CUDA based stuff I will remove this code.
 // That decision has not yet been made, so this code currently serves as a starting reference.
@@ -993,7 +1019,7 @@ int EMfft::complex_to_real_nd(float *complex_data, float *real_data, int nx, int
 	return 0;
 }
 
-#endif	//CUDA_FFT
+#endif	//CUDA_FFT_0LD
 
 #ifdef FFTW3
 

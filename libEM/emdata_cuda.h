@@ -54,7 +54,15 @@ private:
 			cuda_array_idx = -1;
 		}
 	}
+	
+	void free_cuda_memory() const {
+		if ( cuda_rdata != 0) {
+			delete_cuda_memory(cuda_rdata);
+			cuda_rdata = 0;
+		}
+	}
 	mutable int cuda_array_idx;
+	mutable float* cuda_rdata;
 
 #endif // EMAN2_USING_CUDA
 	

@@ -16,6 +16,7 @@
 CUDA_ADD_LIBRARY(EM2Cuda SHARED
   cuda_projector.cu
   cuda_util.cu
+  cuda_emfft.cu
   )
   
 # Something else to link to.
@@ -24,9 +25,9 @@ CUDA_ADD_LIBRARY(EM2Cuda SHARED
 #  )
 
 # Specify the dependency.
-#TARGET_LINK_LIBRARIES(EM2Cuda
-#  EM2
-#  )
+TARGET_LINK_LIBRARIES(EM2Cuda
+  cufft
+  )
 
 ##############################################################################
 # Use the CUDA_COMPILE macro.

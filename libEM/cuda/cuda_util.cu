@@ -3,6 +3,7 @@
 #include <stdio.h>
 
 #include "cuda_defs.h"
+#include "cuda_emfft.h"
 texture<float, 3, cudaReadModeElementType> tex;
 
 void cudaBindTexture(texture<float, 3, cudaReadModeElementType> &tex,cudaArray *array) {
@@ -74,6 +75,12 @@ int delete_cuda_array(const int idx) {
 	return 0;
 }
 
+int delete_cuda_memory(float*p) {
+	CUDA_SAFE_CALL(cudaFree(p));
+	p = 0;
+	return 0;
+}
+
 void bind_cuda_texture(const int idx) {
 	//printf("Binding texture\n");
 	CUDA_SAFE_CALL(cudaBindTexture(tex,cuda_arrays[idx].array));
@@ -95,6 +102,9 @@ void device_init() {
 		
 		CUDA_SAFE_CALL(cudaSetDevice(0));
 		init_cuda_emdata_arrays();
+#ifdef FFTW_PLAN_CACHING
+		init_cuda_emfft_cache();
+#endif //FFTW_PLAN_CACHING
 		init = false; //Force init everytikme
 	}
 }
