@@ -9650,7 +9650,6 @@ def imgstat_inf( stacks, rad ):
 
 		print "nx,ny,nz,avg,sigma,min,max: %6d %6d %6d %11.4e %10.5f %10.5f %10.5f" % (nx, ny, nz, avg, sigma, fmin, fmax )
 
-
 def imgstat( stacks, ifccc, fscfile, pinf, rad ):
 	if ifccc:
 		imgstat_ccc( stacks, rad )
@@ -9668,7 +9667,6 @@ def MPI_start_end(nima, nproc, myid):
 	image_start = int(round(float(nima)/nproc*myid))
 	image_end   = int(round(float(nima)/nproc*(myid+1)))
 	return image_start, image_end
-
 
 def normal_prj( prj_stack, outdir, refvol, r, niter, snr, sym, MPI=False ):
 	def peak_range( nx, ctf_params ):
@@ -9727,7 +9725,7 @@ def normal_prj( prj_stack, outdir, refvol, r, niter, snr, sym, MPI=False ):
 	for i in xrange(img_node_start, img_node_end):
 		img = get_im(prj_stack, i)
 		imgdata.append(img)
-	info.write( ' all imgs loaden\n' )
+	info.write( ' all imgs loaded\n' )
 	info.flush( )
 
 
@@ -9849,10 +9847,6 @@ def normal_prj( prj_stack, outdir, refvol, r, niter, snr, sym, MPI=False ):
 
 	info.write( "output written to file " + prj_file + '\n' )
 	info.flush()
-
-
-
-
 
 def incvar(prefix, nfile, nprj, output, fl, fh, radccc, writelp, writestack):
 	from statistics import variancer, ccc
@@ -10018,8 +10012,6 @@ def defvar(files, outdir, fl, fh, radccc, writelp, writestack):
 	avg.write_image( avgfile )
 	var.write_image( varfile )
 
-
-	
 def var_mpi(files, outdir, fl, fh, radccc, writelp, writestack, method="inc"):
 	from statistics import inc_variancer, def_variancer, ccc
 	from string import atoi, replace, split, atof
@@ -10129,10 +10121,6 @@ def var_mpi(files, outdir, fl, fh, radccc, writelp, writestack, method="inc"):
 					#all_var = circumference( all_var, radcir, radcir+1 )
 					all_var.write_image( varfile, 0 )
 
-
-
-
-
 def incvar_mpi(files, outdir, fl, fh, radccc, writelp, writestack):
 	from statistics import inc_variancer, ccc
 	from string import atoi, replace, split, atof
@@ -10241,17 +10229,11 @@ def incvar_mpi(files, outdir, fl, fh, radccc, writelp, writestack):
 		#all_var = circumference( all_var, radcir, radcir+1 )
 		all_var.write_image( output, 0 )
 
-
-
-
-
-
 def factcoords2D( prj_stack, avgvol_stack = None, eigvol_stack = None, output = None, rad = -1, neigvol = -1, of = "txt"):
 	from utilities import get_im, model_circle, model_blank
 
         if of=="txt":
 		foutput = open( output, "w" );
-
 
 	nx = get_im( prj_stack ).get_xsize()
 	ny = nx
@@ -10287,7 +10269,7 @@ def factcoords2D( prj_stack, avgvol_stack = None, eigvol_stack = None, output = 
 			foutput.write( "\n" )
 
 def factcoords3D( prj_stack, avgvol_stack, eigvol_stack, output, rad, neigvol, of):
-	from utilities import get_im, get_image, model_circle, model_blank
+	from utilities import get_im, get_image, model_circle, model_blank, get_params_proj, get_ctf
 	from projection import prgs, prep_vol
 	from filter import filt_ctf
 	from statistics import im_diff
@@ -10296,22 +10278,16 @@ def factcoords3D( prj_stack, avgvol_stack, eigvol_stack, output, rad, neigvol, o
         if of=="txt":
 		foutput = open( output, "w" );
 
-
 	nx = get_im( prj_stack ).get_xsize()
 	ny = nx
 
-	eigvols = []
-	if(neigvol < 0): neigvol = EMUtil.get_image_count( eigvol_stack )
-	for i in xrange(neigvol):
-		eigvols.append( get_im(eigvol_stack, i) )
-
-	avgvol = get_image( avgvol_stack )
-	volft, kb = prep_vol( avgvol )
-        print 'prepare vol done'
 	eigvolfts = []
-	for e in eigvols:
-    		eigvolfts.append( prep_vol(e) )
-        print 'prepare eigvol done '
+	neigvol = EMUtil.get_image_count( eigvol_stack )
+	for i in xrange(neigvol):
+		volft, kb = prep_vol(get_im(eigvol_stack, i) )
+		eigvolfts.append( volft )
+	#  Average volume
+	volft, kb = prep_vol( get_image( avgvol_stack ) )
 
 	m = model_circle( rad, nx, ny )
 	nimage = EMUtil.get_image_count( prj_stack )
@@ -10319,16 +10295,8 @@ def factcoords3D( prj_stack, avgvol_stack, eigvol_stack, output, rad, neigvol, o
 	for i in xrange( nimage ) :
 		exp_prj = get_im( prj_stack, i )
                 
-		phi = exp_prj.get_attr( 'phi' )
-		theta = exp_prj.get_attr( 'theta' )
-		psi = exp_prj.get_attr( 'psi' )
-		s2x = exp_prj.get_attr( 's2x' )
-		s2y = exp_prj.get_attr( 's2y' )
-		defocus = exp_prj.get_attr( 'defocus' )
-		wgh = exp_prj.get_attr( 'amp_contrast' )
-		Cs = exp_prj.get_attr( 'Cs' )
-		voltage = exp_prj.get_attr( 'voltage' )
-		pixel = exp_prj.get_attr( 'Pixel_size' )
+		phi, theta, psi, s2x, s2y = get_params_proj(exp_prj)
+		defocus, cs, voltage, pixel, bfactor, wgh = get_ctf(exp_prj)
 
 		assert exp_prj.get_attr( "ctf_applied" ) == 0.0
 
@@ -10337,7 +10305,7 @@ def factcoords3D( prj_stack, avgvol_stack, eigvol_stack, output, rad, neigvol, o
 		exp_prj =  Processor.EMFourierFilter(exp_prj, shift_params)
 		
 		ref_prj = prgs( volft, kb, [phi, theta, psi, 0.0, 0.0] )
-		ref_ctfprj = filt_ctf( ref_prj, defocus, Cs, voltage, pixel, wgh )
+		ref_ctfprj = filt_ctf( ref_prj, defocus, cs, voltage, pixel, wgh )
 		
 		diff,a,b = im_diff( ref_ctfprj, exp_prj, m)
 		
@@ -10346,23 +10314,23 @@ def factcoords3D( prj_stack, avgvol_stack, eigvol_stack, output, rad, neigvol, o
 
 
 		for j in xrange( neigvol ) :
-			eft = eigvolfts[j]
 
-			ref_eigprj = prgs( eft[0], eft[1], [phi, theta, psi, 0.0, 0.0] )
-			ref_ctfeigprj = filt_ctf( ref_eigprj, defocus, Cs, voltage, pixel, wgh )
+			ref_eigprj = prgs( eigvolfts[j], kb, [phi, theta, psi, 0.0, 0.0] )
+			ref_ctfeigprj = filt_ctf( ref_eigprj, defocus, cs, voltage, pixel, wgh )
 
 			d = diff.cmp( "dot", ref_ctfeigprj, {"negative":0, "mask":m} )
 
 			if of=="hdf":
 				img.set_value_at( j, 0, 0, d )
 			else:
-				foutput.write( "    %e  " % d )
-				foutput.flush()
+				foutput.write( "    %e" % d )
 
                 if of=="hdf":
 			img.write_image( output, i )
 		else:
+			foutput.write( "    %d" % i )
 			foutput.write( "\n" )
+			foutput.flush()
 
 		print i, ' done'
 
