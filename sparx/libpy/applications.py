@@ -10299,19 +10299,17 @@ def factcoords3D( prj_stack, avgvol_stack, eigvol_stack, output, rad, neigvol, o
 
 		assert exp_prj.get_attr( "ctf_applied" ) == 0.0
 
+		from filter import filt_tanb
+		ref_ctfprj = filt_tanb(exp_prj ,0.2,0.1, 0.25,0.1)
+		
+		ref_prj = prgs( volft, kb, [phi, theta, psi, s2x, s2y] )
 		ctf = exp_prj.get_attr("ctf")
-		shift_params = {"filter_type" : Processor.fourier_filter_types.SHIFT,
-				"x_shift" : s2x, "y_shift" : s2y, "z_shift" : 0.0}
-		exp_prj =  Processor.EMFourierFilter(exp_prj, shift_params)
-		
-		ref_prj = prgs( volft, kb, [phi, theta, psi, 0.0, 0.0] )
 		ref_ctfprj = filt_ctf( ref_prj, ctf )
-		
+
 		diff,a,b = im_diff( ref_ctfprj, exp_prj, m)
-		
+
 		if of=="hdf":
 			img = model_blank( len(eigvols) )
-
 
 		for j in xrange( neigvol ) :
 
