@@ -39,7 +39,7 @@ def main():
 
 		global_def.BATCH = True
 		v = EMData()
-		v.read_image(prj_stack, True)
+		v.read_image(avgvol, True)
 		if(v.get_zsize() > 1):
 			from applications import factcoords3D
 			factcoords3D(prj_stack, avgvol, eigvol, output, options.rad, options.neigvol, options.of)
