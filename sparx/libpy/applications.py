@@ -10330,7 +10330,7 @@ def factcoords3D( prj_stack, avgvol_stack, eigvol_stack, output, rad, neigvol, o
 			foutput.write( "\n" )
 			foutput.flush()
 
-		print i, ' done'
+		if(i%100 == 0):  print i, ' done'
 
 def refvol( vollist, fsclist, output, mask ):
 	from utilities     import get_image, read_fsc
