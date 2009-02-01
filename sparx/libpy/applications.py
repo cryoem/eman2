@@ -10300,7 +10300,7 @@ def factcoords3D( prj_stack, avgvol_stack, eigvol_stack, output, rad, neigvol, o
 		assert exp_prj.get_attr( "ctf_applied" ) == 0.0
 
 		from filter import filt_tanb
-		ref_ctfprj = filt_tanb(exp_prj ,0.2,0.1, 0.25,0.1)
+		exp_prj = filt_tanb(exp_prj ,0.2,0.1, 0.25,0.1)
 		
 		ref_prj = prgs( volft, kb, [phi, theta, psi, s2x, s2y] )
 		ctf = exp_prj.get_attr("ctf")
