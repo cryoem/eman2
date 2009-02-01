@@ -10269,7 +10269,7 @@ def factcoords2D( prj_stack, avgvol_stack = None, eigvol_stack = None, output = 
 			foutput.write( "\n" )
 
 def factcoords3D( prj_stack, avgvol_stack, eigvol_stack, output, rad, neigvol, of):
-	from utilities import get_im, get_image, model_circle, model_blank, get_params_proj, get_ctf
+	from utilities import get_im, get_image, model_circle, model_blank, get_params_proj
 	from projection import prgs, prep_vol
 	from filter import filt_ctf
 	from statistics import im_diff
@@ -10296,16 +10296,16 @@ def factcoords3D( prj_stack, avgvol_stack, eigvol_stack, output, rad, neigvol, o
 		exp_prj = get_im( prj_stack, i )
                 
 		phi, theta, psi, s2x, s2y = get_params_proj(exp_prj)
-		defocus, cs, voltage, pixel, bfactor, wgh = get_ctf(exp_prj)
 
 		assert exp_prj.get_attr( "ctf_applied" ) == 0.0
 
+		ctf = exp_prj.get_attr("ctf")
 		shift_params = {"filter_type" : Processor.fourier_filter_types.SHIFT,
 				"x_shift" : s2x, "y_shift" : s2y, "z_shift" : 0.0}
 		exp_prj =  Processor.EMFourierFilter(exp_prj, shift_params)
 		
 		ref_prj = prgs( volft, kb, [phi, theta, psi, 0.0, 0.0] )
-		ref_ctfprj = filt_ctf( ref_prj, defocus, cs, voltage, pixel, wgh )
+		ref_ctfprj = filt_ctf( ref_prj, ctf )
 		
 		diff,a,b = im_diff( ref_ctfprj, exp_prj, m)
 		
@@ -10316,7 +10316,7 @@ def factcoords3D( prj_stack, avgvol_stack, eigvol_stack, output, rad, neigvol, o
 		for j in xrange( neigvol ) :
 
 			ref_eigprj = prgs( eigvolfts[j], kb, [phi, theta, psi, 0.0, 0.0] )
-			ref_ctfeigprj = filt_ctf( ref_eigprj, defocus, cs, voltage, pixel, wgh )
+			ref_ctfeigprj = filt_ctf( ref_eigprj, ctf )
 
 			d = diff.cmp( "dot", ref_ctfeigprj, {"negative":0, "mask":m} )
 
