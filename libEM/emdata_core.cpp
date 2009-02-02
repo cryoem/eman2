@@ -43,15 +43,22 @@ using namespace EMAN;
 // debug only
 #include <iostream>
 #include <cstring>
+				 
+#ifdef EMAN2_USING_CUDA
+#include "cuda/cuda_util.h"
+#endif
 using std::cout;
 using std::endl;
 
 void EMData::free_memory()
 {
 	ENTERFUNC;
-
 	if (rdata) {
+#ifdef EMAN2_USING_CUDA
+		cuda_free(rdata);
+#else
 		free(rdata);
+#endif
 		rdata = 0;
 	}
 

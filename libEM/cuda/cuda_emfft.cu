@@ -5,9 +5,6 @@
 #include "cuda_defs.h"
 #include "cuda_util.h"
 
-#define FFTW_PLAN_CACHING 1
-
-#ifdef FFTW_PLAN_CACHING
 
 const int EMCUDA_FFT_CACHE_SIZE = 10;
 int EMCUDA_FFT_CACHE_NUM_PLANS = 0;
@@ -169,7 +166,7 @@ cufft_plan_cache* get_cuda_emfft_plan(const int rank_in, const int x, const int 
 
 	return c;
 }
-#endif // FFTW_PLAN_CACHING
+
 
 int get_rank(int ny, int nz)
 {
@@ -186,7 +183,6 @@ int get_rank(int ny, int nz)
 int cuda_fft_real_to_complex_1d(float *real_data, float *complex_data, int n)
 {
 	device_init();
-#ifdef FFTW_PLAN_CACHING
 	bool ip = false;
 	int offset = 2 - n%2;
 	int n2 = n + offset;
@@ -196,21 +192,13 @@ int cuda_fft_real_to_complex_1d(float *real_data, float *complex_data, int n)
 	CUDA_SAFE_CALL(cudaMemcpy(cache->real,real_data, real_mem_size, cudaMemcpyHostToDevice));
 	cufftExecR2C(cache->handle, cache->real, cache->complex );
 	CUDA_SAFE_CALL(cudaMemcpy(complex_data,cache->complex, complex_mem_size, cudaMemcpyDeviceToHost));
-	//cufftExecR2C(plan, (cufftReal*)real_data,(cufftComplex *) complex_data);
-#else
-	cufftHandle plan;
-	cufftPlan1d(&plan,n,CUFFT_R2C,1);
-	cufftExecR2C(plan,(cufftReal*)real_data,(cufftComplex *) complex_data);
-	cufftDestroy(plan);
-#endif // FFTW_PLAN_CACHING
+
 	return 0;
 };
 
 int cuda_fft_complex_to_real_1d(float *complex_data, float *real_data, int n)
 {
 	device_init();
-#ifdef FFTW_PLAN_CACHING
-	//bool ip = ( complex_data == real_data );
 	bool ip = false;
 	int offset = 2 - n%2;
 	int n2 = n + offset;
@@ -220,13 +208,7 @@ int cuda_fft_complex_to_real_1d(float *complex_data, float *real_data, int n)
 	CUDA_SAFE_CALL(cudaMemcpy(cache->complex,complex_data, complex_mem_size, cudaMemcpyHostToDevice));
 	cufftExecC2R(cache->handle, cache->complex, cache->real);
 	CUDA_SAFE_CALL(cudaMemcpy(real_data,cache->real, real_mem_size, cudaMemcpyDeviceToHost));
-#else
-	cufftHandle plan;
-	cufftPlan1d(&plan,n,CUFFT_C2C,1);
-	cufftExecC2R(plan,(cufftComplex*)complex_data,(cufftReal *) real_data);
-	cufftDestroy(plan);
-#endif // FFTW_PLAN_CACHING
-	
+
 	return 0;
 }
 
@@ -234,23 +216,18 @@ int cuda_fft_real_to_complex_nd(float *real_data, float *complex_data, int nx, i
 {
 	device_init();
 	const int rank = get_rank(ny, nz);
-#ifdef FFTW_PLAN_CACHING
 	bool ip;
 	int offset = 2 - nx%2;
 	int nx2 = nx + offset;
 	int complex_mem_size = sizeof(cufftComplex) * nx2 * ny * nz/2;
 	int real_mem_size = sizeof(cufftReal) * nx * ny * nz;
 	cufft_plan_cache* cache = 0;
-#endif //FFTW_PLAN_CACHING
-	//cufftHandle plan;
-	
+
 	switch(rank) {
 		case 1:
 			cuda_fft_real_to_complex_1d(real_data, complex_data, nx);
 			break;
 		
-		
-#ifdef FFTW_PLAN_CACHING
 		case 2:
 		case 3:
 			ip = ( complex_data == real_data );
@@ -259,28 +236,17 @@ int cuda_fft_real_to_complex_nd(float *real_data, float *complex_data, int nx, i
 			if ( !ip ) {
 				cache = get_cuda_emfft_plan(rank,nx,ny,nz,real_2_complex,ip);
 				CUDA_SAFE_CALL(cudaMemcpy(cache->real,real_data, real_mem_size, cudaMemcpyHostToDevice));
-				cufftExecR2C(cache->handle, cache->real, cache->complex );
+				CUDA_SAFE_CALL(cufftExecR2C(cache->handle, cache->real, cache->complex ));
 				CUDA_SAFE_CALL(cudaMemcpy(complex_data,cache->complex, complex_mem_size, cudaMemcpyDeviceToHost));
 			}
 			else {
 				cache = get_cuda_emfft_plan(rank,nx,ny,nz,real_2_complex,ip);
 				CUDA_SAFE_CALL(cudaMemcpy(cache->complex,real_data, complex_mem_size, cudaMemcpyHostToDevice));
-				cufftExecR2C(cache->handle, (cufftReal*)cache->complex, cache->complex );
+				CUDA_SAFE_CALL(cufftExecR2C(cache->handle, (cufftReal*)cache->complex, cache->complex ));
 				CUDA_SAFE_CALL(cudaMemcpy(complex_data,cache->complex, complex_mem_size, cudaMemcpyDeviceToHost));
 			}
 		break;
-#else
-		case 2:
-			cufftPlan2d(&plan,nx,ny,CUFFT_R2C);
-			cufftExecR2C(plan, (cufftReal*)real_data,(cufftComplex *) complex_data);
-			cufftDestroy(plan);
-		break;
-		case 3:
-			cufftPlan3d(&plan,nx,ny,nz,CUFFT_R2C);
-			cufftExecR2C(plan, (cufftReal*)real_data,(cufftComplex *) complex_data);
-			cufftDestroy(plan);
-		break;
-#endif // FFTW_PLAN_CACHING
+
 		
 		default:throw;
 	}
@@ -292,8 +258,6 @@ int cuda_fft_complex_to_real_nd(float *complex_data, float *real_data, int nx, i
 {
 	device_init();
 	const int rank = get_rank(ny, nz);
-	
-#ifdef FFTW_PLAN_CACHING
 	bool ip;
 	int offset = 2 - nx%2;
 	int nx2 = nx + offset;
@@ -301,34 +265,20 @@ int cuda_fft_complex_to_real_nd(float *complex_data, float *real_data, int nx, i
 	int complex_mem_size = sizeof(cufftComplex) * nx2 * ny * nz/2;
 	int real_mem_size = sizeof(cufftReal) * nx2 * ny * nz;
 	cufft_plan_cache* cache = 0;
-#endif
-	//cufftHandle plan;
+
 	switch(rank) {
 		case 1:
 			cuda_fft_complex_to_real_1d(complex_data, real_data, nx);
 			break;
 		
-#ifdef FFTW_PLAN_CACHING
 		case 2:
 		case 3:
 			ip = ( complex_data == real_data );
 			cache = get_cuda_emfft_plan(rank,nx,ny,nz,complex_2_real,ip);
 			CUDA_SAFE_CALL(cudaMemcpy(cache->complex,complex_data, complex_mem_size, cudaMemcpyHostToDevice));
-			cufftExecC2R(cache->handle, cache->complex, cache->real);
+			CUDA_SAFE_CALL(cufftExecC2R(cache->handle, cache->complex, cache->real));
 			CUDA_SAFE_CALL(cudaMemcpy(real_data,cache->real, real_mem_size, cudaMemcpyDeviceToHost));
 			break;
-#else
-		case 2:
-			cufftPlan2d(&plan,nx,ny,CUFFT_C2C);
-			cufftExecC2R(plan, (cufftComplex*)complex_data,(cufftReal *) real_data);
-			cufftDestroy(plan);
-			break;
-		case 3:
-			cufftPlan3d(&plan,nx,ny,nz,CUFFT_C2C);
-			cufftExecC2R(plan, (cufftComplex*)complex_data, (cufftReal *) real_data);
-			cufftDestroy(plan);
-			break;
-#endif // FFTW_PLAN_CACHING
 			
 		default:throw;
 	}

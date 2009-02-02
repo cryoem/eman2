@@ -43,7 +43,10 @@ using std::stringstream;
 
 #include <iomanip>
 using std::setprecision;
-
+		 
+#ifdef EMAN2_USING_CUDA
+#include "cuda/cuda_util.h"
+#endif
 using namespace EMAN;
 
 EMData* EMData::get_fft_amplitude2D()
@@ -608,8 +611,16 @@ void EMData::set_size(int x, int y, int z)
 	nxy = nx*ny;
 
 	size_t size = (size_t)(x) * (size_t)y * (size_t)z * sizeof(float);
+#ifdef EMAN2_USING_CUDA
+	if (rdata != 0) {
+		cuda_free(rdata);
+	}
+	rdata = cuda_malloc_float(size);
+#else
+	
 	rdata = static_cast < float *>(realloc(rdata, size));
-
+#endif
+	
 	if ( rdata == 0 )
 	{
 		stringstream ss;
@@ -626,7 +637,11 @@ void EMData::set_size(int x, int y, int z)
 
 	// This will never occur because of the throw above! dsaw
 	if (old_nx == 0) {
+#ifdef EMAN2_USING_CUDA
+		cuda_memset(rdata,0,size);
+#else
 		memset(rdata, 0, size);
+#endif
 	}
 
 	if (supp) {

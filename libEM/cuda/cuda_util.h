@@ -20,4 +20,8 @@ int delete_cuda_memory(float *p);
  */
 void bind_cuda_texture(const int);
 
+float* cuda_malloc_float(const int size);
+void cuda_free(float*);
+void cuda_memset(float*,int value, int size);
+
 #endif // eman__cuda_util_h__

@@ -102,9 +102,25 @@ void device_init() {
 		
 		CUDA_SAFE_CALL(cudaSetDevice(0));
 		init_cuda_emdata_arrays();
-#ifdef FFTW_PLAN_CACHING
 		init_cuda_emfft_cache();
-#endif //FFTW_PLAN_CACHING
 		init = false; //Force init everytikme
 	}
+}
+
+float* cuda_malloc_float(const int size)
+{
+	device_init();
+	float *mem=0;
+	CUDA_SAFE_CALL(cudaMallocHost((void **)&mem, size));
+	return mem;
+}
+
+void cuda_free(float* mem)
+{
+	device_init();
+	cudaFree(mem);
+}
+void cuda_memset(float* mem,int value, int size) {
+	device_init();
+	cudaMemset(mem,value,size);
 }

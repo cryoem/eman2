@@ -82,7 +82,8 @@ float** main_t(const float* rdata, const int nx, const int ny, const int nz)
 		mxz.z=cos(alt)/scale;
 		
 		proj_kernel<<<blockSize,gridSize>>>(memout,(float)nx,mxx,mxy,mxz);
-		CUDA_SAFE_CALL(cuCtxSynchronize());
+		//CUDA_SAFE_CALL(cuCtxSynchronize());
+		cudaThreadSynchronize();
 		CUDA_SAFE_CALL(cudaMemcpy(memout2, memout, nx*ny*sizeof(float), cudaMemcpyDeviceToHost));
 		ret[i] = memout2;
 	}
@@ -119,7 +120,8 @@ void standard_project(const float* const matrix,const float* const rdata, const 
 	mxz.z=matrix[10];
 		
 	proj_kernel<<<blockSize,gridSize>>>(memout,(float)nx,mxx,mxy,mxz);
-	CUDA_SAFE_CALL(cuCtxSynchronize());
+	//CUDA_SAFE_CALL(cuCtxSynchronize());
+	cudaThreadSynchronize();
 	CUDA_SAFE_CALL(cudaMemcpy(d, memout, nx*ny*sizeof(float), cudaMemcpyDeviceToHost));
 	CUDA_SAFE_CALL(cudaFree(memout));
 }
