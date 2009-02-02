@@ -11,46 +11,40 @@ import sys
       
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " prj_stack average eigvol output_factcoords --rad=radius --neigvol=number_of_eigvol --of=output_format"
+	usage = progname + " prj_stack .. average eigvol output_factcoords --rad=radius --neigvol=number_of_eigvol --of=output_format"
 	parser = OptionParser(usage, version=SPARXVERSION)
 	parser.add_option("--rad", type="int",  default=-1, help="radius of mask")
 	parser.add_option("--neigvol", type="int", default=-1, help="number of eigvenvectors to use (default all)")
 	parser.add_option("--of", type="string", default="hdf", help="output format: hdf or txt (default is hdf)")
+	parser.add_option("--MPI", action="store_true", help="flag for MPI version")
 
 	(options, args) = parser.parse_args()
 
-	if( len(args) > 4 or len(args) < 3):
+	if( len(args) < 4 ):
 		print "usage: " + usage
 		print "Please run '" + progname + " -h' for details"
 	else:
-		prj_stack  = args[0]
-		if len(args) == 4:
-			avgvol = args[1]
-			eigvol = args[2]
-			output = args[3]
-		else:
-			avgvol = None
-			eigvol = args[1]
-			output = args[2]
+		stacks = args[0:-3]
+		avgvol = args[-3]
+		eigvol = args[-2]
+		output = args[-1]
 
 		if options.rad < 0:
 			print "Error: mask radius is not given"
 			sys.exit(-1)
+		if options.MPI:
+			from mpi import mpi_init	
+			sys.argv = mpi_init( len(sys.argv), sys.argv )
 
+		from utilities import get_im
 		global_def.BATCH = True
-		v = EMData()
-		v.read_image(avgvol, 0, True)
-		nvz = v.get_zsize()
-		v = EMData()
-		v.read_image(prj_stack, 0, True)
-		npz = v.get_zsize()
-		del v
-		if(nvz > 1 and npz == 1):
-			from applications import factcoords3D
-			factcoords3D(prj_stack, avgvol, eigvol, output, options.rad, options.neigvol, options.of)
+		nz = get_im( stacks[0]).get_zsize()
+		if( nz == 1):
+			from applications import factcoords_prj
+			factcoords_prj(stacks, avgvol, eigvol, output, options.rad, options.neigvol, options.of, options.MPI)
 		else:
-			from applications import factcoords2D
-			factcoords2D(prj_stack, avgvol, eigvol, output, options.rad, options.neigvol, options.of)
+			from applications import factcoords_vol
+			factcoords_vol(stacks, avgvol, eigvol, output, options.rad, options.neigvol, options.of, options.MPI)
 		global_def.BATCH = False
 
 if __name__ == "__main__":
