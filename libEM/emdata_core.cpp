@@ -54,7 +54,7 @@ void EMData::free_memory()
 {
 	ENTERFUNC;
 	if (rdata) {
-#ifdef EMAN2_USING_CUDA
+#ifdef EMAN2_USING_CUDA1
 		cuda_free(rdata);
 #else
 		free(rdata);

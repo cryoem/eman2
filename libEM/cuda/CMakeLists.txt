@@ -28,7 +28,7 @@ TARGET_LINK_LIBRARIES(EM2Cuda
 ##############################################################################
 # Use the CUDA_COMPILE macro.
 #CUDA_COMPILE(CUDA_FILES test_bin.cu)
-
+# 
 
 INSTALL_TARGETS(/lib EM2Cuda)
 #INSTALL_TARGETS(/bin proj3d)

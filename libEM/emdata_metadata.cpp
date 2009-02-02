@@ -611,7 +611,7 @@ void EMData::set_size(int x, int y, int z)
 	nxy = nx*ny;
 
 	size_t size = (size_t)(x) * (size_t)y * (size_t)z * sizeof(float);
-#ifdef EMAN2_USING_CUDA
+#ifdef EMAN2_USING_CUDA1
 	if (rdata != 0) {
 		cuda_free(rdata);
 	}
@@ -637,7 +637,7 @@ void EMData::set_size(int x, int y, int z)
 
 	// This will never occur because of the throw above! dsaw
 	if (old_nx == 0) {
-#ifdef EMAN2_USING_CUDA
+#ifdef EMAN2_USING_CUDA1
 		cuda_memset(rdata,0,size);
 #else
 		memset(rdata, 0, size);

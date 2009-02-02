@@ -61,13 +61,14 @@ void init_cuda_emfft_cache() {
 
 
 
-void cleanup_cuda_emfft_cache() {
-	
+void cleanup_cuda_emfft_cache()
+{	
 	for(int i = 0; i < EMCUDA_FFT_CACHE_SIZE; ++i)
 	{
 		if (CudaFftPlanCache[i].handle != 0) {
 			CUDA_SAFE_CALL(cufftDestroy(CudaFftPlanCache[i].handle));
 			CudaFftPlanCache[i].handle = 0;
+			reset_cuda_fft_cache(&CudaFftPlanCache[i]);
 		}
 	}
 }
