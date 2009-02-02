@@ -45,7 +45,7 @@ def main():
 		v.read_image(prj_stack[0], 0, True)
 		npz = v.get_zsize()
 		del v
-		if(nvz > 1 and npz = 1):
+		if(nvz > 1 and npz == 1):
 			from applications import factcoords3D
 			factcoords3D(prj_stack, avgvol, eigvol, output, options.rad, options.neigvol, options.of)
 		else:
