@@ -10063,7 +10063,7 @@ def var_mpi(files, outdir, fl, fh, radccc, writelp, writestack, method="inc"):
 
         mystack = file_set( files )
         nimage = mystack.nimg()
-        ndump = 100
+        ndump = 10
 
 	lpstack = outdir + ("/tanl_prj%04d.hdf" % myid)
 	iwrite = 0
@@ -10107,7 +10107,7 @@ def var_mpi(files, outdir, fl, fh, radccc, writelp, writestack, method="inc"):
 				eve_nimg = eve_var.get_attr( "nimg" )
 				assert odd_nimg==eve_nimg
 				iprint += 1
-				finf.write( 'ntot, ccc: %6d %10.3f\n' % (all_var.get_attr("nimg"), ccc(odd_var, eve_var, cccmask)) )
+				finf.write( 'ntot, ccc: %6d %10.8f\n' % (all_var.get_attr("nimg"), ccc(odd_var, eve_var, cccmask)) )
 				finf.flush()
 				if writestack:
 					odd_var.write_image( oddstack, istack )
@@ -10242,12 +10242,12 @@ def factcoords_vol( vol_stacks, avgvol_stack, eigvol_stack, prefix, rad = -1, ne
 
 
         if of=="txt":
-		if mpi and ncpu > 1:
+		if MPI and ncpu > 1:
 			foutput = open( "%s%04d.txt" %(prefix,myid), "w" )
 		else:
 			foutput = open( prefix+".txt", "w" );
 	else:
-		if mpi and ncpu > 1:
+		if MPI and ncpu > 1:
 			foutput = "%s%04d.hdf" % (prefix,myid)
 		else:
 			foutput = prefix + ".hdf" 
@@ -10266,7 +10266,6 @@ def factcoords_vol( vol_stacks, avgvol_stack, eigvol_stack, prefix, rad = -1, ne
 
 	m = model_circle( rad, nx, ny, nz )
 	files = file_set( vol_stacks )
-
 	vol_bgn,vol_end = MPI_start_end( files.nimg(), ncpu, myid )
 
 	for i in xrange( vol_bgn, vol_end ) :
@@ -10279,31 +10278,30 @@ def factcoords_vol( vol_stacks, avgvol_stack, eigvol_stack, prefix, rad = -1, ne
 			img = model_blank( len(eigvols) )
 
 		for j in xrange( neigvol ) :
-
-			d = exp_prj.cmp( "dot", eigvols[j], {"negative":0, "mask":m} )
+			d = exp_vol.cmp( "dot", eigvols[j], {"negative":0, "mask":m} )
 
 			if of=="hdf":
 				img.set_value_at( j, 0, 0, d )
 			else:
 				foutput.write( "    %e" % d )
                 if of=="hdf":
-			img.write_image( output, i )
+			img.write_image( foutput, i )
 		else:
 			foutput.write( "    %d" % i )
 			foutput.write( "\n" )
 			foutput.flush()
 
 		if (i+1)%100==0:
-			print 'myid: ', i, ' done'
+			print 'myid: ', myid, i+1, ' done'
 
-def factcoords_prj( prj_stacks, avgvol_stack, eigvol_stack, prefix, rad, neigvol, of, mpi):
+def factcoords_prj( prj_stacks, avgvol_stack, eigvol_stack, prefix, rad, neigvol, of, MPI):
 	from utilities import get_im, get_image, model_circle, model_blank, get_params_proj
 	from projection import prgs, prep_vol, project
 	from filter import filt_ctf
 	from statistics import im_diff
 	from utilities import memory_usage
 
-	if mpi:
+	if MPI:
 		from mpi import mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
 		ncpu = mpi_comm_size( MPI_COMM_WORLD )
 		myid = mpi_comm_rank( MPI_COMM_WORLD )
@@ -10312,12 +10310,12 @@ def factcoords_prj( prj_stacks, avgvol_stack, eigvol_stack, prefix, rad, neigvol
 		myid = 0
 
         if of=="txt":
-		if mpi and ncpu > 1:
+		if MPI and ncpu > 1:
 			foutput = open( "%s%04d.txt" % (prefix, myid), "w" )
 		else:
 			foutput = open( prefix+".txt", "w" )
 	else:
-		if mpi and ncpu > 1:
+		if MPI and ncpu > 1:
 			foutput = prefix + ".hdf"
 		else:
 			foutput = "%s%04d.hdf" % (prefix, myid)
