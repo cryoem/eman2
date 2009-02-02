@@ -42,7 +42,7 @@ def main():
 		v.read_image(avgvol, 0, True)
 		nvz = v.get_zsize()
 		v = EMData()
-		v.read_image(prj_stack[0], 0, True)
+		v.read_image(prj_stack, 0, True)
 		npz = v.get_zsize()
 		del v
 		if(nvz > 1 and npz == 1):
