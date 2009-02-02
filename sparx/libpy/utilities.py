@@ -2634,3 +2634,29 @@ def parse_user_function(opt_string):
         # no list format used, so we assume this is a function name
         #    defined (and referenced) in user_functions.
         return opt_string
+
+
+def getvec( phi, tht ):
+	from math import pi,cos,sin
+	angle_to_rad = pi/180.0
+
+
+	if tht > 180.0:
+		tht = tht - 180.0
+		phi = phi + 180.0
+	elif tht > 90.0:
+		tht = 180.0 - tht
+		phi = phi + 180.0
+
+	assert tht <=90.0
+
+	tht *= angle_to_rad
+	phi *= angle_to_rad
+
+	x = sin(tht)*cos(phi) 
+	y = sin(tht)*sin(phi)
+	z = cos(tht)
+
+	return (x,y,z)
+
+
