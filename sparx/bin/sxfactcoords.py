@@ -40,7 +40,12 @@ def main():
 		global_def.BATCH = True
 		v = EMData()
 		v.read_image(avgvol, 0, True)
-		if(v.get_zsize() > 1):
+		nvz = v.get_zsize()
+		v = EMData()
+		v.read_image(prj_stack[0], 0, True)
+		npz = v.get_zsize()
+		del v
+		if(nvz > 1 and npz = 1):
 			from applications import factcoords3D
 			factcoords3D(prj_stack, avgvol, eigvol, output, options.rad, options.neigvol, options.of)
 		else:

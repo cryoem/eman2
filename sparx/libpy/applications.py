@@ -10235,8 +10235,6 @@ def factcoords2D( prj_stack, avgvol_stack = None, eigvol_stack = None, output = 
         if of=="txt":
 		foutput = open( output, "w" );
 
-	nx = get_im( prj_stack ).get_xsize()
-	ny = nx
 
 	eigvols = []
 	if(neigvol < 0): neigvol = EMUtil.get_image_count( eigvol_stack )
@@ -10246,7 +10244,11 @@ def factcoords2D( prj_stack, avgvol_stack = None, eigvol_stack = None, output = 
 	if( avgvol_stack != None):
 		avgvol = get_im( avgvol_stack )
 
-	m = model_circle( rad, nx, ny )
+	nx = eigvols[0].get_xsize()
+	ny = eigvols[0].get_ysize()
+	nz = eigvols[0].get_zsize()
+
+	m = model_circle( rad, nx, ny, nz )
 	nimage = EMUtil.get_image_count( prj_stack )
 
 	for i in xrange( nimage ) :
@@ -10261,12 +10263,13 @@ def factcoords2D( prj_stack, avgvol_stack = None, eigvol_stack = None, output = 
 			if of=="hdf":
 				img.set_value_at( j, 0, 0, d )
 			else:
-				foutput.write( "    %e  " % d )
-				foutput.flush()
+				foutput.write( "    %e" % d )
                 if of=="hdf":
 			img.write_image( output, i )
 		else:
+			foutput.write( "    %d" % i )
 			foutput.write( "\n" )
+			foutput.flush()
 
 def factcoords3D( prj_stack, avgvol_stack, eigvol_stack, output, rad, neigvol, of):
 	from utilities import get_im, get_image, model_circle, model_blank, get_params_proj
