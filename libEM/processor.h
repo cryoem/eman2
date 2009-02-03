@@ -4925,9 +4925,9 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 				return new TestTomoImage();
 			}
 		private:
-			void insert_solid_ellipse( EMData* image, const Region& region, const float& value, const Transform& t3d = NULL );
-			void insert_hollow_ellipse( EMData* image, const Region& region, const float& value, const int& radius, const Transform& t3d = NULL );
-			void insert_rectangle( EMData* image, const Region& region, const float& value, const Transform& t3d = NULL );
+			void insert_solid_ellipse( EMData* image, const Region& region, const float& value, const Transform& t3d  = Transform() );
+			void insert_hollow_ellipse( EMData* image, const Region& region, const float& value, const int& radius, const Transform& t3d = Transform() );
+			void insert_rectangle( EMData* image, const Region& region, const float& value, const Transform& t3d = Transform() );
 	};
 	
 	/** Put a gradient in the image of the form y = mx+b : "x" is a string indicating any of the image axes, i.e., x,y or z.
