@@ -620,5 +620,8 @@ public:
 		return x;
 	}
 
+        // wrap function for CUDA code
+        static void kmeans_cuda(void);
+
 
 #endif	//util__sparx_h__

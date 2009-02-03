@@ -358,6 +358,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
 		.def("merge_peaks", &EMAN::Util::merge_peaks )
 		.def("point_is_in_triangle_2d", &EMAN::Util::point_is_in_triangle_2d )
 		.def("point_is_in_convex_polygon_2d", &EMAN::Util::point_is_in_convex_polygon_2d )
+		.def("kmeans_cuda", &EMAN::Util::kmeans_cuda)
 #ifdef EMAN2_USING_OPENGL
 		.def("nearest_projected_points", &EMAN::Util::nearest_projected_points )
 		.staticmethod("nearest_projected_points")
@@ -498,6 +499,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
 		.staticmethod("get_biggest_cluster")
 		.staticmethod("merge_peaks")
 		.staticmethod("get_slice")
+		.staticmethod("kmeans_cuda")
 	);
 
     scope* EMAN_Util_sincBlackman_scope = new scope(
