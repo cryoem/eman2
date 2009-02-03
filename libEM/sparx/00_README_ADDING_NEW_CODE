@@ -46,7 +46,7 @@ MCArrayND
 
 4. add new static function to Util class:
 The util.h/cpp files, like emdata.h/cpp, has been splitted to util_sparx.h/cpp.
-You can add your functions into util.sparx.h, and this file has been included into
+You can add your functions into util_sparx.h, and this file has been included into
 util.h, so you never need include "util_sparx.h", just include "util.h" is enough.
 Your implementation code could be added into util_sparx.cpp.
 
