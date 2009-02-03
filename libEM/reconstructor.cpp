@@ -3037,7 +3037,10 @@ EMData* nn4_ctfReconstructor::finish()
 		for (iy = 1; iy <= m_vnyp; iy++) {
 			for (ix = 0; ix <= m_vnxc; ix++) {
 				if ( (*m_wptr)(ix,iy,iz) > 0.0f) {//(*v) should be treated as complex!!
-					float  tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+osnr)*m_sign;
+                                        int iyp = (iy<=m_vnyc) ? iy - 1 : iy-m_vnyp-1;
+                                        int izp = (iz<=m_vnzc) ? iz - 1 : iz-m_vnzp-1;
+					float freq = sqrt( ix*ix+iyp*iyp+izp*izp );
+					float  tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+freq*osnr)*m_sign;
 					if( m_weighting == ESTIMATE ) {
 						int cx = ix;
 						int cy = (iy<=m_vnyc) ? iy - 1 : iy - 1 - m_vnyp;
