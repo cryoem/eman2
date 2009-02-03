@@ -151,7 +151,7 @@ EMData::EMData(const EMData& that) :
 	if (that.rdata)
 	{
 		set_size(that.nx, that.ny, that.nz);
-		memcpy(rdata, that.rdata, nx * ny * nz * sizeof(float));
+		EMUtil::em_memcpy(rdata, that.rdata, nx * ny * nz * sizeof(float));
 	}
 	
 	flags = that.flags;
@@ -169,8 +169,13 @@ EMData::EMData(const EMData& that) :
 	update();
 
 	if (that.rot_fp != 0) rot_fp = new EMData(*(that.rot_fp));
-	else rot_fp = 0;
-	
+	else {
+// 		if (rot_fp != 0 ) {
+// 			delete rot_fp;
+// 			rot_fp = 0; 
+// 		}
+		rot_fp = 0;
+	}
 #ifdef EMAN2_USING_CUDA
 	cuda_array_idx = -1;
 	cuda_rdata = 0;
@@ -200,7 +205,7 @@ EMData& EMData::operator=(const EMData& that)
 		if (that.rdata)
 		{
 			set_size(that.nx, that.ny, that.nz);
-			memcpy(rdata, that.rdata, nx * ny * nz * sizeof(float));
+			EMUtil::em_memcpy(rdata, that.rdata, nx * ny * nz * sizeof(float));
 		}
 
 		flags = that.flags;
@@ -441,7 +446,7 @@ void EMData::clip_inplace(const Region & area)
 		set_size(new_nx, new_ny, new_nz);
 
 		// Set pixel memory to zero - the client should expect to see nothing
-		memset(rdata, 0, new_nx*new_ny*new_nz);
+		EMUtil::em_memset(rdata, 0, new_nx*new_ny*new_nz);
 
 		return;
 	}
@@ -490,7 +495,7 @@ void EMData::clip_inplace(const Region & area)
 			Assert( dst_inc < new_size && src_inc < prev_size && dst_inc >= 0 && src_inc >= 0 );
 
 			// Finally copy the memory
-			memcpy(local_dst, local_src, clipped_row_size);
+			EMUtil::em_memcpy(local_dst, local_src, clipped_row_size);
 		}
 	}
 
@@ -535,7 +540,7 @@ void EMData::clip_inplace(const Region & area)
 			Assert( dst_inc < new_size && src_inc < prev_size && dst_inc >= 0 && src_inc >= 0 );
 			
 			// Perform the memory copy
-			memcpy(local_dst, local_src, clipped_row_size);
+			EMUtil::em_memcpy(local_dst, local_src, clipped_row_size);
 		}
 	}
 
@@ -549,14 +554,14 @@ void EMData::clip_inplace(const Region & area)
 	// Set the extra bottom z slices to zero
 	if (  z0 < 0 )
 	{
-		memset(rdata, 0, (-z0)*new_sec_size*sizeof(float));
+		EMUtil::em_memset(rdata, 0, (-z0)*new_sec_size*sizeof(float));
 	}
 
 	// Set the extra top z slices to zero
 	if (  civ.new_z_top > 0 )
 	{
 		float* begin_pointer = rdata + (new_nz-civ.new_z_top)*new_sec_size;
-		memset(begin_pointer, 0, (civ.new_z_top)*new_sec_size*sizeof(float));
+		EMUtil::em_memset(begin_pointer, 0, (civ.new_z_top)*new_sec_size*sizeof(float));
 	}
 
 	// Next deal with x and y edges by iterating through each slice
@@ -566,14 +571,14 @@ void EMData::clip_inplace(const Region & area)
 		if ( y0 < 0 )
 		{
 			float* begin_pointer = rdata + i*new_sec_size;
-			memset(begin_pointer, 0, (-y0)*new_nx*sizeof(float));
+			EMUtil::em_memset(begin_pointer, 0, (-y0)*new_nx*sizeof(float));
 		}
 	
 		// Set the extra back y components to 0
 		if ( civ.new_y_back > 0 )
 		{
 			float* begin_pointer = rdata + i*new_sec_size + (new_ny-civ.new_y_back)*new_nx;
-			memset(begin_pointer, 0, (civ.new_y_back)*new_nx*sizeof(float));
+			EMUtil::em_memset(begin_pointer, 0, (civ.new_y_back)*new_nx*sizeof(float));
 		}
 
 		// Iterate through the y to set each correct x component to 0
@@ -583,14 +588,14 @@ void EMData::clip_inplace(const Region & area)
 			if ( x0 < 0 )
 			{
 				float* begin_pointer = rdata + i*new_sec_size + j*new_nx;
-				memset(begin_pointer, 0, (-x0)*sizeof(float));
+				EMUtil::em_memset(begin_pointer, 0, (-x0)*sizeof(float));
 			}
 
 			// Set the extra right x components to 0
 			if ( civ.new_x_right > 0 )
 			{
 				float* begin_pointer = rdata + i*new_sec_size + j*new_nx + (new_nx - civ.new_x_right);
-				memset(begin_pointer, 0, (civ.new_x_right)*sizeof(float));
+				EMUtil::em_memset(begin_pointer, 0, (civ.new_x_right)*sizeof(float));
 			}
 
 		}
@@ -698,7 +703,7 @@ EMData *EMData::get_clip(const Region & area, const float fill) const
 
 	for (int i = z0; i < z1; i++) {
 		for (int j = y0; j < y1; j++) {
-			memcpy(dst, src, clipped_row_size);
+			EMUtil::em_memcpy(dst, src, clipped_row_size);
 			src += nx;
 			dst += (int)area.size[0];
 		}
@@ -754,7 +759,7 @@ EMData *EMData::get_top_half() const
 	half->set_size(nx, ny, nz / 2);
 
 	float *half_data = half->get_data();
-	memcpy(half_data, &rdata[nz / 2 * nx * ny], sizeof(float) * nx * ny * nz / 2);
+	EMUtil::em_memcpy(half_data, &rdata[nz / 2 * nx * ny], sizeof(float) * nx * ny * nz / 2);
 
 	float apix_z = attr_dict["apix_z"];
 	float origin_sec = attr_dict["origin_sec"];
@@ -851,7 +856,7 @@ float *EMData::setup4slice(bool redo)
 
 	if (supp) {
 		if (redo) {
-			free(supp);
+			EMUtil::em_free(supp);
 			supp = 0;
 		}
 		else {
@@ -864,7 +869,7 @@ float *EMData::setup4slice(bool redo)
 	const int SUPP_ROW_OFFSET = 4;
 	const int supp_size = SUPP_ROW_SIZE + SUPP_ROW_OFFSET;
 
-	supp = (float *) calloc(supp_size * ny * nz, sizeof(float));
+	supp = (float *) EMUtil::em_calloc(supp_size * ny * nz, sizeof(float));
 	int nxy = nx * ny;
 	int supp_xy = supp_size * ny;
 
@@ -946,8 +951,8 @@ void EMData::translate(const Vec3i &translation)
 
 	float *this_data = get_data();
 	int data_size = sizeof(float)*get_xsize()*get_ysize()*get_zsize();
-	float *tmp_data = (float *)malloc(data_size);
-	memcpy(tmp_data, this_data, data_size);
+	float *tmp_data = (float *)EMUtil::em_malloc(data_size);
+	EMUtil::em_memcpy(tmp_data, this_data, data_size);
 
 	int x0, x1, x2;
 	if( translation[0] < 0 ) {
@@ -1006,7 +1011,7 @@ void EMData::translate(const Vec3i &translation)
 	}
 
 	if( tmp_data ) {
-		free(tmp_data);
+		EMUtil::em_free(tmp_data);
 		tmp_data = 0;
 	}
 
@@ -1199,7 +1204,7 @@ void EMData::rotate_translate(const Transform3D & RA)
 	float *des_data = 0;
 
 	src_data = get_data();
-	des_data = (float *) malloc(nx * ny * nz * sizeof(float));
+	des_data = (float *) EMUtil::em_malloc(nx * ny * nz * sizeof(float));
 
 	if (nz == 1) {
 		float x2c =  nx / 2 - dcenter[0] + RAInv[0][3];
@@ -1335,7 +1340,7 @@ void EMData::rotate_translate(const Transform3D & RA)
 
 	if( rdata )
 	{
-		free(rdata);
+		EMUtil::em_free(rdata);
 		rdata = 0;
 	}
 	rdata = des_data;
@@ -1362,15 +1367,16 @@ void EMData::rotate_x(int dx)
 		throw ImageDimensionException("no 3D image");
 	}
 
-	float *tmp = new float[nx];
+
 	size_t row_size = nx * sizeof(float);
+	float *tmp = (float*)EMUtil::em_malloc(row_size);
 
 	for (int y = 0; y < ny; y++) {
 		int y_nx = y * nx;
 		for (int x = 0; x < nx; x++) {
 			tmp[x] = rdata[y_nx + (x + dx) % nx];
 		}
-		memcpy(&rdata[y_nx], tmp, row_size);
+		EMUtil::em_memcpy(&rdata[y_nx], tmp, row_size);
 	}
 
 	update();
@@ -1742,8 +1748,9 @@ EMData *EMData::calc_ccfx( EMData * const with, int y0, int y1, bool no_sum)
 		return cf;
 	}
 	else {
-		float *f1 = (float *) calloc(nx+2, sizeof(float));
-		float *f2 = (float *) calloc(nx+2, sizeof(float));
+		
+		float *f1 = (float *)EMUtil::em_calloc(nx+2, sizeof(float));
+		float *f2 = (float *)EMUtil::em_calloc(nx+2, sizeof(float));
 
 		float *cfd = cf->get_data();
 		float *d1 = get_data();
@@ -1753,15 +1760,14 @@ EMData *EMData::calc_ccfx( EMData * const with, int y0, int y1, bool no_sum)
 		if (!is_complex_x()) {
 			for (int j = 0; j < ny; j++) {
 				EMfft::real_to_complex_1d(d1 + j * nx, f1, nx);
-				memcpy(d1 + j * nx, f1, row_size);
+				EMUtil::em_memcpy(d1 + j * nx, f1, row_size);
 			}
-
 			set_complex_x(true);
 		}
 		if (!with->is_complex_x()) {
 			for (int j = 0; j < with->get_ysize(); j++) {
 				EMfft::real_to_complex_1d(d2 + j * nx, f2, nx);
-				memcpy(d2 + j * nx, f2, row_size);
+				EMUtil::em_memcpy(d2 + j * nx, f2, row_size);
 			}
 
 			with->set_complex_x(true);
@@ -1800,12 +1806,12 @@ EMData *EMData::calc_ccfx( EMData * const with, int y0, int y1, bool no_sum)
 
 		if( f1 )
 		{
-			free(f1);
+			EMUtil::em_free(f1);
 			f1 = 0;
 		}
 		if( f2 )
 		{
-			free(f2);
+			EMUtil::em_free(f2);
 			f2 = 0;
 		}
 	}

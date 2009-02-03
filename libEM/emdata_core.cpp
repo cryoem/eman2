@@ -44,9 +44,6 @@ using namespace EMAN;
 #include <iostream>
 #include <cstring>
 				 
-#ifdef EMAN2_USING_CUDA
-#include "cuda/cuda_util.h"
-#endif
 using std::cout;
 using std::endl;
 
@@ -54,16 +51,13 @@ void EMData::free_memory()
 {
 	ENTERFUNC;
 	if (rdata) {
-#ifdef EMAN2_USING_CUDA1
-		cuda_free(rdata);
-#else
-		free(rdata);
-#endif
+		EMUtil::em_free(rdata);
 		rdata = 0;
 	}
 
 	if (supp) {
-		free(supp);
+		EMUtil::em_free(supp);
+// 		free(supp);
 		supp = 0;
 	}
 	
@@ -1095,7 +1089,7 @@ void EMData::to_zero()
 		set_ri(false);
 	}
 
-	memset(rdata, 0, nxy * nz * sizeof(float));
+	EMUtil::em_memset(rdata, 0, nxy * nz * sizeof(float));
 	update();
 	EXITFUNC;
 }

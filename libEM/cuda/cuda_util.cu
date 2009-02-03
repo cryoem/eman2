@@ -107,20 +107,30 @@ void device_init() {
 	}
 }
 
-float* cuda_malloc_float(const int size)
+void* cuda_malloc(const size_t size)
 {
 	device_init();
-	float *mem=0;
-	CUDA_SAFE_CALL(cudaMallocHost((void **)&mem, size));
+	void *mem=0;
+	cudaMallocHost((void **)&mem, size);
 	return mem;
 }
 
-void cuda_free(float* mem)
+void cuda_free(void* mem)
 {
 	device_init();
-	cudaFree(mem);
+	cudaFreeHost(mem);
 }
-void cuda_memset(float* mem,int value, int size) {
+void cuda_memset(void* mem,int value, size_t size) {
 	device_init();
 	cudaMemset(mem,value,size);
+}
+
+void cuda_memcpy(void* dst, const void* const src, size_t count) {
+	device_init();
+	cudaMemcpy(dst,src,count,cudaMemcpyHostToHost);
+// 	cudaStream_t stream;
+// 	cudaStreamCreate(&stream);
+// 	cudaMemcpyAsync(dst,src,count,cudaMemcpyHostToHost,stream);
+// 	cudaStreamSynchronize(stream);
+// 	cudaStreamDestroy(stream);
 }

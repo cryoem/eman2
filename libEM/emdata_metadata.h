@@ -81,7 +81,7 @@ inline const float * const get_const_data() const { return rdata; }
 * @param z the number of pixels in the z direction
 */
 inline void set_data(float* data, const int x, const int y, const int z) {
-	if (rdata) { free(rdata); rdata = 0; }
+	if (rdata) { EMUtil::em_free(rdata); rdata = 0; }
 	rdata = data;
 	nx = x; ny = y; nz = z;
 	update();

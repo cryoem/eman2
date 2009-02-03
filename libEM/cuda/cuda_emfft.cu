@@ -100,15 +100,15 @@ cufft_plan_cache* get_cuda_emfft_plan(const int rank_in, const int x, const int 
 		int x2 = x + 2;
 		int complex_mem_size = sizeof(cufftComplex) * x2 * y * z/2;
 		int real_mem_size = sizeof(cufftReal) * x2 * y * z;
-		CUDA_SAFE_CALL(cudaMalloc((void**)&complex, complex_mem_size));
-		CUDA_SAFE_CALL(cudaMalloc((void**)&real, real_mem_size));
+		cudaMalloc((void**)&complex, complex_mem_size);
+		cudaMalloc((void**)&real, real_mem_size);
 	} else {
 		int offset = 2 - x%2;
 		int x2 = x + offset;
 		int complex_mem_size = sizeof(cufftComplex) * x2 * y * z/2;
 		int real_mem_size = sizeof(cufftReal) * x * y * z;
-		CUDA_SAFE_CALL(cudaMalloc((void**)&complex, complex_mem_size));
-		CUDA_SAFE_CALL(cudaMalloc((void**)&real, real_mem_size));
+		cudaMalloc((void**)&complex, complex_mem_size);
+		cudaMalloc((void**)&real, real_mem_size);
 	}
 	// Create the plan
 	if ( y == 1 && z == 1 )
@@ -150,7 +150,6 @@ cufft_plan_cache* get_cuda_emfft_plan(const int rank_in, const int x, const int 
 		copy_cuda_fft_cache(&(CudaFftPlanCache[i]),&(CudaFftPlanCache[i-1]));
 		
 	}
-		//dimplan[0]=-1;
 	
 	cufft_plan_cache* c = &CudaFftPlanCache[0];
 	
@@ -223,7 +222,9 @@ int cuda_fft_real_to_complex_nd(float *real_data, float *complex_data, int nx, i
 	int complex_mem_size = sizeof(cufftComplex) * nx2 * ny * nz/2;
 	int real_mem_size = sizeof(cufftReal) * nx * ny * nz;
 	cufft_plan_cache* cache = 0;
-
+#ifdef EMAN2_USING_CUDA_MALLOC	
+	cudaStream_t stream1,stream2;
+#endif
 	switch(rank) {
 		case 1:
 			cuda_fft_real_to_complex_1d(real_data, complex_data, nx);
@@ -236,15 +237,46 @@ int cuda_fft_real_to_complex_nd(float *real_data, float *complex_data, int nx, i
 			
 			if ( !ip ) {
 				cache = get_cuda_emfft_plan(rank,nx,ny,nz,real_2_complex,ip);
-				CUDA_SAFE_CALL(cudaMemcpy(cache->real,real_data, real_mem_size, cudaMemcpyHostToDevice));
-				CUDA_SAFE_CALL(cufftExecR2C(cache->handle, cache->real, cache->complex ));
-				CUDA_SAFE_CALL(cudaMemcpy(complex_data,cache->complex, complex_mem_size, cudaMemcpyDeviceToHost));
+#ifdef EMAN2_USING_CUDA_MALLOC	
+				
+				cudaStreamCreate(&stream1);
+				cudaMemcpyAsync(cache->real,real_data, real_mem_size, cudaMemcpyHostToDevice,stream1);
+				cudaThreadSynchronize();
+				cudaStreamDestroy(stream1);
+#else
+				cudaMemcpy(cache->real,real_data, real_mem_size, cudaMemcpyHostToDevice);
+#endif
+				cufftExecR2C(cache->handle, cache->real, cache->complex );
+				cudaThreadSynchronize();
+#ifdef EMAN2_USING_CUDA_MALLOC	
+				cudaStreamCreate(&stream2);
+				cudaMemcpyAsync(complex_data,cache->complex, complex_mem_size, cudaMemcpyDeviceToHost,stream2);
+				cudaThreadSynchronize();
+				cudaStreamDestroy(stream2);
+#else
+				cudaMemcpy(complex_data,cache->complex, complex_mem_size,cudaMemcpyDeviceToHost);
+#endif
 			}
 			else {
 				cache = get_cuda_emfft_plan(rank,nx,ny,nz,real_2_complex,ip);
-				CUDA_SAFE_CALL(cudaMemcpy(cache->complex,real_data, complex_mem_size, cudaMemcpyHostToDevice));
-				CUDA_SAFE_CALL(cufftExecR2C(cache->handle, (cufftReal*)cache->complex, cache->complex ));
-				CUDA_SAFE_CALL(cudaMemcpy(complex_data,cache->complex, complex_mem_size, cudaMemcpyDeviceToHost));
+#ifdef EMAN2_USING_CUDA_MALLOC	
+				cudaStreamCreate(&stream1);
+				cudaMemcpyAsync(cache->complex,real_data, complex_mem_size, cudaMemcpyHostToDevice,stream1);
+				cudaThreadSynchronize();
+				cudaStreamDestroy(stream1);
+#else
+				cudaMemcpy(cache->complex,real_data, complex_mem_size, cudaMemcpyHostToDevice);
+#endif
+				cufftExecR2C(cache->handle, (cufftReal*)cache->complex, cache->complex );
+				cudaThreadSynchronize();
+#ifdef EMAN2_USING_CUDA_MALLOC	
+				cudaStreamCreate(&stream2);
+				cudaMemcpyAsync(complex_data,cache->complex, complex_mem_size, cudaMemcpyDeviceToHost,stream2);
+				cudaThreadSynchronize();
+				cudaStreamDestroy(stream2);
+#else
+				cudaMemcpy(complex_data,cache->complex, complex_mem_size,cudaMemcpyDeviceToHost);
+#endif
 			}
 		break;
 
@@ -266,7 +298,9 @@ int cuda_fft_complex_to_real_nd(float *complex_data, float *real_data, int nx, i
 	int complex_mem_size = sizeof(cufftComplex) * nx2 * ny * nz/2;
 	int real_mem_size = sizeof(cufftReal) * nx2 * ny * nz;
 	cufft_plan_cache* cache = 0;
-
+#ifdef EMAN2_USING_CUDA_MALLOC
+	cudaStream_t stream1,stream2;
+#endif
 	switch(rank) {
 		case 1:
 			cuda_fft_complex_to_real_1d(complex_data, real_data, nx);
@@ -276,9 +310,26 @@ int cuda_fft_complex_to_real_nd(float *complex_data, float *real_data, int nx, i
 		case 3:
 			ip = ( complex_data == real_data );
 			cache = get_cuda_emfft_plan(rank,nx,ny,nz,complex_2_real,ip);
-			CUDA_SAFE_CALL(cudaMemcpy(cache->complex,complex_data, complex_mem_size, cudaMemcpyHostToDevice));
-			CUDA_SAFE_CALL(cufftExecC2R(cache->handle, cache->complex, cache->real));
-			CUDA_SAFE_CALL(cudaMemcpy(real_data,cache->real, real_mem_size, cudaMemcpyDeviceToHost));
+	
+#ifdef EMAN2_USING_CUDA_MALLOC			
+			cudaStreamCreate(&stream1);
+			cudaMemcpyAsync(cache->complex,complex_data, complex_mem_size, cudaMemcpyHostToDevice,stream1);
+			cudaThreadSynchronize();
+			cudaStreamDestroy(stream1);
+#else
+			cudaMemcpy(cache->complex,complex_data, complex_mem_size, cudaMemcpyHostToDevice);
+#endif
+			cufftExecC2R(cache->handle, cache->complex, cache->real);
+			cudaThreadSynchronize();
+	
+#ifdef EMAN2_USING_CUDA_MALLOC
+			cudaStreamCreate(&stream2);
+			cudaMemcpyAsync(real_data,cache->real, real_mem_size, cudaMemcpyDeviceToHost,stream2);
+			cudaThreadSynchronize();
+			cudaStreamDestroy(stream2);
+#else
+			cudaMemcpy(real_data,cache->real, real_mem_size, cudaMemcpyDeviceToHost);
+#endif
 			break;
 			
 		default:throw;

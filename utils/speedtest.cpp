@@ -384,7 +384,9 @@ int main(int argc, char *argv[])
 			}
 			else if (newali == 1) {
 				tmp = data[i]->align("rotate_translate_flip", data[j], Dict());
-				tmp->align("refine", data[j], Dict());
+				EMData* tmp2 = tmp->align("refine", data[j], Dict());
+				delete tmp2;
+				tmp2 = 0;
 			}
 			else {
 				tmp = data[i]->align("rotate_translate_flip", data[j], Dict());

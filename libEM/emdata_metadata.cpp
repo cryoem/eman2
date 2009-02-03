@@ -44,9 +44,7 @@ using std::stringstream;
 #include <iomanip>
 using std::setprecision;
 		 
-#ifdef EMAN2_USING_CUDA
-#include "cuda/cuda_util.h"
-#endif
+
 using namespace EMAN;
 
 EMData* EMData::get_fft_amplitude2D()
@@ -605,21 +603,20 @@ void EMData::set_size(int x, int y, int z)
 	}
 
 	int old_nx = nx;
+	size_t old_size = nx*ny*nz*sizeof(float);
 	nx = x;
 	ny = y;
 	nz = z;
 	nxy = nx*ny;
 
 	size_t size = (size_t)(x) * (size_t)y * (size_t)z * sizeof(float);
-#ifdef EMAN2_USING_CUDA1
-	if (rdata != 0) {
-		cuda_free(rdata);
-	}
-	rdata = cuda_malloc_float(size);
-#else
 	
-	rdata = static_cast < float *>(realloc(rdata, size));
-#endif
+	if (rdata != 0) {
+		rdata = (float*)EMUtil::em_realloc(rdata,size,old_size);
+	} else {
+		rdata = (float*)EMUtil::em_malloc(size);
+	}
+// 	rdata = static_cast < float *>(realloc(rdata, size));
 	
 	if ( rdata == 0 )
 	{
@@ -637,15 +634,11 @@ void EMData::set_size(int x, int y, int z)
 
 	// This will never occur because of the throw above! dsaw
 	if (old_nx == 0) {
-#ifdef EMAN2_USING_CUDA1
-		cuda_memset(rdata,0,size);
-#else
-		memset(rdata, 0, size);
-#endif
+		EMUtil::em_memset(rdata,0,size);
 	}
 
 	if (supp) {
-		free(supp);
+		EMUtil::em_free(supp);
 		supp = 0;
 	}
 
@@ -1048,7 +1041,7 @@ void EMData::set_data_pickle(std::string vf)
 //	if (rdata) printf("rdata exists\n");
 //	rdata = (float *)malloc(nx*ny*nz*sizeof(float));
 //	std::copy(vf.begin(), vf.end(), rdata);
-	memcpy(rdata,vf.data(),nx*ny*nz*sizeof(float));
+	EMUtil::em_memcpy(rdata,vf.data(),nx*ny*nz*sizeof(float));
 
 }
 

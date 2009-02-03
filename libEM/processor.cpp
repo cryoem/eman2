@@ -6710,7 +6710,7 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 	int nz = image->get_zsize();
 	int nxy = nx*ny;
 
-	float *des_data = (float *) malloc(nx*ny*nz* sizeof(float));
+	float *des_data = (float *) EMUtil::em_malloc(nx*ny*nz* sizeof(float));
 
 	if (nz == 1) {
 		Vec2f offset(nx/2,ny/2);
