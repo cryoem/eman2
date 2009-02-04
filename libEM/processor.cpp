@@ -5513,7 +5513,7 @@ void AutoMask3D2Processor::process_inplace(EMData * image)
 
 	amask->update();
 
-	amask->process_inplace("mask.addshells.gauss", Dict("val1", nshells+nshellsgauss, "val2", nshells));
+	amask->process_inplace("mask.addshells.gauss", Dict("val1", nshells, "val2", nshellsgauss));
 
 	bool return_mask = params.set_default("return_mask",false);
 	if (return_mask) {
