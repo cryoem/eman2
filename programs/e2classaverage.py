@@ -514,6 +514,13 @@ def main():
 		da.write_image(options.resultmx,-1)
 		dflip.write_image(options.resultmx,-1)
 		
+	if options.idxcache:
+			name = "bdb:"+options.dbpath+"#class_indices"
+			if options.even: name += "_even"
+			elif options.odd: name += "_odd"
+			db_name = numbered_bdb(name)
+			db_close_dict(db_name)
+		
 	
 	E2end(logger)
 

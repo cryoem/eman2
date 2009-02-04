@@ -47,9 +47,10 @@ template <> Factory < Averager >::Factory()
 	force_add(&MinMaxAverager::NEW);
 	force_add(&IterationAverager::NEW);
 	force_add(&WeightingAverager::NEW);
-	force_add(&CtfCAverager::NEW);
-	force_add(&CtfCWAverager::NEW);
-	force_add(&CtfCWautoAverager::NEW);
+	// These commented out until we're happy they're working. (d.woolford, Feb 3rd 2009)
+//	force_add(&CtfCAverager::NEW);
+//	force_add(&CtfCWAverager::NEW);
+//	force_add(&CtfCWautoAverager::NEW);
 }
 
 void Averager::mult(const float& s)

@@ -2647,7 +2647,7 @@ class ClassificationTask(ParticleWorkFlowTask):
 		
 		averagers = self.get_averagers_list()
 		averagers.sort()
-		paverager =  ParamDef("classaverager",vartype="string",desc_short="Averager",desc_long="The method used for generating class averages",property=None,defaultunits=db.get("classaverager",dfl="image"),choices=averagers)
+		paverager =  ParamDef("classaverager",vartype="string",desc_short="Averager",desc_long="The method used for generating class averages",property=None,defaultunits=db.get("classaverager",dfl="mean"),choices=averagers)
 		
 		pkeep = ParamDef(name="classkeep",vartype="float",desc_short="keep",desc_long="The fraction of particles to keep in each class average. If sigma based is checked this value is interpreted in standard deviations from the mean instead",property=None,defaultunits=db.get("classkeep",dfl=0.8),choices=[])
 		pkeepsig = ParamDef(name="classkeepsig",vartype="boolean",desc_short="Sigma based",desc_long="If checked the keep value is interpreted in standard deviations from the mean instead of basic ratio",property=None,defaultunits=db.get("classkeepsig",dfl=True),choices=[])
@@ -3413,6 +3413,7 @@ class ImportInitialModels(ParticleWorkFlowTask):
 			progress.qt_widget.setValue(i)
 			output_name = "bdb:initial_models#"+get_file_tag(file)
 			e.write_image(output_name,0)
+			db_close_dict(output_name)
 			i +=1
 			progress.qt_widget.setValue(i)
 		
@@ -4035,7 +4036,7 @@ class E2RefineParticlesTask(ClassificationTask):
 		
 		orient_options = ["angle based", "number based"]
 		porientoptions = ParamDef(name="orientopt",vartype="choice",desc_short="Method of generating orientation distribution",desc_long="Choose whether you want the orientations generating based on an angle or based on a total number of orientations desired",property=None,defaultunits=db.get("orientopt",dfl=orient_options[0]),choices=orient_options)
-		porientoptionsentry  =  ParamDef(name="orientopt_entry",vartype="float",desc_short="value",desc_long="Specify the value corresponding to your choice",property=None,defaultunits=db.get("orientgen_entry",dfl=5),choices=[])
+		porientoptionsentry  =  ParamDef(name="orientopt_entry",vartype="float",desc_short="value",desc_long="Specify the value corresponding to your choice",property=None,defaultunits=db.get("orientopt_entry",dfl=5),choices=[])
 		
 		params.append([pprojector,porientgens])
 		params.append([porientoptions,porientoptionsentry])
@@ -4607,7 +4608,7 @@ class E2ResolutionTask(WorkFlowTask):
 	Inherits from E2RefineParticlesTask because it uses some forms that are/almost identical
 	'''
 	 
-	general_documentation = "These are parameters required to run an e2resolutions.\n\n THIS DOES NOT WORK YET"
+	general_documentation = "These are parameters required to run an e2resolution.py."
 	warning_string = "\n\n\nThere are no refinement results available to use as the basis of running e2resolution"
 	def __init__(self,application):
 	 	WorkFlowTask.__init__(self,application)

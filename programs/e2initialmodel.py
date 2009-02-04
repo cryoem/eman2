@@ -70,6 +70,7 @@ def main():
 	# angles to use for refinement
 	sym_object = parsesym(options.sym)
 #	orts = sym_object.gen_orientations("eman",{"delta":7.5})
+	#orts = sym_object.gen_orientations("random",{"n":15})
    	orts = sym_object.gen_orientations("eman",{"delta":9.0})
 
 	logid=E2init(sys.argv)

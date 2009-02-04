@@ -37,63 +37,6 @@ __global__ void proj_kernel(float *out,float size,float3 mxx,float3 mxy, float3 
 	out[x+y*(int)size]=sum;
 }
 
-float** main_t(const float* rdata, const int nx, const int ny, const int nz) 
-{
-	device_init();
-		
-	printf("read angles\n");
-	float alts[1000],azs[1000],phis[1000];
-	int neul,tmp;
-	FILE *fin=fopen("euler.txt","r");
-	for (neul=0; fscanf(fin," %d %f %f %f",&tmp,alts+neul,azs+neul,phis+neul)==4; neul++) ;
-	printf("%d Eulers\n",neul);
-	fclose(fin);
-	
-	int idx = stored_cuda_array(rdata,nx,ny,nz);
-	bind_cuda_texture(idx);
-	
-	const dim3 blockSize(nx,1, 1);
-	const dim3 gridSize(nx,1,1);
-
-	float *memout=0;
-	CUDA_SAFE_CALL(cudaMalloc((void **)&memout, nx*ny*sizeof(float)));
-	
-	float3 mxx,mxy,mxz;
-
-	// loop over Eulers
-	float** ret = (float**) malloc(neul*sizeof(float*));
-	for (int i=0; i<neul; i++) {
-		printf("%d %f %f %f\n",i,alts[i],azs[i],phis[i]);
-		float *memout2=0;
-		CUDA_SAFE_CALL(cudaMallocHost((void **)&memout2, nx*ny*sizeof(float)));
-		
-		float alt=alts[i]*.017453292;
-		float az =azs[i]*.017453292;
-		float phi=phis[i]*.017453292;
-		float scale=1.0;
-		mxx.x=(cos(phi)*cos(az)-cos(alt)*sin(az)*sin(phi))/scale;
-		mxx.y=-(sin(phi)*cos(az)+cos(alt)*sin(az)*cos(phi))/scale;
-		mxx.z=sin(alt)*sin(az)/scale;
-		mxy.x=(cos(phi)*sin(az)+cos(alt)*cos(az)*sin(phi))/scale;
-		mxy.y=(-sin(phi)*sin(az)+cos(alt)*cos(az)*cos(phi))/scale;
-		mxy.z=-sin(alt)*cos(az)/scale;
-		mxz.x=sin(alt)*sin(phi)/scale;
-		mxz.y=sin(alt)*cos(phi)/scale;
-		mxz.z=cos(alt)/scale;
-		
-		proj_kernel<<<blockSize,gridSize>>>(memout,(float)nx,mxx,mxy,mxz);
-		//CUDA_SAFE_CALL(cuCtxSynchronize());
-		cudaThreadSynchronize();
-		CUDA_SAFE_CALL(cudaMemcpy(memout2, memout, nx*ny*sizeof(float), cudaMemcpyDeviceToHost));
-		ret[i] = memout2;
-	}
-	//cudaFreeHost(memout2);
-	CUDA_SAFE_CALL(cudaFree(memout));
-	
-	//return soln;
-	return ret;
-}
-
 void standard_project(const float* const matrix,const float* const rdata, const int nx, const int ny, const int nz, float*const d) 
 {
 	//device_init();
@@ -122,7 +65,7 @@ void standard_project(const float* const matrix,const float* const rdata, const 
 	proj_kernel<<<blockSize,gridSize>>>(memout,(float)nx,mxx,mxy,mxz);
 	//CUDA_SAFE_CALL(cuCtxSynchronize());
 	cudaThreadSynchronize();
-	CUDA_SAFE_CALL(cudaMemcpy(d, memout, nx*ny*sizeof(float), cudaMemcpyDeviceToHost));
-	CUDA_SAFE_CALL(cudaFree(memout));
+	cudaMemcpy(d, memout, nx*ny*sizeof(float), cudaMemcpyDeviceToHost);
+	cudaFree(memout);
 }
 

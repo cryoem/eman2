@@ -39,7 +39,6 @@
 #include "aligner.h"
 #include "projector.h"
 #include "analyzer.h"
-#include "cuda/cuda_projector.h"
 
 using namespace EMAN;
 
@@ -195,22 +194,3 @@ EMData *EMData::backproject(const string & projector_name, const Dict & params)
 	EXITFUNC;
 	return result;
 }
-
-#ifdef EMAN2_USING_CUDA
-vector<EMData*> EMData::cuda_project(const vector<Transform> transforms)
-{	
-	float** data = main_t(rdata,nx,ny,nz);
-
-	vector<EMData*> s;
-	for(int i = 0; i < 509; ++i) {
-		EMData* e = new EMData(data[i],nx,nx,1);
-		s.push_back(e);
-	}
-	
-	//for( vector<EMDataRawStruct>::const_iterator it = v.begin(); it != v.end(); ++it) {
-	//	s.push_back(new EMData(it->data,it->nx,it->ny,it->nz));
-	//}
-	return s;
-}
-
-#endif // EMAN2_USING_CUDA

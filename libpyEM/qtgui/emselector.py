@@ -1063,7 +1063,7 @@ class EMBDBListing:
 				db_name = "bdb:"+db_directory+"#"+f[0]
 				db = db_open_dict(db_name,ro=True)
 				
-				if db.has_key("maxrec"):
+				if db and db.has_key("maxrec"):
 					#n = DB[f[0]]["maxrec"]
 					n = db["maxrec"]
 					if n >= 1:
