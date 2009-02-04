@@ -1151,18 +1151,66 @@ def test_image_3d(type=0,size=(128,128,128)):
 	if len(size) != 3:
 		print "error, you can't create a 3d test image if there are not 3 dimensions in the size parameter"
 		return None
-	ret.set_size(*size)
+	if type != 2: ret.set_size(*size)
+	else: ret.set_size(256,256,64)
 	if type==0 :
 		ret.process_inplace("testimage.axes")
-	elif type==1 :
-		ret.process_inplace("testimage.noise.gauss")
-	elif type==2:
-		ret.process_inplace("testimage.gradient",{"axis":"y"})
+	elif type==1:
+		tmp = EMData()
+		tmp.set_size(*size)
+		tmp.process_inplace("testimage.sphericalwave",{"wavelength":size[0]/7.0,"phase":0})
+		
+		a = tmp.copy()
+		a.translate(size[0]/7.0,size[1]/7.0,0)
+		ret.process_inplace("testimage.sphericalwave",{"wavelength":size[0]/11.0,"phase":0})
+		ret.add(a)
+		
+		a = tmp.copy()
+		a.translate(-size[0]/7.0,size[1]/7.0,0)
+		ret.add(a)
+		
+		a = tmp.copy()
+		a.translate(-size[0]/7.0,-size[1]/7.0,0)
+		ret.add(a)
+		
+		a = tmp.copy()
+		a.translate(size[0]/7.0,-size[1]/7.0,0)
+		ret.add(a)
+		
+		ret.process_inplace("normalize")
+		
+	elif type==2:		
+		ret.process_inplace("testimage.tomo.objects")
 	elif type==3:
 		ret.process_inplace("testimage.squarecube",{"fill":1,"edge_length":size[0]/2})
 	elif type==4:
-		ret.process_inplace("testimage.circlesphere")
-	
+		ret.process_inplace("testimage.circlesphere",{"radius":int(size[0]*.375)})
+	elif type==5:
+		
+		t = Transform({"type":"eman","az":60,"alt":30})
+		ret.process_inplace("testimage.ellipsoid",{"a":size[0]/3,"b":size[1]/5,"c":size[2]/4,"transform":t})
+		
+		t = Transform({"type":"eman","az":-45})
+		t.set_trans(0,0,0)
+		ret.process_inplace("testimage.ellipsoid",{"a":size[0]/2,"b":size[1]/16,"c":size[2]/16,"transform":t,"fill":0})
+		
+		t.set_trans(0,0,size[2]/6)
+		ret.process_inplace("testimage.ellipsoid",{"a":size[0]/2,"b":size[1]/16,"c":size[2]/16,"transform":t,"fill":0})
+		
+		t.set_trans(0,0,-size[2]/6)
+		ret.process_inplace("testimage.ellipsoid",{"a":size[0]/2,"b":size[1]/16,"c":size[2]/16,"transform":t,"fill":0})
+		
+		t = Transform({"type":"eman","alt":-45})
+		t.set_trans(-size[0]/8,size[1]/4,0)
+		ret.process_inplace("testimage.ellipsoid",{"a":size[0]/16,"b":size[1]/2,"c":size[2]/16,"transform":t,"fill":0})
+		
+		t = Transform({"type":"eman","alt":-45})
+		t.set_trans(size[0]/8,-size[1]/3.5)
+		ret.process_inplace("testimage.ellipsoid",{"a":size[0]/16,"b":size[1]/2,"c":size[2]/16,"transform":t,"fill":0})
+		
+	elif type==6 :
+		ret.process_inplace("testimage.noise.gauss")
+		
 	return ret
 
 # get a font renderer

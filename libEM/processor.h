@@ -5225,6 +5225,74 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		}
 	};
 	
+	class TestImageEllipse : public TestImageProcessor
+	{
+	public:
+		virtual void process_inplace(EMData * image);
+				
+		virtual string get_name() const
+		{
+			return "testimage.ellipsoid";
+		}
+		
+		virtual string get_desc() const
+		{
+			return "Insert an ellipse into the image.";
+		}
+		
+		static Processor * NEW()
+		{
+			return new TestImageEllipse();
+		}
+		
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("a", EMObject::FLOAT, "a");
+			d.put("b", EMObject::FLOAT, "b");
+			d.put("c", EMObject::FLOAT, "c");
+			d.put("transform", EMObject::TRANSFORM, "Optionally transform the ellipse");
+			d.put("fill", EMObject::FLOAT, "Fill value");
+			return d;
+		}
+	};
+	
+	class TestImageHollowEllipse : public TestImageProcessor
+		{
+		public:
+			virtual void process_inplace(EMData * image);
+					
+			virtual string get_name() const
+			{
+				return "testimage.ellipsoid.hollow";
+			}
+			
+			virtual string get_desc() const
+			{
+				return "Insert a hollow ellipse into the image.";
+			}
+			
+			static Processor * NEW()
+			{
+				return new TestImageHollowEllipse();
+			}
+			
+			virtual TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("xwidth", EMObject::FLOAT, "a1");
+				d.put("ywidth", EMObject::FLOAT, "b1");
+				d.put("zwidth", EMObject::FLOAT, "c1");
+				d.put("a", EMObject::FLOAT, "a");
+				d.put("b", EMObject::FLOAT, "b");
+				d.put("c", EMObject::FLOAT, "c");
+				d.put("width",EMObject::FLOAT, "width - specify the width or specify each width explicitly - xwidth, ywidth, zwidth");
+				d.put("transform", EMObject::TRANSFORM, "Optionally transform the ellipse");
+				d.put("fill", EMObject::FLOAT, "Fill value");
+				return d;
+			}
+		};
+	
 	/**Replace a source image as a circle or sphere depends on 2D or 3D of the source image
 	 *@param radius radius of circle or sphere
 	 *@param axis specify a major axis for asymmetric features

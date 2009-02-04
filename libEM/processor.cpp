@@ -216,6 +216,8 @@ template <> Factory < Processor >::Factory()
 	force_add(&TestImageGradient::NEW);
 	force_add(&TestTomoImage::NEW);
 	force_add(&TestImageLineWave::NEW);
+	force_add(&TestImageEllipse::NEW);
+	force_add(&TestImageHollowEllipse::NEW);
 
 	force_add(&TomoTiltEdgeMaskProcessor::NEW);
 	force_add(&TomoTiltAngleWeightProcessor::NEW);
@@ -5810,7 +5812,7 @@ void TestImageScurve::process_inplace(EMData * image)
 
 	int dim_size = image->get_ndim();
 	if( 2 != dim_size ) {
-		throw ImageDimensionException("work for 2D image only");
+		throw ImageDimensionException("works for 2D images only");
 	}
 
 	int nx = image->get_xsize();
@@ -5891,11 +5893,11 @@ void TestImageSphericalWave::process_inplace(EMData * image)
 		phase = params["phase"];
 	}
 
-	float x = 0;
+	float x = nx/2;
 	if (params.has_key("x")) x=params["x"];
-	float y = 0;
+	float y = ny/2;
 	if (params.has_key("y")) y=params["y"];
-	float z = 0;
+	float z =nz/2;
 	if (params.has_key("z")) z=params["z"];
 
 	int ndim = image->get_ndim();
@@ -6193,6 +6195,142 @@ void TestImageCirclesphere::process_inplace(EMData * image)
 					}
 					else {
 						*dat = 0;
+					}
+				}
+			}
+		}
+	}
+
+	image->update();
+}
+
+void TestImageHollowEllipse::process_inplace(EMData * image)
+{
+	preprocess(image);
+
+	float width = params.set_default("width",2.0);
+	
+	float a2 = params.set_default("a",nx/2.0f-1.0f);
+	float b2 = params.set_default("b",ny/2.0f-1.0f);
+	float c2 = params.set_default("c",nz/2.0f-1.0f);
+	
+	float a1 = params.set_default("xwidth",a2-width);
+	float b1 = params.set_default("ywidth",b2-width);
+	float c1 = params.set_default("zwidth",c2-width);
+	
+	float fill = params.set_default("fill",1.0);
+	Transform* t = params.set_default("transform",(Transform*)0);
+	
+	int mz = 2*(int)c2+1;
+	if ( nz < mz ) mz = nz;
+	int my = 2*(int)b2+1;
+	if ( ny < my ) my = ny;
+	int mx = 2*(int)a2+1;
+	if ( nx < mx ) mx = nx;
+	
+	float ai1 = 1/(a1*a1);
+	float bi1 = 1/(b1*b1);
+	float ci1 = 1/(c1*c1);
+	
+	float ai2 = 1/(a2*a2);
+	float bi2 = 1/(b2*b2);
+	float ci2 = 1/(c2*c2);
+	
+	Vec3f origin(nx/2,ny/2,nz/2);
+	
+	for (int k = 0; k < mz; k++) {
+		for (int j = 0; j < my; j++) {
+			for (int i = 0; i < mx; i++) {
+				float x2 = (float)(i - mx/2);
+				float y2 = (float)(j - my/2);
+				float z2 = (float)(k - mz/2);
+				float r1 = (x2*x2)*ai1 + (y2*y2)*bi1 + (z2*z2)*ci1;
+				float r2 = (x2*x2)*ai2 + (y2*y2)*bi2 + (z2*z2)*ci2;
+				if (r2 <= 1 && r1 >= 1) {
+				
+					if (t != 0) {
+						Vec3f v(x2,y2,z2);
+						v = (*t)*v;
+						v += origin;
+						
+						// THIS ISN'T THE BEST STRATEGY BUT IT'S A STOP GAP. A FLOOD FILL IS PROBABLY BETTER
+						// I fill in 3x3 cubes to make sure there are no gaps...
+						
+						for( int kk = -1; kk <= 1; ++kk) 
+							for( int jj = -1; jj <= 1; ++jj) 
+								for( int ii = -1; ii <= 1; ++ii) {
+									int xl = (int)v[0]+ii;
+									int yl = (int)v[1]+jj;
+									int zl = (int)v[2]+kk;
+									if (xl >= 0 && xl < nx && yl >= 0 && yl < ny && zl >= 0 && zl < nz) 
+										image->set_value_at(xl,yl,zl,1.0);
+								}
+					} else {
+						image->set_value_at((int)x2+nx/2,(int)y2+ny/2,(int)z2+nz/2,fill);
+					}
+				}
+			}
+		}
+	}
+
+	image->update();
+}
+
+void TestImageEllipse::process_inplace(EMData * image)
+{
+	preprocess(image);
+
+	
+	float a = params.set_default("a",nx/2.0f-1.0f);
+	float b = params.set_default("b",ny/2.0f-1.0f);
+	float c = params.set_default("c",nz/2.0f-1.0f);
+	float fill = params.set_default("fill",1.0);
+	//bool hollow = params.set_default("hollow",false);
+	Transform* t = params.set_default("transform",(Transform*)0);
+	
+	
+	int mz = 2*(int)c+1;
+	if ( nz < mz ) mz = nz;
+	int my = 2*(int)b+1;
+	if ( ny < my ) my = ny;
+	int mx = 2*(int)a+1;
+	if ( nx < mx ) mx = nx;
+	
+	
+	float ai = 1/(a*a);
+	float bi = 1/(b*b);
+	float ci = 1/(c*c);
+	
+	Vec3f origin(nx/2,ny/2,nz/2);
+	
+	for (int k = 0; k < mz; k++) {
+		for (int j = 0; j < my; j++) {
+			for (int i = 0; i < mx; i++) {
+				float x2 = (float)(i - mx/2);
+				float y2 = (float)(j - my/2);
+				float z2 = (float)(k - mz/2);
+				float r = (x2*x2)*ai + (y2*y2)*bi + (z2*z2)*ci;
+				if (r <= 1) {
+				
+					if (t != 0) {
+						Vec3f v(x2,y2,z2);
+						v = (*t)*v;
+						v += origin;
+						
+						// THIS ISN'T THE BEST STRATEGY BUT IT'S A STOP GAP. A FLOOD FILL IS PROBABLY BETTER
+						// I fill in 3x3 cubes to make sure there are no gaps...
+						
+						for( int kk = -1; kk <= 1; ++kk) 
+							for( int jj = -1; jj <= 1; ++jj) 
+								for( int ii = -1; ii <= 1; ++ii) {
+									int xl = (int)v[0]+ii;
+									int yl = (int)v[1]+jj;
+									int zl = (int)v[2]+kk;
+									if (xl >= 0 && xl < nx && yl >= 0 && yl < ny && zl >= 0 && zl < nz) 
+										image->set_value_at(xl,yl,zl,fill);
+								}
+					} else {
+						image->set_value_at((int)x2+nx/2,(int)y2+ny/2,(int)z2+nz/2,fill);
 					}
 				}
 			}
@@ -6976,7 +7114,6 @@ void ClampingProcessor::process_inplace( EMData* image )
 	}
 }
 
-#define deg2rad 0.017453292519943295
 void TestTomoImage::insert_rectangle( EMData* image, const Region& region, const float& value, const Transform& t3d )
 {
 	int startx = (int)region.origin[0] - (int)region.size[0]/2;
@@ -7011,175 +7148,196 @@ void TestTomoImage::insert_rectangle( EMData* image, const Region& region, const
 	}
 }
 
-void TestTomoImage::insert_solid_ellipse( EMData* image, const Region& region, const float& value, const Transform& t3d )
-{
-	int originx = (int)region.origin[0];
-	int originy = (int)region.origin[1];
-	int originz = (int)region.origin[2];
-
-	int radiusx  = (int)region.size[0];
-	int radiusy  = (int)region.size[1];
-	int radiusz = (int)region.size[2];
-
-	int maxrad = ( radiusx > radiusy ? radiusx : radiusy );
-	maxrad = ( maxrad > radiusz ? maxrad : radiusz );
-
-	float length = (float)(radiusx*radiusx + radiusy*radiusy + radiusz*radiusz);
-	length = sqrtf(length);
-
-	float xinc = radiusx/length/2.0f;
-	float yinc = radiusy/length/2.0f;
-	float zinc = radiusz/length/2.0f;
-
-	for ( float rad = 0; rad <= 2.0*length; rad += 1.0 ) {
-		float rx = xinc + rad*xinc;
-		float ry = yinc + rad*yinc;
-		float rz = zinc + rad*zinc;
-		for ( float beta = -90.0f; beta <= 90.0f; beta += 0.2f ) {
-			for ( float lambda = -180.0f; lambda <= 180.0f; lambda += 0.2f ) {
-				float b = (float)(deg2rad * beta);
-				float l = (float)(deg2rad * lambda);
-				if ( !t3d.is_identity()) {
-					float z = rz * sin(b);
-					float y = ry * cos(b) * sin(l);
-					float x = rx * cos(b) * cos(l);
-					Vec3f v(x,y,z);
-					v = t3d*v;
-					image->set_value_at((int)(v[0]+originx),(int)(v[1]+originy),(int)(v[2]+originz), value);
-				}
-				else {
-					int z = (int) (originz + rz * sin(b));
-					int y = (int) (originy + ry * cos(b) * sin(l));
-					int x = (int) (originx + rx * cos(b) * cos(l));
-					image->set_value_at(x,y,z, value);
-				}
-			}
-		}
-	}
-}
-
-void TestTomoImage::insert_hollow_ellipse( EMData* image, const Region& region, const float& value, const int& radius, const Transform& t3d )
-{
-	int originx = (int)region.origin[0];
-	int originy = (int)region.origin[1];
-	int originz = (int)region.origin[2];
-
-	int radiusx  = (int)region.size[0];
-	int radiusy  = (int)region.size[1];
-	int radiusz = (int)region.size[2];
-
-	for ( int rad = 0; rad <= radius; ++rad ) {
-		int tmprad = rad - radius/2;
-		int rx = radiusx + tmprad;
-		int ry = radiusy + tmprad;
-		int rz = radiusz + tmprad;
-		for ( float beta = -90.0f; beta <= 90.0f; beta += 0.2f ) {
-			for ( float lambda = -180.0f; lambda <= 180.0f; lambda += 0.2f ) {
-				float b = (float)(deg2rad * beta);
-				float l = (float)(deg2rad * lambda);
-
-				if ( !t3d.is_identity()) {
-					float z = rz * sin(b);
-					float y = ry * cos(b) * sin(l);
-					float x = rx * cos(b) * cos(l);
-					Vec3f v(x,y,z);
-					v = t3d*v;
-					image->set_value_at((int)(v[0]+originx),(int)(v[1]+originy),(int)(v[2]+originz), value);
-				}
-				else {
-					int z = (int) (originz + rz * sin(b));
-					int y = (int) (originy + ry * cos(b) * sin(l));
-					int x = (int) (originx + rx * cos(b) * cos(l));
-					image->set_value_at(x,y,z, value);
-				}
-			}
-		}
-	}
-}
-
 void TestTomoImage::process_inplace( EMData* image )
 {
-	float nx = 240;
-	float ny = 240;
-	float nz = 60;
+	//float nx = 240;
+	//float ny = 240;
+	//float nz = 60;
 
+	//image->set_size((int)nx,(int)ny,(int)nz);
+	float nx = (float) image->get_xsize();
+	float ny = (float) image->get_ysize();
+	float nz = (float) image->get_zsize();
+	
 	// This increment is used to simplified positioning
 	// It's an incremental factor that matches the grid size of the paper
 	// that I drew this design on before implementing it in code
 	float inc = 1.0f/22.0f;
+	float xinc = inc;
+	float yinc = inc;
+	float zinc = inc;
 
-	image->set_size((int)nx,(int)ny,(int)nz);
-
-	Region region(nx/2.0,ny/2.,nz/2.,.4*nx,0.4*ny,0.4*nz);
-	insert_solid_ellipse(image, region, 0.1f);
-	insert_hollow_ellipse(image, region, 0.2f, 3);
-
-	// Center x, center z, bottom y ellipsoids that grow progessively smaller
-	{
-		Region region(nx/2.,ny*4.*inc,nz/2.,2.*inc*nx,0.5*inc*ny,1.*inc*nz);
-		insert_solid_ellipse(image, region, 0.3f);
-	}
-
-	{
-		Region region(nx/2.,ny*5.5*inc,nz/2.,1.5*inc*nx,.5*inc*ny,1.*inc*nz);
-		insert_solid_ellipse(image, region, 0.0f);
-	}
-
-	{
-		Region region(nx/2.,ny*7.*inc,nz/2.,1.*inc*nx,0.5*inc*ny,1.*inc*nz);
-		insert_solid_ellipse(image, region, 0.3f);
-	}
-
-	{
-		Region region(nx/2.,ny*8.5*inc,nz/2.,0.75*inc*nx,0.5*inc*ny,1.*inc*nz);
-		insert_solid_ellipse(image, region, 0.0f);
-	}
+	Dict d;
+	d["a"] = (float) .4*nx+3;
+	d["b"] = (float) .4*ny+3;
+	d["c"] = (float) .4*nz+3;
+	d["fill"] = 0.2;
+	image->process_inplace("testimage.ellipsoid",d);
+	
+	d["a"] = (float) .4*nx;
+	d["b"] = (float) .4*ny;
+	d["c"] = (float) .4*nz;
+	d["fill"] = 0.1;
+	image->process_inplace("testimage.ellipsoid",d);
 
 	// Center x, center z, bottom y ellipsoids that grow progessively smaller
 	{
-		Region region(nx/2.,ny*18.*inc,nz/2.,2.*inc*nx,0.5*inc*ny,1.*inc*nz);
-		insert_solid_ellipse(image, region, 0.3f);
+		Transform t;
+		t.set_trans(0.,ny*4.*yinc-ny/2,0);
+		Dict d;
+		d["transform"] = &t;
+		d["a"] = (float) 2.*xinc*nx;
+		d["b"] = (float)0.5*yinc*ny;
+		d["c"] = (float) 1.*zinc*nz;
+		d["fill"] = 0.3;
+		image->process_inplace("testimage.ellipsoid",d);
 	}
 
 	{
-		Region region(nx/2.,ny*16.5*inc,nz/2.,1.5*inc*nx,.5*inc*ny,1.*inc*nz);
-		insert_solid_ellipse(image, region, 0.3f);
+		Transform t;
+		t.set_trans(0.,ny*5.5*yinc-ny/2,0);
+		Dict d;
+		d["transform"] = &t;
+		d["a"] = (float) 1.5*xinc*nx;
+		d["b"] = (float)0.5*yinc*ny;
+		d["c"] = (float) 1.*zinc*nz;
+		d["fill"] = 0.0;
+		image->process_inplace("testimage.ellipsoid",d);
+	}
+	{
+		Transform t;
+		t.set_trans(0.,ny*7*yinc-ny/2,0);
+		Dict d;
+		d["transform"] = &t;
+		d["a"] = (float) 1.*xinc*nx;
+		d["b"] = (float)0.5*yinc*ny;
+		d["c"] = (float) 1.*zinc*nz;
+		d["fill"] = 0.3;
+		image->process_inplace("testimage.ellipsoid",d);
+	}
+
+
+	{
+		Transform t;
+		t.set_trans(0.,ny*8.5*yinc-ny/2,0);
+		Dict d;
+		d["transform"] = &t;
+		d["a"] = (float) .75*xinc*nx;
+		d["b"] = (float)0.5*yinc*ny;
+		d["c"] = (float) 1.*zinc*nz;
+		d["fill"] = 0.0;
+		image->process_inplace("testimage.ellipsoid",d);
+	}
+	
+	// Center x, center z, bottom y ellipsoids that grow progessively smaller
+	{
+		Transform t;
+		t.set_trans(0.,ny*18*yinc-ny/2,0);
+		Dict d;
+		d["transform"] = &t;
+		d["a"] = (float) 2*xinc*nx;
+		d["b"] = (float)0.5*yinc*ny;
+		d["c"] = (float) 1.*zinc*nz;
+		d["fill"] = 0.3;
+		image->process_inplace("testimage.ellipsoid",d);
 	}
 
 	{
-		Region region(nx/2.,ny*15.*inc,nz/2.,1.*inc*nx,0.5*inc*ny,1.*inc*nz);
-		insert_solid_ellipse(image, region, 0.3f);
+		Transform t;
+		t.set_trans(0.,ny*16.5*yinc-ny/2,0);
+		Dict d;
+		d["transform"] = &t;
+		d["a"] = (float) 1.5*xinc*nx;
+		d["b"] = (float)0.5*yinc*ny;
+		d["c"] = (float) 1.*zinc*nz;
+		d["fill"] = 0.3;
+		image->process_inplace("testimage.ellipsoid",d);
 	}
 
 	{
-		Region region(nx/2.,ny*13.5*inc,nz/2.,0.75*inc*nx,0.5*inc*ny,1.*inc*nz);
-		insert_solid_ellipse(image, region, 0.3f);
+		Transform t;
+		t.set_trans(0.,ny*15*yinc-ny/2,0);
+		Dict d;
+		d["transform"] = &t;
+		d["a"] = (float) 1*xinc*nx;
+		d["b"] = (float)0.5*yinc*ny;
+		d["c"] = (float) 1.*zinc*nz;
+		d["fill"] = 0.3;
+		image->process_inplace("testimage.ellipsoid",d);
+	}
+
+	{
+		Transform t;
+		t.set_trans(0.,ny*13.5*yinc-ny/2,0);
+		Dict d;
+		d["transform"] = &t;
+		d["a"] = (float).75*xinc*nx;
+		d["b"] = (float)0.5*yinc*ny;
+		d["c"] = (float) 1.*zinc*nz;
+		d["fill"] = 0.3;
+		image->process_inplace("testimage.ellipsoid",d);
 	}
 
 	// Left ellipsoids from the bottom up
 	{
-		Region region(nx*7.*inc,ny*5.*inc,nz/2.,1.*inc*nx,0.75*inc*ny,1.5*inc*nz);
-		insert_solid_ellipse(image, region, 0.25);
+		
+		Transform t;
+		t.set_trans(nx*6*xinc-nx/2,ny*5*yinc-ny/2,0);
+		Dict d;
+		d["transform"] = &t;
+		d["a"] = (float)1*xinc*nx;
+		d["b"] = (float).75*yinc*ny;
+		d["c"] = (float) .75*zinc*nz;
+		d["fill"] = 0.25;
+		image->process_inplace("testimage.ellipsoid",d);
+	}
+	
+	{	
+		Transform t;
+		t.set_trans(nx*6*xinc-nx/2,ny*7*yinc-ny/2,0);
+		Dict d;
+		d["transform"] = &t;
+		d["a"] = (float)1.5*xinc*nx;
+		d["b"] = (float).75*yinc*ny;
+		d["c"] = (float) .75*zinc*nz;
+		d["fill"] = 0.25;
+		image->process_inplace("testimage.ellipsoid",d);
 	}
 
 	{
-		Region region(nx*7.*inc,ny*7.*inc,nz/2.,1.5*inc*nx,0.75*inc*ny,1.5*inc*nz);
-		insert_solid_ellipse(image, region, 0.25);
+		Transform t;
+		t.set_trans(nx*6*xinc-nx/2,ny*9*yinc-ny/2,0);
+		Dict d;
+		d["transform"] = &t;
+		d["a"] = (float)2*xinc*nx;
+		d["b"] = (float).75*yinc*ny;
+		d["c"] = (float) .75*zinc*nz;
+		d["fill"] = 0.25;
+		image->process_inplace("testimage.ellipsoid",d);
 	}
 
 	{
-		Region region(nx*7.*inc,ny*9.*inc,nz/2.,2.*inc*nx,0.75*inc*ny,1.*inc*nz);
-		insert_solid_ellipse(image, region, 0.25);
+		Transform t;
+		t.set_trans(nx*6*xinc-nx/2,ny*11*yinc-ny/2,0);
+		Dict d;
+		d["transform"] = &t;
+		d["a"] = (float)2.5*xinc*nx;
+		d["b"] = (float).75*yinc*ny;
+		d["c"] = (float) 1*zinc*nz;
+		d["fill"] = 0.25;
+		image->process_inplace("testimage.ellipsoid",d);
 	}
 
 	{
-		Region region(nx*7.*inc,ny*11.*inc,nz/2.,2.5*inc*nx,0.75*inc*ny,1.*inc*nz);
-		insert_solid_ellipse(image, region, 0.25);
-	}
-
-	{
-		Region region(nx*7.*inc,ny*13.*inc,nz/2.,3.*inc*nx,0.75*inc*ny,1.*inc*nz);
-		insert_solid_ellipse(image, region, 0.25);
+		Transform t;
+		t.set_trans(nx*6*xinc-nx/2,ny*13*yinc-ny/2,0);
+		Dict d;
+		d["transform"] = &t;
+		d["a"] = (float) 3*xinc*nx;
+		d["b"] = (float).75*yinc*ny;
+		d["c"] = (float) 1*zinc*nz;
+		d["fill"] = 0.25;
+		image->process_inplace("testimage.ellipsoid",d);
 	}
 
 	// Right rectangle from the top down
@@ -7213,39 +7371,61 @@ void TestTomoImage::process_inplace( EMData* image )
 
 	// Rotated ellipsoids
 	{
-		Region region(nx*6.8*inc,ny*16.*inc,nz/2.,1.5*inc*nx,0.5*inc*ny,0.5*inc*nz);
-		Transform t3d(Dict("type","eman","az",(float)43.0));
-		insert_solid_ellipse(image, region, 0.2f, t3d);
+		Transform t;
+		t.set_trans(nx*6.8*xinc-nx/2,ny*16*yinc-ny/2,0);
+		Dict rot;
+		rot["type"] = "eman";
+		rot["az"] = 43.0f;
+		t.set_rotation(rot);
+		Dict d;
+		d["transform"] = &t;
+		d["a"] = (float) 1.5*xinc*nx;
+		d["b"] = (float) .5*yinc*ny;
+		d["c"] = (float) .5*zinc*nz;
+		d["fill"] = 0.2;
+		image->process_inplace("testimage.ellipsoid",d);
 	}
 	{
-		Region region(nx*7.2*inc,ny*16.*inc,nz/2.,1.5*inc*nx,0.5*inc*ny,0.5*inc*nz);
-		Transform t3d(Dict("type","eman","az",(float)135.0));
-		insert_solid_ellipse(image, region, 0.3f, t3d);
+		Transform t;
+		t.set_trans(nx*7.2*xinc-nx/2,ny*16*yinc-ny/2,0);
+		Dict rot;
+		rot["type"] = "eman";
+		rot["az"] = 135.0f;
+		t.set_rotation(rot);
+		Dict d;
+		d["transform"] = &t;
+		d["a"] = (float) 1.5*xinc*nx;
+		d["b"] = (float) .5*yinc*ny;
+		d["c"] = (float) .5*zinc*nz;
+		d["fill"] = 0.3;
+		image->process_inplace("testimage.ellipsoid",d);
 	}
 
 	// Dense small ellipsoids
 	{
-		Region region(nx*4.*inc,ny*8.*inc,nz/2.,0.5*inc*nx,0.5*inc*ny,0.5*inc*nz);
-		insert_solid_ellipse(image, region, 2.05f);
-	}
-	{
-		Region region(nx*8.*inc,ny*18.*inc,nz/2.,0.5*inc*nx,0.5*inc*ny,0.5*inc*nz);
-		insert_solid_ellipse(image, region, 2.05f);
-	}
-	{
-		Region region(nx*14.*inc,ny*18.2*inc,nz/2.,0.5*inc*nx,0.5*inc*ny,0.5*inc*nz);
-		insert_solid_ellipse(image, region, 2.05f);
+		Transform t;
+		t.set_trans(nx*3.5*xinc-nx/2,ny*8*yinc-ny/2,0);
+		Dict d;
+		d["transform"] = &t;
+		d["a"] = (float) .5*xinc*nx;
+		d["b"] = (float) .5*yinc*ny;
+		d["c"] = (float) .5*zinc*nz;
+		d["fill"] = 2.05;
+		image->process_inplace("testimage.ellipsoid",d);
+		
+		t.set_trans(nx*8*xinc-nx/2,ny*18*yinc-ny/2,0);
+		image->process_inplace("testimage.ellipsoid",d);
+		
+		t.set_trans(nx*14*xinc-nx/2,ny*18.2*yinc-ny/2,0);
+		image->process_inplace("testimage.ellipsoid",d);
+		
+		t.set_trans(nx*18*xinc-nx/2,ny*14*yinc-ny/2,0);
+		image->process_inplace("testimage.ellipsoid",d);
+		
+		t.set_trans(nx*17*xinc-nx/2,ny*7.5*yinc-ny/2,0);
+		image->process_inplace("testimage.ellipsoid",d);
 	}
 
-	{
-		Region region(nx*18.*inc,ny*14.*inc,nz/2.,0.5*inc*nx,0.5*inc*ny,0.5*inc*nz);
-		insert_solid_ellipse(image, region, 2.05f);
-	}
-
-	{
-		Region region(nx*17.*inc,ny*7.5*inc,nz/2.,0.5*inc*nx,0.5*inc*ny,0.5*inc*nz);
-		insert_solid_ellipse(image, region, 2.05f);
-	}
 
 	// Dense small rectangles
 	{
@@ -7254,55 +7434,61 @@ void TestTomoImage::process_inplace( EMData* image )
 		insert_rectangle(image, region, 1.45f, t3d);
 	}
 	{
-		Region region(nx*3.5*inc,ny*10.5*inc,nz/2.,1.*inc*nx,1.*inc*ny,1.*inc*nz);
+		Region region(nx*3.*inc,ny*10.5*inc,nz/2.,1.*inc*nx,1.*inc*ny,1.*inc*nz);
 		Transform t3d(Dict("type","eman","az",(float)45.0));
 		insert_rectangle(image, region, 1.45f, t3d);
 	}
 
 	// Insert small cluster of spheres
 	{
-		Region region(nx*14.*inc,ny*7.5*inc,nz/2.,0.5*inc*nx,0.5*inc*ny,0.5*inc*nz);
-		insert_solid_ellipse(image, region, .35f);
+		Transform t;
+		t.set_trans(nx*14*xinc-nx/2,ny*7.5*yinc-ny/2,0);
+		Dict d;
+		d["transform"] = &t;
+		d["a"] = (float) .5*xinc*nx;
+		d["b"] = (float) .5*yinc*ny;
+		d["c"] = (float) .5*zinc*nz;
+		d["fill"] = .35;
+		image->process_inplace("testimage.ellipsoid",d);
 	}
 	{
-		Region region(nx*15.*inc,ny*7.5*inc,nz/2.,0.25*inc*nx,0.25*inc*ny,0.25*inc*nz);
-		insert_solid_ellipse(image, region, .35f);
+		Transform t;
+		t.set_trans(nx*15*xinc-nx/2,ny*7.5*yinc-ny/2,0);
+		Dict d;
+		d["transform"] = &t;
+		d["a"] = (float) .25*xinc*nx;
+		d["b"] = (float) .25*yinc*ny;
+		d["c"] = (float) .25*zinc*nz;
+		d["fill"] = .35;
+		image->process_inplace("testimage.ellipsoid",d);
+		
+		t.set_trans(nx*13.5*xinc-nx/2,ny*6.5*yinc-ny/2,0);
+		image->process_inplace("testimage.ellipsoid",d);
+		
+		t.set_trans(nx*14.5*xinc-nx/2,ny*6.5*yinc-ny/2,0);
+		image->process_inplace("testimage.ellipsoid",d);
+		
+		t.set_trans(nx*15.5*xinc-nx/2,ny*6.5*yinc-ny/2,0);
+		image->process_inplace("testimage.ellipsoid",d);
+		
+		t.set_trans(nx*14*xinc-nx/2,ny*5.5*yinc-ny/2,0);
+		image->process_inplace("testimage.ellipsoid",d);
+		
+		t.set_trans(nx*14*xinc-nx/2,ny*5.5*yinc-ny/2,0);
+		image->process_inplace("testimage.ellipsoid",d);
+				
+		t.set_trans(nx*15*xinc-nx/2,ny*5.5*yinc-ny/2,0);
+		image->process_inplace("testimage.ellipsoid",d);
+		
+		t.set_trans(nx*16*xinc-nx/2,ny*5.5*yinc-ny/2,0);
+		image->process_inplace("testimage.ellipsoid",d);
+		
+		t.set_trans(nx*14.5*xinc-nx/2,ny*4.5*yinc-ny/2,0);
+		image->process_inplace("testimage.ellipsoid",d);
+		
+		t.set_trans(nx*15.5*xinc-nx/2,ny*4.5*yinc-ny/2,0);
+		image->process_inplace("testimage.ellipsoid",d);
 	}
-	{
-		Region region(nx*13.5*inc,ny*6.5*inc,nz/2.,0.25*inc*nx,0.25*inc*ny,0.25*inc*nz);
-		insert_solid_ellipse(image, region, .35f);
-	}
-	{
-		Region region(nx*14.5*inc,ny*6.5*inc,nz/2.,0.25*inc*nx,0.25*inc*ny,0.25*inc*nz);
-		insert_solid_ellipse(image, region, .35f);
-	}
-	{
-		Region region(nx*15.5*inc,ny*6.5*inc,nz/2.,0.25*inc*nx,0.25*inc*ny,0.25*inc*nz);
-		insert_solid_ellipse(image, region, .35f);
-	}
-
-	{
-		Region region(nx*14.*inc,ny*5.5*inc,nz/2.,0.25*inc*nx,0.25*inc*ny,0.25*inc*nz);
-		insert_solid_ellipse(image, region, .35f);
-	}
-	{
-		Region region(nx*15.*inc,ny*5.5*inc,nz/2.,0.25*inc*nx,0.25*inc*ny,0.25*inc*nz);
-		insert_solid_ellipse(image, region, .35f);
-	}
-	{
-		Region region(nx*16.*inc,ny*5.5*inc,nz/2.,0.25*inc*nx,0.25*inc*ny,0.25*inc*nz);
-		insert_solid_ellipse(image, region, .35f);
-	}
-
-	{
-		Region region(nx*14.5*inc,ny*4.5*inc,nz/2.,0.25*inc*nx,0.25*inc*ny,0.25*inc*nz);
-		insert_solid_ellipse(image, region, .35f);
-	}
-	{
-		Region region(nx*15.5*inc,ny*4.5*inc,nz/2.,0.25*inc*nx,0.25*inc*ny,0.25*inc*nz);
-		insert_solid_ellipse(image, region, .35f);
-	}
-
 	// Insert feducials around the outside of the "cell"
 // 	for ( float i = 0.; i < 3.; i += 1. ) {
 // 		for ( float j = 0.; j < 3.; j += 1. ) {
