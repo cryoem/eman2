@@ -3665,10 +3665,11 @@ def ali3d_a(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, 
             xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta = "10 6 4 4", an = "-1", 
 	    center = -1, maxit = 5, CTF = False, snr = 1.0,  ref_a = "S", sym = "c1",
-	    user_func_name = "ref_ali3d", debug = False, MPI = False):
+	    user_func_name = "ref_ali3d", fourvar = True, debug = False, MPI = False):
 	if MPI:
 		ali3d_d_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr, ts,
-	        	delta, an, center, maxit, CTF, snr, ref_a, sym, user_func_name, debug)
+	        	delta, an, center, maxit, CTF, snr, ref_a, sym, user_func_name,
+			fourvar, debug)
 		return
 
 	from alignment      import proj_ali_incore, proj_ali_incore_local
@@ -3795,10 +3796,10 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 			drop_image(vol, os.path.join(outdir, "vol%04d.hdf"%(N_step*max_iter+Iter+1)))
 			ref_data[2] = vol
 			ref_data[3] = fscc
-			
+
 			#  call user-supplied function to prepare reference image, i.e., center and filter it
 			vol, dummy = user_func(ref_data)
-			
+
 			drop_image(vol, os.path.join(outdir, "volf%04d.hdf"%(N_step*max_iter+Iter+1)))
 			#  here we write header info
 			if CTF and data_had_ctf == 0:
@@ -3965,14 +3966,22 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 			if CTF: vol, fscc = rec3D_MPI(data, snr, sym, mask3D, os.path.join(outdir, "resolution%04d"%(N_step*max_iter+Iter+1)), myid, main_node)
 			else:    vol, fscc = rec3D_MPI_noCTF(data, sym, mask3D, os.path.join(outdir, "resolution%04d"%(N_step*max_iter+Iter+1)), myid, main_node)
 
+			if fourvar:
+			#  Compute Fourier variance
+				varf = varf3d_MPI(dataim, ssnr_text_file = os.path.join(outdir, "ssnr%04d"%(N_step*max_iter+Iter+1)), mask2D = None, reference_structure = vol, ou = last_ring, rw = 1.0, npad = 1, CTF = CTF, sign = 1, sym =sym, myid = myid)
+				if myid == main_node:   varf = 1.0/varf
+			else:  varf = None
+
 			if myid == main_node:
 				drop_image(vol, os.path.join(outdir, "vol%04d.hdf"%(N_step*max_iter+Iter+1)))
 				ref_data[2] = vol
 				ref_data[3] = fscc
+				ref_data[4] = varf
 				#  call user-supplied function to prepare reference image, i.e., center and filter it
 				vol, cs = user_func(ref_data)
 				drop_image(vol, os.path.join(outdir, "volf%04d.hdf"%(N_step*max_iter+Iter+1)))
 
+			del varf
 			bcast_EMData_to_all(vol, myid, main_node)
 			# write out headers, under MPI writing has to be done sequentially
 			mpi_barrier(MPI_COMM_WORLD)

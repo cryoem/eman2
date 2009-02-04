@@ -58,7 +58,7 @@ def main():
 	parser.add_option("--function", type="string", default="ref_ali3d",help="name of the user-supplied reference preparation function")
 	parser.add_option("--debug",  action="store_true", default=False, help="Debug printout")
 	parser.add_option("--MPI",    action="store_true", default=False, help="use MPI version")
-	parser.add_option("--Fourvar",action="store_true", default=True,  help="compute Fourier variance")
+	parser.add_option("--Fourvar",action="store_true", default=False,  help="compute Fourier variance")
 	(options, args) = parser.parse_args(arglist[1:])
 	if(len(args) < 2 or len(args) > 3):
     		print "usage: " + usage
