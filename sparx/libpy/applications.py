@@ -3812,8 +3812,8 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 
 def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, 
             xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta = "10 6 4 4", an = "-1",
-	    center = -1, maxit = 5, CTF = False, snr = 1.0,  ref_a = "S", sym = "c1", 
-	    user_func_name = "ref_ali3d", debug = False):
+	    center = -1, maxit = 5, CTF = False, snr = 1.0,  ref_a = "S", sym = "c1",  user_func_name = "ref_ali3d",
+	    fourvar = True, debug = False):
 
 	from alignment      import proj_ali_incore, proj_ali_incore_local
 	from utilities      import model_circle, get_image, drop_image, get_input_from_string
