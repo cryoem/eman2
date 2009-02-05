@@ -44,6 +44,7 @@ import subprocess
 from pyemtbx.boxertools import set_idd_image_entry, TrimBox
 import weakref
 from e2history import HistoryForm
+import time
 
 class EmptyObject:
 	'''
@@ -2048,7 +2049,6 @@ class E2CTFWorkFlowTask(ParticleWorkFlowTask):
 				print "error?",key
 				continue
 			ret.append([key,data[-1]]) # parms[-1] should be the original filename
-		
 		db_close_dict("bdb:e2ctf.parms")
 		return ret
 
@@ -2479,10 +2479,7 @@ class E2CTFGuiTask(E2CTFWorkFlowTask):
 	def get_params(self):
 
 		ptcl_names = self.get_particle_db_names(strip_ptcls=False) # particles in the project directory
-		ctf_names = self.get_names_with_ctf_params()
-		if ctf_names != None: 
-			ctf_ptcl_names = [l[0] for l in ctf_names]
-			
+		if ptcl_names != None and len(ptcl_names) != 0: 
 			p,n = self.get_ctf_param_table(self.get_project_particle_names_with_ctf(),no_particles=True)
 		else:
 			n = 0
