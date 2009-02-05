@@ -858,6 +858,13 @@ vector<Vec3f> OptimumOrientationGenerator::optimize_distances(const vector<Trans
 
 
 
+Symmetry3D::Symmetry3D() : cached_au_planes(0),cache_size(0),num_triangles(0),au_sym_triangles() {}
+Symmetry3D::~Symmetry3D() {
+	if (cached_au_planes != 0 ) {
+		delete_au_planes();
+	}
+}
+
 void verify(const Vec3f& tmp, float * plane, const string& message )
 {
 	cout << message << " residual " << plane[0]*tmp[0]+plane[1]*tmp[1]+plane[2]*tmp[2] + plane[3]  << endl;
@@ -904,31 +911,74 @@ int Symmetry3D::in_which_asym_unit(const Transform& t3d) const
 	// left multiplation (as in what occurs in the FourierReconstructor during slice insertion)
 	p = o*p;
 	
-	// This is empty space for storing the equation of a plane
-	float* plane = new float[4];
-	
-	// Get a set of triangles that, if projected through, covers the entire asymmetric unit.
-	// Sometimes this will only be one triangle, sometimes it's two, occassionally it's 4.
-	vector<vector<Vec3f> >triangles = get_asym_unit_triangles(true);
-	typedef vector<vector<Vec3f> >::const_iterator cit;
-	
-	for(int i = 0; i < get_nsym(); ++i) {
-		
-		for( cit it = triangles.begin(); it != triangles.end(); ++it )
-		{
-			// For each given triangle
-			vector<Vec3f> points = *it;
-			if ( i != 0 ) {
-				for (vector<Vec3f>::iterator it = points.begin(); it != points.end(); ++it ) {
-					// Rotate the points in the triangle so that the triangle occupies the
-					// space of the current asymmetric unit
-					*it = (*it)*get_sym(i); 
-				}
-			}
-			
-			// Determine the equation of the plane for the points, store it in plane
-			Util::equation_of_plane(points[0],points[2],points[1],plane);
+	return point_in_which_asym_unit(p);
+}
 
+		
+void Symmetry3D::cache_au_planes() const {
+	if (cached_au_planes == 0 ) {
+		vector< vector<Vec3f> > au_triangles = get_asym_unit_triangles(true);
+		num_triangles = au_triangles.size();
+		cache_size = get_nsym()*au_triangles.size();
+		
+		cached_au_planes = new float*[cache_size];
+		float** fit = cached_au_planes;
+		for(int i =0; i < cache_size; ++i,++fit) {
+			float *t = new float[4];
+			*fit = t;
+		}
+		
+		
+		int k = 0;
+		for(int i = 0; i < get_nsym(); ++i) {
+			
+			for( ncit it = au_triangles.begin(); it != au_triangles.end(); ++it, ++k)
+			{
+				// For each given triangle
+				vector<Vec3f> points = *it;
+				if ( i != 0 ) {
+					for (vector<Vec3f>::iterator iit = points.begin(); iit != points.end(); ++iit ) {
+						// Rotate the points in the triangle so that the triangle occupies the
+						// space of the current asymmetric unit
+						*iit = (*iit)*get_sym(i); 
+					}
+				}
+				
+				au_sym_triangles.push_back(points);
+				
+				// Determine the equation of the plane for the points, store it in plane
+				Util::equation_of_plane(points[0],points[2],points[1],cached_au_planes[k]);
+			}
+		}
+	}
+	else throw UnexpectedBehaviorException("Attempt to generate a cache when cache exists");
+}
+
+void Symmetry3D::delete_au_planes() {
+	if (cached_au_planes == 0 ) throw UnexpectedBehaviorException("Attempt to delete a cache that does not exist");
+	float** fit = cached_au_planes;
+	for(int i =0; i < cache_size; ++i,++fit) {
+		if (*fit == 0) throw UnexpectedBehaviorException("Attempt to delete a cache that does not exist");
+		delete [] *fit;
+		*fit = 0;
+	}
+	
+	delete [] cached_au_planes;
+	cached_au_planes = 0;
+}
+
+int Symmetry3D::point_in_which_asym_unit(const Vec3f& p) const
+{
+	if (cached_au_planes == 0) {
+		cache_au_planes();
+	}
+	
+	int k = 0;
+	for(int i = 0; i < get_nsym(); ++i) {
+		for( int j = 0; j < num_triangles; ++j,++k) {
+			vector<Vec3f> points = au_sym_triangles[k];
+
+			float* plane = cached_au_planes[k];
 			Vec3f tmp = p;
 	
 			// Determine the intersection of p with the plane - do this by finding out how much p should be scaled by
@@ -977,16 +1027,13 @@ int Symmetry3D::in_which_asym_unit(const Transform& t3d) const
 			
 			// The final decision, if this is true then we've hit the jackpot
 			if ( s >= 0 && t >= 0 && (s+t) <= 1 ) {
-				delete [] plane;
 				return i;
 			}
 		}
 	}
 
-	delete [] plane;
 	return -1;
 }
-
 vector<Transform> Symmetry3D::get_touching_au_transforms(bool inc_mirror) const
 {
 	vector<Transform>  ret;

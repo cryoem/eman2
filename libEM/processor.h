@@ -4248,6 +4248,43 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 
 	};
 
+	
+	/**Tries to mask out only interesting density
+	 * @param au  The asymmetric unit to mask, if -1 masks all asymmetric units but assigns each a unique value
+	 * @param sym The symmetry type, for example, "tet" 
+	 * @author David Woolford
+	 * @date February 2009
+	*/
+	class AutoMaskAsymUnit:public Processor
+	{
+		public:
+			virtual void process_inplace(EMData * image);
+
+			virtual string get_name() const
+			{
+				return "mask.asymunit";
+			}
+
+			static Processor *NEW()
+			{
+				return new AutoMaskAsymUnit();
+			}
+
+			virtual TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("au", EMObject::INT, "The asymmetric unit to mask out. If this is -1 will mask all asymmetric units, giving each a unique number.");
+				d.put("sym", EMObject::STRING, "The symmetry, for example, d7");
+				return d;
+			}
+
+			virtual string get_desc() const
+			{
+				return "Masks out a specific asymmetric unit of the given symmetry. If the au parameter is -1 will mask all asymmetric units, assigning the asymetric unit number to the masked area.";
+			}
+
+	};
+	
 	/**Tries to mask out only interesting density
 	 * @param threshold1 
 	 * @param threshold2 

@@ -56,8 +56,10 @@ namespace EMAN {
 	class Symmetry3D : public FactoryBase
 	{
 	public:
-		Symmetry3D() {};
-		virtual  ~Symmetry3D() {};
+		typedef vector<vector<Vec3f> >::const_iterator cit;
+		typedef vector<vector<Vec3f> >::iterator ncit;
+		Symmetry3D();
+		virtual  ~Symmetry3D();
 		
 		/** Every Symmetry3D object must return a dictionary containing the delimiters
 		 * that define its asymmetric unit (this is not strictly true in the case of the PlatonicSym class)
@@ -155,7 +157,7 @@ namespace EMAN {
 		 * Default behavior is to map the given orientation into the default asymmetric unit of the symmetry (n=0). This 
 		 * is a concrete implementation that works for all symmetries, relying on a concrete instance of the get_asym_unit_triangles
 		 * function
-		 * @param t3d a transform3D characterizing an orientation
+		 * @param t3d a Transform characterizing an orientation
 		 * @param n the number of the asymmetric unit you wish to map the given orientation into. There is a strong relationship between n and to Symmetry3D::get_sym
 		 * @return the orientation the specified asymmetric unit (by default this is the default asymmetric unit of the symmetry)
 		 * @ingroup tested3c 
@@ -166,10 +168,19 @@ namespace EMAN {
 		/** A function that will determine in which asymmetric unit a given orientation resides 
 		 * The asymmetric unit 'number' will depend entirely on the order in which different symmetry operations are return by the
 		 * Symmetry3D::get_sym function
-		 * @param t3d a transform3D characterizing an orientation
+		 * @param t3d a Transform characterizing an orientation
 		 * @return the asymmetric unit number the the orientation is in
 		 */
 		virtual int in_which_asym_unit(const Transform& t3d) const;
+		
+		/** A function that will determine in which asymmetric unit a given vector resides 
+		 * The asymmetric unit 'number' will depend entirely on the order in which different symmetry operations are return by the
+		 * Symmetry3D::get_sym function
+		 * The vector is a point
+		 * @param v a Vec3f characterizing a point
+		 * @return the asymmetric unit number the the orientation is in
+		 */
+		virtual int point_in_which_asym_unit(const Vec3f& v) const;
 		
 		/** Get triangles that precisely occlude the projection area of the default asymmetric unit. This will be used
 		 * for collision detection in Symmetry3D::reduce
@@ -190,6 +201,24 @@ namespace EMAN {
 		
 		virtual vector<Transform> get_syms() const;
 		static vector<Transform> get_symmetries(const string& symmetry);
+	protected:
+		/// The asymmetric unit planes are cached to provide a great speed up
+		/// the point_in_which_asym_unit function, which is called by reduce and by in_which_asym_unit
+		mutable float** cached_au_planes;
+		
+		/// Have to remember the cache size
+		mutable int cache_size;
+		/// This is stores the number of triangles returned by get_asym_unit_triangles(true)
+		mutable int num_triangles;
+		/// This cache is of size cache_size
+		mutable vector< vector<Vec3f> > au_sym_triangles;
+		/** Establish the asymmetric unit planes cache
+		*/
+		void cache_au_planes() const;
+		
+		/** Clear the asymmetric unit planes cache
+		*/
+		void delete_au_planes();
 };
 	
 	/** An encapsulation of cyclic 3D symmetry

@@ -179,6 +179,7 @@ template <> Factory < Processor >::Factory()
 	force_add(&AutoMask3DProcessor::NEW);
 	force_add(&AutoMask3D2Processor::NEW);
 	force_add(&AddMaskShellProcessor::NEW);
+	force_add(&AutoMaskAsymUnit::NEW);
 
 	force_add(&ToMassCenterProcessor::NEW);
 	force_add(&PhaseToMassCenterProcessor::NEW);
@@ -4244,6 +4245,45 @@ void PhaseToCenterProcessor::process_inplace(EMData * image)
 
 
 	}
+}
+
+void AutoMaskAsymUnit::process_inplace(EMData* image) {
+	if (!image) {
+		LOGWARN("NULL Image");
+		return;
+	}
+
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+	
+	int ox = nx/2;
+	int oy = ny/2;
+	int oz = nz/2;
+	
+	Symmetry3D* sym = Factory<Symmetry3D>::get((string)params["sym"]);
+	int au = params.set_default("au",0);
+	
+	float *d = image->get_data();
+	for(int k = 0; k < nz; ++k ) {
+		for(int j = 0; j < ny; ++j ) {
+			for (int i = 0; i< nx; ++i, ++d) {
+				//cout << i << " " << j << " " << k << endl;
+				Vec3f v(i-ox,j-oy,k-oz);
+// 				v.normalize();
+				int a = sym->point_in_which_asym_unit(v);
+				if (au == -1) {
+					*d = a;
+				} else {
+					if ( a == au ) *d = 1;
+					else *d = 0;
+				}
+			}
+		}
+	}
+
+	delete sym;
+			
 }
 
 void AutoMask2DProcessor::process_inplace(EMData * image)
