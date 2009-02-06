@@ -4289,7 +4289,14 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 		if os.path.exists(outdir):  os.system('rm -rf '+outdir)
 		os.mkdir(outdir)
 	mpi_barrier(MPI_COMM_WORLD)
+
 	if debug:
+		from time import sleep
+		while not os.path.exists(outdir):
+			print  "Node ",myid,"  waiting..."
+			sleep(5)
+
+
 		info_file = outdir+("/progress%04d"%myid)
 		finfo = open(info_file, 'w')
 	else:
@@ -4367,7 +4374,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 
 	if(myid == main_node):
 		from EMAN2db import db_open_dict
-		dummy = db_open_dict(stack)
+		dummy = db_open_dict(stack, True)
 		active = EMUtil.get_all_attributes(stack, 'active')
 		list_of_particles = []
 		for im in xrange(len(active)):
@@ -4775,9 +4782,16 @@ def ali3d_em_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, na
 		os.mkdir(outdir)
 	mpi_barrier(MPI_COMM_WORLD)
 
+
 	if debug:
+		from time import sleep
+		while not os.path.exists(outdir):
+			print  "Node ",myid,"  waiting..."
+			sleep(5)
+
+
 		info_file = outdir+("/progress%04d"%myid)
-		finfo = open( info_file, "w")
+		finfo = open(info_file, 'w')
 	else:
 		finfo = None
 	
@@ -4817,7 +4831,7 @@ def ali3d_em_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, na
 
 	if(myid == main_node):
 		from EMAN2db import db_open_dict
-		dummy = db_open_dict(stack)
+		dummy = db_open_dict(stack, True)
 		active = EMUtil.get_all_attributes(stack, "active")
 		list_of_particles = []
 		for im in xrange( len(active) ):
@@ -5495,11 +5509,18 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, center = -1, maxit
 			del ima
 			if ctf_applied == 1:  ERROR("ali3d_e does not work for CTF-applied data", "ali3d_e", 1)
 	mpi_barrier(MPI_COMM_WORLD)
+
 	if debug:
+		from time import sleep
+		while not os.path.exists(outdir):
+			print  "Node ",myid,"  waiting..."
+			sleep(5)
+
+
 		info_file = outdir+("/progress%04d"%myid)
-		outf = open(info_file, 'w')
+		finfo = open(info_file, 'w')
 	else:
-		outf = None
+		finfo = None
 
 	last_ring   = int(ou)
 	max_iter    = int(maxit)
@@ -5507,7 +5528,7 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, center = -1, maxit
 
 	if myid == main_node:
 		from EMAN2db import db_open_dict
-		dummy = db_open_dict(stack)
+		dummy = db_open_dict(stack, True)
 		active = EMUtil.get_all_attributes(stack, 'active')
 		list_of_particles = []
 		for im in xrange(len(active)):
