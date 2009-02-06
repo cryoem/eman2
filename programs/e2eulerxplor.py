@@ -590,7 +590,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 		if self.inspector !=None: self.inspector.close()
 		if self.mx_viewer !=None: self.mx_viewer.closeEvent(None)
 		if self.mx_particle_viewer != None: self.mx_particle_viewer.closeEvent(None)
-		self.app().close_specific(self)
+		self.application().close_specific(self)
 		
 	
 #	def get_inspector(self):

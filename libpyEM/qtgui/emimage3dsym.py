@@ -64,6 +64,8 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 			from emimageutil import EMParentWin
 			self.gl_context_parent = EMSymViewerWidget(self)
 			self.qt_context_parent = EMParentWin(self.gl_context_parent)
+			self.qt_context_parent.setWindowIcon(QtGui.QIcon(get_image_directory() + "eulerxplor.png"))
+			self.qt_context_parent.setWindowTitle("Eulerxplor")
 			self.gl_widget = self.gl_context_parent
 		return self.qt_context_parent
 

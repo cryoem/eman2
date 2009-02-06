@@ -175,8 +175,11 @@ def get_gui_arg_img_sets(filenames):
 	'''
 	returns the img_sets list required to intialized the GUI correctly
 	'''
-	db_parms=db_open_dict("bdb:e2ctf.parms")
+	
 	img_sets = []
+	if db_check_dict("bdb:e2ctf.parms"):
+		db_parms=db_open_dict("bdb:e2ctf.parms",ro=True)
+	else: return img_sets
 	for file in filenames:
 		name = get_file_tag(file)
 		if not db_parms.has_key(name):
@@ -231,9 +234,7 @@ def pspec_and_ctf_fit(options,debug=False):
 	global logid
 	img_sets=[]
 
-	db_project=db_open_dict("bdb:project")
 	db_parms=db_open_dict("bdb:e2ctf.parms")
-	db_misc=db_open_dict("bdb:e2ctf.misc")
 
 	for i,filename in enumerate(options.filenames):
 		name=get_file_tag(filename)
@@ -265,6 +266,9 @@ def pspec_and_ctf_fit(options,debug=False):
 	project_db["global.microscope_voltage"] = options.voltage
 	project_db["global.microscope_cs"] = options.cs
 	project_db["global.apix"] = apix
+	
+	db_close_dict("bdb:project")
+	db_close_dict("bdb:e2ctf.parms")
 	
 	return img_sets
 

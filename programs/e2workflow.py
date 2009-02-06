@@ -327,22 +327,24 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.tree_widget_entries.append(browser_entry)
 		self.launchers["Browse"] = self.launch_browser
 		self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Boxer")))
+		self.tree_widget_entries[-1].setIcon(0,QtGui.QIcon(get_image_directory() + "green_boxes.png"))
 		self.launchers["Boxer"] = self.launch_boxer_general
 		self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("CTF ")))
 		self.launchers["CTF "] = self.launch_ctf_general
 		self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Refine2D ")))
 		self.launchers["Refine2D "] = self.launch_refine2d_general
 		self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Eulers")))
+		self.tree_widget_entries[-1].setIcon(0,QtGui.QIcon(get_image_directory() + "eulerxplor.png"))
 		self.launchers["Eulers"] = self.launch_asym_unit
 		history = QtGui.QTreeWidgetItem(QtCore.QStringList("History"))
 		history.setIcon(0,QtGui.QIcon(get_image_directory() + "feather.png"))
 		self.tree_widget_entries.append(history)
 		self.launchers["History"] = self.launch_view_history
-		self.directory = QtGui.QTreeWidgetItem(QtCore.QStringList("Directory"))
+		self.directory = QtGui.QTreeWidgetItem(QtCore.QStringList("Working directory"))
 		self.directory.setIcon(0,QtGui.QIcon(get_image_directory() + "desktop.png"))
 		self.directory.setToolTip(0,os.getcwd())
 		self.tree_widget_entries.append(self.directory)
-		self.launchers["Directory"] = self.launch_change_directory
+		self.launchers["Working directory"] = self.launch_change_directory
 		self.tree_widget.insertTopLevelItems(0,self.tree_widget_entries)
 		self.tree_widget.insertTopLevelItems(0,self.tree_widget_entries)
 
@@ -382,6 +384,9 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.launchers["Interactive tuning - e2ctf"] = self.launch_e2ctf_tune
 		ctf_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Generate output - e2ctf")))
 		self.launchers["Generate output - e2ctf"] =  self.launch_e2ctf_write_ouptut
+		ctf_list[0].setIcon(0,QtGui.QIcon(get_image_directory() + "ctf.png"))
+		ctf_list[1].setIcon(0,QtGui.QIcon(get_image_directory() + "ctf.png"))
+		ctf_list[2].setIcon(0,QtGui.QIcon(get_image_directory() + "ctf.png"))
 		ctf.addChildren(ctf_list)
 		#self.launchers["e2ctf"] = self.launch_e2ctf_management
 		
@@ -394,6 +399,9 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Generate output - e2boxer")))
 		self.launchers["Generate output - e2boxer"] = self.launch_e2boxer_output
 		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Particle import")))
+		ap_list[0].setIcon(0,QtGui.QIcon(get_image_directory() + "green_boxes.png"))
+		ap_list[1].setIcon(0,QtGui.QIcon(get_image_directory() + "green_boxes.png"))
+		ap_list[2].setIcon(0,QtGui.QIcon(get_image_directory() + "green_boxes.png"))
 		self.launchers["Particle import"] = self.launch_particle_import
 		ap.addChildren(ap_list)
 		
@@ -416,6 +424,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		
 		refine_list = []
 		refine_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Run e2refine")))
+		refine_list[0].setIcon(0,QtGui.QIcon(get_image_directory() + "refine.png"))
 		self.launchers["Run e2refine"] = self.launch_e2refine
 		refinement.addChildren(refine_list)
 		
@@ -484,7 +493,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		module = EMAsymmetricUnitViewer(self.application())
 		self.module().emit(QtCore.SIGNAL("launching_module"),"Eulers",module)
 		self.application().show_specific(module)
-		self.add_module([str(module),"AU",module])
+		self.add_module([str(module),"Eulerxplor",module])
 		self.application().setOverrideCursor(Qt.ArrowCursor)
 		
 	def launch_browser(self):
