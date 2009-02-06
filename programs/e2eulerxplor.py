@@ -40,7 +40,7 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 import weakref
 from optparse import OptionParser
-from EMAN2 import Util, E2init, E2end,EMANVERSION,is_2d_image_mx, EMUtil, db_open_dict, EMData, Transform, db_check_dict
+from EMAN2 import Util, E2init, E2end,EMANVERSION,is_2d_image_mx, EMUtil, db_open_dict, EMData, Transform, db_check_dict, db_close_dict
 from emimagemx import EMImageMXModule
 import os
 import sys
@@ -347,10 +347,10 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 		
 		sym = "icos"
 		if db_check_dict("bdb:emform.e2refine"):
-			db = db_open_dict("bdb:emform.e2refine")
+			db = db_open_dict("bdb:emform.e2refine",ro=True)
 			if db.has_key("symname") and db.has_key("symnumber"):
-				sym = db["symname"] + d["symnumber"]
-			
+				sym = db["symname"] + db["symnumber"]
+			db_close_dict("bdb:emform.e2refine")
 		
 		self.set_sym(sym)
 		

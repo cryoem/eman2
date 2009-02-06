@@ -158,7 +158,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		
 		
 		
-		self.set_sym("icos")
+		self.set_sym(self.sym)
 		self.regen_dl()
 		
 		
@@ -177,11 +177,33 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 			print "Error, tried to set a zero or negative radius (",radius,")"
 			exit(1)
 	
-	def trace_great_triangles(self,triangles):
+	def trace_great_triangles(self,inc_mirror):
+		triangles = self.sym_object.get_asym_unit_triangles(inc_mirror)
 		if ( self.tri_dl != 0 ): glDeleteLists(self.tri_dl, 1)
 		
 		self.tri_dl=glGenLists(1)
 		
+		if self.sym_object.get_name() == "d" and self.sym_object.get_nsym()% 4 != 0:
+			if inc_mirror:
+				pass
+#				p1 = (3*triangles[0][2]+triangles[0][1])/4.0
+#				p2 = (triangles[0][2]+3*triangles[0][1])/4.0
+#				a = p1.normalize()
+#				a = p2.normalize()
+#				
+#				t = []
+#				t.append([triangles[0][0],triangles[0][1],p2])
+#				t.append([triangles[0][0],p2, p1])
+#				t.append([triangles[0][0],p1, triangles[0][2]])
+#				triangles = t
+			else:
+				p = (triangles[0][2]+triangles[0][1])/2.0
+				a = p.normalize()
+				t = []
+				t.append([triangles[0][0],triangles[0][1],p])
+				t.append([triangles[0][0],p, triangles[0][2]])
+				triangles = t
+	
 		glNewList(self.tri_dl,GL_COMPILE)
 		
 		glPushMatrix()
@@ -414,7 +436,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		if self.nomirror == True : val = 0
 		else: val = 1
 		self.trace_great_arcs(self.sym_object.get_asym_unit_points(val))
-		self.trace_great_triangles(self.sym_object.get_asym_unit_triangles(val))
+		self.trace_great_triangles(val)
 		if ('inc_mirror' in parms):
 			og += ":inc_mirror=" + str(val)
 			
