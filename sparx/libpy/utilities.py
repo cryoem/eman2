@@ -1884,7 +1884,7 @@ def estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node):
 				image_start_proc, image_end_proc = MPI_start_end(nima, number_of_proc, proc)
 				n_params = (image_end_proc - image_start_proc)*5
 				temp = mpi_recv(n_params, MPI_FLOAT, proc, proc, MPI_COMM_WORLD)
-				for nn in xrange(n_params): 	ali_params_series.append(temp[nn])
+				for nn in xrange(n_params): 	ali_params_series.append(float(temp[nn]))
 					
 		ali_params = []
 		N = len(ali_params_series)/5
