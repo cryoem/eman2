@@ -3836,7 +3836,15 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 		os.mkdir(outdir)
 	mpi_barrier(MPI_COMM_WORLD)
 
+	
+
 	if debug:
+		from time import sleep
+		while not os.path.exists(outdir):
+			print  "Node ",myid,"  waiting..."
+			sleep(5)
+
+
 		info_file = outdir+("/progress%04d"%myid)
 		finfo = open(info_file, 'w')
 	else:
@@ -3899,7 +3907,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 
 	if myid == main_node:
 		from EMAN2db import db_open_dict
-		dummy = db_open_dict(stack)
+		dummy = db_open_dict(stack, True)
 		active = EMUtil.get_all_attributes(stack, 'active')
 		list_of_particles = []
 		for im in xrange(len(active)):
