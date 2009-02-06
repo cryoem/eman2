@@ -3609,8 +3609,8 @@ void FourierToCornerProcessor::process_inplace(EMData * image)
 				}
 			}
 		}
-
 	}
+	image->set_shuffled(false);
 }
 
 void FourierToCenterProcessor::process_inplace(EMData * image)
@@ -3722,6 +3722,7 @@ void FourierToCenterProcessor::process_inplace(EMData * image)
 			}
 		}
 	}
+	image->set_shuffled(true);
 }
 
 void Phase180Processor::fourier_phaseshift180(EMData * image)

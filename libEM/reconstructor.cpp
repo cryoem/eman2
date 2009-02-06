@@ -478,11 +478,50 @@ EMData* FourierReconstructor::preprocess_slice( const EMData* const slice,  cons
 
 	// Fourier transform the slice
 	return_slice->do_fft_inplace();
+	
+	return_slice->mult((float)sqrt(1.0f/(return_slice->get_ysize())*return_slice->get_xsize()));
 
 	// Shift the Fourier transform so that it's origin is in the center (bottom) of the image.
 	return_slice->process_inplace("xform.fourierorigin.tocenter");
 
 	return return_slice;
+}
+
+void FourierReconstructor::zero_memory()
+{
+	cout << "zeroing memory" << endl;
+	if (tmp_data != 0 ) tmp_data->to_zero();
+	if (image != 0 ) image->to_zero();
+	
+	EMData* start_model = params.set_default("start_model",(EMData*)0);
+	
+	if (start_model != 0) {
+		cout << "Establishing a start model" << endl;
+		if (!start_model->is_complex()) {
+			start_model->do_fft_inplace();
+			start_model->process_inplace("xform.phaseorigin.tocenter");
+		}
+		
+		if (start_model->get_xsize() != nx || start_model->get_ysize() != ny || start_model->get_zsize() != nz ) {
+			throw ImageDimensionException("The dimensions of the start_model are incorrect");
+		}
+		
+		cout << "Shuffled " << start_model->is_shuffled() << endl;
+		if (!start_model->is_shuffled()) {
+			start_model->process_inplace("xform.fourierorigin.tocenter"); 
+		}
+		
+		
+		memcpy(image->get_data(),start_model->get_data(),nx*ny*nz*sizeof(float));
+
+		float start_model_weight =  params.set_default("start_model_weight",1.0);
+		
+		if (start_model_weight != 1.0) {
+			image->mult(start_model_weight);
+		}
+		
+		tmp_data->add(start_model_weight);
+	}
 }
 
 int FourierReconstructor::insert_slice(const EMData* const input_slice, const Transform & arg)

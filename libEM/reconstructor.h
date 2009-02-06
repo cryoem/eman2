@@ -215,7 +215,7 @@ namespace EMAN
 
 			virtual void normalize_threed();
 
-			void zero_memory()
+			virtual void zero_memory()
 			{
 				if (tmp_data != 0 ) tmp_data->to_zero();
 				if (image != 0 ) image->to_zero();
@@ -420,6 +420,8 @@ namespace EMAN
 			d.put("quiet", EMObject::BOOL, "Optional. Toggles writing useful information to standard out. Default is false.");
 			d.put("3damp", EMObject::BOOL, "Optional. Toggles writing the 3D FFT amplitude image. Default is false.");
 			d.put("weight", EMObject::FLOAT, "Weight of the slice that is being inserted. Default is 1.0.");
+			d.put("start_model", EMObject::EMDATA, "Start model");
+			d.put("start_model_weight", EMObject::FLOAT, "start_model_weight");
 			return d;
 		}
 
@@ -438,6 +440,8 @@ namespace EMAN
 		 * @exception GenericException(throw) when the idx is beyond the range of the quality_scores vector
 		 */
 		virtual float get_norm(const unsigned int idx) { if ( quality_scores.size() > idx ) return quality_scores[idx].get_norm();  else throw UnexpectedBehaviorException("The requested index was beyond the length of the quality scores vector."); }
+
+		virtual void zero_memory();
 
 	  protected:
 	  	/** Preprocess the slice prior to insertion into the 3D volume

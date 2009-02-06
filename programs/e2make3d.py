@@ -108,6 +108,8 @@ def main():
 	parser.add_option("--postprocess", metavar="processor_name(param1=value1:param2=value2)", type="string", action="append", help="postprocessor to be applied to the 3D volume once the reconstruction is completed. There can be more than one postprocessor, and they are applied in the order in which they are specified. See e2help.py processors for a complete list of available processors.")
 	
 	parser.add_option("--pad", metavar="m or m,n", default=None,type="string", help="This can be a single value or two values. If a single value is specified (m) the input images are padded with zeroes uniformly in both directions so that the dimensions are mxm. If two values are specified (m,n) the images are padded with zeroes such that the dimension are mxn (in x and y, respectively). Padding occurs after preprocessing.")
+	
+	parser.add_option("--start", default=None,type="string", help="This is a starting model for FFT reconstruction")
 
 	(options, args) = parser.parse_args()
 
@@ -478,6 +480,12 @@ def fourier_reconstruction(options):
 	params["y_in"] = ysize;
 	params["sym"] = options.sym
 	params["quiet"] = not options.verbose
+	
+	if options.start:
+		start = EMData(options.start)
+		params["start_model"] = start
+		params["start_model_weight"] = .00001
+	
 	recon.insert_params(params)
 	recon.setup()
 	
