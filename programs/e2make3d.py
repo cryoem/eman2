@@ -110,7 +110,8 @@ def main():
 	parser.add_option("--pad", metavar="m or m,n", default=None,type="string", help="This can be a single value or two values. If a single value is specified (m) the input images are padded with zeroes uniformly in both directions so that the dimensions are mxm. If two values are specified (m,n) the images are padded with zeroes such that the dimension are mxn (in x and y, respectively). Padding occurs after preprocessing.")
 	
 	parser.add_option("--start", default=None,type="string", help="This is a starting model for FFT reconstruction")
-
+	parser.add_option("--smw", default=1.0,type="float", help="This is the starting model weight")
+	
 	(options, args) = parser.parse_args()
 
 	if options.nofilecheck: options.check = True
@@ -118,7 +119,6 @@ def main():
 	# make sure that the user has atleast specified an input file
 	if len(args) <1:
 		parser.error("No input file specified")
-	
 	options.datafile = args[0]
 	options.input_file = args[0]
 	
@@ -484,7 +484,7 @@ def fourier_reconstruction(options):
 	if options.start:
 		start = EMData(options.start)
 		params["start_model"] = start
-		params["start_model_weight"] = .00001
+		params["start_model_weight"] = options.smw
 	
 	recon.insert_params(params)
 	recon.setup()
