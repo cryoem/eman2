@@ -345,16 +345,12 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 		
 		self.previous_len = -1
 		
-		
-		if db_check_dict("bdb:e2refine.args"):
-			db = db_open_dict("bdb:e2refine.args")
-			if db.has_key("sym"):
-				sym = db["sym"]
-			else:
-				sym = "icos"
-				
-		else:
-			sym = "icos"
+		sym = "icos"
+		if db_check_dict("bdb:emform.e2refine"):
+			db = db_open_dict("bdb:emform.e2refine")
+			if db.has_key("symname") and db.has_key("symnumber"):
+				sym = db["symname"] + d["symnumber"]
+			
 		
 		self.set_sym(sym)
 		

@@ -155,7 +155,11 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		gluQuadricNormals(self.gq,GLU_SMOOTH)
 		gluQuadricOrientation(self.gq,GLU_OUTSIDE)
 		gluQuadricTexture(self.gq,GL_FALSE)
-		#self.regen_dl()
+		
+		
+		
+		self.set_sym("icos")
+		self.regen_dl()
 		
 		
 		#self.glbasicobjects = EMBasicOpenGLObjects()
