@@ -3819,7 +3819,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 	from utilities      import model_circle, get_image, drop_image, get_input_from_string
 	from utilities      import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all, reduce_array_to_root 
 	from utilities      import send_attr_dict
-	from utilities      import get_params_proj
+	from utilities      import get_params_proj, file_type
 	from utilities      import estimate_3D_center_MPI, rotate_3D_shift
 	from fundamentals   import rot_avg_image
 	import os
@@ -3906,8 +3906,9 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 	else:	from reconstruction import rec3D_MPI_noCTF
 
 	if myid == main_node:
-		from EMAN2db import db_open_dict
-		dummy = db_open_dict(stack, True)
+       		if(file_type(stack) == "bdb"):
+			from EMAN2db import db_open_dict
+			dummy = db_open_dict(stack, True)
 		active = EMUtil.get_all_attributes(stack, 'active')
 		list_of_particles = []
 		for im in xrange(len(active)):
@@ -3949,7 +3950,8 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 		# initialize data for the reference preparation function
 		ref_data = []
 		ref_data.append( mask3D )
-		ref_data.append( max(center,0) )  # for method -1, switch off centering in er function
+		ref_data.append( max(center,0) )  # for method -1, switch off centering in user function
+		ref_data.append( None )
 		ref_data.append( None )
 		ref_data.append( None )
 	
@@ -3997,7 +3999,6 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 				for im in xrange(len(data)): data[im].set_attr('ctf_applied', 0)
 			par_str = ['xform.projection', 'ID']
 	        	if myid == main_node:
-				from utilities import file_type
 	        		if(file_type(stack) == "bdb"):
 	        			from utilities import recv_attr_dict_bdb
 	        			recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
@@ -4373,8 +4374,9 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 	mask = model_circle(last_ring, nx, nx)
 
 	if(myid == main_node):
-		from EMAN2db import db_open_dict
-		dummy = db_open_dict(stack, True)
+       		if(file_type(stack) == "bdb"):
+			from EMAN2db import db_open_dict
+			dummy = db_open_dict(stack, True)
 		active = EMUtil.get_all_attributes(stack, 'active')
 		list_of_particles = []
 		for im in xrange(len(active)):
@@ -4830,8 +4832,9 @@ def ali3d_em_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, na
 
 
 	if(myid == main_node):
-		from EMAN2db import db_open_dict
-		dummy = db_open_dict(stack, True)
+       		if(file_type(stack) == "bdb"):
+			from EMAN2db import db_open_dict
+			dummy = db_open_dict(stack, True)
 		active = EMUtil.get_all_attributes(stack, "active")
 		list_of_particles = []
 		for im in xrange( len(active) ):
@@ -5527,8 +5530,9 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, center = -1, maxit
 	center      = int(center)
 
 	if myid == main_node:
-		from EMAN2db import db_open_dict
-		dummy = db_open_dict(stack, True)
+       		if(file_type(stack) == "bdb"):
+			from EMAN2db import db_open_dict
+			dummy = db_open_dict(stack, True)
 		active = EMUtil.get_all_attributes(stack, 'active')
 		list_of_particles = []
 		for im in xrange(len(active)):
