@@ -264,10 +264,10 @@ void FourierReconstructor::free_memory()
 		delete inserter;
 		inserter = 0;
 	}
-	if ( interpFRC_calculator != 0 )
+	if ( interp_FRC_calculator != 0 )
 	{
-		delete interpFRC_calculator;
-		interpFRC_calculator = 0;
+		delete interp_FRC_calculator;
+		interp_FRC_calculator = 0;
 	}
 }
 
@@ -295,57 +295,13 @@ void FourierReconstructor::load_inserter()
 		delete inserter;
 	}
 
-//	cout << "FourierPixelInserter3D Factory" << endl;
-
-//#ifdef _WIN32
-//	inserter = get_inserter(mode, parms);
-//#else
 	inserter = Factory<FourierPixelInserter3D>::get(mode, parms);
-//#endif
 	inserter->init();
 }
 
-//#ifdef _WIN32
-//FourierPixelInserter3D* FourierReconstructor::get_inserter(const string& mode, const Dict& params){
-//
-//	cout << "mode is: " << mode << endl;
-//
-//	FourierPixelInserter3D* inserter = 0;
-//	if (mode == "1") {
-//		inserter = new FourierInserter3DMode1();
-//	} else
-//	if (mode == "2") {
-//		inserter = new FourierInserter3DMode2();
-//	}else
-//	if (mode == "3") {
-//		inserter = new FourierInserter3DMode3();
-//	}else
-//	if (mode == "4") {
-//		inserter = new FourierInserter3DMode4();
-//	}else
-//	if (mode == "5") {
-//		inserter = new FourierInserter3DMode5();
-//	}else
-//	if (mode == "6") {
-//		inserter = new FourierInserter3DMode6();
-//	}else
-//	if (mode == "7") {
-//		inserter = new FourierInserter3DMode7();
-//	}else
-//	if (mode == "8") {
-//		inserter = new FourierInserter3DMode8();
-//	}
-//	else {
-//		throw NotExistingObjectException(mode, "No such an instance existing");
-//	}
-//
-//	inserter->set_params(params);
-//	return inserter;
-//
-//}
-//#endif
 
-void FourierReconstructor::load_interpFRC_calculator()
+
+void FourierReconstructor::load_interp_FRC_calculator()
 {
 	Dict init_parms;
 	init_parms["rdata"] = image->get_data();
@@ -358,12 +314,17 @@ void FourierReconstructor::load_interpFRC_calculator()
 	if ( y_scale_factor != 0 ) init_parms["y_scale"] = 1.0/y_scale_factor;
 	if ( z_scale_factor != 0 ) init_parms["z_scale"] = 1.0/z_scale_factor;
 
-	if ( interpFRC_calculator != 0 )
+	if ( interp_FRC_calculator != 0 )
 	{
-		delete interpFRC_calculator;
+		delete interp_FRC_calculator;
 	}
 
-	interpFRC_calculator = new InterpolatedFRC( init_parms );
+	stringstream ss;
+	ss << (int)params["mode"];
+	string mode;
+	ss >> mode;
+	
+	interp_FRC_calculator = Factory<InterpolatedFRC>::get(mode, init_parms);
 }
 
 void FourierReconstructor::setup()
@@ -440,7 +401,7 @@ void FourierReconstructor::setup()
 	tmp_data->update();
 
 	load_inserter();
-	load_interpFRC_calculator();
+	load_interp_FRC_calculator();
 
 	if ( (bool) params["quiet"] == false )
 	{
@@ -489,14 +450,12 @@ EMData* FourierReconstructor::preprocess_slice( const EMData* const slice,  cons
 
 void FourierReconstructor::zero_memory()
 {
-	cout << "zeroing memory" << endl;
 	if (tmp_data != 0 ) tmp_data->to_zero();
 	if (image != 0 ) image->to_zero();
 	
 	EMData* start_model = params.set_default("start_model",(EMData*)0);
 	
 	if (start_model != 0) {
-		cout << "Establishing a start model" << endl;
 		if (!start_model->is_complex()) {
 			start_model->do_fft_inplace();
 			start_model->process_inplace("xform.phaseorigin.tocenter");
@@ -506,14 +465,12 @@ void FourierReconstructor::zero_memory()
 			throw ImageDimensionException("The dimensions of the start_model are incorrect");
 		}
 		
-		cout << "Shuffled " << start_model->is_shuffled() << endl;
 		if (!start_model->is_shuffled()) {
 			start_model->process_inplace("xform.fourierorigin.tocenter"); 
 		}
 		
-		
 		memcpy(image->get_data(),start_model->get_data(),nx*ny*nz*sizeof(float));
-
+		
 		float start_model_weight =  params.set_default("start_model_weight",1.0);
 		
 		if (start_model_weight != 1.0) {
@@ -716,7 +673,7 @@ int FourierReconstructor::determine_slice_agreement(const EMData* const input_sl
 	}
 
 	// Reset zeros the associated memory in the ifrc
-	interpFRC_calculator->reset();
+	interp_FRC_calculator->reset();
 
 	int rl = Util::square( max_input_dim / 2);
 
@@ -803,37 +760,12 @@ int FourierReconstructor::determine_slice_agreement(const EMData* const input_sl
 			}
 			// FIXME: this could be replaced in favor of a class implementation with no switch statement, similar to the
 			// inserter in the Fourier reconstructor do_insert_slice_work method
-			switch ((int)params["mode"])
-			{
-				case 1:
-					interpFRC_calculator->continue_frc_calc1(xx, yy, zz, dt, weight);
-					break;
-				case 2:
-					interpFRC_calculator->continue_frc_calc2(xx, yy, zz, dt, weight);
-					break;
-				case 3:
-					interpFRC_calculator->continue_frc_calc3(xx, yy, zz, dt, weight);
-					break;
-				case 4:
-					interpFRC_calculator->continue_frc_calc4(xx, yy, zz, dt, weight);
-					break;
-				case 5:
-					interpFRC_calculator->continue_frc_calc5(xx, yy, zz, dt, weight);
-					break;
-				case 6:
-					interpFRC_calculator->continue_frc_calc6(xx, yy, zz, dt, weight);
-					break;
-				case 7:
-					interpFRC_calculator->continue_frc_calc7(xx, yy, zz, dt, weight);
-					break;
-				default:
-					cout << "Warning, nothing happened the mode " << (int)params["mode"] << " was unsupported" << endl;
-					throw;
-			}
+			
+			interp_FRC_calculator->continue_frc_calc(xx, yy, zz, dt, weight);
 		}
 	}
 
-	QualityScores q_scores = interpFRC_calculator->finish( num_particles_in_slice );
+	InterpolatedFRC::QualityScores q_scores = interp_FRC_calculator->finish( num_particles_in_slice );
 	// Print the quality scores here for debug information
 	//q_scores.debug_print();
 
@@ -851,7 +783,7 @@ int FourierReconstructor::determine_slice_agreement(const EMData* const input_sl
 	return 0;
 }
 
-void FourierReconstructor::print_stats( const vector<QualityScores>& scores )
+void FourierReconstructor::print_stats( const vector<InterpolatedFRC::QualityScores>& scores )
 {
 	if ( prev_quality_scores.size() == 0 )
 	{

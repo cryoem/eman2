@@ -466,63 +466,7 @@ namespace EMAN
 			float* W;
 	};
 	
-	/** QualityScores class is used by the FourierReconstructor and InterpolatedFRC for storing useful quality information.
-	 * It's basically a data storage object that has a whole heap of getter and setter methods, and nothing more.
-     */
-	class QualityScores
-	{
-		public:
-			/** Default constructor
-			*/
-			QualityScores() : frc_integral(0), snr_normed_frc_intergral(0), normed_snr_integral(0), norm(0) {}
-			
-			/** Copy constructor
-			* @param that the quality scores to be constructed from
-			*/
-			QualityScores( const QualityScores& that ) : frc_integral(that.frc_integral), 
-				snr_normed_frc_intergral(that.snr_normed_frc_intergral), normed_snr_integral(that.normed_snr_integral), norm(that.norm) {}
-			
-			/** Assignment operator 
-			* @param that the quality scores to be constructed from
-			*/
-			QualityScores& operator=( const QualityScores& that ) 
-			{
-				if ( &that != this )
-				{
-					frc_integral = that.frc_integral; 
-// 					snr_normed_frc_intergral = that.snr_normed_frc_intergral;
-					normed_snr_integral  = that.normed_snr_integral;
-					norm = that.norm;
-				}
-				return *this;
-			}
-
-			/** Deconstructor
-			* no memory is alloced by this object, but 4 private variables fall out of scope
-			*/
-			~QualityScores() {}
-
-			/// Various setter and getter methods are below
-			
-			float get_frc_integral() const { return frc_integral; }
-			float get_snr_normed_frc_integral() const { return snr_normed_frc_intergral; }
-			float get_normed_snr_integral() const { return normed_snr_integral; }
-			float get_norm() const { return norm; }
-
-			void set_frc_integral( const float& score ) { frc_integral = score; }
-			void set_snr_normed_frc_integral(const float& score) { snr_normed_frc_intergral = score; }
-			void set_normed_snr_integral(const float& score) { normed_snr_integral = score; }
-			void set_norm( const float& score ) { norm = score; }
-
-			void debug_print()
-			{
-				cout << "frc " << frc_integral << " nfrc " << snr_normed_frc_intergral << " nsnr " << normed_snr_integral << " norm " << norm << endl;
-			}
-		private:
-
-			float frc_integral, snr_normed_frc_intergral, normed_snr_integral, norm;
-		
-	};
+	
 
 	/** InterpolationFunctoid is an abstract base class, having basically one function which is "operate(float radius)"
 	* It simplifies the implementation of InterpolatedFRC::continue_frc_calc? (where ? = 3,4,6 or 7)
@@ -659,37 +603,23 @@ namespace EMAN
 	* a slice is inserted into a 3D volume and, following this, if the normalization constant is calculated it is usually greater than 1, and this is
 	* a consequence of voxels being contributed to by more than one pixel (from the slice) in the 3D volume.
 	*/
-	class InterpolatedFRC
+	class InterpolatedFRC : public FactoryBase
 	{
 		public:
 			/** Normal constructor
 			* @param new_params 
 			*/
-			InterpolatedFRC(const Dict & new_params );
+			InterpolatedFRC();
 			
 			/** Destructor
 			*/
-			~InterpolatedFRC()
+			virtual ~InterpolatedFRC()
 			{
 				free_memory();
 			}
 	
-			void set_params(const Dict & new_params)
-			{
-		// note but this is really inserting OR individually replacing...
-		// the old data will be kept if it is not written over
-				TypeDict permissable_params = get_param_types();
-				for ( Dict::const_iterator it = new_params.begin(); it != new_params.end(); ++it )
-				{
+			void set_params(const Dict & new_params);
 			
-					if ( !permissable_params.find_type(it->first) )
-					{
-						throw InvalidParameterException(it->first);
-					}
-					params[it->first] = it->second;
-				}	
-			}
-		
 			TypeDict get_param_types() const
 			{
 				TypeDict d;
@@ -713,56 +643,18 @@ namespace EMAN
 			* @param dt the complex pixel value stored in a float array of length 2
 			* @param weight the weight that this pixel has - corresponds to the weight with which the pixel was original inserted into the 3D volume
 			*/
-			bool continue_frc_calc1(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1.0);
-			
-			/** continue_frc_calc2 - function for including an additional pixel in the calculation of the FRC
-			 * FRC calculated using weighted average of 8 nearest neighbors. Meant for use in conjunction with FourierInserter3DMode2.
-			 * See comments in continue_frc_calc1 for parameter details.
-			 */
-			bool continue_frc_calc2(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1.0);
-			
-			/** continue_frc_calc3 - function for including an additional pixel in the calculation of the FRC
-			 * Meant for use in conjunction with FourierInserter3DMode3.
-			 * See comments in continue_frc_calc1 for parameter details.
-			 */
-			bool continue_frc_calc3(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1.0);
-			
-			/** continue_frc_calc4 - function for including an additional pixel in the calculation of the FRC
-			 * Meant for use in conjunction with FourierInserter3DMode4.
-			 * See comments in continue_frc_calc1 for parameter details.
-			 */
-			bool continue_frc_calc4(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1.0);
-			
-			/** continue_frc_calc5 - function for including an additional pixel in the calculation of the FRC
-			 * Meant for use in conjunction with FourierInserter3DMode5.
-			 * See comments in continue_frc_calc1 for parameter details.
-			 */
-			bool continue_frc_calc5(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1.0);
-			
-			/** continue_frc_calc6 - function for including an additional pixel in the calculation of the FRC
-			 * Meant for use in conjunction with FourierInserter3DMode6.
-			 * See comments in continue_frc_calc1 for parameter details.
-			 */
-			bool continue_frc_calc6(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1.0);
-			
-			/** continue_frc_calc7 - function for including an additional pixel in the calculation of the FRC
-			 * Meant for use in conjunction with FourierInserter3DMode7.
-			 * See comments in continue_frc_calc1 for parameter details.
-			 */
-			bool continue_frc_calc7(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1.0);
+			virtual bool continue_frc_calc(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1.0) = 0;
 			
 			unsigned int get_size() { return size; }
 	
 			float operator[](const unsigned int& idx) { return frc[idx]; }
 
-			QualityScores finish(const unsigned int num_particles);
+// 			QualityScores finish(const unsigned int num_particles);
 	
 			void reset();
 		
 		protected:
 			mutable Dict params;
-			
-		private:
 			// Disallow copy construction
 			InterpolatedFRC( const InterpolatedFRC& that );
 			// Disallow assigment
@@ -776,24 +668,7 @@ namespace EMAN
 			
 			/** free_memory - frees all associated memory
 			*/
-			void free_memory()
-			{
-				if ( frc != 0 )
-				{
-					delete [] frc;
-					frc = 0;
-				}
-				if ( frc_norm_rdata != 0 )
-				{
-					delete [] frc_norm_rdata;
-					frc_norm_rdata = 0;
-				}
-				if ( frc_norm_dt != 0 )
-				{
-					delete [] frc_norm_dt;
-					frc_norm_dt = 0;
-				}
-			}
+			void free_memory();
 			
 			/** Loads all information from parms into private variables
 			* Called in the constructor only.
@@ -826,10 +701,301 @@ namespace EMAN
 			
 			int off[8];
 			float g[8];
+		public:
+			/** QualityScores class is used by the FourierReconstructor and InterpolatedFRC for storing useful quality information.
+		 	* It's basically a data storage object that has a whole heap of getter and setter methods, and nothing more.
+			 */
+			class QualityScores
+			{
+				public:
+				/** Default constructor
+				*/
+				QualityScores() : frc_integral(0), snr_normed_frc_intergral(0), normed_snr_integral(0), norm(0) {}
+				
+				/** Copy constructor
+				* @param that the quality scores to be constructed from
+				*/
+				QualityScores( const QualityScores& that ) : frc_integral(that.frc_integral), 
+					snr_normed_frc_intergral(that.snr_normed_frc_intergral), normed_snr_integral(that.normed_snr_integral), norm(that.norm) {}
+				
+				/** Assignment operator 
+				* @param that the quality scores to be constructed from
+				*/
+				QualityScores& operator=( const QualityScores& that );
+				/** Deconstructor
+				* no memory is alloced by this object, but 4 private variables fall out of scope
+				*/
+				~QualityScores() {}
+	
+				/// Various setter and getter methods are below
+				
+				float get_frc_integral() const { return frc_integral; }
+				float get_snr_normed_frc_integral() const { return snr_normed_frc_intergral; }
+				float get_normed_snr_integral() const { return normed_snr_integral; }
+				float get_norm() const { return norm; }
+	
+				void set_frc_integral( const float& score ) { frc_integral = score; }
+				void set_snr_normed_frc_integral(const float& score) { snr_normed_frc_intergral = score; }
+				void set_normed_snr_integral(const float& score) { normed_snr_integral = score; }
+				void set_norm( const float& score ) { norm = score; }
+	
+				void debug_print()
+				{
+					cout << "frc " << frc_integral << " nfrc " << snr_normed_frc_intergral << " nsnr " << normed_snr_integral << " norm " << norm << endl;
+				}
+				private:
+	
+				float frc_integral, snr_normed_frc_intergral, normed_snr_integral, norm;
+			
+			};
+			
+		QualityScores finish(const unsigned int num_particles);
+	};
+	
+	class InterpolatedFRCMode1 : public InterpolatedFRC
+	{
+		public:
+		InterpolatedFRCMode1() {};
+			
+			/** Destructor
+			 */
+		virtual ~InterpolatedFRCMode1() {}
+		
+		virtual string get_name() const
+		{
+			return "1";
+		}
+		
+		static InterpolatedFRC *NEW()
+		{
+			return new InterpolatedFRCMode1();
+		}
+		
+		virtual string get_desc() const
+		{
+			return "Corresponds to Fourier pixel inserter mode 1";
+		}
+		
+		virtual bool continue_frc_calc(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1.0);
+		
+	private:
+		// Disallow copy construction
+		InterpolatedFRCMode1( const InterpolatedFRCMode1& that );
+		// Disallow assigment
+		InterpolatedFRCMode1& operator=( const InterpolatedFRCMode1& that);
+
+	};
+	
+	
+	class InterpolatedFRCMode2 : public InterpolatedFRC
+	{
+		public:
+			InterpolatedFRCMode2() {};
+			
+			/** Destructor
+			 */
+			virtual ~InterpolatedFRCMode2() {}
+		
+			virtual string get_name() const
+			{
+				return "2";
+			}
+			
+			static InterpolatedFRC *NEW()
+			{
+				return new InterpolatedFRCMode2();
+			}
+		
+			virtual string get_desc() const
+			{
+				return "Corresponds to Fourier pixel inserter mode 2";
+			}
+		
+			virtual bool continue_frc_calc(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1.0);
+		
+		private:
+		// Disallow copy construction
+			InterpolatedFRCMode2( const InterpolatedFRCMode2& that );
+		// Disallow assigment
+			InterpolatedFRCMode2& operator=( const InterpolatedFRCMode2& that);
+
+	};
+	
+	class InterpolatedFRCMode3 : public InterpolatedFRC
+	{
+		public:
+			InterpolatedFRCMode3() {};
+			
+			/** Destructor
+			 */
+			virtual ~InterpolatedFRCMode3() {}
+			
+			virtual string get_name() const
+			{
+				return "3";
+			}
+		
+			static InterpolatedFRC *NEW()
+			{
+				return new InterpolatedFRCMode3();
+			}
+			
+			virtual string get_desc() const
+			{
+				return "Corresponds to Fourier pixel inserter mode 3";
+			}
+		
+			virtual bool continue_frc_calc(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1.0);
+		
+		private:
+		// Disallow copy construction
+			InterpolatedFRCMode3( const InterpolatedFRCMode3& that );
+		// Disallow assigment
+			InterpolatedFRCMode3& operator=( const InterpolatedFRCMode3& that);
+
+	};
+	
+	
+	class InterpolatedFRCMode4 : public InterpolatedFRC
+	{
+		public:
+			InterpolatedFRCMode4( ) {};
+			
+			/** Destructor
+			 */
+			virtual ~InterpolatedFRCMode4() {}
+		
+			virtual string get_name() const
+			{
+				return "4";
+			}
+		
+			static InterpolatedFRC *NEW()
+			{
+				return new InterpolatedFRCMode4();
+			}
+			
+			virtual string get_desc() const
+			{
+				return "Corresponds to Fourier pixel inserter mode 4";
+			}
+		
+			virtual bool continue_frc_calc(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1.0);
+		
+		private:
+		// Disallow copy construction
+			InterpolatedFRCMode4( const InterpolatedFRCMode4& that );
+		// Disallow assigment
+			InterpolatedFRCMode4& operator=( const InterpolatedFRCMode4& that);
+
+	};
+	
+	
+	class InterpolatedFRCMode5 : public InterpolatedFRC
+	{
+		public:
+			InterpolatedFRCMode5() {};
+			
+			/** Destructor
+			 */
+			virtual ~InterpolatedFRCMode5() {}
+		
+			virtual string get_name() const
+			{
+				return "5";
+			}
+			
+			static InterpolatedFRC *NEW()
+			{
+				return new InterpolatedFRCMode5();
+			}
+		
+			virtual string get_desc() const
+			{
+				return "Corresponds to Fourier pixel inserter mode 5";
+			}
+		
+			virtual bool continue_frc_calc(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1.0);
+		
+		private:
+		// Disallow copy construction
+			InterpolatedFRCMode5( const InterpolatedFRCMode5& that );
+		// Disallow assigment
+			InterpolatedFRCMode5& operator=( const InterpolatedFRCMode5& that);
+
+	};
+	
+	class InterpolatedFRCMode6 : public InterpolatedFRC
+	{
+		public:
+			InterpolatedFRCMode6() {};
+			
+			/** Destructor
+			 */
+			virtual ~InterpolatedFRCMode6() {}
+		
+			virtual string get_name() const
+			{
+				return "6";
+			}
+			
+			static InterpolatedFRC *NEW()
+			{
+				return new InterpolatedFRCMode6();
+			}
+		
+			virtual string get_desc() const
+			{
+				return "Corresponds to Fourier pixel inserter mode 6";
+			}
+		
+			virtual bool continue_frc_calc(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1.0);
+		
+		private:
+		// Disallow copy construction
+			InterpolatedFRCMode6( const InterpolatedFRCMode6& that );
+		// Disallow assigment
+			InterpolatedFRCMode6& operator=( const InterpolatedFRCMode6& that);
+
+	};
+	
+	class InterpolatedFRCMode7 : public InterpolatedFRC
+	{
+		public:
+			InterpolatedFRCMode7() {}
+			
+			/** Destructor
+			 */
+			virtual ~InterpolatedFRCMode7() {}
+		
+			virtual string get_name() const
+			{
+				return "7";
+			}
+			
+			static InterpolatedFRC *NEW()
+			{
+				return new InterpolatedFRCMode7();
+			}
+
+			virtual string get_desc() const
+			{
+				return "Corresponds to Fourier pixel inserter mode 7";
+			}
+		
+			virtual bool continue_frc_calc(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1.0);
+		
+		private:
+		// Disallow copy construction
+			InterpolatedFRCMode7( const InterpolatedFRCMode7& that );
+		// Disallow assigment
+			InterpolatedFRCMode7& operator=( const InterpolatedFRCMode7& that);
+
 	};
 	
 	// Factory for FourierPixelInserter3D
 	template <> Factory < FourierPixelInserter3D >::Factory();
+	template <> Factory < InterpolatedFRC >::Factory();
 	
 } // namespace EMAN
 

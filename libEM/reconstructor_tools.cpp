@@ -53,44 +53,56 @@ template <> Factory < FourierPixelInserter3D >::Factory()
 	force_add(&FourierInserter3DMode8::NEW);
 }
 
-InterpolatedFRC::InterpolatedFRC( const Dict & new_params ) :
+
+template <> Factory < InterpolatedFRC >::Factory()
+{
+	force_add(&InterpolatedFRCMode7::NEW);
+	force_add(&InterpolatedFRCMode6::NEW);
+	force_add(&InterpolatedFRCMode5::NEW);
+	force_add(&InterpolatedFRCMode4::NEW);
+	force_add(&InterpolatedFRCMode3::NEW);
+	force_add(&InterpolatedFRCMode2::NEW);
+	force_add(&InterpolatedFRCMode1::NEW);
+}
+
+InterpolatedFRC::InterpolatedFRC() :
 		threed_rdata(0), norm_data(0), nx(0), ny(0), nz(0), nxy(0), x_scale(1.0), y_scale(1.0), z_scale(1.0), bin(1.0), r(0), rn(0) 
 {
-	set_params(new_params);
-	
-	init();
-	
-	if ( bin <= 0 )
-	{	
-		throw InvalidValueException(bin, "Error: sampling must be greater than 0");
+}
+
+void  InterpolatedFRC::set_params(const Dict & new_params) {
+				 
+	TypeDict permissable_params = get_param_types();
+	for ( Dict::const_iterator it = new_params.begin(); it != new_params.end(); ++it )
+	{
+			
+		if ( !permissable_params.find_type(it->first) )
+		{
+			throw InvalidParameterException(it->first);
+		}
+		params[it->first] = it->second;
 	}
+	init();
+}
 
-	int max_x = nx, max_y = ny, max_z = nz;
-	
-	if ( x_scale != 1.0 ) max_x = (int) x_scale*nx;
-	if ( y_scale != 1.0 ) max_y = (int) y_scale*ny;
-	if ( z_scale != 1.0 ) max_z = (int) z_scale*nz;
-	
-	int max = max_x;
-	if ( max_y > max ) max = max_y;
-	if ( max_z > max ) max = max_z;
-	
-	pixel_radius_max = max/2;
-	pixel_radius_max_square = Util::square( (int) pixel_radius_max );
-	
-	size = static_cast<int>(pixel_radius_max*bin);
-	frc = new float[size];
-	frc_norm_rdata = new float[size];
-	frc_norm_dt = new float[size];
 
-	off[0] = 0;
-	off[1] = 2;
-	off[2] = nx;
-	off[3] = nx + 2;
-	off[4] = nxy;
-	off[5] = nxy + 2;
-	off[6] = nxy + nx;
-	off[7] = nxy + nx + 2;
+void InterpolatedFRC::free_memory()
+{
+	if ( frc != 0 )
+	{
+		delete [] frc;
+		frc = 0;
+	}
+	if ( frc_norm_rdata != 0 )
+	{
+		delete [] frc_norm_rdata;
+		frc_norm_rdata = 0;
+	}
+	if ( frc_norm_dt != 0 )
+	{
+		delete [] frc_norm_dt;
+		frc_norm_dt = 0;
+	}
 }
 
 void InterpolatedFRC::init()
@@ -142,6 +154,36 @@ void InterpolatedFRC::init()
 	if ( params.has_key("z_scale") ) z_scale = params["z_scale"];
 		
 	nxy = nx*ny;
+	
+	
+	if ( bin <= 0 ) throw InvalidValueException(bin, "Error: sampling must be greater than 0");
+
+	int max_x = nx, max_y = ny, max_z = nz;
+	
+	if ( x_scale != 1.0 ) max_x = (int) x_scale*nx;
+	if ( y_scale != 1.0 ) max_y = (int) y_scale*ny;
+	if ( z_scale != 1.0 ) max_z = (int) z_scale*nz;
+	
+	int max = max_x;
+	if ( max_y > max ) max = max_y;
+	if ( max_z > max ) max = max_z;
+	
+	pixel_radius_max = max/2;
+	pixel_radius_max_square = Util::square( (int) pixel_radius_max );
+	
+	size = static_cast<int>(pixel_radius_max*bin);
+	frc = new float[size];
+	frc_norm_rdata = new float[size];
+	frc_norm_dt = new float[size];
+
+	off[0] = 0;
+	off[1] = 2;
+	off[2] = nx;
+	off[3] = nx + 2;
+	off[4] = nxy;
+	off[5] = nxy + 2;
+	off[6] = nxy + nx;
+	off[7] = nxy + nx + 2;
 }
 
 void InterpolatedFRC::reset()
@@ -229,17 +271,17 @@ bool InterpolatedFRC::continue_frc_calc_functoid(const float& xx, const float& y
 	return true;
 }
 
-bool InterpolatedFRC::continue_frc_calc7(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight)
+bool InterpolatedFRCMode7::continue_frc_calc(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight)
 {
 	return continue_frc_calc_functoid(xx,yy,zz,dt,InterpolationFunctoidMode7(),weight);
 }
 
-bool InterpolatedFRC::continue_frc_calc6(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight)
+bool InterpolatedFRCMode6::continue_frc_calc(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight)
 {
 	return continue_frc_calc_functoid(xx,yy,zz,dt,InterpolationFunctoidMode6(),weight);
 }
 
-bool InterpolatedFRC::continue_frc_calc5(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight)
+bool InterpolatedFRCMode5::continue_frc_calc(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight)
 {
 	int x0 = (int) floor(xx + 0.5f);
 	int y0 = (int) floor(yy + 0.5f);
@@ -366,17 +408,17 @@ bool InterpolatedFRC::continue_frc_calc5(const float& xx, const float& yy, const
 
 
 
-bool InterpolatedFRC::continue_frc_calc4(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight)
+bool InterpolatedFRCMode4::continue_frc_calc(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight)
 {
 	return continue_frc_calc_functoid(xx,yy,zz,dt,InterpolationFunctoidMode4(),weight);
 }
 
-bool InterpolatedFRC::continue_frc_calc3(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight)
+bool InterpolatedFRCMode3::continue_frc_calc(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight)
 {
 	return continue_frc_calc_functoid(xx,yy,zz,dt,InterpolationFunctoidMode3(),weight);
 }
 
-bool InterpolatedFRC::continue_frc_calc2(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight)
+bool InterpolatedFRCMode2::continue_frc_calc(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight)
 {
 	int x0 = (int) floor(xx);
 	int y0 = (int) floor(yy);
@@ -461,7 +503,7 @@ bool InterpolatedFRC::continue_frc_calc2(const float& xx, const float& yy, const
 }
 
 
-bool InterpolatedFRC::continue_frc_calc1(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight)
+bool InterpolatedFRCMode1::continue_frc_calc(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight)
 {
 	int x0 = 2 * (int) floor(xx + 0.5f);
 	int y0 = (int) floor(yy + 0.5f);
@@ -511,8 +553,19 @@ bool InterpolatedFRC::continue_frc_calc1(const float& xx, const float& yy, const
 	return true;
 }
 
+InterpolatedFRC::QualityScores& InterpolatedFRC::QualityScores::operator=( const QualityScores& that ) 
+{
+	if ( &that != this )
+	{
+		frc_integral = that.frc_integral; 
+	// 					snr_normed_frc_intergral = that.snr_normed_frc_intergral;
+		normed_snr_integral  = that.normed_snr_integral;
+		norm = that.norm;
+	}
+	return *this;
+}
 
-QualityScores InterpolatedFRC::finish(const unsigned int num_particles)
+InterpolatedFRC::QualityScores InterpolatedFRC::finish(const unsigned int num_particles)
 {
 	float frc_integral = 0, snr_normed_frc_intergral = 0, normed_snr_integral = 0;
 
@@ -556,7 +609,7 @@ QualityScores InterpolatedFRC::finish(const unsigned int num_particles)
 	snr_normed_frc_intergral /= size;
 	normed_snr_integral /= size;
 
-	QualityScores quality_scores;
+	InterpolatedFRC::QualityScores quality_scores;
 	quality_scores.set_frc_integral( frc_integral );
 	quality_scores.set_snr_normed_frc_integral( snr_normed_frc_intergral );
 	quality_scores.set_normed_snr_integral( normed_snr_integral );

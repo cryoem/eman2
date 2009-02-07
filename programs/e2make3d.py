@@ -483,8 +483,27 @@ def fourier_reconstruction(options):
 	
 	if options.start:
 		start = EMData(options.start)
+		x = start.get_xsize()
+		y = start.get_ysize()
+		z = start.get_zsize()
+		pad_dims = parse_pad(options.pad)
+		if pad_dims != None:
+			if len(pad_dims) == 1:
+				xpad = pad_dims[0]
+				ypad = pad_dims[0]
+				zpad = pad_dims[0]
+			else:
+				# non uniform needs some thinking
+				raise
+				#xpad = pad_dims[0]
+				#ypad = pad_dims[1]
+				#zpad = pad_dims[0]
+			
+			start.clip_inplace(Region((x-xpad)/2,(y-ypad)/2,(z-zpad)/2, xpad, ypad,zpad))
+
 		params["start_model"] = start
 		params["start_model_weight"] = options.smw
+		
 	
 	recon.insert_params(params)
 	recon.setup()

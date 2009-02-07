@@ -322,7 +322,7 @@ namespace EMAN
 		/** Default constructor
 		* calls load_default_settings()
 		*/
-		FourierReconstructor() : image_idx(0), inserter(0), interpFRC_calculator(0), slice_insertion_flag(true),
+		FourierReconstructor() : image_idx(0), inserter(0), interp_FRC_calculator(0), slice_insertion_flag(true),
 		slice_agreement_flag(false), x_scale_factor(0.0), y_scale_factor(0.0), z_scale_factor(0.0),
 		max_input_dim(0), output_x(0), output_y(0), output_z(0) { load_default_settings(); }
 
@@ -491,7 +491,7 @@ namespace EMAN
 
 		/** Load the pixel inserter based on the information in params
 		 */
-		void load_interpFRC_calculator();
+		void load_interp_FRC_calculator();
 
 		/** A function to perform the nuts and bolts of inserting an image slice
 		 * @param input_slice the slice to insert into the 3D volume
@@ -501,10 +501,10 @@ namespace EMAN
 
 		/** print stats is called internally at various points in the reconstruction routine and is for the benefit of people using e2make3d.py
 		 */
-		void print_stats(const vector<QualityScores>& scores);
+		void print_stats(const vector<InterpolatedFRC::QualityScores>& scores);
 
 		/// Quality scores vectors for storing normalization constants, and SNR normalized Fourier ring correlation scores
-		vector<QualityScores> quality_scores, prev_quality_scores;
+		vector<InterpolatedFRC::QualityScores> quality_scores, prev_quality_scores;
 
 		/// Index used internally to index into the quality scores vectors at different points ( in insert_slice and determine_slice_agreement)
 		unsigned int image_idx;
@@ -513,7 +513,7 @@ namespace EMAN
 		FourierPixelInserter3D* inserter;
 
 		/// A pixel inserter pointer which inserts pixels into the 3D volume using one of a variety of insertion methods
-		InterpolatedFRC* interpFRC_calculator;
+		InterpolatedFRC* interp_FRC_calculator;
 
 		/// Internal flags used to perform memory zeroing and normalization transparently
 		bool slice_insertion_flag;
