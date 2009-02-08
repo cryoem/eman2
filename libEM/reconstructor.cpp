@@ -3008,8 +3008,8 @@ EMData* nn4_ctfReconstructor::finish()
 		for (iy = 1; iy <= m_vnyp; iy++) {
 			for (ix = 0; ix <= m_vnxc; ix++) {
 				if ( (*m_wptr)(ix,iy,iz) > 0.0f) {//(*v) should be treated as complex!!
-                                        int iyp = (iy<=m_vnyc) ? iy - 1 : iy-m_vnyp-1;
-                                        int izp = (iz<=m_vnzc) ? iz - 1 : iz-m_vnzp-1;
+                    int iyp = (iy<=m_vnyc) ? iy - 1 : iy-m_vnyp-1;
+                    int izp = (iz<=m_vnzc) ? iz - 1 : iz-m_vnzp-1;
 					float freq = sqrt( (float)(ix*ix+iyp*iyp+izp*izp) );
 					float  tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+freq*osnr)*m_sign;
 					if( m_weighting == ESTIMATE ) {
@@ -3698,12 +3698,6 @@ void newfile_store::add_tovol( EMData* fftvol, EMData* wgtvol, const vector<int>
             int pos2 = m_points[ipt].pos2;
             int pos1 = pos2*2;
 
-            std::cout << "ipt,pos1,pos2,ctf2,real,imag: ";
-            std::cout << ipt << " ";
-            std::cout << pos1 << " ";
-            std::cout << m_points[ipt].real << " " << m_points[ipt].imag;
-            std::cout << pos2 << " ";
-            std::cout << m_points[ipt].ctf2 << std::endl;
             wdata[pos2] += m_points[ipt].ctf2*m;
             vdata[pos1] += m_points[ipt].real*m;
             vdata[pos1+1]+= m_points[ipt].imag*m;
