@@ -117,7 +117,10 @@ def bootstrap_calcwgts( prjfile, wgtfile, voronoi, delta, refvol=None, fl=None, 
 		if MPI:
 			angs = mpi_reduce( angs, 2*nprj, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD )
 		if myid == 0:
-			wgts = Util.cml_weights( angs )
+			tmp = [0.0]*len(angs)
+			for i in xrange( len(angs) ):
+				tmp[i] = float(angs[i])
+			wgts = Util.cml_weights( tmp )
 	
 	else:
 		eve_angs = even_angles( delta, 0.0, 89.99, method='P' )
