@@ -18446,8 +18446,6 @@ EMData* Util::get_slice(EMData *vol, int dim, int index) {
 
 /////////////////////////////////////////////////////////////////////////////////////
 // Wrap function for CUDA code (only to test)
-#ifdef EMAN2_USING_CUDA
-#include "cuda/cuda_kmeans.cu"
 void Util::kmeans_cuda(void) {
 
 	ENTERFUNC;
@@ -18462,7 +18460,7 @@ void Util::kmeans_cuda(void) {
 
 
 }
-#endif // EMAN2_USING_CUDA
+
 
 
 
