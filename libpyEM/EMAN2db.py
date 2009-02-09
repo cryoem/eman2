@@ -50,6 +50,21 @@ except:
 	from sets import Set
 	frozenset=Set
 
+# Flags used to open the database environment
+envopenflags=db.DB_CREATE|db.DB_INIT_MPOOL|db.DB_INIT_LOCK|db.DB_INIT_LOG|db.DB_THREAD
+
+# If set, databases will be opened without any caching, locking, etc.
+# DANGER, unless DB is single-threaded and local, don't do any writing
+MPIMODE=0
+
+# This hardcoded value is the maximum number of DBDict objects which will be simultaneously open
+# when more than this are open, we beging closing the oldest ones. They will be reopened on-demand,
+# but this will prevent resource exhaustion
+MAXOPEN=20
+
+cachesize=80000000
+
+
 def DB_cleanup(a1=None,a2=None):
 	if a1==2 :
 		print "Program interrupted, closing databases, please wait (%d)"%os.getpid() 
@@ -299,9 +314,6 @@ Takes a path or bdb: specifier and returns the number of images in the reference
 EMUtil.get_image_count_c=staticmethod(EMUtil.get_image_count)
 EMUtil.get_image_count=staticmethod(db_get_image_count)
 
-envopenflags=db.DB_CREATE|db.DB_INIT_MPOOL|db.DB_INIT_LOCK|db.DB_INIT_LOG|db.DB_THREAD
-#dbopenflags=db.DB_CREATE
-cachesize=80000000
 
 def db_get_all_attributes(fsp,*parms):
 	if fsp[:4].lower()=="bdb:" :
@@ -460,6 +472,7 @@ class EMAN2DB:
 	
 	def __init__(self,path=None):
 		"""path points to the directory containin the EMAN2DB subdirectory. None implies the current working directory"""
+		global MPIMODE
 		#if recover: xtraflags=db.DB_RECOVER
 #		if not path : path=e2getcwd()
 		if not path : path=e2gethome()+"/.eman2"
@@ -476,20 +489,26 @@ class EMAN2DB:
 			if not os.access("/tmp/eman2db-%s"%os.getenv("USER","anyone"),os.F_OK) : os.makedirs("/tmp/eman2db-%s"%os.getenv("USER","anyone"))
 		else:
 			if not os.access("/tmp/eman2db-%s"%os.getenv("USERNAME","anyone"),os.F_OK) : os.makedirs("/tmp/eman2db-%s"%os.getenv("USERNAME","anyone"))
-		self.dbenv=db.DBEnv()
-		self.dbenv.set_cachesize(0,cachesize,4)		# gbytes, bytes, ncache (splits into groups)
-#		self.dbenv.set_cachesize(1,0,8)		# gbytes, bytes, ncache (splits into groups)
-		self.dbenv.set_data_dir("%s/EMAN2DB"%self.path)
-		self.dbenv.set_lk_detect(db.DB_LOCK_DEFAULT)	# internal deadlock detection
+
+		if MPIMODE:
+			self.dbenv=None
+		else :
+			self.dbenv=db.DBEnv()
+			self.dbenv.set_cachesize(0,cachesize,4)		# gbytes, bytes, ncache (splits into groups)
+#			self.dbenv.set_cachesize(1,0,8)		# gbytes, bytes, ncache (splits into groups)
+			self.dbenv.set_data_dir("%s/EMAN2DB"%self.path)
+			self.dbenv.set_lk_detect(db.DB_LOCK_DEFAULT)	# internal deadlock detection
+
+			if(sys.platform != 'win32'):
+				self.dbenv.open("/tmp/eman2db-%s"%os.getenv("USER","anyone"),envopenflags)
+			else:
+				self.dbenv.open("/tmp/eman2db-%s"%os.getenv("USERNAME","anyone"),envopenflags)
+
 		self.dicts={}
 		#if self.__dbenv.DBfailchk(flags=0) :
 			#self.LOG(1,"Database recovery required")
 			#sys.exit(1)
 		
-		if(sys.platform != 'win32'):
-			self.dbenv.open("/tmp/eman2db-%s"%os.getenv("USER","anyone"),envopenflags)
-		else:
-			self.dbenv.open("/tmp/eman2db-%s"%os.getenv("USERNAME","anyone"),envopenflags)
 		
 	def close(self):
 		"""close the environment associated with this object"""
@@ -513,30 +532,14 @@ class EMAN2DB:
 	def open_dict(self,name,ro=False):
 #		print "open ",name,ro
 		if self.dicts.has_key(name) : return
-		if ro:
-			# note, if the database is already open read/write, we just use that
-			if self.dicts.has_key(name+"__ro") or self.dicts.has_key(name) : return
-			self.dicts[name+"__ro"]=DBDict(name,dbenv=self.dbenv,path=self.path+"/EMAN2DB",parent=self,ro=ro)
-			self.__dict__[name+"__ro"]=self.dicts[name+"__ro"]
-		else:
-			self.dicts[name]=DBDict(name,dbenv=self.dbenv,path=self.path+"/EMAN2DB",parent=self,ro=ro)
-			self.__dict__[name]=self.dicts[name]
+		self.dicts[name]=DBDict(name,dbenv=self.dbenv,path=self.path+"/EMAN2DB",parent=self,ro=ro)
+		self.__dict__[name]=self.dicts[name]
 	
 	def close_dict(self,name):
-		"this will close a dictionary, and also delete references to it"
+		"this will close a dictionary"
 		try: 
 			self.__dict__[name].close()
-			self.__dict__[name+"__ro"].close()
 		except: pass
-		self.dict_closed(name)
-
-	def dict_closed(self,name):
-		"This is called when a dictionary has been closed to eliminate references to it"
-		try:
-			del(self.__dict__[name])
-			del self.dicts[name]
-		except: pass
-#			print "warning, attempted to close a dictionary named",name,"but failed"
 
 	def remove_dict(self,name):
 		if name in self.dicts.keys():
@@ -563,40 +566,70 @@ class DBDict:
 	def __init__(self,name,file=None,dbenv=None,path=None,parent=None,ro=False):
 		"""This is a persistent dictionary implemented as a BerkeleyDB Hash
 		name is required, and will also be used as a filename if none is
-		specified. """
+		specified. Note that the database is not actually opened until it's used."""
 		
 		global dbopenflags
 		DBDict.alldicts[self]=1		# we keep a running list of all trees so we can close everything properly
 		self.name = name
 		self.parent=parent
+		self.dbenv=dbenv
+		self.file=file
+		self.rohint=ro
+		self.opencount=0
 		if path : self.path = path
 		else : self.path=e2getcwd()
 		self.txn=None	# current transaction used for all database operations
-		if ro : self.bdb=db.DB()
-		else : self.bdb=db.DB(dbenv)
-		if file==None : file=name+".bdb"
-#		print "open ",self.path+"/"+file,name
-		if ro : self.bdb.open(self.path+"/"+file,name,db.DB_BTREE,db.DB_RDONLY)
-		else : 
-			try: self.bdb.open(self.path+"/"+file,name,db.DB_BTREE,db.DB_CREATE)
-			except: raise Exception,"Cannot create database : %s"%self.path+"/"+file
-#		self.bdb.open(file,name,db.DB_HASH,dbopenflags)
-#		print "Init ",name,file,path
+		self.bdb=None
+		self.isro=False
+		
 
 	def __str__(self): return "<EMAN2db DBHash instance: %s>" % self.name
 
 	def __del__(self):
 		self.close()
 
+	def open(self,ro=False):
+		"""This actually opens the database (unless already open), if ro is set and the database is not already
+		open read-write, it will be opened read-only"""
+
+		self.lasttime=time.time()
+		if self.bdb!=None :
+			if ro==True or self.isro==False : 
+#				print "already open",self.name
+				return  		# return if the database is already open and in a compatible read-only mode
+			self.close()	# we need to reopen read-write
+		
+		global MAXOPEN
+		if len(DBDict.alldicts)>=MAXOPEN : self.closeone()
+
+
+		self.bdb=db.DB(self.dbenv)		# we don't check MPIMODE here, since self.dbenv will already be None if its set
+		if self.file==None : file=self.name+".bdb"
+		else : file=self.file
+#		print "open ",self.path+"/"+file,self.name,ro
+		self.opencount+=1	# how many times we have had to reopen this database
+		if ro : 
+			self.bdb.open(self.path+"/"+file,self.name,db.DB_BTREE,db.DB_RDONLY)
+			self.isro=True
+		else : 
+			try: self.bdb.open(self.path+"/"+file,self.name,db.DB_BTREE,db.DB_CREATE)
+			except: raise Exception,"Cannot create database : %s"%self.path+"/"+file
+			self.isro=False
+#		print "opened ",self.name,ro
+#		self.bdb.open(file,name,db.DB_HASH,dbopenflags)
+#		print "Init ",name,file,path
+
+	def closeone(self):
+		print "closeone called"
+
 	def close(self):
 		if self.bdb == None: return
-		if self.parent:		# close through the parent if it exists
-			self.parent.dict_closed(self.name)
+#		print "close x ",self.path+"/"+str(self.file),self.name,"XXX"
 		self.bdb.close()
 		self.bdb=None
 	
 	def sync(self):
-		if self.bdb : self.bdb.sync()
+		if self.bdb!=None : self.bdb.sync()
 		
 	def set_txn(self,txn):
 		"""sets the current transaction. Note that other python threads will not be able to use this
@@ -612,6 +645,7 @@ class DBDict:
 	def get_attr(self,n,attr):
 		"""Returns an attribute or set of attributes for an image or set of images. n may be a single key or a list/tuple/set of keys,
 		and attr may be a single attribute or a list/tuple/set. Returns the attribute, a dict of attributes or a image keyed dict of dicts keyed by attribute"""
+		self.open(self.rohint)	# make sure the database is open
 		try :
 			ret={}
 			for i in n:
@@ -636,6 +670,7 @@ class DBDict:
 	def set_attr(self,n,attr,val=None):
 		"""Sets an attribute to val in EMData object 'n'. Alternatively, attr may be a dictionary containing multiple key/value pairs
 		to be updated in the EMData object. Unlike with get_attr, n must always refer to a single EMData object in the database."""
+		self.open()
 		a=loads(self.bdb.get(dumps(n,-1),txn=self.txn))
 		if isinstance(attr,dict) :
 			a.update(attr)
@@ -643,12 +678,14 @@ class DBDict:
 		self[n]=a
 
 	def __len__(self):
+		self.open(self.rohint)
 		try: return self["maxrec"]+1
 		except: return 0
 #		return self.bdb.stat(db.DB_FAST_STAT)["nkeys"]
 #		return len(self.bdb)
 
 	def __setitem__(self,key,val):
+		self.open()
 		if (val==None) :
 			try:
 				self.__delitem__(key)
@@ -696,6 +733,7 @@ class DBDict:
 			if isinstance(key,int) and (not self.has_key("maxrec") or key>self["maxrec"]) : self["maxrec"]=key
 				
 	def __getitem__(self,key):
+		self.open(self.rohint)
 		try: r=loads(self.bdb.get(dumps(key,-1),txn=self.txn))
 		except: return None
 		if isinstance(r,dict) and r.has_key("is_complex_x") :
@@ -716,31 +754,39 @@ class DBDict:
 		return r
 
 	def __delitem__(self,key):
+		self.open()
 		self.bdb.delete(dumps(key,-1),txn=self.txn)
 
 	def __contains__(self,key):
+		self.open(self.rohint)
 		return self.bdb.has_key(dumps(key,-1))
 
 	def item_type(self,key):
+		self.open(self.rohint)
 		try: r=loads(self.bdb.get(dumps(key,-1),txn=self.txn))
 		except: return None
 		if isinstance(r,dict) and r.has_key("is_complex_x") : return EMData
 		return type(r)
 
 	def keys(self):
+		self.open(self.rohint)
 		return [loads(x) for x in self.bdb.keys() if x[0]=='\x80']
 
 	def values(self):
+		self.open(self.rohint)
 		return [self[k] for k in self.keys()]
 
 	def items(self):
+		self.open(self.rohint)
 		return [(k,self[k]) for k in self.keys()]
 
 	def has_key(self,key):
+		self.open(self.rohint)
 		return self.bdb.has_key(dumps(key,-1))
 
 	def get_data_path(self,key):
 		"""returns the path to the binary data as "path*location". Only valid for EMData objects."""
+		self.open(self.rohint)
 		try: r=loads(self.bdb.get(dumps(key,-1)))
 		except: return None
 		if isinstance(r,dict) and r.has_key("is_complex_x") :
@@ -751,10 +797,10 @@ class DBDict:
 			else : return "%s*%d"%(pkey+fkey,n*4*r["nx"]*r["ny"]*r["nz"])
 		return None
 
-
 	def get(self,key,dfl=None,txn=None,target=None,nodata=0):
 		"""Alternate method for retrieving records. Permits specification of an EMData 'target'
 		object in which to place the read object"""
+		self.open(self.rohint)
 		try: r=loads(self.bdb.get(dumps(key,-1),txn=txn))
 		except: return dfl
 		if isinstance(r,dict) and r.has_key("is_complex_x") :
@@ -784,11 +830,13 @@ class DBDict:
 		
 	def get_header(self,key,txn=None,target=None):
 		"""Alternate method for retrieving metadata for EMData records."""
+		self.open(self.rohint)
 		try: return loads(self.bdb.get(dumps(key,-1),txn=txn))
 		except: return None
 
 	def set(self,key,val,txn=None):
 		"Alternative to x[key]=val with transaction set"
+		self.open()
 		if (val==None) :
 			try:
 				self.__delitem__(key)
@@ -831,6 +879,7 @@ class DBDict:
 
 	def set_header(self,key,val,txn=None):
 		"Alternative to x[key]=val with transaction set"
+		self.open()
 		# make sure the object exists and is an EMData object
 		try: r=loads(self.bdb.get(dumps(key,-1),txn=txn))
 		except: raise Exception,"set_header can only be used to update existing EMData objects"
@@ -848,6 +897,7 @@ class DBDict:
 			
 
 	def update(self,dict):
+		self.open()
 		for i,j in dict.items(): self[i]=j
 
 
