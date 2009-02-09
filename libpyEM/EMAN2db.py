@@ -620,7 +620,8 @@ class DBDict:
 #		print "Init ",name,file,path
 
 	def closeone(self):
-		print "closeone called"
+		pass
+#		print "closeone called"
 
 	def close(self):
 		if self.bdb == None: return
