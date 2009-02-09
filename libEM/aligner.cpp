@@ -1062,6 +1062,44 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 	return result;
 }
 
+CUDA_Aligner::CUDA_Aligner() {
+	image_stack = NULL;
+}
+
+CUDA_Aligner::~CUDA_Aligner() {
+	if (image_stack) delete image_stack;
+}
+
+void CUDA_Aligner::setup(int nima, int nx, int ny) {
+	
+	m_nima = nima;
+	m_nx = nx;
+	m_ny = ny; 
+	
+	image_stack = (float *)malloc(m_nima*m_nx*m_ny*sizeof(float));	
+}
+
+void CUDA_Aligner::insert_image(EMData *image, int num) {
+	int base_address = num*m_nx*m_ny;
+	for (int x=0; x<m_nx; x++) 
+		for (int y=0; y<m_ny; y++) 
+			image_stack[base_address+x*m_ny+y] = (*image)(x, y);	
+}
+
+vector<float> CUDA_Aligner::alignment_2d() {
+        //calculate_ccf(image_stack, ccf_s, ccf_m);
+	
+	vector<float>  align_result;
+	for (int i=0; i<m_nima; i++) {
+	     align_result.push_back(70);
+	     align_result.push_back(0.5);
+	     align_result.push_back(-0.5);
+	     align_result.push_back(0.6);
+	}
+	return align_result;
+}
+
+
 void EMAN::dump_aligners()
 {
 	dump_factory < Aligner > ();

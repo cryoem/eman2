@@ -538,6 +538,45 @@ namespace EMAN
 		}
 	};
 
+
+	class CUDA_Aligner
+	{
+	  public:
+	  	CUDA_Aligner();
+		
+		~CUDA_Aligner();
+		
+		void setup(int nima, int nx, int ny);
+		
+		void insert_image(EMData *image, int num);
+		
+		vector<float> alignment_2d();
+		
+/*		virtual Dict get_params() const
+		{
+			return params;
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+
+			d.put("nima", EMObject::INT);
+			d.put("nx", EMObject::INT);
+			d.put("ny", EMObject::INT);
+			return d;
+		}
+		
+	  protected:
+	  	mutable Dict params; */
+	  
+	  private:
+	        float *image_stack;
+		float *ccf_s, *ccf_m;
+		int m_nima, m_nx, m_ny;
+	};
+
+
 	template <> Factory < Aligner >::Factory();
 
 	void dump_aligners();

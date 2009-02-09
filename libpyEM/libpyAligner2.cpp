@@ -98,6 +98,7 @@ struct EMAN_Aligner_Wrapper: EMAN::Aligner
     PyObject* py_self;
 };
 
+
 struct EMAN_Ctf_Wrapper: EMAN::Ctf
 {
     EMAN_Ctf_Wrapper(PyObject* py_self_, const EMAN::Ctf& p0):
@@ -392,6 +393,16 @@ BOOST_PYTHON_MODULE(libpyAligner2)
         .def("set_params", &EMAN::Aligner::set_params, &EMAN_Aligner_Wrapper::default_set_params)
         .def("get_param_types", pure_virtual(&EMAN::Aligner::get_param_types))
     ;
+
+    class_< EMAN::CUDA_Aligner, boost::noncopyable>("CUDA_Aligner", init<>())
+        .def("setup", &EMAN::CUDA_Aligner::setup)
+        .def("insert_image", &EMAN::CUDA_Aligner::insert_image)
+        .def("alignment_2d", &EMAN::CUDA_Aligner::alignment_2d)
+	.staticmethod("setup")
+	.staticmethod("insert_image")
+	.staticmethod("alignment_2d")
+    ;
+
 
     class_< EMAN::Factory<EMAN::Aligner>, boost::noncopyable >("Aligners", no_init)
         .def("get", (EMAN::Aligner* (*)(const std::basic_string<char,std::char_traits<char>,std::allocator<char> >&))&EMAN::Factory<EMAN::Aligner>::get, return_value_policy< manage_new_object >())
