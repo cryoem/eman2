@@ -117,10 +117,10 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 		else:
 			for i in range(n):
 				im=EMData(args[2],i)
-				if maskfile : im*=maskfile
+				if maskfile!=None : im*=maskfile
 				try: im.process_inplace(options.normalize)
 				except: print "Warning: Normalization failed"
-				if mean : im-=mean
+				if mean!=None : im-=mean
 
 				proj=EMData(len(basis),1,1)
 			
@@ -150,7 +150,7 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 				if options.verbose >1 : 
 					print "  %5d\r"%i,
 					sys.stdout.flush()
-				elif options.verbose and i%100==0:
+				elif options.verbose!=0 and i%100==0:
 					print "  %5d\r"%i,
 					sys.stdout.flush()
 				im=EMData(args[2],i)
@@ -165,10 +165,10 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 
 				im.transform(Transform({"type":"2d","phi":best[3],"tx":best[1],"ty":best[2],"flip":best[4]}))
 
-				if maskfile : im*=maskfile
+				if maskfile!=None : im*=maskfile
 				try: im.process_inplace(options.normalize)
 				except: print "Warning: Normalization failed"
-				if mean : im-=mean
+				if mean!=None : im-=mean
 				
 				# inner loop over the basis images to generate the components of the projection vector
 				for j,b in enumerate(basis):
@@ -203,10 +203,10 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 #				im.rotate_translate(best[1],0,0,best[2],best[3],0)
 				im.transform(Transform({"type":"2d","phi":best[3],"tx":best[1],"ty":best[2],"flip":best[4]}))
 
-				if maskfile : im*=maskfile
+				if maskfile!=None : im*=maskfile
 				try: im.process_inplace(options.normalize)
 				except: print "Warning: Normalization failed"
-				if mean : im-=mean
+				if mean!=None : im-=mean
 				
 				proj=EMData(len(basis),1,1)
 			

@@ -535,6 +535,11 @@ class EMAN2DB:
 		self.dicts[name]=DBDict(name,dbenv=self.dbenv,path=self.path+"/EMAN2DB",parent=self,ro=ro)
 		self.__dict__[name]=self.dicts[name]
 	
+	@classmethod
+	def close_one(x):
+		"""A class method. Pick the best dict to close and close it."""
+		pass
+	
 	def close_dict(self,name):
 		"this will close a dictionary"
 		try: 
@@ -575,7 +580,8 @@ class DBDict:
 		self.dbenv=dbenv
 		self.file=file
 		self.rohint=ro
-		self.opencount=0
+		self.lasttime=time.time()		# last time the database was accessed
+		self.opencount=0				# number of times the database has needed reopening
 		if path : self.path = path
 		else : self.path=e2getcwd()
 		self.txn=None	# current transaction used for all database operations
@@ -600,8 +606,8 @@ class DBDict:
 			self.close()	# we need to reopen read-write
 		
 		global MAXOPEN
-		if len(DBDict.alldicts)>=MAXOPEN : self.closeone()
-
+		if len(DBDict.alldicts)>=MAXOPEN : 
+			DBDict.close_one() 
 
 		self.bdb=db.DB(self.dbenv)		# we don't check MPIMODE here, since self.dbenv will already be None if its set
 		if self.file==None : file=self.name+".bdb"
@@ -618,10 +624,6 @@ class DBDict:
 #		print "opened ",self.name,ro
 #		self.bdb.open(file,name,db.DB_HASH,dbopenflags)
 #		print "Init ",name,file,path
-
-	def closeone(self):
-		pass
-#		print "closeone called"
 
 	def close(self):
 		if self.bdb == None: return

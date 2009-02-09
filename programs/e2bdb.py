@@ -87,10 +87,10 @@ Various utilities related to BDB databases."""
 		if options.filt:
 			dbs=[db for db in dbs if options.filt in db]
 			
-		if options.match:
+		if options.match!=None:
 			dbs=[db for db in dbs if re.match(options.match,db)]
 		
-		if options.makevstack :
+		if options.makevstack!=None :
 			for db in dbs:
 				dct=db_open_dict(path+db)
 				if dct==vstack : continue
@@ -100,7 +100,7 @@ Various utilities related to BDB databases."""
 						print "error reading ",db,n 
 						continue
 					d["data_path"]=dct.get_data_path(n)
-					if not d["data_path"] :
+					if d["data_path"]==None :
 						print "error with data_path ",db,n
 						continue
 					vstack[vstackn]=d

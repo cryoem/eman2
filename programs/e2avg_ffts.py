@@ -78,7 +78,7 @@ def avg_this_pixel (filename, imagedict, thr, i,j,k):
         ith=sumith/numth
     rwt=0.
     iwt=0.
-    if (suma):
+    if (suma>0):
         rwt=sumr2/suma
         iwt=sumi2/suma
 #        process (filename, imagedict[filename] )

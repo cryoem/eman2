@@ -233,7 +233,7 @@ Locates the best 'docking' locations for a small probe in a large target map."""
 #		c.write_image("z.%02d.mrc"%best2.index(i))
 	
 	print "Optimize:"
-	if options.csym :
+	if options.csym!=False :
 		for j in range(len(best2)):
 			c2alt=best2[j][1]
 			sm=Simplex(compare2,[best2[j][3],best2[j][6]],[1,2.])
