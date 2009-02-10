@@ -80,6 +80,11 @@ def main():
 	if options.MPI:
 		from mpi import mpi_init
 		sys.argv = mpi_init(len(sys.argv), sys.argv)
+
+		from utilities import init_mpi_bdb
+		init_mpi_bdb()	
+
+
 	global_def.BATCH = True
 	recons3d_n(prj_stack, pid_list, vol_stack, options.CTF, options.snr, 1, options.npad, options.sym, options.verbose, options.MPI)
 	global_def.BATCH = False

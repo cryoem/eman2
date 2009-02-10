@@ -87,6 +87,9 @@ def main():
 		if options.MPI:
 			from mpi import mpi_init
 			sys.argv = mpi_init(len(sys.argv), sys.argv)
+			from utilities import init_mpi_bdb
+			init_mpi_bdb()
+
 		from applications import ssnr3d		
 		global_def.BATCH = True
 		ssnr3d(stack, out_vol, ssnr_file, mask, reference, options.ou, options.rw, options.npad, options.CTF, options.sign, options.sym, options.MPI, options.random_angles)

@@ -35,6 +35,10 @@ def main():
 
 		if options.MPI:
 			from applications import var_mpi
+			from utilities import init_mpi_bdb
+			init_mpi_bdb()
+
+
 			var_mpi( files, outdir, options.fl, options.fh, options.radccc, options.writelp, options.writestack, options.method)
 		else:
 			from applications import defvar
