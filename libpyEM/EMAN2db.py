@@ -534,12 +534,7 @@ class EMAN2DB:
 		if self.dicts.has_key(name) : return
 		self.dicts[name]=DBDict(name,dbenv=self.dbenv,path=self.path+"/EMAN2DB",parent=self,ro=ro)
 		self.__dict__[name]=self.dicts[name]
-	
-	@classmethod
-	def close_one(x):
-		"""A class method. Pick the best dict to close and close it."""
-		pass
-	
+		
 	def close_dict(self,name):
 		"this will close a dictionary"
 		try: 
@@ -607,7 +602,7 @@ class DBDict:
 		
 		global MAXOPEN
 		if len(DBDict.alldicts)>=MAXOPEN : 
-			DBDict.close_one() 
+			self.close_one() 
 
 		self.bdb=db.DB(self.dbenv)		# we don't check MPIMODE here, since self.dbenv will already be None if its set
 		if self.file==None : file=self.name+".bdb"
@@ -624,6 +619,9 @@ class DBDict:
 #		print "opened ",self.name,ro
 #		self.bdb.open(file,name,db.DB_HASH,dbopenflags)
 #		print "Init ",name,file,path
+
+	def close_one(self):
+		pass
 
 	def close(self):
 		if self.bdb == None: return
