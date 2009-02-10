@@ -40,7 +40,7 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 import weakref
 from optparse import OptionParser
-from EMAN2 import Util, E2init, E2end,EMANVERSION,is_2d_image_mx, EMUtil, db_open_dict, EMData, Transform, db_check_dict, db_close_dict
+from EMAN2 import Util, E2init, E2end,EMANVERSION,is_2d_image_mx, EMUtil, db_open_dict, EMData, Transform, db_check_dict, db_close_dict, get_files_and_directories
 from emimagemx import EMImageMXModule
 import os
 import sys
@@ -321,10 +321,11 @@ class ClassOrientationEvents(NavigationEvents,QtCore.QObject):
 class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 	def get_desktop_hint(self): return "image"
 	def __init__(self,application,auto=True):
-		EM3DSymViewerModule.__init__(self,application,inspector_go=False)
-		InputEventsManager.__init__(self)
 		if auto:
 			self.gen_refinement_data()
+		EM3DSymViewerModule.__init__(self,application,inspector_go=False)
+		InputEventsManager.__init__(self)
+		
 		self.__init_events_handlers()
 		self.projection_file = None
 		self.average_file = None
@@ -350,7 +351,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 			db = db_open_dict("bdb:emform.e2refine",ro=True)
 			if db.has_key("symname") and db.has_key("symnumber"):
 				sym = db["symname"] + db["symnumber"]
-			db_close_dict("bdb:emform.e2refine")
+			#db_close_dict("bdb:emform.e2refine")
 		
 		self.set_sym(sym)
 		
@@ -375,8 +376,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 	def depth(self): return 2*self.radius
 	
 	def gen_refinement_data(self):
-		for root, dirs, files in os.walk(os.getcwd()):
-			break
+		dirs,files = get_files_and_directories()
 		
 		dirs.sort()
 		for i in range(len(dirs)-1,-1,-1):
@@ -388,18 +388,13 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 				try: int(dirs[i][7:])
 				except: dirs.pop(i)
 		
-		
 		self.dirs = dirs
 		
 		self.au_data = {}
 		for dir in self.dirs:
 			d = self.check_refine_db_dir(dir)
 			if len(d) != 0 and len(d[dir]) != 0: self.au_data.update(d)
-			
-		
-				
-		#self.mousePressEvent = InputEventsManager.mousePressEvent
-		
+
 	def check_refine_db_dir(self,dir,s1="classes",s2="class_indices",s3="cls_result",s4="threed",s5="projections"):
 		names = [s1,s2,s3,s4,s5]
 		data = {}
@@ -415,7 +410,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 						fail= True
 						break
 					else: r.append(db_name)
-					
+	
 				if not fail:
 					data[dir].append(r)
 		return data

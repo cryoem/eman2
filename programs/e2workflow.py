@@ -38,7 +38,7 @@ from emapplication import EMQtWidgetModule,ModuleEventsManager
 from emsprworkflow import *
 from emselector import EMBrowserModule
 from e2boxer import EMBoxerModule
-from EMAN2 import HOMEDB, process_running,kill_process
+from EMAN2 import process_running,kill_process
 from emanimationutil import Animator
 from emimage import EMModuleFromFile
 from e2eulerxplor import EMAsymmetricUnitViewer
@@ -67,6 +67,9 @@ class EMTaskMonitorWidget(QtGui.QWidget,Animator):
 		self.register_animatable(self)
 		# remember the number of entries in the history db when this was initialized
 		# so that keeping track of processes using pids is more efficient
+		global HOMEDB
+		HOMEDB=EMAN2db.EMAN2DB.open_db()
+		HOMEDB.open_dict("history")
 		try: self.init_history_db_entries = HOMEDB.history["count"]
 		except: self.init_history_db_entries = 0
 		if self.init_history_db_entries == None: self.init_history_db_entries = 0
@@ -331,6 +334,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.launchers["Boxer"] = self.launch_boxer_general
 		self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("CTF ")))
 		self.launchers["CTF "] = self.launch_ctf_general
+		self.tree_widget_entries[-1].setIcon(0,QtGui.QIcon(get_image_directory() + "ctf.png"))
 		self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Refine2D ")))
 		self.launchers["Refine2D "] = self.launch_refine2d_general
 		self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Eulers")))
@@ -774,10 +778,11 @@ class EMWorkFlowManager:
 		#self.application().close_specific(self.task_monitor)
 
 if __name__ == '__main__':
-	
+	logid=E2init(sys.argv)
 	from emapplication import EMStandAloneApplication
 	em_app = EMStandAloneApplication()
 	sprinit = EMWorkFlowManager(em_app)
 	
 	em_app.show()
-	em_app.execute()	
+	em_app.execute()
+	E2end(logid)

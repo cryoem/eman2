@@ -117,8 +117,8 @@ class WorkFlowTask(QtCore.QObject):
 			else:
 				if db != None: db[k] = v
 		
-		if self.form_db_name != None: db_close_dict(self.form_db_name)
-		db_close_dict("bdb:project")
+		#if self.form_db_name != None: db_close_dict(self.form_db_name)
+		#db_close_dict("bdb:project")
 		
 	def get_default_filenames_from_form_db(self,key="filenames"):
 		'''
@@ -130,7 +130,7 @@ class WorkFlowTask(QtCore.QObject):
 		if self.form_db_name != None:
 			db = db_open_dict(self.form_db_name)
 			default_selections = db.get(key,dfl=[])
-			db_close_dict(self.form_db_name)
+			#db_close_dict(self.form_db_name)
 			
 		return default_selections
 	
@@ -144,7 +144,7 @@ class WorkFlowTask(QtCore.QObject):
 		else:
 			pass
 		
-		db_close_dict("bdb:project")
+		#db_close_dict("bdb:project")
 	def get_wd(self):
 		'''
 		Get the working directory, originally introduced to provide a centralized mechanism for accessing the working directory,
@@ -212,7 +212,7 @@ class WorkFlowTask(QtCore.QObject):
 			print "started process",process.pid
 			self.emit(QtCore.SIGNAL("process_started"),process.pid)
 			
-		db_close_dict("bdb:project")
+		#db_close_dict("bdb:project")
 	
 	def spawn_single_task(self,program,options,string_args,bool_args,additional_args=[],temp_file_name="e2workflow_tmp.txt"):
 		'''
@@ -259,7 +259,7 @@ class WorkFlowTask(QtCore.QObject):
 		print "started process",process.pid
 		self.emit(QtCore.SIGNAL("process_started"),process.pid)
 		
-		db_close_dict("bdb:project")
+		#db_close_dict("bdb:project")
 		
 	def run_select_files_msg(self):
 		'''
@@ -326,7 +326,7 @@ class WorkFlowTask(QtCore.QObject):
 					class_ptcls.append("")
 					class_dims.append("")
 					
-				db_close_dict(classes_db)
+				#db_close_dict(classes_db)
 					
 		return class_files,class_ptcls,class_dims
 	
@@ -470,7 +470,7 @@ class SPRInitTask(WorkFlowTask):
 		params.append(pcs)
 		params.append(pncp)
 		params.append(pmem)
-		db_close_dict("bdb:project")
+		#db_close_dict("bdb:project")
 		return params
 
 	def write_db_entry(self,key,value):
@@ -496,7 +496,7 @@ class MicrographCCDImportTask(WorkFlowTask):
 		
 		params.append([pinvert,pxray,pnorm,pthumbnail])
 		
-		db_close_dict("bdb:project")
+		#db_close_dict("bdb:project")
 		return params
 	
 	def on_form_ok(self,params):
@@ -620,7 +620,7 @@ class MicrographCCDImportTask(WorkFlowTask):
 				self.application().processEvents()
 				
 			e.write_image(db_name,0)
-			db_close_dict(db_name)
+			#db_close_dict(db_name)
 			cancelled_dbs.append(db_name)
 			i += 1
 			progress.qt_widget.setValue(i)
@@ -650,7 +650,7 @@ class MicrographCCDImportTask(WorkFlowTask):
 		
 		if not cancelled:
 			project_db["global.micrograph_ccd_filenames"] = current_project_files
-			db_close_dict("bdb:project")
+			#db_close_dict("bdb:project")
 		
 	def get_thumb_shrink(self,nx,ny):
 		if self.thumb_shrink == -1:
@@ -685,7 +685,7 @@ class MicrographCCDTask(WorkFlowTask):
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="Raw image data",desc_long="",property=None,defaultunits=MicrographCCDTask.documentation_string,choices=None))
 		params.append(ParamDef(name="global.micrograph_ccd_filenames",vartype="url",desc_short="File names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=project_db.get("global.micrograph_ccd_filenames",dfl=[]),choices=[]))
 		
-		db_close_dict("bdb:project")
+		#db_close_dict("bdb:project")
 		return params
 
 	def on_form_ok(self,params):
@@ -738,7 +738,7 @@ class MicrographCCDTask(WorkFlowTask):
 						
 				project_db = db_open_dict("bdb:project")
 				project_db["global.micrograph_ccd_filenames"] = new_names
-				db_close_dict("bdb:project")
+				#db_close_dict("bdb:project")
 		else:  pass
 
 
@@ -798,7 +798,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 			stripped = get_file_tag(name)
 			if stripped not in ptcl_dbs:
 				ptcl_dbs.append(stripped)
-		db_close_dict("bdb:project")
+		#db_close_dict("bdb:project")
 		return ptcl_dbs
 	
 	def get_num_particles(self,project_files_names):
@@ -814,7 +814,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 						vals.append(db["maxrec"]+1)
 						#db_close_dict(db_name)
 					else: vals.append("")
-					db_close_dict(db_name)
+					#db_close_dict(db_name)
 				else:
 					vals.append("")
 			else:
@@ -835,7 +835,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 						db = db_open_dict(db_name,ro=True)
 						hdr = db.get_header(0)
 						vals.append(str(hdr["nx"])+'x'+str(hdr["ny"])+'x'+str(hdr["nz"]))
-						db_close_dict(db_name)
+						#db_close_dict(db_name)
 					except:vals.append("")
 				else: vals.append("")
 			return vals
@@ -854,7 +854,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 				db = db_open_dict(db_name,ro=True)
 				hdr = db.get_header(0)
 				vals.append(str(hdr["nx"])+'x'+str(hdr["ny"])+'x'+str(hdr["nz"]))
-				db_close_dict(db_name)
+				#db_close_dict(db_name)
 			else: vals.append("No data")
 		return vals
 
@@ -872,7 +872,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 			if db_check_dict(db_name):
 				db = db_open_dict(db_name,ro=True)
 				vals.append(db["maxrec"]+1)
-				db_close_dict(db_name)
+				#db_close_dict(db_name)
 			else:
 				vals.append(-1)
 		return vals
@@ -1282,7 +1282,7 @@ class ParticleImportTask(ParticleWorkFlowTask):
 		project_db = db_open_dict("bdb:project")
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="Description",desc_long="",property=None,defaultunits=ParticleImportTask.documentation_string,choices=None))
 		params.append(ParamDef(name="import_particle_files",vartype="url",desc_short="Imported particles",desc_long="A list of particle files that have been or will be imported into this project",property=None,defaultunits=[],choices=[]))
-		db_close_dict("bdb:project")
+		#db_close_dict("bdb:project")
 		return params
 
 	def on_form_ok(self,params):
@@ -1506,7 +1506,7 @@ class E2BoxerGenericTask(ParticleWorkFlowTask):
 #		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFGenericTask.documentation_string,choices=None))
 		db = db_open_dict(self.form_db_name)
 		params.append(ParamDef(name="running_mode",vartype="choice",desc_short="Choose your running mode",desc_long="There are three Boxer related task which are generally run in order",property=None,defaultunits=db.get("running_mode",dfl="Interactive boxing"),choices=["Interactive boxing", "Autoboxing", "Write output"]))
-		db_close_dict(self.form_db_name)
+		#db_close_dict(self.form_db_name)
 		return params
 
 	def on_form_ok(self,params):
@@ -1634,7 +1634,7 @@ class E2BoxerGuiTask(E2BoxerTask):
 			params.append(p)
 			db = db_open_dict(self.form_db_name)
 			params.append(ParamDef(name="interface_boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=db.get("interface_boxsize",dfl=128),choices=[]))
-			db_close_dict(self.form_db_name)
+			#db_close_dict(self.form_db_name)
 		return params
 			
 	def on_form_ok(self,params):
@@ -1697,7 +1697,7 @@ class E2BoxerGuiTaskGeneral(E2BoxerGuiTask):
 		params.append(ParamDef(name="filenames",vartype="url",desc_short="File names",desc_long="The names of the particle files you want to interactively box using e2boxer",property=None,defaultunits=[],choices=[]))
 		db = db_open_dict(self.form_db_name)
 		params.append(ParamDef(name="interface_boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=db.get("interface_boxsize",dfl=128),choices=[]))
-		db_close_dict(self.form_db_name)
+		#db_close_dict(self.form_db_name)
 		return params
 	
 	
@@ -1728,11 +1728,11 @@ class E2BoxerOutputTask(E2BoxerTask):
 		db = db_open_dict(self.form_db_name)
 		pbox = ParamDef(name="output_boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=db.get("output_boxsize",dfl=128),choices=[])	
 		pfo = ParamDef(name="force",vartype="boolean",desc_short="Force overwrite",desc_long="Whether or not to force overwrite files that already exist",property=None,defaultunits=db.get("force",dfl=False),choices=None)
-		pwc = ParamDef(name="write_coord_files",vartype="boolean",desc_short="Write box db files",desc_long="Whether or not box db files should be written",property=None,defaultunits=db.get("write_coord_files",dfl=False),choices=None)
+		pwc = ParamDef(name="write_coord_files",vartype="boolean",desc_short="Write box coord files",desc_long="Whether or not box db files should be written",property=None,defaultunits=db.get("write_coord_files",dfl=False),choices=None)
 		pwb = ParamDef(name="write_box_images",vartype="boolean",desc_short="Write box image files",desc_long="Whether or not box images should be written",property=None,defaultunits=db.get("write_box_images",dfl=True),choices=None)
 		pn =  ParamDef(name="normproc",vartype="string",desc_short="Normalize images",desc_long="How the output box images should be normalized",property=None,defaultunits=db.get("normproc",dfl="normalize.edgemean"),choices=["normalize","normalize.edgemean","none"])
 		pop = ParamDef(name="outformat",vartype="string",desc_short="Output image format",desc_long="The format of the output box images",property=None,defaultunits=db.get("outformat",dfl="bdb"),choices=["bdb","img","hdf"])
-		db_close_dict(self.form_db_name)
+		#db_close_dict(self.form_db_name)
 		params.append([pbox,pfo])
 		params.append([pwc,pwb])
 		params.append(pn)
@@ -1929,7 +1929,7 @@ class E2CTFWorkFlowTask(ParticleWorkFlowTask):
 				noise_profile.append(vals[4])
 				snrs.append(vals[5])
 				
-			db_close_dict("bdb:e2ctf.parms")
+			#db_close_dict("bdb:e2ctf.parms")
 
 			return defocus,dfdiff,dfang,bfactor,noise_profile,snrs
 	
@@ -1975,7 +1975,7 @@ class E2CTFWorkFlowTask(ParticleWorkFlowTask):
 					if particle_db.has_key("maxrec"): 
 						data_list.append(particle_db["maxrec"]+1)
 					else: data_list.append("")
-					db_close_dict(db_name)
+					#db_close_dict(db_name)
 				else: data_list.append("")
 			
 			d = {}
@@ -2006,7 +2006,7 @@ class E2CTFWorkFlowTask(ParticleWorkFlowTask):
 			vals = ctf_parms_db.keys()
 			#print vals
 			if vals == None: vals = []
-			db_close_dict("bdb:e2ctf.parms")
+			#db_close_dict("bdb:e2ctf.parms")
 			return vals
 		else:
 			return []
@@ -2049,7 +2049,7 @@ class E2CTFWorkFlowTask(ParticleWorkFlowTask):
 				print "error?",key
 				continue
 			ret.append([key,data[-1]]) # parms[-1] should be the original filename
-		db_close_dict("bdb:e2ctf.parms")
+		#db_close_dict("bdb:e2ctf.parms")
 		return ret
 
 class CTFReportTask(E2CTFWorkFlowTask):
@@ -2088,7 +2088,7 @@ class E2CTFGenericTask(ParticleWorkFlowTask):
 #		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFGenericTask.documentation_string,choices=None))
 		db = db_open_dict(self.form_db_name)
 		params.append(ParamDef(name="running_mode",vartype="choice",desc_short="Choose your running mode",desc_long="There are three CTF related task which are generally run in order",property=None,defaultunits=db.get("running_mode",dfl="auto params"),choices=["auto params", "interactively fine tune", "write output"]))
-		db_close_dict(self.form_db_name)
+		#db_close_dict(self.form_db_name)
 		return params
 
 	def on_form_ok(self,params):
@@ -2144,14 +2144,14 @@ class E2CTFAutoFitTask(E2CTFWorkFlowTask):
 		pncp = ParamDef(name="global.num_cpus",vartype="int",desc_short="Number of CPUs",desc_long="Number of CPUS available for the project to use",property=None,defaultunits=project_db.get("global.num_cpus",dfl=num_cpus()),choices=None)
 		pahp = ParamDef(name="autohp",vartype="boolean",desc_short="Auto high pass",desc_long="Automatic high pass filter of the SNR only to remove initial sharp peak, phase-flipped data is not directly affected (default false)",property=None,defaultunits=db.get("autohp",dfl=False),choices=None)
 		pns = ParamDef(name="nosmooth",vartype="boolean",desc_short="No smoothing",desc_long="Disable smoothing of the background (running-average of the log with adjustment at the zeroes of the CTF)",property=None,defaultunits=db.get("nosmooth",dfl=False),choices=None)
-		db_close_dict(self.form_db_name)
+		#db_close_dict(self.form_db_name)
 		
 		params.append([papix,pvolt])
 		params.append([pcs,pac])
 		params.append([pos,pncp])
 		params.append([pahp,pns])
 
-		db_close_dict("bdb:project")
+		#db_close_dict("bdb:project")
 	
 	def get_default_ctf_options(self,params):
 		'''
@@ -2180,11 +2180,11 @@ class E2CTFAutoFitTask(E2CTFWorkFlowTask):
 				db = db_open_dict(db_name,ro=True)
 				hdr = db.get_header(0)
 				boxsize = hdr["nx"] # no consideration is given for non square images
-				db_close_dict(db_name)
+				#db_close_dict(db_name)
 			else:
 				db = db_open_dict(db_name,ro=True)
 				hdr = db.get_header(0)
-				db_close_dict(db_name)
+				#db_close_dict(db_name)
 				if boxsize != hdr["nx"]: # no consideration is given for non square images
 					error_message.append("Can't run e2ctf on images with different box sizes.")
 		
@@ -2332,7 +2332,7 @@ class E2CTFOutputTask(E2CTFWorkFlowTask):
 			pphase = ParamDef(name="phaseflip",vartype="boolean",desc_short="Phase flip",desc_long="Phase flip your particle images using parameters in the database",property=None,defaultunits=db.get("phaseflip",dfl=False),choices=None)
 			params.append(pos)
 			params.append([pphase,pwiener])
-			db_close_dict(self.form_db_name)
+			#db_close_dict(self.form_db_name)
 		return params
 
 	def get_default_ctf_options(self,params):
@@ -2629,7 +2629,7 @@ class ClassificationTask(ParticleWorkFlowTask):
 		params.append(pshrink)
 		params.extend(self.get_cls_simmx_params(parameter_prefix="sim"))
 		
-		db_close_dict(self.form_db_name)
+		#db_close_dict(self.form_db_name)
 		return ["Simmx",params]
 	
 
@@ -2651,7 +2651,7 @@ class ClassificationTask(ParticleWorkFlowTask):
 		
 		pnormproc =  ParamDef("classnormproc",vartype="string",desc_short="Normalization processor",desc_long="The normalization method applied to the class averages",property=None,defaultunits=db.get("classnormproc",dfl="normalize.edgemean"),choices=["normalize","normalize.edgemean","None"])
 		
-		db_close_dict(self.form_db_name)
+		#db_close_dict(self.form_db_name)
 		
 		if include_sep: 
 			params.append([piter,psep])
@@ -2690,7 +2690,7 @@ class ClassificationTask(ParticleWorkFlowTask):
 		pcmp  =  ParamDef(name=parameter_prefix+"cmp",vartype="string",desc_short="Main comparator",desc_long="The comparator to determine the final quality metric",defaultunits=db.get(parameter_prefix+"cmp",dfl="phase"),choices=cmps)
 		pcmpargs =  ParamDef(name=parameter_prefix+"cmpargs",vartype="string",desc_short="params",desc_long="Parameters for the this comparator, see \"e2help.py cmps\"",property=None,defaultunits=db.get(parameter_prefix+"cmpargs",dfl=""),choices=[])	
 	
-		db_close_dict(self.form_db_name)
+		#db_close_dict(self.form_db_name)
 
 		params.append([pcmp,pcmpargs])
 		params.append([palign,palignargs])
@@ -2818,8 +2818,8 @@ class E2Refine2DTask(ClassificationTask):
 		pncp = ParamDef(name="global.num_cpus",vartype="int",desc_short="Number of CPUs",desc_long="Number of CPUS available for e2refine2d to use",property=None,defaultunits=project_db.get("global.num_cpus",dfl=num_cpus()),choices=None)
 		pinitclasses =  ParamDef(name="initial",vartype="string",desc_short="Initial class averages",desc_long="A file (full path) containing starting class averages. If note specificed will generate starting class averages automatically.",property=None,defaultunits=db.get("initial",dfl=""),choices=[])	
 		
-		db_close_dict(self.form_db_name)
-		db_close_dict("bdb:project")
+		#db_close_dict(self.form_db_name)
+		#db_close_dict("bdb:project")
 		
 		params.append([pncls,pnp])
 		params.append(piter)
@@ -3018,7 +3018,7 @@ class E2Refine2DChooseDataTask(ParticleWorkFlowTask):
 		
 		db = db_open_dict(self.form_db_name)
 		params.append(ParamDef(name="particle_set_choice",vartype="choice",desc_long="Choose the particle data set you wish to use to generate a starting data for e2refine2d",desc_short="Choose data",property=None,defaultunits=db.get("particle_set_choice",dfl=""),choices=choices))
-		db_close_dict(self.form_db_name)
+		#db_close_dict(self.form_db_name)
 		return params
 	
 	def on_form_ok(self,params):
@@ -3286,7 +3286,7 @@ class E2MakeInitialModel(ParticleWorkFlowTask):
 			syms = ["icos","oct","tet","c","d","h"]
 			psym =  ParamDef(name="symname",vartype="string",desc_short="Symmetry",desc_long="Symmetry to be imposed during refinement",property=None,defaultunits=db.get("symname",dfl="c"),choices=syms)
 			psymnum = ParamDef(name="symnumber",vartype="string",desc_short="Symmetry number",desc_long="In C,D and H symmetry, this is the symmetry number",property=None,defaultunits=db.get("symnumber",dfl=""),choices=None)
-			db_close_dict(self.form_db_name)
+			#db_close_dict(self.form_db_name)
 			
 			p.enable_multiple_selection = False
 			params.append(p)
@@ -3360,7 +3360,7 @@ class ImportInitialModels(ParticleWorkFlowTask):
 		pfo = ParamDef(name="force",vartype="boolean",desc_short="Force overwrite",desc_long="Whether or not to force overwrite files that already exist",property=None,defaultunits=db.get("force",dfl=False),choices=None)
 		params.append(pfo)
 		
-		db_close_dict(self.form_db_name)
+		#db_close_dict(self.form_db_name)
 		
 		return params
 	
@@ -3410,7 +3410,7 @@ class ImportInitialModels(ParticleWorkFlowTask):
 			progress.qt_widget.setValue(i)
 			output_name = "bdb:initial_models#"+get_file_tag(file)
 			e.write_image(output_name,0)
-			db_close_dict(output_name)
+			#db_close_dict(output_name)
 			i +=1
 			progress.qt_widget.setValue(i)
 		
@@ -3503,7 +3503,7 @@ class RefinementReportTask(ParticleWorkFlowTask):
 				except: pass
 				
 				
-				db_close_dict(threed_db)
+				#db_close_dict(threed_db)
 				threed_dims.append(dims)
 				threed_mean.append(mean)
 				threed_sigma.append(sigma)
@@ -3678,8 +3678,8 @@ class E2RefineParticlesTask(ClassificationTask):
 		p1.enable_multiple_selection = False
 		params.append(p1)
 		
-		db_close_dict(self.form_db_name)
-		db_close_dict("bdb:project")
+		#db_close_dict(self.form_db_name)
+		#db_close_dict("bdb:project")
 		
 		return ["Data",params]
 	
@@ -3729,8 +3729,8 @@ class E2RefineParticlesTask(ClassificationTask):
 		params.append([pamthreshold,pamradius])
 		params.append([pamnshells,pamngaussshells])
 
-		db_close_dict(self.form_db_name)
-		db_close_dict("bdb:project")
+		#db_close_dict(self.form_db_name)
+		#db_close_dict("bdb:project")
 		
 		return ["General",params]
 
@@ -3812,7 +3812,7 @@ class E2RefineParticlesTask(ClassificationTask):
 			image.write_image(new_model,0) # db got opened here
 
 		 	options.model = new_model
-		 	db_close_dict(new_model) # force synchronization so e2refine.py will definetely run -
+		 	#db_close_dict(new_model) # force synchronization so e2refine.py will definetely run -
 		else:
 			options.model = model # all good
 			
@@ -4039,7 +4039,7 @@ class E2RefineParticlesTask(ClassificationTask):
 		params.append([porientoptions,porientoptionsentry])
 		params.append(pmirror)
 		
-		db_close_dict(self.form_db_name)
+		#db_close_dict(self.form_db_name)
 		
 		return ["Project 3D",params]
 	
@@ -4139,7 +4139,7 @@ class E2RefineParticlesTask(ClassificationTask):
 		ppad = ParamDef("pad",vartype="string",desc_short="Pad to",desc_long="The amount to which you want to pad the 3D volume when Fourier inversion is being used. At least 25% is recommended", defaultunits=db.get("pad",dfl=""),choices=[])
 		params = []
 		
-		db_close_dict(self.form_db_name)
+		#db_close_dict(self.form_db_name)
 		
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2RefineParticlesTask.make3d_documentation,choices=None))
 
@@ -4202,7 +4202,7 @@ class E2RefineChooseDataTask(ParticleWorkFlowTask):
 			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2RefineChooseDataTask.documentation_string,choices=None))
 			db = db_open_dict(self.form_db_name)
 			params.append(ParamDef(name="particle_set_choice",vartype="choice",desc_long="Choose the particle data set you wish to use to generate a starting data for e2refine2d",desc_short="Choose data",property=None,defaultunits=db.get("particle_set_choice",dfl=None),choices=choices))
-			db_close_dict(self.form_db_name)
+			#db_close_dict(self.form_db_name)
 		return params
 	
 	def on_form_ok(self,params):
@@ -4337,7 +4337,7 @@ class ResolutionReportTask(ParticleWorkFlowTask):
 					else:
 						eotest_res.append("")
 				
-				db_close_dict(db_name)
+				#db_close_dict(db_name)
 
 		if len(available_dirs) > 0:
 			p = ParamTable(name="filenames",desc_short="Resolution evaluation",desc_long="")
@@ -4526,7 +4526,7 @@ class E2EotestTask(E2RefineParticlesTask):
 		params.append([psym,psymnum])
 		
 		
-		db_close_dict(self.form_db_name)
+		#db_close_dict(self.form_db_name)
 		
 		return ["General",params]
 	
@@ -4662,7 +4662,7 @@ class E2ResolutionTask(WorkFlowTask):
 		papix = ParamDef(name="global.apix",vartype="float",desc_short="Angtsrom per pixel",desc_long="The physical distance represented by the pixel spacing",property=None,defaultunits=project_db.get("global.apix",dfl=1.1),choices=None)
 		params.append(papix)
 		
-		db_close_dict("bdb:project")
+		#db_close_dict("bdb:project")
 		
 		return params
 	

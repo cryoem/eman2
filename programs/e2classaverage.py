@@ -453,8 +453,8 @@ def main():
 				if (options.verbose):
 					print "Class",cl,"...no particles on iteration",it
 				# FIXME
-				# write blank image? Write meta data?
-				continue
+				average = None
+				break
 		
 			average = averager.finish()
 			#should this be centeracf?
@@ -465,11 +465,49 @@ def main():
 			#avg.process_inplace("normalize.edgemean")
 			#avg.process_inplace("xform.centerofmass")
 			#avg.process_inplace("mask.sharp",{"outer_radius":ta.get_xsize()/2})
-			
+		
+		if average == None: continue
 		# extract euler data from the ref image, if it was specified
-		if ( options.ref  ):
+		if ( options.ref):
 			e = EMData()
-			e.read_image(options.ref, cl, READ_HEADER_ONLY)
+			if options.iter > 0:
+				e.read_image(options.ref, cl)
+				average_to_ref = align(average,e,options)
+				averager=Averagers.get(averager_parms[0], averager_parms[1]) # need an empty averager
+				fine_transform = average_to_ref.get_attr("xform.align2d")
+				#avg = None
+				np = 0 # number of particles in the average
+				for d in ccache:
+					p = d[0]
+					c = d[1]
+					if (options.cull ):
+						if ( weights.get(c,p) == 0 ) : continue
+					
+					if (options.lowmem):
+						image = EMData(args[0],p)
+					else:
+						image = images[p].copy()
+					
+					if str(options.normproc) != "None": image.process_inplace(options.norm[0],options.norm[1])
+	
+					t = Transform({"type":"2d","alpha":da.get(c,p)})
+					t.set_trans(dx.get(c,p),dy.get(c,p))
+					if dflip.get(c,p) != 0: t.set_mirror(True)
+			
+					image.transform(fine_transform*t)
+				
+					np += 1
+					averager.add_image(image)
+			
+				if np == 0:
+					if (options.verbose):
+						print "Class",cl,"...no particles on iteration",it
+					continue
+				
+				average = averager.finish()
+			else:
+				e.read_image(options.ref, cl, READ_HEADER_ONLY)
+
 			average.set_attr("xform.projection", e.get_attr("xform.projection"))
 			average.set_attr("projection_image",options.ref)
 			average.set_attr("projection_image_idx",cl)
@@ -519,7 +557,7 @@ def main():
 			if options.even: name += "_even"
 			elif options.odd: name += "_odd"
 			db_name = numbered_bdb(name)
-			db_close_dict(db_name)
+			#db_close_dict(db_name)
 		
 	
 	E2end(logger)

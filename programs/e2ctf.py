@@ -138,7 +138,7 @@ images far from focus."""
 		
 		db_misc=db_open_dict("bdb:e2ctf.misc")
 		db_misc["envelope"]=envelope
-		db_close_dict("bdb:e2ctf.misc")
+		#db_close_dict("bdb:e2ctf.misc")
 		
 		#out=file("envelope.txt","w")
 		#for i in envelope: out.write("%f\t%f\n"%(i[0],i[1]))
@@ -163,11 +163,6 @@ images far from focus."""
 	# write wiener filtered and/or phase flipped particle data to the local database
 	if options.phaseflip or options.wiener: # only put this if statement here to make the program flow obvious
 		write_e2ctf_output(options) # converted to a function so to work with the workflow
-
-	# David Woolford did this - they should just be flushed, but I can't find the flush functionality
-	db_close_dict("bdb:project")
-	db_close_dict("bdb:e2ctf.parms")
-	db_close_dict("bdb:e2ctf.misc")
 
 	E2end(logid)
 
@@ -267,8 +262,8 @@ def pspec_and_ctf_fit(options,debug=False):
 	project_db["global.microscope_cs"] = options.cs
 	project_db["global.apix"] = apix
 	
-	db_close_dict("bdb:project")
-	db_close_dict("bdb:e2ctf.parms")
+	#db_close_dict("bdb:project")
+	#db_close_dict("bdb:e2ctf.parms")
 	
 	return img_sets
 
@@ -360,8 +355,8 @@ def process_stack(stackfile,phaseflip=None,wiener=None,edgenorm=True,oversamp=1,
 					out.write_image("error.hed",-1)
 		lctf=ctf
 
-	if wiener and wiener[:4]=="bdb:" : db_close_dict(wiener)
-	if phaseflip and phaseflip[:4]=="bdb:" : db_close_dict(phaseflip)
+	#if wiener and wiener[:4]=="bdb:" : db_close_dict(wiener)
+	#if phaseflip and phaseflip[:4]=="bdb:" : db_close_dict(phaseflip)
 	
 	return
 
@@ -763,6 +758,7 @@ class GUIctfModule(EMQtWidgetModule):
 		EMQtWidgetModule.__init__(self,self.guictf,application)
 		self.application = weakref.ref(application)
 		self.setWindowTitle("CTF")
+		
 		#GLUT.glutInit([]) # this should be taken care of now
 
 		
@@ -793,6 +789,7 @@ class GUIctf(QtGui.QWidget):
 		self.module = weakref.ref(module)
 		
 		QtGui.QWidget.__init__(self,None)
+		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "ctf.png"))
 		
 		self.data=data
 		self.curset=0

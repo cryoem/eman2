@@ -59,6 +59,7 @@ from EMAN2db import EMAN2DB,db_open_dict,db_close_dict,db_remove_dict,db_list_di
 
 Vec3f.__str__=lambda x:"Vec3f"+str(x.as_list())
 
+# Who is using this? Transform3D is deprecated use the Transform insteand
 Transform3D.__str__=lambda x:"Transform3D(\t%7.4g\t%7.4g\t%7.4g\n\t\t%7.4g\t%7.4g\t%7.4g\n\t\t%7.4g\t%7.4g\t%7.4g)\nPretrans:%s\nPosttrans:%s"%(x.at(0,0),x.at(0,1),x.at(0,2),x.at(1,0),x.at(1,1),x.at(1,2),x.at(2,0),x.at(2,1),x.at(2,2),str(x.get_pretrans()),str(x.get_posttrans()))
 
 GUIMode=0
@@ -102,7 +103,7 @@ is complete. If the process is killed, 'end' may never be set."""
 	global HOMEDB
 	HOMEDB=EMAN2db.EMAN2DB.open_db()
 	HOMEDB.open_dict("history")
-	if HOMEDB :
+	if HOMEDB != None:
 		if not HOMEDB.history.has_key("count") : HOMEDB.history["count"]=1
 		else : HOMEDB.history["count"]+=1
 		n=HOMEDB.history["count"]
