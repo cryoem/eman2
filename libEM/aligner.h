@@ -550,7 +550,7 @@ namespace EMAN
 		
 		void insert_image(EMData *image, int num);
 		
-		vector<float> alignment_2d();
+		vector<float> alignment_2d(EMData *ref_image);
 		
 /*		virtual Dict get_params() const
 		{

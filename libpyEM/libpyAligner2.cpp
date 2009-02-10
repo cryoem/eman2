@@ -398,9 +398,6 @@ BOOST_PYTHON_MODULE(libpyAligner2)
         .def("setup", &EMAN::CUDA_Aligner::setup)
         .def("insert_image", &EMAN::CUDA_Aligner::insert_image)
         .def("alignment_2d", &EMAN::CUDA_Aligner::alignment_2d)
-	.staticmethod("setup")
-	.staticmethod("insert_image")
-	.staticmethod("alignment_2d")
     ;
 
 

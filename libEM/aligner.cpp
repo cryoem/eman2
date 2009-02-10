@@ -1086,7 +1086,7 @@ void CUDA_Aligner::insert_image(EMData *image, int num) {
 			image_stack[base_address+x*m_ny+y] = (*image)(x, y);	
 }
 
-vector<float> CUDA_Aligner::alignment_2d() {
+vector<float> CUDA_Aligner::alignment_2d(EMData *ref_image) {
         //calculate_ccf(image_stack, ccf_s, ccf_m);
 	
 	vector<float>  align_result;
