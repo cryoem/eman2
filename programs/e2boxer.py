@@ -149,28 +149,20 @@ for single particle analysis."""
 	error_message = []
 	for arg in args:
 		if file_exists(arg):
-			nx,ny,nz = gimme_image_dimensions3D(arg)
-			if nz != 1:
-				error_message.append("%s is 3D!" %arg)
-			elif EMUtil.get_image_count(arg) > 1:
-				error_message.append("%s contains more than one image" %arg)
-			else:
+			if options.merge_boxes_to_db == True:
 				filenames.append(arg)
+			else:
+				
+				nx,ny,nz = gimme_image_dimensions3D(arg)
+				if nz != 1:
+					error_message.append("%s is 3D!" %arg)
+				elif EMUtil.get_image_count(arg) > 1:
+					error_message.append("%s contains more than one image" %arg)
+				else:
+					filenames.append(arg)
 		else:
 			error_message.append("file %s does not exist" %arg)
-			
-	if options.boxsize > 0 and  len(args) > 0:
-		nx,ny = gimme_image_dimensions2D(arg)
-		if options.boxsize > nx/2 or options.boxsize > ny/2:
-			error_message.append("boxsize can not be greater than half of either of the image dimensions")
-		
-	if len(error_message) > 0:
-		for error in error_message:
-			print error
-		
-		sys.exit(1)
-		
-		
+
 	options.filenames = filenames
 	
 	if options.merge_boxes_to_db == True:
@@ -178,6 +170,18 @@ for single particle analysis."""
 		merge_boxes_as_manual_to_db(filenames)
 		sys.exit(1)
 		
+	if options.boxsize > 0 and  len(args) > 0:
+		nx,ny = gimme_image_dimensions2D(arg)
+		if options.boxsize > nx/2 or options.boxsize > ny/2:
+			error_message.append("boxsize can not be greater than half of either of the image dimensions")
+	
+	
+	if len(error_message) > 0:
+		for error in error_message:
+			print error
+		
+		sys.exit(1)
+	
 	if options.gui: options.running_mode = "gui"
 	elif options.auto: options.running_mode = "auto_db"
 	else: 

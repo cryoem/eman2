@@ -3976,7 +3976,7 @@ class E2RefineParticlesTask(ClassificationTask):
 					arg +=","
 				arg+= str(params[name])
 		
-		options.automask3d=arg
+			options.automask3d=arg
 				
 		#symmetry
 		error_message.extend(self.check_sym(params,options))

@@ -505,6 +505,9 @@ def main():
 					continue
 				
 				average = averager.finish()
+				if str(options.normproc) != "None": average.process_inplace(options.norm[0],options.norm[1])
+				#average.process_inplace("xform.centerofmass") this shouldn't be necessary if we aligned to the projection
+				average.process_inplace("mask.sharp",{"outer_radius":ta.get_xsize()/2})
 			else:
 				e.read_image(options.ref, cl, READ_HEADER_ONLY)
 

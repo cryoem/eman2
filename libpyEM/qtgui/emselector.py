@@ -1252,7 +1252,7 @@ class EMBDBListing:
 			item_key = split[j-2]
 			
 			#DB.open_dict(key)
-			db_name = "bdb:"+item.db_directory+"#"+item.key
+			db_name = "bdb:"+db_directory+"#"+key
 			db = db_open_dict(db_name,ro=True)
 			#item = DB[key]
 			
@@ -1260,7 +1260,9 @@ class EMBDBListing:
 			try:
 				for ii in range(j-2,-1,-1):
 					db = db[split[ii]]
-			except: return False
+			except: 
+				print 0	
+				return False
 			
 			if type(db) == dict:
 				keys = db.keys()

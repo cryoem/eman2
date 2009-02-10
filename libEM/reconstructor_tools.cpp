@@ -66,7 +66,7 @@ template <> Factory < InterpolatedFRC >::Factory()
 }
 
 InterpolatedFRC::InterpolatedFRC() :
-		threed_rdata(0), norm_data(0), nx(0), ny(0), nz(0), nxy(0), x_scale(1.0), y_scale(1.0), z_scale(1.0), bin(1.0), r(0), rn(0) 
+		threed_rdata(0), norm_data(0), nx(0), ny(0), nz(0), nxy(0), x_scale(1.0), y_scale(1.0), z_scale(1.0), bin(1.0), r(0), rn(0), frc(0), frc_norm_rdata(0),frc_norm_dt(0)
 {
 }
 
