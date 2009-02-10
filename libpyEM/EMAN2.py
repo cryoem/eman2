@@ -46,6 +46,7 @@ from pyemtbx.box import *
 
 EMANVERSION="EMAN2 v1.97"
 
+HOMEDB=None
 
 # This block attempts to open the standard EMAN2 database interface
 # if it fails, it sets db to None. Applications can then alter their

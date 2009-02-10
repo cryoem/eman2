@@ -562,6 +562,7 @@ class DBDict:
 	to efficiently get and set attributes for images with reduced i/o requirements (in certain cases)."""
 	
 	alldicts=weakref.WeakKeyDictionary()
+	nopen=0
 	fixedkeys=frozenset(("nx","ny","nz","minimum","maximum","mean","sigma","square_sum","mean_nonzero","sigma_nonzero"))
 	def __init__(self,name,file=None,dbenv=None,path=None,parent=None,ro=False):
 		"""This is a persistent dictionary implemented as a BerkeleyDB Hash
@@ -601,8 +602,7 @@ class DBDict:
 			self.close()	# we need to reopen read-write
 		
 		global MAXOPEN
-		if len(DBDict.alldicts)>=MAXOPEN : 
-			self.close_one() 
+		if DBDict.nopen>MAXOPEN : self.close_one() 
 
 		self.bdb=db.DB(self.dbenv)		# we don't check MPIMODE here, since self.dbenv will already be None if its set
 		if self.file==None : file=self.name+".bdb"
@@ -616,18 +616,30 @@ class DBDict:
 			try: self.bdb.open(self.path+"/"+file,self.name,db.DB_BTREE,db.DB_CREATE)
 			except: raise Exception,"Cannot create database : %s"%self.path+"/"+file
 			self.isro=False
+			
+		DBDict.nopen+=1
+#		print "%d open"%DBDict.nopen
 #		print "opened ",self.name,ro
 #		self.bdb.open(file,name,db.DB_HASH,dbopenflags)
 #		print "Init ",name,file,path
 
 	def close_one(self):
-		pass
+		"""Will select and close any excess open databases. Closure is based on the number of times it has been repoened and the
+		time it was last used."""
+		global MAXOPEN
+		l=[(i.opencount,i.lasttime,i) for i in self.alldicts if i.bdb!=None]		# list of all open databases and usage,time info
+		l.sort()
+
+		if len(l)>MAXOPEN :
+#			print "closing ",len(l)-MAXOPEN
+			for i in range(len(l)-MAXOPEN): l[i][2].close()
 
 	def close(self):
 		if self.bdb == None: return
 #		print "close x ",self.path+"/"+str(self.file),self.name,"XXX"
 		self.bdb.close()
 		self.bdb=None
+		DBDict.nopen-=1
 	
 	def sync(self):
 		if self.bdb!=None : self.bdb.sync()
