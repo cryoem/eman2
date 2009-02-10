@@ -2660,7 +2660,7 @@ def getvec( phi, tht ):
 	return (x,y,z)
 
 def init_mpi_bdb():
-	from mpi import mpi_comm_rank, MPI_COMM_WORLD )
+	from mpi import mpi_comm_rank, MPI_COMM_WORLD
 
 	myid = mpi_comm_rank( MPI_COMM_WORLD )
 	import EMAN2db
