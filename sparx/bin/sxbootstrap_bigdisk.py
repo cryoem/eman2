@@ -11,7 +11,7 @@ def bootstrap_genbuf( prjfile, bufprefix, beg, end, CTF, npad, finfo=None ):
 	for i in xrange( beg, end ):
 		prj = get_im( prjfile, i ) 
 		istore.add_image( prj, prj.get_attr("xform.projection") )
-		if not(info is None) and (i%100==99):
+		if not(info is None) and (i%100==99 or i==end-1):
 			finfo.write( "%6d buffered, time: %10.3f\n" % (i+1, time()-start_time) )
 			finfo.flush()
 
