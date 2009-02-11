@@ -23,6 +23,9 @@ def main():
 	parser.add_option("--writelp",   action="store_true", default=False, help="write the low pass filtered volume to disk (default is False)" )
 	parser.add_option("--writestack", action="store_true", default=False, help="write the stack contain all variance map" )
 	parser.add_option("--MPI", action="store_true", default=False, help="use MPI version" )
+	parser.add_option("--pca", action="store_true", default=False, help="run pca" )
+	parser.add_option("--pcamask", type="string", help="mask for pca" )
+	parser.add_option("--pcanvec", type="int", help="number of eigvectors for pca")
 	parser.add_option("--method", type="string", default="inc", help="calculation method: def: calculate by definition, inc: use incremental. default is inc")
 	(options, args) = parser.parse_args(arglist[1:])
 
@@ -39,7 +42,7 @@ def main():
 			init_mpi_bdb()
 
 
-			var_mpi( files, outdir, options.fl, options.fh, options.radccc, options.writelp, options.writestack, options.method)
+			var_mpi( files, outdir, options.fl, options.fh, options.radccc, options.writelp, options.writestack, options.method, options.pca, options.pcamask, options.pcanvec)
 		else:
 			from applications import defvar
 			defvar( files, outdir, options.fl, options.fh, options.radccc, options.writelp, options.writestack)

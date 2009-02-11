@@ -6900,7 +6900,7 @@ class inc_variancer:
 		del sum2
 		del cpy1
 		del cpy2
-		return None,None
+		return model_blank(self.nx,self.ny,self.nz), model_blank(self.nx,self.ny,self.nz)
 
 
         def mpi_getavg(self, myid, rootid ):
@@ -7132,3 +7132,200 @@ def cluster_equalsize(d, m):
 		groupping[k].sort()
 	
 	return  groupping,cent,disp
+
+
+class pcanalyzer:
+	def __init__(self, mask, sdir, nvec, MPI=False ):
+		self.mask = mask.copy()
+		if MPI:
+			from mpi import mpi_comm_rank, MPI_COMM_WORLD
+			self.myid = mpi_comm_rank( MPI_COMM_WORLD )
+			self.file = sdir + ("/maskedimg%04d.bin" % self.myid )
+			self.MPI  = True
+		else:
+			self.file = sdir + ("/maskedimg.bin" )
+			self.MPI  = False
+		self.nimg = 0
+		self.nvec = nvec
+		self.fw = None
+		self.fr = None
+		self.avgdat = None
+
+	def writedat( self, data ):
+		import array
+
+		if self.fw is None:
+			self.fw = open( self.file, "wb" )
+
+		data.tofile( self.fw )
+
+	def read_dat( self, data ):
+		from numpy import fromfile, float32
+		if not( self.fw.closed ):
+			self.fw.close()
+
+		assert not(self.fr is None) and not self.fr.closed
+		Util.readarray( self.fr, data, self.ncov )
+		if not(self.avgdat is None):
+			data -= self.avgdat
+		#b = fromfile( self.fr, dtype=float32, count=self.ncov )
+		#if not(self.avgdat is None):
+		#	b -= self.avgdat
+		#data[:] = b[:]
+
+	def setavg( self, avg ):
+		from numpy import zeros, float32
+		from utilities import get_image_data
+		tmpimg = Util.compress_image_mask( avg, self.mask )
+		avgdat = get_image_data(tmpimg)
+		self.avgdat = zeros( (len(avgdat)), float32 )
+		self.avgdat[:] = avgdat[:]
+
+	def insert( self, img ):
+		assert self.mask.get_xsize()==img.get_xsize()
+		assert self.mask.get_ysize()==img.get_ysize()
+		assert self.mask.get_zsize()==img.get_zsize()
+
+		from utilities import get_image_data
+		tmpimg = Util.compress_image_mask( img, self.mask )
+		tmpdat = get_image_data(tmpimg)
+		self.writedat( tmpdat )
+		self.nimg +=1
+		self.ncov = tmpimg.get_xsize()
+	
+	def analyze( self ):
+		if self.myid==0:
+			print "analyze: ", self.ncov, " nvec: ", self.nvec
+		from time import time
+		from numpy import zeros, float32, int32
+		ncov = self.ncov
+		kstep = self.nvec + 20 # the choice of kstep is purely heuristic
+
+		diag    = zeros( (kstep), float32 )
+		subdiag = zeros( (kstep-1), float32 )
+		vmat    = zeros( (kstep, ncov), float32 )
+
+		lanczos_start = time()
+		kstep = self.lanczos( kstep, diag, subdiag, vmat )
+		print 'time for lanczos: ', time() - lanczos_start
+
+		if not self.MPI or self.myid==0:
+                	qmat = zeros( (kstep,kstep), float32 )
+			lfwrk = 100 + 4*kstep + kstep*kstep
+			liwrk =   3 + 5*kstep
+
+			fwork = zeros( (lfwrk), float32 )
+			iwork = zeros( (liwrk), int32 )
+
+			info = Util.sstevd( "V", kstep, diag, subdiag, qmat, kstep, fwork, lfwrk, iwork, liwrk)
+			
+
+			eigval = zeros( (self.nvec), float32 )
+			for j in xrange(self.nvec):
+				eigval[j] = diag[kstep-j-1]
+
+
+			from utilities import model_blank, get_image_data
+			eigimgs = []
+                	for j in xrange(self.nvec):
+				tmpimg = model_blank(ncov, 1, 1)
+				eigvec = get_image_data( tmpimg )
+				trans = 'N'
+				Util.sgemv( trans, ncov, kstep, 1.0, vmat, ncov, qmat[kstep-j-1], 1, 0.0, eigvec, 1 );
+
+				eigimg = Util.reconstitute_image_mask(tmpimg, self.mask)
+				eigimg.set_attr( "eigval", float(eigval[j]) )
+				eigimgs.append( eigimg )
+
+			return eigimgs
+
+
+	def lanczos( self, kstep, diag, subdiag, V ):
+		from numpy import zeros, float32, array
+		from time import time
+		
+		all_start = time()
+	
+		ncov = self.ncov
+		v0 = zeros( (ncov), float32)
+		Av = zeros( (ncov), float32)
+
+		hvec = zeros( (kstep), float32 )
+		htmp = zeros( (kstep), float32 )
+		imgdata = zeros( (ncov), float32 )
+	
+		for i in xrange(ncov):
+			v0[i] = 1.0
+
+		beta = Util.snrm2(ncov, v0, 1)
+		for i in xrange(ncov):
+			V[0][i] = v0[i]/beta
+
+		self.fr = open( self.file, "rb" )
+		for i in xrange(self.nimg):
+			self.read_dat(imgdata)
+			alpha = Util.sdot( ncov, imgdata, 1, V[0], 1 )
+			Util.saxpy( ncov, alpha, imgdata, 1, Av, 1 )
+		self.fr.close()
+
+		if self.MPI:
+			from mpi import mpi_reduce, mpi_bcast, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD
+			Av = mpi_reduce( Av, ncov, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD )
+			Av = mpi_bcast(  Av, ncov, MPI_FLOAT, 0, MPI_COMM_WORLD )
+			Av = array(Av, float32)
+		print 'iter 0: ', time() - all_start
+
+
+		diag[0] = Util.sdot( ncov, V[0], 1, Av, 1 )
+		alpha = -diag[0]
+		Util.saxpy( ncov, float(alpha), V[0], 1, Av, 1 )
+
+		TOL = 1e-7
+		for iter in xrange(1, kstep):
+			iter_start = time()
+			beta = Util.snrm2(ncov, Av, 1)
+			if( beta < TOL ):
+				kstep = iter+1
+				break
+
+			subdiag[iter-1] = beta
+			for i in xrange(ncov):
+				V[iter][i] = Av[i]/beta
+
+			Av[:] = 0.0
+
+			self.fr = open( self.file, "rb" )
+			for i in xrange(self.nimg):
+				self.read_dat( imgdata )
+				alpha = Util.sdot( ncov, imgdata, 1, V[iter], 1 )
+				Util.saxpy( ncov, float(alpha), imgdata, 1, Av, 1 )
+			self.fr.close()
+
+
+			if self.MPI:
+				Av = mpi_reduce( Av, ncov, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD )
+				Av = mpi_bcast(  Av, ncov, MPI_FLOAT, 0, MPI_COMM_WORLD )
+				Av = array(Av, float32)
+
+			trans = 'T'
+			Util.sgemv( trans, ncov, iter+1,  1.0, V, ncov, Av, 1,
+			              0.0, hvec, 1 )
+
+			trans = 'N'
+			Util.sgemv( trans, ncov, iter+1, -1.0, V, ncov, hvec, 1,
+			              1.0,     Av, 1 )
+
+			trans = 'T'
+			Util.sgemv( trans, ncov, iter+1,  1.0, V, ncov, Av, 1,
+			              0.0,   htmp, 1 )
+
+			Util.saxpy(iter+1, 1.0, htmp, 1, hvec, 1)
+
+			trans = 'N'
+			Util.sgemv( trans, ncov, iter+1, -1.0, V, ncov, htmp, 1,
+			              1.0,     Av, 1 )
+
+			diag[iter] = hvec[iter]
+
+			print 'iter, time, overall_time: ', iter, time()-iter_start, time()-all_start
+		return kstep

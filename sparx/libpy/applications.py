@@ -10054,8 +10054,8 @@ def defvar(files, outdir, fl, fh, radccc, writelp, writestack):
 	avg.write_image( avgfile )
 	var.write_image( varfile )
 
-def var_mpi(files, outdir, fl, fh, radccc, writelp, writestack, method="inc"):
-	from statistics import inc_variancer, def_variancer, ccc
+def var_mpi(files, outdir, fl, fh, radccc, writelp, writestack, method="inc", pca=False, pcamask=None, pcanvec=None):
+	from statistics import inc_variancer, def_variancer, ccc, pcanalyzer
 	from string import atoi, replace, split, atof
 	from EMAN2 import EMUtil
 	from utilities import memory_usage, get_im, circumference, model_circle, drop_image, info
@@ -10086,6 +10086,9 @@ def var_mpi(files, outdir, fl, fh, radccc, writelp, writestack, method="inc"):
 		odd_varer = inc_variancer(n,n,n)
 		eve_varer = inc_variancer(n,n,n)
 		 
+	if pca:
+		pcamask = get_im( pcamask)
+		pcaer = pcanalyzer(pcamask, outdir, pcanvec, True)
 
 	varfile = outdir + "/var.hdf"
 	avgfile = outdir + "/avg.hdf"
@@ -10135,6 +10138,8 @@ def var_mpi(files, outdir, fl, fh, radccc, writelp, writestack, method="inc"):
 			eve_varer.insert(img)
 
 		all_varer.insert(img)
+		if pca:
+			pcaer.insert(img)
 
 		iadded += 1
 
@@ -10142,7 +10147,8 @@ def var_mpi(files, outdir, fl, fh, radccc, writelp, writestack, method="inc"):
 			odd_var, odd_avg = odd_varer.mpi_getvar(myid, 0)
 			eve_var, eve_avg = eve_varer.mpi_getvar(myid, 0)
 			all_var, all_avg = all_varer.mpi_getvar(myid, 0)
-			
+		
+
 	
 			if myid==0 :
 				odd_nimg = odd_var.get_attr( "nimg" )
@@ -10160,8 +10166,23 @@ def var_mpi(files, outdir, fl, fh, radccc, writelp, writestack, method="inc"):
 
 				if iadded==niter:
 					all_avg.write_image( avgfile, 0 )
-					#all_var = circumference( all_var, radcir, radcir+1 )
 					all_var.write_image( varfile, 0 )
+
+	
+			if pca and iadded==niter:
+				from utilities import bcast_EMData_to_all
+				assert not(all_avg is None)
+
+				bcast_EMData_to_all( all_avg, myid )
+				
+				pcaer.setavg( all_avg )
+
+				eigs = pcaer.analyze()
+				if myid==0:
+					eigfile = outdir + "/eigvol.hdf"
+					for i in xrange( len(eigs) ):
+						eigs[i].write_image( eigfile, i )
+				
 
 def incvar_mpi(files, outdir, fl, fh, radccc, writelp, writestack):
 	from statistics import inc_variancer, ccc
