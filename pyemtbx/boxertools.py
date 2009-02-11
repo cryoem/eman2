@@ -1028,7 +1028,6 @@ class BigImage:
 		if self.image == None:
 			
 			self.image = EMData()
-			print self.image_name
 			self.image.read_image(self.image_name,0) # doing it this way makes it work with db terminology
 			self.image.process_inplace("normalize.edgemean") # this seams to be the normal behavior
 			

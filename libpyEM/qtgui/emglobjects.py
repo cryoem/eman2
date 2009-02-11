@@ -74,7 +74,10 @@ class EMBasicOpenGLObjects:
 			self.sphere_around_z = 8
 			self.sphere_along_z = 8
 			
-			self.gq=gluNewQuadric()
+			self.gq= None
+
+		def init_quadric(self):
+			self.gq= gluNewQuadric()
 			gluQuadricDrawStyle(self.gq,GLU_FILL)
 			gluQuadricNormals(self.gq,GLU_SMOOTH)
 			gluQuadricOrientation(self.gq,GLU_OUTSIDE)
@@ -87,6 +90,8 @@ class EMBasicOpenGLObjects:
 				glDeleteLists(self.spheredl,1)
 			
 		def getSphereDL(self):
+			if self.gq == None: self.init_quadric()
+			
 			if ( self.spheredl == 0 ):
 				self.spheredl=glGenLists(1)
 				
@@ -100,6 +105,7 @@ class EMBasicOpenGLObjects:
 			return self.spheredl
 		
 		def getCylinderDL(self):
+			if self.gq == None: self.init_quadric()
 			if ( self.cylinderdl == 0 ):
 				self.cylinderdl=glGenLists(1)
 				

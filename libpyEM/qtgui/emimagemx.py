@@ -48,13 +48,13 @@ from pickle import dumps,loads
 from PyQt4.QtGui import QImage
 from PyQt4.QtCore import QTimer
 
-from emglobjects import EMOpenGLFlagsAndTools
+from emglobjects import EMOpenGLFlagsAndTools,EMGLProjectionViewMatrices,EMBasicOpenGLObjects
 from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
 import weakref
 
 from emapplication import EMProgressDialogModule
 
-class EMImageMXWidget(QtOpenGL.QGLWidget,EMEventRerouter):
+class EMImageMXWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMatrices):
 	"""
 	"""
 	def __init__(self, em_mx_module,parent=None):
@@ -66,6 +66,7 @@ class EMImageMXWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		#fmt.setSampleBuffers(True)
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
 		EMEventRerouter.__init__(self,em_mx_module)
+		EMGLProjectionViewMatrices.__init__(self)
 		
 		self.imagefilename = None
 		
@@ -88,16 +89,16 @@ class EMImageMXWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 	def initializeGL(self):
 		glClearColor(0,0,0,0)
 		
+		
 		glEnable(GL_LIGHTING)
 		glEnable(GL_LIGHT0)
 		#glEnable(GL_DEPTH_TEST)
 		#print "Initializing"
-		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.9, 0.9, 0.9, 1.0])
-		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
+		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.0, 0.0, 0.0, 1.0])
+		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0,1.0,1.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_POSITION, [0.5,0.7,11.,0.])
-		
-		glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_TRUE)
+		glLightfv(GL_LIGHT0, GL_POSITION, [1,1,1.,0.])
+		#glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_TRUE) # this is intenionally turned off
 
 		glEnable(GL_CULL_FACE)
 		glCullFace(GL_BACK)
@@ -122,6 +123,7 @@ class EMImageMXWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
 		
+		self.set_projection_view_update()
 		try: self.target().resize_event(width,height)
 		except: pass
 	def set_mouse_mode(self,mode):
@@ -137,6 +139,7 @@ class EMImageMXWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 	def closeEvent(self,event):
 		self.target().clear_gl_memory()
 		self.target().closeEvent(None)
+		
 		
 
 class EMMXCoreMouseEvents:
@@ -390,6 +393,7 @@ class EMImageMXModule(EMGUIModule):
 		self.suppress_inspector = False 	# Suppresses showing the inspector - switched on in emfloatingwidgets
 		self.image_file_name = None
 		self.first_render = True # a hack, something is slowing us down in FTGL
+		self.scroll_bar = EMGLScrollBar()
 		
 		
 		self.coords={}
@@ -1016,6 +1020,8 @@ class EMImageMXModule(EMGUIModule):
 			if self.first_render: #A hack, FTGL is slowing us down
 				self.display_states = []
 				self.first_render = False 
+				
+		self.draw_scroll_bar()
 	
 	def __render_excluded_square(self):
 		glBegin(GL_QUADS)
@@ -1174,6 +1180,8 @@ class EMImageMXModule(EMGUIModule):
 		#except: pass
 		if self.data and len(self.data)>0 and (self.data[0].get_ysize()*self.scale>self.gl_widget.height() or self.data[0].get_xsize()*self.scale>self.gl_widget.width()):
 			self.scale=min(float(self.gl_widget.height())/self.data[0].get_ysize(),float(self.gl_widget.width())/self.data[0].get_xsize())
+			
+		self.scroll_bar.height = height
 				
 	def is_visible(self,n):
 		try:
@@ -1395,6 +1403,12 @@ class EMImageMXModule(EMGUIModule):
 		self.origin = new_origin
 			
 	def mousePressEvent(self, event):
+		if (self.gl_widget.width()-event.x() <= self.scroll_bar.width):
+			print "scroll bar not yet working"
+			return
+			self.scroll_bar.mousePressEvent(event)
+			return
+		
 		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
 			self.show_inspector(1)
 #			self.emit(QtCore.SIGNAL("inspector_shown"),event)
@@ -1447,7 +1461,123 @@ class EMImageMXModule(EMGUIModule):
 			
 	def get_frame_buffer(self):
 		return self.gl_widget.get_frame_buffer()
+	
+	def draw_scroll_bar(self):
+		width = self.gl_widget.width()
+		height =self.gl_widget.height()
+		glMatrixMode(GL_PROJECTION)
+		glPushMatrix()
+		glLoadIdentity()
+		glOrtho(0,width,0,height,-10,10)
+		glMatrixMode(GL_MODELVIEW)
+		glLoadIdentity()
+		glEnable(GL_LIGHTING)
+		glEnable(GL_NORMALIZE)
+		#glDisable(GL_DEPTH_TEST)
+		glDisable(GL_TEXTURE_2D)
 
+		glPushMatrix()
+		glTranslate(width-self.scroll_bar.width,0,0)
+		self.scroll_bar.draw()
+		glPopMatrix()
+		
+		glMatrixMode(GL_PROJECTION)
+		glPopMatrix()
+		glMatrixMode(GL_MODELVIEW)
+		
+		
+		
+
+class EMGLScrollBar(EMBasicOpenGLObjects):
+	def __init__(self):
+		EMBasicOpenGLObjects.__init__(self)
+		self.min = 0
+		self.max = 0
+		self.current_pos = 0
+		self.width = 12
+		self.height = 0
+		self.startx = 0
+		
+		self.cylinder_around_z = 30
+		
+		self.arrow_button_height = 12
+		self.arrow_part_offset = 2
+		self.arrow_part_thickness = 1
+		self.arrow_width = (self.width/2-self.arrow_part_offset)
+		self.arrow_height = (self.arrow_button_height-2*self.arrow_part_offset)
+		self.arrow_part_length = sqrt(self.arrow_width**2 +self.arrow_height**2)
+		
+		self.arrow_theta = 90-atan(self.arrow_height/self.arrow_width)*180.0/pi
+		
+		self.starty = 2*self.arrow_button_height
+		
+	def draw(self):
+		
+		sx = self.startx
+		sy = self.starty
+		ex = self.width
+		ey = self.height
+		
+		#print glIsEnabled(GL_LIGHTING)
+		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.1,.4,.8,1.0))
+		glMaterial(GL_FRONT,GL_SPECULAR,(.8,.8,.8,1.0))
+		glMaterial(GL_FRONT,GL_SHININESS,20.0)
+
+		
+		glPushMatrix()
+		glTranslate((ex-sx)/2,sy,0)
+		glRotate(-90,1,0,0)
+		glScale((ex-sx)/2,1,(ey-sy))
+		glCallList(self.getCylinderDL())
+		glPopMatrix()
+		
+		
+		glPushMatrix()
+		glTranslate(0,self.arrow_button_height,0)
+		glTranslate(self.arrow_part_offset,self.arrow_part_offset,0)
+		glRotate(-self.arrow_theta,0,0,1)
+		glRotate(-90,1,0,0)
+		glScale(self.arrow_part_thickness,1,self.arrow_part_length)
+		glCallList(self.getCylinderDL())
+		glPopMatrix()
+		
+		glPushMatrix()
+		glTranslate(0,self.arrow_button_height,0)
+		glTranslate(self.width-self.arrow_part_offset,self.arrow_part_offset,0)
+		glRotate( self.arrow_theta,0,0,1)
+		glRotate(-90,1,0,0)
+		glScale(self.arrow_part_thickness,1,self.arrow_part_length)
+		glCallList(self.getCylinderDL())
+		glPopMatrix()
+		
+		glPushMatrix()
+		glTranslate(self.arrow_width+self.arrow_part_offset,self.arrow_part_offset,0)
+		glRotate(self.arrow_theta,0,0,1)
+		glRotate(-90,1,0,0)
+		glScale(self.arrow_part_thickness,1,self.arrow_part_length)
+		glCallList(self.getCylinderDL())
+		glPopMatrix()
+		
+		glPushMatrix()
+		glTranslate(self.width/2,self.arrow_part_offset,0)
+		glRotate(-self.arrow_theta,0,0,1)
+		glRotate(-90,1,0,0)
+		glScale(self.arrow_part_thickness,1,self.arrow_part_length)
+		glCallList(self.getCylinderDL())
+		glPopMatrix()
+		
+		
+		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.0,.2,.0,1.0))
+		glMaterial(GL_FRONT,GL_SPECULAR,(.8,.8,.8,1.0))
+		glMaterial(GL_FRONT,GL_SHININESS,20.0)
+		
+		glPushMatrix()
+		glTranslate((ex-sx)/2,sy,0)
+		glRotate(-90,1,0,0)
+		glScale((ex-sx)/3,1, 20)
+		glCallList(self.getCylinderDL())
+		glPopMatrix()
+		
 class EMImageInspectorMX(QtGui.QWidget):
 	def __init__(self,target,allow_col_variation=False,allow_window_variation=False,allow_opt_button=False):
 		QtGui.QWidget.__init__(self,None)
