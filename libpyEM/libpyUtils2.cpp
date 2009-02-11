@@ -32,6 +32,9 @@
 	#pragma warning(disable:4819)
 #endif	//_WIN32
 
+#include <Python.h>
+#include <numpy/arrayobject.h>
+
 // Boost Includes ==============================================================
 #include <boost/python.hpp>
 #include <boost/cstdint.hpp>
@@ -39,6 +42,7 @@
 // Includes ====================================================================
 #include <emdata.h>
 #include <emutil.h>
+#include <sparx/lapackblas.h>
 #ifdef EMAN2_USING_FTGL
 #include <emftgl.h>
 #endif
@@ -207,6 +211,110 @@ struct EMAN_Util_Wrapper: EMAN::Util
 	PyObject* py_self;
 };*/
 
+using boost::python::numeric::array;
+
+float* get_fptr( array& a )
+{
+/*
+	if (!PyArray_Check(a.ptr())) {
+		//PyErr_SetString(PyExc_ValueError, "expected a PyArrayObject for get_fptr");
+		//return NULL;
+		throw std::runtime_error( "Expected a PyArryaObject for get_fptr" );
+	} */
+
+	PyArrayObject* aptr = (PyArrayObject*)a.ptr();
+        char datatype = aptr->descr->type;
+        if( datatype != 'f' )
+        {
+		//PyErr_SetString(PyExc_ValueError, "expected a float PyArrayObject for get_fptr");
+		//return NULL;
+		throw std::runtime_error( "Expected a float array for get_fptr" );
+	
+	}
+
+	return (float*)(aptr->data);
+
+
+}
+
+
+int* get_iptr( array& a )
+{
+/*
+	if (!PyArray_Check(a.ptr())) {
+		PyErr_SetString(PyExc_ValueError, "expected a PyArrayObject for get_iptr");
+		return NULL;
+	}
+*/
+	PyArrayObject* aptr = (PyArrayObject*)a.ptr();
+        char datatype = aptr->descr->type;
+        if( datatype != 'i' )
+        {
+        	PyErr_SetString(PyExc_ValueError, "expected an integer PyArrayObject for get_iptr");
+		return NULL;
+	}
+
+	return (int*)(aptr->data);
+}
+
+
+
+int pysstevd(const string& jobz, int n, array& diag, array& subdiag, array& qmat, int kstep, array& fwork, int lfwrk, array& iwork, int liwrk )
+{
+    int info; 
+
+    float* d = get_fptr( diag );
+    float* e = get_fptr( subdiag );
+    float* f = get_fptr( qmat );
+    float* g = get_fptr( fwork );
+    int*  ih = get_iptr( iwork );
+
+    sstevd_( (char*)jobz.c_str(), &n, d, e, f, &kstep, g, &lfwrk, ih, &liwrk, &info );
+    return info;
+}
+
+float pysnrm2( int n, array& a, int incx )
+{
+    float* f = get_fptr( a );
+    return snrm2_(&n, f, &incx);
+}
+
+int pysgemv( const string& trans, int m, int n, float alpha, array& a, int lda, array& x, int incx, float beta, array& y, int incy )
+{
+    float* fa = get_fptr( a );
+    float* fx = get_fptr( x );
+    float* fy = get_fptr( y );
+    return sgemv_( trans.c_str(), &m, &n, &alpha, fa, &lda, fx, &incx, &beta, fy, &incy );
+}
+
+int pysaxpy( int n, float alpha, array& x, int incx, array& y, int incy )
+{
+    float* fx = get_fptr( x );
+    float* fy = get_fptr( y );
+    return saxpy_( &n, &alpha, fx, &incx, fy, &incy );
+}
+
+float pysdot( int n, array& x, int incx, array& y, int incy )
+{
+    float* fx = get_fptr( x );
+    float* fy = get_fptr( y );
+    assert( fx != NULL && fy != NULL );
+    return sdot_( &n, fx, &incx, fy, &incy );
+}
+
+void readarray( object& f, array& x, int size)
+{
+    if( !PyFile_Check(f.ptr()) )
+    {
+        std::cout << "Error: expecting a file object" << std::endl;
+        return;
+    }
+
+    FILE*  fh = PyFile_AsFile( f.ptr() );
+    float* fx = get_fptr( x );
+
+    fread( fx, sizeof(float), size, fh );
+}
 // Module ======================================================================
 BOOST_PYTHON_MODULE(libpyUtils2)
 {
@@ -359,6 +467,12 @@ BOOST_PYTHON_MODULE(libpyUtils2)
 		.def("point_is_in_triangle_2d", &EMAN::Util::point_is_in_triangle_2d )
 		.def("point_is_in_convex_polygon_2d", &EMAN::Util::point_is_in_convex_polygon_2d )
 		.def("kmeans_cuda", &EMAN::Util::kmeans_cuda)
+		.def("sstevd", &pysstevd )
+		.def("snrm2",  &pysnrm2 )
+		.def("sgemv",  &pysgemv )
+		.def("saxpy",  &pysaxpy )
+		.def("sdot",   &pysdot  )
+		.def("readarray", &readarray )
 #ifdef EMAN2_USING_OPENGL
 		.def("nearest_projected_points", &EMAN::Util::nearest_projected_points )
 		.staticmethod("nearest_projected_points")
@@ -500,6 +614,12 @@ BOOST_PYTHON_MODULE(libpyUtils2)
 		.staticmethod("merge_peaks")
 		.staticmethod("get_slice")
 		.staticmethod("kmeans_cuda")
+		.staticmethod("sstevd")
+		.staticmethod("sgemv")
+		.staticmethod("snrm2")
+		.staticmethod("saxpy")
+		.staticmethod("sdot")
+		.staticmethod("readarray")
 	);
 
     scope* EMAN_Util_sincBlackman_scope = new scope(
