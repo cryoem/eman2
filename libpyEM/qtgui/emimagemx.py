@@ -552,17 +552,23 @@ class EMImageMXModule(EMGUIModule):
 		return self.scale
 	
 	def pop_box_image(self,idx,event=None,update_gl=False):
-		if self.reroute_delete_target  == None:
-			d = self.data.pop(idx)
+		val = self.data.delete_box(idx)
+		if val > 0 and update_gl:
 			self.display_states = []
-			if event != None: self.emit(QtCore.SIGNAL("mx_boxdeleted"),event,[idx],False)
-			if update_gl:
-				self.display_states = [] 
-				self.updateGL()
-			return d
-		else:
-			self.reroute_delete_target.pop_box_image(idx)
-			if event != None: self.emit(QtCore.SIGNAL("mx_boxdeleted"),event,[idx],False)
+			self.updateGL()
+	
+#	def pop_box_image(self,idx,event=None,update_gl=False):
+#		if self.reroute_delete_target  == None:
+#			d = self.data.pop(idx)
+#			self.display_states = []
+#			if event != None: self.emit(QtCore.SIGNAL("mx_boxdeleted"),event,[idx],False)
+#			if update_gl:
+#				self.display_states = [] 
+#				self.updateGL()
+#			return d
+#		else:
+#			self.reroute_delete_target.pop_box_image(idx)
+#			if event != None: self.emit(QtCore.SIGNAL("mx_boxdeleted"),event,[idx],False)
 
 	def get_box_image(self,idx):
 		return self.data[idx]
@@ -873,10 +879,6 @@ class EMImageMXModule(EMGUIModule):
 		if render: 
 			if self.draw_background:
 				self.__draw_backdrop()
-				
-			glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.2,.2,.8,1.0))
-			glMaterial(GL_FRONT,GL_SPECULAR,(.2,.2,.8,1.0))
-			glMaterial(GL_FRONT,GL_SHININESS,100.0)
 		
 			#for i in self.data:
 				#self.changec[i]=i.get_attr("changecount")
@@ -960,6 +962,9 @@ class EMImageMXModule(EMGUIModule):
 						#print col,row,
 						continue
 					
+					self.coords[i]=(tx,ty,tw,th)
+					
+					draw_tex = True
 					try:
 						exc = self.data[i].get_attr("excluded")
 						if exc == True:
@@ -972,30 +977,28 @@ class EMImageMXModule(EMGUIModule):
 							glScale(width,height,1.0)
 							self.__render_excluded_square()
 							glPopMatrix()
+							draw_tex = False
 							if not light: glEnable(GL_LIGHTING)
 						else: raise
 					except: 
 							pass
-					shown = True
-					#print rx,ry,tw,th,self.gl_widget.width(),self.gl_widget.height(),self.origin
-					if not self.glflags.npt_textures_unsupported():
-						a=self.data[i].render_amp8(rx,ry,tw,th,(tw-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
-						self.texture(a,tx,ty,tw,th)
-					else:
-						a=self.data[i].render_amp8(rx,ry,tw,th,(tw-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,6)
-						glRasterPos(tx,ty)
-						glDrawPixels(tw,th,GL_LUMINANCE,GL_UNSIGNED_BYTE,a)
-							
-					
-					hist2=numpy.fromstring(a[-1024:],'i')
-					self.hist+=hist2
-					# render labels		
+					if draw_tex:
+						#print rx,ry,tw,th,self.gl_widget.width(),self.gl_widget.height(),self.origin
+						if not self.glflags.npt_textures_unsupported():
+							a=self.data[i].render_amp8(rx,ry,tw,th,(tw-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
+							self.texture(a,tx,ty,tw,th)
+						else:
+							a=self.data[i].render_amp8(rx,ry,tw,th,(tw-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,6)
+							glRasterPos(tx,ty)
+							glDrawPixels(tw,th,GL_LUMINANCE,GL_UNSIGNED_BYTE,a)
+								
+						
+						hist2=numpy.fromstring(a[-1024:],'i')
+						self.hist+=hist2	
 					if drawlabel:
 						self.__draw_mx_text(tx,ty,txtcol,i)
 						
-					self.coords[i]=(tx,ty,tw,th)
-					
-					if shown : self.nshown+=1
+					if draw_tex : self.nshown+=1
 			
 			for i in self.selected:
 				try:
@@ -1010,11 +1013,6 @@ class EMImageMXModule(EMGUIModule):
 				except:
 					# this means the box isn't visible!
 					pass
-			# If the user is lost, help him find himself again...
-			if self.nshown==0 : 
-				try: self.targetorigin=(0,self.coords[self.selected[0]][1]-self.gl_widget.height()/2+self.data.get_ysize()*self.scale/2)
-				except: self.targetorigin=(0,0)
-				self.targetspeed=100.0
 			
 			if self.inspector : self.inspector.set_hist(self.hist,self.minden,self.maxden)
 		else:
@@ -1032,6 +1030,9 @@ class EMImageMXModule(EMGUIModule):
 		self.draw_scroll_bar()
 	
 	def __render_excluded_square(self):
+		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.2,.2,.8,1.0))
+		glMaterial(GL_FRONT,GL_SPECULAR,(.2,.2,.8,1.0))
+		glMaterial(GL_FRONT,GL_SHININESS,100.0)
 		glBegin(GL_QUADS)
 		glColor(0,0,0)
 		glNormal(-.1,.1,1)
@@ -1267,9 +1268,7 @@ class EMImageMXModule(EMGUIModule):
 		bdb_idx = fsp.find("bdb:")
 		if bdb_idx != -1:
 			fsp = fsp[bdb_idx:]
-		
-		
-		
+
 		if fsp != '':
 			
 			if len(fsp) < 3 or ( fsp[-4:] not in [".hdf",".img",".spi",".hed",".lst"] and fsp[:4] != "bdb:" ):
@@ -1282,7 +1281,7 @@ class EMImageMXModule(EMGUIModule):
 				msg.exec_()
 				return
 			elif fsp[-4:] == ".lst":
-				self.save_lst(fsp)
+				self.data.save_lst(fsp)
 				return
 			
 			if db_check_dict(fsp):
@@ -1297,7 +1296,15 @@ class EMImageMXModule(EMGUIModule):
 			
 			progress = EMProgressDialogModule(self.application(),"Writing files", "abort", 0, len(self.data),None)
 			progress.qt_widget.show()
-			for i,d in enumerate(self.data):
+			for i in xrange(0,len(self.data)):
+			#for i,d in enumerate(self.data):
+				d = self.data[i]
+				try:
+					d.get_attr("excluded")
+					# if we make it here then the image does have the attribute, and it's true, just by design
+					continue
+				except: pass
+				
 				try:
 					d.write_image(fsp,-1)
 				except:
@@ -1314,7 +1321,7 @@ class EMImageMXModule(EMGUIModule):
 					return
 				
 			
-			#progress.qt_widget.setValue(len(self.data)-1)
+			progress.qt_widget.setValue(len(self.data)-1)
 			progress.qt_widget.close()
 		
 	def save_lst(self,fsp):
@@ -1329,7 +1336,14 @@ class EMImageMXModule(EMGUIModule):
 		
 		progress = EMProgressDialogModule(self.application(),"Writing files", "abort", 0, len(self.data),None)
 		progress.qt_widget.show()
-		for i,d in enumerate(self.data):
+		for i in xrange(0,len(self.data)):
+			#for i,d in enumerate(self.data):
+			d = self.data[i]
+			try:
+				d.get_attr("excluded")
+				# if we make it here then the image does have the attribute, and it's true, just by design
+				continue
+			except: pass
 			#try:
 			if origname != None:
 				f.write(str(d.get_attr('original_number')) +'\t'+origname+'\n')
@@ -2048,8 +2062,8 @@ class EMDataListCache:
 			self.cache_size = self.max_idx
 			self.images = object
 			self.start_idx = 0
-			DB.open_dict("emimage_mx_rotor_cache")
-			self.db = DB.emimage_mx_rotor_cache
+			DB.open_dict("emimage_mx_cache")
+			self.db = DB.emimage_mx_cache
 			self.exclusions_key = "interactive_exclusions"
 			self.db[self.exclusions_key] = []
 			self.exclusions = self.db["interactive_exclusions"]
@@ -2071,8 +2085,8 @@ class EMDataListCache:
 				self.cache_size = cache_size
 			self.start_idx = start_idx - self.cache_size/2
 						
-			DB.open_dict("emimage_mx_rotor_cache")
-			self.db = DB.emimage_mx_rotor_cache
+			DB.open_dict("emimage_mx_cache")
+			self.db = DB.emimage_mx_cache
 			self.exclusions_key = self.file_name+"_interactive_exclusions"
 			self.exclusions  = self.db[self.exclusions_key]
 			if self.exclusions == None: self.exclusions = []
@@ -2088,7 +2102,7 @@ class EMDataListCache:
 	def __del__(self):
 #		DB = EMAN2db.EMAN2DB.open_db(".")
 #		try:
-#			DB.close_dict("emimage_mx_rotor_cache")
+#			DB.close_dict("emimage_mx_cache")
 #		except: pass
 	   pass
 	
@@ -2147,33 +2161,29 @@ class EMDataListCache:
 			
 			if self.mode == EMDataListCache.FILE_MODE: self.db[self.exclusions_key] = self.exclusions
 			
-			if self.mode == EMDataListCache.FILE_MODE: im.write_image(self.file_name,idx)
+			#if self.mode == EMDataListCache.FILE_MODE: im.write_image(self.file_name,idx)
 			return 2
 		
 		return 0
 				
-	def save_lst(self):
+	def save_lst(self,fsp):
 		# Get the output filespec
-		fsp=QtGui.QFileDialog.getSaveFileName(None, "Specify lst file to save","","","")
-		fsp=str(fsp)
+		f = file(fsp,'w')
+		f.write('#LST\n')
 		
-		if fsp != '':
-			f = file(fsp,'w')
-			f.write('#LST\n')
+		if self.mode == EMDataListCache.LIST_MODE and not self.soft_delete:
+			for d in self.data:
+				f.write(str(d.get_attr('original_number'))+'\n')
+		elif self.mode == EMDataListCache.FILE_MODE or self.soft_delete:
+			indices = [i for i in range(self.max_idx)]
+			for exc in self.exclusions: indices.remove(exc)
 			
-			if self.mode == EMDataListCache.LIST_MODE and not self.soft_delete:
-				for d in self.data:
-					f.write(str(d.get_attr('original_number'))+'\n')
-			elif self.mode == EMDataListCache.FILE_MODE or self.soft_delete:
-				indices = [i for i in range(self.max_idx)]
-				for exc in self.exclusions: indices.remove(exc)
-				
-				if self.mode ==  EMDataListCache.FILE_MODE:
-					for idx in indices:	f.write(str(idx)+'\t'+self.file_name+'\n')
-				elif self.soft_delete:
-					for idx in indices:	f.write(str(idx)+'\n')
-		
-			f.close()
+			if self.mode ==  EMDataListCache.FILE_MODE:
+				for idx in indices:	f.write(str(idx)+'\t'+self.file_name+'\n')
+			elif self.soft_delete:
+				for idx in indices:	f.write(str(idx)+'\n')
+	
+		f.close()
 	def save_data(self):
 		
 		fsp=QtGui.QFileDialog.getSaveFileName(None, "Specify name of file to save","","","")
@@ -2232,6 +2242,7 @@ class EMDataListCache:
 						if self.mode ==  EMDataListCache.FILE_MODE:
 							a = EMData()
 							a.read_image(self.file_name,idx)
+							a.set_attr("original_number",idx) # this i so saving to lst works
 							cache[idx] = a
 							if self.exclusions.count(idx) != 0:
 								cache[idx].set_attr("excluded",True)
@@ -2260,8 +2271,6 @@ class EMDataListCache:
 				#self.start_idx =  self.max_idx - self.cache_size/2 -1
 			self.__refresh_cache()
 			try:
-				image = self.images[i]
-				if not image.get_attr_dict().has_key("original_number"): image.set_attr("original_number",i)
 				return self.images[i]
 			except:
 				print "error, couldn't get image",i,self.start_idx,self.max_idx,self.cache_size
