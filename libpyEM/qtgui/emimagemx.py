@@ -556,6 +556,7 @@ class EMImageMXModule(EMGUIModule):
 		if val > 0 and update_gl:
 			self.display_states = []
 			self.updateGL()
+			if event != None: self.emit(QtCore.SIGNAL("mx_boxdeleted"),event,[idx],False) 
 	
 #	def pop_box_image(self,idx,event=None,update_gl=False):
 #		if self.reroute_delete_target  == None:
