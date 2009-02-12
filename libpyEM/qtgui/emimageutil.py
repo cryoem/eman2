@@ -464,9 +464,10 @@ class EMParentWin(QtGui.QWidget,Animator):
 		self.hbl.setMargin(self.margin)
 		self.hbl.setSpacing(0)
 		self.hbl.addWidget(self.child,100)
-		self.status = QtGui.QStatusBar()
-		self.status.setSizeGripEnabled(True)
-		self.hbl.addWidget(self.status,0)
+		if get_platform() == "Darwin": # because OpenGL widgets in Qt don't leave room in the bottom right hand corner for the resize tool
+			self.status = QtGui.QStatusBar()
+			self.status.setSizeGripEnabled(True)
+			self.hbl.addWidget(self.status,0)
 		self.setLayout(self.hbl)
 	
 	def get_margin(self):
