@@ -1741,7 +1741,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 		
 		try:
 			self.vals.clear()
-			vn=self.target().get_image(0).get_attr_dict().keys()
+			vn=self.target().data.get_image_keys()
 			vn.sort()
 			for i in vn:
 				action=self.vals.addAction(i)
@@ -1926,8 +1926,6 @@ class EMImageInspectorMX(QtGui.QWidget):
 		if allow_opt_button:
 			QtCore.QObject.connect(self.opt_fit, QtCore.SIGNAL("clicked(bool)"), self.target().optimize_fit)
 		QtCore.QObject.connect(self.bsnapshot, QtCore.SIGNAL("clicked(bool)"), self.snapShot)
-		
-		print "done"
 	
 	def get_desktop_hint(self):
 		return "inspector"
@@ -2050,6 +2048,9 @@ class EMDataListCache:
 	FILE_MODE = 'file_mode'
 	def __init__(self,object,cache_size=256,start_idx=0):
 		DB = EMAN2db.EMAN2DB.open_db(".")
+		self.xsize = -1
+		self.ysize = -1
+		self.keys = None
 		if isinstance(object,list):
 			# in list mode there is no real caching
 			self.mode = EMDataListCache.LIST_MODE
@@ -2102,39 +2103,66 @@ class EMDataListCache:
 	   pass
 	
 	def get_xsize(self):
-		if self.mode == EMDataListCache.FILE_MODE:
-			for i in self.images:
-				try:
-					if self.images[i] != None:
-						return self.images[i].get_xsize()
-				except: pass
-				
-			return 0
-		elif self.mode == EMDataListCache.LIST_MODE:
-			for i in self.images:
-				try: return i.get_xsize()
-				except: pass
-				
-				
-			return 0
-		
+		if self.xsize == -1:
+			
+			if self.mode == EMDataListCache.FILE_MODE:
+				for i in self.images:
+					try:
+						if self.images[i] != None:
+							self.xsize = self.images[i].get_xsize()
+							break
+					except: pass
+					
+			elif self.mode == EMDataListCache.LIST_MODE:
+				for i in self.images:
+					try:
+						self.xsize = i.get_xsize()
+						break
+					except: pass
+					
+					
+		return self.xsize
+	
 	def get_ysize(self):
-		if self.mode == EMDataListCache.FILE_MODE:
-			for i in self.images:
-				try:
-					if self.images[i] != None:
-						return self.images[i].get_ysize()
-				except: pass
+		if self.ysize == -1:
+			
+			if self.mode == EMDataListCache.FILE_MODE:
+				for i in self.images:
+					try:
+						if self.images[i] != None:
+							self.ysize = self.images[i].get_ysize()
+							break
+					except: pass
+					
+			elif self.mode == EMDataListCache.LIST_MODE:
+				for i in self.images:
+					try:
+						self.ysize = i.get_ysize()
+						break
+					except: pass
+					
+					
+		return self.ysize
+	
+	
+	def get_image_keys(self):
+		if self.keys == None:
+			if self.mode == EMDataListCache.FILE_MODE:
+				for i in self.images:
+					try:
+						if self.images[i] != None:
+							self.keys = self.images[i].get_attr_dict().keys()
+							break
+					except: pass
+					
+			elif self.mode == EMDataListCache.LIST_MODE:
+				for i in self.images:
+					try:
+						 self.keys = i.get_attr_dict().keys()
+						 break
+					except: pass
 				
-			return 0
-		elif self.mode == EMDataListCache.LIST_MODE:
-			for i in self.images:
-				try: return i.get_ysize()
-				except: pass
-				
-				
-			return 0
-		
+		return self.keys
 	def delete_box(self,idx):
 		if self.mode == EMDataListCache.LIST_MODE and not self.soft_delete:
 			# we can actually delete the emdata object
