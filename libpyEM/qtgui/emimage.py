@@ -189,9 +189,10 @@ class EMModuleFromFile(object):
 		if em_file_type != IMAGE_UNKNOWN or filename[:4] == "bdb:":
 			n = EMUtil.get_image_count(filename)
 			nx,ny,nz = gimme_image_dimensions3D(filename)
-			if n > 0 and nz == 1: 
-				a = EMData()
-				data=a.read_images(filename)
+			if n > 1 and nz == 1: 
+				#a = EMData()
+				#data=a.read_images(filename)
+				data = [0,0]
 			else:
 				data = EMData()
 				data.read_image(filename,0)
@@ -205,10 +206,13 @@ class EMModuleFromFile(object):
 			elif isinstance(data,EMData):
 				if isinstance(old,EMImage3DModule): module = old
 				else: module = EMImage3DModule(application=application)
-			elif isinstance(data,list) and isinstance(data[0],EMData):
+			elif isinstance(data,list):
 				if isinstance(old,EMImageMXModule): module = old
 				else: module = EMImageMXModule(application=application)
-			else: raise # weirdness, this should never happen
+				data = filename
+			else: 
+				print filename
+				raise # weirdness, this should never happen
 			module.set_data(data,filename)
 			return module
 		else:

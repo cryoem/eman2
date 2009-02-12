@@ -330,38 +330,56 @@ class EMMatrixPanel:
 	A class for managing the parameters of displaying a matrix panel
 	'''
 	def __init__(self):
-		self.data = None
 		self.min_sep = 2 # minimum separation
 		self.max_y = 0
 		self.height = 0 # height of the panel
-		self.current_pos = 0 # current position - the scroll position
-		self.scale = 1 # the current scale
-		self.xsep = 0 # the separation of images in the x direction
-		self.xvisible = 0 # the number of visible images in the x direction
+		self.visiblecols = 0 # the number of visible images in the x direction
 		self.xoffset = 0 # Offset for centering the display images in x
-		
+		self.visiblerows = 0 # the number of visible rows
+		self.rowstart = 0
 	
-	def update_panel_params(self,view_width,view_height,view_scale,view_data):
-		rendered_image_width = (view_data[0].get_xsize())*view_scale
-		rendered_image_height = view_data[0].get_ysize()*view_scale
+	def update_panel_params(self,view_width,view_height,view_scale,view_data,y):
+		rendered_image_width = (view_data.get_xsize())*view_scale
+		rendered_image_height = view_data.get_ysize()*view_scale
 		
-		self.xvisible = floor(view_width/(rendered_image_width+self.min_sep))
+		self.visiblecols = int(floor(view_width/(rendered_image_width+self.min_sep)))
 		
-		if self.xvisible == 0: 
+		if self.visiblecols == 0: 
 			print "scale is too large - the panel can not be rendered"
 			return
 		
-		self.xsep = view_width - self.xvisible*(rendered_image_width+self.min_sep)
-		self.xoffset = self.xsep/2
-		self.xsep /= self.xvisible
 		
-		self.xsep = self.min_sep
+		w=int(min(rendered_image_width,view_width))
+		h=int(min(rendered_image_height,view_height))
 		
+		yoff = 0
+		if y < 0:
+			ybelow = floor(-y/(h+2))
+			yoff = ybelow*(h+2)+y
+			self.visiblerows = int(ceil(float(view_height-yoff)/(h+2)))
+		else: self.visiblerows = int(ceil(float(view_height-y)/(h+2)))
+				
+		maxrow = int(ceil(float(len(view_data))/self.visiblecols))
+		self.ystart =-y/(h+2)
+		if self.ystart < 0: self.ystart = 0
+		elif self.ystart > 0:
+			self.ystart = int(self.ystart)
+			self.visiblerows = self.visiblerows + self.ystart
+		if self.visiblerows > maxrow: self.visiblerows = maxrow
 		
-		self.height = ceil(len(view_data)/float(self.xvisible))*(rendered_image_height+self.min_sep) + self.min_sep
+		self.visiblerows = int(self.visiblerows)
+		self.ystart = int(self.ystart)
+		
+		xsep = view_width - self.visiblecols*(rendered_image_width+self.min_sep)
+		self.xoffset = xsep/2		
+		
+		self.height = ceil(len(view_data)/float(self.visiblecols))*(rendered_image_height+self.min_sep) + self.min_sep
 		self.max_y = self.height - view_height # adjusted height is the maximum value for current y!
 		
-#		print self.height,self.xsep,self.xvisible
+		
+		
+		
+#		print self.height,self.xsep,self.visiblecols
 	
 		
 
@@ -422,8 +440,6 @@ class EMImageMXModule(EMGUIModule):
 		self.mindeng=0
 		self.maxdeng=1.0
 		self.gamma=1.0
-		
-		self.mx_cols=8
 		self.nshow=-1
 		self.mousedrag=None
 		self.nimg=0
@@ -444,7 +460,7 @@ class EMImageMXModule(EMGUIModule):
 		self.scroll_bar_has_mouse = False
 		self.matrix_panel = EMMatrixPanel()
 		self.origin=(0,self.matrix_panel.min_sep)
-		
+		self.emdata_list_cache = None # all import emdata list cache, the object that stores emdata objects efficiently. Must be initialized via set_data or set_image_file_name
 		
 		self.coords={}
 		self.nshown=0
@@ -471,6 +487,13 @@ class EMImageMXModule(EMGUIModule):
 		self.__init_mouse_handlers()
 		
 		self.reroute_delete_target = None
+	
+	def __del__(self):
+		#handler = QtCore.QObjectCleanupHandler()
+		#handler.add(self)
+		#handler.remove(self)
+		#self.setObjectName("me")
+		self.clear_gl_memory()
 	
 	def get_emit_signals_and_connections(self):
 		return {"set_origin":self.set_origin,"set_scale":self.set_scale,"origin_update":self.origin_update}
@@ -548,13 +571,6 @@ class EMImageMXModule(EMGUIModule):
 		#qt_widget = self.application.get_qt_emitter(self)
 		#qt_widget.emit(*args,**kargs)
 	
-	def __del__(self):
-		#handler = QtCore.QObjectCleanupHandler()
-		#handler.add(self)
-		#handler.remove(self)
-		#self.setObjectName("me")
-		self.clear_gl_memory()
-	
 	def clear_gl_memory(self):
 		if self.main_display_list != 0:
 			glDeleteLists(self.main_display_list,1)
@@ -562,9 +578,6 @@ class EMImageMXModule(EMGUIModule):
 		if self.tex_names != None and ( len(self.tex_names) > 0 ):	
 			glDeleteTextures(self.tex_names)
 			self.tex_names = []	
-	
-	def get_cols(self):
-		return self.mx_cols
 	
 	def force_display_update(self):
 		''' If display lists are being used this will force a regeneration'''
@@ -613,13 +626,13 @@ class EMImageMXModule(EMGUIModule):
 		
 	def get_parent_suggested_size(self):
 		if self.data != None and isinstance(self.data[0],EMData): 
-			if len(self.data)<self.mx_cols :
-				w=len(self.data)*(self.data[0].get_xsize()+2)
+			if len(self.data)<self.matrix_panel.visiblecols :
+				w=len(self.data)*(self.data.get_xsize()+2)
 				hfac = 1
 			else : 
-				w=self.mx_cols*(self.data[0].get_xsize()+2)
-				hfac = len(self.data)/self.mx_cols+1
-			hfac *= self.data[0].get_ysize()
+				w=self.matrix_panel.visiblecols*(self.data.get_xsize()+2)
+				hfac = len(self.data)/self.matrix_panel.visiblecols+1
+			hfac *= self.data.get_ysize()
 			if hfac > 512: hfac = 512
 			if w > 512: w = 512
 			return (int(w)+12,int(hfac)+12) # the 12 is related to the EMParentWin... hack...
@@ -634,26 +647,36 @@ class EMImageMXModule(EMGUIModule):
 	
 	def set_data(self,data,filename='',update_gl=True):
 		
-		if data == None or not isinstance(data,list) or len(data)==0:
-			self.data = [] 
-			return
-		if not isinstance(data[0],EMData):
-			print "strange error in set_data"
-			return
+		cache_size = -1
+		if isinstance(data,str):
+			nx,ny,nz = gimme_image_dimensions3D(data)
+			bytes_per_image = nx*ny*4.0
+			cache_size = int(75000000/bytes_per_image) # 75 MB
+		
+		self.data = EMDataListCache(data,cache_size)
 
 		self.file_name = filename
 		self.update_window_title(self.file_name)
-		self.data=data
 		
 		self.force_display_update()
-		self.nimg=len(data)
+		self.nimg=len(self.data)
 		
-		self.minden=data[0].get_attr("mean")
-		self.maxden=1
-		self.mindeng=self.minden
-		self.maxdeng=1
+		d = self.data[0]
+
+	   	mean = d.get_attr("mean")
+	   	sigma = d.get_attr("sigma")
+		m0=d.get_attr("minimum")
+		m1=d.get_attr("maximum")
 		
-		for i in data:
+		self.minden=max(m0,mean-3.0*sigma)
+		self.maxden=min(m1,mean+3.0*sigma)
+		self.mindeng=max(m0,mean-5.0*sigma)
+		self.maxdeng=min(m1,mean+5.0*sigma)
+		
+		start_guess = 5
+		if start_guess > len(self.data):start_guess = len(self.data)
+		for j in range(1,5): # just have a look at the first 5 to see if we've got the stats about right
+			i = self.data[j]
 			if i == None: continue
 			if i.get_zsize()!=1 :
 				self.data=None
@@ -670,13 +693,7 @@ class EMImageMXModule(EMGUIModule):
 			self.mindeng=min(self.mindeng,max(m0,mean-5.0*sigma))
 			self.maxdeng=max(self.maxdeng,min(m1,mean+5.0*sigma))
 
-		self.max_idx = len(data)
-
-		for i,d in enumerate(data):
-			try:
-				d.set_attr("original_number",i)
-			except:pass
-
+		self.max_idx = len(self.data)
 		#if update_gl: self.updateGL()
 
 	def updateGL(self):
@@ -708,13 +725,13 @@ class EMImageMXModule(EMGUIModule):
 	def set_scale(self,newscale,update_gl=True):
 		"""Adjusts the scale of the display. Tries to maintain the center of the image at the center"""
 			
-		if self.data and len(self.data)>0 and (self.data[0].get_ysize()*newscale>self.gl_widget.height() or self.data[0].get_xsize()*newscale>self.view_width()):
-			newscale=min(float(self.gl_widget.height())/self.data[0].get_ysize(),float(self.view_width())/self.data[0].get_xsize())
+		if self.data and len(self.data)>0 and (self.data.get_ysize()*newscale>self.gl_widget.height() or self.data.get_xsize()*newscale>self.view_width()):
+			newscale=min(float(self.gl_widget.height())/self.data.get_ysize(),float(self.view_width())/self.data.get_xsize())
 			if self.inspector: self.inspector.scale.setValue(newscale)
 				
 		self.scale=newscale
 #		
-		self.matrix_panel.update_panel_params(self.view_width(),self.gl_widget.height(),self.scale,self.data)
+		self.matrix_panel.update_panel_params(self.view_width(),self.gl_widget.height(),self.scale,self.data,self.origin[1])
 		self.scroll_bar.update_target_ypos()	
 		
 		if self.emit_events: self.emit(QtCore.SIGNAL("set_scale"),self.scale,adjust,update_gl)
@@ -723,7 +740,7 @@ class EMImageMXModule(EMGUIModule):
 	def resize_event(self, width, height):
 	
 		self.scroll_bar.height = height
-		self.matrix_panel.update_panel_params(self.view_width(),height,self.scale,self.data)
+		self.matrix_panel.update_panel_params(self.view_width(),height,self.scale,self.data,self.origin[1])
 		self.scroll_bar.update_target_ypos()
 		
 	def set_density_min(self,val,update_gl=True):
@@ -750,17 +767,6 @@ class EMImageMXModule(EMGUIModule):
 		self.gamma=val
 		if update_gl:self.updateGL()
 	
-	def set_mx_cols(self,val,update_gl=True):
-		if self.mx_cols==val: return
-		if val<1 : val=1
-		
-		self.mx_cols=val
-		if update_gl: self.updateGL()
-		try:
-			if self.inspector.nrow.value!=val :
-				self.inspector.nrow.setValue(val)
-		except: pass
-		
 	def set_n_show(self,val,update_gl=True):
 		self.nshow=val
 		if update_gl: self.updateGL()
@@ -783,47 +789,6 @@ class EMImageMXModule(EMGUIModule):
 				self.origin=(self.origin[0]+vec[0]*self.targetspeed,self.origin[1]+vec[1]*self.targetspeed)
 			#self.updateGL()
 	
-	def get_max_matrix_ranges(self):
-		return get_matrix_ranges(0,0)
-	
-	def get_matrix_ranges(self,x,y):
-		n=len(self.data)
-		w=int(min(self.data[0].get_xsize()*self.scale,self.gl_widget.width()))
-		h=int(min(self.data[0].get_ysize()*self.scale,self.gl_widget.height()))
-		
-		yoff = 0
-		if y < 0:
-			ybelow = floor(-y/(h+2))
-			yoff = ybelow*(h+2)+y
-			visiblerows = int(ceil(float(self.gl_widget.height()-yoff)/(h+2)))
-		else: visiblerows = int(ceil(float(self.gl_widget.height()-y)/(h+2)))
-				
-		maxrow = int(ceil(float(n)/self.mx_cols))
-		ystart =-y/(h+2)
-		if ystart < 0: ystart = 0
-		elif ystart > 0:
-			ystart = int(ystart)
-			visiblerows = visiblerows + ystart
-		if visiblerows > maxrow: visiblerows = maxrow
-
-		xoff = 0
-		if x < 0:
-			xbelow = floor(-x/(w+2))
-			xoff = xbelow*(w+2)+x
-			visiblecols =  int(ceil(float(self.gl_widget.width()-xoff)/(w+2)))
-		else: visiblecols =  int(ceil(float(self.gl_widget.width()-x)/(w+2)))
-
-		xstart =-x/(w+2)
-		if xstart < 0:
-			xstart = 0
-		else:
-			xstart = int(xstart)
-			visiblecols = visiblecols + xstart
-		if visiblecols > self.mx_cols:
-			visiblecols = self.mx_cols
-	
-		return [int(xstart),int(visiblecols),int(ystart),int(visiblerows)]
-	
 	def display_state_changed(self):
 		display_states = []
 		display_states.append(self.gl_widget.width())
@@ -835,7 +800,6 @@ class EMImageMXModule(EMGUIModule):
 		display_states.append(self.minden)
 		display_states.append(self.maxden)
 		display_states.append(self.gamma)
-		display_states.append(self.mx_cols)
 		display_states.append(self.draw_background)
 		display_states.append(self.img_num_offset)
 		if len(self.display_states) == 0:
@@ -881,7 +845,7 @@ class EMImageMXModule(EMGUIModule):
 	def render(self):
 		if not self.data : return
 		if self.font_render_mode == EMGUIModule.FTGL: self.set_font_render_resolution()
-		self.image_change_count = self.data[0].get_changecount() # this is important when the user has more than one display instance of the same image, for instance in e2.py if 
+#		self.image_change_count = self.data.get_changecount() # this is important when the user has more than one display instance of the same image, for instance in e2.py if 
 		render = False
 		
 		update = False
@@ -904,7 +868,7 @@ class EMImageMXModule(EMGUIModule):
 				render = True
 		else: render = True
 		
-		self.matrix_panel.update_panel_params(self.view_width(),self.gl_widget.height(),self.scale,self.data)
+		self.matrix_panel.update_panel_params(self.view_width(),self.gl_widget.height(),self.scale,self.data,self.origin[1])
 		
 		if render: 
 			if self.draw_background:
@@ -948,22 +912,14 @@ class EMImageMXModule(EMGUIModule):
 			
 			#x,y=-self.origin[0],-self.origin[1]
 			x,y = self.matrix_panel.xoffset,self.origin[1]
-			w=int(min(self.data[0].get_xsize()*self.scale,self.view_width()))
-			h=int(min(self.data[0].get_ysize()*self.scale,self.gl_widget.height()))
-			
-			self.mx_cols = int(self.matrix_panel.xvisible)
-			[xstart,visiblecols,ystart,visiblerows] = self.get_matrix_ranges(x,y)
-			visiblecols = int(self.matrix_panel.xvisible)
-			xstart = 0
+			w=int(min(self.data.get_xsize()*self.scale,self.view_width()))
+			h=int(min(self.data.get_ysize()*self.scale,self.gl_widget.height()))
 				
-#			print "rows",visiblerows-ystart,"cols",visiblecols-xstart
-			#print "yoffset",yoff,"xoffset",xoff
-			#print (visiblerows-ystart)*(h+2)+yoff,self.gl_widget.height(),"height",(visiblecols-xstart)*(w+2)+xoff,self.gl_widget.width()		
 			invscale=1.0/self.scale
 			self.coords = {}
-			for row in range(ystart,visiblerows):
-				for col in range(xstart,visiblecols):
-					i = int((row)*self.mx_cols+col)
+			for row in range(self.matrix_panel.ystart,self.matrix_panel.visiblerows):
+				for col in range(0,self.matrix_panel.visiblecols):
+					i = int((row)*self.matrix_panel.visiblecols+col)
 					try:
 						if self.data[i] == None: continue
 					except: continue
@@ -1020,8 +976,6 @@ class EMImageMXModule(EMGUIModule):
 						else: raise
 					except: 
 							pass
-					#i = (row+yoffset)*self.mx_cols+col+xoffset
-					#print i,':',row,col,tx,ty,tw,th
 					shown = True
 					#print rx,ry,tw,th,self.gl_widget.width(),self.gl_widget.height(),self.origin
 					if not self.glflags.npt_textures_unsupported():
@@ -1058,7 +1012,7 @@ class EMImageMXModule(EMGUIModule):
 					pass
 			# If the user is lost, help him find himself again...
 			if self.nshown==0 : 
-				try: self.targetorigin=(0,self.coords[self.selected[0]][1]-self.gl_widget.height()/2+self.data[0].get_ysize()*self.scale/2)
+				try: self.targetorigin=(0,self.coords[self.selected[0]][1]-self.gl_widget.height()/2+self.data.get_ysize()*self.scale/2)
 				except: self.targetorigin=(0,0)
 				self.targetspeed=100.0
 			
@@ -1239,10 +1193,10 @@ class EMImageMXModule(EMGUIModule):
 #		try: self.origin=(self.coords[8][0]-self.width()/2-self.origin[0],self.coords[8][1]+self.height()/2-self.origin[1])
 		if yonly :
 			try: 
-				self.targetorigin=(0,self.coords[n][1]-self.gl_widget.height()/2+self.data[0].get_ysize()*self.scale/2)
+				self.targetorigin=(0,self.coords[n][1]-self.gl_widget.height()/2+self.data.get_ysize()*self.scale/2)
 			except: return
 		else:
-			try: self.targetorigin=(self.coords[n][0]-self.view_width()/2+self.data[0].get_xsize()*self.scale/2,self.coords[n][1]-self.gl_widget.height()/2+self.data[0].get_ysize()*self.scale/2)
+			try: self.targetorigin=(self.coords[n][0]-self.view_width()/2+self.data.get_xsize()*self.scale/2,self.coords[n][1]-self.gl_widget.height()/2+self.data.get_ysize()*self.scale/2)
 			except: return
 		self.targetspeed=hypot(self.targetorigin[0]-self.origin[0],self.targetorigin[1]-self.origin[1])/20.0
 #		print n,self.origin
@@ -1420,8 +1374,8 @@ class EMImageMXModule(EMGUIModule):
 
 	def keyPressEvent(self,event):
 		if self.data == None: return
-		ystep = (self.data[0].get_ysize()*self.scale + 2)/2.0
-		xstep = (self.data[0].get_xsize()*self.scale + 2)/2.0
+		ystep = (self.data.get_ysize()*self.scale + 2)/2.0
+		xstep = (self.data.get_xsize()*self.scale + 2)/2.0
 		oldy = self.origin[1]
 		newy = self.origin[1]
 		if event.key() == Qt.Key_F1:
@@ -1485,12 +1439,6 @@ class EMImageMXModule(EMGUIModule):
 	def mouseMoveEvent(self, event):
 		if self.scroll_bar_has_mouse:
 			self.scroll_bar.mouseMoveEvent(event)
-			return
-		
-		if (self.gl_widget.width()-event.x() <= self.scroll_bar.width):
-			print "scroll bar not yet working"
-			return
-			self.scroll_bar.mousePressEvent(event)
 			return
 		
 		if self.mousedrag:
@@ -1564,7 +1512,7 @@ class EMGLScrollBar(EMBasicOpenGLObjects):
 		self.cylinder_around_z = 30
 		
 		self.arrow_button_height = 12
-		self.arrow_part_offset = 2
+		self.arrow_part_offset = .5
 		self.arrow_part_thickness = 1
 		self.arrow_width = (self.width/2-self.arrow_part_offset)
 		self.arrow_height = (self.arrow_button_height-2*self.arrow_part_offset)
@@ -1579,6 +1527,22 @@ class EMGLScrollBar(EMBasicOpenGLObjects):
 		self.scroll_bit_position = 0
 		
 		self.mouse_scroll_pos = None # used for moving the scroll bar with the mouse
+		
+		self.min_scroll_bar_size = 30
+		
+		self.scroll_bar_press_color = (.2,.2,.3,0)
+		self.scroll_bar_idle_color = (0,0,0,0)
+		self.scroll_bar_color = self.scroll_bar_idle_color
+		
+		self.scroll_bit_press_color = (0,0,.5,0)
+		self.scroll_bit_idle_color = (.5,0,0,0)
+		self.scroll_bit_color = self.scroll_bit_idle_color
+		
+		self.up_arrow_color = self.scroll_bar_idle_color
+		self.down_arrow_color = self.scroll_bar_idle_color
+		
+		glShadeModel(GL_SMOOTH) # because we want smooth shading for the scroll bar components
+		
 	def update_stuff(self):
 	
 		view_height = self.target().gl_widget.height()
@@ -1588,6 +1552,7 @@ class EMGLScrollBar(EMBasicOpenGLObjects):
 		
 		self.scroll_bar_height = self.height - self.starty
 		self.scroll_bit_height = view_height/float(panel_height)*self.scroll_bar_height
+		if self.scroll_bit_height < self.min_scroll_bar_size: self.scroll_bit_height = self.min_scroll_bar_size
 		
 		adjusted_scroll_bar_height = self.scroll_bar_height - self.scroll_bit_height
 		
@@ -1616,86 +1581,87 @@ class EMGLScrollBar(EMBasicOpenGLObjects):
 		ex = self.width
 		ey = self.height
 		
-		#print glIsEnabled(GL_LIGHTING)
-		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.1,.4,.8,1.0))
-		glMaterial(GL_FRONT,GL_SPECULAR,(.8,.8,.8,1.0))
+		glNormal(0,0,1) # this normal is fine for everything that is drawn here
+		# this provides some defaults for specular and shininess
+		glMaterial(GL_FRONT,GL_SPECULAR,(.8,1,1,1.0))
 		glMaterial(GL_FRONT,GL_SHININESS,20.0)
 
-		
-		glPushMatrix()
-		glTranslate((ex-sx)/2,sy,0)
-		glRotate(-90,1,0,0)
-		glScale((ex-sx)/2,1,(ey-sy))
-		glCallList(self.getCylinderDL())
-		glPopMatrix()
-		
-		
+		# The scroll bar - the long bar that defines the extent
+		glBegin(GL_QUADS)
+		glNormal(0,0,1)
+		x1 = self.startx
+		x2 = self.width
+		y1 = self.starty
+		y2 = self.height
+		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,self.scroll_bar_color )
+		glVertex(x1,y1,0)
+		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(1,1,1,1.0))
+		glVertex(x2,y1,0)
+		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(1,1,1,1.0))
+		glVertex(x2,y2,0)
+		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,self.scroll_bar_color )
+		glVertex(x1,y2,0)
+		glEnd()
+
+		# The up pointing arrow
 		glPushMatrix()
 		glTranslate(0,self.arrow_button_height,0)
-		glTranslate(self.arrow_part_offset,self.arrow_part_offset,0)
-		glRotate(-self.arrow_theta,0,0,1)
-		glRotate(-90,1,0,0)
-		glScale(self.arrow_part_thickness,1,self.arrow_part_length)
-		glCallList(self.getCylinderDL())
+		glBegin(GL_TRIANGLES)
+		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,self.up_arrow_color)
+		glVertex(self.arrow_part_offset,self.arrow_part_offset,0)
+		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,self.up_arrow_color)
+		glVertex(self.width-self.arrow_part_offset,self.arrow_part_offset,0)
+		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(1,1,1,1.0))
+		glVertex(self.width/2,self.arrow_button_height-self.arrow_part_offset,0)
+		glEnd()
 		glPopMatrix()
 		
-		glPushMatrix()
-		glTranslate(0,self.arrow_button_height,0)
-		glTranslate(self.width-self.arrow_part_offset,self.arrow_part_offset,0)
-		glRotate( self.arrow_theta,0,0,1)
-		glRotate(-90,1,0,0)
-		glScale(self.arrow_part_thickness,1,self.arrow_part_length)
-		glCallList(self.getCylinderDL())
-		glPopMatrix()
+		# the down pointing arrow
+		glBegin(GL_TRIANGLES) 
+		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,self.down_arrow_color)
+		glVertex(self.arrow_part_offset,self.arrow_button_height-self.arrow_part_offset,0)
+		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(1,1,1,1.0))
+		glVertex(self.width/2,self.arrow_part_offset,0)
+		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,self.down_arrow_color)
+		glVertex(self.width-self.arrow_part_offset,self.arrow_button_height-self.arrow_part_offset,0)
+		glEnd()
 		
-		glPushMatrix()
-		glTranslate(self.arrow_width+self.arrow_part_offset,self.arrow_part_offset,0)
-		glRotate(self.arrow_theta,0,0,1)
-		glRotate(-90,1,0,0)
-		glScale(self.arrow_part_thickness,1,self.arrow_part_length)
-		glCallList(self.getCylinderDL())
-		glPopMatrix()
-		
-		glPushMatrix()
-		glTranslate(self.width/2,self.arrow_part_offset,0)
-		glRotate(-self.arrow_theta,0,0,1)
-		glRotate(-90,1,0,0)
-		glScale(self.arrow_part_thickness,1,self.arrow_part_length)
-		glCallList(self.getCylinderDL())
-		glPopMatrix()
-		
-		
-		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.0,.2,.0,1.0))
-		glMaterial(GL_FRONT,GL_SPECULAR,(.8,.8,.8,1.0))
-		glMaterial(GL_FRONT,GL_SHININESS,20.0)
-		
-		glPushMatrix()
-		glTranslate((ex-sx)/2,sy+self.scroll_bit_position,1)
-		glRotate(-90,1,0,0)
-		glScale((ex-sx)/3,1, self.scroll_bit_height)
-		glCallList(self.getCylinderDL())
-		glPopMatrix()
-		
+		# The scroll bit
+		glBegin(GL_QUADS)
+		x1 = sx
+		x2 = ex
+		y1 = sy+self.scroll_bit_position
+		y2 = y1+self.scroll_bit_height
+		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(0,.5,0.5,1.0))
+		glVertex(x1,y1,1)
+		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(1,1,1,1.0))
+		glVertex(x2,y1,1)
+		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(1,1,1,1.0))
+		glVertex(x2,y2,1)
+		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,self.scroll_bit_color)
+		glVertex(x1,y2,1)		
+		glEnd()
+
 	def down_button_pressed(self):
-		image_height = self.target().data[0].get_ysize()*self.target().scale+self.target().matrix_panel.min_sep
+		self.down_arrow_color = self.scroll_bar_press_color
+		image_height = self.target().data.get_ysize()*self.target().scale+self.target().matrix_panel.min_sep
 		newy = self.target().origin[1]+ image_height
 		newy = self.target().check_newy(newy)
 		oldx = self.target().origin[0]
 		self.target().origin =( oldx, newy)
 		self.target().updateGL()
 
-		pass
-	
 	def up_button_pressed(self):
-		image_height = self.target().data[0].get_ysize()*self.target().scale+self.target().matrix_panel.min_sep
+		self.up_arrow_color = self.scroll_bar_press_color
+		image_height = self.target().data.get_ysize()*self.target().scale+self.target().matrix_panel.min_sep
 		newy  = self.target().origin[1] - image_height
 		newy = self.target().check_newy(newy)
 		oldx = self.target().origin[0]
 		self.target().origin =( oldx, newy)
 		self.target().updateGL()
-		pass
 	
 	def scroll_down(self):
+		self.scroll_bar_color = self.scroll_bar_press_color
 		newy  = self.target().origin[1]+ self.target().gl_widget.height()
 		newy = self.target().check_newy(newy)
 		oldx = self.target().origin[0]
@@ -1703,6 +1669,7 @@ class EMGLScrollBar(EMBasicOpenGLObjects):
 		self.target().updateGL()
 
 	def scroll_up(self):
+		self.scroll_bar_color = self.scroll_bar_press_color
 		newy  = self.target().origin[1] - self.target().gl_widget.height()
 		newy = self.target().check_newy(newy)
 		oldx = self.target().origin[0]
@@ -1710,9 +1677,7 @@ class EMGLScrollBar(EMBasicOpenGLObjects):
 		self.target().updateGL()
 		
 	def scroll_move(self,dy):
-		
 		ratio = dy/float(self.scroll_bar_height)
-	
 		panel_height = self.target().matrix_panel.height
 		newy  = self.target().origin[1] - ratio*panel_height
 		newy = self.target().check_newy(newy)
@@ -1733,7 +1698,9 @@ class EMGLScrollBar(EMBasicOpenGLObjects):
 			scroll_bit_ymin = self.starty +self.scroll_bit_position
 			scroll_bit_ymax = scroll_bit_ymin + self.scroll_bit_height
 			if y >= scroll_bit_ymin and y < scroll_bit_ymax:
+				self.scroll_bit_color = self.scroll_bit_press_color
 				self.mouse_scroll_pos = y
+				self.target().updateGL()
 			elif y < scroll_bit_ymin:
 				self.scroll_down()
 			else:
@@ -1748,6 +1715,11 @@ class EMGLScrollBar(EMBasicOpenGLObjects):
 		
 	def mouseReleaseEvent(self,event):
 		self.mouse_scroll_pos = None
+		self.scroll_bar_color = self.scroll_bar_idle_color
+		self.scroll_bit_color = self.scroll_bit_idle_color
+		self.up_arrow_color = self.scroll_bar_idle_color
+		self.down_arrow_color = self.scroll_bar_idle_color
+		self.target().updateGL()
 		
 class EMImageInspectorMX(QtGui.QWidget):
 	def __init__(self,target,allow_col_variation=False,allow_window_variation=False,allow_opt_button=False):
@@ -1815,10 +1787,6 @@ class EMImageInspectorMX(QtGui.QWidget):
 		self.hbl2.setSpacing(6)
 		self.hbl2.setObjectName("hboxlayout")
 		self.vbl.addLayout(self.hbl2)
-		
-		#self.mmeas = QtGui.QPushButton("Meas")
-		#self.mmeas.setCheckable(1)
-		#self.hbl2.addWidget(self.mmeas)
 
 		self.mapp = QtGui.QPushButton("App")
 		self.mapp.setCheckable(1)
@@ -1877,12 +1845,6 @@ class EMImageInspectorMX(QtGui.QWidget):
 		self.lbl.setAlignment(Qt.AlignRight|Qt.AlignVCenter)
 		self.hbl.addWidget(self.lbl)
 		
-		self.nrow = QtGui.QSpinBox(self)
-		self.nrow.setObjectName("nrow")
-		self.nrow.setRange(1,50)
-		self.nrow.setValue(self.target().get_cols())
-		self.hbl.addWidget(self.nrow)
-		
 		if allow_window_variation:
 			self.lbl3 = QtGui.QLabel("#/mx:")
 			self.lbl3.setAlignment(Qt.AlignRight|Qt.AlignVCenter)
@@ -1934,7 +1896,6 @@ class EMImageInspectorMX(QtGui.QWidget):
 		self.busy=0
 		
 		QtCore.QObject.connect(self.vals, QtCore.SIGNAL("triggered(QAction*)"), self.newValDisp)
-		QtCore.QObject.connect(self.nrow, QtCore.SIGNAL("valueChanged(int)"), self.target().set_mx_cols)
 		if allow_col_variation:
 			QtCore.QObject.connect(self.ncol, QtCore.SIGNAL("valueChanged(int)"), self.target().set_mx_rows)
 		if allow_window_variation:
@@ -1956,6 +1917,8 @@ class EMImageInspectorMX(QtGui.QWidget):
 		if allow_opt_button:
 			QtCore.QObject.connect(self.opt_fit, QtCore.SIGNAL("clicked(bool)"), self.target().optimize_fit)
 		QtCore.QObject.connect(self.bsnapshot, QtCore.SIGNAL("clicked(bool)"), self.snapShot)
+		
+		print "done"
 	
 	def get_desktop_hint(self):
 		return "inspector"
@@ -2067,7 +2030,248 @@ class EMImageInspectorMX(QtGui.QWidget):
 		self.maxs.setRange(lowlim,highlim)
 		self.mins.setValue(curmin)
 		self.maxs.setValue(curmax)
+		 
+class EMDataListCache:
+	'''
+	This class designed primarily for memory management in the context of large lists of EMData objects.
+	
+	The main public interface is to acquired a list of EMData objects in a specific range
+	'''
+	LIST_MODE = 'list_mode'
+	FILE_MODE = 'file_mode'
+	def __init__(self,object,cache_size=256,start_idx=0):
+		DB = EMAN2db.EMAN2DB.open_db(".")
+		if isinstance(object,list):
+			# in list mode there is no real caching
+			self.mode = EMDataListCache.LIST_MODE
+			self.max_idx = len(object)
+			self.cache_size = self.max_idx
+			self.images = object
+			self.start_idx = 0
+			DB.open_dict("emimage_mx_rotor_cache")
+			self.db = DB.emimage_mx_rotor_cache
+			self.exclusions_key = "interactive_exclusions"
+			self.db[self.exclusions_key] = []
+			self.exclusions = self.db["interactive_exclusions"]
+			
+			for i,d in enumerate(self.images):	d.set_attr("original_number",i)
 
+		elif isinstance(object,str):
+			#print "file mode"
+			self.mode = EMDataListCache.FILE_MODE
+			if not os.path.exists(object) and not db_check_dict(object):
+				print "error, the file you specified does not exist:",object
+				return
+			self.file_name = object
+			self.max_idx = EMUtil.get_image_count(self.file_name)
+			self.images = {}
+			if self.max_idx < cache_size:
+				self.cache_size = self.max_idx
+			else:
+				self.cache_size = cache_size
+			self.start_idx = start_idx - self.cache_size/2
+						
+			DB.open_dict("emimage_mx_rotor_cache")
+			self.db = DB.emimage_mx_rotor_cache
+			self.exclusions_key = self.file_name+"_interactive_exclusions"
+			self.exclusions  = self.db[self.exclusions_key]
+			if self.exclusions == None: self.exclusions = []
+			self.__refresh_cache()
+		else:
+			print "the object used to construct the EMDataListCache is not a string (filename) or a list (of EMData objects). Can't proceed"
+			return
+		
+		self.soft_delete = False # toggle to prevent permanent deletion of particles
+		self.image_width = -1
+		self.image_height = -1
+	
+	def __del__(self):
+#		DB = EMAN2db.EMAN2DB.open_db(".")
+#		try:
+#			DB.close_dict("emimage_mx_rotor_cache")
+#		except: pass
+	   pass
+	
+	def get_xsize(self):
+		if self.mode == EMDataListCache.FILE_MODE:
+			for i in self.images:
+				try:
+					if self.images[i] != None:
+						return self.images[i].get_xsize()
+				except: pass
+				
+			return 0
+		elif self.mode == EMDataListCache.LIST_MODE:
+			for i in self.images:
+				try: return i.get_xsize()
+				except: pass
+				
+				
+			return 0
+		
+	def get_ysize(self):
+		if self.mode == EMDataListCache.FILE_MODE:
+			for i in self.images:
+				try:
+					if self.images[i] != None:
+						return self.images[i].get_ysize()
+				except: pass
+				
+			return 0
+		elif self.mode == EMDataListCache.LIST_MODE:
+			for i in self.images:
+				try: return i.get_ysize()
+				except: pass
+				
+				
+			return 0
+		
+	def delete_box(self,idx):
+		if self.mode == EMDataListCache.LIST_MODE and not self.soft_delete:
+			# we can actually delete the emdata object
+			image = self.images.pop(idx)
+			self.max_idx = len(self.images)
+			self.cache_size = self.max_idx
+			return 1
+		elif self.mode == EMDataListCache.FILE_MODE or self.soft_delete:
+			im = self.images[idx]
+			try:
+				val = im.get_attr("excluded")
+				if val == True:
+					im.del_attr("excluded")
+					self.exclusions.remove(idx)
+				else: raise
+			except: 
+					im.set_attr("excluded",True)
+					self.exclusions.append(idx)
+			
+			if self.mode == EMDataListCache.FILE_MODE: self.db[self.exclusions_key] = self.exclusions
+			
+			if self.mode == EMDataListCache.FILE_MODE: im.write_image(self.file_name,idx)
+			return 2
+		
+		return 0
+				
+	def save_lst(self):
+		# Get the output filespec
+		fsp=QtGui.QFileDialog.getSaveFileName(None, "Specify lst file to save","","","")
+		fsp=str(fsp)
+		
+		if fsp != '':
+			f = file(fsp,'w')
+			f.write('#LST\n')
+			
+			if self.mode == EMDataListCache.LIST_MODE and not self.soft_delete:
+				for d in self.data:
+					f.write(str(d.get_attr('original_number'))+'\n')
+			elif self.mode == EMDataListCache.FILE_MODE or self.soft_delete:
+				indices = [i for i in range(self.max_idx)]
+				for exc in self.exclusions: indices.remove(exc)
+				
+				if self.mode ==  EMDataListCache.FILE_MODE:
+					for idx in indices:	f.write(str(idx)+'\t'+self.file_name+'\n')
+				elif self.soft_delete:
+					for idx in indices:	f.write(str(idx)+'\n')
+		
+			f.close()
+	def save_data(self):
+		
+		fsp=QtGui.QFileDialog.getSaveFileName(None, "Specify name of file to save","","","")
+		fsp=str(fsp)
+		
+		try:
+			if fsp == self.file_name:
+				print "writing over the same file is currently not supported"
+				return
+		except: pass
+		
+		if fsp != '':
+			for idx in range(self.max_idx):
+				d = self.__getitem__(idx)
+				try:
+					d.get_attr("excluded")
+					continue
+				except: pass
+				d.write_image(fsp,-1)
+
+	def get_max_idx(self):
+		return self.max_idx
+	
+	def get_num_images(self):
+		return len(self.images)
+	
+	def set_cache_size(self,cache_size,refresh=False):
+		if self.mode != EMDataListCache.LIST_MODE:
+			if cache_size > self.max_idx: self.cache_size = self.max_idx
+			else: self.cache_size = cache_size
+			self.start_idx = self.start_idx - self.cache_size/2
+			if refresh: self.__refresh_cache()
+		else:
+			if self.cache_size != self.max_idx:
+				print "error, in list mode the cache size is always equal to the max idx"
+				return
+	def set_start_idx(self,start_idx,refresh=True):
+		self.start_idx = start_idx
+		if refresh: self.__refresh_cache()
+	
+	def __refresh_cache(self):
+		#print "regenerating CACHE"
+		app = QtGui.QApplication.instance()
+		app.setOverrideCursor(Qt.BusyCursor)
+		
+		try:
+			cache = {}
+			for i in range(self.start_idx,self.start_idx+self.cache_size,1):
+				if i != 0:
+					idx = i % self.max_idx
+				else: idx = 0
+				try: 
+					cache[idx] = self.images[idx]
+				except:
+					try:
+						if self.mode ==  EMDataListCache.FILE_MODE:
+							a = EMData()
+							a.read_image(self.file_name,idx)
+							cache[idx] = a
+							if self.exclusions.count(idx) != 0:
+								cache[idx].set_attr("excluded",True)
+						else:
+							print "data has been lost"
+							raise
+					except: print "couldn't access",idx,"the max idx was",self.max_idx,"i was",i,"start idx",self.start_idx,"cache size",self.cache_size,len(self.images)
+				#print i,idx
+			self.images = cache
+		except:
+			print "there was an error in cache regeneration. Suggest restarting"
+			
+		app.setOverrideCursor(Qt.ArrowCursor)
+	def __getitem__(self,idx):
+		
+		i = 0
+		if idx != 0: i = idx%self.max_idx
+		try:
+			return self.images[i]
+		except:
+			self.start_idx = i - self.cache_size/2
+			if self.start_idx < 0: self.start_idx = 0 
+			#if self.start_idx < 0: 
+				#self.start_idx = self.start_idx % self.max_idx
+			#elif self.start_idx+self.cache_size >= self.max_idx:
+				#self.start_idx =  self.max_idx - self.cache_size/2 -1
+			self.__refresh_cache()
+			try:
+				image = self.images[i]
+				if not image.get_attr_dict().has_key("original_number"): image.set_attr("original_number",i)
+				return self.images[i]
+			except:
+				print "error, couldn't get image",i,self.start_idx,self.max_idx,self.cache_size
+				#for i in self.images:
+					#print i,
+				#print ''
+				
+	def __len__(self):
+		return self.max_idx
+		
 
 if __name__ == '__main__':
 	em_app = EMStandAloneApplication()

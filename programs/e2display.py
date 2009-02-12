@@ -32,8 +32,8 @@
 #
 
 from EMAN2 import *
-from emimage import EMImageModule
-try: from emplot2d import EMPlot2D,NewPlot2DWin
+from emimage import EMImageModule,EMModuleFromFile
+try: from emplot2d import EMPlot2DModule
 except: pass
 
 from emimageutil import EMParentWin
@@ -112,36 +112,37 @@ def main():
 		display(imgs,app,args[0])
 	else:
 		for i in args:
-			n = EMUtil.get_image_count(i)
-			nx,ny,nz = gimme_image_dimensions3D(i)
-			if n > 1 and nz == 1:
-				nx,ny = gimme_image_dimensions2D(i)
-				mx = 256000000# 256Mb
-				a = []
-				if n*nx*ny*4 > mx:
-					new_n = mx/(nx*ny) + 1
-					
-					
-					msg = QtGui.QMessageBox()
-					msg.setWindowTitle("Warning")
-					msg.setText("Image data is more than 256Mb, only showing first %i images" %new_n)
-					msg.exec_()
-					
-					progress = EMProgressDialogModule(app,"Reading files", "abort", 0, new_n,None)
-					progress.qt_widget.show()
-					for j in range(new_n):
-						a.append(EMData(i,j))
-						progress.qt_widget.setValue(j)
-						if progress.qt_widget.wasCanceled():
-							progress.qt_widget.close()
-							return
-					progress.qt_widget.close()
-				else:
-					a=EMData.read_images(i)
-			else:
-				a=[EMData(i,0)]
-					
-			display(a,app,i)
+			display_file(i,app)
+#			n = EMUtil.get_image_count(i)
+#			nx,ny,nz = gimme_image_dimensions3D(i)
+#			if n > 1 and nz == 1:
+#				nx,ny = gimme_image_dimensions2D(i)
+#				mx = 256000000# 256Mb
+#				a = []
+#				if n*nx*ny*4 > mx:
+#					new_n = mx/(nx*ny) + 1
+#					
+#					
+#					msg = QtGui.QMessageBox()
+#					msg.setWindowTitle("Warning")
+#					msg.setText("Image data is more than 256Mb, only showing first %i images" %new_n)
+#					msg.exec_()
+#					
+#					progress = EMProgressDialogModule(app,"Reading files", "abort", 0, new_n,None)
+#					progress.qt_widget.show()
+#					for j in range(new_n):
+#						a.append(EMData(i,j))
+#						progress.qt_widget.setValue(j)
+#						if progress.qt_widget.wasCanceled():
+#							progress.qt_widget.close()
+#							return
+#					progress.qt_widget.close()
+#				else:
+#					a=i
+#			else:
+#				a=[EMData(i,0)]
+#					
+#			display(a,app,i)
 	
 	
 	app.exec_()
@@ -195,6 +196,16 @@ def getmxim(fsp,fsp2,clsnum):
 		i[0].rotate_translate(i[3],0,0,i[1],i[2],0)
 	imgs=[i[0] for i in imgs]
 	return imgs
+
+def display_file(filename,app):
+	w = EMModuleFromFile(filename,application=app)
+	w.get_qt_widget().setWindowTitle(get_file_tag(filename))
+	
+	app.show_specific(w)
+	try: w.optimally_resize()
+	except: pass
+	return w
+
 
 def display(img,app,title="EMAN2 image"):
 	if len(img)==1 : img=img[0]
