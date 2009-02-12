@@ -456,18 +456,22 @@ class EMParentWin(QtGui.QWidget,Animator):
 #		EMEventRerouter.__init__(self,child)
 
 		self.child = child
-		self.margin = 0
+		
 		self.resize(child.width(),child.height())
 		self.setMaximumSize(8000,8000)
 
 		self.hbl = QtGui.QVBoxLayout()
-		self.hbl.setMargin(self.margin)
+		
 		self.hbl.setSpacing(0)
 		self.hbl.addWidget(self.child,100)
 		if get_platform() == "Darwin": # because OpenGL widgets in Qt don't leave room in the bottom right hand corner for the resize tool
 			self.status = QtGui.QStatusBar()
 			self.status.setSizeGripEnabled(True)
 			self.hbl.addWidget(self.status,0)
+			self.margin = 0
+		else:
+			self.margin = 5
+		self.hbl.setMargin(self.margin)
 		self.setLayout(self.hbl)
 	
 	def get_margin(self):
