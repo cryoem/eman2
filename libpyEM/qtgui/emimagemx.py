@@ -98,6 +98,11 @@ class EMImageMXWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMatri
 		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0,1.0,1.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_POSITION, [1,1,1.,0.])
+		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.4, 0.4, 0.4, 1.0])
+		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
+		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
+		glLightfv(GL_LIGHT0, GL_SPOT_DIRECTION, [1,0,-1.,1.])
+		glLightfv(GL_LIGHT0, GL_POSITION, [40,40,100.,1.])
 		#glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_TRUE) # this is intenionally turned off
 
 		glEnable(GL_CULL_FACE)
@@ -122,6 +127,8 @@ class EMImageMXWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMatri
 		GL.glOrtho(0.0,width,0.0,height,-50,50)
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
+		
+		glLightfv(GL_LIGHT0, GL_POSITION, [width/2,height/2,100.,1.])
 		
 		self.set_projection_view_update()
 		try: self.target().resize_event(width,height)
@@ -317,6 +324,46 @@ class EMMAppMouseEvents(EMMXCoreMouseEvents):
 				##app.setOverrideCursor(Qt.SizeAllCursor)
 				
 			#self.mousedrag=(event.x(),event.y())
+			
+class EMMatrixPanel:
+	'''
+	A class for managing the parameters of displaying a matrix panel
+	'''
+	def __init__(self):
+		self.data = None
+		self.min_sep = 2 # minimum separation
+		self.max_y = 0
+		self.height = 0 # height of the panel
+		self.current_pos = 0 # current position - the scroll position
+		self.scale = 1 # the current scale
+		self.xsep = 0 # the separation of images in the x direction
+		self.xvisible = 0 # the number of visible images in the x direction
+		self.xoffset = 0 # Offset for centering the display images in x
+		
+	
+	def update_panel_params(self,view_width,view_height,view_scale,view_data):
+		rendered_image_width = (view_data[0].get_xsize())*view_scale
+		rendered_image_height = view_data[0].get_ysize()*view_scale
+		
+		self.xvisible = floor(view_width/(rendered_image_width+self.min_sep))
+		
+		if self.xvisible == 0: 
+			print "scale is too large - the panel can not be rendered"
+			return
+		
+		self.xsep = view_width - self.xvisible*(rendered_image_width+self.min_sep)
+		self.xoffset = self.xsep/2
+		self.xsep /= self.xvisible
+		
+		self.xsep = self.min_sep
+		
+		
+		self.height = ceil(len(view_data)/float(self.xvisible))*(rendered_image_height+self.min_sep) + self.min_sep
+		self.max_y = self.height - view_height # adjusted height is the maximum value for current y!
+		
+#		print self.height,self.xsep,self.xvisible
+	
+		
 
 class EMImageMXModule(EMGUIModule):
 	
@@ -375,7 +422,7 @@ class EMImageMXModule(EMGUIModule):
 		self.mindeng=0
 		self.maxdeng=1.0
 		self.gamma=1.0
-		self.origin=(0,0)
+		
 		self.mx_cols=8
 		self.nshow=-1
 		self.mousedrag=None
@@ -393,7 +440,10 @@ class EMImageMXModule(EMGUIModule):
 		self.suppress_inspector = False 	# Suppresses showing the inspector - switched on in emfloatingwidgets
 		self.image_file_name = None
 		self.first_render = True # a hack, something is slowing us down in FTGL
-		self.scroll_bar = EMGLScrollBar()
+		self.scroll_bar = EMGLScrollBar(self)
+		self.scroll_bar_has_mouse = False
+		self.matrix_panel = EMMatrixPanel()
+		self.origin=(0,self.matrix_panel.min_sep)
 		
 		
 		self.coords={}
@@ -427,7 +477,7 @@ class EMImageMXModule(EMGUIModule):
 	
 	def width(self):
 		if self.gl_widget != None:
-			return self.gl_widget.width()
+			return self.view_width()
 		else:
 			return 0
 	
@@ -449,7 +499,6 @@ class EMImageMXModule(EMGUIModule):
 			return 0
 	
 	def __init_mouse_handlers(self):
-		
 		self.mouse_events_mediator = EMMXCoreMouseEventsMediator(self)
 		self.mouse_event_handlers = {}
 		self.mouse_event_handlers["app"] = EMMAppMouseEvents(self.mouse_events_mediator)
@@ -562,7 +611,6 @@ class EMImageMXModule(EMGUIModule):
 		else:
 			self.gl_widget.resize(*self.get_parent_suggested_size())
 		
-	
 	def get_parent_suggested_size(self):
 		if self.data != None and isinstance(self.data[0],EMData): 
 			if len(self.data)<self.mx_cols :
@@ -657,29 +705,26 @@ class EMImageMXModule(EMGUIModule):
 		self.targetorigin=None
 		if update_gl: self.updateGL()
 		
-	def set_scale(self,newscale,adjust=True,update_gl=True):
+	def set_scale(self,newscale,update_gl=True):
 		"""Adjusts the scale of the display. Tries to maintain the center of the image at the center"""
-		
-		if self.targetorigin : 
-			self.origin=self.targetorigin
-			self.targetorigin=None
 			
-		if self.data and len(self.data)>0 and (self.data[0].get_ysize()*newscale>self.gl_widget.height() or self.data[0].get_xsize()*newscale>self.gl_widget.width()):
-			newscale=min(float(self.gl_widget.height())/self.data[0].get_ysize(),float(self.gl_widget.width())/self.data[0].get_xsize())
+		if self.data and len(self.data)>0 and (self.data[0].get_ysize()*newscale>self.gl_widget.height() or self.data[0].get_xsize()*newscale>self.view_width()):
+			newscale=min(float(self.gl_widget.height())/self.data[0].get_ysize(),float(self.view_width())/self.data[0].get_xsize())
 			if self.inspector: self.inspector.scale.setValue(newscale)
-			
-			
-#		yo=self.height()-self.origin[1]-1
-		yo=self.origin[1]
-#		self.origin=(newscale/self.scale*(self.width()/2+self.origin[0])-self.width()/2,newscale/self.scale*(self.height()/2+yo)-self.height()/2)
-#		self.origin=(newscale/self.scale*(self.width()/2+self.origin[0])-self.width()/2,newscale/self.scale*(yo-self.height()/2)+self.height()/2)
-		if adjust:
-			self.origin=(newscale/self.scale*(self.gl_widget.width()/2+self.origin[0])-self.gl_widget.width()/2,newscale/self.scale*(self.gl_widget.height()/2+self.origin[1])-self.gl_widget.height()/2)
-#		print self.origin,newscale/self.scale,yo,self.height()/2+yo
-		
+				
 		self.scale=newscale
+#		
+		self.matrix_panel.update_panel_params(self.view_width(),self.gl_widget.height(),self.scale,self.data)
+		self.scroll_bar.update_target_ypos()	
+		
 		if self.emit_events: self.emit(QtCore.SIGNAL("set_scale"),self.scale,adjust,update_gl)
 		if update_gl: self.updateGL()
+	
+	def resize_event(self, width, height):
+	
+		self.scroll_bar.height = height
+		self.matrix_panel.update_panel_params(self.view_width(),height,self.scale,self.data)
+		self.scroll_bar.update_target_ypos()
 		
 	def set_density_min(self,val,update_gl=True):
 		self.minden=val
@@ -830,6 +875,9 @@ class EMImageMXModule(EMGUIModule):
 		if light: glEnable(GL_LIGHTING)
 	
 	
+	def view_width(self):
+		return self.gl_widget.width() - self.scroll_bar.width
+	
 	def render(self):
 		if not self.data : return
 		if self.font_render_mode == EMGUIModule.FTGL: self.set_font_render_resolution()
@@ -855,6 +903,8 @@ class EMImageMXModule(EMGUIModule):
 				glNewList(self.main_display_list,GL_COMPILE)
 				render = True
 		else: render = True
+		
+		self.matrix_panel.update_panel_params(self.view_width(),self.gl_widget.height(),self.scale,self.data)
 		
 		if render: 
 			if self.draw_background:
@@ -896,11 +946,15 @@ class EMImageMXModule(EMGUIModule):
 	
 			self.nshown=0
 			
-			x,y=-self.origin[0],-self.origin[1]
-			w=int(min(self.data[0].get_xsize()*self.scale,self.gl_widget.width()))
+			#x,y=-self.origin[0],-self.origin[1]
+			x,y = self.matrix_panel.xoffset,self.origin[1]
+			w=int(min(self.data[0].get_xsize()*self.scale,self.view_width()))
 			h=int(min(self.data[0].get_ysize()*self.scale,self.gl_widget.height()))
 			
+			self.mx_cols = int(self.matrix_panel.xvisible)
 			[xstart,visiblecols,ystart,visiblerows] = self.get_matrix_ranges(x,y)
+			visiblecols = int(self.matrix_panel.xvisible)
+			xstart = 0
 				
 #			print "rows",visiblerows-ystart,"cols",visiblecols-xstart
 			#print "yoffset",yoff,"xoffset",xoff
@@ -909,22 +963,22 @@ class EMImageMXModule(EMGUIModule):
 			self.coords = {}
 			for row in range(ystart,visiblerows):
 				for col in range(xstart,visiblecols):
-					i = (row)*self.mx_cols+col
+					i = int((row)*self.mx_cols+col)
 					try:
 						if self.data[i] == None: continue
 					except: continue
 					#print i,n
 					if i >= n : break
-					tx = int((w+2)*(col) + x)
-					ty = int((h+2)*(row) + y)
+					tx = int((w+self.matrix_panel.min_sep)*(col) + x)
+					ty = int((h+self.matrix_panel.min_sep)*(row) + y)
 					tw = w
 					th = h
 					rx = 0	#render x
 					ry = 0	#render y
 					#print "Prior",i,':',row,col,tx,ty,tw,th,y,x
 					drawlabel = True
-					if (tx+tw) > self.gl_widget.width():
-						tw = int(self.gl_widget.width()-tx)
+					if (tx+tw) > self.view_width():
+						tw = int(self.view_width()-tx)
 					elif tx<0:
 						drawlabel=False
 						rx = int(ceil(-tx*invscale))
@@ -1171,17 +1225,6 @@ class EMImageMXModule(EMGUIModule):
 		for c in s:
 			GLUT.glutBitmapCharacter(GLUT.GLUT_BITMAP_9_BY_15,ord(c))
 
-	def resize_event(self, width, height):
-		if self.data and len(self.data)>0 :
-			if self.data[0].get_xsize()*self.scale != 0:
-				self.set_mx_cols(int(self.gl_widget.width()/(self.data[0].get_xsize()*self.scale)))
-			else:
-				print "error", self.data[0].get_xsize(),self.scale
-		#except: pass
-		if self.data and len(self.data)>0 and (self.data[0].get_ysize()*self.scale>self.gl_widget.height() or self.data[0].get_xsize()*self.scale>self.gl_widget.width()):
-			self.scale=min(float(self.gl_widget.height())/self.data[0].get_ysize(),float(self.gl_widget.width())/self.data[0].get_xsize())
-			
-		self.scroll_bar.height = height
 				
 	def is_visible(self,n):
 		try:
@@ -1199,7 +1242,7 @@ class EMImageMXModule(EMGUIModule):
 				self.targetorigin=(0,self.coords[n][1]-self.gl_widget.height()/2+self.data[0].get_ysize()*self.scale/2)
 			except: return
 		else:
-			try: self.targetorigin=(self.coords[n][0]-self.gl_widget.width()/2+self.data[0].get_xsize()*self.scale/2,self.coords[n][1]-self.gl_widget.height()/2+self.data[0].get_ysize()*self.scale/2)
+			try: self.targetorigin=(self.coords[n][0]-self.view_width()/2+self.data[0].get_xsize()*self.scale/2,self.coords[n][1]-self.gl_widget.height()/2+self.data[0].get_ysize()*self.scale/2)
 			except: return
 		self.targetspeed=hypot(self.targetorigin[0]-self.origin[0],self.targetorigin[1]-self.origin[1])/20.0
 #		print n,self.origin
@@ -1379,33 +1422,48 @@ class EMImageMXModule(EMGUIModule):
 		if self.data == None: return
 		ystep = (self.data[0].get_ysize()*self.scale + 2)/2.0
 		xstep = (self.data[0].get_xsize()*self.scale + 2)/2.0
+		oldy = self.origin[1]
+		newy = self.origin[1]
 		if event.key() == Qt.Key_F1:
 			self.display_web_help()
 		elif event.key()==Qt.Key_Up :
-			self.origin=(self.origin[0],self.origin[1]+ystep)
-			self.updateGL()
+			newy = self.origin[1]-ystep
 		elif event.key()==Qt.Key_Down :
-			self.origin=(self.origin[0],self.origin[1]-ystep)
-			self.updateGL()
+			newy = self.origin[1]+ystep
 		elif event.key()==Qt.Key_Left :
-			self.origin=(self.origin[0]+xstep,self.origin[1])
-			self.updateGL()
+			pass
+			#self.origin=(self.origin[0]+xstep,self.origin[1])
+			#self.updateGL()
 		elif event.key()==Qt.Key_Right:
-			self.origin=(self.origin[0]-xstep,self.origin[1])
-			self.updateGL()
+			pass
+			#self.origin=(self.origin[0]-xstep,self.origin[1])
+			#self.updateGL()
 		else:
 			return
 		
+		newy = self.check_newy(newy)
+		if newy == oldy: return # this won't hold if the zoom level is great and an image occupies more than the size of the display
+		
+		self.origin=(self.origin[0],newy)
+		self.updateGL()
+		
 		if self.emit_events: self.emit(QtCore.SIGNAL("origin_update"),self.origin)
 		
+	def check_newy(self,y):
+		newy = y
+		
+		if newy > self.matrix_panel.min_sep: newy = self.matrix_panel.min_sep # this is enforcing a strong boundary at the bottom
+		elif newy < -self.matrix_panel.max_y: newy = -self.matrix_panel.max_y
+		
+		 
+		return newy
 	
 	def origin_update(self,new_origin):
 		self.origin = new_origin
 			
 	def mousePressEvent(self, event):
 		if (self.gl_widget.width()-event.x() <= self.scroll_bar.width):
-			print "scroll bar not yet working"
-			return
+			self.scroll_bar_has_mouse = True
 			self.scroll_bar.mousePressEvent(event)
 			return
 		
@@ -1425,8 +1483,24 @@ class EMImageMXModule(EMGUIModule):
 		else: self.mouse_event_handler.mouse_down(event)
 		
 	def mouseMoveEvent(self, event):
+		if self.scroll_bar_has_mouse:
+			self.scroll_bar.mouseMoveEvent(event)
+			return
+		
+		if (self.gl_widget.width()-event.x() <= self.scroll_bar.width):
+			print "scroll bar not yet working"
+			return
+			self.scroll_bar.mousePressEvent(event)
+			return
+		
 		if self.mousedrag:
-			self.origin=(self.origin[0]+self.mousedrag[0]-event.x(),self.origin[1]-self.mousedrag[1]+event.y())
+			oldy = self.origin[1]
+			newy = self.origin[1]+self.mousedrag[1]-event.y()
+			newy = self.check_newy(newy)
+			if newy == oldy: return # this won't hold if the zoom level is great and an image occupies more than the size of the display
+	
+			#self.origin=(self.origin[0]+self.mousedrag[0]-event.x(),self.origin[1]-self.mousedrag[1]+event.y())
+			self.origin=(self.matrix_panel.xoffset,newy)
 			if self.emit_events: self.emit(QtCore.SIGNAL("set_origin"),self.origin[0],self.origin[1],False)
 			self.mousedrag=(event.x(),event.y())
 			try:self.gl_widget.updateGL()
@@ -1435,6 +1509,11 @@ class EMImageMXModule(EMGUIModule):
 			self.mouse_event_handler.mouse_move(event)
 		
 	def mouseReleaseEvent(self, event):
+		if self.scroll_bar_has_mouse:
+			self.scroll_bar.mouseReleaseEvent(event)
+			self.scroll_bar_has_mouse = False
+			return
+		
 		self.application().setOverrideCursor(Qt.ArrowCursor)
 		lc=self.scr_to_img((event.x(),event.y()))
 		if self.mousedrag:
@@ -1443,17 +1522,16 @@ class EMImageMXModule(EMGUIModule):
 			
 	def wheelEvent(self, event):
 		if event.delta() > 0:
-			self.set_scale( self.scale * self.mag,True )
+			self.set_scale( self.scale * self.mag )
 		elif event.delta() < 0:
-			self.set_scale(self.scale * self.invmag,True)
+			self.set_scale(self.scale * self.invmag)
 		#self.resize_event(self.gl_widget.width(),self.gl_widget.height())
 		# The self.scale variable is updated now, so just update with that
 		if self.inspector: self.inspector.set_scale(self.scale)
 	
 	def mouseDoubleClickEvent(self,event):
 		pass
-		
-		
+	
 	def leaveEvent(self,event):
 		self.application().setOverrideCursor(Qt.ArrowCursor)
 		if self.mousedrag:
@@ -1464,16 +1542,8 @@ class EMImageMXModule(EMGUIModule):
 	
 	def draw_scroll_bar(self):
 		width = self.gl_widget.width()
-		height =self.gl_widget.height()
-		glMatrixMode(GL_PROJECTION)
-		glPushMatrix()
-		glLoadIdentity()
-		glOrtho(0,width,0,height,-10,10)
-		glMatrixMode(GL_MODELVIEW)
-		glLoadIdentity()
 		glEnable(GL_LIGHTING)
 		glEnable(GL_NORMALIZE)
-		#glDisable(GL_DEPTH_TEST)
 		glDisable(GL_TEXTURE_2D)
 
 		glPushMatrix()
@@ -1481,15 +1551,8 @@ class EMImageMXModule(EMGUIModule):
 		self.scroll_bar.draw()
 		glPopMatrix()
 		
-		glMatrixMode(GL_PROJECTION)
-		glPopMatrix()
-		glMatrixMode(GL_MODELVIEW)
-		
-		
-		
-
 class EMGLScrollBar(EMBasicOpenGLObjects):
-	def __init__(self):
+	def __init__(self,target):
 		EMBasicOpenGLObjects.__init__(self)
 		self.min = 0
 		self.max = 0
@@ -1511,7 +1574,42 @@ class EMGLScrollBar(EMBasicOpenGLObjects):
 		
 		self.starty = 2*self.arrow_button_height
 		
+		self.target = weakref.ref(target)
+		self.scroll_bit_position_ratio = 0
+		self.scroll_bit_position = 0
+		
+		self.mouse_scroll_pos = None # used for moving the scroll bar with the mouse
+	def update_stuff(self):
+	
+		view_height = self.target().gl_widget.height()
+		current_y = self.target().origin[1]
+		panel_height = self.target().matrix_panel.height
+		adjusted_height = panel_height - view_height # adjusted height is the maximum value for current y!
+		
+		self.scroll_bar_height = self.height - self.starty
+		self.scroll_bit_height = view_height/float(panel_height)*self.scroll_bar_height
+		
+		adjusted_scroll_bar_height = self.scroll_bar_height - self.scroll_bit_height
+		
+		self.scroll_bit_position_ratio = (-float(current_y)/adjusted_height)
+		self.scroll_bit_position = self.scroll_bit_position_ratio *adjusted_scroll_bar_height
+		
+	
+	def update_target_ypos(self):
+		
+		view_height = self.target().gl_widget.height()
+		panel_height = self.target().matrix_panel.height
+		adjusted_height = panel_height - view_height # adjusted height is the maximum value for current y!
+	
+		new_y = -self.scroll_bit_position_ratio*adjusted_height
+		new_y = self.target().check_newy(new_y)
+		
+		old_x = self.target().origin[0]
+		self.target().origin =( old_x, new_y)
+	
 	def draw(self):
+		
+		self.update_stuff()
 		
 		sx = self.startx
 		sy = self.starty
@@ -1572,11 +1670,84 @@ class EMGLScrollBar(EMBasicOpenGLObjects):
 		glMaterial(GL_FRONT,GL_SHININESS,20.0)
 		
 		glPushMatrix()
-		glTranslate((ex-sx)/2,sy,0)
+		glTranslate((ex-sx)/2,sy+self.scroll_bit_position,1)
 		glRotate(-90,1,0,0)
-		glScale((ex-sx)/3,1, 20)
+		glScale((ex-sx)/3,1, self.scroll_bit_height)
 		glCallList(self.getCylinderDL())
 		glPopMatrix()
+		
+	def down_button_pressed(self):
+		image_height = self.target().data[0].get_ysize()*self.target().scale+self.target().matrix_panel.min_sep
+		newy = self.target().origin[1]+ image_height
+		newy = self.target().check_newy(newy)
+		oldx = self.target().origin[0]
+		self.target().origin =( oldx, newy)
+		self.target().updateGL()
+
+		pass
+	
+	def up_button_pressed(self):
+		image_height = self.target().data[0].get_ysize()*self.target().scale+self.target().matrix_panel.min_sep
+		newy  = self.target().origin[1] - image_height
+		newy = self.target().check_newy(newy)
+		oldx = self.target().origin[0]
+		self.target().origin =( oldx, newy)
+		self.target().updateGL()
+		pass
+	
+	def scroll_down(self):
+		newy  = self.target().origin[1]+ self.target().gl_widget.height()
+		newy = self.target().check_newy(newy)
+		oldx = self.target().origin[0]
+		self.target().origin =( oldx, newy)
+		self.target().updateGL()
+
+	def scroll_up(self):
+		newy  = self.target().origin[1] - self.target().gl_widget.height()
+		newy = self.target().check_newy(newy)
+		oldx = self.target().origin[0]
+		self.target().origin =( oldx, newy)
+		self.target().updateGL()
+		
+	def scroll_move(self,dy):
+		
+		ratio = dy/float(self.scroll_bar_height)
+	
+		panel_height = self.target().matrix_panel.height
+		newy  = self.target().origin[1] - ratio*panel_height
+		newy = self.target().check_newy(newy)
+		oldx = self.target().origin[0]
+		self.target().origin =( oldx, newy)
+		self.target().updateGL()
+		
+	def mousePressEvent(self,event):
+		x = self.target().gl_widget.width()-event.x()
+		y = self.target().gl_widget.height()-event.y()
+		if x < 0 or x > self.width: return # this shouldn't happen but it's nice to check I guess
+		
+		if y < self.arrow_button_height:
+			self.down_button_pressed()
+		elif y < 2*self.arrow_button_height:
+			self.up_button_pressed()
+		else:
+			scroll_bit_ymin = self.starty +self.scroll_bit_position
+			scroll_bit_ymax = scroll_bit_ymin + self.scroll_bit_height
+			if y >= scroll_bit_ymin and y < scroll_bit_ymax:
+				self.mouse_scroll_pos = y
+			elif y < scroll_bit_ymin:
+				self.scroll_down()
+			else:
+				self.scroll_up()
+	
+	def mouseMoveEvent(self,event):
+		if self.mouse_scroll_pos != None:
+			y = self.target().gl_widget.height()-event.y()
+			dy = y - self.mouse_scroll_pos
+			self.scroll_move(dy)
+			self.mouse_scroll_pos = y
+		
+	def mouseReleaseEvent(self,event):
+		self.mouse_scroll_pos = None
 		
 class EMImageInspectorMX(QtGui.QWidget):
 	def __init__(self,target,allow_col_variation=False,allow_window_variation=False,allow_opt_button=False):
@@ -1788,7 +1959,6 @@ class EMImageInspectorMX(QtGui.QWidget):
 	
 	def get_desktop_hint(self):
 		return "inspector"
-	
 	
 	def set_scale(self,val):
 		if self.busy : return

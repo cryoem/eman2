@@ -685,10 +685,6 @@ namespace EMAN
 			float x_scale, y_scale, z_scale;
 	
 			float bin;
-
-			float* frc;
-			float* frc_norm_rdata;
-			float* frc_norm_dt;
 	
 			// The maximum dimension (radius) of a considered pixel
 			int size;
@@ -698,6 +694,10 @@ namespace EMAN
 			
 			// values used for calculating the normalization value
 			float r, rn;
+			
+			float* frc;
+			float* frc_norm_rdata;
+			float* frc_norm_dt;
 			
 			int off[8];
 			float g[8];
