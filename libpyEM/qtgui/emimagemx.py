@@ -1388,16 +1388,17 @@ class EMImageMXModule(EMGUIModule):
 
 	def keyPressEvent(self,event):
 		if self.data == None: return
-		ystep = (self.data.get_ysize()*self.scale + 2)/2.0
-		xstep = (self.data.get_xsize()*self.scale + 2)/2.0
-		oldy = self.origin[1]
-		newy = self.origin[1]
+	
 		if event.key() == Qt.Key_F1:
 			self.display_web_help()
 		elif event.key()==Qt.Key_Up :
-			newy = self.origin[1]-ystep
+			self.scroll_bar.down_button_pressed(False)
 		elif event.key()==Qt.Key_Down :
-			newy = self.origin[1]+ystep
+			self.scroll_bar.down_button_pressed(False)
+		elif event.key()==Qt.Key_W :
+			self.scroll_bar.scroll_up(False)
+		elif event.key()==Qt.Key_S :
+			self.scroll_bar.scroll_down(False)
 		elif event.key()==Qt.Key_Left :
 			pass
 			#self.origin=(self.origin[0]+xstep,self.origin[1])
@@ -1408,12 +1409,6 @@ class EMImageMXModule(EMGUIModule):
 			#self.updateGL()
 		else:
 			return
-		
-		newy = self.check_newy(newy)
-		if newy == oldy: return # this won't hold if the zoom level is great and an image occupies more than the size of the display
-		
-		self.origin=(self.origin[0],newy)
-		self.updateGL()
 		
 		if self.emit_events: self.emit(QtCore.SIGNAL("origin_update"),self.origin)
 		
@@ -1656,8 +1651,8 @@ class EMGLScrollBar(EMBasicOpenGLObjects):
 		glVertex(x1,y2,1)		
 		glEnd()
 
-	def down_button_pressed(self):
-		self.down_arrow_color = self.scroll_bar_press_color
+	def down_button_pressed(self,color_change=True):
+		if color_change: self.down_arrow_color = self.scroll_bar_press_color
 		image_height = self.target().data.get_ysize()*self.target().scale+self.target().matrix_panel.min_sep
 		newy = self.target().origin[1]+ image_height
 		newy = self.target().check_newy(newy)
@@ -1665,8 +1660,8 @@ class EMGLScrollBar(EMBasicOpenGLObjects):
 		self.target().origin =( oldx, newy)
 		self.target().updateGL()
 
-	def up_button_pressed(self):
-		self.up_arrow_color = self.scroll_bar_press_color
+	def up_button_pressed(self,color_change=True):
+		if color_change: self.up_arrow_color = self.scroll_bar_press_color
 		image_height = self.target().data.get_ysize()*self.target().scale+self.target().matrix_panel.min_sep
 		newy  = self.target().origin[1] - image_height
 		newy = self.target().check_newy(newy)
@@ -1674,16 +1669,16 @@ class EMGLScrollBar(EMBasicOpenGLObjects):
 		self.target().origin =( oldx, newy)
 		self.target().updateGL()
 	
-	def scroll_down(self):
-		self.scroll_bar_color = self.scroll_bar_press_color
+	def scroll_down(self,color_change=True):
+		if color_change: self.scroll_bar_color = self.scroll_bar_press_color
 		newy  = self.target().origin[1]+ self.target().gl_widget.height()
 		newy = self.target().check_newy(newy)
 		oldx = self.target().origin[0]
 		self.target().origin =( oldx, newy)
 		self.target().updateGL()
 
-	def scroll_up(self):
-		self.scroll_bar_color = self.scroll_bar_press_color
+	def scroll_up(self,color_change=True):
+		if color_change: self.scroll_bar_color = self.scroll_bar_press_color
 		newy  = self.target().origin[1] - self.target().gl_widget.height()
 		newy = self.target().check_newy(newy)
 		oldx = self.target().origin[0]
