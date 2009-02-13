@@ -595,6 +595,7 @@ class EMImage2DModule(EMGUIModule):
 		self.otherdatascale = scale
 		self.otherdatablend = blend
 		self.otherdataupdate=True
+		
 	def get_data_dims(self):
 		data = None
 		

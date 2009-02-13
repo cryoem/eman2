@@ -50,6 +50,7 @@ from PyQt4.QtCore import QTimer
 
 from emglobjects import EMOpenGLFlagsAndTools,EMGLProjectionViewMatrices,EMBasicOpenGLObjects
 from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
+from emanimationutil import LineAnimation
 import weakref
 
 from emapplication import EMProgressDialogModule
@@ -337,14 +338,28 @@ class EMMatrixPanel:
 		self.xoffset = 0 # Offset for centering the display images in x
 		self.visiblerows = 0 # the number of visible rows
 		self.rowstart = 0
+		
+		self.scale_cache = {}
 	
 	def update_panel_params(self,view_width,view_height,view_scale,view_data,y):
 		rendered_image_width = (view_data.get_xsize())*view_scale
 		rendered_image_height = view_data.get_ysize()*view_scale
 		
-		self.visiblecols = int(floor(view_width/(rendered_image_width+self.min_sep)))
+		[self.ystart,self.visiblerows,self.visiblecols] = self.visible_row_col(view_width,view_height,view_scale,view_data,y)
 		
-		if self.visiblecols == 0: 
+		xsep = view_width - self.visiblecols*(rendered_image_width+self.min_sep)
+		self.xoffset = xsep/2		
+		
+		self.height = ceil(len(view_data)/float(self.visiblecols))*(rendered_image_height+self.min_sep) + self.min_sep
+		self.max_y = self.height - view_height # adjusted height is the maximum value for current y!
+	
+	def visible_row_col(self,view_width,view_height,view_scale,view_data,y):
+		rendered_image_width = (view_data.get_xsize())*view_scale
+		rendered_image_height = view_data.get_ysize()*view_scale
+		
+		visiblecols = int(floor(view_width/(rendered_image_width+self.min_sep)))
+		
+		if visiblecols == 0: 
 			print "scale is too large - the panel can not be rendered"
 			return
 		
@@ -356,27 +371,88 @@ class EMMatrixPanel:
 		if y < 0:
 			ybelow = floor(-y/(h+2))
 			yoff = ybelow*(h+2)+y
-			self.visiblerows = int(ceil(float(view_height-yoff)/(h+2)))
-		else: self.visiblerows = int(ceil(float(view_height-y)/(h+2)))
+			visiblerows = int(ceil(float(view_height-yoff)/(h+2)))
+		else: visiblerows = int(ceil(float(view_height-y)/(h+2)))
 				
-		maxrow = int(ceil(float(len(view_data))/self.visiblecols))
-		self.ystart =-y/(h+2)
-		if self.ystart < 0: self.ystart = 0
-		elif self.ystart > 0:
-			self.ystart = int(self.ystart)
-			self.visiblerows = self.visiblerows + self.ystart
-		if self.visiblerows > maxrow: self.visiblerows = maxrow
+		maxrow = int(ceil(float(len(view_data))/visiblecols))
+		rowstart =-y/(h+2)
+		if rowstart < 0: rowstart = 0
+		elif rowstart > 0:
+			rowstart = int(rowstart)
+			visiblerows = visiblerows + rowstart
+		if visiblerows > maxrow: visiblerows = maxrow
 		
-		self.visiblerows = int(self.visiblerows)
-		self.ystart = int(self.ystart)
+		visiblerows = int(visiblerows)
+		rowstart = int(rowstart)
 		
-		xsep = view_width - self.visiblecols*(rendered_image_width+self.min_sep)
-		self.xoffset = xsep/2		
+		return [rowstart,visiblerows,visiblecols]
+	
+	
+	def basic_visible_row_col(self,view_width,view_height,view_scale,view_data):
+		rendered_image_width = (view_data.get_xsize())*view_scale
+		rendered_image_height = view_data.get_ysize()*view_scale
 		
-		self.height = ceil(len(view_data)/float(self.visiblecols))*(rendered_image_height+self.min_sep) + self.min_sep
-		self.max_y = self.height - view_height # adjusted height is the maximum value for current y!
+		visiblecols = int(floor(view_width/(rendered_image_width+self.min_sep)))
+		visiblerows = int(floor(view_height/(rendered_image_height+self.min_sep)))
 		
+		return [visiblerows,visiblecols]
 		
+	def get_min_scale(self,view_width,view_height,view_scale,view_data):
+		'''
+		Gets min scale using something like a bifurcation algorithm
+		
+		'''
+		
+		s = str(view_width) + str(view_height)
+		if self.scale_cache.has_key(s):
+			return self.scale_cache[s]
+		
+		n = len(view_data)
+		
+		[visiblerows,visiblecols] = self.basic_visible_row_col(view_width,view_height,view_scale,view_data)
+		
+		if self.auto_scale_logic(visiblerows,visiblecols,n) == 1:
+			min_scale = view_scale
+			max_scale = min_scale
+			while (True):
+				max_scale *= 2
+				[visiblerows,visiblecols] = self.basic_visible_row_col(view_width,view_height,max_scale,view_data)
+				if self.auto_scale_logic(visiblerows,visiblecols,n) == -1:
+					break
+		else:
+			max_scale = view_scale
+			min_scale = max_scale
+			while (True):
+				min_scale /= 2
+				[visiblerows,visiblecols] = self.basic_visible_row_col(view_width,view_height,min_scale,view_data)
+				if self.auto_scale_logic(visiblerows,visiblecols,n) == 1:
+					break
+				
+		
+		while (True):
+			estimate_scale = (min_scale + max_scale)*0.5
+			[visiblerows,visiblecols] = self.basic_visible_row_col(view_width,view_height,estimate_scale,view_data)
+			#[rowstart,visiblerows,visiblecols] = self.visible_row_col(view_width,view_height,estimate_scale,view_data,-self.min_sep)
+			if self.auto_scale_logic(visiblerows,visiblecols,n) >= 0:
+				min_scale = estimate_scale
+			elif self.auto_scale_logic(visiblerows,visiblecols,n) == -1:
+				max_scale = estimate_scale
+		
+			if abs(min_scale-max_scale) < 0.01:
+				self.scale_cache[s] = max_scale
+				return max_scale
+				
+	
+		
+	def auto_scale_logic(self,visiblerows,visiblecols,n):
+		if (visiblerows*visiblecols) >= n :
+			if ((visiblerows-1)*visiblecols) < n:
+
+				return 0 # scale is perfect
+			else:
+				return 1 # scale is too small
+		else: 
+			return -1 # scale is too large
 		
 		
 #		print self.height,self.xsep,self.visiblecols
@@ -457,10 +533,12 @@ class EMImageMXModule(EMGUIModule):
 		self.image_file_name = None
 		self.first_render = True # a hack, something is slowing us down in FTGL
 		self.scroll_bar = EMGLScrollBar(self)
+		self.draw_scroll = True
 		self.scroll_bar_has_mouse = False
 		self.matrix_panel = EMMatrixPanel()
-		self.origin=(0,self.matrix_panel.min_sep)
+		self.origin=(self.matrix_panel.min_sep,self.matrix_panel.min_sep)
 		self.emdata_list_cache = None # all import emdata list cache, the object that stores emdata objects efficiently. Must be initialized via set_data or set_image_file_name
+		self.animation_enabled = True
 		
 		self.coords={}
 		self.nshown=0
@@ -725,9 +803,21 @@ class EMImageMXModule(EMGUIModule):
 	
 	def set_origin(self,x,y,update_gl=True):
 		"""Set the display origin within the image"""
-		self.origin=(x,y)
-		self.targetorigin=None
+		if self.animation_enabled:
+			animation = LineAnimation(self,self.origin,(x,y))
+			self.get_qt_context_parent().register_animatable(animation)
+			return True
+		else:
+			self.origin=(x,y)
+			self.targetorigin=None
 		if update_gl: self.updateGL()
+		
+	def set_line_animation(self,x,y):
+		self.origin=(x,y)
+		self.updateGL()
+	
+	def animation_done_event(self,event):
+		pass
 		
 	def set_scale(self,newscale,update_gl=True):
 		"""Adjusts the scale of the display. Tries to maintain the center of the image at the center"""
@@ -735,20 +825,41 @@ class EMImageMXModule(EMGUIModule):
 		if self.data and len(self.data)>0 and (self.data.get_ysize()*newscale>self.gl_widget.height() or self.data.get_xsize()*newscale>self.view_width()):
 			newscale=min(float(self.gl_widget.height())/self.data.get_ysize(),float(self.view_width())/self.data.get_xsize())
 			if self.inspector: self.inspector.scale.setValue(newscale)
-				
+		
+		oldscale = self.scale
 		self.scale=newscale
-#		
 		self.matrix_panel.update_panel_params(self.view_width(),self.gl_widget.height(),self.scale,self.data,self.origin[1])
-		self.scroll_bar.update_target_ypos()	
+		
+		
+		view_height = self.gl_widget.height()
+		panel_height = self.matrix_panel.height
+		if panel_height < view_height :
+			if oldscale > newscale: self.scale =  self.matrix_panel.get_min_scale(self.view_width(),self.gl_widget.height(),self.scale,self.data) # this is to prevent locking
+			self.draw_scroll = False
+			self.origin=(self.matrix_panel.min_sep,self.matrix_panel.min_sep)
+			self.matrix_panel.update_panel_params(self.view_width(),self.gl_widget.height(),self.scale,self.data,self.origin[1])
+		else:
+			self.draw_scroll = True
+			self.scroll_bar.update_target_ypos()	
 		
 		if self.emit_events: self.emit(QtCore.SIGNAL("set_scale"),self.scale,adjust,update_gl)
 		if update_gl: self.updateGL()
 	
 	def resize_event(self, width, height):
-	
 		self.scroll_bar.height = height
+		
 		self.matrix_panel.update_panel_params(self.view_width(),height,self.scale,self.data,self.origin[1])
-		self.scroll_bar.update_target_ypos()
+		view_height = self.gl_widget.height()
+		panel_height = self.matrix_panel.height
+		if panel_height < view_height :
+			self.scale =  self.matrix_panel.get_min_scale(self.view_width(),self.gl_widget.height(),self.scale,self.data) # this is to prevent locking
+			self.draw_scroll = False
+			self.origin=(self.matrix_panel.min_sep,self.matrix_panel.min_sep)
+			self.matrix_panel.update_panel_params(self.view_width(),self.gl_widget.height(),self.scale,self.data,self.origin[1])
+		else:
+			self.draw_scroll = True
+			self.scroll_bar.update_target_ypos()	
+			
 		
 	def set_density_min(self,val,update_gl=True):
 		self.minden=val
@@ -847,7 +958,7 @@ class EMImageMXModule(EMGUIModule):
 	
 	
 	def view_width(self):
-		return self.gl_widget.width() - self.scroll_bar.width
+		return self.gl_widget.width() - self.draw_scroll*self.scroll_bar.width
 	
 	def render(self):
 		if not self.data : return
@@ -914,7 +1025,7 @@ class EMImageMXModule(EMGUIModule):
 			self.nshown=0
 			
 			#x,y=-self.origin[0],-self.origin[1]
-			x,y = self.matrix_panel.xoffset,self.origin[1]
+			x,y = self.matrix_panel.xoffset,int(self.origin[1])
 			w=int(min(self.data.get_xsize()*self.scale,self.view_width()))
 			h=int(min(self.data.get_ysize()*self.scale,self.gl_widget.height()))
 				
@@ -1027,24 +1138,23 @@ class EMImageMXModule(EMGUIModule):
 			if self.first_render: #A hack, FTGL is slowing us down
 				self.display_states = []
 				self.first_render = False 
-				
-		self.draw_scroll_bar()
+		if self.draw_scroll: self.draw_scroll_bar()
 	
 	def __render_excluded_square(self):
 		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.2,.2,.8,1.0))
 		glMaterial(GL_FRONT,GL_SPECULAR,(.2,.2,.8,1.0))
 		glMaterial(GL_FRONT,GL_SHININESS,100.0)
 		glBegin(GL_QUADS)
-		glColor(0,0,0)
+		#glColor(0,0,0)
 		glNormal(-.1,.1,1)
 		glVertex(-1,1,0.1)
-		glColor(0.15,0.15,0.15)
+		#glColor(0.15,0.15,0.15)
 		glNormal(-1,1,-0.1)
 		glVertex(-1,-1,0.1)	
-		glColor(0.3,0.3,0.3)
+		#glColor(0.3,0.3,0.3)
 		glNormal(.1,-.1,1)
 		glVertex(1,-1,0.1)
-		glColor(0.22,0.22,0.22)
+		#glColor(0.22,0.22,0.22)
 		glNormal(1,-1,0.1)
 		glVertex(1,1,0.1)
 		glEnd()
@@ -1393,12 +1503,12 @@ class EMImageMXModule(EMGUIModule):
 		if event.key() == Qt.Key_F1:
 			self.display_web_help()
 		elif event.key()==Qt.Key_Up :
+			self.scroll_bar.up_button_pressed(False)
+		elif event.key()==Qt.Key_Down:
 			self.scroll_bar.down_button_pressed(False)
-		elif event.key()==Qt.Key_Down :
-			self.scroll_bar.down_button_pressed(False)
-		elif event.key()==Qt.Key_W :
+		elif event.key()==Qt.Key_W or event.key()==Qt.Key_PageUp:
 			self.scroll_bar.scroll_up(False)
-		elif event.key()==Qt.Key_S :
+		elif event.key()==Qt.Key_S or event.key()==Qt.Key_PageDown:
 			self.scroll_bar.scroll_down(False)
 		elif event.key()==Qt.Key_Left :
 			pass
@@ -1435,6 +1545,7 @@ class EMImageMXModule(EMGUIModule):
 			self.show_inspector(1)
 #			self.emit(QtCore.SIGNAL("inspector_shown"),event)
 		elif event.button()==Qt.RightButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
+			if not self.draw_scroll: return # if the (vertical) scroll bar isn't drawn then mouse movement is disabled (because the images occupy the whole view)
 			app =  QtGui.QApplication.instance()
 			try:
 				self.application().setOverrideCursor(Qt.ClosedHandCursor)
@@ -1451,7 +1562,7 @@ class EMImageMXModule(EMGUIModule):
 			self.scroll_bar.mouseMoveEvent(event)
 			return
 		
-		if self.mousedrag:
+		if self.mousedrag and self.draw_scroll: # if the (vertical) scroll bar isn't drawn then mouse movement is disabled (because the images occupy the whole view)
 			oldy = self.origin[1]
 			newy = self.origin[1]+self.mousedrag[1]-event.y()
 			newy = self.check_newy(newy)
@@ -1509,9 +1620,8 @@ class EMImageMXModule(EMGUIModule):
 		self.scroll_bar.draw()
 		glPopMatrix()
 		
-class EMGLScrollBar(EMBasicOpenGLObjects):
+class EMGLScrollBar:
 	def __init__(self,target):
-		EMBasicOpenGLObjects.__init__(self)
 		self.min = 0
 		self.max = 0
 		self.current_pos = 0
@@ -1580,8 +1690,8 @@ class EMGLScrollBar(EMBasicOpenGLObjects):
 		new_y = self.target().check_newy(new_y)
 		
 		old_x = self.target().origin[0]
-		self.target().origin =( old_x, new_y)
-	
+		self.target().set_origin(old_x,new_y,False) # suppress gl updates because the calling functions always do this (at least, for now)
+		
 	def draw(self):
 		
 		self.update_stuff()
@@ -1658,8 +1768,7 @@ class EMGLScrollBar(EMBasicOpenGLObjects):
 		newy = self.target().origin[1]+ image_height
 		newy = self.target().check_newy(newy)
 		oldx = self.target().origin[0]
-		self.target().origin =( oldx, newy)
-		self.target().updateGL()
+		self.target().set_origin(oldx,newy)
 
 	def up_button_pressed(self,color_change=True):
 		if color_change: self.up_arrow_color = self.scroll_bar_press_color
@@ -1667,24 +1776,21 @@ class EMGLScrollBar(EMBasicOpenGLObjects):
 		newy  = self.target().origin[1] - image_height
 		newy = self.target().check_newy(newy)
 		oldx = self.target().origin[0]
-		self.target().origin =( oldx, newy)
-		self.target().updateGL()
+		self.target().set_origin(oldx,newy)
 	
 	def scroll_down(self,color_change=True):
 		if color_change: self.scroll_bar_color = self.scroll_bar_press_color
 		newy  = self.target().origin[1]+ self.target().gl_widget.height()
 		newy = self.target().check_newy(newy)
 		oldx = self.target().origin[0]
-		self.target().origin =( oldx, newy)
-		self.target().updateGL()
+		self.target().set_origin(oldx,newy)
 
 	def scroll_up(self,color_change=True):
 		if color_change: self.scroll_bar_color = self.scroll_bar_press_color
 		newy  = self.target().origin[1] - self.target().gl_widget.height()
 		newy = self.target().check_newy(newy)
 		oldx = self.target().origin[0]
-		self.target().origin =( oldx, newy)
-		self.target().updateGL()
+		self.target().set_origin(oldx,newy)
 		
 	def scroll_move(self,dy):
 		ratio = dy/float(self.scroll_bar_height)
@@ -1692,7 +1798,7 @@ class EMGLScrollBar(EMBasicOpenGLObjects):
 		newy  = self.target().origin[1] - ratio*panel_height
 		newy = self.target().check_newy(newy)
 		oldx = self.target().origin[0]
-		self.target().origin =( oldx, newy)
+		self.target().origin = (oldx,newy)
 		self.target().updateGL()
 		
 	def mousePressEvent(self,event):
@@ -1851,10 +1957,6 @@ class EMImageInspectorMX(QtGui.QWidget):
 			self.ncol.setValue(self.target().get_rows())
 			self.hbl.addWidget(self.ncol)
 			
-		self.lbl = QtGui.QLabel("#/row:")
-		self.lbl.setAlignment(Qt.AlignRight|Qt.AlignVCenter)
-		self.hbl.addWidget(self.lbl)
-		
 		if allow_window_variation:
 			self.lbl3 = QtGui.QLabel("#/mx:")
 			self.lbl3.setAlignment(Qt.AlignRight|Qt.AlignVCenter)
@@ -2041,14 +2143,25 @@ class EMImageInspectorMX(QtGui.QWidget):
 		 
 class EMDataListCache:
 	'''
-	This class designed primarily for memory management in the context of large lists of EMData objects.
+	This class designed primarily for memory management in the context of large lists of EMData objects. It is only efficient
+	if accessing contiguous blocks of images - it is not effecient if randomly accessing images.
 	
-	The main public interface is to acquired a list of EMData objects in a specific range
+	The basic strategy is this - if asked for an image that is not currently in memory, then the cache is refocused about the newly
+	requested image index.
+	
+	You can initialize this object with a filename of an image matrix. Then you can treat it as though it's
+	a list of EMData objects. For example,
+	
+	data = EMDataListCache("particles.hdf")
+	image1 = data[1] # just treat it like a list
+	
+	for i in data: i.write_image("test.hdf",-1) # iterable and enumerable
+	
 	'''
 	LIST_MODE = 'list_mode'
 	FILE_MODE = 'file_mode'
 	def __init__(self,object,cache_size=256,start_idx=0):
-		DB = EMAN2db.EMAN2DB.open_db(".")
+		#DB = EMAN2db.EMAN2DB.open_db(".")
 		self.xsize = -1
 		self.ysize = -1
 		self.keys = None
@@ -2059,11 +2172,12 @@ class EMDataListCache:
 			self.cache_size = self.max_idx
 			self.images = object
 			self.start_idx = 0
-			DB.open_dict("emimage_mx_cache")
-			self.db = DB.emimage_mx_cache
-			self.exclusions_key = "interactive_exclusions"
-			self.db[self.exclusions_key] = []
-			self.exclusions = self.db["interactive_exclusions"]
+#			DB.open_dict("emimage_mx_cache")
+#			self.db = DB.emimage_mx_cache
+#			self.exclusions_key = "interactive_exclusions"
+#			self.db[self.exclusions_key] = []
+#			self.exclusions = self.db["interactive_exclusions"]
+			self.exclusions = []
 			
 			for i,d in enumerate(self.images):	d.set_attr("original_number",i)
 
@@ -2082,16 +2196,18 @@ class EMDataListCache:
 				self.cache_size = cache_size
 			self.start_idx = start_idx - self.cache_size/2
 						
-			DB.open_dict("emimage_mx_cache")
-			self.db = DB.emimage_mx_cache
-			self.exclusions_key = self.file_name+"_interactive_exclusions"
-			self.exclusions  = self.db[self.exclusions_key]
-			if self.exclusions == None: self.exclusions = []
+			#DB.open_dict("emimage_mx_cache")
+			#self.db = DB.emimage_mx_cache
+			#self.exclusions_key = self.file_name+"_interactive_exclusions"
+			#self.exclusions  = self.db[self.exclusions_key]
+			#if self.exclusions == None: self.exclusions = []
+			self.exclusions = []
 			self.__refresh_cache()
 		else:
 			print "the object used to construct the EMDataListCache is not a string (filename) or a list (of EMData objects). Can't proceed"
 			return
 		
+		self.current_iter = 0 # For iteration support
 		self.soft_delete = False # toggle to prevent permanent deletion of particles
 		self.image_width = -1
 		self.image_height = -1
@@ -2183,7 +2299,7 @@ class EMDataListCache:
 					im.set_attr("excluded",True)
 					self.exclusions.append(idx)
 			
-			if self.mode == EMDataListCache.FILE_MODE: self.db[self.exclusions_key] = self.exclusions
+			#if self.mode == EMDataListCache.FILE_MODE: self.db[self.exclusions_key] = self.exclusions
 			
 			#if self.mode == EMDataListCache.FILE_MODE: im.write_image(self.file_name,idx)
 			return 2
@@ -2229,12 +2345,15 @@ class EMDataListCache:
 				d.write_image(fsp,-1)
 
 	def get_max_idx(self):
+		''' Get the maximum image index  '''
 		return self.max_idx
 	
 	def get_num_images(self):
+		''' Get the number of images currently cached '''
 		return len(self.images)
 	
 	def set_cache_size(self,cache_size,refresh=False):
+		''' Set the cache size. May cause the cache to be refreshed, which could take a few moments '''
 		if self.mode != EMDataListCache.LIST_MODE:
 			if cache_size > self.max_idx: self.cache_size = self.max_idx
 			else: self.cache_size = cache_size
@@ -2245,6 +2364,7 @@ class EMDataListCache:
 				print "error, in list mode the cache size is always equal to the max idx"
 				return
 	def set_start_idx(self,start_idx,refresh=True):
+		''' Set the starting index of the cache, '''
 		self.start_idx = start_idx
 		if refresh: self.__refresh_cache()
 	
@@ -2304,7 +2424,20 @@ class EMDataListCache:
 				
 	def __len__(self):
 		return self.max_idx
-		
+	
+	def __iter__(self):
+		''' Iteration support '''
+		self.current_iter = 0
+		return self
+	
+	def next(self):
+		''' Iteration support '''
+		if self.current_iter > self.max_idx:
+			raise StopIteration
+		else:
+			self.current_iter += 1
+			return self[self.current_iter-1]
+
 
 if __name__ == '__main__':
 	em_app = EMStandAloneApplication()

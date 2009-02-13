@@ -112,6 +112,9 @@ def main():
 		display(imgs,app,args[0])
 	else:
 		for i in args:
+			if not file_exists(i):
+				print "file doesn't exist:",i
+				sys.exit(1)
 			display_file(i,app)
 #			n = EMUtil.get_image_count(i)
 #			nx,ny,nz = gimme_image_dimensions3D(i)
