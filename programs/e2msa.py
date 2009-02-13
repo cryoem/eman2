@@ -93,9 +93,9 @@ handled this way."""
 	out=msa(args[0],mask,options.nbasis,options.varimax,mode)
 	
 	if options.verbose : print "MSA complete"
-	for i in out:
+	for j,i in enumerate(out):
 		if options.verbose : print "Eigenvalue: ",i.get_attr("eigval")
-		i.write_image(args[1],-1)
+		i.write_image(args[1],j)
 		
 
 def msa(images,mask,nbasis,varimax,mode):
@@ -119,7 +119,8 @@ pca,pca_large or svd_gsl"""
 			im*=mask
 			im.process_inplace("normalize.unitlen")
 			mean+=im
-		mean/=float(n)
+		mean.mult(1.0/float(n))
+		mean.mult(mask)
 		
 		for i in range(n):
 			im=EMData(images,i)
@@ -143,6 +144,7 @@ pca,pca_large or svd_gsl"""
 			pca.insert_image(im)
 			
 	results=pca.analyze()
+	for im in results: im.mult(mask)
 	
 	if varimax:
 		pca=Analyzers.get("varimax",{"mask":mask})
@@ -151,6 +153,7 @@ pca,pca_large or svd_gsl"""
 			pca.insert_image(im)
 		
 		results=pca.analyze()
+		for im in results: im.mult(mask)
 
 	for im in results:
 		if im["mean"]<0 : im.mult(-1.0)

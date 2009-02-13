@@ -77,7 +77,7 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 	logid=E2init(sys.argv)
 	
 	# second parameter is always the input basis set
-	if options.nbasis>1 : basis=EMData.read_images(args[1],(0,options.nbasis))
+	if options.nbasis>1 : basis=EMData.read_images(args[1],range(options.nbasis+1))
 	else :basis=EMData.read_images(args[1])
 	
 	if options.mean1 : 
@@ -86,6 +86,8 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 	else : 
 		if options.nbasis>1 : del basis[-1]
 		mean=None
+
+	if options.verbose>1 : print "Using %d basis vectors"%len(basis)
 	
 	if options.maskfile : maskfile=EMData("options.maskfile",0)
 	else : maskfile=None
