@@ -16,8 +16,11 @@ def main():
 	parser.add_option("--subavg", type="string", default="", help="subtract average")
 	parser.add_option("--rad",    type="int",  default=-1, help="radius of mask")
 	parser.add_option("--nvec",   type="int", help="number of eigenvectors")
-	parser.add_option("--type",   type="string", default="out_of_core", help="out_of_core calculations")
 	parser.add_option("--mask",   type="string", default="", help="mask file" )
+	parser.add_option("--sdir",   type="string", default=".", help="scratch directory")
+	parser.add_option("--usebuf", action="store_true", default=False, help="use existing buffer")
+	parser.add_option("--MPI",    action="store_true", default=False, help="run mpi version" )
+	parser.add_option("--shuffle", action="store_true", default=False, help="use shuffle")
 
 	(options, args) = parser.parse_args()
 
@@ -28,9 +31,13 @@ def main():
 		print "Error: number of components is not given"
 		sys.exit(-2) 
 
+	if options.MPI:
+		from mpi import mpi_init
+		sys.argv = mpi_init( len(sys.argv), sys.argv )
+
 	from applications import pca
 	global_def.BATCH = True
-	pca(input_stacks, output_stack, options.subavg, options.rad, options.nvec, options.type, options.mask)
+	pca(input_stacks, output_stack, options.subavg, options.rad, options.sdir, options.nvec, options.shuffle, not(options.usebuf), options.mask, options.MPI)
 	global_def.BATCH = False
 
 if __name__ == "__main__":

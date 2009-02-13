@@ -9011,9 +9011,9 @@ def ssnr3d_MPI(stack, output_volume = None, ssnr_text_file = None, mask = None, 
 		vol_ssnr2, output_volume+"2.spi", "s")
 		"""
 
-def pca( input_stacks, output_stack, subavg, mask_radius, nvec, type="out_of_core", maskfile="",verbose=False ) :
+def pca( input_stacks, output_stack, subavg, mask_radius, sdir, nvec, shuffle, genbuf, maskfile="", MPI=False, verbose=False) :
 	from utilities import get_image, get_im, model_circle, model_blank
-	from EMAN2 import Analyzers
+	from statistics import pcanalyzer
 
 	if len(input_stacks)==0:
 		print "Error: no input file."
@@ -9029,6 +9029,10 @@ def pca( input_stacks, output_stack, subavg, mask_radius, nvec, type="out_of_cor
 		if(verbose):
 			print "Using spherical mask, rad=", mask_radius
 
+		if maskfile!="":
+			print "Error: mask radius and mask file cannot be given at the same time"
+			return
+
 		data = get_im( input_stacks[0] )
 		mask = model_circle(mask_radius, data.get_xsize(), data.get_ysize(), data.get_zsize())
 
@@ -9041,37 +9045,42 @@ def pca( input_stacks, output_stack, subavg, mask_radius, nvec, type="out_of_cor
 		data.read_image( input_stack, 0, True)
 		mask = model_blank(data.get_xsize(), data.get_ysize(), data.get_zsize(), bckg=1.0)
 
+	pca = pcanalyzer(mask, sdir, nvec, MPI, shuffle)
+
+
 	if subavg != "":
 		if(verbose):
 			print "Subtracting ", subavg, " from each image"
 		avg = get_image( subavg )
+		pca.setavg( avg )
+	
+	files = file_set( input_stacks )
+	if MPI:
+		from mpi import mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
+		myid = mpi_comm_rank( MPI_COMM_WORLD )
+		ncpu = mpi_comm_size( MPI_COMM_WORLD )
 	else:
-		avg = None
-	if type == "out_of_core" : ana = Analyzers.get( "pca_large", {"mask":mask, "nvec":nvec} )
-	else :                     ana = Analyzers.get( "pca", {"mask":mask, "nvec":nvec} )
+		myid = 0
+		ncpu = 1
 
-	totimg = 0
-	for j in xrange( len(input_stacks) ):
-		
-		curt_input_stack = input_stacks[j]
-		nimage = EMUtil.get_image_count( curt_input_stack )
 
-		if(verbose):
-			print "loading file ", curt_input_stack
-		for i in xrange(nimage):
-			data = get_im( curt_input_stack, i)
-			if not(avg is None):
-				data -= avg
-			ana.insert_image( data )
+	if genbuf:
+		bgn,end = MPI_start_end( files.nimg(), ncpu, myid )
+		for i in xrange(bgn,end):
+			fname, imgid = files.get( i )
+			
+			data = get_im( fname, imgid)
+			pca.insert( data )
 			if(verbose):
-				 print "Inserting image %4d" % totimg
-			totimg += 1
+				 print "Inserting image %s, %4d" % (fname, imgid)
+	else:
+		pca.usebuf( )
+		print myid, "using existing buff, nimg: ", pca.nimg
 
-	vecs = ana.analyze()
-	iout = 0
-	for vec in vecs:
-		vec.write_image( output_stack, iout)
-		iout = iout + 1
+	vecs = pca.analyze()
+	if myid==0:
+		for i in xrange( len(vecs) ):
+			vecs[i].write_image( output_stack, i)
 
 def prepare_2d_forPCA(input_stack, output_stack, average, avg = False, CTF = False):
 	"""
