@@ -3400,7 +3400,7 @@ vector<float> EMData::peak_search(int ml, float invert) {
 	EMData& buf = *this;
 	vector<Pixel> peaks;
 	int img_dim;
-	int i, j, k, l, m;
+	int i, j, k;
 	int i__1, i__2;
 	int j__1, j__2;
 	//int k__1, k__2;

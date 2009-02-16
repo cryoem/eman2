@@ -497,7 +497,7 @@ int EMAN2Ctf::from_string(const string & ctf)
 	float v;
 	const char *s=ctf.c_str();
 	
-	int ii = sscanf(s, "%c%f %f %f %f %f %f %f %f %f %d%n",
+	sscanf(s, "%c%f %f %f %f %f %f %f %f %f %d%n",
 				   &type,&defocus, &dfdiff,&dfang,&bfactor,&ampcont,&voltage, &cs, &apix,&dsbg,&bglen,&pos);
 	if (type!='E') throw InvalidValueException(type,"Trying to initialize Ctf object with bad string");
 	
@@ -679,7 +679,7 @@ vector < float >EMAN2Ctf::compute_1d(int size,float ds, CtfType type, XYData * s
 			float f = s/dsbg;
 			int j = (int)floor(f);
 			f-=j;
-			if (j>background.size()-2) r[i]=background.back();
+			if (j>(int)background.size()-2) r[i]=background.back();
 			else r[i]=background[j]*(1.0f-f)+background[j+1]*f;
 			s+=ds;
 		}
@@ -690,7 +690,7 @@ vector < float >EMAN2Ctf::compute_1d(int size,float ds, CtfType type, XYData * s
 			float f = s/dsbg;
 			int j = (int)floor(f);
 			f-=j;
-			if (j>snr.size()-2) r[i]=snr.back();
+			if (j>(int)snr.size()-2) r[i]=snr.back();
 			else r[i]=snr[j]*(1.0f-f)+snr[j+1]*f;
 //			printf("%d\t%f\n",j,snr[j]);
 			s+=ds;
@@ -706,7 +706,7 @@ vector < float >EMAN2Ctf::compute_1d(int size,float ds, CtfType type, XYData * s
 			for (int k=max_int(j-5,1); k<min_int(j+6,np); k++) {
 				float s2=f-k;
 				float e=exp(-14.0f*s2*s2/(gamma));
-				if (k>snr.size()) break;
+				if (k>(int)snr.size()) break;
 				sum+=e*snr[k];
 				norm+=e;
 //				printf("%d\t%f\t%f\t%f\t%f\n",k,e,snr[k],sum,norm);
@@ -728,7 +728,7 @@ vector < float >EMAN2Ctf::compute_1d(int size,float ds, CtfType type, XYData * s
 			int j = (int)floor(f);
 			float bg;
 			f-=j;
-			if (j>snr.size()-2) { 
+			if (j>(int)snr.size()-2) { 
 /*				r[i]=snr.back(); 
 				bg=background.back();*/
 				r[i]=0;
@@ -816,7 +816,7 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 #ifdef	_WIN32
 				float s = (float) _hypot(x, y ) * ds;
 #else
-				float s = (float) hypot(x, y ) * ds;
+//				float s = (float) hypot(x, y ) * ds;
 #endif			
 //				d[x * 2 + ynx] = calc_noise(s);
 				d[x * 2 + ynx + 1] = 0;			// The phase is somewhat arbitrary
@@ -874,7 +874,7 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 				float f = s/dsbg;
 				int j = (int)floor(f);
 				f-=j;
-				if (j>snr.size()-2) d[x*2+ynx]=snr.back();
+				if (j>(int)snr.size()-2) d[x*2+ynx]=snr.back();
 				else d[x*2+ynx]=snr[j]*(1.0f-f)+snr[j+1]*f;
 				d[x * 2 + ynx + 1] = 0;
 			}
@@ -896,7 +896,7 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 				float f = s/dsbg;
 				int j = (int)floor(f);
 				f-=j;
-				if (j>snr.size()-2) d[x*2+ynx]=snr.back();
+				if (j>(int)snr.size()-2) d[x*2+ynx]=snr.back();
 				else d[x*2+ynx]=snr[j]*(1.0f-f)+snr[j+1]*f;
 				d[x * 2 + ynx + 1] = 0;
 			}
@@ -920,7 +920,7 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 				int j = (int)floor(f);
 				float bg,snrf;
 				f-=j;
-				if (j>snr.size()-2) {
+				if (j>(int)snr.size()-2) {
 /*					bg=background.back();
 					d[x*2+ynx]=snr.back()/(snr.back()+1.0);*/
 					d[x*2+ynx]=0;
