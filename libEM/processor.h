@@ -5741,7 +5741,39 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		protected:
 			int default_bins;
 	};
-
+	
+	/* class CUDA kmeans processor
+	 * 02/13/2009 JB
+	 * python wrap for cuda_kmeans.cu
+	 */
+	class CUDA_kmeans {
+	public:
+		CUDA_kmeans();
+		~CUDA_kmeans();
+		int setup(int  extm, int extN, int extK, float extF, int extnbpart, int extmaxite);
+		int append_flat_image(EMData* im);
+		int kmeans();
+		vector <float> get_image(int n);
+	private:
+		// params
+		int m;
+		int N;
+		int K;
+		int maxite;
+		int nb_part;
+		float F;
+		// host memory
+		float* h_IM;
+		float* h_INFO;
+		float* h_AVE;
+		unsigned short int* h_PART;
+		// const about info structure
+		int SEQ_INFO;
+		// local vars
+		int index;
+		
+	};
+	
 #if 0
 
 	class XYZProcessor:public Processor
