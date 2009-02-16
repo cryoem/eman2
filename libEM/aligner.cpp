@@ -40,6 +40,10 @@
 #include "util.h"
 #include <gsl/gsl_multimin.h>
 
+#ifdef EMAN2_USING_CUDA
+	#include <sparx/cuda/cuda_ccf.h>
+#endif
+
 #define EMAN2_ALIGNER_DEBUG 0
 
 using namespace EMAN;
@@ -1064,37 +1068,84 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 
 CUDA_Aligner::CUDA_Aligner() {
 	image_stack = NULL;
+	ccf_s = NULL;
+	ccf_m = NULL;
 }
 
 CUDA_Aligner::~CUDA_Aligner() {
 	if (image_stack) delete image_stack;
+	if (ccf_s) delete ccf_s;
+	if (ccf_m) delete ccf_m;
 }
 
-void CUDA_Aligner::setup(int nima, int nx, int ny) {
+void CUDA_Aligner::setup(int nima, int nx, int ny, int ring_length, int nring, float step, int kx, int ky) {
 	
-	m_nima = nima;
-	m_nx = nx;
-	m_ny = ny; 
-	
-	image_stack = (float *)malloc(m_nima*m_nx*m_ny*sizeof(float));	
+	NIMA = nima;
+	NX = nx;
+	NY = ny; 
+	RING_LENGTH = ring_length;
+        NRING = nring;	
+	STEP = step;
+	KX = kx;
+	KY = ky;
+
+	image_stack = (float *)malloc(NIMA*NX*NY*sizeof(float));
+	ccf_s = (float *)malloc((2*KX+1)*(2*KY+1)*NIMA*(RING_LENGTH+2)*sizeof(float));
+	ccf_m = (float *)malloc((2*KX+1)*(2*KY+1)*NIMA*(RING_LENGTH+2)*sizeof(float));
 }
 
 void CUDA_Aligner::insert_image(EMData *image, int num) {
-	int base_address = num*m_nx*m_ny;
-	for (int x=0; x<m_nx; x++) 
-		for (int y=0; y<m_ny; y++) 
-			image_stack[base_address+x*m_ny+y] = (*image)(x, y);	
+	int base_address = num*NX*NY;
+	for (int x=0; x<NX; x++) 
+		for (int y=0; y<NY; y++) 
+			image_stack[base_address+x*NY+y] = (*image)(x, y);	
 }
 
-vector<float> CUDA_Aligner::alignment_2d(EMData *ref_image) {
-        //calculate_ccf(image_stack, ccf_s, ccf_m);
+vector<float> CUDA_Aligner::alignment_2d(EMData *ref_image_em) {
+
+	float *ref_image, max_ccf;
+	int base_address;
+	float ts, tm;
+	float ang, sx, sy, mirror;
+	vector<float> align_result;
+
+        ref_image = (float *)malloc(NX*NY*sizeof(float));
+
+	for (int x=0; x<NX; x++)
+		for (int y=0; y<NY; y++)
+			ref_image[x*NY+y] = (*ref_image_em)(x, y);
+
+        calculate_ccf(image_stack, ref_image, ccf_s, ccf_m, NIMA, NX, NY, RING_LENGTH, NRING, STEP, KX, KY);
 	
-	vector<float>  align_result;
-	for (int i=0; i<m_nima; i++) {
-	     align_result.push_back(70);
-	     align_result.push_back(0.5);
-	     align_result.push_back(-0.5);
-	     align_result.push_back(0.6);
+	for (int im=0; im<NIMA; im++) {
+		max_ccf = -1.0e22;
+		for (int kx=-KX; kx<=KX; kx++) {
+			for (int ky=-KY; ky<=KY; ky++) {
+				base_address = (((ky+KY)*(2*KX+1)+(kx+KX))*NIMA+im)*(RING_LENGTH+2);	
+				for (int l=0; l<RING_LENGTH; l++) {
+					ts = ccf_s[base_address+l];
+					tm = ccf_m[base_address+l];
+					if (ts > max_ccf) {
+						ang = float(l)/RING_LENGTH*360.0;
+						sx = kx*STEP;
+						sy = ky*STEP;
+						mirror = 0;
+						max_ccf = ts;
+					}
+					if (tm > max_ccf) {
+						ang = float(l)/RING_LENGTH*360.0;
+						sx = kx*STEP;
+						sy = ky*STEP;
+						mirror = 1;
+						max_ccf = tm;
+					}				
+				}
+			}
+		}
+		align_result.push_back(ang);
+		align_result.push_back(sx);
+		align_result.push_back(sy);
+		align_result.push_back(mirror);
 	}
 	return align_result;
 }

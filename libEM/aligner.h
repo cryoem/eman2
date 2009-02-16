@@ -546,34 +546,17 @@ namespace EMAN
 		
 		~CUDA_Aligner();
 		
-		void setup(int nima, int nx, int ny);
+		void setup(int nima, int nx, int ny, int ring_length, int nring, float step, int kx, int ky);
 		
 		void insert_image(EMData *image, int num);
 		
 		vector<float> alignment_2d(EMData *ref_image);
 		
-/*		virtual Dict get_params() const
-		{
-			return params;
-		}
-
-		TypeDict get_param_types() const
-		{
-			TypeDict d;
-
-			d.put("nima", EMObject::INT);
-			d.put("nx", EMObject::INT);
-			d.put("ny", EMObject::INT);
-			return d;
-		}
-		
-	  protected:
-	  	mutable Dict params; */
-	  
 	  private:
 	        float *image_stack;
 		float *ccf_s, *ccf_m;
-		int m_nima, m_nx, m_ny;
+		int NIMA, NX, NY, RING_LENGTH, NRING, KX, KY;
+		float STEP;
 	};
 
 

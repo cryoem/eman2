@@ -16,7 +16,7 @@ CUDA_ADD_LIBRARY(EM2Cuda SHARED
   cuda_projector.cu
   cuda_util.cu
   cuda_emfft.cu
-  )
+ )
 
 
 # Specify the dependency.
@@ -32,3 +32,4 @@ TARGET_LINK_LIBRARIES(EM2Cuda
 
 INSTALL_TARGETS(/lib EM2Cuda)
 #INSTALL_TARGETS(/bin proj3d)
+
