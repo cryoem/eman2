@@ -7139,7 +7139,7 @@ def cluster_equalsize(d, m):
 
 
 class pcanalyzer:
-	def __init__(self, mask, sdir, nvec, MPI=False, shuffle=False ):
+	def __init__(self, mask, sdir, nvec, MPI=False ):
 		self.mask = mask.copy()
 		if MPI:
 			from mpi import mpi_comm_rank, MPI_COMM_WORLD
@@ -7149,17 +7149,12 @@ class pcanalyzer:
 		else:
 			self.file = sdir + ("/maskedimg.bin" )
 			self.MPI  = False
+		self.sdir = sdir
 		self.nimg = 0
 		self.nvec = nvec
 		self.fw = None
 		self.fr = None
 		self.avgdat = None
-
-		if shuffle:
-			self.shuffle = True
-			self.seedbase = 10000
-		else:
-			self.shuffle = False
 
 	def writedat( self, data ):
 		import array
@@ -7171,11 +7166,70 @@ class pcanalyzer:
 
 	def read_dat( self, data ):
 		from numpy import fromfile, float32
-		if not(self.fw is None) and (self.fw.closed):
+		if not(self.fw is None) and not( self.fw.closed ):
 			self.fw.close()
 
 		assert not(self.fr is None) and not self.fr.closed
 		Util.readarray( self.fr, data, self.ncov )
+		if not(self.avgdat is None):
+			data -= self.avgdat
+
+	def usebuf( self ):
+		nx = self.mask.get_xsize()
+		ny = self.mask.get_ysize()
+		nz = self.mask.get_zsize()
+
+		self.ncov = 0
+		for ix in xrange(nx):
+			for iy in xrange(ny):
+				for iz in xrange(nz):
+					if( self.mask.get_value_at(ix,iy,iz) >= 0.5 ):
+						self.ncov += 1
+		import os
+		size = os.stat( self.file )[6]
+		self.nimg = size/(self.ncov*4)
+		assert self.nimg * self.ncov*4 == size
+		self.bufused = True
+
+	def shuffle( self ):
+		assert self.bufused
+		from random import shuffle, seed
+		from numpy  import zeros, float32, array
+		from string import replace
+		seed( 10000 + 10*self.myid )
+
+
+		shfflfile = replace( self.file, "masked", "shuffled" )
+
+
+		print self.myid, "shuffling"
+		sumdata = zeros( (self.ncov), float32 )
+		imgdata = zeros( (self.ncov), float32 )
+		self.fr = open( self.file, "rb" )
+		self.avgdata = None
+
+		fw = open( shfflfile, "wb" )
+		for i in xrange(self.nimg):
+			self.read_dat( imgdata )
+			shuffle( imgdata )
+			sumdata += imgdata
+			imgdata.tofile( fw )
+
+		self.fr.close()
+		fw.close()
+
+		if self.MPI:
+			from mpi import mpi_reduce, mpi_bcast, MPI_FLOAT, MPI_INT, MPI_SUM, MPI_COMM_WORLD
+			sumdata = mpi_reduce( sumdata, self.ncov, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD )
+			sumdata = mpi_bcast(  sumdata, self.ncov, MPI_FLOAT, 0, MPI_COMM_WORLD )
+			sumdata = array(sumdata, float32)
+ 
+			sumnimg = mpi_reduce( self.nimg, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD )
+			sumnimg = mpi_bcast(  sumnimg,   1, MPI_INT, 0, MPI_COMM_WORLD )
+
+		self.file = shfflfile
+		self.avgdat = sumdata[:]/float(sumnimg)
+		print "done shuffling,nimg:", float(sumnimg)
 
 
 
@@ -7199,54 +7253,6 @@ class pcanalyzer:
 		self.nimg +=1
 		self.ncov = tmpimg.get_xsize()
 	
-	def usebuf( self ):
-		nx = self.mask.get_xsize()
-		ny = self.mask.get_ysize()
-		nz = self.mask.get_zsize()
-
-		self.ncov = 0
-		for ix in xrange(nx):
-			for iy in xrange(ny):
-				for iz in xrange(nz):
-					if( self.mask.get_value_at(ix,iy,iz) >= 0.5 ):
-						self.ncov += 1
-		import os
-		size = os.stat( self.file )[6]
-		self.nimg = size/(self.ncov*4)
-		assert self.nimg * self.ncov*4 == size
-
-		if self.shuffle:
-			from random import shuffle, seed
-			from numpy  import zeros, float32
-			from string import replace
-			seed( self.seedbase + 10*self.myid )
-
-
-			shfflfile = replace( self.file, "masked", "shuffled" )
-
-
-			print self.myid, "shuffling"
-			imgdata = zeros( (self.ncov), float32 )
-			self.fr = open( self.file, "rb" )
-			self.fw = open( shfflfile, "wb" )
-			for i in xrange(self.nimg):
-				self.read_dat( imgdata )
-				if not(self.avgdat is None):
-					imgdata -= self.avgdat
-				shuffle( imgdata )
-				imgdata.tofile( self.fw )
-
-			self.fr.close()
-			self.fw.close()
-			self.file = shfflfile
-			print "done shuffling"
-
-				
-			
-
-
-
-
 	def analyze( self ):
 		if self.myid==0:
 			print "analyze: ", self.ncov, " nvec: ", self.nvec
@@ -7297,10 +7303,7 @@ class pcanalyzer:
 	def lanczos( self, kstep, diag, subdiag, V ):
 		from numpy import zeros, float32, array
 		from time import time
-		#if self.shuffle:
-		#	from random import shuffle, seed
-		#	print self.myid, ' image will be shuffled '		
-
+		
 		all_start = time()
 	
 		ncov = self.ncov
@@ -7318,18 +7321,9 @@ class pcanalyzer:
 		for i in xrange(ncov):
 			V[0][i] = v0[i]/beta
 
-		#if self.shuffle:
-		# use same seed to ensure each time the result is the same
-		#	seed(self.seedbase + self.myid*10)
-
 		self.fr = open( self.file, "rb" )
 		for i in xrange(self.nimg):
 			self.read_dat(imgdata)
-			#if self.shuffle:
-			#	shuffle( imgdata )	
-			if not(self.shuffle) and not(self.avgdat is None):
-				imgdata -= self.avgdat
-
 			alpha = Util.sdot( ncov, imgdata, 1, V[0], 1 )
 			Util.saxpy( ncov, alpha, imgdata, 1, Av, 1 )
 		self.fr.close()
@@ -7360,17 +7354,9 @@ class pcanalyzer:
 
 			Av[:] = 0.0
 
-			#if self.shuffle:
-			#	seed(self.seedbase + self.myid*10)
-
 			self.fr = open( self.file, "rb" )
 			for i in xrange(self.nimg):
 				self.read_dat( imgdata )
-				#if self.shuffle:
-				#	shuffle( imgdata )	
-				if not(self.shuffle) and not(self.avgdat is None):
-					imgdata -= self.avgdat
-
 				alpha = Util.sdot( ncov, imgdata, 1, V[iter], 1 )
 				Util.saxpy( ncov, float(alpha), imgdata, 1, Av, 1 )
 			self.fr.close()
