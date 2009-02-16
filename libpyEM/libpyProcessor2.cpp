@@ -174,13 +174,15 @@ BOOST_PYTHON_MODULE(libpyProcessor2)
         .staticmethod("get_list")
         .staticmethod("get")
     ;
-	
-	class_< EMAN::CUDA_kmeans, boost::noncopyable >("CUDA_kmeans", init<>())
-		.def("setup", &EMAN::CUDA_kmeans::setup)
-		.def("append_flat_image", &EMAN::CUDA_kmeans::append_flat_image)
-		.def("kmeans", &EMAN::CUDA_kmeans::kmeans)
-		.def("get_image", &EMAN::CUDA_kmeans::get_image)
-	;
+
+#ifdef EMAN2_USING_CUDA	
+    // Class to wrap CUDA kmeans code
+    class_< EMAN::CUDA_kmeans, boost::noncopyable >("CUDA_kmeans", init<>())
+	.def("setup", &EMAN::CUDA_kmeans::setup)
+	.def("append_flat_image", &EMAN::CUDA_kmeans::append_flat_image)
+	.def("kmeans", &EMAN::CUDA_kmeans::kmeans)
+    ;
+#endif //EMAN2_USING_CUDA
 
 }
 

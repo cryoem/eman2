@@ -7906,12 +7906,12 @@ void ZGradientProcessor::process_inplace( EMData* image )
 /* CLASS CUDA_kmeans processor
  *
  */
+#ifdef EMAN2_USING_CUDA
 CUDA_kmeans::CUDA_kmeans() {
 	h_IM = NULL;
 	h_PART = NULL;
 	h_INFO = NULL;
 	SEQ_INFO = 6;
-	index = 0;
 }
 	
 CUDA_kmeans::~CUDA_kmeans() {
@@ -7921,16 +7921,13 @@ CUDA_kmeans::~CUDA_kmeans() {
 	free(h_INFO);
 }
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <iostream>		
 int CUDA_kmeans::setup(int extm, int extN, int extK, float extF, int extnbpart, int extmaxite) {
 	m = extm;				// number of pixels per image
 	N = extN;				// number of images
 	K = extK;				// number of classes
 	F = extF;				// value of the cooling factor
-	maxite = extmaxite;		// maximum number of iteration
-	nb_part = extnbpart;	// number of partitions
+	maxite = extmaxite;		        // maximum number of iteration
+	nb_part = extnbpart;	                // number of partitions
 		
 	// Host memory allocation for images
 	h_IM = (float*)malloc(m * N * sizeof(float));
@@ -7946,38 +7943,18 @@ int CUDA_kmeans::setup(int extm, int extN, int extK, float extF, int extnbpart, 
 }
 
 // add image pre-process by Util.compress_image_mask
-int CUDA_kmeans::append_flat_image(EMData* im) {
-	if (im->get_ysize() != 1 || im->get_xsize() != m) return 0;
-
-	int i = 0;
-	for (i; i < m ; ++i) h_IM[index * m + i] = (*im)(i);
-	index++;
-	
-	return 1;
-		
+void CUDA_kmeans::append_flat_image(EMData* im, int pos) {
+	for (int i = 0; i < m ; ++i) h_IM[pos * m + i] = (*im)(i);
 }
 
 // cuda k-means core
-#ifdef EMAN2_USING_CUDA
-#include "sparx/cuda/cuda_kmeans.h"
+#include "sparx/cuda/sparx_cuda_kmeans.h"
 int CUDA_kmeans::kmeans() {
 	return 1;
 		
 }
-#else
-int CUDA_kmeans::kmeans() {
-	printf("CUDA flag not active!\n");
-	return 1;
-}
+
 #endif //EMAN2_USING_CUDA	
-	
-vector <float> CUDA_kmeans::get_image(int n) {
-	vector <float> result(m);
-	for (int i = 0; i < m; ++i) result[i] = h_IM[n * m + i];
-	return result;
-}
-	
-	
 	
 void EMAN::dump_processors()
 {

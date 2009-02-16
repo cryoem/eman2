@@ -5746,14 +5746,14 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	 * 02/13/2009 JB
 	 * python wrap for cuda_kmeans.cu
 	 */
+#ifdef EMAN2_USING_CUDA
 	class CUDA_kmeans {
 	public:
 		CUDA_kmeans();
 		~CUDA_kmeans();
 		int setup(int  extm, int extN, int extK, float extF, int extnbpart, int extmaxite);
-		int append_flat_image(EMData* im);
+		void append_flat_image(EMData* im, int pos);
 		int kmeans();
-		vector <float> get_image(int n);
 	private:
 		// params
 		int m;
@@ -5769,10 +5769,8 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		unsigned short int* h_PART;
 		// const about info structure
 		int SEQ_INFO;
-		// local vars
-		int index;
-		
 	};
+#endif //EMAN2_USING_CUDA
 	
 #if 0
 
