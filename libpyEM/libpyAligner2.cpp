@@ -394,11 +394,13 @@ BOOST_PYTHON_MODULE(libpyAligner2)
         .def("get_param_types", pure_virtual(&EMAN::Aligner::get_param_types))
     ;
 
+#ifdef EMAN2_USING_CUDA
     class_< EMAN::CUDA_Aligner, boost::noncopyable>("CUDA_Aligner", init<>())
         .def("setup", &EMAN::CUDA_Aligner::setup)
         .def("insert_image", &EMAN::CUDA_Aligner::insert_image)
         .def("alignment_2d", &EMAN::CUDA_Aligner::alignment_2d)
     ;
+#endif
 
 
     class_< EMAN::Factory<EMAN::Aligner>, boost::noncopyable >("Aligners", no_init)

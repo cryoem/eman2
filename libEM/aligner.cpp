@@ -1078,6 +1078,7 @@ CUDA_Aligner::~CUDA_Aligner() {
 	if (ccf_m) delete ccf_m;
 }
 
+#ifdef EMAN2_USING_CUDA
 void CUDA_Aligner::setup(int nima, int nx, int ny, int ring_length, int nring, float step, int kx, int ky) {
 	
 	NIMA = nima;
@@ -1149,7 +1150,7 @@ vector<float> CUDA_Aligner::alignment_2d(EMData *ref_image_em) {
 	}
 	return align_result;
 }
-
+#endif
 
 void EMAN::dump_aligners()
 {
