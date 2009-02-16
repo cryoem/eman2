@@ -11,3 +11,4 @@ int cuda_fft_real_to_complex_nd(float *real_data, float *complex_data, int nx, i
 int cuda_fft_complex_to_real_nd(float *complex_data, float *real_data, int nx, int ny, int nz);
 
 #endif //eman__cuda_emfft_h__
+

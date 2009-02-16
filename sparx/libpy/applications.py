@@ -472,7 +472,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	data = EMData.read_images(stack, range(image_start, image_end))
 
 	seed(5127 + myid*5341)
-	nsav = 5
+	nsav = 10
 	N_step = 0
 	tnull = Transform({"type":"2D"})
 	savg = []

@@ -26,3 +26,5 @@ void cuda_memset(void*,int value, size_t size);
 void cuda_memcpy(void* dst,const void* const, size_t count);
 
 #endif // eman__cuda_util_h__
+
+

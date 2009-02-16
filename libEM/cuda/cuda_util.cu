@@ -134,3 +134,4 @@ void cuda_memcpy(void* dst, const void* const src, size_t count) {
 // 	cudaStreamSynchronize(stream);
 // 	cudaStreamDestroy(stream);
 }
+

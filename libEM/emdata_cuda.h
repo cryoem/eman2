@@ -67,3 +67,4 @@ private:
 #endif // EMAN2_USING_CUDA
 	
 #endif //eman__emdatacuda_h__ 1
+

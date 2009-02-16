@@ -1303,3 +1303,4 @@ namespace EMAN {
 } // namespace EMAN
 
 #endif // eman__symmetry_h__
+
