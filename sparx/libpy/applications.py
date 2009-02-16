@@ -9068,7 +9068,7 @@ def pca( input_stacks, output_stack, subavg, mask_radius, sdir, nvec, shuffle, g
 		data.read_image( input_stack, 0, True)
 		mask = model_blank(data.get_xsize(), data.get_ysize(), data.get_zsize(), bckg=1.0)
 
-	pca = pcanalyzer(mask, sdir, nvec, MPI, shuffle)
+	pca = pcanalyzer(mask, sdir, nvec, MPI)
 
 
 	if subavg != "":
@@ -9086,8 +9086,11 @@ def pca( input_stacks, output_stack, subavg, mask_radius, sdir, nvec, shuffle, g
 		myid = 0
 		ncpu = 1
 
-
 	if genbuf:
+		if shuffle:
+			print "Error: shuffle works only with usebuf"
+			return
+
 		bgn,end = MPI_start_end( files.nimg(), ncpu, myid )
 		for i in xrange(bgn,end):
 			fname, imgid = files.get( i )
@@ -9099,11 +9102,14 @@ def pca( input_stacks, output_stack, subavg, mask_radius, sdir, nvec, shuffle, g
 	else:
 		pca.usebuf( )
 		print myid, "using existing buff, nimg: ", pca.nimg
+		if shuffle:
+			pca.shuffle()
 
 	vecs = pca.analyze()
 	if myid==0:
 		for i in xrange( len(vecs) ):
 			vecs[i].write_image( output_stack, i)
+
 
 def prepare_2d_forPCA(input_stack, output_stack, average, avg = False, CTF = False):
 	"""
@@ -10411,9 +10417,9 @@ def factcoords_prj( prj_stacks, avgvol_stack, eigvol_stack, prefix, rad, neigvol
 			foutput = open( prefix+".txt", "w" )
 	else:
 		if MPI and ncpu > 1:
-			foutput = prefix + ".hdf"
-		else:
 			foutput = "%s%04d.hdf" % (prefix, myid)
+		else:
+			foutput = prefix + ".hdf"
 
 	nx = get_im( prj_stacks[0] ).get_xsize()
 	ny = nx
@@ -10477,14 +10483,17 @@ def factcoords_prj( prj_stacks, avgvol_stack, eigvol_stack, prefix, rad, neigvol
 				foutput.write( "    %e" % d )
 
                 if of=="hdf":
-			img.write_image( foutput, i )
+			if MPI:
+				img.write_image( foutput, i-img_bgn )
+			else:
+				img.write_image( foutput, i )
 		else:
 			foutput.write( "    %d" % i )
 			foutput.write( "\n" )
 			foutput.flush()
 
 		if(i%100 == 0):  print 'myid:', myid, i, ' done'
-
+	 
 def refvol( vollist, fsclist, output, mask ):
 	from utilities     import get_image, read_fsc
 	from fundamentals  import rops_table
