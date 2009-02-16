@@ -510,7 +510,17 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		ref_data.append(center)
 		ref_data.append(None)
 		ref_data.append(None)
-
+		mix_x1 = model_blank(nx, nx)
+		mix_x2 = model_blank(nx, nx)
+		mix_y1 = model_blank(nx, nx)
+		mix_y2 = model_blank(nx, nx)
+		for ii in xrange(nx):
+			temp_value = float(ii)/nx
+			for jj in xrange(nx):
+				mix_x1.set_value_at(ii, jj, temp_value)
+				mix_x2.set_value_at(ii, jj, 1-temp_value) 
+				mix_y1.set_value_at(jj, ii, temp_value)
+				mix_y2.set_value_at(jj, ii, 1-temp_value)
 	cs = [0.0]*2
 
 	sx_sum = 0.0
@@ -630,15 +640,19 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			i1 = 0
 			i2 = 1
 			while itp < nsav:
-				tsavg.append(Util.addn_img(savg[qt[i1][1]], savg[qt[i2][1]]))
+				x_or_y = randint(0, 1)
+				if x_or_y == 0:	
+					tsavg.append(Util.addn_img(Util.muln_img(savg[qt[i1][1]], mix_x1), Util.muln_img(savg[qt[i2][1]], mix_x2)))
+				else:
+					tsavg.append(Util.addn_img(Util.muln_img(savg[qt[i1][1]], mix_y1), Util.muln_img(savg[qt[i2][1]], mix_y2)))
 				itp += 1
 				if i2-i1==1:
 					i2 += 1
 					i1 = 0
 				else:
 					i1 += 1
-			for i1 in xrange(nsav):
-				savg[i1] = tsavg[i1].copy()
+			for isav in xrange(nsav):
+				savg[isav] = tsavg[isav].copy()
 			del tsavg			
 		for isav in xrange(nsav):
 			bcast_EMData_to_all(savg[isav], myid, main_node)
@@ -3955,15 +3969,21 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 		ref_data.append( None )
 		ref_data.append( None )
 	
+   	from time import time
+	
+     
 	cs = [0.0]*3
 	# do the projection matching
 	for N_step in xrange(lstp):
  		for Iter in xrange(max_iter):
 			if myid == main_node:
+				start_time = time()
 				print_msg("\nITERATION #%3d\n"%(N_step*max_iter+Iter+1))
 			if an[N_step] == -1: proj_ali_incore(vol, mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], ref_a, sym, finfo = finfo, MPI=True)
 			else:           proj_ali_incore_local(vol, mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], an[N_step], ref_a, sym, finfo = finfo, MPI=True)
-
+			if myid == main_node:
+				print_msg("Time Used = %d"%(time()-start_time))
+				start_time = time()
 			if(center == -1):
 				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node)				
 				if myid == main_node:
@@ -3975,7 +3995,10 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 
 			if CTF: vol, fscc = rec3D_MPI(data, snr, sym, mask3D, os.path.join(outdir, "resolution%04d"%(N_step*max_iter+Iter+1)), myid, main_node)
 			else:    vol, fscc = rec3D_MPI_noCTF(data, sym, mask3D, os.path.join(outdir, "resolution%04d"%(N_step*max_iter+Iter+1)), myid, main_node)
-
+			
+			if myid == main_node:
+				print_msg("Time Used = %d"%(time()-start_time))
+				
 			if fourvar:
 			#  Compute Fourier variance
 				varf = varf3d_MPI(dataim, ssnr_text_file = os.path.join(outdir, "ssnr%04d"%(N_step*max_iter+Iter+1)), mask2D = None, reference_structure = vol, ou = last_ring, rw = 1.0, npad = 1, CTF = CTF, sign = 1, sym =sym, myid = myid)

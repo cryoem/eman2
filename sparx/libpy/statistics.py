@@ -1417,6 +1417,8 @@ def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, listID = None):
 
 	if listID is None: listim = range(N_start, N_stop)
 	else:              listim = listID[N_start:N_stop]
+
+	
 	DATA = im.read_images(stack, listim)
 	ct   = 0
 	for i in xrange(N_start, N_stop):
@@ -4915,7 +4917,9 @@ def k_means_open_unstable_MPI(stack, maskname, CTF, nb_cpu, main_node, myid):
 
 	# Now each node read his part of data (unsynchronise due to bdb)
 	for cpu in xrange(nb_cpu):
-		if cpu == myid: im_M, mask, ctf, ctf2 = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, lim)
+		if cpu == myid:			
+			im_M, mask, ctf, ctf2 = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, lim)
+			print myid, 'ok'
 		mpi_barrier(MPI_COMM_WORLD)
 
 	return im_M, mask, ctf, ctf2, lim, N, N_start, N_stop
