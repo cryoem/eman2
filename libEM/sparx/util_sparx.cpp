@@ -18444,23 +18444,6 @@ EMData* Util::get_slice(EMData *vol, int dim, int index) {
 }
 
 
-/////////////////////////////////////////////////////////////////////////////////////
-// Wrap function for CUDA code (only to test)
-void Util::kmeans_cuda(void) {
-
-	ENTERFUNC;
-	int nima = 20000;
-	int length = 530;
-	float* IM;
-
-	// memory allocation
-	IM = (float*)malloc(nima * length * sizeof(float));
-
-	EXITFUNC;
-
-
-}
-
 
 
 
