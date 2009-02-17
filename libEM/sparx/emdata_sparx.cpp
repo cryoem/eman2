@@ -1389,7 +1389,6 @@ void EMData::onelinenn_ctf(int j, int n, int n2,
 	        int r2 = i*i+j*j;
 		if ( (r2<n*n/4) && !( (0==i) && (j<0) ) ) {
 		        float  ctf = ctf_store::get_ctf( r2 );
-			float  ctf3 = ctf*ctf*ctf;
 			float xnew = i*tf[0][0] + j*tf[1][0];
 			float ynew = i*tf[0][1] + j*tf[1][1];
 			float znew = i*tf[0][2] + j*tf[1][2];
@@ -1413,11 +1412,11 @@ void EMData::onelinenn_ctf(int j, int n, int n2,
 					else          iya = n + iyn + 1;
 
                                         if(remove > 0 ) {
-                                            cmplx(ixn,iya,iza) -= btq*ctf3*float(mult);
-					    (*w)(ixn,iya,iza) -= ctf*ctf3*mult;
+                                            cmplx(ixn,iya,iza) -= btq*ctf*float(mult);
+					    (*w)(ixn,iya,iza) -= ctf*ctf*mult;
                                         } else {
-				            cmplx(ixn,iya,iza) += btq*ctf3*float(mult);
-					    (*w)(ixn,iya,iza) += ctf*ctf3*mult;
+				            cmplx(ixn,iya,iza) += btq*ctf*float(mult);
+					    (*w)(ixn,iya,iza) += ctf*ctf*mult;
                                         }
 
 				       //	std::cout<<"    "<<j<<"  "<<ixn<<"  "<<iya<<"  "<<iza<<"  "<<ctf<<std::endl;
@@ -1430,11 +1429,11 @@ void EMData::onelinenn_ctf(int j, int n, int n2,
 					else         iyt = -iyn + 1;
 
                                         if( remove > 0 ) {
-					    cmplx(-ixn,iyt,izt) -= conj(btq)*ctf3*float(mult);
-					    (*w)(-ixn,iyt,izt) -= ctf*ctf3*float(mult);
+					    cmplx(-ixn,iyt,izt) -= conj(btq)*ctf*float(mult);
+					    (*w)(-ixn,iyt,izt) -= ctf*ctf*float(mult);
                                         } else {
 					    cmplx(-ixn,iyt,izt) += conj(btq)*ctf*float(mult);
-					    (*w)(-ixn,iyt,izt) += ctf*ctf3*float(mult);
+					    (*w)(-ixn,iyt,izt) += ctf*ctf*float(mult);
                                         }
 
 				        //	std::cout<<" *  " << j << "  " <<-ixn << "  " << iyt << "  " << izt << "  " << ctf <<std::endl;
