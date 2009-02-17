@@ -73,6 +73,10 @@ def main():
 		if options.MPI:
 			from mpi import mpi_init
 	   		sys.argv = mpi_init(len(sys.argv), sys.argv)
+
+			from utilities import init_mpi_bdb
+			init_mpi_bdb()
+
 		from applications import ali3d_e
 		global_def.BATCH = True
 		ali3d_e(args[0], args[1], mask, options.ou, options.delta, options.center, options.maxit, options.CTF, options.snr, options.sym, options.chunk, parse_user_function(options.function), options.Fourvar, options.debug, options.MPI)
