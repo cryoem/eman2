@@ -71,6 +71,10 @@ def main():
 	        if options.MPI:
 			from mpi import mpi_init
    			sys.argv = mpi_init(len(sys.argv), sys.argv)
+
+			from utilities import init_mpi_bdb
+			init_mpi_bdb()
+
 		global_def.BATCH = True
 		ali2d_m(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.center, options.maxit, options.CTF, options.snr, options.function, options.rand_seed, options.MPI)
 		global_def.BATCH = False
