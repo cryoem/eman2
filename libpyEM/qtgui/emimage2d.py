@@ -1299,7 +1299,9 @@ class EMImage2DModule(EMGUIModule):
 		
 		
 		for k,s in self.shapes.items():
-			Util.colored_rectangle(s.shape[1:8],alpha)
+			try:
+				Util.colored_rectangle(s.shape[1:8],alpha)
+			except: pass
 			
 		if isanimated:
 			GL.glDisable( GL.GL_BLEND);
@@ -1795,7 +1797,7 @@ class EMImageInspector2D(QtGui.QWidget):
 	
 		self.scale = ValSlider(self,(0.1,5.0),"Mag:")
 		self.scale.setObjectName("scale")
-		self.scale.setValue(1.0)
+		self.scale.setValue(self.target().scale)
 		self.vbl.addWidget(self.scale)
 		
 		self.mins = ValSlider(self,label="Min:")

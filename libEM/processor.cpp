@@ -169,10 +169,8 @@ template <> Factory < Processor >::Factory()
 	force_add(&AddSigmaNoiseProcessor::NEW);
 	force_add(&AddRandomNoiseProcessor::NEW);
 
-// 	force_add(&Phase180Processor::NEW);
 	force_add(&PhaseToCenterProcessor::NEW);
 	force_add(&PhaseToCornerProcessor::NEW);
-// 	force_add(&FourierOriginShiftProcessor::NEW);
 	force_add(&FourierToCenterProcessor::NEW);
 	force_add(&FourierToCornerProcessor::NEW);
 	force_add(&AutoMask2DProcessor::NEW);
@@ -7948,7 +7946,7 @@ void CUDA_kmeans::append_flat_image(EMData* im, int pos) {
 }
 
 // cuda k-means core
-#include "sparx/cuda/sparx_cuda_kmeans.h"
+//#include "sparx/cuda/sparx_cuda_kmeans.h"
 int CUDA_kmeans::kmeans() {
 	return 1;
 		

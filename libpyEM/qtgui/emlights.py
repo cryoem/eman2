@@ -826,7 +826,6 @@ class EMLightsInspectorBase:
 		spec = [ getattr(self.light_specular, a).getValue() for a in attribs]
 		spec.append(1.0) # alpha
 		
-		
 		glLightfv(l, GL_AMBIENT, amb)
 		glLightfv(l, GL_DIFFUSE, dif)
 		glLightfv(l, GL_SPECULAR, spec)

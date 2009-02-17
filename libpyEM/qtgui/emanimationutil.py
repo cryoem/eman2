@@ -103,15 +103,17 @@ class Animatable:
 		from math import tanh,sin,pi
 		Animatable.cache_dts = []
 		tanh_approach = False
+		linear_approach = True
 		for i in range(self.n):
 			if tanh_approach:
 				val = (1+ (tanh(-4+float(i)/(self.n-1)*8)))/2.0
 				Animatable.cache_dts.append(val)
+			elif linear_approach:
+				#  Linear
+				Animatable.cache_dts.append(float(i)/(self.n-1))
 			else:
 				# sine approach
 				Animatable.cache_dts.append(sin(float(i)/(self.n-1)*pi/2))
-				#  Linear
-				#Animatable.cache_dts.append(float(i)/(self.n-1))
 		#print Animatable.cache_dts
 		
 	def set_animated(self,val=True):

@@ -859,9 +859,9 @@ Vec3f BoxingTools::get_color( const unsigned int index )
 {
 	if ( colors.size() == 0 ) {
 		colors.push_back(Vec3f(0,0,0));
+		colors.push_back(Vec3f(0,0,1));
 		colors.push_back(Vec3f(1,0,0));
 		colors.push_back(Vec3f(0,1,0));
-		colors.push_back(Vec3f(0,0,1));
 		colors.push_back(Vec3f(1,1,0));
 		colors.push_back(Vec3f(1,0,1));
 		colors.push_back(Vec3f(0,1,1));
