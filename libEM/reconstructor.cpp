@@ -2853,53 +2853,51 @@ void nn4_ctfReconstructor::setup( const string& symmetry, int size, int npad, fl
 }
 
 void nn4_ctfReconstructor::buildFFTVolume() {
-    int offset = 2 - m_vnxp%2;
-    if( params.has_key("fftvol") ) {
-        m_volume = params["fftvol"];
-        m_delete_volume = false;
-    } else {
-	m_volume = new EMData();
-        m_delete_volume = true;
-    }
+	int offset = 2 - m_vnxp%2;
+	if( params.has_key("fftvol") ) {
+	    m_volume = params["fftvol"];
+	    m_delete_volume = false;
+	} else {
+	    m_volume = new EMData();
+	    m_delete_volume = true;
+	}
 
-    if( m_volume->get_xsize() != m_vnxp+offset &&
-        m_volume->get_ysize() != m_vnyp &&
-	m_volume->get_zsize() != m_vnzp )
-    {
-        m_volume->set_size(m_vnxp+offset,m_vnyp,m_vnzp);
-        m_volume->to_zero();
-    }
+	if( m_volume->get_xsize() != m_vnxp+offset &&
+	    m_volume->get_ysize() != m_vnyp &&
+	    m_volume->get_zsize() != m_vnzp )
+	{
+	    m_volume->set_size(m_vnxp+offset,m_vnyp,m_vnzp);
+	    m_volume->to_zero();
+	}
 
-    m_volume->set_nxc(m_vnxp/2);
-    m_volume->set_complex(true);
-    m_volume->set_ri(true);
-    m_volume->set_fftpad(true);
-    m_volume->set_attr("npad", m_npad);
-    m_volume->set_array_offsets(0,1,1);
+	m_volume->set_nxc(m_vnxp/2);
+	m_volume->set_complex(true);
+	m_volume->set_ri(true);
+	m_volume->set_fftpad(true);
+	m_volume->set_attr("npad", m_npad);
+	m_volume->set_array_offsets(0,1,1);
 }
 
 void nn4_ctfReconstructor::buildNormVolume()
 {
-    if( params.has_key("weight") )
-    {
-        m_wptr = params["weight"];
-        m_delete_weight = false;
-    }
-    else
-    {
-	m_wptr = new EMData();
-        m_delete_weight = true;
-    }
+	if( params.has_key("weight") )
+	{
+	    m_wptr = params["weight"];
+	    m_delete_weight = false;
+	} else {
+	    m_wptr = new EMData();
+	    m_delete_weight = true;
+	}
 
-    if( m_wptr->get_xsize() != m_vnxc+1 &&
-        m_wptr->get_ysize() != m_vnyp &&
-	m_wptr->get_zsize() != m_vnzp )
-    {
-	m_wptr->set_size(m_vnxc+1,m_vnyp,m_vnzp);
-	m_wptr->to_zero();
-    }
+	if( m_wptr->get_xsize() != m_vnxc+1 &&
+	    m_wptr->get_ysize() != m_vnyp &&
+	    m_wptr->get_zsize() != m_vnzp )
+	{
+	    m_wptr->set_size(m_vnxc+1,m_vnyp,m_vnzp);
+	    m_wptr->to_zero();
+	}
 
-    m_wptr->set_array_offsets(0,1,1);
+	m_wptr->set_array_offsets(0,1,1);
 
 }
 
@@ -2944,26 +2942,25 @@ int nn4_ctfReconstructor::insert_slice(const EMData* const slice, const Transfor
 
 int nn4_ctfReconstructor::insert_buffed_slice( const EMData* buffed, int mult )
 {
-    const float* bufdata = buffed->get_data();
-    float* cdata = m_volume->get_data();
-    float* wdata = m_wptr->get_data();
+	const float* bufdata = buffed->get_data();
+	float* cdata = m_volume->get_data();
+	float* wdata = m_wptr->get_data();
 
-    int npoint = buffed->get_xsize()/4;
-    for( int i=0; i < npoint; ++i )
-    {
+	int npoint = buffed->get_xsize()/4;
+	for( int i=0; i < npoint; ++i ) {
 
-        int pos2 = int( bufdata[4*i] );
-        int pos1 = pos2 * 2;
-        cdata[pos1  ] += bufdata[4*i+1]*mult;
-        cdata[pos1+1] += bufdata[4*i+2]*mult;
-        wdata[pos2  ] += bufdata[4*i+3]*mult;
+               int pos2 = int( bufdata[4*i] );
+               int pos1 = pos2 * 2;
+               cdata[pos1  ] += bufdata[4*i+1]*mult;
+               cdata[pos1+1] += bufdata[4*i+2]*mult;
+               wdata[pos2  ] += bufdata[4*i+3]*mult;
 /*
         std::cout << "pos1, pos2, ctfv1, ctfv2, ctf2: ";
         std::cout << pos1 << " " << bufdata[5*i+1] << " " << bufdata[5*i+2] << " ";
         std::cout << pos2 << " " << bufdata[5*i+4] << std::endl;
  */
-    }
-    return 0;
+	}
+	return 0;
 }
 
 int nn4_ctfReconstructor::insert_padfft_slice( EMData* padfft, const Transform& t, int mult )
