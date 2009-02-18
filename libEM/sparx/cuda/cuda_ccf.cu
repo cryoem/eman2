@@ -52,22 +52,24 @@
 #define MAX_RING_LENGTH (256)
 #define MAX_NRING (32) 
 
-__global__ void complex_mul(float* ref_image, float *ccf_s, float *ccf_m, int BLOCK_SIZE, int NRING);
+__global__ void complex_mul(float *ccf, int BLOCK_SIZE, int NRING, int NIMAGE, int KX, int KY);
 __global__ void resample_to_polar(float* image, float dx, float dy, int NX, int NY, int RING_LENGTH, int NRING);
 __constant__ float const_ref_image_polar[(MAX_RING_LENGTH+2)*MAX_NRING];
 
 texture<float, 2, cudaReadModeElementType> tex;
+texture<float, 1, cudaReadModeElementType> texim;
+texture<float, 1, cudaReadModeElementType> texim_ref;
  
 /* Main */
-void calculate_ccf(float *subject_image, float *ref_image, float *ccf_s, float *ccf_m, int NIMAGE, int NX, int NY, int RING_LENGTH, int NRING, float STEP, int KX, int KY)
+void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAGE, int NX, int NY, int RING_LENGTH, int NRING, float STEP, int KX, int KY)
 {    
     cufftHandle plan_subject_image, plan_ref_image, plan_ccf;
     cufftPlan1d(&plan_subject_image, RING_LENGTH, CUFFT_R2C, NRING*NIMAGE);
     cufftPlan1d(&plan_ref_image, RING_LENGTH, CUFFT_R2C, NRING);
-    cufftPlan1d(&plan_ccf, RING_LENGTH, CUFFT_C2R, NIMAGE*(2*KX+1)*(2*KY+1));
+    cufftPlan1d(&plan_ccf, RING_LENGTH, CUFFT_C2R, NIMAGE*(2*KX+1)*(2*KY+1)*2);
     float *subject_image_polar, *ref_image_polar;
     float *d_subject_image_polar, *d_ref_image_polar;
-    float *d_ccf_s, *d_ccf_m;
+    float *d_ccf;
     int i, j, k;
     int ccf_base_addr;
     float x, y;
@@ -135,18 +137,17 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf_s, float *
  
     /* Allocate the matrix for the ccf on the video card */
     printf("Allocating the matrix for the ccf on the video card ... \n\n");
-    cudaMalloc((void**)&d_ccf_s, (RING_LENGTH+2)*NIMAGE*(2*KX+1)*(2*KY+1)*sizeof(float));
-    cudaMalloc((void**)&d_ccf_m, (RING_LENGTH+2)*NIMAGE*(2*KX+1)*(2*KY+1)*sizeof(float));
+    cudaMalloc((void**)&d_ccf, 2*(RING_LENGTH+2)*NIMAGE*(2*KX+1)*(2*KY+1)*sizeof(float));
  
 
     /* Copy the matrix for the reference image to the video card */
     cudaMemcpyToArray(ref_image_array, 0, 0, ref_image,  NX*NY*sizeof(float), cudaMemcpyHostToDevice);
     cudaBindTextureToArray(tex, ref_image_array, channelDesc);
  
-
     /* Convert the reference image to polar coordinates */
     resample_to_polar<<<NRING, RING_LENGTH>>>(d_ref_image_polar, 0.0, 0.0, NX, NY, RING_LENGTH, NRING);
     cudaThreadSynchronize();
+    cudaUnbindTexture(tex);
 
 
     /* Conduct FFT of the reference image in polar coordinates */
@@ -172,36 +173,44 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf_s, float *
 		y = j*STEP;
 
                 for (k=0; k<NROW; k++) { 
-     			cudaUnbindTexture(tex);
     			cudaBindTextureToArray(tex, subject_image_array[k], channelDesc);
 
 			/* Convert NIMAGE_ROW subject images to the polar coordinates */
 			resample_to_polar<<<GridSize1, RING_LENGTH>>>(d_subject_image_polar+k*NIMAGE_ROW*(RING_LENGTH+2)*NRING, x, y, NX, NY, RING_LENGTH, NRING);
                 	cudaThreadSynchronize();
+     			cudaUnbindTexture(tex);
 		}
 		if (NIMAGE_LEFT != 0) {
-    			cudaUnbindTexture(tex);
     			cudaBindTextureToArray(tex, subject_image_array_left, channelDesc);
    		
 			/* Convert NIMAGE_LEFT subject images to the polar coordinates */
 			resample_to_polar<<<GridSize2, RING_LENGTH>>>(d_subject_image_polar+NROW*NIMAGE_ROW*(RING_LENGTH+2)*NRING, x, y, NX, NY, RING_LENGTH, NRING);
                 	cudaThreadSynchronize();
+    			cudaUnbindTexture(tex);
 		}
 
 		/* Conduct FFT for all subject images */
 		cufftExecR2C(plan_subject_image, (cufftReal *)d_subject_image_polar, (cufftComplex *)d_subject_image_polar);
 
+		const textureReference *texPtr;
+		cudaGetTextureReference(&texPtr, "texim");
+		cudaBindTexture(0, texPtr, d_subject_image_polar, &channelDesc, NIMAGE*(RING_LENGTH+2)*NRING*sizeof(float));
+ 
+		const textureReference *texPtr_ref;
+		cudaGetTextureReference(&texPtr_ref, "texim_ref");
+		cudaBindTexture(0, texPtr_ref, d_ref_image_polar, &channelDesc, (RING_LENGTH+2)*NRING*sizeof(float));
+
                 ccf_base_addr = ((j+KY)*(2*KX+1)+(i+KX))*NIMAGE*(RING_LENGTH+2);
-		complex_mul<<<NIMAGE, BLOCK_SIZE>>>(d_subject_image_polar, d_ccf_s+ccf_base_addr, d_ccf_m+ccf_base_addr, BLOCK_SIZE, NRING);
+		complex_mul<<<NIMAGE, BLOCK_SIZE>>>(d_ccf+ccf_base_addr, BLOCK_SIZE, NRING, NIMAGE, KX, KY);
+		cudaUnbindTexture(texim);
+		cudaUnbindTexture(texim_ref);
 	}
     }
  
-    cufftExecC2R(plan_ccf, (cufftComplex *)d_ccf_s, (cufftReal *)d_ccf_s);
-    cufftExecC2R(plan_ccf, (cufftComplex *)d_ccf_m, (cufftReal *)d_ccf_m);
+    cufftExecC2R(plan_ccf, (cufftComplex *)d_ccf, (cufftReal *)d_ccf);
         
 
-    cudaMemcpy(ccf_s, d_ccf_s, (RING_LENGTH+2)*NIMAGE*(2*KX+1)*(2*KY+1)*sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(ccf_m, d_ccf_m, (RING_LENGTH+2)*NIMAGE*(2*KX+1)*(2*KY+1)*sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(ccf, d_ccf, 2*(RING_LENGTH+2)*NIMAGE*(2*KX+1)*(2*KY+1)*sizeof(float), cudaMemcpyDeviceToHost);
 
 
     /* Memory clean up */
@@ -214,8 +223,7 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf_s, float *
     cudaFreeArray(ref_image_array);
     cudaFree(d_subject_image_polar);
     cudaFree(d_ref_image_polar);
-    cudaFree(d_ccf_s);
-    cudaFree(d_ccf_m);
+    cudaFree(d_ccf);
     cufftDestroy(plan_subject_image);
     cufftDestroy(plan_ref_image);
     cufftDestroy(plan_ccf);
@@ -224,7 +232,7 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf_s, float *
 }
 
 
-__global__ void complex_mul(float* subject_image_polar, float *ccf_s, float *ccf_m, int BLOCK_SIZE, int NRING) {
+__global__ void complex_mul(float *ccf, int BLOCK_SIZE, int NRING, int NIMAGE, int KX, int KY) {
 
     // Block index
     int bx = blockIdx.x;
@@ -246,10 +254,10 @@ __global__ void complex_mul(float* subject_image_polar, float *ccf_s, float *ccf
 	subject_index = (b_image+i_block+tx)*2;
         ref_index = (i_block+tx)*2;
 	
-	sub_real = subject_image_polar[subject_index];
-    	sub_imag = subject_image_polar[subject_index+1];
-	ref_real = const_ref_image_polar[ref_index];
-	ref_imag = const_ref_image_polar[ref_index+1];
+	sub_real = tex1Dfetch(texim, subject_index);  //subject_image_polar[subject_index];
+    	sub_imag = tex1Dfetch(texim, subject_index+1);  //subject_image_polar[subject_index+1];
+	ref_real = tex1Dfetch(texim_ref, ref_index);  //const_ref_image_polar[ref_index];
+	ref_imag = tex1Dfetch(texim_ref, ref_index+1);  // const_ref_image_polar[ref_index+1];
 	sr_rr = sub_real*ref_real;
         si_ri = sub_imag*ref_imag;
         sr_ri = sub_real*ref_imag;
@@ -261,10 +269,11 @@ __global__ void complex_mul(float* subject_image_polar, float *ccf_s, float *ccf
     }
     
     ccf_index = (bx*BLOCK_SIZE+tx)*2;
-    ccf_s[ccf_index] = ccf_s_real;    
-    ccf_s[ccf_index+1] = ccf_s_imag;
-    ccf_m[ccf_index] = ccf_m_real;    
-    ccf_m[ccf_index+1] = ccf_m_imag;
+    int ccf_OFFSET = BLOCK_SIZE*2*NIMAGE*(2*KX+1)*(2*KY+1);
+    ccf[ccf_index] = ccf_s_real;    
+    ccf[ccf_index+1] = ccf_s_imag;
+    ccf[ccf_index+ccf_OFFSET] = ccf_m_real;    
+    ccf[ccf_index+ccf_OFFSET+1] = ccf_m_imag;
 }
 
 __global__ void resample_to_polar(float* image, float dx, float dy, int NX, int NY, int RING_LENGTH, int NRING) {
@@ -277,7 +286,7 @@ __global__ void resample_to_polar(float* image, float dx, float dy, int NX, int 
     int tx = threadIdx.x;
  
     float cnx = NX/2+dx;
-    float cny = by*NX+NY/2+dy+1;
+    float cny = by*NX+NY/2+dy;
     float ang = float(tx)/RING_LENGTH*PI*2;
     float sx = cnx+(bx+1)*cosf(ang);
     float sy = cny+(bx+1)*sinf(ang);

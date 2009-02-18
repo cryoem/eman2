@@ -1068,14 +1068,12 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 
 CUDA_Aligner::CUDA_Aligner() {
 	image_stack = NULL;
-	ccf_s = NULL;
-	ccf_m = NULL;
+	ccf = NULL;
 }
 
 CUDA_Aligner::~CUDA_Aligner() {
 	if (image_stack) delete image_stack;
-	if (ccf_s) delete ccf_s;
-	if (ccf_m) delete ccf_m;
+	if (ccf) delete ccf;
 }
 
 #ifdef EMAN2_USING_CUDA
@@ -1091,8 +1089,7 @@ void CUDA_Aligner::setup(int nima, int nx, int ny, int ring_length, int nring, f
 	KY = ky;
 
 	image_stack = (float *)malloc(NIMA*NX*NY*sizeof(float));
-	ccf_s = (float *)malloc((2*KX+1)*(2*KY+1)*NIMA*(RING_LENGTH+2)*sizeof(float));
-	ccf_m = (float *)malloc((2*KX+1)*(2*KY+1)*NIMA*(RING_LENGTH+2)*sizeof(float));
+	ccf = (float *)malloc(2*(2*KX+1)*(2*KY+1)*NIMA*(RING_LENGTH+2)*sizeof(float));
 }
 
 void CUDA_Aligner::insert_image(EMData *image, int num) {
@@ -1105,7 +1102,7 @@ void CUDA_Aligner::insert_image(EMData *image, int num) {
 vector<float> CUDA_Aligner::alignment_2d(EMData *ref_image_em) {
 
 	float *ref_image, max_ccf;
-	int base_address;
+	int base_address, ccf_offset;	
 	float ts, tm;
 	float ang, sx, sy, mirror;
 	vector<float> align_result;
@@ -1116,7 +1113,9 @@ vector<float> CUDA_Aligner::alignment_2d(EMData *ref_image_em) {
 		for (int y=0; y<NY; y++)
 			ref_image[x*NY+y] = (*ref_image_em)(x, y);
 
-        calculate_ccf(image_stack, ref_image, ccf_s, ccf_m, NIMA, NX, NY, RING_LENGTH, NRING, STEP, KX, KY);
+        calculate_ccf(image_stack, ref_image, ccf, NIMA, NX, NY, RING_LENGTH, NRING, STEP, KX, KY);
+	
+	ccf_offset = NIMA*(RING_LENGTH+2)*(2*KX+1)*(2*KY+1);
 	
 	for (int im=0; im<NIMA; im++) {
 		max_ccf = -1.0e22;
@@ -1124,8 +1123,8 @@ vector<float> CUDA_Aligner::alignment_2d(EMData *ref_image_em) {
 			for (int ky=-KY; ky<=KY; ky++) {
 				base_address = (((ky+KY)*(2*KX+1)+(kx+KX))*NIMA+im)*(RING_LENGTH+2);	
 				for (int l=0; l<RING_LENGTH; l++) {
-					ts = ccf_s[base_address+l];
-					tm = ccf_m[base_address+l];
+					ts = ccf[base_address+l];
+					tm = ccf[base_address+l+ccf_offset];
 					if (ts > max_ccf) {
 						ang = float(l)/RING_LENGTH*360.0;
 						sx = kx*STEP;

@@ -554,7 +554,7 @@ namespace EMAN
 		
 	  private:
 	        float *image_stack;
-		float *ccf_s, *ccf_m;
+		float *ccf;
 		int NIMA, NX, NY, RING_LENGTH, NRING, KX, KY;
 		float STEP;
 	};
