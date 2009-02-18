@@ -79,6 +79,7 @@ class EMSelectorDialog(QtGui.QDialog):
 		
 		self.current_force = None # use to keep track of what is currently being forced, either 2D plotting, 2D image showing, or neither
 		self.selections = []
+		self.current_item = None # Used to remember the currently clicked item, used by contextMenu
 		self.current_list_widget = None
 		self.lock = True
 		self.list_widgets = []
@@ -280,8 +281,31 @@ class EMSelectorDialog(QtGui.QDialog):
 				directory += dtag + d
 	
 		self.lock = False
+		
+	def listWidgetContextMenuEvent(self,event):
+		focus = None
+		print self.current_item
+		for l in self.list_widgets:
+			if l.hasFocus(): 
+				focus = l
+				break
+		else:
+			raise
+			return # No list widget has the focus even though its contextMenuEvent was triggered.
+		
+		menu = QtGui.QMenu()
+		for k in ["Save a copy", "Move to Trash", "Rename"]:
+			menu.addAction(k)
+		QtCore.QObject.connect(menu,QtCore.SIGNAL("triggered(QAction*)"),self.menu_action_triggered)
+		menu.exec_(event.globalPos())
+	
+	def menu_action_triggered(self,action):
+		print "This feature is currently disabled"
+		
 	def __add_list_widget(self, list_widget = None):
 		if list_widget == None:	list_widget = QtGui.QListWidget(None)
+		
+		list_widget.contextMenuEvent = self.listWidgetContextMenuEvent
 		
 		list_widget.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
 		list_widget.setMouseTracking(True)	
@@ -294,21 +318,11 @@ class EMSelectorDialog(QtGui.QDialog):
 		QtCore.QObject.connect(list_widget, QtCore.SIGNAL("currentRowChanged (int)"),self.list_widget_row_changed)
 		#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("paintEvent (int)"),self.list_widget_row_changed)
 		QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemEntered(QListWidgetItem*)"),self.list_widget_item_entered)
-		QtCore.QObject.connect(list_widget, QtCore.SIGNAL("currentItemChanged(QListWidgetItem*,QListWidgetItem*)"),self.list_widget_current_changed)
+		#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("currentItemChanged(QListWidgetItem*,QListWidgetItem*)"),self.list_widget_current_changed)
 		#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemChanged(QListWidgetItem*)"),self.list_widget_item_changed)
 		#\QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemActivated(QListWidgetItem*)"),self.list_widget_item_activated)
 		#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("activated(QModelIndex)"),self.activated)
 		#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("selectionChanged(QItemSelection,QItemSelection)"),self.selection_changed)
-	
-	
-	def list_widget_item_activated(self,item):
-		pass
-	
-	def list_widget_item_changed(self,item):
-		pass
-	
-	def list_widget_current_changed(self,item1,item2):
-		pass
 	
 	def __go_back_a_directory(self):
 		self.lock = True
@@ -362,7 +376,7 @@ class EMSelectorDialog(QtGui.QDialog):
 			directory += dtag + str(self.list_widget_data[i].text())
 		
 		
-		a = EMSelectionListItem("../",None)
+		a = QtGui.QListWidgetItem("../",None)
 		a.type_of_me = "go up a directory"
 		self.list_widgets[0].insertItem(0,a)
 		
@@ -426,8 +440,8 @@ class EMSelectorDialog(QtGui.QDialog):
 		if item.type_of_me == "value": return #it's just a value in the db
 		self.__update_selections()
 
+		self.current_item = item
 		if item == None: return
-		
 		
 		dtag = get_dtag()
 		if item.text() == "../": 
@@ -552,13 +566,20 @@ class EMSelectorDialog(QtGui.QDialog):
 			self.application().show_specific(preview)
 			
 	def preview_data(self,a,filename=""):
-		from emimage import EMImageModule
+		from emimage import EMImageModule, EMModuleFromFile
+		
+		using_file_names_only = False
+		if a == None: using_file_names_only = True # For the image matrix, you can load large image stacks if you specify only the file name
+		
 		f_2d = self.force_2d.isChecked()
 		f_plot = self.force_plot.isChecked()
 		
 		if self.single_preview_only() and len(self.previews) != 0:
 			old_preview = self.previews[-1] # this means we always choose the last preview if the user suddenly goes from multipreview to single preview
-			preview = EMImageModule(data=a,app=self.application(),force_2d=f_2d,force_plot=f_plot,old=old_preview,filename=filename,replace=self.replace.isChecked())
+			if not using_file_names_only:
+				preview = EMImageModule(data=a,app=self.application(),force_2d=f_2d,force_plot=f_plot,old=old_preview,filename=filename,replace=self.replace.isChecked())
+			else:
+				preview = EMModuleFromFile(filename,application=self.application(), force_2d=f_2d,force_plot=f_plot,old=old_preview)
 			if preview != old_preview:
 				self.module_closed(old_preview)
 				old_preview.closeEvent(None)
@@ -567,12 +588,15 @@ class EMSelectorDialog(QtGui.QDialog):
 				try: preview.optimally_resize()
 				except: pass
 		else:
-			preview = EMImageModule(data=a,app=self.application(),force_2d=f_2d,force_plot=f_plot,filename=filename)
+			if not using_file_names_only:
+				preview = EMImageModule(data=a,app=self.application(),force_2d=f_2d,force_plot=f_plot,filename=filename)
+			else:
+				preview = EMModuleFromFile(filename,application=self.application(), force_2d=f_2d,force_plot=f_plot)
 			self.previews.append(preview)
 			self.module_events.append(ModuleEventsManager(self,preview))
 			try: preview.optimally_resize()
 			except: pass
-		
+					
 		self.application().show_specific(preview)
 				
 		preview.updateGL()
@@ -654,12 +678,12 @@ class EMSelectorDialog(QtGui.QDialog):
 		list_widget.clear()
 		if (list_widget == self.list_widgets[0]):
 			self.lock = True
-			a = EMSelectionListItem("../",list_widget)
+			a = QtGui.QListWidgetItem("../",list_widget)
 			a.type_of_me = "go up a directory"
 			self.lock = False
 			
 		if item != None and item.type_of_me == "key_value":
-			a = EMSelectionListItem(self.basic_python_icon,str(item.value),list_widget)
+			a = QtGui.QListWidgetItem(self.basic_python_icon,str(item.value),list_widget)
 			a.type_of_me = "value"
 			a.value = item.value
 			return
@@ -760,16 +784,16 @@ class EMDirectoryListing:
 			file_length = len(f)
 			if file_length == 0: file_length = len(d)
 			if file_length != 0:
-				a = EMSelectionListItem(self.target().folder_files_icon,i,list_widget)
+				a = QtGui.QListWidgetItem(self.target().folder_files_icon,i,list_widget)
 				a.type_of_me = "directory_file"
 			else:
-				a = EMSelectionListItem(self.target().folder_icon,i,list_widget)
+				a = QtGui.QListWidgetItem(self.target().folder_icon,i,list_widget)
 				type_of_me = "directory"
 				
 			#for i,file in enumerate(files):
 				#if file[0] == '.': continue
 				#if get_file_tag(file) == "bdb":
-					#a = EMSelectionListItem(self.database_icon,file,list_widget)
+					#a = QtGui.QListWidgetItem(self.database_icon,file,list_widget)
 					#files.pop(i)
 					
 		for file in files:
@@ -784,31 +808,31 @@ class EMDirectoryListing:
 			if EMUtil.get_image_ext_type(extension) != IMAGE_UNKNOWN and extension not in ["png","jpeg","jpg","JPG"]:
 				try:
 					if EMUtil.get_image_count(full_name) > 1:
-						a = EMSelectionListItem(self.target().emdata_matrix_icon,file,list_widget)
+						a = QtGui.QListWidgetItem(self.target().emdata_matrix_icon,file,list_widget)
 						a.type_of_me = self.emdata_mx
 						a.full_path = full_name
 					else:
 						e.read_image(full_name,0, read_header_only)
 						if e.get_zsize() > 1:
-							a = EMSelectionListItem(self.target().emdata_3d_icon,file,list_widget)
+							a = QtGui.QListWidgetItem(self.target().emdata_3d_icon,file,list_widget)
 							a.type_of_me = self.emdata_3d 
 							a.full_path = full_name
 						else:
-							a = EMSelectionListItem(self.target().emdata_icon,file,list_widget)
+							a = QtGui.QListWidgetItem(self.target().emdata_icon,file,list_widget)
 							a.type_of_me = self.emdata 
 							a.full_path = full_name
 					
 				except:
-					a = EMSelectionListItem(self.target().file_icon,file,list_widget) # this happens when files are corrupted	
+					a = QtGui.QListWidgetItem(self.target().file_icon,file,list_widget) # this happens when files are corrupted	
 					a.type_of_me = "regular_file"
 			
 			elif plot.is_file_readable(full_name):
-				a = EMSelectionListItem(self.target().plot_icon,file,list_widget)
+				a = QtGui.QListWidgetItem(self.target().plot_icon,file,list_widget)
 				a.type_of_me = self.plot_data
 				a.full_path = full_name
 			else:
 				if filt != "EM types":
-					a = EMSelectionListItem(self.target().file_icon,file,list_widget)
+					a = QtGui.QListWidgetItem(self.target().file_icon,file,list_widget)
 					a.type_of_me = "regular_file"
 					
 
@@ -823,33 +847,7 @@ class EMDirectoryListing:
 			self.target().preview_data(EMData(item.full_path),item.full_path)
 			return True
 		elif item.type_of_me == self.emdata_mx:
-			# there is an inconsistency here seeing as size considerations are 
-			n = EMUtil.get_image_count(item.full_path)
-			nx,ny = gimme_image_dimensions2D(item.full_path)
-			mx = 256000000# 256Mb
-			a = []
-			if n*nx*ny*4 > mx:
-				new_n = mx/(nx*ny) + 1
-				
-				
-				msg = QtGui.QMessageBox()
-				msg.setWindowTitle("Warning")
-				msg.setText("Image data is more than 256Mb, only showing first %i images" %new_n)
-				msg.exec_()
-				
-				progress = EMProgressDialogModule(self.target().application(),"Reading files", "abort", 0, new_n,None)
-				progress.qt_widget.show()
-				for i in range(new_n):
-					a.append(EMData(item.full_path,i))
-					progress.qt_widget.setValue(i)
-					if progress.qt_widget.wasCanceled():
-						progress.qt_widget.close()
-						return
-				progress.qt_widget.close()	
-				
-			else:
-				a=EMData.read_images(item.full_path)
-			self.target().preview_data(a,item.full_path)
+	   	   	self.target().preview_data(None,item.full_path)
 			return True
 		elif item.type_of_me == self.emdata_mx_member:
 			# there is an inconsistency here seeing as size considerations are 
@@ -872,7 +870,7 @@ class EMDirectoryListing:
 			keys.sort() # alphabetical order
 			for k in keys:
 				v = data[k]
-				a = EMSelectionListItem(self.target().basic_python_icon,str(k)+":"+str(v),list_widget)
+				a = QtGui.QListWidgetItem(self.target().basic_python_icon,str(k)+":"+str(v),list_widget)
 				a.type_of_me = "key_value"
 				a.key = k
 				a.value = v
@@ -880,7 +878,7 @@ class EMDirectoryListing:
 			return True
 		elif item.type_of_me == self.emdata_mx:
 			for i in range(EMUtil.get_image_count(item.full_path)):
-				a = EMSelectionListItem(self.target().emdata_icon,str(i),list_widget)
+				a = QtGui.QListWidgetItem(self.target().emdata_icon,str(i),list_widget)
 				a.type_of_me = self.emdata_mx_member
 				a.full_path = item.full_path
 				a.idx = i
@@ -986,7 +984,7 @@ class EMBDBListing:
 			d = remove_directories_from_name(directory)
 			
 			if d in self.directory_replacements.keys():
-				a = EMSelectionListItem(self.target().database_icon,self.directory_replacements[d],list_widget)
+				a = QtGui.QListWidgetItem(self.target().database_icon,self.directory_replacements[d],list_widget)
 				rm.append(i)
 				a.type_of_me = "regular"
 		
@@ -1036,7 +1034,7 @@ class EMBDBListing:
 			if i[0] == '.': continue
 			
 			if i == "EMAN2DB":
-				a = EMSelectionListItem(self.target().database_icon,"bdb",list_widget) # this is something we do not wish to support
+				a = QtGui.QListWidgetItem(self.target().database_icon,"bdb",list_widget) # this is something we do not wish to support
 				a.type_of_me = "unwanted" # really haven't accommodated for this...
 				continue
 		
@@ -1047,11 +1045,11 @@ class EMBDBListing:
 			if file_length == 0: file_length = len(d)
 				
 			if file_length != 0:
-				a = EMSelectionListItem(self.target().folder_files_icon,i,list_widget)
+				a = QtGui.QListWidgetItem(self.target().folder_files_icon,i,list_widget)
 				a.type_of_me = "directory_file"
 				#a.full_path = real_directory
 			else:
-				a = EMSelectionListItem(self.target().folder_icon,i,list_widget)
+				a = QtGui.QListWidgetItem(self.target().folder_icon,i,list_widget)
 				a.type_of_me = "directory"
 				a.full_path = real_directory
 			
@@ -1067,7 +1065,7 @@ class EMBDBListing:
 					#n = DB[f[0]]["maxrec"]
 					n = db["maxrec"]
 					if n >= 1:
-						a = EMSelectionListItem(self.target().emdata_matrix_icon,f[0],list_widget)
+						a = QtGui.QListWidgetItem(self.target().emdata_matrix_icon,f[0],list_widget)
 						a.type_of_me = self.db_mx
 						a.database_directory = db_directory
 						a.database = f[0]
@@ -1075,10 +1073,10 @@ class EMBDBListing:
 						#d = DB[f[0]].get_header(0)
 						d = db.get_header(0)
 						if d["nz"] <= 1:
-							a = EMSelectionListItem(self.target().emdata_icon,f[0],list_widget)
+							a = QtGui.QListWidgetItem(self.target().emdata_icon,f[0],list_widget)
 							a.type_of_me = self.emdata_entry
 						else:
-							a = EMSelectionListItem(self.target().emdata_3d_icon,f[0],list_widget)
+							a = QtGui.QListWidgetItem(self.target().emdata_3d_icon,f[0],list_widget)
 							a.type_of_me = self.emdata_3d_entry
 						
 						a.database_directory = db_directory
@@ -1086,15 +1084,15 @@ class EMBDBListing:
 						a.database_key = 0
 				
 					else:
-						a = EMSelectionListItem(self.target().database_icon,f[0],list_widget)
+						a = QtGui.QListWidgetItem(self.target().database_icon,f[0],list_widget)
 						a.type_of_me = "regular"
 				else:
-					a = EMSelectionListItem(self.target().database_icon,f[0],list_widget)
+					a = QtGui.QListWidgetItem(self.target().database_icon,f[0],list_widget)
 					a.type_of_me = "regular"
 					
 				db_close_dict(db_name)
 			#else:
-				#a = EMSelectionListItem(self.target().key_icon,file,list_widget)
+				#a = QtGui.QListWidgetItem(self.target().key_icon,file,list_widget)
 			
 		return True
 
@@ -1131,18 +1129,18 @@ class EMBDBListing:
 			if k == '': continue
 			_type =db.item_type(k)
 			if _type == dict:
-				a = EMSelectionListItem(self.target().database_icon,str(k),list_widget)
+				a = QtGui.QListWidgetItem(self.target().database_icon,str(k),list_widget)
 				a.type_of_me = "database_dict"
 			elif _type == EMData:
 				data = db.get_header(k)
 				if data["nz"] > 1:
-					a = EMSelectionListItem(self.target().emdata_3d_icon,str(k),list_widget)
+					a = QtGui.QListWidgetItem(self.target().emdata_3d_icon,str(k),list_widget)
 					a.type_of_me = self.emdata_3d_entry
 					a.database_directory = db_directory
 					a.database = key
 					a.database_key = k
 				else:
-					a = EMSelectionListItem(self.target().emdata_icon,str(k),list_widget)
+					a = QtGui.QListWidgetItem(self.target().emdata_icon,str(k),list_widget)
 					a.type_of_me = self.emdata_entry
 					a.database_directory = db_directory
 					a.database = key
@@ -1152,17 +1150,16 @@ class EMBDBListing:
 					if (isinstance(db[k][0][0],float) or isinstance(db[k][0][0],int)) and (isinstance(db[k][1][0],float) or isinstance(db[k][0][0],int)):
 						v = db[k]
 				
-						a = EMSelectionListItem(self.target().plot_icon,str(k)+":"+str(v),list_widget)
+						a = QtGui.QListWidgetItem(self.target().plot_icon,str(k)+":"+str(v),list_widget)
 						a.type_of_me = self.db_list_plot
 						a.db_dir = db_directory
 						a.db = key
 						a.db_key = k
 					else: raise
 				except:
-					# yes redundant but not time
+					# yes redundant but no time
 					v = db[k]
-				
-					a = EMSelectionListItem(self.target().basic_python_icon,str(k)+":"+str(v),list_widget)
+					a = QtGui.QListWidgetItem(self.target().basic_python_icon,str(k)+":"+str(v),list_widget)
 					a.type_of_me = "key_value"
 					a.key = k
 					a.value = v
@@ -1170,8 +1167,7 @@ class EMBDBListing:
 			else:
 				#if type(i) in [str,float,int,tuple,list,bool]:
 				v = db[k]
-				
-				a = EMSelectionListItem(self.target().basic_python_icon,str(k)+":"+str(v),list_widget)
+				a = QtGui.QListWidgetItem(self.target().basic_python_icon,str(k)+":"+str(v),list_widget)
 				a.type_of_me = "key_value"
 				a.key = k
 				a.value = v
@@ -1213,7 +1209,7 @@ class EMBDBListing:
 			keys.sort() # alphabetical order
 			for k in keys:
 				v = data[k]
-				a = EMSelectionListItem(self.target().basic_python_icon,str(k)+":"+str(v),list_widget)
+				a = QtGui.QListWidgetItem(self.target().basic_python_icon,str(k)+":"+str(v),list_widget)
 				a.type_of_me = "key_value"
 				a.key = k
 				a.value = v
@@ -1270,22 +1266,22 @@ class EMBDBListing:
 				for k in keys:
 					i = db[k]
 					if k == "auto_boxes":
-						a = EMSelectionListItem(self.target().ab_autoboxes_icon,str(k),list_widget)
+						a = QtGui.QListWidgetItem(self.target().ab_autoboxes_icon,str(k),list_widget)
 						a.type_of_me = "auto_boxes"
 					elif k == "reference_boxes":
-						a = EMSelectionListItem(self.target().ab_autoboxes_icon,str(k),list_widget)
+						a = QtGui.QListWidgetItem(self.target().ab_autoboxes_icon,str(k),list_widget)
 						a.type_of_me = "reference_boxes"
 					elif k == "manual_boxes":
-						a = EMSelectionListItem(self.target().ab_autoboxes_icon,str(k),list_widget)
+						a = QtGui.QListWidgetItem(self.target().ab_autoboxes_icon,str(k),list_widget)
 						a.type_of_me = "manual_boxes"
 					elif type(i) in [str,float,int,tuple,list,bool]:
-						a = EMSelectionListItem(self.target().basic_python_icon,str(k),list_widget)
+						a = QtGui.QListWidgetItem(self.target().basic_python_icon,str(k),list_widget)
 						a.type_of_me = "value"
 					elif type(i) == dict:
-						a = EMSelectionListItem(self.target().dict_python_icon,str(k),list_widget)
+						a = QtGui.QListWidgetItem(self.target().dict_python_icon,str(k),list_widget)
 						a.type_of_me = "python_dict"
 					elif type(i) == EMData:
-						a = EMSelectionListItem(self.target().emdata_icon,str(k),list_widget)
+						a = QtGui.QListWidgetItem(self.target().emdata_icon,str(k),list_widget)
 						a.type_of_me = self.db_dict_emdata_entry
 						a.database_directory = db_directory
 						a.database = key
@@ -1294,13 +1290,13 @@ class EMBDBListing:
 					elif type(i) == list:
 						if len(i) == 2 and False:
 							# warning - I haven't tested this
-							a = EMSelectionListItem(self.target().plot_icon,str(k),list_widget)
+							a = QtGui.QListWidgetItem(self.target().plot_icon,str(k),list_widget)
 							a.type_of_me = self.db_list_plot
 						else:
-							a = EMSelectionListItem(self.target().basic_python_icon,str(k),list_widget)
+							a = QtGui.QListWidgetItem(self.target().basic_python_icon,str(k),list_widget)
 							a.type_of_me = "value"
 					else:
-						a = EMSelectionListItem(self.target().basic_python_icon,str(k),list_widget)
+						a = QtGui.QListWidgetItem(self.target().basic_python_icon,str(k),list_widget)
 						a.type_of_me = "value"
 			elif isinstance(db,EMData):
 				print "this shouldn't happen"
@@ -1308,7 +1304,7 @@ class EMBDBListing:
 				self.target().preview_data(db)
 				return False
 			else:
-				a = EMSelectionListItem(self.target().basic_python_icon,str(db),list_widget)
+				a = QtGui.QListWidgetItem(self.target().basic_python_icon,str(db),list_widget)
 				a.type_of_me = "value"
 			db_close_dict(db_name)
 			return True
@@ -1335,37 +1331,7 @@ class EMBDBListing:
 		
 		if item.type_of_me == self.db_mx:
 			db_name = "bdb:"+item.database_directory+"#"+item.database
-			db = db_open_dict(db_name,ro=True)
-			
-			maxrec = db["maxrec"]+1
-
-			hdr = db.get_header(0)
-			nx = hdr["nx"]
-			ny = hdr["ny"]
-			mx = 256000000# 256Mb
-			if maxrec*nx*ny*4 > mx:
-				maxrec = mx/(nx*ny) + 1
-				
-				
-				msg = QtGui.QMessageBox()
-				msg.setWindowTitle("Warning")
-				msg.setText("Image data is more than 256Mb, only showing first %i images" %maxrec)
-				msg.exec_()
-				
-				
-			progress = EMProgressDialogModule(self.target().application(),"Reading files", "abort", 0, maxrec,None)
-			progress.qt_widget.show()
-			data = []
-			for i in range(maxrec):
-				data.append(db[i])
-				progress.qt_widget.setValue(i)
-				if progress.qt_widget.wasCanceled():
-					db_close_dict(db_name)
-					progress.qt_widget.close()
-					return False
-			db_close_dict(db_name)
-			progress.qt_widget.close()
-			self.target().preview_data(data)	
+			self.target().preview_data(None,db_name)	
 			return True
 				
 		elif item.type_of_me in [self.emdata_3d_entry,self.emdata_entry]:
@@ -1431,67 +1397,10 @@ class EMBDBListing:
 			return db.get_attr_dict()
 			
 		else: return None
-	
-	#def do_preview(self,file_name,fake_it=False):
-		#split = file_name.split('/')
-		
-		#rm = []
-		#for i,s in enumerate(split):
-			#if len(s) == 0: rm.append(i)
-		
-		#rm.reverse()
-		#for k in rm: split.pop(k)
-		
-		#if len(split) > 1 : # must atleast have EMAN2DB/something.bdb/dictionary
-			#split.reverse() # this probably makes things faster
-			#for j in range(1,len(split)):
-				#if split[j] in self.directory_replacements.values():
-					#break
-			#else: return False
-			
-			#real_name = self.convert_to_absolute_path(file_name)
-			#db_directory = self.get_emdatabase_directory(real_name)
-			#DB = EMAN2DB.open_db(db_directory)
-			
-			#key = split[j-1]
-			##item_key = split[j-2]
-			
-			
-			##print key,item_key
-			#DB.open_dict(key)
-			#item = DB[key]
-			#for ii in range(j-2,-1,-1):
-				#for t in [type(split[ii]),float,int]:
-					#try:
-						#key = t(split[ii])
-						#if item[key] != None: 
-							#item = item[key]
-							#break
-					#except:
-						#pass
-			
-			#if isinstance(item,EMData):
-				#if not fake_it: self.target().preview_data(item)
-				#return True
-			
-		#return False
-			
+
 	def load_database_variables(self,directory,list_widget):
 		pass
 
-
-class EMSelectionListItem(QtGui.QListWidgetItem):
-	def __init__(self,a,b,c=None):
-		if c != None:
-			QtGui.QListWidgetItem.__init__(self,a,b,c)
-		else:
-			QtGui.QListWidgetItem.__init__(self,a,b)
-	
-		self.type_of_me = None # should be a string storing "emdata","emdata_matrix","emdata_3d", etc
-	def set_type_of_me(self,type_of_me):
-		self.type_of_me = type_of_me
-		
-	def get_type_of_me(self): return self.type_of_me
 
 class EMBrowserDialog(EMSelectorDialog):
 	def __init__(self,target,application):
@@ -1528,7 +1437,5 @@ if __name__ == '__main__':
 	QtCore.QObject.connect(em_qt_widget,QtCore.SIGNAL("cancel"),on_cancel)
 	em_app.show()
 	em_app.execute()
-
-
 
 

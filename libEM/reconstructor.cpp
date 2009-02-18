@@ -61,8 +61,6 @@ using std::cout; // for debug
 #include <iomanip>
 using std::setprecision;
 
-
-
 template < typename T > void checked_delete( T*& x )
 {
     typedef char type_must_be_complete[ sizeof(T)? 1: -1 ];

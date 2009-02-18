@@ -771,14 +771,18 @@ class EMImageMXModule(EMGUIModule):
 			if self.gl_widget != None:
 				self.gl_widget.setWindowTitle(remove_directories_from_name(filename))
 	
-	def set_data(self,data,filename='',update_gl=True):
+	def set_data(self,data_or_filename,filename='',update_gl=True):
+		'''
+		This function will work if you give it a list of EMData objects, or if you give it the file name (as the first argument)
+		If this solution is undesirable one could easily split this function into two equivalents.
+		'''
 		cache_size = -1
-		if isinstance(data,str):
-			nx,ny,nz = gimme_image_dimensions3D(data)
+		if isinstance(data_or_filename,str):
+			nx,ny,nz = gimme_image_dimensions3D(data_or_filename)
 			bytes_per_image = nx*ny*4.0
 			cache_size = int(75000000/bytes_per_image) # 75 MB
 		
-		self.data = EMDataListCache(data,cache_size)
+		self.data = EMDataListCache(data_or_filename,cache_size)
 
 		self.file_name = filename
 		self.update_window_title(self.file_name)

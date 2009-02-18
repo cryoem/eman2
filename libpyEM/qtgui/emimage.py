@@ -167,7 +167,13 @@ class EMImageModule(object):
 class EMModuleFromFile(object):
 	"""This is basically a factory class that will return an instance of the appropriate EMDisplay class,
 	using only a file name as input. Can force plot and force 2d display, also.
-	Used by emselector.py
+	
+	Used by emselector.py and e2display.py.
+	
+	This object was retrospectively altered to allow a file name to be passed into the EMImageMXModule's set_data function,
+	this is to facilitate viewing large images using the EMImageMXModule's caching mechanism. The object reads the images
+	from disk internally, allowing the user to view very large sets.
+	
 	"""
 	def __new__(cls,filename,application,force_plot=False,force_2d=False,old=None):
 		file_type = Util.get_filename_ext(filename)
@@ -190,15 +196,17 @@ class EMModuleFromFile(object):
 			n = EMUtil.get_image_count(filename)
 			nx,ny,nz = gimme_image_dimensions3D(filename)
 			if n > 1 and nz == 1: 
-				#a = EMData()
-				#data=a.read_images(filename)
-				data = [0,0]
+				if force_2d:
+					a = EMData()
+					data=a.read_images(filename)
+				else:
+					data = None # This is like a flag - the ImageMXModule only needs the file name
 			else:
 				data = EMData()
 				data.read_image(filename,0)
 				data = [data]
 				
-			if len(data) == 1: data = data[0]
+			if data != None and len(data) == 1: data = data[0]
 			
 			if force_2d or isinstance(data,EMData) and data.get_zsize()==1:
 				if isinstance(old,EMImage2DModule): module = old
@@ -206,7 +214,7 @@ class EMModuleFromFile(object):
 			elif isinstance(data,EMData):
 				if isinstance(old,EMImage3DModule): module = old
 				else: module = EMImage3DModule(application=application)
-			elif isinstance(data,list):
+			elif data == None or isinstance(data,list):
 				if isinstance(old,EMImageMXModule): module = old
 				else: module = EMImageMXModule(application=application)
 				data = filename

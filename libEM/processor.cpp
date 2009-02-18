@@ -323,7 +323,7 @@ void FourierProcessor::process_inplace(EMData * image)
 
 		memcpy(image->get_data(),ift->get_data(),ift->get_xsize()*ift->get_ysize()*ift->get_zsize()*sizeof(float));
 
-		ift->update();
+		//ift->update(); Unecessary
 
 		if( fft )
 		{
