@@ -7946,8 +7946,7 @@ void CUDA_kmeans::append_flat_image(EMData* im, int pos) {
 }
 
 // cuda k-means core
-#ifdef EMAN2_USING_CUDA
-//#include "sparx/cuda/cuda_kmeans.h"
+// #include "sparx/cuda/cuda_kmeans.h"
 int CUDA_kmeans::kmeans() {
 	return 1;
 		
