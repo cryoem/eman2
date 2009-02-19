@@ -233,7 +233,7 @@ def defocus_gett(roo, voltage=300.0, Pixel_size=1.0, Cs=2.0, wgh=0.1, f_start=0.
 		2. Based one extracted ctf imprints, perform exhaustive defocus searching to get 
 		   defocus which matches the extracted CTF imprints 
 	"""
-	
+	from utilities import generate_ctf
 	from math 	import sqrt, atan
 	res     = []
 	Res_roo = []
@@ -251,14 +251,17 @@ def defocus_gett(roo, voltage=300.0, Pixel_size=1.0, Cs=2.0, wgh=0.1, f_start=0.
 		Res_roo.append(roo[i] - Pn1[i])
 		Res_TE.append( TE[i]  - Pn1[i])
 	#
+	defocus = defocus_guess(Res_roo, Res_TE, voltage, Cs, Pixel_size, wgh, i_start, i_stop, 2, round_off)
+	nx  = int(len(Res_roo)*2)
+	ctf = ctf_1d(nx, generate_ctf([defocus,Cs,voltage,Pixel_size, 0.0, wgh]))
 	if (parent is not None):
 		parent.ctf_data=[roo, Res_roo, Res_TE]
 		parent.i_start = i_start
 		parent.i_stop = i_stop
 	else:
 		from utilities import write_text_file
-		write_text_file([roo, Res_roo, Res_TE], "procpw.txt")
-	return  defocus_guess(Res_roo, Res_TE, voltage, Cs, Pixel_size, wgh, i_start, i_stop, 2, round_off)
+		write_text_file([roo, Res_roo, Res_TE, ctf], "procpw.txt")
+	return defocus
 
 def defocus_get_Eudis(fnam_roo, volt=300, Pixel_size=1, Cs=2, wgh=.1, f_start=0, f_stop=-1, docf="a" ,skip="#", round_off=1, nr1=3, nr2=6):
 	"""

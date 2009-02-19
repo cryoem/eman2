@@ -5401,7 +5401,7 @@ def ali3d_e(stack, outdir, maskfile = None, ou = -1,  delta = 2, center = -1, ma
 		print_msg("ITERATION #%3d\n"%(iteration+1))
 		for ic in xrange(n_of_chunks):
 			if(center == -1):
-				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center_MPI(dataim, nima, myid, number_of_proc, main_node)				
+				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center(dataim)				
 				rotate_3D_shift(dataim, cs)
 				msg = "Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
 				print_msg(msg)				
@@ -5614,20 +5614,20 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, center = -1, maxit
 
 
 	if debug:
-		outf.write( "image_start, image_end: %d %d\n" %(image_start, image_end) )
-		outf.flush()
+		finfo.write( "image_start, image_end: %d %d\n" %(image_start, image_end) )
+		finfo.flush()
 
 	n_in_chunk  = max(int(chunk*(image_end-image_start)), 1)
 	n_of_chunks = (image_end-image_start)//n_in_chunk + min((image_end-image_start)%n_in_chunk, 1)
 
 	if debug:
-		outf.write("  chunk = "+str(chunk)+"   ")
-		outf.write("\n")
-		outf.flush()
-		outf.write("  Number of images in a chunk = "+str(n_in_chunk)+"   ")
-		outf.write("  Number of chunks = "+str(n_of_chunks)+"   ")
-		outf.write("\n")
-		outf.flush()
+		finfo.write("  chunk = "+str(chunk)+"   ")
+		finfo.write("\n")
+		finfo.flush()
+		finfo.write("  Number of images in a chunk = "+str(n_in_chunk)+"   ")
+		finfo.write("  Number of chunks = "+str(n_of_chunks)+"   ")
+		finfo.write("\n")
+		finfo.flush()
 
 	dataim = EMData.read_images(stack, list_of_particles)
 	for im in xrange(len(dataim)):
@@ -5635,10 +5635,10 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, center = -1, maxit
 	del list_of_particles
 
 	if debug:
-		outf.write("  First image on this processor: "+str(image_start)+"   ")
-		outf.write("  Last image on this processor:  "+str(image_end)+"   ")
-		outf.write("\n")
-		outf.flush()
+		finfo.write("  First image on this processor: "+str(image_start)+"   ")
+		finfo.write("  Last image on this processor:  "+str(image_end)+"   ")
+		finfo.write("\n")
+		finfo.flush()
 
 	if myid == main_node:
 		# initialize data for the reference preparation function
@@ -5666,14 +5666,14 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, center = -1, maxit
 		if myid == main_node:
 			print_msg("ITERATION #%3d\n"%(iteration+1))
 		if debug:
-			outf.write("  iteration = "+str(iteration)+"   ")
-			outf.write("\n")
-			outf.flush()
+			finfo.write("  iteration = "+str(iteration)+"   ")
+			finfo.write("\n")
+			finfo.flush()
 		for ic in xrange(n_of_chunks):
 			if(center == -1):
 				if debug:
-					outf.write("  begin centering \n")
-					outf.flush()
+					finfo.write("  begin centering \n")
+					finfo.flush()
 				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center_MPI(dataim, nima, myid, number_of_proc, main_node)				
 				cs = mpi_bcast(cs, 3, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 				cs = [float(cs[0]), float(cs[1]), float(cs[2])]
@@ -5684,9 +5684,9 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, center = -1, maxit
 			# compute updated 3D before each chunk
  	    		# resolution
 			if debug:
-				outf.write("  begin reconstruction = "+str(image_start))
-				outf.write("\n")
-				outf.flush()
+				finfo.write("  begin reconstruction = "+str(image_start))
+				finfo.write("\n")
+				finfo.flush()
 
 			if CTF: vol, fscc = rec3D_MPI(dataim, snr, sym, mask3D, os.path.join(outdir, "resolution%03d_%03d"%(iteration, ic)), myid, main_node)
 			else:   vol, fscc = rec3D_MPI_noCTF(dataim, sym, mask3D, os.path.join(outdir, "resolution%03d_%03d"%(iteration, ic)), myid, main_node)
@@ -5694,9 +5694,9 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, center = -1, maxit
 			if myid == main_node:
 				drop_image(vol, os.path.join(outdir, "vol%03d_%03d.hdf"%(iteration, ic) ))
 			if debug:
-				outf.write("  done reconstruction = "+str(image_start))
-				outf.write("\n")
-				outf.flush()
+				finfo.write("  done reconstruction = "+str(image_start))
+				finfo.write("\n")
+				finfo.flush()
 
 			if fourvar:
 			#  Compute Fourier variance
@@ -5728,9 +5728,9 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, center = -1, maxit
 			image_start_in_chunk = image_start + ic*n_in_chunk
 			image_end_in_chunk   = min(image_start_in_chunk + n_in_chunk, image_end)
 			if debug:
-				outf.write("Chunk "+str(ic)+"   Number of images in this chunk: "+str(n_in_chunk)+"\n")
-				outf.write("First image in this chunk: "+str(image_start_in_chunk)+"   Last image in this chunk: "+str(image_end_in_chunk-1)+"\n")
-				outf.flush()
+				finfo.write("Chunk "+str(ic)+"   Number of images in this chunk: "+str(n_in_chunk)+"\n")
+				finfo.write("First image in this chunk: "+str(image_start_in_chunk)+"   Last image in this chunk: "+str(image_end_in_chunk-1)+"\n")
+				finfo.flush()
 			if CTF:  previous_defocus = -1.0
 			for imn in xrange(image_start_in_chunk, image_end_in_chunk):
 				if CTF:
@@ -5750,9 +5750,9 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, center = -1, maxit
 
 				if debug:
 					initial, dummy = eqproj_cascaded_ccc(atparams, data)  # this is if we need initial discrepancy
-					outf.write("Image "+str(imn)+"\n")
-					outf.write('Old  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f  %11.4f'%(atparams[0], atparams[1], atparams[2], data[5][0], data[5][1], initial))
-					outf.write("\n")
+					finfo.write("Image "+str(imn)+"\n")
+					finfo.write('Old  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f  %11.4f'%(atparams[0], atparams[1], atparams[2], data[5][0], data[5][1], initial))
+					finfo.write("\n")
 				# change signs of shifts for projections
 				data[5][0] *= -1
 				data[5][1] *= -1
@@ -5766,9 +5766,9 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, center = -1, maxit
 				optm_params[0][4] *= -1
 
 				if debug:
-					outf.write('New  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f  %11.4f  %4d'%(optm_params[0][0], optm_params[0][1], optm_params[0][2], optm_params[0][3], optm_params[0][4], optm_params[1], optm_params[2]))
-					outf.write("\n")
-					outf.flush()
+					finfo.write('New  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f  %11.4f  %4d'%(optm_params[0][0], optm_params[0][1], optm_params[0][2], optm_params[0][3], optm_params[0][4], optm_params[1], optm_params[2]))
+					finfo.write("\n")
+					finfo.flush()
 
 				set_params_proj(dataim[imn-image_start], optm_params[0])
 
