@@ -1124,6 +1124,24 @@ class ParticleWorkFlowTask(WorkFlowTask):
 def ptable_convert(text):
 	return "bdb:particles#"+text+"_ptcls"
 
+def image_generic_delete(text_list,application):
+	'''
+	A function that will delete all of the files in the argument text list. It does not delete .img/.hed pairs automatically
+	'''
+	msg = QtGui.QMessageBox()
+	msg.setText("Deletion will be permanent. Are you sure you want to delete these files?");
+	s = ""
+	for text in text_list: s+=text+"\n"
+	msg.setInformativeText(s)
+	msg.setStandardButtons(QtGui.QMessageBox.Cancel | QtGui.QMessageBox.Ok )
+	msg.setDefaultButton(QtGui.QMessageBox.Cancel)
+	ret = msg.exec_()
+	if ret == QtGui.QMessageBox.Cancel: return
+	elif ret == QtGui.QMessageBox.Ok:
+		application.setOverrideCursor(Qt.BusyCursor)
+ 		for text in text_list: remove_file(text,img_couples_too=False)
+ 		application.setOverrideCursor(Qt.ArrowCursor)
+
 def image_db_delete(text_list,application):
 	msg = QtGui.QMessageBox()
 	msg.setText("Deletion will be permanent. Are you sure you want to delete these files?");

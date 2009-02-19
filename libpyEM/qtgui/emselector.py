@@ -44,7 +44,9 @@ from emplot2d import EMPlot2DModule
 #from boxertools import TrimSwarmAutoBoxer
 from emapplication import EMQtWidgetModule, ModuleEventsManager
 import weakref
+import copy
 
+read_header_only = True
 
 
 class EMSelectorModule(EMQtWidgetModule):
@@ -61,8 +63,8 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.application=weakref.ref(application)
 		self.module=weakref.ref(module)
 		self.desktop_hint = "dialog"
-		self.db_listing = EMBDBListing(self)
-		self.dir_listing = EMDirectoryListing(self)
+		self.db_listing = EMDBListing(self)
+		self.dir_listing = EMFSListing(self)
 		
 		self.hbl = QtGui.QVBoxLayout(self)
 		self.hbl.setMargin(0)
@@ -79,7 +81,6 @@ class EMSelectorDialog(QtGui.QDialog):
 		
 		self.current_force = None # use to keep track of what is currently being forced, either 2D plotting, 2D image showing, or neither
 		self.selections = []
-		self.current_item = None # Used to remember the currently clicked item, used by contextMenu
 		self.current_list_widget = None
 		self.lock = True
 		self.list_widgets = []
@@ -282,9 +283,8 @@ class EMSelectorDialog(QtGui.QDialog):
 	
 		self.lock = False
 		
-	def listWidgetContextMenuEvent(self,event):
+	def list_widget_context_menu_event(self,event):
 		focus = None
-		print self.current_item
 		for l in self.list_widgets:
 			if l.hasFocus(): 
 				focus = l
@@ -292,20 +292,111 @@ class EMSelectorDialog(QtGui.QDialog):
 		else:
 			raise
 			return # No list widget has the focus even though its contextMenuEvent was triggered.
+		selected_items = []
+		for i in range(l.count()):
+			item = l.item(i)
+			if item.isSelected(): selected_items.append(item)
+			
+		if len(selected_items) == 0: return
+		
+		first_item = selected_items[0]
+		
+		options = first_item.context_menu_options
+		if len(options) == 0: return
+		options_keys = options.keys()
+		
+		# Make sure the options are applicable to all selected items
+		for i in range(1,len(selected_items)):
+			o_k = selected_items[i].context_menu_options.keys()
+			rm = []
+			for k in options_keys:
+				if k not in o_k: rm.append(k)
+			for r in rm: options_keys.pop(r)
+		
+		if len(options_keys) == 0: return
 		
 		menu = QtGui.QMenu()
-		for k in ["Save a copy", "Move to Trash", "Rename"]:
+		self.menu_selected_items = selected_items
+		for k in options_keys:
+#			action = QtGui.QAction(k,menu)
+#			action.items = selected_items
 			menu.addAction(k)
 		QtCore.QObject.connect(menu,QtCore.SIGNAL("triggered(QAction*)"),self.menu_action_triggered)
+		self.action_list_widget = l # only set if the menu acutally triggers
 		menu.exec_(event.globalPos())
 	
 	def menu_action_triggered(self,action):
-		print "This feature is currently disabled"
+		items = self.menu_selected_items
+		
+		cont = self.__check_action(action.text(),items) # this kind of breaks the OO design, but it's necessary in the current framework
+		if not cont: return
+		total = len(items)
+		progress = EMProgressDialogModule(self.application(),action.text(), "abort", 0, total,None)
+		progress.qt_widget.show()
+		
+		msg = QtGui.QMessageBox()
+		
+		items_acted_on = []
+		for i,item in enumerate(items):
+			if not item.context_menu_options[str(action.text())](self):
+				msg.setText("An error occurred")
+				msg.setInformativeText("There was a problem performing the requested operation on the item labeled %s" %item.text())
+				msg.exec_()
+				break
+			else:
+				items_acted_on.append(item)
+				
+				
+			progress.qt_widget.setValue(i)
+			self.application().processEvents()
+			if progress.qt_widget.wasCanceled():
+				break	
+		
+		self.__post_action(action.text(),items_acted_on)
+		self.action_list_widget = None
+		progress.qt_widget.close()
+		
+	def __post_action(self,action_str,items_acted_on):
+		if action_str == "Delete":
+			c_list_widget = self.action_list_widget
+			items = [c_list_widget.item(i) for i in range(c_list_widget.count())]
+			rm_indices = []
+			for j,i in enumerate(items):
+				if i in items_acted_on:
+					rm_indices.append(j)
+			
+			rm_indices.reverse()
+			for idx in rm_indices:
+				c_list_widget.takeItem(idx)
+			
+			for ii,l in enumerate(self.list_widgets):
+				if l == c_list_widget:
+					break
+			
+			ii += 1
+			if ii <= (len(self.list_widgets) -1):
+				for i in range(ii,len(self.list_widgets)):
+					self.list_widgets[i].clear()
+			
+	def __check_action(self,action_str,items):
+		if action_str == "Delete":
+			msg = QtGui.QMessageBox()
+			msg.setText("Deletion will be permanent. Are you sure you want to delete the selected file(s)?")
+			s = ""
+			for i in items: s+=i.text()+"\n"
+			msg.setInformativeText(s)
+			msg.setStandardButtons(QtGui.QMessageBox.Cancel | QtGui.QMessageBox.Ok )
+			msg.setDefaultButton(QtGui.QMessageBox.Cancel)
+			ret = msg.exec_()
+			if ret == QtGui.QMessageBox.Cancel: return False
+			else: return True
+		else:
+			return True
 		
 	def __add_list_widget(self, list_widget = None):
 		if list_widget == None:	list_widget = QtGui.QListWidget(None)
 		
-		list_widget.contextMenuEvent = self.listWidgetContextMenuEvent
+		list_widget.contextMenuEvent = self.list_widget_context_menu_event
 		
 		list_widget.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
 		list_widget.setMouseTracking(True)	
@@ -418,7 +509,6 @@ class EMSelectorDialog(QtGui.QDialog):
 		if self.gl_image_preview  != None:
 			self.application().hide_specific(self.gl_image_preview)
 	
-		
 	def list_widget_item_entered(self,item):
 		self.current_list_widget = item.listWidget()
 
@@ -440,7 +530,6 @@ class EMSelectorDialog(QtGui.QDialog):
 		if item.type_of_me == "value": return #it's just a value in the db
 		self.__update_selections()
 
-		self.current_item = item
 		if item == None: return
 		
 		dtag = get_dtag()
@@ -462,7 +551,7 @@ class EMSelectorDialog(QtGui.QDialog):
 			print "no list widget has focus?"
 			return
 		
-		if allow_preview and self.previews_allowed() and self.set_preview(item):
+		if allow_preview and self.previews_allowed() and self.try_preview_item(item):
 			
 			for i in range(idx+1,len(self.list_widgets)):
 				self.list_widgets[i].clear()
@@ -490,37 +579,13 @@ class EMSelectorDialog(QtGui.QDialog):
 		for i in range(idx+2,len(self.list_widgets)):
 			self.list_widgets[i].clear()
 			self.list_widget_data[i] = None
-		
-#	def list_widget_dclicked(self,item):
-#		dtag = get_dtag()
-#		file = self.starting_directory+dtag
-#		for i,list_widget in enumerate(self.list_widgets):
-#			if item.listWidget() == list_widget:
-#				file += str(item.text())
-#				break
-#			file += str(self.list_widget_data[i].text()) + dtag
-#	
-#		
-#		if self.__is_previewable(item):
-#			print "Opening ", file
 	
-	def set_preview(self,item):
-		
+	def try_preview_item(self,item):
 		self.application().setOverrideCursor(Qt.BusyCursor)
-		#try/except is only here incase something (unlikely) goes wrong and we're left with a busy cursor
-		try:
-			if self.db_listing.do_preview(item):
-				self.application().setOverrideCursor(Qt.ArrowCursor)
-				return True
-			elif self.dir_listing.do_preview(item):
-				self.application().setOverrideCursor(Qt.ArrowCursor)
-				return True
-			self.application().setOverrideCursor(Qt.ArrowCursor)
-			return False
-		except:
-			self.application().setOverrideCursor(Qt.ArrowCursor)
-			return False
-		
+		preview_occured = item.do_preview(self)
+		self.application().setOverrideCursor(Qt.ArrowCursor)
+		return preview_occured
+
 	def check_preview_item_wants_to_list(self,item):
 		if self.db_listing.preview_item_wants_to_list(item):
 			return True
@@ -528,12 +593,6 @@ class EMSelectorDialog(QtGui.QDialog):
 			return True
 		
 		return False
-	
-	#def try_preview_plot(self,filename):		#preview = EMModuleFromFile(filename,app=self.application(),force_2d=False,force_plot=True,old=self.browse_gl_preview)
-		#if preview != self.browse_gl_preview:
-			#if self.browse_gl_preview != None: self.browse_gl_preview.closeEvent(None):
-				#self.browse_gl_preview = preview
-
 	
 	def preview_plot(self,filename):
 		if self.single_preview_only():
@@ -673,7 +732,13 @@ class EMSelectorDialog(QtGui.QDialog):
 		print "loading database directory",database_name
 	
 	
+	def __refresh_directory_data(self):
+		self.__load_directory_data(self.ldd_directory,self.ldd_list_widget,self.ldd_item)
+	
 	def __load_directory_data(self,directory,list_widget,item=None):
+		self.ldd_directory = directory
+		self.ldd_list_widget = list_widget
+		self.ldd_item = item
 		
 		list_widget.clear()
 		if (list_widget == self.list_widgets[0]):
@@ -690,13 +755,13 @@ class EMSelectorDialog(QtGui.QDialog):
 		
 		if self.db_listing.responsible_for(directory):
 			if  self.db_listing.load_database_data(directory,list_widget): return True
-			elif item != None and self.db_listing.load_image_metada(item,list_widget): return True
+			elif item != None and self.db_listing.load_metadata(item,list_widget): return True
 			elif self.db_listing.load_directory_data(directory,list_widget): return True
 			elif self.db_listing.load_database_interrogation(directory,list_widget): return True
 			
 			else: return False
 		else: 
-			if item != None and self.dir_listing.load_image_metada(item,list_widget): return True
+			if item != None and self.dir_listing.load_metadata(item,list_widget): return True
 			else: return self.dir_listing.load_directory_data(directory,list_widget)
 		
 	def make_replacements(self,dirs,list_widget):
@@ -704,7 +769,10 @@ class EMSelectorDialog(QtGui.QDialog):
 
 
 
-class EMDirectoryListing:
+class EMFSListing:
+	'''
+	FS stands for File System
+	'''
 	def __init__(self,target):
 		self.target = weakref.ref(target)
 		
@@ -717,12 +785,6 @@ class EMDirectoryListing:
 		self.previewable_types = [self.emdata_mx,self.emdata_3d,self.emdata,self.emdata_mx_member,self.plot_data] # add any others as functionality grows
 		self.threed_dim_limit = 128
 		pass
-	
-	
-	#if str(self.filter_combo.currentText()) != "EM types":
-			#for s in strings:
-				
-		#else:
 		
 	def paths(self,items):
 		ret = []
@@ -785,10 +847,14 @@ class EMDirectoryListing:
 			if file_length == 0: file_length = len(d)
 			if file_length != 0:
 				a = QtGui.QListWidgetItem(self.target().folder_files_icon,i,list_widget)
-				a.type_of_me = "directory_file"
+				b = EMGenericItem("directory_file",i)
+				accrue_public_attributes(a,b)
+#				a.type_of_me = "directory_file"
 			else:
 				a = QtGui.QListWidgetItem(self.target().folder_icon,i,list_widget)
-				type_of_me = "directory"
+				b = EMGenericItem("directory",i)
+				accrue_public_attributes(a,b)
+#				a.type_of_me = "directory"
 				
 			#for i,file in enumerate(files):
 				#if file[0] == '.': continue
@@ -809,61 +875,51 @@ class EMDirectoryListing:
 				try:
 					if EMUtil.get_image_count(full_name) > 1:
 						a = QtGui.QListWidgetItem(self.target().emdata_matrix_icon,file,list_widget)
-						a.type_of_me = self.emdata_mx
-						a.full_path = full_name
+						b = EMFS2DImageStackItem(self.emdata_mx,full_name)
+						accrue_public_attributes(a,b)
+#						a.type_of_me = self.emdata_mx
+#						a.full_path = full_name
 					else:
 						e.read_image(full_name,0, read_header_only)
 						if e.get_zsize() > 1:
 							a = QtGui.QListWidgetItem(self.target().emdata_3d_icon,file,list_widget)
-							a.type_of_me = self.emdata_3d 
-							a.full_path = full_name
+							b = EMFSSingleImageItem(self.emdata_3d,full_name)
+#							a.type_of_me = self.emdata_3d 
+#							a.full_path = full_name
 						else:
 							a = QtGui.QListWidgetItem(self.target().emdata_icon,file,list_widget)
-							a.type_of_me = self.emdata 
-							a.full_path = full_name
+							b = EMFSSingleImageItem(self.emdata_3d,full_name)
+#							a.type_of_me = self.emdata 
+#							a.full_path = full_name
+	   	   	   	   	   	accrue_public_attributes(a,b)
 					
 				except:
 					a = QtGui.QListWidgetItem(self.target().file_icon,file,list_widget) # this happens when files are corrupted	
-					a.type_of_me = "regular_file"
+					b = EMGenericItem("regular_file",file)
+					accrue_public_attributes(a,b)
+#					a.type_of_me = "regular_file"
 			
 			elif plot.is_file_readable(full_name):
 				a = QtGui.QListWidgetItem(self.target().plot_icon,file,list_widget)
-				a.type_of_me = self.plot_data
-				a.full_path = full_name
+				b = EMFSPlotItem(self.plot_data,full_name)
+				accrue_public_attributes(a,b)
+#				a.type_of_me = self.plot_data
+#				a.full_path = full_name
 			else:
 				if filt != "EM types":
 					a = QtGui.QListWidgetItem(self.target().file_icon,file,list_widget)
-					a.type_of_me = "regular_file"
+					b = EMGenericItem("regular_file",file)
+					accrue_public_attributes(a,b)
+#					a.type_of_me = "regular_file"
 					
 
 		return True
 			
 	
 	def do_preview(self,item):
-		
-		#if not os.path.isfile(item.full_path): return False
-		
-		if item.type_of_me == self.emdata_3d or item.type_of_me == self.emdata:
-			self.target().preview_data(EMData(item.full_path),item.full_path)
-			return True
-		elif item.type_of_me == self.emdata_mx:
-	   	   	self.target().preview_data(None,item.full_path)
-			return True
-		elif item.type_of_me == self.emdata_mx_member:
-			# there is an inconsistency here seeing as size considerations are 
-			a=EMData(item.full_path,item.idx)
-			self.target().preview_data(a,item.full_path)
-			return True
-		elif item.type_of_me == self.plot_data:
-			# there is an inconsistency here seeing as size considerations are 
-			self.target().preview_plot(item.full_path)
-			return True
-		#else:
-			
-			#self.target().preview
-		else: return False
+		return item.do_preview(self.target())
 	
-	def load_image_metada(self,item,list_widget):
+	def load_metadata(self,item,list_widget):
 		if item.type_of_me in [self.emdata_3d, self.emdata,self.emdata_mx_member]:
 			data = self.get_emdata_header(item)
 			keys = data.keys()
@@ -871,17 +927,18 @@ class EMDirectoryListing:
 			for k in keys:
 				v = data[k]
 				a = QtGui.QListWidgetItem(self.target().basic_python_icon,str(k)+":"+str(v),list_widget)
-				a.type_of_me = "key_value"
-				a.key = k
-				a.value = v
-		
+				b = EMKeyValueItem("key_value",k,v)
+				accrue_public_attributes(a,b)
+
 			return True
 		elif item.type_of_me == self.emdata_mx:
 			for i in range(EMUtil.get_image_count(item.full_path)):
 				a = QtGui.QListWidgetItem(self.target().emdata_icon,str(i),list_widget)
-				a.type_of_me = self.emdata_mx_member
-				a.full_path = item.full_path
-				a.idx = i
+				b = EMFS2DImageStackMemberItem(self.emdata_mx_member,item.full_path,i)
+				accrue_public_attributes(a,b)
+#				a.type_of_me = self.emdata_mx_member
+#				a.full_path = item.full_path
+#				a.idx = i
 				
 			return True
 				
@@ -889,32 +946,120 @@ class EMDirectoryListing:
 		return False
 	
 	def get_emdata_header(self,item):
-		
-		read_header_only = True
-		e = EMData()
-		if item.type_of_me in [self.emdata_3d, self.emdata]:
-			e.read_image(item.full_path,0, read_header_only)
-			return e.get_attr_dict()
-		elif item.type_of_me == self.emdata_mx_member:
-			e.read_image(item.full_path,item.idx, read_header_only)
-			return e.get_attr_dict()
-		else: return None
+		return item.get_metadata()
 			
-		
 	def is_previewable(self,item):
-		if item.type_of_me in self.previewable_types: return True
-		else: return False
+		return item.type_of_me in self.previewable_types
 		
 	def preview_item_wants_to_list(self,item):
-		if item.type_of_me in self.previewable_types: return True
-		else: return False
+		return item.is_previewable()
 
 	#def is_previewable(self,file_or_folder):
 		## this may not be strictly correct, seeing as if it's a file it will return true
 		#return os.path.isfile(file_or_folder)
-		
 
-class EMBDBListing:
+class EMListingItem:
+	'''
+	Base class definition providing the pubic interface of list widget items as 
+	required by the EMSelectorDialog, public interface required by the EMListing objects (DB and FS)
+	'''
+	def __init__(self):
+		self.context_menu_options = {} # this is used for running context menu actions
+		pass
+	def do_preview(self,target):
+		'''
+		A function that is supposed to call the targets preview_data or preview_plot function,
+		then return True
+		'''
+		return False
+	
+	def is_previewable(self):
+		'''
+		Essentially asking if the subclassing object provides its own definition
+		of the do_preview functoin
+		''' 
+		return False
+
+	def get_metadata(self):
+		'''
+		Returns a dictionary if defined
+		'''
+		return None
+
+
+class EMFSListingItem(EMListingItem):
+	def __init__(self,type,full_name):
+		EMListingItem.__init__(self)
+		self.type_of_me = type
+		self.full_path = full_name
+		self.context_menu_options["Delete"] = self.delete
+		self.context_menu_options["Save As"] = self.save_as
+		
+	def delete(self,target):
+		try:
+			remove_file(self.full_path)
+			return True
+		except: return False
+		
+	def save_as(self,target):
+		return save_as(self.full_path,target.application())
+	
+class EMFS2DImageStackItem(EMFSListingItem):
+	def __init__(self,type,full_name):
+		EMFSListingItem.__init__(self,type,full_name)
+		
+	def do_preview(self,target):
+		target.preview_data(None,self.full_path)
+		return True
+		
+	def is_previewable(self): return True
+
+	
+class EMFS2DImageStackMemberItem(EMFSListingItem):
+	def __init__(self,type,full_name,idx):
+		EMFSListingItem.__init__(self,type,full_name)
+		self.idx = idx
+		
+	def do_preview(self,target):
+		a=EMData(self.full_path,self.idx)
+		target.preview_data(a,self.full_path)
+		return True
+		
+	def is_previewable(self): return True
+
+	def get_metadata(self):
+		e = EMData()
+		e.read_image(self.full_path,self.idx, read_header_only)
+		return e.get_attr_dict()
+	
+	
+class EMFSSingleImageItem(EMFSListingItem):
+	def __init__(self,type,full_name):
+		EMFSListingItem.__init__(self,type,full_name)
+		
+		
+	def do_preview(self,target): 
+		target.preview_data(EMData(self.full_path),self.full_path)
+		return True
+		
+	def is_previewable(self): return True
+
+	def get_metadata(self):
+		e = EMData()
+		e.read_image(self.full_path,0, read_header_only)
+		return e.get_attr_dict()
+
+class EMFSPlotItem(EMFSListingItem):
+	def __init__(self,type,full_name):
+		EMFSListingItem.__init__(self,type,full_name)
+		
+	def do_preview(self,target):
+		target.preview_plot(self.full_path)
+		return True
+		
+	def is_previewable(self): return True
+	
+class EMDBListing:
 	def __init__(self,target):
 		self.target = weakref.ref(target)
 		self.directory_replacements = {"EMAN2DB":"bdb"}
@@ -986,7 +1131,8 @@ class EMBDBListing:
 			if d in self.directory_replacements.keys():
 				a = QtGui.QListWidgetItem(self.target().database_icon,self.directory_replacements[d],list_widget)
 				rm.append(i)
-				a.type_of_me = "regular"
+				b = EMGenericItem("regular",None)
+				accrue_public_attributes(a,b)
 		
 		rm.reverse()
 		for r in rm:
@@ -1035,7 +1181,8 @@ class EMBDBListing:
 			
 			if i == "EMAN2DB":
 				a = QtGui.QListWidgetItem(self.target().database_icon,"bdb",list_widget) # this is something we do not wish to support
-				a.type_of_me = "unwanted" # really haven't accommodated for this...
+				b = EMGenericItem("unwanted","bdb")  # really haven't accommodated for this...
+				accrue_public_attributes(a,b)
 				continue
 		
 			file_length = 0
@@ -1046,12 +1193,16 @@ class EMBDBListing:
 				
 			if file_length != 0:
 				a = QtGui.QListWidgetItem(self.target().folder_files_icon,i,list_widget)
-				a.type_of_me = "directory_file"
+				b = EMGenericItem("directory_file",i)
+				accrue_public_attributes(a,b)
+				#a.type_of_me = "directory_file"
 				#a.full_path = real_directory
 			else:
 				a = QtGui.QListWidgetItem(self.target().folder_icon,i,list_widget)
-				a.type_of_me = "directory"
-				a.full_path = real_directory
+				b = EMDBDirectoryItem("directory",real_directory)
+				accrue_public_attributes(a,b)
+#				a.type_of_me = "directory"
+#				a.full_path = real_directory
 			
 		for file in files:
 			if file[len(file)-3:] == "bdb":
@@ -1066,31 +1217,36 @@ class EMBDBListing:
 					n = db["maxrec"]
 					if n >= 1:
 						a = QtGui.QListWidgetItem(self.target().emdata_matrix_icon,f[0],list_widget)
-						a.type_of_me = self.db_mx
-						a.database_directory = db_directory
-						a.database = f[0]
+						b = EMDB2DImageStackItem(self.db_mx,db_directory,f[0])
+						accrue_public_attributes(a,b)
+#						a.type_of_me = self.db_mx
+#						a.database_directory = db_directory
+#						a.database = f[0]
 					elif n == 0:
 						#d = DB[f[0]].get_header(0)
 						d = db.get_header(0)
 						if d["nz"] <= 1:
 							a = QtGui.QListWidgetItem(self.target().emdata_icon,f[0],list_widget)
-							a.type_of_me = self.emdata_entry
+							type = self.emdata_entry
 						else:
 							a = QtGui.QListWidgetItem(self.target().emdata_3d_icon,f[0],list_widget)
-							a.type_of_me = self.emdata_3d_entry
+							type = self.emdata_3d_entry
 						
-						a.database_directory = db_directory
-						a.database = f[0]
-						a.database_key = 0
+						b = EMDBSingleImageItem(type,db_directory,f[0],0)
+						accrue_public_attributes(a,b)
+#						a.database_directory = db_directory
+#						a.database = f[0]
+#						a.database_key = 0
 				
 					else:
 						a = QtGui.QListWidgetItem(self.target().database_icon,f[0],list_widget)
-						a.type_of_me = "regular"
+						b = EMGenericItem("regular",f[0])
+						accrue_public_attributes(a,b)
 				else:
 					a = QtGui.QListWidgetItem(self.target().database_icon,f[0],list_widget)
-					a.type_of_me = "regular"
+					b = EMGenericItem("regular",f[0])
+					accrue_public_attributes(a,b)
 					
-				db_close_dict(db_name)
 			#else:
 				#a = QtGui.QListWidgetItem(self.target().key_icon,file,list_widget)
 			
@@ -1130,49 +1286,42 @@ class EMBDBListing:
 			_type =db.item_type(k)
 			if _type == dict:
 				a = QtGui.QListWidgetItem(self.target().database_icon,str(k),list_widget)
-				a.type_of_me = "database_dict"
+				b = EMGenericItem("database_dict",str(k))  # really haven't accommodated for this...
+				accrue_public_attributes(a,b)
+				#a.type_of_me = "database_dict"
 			elif _type == EMData:
 				data = db.get_header(k)
 				if data["nz"] > 1:
 					a = QtGui.QListWidgetItem(self.target().emdata_3d_icon,str(k),list_widget)
-					a.type_of_me = self.emdata_3d_entry
-					a.database_directory = db_directory
-					a.database = key
-					a.database_key = k
+					b = EMDBSingleImageItem(self.emdata_3d_entry,db_directory,key,k)
+					accrue_public_attributes(a,b)
 				else:
 					a = QtGui.QListWidgetItem(self.target().emdata_icon,str(k),list_widget)
-					a.type_of_me = self.emdata_entry
-					a.database_directory = db_directory
-					a.database = key
-					a.database_key = k
+					b = EMDBSingleImageItem(self.emdata_entry,db_directory,key,k)
+					accrue_public_attributes(a,b)
 			elif _type == list and len(db[k]) == 2:
-				try:
+				if 1:
 					if (isinstance(db[k][0][0],float) or isinstance(db[k][0][0],int)) and (isinstance(db[k][1][0],float) or isinstance(db[k][0][0],int)):
 						v = db[k]
 				
 						a = QtGui.QListWidgetItem(self.target().plot_icon,str(k)+":"+str(v),list_widget)
-						a.type_of_me = self.db_list_plot
-						a.db_dir = db_directory
-						a.db = key
-						a.db_key = k
+						b = EMDBPlotItem(self.db_list_plot,db_directory,key,k)
+						accrue_public_attributes(a,b)
 					else: raise
-				except:
+				else:
 					# yes redundant but no time
 					v = db[k]
 					a = QtGui.QListWidgetItem(self.target().basic_python_icon,str(k)+":"+str(v),list_widget)
-					a.type_of_me = "key_value"
-					a.key = k
-					a.value = v
+					b = EMKeyValueItem("key_value",k,v)
+					accrue_public_attributes(a,b)
 					
 			else:
 				#if type(i) in [str,float,int,tuple,list,bool]:
 				v = db[k]
 				a = QtGui.QListWidgetItem(self.target().basic_python_icon,str(k)+":"+str(v),list_widget)
-				a.type_of_me = "key_value"
-				a.key = k
-				a.value = v
-				
-		db_close_dict(db_name)
+				b = EMKeyValueItem("key_value",k,v)
+				accrue_public_attributes(a,b)
+			
 		return True
 				
 	
@@ -1201,19 +1350,17 @@ class EMBDBListing:
 		else: return None
 		
 	
-	def load_image_metada(self,item,list_widget):
-		if item.type_of_me in [self.emdata_3d_entry,self.emdata_entry,self.db_dict_emdata_entry]:
-			data = self.get_emdata_header(item)
-			data = self.get_emdata_header(item)
+	def load_metadata(self,item,list_widget):
+		
+		data = item.get_metadata()
+		if data != None:
 			keys = data.keys()
 			keys.sort() # alphabetical order
 			for k in keys:
 				v = data[k]
 				a = QtGui.QListWidgetItem(self.target().basic_python_icon,str(k)+":"+str(v),list_widget)
-				a.type_of_me = "key_value"
-				a.key = k
-				a.value = v
-				
+				b = EMKeyValueItem("key_value",k,v)
+				accrue_public_attributes(a,b)
 			return True
 			
 		return False
@@ -1267,141 +1414,234 @@ class EMBDBListing:
 					i = db[k]
 					if k == "auto_boxes":
 						a = QtGui.QListWidgetItem(self.target().ab_autoboxes_icon,str(k),list_widget)
-						a.type_of_me = "auto_boxes"
+						b = EMGenericItem("auto_boxes",str(k))
+						accrue_public_attributes(a,b)
 					elif k == "reference_boxes":
 						a = QtGui.QListWidgetItem(self.target().ab_autoboxes_icon,str(k),list_widget)
-						a.type_of_me = "reference_boxes"
+						b = EMGenericItem("reference_boxes",str(k))
+						accrue_public_attributes(a,b)
 					elif k == "manual_boxes":
 						a = QtGui.QListWidgetItem(self.target().ab_autoboxes_icon,str(k),list_widget)
-						a.type_of_me = "manual_boxes"
+						b = EMGenericItem("manual_boxes",str(k))
+						accrue_public_attributes(a,b)
 					elif type(i) in [str,float,int,tuple,list,bool]:
 						a = QtGui.QListWidgetItem(self.target().basic_python_icon,str(k),list_widget)
-						a.type_of_me = "value"
+						b = EMGenericItem("value",str(k))
+						accrue_public_attributes(a,b)
 					elif type(i) == dict:
 						a = QtGui.QListWidgetItem(self.target().dict_python_icon,str(k),list_widget)
-						a.type_of_me = "python_dict"
+						b = EMGenericItem("python_dict",str(k))
+						accrue_public_attributes(a,b)
 					elif type(i) == EMData:
 						a = QtGui.QListWidgetItem(self.target().emdata_icon,str(k),list_widget)
-						a.type_of_me = self.db_dict_emdata_entry
-						a.database_directory = db_directory
-						a.database = key
-						a.database_dictionary_keys = [split[jj] for jj in range(j-2,-1,-1)]
-						a.database_dictionary_keys.append(k)
-					elif type(i) == list:
-						if len(i) == 2 and False:
-							# warning - I haven't tested this
-							a = QtGui.QListWidgetItem(self.target().plot_icon,str(k),list_widget)
-							a.type_of_me = self.db_list_plot
-						else:
-							a = QtGui.QListWidgetItem(self.target().basic_python_icon,str(k),list_widget)
-							a.type_of_me = "value"
+#						a.type_of_me = self.db_dict_emdata_entry
+#						a.database_directory = db_directory
+#						a.database = key
+						database_dictionary_keys = [split[jj] for jj in range(j-2,-1,-1)]
+						database_dictionary_keys.append(k)
+						b = EMDBDictSingleImageItem(self.db_dict_emdata_entry,db_directory,key,database_dictionary_keys)
+						accrue_public_attributes(a,b)
+					elif type(i) == list and len(i) >= 2:
+						# warning - I haven't tested this
+						# double warning - it is really really untested only leaving for a short while
+						a = QtGui.QListWidgetItem(self.target().plot_icon,str(k),list_widget)
+						b = EMDBPlotItem(self.db_list_plot,db_directory,key,k)
+						accrue_public_attributes(a,b)
+						#a.type_of_me = self.db_list_plot
 					else:
 						a = QtGui.QListWidgetItem(self.target().basic_python_icon,str(k),list_widget)
-						a.type_of_me = "value"
+						b = EMGenericItem("value",str(k))
+						accrue_public_attributes(a,b)
+	
 			elif isinstance(db,EMData):
 				print "this shouldn't happen"
-				db_close_dict(db_name)
 				self.target().preview_data(db)
 				return False
 			else:
 				a = QtGui.QListWidgetItem(self.target().basic_python_icon,str(db),list_widget)
-				a.type_of_me = "value"
-			db_close_dict(db_name)
+				b = EMGenericItem("value",str(k))
+				accrue_public_attributes(a,b)
 			return True
 				
-		else:
-			db_close_dict(db_name)
-			return False 
-	
-	#def is_previewable(self,file_name):
-		#return self.do_preview(file_name,fake_it=True)
+		else: return False 
 	
 	def is_previewable(self,item):
-		if item.type_of_me in self.previewable_types: return True 
-	
+		return item.type_of_me in self.previewable_types
+
 	def preview_item_wants_to_list(self,item):
 		'''
 		Sometimes a previeable item will still be able to list information
 		'''
-		if item.type_of_me in self.previewable_types: return True
-		else: return False
+		return item.is_previewable()
 	
 	def do_preview(self,item):
 		#if not os.path.isfile(item.full_path): return False
-		
-		if item.type_of_me == self.db_mx:
-			db_name = "bdb:"+item.database_directory+"#"+item.database
-			self.target().preview_data(None,db_name)	
-			return True
-				
-		elif item.type_of_me in [self.emdata_3d_entry,self.emdata_entry]:
-			db_name = "bdb:"+item.database_directory+"#"+item.database
-			db = db_open_dict(db_name,ro=True)
-			
-			data = db[item.database_key]
-			db_close_dict(db_name)
-			self.target().preview_data(data)
-			return True
-
-		elif item.type_of_me == self.db_dict_emdata_entry:
-			db_name = "bdb:"+item.database_directory+"#"+item.database
-			db = db_open_dict(db_name,ro=True)
-
-			for key in item.database_dictionary_keys:
-				db = db[key]
-				
-			db_close_dict(db_name)
-			# db should now be an EMData
-			self.target().preview_data(db)
-			return True
-		
-		elif item.type_of_me == self.db_list_plot:
-			db_name = "bdb:"+item.db_dir+"#"+item.db
-			db = db_open_dict(db_name,ro=True)
-
-			plot = db[item.db_key]
-			db_close_dict(db_name)
-				
-			# db should now be an EMData
-			self.target().preview_plot_list(item.db_key,plot)
-			return True
-		
-		
-		else: return False
-		
+		return item.do_preview(self.target())
 	
 	def get_emdata_header(self,item):
-
-				
-		if item.type_of_me == self.emdata_3d_entry or item.type_of_me == self.emdata_entry:
-			
-			#DB = EMAN2DB.open_db(item.database_directory)
-			#DB.open_dict(item.database)
-			db_name = "bdb:"+item.database_directory+"#"+item.database
-			db = db_open_dict(db_name,ro=True)
-			value = db.get_header(item.database_key)
-			db_close_dict(db_name)
-			#return DB[item.database].get_header(item.database_key)
-			return value
-		elif item.type_of_me == self.db_dict_emdata_entry:
-			#this is really inefficient seeing as the whole image has to be read
-			db_name = "bdb:"+item.database_directory+"#"+item.database
-			#DB = EMAN2DB.open_db(item.database_directory)
-			#DB.open_dict(item.database)
-			#db = DB[item.database]
-			db = db_open_dict(db_name,ro=True)
-			for key in item.database_dictionary_keys:
-				db = db[key]
-			
-			db_close_dict(db_name)
-			return db.get_attr_dict()
-			
-		else: return None
+		return item.get_metadata()
 
 	def load_database_variables(self,directory,list_widget):
 		pass
 
+def accrue_public_attributes(to_this,from_this):
+	'''
+	Accrues the public attributes of the from_this object to to_this.
+	By public it is meant that all attributes beginning with "__" are ignorned
+	'''
+	for attr in dir(from_this):
+		if len(attr) > 2 and attr[:2] == "__": continue
+		setattr(to_this,attr,getattr(from_this,attr))
+	
+#	
+#class MultiDelegate(object):
+#	'''
+#	This class was the basis of the idea behind the accrue_public_attributes function
+#	'''
+#	def __init__(self, *args):
+#	    object.__setattr__(self,"_objects",args)
+#	def __getattr__(self, attr):
+#	    for obj in self._objects:
+#	         if attr in dir(obj):
+#	             return getattr(obj, attr)
+#	     types = ",".join(obj.__class__.__name__ for obj in self._objects)
+#	 raise AttributeError, "%s object has no attribute '%s'" % (types, attr)
+#	 def __setattr__(self, attr, value):
+#	     # but you could do something more useful here too
+#	 raise TypeError, "Can't set attributes of MultiDelegate"
 
+
+class EMDB2DImageStackItem(EMListingItem):
+	def __init__(self,type,db_directory,db):
+		EMListingItem.__init__(self)
+		self.type_of_me = type
+		self.database_directory = db_directory
+		self.database = db
+		
+		self.context_menu_options["Delete"] = self.delete
+		self.context_menu_options["Save As"] = self.save_as
+		
+	
+	def do_preview(self,target):
+		print "in do preview"
+		db_name = "bdb:"+self.database_directory+"#"+self.database
+		target.preview_data(None,db_name)	
+		return True
+	
+	def is_previewable(self): return True
+
+	def delete(self,target):
+		db_name = "bdb:"+self.database_directory+"#"+self.database
+		try:
+			remove_file(db_name)
+			return True
+		except: return False
+		
+	def save_as(self,target):
+		db_name = "bdb:"+self.database_directory+"#"+self.database
+		return save_as(db_name,target.application())
+
+
+class EMDBDictSingleImageItem(EMListingItem):
+	def __init__(self,type,db_directory,key,dictionary_keys):
+		EMListingItem.__init__(self)
+		self.type_of_me = type
+		self.database_directory = db_directory
+		self.database = key
+		self.database_dictionary_keys = database_dictionary_keys
+	
+	def do_preview(self,target):
+		db_name = "bdb:"+self.database_directory+"#"+self.database
+		db = db_open_dict(db_name)
+
+		for key in self.database_dictionary_keys:
+			db = db[key]
+		# db should now be an EMData
+		target.preview_data(db)
+		return True
+	
+	def is_previewable(self): return True
+	
+	def get_metadata(self):
+		db_name = "bdb:"+self.database_directory+"#"+self.database
+		db = db_open_dict(db_name,ro=True)
+		for key in self.database_dictionary_keys:
+			db = db[key]
+		
+		return db.get_attr_dict()
+
+class EMDBSingleImageItem(EMListingItem):
+	def __init__(self,type,db_directory,key,k):
+		EMListingItem.__init__(self)
+		self.type_of_me = type
+		self.database_directory = db_directory
+		self.database = key
+		self.database_key = k
+		self.context_menu_options["Save As"] = self.save_as
+
+	def do_preview(self,target):
+		db_name = "bdb:"+self.database_directory+"#"+self.database
+		db = db_open_dict(db_name,ro=True)
+		
+		data = db[self.database_key]
+		target.preview_data(data)
+		return True
+	
+	def is_previewable(self): return True
+
+	def get_metadata(self):
+		db_name = "bdb:"+self.database_directory+"#"+self.database
+		db = db_open_dict(db_name,ro=True)
+		data = db.get_header(self.database_key)
+		return data
+	
+	def save_as(self,target):
+		db_name = "bdb:"+self.database_directory+"#"+self.database
+		return save_as(db_name,target.application())
+
+class EMDBPlotItem(EMListingItem):
+	def __init__(self,type,db_directory,key,k):
+		EMListingItem.__init__(self)
+		self.type_of_me = type
+		self.db_dir = db_directory
+		self.db = key
+		self.db_key = k
+		
+	def do_preview(self,target):
+		db_name = "bdb:"+self.db_dir+"#"+self.db
+		db = db_open_dict(db_name)
+		plot = db[self.db_key]
+		target.preview_plot_list(self.db_key,plot)
+		return True
+	
+	def is_previewable(self): return True
+		
+class EMKeyValueItem(EMListingItem):
+	def __init__(self,type,k,v):
+		EMListingItem.__init__(self)
+		self.type_of_me = type
+		self.key = k
+		self.value = v
+
+class EMDBDirectoryItem(EMListingItem):
+	def __init__(self,type,real_directory):
+		EMListingItem.__init__(self)
+		self.type_of_me = type
+		self.full_path = real_directory
+
+class EMGenericItem(EMListingItem):
+	'''
+	This one is just where things end up if they have no special treatment, and/or only the type is relevant
+	'''
+	def __init__(self,type,key):
+		EMListingItem.__init__(self)
+		self.type_of_me = type
+		self.key = key
+		
+	def do_preview(self,target): pass
+	
+
+		
 class EMBrowserDialog(EMSelectorDialog):
 	def __init__(self,target,application):
 		EMSelectorDialog.__init__(self,target,application)
@@ -1415,7 +1655,106 @@ class EMBrowserModule(EMQtWidgetModule):
 		self.application = weakref.ref(application)
 		self.widget = EMBrowserDialog(self,application)
 		EMQtWidgetModule.__init__(self,self.widget,application)
+
+
+def save_as(file_name,application=None):
+	total_images = EMUtil.get_image_count(file_name)
+	if total_images == 1:
+		file_filt = [".hdf", ".img", ".spi", ".mrc", ".dm3", ".pgm", ".pif"]
+	else: # logic dictates that total_images > 1
+		file_filt = [".hdf", ".img", ".spi"]
 	
+	file_filt_string = ""
+	for f in file_filt:
+		if f != file_filt[0]:
+			file_filt_string += " "
+		file_filt_string += "*"+f
+
+	fsp = get_file_tag(file_name)+".hdf"
+
+	while True:
+		fsp=QtGui.QFileDialog.getSaveFileName(None, "Specify file name (%s)" %file_name,fsp,file_filt_string,"")
+		fsp=str(fsp)
+		
+		# BDB works but it's not advertised as working
+		# BDB has issues on Windows and MAC
+		bdb_idx = fsp.find("bdb:")
+		if bdb_idx != -1:
+			fsp = fsp[bdb_idx:]
+	
+		if fsp != '':
+			
+			# remove the file if it exists - the save file dialog already made sure the user wanted to overwrite the file
+			if file_exists(fsp):
+				remove_file(fsp)
+			
+			if len(fsp) < 3 or ( fsp[-4:] not in file_filt and fsp[:4] != "bdb:" ):
+				m = "%s is an invalid image name. Please choose from one of these formats:" %fsp
+				for f in file_filt:
+					if f == file_filt[-1]: m += " or " + f	
+					else: m += " " + f
+				msg.setText(m)
+				msg.exec_()
+				continue
+				
+			if fsp[:4] == "bdb:" and len(fsp) == 4:
+				msg.setText("%s is an invalid bdb name" %fsp)
+				msg.exec_()
+				continue
+			
+			if db_check_dict(fsp):
+				 msg = QtGui.QMessageBox()
+				 msg.setWindowTitle("Caution")
+				 msg.setText("Are you sure you want to overwrite the bdb file?");
+				 msg.setInformativeText("Clicking ok to remove this file")
+				 msg.setStandardButtons(QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel);
+				 msg.setDefaultButton(QMessageBox.Cancel);
+				 ret = msg.exec_()
+			
+			using_progress = (total_images > 1)
+			if using_progress:
+				progress = EMProgressDialogModule(application,"Writing files", "abort", 0, total_images,None)
+				progress.qt_widget.show()
+				for i in range(total_images):
+					d = EMData()
+					d.read_image(file_name,i)
+					try:
+						d.write_image(fsp,-1)
+					except:
+						msg.setText("An exception occured while writing %s, please try again" %fsp)
+						msg.exec_()
+						progress.qt_widget.close()
+						return False
+						
+					progress.qt_widget.setValue(i)
+					application.processEvents()
+					if progress.qt_widget.wasCanceled():
+						remove_file(fsp)
+						progress.qt_widget.close()
+						return True
+					
+				progress.qt_widget.close()
+			else:
+				d = EMData()
+				d.read_image(file_name,0)
+				try:
+					d.write_image(fsp)
+				except:
+					msg.setText("An exception occured while writing %s, please try again" %fsp)
+					msg.exec_()
+					return False
+			
+			#progress.qt_widget.setValue(len(self.data)-1)
+			
+			
+			break
+		else: return False
+		
+	return True
+
+ 
+
+
 app = None
 def on_done(string_list):
 	if len(string_list) != 0:

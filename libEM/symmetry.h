@@ -50,7 +50,7 @@ namespace EMAN {
 	* see http://blake.bcm.edu/emanwiki/EMAN2/Symmetry for figures and description of what we're doing
 	* here, for all the symmetries, and look in the comments of the PlatonicSym classes themselves.
 	* It inherits from a factory base, making it amenable to incorporation in EMAN2 style factories
-	* @author David Woolford with Phil Baldwin and Steven Ludkte
+	* @author David Woolford with Philip Baldwin and Steven Ludtke
 	* @date Feb 2008
 	 */
 	class Symmetry3D : public FactoryBase

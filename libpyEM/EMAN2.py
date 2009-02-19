@@ -724,9 +724,12 @@ def gimme_image_dimensions3D( imagefilename ):
 	
 	return (xsize, ysize,zsize)
 
-# A function for removing a file from disk
-# adapted so that if you want to remove an img/hed couple it will automatically remove both
-def remove_file( file_name ):
+def remove_file( file_name, img_couples_too=True ):
+	'''
+	A function for removing a file from disk. Works for database style file names.
+	Adapted so that if you want to remove an img/hed couple it will automatically remove both.
+	You can disable the img coupling feature with the the image_couples_too flag
+	'''
 	
 	if ( os.path.exists(file_name) ):
 		
@@ -739,9 +742,11 @@ def remove_file( file_name ):
 			name = ''
 			for i in range(0,len(parts)-1):
 				name = name + parts[i] + '.'
-				
-			os.remove(name+'hed')
-			os.remove(name+'img')
+			
+			if img_couples_too:
+				os.remove(name+'hed')
+				os.remove(name+'img')
+			else: os.remove(name+file_tag)
 		else:
 			os.remove(file_name)
 		return True
@@ -918,7 +923,8 @@ def strip_after_dot(file_name):
 
 def get_platform():
 	'''
-	wraps platform.system but accommodates for its internal bad programming
+	wraps platform.system but accommodates for its internal bad programming.
+	Returns Darwin, Windows, Linux, or potentially something else
 	'''
 	import platform
 	while True:
@@ -940,7 +946,7 @@ def remove_directories_from_name(file_name):
 	'''
 	import platform
 	pfm = get_platform() # will be Linux, Darwin or Windows, even Java
-	if pfm == "Window":
+	if pfm == "Windows":
 		idx = file_name.rfind('\\')
 	else:
 		idx = file_name.rfind('/')
@@ -1254,7 +1260,6 @@ class EMAbstractFactory:
 		"""unregister a constructor"""
 		delattr(self, methodName)
 		
- 
 class EMFunctor:
 	''' 
 	Taken from http://code.activestate.com/recipes/86900/
