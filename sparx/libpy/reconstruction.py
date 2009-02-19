@@ -168,7 +168,7 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign=1, symmetry="c1", info=None):
 
 	return vol
 
-def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4, snr=None):
+def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4, snr=None, weighting=1, varsnr=True):
 	"""
 	Perform a 3-D reconstruction using Pawel's FFT Back Projection algoritm.
 	   
@@ -205,9 +205,9 @@ def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4, snr=None):
 		ERROR("input data has to be square","recons3d_4nn",1)
 	# reconstructor
 	if snr is None:
-		params = {"size":size, "npad":npad, "symmetry":symmetry}
+		params = {"size":size, "npad":npad, "symmetry":symmetry, "weighting":weighting}
 	else:
-		params = {"size":size, "npad":npad, "symmetry":symmetry, "snr":snr}
+		params = {"size":size, "npad":npad, "symmetry":symmetry, "weighting":weighting, "snr":snr, "varsnr":int(varsnr)}
 	
 	r = Reconstructors.get("nn4", params)
 	r.setup()
