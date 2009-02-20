@@ -197,6 +197,7 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.emdata_icon = QtGui.QIcon(get_image_directory() + "/single_image.png")
 		self.emdata_3d_icon = QtGui.QIcon(get_image_directory() + "/single_image_3d.png")
 		self.emdata_matrix_icon = QtGui.QIcon(get_image_directory() + "/multiple_images.png")
+		self.emdata_matrix_3d_icon = QtGui.QIcon(get_image_directory() + "/multiple_images_3d.png")
 		self.up_arrow_icon = QtGui.QIcon(get_image_directory() + "/up_arrow.png")
 		self.plot_icon = QtGui.QIcon(get_image_directory() + "/plot.png")
 
@@ -354,7 +355,7 @@ class EMSelectorDialog(QtGui.QDialog):
 				if not md.has_key(k): gtg = False
 				break
 			
-			if gtg and md["nz"] == 1: # no current support for saving 3D images to stacks - this is intentional. If we write widgets for viewing 3D stacks we might want to change this.
+			if gtg: # no current support for saving 3D images to stacks - this is intentional. If we write widgets for viewing 3D stacks we might want to change this.
 				multi_images_all_same_dims = True
 				# this means I think it's an emdata. This is potentially a fatal assumption, but unlikely for the time being
 				# now check to make sure all other selected items have the samve value
@@ -400,8 +401,8 @@ class EMSelectorDialog(QtGui.QDialog):
 		if multi_images_all_same_dims:
 			# These are customized actions that somewhat break the modularity, but I don't think it's too bad
 			menu.addSeparator()
-			menu.addAction("Save To Single File")
-			menu.addAction("Preview Subset")
+			menu.addAction("Save As Stack")
+			if nz == 1: menu.addAction("Preview Subset")
 			
 		QtCore.QObject.connect(menu,QtCore.SIGNAL("triggered(QAction*)"),self.menu_action_triggered)
 		self.action_list_widget = l # only set if the menu acutally triggers
@@ -414,12 +415,12 @@ class EMSelectorDialog(QtGui.QDialog):
 		if not cont: return
 		total = len(items)
 		
-		if action.text() == "Save To Single File":
+		if action.text() == "Save As Stack":
 			data = []
 			for item in self.menu_selected_items:
 				data.append(item.get_data())
 				
-			save_2d_stack(data,self.application())
+			save_stack(data,self.application())
 		elif action.text() == "Preview Subset":
 			data = []
 			for item in self.menu_selected_items:
@@ -542,20 +543,20 @@ class EMSelectorDialog(QtGui.QDialog):
 		directory = self.starting_directory 
 		for i in range(len(self.list_widgets)-1):
 			items = []
-			old_row = self.list_widgets[i+1].currentRow()
-			n = self.list_widgets[i+1].count()
+			li = self.list_widgets[i]
+			lip = self.list_widgets[i+1]
+			old_row = lip.currentRow()
+			n = lip.count()
 			for j in range(n-1,-1,-1):
-				items.append(self.list_widgets[i+1].takeItem(j))
+				items.append(lip.takeItem(j))
 				
-			self.list_widgets[i].clear()	
+			li.clear()	
 			for k in items:
-				self.list_widgets[i].insertItem(0,k)
+				li.insertItem(0,k)
 			
-			self.list_widgets[i].setCurrentRow(old_row)
+			li.setCurrentRow(old_row)
 			req_attr = ["mod_time","directory","directory_lister","directory_arg"]
 			if  hasattr(self.list_widgets[i+1],req_attr[0]): # if it has the first it has them all
-				li = self.list_widgets[i]
-				lip = self.list_widgets[i+1]
 				for attr in req_attr: setattr(li,attr,getattr(lip,attr))
 	   	   	else:
 	   	   		# just make sure the attributes don't exist
@@ -563,7 +564,7 @@ class EMSelectorDialog(QtGui.QDialog):
 	   	   			if hasattr(li,attr): delattr(li,attr)
 				
 			
-			self.list_widget_data[i] = self.list_widgets[i].item(old_row)
+			self.list_widget_data[i] = li.item(old_row)
 			directory += dtag + str(self.list_widget_data[i].text())
 		
 		
@@ -877,12 +878,13 @@ class EMFSListing:
 		self.target = weakref.ref(target)
 		
 		self.emdata_mx = "directory_emdata_mx"
+		self.emdata_mx_3d = "directory_emdata_mx_3d"
 		self.emdata_3d = "directory_emdata_3d"
 		self.emdata = "directory_emdata"
 		self.emdata_mx_member = "directory_emdata_mx_member" # for individual images in mxs
 		self.plot_data = "plot_data"
  		
-		self.previewable_types = [self.emdata_mx,self.emdata_3d,self.emdata,self.emdata_mx_member,self.plot_data] # add any others as functionality grows
+		self.previewable_types = [self.emdata_mx,self.emdata_3d,self.emdata,self.emdata_mx_member,self.plot_data, self.emdata_mx_3d] # add any others as functionality grows
 		self.threed_dim_limit = 128
 		pass
 		
@@ -970,12 +972,17 @@ class EMFSListing:
 			# such as pngs and jpges...etc.
 			if EMUtil.get_image_ext_type(extension) != IMAGE_UNKNOWN and extension not in ["png","jpeg","jpg","JPG"]:
 				try:
+					e.read_image(full_name,0, read_header_only)
 					if EMUtil.get_image_count(full_name) > 1:
-						a = QtGui.QListWidgetItem(self.target().emdata_matrix_icon,file,list_widget)
-						b = EMFS2DImageStackItem(self.emdata_mx,full_name)
-						accrue_public_attributes(a,b)
+						if e.get_zsize() > 1:
+							a = QtGui.QListWidgetItem(self.target().emdata_matrix_3d_icon,file,list_widget)
+							b = EMFS3DImageStackItem(self.emdata_mx_3d,full_name)
+							accrue_public_attributes(a,b)
+						else:
+							a = QtGui.QListWidgetItem(self.target().emdata_matrix_icon,file,list_widget)
+							b = EMFS2DImageStackItem(self.emdata_mx,full_name)
+							accrue_public_attributes(a,b)
 					else:
-						e.read_image(full_name,0, read_header_only)
 						if e.get_zsize() > 1:
 							a = QtGui.QListWidgetItem(self.target().emdata_3d_icon,file,list_widget)
 							b = EMFSSingleImageItem(self.emdata_3d,full_name)
@@ -983,7 +990,6 @@ class EMFSListing:
 							a = QtGui.QListWidgetItem(self.target().emdata_icon,file,list_widget)
 							b = EMFSSingleImageItem(self.emdata_3d,full_name)
 	   	   	   	   	   	accrue_public_attributes(a,b)
-					
 				except:
 					a = QtGui.QListWidgetItem(self.target().file_icon,file,list_widget) # this happens when files are corrupted	
 					b = EMGenericItem("regular_file",file)
@@ -1020,11 +1026,16 @@ class EMFSListing:
 		elif item.type_of_me == self.emdata_mx:
 			for i in range(EMUtil.get_image_count(item.full_path)):
 				a = QtGui.QListWidgetItem(self.target().emdata_icon,str(i),list_widget)
-				b = EMFS2DImageStackMemberItem(self.emdata_mx_member,item.full_path,i)
+				b = EMFSImageStackMemberItem(self.emdata_mx_member,item.full_path,i)
 				accrue_public_attributes(a,b)
-#				a.type_of_me = self.emdata_mx_member
-#				a.full_path = item.full_path
-#				a.idx = i
+				
+			return True
+		
+		elif item.type_of_me == self.emdata_mx_3d:
+			for i in range(EMUtil.get_image_count(item.full_path)):
+				a = QtGui.QListWidgetItem(self.target().emdata_3d_icon,str(i),list_widget)
+				b = EMFSImageStackMemberItem(self.emdata_mx_member,item.full_path,i)
+				accrue_public_attributes(a,b)
 				
 			return True
 				
@@ -1099,9 +1110,15 @@ class EMFS2DImageStackItem(EMFSListingItem):
 		return True
 		
 	def is_previewable(self): return True
+	
+class EMFS3DImageStackItem(EMFSListingItem):
+	def __init__(self,type,full_name):
+		EMFSListingItem.__init__(self,type,full_name)
+
+	# no preview for this item as of Feb 2009
 
 	
-class EMFS2DImageStackMemberItem(EMFSListingItem):
+class EMFSImageStackMemberItem(EMFSListingItem):
 	def __init__(self,type,full_name,idx):
 		EMFSListingItem.__init__(self,type,full_name)
 		self.idx = idx
@@ -1128,7 +1145,7 @@ class EMFS2DImageStackMemberItem(EMFSListingItem):
 class EMFSSingleImageItem(EMFSListingItem):
 	def __init__(self,type,full_name):
 		EMFSListingItem.__init__(self,type,full_name)
-		
+
 	def do_preview(self,target): 
 		target.preview_data(EMData(self.full_path),self.full_path)
 		return True
@@ -1141,7 +1158,7 @@ class EMFSSingleImageItem(EMFSListingItem):
 		return e.get_attr_dict()
 	
 	def get_data(self):
-		return EMData(self.full_path,0)
+		return EMData(self.full_path)
 
 class EMFSPlotItem(EMFSListingItem):
 	def __init__(self,type,full_name):
@@ -1734,8 +1751,12 @@ class EMBrowserModule(EMQtWidgetModule):
 		EMQtWidgetModule.__init__(self,self.widget,application)
 
 
-def save_2d_stack(data_list,application):
-	file_filt = [".hdf", ".img", ".spi"]
+def save_stack(data_list,application):
+	if data_list[0].get_zsize() == 1:
+		file_filt=[".hdf", ".img", ".spi"]
+	else:
+		file_filt =[".hdf"] # 3D only works for hdf (and bdb)
+		
 	file_filt_string = ""
 	for f in file_filt:
 		if f != file_filt[0]:
