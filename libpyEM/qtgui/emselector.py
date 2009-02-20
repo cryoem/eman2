@@ -156,6 +156,7 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.emdata_icon = QtGui.QIcon(get_image_directory() + "/single_image.png")
 		self.emdata_3d_icon = QtGui.QIcon(get_image_directory() + "/single_image_3d.png")
 		self.emdata_matrix_icon = QtGui.QIcon(get_image_directory() + "/multiple_images.png")
+		self.up_arrow_icon = QtGui.QIcon(get_image_directory() + "/up_arrow.png")
 		self.plot_icon = QtGui.QIcon(get_image_directory() + "/plot.png")
 
 	def __init_plot_options(self):
@@ -292,6 +293,7 @@ class EMSelectorDialog(QtGui.QDialog):
 		else:
 			raise
 			return # No list widget has the focus even though its contextMenuEvent was triggered.
+		event.accept()
 		selected_items = []
 		for i in range(l.count()):
 			item = l.item(i)
@@ -311,9 +313,9 @@ class EMSelectorDialog(QtGui.QDialog):
 			rm = []
 			for k in options_keys:
 				if k not in o_k: rm.append(k)
-			for r in rm: options_keys.pop(r)
-		
-		if len(options_keys) == 0: return
+			for r in rm: options_keys.remove(r)
+			
+			if len(options_keys) == 0: return
 		
 		menu = QtGui.QMenu()
 		self.menu_selected_items = selected_items
@@ -331,30 +333,31 @@ class EMSelectorDialog(QtGui.QDialog):
 		cont = self.__check_action(action.text(),items) # this kind of breaks the OO design, but it's necessary in the current framework
 		if not cont: return
 		total = len(items)
-		progress = EMProgressDialogModule(self.application(),action.text(), "abort", 0, total,None)
-		progress.qt_widget.show()
+		
+		
+		#progress = EMProgressDialogModule(self.application(),action.text(), "abort", 0, total,None)
+		#progress.qt_widget.show()
 		
 		msg = QtGui.QMessageBox()
 		
 		items_acted_on = []
 		for i,item in enumerate(items):
 			if not item.context_menu_options[str(action.text())](self):
-				msg.setText("An error occurred")
-				msg.setInformativeText("There was a problem performing the requested operation on the item labeled %s" %item.text())
-				msg.exec_()
+				# this is fine if the user hit cancel when they were saving a whole bunch of images
+				# but it's not so fine if an error was thrown while deleting... hmmm needs some thought
 				break
 			else:
 				items_acted_on.append(item)
 				
 				
-			progress.qt_widget.setValue(i)
-			self.application().processEvents()
-			if progress.qt_widget.wasCanceled():
-				break	
+			#progress.qt_widget.setValue(i)
+			#self.application().processEvents()
+#			if progress.qt_widget.wasCanceled():
+#				break	
 		
 		self.__post_action(action.text(),items_acted_on)
 		self.action_list_widget = None
-		progress.qt_widget.close()
+		#progress.qt_widget.close()
 		
 	def __post_action(self,action_str,items_acted_on):
 		if action_str == "Delete":
@@ -467,7 +470,7 @@ class EMSelectorDialog(QtGui.QDialog):
 			directory += dtag + str(self.list_widget_data[i].text())
 		
 		
-		a = QtGui.QListWidgetItem("../",None)
+		a = QtGui.QListWidgetItem(self.up_arrow_icon,"../",None)
 		a.type_of_me = "go up a directory"
 		self.list_widgets[0].insertItem(0,a)
 		
@@ -743,7 +746,7 @@ class EMSelectorDialog(QtGui.QDialog):
 		list_widget.clear()
 		if (list_widget == self.list_widgets[0]):
 			self.lock = True
-			a = QtGui.QListWidgetItem("../",list_widget)
+			a = QtGui.QListWidgetItem(self.up_arrow_icon,"../",list_widget)
 			a.type_of_me = "go up a directory"
 			self.lock = False
 			
@@ -1082,19 +1085,21 @@ class EMDBListing:
 			# so if the first two items are from the same matrix database, then they all are
 			# if this wasn't the case then we could iterate through the items and group them, but
 			# currently isn't so hence this simplified approach
-						
+			# FEB 2009 - I'm a bit confused about what I was doing, I added a try block. (d.woolford)			
 			item0 = items[0]
 			item1 = items[1]
+			try:
 			# check to see if the first two items are in the same directory
-			if (item0.database_directory+item0.database) == (item1.database_directory+item1.database):
-				# we know assume they are all in the same directory
-				return_val = "bdb:"+item0.database_directory+'#'+item0.database + "?"
-				for i,item in enumerate(items):
-					if i != 0:
-						return_val += ","
-					return_val += str(item.database_key)
-					
-				return [return_val]
+				if (item0.database_directory+item0.database) == (item1.database_directory+item1.database):
+					# we know assume they are all in the same directory
+					return_val = "bdb:"+item0.database_directory+'#'+item0.database + "?"
+					for i,item in enumerate(items):
+						if i != 0:
+							return_val += ","
+						return_val += str(item.database_key)
+						
+					return [return_val]
+			except: pass
 					
 		# if the return didn't happen then this generic loop will work -
 		ret = []
@@ -1487,7 +1492,7 @@ class EMDBListing:
 def accrue_public_attributes(to_this,from_this):
 	'''
 	Accrues the public attributes of the from_this object to to_this.
-	By public it is meant that all attributes beginning with "__" are ignorned
+	By public it is meant that all attributes beginning with "__" are ignored
 	'''
 	for attr in dir(from_this):
 		if len(attr) > 2 and attr[:2] == "__": continue

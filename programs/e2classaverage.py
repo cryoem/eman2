@@ -465,16 +465,17 @@ def main():
 			#avg.process_inplace("normalize.edgemean")
 			#avg.process_inplace("xform.centerofmass")
 			#avg.process_inplace("mask.sharp",{"outer_radius":ta.get_xsize()/2})
-		
 		if average == None: continue
 		# extract euler data from the ref image, if it was specified
 		if ( options.ref):
 			e = EMData()
 			if options.iter > 0:
 				e.read_image(options.ref, cl)
-				average_to_ref = align(average,e,options)
+				
+				average_to_ref = align(e,average,options)
 				averager=Averagers.get(averager_parms[0], averager_parms[1]) # need an empty averager
 				fine_transform = average_to_ref.get_attr("xform.align2d")
+				fine_transform.invert()
 				#avg = None
 				np = 0 # number of particles in the average
 				for d in ccache:
@@ -493,8 +494,11 @@ def main():
 					t = Transform({"type":"2d","alpha":da.get(c,p)})
 					t.set_trans(dx.get(c,p),dy.get(c,p))
 					if dflip.get(c,p) != 0: t.set_mirror(True)
-			
-					image.transform(fine_transform*t)
+					ct = fine_transform*t
+					#print "final transform is"
+					#ct.printme()
+					#fine_transform.printme()
+					image.transform(ct)
 				
 					np += 1
 					averager.add_image(image)
@@ -503,8 +507,10 @@ def main():
 					if (options.verbose):
 						print "Class",cl,"...no particles on iteration",it
 					continue
-				
+#				
 				average = averager.finish()
+#				average.transform(fine_transform)
+				
 				if str(options.normproc) != "None": average.process_inplace(options.norm[0],options.norm[1])
 				#average.process_inplace("xform.centerofmass") this shouldn't be necessary if we aligned to the projection
 				average.process_inplace("mask.sharp",{"outer_radius":ta.get_xsize()/2})

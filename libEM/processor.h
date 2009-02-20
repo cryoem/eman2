@@ -4841,7 +4841,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			TypeDict d;
 			d.put("val1", EMObject::FLOAT, "number of pixels to expand");
-			d.put("val2", EMObject::FLOAT, "if val2!=0 will make a soft Gaussian edge starting after val2 pixels");
+			d.put("val2", EMObject::FLOAT, "number of Gaussian pixels to expand, following the first expansion");
 			return d;
 		}
 	};
