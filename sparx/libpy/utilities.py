@@ -1990,7 +1990,7 @@ def reduce_array_to_root(data, myid, main_node = 0, comm = -1):
 	from Numeric import array, shape, reshape
 	from mpi import MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD, mpi_reduce, mpi_barrier
 	
-	if (comm == -1):  comm = MPI_COMM_WORLD
+	if comm == -1:  comm = MPI_COMM_WORLD
 	n = shape(data)
 	ntot = 1
 	for i in xrange(len(n)):  ntot *= n[i]
@@ -2011,7 +2011,7 @@ def reduce_EMData_to_root(data, myid, main_node = 0, comm = -1):
 	from Numeric import array, shape, reshape
 	from mpi import mpi_reduce, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD, mpi_barrier
 	
-	if (comm == -1):  comm = MPI_COMM_WORLD
+	if comm == -1:  comm = MPI_COMM_WORLD
 	array = get_image_data(data)
 	n = shape(array)
 	ntot = 1
@@ -2029,26 +2029,29 @@ def reduce_EMData_to_root(data, myid, main_node = 0, comm = -1):
 		if myid == main_node:
 			array1d[block_begin:block_end] = tmpsum[0:block_size]
 
-def bcast_array_to_all(data, myid, main_node = 0):
+def bcast_array_to_all(data, myid, main_node = 0, comm = -1):
 	from Numeric import array, shape, reshape
 	from mpi import mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
 
+	if comm == -1: comm = MPI_COMM_WORLD
 	n = shape(data)
 	ntot = 1
 	for i in n: ntot *= i
-	tmp = mpi_bcast(data, ntot, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-	if(myid != main_node):
+	tmp = mpi_bcast(data, ntot, MPI_FLOAT, main_node, comm)
+	if myid != main_node:
 		data1d = reshape(data, (ntot, ))
 		data1d[0:ntot] = tmp[0:ntot]
 
-def bcast_EMData_to_all(tavg, myid, main_node = 0):
+def bcast_EMData_to_all(tavg, myid, main_node = 0, comm = -1):
 	from Numeric import array, shape, reshape
 	from mpi import mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
+	
+	if comm == -1: comm = MPI_COMM_WORLD
 	tavg_data = EMNumPy.em2numpy(tavg)
 	n = shape(tavg_data)
 	ntot = 1
 	for i in n: ntot *= i
-	tavg_tmp = mpi_bcast(tavg_data, ntot, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+	tavg_tmp = mpi_bcast(tavg_data, ntot, MPI_FLOAT, main_node, comm)
 	if(myid != main_node):
 		tavg_data1d = reshape(tavg_data,(ntot,))
 		tavg_data1d[0:ntot] = tavg_tmp[0:ntot]
