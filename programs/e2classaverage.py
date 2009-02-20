@@ -233,6 +233,7 @@ def main():
 							image = EMData()
 							image.read_image(args[0],p)
 						else:
+							print images[p],p
 							image = images[p].copy()
 						image.transform(t3d)
 						

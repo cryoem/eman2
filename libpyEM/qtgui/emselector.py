@@ -135,6 +135,46 @@ class EMSelectorDialog(QtGui.QDialog):
 		
 		self.paint_events = 0
 		
+		self.timer_interval = 500
+		self.timer = QtCore.QTimer()
+		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.time_out)
+		
+		self.timer.start(self.timer_interval)
+	
+	def time_out(self):
+		'''
+		This function takes care of automatic updates - if the file system changes then so does
+		the information we display
+		'''
+		for i,widget in enumerate(self.list_widgets):
+			if hasattr(widget,"directory"):
+				statinfo = os.stat(widget.directory)
+				if statinfo[-2] != widget.mod_time:
+					crow = widget.currentRow()
+					old_row_text = widget.item(crow).text()
+					widget.clear()
+					widget.directory_lister.load_directory_data(widget.directory_arg,widget)
+					if i == 0:
+							a = QtGui.QListWidgetItem(self.up_arrow_icon,"../",None)
+							a.type_of_me = "go up a directory"
+							widget.insertItem(0,a)
+					new_row_text = widget.item(crow) # this could potentially by None
+					if new_row_text != None: new_row_text = new_row_text.text()
+					if new_row_text != old_row_text:
+						#print "row lost"
+						# if the current row was deleted then the next list widgets need to be cleared
+						for j in range(i+1,len(self.list_widgets)):
+							widget = self.list_widgets[j]
+							widget.clear()
+							self.list_widget_data[j] = None
+							# get rid of these attributes, they could have been set by the listing objects
+							del_attr = ["directory","directory_lister","directory_arg","mod_time"]
+							for attr in del_attr:
+								if hasattr(widget,attr): delattr(widget,attr)
+				
+					return # only do one at a time
+
+	
 	def get_desktop_hint(self):
 		return self.desktop_hint
 		
@@ -355,7 +395,7 @@ class EMSelectorDialog(QtGui.QDialog):
 #			if progress.qt_widget.wasCanceled():
 #				break	
 		
-		self.__post_action(action.text(),items_acted_on)
+		#self.__post_action(action.text(),items_acted_on)
 		self.action_list_widget = None
 		#progress.qt_widget.close()
 		
@@ -442,8 +482,14 @@ class EMSelectorDialog(QtGui.QDialog):
 			
 		self.starting_directory = new_dir
 		for j in range(0,len(self.list_widgets)):
-			self.list_widgets[j].clear()
+			widget = self.list_widgets[j]
+			widget.clear()
 			self.list_widget_data[j] = None
+			# get rid of these attributes, they could have been set by the listing objects
+			del_attr = ["directory","directory_lister","directory_arg","mod_time"]
+			for attr in del_attr:
+				if hasattr(widget,attr): delattr(widget,attr)
+				
 		self.__load_directory_data(self.starting_directory,self.first_list_widget)
 		#self.hide_preview()
 		self.lock = False
@@ -465,6 +511,11 @@ class EMSelectorDialog(QtGui.QDialog):
 				self.list_widgets[i].insertItem(0,k)
 			
 			self.list_widgets[i].setCurrentRow(old_row)
+			self.list_widgets[i].mod_time = self.list_widgets[i+1].mod_time
+			self.list_widgets[i].directory = self.list_widgets[i+1].directory
+			self.list_widgets[i].directory_lister = self.list_widgets[i+1].directory_lister
+			self.list_widgets[i].directory_arg = self.list_widgets[i+1].directory_arg
+			
 			
 			self.list_widget_data[i] = self.list_widgets[i].item(old_row)
 			directory += dtag + str(self.list_widget_data[i].text())
@@ -834,6 +885,12 @@ class EMFSListing:
 		files = self.filter_strings(files)
 		filt = self.target().get_file_filter()
 		
+		statinfo = os.stat(directory)
+		list_widget.mod_time = statinfo[-2] # this is to record when the last modification time was, so automatic updates are possible
+		list_widget.directory = directory
+		list_widget.directory_lister = self
+		list_widget.directory_arg = directory
+		
 		dirs.sort()
 		files.sort()
 		 
@@ -1085,7 +1142,7 @@ class EMDBListing:
 			# so if the first two items are from the same matrix database, then they all are
 			# if this wasn't the case then we could iterate through the items and group them, but
 			# currently isn't so hence this simplified approach
-			# FEB 2009 - I'm a bit confused about what I was doing, I added a try block. (d.woolford)			
+			# FEB 2009 - I'm a bit confused about what I was doing, I added a try block because I was getting an error sometimes. (d.woolford)			
 			item0 = items[0]
 			item1 = items[1]
 			try:
@@ -1175,11 +1232,20 @@ class EMDBListing:
 		if not remove_directories_from_name(directory) in self.directory_replacements.values():
 			 return False
 
+		
+		
 		dtag = get_dtag()
 		real_directory = self.convert_to_absolute_path(directory)
 		dirs,files = get_files_and_directories(real_directory)
 		files.sort()
 		dirs.sort()
+		
+		statinfo = os.stat(real_directory)
+		list_widget.mod_time = statinfo[-2] # this is to record when the last modification time was, so automatic updates are possible
+		list_widget.directory = real_directory
+		list_widget.directory_lister = self
+		list_widget.directory_arg = directory
+		#print list_widget.directory, list_widget.mod_time
 		
 		for i in dirs:
 			if i[0] == '.': continue
