@@ -552,11 +552,16 @@ class EMSelectorDialog(QtGui.QDialog):
 				self.list_widgets[i].insertItem(0,k)
 			
 			self.list_widgets[i].setCurrentRow(old_row)
-			self.list_widgets[i].mod_time = self.list_widgets[i+1].mod_time
-			self.list_widgets[i].directory = self.list_widgets[i+1].directory
-			self.list_widgets[i].directory_lister = self.list_widgets[i+1].directory_lister
-			self.list_widgets[i].directory_arg = self.list_widgets[i+1].directory_arg
-			
+			req_attr = ["mod_time","directory","directory_lister","directory_arg"]
+			if  hasattr(self.list_widgets[i+1],req_attr[0]): # if it has the first it has them all
+				li = self.list_widgets[i]
+				lip = self.list_widgets[i+1]
+				for attr in req_attr: setattr(li,attr,getattr(lip,attr))
+	   	   	else:
+	   	   		# just make sure the attributes don't exist
+	   	   		for attr in req_attr:
+	   	   			if hasattr(li,attr): delattr(li,attr)
+				
 			
 			self.list_widget_data[i] = self.list_widgets[i].item(old_row)
 			directory += dtag + str(self.list_widget_data[i].text())
@@ -1591,9 +1596,7 @@ class EMDB2DImageStackItem(EMListingItem):
 		self.context_menu_options["Delete"] = self.delete
 		self.context_menu_options["Save As"] = self.save_as
 		
-	
 	def do_preview(self,target):
-		print "in do preview"
 		db_name = "bdb:"+self.database_directory+"#"+self.database
 		target.preview_data(None,db_name)	
 		return True
@@ -1669,7 +1672,6 @@ class EMDBSingleImageItem(EMListingItem):
 		db_name = "bdb:"+self.database_directory+"#"+self.database
 		return EMData(db_name,self.database_key)
 		
-	
 	def save_as(self,target):
 		db_name = "bdb:"+self.database_directory+"#"+self.database
 		return save_as(db_name,target.application())
