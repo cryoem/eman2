@@ -28,13 +28,16 @@ def main():
 		avgvol = args[-3]
 		eigvol = args[-2]
 		output = args[-1]
-
+		
 		if options.rad < 0:
 			print "Error: mask radius is not given"
 			sys.exit(-1)
 		if options.MPI:
 			from mpi import mpi_init	
 			sys.argv = mpi_init( len(sys.argv), sys.argv )
+
+			from utilities import init_mpi_bdb
+			init_mpi_bdb()
 
 		from utilities import get_im
 		global_def.BATCH = True
@@ -46,6 +49,7 @@ def main():
 			from applications import factcoords_vol
 			factcoords_vol(stacks, avgvol, eigvol, output, options.rad, options.neigvol, options.of, options.MPI)
 		global_def.BATCH = False
+		
 
 if __name__ == "__main__":
 	main()
