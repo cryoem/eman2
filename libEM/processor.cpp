@@ -305,7 +305,9 @@ void FourierProcessor::process_inplace(EMData * image)
 		LOGWARN("NULL Image");
 		return;
 	}
-
+	
+	preprocess(image);
+	
 	int array_size = FFTRADIALOVERSAMPLE * image->get_ysize();
 	float step=0.5f/array_size;
 
@@ -339,6 +341,36 @@ void FourierProcessor::process_inplace(EMData * image)
 	}
 
 	image->update();
+}
+
+void LowpassFourierProcessor::preprocess(const EMData * const image)
+{
+	Dict dict = image->get_attr_dict();
+	if( params.has_key("cutoff_abs") ) {
+		lowpass = params["cutoff_abs"];
+	}
+	else if( params.has_key("cutoff_freq") ) {
+		lowpass = (float)params["cutoff_freq"] * (float)dict["apix_x"] * (float)dict["nx"] / 2.0f;
+	}
+	else if( params.has_key("cutoff_pixels") ) {
+		lowpass = (float)params["cutoff_pixels"] / (float)dict["nx"];			
+	}
+	
+	std::cout << "lowpass = " << lowpass << std::endl;
+}
+
+void HighpassFourierProcessor::preprocess(const EMData * const image)
+{
+	Dict dict = image->get_attr_dict();
+	if( params.has_key("cutoff_abs") ) {
+		highpass = params["cutoff_abs"];
+	}
+	else if( params.has_key("cutoff_freq") ) {
+		highpass = (float)params["cutoff_freq"] * (float)dict["apix_x"] * (float)dict["nx"] / 2.0f;
+	}
+	else if( params.has_key("cutoff_pixels") ) {
+		highpass = (float)params["cutoff_pixels"] / (float)dict["nx"];			
+	}
 }
 
 void AmpweightFourierProcessor::process_inplace(EMData * image)

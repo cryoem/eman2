@@ -347,7 +347,8 @@ The basic design of EMAN Processors: <br>\
 		}
 		
 	  protected:
-		virtual void create_radial_func(vector < float >&radial_mask) const = 0;
+		  virtual void preprocess(const EMData * const image) {}
+		  virtual void create_radial_func(vector < float >&radial_mask) const = 0;
 	};
 
 	class AmpweightFourierProcessor:public Processor
@@ -627,10 +628,7 @@ The basic design of EMAN Processors: <br>\
 		void set_params(const Dict & new_params)
 		{
 			params = new_params;
-			if( params.has_key("cutoff_abs") ) {
-				lowpass = params["cutoff_abs"];
-			}
-			else if( params.has_key("lowpass") ) {
+			if( params.has_key("lowpass") ) {
 				lowpass = params["lowpass"];
 			}
 //			printf("%s %f\n",params.keys()[0].c_str(),lowpass);
@@ -649,7 +647,8 @@ The basic design of EMAN Processors: <br>\
 		}
 		
 	  protected:
-		float lowpass;
+		  virtual void preprocess(const EMData * const image);
+		  float lowpass;
 	};
 	
 	class LinearRampFourierProcessor:public FourierProcessor
@@ -684,10 +683,7 @@ The basic design of EMAN Processors: <br>\
 		void set_params(const Dict & new_params)
 		{
 			params = new_params;
-			if( params.has_key("cutoff_abs") ) {
-				highpass = params["cutoff_abs"];
-			}
-			else if( params.has_key("highpass") ) {
+			if( params.has_key("highpass") ) {
 				highpass = params["highpass"];
 			}
 		}
@@ -705,7 +701,8 @@ The basic design of EMAN Processors: <br>\
 		}
 		
 	  protected:
-		float highpass;
+		  virtual void preprocess(const EMData * const image);
+		  float highpass;
 	};
 
 	/**processor radial function: if x <= lowpass, f(x) = 1; else f(x) = 0;
