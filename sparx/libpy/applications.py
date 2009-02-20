@@ -10888,7 +10888,9 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 	from statistics import k_means_criterion, k_means_export, k_means_open_im, k_means_headlog
 	import sys
 
-	#== NEW VERSION ==
+	## DEV CUDA
+	CUDA = False
+
 	ext = file_type(stack)
 	if ext == 'bdb': BDB = True
 	else:            BDB = False
@@ -10908,7 +10910,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 			k_means_headlog(stack, out_dir, opt_method, N, K, critname, maskname, trials, maxit, CTF, T0, F, rand_seed, ncpu)
 
 		if BDB:
-			# with BDB only one by one node can read data base
+			# with BDB all node can not read the same data base
 			import os
 			for i in xrange(ncpu):
 				if myid == i: [im_M, mask, ctf, ctf2] = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF)
@@ -10938,6 +10940,18 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 
 		mpi_barrier(MPI_COMM_WORLD)
 
+	elif CUDA: # added 2009-02-20 16:27:26
+		from statistics import k_means_cuda_open_im
+		
+		# instance of CUDA kmeans obj
+		KmeansCUDA = CUDA_kmeans()
+
+		# open images and load to C
+		[KmeansCUDA, LUT, mask, N, m] = k_means_cuda_open_im(KmeansCUDA, stack, maskname)
+
+		print_begin_msg('k-means')
+
+		## log
 	else:
 		from statistics import k_means_classical, k_means_SSE
 		N = EMUtil.get_image_count(stack)

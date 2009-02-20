@@ -30,7 +30,7 @@
 #
 from EMAN2_cppwrap import *
 from global_def import *
-
+#test
 def add_oe_series(data):
 	"""
 		Calculate odd and even sum of an image series using current alignment parameters
@@ -1417,7 +1417,6 @@ def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, listID = None):
 
 	if listID is None: listim = range(N_start, N_stop)
 	else:              listim = listID[N_start:N_stop]
-
 	
 	DATA = im.read_images(stack, listim)
 	ct   = 0
@@ -1719,7 +1718,6 @@ def k_means_classical(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, D
 	from utilities 		import model_blank, get_im, running_time
 	from random    		import seed, randint
 	from utilities 		import print_msg
-	from alignment          import select_k
 	from copy		import deepcopy
 	import sys
 	import time
@@ -1907,7 +1905,7 @@ def k_means_classical(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, D
 					mindJe = min(dJe)
 					scale  = max(dJe) - mindJe
 					for k in xrange(K): dJe[k] = 1 - (dJe[k] - mindJe) / scale
-					select = select_k(dJe, T)
+					select = select_kmeans(dJe, T)
 
 					if select != res['pos']:
 						ct_pert    += 1
@@ -2078,7 +2076,6 @@ def k_means_classical(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, D
 def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=False):
 	from utilities    import model_blank, get_im, running_time
 	from utilities    import print_begin_msg, print_end_msg, print_msg
-	from alignment    import select_k
 	from random       import seed, randint, shuffle
 	from copy         import deepcopy
 	import sys
@@ -2516,7 +2513,6 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 	from utilities    import model_blank, get_im
 	from utilities    import bcast_EMData_to_all, reduce_EMData_to_root
 	from utilities    import print_msg, running_time
-	from alignment    import select_k
 	from random       import seed, randint
 	from copy	  import deepcopy
 	from mpi 	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
@@ -2759,7 +2755,7 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 					mindJe = min(dJe)
 					scale  = max(dJe) - mindJe
 					for k in xrange(K): dJe[k] = 1 - (dJe[k] - mindJe) / scale
-					select = select_k(dJe, T)
+					select = select_kmeans(dJe, T)
 
 					if select != res['pos']:
 						ct_pert    += 1
@@ -3014,7 +3010,6 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 	from utilities    import model_blank, get_im
 	from utilities    import bcast_EMData_to_all, reduce_EMData_to_root
 	from utilities    import print_msg, running_time
-	from alignment    import select_k
 	from random       import seed, randint, shuffle
 	from copy	  import deepcopy
 	from mpi 	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
@@ -3280,7 +3275,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 					mindJe = min(dJe)
 					scale  = max(dJe) - mindJe
 					for k in xrange(K): dJe[k] = 1 - (dJe[k] - mindJe) / scale
-					select = select_k(dJe, T)
+					select = select_kmeans(dJe, T)
 
 					if select != res['pos']:
 						ct_pert    += 1
@@ -3972,6 +3967,135 @@ def k_means_groups_MPI(stack, out_file, maskname, opt_method, K1, K2, rand_seed,
 
 	if myid == main_node: return Crit, KK
 	else:                 return None, None
+
+## K-MEANS CUDA ###########################################################################
+# 2009-02-20 15:39:43
+
+# k-means write the head of the logfile for CUDA
+def k_means_headlog_cuda(stackname, outname, method, N, K, maskname, maxit, T0, F, rnd, ncpu, m):
+	from utilities import print_msg
+	from math import log
+
+	if F != 0: SA = True
+	else:      SA = False
+
+	if method == 'cla': method = 'No optimisation'
+
+	if ncpu > 1: methodhead = 'CUDA MPI'
+	else:        methodhead = 'CUDA'
+
+	# memory estimation
+	#        IM          AVE         DIST
+	device = N * m * 4 + K * m * 4 + N * K * 4
+	#               ASG     NC      IM2     AVE2
+	host = device + N * 2 + K * 2 + N * 4 + K * 4
+	ie_device  = int(log(device) // log(1e3))
+	ie_host    = int(log(host)   // log(1e3))
+	device    /= (1e3 ** ie_device)
+	host      /= (1e3 ** ie_host)
+	txt        = ['', 'k', 'M', 'G', 'T']
+	device     = '%5.2f %sB' % (device, txt[ie_device])
+	host       = '%5.2f %sB' % (host,   txt[ie_host])
+
+	print_msg('\n************* k-means %s *************\n' % methodhead)
+	print_msg('Input stack                 : %s\n'     % stackname)
+	print_msg('Number of images            : %i\n'     % N)
+	print_msg('Maskfile                    : %s\n'     % maskname)
+	print_msg('Number of pixels under mask : %i\n'     % m)
+	print_msg('Number of clusters          : %s\n'     % K)
+	print_msg('Maximum iteration           : %i\n'     % maxit)
+	print_msg('Criterion                   : CHD\n'    )
+	print_msg('Optimization method         : %s\n'     % method)
+	if SA:
+		print_msg('Simulate annealing          : ON\n')
+		print_msg('   F                        : %f\n' % F)
+		if T0 != -1: print_msg('   T0                       : %f\n' % T0)
+		else:        print_msg('   T0                       : AUTO\n')
+
+	else:
+		print_msg('Simulate annealing          : OFF\n')
+	print_msg('Random seed                 : %i\n'     % rnd)
+	print_msg('Number of cpus              : %i\n'     % ncpu)
+	print_msg('Output seed names           : %s\n'     % outname)
+	print_msg('Memory on device            : %s\n'     % device)
+	print_msg('Memory on host              : %s\n\n'    % host)
+
+
+# k-means open, prepare, and load images for CUDA k-means
+def k_means_cuda_open_im(KmeansCUDA, stack, maskname):
+	from utilities     import get_params2D, get_image
+	from fundamentals  import rot_shift2D, rot_shift3D
+	from utilities     import file_type
+	from statistics    import k_means_open_im
+
+	# check if the flag active is used, in the case where k-means will run for the stability
+	image = EMData()
+	image.read_image(stack, 0, True)
+	flagactive = True
+	try:	active = image.get_attr('active')
+	except: flagactive = False
+	
+	# some parameters
+	N  = EMUtil.get_image_count(stack)
+	nx = image.get_xsize()
+	ny = image.get_ysize()
+	nz = image.get_zsize()
+	
+	# if flag active used, prepare the list of images
+	if flagactive:
+		lim  = []
+		ext  = file_type(stack)
+		if ext == 'bdb':
+			DB = db_open_dict(stack)
+			for n in xrange(N):
+				if DB.get_attr(n, 'active'): lim.append(n)
+			DB.close()
+		else:
+			for n in xrange(N):
+				image.read_image(stack, n, True)
+				if image.get_attr('active'): lim.append(n)
+
+		N = len(lim)
+	else: lim = None
+
+	# open mask if defined
+	if maskname != None:
+		if isinstance(maskname, basestring):
+			mask = get_image(maskname)
+	else:
+		# anyway image must be a flat image
+		mask = model_blank(nx, ny, nz)
+		mask.to_one()
+
+	# open one by one to avoid allocation of twice memory (python/C)
+	c = 0
+	for i in lim:
+		image.read_image(stack, i)
+		
+		# 3D object
+		if nz > 1:
+			try:	phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(image)
+			except:	phi, theta, psi, s3x, s3y, s3z, mirror, scale = 0, 0, 0, 0, 0, 0, 0, 0
+			image  = rot_shift3D(image, phi, theta, psi, s3x, s3y, s3z)
+			if mirror: image.process_inplace('mirror', {'axis':'x'})
+		# 2D object
+		elif ny > 1:
+			try:	alpha, sx, sy, mirror, scale = get_params2D(image)
+			except: alpha, sx, sy, mirror, scale  = 0, 0, 0, 0, 0
+			image = rot_shift2D(image, alpha, sx, sy, mirror)
+
+		# apply mask 
+		image = Util.compress_image_mask(image, mask)
+
+		# one more parameter
+		if c == 0: m = image.get_xsize()
+
+		# load to C function through the kmeansCUDA object
+		KmeansCUDA.append_flat_image(image, c)
+		c += 1
+
+	return KmeansCUDA, lim, mask, N, m
+
 
 
 ## K-MEANS STABILITY ######################################################################
