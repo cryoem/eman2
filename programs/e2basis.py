@@ -60,9 +60,11 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
 	parser.add_option("--normproj",action="store_true",help="Normalize the projections resulting from 'project', such that the length of each vector is 1",default=False)
+	parser.add_option("--normcomponent",action="store_true",help="Normalize the dot product for each component of the output vector. If the basis spans the input vector, then the projected vector length will be 1, otherwise it will be less than 1.",default=False)
 	parser.add_option("--normalize",type="string",help="Normalize the input images using the named processor",default="normalize.unitlen")
 	parser.add_option("--maskfile","-M",type="string",help="File containing a mask to apply to the particles before normalization", default=None)
 	parser.add_option("--mean1",action="store_true",help="Indicates that the first image in the basis set is actually the mean image, which should be subtracted prior to projection. Output from e2msa requires this flag.")
+	parser.add_option("--recalcmean",action="store_true",help="This will recompute the mean from the input set and subtract before projection. Useful if a different normalization is used than in the original basis file.")
 	parser.add_option("--oneout",action="store_true",help="Output is a single 2-D image rather than a set of 1-D images",default=False)
 	parser.add_option("--nbasis","-n",type="int",help="Will use the first n basis images from the input, excluding the mean if present",default=-1)
 	parser.add_option("--verbose", metavar="n", type="int", help="Give verbose output, higher numbers = more detail")
@@ -103,6 +105,13 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 		if options.oneout: 
 			proj=EMData(len(basis),n,1)
 			
+			if options.recalcmean:
+				mean=EMData(args[2],0)
+				for i in range(1,n):
+					im=EMData(args[2],i)
+					mean+=im
+				mean/=float(n)
+			
 			for i in range(n):
 				im=EMData(args[2],i)
 				if maskfile : im*=maskfile
@@ -111,12 +120,27 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 				if mean : im-=mean
 			
 				# inner loop over the basis images
+				l=0
 				for j,b in enumerate(basis):
-					proj.set_value_at(j,i,0,im.cmp("dot",b,{"normalize":options.normproj,"negative":0}))
+					proj.set_value_at(j,i,0,im.cmp("dot",b,{"normalize":options.normcomponent,"negative":0}))
+					l+=proj[j,i]**2
+				
+				if options.normproj :
+					l=sqrt(l)
+					for j in range(len(basis)): proj[j,i]/=l
+						
+						
 			
 			proj["isvector"]=1
 			proj.write_image(args[3],0)
 		else:
+			if options.recalcmean:
+				mean=EMData(args[2],0)
+				for i in range(1,n):
+					im=EMData(args[2],i)
+					mean+=im
+				mean/=float(n)
+
 			for i in range(n):
 				im=EMData(args[2],i)
 				if maskfile!=None : im*=maskfile
@@ -127,11 +151,18 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 				proj=EMData(len(basis),1,1)
 			
 				# inner loop over the basis images
+				l=0
 				for j,b in enumerate(basis):
-					proj.set_value_at(j,0,0,im.cmp("dot",b,{"normalize":options.normproj,"negative":0}))
+					proj.set_value_at(j,0,0,im.cmp("dot",b,{"normalize":options.normcomponent,"negative":0}))
+					l+=proj[j,0]**2
+
+				if options.normproj :
+					l=sqrt(l)
+					for j in range(len(basis)): proj[j,0]/=l
 					
 				proj["isvector"]=1
 				proj.write_image(args[3],i)
+
 	
 	# Project rotated images into a basis subspace
 	elif args[0]=="projectrot" :
@@ -148,6 +179,13 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 		n=EMUtil.get_image_count(args[2])
 		if options.oneout:
 			proj=EMData(len(basis)+4,n,1)
+			if options.recalcmean:
+				mean=EMData(args[2],0)
+				for i in range(1,n):
+					im=EMData(args[2],i)
+					mean+=im
+				mean/=float(n)
+
 			for i in range(n):
 				if options.verbose >1 : 
 					print "  %5d\r"%i,
@@ -173,12 +211,19 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 				if mean!=None : im-=mean
 				
 				# inner loop over the basis images to generate the components of the projection vector
+				l=0
 				for j,b in enumerate(basis):
-					proj.set_value_at(j+4,i,0,im.cmp("dot",b,{"normalize":options.normproj,"negative":0}))
+					proj.set_value_at(j+4,i,0,im.cmp("dot",b,{"normalize":options.normcomponent,"negative":0}))
+					l+=proj[j+4,i]**2
 #					im["dot"]=proj[j+4,i]
 #					im.write_image("dbug.hdf",-1)
 #					b["dot"]=proj[j+4,i]
 #					b.write_image("dbug.hdf",-1)
+
+				if options.normproj :
+					l=sqrt(l)
+					for j in range(len(basis)): proj[j+4,i]/=l
+
 				proj.set_value_at(0,i,best[1])
 				proj.set_value_at(1,i,best[2])
 				proj.set_value_at(2,i,best[3])
@@ -187,6 +232,13 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 				proj["isvector"]=1
 			proj.write_image(args[4],0)
 		else:
+			if options.recalcmean:
+				mean=EMData(args[2],0)
+				for i in range(1,n):
+					im=EMData(args[2],i)
+					mean+=im
+				mean/=float(n)
+
 			for i in range(n):
 				if options.verbose >1 : 
 					print "  %5d\r"%i,
@@ -213,8 +265,14 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 				proj=EMData(len(basis),1,1)
 			
 				# inner loop over the basis images to generate the components of the projection vector
+				l=0
 				for j,b in enumerate(basis):
-					proj.set_value_at(j,0,0,im.cmp("dot",b,{"normalize":options.normproj,"negative":0}))
+					proj.set_value_at(j,0,0,im.cmp("dot",b,{"normalize":options.normcomponent,"negative":0}))
+					l+=proj[j,0]
+
+				if options.normproj :
+					l=sqrt(l)
+					for j in range(len(basis)): proj[j,0]/=l
 				
 				proj.set_attr("ref_da",best[1])
 				proj.set_attr("ref_dx",best[2])

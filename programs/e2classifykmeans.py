@@ -172,7 +172,7 @@ be classified. """
 		else:
 			# write the class-averages to avg.hed
 			for i in range(len(centers)):
-				centers[i].write_image("avg.hed",-1)
+				centers[i].write_image("avg.hdf",-1)
 			
 			# if original images specified, also write those averages to avg.orig.hed
 			if options.original :
@@ -181,7 +181,7 @@ be classified. """
 					for i in range(1,len(classes[j])):
 						avg+=EMData(options.original,filen[classes[j][i]])
 					avg/=len(classes[j])
-					avg.write_image("avg.orig.hed",-1)
+					avg.write_image("avg.orig.hdf",-1)
 		
 	if (options.clsfiles) :
 		os.system("rm -f cls????.lst")
