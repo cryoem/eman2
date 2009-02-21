@@ -4,10 +4,13 @@
 
 #include "cuda_defs.h"
 #include "cuda_emfft.h"
+
+#include "emcudautil.h"
+
 texture<float, 3, cudaReadModeElementType> tex;
 
 void cudaBindTexture(texture<float, 3, cudaReadModeElementType> &tex,cudaArray *array) {
-	tex.normalized = false;
+	tex.normalized = 0;
 	tex.filterMode = cudaFilterModeLinear;
 	tex.addressMode[0] = cudaAddressModeClamp;
 	tex.addressMode[1] = cudaAddressModeClamp;
@@ -20,7 +23,21 @@ void cudaBindTexture(texture<float, 3, cudaReadModeElementType> &tex,cudaArray *
 struct CudaEMDataArray {
 	cudaArray* array;
 	const float* data;
+	void* emdata_pointer;
 };
+
+void copy_array_data(CudaEMDataArray* to, CudaEMDataArray* from) {
+	to->array = from->array;
+	to->data = from->data;
+	to->emdata_pointer = from->emdata_pointer;
+}
+
+void set_arry_data_null(CudaEMDataArray* p)
+{
+	p->array = 0;
+	p->data = 0;
+	p->emdata_pointer = 0;
+}
 
 const int max_cuda_arrays = 100;
 int num_cuda_arrays = 0;
@@ -33,7 +50,7 @@ void init_cuda_emdata_arrays() {
 	}
 }
 
-int stored_cuda_array(const float * data,const int nx, const int ny, const int nz) {
+int get_cuda_array_handle(const float * data,const int nx, const int ny, const int nz, void* emdata_pointer) {
 	
 	for(int i = 0; i < num_cuda_arrays; ++i ) {
 		if (cuda_arrays[i].data == data ) {
@@ -45,21 +62,23 @@ int stored_cuda_array(const float * data,const int nx, const int ny, const int n
 	//printf("Making a new cuda array\n");
 	// If we make it here then it doesn't exist
 	cuda_arrays[num_cuda_arrays].data = data;
+	cuda_arrays[num_cuda_arrays].emdata_pointer = emdata_pointer;
 	cudaExtent VS = make_cudaExtent(nx,ny,nz);
 	
 	cudaArray *array = 0;
 	cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<float>();
-	CUDA_SAFE_CALL(cudaMalloc3DArray(&array, &channelDesc, VS));
+	cudaMalloc3DArray(&array, &channelDesc, VS);
 	
 	cudaMemcpy3DParms copyParams = {0};
 	copyParams.srcPtr   = make_cudaPitchedPtr((void*)data, VS.width*sizeof(float), VS.width, VS.height);
 	copyParams.dstArray = array;
 	copyParams.extent   = VS;
 	copyParams.kind     = cudaMemcpyHostToDevice;
-	CUDA_SAFE_CALL(cudaMemcpy3D(&copyParams));
+	cudaMemcpy3D(&copyParams);
 	
 	//cudaBindTexture(tex,array);
 	cuda_arrays[num_cuda_arrays].array = array;
+	cuda_arrays[num_cuda_arrays].emdata_pointer = emdata_pointer;
 	num_cuda_arrays++;
 	return num_cuda_arrays-1;
 }
@@ -67,11 +86,16 @@ int stored_cuda_array(const float * data,const int nx, const int ny, const int n
 int delete_cuda_array(const int idx) {
 	CUDA_SAFE_CALL(cudaFree(cuda_arrays[idx].array));
 	cuda_arrays[idx].array = 0;
-	/*
+	
 	for (int i = idx; i < num_cuda_arrays-1; ++i ) {
-		
+		CudaEMDataArray* to = &cuda_arrays[idx];
+		CudaEMDataArray* from = &cuda_arrays[idx+1];
+		copy_array_data(to,from);
+		set_emdata_cuda_array_handle(idx,to->emdata_pointer);
 	}
-	*/
+	set_arry_data_null(&cuda_arrays[num_cuda_arrays-1]);
+	num_cuda_arrays--;
+	
 	return 0;
 }
 

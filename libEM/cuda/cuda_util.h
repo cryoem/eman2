@@ -10,7 +10,7 @@ void device_init();
 
 /** Get the stored cuda arrary corresponding to the input arguments
  */
-int stored_cuda_array(const float* ,const int,const int,const int);
+int get_cuda_array_handle(const float* ,const int,const int,const int, void*);
 
 int delete_cuda_array(const int idx);
 

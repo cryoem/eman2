@@ -13,7 +13,7 @@
 extern texture<float, 3, cudaReadModeElementType> tex;
 
 typedef unsigned int uint;
-__global__ void proj_kernel(float *out,float size,float3 mxx,float3 mxy, float3 mxz)
+__global__ void proj_kernel(float *out,float size, float size_on_two, float3 mxx,float3 mxy, float3 mxz)
 {
 //	uint x=(threadIdx.x&0xfffe)+(blockIdx.x&1);
 //	uint y=(blockIdx.x&0xfffe)+(threadIdx.x&1);
@@ -21,17 +21,21 @@ __global__ void proj_kernel(float *out,float size,float3 mxx,float3 mxy, float3 
 //	uint y=(blockIdx.x&0xfffe)+(threadIdx.x&1);
 	uint x=threadIdx.x;
 	uint y=blockIdx.x;
-	float fx=x-size/2;
-	float fy=y-size/2;
+	
+	float fx=x-size_on_two;
+	float fy=y-size_on_two;
 
 	float tx,ty,tz;
 
 	float sum=0;
-	for (float fz=-size/2.0; fz<size/2.0-.1; fz+=1.0) {
-		tx=fx*mxx.x+fy*mxx.y+fz*mxx.z+size/2.0;
-		ty=fx*mxy.x+fy*mxy.y+fz*mxy.z+size/2.0;
-		tz=fx*mxz.x+fy*mxz.y+fz*mxz.z+size/2.0;
-		sum += CUDA_SAFE_CALL(tex3D(tex, tx,ty,tz));
+	// The 0.5f offsets for x,y and z are required - Read section D.2 in Appendix D of the CUDA
+	// Programming Guide (version 2.0).
+	// Thankyou http://sites.google.com/site/cudaiap2009/cookbook-1
+	for (float fz=-size_on_two; fz<size_on_two-.1; fz+=1.0) {
+		tx=fx*mxx.x+fy*mxx.y+fz*mxx.z+size_on_two+0.5;
+		ty=fx*mxy.x+fy*mxy.y+fz*mxy.z+size_on_two+0.5;
+		tz=fx*mxz.x+fy*mxz.y+fz*mxz.z+size_on_two+0.5;
+		sum += tex3D(tex, tx,ty,tz);
 	}
 
 	out[x+y*(int)size]=sum;
@@ -44,11 +48,11 @@ void standard_project(const float* const matrix,const float* const rdata, const 
 	//int idx = stored_cuda_array(rdata,nx,ny,nz);
 	//bind_cuda_texture(idx);
 	
-	const dim3 blockSize(nx,1, 1);
+	const dim3 blockSize(ny,1, 1);
 	const dim3 gridSize(nx,1,1);
 
 	float *memout=0;
-	CUDA_SAFE_CALL(cudaMalloc((void **)&memout, nx*ny*sizeof(float)));
+	cudaMalloc((void **)&memout, nx*ny*sizeof(float));
 	
 	float3 mxx,mxy,mxz;
 	
@@ -62,7 +66,7 @@ void standard_project(const float* const matrix,const float* const rdata, const 
 	mxz.y=matrix[6];
 	mxz.z=matrix[10];
 		
-	proj_kernel<<<blockSize,gridSize>>>(memout,(float)nx,mxx,mxy,mxz);
+	proj_kernel<<<blockSize,gridSize>>>(memout,(float)nx,(float)nx/2,mxx,mxy,mxz);
 	//CUDA_SAFE_CALL(cuCtxSynchronize());
 	cudaThreadSynchronize();
 	cudaMemcpy(d, memout, nx*ny*sizeof(float), cudaMemcpyDeviceToHost);

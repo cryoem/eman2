@@ -373,7 +373,7 @@ class EMMatrixPanel:
 		rendered_image_height = view_data.get_ysize()*view_scale
 		
 		[self.ystart,self.visiblerows,self.visiblecols] = self.visible_row_col(view_width,view_height,view_scale,view_data,y)
-		
+		if self.ystart == None: return 
 		xsep = view_width - self.visiblecols*(rendered_image_width+self.min_sep)
 		self.xoffset = xsep/2		
 		
@@ -388,7 +388,7 @@ class EMMatrixPanel:
 		
 		if visiblecols == 0: 
 			print "scale is too large - the panel can not be rendered"
-			return
+			return [None,None,None]
 		
 		
 		w=int(min(rendered_image_width,view_width))
@@ -745,10 +745,16 @@ class EMImageMXModule(EMGUIModule):
 		except: return None
 	
 	def optimally_resize(self):
+		# I disabled this because it was giving me problems from e2.py
+		return
+	
 		if isinstance(self.gl_context_parent,EMImageMXWidget):
 			self.qt_context_parent.resize(*self.get_parent_suggested_size())
 		else:
 			self.gl_widget.resize(*self.get_parent_suggested_size())
+		
+		self.scale =  self.matrix_panel.get_min_scale(self.view_width(),self.gl_widget.height(),self.scale,self.data) # this is to prevent locking
+#		print self.scale
 		
 	def get_parent_suggested_size(self):
 		if self.data != None and isinstance(self.data[0],EMData): 

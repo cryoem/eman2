@@ -37,21 +37,26 @@
 public:
 	/** Called externally if the associated cuda array is freed
 	 */
-	inline void reset_cuda_array_idx() { cuda_array_idx = -1; }
+	inline void reset_cuda_array_handle() { cuda_array_handle = -1; }
+	
 
 	inline void bind_cuda_array() {
 		update_stat();
-		if (cuda_array_idx == -1) {
-			cuda_array_idx = stored_cuda_array(rdata,nx,ny,nz);
+		if (cuda_array_handle == -1) {
+			cuda_array_handle = get_cuda_array_handle(rdata,nx,ny,nz,this);
 		}
-		bind_cuda_texture(cuda_array_idx);
+		bind_cuda_texture(cuda_array_handle);
 	}
+	// This should never be set by anything other than something that knows what it's doing
+	inline void set_cuda_array_handle(const int idx) { cuda_array_handle = idx; }
 	
 private:
+	
+	
 	void free_cuda_array() const {
-		if (cuda_array_idx != -1){
-			delete_cuda_array(cuda_array_idx);
-			cuda_array_idx = -1;
+		if (cuda_array_handle != -1){
+			delete_cuda_array(cuda_array_handle);
+			cuda_array_handle = -1;
 		}
 	}
 	
@@ -61,7 +66,7 @@ private:
 			cuda_rdata = 0;
 		}
 	}
-	mutable int cuda_array_idx;
+	mutable int cuda_array_handle;
 	mutable float* cuda_rdata;
 
 #endif // EMAN2_USING_CUDA
