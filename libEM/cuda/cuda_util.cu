@@ -126,7 +126,7 @@ int delete_cuda_array(const int idx) {
 	CUDA_SAFE_CALL(cudaFree(cuda_arrays[idx].array));
 	cuda_arrays[idx].array = 0;
 	
-	for (int i = idx; i < num_cuda_arrays-1; ++i ) {
+	for (int i = idx; i < num_cuda_arrays; ++i ) {
 		CudaEMDataArray* to = &cuda_arrays[i];
 		CudaEMDataArray* from = &cuda_arrays[i+1];
 		copy_array_data(to,from);
