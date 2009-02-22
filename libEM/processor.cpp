@@ -355,8 +355,6 @@ void LowpassFourierProcessor::preprocess(const EMData * const image)
 	else if( params.has_key("cutoff_pixels") ) {
 		lowpass = (float)params["cutoff_pixels"] / (float)dict["nx"];			
 	}
-	
-	std::cout << "lowpass = " << lowpass << std::endl;
 }
 
 void HighpassFourierProcessor::preprocess(const EMData * const image)
