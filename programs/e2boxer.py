@@ -2033,6 +2033,7 @@ class EMBoxerModule(QtCore.QObject):
 		except: pass
 		
 	def box_released(self,event,lc):
+		if lc == None: return # this can happen in strange circumstances
 		boxes = self.get_boxes()
 		#print boxes
 		try: box =  boxes[self.moving_box_data[2]]

@@ -750,14 +750,14 @@ class EMImage2DModule(EMGUIModule):
 		if self.file_name == "": return # there is no file name, we have no means to stores information
 		
 		try:
-			DB = HOMEDB
-			DB.open_dict("image_2d_display_settings")
+			global HOMEDB
+			HOMEDB=EMAN2db.EMAN2DB.open_db()
+			HOMEDB.open_dict("image_2d_display_settings")
 		except:
-			# Databasing is not supported, in which case w
-			print "no db support - remove the database directory in /tmp"
+			# something wrong with the HOMEDB?
 			return
 		
-		db = DB.image_2d_display_settings
+		db = HOMEDB.image_2d_display_settings
 	
 		data = db[self.file_name]
 		if data == None: return
@@ -770,14 +770,16 @@ class EMImage2DModule(EMGUIModule):
 			self.gamma = data["gamma"]
 			self.scale = data["scale"] 
 			self.origin = data["origin"]
-		except: pass
+		except:
+			# perhaps in inconsistency, something wasn't set. This should not happen in general
+			pass
 		if isinstance(self.gl_context_parent,EMImage2DWidget):
 			try:
 				self.parent_geometry = data["parent_geometry"]
 				if self.qt_context_parent != None:
 					try:
-						pass
-						#self.qt_context_parent.restoreGeometry(self.parent_geometry)
+						#pass
+						self.qt_context_parent.restoreGeometry(self.parent_geometry)
 					except: pass
 			except:pass
 		

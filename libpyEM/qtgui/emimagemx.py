@@ -1584,19 +1584,8 @@ class EMImageMXModule(EMGUIModule):
 		progress = EMProgressDialogModule(self.application(),"Writing files", "abort", 0, len(self.data),None)
 		progress.qt_widget.show()
 		for i in xrange(0,len(self.data)):
-			#for i,d in enumerate(self.data):
 			d = self.data[i]
-			try:
-				d.get_attr("excluded")
-				# if we make it here then the image does have the attribute, and it's true, just by design
-				continue
-			except: pass
-			#try:
-			if origname != None:
-				f.write(str(d.get_attr('original_number')) +'\t'+origname+'\n')
-			else:
-				f.write(str(d.get_attr('original_number')) +'\n')
-			#
+			if d == None: continue # the image has been excluded
 			progress.qt_widget.setValue(i)
 			self.application().processEvents()
 			if progress.qt_widget.wasCanceled():
@@ -1806,6 +1795,9 @@ class EMGLScrollBar:
 		panel_height = self.target().matrix_panel.height
 		adjusted_height = panel_height - view_height # adjusted height is the maximum value for current y!
 		
+		if adjusted_height <= 0:
+			return False
+		
 		self.scroll_bar_height = self.height - self.starty
 		self.scroll_bit_height = view_height/float(panel_height)*self.scroll_bar_height
 		if self.scroll_bit_height < self.min_scroll_bar_size: self.scroll_bit_height = self.min_scroll_bar_size
@@ -1815,7 +1807,7 @@ class EMGLScrollBar:
 		self.scroll_bit_position_ratio = (-float(current_y)/adjusted_height)
 		self.scroll_bit_position = self.scroll_bit_position_ratio *adjusted_scroll_bar_height
 		
-	
+		return True
 	def update_target_ypos(self):
 		
 		view_height = self.target().gl_widget.height()
@@ -1830,7 +1822,7 @@ class EMGLScrollBar:
 		
 	def draw(self):
 		
-		self.update_stuff()
+		if not self.update_stuff(): return # it doesn't make sense to draw the bar
 		
 		sx = self.startx
 		sy = self.starty
@@ -2518,14 +2510,6 @@ class EMDataListCache:
 			self.cache_size = self.max_idx
 			self.images = object
 			self.start_idx = 0
-#			DB.open_dict("emimage_mx_cache")
-#			self.db = DB.emimage_mx_cache
-#			self.exclusions_key = "interactive_exclusions"
-#			self.db[self.exclusions_key] = []
-#			self.exclusions = self.db["interactive_exclusions"]
-
-			
-			for i,d in enumerate(self.images):	d.set_attr("original_number",i)
 
 		elif isinstance(object,str):
 			#print "file mode"
@@ -2541,13 +2525,7 @@ class EMDataListCache:
 			else:
 				self.cache_size = cache_size
 			self.start_idx = start_idx - self.cache_size/2
-						
-			#DB.open_dict("emimage_mx_cache")
-			#self.db = DB.emimage_mx_cache
-			#self.exclusions_key = self.file_name+"_interactive_exclusions"
-			#self.exclusions  = self.db[self.exclusions_key]
-			#if self.exclusions == None: self.exclusions = []
-#			
+		
 			self.__refresh_cache()
 		else:
 			print "the object used to construct the EMDataListCache is not a string (filename) or a list (of EMData objects). Can't proceed"
@@ -2561,10 +2539,6 @@ class EMDataListCache:
 		self.image_height = -1
 	
 	def __del__(self):
-#		DB = EMAN2db.EMAN2DB.open_db(".")
-#		try:
-#			DB.close_dict("emimage_mx_cache")
-#		except: pass
 	   pass
 	
 	def get_xsize(self):
@@ -2663,18 +2637,10 @@ class EMDataListCache:
 		if i in self.visible_sets: self.visible_sets.remove(i)
 		if i == self.current_set:
 			self.current_set = None
-#		for k in self.images.keys():
-#			im = self.images[k]
-#			try: 
-#				im.mxset.remove(i)
-#				if len(im.mxset) == 0: delattr(im,"mxset")
-#			except: pass
 	
 	def delete_set(self,idx):
-	#	print "delete set",0
 		if self.sets.has_key(idx):
 			self.sets.pop(idx)
-	#	print self.sets
 		self.make_set_not_visible(idx)
 		
 		for im in self.images:
@@ -2734,8 +2700,7 @@ class EMDataListCache:
 		f.write('#LST\n')
 		
 		if self.mode == EMDataListCache.LIST_MODE and not self.soft_delete:
-			for d in self.data:
-				f.write(str(d.get_attr('original_number'))+'\n')
+			raise # fixme - saving an lst in list mode is something that needs thought. EMAN2 only supports sets, anyway.
 		elif self.mode == EMDataListCache.FILE_MODE or self.soft_delete:
 			
 			indices = [i for i in range(self.max_idx)]
@@ -2815,7 +2780,6 @@ class EMDataListCache:
 							else:
 								a = EMData()
 								a.read_image(self.file_name,idx)
-								a.set_attr("original_number",idx) # this i so saving to lst works
 								cache[idx] = a
 								if self.current_set != None:
 									sets = []
