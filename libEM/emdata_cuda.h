@@ -43,12 +43,15 @@ public:
 	inline void bind_cuda_array() {
 		update_stat();
 		if (cuda_array_handle == -1) {
+			// This would eventually change, if for example the cuda_rdata is not zero
 			cuda_array_handle = get_cuda_array_handle(rdata,nx,ny,nz,this);
 		}
 		bind_cuda_texture(cuda_array_handle);
 	}
 	// This should never be set by anything other than something that knows what it's doing
 	inline void set_cuda_array_handle(const int idx) { cuda_array_handle = idx; }
+	
+	
 	
 private:
 	

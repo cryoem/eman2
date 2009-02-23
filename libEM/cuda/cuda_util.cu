@@ -22,7 +22,7 @@ void cudaBindTexture(texture<float, 3, cudaReadModeElementType> &tex,cudaArray *
 
 struct CudaEMDataArray {
 	cudaArray* array;
-	const float* data;
+	const float* data; /*This one may be unecessary*/
 	void* emdata_pointer;
 };
 
@@ -115,14 +115,13 @@ int get_cuda_array_handle(const float * data,const int nx, const int ny, const i
 	copyParams.kind     = cudaMemcpyHostToDevice;
 	cudaMemcpy3D(&copyParams);
 	
-	//cudaBindTexture(tex,array);
 	cuda_arrays[idx].array = array;
 	if (num_cuda_arrays != max_cuda_arrays) num_cuda_arrays++;
 	return idx;
 }
 
 int delete_cuda_array(const int idx) {
-	printf("Deleting a cuda array\n");
+	//printf("Deleting a cuda array\n");
 	CUDA_SAFE_CALL(cudaFree(cuda_arrays[idx].array));
 	cuda_arrays[idx].array = 0;
 	
