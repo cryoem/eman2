@@ -53,7 +53,7 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode
 	for im in xrange(len(data)):
 		if CTF:
 			#Apply CTF to image
-			ctf_params = ima.get_attr("ctf")
+			ctf_params = data[im].get_attr("ctf")
 			ima = filt_ctf(data[im], ctf_params, True)
 		else:
 			ima = data[im]
@@ -103,7 +103,7 @@ def ali2d_random_ccf(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode,
 	for im in xrange(len(data)):
 		if CTF:
 			#Apply CTF to image
-			ctf_params = ima.get_attr("ctf")
+			ctf_params = data[im].get_attr("ctf")
 			ima = filt_ctf(data[im], ctf_params, True)
 		else:
 			ima = data[im]
