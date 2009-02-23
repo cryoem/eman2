@@ -10910,7 +10910,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 			k_means_headlog(stack, out_dir, opt_method, N, K, critname, maskname, trials, maxit, CTF, T0, F, rand_seed, ncpu)
 
 		if BDB:
-			# with BDB all node can not read the same data base
+			# with BDB all node can not read the same data base in the same time
 			import os
 			for i in xrange(ncpu):
 				if myid == i: [im_M, mask, ctf, ctf2] = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF)
@@ -10941,7 +10941,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		mpi_barrier(MPI_COMM_WORLD)
 
 	elif CUDA: # added 2009-02-20 16:27:26
-		from statistics import k_means_cuda_open_im
+		from statistics import k_means_cuda_open_im, k_means_headlog_cuda
 		
 		# instance of CUDA kmeans obj
 		KmeansCUDA = CUDA_kmeans()
@@ -10949,9 +10949,20 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		# open images and load to C
 		[KmeansCUDA, LUT, mask, N, m] = k_means_cuda_open_im(KmeansCUDA, stack, maskname)
 
+		# logfile
 		print_begin_msg('k-means')
+		opt_method = 'cla'
+		ncpu       = '1'
+		k_means_headlog_cuda(stack, out_dir, opt_method, N, K, maskname, maxit, T0, F, rand_seed, ncpu, m)
+		
+		# init k-means
+		KmeansCUDA.system(m, N, K, F, maxit, rnd)
 
-		## log
+		## TO DO
+		# 1- remove npart as parameters to KmeansCUDA.system, partition will be done in python level
+		# 2- add rnd parameters to the function KmeansCUDA.system
+		# 3- trials for empty class??
+
 	else:
 		from statistics import k_means_classical, k_means_SSE
 		N = EMUtil.get_image_count(stack)
@@ -10985,9 +10996,9 @@ def k_means_groups(stack, out_file, maskname, opt_method, K1, K2, rand_seed, max
 	if stack.split(':')[0] == 'bdb': BDB = True
 	else:                            BDB = False
 	
-	if maskname != None:
-		if (maskname.split(':')[0] != 'bdb' and BDB) or (maskname.split(':')[0] == 'bdb' and not BDB):
-		        ERROR('Both mask and stack must be on bdb format!', 'k-means groups', 1)
+	#if maskname != None:
+	#	if (maskname.split(':')[0] != 'bdb' and BDB) or (maskname.split(':')[0] == 'bdb' and not BDB):
+	#	        ERROR('Both mask and stack must be on bdb format!', 'k-means groups', 1)
 	
 	if MPI:
 		from statistics import k_means_groups_MPI
