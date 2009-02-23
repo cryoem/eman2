@@ -597,7 +597,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					else:
 						tavg, cs = user_func(ref_data)
 						
-					if Iter == max_iter-1:
+					if Iter == max_iter-1 or again == 0:
 						drop_image(tavg, os.path.join(outdir, "aqc%02d_%02d_%04d.hdf"%(ipt, isav, Iter)))
 						#drop_image(tavg, os.path.join(outdir, "aqf_%05d.hdf"%(ipt*1000+isav)))
 					a1 = tavg.cmp("dot", tavg, dict(negative = 0, mask = ref_data[0]))
@@ -939,7 +939,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				else:
 					tavg, cs = user_func(ref_data)
 					
-				if Iter == max_iter-1:
+				if Iter == max_iter-1 or again == 0:
 					drop_image(tavg, os.path.join(outdir, "aqc%02d_%02d_%04d.hdf"%(ipt, color, Iter)))
 					#drop_image(tavg, os.path.join(outdir, "aqf_%05d.hdf"%(ipt*1000+isav)))
 				a1 = tavg.cmp("dot", tavg, dict(negative = 0, mask = ref_data[0]))
