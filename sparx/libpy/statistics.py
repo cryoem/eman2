@@ -1655,7 +1655,8 @@ def k_means_criterion(Cls, crit_name=''):
 				# Tr already compute in Crit['C']
 				for k in xrange(Cls['k']):	Je += Cls['Ji'][k]							
 				if Je > 0:
-					Crit['H'] = ((Crit['C'] / Je) / (Cls['k'] - 1)) / (Je / (N - Cls['k']))
+					Tr = Crit['C'] / Je
+					Crit['H'] = (Tr / (Cls['k'] - 1)) / (Je / (N - Cls['k']))
 				else:
 					Crit['H'] = 1e20				
 		
