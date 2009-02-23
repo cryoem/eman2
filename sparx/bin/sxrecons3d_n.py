@@ -56,6 +56,15 @@ def main():
 	parser.add_option("--MPI",     action="store_true", default=False, help="use MPI version ")
 	(options,args) = parser.parse_args(arglist[1:])
 
+
+	if options.MPI:
+		from mpi import mpi_init
+		sys.argv = mpi_init(len(sys.argv), sys.argv)
+
+		from utilities import init_mpi_bdb
+		init_mpi_bdb()	
+
+
 	if len(args) == 2:
 		prj_stack = args[0]
 		vol_stack = args[1]
@@ -77,13 +86,6 @@ def main():
 		pid_list = read_text_file(options.list, 0)
 		for i in xrange(len(pid_list)):  pid_list[i] = int(pid_list[i])
 	from applications import recons3d_n
-	if options.MPI:
-		from mpi import mpi_init
-		sys.argv = mpi_init(len(sys.argv), sys.argv)
-
-		from utilities import init_mpi_bdb
-		init_mpi_bdb()	
-
 
 	global_def.BATCH = True
 	recons3d_n(prj_stack, pid_list, vol_stack, options.CTF, options.snr, 1, options.npad, options.sym, options.verbose, options.MPI)
