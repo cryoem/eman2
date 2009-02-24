@@ -144,7 +144,7 @@ namespace EMAN
 		 * @param ny the number of pixels in the y direction
 		 * @param nz the number of pixels in the z direction
 		 */
-		EMData(float* data, const int nx, const int ny, const int nz);
+		EMData(float* data, const int nx, const int ny, const int nz, const Dict& attr_dict = Dict());
 
 		/** Construct from an EMData (copy constructor).
 		 * Performs a deep copy
@@ -843,6 +843,64 @@ namespace EMAN
 
 		/** This is a cached rotational footprint, can save much time */
 		mutable EMData* rot_fp;
+		
+		// Clip inplace variables is a local class used from convenience in EMData::clip_inplace
+		// Added by d.woolford
+		class ClipInplaceVariables
+		{
+			public:
+				ClipInplaceVariables(const int p_nx, const int p_ny, const int p_nz, const int n_nx, const int n_ny, const int n_nz,const int xtrans, const int ytrans, const int ztrans) :
+					prv_nx(p_nx), prv_ny(p_ny), prv_nz(p_nz), new_nx(n_nx), new_ny(n_ny), new_nz(n_nz), xshift(xtrans), yshift(ytrans), zshift(ztrans),
+				 x_iter(prv_nx), y_iter(prv_ny), z_iter(prv_nz), new_z_top(0), new_z_bottom(0),  new_y_back(0), new_y_front(0),new_x_left(0), new_x_right(0),
+				prv_z_top(0), prv_z_bottom(0), prv_y_back(0), prv_y_front(0), prv_x_left(0), prv_x_right(0)
+			{
+				if ( xtrans > 0 ) x_iter -= xtrans;
+				if ( x_iter < 0 ) x_iter = 0;
+				if ( ytrans > 0 ) y_iter -= ytrans;
+				if ( y_iter < 0 ) y_iter = 0;
+				if ( ztrans > 0 ) z_iter -= ztrans;
+				if ( z_iter < 0 ) z_iter = 0;
+
+				// Get the depth in the new volume where slices are inserted 
+				// if this value is zero it means that the last z-slice in the new
+				// volume contains image data
+				if ( (new_nz + ztrans) > prv_nz ) new_z_top = new_nz + ztrans - prv_nz;
+				if ( (new_ny + ytrans) > prv_ny ) new_y_back = new_ny + ytrans - prv_ny;
+				if ( (new_nx + xtrans) > prv_nx ) new_x_right = new_nx + xtrans - prv_nx;
+
+				if ( (new_nz + ztrans) < prv_nz )
+				{
+					prv_z_top = prv_nz - new_nz - ztrans;
+					z_iter -= prv_z_top;
+				}
+				if ( (new_ny + ytrans) < prv_ny )
+				{
+					prv_y_back = prv_ny - new_ny - ytrans;
+					y_iter -= prv_y_back;
+				}
+				if ( (new_nx + xtrans) < prv_nx )
+				{
+					prv_x_right = prv_nx - new_nx - xtrans;
+					x_iter -= prv_x_right;
+				}
+
+				if ( xtrans > 0 ) prv_x_left = xtrans;
+				if ( ytrans > 0 ) prv_y_front = ytrans;
+				if ( ztrans > 0 ) prv_z_bottom = ztrans;
+
+				if ( xtrans < 0 ) new_x_left = -xtrans;
+				if ( ytrans < 0 ) new_y_front = -ytrans;
+				if ( ztrans < 0 ) new_z_bottom = -ztrans;
+
+			}
+			~ClipInplaceVariables() {}
+
+			int prv_nx, prv_ny, prv_nz, new_nx, new_ny, new_nz;
+			int xshift, yshift, zshift;
+			int x_iter, y_iter, z_iter;
+			int new_z_top, new_z_bottom, new_y_back, new_y_front, new_x_left, new_x_right;
+			int prv_z_top, prv_z_bottom,  prv_y_back, prv_y_front, prv_x_left, prv_x_right;
+		};
 	};
 
 

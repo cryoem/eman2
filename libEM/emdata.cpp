@@ -62,18 +62,16 @@ using namespace boost;
 
 int EMData::totalalloc=0;		// mainly used for debugging/memory leak purposes
 
-EMData::EMData()
+EMData::EMData() :
+#ifdef EMAN2_USING_CUDA
+		cuda_array_handle(-1), cuda_rdata(0),
+#endif //EMAN2_USING_CUDA
+		attr_dict(), rdata(0), supp(0), flags(0), changecount(0), nx(0), ny(0), nz(0), nxy(0), xoff(0), yoff(0),
+		zoff(0), all_translation(),	path(""), pathnum(0), rot_fp(0)
+
 {
 	ENTERFUNC;
 
-	// Make the rotational footprint 0
-	rot_fp = 0;
-	
-	rdata = 0;
-	supp = 0;
-
-	flags =0;
-	// used to replace cube 'pixel'
 	attr_dict["apix_x"] = 1.0f;
 	attr_dict["apix_y"] = 1.0f;
 	attr_dict["apix_z"] = 1.0f;
@@ -81,32 +79,23 @@ EMData::EMData()
 	attr_dict["is_complex"] = int(0);
 	attr_dict["is_complex_x"] = int(0);
 	attr_dict["is_complex_ri"] = int(1);
-
-	changecount=0;
-
-	nx = 0;
-	ny = 0;
-	nz = 0;
-	xoff = yoff = zoff = 0;
 
 	EMData::totalalloc++;
 #ifdef MEMDEBUG
 	printf("EMDATA+  %4d    %p\n",EMData::totalalloc,this);
 #endif
-#ifdef EMAN2_USING_CUDA
-	cuda_array_handle = -1;
-	cuda_rdata = 0;
-#endif //EMAN2_USING_CUDA
-	EXITFUNC;
+
 }
 
 EMData::EMData(const string& filename, int image_index) :
-	rdata(0), supp(0), rot_fp(0)
+#ifdef EMAN2_USING_CUDA
+		cuda_array_handle(-1), cuda_rdata(0),
+#endif //EMAN2_USING_CUDA
+		attr_dict(), rdata(0), supp(0), flags(0), changecount(0), nx(0), ny(0), nz(0), nxy(0), xoff(0), yoff(0), zoff(0),
+		all_translation(),	path(filename), pathnum(image_index), rot_fp(0)
 {
 	ENTERFUNC;
 
-	flags =0;
-	// used to replace cube 'pixel'
 	attr_dict["apix_x"] = 1.0f;
 	attr_dict["apix_y"] = 1.0f;
 	attr_dict["apix_z"] = 1.0f;
@@ -115,21 +104,7 @@ EMData::EMData(const string& filename, int image_index) :
 	attr_dict["is_complex_x"] = int(0);
 	attr_dict["is_complex_ri"] = int(1);
 
-	changecount=0;
-
-	nx = 0;
-	ny = 0;
-	nz = 0;
-	nxy = 0;
-
-	xoff = yoff = zoff = 0;
-	
 	this->read_image(filename, image_index);
-	
-#ifdef EMAN2_USING_CUDA
-	cuda_array_handle = -1;
-	cuda_rdata = 0;
-#endif //EMAN2_USING_CUDA
 	
 	EMData::totalalloc++;
 	
@@ -137,49 +112,23 @@ EMData::EMData(const string& filename, int image_index) :
 }
 
 EMData::EMData(const EMData& that) :
-	rdata(0), supp(0)
+#ifdef EMAN2_USING_CUDA
+		cuda_array_handle(-1), cuda_rdata(0),
+#endif //EMAN2_USING_CUDA
+		attr_dict(that.attr_dict), rdata(0), supp(0), flags(that.flags), changecount(0), nx(0), ny(0), nz(0), 
+		nxy(0), xoff(that.xoff), yoff(that.yoff), zoff(that.zoff),all_translation(that.all_translation),	path(that.path),
+		pathnum(that.pathnum), rot_fp(0)
 {
 	ENTERFUNC;
 
-// 	cout << "Calling copy constructor" << endl;
-	nx = that.nx;
-	ny = that.ny;
-	nz = that.nz;
-	nxy = that.nxy;
-	
-	// Only copy the rdata if it exists, we could be in a scenario where only the header has been read
 	if (that.rdata)
 	{
 		set_size(that.nx, that.ny, that.nz);
 		EMUtil::em_memcpy(rdata, that.rdata, nx * ny * nz * sizeof(float));
 	}
-	
-	flags = that.flags;
-	all_translation = that.all_translation;
-	path = that.path;
-	pathnum = that.pathnum;
-	attr_dict = that.attr_dict;
-	
-	xoff = that.xoff;
-	yoff = that.yoff;
-	zoff = that.zoff;
-
-	changecount = 0;
-	
-	update();
 
 	if (that.rot_fp != 0) rot_fp = new EMData(*(that.rot_fp));
-	else {
-// 		if (rot_fp != 0 ) {
-// 			delete rot_fp;
-// 			rot_fp = 0; 
-// 		}
-		rot_fp = 0;
-	}
-#ifdef EMAN2_USING_CUDA
-	cuda_array_handle = -1;
-	cuda_rdata = 0;
-#endif //EMAN2_USING_CUDA
+
 	
 	EMData::totalalloc++;
 	
@@ -190,22 +139,16 @@ EMData& EMData::operator=(const EMData& that)
 {
 	ENTERFUNC;
 	
-// 	cout << "Calling assignment op" << endl;
-	
 	if ( this != &that )
 	{
-		free_memory();
-		
-		nx = that.nx;
-		ny = that.ny;
-		nz = that.nz;
-		nxy = that.nxy;
+		free_memory(); // Free memory sets nx,ny and nz to 0
 		
 		// Only copy the rdata if it exists, we could be in a scenario where only the header has been read
-		if (that.rdata)
+		float* data = that.get_data();
+		if (data)
 		{
 			set_size(that.nx, that.ny, that.nz);
-			EMUtil::em_memcpy(rdata, that.rdata, nx * ny * nz * sizeof(float));
+			EMUtil::em_memcpy(data, that.rdata, nx * ny * nz * sizeof(float));
 		}
 
 		flags = that.flags;
@@ -219,14 +162,14 @@ EMData& EMData::operator=(const EMData& that)
 		xoff = that.xoff;
 		yoff = that.yoff;
 		zoff = that.zoff;
+		
 #ifdef EMAN2_USING_CUDA
+		// TODO This probably has to change to potential copying
 		free_cuda_array();
 		free_cuda_memory();
 #endif //EMAN2_USING_CUDA
 
 		changecount = that.changecount;
-
-		update();
 		
 		if (that.rot_fp != 0) rot_fp = new EMData(*(that.rot_fp));
 		else rot_fp = 0;
@@ -237,22 +180,20 @@ EMData& EMData::operator=(const EMData& that)
 	return *this;
 }
 
-EMData::EMData(int nx, int ny, int nz, bool is_real)
+EMData::EMData(int nx, int ny, int nz, bool is_real) :
+#ifdef EMAN2_USING_CUDA
+		cuda_array_handle(-1), cuda_rdata(0),
+#endif //EMAN2_USING_CUDA
+		attr_dict(), rdata(0), supp(0), flags(0), changecount(0), nx(0), ny(0), nz(0), nxy(0), xoff(0), yoff(0), zoff(0),
+		all_translation(),	path(""), pathnum(0), rot_fp(0)
 {
 	ENTERFUNC;
-	
-	rot_fp = 0;
-	rdata = 0;
-	supp = 0;
 
-	flags =0;
 	// used to replace cube 'pixel'
 	attr_dict["apix_x"] = 1.0f;
 	attr_dict["apix_y"] = 1.0f;
 	attr_dict["apix_z"] = 1.0f;
-	xoff = yoff = zoff = 0;
 
-	changecount=0;
 	
 	if(is_real) {	// create a real image [nx, ny, nz]
 		attr_dict["is_complex"] = int(0);
@@ -282,46 +223,30 @@ EMData::EMData(int nx, int ny, int nz, bool is_real)
 	}
 	
 	this->to_zero();
-#ifdef EMAN2_USING_CUDA
-	cuda_array_handle = -1;
-	cuda_rdata = 0;
-#endif //EMAN2_USING_CUDA
-	
+
 	EMData::totalalloc++;
 	
 	EXITFUNC;
 }
 
 
-EMData::EMData(float* data, const int x, const int y, const int z) :
-	rdata(data), nx(x), ny(y), nz(z)
+EMData::EMData(float* data, const int x, const int y, const int z, const Dict& attr_dict) :
+#ifdef EMAN2_USING_CUDA
+		cuda_array_handle(-1), cuda_rdata(0),
+#endif //EMAN2_USING_CUDA
+		attr_dict(attr_dict), rdata(data), supp(0), flags(0), changecount(0), nx(x), ny(y), nz(z), nxy(x*y), xoff(0),
+		yoff(0), zoff(0), all_translation(), path(""), pathnum(0), rot_fp(0)
 {
 	ENTERFUNC;
-	
-	rot_fp = 0;
-	//rdata = 0;
-	supp = 0;
 
-	flags =0;
 	// used to replace cube 'pixel'
 	attr_dict["apix_x"] = 1.0f;
 	attr_dict["apix_y"] = 1.0f;
 	attr_dict["apix_z"] = 1.0f;
-	xoff = yoff = zoff = 0;
 
-	changecount=0;
-	
-	/*
-	rdata = data;
-	nx = x; ny = y; nz = z;
-	*/
-	nxy = nx*ny;
-	
-#ifdef EMAN2_USING_CUDA
-	cuda_array_handle = -1;
-	cuda_rdata = 0;
-#endif //EMAN2_USING_CUDA
 	EMData::totalalloc++;
+	
+	cout << "from constructor " << rdata << endl;
 	
 	update();
 	EXITFUNC;
@@ -345,66 +270,6 @@ EMData::~EMData()
 #endif
 	EXITFUNC;
 }
-
-// Clip inplace variables is a local class used from convenience in EMData::clip_inplace
-// Added by d.woolford
-class ClipInplaceVariables
-{
-public:
-	ClipInplaceVariables(const int p_nx, const int p_ny, const int p_nz, const int n_nx, const int n_ny, const int n_nz,
-		const int xtrans, const int ytrans, const int ztrans) :
-	prv_nx(p_nx), prv_ny(p_ny), prv_nz(p_nz), new_nx(n_nx), new_ny(n_ny), new_nz(n_nz), xshift(xtrans), yshift(ytrans), zshift(ztrans),
-	x_iter(prv_nx), y_iter(prv_ny), z_iter(prv_nz), new_z_top(0), new_z_bottom(0),  new_y_back(0), new_y_front(0),new_x_left(0), new_x_right(0),
-	prv_z_top(0), prv_z_bottom(0), prv_y_back(0), prv_y_front(0), prv_x_left(0), prv_x_right(0)
-	{
-		if ( xtrans > 0 ) x_iter -= xtrans;
-		if ( x_iter < 0 ) x_iter = 0;
-		if ( ytrans > 0 ) y_iter -= ytrans;
-		if ( y_iter < 0 ) y_iter = 0;
-		if ( ztrans > 0 ) z_iter -= ztrans;
-		if ( z_iter < 0 ) z_iter = 0;
-
-		// Get the depth in the new volume where slices are inserted 
-		// if this value is zero it means that the last z-slice in the new
-		// volume contains image data
-		if ( (new_nz + ztrans) > prv_nz ) new_z_top = new_nz + ztrans - prv_nz;
-		if ( (new_ny + ytrans) > prv_ny ) new_y_back = new_ny + ytrans - prv_ny;
-		if ( (new_nx + xtrans) > prv_nx ) new_x_right = new_nx + xtrans - prv_nx;
-
-		if ( (new_nz + ztrans) < prv_nz )
-		{
-			prv_z_top = prv_nz - new_nz - ztrans;
-			z_iter -= prv_z_top;
-		}
-		if ( (new_ny + ytrans) < prv_ny )
-		{
-			prv_y_back = prv_ny - new_ny - ytrans;
-			y_iter -= prv_y_back;
-		}
-		if ( (new_nx + xtrans) < prv_nx )
-		{
-			prv_x_right = prv_nx - new_nx - xtrans;
-			x_iter -= prv_x_right;
-		}
-
-		if ( xtrans > 0 ) prv_x_left = xtrans;
-		if ( ytrans > 0 ) prv_y_front = ytrans;
-		if ( ztrans > 0 ) prv_z_bottom = ztrans;
-
-		if ( xtrans < 0 ) new_x_left = -xtrans;
-		if ( ytrans < 0 ) new_y_front = -ytrans;
-		if ( ztrans < 0 ) new_z_bottom = -ztrans;
-
-	}
-	~ClipInplaceVariables() {}
-
-	int prv_nx, prv_ny, prv_nz, new_nx, new_ny, new_nz;
-	int xshift, yshift, zshift;
-	int x_iter, y_iter, z_iter;
-	int new_z_top, new_z_bottom, new_y_back, new_y_front, new_x_left, new_x_right;
-	int prv_z_top, prv_z_bottom,  prv_y_back, prv_y_front, prv_x_left, prv_x_right;
-};
-
 
 void EMData::clip_inplace(const Region & area)
 {

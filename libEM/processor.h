@@ -1248,6 +1248,8 @@ The basic design of EMAN Processors: <br>\
 		private:
 			float* transform(const EMData* const image, const Transform& t);
 			
+			void update_emdata_attributes(EMData* const image, const Dict& attr_dict, const float& scale);
+			
 			
 			void assert_valid_aspect(const EMData* const image);
 	};

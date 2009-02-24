@@ -7034,6 +7034,34 @@ void TransformProcessor::assert_valid_aspect(const EMData* const image) {
 	if (t == 0) throw InvalidParameterException("You must specify a Transform in order to perform this operation");
 }
 
+void TransformProcessor::update_emdata_attributes(EMData* const p, const Dict& attr_dict, const float& scale) {
+	
+	float inv_scale = 1.0f/scale;
+	vector<string> inv_scale_attrs;
+	inv_scale_attrs.push_back("origin_row");
+	inv_scale_attrs.push_back("origin_col");
+	inv_scale_attrs.push_back("origin_sec");
+	
+	for(vector<string>::const_iterator it = inv_scale_attrs.begin(); it != inv_scale_attrs.end(); ++it) {
+		if (attr_dict.has_key(*it)) {
+			p->set_attr(*it,(float) attr_dict[*it] * inv_scale);
+		}
+	}
+	
+	vector<string> scale_attrs;
+	scale_attrs.push_back("apix_x");
+	scale_attrs.push_back("apix_y");
+	scale_attrs.push_back("apix_z");
+	
+	
+	for(vector<string>::const_iterator it = scale_attrs.begin(); it != scale_attrs.end(); ++it) {
+		if (attr_dict.has_key(*it)) {
+			p->set_attr(*it,(float) attr_dict[*it] * scale);
+		}
+	}
+		
+}
+
 EMData* TransformProcessor::process(const EMData* const image) {
 	ENTERFUNC;
 
@@ -7042,17 +7070,13 @@ EMData* TransformProcessor::process(const EMData* const image) {
 	Transform* t = params["transform"];
 
 	float* des_data = transform(image,*t);
-	EMData* p = new EMData(des_data,image->get_xsize(),image->get_ysize(),image->get_zsize());
+	EMData* p = new EMData(des_data,image->get_xsize(),image->get_ysize(),image->get_zsize(),image->get_attr_dict());
+	
 	// 	all_translation += transform.get_trans();
 
 	float scale = t->get_scale();
 	if (scale != 1.0) {
-		Dict attr_dict = image->get_attr_dict();
-		float inv_scale = 1.0f/scale;
-		attr_dict["origin_row"] = (float) attr_dict["origin_row"] * inv_scale;
-		attr_dict["origin_col"] = (float) attr_dict["origin_col"] * inv_scale;
-		attr_dict["origin_sec"] = (float) attr_dict["origin_sec"] * inv_scale;
-		p->set_attr_dict(attr_dict); // This adds new values, keeping originals.
+		update_emdata_attributes(p,image->get_attr_dict(),scale);
 	}
 
 	return p;
@@ -7075,13 +7099,7 @@ void TransformProcessor::process_inplace(EMData* image) {
 
 	float scale = t->get_scale();
 	if (scale != 1.0) {
-		Dict attr = image->get_attr_dict();
-		Dict attr_dict;
-		float inv_scale = 1.0f/scale;
-		attr_dict["origin_row"] = (float) attr["origin_row"] * inv_scale;
-		attr_dict["origin_col"] = (float) attr["origin_col"] * inv_scale;
-		attr_dict["origin_sec"] = (float) attr["origin_sec"] * inv_scale;
-		image->set_attr_dict(attr_dict); // This adds new values, keeping originals.
+		update_emdata_attributes(image,image->get_attr_dict(),scale);
 	}
 
 	image->update();

@@ -198,7 +198,6 @@ float* EMData::get_data() const
 		rdata = (float*)EMUtil::em_malloc(num_bytes);
 	}
 #ifdef EMAN2_USING_CUDA
-
 	if (cuda_rdata != 0 && (EMDATA_CPU_NEEDS_UPDATE & flags)) {
 		
 		cudaMemcpy(rdata,cuda_rdata,num_bytes,cudaMemcpyDeviceToHost);

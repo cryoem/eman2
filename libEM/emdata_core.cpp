@@ -57,7 +57,6 @@ void EMData::free_memory()
 
 	if (supp) {
 		EMUtil::em_free(supp);
-// 		free(supp);
 		supp = 0;
 	}
 	
@@ -66,6 +65,11 @@ void EMData::free_memory()
 		delete rot_fp;
 		rot_fp = 0;
 	}
+	
+	nx = 0;
+	ny = 0;
+	nz = 0;
+	nxy = 0;
 
 	EXITFUNC;
 }
