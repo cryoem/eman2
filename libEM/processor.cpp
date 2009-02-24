@@ -7954,50 +7954,106 @@ void ZGradientProcessor::process_inplace( EMData* image )
  */
 #ifdef EMAN2_USING_CUDA
 CUDA_kmeans::CUDA_kmeans() {
-	h_IM = NULL;
-	h_PART = NULL;
-	h_INFO = NULL;
-	SEQ_INFO = 6;
+    h_IM = NULL;
+    h_AVE = NULL;
+    h_ASG = NULL;
+    h_INFO = NULL;
+    rnd = 0;
 }
 	
 CUDA_kmeans::~CUDA_kmeans() {
-	free(h_IM);
-	free(h_AVE);
-	free(h_PART);
-	free(h_INFO);
+    if (h_IM) delete h_IM;
+    if (h_ASG) delete h_ASG;
+    if (h_INFO) delete h_INFO;
+    if (h_AVE) delete h_AVE;
 }
 
-int CUDA_kmeans::setup(int extm, int extN, int extK, float extF, int extnbpart, int extmaxite) {
-	m = extm;				// number of pixels per image
-	N = extN;				// number of images
-	K = extK;				// number of classes
-	F = extF;				// value of the cooling factor
-	maxite = extmaxite;		        // maximum number of iteration
-	nb_part = extnbpart;	                // number of partitions
+int CUDA_kmeans::setup(int extm, int extN, int extK, float extF, int extmaxite) {
+    m = extm;				// number of pixels per image
+    N = extN;				// number of images
+    K = extK;				// number of classes
+    F = extF;				// value of the cooling factor
+    maxite = extmaxite;		        // maximum number of iteration
 		
-	// Host memory allocation for images
-	h_IM = (float*)malloc(m * N * sizeof(float));
-	if (h_IM == 0) return 0; 
-	// Host memory allocation for all assignment
-	h_PART = (unsigned short int*)malloc(N * nb_part * sizeof(unsigned short int));
-	if (h_PART == 0) return 0;
-	// Host memory allocation for info about partition
-	h_INFO = (float*)malloc(nb_part * SEQ_INFO * sizeof(float));
-	if (h_INFO == 0) return 0;
-	
-	return 1;
+    // Host memory allocation for images
+    h_IM = (float*)malloc(m * N * sizeof(float));
+    if (h_IM == 0) return 1;
+    // Host memory allocation for the averages
+    h_AVE = (float*)malloc(m * K * sizeof(float));
+    if (h_AVE == 0) return 1;
+    // Host memory allocation for all assignment
+    h_ASG = (unsigned short int*)malloc(N * sizeof(unsigned short int));
+    if (h_ASG == 0) return 1;
+    // Host memory allocation for info about partition
+    h_INFO = (float*)malloc(6 * sizeof(float));
+    if (h_INFO == 0) return 1;
+    /* DATA STRUCTURE OF INFO
+     * SEQ INFO = [Je, Coleman, Davies-Bouldin, Harabasz, number of iterations, running time]
+     */
+    return 0;
 }
 
 // add image pre-process by Util.compress_image_mask
 void CUDA_kmeans::append_flat_image(EMData* im, int pos) {
-	for (int i = 0; i < m ; ++i) h_IM[pos * m + i] = (*im)(i);
+    for (int i = 0; i < m ; ++i) h_IM[pos * m + i] = (*im)(i);
 }
 
 // cuda k-means core
-// #include "sparx/cuda/cuda_kmeans.h"
+#include "sparx/cuda/cuda_kmeans.h"
 int CUDA_kmeans::kmeans() {
-	return 1;
-		
+    return cuda_kmeans(h_IM, h_AVE, h_ASG, h_INFO, N, m, K, maxite, F, rnd);	
+}
+
+// change the value of K
+void CUDA_kmeans::set_K(int valK) {
+    if (h_AVE) delete h_AVE;
+    K = valK;
+    h_AVE = (float*)malloc(m * K * sizeof(float));
+}
+
+// change the value of the random seed
+void CUDA_kmeans::set_rnd(int valrnd) {
+    rnd = valrnd;
+}
+
+// get back the averages
+vector<EMData*> CUDA_kmeans::get_averages() {
+    vector<EMData*> ave(K);
+    
+    for (int k = 0; k < K; ++k) {
+	EMData* im = new EMData();
+	im->set_size(m, 1, 1);
+	for (int i = 0; i < m; ++i) {
+	    im->set_value_at(i, h_AVE[k * m + i]);
+	}
+	ave[k] = im->copy();
+	delete im;
+    }
+
+    return ave;
+}
+
+
+// get back the assignment for each partition
+vector <int> CUDA_kmeans::get_partition() {
+    vector <int> PART(N);
+    for (int i = 0; i < N; ++i) PART[i] = (int)h_ASG[i];
+    return PART;
+}
+
+// get back informations about the partition for each classification
+Dict CUDA_kmeans::get_info() {
+    /* DATA STRUCTURE OF INFO
+     * SEQ INFO = [Je, Coleman, Davies-Bouldin, Harabasz, number of iterations, running time]
+     */
+    Dict INFO;
+    INFO["Je"] = h_INFO[0];
+    INFO["C"] = h_INFO[1];
+    INFO["DB"] = h_INFO[2];
+    INFO["H"] = h_INFO[3];
+    INFO["noi"] = h_INFO[4];
+    INFO["time"] = h_INFO[5];
+    return INFO;
 }
 
 #endif //EMAN2_USING_CUDA	

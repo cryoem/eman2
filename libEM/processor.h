@@ -5750,9 +5750,14 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	public:
 		CUDA_kmeans();
 		~CUDA_kmeans();
-		int setup(int  extm, int extN, int extK, float extF, int extnbpart, int extmaxite);
+		int setup(int  extm, int extN, int extK, float extF, int extmaxite);
 		void append_flat_image(EMData* im, int pos);
 		int kmeans();
+		vector<EMData*> get_averages();
+		vector<int> get_partition();
+		void set_K(int valK);
+		void set_rnd(int valrnd);
+		Dict get_info();
 	private:
 		// params
 		int m;
@@ -5761,13 +5766,12 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		int maxite;
 		int nb_part;
 		float F;
+		int rnd;
 		// host memory
 		float* h_IM;
 		float* h_INFO;
 		float* h_AVE;
-		unsigned short int* h_PART;
-		// const about info structure
-		int SEQ_INFO;
+		unsigned short int* h_ASG;
 	};
 #endif //EMAN2_USING_CUDA
 	
