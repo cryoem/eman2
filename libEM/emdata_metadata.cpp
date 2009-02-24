@@ -188,6 +188,27 @@ EMData* EMData::get_fft_phase()
 	EXITFUNC;
 	return dat;
 }
+#ifdef EMAN2_USING_CUDA
+#include <cuda_runtime_api.h>
+#endif
+float* EMData::get_data() const 
+{
+	size_t num_bytes = nx*ny*nz*sizeof(float);
+	if (rdata == 0) {
+		rdata = (float*)EMUtil::em_malloc(num_bytes);
+	}
+#ifdef EMAN2_USING_CUDA
+
+	if (cuda_rdata != 0 && (EMDATA_CPU_NEEDS_UPDATE & flags)) {
+		
+		cudaMemcpy(rdata,cuda_rdata,num_bytes,cudaMemcpyDeviceToHost);
+	}
+	
+	flags &= ~EMDATA_CPU_NEEDS_UPDATE;
+#endif
+	return rdata; 
+
+}
 
 void EMData::write_data(string fsp,size_t loc) {
 	FILE *f = 0;
@@ -937,8 +958,13 @@ void EMData::set_attr_dict(const Dict & new_dict)
 	vector<string> new_keys = new_dict.keys();
 	vector<string>::const_iterator it;
 	for(it = new_keys.begin(); it!=new_keys.end(); ++it) {
-			this->set_attr(*it, new_dict[*it]);
+		this->set_attr(*it, new_dict[*it]);
 	}
+}
+
+void EMData::set_attr_dict_explicit(const Dict & new_dict)
+{
+	attr_dict = new_dict;
 }
 
 void EMData::del_attr(const string & attr_name)

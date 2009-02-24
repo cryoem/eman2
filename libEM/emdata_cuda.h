@@ -69,7 +69,7 @@ private:
 	mutable int cuda_array_handle;
 	mutable float* cuda_rdata;
 	
-	//void update_stat_gpu() const;
+	void gpu_update();
 
 #endif // EMAN2_USING_CUDA
 	

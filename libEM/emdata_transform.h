@@ -58,6 +58,11 @@ EMData *do_fft() const;
  */
 EMData *do_fft_cuda() const;
 
+/**  return the inverse fourier transform (IFT) image of the current
+ * image. The result exists only on the GPU
+ * @return The FFT of the current image in real/imaginary format, existing on the GPU.
+ */
+EMData *do_ift_cuda() const;
 #endif //EMAN2_USING_CUDA
 
 

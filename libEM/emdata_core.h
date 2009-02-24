@@ -187,7 +187,7 @@ void set_col(const EMData * data, int col_index);
  */
 inline float get_value_at(int x, int y, int z) const
 {
-	return rdata[x + y * nx + z * nxy];
+	return get_data()[x + y * nx + z * nxy];
 }
 
 		
@@ -200,7 +200,7 @@ inline float get_value_at(int x, int y, int z) const
  */
 inline float get_value_at(int x, int y) const
 {
-	return rdata[x + y * nx];
+	return get_data()[x + y * nx];
 }
 
 
@@ -213,7 +213,7 @@ inline float get_value_at(int x, int y) const
  */
 inline float get_value_at(size_t i) const
 {
-	return rdata[i];
+	return get_data()[i];
 }
 
 
@@ -331,7 +331,7 @@ inline void set_value_at(int x, int y, int z, float v)
 	}
 	else
 	{
-		rdata[x + y * nx + z * nxy] = v;
+		get_data()[x + y * nx + z * nxy] = v;
 		flags |= EMDATA_NEEDUPD;
 		changecount++;
 	}
@@ -349,7 +349,7 @@ inline void set_value_at(int x, int y, int z, float v)
  */
 inline void set_value_at_fast(int x, int y, int z, float v)
 {
-	rdata[x + y * nx + z * nxy] = v;
+	get_data()[x + y * nx + z * nxy] = v;
 	flags |= EMDATA_NEEDUPD;
 	changecount++;
 }
@@ -375,7 +375,7 @@ inline void set_value_at(int x, int y, float v)
 	}
 	else
 	{
-		rdata[x + y * nx] = v;
+		get_data()[x + y * nx] = v;
 		flags |= EMDATA_NEEDUPD;
 		changecount++;
 	}
@@ -391,7 +391,7 @@ inline void set_value_at(int x, int y, float v)
  */
 inline void set_value_at_fast(int x, int y, float v)
 {
-	rdata[x + y * nx] = v;
+	get_data()[x + y * nx] = v;
 	flags |= EMDATA_NEEDUPD;
 	changecount++;
 }
@@ -412,7 +412,7 @@ inline void set_value_at(int x, float v)
 	}
 	else
 	{
-		rdata[x] = v;
+		get_data()[x] = v;
 		flags |= EMDATA_NEEDUPD;
 		changecount++;
 	}
@@ -426,7 +426,7 @@ inline void set_value_at(int x, float v)
  */
 inline void set_value_at_fast(int x, float v)
 {
-	rdata[x] = v;
+	get_data()[x] = v;
 	flags |= EMDATA_NEEDUPD;
 	changecount++;
 }
@@ -456,7 +456,7 @@ inline float& operator()(const int ix, const int iy, const int iz) const {
 		throw OutofRangeException(0, nx*ny*nz-1, pos, "EMData");
 	}
 #endif // BOUNDS_CHECKING
-	return *(rdata + pos);
+	return *(get_data() + pos);
 }
 
 inline float& operator()(const int ix, const int iy) const {
@@ -467,7 +467,7 @@ inline float& operator()(const int ix, const int iy) const {
 		throw OutofRangeException(0, nx*ny*nz-1, pos, "EMData");
 	}
 #endif // BOUNDS_CHECKING
-	return *(rdata + pos);
+	return *(get_data() + pos);
 }
 
 
@@ -477,7 +477,7 @@ inline float& operator()(const int ix) const {
 	if (pos < 0 || pos >= nx*ny*nz)
 		throw OutofRangeException(0, nx*ny*nz-1, pos, "EMData");
 #endif // BOUNDS_CHECKING
-	return *(rdata + pos);
+	return *(get_data() + pos);
 }
 		
 
@@ -509,7 +509,7 @@ std::complex<float>& cmplx(const int ix, const int iy, const int iz) {
 	if (pos < 0 || pos >= nx*ny*nz)
 		throw OutofRangeException(0, nx*ny*nz-1, pos, "EMData");
 #endif // BOUNDS_CHECKING
-	float* begin = rdata + pos;
+	float* begin = get_data() + pos;
 	return *(reinterpret_cast<std::complex<float>* >(begin));
 }
 
@@ -520,7 +520,7 @@ std::complex<float>& cmplx(const int ix, const int iy) {
 	if (pos < 0 || pos >= nx*ny*nz)
 		throw OutofRangeException(0, nx*ny*nz-1, pos, "EMData");
 #endif // BOUNDS_CHECKING
-	float* begin = rdata + pos;
+	float* begin = get_data() + pos;
 	return *(reinterpret_cast<std::complex<float>* >(begin));
 }
 
@@ -531,7 +531,7 @@ std::complex<float>& cmplx(const int ix) {
 	if (pos < 0 || pos >= nx*ny*nz)
 		throw OutofRangeException(0, nx*ny*nz-1, pos, "EMData");
 #endif // BOUNDS_CHECKING
-	float* begin = rdata + pos;
+	float* begin = get_data() + pos;
 	return *(reinterpret_cast<std::complex<float>* >(begin));
 }
 

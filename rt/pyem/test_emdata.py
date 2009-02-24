@@ -1577,7 +1577,7 @@ class TestEMData(unittest.TestCase):
         e2 = EMData()
         e2.set_size(32,32,1)
         e2.process_inplace("testimage.noise.uniform.rand")
-        e.dot_rotate_translate(e2, 2.0, 3.0, 1.0)
+        e.dot_rotate_translate(e2, 2.0, 3.0, 1.0,False)
         
         if(IS_TEST_EXCEPTION):
             #two image must be the same size
@@ -1587,7 +1587,7 @@ class TestEMData(unittest.TestCase):
             e4 = EMData()
             e4.set_size(24,24,1)
             e4.process_inplace("testimage.noise.uniform.rand")
-            self.assertRaises( RuntimeError, e3.dot_rotate_translate, e4, 2.0, 3.0, 1.0)
+            self.assertRaises( RuntimeError, e3.dot_rotate_translate, e4, 2.0, 3.0, 1.0,False)
             try:
                 e3.dot_rotate_translate(e4, 2.0, 3.0, 1.0)
             except RuntimeError, runtime_err:
@@ -1600,9 +1600,9 @@ class TestEMData(unittest.TestCase):
             e6 = EMData()
             e6.set_size(32,32,32)
             e6.process_inplace("testimage.noise.uniform.rand")
-            self.assertRaises( RuntimeError, e5.dot_rotate_translate, e6, 2.0, 3.0, 1.0)
+            self.assertRaises( RuntimeError, e5.dot_rotate_translate, e6, 2.0, 3.0, 1.0,False)
             try:
-                e5.dot_rotate_translate(e6, 2.0, 3.0, 1.0)
+                e5.dot_rotate_translate(e6, 2.0, 3.0, 1.0,False)
             except RuntimeError, runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
         

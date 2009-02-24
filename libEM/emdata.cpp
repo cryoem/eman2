@@ -1892,9 +1892,7 @@ EMData *EMData::make_rotational_footprint( bool unwrap) {
 	EMData* ccf = this->calc_ccf(this);
 	ccf->sub(ccf->get_edge_mean());
 	ccf->process_inplace("xform.phaseorigin.tocenter");
-	cout << "unwrapping" << endl;
 	EMData *result = ccf->unwrap();
-	cout << "done" << endl;
 	delete ccf; ccf = 0;
 
 	EXITFUNC;
@@ -2797,7 +2795,7 @@ void EMData::update_stat() const
 	
 #ifdef EMAN2_USING_CUDA
 	free_cuda_array();
-	free_cuda_memory();
+// 	free_cuda_memory();
 #endif // EMAN2_USING_CUDA
 	
 	EXITFUNC;

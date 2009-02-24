@@ -66,8 +66,7 @@ EMData *get_fft_phase();
 /** Get the image pixel density data in a 1D float array.
  * @return The image pixel density data.
  */
-inline float *get_data() const { return rdata; }
-
+float *get_data() const;
 /** Get the image pixel density data in a 1D float array - const version of get_data
  * @return The image pixel density data.
  */
@@ -110,7 +109,7 @@ void read_data(string fsp,size_t loc);
 /** Mark EMData as changed, statistics, etc will be updated at need.*/
 inline void update()
 {
-	flags |= EMDATA_NEEDUPD;
+	flags |= EMDATA_NEEDUPD | EMDATA_GPU_NEEDS_UPDATE | EMDATA_GPU_RO_NEEDS_UPDATE;
 	changecount++;
 }
 
@@ -518,6 +517,7 @@ Dict get_attr_dict() const;
  * @param new_dict The new attribute dictionary.
  */
 void set_attr_dict(const Dict & new_dict);
+
 
 
 /** Delete the attribute from dictionary.
@@ -942,6 +942,13 @@ int get_supp_pickle() const;
 
 void set_supp_pickle(int i);
 
+private:
+/** Make the attributes of this EMData exactly equal to the argument dictionary
+ * Originally introduced because set_attr_dict does automatic resizing, which is undersirable in some
+ * circumstances
+ * @param new_dict The attribute dictionary that will become this image's attribute dictionary.
+ */
+void set_attr_dict_explicit(const Dict & new_dict);
 
 /*****************************************************************************/
 

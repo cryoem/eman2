@@ -804,7 +804,10 @@ namespace EMAN
 			EMDATA_PAD = 1 << 8,       // is the image fft padded
 			EMDATA_FFTODD = 1 << 9,	   // is the (real-space) nx odd
 			EMDATA_SHUFFLE = 1 << 10,  // fft been shuffled? (so O is centered) PRB
-			EMDATA_FH = 1 << 11        // is the complex image a FH image
+			EMDATA_FH = 1 << 11,        // is the complex image a FH image
+			EMDATA_CPU_NEEDS_UPDATE = 1 << 12, // CUDA related: is the CPU version of the image out out data
+			EMDATA_GPU_NEEDS_UPDATE = 1 << 13, // CUDA related: is the GPU version of the image out out data
+			EMDATA_GPU_RO_NEEDS_UPDATE = 1 << 14 // // CUDA related: is the GPU RO version of the image out out data
 		};
 
 		void update_stat() const;
@@ -814,7 +817,7 @@ namespace EMAN
 		/** to store all image header info */
 		mutable Dict attr_dict;
 		/** image real data */
-		float *rdata;
+		mutable float *rdata;
 		/** supplementary data array */
 		float *supp;
 

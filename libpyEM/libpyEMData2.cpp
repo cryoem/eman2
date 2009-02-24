@@ -291,12 +291,13 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("project", (EMAN::EMData* (EMAN::EMData::*)(const std::string&, const EMAN::Transform&) )&EMAN::EMData::project, return_value_policy< manage_new_object >() )
 	.def("backproject", &EMAN::EMData::backproject, EMAN_EMData_backproject_overloads_1_2()[ return_value_policy< manage_new_object >() ])
 	.def("do_fft", &EMAN::EMData::do_fft, return_value_policy< manage_new_object >())
-#ifdef EMAN2_USING_CUDA
-	.def("do_fft_cuda", &EMAN::EMData::do_fft_cuda, return_value_policy< manage_new_object >())
-#endif // EMAN2_USING_CUDA
 	.def("do_fft_inplace", &EMAN::EMData::do_fft_inplace, return_value_policy< reference_existing_object >())
 	.def("do_ift", &EMAN::EMData::do_ift, return_value_policy< manage_new_object >())
 	.def("do_ift_inplace", &EMAN::EMData::do_ift_inplace, return_value_policy< reference_existing_object >())
+#ifdef EMAN2_USING_CUDA
+	.def("do_fft_cuda", &EMAN::EMData::do_fft_cuda, return_value_policy< manage_new_object >())
+	.def("do_ift_cuda", &EMAN::EMData::do_ift_cuda, return_value_policy< manage_new_object >())
+#endif // EMAN2_USING_CUDA
 	.def("render_amp8", &EMAN::EMData::render_amp8)
 	.def("render_ap24", &EMAN::EMData::render_ap24)
 	.def("ri2ap", &EMAN::EMData::ri2ap)

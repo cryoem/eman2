@@ -42,17 +42,25 @@ using namespace EMAN;
 
 float* EMData::get_cuda_data() const {
 	device_init();
-	update_stat(); // This will delete the cuda pointer, i.e. if it's out of date
+
+	size_t num_bytes = nx*ny*nz*sizeof(float);
 	if (cuda_rdata == 0) {
-		size_t num_bytes = nx*ny*nz*sizeof(float);
 		cudaMalloc((void**)&cuda_rdata,num_bytes);
-		if (rdata != 0) { // If rdata is zero it means we're working exclusively on the GPU
-			cudaMemcpy(cuda_rdata,rdata,num_bytes,cudaMemcpyHostToDevice);
-		}
 	}
+	
+	if (rdata != 0 && (EMDATA_GPU_NEEDS_UPDATE & flags)) { // If rdata is zero it means we're working exclusively on the GPU
+		cudaMemcpy(cuda_rdata,rdata,num_bytes,cudaMemcpyHostToDevice);
+	}
+	
+	flags &= ~EMDATA_GPU_NEEDS_UPDATE;
+	
 	return cuda_rdata;
 }
 
+
+void EMData::gpu_update() {
+	flags |= EMDATA_NEEDUPD | EMDATA_CPU_NEEDS_UPDATE | EMDATA_GPU_RO_NEEDS_UPDATE;
+}
 
 void EMData::free_cuda_array() const {
 	if (cuda_array_handle != -1){
@@ -67,5 +75,7 @@ void EMData::free_cuda_memory() const {
 		cuda_rdata = 0;
 	}
 }
+
+
 
 #endif //EMAN2_USING_CUDA

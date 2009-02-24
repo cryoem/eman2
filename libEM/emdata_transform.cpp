@@ -63,7 +63,8 @@ EMData *EMData::do_fft_cuda() const
 	int nxreal = nx;
 	int offset = 2 - nx%2;
 	int nx2 = nx + offset;
-	EMData* dat = copy_head();
+	EMData* dat = new EMData();
+	dat->set_attr_dict_explicit(attr_dict);
 	dat->set_size_cuda(nx2, ny, nz);
 	//dat->to_zero();  // do not need it, real_to_complex will do it right anyway
 	if (offset == 1) dat->set_fftodd(true);
@@ -73,12 +74,58 @@ EMData *EMData::do_fft_cuda() const
 	//std::cout<<" do_fft "<<rdata[5]<<"  "<<d[5]<<std::endl;
 	cuda_dd_fft_real_to_complex_nd(get_cuda_data(), d, nxreal, ny, nz);
 
-	dat->update();
+	dat->gpu_update();
 	dat->set_fftpad(true);
 	dat->set_complex(true);
 	if(dat->get_ysize()==1 && dat->get_zsize()==1) dat->set_complex_x(true);
 	dat->set_ri(true);
 
+	EXITFUNC;
+	return dat;
+}
+
+EMData *EMData::do_ift_cuda() const
+{
+	ENTERFUNC;
+
+	if (!is_complex()) {
+		LOGERR("complex image expected. Input image is real image.");
+		throw ImageFormatException("complex image expected. Input image is real image.");
+	}
+
+	if (!is_ri()) {
+		LOGWARN("run IFT on AP data, only RI should be used. Converting.");
+	}
+
+// 	EMData* dat = copy_head();
+	EMData* dat = new EMData();
+	dat->set_attr_dict_explicit(attr_dict);
+	dat->set_size_cuda(nx, ny, nz);
+// 	dat->set_size(nx, ny, nz);
+	
+	// TODO cuda apri infrastructure
+	// ap2ri()
+
+	float *d = dat->get_cuda_data();
+
+	
+	int offset = is_fftodd() ? 1 : 2;
+	cuda_dd_fft_complex_to_real_nd(get_cuda_data(),d,nx - offset, ny, nz);
+	
+	// TODO resize the image
+	//dat->set_size(nx - offset, ny, nz);	//remove the padding
+	
+	// SCALE the inverse FFT
+	// TODO Mult for a  gpu pointer
+	//float scale = 1.0f / ((nx - offset) * ny * nz);
+	//dat->mult(scale);
+	
+	dat->set_fftpad(false);
+	dat->set_complex(false);
+	if(dat->get_ysize()==1 && dat->get_zsize()==1)  dat->set_complex_x(false);
+	dat->set_ri(false);
+	dat->gpu_update();
+	
 	EXITFUNC;
 	return dat;
 }
@@ -105,7 +152,7 @@ EMData *EMData::do_fft() const
 
 	float *d = dat->get_data();
 	//std::cout<<" do_fft "<<rdata[5]<<"  "<<d[5]<<std::endl;
-	EMfft::real_to_complex_nd(rdata, d, nxreal, ny, nz);
+	EMfft::real_to_complex_nd(get_data(), d, nxreal, ny, nz);
 
 	dat->update();
 	dat->set_fftpad(true);
@@ -240,7 +287,8 @@ EMData *EMData::do_ift_inplace()
 	ap2ri();
 
 	int offset = is_fftodd() ? 1 : 2;
-	EMfft::complex_to_real_nd(rdata, rdata, nx - offset, ny, nz);
+	float* data = get_data();
+	EMfft::complex_to_real_nd(data, data, nx - offset, ny, nz);
 
 #if defined	FFTW2 || defined FFTW3 || defined CUDA_FFT	//native fft and ACML already done normalization
 	// SCALE the inverse FFT
@@ -382,6 +430,7 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 	int lmax = nx * ny - 1;
 
 	int mid=nx*ny/2;
+	float * image_data = get_data();
 	if (is_complex()) {
 		if (dsx != -1) {
 			int l = y0 * nx;
@@ -399,7 +448,7 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 					else k = nx * ny - (l + 2 * ll) - 2;
 					if (k>=mid) k-=mid;		// These 2 lines handle the Fourier origin being in the corner, not the middle
 					else k+=mid; 
-					float t = rdata[k];
+					float t = image_data[k];
 					if (t <= rm)  p = mingray;
 					else if (t >= render_max) p = maxgray;
 					else if (gamma!=1.0) {
@@ -442,7 +491,7 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 					if (k>=mid) k-=mid;		// These 2 lines handle the Fourier origin being in the corner, not the middle
 					else k+=mid; 
 
-					float t = rdata[k];
+					float t = image_data[k];
 					if (t <= rm)
 						p = mingray;
 					else if (t >= render_max) {
@@ -490,12 +539,12 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 					int k = 0;
 					unsigned char p;
 					float t;
-					if (dsx==1) t=rdata[l];
+					if (dsx==1) t=image_data[l];
 					else {						// This block does local pixel averaging for nicer reduced views
 						t=0;
 						for (int iii=0; iii<dsx; iii++) {
 							for (int jjj=0; jjj<dsy; jjj+=nx) {
-								t+=rdata[l+iii+jjj];
+								t+=image_data[l+iii+jjj];
 							}
 						}
 						t/=dsx*(dsy/nx);
@@ -541,12 +590,12 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 					int k = 0;
 					unsigned char p;
 					float t;
-					if (addi<=1) t = rdata[l];
+					if (addi<=1) t = image_data[l];
 					else {						// This block does local pixel averaging for nicer reduced views
 						t=0;
 						for (int jjj=0; jjj<addj; jjj++) {
 							for (int iii=0; iii<addi; iii++) {
-								t+=rdata[l+iii+jjj*nx];
+								t+=image_data[l+iii+jjj*nx];
 							}
 						}
 						t/=addi*addi;
@@ -743,6 +792,7 @@ std::string EMData::render_ap24(int x0, int y0, int ixsize, int iysize,
 	int lmax = nx * ny - 1;
 
 	int mid=nx*ny/2;
+	float* image_data = get_data();
 	if (dsx != -1) {
 		int l = y0 * nx;
 		for (int j = ymax; j >= ymin; j--) {
@@ -756,15 +806,15 @@ std::string EMData::render_ap24(int x0, int y0, int ixsize, int iysize,
 				if (ll >= nx / 2) {
 					if (l >= (ny - inv_scale) * nx) k = 2 * (ll - nx / 2) + 2;
 					else k = 2 * (ll - nx / 2) + l + 2 + nx;
-					ph = (int)(rdata[k+1]*768/(2.0*M_PI))+384;	// complex phase as integer 0-767
+					ph = (int)(image_data[k+1]*768/(2.0*M_PI))+384;	// complex phase as integer 0-767
 				}
 				else {
 					k = nx * ny - (l + 2 * ll) - 2;
-					ph = (int)(-rdata[k+1]*768/(2.0*M_PI))+384;	// complex phase as integer 0-767
+					ph = (int)(-image_data[k+1]*768/(2.0*M_PI))+384;	// complex phase as integer 0-767
 				}
 				if (k>=mid) k-=mid;		// These 2 lines handle the Fourier origin being in the corner, not the middle
 				else k+=mid; 
-				float t = rdata[k];
+				float t = image_data[k];
 				if (t <= rm)  p = mingray;
 				else if (t >= render_max) p = maxgray;
 				else if (gamma!=1.0) {
@@ -813,16 +863,16 @@ std::string EMData::render_ap24(int x0, int y0, int ixsize, int iysize,
 				if (ll >= nx / 2) {
 					if (l >= (ny * nx - nx)) k = 2 * (ll - nx / 2) + 2;
 					else k = 2 * (ll - nx / 2) + l + 2 + nx;
-					ph = (int)(rdata[k+1]*768/(2.0*M_PI))+384;	// complex phase as integer 0-767
+					ph = (int)(image_data[k+1]*768/(2.0*M_PI))+384;	// complex phase as integer 0-767
 				}
 				else {
 					k = nx * ny - (l + 2 * ll) - 2;
-					ph = (int)(-rdata[k+1]*768/(2.0*M_PI))+384;	// complex phase as integer 0-767
+					ph = (int)(-image_data[k+1]*768/(2.0*M_PI))+384;	// complex phase as integer 0-767
 				}
 				if (k>=mid) k-=mid;		// These 2 lines handle the Fourier origin being in the corner, not the middle
 				else k+=mid; 
 
-				float t = rdata[k];
+				float t = image_data[k];
 				if (t <= rm)
 					p = mingray;
 				else if (t >= render_max) {
@@ -927,7 +977,7 @@ void EMData::render_amp24( int x0, int y0, int ixsize, int iysize,
 	const int scale_n = 100000;
 
 	int ymin = 0;
-	if (iysize * inv_scale > ny) {
+	if ( iysize * inv_scale > ny) {
 		ymin = (int) (iysize - ny / inv_scale);
 	}
 	float gs = (maxgray - mingray) / (render_max - render_min);
@@ -985,7 +1035,7 @@ void EMData::render_amp24( int x0, int y0, int ixsize, int iysize,
 
 	int lmax = nx * ny - 1;
 	unsigned char tri[3];
-
+	float* image_data = get_data();
 	if (is_complex()) {
 		if (dsx != -1) {
 			int l = y0 * nx;
@@ -1008,7 +1058,7 @@ void EMData::render_amp24( int x0, int y0, int ixsize, int iysize,
 						kk = nx * ny - (l + 2 * ll) - 2;
 					}
 					int k = 0;
-					float t = rdata[kk];
+					float t = image_data[kk];
 					if (t <= rm) {
 						k = mingray;
 					}
@@ -1050,7 +1100,7 @@ void EMData::render_amp24( int x0, int y0, int ixsize, int iysize,
 						kk = nx * ny - (l + 2 * ll) - 2;
 					}
 					int k = 0;
-					float t = rdata[kk];
+					float t = image_data[kk];
 					if (t <= rm) {
 						k = mingray;
 					}
@@ -1090,7 +1140,7 @@ void EMData::render_amp24( int x0, int y0, int ixsize, int iysize,
 					if (l > lmax) {
 						break;
 					}
-					float t = rdata[l];
+					float t = image_data[l];
 					int k = 0;
 					if (t <= rm) {
 						k = mingray;
@@ -1120,7 +1170,7 @@ void EMData::render_amp24( int x0, int y0, int ixsize, int iysize,
 					if (l > lmax) {
 						break;
 					}
-					float t = rdata[l];
+					float t = image_data[l];
 					int k = 0;
 					if (t <= rm) {
 						k = mingray;
@@ -1164,10 +1214,11 @@ void EMData::ri2inten()
 	if (!is_complex()) return;
 	if (!is_ri()) ap2ri();
 
+	float * data = get_data();
 	int size = nx * ny * nz;
 	for (int i = 0; i < size; i += 2) {
-		rdata[i]=rdata[i]*rdata[i]+rdata[i+1]*rdata[i+1];
-		rdata[i+1]=0;
+		data[i]=data[i]*data[i]+data[i+1]*data[i+1];
+		data[i+1]=0;
 	}
 
 	set_attr("is_intensity", int(1));
@@ -1183,21 +1234,22 @@ void EMData::ri2ap()
 	if (!is_complex() || !is_ri()) {
 		return;
 	}
+	float * data = get_data();
 
 	int size = nx * ny * nz;
 	for (int i = 0; i < size; i += 2) {
 #ifdef	_WIN32
-		float f = (float)_hypot(rdata[i], rdata[i + 1]);
+		float f = (float)_hypot(data[i], data[i + 1]);
 #else
-		float f = (float)hypot(rdata[i], rdata[i + 1]);
+		float f = (float)hypot(data[i], data[i + 1]);
 #endif	
-		if (rdata[i] == 0 && rdata[i + 1] == 0) {
-			rdata[i + 1] = 0;
+		if (data[i] == 0 && data[i + 1] == 0) {
+			data[i + 1] = 0;
 		}
 		else {
-			rdata[i + 1] = atan2(rdata[i + 1], rdata[i]);
+			data[i + 1] = atan2(data[i + 1], data[i]);
 		}
-		rdata[i] = f;
+		data[i] = f;
 	}
 
 	set_ri(false);
@@ -1214,7 +1266,7 @@ void EMData::ap2ri()
 		return;
 	}
 
-	Util::ap2ri(rdata, nx * ny * nz);
+	Util::ap2ri(get_data(), nx * ny * nz);
 	set_ri(true);
 	update();
 	EXITFUNC;
@@ -1243,7 +1295,7 @@ void EMData::insert_clip(EMData * block, const IntPoint &origin)
 	size_t inserted_row_size = nx1 * sizeof(float);
 	float *inserted_data = block->get_data();
 	float *src = inserted_data;
-	float *dst = rdata + z0 * nx * ny + y0 * nx + x0;
+	float *dst = get_data() + z0 * nx * ny + y0 * nx + x0;
 
 	for (int i = z0; i < z1; i++) {
 
@@ -1264,6 +1316,7 @@ void EMData::insert_scaled_sum(EMData *block, const FloatPoint &center,
 						   float scale, float)
 {
 	ENTERFUNC;
+	float * data = get_data();
 	if (get_ndim()==3) {
 		// Start by determining the region to operate on
 		int xs=(int)floor(block->get_xsize()*scale/2.0);
@@ -1293,7 +1346,7 @@ void EMData::insert_scaled_sum(EMData *block, const FloatPoint &center,
 		for (int x=x0; x<=x1; x++) {
 			for (int y=y0; y<=y1; y++) {
 				for (int z=z0; z<=z1; z++) {
-					rdata[x + y * nx + z * nx * ny] +=
+					data[x + y * nx + z * nx * ny] +=
 						block->sget_value_at_interp((x-center[0])/scale+bx,(y-center[1])/scale+by,(z-center[2])/scale+bz);
 				}
 			}
@@ -1322,7 +1375,7 @@ void EMData::insert_scaled_sum(EMData *block, const FloatPoint &center,
 
 		for (int x=x0; x<=x1; x++) {
 			for (int y=y0; y<=y1; y++) {
-				rdata[x + y * nx] +=
+				data[x + y * nx] +=
 					block->sget_value_at_interp((x-center[0])/scale+bx,(y-center[1])/scale+by);
 			}
 		}
