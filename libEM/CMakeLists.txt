@@ -24,6 +24,7 @@ SET(LIB_EM_SOURCE byteorder.cpp
     emdata.cpp
     emdata_io.cpp
     emdata_core.cpp
+    emdata_cuda.cpp
     emdata_gl.cpp
     emdata_modular.cpp
     emdata_metadata.cpp
@@ -131,7 +132,8 @@ IF (ENABLE_PNG)
 ENDIF(ENABLE_PNG)
 
 IF (ENABLE_CUDA)
-    TARGET_LINK_LIBRARIES(EM2 EM2Cuda)
+	INCLUDE_DIRECTORIES(${FOUND_CUDA_NVCC_INCLUDE})
+    TARGET_LINK_LIBRARIES(EM2 EM2Cuda cudart)
     TARGET_LINK_LIBRARIES(EM2 EM2SparxCuda)
 ENDIF(ENABLE_CUDA)
 

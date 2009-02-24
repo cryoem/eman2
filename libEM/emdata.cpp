@@ -2729,7 +2729,7 @@ void EMData::update_stat() const
 {
 	ENTERFUNC;
 
-	if (!(flags & EMDATA_NEEDUPD))
+	if (!(flags & EMDATA_NEEDUPD) || rdata == 0) // rdata == 0 condition may exist when using GPU 
 	{
 		EXITFUNC;
 		return;

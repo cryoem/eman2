@@ -47,6 +47,44 @@
 using namespace EMAN;
 
 
+#ifdef EMAN2_USING_CUDA
+
+#include "cuda/cuda_emfft.h"
+
+EMData *EMData::do_fft_cuda() const
+{
+	ENTERFUNC;
+
+	if ( is_complex() ) {
+		LOGERR("real image expected. Input image is complex image.");
+		throw ImageFormatException("real image expected. Input image is complex image.");
+	}
+
+	int nxreal = nx;
+	int offset = 2 - nx%2;
+	int nx2 = nx + offset;
+	EMData* dat = copy_head();
+	dat->set_size_cuda(nx2, ny, nz);
+	//dat->to_zero();  // do not need it, real_to_complex will do it right anyway
+	if (offset == 1) dat->set_fftodd(true);
+	else             dat->set_fftodd(false);
+
+	float *d = dat->get_cuda_data();
+	//std::cout<<" do_fft "<<rdata[5]<<"  "<<d[5]<<std::endl;
+	cuda_dd_fft_real_to_complex_nd(get_cuda_data(), d, nxreal, ny, nz);
+
+	dat->update();
+	dat->set_fftpad(true);
+	dat->set_complex(true);
+	if(dat->get_ysize()==1 && dat->get_zsize()==1) dat->set_complex_x(true);
+	dat->set_ri(true);
+
+	EXITFUNC;
+	return dat;
+}
+
+#endif //EMAN2_USING_CUDA
+
 EMData *EMData::do_fft() const
 {
 	ENTERFUNC;

@@ -50,6 +50,18 @@ public:
 EMData *do_fft() const;
 
 
+#ifdef EMAN2_USING_CUDA
+/** return the fast fourier transform (FFT) image of the current
+ * image. the current image is not changed. The result is in
+ * real/imaginary format and exists only on the GPU
+ * @return The FFT of the current image in real/imaginary format, existing on the GPU.
+ */
+EMData *do_fft_cuda() const;
+
+#endif //EMAN2_USING_CUDA
+
+
+
 /** Do FFT inplace. And return the FFT image.
  * @return The FFT of the current image in real/imaginary format.
  */

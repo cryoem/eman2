@@ -50,18 +50,6 @@ void init_cuda_emdata_arrays() {
 	}
 }
 
-
-void debug_arrays()
-{
-	printf("debug\n");
-	for(int i=0; i < max_cuda_arrays; ++i) 
-	{
-		CudaEMDataArray t = cuda_arrays[i];
-		printf("%d %d %d\n",t.array,t.data,t.emdata_pointer);
-	}
-	printf("end debug\n");
-}
-
 int make_cuda_array_space_0_free() {
 	//printf("Freeing space 0\n");
 	//debug_arrays();
@@ -167,7 +155,8 @@ void device_init() {
 		
 		CUDA_SAFE_CALL(cudaSetDevice(0));
 		init_cuda_emdata_arrays();
-		init_cuda_emfft_cache();
+		init_cuda_fft_hh_plan_cache(); // should only be performed if the host is using Cuda ffts, which is unlikey. Will do after development has progressed.
+		init_cuda_fft_dd_plan_cache();
 		init = false; //Force init everytikme
 	}
 }
@@ -198,5 +187,25 @@ void cuda_memcpy(void* dst, const void* const src, size_t count) {
 // 	cudaMemcpyAsync(dst,src,count,cudaMemcpyHostToHost,stream);
 // 	cudaStreamSynchronize(stream);
 // 	cudaStreamDestroy(stream);
+}
+
+
+void cuda_memcpy_host_to_device(const void* const host_rdata, void* device_rdata, const size_t num_bytes )
+{
+	device_init();
+	cudaMemcpy(device_rdata,host_rdata,num_bytes,cudaMemcpyHostToDevice);
+}
+
+void cuda_malloc_device(void** device_rdata, const size_t num_bytes)
+{
+	device_init();
+	int val = cudaMalloc(device_rdata, num_bytes);
+	printf("Success? %d\n",(val==cudaSuccess));
+}
+
+void cuda_free_device(void* device_rdata)
+{
+	device_init(); // Technically unecessary seeing as the device must have been initialized to have allocate the pointer
+	cudaFree(device_rdata);
 }
 

@@ -52,25 +52,24 @@ public:
 	inline void set_cuda_array_handle(const int idx) { cuda_array_handle = idx; }
 	
 	
+	/** Get the cuda pointer to the raw data
+	 * May cause an allocation, reflecting the lazy strategy employed in EMAN2
+	 * Calls update_stat - this may delete the cuda pointer, which is ok
+	 * @return a floating pointer cuda allocated pointer
+	 */
+	float* get_cuda_data() const;
 	
 private:
 	
 	
-	void free_cuda_array() const {
-		if (cuda_array_handle != -1){
-			delete_cuda_array(cuda_array_handle);
-			cuda_array_handle = -1;
-		}
-	}
+	void free_cuda_array() const;
 	
-	void free_cuda_memory() const {
-		if ( cuda_rdata != 0) {
-			delete_cuda_memory(cuda_rdata);
-			cuda_rdata = 0;
-		}
-	}
+	void free_cuda_memory() const;
+	
 	mutable int cuda_array_handle;
 	mutable float* cuda_rdata;
+	
+	//void update_stat_gpu() const;
 
 #endif // EMAN2_USING_CUDA
 	

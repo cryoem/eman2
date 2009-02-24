@@ -621,10 +621,10 @@ void EMData::set_size(int x, int y, int z)
 	if ( rdata == 0 )
 	{
 		stringstream ss;
-		string megs;
+		string gigs;
 		ss << (float) size/1000000000.0;
-		ss >> megs;
-		string message = "Cannot allocate " + megs + " GB - not enough memory.";
+		ss >> gigs;
+		string message = "Cannot allocate " + gigs + " GB - not enough memory.";
 		throw BadAllocException(message);
 	}
 
@@ -632,7 +632,6 @@ void EMData::set_size(int x, int y, int z)
 	attr_dict["ny"] = y;
 	attr_dict["nz"] = z;
 
-	// This will never occur because of the throw above! dsaw
 	if (old_nx == 0) {
 		EMUtil::em_memset(rdata,0,size);
 	}
@@ -646,6 +645,60 @@ void EMData::set_size(int x, int y, int z)
 	EXITFUNC;
 }
 
+#ifdef EMAN2_USING_CUDA
+
+#include <cuda_runtime_api.h>
+#include "cuda/cuda_util.h"
+
+void EMData::set_size_cuda(int x, int y, int z)
+{
+	ENTERFUNC;
+
+	if (x <= 0) {
+		throw InvalidValueException(x, "x size <= 0");
+	}
+	else if (y <= 0) {
+		throw InvalidValueException(y, "y size <= 0");
+	}
+	else if (z <= 0) {
+		throw InvalidValueException(z, "z size <= 0");
+	}
+
+	//size_t old_size = nx*ny*nz*sizeof(float);
+	nx = x;
+	ny = y;
+	nz = z;
+	nxy = nx*ny;
+
+	size_t size = (size_t)(x) * (size_t)y * (size_t)z * sizeof(float);
+	
+	device_init();
+	if (cuda_rdata != 0) {
+		cudaFree(cuda_rdata);
+		cuda_rdata = 0;
+	}
+	
+	cudaMalloc((void**)&cuda_rdata,size);
+
+	if ( cuda_rdata == 0 )
+	{
+		stringstream ss;
+		string gigs;
+		ss << (float) size/1000000000.0;
+		ss >> gigs;
+		string message = "GPU - Can't allocate " + gigs + " GB - not enough memory.";
+		throw BadAllocException(message);
+	}
+
+	attr_dict["nx"] = x;
+	attr_dict["ny"] = y;
+	attr_dict["nz"] = z;
+
+	update();
+	EXITFUNC;
+}
+
+#endif // EMAN2_USING_CUDA
 
 MArray2D EMData::get_2dview() const
 {
