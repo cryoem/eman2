@@ -121,10 +121,12 @@ EMData::EMData(const EMData& that) :
 {
 	ENTERFUNC;
 
-	if (that.rdata)
+	float* data = that.get_data();
+	if (data)
 	{
+		nx = 1; // This prevents a memset in set_size
 		set_size(that.nx, that.ny, that.nz);
-		EMUtil::em_memcpy(rdata, that.rdata, nx * ny * nz * sizeof(float));
+		EMUtil::em_memcpy(rdata, data, nx * ny * nz * sizeof(float));
 	}
 
 	if (that.rot_fp != 0) rot_fp = new EMData(*(that.rot_fp));
@@ -147,8 +149,9 @@ EMData& EMData::operator=(const EMData& that)
 		float* data = that.get_data();
 		if (data)
 		{
+			nx = 1; // This prevents a memset in set_size
 			set_size(that.nx, that.ny, that.nz);
-			EMUtil::em_memcpy(data, that.rdata, nx * ny * nz * sizeof(float));
+			EMUtil::em_memcpy(rdata, data, nx * ny * nz * sizeof(float));
 		}
 
 		flags = that.flags;
@@ -245,9 +248,7 @@ EMData::EMData(float* data, const int x, const int y, const int z, const Dict& a
 	attr_dict["apix_z"] = 1.0f;
 
 	EMData::totalalloc++;
-	
-	cout << "from constructor " << rdata << endl;
-	
+
 	update();
 	EXITFUNC;
 }
@@ -559,7 +560,7 @@ EMData *EMData::get_clip(const Region & area, const float fill) const
 	int src_secsize = nx * ny;
 	int dst_secsize = (int)(area.size[0] * area.size[1]);
 
-	float *src = rdata + z0 * src_secsize + y0 * nx + x0;
+	float *src = get_data() + z0 * src_secsize + y0 * nx + x0;
 	float *dst = result->get_data();
 	dst += zd0 * dst_secsize + yd0 * (int)area.size[0] + xd0;
 
@@ -624,7 +625,7 @@ EMData *EMData::get_top_half() const
 	half->set_size(nx, ny, nz / 2);
 
 	float *half_data = half->get_data();
-	EMUtil::em_memcpy(half_data, &rdata[nz / 2 * nx * ny], sizeof(float) * nx * ny * nz / 2);
+	EMUtil::em_memcpy(half_data, &(get_data()[nz / 2 * nx * ny]), sizeof(float) * nx * ny * nz / 2);
 
 	float apix_z = attr_dict["apix_z"];
 	float origin_sec = attr_dict["origin_sec"];
@@ -737,6 +738,7 @@ float *EMData::setup4slice(bool redo)
 	supp = (float *) EMUtil::em_calloc(supp_size * ny * nz, sizeof(float));
 	int nxy = nx * ny;
 	int supp_xy = supp_size * ny;
+	float * data = get_data();
 
 	for (int z = 0; z < nz; z++) {
 		int cur_z1 = z * nxy;
@@ -748,7 +750,7 @@ float *EMData::setup4slice(bool redo)
 
 			for (int x = 0; x < SUPP_ROW_SIZE; x++) {
 				int k = (x + SUPP_ROW_OFFSET) + cur_y2 + cur_z2;
-				supp[k] = rdata[x + cur_y1 + cur_z1];
+				supp[k] = data[x + cur_y1 + cur_z1];
 			}
 		}
 	}
@@ -758,10 +760,10 @@ float *EMData::setup4slice(bool redo)
 		int cur_z2 = z * supp_xy;
 
 		for (int y = 1, yy = ny - 1; y < ny; y++, yy--) {
-			supp[y * 12 + cur_z2] = rdata[4 + yy * nx + cur_z1];
-			supp[1 + y * 12 + cur_z2] = -rdata[5 + yy * nx + cur_z1];
-			supp[2 + y * 12 + cur_z2] = rdata[2 + yy * nx + cur_z1];
-			supp[3 + y * 12 + cur_z2] = -rdata[3 + yy * nx + cur_z1];
+			supp[y * 12 + cur_z2] = data[4 + yy * nx + cur_z1];
+			supp[1 + y * 12 + cur_z2] = -data[5 + yy * nx + cur_z1];
+			supp[2 + y * 12 + cur_z2] = data[2 + yy * nx + cur_z1];
+			supp[3 + y * 12 + cur_z2] = -data[3 + yy * nx + cur_z1];
 		}
 	}
 
@@ -1235,13 +1237,14 @@ void EMData::rotate_x(int dx)
 
 	size_t row_size = nx * sizeof(float);
 	float *tmp = (float*)EMUtil::em_malloc(row_size);
+	float * data = get_data();
 
 	for (int y = 0; y < ny; y++) {
 		int y_nx = y * nx;
 		for (int x = 0; x < nx; x++) {
-			tmp[x] = rdata[y_nx + (x + dx) % nx];
+			tmp[x] = data[y_nx + (x + dx) % nx];
 		}
-		EMUtil::em_memcpy(&rdata[y_nx], tmp, row_size);
+		EMUtil::em_memcpy(&data[y_nx], tmp, row_size);
 	}
 
 	update();
@@ -1591,6 +1594,7 @@ EMData *EMData::calc_ccfx( EMData * const with, int y0, int y1, bool no_sum)
 	cf->set_attr("label", "CCFx");
 	cf->set_path("/tmp/eman.ccf");
 
+	float* data = get_data();
 
 	if (no_sum) {
 		float *cfd = cf->get_data();
@@ -1603,7 +1607,7 @@ EMData *EMData::calc_ccfx( EMData * const with, int y0, int y1, bool no_sum)
 				float dot = 0;
 				for (int i = 0; i < nx; i++) {
 					int k1 = (i + x) % nx + cur_y;
-					dot += rdata[i + cur_y] * with_data[k1];
+					dot += data[i + cur_y] * with_data[k1];
 				}
 				cfd[x + (y - y0) * nx] = dot;
 			}
@@ -2055,6 +2059,7 @@ vector < float > EMData::calc_hist(int hist_size, float histmin, float histmax)
 //	float norm = 0;
 	size_t n = hist.size();
 
+	float * data = get_data();
 	for (int k = p0; k <= p1; ++k) {
 		if (is_complex()) {
 			di = prime[k] * 2;
@@ -2067,7 +2072,7 @@ vector < float > EMData::calc_hist(int hist_size, float histmin, float histmax)
 		float w = (float)n / (histmax - histmin);
 
 		for(size_t i=0; i<=size-di; i += di) {
-			int j = Util::round((rdata[i] - histmin) * w);
+			int j = Util::round((data[i] - histmin) * w);
 			if (j >= 0 && j < (int) n) {
 				hist[j] += 1;
 			}
@@ -2103,7 +2108,8 @@ vector<float> EMData::calc_az_dist(int n, float a0, float da, float rmin, float 
 	for (int i = 0; i < n; i++) {
 		yc[i] = 0.00001f;
 	}
-
+	
+	float * data = get_data();
 	if (is_complex()) {
 		int c = 0;
 		for (int y = 0; y < ny; y++) {
@@ -2127,24 +2133,24 @@ vector<float> EMData::calc_az_dist(int n, float a0, float da, float rmin, float 
 					a -= i;
 
 					if (i == 0) {
-						vd[0] += rdata[c] * (1.0f - a);
+						vd[0] += data[c] * (1.0f - a);
 						yc[0] += (1.0f - a);
 					}
 					else if (i == n - 1) {
-						vd[n - 1] += rdata[c] * a;
+						vd[n - 1] += data[c] * a;
 						yc[n - 1] += a;
 					}
 					else if (i > 0 && i < (n - 1)) {
 						float h = 0;
 						if (is_ri()) {
 #ifdef	_WIN32
-							h = (float)_hypot(rdata[c], rdata[c + 1]);
+							h = (float)_hypot(data[c], data[c + 1]);
 #else
-							h = (float)hypot(rdata[c], rdata[c + 1]);
+							h = (float)hypot(data[c], data[c + 1]);
 #endif	//_WIN32			
 						}
 						else {
-							h = rdata[c];
+							h = data[c];
 						}
 
 						vd[i] += h * (1.0f - a);
@@ -2185,17 +2191,17 @@ vector<float> EMData::calc_az_dist(int n, float a0, float da, float rmin, float 
 					a -= i;
 
 					if (i == 0) {
-						vd[0] += rdata[c] * (1.0f - a);
+						vd[0] += data[c] * (1.0f - a);
 						yc[0] += (1.0f - a);
 					}
 					else if (i == n - 1) {
-						vd[n - 1] += rdata[c] * a;
+						vd[n - 1] += data[c] * a;
 						yc[n - 1] += (a);
 					}
 					else if (i > 0 && i < (n - 1)) {
-						vd[i] += rdata[c] * (1.0f - a);
+						vd[i] += data[c] * (1.0f - a);
 						yc[i] += (1.0f - a);
-						vd[i + 1] += rdata[c] * a;
+						vd[i + 1] += data[c] * a;
 						yc[i + 1] += a;
 					}
 				}
@@ -2296,7 +2302,7 @@ void EMData::apply_radial_func(float x0, float step, vector < float >array, bool
 	ap2ri();
 
 	size_t ndims = get_ndim();
-
+	float * data = get_data();
 	if (ndims == 2) {
 		int k = 0;
 		for (int j = 0; j < ny; j++) {
@@ -2334,8 +2340,8 @@ void EMData::apply_radial_func(float x0, float step, vector < float >array, bool
 					}
 				}
 
-				rdata[k] *= f;
-				rdata[k + 1] *= f;
+				data[k] *= f;
+				data[k + 1] *= f;
 			}
 		}
 	}
@@ -2378,8 +2384,8 @@ void EMData::apply_radial_func(float x0, float step, vector < float >array, bool
 						}
 					}
 
-					rdata[k] *= f;
-					rdata[k + 1] *= f;
+					data[k] *= f;
+					data[k + 1] *= f;
 				}
 			}
 		}
@@ -2390,7 +2396,7 @@ void EMData::apply_radial_func(float x0, float step, vector < float >array, bool
 	EXITFUNC;
 }
 
-vector < float >EMData::calc_radial_dist(int n, float x0, float dx, bool inten)
+vector<float> EMData::calc_radial_dist(int n, float x0, float dx, bool inten)
 {
 	ENTERFUNC;
 
@@ -2404,6 +2410,7 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx, bool inten)
 	if (isinten&&!inten) { throw InvalidParameterException("Must set inten for calc_radial_dist with intensity image"); }
 
 	for (i=0; i<n; i++) ret[i]=norm[i]=0.0;
+	float * data = get_data();
 
 	// We do 2D separately to avoid the hypot3 call
 	if (nz==1) {
@@ -2415,17 +2422,17 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx, bool inten)
 #ifdef	_WIN32
 					r=static_cast<float>(_hypot(x/2.0,y<ny/2?y:ny-y));		// origin at 0,0; periodic
 					if (!inten) {
-						if (is_ri()) v=static_cast<float>(_hypot(rdata[i],rdata[i+1]));	// real/imag, compute amplitude
+						if (is_ri()) v=static_cast<float>(_hypot(data[i],data[i+1]));	// real/imag, compute amplitude
 #else
 					r=static_cast<float>(hypot(x/2.0,y<ny/2?y:ny-y));		// origin at 0,0; periodic
 					if (!inten) {
-						if (is_ri()) v=static_cast<float>(hypot(rdata[i],rdata[i+1]));	// real/imag, compute amplitude
+						if (is_ri()) v=static_cast<float>(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
 #endif	//_WIN32	
-						else v=rdata[i];							// amp/phase, just get amp
+						else v=data[i];							// amp/phase, just get amp
 					} else {
-						if (isinten) v=rdata[i];
-						else if (is_ri()) v=rdata[i]*rdata[i]+rdata[i+1]*rdata[i+1];
-						else v=rdata[i]*rdata[i];
+						if (isinten) v=data[i];
+						else if (is_ri()) v=data[i]*data[i]+data[i+1]*data[i+1];
+						else v=data[i]*data[i];
 					}
 				}
 				else {
@@ -2434,8 +2441,8 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx, bool inten)
 #else
 					r=static_cast<float>(hypot(x-nx/2,y-ny/2));
 #endif	//_WIN32			
-					if (inten) v=rdata[i]*rdata[i];
-					else v=rdata[i];
+					if (inten) v=data[i]*data[i];
+					else v=data[i];
 				}
 				r=(r-x0)/dx;
 				int f=int(r);	// safe truncation, so floor isn't needed
@@ -2462,21 +2469,21 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx, bool inten)
 						r=Util::hypot3(x/2,y<ny/2?y:ny-y,z<nz/2?z:nz-z);	// origin at 0,0; periodic
 						if (!inten) {
 #ifdef	_WIN32
-							if (is_ri()) v=static_cast<float>(_hypot(rdata[i],rdata[i+1]));	// real/imag, compute amplitude
+							if (is_ri()) v=static_cast<float>(_hypot(data[i],data[i+1]));	// real/imag, compute amplitude
 #else
-							if (is_ri()) v=static_cast<float>(hypot(rdata[i],rdata[i+1]));	// real/imag, compute amplitude
+							if (is_ri()) v=static_cast<float>(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
 #endif	//_WIN32			
-							else v=rdata[i];							// amp/phase, just get amp
+							else v=data[i];							// amp/phase, just get amp
 						} else {
-							if (isinten) v=rdata[i];
-							else if (is_ri()) v=rdata[i]*rdata[i]+rdata[i+1]*rdata[i+1];
-							else v=rdata[i]*rdata[i];
+							if (isinten) v=data[i];
+							else if (is_ri()) v=data[i]*data[i]+data[i+1]*data[i+1];
+							else v=data[i]*data[i];
 						}
 					}
 					else {
 						r=Util::hypot3(x-nx/2,y-ny/2,z-nz/2);
-						if (inten) v=rdata[i]*rdata[i];
-						else v=rdata[i];
+						if (inten) v=data[i]*data[i];
+						else v=data[i];
 					}
 					r=(r-x0)/dx;
 					int f=int(r);	// safe truncation, so floor isn't needed
@@ -2501,7 +2508,7 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx, bool inten)
 	return ret;
 }
 	
-vector < float >EMData::calc_radial_dist(int n, float x0, float dx, int nwedge, bool inten)
+vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int nwedge, bool inten)
 {
 	ENTERFUNC;
 
@@ -2516,7 +2523,7 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx, int nwedge, 
 	int x,y,i;
 	int step=is_complex()?2:1;
 	float astep=static_cast<float>(M_PI*2.0/nwedge);
-
+	float* data = get_data();
 	for (i=0; i<n*nwedge; i++) ret[i]=norm[i]=0.0;
 
 	// We do 2D separately to avoid the hypot3 call
@@ -2532,14 +2539,14 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx, int nwedge, 
 				a=atan2(float(y<ny/2?y:ny-y),x/2.0f);
 				if (!inten) {
 #ifdef	_WIN32
-					if (is_ri()) v=static_cast<float>(_hypot(rdata[i],rdata[i+1]));	// real/imag, compute amplitude
+					if (is_ri()) v=static_cast<float>(_hypot(data[i],data[i+1]));	// real/imag, compute amplitude
 #else
-					if (is_ri()) v=static_cast<float>(hypot(rdata[i],rdata[i+1]));	// real/imag, compute amplitude
+					if (is_ri()) v=static_cast<float>(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
 #endif	//_WIN32			
-					else v=rdata[i];							// amp/phase, just get amp
+					else v=data[i];							// amp/phase, just get amp
 				} else {
-					if (is_ri()) v=rdata[i]*rdata[i]+rdata[i+1]*rdata[i+1];
-					else v=rdata[i]*rdata[i];
+					if (is_ri()) v=data[i]*data[i]+data[i+1]*data[i+1];
+					else v=data[i]*data[i];
 				}
 			}
 			else {
@@ -2549,8 +2556,8 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx, int nwedge, 
 				r=static_cast<float>(hypot(x-nx/2,y-ny/2));
 #endif	//_WIN32			
 				a=atan2(float(y-ny/2),float(x-nx/2));
-				if (inten) v=rdata[i]*rdata[i];
-				else v=rdata[i];
+				if (inten) v=data[i]*data[i];
+				else v=data[i];
 			}
 			int bin=n*int((a+M_PI)/astep);
 			if (bin>=nwedge) bin=nwedge-1;
@@ -3180,6 +3187,7 @@ void EMData::common_lines(EMData * image1, EMData * image2,
 			l += 2;
 		}
 	}
+	float * data = get_data();
 
 	switch (mode) {
 	case 0:

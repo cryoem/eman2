@@ -106,15 +106,15 @@ EMData* EMData::get_fft_amplitude()
 	dat->to_zero();
 
 	float *d = dat->get_data();
-
+	float *data = get_data();
 	int ndim = get_ndim();
 
 	if (ndim == 3) {
 		for (int k = 1; k < nz; k++) {
 			for (int j = 1; j < ny; j++) {
 				for (int i = 0; i < nx2/2; i++) {
-					d[k*nx2*ny+j*nx2+nx2/2+i] = rdata[k*nx*ny+j*nx+2*i];
-					d[(nz-k)*nx2*ny+(ny-j)*nx2+nx2/2-i] = rdata[k*nx*ny+j*nx+2*i];
+					d[k*nx2*ny+j*nx2+nx2/2+i] = data[k*nx*ny+j*nx+2*i];
+					d[(nz-k)*nx2*ny+(ny-j)*nx2+nx2/2-i] = data[k*nx*ny+j*nx+2*i];
 				}
 			}
 		}
@@ -122,8 +122,8 @@ EMData* EMData::get_fft_amplitude()
 	else if (ndim == 2) {
 		for (int j = 1; j < ny; j++) {
 			for (int i = 0; i < nx2/2; i++) {
-				d[j*nx2+nx2/2+i] = rdata[j*nx+2*i];
-				d[(ny-j)*nx2+nx2/2-i] = rdata[j*nx+2*i];
+				d[j*nx2+nx2/2+i] = data[j*nx+2*i];
+				d[(ny-j)*nx2+nx2/2-i] = data[j*nx+2*i];
 			}
 		}
 	}
@@ -157,14 +157,15 @@ EMData* EMData::get_fft_phase()
 	dat->to_zero();
 
 	float *d = dat->get_data();
+	float * data = get_data();
 
 	int ndim = get_ndim();
 	if (ndim == 3) {
 		for (int k = 1; k < nz; k++) {
 			for (int j = 1; j < ny; j++) {
 				for (int i = 0; i < nx2/2; i++) {
-					d[k*nx2*ny+j*nx2+nx2/2+i] = rdata[k*nx*ny+j*nx+2*i+1];
-					d[(nz-k)*nx2*ny+(ny-j)*nx2+nx2/2-i] = -rdata[k*nx*ny+j*nx+2*i+1];
+					d[k*nx2*ny+j*nx2+nx2/2+i] = data[k*nx*ny+j*nx+2*i+1];
+					d[(nz-k)*nx2*ny+(ny-j)*nx2+nx2/2-i] = -data[k*nx*ny+j*nx+2*i+1];
 				}
 			}
 		}
@@ -172,8 +173,8 @@ EMData* EMData::get_fft_phase()
 	else if (ndim == 2) {
 		for (int j = 1; j < ny; j++) {
 			for (int i = 0; i < nx2/2; i++) {
-				d[j*nx2+nx2/2+i] = rdata[j*nx+2*i+1];
-				d[(ny-j)*nx2+nx2/2-i] = -rdata[j*nx+2*i+1];
+				d[j*nx2+nx2/2+i] = data[j*nx+2*i+1];
+				d[(ny-j)*nx2+nx2/2-i] = -data[j*nx+2*i+1];
 			}
 		}
 	}
@@ -215,7 +216,7 @@ void EMData::write_data(string fsp,size_t loc) {
 	if (!f) f=fopen(fsp.c_str(), "wb");
 	if (!f) throw FileAccessException(fsp);
 	portable_fseek(f,loc,SEEK_SET);
-	if (fwrite(rdata,nx*ny,nz*4,f)!=(size_t)(nz*4)) throw FileAccessException(fsp);
+	if (fwrite(get_data(),nx*ny,nz*4,f)!=(size_t)(nz*4)) throw FileAccessException(fsp);
 	fclose(f);
 }
 
@@ -224,7 +225,7 @@ void EMData::read_data(string fsp,size_t loc) {
 	f=fopen(fsp.c_str(), "rb");
 	if (!f) throw FileAccessException(fsp);
 	portable_fseek(f,loc,SEEK_SET);
-	if (fread(rdata,nx*ny,nz*4,f)!=(size_t)(nz*4)) throw FileAccessException(fsp);
+	if (fread(get_data(),nx*ny,nz*4,f)!=(size_t)(nz*4)) throw FileAccessException(fsp);
 	fclose(f);
 }
 
@@ -316,6 +317,7 @@ IntPoint EMData::calc_min_location() const
 	int min_y = 0;
 	int min_z = 0;
 	int nxy = nx * ny;
+	float * data = get_data();
 
 	for (int j = 0; j < nz; j++) {
 		int cur_z = j * nxy;
@@ -324,7 +326,7 @@ IntPoint EMData::calc_min_location() const
 			int cur_y = k * nx + cur_z;
 
 			for (int l = 0; l < nx; l += di) {
-				float t = rdata[l + cur_y];
+				float t = data[l + cur_y];
 				if (t < min) {
 					min_x = l;
 					min_y = k;
@@ -353,6 +355,7 @@ IntPoint EMData::calc_max_location() const
 	int max_y = 0;
 	int max_z = 0;
 	int nxy = nx * ny;
+	float * data = get_data();
 
 	for (int j = 0; j < nz; j++) {
 		int cur_z = j * nxy;
@@ -361,7 +364,7 @@ IntPoint EMData::calc_max_location() const
 			int cur_y = k * nx + cur_z;
 
 			for (int l = 0; l < nx; l += di) {
-				float t = rdata[l + cur_y];
+				float t = data[l + cur_y];
 				if (t > max) {
 					max_x = l;
 					max_y = k;
@@ -408,7 +411,7 @@ IntPoint EMData::calc_max_location_wrap(const int maxdx, const int maxdy, const 
 
 FloatPoint EMData::calc_center_of_mass()
 {
-	float *rdata = get_data();
+	float *data = get_data();
 
 	float sigma = get_attr("sigma");
 	float mean = get_attr("mean");
@@ -420,11 +423,11 @@ FloatPoint EMData::calc_center_of_mass()
 			int j2 = nx * j;
 			for (int k = 0; k < nz; k++) {
 				int l = i + j2 + k * nxy;
-				if (rdata[l] >= sigma * .75 + mean) {
-					com[0] += i * rdata[l];
-					com[1] += j * rdata[l];
-					com[2] += k * rdata[l];
-					m += rdata[l];
+				if (data[l] >= sigma * .75 + mean) {
+					com[0] += i * data[l];
+					com[1] += j * data[l];
+					com[2] += k * data[l];
+					m += data[l];
 				}
 			}
 		}
@@ -466,6 +469,7 @@ vector<Pixel> EMData::calc_highest_locations(float threshold)
 	}
 
 	int nxy = nx * ny;
+	float * data = get_data();
 
 	for (int j = 0; j < nz; j++) {
 		int cur_z = j * nxy;
@@ -474,7 +478,7 @@ vector<Pixel> EMData::calc_highest_locations(float threshold)
 			int cur_y = k * nx + cur_z;
 
 			for (int l = 0; l < nx; l += di) {
-				float v = rdata[l + cur_y];
+				float v =data[l + cur_y];
 				if (v > threshold) {
 					result.push_back(Pixel(l, k, j, v));
 				}
@@ -497,25 +501,25 @@ float EMData::get_edge_mean() const
 	double edge_sum = 0;
 	float edge_mean = 0;
 	int nxy = nx * ny;
-
+	float * data = get_data();
 	if (nz == 1) {
 		for (int i = 0, j = (ny - 1) * nx; i < nx; i++, j++) {
-			edge_sum += rdata[i] + rdata[j];
+			edge_sum += data[i] + data[j];
 		}
 		for (int i = 0, j = nx - 1; i < nxy; i += nx, j += nx) {
-			edge_sum += rdata[i] + rdata[j];
+			edge_sum += data[i] + data[j];
 		}
 		edge_mean = (float)edge_sum / (nx * 2 + ny * 2);
 	}
 	else {
 		if (nx == ny && nx == nz * 2 - 1) {
 			for (int j = (nxy * (nz - 1)); j < nxy * nz; j++, di++) {
-				edge_sum += rdata[j];
+				edge_sum += data[j];
 			}
 		}
 		else {
 			for (int i = 0, j = (nxy * (nz - 1)); i < nxy; i++, j++, di++) {
-				edge_sum += rdata[i] + rdata[j];
+				edge_sum += data[i] + data[j];
 			}
 		}
 
@@ -524,14 +528,14 @@ float EMData::get_edge_mean() const
 			int k2 = k * nxy;
 			int k3 = k2 + nxy2;
 			for (int i = 0; i < nx; i++, di++) {
-				edge_sum += rdata[i + k2] + rdata[i + k3];
+				edge_sum += data[i + k2] + data[i + k3];
 			}
 		}
 		for (int k = 1; k < nz - 1; k++) {
 			int k2 = k * nxy;
 			int k3 = nx - 1 + k2;
 			for (int i = 1; i < ny - 1; i++, di++) {
-				edge_sum += rdata[i * nx + k2] + rdata[i * nx + k3];
+				edge_sum += data[i * nx + k2] + data[i * nx + k3];
 			}
 		}
 
@@ -567,9 +571,10 @@ float EMData::get_circle_mean()
 	}
 	double n = 0,s=0;
 	float *d = mask->get_data();
+	float * data = get_data();
 
-	for (int i = 0; i < nx * ny * nz; i++) {
-		if (d[i]) { n+=1.0; s+=rdata[i]; }
+	for (int i = 0; i < nx*ny*nz; i++) {
+		if (d[i]) { n+=1.0; s+=data[i]; }
 	}
 	
 
@@ -727,7 +732,7 @@ MArray2D EMData::get_2dview() const
 		throw ImageDimensionException("2D only");
 	}
 	boost::array<std::size_t,ndims> dims = {{nx, ny}};
-	MArray2D marray(rdata, dims, boost::fortran_storage_order());
+	MArray2D marray(get_data(), dims, boost::fortran_storage_order());
 	return marray;
 }
 
@@ -736,7 +741,7 @@ MArray3D EMData::get_3dview() const
 {
 	const int ndims = 3;
 	boost::array<std::size_t,ndims> dims = {{nx, ny, nz}};
-	MArray3D marray(rdata, dims, boost::fortran_storage_order());
+	MArray3D marray(get_data(), dims, boost::fortran_storage_order());
 	return marray;
 }
 
@@ -748,7 +753,7 @@ MCArray2D EMData::get_2dcview() const
 		throw ImageDimensionException("2D only");
 	}
 	boost::array<std::size_t,ndims> dims = {{nx/2, ny}};
-	std::complex<float>* cdata = reinterpret_cast<std::complex<float>*>(rdata);
+	std::complex<float>* cdata = reinterpret_cast<std::complex<float>*>(get_data());
 	MCArray2D marray(cdata, dims, boost::fortran_storage_order());
 	return marray;
 }
@@ -758,7 +763,7 @@ MCArray3D EMData::get_3dcview() const
 {
 	const int ndims = 3;
 	boost::array<std::size_t,ndims> dims = {{nx/2, ny, nz}};
-	std::complex<float>* cdata = reinterpret_cast<std::complex<float>*>(rdata);
+	std::complex<float>* cdata = reinterpret_cast<std::complex<float>*>(get_data());
 	MCArray3D marray(cdata, dims, boost::fortran_storage_order());
 	return marray;
 }
@@ -768,7 +773,7 @@ MCArray3D* EMData::get_3dcviewptr() const
 {
 	const int ndims = 3;
 	boost::array<std::size_t,ndims> dims = {{nx/2, ny, nz}};
-	std::complex<float>* cdata = reinterpret_cast<std::complex<float>*>(rdata);
+	std::complex<float>* cdata = reinterpret_cast<std::complex<float>*>(get_data());
 	MCArray3D* marray = new MCArray3D(cdata, dims,
 									  boost::fortran_storage_order());
 	return marray;
@@ -782,7 +787,7 @@ MArray2D EMData::get_2dview(int x0, int y0) const
 		throw ImageDimensionException("2D only");
 	}
 	boost::array<std::size_t,ndims> dims = {{nx, ny}};
-	MArray2D marray(rdata, dims, boost::fortran_storage_order());
+	MArray2D marray(get_data(), dims, boost::fortran_storage_order());
 	boost::array<std::size_t,ndims> bases={{x0, y0}};
 	marray.reindex(bases);
 	return marray;
@@ -793,7 +798,7 @@ MArray3D EMData::get_3dview(int x0, int y0, int z0) const
 {
 	const int ndims = 3;
 	boost::array<std::size_t,ndims> dims = {{nx, ny, nz}};
-	MArray3D marray(rdata, dims, boost::fortran_storage_order());
+	MArray3D marray(get_data(), dims, boost::fortran_storage_order());
 	boost::array<std::size_t,ndims> bases={{x0, y0, z0}};
 	marray.reindex(bases);
 	return marray;
@@ -807,7 +812,7 @@ MCArray2D EMData::get_2dcview(int x0, int y0) const
 		throw ImageDimensionException("2D only");
 	}
 	boost::array<std::size_t,ndims> dims = {{nx/2, ny}};
-	std::complex<float>* cdata = reinterpret_cast<std::complex<float>*>(rdata);
+	std::complex<float>* cdata = reinterpret_cast<std::complex<float>*>(get_data());
 	MCArray2D marray(cdata, dims, boost::fortran_storage_order());
 	boost::array<std::size_t,ndims> bases={{x0, y0}};
 	marray.reindex(bases);
@@ -819,7 +824,7 @@ MCArray3D EMData::get_3dcview(int x0, int y0, int z0) const
 {
 	const int ndims = 3;
 	boost::array<std::size_t,ndims> dims = {{nx/2, ny, nz}};
-	std::complex<float>* cdata = reinterpret_cast<std::complex<float>*>(rdata);
+	std::complex<float>* cdata = reinterpret_cast<std::complex<float>*>(get_data());
 	MCArray3D marray(cdata, dims, boost::fortran_storage_order());
 	boost::array<std::size_t,ndims> bases={{x0, y0, z0}};
 	marray.reindex(bases);
@@ -845,12 +850,12 @@ EMObject EMData::get_attr(const string & key) const
 
 	float mean = attr_dict["mean"];
 	float sigma = attr_dict["sigma"];
-
+	float *data = get_data();
 	if (key == "kurtosis") {
 		double kurtosis_sum = 0;
 
 		for (size_t k = 0; k < size; k++) {
-			float t = (rdata[k] - mean) / sigma;
+			float t = (data[k] - mean) / sigma;
 			float tt = t * t;
 			kurtosis_sum += tt * tt;
 		}
@@ -862,7 +867,7 @@ EMObject EMData::get_attr(const string & key) const
 	else if (key == "skewness") {
 		double skewness_sum = 0;
 		for (size_t k = 0; k < size; k++) {
-			float t = (rdata[k] - mean) / sigma;
+			float t = (data[k] - mean) / sigma;
 			skewness_sum +=  t * t * t;
 		}
 		float skewness = (float)(skewness_sum / size);
@@ -995,9 +1000,10 @@ void EMData::set_attr(const string & key, EMObject val)
 	}
 
 	attr_dict[key] = val;
+	float * data = get_data();
 
-	/* reset attribute nx, ny, nz will resize the image */
-	if(rdata != 0) {
+	/* data attribute nx, ny, nz will resize the image */
+	if(data != 0) {
 		EMData * new_image =0;
 		if( key == "nx" ) {
 			int nd = (int) val;
@@ -1057,9 +1063,9 @@ void EMData::set_attr_python(const string & key, EMObject val)
 		attr_dict[key] = val;
 	}
 
-
+	float * data = get_data();
 	/* reset attribute nx, ny, nz will resize the image */
-	if(rdata != 0) {
+	if(data != 0) {
 		EMData * new_image =0;
 		if( key == "nx" ) {
 			int nd = (int) val;
@@ -1108,7 +1114,7 @@ std::string EMData::get_data_pickle() const
 //	vf.resize(nx*ny*nz);
 //	std::copy(rdata, rdata+nx*ny*nz, vf.begin());
 
-	std::string vf((const char *)rdata,nx*ny*nz*sizeof(float));
+	std::string vf((const char *)get_data(),nx*ny*nz*sizeof(float));
 
 	return vf;
 }
@@ -1119,7 +1125,7 @@ void EMData::set_data_pickle(std::string vf)
 //	if (rdata) printf("rdata exists\n");
 //	rdata = (float *)malloc(nx*ny*nz*sizeof(float));
 //	std::copy(vf.begin(), vf.end(), rdata);
-	EMUtil::em_memcpy(rdata,vf.data(),nx*ny*nz*sizeof(float));
+	EMUtil::em_memcpy(get_data(),vf.data(),nx*ny*nz*sizeof(float));
 
 }
 
