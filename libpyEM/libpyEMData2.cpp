@@ -297,6 +297,8 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 #ifdef EMAN2_USING_CUDA
 	.def("do_fft_cuda", &EMAN::EMData::do_fft_cuda, return_value_policy< manage_new_object >())
 	.def("do_ift_cuda", &EMAN::EMData::do_ift_cuda, return_value_policy< manage_new_object >())
+	.def("calc_ccf_cuda", &EMAN::EMData::calc_ccf_cuda, return_value_policy< manage_new_object >())
+	.def("cut_slice_cuda", &EMAN::EMData::cut_slice_cuda, return_value_policy< manage_new_object >())		
 #endif // EMAN2_USING_CUDA
 	.def("render_amp8", &EMAN::EMData::render_amp8)
 	.def("render_ap24", &EMAN::EMData::render_ap24)

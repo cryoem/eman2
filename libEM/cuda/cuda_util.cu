@@ -4,6 +4,7 @@
 
 #include "cuda_defs.h"
 #include "cuda_emfft.h"
+#include "cuda_util.h"
 
 #include "emcudautil.h"
 
@@ -54,7 +55,7 @@ int make_cuda_array_space_0_free() {
 	//printf("Freeing space 0\n");
 	//debug_arrays();
 	int n = num_cuda_arrays-1;
-	set_emdata_cuda_array_handle(-1,cuda_arrays[n].emdata_pointer);
+	if (cuda_arrays[n].emdata_pointer != 0) set_emdata_cuda_array_handle(-1,cuda_arrays[n].emdata_pointer);
 	CUDA_SAFE_CALL(cudaFree(cuda_arrays[n].array));
 	cuda_arrays[n].array = 0;
 	
@@ -62,7 +63,7 @@ int make_cuda_array_space_0_free() {
 		CudaEMDataArray* to = &cuda_arrays[i+1];
 		CudaEMDataArray* from = &cuda_arrays[i];
 		copy_array_data(to,from);
-		set_emdata_cuda_array_handle(i+1,to->emdata_pointer);
+		if (to->emdata_pointer != 0) set_emdata_cuda_array_handle(i+1,to->emdata_pointer);
 	}
 	set_array_data_null(&cuda_arrays[0]);
 	
@@ -117,7 +118,7 @@ int delete_cuda_array(const int idx) {
 		CudaEMDataArray* to = &cuda_arrays[i];
 		CudaEMDataArray* from = &cuda_arrays[i+1];
 		copy_array_data(to,from);
-		set_emdata_cuda_array_handle(i,to->emdata_pointer);
+		if (to->emdata_pointer != 0) set_emdata_cuda_array_handle(i,to->emdata_pointer);
 	}
 	set_array_data_null(&cuda_arrays[num_cuda_arrays-1]);
 	num_cuda_arrays--;
@@ -207,5 +208,112 @@ void cuda_free_device(void* device_rdata)
 {
 	device_init(); // Technically unecessary seeing as the device must have been initialized to have allocate the pointer
 	cudaFree(device_rdata);
+}
+
+__global__ void  calc_max_location_wrap(int* const soln, const float* data,const int maxdx, const int maxdy, const int maxdz, const int nx, const int ny, const int nz) {
+	int maxshiftx = maxdx, maxshifty = maxdy, maxshiftz = maxdz;
+	if (maxdx == -1) maxshiftx = nx/4;
+	if (maxdy == -1) maxshifty = ny/4;
+	if (maxdz == -1) maxshiftz = nz/4;
+
+	float max_value = -10000000000000;
+
+	for (int k = -maxshiftz; k <= maxshiftz; k++) {
+		for (int j = -maxshifty; j <= maxshifty; j++) {
+			for (int i = -maxshiftx; i <= maxshiftx; i++) {
+				
+				int kk = k;
+				if (kk < 0) {
+					kk = nz-kk;
+				}
+				int jj = j;
+				if (jj < 0) {
+					jj = nz-jj;
+				}
+				int ii = i;
+				if (ii < 0) {
+					ii = nz-ii;
+				}
+				float value = data[ii+jj*nx+kk*nx*ny];
+
+				if (value > max_value) {
+					max_value = value;
+					soln[0] = i;
+					soln[1] = j;
+					soln[2] = k;
+				}
+			}
+		}
+	}
+}
+
+int* calc_max_location_wrap_cuda(const EMDataForCuda* data, const int maxdx, const int maxdy, const int maxdz) {
+	
+	int * device_soln=0;
+	cudaMalloc((void **)&device_soln, 3*sizeof(int));
+		
+	int * host_soln = 0;
+	host_soln = (int*) malloc(3*sizeof(int));
+	
+	const dim3 blockSize(1,1, 1);
+	const dim3 gridSize(1,1,1);
+		
+	calc_max_location_wrap<<<blockSize,gridSize>>>(device_soln,data->data,maxdx,maxdy,maxdz,data->nx,data->ny,data->nz);
+	
+	cudaMemcpy(host_soln,device_soln,3*sizeof(int),cudaMemcpyDeviceToHost);
+	cudaFree(device_soln);
+	return host_soln;
+}
+
+
+
+__global__ void cut_slice_kernel(float *out,int size, float3 mxx,float3 mxy, float3 mxz, float3 trans)
+{
+	uint x=threadIdx.x;
+	uint y=blockIdx.x;
+	
+	float fx=x-size/2.0;
+	float fy=y-size/2.0;
+
+	// The 0.5f offsets for x,y and z are required - Read section D.2 in Appendix D of the CUDA
+	// Programming Guide (version 2.0).
+	// Thankyou http://sites.google.com/site/cudaiap2009/cookbook-1
+	float tx=fx*mxx.x+fy*mxx.y+size/2.0+trans.x+0.5;
+	float ty=fx*mxy.x+fy*mxy.y+size/2.0+trans.y+0.5;
+	float tz=fx*mxz.x+fy*mxz.y+size/2.0+trans.z+0.5;
+
+	out[x+y*(int)size]=tex3D(tex, tx,ty,tz);
+}
+
+
+
+void cut_slice_cuda_(const EMDataForCuda* to_data,const float* const matrix)
+{
+	
+	const dim3 blockSize(to_data->ny,1, 1);
+	const dim3 gridSize(to_data->nx,1,1);
+	
+	float3 mxx,mxy,mxz,trans;
+	
+	mxx.x=matrix[0];
+	mxx.y=matrix[4];
+	mxx.z=matrix[8];
+	mxy.x=matrix[1];
+	mxy.y=matrix[5];
+	mxy.z=matrix[9];
+	mxz.x=matrix[2];
+	mxz.y=matrix[6];
+	mxz.z=matrix[10];
+	trans.x =matrix[3];
+	trans.y =matrix[7];
+	trans.z =matrix[11];
+	
+		
+	cut_slice_kernel<<<blockSize,gridSize>>>(to_data->data,to_data->nx,mxx,mxy,mxz,trans);
+	//CUDA_SAFE_CALL(cuCtxSynchronize());
+	cudaThreadSynchronize();
+// 	cudaMemcpy(d, memout, nx*ny*sizeof(float), cudaMemcpyDeviceToHost);
+// 	cudaFree(memout);
+	
 }
 

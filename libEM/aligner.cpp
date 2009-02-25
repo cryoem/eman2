@@ -104,6 +104,7 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 	EMData *cf = 0;
 
 	cf = this_img->calc_ccf(to);
+// 	cf = this_img->calc_ccf_cuda(to);
 // 
 	int nx = this_img->get_xsize();
 	int ny = this_img->get_ysize();
@@ -133,6 +134,7 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 	
 	
 	IntPoint peak = cf->calc_max_location_wrap(maxshiftx, maxshifty, maxshiftz);
+// 	int* peak = calc_max_location_wrap_cuda(&cf->get_data_struct_for_cuda(),maxshiftx, maxshifty, maxshiftz);
 // 	float maxscore = cf->get_value_at_wrap(peak[0],peak[1],peak[2]);
 // 	Vec3f pre_trans = this_img->get_translation();
 	Vec3f cur_trans = Vec3f ( (float)-peak[0], (float)-peak[1], (float)-peak[2]);
@@ -164,16 +166,7 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 		t->set_trans(cur_trans);
 	}
 	
-	
-	bool test = false;
-	if ( test ) {
-		EMData* test = cf->calc_ccf(to);
-		IntPoint peak = cf->calc_max_location_wrap(maxshiftx, maxshifty, maxshiftz);
-		delete test;
-	}
-	
 	return cf;	
-	
 }
 
 EMData * RotationalAligner::align_180_ambiguous(EMData * this_img, EMData * to, int rfp_mode) {

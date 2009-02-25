@@ -34,6 +34,21 @@ void cuda_memcpy_host_to_device(const void* const host_rdata, void* device_rdata
 void cuda_malloc_device(void** device_rdata, const size_t num_bytes);
 void cuda_free_device(void* device_rdata);
 
+/** A struct for passing EMData objects to and from things like processors
+*/
+struct EMDataForCuda {
+	float * data; // Cuda device pointer
+	int nx; // Number of pixels in the x dimension
+	int ny; // Number of pixels in the y dimension
+	int nz; // Number of pixels in the z dimension
+};
+
+
+int* calc_max_location_wrap_cuda(const EMDataForCuda* data, const int maxdx, const int maxdy, const int maxdz);
+
+void cut_slice_cuda_(const EMDataForCuda* data,const float* const);
+
+
 #endif // eman__cuda_util_h__
 
 

@@ -91,8 +91,8 @@ EMData *EMData::copy_head() const
 	ENTERFUNC;
 	EMData *ret = new EMData();
 	ret->attr_dict = attr_dict;
-	ret->set_size(nx, ny, nz); // This could potentially be removed if lazy allocation is going to be used
-
+// This call doesn't make sense. I found an 
+// 	ret->set_size(nx, ny, nz); 
 	ret->flags = flags;
 
 	ret->all_translation = all_translation;

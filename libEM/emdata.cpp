@@ -56,6 +56,10 @@
 
 #define EMDATA_EMAN2_DEBUG 0
 
+#ifdef EMAN2_USING_CUDA
+#include <cuda_runtime_api.h>
+#endif // EMAN2_USING_CUDA
+
 using namespace EMAN;
 using namespace std;
 using namespace boost;
@@ -115,20 +119,27 @@ EMData::EMData(const EMData& that) :
 #ifdef EMAN2_USING_CUDA
 		cuda_array_handle(-1), cuda_rdata(0),
 #endif //EMAN2_USING_CUDA
-		attr_dict(that.attr_dict), rdata(0), supp(0), flags(that.flags), changecount(0), nx(0), ny(0), nz(0), 
+		attr_dict(that.attr_dict), rdata(0), supp(0), flags(that.flags), changecount(0), nx(that.nx), ny(that.ny), nz(that.nz), 
 		nxy(0), xoff(that.xoff), yoff(that.yoff), zoff(that.zoff),all_translation(that.all_translation),	path(that.path),
 		pathnum(that.pathnum), rot_fp(0)
 {
 	ENTERFUNC;
 
-	float* data = that.get_data();
+	float* data = that.rdata;
+	size_t num_bytes = nx*ny*nz*sizeof(float);
 	if (data)
 	{
-		nx = 1; // This prevents a memset in set_size
-		set_size(that.nx, that.ny, that.nz);
+		
+		rdata = (float*)EMUtil::em_malloc(num_bytes);
 		EMUtil::em_memcpy(rdata, data, nx * ny * nz * sizeof(float));
 	}
-
+#ifdef EMAN2_USING_CUDA
+	float * cuda_data = that.cuda_rdata;
+	if (cuda_data) {
+		cudaMalloc((void**)&cuda_rdata,num_bytes);
+		cudaMemcpy(cuda_rdata,cuda_data,num_bytes,cudaMemcpyDeviceToDevice);
+	}
+#endif //EMAN2_USING_CUDA
 	if (that.rot_fp != 0) rot_fp = new EMData(*(that.rot_fp));
 
 	
@@ -302,10 +313,11 @@ void EMData::clip_inplace(const Region & area)
 	// Get a object that calculates all the interesting variables associated with the clip inplace operation
 	ClipInplaceVariables civ(prev_nx, prev_ny, prev_nz, new_nx, new_ny, new_nz, x0, y0, z0);
 
+	get_data(); // Do this here to make sure rdata is up to date, applicable if GPU stuff is occuring
 	// Double check to see if any memory shifting even has to occur
 	if ( x0 > prev_nx || y0 > prev_ny || z0 > prev_nz || civ.x_iter == 0 || civ.y_iter == 0 || civ.z_iter == 0)
 	{
-		// In this case the volume has been shifted beyond the location of the pixel data and
+		// In this case the volume has been shifted beyond the location of the pixel rdata and
 		// the client should expect to see a volume with nothing in it.
 
 		// Set size calls realloc,
@@ -318,7 +330,7 @@ void EMData::clip_inplace(const Region & area)
 	}
 
 	// Resize the volume before memory shifting occurs if the new volume is larger than the previous volume
-	// All of the pixel data is guaranteed to be at the start of the new volume because realloc (called in set size)
+	// All of the pixel rdata is guaranteed to be at the start of the new volume because realloc (called in set size)
 	// guarantees this.
 	if ( new_size > prev_size )
 		set_size(new_nx, new_ny, new_nz);
@@ -411,7 +423,7 @@ void EMData::clip_inplace(const Region & area)
 	}
 
 	// Resize the volume after memory shifting occurs if the new volume is smaller than the previous volume
-	// set_size calls realloc, guaranteeing that the pixel data is in the right location.
+	// set_size calls realloc, guaranteeing that the pixel rdata is in the right location.
 	if ( new_size < prev_size )
 		set_size(new_nx, new_ny, new_nz);
 
@@ -1827,7 +1839,6 @@ EMData *EMData::make_rotational_footprint_e1( bool unwrap)
 		   filt->get_zsize() != clipped->get_zsize()) {
 		filt->set_size(clipped->get_xsize() + 2-(clipped->get_xsize()%2), clipped->get_ysize(), clipped->get_zsize());
 		filt->to_one();
-
 	}
 	
 	EMData *mc = clipped->calc_mutual_correlation(clipped, true,filt);
@@ -2598,8 +2609,8 @@ void EMData::cconj() {
 void EMData::update_stat() const
 {
 	ENTERFUNC;
-
-	if (!(flags & EMDATA_NEEDUPD) || rdata == 0) // rdata == 0 condition may exist when using GPU 
+	float* data = get_data();
+	if (!(flags & EMDATA_NEEDUPD) || data == 0) // rdata == 0 condition may exist when using GPU 
 	{
 		EXITFUNC;
 		return;
@@ -2620,8 +2631,9 @@ void EMData::update_stat() const
 
 	//cout << "point 1" << endl;
 	//cout << "size is " << nx << " " << ny << " " << nz << endl;
+	
 	for (int i = 0; i < nx*ny*nz; i += step) {
-		float v = rdata[i];
+		float v = data[i];
 	#ifdef _WIN32
 		max = _cpp_max(max,v);
 		min = _cpp_min(min,v);
@@ -2664,11 +2676,6 @@ void EMData::update_stat() const
 	{
 		delete rot_fp; rot_fp = NULL;
 	}
-	
-#ifdef EMAN2_USING_CUDA
-	free_cuda_array();
-// 	free_cuda_memory();
-#endif // EMAN2_USING_CUDA
 	
 	EXITFUNC;
 }
@@ -3200,9 +3207,9 @@ void EMData::common_lines(EMData * image1, EMData * image2,
 						for (int j = 0; j < steps; j++) {
 							int l = i + j * steps * 2;
 							int j2 = j * rmax * 2;
-							rdata[l] = 0;
+							data[l] = 0;
 							for (int k = 0; k < jmax; k++) {
-								rdata[l] += im1[i2 + k] * im2[j2 + k];
+								data[l] += im1[i2 + k] * im2[j2 + k];
 							}
 						}
 					}
@@ -3215,13 +3222,13 @@ void EMData::common_lines(EMData * image1, EMData * image2,
 						for (int j = 0; j < steps; j++) {
 							int j2 = j * rmax * 2;
 							int l = i + j * steps * 2 + steps2;
-							rdata[l] = 0;
+							data[l] = 0;
 
 							for (int k = 0; k < jmax; k += 2) {
 								i2 += k;
 								j2 += k;
-								rdata[l] += im1[i2] * im2[j2];
-								rdata[l] += -im1[i2 + 1] * im2[j2 + 1];
+								data[l] += im1[i2] * im2[j2];
+								data[l] += -im1[i2 + 1] * im2[j2 + 1];
 							}
 						}
 					}
@@ -3246,7 +3253,7 @@ void EMData::common_lines(EMData * image1, EMData * image2,
 						int j2 = j * rmax * 2;
 
 						int l = i + j * steps * 2 + steps2;
-						rdata[l] = 0;
+						data[l] = 0;
 						float a = 0;
 
 						for (int k = 0; k < jmax; k += 2) {
@@ -3261,11 +3268,11 @@ void EMData::common_lines(EMData * image1, EMData * image2,
 							float p1 = atan2(im1[i2 + 1], im1[i2]);
 							float p2 = atan2(im2[j2 + 1], im2[j2]);
 
-							rdata[l] += Util::angle_sub_2pi(p1_sign * p1, p2) * a1;
+							data[l] += Util::angle_sub_2pi(p1_sign * p1, p2) * a1;
 							a += a1;
 						}
 
-						rdata[l] /= (float)(a * M_PI / 180.0f);
+						data[l] /= (float)(a * M_PI / 180.0f);
 					}
 				}
 			}
@@ -3283,15 +3290,15 @@ void EMData::common_lines(EMData * image1, EMData * image2,
 					for (int j = 0; j < steps; j++) {
 						int j2 = j * rmax * 2;
 						int l = i + j * steps * 2 + steps2;
-						rdata[l] = 0;
+						data[l] = 0;
 
 						for (int k = 0; k < jmax; k += 2) {
 							i2 += k;
 							j2 += k;
 #ifdef	_WIN32
-							rdata[l] += (float) (_hypot(im1[i2], im1[i2 + 1]) * _hypot(im2[j2], im2[j2 + 1]));
+							data[l] += (float) (_hypot(im1[i2], im1[i2 + 1]) * _hypot(im2[j2], im2[j2 + 1]));
 #else
-							rdata[l] += (float) (hypot(im1[i2], im1[i2 + 1]) * hypot(im2[j2], im2[j2 + 1]));
+							data[l] += (float) (hypot(im1[i2], im1[i2 + 1]) * hypot(im2[j2], im2[j2 + 1]));
 #endif	//_WIN32
 						}
 					}
@@ -3553,6 +3560,36 @@ void EMData::cut_slice(const EMData *const map, const Transform& transform, bool
 
 	EXITFUNC;
 }
+
+#ifdef EMAN2_USING_CUDA
+EMData* EMData::cut_slice_cuda(const Transform& transform)
+{
+	ENTERFUNC;
+// 
+	// These restrictions should be ultimately restricted so that all that matters is get_ndim() = (map->get_ndim() -1)
+	if ( get_ndim() != 3 ) throw ImageDimensionException("Can not cut slice from an image that is not 3D");
+	// Now check for complex images - this is really just being thorough
+	if ( is_complex() ) throw ImageFormatException("Can not call cut slice on an image that is complex");
+// 
+
+	EMData* ret = new EMData();
+	ret->set_size_cuda(nx,ny,1);
+	
+	float * m = new float[12];
+	transform.copy_matrix_into_array(m);
+	
+	EMDataForCuda tmp = ret->get_data_struct_for_cuda();
+	bind_cuda_array(); // Binds this image to the global texture
+	cut_slice_cuda_(&tmp,m);
+	
+	ret->gpu_update();
+	delete [] m;
+	
+	EXITFUNC;
+	return ret;
+}
+
+#endif // EMAN2_USING_CUDA
 
 
 void EMData::uncut_slice(EMData * const map, const Transform& transform) const

@@ -247,6 +247,11 @@ template <> Factory < Processor >::Factory()
 	force_add(&WaveletProcessor::NEW);
 	force_add(&FFTProcessor::NEW);
 	force_add(&RadialProcessor::NEW);
+	
+#ifdef EMAN2_USING_CUDA
+	force_add(&CudaMultProcessor::NEW);
+	force_add(&CudaCorrelationProcessor::NEW);
+#endif // EMAN2_USING_CUDA
 }
 
 EMData* Processor::process(const EMData * const image)
@@ -8056,6 +8061,27 @@ Dict CUDA_kmeans::get_info() {
     return INFO;
 }
 
+#include "cuda/cuda_util.h"
+#include "cuda/cuda_processor.h"
+
+void CudaMultProcessor::process_inplace(EMData* image) {
+	float val = params.set_default("scale",(float) 1.0);
+	EMDataForCuda tmp = image->get_data_struct_for_cuda();
+	emdata_processor_mult(&tmp,val);
+	image->gpu_update();
+}
+
+
+void CudaCorrelationProcessor::process_inplace(EMData* image) {
+	EMData* with = params.set_default("with",(EMData*)0);
+	if (with == 0) throw InvalidParameterException("You must supply the with parameter, and it must be valid. It is NULL.");
+	
+	EMDataForCuda left = image->get_data_struct_for_cuda();
+	EMDataForCuda right = with->get_data_struct_for_cuda();
+	emdata_processor_correlation(&left,&right);
+	image->gpu_update();
+}
+
 #endif //EMAN2_USING_CUDA	
 	
 void EMAN::dump_processors()
@@ -8104,5 +8130,7 @@ map<string, vector<string> > EMAN::group_processors()
 
 	return processor_groups;
 }
+
+
 
 /* vim: set ts=4 noet: */

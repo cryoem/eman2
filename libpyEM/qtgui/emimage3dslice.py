@@ -277,12 +277,14 @@ class EM3DSliceViewerModule(EMImage3DGUIModule):
 		[t,alt,phi] = self.get_eman_transform(v)
 			
 		nn = float(self.slice)/float(n)
-	
-		tmp = self.get_correct_dims_2d_emdata() 
-
 		trans = (nn-0.5)*v
 		t.set_trans(2.0*int(n/2)*trans)
-		tmp.cut_slice(self.data,t,True)
+	
+		if False and EMUtil.cuda_available(): # disable for the time being - big textures won't work on CPU
+			tmp = self.data.cut_slice_cuda(t)
+		else:
+			tmp = self.get_correct_dims_2d_emdata() 
+			tmp.cut_slice(self.data,t,True)
 			
 		if ( self.tex_name != 0 ): glDeleteTextures(self.tex_name)
 		self.tex_name = 0

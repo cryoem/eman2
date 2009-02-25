@@ -70,7 +70,7 @@ float *get_data() const;
 /** Get the image pixel density data in a 1D float array - const version of get_data
  * @return The image pixel density data.
  */
-inline const float * const get_const_data() const { return rdata; }
+inline const float * const get_const_data() const { return get_data(); }
 
 /**  Set the data explicitly
 * data pointer must be allocated using malloc!
@@ -83,6 +83,7 @@ inline void set_data(float* data, const int x, const int y, const int z) {
 	if (rdata) { EMUtil::em_free(rdata); rdata = 0; }
 	rdata = data;
 	nx = x; ny = y; nz = z;
+	nxy = nx*ny;
 	update();
 }
 
@@ -575,7 +576,8 @@ inline int get_size() const
 inline vector<float> get_data_as_vector() const {
 	int size = get_size();
 	vector<float> v(size);
-	std::copy(rdata,rdata+size,v.begin());
+	float* data = get_data();
+	std::copy(data,data+size,v.begin());
 	return v;
 }
 

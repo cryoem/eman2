@@ -5741,11 +5741,81 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			int default_bins;
 	};
 	
-	/* class CUDA kmeans processor
-	 * 02/13/2009 JB
-	 * python wrap for cuda_kmeans.cu
-	 */
+	
 #ifdef EMAN2_USING_CUDA
+	/** Cuda based constant multiplication processor
+	 * @author David Woolford
+	 * @date Feb 24 2009
+	*/
+	class CudaMultProcessor: public Processor
+	{
+		public:
+			
+			void process_inplace(EMData * image);
+		
+			string get_name() const
+			{
+				return "cuda.math.mult";
+			}
+		
+			static Processor *NEW()
+			{
+				return new CudaMultProcessor();
+			}
+		
+			TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("scale", EMObject::FLOAT, "The amount to multiply each pixel by");
+				return d;
+			}
+		
+			string get_desc() const
+			{
+				return "Multiplies each pixel by a constant value";
+			}
+		protected:
+	};
+	
+	/** Cuda based auto correlation processor
+	 * @author David Woolford
+	 * @date Feb 24 2009
+	 */
+	class CudaCorrelationProcessor: public Processor
+	{
+		public:
+			
+			void process_inplace(EMData * image);
+		
+			string get_name() const
+			{
+				return "cuda.correlate";
+			}
+		
+			static Processor *NEW()
+			{
+				return new CudaCorrelationProcessor();
+			}
+		
+			TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("with", EMObject::EMDATA, "That which to perform the cross correlation with.");
+				return d;
+			}
+		
+			string get_desc() const
+			{
+				return "Performs Fourier based cross correlation on the GPU";
+			}
+		protected:
+	};
+	
+	
+	/* class CUDA kmeans processor
+	* 02/13/2009 JB
+	* python wrap for cuda_kmeans.cu
+	*/
 	class CUDA_kmeans {
 	public:
 		CUDA_kmeans();

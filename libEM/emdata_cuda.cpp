@@ -36,13 +36,14 @@
 #include "emdata.h"
 #include <cuda_runtime_api.h>
 #include "cuda/cuda_util.h"
+#include "cuda/cuda_processor.h"
+
 
 
 using namespace EMAN;
 
 float* EMData::get_cuda_data() const {
 	device_init();
-
 	size_t num_bytes = nx*ny*nz*sizeof(float);
 	if (cuda_rdata == 0) {
 		cudaMalloc((void**)&cuda_rdata,num_bytes);
@@ -53,13 +54,50 @@ float* EMData::get_cuda_data() const {
 	}
 	
 	flags &= ~EMDATA_GPU_NEEDS_UPDATE;
-	
 	return cuda_rdata;
 }
 
 
 void EMData::gpu_update() {
 	flags |= EMDATA_NEEDUPD | EMDATA_CPU_NEEDS_UPDATE | EMDATA_GPU_RO_NEEDS_UPDATE;
+}
+
+void EMData::mult_cuda(const float& val) {
+	Dict d("scale",(float)val);
+	process_inplace("cuda.math.mult",d);
+}
+
+EMData* EMData::calc_ccf_cuda( EMData*  image ) {
+	
+	EMData* tmp;
+	if (is_complex()) {
+		tmp = new EMData(*this);
+	} else {
+		tmp = do_fft_cuda();
+	}
+	
+	Dict d;
+	EMData* with = 0;
+	if (!image->is_complex()) {
+		with = image->do_fft_cuda();
+		d["with"] = (EMData*) with;
+	} else {
+		d["with"] = (EMData*)image;
+	}
+	
+	tmp->process_inplace("cuda.correlate",d);
+	
+	if (with != 0) {
+		delete with;
+		with = 0;
+	}
+	
+
+	EMData* soln = tmp->do_ift_cuda();
+	
+	delete tmp;
+	tmp = 0;
+	return soln;
 }
 
 void EMData::free_cuda_array() const {

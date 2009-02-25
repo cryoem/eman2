@@ -62,7 +62,6 @@ EMData* EMData::get_fft_amplitude2D()
 			" expected Input image is 3D.");
 	}
 
-
 	int nx2 = nx/2;
 
 	EMData *dat = copy_head();
@@ -200,7 +199,6 @@ float* EMData::get_data() const
 	}
 #ifdef EMAN2_USING_CUDA
 	if (cuda_rdata != 0 && (EMDATA_CPU_NEEDS_UPDATE & flags)) {
-		
 		cudaMemcpy(rdata,cuda_rdata,num_bytes,cudaMemcpyDeviceToHost);
 	}
 	
@@ -629,10 +627,7 @@ void EMData::set_size(int x, int y, int z)
 
 	int old_nx = nx;
 	size_t old_size = nx*ny*nz*sizeof(float);
-	nx = x;
-	ny = y;
-	nz = z;
-	nxy = nx*ny;
+	
 
 	size_t size = (size_t)(x) * (size_t)y * (size_t)z * sizeof(float);
 	
@@ -653,10 +648,7 @@ void EMData::set_size(int x, int y, int z)
 		throw BadAllocException(message);
 	}
 
-	attr_dict["nx"] = x;
-	attr_dict["ny"] = y;
-	attr_dict["nz"] = z;
-
+	
 	if (old_nx == 0) {
 		EMUtil::em_memset(rdata,0,size);
 	}
@@ -665,7 +657,22 @@ void EMData::set_size(int x, int y, int z)
 		EMUtil::em_free(supp);
 		supp = 0;
 	}
+	
+#ifdef EMAN2_USING_CUDA
+	free_cuda_array();
+ 	free_cuda_memory();
+#endif // EMAN2_USING_CUDA
+	
+	nx = x;
+	ny = y;
+	nz = z;
+	nxy = nx*ny;
+	
+	attr_dict["nx"] = x;
+	attr_dict["ny"] = y;
+	attr_dict["nz"] = z;
 
+	
 	update();
 	EXITFUNC;
 }
@@ -689,12 +696,6 @@ void EMData::set_size_cuda(int x, int y, int z)
 		throw InvalidValueException(z, "z size <= 0");
 	}
 
-	//size_t old_size = nx*ny*nz*sizeof(float);
-	nx = x;
-	ny = y;
-	nz = z;
-	nxy = nx*ny;
-
 	size_t size = (size_t)(x) * (size_t)y * (size_t)z * sizeof(float);
 	
 	device_init();
@@ -715,11 +716,19 @@ void EMData::set_size_cuda(int x, int y, int z)
 		throw BadAllocException(message);
 	}
 
+	free_memory();
+	
+	nx = x;
+	ny = y;
+	nz = z;
+	
+	nxy = nx*ny;
+
 	attr_dict["nx"] = x;
 	attr_dict["ny"] = y;
 	attr_dict["nz"] = z;
-
 	update();
+	
 	EXITFUNC;
 }
 
@@ -1000,10 +1009,10 @@ void EMData::set_attr(const string & key, EMObject val)
 	}
 
 	attr_dict[key] = val;
-	float * data = get_data();
+	
 
 	/* data attribute nx, ny, nz will resize the image */
-	if(data != 0) {
+	if(rdata != 0) {
 		EMData * new_image =0;
 		if( key == "nx" ) {
 			int nd = (int) val;

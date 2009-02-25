@@ -751,6 +751,9 @@ namespace EMAN
 		 */
 		void cut_slice(const EMData * const map, const Transform& tr, bool interpolate = true);
 
+#ifdef EMAN2_USING_CUDA
+		EMData* cut_slice_cuda(const Transform& tr);
+#endif // EMAN2_USING_CUDA
 		/** Opposite of the cut_slice(). It will take a slice and insert
 		 * the data into a real 3D map. It does not interpolate, it uses
 		 * the nearest neighbor.

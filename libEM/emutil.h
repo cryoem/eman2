@@ -278,6 +278,13 @@ namespace EMAN
 		static vector<EMObject> get_all_attributes(const string & file_name, const string & attr_name);
         
 		
+		static bool cuda_available() {
+#ifdef EMAN2_USING_CUDA
+			return true;	
+#else
+			return false;
+#endif
+		}
 		
 		static void* em_malloc(const size_t size);
 		static void* em_calloc(const size_t nmemb,const size_t size);

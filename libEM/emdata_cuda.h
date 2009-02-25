@@ -59,6 +59,16 @@ public:
 	 */
 	float* get_cuda_data() const;
 	
+	EMDataForCuda get_data_struct_for_cuda() { 
+		EMDataForCuda tmp = {get_cuda_data(),nx,ny,nz};
+		return tmp;
+	}
+	
+	EMData* calc_ccf_cuda(EMData* image );
+	
+	void mult_cuda(const float& val);
+	
+	void gpu_update();
 private:
 	
 	
@@ -69,7 +79,10 @@ private:
 	mutable int cuda_array_handle;
 	mutable float* cuda_rdata;
 	
-	void gpu_update();
+	
+	
+	
+	
 
 #endif // EMAN2_USING_CUDA
 	

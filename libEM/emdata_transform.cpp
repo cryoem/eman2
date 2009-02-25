@@ -59,12 +59,12 @@ EMData *EMData::do_fft_cuda() const
 		LOGERR("real image expected. Input image is complex image.");
 		throw ImageFormatException("real image expected. Input image is complex image.");
 	}
-
 	int nxreal = nx;
 	int offset = 2 - nx%2;
 	int nx2 = nx + offset;
 	EMData* dat = new EMData();
 	dat->set_attr_dict_explicit(attr_dict);
+	dat->set_flags(get_flags());
 	dat->set_size_cuda(nx2, ny, nz);
 	//dat->to_zero();  // do not need it, real_to_complex will do it right anyway
 	if (offset == 1) dat->set_fftodd(true);
@@ -74,11 +74,11 @@ EMData *EMData::do_fft_cuda() const
 	//std::cout<<" do_fft "<<rdata[5]<<"  "<<d[5]<<std::endl;
 	cuda_dd_fft_real_to_complex_nd(get_cuda_data(), d, nxreal, ny, nz);
 
-	dat->gpu_update();
 	dat->set_fftpad(true);
 	dat->set_complex(true);
 	if(dat->get_ysize()==1 && dat->get_zsize()==1) dat->set_complex_x(true);
 	dat->set_ri(true);
+	dat->gpu_update();
 
 	EXITFUNC;
 	return dat;
@@ -96,29 +96,19 @@ EMData *EMData::do_ift_cuda() const
 	if (!is_ri()) {
 		LOGWARN("run IFT on AP data, only RI should be used. Converting.");
 	}
-
-// 	EMData* dat = copy_head();
+	int offset = is_fftodd() ? 1 : 2;
 	EMData* dat = new EMData();
 	dat->set_attr_dict_explicit(attr_dict);
-	dat->set_size_cuda(nx, ny, nz);
-// 	dat->set_size(nx, ny, nz);
-	
-	// TODO cuda apri infrastructure
-	// ap2ri()
+	dat->set_flags(get_flags());
+	dat->set_size_cuda(nx-offset, ny, nz);
 
 	float *d = dat->get_cuda_data();
 
-	
-	int offset = is_fftodd() ? 1 : 2;
 	cuda_dd_fft_complex_to_real_nd(get_cuda_data(),d,nx - offset, ny, nz);
 	
-	// TODO resize the image
-	//dat->set_size(nx - offset, ny, nz);	//remove the padding
-	
 	// SCALE the inverse FFT
-	// TODO Mult for a  gpu pointer
-	//float scale = 1.0f / ((nx - offset) * ny * nz);
-	//dat->mult(scale);
+	float scale = 1.0f / ((nx - offset) * ny * nz);
+	dat->mult_cuda(scale);
 	
 	dat->set_fftpad(false);
 	dat->set_complex(false);
@@ -175,6 +165,7 @@ EMData *EMData::do_fft_inplace()
 	
 	size_t offset;
 	int nxreal;
+	get_data(); // Required call if GPU caching is being used. Otherwise harmless
 	if (!is_fftpadded()) {
 		// need to extend the matrix along x
 		// meaning nx is the un-fftpadded size
@@ -224,6 +215,7 @@ EMData *EMData::do_ift()
 		LOGWARN("run IFT on AP data, only RI should be used. Converting.");
 	}
 
+	get_data(); // Required call if GPU caching is being used. Otherwise harmless
 	EMData* dat = copy_head();
 	dat->set_size(nx, ny, nz);
 	ap2ri();
