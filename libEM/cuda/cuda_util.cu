@@ -295,13 +295,13 @@ void cut_slice_cuda_(const EMDataForCuda* to_data,const float* const matrix)
 	float3 mxx,mxy,mxz,trans;
 	
 	mxx.x=matrix[0];
-	mxx.y=matrix[4];
-	mxx.z=matrix[8];
-	mxy.x=matrix[1];
+	mxx.y=matrix[1];
+	mxx.z=matrix[2];
+	mxy.x=matrix[4];
 	mxy.y=matrix[5];
-	mxy.z=matrix[9];
-	mxz.x=matrix[2];
-	mxz.y=matrix[6];
+	mxy.z=matrix[6];
+	mxz.x=matrix[8];
+	mxz.y=matrix[9];
 	mxz.z=matrix[10];
 	trans.x =matrix[3];
 	trans.y =matrix[7];
