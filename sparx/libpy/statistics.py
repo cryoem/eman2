@@ -1424,15 +1424,18 @@ def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, listID = None):
 		image = DATA[ct].copy()
 		# 3D object
 		if nz > 1:
-			try:	phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(image)
-			except:	phi, theta, psi, s3x, s3y, s3z, mirror, scale = 0, 0, 0, 0, 0, 0, 0, 0
-			image  = rot_shift3D(image, phi, theta, psi, s3x, s3y, s3z)
-			if mirror: image.process_inplace('mirror', {'axis':'x'})
+			try:
+				phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(image)
+				image  = rot_shift3D(image, phi, theta, psi, s3x, s3y, s3z, scale)
+				if mirror: image.process_inplace('mirror', {'axis':'x'})
+			except:	pass
 		# 2D object
 		elif ny > 1:
-			try:	alpha, sx, sy, mirror, scale = get_params2D(image)
-			except: alpha, sx, sy, mirror, scale  = 0, 0, 0, 0, 0
-			image = rot_shift2D(image, alpha, sx, sy, mirror)
+			try:
+				alpha, sx, sy, mirror, scale = get_params2D(image)
+				image = rot_shift2D(image, alpha, sx, sy, mirror, scale)
+			except: pass
+			
 		# obtain ctf
 		if CTF:
 			ctf_params = image.get_attr( "ctf" )
@@ -3972,8 +3975,26 @@ def k_means_groups_MPI(stack, out_file, maskname, opt_method, K1, K2, rand_seed,
 ## K-MEANS CUDA ###########################################################################
 # 2009-02-20 15:39:43
 
+# k-means print out error given by the cuda code
+def k_means_cuda_error(status):
+	from utilities import print_msg
+	# status info:
+	# 0 - all is ok
+	# 1 - error to init host memory
+	# 2 - error to init device memory
+	# 3 - error system on device
+	# 4 - init assignment with empty class
+	# 5 - classification return empty class
+	print_msg('============================================\n')
+	if   status == 1: print_msg('* ERROR: allocation host memory            *\n')
+	elif status == 2: print_msg('* ERROR: allocation device memory          *\n')
+	elif status == 3: print_msg('* ERROR: system device                     *\n')
+	elif status == 4: print_msg('* ERROR: random assignment (empty class)   *\n')
+	elif status == 5: print_msg('* ERROR: classification return empty class *\n')
+	print_msg('============================================\n')
+
 # k-means write the head of the logfile for CUDA
-def k_means_headlog_cuda(stackname, outname, method, N, K, maskname, maxit, T0, F, rnd, ncpu, m):
+def k_means_cuda_headlog(stackname, outname, method, N, K, maskname, maxit, T0, F, rnd, ncpu, m):
 	from utilities import print_msg
 	from math import log
 
@@ -3989,7 +4010,7 @@ def k_means_headlog_cuda(stackname, outname, method, N, K, maskname, maxit, T0, 
 	#        IM          AVE         DIST
 	device = N * m * 4 + K * m * 4 + N * K * 4
 	#               ASG     NC      IM2     AVE2
-	host = device + N * 2 + K * 2 + N * 4 + K * 4
+	host = device + N * 2 + K * 4 + N * 4 + K * 4
 	ie_device  = int(log(device) // log(1e3))
 	ie_host    = int(log(host)   // log(1e3))
 	device    /= (1e3 ** ie_device)
@@ -4023,10 +4044,10 @@ def k_means_headlog_cuda(stackname, outname, method, N, K, maskname, maxit, T0, 
 
 
 # k-means open, prepare, and load images for CUDA k-means
-def k_means_cuda_open_im(KmeansCUDA, stack, maskname):
+def k_means_cuda_open_im(KmeansCUDA, stack, mask):
 	from utilities     import get_params2D, get_image
 	from fundamentals  import rot_shift2D, rot_shift3D
-	from utilities     import file_type
+	from utilities     import file_type, model_blank, get_im
 	from statistics    import k_means_open_im
 
 	# check if the flag active is used, in the case where k-means will run for the stability
@@ -4057,48 +4078,40 @@ def k_means_cuda_open_im(KmeansCUDA, stack, maskname):
 				if image.get_attr('active'): lim.append(n)
 
 		N = len(lim)
-	else: lim = None
-
-	# open mask if defined
-	if maskname != None:
-		if isinstance(maskname, basestring):
-			mask = get_image(maskname)
-	else:
-		# anyway image must be a flat image
-		mask = model_blank(nx, ny, nz)
-		mask.to_one()
+	else: lim = range(N)
+	del image
 
 	# open one by one to avoid allocation of twice memory (python/C)
+	# even if it takes more time
 	c = 0
 	for i in lim:
-		image.read_image(stack, i)
+		image = get_im(stack, i)
 		
 		# 3D object
 		if nz > 1:
-			try:	phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(image)
-			except:	phi, theta, psi, s3x, s3y, s3z, mirror, scale = 0, 0, 0, 0, 0, 0, 0, 0
-			image  = rot_shift3D(image, phi, theta, psi, s3x, s3y, s3z)
-			if mirror: image.process_inplace('mirror', {'axis':'x'})
+			try:
+				phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(image)
+				image = rot_shift3D(image, phi, theta, psi, s3x, s3y, s3z, scale)
+				if mirror: image.process_inplace('mirror', {'axis':'x'})
+			except:	pass
 		# 2D object
 		elif ny > 1:
-			try:	alpha, sx, sy, mirror, scale = get_params2D(image)
-			except: alpha, sx, sy, mirror, scale  = 0, 0, 0, 0, 0
-			image = rot_shift2D(image, alpha, sx, sy, mirror)
+			try:
+				alpha, sx, sy, mirror, scale = get_params2D(image)
+				image = rot_shift2D(image, alpha, sx, sy, mirror, scale)
+			except: pass
 
 		# apply mask 
 		image = Util.compress_image_mask(image, mask)
-
-		# one more parameter
-		if c == 0: m = image.get_xsize()
 
 		# load to C function through the kmeansCUDA object
 		KmeansCUDA.append_flat_image(image, c)
 		c += 1
 
-	return KmeansCUDA, lim, mask, N, m
+	return lim 
 
 # K-means write results output directory
-def k_means_cuda_export(PART, INFO, AVE, out_seedname):
+def k_means_cuda_export(PART, INFO, FLATAVE, out_seedname, mask):
 	from utilities import print_msg
 	import os
 	
@@ -4107,20 +4120,20 @@ def k_means_cuda_export(PART, INFO, AVE, out_seedname):
 	os.mkdir(out_seedname)
 
 	# write the report on the logfile
-	print_msg('\nReport:\n')
-	time_run = INFO['time']
+	time_run = int(INFO['time'])
 	time_h   = time_run / 3600
 	time_m   = (time_run % 3600) / 60
 	time_s   = (time_run % 3600) % 60
-	print_msg('Running time is: %s h %s min %s s\n\n' % (str(time_h).rjust(2, '0'), str(time_m).rjust(2, '0'), str(time_s).rjust(2, '0')))
-
-	print_msg('Partition criterion is\t%11.6e\n (total sum of squares error)' % INFO['Je'])
-	print_msg('Criteria Coleman is\t%11.4e\n' % INFO['C'])
-	print_msg('Criteria Harabasz is\t%11.4e\n' % INFO['H'])
-	print_msg('Criteria Davies-Bouldin is\t%11.4e\n' % INFO['DB'])
+	
+	print_msg('Running time is             : %s h %s min %s s\n' % (str(time_h).rjust(2, '0'), str(time_m).rjust(2, '0'), str(time_s).rjust(2, '0')))
+	print_msg('Number of iterations        : %i\n' % INFO['noi'])
+	print_msg('Partition criterion is      : %11.6e (total sum of squares error)\n' % INFO['Je'])
+	print_msg('Criteria Coleman is         : %11.6e\n' % INFO['C'])
+	print_msg('Criteria Harabasz is        : %11.6e\n' % INFO['H'])
+	print_msg('Criteria Davies-Bouldin is  : %11.6e\n' % INFO['DB'])
 
 	# prepare list of images id for each group
-	K   = max(PART)
+	K   = max(PART) + 1
 	N   = len(PART)
 	GRP = [[] for i in xrange(K)]
 	for n in xrange(N): GRP[int(PART[n])].append(n)
@@ -4132,7 +4145,10 @@ def k_means_cuda_export(PART, INFO, AVE, out_seedname):
 	# write the details of the clustering
 	print_msg('\n-- Details ----------------------------\n')
 	for k in xrange(K):
-		print_msg('\t%s\t%d\t%s\t%d' % ('Cluster no:', k, 'No of Objects = ', len(GRP[k])))
+		print_msg('\t%s\t%d\t%s\t%d\n' % ('Cluster no:', k, 'No of Objects = ', len(GRP[k])))
+
+		# reconstitute averages
+		AVE = Util.reconstitute_image_mask(FLATAVE[k], mask)
 
 		# limitation of hdf format
 		if flagHDF:
@@ -4141,15 +4157,14 @@ def k_means_cuda_export(PART, INFO, AVE, out_seedname):
 			outfile.close()
 
 			## NEED averages
-			AVE[k].set_attr_dict({'Class_average':1.0, 'nobjects': len(GRP[k])})
+			AVE.set_attr_dict({'Class_average':1.0, 'nobjects': len(GRP[k])})
 		else:
-			AVE[k].set_attr('Class_average', 1.0)
-			AVE[k].set_attr('nobjects', len(GRP[k]))
-			AVE[k].set_attr('members', GRP[k])
+			AVE.set_attr('Class_average', 1.0)
+			AVE.set_attr('nobjects', len(GRP[k]))
+			AVE.set_attr('members', GRP[k])
 
-		AVE[k].write_image(out_seedname + "/averages.hdf", k)
-		
-
+		AVE.write_image(out_seedname + "/averages.hdf", k)
+	print_msg('\n')
 
 ## K-MEANS STABILITY ######################################################################
 # 2008-12-18 11:35:11 

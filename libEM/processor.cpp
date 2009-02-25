@@ -7963,7 +7963,6 @@ CUDA_kmeans::CUDA_kmeans() {
     h_AVE = NULL;
     h_ASG = NULL;
     h_INFO = NULL;
-    rnd = 0;
 }
 	
 CUDA_kmeans::~CUDA_kmeans() {
@@ -7973,13 +7972,15 @@ CUDA_kmeans::~CUDA_kmeans() {
     if (h_AVE) delete h_AVE;
 }
 
-int CUDA_kmeans::setup(int extm, int extN, int extK, float extF, int extmaxite) {
+int CUDA_kmeans::setup(int extm, int extN, int extK, float extF, float extT0, int extmaxite, int extrnd) {
     m = extm;				// number of pixels per image
     N = extN;				// number of images
     K = extK;				// number of classes
     F = extF;				// value of the cooling factor
+    T0 = extT0;                         // first temperature for SA
     maxite = extmaxite;		        // maximum number of iteration
-		
+    rnd = extrnd;                       // random seed
+
     // Host memory allocation for images
     h_IM = (float*)malloc(m * N * sizeof(float));
     if (h_IM == 0) return 1;
@@ -8006,7 +8007,7 @@ void CUDA_kmeans::append_flat_image(EMData* im, int pos) {
 // cuda k-means core
 #include "sparx/cuda/cuda_kmeans.h"
 int CUDA_kmeans::kmeans() {
-    return cuda_kmeans(h_IM, h_AVE, h_ASG, h_INFO, N, m, K, maxite, F, rnd);	
+    return cuda_kmeans(h_IM, h_AVE, h_ASG, h_INFO, N, m, K, maxite, F, T0, rnd);	
 }
 
 // change the value of K
@@ -8037,7 +8038,6 @@ vector<EMData*> CUDA_kmeans::get_averages() {
 
     return ave;
 }
-
 
 // get back the assignment for each partition
 vector <int> CUDA_kmeans::get_partition() {

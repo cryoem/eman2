@@ -10885,13 +10885,11 @@ def refvol( vollist, fsclist, output, mask ):
 # -- K-means main ---------------------------------------------------------------------------
 
 # K-means main driver
-def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, trials, critname, CTF = False, F = 0, T0 = 0, MPI = False, DEBUG = False):
+def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, trials, critname,
+		 CTF = False, F = 0, T0 = 0, MPI = False, CUDA = False, DEBUG = False):
 	from utilities 	import print_begin_msg, print_end_msg, print_msg, file_type
 	from statistics import k_means_criterion, k_means_export, k_means_open_im, k_means_headlog
 	import sys
-
-	## DEV CUDA
-	CUDA = False
 
 	ext = file_type(stack)
 	if ext == 'bdb': BDB = True
@@ -10943,27 +10941,61 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		mpi_barrier(MPI_COMM_WORLD)
 
 	elif CUDA: # added 2009-02-20 16:27:26
-		from statistics import k_means_cuda_open_im, k_means_headlog_cuda
+		from statistics import k_means_cuda_open_im, k_means_cuda_headlog, k_means_cuda_error
+		from statistics import k_means_cuda_export
+		from utilities  import model_blank, get_im, get_image
 		
 		# instance of CUDA kmeans obj
 		KmeansCUDA = CUDA_kmeans()
 
-		# open images and load to C
-		[KmeansCUDA, LUT, mask, N, m] = k_means_cuda_open_im(KmeansCUDA, stack, maskname)
+		# open mask if defined
+		if maskname != None: mask = get_image(maskname)
+		else:
+			# anyway image must be a flat image
+			im = get_im(stack, 0)
+			mask = model_blank(im.get_xsize(), im.get_ysize(), im.get_zsize())
+			mask.to_one()
+			del im
 
-		# logfile
+		# get some params
+		N  = EMUtil.get_image_count(stack)
+		im = Util.compress_image_mask(mask, mask)
+		m  = im.get_xsize()
+		del im
+
+		# write logfile
 		print_begin_msg('k-means')
-		opt_method = 'cla'
-		ncpu       = '1'
-		k_means_headlog_cuda(stack, out_dir, opt_method, N, K, maskname, maxit, T0, F, rand_seed, ncpu, m)
+		method = 'cla'
+		ncpu   = 1
+		k_means_cuda_headlog(stack, out_dir, method, N, K, maskname, maxit, T0, F, rand_seed, ncpu, m)
 		
 		# init k-means
-		KmeansCUDA.system(m, N, K, F, maxit, rnd)
+		KmeansCUDA.setup(m, N, K, F, T0, maxit, rand_seed)
+	
+		# open images and load to C
+		LUT = k_means_cuda_open_im(KmeansCUDA, stack, mask)
+		
+		# run k-means
+		print_msg('::: RUNNING :::\n\n')
+		status = KmeansCUDA.kmeans()
+		print status
+		if status:
+			k_means_cuda_error(status)
+			sys.exit()
+	
+		# get back partition, averages and info about the classification
+		PART = KmeansCUDA.get_partition()
+		INFO = KmeansCUDA.get_info()
+		AVE  = KmeansCUDA.get_averages() # return flat images
+
+		# export data
+		k_means_cuda_export(PART, INFO, AVE, out_dir, mask)
+	
+		# end
+		print_end_msg('k-means')
 
 		## TO DO
-		# 1- remove npart as parameters to KmeansCUDA.system, partition will be done in python level
-		# 2- add rnd parameters to the function KmeansCUDA.system
-		# 3- trials for empty class??
+		# 1- trials for empty class??
 
 	else:
 		from statistics import k_means_classical, k_means_SSE

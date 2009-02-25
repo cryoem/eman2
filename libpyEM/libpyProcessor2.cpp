@@ -181,6 +181,11 @@ BOOST_PYTHON_MODULE(libpyProcessor2)
 	.def("setup", &EMAN::CUDA_kmeans::setup)
 	.def("append_flat_image", &EMAN::CUDA_kmeans::append_flat_image)
 	.def("kmeans", &EMAN::CUDA_kmeans::kmeans)
+	.def("set_K", &EMAN::CUDA_kmeans::set_K)
+	.def("set_rnd", &EMAN::CUDA_kmeans::set_rnd)
+	.def("get_averages", &EMAN::CUDA_kmeans::get_averages)
+	.def("get_partition", &EMAN::CUDA_kmeans::get_partition)
+	.def("get_info", &EMAN::CUDA_kmeans::get_info)
     ;
 #endif //EMAN2_USING_CUDA
 

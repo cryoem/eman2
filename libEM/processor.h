@@ -5820,7 +5820,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	public:
 		CUDA_kmeans();
 		~CUDA_kmeans();
-		int setup(int  extm, int extN, int extK, float extF, int extmaxite);
+		int setup(int  extm, int extN, int extK, float extF, float extT0, int extmaxite, int extrnd);
 		void append_flat_image(EMData* im, int pos);
 		int kmeans();
 		vector<EMData*> get_averages();
@@ -5836,6 +5836,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		int maxite;
 		int nb_part;
 		float F;
+		float T0;
 		int rnd;
 		// host memory
 		float* h_IM;
