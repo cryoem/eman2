@@ -110,6 +110,7 @@ EMData::EMData(const string& filename, int image_index) :
 
 	this->read_image(filename, image_index);
 	
+	update();
 	EMData::totalalloc++;
 	
 	EXITFUNC;
@@ -141,7 +142,7 @@ EMData::EMData(const EMData& that) :
 #endif //EMAN2_USING_CUDA
 	if (that.rot_fp != 0) rot_fp = new EMData(*(that.rot_fp));
 
-// 	update();
+	update();
 	EMData::totalalloc++;
 	
 	ENTERFUNC;	
@@ -186,7 +187,7 @@ EMData& EMData::operator=(const EMData& that)
 		
 		if (that.rot_fp != 0) rot_fp = new EMData(*(that.rot_fp));
 		else rot_fp = 0;
-	
+		update();
 	}
 	
 	EXITFUNC;
@@ -1359,6 +1360,7 @@ EMData *EMData::little_big_dot(EMData * with, bool do_sigma)
 	}
 
 	EMData *ret = copy_head();
+	ret->set_size(nx,ny,nz);
 	ret->to_zero();
 
 	int nx2 = with->get_xsize();
@@ -1371,7 +1373,7 @@ EMData *EMData::little_big_dot(EMData * with, bool do_sigma)
 
 	float sum2 = (Util::square((float)with->get_attr("sigma")) +
 				  Util::square((float)with->get_attr("mean")));
-
+	cout << "Entry" << endl;
 	if (do_sigma) {
 		for (int j = ny2 / 2; j < ny - ny2 / 2; j++) {
 			for (int i = nx2 / 2; i < nx - nx2 / 2; i++) {
@@ -1434,6 +1436,7 @@ EMData *EMData::little_big_dot(EMData * with, bool do_sigma)
 		}
 	}
 
+	cout << "Returning" << endl;
 	ret->update();
 
 	EXITFUNC;

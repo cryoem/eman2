@@ -463,16 +463,16 @@ namespace EMAN
 		*/
 		void load_default_settings()
 		{
-			params["x_in"] = 0;
-			params["y_in"] = 0;
-			params["zsample"] = 0;
-			params["ysample"] = 0;
-			params["xsample"] = 0;
-			params["mode"] = 2;
-			params["hard"] = 0.05;
-			params["sym"] = "c1";
-			params["quiet"] = true;
-			params["3damp"] = false;
+// 			params.put("x_in", = 0;
+// 			params.put("y_in", = 0;
+// 			params["zsample"] = 0;
+// 			params["ysample"] = 0;
+// 			params["xsample"] = 0;
+// 			params["mode"] = 2;
+// 			params["hard"] = 0.05;
+// 			params["sym"] = "c1";
+// 			params["quiet"] = true;
+// 			params["3damp"] = false;
 		}
 
 		/** Frees the memory owned by this object (but not parent objects)
