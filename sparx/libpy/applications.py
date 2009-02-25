@@ -33,7 +33,7 @@ from global_def import *
 """
 def ali2d_reduce(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, center=1, maxit=0, CTF=False, user_func_name="ref_ali2d", randomize = False):
 	from fundamentals import resample
-	from utilities    import model_circle, get_arb_params, set_arb_params, get_image, get_params2D, set_params_2D
+	from utilities    import model_circle, get_arb_params, set_arb_params, get_image, get_params2D, set_params2D
 	from applications import ali2d_a
 	import os
 	
