@@ -463,11 +463,15 @@ class EMVolumeModule(EMImage3DGUIModule):
 		[t,alt,phi] = self.get_eman_transform(v)
 		for i in range(0,int(self.texsample*n)):
 			nn = float(i)/float(n)/self.texsample
-			tmp = self.get_correct_dims_2d_emdata() 
 			
 			trans = (nn-0.5)*v
 			t.set_posttrans(2.0*int(n/2)*trans)
-			tmp.cut_slice(self.data_copy,t,True)
+			
+			if False and EMUtil.cuda_available(): # disable for the time being - big textures won't work on CPU
+				tmp = self.data_copy.cut_slice_cuda(t)
+			else:
+				tmp = self.get_correct_dims_2d_emdata() 
+				tmp.cut_slice(self.data_copy,t,True)
 			#tmp.write_image("tmp.img",-1)
 			
 			# get the texture name, store it, and bind it in OpenGL
@@ -522,7 +526,6 @@ class EMVolumeModule(EMImage3DGUIModule):
 		self.data_copy = self.data.copy()
 		self.data_copy.add(self.brightness)
 		self.data_copy.mult(self.contrast*1.0/self.data.get_zsize())
-		
 		hist = self.data_copy.calc_hist(256,0,1.0)
 		self.inspector.set_hist(hist,0,1.0)
 

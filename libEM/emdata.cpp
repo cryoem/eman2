@@ -120,7 +120,7 @@ EMData::EMData(const EMData& that) :
 		cuda_array_handle(-1), cuda_rdata(0),
 #endif //EMAN2_USING_CUDA
 		attr_dict(that.attr_dict), rdata(0), supp(0), flags(that.flags), changecount(0), nx(that.nx), ny(that.ny), nz(that.nz), 
-		nxy(0), xoff(that.xoff), yoff(that.yoff), zoff(that.zoff),all_translation(that.all_translation),	path(that.path),
+		nxy(that.nx*that.ny), xoff(that.xoff), yoff(that.yoff), zoff(that.zoff),all_translation(that.all_translation),	path(that.path),
 		pathnum(that.pathnum), rot_fp(0)
 {
 	ENTERFUNC;
@@ -129,9 +129,8 @@ EMData::EMData(const EMData& that) :
 	size_t num_bytes = nx*ny*nz*sizeof(float);
 	if (data)
 	{
-		
 		rdata = (float*)EMUtil::em_malloc(num_bytes);
-		EMUtil::em_memcpy(rdata, data, nx * ny * nz * sizeof(float));
+		EMUtil::em_memcpy(rdata, data, num_bytes);
 	}
 #ifdef EMAN2_USING_CUDA
 	float * cuda_data = that.cuda_rdata;
@@ -142,7 +141,7 @@ EMData::EMData(const EMData& that) :
 #endif //EMAN2_USING_CUDA
 	if (that.rot_fp != 0) rot_fp = new EMData(*(that.rot_fp));
 
-	
+// 	update();
 	EMData::totalalloc++;
 	
 	ENTERFUNC;	
@@ -157,7 +156,7 @@ EMData& EMData::operator=(const EMData& that)
 		free_memory(); // Free memory sets nx,ny and nz to 0
 		
 		// Only copy the rdata if it exists, we could be in a scenario where only the header has been read
-		float* data = that.get_data();
+		float* data = that.rdata;
 		if (data)
 		{
 			nx = 1; // This prevents a memset in set_size
@@ -3569,7 +3568,7 @@ EMData* EMData::cut_slice_cuda(const Transform& transform)
 	// These restrictions should be ultimately restricted so that all that matters is get_ndim() = (map->get_ndim() -1)
 	if ( get_ndim() != 3 ) throw ImageDimensionException("Can not cut slice from an image that is not 3D");
 	// Now check for complex images - this is really just being thorough
-	if ( is_complex() ) throw ImageFormatException("Can not call cut slice on an image that is complex");
+	if ( is_complex() ) throw ImageFormatException("Can not call cut slice an image that is complex");
 // 
 
 	EMData* ret = new EMData();

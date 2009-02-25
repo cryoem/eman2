@@ -750,8 +750,25 @@ namespace EMAN
 		 * @date Feb 2008
 		 */
 		void cut_slice(const EMData * const map, const Transform& tr, bool interpolate = true);
-
+		
+		/** cut a 2D slice out of a this 3D image and return it
+		 * An alternative to cut_slice
+		 * @param tr orientation of the slice as encapsulated in a Transform object
+		 * @exception ImageDimensionException If this image is not 3D.
+		 * @exception ImageFormatException If this image is complex
+		 * @author David Woolford (adapted from an original version by Steve Ludtke)
+		 * @date Feb 2009
+		 */
+// 		EMData* get_cut_slice(const Transform& tr);
 #ifdef EMAN2_USING_CUDA
+		
+		/** cuda equivalent of get_cut_slice
+		 * @param tr orientation of the slice as encapsulated in a Transform object
+		 * @exception ImageDimensionException If this image is not 3D.
+		 * @exception ImageFormatException If this image is complex
+		 * @author David Woolford (adapted from an original version by Steve Ludtke)
+		 * @date Feb 20009
+		 */
 		EMData* cut_slice_cuda(const Transform& tr);
 #endif // EMAN2_USING_CUDA
 		/** Opposite of the cut_slice(). It will take a slice and insert

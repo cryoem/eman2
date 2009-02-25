@@ -5751,9 +5751,9 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	{
 		public:
 			
-			void process_inplace(EMData * image);
+			virtual void process_inplace(EMData * image);
 		
-			string get_name() const
+			virtual string get_name() const
 			{
 				return "cuda.math.mult";
 			}
@@ -5763,14 +5763,14 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 				return new CudaMultProcessor();
 			}
 		
-			TypeDict get_param_types() const
+			virtual TypeDict get_param_types() const
 			{
 				TypeDict d;
 				d.put("scale", EMObject::FLOAT, "The amount to multiply each pixel by");
 				return d;
 			}
 		
-			string get_desc() const
+			virtual string get_desc() const
 			{
 				return "Multiplies each pixel by a constant value";
 			}
@@ -5785,7 +5785,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	{
 		public:
 			
-			void process_inplace(EMData * image);
+			virtual void process_inplace(EMData * image);
 		
 			string get_name() const
 			{
@@ -5797,14 +5797,14 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 				return new CudaCorrelationProcessor();
 			}
 		
-			TypeDict get_param_types() const
+			virtual TypeDict get_param_types() const
 			{
 				TypeDict d;
 				d.put("with", EMObject::EMDATA, "That which to perform the cross correlation with.");
 				return d;
 			}
 		
-			string get_desc() const
+			virtual string get_desc() const
 			{
 				return "Performs Fourier based cross correlation on the GPU";
 			}

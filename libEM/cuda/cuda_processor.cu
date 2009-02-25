@@ -41,7 +41,7 @@ __global__ void correlation_kernel(float *ldata, float* rdata, const int z,const
 	float v1 = ldata[idx];
 	float v2 = ldata[idx+1];
 	float u1 = rdata[idx];
-	float u2 = rdata[idx];
+	float u2 = rdata[idx+1];
 	
 	ldata[idx] = v1*u1 - v2*u2;
 	ldata[idx+1] = v1*u2 + v2*u1;
