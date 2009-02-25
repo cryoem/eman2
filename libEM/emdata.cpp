@@ -1373,7 +1373,6 @@ EMData *EMData::little_big_dot(EMData * with, bool do_sigma)
 
 	float sum2 = (Util::square((float)with->get_attr("sigma")) +
 				  Util::square((float)with->get_attr("mean")));
-	cout << "Entry" << endl;
 	if (do_sigma) {
 		for (int j = ny2 / 2; j < ny - ny2 / 2; j++) {
 			for (int i = nx2 / 2; i < nx - nx2 / 2; i++) {
@@ -1435,8 +1434,7 @@ EMData *EMData::little_big_dot(EMData * with, bool do_sigma)
 			}
 		}
 	}
-
-	cout << "Returning" << endl;
+	
 	ret->update();
 
 	EXITFUNC;

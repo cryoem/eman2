@@ -280,7 +280,7 @@ class EM3DSliceViewerModule(EMImage3DGUIModule):
 		trans = (nn-0.5)*v
 		t.set_trans(2.0*int(n/2)*trans)
 	
-		if EMUtil.cuda_available(): # disable for the time being - big textures won't work on CPU
+		if False and EMUtil.cuda_available(): # disable for the time being - big textures won't work on CPU
 			tmp = self.data.cut_slice_cuda(t)
 		else:
 			tmp = self.get_correct_dims_2d_emdata() 

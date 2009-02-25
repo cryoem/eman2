@@ -9,15 +9,26 @@
 #include "emcudautil.h"
 
 texture<float, 3, cudaReadModeElementType> tex;
+texture<float, 2, cudaReadModeElementType> tex2d;
 
-void cudaBindTexture(texture<float, 3, cudaReadModeElementType> &tex,cudaArray *array) {
+void cuda_bind_texture_3d(texture<float, 3, cudaReadModeElementType> &tex,cudaArray *array) {
 	tex.normalized = 0;
 	tex.filterMode = cudaFilterModeLinear;
 	tex.addressMode[0] = cudaAddressModeClamp;
 	tex.addressMode[1] = cudaAddressModeClamp;
 	tex.addressMode[2] = cudaAddressModeClamp;
 	
-	CUDA_SAFE_CALL(cudaBindTextureToArray(tex, array));
+	cudaBindTextureToArray(tex, array);
+}
+
+void cuda_bind_texture_2d(texture<float, 2, cudaReadModeElementType> &tex,cudaArray *array) {
+	tex.normalized = 0;
+	tex.filterMode = cudaFilterModeLinear;
+	tex.addressMode[0] = cudaAddressModeClamp;
+	tex.addressMode[1] = cudaAddressModeClamp;
+// 	tex.addressMode[2] = cudaAddressModeClamp;
+	
+	cudaBindTextureToArray(tex, array);
 }
 
 
@@ -25,12 +36,18 @@ struct CudaEMDataArray {
 	cudaArray* array;
 	const float* data; /*This one may be unecessary*/
 	void* emdata_pointer;
+	int nx;
+	int ny;
+	int nz;
 };
 
 void copy_array_data(CudaEMDataArray* to, CudaEMDataArray* from) {
 	to->array = from->array;
 	to->data = from->data;
 	to->emdata_pointer = from->emdata_pointer;
+	to->nx = from->nx;
+	to->ny = from->ny;
+	to->nz = from->nz;
 }
 
 void set_array_data_null(CudaEMDataArray* p)
@@ -38,15 +55,18 @@ void set_array_data_null(CudaEMDataArray* p)
 	p->array = 0;
 	p->data = 0;
 	p->emdata_pointer = 0;
+	p->nx = 0;
+	p->ny = 0;
+	p->nz = 0;
 }
 
-const int max_cuda_arrays = 2;
+const int max_cuda_arrays = 10;
 int num_cuda_arrays = 0;
 CudaEMDataArray cuda_arrays[max_cuda_arrays];
 
 void init_cuda_emdata_arrays() {
 	for(int i = 0; i < max_cuda_arrays; ++i ) {
-		CudaEMDataArray c =  { 0, 0 };
+		CudaEMDataArray c =  { 0, 0, 0, 0, 0, 0};
 		cuda_arrays[i] = c;
 	}
 }
@@ -87,24 +107,36 @@ int get_cuda_array_handle(const float * data,const int nx, const int ny, const i
 		make_cuda_array_space_0_free();
 		idx = 0;
 	}
-	//printf("Making a new cuda array\n");
+// 	printf("Making a new cuda array\n");
 	// If we make it here then it doesn't exist
-	cuda_arrays[idx].data = data;
-	cuda_arrays[idx].emdata_pointer = emdata_pointer;
-	cudaExtent VS = make_cudaExtent(nx,ny,nz);
+	CudaEMDataArray* c = &cuda_arrays[idx];
+	c->data = data;
+	c->emdata_pointer = emdata_pointer;
+	c->nx = nx;
+	c->ny = ny;
+	c->nz = nz;
 	
 	cudaArray *array = 0;
 	cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<float>();
-	cudaMalloc3DArray(&array, &channelDesc, VS);
 	
-	cudaMemcpy3DParms copyParams = {0};
-	copyParams.srcPtr   = make_cudaPitchedPtr((void*)data, VS.width*sizeof(float), VS.width, VS.height);
-	copyParams.dstArray = array;
-	copyParams.extent   = VS;
-	copyParams.kind     = cudaMemcpyHostToDevice;
-	cudaMemcpy3D(&copyParams);
+	if (nz > 1) {
+		cudaExtent VS = make_cudaExtent(nx,ny,nz);
+// 		printf("It's a 3D one\n");
+		cudaMalloc3DArray(&array, &channelDesc, VS);
+		
+		cudaMemcpy3DParms copyParams = {0};
+		copyParams.srcPtr   = make_cudaPitchedPtr((void*)data, VS.width*sizeof(float), VS.width, VS.height);
+		copyParams.dstArray = array;
+		copyParams.extent   = VS;
+		copyParams.kind     = cudaMemcpyDeviceToDevice;
+		cudaMemcpy3D(&copyParams);
+	} else if ( ny > 1) {
+// 		printf("It's a 2D one\n");d
+		cudaMallocArray(&array,&channelDesc,nx,ny);
+		cudaMemcpy2DToArray(array, 0, 0, data, nx*sizeof(float), nx*sizeof(float), ny, cudaMemcpyDeviceToDevice);
+	} else throw;
 	
-	cuda_arrays[idx].array = array;
+	c->array = array;
 	if (num_cuda_arrays != max_cuda_arrays) num_cuda_arrays++;
 	return idx;
 }
@@ -136,8 +168,12 @@ int delete_cuda_memory(float*p) {
 }
 
 void bind_cuda_texture(const int idx) {
-	//printf("Binding texture\n");
-	CUDA_SAFE_CALL(cudaBindTexture(tex,cuda_arrays[idx].array));
+	CudaEMDataArray* c = &cuda_arrays[idx];
+	if (c->nz > 1) {
+		cuda_bind_texture_3d(tex,cuda_arrays[idx].array);
+	} else if ( c->ny > 1 ) {
+		cuda_bind_texture_2d(tex2d,cuda_arrays[idx].array);
+	} else throw;
 	//printf("Done bind\n");
 }
 

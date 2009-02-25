@@ -2,7 +2,9 @@
 
 #include "cuda_util.h"
 
-
+// Global texture
+extern texture<float, 3, cudaReadModeElementType> tex;
+extern texture<float, 2, cudaReadModeElementType> tex2d;
 
 typedef unsigned int uint;
 __global__ void mult_kernel(float *data,const float scale, const int z, const int xsize, const int xysize)
@@ -37,11 +39,31 @@ __global__ void correlation_kernel(float *ldata, float* rdata, const int z,const
 	uint y=blockIdx.x;
 
 	uint idx = 2*x + y*xsize+z*xysize;
+	uint idxp1 = idx+1;
 	
 	float v1 = ldata[idx];
-	float v2 = ldata[idx+1];
+	float v2 = ldata[idxp1];
 	float u1 = rdata[idx];
-	float u2 = rdata[idx+1];
+	float u2 = rdata[idxp1];
+	
+	ldata[idx] = v1*u1 - v2*u2;
+	ldata[idx+1] = v1*u2 + v2*u1;
+}
+
+
+__global__ void correlation_kernel_2(float *ldata, const int z,const int xsize, const int xysize)
+{
+
+	uint x=threadIdx.x;
+	uint y=blockIdx.x;
+
+	uint idx = 2*x + y*xsize+z*xysize;
+	uint idxp1 = idx+1;
+	
+	float v1 = ldata[idx];
+	float v2 = ldata[idxp1];
+	float u1 = tex2D(tex2d,x,y);
+	float u2 =  tex2D(tex2d,x+1,y);
 	
 	ldata[idx] = v1*u1 - v2*u2;
 	ldata[idx+1] = v1*u2 + v2*u1;
@@ -54,6 +76,7 @@ void emdata_processor_correlation( const EMDataForCuda* left,const EMDataForCuda
 		
 	for (int i = 0; i < left->nz; ++i) {
 		correlation_kernel<<<blockSize,gridSize>>>(left->data,right->data,i,left->nx,left->nx*left->ny);
+// 		correlation_kernel_2<<<blockSize,gridSize>>>(left->data,i,left->nx,left->nx*left->ny);
 	}
 	cudaThreadSynchronize();
 }

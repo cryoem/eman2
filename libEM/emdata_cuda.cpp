@@ -91,12 +91,12 @@ EMData* EMData::calc_ccf_cuda( EMData*  image ) {
 		delete with;
 		with = 0;
 	}
-	
 
 	EMData* soln = tmp->do_ift_cuda();
-	
+	soln->gpu_update();
 	delete tmp;
 	tmp = 0;
+	
 	return soln;
 }
 
@@ -109,6 +109,7 @@ void EMData::free_cuda_array() const {
 
 void EMData::free_cuda_memory() const {
 	if ( cuda_rdata != 0) {
+		cout << "Deleting cuda_rdata" << endl;
 		cudaFree(cuda_rdata);
 		cuda_rdata = 0;
 	}

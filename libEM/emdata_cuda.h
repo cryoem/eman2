@@ -41,10 +41,10 @@ public:
 	
 
 	inline void bind_cuda_array() {
-		update_stat();
-		if (cuda_array_handle == -1) {
+		if (cuda_array_handle == -1 || EMDATA_GPU_RO_NEEDS_UPDATE & flags) {
 			// This would eventually change, if for example the cuda_rdata is not zero
-			cuda_array_handle = get_cuda_array_handle(rdata,nx,ny,nz,this);
+			if (cuda_array_handle != -1) delete_cuda_array(cuda_array_handle);
+			cuda_array_handle = get_cuda_array_handle(get_cuda_data(),nx,ny,nz,this);
 		}
 		bind_cuda_texture(cuda_array_handle);
 	}

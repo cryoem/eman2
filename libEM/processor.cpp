@@ -8078,8 +8078,10 @@ void CudaCorrelationProcessor::process_inplace(EMData* image) {
 	
 	EMDataForCuda left = image->get_data_struct_for_cuda();
 	EMDataForCuda right = with->get_data_struct_for_cuda();
+// 	with->bind_cuda_array();
 	emdata_processor_correlation(&left,&right);
 	image->gpu_update();
+	
 }
 
 #endif //EMAN2_USING_CUDA	
