@@ -266,11 +266,10 @@ int* calc_max_location_wrap_cuda(const EMDataForCuda* data, const int maxdx, con
 }
 
 
-
 __global__ void cut_slice_kernel(float *out,int size, float3 mxx,float3 mxy, float3 mxz, float3 trans)
 {
-	uint x=threadIdx.x;
-	uint y=blockIdx.x;
+	unsigned int x=threadIdx.x;
+	unsigned int y=blockIdx.x;
 	
 	float fx=x-size/2.0;
 	float fy=y-size/2.0;
