@@ -4097,6 +4097,58 @@ def k_means_cuda_open_im(KmeansCUDA, stack, maskname):
 
 	return KmeansCUDA, lim, mask, N, m
 
+# K-means write results output directory
+def k_means_cuda_export(PART, INFO, AVE, out_seedname):
+	from utilities import print_msg
+	import os
+	
+	# clean directory if need
+	if os.path.exists(out_seedname):  os.system('rm -rf ' + out_seedname)
+	os.mkdir(out_seedname)
+
+	# write the report on the logfile
+	print_msg('\nReport:\n')
+	time_run = INFO['time']
+	time_h   = time_run / 3600
+	time_m   = (time_run % 3600) / 60
+	time_s   = (time_run % 3600) % 60
+	print_msg('Running time is: %s h %s min %s s\n\n' % (str(time_h).rjust(2, '0'), str(time_m).rjust(2, '0'), str(time_s).rjust(2, '0')))
+
+	print_msg('Partition criterion is\t%11.6e\n (total sum of squares error)' % INFO['Je'])
+	print_msg('Criteria Coleman is\t%11.4e\n' % INFO['C'])
+	print_msg('Criteria Harabasz is\t%11.4e\n' % INFO['H'])
+	print_msg('Criteria Davies-Bouldin is\t%11.4e\n' % INFO['DB'])
+
+	# prepare list of images id for each group
+	K   = max(PART)
+	N   = len(PART)
+	GRP = [[] for i in xrange(K)]
+	for n in xrange(N): GRP[int(PART[n])].append(n)
+	flagHDF = False
+	for k in xrange(K):
+		if len(GRP[k]) > 16000: flagHDF = True
+	if flagHDF: print_msg('\nWARNING: limitation of number attributes in hdf format, the results will be export in separate text files\n')
+
+	# write the details of the clustering
+	print_msg('\n-- Details ----------------------------\n')
+	for k in xrange(K):
+		print_msg('\t%s\t%d\t%s\t%d' % ('Cluster no:', k, 'No of Objects = ', len(GRP[k])))
+
+		# limitation of hdf format
+		if flagHDF:
+			outfile = open('grp_%d_kmeans' % (k + 1), 'w')
+			for id in GRP[k]: outfile.write('%i\n' % int(id))
+			outfile.close()
+
+			## NEED averages
+			AVE[k].set_attr_dict({'Class_average':1.0, 'nobjects': len(GRP[k])})
+		else:
+			AVE[k].set_attr('Class_average', 1.0)
+			AVE[k].set_attr('nobjects', len(GRP[k]))
+			AVE[k].set_attr('members', GRP[k])
+
+		AVE[k].write_image(out_seedname + "/averages.hdf", k)
+		
 
 
 ## K-MEANS STABILITY ######################################################################
