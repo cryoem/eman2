@@ -2249,7 +2249,7 @@ def send_attr_dict(main_node, data, list_params, image_start, image_end, comm = 
 		value = get_arb_params(data[im-image_start], list_params)
 		for il in xrange(len(value)):
 			if    type(value[il]) is types.IntType:  nvalue.append(float(value[il]))
-			elif  type(valel[il]) is types.FloatType: nvalue.append(value[il])
+			elif  type(value[il]) is types.FloatType: nvalue.append(value[il])
 			elif  type(value[il]) is TransType: 
 				m = value[il].get_matrix()
 				assert (len(m)==12)
