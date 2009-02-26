@@ -38,6 +38,7 @@
 
 #include "emobject.h"
 #include "emassert.h"
+#include <string.h>
 
 using std::string;
 using std::vector;
@@ -286,12 +287,27 @@ namespace EMAN
 #endif
 		}
 		
-		static void* em_malloc(const size_t size);
-		static void* em_calloc(const size_t nmemb,const size_t size);
-		static void* em_realloc(void*,const size_t new_size,const size_t old_size);
-		static void em_memset(void* data, const int value, const size_t size);
-		static void em_free(void*);
-		static void em_memcpy(void*dst,const void* const src,const size_t size);
+		inline static void* em_malloc(const size_t size) {
+			return malloc(size);
+		}
+
+		inline static void* em_calloc(const size_t nmemb,const size_t size) {
+			return calloc(nmemb,size);
+		}
+
+		inline static void* em_realloc(void* data,const size_t new_size,const size_t old_size) {
+			return realloc(data, new_size);
+		}
+		inline static void em_memset(void* data, const int value, const size_t size) {
+			memset(data, value, size);
+		}
+		inline static void em_free(void*data) {
+			free(data);
+		}
+
+		inline static void em_memcpy(void* dst,const void* const src,const size_t size) {
+			memcpy(dst,src,size);
+		}
 	  private:
 		static ImageType fast_get_image_type(const string & filename,
 											 const void *first_block,

@@ -14,25 +14,11 @@ int get_cuda_array_handle(const float* ,const int,const int,const int, void*);
 
 int delete_cuda_array(const int idx);
 
-int delete_cuda_memory(float *p);
-
-
 
 /** Texture binding
  */
 void bind_cuda_texture(const int);
 
-void* cuda_malloc(const size_t size);
-void cuda_free(void*);
-void cuda_memset(void*,int value, size_t size);
-void cuda_memcpy(void* dst,const void* const, size_t count);
-
-/** Wrapping memory allocation functions
- */
-
-void cuda_memcpy_host_to_device(const void* const host_rdata, void* device_rdata, const size_t num_bytes );
-void cuda_malloc_device(void** device_rdata, const size_t num_bytes);
-void cuda_free_device(void* device_rdata);
 
 /** A struct for passing EMData objects to and from things like processors
 */

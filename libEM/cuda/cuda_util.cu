@@ -160,13 +160,6 @@ int delete_cuda_array(const int idx) {
 
 // highly specialized, use cautiously
 
-
-int delete_cuda_memory(float*p) {
-	CUDA_SAFE_CALL(cudaFree(p));
-	p = 0;
-	return 0;
-}
-
 void bind_cuda_texture(const int idx) {
 	CudaEMDataArray* c = &cuda_arrays[idx];
 	if (c->nz > 1) {
@@ -196,54 +189,6 @@ void device_init() {
 		init_cuda_fft_dd_plan_cache();
 		init = false; //Force init everytikme
 	}
-}
-
-void* cuda_malloc(const size_t size)
-{
-	device_init();
-	void *mem=0;
-	cudaMallocHost((void **)&mem, size);
-	return mem;
-}
-
-void cuda_free(void* mem)
-{
-	device_init();
-	cudaFreeHost(mem);
-}
-void cuda_memset(void* mem,int value, size_t size) {
-	device_init();
-	cudaMemset(mem,value,size);
-}
-
-void cuda_memcpy(void* dst, const void* const src, size_t count) {
-	device_init();
-	cudaMemcpy(dst,src,count,cudaMemcpyHostToHost);
-// 	cudaStream_t stream;
-// 	cudaStreamCreate(&stream);
-// 	cudaMemcpyAsync(dst,src,count,cudaMemcpyHostToHost,stream);
-// 	cudaStreamSynchronize(stream);
-// 	cudaStreamDestroy(stream);
-}
-
-
-void cuda_memcpy_host_to_device(const void* const host_rdata, void* device_rdata, const size_t num_bytes )
-{
-	device_init();
-	cudaMemcpy(device_rdata,host_rdata,num_bytes,cudaMemcpyHostToDevice);
-}
-
-void cuda_malloc_device(void** device_rdata, const size_t num_bytes)
-{
-	device_init();
-	int val = cudaMalloc(device_rdata, num_bytes);
-	printf("Success? %d\n",(val==cudaSuccess));
-}
-
-void cuda_free_device(void* device_rdata)
-{
-	device_init(); // Technically unecessary seeing as the device must have been initialized to have allocate the pointer
-	cudaFree(device_rdata);
 }
 
 __global__ void  calc_max_location_wrap(int* const soln, const float* data,const int maxdx, const int maxdy, const int maxdz, const int nx, const int ny, const int nz) {

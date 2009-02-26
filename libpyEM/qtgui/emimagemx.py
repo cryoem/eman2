@@ -795,6 +795,8 @@ class EMImageMXModule(EMGUIModule):
 		
 		self.force_display_update()
 		self.nimg=len(self.data)
+		self.max_idx = len(self.data)
+		if self.nimg == 0: return # the list is empty
 		
 		d = self.data[0]
 
@@ -828,7 +830,7 @@ class EMImageMXModule(EMGUIModule):
 			self.mindeng=min(self.mindeng,max(m0,mean-5.0*sigma))
 			self.maxdeng=max(self.maxdeng,min(m1,mean+5.0*sigma))
 
-		self.max_idx = len(self.data)
+		
 		#if update_gl: self.updateGL()
 
 	def updateGL(self):
@@ -1481,6 +1483,8 @@ class EMImageMXModule(EMGUIModule):
 		"""Converts screen location (ie - mouse event) to pixel coordinates within a single
 		image from the matrix. Returns (image number,x,y) or None if the location is not within any
 		of the contained images. """ 
+		if  self.max_idx == 0: return # there is no data
+		
 		absloc=((vec[0]),(self.gl_widget.height()-(vec[1])))
 		for item in self.coords.items():
 			index = item[0]+self.img_num_offset

@@ -2417,7 +2417,10 @@ class EMBoxerModule(QtCore.QObject):
 	def remove_dummy(self):
 		self.autoboxer.set_dummy_box(None)
 		self.box_display_update()
-		
+	
+	def run_output_dialog(self):
+		pass
+	
 	def write_all_box_image_files(self,box_size,forceoverwrite=False,imageformat="hdf",normalize=True,norm_method="normalize.edgemean"):
 		self.boxable.cache_exc_to_db()
 		progress = EMProgressDialogModule(self.application(),"Writing boxed images", "Abort", 0, len(self.image_names),None)
@@ -2753,6 +2756,7 @@ class AutoBoxerSelectionsMediator:
 			E2setappval("boxer","mxcontrol",self.guimx.inspector.isVisible())
 			if self.guimx.inspector.isVisible() : E2saveappwin("boxer","mxcontrolgeom",self.guimx.inspector)
 		except : E2setappval("boxer","mxcontrol",False)
+		
 
 		
 def histogram1d( data, nbin, presize=0 ) :
@@ -2926,8 +2930,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.connect(self.bs,QtCore.SIGNAL("editingFinished()"),self.new_box_size)
 	
 		self.connect(self.thr,QtCore.SIGNAL("valueChanged"),self.new_threshold)
-		self.connect(self.done,QtCore.SIGNAL("clicked(bool)"),self.target().done)
-		self.connect(self.classifybut,QtCore.SIGNAL("clicked(bool)"),self.target().classify)
+		
 #		self.connect(self.trythat,QtCore.SIGNAL("clicked(bool)"),self.try_dummy_parameters)
 #		self.connect(self.reset,QtCore.SIGNAL("clicked(bool)"),self.target.remove_dummy)
 		self.connect(self.thrbut, QtCore.SIGNAL("clicked(bool)"), self.selection_mode_changed)
@@ -3115,6 +3118,9 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.classifybut=QtGui.QPushButton("Classify")
 		self.main_vbl.addWidget(self.classifybut)
 		
+		self.gen_output_but=QtGui.QPushButton("Write output")
+		self.main_vbl.addWidget(self.gen_output_but)
+		
 		self.done=QtGui.QPushButton("Done")
 		self.main_vbl.addWidget(self.done)
 		
@@ -3140,7 +3146,9 @@ class EMBoxerModulePanel(QtGui.QWidget):
 
 		QtCore.QObject.connect(self.imagequalities, QtCore.SIGNAL("currentIndexChanged(QString)"), self.image_quality_changed)
 		
-
+		self.connect(self.done,QtCore.SIGNAL("clicked(bool)"),self.target().done)
+		self.connect(self.classifybut,QtCore.SIGNAL("clicked(bool)"),self.target().classify)
+		self.connect(self.gen_output_but,QtCore.SIGNAL("clicked(bool)"),self.target().run_output_dialog)
 	def normalize_box_images_toggled(self):
 		val = self.normalize_box_images.isChecked()
 		self.normalization_options.setEnabled(val)

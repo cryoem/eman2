@@ -57,6 +57,15 @@ float* EMData::get_cuda_data() const {
 	return cuda_rdata;
 }
 
+void EMData::bind_cuda_array() {
+	if (cuda_array_handle==-1|| EMDATA_GPU_RO_NEEDS_UPDATE & flags) {
+		if (cuda_array_handle==-1) delete_cuda_array(cuda_array_handle);
+		cuda_array_handle = get_cuda_array_handle(get_cuda_data(),nx,ny,nz,this);
+		flags &= ~EMDATA_GPU_RO_NEEDS_UPDATE;
+	}
+	bind_cuda_texture(cuda_array_handle);
+}
+
 
 void EMData::gpu_update() {
 	flags |= EMDATA_NEEDUPD | EMDATA_CPU_NEEDS_UPDATE | EMDATA_GPU_RO_NEEDS_UPDATE;
@@ -109,8 +118,9 @@ void EMData::free_cuda_array() const {
 
 void EMData::free_cuda_memory() const {
 	if ( cuda_rdata != 0) {
-		cout << "Deleting cuda_rdata" << endl;
-		cudaFree(cuda_rdata);
+// 		cout << "Deleting cuda_rdata" << endl;
+		cudaFree(cuda_rdata);        
+		cudaThreadSynchronize();
 		cuda_rdata = 0;
 	}
 }

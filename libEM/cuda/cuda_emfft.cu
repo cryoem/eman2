@@ -484,13 +484,13 @@ int cuda_dd_fft_real_to_complex_nd(float *real_data, float *complex_data, int nx
 			if ( !ip ) {
 				cache = get_cuda_fft_dd_plan_cache(rank,nx,ny,nz,real_2_complex,ip);
 				cufftExecR2C(cache->handle, real_data, (cufftComplex*)complex_data );
-				cudaThreadSynchronize();
+				//cudaThreadSynchronize();
 			}
 			else {
 				cache = get_cuda_fft_dd_plan_cache(rank,nx,ny,nz,real_2_complex,ip);
 				/// CHECK LATER - Not sure if this will work
 				cufftExecR2C(cache->handle, (cufftReal*)complex_data, (cufftComplex*)complex_data );
-				cudaThreadSynchronize();
+				//cudaThreadSynchronize();
 
 			}
 		break;
@@ -520,7 +520,7 @@ int cuda_dd_fft_complex_to_real_nd(float *complex_data, float *real_data, int nx
 			ip = ( complex_data == real_data );
 			cache = get_cuda_fft_dd_plan_cache(rank,nx,ny,nz,complex_2_real,ip);
 			cufftExecC2R(cache->handle, (cufftComplex*)complex_data, real_data);
-			cudaThreadSynchronize();
+			//cudaThreadSynchronize();
 			break;
 			
 		default:throw;

@@ -40,14 +40,8 @@ public:
 	inline void reset_cuda_array_handle() { cuda_array_handle = -1; }
 	
 
-	inline void bind_cuda_array() {
-		if (cuda_array_handle == -1 || EMDATA_GPU_RO_NEEDS_UPDATE & flags) {
-			// This would eventually change, if for example the cuda_rdata is not zero
-			if (cuda_array_handle != -1) delete_cuda_array(cuda_array_handle);
-			cuda_array_handle = get_cuda_array_handle(get_cuda_data(),nx,ny,nz,this);
-		}
-		bind_cuda_texture(cuda_array_handle);
-	}
+	void bind_cuda_array();
+	
 	// This should never be set by anything other than something that knows what it's doing
 	inline void set_cuda_array_handle(const int idx) { cuda_array_handle = idx; }
 	
