@@ -10942,27 +10942,15 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 
 	elif CUDA: # added 2009-02-20 16:27:26
 		from statistics import k_means_cuda_open_im, k_means_cuda_headlog, k_means_cuda_error
-		from statistics import k_means_cuda_export
+		from statistics import k_means_cuda_export, k_means_cuda_init_open_im
 		from utilities  import model_blank, get_im, get_image
 		
 		# instance of CUDA kmeans obj
 		KmeansCUDA = CUDA_kmeans()
 
-		# open mask if defined
-		if maskname != None: mask = get_image(maskname)
-		else:
-			# anyway image must be a flat image
-			im = get_im(stack, 0)
-			mask = model_blank(im.get_xsize(), im.get_ysize(), im.get_zsize())
-			mask.to_one()
-			del im
-
-		# get some params
-		N  = EMUtil.get_image_count(stack)
-		im = Util.compress_image_mask(mask, mask)
-		m  = im.get_xsize()
-		del im
-
+		# init to open images
+		LUT, mask, N, m = k_means_cuda_init_open_im(stack, maskname)
+		
 		# write logfile
 		print_begin_msg('k-means')
 		method = 'cla'
@@ -10973,7 +10961,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		KmeansCUDA.setup(m, N, K, F, T0, maxit, rand_seed)
 	
 		# open images and load to C
-		LUT = k_means_cuda_open_im(KmeansCUDA, stack, mask)
+		k_means_cuda_open_im(KmeansCUDA, stack, LUT, mask)
 		
 		# run k-means
 		print_msg('::: RUNNING :::\n\n')
@@ -10990,7 +10978,10 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 
 		# export data
 		k_means_cuda_export(PART, INFO, AVE, out_dir, mask)
-	
+
+		# destroy obj
+		del KmeansCUDA
+
 		# end
 		print_end_msg('k-means')
 
@@ -11048,9 +11039,12 @@ def k_means_groups(stack, out_file, maskname, opt_method, K1, K2, rand_seed, max
 # 2008-12-18 11:43:11
 
 # K-means main stability
-def k_means_stab(stack, outdir, maskname, opt_method, K, npart = 5, CTF = False, F = 0, maxrun = 50, th_nobj = 0, th_stab = 6.0, th_dec = 5, restart = 1, MPI = False, bck = False):
+def k_means_stab(stack, outdir, maskname, opt_method, K, npart = 5, CTF = False, F = 0, maxrun = 50, th_nobj = 0, th_stab = 6.0, th_dec = 5, restart = 1, MPI = False, CUDA = False, bck = False):
 	if MPI:
 		k_means_stab_MPI(stack, outdir, maskname, opt_method, K, npart, CTF, F, maxrun, th_nobj, th_stab, th_dec, restart, bck)
+		return
+	elif CUDA:
+		k_means_stab_CUDA(stack, outdir, maskname, K, npart, F, maxrun, th_nobj, th_stab, th_dec, restart, bck)
 		return
 	
 	from utilities 	 import print_begin_msg, print_end_msg, print_msg, file_type
@@ -11134,6 +11128,170 @@ def k_means_stab(stack, outdir, maskname, opt_method, K, npart = 5, CTF = False,
 				f.close()
 		print_end_msg('k-means')
 
+		if flag_cluster:
+			num_run -= 1
+			dec = int(K * (stb / 100.0))
+			if dec < th_dec: K -= th_dec
+			else: 	         K -= dec
+			if K > 1:
+				logging.info('[WARNING] Restart the run with K = %d' % K)
+				continue
+			else:
+				logging.info('[STOP] Not enough number of clusters ')
+				break
+
+		# convert local assignment to absolute partition
+		logging.info('... Convert local assign to abs partition')
+		ALL_PART = k_means_stab_asg2part(ALL_ASG, LUT)
+
+		# calculate the stability
+		stb, nb_stb, STB_PART = k_means_stab_H(ALL_PART)
+		logging.info('... Stability: %5.2f %% (%d objects)' % (stb, nb_stb))
+
+		# manage the stability
+		if stb < th_stab:
+			dec = int(K * (stb / 100.0))
+			if dec < th_dec: K -= th_dec
+			else:            K -= dec
+			if K > 1:
+				logging.info('[WARNING] Stability too low, restart the run with K = %d' % K)
+				num_run -= 1
+				continue
+			else:
+				logging.info('[STOP] Not enough number of clusters ')
+				break
+
+		# export the stable class averages
+		logging.info('... Export stable class averages: average_stb_run%02d.hdf' % num_run)
+		k_means_stab_export(STB_PART, stack, num_run, outdir)
+
+		# tag informations to the header
+		logging.info('... Update info to the header')
+		k_means_stab_update_tag(stack, ALL_PART, STB_PART, num_run)
+
+		# stop if max run is reach
+		if num_run >= maxrun:
+			flag_run = False
+			logging.info('[STOP] Max number of runs is reached (%d)' % maxrun)
+
+	# merge and clean all stable averages
+	logging.info('Remove class average with nb objs < %d' % th_nobj)
+	ct = k_means_stab_gather(num_run, th_nobj, maskname, outdir)
+	logging.info('Gather and normalize all stable class averages: averages.hdf (%d images)' % ct)
+	
+	logging.info('::: END k-means stability :::')
+
+# K-means main stability
+def k_means_stab_CUDA(stack, outdir, maskname, K, npart = 5, F = 0, maxrun = 50, th_nobj = 0, th_stab = 6.0, th_dec = 5, restart = 1, bck = False):
+	
+	from utilities 	 import print_begin_msg, print_end_msg, print_msg
+	from utilities   import model_blank, get_image, get_im
+	from statistics  import k_means_cuda_init_open_im, k_means_cuda_open_im, k_means_stab_init_tag
+	from statistics  import k_means_cuda_headlog, k_means_cuda_error, k_means_cuda_info
+
+	from statistics  import k_means_stab_update_tag, k_means_stab_gather, k_means_stab_init_tag
+	from statistics  import k_means_stab_asg2part, k_means_stab_H, k_means_stab_export
+	import sys, logging, os
+
+	# create a directory
+	if os.path.exists(outdir):  os.system('rm -rf ' + outdir)
+	os.mkdir(outdir)
+
+	# create main log
+	if restart == 1:
+		f = open(outdir + '/main_log.txt', 'w')
+		f.close()
+	logging.basicConfig(filename = outdir + '/main_log.txt', format = '%(asctime)s     %(message)s', level = logging.INFO)
+	logging.info('::: Start k-means stability :::')
+
+	# manage random seed
+	rnd = []
+	for n in xrange(1, npart + 1): rnd.append(n * (10**n))
+	logging.info('Init list random seed: %s' % rnd)
+
+	# init tag to the header for the stack file
+	if restart == 1:
+		logging.info('Init header to the stack file')
+		k_means_stab_init_tag(stack)
+
+	# loop over run
+	stb          = 6.0
+	flag_run     = True
+	num_run      = restart - 1
+	maxit        = int(1e9)
+	T0           = float(-1) # auto
+	while flag_run:
+		flag_cluster = False
+		num_run += 1
+		logging.info('RUN %02d K = %03d %s' % (num_run, K, 40 * '-'))
+
+		# create k-means obj
+		KmeansCUDA = CUDA_kmeans()
+
+		# open unstable images
+		logging.info('... Open images')
+		LUT, mask, N, m = k_means_cuda_init_open_im(stack, maskname)
+		logging.info('... %d unstable images found' % N)
+		if N < 2:
+			logging.info('[STOP] Not enough images')
+			break
+		KmeansCUDA.setup(m, N, K, F, T0, maxit, 0)
+		k_means_cuda_open_im(KmeansCUDA, stack, LUT, mask)
+		'''
+		if F != 0:
+			try:
+				T0, ct_pert = k_means_SA_T0(im_M, mask, K, rand_seed, [CTF, ctf, ctf2], F)
+				logging.info('... Select first temperature T0: %4.2f (dst %d)' % (T0, ct_pert))
+			except SystemExit:
+				logging.info('[STOP] Not enough images')
+				break
+		else: T0 = 0
+		'''
+		# loop over partition
+		ALL_ASG = []
+		print_begin_msg('k-means')
+		for n in xrange(npart):
+			# info
+			logging.info('...... Start partition: %d' % (n + 1))
+			partdir = 'partition %d' % (n + 1)
+			ncpu   = 1
+			method = 'cla'
+			k_means_cuda_headlog(stack, partdir, method, N, K, maskname, maxit, T0, F, rnd[n], ncpu, m)
+
+			# classification
+			KmeansCUDA.set_rnd(rnd[n])
+			status = KmeansCUDA.kmeans()
+			if   status == 0:
+				pass
+			elif status == 4:
+				logging.info('[WARNING] Empty cluster')
+				k_means_cuda_error(status)
+				flag_cluster = True
+				break
+			else:
+				k_means_cuda_error(status)
+				sys.exit()
+
+			# get back the partition and its infos
+			PART = KmeansCUDA.get_partition()
+			ALL_ASG.append(PART)
+			INFO = KmeansCUDA.get_info()
+			k_means_cuda_info(INFO)
+
+			# if backup required do it
+			if bck:
+				import pickle
+				f = open('run%02d_part%02d.pck' % (num_run, n), 'w')
+				pickle.dump(PART, f)
+				f.close()
+
+		# end of classification
+		print_end_msg('k-means')
+
+		# destroy k-means
+		del KmeansCUDA
+
+		# flow control if empty cluster
 		if flag_cluster:
 			num_run -= 1
 			dec = int(K * (stb / 100.0))

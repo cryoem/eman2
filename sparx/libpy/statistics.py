@@ -1387,7 +1387,7 @@ def im_diff(im1, im2, mask = None):
 
 # k-means open and prepare images
 def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, listID = None):
-	from utilities     import get_params2D, get_image
+	from utilities     import get_params2D, get_image, get_params3D
 	from fundamentals  import rot_shift2D, rot_shift3D
 	
 	if CTF:
@@ -4040,15 +4040,26 @@ def k_means_cuda_headlog(stackname, outname, method, N, K, maskname, maxit, T0, 
 	print_msg('Number of cpus              : %i\n'     % ncpu)
 	print_msg('Output seed names           : %s\n'     % outname)
 	print_msg('Memory on device            : %s\n'     % device)
-	print_msg('Memory on host              : %s\n\n'    % host)
+	print_msg('Memory on host              : %s\n\n'   % host)
 
+# k-means, prepare to open images later
+def k_means_cuda_init_open_im(stack, maskname):
+	from utilities import get_image, get_im, model_blank, file_type
 
-# k-means open, prepare, and load images for CUDA k-means
-def k_means_cuda_open_im(KmeansCUDA, stack, mask):
-	from utilities     import get_params2D, get_image
-	from fundamentals  import rot_shift2D, rot_shift3D
-	from utilities     import file_type, model_blank, get_im
-	from statistics    import k_means_open_im
+	# open mask if defined
+	if maskname != None: mask = get_image(maskname)
+	else:
+		# anyway image must be a flat image
+		im = get_im(stack, 0)
+		mask = model_blank(im.get_xsize(), im.get_ysize(), im.get_zsize())
+		mask.to_one()
+		del im
+
+	# get some params
+	N  = EMUtil.get_image_count(stack)
+	im = Util.compress_image_mask(mask, mask)
+	m  = im.get_xsize()
+	del im
 
 	# check if the flag active is used, in the case where k-means will run for the stability
 	image = EMData()
@@ -4056,12 +4067,7 @@ def k_means_cuda_open_im(KmeansCUDA, stack, mask):
 	flagactive = True
 	try:	active = image.get_attr('active')
 	except: flagactive = False
-	
-	# some parameters
-	N  = EMUtil.get_image_count(stack)
-	nx = image.get_xsize()
-	ny = image.get_ysize()
-	nz = image.get_zsize()
+	del image
 	
 	# if flag active used, prepare the list of images
 	if flagactive:
@@ -4073,12 +4079,25 @@ def k_means_cuda_open_im(KmeansCUDA, stack, mask):
 				if DB.get_attr(n, 'active'): lim.append(n)
 			DB.close()
 		else:
+			im = EMData.read_images(stack, range(N), True)
 			for n in xrange(N):
-				image.read_image(stack, n, True)
-				if image.get_attr('active'): lim.append(n)
-
+				if im[n].get_attr('active'): lim.append(n)
+			del im
 		N = len(lim)
 	else: lim = range(N)
+
+	return lim, mask, N, m
+
+# k-means open, prepare, and load images for CUDA k-means
+def k_means_cuda_open_im(KmeansCUDA, stack, lim, mask):
+	from utilities     import get_params2D, get_params3D, get_im
+	from fundamentals  import rot_shift2D, rot_shift3D
+	
+	# some parameters
+	image = get_im(stack, 0)
+	nx = image.get_xsize()
+	ny = image.get_ysize()
+	nz = image.get_zsize()
 	del image
 
 	# open one by one to avoid allocation of twice memory (python/C)
@@ -4108,7 +4127,22 @@ def k_means_cuda_open_im(KmeansCUDA, stack, mask):
 		KmeansCUDA.append_flat_image(image, c)
 		c += 1
 
-	return lim 
+# K-means write only the major info to the header, call by the stability process
+def k_means_cuda_info(INFO):
+	from utilities import print_msg
+	
+	# write the report on the logfile
+	time_run = int(INFO['time'])
+	time_h   = time_run / 3600
+	time_m   = (time_run % 3600) / 60
+	time_s   = (time_run % 3600) % 60
+	
+	print_msg('Running time is             : %s h %s min %s s\n' % (str(time_h).rjust(2, '0'), str(time_m).rjust(2, '0'), str(time_s).rjust(2, '0')))
+	print_msg('Number of iterations        : %i\n' % INFO['noi'])
+	print_msg('Partition criterion is      : %11.6e (total sum of squares error)\n' % INFO['Je'])
+	print_msg('Criteria Coleman is         : %11.6e\n' % INFO['C'])
+	print_msg('Criteria Harabasz is        : %11.6e\n' % INFO['H'])
+	print_msg('Criteria Davies-Bouldin is  : %11.6e\n' % INFO['DB'])
 
 # K-means write results output directory
 def k_means_cuda_export(PART, INFO, FLATAVE, out_seedname, mask):
@@ -5057,15 +5091,15 @@ def k_means_stab_init_tag(stack):
 	if ext == 'bdb':
 		DB = db_open_dict(stack)
 		for n in xrange(N):
-			DB.set_attr(n, 'stab_active', 1)
-			DB.set_attr(n, 'stab_part',  -2)
+			DB.set_attr(n, 'active', 1)
+			DB.set_attr(n, 'stab_part', -2)
 		DB.close()
 	else:
 		im = EMData()
 		for n in xrange(N):
 			im.read_image(stack, n, True)
-			im.set_attr('stab_active', 1)
-			im.set_attr('stab_part',  -2)
+			im.set_attr('active', 1)
+			im.set_attr('stab_part', -2)
 			write_header(stack, im, n) 
 
 # k-means open and prepare images MPI version, only unstable objects (active = 1)
@@ -5194,7 +5228,7 @@ def k_means_stab_update_tag(stack, ALL_PART, STB_PART, num_run):
 			DB.set_attr(n, 'stab_part', val)
 
 		# active or not (unstable or not)
-		for ID in list_stb: DB.set_attr(ID, 'stab_active', 0)
+		for ID in list_stb: DB.set_attr(ID, 'active', 0)
 
 		DB.close()
 	else:
@@ -5218,24 +5252,26 @@ def k_means_stab_update_tag(stack, ALL_PART, STB_PART, num_run):
 		# active or not (unstable or not)
 		for ID in list_stb:
 			im.read_image(stack, ID, True)
-			im.set_attr('stab_active', 0)
+			im.set_attr('active', 0)
 			write_header(stack, im, ID)
 
 # Gather all stable class averages in the same stack
 def k_means_stab_gather(nb_run, th, maskname, outdir):
-	from utilities import get_im
-	
-	if maskname != None: mask = get_im(maskname, 0)
-	else: mask = None
+	from utilities import get_image
+
 	ct   = 0
 	im   = EMData()
 	for nr in xrange(1, nb_run):
 		name = outdir + '/average_stb_run%02d.hdf' % nr
 		N = EMUtil.get_image_count(name)
+		if nr == 1:
+			if maskname != None: mask = get_image(maskname)
+			else: mask   = None
 		for n in xrange(N):
 			im.read_image(name, n)
 			if im.get_attr('nobjects') > th:
 				ret = Util.infomask(im, mask, True) # 
+				print ret
 				im  = (im - ret[0]) / ret[1]        # normalize
 				im.write_image(outdir + '/averages.hdf', ct)
 				ct += 1
