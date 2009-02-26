@@ -71,8 +71,7 @@ class EM3DSliceViewerModule(EMImage3DGUIModule):
 		self.axes.append( Vec3f(0,1,0) )
 		self.axes.append( Vec3f(0,0,1) )
 		self.axes_idx = 2
-		
-		
+	
 		self.forceuse2dtextures = True	# This placed here by David Woolford - we get better performance
 		
 		self.track = False

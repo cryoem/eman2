@@ -1201,6 +1201,7 @@ class EMBoxerModule(QtCore.QObject):
 		self.guimxit = None
 		self.dab = None
 		self.form = None
+		self.output_task = None # will be an EMAN2 style form
 		
 		form_init = False
 		for s in self.required_options: 
@@ -2419,13 +2420,23 @@ class EMBoxerModule(QtCore.QObject):
 		self.box_display_update()
 	
 	def run_output_dialog(self):
-		pass
+		from emsprworkflow import E2BoxerProgramOutputTask
+		if self.output_task != None: return
+		self.output_task = E2BoxerProgramOutputTask(self.application(),self.image_names,self)
+		QtCore.QObject.connect(self.output_task,QtCore.SIGNAL("task_idle"),self.on_output_task_idle)
+		self.output_task.run_form()
+		
+	def on_output_task_idle(self):
+		self.output_task = None
 	
 	def write_all_box_image_files(self,box_size,forceoverwrite=False,imageformat="hdf",normalize=True,norm_method="normalize.edgemean"):
+		self.write_box_image_files(self.image_names,box_size,forceoverwrite,imageformat,normalize,norm_method)
+		
+	def write_box_image_files(self,image_names,box_size,forceoverwrite=False,imageformat="hdf",normalize=True,norm_method="normalize.edgemean"):
 		self.boxable.cache_exc_to_db()
-		progress = EMProgressDialogModule(self.application(),"Writing boxed images", "Abort", 0, len(self.image_names),None)
+		progress = EMProgressDialogModule(self.application(),"Writing boxed images", "Abort", 0, len(image_names),None)
 		progress.qt_widget.show()
-		for i,image_name in enumerate(self.image_names):
+		for i,image_name in enumerate(image_names):
 			try:
 				project_db = EMProjectDB()
 				data = project_db[get_idd_key(image_name)]
@@ -2464,10 +2475,13 @@ class EMBoxerModule(QtCore.QObject):
 		progress.qt_widget.close()
  
 	def write_all_coord_files(self,box_size,forceoverwrite=False):
+		self.write_coord_files(self.image_names,box_size,forceoverwrite)
+
+	def write_coord_files(self,image_names,box_size,forceoverwrite=False):
 		self.boxable.cache_exc_to_db()
-		progress = EMProgressDialogModule(self.application(),"Writing boxed images", "Abort", 0, len(self.image_names),None)
+		progress = EMProgressDialogModule(self.application(),"Writing boxed images", "Abort", 0, len(image_names),None)
 		progress.qt_widget.show()
-		for i,image_name in enumerate(self.image_names):
+		for i,image_name in enumerate(image_names):
 			
 			try:
 				project_db = EMProjectDB()

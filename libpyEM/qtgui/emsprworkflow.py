@@ -1859,6 +1859,61 @@ class E2BoxerOutputTaskGeneral(E2BoxerOutputTask):
 		p.append(pboxes)
 		p.append(pdims)
 		return p
+	
+	
+class E2BoxerProgramOutputTask(E2BoxerOutputTask):
+	'''
+	This task is called from e2boxer itself. Not from the workflow
+	'''
+	documentation_string = "Use this form for writing output from within the e2boxer interface. This form is not intended to be used from the context of e2workflow.\nYou can choose to write image files in a number of formats. The bdb file format is mostly useful if you are using EMAN2. If you plan on using your data with other programs, including EMAN1, you must choose either the hdf or img output formats.\n You can also choose to write EMAN1 style .box files"
+	def __init__(self,application,filenames,target):
+		E2BoxerOutputTask.__init__(self,application)
+		self.window_title = "E2boxer Output"
+		self.filenames = filenames
+		self.target = weakref.ref(target)
+		
+	def get_params(self):
+		params = []
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="E2Boxer output form",desc_long="",property=None,defaultunits=E2BoxerProgramOutputTask.documentation_string,choices=None))
+		
+		p = ParamTable(name="filenames",desc_short="Choose a subset of these images",desc_long="")
+		pnames = ParamDef(name="Filenames",vartype="stringlist",desc_short="File names",desc_long="The filenames",property=None,defaultunits=None,choices=self.filenames)
+		p.append(pnames)
+		setattr(p,"convert_text", ptable_convert_2)
+		setattr(p,"icon_type","single_image")
+		
+		params.append(p)
+		
+		self.add_general_params(params)
+	
+#		boxer_project_db = db_open_dict("bdb:e2boxer.project")
+#		params.append(ParamDef(name="boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=boxer_project_db.get("interface_boxsize",dfl=128),choices=[]))
+		return params
+	
+	def on_form_ok(self,params):
+		
+		if  params.has_key("filenames") and len(params["filenames"]) == 0:
+			self.run_select_files_msg()
+			return
+		
+		error_message = self.check_params(params)
+		if len(error_message) >0: 
+			self.show_error_message(error_message)
+			return
+		
+		else:
+			print params
+			if params["write_coord_files"]:
+				self.target().write_coord_files(params["filenames"],params["output_boxsize"],params["force"])
+			if params["write_box_images"]:
+				normproc = False
+				if params["normproc"] != "none":
+					normproc=True
+				self.target().write_box_image_files(params["filenames"],params["output_boxsize"],params["force"],params["outformat"],normproc,params["normproc"])
+				
+			self.emit(QtCore.SIGNAL("task_idle"))
+			self.form.closeEvent(None)
+			self.form = None
 
 class E2CTFWorkFlowTask(ParticleWorkFlowTask):
 	'''
