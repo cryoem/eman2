@@ -2161,154 +2161,162 @@ def recv_EMData(src, tag):
         '''
 	return img
 
-def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, number_of_proc):
+def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, number_of_proc, comm = -1):
 	import types
 	from  utilities import  get_arb_params, set_arb_params
 	from  mpi 	import mpi_recv
 	from  mpi 	import MPI_FLOAT, MPI_INT, MPI_TAG_UB, MPI_COMM_WORLD
 	#   hdf version!
 	# This is done on the main node, so for images from the main node, simply write headers
+	
+	if comm == -1:  comm = MPI_COMM_WORLD
+	
 	TransType = type(Transform())
 	# prepare keys for float/int
-	vl = get_arb_params(data[0], list_params)
+	value = get_arb_params(data[0], list_params)
 	ink = []
-	lenlis = 0
+	len_list = 0
 	for il in xrange(len(list_params)):
-		if type(vl[il]) is types.IntType:     
+		if type(value[il]) is types.IntType:     
 			ink.append(1)
-			lenlis += 1
-		elif type(vl[il]) is types.FloatType:  
+			len_list += 1
+		elif type(value[il]) is types.FloatType:  
 			ink.append(0)
-			lenlis += 1
-		elif type(vl[il]) is TransType:
+			len_list += 1
+		elif type(value[il]) is TransType:
 			ink.append(2)
-			lenlis += 12
+			len_list += 12
 	ldis = []
 	headers = []
 	for n in xrange(number_of_proc):
-		if(n != main_node):
-			dis = mpi_recv(2, MPI_INT, n, MPI_TAG_UB, MPI_COMM_WORLD)
-			vl = mpi_recv(lenlis*(dis[1]-dis[0]), MPI_FLOAT, n, MPI_TAG_UB, MPI_COMM_WORLD)
+		if n != main_node:
+			dis = mpi_recv(2, MPI_INT, n, MPI_TAG_UB, comm)
+			value = mpi_recv(len_list*(dis[1]-dis[0]), MPI_FLOAT, n, MPI_TAG_UB, comm)
 			ldis.append([dis[0], dis[1]])
-			headers.append(vl)
+			headers.append(value)
 			del  dis
-	del  vl
+	del  value
 	for im in xrange(image_start, image_end):
 		data[im-image_start].write_image(stack, data[im-image_start].get_attr_default('ID', im), EMUtil.ImageType.IMAGE_HDF, True)
 
 	for n in xrange(len(ldis)):
-		img_beg = ldis[n][0]
+		img_begin = ldis[n][0]
 		img_end = ldis[n][1]
-		for im in xrange(img_beg, img_end):
-			par_beg = (im-img_beg)*lenlis
-			nvl = []
+		for im in xrange(img_begin, img_end):
+			par_begin = (im-img_begin)*len_list
+			nvalue = []
 			header = headers[n]
 			ilis = 0
 			for il in xrange(len(list_params)):
 				if(ink[il] == 1):
-					nvl.append(int(header[par_beg+ilis]))
+					nvalue.append(int(header[par_begin+ilis]))
 					ilis += 1
 				elif ink[il]==0:
-					nvl.append(header[par_beg+ilis])
+					nvalue.append(header[par_begin+ilis])
 					ilis += 1
 				else:
 					assert ink[il]==2
 					t = Transform()
 					tmp = []
-					for iii in xrange(par_beg+ilis, par_beg+ilis+12):
+					for iii in xrange(par_begin+ilis, par_begin+ilis+12):
 						tmp.append(float(header[iii]))
 					t.set_matrix(tmp)
 					ilis += 12
-					nvl.append(t)
+					nvalue.append(t)
 			ISID = list_params.count('ID')
 			if(ISID == 0):
 				imm = im
 			else:
-				imm = nvl[ISID]
+				imm = nvalue[ISID]
 			# read head, set params, and write it
 			dummy = EMData()
 			dummy.read_image(stack, imm, True)
-			set_arb_params(dummy, nvl, list_params)
+			set_arb_params(dummy, nvalue, list_params)
 			dummy.write_image(stack, dummy.get_attr_default('ID', im), EMUtil.ImageType.IMAGE_HDF, True)
 
-def send_attr_dict(main_node, data, list_params, image_start, image_end):
+def send_attr_dict(main_node, data, list_params, image_start, image_end, comm = -1):
 	import types
 	from utilities import get_arb_params
 	from mpi 	   import mpi_send
 	from mpi 	   import MPI_FLOAT, MPI_INT, MPI_TAG_UB, MPI_COMM_WORLD
 	#  This function is called from a node other than the main node
+	
+	if comm == -1: comm = MPI_COMM_WORLD
 	TransType = type(Transform())
-	mpi_send([image_start, image_end], 2, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
-	nvl = []
+	mpi_send([image_start, image_end], 2, MPI_INT, main_node, MPI_TAG_UB, comm)
+	nvalue = []
 	for im in xrange(image_start, image_end):
-		vl = get_arb_params(data[im-image_start], list_params)
-		for il in xrange(len(vl)):
-			if    type(vl[il]) is types.IntType:  nvl.append(float(vl[il]))
-			elif  type(vl[il]) is types.FloatType: nvl.append(vl[il])
-			elif  type(vl[il]) is TransType: 
-				m = vl[il].get_matrix()
-				assert(len(m)==12)
-				for f in m: nvl.append(f)
-	mpi_send(nvl, len(nvl), MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+		value = get_arb_params(data[im-image_start], list_params)
+		for il in xrange(len(value)):
+			if    type(value[il]) is types.IntType:  nvalue.append(float(value[il]))
+			elif  type(valel[il]) is types.FloatType: nvalue.append(value[il])
+			elif  type(value[il]) is TransType: 
+				m = value[il].get_matrix()
+				assert (len(m)==12)
+				for f in m: nvalue.append(f)
+	mpi_send(nvalue, len(nvalue), MPI_FLOAT, main_node, MPI_TAG_UB, comm)
 
-def recv_attr_dict_bdb(main_node, stack, data, list_params, image_start, image_end, number_of_proc):
+def recv_attr_dict_bdb(main_node, stack, data, list_params, image_start, image_end, number_of_proc, comm = -1):
 	import types
 	from  utilities import  get_arb_params, set_arb_params
 	from  mpi 	import mpi_recv
 	from  mpi 	import MPI_FLOAT, MPI_INT, MPI_TAG_UB, MPI_COMM_WORLD
 	#  bdb version!
 	# This is done on the main node, so for images from the main node, simply write headers
+	
+	if comm == -1: comm = MPI_COMM_WORLD
+	
 	DB = db_open_dict(stack)
 	TransType = type(Transform())
 	# prepare keys for float/int
-	vl = get_arb_params(data[0], list_params)
+	value = get_arb_params(data[0], list_params)
 	ink = []
-	lenlis = 0
+	len_list = 0
 	for il in xrange(len(list_params)):
-		if type(vl[il]) is types.IntType:     
+		if type(value[il]) is types.IntType:     
 			ink.append(1)
-			lenlis += 1
-		elif type(vl[il]) is types.FloatType:  
+			len_list += 1
+		elif type(value[il]) is types.FloatType:  
 			ink.append(0)
-			lenlis += 1
-		elif type(vl[il]) is TransType:
+			len_list += 1
+		elif type(value[il]) is TransType:
 			ink.append(2)
-			lenlis += 12
+			len_list += 12
 	ldis = []
 	headers = []
 	for n in xrange(number_of_proc):
-		if(n != main_node):
-			dis = mpi_recv(2, MPI_INT, n, MPI_TAG_UB, MPI_COMM_WORLD)
-			img_beg = int(dis[0])
+		if n != main_node:
+			dis = mpi_recv(2, MPI_INT, n, MPI_TAG_UB, comm)
+			img_begin = int(dis[0])
 			img_end = int(dis[1])
-			header = mpi_recv(lenlis*(img_end-img_beg), MPI_FLOAT, n, MPI_TAG_UB, MPI_COMM_WORLD)
-			for im in xrange(img_beg, img_end):
-				par_beg = (im-img_beg)*lenlis
-				nvl = []
+			header = mpi_recv(len_list*(img_end-img_begin), MPI_FLOAT, n, MPI_TAG_UB, comm)
+			for im in xrange(img_begin, img_end):
+				par_begin = (im-img_begin)*len_list
+				nvalue = []
 				ilis = 0
 				for il in xrange(len(list_params)):
 					if(ink[il] == 1):
-						nvl.append(int(header[par_beg+ilis]))
+						nvalue.append(int(header[par_begin+ilis]))
 						ilis += 1
 					elif ink[il]==0:
-						nvl.append(header[par_beg+ilis])
+						nvalue.append(header[par_begin+ilis])
 						ilis += 1
 					else:
 						assert ink[il]==2
 						t = Transform()
 						tmp = []
-						for iii in xrange(par_beg+ilis, par_beg+ilis+12):
+						for iii in xrange(par_begin+ilis, par_begin+ilis+12):
 							tmp.append(float(header[iii]))
 						t.set_matrix(tmp)
 						ilis += 12
-						nvl.append(t)
+						nvalue.append(t)
 				ISID = list_params.count('ID')
 				if(ISID == 0):
 					imm = im
 				else:
-					imm = nvl[ISID]
+					imm = nvalue[ISID]
 				for i in xrange(len(list_params)):
-					if(list_params[i] != "ID"):  DB.set_attr(imm, list_params[i], nvl[i])
+					if(list_params[i] != "ID"):  DB.set_attr(imm, list_params[i], nvalue[i])
 		else:
 			for n in xrange(image_start, image_end):
 				ID = data[n-image_start].get_attr_default('ID', n)

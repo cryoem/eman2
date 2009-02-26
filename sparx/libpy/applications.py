@@ -1025,16 +1025,16 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	#par_str = ["xform.align2d", "ID"]
 	par_str = ["xform.align2d"]
 	if color == 0:    # We can only use one group of alignment as the final results
-		if myid == group_main_node:
+		if key == group_main_node:
 			from utilities import file_type
 			if file_type(stack) == "bdb":
 				from utilities import recv_attr_dict_bdb
-				recv_attr_dict_bdb(group_main_node, stack, data, par_str, image_start, image_end, group_number_of_proc)
+				recv_attr_dict_bdb(group_main_node, stack, data, par_str, image_start, image_end, group_number_of_proc, group_comm)
 			else:
 				from utilities import recv_attr_dict
-				recv_attr_dict(group_main_node, stack, data, par_str, image_start, image_end, group_number_of_proc)
+				recv_attr_dict(group_main_node, stack, data, par_str, image_start, image_end, group_number_of_proc, group_comm)
 		else:
-			send_attr_dict(group_main_node, data, par_str, image_start, image_end)
+			send_attr_dict(group_main_node, data, par_str, image_start, image_end, group_comm)
 	if myid == main_node:  print_end_msg("ali2d_a_MPI")
 
 '''
