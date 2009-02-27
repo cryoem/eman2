@@ -1900,9 +1900,7 @@ class E2BoxerProgramOutputTask(E2BoxerOutputTask):
 		if len(error_message) >0: 
 			self.show_error_message(error_message)
 			return
-		
 		else:
-			print params
 			if params["write_coord_files"]:
 				self.target().write_coord_files(params["filenames"],params["output_boxsize"],params["force"])
 			if params["write_box_images"]:

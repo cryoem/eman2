@@ -2436,6 +2436,8 @@ class EMBoxerModule(QtCore.QObject):
 		self.boxable.cache_exc_to_db()
 		progress = EMProgressDialogModule(self.application(),"Writing boxed images", "Abort", 0, len(image_names),None)
 		progress.qt_widget.show()
+		app = QtGui.QApplication.instance()
+		app.setOverrideCursor(Qt.BusyCursor)
 		for i,image_name in enumerate(image_names):
 			try:
 				project_db = EMProjectDB()
@@ -2468,10 +2470,11 @@ class EMBoxerModule(QtCore.QObject):
 				
 			if progress.qt_widget.wasCanceled():
 				# yes we could probably clean up all of the images that were written to disk but not time...
-				return
+				break
 				
 			progress.qt_widget.setValue(i+1)
 			self.application().processEvents()
+		app.setOverrideCursor(Qt.ArrowCursor)
 		progress.qt_widget.close()
  
 	def write_all_coord_files(self,box_size,forceoverwrite=False):
@@ -2479,8 +2482,10 @@ class EMBoxerModule(QtCore.QObject):
 
 	def write_coord_files(self,image_names,box_size,forceoverwrite=False):
 		self.boxable.cache_exc_to_db()
-		progress = EMProgressDialogModule(self.application(),"Writing boxed images", "Abort", 0, len(image_names),None)
+		progress = EMProgressDialogModule(self.application(),"Writing Coordinate  Files", "Abort", 0, len(image_names),None)
 		progress.qt_widget.show()
+		app = QtGui.QApplication.instance()
+		app.setOverrideCursor(Qt.BusyCursor)
 		for i,image_name in enumerate(image_names):
 			
 			try:
@@ -2510,10 +2515,12 @@ class EMBoxerModule(QtCore.QObject):
 				
 			if progress.qt_widget.wasCanceled():
 				# yes we could probably clean up all of the images that were written to disk but not time...
-				return
+				break;
+			
 				
 			progress.qt_widget.setValue(i+1)
 			self.application().processEvents()
+		app.setOverrideCursor(Qt.ArrowCursor)
 		progress.qt_widget.close()
  
 	
@@ -2973,16 +2980,13 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.main_inspector = QtGui.QWidget()
 		self.main_vbl =  QtGui.QVBoxLayout(self.main_inspector)
 		
-		self.infohbl = QtGui.QHBoxLayout()
-		self.info = QtGui.QLabel("%d Boxes"%len(self.target().get_boxes()),self)
-		#self.ppc = QtGui.QLabel("%f particles per click"%0,self)
-		self.infohbl.addWidget(self.info)
+		
 		#self.infohbl.addWidget(self.ppc)
 		
 		
-		self.statsbox = QtGui.QGroupBox("Stats")
-		self.statsbox.setLayout(self.infohbl)
-		self.main_vbl.addWidget(self.statsbox)
+		#self.statsbox = QtGui.QGroupBox("Stats")
+		#self.statsbox.setLayout(self.infohbl)
+		#self.main_vbl.addWidget(self.statsbox)
 		
 		self.boxingvbl = QtGui.QVBoxLayout()
 		
@@ -3075,65 +3079,72 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		
 		self.boxingvbl.addLayout(self.boxinghbl4)
 		
+		self.infohbl = QtGui.QHBoxLayout()
+		self.info = QtGui.QLabel("%d Boxes"%len(self.target().get_boxes()),self)
+		#self.ppc = QtGui.QLabel("%f particles per click"%0,self)
+		self.infohbl.addWidget(self.info)
+		self.boxingvbl.addLayout(self.infohbl)
+		
 		self.interactiveboxing = QtGui.QGroupBox("Interactive Boxing")
 		self.interactiveboxing.setLayout(self.boxingvbl)
 		self.main_vbl.addWidget(self.interactiveboxing)
 		
 		# output
-		self.outputvbl = QtGui.QVBoxLayout()
-		self.outputhbl1=QtGui.QHBoxLayout()
-		self.write_all_box_image_files = QtGui.QPushButton("Write Box Images")
-		self.outputhbl1.addWidget(self.write_all_box_image_files,0)
-		self.normalize_box_images = QtGui.QCheckBox("Normalize Box Images")
-		self.normalize_box_images.setChecked(True)
-		self.outputhbl1.addWidget(self.normalize_box_images,0, Qt.AlignLeft)
-		self.outputvbl.addLayout(self.outputhbl1)
+		#self.outputvbl = QtGui.QVBoxLayout()
+		#self.outputhbl1=QtGui.QHBoxLayout()
+		#self.write_all_box_image_files = QtGui.QPushButton("Write Box Images")
+		#self.outputhbl1.addWidget(self.write_all_box_image_files,0)
+		#self.normalize_box_images = QtGui.QCheckBox("Normalize Box Images")
+		#self.normalize_box_images.setChecked(True)
+		#self.outputhbl1.addWidget(self.normalize_box_images,0, Qt.AlignLeft)
+		#self.outputvbl.addLayout(self.outputhbl1)
 		
-		self.outputhbl2=QtGui.QHBoxLayout()
-		self.write_all_coord_files = QtGui.QPushButton("Write Coord Files")
-		self.outputhbl2.addWidget(self.write_all_coord_files,0)
-		self.outputforceoverwrite = QtGui.QCheckBox("Force Overwrite")
-		self.outputforceoverwrite.setChecked(False)
-		self.outputhbl2.addWidget(self.outputforceoverwrite,0, Qt.AlignRight)
-		self.outputvbl.addLayout(self.outputhbl2)
+		#self.outputhbl2=QtGui.QHBoxLayout()
+		#self.write_all_coord_files = QtGui.QPushButton("Write Coord Files")
+		#self.outputhbl2.addWidget(self.write_all_coord_files,0)
+		#self.outputforceoverwrite = QtGui.QCheckBox("Force Overwrite")
+		#self.outputforceoverwrite.setChecked(False)
+		#self.outputhbl2.addWidget(self.outputforceoverwrite,0, Qt.AlignRight)
+		#self.outputvbl.addLayout(self.outputhbl2)
 		
-		self.output_gridl = QtGui.QGridLayout()
+		#self.output_gridl = QtGui.QGridLayout()
 		
-		self.usingbox_sizetext=QtGui.QLabel("Using Box Size:",self)
-		self.output_gridl.addWidget(self.usingbox_sizetext,0,0,Qt.AlignRight)
+		#self.usingbox_sizetext=QtGui.QLabel("Using Box Size:",self)
+		#self.output_gridl.addWidget(self.usingbox_sizetext,0,0,Qt.AlignRight)
 		
-		self.usingbox_size = QtGui.QLineEdit(str(self.target().box_size),self)
-		self.usingbox_size.setValidator(self.pos_int_validator)
-		self.output_gridl.addWidget(self.usingbox_size,0,1,Qt.AlignLeft)
+		#self.usingbox_size = QtGui.QLineEdit(str(self.target().box_size),self)
+		#self.usingbox_size.setValidator(self.pos_int_validator)
+		#self.output_gridl.addWidget(self.usingbox_size,0,1,Qt.AlignLeft)
 		
-		self.outputformat=QtGui.QLabel("Image Format:",self)
-		self.output_gridl.addWidget(self.outputformat,1,0, Qt.AlignRight)
+		#self.outputformat=QtGui.QLabel("Image Format:",self)
+		#self.output_gridl.addWidget(self.outputformat,1,0, Qt.AlignRight)
 		
-		self.outputformats = QtGui.QComboBox(self)
-		self.outputformats.addItem("bdb")
-		self.outputformats.addItem("hdf")
-		self.outputformats.addItem("img")
-		self.output_gridl.addWidget(self.outputformats,1,1,Qt.AlignLeft)
+		#self.outputformats = QtGui.QComboBox(self)
+		#self.outputformats.addItem("bdb")
+		#self.outputformats.addItem("hdf")
+		#self.outputformats.addItem("img")
+		#self.output_gridl.addWidget(self.outputformats,1,1,Qt.AlignLeft)
 		
-		self.normalization_method=QtGui.QLabel("Normalization Method:",self)
-		self.output_gridl.addWidget(self.normalization_method,2,0,Qt.AlignRight)
+		#self.normalization_method=QtGui.QLabel("Normalization Method:",self)
+		#self.output_gridl.addWidget(self.normalization_method,2,0,Qt.AlignRight)
 		
-		self.normalization_options = QtGui.QComboBox(self)
-		self.normalization_options.addItem("normalize.edgemean")
-		self.normalization_options.addItem("normalize.ramp.normvar")
-		self.output_gridl.addWidget(self.normalization_options,2,1, Qt.AlignLeft)
+		#self.normalization_options = QtGui.QComboBox(self)
+		#self.normalization_options.addItem("normalize.edgemean")
+		#self.normalization_options.addItem("normalize.ramp.normvar")
+		#self.output_gridl.addWidget(self.normalization_options,2,1, Qt.AlignLeft)
 		
-		self.outputvbl.addLayout(self.output_gridl)
+		#self.outputvbl.addLayout(self.output_gridl)
 		
-		self.outputbox = QtGui.QGroupBox("Output")
-		self.outputbox.setLayout(self.outputvbl)
-		self.main_vbl.addWidget(self.outputbox)
+		#self.outputbox = QtGui.QGroupBox("Output")
+		#self.outputbox.setLayout(self.outputvbl)
+		#self.main_vbl.addWidget(self.outputbox)
+
+		self.gen_output_but=QtGui.QPushButton("Write output")
+		self.main_vbl.addWidget(self.gen_output_but)
 
 		self.classifybut=QtGui.QPushButton("Classify")
 		self.main_vbl.addWidget(self.classifybut)
 		
-		self.gen_output_but=QtGui.QPushButton("Write output")
-		self.main_vbl.addWidget(self.gen_output_but)
 		
 		self.done=QtGui.QPushButton("Done")
 		self.main_vbl.addWidget(self.done)
@@ -3151,22 +3162,22 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.connect(self.refbutton, QtCore.SIGNAL("clicked(bool)"), self.ref_button_toggled)
 		self.connect(self.manualbutton, QtCore.SIGNAL("clicked(bool)"), self.manual_button_toggled)
 
-		self.connect(self.write_all_box_image_files,QtCore.SIGNAL("clicked(bool)"),self.write_box_images)
-		self.connect(self.write_all_coord_files,QtCore.SIGNAL("clicked(bool)"),self.write_box_coords)
+		#self.connect(self.write_all_box_image_files,QtCore.SIGNAL("clicked(bool)"),self.write_box_images)
+		#self.connect(self.write_all_coord_files,QtCore.SIGNAL("clicked(bool)"),self.write_box_coords)
 		
 		self.connect(self.method, QtCore.SIGNAL("activated(int)"), self.method_changed)
 
-		self.connect(self.normalize_box_images,QtCore.SIGNAL("clicked(bool)"),self.normalize_box_images_toggled)
+		#self.connect(self.normalize_box_images,QtCore.SIGNAL("clicked(bool)"),self.normalize_box_images_toggled)
 
 		QtCore.QObject.connect(self.imagequalities, QtCore.SIGNAL("currentIndexChanged(QString)"), self.image_quality_changed)
 		
 		self.connect(self.done,QtCore.SIGNAL("clicked(bool)"),self.target().done)
 		self.connect(self.classifybut,QtCore.SIGNAL("clicked(bool)"),self.target().classify)
 		self.connect(self.gen_output_but,QtCore.SIGNAL("clicked(bool)"),self.target().run_output_dialog)
-	def normalize_box_images_toggled(self):
-		val = self.normalize_box_images.isChecked()
-		self.normalization_options.setEnabled(val)
-		self.normalization_method.setEnabled(val)
+	#def normalize_box_images_toggled(self):
+		#val = self.normalize_box_images.isChecked()
+		#self.normalization_options.setEnabled(val)
+		#self.normalization_method.setEnabled(val)
 	
 	def invert_contrast_mic_toggled(self):
 		from EMAN2 import Util

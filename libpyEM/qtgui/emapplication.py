@@ -36,7 +36,7 @@ from PyQt4.QtCore import Qt
 import sys
 import platform
 from emimageutil import EMParentWin,EventsEmitterAndReciever
-from EMAN2 import remove_directories_from_name
+from EMAN2 import remove_directories_from_name, get_image_directory
 import weakref
 
 
@@ -552,6 +552,7 @@ class EMProgressDialogModule(EMQtWidgetModule):
 	def __init__(self,application,label_text,cancel_button_text, minimum, maximum, parent):
 		self.application = weakref.ref(application)
 		self.widget = EMProgressDialog(label_text,cancel_button_text, minimum, maximum, parent)
+		self.widget.setWindowIcon(QtGui.QIcon(get_image_directory() + "/eman.png"))
 		EMQtWidgetModule.__init__(self,self.widget,application)
 		
 	def get_desktop_hint(self):

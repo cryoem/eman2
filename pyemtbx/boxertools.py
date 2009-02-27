@@ -1717,7 +1717,7 @@ class Boxable:
 				image.set_attr("original_y_size",box.ysize)
 				
 				image.set_attr("originating_image_name",self.get_image_name())
-				
+
 				image.write_image(image_name,-1)
 				
 				if box_size != -1:
