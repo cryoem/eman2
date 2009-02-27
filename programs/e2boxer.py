@@ -1248,6 +1248,7 @@ class EMBoxerModule(QtCore.QObject):
 		for key in params.keys():
 			setattr(options,key,params[key])
 		
+		print "ici"
 		if len(options.filenames) == 0 or options.running_mode not in ["gui","auto_db"]:
 			print "we have to keep the dialog open"
 			return
