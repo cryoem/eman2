@@ -77,6 +77,7 @@ void KMeansAnalyzer::set_params(const Dict & new_params)
 	if (params.has_key("mininclass"))mininclass = params["mininclass"];
 	if (params.has_key("slowseed"))slowseed = params["slowseed"];
 	if (params.has_key("verbose"))verbose = params["verbose"];
+	if (params.has_key("calcsigmamean")) calcsigmamean=params["calcsigmamean"];
 
 }
 
@@ -88,7 +89,8 @@ if (ncls<=1) return vector<EMData *>();
 // These are the class centers, start each with a random image
 int nptcl=images.size();
 int nclstot=ncls;
-centers.resize(ncls);
+if (calcsigmamean) centers.resize(ncls*2);
+else centers.resize(ncls);
 if (mininclass<1) mininclass=1;
 
 if (slowseed) {
@@ -99,7 +101,13 @@ if (slowseed) {
 for (int i=0; i<ncls; i++) {
 	// Fixed by d.woolford, Util.get_irand is inclusive (added a -1)
 	centers[i]=images[Util::get_irand(0,nptcl-1)]->copy();
+	
 }
+
+if (calcsigmamean) {
+	for (int i=ncls; i<ncls*2; i++) centers[i]=new EMData(images[0]->get_xsize(),images[0]->get_ysize(),images[0]->get_zsize());
+}
+
 
 for (int i=0; i<maxiter; i++) {
 	nchanged=0;
@@ -114,23 +122,26 @@ for (int i=0; i<maxiter; i++) {
 		reseed();
 	}
 }
+update_centers(1);
 
 return centers;
 }
 
-void KMeansAnalyzer::update_centers() {
+void KMeansAnalyzer::update_centers(int sigmas) {
 int nptcl=images.size();
 //int repr[ncls];
 int * repr = new int[ncls];
 
 for (int i=0; i<ncls; i++) {
 	centers[i]->to_zero();
+	if (sigmas) centers[i+ncls]->to_zero();
 	repr[i]=0;
 }
 
 for (int i=0; i<nptcl; i++) {
 	int cid=images[i]->get_attr("class_id");
 	centers[cid]->add(*images[i]);
+	if (sigmas) centers[cid+ncls]->addsquare(*images[i]);
 	repr[cid]++;
 }
 
@@ -143,6 +154,13 @@ for (int i=0; i<ncls; i++) {
 	else {
 		centers[i]->mult((float)1.0/(float)(repr[i]));
 		centers[i]->set_attr("ptcl_repr",repr[i]);
+		if (sigmas) {
+			centers[i+ncls]->mult((float)1.0/(float)(repr[i]));		// sum of squares over n
+			centers[i+ncls]->subsquare(*centers[i]);					// subtract the mean value squared
+			centers[i+ncls]->process("math.sqrt");					// square root
+			centers[i+ncls]->mult((float)1.0/(float)sqrt(repr[i]));		// divide by sqrt(N) to get std. dev. of mean
+		}			
+
 	}
 	if (verbose>1) printf("%d(%d)\t",i,(int)repr[i]);
 }

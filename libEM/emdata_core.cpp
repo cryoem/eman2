@@ -190,6 +190,56 @@ void EMData::add(const EMData & image)
 	EXITFUNC;
 }
 
+//for add operation, real and complex image is the same
+void EMData::addsquare(const EMData & image)
+{
+	ENTERFUNC;
+	if (nx != image.get_xsize() || ny != image.get_ysize() || nz != image.get_zsize()) {
+		throw ImageFormatException( "images not same sizes");
+	}
+	else if( this->is_complex() || image.is_complex() )
+	{
+		throw ImageFormatException( "Cannot addsquare() with complex images");
+	}
+	else {
+		
+		const float *src_data = image.get_data();
+		int size = nxy * nz;
+		float* data = get_data();
+
+		for (int i = 0; i < size; i++) {
+			data[i] += src_data[i]*src_data[i];
+		}
+		update();
+	}
+	EXITFUNC;
+}
+
+//for add operation, real and complex image is the same
+void EMData::subsquare(const EMData & image)
+{
+	ENTERFUNC;
+	if (nx != image.get_xsize() || ny != image.get_ysize() || nz != image.get_zsize()) {
+		throw ImageFormatException( "images not same sizes");
+	}
+	else if( this->is_complex() || image.is_complex() )
+	{
+		throw ImageFormatException( "Cannot addsquare() with complex images");
+	}
+	else {
+		
+		const float *src_data = image.get_data();
+		int size = nxy * nz;
+		float* data = get_data();
+
+		for (int i = 0; i < size; i++) {
+			data[i] -= src_data[i]*src_data[i];
+		}
+		update();
+	}
+	EXITFUNC;
+}
+
 
 void EMData::sub(float f)
 {

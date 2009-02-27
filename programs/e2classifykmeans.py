@@ -57,6 +57,7 @@ be classified. """
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 	parser.add_option("--ncls","-N",type="int",help="Number of classes to generate",default=-1)
 	parser.add_option("--average","-A",action="store_true",help="Average the particles within each class",default=False)
+	parser.add_option("--sigma",action="store_true",help="with --average, this will also produce standard deviation images for each average",default=False)
 	parser.add_option("--onein",action="store_true",help="Read 1-d input images from a single 2-D image (oneout in e2basis.py)",default=False)
 	parser.add_option("--oneinali",action="store_true",help="Read 1-d input images from a single 2-D image where the first 4 elements on each row are da,dx,dy,flip",default=False)
 	parser.add_option("--normavg",action="store_true",help="Normalize averages",default=False)

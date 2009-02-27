@@ -166,11 +166,12 @@ namespace EMAN
 			d.put("minchange", EMObject::INT, "Terminate if fewer than minchange members move in an iteration");
 			d.put("mininclass", EMObject::INT, "Minumum number of particles to keep a class as good (not enforced at termination");
 			d.put("slowseed",EMObject::INT, "Instead of seeding all classes at once, it will gradually increase the number of classes by adding new seeds in groups with large standard deviations");
+			d.put("calcsigmamean",EMObject::INT, "Computes standard deviation of the mean image for each class-average (center), and returns them at the end of the list of centers");
 			return d;
 		}
 
 		protected:
-		void update_centers();
+		void update_centers(int sigmas=0);
 		void reclassify();
 		void reseed();
 
@@ -182,6 +183,7 @@ namespace EMAN
 		int mininclass;
 		int nchanged;
 		int slowseed;
+		int calcsigmamean;
 
 	};
 

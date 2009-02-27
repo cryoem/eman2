@@ -62,6 +62,10 @@ MPIMODE=0
 # but this will prevent resource exhaustion
 MAXOPEN=20
 
+# maximum number of times a task will be restarted before we assume there is something fundamentally
+# flawed about the task itself
+MAXTASKFAIL=10
+
 cachesize=80000000
 
 
@@ -357,9 +361,13 @@ class TaskMgr:
 	
 	def get_task(self):
 		"""This will return the next task waiting for execution"""
-		
+		for tid in range(self.db.tasks_active["min"],self.db.tasks_active["max"]+1):
+			task=self.db.tasks_active[tid]
+			if task.starttime==None and (task.waitfor==None or len(task.waitfor)==0): return tid
+			
+		return None
 	
-	def add_task(self,task,parentid=None):
+	def add_task(self,task,parentid=None,wait_for=None):
 		"""Adds a new task to the active queue, scheduling it for execution. If parentid is
 		specified, a doubly linked list is established. parentid MUST be the id of a task
 		currently in the active queue."""
@@ -374,7 +382,9 @@ class TaskMgr:
 			else : t2.children=[tid]
 			self.db.tasks_active[parentid]=t2
 		task.queuetime=time.time()
+		task.wait_for=wait_for
 		self.db.tasks_active[tid]=task
+
 		
 	def task_wait(self,taskid,wait_for=None):
 		"""Permits deferred execution. The task remains in the execution queue, but will
@@ -408,6 +418,22 @@ class TaskMgr:
 					self.db.tasks_active[task.parent]=t2
 			except:
 				pass
+
+	def task_rerun(self,taskid):
+		"""If a task has been started somewhere, but execution fails due to a problem with the target node, call
+		this and the task will be returned to the queue, unless it has failed MAXTASKFAIL times."""
+		try:
+			task=db.tasks_active[tid]
+		except:
+			return
+
+		if task.failcount==MAXTASKFAIL :
+			self.task_aborted(taskid)
+			return
+		
+		task.failcount+=1
+		task.starttime=None
+		return
 		
 	def task_aborted(self, taskid):
 		"""Mark a Task as being aborted, by shifting a task to the tasks_complete queue"""
@@ -437,7 +463,7 @@ class EMTask:
 	an abstract superclass to define common member variables and methods"""
 	def __init__(self,data=None,module=None,command=None,options=None):
 		self.taskid=None		# unique task identifier (in this directory)
-		self.queuetime=None		# Time (as returned by time.time()) when task queued began
+		self.queuetime=None		# Time (as returned by time.time()) when task queued
 		self.starttime=None		# Time when execution began
 		self.endtime=None		# Time when task completed
 		self.exechost=None		# hostname where task was executed
@@ -448,6 +474,7 @@ class EMTask:
 		self.data=data			# dictionary of named data specifiers (ie - filenames, db access, etc)
 		self.options=options	# dictionary of options
 		self.wait_for=None		# in the active queue, this identifies an exited class which needs to be rerun when all wait_for jobs are complete
+		self.failcount==0		# Number of times this task failed to reach completion after starting
 
 ##########
 ### This is the 'database' object, representing a BerkeleyDB environment

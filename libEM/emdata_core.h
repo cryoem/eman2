@@ -67,6 +67,13 @@ void add(float f,int keepzero=0);
  */
 void add(const EMData & image);
 
+/** add the squared value of each pixel from a same-size image to this image.
+ *
+ * @param image The image whose square is added to 'this' image.
+ * @exception ImageFormatException If the 2 images are not same size.
+ */
+void addsquare(const EMData & image);
+
 		
 /** subtract a number to each pixel value of the image.
  * @param f The number subtracted from 'this' image.		 
@@ -79,6 +86,13 @@ void sub(float f);
  * @exception ImageFormatException If the 2 images are not same size.
  */
 void sub(const EMData & image);
+
+/** subtract the squared value of each pixel from a same-size image to this image.
+ *
+ * @param image The image whose square is subtracted from 'this' image.
+ * @exception ImageFormatException If the 2 images are not same size.
+ */
+void subsquare(const EMData & image);
 
 
 /** multiply a number to each pixel value of the image.
