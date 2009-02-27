@@ -11039,12 +11039,12 @@ def k_means_groups(stack, out_file, maskname, opt_method, K1, K2, rand_seed, max
 # 2008-12-18 11:43:11
 
 # K-means main stability
-def k_means_stab(stack, outdir, maskname, opt_method, K, npart = 5, CTF = False, F = 0, maxrun = 50, th_nobj = 0, th_stab = 6.0, th_dec = 5, restart = 1, MPI = False, CUDA = False, bck = False):
+def k_means_stab(stack, outdir, maskname, opt_method, K, npart = 5, CTF = False, F = 0, FK = 0, maxrun = 50, th_nobj = 0, th_stab = 6.0, th_dec = 5, restart = 1, MPI = False, CUDA = False, bck = False):
 	if MPI:
 		k_means_stab_MPI(stack, outdir, maskname, opt_method, K, npart, CTF, F, maxrun, th_nobj, th_stab, th_dec, restart, bck)
 		return
 	elif CUDA:
-		k_means_stab_CUDA(stack, outdir, maskname, K, npart, F, maxrun, th_nobj, th_stab, th_dec, restart, bck)
+		k_means_stab_CUDA(stack, outdir, maskname, K, npart, F, FK, maxrun, th_nobj, th_stab, th_dec, restart, bck)
 		return
 	
 	from utilities 	 import print_begin_msg, print_end_msg, print_msg, file_type
@@ -11182,7 +11182,7 @@ def k_means_stab(stack, outdir, maskname, opt_method, K, npart = 5, CTF = False,
 	logging.info('::: END k-means stability :::')
 
 # K-means main stability
-def k_means_stab_CUDA(stack, outdir, maskname, K, npart = 5, F = 0, maxrun = 50, th_nobj = 0, th_stab = 6.0, th_dec = 5, restart = 1, bck = False):
+def k_means_stab_CUDA(stack, outdir, maskname, K, npart = 5, F = 0, FK = 0, maxrun = 50, th_nobj = 0, th_stab = 6.0, th_dec = 5, restart = 1, bck = False):
 	
 	from utilities 	 import print_begin_msg, print_end_msg, print_msg
 	from utilities   import model_blank, get_image, get_im
@@ -11193,14 +11193,16 @@ def k_means_stab_CUDA(stack, outdir, maskname, K, npart = 5, F = 0, maxrun = 50,
 	from statistics  import k_means_stab_asg2part, k_means_stab_H, k_means_stab_export
 	import sys, logging, os
 
-	# create a directory
-	if os.path.exists(outdir):  os.system('rm -rf ' + outdir)
-	os.mkdir(outdir)
-
-	# create main log
+	# if is the first round
 	if restart == 1:
+		# create a directory
+		if os.path.exists(outdir):  os.system('rm -rf ' + outdir)
+		os.mkdir(outdir)
+
+		# create main log
 		f = open(outdir + '/main_log.txt', 'w')
 		f.close()
+		
 	logging.basicConfig(filename = outdir + '/main_log.txt', format = '%(asctime)s     %(message)s', level = logging.INFO)
 	logging.info('::: Start k-means stability :::')
 
@@ -11215,7 +11217,6 @@ def k_means_stab_CUDA(stack, outdir, maskname, K, npart = 5, F = 0, maxrun = 50,
 		k_means_stab_init_tag(stack)
 
 	# loop over run
-	stb          = 6.0
 	flag_run     = True
 	num_run      = restart - 1
 	maxit        = int(1e9)
@@ -11237,16 +11238,7 @@ def k_means_stab_CUDA(stack, outdir, maskname, K, npart = 5, F = 0, maxrun = 50,
 			break
 		KmeansCUDA.setup(m, N, K, F, T0, maxit, 0)
 		k_means_cuda_open_im(KmeansCUDA, stack, LUT, mask)
-		'''
-		if F != 0:
-			try:
-				T0, ct_pert = k_means_SA_T0(im_M, mask, K, rand_seed, [CTF, ctf, ctf2], F)
-				logging.info('... Select first temperature T0: %4.2f (dst %d)' % (T0, ct_pert))
-			except SystemExit:
-				logging.info('[STOP] Not enough images')
-				break
-		else: T0 = 0
-		'''
+
 		# loop over partition
 		ALL_ASG = []
 		print_begin_msg('k-means')
@@ -11294,9 +11286,7 @@ def k_means_stab_CUDA(stack, outdir, maskname, K, npart = 5, F = 0, maxrun = 50,
 		# flow control if empty cluster
 		if flag_cluster:
 			num_run -= 1
-			dec = int(K * (stb / 100.0))
-			if dec < th_dec: K -= th_dec
-			else: 	         K -= dec
+			K       -= th_dec
 			if K > 1:
 				logging.info('[WARNING] Restart the run with K = %d' % K)
 				continue
@@ -11314,9 +11304,10 @@ def k_means_stab_CUDA(stack, outdir, maskname, K, npart = 5, F = 0, maxrun = 50,
 
 		# manage the stability
 		if stb < th_stab:
-			dec = int(K * (stb / 100.0))
-			if dec < th_dec: K -= th_dec
-			else:            K -= dec
+			newK = int(float(K) * FK)    # cooling factor on K
+			if (K - newK) < th_dec:
+				K -= th_dec
+			else:   K  = newK
 			if K > 1:
 				logging.info('[WARNING] Stability too low, restart the run with K = %d' % K)
 				num_run -= 1

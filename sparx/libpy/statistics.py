@@ -5261,7 +5261,7 @@ def k_means_stab_gather(nb_run, th, maskname, outdir):
 
 	ct   = 0
 	im   = EMData()
-	for nr in xrange(1, nb_run):
+	for nr in xrange(1, nb_run + 1):
 		name = outdir + '/average_stb_run%02d.hdf' % nr
 		N = EMUtil.get_image_count(name)
 		if nr == 1:
@@ -5271,7 +5271,6 @@ def k_means_stab_gather(nb_run, th, maskname, outdir):
 			im.read_image(name, n)
 			if im.get_attr('nobjects') > th:
 				ret = Util.infomask(im, mask, True) # 
-				print ret
 				im  = (im - ret[0]) / ret[1]        # normalize
 				im.write_image(outdir + '/averages.hdf', ct)
 				ct += 1

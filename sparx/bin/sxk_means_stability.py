@@ -47,6 +47,7 @@ def main():
 	parser.add_option("--opt_method", type='string',       default="SSE",     help="K-means method: SSE (default), cla")
 	parser.add_option("--CTF",        action="store_true", default=False,     help="Perform classification using CTF information")
 	parser.add_option("--F",          type="float",        default=0.0,       help="Factor to decrease temperature in simulate annealing, ex.: 0.95")
+	parser.add_option("--FK",         type="float",        default=0.0,       help="Cooling factor to decrease K according the number of runs")
 	parser.add_option("--max_run",    type="int",          default=50,        help="Maximum number of runs (default 50)")
 	parser.add_option("--th_nobj",    type="int",          default=10,        help="Cleanning threshold, classes with number of images < th_nobj are removed (default 10) ")
 	parser.add_option("--th_stab",    type="float",        default=6.0,       help="Stability threshold required to start the next run in percent (default 6.0)")
@@ -77,7 +78,7 @@ def main():
 
 		from  applications  import  k_means_stab
 		global_def.BATCH = True
-		k_means_stab(args[0], args[1], mask, options.opt_method, options.K, options.nb_part, options.CTF, options.F, options.max_run, options.th_nobj, options.th_stab, options.min_dec_K, options.restart, options.MPI, options.CUDA, options.backup)
+		k_means_stab(args[0], args[1], mask, options.opt_method, options.K, options.nb_part, options.CTF, options.F, options.FK, options.max_run, options.th_nobj, options.th_stab, options.min_dec_K, options.restart, options.MPI, options.CUDA, options.backup)
 		global_def.BATCH = False
 
 if __name__ == "__main__":
