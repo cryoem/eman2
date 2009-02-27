@@ -31,12 +31,7 @@
 #
 #
 
-# e2pdb2mrc.py  07/23/3004  Steven Ludtke
-# This program will generate an electron density map from a PDB file. Unlike the earlier versions
-# of this program, operations like applying symmetry or centering are now offloaded onto
-# e2procpdb.py. Note that atomic form factors are not included in this program. It is designed 
-# for intermediate resolutions (~4 A and higher). Each atom is represented by a Gaussian with
-# the approrpiate number of electrons.
+#  Implemented by PAP 02/27/09.  Based on Agarwal Acta Cryst. 1978, A34, 791.
 
 # PDB sample line
 #           1         2         3         4         5         6         7
@@ -47,6 +42,7 @@
 
 
 from EMAN2 import *
+from sparx import *
 from optparse import OptionParser
 from math import *
 from global_def import *
@@ -55,6 +51,28 @@ import sys
 
 atomdefs={'H':(1.0,1.00794),'C':(6.0,12.0107),'A':(7.0,14.00674),'N':(7.0,14.00674),'O':(8.0,15.9994),'P':(15.0,30.973761),
 	'S':(16.0,32.066),'W':(18.0,1.00794*2.0+15.9994),'AU':(79.0,196.96655) }
+
+def create_Fgaus(nx,ny,nz,pixel_size,C1,B1,C2,B2):
+	# precalculate a Gaussian function in Fourier space (data from Table 1)
+	gaus=EMData(nx,ny,nz, False)  # Fourier object!
+	nxp = nx//2
+	nyp = ny//2
+	nzp = nz//2
+	dx2 = (1.0/float(nxp))**2
+	dy2 = (1.0/nyp)**2
+	dz2 = (1.0/nzp)**2
+	for i in xrange((nx+2)//2):
+		argx = float(i*i)*dx2
+		for j in xrange(ny):
+			jy=j
+			if(jy>nyp): jy=jy-nyp
+			argy = argx + float(jy*jy)*dy2
+			for k in xrange(nz):
+				jz = k
+				if (jz>nzp): jz=jz-nzp
+				argz = (float(jz*jz)*dz2 + argy)/pixel_size/pixel_size
+				gaus[i,j,k] = C1*exp(-B1*argz/4) + C2*exp(-B2*argz/4)   #Eq.40
+	return gaus
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -66,24 +84,21 @@ map to the center of the volume."""
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
 	parser.add_option("--apix", "-A", type="float", help="A/voxel", default=1.0)
-	parser.add_option("--res", "-R", type="float", help="Resolution in A, equivalent to Gaussian lowpass with 1/e width at 1/res",default=0.0)
 	parser.add_option("--box", "-B", type="string", help="Box size in pixels, <xyz> or <x>,<y>,<z>")
 	parser.add_option("--het", action="store_true", help="Include HET atoms in the map", default=False)
-	parser.add_option("--chains",type="string",help="String list of chain identifiers to include, eg 'ABEFG'")
+	#parser.add_option("--chains",type="string",help="String list of chain identifiers to include, eg 'ABEFG'")
 	parser.add_option("--center",  type="string",  default="a", help="center: c - coordinates, a - center of gravity, n - no" )
 	parser.add_option("--O",  action="store_true", default=False, help="use O system of coordinates")
 	parser.add_option("--quiet",action="store_true",default=False,help="Verbose is the default")
-	
+
 	(options, args) = parser.parse_args()
 	if len(args)<2 : parser.error("Input and output files required")
-	try: chains=options.chains
-	except: chains=None
+	#try: chains=options.chains
+	#except: 
+	chains=None
 	
 	try : infile=open(args[0],"r")
 	except : parser.error("Cannot open input file")
-	
-	if options.res == 0.0: options.res = 2*options.apix
-	#print "Warning: res<=apix. Generally res should be 2x apix or more"
 	
 	aavg=[0,0,0]	# calculate atomic center
 	amin=[1.0e20,1.0e20,1.0e20]		# coords of lower left front corner of bounding box
@@ -93,6 +108,7 @@ map to the center of the volume."""
 	nelec=0
 	mass=0
 
+	encountered_atoms = []
 	# parse the pdb file and pull out relevant atoms
 	for line in infile:
 		if (line[:4]=='ATOM' or (line[:6]=='HETATM' and options.het)) :
@@ -117,6 +133,7 @@ map to the center of the volume."""
 			try:
 				nelec += atomdefs[a.upper()][0]
 				mass  += atomdefs[a.upper()][1]
+				if( not(a.upper() in encountered_atoms)):  encountered_atoms.append(a.upper())
 			except:
 				print("Unknown atom %s ignored at %d"%(a,aseq))
 
@@ -163,58 +180,73 @@ map to the center of the volume."""
 		print "              y: %7.2f - %7.2f"%(amin[1],amax[1])
 		print "              z: %7.2f - %7.2f"%(amin[2],amax[2])
 	
-	# precalculate a prototypical Gaussian to resample
-	# 64^3 box with a real-space 1/2 width of 12 pixels
-	gaus=EMData()
-	gaus.set_size(64,64,64)
-	gaus.to_one()
-	gaus.process_inplace("mask.gaussian",{"outer_radius":12.0})
-
 	# find the output box size, either user specified or from bounding box
 	box=[0,0,0]
 	try:
 		spl=options.box.split(',')
 		if len(spl)==1 : box[0]=box[1]=box[2]=int(spl[0])
 		else :
-			box[0] = int(spl[0])
-			box[1] = int(spl[1])
-			box[2] = int(spl[2])
+			box[0]=int(spl[0])
+			box[1]=int(spl[1])
+			box[2]=int(spl[2])
 	except:
-		pad=int(2.0*options.res/options.apix)
-		box[0]  = int(2*max(fabs(amin[0]),fabs(amax[0]))/options.apix)+pad
-		box[1]  = int(2*max(fabs(amin[1]),fabs(amax[1]))/options.apix)+pad
-		box[2]  = int(2*max(fabs(amin[2]),fabs(amax[2]))/options.apix)+pad
-		box[0] += box[0]%2
-		box[1] += box[1]%2
-		box[2] += box[2]%2
-		
+		box[0]=int(2*max(fabs(amin[0]),fabs(amax[0]))/options.apix)
+		box[1]=int(2*max(fabs(amin[1]),fabs(amax[1]))/options.apix)
+		box[2]=int(2*max(fabs(amin[2]),fabs(amax[2]))/options.apix)
+		box[0]+=box[0]%2
+		box[1]+=box[1]%2
+		box[2]+=box[2]%2
+
+	box[0]=box[1]=box[2]=max(box[0], box[1], box[2])
+
 	if not options.quiet: print "Box size: %d x %d x %d"%(box[0],box[1],box[2])
-	
+
+	# Generate atom prototypes (constants from Table 1).
+	for atom in encountered_atoms:
+		if(atom == "H"):   gaussH = create_Fgaus(box[0],box[1],box[2], options.apix, 0.486, 34.1284, 0.5098, 8.8996)
+		elif(atom == "C"):  gaussN = create_Fgaus(box[0],box[1],box[2], options.apix, 3.0102,29.9132, 2.9705, 2.8724)
+		elif(atom == "N"):  gaussO = create_Fgaus(box[0],box[1],box[2], options.apix, 3.0492, 25.0383, 3.9432, 3.4059)
+		elif(atom == "O"):  gaussC = create_Fgaus(box[0],box[1],box[2], options.apix, 3.2942,20.0401,4.6968,3.1184)
+		else:              gaussS = create_Fgaus(box[0],box[1],box[2], options.apix, 5.6604, 33.04, 10.314, 1.816)
+
+	del encountered_atoms
+
 	# initialize the final output volume
-	outmap=EMData()
-	outmap.set_size(box[0],box[1],box[2])
-	outmap.to_zero()
-	
-	# fill in the atom gaussians
+	outmap=EMData(box[0],box[1],box[2], False)
+
+	# fill in the atoms
 	for i in xrange(len(atoms)):
+		#print "Adding %d '%s'"%(i,atoms[i][0])
 		if not options.quiet and i%1000==0 :
 			print '\r   %d'%i,
 			sys.stdout.flush()
 		try:
-			elec = atomdefs[atoms[i][0].upper()][0]
-			outmap.insert_scaled_sum(gaus,(atoms[i][1]/options.apix+box[0]/2,atoms[i][2]/options.apix+box[1]/2,atoms[i][3]/options.apix+box[2]/2),options.res/(pi*12.0*options.apix),elec)
+			atom = atoms[i][0].upper()
+			if(atom == "H"):   gaus = gaussH
+			elif(atom == "O"):  gaus = gaussO
+			elif(atom == "C"):  gaus = gaussC
+			elif(atom == "N"):  gaus = gaussN
+			else:              gaus = gaussS
+			Util.add_img(outmap, fshift(gaus, atoms[i][1]/options.apix, atoms[i][2]/options.apix, atoms[i][3]/options.apix) )
+			#elec = atomdefs[atoms[i][0].upper()][0]
+			#Util.add_img(outmap, fshift(gaus,atoms[i][1]/options.apix,atoms[i][2]/options.apix,atoms[i][3]/options.apix)*elec)
+			#outmap.insert_scaled_sum(gaus,(atoms[i][1]/options.apix+box[0]/2,atoms[i][2]/options.apix+box[1]/2,atoms[i][3]/options.apix+box[2]/2),options.res/(pi*12.0*options.apix),elec)
 		except: print "Skipping %d '%s'"%(i,atoms[i][0])
 		
 	if not options.quiet: print '\r   %d\nConversion complete'%len(atoms)
+	info(outmap)
+	outmap = fft(fshift(outmap,box[0]//2,box[1]//2,box[2]//2))
+	info(outmap)
 	(filename_path, filextension) = os.path.splitext(args[1])
 	if filextension == ".hdf" :
 		outmap.set_attr("apix_x",options.apix)
 		outmap.set_attr("apix_y",options.apix)
 		outmap.set_attr("apix_z",options.apix)
-		outmap.set_attr("Pixel_size",options.apix)
+		outmap.set_attr("pixel_size",options.apix)
 		outmap.write_image(args[1],0, EMUtil.ImageType.IMAGE_HDF)
 	elif filextension == ".spi": outmap.write_image(args[1],0, EMUtil.ImageType.IMAGE_SINGLE_SPIDER)
 	else:   ERROR("unknown image type","e2pdb2em",1)
 				
 if __name__ == "__main__":
     main()
+
