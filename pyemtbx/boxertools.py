@@ -117,7 +117,14 @@ class EMProjectDB:
 	
 #	def cache_key_entry_from_memory_to_disk(self,key,entry):
 #		return self.__instance.set_key_entry_in_memory(key,entry)
-	
+
+def compare_box_correlation(box1,box2):
+	c1 = box1.correlation_score
+	c2 = box2.correlation_score
+	if c1 > c2: return -1
+	elif c1 == c2: return 0
+	else: return 1
+
 class Box:
 	CENTERACF = "centeracf"
 	#CENTERALIGNINT = "cenlignint"
@@ -3738,7 +3745,10 @@ class SwarmAutoBoxer(AutoBoxer):
 #			box.correct_resolution_centering(self.get_subsample_rate(),False)
 			box.center(Box.CENTERPROPAGATE,template,False,update_image)
 			boxes.append(box)
-	
+		
+		
+	   	boxes.sort(compare_box_correlation)
+	   	print "sorted"
 		return boxes
 		
 	def get_high_res_template_image(self):

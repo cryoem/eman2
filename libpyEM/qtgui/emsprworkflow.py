@@ -1865,7 +1865,7 @@ class E2BoxerProgramOutputTask(E2BoxerOutputTask):
 	'''
 	This task is called from e2boxer itself. Not from the workflow
 	'''
-	documentation_string = "Use this form for writing output from within the e2boxer interface. This form is not intended to be used from the context of e2workflow.\nYou can choose to write image files in a number of formats. The bdb file format is mostly useful if you are using EMAN2. If you plan on using your data with other programs, including EMAN1, you must choose either the hdf or img output formats.\n You can also choose to write EMAN1 style .box files"
+	documentation_string = "Use this form for writing output from within the e2boxer interface.\nYou can choose to write image files in a number of formats. The bdb file format is mostly useful if you are using EMAN2. If you plan on using your data with other programs, including EMAN1, you must choose either the hdf or img output formats.\nYou can also choose to write EMAN1 style .box files"
 	def __init__(self,application,filenames,target):
 		E2BoxerOutputTask.__init__(self,application)
 		self.window_title = "E2boxer Output"

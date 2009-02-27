@@ -82,6 +82,7 @@ class EMFormWidget(QtGui.QWidget):
 		self.parent = weakref.ref(parent)
 		self.params = params
 		self.event_handlers = [] # used to keep event handlers in memory
+		self.resize_event_handlers = [] # used to keep resize event handlers in memory
 		self.output_writers = [] # used to register output write objects, for the purpose of returning the results
 		self.name_widget_map = {} # used to map parameter names to qt widgets - used by booleans to automatically disable and enable widgets
 		self.__init_icons()
@@ -197,7 +198,7 @@ class EMFormWidget(QtGui.QWidget):
 			table_widget.setHorizontalHeaderItem(i,item)
 			correct_len = 7.5*max_len # the 7.5 means "string are rendered approximately 7.5 pixels wide"
 			if correct_len > 1000: correct_len = 1000
-			table_widget.setColumnWidth(i,int(correct_len))
+			#table_widget.setColumnWidth(i,int(correct_len))
 			
 		table_widget.setSortingEnabled(True)
 		table_widget.setToolTip(paramtable.desc_long)
@@ -214,8 +215,12 @@ class EMFormWidget(QtGui.QWidget):
 				setattr(table_widget,opt,getattr(paramtable,opt))
 #		if hasattr(paramtable,"convert_menu"):
 #			setattr(table_widget,"convert_text",paramtable.convert_text)
-			
-		self.event_handlers.append(ParamTableEventHandler(self,table_widget))
+		
+		table_event_handler = ParamTableEventHandler(self,table_widget)
+		self.event_handlers.append(table_event_handler)
+		self.resize_event_handlers.append(table_event_handler)
+		table_widget.resizeColumnsToContents()
+		
 		if len(paramtable[0].choices) > 0:
 			type_of = type(paramtable[0].choices[0])
 		else:
@@ -554,8 +559,11 @@ class EMFormWidget(QtGui.QWidget):
 		
 	def closeEvent(self,event):
 		self.parent().emit(QtCore.SIGNAL("emform_close"))
-
 		
+	def resizeEvent(self,event):
+		for event_handler in self.resize_event_handlers:
+			event_handler.resizeEvent(event)
+
 	def display_file(self,filename):
 		self.parent().emit(QtCore.SIGNAL("display_file"),filename)
 
@@ -759,6 +767,25 @@ class ParamTableEventHandler:
 	def table_item_clicked(self,item):
 		#
 		pass
+	def resizeEvent(self,event):
+		return
+		cols = self.table_widget.columnCount()
+		cumulative_width = 0
+		for i in range(cols):
+			cumulative_width += self.table_widget.columnWidth(i)
+		
+		tab_widget_width = self.table_widget.geometry().width()
+		print cumulative_width,self.table_widget.width(),tab_widget_width,self.table_widget.frameSize().width()
+		print self.table_widget.getContentsMargins()
+		
+		if cumulative_width < self.table_widget.width():
+			scale = float(self.table_widget.width())/cumulative_width
+			for i in range(cols):
+				w = self.table_widget.columnWidth(i)
+				self.table_widget.setColumnWidth(i,w*scale)
+		
+		
+		
 class UrlEventHandler:
 	'''
 	The browse and cancel events have to be sent to the correct line edit, so this handles it
