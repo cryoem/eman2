@@ -34,6 +34,9 @@ int* calc_max_location_wrap_cuda(const EMDataForCuda* data, const int maxdx, con
 
 void cut_slice_cuda_(const EMDataForCuda* data,const float* const);
 
+cudaArray* get_cuda_arrary_host(const float * const data,const int nx, const int ny, const int nz);
+
+cudaArray* get_cuda_arrary_device(const float * const data,const int nx, const int ny, const int nz);
 
 #endif // eman__cuda_util_h__
 

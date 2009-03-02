@@ -198,8 +198,8 @@ float* EMData::get_data() const
 		rdata = (float*)EMUtil::em_malloc(num_bytes);
 	}
 #ifdef EMAN2_USING_CUDA
-	if (cuda_rdata != 0 && (EMDATA_CPU_NEEDS_UPDATE & flags)) {
-		cudaMemcpy(rdata,cuda_rdata,num_bytes,cudaMemcpyDeviceToHost);
+	if (cuda_pointer_handle != -1 && (EMDATA_CPU_NEEDS_UPDATE & flags)) {
+		cudaMemcpy(rdata,get_cuda_data(),num_bytes,cudaMemcpyDeviceToHost);
 	}
 	
 	flags &= ~EMDATA_CPU_NEEDS_UPDATE;
@@ -659,8 +659,9 @@ void EMData::set_size(int x, int y, int z)
 	}
 	
 #ifdef EMAN2_USING_CUDA
-	free_cuda_array();
- 	free_cuda_memory();
+	// not required in lazy allocation scheme
+	//free_cuda_array();
+ 	//free_cuda_memory();
 #endif // EMAN2_USING_CUDA
 	
 	nx = x;
@@ -696,28 +697,10 @@ void EMData::set_size_cuda(int x, int y, int z)
 		throw InvalidValueException(z, "z size <= 0");
 	}
 
-	size_t size = (size_t)(x) * (size_t)y * (size_t)z * sizeof(float);
-	
-	device_init();
-	if (cuda_rdata != 0) {
-		cudaFree(cuda_rdata);
-		cuda_rdata = 0;
+	if (cuda_pointer_handle!=-1) {
+		cuda_rw_cache.clear_item(cuda_pointer_handle);
+		cuda_pointer_handle = -1;
 	}
-	
-	cudaMalloc((void**)&cuda_rdata,size);
-
-	if ( cuda_rdata == 0 )
-	{
-		stringstream ss;
-		string gigs;
-		ss << (float) size/1000000000.0;
-		ss >> gigs;
-		string message = "GPU - Can't allocate " + gigs + " GB - not enough memory.";
-		throw BadAllocException(message);
-	}
-
-	free_memory();
-	
 	nx = x;
 	ny = y;
 	nz = z;
@@ -727,7 +710,12 @@ void EMData::set_size_cuda(int x, int y, int z)
 	attr_dict["nx"] = x;
 	attr_dict["ny"] = y;
 	attr_dict["nz"] = z;
-	update();
+	
+	cuda_pointer_handle = cuda_rw_cache.cache_data(this,rdata,nx,ny,nz);
+	
+	//free_memory(); // Now release CPU memory, seeing as a GPU resize invalidates it - Actually let's be lazy about it instead
+	
+	gpu_update();
 	
 	EXITFUNC;
 }

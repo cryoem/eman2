@@ -1545,7 +1545,7 @@ class EMImageMXModule(EMGUIModule):
 				 msg.setText("Are you sure you want to overwrite the bdb file?");
 				 msg.setInformativeText("Clicking ok to remove this file")
 				 msg.setStandardButtons(QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel);
-				 msg.setDefaultButton(QMessageBox.Cancel);
+				 msg.setDefaultButton(QtGui.QMessageBox.Cancel);
 				 ret = msg.exec_()
 				
 			

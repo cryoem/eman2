@@ -65,13 +65,13 @@ void EMData::free_memory()
 		delete rot_fp;
 		rot_fp = 0;
 	}
-	
-	
+	/*
 	nx = 0;
 	ny = 0;
 	nz = 0;
 	nxy = 0;
-
+	 */
+	
 	EXITFUNC;
 }
 

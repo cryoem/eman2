@@ -50,6 +50,7 @@
 #include "geometry.h"
 #include "transform.h"
 #ifdef EMAN2_USING_CUDA
+#include <cuda_runtime_api.h>
 #include "cuda/cuda_util.h"
 #endif // EMAN2_USING_CUDA
 using std::string;

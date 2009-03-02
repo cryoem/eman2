@@ -63,8 +63,6 @@ EMData *EMData::do_fft_cuda() const
 	int offset = 2 - nx%2;
 	int nx2 = nx + offset;
 	EMData* dat = new EMData();
-	dat->set_attr_dict_explicit(attr_dict);
-	dat->set_flags(get_flags());
 	dat->set_size_cuda(nx2, ny, nz);
 	//dat->to_zero();  // do not need it, real_to_complex will do it right anyway
 	if (offset == 1) dat->set_fftodd(true);
@@ -98,8 +96,6 @@ EMData *EMData::do_ift_cuda() const
 	}
 	int offset = is_fftodd() ? 1 : 2;
 	EMData* dat = new EMData();
-	dat->set_attr_dict_explicit(attr_dict);
-	dat->set_flags(get_flags());
 	dat->set_size_cuda(nx-offset, ny, nz);
 
 	float *d = dat->get_cuda_data();

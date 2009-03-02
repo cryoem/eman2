@@ -91,6 +91,42 @@ int make_cuda_array_space_0_free() {
 	return 0;
 }
 
+cudaArray* get_cuda_arrary(const float * const data,const int nx, const int ny, const int nz, const cudaMemcpyKind mem_cpy_flag)
+{
+	cudaArray *array = 0;
+	cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<float>();
+	
+	if (nz > 1) {
+		cudaExtent VS = make_cudaExtent(nx,ny,nz);
+// 		printf("It's a 3D one\n");
+		cudaMalloc3DArray(&array, &channelDesc, VS);
+		
+		cudaMemcpy3DParms copyParams = {0};
+		copyParams.srcPtr   = make_cudaPitchedPtr((void*)data, VS.width*sizeof(float), VS.width, VS.height);
+		copyParams.dstArray = array;
+		copyParams.extent   = VS;
+		copyParams.kind     = mem_cpy_flag;
+		cudaMemcpy3D(&copyParams);
+	} else if ( ny > 1) {
+// 		printf("It's a 2D one\n");d
+		cudaMallocArray(&array,&channelDesc,nx,ny);
+		cudaMemcpyToArray(array, 0, 0, data, nx*ny*sizeof(float), mem_cpy_flag);
+	} else throw;
+	
+	return array;
+}
+
+
+cudaArray* get_cuda_arrary_device(const float * const data,const int nx, const int ny, const int nz)
+{
+	return get_cuda_arrary(data,nx,ny,nz,cudaMemcpyDeviceToDevice);
+}
+
+cudaArray* get_cuda_arrary_host(const float * const data,const int nx, const int ny, const int nz)
+{
+	return get_cuda_arrary(data,nx,ny,nz,cudaMemcpyHostToDevice);
+}
+
 
 int get_cuda_array_handle(const float * data,const int nx, const int ny, const int nz, void* emdata_pointer) {
 	
@@ -116,30 +152,15 @@ int get_cuda_array_handle(const float * data,const int nx, const int ny, const i
 	c->ny = ny;
 	c->nz = nz;
 	
-	cudaArray *array = 0;
-	cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<float>();
-	
-	if (nz > 1) {
-		cudaExtent VS = make_cudaExtent(nx,ny,nz);
-// 		printf("It's a 3D one\n");
-		cudaMalloc3DArray(&array, &channelDesc, VS);
-		
-		cudaMemcpy3DParms copyParams = {0};
-		copyParams.srcPtr   = make_cudaPitchedPtr((void*)data, VS.width*sizeof(float), VS.width, VS.height);
-		copyParams.dstArray = array;
-		copyParams.extent   = VS;
-		copyParams.kind     = cudaMemcpyDeviceToDevice;
-		cudaMemcpy3D(&copyParams);
-	} else if ( ny > 1) {
-// 		printf("It's a 2D one\n");d
-		cudaMallocArray(&array,&channelDesc,nx,ny);
-		cudaMemcpy2DToArray(array, 0, 0, data, nx*sizeof(float), nx*sizeof(float), ny, cudaMemcpyDeviceToDevice);
-	} else throw;
+	cudaArray *array = get_cuda_arrary_device(data,nx,ny,nz);
 	
 	c->array = array;
 	if (num_cuda_arrays != max_cuda_arrays) num_cuda_arrays++;
 	return idx;
 }
+
+
+
 
 int delete_cuda_array(const int idx) {
 	//printf("Deleting a cuda array\n");

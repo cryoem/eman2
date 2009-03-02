@@ -156,7 +156,7 @@ namespace EMAN
 		int size;
 		int nitems;
 	};
-
+	
 	class ImageIO;
 
 	/** GlobalCache is a Singleton class that handles cache across EMAN.
