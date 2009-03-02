@@ -863,14 +863,14 @@ int MrcIO::generate_machine_stamp()
 	if (ByteOrder::is_host_big_endian()) {
 		p[0] = 0x11;
 		p[1] = 0x11;
-		p[2] = 0x11;	// This was changed to deal with amiguities in the specs
-		p[3] = 0x11;
+		p[2] = 0;
+		p[3] = 0;
 	}
 	else {
-		p[0] = 0x44;	// This was changed to deal with amiguities in the specs
-		p[1] = 0x44;
-		p[2] = 0x44;
-		p[3] = 0x44;
+		p[0] = 0x44;	
+		p[1] = 0x41;
+		p[2] = 0;
+		p[3] = 0;
 	}
 	return stamp;
 }
