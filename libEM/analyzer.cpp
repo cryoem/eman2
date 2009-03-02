@@ -89,8 +89,8 @@ if (ncls<=1) return vector<EMData *>();
 // These are the class centers, start each with a random image
 int nptcl=images.size();
 int nclstot=ncls;
-if (calcsigmamean) centers.resize(ncls*2);
-else centers.resize(ncls);
+if (calcsigmamean) centers.resize(nclstot*2);
+else centers.resize(nclstot);
 if (mininclass<1) mininclass=1;
 
 if (slowseed) {
@@ -105,7 +105,7 @@ for (int i=0; i<ncls; i++) {
 }
 
 if (calcsigmamean) {
-	for (int i=ncls; i<ncls*2; i++) centers[i]=new EMData(images[0]->get_xsize(),images[0]->get_ysize(),images[0]->get_zsize());
+	for (int i=nclstot; i<nclstot*2; i++) centers[i]=new EMData(images[0]->get_xsize(),images[0]->get_ysize(),images[0]->get_zsize());
 }
 
 
@@ -122,7 +122,7 @@ for (int i=0; i<maxiter; i++) {
 		reseed();
 	}
 }
-update_centers(1);
+update_centers(calcsigmamean);
 
 return centers;
 }

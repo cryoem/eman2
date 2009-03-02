@@ -342,7 +342,7 @@ EMUtil.get_all_attributes=staticmethod(db_get_all_attributes)
 ###  Task Management classes
 #############
 
-class TaskMgr:
+class EMTaskQueue:
 	"""This class is used to manage active and completed tasks through an
 	EMAN2DB object. Pass it an initialized EMAN2DB instance. Tasks are each
 	assigned a number unique in the local database. The active task 'max'
@@ -350,19 +350,22 @@ class TaskMgr:
 	tasks_done list, and the 'max' value is increased if necessary. There is
 	no guarantee in either list that all keys less than 'max' will exist."""
 	
-	def __init__(self,db):
-		self.db=db
-		db.open_dict('tasks_active')
-		if not db.tasks_active.has_key("max") : db.tasks_active["max"]=0
-		if not db.tasks_active.has_key("min") : db.tasks_active["min"]=1
+	def __init__(self,path=None):
+		"""path should point to the directory where the disk-based task queue will reside without bdb:"""
+		if path==None or len(path)==0 : path="."
+		self.active=db_open_dict("bdb:%s#tasks_active"%path)
+		self.complete=db_open_dict("bdb:%s#tasks_complete"%path)
+
+		if not self.active.has_key("max") : self.active["max"]=-1
+		if not self.active.has_key("min") : self.active["min"]=0
 		
 		db.open_dict('tasks_complete')
 		if not db.tasks_done.has_key("max") : db.tasks_done["max"]=0
 	
 	def get_task(self):
 		"""This will return the next task waiting for execution"""
-		for tid in range(self.db.tasks_active["min"],self.db.tasks_active["max"]+1):
-			task=self.db.tasks_active[tid]
+		for tid in range(self.active["min"],self.active["max"]+1):
+			task=self.active[tid]
 			if task.starttime==None and (task.waitfor==None or len(task.waitfor)==0): return tid
 			
 		return None
@@ -372,18 +375,18 @@ class TaskMgr:
 		specified, a doubly linked list is established. parentid MUST be the id of a task
 		currently in the active queue."""
 		if not isinstance(task,EMTask) : raise Exception,"Invalid Task"
-		self.db.tasks_active["max"]+=1
-		tid=self.db.tasks_active["max"]
+		self.active["max"]+=1
+		tid=self.active["max"]
 		task.taskid=tid
 		if parentid:
 			task.parent=parentid
-			t2=self.db.tasks_active[parentid]
+			t2=self.active[parentid]
 			if t2.children : t2.children.append(tid)
 			else : t2.children=[tid]
-			self.db.tasks_active[parentid]=t2
+			self.active[parentid]=t2
 		task.queuetime=time.time()
 		task.wait_for=wait_for
-		self.db.tasks_active[tid]=task
+		self.active[tid]=task
 
 		
 	def task_wait(self,taskid,wait_for=None):
@@ -392,7 +395,7 @@ class TaskMgr:
 		all wait_for tasks should be children of taskid. If wait_for is not specified, will wait
 		for all children to complete"""
 		
-		task=db.tasks_active[taskid]
+		task=self.active[taskid]
 		if not wait_for : task.wait_for=task.children
 		else : task.wait_for=wait_for
 		
@@ -400,22 +403,22 @@ class TaskMgr:
 	def task_done(self, taskid):
 		"""Mark a Task as complete, by shifting a task to the tasks_complete queue"""
 		try:
-			task=db.tasks_active[tid]
+			task=self.active[tid]
 		except:
 			return
 		
 		task.endtime=time.time()
-		if db.tasks_active["min"]==taskid : db.tasks_active["min"]=min(db.tasks_active.keys())
-		self.db.tasks_complete[tid]=task
+		if self.active["min"]==taskid : self.active["min"]=min(self.active.keys())
+		self.complete[tid]=task
 		self.db,tasks_active[tid]=None
 		
 		# if our parent is waiting for us
 		if task.parent :
 			try: 
-				t2=self.db.tasks_active[task.parent]
+				t2=self.active[task.parent]
 				if taskid in t2.wait_for : 
 					t2.wait_for.remove(taskid)
-					self.db.tasks_active[task.parent]=t2
+					self.active[task.parent]=t2
 			except:
 				pass
 
@@ -423,7 +426,7 @@ class TaskMgr:
 		"""If a task has been started somewhere, but execution fails due to a problem with the target node, call
 		this and the task will be returned to the queue, unless it has failed MAXTASKFAIL times."""
 		try:
-			task=db.tasks_active[tid]
+			task=self.active[tid]
 		except:
 			return
 
@@ -438,21 +441,21 @@ class TaskMgr:
 	def task_aborted(self, taskid):
 		"""Mark a Task as being aborted, by shifting a task to the tasks_complete queue"""
 		try:
-			task=db.tasks_active[tid]
+			task=self.active[tid]
 		except:
 			return
 		
-		if db.tasks_active["min"]==taskid : db.tasks_active["min"]=min(db.tasks_active.keys())
-		self.db.tasks_complete[tid]=task
-		self.db.tasks_active[tid]=None
+		if self.active["min"]==taskid : self.active["min"]=min(self.active.keys())
+		self.complete[tid]=task
+		self.active[tid]=None
 		
 		# if our parent is waiting for us
 		if task.parent :
 			try: 
-				t2=self.db.tasks_active[task.parent]
+				t2=self.active[task.parent]
 				if taskid in t2.wait_for : 
 					t2.wait_for.remove(taskid)
-					self.db.tasks_active[task.parent]=t2
+					self.active[task.parent]=t2
 			except:
 				pass
 
@@ -460,7 +463,9 @@ class TaskMgr:
 	
 class EMTask:
 	"""This class represents a task to be completed. Generally it will be subclassed. This is effectively
-	an abstract superclass to define common member variables and methods"""
+	an abstract superclass to define common member variables and methods. Note that the data dictionary,
+	which contains a mix of actual data elements, and (filename,#|min,max|(list)) image references, will
+	be transparently remapped on the client to similar specifiers which are valid locally"""
 	def __init__(self,data=None,module=None,command=None,options=None):
 		self.taskid=None		# unique task identifier (in this directory)
 		self.queuetime=None		# Time (as returned by time.time()) when task queued
@@ -471,7 +476,11 @@ class EMTask:
 		self.parent=None		# single parent id
 		self.module=module		# module to import to execute this task
 		self.command=command	# name of a function in module
-		self.data=data			# dictionary of named data specifiers (ie - filenames, db access, etc)
+		self.data=data			# dictionary of named data specifiers value may be:
+								# - actual data object (no caching)
+								# - (filename,#)
+								# - (filename/url,min,max)  (max is exclusive, not inclusive)
+								# - (filename/url,(list))
 		self.options=options	# dictionary of options
 		self.wait_for=None		# in the active queue, this identifies an exited class which needs to be rerun when all wait_for jobs are complete
 		self.failcount==0		# Number of times this task failed to reach completion after starting

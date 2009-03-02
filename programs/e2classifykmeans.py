@@ -105,12 +105,12 @@ be classified. """
 	print len(data)," images to classify."
 
 	an=Analyzers.get("kmeans")
-	an.set_params({"ncls":options.ncls,"minchange":len(data)/(options.ncls*25)+1,"verbose":1,"slowseed":1})
+	an.set_params({"ncls":options.ncls,"minchange":len(data)/(options.ncls*25)+1,"verbose":1,"slowseed":1,"calcsigmamean":options.sigma})
 	
 	an.insert_images_list(data)
 	centers=an.analyze()
 	
-	nrep=[i.get_attr("ptcl_repr") for i in centers]
+	nrep=[i.get_attr("ptcl_repr") for i in centers[:options.ncls]]
 	maxcls=max(nrep)
 	for n,i in enumerate(nrep):
 		print "%d) %s (%d)"%(n,"#"*int(i*72/maxcls),i)
@@ -168,31 +168,49 @@ be classified. """
 	
 	if (options.average) :
 		if (centers[0].get_zsize()>1) :
-			for i in range(len(centers)):
+			for i in range(options.ncls):
 				centers[i].write_image("avg.%04d.mrc"%i,0)
+				if options.sigma: centers[i+options.ncls].write_image("avgsig.%04d.mrc"%i,0)
 		else:
 			# write the class-averages to avg.hed
-			for i in range(len(centers)):
+			for i in range(options.ncls):
 				centers[i].write_image("avg.hdf",-1)
+				if options.sigma: centers[i+options.ncls].write_image("avgsig.hdf",-1)
 			
 			# if original images specified, also write those averages to avg.orig.hed
 			if options.original :
-				for j in range(len(classes)):
+				for j in range(options.ncls):
 					avg=EMData(options.original,filen[classes[j][0]])
+					if options.sigma: 
+						sig=EMData(avg.get_xsize(),avg.get_ysize(),avg.get_zsize())
+						sig.addsquare(EMData(options.original,filen[classes[j][0]]))
+
 					for i in range(1,len(classes[j])):
 						avg+=EMData(options.original,filen[classes[j][i]])
+						if options.sigma : sig.addsquare(EMData(options.original,filen[classes[j][i]]))
+
 					avg/=len(classes[j])
 					avg.write_image("avg.orig.hdf",-1)
+					
+					if options.sigma :
+						sig.mult(1.0/len(classes[j]))
+						sig.subsquare(avg)
+						sig.process("math.sqrt")
+						sig.mult(1.0/math.sqrt(len(classes[j])))
+						sig.write_image("avgsig.orig.hdf",-1)
+					
 		
 	if (options.clsfiles) :
 		os.system("rm -f cls????.lst")
 		stackname=argv[1]
 		if options.original : stackname=options.original
-		for j in range(len(classes)):
+		for j in range(options.ncls):
 			out=open("cls%04d.lst"%j,"w")
 			out.write("#LST\n")
 			for i in range(len(classes[j])):
 				out.write("%d\t%s\n"%(filen[classes[j][i]],stackname))
+				im=EMData(stackname,filen[classes[j][i]])
+				im.write_image("cls%04d.hdf"%j,-1)
 			out.close()
 	
 	# Write an EMAN2 standard classification matrix. Particles run along y
