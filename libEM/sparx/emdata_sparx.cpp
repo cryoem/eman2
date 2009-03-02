@@ -5089,8 +5089,10 @@ EMData *EMData::FourTruncate(int nxn, int nyni, int nzni, bool RetReal) {
 
 	int nyn, nzn, lsd, lsdn, inx, iny, inz;
 	int i, j, k;
-	if (is_complex()) 
-		throw ImageFormatException("Input image has to be real");
+	float  *fint;
+	EMData *temp_ft = NULL;
+	//if (is_complex())
+	//	throw ImageFormatException("Input image has to be real");
 
 	if(ny > 1) {
 		nyn = nyni;
@@ -5102,15 +5104,20 @@ EMData *EMData::FourTruncate(int nxn, int nyni, int nzni, bool RetReal) {
 	} else {
 		nyn = 1; nzn = 1;
 	}
+	if (is_complex()) {
+		nx = nx - 2 + nx%2;
+		fint = get_data();
+	} else {
+		//  do out of place ft
+		temp_ft = do_fft();
+		fint = temp_ft->get_data();
+	}
 	if(nxn>nx || nyn>ny || nzn>nz)	throw ImageDimensionException("Cannot increase the image size");
 	lsd = nx + 2 - nx%2;
 	lsdn = nxn + 2 - nxn%2;
-//  do out of place ft
-	EMData *temp_ft = do_fft();
-	EMData *ret = this->copy();
+	EMData *ret = this->copy_head();
 	ret->set_size(lsdn, nyn, nzn);
 	float *fout = ret->get_data();
-	float *fint = temp_ft->get_data();
 //  TO KEEP EXACT VALUES ON THE ORIGINAL GRID ONE SHOULD USE
 //  SQ2     = 2.0. HOWEVER, TOTAL ENERGY WILL NOT BE CONSERVED
 	//float  sq2 = std::sqrt(2.0f);
@@ -5180,8 +5187,10 @@ EMData *EMData::FourTruncate(int nxn, int nyni, int nzni, bool RetReal) {
 	EMUtil::dump_dict(d1);
 	printf("-----------------Attribute Dict for ret--------------\n");
 	EMUtil::dump_dict(d2);*/
-	delete temp_ft;
-	temp_ft = 0;
+	if (!is_complex()) {
+		delete temp_ft;
+		temp_ft = 0;
+	}
 	return ret;
 }
 /*
