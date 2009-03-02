@@ -183,6 +183,7 @@ be classified. """
 					avg=EMData(options.original,filen[classes[j][0]])
 					if options.sigma: 
 						sig=EMData(avg.get_xsize(),avg.get_ysize(),avg.get_zsize())
+						sig.to_zero()
 						sig.addsquare(EMData(options.original,filen[classes[j][0]]))
 
 					for i in range(1,len(classes[j])):
@@ -191,7 +192,8 @@ be classified. """
 
 					avg/=len(classes[j])
 					avg.write_image("avg.orig.hdf",-1)
-					
+
+					# sigma = sqrt(sumsq / N - avg ^2)/sqrt(N)
 					if options.sigma :
 						sig.mult(1.0/len(classes[j]))
 						sig.subsquare(avg)
