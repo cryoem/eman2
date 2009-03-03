@@ -77,6 +77,7 @@ public:
 private:
 	
 	bool gpu_rw_is_current() const;
+	bool gpu_ro_is_current() const;
 	
 	/** Free CUDA memory
 	 */

@@ -41,18 +41,15 @@ __global__ void proj_kernel(float *out,float size, float size_on_two, float3 mxx
 	out[x+y*(int)size]=sum;
 }
 
-void standard_project(const float* const matrix,const float* const rdata, const int nx, const int ny, const int nz, float*const d) 
+void standard_project(const float* const matrix,const EMDataForCuda* const data) 
 {
 	//device_init();
 	
 	//int idx = stored_cuda_array(rdata,nx,ny,nz);
 	//bind_cuda_texture(idx);
 	
-	const dim3 blockSize(ny,1, 1);
-	const dim3 gridSize(nx,1,1);
-
-	float *memout=0;
-	cudaMalloc((void **)&memout, nx*ny*sizeof(float));
+	const dim3 blockSize(data->ny,1, 1);
+	const dim3 gridSize(data->nx,1,1);
 	
 	float3 mxx,mxy,mxz;
 	
@@ -66,10 +63,8 @@ void standard_project(const float* const matrix,const float* const rdata, const 
 	mxz.y=matrix[6];
 	mxz.z=matrix[10];
 		
-	proj_kernel<<<blockSize,gridSize>>>(memout,(float)nx,(float)nx/2,mxx,mxy,mxz);
+	proj_kernel<<<blockSize,gridSize>>>(data->data,(float)data->nx,(float)data->nx/2,mxx,mxy,mxz);
 	//CUDA_SAFE_CALL(cuCtxSynchronize());
 	cudaThreadSynchronize();
-	cudaMemcpy(d, memout, nx*ny*sizeof(float), cudaMemcpyDeviceToHost);
-	cudaFree(memout);
 }
 

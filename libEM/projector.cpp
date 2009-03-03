@@ -987,9 +987,10 @@ EMData *CudaStandardProjector::project3d(EMData * image) const
 	t3d->copy_matrix_into_array(m);
 	image->bind_cuda_texture();
 	EMData* e = new EMData(image->get_xsize(),image->get_ysize());
-	standard_project(m,image->get_data(),image->get_xsize(),image->get_ysize(),image->get_zsize(),e->get_data());
+	EMDataForCuda tmp = e->get_data_struct_for_cuda();
+	standard_project(m,&tmp);
 	delete [] m;
-	
+	e->gpu_update();
 	return e;
 }
 #endif // EMAN2_USING_CUDA

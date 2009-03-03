@@ -36,6 +36,7 @@
 #include "emdata.h"
 #include "exception.h"
 #include <cuda_runtime_api.h>
+#include <driver_functions.h>
 #include <cuda.h>
 #include "cuda/cuda_util.h"
 #include "cuda/cuda_processor.h"
@@ -46,9 +47,8 @@ EMData::CudaDeviceEMDataCache EMData::cuda_cache(100);
 
 float* EMData::get_cuda_data() const {
 	if (cuda_cache_handle==-1 || EMDATA_GPU_NEEDS_UPDATE & flags) {
-		if (cuda_cache_handle != -1 && !(EMDATA_GPU_RO_NEEDS_UPDATE & flags ) ) {
-			throw;
-// 			cuda_cache.copy_ro_to_rw_data(cuda_cache_handle);
+		if (cuda_cache_handle != -1 && gpu_ro_is_current() ) {
+			cuda_cache.copy_ro_to_rw(cuda_cache_handle);
 		}
 		cuda_cache_handle = cuda_cache.cache_rw_data(this,rdata,nx,ny,nz);
 		flags &= ~EMDATA_GPU_NEEDS_UPDATE;
@@ -58,6 +58,11 @@ float* EMData::get_cuda_data() const {
 
 bool EMData::gpu_rw_is_current() const {
 	if (cuda_cache_handle !=-1 || !(EMDATA_GPU_NEEDS_UPDATE & flags)) return cuda_cache.has_rw_data(cuda_cache_handle);
+	else return false;
+}
+
+bool EMData::gpu_ro_is_current() const {
+	if (cuda_cache_handle !=-1 || !(EMDATA_GPU_RO_NEEDS_UPDATE & flags)) return cuda_cache.has_ro_data(cuda_cache_handle);
 	else return false;
 }
 
@@ -262,6 +267,16 @@ void  EMData::CudaDeviceEMDataCache::copy_ro_to_rw(const int idx) {
 	float* cuda_rw_data = alloc_rw_data(nx,ny,nz);
 	
 	if (nz > 1) {
+		cudaExtent extent;
+		extent.width  = nx;
+		extent.height = ny;
+		extent.depth  = nz;
+		cudaMemcpy3DParms copyParams = {0};
+		copyParams.srcArray   = ro_cache[idx];
+		copyParams.dstPtr = make_cudaPitchedPtr((void*)cuda_rw_data, extent.width*sizeof(float), extent.width, extent.height);
+		copyParams.extent   = extent;
+		copyParams.kind     = cudaMemcpyDeviceToDevice;
+		cudaMemcpy3D(&copyParams);
 		
 	} else if ( ny > 1 ) {
 		cudaMemcpyFromArray(cuda_rw_data,ro_cache[idx],0,0,num_bytes,cudaMemcpyDeviceToDevice);
