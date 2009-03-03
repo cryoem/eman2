@@ -56,45 +56,94 @@ class EMTaskClient:
 
 #######################
 #  Here we define the classes for publish and subscribe parallelism
+
+
 class EMDCTaskServer(EMTaskServer,SocketServer.BaseRequestHandler):
 	"""Distributed Computing Taskserver. In this system, clients run on hosts with free cycles and request jobs
 	from the server, which runs on a host with access to the data to be processed."""
 	
-	def __init__(self):
+	def __init__(self,port=None):
+		# if a port is specified, just try to open it directly. No error detection
+		if port!=None and port>0 : 
+			self.port=port
+			server = SocketServer.TCPServer(("", port), self)	# "" is the hostname and will bind to any IPV4 interface/address
+
+		# EMAN2 will use ports in the range 9900-9999
+		for port in range(9900,10000):
+			try: server = SocketServer.TCPServer(("", port), self)
+			except: continue
+			self.port=port
+			break
+
 		EMTaskServer.__init__(self)
-		server = SocketServer.TCPServer((HOST, PORT), self)
 
 		server.serve_forever()
 
+	def sendobj(sock,obj):
+		"""Sends an object as a (binary) size then a binary pickled object"""
+		strobj=dumps(obj,-1)
+		sock.send(pack("I",len(strobj)))
+		sock.send(strobj)
+
+
 	
 	def handle(self):
-		"""Process requests from the client"""
+		"""Process requests from the client. The exchange is:
+	send EMAN
+	recv EMAN,version,command,data len
+	recv data (if len not 0)
+	send response
+	recv "ACK "
+	close"""
 
-		# the beginning of a message is a struct containing
-		# 0-3  : EMAN
-		# 4-7  : int, EMAN2PARVER
-		# 8-11 : 4 char command
-		# 12-15: bytes in pickled data following header
-		msg = sel.request.recv(4)
-		if msg!="EMAN" : raise Exception,"Non EMAN client"
-		msg = sel.request.recv(12)
-		ver,cmd,datlen=unpack("I4sI",msg)
-		if ver!=EMAN2PARVER : raise Exception,"Version mispatch in parallelism"
-		
-		data = loads(sel.request.recv(datlen))
-		
-		# Ready for a task
-		if cmd=="RDYT" :
-			pass
+		while (1):
+			# the beginning of a message is a struct containing
+			# 0-3  : EMAN
+			# 4-7  : int, EMAN2PARVER
+			# 8-11 : 4 char command
+			# 12-15: count of bytes in pickled data following header
+			self.request.send("EMAN")
+			msg = sel.request.recv(4)
+			if msg!="EMAN" : raise Exception,"Non EMAN client"
+			msg = sel.request.recv(12)
+			ver,cmd,datlen=unpack("I4sI",msg)
+			if ver!=EMAN2PARVER : raise Exception,"Version mispatch in parallelism"
 			
-		# Notify that a task has been aborted
-		elif cmd=="ABOR" : 
-			pass
-	
-		# Progress message indicating that processing continues
-		elif cmd=="PROG" :
-			pass
+			data = loads(sel.request.recv(datlen))
+			
+			# Ready for a task
+			if cmd=="RDYT" :
+				# Get the first task and send it (pickled)
+				task=self.queue.get_task()
+				task.starttime=time.time()
+				sendobj(self.request,task)
+				
+				# check for an ACK, if not, requeue
+				try:
+					if sel.request.recv(4)!="ACK " : raise Exception
+				except: 
+					task.starttime=None		# requeue
+			
+			# Job is completed, results returned
+			elif cmd=="DONE" :
+				pass
+			
+			# Request data from the server
+			elif cmd=="DATA" :
+				pass
+			
+			# Notify that a task has been aborted
+			elif cmd=="ABOR" : 
+				pass
 		
+			# Progress message indicating that processing continues
+			elif cmd=="PROG" :
+				pass
+			
+			################### These are issued by customers
+			# status request
+			elif cmd=="STAT":
+				pass
 		
 		# self.request is the TCP socket connected to the client
 #		self.data = self.request.recv(1024).strip()
@@ -103,4 +152,6 @@ class EMDCTaskServer(EMTaskServer,SocketServer.BaseRequestHandler):
 #		# just send back the same data, but upper-cased
 #		self.request.send(self.data.upper())
 
+class EMDCTaskClient(EMTaskClient):
+	"""Distributed Computing Task Client. This client will connect to an EMDCTaskServer and request jobs to run
 	
