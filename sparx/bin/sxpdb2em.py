@@ -143,7 +143,9 @@ map to the center of the volume."""
 				atoms[i][1] -= aavg[0]/mass
 				atoms[i][2] -= aavg[1]/mass
 				atoms[i][3] -= aavg[2]/mass
-			for i in xrange(3): amin[i] -= aavg[i]/mass
+			for i in xrange(3):
+				amin[i] -= aavg[i]/mass
+				amax[i] -= aavg[i]/mass
 		else:
 			print "atomic center at %1.1f,%1.1f,%1.1f (center of volume at 0,0,0)"%(aavg[0]/natm,aavg[1]/natm,aavg[2]/natm)
 			if(options.center == "c"):
@@ -151,7 +153,9 @@ map to the center of the volume."""
 					atoms[i][1] -= aavg[0]/natm
 					atoms[i][2] -= aavg[1]/natm
 					atoms[i][3] -= aavg[2]/natm
-				for i in xrange(3): amin[i] -= aavg[i]/natm
+				for i in xrange(3):
+					amin[i] -= aavg[i]/natm
+					amax[i] -= aavg[i]/natm
 		print "Bounding box: x: %7.2f - %7.2f"%(amin[0],amax[0])
 		print "              y: %7.2f - %7.2f"%(amin[1],amax[1])
 		print "              z: %7.2f - %7.2f"%(amin[2],amax[2])
