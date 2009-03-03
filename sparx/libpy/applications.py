@@ -882,7 +882,6 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		for im in data:
 			im.set_attr_dict({'xform.align2d':tnull})
 		if key == group_main_node:
-			drop_image(tavg, os.path.join(outdir, "itavg%02d_%02d.hdf"%(ipt, color)))
 			msg = ""
 		for Iter in xrange(max_iter):
 			cs = mpi_bcast(cs, 2, MPI_FLOAT, group_main_node, group_comm)
@@ -956,11 +955,13 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 
 		if key == group_main_node:
 			if myid != main_node:
-				mpi_send(msg, len(msg), MPI_INT, main_node, color*10, MPI_COMM_WORLD)
+				mpi_send(msg, len(msg), MPI_INT, main_node, color+100, MPI_COMM_WORLD)
+				send_EMData(tavg, main_node, color+200)
+				tavg = recv_EMData(main_node, color+300)
 			else:
 				print_msg(msg)
 				for isav in xrange(1, number_of_ave):
-					msg = mpi_recv(500*max_iter, MPI_INT, isav, isav*10, MPI_COMM_WORLD)
+					msg = mpi_recv(500*max_iter, MPI_INT, isav, isav+100, MPI_COMM_WORLD)
 					msg_string = ""
 					index = 0
 					num = msg[index]
@@ -970,59 +971,59 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 						num = msg[index]
 					print_msg(msg_string)
 
-			drop_image(tavg, os.path.join(outdir, "isavg%02d_%02d.hdf"%(ipt, color)))
-			if myid != main_node:
-				send_EMData(tavg, main_node, color)
-		
-		if myid == main_node:
-			savg = [tavg]
-			for isav in xrange(1, number_of_ave):
-				savg.append(recv_EMData(isav, isav))
-				Util.add_img(tavg, savg[isav])
-			"""
-			for isav in xrange(number_of_ave):
-				savg[isav] = rot_shift2D(savg[isav], randint(0, 360), randint(-2, 2), randint(-2, 2), randint(0,1))
-				savg[isav].set_attr_dict({'xform.align2d':tnull, 'active':1})
-			"""
-			for isav in xrange(number_of_ave):
-				savg[isav].set_attr_dict({'xform.align2d':tnull, 'active':1})
-			for inp in xrange(5):
-				sx_sum, sy_sum = ali2d_single_iter(savg, numr, wr, [0.0, 0.0], tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, False)
-				tavg = ave_series(savg)
-			qt = [[None, None] for inp in xrange(number_of_ave)]
-			for inp in xrange(number_of_ave):
-	 			alpha, sx, sy, mirror, scale = get_params2D(savg[inp])
-				savg[inp] = rot_shift2D(savg[inp], alpha, sx, sy, mirror)
-				qt[inp][0] = savg[inp].cmp("dot", savg[inp], dict(negative = 0, mask = ref_data[0]))
-				qt[inp][1] = inp
-			qt.sort(reverse = True)
-			itp = 0
-			tsavg = []
-			i1 = 0
-			i2 = 1
-			while itp < number_of_ave:
-				x_or_y = randint(0, 1)
-				if x_or_y == 0:	
-					tsavg.append(Util.addn_img(Util.muln_img(savg[qt[i1][1]], mix_x1), Util.muln_img(savg[qt[i2][1]], mix_x2)))
-				else:
-					tsavg.append(Util.addn_img(Util.muln_img(savg[qt[i1][1]], mix_y1), Util.muln_img(savg[qt[i2][1]], mix_y2)))
-				itp += 1
-				if i2-i1==1:
-					i2 += 1
-					i1 = 0
-				else:
-					i1 += 1
-			for isav in xrange(1, number_of_ave):
-				send_EMData(tsavg[isav], isav, isav)
-			tavg = tsavg[0].copy()
-			del tsavg
-		if key == group_main_node and myid != main_node:
-			tavg = recv_EMData(main_node, color)
+				savg = [tavg]
+				tavg.write_image("avg_before_ali%02d.hdf"%(ipt), 0)
+				for isav in xrange(1, number_of_ave):
+					img = recv_EMData(isav, isav+200)
+					savg.append(img)
+					Util.add_img(tavg, img)
+					img.write_image("avg_before_ali%02d.hdf"%(ipt), isav)
+				"""
+				for isav in xrange(number_of_ave):
+					savg[isav] = rot_shift2D(savg[isav], randint(0, 360), randint(-2, 2), randint(-2, 2), randint(0,1))
+					savg[isav].set_attr_dict({'xform.align2d':tnull, 'active':1})
+				"""
+				for isav in xrange(number_of_ave):
+					savg[isav].set_attr_dict({'xform.align2d':tnull, 'active':1})
+				for inp in xrange(5):
+					sx_sum, sy_sum = ali2d_single_iter(savg, numr, wr, [0.0, 0.0], tavg, cnx, cny, "3", "3", "0.5", mode, False)
+					tavg = ave_series(savg)
+				qt = [[None, None] for inp in xrange(number_of_ave)]
+				for isav in xrange(number_of_ave):
+	 				alpha, sx, sy, mirror, scale = get_params2D(savg[isav])
+					savg[isav] = rot_shift2D(savg[isav], alpha, sx, sy, mirror)
+					savg[isav].write_image("avg_after_ali%02d.hdf"%(ipt), isav)
+					qt[isav][0] = savg[isav].cmp("dot", savg[isav], dict(negative = 0, mask = ref_data[0]))
+					qt[isav][1] = isav
+				qt.sort(reverse = True)
+
+				itp = 0
+				tsavg = []
+				i1 = 0
+				i2 = 1
+				while itp < number_of_ave:
+					x_or_y = randint(0, 1)
+					if x_or_y == 0:	
+						tsavg.append(Util.addn_img(Util.muln_img(savg[qt[i1][1]], mix_x1), Util.muln_img(savg[qt[i2][1]], mix_x2)))
+					else:
+						tsavg.append(Util.addn_img(Util.muln_img(savg[qt[i1][1]], mix_y1), Util.muln_img(savg[qt[i2][1]], mix_y2)))
+					itp += 1
+					if i2-i1==1:
+						i2 += 1
+						i1 = 0
+					else:
+						i1 += 1
+				for isav in xrange(number_of_ave):
+					tsavg[isav].write_image("avg_after_merge%02d.hdf"%(ipt), isav)
+				for isav in xrange(1, number_of_ave):
+					send_EMData(tsavg[isav], isav, isav+300)
+				tavg = tsavg[0].copy()
+				del tsavg
 		bcast_EMData_to_all(tavg, key, group_main_node, group_comm)
 		
 		# write out headers and STOP, under MPI writing has to be done sequentially
 		# Commented by Yang on 03/02/09
-		# I have decided to permanetly move this block into the 'for' loop, 
+		# I have decided to permanently move this block into the 'for' loop, 
 		# the cost of not recording the partial run results is too high 
 		mpi_barrier(MPI_COMM_WORLD)
 		#par_str = ["xform.align2d", "ID"]
