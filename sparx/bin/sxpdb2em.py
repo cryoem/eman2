@@ -177,12 +177,14 @@ map to the center of the volume."""
 	# figure oversampled box size
 	bigb = max(box[0],box[1],box[2])
 	fcbig = 1
+	"""
 	while(bigb*fcbig <= 512):   # maximum boxsize = 512
 		fcbig +=1
 	fcbig -= 1
 	if(fcbig == 0):
 		print  "Pixel size too small resulting in a box size >512"
 		sys.exit()
+	"""
 	if not options.quiet: print "Box size: %d x %d x %d"%(box[0],box[1],box[2]),",  oversampling ",fcbig
 
 	# Calculate working dimensions
@@ -218,6 +220,7 @@ map to the center of the volume."""
 		except: print "Skipping %d '%s'"%(i,atoms[i][0])
 		
 	if not options.quiet: print '\r   %d\nConversion complete.'%len(atoms),"    Now shape atoms."
+	"""
 	fftip(outmap)
 	# Atom in Fourier space has sigma = 0.41 [1/A]
 	outmap = filt_gaussl(outmap,pixelbig*0.41)
@@ -226,6 +229,7 @@ map to the center of the volume."""
 		outmap = filt_tanl(outmap,0.5/fcbig, 0.02)
 		outmap = outmap.FourTruncate(box[0],box[1],box[2], False)
 	outmap = fft(outmap)
+	"""
 	(filename_path, filextension) = os.path.splitext(args[1])
 	if filextension == ".hdf" :
 		outmap.set_attr("apix_x",options.apix)
