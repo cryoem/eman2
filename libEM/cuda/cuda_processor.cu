@@ -32,13 +32,13 @@ void emdata_processor_mult( const EMDataForCuda* cuda_data, const float& mult) {
 
 
 
-__global__ void correlation_kernel(float *ldata, float* rdata, const int z,const int xsize, const int xysize)
+__global__ void correlation_kernel_2D(float *ldata, float* rdata,const int xsize)
 {
 
 	uint x=threadIdx.x;
 	uint y=blockIdx.x;
 
-	uint idx = 2*x + y*xsize+z*xysize;
+	uint idx = 2*x + y*xsize;
 	uint idxp1 = idx+1;
 	
 	float v1 = ldata[idx];
@@ -46,37 +46,64 @@ __global__ void correlation_kernel(float *ldata, float* rdata, const int z,const
 	float u1 = rdata[idx];
 	float u2 = rdata[idxp1];
 	
-	ldata[idx] = v1*u1 - v2*u2;
-	ldata[idx+1] = v1*u2 + v2*u1;
+	ldata[idx] = v1*u1 + v2*u2;
+	ldata[idxp1] = v1*u2 - v2*u1;
 }
 
-
-__global__ void correlation_kernel_2(float *ldata, const int z,const int xsize, const int xysize)
+__global__ void correlation_kernel_3D(float *ldata, const int z,const int xsize, const int xysize)
 {
 
 	uint x=threadIdx.x;
 	uint y=blockIdx.x;
 
-	uint idx = 2*x + y*xsize+z*xysize;
+	uint twox = 2*x;
+	uint idx = twox + y*xsize+z*xysize;
 	uint idxp1 = idx+1;
 	
 	float v1 = ldata[idx];
 	float v2 = ldata[idxp1];
-	float u1 = tex2D(tex2d,x,y);
-	float u2 =  tex2D(tex2d,x+1,y);
+	float u1 = tex3D(tex,twox+0.5,y+0.5,z+0.5);
+	float u2 = tex3D(tex,twox+1+0.5,y+0.5,z+0.5);
 	
-	ldata[idx] = v1*u1 - v2*u2;
-	ldata[idx+1] = v1*u2 + v2*u1;
+	ldata[idx] = v1*u1 + v2*u2;
+	ldata[idxp1] = v1*u2 - v2*u1;
 }
 
 
-void emdata_processor_correlation( const EMDataForCuda* left,const EMDataForCuda* right) {
+
+__global__ void correlation_kernel_2D_2(float *ldata,const int xsize)
+{
+
+	uint x=threadIdx.x;
+	uint y=blockIdx.x;
+
+	uint twox = 2*x;
+	uint idx = twox + y*xsize;
+	uint idxp1 = idx+1;
+	
+	float v1 = ldata[idx];
+	float v2 = ldata[idxp1];
+	float u1 = tex2D(tex2d,twox+0.5,y+0.5);
+	float u2 =  tex2D(tex2d,twox+1+0.5,y+0.5);
+	
+	ldata[idx] = v1*u1 + v2*u2;
+	ldata[idxp1] = v1*u2 - v2*u1;
+}
+
+
+void emdata_processor_correlation( const EMDataForCuda* left) {
 	const dim3 blockSize(left->ny,1, 1);
 	const dim3 gridSize(left->nx/2,1,1);
-		
-	for (int i = 0; i < left->nz; ++i) {
-		correlation_kernel<<<blockSize,gridSize>>>(left->data,right->data,i,left->nx,left->nx*left->ny);
-// 		correlation_kernel_2<<<blockSize,gridSize>>>(left->data,i,left->nx,left->nx*left->ny);
+	
+	int nz = left->nz;
+	if (nz > 1) {
+		for (int i = 0; i < left->nz; ++i) {
+			correlation_kernel_3D<<<blockSize,gridSize>>>(left->data,i,left->nx,left->nx*left->ny);
+		}
 	}
+	else {
+		correlation_kernel_2D_2<<<blockSize,gridSize>>>(left->data,left->nx);
+		//correlation_kernel_2D<<<blockSize,gridSize>>>(left->data,right->data,left->nx);
+	}	
 	cudaThreadSynchronize();
 }

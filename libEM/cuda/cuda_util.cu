@@ -6,8 +6,6 @@
 #include "cuda_emfft.h"
 #include "cuda_util.h"
 
-#include "emcudautil.h"
-
 texture<float, 3, cudaReadModeElementType> tex;
 texture<float, 2, cudaReadModeElementType> tex2d;
 
@@ -24,71 +22,12 @@ void cuda_bind_texture_3d(texture<float, 3, cudaReadModeElementType> &tex,const 
 void cuda_bind_texture_2d(texture<float, 2, cudaReadModeElementType> &tex, const cudaArray * const array) {
 	tex.normalized = 0;
 	tex.filterMode = cudaFilterModeLinear;
+	// tex.filterMode = cudaFilterModePoint;
 	tex.addressMode[0] = cudaAddressModeClamp;
 	tex.addressMode[1] = cudaAddressModeClamp;
 // 	tex.addressMode[2] = cudaAddressModeClamp;
 	
 	cudaBindTextureToArray(tex, array);
-}
-
-
-struct CudaEMDataArray {
-	cudaArray* array;
-	const float* data; /*This one may be unecessary*/
-	void* emdata_pointer;
-	int nx;
-	int ny;
-	int nz;
-};
-
-void copy_array_data(CudaEMDataArray* to, CudaEMDataArray* from) {
-	to->array = from->array;
-	to->data = from->data;
-	to->emdata_pointer = from->emdata_pointer;
-	to->nx = from->nx;
-	to->ny = from->ny;
-	to->nz = from->nz;
-}
-
-void set_array_data_null(CudaEMDataArray* p)
-{
-	p->array = 0;
-	p->data = 0;
-	p->emdata_pointer = 0;
-	p->nx = 0;
-	p->ny = 0;
-	p->nz = 0;
-}
-
-const int max_cuda_arrays = 10;
-int num_cuda_arrays = 0;
-CudaEMDataArray cuda_arrays[max_cuda_arrays];
-
-void init_cuda_emdata_arrays() {
-	for(int i = 0; i < max_cuda_arrays; ++i ) {
-		CudaEMDataArray c =  { 0, 0, 0, 0, 0, 0};
-		cuda_arrays[i] = c;
-	}
-}
-
-int make_cuda_array_space_0_free() {
-	//printf("Freeing space 0\n");
-	//debug_arrays();
-	int n = num_cuda_arrays-1;
-	if (cuda_arrays[n].emdata_pointer != 0) set_emdata_cuda_array_handle(-1,cuda_arrays[n].emdata_pointer);
-	CUDA_SAFE_CALL(cudaFree(cuda_arrays[n].array));
-	cuda_arrays[n].array = 0;
-	
-	for (int i = 0; i < num_cuda_arrays-1; ++i ) {
-		CudaEMDataArray* to = &cuda_arrays[i+1];
-		CudaEMDataArray* from = &cuda_arrays[i];
-		copy_array_data(to,from);
-		if (to->emdata_pointer != 0) set_emdata_cuda_array_handle(i+1,to->emdata_pointer);
-	}
-	set_array_data_null(&cuda_arrays[0]);
-	
-	//debug_arrays();
-	return 0;
 }
 
 cudaArray* get_cuda_array(const float * const data,const int nx, const int ny, const int nz, const cudaMemcpyKind mem_cpy_flag)
@@ -127,71 +66,7 @@ cudaArray* get_cuda_array_host(const float * const data,const int nx, const int 
 	return get_cuda_array(data,nx,ny,nz,cudaMemcpyHostToDevice);
 }
 
-
-int get_cuda_array_handle(const float * data,const int nx, const int ny, const int nz, void* emdata_pointer) {
-	
-	//printf("Get cuda array %d\n", emdata_pointer);
-	//debug_arrays();
-	for(int i = 0; i < num_cuda_arrays; ++i ) {
-		if (cuda_arrays[i].emdata_pointer == emdata_pointer ) {
-			//printf("Found that cuda arrary\n");
-			return i;
-		}
-	}
-	int idx = num_cuda_arrays;
-	if (num_cuda_arrays == max_cuda_arrays) {
-		make_cuda_array_space_0_free();
-		idx = 0;
-	}
-// 	printf("Making a new cuda array\n");
-	// If we make it here then it doesn't exist
-	CudaEMDataArray* c = &cuda_arrays[idx];
-	c->data = data;
-	c->emdata_pointer = emdata_pointer;
-	c->nx = nx;
-	c->ny = ny;
-	c->nz = nz;
-	
-	cudaArray *array = get_cuda_array_device(data,nx,ny,nz);
-	
-	c->array = array;
-	if (num_cuda_arrays != max_cuda_arrays) num_cuda_arrays++;
-	return idx;
-}
-
-
-
-
-int delete_cuda_array(const int idx) {
-	//printf("Deleting a cuda array\n");
-	CUDA_SAFE_CALL(cudaFree(cuda_arrays[idx].array));
-	cuda_arrays[idx].array = 0;
-	
-	for (int i = idx; i < num_cuda_arrays; ++i ) {
-		CudaEMDataArray* to = &cuda_arrays[i];
-		CudaEMDataArray* from = &cuda_arrays[i+1];
-		copy_array_data(to,from);
-		if (to->emdata_pointer != 0) set_emdata_cuda_array_handle(i,to->emdata_pointer);
-	}
-	set_array_data_null(&cuda_arrays[num_cuda_arrays-1]);
-	num_cuda_arrays--;
-	
-	return 0;
-}
-
-// highly specialized, use cautiously
-
-void cuda_bind_texture(const int idx) {
-	CudaEMDataArray* c = &cuda_arrays[idx];
-	if (c->nz > 1) {
-		cuda_bind_texture_3d(tex,cuda_arrays[idx].array);
-	} else if ( c->ny > 1 ) {
-		cuda_bind_texture_2d(tex2d,cuda_arrays[idx].array);
-	} else throw;
-	//printf("Done bind\n");
-}
-
-void bind_cuda_array_to_texture( const cudaArray* const array, const unsigned int ndims) {
+void bind_cuda_array_to_texture( const cudaArray* const array, const int ndims) {
 	if (ndims == 3) {
 		cuda_bind_texture_3d(tex,array);
 	} else if ( ndims == 2) {
@@ -209,18 +84,17 @@ void device_init() {
 		
 		if (deviceCount == 0) throw;
 		
-		if (deviceCount > 1) {
-			printf("%d CUDA devices detected\n",deviceCount);
-		} else { // must be one
-			printf("1 CUDA device detected\n");
-		}
+// 		if (deviceCount > 1) {
+// 			printf("%d CUDA devices detected\n",deviceCount);
+// 		} else { // must be one
+// 			printf("1 CUDA device detected\n");
+// 		}
 		
 		cudaDeviceProp deviceProp;
 		cudaGetDeviceProperties(&deviceProp, 0);
 		if (deviceProp.major < 1) exit(2);
 		
 		cudaSetDevice(0);
-		init_cuda_emdata_arrays();
 		init_cuda_fft_hh_plan_cache(); // should only be performed if the host is using Cuda ffts, which is unlikey. Will do after development has progressed.
 		init_cuda_fft_dd_plan_cache();
 		init = false; //Force init everytikme

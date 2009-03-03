@@ -51,7 +51,7 @@ class TestEMDataCuda(unittest.TestCase):
 	# cuda driver has bugs (March 2009) relating to non power of two sized data
 	
 	def test_cuda_ft_fidelity(self):
-		"""test cuda fft/ift equals input ..........................."""
+		"""test cuda fft/ift equals input ..................."""
 		
 		for z in [1]:
 			for y in [15,16]:
@@ -72,12 +72,10 @@ class TestEMDataCuda(unittest.TestCase):
 								self.assertAlmostEqual(c.get_value_at(i,j,k), a.get_value_at(i,j,k), 3)
 	
 	def test_cuda_ccf(self):
-		"""test cuda ccf equals cpu ccf ............................."""
+		"""test cuda ccf equals cpu ccf ....................."""
 		a = test_image(0,size=(32,32))
 		b = a.calc_ccf(a)
 		c = a.calc_ccf_cuda(a)
-		c.process_inplace("xform.flip",{"axis":"x"})
-		c.process_inplace("xform.flip",{"axis":"y"})
 		#b.process_inplace("normalize")
 		#c.process_inplace("normalize")
 		for k in range(c.get_zsize()):
@@ -86,7 +84,7 @@ class TestEMDataCuda(unittest.TestCase):
 					self.assertAlmostEqual(c.get_value_at(i,j,k), b.get_value_at(i,j,k), 1)
 					
 	def test_cuda_2d_square_fft(self):
-		"""test cuda 2D square fft equals cpu fft ..................."""
+		"""test cuda 2D square fft equals cpu fft ..........."""
 		for x in [15,16]:
 			a = test_image(0,size=(x,x))
 			b = a.do_fft()
@@ -97,7 +95,7 @@ class TestEMDataCuda(unittest.TestCase):
 						self.assertAlmostEqual(c.get_value_at(i,j,k), b.get_value_at(i,j,k), 3)
 						
 	def test_cuda_3d_square_fft(self):
-		"""test cuda 3D square fft equals cpu fft ..................."""
+		"""test cuda 3D square fft equals cpu fft ..........."""
 		for x in [15,16]:
 			a = test_image_3d(0,size=(x,x,x))
 			b = a.do_fft()
@@ -108,7 +106,7 @@ class TestEMDataCuda(unittest.TestCase):
 						self.assertAlmostEqual(c.get_value_at(i,j,k), b.get_value_at(i,j,k), 3)
 						
 	def test_cuda_basic_mult(self):
-		"""test cuda basic multiplication ..........................."""
+		"""test cuda basic multiplication ..................."""
 		for x in [15,16]:
 			a = EMData(x,x)
 			a.process_inplace('testimage.noise.uniform.rand')
@@ -119,6 +117,18 @@ class TestEMDataCuda(unittest.TestCase):
 				for j in range(a.get_ysize()):
 					for i in range(a.get_xsize()):
 						self.assertAlmostEqual(a.get_value_at(i,j,k), b.get_value_at(i,j,k), 8)
+						
+	def test_cuda_standard_projector(self):
+		"""test cuda basic projection ......................."""
+		for x in [15,16]:
+			a = EMData(x,x,x)
+			a.process_inplace('testimage.noise.uniform.rand')
+			b = a.project("cuda_standard",Transform())
+			c = a.project("standard",Transform())
+			for k in range(b.get_zsize()):
+				for j in range(b.get_ysize()):
+					for i in range(b.get_xsize()):
+						self.assertAlmostEqual(c.get_value_at(i,j,k), b.get_value_at(i,j,k), 8)
 		
 	
 def test_main():

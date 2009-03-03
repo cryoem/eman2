@@ -847,7 +847,7 @@ EMData *StandardProjector::project3d(EMData * image) const
 		EMData *proj = new EMData();
 		proj->set_size(nx, ny, 1);
 
-		Vec3f offset(nx/2,ny/2,nz/2);
+		Vec3i offset(nx/2,ny/2,nz/2);
 
 		float *sdata = image->get_data();
 		float *ddata = proj->get_data();

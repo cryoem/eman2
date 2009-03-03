@@ -8,18 +8,6 @@
  */
 void device_init();
 
-/** Get the stored cuda arrary corresponding to the input arguments
- */
-int get_cuda_array_handle(const float* ,const int,const int,const int, void*);
-
-int delete_cuda_array(const int idx);
-
-
-/** Texture binding
- */
-void cuda_bind_texture(const int);
-
-
 /** A struct for passing EMData objects to and from things like processors
 */
 struct EMDataForCuda {
@@ -38,7 +26,7 @@ cudaArray* get_cuda_array_host(const float * const data,const int nx, const int 
 
 cudaArray* get_cuda_array_device(const float * const data,const int nx, const int ny, const int nz);
 
-void bind_cuda_array_to_texture( const cudaArray* const array, const unsigned int ndims);
+void bind_cuda_array_to_texture( const cudaArray* const array, const int ndims);
 
 #endif // eman__cuda_util_h__
 

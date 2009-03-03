@@ -41,7 +41,7 @@ from time import time
 
 def test_main():
 	
-	test_dims = [32*i for i in range(2,10)]
+	test_dims = [64*i for i in range(1,6)]
 	
 	test_range = range(20)
 	
@@ -86,7 +86,27 @@ def test_main():
 			c = b.do_ift()
 		cpu_times.append(time()-t)
 		print dims,"\t", cpu_times[-1]/gpu_times[-1]
+
+	print "Testing Fourier correlation (2D)"
+	print "Dims","\t", "GPU speedup"
+	for dims in test_dims:
+		a = test_image(0,size=(dims,dims)).do_fft_cuda()
+		b = test_image(0,size=(dims,dims)).do_fft_cuda()
 		
+		t = time()
+		for i in test_range:
+			c = a.calc_ccf_cuda(b)
+		gpu_times.append(time()-t)
+		a = test_image(0,size=(dims,dims)).do_fft()
+		b = test_image(0,size=(dims,dims)).do_fft()
+		t = time()
+		for i in test_range:
+			c = a.calc_ccf(b)
+		cpu_times.append(time()-t)
+		print dims,"\t", cpu_times[-1]/gpu_times[-1]
+
+
+	test_range = range(10)
 	print "Testing 3D real space projection"
 	print "Dims","\t", "GPU speedup"
 	for dims in test_dims:

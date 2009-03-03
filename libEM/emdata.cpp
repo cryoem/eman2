@@ -68,7 +68,7 @@ int EMData::totalalloc=0;		// mainly used for debugging/memory leak purposes
 
 EMData::EMData() :
 #ifdef EMAN2_USING_CUDA
-		cuda_array_handle(-1), cuda_cache_handle(-1),
+		cuda_cache_handle(-1),
 #endif //EMAN2_USING_CUDA
 		attr_dict(), rdata(0), supp(0), flags(0), changecount(0), nx(0), ny(0), nz(0), nxy(0), xoff(0), yoff(0),
 		zoff(0), all_translation(),	path(""), pathnum(0), rot_fp(0)
@@ -93,7 +93,7 @@ EMData::EMData() :
 
 EMData::EMData(const string& filename, int image_index) :
 #ifdef EMAN2_USING_CUDA
-		cuda_array_handle(-1), cuda_cache_handle(0),
+		cuda_cache_handle(-1),
 #endif //EMAN2_USING_CUDA
 		attr_dict(), rdata(0), supp(0), flags(0), changecount(0), nx(0), ny(0), nz(0), nxy(0), xoff(0), yoff(0), zoff(0),
 		all_translation(),	path(filename), pathnum(image_index), rot_fp(0)
@@ -118,7 +118,7 @@ EMData::EMData(const string& filename, int image_index) :
 
 EMData::EMData(const EMData& that) :
 #ifdef EMAN2_USING_CUDA
-		cuda_array_handle(-1), cuda_cache_handle(-1),
+		cuda_cache_handle(-1),
 #endif //EMAN2_USING_CUDA
 		attr_dict(that.attr_dict), rdata(0), supp(0), flags(that.flags), changecount(0), nx(that.nx), ny(that.ny), nz(that.nz), 
 		nxy(that.nx*that.ny), xoff(that.xoff), yoff(that.yoff), zoff(that.zoff),all_translation(that.all_translation),	path(that.path),
@@ -134,7 +134,7 @@ EMData::EMData(const EMData& that) :
 		EMUtil::em_memcpy(rdata, data, num_bytes);
 	}
 #ifdef EMAN2_USING_CUDA
-	if (that.cuda_cache_handle != -1) {
+	if (that.cuda_cache_handle != -1 && that.gpu_rw_is_current()) {
 		float * cuda_data = that.get_cuda_data();
 		cudaMemcpy(get_cuda_data(),cuda_data,num_bytes,cudaMemcpyDeviceToDevice);
 	}
@@ -179,7 +179,6 @@ EMData& EMData::operator=(const EMData& that)
 		
 #ifdef EMAN2_USING_CUDA
 		// TODO This probably has to change to potential copying
-		free_cuda_array();
 		free_cuda_memory();
 #endif //EMAN2_USING_CUDA
 
@@ -195,7 +194,7 @@ EMData& EMData::operator=(const EMData& that)
 
 EMData::EMData(int nx, int ny, int nz, bool is_real) :
 #ifdef EMAN2_USING_CUDA
-		cuda_array_handle(-1), cuda_cache_handle(-1),
+		cuda_cache_handle(-1),
 #endif //EMAN2_USING_CUDA
 		attr_dict(), rdata(0), supp(0), flags(0), changecount(0), nx(0), ny(0), nz(0), nxy(0), xoff(0), yoff(0), zoff(0),
 		all_translation(),	path(""), pathnum(0), rot_fp(0)
@@ -245,7 +244,7 @@ EMData::EMData(int nx, int ny, int nz, bool is_real) :
 
 EMData::EMData(float* data, const int x, const int y, const int z, const Dict& attr_dict) :
 #ifdef EMAN2_USING_CUDA
-		cuda_array_handle(-1), cuda_cache_handle(-1),
+		cuda_cache_handle(-1),
 #endif //EMAN2_USING_CUDA
 		attr_dict(attr_dict), rdata(data), supp(0), flags(0), changecount(0), nx(x), ny(y), nz(z), nxy(x*y), xoff(0),
 		yoff(0), zoff(0), all_translation(), path(""), pathnum(0), rot_fp(0)
@@ -272,7 +271,6 @@ EMData::~EMData()
 	
 	free_memory();
 #ifdef EMAN2_USING_CUDA
-	free_cuda_array();
 	free_cuda_memory();
 #endif // EMAN2_USING_CUDA
 	EMData::totalalloc--;

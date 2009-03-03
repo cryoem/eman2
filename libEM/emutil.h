@@ -295,7 +295,7 @@ namespace EMAN
 			return calloc(nmemb,size);
 		}
 
-		inline static void* em_realloc(void* data,const size_t new_size,const size_t old_size) {
+		inline static void* em_realloc(void* data,const size_t new_size) {
 			return realloc(data, new_size);
 		}
 		inline static void em_memset(void* data, const int value, const size_t size) {

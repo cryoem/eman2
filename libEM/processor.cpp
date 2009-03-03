@@ -8077,9 +8077,8 @@ void CudaCorrelationProcessor::process_inplace(EMData* image) {
 	if (with == 0) throw InvalidParameterException("You must supply the with parameter, and it must be valid. It is NULL.");
 	
 	EMDataForCuda left = image->get_data_struct_for_cuda();
-	EMDataForCuda right = with->get_data_struct_for_cuda();
-// 	with->bind_cuda_array();
-	emdata_processor_correlation(&left,&right);
+	with->bind_cuda_texture();
+	emdata_processor_correlation(&left);
 	image->gpu_update();
 	
 }

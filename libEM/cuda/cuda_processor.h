@@ -6,6 +6,6 @@
 
 void emdata_processor_mult( const EMDataForCuda* cuda_data, const float& mult);
 
-void emdata_processor_correlation( const EMDataForCuda* left,const EMDataForCuda* right);
+void emdata_processor_correlation( const EMDataForCuda* left);
 
 #endif // cuda_processor_h__

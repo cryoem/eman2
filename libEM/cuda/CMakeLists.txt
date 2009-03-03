@@ -17,7 +17,6 @@ CUDA_ADD_LIBRARY(EM2Cuda SHARED
   cuda_util.cu
   cuda_emfft.cu
   cuda_processor.cu
-  emcudautil.cpp
  )
 
 

@@ -626,13 +626,11 @@ void EMData::set_size(int x, int y, int z)
 	}
 
 	int old_nx = nx;
-	size_t old_size = nx*ny*nz*sizeof(float);
 	
-
 	size_t size = (size_t)(x) * (size_t)y * (size_t)z * sizeof(float);
 	
 	if (rdata != 0) {
-		rdata = (float*)EMUtil::em_realloc(rdata,size,old_size);
+		rdata = (float*)EMUtil::em_realloc(rdata,size);
 	} else {
 		rdata = (float*)EMUtil::em_malloc(size);
 	}

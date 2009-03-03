@@ -35,19 +35,8 @@
 #ifdef EMAN2_USING_CUDA
 
 public:
-	/** Called externally if the associated cuda array is freed
-	 */
-	inline void reset_cuda_array_handle() { cuda_array_handle = -1; }
-	
 
-// 	void bind_cuda_array();
-	
 	void bind_cuda_texture();
-	
-	// This should never be set by anything other than something that knows what it's doing
-	inline void set_cuda_array_handle(const int idx) { cuda_array_handle = idx; }
-	
-	
 	
 	/** Get the cuda device pointer to the raw data
 	 * May cause an allocation, reflecting the lazy strategy employed in EMAN2
@@ -84,18 +73,14 @@ public:
 	 */
 	void gpu_update();
 	
-	bool gpu_rw_is_current() const;
+	
 private:
 	
-	/** Free the read only CUDA array on the device
-	 */
-	void free_cuda_array() const;
+	bool gpu_rw_is_current() const;
 	
-	/** Free the read-write CUDA float pointer on the device
+	/** Free CUDA memory
 	 */
 	void free_cuda_memory() const;
-	
-	mutable int cuda_array_handle;
 	
 	/// A handle which may used to retrieve the device float pointer from the CudaDeviceEMDataCache using its [] operator
 	mutable int cuda_cache_handle;
@@ -111,7 +96,7 @@ private:
 		/** Constructor
 		 * @param size the size of the cache
 		 */
-		CudaDeviceEMDataCache(const unsigned int size);
+		CudaDeviceEMDataCache(const int size);
 		
 		/** Destructor, frees any non zero CUDA memory 
 		 */
@@ -125,37 +110,38 @@ private:
 		 * @param nz the length of the z dimension of the raw data pointer
 		 * @return the index of the cached CUDA device pointer, as stored by this object
 		 */
-		unsigned int cache_rw_data(const EMData* const emdata, const float* const data,const int nx, const int ny, const int nz);
+		int cache_rw_data(const EMData* const emdata, const float* const data,const int nx, const int ny, const int nz);
 		
-		unsigned int cache_ro_data(const EMData* const emdata, const float* const data,const int nx, const int ny, const int nz);
+		int cache_ro_data(const EMData* const emdata, const float* const data,const int nx, const int ny, const int nz);
 		
 		/** Operator[] access to the cache
 		 * Should be called using the return value of the cache_data function
 		 * @param idx the index of the stored CUDA device pointer
 		 * @return a CUDA device float pointer
 		 */
-		inline float* operator[](const unsigned int idx) const { return rw_cache[idx]; }
+		inline float* operator[](const int idx) const { return rw_cache[idx]; }
 		
-		inline float* get_rw_data(const unsigned int idx) const { return rw_cache[idx]; }
-		inline cudaArray* get_ro_data(const unsigned int idx) const { return ro_cache[idx]; }
+		inline float* get_rw_data(const int idx) const { return rw_cache[idx]; }
+		inline cudaArray* get_ro_data(const int idx) const { return ro_cache[idx]; }
 		
-		inline bool has_rw_data(const unsigned int idx) const { return (rw_cache[idx] != 0); }
-		inline bool has_ro_data(const unsigned int idx) const { return (ro_cache[idx] != 0); }
+		inline bool has_rw_data(const int idx) const { return (rw_cache[idx] != 0); }
+		inline bool has_ro_data(const int idx) const { return (ro_cache[idx] != 0); }
 		
 		/** Clear a cache slot at a given index
 		 * Performs device memory freeing if stored data is non zero
 		 * @param idx the index of the stored CUDA device pointer
 		 */
-		void clear_item(const unsigned int idx);
+		void clear_item(const int idx);
 		
 		/** Clear the rw data from a cache slot whilst simultaneously determining the current ro data is up to date
 		 */
-// 		int copy_ro_to_rw_data(const unsigned int idx);
+// 		int copy_ro_to_rw_data(const int idx);
 		
 		
-		void copy_rw_to_ro(const unsigned idx);
+		void copy_rw_to_ro(const int idx);
+		void copy_ro_to_rw(const int idx);
 		
-		inline unsigned int get_ndim(const unsigned int idx) {
+		inline int get_ndim(const int idx) {
 			return caller_cache[idx]->get_ndim();
 		}
 	private:
@@ -163,9 +149,9 @@ private:
 		float* alloc_rw_data(const int nx, const int ny, const int nz);
 		
 		/// The size of the cache
-		unsigned int cache_size;
+		int cache_size;
 		/// The current position of the "snake head" in terms of the cache_size
-		unsigned int current_insert_idx;
+		int current_insert_idx;
 		
 		/// The CUDA device rw pointer cache
 		float** rw_cache;

@@ -63,7 +63,7 @@ bool EMData::gpu_rw_is_current() const {
 
 void EMData::bind_cuda_texture() {
 	if (cuda_cache_handle==-1 || EMDATA_GPU_RO_NEEDS_UPDATE & flags) {
-		if (cuda_cache_handle !=- 1)  {
+		if (cuda_cache_handle !=- 1 && gpu_rw_is_current() )  {
 			cuda_cache.copy_rw_to_ro(cuda_cache_handle);
 		} else {
 			cuda_cache_handle = cuda_cache.cache_ro_data(this,rdata,nx,ny,nz);
@@ -120,13 +120,6 @@ EMData* EMData::calc_ccf_cuda( EMData*  image ) {
 	return soln;
 }
 
-void EMData::free_cuda_array() const {
-	if (cuda_array_handle != -1){
-		delete_cuda_array(cuda_array_handle);
-		cuda_array_handle = -1;
-	}
-}
-
 void EMData::free_cuda_memory() const {
 	if (cuda_cache_handle!=-1) {
 		cuda_cache.clear_item(cuda_cache_handle);
@@ -136,14 +129,14 @@ void EMData::free_cuda_memory() const {
 
 
 
-EMData::CudaDeviceEMDataCache::CudaDeviceEMDataCache(const unsigned int size) : cache_size(size),current_insert_idx(0)
+EMData::CudaDeviceEMDataCache::CudaDeviceEMDataCache(const int size) : cache_size(size),current_insert_idx(0)
 {
 	device_init();
 	rw_cache = new float *[cache_size];
 	caller_cache = new const EMData*[cache_size];
 	ro_cache = new cudaArray *[cache_size];
 	
-	for(unsigned int i = 0; i < cache_size; ++ i ) {
+	for(int i = 0; i < cache_size; ++ i ) {
 		rw_cache[i] = 0;
 		caller_cache[i] = 0;
 		ro_cache[i] = 0;
@@ -152,7 +145,7 @@ EMData::CudaDeviceEMDataCache::CudaDeviceEMDataCache(const unsigned int size) : 
 
 EMData::CudaDeviceEMDataCache::~CudaDeviceEMDataCache()
 {
-	for (unsigned int i = 0; i < cache_size; i++) {
+	for (int i = 0; i < cache_size; i++) {
 		clear_item(i);
 	}
 
@@ -170,7 +163,7 @@ EMData::CudaDeviceEMDataCache::~CudaDeviceEMDataCache()
 	}
 }
 
-unsigned int EMData::CudaDeviceEMDataCache::cache_rw_data(const EMData* const emdata, const float* const data,const int nx, const int ny, const int nz)
+int EMData::CudaDeviceEMDataCache::cache_rw_data(const EMData* const emdata, const float* const data,const int nx, const int ny, const int nz)
 {
 	const EMData* previous = caller_cache[current_insert_idx];
 	if (previous != 0) {
@@ -189,7 +182,7 @@ unsigned int EMData::CudaDeviceEMDataCache::cache_rw_data(const EMData* const em
 	caller_cache[current_insert_idx] = emdata;
 	ro_cache[current_insert_idx] = 0;
 	
-	unsigned int ret = current_insert_idx;
+	int ret = current_insert_idx;
 	current_insert_idx += 1;
 	current_insert_idx %= cache_size; // Potentially inefficient to do this every time, the alternative is an if statement. Which is faster?
 	return ret;
@@ -214,42 +207,7 @@ float* EMData::CudaDeviceEMDataCache::alloc_rw_data(const int nx, const int ny, 
 	
 }
 
-
-// float* EMData::CudaDeviceEMDataCache::get_rw_data(const unsigned int idx) {
-// 	if (rw_cache[idx] != 0) return rw_cache[idx]; // This is a common case
-// 
-// 	// If there is no current copy of the rw data then the ro should definitely exist - that is the only way the EMData object should have the slot index (idx);
-// 	if (ro_cache[idx] == 0) throw UnexpectedBehaviorException("The CUDA read write data was requested, it was 0, so there was an attempt to copy the CUDA RO data, but this was 0.");
-// 	
-// 	const EMData* d = caller_cache[idx];
-// 	int nx = d->get_xsize();
-// 	int ny = d->get_ysize();
-// 	int nz = d->get_zsize();
-// 	
-// 	rw_cache[idx] = alloc_rw_data(nx,ny,nz);
-// 	
-// 	if (nz == 1) {
-// 		cudaMemcpyFromArray(rw_cache[idx], ro_cache[idx], nx,ny, nx*ny*sizeof(float), cudaMemcpyDeviceToDevice);
-// 	} else if (nz > 1) {
-// 		throw;
-// 		/*
-// 		cudaExtent ca_extent;
-// 		ca_extent.width  = nx;
-// 		ca_extent.height = ny;
-// 		ca_extent.depth  = nz;
-// 		
-// 		cudaMemcpy3DParms copyParams = {0};
-// 		copyParams.srcArray   = ro_cache[idx];
-// 		copyParams.dstPtr = rw_cache[idx];
-// 		copyParams.extent   = ca_extent;
-// 		copyParams.kind     = cudaMemcpyDeviceToDevice;
-// 		
-// 		cudaMemcpy3D(&copyParams);
-// 		*/
-// 	}
-// }
-
-unsigned int EMData::CudaDeviceEMDataCache::cache_ro_data(const EMData* const emdata, const float* const data,const int nx, const int ny, const int nz) {
+int EMData::CudaDeviceEMDataCache::cache_ro_data(const EMData* const emdata, const float* const data,const int nx, const int ny, const int nz) {
 	
 	const EMData* previous = caller_cache[current_insert_idx];
 	if (previous != 0) {
@@ -263,14 +221,14 @@ unsigned int EMData::CudaDeviceEMDataCache::cache_ro_data(const EMData* const em
 	caller_cache[current_insert_idx] = emdata;
 	ro_cache[current_insert_idx] = array;
 	
-	unsigned int ret = current_insert_idx;
+	int ret = current_insert_idx;
 	current_insert_idx += 1;
 	current_insert_idx %= cache_size; // Potentially inefficient to do this everytime, the alternative is an if statement. Which is faster?
 	return ret;		
 }
 
 
-void  EMData::CudaDeviceEMDataCache::copy_rw_to_ro(const unsigned int idx) {
+void  EMData::CudaDeviceEMDataCache::copy_rw_to_ro(const int idx) {
 	if (rw_cache[idx] == 0) throw UnexpectedBehaviorException("Can not update RO CUDA data: RW data is null.");
 
 	if (ro_cache[idx] != 0)  {
@@ -287,7 +245,34 @@ void  EMData::CudaDeviceEMDataCache::copy_rw_to_ro(const unsigned int idx) {
 	ro_cache[idx] = array;
 }
 
-void EMData::CudaDeviceEMDataCache::clear_item(const unsigned int idx) {
+void  EMData::CudaDeviceEMDataCache::copy_ro_to_rw(const int idx) {
+	if (ro_cache[idx] == 0) throw UnexpectedBehaviorException("Can not update RW CUDA data: RO data is null.");
+
+	if (rw_cache[idx] != 0)  {
+		cudaFree(rw_cache[idx]);
+		rw_cache[idx] = 0;
+	}
+
+	const EMData* d = caller_cache[idx];
+	int nx = d->get_xsize();
+	int ny = d->get_ysize();
+	int nz = d->get_zsize();
+	size_t num_bytes = nx*ny*nz*sizeof(float);
+	
+	float* cuda_rw_data = alloc_rw_data(nx,ny,nz);
+	
+	if (nz > 1) {
+		
+	} else if ( ny > 1 ) {
+		cudaMemcpyFromArray(cuda_rw_data,ro_cache[idx],0,0,num_bytes,cudaMemcpyDeviceToDevice);
+		
+	} else throw UnexpectedBehaviorException("Cuda infrastructure has not been designed to work on 1D data");
+	
+	
+	rw_cache[idx] = cuda_rw_data;
+}
+
+void EMData::CudaDeviceEMDataCache::clear_item(const int idx) {
 	float** pointer_to_cuda_pointer = &rw_cache[idx];
 	if  ( (*pointer_to_cuda_pointer) != 0) {
 		cudaFree(*pointer_to_cuda_pointer);
@@ -303,13 +288,7 @@ void EMData::CudaDeviceEMDataCache::clear_item(const unsigned int idx) {
 	caller_cache[idx] = 0;
 	
 }
-/*
-int EMData::CudaDeviceEMDataCache::copy_ro_to_rw_data(const unsigned int idx)
-{
-	return 0;
-	//float** pointer_to_cuda_pointer = &rw_cache[idx];
-	
-}*/
+
 
 
 #endif //EMAN2_USING_CUDA
