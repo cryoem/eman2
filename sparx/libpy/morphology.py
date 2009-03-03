@@ -316,7 +316,7 @@ def defocus_L2_euc(v1,v2, ist,istp):
 		dis+=    (v1[i]-v2[2])**2
 		pw_sum+= (v1[i])**2
 	if pw_sum <= 0:		ERROR("negative or zero power ", "defocus_L2_euc", 1)
-	if dis    <= 0:		ERROR("bad fitting, change opitons and do it again  ", "defocus_L2_euc", 0)
+	if dis    <= 0:		ERROR("bad fitting, change options settings and try again  ", "defocus_L2_euc", 0)
 	else:	
 		res = sqrt(dis)/sqrt(pw_sum)/tfeq	
 		return res
@@ -700,7 +700,7 @@ def imf_params_cl1(pw,n=2,iswi=3,Pixel_size=1):
 		3. original power spectrum to be fitted
 		4. The parameters
 		Attension:
-		      iswi= 2 using polynomial n rank to fit no-Gaussian envelope function
+		        iswi= 2 using polynomial n rank to fit no-Gaussian envelope function
 			iswi =3 using polynomail n rank to fit background
 			n = the polynomial rank +1
 			The optimization tend to fail when the polynomial rank is higher than 6 
@@ -724,7 +724,7 @@ def imf_params_cl1(pw,n=2,iswi=3,Pixel_size=1):
 	res.append(pw  )
 	res.append(parm)	
 	return res
-			
+
 def imf_get_1dpw_list(fstr):
 	pw   = []
 	data = read_spider_doc(fstr)
@@ -814,7 +814,7 @@ def imf_fit_pu(res_P, x, ctf_params, pu, C, B, q, w):
 	res.append(pu)
 	res.append(xopt[0])
 	return res
-	
+
 def imf_residuals_pu(p,y,pu,x):
 	"""
 		fit B-factor in case of considering CTF effect
