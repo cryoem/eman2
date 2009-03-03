@@ -17,7 +17,7 @@ int delete_cuda_array(const int idx);
 
 /** Texture binding
  */
-void bind_cuda_texture(const int);
+void cuda_bind_texture(const int);
 
 
 /** A struct for passing EMData objects to and from things like processors
@@ -34,9 +34,11 @@ int* calc_max_location_wrap_cuda(const EMDataForCuda* data, const int maxdx, con
 
 void cut_slice_cuda_(const EMDataForCuda* data,const float* const);
 
-cudaArray* get_cuda_arrary_host(const float * const data,const int nx, const int ny, const int nz);
+cudaArray* get_cuda_array_host(const float * const data,const int nx, const int ny, const int nz);
 
-cudaArray* get_cuda_arrary_device(const float * const data,const int nx, const int ny, const int nz);
+cudaArray* get_cuda_array_device(const float * const data,const int nx, const int ny, const int nz);
+
+void bind_cuda_array_to_texture( const cudaArray* const array, const unsigned int ndims);
 
 #endif // eman__cuda_util_h__
 

@@ -43,17 +43,6 @@ from optparse import OptionParser
 
 IS_TEST_EXCEPTION = False
 
-class TestEMDataCuda(unittest.TestCase):
-	"""this is the unit test that verifies the CUDA functionality of the EMData class"""
-	
-	def test_cuda_conversion(self):
-		"""test cuda conversion ..........................."""
-		a = test_image(0,size=(32,32))
-		#a.mult_cuda(1.0)
-		
-		
-
-
 class TestEMData(unittest.TestCase):
     """this is the unit test for EMData class"""
     
@@ -3343,24 +3332,18 @@ class TestEMData(unittest.TestCase):
         self.assertAlmostEqual(img.get_attr('origin_sec'), 3.0, 3)
 
 def test_main():
-    p = OptionParser()
-    p.add_option('--t', action='store_true', help='test exception', default=False )
-    global IS_TEST_EXCEPTION
-    opt, args = p.parse_args()
-    if opt.t:
-        IS_TEST_EXCEPTION = True
-    Log.logger().set_level(-1)  #perfect solution for quenching the Log error information, thank Liwei
-    if EMUtil.cuda_available():
-    	suite = unittest.TestLoader().loadTestsFromTestCase(TestEMData)
-    	suite2 = unittest.TestLoader().loadTestsFromTestCase(TestEMDataCuda)
-    	unittest.TextTestRunner(verbosity=2).run(suite2)
-    	unittest.TextTestRunner(verbosity=2).run(suite)
-    else:
-    	suite = unittest.TestLoader().loadTestsFromTestCase(TestEMData)
-        unittest.TextTestRunner(verbosity=2).run(suite)
-    testlib.safe_unlink('mydb2')
-    testlib.safe_unlink('mydb1')
-    testlib.safe_unlink('mydb')
+	p = OptionParser()
+	p.add_option('--t', action='store_true', help='test exception', default=False )
+	global IS_TEST_EXCEPTION
+	opt, args = p.parse_args()
+	if opt.t:
+		IS_TEST_EXCEPTION = True
+	Log.logger().set_level(-1)  #perfect solution for quenching the Log error information, thank Liwei
+	suite = unittest.TestLoader().loadTestsFromTestCase(TestEMData)
+	unittest.TextTestRunner(verbosity=2).run(suite)
+	testlib.safe_unlink('mydb2')
+	testlib.safe_unlink('mydb1')
+	testlib.safe_unlink('mydb')
 
 if __name__ == '__main__':
     test_main()

@@ -11,7 +11,7 @@
 texture<float, 3, cudaReadModeElementType> tex;
 texture<float, 2, cudaReadModeElementType> tex2d;
 
-void cuda_bind_texture_3d(texture<float, 3, cudaReadModeElementType> &tex,cudaArray *array) {
+void cuda_bind_texture_3d(texture<float, 3, cudaReadModeElementType> &tex,const cudaArray * const array) {
 	tex.normalized = 0;
 	tex.filterMode = cudaFilterModeLinear;
 	tex.addressMode[0] = cudaAddressModeClamp;
@@ -21,7 +21,7 @@ void cuda_bind_texture_3d(texture<float, 3, cudaReadModeElementType> &tex,cudaAr
 	cudaBindTextureToArray(tex, array);
 }
 
-void cuda_bind_texture_2d(texture<float, 2, cudaReadModeElementType> &tex,cudaArray *array) {
+void cuda_bind_texture_2d(texture<float, 2, cudaReadModeElementType> &tex, const cudaArray * const array) {
 	tex.normalized = 0;
 	tex.filterMode = cudaFilterModeLinear;
 	tex.addressMode[0] = cudaAddressModeClamp;
@@ -91,7 +91,7 @@ int make_cuda_array_space_0_free() {
 	return 0;
 }
 
-cudaArray* get_cuda_arrary(const float * const data,const int nx, const int ny, const int nz, const cudaMemcpyKind mem_cpy_flag)
+cudaArray* get_cuda_array(const float * const data,const int nx, const int ny, const int nz, const cudaMemcpyKind mem_cpy_flag)
 {
 	cudaArray *array = 0;
 	cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<float>();
@@ -117,14 +117,14 @@ cudaArray* get_cuda_arrary(const float * const data,const int nx, const int ny, 
 }
 
 
-cudaArray* get_cuda_arrary_device(const float * const data,const int nx, const int ny, const int nz)
+cudaArray* get_cuda_array_device(const float * const data,const int nx, const int ny, const int nz)
 {
-	return get_cuda_arrary(data,nx,ny,nz,cudaMemcpyDeviceToDevice);
+	return get_cuda_array(data,nx,ny,nz,cudaMemcpyDeviceToDevice);
 }
 
-cudaArray* get_cuda_arrary_host(const float * const data,const int nx, const int ny, const int nz)
+cudaArray* get_cuda_array_host(const float * const data,const int nx, const int ny, const int nz)
 {
-	return get_cuda_arrary(data,nx,ny,nz,cudaMemcpyHostToDevice);
+	return get_cuda_array(data,nx,ny,nz,cudaMemcpyHostToDevice);
 }
 
 
@@ -152,7 +152,7 @@ int get_cuda_array_handle(const float * data,const int nx, const int ny, const i
 	c->ny = ny;
 	c->nz = nz;
 	
-	cudaArray *array = get_cuda_arrary_device(data,nx,ny,nz);
+	cudaArray *array = get_cuda_array_device(data,nx,ny,nz);
 	
 	c->array = array;
 	if (num_cuda_arrays != max_cuda_arrays) num_cuda_arrays++;
@@ -181,7 +181,7 @@ int delete_cuda_array(const int idx) {
 
 // highly specialized, use cautiously
 
-void bind_cuda_texture(const int idx) {
+void cuda_bind_texture(const int idx) {
 	CudaEMDataArray* c = &cuda_arrays[idx];
 	if (c->nz > 1) {
 		cuda_bind_texture_3d(tex,cuda_arrays[idx].array);
@@ -191,20 +191,35 @@ void bind_cuda_texture(const int idx) {
 	//printf("Done bind\n");
 }
 
+void bind_cuda_array_to_texture( const cudaArray* const array, const unsigned int ndims) {
+	if (ndims == 3) {
+		cuda_bind_texture_3d(tex,array);
+	} else if ( ndims == 2) {
+		cuda_bind_texture_2d(tex2d,array);
+	} else throw;
+	//printf("Done bind\n");
+}
+
 void device_init() {
 	static bool init = true;
 	
 	if (init) {
 		int deviceCount;
-		CUDA_SAFE_CALL(cudaGetDeviceCount(&deviceCount));
-		printf("%d CUDA devices detected\n",deviceCount);
-		if (deviceCount == 0) exit(1);
+		cudaGetDeviceCount(&deviceCount);
+		
+		if (deviceCount == 0) throw;
+		
+		if (deviceCount > 1) {
+			printf("%d CUDA devices detected\n",deviceCount);
+		} else { // must be one
+			printf("1 CUDA device detected\n");
+		}
 		
 		cudaDeviceProp deviceProp;
-		CUDA_SAFE_CALL(cudaGetDeviceProperties(&deviceProp, 0));
+		cudaGetDeviceProperties(&deviceProp, 0);
 		if (deviceProp.major < 1) exit(2);
 		
-		CUDA_SAFE_CALL(cudaSetDevice(0));
+		cudaSetDevice(0);
 		init_cuda_emdata_arrays();
 		init_cuda_fft_hh_plan_cache(); // should only be performed if the host is using Cuda ffts, which is unlikey. Will do after development has progressed.
 		init_cuda_fft_dd_plan_cache();

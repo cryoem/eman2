@@ -198,7 +198,7 @@ float* EMData::get_data() const
 		rdata = (float*)EMUtil::em_malloc(num_bytes);
 	}
 #ifdef EMAN2_USING_CUDA
-	if (cuda_pointer_handle != -1 && (EMDATA_CPU_NEEDS_UPDATE & flags)) {
+	if (gpu_rw_is_current() && (EMDATA_CPU_NEEDS_UPDATE & flags)) {
 		cudaMemcpy(rdata,get_cuda_data(),num_bytes,cudaMemcpyDeviceToHost);
 	}
 	
@@ -697,9 +697,9 @@ void EMData::set_size_cuda(int x, int y, int z)
 		throw InvalidValueException(z, "z size <= 0");
 	}
 
-	if (cuda_pointer_handle!=-1) {
-		cuda_rw_cache.clear_item(cuda_pointer_handle);
-		cuda_pointer_handle = -1;
+	if (cuda_cache_handle!=-1) {
+		cuda_cache.clear_item(cuda_cache_handle);
+		cuda_cache_handle = -1;
 	}
 	nx = x;
 	ny = y;
@@ -711,7 +711,7 @@ void EMData::set_size_cuda(int x, int y, int z)
 	attr_dict["ny"] = y;
 	attr_dict["nz"] = z;
 	
-	cuda_pointer_handle = cuda_rw_cache.cache_data(this,rdata,nx,ny,nz);
+// 	cuda_cache_handle = cuda_rw_cache.cache_data(this,rdata,nx,ny,nz); Let's be lazy
 	
 	//free_memory(); // Now release CPU memory, seeing as a GPU resize invalidates it - Actually let's be lazy about it instead
 	

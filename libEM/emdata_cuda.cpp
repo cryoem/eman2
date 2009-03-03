@@ -42,36 +42,40 @@
 
 using namespace EMAN;
 // Static init
-EMData::CudaDeviceEMDataCache EMData::cuda_rw_cache(100);
+EMData::CudaDeviceEMDataCache EMData::cuda_cache(100);
 
 float* EMData::get_cuda_data() const {
-	if (cuda_pointer_handle==-1 || EMDATA_GPU_NEEDS_UPDATE & flags) {
-		if (cuda_pointer_handle != -1 && !(EMDATA_GPU_RO_NEEDS_UPDATE & flags ) ) {
+	if (cuda_cache_handle==-1 || EMDATA_GPU_NEEDS_UPDATE & flags) {
+		if (cuda_cache_handle != -1 && !(EMDATA_GPU_RO_NEEDS_UPDATE & flags ) ) {
 			throw;
-			cuda_rw_cache.copy_ro_to_rw_data(cuda_pointer_handle);
+// 			cuda_cache.copy_ro_to_rw_data(cuda_cache_handle);
 		}
-		cuda_pointer_handle = cuda_rw_cache.cache_data(this,rdata,nx,ny,nz);
+		cuda_cache_handle = cuda_cache.cache_rw_data(this,rdata,nx,ny,nz);
 		flags &= ~EMDATA_GPU_NEEDS_UPDATE;
 	}
-	return cuda_rw_cache.get_rw_data(cuda_pointer_handle);
+	return cuda_cache.get_rw_data(cuda_cache_handle);
 }
 
-void EMData::bind_cuda_array() {
-	if (cuda_array_handle==-1|| EMDATA_GPU_RO_NEEDS_UPDATE & flags) {
-		if (cuda_array_handle!=-1)  {
-			delete_cuda_array(cuda_array_handle);
-			
+bool EMData::gpu_rw_is_current() const {
+	if (cuda_cache_handle !=-1 || !(EMDATA_GPU_NEEDS_UPDATE & flags)) return cuda_cache.has_rw_data(cuda_cache_handle);
+	else return false;
+}
+
+void EMData::bind_cuda_texture() {
+	if (cuda_cache_handle==-1 || EMDATA_GPU_RO_NEEDS_UPDATE & flags) {
+		if (cuda_cache_handle !=- 1)  {
+			cuda_cache.copy_rw_to_ro(cuda_cache_handle);
+		} else {
+			cuda_cache_handle = cuda_cache.cache_ro_data(this,rdata,nx,ny,nz);
 		}
-		cuda_array_handle = get_cuda_array_handle(get_cuda_data(),nx,ny,nz,this);
-		
 		flags &= ~EMDATA_GPU_RO_NEEDS_UPDATE;
 	}
-	bind_cuda_texture(cuda_array_handle);
+	bind_cuda_array_to_texture(cuda_cache.get_ro_data(cuda_cache_handle),cuda_cache.get_ndim(cuda_cache_handle));
 }
 
 void EMData::cuda_cache_lost_imminently() const {
 	get_data(); // This causes cuda memory to be copied to cpu memory
-	cuda_pointer_handle = -1;
+	cuda_cache_handle = -1;
 }
 
 void EMData::gpu_update() {
@@ -124,9 +128,9 @@ void EMData::free_cuda_array() const {
 }
 
 void EMData::free_cuda_memory() const {
-	if (cuda_pointer_handle!=-1) {
-		cuda_rw_cache.clear_item(cuda_pointer_handle);
-		cuda_pointer_handle = -1;
+	if (cuda_cache_handle!=-1) {
+		cuda_cache.clear_item(cuda_cache_handle);
+		cuda_cache_handle = -1;
 	}
 }
 
@@ -166,7 +170,7 @@ EMData::CudaDeviceEMDataCache::~CudaDeviceEMDataCache()
 	}
 }
 
-unsigned int EMData::CudaDeviceEMDataCache::cache_data(const EMData* const emdata, const float* const data,const int nx, const int ny, const int nz)
+unsigned int EMData::CudaDeviceEMDataCache::cache_rw_data(const EMData* const emdata, const float* const data,const int nx, const int ny, const int nz)
 {
 	const EMData* previous = caller_cache[current_insert_idx];
 	if (previous != 0) {
@@ -210,39 +214,40 @@ float* EMData::CudaDeviceEMDataCache::alloc_rw_data(const int nx, const int ny, 
 	
 }
 
-float* EMData::CudaDeviceEMDataCache::get_rw_data(const unsigned int idx) {
-	if (rw_cache[idx] != 0) return rw_cache[idx]; // This is a common case
 
-	// If there is no current copy of the rw data then the ro should definitely exist - that is the only way the EMData object should have the slot index (idx);
-	if (ro_cache[idx] == 0) throw UnexpectedBehaviorException("The CUDA read write data was requested, it was 0, so there was an attempt to copy the CUDA RO data, but this was 0.");
-	
-	const EMData* d = caller_cache[idx];
-	int nx = d->get_xsize();
-	int ny = d->get_ysize();
-	int nz = d->get_zsize();
-	
-	rw_cache[idx] = alloc_rw_data(nx,ny,nz);
-	
-	if (nz == 1) {
-		cudaMemcpyFromArray(rw_cache[idx], ro_cache[idx], nx,ny, nx*ny*sizeof(float), cudaMemcpyDeviceToDevice);
-	} else if (nz > 1) {
-		throw;
-		/*
-		cudaExtent ca_extent;
-		ca_extent.width  = nx;
-		ca_extent.height = ny;
-		ca_extent.depth  = nz;
-		
-		cudaMemcpy3DParms copyParams = {0};
-		copyParams.srcArray   = ro_cache[idx];
-		copyParams.dstPtr = rw_cache[idx];
-		copyParams.extent   = ca_extent;
-		copyParams.kind     = cudaMemcpyDeviceToDevice;
-		
-		cudaMemcpy3D(&copyParams);
-		*/
-	}
-}
+// float* EMData::CudaDeviceEMDataCache::get_rw_data(const unsigned int idx) {
+// 	if (rw_cache[idx] != 0) return rw_cache[idx]; // This is a common case
+// 
+// 	// If there is no current copy of the rw data then the ro should definitely exist - that is the only way the EMData object should have the slot index (idx);
+// 	if (ro_cache[idx] == 0) throw UnexpectedBehaviorException("The CUDA read write data was requested, it was 0, so there was an attempt to copy the CUDA RO data, but this was 0.");
+// 	
+// 	const EMData* d = caller_cache[idx];
+// 	int nx = d->get_xsize();
+// 	int ny = d->get_ysize();
+// 	int nz = d->get_zsize();
+// 	
+// 	rw_cache[idx] = alloc_rw_data(nx,ny,nz);
+// 	
+// 	if (nz == 1) {
+// 		cudaMemcpyFromArray(rw_cache[idx], ro_cache[idx], nx,ny, nx*ny*sizeof(float), cudaMemcpyDeviceToDevice);
+// 	} else if (nz > 1) {
+// 		throw;
+// 		/*
+// 		cudaExtent ca_extent;
+// 		ca_extent.width  = nx;
+// 		ca_extent.height = ny;
+// 		ca_extent.depth  = nz;
+// 		
+// 		cudaMemcpy3DParms copyParams = {0};
+// 		copyParams.srcArray   = ro_cache[idx];
+// 		copyParams.dstPtr = rw_cache[idx];
+// 		copyParams.extent   = ca_extent;
+// 		copyParams.kind     = cudaMemcpyDeviceToDevice;
+// 		
+// 		cudaMemcpy3D(&copyParams);
+// 		*/
+// 	}
+// }
 
 unsigned int EMData::CudaDeviceEMDataCache::cache_ro_data(const EMData* const emdata, const float* const data,const int nx, const int ny, const int nz) {
 	
@@ -252,7 +257,7 @@ unsigned int EMData::CudaDeviceEMDataCache::cache_ro_data(const EMData* const em
 		clear_item(current_insert_idx);
 	}
 		
-	cudaArray *array = get_cuda_arrary_host(data,nx,ny,nz);
+	cudaArray *array = get_cuda_array_host(data,nx,ny,nz);
 	
 	rw_cache[current_insert_idx] = 0;
 	caller_cache[current_insert_idx] = emdata;
@@ -265,22 +270,46 @@ unsigned int EMData::CudaDeviceEMDataCache::cache_ro_data(const EMData* const em
 }
 
 
+void  EMData::CudaDeviceEMDataCache::copy_rw_to_ro(const unsigned int idx) {
+	if (rw_cache[idx] == 0) throw UnexpectedBehaviorException("Can not update RO CUDA data: RW data is null.");
+
+	if (ro_cache[idx] != 0)  {
+		cudaFreeArray(ro_cache[idx]);
+		ro_cache[idx] = 0;
+	}
+	
+	const EMData* d = caller_cache[idx];
+	int nx = d->get_xsize();
+	int ny = d->get_ysize();
+	int nz = d->get_zsize();
+	
+	cudaArray *array = get_cuda_array_device(rw_cache[idx],nx,ny,nz);
+	ro_cache[idx] = array;
+}
+
 void EMData::CudaDeviceEMDataCache::clear_item(const unsigned int idx) {
 	float** pointer_to_cuda_pointer = &rw_cache[idx];
 	if  ( (*pointer_to_cuda_pointer) != 0) {
 		cudaFree(*pointer_to_cuda_pointer);
-	} 
+	}
 	*pointer_to_cuda_pointer = 0;
+	
+	cudaArray** pointer_to_cuda_ro = &ro_cache[idx];
+	if  ( (*pointer_to_cuda_ro) != 0) {
+		cudaFreeArray(*pointer_to_cuda_ro);
+	}
+	*pointer_to_cuda_ro = 0;
+	
 	caller_cache[idx] = 0;
 	
 }
-
+/*
 int EMData::CudaDeviceEMDataCache::copy_ro_to_rw_data(const unsigned int idx)
 {
 	return 0;
 	//float** pointer_to_cuda_pointer = &rw_cache[idx];
 	
-}
+}*/
 
 
 #endif //EMAN2_USING_CUDA
