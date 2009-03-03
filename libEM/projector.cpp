@@ -990,6 +990,7 @@ EMData *CudaStandardProjector::project3d(EMData * image) const
 	EMDataForCuda tmp = e->get_data_struct_for_cuda();
 	standard_project(m,&tmp);
 	delete [] m;
+	e->set_attr("xform.projection",t3d);
 	e->gpu_update();
 	return e;
 }

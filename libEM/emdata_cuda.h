@@ -36,6 +36,12 @@
 
 public:
 
+	/** Bind either a 2D or a 3D global scope CUDA texture which may be accessed using tex3D/tex2D
+	 * Automatically binds to the correct dimensionality using the dimenisons of this EMData object
+	 * Presently the 3D texture is called "tex" and the 2D texture is called "tex2d", these are currently
+	 * defined in cuda_util.cu. The number of available textures and naming is likely to change
+	 * to accommodate the need for accessing many textures using a single kernel
+	 */
 	void bind_cuda_texture();
 	
 	/** Get the cuda device pointer to the raw data
@@ -75,8 +81,18 @@ public:
 	
 	
 private:
-	
+	/** Check whether the CUDA-cached read-write version of the data pointer is current
+	 * Used to double check before copying the cuda rw data. It might be the case that the
+	 * cuda_cache_handle is non-zero but that the cuda rw is actually not available.
+	 * @return true or false
+	 */
 	bool gpu_rw_is_current() const;
+	
+	/** Check whether the CUDA-cached read-only version of the data pointer is current
+	 * Used to double check before copying the cuda ro data. It might be the case that the
+	 * cuda_cache_handle is non-zero but that the cuda ro is actually not available.
+	 * @return true or false
+	 */
 	bool gpu_ro_is_current() const;
 	
 	/** Free CUDA memory
@@ -86,13 +102,23 @@ private:
 	/// A handle which may used to retrieve the device float pointer from the CudaDeviceEMDataCache using its [] operator
 	mutable int cuda_cache_handle;
 	
-	/** CudaDeviceEMDataCache stores the CUDA device pointers of EMData objects
+	/** CudaDeviceEMDataCache stores the CUDA device pointers and cudaArray pointers associated with EMData objects
+	 * The cudaArray pointers may be bound to CUDA textures and used as read only memory. They are sometimes referred to as read-only or ro data.
+	 * The cuda device pointers may be used for general GPU applications. They are sometimes referred to as read-write or rw data.
 	 * This is a "snake cache" that eats its own tail once the available slots are all taken. 
 	 * In the event of a random slot becoming free it is simply left that way, waiting empty until the snake head devours it.
 	 * @author David Woolford
 	 * @date February 2009
 	*/
 	class CudaDeviceEMDataCache {
+		/** Class EMData is a friend to reflect the tight coupling of these two classes
+		 * The EMData's use of this class' protected functions is somewhat specialized -
+		 * It is presently hard to envisage any other class calling these functions directly. 
+		 * It could be possible to move some of the code in EMData::get_cuda_data
+		 * and EMData::bind_cuda_texture into this object, however it remains as is because
+		 * most of that code is based on the EMData.flags member variable.
+		 */
+		friend class EMData;
 	public:
 		/** Constructor
 		 * @param size the size of the cache
@@ -102,30 +128,50 @@ private:
 		/** Destructor, frees any non zero CUDA memory 
 		 */
 		~CudaDeviceEMDataCache();
+	protected:
 		
-		/** Cache the data of the EMData and return in index reflecting its position in the cache
+		/** Cache a read-write (CUDA device pointer) version of the  data and return an index reflecting its position in the cache
 		 * @param emdata the EMData object making the call
 		 * @param data the raw data pointer of the EMData object which is making the call
 		 * @param nx the length of the x dimension of the raw data pointer
 		 * @param ny the length of the y dimension of the raw data pointer
 		 * @param nz the length of the z dimension of the raw data pointer
-		 * @return the index of the cached CUDA device pointer, as stored by this object
+		 * @return the index which can be used to retrieve the CUDA device pointer using get_rw_data
 		 */
 		int cache_rw_data(const EMData* const emdata, const float* const data,const int nx, const int ny, const int nz);
 		
+		/** Cache a read-only (cudaArray) version of the  data and return an index reflecting its position in the cache
+		 * @param emdata the EMData object making the call
+		 * @param data the raw data pointer of the EMData object which is making the call
+		 * @param nx the length of the x dimension of the raw data pointer
+		 * @param ny the length of the y dimension of the raw data pointer
+		 * @param nz the length of the z dimension of the raw data pointer
+		 * @return the index which can be used to retrieve the CUDA device pointer using get_ro_data
+		 */
 		int cache_ro_data(const EMData* const emdata, const float* const data,const int nx, const int ny, const int nz);
 		
-		/** Operator[] access to the cache
-		 * Should be called using the return value of the cache_data function
-		 * @param idx the index of the stored CUDA device pointer
-		 * @return a CUDA device float pointer
+		/** Get the read-write (CUDA device) pointer from a specific location in the cache
+		 * @param idx the index used to retrieve the cached data
+		 * @return a CUDA device pointer that may be used for reading and writing
 		 */
-		inline float* operator[](const int idx) const { return rw_cache[idx]; }
-		
 		inline float* get_rw_data(const int idx) const { return rw_cache[idx]; }
+		
+		/** Get the read-only (cudaArray) pointer from a specific location in the cache
+		 * @param idx the index used to retrieve the cached data
+		 * @return a cudaArray pointer that may be used for binding a CUDA texture
+		 */
 		inline cudaArray* get_ro_data(const int idx) const { return ro_cache[idx]; }
 		
+		/** Check whether the cache has read-write (CUDA device) data at the given index
+		 * @param idx the cache index that will be checked
+		 * @return true or false
+		 */
 		inline bool has_rw_data(const int idx) const { return (rw_cache[idx] != 0); }
+		
+		/** Check whether the cache has read-only (cudaArray) data at the given index
+		 * @param idx the cache index that will be checked
+		 * @return true or false
+		 */
 		inline bool has_ro_data(const int idx) const { return (ro_cache[idx] != 0); }
 		
 		/** Clear a cache slot at a given index
@@ -134,19 +180,34 @@ private:
 		 */
 		void clear_item(const int idx);
 		
-		/** Clear the rw data from a cache slot whilst simultaneously determining the current ro data is up to date
+		/** Copy the read-write data to the read-only data at the given cache index
+		 * This function is used by the EMData object when it knows the read-write data is present and up to date
+		 * Deletes the old read-only data
+		 *  @param idx the cache index defining where the copying operation will occur
 		 */
-// 		int copy_ro_to_rw_data(const int idx);
-		
-		
 		void copy_rw_to_ro(const int idx);
+		
+		/** Copy the read-only data to the read-write data at the given cache index
+		 * This function is used by the EMData object when it knows the read-only data is present and up to date
+		 * Deletes the old read-write data
+		 *  @param idx the cache index defining where the copying operation will occur
+		 */
 		void copy_ro_to_rw(const int idx);
 		
+		/** Get the number of dimensions of the EMData object the is associated with a specific cached object
+		  * @param idx the cache index
+		  * @return the dimensionality of the EMData object that is associated with the cached data 
+		  */
 		inline int get_ndim(const int idx) {
 			return caller_cache[idx]->get_ndim();
 		}
 	private:
-		
+		/** Allocate a CUDA device pointer using cudaMalloc
+		 * @param nx the length of the x dimension
+		 * @param ny the length of the y dimension
+		 * @param nz the length of the z dimension
+		 * @return the cuda malloced device pointer
+		 */
 		float* alloc_rw_data(const int nx, const int ny, const int nz);
 		
 		/// The size of the cache
