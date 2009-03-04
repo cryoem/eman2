@@ -51,7 +51,7 @@ def main():
 	parser.add_option("--max_run",        type="int",          default=50,        help="Maximum number of runs (default 50)")
 	parser.add_option("--th_nobj",        type="int",          default=10,        help="Cleanning threshold, classes with number of images < th_nobj are removed (default 10) ")
 	parser.add_option("--th_stab_max",    type="float",        default=6.0,       help="Stability threshold where K stop to decrease (default 6.0)")
-	parser.add_option("--th_stab_min",    type="float",        default=3.0,       help="Stability threshold required to start the next run in percent (default 3.0)")
+	parser.add_option("--th_stab_min",    type="float",        default=0.0,       help="Stability threshold required to start the next run in percent (default 3.0)")
 	parser.add_option("--min_dec_K",      type="int",          default=5,         help="Minimum decrement value to K when the stability is to low (default 5)")
 	parser.add_option("--restart",        type="int",          default=1,         help="Restart run n from a previous one, means start without init the header and read the current (default 1)")
 	parser.add_option("--MPI",            action="store_true", default=False,     help="MPI version")
