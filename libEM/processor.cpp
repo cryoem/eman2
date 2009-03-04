@@ -93,6 +93,7 @@ template <> Factory < Processor >::Factory()
 	force_add(&LogProcessor::NEW);
 
 	force_add(&PaintProcessor::NEW);
+	force_add(&WatershedProcessor::NEW);
 	force_add(&MaskSharpProcessor::NEW);
 	force_add(&MaskEdgeMeanProcessor::NEW);
 	force_add(&MaskNoiseProcessor::NEW);
@@ -754,6 +755,143 @@ void PaintProcessor::process_inplace(EMData *image) {
 		}
 	}
 	image->update();
+}
+
+void WatershedProcessor::process_inplace(EMData * image) {
+	vector<float> xpoints = params["xpoints"];
+	vector<float> ypoints = params["ypoints"];
+	vector<float> zpoints = params["zpoints"];
+	
+	vector<int> x(xpoints.begin(),xpoints.end());
+	vector<int> y(ypoints.begin(),ypoints.end());
+	vector<int> z(zpoints.begin(),zpoints.end());
+	
+	
+	// throw if vector lengths are unequal
+	
+	float maxval = image->get_attr("maximum");
+	/*
+	for(unsigned int i = 0; i < xpoints.size(); ++i) {
+		float val = image->get_value_at(x[i],y[i],z[i]);
+		if (val > maxval) {
+			maxval = val;
+		}
+	}*/
+	
+	float minval = params["minval"];
+	
+	EMData* mask = new EMData(*image);
+	mask->to_zero();
+	
+	// Set the original mask values
+	for(unsigned int i = 0; i < xpoints.size(); ++i) {
+		mask->set_value_at(x[i],y[i],z[i],i+1);
+	}
+	
+	int dis = 100;
+	float dx = (maxval-minval)/((float) dis - 1);
+	
+	
+	for(int i = 0; i < dis; ++i) {
+		float val = maxval-i*dx;
+		
+		for(unsigned int j = 0; j < xpoints.size(); ++j) {
+			Vec3i coord(x[j],y[j],z[j]);
+			vector<Vec3i> region;
+			region.push_back(coord);
+			vector<Vec3i> find_region_input = region;
+			while (true) {
+				vector<Vec3i> v = find_region(mask,find_region_input, j+1, region);
+				if (v.size() == 0 ) break;
+				else find_region_input = v;
+			}
+			while( true ) {
+				vector<Vec3i> tmp(region.begin(),region.end());
+				region.clear();
+				for(vector<Vec3i>::const_iterator it = tmp.begin(); it != tmp.end(); ++it ) {
+					vector<Vec3i> tmp2 = watershed(mask, image, val, *it, j+1);
+					copy(tmp2.begin(),tmp2.end(),back_inserter(region));
+				}
+				if (region.size() == 0) break;
+			}
+		}
+	}
+	
+	memcpy(image->get_data(),mask->get_data(),sizeof(float)*image->get_size());
+}
+
+
+vector<Vec3i > WatershedProcessor::find_region(EMData* mask,const vector<Vec3i >& coords, const int mask_value, vector<Vec3i >& region)
+{
+	static vector<Vec3i> two_six_connected;
+	if (two_six_connected.size() == 0) {
+		for(int i = -1; i <= 1; ++i) {
+			for(int j = -1; j <= 1; ++j) {
+				for(int  k = -1; k <= 1; ++k) {
+					if ( j != 0 && i != 0 && k != 0) {
+						two_six_connected.push_back(Vec3i(i,j,k));
+					}
+				}
+			}
+		}
+	}
+	
+	vector<Vec3i> ret;
+	for(vector<Vec3i>::const_iterator it = two_six_connected.begin(); it != two_six_connected.end(); ++it ) {
+		for(vector<Vec3i>::const_iterator it2 = coords.begin(); it2 != coords.end(); ++it2 ) {
+			if  (mask->get_value_at((*it2)[0],(*it2)[1],(*it2)[2]) != mask_value) throw;
+			Vec3i c = (*it)+(*it2);
+			
+			if ( c[0] < 0 || c[0] >= mask->get_xsize()) continue;
+			if ( c[1] < 0 || c[1] >= mask->get_ysize()) continue;
+			if ( c[2] < 0 || c[2] >= mask->get_zsize()) continue;
+			
+			if( mask->get_value_at(c[0],c[1],c[2]) == mask_value ) {
+				if (find(ret.begin(),ret.end(),c) == ret.end()) {
+					if (find(region.begin(),region.end(),c) == region.end()) {
+						region.push_back(c);
+						ret.push_back(c);
+					}
+				}
+			}
+		}
+	}
+	return ret;
+}
+
+vector<Vec3i > WatershedProcessor::watershed(EMData* mask, EMData* image, const float& threshold, const Vec3i& coordinate, const int mask_value)
+{
+	static vector<Vec3i> two_six_connected;
+	if (two_six_connected.size() == 0) {
+		for(int i = -1; i <= 1; ++i) {
+			for(int j = -1; j <= 1; ++j) {
+				for(int  k = -1; k <= 1; ++k) {
+					if ( j != 0 && i != 0 && k != 0) {
+						two_six_connected.push_back(Vec3i(i,j,k));
+					}
+				}
+			}
+		}
+	}
+	
+	if  (mask->get_value_at(coordinate[0],coordinate[1],coordinate[2]) != mask_value) throw;
+	
+	vector<Vec3i> ret;
+	for(vector<Vec3i>::const_iterator it = two_six_connected.begin(); it != two_six_connected.end(); ++it ) {
+		Vec3i c = (*it)+coordinate;
+		
+		if ( c[0] < 0 || c[0] >= image->get_xsize()) continue;
+		if ( c[1] < 0 || c[1] >= image->get_ysize()) continue;
+		if ( c[2] < 0 || c[2] >= image->get_zsize()) continue;
+		
+	//	cout << image->get_value_at(c[0],c[1],c[2] ) << " " << threshold << endl;
+		if( image->get_value_at(c[0],c[1],c[2]) >= threshold && (mask->get_value_at(c[0],c[1],c[2]) == 0 )) {
+			//cout << "Added something " << mask_value << endl;
+			mask->set_value_at(c[0],c[1],c[2], mask_value);
+			ret.push_back(c);
+		}
+	}
+	return ret;
 }
 
 void CircularMaskProcessor::calc_locals(EMData *)

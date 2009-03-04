@@ -4,6 +4,7 @@
 
 /*
  * Author: Tao Ju, 5/16/2007 <taoju@cs.wustl.edu>, code ported by Grant Tang
+ * code extensively modified and optimized by David Woolford
  * Copyright (c) 2000-2006 Baylor College of Medicine
  * 
  * This software is issued under a joint BSD/GNU license. You may use the

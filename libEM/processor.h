@@ -4752,6 +4752,44 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	};
 
 
+	/**'paints' a circle into the image at x,y,z with values inside r1 set to v1, values between r1 and r2 will be set to a
+	 *	value between v1 and v2, and values outside r2 will be unchanged
+	 */
+	class WatershedProcessor:public Processor
+	{
+	  public:
+		virtual void process_inplace(EMData * image);
+		
+		virtual string get_name() const
+		{
+			return "watershed";
+		}
+
+		static Processor *NEW()
+		{
+			return new WatershedProcessor();
+		}
+
+		virtual string get_desc() const
+		{
+			return "Does a watershed"; 
+		}
+
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("xpoints", EMObject::FLOATARRAY,"x coordinates");
+			d.put("ypoints", EMObject::FLOATARRAY,"y coordinates");
+			d.put("zpoints", EMObject::FLOATARRAY,"z coordinates");
+			d.put("minval", EMObject::FLOAT,"min value");
+			return d;
+		}
+	  private:
+		  vector<Vec3i > watershed(EMData* mask, EMData* image, const float& threshold, const Vec3i& cordinate, const int mask_value);
+		  vector<Vec3i > find_region(EMData* mask,const vector<Vec3i >& coords, const int mask_value, vector<Vec3i >& region);
+
+	};
+	
 	/**Sets the structure factor based on a 1D x/y text file.
 	 *@param filename
 	 */

@@ -201,7 +201,7 @@ void set_col(const EMData * data, int col_index);
  */
 inline float get_value_at(int x, int y, int z) const
 {
-	return get_data()[x + y * nx + z * nx*ny];
+	return get_data()[x + y * nx + z * nxy];
 }
 
 		

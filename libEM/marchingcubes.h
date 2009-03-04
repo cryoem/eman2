@@ -64,6 +64,7 @@ namespace EMAN
 	*
 	* This class was not written for general use because- it is designed specifically for
 	* use in conjunction with the MarchingCubes class only. 
+	* @author David Woolford
 	*/
 	template<typename type>
 	class CustomVector
@@ -320,6 +321,51 @@ namespace EMAN
 		CustomVector<float> nn;
 		CustomVector<unsigned int> ff;
 	};
+	
+	/** @author David Woolford
+	 * @date March 2009
+	 */
+//	class CudaMarchingCubes : public Isosurface {
+//		public:
+//			
+//			/** Most commonly used constructor
+//			* calls set_data(em)
+//			* @param em the EMData object to generate triangles and normals for
+//			*/
+//			CudaMarchingCubes(EMData * em);
+//			virtual ~CudaMarchingCubes();
+//			/**
+//			 * Set Isosurface value
+//			 */
+//			virtual void set_surface_value(const float value);
+//			
+//			/** Sets Voxel data for Isosurface implementation
+//			* Calls calculate_min_max_vals which generates the tree of data
+//			* @param data the emdata object to be rendered in 3D
+//			* @exception ImageDimensionException if the image z dimension is 1
+//			*/
+//			void set_data(EMData* data);
+//		
+//			virtual float get_surface_value() const { return _surf_value; }
+//		
+//			/**
+//			 * Set Grid Size
+//			 */
+//			virtual void set_sampling(const int size) {} ;
+//		
+//			virtual int get_sampling() const { return 0; };
+//			
+//			/** Get the number of feasible samplings
+//			*
+//			 */
+//			virtual int get_sampling_range() {return 0; }
+//			
+//			virtual Dict get_isosurface()  { return Dict;} 
+//#ifdef EMAN2_USING_OPENGL
+//			virtual unsigned long get_isosurface_dl(unsigned int) { return 0; };
+//#endif
+//				
+//	}
 	
 	/** A work in progress by David Woolford
 	*/
