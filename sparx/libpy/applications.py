@@ -11043,12 +11043,12 @@ def k_means_groups(stack, out_file, maskname, opt_method, K1, K2, rand_seed, max
 # 2008-12-18 11:43:11
 
 # K-means main stability
-def k_means_stab(stack, outdir, maskname, opt_method, K, npart = 5, CTF = False, F = 0, FK = 0, maxrun = 50, th_nobj = 0, th_stab = 6.0, th_stab_reject = 3.0, th_dec = 5, restart = 1, MPI = False, CUDA = False, bck = False):
+def k_means_stab(stack, outdir, maskname, opt_method, K, npart = 5, CTF = False, F = 0, FK = 0, maxrun = 50, th_nobj = 0, th_stab_max = 6.0, th_stab_min = 3.0, th_dec = 5, restart = 1, MPI = False, CUDA = False, bck = False):
 	if MPI:
-		k_means_stab_MPI(stack, outdir, maskname, opt_method, K, npart, CTF, F, maxrun, th_nobj, th_stab, th_dec, restart, bck)
+		k_means_stab_MPI(stack, outdir, maskname, opt_method, K, npart, CTF, F, FK, maxrun, th_nobj, th_stab_max, th_stab_min, th_dec, restart, bck)
 		return
 	elif CUDA:
-		k_means_stab_CUDA(stack, outdir, maskname, K, npart, F, FK, maxrun, th_nobj, th_stab, th_stab_reject, th_dec, restart, bck)
+		k_means_stab_CUDA(stack, outdir, maskname, K, npart, F, FK, maxrun, th_nobj, th_stab_max, th_stab_min, th_dec, restart, bck)
 		return
 	
 	from utilities 	 import print_begin_msg, print_end_msg, print_msg, file_type
@@ -11153,17 +11153,19 @@ def k_means_stab(stack, outdir, maskname, opt_method, K, npart = 5, CTF = False,
 		logging.info('... Stability: %5.2f %% (%d objects)' % (stb, nb_stb))
 
 		# manage the stability
-		if stb < th_stab:
-			dec = int(K * (stb / 100.0))
-			if dec < th_dec: K -= th_dec
-			else:            K -= dec
-			if K > 1:
-				logging.info('[WARNING] Stability too low, restart the run with K = %d' % K)
-				num_run -= 1
-				continue
-			else:
-				logging.info('[STOP] Not enough number of clusters ')
-				break
+		if stb < th_stab_max:
+			newK = int(float(K) * FK)   # cooling factor on K
+			if (K - newK) < th_dec:
+				K -= th_dec
+			else:   K  = newK
+
+		if K < 2:
+			logging.info('[STOP] Not enough number of clusters')
+			break
+		if stb < th_stab_min:
+			logging.info('[WARNING] Stability too low, restart the run with K = %d' % K)
+			num_run -= 1
+			continue
 
 		# export the stable class averages
 		logging.info('... Export stable class averages: average_stb_run%02d.hdf' % num_run)
@@ -11186,7 +11188,7 @@ def k_means_stab(stack, outdir, maskname, opt_method, K, npart = 5, CTF = False,
 	logging.info('::: END k-means stability :::')
 
 # K-means main stability
-def k_means_stab_CUDA(stack, outdir, maskname, K, npart = 5, F = 0, FK = 0, maxrun = 50, th_nobj = 0, th_stab = 6.0, th_stab_reject = 3.0, th_dec = 5, restart = 1, bck = False):
+def k_means_stab_CUDA(stack, outdir, maskname, K, npart = 5, F = 0, FK = 0, maxrun = 50, th_nobj = 0, th_stab_max = 6.0, th_stab_min = 3.0, th_dec = 5, restart = 1, bck = False):
 	
 	from utilities 	 import print_begin_msg, print_end_msg, print_msg
 	from utilities   import model_blank, get_image, get_im
@@ -11274,7 +11276,6 @@ def k_means_stab_CUDA(stack, outdir, maskname, K, npart = 5, F = 0, FK = 0, maxr
 			INFO = KmeansCUDA.get_info()
 			k_means_cuda_info(INFO)
 
-
 		# end of classification
 		print_end_msg('k-means')
 
@@ -11308,7 +11309,7 @@ def k_means_stab_CUDA(stack, outdir, maskname, K, npart = 5, F = 0, FK = 0, maxr
 		logging.info('... Stability: %5.2f %% (%d objects)' % (stb, nb_stb))
 
 		# manage the stability
-		if stb < th_stab:
+		if stb < th_stab_max:
 			newK = int(float(K) * FK)   # cooling factor on K
 			if (K - newK) < th_dec:
 				K -= th_dec
@@ -11317,7 +11318,7 @@ def k_means_stab_CUDA(stack, outdir, maskname, K, npart = 5, F = 0, FK = 0, maxr
 		if K < 2:
 			logging.info('[STOP] Not enough number of clusters')
 			break
-		if stb < th_stab_reject:
+		if stb < th_stab_min:
 			logging.info('[WARNING] Stability too low, restart the run with K = %d' % K)
 			num_run -= 1
 			continue
@@ -11343,7 +11344,7 @@ def k_means_stab_CUDA(stack, outdir, maskname, K, npart = 5, F = 0, FK = 0, maxr
 	logging.info('::: END k-means stability :::')
 
 # K-means main stability
-def k_means_stab_MPI(stack, outdir, maskname, opt_method, K, npart = 5, CTF = False, F = 0, maxrun = 50, th_nobj = 0, th_stab = 6.0, th_dec = 5, restart = 1, bck = False):
+def k_means_stab_MPI(stack, outdir, maskname, opt_method, K, npart = 5, CTF = False, F = 0, FK = 0, maxrun = 50, th_nobj = 0, th_stab_max = 6.0, th_stab_min = 3.0, th_dec = 5, restart = 1, bck = False):
 	from utilities 	 import print_begin_msg, print_end_msg, print_msg, file_type
 	from statistics  import k_means_stab_update_tag, k_means_headlog, k_means_open_unstable_MPI, k_means_stab_gather
 	from statistics  import k_means_cla_MPI, k_means_SSE_MPI, k_means_SA_T0_MPI, k_means_stab_init_tag
@@ -11468,19 +11469,21 @@ def k_means_stab_MPI(stack, outdir, maskname, opt_method, K, npart = 5, CTF = Fa
 		stb = stb.tolist()[0]
 
 		# manage the stability
-		if stb < th_stab:
-			dec = int(K * (stb / 100.0))
-			if dec < th_dec: K -= th_dec
-			else:            K -= dec
-			if K > 1:
-				if myid == main_node: logging.info('[WARNING] Stability too low, restart the run with K = %d' % K)
-				mpi_barrier(MPI_COMM_WORLD)
-				num_run -= 1
-				continue
-			else:
-				if myid == main_node: logging.info('[STOP] Not enough number of clusters ')
-				mpi_barrier(MPI_COMM_WORLD)
-				break
+		if stb < th_stab_max:
+			newK = int(float(K) * FK)   # cooling factor on K
+			if (K - newK) < th_dec:
+				K -= th_dec
+			else:   K  = newK
+
+		if K < 2:
+			if myid == main_node: logging.info('[STOP] Not enough number of clusters')
+			mpi_barrier(MPI_COMM_WORLD)
+			break
+		if stb < th_stab_min:
+			if myid == main_node: logging.info('[WARNING] Stability too low, restart the run with K = %d' % K)
+			mpi_barrier(MPI_COMM_WORLD)
+			num_run -= 1
+			continue
 
 		if myid == main_node:
 			# export the stable class averages
