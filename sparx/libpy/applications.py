@@ -955,7 +955,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		for nim in xrange(image_start, image_end):
 			dummy, dummy, dummy, mirror, dummy = get_params2D(data[nim-image_start])
 			mirror_list[nim+color*nima] = mirror
-		mpi_reduce(mirror_list, nima*number_of_ave, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
+		mirror_list = mpi_reduce(mirror_list, nima*number_of_ave, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
 	
 
 		if key == group_main_node:
@@ -980,6 +980,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					print_msg(msg_string)
 				
 				# Calculate and print the stability information
+				avg_mirror_stable = 0
 				for iii in xrange(number_of_ave-1):
 					for jjj in xrange(iii+1, number_of_ave):
 						mirror_change = 0
@@ -987,7 +988,9 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 							mirror_change += abs(int(mirror_list[iii*nima+nim])-int(mirror_list[jjj*nima+nim]))
 						if mirror_change < 0.5*nima:
 							mirror_change = nima-mirror_change
+						avg_mirror_stable += mirror_change
 						print_msg("The stability between Group %d and Group %d is %f\n"%(iii, jjj, mirror_change/float(nima)))				
+				print_msg("The average mirror stability rate is %f\n"%(avg_mirror_stable/float(nima*(number_of_ave-1)*number_of_ave/2)))
 
 				savg = [tavg.copy()]
 				tavg.write_image(os.path.join(outdir, "avg_before_ali%02d.hdf"%(ipt)), 0)
@@ -995,7 +998,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					img = recv_EMData(isav, isav+200)
 					savg.append(img.copy())
 					Util.add_img(tavg, img)
-					img.write_image("avg_before_ali%02d.hdf"%(ipt), isav)
+					img.write_image(os.path.join(outdir, "avg_before_ali%02d.hdf"%(ipt)), isav)
 				"""
 				for isav in xrange(number_of_ave):
 					savg[isav] = rot_shift2D(savg[isav], randint(0, 360), randint(-2, 2), randint(-2, 2), randint(0,1))
