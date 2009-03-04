@@ -68,7 +68,7 @@ improved with time."""
     SIZE = 96
     NTT = 500
     
-    print 'This could take a few minutes. Please be patient.\n'
+    print 'This could take a few minutes. Please be patient.'
     if options.big:
         SIZE = 100
         NIT = 320
@@ -123,7 +123,6 @@ improved with time."""
     t2 = time.clock()
     
     ti = t2 - t1;
-    print ti
     
     if not options.big and not options.slow and not options.refine:
         print '\nYour machines speed factor = %1.1f\n' % (25000.0 / ti)
