@@ -769,14 +769,14 @@ void WatershedProcessor::process_inplace(EMData * image) {
 	
 	// throw if vector lengths are unequal
 	
-	float maxval = image->get_attr("maximum");
-	/*
+	float maxval = -99999;
+	
 	for(unsigned int i = 0; i < xpoints.size(); ++i) {
 		float val = image->get_value_at(x[i],y[i],z[i]);
 		if (val > maxval) {
 			maxval = val;
 		}
-	}*/
+	}
 	
 	float minval = params["minval"];
 	
@@ -785,10 +785,14 @@ void WatershedProcessor::process_inplace(EMData * image) {
 	
 	// Set the original mask values
 	for(unsigned int i = 0; i < xpoints.size(); ++i) {
-		mask->set_value_at(x[i],y[i],z[i],i+1);
+		try {
+			mask->set_value_at(x[i],y[i],z[i],i+1);
+		} catch (...) {
+			continue;
+		}
 	}
-	
-	int dis = 100;
+	mask->write_image("seeds2.mrc");
+	int dis = 500;
 	float dx = (maxval-minval)/((float) dis - 1);
 	
 	
@@ -828,7 +832,7 @@ vector<Vec3i > WatershedProcessor::find_region(EMData* mask,const vector<Vec3i >
 		for(int i = -1; i <= 1; ++i) {
 			for(int j = -1; j <= 1; ++j) {
 				for(int  k = -1; k <= 1; ++k) {
-					if ( j != 0 && i != 0 && k != 0) {
+					if ( j != 0 || i != 0 || k != 0) {
 						two_six_connected.push_back(Vec3i(i,j,k));
 					}
 				}
@@ -866,7 +870,7 @@ vector<Vec3i > WatershedProcessor::watershed(EMData* mask, EMData* image, const 
 		for(int i = -1; i <= 1; ++i) {
 			for(int j = -1; j <= 1; ++j) {
 				for(int  k = -1; k <= 1; ++k) {
-					if ( j != 0 && i != 0 && k != 0) {
+					if ( j != 0 || i != 0 || k != 0) {
 						two_six_connected.push_back(Vec3i(i,j,k));
 					}
 				}
