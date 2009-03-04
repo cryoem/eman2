@@ -4784,9 +4784,6 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 	mask = model_circle(last_ring, nx, nx)
 
 	if(myid == main_node):
-       		if(file_type(stack) == "bdb"):
-			from EMAN2db import db_open_dict
-			dummy = db_open_dict(stack, True)
 		active = EMUtil.get_all_attributes(stack, 'active')
 		list_of_particles = []
 		for im in xrange(len(active)):
@@ -4813,9 +4810,6 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 		data[im].set_attr('ID', list_of_particles[im])
 
 	if(CTF):
-		parnames = ["defocus", "Cs", "voltage", "Pixel_size", "amp_contrast", "B_factor", "ctf_applied" ]
-		#               0        1        2         3              4              5               6
-		#  ERROR if ctf applied
 		if(data[0].get_attr("ctf_applied") > 0.0):  ERROR("ali3d_m does not work for CTF-applied data","ali3d_m",1)
 		from reconstruction import rec3D_MPI
 	else:
@@ -4826,13 +4820,6 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 		finfo.flush()
 	nima = len(list_of_particles)
 	del list_of_particles
-	if (myid == main_node):
-		# initialize data for the reference preparation function
-		ref_data = []
-		ref_data.append( mask3D )
-		ref_data.append( center )
-		ref_data.append( None )
-		ref_data.append( None )
 
 	total_iter = 0
 	tr_dummy = Transform({"type":"spider"})
@@ -4900,22 +4887,15 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 			if(myid == main_node):
 				volref.write_image(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref)
 		if(myid == main_node):
-			from filter import fit_tanh, filt_tanl
-			flmin = 1.0
-			flmax = -1.0
-			for iref in xrange(numref):
-				fl, aa = fit_tanh( fscc[iref] )
-				if (fl < flmin):
-					flmin = fl
-					aamin = aa
-				if (fl > flmax):
-					flmax = fl
-					aamax = aa
-			# filter to minimum resolution
-			for iref in xrange(numref):
-				filt_tanl(get_im(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref), flmin, aamin).write_image(os.path.join(outdir, "volf%04d.hdf"%( total_iter)), iref)
-					
-			#  here we  write header info
+			from user_functions import ref_ali3dm
+			refdata = [None]*4
+			refdata[0] = numref
+			refdata[1] = outdir
+			refdata[2] = fscc
+			refdata[3] = total_iter
+			ref_ali3dm( refdata )
+
+		#  here we  write header info
 		mpi_barrier(MPI_COMM_WORLD)
 		par_str = ['xform.projection', 'ID']
 	        if myid == main_node:
@@ -8829,16 +8809,17 @@ def ali_vol_2(vol, refv, ang_scale, shift_scale, radius=None, discrepancy = "ccc
 	vol = rot_shift3D(vol, new_params[0][0], new_params[0][1], new_params[0][2], new_params[0][3], new_params[0][4], new_params[0][5],1.0)
 	return vol
         
-def ali_vol_3(vol, refv, ang_scale, shift_scale, radius=None, discrepancy = "ccc"):
+def ali_vol_3(vol, refv, ang_scale, shift_scale, radius=None, discrepancy = "ccc", mask=None):
 	#rotation and shift
 	from alignment    import ali_vol_func
-	from utilities    import model_circle
+	from utilities    import model_circle, amoeba
 
 	nx = refv.get_xsize()
 	ny = refv.get_ysize()
 	nz = refv.get_zsize()
-	if(radius != None): mask = model_circle(radius, nx, ny, nz)
-	else:               mask = model_circle(float(min(nx, ny, nz)//2-2), nx, ny, nz)
+	if mask is None:
+		if(radius != None): mask = model_circle(radius, nx, ny, nz)
+		else:               mask = model_circle(float(min(nx, ny, nz)//2-2), nx, ny, nz)
 
 	scale = [ang_scale, ang_scale, ang_scale, shift_scale, shift_scale, shift_scale]
 	data=[vol, refv, mask]
