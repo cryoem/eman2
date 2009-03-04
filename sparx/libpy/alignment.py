@@ -1143,13 +1143,13 @@ def proj_ali_incore_peaks(volref, mask3D, projdata, first_ring, last_ring, rstep
 def ali_vol_func(params, data):
 	from utilities    import compose_transform3
 	from fundamentals import rot_shift3D
-	print  params
-	print  data[3]
-	cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= compose_transform3(data[3][0], data[3][1], data[3][2], data[3][3], data[3][4], data[3][5], data[3][6], params[0], params[1], params[2],params[3], params[4], params[5],1.0)
-	print  cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale
-	x = rot_shift3D(data[0], cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale)
-	res = -x.cmp(data[4], data[1], {"mask":data[2]})
-	print  " %9.3f %9.3f %9.3f %9.3f %9.3f %9.3f  %12.3e" %(params[0], params[1], params[2],params[3], params[4], params[5], -res)
+	#print  params
+	#print  data[3]
+	#cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= compose_transform3(data[3][0], data[3][1], data[3][2], data[3][3], data[3][4], data[3][5], data[3][6], params[0], params[1], params[2],params[3], params[4], params[5],1.0)
+	#rint  cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale
+	x = rot_shift3D(data[0], params[0], params[1], params[2], params[3], params[4], params[5], 1.0)
+	res = -x.cmp("ccc", data[1], {"mask":data[2]})
+	print  " %9.3f %9.3f %9.3f %9.3f %9.3f %9.3f  %10.5f" %(params[0], params[1], params[2],params[3], params[4], params[5], -res)
 	return res
 
 def ali_vol_func_rotate(params, data):
