@@ -953,7 +953,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 
 		mirror_list = [0]*(nima*number_of_ave)
 		for nim in xrange(image_start, image_end):
-			dummy, dummy, dummy, mirror, dummy = get_params2D(data[nim])
+			dummy, dummy, dummy, mirror, dummy = get_params2D(data[nim-image_start])
 			mirror_list[nim+color*nima] = mirror
 		mpi_reduce(mirror_list, nima*number_of_ave, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
 	
