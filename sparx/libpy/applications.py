@@ -10972,7 +10972,6 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		# run k-means
 		print_msg('::: RUNNING :::\n\n')
 		status = KmeansCUDA.kmeans()
-		print status
 		if status:
 			k_means_cuda_error(status)
 			sys.exit()
@@ -11021,20 +11020,19 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 # -- K-means groups ---------------------------------------------------------------------------
 			
 # K-means groups driver
-def k_means_groups(stack, out_file, maskname, opt_method, K1, K2, rand_seed, maxit, trials, crit, CTF, F, T0, MPI=False, DEBUG=False):
+def k_means_groups(stack, out_file, maskname, opt_method, K1, K2, rand_seed, maxit, trials, crit, CTF, F, T0, MPI=False, CUDA=False, DEBUG=False):
 
 	# check entry
 	if stack.split(':')[0] == 'bdb': BDB = True
 	else:                            BDB = False
 	
-	#if maskname != None:
-	#	if (maskname.split(':')[0] != 'bdb' and BDB) or (maskname.split(':')[0] == 'bdb' and not BDB):
-	#	        ERROR('Both mask and stack must be on bdb format!', 'k-means groups', 1)
-	
 	if MPI:
 		from statistics import k_means_groups_MPI
 		[rescrit, KK] = k_means_groups_MPI(stack, out_file, maskname, opt_method, K1, K2, rand_seed, maxit, trials, crit, CTF, F, T0)
-		
+	elif CUDA:
+		from statistics import k_means_groups_CUDA
+		k_means_groups_CUDA(stack, out_file, maskname, K1, K2, rand_seed, maxit, F, T0)
+		rescrit, KK = None, None
 	else:
 		from statistics import k_means_groups_serial
 		[rescrit, KK] = k_means_groups_serial(stack, out_file, maskname, opt_method, K1, K2, rand_seed, maxit, trials, crit, CTF, F, T0, DEBUG)
@@ -11045,12 +11043,12 @@ def k_means_groups(stack, out_file, maskname, opt_method, K1, K2, rand_seed, max
 # 2008-12-18 11:43:11
 
 # K-means main stability
-def k_means_stab(stack, outdir, maskname, opt_method, K, npart = 5, CTF = False, F = 0, FK = 0, maxrun = 50, th_nobj = 0, th_stab = 6.0, th_dec = 5, restart = 1, MPI = False, CUDA = False, bck = False):
+def k_means_stab(stack, outdir, maskname, opt_method, K, npart = 5, CTF = False, F = 0, FK = 0, maxrun = 50, th_nobj = 0, th_stab = 6.0, th_stab_reject = 3.0, th_dec = 5, restart = 1, MPI = False, CUDA = False, bck = False):
 	if MPI:
 		k_means_stab_MPI(stack, outdir, maskname, opt_method, K, npart, CTF, F, maxrun, th_nobj, th_stab, th_dec, restart, bck)
 		return
 	elif CUDA:
-		k_means_stab_CUDA(stack, outdir, maskname, K, npart, F, FK, maxrun, th_nobj, th_stab, th_dec, restart, bck)
+		k_means_stab_CUDA(stack, outdir, maskname, K, npart, F, FK, maxrun, th_nobj, th_stab, th_stab_reject, th_dec, restart, bck)
 		return
 	
 	from utilities 	 import print_begin_msg, print_end_msg, print_msg, file_type
@@ -11188,7 +11186,7 @@ def k_means_stab(stack, outdir, maskname, opt_method, K, npart = 5, CTF = False,
 	logging.info('::: END k-means stability :::')
 
 # K-means main stability
-def k_means_stab_CUDA(stack, outdir, maskname, K, npart = 5, F = 0, FK = 0, maxrun = 50, th_nobj = 0, th_stab = 6.0, th_dec = 5, restart = 1, bck = False):
+def k_means_stab_CUDA(stack, outdir, maskname, K, npart = 5, F = 0, FK = 0, maxrun = 50, th_nobj = 0, th_stab = 6.0, th_stab_reject = 3.0, th_dec = 5, restart = 1, bck = False):
 	
 	from utilities 	 import print_begin_msg, print_end_msg, print_msg
 	from utilities   import model_blank, get_image, get_im
@@ -11276,12 +11274,6 @@ def k_means_stab_CUDA(stack, outdir, maskname, K, npart = 5, F = 0, FK = 0, maxr
 			INFO = KmeansCUDA.get_info()
 			k_means_cuda_info(INFO)
 
-			# if backup required do it
-			if bck:
-				import pickle
-				f = open('run%02d_part%02d.pck' % (num_run, n), 'w')
-				pickle.dump(PART, f)
-				f.close()
 
 		# end of classification
 		print_end_msg('k-means')
@@ -11304,24 +11296,32 @@ def k_means_stab_CUDA(stack, outdir, maskname, K, npart = 5, F = 0, FK = 0, maxr
 		logging.info('... Convert local assign to abs partition')
 		ALL_PART = k_means_stab_asg2part(ALL_ASG, LUT)
 
+		# if backup required do it
+		if bck:
+			import cPickle
+			f = open('run%02d_allpart.pck' % num_run, 'w')
+			cPickle.dump(ALL_PART, f)
+			f.close()
+
 		# calculate the stability
 		stb, nb_stb, STB_PART = k_means_stab_H(ALL_PART)
 		logging.info('... Stability: %5.2f %% (%d objects)' % (stb, nb_stb))
 
 		# manage the stability
 		if stb < th_stab:
-			newK = int(float(K) * FK)    # cooling factor on K
+			newK = int(float(K) * FK)   # cooling factor on K
 			if (K - newK) < th_dec:
 				K -= th_dec
 			else:   K  = newK
-			if K > 1:
-				logging.info('[WARNING] Stability too low, restart the run with K = %d' % K)
-				num_run -= 1
-				continue
-			else:
-				logging.info('[STOP] Not enough number of clusters ')
-				break
 
+		if K < 2:
+			logging.info('[STOP] Not enough number of clusters')
+			break
+		if stb < th_stab_reject:
+			logging.info('[WARNING] Stability too low, restart the run with K = %d' % K)
+			num_run -= 1
+			continue
+	
 		# export the stable class averages
 		logging.info('... Export stable class averages: average_stb_run%02d.hdf' % num_run)
 		k_means_stab_export(STB_PART, stack, num_run, outdir)

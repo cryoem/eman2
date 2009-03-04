@@ -3630,6 +3630,30 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 
 ## K-MEANS GROUPS ######################################################################
 
+# make script file to gnuplot
+def k_means_groups_gnuplot(file, src, C, DB, H):
+	out = open(file, 'w')
+	out.write('# Gnuplot script file for plotting result in kmeans groups\n')
+	out.write('# cmd: gnuplot> load \x22%s.p\x22\n' % src)
+	out.write('reset\n')
+	out.write('set autoscale\n')
+	txt = 'plot'
+
+	WORLD = [C, DB, H]
+	name  = ['Coleman', 'Davies-Bouldin', 'Harabasz']
+	pos   = [3, 5, 7]
+
+	# norm plot [0;1]
+	for i in xrange(3):
+		minv = min(WORLD[i])
+		maxv = max(WORLD[i])
+		d = maxv - minv
+		a = 1 / d
+		b = 0.5 - ((maxv + minv) * a / 2)
+		txt += ' \x22%s\x22 u 1:($%d*(%11.4e)+(%11.4e)) ti \x22%s\x22 w l,' % (src, pos[i], a, b, name[i])
+
+	out.write(txt.rstrip(',') + '\n')
+	out.close()
 
 # to figure out the number of clusters
 def k_means_groups_serial(stack, out_file, maskname, opt_method, K1, K2, rand_seed, maxit, trials, crit_name, CTF, F, T0, DEBUG=False):
@@ -3789,6 +3813,98 @@ def k_means_groups_serial(stack, out_file, maskname, opt_method, K1, K2, rand_se
 	print_end_msg('k-means groups')
 		
 	return Crit, KK
+
+# to figure out the number of clusters CUDA version
+def k_means_groups_CUDA(stack, out_file, maskname, K1, K2, rand_seed, maxit, F, T0):
+	from utilities   import print_begin_msg, print_end_msg, print_msg, running_time
+	from statistics  import k_means_cuda_init_open_im, k_means_cuda_headlog
+	from statistics  import k_means_cuda_open_im, k_means_cuda_error, k_means_groups_gnuplot
+	import time
+	import string
+	import os
+	import sys
+
+	if os.path.exists(out_file):  os.system('rm -rf ' + out_file)
+	os.mkdir(out_file)
+	t_start = time.time()
+
+	# instance of CUDA kmeans obj
+	KmeansCUDA = CUDA_kmeans()
+
+	# init to open images
+	LUT, mask, N, m = k_means_cuda_init_open_im(stack, maskname)
+		
+	# write logfile
+	print_begin_msg('k-means groups')
+	method = 'cla'
+	ncpu   = 1
+	k_means_cuda_headlog(stack, out_file, method, N, [K1, K2], maskname, maxit, T0, F, rand_seed, ncpu, m)
+	
+	# init k-means
+	KmeansCUDA.setup(m, N, K1, F, T0, maxit, rand_seed)
+	
+	# open images and load to C
+	k_means_cuda_open_im(KmeansCUDA, stack, LUT, mask)
+
+	# init
+	KK       = range(K1, K2 + 1)	# Range of works
+	C, DB, H = [], [], []
+	sp       = 15                   # space for format file result
+		
+	# init the file result
+	file_crit = open(out_file + '/' + out_file, 'w')
+	file_crit.write('# Criterion of k-means group\n')
+	file_crit.write('# %s %s %s  %s\n' % ('N ', 'Coleman'.ljust(sp), 'Davies-Bouldin'.ljust(sp), 'Harabasz'.ljust(sp)))
+	file_crit.close()
+		
+	# Compute the criterion and format
+	for K in KK:
+		KmeansCUDA.set_K(K)
+		
+		print_msg('\n')
+		print_msg('| K=%d |====================================================================\n' % K)
+
+		ct_rnd   = 0
+		while 1:
+			status = KmeansCUDA.kmeans()
+			if   status == 0:
+				break
+			elif status == 4:
+				k_means_cuda_error(status)
+			else:
+				k_means_cuda_error(status)
+				sys.exit()
+
+			# if here, there are some classes empty
+			rand_seed += 100
+			ct_rnd    += 1
+			print_msg('Empty cluster, restart with random seed: %d\n' % rand_seed)
+			KmeansCUDA.set_rnd(rand_seed)
+			if ct_rnd >= 5:
+				print_msg('\n=== STOP number of groups to high. ===\n\n')
+				sys.exit()
+		
+		# get back cirterions
+		INFO = KmeansCUDA.get_info()
+		print_msg('Criterion SSE: %11.4e\n' % INFO['Je'])
+		print_msg('Number of iterations: %i\n' % INFO['noi'])
+		print_msg('Running time: %i s\n' % INFO['time'])
+
+		# result file
+		file_crit = open(out_file + '/' + out_file, 'a')
+		file_crit.write('%3d  C: %11.4e  DB: %11.4e  H: %11.4e | %s\n' % (K, INFO['C'], INFO['DB'], INFO['H'], time.ctime())) 
+		file_crit.close()
+
+		# mem for latter
+		C.append(INFO['C'])
+		DB.append(INFO['DB'])
+		H.append(INFO['H'])
+
+	k_means_groups_gnuplot(out_file + '/' + out_file + '.p', out_file, C, DB, H)
+		
+	# runtime
+	running_time(t_start)
+	print_end_msg('k-means groups')
 
 # to figure out the number of clusters MPI version
 def k_means_groups_MPI(stack, out_file, maskname, opt_method, K1, K2, rand_seed, maxit, trials, crit_name, CTF, F, T0):
@@ -4006,11 +4122,16 @@ def k_means_cuda_headlog(stackname, outname, method, N, K, maskname, maxit, T0, 
 	if ncpu > 1: methodhead = 'CUDA MPI'
 	else:        methodhead = 'CUDA'
 
+	if isinstance(K, list): txtK = '%i to %i' % (K[0], K[1])
+	else:
+		K = [K]
+		txtK = '%i' % K[0]
+
 	# memory estimation
 	#        IM          AVE         DIST
-	device = N * m * 4 + K * m * 4 + N * K * 4
+	device = N * m * 4 + max(K) * m * 4 + N * max(K) * 4
 	#               ASG     NC      IM2     AVE2
-	host = device + N * 2 + K * 4 + N * 4 + K * 4
+	host = device + N * 2 + max(K) * 4 + N * 4 + max(K) * 4
 	ie_device  = int(log(device) // log(1e3))
 	ie_host    = int(log(host)   // log(1e3))
 	device    /= (1e3 ** ie_device)
@@ -4024,7 +4145,7 @@ def k_means_cuda_headlog(stackname, outname, method, N, K, maskname, maxit, T0, 
 	print_msg('Number of images            : %i\n'     % N)
 	print_msg('Maskfile                    : %s\n'     % maskname)
 	print_msg('Number of pixels under mask : %i\n'     % m)
-	print_msg('Number of clusters          : %s\n'     % K)
+	print_msg('Number of clusters          : %s\n'     % txtK)
 	print_msg('Maximum iteration           : %i\n'     % maxit)
 	print_msg('Criterion                   : CHD\n'    )
 	print_msg('Optimization method         : %s\n'     % method)
