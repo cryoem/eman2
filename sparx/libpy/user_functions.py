@@ -121,6 +121,53 @@ def ref_ali2d_m( ref_data ):
 		print_msg(msg)
 	return  tavg, cs
 
+
+def ref_ali3dm( refdata ):
+	from filter import fit_tanh, filt_tanl
+	from utilities import get_im
+	from fundamentals import rot_shift3D
+	assert( len(refdata)==4 )
+
+	numref = refdata[0]
+	outdir = refdata[1]
+	fscc   = refdata[2]
+	total_iter = refdata[3]
+
+	mask_50S = get_im( "mask-50S.spi" )
+
+	flmin = 1.0
+	flmax = -1.0
+	for iref in xrange(numref):
+		fl, aa = fit_tanh( fscc[iref] )
+		if (fl < flmin):
+			flmin = fl
+			aamin = aa
+		if (fl > flmax):
+			flmax = fl
+			aamax = aa
+		# filter to minimum resolution
+	for iref in xrange(numref):
+		v = get_im(os.path.join(outdir, "vol%04d.hdf"%(total_iter)), iref)
+		v = filt_tanl(v, flmin, aamin)
+
+		if iref==0:
+			v50S_0 = v.copy()
+			v50S_0 *= mask_50S
+		else:
+			from applications import ali_vol_3
+			v50S_i = v.copy()
+			v50S_i *= mask_50S
+
+			print "aligning ", iref
+			params = ali_vol_3(v50S_i, v50S_0, 10.0, 0.5, mask=mask_50S)
+			v = rot_shift3D( v, params[0], params[1], params[2], params[3], params[4], params[5], 1.0)
+
+
+		v.write_image(os.path.join(outdir, "volf%04d.hdf"%( total_iter)), iref)
+					
+
+
+
 def ref_random( ref_data ):
 	from utilities    import print_msg
 	from filter       import fit_tanh, filt_tanl
