@@ -779,9 +779,11 @@ def prepare_recons(data, symmetry, myid, main_node_half, half_start, step, index
 		info.flush()
 
 	if myid == main_node_half:
+		import os
+		scratch = os.getenv("SCRATCH", "/tmp")
 		tmpid = randint(0, 1000000)
-		fftvol_half_file = ("/tmp/fftvol_half%d.hdf" % tmpid)
-		weight_half_file = ("/tmp/weight_half%d.hdf" % tmpid)
+		fftvol_half_file = scratch + ("/fftvol_half%d.hdf" % tmpid)
+		weight_half_file = scratch + ("/weight_half%d.hdf" % tmpid)
 		fftvol_half.write_image(fftvol_half_file)
 		weight_half.write_image(weight_half_file)
 	mpi_barrier(MPI_COMM_WORLD)
@@ -854,9 +856,11 @@ def prepare_recons_ctf(nx, data, snr, symmetry, myid, main_node_half, half_start
 		info.flush()
         
 	if myid == main_node_half:
+		import os
+		scratch = os.getenv("SCRATCH", "/tmp")
 		tmpid = randint(0, 1000000) 
-		fftvol_half_file = ("/tmp/fftvol_half%d.hdf" % tmpid)
-		weight_half_file = ("/tmp/weight_half%d.hdf" % tmpid)
+		fftvol_half_file = scratch + ("/fftvol_half%d.hdf" % tmpid)
+		weight_half_file = scratch + ("/weight_half%d.hdf" % tmpid)
 		fftvol_half.write_image(fftvol_half_file)
 		weight_half.write_image(weight_half_file)
 	mpi_barrier(MPI_COMM_WORLD)
@@ -1082,7 +1086,7 @@ def rec3D_MPI(data, snr, symmetry, mask3D, fsc_curve, myid, main_node = 0, rstep
 		return volall,fscdat
                  
 	if myid == main_node_eve:
-
+		print "fftvol_eve_file: ", fftvol_eve_file
 		fftvol = get_image( fftvol_eve_file )
 		send_EMData(fftvol, main_node_all, tag_fftvol_eve )
 
