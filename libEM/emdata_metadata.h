@@ -944,7 +944,7 @@ int get_supp_pickle() const;
 
 void set_supp_pickle(int i);
 
-vector<Vec3i> mask_contig_region(const float& val, const vector<int>& seed);
+vector<Vec3i> mask_contig_region(const float& val, const Vec3i& seed);
 
 
 private:

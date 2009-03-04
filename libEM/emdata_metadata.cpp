@@ -1173,7 +1173,7 @@ vector<Vec3i > find_region(EMData* image,const vector<Vec3i >& coords, const flo
 	return ret;
 }
 
-vector<Vec3i> EMData::mask_contig_region(const float& value, const vector<int>& seed) {
+vector<Vec3i> EMData::mask_contig_region(const float& value, const Vec3i& seed) {
 	Vec3i coord(seed[0],seed[1],seed[2]);
 	vector<Vec3i> region;
 	region.push_back(coord);
