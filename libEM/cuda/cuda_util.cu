@@ -9,25 +9,27 @@
 texture<float, 3, cudaReadModeElementType> tex;
 texture<float, 2, cudaReadModeElementType> tex2d;
 
-void cuda_bind_texture_3d(texture<float, 3, cudaReadModeElementType> &tex,const cudaArray * const array) {
-	tex.normalized = 0;
-	tex.filterMode = cudaFilterModeLinear;
-	tex.addressMode[0] = cudaAddressModeClamp;
-	tex.addressMode[1] = cudaAddressModeClamp;
-	tex.addressMode[2] = cudaAddressModeClamp;
+void cuda_bind_texture_3d(texture<float, 3, cudaReadModeElementType> &texture,const cudaArray * const array, const bool interp_mode) {
+	texture.normalized = 0;
+	if (interp_mode) texture.filterMode = cudaFilterModeLinear;
+	else texture.filterMode = cudaFilterModePoint;
+	texture.addressMode[0] = cudaAddressModeClamp;
+	texture.addressMode[1] = cudaAddressModeClamp;
+	texture.addressMode[2] = cudaAddressModeClamp;
 	
-	cudaBindTextureToArray(tex, array);
+	cudaBindTextureToArray(texture, array);
 }
 
-void cuda_bind_texture_2d(texture<float, 2, cudaReadModeElementType> &tex, const cudaArray * const array) {
-	tex.normalized = 0;
-	tex.filterMode = cudaFilterModeLinear;
+void cuda_bind_texture_2d(texture<float, 2, cudaReadModeElementType> &texture, const cudaArray * const array, const bool interp_mode) {
+	texture.normalized = 0;
+	if (interp_mode) texture.filterMode = cudaFilterModeLinear;
+	else texture.filterMode = cudaFilterModePoint;
 	// tex.filterMode = cudaFilterModePoint;
-	tex.addressMode[0] = cudaAddressModeClamp;
-	tex.addressMode[1] = cudaAddressModeClamp;
+	texture.addressMode[0] = cudaAddressModeClamp;
+	texture.addressMode[1] = cudaAddressModeClamp;
 // 	tex.addressMode[2] = cudaAddressModeClamp;
 	
-	cudaBindTextureToArray(tex, array);
+	cudaBindTextureToArray(texture, array);
 }
 
 cudaArray* get_cuda_array(const float * const data,const int nx, const int ny, const int nz, const cudaMemcpyKind mem_cpy_flag)
@@ -66,11 +68,11 @@ cudaArray* get_cuda_array_host(const float * const data,const int nx, const int 
 	return get_cuda_array(data,nx,ny,nz,cudaMemcpyHostToDevice);
 }
 
-void bind_cuda_array_to_texture( const cudaArray* const array, const int ndims) {
+void bind_cuda_array_to_texture( const cudaArray* const array, const int ndims,const bool interp_mode) {
 	if (ndims == 3) {
-		cuda_bind_texture_3d(tex,array);
+		cuda_bind_texture_3d(tex,array,interp_mode);
 	} else if ( ndims == 2) {
-		cuda_bind_texture_2d(tex2d,array);
+		cuda_bind_texture_2d(tex2d,array,interp_mode);
 	} else throw;
 	//printf("Done bind\n");
 }

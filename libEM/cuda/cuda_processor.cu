@@ -62,8 +62,8 @@ __global__ void correlation_kernel_3D(float *ldata, const int z,const int xsize,
 	
 	float v1 = ldata[idx];
 	float v2 = ldata[idxp1];
-	float u1 = tex3D(tex,twox+0.5,y+0.5,z+0.5);
-	float u2 = tex3D(tex,twox+1+0.5,y+0.5,z+0.5);
+	float u1 = tex3D(tex,twox,y,z);
+	float u2 = tex3D(tex,twox+1,y,z);
 	
 	ldata[idx] = v1*u1 + v2*u2;
 	ldata[idxp1] = v1*u2 - v2*u1;
@@ -83,8 +83,8 @@ __global__ void correlation_kernel_2D_2(float *ldata,const int xsize)
 	
 	float v1 = ldata[idx];
 	float v2 = ldata[idxp1];
-	float u1 = tex2D(tex2d,twox+0.5,y+0.5);
-	float u2 =  tex2D(tex2d,twox+1+0.5,y+0.5);
+	float u1 = tex2D(tex2d,twox,y);
+	float u2 =  tex2D(tex2d,twox+1,y);
 	
 	ldata[idx] = v1*u1 + v2*u2;
 	ldata[idxp1] = v1*u2 - v2*u1;

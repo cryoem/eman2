@@ -1133,3 +1133,56 @@ void EMData::set_supp_pickle(int)
 {
 	this->supp = 0;
 }
+
+
+vector<Vec3i > find_region(EMData* image,const vector<Vec3i >& coords, const float value, vector<Vec3i >& region)
+{
+	static vector<Vec3i> two_six_connected;
+	if (two_six_connected.size() == 0) {
+		for(int i = -1; i <= 1; ++i) {
+			for(int j = -1; j <= 1; ++j) {
+				for(int  k = -1; k <= 1; ++k) {
+					if ( j != 0 && i != 0 && k != 0) {
+						two_six_connected.push_back(Vec3i(i,j,k));
+					}
+				}
+			}
+		}
+	}
+	
+	vector<Vec3i> ret;
+	for(vector<Vec3i>::const_iterator it = two_six_connected.begin(); it != two_six_connected.end(); ++it ) {
+		for(vector<Vec3i>::const_iterator it2 = coords.begin(); it2 != coords.end(); ++it2 ) {
+			if  (image->get_value_at((*it2)[0],(*it2)[1],(*it2)[2]) != value) throw;
+			Vec3i c = (*it)+(*it2);
+			
+			if ( c[0] < 0 || c[0] >= image->get_xsize()) continue;
+			if ( c[1] < 0 || c[1] >= image->get_ysize()) continue;
+			if ( c[2] < 0 || c[2] >= image->get_zsize()) continue;
+			
+			if( image->get_value_at(c[0],c[1],c[2]) == value ) {
+				if (find(ret.begin(),ret.end(),c) == ret.end()) {
+					if (find(region.begin(),region.end(),c) == region.end()) {
+						region.push_back(c);
+						ret.push_back(c);
+					}
+				}
+			}
+		}
+	}
+	return ret;
+}
+
+vector<Vec3i> EMData::mask_contig_region(const float& value, const vector<int>& seed) {
+	Vec3i coord(seed[0],seed[1],seed[2]);
+	vector<Vec3i> region;
+	region.push_back(coord);
+	vector<Vec3i> find_region_input = region;
+	while (true) {
+		vector<Vec3i> v = find_region(this,find_region_input, value, region);
+		if (v.size() == 0 ) break;
+		else find_region_input = v;
+	}
+	return region;
+}
+

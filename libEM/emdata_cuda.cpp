@@ -66,7 +66,7 @@ bool EMData::gpu_ro_is_current() const {
 	else return false;
 }
 
-void EMData::bind_cuda_texture() {
+void EMData::bind_cuda_texture(const bool interp_mode) {
 	if (cuda_cache_handle==-1 || EMDATA_GPU_RO_NEEDS_UPDATE & flags) {
 		if (cuda_cache_handle !=- 1 && gpu_rw_is_current() )  {
 			cuda_cache.copy_rw_to_ro(cuda_cache_handle);
@@ -75,7 +75,7 @@ void EMData::bind_cuda_texture() {
 		}
 		flags &= ~EMDATA_GPU_RO_NEEDS_UPDATE;
 	}
-	bind_cuda_array_to_texture(cuda_cache.get_ro_data(cuda_cache_handle),cuda_cache.get_ndim(cuda_cache_handle));
+	bind_cuda_array_to_texture(cuda_cache.get_ro_data(cuda_cache_handle),cuda_cache.get_ndim(cuda_cache_handle),interp_mode);
 }
 
 void EMData::cuda_cache_lost_imminently() const {

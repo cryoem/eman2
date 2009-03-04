@@ -26,7 +26,7 @@ cudaArray* get_cuda_array_host(const float * const data,const int nx, const int 
 
 cudaArray* get_cuda_array_device(const float * const data,const int nx, const int ny, const int nz);
 
-void bind_cuda_array_to_texture( const cudaArray* const array, const int ndims);
+void bind_cuda_array_to_texture( const cudaArray* const array, const int ndims, const bool interp_mode);
 
 #endif // eman__cuda_util_h__
 

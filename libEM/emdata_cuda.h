@@ -42,7 +42,7 @@ public:
 	 * defined in cuda_util.cu. The number of available textures and naming is likely to change
 	 * to accommodate the need for accessing many textures using a single kernel
 	 */
-	void bind_cuda_texture();
+	void bind_cuda_texture(const bool interp_mode =true);
 	
 	/** Get the cuda device pointer to the raw data
 	 * May cause an allocation, reflecting the lazy strategy employed in EMAN2

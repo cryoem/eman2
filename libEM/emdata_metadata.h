@@ -944,6 +944,9 @@ int get_supp_pickle() const;
 
 void set_supp_pickle(int i);
 
+vector<Vec3i> mask_contig_region(const float& val, const vector<int>& seed);
+
+
 private:
 /** Make the attributes of this EMData exactly equal to the argument dictionary
  * Originally introduced because set_attr_dict does automatic resizing, which is undersirable in some
