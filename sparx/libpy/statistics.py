@@ -1566,7 +1566,7 @@ def k_means_export(Cls, crit, assign, out_seedname):
 		# limitation of hdf file in the numbers of attributes
 		if Cls['n'][k] > 16000 and not BDB:
 			print 'WARNING: limitation of number attributes in hdf file, the results will be export in separate files \n'
-			outfile = open('%d_kmeans' % k, 'w')
+			outfile = open('%d_kmeans.txt' % (k + 1), 'w')
 			list_images = []
 			for i in xrange(len(assign)):
 				if assign[i] == k:
@@ -5095,7 +5095,7 @@ See the module documentation for usage.
                     self.marked[i][j] = 0
 
 
-# Match two partitions asignment with hungarian algorithm
+# Match two partitions assignment with hungarian algorithm
 def k_means_match_clusters_asg(asg1, asg2):
 	from statistics import Munkres
 	import sys
