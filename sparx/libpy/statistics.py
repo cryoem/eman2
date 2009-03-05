@@ -3555,10 +3555,6 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 		
 		# [all] global sum var
 		for k in xrange(K): reduce_EMData_to_root(Cls['var'][k], myid, main_node)
-		
-		# compute criterion
-		crit = k_means_criterion(Cls, assign, crit_name)
-		
 	else:
 		# [id] compute the variance 1/n S(im-ave)**2 -> 1/n (Sim**2 - n ave**2)	
 		for im in xrange(N_start, N_stop): Util.add_img2(Cls['var'][int(assign[im])], im_M[im])
