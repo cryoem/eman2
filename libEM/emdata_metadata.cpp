@@ -1142,7 +1142,7 @@ vector<Vec3i > find_region(EMData* image,const vector<Vec3i >& coords, const flo
 		for(int i = -1; i <= 1; ++i) {
 			for(int j = -1; j <= 1; ++j) {
 				for(int  k = -1; k <= 1; ++k) {
-					if ( j != 0 && i != 0 && k != 0) {
+					if ( j != 0 || i != 0 || k != 0) {
 						two_six_connected.push_back(Vec3i(i,j,k));
 					}
 				}

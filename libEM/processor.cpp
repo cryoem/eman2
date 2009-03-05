@@ -799,29 +799,36 @@ void WatershedProcessor::process_inplace(EMData * image) {
 	for(int i = 0; i < dis; ++i) {
 		float val = maxval-i*dx;
 		
-		for(unsigned int j = 0; j < xpoints.size(); ++j) {
-			Vec3i coord(x[j],y[j],z[j]);
-			vector<Vec3i> region;
-			region.push_back(coord);
-			vector<Vec3i> find_region_input = region;
-			while (true) {
-				vector<Vec3i> v = find_region(mask,find_region_input, j+1, region);
-				if (v.size() == 0 ) break;
-				else find_region_input = v;
-			}
-			while( true ) {
+		while( true ) {
+			bool cont= false;
+			for(unsigned int j = 0; j < xpoints.size(); ++j)
+			{
+				
+				Vec3i coord(x[j],y[j],z[j]);
+				vector<Vec3i> region;
+				region.push_back(coord);
+				vector<Vec3i> find_region_input = region;
+				while (true) {
+					vector<Vec3i> v = find_region(mask,find_region_input, j+1, region);
+					if (v.size() == 0 ) break;
+					else find_region_input = v;
+				}
+				
 				vector<Vec3i> tmp(region.begin(),region.end());
 				region.clear();
 				for(vector<Vec3i>::const_iterator it = tmp.begin(); it != tmp.end(); ++it ) {
 					vector<Vec3i> tmp2 = watershed(mask, image, val, *it, j+1);
 					copy(tmp2.begin(),tmp2.end(),back_inserter(region));
 				}
-				if (region.size() == 0) break;
+				if (region.size() != 0) cont = true;
 			}
+			
+			if (!cont) break;
 		}
 	}
 	
 	memcpy(image->get_data(),mask->get_data(),sizeof(float)*image->get_size());
+	image->update();
 }
 
 
