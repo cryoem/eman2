@@ -5815,13 +5815,14 @@ void IterBinMaskProcessor::process_inplace(EMData * image)
 	delete image2;
 }
 
-void TestImageProcessor::preprocess(const EMData * const image)
+void TestImageProcessor::preprocess(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
 		return;
 	}
-
+	
+	image->set_attr("datatype", EMAN::EMUtil::EM_FLOAT);
 	nx = image->get_xsize();
 	ny = image->get_ysize();
 	nz = image->get_zsize();

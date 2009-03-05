@@ -4894,7 +4894,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		}
 	
 	protected:
-		void preprocess(const EMData * const image);
+		void preprocess(EMData * image);
 		int nx, ny, nz; //this is the size of the source image
 	};
 	
