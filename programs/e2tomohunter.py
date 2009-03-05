@@ -31,34 +31,40 @@
 #
 #
 
+
+#N tomohunter.py
+#F tomography hunter
+
 import os
 import sys
 import string
 import commands
 import math
-import EMAN2
+import EMAN
 #import Numeric
 from math import *
 from sys import argv
 
 
-def tomoccf(targetMRC,probeMRC):
-    ccf=targetMRC.calc_ccf(probeMRC)
+def tomoccf(targetMRC,probeMRC,norm):
+    ccf=targetMRC.calcCCF(probeMRC)
     ccf.toCorner()
+    if norm==1:
+        ccf.normalize()
     return (ccf)
 
-def updateCCF(bestCCF,bestALT,bestAZ,bestPHI,altrot,azrot,phirot,currentCCF,box,scalar):
+def updateCCF(bestCCF,bestALT,bestAZ,bestPHI,altrot,azrot,phirot,currentCCF,box,scalar,searchx,searchy,searchz):
     bestValue=-1.e10
     xbest=-10
     ybest=-10
     zbest=-10
-    z=(box/2)-3
-    while z < (box/2)+4:
-        y=(box/2)-3
-        while y < (box/2)+4:
-            x=(box/2)-3
-            while x < (box/2)+4:
-                currentValue=currentCCF.get_value_at(x,y,z)/scalar
+    z=(box/2)-searchz
+    while z < (box/2)+searchz+1:
+        y=(box/2)-searchy
+        while y < (box/2)+searchy+1:
+            x=(box/2)-searchx
+            while x < (box/2)+searchx+1:
+                currentValue=currentCCF.valueAt(x,y,z)/scalar
                 if currentValue > bestValue:
                     bestValue = currentValue
                     xbest=x-(box/2)
@@ -70,25 +76,25 @@ def updateCCF(bestCCF,bestALT,bestAZ,bestPHI,altrot,azrot,phirot,currentCCF,box,
         z=z+1
     inlist=0
     while inlist < 10:
-        if  bestValue > bestCCF.get_value_at(inlist,1,1):
+        if  bestValue > bestCCF.valueAt(inlist,1,1):
             swlist=9
             while swlist >inlist:
                 #print swlist
-                bestCCF.set_value_at(swlist,1,1,bestCCF.get_value_at(swlist-1,1,1))
-                bestALT.set_value_at(swlist,1,1,bestALT.get_value_at(swlist-1,1,1))
-                bestAZ.set_value_at(swlist,1,1,bestAZ.get_value_at(swlist-1,1,1))
-                bestPHI.set_value_at(swlist,1,1,bestPHI.get_value_at(swlist-1,1,1))
-                bestX.set_value_at(swlist,1,1,bestX.get_value_at(swlist-1,1,1))
-                bestY.set_value_at(swlist,1,1,bestY.get_value_at(swlist-1,1,1))
-                bestZ.set_value_at(swlist,1,1,bestZ.get_value_at(swlist-1,1,1))
+                bestCCF.setValueAt(swlist,1,1,bestCCF.valueAt(swlist-1,1,1))
+                bestALT.setValueAt(swlist,1,1,bestALT.valueAt(swlist-1,1,1))
+                bestAZ.setValueAt(swlist,1,1,bestAZ.valueAt(swlist-1,1,1))
+                bestPHI.setValueAt(swlist,1,1,bestPHI.valueAt(swlist-1,1,1))
+                bestX.setValueAt(swlist,1,1,bestX.valueAt(swlist-1,1,1))
+                bestY.setValueAt(swlist,1,1,bestY.valueAt(swlist-1,1,1))
+                bestZ.setValueAt(swlist,1,1,bestZ.valueAt(swlist-1,1,1))
                 swlist=swlist-1
-            bestCCF.set_value_at(inlist,1,1,bestValue)
-            bestALT.set_value_at(inlist,1,1,altrot*180/3.14159)
-            bestAZ.set_value_at(inlist,1,1,azrot*180/3.14159)
-            bestPHI.set_value_at(inlist,1,1,phirot*180/3.14159)
-            bestX.set_value_at(inlist,1,1,xbest)
-            bestY.set_value_at(inlist,1,1,ybest)
-            bestZ.set_value_at(inlist,1,1,zbest)
+            bestCCF.setValueAt(inlist,1,1,bestValue)
+            bestALT.setValueAt(inlist,1,1,altrot*180/3.14159)
+            bestAZ.setValueAt(inlist,1,1,azrot*180/3.14159)
+            bestPHI.setValueAt(inlist,1,1,phirot*180/3.14159)
+            bestX.setValueAt(inlist,1,1,xbest)
+            bestY.setValueAt(inlist,1,1,ybest)
+            bestZ.setValueAt(inlist,1,1,zbest)
             break
         inlist=inlist+1
     #print "one"
@@ -120,7 +126,7 @@ def peakSearch(bestCCF,Max_location,width,box):
         for y in (range(ymin,ymax)):
             for z in (range(zmin,zmax)):
                 print x,y,z
-                bestCCF.set_value_at(x,y,z,-10000)
+                bestCCF.setValueAt(x,y,z,-10000)
     bestCCF.update()
     return(bestCCF)        
 
@@ -135,7 +141,10 @@ thresh=0
 da=60
 maxPeaks=10
 width=2
-
+norm=0
+searchx=3
+searchy=3
+searchz=3
 for a in argv[3:] :
     s=a.split('=')
     if (s[0]=='dal'):
@@ -152,64 +161,72 @@ for a in argv[3:] :
 #        raz=float(s[1])
     elif (s[0]=='rap'):
         rap=float(s[1])
+    elif (s[0]=='norm'):
+        norm=int(s[1])
+    elif (s[0]=='searchx'):
+        searchx=int(s[1])
+    elif (s[0]=='searchy'):
+        searchy=int(s[1])
+    elif (s[0]=='searchz'):
+        searchz=int(s[1])
     else:
         print("Unknown argument "+a)
         exit(1)
 
 print target, probe
 
-targetMRC=EMAN2.EMData()
-targetMRC.read_image(argv[1],-1)
-targetMean=targetMRC.get_attr('mean')
-targetSigma=targetMRC.get_attr('sigma')
+targetMRC=EMAN.EMData()
+targetMRC.readImage(argv[1],-1)
+targetMean=targetMRC.Mean()
+targetSigma=targetMRC.Sigma()
 print "Target Information"
 print "   mean:       %f"%(targetMean)
 print "   sigma:      %f"%(targetSigma)
 
-target_xsize=targetMRC.get_xsize()
-target_ysize=targetMRC.get_ysize()
-target_zsize=targetMRC.get_zsize()
+target_xsize=targetMRC.xSize()
+target_ysize=targetMRC.ySize()
+target_zsize=targetMRC.zSize()
 if (target_xsize!=target_ysize!=target_zsize) or (target_xsize%2==1):
     print "The density map must be even and cubic. Terminating."
     sys.exit()
 box=target_xsize
 
-probeMRC=EMAN2.EMData()
-probeMRC.read_image(argv[2],-1)
-probeMean=probeMRC.get_attr('mean')
-probeSigma=probeMRC.get_attr('sigma')
+probeMRC=EMAN.EMData()
+probeMRC.readImage(argv[2],-1)
+probeMean=probeMRC.Mean()
+probeSigma=probeMRC.Sigma()
 print "Probe Information"
 print "   mean:       %f"%(probeMean)
 print "   sigma:      %f"%(probeSigma)
 
 
-bestCCF=EMAN2.EMData()
-bestCCF.set_size(box,box,box)
-bestCCF.to_zero()
+bestCCF=EMAN.EMData()
+bestCCF.setSize(box,box,box)
+bestCCF.zero()
 
-bestAZ=EMAN2.EMData()
-bestAZ.set_size(box,box,box)
-bestAZ.to_zero()
+bestAZ=EMAN.EMData()
+bestAZ.setSize(box,box,box)
+bestAZ.zero()
 
-bestALT=EMAN2.EMData()
-bestALT.set_size(box,box,box)
-bestALT.to_zero()
+bestALT=EMAN.EMData()
+bestALT.setSize(box,box,box)
+bestALT.zero()
 
-bestPHI=EMAN2.EMData()
-bestPHI.set_size(box,box,box)
-bestPHI.to_zero()
+bestPHI=EMAN.EMData()
+bestPHI.setSize(box,box,box)
+bestPHI.zero()
 
-bestX=EMAN2.EMData()
-bestX.set_size(box,box,box)
-bestX.to_zero()
+bestX=EMAN.EMData()
+bestX.setSize(box,box,box)
+bestX.zero()
 
-bestY=EMAN2.EMData()
-bestY.set_size(box,box,box)
-bestY.to_zero()
+bestY=EMAN.EMData()
+bestY.setSize(box,box,box)
+bestY.zero()
 
-bestZ=EMAN2.EMData()
-bestZ.set_size(box,box,box)
-bestZ.to_zero()
+bestZ=EMAN.EMData()
+bestZ.setSize(box,box,box)
+bestZ.zero()
 
 
 altarray=[]
@@ -243,11 +260,13 @@ for altrot in altarray:
         maxnum=0
         #print "Trying rotation %f %f"%(altrot, azrot)
         while phirot <= -azrot+rarad:
-            dMRC=EMAN2.EMData()
+            dMRC=EMAN.EMData()
             dMRC = probeMRC.copy()
-            dMRC.rotate(azrot, altrot, phirot)
+            dMRC.setRAlign(altrot,azrot,phirot)
+            dMRC.setTAlign(0,0,0)
+            dMRC.rotateAndTranslate()    
             #print "Trying rotation %f %f %f"%(altrot, azrot, phirot)
-            currentCCF=tomoccf(targetMRC,dMRC)
+            currentCCF=tomoccf(targetMRC,dMRC,norm)
             scalar=ccfFFT(currentCCF,thresh,box)
             if scalar>maxnum:
                 maxnum=int(scalar)
@@ -257,7 +276,7 @@ for altrot in altarray:
             #scalar=1
             #scaledCCF=currentCCF/scalar
             #print "three"
-            bestCCF=updateCCF(bestCCF,bestALT,bestAZ,bestPHI,altrot,azrot,phirot,currentCCF,box,scalar)
+            bestCCF=updateCCF(bestCCF,bestALT,bestAZ,bestPHI,altrot,azrot,phirot,currentCCF,box,scalar,searchx,searchy,searchz)
             phirot=phirot+darad
         #print minnum,maxnum, float(maxnum)/float(minnum)
     else:
@@ -265,11 +284,13 @@ for altrot in altarray:
             phirot=-azrot-rarad
             #print "Trying rotation %f %f"%(altrot, azrot)
             while phirot <= -azrot+rarad:
-                dMRC=EMAN2.EMData()
+                dMRC=EMAN.EMData()
                 dMRC = probeMRC.copy()
-                dMRC.rotate(azrot, altrot, phirot)
+                dMRC.setRAlign(altrot,azrot,phirot)
+                dMRC.setTAlign(0,0,0)
+                dMRC.rotateAndTranslate()    
                 #print "Trying rotation %f %f %f"%(altrot, azrot, phirot)
-                currentCCF=tomoccf(targetMRC,dMRC)
+                currentCCF=tomoccf(targetMRC,dMRC,norm)
                 scalar=ccfFFT(currentCCF,thresh,box)
                 if scalar>maxnum:
                     maxnum=int(scalar)
@@ -279,7 +300,7 @@ for altrot in altarray:
                 #scalar=1
                 #scaledCCF=currentCCF/scalar
                 #print "three"
-                bestCCF=updateCCF(bestCCF,bestALT,bestAZ,bestPHI,altrot,azrot,phirot,currentCCF,box,scalar)
+                bestCCF=updateCCF(bestCCF,bestALT,bestAZ,bestPHI,altrot,azrot,phirot,currentCCF,box,scalar,searchx,searchy,searchz)
                 phirot=phirot+darad
             #print minnum,maxnum, float(maxnum)/float(minnum)
 print minnum,maxnum, float(maxnum)/float(minnum)
@@ -288,22 +309,23 @@ print minnum,maxnum, float(maxnum)/float(minnum)
 #outaz="az-%s"%(argv[1])
 #outphi="phi-%s"%(argv[1])
 
-#bestCCF.write_image(outCCF)
-#bestALT.write_image(outalt)
-#bestAZ.write_image(outaz)
-#bestPHI.write_image(outphi)
+#bestCCF.writeImage(outCCF)
+#bestALT.writeImage(outalt)
+#bestAZ.writeImage(outaz)
+#bestPHI.writeImage(outphi)
 
 out=open("log-s3-%s%s.txt"%(argv[1],argv[2]),"w")
 peak=0
 while peak < 10:
     #Max_location=bestCCF.MinLoc()
-    ALT=str(bestALT.get_value_at(peak,1,1))
-    AZ=str(bestAZ.get_value_at(peak,1,1))
-    PHI=str(bestPHI.get_value_at(peak,1,1))
-    COEFF=str(bestCCF.get_value_at(peak,1,1))
-    LOC=str( ( (bestX.get_value_at(peak,1,1)),(bestY.get_value_at(peak,1,1)),(bestZ.get_value_at(peak,1,1) ) ) )
+    ALT=str(bestALT.valueAt(peak,1,1))
+    AZ=str(bestAZ.valueAt(peak,1,1))
+    PHI=str(bestPHI.valueAt(peak,1,1))
+    COEFF=str(bestCCF.valueAt(peak,1,1))
+    LOC=str( ( (bestX.valueAt(peak,1,1)),(bestY.valueAt(peak,1,1)),(bestZ.valueAt(peak,1,1) ) ) )
     line="Peak %d rot=( %s, %s, %s ) trans= %s coeff= %s\n"%(peak,ALT,AZ,PHI,LOC,COEFF)
     out.write(line)
     #bestCCF=peakSearch(bestCCF,Max_location, width, box)
     peak=peak+1
 out.close()
+
