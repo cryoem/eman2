@@ -1,5 +1,9 @@
 /**
+<<<<<<< processor.cpp
  * $Id$
+=======
+ * $Id$
+>>>>>>> 1.173
  */
 
 /*
@@ -770,13 +774,13 @@ void WatershedProcessor::process_inplace(EMData * image) {
 	// throw if vector lengths are unequal
 	
 	float maxval = -99999;
-	
+	/*
 	for(unsigned int i = 0; i < xpoints.size(); ++i) {
 		float val = image->get_value_at(x[i],y[i],z[i]);
 		if (val > maxval) {
 			maxval = val;
 		}
-	}
+	}*/
 	
 	float minval = params["minval"];
 	
@@ -796,8 +800,8 @@ void WatershedProcessor::process_inplace(EMData * image) {
 	float dx = (maxval-minval)/((float) dis - 1);
 	
 	
-	for(int i = 0; i < dis; ++i) {
-		float val = maxval-i*dx;
+//	for(int i = 0; i < dis; ++i) {
+//		float val = maxval-i*dx;
 		
 		while( true ) {
 			bool cont= false;
@@ -817,7 +821,7 @@ void WatershedProcessor::process_inplace(EMData * image) {
 				vector<Vec3i> tmp(region.begin(),region.end());
 				region.clear();
 				for(vector<Vec3i>::const_iterator it = tmp.begin(); it != tmp.end(); ++it ) {
-					vector<Vec3i> tmp2 = watershed(mask, image, val, *it, j+1);
+					vector<Vec3i> tmp2 = watershed(mask, image, minval, *it, j+1);
 					copy(tmp2.begin(),tmp2.end(),back_inserter(region));
 				}
 				if (region.size() != 0) cont = true;
@@ -825,7 +829,7 @@ void WatershedProcessor::process_inplace(EMData * image) {
 			
 			if (!cont) break;
 		}
-	}
+//	}
 	
 	memcpy(image->get_data(),mask->get_data(),sizeof(float)*image->get_size());
 	image->update();
@@ -896,7 +900,7 @@ vector<Vec3i > WatershedProcessor::watershed(EMData* mask, EMData* image, const 
 		if ( c[2] < 0 || c[2] >= image->get_zsize()) continue;
 		
 	//	cout << image->get_value_at(c[0],c[1],c[2] ) << " " << threshold << endl;
-		if( image->get_value_at(c[0],c[1],c[2]) >= threshold && (mask->get_value_at(c[0],c[1],c[2]) == 0 )) {
+		if( image->get_value_at(c[0],c[1],c[2]) != 0 && (mask->get_value_at(c[0],c[1],c[2]) == 0 )) {
 			//cout << "Added something " << mask_value << endl;
 			mask->set_value_at(c[0],c[1],c[2], mask_value);
 			ret.push_back(c);
