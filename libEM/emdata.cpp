@@ -2677,6 +2677,23 @@ void EMData::update_stat() const
 	EXITFUNC;
 }
 
+// bool EMAN::operator==(const EMData& a, const EMData& b ) {
+// 	return a.operator==(b);	
+// }
+
+bool EMData::operator==(const EMData& that) const {
+	if (that.get_xsize() != nx || that.get_ysize() != ny || that.get_zsize() != nz ) return false;
+	
+	const float*  d1 = that.get_const_data();
+	float* d2 = get_data();
+	
+	for(int i =0; i < get_size(); ++i,++d1,++d2) {
+		if ((*d1) != (*d2)) return false;
+	}
+	return true;
+	
+}
+
 EMData * EMAN::operator+(const EMData & em, float n)
 {
 	EMData * r = em.copy();

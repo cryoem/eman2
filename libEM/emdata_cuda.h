@@ -41,6 +41,7 @@ public:
 	 * Presently the 3D texture is called "tex" and the 2D texture is called "tex2d", these are currently
 	 * defined in cuda_util.cu. The number of available textures and naming is likely to change
 	 * to accommodate the need for accessing many textures using a single kernel
+	 * @param interp_mode if true the texture will be bound using the cudaFilterModeLinear filtermode,  otherwise cudaFilterModePoint is usedddd
 	 */
 	void bind_cuda_texture(const bool interp_mode =true);
 	
@@ -80,6 +81,20 @@ public:
 	void gpu_update();
 	
 	
+	/** Explicitly force a copy from the cuda device pointer to the CPU
+	 * Originally added to facilitate testing only
+	 */
+	void copy_gpu_rw_to_cpu();
+
+	void copy_cpu_to_gpu_rw();
+
+	void copy_cpu_to_gpu_ro();
+
+	void copy_gpu_rw_to_gpu_ro();
+
+	void copy_gpu_ro_to_gpu_rw();
+	
+	
 private:
 	/** Check whether the CUDA-cached read-write version of the data pointer is current
 	 * Used to double check before copying the cuda rw data. It might be the case that the
@@ -88,6 +103,8 @@ private:
 	 */
 	bool gpu_rw_is_current() const;
 	
+	bool cpu_rw_is_current() const;
+	
 	/** Check whether the CUDA-cached read-only version of the data pointer is current
 	 * Used to double check before copying the cuda ro data. It might be the case that the
 	 * cuda_cache_handle is non-zero but that the cuda ro is actually not available.
@@ -95,6 +112,9 @@ private:
 	 */
 	bool gpu_ro_is_current() const;
 	
+	void check_cuda_array_update();
+	cudaArray* get_cuda_array();
+		
 	/** Free CUDA memory
 	 */
 	void free_cuda_memory() const;

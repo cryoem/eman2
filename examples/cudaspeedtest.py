@@ -41,7 +41,7 @@ from time import time
 
 def test_main():
 	
-	test_dims = [64*i for i in range(1,6)]
+	test_dims = [64*i for i in [2,3,4,6,8]]
 	
 	test_range = range(20)
 	
@@ -52,6 +52,7 @@ def test_main():
 	print "Dims","\t", "GPU speedup"
 	for dims in test_dims:
 		a = test_image(0,size=(dims,dims))
+		a._copy_cpu_to_gpu_rw()
 		t = time()
 		for i in test_range:
 			a.mult_cuda(2.0)
@@ -109,20 +110,20 @@ def test_main():
 	test_range = range(10)
 	print "Testing 3D real space projection"
 	print "Dims","\t", "GPU speedup"
-	for dims in test_dims:
-		a = test_image_3d(5,size=(dims,dims,dims))
-		trans = Transform()
-		t = time()
-		for i in test_range:
-			p = a.project("cuda_standard",trans)
-		gpu_times.append(time()-t)
+	#for dims in test_dims:
+		#a = test_image_3d(5,size=(dims,dims,dims))
+		#trans = Transform()
+		#t = time()
+		#for i in test_range:
+			#p = a.project("cuda_standard",trans)
+		#gpu_times.append(time()-t)
 		
-		a = test_image_3d(5,size=(dims,dims,dims))
-		t = time()
-		for i in test_range:
-			p = a.project("standard",trans)
-		cpu_times.append(time()-t)
-		print dims,"\t", cpu_times[-1]/gpu_times[-1]
+		#a = test_image_3d(5,size=(dims,dims,dims))
+		#t = time()
+		#for i in test_range:
+			#p = a.project("standard",trans)
+		#cpu_times.append(time()-t)
+		#print dims,"\t", cpu_times[-1]/gpu_times[-1]
 
 if __name__ == '__main__':
 	if EMUtil.cuda_available(): test_main()

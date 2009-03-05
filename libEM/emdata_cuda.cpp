@@ -61,12 +61,27 @@ bool EMData::gpu_rw_is_current() const {
 	else return false;
 }
 
+bool EMData::cpu_rw_is_current() const {
+	if 	(!(EMDATA_CPU_NEEDS_UPDATE & flags) && rdata != 0) return true;
+	return false;
+}
+
 bool EMData::gpu_ro_is_current() const {
 	if (cuda_cache_handle !=-1 || !(EMDATA_GPU_RO_NEEDS_UPDATE & flags)) return cuda_cache.has_ro_data(cuda_cache_handle);
 	else return false;
 }
 
 void EMData::bind_cuda_texture(const bool interp_mode) {
+	check_cuda_array_update();
+	bind_cuda_array_to_texture(cuda_cache.get_ro_data(cuda_cache_handle),cuda_cache.get_ndim(cuda_cache_handle),interp_mode);
+}
+
+cudaArray* EMData::get_cuda_array() {
+	check_cuda_array_update();
+	return cuda_cache.get_ro_data(cuda_cache_handle);
+}
+
+void EMData::check_cuda_array_update() {
 	if (cuda_cache_handle==-1 || EMDATA_GPU_RO_NEEDS_UPDATE & flags) {
 		if (cuda_cache_handle !=- 1 && gpu_rw_is_current() )  {
 			cuda_cache.copy_rw_to_ro(cuda_cache_handle);
@@ -75,7 +90,6 @@ void EMData::bind_cuda_texture(const bool interp_mode) {
 		}
 		flags &= ~EMDATA_GPU_RO_NEEDS_UPDATE;
 	}
-	bind_cuda_array_to_texture(cuda_cache.get_ro_data(cuda_cache_handle),cuda_cache.get_ndim(cuda_cache_handle),interp_mode);
 }
 
 void EMData::cuda_cache_lost_imminently() const {
@@ -130,6 +144,27 @@ void EMData::free_cuda_memory() const {
 		cuda_cache.clear_item(cuda_cache_handle);
 		cuda_cache_handle = -1;
 	}
+}
+
+/// THIS functoin was only ever meant for testing. Just use get_data() instead, where it's all automatic
+void EMData::copy_gpu_rw_to_cpu() {
+	get_data();
+}
+
+void EMData::copy_cpu_to_gpu_rw() {
+	get_cuda_data();
+}
+
+void EMData::copy_cpu_to_gpu_ro() {
+	get_cuda_array();
+}
+
+void EMData::copy_gpu_rw_to_gpu_ro() {
+	cuda_cache.copy_rw_to_ro(cuda_cache_handle);
+}
+
+void EMData::copy_gpu_ro_to_gpu_rw() {
+	cuda_cache.copy_ro_to_rw(cuda_cache_handle);
 }
 
 

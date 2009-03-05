@@ -120,6 +120,8 @@ class TestEMDataCuda(unittest.TestCase):
 						
 	def test_cuda_standard_projector(self):
 		"""test cuda basic projection ......................."""
+		print ""
+		print "The problem with projection is to do wit the CPU one, not the GPU one"
 		for x in [15,16]:
 			a = EMData(x,x,x)
 			a.process_inplace('testimage.noise.uniform.rand')
@@ -129,8 +131,39 @@ class TestEMDataCuda(unittest.TestCase):
 				for j in range(b.get_ysize()):
 					for i in range(b.get_xsize()):
 						self.assertAlmostEqual(c.get_value_at(i,j,k), b.get_value_at(i,j,k), 8)
+	def test_dt_cpu_gpurw_cpu(self):
+		"""test data transfer cpu->gpurw->cpu................"""
+		test_suite = [test_image(0,size=(32,32)), test_image(0,size=(33,33))]
+		test_suite.extend([test_image_3d(0,size=(32,32,32)), test_image_3d(0,size=(33,33,33))])
+		for a in test_suite:
+			b = a.copy()
+			a._copy_cpu_to_gpu_rw()
+			a._copy_gpu_rw_to_cpu()
+			self.assertEqual(a==b,True)
 		
+	def test_dt_cpu_gpurw_gpuro_gpurw_cpu(self):
+		"""test data transfer cpu->gpurw->gpuro->gpurw->cpu.."""
+		test_suite = [test_image(0,size=(32,32)), test_image(0,size=(33,33))]
+		test_suite.extend([test_image_3d(0,size=(32,32,32)), test_image_3d(0,size=(33,33,33))])
+		for a in test_suite:
+			b = a.copy()
+			b._copy_cpu_to_gpu_rw()
+			b._copy_gpu_rw_to_gpu_ro()
+			b._copy_gpu_ro_to_gpu_rw()
+			b._copy_gpu_rw_to_cpu()
+			self.assertEqual(a==b,True)
 	
+	def test_dt_cpu_gpuro_gpurw_cpu(self):
+		"""test data transfer cpu->gpuro->gpurw->cpu ........"""
+		test_suite = [test_image(0,size=(32,32)), test_image(0,size=(33,33))]
+		test_suite.extend([test_image_3d(0,size=(32,32,32)), test_image_3d(0,size=(33,33,33))])
+		for a in test_suite:
+			b = a.copy()
+			b._copy_cpu_to_gpu_ro()
+			b._copy_gpu_ro_to_gpu_rw()
+			b._copy_gpu_rw_to_cpu()
+			self.assertEqual(a==b,True)
+		
 def test_main():
 	p = OptionParser()
 	p.add_option('--t', action='store_true', help='test exception', default=False )

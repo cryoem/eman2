@@ -793,7 +793,7 @@ void WatershedProcessor::process_inplace(EMData * image) {
 	}
 	mask->write_image("seeds2.mrc");
 	int dis = 500;
-	float dx = (maxval-minval)/((float) dis - 1);
+// 	float dx = (maxval-minval)/((float) dis - 1);
 	
 	
 //	for(int i = 0; i < dis; ++i) {

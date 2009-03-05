@@ -943,7 +943,8 @@ namespace EMAN
 	EMData * operator*(const EMData & a, const EMData & b);
 	EMData * operator/(const EMData & a, const EMData & b);
 
-
+	// This one useful for testing purposes
+// 	bool operator==(const EMData&, const EMData&);
 
 /*   Next  is Modified by PRB      Transform3D::EMAN,
 	inline Transform3D EMData::get_transform() const

@@ -20,13 +20,24 @@ __global__ void mult_kernel(float *data,const float scale, const int z, const in
 
 void emdata_processor_mult( const EMDataForCuda* cuda_data, const float& mult) {
 	
-	const dim3 blockSize(cuda_data->ny,1, 1);
-	const dim3 gridSize(cuda_data->nx,1,1);
-		
-	for (int i = 0; i < cuda_data->nz; ++i) {
-		mult_kernel<<<blockSize,gridSize>>>(cuda_data->data,mult,i,cuda_data->nx,cuda_data->nx*cuda_data->ny);
+	
+	if ( cuda_data->nx <= 256 ) {
+		const dim3 blockSize(2*cuda_data->nx,1, 1);
+		const dim3 gridSize(cuda_data->ny/2,1,1);
+			
+		for (int i = 0; i < cuda_data->nz; ++i) {
+			mult_kernel<<<gridSize,blockSize>>>(cuda_data->data,mult,i,2*cuda_data->nx,cuda_data->nx*cuda_data->ny);
+		}
 	}
-	//CUDA_SAFE_CALL(cuCtxSynchronize());
+	else {
+		const dim3 blockSize(cuda_data->nx,1, 1);
+		const dim3 gridSize(cuda_data->ny,1,1);
+			
+		for (int i = 0; i < cuda_data->nz; ++i) {
+			mult_kernel<<<gridSize,blockSize>>>(cuda_data->data,mult,i,cuda_data->nx,cuda_data->nx*cuda_data->ny);
+		}
+	}
+		//CUDA_SAFE_CALL(cuCtxSynchronize());
 	cudaThreadSynchronize();	
 }
 
