@@ -511,9 +511,9 @@ void EMData::clip_inplace(const Region & area)
 
 EMData *EMData::get_clip(const Region & area, const float fill) const
 {
-		ENTERFUNC;
+	ENTERFUNC;
 	if (get_ndim() != area.get_ndim()) {
-		LOGERR("cannot get %dD clip out of %dD image", get_ndim(), area.get_ndim());
+		LOGERR("cannot get %dD clip out of %dD image", area.get_ndim(),get_ndim());
 		return 0;
 	}
 

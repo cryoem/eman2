@@ -55,7 +55,7 @@ public:
 	/** A convenient way to get the EMData object as an EMDataForCuda struct
 	 * @return an EMDataForCuda struct storing vital information
 	 */
-	EMDataForCuda get_data_struct_for_cuda() { 
+	inline EMDataForCuda get_data_struct_for_cuda() { 
 		EMDataForCuda tmp = {get_cuda_data(),nx,ny,nz};
 		return tmp;
 	}
@@ -78,7 +78,9 @@ public:
 	 * read only array on the CUDA device are out of date and need to be updated at a later point.
 	 * Also sets a flag dictating that the cached statistics of the image need to be updated.
 	 */
-	void gpu_update();
+	inline void gpu_update() {
+		flags |= EMDATA_NEEDUPD | EMDATA_CPU_NEEDS_UPDATE | EMDATA_GPU_RO_NEEDS_UPDATE;
+	}
 	
 	
 	/** Explicitly force a copy from the cuda device pointer to the CPU
@@ -234,6 +236,19 @@ private:
 		int cache_size;
 		/// The current position of the "snake head" in terms of the cache_size
 		int current_insert_idx;
+		/// Keep track of how much memory has been allocated
+		size_t mem_allocated;
+		
+		inline size_t get_emdata_bytes(const int idx) {
+			// This function can be called at program exit, in which case the EMData objects could
+			// Already be deallocated.
+// 			try {
+				const EMData* e = caller_cache[idx];
+				return e->get_size()*sizeof(float);
+// 			} except (...) {
+// 				return 0;	
+// 			}
+		}
 		
 		/// The CUDA device rw pointer cache
 		float** rw_cache;

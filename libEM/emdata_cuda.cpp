@@ -97,13 +97,14 @@ void EMData::cuda_cache_lost_imminently() const {
 	cuda_cache_handle = -1;
 }
 
-void EMData::gpu_update() {
-	flags |= EMDATA_NEEDUPD | EMDATA_CPU_NEEDS_UPDATE | EMDATA_GPU_RO_NEEDS_UPDATE;
-}
+
 
 void EMData::mult_cuda(const float& val) {
-	Dict d("scale",(float)val);
-	process_inplace("cuda.math.mult",d);
+// 	Dict d("scale",(float)val);
+// 	process_inplace("cuda.math.mult",d);
+	EMDataForCuda tmp = get_data_struct_for_cuda();
+	emdata_processor_mult(&tmp,val);
+	gpu_update();
 }
 
 EMData* EMData::calc_ccf_cuda( EMData*  image ) {
@@ -118,11 +119,28 @@ EMData* EMData::calc_ccf_cuda( EMData*  image ) {
 	Dict d;
 	EMData* with = 0;
 	if (!image->is_complex()) {
-		with = image->do_fft_cuda();
+		int wnx = image->get_xsize(); int wny = image->get_ysize(); int wnz = image->get_zsize();
+		if ( wnx != nx || wny != ny || wnz != nz ) {
+			
+			Region r;
+			if (nz > 1) {
+				r = Region((wnx-nx)/2, (wny-ny)/2, (wnz-nz)/2,nx,ny,nz);
+			}
+			else if (ny > 1) {
+				r = Region((wnx-nx)/2, (wny-ny)/2,nx,ny);
+			}
+			else throw UnexpectedBehaviorException("Calc_ccf_cuda doesn't work on 1D images");
+			EMData* tmp = image->get_clip(r);
+			with = tmp->do_fft_cuda();
+			delete tmp;
+		}else {
+			with = image->do_fft_cuda();
+		}
 		d["with"] = (EMData*) with;
 	} else {
 		d["with"] = (EMData*)image;
 	}
+	
 	
 	tmp->process_inplace("cuda.correlate",d);
 	
@@ -169,7 +187,7 @@ void EMData::copy_gpu_ro_to_gpu_rw() {
 
 
 
-EMData::CudaDeviceEMDataCache::CudaDeviceEMDataCache(const int size) : cache_size(size),current_insert_idx(0)
+EMData::CudaDeviceEMDataCache::CudaDeviceEMDataCache(const int size) : cache_size(size), current_insert_idx(0), mem_allocated(0)
 {
 	device_init();
 	rw_cache = new float *[cache_size];
@@ -243,6 +261,8 @@ float* EMData::CudaDeviceEMDataCache::alloc_rw_data(const int nx, const int ny, 
 		throw BadAllocException(message);
 		//throw BadAllocException("Cuda malloc failed, memory may be exhaused");
 	}
+	mem_allocated += num_bytes;
+// 	cout << "Allocation went up, it is currently " << (float)mem_allocated/1000000.0f << " MB " << endl;
 	return cuda_rw_data;
 	
 }
@@ -256,15 +276,19 @@ int EMData::CudaDeviceEMDataCache::cache_ro_data(const EMData* const emdata, con
 	}
 		
 	cudaArray *array = get_cuda_array_host(data,nx,ny,nz);
-	
-	rw_cache[current_insert_idx] = 0;
-	caller_cache[current_insert_idx] = emdata;
-	ro_cache[current_insert_idx] = array;
-	
-	int ret = current_insert_idx;
-	current_insert_idx += 1;
-	current_insert_idx %= cache_size; // Potentially inefficient to do this everytime, the alternative is an if statement. Which is faster?
-	return ret;		
+	if (array != 0) {
+		mem_allocated += nx*ny*nz*sizeof(float);
+// 		cout << "Allocation went up, it is currently " << (float)mem_allocated/1000000.0f << " MB " << endl;
+		rw_cache[current_insert_idx] = 0;
+		caller_cache[current_insert_idx] = emdata;
+		ro_cache[current_insert_idx] = array;
+		
+		int ret = current_insert_idx;
+		current_insert_idx += 1;
+		current_insert_idx %= cache_size; // Potentially inefficient to do this everytime, the alternative is an if statement. Which is faster?
+		return ret; 
+	}
+	else throw BadAllocException("The allocation of the CUDA array failed");
 }
 
 
@@ -325,17 +349,21 @@ void  EMData::CudaDeviceEMDataCache::copy_ro_to_rw(const int idx) {
 void EMData::CudaDeviceEMDataCache::clear_item(const int idx) {
 	float** pointer_to_cuda_pointer = &rw_cache[idx];
 	if  ( (*pointer_to_cuda_pointer) != 0) {
+		mem_allocated -= get_emdata_bytes(idx);
 		cudaFree(*pointer_to_cuda_pointer);
 	}
 	*pointer_to_cuda_pointer = 0;
 	
 	cudaArray** pointer_to_cuda_ro = &ro_cache[idx];
 	if  ( (*pointer_to_cuda_ro) != 0) {
+		mem_allocated -= get_emdata_bytes(idx);
 		cudaFreeArray(*pointer_to_cuda_ro);
 	}
 	*pointer_to_cuda_ro = 0;
 	
 	caller_cache[idx] = 0;
+	
+// 	cout << "Allocation went down, it is currently " << (float)mem_allocated/1000000.0f << " MB " << endl;
 	
 }
 

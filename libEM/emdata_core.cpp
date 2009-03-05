@@ -290,7 +290,6 @@ void EMData::sub(const EMData & em)
 		throw ImageFormatException( "not support sub between real image and complex image");
 	}
 	else {
-		update();
 		const float *src_data = em.get_data();
 		size_t size = nxy * nz;
 		float* data = get_data();
@@ -298,6 +297,7 @@ void EMData::sub(const EMData & em)
 		for (size_t i = 0; i < size; i++) {
 			data[i] -= src_data[i];
 		}
+		update();
 	}
 	EXITFUNC;
 }
@@ -312,12 +312,12 @@ void EMData::mult(float f)
 		ap2ri();
 	}
 	if (f != 1.0) {
-		update();
 		float* data = get_data();
 		size_t size = nxy * nz;
 		for (size_t i = 0; i < size; i++) {
 			data[i] *= f;
 		}
+		update();
 	}
 	EXITFUNC;
 }
@@ -336,7 +336,6 @@ void EMData::mult(const EMData & em, bool prevent_complex_multiplication)
 	}
 	else
 	{
-		update();
 		const float *src_data = em.get_data();
 		size_t size = nxy * nz;
 		float* data = get_data();
@@ -358,6 +357,7 @@ void EMData::mult(const EMData & em, bool prevent_complex_multiplication)
 				data[i+1] = c_result.imag();
 			}
 		}
+		update();
 	}
 
 	EXITFUNC;
@@ -387,7 +387,6 @@ void EMData::mult_complex_efficient(const EMData & em, const int radius)
 	}
 	
 	
-	update();
 	int s_nx = em.get_xsize();
 	int s_nxy = s_nx*em.get_ysize();
 	
@@ -405,6 +404,8 @@ void EMData::mult_complex_efficient(const EMData & em, const int radius)
 			}
 		}
 	}
+	
+	update();
 
 	EXITFUNC;
 }
@@ -419,12 +420,12 @@ void EMData::div(float f)
 	}
 	
 	if (f != 0) {
-		update();
 		float* data = get_data();
 		size_t size = nxy * nz;
 		for (size_t i = 0; i < size; i++) {
 			data[i] /= f;
 		}
+		update();
 	}
 	else {
 		throw InvalidValueException(f, "divide by zero");
@@ -445,7 +446,6 @@ void EMData::div(const EMData & em)
 		throw ImageFormatException( "not support division between real image and complex image");
 	}
 	else {
-		update();
 		const float *src_data = em.get_data();
 		size_t size = nxy * nz;
 		float* data = get_data();
@@ -473,6 +473,7 @@ void EMData::div(const EMData & em)
 				data[i+1] = c_result.imag();
 			}
 		}
+		update();
 	}
 
 	EXITFUNC;

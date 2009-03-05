@@ -47,7 +47,7 @@ class TestEMDataCuda(unittest.TestCase):
 	"""this is the unit test that verifies the CUDA functionality of the EMData class"""
 	
 	# Known issues
-	# cuda irregular sized FFTs are not invertible (test_image(0,size=(15,16)))
+	# cuda irregular sized FFTs are not invertible (test_image(0,size=(799,800)))
 	# cuda driver has bugs (March 2009) relating to non power of two sized data
 	
 	def test_cuda_ft_fidelity(self):
@@ -73,15 +73,19 @@ class TestEMDataCuda(unittest.TestCase):
 	
 	def test_cuda_ccf(self):
 		"""test cuda ccf equals cpu ccf ....................."""
-		a = test_image(0,size=(32,32))
-		b = a.calc_ccf(a)
-		c = a.calc_ccf_cuda(a)
-		#b.process_inplace("normalize")
-		#c.process_inplace("normalize")
-		for k in range(c.get_zsize()):
-			for j in range(c.get_ysize()):
-				for i in range(c.get_xsize()):
-					self.assertAlmostEqual(c.get_value_at(i,j,k), b.get_value_at(i,j,k), 1)
+		test_suite = [test_image(0,size=(32,32)), test_image(0,size=(768,768))]
+		for a in  test_suite:
+			b = a.calc_ccf(a)
+			c = a.calc_ccf_cuda(a)
+			#b.process_inplace("normalize")
+			#c.process_inplace("normalize")
+			for k in range(c.get_zsize()):
+				for j in range(c.get_ysize()):
+					for i in range(c.get_xsize()):
+						if b.get_value_at(i,j,k) != 0 and c.get_value_at(i,j,k) != 0:
+							self.assertAlmostEqual(c.get_value_at(i,j,k)/b.get_value_at(i,j,k),1, 1)
+						else:
+							self.assertAlmostEqual(c.get_value_at(i,j,k), b.get_value_at(i,j,k), 1)
 					
 	def test_cuda_2d_square_fft(self):
 		"""test cuda 2D square fft equals cpu fft ..........."""
@@ -107,12 +111,14 @@ class TestEMDataCuda(unittest.TestCase):
 						
 	def test_cuda_basic_mult(self):
 		"""test cuda basic multiplication ..................."""
-		for x in [15,16]:
-			a = EMData(x,x)
-			a.process_inplace('testimage.noise.uniform.rand')
+		test_suite = [test_image(1,size=(32,32)), test_image(1,size=(33,33)), test_image(1,size=(32,33)),test_image(1,size=(33,32)),test_image(1,size=(600,800))]
+		test_suite.extend([test_image_3d(0,size=(32,32,32)), test_image_3d(0,size=(33,33,33))])
+		for a in test_suite:
+			#a = EMData(x,x)
+			#a.process_inplace('testimage.noise.uniform.rand')
 			b = a.copy()
-			a.process_inplace("cuda.math.mult",{"scale":2.0})
-			a.process_inplace("cuda.math.mult",{"scale":1.0/2.0})
+			b.mult_cuda(2.0)
+			a.mult(2.0)
 			for k in range(a.get_zsize()):
 				for j in range(a.get_ysize()):
 					for i in range(a.get_xsize()):
@@ -121,7 +127,7 @@ class TestEMDataCuda(unittest.TestCase):
 	def test_cuda_standard_projector(self):
 		"""test cuda basic projection ......................."""
 		print ""
-		print "The problem with projection is to do wit the CPU one, not the GPU one"
+		print "The problem with projection is to do with the CPU version, not the GPU version"
 		for x in [15,16]:
 			a = EMData(x,x,x)
 			a.process_inplace('testimage.noise.uniform.rand')
@@ -133,7 +139,7 @@ class TestEMDataCuda(unittest.TestCase):
 						self.assertAlmostEqual(c.get_value_at(i,j,k), b.get_value_at(i,j,k), 8)
 	def test_dt_cpu_gpurw_cpu(self):
 		"""test data transfer cpu->gpurw->cpu................"""
-		test_suite = [test_image(0,size=(32,32)), test_image(0,size=(33,33))]
+		test_suite = [test_image(1,size=(32,32)), test_image(1,size=(33,33)), test_image(1,size=(32,33)), test_image(1,size=(33,32)),test_image(1,size=(600,800))]
 		test_suite.extend([test_image_3d(0,size=(32,32,32)), test_image_3d(0,size=(33,33,33))])
 		for a in test_suite:
 			b = a.copy()
@@ -143,7 +149,7 @@ class TestEMDataCuda(unittest.TestCase):
 		
 	def test_dt_cpu_gpurw_gpuro_gpurw_cpu(self):
 		"""test data transfer cpu->gpurw->gpuro->gpurw->cpu.."""
-		test_suite = [test_image(0,size=(32,32)), test_image(0,size=(33,33))]
+		test_suite = [test_image(1,size=(32,32)), test_image(1,size=(33,33)), test_image(1,size=(32,33)),test_image(1,size=(33,32)),test_image(1,size=(600,800))]
 		test_suite.extend([test_image_3d(0,size=(32,32,32)), test_image_3d(0,size=(33,33,33))])
 		for a in test_suite:
 			b = a.copy()
@@ -155,7 +161,7 @@ class TestEMDataCuda(unittest.TestCase):
 	
 	def test_dt_cpu_gpuro_gpurw_cpu(self):
 		"""test data transfer cpu->gpuro->gpurw->cpu ........"""
-		test_suite = [test_image(0,size=(32,32)), test_image(0,size=(33,33))]
+		test_suite = [test_image(1,size=(32,32)), test_image(1,size=(33,33)), test_image(1,size=(32,33)),test_image(1,size=(33,32)),test_image(1,size=(600,800))]
 		test_suite.extend([test_image_3d(0,size=(32,32,32)), test_image_3d(0,size=(33,33,33))])
 		for a in test_suite:
 			b = a.copy()
@@ -163,7 +169,7 @@ class TestEMDataCuda(unittest.TestCase):
 			b._copy_gpu_ro_to_gpu_rw()
 			b._copy_gpu_rw_to_cpu()
 			self.assertEqual(a==b,True)
-		
+	
 def test_main():
 	p = OptionParser()
 	p.add_option('--t', action='store_true', help='test exception', default=False )

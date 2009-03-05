@@ -41,9 +41,9 @@ from time import time
 
 def test_main():
 	
-	test_dims = [64*i for i in [2,3,4,6,8]]
+	test_dims = [64*i for i in [2,3,4,6,8,10,12,16]]
 	
-	test_range = range(20)
+	test_range = range(100)
 	
 	gpu_times = []
 	cpu_times = []
@@ -65,7 +65,7 @@ def test_main():
 			a.mult(2.0)
 			a.mult(0.5)
 		cpu_times.append(time()-t)
-		print dims,"\t", cpu_times[-1]/gpu_times[-1]
+		print dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1]
 	
 	
 	print "Testing FFT/IFT (2D)"
