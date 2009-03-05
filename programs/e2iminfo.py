@@ -61,7 +61,7 @@ This program will print out some information about the image.
     parser = OptionParser(usage=usage,version=EMANVERSION)
     
     parser.add_option("-H", "--header", action="store_true",help="show all header information",default=False)
-    parser.add_option("-v", "--verbose", type="int", help="set verbosity level. N=0,1,2,3. large N means more verbose.")
+#    parser.add_option("-v", "--verbose", type="int", help="set verbosity level. N=0,1,2,3. large N means more verbose.")
     parser.add_option("-s", "--stat", action="store_true",help="show statistical information about the image(s).",default=False)
     
     (options, args) = parser.parse_args()
