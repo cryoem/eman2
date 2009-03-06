@@ -83,6 +83,8 @@ EMData::EMData() :
 	attr_dict["is_complex"] = int(0);
 	attr_dict["is_complex_x"] = int(0);
 	attr_dict["is_complex_ri"] = int(1);
+	
+	attr_dict["datatype"] = (int)EMUtil::EM_FLOAT;
 
 	EMData::totalalloc++;
 #ifdef MEMDEBUG
