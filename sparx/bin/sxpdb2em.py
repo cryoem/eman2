@@ -238,7 +238,7 @@ map to the center of the volume."""
 		outmap.set_attr("pixel_size",options.apix)
 		outmap.write_image(args[1],0, EMUtil.ImageType.IMAGE_HDF)
 	elif filextension == ".spi": outmap.write_image(args[1],0, EMUtil.ImageType.IMAGE_SINGLE_SPIDER)
-	else:   ERROR("unknown image type","e2pdb2em",1)
+	else:   ERROR("unknown image type","sxpdb2em",1)
 				
 if __name__ == "__main__":
     main()
