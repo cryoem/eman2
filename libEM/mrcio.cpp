@@ -827,12 +827,19 @@ int MrcIO::to_mrcmode(int e, int is_complex)
 			m = MRC_USHORT;
 		}
 		break;
+	case EMUtil::EM_SHORT:
+		if (is_complex) {
+			m = MRC_SHORT_COMPLEX;
+		}
+		else {
+			m = MRC_SHORT;
+		}
+		break;
 	case EMUtil::EM_SHORT_COMPLEX:
 	case EMUtil::EM_USHORT_COMPLEX:
 		m = MRC_SHORT_COMPLEX;
 		break;
 	case EMUtil::EM_CHAR:
-	case EMUtil::EM_SHORT:
 	case EMUtil::EM_INT:
 	case EMUtil::EM_UINT:
 	case EMUtil::EM_FLOAT:
@@ -847,7 +854,7 @@ int MrcIO::to_mrcmode(int e, int is_complex)
 		m = MRC_FLOAT_COMPLEX;
 		break;
 	default:
-	        m = MRC_FLOAT;
+		m = MRC_FLOAT;
 	}
 
 	return m;
