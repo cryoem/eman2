@@ -5829,7 +5829,6 @@ void TestImageProcessor::preprocess(EMData * image)
 		return;
 	}
 	
-	image->set_attr("datatype", EMAN::EMUtil::EM_FLOAT);
 	nx = image->get_xsize();
 	ny = image->get_ysize();
 	nz = image->get_zsize();
