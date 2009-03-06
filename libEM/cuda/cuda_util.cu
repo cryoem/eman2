@@ -39,9 +39,9 @@ cudaArray* get_cuda_array(const float * const data,const int nx, const int ny, c
 	
 	if (nz > 1) {
 		cudaExtent VS = make_cudaExtent(nx,ny,nz);
-// 		printf("It's a 3D one\n");
+// 		printf("It's a 3D one %d %d %d %d\n",VS.width,VS.height,nx,ny);
 		cudaMalloc3DArray(&array, &channelDesc, VS);
-		
+		printf("It's a 3D one %d %d %d %d %d\n",VS.width,VS.height,nx,ny,array);
 		cudaMemcpy3DParms copyParams = {0};
 		copyParams.srcPtr   = make_cudaPitchedPtr((void*)data, VS.width*sizeof(float), VS.width, VS.height);
 		copyParams.dstArray = array;
@@ -70,6 +70,7 @@ cudaArray* get_cuda_array_host(const float * const data,const int nx, const int 
 
 void bind_cuda_array_to_texture( const cudaArray* const array, const int ndims,const bool interp_mode) {
 	if (ndims == 3) {
+		printf("Binding 3D texture\n");
 		cuda_bind_texture_3d(tex,array,interp_mode);
 	} else if ( ndims == 2) {
 		cuda_bind_texture_2d(tex2d,array,interp_mode);

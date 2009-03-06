@@ -142,7 +142,14 @@ EMData* EMData::calc_ccf_cuda( EMData*  image ) {
 	}
 	
 	
-	tmp->process_inplace("cuda.correlate",d);
+	EMDataForCuda left = tmp->get_data_struct_for_cuda();
+	((EMData*)d["with"])->bind_cuda_texture(false);
+	emdata_processor_correlation_texture(&left);
+// // 	EMDataForCuda right = ((EMData*)d["with"])->get_data_struct_for_cuda();
+// // 	emdata_processor_correlation(&left,&right);
+	tmp->gpu_update();
+	
+// 	tmp->process_inplace("cuda.correlate",d);
 	
 	if (with != 0) {
 		delete with;
@@ -268,7 +275,6 @@ float* EMData::CudaDeviceEMDataCache::alloc_rw_data(const int nx, const int ny, 
 }
 
 int EMData::CudaDeviceEMDataCache::cache_ro_data(const EMData* const emdata, const float* const data,const int nx, const int ny, const int nz) {
-	
 	const EMData* previous = caller_cache[current_insert_idx];
 	if (previous != 0) {
 		previous->cuda_cache_lost_imminently();

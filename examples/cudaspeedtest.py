@@ -41,52 +41,108 @@ from time import time
 
 def test_main():
 	
-	test_dims = [64*i for i in [2,3,4,6,8,10,12,16]]
+	test_dims = [64*i for i in [2,3,4,8]]
+	test_dims_3d = [64*i for i in [1,2,3,4]]
 	
 	test_range = range(100)
 	
 	gpu_times = []
 	cpu_times = []
 	
-	print "Testing pixel multiplication by a constant (2D)"
-	print "Dims","\t", "GPU speedup"
-	for dims in test_dims:
-		a = test_image(0,size=(dims,dims))
-		a._copy_cpu_to_gpu_rw()
-		t = time()
-		for i in test_range:
-			a.mult_cuda(2.0)
-			a.mult_cuda(0.5)
-		gpu_times.append(time()-t)
+	#print "Testing pixel multiplication by a constant (3D)"
+	#print "Dims","\t", "GPU speedup"
+	#for dims in test_dims_3d:
+		#a = test_image_3d(0,size=(dims,dims,dims))
+		#a._copy_cpu_to_gpu_rw()
+		#t = time()
+		#for i in test_range:
+			#a.mult_cuda(2.0)
+			#a.mult_cuda(0.5)
+		#gpu_time = time()-t
 		
-		a = test_image(0,size=(dims,dims))
-		t = time()
-		for i in test_range:
-			a.mult(2.0)
-			a.mult(0.5)
-		cpu_times.append(time()-t)
-		print dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1]
+		#a = test_image_3d(0,size=(dims,dims,dims))
+		#t = time()
+		#for i in test_range:
+			#a.mult(2.0)
+			#a.mult(0.5)
+		#cpu_time = time()-t
+		#print dims,"\t", cpu_time/gpu_time,'\t',cpu_time,'\t',gpu_time
+	
+	#print "Testing pixel multiplication by a constant (2D)"
+	#print "Dims","\t", "GPU speedup"
+	#for dims in test_dims:
+		#a = test_image(0,size=(dims,dims))
+		#a._copy_cpu_to_gpu_rw()
+		#t = time()
+		#for i in test_range:
+			#a.mult_cuda(2.0)
+			#a.mult_cuda(0.5)
+		#gpu_time = time()-t
+		
+		#a = test_image(0,size=(dims,dims))
+		#t = time()
+		#for i in test_range:
+			#a.mult(2.0)
+			#a.mult(0.5)
+		#cpu_time = time()-t
+		#print dims,"\t", cpu_time/gpu_time,'\t',cpu_time,'\t',gpu_time
 	
 	
-	print "Testing FFT/IFT (2D)"
-	print "Dims","\t", "GPU speedup"
-	for dims in test_dims:
-		a = test_image(0,size=(dims,dims))
-		tmp = a.do_fft_cuda()
-		t = time()
-		for i in test_range:
-			#a = aa.copy()
-			b = a.do_fft_cuda()
-			c = b.do_ift_cuda()
-		gpu_times.append(time()-t)
-		a = test_image(0,size=(dims,dims))
-		t = time()
-		for i in test_range:
-			#a = aa.copy()
-			b = a.do_fft()
-			c = b.do_ift()
-		cpu_times.append(time()-t)
-		print dims,"\t", cpu_times[-1]/gpu_times[-1]
+	
+	#print "Testing FFT (2D)"
+	#print "Dims","\t", "GPU speedup"
+	#for dims in test_dims:
+		#a = test_image(0,size=(dims,dims))
+		##tmp = a.do_fft_cuda()
+		#t = time()
+		#for i in test_range:
+			##a = aa.copy()
+			#b = a.do_fft_cuda()
+		#gpu_times.append(time()-t)
+		#a = test_image(0,size=(dims,dims))
+		#t = time()
+		#for i in test_range:
+			##a = aa.copy()
+			#b = a.do_fft()
+		#cpu_times.append(time()-t)
+		#print dims,"\t", cpu_times[-1]/gpu_times[-1]
+		
+	#print "Testing IFT (2D)"
+	#print "Dims","\t", "GPU speedup"
+	#for dims in test_dims:
+		#a = test_image(0,size=(dims,dims))
+		#b = a.do_fft_cuda()
+		##tmp = a.do_fft_cuda()
+		#t = time()
+		#for i in test_range:
+			#c = b.do_ift_cuda()
+		#gpu_times.append(time()-t)
+		#a = test_image(0,size=(dims,dims))
+		#b =a.do_fft()
+		#t = time()
+		#for i in test_range:
+			#c = b.do_ift()
+		#cpu_times.append(time()-t)
+		#print dims,"\t", cpu_times[-1]/gpu_times[-1]
+	#print "Testing FFT/IFT (2D)"
+	#print "Dims","\t", "GPU speedup"
+	#for dims in test_dims:
+		#a = test_image(0,size=(dims,dims))
+		#tmp = a.do_fft_cuda()
+		#t = time()
+		#for i in test_range:
+			##a = aa.copy()
+			#b = a.do_fft_cuda()
+			#c = b.do_ift_cuda()
+		#gpu_times.append(time()-t)
+		#a = test_image(0,size=(dims,dims))
+		#t = time()
+		#for i in test_range:
+			##a = aa.copy()
+			#b = a.do_fft()
+			#c = b.do_ift()
+		#cpu_times.append(time()-t)
+		#print dims,"\t", cpu_times[-1]/gpu_times[-1]
 
 	print "Testing Fourier correlation (2D)"
 	print "Dims","\t", "GPU speedup"
@@ -97,6 +153,7 @@ def test_main():
 		t = time()
 		for i in test_range:
 			c = a.calc_ccf_cuda(b)
+			
 		gpu_times.append(time()-t)
 		a = test_image(0,size=(dims,dims)).do_fft()
 		b = test_image(0,size=(dims,dims)).do_fft()
@@ -106,24 +163,43 @@ def test_main():
 		cpu_times.append(time()-t)
 		print dims,"\t", cpu_times[-1]/gpu_times[-1]
 
-
 	test_range = range(10)
+	print "Testing Fourier correlation (3D)"
+	print "Dims","\t", "GPU speedup"
+	for dims in test_dims_3d:
+		a = test_image_3d(0,size=(dims,dims,dims)).do_fft_cuda()
+		b = test_image_3d(0,size=(dims,dims,dims)).do_fft_cuda()
+		
+		t = time()
+		for i in test_range:
+			c = a.calc_ccf_cuda(b)
+			
+		gpu_times.append(time()-t)
+		a = test_image_3d(0,size=(dims,dims,dims)).do_fft()
+		b = test_image_3d(0,size=(dims,dims,dims)).do_fft()
+		t = time()
+		for i in test_range:
+			c = a.calc_ccf(b)
+		cpu_times.append(time()-t)
+		print dims,"\t", cpu_times[-1]/gpu_times[-1]
+
+	
 	print "Testing 3D real space projection"
 	print "Dims","\t", "GPU speedup"
-	#for dims in test_dims:
-		#a = test_image_3d(5,size=(dims,dims,dims))
-		#trans = Transform()
-		#t = time()
-		#for i in test_range:
-			#p = a.project("cuda_standard",trans)
-		#gpu_times.append(time()-t)
+	for dims in test_dims_3d:
+		a = test_image_3d(5,size=(dims,dims,dims))
+		trans = Transform()
+		t = time()
+		for i in test_range:
+			p = a.project("cuda_standard",trans)
+		gpu_times.append(time()-t)
 		
-		#a = test_image_3d(5,size=(dims,dims,dims))
-		#t = time()
-		#for i in test_range:
-			#p = a.project("standard",trans)
-		#cpu_times.append(time()-t)
-		#print dims,"\t", cpu_times[-1]/gpu_times[-1]
+		a = test_image_3d(5,size=(dims,dims,dims))
+		t = time()
+		for i in test_range:
+			p = a.project("standard",trans)
+		cpu_times.append(time()-t)
+		print dims,"\t", cpu_times[-1]/gpu_times[-1]
 
 if __name__ == '__main__':
 	if EMUtil.cuda_available(): test_main()
