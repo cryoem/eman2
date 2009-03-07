@@ -12,7 +12,7 @@ __global__ void mult_kernel(float *data,const float scale, const int xsize, cons
 
 	uint x=threadIdx.x;
 	uint y=blockIdx.x;
-	uint z=blockIdx.z;
+	uint z=blockIdx.y;
 
 	data[x+y*xsize+z*xysize] *= scale;
 }
@@ -21,7 +21,7 @@ __global__ void mult_kernel_offset(float *data,const float scale, const int xsiz
 {
 	uint x=threadIdx.x;
 	uint y=blockIdx.x;
-	uint z=blockIdx.z;
+	uint z=blockIdx.y;
 
 	data[x+offset+y*xsize+z*xysize] = scale;
 }
@@ -207,13 +207,16 @@ void emdata_processor_correlation( const EMDataForCuda* left, const EMDataForCud
 	const dim3 blockSize(left->nx/2,1,1);
 	int nz = left->nz;
 	if (nz > 1) {
+		//printf("Dimensions are %d %d %d, args are %d %d\n",left->nx/2,left->ny,left->nz,left->nx,left->nx*left->ny);
 		correlation_kernel_3D<<<gridSize,blockSize>>>(left->data,right->data,left->nx,left->nx*left->ny);
 	}
 	else {
 		if (left->nx <= 512) {
+			//printf("Doing correlation nx <= 512\n");
 			correlation_kernel_2D<<<gridSize,blockSize>>>(left->data,right->data,left->nx);
 		} else {
 			int offset = 0; 
+			//printf("Doing correlation nx > 512\n");
 			while(offset < left->nx) {
 				int block_size = 512;
 				if ( (block_size + offset) > left->nx ) {
@@ -223,12 +226,12 @@ void emdata_processor_correlation( const EMDataForCuda* left, const EMDataForCud
 				const dim3 blockSize(block_size/2,1,1);
 				
 				correlation_kernel_2D_offset<<<gridSize,blockSize>>>(left->data,right->data,left->nx,offset);
+				cudaThreadSynchronize();				
 				offset += 512;
-			}
-			
+			}	
 		}
-		//
-	}	
+	}
+	
 }
 
 void emdata_processor_correlation_texture( const EMDataForCuda* left) {
@@ -241,8 +244,10 @@ void emdata_processor_correlation_texture( const EMDataForCuda* left) {
 	}
 	else {
 		if (left->nx <= 512) {
+			//printf("Doing correlation nx <= 512\n");
 			correlation_kernel_2D_texture<<<gridSize,blockSize>>>(left->data,left->nx);
 		} else {
+			//printf("Doing correlation nx > 512\n");
 			int offset = 0; 
 			while(offset < left->nx) {
 				int block_size = 512;

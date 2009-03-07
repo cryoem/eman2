@@ -40,6 +40,7 @@
 #include <cuda.h>
 #include "cuda/cuda_util.h"
 #include "cuda/cuda_processor.h"
+#include "cuda/cuda_emfft.h"
 
 using namespace EMAN;
 // Static init
@@ -111,47 +112,55 @@ EMData* EMData::calc_ccf_cuda( EMData*  image ) {
 	
 	EMData* tmp;
 	if (is_complex()) {
+// 		cout << "Tmp is a copy of this" << endl;
 		tmp = new EMData(*this);
 	} else {
+// 		cout << "Tmp is this fftd" << endl;
 		tmp = do_fft_cuda();
 	}
 	
 	Dict d;
 	EMData* with = 0;
-	if (!image->is_complex()) {
-		int wnx = image->get_xsize(); int wny = image->get_ysize(); int wnz = image->get_zsize();
-		if ( wnx != nx || wny != ny || wnz != nz ) {
-			
-			Region r;
-			if (nz > 1) {
-				r = Region((wnx-nx)/2, (wny-ny)/2, (wnz-nz)/2,nx,ny,nz);
-			}
-			else if (ny > 1) {
-				r = Region((wnx-nx)/2, (wny-ny)/2,nx,ny);
-			}
-			else throw UnexpectedBehaviorException("Calc_ccf_cuda doesn't work on 1D images");
-			EMData* tmp = image->get_clip(r);
-			with = tmp->do_fft_cuda();
-			delete tmp;
-		}else {
-			with = image->do_fft_cuda();
-		}
-		d["with"] = (EMData*) with;
+	if (image == this) {
+		d["with"] = (EMData*) tmp;
 	} else {
-		d["with"] = (EMData*)image;
+		if (!image->is_complex()) {
+	// 		int wnx = image->get_xsize(); int wny = image->get_ysize(); int wnz = image->get_zsize();
+	// 		if ( wnx != nx || wny != ny || wnz != nz ) {
+	// 			
+	// 			Region r;
+	// 			if (nz > 1) {
+	// 				r = Region((wnx-nx)/2, (wny-ny)/2, (wnz-nz)/2,nx,ny,nz);
+	// 			}
+	// 			else if (ny > 1) {
+	// 				r = Region((wnx-nx)/2, (wny-ny)/2,nx,ny);
+	// 			}
+	// 			else throw UnexpectedBehaviorException("Calc_ccf_cuda doesn't work on 1D images");
+	// 			EMData* tmp = image->get_clip(r);
+	// 			with = tmp->do_fft_cuda();
+	// 			delete tmp;
+	// 		}else {
+	// 			cout << "With is the fft of the input" << endl;
+				with = image->do_fft_cuda();
+	// 		}
+			d["with"] = (EMData*) with;
+		} else {
+	// 		cout << "With is the input image" << endl;
+			d["with"] = (EMData*)image;
+		}
 	}
 	
 	
 	EMDataForCuda left = tmp->get_data_struct_for_cuda();
-	((EMData*)d["with"])->bind_cuda_texture(false);
-	emdata_processor_correlation_texture(&left);
-// // 	EMDataForCuda right = ((EMData*)d["with"])->get_data_struct_for_cuda();
-// // 	emdata_processor_correlation(&left,&right);
+// 	((EMData*)d["with"])->bind_cuda_texture(false);
+// 	emdata_processor_correlation_texture(&left);
+	EMDataForCuda right = ((EMData*)d["with"])->get_data_struct_for_cuda();
+	emdata_processor_correlation(&left,&right);
 	tmp->gpu_update();
 	
 // 	tmp->process_inplace("cuda.correlate",d);
-	
-	if (with != 0) {
+// 	return tmp;
+	if (with != 0 && image != this) {
 		delete with;
 		with = 0;
 	}
@@ -226,6 +235,8 @@ EMData::CudaDeviceEMDataCache::~CudaDeviceEMDataCache()
 		delete[]caller_cache;
 		caller_cache = 0;
 	}
+	// This might need some thinking
+	cleanup_cuda_fft_dd_plan_cache();
 }
 
 int EMData::CudaDeviceEMDataCache::cache_rw_data(const EMData* const emdata, const float* const data,const int nx, const int ny, const int nz)

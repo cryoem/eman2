@@ -53,7 +53,7 @@ class TestEMDataCuda(unittest.TestCase):
 	def test_cuda_ft_fidelity(self):
 		"""test cuda fft/ift equals input ..................."""
 		
-		for z in [1]:
+		for z in [1,15,16]:
 			for y in [15,16]:
 				for x in [15,16]:
 					#print x,y,z
@@ -87,7 +87,7 @@ class TestEMDataCuda(unittest.TestCase):
 						else:
 							self.assertAlmostEqual(c.get_value_at(i,j,k), b.get_value_at(i,j,k), 1)
 					
-	def test_cuda_2d_square_fft(self):
+	def no_test_cuda_2d_square_fft(self):
 		"""test cuda 2D square fft equals cpu fft ..........."""
 		for x in [15,16]:
 			a = test_image(0,size=(x,x))
@@ -98,7 +98,7 @@ class TestEMDataCuda(unittest.TestCase):
 					for i in range(c.get_xsize()):
 						self.assertAlmostEqual(c.get_value_at(i,j,k), b.get_value_at(i,j,k), 3)
 						
-	def test_cuda_3d_square_fft(self):
+	def no_test_cuda_3d_square_fft(self):
 		"""test cuda 3D square fft equals cpu fft ..........."""
 		for x in [15,16]:
 			a = test_image_3d(0,size=(x,x,x))

@@ -59,18 +59,31 @@ EMData *EMData::do_fft_cuda() const
 		LOGERR("real image expected. Input image is complex image.");
 		throw ImageFormatException("real image expected. Input image is complex image.");
 	}
-	int nxreal = nx;
-	int offset = 2 - nx%2;
-	int nx2 = nx + offset;
+// 	int nxreal = nx;
+	int offset;
+	int ndim = get_ndim();
 	EMData* dat = new EMData();
-	dat->set_size_cuda(nx2, ny, nz);
+	
+	// CUDA halves the last dimension as opposed to the first. This is annoying
+	// from the perspective of FFTW, which always halves the first
+	if ( ndim <= 3 ) {
+		offset = 2 - nx%2;
+		dat->set_size_cuda(nx+offset, ny, nz);
+	} else if (ndim == 2) {
+		offset = 2 - ny%2;
+		dat->set_size_cuda(nx, ny+offset, nz);
+	} else if (ndim == 3) {
+		offset = 2 - nz%2;
+		dat->set_size_cuda(nx, ny, nz+offset);
+	} else throw ImageDimensionException("No cuda FFT support of images with dimensions exceeding 3");
+	
 	//dat->to_zero();  // do not need it, real_to_complex will do it right anyway
 	if (offset == 1) dat->set_fftodd(true);
 	else             dat->set_fftodd(false);
 
 	float *d = dat->get_cuda_data();
 	//std::cout<<" do_fft "<<rdata[5]<<"  "<<d[5]<<std::endl;
-	cuda_dd_fft_real_to_complex_nd(get_cuda_data(), d, nxreal, ny, nz);
+	cuda_dd_fft_real_to_complex_nd(get_cuda_data(), d, nx, ny, nz);
 
 	dat->set_fftpad(true);
 	dat->set_complex(true);
@@ -92,18 +105,26 @@ EMData *EMData::do_ift_cuda() const
 	}
 
 	if (!is_ri()) {
-		LOGWARN("run IFT on AP data, only RI should be used. Converting.");
+		throw ImageFormatException("complex ri expected. Got amplitude phase.");
 	}
 	int offset = is_fftodd() ? 1 : 2;
 	EMData* dat = new EMData();
-	dat->set_size_cuda(nx-offset, ny, nz);
-
+	int ndim = get_ndim();
+	if ( ndim <= 3 ) {
+		dat->set_size_cuda(nx-offset, ny, nz);
+	} else if (ndim == 2) {
+		dat->set_size_cuda(nx, ny-offset, nz);
+	} else if (ndim == 3) {
+		dat->set_size_cuda(nx, ny, nz-offset);
+	} else throw ImageDimensionException("No cuda FFT support of images with dimensions exceeding 3");
+	
 	float *d = dat->get_cuda_data();
-
-	cuda_dd_fft_complex_to_real_nd(get_cuda_data(),d,nx - offset, ny, nz);
+	//
+	EMData tmp(*this);
+	cuda_dd_fft_complex_to_real_nd(tmp.get_cuda_data(),d,dat->get_xsize(), dat->get_ysize(),dat->get_zsize());
 	
 	// SCALE the inverse FFT
-	float scale = 1.0f / ((nx - offset) * ny * nz);
+	float scale = 1.0f / (dat->get_size());
 	dat->mult_cuda(scale);
 	
 	dat->set_fftpad(false);
