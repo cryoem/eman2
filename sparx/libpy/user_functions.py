@@ -133,6 +133,34 @@ def ref_ali3dm( refdata ):
 	fscc   = refdata[2]
 	total_iter = refdata[3]
 
+	flmin = 1.0
+	flmax = -1.0
+	for iref in xrange(numref):
+		fl, aa = fit_tanh( fscc[iref] )
+		if (fl < flmin):
+			flmin = fl
+			aamin = aa
+		if (fl > flmax):
+			flmax = fl
+			aamax = aa
+		# filter to minimum resolution
+	for iref in xrange(numref):
+		v = get_im(os.path.join(outdir, "vol%04d.hdf"%(total_iter)), iref)
+		v = filt_tanl(v, flmin, aamin)
+		v.write_image(os.path.join(outdir, "volf%04d.hdf"%( total_iter)), iref)
+					
+
+def ref_ali3dm_ali_50S( refdata ):
+	from filter import fit_tanh, filt_tanl
+	from utilities import get_im
+	from fundamentals import rot_shift3D
+	assert( len(refdata)==4 )
+
+	numref = refdata[0]
+	outdir = refdata[1]
+	fscc   = refdata[2]
+	total_iter = refdata[3]
+
 	mask_50S = get_im( "mask-50S.spi" )
 
 	flmin = 1.0
@@ -164,9 +192,7 @@ def ref_ali3dm( refdata ):
 
 
 		v.write_image(os.path.join(outdir, "volf%04d.hdf"%( total_iter)), iref)
-					
-
-
+	
 
 def ref_random( ref_data ):
 	from utilities    import print_msg
@@ -571,6 +597,8 @@ class factory_class:
 		self.contents["ref_ali2d_m"]        = ref_ali2d_m
 		self.contents["ref_random"]         = ref_random
 		self.contents["ref_ali3d"]          = ref_ali3d
+		self.contents["ref_ali3dm"]         = ref_ali3dm
+		self.contents["ref_ali3dm_ali_50S"] = ref_ali3dm_ali_50S
 		self.contents["reference3"]         = reference3
 		self.contents["reference4"]         = reference4
 		self.contents["spruce_up"]          = spruce_up
