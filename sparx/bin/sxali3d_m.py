@@ -53,6 +53,7 @@ def main():
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ir",       type= "int",   default= 1,                  help="  inner radius for rotational correlation > 0 (set to 1)")
 	parser.add_option("--ou",       type= "int",   default= "-1",               help="  outer radius for rotational correlation <nx-1 (set to the radius of the particle)")
+	parser.add_option("--maxit",	type= "int",   default= 5,                  help="  maximum number of iteration")
 	parser.add_option("--rs",       type= "int",   default= "1",                help="  step between rings in rotational correlation >0 (set to 1)" ) 
 	parser.add_option("--xr",       type="string", default= " 4  2 1  1   1",   help="  range for translation search in x direction, search is +/xr ")
 	parser.add_option("--yr",       type="string", default= "-1",               help="  range for translation search in y direction, search is +/yr (default = same as xr)")
@@ -90,7 +91,7 @@ def main():
 
 
 		global_def.BATCH = True
-		ali3d_m(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.delta, options.an, options.center, options.nassign, options.nrefine, options.CTF, options.snr, options.ref_a, options.sym, options.function, options.MPI, options.debug)
+		ali3d_m(args[0], args[1], args[2], mask, options.maxit, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.delta, options.an, options.center, options.nassign, options.nrefine, options.CTF, options.snr, options.ref_a, options.sym, options.function, options.MPI, options.debug)
 		global_def.BATCH = False
 
 if __name__ == "__main__":
