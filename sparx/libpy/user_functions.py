@@ -133,6 +133,7 @@ def ref_ali3dm( refdata ):
 	fscc   = refdata[2]
 	total_iter = refdata[3]
 
+	'''
 	flmin = 1.0
 	flmax = -1.0
 	for iref in xrange(numref):
@@ -144,9 +145,11 @@ def ref_ali3dm( refdata ):
 			flmax = fl
 			aamax = aa
 		# filter to minimum resolution
+	'''
+	print 'filter every volume at (0.4, 0.1)'
 	for iref in xrange(numref):
 		v = get_im(os.path.join(outdir, "vol%04d.hdf"%(total_iter)), iref)
-		v = filt_tanl(v, flmin, aamin)
+		v = filt_tanl(v, 0.4, 0.1)
 		v.write_image(os.path.join(outdir, "volf%04d.hdf"%( total_iter)), iref)
 					
 
@@ -161,7 +164,7 @@ def ref_ali3dm_ali_50S( refdata ):
 	fscc   = refdata[2]
 	total_iter = refdata[3]
 
-	mask_50S = get_im( "mask-50S.spi" )
+	#mask_50S = get_im( "mask-50S.spi" )
 
 	flmin = 1.0
 	flmax = -1.0
@@ -173,11 +176,13 @@ def ref_ali3dm_ali_50S( refdata ):
 		if (fl > flmax):
 			flmax = fl
 			aamax = aa
+		print 'iref,fl,aa: ', iref, fl, aa
 		# filter to minimum resolution
+	print 'flmin,aamin:', flmin, aamin
 	for iref in xrange(numref):
 		v = get_im(os.path.join(outdir, "vol%04d.hdf"%(total_iter)), iref)
 		v = filt_tanl(v, flmin, aamin)
-
+		'''
 		if iref==0:
 			v50S_0 = v.copy()
 			v50S_0 *= mask_50S
@@ -189,7 +194,7 @@ def ref_ali3dm_ali_50S( refdata ):
 			print "aligning ", iref
 			params = ali_vol_3(v50S_i, v50S_0, 10.0, 0.5, mask=mask_50S)
 			v = rot_shift3D( v, params[0], params[1], params[2], params[3], params[4], params[5], 1.0)
-
+		'''
 
 		v.write_image(os.path.join(outdir, "volf%04d.hdf"%( total_iter)), iref)
 	
