@@ -65,7 +65,7 @@ public:
 	 * @param image the image to perform the correlation operation with
 	 * @return a real space correlation image
 	 */
-	EMData* calc_ccf_cuda(EMData* image );
+	EMData* calc_ccf_cuda(EMData* image, bool use_texturing );
 	
 	/** Multiply the image by a constant value using the CUDA device
 	 * @param val the amount by which to multiply each pixel in the image

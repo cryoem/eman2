@@ -66,7 +66,7 @@ EMData *EMData::do_fft_cuda() const
 	
 	// CUDA halves the last dimension as opposed to the first. This is annoying
 	// from the perspective of FFTW, which always halves the first
-	if ( ndim <= 3 ) {
+	if ( ndim == 1 ) {
 		offset = 2 - nx%2;
 		dat->set_size_cuda(nx+offset, ny, nz);
 	} else if (ndim == 2) {
@@ -110,7 +110,7 @@ EMData *EMData::do_ift_cuda() const
 	int offset = is_fftodd() ? 1 : 2;
 	EMData* dat = new EMData();
 	int ndim = get_ndim();
-	if ( ndim <= 3 ) {
+	if ( ndim == 1 ) {
 		dat->set_size_cuda(nx-offset, ny, nz);
 	} else if (ndim == 2) {
 		dat->set_size_cuda(nx, ny-offset, nz);

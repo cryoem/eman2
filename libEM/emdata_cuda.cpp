@@ -108,7 +108,7 @@ void EMData::mult_cuda(const float& val) {
 	gpu_update();
 }
 
-EMData* EMData::calc_ccf_cuda( EMData*  image ) {
+EMData* EMData::calc_ccf_cuda( EMData*  image, bool use_texturing ) {
 	
 	EMData* tmp;
 	if (is_complex()) {
@@ -152,10 +152,13 @@ EMData* EMData::calc_ccf_cuda( EMData*  image ) {
 	
 	
 	EMDataForCuda left = tmp->get_data_struct_for_cuda();
-// 	((EMData*)d["with"])->bind_cuda_texture(false);
-// 	emdata_processor_correlation_texture(&left);
-	EMDataForCuda right = ((EMData*)d["with"])->get_data_struct_for_cuda();
-	emdata_processor_correlation(&left,&right);
+	if (use_texturing) {
+	 	((EMData*)d["with"])->bind_cuda_texture(false);
+	 	emdata_processor_correlation_texture(&left);
+	} else {
+		EMDataForCuda right = ((EMData*)d["with"])->get_data_struct_for_cuda();
+		emdata_processor_correlation(&left,&right);
+	}
 	tmp->gpu_update();
 	
 // 	tmp->process_inplace("cuda.correlate",d);

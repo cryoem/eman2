@@ -237,7 +237,7 @@ EMData::EMData(int nx, int ny, int nz, bool is_real) :
 	}
 	
 	this->to_zero();
-
+	update();
 	EMData::totalalloc++;
 	
 	EXITFUNC;

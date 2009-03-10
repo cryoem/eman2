@@ -46,10 +46,6 @@ IS_TEST_EXCEPTION = False
 class TestEMDataCuda(unittest.TestCase):
 	"""this is the unit test that verifies the CUDA functionality of the EMData class"""
 	
-	# Known issues
-	# cuda irregular sized FFTs are not invertible (test_image(0,size=(799,800)))
-	# cuda driver has bugs (March 2009) relating to non power of two sized data
-	
 	def test_cuda_ft_fidelity(self):
 		"""test cuda fft/ift equals input ..................."""
 		
@@ -73,19 +69,14 @@ class TestEMDataCuda(unittest.TestCase):
 	
 	def test_cuda_ccf(self):
 		"""test cuda ccf equals cpu ccf ....................."""
-		test_suite = [test_image(0,size=(32,32)), test_image(0,size=(768,768))]
+		test_suite = [test_image(0,size=(32,32)), test_image(0,size=(33,33))]
 		for a in  test_suite:
 			b = a.calc_ccf(a)
-			c = a.calc_ccf_cuda(a)
-			#b.process_inplace("normalize")
-			#c.process_inplace("normalize")
+			c = a.calc_ccf_cuda(a,False)
 			for k in range(c.get_zsize()):
 				for j in range(c.get_ysize()):
 					for i in range(c.get_xsize()):
-						if b.get_value_at(i,j,k) != 0 and c.get_value_at(i,j,k) != 0:
-							self.assertAlmostEqual(c.get_value_at(i,j,k)/b.get_value_at(i,j,k),1, 1)
-						else:
-							self.assertAlmostEqual(c.get_value_at(i,j,k), b.get_value_at(i,j,k), 1)
+						self.assertAlmostEqual(c.get_value_at(i,j,k), b.get_value_at(i,j,k), 1)
 					
 	def no_test_cuda_2d_square_fft(self):
 		"""test cuda 2D square fft equals cpu fft ..........."""
@@ -111,7 +102,7 @@ class TestEMDataCuda(unittest.TestCase):
 						
 	def test_cuda_basic_mult(self):
 		"""test cuda basic multiplication ..................."""
-		test_suite = [test_image(1,size=(32,32)), test_image(1,size=(33,33)), test_image(1,size=(32,33)),test_image(1,size=(33,32)),test_image(1,size=(600,800))]
+		test_suite = [test_image(1,size=(32,32)), test_image(1,size=(33,33)), test_image(1,size=(32,33)),test_image(1,size=(33,32))]
 		test_suite.extend([test_image_3d(0,size=(32,32,32)), test_image_3d(0,size=(33,33,33))])
 		for a in test_suite:
 			#a = EMData(x,x)
@@ -126,8 +117,8 @@ class TestEMDataCuda(unittest.TestCase):
 						
 	def test_cuda_standard_projector(self):
 		"""test cuda basic projection ......................."""
-		print ""
-		print "The problem with projection is to do with the CPU version, not the GPU version"
+		#print ""
+		#print "The problem with projection is to do with the CPU version, not the GPU version"
 		for x in [15,16]:
 			a = EMData(x,x,x)
 			a.process_inplace('testimage.noise.uniform.rand')
