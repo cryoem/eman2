@@ -4691,7 +4691,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 	from random          import randint
 	from fundamentals   import fshift
 	from utilities      import print_begin_msg, print_end_msg, print_msg
-	from projection     import prep_vol, prgs
+	from projection     import prep_vol, prgs, project
 	import os
 	import types
 	from mpi            import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD, mpi_barrier
@@ -4709,7 +4709,6 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 		while not os.path.exists(outdir):
 			print  "Node ",myid,"  waiting..."
 			sleep(5)
-
 
 		info_file = outdir+("/progress%04d"%myid)
 		finfo = open(info_file, 'w')
@@ -4809,8 +4808,11 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 		finfo.flush()
 
 	data = EMData.read_images(stack, list_of_particles)
+	masks = [None]*len(data)
 	for im in xrange(len(data)):
 		data[im].set_attr('ID', list_of_particles[im])
+		phi,tht,psi,s2x,s2y = get_params_proj( data[im] )
+		masks[im] = project( mask3D, [phi,tht,psi,-s2x,-s2y],int(ou) )
 
 	if(CTF):
 		if(data[0].get_attr("ctf_applied") > 0.0):  ERROR("ali3d_m does not work for CTF-applied data","ali3d_m",1)
@@ -4859,9 +4861,10 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 						ctf_params = data[im].get_attr( "ctf" )
 						if(ctf_params.defocus != previous_defocus):
 							previous_defocus = ctf_params.defocus
-							volref, kb = prep_vol(filt_ctf(vol, ctf_params))
-					phi, theta, psi, tx, ty = get_params_proj(data[im])
-					peak = prgs(volref, kb, [phi, theta, psi, tx, ty]).cmp("ccc", data[im], {"mask":mask, "negative":0})
+							vol = filt_ctf(vol, ctf_params)
+
+					phi,tht,psi,s2x,s2y = get_params_proj(data[im])
+					peak = project(vol,[phi,tht,psi,-s2x,-s2y],int(ou)).cmp("ccc",data[im],{"mask":masks[im], "negative":0})
 
 					if not(finfo is None):
 						finfo.write( "ID,iref,peak: %6d %d %8.5f" % (list_of_particles[im],iref,peak) )
@@ -4876,7 +4879,6 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 						if not(finfo is None):
 							finfo.write( "\n" )
 							finfo.flush()
-
 
 			else:
 				if(an[N_step] == -1):	proj_ali_incore(vol, mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], ref_a, sym, finfo, MPI=False)
