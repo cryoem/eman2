@@ -10038,7 +10038,7 @@ def header(stack, params, zero, one, randomize, rand_alpha, fimport, fexport, fp
 				elif delete:
 					img.del_attr(p)					
 
-			if zero or one or randomize or backup or restore or delete:
+			if zero or one or randomize or rand_alpha or backup or restore or delete:
 				write_header(stack, img, i)
 			elif fexport != None:
 				fexp.write( "\n" )
