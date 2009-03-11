@@ -78,27 +78,30 @@ class TestEMDataCuda(unittest.TestCase):
 					for i in range(c.get_xsize()):
 						self.assertAlmostEqual(c.get_value_at(i,j,k), b.get_value_at(i,j,k), 1)
 					
-	def no_test_cuda_2d_square_fft(self):
-		"""test cuda 2D square fft equals cpu fft ..........."""
-		for x in [15,16]:
-			a = test_image(0,size=(x,x))
-			b = a.do_fft()
-			c = a.do_fft_cuda()
-			for k in range(c.get_zsize()):
-				for j in range(c.get_ysize()):
-					for i in range(c.get_xsize()):
-						self.assertAlmostEqual(c.get_value_at(i,j,k), b.get_value_at(i,j,k), 3)
+	def test_cuda_2d_square_fft(self):
+		"""test cuda 2D fft equals cpu fft .................."""
+		for y in [15,16]:
+			for x in [15,16]:
+				a = test_image(0,size=(x,y))
+				b = a.do_fft()
+				c = a.do_fft_cuda()
+				for k in range(c.get_zsize()):
+					for j in range(c.get_ysize()):
+						for i in range(c.get_xsize()):
+							self.assertAlmostEqual(c.get_value_at(i,j,k), b.get_value_at(i,j,k), 3)
 						
-	def no_test_cuda_3d_square_fft(self):
-		"""test cuda 3D square fft equals cpu fft ..........."""
-		for x in [15,16]:
-			a = test_image_3d(0,size=(x,x,x))
-			b = a.do_fft()
-			c = a.do_fft_cuda()
-			for k in range(c.get_zsize()):
-				for j in range(c.get_ysize()):
-					for i in range(c.get_xsize()):
-						self.assertAlmostEqual(c.get_value_at(i,j,k), b.get_value_at(i,j,k), 3)
+	def test_cuda_3d_square_fft(self):
+		"""test cuda 3D fft equals cpu fft .................."""
+		for z in [15,16]:
+			for y in [15,16]:
+				for x in [15,16]:
+					a = test_image_3d(0,size=(x,x,x))
+					b = a.do_fft()
+					c = a.do_fft_cuda()
+					for k in range(c.get_zsize()):
+						for j in range(c.get_ysize()):
+							for i in range(c.get_xsize()):
+								self.assertAlmostEqual(c.get_value_at(i,j,k), b.get_value_at(i,j,k), 3)
 						
 	def test_cuda_basic_mult(self):
 		"""test cuda basic multiplication ..................."""
