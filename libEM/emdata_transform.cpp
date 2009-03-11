@@ -64,8 +64,6 @@ EMData *EMData::do_fft_cuda() const
 	int ndim = get_ndim();
 	EMData* dat = new EMData();
 	
-	// CUDA halves the last dimension as opposed to the first. This is annoying
-	// from the perspective of FFTW, which always halves the first
 	offset = 2 - nx%2;
 	dat->set_size_cuda(nx+offset,ny, nz);
 	float *d = dat->get_cuda_data();
@@ -77,13 +75,8 @@ EMData *EMData::do_fft_cuda() const
 		cuda_dd_fft_real_to_complex_nd(get_cuda_data(), d, nz, ny, nx);
 	} else throw ImageDimensionException("No cuda FFT support of images with dimensions exceeding 3");
 	
-	//dat->to_zero();  // do not need it, real_to_complex will do it right anyway
 	if (offset == 1) dat->set_fftodd(true);
 	else             dat->set_fftodd(false);
-
-	
-	//std::cout<<" do_fft "<<rdata[5]<<"  "<<d[5]<<std::endl;
-	
 
 	dat->set_fftpad(true);
 	dat->set_complex(true);
@@ -105,8 +98,9 @@ EMData *EMData::do_ift_cuda() const
 	}
 
 	if (!is_ri()) {
-		throw ImageFormatException("complex ri expected. Got amplitude phase.");
+		throw ImageFormatException("complex ri expected. Got amplitude/phase.");
 	}
+	
 	int offset = is_fftodd() ? 1 : 2;
 	EMData* dat = new EMData();
 	int ndim = get_ndim();
@@ -121,9 +115,8 @@ EMData *EMData::do_ift_cuda() const
 		cuda_dd_fft_complex_to_real_nd(tmp.get_cuda_data(),d, nz,ny,nx-offset);
 	} else throw ImageDimensionException("No cuda FFT support of images with dimensions exceeding 3");
 	
-	
 	// SCALE the inverse FFT
-	float scale = 1.0f / (dat->get_size());
+	float scale = 1.0f/static_cast<float>((dat->get_size()));
 	dat->mult_cuda(scale);
 	
 	dat->set_fftpad(false);

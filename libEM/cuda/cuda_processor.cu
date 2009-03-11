@@ -51,13 +51,31 @@ __global__ void correlation_kernel(float *ldata, float* rdata,const int num_thre
 	const uint idx = 2*x + y*num_threads;
 	const uint idxp1 = idx+1;
 	
-	float v1 = ldata[idx];
-	float v2 = ldata[idxp1];
-	float u1 = rdata[idx];
-	float u2 = rdata[idxp1];
+	const float v1 = ldata[idx];
+	const float v2 = ldata[idxp1];
+	const float u1 = rdata[idx];
+	const float u2 = rdata[idxp1];
 	
 	ldata[idx] = v1*u1 + v2*u2;
 	ldata[idxp1] = v1*u2 - v2*u1;
+}
+
+__global__ void auto_correlation_kernel(float *ldata, float* rdata,const int num_threads)
+{
+
+	const uint x=threadIdx.x;
+	const uint y=blockIdx.x;
+
+	const uint idx = 2*x + y*num_threads;
+	const uint idxp1 = idx+1;
+	
+	const float v1 = ldata[idx];
+	const float v2 = ldata[idxp1];
+	const float u1 = rdata[idx];
+	const float u2 = rdata[idxp1];
+	
+	ldata[idx] = v1*u1 + v2*u2;
+	ldata[idxp1] = 0;
 }
 
 
@@ -74,14 +92,15 @@ __global__ void correlation_kernel_texture_2D(float *ldata,const int num_threads
 	const uint tx = tex_idx % xsize;
 	const uint ty = tex_idx / xsize;
 	
-	float v1 = ldata[idx];
-	float v2 = ldata[idxp1];
-	float u1 = tex2D(tex2d,tx,ty);
-	float u2 =  tex2D(tex2d,tx+1,ty);
+	const float v1 = ldata[idx];
+	const float v2 = ldata[idxp1];
+	const float u1 = tex2D(tex2d,tx,ty);
+	const float u2 =  tex2D(tex2d,tx+1,ty);
 	
 	ldata[idx] = v1*u1 + v2*u2;
 	ldata[idxp1] = v1*u2 - v2*u1;
 }
+
 
 __global__ void correlation_kernel_texture_3D(float *ldata,const int num_threads, const int xsize, const int xysize, const int offset)
 {
@@ -97,14 +116,16 @@ __global__ void correlation_kernel_texture_3D(float *ldata,const int num_threads
 	const uint tz = tex_idx / xysize;
 	const uint ty = (tex_idx - tz*xysize)/xsize;
 	
-	float v1 = ldata[idx];
-	float v2 = ldata[idxp1];
-	float u1 = tex3D(tex,tx,ty,tz);
-	float u2 = tex3D(tex,tx+1,ty,tz);
+	const float v1 = ldata[idx];
+	const float v2 = ldata[idxp1];
+	const float u1 = tex3D(tex,tx,ty,tz);
+	const float u2 = tex3D(tex,tx+1,ty,tz);
 	
 	ldata[idx] = v1*u1 + v2*u2;
 	ldata[idxp1] = v1*u2 - v2*u1;
 }
+
+
 
 void emdata_processor_correlation_texture( const EMDataForCuda* cuda_data) {
 	int max_threads = 512; // I halve the threads because each kernel access memory in two locations
@@ -155,15 +176,22 @@ void emdata_processor_correlation( const EMDataForCuda* left, const EMDataForCud
 	if ( grid_y > 0 ) {
 		const dim3 blockSize(max_threads,1, 1);
 		const dim3 gridSize(grid_y,1,1);
-		correlation_kernel<<<gridSize,blockSize>>>(left->data,right->data,2*max_threads);
+		if (left->data != right->data) {
+			correlation_kernel<<<gridSize,blockSize>>>(left->data,right->data,2*max_threads);
+		} else {
+			auto_correlation_kernel<<<gridSize,blockSize>>>(left->data,right->data,2*max_threads);
+		}
 	}
 	
 	if ( res_y > 0 ) {
 		const dim3 blockSize(res_y,1, 1);
 		const dim3 gridSize(1,1,1);
 		int inc = 2*grid_y*max_threads;
-		correlation_kernel<<<gridSize,blockSize>>>(left->data+inc,right->data+inc,0);
-
+		if (left->data != right->data) {
+			correlation_kernel<<<gridSize,blockSize>>>(left->data+inc,right->data+inc,0);
+		} else {
+			auto_correlation_kernel<<<gridSize,blockSize>>>(left->data+inc,right->data+inc,0);
+		}
 	}
 	cudaThreadSynchronize();
 }

@@ -125,24 +125,24 @@ EMData* EMData::calc_ccf_cuda( EMData*  image, bool use_texturing ) {
 		d["with"] = (EMData*) tmp;
 	} else {
 		if (!image->is_complex()) {
-	// 		int wnx = image->get_xsize(); int wny = image->get_ysize(); int wnz = image->get_zsize();
-	// 		if ( wnx != nx || wny != ny || wnz != nz ) {
-	// 			
-	// 			Region r;
-	// 			if (nz > 1) {
-	// 				r = Region((wnx-nx)/2, (wny-ny)/2, (wnz-nz)/2,nx,ny,nz);
-	// 			}
-	// 			else if (ny > 1) {
-	// 				r = Region((wnx-nx)/2, (wny-ny)/2,nx,ny);
-	// 			}
-	// 			else throw UnexpectedBehaviorException("Calc_ccf_cuda doesn't work on 1D images");
-	// 			EMData* tmp = image->get_clip(r);
-	// 			with = tmp->do_fft_cuda();
-	// 			delete tmp;
-	// 		}else {
-	// 			cout << "With is the fft of the input" << endl;
+			int wnx = image->get_xsize(); int wny = image->get_ysize(); int wnz = image->get_zsize();
+			if ( wnx != nx || wny != ny || wnz != nz ) {
+				
+				Region r;
+				if (nz > 1) {
+					r = Region((wnx-nx)/2, (wny-ny)/2, (wnz-nz)/2,nx,ny,nz);
+				}
+				else if (ny > 1) {
+					r = Region((wnx-nx)/2, (wny-ny)/2,nx,ny);
+				}
+				else throw UnexpectedBehaviorException("Calc_ccf_cuda doesn't work on 1D images");
+				EMData* tmp = image->get_clip(r);
+				with = tmp->do_fft_cuda();
+				delete tmp;
+			}else {
+				cout << "With is the fft of the input" << endl;
 				with = image->do_fft_cuda();
-	// 		}
+			}
 			d["with"] = (EMData*) with;
 		} else {
 	// 		cout << "With is the input image" << endl;
@@ -308,7 +308,9 @@ int EMData::CudaDeviceEMDataCache::cache_ro_data(const EMData* const emdata, con
 		current_insert_idx %= cache_size; // Potentially inefficient to do this everytime, the alternative is an if statement. Which is faster?
 		return ret; 
 	}
-	else throw BadAllocException("The allocation of the CUDA array failed");
+	else {
+		throw BadAllocException("The allocation of the CUDA array failed");
+	}
 }
 
 
