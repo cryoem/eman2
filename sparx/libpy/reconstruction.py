@@ -367,8 +367,7 @@ def recons3d_nn_SSNR(stack_name,  mask2D = None, ring_width=1, npad =1, sign=1, 
 	return [outlist, vol_ssnr]
 
 def recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, ring_width=1, npad =1, sign=1, symmetry="c1", CTF = False, random_angles = 0):
-	from utilities import reduce_EMData_
-	to_root,bcast_EMData_to_all, bcast_number_to_all
+	from utilities import reduce_EMData_to_root,bcast_EMData_to_all, bcast_number_to_all
 	if( len(prjlist) == 0 ):    ERROR("empty input list","recons3d_nn_SSNR_MPI",1)
 	imgsize = prjlist[0].get_xsize()
 	if prjlist[0].get_ysize() != imgsize:  ERROR("input data has to be square","recons3d_nn_SSNR_MPI",1)
