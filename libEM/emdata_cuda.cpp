@@ -326,6 +326,7 @@ void  EMData::CudaDeviceEMDataCache::copy_rw_to_ro(const int idx) {
 	int nz = d->get_zsize();
 	
 	cudaArray *array = get_cuda_array_device(rw_cache[idx],nx,ny,nz);
+	if (array == 0) throw BadAllocException("The allocation of the CUDA array failed");
 	ro_cache[idx] = array;
 }
 

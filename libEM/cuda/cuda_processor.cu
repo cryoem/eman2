@@ -61,7 +61,7 @@ __global__ void correlation_kernel(float *ldata, float* rdata,const int num_thre
 }
 
 
-__global__ void correlation_kernel_texture_2D(float *ldata,const int num_threads,const int xsize)
+__global__ void correlation_kernel_texture_2D(float *ldata,const int num_threads,const int xsize,const int offset)
 {
 
 	const uint x=threadIdx.x;
@@ -70,8 +70,9 @@ __global__ void correlation_kernel_texture_2D(float *ldata,const int num_threads
 	const uint idx = 2*x + y*num_threads;
 	const uint idxp1 = idx+1;
 	
-	const uint tx = idx % xsize;
-	const uint ty = idx / xsize;
+	const uint tex_idx = offset+idx;
+	const uint tx = tex_idx % xsize;
+	const uint ty = tex_idx / xsize;
 	
 	float v1 = ldata[idx];
 	float v2 = ldata[idxp1];
@@ -82,7 +83,7 @@ __global__ void correlation_kernel_texture_2D(float *ldata,const int num_threads
 	ldata[idxp1] = v1*u2 - v2*u1;
 }
 
-__global__ void correlation_kernel_texture_3D(float *ldata,const int num_threads, const int xsize, const int xysize)
+__global__ void correlation_kernel_texture_3D(float *ldata,const int num_threads, const int xsize, const int xysize, const int offset)
 {
 
 	const uint x=threadIdx.x;
@@ -91,9 +92,10 @@ __global__ void correlation_kernel_texture_3D(float *ldata,const int num_threads
 	const uint idx = 2*x + y*num_threads;
 	const uint idxp1 = idx+1;
 	
-	const uint tx = idx % xsize;
-	const uint tz = idx / xysize;
-	const uint ty = (idx - tz*xysize)/xsize;
+	const uint tex_idx = offset+idx;
+	const uint tx = tex_idx % xsize;
+	const uint tz = tex_idx / xysize;
+	const uint ty = (tex_idx - tz*xysize)/xsize;
 	
 	float v1 = ldata[idx];
 	float v2 = ldata[idxp1];
@@ -118,20 +120,21 @@ void emdata_processor_correlation_texture( const EMDataForCuda* cuda_data) {
 		const dim3 blockSize(max_threads,1, 1);
 		const dim3 gridSize(grid_y,1,1);
 		if (cuda_data->nz == 1) {
-			correlation_kernel_texture_2D<<<gridSize,blockSize>>>(cuda_data->data,2*max_threads,cuda_data->nx);
+			correlation_kernel_texture_2D<<<gridSize,blockSize>>>(cuda_data->data,2*max_threads,cuda_data->nx,0);
 		} else {
-			correlation_kernel_texture_3D<<<gridSize,blockSize>>>(cuda_data->data,2*max_threads,cuda_data->nx,cuda_data->nx*cuda_data->ny);
+			correlation_kernel_texture_3D<<<gridSize,blockSize>>>(cuda_data->data,2*max_threads,cuda_data->nx,cuda_data->nx*cuda_data->ny,0);
 		}
 	}
-	res_y = 0;
+// 	res_y = 0;
 	if ( res_y > 0 ) {
 		const dim3 blockSize(res_y,1,1);
 		const dim3 gridSize(1,1,1);
 		int inc = 2*grid_y*max_threads;
+// 		printf("Res %d, inc %d\n",res_y,inc);
 		if (cuda_data->nz == 1) {
-			correlation_kernel_texture_2D<<<gridSize,blockSize>>>(cuda_data->data+inc,0,cuda_data->nx);
+			correlation_kernel_texture_2D<<<gridSize,blockSize>>>(cuda_data->data+inc,0,cuda_data->nx,inc);
 		} else {
-			correlation_kernel_texture_3D<<<gridSize,blockSize>>>(cuda_data->data+inc,0,cuda_data->nx,cuda_data->nx*cuda_data->ny);
+			correlation_kernel_texture_3D<<<gridSize,blockSize>>>(cuda_data->data+inc,0,cuda_data->nx,cuda_data->nx*cuda_data->ny,inc);
 		}
 	}
 	

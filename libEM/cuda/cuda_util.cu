@@ -41,17 +41,27 @@ cudaArray* get_cuda_array(const float * const data,const int nx, const int ny, c
 		cudaExtent VS = make_cudaExtent(nx,ny,nz);
 // 		printf("It's a 3D one %d %d %d %d\n",VS.width,VS.height,nx,ny);
 		cudaMalloc3DArray(&array, &channelDesc, VS);
-		//printf("It's a 3D one %d %d %d %d %d\n",VS.width,VS.height,nx,ny,array);
+// 		printf("It's a 3D one %d %d %d %d %d\n",VS.width,data,nx,ny,nz);
 		cudaMemcpy3DParms copyParams = {0};
 		copyParams.srcPtr   = make_cudaPitchedPtr((void*)data, VS.width*sizeof(float), VS.width, VS.height);
 		copyParams.dstArray = array;
 		copyParams.extent   = VS;
 		copyParams.kind     = mem_cpy_flag;
-		cudaMemcpy3D(&copyParams);
+		if ( cudaMemcpy3D(&copyParams) != cudaSuccess) {
+			cudaFreeArray(array);
+			return 0;	
+		}
 	} else if ( ny > 1) {
 // 		printf("It's a 2D one\n");d
 		cudaMallocArray(&array,&channelDesc,nx,ny);
-		cudaMemcpyToArray(array, 0, 0, data, nx*ny*sizeof(float), mem_cpy_flag);
+		cudaExtent VS = make_cudaExtent(nx,ny,nz);
+// 		printf("It's a 3D one %d %d %d %d\n",VS.width,VS.height,nx,ny);
+		cudaMalloc3DArray(&array, &channelDesc, VS);
+		if (cudaMemcpyToArray(array, 0, 0, data, nx*ny*nz*sizeof(float), mem_cpy_flag) != cudaSuccess) 
+		{
+			cudaFreeArray(array);
+			return 0;	
+		}
 	} else throw;
 	
 	return array;
