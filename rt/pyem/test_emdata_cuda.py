@@ -89,7 +89,7 @@ class TestEMDataCuda(unittest.TestCase):
 		for z in [15,16]:	
 			for y in [15,16]:
 				for x in [15,16]:
-					print x,y,z
+					#print x,y,z
 					a = test_image_3d(0,size=(x,y,z))
 					b = a.calc_ccf(a)
 					# Not textured
@@ -100,11 +100,11 @@ class TestEMDataCuda(unittest.TestCase):
 								self.assertAlmostEqual(c.get_value_at(i,j,k), b.get_value_at(i,j,k), 1)
 					
 					#Textured
-					c = a.calc_ccf_cuda(a,True)
-					for k in range(c.get_zsize()):
-						for j in range(c.get_ysize()):
-							for i in range(c.get_xsize()):
-								self.assertAlmostEqual(c.get_value_at(i,j,k), b.get_value_at(i,j,k), 1)
+#					c = a.calc_ccf_cuda(a,True)
+#					for k in range(c.get_zsize()):
+#						for j in range(c.get_ysize()):
+#							for i in range(c.get_xsize()):
+#								self.assertAlmostEqual(c.get_value_at(i,j,k), b.get_value_at(i,j,k), 1)
 							
 		
 					
