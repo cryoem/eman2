@@ -368,7 +368,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	from numpy        import reshape, shape
 	from utilities    import print_msg, print_begin_msg, print_end_msg
 	from fundamentals import fft, rot_avg_table, rot_shift2D
-	from random       import seed, randint, random
+	from random       import randint, random
 	from math         import sqrt, sin, pi
 	import os
 
@@ -471,7 +471,6 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		ctf_2_sum = EMData(nx, nx, 1, False)
 	data = EMData.read_images(stack, range(image_start, image_end))
 
-	seed(5127 + myid*5341)
 	nsav = 8
 	N_step = 0
 	tnull = Transform({"type":"2D"})
@@ -690,7 +689,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	from numpy        import reshape, shape
 	from utilities    import print_msg, print_begin_msg, print_end_msg
 	from fundamentals import fft, rot_avg_table, rot_shift2D
-	from random       import seed, randint, random
+	from random       import randint, random
 	from math         import sqrt, sin, pi
 	import os
 
@@ -1738,7 +1737,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	from utilities    import print_msg, print_begin_msg, print_end_msg
 	from fundamentals import fft, rot_avg_table, rot_shift2D
 	from math         import exp
-	from random       import seed, randint, random
+	from random       import randint, random
 	import os
 
 	from mpi 	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
