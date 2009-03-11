@@ -803,13 +803,11 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		ctf_2_sum = EMData(nx, nx, 1, False)
 	data = EMData.read_images(stack, range(image_start, image_end))
 
-	seed(5127 + myid*5341)
-
 	N_step = 0
 	tnull = Transform({"type":"2D"})
 
 	for im in data:
-		set_params2D(im, [random()*360.0, random()*4.0-2.0, random()*4.0-2.0, randint(0, 1), 1.0])
+		set_params2D(im, [random()*360.0, 0.0, 0.0, randint(0, 1), 1.0])
 	tavg = ave_series(data, False)
 	reduce_EMData_to_root(tavg, key, group_main_node, group_comm)
 	if key == group_main_node:
@@ -9824,13 +9822,13 @@ def extract_value( s ):
 	
 	return s 
 
-def header(stack, params, zero, one, randomize, fimport, fexport, fprint, backup, suffix, restore, delete):
+def header(stack, params, zero, one, randomize, rand_alpha, fimport, fexport, fprint, backup, suffix, restore, delete):
 	from string    import split
 	from utilities import write_header, file_type
 	from random    import random, randint
 	from utilities import set_params2D, get_params2D, set_params3D, get_params3D, set_params_proj, get_params_proj, set_ctf, get_ctf
 
-	op = zero+one+randomize+(fimport!=None)+(fexport!=None)+fprint+backup+restore+delete
+	op = zero+one+randomize+rand_alpha+(fimport!=None)+(fexport!=None)+fprint+backup+restore+delete
 	if op == 0:
 		print "Error: no operation selected!"
 		return
@@ -9940,7 +9938,7 @@ def header(stack, params, zero, one, randomize, fimport, fexport, fprint, backup
 						alpha = random()*360.0
 						sx = random()*4.0-2.0
 						sy = random()*4.0-2.0
-						mirror = randint(0,1)
+						mirror = randint(0, 1)
 						scale = 1.0
 						set_params2D(img, [alpha, sx, sy, mirror, scale], p)
 					elif p[:16] == "xform.projection":
@@ -9957,7 +9955,35 @@ def header(stack, params, zero, one, randomize, fimport, fexport, fprint, backup
 						s3x = random()*4.0-2.0
 						s3y = random()*4.0-2.0
 						s3z = random()*4.0-2.0
-						mirror = randint(0,1)
+						mirror = randint(0, 1)
+						scale = 1.0
+						set_params3D(img, [phi, theta, psi, s3x, s3y, s3z, mirror, scale], p)						
+					else:
+						print "Invalid operation!"
+						return						
+				elif rand_alpha:
+					if p[:13] == "xform.align2d":
+						alpha = random()*360.0
+						sx = 0.0
+						sy = 0.0
+						mirror = randint(0, 1)
+						scale = 1.0
+						set_params2D(img, [alpha, sx, sy, mirror, scale], p)
+					elif p[:16] == "xform.projection":
+						phi = random()*360.0
+						theta = random()*180.0
+						psi = random()*360.0
+						s2x = 0.0
+						s2y = 0.0
+						set_params_proj(img, [phi, theta, psi, s2x, s2y], p)
+					elif p[:13] == "xform.align3d":
+						phi = random()*360.0
+						theta = random()*180.0
+						psi = random()*360.0
+						s3x = 0.0
+						s3y = 0.0
+						s3z = 0.0
+						mirror = randint(0, 1)
 						scale = 1.0
 						set_params3D(img, [phi, theta, psi, s3x, s3y, s3z, mirror, scale], p)						
 					else:
