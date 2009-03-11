@@ -223,25 +223,28 @@ def image_decimate(img, decimation=2, fit_to_fft = True, frequency_low=0, freque
 		e        = filt_btwl(img, frequency_low, frequency_high)
 	return Util.decimate(e, int(decimation), int(decimation), 1)
 
-def resample(img, sub_rate=0.5, fit_to_fft = False, frequency_low=0.0, frequency_high=0.0, num_prime = 3):
+
+def resample(img, sub_rate=0.5, fit_to_fft=False, frequency_low=0.0, frequency_high=0.0, num_prime=3):
+
 	from filter       import filt_btwl
 	from fundamentals import smallprime, window2d, rtshg
+	
 	"""
 		Window image to FFT-friendly size, apply Butterworth low pass filter,
 		and subsample image 
-		sub_rate <1.0, subsampling rate
+		sub_rate < 1.0, subsampling rate
 		fit_to_fft will channge the ouput image size
 	"""
 	if type(img) == str:
 		from utilities    import get_image
 		img = get_image(img)
-	if(sub_rate == 1.0): return  img.copy()
-	elif(sub_rate < 1.0):
-		if(frequency_low <= 0.0): 
+	if sub_rate == 1.0: return  img.copy()
+	elif sub_rate < 1.0:
+		if frequency_low <= 0.0: 
 			frequency_low = 0.5*sub_rate - 0.02
 			if(frequency_low <= 0.0): ERROR("Butterworth pass_band frequency is too low","resample",1)		 
 			frequency_high = min(0.5*sub_rate + 0.02, 0.499)
-		if(frequency_high == 0.0): frequency_high = frequency_low + 0.1
+		if frequency_high == 0.0: frequency_high = frequency_low + 0.1
 		nx = img.get_xsize()
 		ny = img.get_ysize()
 		if fit_to_fft:
@@ -271,13 +274,22 @@ def resample(img, sub_rate=0.5, fit_to_fft = False, frequency_low=0.0, frequency
 		if fit_to_fft:
 			new_nx = smallprime(new_nx, num_prime)
 			new_ny = smallprime(new_ny, num_prime)
-		if(nx != ny):
+		if nx != ny:
 			#  rtshg  will  not  work  for  rectangular  images
 			nn = max(new_nx, new_ny)
 			e = Util.pad(e, nn, nn,  1, 0, 0, 0, "circumference")
 			e = Util.window( rtshg(e, scale = sub_rate), new_nx, new_ny, 1, 0,0,0)
 		else:
 			e = rtshg(Util.pad(img, new_nx, new_ny, 1, 0, 0, 0, "circumference"), scale = sub_rate)
+	
+	# Automatically adjust pixel size for ctf parameters
+	attr_list = img.get_attr_dict()
+	if attr_list.has_key("ctf"):
+		from utilities import set_ctf, get_ctf
+		defocus, cs, voltage, apix, bfactor, ampcont = get_ctf(img)
+		apix /= sub_rate
+   		set_ctf(e, [defocus, cs, voltage, apix, bfactor, ampcont])
+		
 	return 	e
 
 def prepi(image):
