@@ -809,7 +809,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	tnull = Transform({"type":"2D"})
 
 	for im in data:
-		set_params2D(im, [randint(0, 359), randint(-2, 2), randint(-2, 2), randint(0, 1), 1.0])
+		set_params2D(im, [random()*360.0, random()*4.0-2.0, random()*4.0-2.0, randint(0, 1), 1.0])
 	tavg = ave_series(data, False)
 	reduce_EMData_to_root(tavg, key, group_main_node, group_comm)
 	if key == group_main_node:
