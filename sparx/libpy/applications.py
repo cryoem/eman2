@@ -4424,10 +4424,10 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 def ali3d_m(stack, ref_vol, outdir, maskfile = None, maxit=1, ir=1, ou=-1, rs=1, 
            xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta="10 6 4 4", an="-1", 
 	     center = 1.0, nassign = 3, nrefine = 1, CTF = False, snr = 1.0,  ref_a = "S", sym="c1",
-	     user_func_name="ref_ali3d", MPI=False, debug = False):
+	     user_func_name="ref_ali3d", MPI=False, debug = False, fourvar=False):
 	if MPI:
 		ali3d_m_MPI(stack, ref_vol, outdir, maskfile, maxit, ir, ou, rs, xr, yr, ts,
-		 delta, an, center, nassign, nrefine, CTF, snr, ref_a, sym, user_func_name, debug)
+		 delta, an, center, nassign, nrefine, CTF, snr, ref_a, sym, user_func_name, debug, fourvar)
 		return
 	from utilities      import model_circle, drop_image, get_image, get_input_from_string
 	from utilities      import get_arb_params, set_arb_params, get_im, write_headers
@@ -4678,7 +4678,7 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, maxit=1, ir=1, ou=-1, rs=1,
 def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=1, 
             xr ="4 2  2  1", yr="-1", ts="1 1 0.5 0.25",   delta="10  6  4  4", an="-1",
 	      center = 0, nassign = 3, nrefine= 1, CTF = False, snr = 1.0,  ref_a="S", sym="c1",
-	      user_func_name="ref_ali3d", debug = False):
+	      user_func_name="ref_ali3d", debug = False, fourvar=False):
 	from utilities      import model_circle, reduce_EMData_to_root, bcast_EMData_to_all, bcast_number_to_all, drop_image
 	from utilities      import bcast_string_to_all, bcast_list_to_all, get_image, get_input_from_string, get_im
 	from utilities      import get_arb_params, set_arb_params, drop_spider_doc, send_attr_dict
@@ -4748,11 +4748,6 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 		import user_functions
 		user_func = user_functions.factory[user_func_name]
 
-		for  iref in xrange(numref):
-			volref     = EMData()
-			volref.read_image(ref_vol, iref)
-			volref.write_image(os.path.join(outdir, "volf0000.hdf"), iref)
-
 		print_begin_msg("ali3d_m_MPI")
 		print_msg("Input stack                 : %s\n"%(stack))
 		print_msg("Reference volume            : %s\n"%(ref_vol))	
@@ -4810,6 +4805,28 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 		data[im].set_attr('ID', list_of_particles[im])
 		phi,tht,psi,s2x,s2y = get_params_proj( data[im] )
 		masks[im] = project( mask3D, [phi,tht,psi,-s2x,-s2y],int(ou) )
+
+	if fourvar:
+		from reconstruction import rec3D_MPI
+		from statistics     import varf3d_MPI
+		#  Compute Fourier variance
+		print 'computing Fourier variance'
+		vol, fscc = rec3D_MPI(data, snr, sym, mask3D, os.path.join(outdir, "resolution0000"), myid, main_node)
+		varf = varf3d_MPI(data, os.path.join(outdir, "ssnr0000"), None, vol, last_ring, 1.0, 1, CTF, 1, sym, myid)
+		if myid == main_node:   varf = 1.0/varf
+	else:  
+		varf = None
+
+
+	if myid==main_node:
+		for  iref in xrange(numref):
+			volref     = EMData()
+			volref.read_image(ref_vol, iref)
+			if fourvar:
+				volref.filter_by_image( varf )
+			volref.write_image(os.path.join(outdir, "volf0000.hdf"), iref)
+	mpi_barrier( MPI_COMM_WORLD )
+
 
 	if(CTF):
 		if(data[0].get_attr("ctf_applied") > 0.0):  ERROR("ali3d_m does not work for CTF-applied data","ali3d_m",1)
@@ -4914,11 +4931,12 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 			if(myid == main_node):
 				volref.write_image(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref)
 		if(myid == main_node):
-			refdata = [None]*4
+			refdata = [None]*5
 			refdata[0] = numref
 			refdata[1] = outdir
 			refdata[2] = fscc
 			refdata[3] = total_iter
+			refdata[4] = varf
 			user_func( refdata )
 
 		#  here we  write header info

@@ -126,12 +126,14 @@ def ref_ali3dm( refdata ):
 	from filter import fit_tanh, filt_tanl
 	from utilities import get_im
 	from fundamentals import rot_shift3D
-	assert( len(refdata)==4 )
 
 	numref = refdata[0]
 	outdir = refdata[1]
 	fscc   = refdata[2]
 	total_iter = refdata[3]
+	varf   = refdata[4]
+
+
 
 	'''
 	flmin = 1.0
@@ -150,6 +152,9 @@ def ref_ali3dm( refdata ):
 	for iref in xrange(numref):
 		v = get_im(os.path.join(outdir, "vol%04d.hdf"%(total_iter)), iref)
 		v = filt_tanl(v, 0.4, 0.1)
+		if not(varf is None):
+			print 'filtering by fourier variance'
+			v.filter_by_image( varf )
 		v.write_image(os.path.join(outdir, "volf%04d.hdf"%( total_iter)), iref)
 					
 
@@ -157,12 +162,12 @@ def ref_ali3dm_ali_50S( refdata ):
 	from filter import fit_tanh, filt_tanl
 	from utilities import get_im
 	from fundamentals import rot_shift3D
-	assert( len(refdata)==4 )
 
 	numref = refdata[0]
 	outdir = refdata[1]
 	fscc   = refdata[2]
 	total_iter = refdata[3]
+	varf   = refdata[4]
 
 	#mask_50S = get_im( "mask-50S.spi" )
 
@@ -195,7 +200,10 @@ def ref_ali3dm_ali_50S( refdata ):
 			params = ali_vol_3(v50S_i, v50S_0, 10.0, 0.5, mask=mask_50S)
 			v = rot_shift3D( v, params[0], params[1], params[2], params[3], params[4], params[5], 1.0)
 		'''
-
+		if not(varf is None):
+			print 'filtering by fourier variance'
+			v.filter_by_image( varf )
+	
 		v.write_image(os.path.join(outdir, "volf%04d.hdf"%( total_iter)), iref)
 	
 
