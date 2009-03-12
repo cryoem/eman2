@@ -4743,6 +4743,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 	nx      = volref.get_xsize()
 	if last_ring < 0:	last_ring = nx//2 - 2
 
+	fscmask = model_circle(last_ring, nx, nx, nx)
 
 	if (myid == main_node):
 		import user_functions
@@ -4811,7 +4812,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 		from statistics     import varf3d_MPI
 		#  Compute Fourier variance
 		print 'computing Fourier variance'
-		vol, fscc = rec3D_MPI(data, snr, sym, mask3D, os.path.join(outdir, "resolution0000"), myid, main_node)
+		vol, fscc = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution0000"), myid, main_node)
 		varf = varf3d_MPI(data, os.path.join(outdir, "ssnr0000"), None, vol, last_ring, 1.0, 1, CTF, 1, sym, myid)
 		if myid == main_node:   varf = 1.0/varf
 	else:  
@@ -4861,6 +4862,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 		else:
  			peaks = [[-1.0e23, tr_dummy] for im in xrange(nima) ]
 	
+		
 		for iref in xrange(numref):
 			vol = get_im(os.path.join(outdir, "volf%04d.hdf"%(total_iter-1)), iref)
 			if(CTF):
@@ -4919,16 +4921,20 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 		if runtype=="REFINEMENT":
 			for im in xrange(nima):
 				data[im].set_attr('xform.projection', peaks[im][1])
-	
+
 		del peaks
 		if CTF: del vol
 		fscc = [None]*numref
 		for iref in xrange(numref):
 				#  3D stuff
-			if(CTF): volref, fscc[iref] = rec3D_MPI(data, snr, sym, mask3D, os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index = iref)
-			else:    volref, fscc[iref] = rec3D_MPI_noCTF(data, sym, mask3D, os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index = iref)
+			from time import localtime, strftime
+			if(myid == main_node):
+				print myid, " begin reconstruction at ", strftime("%d_%b_%Y_%H_%M_%S", localtime())
+			if(CTF): volref, fscc[iref] = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index = iref)
+			else:    volref, fscc[iref] = rec3D_MPI_noCTF(data, sym, fscmask, os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index = iref)
 
 			if(myid == main_node):
+				print myid, " after reconstruction at ", strftime("%d_%b_%Y_%H_%M_%S", localtime())
 				volref.write_image(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref)
 		if(myid == main_node):
 			refdata = [None]*5
@@ -4941,7 +4947,10 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 
 		#  here we  write header info
 		mpi_barrier(MPI_COMM_WORLD)
-		par_str = ['xform.projection', 'ID', 'group']
+		if runtype=="REFINEMENT":
+			par_str = ['xform.projection', 'ID', 'group']
+		else:
+			par_str = ['group', 'ID' ]
 	        if myid == main_node:
 			from utilities import file_type
 	        	if(file_type(stack) == "bdb"):
