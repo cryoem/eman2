@@ -11707,4 +11707,11 @@ def HAC_averages(stack, dendoname, avename, K):
 			im.write_image(avename, k)
 
 
+def tomo(box):
+	print "box: ", box
+        cmd = "your_executable -box " + box
 
+	print "cmd: ", cmd
+	from os import system
+	status = system( cmd )
+        print 'status: ', status
