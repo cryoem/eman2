@@ -38,7 +38,7 @@ from EMAN2 import *
 from math import *
 from optparse import OptionParser
 from Simplex import Simplex
-import os
+import glob, os
 
 # Global variables
 # Most variables are global in order to work with the Simplex algorithm
@@ -59,27 +59,37 @@ def main() :
 	"""
 	global debug, name, e1ctf
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] <input stack/image>
+	usage = """%prog [options] <EMAN2 project directory>
 	
-Converts EMAN2 CTF model to the EMAN1 CTF model as best as possible. Outputs CTF parameters to ctfparm.txt file.
-Always manually check/refine output, since the EMAN1 and EMAN2 CTF models are not exactly compatible."""
+Converts EMAN2 CTF model to the EMAN1 CTF model as best as possible.
+Outputs CTF parameters to ctfparm.txt file in the current directory.
+
+Always manually check/refine output, since the EMAN1 and EMAN2 CTF
+models are not completely compatible.  Most of the time, amplitude
+(and possibly envelop) are the only parameters that require manual
+adjustment in the EMAN1 ctfit program."""
 	parser = OptionParser(usage=usage, version=EMANVERSION)
 	parser.add_option("--ac", type="float", help="Set amplitude contrast (percentage, default=10).", default=10.)
 	parser.add_option("--sf", type="string", help="The name of a file containing a structure factor curve.", default="NULL")
 	parser.add_option("--debug", action="store_true", default=False)
-
+	
 	(options, args) = parser.parse_args()
 	if len(args) < 1 :
-		parser.error("Input image(s) required.")
+		parser.error("You must specify the EMAN2 project directory.")
 	if options.debug :
 		debug = True
-
+	
 	pid=E2init(sys.argv)
-
+	
+	ptcls = glob.glob( "particles/EMAN2DB/*_ptcls.bdb" )
+	
+	if len(ptcls) < 1 :
+		parser.error("No particles found. Please run Particles -> Generate Output in e2workflow.py." )
+	
 	newctflines = [ ]
 	loadsf(options.sf)
-	for i, f in enumerate(args) :
-		print "[%0.1f" % (100. * float(i) / len(args)) + "%" + "] Converting %s..." % (f)
+	for i, f in enumerate(ptcls) :
+		print "[%0.1f" % (100. * float(i) / len(ptcls)) + "%" + "] Converting %s..." % (f)
 		loadctf(f, options.ac)
 		convertnoise()
 		convertenvelop()
