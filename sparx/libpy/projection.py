@@ -301,10 +301,46 @@ def get_line(im, li):
 	return e
 
 # transform an image to sinogram (mirror include)
-def cml_sinogram(image2D, diameter, d_psi):
+def cml_sinogram(image2D, diameter = 26, d_psi = 1):
 	from math         import cos, sin
 	from fundamentals import fft
+	from utilities import model_blank
+	M_PI  = 3.141592653589793238462643383279502884197
 	
+	ri = diameter//2
+	diameter = 2*ri + 1
+	ri2 = ri*ri
+	nx = image2D.get_xsize()
+	ny = image2D.get_ysize()
+	nxc = nx//2
+	nyc = ny//2
+
+	# get line projection
+	nangle = int(360 / d_psi)     
+	dangle = 2 * M_PI / float(nangle)
+	e = model_blank(diameter,nangle)
+	for j in xrange(nangle):
+		cs =  cos(dangle * j)
+		si = -sin(dangle * j)
+		for iy in xrange(ny):
+			oiy = iy - nyc
+			for ix in xrange(nx):
+				oix = ix - nxc
+				if( (oiy*oiy + oix*oix) < ri2):
+					xb = oix*cs+oiy*si + ri
+					ixb = int(xb)
+					dipx = xb - ixb
+					val = image2D.get_value_at(ix,iy)
+					e.set_value_at(ixb, j, e.get_value_at(ixb, j) + (1.0-dipx)*val)
+					e.set_value_at(ixb+1, j, e.get_value_at(ixb+1, j) + dipx*val)
+				
+	return Util.window(e, diameter-1,nangle,1,0,0,0)
+
+# transform an image to sinogram (mirror include)
+def cml_sinogram_(image2D, diameter, d_psi = 1):
+	from math         import cos, sin
+	from fundamentals import fft
+
 	M_PI  = 3.141592653589793238462643383279502884197
 	
 	# prepare 
