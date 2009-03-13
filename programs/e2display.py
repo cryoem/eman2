@@ -31,7 +31,7 @@
 #
 #
 
-from EMAN2 import EMANVERSION,E2init,E2end
+from EMAN2 import EMANVERSION,E2init,E2end,EMData,get_file_tag,file_exists
 from emimage import EMImageModule,EMModuleFromFile
 
 from emimageutil import EMParentWin
