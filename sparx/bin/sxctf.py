@@ -32,7 +32,7 @@
 #
 
 # e2ctf.py  10/29/2008 Steven Ludtke
-# This is a program for determining CTF parameters and (optionally) phase flipping images
+# This is a program for determining CTF parameters
 
 from EMAN2 import *
 from sparx import *
@@ -75,12 +75,12 @@ images far from focus."""
 	parser.add_option("--cs",type="float",help="Microscope Cs (spherical aberation)",default=0)
 	parser.add_option("--ac",type="float",help="Amplitude contrast (percentage, default=10)",default=10)
 	parser.add_option("--autohp",action="store_true",help="Automatic high pass filter of the SNR only to remove initial sharp peak, phase-flipped data is not directly affected (default false)",default=False)
-	parser.add_option("--invert",action="store_true",help="Invert the contrast of the particles in output files (default false)",default=False)
-	parser.add_option("--nonorm",action="store_true",help="Suppress per image real-space normalization",default=False)
+	#parser.add_option("--invert",action="store_true",help="Invert the contrast of the particles in output files (default false)",default=False)
+	#parser.add_option("--nonorm",action="store_true",help="Suppress per image real-space normalization",default=False)
 	parser.add_option("--nosmooth",action="store_true",help="Disable smoothing of the background (running-average of the log with adjustment at the zeroes of the CTF)",default=False)
-	parser.add_option("--phaseflip",action="store_true",help="Perform phase flipping after CTF determination and writes to specified file.",default=False)
-	parser.add_option("--wiener",action="store_true",help="Wiener filter (optionally phaseflipped) particles.",default=False)
-	parser.add_option("--oversamp",type="int",help="Oversampling factor",default=1)
+	#parser.add_option("--phaseflip",action="store_true",help="Perform phase flipping after CTF determination and writes to specified file.",default=False)
+	#parser.add_option("--wiener",action="store_true",help="Wiener filter (optionally phaseflipped) particles.",default=False)
+	#parser.add_option("--oversamp",type="int",help="Oversampling factor",default=1)
 	parser.add_option("--sf",type="string",help="The name of a file containing a structure factor curve. Can improve B-factor determination.",default=None)
 	parser.add_option("--debug",action="store_true",default=False)
 	
@@ -117,7 +117,7 @@ images far from focus."""
 		# as according to Steven Ludtke
 		for i in img_sets:
 			envelopes.append(ctf_env_points(i[2],i[3],i[1]))
-		
+
 		# we use a simplex minimizer to try to rescale the individual sets to match as best they can
 		scales=[1.0]*len(img_sets)
 		if (len(img_sets)>3) :
@@ -126,21 +126,21 @@ images far from focus."""
 			scales=simp.minimize(maxiters=1000)[0]
 	#		print scales
 			print " "
-		
+
 		# apply the final rescaling
 		envelope=[]
 		for i in range(len(scales)):
 			cur=envelopes[i]
 			for j in range(len(cur)):
 				envelope.append((cur[j][0],cur[j][1]*scales[i]))
-				
+
 		envelope.sort()
 		envelope=[i for i in envelope if i[1]>0]	# filter out all negative peak values
-		
+
 		db_misc=db_open_dict("bdb:e2ctf.misc")
 		db_misc["envelope"]=envelope
 		#db_close_dict("bdb:e2ctf.misc")
-		
+
 		#out=file("envelope.txt","w")
 		#for i in envelope: out.write("%f\t%f\n"%(i[0],i[1]))
 		#out.close()
@@ -160,10 +160,10 @@ images far from focus."""
 		print "done execution"
 
 	### Process input files
-	if debug : print "Phase flipping / Wiener filtration"
+	#if debug : print "Phase flipping / Wiener filtration"
 	# write wiener filtered and/or phase flipped particle data to the local database
-	if options.phaseflip or options.wiener: # only put this if statement here to make the program flow obvious
-		write_e2ctf_output(options) # converted to a function so to work with the workflow
+	#if options.phaseflip or options.wiener: # only put this if statement here to make the program flow obvious
+	#	write_e2ctf_output(options) # converted to a function so to work with the workflow
 
 	E2end(logid)
 
@@ -244,7 +244,7 @@ def pspec_and_ctf_fit(options,debug=False):
 		if not options.nosmooth : bg_1d=smooth_bg(bg_1d,ds)
 
 		Util.save_data(0,ds,bg_1d,"ctf.bgb4.txt")
-		
+
 		# Fit the CTF parameters
 		if debug : print "Fit CTF"
 		ctf=ctf_fit(im_1d,bg_1d,im_2d,bg_2d,options.voltage,options.cs,options.ac,apix,bgadj=not options.nosmooth,autohp=options.autohp)
@@ -563,7 +563,7 @@ def least_square(data,dolog=0):
 
 def snr_safe(s,n) :
 	if s<=0 or n<=0 : return 0.0
-	return (s-n)/n
+	return s/n-1.0
 
 def sfact_(ss):
 	"""This will return a curve shaped something like the structure factor of a typical protein. It is not designed to be
@@ -579,7 +579,7 @@ def sfact_(ss):
 
 
 def sfact(s, specimen = "ribosome", mode = "original"):
-	mode = "nono"#"original"
+	mode = "nono"
 	if(specimen == "ribosome"):
 		if(mode == "original"):
 			cof = poly1d(
@@ -674,12 +674,12 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 		for fz in range(len(cc)): 
 			#norm+=cc[fz]**2
 			if cc[fz]<0 : break
-	
+
 		tot,totr=0,0
 		for s in range(int(st),ys/2): 
 			tot+=(cc[s]**2)*(im_1d[s]-bg_1d[s])
 			totr+=cc[s]**4
-		
+
 		tot/=sqrt(totr)
 		if tot>dfbest[1] : 
 			dfbest=(df,tot)
@@ -693,36 +693,34 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 		# now we try to construct a better background based on the CTF zeroes being zero
 		bg2=bg_1d[:]
 		last=0,1.0
-		for x in range(1,len(bg2)-1) : 
+		for x in xrange(1,len(bg2)-1) : 
 			if cc[x]*cc[x+1]<0 :
 				# we search +-1 point from the zero for the minimum
 				cur=(x,min(im_1d[x]/bg_1d[x],im_1d[x-1]/bg_1d[x-1],im_1d[x+1]/bg_1d[x+1]))
 				# once we have a pair of zeros we adjust the background values between
-				for xx in range(last[0],cur[0]):
+				for xx in xrange(last[0],cur[0]):
 					w=(xx-last[0])/float(cur[0]-last[0])
 					bg_1d[xx]=bg2[xx]*(cur[1]*w+last[1]*(1.0-w))
 #					print xx,"\t",(cur[1]*w+last[1]*(1.0-w)) #,"\t",cur[1],last[1]
 				last=cur
 		# cover the area from the last zero crossing to the end of the curve
-		for xx in range(last[0],len(bg2)):
+		for xx in xrange(last[0],len(bg2)):
 			bg_1d[xx]=bg2[xx]*last[1]
 
-	
-	snr=[snr_safe(im_1d[i],bg_1d[i]) for i in range(len(im_1d))]
-	
+
+	snr=[snr_safe(im_1d[i],bg_1d[i]) for i in xrange(len(im_1d))]
 	# This will dramatically reduce the intensity of the initial sharp peak found in almost all single particle data
 	# this applies to the SNR curve only, downweighting the importance of this section of the spectrum without actually
 	# removing the information by filtering the image data. It will, of course also impact Wiener filters.
 	if autohp:
 		for x in range(2,len(snr)-2):
 			if snr[x]>snr[x+1] and snr[x+1]<snr[x+2] : break	# we find the first minimum
-		
+
 		snr1max=max(snr[1:x])				# find the intensity of the first peak
 		snr2max=max(snr[x+2:len(snr)/2])		# find the next highest snr peak
+		qtmp = 0.5*snr2max/snr1max
+		for xx in range(1,x+1): snr[xx] *= qtmp		# scale the initial peak to 50% of the next highest peak
 
-		for xx in range(1,x+1): snr[xx]*=0.5*snr2max/snr1max		# scale the initial peak to 50% of the next highest peak
-
-	
 	# store the final results
 	ctf.snr=snr
 	ctf.defocus=dfbest[0]
@@ -736,24 +734,24 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 	# This is a quick hack and not very efficiently coded
 	bfs=[0.0,50.0,100.0,200.0,400.0,600.0,800.0,1200.0,1800.0,2500.0,4000.0]
 	best=(0,0)
-	s0=int(.04/ds)+1
-	s1=min(int(0.15/ds),len(bg_1d)-1)
+	s0=int(.05/ds)+1
+	s1=min(int(0.14/ds),len(bg_1d)-1)
 	print  "  FREQ RANGE",s0,s1
 	for b in range(1,len(bfs)-1):
 		ctf.bfactor=bfs[b]
 		cc=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_AMP)
-		sf = sfact([ds*i for i in xrange(len(cc))], "ribosome","nono")
+		sf = sfact([ds*i for i in xrange(len(cc))], "ribosome","original")
 		cc=[sf[i]*cc[i]**2 for i in xrange(len(cc))]
-		
+
 		# adjust the amplitude to match well
 		a0,a1=0,0
-		for s in range(s0,s1): 
-			a0+=cc[s]
-			a1+=fabs(im_1d[s]-bg_1d[s])
+		for s in range(s0,s1):
+			a0 += cc[s]
+			a1 += fabs(im_1d[s]-bg_1d[s])
 		if a1==0 : a1=1.0
 		a0/=a1
 		cc=[i/a0 for i in cc]
-		
+
 		er=0
 		# compute the error
 		for s in range(s0,len(bg_1d)-1):
@@ -764,11 +762,11 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 	# Stupid replication here, in a hurry
 	bb=best[1]
 	best=(best[0],bfs[best[1]])
-	for b in range(20):
+	for b in xrange(20):
 		ctf.bfactor=bfs[bb-1]*(1.0-b/20.0)+bfs[bb+1]*(b/20.0)
 		cc=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_AMP)
-		sf = sfact([i*ds for i in xrange(len(cc))], "ribosome","nono")
-		cc=[sf[i]*cc[i]**2 for i in range(len(cc))]
+		sf = sfact([i*ds for i in xrange(len(cc))], "ribosome","original")
+		cc=[sf[i]*cc[i]**2 for i in xrange(len(cc))]
 		# adjust the amplitude to match well
 		a0,a1=0,0
 		for s in range(s0,s1): 
@@ -780,7 +778,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 		
 		er=0
 		# compute the error
-		for s in range(s0,len(bg_1d)-1):
+		for s in xrange(s0,len(bg_1d)-1):
 			er+=(cc[s]-im_1d[s]+bg_1d[s])**2
 
 		if best[0]==0 or er<best[0] :
