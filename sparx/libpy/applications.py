@@ -4825,8 +4825,6 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 		for  iref in xrange(numref):
 			volref     = EMData()
 			volref.read_image(ref_vol, iref)
-			if fourvar:
-				volref.filter_by_image( varf )
 			volref.write_image(os.path.join(outdir, "volf0000.hdf"), iref)
 	mpi_barrier( MPI_COMM_WORLD )
 
