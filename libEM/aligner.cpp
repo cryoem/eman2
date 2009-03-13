@@ -191,7 +191,7 @@ EMData * RotationalAligner::align_180_ambiguous(EMData * this_img, EMData * to, 
 	// Perform the column wise FT (or something like that, unsure of precise details)
 	EMData *cf = this_img_rfp->calc_ccfx(to_rfp, 0, this_img->get_ysize());
 
-	// Delete them they're no longer needed
+	// Delete them, they're no longer needed
 	delete this_img_rfp; this_img_rfp = 0;
 	delete to_rfp; to_rfp = 0;
 

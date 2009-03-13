@@ -1697,8 +1697,8 @@ EMData *EMData::calc_ccfx( EMData * const with, int y0, int y1, bool no_sum)
 	}
 
 	cf->update();
-	update();
-	with->update();
+	//update();
+	//with->update();
 
 	EXITFUNC;
 	return cf;
@@ -1838,6 +1838,7 @@ EMData *EMData::make_rotational_footprint_e1( bool unwrap)
 		   filt->get_zsize() != clipped->get_zsize()) {
 		filt->set_size(clipped->get_xsize() + 2-(clipped->get_xsize()%2), clipped->get_ysize(), clipped->get_zsize());
 		filt->to_one();
+		filt->process_inplace("eman1.filter.highpass.gaussian", Dict("highpass", 1.5f/nx));
 	}
 	
 	EMData *mc = clipped->calc_mutual_correlation(clipped, true,filt);
@@ -2253,7 +2254,6 @@ EMData *EMData::unwrap(int r1, int r2, int xs, int dx, int dy, bool do360) const
 		xs = (int) Util::fast_floor(p * M_PI * ny / 4);
 		xs -= xs % 8;
 		if (xs<=8) xs=16;
-//		xs = Util::calc_best_fft_size(xs);
 	}
 
 	if (r1 < 0) {
@@ -2276,10 +2276,11 @@ EMData *EMData::unwrap(int r1, int r2, int xs, int dx, int dy, bool do360) const
 	ret->set_size(xs, r2 - r1, 1);
 	const float *const d = get_const_data();
 	float *dd = ret->get_data();
+	float pfac = (float)p/(float)xs;
 
 	for (int x = 0; x < xs; x++) {
-		float si = sin(x * M_PI * p / xs);
-		float co = cos(x * M_PI * p / xs);
+		float si = sin(x * M_PI * pfac);
+		float co = cos(x * M_PI * pfac);
 
 		for (int y = 0; y < r2 - r1; y++) {
 			float xx = (y + r1) * co + nx / 2 + dx;

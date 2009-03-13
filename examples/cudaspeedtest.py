@@ -44,10 +44,29 @@ def test_main():
 	test_dims = [64*i for i in [2,3,4,8]]
 	test_dims_3d = [64*i for i in [1,2,3,4]]
 	
-	test_range = range(100)
+	test_range = range(30)
 	
 	gpu_times = []
 	cpu_times = []
+	
+	print "Testing unwrap"
+	print "Dims","\t", "GPU speedup"
+	for dims in test_dims:
+		a = test_image(0,size=(dims,dims))
+		a._copy_cpu_to_gpu_ro()
+		
+		t = time()
+		for i in test_range:
+			c = a.unwrap_cuda()
+			
+		gpu_times.append(time()-t)
+		
+		a = test_image(0,size=(dims,dims))
+		
+		for i in test_range:
+			c = a.unwrap()
+		cpu_times.append(time()-t)
+		print dims,"\t", cpu_times[-1]/gpu_times[-1]
 	
 	print "Testing pixel multiplication by a constant (3D)"
 	print "Dims","\t", "GPU speedup"

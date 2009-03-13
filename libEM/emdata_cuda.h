@@ -43,7 +43,9 @@ public:
 	 * to accommodate the need for accessing many textures using a single kernel
 	 * @param interp_mode if true the texture will be bound using the cudaFilterModeLinear filtermode,  otherwise cudaFilterModePoint is usedddd
 	 */
-	void bind_cuda_texture(const bool interp_mode =true);
+	void bind_cuda_texture(const bool interp_mode =true) const;
+	
+	void unbind_cuda_texture() const;
 	
 	/** Get the cuda device pointer to the raw data
 	 * May cause an allocation, reflecting the lazy strategy employed in EMAN2
@@ -55,7 +57,7 @@ public:
 	/** A convenient way to get the EMData object as an EMDataForCuda struct
 	 * @return an EMDataForCuda struct storing vital information
 	 */
-	inline EMDataForCuda get_data_struct_for_cuda() { 
+	inline EMDataForCuda get_data_struct_for_cuda() const { 
 		EMDataForCuda tmp = {get_cuda_data(),nx,ny,nz};
 		return tmp;
 	}
@@ -65,12 +67,15 @@ public:
 	 * @param image the image to perform the correlation operation with
 	 * @return a real space correlation image
 	 */
-	EMData* calc_ccf_cuda(EMData* image, bool use_texturing );
+	EMData* calc_ccf_cuda(EMData* image, bool use_texturing ) const;
 	
 	/** Multiply the image by a constant value using the CUDA device
 	 * @param val the amount by which to multiply each pixel in the image
 	 */
 	void mult_cuda(const float& val);
+	
+	EMData* unwrap_cuda(int r1 = -1, int r2 = -1, int xs = -1, int dx = 0,
+							   int dy = 0, bool do360 = false) const;
 	
 	/** Explicitly register that the raw data on the GPU has changed in some/any way.
 	 * An important part of the EMAN2 device/host framework.
@@ -98,6 +103,9 @@ public:
 	
 	
 private:
+	
+	void set_gpu_rw_data(float* data, const int x, const int y, const int z) ;
+	
 	/** Check whether the CUDA-cached read-write version of the data pointer is current
 	 * Used to double check before copying the cuda rw data. It might be the case that the
 	 * cuda_cache_handle is non-zero but that the cuda rw is actually not available.
@@ -114,8 +122,8 @@ private:
 	 */
 	bool gpu_ro_is_current() const;
 	
-	void check_cuda_array_update();
-	cudaArray* get_cuda_array();
+	void check_cuda_array_update() const;
+	cudaArray* get_cuda_array() const;
 		
 	/** Free CUDA memory
 	 */
@@ -249,6 +257,11 @@ private:
 // 				return 0;	
 // 			}
 		}
+		
+		void clear_current();
+		int store_rw_data(const EMData* const emdata, float* cuda_rw_data);
+		int force_store_rw_data(const EMData* const emdata, float*  cuda_rw_data);
+		void replace_gpu_rw(const int handle, float* cuda_rw_data);
 		
 		/// The CUDA device rw pointer cache
 		float** rw_cache;

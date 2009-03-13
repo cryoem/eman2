@@ -43,7 +43,7 @@ cudaArray* get_cuda_array(const float * const data,const int nx, const int ny, c
 		cudaMalloc3DArray(&array, &channelDesc, VS);
 // 		printf("It's a 3D one %d %d %d %d %d\n",VS.width,data,nx,ny,nz);
 		cudaMemcpy3DParms copyParams = {0};
-		copyParams.srcPtr   = make_cudaPitchedPtr((void*)data, VS.depth*sizeof(float), VS.width, VS.height);
+		copyParams.srcPtr   = make_cudaPitchedPtr((void*)data, VS.width*sizeof(float), VS.width, VS.height);
 		copyParams.dstArray = array;
 		copyParams.extent   = VS;
 		copyParams.kind     = mem_cpy_flag;
@@ -60,7 +60,6 @@ cudaArray* get_cuda_array(const float * const data,const int nx, const int ny, c
 		cudaExtent VS = make_cudaExtent(nx,ny,nz);
 // 		printf("It's a 3D one %d %d %d %d\n",VS.width,VS.height,nx,ny);
 		cudaMalloc3DArray(&array, &channelDesc, VS);
-		CUT_CHECK_ERROR();
 		cudaError_t error = cudaMemcpyToArray(array, 0, 0, data, nx*ny*nz*sizeof(float), mem_cpy_flag);
 		if ( error != cudaSuccess)
 		{
@@ -93,6 +92,14 @@ void bind_cuda_array_to_texture( const cudaArray* const array, const int ndims,c
 		cuda_bind_texture_2d(tex2d,array,interp_mode);
 	} else throw;
 	//printf("Done bind\n");
+}
+
+void unbind_cuda_texture(const int ndims) {
+	if (ndims == 3) {
+		cudaUnbindTexture(&tex);
+	}else if ( ndims == 2) {
+		cudaUnbindTexture(&tex2d);
+	} else throw;
 }
 
 void device_init() {

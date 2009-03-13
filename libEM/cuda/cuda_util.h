@@ -28,6 +28,8 @@ cudaArray* get_cuda_array_device(const float * const data,const int nx, const in
 
 void bind_cuda_array_to_texture( const cudaArray* const array, const int ndims, const bool interp_mode);
 
+void unbind_cuda_texture(const int ndims);
+
 #endif // eman__cuda_util_h__
 
 

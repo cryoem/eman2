@@ -198,8 +198,9 @@ float* EMData::get_data() const
 		rdata = (float*)EMUtil::em_malloc(num_bytes);
 	}
 #ifdef EMAN2_USING_CUDA
-	if (gpu_rw_is_current() && (EMDATA_CPU_NEEDS_UPDATE & flags)) {
-		cudaMemcpy(rdata,get_cuda_data(),num_bytes,cudaMemcpyDeviceToHost);
+	if ( (gpu_rw_is_current() || gpu_ro_is_current()) && (EMDATA_CPU_NEEDS_UPDATE & flags)) {
+		cudaError_t error = cudaMemcpy(rdata,get_cuda_data(),num_bytes,cudaMemcpyDeviceToHost);
+		if (error != cudaSuccess ) throw UnexpectedBehaviorException("The host to device cudaMemcpy failed : " + string(cudaGetErrorString(error)));
 	}
 	
 	flags &= ~EMDATA_CPU_NEEDS_UPDATE;

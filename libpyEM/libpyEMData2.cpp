@@ -152,6 +152,9 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_calc_mutual_correlation_overl
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_unwrap_overloads_0_6, unwrap, 0, 6)
 
+#ifdef EMAN2_USING_CUDA
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_unwrap_cuda_overloads_0_6, unwrap_cuda, 0, 6)
+#endif //EMAN2_USING_CUDA
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_apply_radial_func_overloads_3_4, apply_radial_func, 3, 4)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_calc_hist_overloads_0_3, calc_hist, 0, 3)
@@ -458,6 +461,9 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("make_footprint", &EMAN::EMData::make_footprint, return_value_policy< manage_new_object >())
 	.def("calc_mutual_correlation", &EMAN::EMData::calc_mutual_correlation, EMAN_EMData_calc_mutual_correlation_overloads_1_3()[ return_value_policy< manage_new_object >() ])
 	.def("unwrap", &EMAN::EMData::unwrap, EMAN_EMData_unwrap_overloads_0_6()[ return_value_policy< manage_new_object >() ])
+#ifdef EMAN2_USING_CUDA
+	.def("unwrap_cuda", &EMAN::EMData::unwrap_cuda, EMAN_EMData_unwrap_cuda_overloads_0_6()[ return_value_policy< manage_new_object >() ])
+#endif
 	.def("apply_radial_func", &EMAN::EMData::apply_radial_func, EMAN_EMData_apply_radial_func_overloads_3_4())
 	.def("calc_radial_dist", (std::vector<float,std::allocator<float> > (EMAN::EMData::*)(int, float, float, bool) )&EMAN::EMData::calc_radial_dist)
 	.def("calc_radial_dist", (std::vector<float,std::allocator<float> > (EMAN::EMData::*)(int, float, float, int, bool) )&EMAN::EMData::calc_radial_dist)
