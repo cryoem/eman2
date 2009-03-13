@@ -4814,7 +4814,9 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 		print 'computing Fourier variance'
 		vol, fscc = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution0000"), myid, main_node)
 		varf = varf3d_MPI(data, os.path.join(outdir, "ssnr0000"), None, vol, last_ring, 1.0, 1, CTF, 1, sym, myid)
-		if myid == main_node:   varf = 1.0/varf
+		if myid == main_node:   
+			varf = 1.0/varf
+			varf.write_image( os.path.join(outdir,"varf0000.hdf") )
 	else:  
 		varf = None
 
@@ -4925,6 +4927,10 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 		del peaks
 		if CTF: del vol
 		fscc = [None]*numref
+
+		if myid==main_node and fourvar and runtype=="REFINEMENT":
+			sumvol = model_blank(nx, nx, nx)
+
 		for iref in xrange(numref):
 				#  3D stuff
 			from time import localtime, strftime
@@ -4936,13 +4942,26 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 			if(myid == main_node):
 				print myid, " after reconstruction at ", strftime("%d_%b_%Y_%H_%M_%S", localtime())
 				volref.write_image(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref)
+				if fourvar and runtype=="REFINEMENT":
+					sumvol += volref
+
+		if fourvar and runtype=="REFINEMENT":
+			varf = varf3d_MPI(data, os.path.join(outdir, "ssnr%04d"%total_iter), None, sumvol, last_ring, 1.0, 1, CTF, 1, sym, myid)
+			if myid == main_node:   
+				varf = 1.0/varf
+				varf.write_image( os.path.join(outdir,"varf%04d.hdf"%total_iter), total_iter )
+	
+
+
 		if(myid == main_node):
-			refdata = [None]*5
+			refdata = [None]*7
 			refdata[0] = numref
 			refdata[1] = outdir
 			refdata[2] = fscc
 			refdata[3] = total_iter
 			refdata[4] = varf
+			refdata[5] = fscmask
+			refdata[6] = (runtype=="REFINEMENT") # whether align on 50S, this only happens at refinement step
 			user_func( refdata )
 
 		#  here we  write header info
