@@ -38,6 +38,22 @@
 from EMAN2_cppwrap import *
 from global_def import *
 
+
+def minfilt( fscc ):
+	from filter import fit_tanh
+	numref = len(fscc)
+	flmin = 1.0
+	flmax = -1.0
+	for iref in xrange(numref):
+		fl, aa = fit_tanh( fscc[iref] )
+		if (fl < flmin):
+			flmin = fl
+			aamin = aa
+		if (fl > flmax):
+			flmax = fl
+			aamax = aa
+	return flmin,aamin
+
 ref_ali2d_counter = -1
 def ref_ali2d( ref_data ):
 	from utilities    import print_msg
@@ -136,17 +152,6 @@ def ref_ali3dm( refdata ):
 
 
 	'''
-	flmin = 1.0
-	flmax = -1.0
-	for iref in xrange(numref):
-		fl, aa = fit_tanh( fscc[iref] )
-		if (fl < flmin):
-			flmin = fl
-			aamin = aa
-		if (fl > flmax):
-			flmax = fl
-			aamax = aa
-		# filter to minimum resolution
 	'''
 	print 'filter every volume at (0.4, 0.1)'
 	for iref in xrange(numref):
@@ -540,13 +545,55 @@ def spruce_up_variance( ref_data ):
 	volf = threshold(volf)
 	# The next line is to smooth edges
 	volf = filt_gaussl(volf, 0.4)
-	if(ref_data[1] == 1):
-		from fundamentals   import fshift
-		cs    = volf.phase_cog()
-		msg = "Center x =	%10.3f  y = %10.3f  z = %10.3f\n"%(cs[0], cs[1], cs[2])
-		print_msg(msg)
-		volf  = fshift(volf, -cs[0], -cs[1], -cs[2])
 	return  volf, cs
+
+def spruce_up_var_m( refdata ):
+	from utilities import model_circle, get_im
+	from filter    import filt_tanl
+
+	numref = refdata[0]
+	outdir = refdata[1]
+	fscc   = refdata[2]
+	total_iter = refdata[3]
+	varf   = refdata[4]
+	mask   = refdata[5]
+	ali50S = refdata[6]
+
+	print 'spruce up using variance'
+
+	if ali50S:
+		mask_50S = get_im( "mask-50S.spi" )
+
+
+	flmin,aamin=minfilt( fscc )
+	print 'flmin,aamin:', flmin, aamin
+	for i in xrange(numref):
+		v = get_im( outdir + ("/vol%04d.hdf"% total_iter) , i )
+		v.filter_by_image( varf )
+		volf = filt_tanl(v, flmin, aamin/2)
+		stat = Util.infomask(v, None, True)
+		volf -= stat[0]
+		volf /= stat[1]
+		nx = volf.get_xsize()
+		stat = Util.infomask(volf,model_circle(nx//2-2,nx,nx,nx)-model_circle(nx//2-6,nx,nx,nx), True)
+		Util.mul_img( volf, mask )
+		volf = threshold(volf)
+		volf = filt_gaussl( volf, 0.4 )
+
+		if ali50S:
+			if iref==0:
+				v50S_0 = volf.copy()
+				v50S_0 *= mask_50S
+			else:
+				from applications import ali_vol_3
+				v50S_i = volf.copy()
+				v50S_i *= mask_50S
+
+				print "aligning ", iref
+				params = ali_vol_3(v50S_i, v50S_0, 10.0, 0.5, mask=mask_50S)
+				volf = rot_shift3D( volf, params[0], params[1], params[2], params[3], params[4], params[5], 1.0)
+
+		volf.write_image( outdir+("/volf%04d.hdf"%total_iter), i )
 
 def steady( ref_data ):
 	from utilities    import print_msg
@@ -612,6 +659,7 @@ class factory_class:
 		self.contents["ref_ali3d"]          = ref_ali3d
 		self.contents["ref_ali3dm"]         = ref_ali3dm
 		self.contents["ref_ali3dm_ali_50S"] = ref_ali3dm_ali_50S
+		self.contents["spruce_up_var_m"]    = spruce_up_var_m
 		self.contents["reference3"]         = reference3
 		self.contents["reference4"]         = reference4
 		self.contents["spruce_up"]          = spruce_up
