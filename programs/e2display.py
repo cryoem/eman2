@@ -99,7 +99,7 @@ def main():
 		display(imgs,app,args[0])
 	else:
 		for i in args:
-			if not file_exists(i):
+			if not os.path.exists(i):
 				print "file doesn't exist:",i
 				sys.exit(1)
 			display_file(i,app)
