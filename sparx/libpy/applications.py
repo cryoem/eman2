@@ -4905,6 +4905,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 					if not(finfo is None):
 						phi,tht,psi,s2x,s2y = get_params_proj(data[im])
 						finfo.write( "ID,iref,peak,trans: %6d %d %f %f %f %f %f %f"%(list_of_particles[im],iref,peak,phi,tht,psi,s2x,s2y) )
+						finfo.flush()
 
 					if(peak > peaks[im][0]):
 						peaks[im][0] = peak
