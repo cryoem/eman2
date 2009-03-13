@@ -1866,11 +1866,12 @@ class E2BoxerProgramOutputTask(E2BoxerOutputTask):
 	This task is called from e2boxer itself. Not from the workflow
 	'''
 	documentation_string = "Use this form for writing output from within the e2boxer interface.\nYou can choose to write image files in a number of formats. The bdb file format is mostly useful if you are using EMAN2. If you plan on using your data with other programs, including EMAN1, you must choose either the hdf or img output formats.\nYou can also choose to write EMAN1 style .box files"
-	def __init__(self,application,filenames,target):
+	def __init__(self,application,filenames,target,exclusions=[]):
 		E2BoxerOutputTask.__init__(self,application)
 		self.window_title = "E2boxer Output"
 		self.filenames = filenames
 		self.target = weakref.ref(target)
+		self.exclusions = exclusions
 		
 	def get_params(self):
 		params = []
@@ -1881,6 +1882,7 @@ class E2BoxerProgramOutputTask(E2BoxerOutputTask):
 		p.append(pnames)
 		setattr(p,"convert_text", ptable_convert_2)
 		setattr(p,"icon_type","single_image")
+		setattr(p,"exclusions",self.exclusions)
 		
 		params.append(p)
 		

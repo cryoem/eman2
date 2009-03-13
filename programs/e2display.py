@@ -31,10 +31,8 @@
 #
 #
 
-from EMAN2 import *
+from EMAN2 import EMANVERSION,E2init,E2end
 from emimage import EMImageModule,EMModuleFromFile
-try: from emplot2d import EMPlot2DModule
-except: pass
 
 from emimageutil import EMParentWin
 import sys
@@ -44,14 +42,9 @@ from PyQt4.QtCore import Qt
 from OpenGL import GL,GLU,GLUT
 from emapplication import EMStandAloneApplication, EMProgressDialogModule
 from emselector import EMBrowserModule
+import os
 
-#from valslider import ValSlider
-#from math import *
-#import numpy
-#from emimageutil import ImgHistogram
-#from weakref import WeakKeyDictionary
 
-#gapp = None
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] <image file> ...
@@ -63,12 +56,6 @@ def main():
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
-#	parser.add_option("--gui",action="store_true",help="Start the GUI for interactive boxing",default=False)
-#	parser.add_option("--auto","-A",type="string",action="append",help="Autobox using specified method: circle, ref, grid",default=[])
-#	parser.add_option("--threshold","-T",type="float",help="Threshold for keeping particles. 0-4, 0 excludes all, 4 keeps all.",default=2.0)
-#	parser.add_option("--maxbad","-M",type="int",help="Maximumum number of unassigned helices",default=2)
-#	parser.add_option("--minhelix","-H",type="int",help="Minimum residues in a helix",default=6)
-#	parser.add_option("--apix","-P",type="float",help="A/Pixel",default=1.0)
 	parser.add_option("--classmx",type="string",help="<classmx>,<#> Show particles in one class from a classification matrix. Pass raw particle file as first argument to command.")
 	parser.add_option("--classes",type="string",help="<rawptcl>,<classmx> Show particles associated class-averages")
 	parser.add_option("--plot",action="store_true",default=False,help="Data file(s) should be plotted rather than displayed in 2-D")
@@ -116,40 +103,8 @@ def main():
 				print "file doesn't exist:",i
 				sys.exit(1)
 			display_file(i,app)
-#			n = EMUtil.get_image_count(i)
-#			nx,ny,nz = gimme_image_dimensions3D(i)
-#			if n > 1 and nz == 1:
-#				nx,ny = gimme_image_dimensions2D(i)
-#				mx = 256000000# 256Mb
-#				a = []
-#				if n*nx*ny*4 > mx:
-#					new_n = mx/(nx*ny) + 1
-#					
-#					
-#					msg = QtGui.QMessageBox()
-#					msg.setWindowTitle("Warning")
-#					msg.setText("Image data is more than 256Mb, only showing first %i images" %new_n)
-#					msg.exec_()
-#					
-#					progress = EMProgressDialogModule(app,"Reading files", "abort", 0, new_n,None)
-#					progress.qt_widget.show()
-#					for j in range(new_n):
-#						a.append(EMData(i,j))
-#						progress.qt_widget.setValue(j)
-#						if progress.qt_widget.wasCanceled():
-#							progress.qt_widget.close()
-#							return
-#					progress.qt_widget.close()
-#				else:
-#					a=i
-#			else:
-#				a=[EMData(i,0)]
-#					
-#			display(a,app,i)
-	
 	
 	app.exec_()
-	#sys.exit(app.exec_())
 
 	E2end(logid)
 	

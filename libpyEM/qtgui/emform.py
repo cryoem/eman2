@@ -166,22 +166,26 @@ class EMFormWidget(QtGui.QWidget):
 			table_widget.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
 			
 		selected_items = [] # used to ensure default selection is correct
+		exclusions = []
+		if hasattr(paramtable,"exclusions"): exclusions = paramtable.exclusions
 		table_widget.setSortingEnabled(False)
 		max_len_sum = 0
 		for i,param in enumerate(paramtable):
-			max_len = -1
 			for j,choice in enumerate(param.choices):
-				str_choice = str(choice)
-				str_len = len(str_choice)
-				if str_len > max_len: max_len = str_len 
 				if i == 0 and icon != None: item = QtGui.QTableWidgetItem(icon,str(choice))
 				else: item = QtGui.QTableWidgetItem(str(choice))
 				flag2 = Qt.ItemFlags(Qt.ItemIsSelectable)
 				flag3 = Qt.ItemFlags(Qt.ItemIsEnabled)
 				flag4 = Qt.ItemFlags(Qt.ItemIsEditable)
-				#flags = flags.
 				if i == 0:
-					item.setFlags(flag2|flag3)
+					if str(choice) not in exclusions:
+						item.setFlags(flag2|flag3)
+					else:
+						# exluded items are displayed but they are not selectable
+						# this was originally added for e2boxer -the write output form needs to show which images are are excluded
+						item.setFlags(flag3)
+						item.setTextColor(QtGui.QColor(0,128,0))
+						item.setToolTip("This item is excluded")
 					if param.defaultunits != None and len(param.defaultunits) > 0:
 						if choice in param.defaultunits:
 							selected_items.append(item)
@@ -192,14 +196,10 @@ class EMFormWidget(QtGui.QWidget):
 				table_widget.setItem(j, i, item)
 				
 			item = QtGui.QTableWidgetItem(param.desc_short)
-			if len(param.desc_short) > max_len: max_len = len(param.desc_short)
 			item.setTextAlignment(QtCore.Qt.AlignHCenter)
 			item.setToolTip(param.desc_long)
 			table_widget.setHorizontalHeaderItem(i,item)
-			correct_len = 7.5*max_len # the 7.5 means "string are rendered approximately 7.5 pixels wide"
-			if correct_len > 1000: correct_len = 1000
-			#table_widget.setColumnWidth(i,int(correct_len))
-			
+		
 		table_widget.setSortingEnabled(True)
 		table_widget.setToolTip(paramtable.desc_long)
 		hbl.addWidget(table_widget,1)
@@ -213,8 +213,6 @@ class EMFormWidget(QtGui.QWidget):
 		for opt in optional_attr:
 			if hasattr(paramtable,opt):
 				setattr(table_widget,opt,getattr(paramtable,opt))
-#		if hasattr(paramtable,"convert_menu"):
-#			setattr(table_widget,"convert_text",paramtable.convert_text)
 		
 		table_event_handler = ParamTableEventHandler(self,table_widget)
 		self.event_handlers.append(table_event_handler)

@@ -36,18 +36,17 @@ from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 import os
 import re
-from EMAN2 import *
+from EMAN2 import get_image_directory,e2getcwd,get_dtag,EMData,get_files_and_directories,db_open_dict,strip_file_tag,remove_file
+from EMAN2 import remove_directories_from_name,Util,EMUtil,IMAGE_UNKNOWN,get_file_tag,db_check_dict,file_exists
 from emimage2d import EMImage2DModule
 from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMProgressDialogModule
 from EMAN2db import EMAN2DB
 from emplot2d import EMPlot2DModule
-#from boxertools import TrimSwarmAutoBoxer
 from emapplication import EMQtWidgetModule, ModuleEventsManager
 import weakref
 import copy
 
 read_header_only = True
-
 
 class EMSelectorModule(EMQtWidgetModule):
 	def __init__(self,application=None):
@@ -271,7 +270,6 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.force_clicked(self.force_plot)
 	
 	def force_clicked(self,f):
-		
 		if self.current_force == None:
 			self.current_force = f
 		elif f == self.current_force:
@@ -280,8 +278,7 @@ class EMSelectorDialog(QtGui.QDialog):
 		else:
 			self.current_force.setChecked(False)
 			self.current_force = f
-		
-	
+
 	def single_preview_clicked(self,bool):
 		pass
 		#print "not supported"
@@ -355,7 +352,7 @@ class EMSelectorDialog(QtGui.QDialog):
 				if not md.has_key(k): gtg = False
 				break
 			
-			if gtg: # no current support for saving 3D images to stacks - this is intentional. If we write widgets for viewing 3D stacks we might want to change this.
+			if gtg:
 				multi_images_all_same_dims = True
 				# this means I think it's an emdata. This is potentially a fatal assumption, but unlikely for the time being
 				# now check to make sure all other selected items have the samve value
@@ -370,13 +367,10 @@ class EMSelectorDialog(QtGui.QDialog):
 						if not mdt.has_key(k): gtg = False
 						break
 					
-					
 					if not gtgt or mdt["nx"] != nx or mdt["ny"] != ny or mdt["nz"] != nz:
 						multi_images_all_same_dims = False
 						break
-					
-		
-		
+
 		options = first_item.context_menu_options
 		if len(options) == 0: return
 		options_keys = options.keys()
@@ -416,11 +410,11 @@ class EMSelectorDialog(QtGui.QDialog):
 		total = len(items)
 		
 		if action.text() == "Save As Stack":
-			data = []
-			for item in self.menu_selected_items:
-				data.append(item.get_data())
+			#data = []
+			#for item in self.menu_selected_items:
+				#data.append(item)
 				
-			save_stack(data,self.application())
+			save_stack(self.menu_selected_items,self.application())
 		elif action.text() == "Preview Subset":
 			data = []
 			for item in self.menu_selected_items:
@@ -498,7 +492,7 @@ class EMSelectorDialog(QtGui.QDialog):
 		#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemChanged(QListWidgetItem*)"),self.list_widget_item_changed)
 		#\QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemActivated(QListWidgetItem*)"),self.list_widget_item_activated)
 		#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("activated(QModelIndex)"),self.activated)
-		#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("selectionChanged(QItemSelection,QItemSelection)"),self.selection_changed)
+		QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemSelectionChanged()"),self.selection_changed)
 	
 	def __go_back_a_directory(self):
 		self.lock = True
@@ -573,10 +567,12 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.list_widgets[0].insertItem(0,a)
 		
 		self.lock = False
-		#self.hide_preview()
+		self.hide_preview()
 		
-	def selection_changed(self,item1,item2):
-		pass
+	def selection_changed(self):
+		if not self.lock:
+			self.__update_selections()
+		
 		
 	def __update_selections(self):
 		'''
@@ -584,6 +580,7 @@ class EMSelectorDialog(QtGui.QDialog):
 		something has been clicked in a a list widget
 		'''
 		
+		#print self.current_list_widget
 		# get the directory 
 		dtag = get_dtag()
 		directory = self.starting_directory+dtag
@@ -591,6 +588,9 @@ class EMSelectorDialog(QtGui.QDialog):
 		for i,list_widget in enumerate(self.list_widgets):
 			if list_widget == self.current_list_widget: 
 				break
+			if (self.list_widget_data[i] == None):
+				# this means it could be a header attribute, for example
+				return
 			directory += str(self.list_widget_data[i].text()) + dtag
 		else:
 			print "no list widget has focus?"
@@ -665,9 +665,11 @@ class EMSelectorDialog(QtGui.QDialog):
 	
 		n = len(self.list_widgets)-1
 		if self.current_list_widget  == self.list_widgets[n]:
+				self.lock = True
 				self.list_widget_data[n] = item
 				self.__go_forward_a_directory()
 				self.__load_directory_data(file+dtag,self.list_widgets[n],item)
+				self.lock = False
 				return
 
 		if self.__load_directory_data(file,self.list_widgets[idx+1],item):
@@ -930,6 +932,9 @@ class EMFSListing:
 		plot = EMPlot2DModule()
 		
 		dirs, files = get_files_and_directories(directory)
+		if len(files) == 0 and len(dirs) == 0:
+			# something is unusual about the directory, for instance, it is a file
+			return
 		files = self.filter_strings(files)
 		filt = self.target().get_file_filter()
 		
@@ -1140,6 +1145,9 @@ class EMFSImageStackMemberItem(EMFSListingItem):
 		e = EMData()
 		e.read_image(self.full_path,self.idx)
 		return e
+	
+	def save_as(self,target):
+		return save_as(self.full_path,target.application(),self.idx)
 	
 	
 class EMFSSingleImageItem(EMFSListingItem):
@@ -1691,7 +1699,7 @@ class EMDBSingleImageItem(EMListingItem):
 		
 	def save_as(self,target):
 		db_name = "bdb:"+self.database_directory+"#"+self.database
-		return save_as(db_name,target.application())
+		return save_as(db_name,target.application(),self.database_key)
 
 class EMDBPlotItem(EMListingItem):
 	def __init__(self,type,db_directory,key,k):
@@ -1751,8 +1759,8 @@ class EMBrowserModule(EMQtWidgetModule):
 		EMQtWidgetModule.__init__(self,self.widget,application)
 
 
-def save_stack(data_list,application):
-	if data_list[0].get_zsize() == 1:
+def save_stack(item_list,application):
+	if item_list[0].get_metadata()["nz"] == 1:
 		file_filt=[".hdf", ".img", ".spi"]
 	else:
 		file_filt =[".hdf"] # 3D only works for hdf (and bdb)
@@ -1764,7 +1772,7 @@ def save_stack(data_list,application):
 		file_filt_string += "*"+f
 		
 	fsp = "stack.hdf"
-	total_images = len(data_list)
+	total_images = len(item_list)
 	while True:
 		fsp=QtGui.QFileDialog.getSaveFileName(None, "Specify file name",fsp,file_filt_string,"")
 		fsp=str(fsp)
@@ -1780,10 +1788,15 @@ def save_stack(data_list,application):
 			if file_exists(fsp):
 				remove_file(fsp)
 
-			progress = EMProgressDialogModule(application,"Writing files", "abort", 0, total_images,None)
+			progress = EMProgressDialogModule(application,"Writing files", "abort", 0, 2*total_images,None)
 			progress.qt_widget.show()
+			tally = 0
 			for i in range(total_images):
-				d = data_list[i]
+				d = item_list[i].get_data()
+				progress.qt_widget.setValue(tally)
+				tally += 1
+				application.processEvents()
+				
 				try:
 					d.write_image(fsp,-1)
 				except:
@@ -1792,7 +1805,8 @@ def save_stack(data_list,application):
 					progress.qt_widget.close()
 					return False
 					
-				progress.qt_widget.setValue(i)
+				progress.qt_widget.setValue(tally)
+				tally += 1
 				application.processEvents()
 				if progress.qt_widget.wasCanceled():
 					remove_file(fsp)
@@ -1806,8 +1820,11 @@ def save_stack(data_list,application):
 	return True
 		
 			
-def save_as(file_name,application=None):
-	total_images = EMUtil.get_image_count(file_name)
+def save_as(file_name,application=None,idx=-1):
+	
+	if idx == -1: total_images = EMUtil.get_image_count(file_name)
+	else: total_images = 1
+	print file_name,idx,total_images
 	if total_images == 1:
 		file_filt = [".hdf", ".img", ".spi", ".mrc", ".dm3", ".pgm", ".pif"]
 	else: # logic dictates that total_images > 1
@@ -1834,43 +1851,22 @@ def save_as(file_name,application=None):
 		if fsp != '':
 			
 			if not validate_file_name(fsp,file_filt): continue
-#			if len(fsp) < 3 or ( fsp[-4:] not in file_filt and fsp[:4] != "bdb:" ):
-#				m = "%s is an invalid image name. Please choose from one of these formats:" %fsp
-#				for f in file_filt:
-#					if f == file_filt[-1]: m += " or " + f	
-#					else: m += " " + f
-#				msg.setText(m)
-#				msg.exec_()
-#				continue
-#				
-#			if fsp[:4] == "bdb:" and len(fsp) == 4:
-#				msg.setText("%s is an invalid bdb name" %fsp)
-#				msg.exec_()
-#				continue
-#			
-#			if db_check_dict(fsp):
-#				 # Check this - something isn't quite right
-#				 msg = QtGui.QMessageBox()
-#				 msg.setWindowTitle("Caution")
-#				 msg.setText("Are you sure you want to overwrite the bdb file?");
-#				 msg.setInformativeText("Clicking ok to remove this file")
-#				 msg.setStandardButtons(QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel);
-#				 msg.setDefaultButton(QMessageBox.Cancel);
-#				 ret = msg.exec_()
-#				 if ret != 0: continue # need to double check this is the right return code
-				 
-			# remove the file if it exists - the save file dialog already made sure the user wanted to overwrite the file
 			if file_exists(fsp):
 				remove_file(fsp)
 				 
 			
 			using_progress = (total_images > 1)
 			if using_progress:
-				progress = EMProgressDialogModule(application,"Writing files", "abort", 0, total_images,None)
+				progress = EMProgressDialogModule(application,"Writing files", "abort", 0, 2*total_images,None)
 				progress.qt_widget.show()
+				tally = 0
 				for i in range(total_images):
 					d = EMData()
-					d.read_image(file_name,i)
+					if idx == -1: d.read_image(file_name,i)
+					else: d.read_image(file_name,idx)
+					progress.qt_widget.setValue(tally)
+					tally += 1
+					application.processEvents()
 					try:
 						d.write_image(fsp,-1)
 					except:
@@ -1879,7 +1875,8 @@ def save_as(file_name,application=None):
 						progress.qt_widget.close()
 						return False
 						
-					progress.qt_widget.setValue(i)
+					progress.qt_widget.setValue(tally)
+					tally += 1
 					application.processEvents()
 					if progress.qt_widget.wasCanceled():
 						remove_file(fsp)
@@ -1893,6 +1890,8 @@ def save_as(file_name,application=None):
 				try:
 					d.write_image(fsp)
 				except:
+					msg = QtGui.QMessageBox()
+					msg.setWindowTitle("Attention")
 					msg.setText("An exception occured while writing %s, please try again" %fsp)
 					msg.exec_()
 					return False
@@ -1906,11 +1905,14 @@ def save_as(file_name,application=None):
 	return True
 
 def validate_file_name(fsp,file_filt):
+	msg = QtGui.QMessageBox()
+	msg.setWindowTitle("Achtung")
 	if len(fsp) < 3 or ( fsp[-4:] not in file_filt and fsp[:4] != "bdb:" ):
 		m = "%s is an invalid image name. Please choose from one of these formats:" %fsp
 		for f in file_filt:
 			if f == file_filt[-1]: m += " or " + f	
 			else: m += " " + f
+		
 		msg.setText(m)
 		msg.exec_()
 		return False
@@ -1922,8 +1924,6 @@ def validate_file_name(fsp,file_filt):
 	
 	if db_check_dict(fsp):
 		 # Check this - something isn't quite right
-		 msg = QtGui.QMessageBox()
-		 msg.setWindowTitle("Caution")
 		 msg.setText("Are you sure you want to overwrite the bdb file?");
 		 msg.setInformativeText("Clicking ok to remove this file")
 		 msg.setStandardButtons(QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel);

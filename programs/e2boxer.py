@@ -1248,9 +1248,8 @@ class EMBoxerModule(QtCore.QObject):
 		for key in params.keys():
 			setattr(options,key,params[key])
 		
-		print "ici"
 		if len(options.filenames) == 0 or options.running_mode not in ["gui","auto_db"]:
-			print "we have to keep the dialog open"
+			#print "we have to keep the dialog open"
 			return
 		elif options.running_mode == "gui":
 			self.__disconnect_form_signals()
@@ -2422,8 +2421,12 @@ class EMBoxerModule(QtCore.QObject):
 	
 	def run_output_dialog(self):
 		from emsprworkflow import E2BoxerProgramOutputTask
+		exclusions = []
+		for name in self.image_names:
+			if get_idd_key_entry(name,"quality") == 0:
+				exclusions.append(name)
 		if self.output_task != None: return
-		self.output_task = E2BoxerProgramOutputTask(self.application(),self.image_names,self)
+		self.output_task = E2BoxerProgramOutputTask(self.application(),self.image_names,self,exclusions)
 		QtCore.QObject.connect(self.output_task,QtCore.SIGNAL("task_idle"),self.on_output_task_idle)
 		self.output_task.run_form()
 		

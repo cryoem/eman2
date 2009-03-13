@@ -3748,7 +3748,6 @@ class SwarmAutoBoxer(AutoBoxer):
 		
 		
 	   	boxes.sort(compare_box_correlation)
-	   	print "sorted"
 		return boxes
 		
 	def get_high_res_template_image(self):

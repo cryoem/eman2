@@ -47,9 +47,7 @@ cudaArray* get_cuda_array(const float * const data,const int nx, const int ny, c
 		copyParams.dstArray = array;
 		copyParams.extent   = VS;
 		copyParams.kind     = mem_cpy_flag;
-		CUT_CHECK_ERROR();
 		cudaError_t error =  cudaMemcpy3D(&copyParams);
-		CUT_CHECK_ERROR();
 		if ( error != cudaSuccess) {
 			const char* e = cudaGetErrorString(error);
 			printf("CUDA error from cudaMemcpy3D: %s\n",e);
@@ -61,7 +59,6 @@ cudaArray* get_cuda_array(const float * const data,const int nx, const int ny, c
 		cudaMallocArray(&array,&channelDesc,nx,ny);
 		cudaExtent VS = make_cudaExtent(nx,ny,nz);
 // 		printf("It's a 3D one %d %d %d %d\n",VS.width,VS.height,nx,ny);
-		CUT_CHECK_ERROR();
 		cudaMalloc3DArray(&array, &channelDesc, VS);
 		CUT_CHECK_ERROR();
 		cudaError_t error = cudaMemcpyToArray(array, 0, 0, data, nx*ny*nz*sizeof(float), mem_cpy_flag);

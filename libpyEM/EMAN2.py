@@ -330,7 +330,7 @@ def get_files_and_directories(path=".",include_hidden=False):
 	try:
 		entries = os.listdir(l_path)
 	except: # something is wrong with the path
-		print "path failed",l_path
+		#print "path failed",l_path
 		return dirs,files
 	
 	for name in entries:
@@ -650,13 +650,18 @@ def memory_stats():
 			
 	return [mem_total,mem_avail]
 
+def free_space(p=os.getcwd()):
+	'''
+	Get the free space on the drive that "p" is on
+	return value is in bytes
+	Works on Linux - needs checking on other platforms
+	'''
+	s = os.statvfs(p)
+	return s.f_bsize*s.f_bavail
 
 def num_cpus():
 	'''
 	Returns the number of cpus available on the current platform
-	This program is in its infancy but should work in general. A very basic approach is employed for Linux,
-	however MAC and Windows should work fine.
-	Based on http://mail.python.org/pipermail/python-list/2007-October/460750.html
 	'''
 	import platform
 	platform_string = get_platform()
