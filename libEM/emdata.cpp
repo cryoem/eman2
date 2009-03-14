@@ -2276,7 +2276,7 @@ vector<float> EMData::calc_az_dist(int n, float a0, float da, float rmin, float 
 }
 
 
-EMData *EMData::unwrap(int r1, int r2, int xs, int dx, int dy, bool do360) const
+EMData *EMData::unwrap(int r1, int r2, int xs, int dx, int dy, bool do360, bool weight_radial) const
 {
 	ENTERFUNC;
 
@@ -2327,9 +2327,11 @@ EMData *EMData::unwrap(int r1, int r2, int xs, int dx, int dy, bool do360) const
 			float t = xx - Util::fast_floor(xx);
 			float u = yy - Util::fast_floor(yy);
 			int k = (int) Util::fast_floor(xx) + (int) (Util::fast_floor(yy)) * nx;
-			dd[x + y * xs] =
-				Util::bilinear_interpolate(d[k], d[k + 1], d[k + nx], d[k + nx+1], t,u) * (y + r1);
+			float val = Util::bilinear_interpolate(d[k], d[k + 1], d[k + nx], d[k + nx+1], t,u);
+			if (weight_radial) val *=  (y + r1);
+			dd[x + y * xs] = val;
 		}
+				
 	}
 	ret->update();
 

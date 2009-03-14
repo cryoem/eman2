@@ -149,7 +149,7 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_make_rotational_footprint_cmc
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_calc_mutual_correlation_overloads_1_3, calc_mutual_correlation, 1, 3)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_unwrap_overloads_0_6, unwrap, 0, 6)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_unwrap_overloads_0_7, unwrap, 0, 7)
 
 #ifdef EMAN2_USING_CUDA
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_unwrap_cuda_overloads_0_6, unwrap_cuda, 0, 6)
@@ -463,7 +463,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("make_rotational_footprint_cmc", &EMAN::EMData::make_rotational_footprint_cmc, EMAN_EMData_make_rotational_footprint_cmc_overloads_0_1()[ return_value_policy< manage_new_object >() ])
 	.def("make_footprint", &EMAN::EMData::make_footprint, return_value_policy< manage_new_object >())
 	.def("calc_mutual_correlation", &EMAN::EMData::calc_mutual_correlation, EMAN_EMData_calc_mutual_correlation_overloads_1_3()[ return_value_policy< manage_new_object >() ])
-	.def("unwrap", &EMAN::EMData::unwrap, EMAN_EMData_unwrap_overloads_0_6()[ return_value_policy< manage_new_object >() ])
+	.def("unwrap", &EMAN::EMData::unwrap, EMAN_EMData_unwrap_overloads_0_7()[ return_value_policy< manage_new_object >() ])
 #ifdef EMAN2_USING_CUDA
 	.def("unwrap_cuda", &EMAN::EMData::unwrap_cuda, EMAN_EMData_unwrap_cuda_overloads_0_6()[ return_value_policy< manage_new_object >() ])
 #endif

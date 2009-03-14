@@ -531,23 +531,22 @@ namespace EMAN
 		EMData *calc_mutual_correlation(EMData * with, bool tocorner = false, EMData * filter = 0);
 
 
-		/** maps polar coordinates to Cartesian coordinates. radially weighted.
+		/** Maps to polar coordinates from Cartesian coordinates. Optionaly radially weighted.
 		 * When used with RFP, this provides 1 pixel accuracy at 75% radius.
 		 * 2D only.
-		 *
 		 * @param r1
 		 * @param r2
 		 * @param xs
 		 * @param dx
 		 * @param dy
-		 * @param do360  If true, do 0-360 degree mapping. Otherwise,
-		 * do 0-180 degree mapping.
+		 * @param do360  If true, do 0-360 degree mapping. Otherwise, do 0-180 degree mapping.
+		 * @param weight_radial if true (default) reights the pixel value by its radius
 		 * @exception ImageDimensionException If 'this' image is not 2D.
 		 * @exception UnexpectedBehaviorException if the dimension of this image and the function arguments are incompatibale - i.e. the return image is less than 0 in some dimension.
 		 * @return The image in Cartesian coordinates.
 		 */
 		EMData *unwrap(int r1 = -1, int r2 = -1, int xs = -1, int dx = 0,
-							   int dy = 0, bool do360 = false) const;
+							   int dy = 0, bool do360 = false, bool weight_radial=true) const;
 
 
 		/** multiplies by a radial function in fourier space.
