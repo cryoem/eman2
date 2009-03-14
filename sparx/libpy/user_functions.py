@@ -573,10 +573,13 @@ def spruce_up_var_m( refdata ):
 		volf = filt_tanl(v, flmin, aamin/2)
 		stat = Util.infomask(v, None, True)
 		volf -= stat[0]
-		volf /= stat[1]
+		Util.mul_scalar(volf, 1.0/stat[1])
+
 		nx = volf.get_xsize()
 		stat = Util.infomask(volf,model_circle(nx//2-2,nx,nx,nx)-model_circle(nx//2-6,nx,nx,nx), True)
+		volf -= stat[0]
 		Util.mul_img( volf, mask )
+
 		volf = threshold(volf)
 		volf = filt_gaussl( volf, 0.4 )
 
