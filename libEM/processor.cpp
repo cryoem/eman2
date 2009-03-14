@@ -49,6 +49,11 @@
 #include <algorithm>
 #include <ctime>
 
+#ifdef EMAN2_USING_CUDA
+#include "cuda/cuda_util.h"
+#include "cuda/cuda_processor.h"
+#endif // EMAN2_USING_CUDA
+
 using namespace EMAN;
 using std::reverse;
 
@@ -769,7 +774,7 @@ void WatershedProcessor::process_inplace(EMData * image) {
 	
 	// throw if vector lengths are unequal
 	
-	float maxval = -99999;
+//	float maxval = -99999;
 	/*
 	for(unsigned int i = 0; i < xpoints.size(); ++i) {
 		float val = image->get_value_at(x[i],y[i],z[i]);
@@ -792,7 +797,7 @@ void WatershedProcessor::process_inplace(EMData * image) {
 		}
 	}
 	mask->write_image("seeds2.mrc");
-	int dis = 500;
+//	int dis = 500;
 // 	float dx = (maxval-minval)/((float) dis - 1);
 	
 	
@@ -4291,7 +4296,22 @@ void PhaseToCornerProcessor::process_inplace(EMData * image)
 void PhaseToCenterProcessor::process_inplace(EMData * image)
 {
 	if (!image)	throw NullPointerException("Error: attempt to phase shift a null image");
+	bool proceed = true;
 
+#ifdef EMAN2_USING_CUDA
+	bool cpu = image->cpu_rw_is_current();
+	bool gpu = image->gpu_rw_is_current();
+	if ( !cpu && !gpu )
+		throw UnexpectedBehaviorException("Both the CPU and GPU data are not current");
+	if (gpu && image->get_ndim() == 2) { // Because CUDA phase origin to center only works for 2D atm
+		EMDataForCuda tmp = image->get_data_struct_for_cuda();
+		emdata_phaseorigin_to_center(&tmp);
+		proceed = false;
+		image->gpu_update();
+	}
+#endif // EMAN2_USING_CUDA
+	if (!proceed) return; // GPU processing occurred
+	
 	if (image->is_complex()) {
 		fourier_phaseshift180(image);
 		return;
@@ -8210,9 +8230,6 @@ Dict CUDA_kmeans::get_info() {
     INFO["time"] = h_INFO[5];
     return INFO;
 }
-
-#include "cuda/cuda_util.h"
-#include "cuda/cuda_processor.h"
 
 void CudaMultProcessor::process_inplace(EMData* image) {
 	float val = params.set_default("scale",(float) 1.0);

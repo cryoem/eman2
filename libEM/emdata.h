@@ -114,9 +114,6 @@ namespace EMAN
 
 	static int totalalloc;
 	public:
-
-
-
 		enum FFTPLACE { FFT_OUT_OF_PLACE, FFT_IN_PLACE };
 		enum WINDOWPLACE { WINDOW_OUT_OF_PLACE, WINDOW_IN_PLACE };
 
@@ -205,8 +202,9 @@ namespace EMAN
 //		FloatPoint normalize_slice(EMData * slice, float az, float alt, float phi);
 
 
-		/** Get an inclusive clip. Pads 0 if larger than this image.
+		/** Get an inclusive clip. Pads to fill if larger than this image.
 		 * area can be 2D/3D.
+		 * CUDA sensitive - will clip on the GPU if the gpu data is present and up to date
 		 * @param area The clip area.
 		 * @param fill the value to assign new pixels outside the area of the original image
 		 * @exception ImageDimensionException if any of the dimensions of the argument region are negative

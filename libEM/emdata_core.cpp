@@ -1179,11 +1179,24 @@ void EMData::to_one()
 	else {
 		set_ri(false);
 	}
-
+	float* data = get_data();
 	for (int i = 0; i < nxy * nz; i++) {
-		rdata[i] = 1.0f;
+		data[i] = 1.0f;
 	}
 
 	update();
 	EXITFUNC;
 }
+
+void EMData::to_value(const float& value)
+{
+	ENTERFUNC;
+
+	float* data = get_data();
+	std::fill(data,data+get_size(),value);
+
+	update();
+	EXITFUNC;
+}
+
+

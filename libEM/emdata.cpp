@@ -539,9 +539,26 @@ EMData *EMData::get_clip(const Region & area, const float fill) const
 		throw ImageDimensionException("New image dimensions are negative - this is not supported in the the get_clip operation");
 	}
 
+#ifdef EMAN2_USING_CUDA
+	bool cpu = cpu_rw_is_current();
+	bool gpu = gpu_rw_is_current();
+	if ( !cpu && !gpu )
+		throw UnexpectedBehaviorException("Both the CPU and GPU data are not current, according to get_clip");
+	bool use_gpu = false;
+	// Strategy is always to prefer using the GPU
+	if ( gpu ) {
+		result->set_size_cuda((int)area.size[0], ysize, zsize);
+		result->to_value_cuda(fill);
+		use_gpu = true;
+	} else { // cpu == True
+		result->set_size((int)area.size[0], ysize, zsize);
+		if (fill != 0.0) { result->to_value(fill); };
+	}
+#else
 	result->set_size((int)area.size[0], ysize, zsize);
-	if (fill != 0.0) { result->add(fill); };
-
+	if (fill != 0.0) { result->to_value(fill); };
+#endif //EMAN2_USING_CUDA
+	
 	int x0 = (int) area.origin[0];
 	x0 = x0 < 0 ? 0 : x0;
 
@@ -571,8 +588,19 @@ EMData *EMData::get_clip(const Region & area, const float fill) const
 	int src_secsize = nx * ny;
 	int dst_secsize = (int)(area.size[0] * area.size[1]);
 
+#ifdef EMAN2_USING_CUDA
+	float* src, *dst;
+	if (use_gpu) {
+		src = get_cuda_data() + z0 * src_secsize + y0 * nx + x0;
+		dst = result->get_cuda_data();
+	} else {
+		src = get_data() + z0 * src_secsize + y0 * nx + x0;
+		dst = result->get_data();
+	}
+#else
 	float *src = get_data() + z0 * src_secsize + y0 * nx + x0;
 	float *dst = result->get_data();
+#endif //EMAN2_USING_CUDA
 	dst += zd0 * dst_secsize + yd0 * (int)area.size[0] + xd0;
 
 	int src_gap = src_secsize - (y1-y0) * nx;
@@ -580,7 +608,12 @@ EMData *EMData::get_clip(const Region & area, const float fill) const
 
 	for (int i = z0; i < z1; i++) {
 		for (int j = y0; j < y1; j++) {
+#ifdef EMAN2_USING_CUDA
+			if (use_gpu) cudaMemcpy(dst, src, clipped_row_size, cudaMemcpyDeviceToDevice);
+			else EMUtil::em_memcpy(dst, src, clipped_row_size);
+#else
 			EMUtil::em_memcpy(dst, src, clipped_row_size);
+#endif // EMAN2_USING_CUDA
 			src += nx;
 			dst += (int)area.size[0];
 		}
@@ -612,8 +645,14 @@ EMData *EMData::get_clip(const Region & area, const float fill) const
 							       zorigin + apix_z * area.origin[2]);
 		}
 	}
-
+	
+#ifdef EMAN2_USING_CUDA
+	if (use_gpu) result->gpu_update();
+	else result->update();
+#else
 	result->update();
+#endif // EMAN2_USING_CUDA
+	
 
 	result->set_path(path);
 	result->set_pathnum(pathnum);

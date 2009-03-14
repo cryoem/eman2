@@ -73,9 +73,15 @@ public:
 	 * @param val the amount by which to multiply each pixel in the image
 	 */
 	void mult_cuda(const float& val);
+	void add_cuda(const float& val);
 	
 	EMData* unwrap_cuda(int r1 = -1, int r2 = -1, int xs = -1, int dx = 0,
 							   int dy = 0, bool do360 = false) const;
+	
+	void to_value_cuda(const float& value );
+	
+	
+	EMData * make_rotational_footprint_cuda( bool unwrap=true);
 	
 	/** Explicitly register that the raw data on the GPU has changed in some/any way.
 	 * An important part of the EMAN2 device/host framework.
@@ -101,11 +107,6 @@ public:
 
 	void copy_gpu_ro_to_gpu_rw();
 	
-	
-private:
-	
-	void set_gpu_rw_data(float* data, const int x, const int y, const int z) ;
-	
 	/** Check whether the CUDA-cached read-write version of the data pointer is current
 	 * Used to double check before copying the cuda rw data. It might be the case that the
 	 * cuda_cache_handle is non-zero but that the cuda rw is actually not available.
@@ -114,6 +115,11 @@ private:
 	bool gpu_rw_is_current() const;
 	
 	bool cpu_rw_is_current() const;
+private:
+	
+	void set_gpu_rw_data(float* data, const int x, const int y, const int z) ;
+	
+	
 	
 	/** Check whether the CUDA-cached read-only version of the data pointer is current
 	 * Used to double check before copying the cuda ro data. It might be the case that the

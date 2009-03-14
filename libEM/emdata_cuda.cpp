@@ -44,7 +44,7 @@
 
 using namespace EMAN;
 // Static init
-EMData::CudaDeviceEMDataCache EMData::cuda_cache(101);
+EMData::CudaDeviceEMDataCache EMData::cuda_cache(100);
 
 float* EMData::get_cuda_data() const {
 	if (cuda_cache_handle==-1 || EMDATA_GPU_NEEDS_UPDATE & flags) {
@@ -110,6 +110,23 @@ void EMData::mult_cuda(const float& val) {
 // 	process_inplace("cuda.math.mult",d);
 	EMDataForCuda tmp = get_data_struct_for_cuda();
 	emdata_processor_mult(&tmp,val);
+	gpu_update();
+}
+
+void EMData::add_cuda(const float& val) {
+// 	Dict d("scale",(float)val);
+// 	process_inplace("cuda.math.mult",d);
+	EMDataForCuda tmp = get_data_struct_for_cuda();
+	emdata_processor_add(&tmp,val);
+	gpu_update();
+}
+
+
+void EMData::to_value_cuda(const float& val) {
+// 	Dict d("scale",(float)val);
+// 	process_inplace("cuda.math.mult",d);
+	EMDataForCuda tmp = get_data_struct_for_cuda();
+	emdata_processor_to_value(&tmp,val);
 	gpu_update();
 }
 
@@ -191,7 +208,118 @@ EMData* EMData::unwrap_cuda(int r1, int r2, int xs, int dx,
 	EMData* e = new EMData();
 	e->set_gpu_rw_data(tmp->data,tmp->nx,tmp->ny,tmp->nz);
 	free(tmp);
+	e->gpu_update();
 	return  e;
+}
+
+EMData *EMData::make_rotational_footprint_cuda( bool unwrap)
+{
+	ENTERFUNC;
+//
+//	update_stat();
+//	float edge_mean = get_edge_mean();
+//	//if ( rot_fp != 0 && unwrap == true) {
+//	//	return new EMData(*rot_fp);
+//	//}
+//	
+//	//static EMData obj_filt;
+//	//EMData* filt = &obj_filt;
+//	//filt->set_complex(true);
+//// 	Region filt_region;
+//
+//// 	if (nx & 1) {
+//// 		LOGERR("even image xsize only");		throw ImageFormatException("even image xsize only");
+//// 	}
+//
+	int cs = (((nx * 7 / 4) & 0xfffff8) - nx) / 2; // this pads the image to 1 3/4 * size with result divis. by 8
+
+	Region r1;
+	if (nz == 1) {
+		r1 = Region(-cs, -cs, nx + 2 * cs, ny + 2 * cs);
+	}
+	else {
+		r1 = Region(-cs, -cs, -cs, nx + 2 * cs, ny + 2 * cs, nz + 2 * cs);
+	}
+//	// It is important to set all newly established pixels around the boundaries to the mean
+//	// If this is not done then the associated rotational alignment routine breaks, in fact
+//	// everythin just goes foo. 
+	EMData *clipped = get_clip(r1);
+//// 	EMData *clipped = copy()
+//	
+//	// The filter object is nothing more than a cached high pass filter
+//	// Ultimately it is used an argument to the EMData::mult(EMData,prevent_complex_multiplication (bool)) 
+//	// function in calc_mutual_correlation. Note that in the function the prevent_complex_multiplication 
+//	// set to true, which is used for speed reasons. 
+//	if (filt->get_xsize() != clipped->get_xsize() +2-(clipped->get_xsize()%2) || filt->get_ysize() != clipped->get_ysize() ||
+//		   filt->get_zsize() != clipped->get_zsize()) {
+//		filt->set_size(clipped->get_xsize() + 2-(clipped->get_xsize()%2), clipped->get_ysize(), clipped->get_zsize());
+//		filt->to_one();
+//		filt->process_inplace("eman1.filter.highpass.gaussian", Dict("highpass", 1.5f/nx));
+//	}
+//	
+	//cout << "Clip 1" << endl;
+	EMData *mc = clipped->calc_ccf_cuda(clipped,false);
+	//mc->add_cuda(mc->get_edge_mean());
+	mc->process_inplace("xform.phaseorigin.tocenter");
+	//mc->write_image("mc.hdf");
+	if( clipped ) {
+		delete clipped;
+		clipped = 0;
+	}
+
+	Region r2;
+	if (nz == 1) {
+		r2 = Region(cs - nx / 4, cs - ny / 4, nx * 3 / 2, ny * 3 / 2);
+	}
+	else {
+		r2 = Region(cs - nx / 4, cs - ny / 4, cs - nz / 4, nx * 3 / 2, ny * 3 / 2, nz * 3 / 2);
+	}
+	EMData* clipped_mc = mc->get_clip(r2);
+	//clipped_mc->write_image("clipped_mc.hdf");
+	if( mc ) {
+		delete mc;
+		mc = 0;
+	}
+//	
+	EMData * result = NULL;
+//
+//	if (nz == 1) {
+	if (!unwrap) {
+		//clipped_mc->process_inplace("mask.sharp", Dict("outer_radius", -1, "value", 0));
+		result = clipped_mc;
+	}
+	else {
+		result = clipped_mc->unwrap_cuda();
+		if( clipped_mc ) {
+			delete clipped_mc;
+			clipped_mc = 0;
+		}
+	}
+	
+	result->gpu_update();
+	
+	return result;
+//	}
+//	else {
+//		// I am not sure why there is any consideration of non 2D images, but it was here
+//		// in the first port so I kept when I cleaned this function up (d.woolford)
+//		result = clipped_mc;
+//	}
+//
+//	EXITFUNC;
+//	if ( unwrap == true)
+//	{ // this if statement reflects a strict policy of caching in only one scenario see comments at beginning of function block
+//		
+//		// Note that the if statement at the beginning of this function ensures that rot_fp is not zero, so there is no need
+//		// to throw any exception
+//		// if ( rot_fp != 0 ) throw UnexpectedBehaviorException("The rotational foot print is only expected to be cached if it is not NULL");
+//		
+//		// Here is where the caching occurs - the rot_fp takes ownsherhip of the pointer, and a deep copied EMData object is returned.
+//		// The deep copy invokes a cost in terms of CPU cycles and memory, but prevents the need for complicated memory management (reference counting)
+//		rot_fp = result;
+//		return new EMData(*rot_fp);
+//	}
+//	else return result;
 }
 
 void EMData::set_gpu_rw_data(float* data, const int x, const int y, const int z) {

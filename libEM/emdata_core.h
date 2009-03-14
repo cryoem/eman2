@@ -142,6 +142,9 @@ void to_zero();
 /** set all the pixel values = 1. */
 void to_one();
 
+/** set all the pixel values to a value. */
+void to_value(const float& value);
+
 /** Dot product 2 images. The 2 images must be of same size.
  * If 'evenonly' is true, only calculates pixels with even
  * positions assuming all pixels are in a single array. If

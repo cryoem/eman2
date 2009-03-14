@@ -43,6 +43,72 @@ void emdata_processor_mult( EMDataForCuda* cuda_data, const float& mult) {
 	cudaThreadSynchronize();	
 }
 
+__global__ void add_kernel(float *data,const float add,const int num_threads)
+{
+
+	const uint x=threadIdx.x;
+	const uint y=blockIdx.x;
+
+	data[x+y*num_threads] += add;
+}
+
+void emdata_processor_add( EMDataForCuda* cuda_data, const float& add) {
+	
+	int max_threads = 512;
+
+	int num_calcs = cuda_data->nx*cuda_data->ny*cuda_data->nz;
+	
+	int grid_y = num_calcs/max_threads;
+	int res_y = num_calcs - (grid_y*max_threads);
+	
+	if ( grid_y > 0 ) {
+		const dim3 blockSize(max_threads,1, 1);
+		const dim3 gridSize(grid_y,1,1);
+		add_kernel<<<gridSize,blockSize>>>(cuda_data->data,add,max_threads);
+	}
+	
+	if ( res_y > 0 ) {
+		const dim3 blockSize(res_y,1, 1);
+		const dim3 gridSize(1,1,1);
+		add_kernel<<<gridSize,blockSize>>>(cuda_data->data+grid_y*max_threads,add,0);
+	}
+
+	cudaThreadSynchronize();	
+}
+
+__global__ void assignment_kernel(float *data,const float value,const int num_threads)
+{
+
+	const uint x=threadIdx.x;
+	const uint y=blockIdx.x;
+
+	data[x+y*num_threads] = value;
+}
+
+void emdata_processor_to_value( EMDataForCuda* cuda_data, const float& value) {
+	
+	int max_threads = 512;
+
+	int num_calcs = cuda_data->nx*cuda_data->ny*cuda_data->nz;
+	
+	int grid_y = num_calcs/max_threads;
+	int res_y = num_calcs - (grid_y*max_threads);
+	
+	if ( grid_y > 0 ) {
+		const dim3 blockSize(max_threads,1, 1);
+		const dim3 gridSize(grid_y,1,1);
+		assignment_kernel<<<gridSize,blockSize>>>(cuda_data->data,value,max_threads);
+	}
+	
+	if ( res_y > 0 ) {
+		const dim3 blockSize(res_y,1, 1);
+		const dim3 gridSize(1,1,1);
+		assignment_kernel<<<gridSize,blockSize>>>(cuda_data->data+grid_y*max_threads,value,0);
+	}
+
+	cudaThreadSynchronize();	
+}
+
 __global__ void correlation_kernel(float *ldata, float* rdata,const int num_threads)
 {
 
@@ -273,3 +339,255 @@ EMDataForCuda* emdata_unwrap(int r1, int r2, int xs, int do360,int nx, int ny) {
 	tmp->nz = 1;
 	return tmp;
 }
+
+
+
+__global__ void swap_bot_left_top_right(float* data, const int num_threads, const int nx, const int ny, const int xodd, const int yodd, const int offset) {
+	const uint x=threadIdx.x;
+	const uint y=blockIdx.x;
+	
+	const uint gpu_idx = x+y*num_threads+offset; 
+	const uint c = gpu_idx % (nx/2);
+	const uint r = gpu_idx / (nx/2);
+	
+	const uint idx1 = r*nx + c;
+	const uint idx2 = (r+ny/2+yodd)*nx + c + nx/2+xodd;
+	float tmp = data[idx1];
+	data[idx1] = data[idx2];
+	data[idx2] = tmp;
+}
+
+__global__ void swap_top_left_bot_right(float* data, const int num_threads, const int nx, const int ny, const int xodd, const int yodd, const int offset) {
+	const uint x=threadIdx.x;
+	const uint y=blockIdx.x;
+	
+	const uint gpu_idx = x+y*num_threads+offset;
+	const uint c = gpu_idx % (nx/2);
+	const uint r = gpu_idx / (nx/2) + ny/2+yodd;
+	
+	const uint idx1 = r*nx + c;
+	const uint idx2 = (r-ny/2-yodd)*nx + c + nx/2+xodd;
+	float tmp = data[idx1];
+	data[idx1] = data[idx2];
+	data[idx2] = tmp;
+}
+
+__global__ void swap_middle_row(float* data, const int num_threads, const int nx, const int ny, const int xodd, const int yodd, const int offset) {
+	const uint x=threadIdx.x;
+	const uint y=blockIdx.x;
+	
+	const uint c = x+y*num_threads+offset;
+	int r = ny/2;
+	int idx1 = r*nx + c;
+	int idx2 = r*nx + c + nx/2+ xodd;
+	float tmp = data[idx1];
+	data[idx1] = data[idx2];
+	data[idx2] = tmp;
+}
+
+// Iterate along the central column, swapping values where appropriate
+__global__ void swap_middle_column(float* data, const int num_threads, const int nx, const int ny, const int xodd, const int yodd, const int offset) {
+	const uint x=threadIdx.x;
+	const uint y=blockIdx.x;
+	
+	const uint r = x+y*num_threads+offset;
+	int c = nx/2;
+	int idx1 = r*nx + c;
+	int idx2 = (r+ny/2+yodd)*nx + c;
+	float tmp = data[idx1];
+	data[idx1] = data[idx2];
+	data[idx2] = tmp;
+}
+
+void swap_central_slices_180(EMDataForCuda* cuda_data)
+{
+	int nx = cuda_data->nx;
+	int ny = cuda_data->ny;
+	int nz = cuda_data->nz;
+
+	int xodd = (nx % 2) == 1;
+	int yodd = (ny % 2) == 1;
+	//int zodd = (nz % 2) == 1;
+	
+	//int nxy = nx * ny;
+	float *data = cuda_data->data;
+
+	if ( ny == 1 && nz == 1 ){
+		throw;
+	}
+	else if ( nz == 1 ) {
+		if ( yodd ) {
+			// Iterate along middle row, swapping values where appropriate
+			
+			int max_threads = 512;
+			int num_calcs = nx/2;
+				
+			int grid_y = num_calcs/(max_threads);
+			int res_y = num_calcs - grid_y*max_threads;
+			
+			if (grid_y > 0) {
+				const dim3 blockSize(max_threads,1, 1);
+				const dim3 gridSize(grid_y,1,1);
+				swap_middle_row<<<gridSize,blockSize>>>(data,max_threads,nx,ny,xodd,yodd,0);
+			}
+			
+			if (res_y) {
+				const dim3 blockSize(res_y,1, 1);
+				const dim3 gridSize(1,1,1);
+				swap_middle_row<<<gridSize,blockSize>>>(data,max_threads,nx,ny,xodd,yodd,grid_y*max_threads);
+			}
+		}
+
+		if ( xodd )	{
+			// Iterate along the central column, swapping values where appropriate
+			int max_threads = 512;
+			int num_calcs = ny/2;
+				
+			int grid_y = num_calcs/(max_threads);
+			int res_y = num_calcs - grid_y*max_threads;
+			
+			if (grid_y > 0) {
+				const dim3 blockSize(max_threads,1, 1);
+				const dim3 gridSize(grid_y,1,1);
+				swap_middle_column<<<gridSize,blockSize>>>(data,max_threads,nx,ny,xodd,yodd,0);
+			}
+			
+			if (res_y) {
+				const dim3 blockSize(res_y,1, 1);
+				const dim3 gridSize(1,1,1);
+				swap_middle_column<<<gridSize,blockSize>>>(data,max_threads,nx,ny,xodd,yodd,grid_y*max_threads);
+			}
+			
+		}
+	}
+	else // nx && ny && nz are greater than 1
+	{
+		throw;
+	}
+}
+
+void swap_corners_180(EMDataForCuda* cuda_data)
+{
+	int nx = cuda_data->nx;
+	int ny = cuda_data->ny;
+	int nz = cuda_data->nz;
+
+	int xodd = (nx % 2) == 1;
+	int yodd = (ny % 2) == 1;
+	//int zodd = (nz % 2) == 1;
+
+	//int nxy = nx * ny;
+
+	float *data = cuda_data->data;
+
+	if ( ny == 1 && nz == 1 ){
+		throw;
+	}
+	else if ( nz == 1 ) {
+		int max_threads = 512;
+		int num_calcs = ny/2*nx/2;
+			
+		int grid_y = num_calcs/(max_threads);
+		int res_y = num_calcs - grid_y*max_threads;
+		
+		//printf("Grid %d, res %d, n %d\n",grid_y,res_y,num_calcs );
+		// Swap bottom left and top right
+		if (grid_y > 0) {
+			const dim3 blockSize(max_threads,1, 1);
+			const dim3 gridSize(grid_y,1,1);
+			swap_bot_left_top_right<<<gridSize,blockSize>>>(data,max_threads,nx,ny,xodd,yodd,0);
+		}
+		
+		if (res_y) {
+			const dim3 blockSize(res_y,1, 1);
+			const dim3 gridSize(1,1,1);
+			swap_bot_left_top_right<<<gridSize,blockSize>>>(data,max_threads,nx,ny,xodd,yodd,grid_y*max_threads);
+		}
+		
+		num_calcs = (ny-ny/2+yodd)*nx/2;
+		//printf("Grid %d, res %d, n %d\n",grid_y,res_y,num_calcs );
+					
+		grid_y = num_calcs/(max_threads);
+		res_y = num_calcs - grid_y*max_threads;
+		// Swap the top left and bottom right corners
+		if (grid_y > 0) {
+			const dim3 blockSize(max_threads,1, 1);
+			const dim3 gridSize(grid_y,1,1);
+			swap_top_left_bot_right<<<gridSize,blockSize>>>(data,max_threads,nx,ny,xodd,yodd,0);
+		}
+		
+		if (res_y) {
+			const dim3 blockSize(res_y,1, 1);
+			const dim3 gridSize(1,1,1);
+			swap_top_left_bot_right<<<gridSize,blockSize>>>(data,max_threads,nx,ny,xodd,yodd,grid_y*max_threads);
+
+		}
+	}
+	else // nx && ny && nz are greater than 1
+	{
+		throw;
+	}
+}
+
+__global__ void middle_to_right(float* data, const int nx, const int ny)
+{
+	float tmp;
+	for ( int r  = 0; r < ny; ++r ) {
+		float last_val = data[r*nx+nx/2];
+		for ( int c = nx-1; c >=  nx/2; --c ){
+			int idx = r*nx+c;
+			tmp = data[idx];
+			data[idx] = last_val;
+			last_val = tmp;
+		}
+	}
+}
+
+__global__ void middle_to_top(float* data, const int nx, const int ny)
+{
+	float tmp;
+	for ( int c = 0; c < nx; ++c ) {
+		// Get the value in the top row
+		float last_val = data[ny/2*nx + c];
+		for ( int r = ny-1; r >= ny/2; --r ){
+			int idx = r*nx+c;
+			tmp = data[idx];
+			data[idx] = last_val;
+			last_val = tmp;
+		}
+	}
+}
+
+
+void emdata_phaseorigin_to_center(EMDataForCuda* cuda_data) {
+	int xodd = (cuda_data->nx % 2) == 1;
+	int yodd = (cuda_data->ny % 2) == 1;
+	//int zodd = (cuda_data->nz % 2) == 1;
+
+	//int nxy = nx * ny;
+	if ( cuda_data->nz == 1 && cuda_data->ny > 1 ){
+		// The order in which these operations occur literally undoes what the
+		// PhaseToCornerProcessor did to the image.
+		// First, the corners sections of the image are swapped appropriately
+		swap_corners_180(cuda_data);
+		// Second, central pixel lines are swapped
+		swap_central_slices_180(cuda_data);
+
+		// Third, appropriate sections of the image are cyclically shifted by one pixel
+		if (xodd) {
+			// Transfer the middle column to the far right
+			// Shift all from the far right to (but not including the) middle one to the left
+			middle_to_right<<<1,1>>>(cuda_data->data,cuda_data->nx,cuda_data->ny);
+		}
+		if (yodd) {
+			// Tranfer the middle row to the top,
+			// shifting all pixels from the top row down one, until  but not including the) middle
+			middle_to_top<<<1,1>>>(cuda_data->data,cuda_data->nx,cuda_data->ny);
+		}
+		cudaThreadSynchronize();
+	} else {
+		throw;
+	}
+}
+
+

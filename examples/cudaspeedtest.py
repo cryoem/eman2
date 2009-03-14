@@ -49,6 +49,43 @@ def test_main():
 	gpu_times = []
 	cpu_times = []
 	
+	print "Testing phase origin"
+	print "Dims","\t", "GPU speedup"
+	for dims in test_dims:
+		a = test_image(0,size=(dims,dims))
+		a._copy_cpu_to_gpu_rw()
+		t = time()
+		for i in test_range:
+			a.process_inplace("xform.phaseorigin.tocenter")
+			
+		gpu_times.append(time()-t)
+		
+		a = test_image(0,size=(dims,dims))
+		t = time()
+		for i in test_range:
+			a.process_inplace("xform.phaseorigin.tocenter")
+		cpu_times.append(time()-t)
+		print dims,"\t", cpu_times[-1]/gpu_times[-1]
+	
+	
+	print "Testing make rotational footprint"
+	print "Dims","\t", "GPU speedup"
+	for dims in test_dims:
+		a = test_image(0,size=(dims,dims))
+		a._copy_cpu_to_gpu_rw()
+		t = time()
+		for i in test_range:
+			c = a.make_rotational_footprint_cuda()
+				
+		gpu_times.append(time()-t)
+		
+		t = time()
+		for i in test_range:
+			a = test_image(0,size=(dims,dims))
+			c = a.make_rotational_footprint()
+		cpu_times.append(time()-t)
+		print dims,"\t", cpu_times[-1]/gpu_times[-1]
+	
 	print "Testing unwrap"
 	print "Dims","\t", "GPU speedup"
 	for dims in test_dims:
