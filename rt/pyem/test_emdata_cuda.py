@@ -46,6 +46,23 @@ IS_TEST_EXCEPTION = False
 class TestEMDataCuda(unittest.TestCase):
 	"""this is the unit test that verifies the CUDA functionality of the EMData class"""
 	
+	def test_cuda_unwrap(self):
+		"""test cuda unwrap ................................."""
+		for x in [32,33]:
+			a = test_image(0,size=(x,x))
+			b = a.unwrap()
+			a.set_gpu_rw_current()
+			c = a.unwrap()
+			
+				
+			for k in range(c.get_zsize()):
+				for j in range(c.get_ysize()):
+					for i in range(c.get_xsize()):
+						if b.get_value_at(i,j,k) != 0:
+							self.assertAlmostEqual(c.get_value_at(i,j,k)/b.get_value_at(i,j,k),1, 1)
+						else:
+							self.assertAlmostEqual(c.get_value_at(i,j,k),b.get_value_at(i,j,k), 3)
+	
 	def test_cuda_ft_fidelity(self):
 		"""test cuda fft/ift equals input ..................."""
 		

@@ -75,8 +75,8 @@ public:
 	void mult_cuda(const float& val);
 	void add_cuda(const float& val);
 	
-	EMData* unwrap_cuda(int r1 = -1, int r2 = -1, int xs = -1, int dx = 0,
-							   int dy = 0, bool do360 = false) const;
+//	EMData* unwrap_cuda(int r1 = -1, int r2 = -1, int xs = -1, int dx = 0,
+//							   int dy = 0, bool do360 = false) const;
 	
 	void to_value_cuda(const float& value );
 	
@@ -100,12 +100,18 @@ public:
 	void copy_gpu_rw_to_cpu();
 
 	void copy_cpu_to_gpu_rw();
+	// A long term solution
+	inline void set_gpu_rw_current() { get_cuda_data(); }
 
+	bool gpu_operation_preferred() const;
+	
 	void copy_cpu_to_gpu_ro();
 
 	void copy_gpu_rw_to_gpu_ro();
 
 	void copy_gpu_ro_to_gpu_rw();
+	
+	
 	
 	/** Check whether the CUDA-cached read-write version of the data pointer is current
 	 * Used to double check before copying the cuda rw data. It might be the case that the

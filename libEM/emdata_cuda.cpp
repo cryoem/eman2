@@ -104,6 +104,17 @@ void EMData::cuda_cache_lost_imminently() const {
 }
 
 
+bool EMData::gpu_operation_preferred() const {
+	bool cpu = cpu_rw_is_current();
+	bool gpu = gpu_rw_is_current();
+	if ( !cpu && !gpu )
+		throw UnexpectedBehaviorException("Both the CPU and GPU data are not current");
+	if (gpu) return true;
+	return false;
+}
+
+
+
 
 void EMData::mult_cuda(const float& val) {
 // 	Dict d("scale",(float)val);
@@ -197,20 +208,20 @@ EMData* EMData::calc_ccf_cuda( EMData*  image, bool use_texturing ) const {
 	
 	return soln;
 }
-
-EMData* EMData::unwrap_cuda(int r1, int r2, int xs, int dx,
-							   int dy, bool do360 ) const
-{
-	if (get_ndim() != 2) throw ImageDimensionException("Unwrap_cuda works only for 2D images");
-	bind_cuda_texture();
-	EMDataForCuda* tmp = emdata_unwrap(r1,r2,xs,(int)do360,nx,ny);
-	unbind_cuda_texture();
-	EMData* e = new EMData();
-	e->set_gpu_rw_data(tmp->data,tmp->nx,tmp->ny,tmp->nz);
-	free(tmp);
-	e->gpu_update();
-	return  e;
-}
+//
+//EMData* EMData::unwrap_cuda(int r1, int r2, int xs, int dx,
+//							   int dy, bool do360 ) const
+//{
+//	if (get_ndim() != 2) throw ImageDimensionException("Unwrap_cuda works only for 2D images");
+//	bind_cuda_texture();
+//	EMDataForCuda* tmp = emdata_unwrap(r1,r2,xs,(int)do360,nx,ny);
+//	unbind_cuda_texture();
+//	EMData* e = new EMData();
+//	e->set_gpu_rw_data(tmp->data,tmp->nx,tmp->ny,tmp->nz);
+//	free(tmp);
+//	e->gpu_update();
+//	return  e;
+//}
 
 EMData *EMData::make_rotational_footprint_cuda( bool unwrap)
 {
@@ -289,7 +300,7 @@ EMData *EMData::make_rotational_footprint_cuda( bool unwrap)
 		result = clipped_mc;
 	}
 	else {
-		result = clipped_mc->unwrap_cuda();
+		//result = clipped_mc->unwrap_cuda();
 		if( clipped_mc ) {
 			delete clipped_mc;
 			clipped_mc = 0;

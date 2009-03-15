@@ -58,6 +58,7 @@
 
 #ifdef EMAN2_USING_CUDA
 #include <cuda_runtime_api.h>
+#include "cuda/cuda_processor.h"
 #endif // EMAN2_USING_CUDA
 
 using namespace EMAN;
@@ -2311,24 +2312,44 @@ EMData *EMData::unwrap(int r1, int r2, int xs, int dx, int dy, bool do360, bool 
 
 	if ( (r2-r1) < 0 ) throw UnexpectedBehaviorException("The combination of function the arguments and the image dimensions causes unexpected behavior internally. Use a larger image, or a smaller value of r1, or a combination of both");
 	
+#ifdef EMAN2_USING_CUDA
+	if ( gpu_operation_preferred() ) {
+		bind_cuda_texture();
+		EMDataForCuda* tmp = emdata_unwrap(r1,r2,xs,p,dx,dy,weight_radial,nx,ny);
+		unbind_cuda_texture();
+		EMData* e = new EMData();
+		e->set_gpu_rw_data(tmp->data,tmp->nx,tmp->ny,tmp->nz);
+		free(tmp);
+		e->gpu_update();
+		return  e;
+	}
+#endif
+	
 	EMData *ret = new EMData();
 	ret->set_size(xs, r2 - r1, 1);
 	const float *const d = get_const_data();
 	float *dd = ret->get_data();
 	float pfac = (float)p/(float)xs;
 
+	int nxon2 = nx/2;
+	int nyon2 = ny/2;
 	for (int x = 0; x < xs; x++) {
-		float si = sin(x * M_PI * pfac);
-		float co = cos(x * M_PI * pfac);
+		float ang = x * M_PI * pfac;
+		float si = sin(ang);
+		float co = cos(ang);
 
 		for (int y = 0; y < r2 - r1; y++) {
-			float xx = (y + r1) * co + nx / 2 + dx;
-			float yy = (y + r1) * si + ny / 2 + dy;
-			float t = xx - Util::fast_floor(xx);
-			float u = yy - Util::fast_floor(yy);
-			int k = (int) Util::fast_floor(xx) + (int) (Util::fast_floor(yy)) * nx;
+			float ypr1 = (float)y + r1;
+			float xx = ypr1 * co + nxon2 + dx;
+			float yy = ypr1 * si + nyon2 + dy;
+//			float t = xx - Util::fast_floor(xx);
+//			float u = yy - Util::fast_floor(yy);
+			float t = xx - (int)xx;
+			float u = yy - (int)yy;
+//			int k = (int) Util::fast_floor(xx) + (int) (Util::fast_floor(yy)) * nx;
+			int k = (int) xx + ((int) yy) * nx;
 			float val = Util::bilinear_interpolate(d[k], d[k + 1], d[k + nx], d[k + nx+1], t,u);
-			if (weight_radial) val *=  (y + r1);
+			if (weight_radial) val *=  ypr1;
 			dd[x + y * xs] = val;
 		}
 				

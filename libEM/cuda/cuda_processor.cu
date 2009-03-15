@@ -9,7 +9,10 @@ extern texture<float, 2, cudaReadModeElementType> tex2d;
 
 typedef unsigned int uint;
 
-typedef unsigned int uint;
+#ifdef WIN32
+	#define M_PI 3.14159265358979323846f
+#endif	//WIN32
+
 __global__ void mult_kernel(float *data,const float scale,const int num_threads)
 {
 
@@ -190,8 +193,6 @@ __global__ void correlation_kernel_texture_3D(float *ldata,const int num_threads
 	ldata[idxp1] = v1*u2 - v2*u1;
 }
 
-
-
 void emdata_processor_correlation_texture( const EMDataForCuda* cuda_data) {
 	int max_threads = 512; // I halve the threads because each kernel access memory in two locations
 
@@ -261,7 +262,7 @@ void emdata_processor_correlation( const EMDataForCuda* left, const EMDataForCud
 	cudaThreadSynchronize();
 }
 
-__global__ void unwrap_kernel(float* dptr, const int num_threads, const int r1, const float p, const int nx, const int ny, const int nxp, const int offset) {
+__global__ void unwrap_kernel(float* dptr, const int num_threads, const int r1, const float p, const int nx, const int ny, const int nxp, const int dx,const int dy,const int weight_radial,const int offset) {
 	const uint x=threadIdx.x;
 	const uint y=blockIdx.x;
 	
@@ -270,39 +271,20 @@ __global__ void unwrap_kernel(float* dptr, const int num_threads, const int r1, 
 	const uint tx = idx % nxp;
 	const uint ty = idx / nxp;
 	
-	float si = sinf(tx * 3.141592653589793 * p );
-	float co = cosf(tx * 3.141592653589793 * p );
+	float ang = tx * M_PI * p;
+	float si = sinf(ang);
+	float co = cosf(ang);
 
-	float xx = (ty + r1) * co + nx / 2;
-	float yy = (ty + r1) * si + ny / 2;
-	dptr[idx] = tex2D(tex2d,xx+0.5,yy+0.5)*(ty+r1);
+	float ypr1 = ty + r1;
+	float xx = ypr1 * co + nx / 2 + dx;
+	float yy = ypr1 * si + ny / 2 + dy;
+	if ( weight_radial ) dptr[idx] = tex2D(tex2d,xx+0.5,yy+0.5)*ypr1;
+	else dptr[idx] = tex2D(tex2d,xx+0.5,yy+0.5);
 }
 
-EMDataForCuda* emdata_unwrap(int r1, int r2, int xs, int do360,int nx, int ny) {
-	int p = 1;
-	if (do360) {
-		p = 2;
-	}
-
-	if (xs < 1) {
-		//xs = (int) Util::fast_floor(p * M_PI * ny / 4);
-		xs = (int) (p * 3.1415926535897931 * ny / 4);
-		xs -= xs % 8;
-		if (xs<=8) xs=16;
-	}
-
-	if (r1 < 0) {
-		r1 = 4;
-	}
-
-	int rr = ny / 2 - 2;
 	
-	rr-=rr%2;
-	if (r2 <= r1 || r2 > rr) {
-		r2 = rr;
-	}
-
-	if ( (r2-r1) < 0 ) throw;
+EMDataForCuda* emdata_unwrap(int r1, int r2, int xs, int num_pi, int dx, int dy, int weight_radial, int nx, int ny) {	
+	
 	float* dptr;
 	int n = xs*(r2-r1);
 	cudaError_t error = cudaMalloc((void**)&dptr,n*sizeof(float));
@@ -323,13 +305,13 @@ EMDataForCuda* emdata_unwrap(int r1, int r2, int xs, int do360,int nx, int ny) {
 	if ( grid_y > 0 ) {
 		const dim3 blockSize(max_threads,1, 1);
 		const dim3 gridSize(grid_y,1,1);
-		unwrap_kernel<<<gridSize,blockSize>>>(dptr,max_threads,r1,(float) p/ (float)xs, nx,ny,xs,0);	
+		unwrap_kernel<<<gridSize,blockSize>>>(dptr,max_threads,r1,(float) num_pi/ (float)xs, nx,ny,xs,dx,dy,weight_radial,0);	
 	}
 	
 	if ( res_y > 0 ) {
 		const dim3 blockSize(res_y,1, 1);
 		const dim3 gridSize(1,1,1);
-		unwrap_kernel<<<gridSize,blockSize>>>(dptr,max_threads,r1, (float) p/ (float)xs, nx,ny,xs,grid_y*max_threads);	
+		unwrap_kernel<<<gridSize,blockSize>>>(dptr,max_threads,r1, (float) num_pi/ (float)xs, nx,ny,xs,dx,dy,weight_radial,grid_y*max_threads);	
 	}
 	
 	EMDataForCuda* tmp = (EMDataForCuda*) malloc( sizeof(EMDataForCuda) );
