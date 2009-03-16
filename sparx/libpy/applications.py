@@ -738,8 +738,10 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		print_msg("Inner radius                : %i\n"%(first_ring))
 
 	if ftp == "hdf":
+		from utilities import recv_attr_dict
 		nima = EMUtil.get_image_count(stack)
 	elif ftp == "bdb":
+		from utilities import recv_attr_dict_bdb
 		nima = 0
 		if myid == main_node:
 			nima = EMUtil.get_image_count(stack)
@@ -1048,12 +1050,9 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		par_str = ["xform.align2d"]
 		if color == 0:    # We can only use one group of alignment as the final results
 			if key == group_main_node:
-				from utilities import file_type
 				if file_type(stack) == "bdb":
-					from utilities import recv_attr_dict_bdb
 					recv_attr_dict_bdb(group_main_node, stack, data, par_str, image_start, image_end, group_number_of_proc, group_comm)
 				else:
-					from utilities import recv_attr_dict
 					recv_attr_dict(group_main_node, stack, data, par_str, image_start, image_end, group_number_of_proc, group_comm)
 			else:
 				send_attr_dict(group_main_node, data, par_str, image_start, image_end, group_comm)
