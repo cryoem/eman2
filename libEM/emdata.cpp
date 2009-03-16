@@ -522,12 +522,10 @@ EMData *EMData::get_clip(const Region & area, const float fill) const
 
 	EMData *result = new EMData();
 
-	// Added by d.woolford - I need to ensure that all of the metadata of this is stored in the new object
+	// Ensure that all of the metadata of this is stored in the new object
 	// Originally added to ensure that euler angles were retained when preprocessing (zero padding) images
 	// prior to insertion into the 3D for volume in the reconstruction phase (see reconstructor.cpp/h).
-	// Could this present a problem in any way? (I am not certain)
 	result->attr_dict = this->attr_dict;
-	
 	int zsize = (int)area.size[2];
 	if (zsize == 0 && nz <= 1) {
 		zsize = 1;
@@ -541,15 +539,13 @@ EMData *EMData::get_clip(const Region & area, const float fill) const
 	}
 
 #ifdef EMAN2_USING_CUDA
-	bool cpu = cpu_rw_is_current();
-	bool gpu = gpu_rw_is_current();
-	if ( !cpu && !gpu )
-		throw UnexpectedBehaviorException("Both the CPU and GPU data are not current, according to get_clip");
-	bool use_gpu = false;
 	// Strategy is always to prefer using the GPU
-	if ( gpu ) {
+	bool use_gpu = false;
+	if ( gpu_operation_preferred() ) {
 		result->set_size_cuda((int)area.size[0], ysize, zsize);
-		result->to_value_cuda(fill);
+		result->get_cuda_data(); // Force the allocation - set_size_cuda is lazy
+		// Setting the value is necessary seeing as cuda data is not automatically zeroed
+		result->to_value(fill); // This will automatically use the GPU. 
 		use_gpu = true;
 	} else { // cpu == True
 		result->set_size((int)area.size[0], ysize, zsize);
@@ -559,7 +555,7 @@ EMData *EMData::get_clip(const Region & area, const float fill) const
 	result->set_size((int)area.size[0], ysize, zsize);
 	if (fill != 0.0) { result->to_value(fill); };
 #endif //EMAN2_USING_CUDA
-	
+
 	int x0 = (int) area.origin[0];
 	x0 = x0 < 0 ? 0 : x0;
 
@@ -610,7 +606,10 @@ EMData *EMData::get_clip(const Region & area, const float fill) const
 	for (int i = z0; i < z1; i++) {
 		for (int j = y0; j < y1; j++) {
 #ifdef EMAN2_USING_CUDA
-			if (use_gpu) cudaMemcpy(dst, src, clipped_row_size, cudaMemcpyDeviceToDevice);
+			if (use_gpu) {
+				cudaError_t  error = cudaMemcpy(dst, src, clipped_row_size, cudaMemcpyDeviceToDevice);
+				if ( error != cudaSuccess) throw UnexpectedBehaviorException( "CudaMemcpy (device to device) in get_clip error:" + string(cudaGetErrorString(error)));	
+			}
 			else EMUtil::em_memcpy(dst, src, clipped_row_size);
 #else
 			EMUtil::em_memcpy(dst, src, clipped_row_size);

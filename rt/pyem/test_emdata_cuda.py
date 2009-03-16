@@ -46,6 +46,48 @@ IS_TEST_EXCEPTION = False
 class TestEMDataCuda(unittest.TestCase):
 	"""this is the unit test that verifies the CUDA functionality of the EMData class"""
 	
+	def test_cuda_get_clip(self):
+		"""test cuda get_clip ..............................."""
+		for z in [1,15,16]:
+			for y in [15,16]:
+				for x in [15,16]:
+					#print x,y,z
+					e = EMData()
+			        e.set_size(x,y,z)
+			        e.process_inplace("testimage.noise.uniform.rand")
+        
+			        # Just lose the edge pixels
+			        if z == 1:
+			        	clip_region_1 = Region(1,1,x-2,y-2)
+			        else:
+			        	clip_region_1 = Region(1,1,1,x-2,y-2,z-2)
+			        
+			        r = e.get_clip(clip_region_1)
+			        e.set_gpu_rw_current()
+			        r2 = e.get_clip(clip_region_1)
+			        self.__test_image_equality(r,r2)
+			        
+			        if z == 1:
+			        	clip_region_1 = Region(-1,-1,x+2,y+2)
+			        else:
+			        	clip_region_1 = Region(-1,-1,-1,x+2,y+2,z+2)
+			        r = e.get_clip(clip_region_1)
+			        e.set_gpu_rw_current()
+			        r2 = e.get_clip(clip_region_1)
+			        self.__test_image_equality(r,r2)
+			        
+	def __test_image_almost_equality(self,a,b,precision):
+		for k in range(a.get_zsize()):
+			for j in range(a.get_ysize()):
+				for i in range(a.get_xsize()):
+					self.assertAlmostEqual(a.get_value_at(i,j,k), b.get_value_at(i,j,k), precision)
+	
+	def __test_image_equality(self,a,b):
+		for k in range(a.get_zsize()):
+			for j in range(a.get_ysize()):
+				for i in range(a.get_xsize()):
+					self.assertEqual(a.get_value_at(i,j,k), b.get_value_at(i,j,k))
+	
 	def test_cuda_unwrap(self):
 		"""test cuda unwrap ................................."""
 		for x in [32,33]:
@@ -54,21 +96,14 @@ class TestEMDataCuda(unittest.TestCase):
 			a.set_gpu_rw_current()
 			c = a.unwrap()
 			
-				
-			for k in range(c.get_zsize()):
-				for j in range(c.get_ysize()):
-					for i in range(c.get_xsize()):
-						if b.get_value_at(i,j,k) != 0:
-							self.assertAlmostEqual(c.get_value_at(i,j,k)/b.get_value_at(i,j,k),1, 1)
-						else:
-							self.assertAlmostEqual(c.get_value_at(i,j,k),b.get_value_at(i,j,k), 3)
-	
+			self.__test_image_almost_equality(b,c,1)
+		
 	def test_cuda_ft_fidelity(self):
 		"""test cuda fft/ift equals input ..................."""
 		
-		for z in [1,15,16]:
-			for y in [15,16]:
-				for x in [15,16]:
+		for z in [1,15,16,27]:
+			for y in [15,16,27]:
+				for x in [15,16,27]:
 					#print x,y,z
 					a = EMData(x,y,z)
 					a.process_inplace('testimage.noise.uniform.rand')
@@ -79,11 +114,7 @@ class TestEMDataCuda(unittest.TestCase):
 					for attr in attrs:
 						self.assertEqual(getattr(c,attr)(),getattr(a,attr)())
 					
-					for k in range(c.get_zsize()):
-						for j in range(c.get_ysize()):
-							for i in range(c.get_xsize()):
-								self.assertAlmostEqual(c.get_value_at(i,j,k), a.get_value_at(i,j,k), 3)
-	
+					self.__test_image_almost_equality(a,c,3)
 	def test_cuda_ccf(self):
 		"""test cuda ccf equals cpu ccf ....................."""
 		for y in [15,16]:
@@ -91,18 +122,12 @@ class TestEMDataCuda(unittest.TestCase):
 				a = test_image(0,size=(x,y))
 				b = a.calc_ccf(a)
 				# Not textured
-				c = a.calc_ccf_cuda(a,False)
-				for k in range(c.get_zsize()):
-					for j in range(c.get_ysize()):
-						for i in range(c.get_xsize()):
-							self.assertAlmostEqual(c.get_value_at(i,j,k), b.get_value_at(i,j,k), 1)
+				c = a.calc_ccf_cuda(a,False,False)
+				self.__test_image_almost_equality(b,c,1)
 				
 				# Textured
-				c = a.calc_ccf_cuda(a,True)
-				for k in range(c.get_zsize()):
-					for j in range(c.get_ysize()):
-						for i in range(c.get_xsize()):
-							self.assertAlmostEqual(c.get_value_at(i,j,k), b.get_value_at(i,j,k), 1)
+				c = a.calc_ccf_cuda(a,True,False)
+				self.__test_image_almost_equality(b,c,1)
 		for z in [15,16]:	
 			for y in [15,16]:
 				for x in [15,16]:
@@ -110,13 +135,10 @@ class TestEMDataCuda(unittest.TestCase):
 					a = test_image_3d(0,size=(x,y,z))
 					b = a.calc_ccf(a)
 					# Not textured
-					c = a.calc_ccf_cuda(a,False)
-					for k in range(c.get_zsize()):
-						for j in range(c.get_ysize()):
-							for i in range(c.get_xsize()):
-								self.assertAlmostEqual(c.get_value_at(i,j,k), b.get_value_at(i,j,k), 1)
-					
-					#Textured
+					c = a.calc_ccf_cuda(a,False,False)
+					self.__test_image_almost_equality(b,c,1)
+										
+					#Textured there is a problem with textured at the moment, something to do with pitched pointers on the CUDA side
 #					c = a.calc_ccf_cuda(a,True)
 #					for k in range(c.get_zsize()):
 #						for j in range(c.get_ysize()):
@@ -125,32 +147,41 @@ class TestEMDataCuda(unittest.TestCase):
 							
 		
 					
-	def test_cuda_2d_square_fft(self):
+	def test_cuda_2d_fft(self):
 		"""test cuda 2D fft equals cpu fft .................."""
-		for y in [15,16]:
-			for x in [15,16]:
+		for y in [15,16,27]:
+			for x in [15,16,27]:
 				a = test_image(0,size=(x,y))
 				b = a.do_fft()
 				c = a.do_fft_cuda()
-				for k in range(c.get_zsize()):
-					for j in range(c.get_ysize()):
-						for i in range(c.get_xsize()):
-							self.assertAlmostEqual(c.get_value_at(i,j,k), b.get_value_at(i,j,k), 3)
-						
-	def test_cuda_3d_square_fft(self):
+				self.__test_image_almost_equality(b,c,3)						
+	def test_cuda_3d_fft(self):
 		"""test cuda 3D fft equals cpu fft .................."""
-		for z in [15,16]:
-			for y in [15,16]:
-				for x in [15,16]:
+		for z in [15,16,27]:
+			for y in [15,16,27]:
+				for x in [15,16,27]:
 					a = test_image_3d(0,size=(x,x,x))
 					b = a.do_fft()
 					c = a.do_fft_cuda()
-					for k in range(c.get_zsize()):
-						for j in range(c.get_ysize()):
-							for i in range(c.get_xsize()):
-								self.assertAlmostEqual(c.get_value_at(i,j,k), b.get_value_at(i,j,k), 3)
-						
+					self.__test_image_almost_equality(b,c,3)
+								
 	def test_cuda_basic_mult(self):
+		"""test cuda basic multiplication ..................."""
+		self.__test_cuda_basic_operation("mult",2.0)
+	
+	def test_cuda_basic_division(self):
+		"""test cuda basic division ;........................"""
+		self.__test_cuda_basic_operation("div",2.0)
+	
+	def test_cuda_basic_addition(self):
+		"""test cuda basic addition ........................."""
+		self.__test_cuda_basic_operation("add",2.0)
+		
+	def test_cuda_basic_subtraction(self):
+		"""test cuda basic subtraction ......................"""
+		self.__test_cuda_basic_operation("sub",2.0)
+		
+	def __test_cuda_basic_operation(self,op,arg):
 		"""test cuda basic multiplication ..................."""
 		test_suite = [test_image(1,size=(32,32)), test_image(1,size=(33,33)), test_image(1,size=(32,33)),test_image(1,size=(33,32))]
 		test_suite.extend([test_image_3d(0,size=(32,32,32)), test_image_3d(0,size=(33,33,33))])
@@ -158,13 +189,11 @@ class TestEMDataCuda(unittest.TestCase):
 			#a = EMData(x,x)
 			#a.process_inplace('testimage.noise.uniform.rand')
 			b = a.copy()
-			b.mult_cuda(2.0)
-			a.mult(2.0)
-			for k in range(a.get_zsize()):
-				for j in range(a.get_ysize()):
-					for i in range(a.get_xsize()):
-						self.assertAlmostEqual(a.get_value_at(i,j,k), b.get_value_at(i,j,k), 8)
-						
+			b.set_gpu_rw_current()
+			getattr(b,op)(arg)
+			getattr(a,op)(arg)
+			self.__test_image_almost_equality(a,b,8)
+					
 	def test_cuda_standard_projector(self):
 		"""test cuda basic projection ......................."""
 		#print ""
@@ -174,10 +203,8 @@ class TestEMDataCuda(unittest.TestCase):
 			a.process_inplace('testimage.noise.uniform.rand')
 			b = a.project("cuda_standard",Transform())
 			c = a.project("standard",Transform())
-			for k in range(b.get_zsize()):
-				for j in range(b.get_ysize()):
-					for i in range(b.get_xsize()):
-						self.assertAlmostEqual(c.get_value_at(i,j,k), b.get_value_at(i,j,k), 8)
+			self.__test_image_almost_equality(b,c,3)
+			
 	def test_dt_cpu_gpurw_cpu(self):
 		"""test data transfer cpu->gpurw->cpu................"""
 		test_suite = [test_image(1,size=(32,32)), test_image(1,size=(33,33)), test_image(1,size=(32,33)), test_image(1,size=(33,32)),test_image(1,size=(600,800))]

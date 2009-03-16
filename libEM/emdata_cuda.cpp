@@ -58,7 +58,7 @@ float* EMData::get_cuda_data() const {
 }
 
 bool EMData::gpu_rw_is_current() const {
-	if (cuda_cache_handle !=-1 || !(EMDATA_GPU_NEEDS_UPDATE & flags)) return cuda_cache.has_rw_data(cuda_cache_handle);
+	if (cuda_cache_handle !=-1 && !(EMDATA_GPU_NEEDS_UPDATE & flags)) return cuda_cache.has_rw_data(cuda_cache_handle);
 	else return false;
 }
 
@@ -107,38 +107,16 @@ void EMData::cuda_cache_lost_imminently() const {
 bool EMData::gpu_operation_preferred() const {
 	bool cpu = cpu_rw_is_current();
 	bool gpu = gpu_rw_is_current();
-	if ( !cpu && !gpu )
-		throw UnexpectedBehaviorException("Both the CPU and GPU data are not current");
+	if ( cpu==0 &&  gpu==0 ) {		
+		cout << (!(EMDATA_CPU_NEEDS_UPDATE & flags) && rdata != 0) << " " << (cuda_cache_handle !=-1 && !(EMDATA_GPU_NEEDS_UPDATE & flags) && cuda_cache.has_rw_data(cuda_cache_handle)) << endl;
+		cout << "GPU flag " << !(EMDATA_GPU_NEEDS_UPDATE & flags) << endl;
+		cout << "CPU flag " << !(EMDATA_CPU_NEEDS_UPDATE & flags) << endl;
+		cout << "Rdata " << rdata << endl;
+		cout << "Cuda handle " << cuda_cache_handle << endl;
+		throw UnexpectedBehaviorException("Neither the CPU and GPU data are current");
+	}
 	if (gpu) return true;
 	return false;
-}
-
-
-
-
-void EMData::mult_cuda(const float& val) {
-// 	Dict d("scale",(float)val);
-// 	process_inplace("cuda.math.mult",d);
-	EMDataForCuda tmp = get_data_struct_for_cuda();
-	emdata_processor_mult(&tmp,val);
-	gpu_update();
-}
-
-void EMData::add_cuda(const float& val) {
-// 	Dict d("scale",(float)val);
-// 	process_inplace("cuda.math.mult",d);
-	EMDataForCuda tmp = get_data_struct_for_cuda();
-	emdata_processor_add(&tmp,val);
-	gpu_update();
-}
-
-
-void EMData::to_value_cuda(const float& val) {
-// 	Dict d("scale",(float)val);
-// 	process_inplace("cuda.math.mult",d);
-	EMDataForCuda tmp = get_data_struct_for_cuda();
-	emdata_processor_to_value(&tmp,val);
-	gpu_update();
 }
 
 EMData* EMData::calc_ccf_cuda( EMData*  image, bool use_texturing,bool center ) const {

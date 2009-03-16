@@ -129,7 +129,7 @@ void EMData::add(float f,int keepzero)
 #ifdef EMAN2_USING_CUDA
 			if ( gpu_operation_preferred () && !keepzero ) {
 				EMDataForCuda tmp = get_data_struct_for_cuda();
-				emdata_processor_mult(&tmp,f);
+				emdata_processor_add(&tmp,f);
 				gpu_update();
 				EXITFUNC;
 				return;
@@ -1215,6 +1215,15 @@ void EMData::to_value(const float& value)
 {
 	ENTERFUNC;
 
+#ifdef EMAN2_USING_CUDA
+	if ( gpu_operation_preferred() ) {
+		EMDataForCuda tmp = get_data_struct_for_cuda();
+		emdata_processor_to_value(&tmp,value);
+		gpu_update();
+		EXITFUNC;
+		return;
+	}
+#endif // EMAN2_USING_CUDA
 	float* data = get_data();
 	std::fill(data,data+get_size(),value);
 

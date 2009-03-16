@@ -126,7 +126,7 @@ EMData *EMData::do_ift_cuda(bool preserve_input) const
 	
 	// SCALE the inverse FFT
 	float scale = 1.0f/static_cast<float>((dat->get_size()));
-	dat->mult_cuda(scale);
+	dat->mult(scale); // Use of GPU should be automatic
 	
 	dat->set_fftpad(false);
 	dat->set_complex(false);

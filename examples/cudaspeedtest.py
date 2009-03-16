@@ -49,6 +49,27 @@ def test_main():
 	gpu_times = []
 	cpu_times = []
 	
+	print "Testing get_clip, lose edge pixels"
+	print "Dims","\t", "GPU speedup"
+	for dims in test_dims:
+		a = test_image(0,size=(dims,dims))
+		r = Region(1,1,dims-2,dims-2)
+		a.set_gpu_rw_current()
+		t = time()
+		for i in test_range:
+			b = a.get_clip(r)
+		gpu_times.append(time()-t)
+		
+		a = test_image(0,size=(dims,dims))
+		t = time()
+		for i in test_range:
+			b = a.get_clip(r)
+			
+		cpu_times.append(time()-t)
+		print dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1]
+		
+	
+	
 	print "Testing phase origin"
 	print "Dims","\t", "GPU speedup"
 	for dims in test_dims:
@@ -109,11 +130,11 @@ def test_main():
 	print "Dims","\t", "GPU speedup"
 	for dims in test_dims_3d:
 		a = test_image_3d(0,size=(dims,dims,dims))
-		a._copy_cpu_to_gpu_rw()
+		a.set_gpu_rw_current()
 		t = time()
 		for i in test_range:
-			a.mult_cuda(2.0)
-			a.mult_cuda(0.5)
+			a.mult(2.0)
+			a.mult(0.5)
 		gpu_time = time()-t
 		
 		a = test_image_3d(0,size=(dims,dims,dims))
@@ -128,11 +149,11 @@ def test_main():
 	print "Dims","\t", "GPU speedup"
 	for dims in test_dims:
 		a = test_image(0,size=(dims,dims))
-		a._copy_cpu_to_gpu_rw()
+		a.set_gpu_rw_current()
 		t = time()
 		for i in test_range:
-			a.mult_cuda(2.0)
-			a.mult_cuda(0.5)
+			a.mult(2.0)
+			a.mult(0.5)
 		gpu_time = time()-t
 		
 		a = test_image(0,size=(dims,dims))

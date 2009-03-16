@@ -68,19 +68,7 @@ public:
 	 * @return a real space correlation image
 	 */
 	EMData* calc_ccf_cuda(EMData* image, bool use_texturing,bool center=false ) const;
-	
-	/** Multiply the image by a constant value using the CUDA device
-	 * @param val the amount by which to multiply each pixel in the image
-	 */
-	void mult_cuda(const float& val);
-	void add_cuda(const float& val);
-	
-//	EMData* unwrap_cuda(int r1 = -1, int r2 = -1, int xs = -1, int dx = 0,
-//							   int dy = 0, bool do360 = false) const;
-	
-	void to_value_cuda(const float& value );
-	
-	
+		
 	EMData * make_rotational_footprint_cuda( bool unwrap=true);
 	
 	/** Explicitly register that the raw data on the GPU has changed in some/any way.
@@ -101,7 +89,9 @@ public:
 
 	void copy_cpu_to_gpu_rw();
 	// A long term solution
-	inline void set_gpu_rw_current() { get_cuda_data(); }
+	inline void set_gpu_rw_current() { 
+		get_cuda_data();
+	}
 
 	bool gpu_operation_preferred() const;
 	
@@ -110,8 +100,6 @@ public:
 	void copy_gpu_rw_to_gpu_ro();
 
 	void copy_gpu_ro_to_gpu_rw();
-	
-	
 	
 	/** Check whether the CUDA-cached read-write version of the data pointer is current
 	 * Used to double check before copying the cuda rw data. It might be the case that the
@@ -124,8 +112,6 @@ public:
 private:
 	
 	void set_gpu_rw_data(float* data, const int x, const int y, const int z) ;
-	
-	
 	
 	/** Check whether the CUDA-cached read-only version of the data pointer is current
 	 * Used to double check before copying the cuda ro data. It might be the case that the
