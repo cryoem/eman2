@@ -4927,7 +4927,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 		if CTF: del vol
 		fscc = [None]*numref
 
-		if myid==main_node and fourvar and runtype=="REFINEMENT":
+		if fourvar and runtype=="REFINEMENT":
 			sumvol = model_blank(nx, nx, nx)
 
 		for iref in xrange(numref):
