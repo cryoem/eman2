@@ -57,7 +57,7 @@
 #define EMDATA_EMAN2_DEBUG 0
 
 #ifdef EMAN2_USING_CUDA
-#include <cuda_runtime_api.h>
+#include <driver_functions.h>
 #include "cuda/cuda_processor.h"
 #endif // EMAN2_USING_CUDA
 
@@ -539,7 +539,7 @@ EMData *EMData::get_clip(const Region & area, const float fill) const
 	}
 
 #ifdef EMAN2_USING_CUDA
-	// Strategy is always to prefer using the GPU
+	// Strategy is always to prefer using the GPU if possible
 	bool use_gpu = false;
 	if ( gpu_operation_preferred() ) {
 		result->set_size_cuda((int)area.size[0], ysize, zsize);
@@ -583,52 +583,63 @@ EMData *EMData::get_clip(const Region & area, const float fill) const
 
 	size_t clipped_row_size = (x1-x0) * sizeof(float);
 	int src_secsize = nx * ny;
-	int dst_secsize = (int)(area.size[0] * area.size[1]);
+	int dst_secsize = (int)(area.size[0] * area.size[1]);	
 
+	bool memcpy_done_by_cuda = false;
 #ifdef EMAN2_USING_CUDA
-	float* src, *dst;
 	if (use_gpu) {
-		src = get_cuda_data() + z0 * src_secsize + y0 * nx + x0;
-		dst = result->get_cuda_data();
-	} else {
-		src = get_data() + z0 * src_secsize + y0 * nx + x0;
-		dst = result->get_data();
-	}
-#else
-	float *src = get_data() + z0 * src_secsize + y0 * nx + x0;
-	float *dst = result->get_data();
-#endif //EMAN2_USING_CUDA
-	dst += zd0 * dst_secsize + yd0 * (int)area.size[0] + xd0;
-
-	int src_gap = src_secsize - (y1-y0) * nx;
-	int dst_gap = dst_secsize - (y1-y0) * (int)area.size[0];
-
-	for (int i = z0; i < z1; i++) {
-		for (int j = y0; j < y1; j++) {
-#ifdef EMAN2_USING_CUDA
-			if (use_gpu) {
-				cudaError_t  error = cudaMemcpy(dst, src, clipped_row_size, cudaMemcpyDeviceToDevice);
-				if ( error != cudaSuccess) throw UnexpectedBehaviorException( "CudaMemcpy (device to device) in get_clip error:" + string(cudaGetErrorString(error)));	
+		memcpy_done_by_cuda = true; 
+//		cudaMemcpy3DParms copyParams = {0};
+//		copyParams.srcPtr   = make_cudaPitchedPtr((void*)get_cuda_data(), nx*sizeof(float), nx, ny);
+//		cout << "Src pos is " << x0 << " " << y0 << " " << z0 << endl;
+//		copyParams.srcPos  = make_cudaPos(x0,y0,z0);
+//		cout << "Extent is " << x1-x0 << " " << y1-y0 << " " << z1-z0 << endl;
+//		cudaExtent extent = make_cudaExtent(x1-x0,y1-y0,z1-z0);
+//		int rnx = result->get_xsize();
+//		int rny = result->get_ysize();
+//		copyParams.dstPtr = make_cudaPitchedPtr((void*)result->get_cuda_data(),rnx*sizeof(float),rnx,rny );
+//		cout << "Dest pos is " << xd0 << " " << yd0 << " " << zd0 << endl;
+//		copyParams.dstPos  = make_cudaPos(xd0,yd0,zd0);
+//		copyParams.extent   = extent;
+//		copyParams.kind     = cudaMemcpyDeviceToDevice;
+//		cudaError_t error =  cudaMemcpy3D(&copyParams);
+//		if ( error != cudaSuccess) {
+//			string e = cudaGetErrorString(error);
+//			throw UnexpectedBehaviorException("CudaMemcpy3D failed with error: " + e);
+//		}
+		for (int i = 0; i < (z1-z0); i++) {
+			float* ldst = result->get_cuda_data() + (zd0+i) * dst_secsize + yd0 * (int)area.size[0] + xd0;
+			float* lsrc = get_cuda_data() + (z0+i) * src_secsize + y0 * nx + x0;
+			cudaError_t error =  cudaMemcpy2D( ldst, ((int)area.size[0])*sizeof(float), lsrc,nx*sizeof(float), clipped_row_size, (y1-y0), cudaMemcpyDeviceToDevice );
+			if ( error != cudaSuccess) {
+				string e = cudaGetErrorString(error);
+				throw UnexpectedBehaviorException("cudaMemcpy2D failed in get_clip with error: " + e);
 			}
-			else EMUtil::em_memcpy(dst, src, clipped_row_size);
-#else
-			EMUtil::em_memcpy(dst, src, clipped_row_size);
-#endif // EMAN2_USING_CUDA
-			src += nx;
-			dst += (int)area.size[0];
 		}
-		src += src_gap;
-		dst += dst_gap;
+	}
+#endif
+	if (memcpy_done_by_cuda == false) {
+		float *src = get_data() + z0 * src_secsize + y0 * nx + x0;
+		float *dst = result->get_data();
+		dst += zd0 * dst_secsize + yd0 * (int)area.size[0] + xd0;
+
+		int src_gap = src_secsize - (y1-y0) * nx;
+		int dst_gap = dst_secsize - (y1-y0) * (int)area.size[0];
+		for (int i = z0; i < z1; i++) {
+			for (int j = y0; j < y1; j++) {
+				EMUtil::em_memcpy(dst, src, clipped_row_size);
+				src += nx;
+				dst += (int)area.size[0];
+			}
+			src += src_gap;
+			dst += dst_gap;
+		}
 	}
 
 
 	if( attr_dict.has_key("apix_x") && attr_dict.has_key("apix_y") &&
 		attr_dict.has_key("apix_z") )
 	{
-		result->attr_dict["apix_x"] = attr_dict["apix_x"];
-		result->attr_dict["apix_y"] = attr_dict["apix_y"];
-		result->attr_dict["apix_z"] = attr_dict["apix_z"];
-
 		if( attr_dict.has_key("origin_row") && attr_dict.has_key("origin_col") &&
 		    attr_dict.has_key("origin_sec") )
 		{

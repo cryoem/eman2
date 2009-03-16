@@ -234,3 +234,8 @@ void cut_slice_cuda_(const EMDataForCuda* to_data,const float* const matrix)
 	
 }
 
+
+//float emdata_get_edge_mean(const EMDataForCuda* data)
+//{
+//	
+//}

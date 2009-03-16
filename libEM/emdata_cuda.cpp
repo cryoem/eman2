@@ -192,7 +192,7 @@ EMData *EMData::make_rotational_footprint_cuda( bool unwrap)
 	ENTERFUNC;
 //
 //	update_stat();
-//	float edge_mean = get_edge_mean();
+	float edge_mean = get_edge_mean();
 //	//if ( rot_fp != 0 && unwrap == true) {
 //	//	return new EMData(*rot_fp);
 //	//}
@@ -218,7 +218,7 @@ EMData *EMData::make_rotational_footprint_cuda( bool unwrap)
 //	// It is important to set all newly established pixels around the boundaries to the mean
 //	// If this is not done then the associated rotational alignment routine breaks, in fact
 //	// everythin just goes foo. 
-	EMData *clipped = get_clip(r1);
+	EMData *clipped = get_clip(r1,edge_mean);
 //// 	EMData *clipped = copy()
 //	
 //	// The filter object is nothing more than a cached high pass filter
@@ -234,7 +234,7 @@ EMData *EMData::make_rotational_footprint_cuda( bool unwrap)
 //	
 	//cout << "Clip 1" << endl;
 	EMData *mc = clipped->calc_ccf_cuda(clipped,false,true);
-	//mc->add(mc->get_edge_mean());
+	mc->sub(mc->get_edge_mean());
 	//mc->process_inplace("xform.phaseorigin.tocenter");
 	//mc->write_image("mc.hdf");
 	if( clipped ) {

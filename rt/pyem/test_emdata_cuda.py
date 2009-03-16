@@ -51,7 +51,6 @@ class TestEMDataCuda(unittest.TestCase):
 		for z in [1,15,16]:
 			for y in [15,16]:
 				for x in [15,16]:
-					#print x,y,z
 					e = EMData()
 			        e.set_size(x,y,z)
 			        e.process_inplace("testimage.noise.uniform.rand")
@@ -67,6 +66,9 @@ class TestEMDataCuda(unittest.TestCase):
 			        r2 = e.get_clip(clip_region_1)
 			        self.__test_image_equality(r,r2)
 			        
+			        e = EMData()
+			        e.set_size(x,y,z)
+			        e.process_inplace("testimage.noise.uniform.rand")
 			        if z == 1:
 			        	clip_region_1 = Region(-1,-1,x+2,y+2)
 			        else:

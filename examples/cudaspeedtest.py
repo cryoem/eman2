@@ -74,7 +74,7 @@ def test_main():
 	print "Dims","\t", "GPU speedup"
 	for dims in test_dims:
 		a = test_image(0,size=(dims,dims))
-		a._copy_cpu_to_gpu_rw()
+		a.set_gpu_rw_current()
 		t = time()
 		for i in test_range:
 			a.process_inplace("xform.phaseorigin.tocenter")
@@ -93,13 +93,14 @@ def test_main():
 	print "Dims","\t", "GPU speedup"
 	for dims in test_dims:
 		a = test_image(0,size=(dims,dims))
-		a._copy_cpu_to_gpu_rw()
+		a.set_gpu_rw_current()
 		t = time()
 		for i in test_range:
+			a.set_gpu_rw_current()
 			c = a.make_rotational_footprint_cuda()
 				
 		gpu_times.append(time()-t)
-		
+		print "XXXXX"
 		t = time()
 		for i in test_range:
 			a = test_image(0,size=(dims,dims))
