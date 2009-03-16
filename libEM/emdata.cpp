@@ -1567,14 +1567,14 @@ void EMData::zero_corner_circulant(const int radius)
 	
 }
 
-EMData *EMData::calc_ccf(EMData * with, fp_flag fpflag)
+EMData *EMData::calc_ccf(EMData * with, fp_flag fpflag,bool center)
 {
 	
 	if( with == 0 ) {
-		return convolution(this,this,fpflag, false);
+		return convolution(this,this,fpflag, center);
 	}
 	else if ( with == this ){ // this if statement is not necessary, the correlation function tests to see if with == this
-		return correlation(this, this, fpflag,false);
+		return correlation(this, this, fpflag,center);
 	}
 	else {
 		// If the argument EMData pointer is not the same size we automatically resize it
@@ -1586,7 +1586,7 @@ EMData *EMData::calc_ccf(EMData * with, fp_flag fpflag)
 			undoresize = true;
 		}
 		
-		EMData* cor = correlation(this, with, fpflag, false);
+		EMData* cor = correlation(this, with, fpflag, center);
 		
 		// If the argument EMData pointer was resized, it is returned to its original dimensions
 		if ( undoresize ) {
@@ -1809,9 +1809,9 @@ EMData *EMData::make_rotational_footprint( bool unwrap) {
 		return new EMData(*rot_fp);
 	}
 	
-	EMData* ccf = this->calc_ccf(this);
+	EMData* ccf = this->calc_ccf(this,CIRCULANT,true);
 	ccf->sub(ccf->get_edge_mean());
-	ccf->process_inplace("xform.phaseorigin.tocenter");
+	//ccf->process_inplace("xform.phaseorigin.tocenter"); ccf did the centering
 	EMData *result = ccf->unwrap();
 	delete ccf; ccf = 0;
 

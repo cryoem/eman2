@@ -8245,7 +8245,7 @@ void CudaCorrelationProcessor::process_inplace(EMData* image) {
 	
 	EMDataForCuda left = image->get_data_struct_for_cuda();
 	with->bind_cuda_texture(false);
-	emdata_processor_correlation_texture(&left);
+	emdata_processor_correlation_texture(&left,1);
 	image->gpu_update();
 	
 }

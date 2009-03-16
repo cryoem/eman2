@@ -455,9 +455,10 @@ namespace EMAN
 		 * @param[in] fpflag Specify how periodicity (or normalization) should
 		 * be handled.  See fundamentals.h  The default is "CIRCULANT".  for
 		 * specific flags.
+		 * @param center whether or not to center the image (bring bottom left corner to center)
 		 * @return Real-space image.
 		 */
-		EMData *calc_ccf(EMData * with, fp_flag fpflag = CIRCULANT);
+		EMData *calc_ccf(EMData * with, fp_flag fpflag = CIRCULANT, bool center=false);
 
 		/** Zero the pixels in the bottom left corner of the image
 		 *  If radius is greater than 1, than circulant zeroing occurs

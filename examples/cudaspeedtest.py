@@ -94,7 +94,7 @@ def test_main():
 		
 		t = time()
 		for i in test_range:
-			c = a.unwrap_cuda()
+			c = a.unwrap()
 			
 		gpu_times.append(time()-t)
 		
@@ -206,7 +206,7 @@ def test_main():
 		
 		t = time()
 		for i in test_range:
-			c = a.calc_ccf_cuda(b,False)
+			c = a.calc_ccf_cuda(b,False,0)
 			
 		gpu_times.append(time()-t)
 		a = test_image(0,size=(dims,dims)).do_fft()
@@ -244,7 +244,7 @@ def test_main():
 		
 		t = time()
 		for i in test_range:
-			c = a.calc_ccf_cuda(b,True)
+			c = a.calc_ccf_cuda(b,True,0)
 			
 		gpu_times.append(time()-t)
 		a = test_image(0,size=(dims,dims)).do_fft()
@@ -264,7 +264,7 @@ def test_main():
 		
 		t = time()
 		for i in test_range:
-			c = a.calc_ccf_cuda(b,False)
+			c = a.calc_ccf_cuda(b,False,0)
 			
 		gpu_times.append(time()-t)
 		a = test_image_3d(0,size=(dims,dims,dims)).do_fft()

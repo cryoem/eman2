@@ -47,6 +47,10 @@ using namespace EMAN;
 using std::cout;
 using std::endl;
 
+#ifdef EMAN2_USING_CUDA
+#include "cuda/cuda_processor.h"
+#endif // EMAN2_USING_CUDA
+
 void EMData::free_memory()
 {
 	ENTERFUNC;
@@ -120,7 +124,17 @@ void EMData::add(float f,int keepzero)
 	if( is_real() )
 	{
 		if (f != 0) {
-			update();
+			
+			
+#ifdef EMAN2_USING_CUDA
+			if ( gpu_operation_preferred () && !keepzero ) {
+				EMDataForCuda tmp = get_data_struct_for_cuda();
+				emdata_processor_mult(&tmp,f);
+				gpu_update();
+				EXITFUNC;
+				return;
+			}
+#endif // EMAN2_USING_CUDA
 			size_t size = nxy * nz;
 			if (keepzero) {
 				for (size_t i = 0; i < size; i++) {
@@ -132,6 +146,7 @@ void EMData::add(float f,int keepzero)
 					data[i] += f;
 				}
 			}
+			update();
 		}
 	}
 	else if( is_complex() )
@@ -249,24 +264,33 @@ void EMData::sub(float f)
 	if( is_real() )
 	{
 		if (f != 0) {
-			update();
+#ifdef EMAN2_USING_CUDA
+		if ( gpu_operation_preferred () ) {
+			EMDataForCuda tmp = get_data_struct_for_cuda();
+			emdata_processor_add(&tmp,-f);
+			gpu_update();
+			EXITFUNC;
+			return;
+		}
+#endif // EMAN2_USING_CUDA		
 			size_t size = nxy * nz;
 			for (size_t i = 0; i < size; i++) {
 				data[i] -= f;
 			}
 		}
+		update();
 	}
 	else if( is_complex() )
 	{
 		if( f != 0 )
 		{
-			update();
 			size_t size = nxy * nz;
 			for( size_t i=0; i<size; i+=2 )
 			{
 				data[i] -= f;
 			}
 		}
+		update();
 	}
 	else
 	{
@@ -312,6 +336,15 @@ void EMData::mult(float f)
 		ap2ri();
 	}
 	if (f != 1.0) {
+#ifdef EMAN2_USING_CUDA
+		if ( gpu_operation_preferred () ) {
+			EMDataForCuda tmp = get_data_struct_for_cuda();
+			emdata_processor_mult(&tmp,f);
+			gpu_update();
+			EXITFUNC;
+			return;
+		}
+#endif // EMAN2_USING_CUDA
 		float* data = get_data();
 		size_t size = nxy * nz;
 		for (size_t i = 0; i < size; i++) {
@@ -415,21 +448,11 @@ void EMData::div(float f)
 {
 	ENTERFUNC;
 
-	if (is_complex()) {
-		ap2ri();
+	if ( f == 0 ) {
+		throw InvalidValueException(f,"Can not divide by zero");
 	}
 	
-	if (f != 0) {
-		float* data = get_data();
-		size_t size = nxy * nz;
-		for (size_t i = 0; i < size; i++) {
-			data[i] /= f;
-		}
-		update();
-	}
-	else {
-		throw InvalidValueException(f, "divide by zero");
-	}
+	mult(1.0f/f);
 	EXITFUNC;
 }
 

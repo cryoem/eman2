@@ -112,6 +112,59 @@ void emdata_processor_to_value( EMDataForCuda* cuda_data, const float& value) {
 	cudaThreadSynchronize();	
 }
 
+
+__global__ void phaseorigin_to_center_fourier(float* data, const int num_threads, const int nx, const int ny, const int nz, const int offset)
+{
+	const uint x=threadIdx.x;
+	const uint y=blockIdx.x;
+	
+	uint idx = x+y*num_threads+offset;
+	const uint nxy = (nx/4)*ny;
+	uint zz = idx/(nxy);
+	uint yy = (idx-zz*nxy)/(nx/4);
+
+	const uint xx = 4*(idx%(nx/4));
+	
+	const uint rnxy = nx*ny;
+	const uint xoff = ((yy+zz)%2==0?2:0);
+	const uint didx = zz*rnxy+yy*nx+xx+xoff;
+	data[didx] *= -1;
+	data[didx+1] *= -1;
+}
+
+void emdata_phaseorigin_to_center_fourier(const EMDataForCuda* cuda_data) {
+	int nx = cuda_data->nx;
+	int ny = cuda_data->ny;
+	int nz = cuda_data->nz;
+	float* data = cuda_data->data;
+	
+	if ( nx%2==0 && (ny%2==0 || ny==1 ) && (nz%2==0 || nz==1 ) ) {
+		int max_threads = 512;
+		
+		int num_calcs = nz*ny*(nx/4);
+			
+		int grid_y = num_calcs/(max_threads);
+		int res_y = num_calcs - grid_y*max_threads;
+
+		//int odd_offset=0;
+		//if (((ny/2)%2)+((nz/2)%2)==1) odd_offset=1;
+		if (grid_y > 0) {
+			const dim3 blockSize(max_threads,1, 1);
+			const dim3 gridSize(grid_y,1,1);
+			phaseorigin_to_center_fourier<<<gridSize,blockSize>>>(data,max_threads,nx,ny,nz,0);
+		}
+		
+		if (res_y > 0) {
+			const dim3 blockSize(res_y,1, 1);
+			const dim3 gridSize(1,1,1);
+			phaseorigin_to_center_fourier<<<gridSize,blockSize>>>(data,max_threads,nx,ny,nz,grid_y*max_threads);
+		}
+		cudaThreadSynchronize();
+	} else {
+		throw;
+	}
+}
+
 __global__ void correlation_kernel(float *ldata, float* rdata,const int num_threads)
 {
 
@@ -193,7 +246,7 @@ __global__ void correlation_kernel_texture_3D(float *ldata,const int num_threads
 	ldata[idxp1] = v1*u2 - v2*u1;
 }
 
-void emdata_processor_correlation_texture( const EMDataForCuda* cuda_data) {
+void emdata_processor_correlation_texture( const EMDataForCuda* cuda_data, const int center ) {
 	int max_threads = 512; // I halve the threads because each kernel access memory in two locations
 
 	int num_calcs = cuda_data->nx*cuda_data->ny*cuda_data->nz;
@@ -226,10 +279,13 @@ void emdata_processor_correlation_texture( const EMDataForCuda* cuda_data) {
 	}
 	
 	cudaThreadSynchronize();
+	if (center) {
+		emdata_phaseorigin_to_center_fourier(cuda_data);
+	}
 }
 
 
-void emdata_processor_correlation( const EMDataForCuda* left, const EMDataForCuda* right ) {
+void emdata_processor_correlation( const EMDataForCuda* left, const EMDataForCuda* right, const int center) {
 	int max_threads = 512;
 
 	int num_calcs = left->nx*left->ny*left->nz;
@@ -260,6 +316,10 @@ void emdata_processor_correlation( const EMDataForCuda* left, const EMDataForCud
 		}
 	}
 	cudaThreadSynchronize();
+	
+	if (center) {
+		emdata_phaseorigin_to_center_fourier(left);
+	}
 }
 
 __global__ void unwrap_kernel(float* dptr, const int num_threads, const int r1, const float p, const int nx, const int ny, const int nxp, const int dx,const int dy,const int weight_radial,const int offset) {
@@ -571,5 +631,6 @@ void emdata_phaseorigin_to_center(EMDataForCuda* cuda_data) {
 		throw;
 	}
 }
+
 
 

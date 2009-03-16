@@ -10,9 +10,9 @@ void emdata_processor_add( EMDataForCuda* cuda_data, const float& sub);
 
 void emdata_processor_to_value( EMDataForCuda* cuda_data, const float& value);
 
-void emdata_processor_correlation_texture( const EMDataForCuda* left);
+void emdata_processor_correlation_texture( const EMDataForCuda* left,const int center);
 
-void emdata_processor_correlation( const EMDataForCuda* left, const EMDataForCuda* right);
+void emdata_processor_correlation( const EMDataForCuda* left, const EMDataForCuda* right,const int center);
 
 //EMDataForCuda* emdata_unwrap( int r1, int r2, int xs, int do360, int nx, int ny);
 EMDataForCuda* emdata_unwrap(int r1, int r2, int xs, int num_pi, int dx, int dy, int weight_radial, int nx, int ny);	

@@ -141,7 +141,7 @@ void EMData::to_value_cuda(const float& val) {
 	gpu_update();
 }
 
-EMData* EMData::calc_ccf_cuda( EMData*  image, bool use_texturing ) const {
+EMData* EMData::calc_ccf_cuda( EMData*  image, bool use_texturing,bool center ) const {
 	
 	EMData* tmp;
 	if (is_complex()) {
@@ -187,10 +187,10 @@ EMData* EMData::calc_ccf_cuda( EMData*  image, bool use_texturing ) const {
 	EMDataForCuda left = tmp->get_data_struct_for_cuda();
 	if (use_texturing) {
 	 	((EMData*)d["with"])->bind_cuda_texture(false);
-	 	emdata_processor_correlation_texture(&left);
+	 	emdata_processor_correlation_texture(&left,center);
 	} else {
 		EMDataForCuda right = ((EMData*)d["with"])->get_data_struct_for_cuda();
-		emdata_processor_correlation(&left,&right);
+		emdata_processor_correlation(&left,&right,center);
 	}
 	tmp->gpu_update();
 	
@@ -269,9 +269,9 @@ EMData *EMData::make_rotational_footprint_cuda( bool unwrap)
 //	}
 //	
 	//cout << "Clip 1" << endl;
-	EMData *mc = clipped->calc_ccf_cuda(clipped,false);
+	EMData *mc = clipped->calc_ccf_cuda(clipped,false,true);
 	//mc->add_cuda(mc->get_edge_mean());
-	mc->process_inplace("xform.phaseorigin.tocenter");
+	//mc->process_inplace("xform.phaseorigin.tocenter");
 	//mc->write_image("mc.hdf");
 	if( clipped ) {
 		delete clipped;
@@ -300,7 +300,7 @@ EMData *EMData::make_rotational_footprint_cuda( bool unwrap)
 		result = clipped_mc;
 	}
 	else {
-		//result = clipped_mc->unwrap_cuda();
+		result = clipped_mc->unwrap();
 		if( clipped_mc ) {
 			delete clipped_mc;
 			clipped_mc = 0;
