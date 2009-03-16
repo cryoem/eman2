@@ -5331,7 +5331,7 @@ def k_means_stab_update_tag(stack, ALL_PART, STB_PART, num_run):
 	ext = file_type(stack)
 	if ext == 'bdb':
 		DB = db_open_dict(stack)
-		N = 1
+		#N = 1
 		for n in xrange(N):
 			# run partitions
 			vec = []
