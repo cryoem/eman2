@@ -549,7 +549,8 @@ def spruce_up_variance( ref_data ):
 
 def spruce_up_var_m( refdata ):
 	from utilities import model_circle, get_im
-	from filter    import filt_tanl
+	from filter    import filt_tanl, filt_gaussl
+	from morphology import threshold
 
 	numref = refdata[0]
 	outdir = refdata[1]
@@ -584,15 +585,16 @@ def spruce_up_var_m( refdata ):
 		volf = filt_gaussl( volf, 0.4 )
 
 		if ali50S:
-			if iref==0:
+			if i==0:
 				v50S_0 = volf.copy()
 				v50S_0 *= mask_50S
 			else:
 				from applications import ali_vol_3
+				from fundamentals import rot_shift3D
 				v50S_i = volf.copy()
 				v50S_i *= mask_50S
 
-				print "aligning ", iref
+				print "aligning ", i
 				params = ali_vol_3(v50S_i, v50S_0, 10.0, 0.5, mask=mask_50S)
 				volf = rot_shift3D( volf, params[0], params[1], params[2], params[3], params[4], params[5], 1.0)
 
