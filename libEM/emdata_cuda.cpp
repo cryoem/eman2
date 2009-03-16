@@ -201,27 +201,13 @@ EMData* EMData::calc_ccf_cuda( EMData*  image, bool use_texturing,bool center ) 
 		with = 0;
 	}
 
-	EMData* soln = tmp->do_ift_cuda();
+	EMData* soln = tmp->do_ift_cuda(false);
 	soln->gpu_update();
 	delete tmp;
 	tmp = 0;
 	
 	return soln;
 }
-//
-//EMData* EMData::unwrap_cuda(int r1, int r2, int xs, int dx,
-//							   int dy, bool do360 ) const
-//{
-//	if (get_ndim() != 2) throw ImageDimensionException("Unwrap_cuda works only for 2D images");
-//	bind_cuda_texture();
-//	EMDataForCuda* tmp = emdata_unwrap(r1,r2,xs,(int)do360,nx,ny);
-//	unbind_cuda_texture();
-//	EMData* e = new EMData();
-//	e->set_gpu_rw_data(tmp->data,tmp->nx,tmp->ny,tmp->nz);
-//	free(tmp);
-//	e->gpu_update();
-//	return  e;
-//}
 
 EMData *EMData::make_rotational_footprint_cuda( bool unwrap)
 {
@@ -270,7 +256,7 @@ EMData *EMData::make_rotational_footprint_cuda( bool unwrap)
 //	
 	//cout << "Clip 1" << endl;
 	EMData *mc = clipped->calc_ccf_cuda(clipped,false,true);
-	//mc->add_cuda(mc->get_edge_mean());
+	//mc->add(mc->get_edge_mean());
 	//mc->process_inplace("xform.phaseorigin.tocenter");
 	//mc->write_image("mc.hdf");
 	if( clipped ) {

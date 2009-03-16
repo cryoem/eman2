@@ -155,7 +155,7 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_unwrap_overloads_0_7, unwrap,
 //BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_unwrap_cuda_overloads_0_6, unwrap_cuda, 0, 6)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_get_clip_cuda_overloads_1_2, get_clip_cuda, 1, 2)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_make_rotational_footprint_cuda_overloads_0_1, make_rotational_footprint_cuda, 0, 1)
-
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_do_ift_cuda_overloads_0_1, do_ift_cuda, 0, 1)
 #endif //EMAN2_USING_CUDA
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_apply_radial_func_overloads_3_4, apply_radial_func, 3, 4)
 
@@ -303,11 +303,10 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("do_ift_inplace", &EMAN::EMData::do_ift_inplace, return_value_policy< reference_existing_object >())
 #ifdef EMAN2_USING_CUDA
 	.def("do_fft_cuda", &EMAN::EMData::do_fft_cuda, return_value_policy< manage_new_object >())
-	.def("do_ift_cuda", &EMAN::EMData::do_ift_cuda, return_value_policy< manage_new_object >())
+	.def("do_ift_cuda", &EMAN::EMData::do_ift_cuda, EMAN_EMData_do_ift_cuda_overloads_0_1()[ return_value_policy< manage_new_object >() ])
 	.def("calc_ccf_cuda", &EMAN::EMData::calc_ccf_cuda, return_value_policy< manage_new_object >())
 	.def("cut_slice_cuda", &EMAN::EMData::cut_slice_cuda, return_value_policy< manage_new_object >())
 	.def("mult_cuda", &EMAN::EMData::mult_cuda)
-	//.def("unwrap_cuda", &EMAN::EMData::unwrap_cuda, EMAN_EMData_unwrap_cuda_overloads_0_6()[ return_value_policy< manage_new_object >() ])
 	.def("set_gpu_rw_current", &EMAN::EMData::set_gpu_rw_current)
 	.def("make_rotational_footprint_cuda", &EMAN::EMData::make_rotational_footprint_cuda, EMAN_EMData_make_rotational_footprint_cuda_overloads_0_1()[ return_value_policy< manage_new_object >() ])
 	// These ones are currently meant mainly for testing purposes

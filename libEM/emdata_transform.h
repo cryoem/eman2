@@ -60,9 +60,10 @@ EMData *do_fft_cuda() const;
 
 /**  return the inverse fourier transform (IFT) image of the current
  * image. The result exists only on the GPU
+ * @param preserve_input whether or not this EMData object should be preserved. If this is unecessary than we can avoid a copy and run faster
  * @return The FFT of the current image in real/imaginary format, existing on the GPU.
  */
-EMData *do_ift_cuda() const;
+EMData *do_ift_cuda(bool preserve_input = true) const;
 #endif //EMAN2_USING_CUDA
 
 

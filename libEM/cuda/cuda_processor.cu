@@ -119,11 +119,12 @@ __global__ void phaseorigin_to_center_fourier(float* data, const int num_threads
 	const uint y=blockIdx.x;
 	
 	uint idx = x+y*num_threads+offset;
-	const uint nxy = (nx/4)*ny;
+	uint nxon4 = nx/4;
+	const uint nxy = nxon4*ny;
 	uint zz = idx/(nxy);
-	uint yy = (idx-zz*nxy)/(nx/4);
+	uint yy = (idx-zz*nxy)/(nxon4);
 
-	const uint xx = 4*(idx%(nx/4));
+	const uint xx = 4*(idx%(nxon4));
 	
 	const uint rnxy = nx*ny;
 	const uint xoff = ((yy+zz)%2==0?2:0);

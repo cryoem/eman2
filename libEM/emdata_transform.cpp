@@ -88,7 +88,7 @@ EMData *EMData::do_fft_cuda() const
 	return dat;
 }
 
-EMData *EMData::do_ift_cuda() const
+EMData *EMData::do_ift_cuda(bool preserve_input) const
 {
 	ENTERFUNC;
 
@@ -106,14 +106,23 @@ EMData *EMData::do_ift_cuda() const
 	int ndim = get_ndim();
 	dat->set_size_cuda(nx-offset, ny, nz);
 	float *d = dat->get_cuda_data();
-	EMData tmp(*this);
+	float *this_d;
+	EMData* tmp = 0;
+	if (preserve_input){
+		tmp = new EMData(*this);
+		this_d = tmp->get_cuda_data();
+	} else {
+		this_d = get_cuda_data();
+	}
 	if ( ndim == 1 ) {
-		cuda_dd_fft_complex_to_real_nd(tmp.get_cuda_data(),d, nx-offset,1,1);
+		cuda_dd_fft_complex_to_real_nd(this_d,d, nx-offset,1,1);
 	} else if (ndim == 2) {
-		cuda_dd_fft_complex_to_real_nd(tmp.get_cuda_data(),d, ny,nx-offset,1);
+		cuda_dd_fft_complex_to_real_nd(this_d,d, ny,nx-offset,1);
 	} else if (ndim == 3) {
-		cuda_dd_fft_complex_to_real_nd(tmp.get_cuda_data(),d, nz,ny,nx-offset);
+		cuda_dd_fft_complex_to_real_nd(this_d,d, nz,ny,nx-offset);
 	} else throw ImageDimensionException("No cuda FFT support of images with dimensions exceeding 3");
+	
+	if (tmp != 0) delete tmp;
 	
 	// SCALE the inverse FFT
 	float scale = 1.0f/static_cast<float>((dat->get_size()));

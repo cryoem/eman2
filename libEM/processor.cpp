@@ -3925,6 +3925,8 @@ void Phase180Processor::fourier_phaseshift180(EMData * image)
 
 	float *rdata = image->get_data();
 
+	// Who uses this function? It doesn't work for odd images, and it will give incorrect results for some even images
+	// d.woolford, March 15 2009
 	int of=0;
 	if (((ny/2)%2)+((nz/2)%2)==1) of=1;
 
