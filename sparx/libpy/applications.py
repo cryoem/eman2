@@ -1056,6 +1056,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					recv_attr_dict(group_main_node, stack, data, par_str, image_start, image_end, group_number_of_proc, group_comm)
 			else:
 				send_attr_dict(group_main_node, data, par_str, image_start, image_end, group_comm)
+			if myid == main_node: print_msg("Iteration %2d ends here."%(ipt))
 	if myid == main_node:  print_end_msg("ali2d_a_MPI")
 
 '''
@@ -4420,12 +4421,12 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 	if myid == main_node: print_end_msg("ali3d_d_MPI")
 
 
-def ali3d_m(stack, ref_vol, outdir, maskfile = None, maxit=1, ir=1, ou=-1, rs=1, 
+def ali3d_m(stack, ref_vol, outdir, cccmaskfile=None, alimaskfile=None, maxit=1, ir=1, ou=-1, rs=1, 
            xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta="10 6 4 4", an="-1", 
 	     center = 1.0, nassign = 3, nrefine = 1, CTF = False, snr = 1.0,  ref_a = "S", sym="c1",
 	     user_func_name="ref_ali3d", MPI=False, debug = False, fourvar=False):
 	if MPI:
-		ali3d_m_MPI(stack, ref_vol, outdir, maskfile, maxit, ir, ou, rs, xr, yr, ts,
+		ali3d_m_MPI(stack, ref_vol, outdir, cccmaskfile,alimaskfile, maxit, ir, ou, rs, xr, yr, ts,
 		 delta, an, center, nassign, nrefine, CTF, snr, ref_a, sym, user_func_name, debug, fourvar)
 		return
 	from utilities      import model_circle, drop_image, get_image, get_input_from_string
@@ -4674,7 +4675,7 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, maxit=1, ir=1, ou=-1, rs=1,
 			write_headers( stack, data, list_of_particles)
 	print_end_msg("ali3d_m")
 
-def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=1, 
+def ali3d_m_MPI(stack, ref_vol, outdir, cccmaskfile=None, alimaskfile=None, maxit=1, ir=1, ou=-1, rs=1, 
             xr ="4 2  2  1", yr="-1", ts="1 1 0.5 0.25",   delta="10  6  4  4", an="-1",
 	      center = 0, nassign = 3, nrefine= 1, CTF = False, snr = 1.0,  ref_a="S", sym="c1",
 	      user_func_name="ref_ali3d", debug = False, fourvar=False):
@@ -4708,8 +4709,10 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 
 		info_file = outdir+("/progress%04d"%myid)
 		finfo = open(info_file, 'w')
+		frec  = open( outdir+("/recons%04d"%myid), "w" )
 	else:
 		finfo = None
+		frec  = None
 
 
 	xrng        = get_input_from_string(xr)
@@ -4753,7 +4756,8 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 		print_msg("Reference volume            : %s\n"%(ref_vol))	
 		print_msg("Number of reference volumes : %i\n"%(numref))
 		print_msg("Output directory            : %s\n"%(outdir))
-		print_msg("Maskfile                    : %s\n"%(maskfile))
+		print_msg("CCC Maskfile                : %s\n"%(cccmaskfile))
+		print_msg("ALI Maskfile                : %s\n"%(alimaskfile))
 		print_msg("Inner radius                : %i\n"%(first_ring))
 		print_msg("Outer radius                : %i\n"%(last_ring))
 		print_msg("Ring step                   : %i\n"%(rstep))
@@ -4771,10 +4775,18 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 		print_msg("Reference projection method : %s\n"%(ref_a))
 		print_msg("Symmetry group              : %s\n\n"%(sym))
 
-	if(maskfile):
-		if(type(maskfile) is types.StringType):	 mask3D = get_image(maskfile)
-		else: 	                                 mask3D = maskfile
-	else        :   mask3D = model_circle(last_ring, nx, nx, nx)
+	if(cccmaskfile):
+		if(type(cccmaskfile) is types.StringType): cccmask3D = get_image(cccmaskfile)
+		else: 	                                   cccmask3D = cccmaskfile
+	else        :  cccmask3D = model_circle(last_ring, nx, nx, nx)
+	
+
+	if(alimaskfile):
+		if(type(alimaskfile) is types.StringType): alimask3D = get_image(alimaskfile)
+		else: 	                                   alimask3D = alimaskfile
+	else        :  alimask3D = model_circle(last_ring, nx, nx, nx)
+	
+
 	mask = model_circle(last_ring, nx, nx)
 
 	if(myid == main_node):
@@ -4804,14 +4816,14 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 	for im in xrange(len(data)):
 		data[im].set_attr('ID', list_of_particles[im])
 		phi,tht,psi,s2x,s2y = get_params_proj( data[im] )
-		masks[im] = project( mask3D, [phi,tht,psi,-s2x,-s2y],int(ou) )
+		masks[im] = project( cccmask3D, [phi,tht,psi,-s2x,-s2y],int(ou) )
 
 	if fourvar:
 		from reconstruction import rec3D_MPI
 		from statistics     import varf3d_MPI
 		#  Compute Fourier variance
 		print 'computing Fourier variance'
-		vol, fscc = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution0000"), myid, main_node)
+		vol, fscc = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution0000"), myid, main_node, info=frec)
 		varf = varf3d_MPI(data, os.path.join(outdir, "ssnr0000"), None, vol, last_ring, 1.0, 1, CTF, 1, sym, myid)
 		if myid == main_node:   
 			varf = 1.0/varf
@@ -4896,8 +4908,8 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 							finfo.flush()
 
 			else:
-				if(an[N_step] == -1):	proj_ali_incore(vol, mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], ref_a, sym, finfo, MPI=False)
-				else:	           proj_ali_incore_local(vol, mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], an[N_step], ref_a, sym, finfo, MPI=False)
+				if(an[N_step] == -1):	proj_ali_incore(vol, alimask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], ref_a, sym, finfo, MPI=False)
+				else:	           proj_ali_incore_local(vol, alimask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], an[N_step], ref_a, sym, finfo, MPI=False)
 				for im in xrange(nima):
 	
 					peak = data[im].get_attr('peak')
@@ -4934,8 +4946,8 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 			from time import localtime, strftime
 			if(myid == main_node):
 				print myid, " begin reconstruction at ", strftime("%d_%b_%Y_%H_%M_%S", localtime())
-			if(CTF): volref, fscc[iref] = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index = iref)
-			else:    volref, fscc[iref] = rec3D_MPI_noCTF(data, sym, fscmask, os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index = iref)
+			if(CTF): volref, fscc[iref] = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index = iref, info=frec)
+			else:    volref, fscc[iref] = rec3D_MPI_noCTF(data, sym, fscmask, os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index = iref, info=frec)
 
 			if(myid == main_node):
 				print myid, " after reconstruction at ", strftime("%d_%b_%Y_%H_%M_%S", localtime())
@@ -4948,7 +4960,9 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 			if myid == main_node:   
 				varf = 1.0/varf
 				varf.write_image( os.path.join(outdir,"varf%04d.hdf"%total_iter), total_iter )
-	
+			for im in xrange(len(data)):
+				phi,tht,psi,s2x,s2y = get_params_proj( data[im] )
+				masks[im] = project( cccmask3D, [phi,tht,psi,-s2x,-s2y], last_ring)
 
 
 		if(myid == main_node):
@@ -4978,7 +4992,8 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 	        		recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 	        else:		send_attr_dict(main_node, data, par_str, image_start, image_end)
 	
-	print_end_msg("ali3d_m_MPI")
+	if myid==main_node:
+		print_end_msg("ali3d_m_MPI")
 
 def ali3d_em_MPI_origin(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CTF = None, snr=1.0, sym="c1"):
 	"""
@@ -9956,6 +9971,7 @@ def header(stack, params, zero, one, randomize, rand_alpha, fimport, fexport, fp
 					img.set_attr(params[j], extract_value(parmvalues[j]))
 
 			write_header(stack, img, i)
+			print i, 'done'
 		else:
 			for p in params:
 				if zero:

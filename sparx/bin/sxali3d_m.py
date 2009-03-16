@@ -49,7 +49,7 @@ def main():
                 arglist.append( sys.argv[i] )
                 i = i+1
 	progname = os.path.basename(arglist[0])
-	usage = progname + " stack ref_vols outdir <mask> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_searching_step  --delta=angular_step --center=1  --maxit=max_iter --CTF --snr=1.0 --ref_a=S --sym=c1 --function=user_function --MPI"
+	usage = progname + " stack ref_vols outdir <cccmask alimask> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_searching_step  --delta=angular_step --center=1  --maxit=max_iter --CTF --snr=1.0 --ref_a=S --sym=c1 --function=user_function --MPI"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ir",       type= "int",   default= 1,                  help="  inner radius for rotational correlation > 0 (set to 1)")
 	parser.add_option("--ou",       type= "int",   default= "-1",               help="  outer radius for rotational correlation <nx-1 (set to the radius of the particle)")
@@ -73,15 +73,17 @@ def main():
 	parser.add_option("--fourvar",    action="store_true", default=False,       help="  compute and use fourier variance")
 	
 	(options, args) = parser.parse_args(arglist[1:])
-	if len(args) < 3 or len(args) > 4:
+	if len(args) < 3 or len(args) > 5:
     		print "usage: " + usage
     		print "Please run '" + progname + " -h' for detailed options"
 	else:
 	
 		if len(args) == 3 :
-			mask = None
+			cccmask = None
+			alimask = None
 		else:
-			mask = args[3]
+			cccmask = args[3]
+			alimask = args[4]
 
 		from applications import ali3d_m
 		if options.MPI:
@@ -93,7 +95,7 @@ def main():
 
 
 		global_def.BATCH = True
-		ali3d_m(args[0], args[1], args[2], mask, options.maxit, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.delta, options.an, options.center, options.nassign, options.nrefine, options.CTF, options.snr, options.ref_a, options.sym, options.function, options.MPI, options.debug, options.fourvar)
+		ali3d_m(args[0], args[1], args[2], cccmask, alimask, options.maxit, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.delta, options.an, options.center, options.nassign, options.nrefine, options.CTF, options.snr, options.ref_a, options.sym, options.function, options.MPI, options.debug, options.fourvar)
 		global_def.BATCH = False
 
 if __name__ == "__main__":
