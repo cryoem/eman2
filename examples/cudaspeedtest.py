@@ -206,14 +206,14 @@ def test_main():
 		
 		t = time()
 		for i in test_range:
-			c = a.calc_ccf_cuda(b,False,0)
+			c = a.calc_ccf_cuda(b,False,1)
 			
 		gpu_times.append(time()-t)
 		a = test_image(0,size=(dims,dims)).do_fft()
 		b = test_image(0,size=(dims,dims)).do_fft()
 		t = time()
 		for i in test_range:
-			c = a.calc_ccf(b)
+			c = a.calc_ccf(b,fp_flag.CIRCULANT,1)
 		cpu_times.append(time()-t)
 		print dims,"\t", cpu_times[-1]/gpu_times[-1]
 		
@@ -244,14 +244,14 @@ def test_main():
 		
 		t = time()
 		for i in test_range:
-			c = a.calc_ccf_cuda(b,True,0)
+			c = a.calc_ccf_cuda(b,True,1)
 			
 		gpu_times.append(time()-t)
 		a = test_image(0,size=(dims,dims)).do_fft()
 		b = test_image(0,size=(dims,dims)).do_fft()
 		t = time()
 		for i in test_range:
-			c = a.calc_ccf(b)
+			c = a.calc_ccf(b,fp_flag.CIRCULANT,1)
 		cpu_times.append(time()-t)
 		print dims,"\t", cpu_times[-1]/gpu_times[-1]
 
@@ -264,14 +264,14 @@ def test_main():
 		
 		t = time()
 		for i in test_range:
-			c = a.calc_ccf_cuda(b,False,0)
+			c = a.calc_ccf_cuda(b,False,1)
 			
 		gpu_times.append(time()-t)
 		a = test_image_3d(0,size=(dims,dims,dims)).do_fft()
 		b = test_image_3d(0,size=(dims,dims,dims)).do_fft()
 		t = time()
 		for i in test_range:
-			c = a.calc_ccf(b)
+			c = a.calc_ccf(b,fp_flag.CIRCULANT,1)
 		cpu_times.append(time()-t)
 		print dims,"\t", cpu_times[-1]/gpu_times[-1]
 		
