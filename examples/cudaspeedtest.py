@@ -86,7 +86,7 @@ def test_main():
 		for i in test_range:
 			a.process_inplace("xform.phaseorigin.tocenter")
 		cpu_times.append(time()-t)
-		print dims,"\t", cpu_times[-1]/gpu_times[-1]
+		print dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1]
 	
 	
 	print "Testing make rotational footprint"
@@ -103,9 +103,9 @@ def test_main():
 		a = [test_image(0,size=(dims,dims)) for i in test_range]
 		t = time()
 		for i in test_range:
-			c = a[i].make_rotational_footprint()
+			c = a[i].make_rotational_footprint_e1()
 		cpu_times.append(time()-t)
-		print dims,"\t", cpu_times[-1]/gpu_times[-1]
+		print dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1]
 	
 	print "Testing unwrap"
 	print "Dims","\t", "GPU speedup"
@@ -124,7 +124,7 @@ def test_main():
 		for i in test_range:
 			c = a.unwrap()
 		cpu_times.append(time()-t)
-		print dims,"\t", cpu_times[-1]/gpu_times[-1]
+		print dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1]
 	
 	print "Testing pixel multiplication by a constant (3D)"
 	print "Dims","\t", "GPU speedup"
