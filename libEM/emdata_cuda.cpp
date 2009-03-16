@@ -192,7 +192,8 @@ EMData *EMData::make_rotational_footprint_cuda( bool unwrap)
 	ENTERFUNC;
 //
 //	update_stat();
-	float edge_mean = get_edge_mean();
+	//float edge_mean = get_edge_mean();
+	float edge_mean = 0;
 //	//if ( rot_fp != 0 && unwrap == true) {
 //	//	return new EMData(*rot_fp);
 //	//}
@@ -234,7 +235,7 @@ EMData *EMData::make_rotational_footprint_cuda( bool unwrap)
 //	
 	//cout << "Clip 1" << endl;
 	EMData *mc = clipped->calc_ccf_cuda(clipped,false,true);
-	mc->sub(mc->get_edge_mean());
+	//mc->sub(mc->get_edge_mean());
 	//mc->process_inplace("xform.phaseorigin.tocenter");
 	//mc->write_image("mc.hdf");
 	if( clipped ) {

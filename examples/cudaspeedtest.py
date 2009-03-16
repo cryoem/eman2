@@ -100,11 +100,10 @@ def test_main():
 			c = a.make_rotational_footprint_cuda()
 				
 		gpu_times.append(time()-t)
-		print "XXXXX"
+		a = [test_image(0,size=(dims,dims)) for i in test_range]
 		t = time()
 		for i in test_range:
-			a = test_image(0,size=(dims,dims))
-			c = a.make_rotational_footprint()
+			c = a[i].make_rotational_footprint()
 		cpu_times.append(time()-t)
 		print dims,"\t", cpu_times[-1]/gpu_times[-1]
 	
