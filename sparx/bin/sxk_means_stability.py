@@ -40,7 +40,7 @@ import sys
 def main():
 	
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack outdir <maskfile> --K=2 --nb_part=5 --opt_method='SSE' --CTF --F=0.9 --max_run=10 --th_nobj=10 --th_stab=6.0 --th_stab_reject=3.0 --min_dec_K=5 --restart=5 --MPI --CUDA"
+	usage = progname + " stack outdir <maskfile> --K=2 --nb_part=5 --opt_method='SSE' --CTF --F=0.9 --max_run=10 --th_nobj=10 --th_stab_max=6.0 --th_stab_min=3.0 --min_dec_K=5 --restart=5 --MPI --CUDA"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--K",              type="int",          default=2,         help="Number of classes for k-means (default 2)")
 	parser.add_option("--nb_part",        type="int",          default=5,         help="Number of partitions used to calculate the stability (default 5)")
@@ -79,7 +79,7 @@ def main():
 
 		from  applications  import  k_means_stab
 		global_def.BATCH = True
-		k_means_stab(args[0], args[1], mask, options.opt_method, options.K, options.nb_part, options.CTF, options.F, options.FK, options.max_run, options.th_nobj, options.th_stab, options.th_stab_reject, options.min_dec_K, options.restart, options.MPI, options.CUDA, options.backup)
+		k_means_stab(args[0], args[1], mask, options.opt_method, options.K, options.nb_part, options.CTF, options.F, options.FK, options.max_run, options.th_nobj, options.th_stab_max, options.th_stab_min, options.min_dec_K, options.restart, options.MPI, options.CUDA, options.backup)
 		global_def.BATCH = False
 
 if __name__ == "__main__":
