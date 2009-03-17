@@ -1853,9 +1853,7 @@ EMData *EMData::make_rotational_footprint_e1( bool unwrap)
 	if (gpu_operation_preferred()) {
 		EXITFUNC;
 		return make_rotational_footprint_cuda(unwrap);
-	} else {
-		cout << "no that's no preferred" << endl;
-	}
+	} 
 #endif
 	
 	update_stat();
