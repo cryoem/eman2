@@ -304,8 +304,11 @@ EMData *RotatePrecenterAligner::align(EMData * this_img, EMData *to,
 EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,  
 			const string & cmp_name, const Dict& cmp_params) const
 {
-	
 	// Get the 180 degree ambiguously rotationally aligned and its 180 degree rotation counterpart
+#ifdef EMAN2_USING_CUDA
+	this_img->set_gpu_rw_current();
+	to->set_gpu_rw_current();
+#endif
 	int rfp_mode = params.set_default("rfp_mode",0);
 	EMData *rot_align  =  RotationalAligner::align_180_ambiguous(this_img,to,rfp_mode);
 	Transform * tmp = rot_align->get_attr("xform.align2d");

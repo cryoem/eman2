@@ -44,7 +44,7 @@
 
 using namespace EMAN;
 // Static init
-EMData::CudaDeviceEMDataCache EMData::cuda_cache(200);
+EMData::CudaDeviceEMDataCache EMData::cuda_cache(150);
 
 float* EMData::get_cuda_data() const {
 	if (cuda_cache_handle==-1 || EMDATA_GPU_NEEDS_UPDATE & flags) {
@@ -68,7 +68,7 @@ bool EMData::cpu_rw_is_current() const {
 }
 
 bool EMData::gpu_ro_is_current() const {
-	if (cuda_cache_handle !=-1 || !(EMDATA_GPU_RO_NEEDS_UPDATE & flags)) return cuda_cache.has_ro_data(cuda_cache_handle);
+	if (cuda_cache_handle !=-1 && !(EMDATA_GPU_RO_NEEDS_UPDATE & flags)) return cuda_cache.has_ro_data(cuda_cache_handle);
 	else return false;
 }
 
