@@ -191,12 +191,12 @@ EMData *EMData::make_rotational_footprint_cuda( bool unwrap)
 {
 	ENTERFUNC;
 //
-//	update_stat();
+	update_stat();
 //	float edge_mean = get_edge_mean();
 	float edge_mean = 0;
-//	//if ( rot_fp != 0 && unwrap == true) {
-//	//	return new EMData(*rot_fp);
-//	//}
+	if ( rot_fp != 0 && unwrap == true) {
+		return new EMData(*rot_fp);
+	}
 //	
 //	//static EMData obj_filt;
 //	//EMData* filt = &obj_filt;
@@ -274,7 +274,6 @@ EMData *EMData::make_rotational_footprint_cuda( bool unwrap)
 	
 	result->gpu_update();
 	
-	return result;
 //	}
 //	else {
 //		// I am not sure why there is any consideration of non 2D images, but it was here
@@ -283,19 +282,19 @@ EMData *EMData::make_rotational_footprint_cuda( bool unwrap)
 //	}
 //
 //	EXITFUNC;
-//	if ( unwrap == true)
-//	{ // this if statement reflects a strict policy of caching in only one scenario see comments at beginning of function block
-//		
-//		// Note that the if statement at the beginning of this function ensures that rot_fp is not zero, so there is no need
-//		// to throw any exception
-//		// if ( rot_fp != 0 ) throw UnexpectedBehaviorException("The rotational foot print is only expected to be cached if it is not NULL");
-//		
-//		// Here is where the caching occurs - the rot_fp takes ownsherhip of the pointer, and a deep copied EMData object is returned.
-//		// The deep copy invokes a cost in terms of CPU cycles and memory, but prevents the need for complicated memory management (reference counting)
-//		rot_fp = result;
-//		return new EMData(*rot_fp);
-//	}
-//	else return result;
+	if ( unwrap == true)
+	{ // this if statement reflects a strict policy of caching in only one scenario see comments at beginning of function block
+		
+		// Note that the if statement at the beginning of this function ensures that rot_fp is not zero, so there is no need
+		// to throw any exception
+		// if ( rot_fp != 0 ) throw UnexpectedBehaviorException("The rotational foot print is only expected to be cached if it is not NULL");
+		
+		// Here is where the caching occurs - the rot_fp takes ownsherhip of the pointer, and a deep copied EMData object is returned.
+		// The deep copy invokes a cost in terms of CPU cycles and memory, but prevents the need for complicated memory management (reference counting)
+		rot_fp = result;
+		return new EMData(*rot_fp);
+	}
+	else return result;
 }
 
 EMData* EMData::calc_ccfx_cuda( EMData * const with, int y0, int y1, bool no_sum)

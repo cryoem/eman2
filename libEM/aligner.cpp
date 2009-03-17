@@ -219,6 +219,10 @@ EMData * RotationalAligner::align_180_ambiguous(EMData * this_img, EMData * to, 
 EMData *RotationalAligner::align(EMData * this_img, EMData *to,  
 			const string& cmp_name, const Dict& cmp_params) const
 {
+#ifdef EMAN2_USING_CUDA
+	this_img->set_gpu_rw_current();
+	to->set_gpu_rw_current();
+#endif
 	if (!to) throw InvalidParameterException("Can not rotational align - the image to align to is NULL");
 	
 	// Perform 180 ambiguous alignment

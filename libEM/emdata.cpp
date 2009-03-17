@@ -1849,7 +1849,13 @@ EMData *EMData::make_rotational_footprint( bool unwrap) {
 EMData *EMData::make_rotational_footprint_e1( bool unwrap)
 {
 	ENTERFUNC;
-
+#ifdef EMAN2_USING_CUDA
+	if (gpu_operation_preferred()) {
+		EXITFUNC;
+		return make_rotational_footprint_cuda(unwrap);
+	}
+#endif
+	
 	update_stat();
 	// Note that rotational_footprint caching saves a large amount of time
 	// but this is at the expense of memory. Note that a policy is hardcoded here, 
