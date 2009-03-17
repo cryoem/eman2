@@ -201,8 +201,11 @@ float* EMData::get_data() const
 	if ( gpu_rw_is_current()  && (EMDATA_CPU_NEEDS_UPDATE & flags)) {
 		cudaError_t error = cudaMemcpy(rdata,get_cuda_data(),num_bytes,cudaMemcpyDeviceToHost);
 		if (error != cudaSuccess ) throw UnexpectedBehaviorException("The host to device cudaMemcpy failed : " + string(cudaGetErrorString(error)));
+	} else if ( gpu_ro_is_current()  && (EMDATA_CPU_NEEDS_UPDATE & flags)) {
+		copy_gpu_ro_to_gpu_rw();
+		cudaError_t error = cudaMemcpy(rdata,get_cuda_data(),num_bytes,cudaMemcpyDeviceToHost);
+		if (error != cudaSuccess ) throw UnexpectedBehaviorException("The host to device cudaMemcpy failed : " + string(cudaGetErrorString(error)));
 	}
-	
 	flags &= ~EMDATA_CPU_NEEDS_UPDATE;
 #endif
 	return rdata; 

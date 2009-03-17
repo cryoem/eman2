@@ -44,7 +44,7 @@
 
 using namespace EMAN;
 // Static init
-EMData::CudaDeviceEMDataCache EMData::cuda_cache(150);
+EMData::CudaDeviceEMDataCache EMData::cuda_cache(50);
 
 float* EMData::get_cuda_data() const {
 	if (cuda_cache_handle==-1 || EMDATA_GPU_NEEDS_UPDATE & flags) {
@@ -420,7 +420,7 @@ void EMData::copy_gpu_rw_to_gpu_ro() {
 	cuda_cache.copy_rw_to_ro(cuda_cache_handle);
 }
 
-void EMData::copy_gpu_ro_to_gpu_rw() {
+void EMData::copy_gpu_ro_to_gpu_rw() const {
 	cuda_cache.copy_ro_to_rw(cuda_cache_handle);
 }
 
@@ -486,6 +486,7 @@ int EMData::CudaDeviceEMDataCache::force_store_rw_data(const EMData* const emdat
 	int ret = current_insert_idx;
 	current_insert_idx += 1;
 	current_insert_idx %= cache_size; // Potentially inefficient to do this every time, the alternative is an if statement. Which is faster?
+	cout << "cache idx is " << ret;
 	return ret;
 }
 
@@ -570,6 +571,7 @@ int EMData::CudaDeviceEMDataCache::cache_ro_data(const EMData* const emdata, con
 		int ret = current_insert_idx;
 		current_insert_idx += 1;
 		current_insert_idx %= cache_size; // Potentially inefficient to do this everytime, the alternative is an if statement. Which is faster?
+		cout << "cache idx is " << ret;
 		return ret; 
 	}
 	else {
