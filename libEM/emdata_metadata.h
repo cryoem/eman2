@@ -81,6 +81,9 @@ inline const float * const get_const_data() const { return get_data(); }
 */
 inline void set_data(float* data, const int x, const int y, const int z) {
 	if (rdata) { EMUtil::em_free(rdata); rdata = 0; }
+#ifdef EMAN2_USING_CUDA
+	free_cuda_memory();
+#endif
 	rdata = data;
 	nx = x; ny = y; nz = z;
 	nxy = nx*ny;

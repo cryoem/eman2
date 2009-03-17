@@ -202,9 +202,7 @@ float* EMData::get_data() const
 		cudaError_t error = cudaMemcpy(rdata,get_cuda_data(),num_bytes,cudaMemcpyDeviceToHost);
 		if (error != cudaSuccess ) throw UnexpectedBehaviorException("The host to device cudaMemcpy failed : " + string(cudaGetErrorString(error)));
 	} else if ( gpu_ro_is_current()  && (EMDATA_CPU_NEEDS_UPDATE & flags)) {
-		copy_gpu_ro_to_gpu_rw();
-		cudaError_t error = cudaMemcpy(rdata,get_cuda_data(),num_bytes,cudaMemcpyDeviceToHost);
-		if (error != cudaSuccess ) throw UnexpectedBehaviorException("The host to device cudaMemcpy failed : " + string(cudaGetErrorString(error)));
+		copy_gpu_ro_to_cpu();
 	}
 	flags &= ~EMDATA_CPU_NEEDS_UPDATE;
 #endif
@@ -712,6 +710,8 @@ void EMData::set_size_cuda(int x, int y, int z)
 	attr_dict["nx"] = x;
 	attr_dict["ny"] = y;
 	attr_dict["nz"] = z;
+	
+	get_cuda_data();
 	
 // 	cuda_cache_handle = cuda_rw_cache.cache_data(this,rdata,nx,ny,nz); Let's be lazy
 	

@@ -131,18 +131,23 @@ EMData::EMData(const EMData& that) :
 
 	float* data = that.rdata;
 	size_t num_bytes = nx*ny*nz*sizeof(float);
-	if (data)
+	if (data && num_bytes != 0)
 	{
 		rdata = (float*)EMUtil::em_malloc(num_bytes);
 		EMUtil::em_memcpy(rdata, data, num_bytes);
 	}
 #ifdef EMAN2_USING_CUDA
-	if (that.cuda_cache_handle != -1 && that.gpu_rw_is_current()) {
+	if (num_bytes != 0 && that.cuda_cache_handle != -1 && that.gpu_rw_is_current()) {
+		set_size_cuda(nx,ny,nz);
+		float *cd = get_cuda_data();
+		CudaDataLock lock1(this);
 		float * cuda_data = that.get_cuda_data();
-		cudaMemcpy(get_cuda_data(),cuda_data,num_bytes,cudaMemcpyDeviceToDevice);
+		CudaDataLock lock2(&that);
+		cudaError_t error = cudaMemcpy(cd,cuda_data,num_bytes,cudaMemcpyDeviceToDevice);
+		if ( error != cudaSuccess ) throw UnexpectedBehaviorException("cudaMemcpy failed in EMData copy construction with error: " + string(cudaGetErrorString(error)));
 	}
-	
-	
+	// This is a bit of hack
+	flags &= EMDATA_GPU_RO_NEEDS_UPDATE;
 #endif //EMAN2_USING_CUDA
 	if (that.rot_fp != 0) rot_fp = new EMData(*(that.rot_fp));
 
@@ -161,11 +166,12 @@ EMData& EMData::operator=(const EMData& that)
 		
 		// Only copy the rdata if it exists, we could be in a scenario where only the header has been read
 		float* data = that.rdata;
-		if (data)
+		size_t num_bytes = that.nx*that.ny*that.nz*sizeof(float);
+		if (data && num_bytes != 0)
 		{
 			nx = 1; // This prevents a memset in set_size
-			set_size(that.nx, that.ny, that.nz);
-			EMUtil::em_memcpy(rdata, data, nx * ny * nz * sizeof(float));
+			set_size(that.nx,that.ny,that.nz);
+			EMUtil::em_memcpy(rdata, data, num_bytes);
 		}
 
 		flags = that.flags;
@@ -178,11 +184,22 @@ EMData& EMData::operator=(const EMData& that)
 
 		xoff = that.xoff;
 		yoff = that.yoff;
-		zoff = that.zoff;
+		zoff = that.zoff;	
 		
 #ifdef EMAN2_USING_CUDA
-		// TODO This probably has to change to potential copying
 		free_cuda_memory();
+		// There should also be the case where we deal with ro data...
+		if (num_bytes != 0 && that.cuda_cache_handle != -1 && that.gpu_rw_is_current()) {
+			set_size_cuda(that.nx, that.ny, that.nz);
+			float * cuda_data = that.get_cuda_data();
+			CudaDataLock lock1(&that);
+			float *cd = get_cuda_data();
+			CudaDataLock lock2(this);
+			cudaError_t error = cudaMemcpy(cd,cuda_data,num_bytes,cudaMemcpyDeviceToDevice);
+			if ( error != cudaSuccess ) throw UnexpectedBehaviorException("cudaMemcpy failed in operator= with error: " + string(cudaGetErrorString(error)));
+		}
+		// This is a bit of hack
+		flags &= EMDATA_GPU_RO_NEEDS_UPDATE;
 #endif //EMAN2_USING_CUDA
 
 		changecount = that.changecount;
@@ -190,7 +207,6 @@ EMData& EMData::operator=(const EMData& that)
 		if (that.rot_fp != 0) rot_fp = new EMData(*(that.rot_fp));
 		else rot_fp = 0;
 	}
-	
 	EXITFUNC;
 	return *this;
 }
@@ -543,6 +559,7 @@ EMData *EMData::get_clip(const Region & area, const float fill) const
 	bool use_gpu = false;
 	if ( gpu_operation_preferred() ) {
 		result->set_size_cuda((int)area.size[0], ysize, zsize);
+		//CudaDataLock lock(this); // Just so we never have to recopy this data to and from the GPU
 		result->get_cuda_data(); // Force the allocation - set_size_cuda is lazy
 		// Setting the value is necessary seeing as cuda data is not automatically zeroed
 		result->to_value(fill); // This will automatically use the GPU. 
@@ -607,7 +624,12 @@ EMData *EMData::get_clip(const Region & area, const float fill) const
 //			string e = cudaGetErrorString(error);
 //			throw UnexpectedBehaviorException("CudaMemcpy3D failed with error: " + e);
 //		}
+		get_cuda_data();
+		CudaDataLock lock(this);
+		result->get_cuda_data();
+		CudaDataLock lock2(result);
 		for (int i = 0; i < (z1-z0); i++) {
+			
 			float* ldst = result->get_cuda_data() + (zd0+i) * dst_secsize + yd0 * (int)area.size[0] + xd0;
 			float* lsrc = get_cuda_data() + (z0+i) * src_secsize + y0 * nx + x0;
 			cudaError_t error =  cudaMemcpy2D( ldst, ((int)area.size[0])*sizeof(float), lsrc,nx*sizeof(float), clipped_row_size, (y1-y0), cudaMemcpyDeviceToDevice );
