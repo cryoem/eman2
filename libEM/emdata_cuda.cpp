@@ -486,7 +486,6 @@ int EMData::CudaDeviceEMDataCache::force_store_rw_data(const EMData* const emdat
 	int ret = current_insert_idx;
 	current_insert_idx += 1;
 	current_insert_idx %= cache_size; // Potentially inefficient to do this every time, the alternative is an if statement. Which is faster?
-	cout << "cache idx is " << ret;
 	return ret;
 }
 
@@ -571,7 +570,6 @@ int EMData::CudaDeviceEMDataCache::cache_ro_data(const EMData* const emdata, con
 		int ret = current_insert_idx;
 		current_insert_idx += 1;
 		current_insert_idx %= cache_size; // Potentially inefficient to do this everytime, the alternative is an if statement. Which is faster?
-		cout << "cache idx is " << ret;
 		return ret; 
 	}
 	else {
