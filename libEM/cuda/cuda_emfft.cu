@@ -46,6 +46,7 @@ struct cufft_dd_plan_cache {
 	int r2c; // store whether the plan was real to complex or vice versa
 	cufftHandle handle;  // Store the plans themselves
 	int ip; // Store whether or not the plan was inplace
+	int batch; // Batch fft number - applicable only to 1D
 };
 
 // This struct is the host to host cufft plan cache. This means that the front end off the FFT mechanism takes and returns data that is valid on the host.
@@ -71,10 +72,11 @@ void reset_cuda_fft_dd_plan_cache(cufft_dd_plan_cache* c) {
 		cufftDestroy(c->handle);
 	}
 	c->handle = 0;
+	c->batch = 0;
 }
 
 void print_fft_dd(cufft_dd_plan_cache* c, const int i) {
-	printf("%d: %d %d %d %d %d %d %d\n",i,c->rank,c->plan_dims[0],c->plan_dims[1],c->plan_dims[2],c->r2c,c->ip, c->handle );
+	printf("%d: %d %d %d %d %d %d %d %d\n",i,c->rank,c->plan_dims[0],c->plan_dims[1],c->plan_dims[2],c->r2c,c->ip, c->handle,c->batch );
 }
 
 
@@ -98,6 +100,7 @@ void copy_cuda_fft_dd_plan_cache(cufft_dd_plan_cache* to,  cufft_dd_plan_cache* 
 	to->r2c = from->r2c;
 	to->ip = from->ip;
 	to->handle = from->handle;
+	to->batch = from->batch;
 }
 
 void copy_cuda_fft_hh_plan_cache(cufft_hh_plan_cache* to,  cufft_hh_plan_cache* from) {
@@ -144,10 +147,10 @@ void cleanup_cuda_fft_hh_plan_cache()
 	}
 }
 
-int cuda_fft_dd_plan_cache_params_match(const cufft_dd_plan_cache* const c, const int x, const int y, const int z, const int rank_in, const int r2c_flag, const int ip_flag ) {
+int cuda_fft_dd_plan_cache_params_match(const cufft_dd_plan_cache* const c, const int x, const int y, const int z, const int rank_in, const int r2c_flag, const int ip_flag, const int batch ) {
 	
 	if (c->plan_dims[0]==x && c->plan_dims[1]==y && c->plan_dims[2]==z 
-					  && c->rank==rank_in && c->r2c==r2c_flag && c->ip==ip_flag) {
+					  && c->rank==rank_in && c->r2c==r2c_flag && c->ip==ip_flag && c->batch == batch) {
 		return 1;
 	}
 	return 0;
@@ -156,7 +159,7 @@ int cuda_fft_dd_plan_cache_params_match(const cufft_dd_plan_cache* const c, cons
 int real_2_complex = 1;
 int complex_2_real = 2;
 
-cufft_hh_plan_cache* get_cuda_fft_hh_plan_cache(const int rank_in, const int x, const int y, const int z, const int r2c_flag, const int ip_flag) {
+cufft_hh_plan_cache* get_cuda_fft_hh_plan_cache(const int rank_in, const int x, const int y, const int z, const int r2c_flag, const int ip_flag,const int batch) {
 
 	if ( rank_in > 3 || rank_in < 1 ) throw; //InvalidValueException(rank_in, "Error, can not get an FFTW plan using rank out of the range [1,3]")
 	if ( r2c_flag != real_2_complex && r2c_flag != complex_2_real ) throw; //InvalidValueException(r2c_flag, "The real two complex flag is not supported");
@@ -165,7 +168,7 @@ cufft_hh_plan_cache* get_cuda_fft_hh_plan_cache(const int rank_in, const int x, 
 	int i;
 	for (i=0; i<EMCUDA_FFT_HH_CACHE_NUM_PLANS; i++) {
 		cufft_dd_plan_cache* c = &(CudaHHFftPlanCache[i].dd_cache);
-		if (cuda_fft_dd_plan_cache_params_match(c,x,y,z,rank_in,r2c_flag,ip_flag)) {
+		if (cuda_fft_dd_plan_cache_params_match(c,x,y,z,rank_in,r2c_flag,ip_flag,batch)) {
 			//printf("Already have that cache\n");
 			return &CudaHHFftPlanCache[i];
 		}
@@ -193,10 +196,10 @@ cufft_hh_plan_cache* get_cuda_fft_hh_plan_cache(const int rank_in, const int x, 
 	if ( y == 1 && z == 1 )
 	{
 		if ( r2c_flag == real_2_complex ) {
-			cufftPlan1d(&plan,x,CUFFT_R2C,1);
+			cufftPlan1d(&plan,x,CUFFT_R2C,batch);
 		}
 		else { // r2c_flag == complex_2_real, this is guaranteed by the error checking at the beginning of the function
-			cufftPlan1d(&plan, x, CUFFT_C2R,1);
+			cufftPlan1d(&plan, x, CUFFT_C2R,batch);
 		}
 	}
 	else if ( z == 1 )
@@ -238,15 +241,17 @@ cufft_hh_plan_cache* get_cuda_fft_hh_plan_cache(const int rank_in, const int x, 
 	c->dd_cache.ip=ip_flag;
 	c->dd_cache.handle = plan;
 	c->dd_cache.rank =rank_in;
+	c->dd_cache.batch = batch;
 	c->complex = complex;
 	c->real = real;
+
 	if (EMCUDA_FFT_HH_CACHE_NUM_PLANS<EMCUDA_FFT_CACHE_SIZE) EMCUDA_FFT_HH_CACHE_NUM_PLANS++;
 
 	
 	return c;
 }
 
-cufft_dd_plan_cache* get_cuda_fft_dd_plan_cache(const int rank_in, const int x, const int y, const int z, const int r2c_flag, const int ip_flag) {
+cufft_dd_plan_cache* get_cuda_fft_dd_plan_cache(const int rank_in, const int x, const int y, const int z, const int r2c_flag, const int ip_flag, const int batch) {
 
 	if ( rank_in > 3 || rank_in < 1 ) throw; //InvalidValueException(rank_in, "Error, can not get an FFTW plan using rank out of the range [1,3]")
 	if ( r2c_flag != real_2_complex && r2c_flag != complex_2_real ) throw; //InvalidValueException(r2c_flag, "The real two complex flag is not supported");
@@ -255,7 +260,7 @@ cufft_dd_plan_cache* get_cuda_fft_dd_plan_cache(const int rank_in, const int x, 
 	int i;
 	for (i=0; i<EMCUDA_FFT_DD_CACHE_NUM_PLANS; i++) {
 		cufft_dd_plan_cache* c = &CudaDDFftPlanCache[i];
-		if (cuda_fft_dd_plan_cache_params_match(c,x,y,z,rank_in,r2c_flag,ip_flag)) {
+		if (cuda_fft_dd_plan_cache_params_match(c,x,y,z,rank_in,r2c_flag,ip_flag,batch)) {
 			//printf("Already have that cache\n");
 			return c;
 		}
@@ -267,11 +272,11 @@ cufft_dd_plan_cache* get_cuda_fft_dd_plan_cache(const int rank_in, const int x, 
 	if ( y == 1 && z == 1 )
 	{
 		if ( r2c_flag == real_2_complex ) {
-			result = cufftPlan1d(&plan,x,CUFFT_R2C,1);
+			result = cufftPlan1d(&plan,x,CUFFT_R2C,batch);
 		}
 		else {
 			// r2c_flag == complex_2_real, this is guaranteed by the error checking at the beginning of the function
-			result = cufftPlan1d(&plan, x, CUFFT_C2R,1);
+			result = cufftPlan1d(&plan, x, CUFFT_C2R,batch);
 		}
 	}
 	else if ( z == 1 )
@@ -321,6 +326,7 @@ cufft_dd_plan_cache* get_cuda_fft_dd_plan_cache(const int rank_in, const int x, 
 	c->ip=ip_flag;
 	c->handle = plan;
 	c->rank =rank_in;
+	c->batch =batch;
 	if (EMCUDA_FFT_DD_CACHE_NUM_PLANS<EMCUDA_FFT_CACHE_SIZE) EMCUDA_FFT_DD_CACHE_NUM_PLANS++;
 // 	debug_fft_dd_plan_cache();
 	return c;
@@ -339,7 +345,7 @@ int get_rank(int ny, int nz)
 	return rank;
 }
 
-int cuda_hh_fft_real_to_complex_1d(float *real_data, float *complex_data, int n)
+int cuda_hh_fft_real_to_complex_1d(float *real_data, float *complex_data, int n,int batch)
 {
 	device_init();
 	bool ip = false;
@@ -347,7 +353,7 @@ int cuda_hh_fft_real_to_complex_1d(float *real_data, float *complex_data, int n)
 	int n2 = n + offset;
 	int complex_mem_size = sizeof(cufftComplex) * n2/2;
 	int real_mem_size = sizeof(cufftReal) * n;
-	cufft_hh_plan_cache* cache =  get_cuda_fft_hh_plan_cache(1,n,1,1,real_2_complex,ip);
+	cufft_hh_plan_cache* cache =  get_cuda_fft_hh_plan_cache(1,n,1,1,real_2_complex,ip,batch);
 	CUDA_SAFE_CALL(cudaMemcpy(cache->real,real_data, real_mem_size, cudaMemcpyHostToDevice));
 	cufftExecR2C(cache->dd_cache.handle, cache->real, cache->complex );
 	CUDA_SAFE_CALL(cudaMemcpy(complex_data,cache->complex, complex_mem_size, cudaMemcpyDeviceToHost));
@@ -355,7 +361,7 @@ int cuda_hh_fft_real_to_complex_1d(float *real_data, float *complex_data, int n)
 	return 0;
 };
 
-int cuda_hh_fft_complex_to_real_1d(float *complex_data, float *real_data, int n)
+int cuda_hh_fft_complex_to_real_1d(float *complex_data, float *real_data, int n,int batch)
 {
 	device_init();
 	bool ip = false;
@@ -363,7 +369,7 @@ int cuda_hh_fft_complex_to_real_1d(float *complex_data, float *real_data, int n)
 	int n2 = n + offset;
 	int complex_mem_size = sizeof(cufftComplex) * n2/2;
 	int real_mem_size = sizeof(cufftReal) * n2;
-	cufft_hh_plan_cache* cache = get_cuda_fft_hh_plan_cache(1,n,1,1,complex_2_real,ip);
+	cufft_hh_plan_cache* cache = get_cuda_fft_hh_plan_cache(1,n,1,1,complex_2_real,ip,batch);
 	CUDA_SAFE_CALL(cudaMemcpy(cache->complex,complex_data, complex_mem_size, cudaMemcpyHostToDevice));
 	cufftExecC2R(cache->dd_cache.handle, cache->complex, cache->real);
 	CUDA_SAFE_CALL(cudaMemcpy(real_data,cache->real, real_mem_size, cudaMemcpyDeviceToHost));
@@ -386,7 +392,7 @@ int cuda_hh_fft_real_to_complex_nd(float *real_data, float *complex_data, int nx
 #endif
 	switch(rank) {
 		case 1:
-			cuda_hh_fft_real_to_complex_1d(real_data, complex_data, nx);
+			cuda_hh_fft_real_to_complex_1d(real_data, complex_data, nx,1);
 			break;
 		
 		case 2:
@@ -395,7 +401,7 @@ int cuda_hh_fft_real_to_complex_nd(float *real_data, float *complex_data, int nx
 			//ip = false;
 			
 			if ( !ip ) {
-				cache = get_cuda_fft_hh_plan_cache(rank,nx,ny,nz,real_2_complex,ip);
+				cache = get_cuda_fft_hh_plan_cache(rank,nx,ny,nz,real_2_complex,ip,1);
 #ifdef EMAN2_USING_CUDA_MALLOC	
 				
 				cudaStreamCreate(&stream1);
@@ -417,7 +423,7 @@ int cuda_hh_fft_real_to_complex_nd(float *real_data, float *complex_data, int nx
 #endif
 			}
 			else {
-				cache = get_cuda_fft_hh_plan_cache(rank,nx,ny,nz,real_2_complex,ip);
+				cache = get_cuda_fft_hh_plan_cache(rank,nx,ny,nz,real_2_complex,ip,1);
 #ifdef EMAN2_USING_CUDA_MALLOC	
 				cudaStreamCreate(&stream1);
 				cudaMemcpyAsync(cache->complex,real_data, complex_mem_size, cudaMemcpyHostToDevice,stream1);
@@ -462,13 +468,13 @@ int cuda_hh_fft_complex_to_real_nd(float *complex_data, float *real_data, int nx
 #endif
 	switch(rank) {
 		case 1:
-			cuda_hh_fft_complex_to_real_1d(complex_data, real_data, nx);
+			cuda_hh_fft_complex_to_real_1d(complex_data, real_data, nx,1);
 			break;
 		
 		case 2:
 		case 3:
 			ip = ( complex_data == real_data );
-			cache = get_cuda_fft_hh_plan_cache(rank,nx,ny,nz,complex_2_real,ip);
+			cache = get_cuda_fft_hh_plan_cache(rank,nx,ny,nz,complex_2_real,ip,1);
 	
 #ifdef EMAN2_USING_CUDA_MALLOC			
 			cudaStreamCreate(&stream1);
@@ -498,22 +504,22 @@ int cuda_hh_fft_complex_to_real_nd(float *complex_data, float *real_data, int nx
 }
 
 
-int cuda_dd_fft_real_to_complex_1d(float *real_data, float *complex_data, int n)
+int cuda_dd_fft_real_to_complex_1d(float *real_data, float *complex_data, int n,int batch)
 {
 	device_init();
 	bool ip = false;
-	cufft_dd_plan_cache* cache =  get_cuda_fft_dd_plan_cache(1,n,1,1,real_2_complex,ip);
+	cufft_dd_plan_cache* cache =  get_cuda_fft_dd_plan_cache(1,n,1,1,real_2_complex,ip,batch);
 	cufftResult result = cufftExecR2C(cache->handle, real_data, (cufftComplex*)complex_data );
 	print_cuda_fft_fail(result);
 	cudaThreadSynchronize();
 	return 0;
 };
 
-int cuda_dd_fft_complex_to_real_1d(float *complex_data, float *real_data, int n)
+int cuda_dd_fft_complex_to_real_1d(float *complex_data, float *real_data, int n, int batch)
 {
 	device_init();
 	bool ip = false;
-	cufft_dd_plan_cache* cache = get_cuda_fft_dd_plan_cache(1,n,1,1,complex_2_real,ip);
+	cufft_dd_plan_cache* cache = get_cuda_fft_dd_plan_cache(1,n,1,1,complex_2_real,ip,batch);
 	cufftResult result = cufftExecC2R(cache->handle, (cufftComplex*)complex_data,real_data);
 	print_cuda_fft_fail(result);
 	cudaThreadSynchronize();
@@ -529,7 +535,7 @@ int cuda_dd_fft_real_to_complex_nd(float *real_data, float *complex_data, int nx
 	cufftResult result;
 	switch(rank) {
 		case 1:
-			cuda_dd_fft_real_to_complex_1d(real_data, complex_data, nx);
+			cuda_dd_fft_real_to_complex_1d(real_data, complex_data, nx,1);
 			break;
 		
 		case 2:
@@ -538,13 +544,13 @@ int cuda_dd_fft_real_to_complex_nd(float *real_data, float *complex_data, int nx
 			//ip = false;
 			
 			if ( !ip ) {
-				cache = get_cuda_fft_dd_plan_cache(rank,nx,ny,nz,real_2_complex,ip);
+				cache = get_cuda_fft_dd_plan_cache(rank,nx,ny,nz,real_2_complex,ip,1);
 				cufftResult result = cufftExecR2C(cache->handle, real_data, (cufftComplex*)complex_data );
 				cudaThreadSynchronize();
 				print_cuda_fft_fail(result);
 			}
 			else {
-				cache = get_cuda_fft_dd_plan_cache(rank,nx,ny,nz,real_2_complex,ip);
+				cache = get_cuda_fft_dd_plan_cache(rank,nx,ny,nz,real_2_complex,ip,1);
 				/// CHECK LATER - Not sure if this will work
 				result = cufftExecR2C(cache->handle, (cufftReal*)complex_data, (cufftComplex*)complex_data );
 				print_cuda_fft_fail(result);
@@ -571,13 +577,13 @@ int cuda_dd_fft_complex_to_real_nd(float *complex_data, float *real_data, int nx
 	cufft_dd_plan_cache* cache = 0;
 	switch(rank) {
 		case 1:
-			cuda_dd_fft_complex_to_real_1d(complex_data, real_data, nx);
+			cuda_dd_fft_complex_to_real_1d(complex_data, real_data, nx,1);
 			break;
 		
 		case 2:
 		case 3:
 			ip = ( complex_data == real_data );
-			cache = get_cuda_fft_dd_plan_cache(rank,nx,ny,nz,complex_2_real,ip);
+			cache = get_cuda_fft_dd_plan_cache(rank,nx,ny,nz,complex_2_real,ip,1);
 			//printf("Executing handle %d\n",cache->handle);
 			result = cufftExecC2R(cache->handle, (cufftComplex*)complex_data, real_data);
 			print_cuda_fft_fail(result);

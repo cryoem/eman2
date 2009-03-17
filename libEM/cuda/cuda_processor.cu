@@ -202,7 +202,6 @@ __global__ void auto_correlation_kernel(float *ldata, float* rdata,const int num
 	ldata[idxp1] = 0;
 }
 
-
 __global__ void correlation_kernel_texture_2D(float *ldata,const int num_threads,const int xsize,const int offset)
 {
 

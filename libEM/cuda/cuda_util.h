@@ -30,6 +30,8 @@ void bind_cuda_array_to_texture( const cudaArray* const array, const int ndims, 
 
 void unbind_cuda_texture(const int ndims);
 
+void emdata_column_sum(const EMDataForCuda* sum_target,const int ny);
+
 #endif // eman__cuda_util_h__
 
 

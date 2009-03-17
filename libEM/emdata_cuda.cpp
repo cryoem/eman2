@@ -44,7 +44,7 @@
 
 using namespace EMAN;
 // Static init
-EMData::CudaDeviceEMDataCache EMData::cuda_cache(100);
+EMData::CudaDeviceEMDataCache EMData::cuda_cache(200);
 
 float* EMData::get_cuda_data() const {
 	if (cuda_cache_handle==-1 || EMDATA_GPU_NEEDS_UPDATE & flags) {
@@ -192,7 +192,7 @@ EMData *EMData::make_rotational_footprint_cuda( bool unwrap)
 	ENTERFUNC;
 //
 //	update_stat();
-	//float edge_mean = get_edge_mean();
+//	float edge_mean = get_edge_mean();
 	float edge_mean = 0;
 //	//if ( rot_fp != 0 && unwrap == true) {
 //	//	return new EMData(*rot_fp);
@@ -235,7 +235,7 @@ EMData *EMData::make_rotational_footprint_cuda( bool unwrap)
 //	
 	//cout << "Clip 1" << endl;
 	EMData *mc = clipped->calc_ccf_cuda(clipped,false,true);
-	//mc->sub(mc->get_edge_mean());
+	mc->sub(mc->get_edge_mean());
 	//mc->process_inplace("xform.phaseorigin.tocenter");
 	//mc->write_image("mc.hdf");
 	if( clipped ) {
@@ -296,6 +296,94 @@ EMData *EMData::make_rotational_footprint_cuda( bool unwrap)
 //		return new EMData(*rot_fp);
 //	}
 //	else return result;
+}
+
+EMData* EMData::calc_ccfx_cuda( EMData * const with, int y0, int y1, bool no_sum)
+{
+	ENTERFUNC;
+
+	if (!with) {
+		LOGERR("NULL 'with' image. ");
+		throw NullPointerException("NULL input image");
+	}
+
+	if (!EMUtil::is_same_size(this, with)) {
+		LOGERR("images not same size: (%d,%d,%d) != (%d,%d,%d)",
+			   nx, ny, nz,
+			   with->get_xsize(), with->get_ysize(), with->get_zsize());
+		throw ImageFormatException("images not same size");
+	}
+	if (get_ndim() > 2) {
+		LOGERR("2D images only");
+		throw ImageDimensionException("2D images only");
+	}
+
+	if (y1 <= y0) {
+		y1 = ny;
+	}
+
+	if (y0 >= y1) {
+		y0 = 0;
+	}
+
+	if (y0 < 0) {
+		y0 = 0;
+	}
+
+	if (y1 > ny) {
+		y1 = ny;
+	}
+
+	static int nx_device_fft = 0;
+	static int ny_defice_fft = 0;
+	static EMData f1;
+	static EMData f2;
+	static EMData rslt;
+	
+	int height = y1-y0;
+	int width = (nx+2-(nx%2));
+	if (width != nx_device_fft || height != ny_defice_fft ) {
+		f1.set_size_cuda(width,height);
+		f2.set_size_cuda(width,height);
+		rslt.set_size_cuda(nx,height);
+		nx_device_fft = width;
+		ny_defice_fft = height;
+	}
+	
+	cuda_dd_fft_real_to_complex_1d(get_cuda_data(),f1.get_cuda_data(),nx,height);
+	cuda_dd_fft_real_to_complex_1d(with->get_cuda_data(),f2.get_cuda_data(),nx,height);
+
+	EMDataForCuda left = f1.get_data_struct_for_cuda();
+	
+	bool use_texturing = false;
+	bool center = false;
+	if (use_texturing) {
+	 	f2.bind_cuda_texture(false);
+	 	emdata_processor_correlation_texture(&left,center);
+	} else {
+		EMDataForCuda right = f2.get_data_struct_for_cuda();
+		emdata_processor_correlation(&left,&right,center);
+	}
+	
+	cuda_dd_fft_complex_to_real_1d(f1.get_cuda_data(),rslt.get_cuda_data(),nx,height);
+	
+	if (no_sum) {
+		EXITFUNC;
+		return new EMData(rslt);
+	}
+	else {
+		EMData *cf = new EMData();
+		cf->set_size_cuda(nx, 1, 1);
+		EMDataForCuda left = cf->get_data_struct_for_cuda();
+		rslt.bind_cuda_texture(false);
+		emdata_column_sum(&left,height);
+	//	EMDataForCuda right = rslt.get_data_struct_for_cuda();
+	//	emdata_column_sum(&left,&right);
+		cf->gpu_update();
+		EXITFUNC;
+		return cf;
+	}
+		
 }
 
 void EMData::set_gpu_rw_data(float* data, const int x, const int y, const int z) {

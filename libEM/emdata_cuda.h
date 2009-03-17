@@ -68,6 +68,7 @@ public:
 	 * @return a real space correlation image
 	 */
 	EMData* calc_ccf_cuda(EMData* image, bool use_texturing,bool center=false ) const;
+	EMData* calc_ccfx_cuda( EMData * const with, int y0=0, int y1=-1, bool no_sum=false);
 		
 	EMData * make_rotational_footprint_cuda( bool unwrap=true);
 	

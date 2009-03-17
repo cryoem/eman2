@@ -1611,6 +1611,13 @@ EMData *EMData::calc_ccf(EMData * with, fp_flag fpflag,bool center)
 EMData *EMData::calc_ccfx( EMData * const with, int y0, int y1, bool no_sum)
 {
 	ENTERFUNC;
+	
+#ifdef EMAN2_USING_CUDA
+	if (gpu_operation_preferred() ) {
+		EXITFUNC;
+		return calc_ccfx_cuda(with,y0,y1,no_sum);
+	}
+#endif
 
 	if (!with) {
 		LOGERR("NULL 'with' image. ");
@@ -1657,82 +1664,82 @@ EMData *EMData::calc_ccfx( EMData * const with, int y0, int y1, bool no_sum)
 
 	float* data = get_data();
 
-	if (no_sum) {
-		float *cfd = cf->get_data();
-		float *with_data = with->get_data();
-
-		for (int y = y0; y < y1; y++) {
-			int cur_y = y * nx;
-
-			for (int x = 0; x < nx; x++) {
-				float dot = 0;
-				for (int i = 0; i < nx; i++) {
-					int k1 = (i + x) % nx + cur_y;
-					dot += data[i + cur_y] * with_data[k1];
-				}
-				cfd[x + (y - y0) * nx] = dot;
-			}
-		}
-
-		cf->update();
-		return cf;
-	}
-	else {
+//	if (0 && no_sum) {
+//		float *cfd = cf->get_data();
+//		float *with_data = with->get_data();
+//
+//		for (int y = y0; y < y1; y++) {
+//			int cur_y = y * nx;
+//
+//			for (int x = 0; x < nx; x++) {
+//				float dot = 0;
+//				for (int i = 0; i < nx; i++) {
+//					int k1 = (i + x) % nx + cur_y;
+//					dot += data[i + cur_y] * with_data[k1];
+//				}
+//				cfd[x + (y - y0) * nx] = dot;
+//			}
+//		}
+//
+//		cf->update();
+//		return cf;
+//	}
+//	else {
 		
-		float *f1 = (float *)EMUtil::em_calloc(nx+2, sizeof(float));
-		float *f2 = (float *)EMUtil::em_calloc(nx+2, sizeof(float));
+	float *f1 = (float *)EMUtil::em_calloc(nx+2, sizeof(float));
+	float *f2 = (float *)EMUtil::em_calloc(nx+2, sizeof(float));
 
-		float *cfd = cf->get_data();
-		float *d1 = get_data();
-		float *d2 = with->get_data();
-		size_t row_size = nx * sizeof(float);
+	float *cfd = cf->get_data();
+	float *d1 = get_data();
+	float *d2 = with->get_data();
+	size_t row_size = nx * sizeof(float);
 
-		if (!is_complex_x()) {
-			for (int j = 0; j < ny; j++) {
-				EMfft::real_to_complex_1d(d1 + j * nx, f1, nx);
-				EMUtil::em_memcpy(d1 + j * nx, f1, row_size);
-			}
-			set_complex_x(true);
+	if (!is_complex_x()) {
+		for (int j = 0; j < ny; j++) {
+			EMfft::real_to_complex_1d(d1 + j * nx, f1, nx);
+			EMUtil::em_memcpy(d1 + j * nx, f1, row_size);
 		}
-		if (!with->is_complex_x()) {
-			for (int j = 0; j < with->get_ysize(); j++) {
-				EMfft::real_to_complex_1d(d2 + j * nx, f2, nx);
-				EMUtil::em_memcpy(d2 + j * nx, f2, row_size);
-			}
-
-			with->set_complex_x(true);
+		set_complex_x(true);
+	}
+	if (!with->is_complex_x()) {
+		for (int j = 0; j < with->get_ysize(); j++) {
+			EMfft::real_to_complex_1d(d2 + j * nx, f2, nx);
+			EMUtil::em_memcpy(d2 + j * nx, f2, row_size);
 		}
 
-		for (int j = y0; j < y1; j++) {
-			float *f1a = d1 + j * nx;   // Taken out by PRB May 2007
-			float *f2a = d2 + j * nx; 
+		with->set_complex_x(true);
+	}
+
+	for (int j = y0; j < y1; j++) {
+		float *f1a = d1 + j * nx;   // Taken out by PRB May 2007
+		float *f2a = d2 + j * nx; 
 /*
 			f1[0] = f1a[0] * f2a[0];
 			f1[nx / 2] = f1a[nx / 2] * f2a[nx / 2];*/
 
-			for (int i = 0; i < nx / 2; i++) { 
-				float re1 = f1a[2*i];
-				float re2 = f2a[2*i];
-				float im1 = f1a[2*i+1];
-				float im2 = f2a[2*i+1];
+		for (int i = 0; i < nx / 2; i++) { 
+			float re1 = f1a[2*i];
+			float re2 = f2a[2*i];
+			float im1 = f1a[2*i+1];
+			float im2 = f2a[2*i+1];
 
-				f1[i*2] = re1 * re2 + im1 * im2;
-				f1[i*2+1] = im1 * re2 - re1 * im2;
-			}
+			f1[i*2] = re1 * re2 + im1 * im2;
+			f1[i*2+1] = im1 * re2 - re1 * im2;
+		}
 
-			EMfft::complex_to_real_1d(f1, f2, nx);
+		EMfft::complex_to_real_1d(f1, f2, nx);
 
-			if (no_sum) {
-				for (int i = 0; i < nx; i++) {
-					cfd[i + nx * (j - y0)] = f2[i];
-				}
-			}
-			else {
-				for (int i = 0; i < nx; i++) {
-					cfd[i] += f2[i];
-				}
+		if (no_sum) {
+			for (int i = 0; i < nx; i++) {
+				cfd[i + nx * (j - y0)] = f2[i];
 			}
 		}
+		else {
+			for (int i = 0; i < nx; i++) {
+				cfd[i] += f2[i];
+			}
+		}
+		//}
 
 		if( f1 )
 		{
@@ -1747,8 +1754,6 @@ EMData *EMData::calc_ccfx( EMData * const with, int y0, int y1, bool no_sum)
 	}
 
 	cf->update();
-	//update();
-	//with->update();
 
 	EXITFUNC;
 	return cf;

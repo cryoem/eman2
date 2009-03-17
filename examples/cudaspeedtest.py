@@ -49,6 +49,28 @@ def test_main():
 	gpu_times = []
 	cpu_times = []
 	
+	print "Testing calc_ccfx"
+	print "Dims","\t", "GPU speedup"
+	for dims in test_dims:
+		a = test_image(0,size=(dims,dims))
+		a.set_gpu_rw_current()
+		t = time()
+		for i in test_range:
+			b = a.unwrap()
+			c = a.unwrap()
+			b = b.calc_ccfx(c,0,-1,True)
+		gpu_times.append(time()-t)
+		
+		a = test_image(0,size=(dims,dims))
+		t = time()
+		for i in test_range:
+			b = a.unwrap()
+			c = a.unwrap()
+			b = b.calc_ccfx(c,0,-1,True)
+			
+		cpu_times.append(time()-t)
+		print dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1]
+	
 	print "Testing get_clip, lose edge pixels"
 	print "Dims","\t", "GPU speedup"
 	for dims in test_dims:

@@ -233,9 +233,37 @@ void cut_slice_cuda_(const EMDataForCuda* to_data,const float* const matrix)
 // 	cudaFree(memout);
 	
 }
+typedef unsigned int uint;
+__global__ void column_sum(float* sum, int ny, int num_threads, int offset ) {
+	
+	const uint x=threadIdx.x;
+	const uint y=blockIdx.x;
 
+	const uint idx_x = x + y*num_threads+offset; /* This is always an x index */
+	for(int i =0; i < ny; ++i) {
+		sum[idx_x] += tex2D(tex2d,idx_x,i);
+	}
+}
 
-//float emdata_get_edge_mean(const EMDataForCuda* data)
-//{
-//	
-//}
+void emdata_column_sum(const EMDataForCuda* sum_target,const int ny) {
+	int max_threads = 512;
+	if (max_threads > sum_target->nx) max_threads = sum_target->nx;
+	
+	int num_calcs = sum_target->nx;
+		
+	int grid_y = num_calcs/(max_threads);
+	int res_y = (num_calcs - (grid_y*max_threads));
+	
+	if ( grid_y > 0 ) {
+		const dim3 blockSize(max_threads,1, 1);
+		const dim3 gridSize(grid_y,1,1);
+		column_sum<<<gridSize,blockSize>>>(sum_target->data,ny,max_threads,0);
+	}
+	
+	if ( res_y > 0 ) {
+		const dim3 blockSize(res_y,1, 1);
+		const dim3 gridSize(1,1,1);
+		column_sum<<<gridSize,blockSize>>>(sum_target->data,ny,max_threads,grid_y*max_threads);
+	}
+	cudaThreadSynchronize();
+}
