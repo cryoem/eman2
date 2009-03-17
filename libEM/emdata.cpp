@@ -1661,9 +1661,9 @@ EMData *EMData::calc_ccfx( EMData * const with, int y0, int y1, bool no_sum)
 
 	cf->set_attr("label", "CCFx");
 	cf->set_path("/tmp/eman.ccf");
-
-	float* data = get_data();
-
+//
+//	float* data = get_data();
+//
 //	if (0 && no_sum) {
 //		float *cfd = cf->get_data();
 //		float *with_data = with->get_data();
@@ -1686,60 +1686,60 @@ EMData *EMData::calc_ccfx( EMData * const with, int y0, int y1, bool no_sum)
 //	}
 //	else {
 		
-	float *f1 = (float *)EMUtil::em_calloc(nx+2, sizeof(float));
-	float *f2 = (float *)EMUtil::em_calloc(nx+2, sizeof(float));
+		float *f1 = (float *)EMUtil::em_calloc(nx+2, sizeof(float));
+		float *f2 = (float *)EMUtil::em_calloc(nx+2, sizeof(float));
 
-	float *cfd = cf->get_data();
-	float *d1 = get_data();
-	float *d2 = with->get_data();
-	size_t row_size = nx * sizeof(float);
+		float *cfd = cf->get_data();
+		float *d1 = get_data();
+		float *d2 = with->get_data();
+		size_t row_size = nx * sizeof(float);
 
-	if (!is_complex_x()) {
-		for (int j = 0; j < ny; j++) {
-			EMfft::real_to_complex_1d(d1 + j * nx, f1, nx);
-			EMUtil::em_memcpy(d1 + j * nx, f1, row_size);
+		if (!is_complex_x()) {
+			for (int j = 0; j < ny; j++) {
+				EMfft::real_to_complex_1d(d1 + j * nx, f1, nx);
+				EMUtil::em_memcpy(d1 + j * nx, f1, row_size);
+			}
+			set_complex_x(true);
 		}
-		set_complex_x(true);
-	}
-	if (!with->is_complex_x()) {
-		for (int j = 0; j < with->get_ysize(); j++) {
-			EMfft::real_to_complex_1d(d2 + j * nx, f2, nx);
-			EMUtil::em_memcpy(d2 + j * nx, f2, row_size);
+		if (!with->is_complex_x()) {
+			for (int j = 0; j < with->get_ysize(); j++) {
+				EMfft::real_to_complex_1d(d2 + j * nx, f2, nx);
+				EMUtil::em_memcpy(d2 + j * nx, f2, row_size);
+			}
+
+			with->set_complex_x(true);
 		}
 
-		with->set_complex_x(true);
-	}
-
-	for (int j = y0; j < y1; j++) {
-		float *f1a = d1 + j * nx;   // Taken out by PRB May 2007
-		float *f2a = d2 + j * nx; 
+		for (int j = y0; j < y1; j++) {
+			float *f1a = d1 + j * nx;   // Taken out by PRB May 2007
+			float *f2a = d2 + j * nx; 
 /*
 			f1[0] = f1a[0] * f2a[0];
 			f1[nx / 2] = f1a[nx / 2] * f2a[nx / 2];*/
 
-		for (int i = 0; i < nx / 2; i++) { 
-			float re1 = f1a[2*i];
-			float re2 = f2a[2*i];
-			float im1 = f1a[2*i+1];
-			float im2 = f2a[2*i+1];
+			for (int i = 0; i < nx / 2; i++) { 
+				float re1 = f1a[2*i];
+				float re2 = f2a[2*i];
+				float im1 = f1a[2*i+1];
+				float im2 = f2a[2*i+1];
 
-			f1[i*2] = re1 * re2 + im1 * im2;
-			f1[i*2+1] = im1 * re2 - re1 * im2;
-		}
+				f1[i*2] = re1 * re2 + im1 * im2;
+				f1[i*2+1] = im1 * re2 - re1 * im2;
+			}
 
-		EMfft::complex_to_real_1d(f1, f2, nx);
+			EMfft::complex_to_real_1d(f1, f2, nx);
 
-		if (no_sum) {
-			for (int i = 0; i < nx; i++) {
-				cfd[i + nx * (j - y0)] = f2[i];
+			if (no_sum) {
+				for (int i = 0; i < nx; i++) {
+					cfd[i + nx * (j - y0)] = f2[i];
+				}
+			}
+			else {
+				for (int i = 0; i < nx; i++) {
+					cfd[i] += f2[i];
+				}
 			}
 		}
-		else {
-			for (int i = 0; i < nx; i++) {
-				cfd[i] += f2[i];
-			}
-		}
-		//}
 
 		if( f1 )
 		{
@@ -1751,7 +1751,7 @@ EMData *EMData::calc_ccfx( EMData * const with, int y0, int y1, bool no_sum)
 			EMUtil::em_free(f2);
 			f2 = 0;
 		}
-	}
+//	}
 
 	cf->update();
 
