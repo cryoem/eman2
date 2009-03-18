@@ -4908,8 +4908,8 @@ def ali3d_m_MPI(stack, ref_vol, outdir, cccmaskfile=None, alimaskfile=None, maxi
 							finfo.flush()
 
 			else:
-				if(an[N_step] == -1):	proj_ali_incore(vol, alimask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], ref_a, sym, finfo, MPI=False)
-				else:	           proj_ali_incore_local(vol, alimask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], an[N_step], ref_a, sym, finfo, MPI=False)
+				if(an[N_step] == -1):	proj_ali_incore(vol, alimask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], ref_a, sym, CTF, MPI=False)
+				else:	           proj_ali_incore_local(vol, alimask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], an[N_step], ref_a, sym, CTF, MPI=False)
 				for im in xrange(nima):
 	
 					peak = data[im].get_attr('peak')
