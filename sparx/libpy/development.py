@@ -7376,7 +7376,7 @@ def ali_SSNR(stack, maskfile=None, ou=-1, maxit=10, CTF=False, opti_method="CG",
 		return
 		
 	from math import pi, sqrt
-	from fundamentals import fftip
+	from fundamentals import fftip, mirror
 	from numpy import Inf
 	from scipy.optimize.lbfgsb import fmin_l_bfgs_b
 	from scipy.optimize.optimize import fmin_cg
@@ -7457,7 +7457,8 @@ def ali_SSNR(stack, maskfile=None, ou=-1, maxit=10, CTF=False, opti_method="CG",
  			_jY.set_value_at(x*2+1, y, -yy*2*pi/N) 
 
 	img_data= []
-	x0 = [0.0]*(nima*3)	
+	x0 = [0.0]*(nima*3)
+	mir = [0]*nima	
 	if opti_method == "LBFGSB":	bounds = []
 
 	# pre-processing, get initial parameters and boundaries (for LBFGSB)
@@ -7467,6 +7468,14 @@ def ali_SSNR(stack, maskfile=None, ou=-1, maxit=10, CTF=False, opti_method="CG",
 			ima.read_image(stack, im)
 		if CTF:
 			ctf_params = ima.get_attr('ctf')
+
+		x0[im*3], x0[im*3+1], x0[im*3+2], mir[im], dummy = get_params2D(ima)
+		
+		if mir[im] == 1:
+			x0[im*3] = 360.0-x0[im*3]
+			x0[im*3+1] = -x0[im*3+1]
+			ima = mirror(ima)
+
 		st = Util.infomask(ima, mask, False)
 		ima -= st[0]	
 		ima.divkbsinh(kb)
@@ -7486,7 +7495,6 @@ def ali_SSNR(stack, maskfile=None, ou=-1, maxit=10, CTF=False, opti_method="CG",
 				index_list.append(index)
 			Util.add_img2(ctfimg2, ctfimg)			
 
-		x0[im*3], x0[im*3+1], x0[im*3+2], dummy1, dummy2 = get_params2D(ima)
 		if opti_method == "LBFGSB":
 			bounds.append((x0[im*3]-2.0, x0[im*3]+2.0))
 			bounds.append((x0[im*3+1]-1.0, x0[im*3+1]+1.0))
@@ -7543,7 +7551,10 @@ def ali_SSNR(stack, maskfile=None, ou=-1, maxit=10, CTF=False, opti_method="CG",
 	for im in xrange(nima):
 		ima = EMData()
 		ima.read_image(stack, im)
-		set_params2D(ima, [ps[im*3], ps[im*3+1], ps[im*3+2], 0, 1.0])
+		if mir[im] == 0:
+			set_params2D(ima, [ps[im*3], ps[im*3+1], ps[im*3+2], 0, 1.0])
+		else:
+			set_params2D(ima, [360.0-ps[im*3], -ps[im*3+1], ps[im*3+2], 1, 1.0]
 		ima.write_image(stack, im)	
 
 	print_end_msg("ali_SSNR")
@@ -7553,7 +7564,7 @@ def ali_SSNR_MPI(stack, maskfile=None, ou=-1, maxit=10, CTF=False, opti_method="
 
 	from applications import MPI_start_end
 	from math import pi, sqrt
-	from fundamentals import fftip
+	from fundamentals import fftip, mirror
 	from numpy import Inf
 	from scipy.optimize.lbfgsb import fmin_l_bfgs_b
 	from scipy.optimize.optimize import fmin_cg
@@ -7643,7 +7654,8 @@ def ali_SSNR_MPI(stack, maskfile=None, ou=-1, maxit=10, CTF=False, opti_method="
  			_jY.set_value_at(x*2+1, y, -yy*2*pi/N) 
 
 	img_data= []
-	x0 = [0.0]*(nima*3)	
+	x0 = [0.0]*(nima*3)
+	mir = [0]*nima
 	if opti_method == "LBFGSB":	bounds = []
 
 	# pre-processing, get initial parameters and boundaries (for LBFGSB)
@@ -7653,6 +7665,14 @@ def ali_SSNR_MPI(stack, maskfile=None, ou=-1, maxit=10, CTF=False, opti_method="
 			ima.read_image(stack, im)
 		if CTF:
 			ctf_params = ima.get_attr('ctf')
+
+		x0[im*3], x0[im*3+1], x0[im*3+2], mir[im], dummy = get_params2D(ima)
+		
+		if mir[im] == 1:
+			x0[im*3] = 360-x0[im*3]
+			x0[im*3+1] = -x0[im*3+1]
+			ima = mirror(ima)		
+
 		if (im >= image_start) and (im < image_end):
 			st = Util.infomask(ima, mask, False)
 			ima -= st[0]	
@@ -7673,7 +7693,6 @@ def ali_SSNR_MPI(stack, maskfile=None, ou=-1, maxit=10, CTF=False, opti_method="
 				index_list.append(index)
 			Util.add_img2(ctfimg2, ctfimg)			
 		
-		x0[im*3], x0[im*3+1], x0[im*3+2], dummy1, dummy2 = get_params2D(ima)
 		if opti_method == "LBFGSB":
 			bounds.append((x0[im*3]-2.0, x0[im*3]+2.0))
 			bounds.append((x0[im*3+1]-1.0, x0[im*3+1]+1.0))
@@ -7731,7 +7750,10 @@ def ali_SSNR_MPI(stack, maskfile=None, ou=-1, maxit=10, CTF=False, opti_method="
 		for im in xrange(nima):
 			ima = EMData()
 			ima.read_image(stack, im)
-			set_params2D(ima, [ps[im*3], ps[im*3+1], ps[im*3+2], 0, 1.0])
+			if mir[im] == 0:
+				set_params2D(ima, [ps[im*3], ps[im*3+1], ps[im*3+2], 0, 1.0])
+			else:
+				set_params2D(ima, [360.0-ps[im*3], -ps[im*3+1], ps[im*3+2], 1, 1.0])
 			ima.write_image(stack, im)	
 
 	if myid == main_node:	print_end_msg("ali_SSNR_MPI")
