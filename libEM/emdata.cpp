@@ -147,7 +147,7 @@ EMData::EMData(const EMData& that) :
 		if ( error != cudaSuccess ) throw UnexpectedBehaviorException("cudaMemcpy failed in EMData copy construction with error: " + string(cudaGetErrorString(error)));
 	}
 	// This is a bit of hack
-	flags &= EMDATA_GPU_RO_NEEDS_UPDATE;
+	flags |= EMDATA_GPU_RO_NEEDS_UPDATE;
 #endif //EMAN2_USING_CUDA
 	if (that.rot_fp != 0) rot_fp = new EMData(*(that.rot_fp));
 
@@ -1671,114 +1671,71 @@ EMData *EMData::calc_ccfx( EMData * const with, int y0, int y1, bool no_sum)
 
 	if (y1 > ny) {
 		y1 = ny;
-	}
+	}	
+	if (is_complex_x() || with->is_complex_x() ) throw; // Woops don't support this anymore!
 
-	EMData *cf = new EMData();
+	static int nx_fft = 0;
+	static int ny_fft = 0;
+	static EMData f1;
+	static EMData f2;
+	static EMData rslt;
+	
+	int height = y1-y0;
+	int width = (nx+2-(nx%2));
+	if (width != nx_fft || height != ny_fft ) {
+		f1.set_size(width,height);
+		f2.set_size(width,height);
+		rslt.set_size(nx,height);
+		nx_fft = width;
+		ny_fft = height;
+	}
+	
+	float *d1 = get_data();
+	float *d2 = with->get_data();
+	float *f1d = f1.get_data();
+	float *f2d = f2.get_data();
+	for (int j = 0; j < height; j++) {
+		EMfft::real_to_complex_1d(d1 + j * nx, f1d+j*width, nx);
+		EMfft::real_to_complex_1d(d2 + j * nx, f2d+j*width, nx);
+	}
+	
+	for (int j = 0; j < height; j++) {
+		float *f1a = f1d + j * width;  
+		float *f2a = f2d + j * width; 
+
+		for (int i = 0; i < width / 2; i++) { 
+			float re1 = f1a[2*i];
+			float re2 = f2a[2*i];
+			float im1 = f1a[2*i+1];
+			float im2 = f2a[2*i+1];
+
+			f1d[j*width+i*2] = re1 * re2 + im1 * im2;
+			f1d[j*width+i*2+1] = im1 * re2 - re1 * im2;
+		}
+	}
+	
+	float* rd = rslt.get_data();
+	for (int j = y0; j < y1; j++) {
+		EMfft::complex_to_real_1d(f1d+j*width, rd+j*nx, nx);
+	}
+	
 	if (no_sum) {
-		cf->set_size(nx, y1 - y0 , 1);
+		rslt.update(); // This is important in terms of the copy - the returned object won't have the correct flags unless we do this
+		EXITFUNC;
+		return new EMData(rslt);
+	} else {
+		EMData *cf = new EMData(nx,1,1);
+		cf->to_zero();
+		float *c = cf->get_data();
+		for (int j = 0; j < height; j++) {
+			for(int i = 0; i < nx; ++i) {
+				c[i] += rd[i+j*nx];
+			}
+		}
+		cf->update();
+		EXITFUNC;
+		return cf;
 	}
-	else {
-		cf->set_size(nx, 1, 1);
-	}
-
-	cf->set_attr("label", "CCFx");
-	cf->set_path("/tmp/eman.ccf");
-//
-//	float* data = get_data();
-//
-//	if (0 && no_sum) {
-//		float *cfd = cf->get_data();
-//		float *with_data = with->get_data();
-//
-//		for (int y = y0; y < y1; y++) {
-//			int cur_y = y * nx;
-//
-//			for (int x = 0; x < nx; x++) {
-//				float dot = 0;
-//				for (int i = 0; i < nx; i++) {
-//					int k1 = (i + x) % nx + cur_y;
-//					dot += data[i + cur_y] * with_data[k1];
-//				}
-//				cfd[x + (y - y0) * nx] = dot;
-//			}
-//		}
-//
-//		cf->update();
-//		return cf;
-//	}
-//	else {
-		
-		float *f1 = (float *)EMUtil::em_calloc(nx+2, sizeof(float));
-		float *f2 = (float *)EMUtil::em_calloc(nx+2, sizeof(float));
-
-		float *cfd = cf->get_data();
-		float *d1 = get_data();
-		float *d2 = with->get_data();
-		size_t row_size = nx * sizeof(float);
-
-		if (!is_complex_x()) {
-			for (int j = 0; j < ny; j++) {
-				EMfft::real_to_complex_1d(d1 + j * nx, f1, nx);
-				EMUtil::em_memcpy(d1 + j * nx, f1, row_size);
-			}
-			set_complex_x(true);
-		}
-		if (!with->is_complex_x()) {
-			for (int j = 0; j < with->get_ysize(); j++) {
-				EMfft::real_to_complex_1d(d2 + j * nx, f2, nx);
-				EMUtil::em_memcpy(d2 + j * nx, f2, row_size);
-			}
-
-			with->set_complex_x(true);
-		}
-
-		for (int j = y0; j < y1; j++) {
-			float *f1a = d1 + j * nx;   // Taken out by PRB May 2007
-			float *f2a = d2 + j * nx; 
-/*
-			f1[0] = f1a[0] * f2a[0];
-			f1[nx / 2] = f1a[nx / 2] * f2a[nx / 2];*/
-
-			for (int i = 0; i < nx / 2; i++) { 
-				float re1 = f1a[2*i];
-				float re2 = f2a[2*i];
-				float im1 = f1a[2*i+1];
-				float im2 = f2a[2*i+1];
-
-				f1[i*2] = re1 * re2 + im1 * im2;
-				f1[i*2+1] = im1 * re2 - re1 * im2;
-			}
-
-			EMfft::complex_to_real_1d(f1, f2, nx);
-
-			if (no_sum) {
-				for (int i = 0; i < nx; i++) {
-					cfd[i + nx * (j - y0)] = f2[i];
-				}
-			}
-			else {
-				for (int i = 0; i < nx; i++) {
-					cfd[i] += f2[i];
-				}
-			}
-		}
-
-		if( f1 )
-		{
-			EMUtil::em_free(f1);
-			f1 = 0;
-		}
-		if( f2 )
-		{
-			EMUtil::em_free(f2);
-			f2 = 0;
-		}
-//	}
-
-	cf->update();
-
-	EXITFUNC;
-	return cf;
 }
 
 EMData *EMData::make_rotational_footprint_cmc( bool unwrap) {

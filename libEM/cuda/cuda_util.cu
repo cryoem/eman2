@@ -239,10 +239,12 @@ __global__ void column_sum(float* sum, int ny, int num_threads, int offset ) {
 	const uint x=threadIdx.x;
 	const uint y=blockIdx.x;
 
+	float s = 0.0;
 	const uint idx_x = x + y*num_threads+offset; /* This is always an x index */
 	for(int i =0; i < ny; ++i) {
-		sum[idx_x] += tex2D(tex2d,idx_x,i);
+		s += tex2D(tex2d,idx_x,i);
 	}
+	sum[idx_x] = s; 
 }
 
 void emdata_column_sum(const EMDataForCuda* sum_target,const int ny) {

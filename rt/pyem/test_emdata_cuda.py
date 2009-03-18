@@ -46,6 +46,19 @@ IS_TEST_EXCEPTION = False
 class TestEMDataCuda(unittest.TestCase):
 	"""this is the unit test that verifies the CUDA functionality of the EMData class"""
 	
+	def test_cuda_calc_ccfx(self):
+		"""test cuda calc_ccfx ..............................."""
+		for y in [15,16]:
+			for x in [15,16]:
+				e = EMData()
+				e.set_size(x,y,1)
+				e.process_inplace("testimage.noise.uniform.rand")
+				f = e.copy()
+				c = e.calc_ccfx(e,0,-1,True)
+				f.set_gpu_rw_current()
+				d = f.calc_ccfx(e,0,-1,True)
+				self.__test_image_almost_equality(c,d,3)
+	
 	def test_cuda_get_clip(self):
 		"""test cuda get_clip ..............................."""
 		for z in [1,15,16]:

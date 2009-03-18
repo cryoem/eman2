@@ -397,27 +397,34 @@ EMData* EMData::calc_ccfx_cuda( EMData * const with, int y0, int y1, bool no_sum
 	
 	float* rcd = rslt.get_cuda_data();
 	CudaDataLock rlock(&rslt);
-	cuda_dd_fft_complex_to_real_1d(f1.get_cuda_data(),rcd,nx,height);
+	float * f1cd = f1.get_cuda_data(); 
+	CudaDataLock lock2(&f1);
+	cuda_dd_fft_complex_to_real_1d(f1cd,rcd,nx,height);
+	rslt.gpu_update();
 	
 	if (no_sum) {
 		EXITFUNC;
 		return new EMData(rslt);
 	}
 	else {
-		EMData *cf = new EMData();
-		cf->set_size_cuda(nx, 1, 1);
-		EMDataForCuda left = cf->get_data_struct_for_cuda();
-		CudaDataLock llock(cf);
-		rslt.bind_cuda_texture(false);
-		emdata_column_sum(&left,height);
-		rslt.unbind_cuda_texture();
-	//	EMDataForCuda right = rslt.get_data_struct_for_cuda();
-	//	emdata_column_sum(&left,&right);
-		cf->gpu_update();
 		EXITFUNC;
-		return cf;
+		return rslt.column_sum_cuda();
 	}
 		
+}
+
+EMData* EMData::column_sum_cuda() const {
+	ENTERFUNC;
+	EMData *cf = new EMData();
+	cf->set_size_cuda(nx, 1, 1);
+	EMDataForCuda left = cf->get_data_struct_for_cuda();
+	CudaDataLock llock(cf);
+	bind_cuda_texture(false);
+	emdata_column_sum(&left,ny);
+	unbind_cuda_texture();
+	cf->gpu_update();
+	EXITFUNC;
+	return cf;
 }
 
 void EMData::set_gpu_rw_data(float* data, const int x, const int y, const int z) {
@@ -577,13 +584,12 @@ void EMData::CudaDeviceEMDataCache::check_for_space() {
 	while ( true && checked_entries < cache_size) {
 		const EMData* previous = caller_cache[current_insert_idx];
 		if (previous != 0 ) {
-			//debug_print();
 			if ( locked[current_insert_idx] == false ) {
 				previous->cuda_cache_lost_imminently();
 				clear_item(current_insert_idx);
 				break;
 			} else {
-				cout << "Lucky it was locked!" << endl;
+				// Lucky it was locked!
 				current_insert_idx++;
 				current_insert_idx %= cache_size;
 				checked_entries++;

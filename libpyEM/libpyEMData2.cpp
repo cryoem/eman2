@@ -307,6 +307,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("calc_ccf_cuda", &EMAN::EMData::calc_ccf_cuda, return_value_policy< manage_new_object >())
 	.def("cut_slice_cuda", &EMAN::EMData::cut_slice_cuda, return_value_policy< manage_new_object >())
 	.def("set_gpu_rw_current", &EMAN::EMData::set_gpu_rw_current)
+	.def("column_sum_cuda",&EMAN::EMData::column_sum_cuda,return_value_policy< manage_new_object >() )
 	.def("make_rotational_footprint_cuda", &EMAN::EMData::make_rotational_footprint_cuda, EMAN_EMData_make_rotational_footprint_cuda_overloads_0_1()[ return_value_policy< manage_new_object >() ])
 	// These ones are currently meant mainly for testing purposes
 	.def("_copy_gpu_rw_to_cpu", &EMAN::EMData::copy_gpu_rw_to_cpu)

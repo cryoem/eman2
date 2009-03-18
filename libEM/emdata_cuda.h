@@ -97,6 +97,8 @@ public:
 		flags |= EMDATA_NEEDUPD | EMDATA_CPU_NEEDS_UPDATE | EMDATA_GPU_RO_NEEDS_UPDATE;
 	}
 	
+	EMData* column_sum_cuda() const;
+	
 	
 	/** Explicitly force a copy from the cuda device pointer to the CPU
 	 * Originally added to facilitate testing only

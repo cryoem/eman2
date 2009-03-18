@@ -41,10 +41,10 @@ from time import time
 
 def test_main():
 	
-	test_dims = [64*i for i in [2,3,4,8]]
+	test_dims = [64*i for i in [1,3,4,8]]
 	test_dims_3d = [64*i for i in [1,2,3,4]]
 	
-	test_range = range(91)
+	test_range = range(30)
 	
 	gpu_times = []
 	cpu_times = []

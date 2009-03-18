@@ -45,6 +45,12 @@
 #include <ctime>
 
 #include "emdata.h"
+#include <sstream>
+using std::stringstream;
+
+#include <iostream>
+using std::cout;
+using std::endl;
 
 using namespace EMAN;
 
@@ -61,6 +67,9 @@ int main(int argc, char *argv[])
     int big = 0;
     int newali = 0;
     int vg = 0;
+#ifdef EMAN2_USING_CUDA
+    int gpu = 0;
+#endif
 
     if (argc > 1) {
 		if (Util::sstrncmp(argv[1], "slow"))
@@ -75,6 +84,20 @@ int main(int argc, char *argv[])
 			big = 1;
 		else if (Util::sstrncmp(argv[1], "valgrind"))
 			vg=1;
+#ifdef EMAN2_USING_CUDA
+		else if (Util::sstrncmp(argv[1], "gpu"))
+			gpu=1;
+#endif
+    } 
+    if (argc > 2) {
+    	// assume it's the boxsize
+    	stringstream ss;
+    	ss << argv[2];
+    	ss >> SIZE;
+    	if (SIZE < 0 || SIZE > 1024) {
+    		cout << "The boxsize " << SIZE << " is invalid. Please specify a box size in the range of (0,1024]" << endl;
+    		throw;
+    	}
     }
 
     // This is some testing code used to run valgrind tests on
@@ -135,6 +158,12 @@ int main(int argc, char *argv[])
 		if (i < 5) {
 			data[i]->write_image("speed.hed", i, EMUtil::IMAGE_IMAGIC);
 		}
+#ifdef EMAN2_USING_CUDA
+		if (gpu) {
+			cout << "Using gpu" << endl;
+			data[i]->set_gpu_rw_current();
+		}
+#endif
     }
 
     if (low) {
