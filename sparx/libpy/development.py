@@ -7554,7 +7554,7 @@ def ali_SSNR(stack, maskfile=None, ou=-1, maxit=10, CTF=False, opti_method="CG",
 		if mir[im] == 0:
 			set_params2D(ima, [ps[im*3], ps[im*3+1], ps[im*3+2], 0, 1.0])
 		else:
-			set_params2D(ima, [360.0-ps[im*3], -ps[im*3+1], ps[im*3+2], 1, 1.0]
+			set_params2D(ima, [360.0-ps[im*3], -ps[im*3+1], ps[im*3+2], 1, 1.0])
 		ima.write_image(stack, im)	
 
 	print_end_msg("ali_SSNR")
