@@ -508,9 +508,11 @@ EMData::CudaDeviceEMDataCache::~CudaDeviceEMDataCache()
 }
 
 void EMData::CudaDeviceEMDataCache::lock(const int idx) {
+	if (idx < 0 || idx >= cache_size) throw InvalidValueException(idx,"The idx is beyond the cache size");
 	locked[idx] = true;
 }
 void EMData::CudaDeviceEMDataCache::unlock(const int idx) {
+	if (idx < 0 || idx >= cache_size) throw InvalidValueException(idx,"The idx is beyond the cache size");
 	locked[idx] = false;
 }
 
