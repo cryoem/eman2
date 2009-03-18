@@ -175,6 +175,8 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_get_clip_overloads_1_2, get_c
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_mult_overloads_1_2, mult, 1, 2)
 
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_norm_pad_overloads_2_3, EMAN::EMData::norm_pad, 2, 3)
+
 }// namespace
 
 
@@ -433,7 +435,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("Four_shuf_ds_cen_us", &EMAN::EMData::Four_shuf_ds_cen_us, EMAN_EMData_Four_shuf_ds_cen_us_overloads_1_4()[ return_value_policy< manage_new_object >() ])
 	.def("filter_by_image", &EMAN::EMData::filter_by_image, EMAN_EMData_filter_by_image_overloads_1_2()[ return_value_policy< manage_new_object >() ])
 	.def("replace_amplitudes", &EMAN::EMData::replace_amplitudes, EMAN_EMData_replace_amplitudes_overloads_1_2()[ return_value_policy< manage_new_object >() ])
-	.def("norm_pad", &EMAN::EMData::norm_pad, return_value_policy< manage_new_object >())
+	.def("norm_pad", &EMAN::EMData::norm_pad, EMAN_EMData_norm_pad_overloads_2_3() [ return_value_policy< manage_new_object >()])
 	.def("get_clip", &EMAN::EMData::get_clip, EMAN_EMData_get_clip_overloads_1_2() [ return_value_policy< manage_new_object >()])
 	.def("clip_inplace", &EMAN::EMData::clip_inplace, return_value_policy< reference_existing_object >())
 	.def("get_top_half", &EMAN::EMData::get_top_half, return_value_policy< manage_new_object >())
