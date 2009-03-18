@@ -613,7 +613,7 @@ EMData* mult_radial(EMData* radial);
 	 *
 	 *  @return [normalized,] [zero-padded,] [ft-extended] input image.
 	 */
-	EMData* norm_pad(bool do_norm, int npad = 1);
+	EMData* norm_pad(bool do_norm, int npad = 1, int valtype=0);
 	
 	void center_origin();
 

@@ -130,7 +130,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 			fp=fimage;
 			fp->do_fft_inplace();
 		} else {
-			fp = fimage->norm_pad( false, npad);
+			fp = fimage->norm_pad( false, npad, 1);
 			fp->do_fft_inplace();
 		}
 	}
