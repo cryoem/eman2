@@ -818,7 +818,12 @@ def aves_wiener(input_stack, mode="a", SNR=1.0):
 		Summation using CTF info and SNR saved in header
 		mode="a" will apply alignment parameters to the input image.
 	"""
-	from utilities import get_arb_params
+	
+	from fundamentals import fft, rot_shift2D
+	from morphology   import ctf_img
+	from filter 	  import filt_ctf
+	from utilities    import pad, get_params2D
+	from math 	  import sqrt
 	
 	n = EMUtil.get_image_count(input_stack)
 	ima = EMData()
@@ -826,25 +831,18 @@ def aves_wiener(input_stack, mode="a", SNR=1.0):
 	nx = ima.get_xsize()
 	ny = ima.get_xsize()
 	
-	if(ima.get_attr_default('ctf_applied', 2) > 0):
-		ERROR("data cannot be ctf-applied","prepare_2d_forPCA",1)
-	from fundamentals import fft, rot_shift2D
-	from morphology   import ctf_img
-	from filter 	  import filt_ctf
-	from utilities    import pad, get_params2D
-	parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
+	if ima.get_attr_default('ctf_applied', 2) > 0:	ERROR("data cannot be ctf-applied", "prepare_2d_forPCA", 1)
 
 	nx2 = 2*nx
 	ny2 = 2*ny
 	ave       = EMData(nx2, ny2, 1, False)
 	ctf_2_sum = EMData(nx2, ny2, 1, False)
-	from math import sqrt
 	snrsqrt = sqrt(SNR)
 
 	for i in xrange(n):
 		ima = EMData()
 		ima.read_image(input_stack, i)
-		ctf_params = ima.get_attr( "ctf" )
+		ctf_params = ima.get_attr("ctf")
 		if mode == "a":
 	 		alpha, sx, sy, mirror, scale = get_params2D(ima)
 		 	ima = rot_shift2D(ima, alpha, sx, sy, mirror)
