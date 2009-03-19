@@ -2,6 +2,7 @@
 
 #
 # Author: Matthew Baker, 10/2005, modified 02/2006 by MFS  
+# ported to EMAN2 by David Woolford October 6th 2008
 # Copyright (c) 2000-2006 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -40,292 +41,218 @@ import sys
 import string
 import commands
 import math
-import EMAN
+from EMAN2 import *
 #import Numeric
 from math import *
 from sys import argv
+from optparse import OptionParser
 
-
-def tomoccf(targetMRC,probeMRC,norm):
-    ccf=targetMRC.calcCCF(probeMRC)
-    ccf.toCorner()
-    if norm==1:
-        ccf.normalize()
-    return (ccf)
-
-def updateCCF(bestCCF,bestALT,bestAZ,bestPHI,altrot,azrot,phirot,currentCCF,box,scalar,searchx,searchy,searchz):
-    bestValue=-1.e10
-    xbest=-10
-    ybest=-10
-    zbest=-10
-    z=(box/2)-searchz
-    while z < (box/2)+searchz+1:
-        y=(box/2)-searchy
-        while y < (box/2)+searchy+1:
-            x=(box/2)-searchx
-            while x < (box/2)+searchx+1:
-                currentValue=currentCCF.valueAt(x,y,z)/scalar
-                if currentValue > bestValue:
-                    bestValue = currentValue
-                    xbest=x-(box/2)
-                    ybest=y-(box/2)
-                    zbest=z-(box/2)
-                #print x,y,z, currentValue
-                x=x+1
-            y=y+1
-        z=z+1
-    inlist=0
-    while inlist < 10:
-        if  bestValue > bestCCF.valueAt(inlist,1,1):
-            swlist=9
-            while swlist >inlist:
-                #print swlist
-                bestCCF.setValueAt(swlist,1,1,bestCCF.valueAt(swlist-1,1,1))
-                bestALT.setValueAt(swlist,1,1,bestALT.valueAt(swlist-1,1,1))
-                bestAZ.setValueAt(swlist,1,1,bestAZ.valueAt(swlist-1,1,1))
-                bestPHI.setValueAt(swlist,1,1,bestPHI.valueAt(swlist-1,1,1))
-                bestX.setValueAt(swlist,1,1,bestX.valueAt(swlist-1,1,1))
-                bestY.setValueAt(swlist,1,1,bestY.valueAt(swlist-1,1,1))
-                bestZ.setValueAt(swlist,1,1,bestZ.valueAt(swlist-1,1,1))
-                swlist=swlist-1
-            bestCCF.setValueAt(inlist,1,1,bestValue)
-            bestALT.setValueAt(inlist,1,1,altrot*180/3.14159)
-            bestAZ.setValueAt(inlist,1,1,azrot*180/3.14159)
-            bestPHI.setValueAt(inlist,1,1,phirot*180/3.14159)
-            bestX.setValueAt(inlist,1,1,xbest)
-            bestY.setValueAt(inlist,1,1,ybest)
-            bestZ.setValueAt(inlist,1,1,zbest)
-            break
-        inlist=inlist+1
-    #print "one"
-    bestCCF.update()
-    #print "two"
-    bestALT.update()
-    bestAZ.update()
-    bestPHI.update()
-    return(bestCCF)
+def main():
+    progname = os.path.basename(sys.argv[0])
+    usage = """%prog <target image> <image to be aligned> [options]"""
     
-def ccfFFT(currentCCF, thresh, box):
-    tempCCF = currentCCF.copy()
-    tempCOMPLEX=tempCCF.doFFT()
-    tempCOMPLEX.gimmeFFT() # supposed to give me "ownership". whatever...
-    tempCOMPLEX.ri2ap()
-    tempCOMPLEX.realFilter(2,thresh)
-    mapSum=tempCOMPLEX.Mean()*box*box*box/2.
-    #print mapSum
-    return(mapSum)
+    parser = OptionParser(usage=usage,version=EMANVERSION)
 
-def peakSearch(bestCCF,Max_location,width,box):
-    xmin=Max_location[0]-width
-    xmax=Max_location[0]+width
-    ymin=Max_location[1]-width
-    ymax=Max_location[1]+width
-    zmin=Max_location[2]-width
-    zmax=Max_location[2]+width
-    for x in (range(xmin,xmax)):
-        for y in (range(ymin,ymax)):
-            for z in (range(zmin,zmax)):
-                print x,y,z
-                bestCCF.setValueAt(x,y,z,-10000)
-    bestCCF.update()
-    return(bestCCF)        
-
-if (len(argv)<3) :
-    print "Usage:\ntomohunter.py <target mrc file> <probe mrc file> \n"
-    print "Options: da=<search step (default=30)>, thresh=<threshold (default=0), maxpeaks=<number of results returned in log file (default=20)>, width=<peak width (default=2)>"
-    sys.exit()
+    parser.add_option("--dalt",type="float",help="Altitude delta", default=10.0)
+    parser.add_option("--ralt",type="float",help="Altitude range", default=180.0)
+    parser.add_option("--dphi",type="float",help="Phi delta", default=10.0)
+    parser.add_option("--rphi",type="float",help="Phi range", default=180.0)
+    parser.add_option("--daz",type="float",help="Azimuth delta", default=10.0)
+    parser.add_option("--thresh",type="float",help="Threshold", default=1.0)
+    parser.add_option("--nsoln",type="int",help="The number of solutions to report", default=10)
     
-target=argv[1]
-probe=argv[2]
-thresh=0
-da=60
-maxPeaks=10
-width=2
-norm=0
-searchx=3
-searchy=3
-searchz=3
-for a in argv[3:] :
-    s=a.split('=')
-    if (s[0]=='dal'):
-        dal=float(s[1])
-    elif (s[0]=='daz'):
-        daz=float(s[1])
-    elif (s[0]=='dap'):
-        dap=float(s[1])
-    elif (s[0]=='thresh'):
-        thresh=float(s[1])
-    elif (s[0]=='ral'):
-        ral=float(s[1])
-#    elif (s[0]=='raz'):
-#        raz=float(s[1])
-    elif (s[0]=='rap'):
-        rap=float(s[1])
-    elif (s[0]=='norm'):
-        norm=int(s[1])
-    elif (s[0]=='searchx'):
-        searchx=int(s[1])
-    elif (s[0]=='searchy'):
-        searchy=int(s[1])
-    elif (s[0]=='searchz'):
-        searchz=int(s[1])
-    else:
-        print("Unknown argument "+a)
-        exit(1)
+    (options, args) = parser.parse_args()
 
-print target, probe
+    if len(args)<2 : parser.error("Input and output files required")
+    
+    error = check(options,args)
+    if (error): exit(0)
+    
+    targetMRC =EMData(argv[1])
+    print "Target Information"
+    print "   mean:       %f"%(targetMRC.get_attr("mean"))
+    print "   sigma:      %f"%(targetMRC.get_attr("sigma"))
+    
+    target_xsize=targetMRC.get_xsize()
+    target_ysize=targetMRC.get_ysize()
+    target_zsize=targetMRC.get_zsize()
+    if (target_xsize!=target_ysize!=target_zsize) or (target_xsize%2==1):
+        print "The density map must be even and cubic. Terminating."
+        sys.exit()
+    
+    box=target_xsize
+    
+    probeMRC=EMData(argv[2])
+    print "Probe Information"
+    print "   mean:       %f"%(probeMRC.get_attr("mean"))
+    print "   sigma:      %f"%(probeMRC.get_attr("sigma"))
+    
+    
+    bestCCF= EMData(options.nsoln,1,1)
+    bestCCF.to_zero()
 
-targetMRC=EMAN.EMData()
-targetMRC.readImage(argv[1],-1)
-targetMean=targetMRC.Mean()
-targetSigma=targetMRC.Sigma()
-print "Target Information"
-print "   mean:       %f"%(targetMean)
-print "   sigma:      %f"%(targetSigma)
+    bestAZ=EMData(options.nsoln,1,1)
+    bestAZ.to_zero()
 
-target_xsize=targetMRC.xSize()
-target_ysize=targetMRC.ySize()
-target_zsize=targetMRC.zSize()
-if (target_xsize!=target_ysize!=target_zsize) or (target_xsize%2==1):
-    print "The density map must be even and cubic. Terminating."
-    sys.exit()
-box=target_xsize
+    bestALT= EMData(options.nsoln,1,1)
+    bestALT.to_zero()
 
-probeMRC=EMAN.EMData()
-probeMRC.readImage(argv[2],-1)
-probeMean=probeMRC.Mean()
-probeSigma=probeMRC.Sigma()
-print "Probe Information"
-print "   mean:       %f"%(probeMean)
-print "   sigma:      %f"%(probeSigma)
+    bestPHI=EMData(options.nsoln,1,1)
+    bestPHI.to_zero()
+    
+    bestX=EMData(options.nsoln,1,1)
+    bestX.to_zero()
+    
+    bestY=EMData(options.nsoln,1,1)
+    bestY.to_zero()
+    
+    bestZ=EMData(options.nsoln,1,1)
+    bestZ.to_zero()
 
 
-bestCCF=EMAN.EMData()
-bestCCF.setSize(box,box,box)
-bestCCF.zero()
+    ral,dal = options.ralt,options.dalt
+    rap,dap = options.rphi, options.dphi
+    daz = options.daz
 
-bestAZ=EMAN.EMData()
-bestAZ.setSize(box,box,box)
-bestAZ.zero()
+    altarray=[]
+    alt=0
+    while alt <= ral:
+        altarray.append(alt)
+        alt=alt+dal
+    
+    azarray=[]
+    az=-180
+    while az < 180:
+        azarray.append(az)
+        az=az+daz
 
-bestALT=EMAN.EMData()
-bestALT.setSize(box,box,box)
-bestALT.zero()
-
-bestPHI=EMAN.EMData()
-bestPHI.setSize(box,box,box)
-bestPHI.zero()
-
-bestX=EMAN.EMData()
-bestX.setSize(box,box,box)
-bestX.zero()
-
-bestY=EMAN.EMData()
-bestY.setSize(box,box,box)
-bestY.zero()
-
-bestZ=EMAN.EMData()
-bestZ.setSize(box,box,box)
-bestZ.zero()
-
-
-altarray=[]
-alt=0
-while alt <= ral:
-    altarray.append(alt*3.14159/180)
-    alt=alt+dal
-
-azarray=[]
-az=-180
-while az < 180:
-    azarray.append(az*3.14159/180)
-    az=az+daz
-
-#phiarray=[]
-#phi=-180
-#while phi < 180:
-#    phiarray.append(phi*3.14159/180)
-#    phi=phi+da
-# I had to change this because the phi range varies depending on the azimuth (it is nearly the negative of it, within
-# a range, when alt is near zero, which it will be at this point)
-rarad=rap*3.14159/180.
-darad=dap*3.14159/180.
-maxfrac=0.
-for altrot in altarray:
-    print "Trying rotation %f"%(altrot*180./3.14159)
-    if (altrot==0.):
-        azrot=0.
-        phirot=-azrot-rarad
-        minnum=10000000
-        maxnum=0
-        #print "Trying rotation %f %f"%(altrot, azrot)
-        while phirot <= -azrot+rarad:
-            dMRC=EMAN.EMData()
-            dMRC = probeMRC.copy()
-            dMRC.setRAlign(altrot,azrot,phirot)
-            dMRC.setTAlign(0,0,0)
-            dMRC.rotateAndTranslate()    
-            #print "Trying rotation %f %f %f"%(altrot, azrot, phirot)
-            currentCCF=tomoccf(targetMRC,dMRC,norm)
-            scalar=ccfFFT(currentCCF,thresh,box)
-            if scalar>maxnum:
-                maxnum=int(scalar)
-            if scalar<minnum:
-                minnum=int(scalar)
-            scalar=scalar/(box*box*box/2.)
-            #scalar=1
-            #scaledCCF=currentCCF/scalar
-            #print "three"
-            bestCCF=updateCCF(bestCCF,bestALT,bestAZ,bestPHI,altrot,azrot,phirot,currentCCF,box,scalar,searchx,searchy,searchz)
-            phirot=phirot+darad
-        #print minnum,maxnum, float(maxnum)/float(minnum)
-    else:
-        for azrot in azarray:
+    rarad=rap
+    darad=dap
+    maxfrac=0.
+    norm = 1.0/(box*box*box)
+    for altrot in altarray:
+        print "Trying rotation %f"%(altrot)
+        if (altrot==0.):
+            azrot=0.
             phirot=-azrot-rarad
-            #print "Trying rotation %f %f"%(altrot, azrot)
+            minnum=10000000
+            maxnum=0
             while phirot <= -azrot+rarad:
-                dMRC=EMAN.EMData()
-                dMRC = probeMRC.copy()
-                dMRC.setRAlign(altrot,azrot,phirot)
-                dMRC.setTAlign(0,0,0)
-                dMRC.rotateAndTranslate()    
-                #print "Trying rotation %f %f %f"%(altrot, azrot, phirot)
-                currentCCF=tomoccf(targetMRC,dMRC,norm)
-                scalar=ccfFFT(currentCCF,thresh,box)
+                t = Transform({"type":"eman","az":azrot,"phi":phirot,"alt":altrot})
+                dMRC= probeMRC.process("math.transform",{"transform":t}) # more efficient than copying than transforming
+                currentCCF=tomoccf(targetMRC,dMRC)
+                scalar=ccfFFT(currentCCF,options.thresh,box)
                 if scalar>maxnum:
                     maxnum=int(scalar)
                 if scalar<minnum:
                     minnum=int(scalar)
                 scalar=scalar/(box*box*box/2.)
-                #scalar=1
-                #scaledCCF=currentCCF/scalar
-                #print "three"
-                bestCCF=updateCCF(bestCCF,bestALT,bestAZ,bestPHI,altrot,azrot,phirot,currentCCF,box,scalar,searchx,searchy,searchz)
+                bestCCF=updateCCF(bestCCF,bestALT,bestAZ,bestPHI,bestX,bestY,bestZ,altrot,azrot,phirot,currentCCF,scalar,options.nsoln)
                 phirot=phirot+darad
-            #print minnum,maxnum, float(maxnum)/float(minnum)
-print minnum,maxnum, float(maxnum)/float(minnum)
-#outCCF="rl-%s"%(argv[1])
-#outalt="alt-%s"%(argv[1])
-#outaz="az-%s"%(argv[1])
-#outphi="phi-%s"%(argv[1])
+    
+        else:
+            for azrot in azarray:
+                phirot=-azrot-rarad
+                #print "Trying rotation %f %f"%(altrot, azrot)
+                while phirot <= -azrot+rarad:
+                    t = Transform({"type":"eman","az":azrot,"phi":phirot,"alt":altrot})
+                    dMRC= probeMRC.process("math.transform",{"transform":t}) # more efficient than copying than
+                    currentCCF=tomoccf(targetMRC,dMRC)
+                    scalar=ccfFFT(currentCCF,options.thresh,box)
+                    if scalar>maxnum:
+                        maxnum=int(scalar)
+                    if scalar<minnum:
+                        minnum=int(scalar)
+                    scalar=scalar/(box*box*box/2.)
+                    bestCCF=updateCCF(bestCCF,bestALT,bestAZ,bestPHI,bestX,bestY,bestZ,altrot,azrot,phirot,currentCCF,scalar,options.nsoln)
+                    phirot=phirot+darad
+    
+    
+    print minnum,maxnum, float(maxnum)/float(minnum)
 
-#bestCCF.writeImage(outCCF)
-#bestALT.writeImage(outalt)
-#bestAZ.writeImage(outaz)
-#bestPHI.writeImage(outphi)
 
-out=open("log-s3-%s%s.txt"%(argv[1],argv[2]),"w")
-peak=0
-while peak < 10:
-    #Max_location=bestCCF.MinLoc()
-    ALT=str(bestALT.valueAt(peak,1,1))
-    AZ=str(bestAZ.valueAt(peak,1,1))
-    PHI=str(bestPHI.valueAt(peak,1,1))
-    COEFF=str(bestCCF.valueAt(peak,1,1))
-    LOC=str( ( (bestX.valueAt(peak,1,1)),(bestY.valueAt(peak,1,1)),(bestZ.valueAt(peak,1,1) ) ) )
-    line="Peak %d rot=( %s, %s, %s ) trans= %s coeff= %s\n"%(peak,ALT,AZ,PHI,LOC,COEFF)
-    out.write(line)
-    #bestCCF=peakSearch(bestCCF,Max_location, width, box)
-    peak=peak+1
-out.close()
+    out=open("log-s3-%s%s.txt"%(argv[1],argv[2]),"w")
+    peak=0
+    while peak < 10:
+        ALT=str(bestALT.get(peak))
+        AZ=str(bestAZ.get(peak))
+        PHI=str(bestPHI.get(peak))
+        COEFF=str(bestCCF.get(peak))
+        LOC=str( ( (bestX.get(peak)),(bestY.get(peak)),(bestZ.get(peak) ) ) )
+        line="Peak %d rot=( %s, %s, %s ) trans= %s coeff= %s\n"%(peak,ALT,AZ,PHI,LOC,COEFF)
+        out.write(line)
+        peak=peak+1
+        
+    out.close()
+    
+def tomoccf(targetMRC,probeMRC):
+    ccf=targetMRC.calc_ccf(probeMRC)
+    # removed a toCorner...this puts the phaseorigin at the left corner, but we can work around this by
+    # by using EMData.calc_max_location_wrap (below)
+    return (ccf)
 
+def ccfFFT(currentCCF, thresh, box):
+    tempCCF = currentCCF.do_fft()
+    tempCCF.ri2ap()
+    tempCCF.process_inplace("threshold.binary",{"value":thresh}) # this is not going to strictly work
+    # because of the phase values - if you only want to consider amplitude I could do that...I would have to write the appropriate processor
+    mapSum=tempCCF.get_attr("mean")*box*box*box/2.
+    return(mapSum)
+
+def updateCCF(bestCCF,bestALT,bestAZ,bestPHI,bestX,bestY,bestZ,altrot,azrot,phirot,currentCCF,scalar,n):
+    best = currentCCF.calc_max_location_wrap(5,5,5) # 5 is the max shift, so range is 10
+    xbest = best[0]
+    ybest = best[1]
+    zbest = best[2]
+    bestValue = currentValue = currentCCF.get(xbest,ybest,zbest)/scalar
+    inlist=0
+    while inlist < n:
+        if  bestValue > bestCCF.get(inlist):
+            swlist=n-1
+            while swlist >inlist:
+                #print swlist
+                bestCCF.set(swlist,bestCCF.get(swlist-1,))
+                bestALT.set(swlist,bestALT.get(swlist-1))
+                bestAZ.set(swlist,bestAZ.get(swlist-1))
+                bestPHI.set(swlist,bestPHI.get(swlist-1))
+                bestX.set(swlist,bestX.get(swlist-1))
+                bestY.set(swlist,bestY.get(swlist-1))
+                bestZ.set(swlist,bestZ.get(swlist-1))
+                swlist=swlist-1
+            bestCCF.set(inlist,bestValue)
+            bestALT.set(inlist,altrot)
+            bestAZ.set(inlist,azrot)
+            bestPHI.set(inlist,phirot)
+            bestX.set(inlist,xbest)
+            bestY.set(inlist,ybest)
+            bestZ.set(inlist,zbest)
+            break
+        inlist=inlist+1
+    
+    #bestCCF.update() uneccessary?
+    #bestALT.update()
+    #bestAZ.update()
+    #bestPHI.update()
+    return(bestCCF)
+
+
+def check(options,args):
+    #should write a function to check the inputs, such as positive range, delta less than range etc
+    #should also check that the file names exist
+    
+    error = False
+    if options.nsoln <= 0:
+        error = True
+        print "Error - nsoln must be greater than 0. Suggest using 10"
+    
+    if options.ralt <= 0:
+        error = True
+        print "Error - ralt must be greater than 0"
+    
+    # etc....
+    
+    return error
+
+# If executed as a program
+if __name__ == '__main__':
+    main() 
