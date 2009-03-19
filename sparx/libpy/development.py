@@ -6844,7 +6844,7 @@ def ave_ali_err_MPI(stack):
 	for im in xrange(nima):
 		img = EMData()
 		img.read_image(stack, im)
-		alpha, sx, sy, mirror, mirror = get_params2D(img)
+		alpha, sx, sy, mirror, dummy = get_params2D(img)
 		v1.append(alpha)
 		v1.append(sx)
 		v1.append(sy)
@@ -7173,7 +7173,7 @@ def SSNR_func_MPI(args, data):
 		a0 = Util.infomask(SSNR, maskI, True)
 		sum_SSNR = a0[0]
 		print_msg("SSNR = %20.7f\n"%(sum_SSNR))
-		print "Before: SSNR=", sum_SSNR
+
 		if SSNR_fit:
 			from fundamentals import rot_avg_table
 			beta = 10.0
@@ -7198,7 +7198,6 @@ def SSNR_func_MPI(args, data):
 			a0 = Util.infomask(SSNR, maskI, True)
 			sum_SSNR -= beta*a0[0]
 			"""
-		print "After:  SSNR=", sum_SSNR
 	else: 	
 		sum_SSNR = 0.0
 	
