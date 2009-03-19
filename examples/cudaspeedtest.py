@@ -57,14 +57,15 @@ def test_main():
 		t = time()
 		for i in test_range:
 			#b = a.unwrap()
-			c = a.calc_ccfx(a,0,-1,True)
+			c = b.calc_ccfx(b,0,-1,True)
+			
 		gpu_times.append(time()-t)
 		
 		a = test_image(0,size=(dims,dims))
 		t = time()
 		for i in test_range:
 			#b = a.unwrap()
-			c = a.calc_ccfx(a,0,-1,True)
+			c = b.calc_ccfx(b,0,-1,True)
 			
 		cpu_times.append(time()-t)
 		print dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1]

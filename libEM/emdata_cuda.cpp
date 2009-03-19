@@ -182,8 +182,8 @@ EMData* EMData::calc_ccf_cuda( EMData*  image, bool use_texturing,bool center ) 
 	 	emdata_processor_correlation_texture(&left,center);
 	 	((EMData*)d["with"])->unbind_cuda_texture();
 	} else {
-		CudaDataLock lock2((EMData*)d["with"]);
 		EMDataForCuda right = ((EMData*)d["with"])->get_data_struct_for_cuda();
+		CudaDataLock lock2((EMData*)d["with"]);
 		emdata_processor_correlation(&left,&right,center);
 	}
 	tmp->gpu_update();
