@@ -373,7 +373,7 @@ def main():
 			
 			elif option1 == "average":
 				if not average:
-					average = d.copy(False, False)
+					average = d.copy()
 				else:
 					average.add(d)
 				continue
