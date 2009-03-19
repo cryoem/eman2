@@ -158,7 +158,7 @@ for (int i=0; i<ncls; i++) {
 			centers[i+ncls]->mult((float)1.0/(float)(repr[i]));		// sum of squares over n
 			centers[i+ncls]->subsquare(*centers[i]);					// subtract the mean value squared
 			centers[i+ncls]->process("math.sqrt");					// square root
-			centers[i+ncls]->mult((float)1.0/sqrt((float)repr[i]));		// divide by sqrt(N) to get std. dev. of mean
+			centers[i+ncls]->mult((float)1.0/(float)sqrt((float)repr[i]));		// divide by sqrt(N) to get std. dev. of mean
 		}			
 
 	}
