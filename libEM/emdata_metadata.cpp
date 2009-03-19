@@ -578,7 +578,7 @@ float EMData::get_circle_mean()
 	}
 	
 
-	float result = s/n;
+	float result = (float)(s/n);
 	busy = false;
 
 	EXITFUNC;

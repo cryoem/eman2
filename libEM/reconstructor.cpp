@@ -469,7 +469,7 @@ void FourierReconstructor::zero_memory()
 		
 		memcpy(image->get_data(),start_model->get_data(),nx*ny*nz*sizeof(float));
 		
-		float start_model_weight =  params.set_default("start_model_weight",1.0);
+		float start_model_weight =  params.set_default("start_model_weight",1.0f);
 		
 		if (start_model_weight != 1.0) {
 			image->mult(start_model_weight);
