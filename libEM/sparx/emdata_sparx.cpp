@@ -451,7 +451,7 @@ EMData *EMData::FH2Real(int Size, float OverSamplekB, int)  // PRB
 
 float dist(int lnlen, const float* line_1, const float* line_2)
 {
-	double dis2=0.0;
+	float dis2=0.0;
 	for( int i=0; i < lnlen; ++i) {
 		float tmp = line_1[i] - line_2[i];
 		dis2 += tmp*tmp;
@@ -4831,8 +4831,8 @@ float circumference( EMData* emdata, int npixel )
                 }
             }
 
-            assert( id==nx*ny  );
-            assert( sumn == nx*ny - (nx-2*npixel)*(ny-2*npixel) );
+            Assert( id==nx*ny  );
+            Assert( sumn == nx*ny - (nx-2*npixel)*(ny-2*npixel) );
             return sumf/sumn;
         }
 
@@ -4858,8 +4858,8 @@ float circumference( EMData* emdata, int npixel )
         }
 
 
-        assert( id==nx*ny*nz);
-        assert( sumn==nx*ny*nz-(nx-2*npixel)*(ny-2*npixel)*(nz-2*npixel) );
+        Assert( id==nx*ny*nz);
+        Assert( sumn==nx*ny*nz-(nx-2*npixel)*(ny-2*npixel)*(nz-2*npixel) );
         return sumf/sumn;
 }
 /*
