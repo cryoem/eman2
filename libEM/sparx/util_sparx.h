@@ -446,7 +446,7 @@ class FakeKaiserBessel : public KaiserBessel {
 
         static vector<double> cml_weights(const vector<float>& cml);
 
-        static vector<float> cml_spin(int n_psi, int i_prj, int n_prj, vector<float> weights, vector<int> com, const vector<EMData*>& data);
+        static vector<float> cml_spin(int n_psi, int i_prj, int n_prj, vector<float> weights, vector<int> com, const vector<EMData*>& data, int flag);
 
         static vector<int> cml_line_pos(float phi1, float theta1, float psi1, float phi2, float theta2, float psi2, int nangle);
 

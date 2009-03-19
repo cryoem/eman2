@@ -9818,7 +9818,7 @@ def find_struct(stack, out_seedname, ir, ou, delta, dpsi, lf, hf, rand_seed, max
 
 	# Open and transform projections
 	Prj, Ori = cml_open_proj(stack, ir, ou, dpsi, lf, hf)
-
+	
 	# if not angles given select randomly orientation for each projection
 	if not given:
 		if rand_seed > 0: seed(rand_seed)

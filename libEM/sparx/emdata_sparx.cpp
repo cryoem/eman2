@@ -456,7 +456,8 @@ float dist(int lnlen, const float* line_1, const float* line_2)
 		float tmp = line_1[i] - line_2[i];
 		dis2 += tmp*tmp;
 	}
-	return static_cast<float>(std::sqrt(dis2));
+	//return static_cast<float>(std::sqrt(dis2));
+	return dis2;
 }   
 
 float dist_r(int lnlen, const float* line_1, const float* line_2)

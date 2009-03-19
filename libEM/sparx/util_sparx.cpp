@@ -3737,6 +3737,7 @@ void Util::sub_fav(EMData* avep, EMData* datp, float tot, int mirror, vector<int
 #define deg_rad  QUADPI/180.0
 #define rad_deg  180.0/QUADPI
 
+// FIXME - this function is crap
 vector<float> Util::cml_line_in3d_full(const vector<float>& Ori){
     int nprj = Ori.size() / 4;
     int nlines = (nprj-1)*nprj/2;
@@ -3832,9 +3833,21 @@ vector<double> Util::cml_line_in3d_iagl(const vector<float>& Ori, float phi, flo
 	    cml[ct+1]=acos(nz);
 	    if(cml[ct+1]==0){cml[ct]=0;}
 	    else{
-		cml[ct]=asin(ny/sin(cml[ct+1]));
+		// theta [0; 90[
 		cml[ct+1]=cml[ct+1]*rad_deg;
-		cml[ct]=((int(cml[ct]*rad_deg*100000)+36000000)%36000000)/100000.0;
+		if(cml[ct+1] > 89.99) {cml[ct+1] = 89.99;}  // this line fix some pb with voronoi
+		// phi [0; 360]
+		cml[ct]=acos(abs(nx) / sqrt(nx*nx+ny*ny))*rad_deg;
+		//if(nx >=0 && ny >= 0)
+		if(nx < 0 && ny >= 0) {cml[ct] += 90.0;}
+		if(nx < 0 && ny < 0) {cml[ct] += 180.0;}
+		if(nx >= 0 && ny < 0) {cml[ct] += 270.0;}
+
+		//cml[ct]=asin(ny/sin(cml[ct+1]));
+		//cml[ct]=cml[ct]*rad_deg;
+
+		//printf("phi %f theta %f\n", cml[ct], cml[ct+1]);
+		//cml[ct]=((int(cml[ct]*rad_deg*100000)+36000000)%36000000)/100000.0;
 	    }
 	    ct++;
 	    ct++;
@@ -3955,7 +3968,7 @@ vector<double> Util::cml_weights(const vector<float>& cml){
 #undef  rad_deg
 
 //helper function for Cml
-vector<float> Util::cml_spin(int n_psi, int i_prj, int n_prj, vector<float> weights, vector<int> com, const vector<EMData*>& data){
+vector<float> Util::cml_spin(int n_psi, int i_prj, int n_prj, vector<float> weights, vector<int> com, const vector<EMData*>& data, int flag){
 
     vector<float> res(2);    // [best_disc, best_ipsi]
     double best_disc=1.0e20;
@@ -3977,13 +3990,25 @@ vector<float> Util::cml_spin(int n_psi, int i_prj, int n_prj, vector<float> weig
 	// do the distance with weighting
 	int n=0;
 	double L_tot=0.0;
+	double e=0.0;
+	double tmp=0.0;
 	for(int i=0; i<=n_prj-2; i++){
 	    for(int j=i+1; j<=n_prj-1; j++){
-		if(i==i_prj||j==i_prj){L_tot = L_tot + data[i]->cm_euc(data[j], com[n], com[n+1]) * weights[int(n/2)];}
+		if(i==i_prj||j==i_prj){
+		    e = data[i]->cm_euc(data[j], com[n], com[n+1]) * weights[int(n/2)];
+		    //if(flag) {tmp += weights[int(n/2)];}
+		    //if(ipsi==316){printf("%i %i %f\n", com[n], com[n+1], e);}
+		    L_tot = L_tot + e;
+		}
 		n+=2;
 	    }
 
 	}
+	
+	// display disc
+	//if(flag) {printf("%f\n", tmp);}
+	if(flag) {printf("%i disc %f\n", ipsi, L_tot);}
+
 	// select the best discrepancy and index ipsi
 	if(L_tot<=best_disc){
 	    best_disc = L_tot;
