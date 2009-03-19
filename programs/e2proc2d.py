@@ -452,7 +452,7 @@ def main():
 	#end of image loop
 
 	if average:
-		average.set_average_nimg(n1-n0+1)
+		average["ptcl_repr"]=(n1-n0+1)
 		average.process_inplace("normalize");
 		average.append_image(outfile);
 
