@@ -219,7 +219,7 @@ map to the center of the volume."""
 			        		outmap[int(px)+m,int(py)+l,int(pz)+k] += ((1-m) + (2*m-1)*dx)*uy
 		except: print "Skipping %d '%s'"%(i,atoms[i][0])
 		
-	if not options.quiet: print '\r   %d\nConversion complete.'%len(atoms),"    Now shape atoms."
+	if not options.quiet: print '\r   %d\nConversion complete.'%len(atoms)  #,"    Now shape atoms."
 	"""
 	fftip(outmap)
 	# Atom in Fourier space has sigma = 0.41 [1/A]
