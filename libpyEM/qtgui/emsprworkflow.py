@@ -353,7 +353,7 @@ class WorkFlowTask(QtCore.QObject):
 			
 			setattr(p,"convert_text", ptable_convert_2)
 			context_menu_dict = {"Save as":image_db_save_as}
-			context_menu_dict["Delete"] = image_db_delete
+			#context_menu_dict["Delete"] = image_db_delete
 			setattr(p,"context_menu", context_menu_dict)
 			setattr(p,"icon_type","matrix_image")
 			
@@ -903,7 +903,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 		ptable,n = self.__make_particle_param_table(project_names)
 		setattr(ptable,"convert_text", ptable_convert_2)
 		context_menu_dict = {"Save as":image_db_save_as}
-		context_menu_dict["Delete"] = image_db_delete
+		#context_menu_dict["Delete"] = image_db_delete
 		setattr(ptable,"context_menu", context_menu_dict)
 		setattr(ptable,"icon_type","single_image")
 		return ptable,n
@@ -916,7 +916,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 		ptable,n = self.__make_particle_param_table(project_names)
 		setattr(ptable,"convert_text", ptable_convert)
 		context_menu_dict = {"Save as":image_db_save_as}
-		context_menu_dict["Delete"] = image_db_delete
+		#context_menu_dict["Delete"] = image_db_delete
 		setattr(ptable,"context_menu", context_menu_dict)
 		setattr(ptable,"icon_type","matrix_image")
 		return ptable,n
@@ -1052,7 +1052,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 		
 		setattr(p,"convert_text", ptable_convert_3)
 		context_menu_dict = {"Save as":image_db_save_as}
-		context_menu_dict["Delete"] = image_db_delete
+		#context_menu_dict["Delete"] = image_db_delete
 		setattr(p,"context_menu", context_menu_dict)
 		setattr(p,"icon_type","matrix_image")
 		
@@ -1114,7 +1114,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 		
 		setattr(p,"convert_text", ptable_convert_4)
 		context_menu_dict = {"Save as":image_db_save_as}
-		context_menu_dict["Delete"] = image_db_delete
+		#context_menu_dict["Delete"] = image_db_delete
 		setattr(p,"context_menu", context_menu_dict)
 		setattr(p,"icon_type","3d_image")
 		
@@ -1424,7 +1424,7 @@ class E2BoxerTask(ParticleWorkFlowTask):
 
 		setattr(p_reordered,"convert_text", ptable_convert_2)
 		context_menu_dict = {"Save as":image_db_save_as}
-		context_menu_dict["Delete"] = image_db_delete
+		#context_menu_dict["Delete"] = image_db_delete
 		setattr(p_reordered,"context_menu", context_menu_dict)
 		setattr(p_reordered,"icon_type","single_image")
 		
@@ -1464,7 +1464,7 @@ class E2BoxerTask(ParticleWorkFlowTask):
 		
 		setattr(p,"convert_text", ptable_convert_2)
 		context_menu_dict = {"Save as":image_db_save_as}
-		context_menu_dict["Delete"] = image_db_delete
+		#context_menu_dict["Delete"] = image_db_delete
 		setattr(p,"context_menu", context_menu_dict)
 		setattr(p,"icon_type","single_image")
 		#p.append(pdvdims) # decided this wasn't necessary
@@ -1966,7 +1966,7 @@ class E2CTFWorkFlowTask(ParticleWorkFlowTask):
 			
 		setattr(p,"convert_text", ptable_convert_3)
 		context_menu_dict = {"Save as":image_db_save_as}
-		context_menu_dict["Delete"] = image_db_delete
+		#context_menu_dict["Delete"] = image_db_delete
 		setattr(p,"context_menu", context_menu_dict)
 		setattr(p,"icon_type","matrix_image")
 		
@@ -3602,7 +3602,7 @@ class RefinementReportTask(ParticleWorkFlowTask):
 			
 			setattr(p,"convert_text", ptable_convert_2)
 			context_menu_dict = {"Save as":image_db_save_as}
-			context_menu_dict["Delete"] = image_db_delete
+			#context_menu_dict["Delete"] = image_db_delete
 			setattr(p,"context_menu", context_menu_dict)
 			setattr(p,"icon_type","3d_image")
 			

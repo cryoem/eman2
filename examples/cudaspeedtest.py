@@ -44,7 +44,7 @@ def test_main():
 	test_dims = [64*i for i in [1,2,3,4,8]]
 	test_dims_3d = [64*i for i in [1,2,3,4]]
 	
-	test_range = range(30)
+	test_range = range(100)
 	
 	gpu_times = []
 	cpu_times = []
@@ -56,9 +56,7 @@ def test_main():
 		a.set_gpu_rw_current()
 		t = time()
 		for i in test_range:
-			b = a.unwrap()
-		
-			c = b.calc_ccfx(b,0,-1,True)
+			c = a.calc_ccfx(a,0,-1,True)
 			#c.print_this()
 
 		gpu_times.append(time()-t)
@@ -67,8 +65,33 @@ def test_main():
 		#a.print_this()
 		t = time()
 		for i in test_range:
-			b = a.unwrap()
-			c = b.calc_ccfx(b,0,-1,True)
+			c = a.calc_ccfx(a,0,-1,True)
+			#print "the other stuff is ", a.get_cuda_handle()
+			#a.print_this()
+			#b.print_this()
+			#c.print_this()
+		cpu_times.append(time()-t)
+		print dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1]
+	
+	print "Testing calc_ccfx column sum"
+	print "Dims","\t", "GPU speedup"
+	for dims in test_dims:
+		a = test_image(0,size=(dims,dims))
+		a.set_gpu_rw_current()
+		t = time()
+		for i in test_range:
+			#b = a.unwrap()
+			c = a.calc_ccfx(a)
+			#c.print_this()
+
+		gpu_times.append(time()-t)
+		#print dims, "B"
+		a = test_image(0,size=(dims,dims))
+		#a.print_this()
+		t = time()
+		for i in test_range:
+			#b = a.unwrap()
+			c = a.calc_ccfx(a)
 			#print "the other stuff is ", a.get_cuda_handle()
 			#a.print_this()
 			#b.print_this()

@@ -319,6 +319,8 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("_copy_gpu_ro_to_gpu_rw", &EMAN::EMData::copy_gpu_ro_to_gpu_rw)
 	.def("_copy_gpu_ro_to_cpu", &EMAN::EMData::copy_gpu_ro_to_cpu)
 	.def("print_this", &EMAN::EMData::print_this)
+	.def("cuda_lock", &EMAN::EMData::cuda_lock)
+	.def("cuda_unlock", &EMAN::EMData::cuda_unlock)
 	.def("get_cuda_handle", &EMAN::EMData::get_cuda_handle)
 #endif // EMAN2_USING_CUDA
 	.def("render_amp8", &EMAN::EMData::render_amp8)

@@ -115,7 +115,17 @@ void EMData::cuda_cache_lost_imminently() const {
 	flags |=  EMDATA_GPU_NEEDS_UPDATE| EMDATA_GPU_RO_NEEDS_UPDATE;
 	cuda_cache_handle = -1;
 }
-
+void EMData::cuda_lock() const {
+	if (cuda_cache_handle == -1) throw UnexpectedBehaviorException("No cuda handle, can't lock");
+	cuda_cache.lock(cuda_cache_handle);
+	//cuda_cache.debug_print();
+}
+void EMData::cuda_unlock() const {
+	//cout << " " << cuda_cache_handle << endl;
+	//cuda_cache.debug_print();
+	if (cuda_cache_handle == -1) throw UnexpectedBehaviorException("No cuda handle, can't lock");
+	cuda_cache.unlock(cuda_cache_handle);
+}
 EMDataForCuda EMData::get_data_struct_for_cuda() const { 
 	EMDataForCuda tmp = {get_cuda_data(),nx,ny,nz};
 	return tmp;
@@ -477,7 +487,7 @@ void EMData::copy_gpu_ro_to_cpu() const {
 }
 
 
-EMData::CudaDeviceEMDataCache::CudaDeviceEMDataCache(const int size) : cache_size(size), current_insert_idx(0), mem_allocated(0), locked(size,false)
+EMData::CudaDeviceEMDataCache::CudaDeviceEMDataCache(const int size) : cache_size(size), current_insert_idx(0), mem_allocated(0), locked(size,0)
 {
 	device_init();
 	rw_cache = new float *[cache_size];
@@ -515,11 +525,18 @@ EMData::CudaDeviceEMDataCache::~CudaDeviceEMDataCache()
 
 void EMData::CudaDeviceEMDataCache::lock(const int idx) {
 	if (idx < 0 || idx >= cache_size) throw InvalidValueException(idx,"The idx is beyond the cache size");
-	locked[idx] = true;
+	locked[idx] += 1;
+// 	debug_print();
 }
 void EMData::CudaDeviceEMDataCache::unlock(const int idx) {
 	if (idx < 0 || idx >= cache_size) throw InvalidValueException(idx,"The idx is beyond the cache size");
-	locked[idx] = false;
+	if (locked[idx] == 0) {
+// // 		cout << "Warning - unlocked something that didn't need it" << endl;
+		return;
+		
+// 		 throw UnexpectedBehaviorException("Can't unlock, it wasn't locked!");
+	}
+	locked[idx] -=1;
 }
 
 int EMData::CudaDeviceEMDataCache::cache_rw_data(const EMData* const emdata, const float* const data,const int nx, const int ny, const int nz)
@@ -605,7 +622,7 @@ void EMData::CudaDeviceEMDataCache::check_for_space() {
 	while ( checked_entries < cache_size) {
 		const EMData* previous = caller_cache[current_insert_idx];
 		if (previous != 0 ) {
-			if ( locked[current_insert_idx] == false ) {
+			if ( locked[current_insert_idx] == 0 ) {
 // 				cout << "Sending imminent lost sig " << current_insert_idx  << endl;
 				previous->cuda_cache_lost_imminently();
 // 				cout << "Clear..." << endl;
@@ -790,7 +807,7 @@ void EMData::CudaDeviceEMDataCache::clear_item(const int idx) {
 	
 	caller_cache[idx] = 0;
 	
-	locked[idx] = false;
+	locked[idx] = 0;
 }
 
 EMData::CudaDataLock::CudaDataLock(const int handle) : data_cuda_handle(handle)

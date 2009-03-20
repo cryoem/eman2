@@ -85,8 +85,10 @@ int main(int argc, char *argv[])
 		else if (Util::sstrncmp(argv[1], "valgrind"))
 			vg=1;
 #ifdef EMAN2_USING_CUDA
-		else if (Util::sstrncmp(argv[1], "gpu"))
+		else if (Util::sstrncmp(argv[1], "gpu")) {
+			cout << "GPU mode selected" << endl;
 			gpu=1;
+		}
 #endif
     } 
     if (argc > 2) {
@@ -158,12 +160,6 @@ int main(int argc, char *argv[])
 		if (i < 5) {
 			data[i]->write_image("speed.hed", i, EMUtil::IMAGE_IMAGIC);
 		}
-#ifdef EMAN2_USING_CUDA
-		if (gpu) {
-// 			cout << "Using gpu" << endl;
-			data[i]->set_gpu_rw_current();
-		}
-#endif
     }
 
     if (low) {
@@ -400,6 +396,13 @@ int main(int argc, char *argv[])
     EMData *tmp = 0;
     float t1 = (float) clock();
     for (int i = 0; i < 3; i++) {
+#ifdef EMAN2_USING_CUDA
+		if (gpu) {
+// 			cout << "Using gpu" << endl;
+			data[i]->set_gpu_rw_current();
+			data[i]->cuda_lock();
+		}
+#endif
 		for (int j = 5; j < NTT; j++) {
 			if (slow == 3) {
 				tmp = data[i]->align("rtf_best", data[j],
@@ -418,6 +421,11 @@ int main(int argc, char *argv[])
 				tmp2 = 0;
 			}
 			else {
+#ifdef EMAN2_USING_CUDA
+				if (gpu) {
+					data[j]->set_gpu_rw_current();
+				}
+#endif
 				tmp = data[i]->align("rotate_translate_flip", data[j], Dict());
 			}
 	    	if( tmp )
@@ -430,6 +438,11 @@ int main(int argc, char *argv[])
 				fflush(stdout);
 			}
 		}
+#ifdef EMAN2_USING_CUDA
+		if (gpu) {
+			data[i]->cuda_unlock();
+		}
+#endif
 		putchar('\n');
     }
     float t2 = (float) clock();

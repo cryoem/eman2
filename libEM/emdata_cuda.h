@@ -124,6 +124,9 @@ public:
 	void print_this() const { cout << "this " << this << " " << cuda_cache_handle << endl; }
 	int get_cuda_handle() const { return cuda_cache_handle; };
 	
+	void cuda_lock() const;
+	void cuda_unlock() const;
+	
 	/** Check whether the CUDA-cached read-write version of the data pointer is current
 	 * Used to double check before copying the cuda rw data. It might be the case that the
 	 * cuda_cache_handle is non-zero but that the cuda rw is actually not available.
@@ -307,8 +310,8 @@ private:
 		const EMData** caller_cache;
 		/// The CUDA  read only cache
 		cudaArray ** ro_cache;
-		/// An array storing locking flags
-		vector<bool> locked;
+		/// An array storing locking flags - everytime a cache entry is locked the value is incremented
+		vector<int> locked;
 	};
 	
 	/// CudaDeviceEMDataCache is a friend because it calls cuda_cache_lost_imminently, a specialized function that should not be made public.

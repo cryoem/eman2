@@ -105,13 +105,16 @@ class EMImageModule(object):
 		old= is provided, and of the appropriate type, it will be used rather than creating
 		a new instance.
 		"""
+		
+		if isinstance(data,EMData) and data.get_size()==0: raise str("Can not display an EMData object that has no pixels")
+		
 		from EMAN2 import remove_directories_from_name
 		if force_plot and force_2d:
 			# ok this sucks but it suffices for the time being
 			print "Error, the force_plot and force_2d options are mutually exclusive"
 			return None
 		
-		if force_plot:
+		if force_plot or (isinstance(data,EMData) and data.get_zsize()==1 and data.get_ysize()==1):
 			if old:
 				if isinstance(old,EMPlot2DModule) :
 					old.set_data(remove_directories_from_name(filename),data)
