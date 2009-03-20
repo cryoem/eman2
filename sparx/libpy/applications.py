@@ -11475,7 +11475,7 @@ def k_means_stab_CUDA_one_run(stack, outdir, maskname, K, npart = 5, F = 0, th_s
 		f = open(outdir + '/main_log.txt', 'w')
 		f.close()
 		
-		logging.basicConfig(filename = outdir + '/main_log.txt', format = '%(asctime)s     %(message)s', level = logging.INFO)
+	logging.basicConfig(filename = outdir + '/main_log.txt', format = '%(asctime)s     %(message)s', level = logging.INFO)
 	
 	if restart == 1: logging.info('::: Start k-means stability :::')
 
