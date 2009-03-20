@@ -160,7 +160,7 @@ int main(int argc, char *argv[])
 		}
 #ifdef EMAN2_USING_CUDA
 		if (gpu) {
-			cout << "Using gpu" << endl;
+// 			cout << "Using gpu" << endl;
 			data[i]->set_gpu_rw_current();
 		}
 #endif

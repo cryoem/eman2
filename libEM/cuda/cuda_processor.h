@@ -15,7 +15,7 @@ void emdata_processor_correlation_texture( const EMDataForCuda* left,const int c
 void emdata_processor_correlation( const EMDataForCuda* left, const EMDataForCuda* right,const int center);
 
 //EMDataForCuda* emdata_unwrap( int r1, int r2, int xs, int do360, int nx, int ny);
-EMDataForCuda* emdata_unwrap(int r1, int r2, int xs, int num_pi, int dx, int dy, int weight_radial, int nx, int ny);	
+void emdata_unwrap(EMDataForCuda* data, int r1, int r2, int xs, int num_pi, int dx, int dy, int weight_radial, int nx, int ny);	
 
 void emdata_phaseorigin_to_center(EMDataForCuda* cuda_data);
 

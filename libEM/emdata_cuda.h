@@ -121,6 +121,9 @@ public:
 	
 	void copy_gpu_ro_to_cpu() const;
 	
+	void print_this() const { cout << "this " << this << " " << cuda_cache_handle << endl; }
+	int get_cuda_handle() const { return cuda_cache_handle; };
+	
 	/** Check whether the CUDA-cached read-write version of the data pointer is current
 	 * Used to double check before copying the cuda rw data. It might be the case that the
 	 * cuda_cache_handle is non-zero but that the cuda rw is actually not available.

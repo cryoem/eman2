@@ -56,17 +56,23 @@ def test_main():
 		a.set_gpu_rw_current()
 		t = time()
 		for i in test_range:
-			#b = a.unwrap()
-			c = b.calc_ccfx(b,0,-1,True)
-			
-		gpu_times.append(time()-t)
+			b = a.unwrap()
 		
+			c = b.calc_ccfx(b,0,-1,True)
+			#c.print_this()
+
+		gpu_times.append(time()-t)
+		#print dims, "B"
 		a = test_image(0,size=(dims,dims))
+		#a.print_this()
 		t = time()
 		for i in test_range:
-			#b = a.unwrap()
+			b = a.unwrap()
 			c = b.calc_ccfx(b,0,-1,True)
-			
+			#print "the other stuff is ", a.get_cuda_handle()
+			#a.print_this()
+			#b.print_this()
+			#c.print_this()
 		cpu_times.append(time()-t)
 		print dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1]
 	

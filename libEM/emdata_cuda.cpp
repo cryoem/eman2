@@ -52,9 +52,11 @@ float* EMData::get_cuda_data() const {
 		if (cuda_cache_handle != -1 && gpu_ro_is_current() ) {
 			cuda_cache.copy_ro_to_rw(cuda_cache_handle);
 		} else {
-			if (cuda_cache_handle !=-1 ) cuda_cache.clear_item(cuda_cache_handle);
+			if (cuda_cache_handle !=-1 ) { 
+				cuda_cache.clear_item(cuda_cache_handle);
+			}
 			cuda_cache_handle = cuda_cache.cache_rw_data(this,rdata,nx,ny,nz);
-			if (cuda_cache_handle >=50 ) throw InvalidValueException(cuda_cache_handle,"In get cuda data, the handle is strange");
+			if (cuda_cache_handle == -1) throw;
 		}
 		flags &= ~EMDATA_GPU_NEEDS_UPDATE;
 	}
@@ -101,6 +103,7 @@ void EMData::check_cuda_array_update() const {
 			if (cuda_cache_handle !=-1 ) cuda_cache.clear_item(cuda_cache_handle);
 			cuda_cache_handle = cuda_cache.cache_ro_data(this,rdata,nx,ny,nz);
 			if (cuda_cache_handle >=50 ) throw InvalidValueException(cuda_cache_handle,"In get cuda data, the handle is strange");
+			if (cuda_cache_handle == -1) throw;
 		}
 		flags &= ~EMDATA_GPU_RO_NEEDS_UPDATE;
 	}
@@ -395,14 +398,16 @@ EMData* EMData::calc_ccfx_cuda( EMData * const with, int y0, int y1, bool no_sum
 		emdata_processor_correlation(&left,&right,center);
 	}
 	
-	float* rcd = rslt.get_cuda_data();
-	CudaDataLock rlock(&rslt);
-	float * f1cd = f1.get_cuda_data(); 
-	CudaDataLock lock2(&f1);
-	cuda_dd_fft_complex_to_real_1d(f1cd,rcd,nx,height);
-	rslt.gpu_update();
+	{
+		float* rcd = rslt.get_cuda_data();
+		CudaDataLock rlock(&rslt);
+		float * f1cd = f1.get_cuda_data(); 
+		CudaDataLock lock2(&f1);
+		cuda_dd_fft_complex_to_real_1d(f1cd,rcd,nx,height);
+	}
 	
 	if (no_sum) {
+		rslt.gpu_update();
 		EXITFUNC;
 		return new EMData(rslt);
 	}
@@ -428,17 +433,18 @@ EMData* EMData::column_sum_cuda() const {
 }
 
 void EMData::set_gpu_rw_data(float* data, const int x, const int y, const int z) {
+	nx = x; ny = y; nz = z;
+	nxy = nx*ny;
 	if (cuda_cache_handle!=-1) {
 		cuda_cache.replace_gpu_rw(cuda_cache_handle,data);
 	} else {
 		cuda_cache_handle = cuda_cache.store_rw_data(this,data);
 	}
-	nx = x; ny = y; nz = z;
-	nxy = nx*ny;
 	gpu_update();
 }
 
 void EMData::free_cuda_memory() const {
+// 	cout << "Death comes to " << this << " " << cuda_cache_handle << endl;
 	if (cuda_cache_handle!=-1) {
 		cuda_cache.clear_item(cuda_cache_handle);
 		cuda_cache_handle = -1;
@@ -533,6 +539,7 @@ int EMData::CudaDeviceEMDataCache::cache_rw_data(const EMData* const emdata, con
 
 int EMData::CudaDeviceEMDataCache::force_store_rw_data(const EMData* const emdata, float*  cuda_rw_data)
 {	
+// 	debug_print();
 	rw_cache[current_insert_idx] = cuda_rw_data;
 	caller_cache[current_insert_idx] = emdata;
 	ro_cache[current_insert_idx] = 0;
@@ -558,11 +565,23 @@ int EMData::CudaDeviceEMDataCache::store_rw_data(const EMData* const emdata, flo
 }
 
 void EMData::CudaDeviceEMDataCache::debug_print() const {
-	cout << "Cuda device cache debug" << endl;
+// 	cout << "Cuda device cache debug" << endl;
 	for(int i = 0; i < cache_size; ++i) {
 		int handle = -1;
-		if (caller_cache[i] != 0) handle = caller_cache[i]->cuda_cache_handle;
-		cout << i << ": " << handle << " " << caller_cache[i] << endl;
+		int nx = 0;
+		int ny = 0;
+		int nz = 0;
+		if (caller_cache[i] != 0) {
+			handle = caller_cache[i]->cuda_cache_handle;
+			nx = caller_cache[i]->get_xsize();
+			ny = caller_cache[i]->get_ysize();
+			nz = caller_cache[i]->get_zsize();
+		}
+// 		if (caller_cache[i] == 0) continue; // temporary debug
+// 		if ( handle == -1 )  {
+		cout << i << ": " << handle << " " << caller_cache[i] << " " << nx << " " << ny << " " << nz << " locked: " << locked[i] << " rw " << rw_cache[i] << " ro " << ro_cache[i] << endl;
+// 			throw UnexpectedBehaviorException("Weird, th handle was -1!");
+// 		}
 	}
 }
 
@@ -583,17 +602,20 @@ void EMData::CudaDeviceEMDataCache::replace_gpu_rw(const int idx,float* cuda_rw_
 void EMData::CudaDeviceEMDataCache::check_for_space() {
 	
 	int checked_entries = 0;
-	while ( true && checked_entries < cache_size) {
+	while ( checked_entries < cache_size) {
 		const EMData* previous = caller_cache[current_insert_idx];
 		if (previous != 0 ) {
 			if ( locked[current_insert_idx] == false ) {
+// 				cout << "Sending imminent lost sig " << current_insert_idx  << endl;
 				previous->cuda_cache_lost_imminently();
+// 				cout << "Clear..." << endl;
 				clear_item(current_insert_idx);
 				break;
 			} else {
-				// Lucky it was locked!
+// 				cout <<  "Lucky it was locked! " << current_insert_idx << endl;
 				current_insert_idx++;
 				current_insert_idx %= cache_size;
+// 				cout <<  "Incremented to " << current_insert_idx << endl;
 				checked_entries++;
 			}
 		} else break; // There IS space!
@@ -655,6 +677,7 @@ int EMData::CudaDeviceEMDataCache::cache_ro_data(const EMData* const emdata, con
 
 
 void  EMData::CudaDeviceEMDataCache::copy_rw_to_ro(const int idx) {
+// 	cout << "Copy rw to ro " << idx << endl;
 	if (rw_cache[idx] == 0) throw UnexpectedBehaviorException("Can not update RO CUDA data: RW data is null.");
 
 	if (ro_cache[idx] != 0)  {
@@ -674,6 +697,7 @@ void  EMData::CudaDeviceEMDataCache::copy_rw_to_ro(const int idx) {
 }
 
 void  EMData::CudaDeviceEMDataCache::copy_ro_to_rw(const int idx) {
+// 	cout << "Copy ro to rw " << idx << endl;
 	if (ro_cache[idx] == 0) throw UnexpectedBehaviorException("Can not update RW CUDA data: RO data is null.");
 
 	if (rw_cache[idx] != 0)  {
@@ -747,7 +771,7 @@ void  EMData::CudaDeviceEMDataCache::copy_ro_to_cpu(const int idx,float* data) {
 	
 }
 void EMData::CudaDeviceEMDataCache::clear_item(const int idx) {
-	
+// 	debug_print();
 	if  ( rw_cache[idx] != 0) {
 		mem_allocated -= get_emdata_bytes(idx);
 		cudaError_t error = cudaFree(rw_cache[idx]);

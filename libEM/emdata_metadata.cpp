@@ -194,14 +194,16 @@ EMData* EMData::get_fft_phase()
 float* EMData::get_data() const 
 {
 	size_t num_bytes = nx*ny*nz*sizeof(float);
-	if (rdata == 0) {
+	if (num_bytes > 0 && rdata == 0) {
 		rdata = (float*)EMUtil::em_malloc(num_bytes);
+		if (rdata == 0) throw BadAllocException("The allocation of the raw data failed");
 	}
 #ifdef EMAN2_USING_CUDA
-	if ( gpu_rw_is_current()  && (EMDATA_CPU_NEEDS_UPDATE & flags)) {
+	if ( num_bytes > 0 && gpu_rw_is_current()  && (EMDATA_CPU_NEEDS_UPDATE & flags)) {
 		cudaError_t error = cudaMemcpy(rdata,get_cuda_data(),num_bytes,cudaMemcpyDeviceToHost);
 		if (error != cudaSuccess ) throw UnexpectedBehaviorException("The host to device cudaMemcpy failed : " + string(cudaGetErrorString(error)));
 	} else if ( gpu_ro_is_current()  && (EMDATA_CPU_NEEDS_UPDATE & flags)) {
+		cout << "Copy ro to cpu" << endl;
 		copy_gpu_ro_to_cpu();
 	}
 	flags &= ~EMDATA_CPU_NEEDS_UPDATE;
@@ -659,9 +661,8 @@ void EMData::set_size(int x, int y, int z)
 	}
 	
 #ifdef EMAN2_USING_CUDA
-	// not required in lazy allocation scheme
-	//free_cuda_array();
- 	//free_cuda_memory();
+	// This is important
+ 	free_cuda_memory();
 #endif // EMAN2_USING_CUDA
 	
 	nx = x;
@@ -714,8 +715,8 @@ void EMData::set_size_cuda(int x, int y, int z)
 	get_cuda_data();
 	
 // 	cuda_cache_handle = cuda_rw_cache.cache_data(this,rdata,nx,ny,nz); Let's be lazy
-	
-	//free_memory(); // Now release CPU memory, seeing as a GPU resize invalidates it - Actually let's be lazy about it instead
+	// This is important
+	free_memory(); // Now release CPU memory, seeing as a GPU resize invalidates it - Actually let's be lazy about it instead
 	
 	gpu_update();
 	

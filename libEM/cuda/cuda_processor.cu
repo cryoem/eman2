@@ -343,16 +343,16 @@ __global__ void unwrap_kernel(float* dptr, const int num_threads, const int r1, 
 }
 
 	
-EMDataForCuda* emdata_unwrap(int r1, int r2, int xs, int num_pi, int dx, int dy, int weight_radial, int nx, int ny) {	
+void emdata_unwrap(EMDataForCuda* data, int r1, int r2, int xs, int num_pi, int dx, int dy, int weight_radial, int nx, int ny) {	
 	
-	float* dptr;
+// 	float* dptr;
 	int n = xs*(r2-r1);
-	cudaError_t error = cudaMalloc((void**)&dptr,n*sizeof(float));
-	if ( error != cudaSuccess ) {
-		const char* s = cudaGetErrorString(error);
-		printf("Cuda malloc failed in emdata_unwrap: %s\n",s);
-		throw;
-	}
+// 	cudaError_t error = cudaMalloc((void**)&dptr,n*sizeof(float));
+// 	if ( error != cudaSuccess ) {
+// 		const char* s = cudaGetErrorString(error);
+// 		printf("Cuda malloc failed in emdata_unwrap: %s\n",s);
+// 		throw;
+// 	}
 	
 	int max_threads = 512;
 	int num_calcs = n;
@@ -365,21 +365,21 @@ EMDataForCuda* emdata_unwrap(int r1, int r2, int xs, int num_pi, int dx, int dy,
 	if ( grid_y > 0 ) {
 		const dim3 blockSize(max_threads,1, 1);
 		const dim3 gridSize(grid_y,1,1);
-		unwrap_kernel<<<gridSize,blockSize>>>(dptr,max_threads,r1,(float) num_pi/ (float)xs, nx,ny,xs,dx,dy,weight_radial,0);	
+		unwrap_kernel<<<gridSize,blockSize>>>(data->data,max_threads,r1,(float) num_pi/ (float)xs, nx,ny,xs,dx,dy,weight_radial,0);	
 	}
 	
 	if ( res_y > 0 ) {
 		const dim3 blockSize(res_y,1, 1);
 		const dim3 gridSize(1,1,1);
-		unwrap_kernel<<<gridSize,blockSize>>>(dptr,max_threads,r1, (float) num_pi/ (float)xs, nx,ny,xs,dx,dy,weight_radial,grid_y*max_threads);	
+		unwrap_kernel<<<gridSize,blockSize>>>(data->data,max_threads,r1, (float) num_pi/ (float)xs, nx,ny,xs,dx,dy,weight_radial,grid_y*max_threads);	
 	}
 	
-	EMDataForCuda* tmp = (EMDataForCuda*) malloc( sizeof(EMDataForCuda) );
-	tmp->data = dptr;
-	tmp->nx = xs;
-	tmp->ny = r2-r1;
-	tmp->nz = 1;
-	return tmp;
+// 	EMDataForCuda* tmp = (EMDataForCuda*) malloc( sizeof(EMDataForCuda) );
+// 	tmp->data = dptr;
+// 	tmp->nx = xs;
+// 	tmp->ny = r2-r1;
+// 	tmp->nz = 1;
+// 	return tmp;
 }
 
 

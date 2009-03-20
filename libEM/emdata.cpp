@@ -138,11 +138,11 @@ EMData::EMData(const EMData& that) :
 	}
 #ifdef EMAN2_USING_CUDA
 	if (num_bytes != 0 && that.cuda_cache_handle != -1 && that.gpu_rw_is_current()) {
+		float * cuda_data = that.get_cuda_data();
+		CudaDataLock lock2(&that);
 		set_size_cuda(nx,ny,nz);
 		float *cd = get_cuda_data();
 		CudaDataLock lock1(this);
-		float * cuda_data = that.get_cuda_data();
-		CudaDataLock lock2(&that);
 		cudaError_t error = cudaMemcpy(cd,cuda_data,num_bytes,cudaMemcpyDeviceToDevice);
 		if ( error != cudaSuccess ) throw UnexpectedBehaviorException("cudaMemcpy failed in EMData copy construction with error: " + string(cudaGetErrorString(error)));
 	}
@@ -190,9 +190,9 @@ EMData& EMData::operator=(const EMData& that)
 		free_cuda_memory();
 		// There should also be the case where we deal with ro data...
 		if (num_bytes != 0 && that.cuda_cache_handle != -1 && that.gpu_rw_is_current()) {
-			set_size_cuda(that.nx, that.ny, that.nz);
 			float * cuda_data = that.get_cuda_data();
 			CudaDataLock lock1(&that);
+			set_size_cuda(that.nx, that.ny, that.nz);
 			float *cd = get_cuda_data();
 			CudaDataLock lock2(this);
 			cudaError_t error = cudaMemcpy(cd,cuda_data,num_bytes,cudaMemcpyDeviceToDevice);
@@ -287,9 +287,9 @@ using std::endl;
 EMData::~EMData()
 {
 	ENTERFUNC;
-	
 	free_memory();
 #ifdef EMAN2_USING_CUDA
+// 	cout << "Death comes to " << cuda_cache_handle << " " << this << endl;
 	free_cuda_memory();
 #endif // EMAN2_USING_CUDA
 	EMData::totalalloc--;
@@ -2314,14 +2314,18 @@ EMData *EMData::unwrap(int r1, int r2, int xs, int dx, int dy, bool do360, bool 
 	
 #ifdef EMAN2_USING_CUDA
 	if ( gpu_operation_preferred() ) {
+// 		cout << "Binding " << cuda_cache_handle << endl;
 		bind_cuda_texture();
-		EMDataForCuda* tmp = emdata_unwrap(r1,r2,xs,p,dx,dy,weight_radial,nx,ny);
+		EMData* rslt = new EMData();
+		rslt->set_size_cuda(xs,r2-r1,1);
+		EMDataForCuda r = rslt->get_data_struct_for_cuda();
+// 		CudaDataLock lock1(rslt);
+		/*EMDataForCuda* tmp = */emdata_unwrap(&r,r1,r2,xs,p,dx,dy,weight_radial,nx,ny);
 		unbind_cuda_texture();
-		EMData* e = new EMData();
-		e->set_gpu_rw_data(tmp->data,tmp->nx,tmp->ny,tmp->nz);
-		free(tmp);
-		e->gpu_update();
-		return  e;
+// 		EMData* e = new EMData();
+// 		e->set_gpu_rw_data(tmp->data,tmp->nx,tmp->ny,tmp->nz);
+// 		free(tmp);
+		return  rslt;
 	}
 #endif
 	
