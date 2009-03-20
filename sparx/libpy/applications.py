@@ -11454,6 +11454,121 @@ def k_means_stab_CUDA(stack, outdir, maskname, K, npart = 5, F = 0, FK = 0, maxr
 	
 	logging.info('::: END k-means stability :::')
 
+# K-means main stability only one run, this function is used to do the stability in streamlines with the alignment
+def k_means_stab_CUDA_one_run(stack, outdir, maskname, K, npart = 5, F = 0, th_stab_min = 3.0, restart = 1):
+	from utilities 	 import print_begin_msg, print_end_msg, print_msg
+	from utilities   import model_blank, get_image, get_im
+	from statistics  import k_means_cuda_init_open_im, k_means_cuda_open_im, k_means_stab_init_tag
+	from statistics  import k_means_cuda_headlog, k_means_cuda_error, k_means_cuda_info
+
+	from statistics  import k_means_stab_update_tag, k_means_stab_gather, k_means_stab_init_tag
+	from statistics  import k_means_stab_asg2part, k_means_stab_H, k_means_stab_export
+	import sys, logging, os, pickle
+
+	# if is the first round
+	if restart == 1:
+		# create a directory
+		if os.path.exists(outdir):  os.system('rm -rf ' + outdir)
+		os.mkdir(outdir)
+
+		# create main log
+		f = open(outdir + '/main_log.txt', 'w')
+		f.close()
+		
+		logging.basicConfig(filename = outdir + '/main_log.txt', format = '%(asctime)s     %(message)s', level = logging.INFO)
+	
+	if restart == 1: logging.info('::: Start k-means stability :::')
+
+	# manage random seed
+	rnd = []
+	for n in xrange(1, npart + 1): rnd.append(n * (10**n))
+	logging.info('Init list random seed: %s' % rnd)
+
+	# init tag to the header for the stack file
+	if restart == 1:
+		logging.info('Init header to the stack file')
+		k_means_stab_init_tag(stack)
+
+	# loop over run
+	num_run      = restart
+	maxit        = int(1e9)
+	T0           = float(-1) # auto
+
+	logging.info('RUN %02d K = %03d %s' % (num_run, K, 40 * '-'))
+
+	# create k-means obj
+	KmeansCUDA = CUDA_kmeans()
+
+	# open unstable images
+	logging.info('... Open images')
+	LUT, mask, N, m = k_means_cuda_init_open_im(stack, maskname)
+	logging.info('... %d unstable images found' % N)
+	if N < 2:
+		logging.info('[STOP] Not enough images')
+		return 'STOP', 0
+	
+	KmeansCUDA.setup(m, N, K, F, T0, maxit, 0)
+	k_means_cuda_open_im(KmeansCUDA, stack, LUT, mask)
+
+	# loop over partition
+	ALL_ASG = []
+	print_begin_msg('k-means')
+	for n in xrange(npart):
+		# info
+		logging.info('...... Start partition: %d' % (n + 1))
+		partdir = 'partition %d' % (n + 1)
+		ncpu    = 1
+		method  = 'cla'
+		k_means_cuda_headlog(stack, partdir, method, N, K, maskname, maxit, T0, F, rnd[n], ncpu, m)
+
+		# classification
+		KmeansCUDA.set_rnd(rnd[n])
+		status = KmeansCUDA.kmeans()
+		if   status == 0:
+			pass
+		elif status == 4:
+			logging.info('[WARNING] Empty cluster')
+			k_means_cuda_error(status)
+			logging.info('[STOP] Not enough images')
+			return 'EMPTY', 0
+		else:
+			k_means_cuda_error(status)
+			sys.exit()
+
+		# get back the partition and its infos
+		PART = KmeansCUDA.get_partition()
+		ALL_ASG.append(PART)
+		INFO = KmeansCUDA.get_info()
+		k_means_cuda_info(INFO)
+
+	# end of classification
+	print_end_msg('k-means')
+
+	# destroy k-means
+	del KmeansCUDA
+
+	# convert local assignment to absolute partition
+	logging.info('... Convert local assign to abs partition')
+	ALL_PART = k_means_stab_asg2part(ALL_ASG, LUT)
+
+	# calculate the stability
+	stb, nb_stb, STB_PART = k_means_stab_H(ALL_PART)
+	logging.info('... Stability: %5.2f %% (%d objects)' % (stb, nb_stb))
+
+	if stb < th_stab_min:
+		logging.info('[WARNING] Stability too low, restart the run with K = %d' % K)
+		return 'LOW', stb
+
+	# export the stable class averages
+	logging.info('... Export stable class averages: average_stb_run%02d.hdf' % num_run)
+	k_means_stab_export(STB_PART, stack, num_run, outdir)
+
+	# tag informations to the header
+	logging.info('... Update info to the header')
+	k_means_stab_update_tag(stack, ALL_PART, STB_PART, num_run)
+
+	return 'OK', stb
+
 # K-means main stability
 def k_means_stab_MPI(stack, outdir, maskname, opt_method, K, npart = 5, CTF = False, F = 0, FK = 0, maxrun = 50, th_nobj = 0, th_stab_max = 6.0, th_stab_min = 3.0, th_dec = 5, restart = 1, bck = False):
 	from utilities 	 import print_begin_msg, print_end_msg, print_msg, file_type
