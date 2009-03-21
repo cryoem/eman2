@@ -223,19 +223,37 @@ class TestEMData(unittest.TestCase):
 
 
     def test_clip_inplace(self):
-        """test clip_inplace() function ....................."""
+		"""test clip_inplace() function ....................."""
 		
-		# added by d.woolford - tests each possible scenario fairly rigorously
+		# tests each possible scenario fairly rigorously
 		# by comparing the clip_inplace result against the get_clip result 
 		# pixel by pixel
-        size = 8
-
-        e = EMData()
-        e.set_size(size,size,size)
-        e.to_zero()
-        e.process_inplace("testimage.noise.uniform.rand")
-
-        for i in range(-1,2):
+		size = 8
+		
+		
+		e = EMData()
+		e.set_size(size,size)
+		e.process_inplace("testimage.noise.uniform.rand")
+		
+		for i in range(-1,2):
+			for j in range(-1,2):
+					for l in range(-1,2):
+						for m in range(-1,2):
+							region = Region(i,j,size+l,size+m)
+							f = e.copy()
+							g = e.get_clip(region)
+							f.clip_inplace(region)
+							for r in range(f.get_zsize()):
+								for s in range(f.get_ysize()):
+										self.assertEqual(g.get(r,s),f.get(r,s))
+		
+		e = EMData()
+		e.set_size(size,size,size)
+		e.to_zero()
+		e.process_inplace("testimage.noise.uniform.rand")
+		
+		
+		for i in range(-1,2):
 			for j in range(-1,2):
 				for k in range(-1,2):
 					for l in range(-1,2):
@@ -249,28 +267,28 @@ class TestEMData(unittest.TestCase):
 									for s in range(size+m):
 										for t in range(size+l):
 											self.assertEqual(g.get_3dview()[r][s][t], f.get_3dview()[r][s][t])
-        
-        if(IS_TEST_EXCEPTION):
-            region = Region(0,0,0,-1,1,1)
-            f = e.copy()
-            try:
-                f.clip_inplace(region)
-            except RuntimeError, runtime_err:
-                self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
-    			
-            region = Region(0,0,0,1,-1,1)
-            f = e.copy()
-            try:
-                f.clip_inplace(region)
-            except RuntimeError, runtime_err:
-                self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
-    			
-            region = Region(0,0,0,1,1,-1)
-            f = e.copy()
-            try:
-                f.clip_inplace(region)
-            except RuntimeError, runtime_err:
-                self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+		
+		if(IS_TEST_EXCEPTION):
+			region = Region(0,0,0,-1,1,1)
+			f = e.copy()
+			try:
+				f.clip_inplace(region)
+			except RuntimeError, runtime_err:
+				self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+				
+			region = Region(0,0,0,1,-1,1)
+			f = e.copy()
+			try:
+				f.clip_inplace(region)
+			except RuntimeError, runtime_err:
+				self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+				
+			region = Region(0,0,0,1,1,-1)
+			f = e.copy()
+			try:
+				f.clip_inplace(region)
+			except RuntimeError, runtime_err:
+				self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
 
     def test_insert_clip(self):
         """test insert_clip() function ......................"""

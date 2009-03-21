@@ -1283,40 +1283,103 @@ void EMData::ap2ri()
 }
 
 
-void EMData::insert_clip(EMData * block, const IntPoint &origin)
-{
-	ENTERFUNC;
+void EMData::insert_clip(const EMData * const block, const IntPoint &origin) {
 	int nx1 = block->get_xsize();
 	int ny1 = block->get_ysize();
 	int nz1 = block->get_zsize();
 
 	Region area(origin[0], origin[1], origin[2],nx1, ny1, nz1);
+	
+	int x0 = (int) area.origin[0];
+	x0 = x0 < 0 ? 0 : x0;
 
-	if (area.inside_region((float)nx, (float)ny, (float)nz)) {
-		throw ImageFormatException("outside of destination image not supported.");
+	int y0 = (int) area.origin[1];
+	y0 = y0 < 0 ? 0 : y0;
+
+	int z0 = (int) area.origin[2];
+	z0 = z0 < 0 ? 0 : z0;
+
+	int x1 = (int) (area.origin[0] + area.size[0]);
+	x1 = x1 > nx ? nx : x1;
+
+	int y1 = (int) (area.origin[1] + area.size[1]);
+	y1 = y1 > ny ? ny : y1;
+
+	int z1 = (int) (area.origin[2] + area.size[2]);
+	z1 = z1 > nz ? nz : z1;
+	if (z1 <= 0) {
+		z1 = 1;
 	}
 
-	int x0 = origin[0];
-	int y0 = origin[1];
-	int y1 = origin[1] + ny1;
-	int z0 = origin[2];
-	int z1 = origin[2] + nz1;
+	int xd0 = (int) (area.origin[0] < 0 ? -area.origin[0] : 0);
+	int yd0 = (int) (area.origin[1] < 0 ? -area.origin[1] : 0);
+	int zd0 = (int) (area.origin[2] < 0 ? -area.origin[2] : 0);
+	
+	size_t clipped_row_size = (x1-x0) * sizeof(float);
+	int src_secsize =  nx1 * ny1;
+	int dst_secsize = nx * ny;
 
-	size_t inserted_row_size = nx1 * sizeof(float);
-	float *inserted_data = block->get_data();
-	float *src = inserted_data;
-	float *dst = get_data() + z0 * nx * ny + y0 * nx + x0;
+#ifdef EMAN2_USING_CUDA
+	if (gpu_operation_preferred()) {
+//		cudaMemcpy3DParms copyParams = {0};
+//		copyParams.srcPtr   = make_cudaPitchedPtr((void*)get_cuda_data(), nx*sizeof(float), nx, ny);
+//		cout << "Src pos is " << x0 << " " << y0 << " " << z0 << endl;
+//		copyParams.srcPos  = make_cudaPos(x0,y0,z0);
+//		cout << "Extent is " << x1-x0 << " " << y1-y0 << " " << z1-z0 << endl;
+//		cudaExtent extent = make_cudaExtent(x1-x0,y1-y0,z1-z0);
+//		int rnx = result->get_xsize();
+//		int rny = result->get_ysize();
+//		copyParams.dstPtr = make_cudaPitchedPtr((void*)result->get_cuda_data(),rnx*sizeof(float),rnx,rny );
+//		cout << "Dest pos is " << xd0 << " " << yd0 << " " << zd0 << endl;
+//		copyParams.dstPos  = make_cudaPos(xd0,yd0,zd0);
+//		copyParams.extent   = extent;
+//		copyParams.kind     = cudaMemcpyDeviceToDevice;
+//		cudaError_t error =  cudaMemcpy3D(&copyParams);
+//		if ( error != cudaSuccess) {
+//			string e = cudaGetErrorString(error);
+//			throw UnexpectedBehaviorException("CudaMemcpy3D failed with error: " + e);
+//		}
+		get_cuda_data();
+		CudaDataLock lock(this);
+		block->get_cuda_data();
+		CudaDataLock lock2(block);
+		for (int i = 0; i < (z1-z0); i++) {
+			float* ldst = get_cuda_data() + (z0+i) * dst_secsize + y0 * nx + x0;
+			float* lsrc = block->get_cuda_data() + (zd0+i) * src_secsize + yd0 * nx1 + xd0;
+			
+			
+// 			float* ldst = result->get_cuda_data() + (zd0+i) * dst_secsize + yd0 * (int)area.size[0] + xd0;
+// 			float* lsrc = get_cuda_data() + (z0+i) * src_secsize + y0 * nx + x0;
+			cudaError_t error =  cudaMemcpy2D( ldst, (nx)*sizeof(float), lsrc,nx1*sizeof(float), clipped_row_size, (y1-y0), cudaMemcpyDeviceToDevice );
+			if ( error != cudaSuccess) {
+				string e = cudaGetErrorString(error);
+				throw UnexpectedBehaviorException("cudaMemcpy2D failed in get_clip with error: " + e);
+			}
+		}
+		gpu_update();
+		EXITFUNC;
+		return;
+	}
+#endif
+	float *src = block->get_data() + zd0 * src_secsize + yd0 * nx1 + xd0;
+	float *dst = get_data() + z0 * dst_secsize + y0 * nx + x0;
+		
+// 		float *src = get_data() + z0 * src_secsize + y0 * nx + x0;
+// 		float *dst = result->get_data();
+// 		dst += zd0 * dst_secsize + yd0 * (int)area.size[0] + xd0;
 
+	int src_gap = src_secsize - (y1-y0) * nx1;
+	int dst_gap = dst_secsize - (y1-y0) * nx;
 	for (int i = z0; i < z1; i++) {
-
 		for (int j = y0; j < y1; j++) {
-			memcpy(dst, src, inserted_row_size);
+			EMUtil::em_memcpy(dst, src, clipped_row_size);
 			src += nx1;
 			dst += nx;
 		}
-		dst += nx * (ny - ny1);
+		src += src_gap;
+		dst += dst_gap;
 	}
-
+	
 	update();
 	EXITFUNC;
 }

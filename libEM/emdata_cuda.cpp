@@ -223,6 +223,7 @@ EMData *EMData::make_rotational_footprint_cuda( bool unwrap)
 //	update_stat();
 //	float edge_mean = get_edge_mean();
 	float edge_mean = 0;
+	CudaDataLock(this);
 	if ( rot_fp != 0 && unwrap == true) {
 		return new EMData(*rot_fp);
 	}
@@ -238,19 +239,27 @@ EMData *EMData::make_rotational_footprint_cuda( bool unwrap)
 //
 	int cs = (((nx * 7 / 4) & 0xfffff8) - nx) / 2; // this pads the image to 1 3/4 * size with result divis. by 8
 
-	Region r1;
-	if (nz == 1) {
-		r1 = Region(-cs, -cs, nx + 2 * cs, ny + 2 * cs);
+	static EMData big_clip;
+	int big_x = nx+2*cs;
+	int big_y = ny+2*cs;
+	int big_z = 1;
+	if ( nz != 1 ) {
+		big_z = nz+2*cs;
 	}
-	else {
-		r1 = Region(-cs, -cs, -cs, nx + 2 * cs, ny + 2 * cs, nz + 2 * cs);
+	
+	
+	if ( big_clip.get_xsize() != big_x || big_clip.get_ysize() != big_y || big_clip.get_zsize() != big_z ) {
+		big_clip.set_size_cuda(big_x,big_y,big_z);
+		big_clip.get_cuda_data();
+		big_clip.cuda_lock(); // Just lock for the entire duration of the program, it's static anyway...	
 	}
-//	// It is important to set all newly established pixels around the boundaries to the mean
-//	// If this is not done then the associated rotational alignment routine breaks, in fact
-//	// everythin just goes foo. 
-	EMData *clipped = get_clip(r1,edge_mean);
-//// 	EMData *clipped = copy()
-//	
+	big_clip.to_value(edge_mean);
+
+	if (nz != 1) {
+		big_clip.insert_clip(this,IntPoint(cs,cs,cs));
+	} else  {
+		big_clip.insert_clip(this,IntPoint(cs,cs,0));
+	}
 //	// The filter object is nothing more than a cached high pass filter
 //	// Ultimately it is used an argument to the EMData::mult(EMData,prevent_complex_multiplication (bool)) 
 //	// function in calc_mutual_correlation. Note that in the function the prevent_complex_multiplication 
@@ -262,55 +271,40 @@ EMData *EMData::make_rotational_footprint_cuda( bool unwrap)
 //		filt->process_inplace("eman1.filter.highpass.gaussian", Dict("highpass", 1.5f/nx));
 //	}
 //	
-	//cout << "Clip 1" << endl;
-	EMData *mc = clipped->calc_ccf_cuda(clipped,false,true);
+	EMData *mc = big_clip.calc_ccf_cuda(&big_clip,false,true);
 	mc->sub(mc->get_edge_mean());
-	//mc->process_inplace("xform.phaseorigin.tocenter");
-	//mc->write_image("mc.hdf");
-	if( clipped ) {
-		delete clipped;
-		clipped = 0;
+	
+	static EMData sml_clip;
+	int sml_x = nx * 3 / 2;
+	int sml_y = ny * 3 / 2;
+	int sml_z = 1;
+	if ( nz != 1 ) {
+		sml_z = nz * 3 / 2;
+	}
+	
+	if ( sml_clip.get_xsize() != sml_x || sml_clip.get_ysize() != sml_y || sml_clip.get_zsize() != sml_z ) {
+		sml_clip.set_size_cuda(sml_x,sml_y,sml_z);
+		sml_clip.get_cuda_data();
+		sml_clip.cuda_lock(); // Just lock for the entire duration of the program, it's static anyway...	
+	}
+	if (nz != 1) {
+		sml_clip.insert_clip(mc,IntPoint(-cs+nx/4,-cs+ny/4,-cs+nz/4));
+	} else {
+		sml_clip.insert_clip(mc,IntPoint(-cs+nx/4,-cs+ny/4,0));
 	}
 
-	Region r2;
-	if (nz == 1) {
-		r2 = Region(cs - nx / 4, cs - ny / 4, nx * 3 / 2, ny * 3 / 2);
-	}
-	else {
-		r2 = Region(cs - nx / 4, cs - ny / 4, cs - nz / 4, nx * 3 / 2, ny * 3 / 2, nz * 3 / 2);
-	}
-	EMData* clipped_mc = mc->get_clip(r2);
-	//clipped_mc->write_image("clipped_mc.hdf");
-	if( mc ) {
-		delete mc;
-		mc = 0;
-	}
-//	
 	EMData * result = NULL;
-//
-//	if (nz == 1) {
-	if (!unwrap) {
+
+	if (!unwrap || nz != 1) {
 		//clipped_mc->process_inplace("mask.sharp", Dict("outer_radius", -1, "value", 0));
-		result = clipped_mc;
+		result = new EMData(sml_clip);
 	}
 	else {
-		result = clipped_mc->unwrap();
-		if( clipped_mc ) {
-			delete clipped_mc;
-			clipped_mc = 0;
-		}
+		result = sml_clip.unwrap();
 	}
 	
 	result->gpu_update();
-	
-//	}
-//	else {
-//		// I am not sure why there is any consideration of non 2D images, but it was here
-//		// in the first port so I kept when I cleaned this function up (d.woolford)
-//		result = clipped_mc;
-//	}
-//
-//	EXITFUNC;
+
 	if ( unwrap == true)
 	{ // this if statement reflects a strict policy of caching in only one scenario see comments at beginning of function block
 		

@@ -168,12 +168,11 @@ This conversion cannot be reversed, and the image remains marked as R/I */
 void ri2inten();
 
 /** Insert a clip into this image.
+ * Very robust clip insertion code works in all way you might think possible
  * @param block An image block.
  * @param origin The origin location to insert the clip.
- * @exception ImageFormatException If clip is outside of the
- * destination image (i.e., this image).
  */
-void insert_clip(EMData * block, const IntPoint & origin);
+void insert_clip(const EMData * const block, const IntPoint & origin);
 
 
 /** Add a scaled image into another image at a specified location.

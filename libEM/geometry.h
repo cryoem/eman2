@@ -186,6 +186,7 @@ namespace EMAN
 			vector<float> t(data,data+3);
 			return t;
 		}
+
 	private:
 		float data[3];
 	};
@@ -270,6 +271,11 @@ namespace EMAN
 		int data[3];
 		int ndim;
 	};
+	
+	IntPoint operator -( const IntPoint& p);
+// 	{
+// 		return IntPoint(-p[0],-p[1],-p[2]);
+// 	}
 
 	/** FloatPoint defines a float-coordinate point in a 1D/2D/3D space.
 	*/
@@ -432,6 +438,8 @@ namespace EMAN
 			vector<float> t(data,data+3);
 			return t;
 		}
+		
+		operator IntPoint () const { return IntPoint((int)data[0],(int)data[1],(int)data[2]); }
 		
 		inline FloatPoint& operator=(const vector<float>& v) {
 			copy(v.begin(),v.end(),data);
