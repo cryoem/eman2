@@ -648,8 +648,11 @@ def drop_png_image(im, trg):
 		ERROR('destination name must be png extension', 'drop_png_image', 1)
 
 	if isinstance(trg, basestring):
+		#print im['minimum'], im['maximum']
+		d = im['maximum'] - im['minimum']
+		d = d / 256.
 		im['render_min'] = im['minimum']
-		im['render_max'] = im['maximum']
+		im['render_max'] = im['maximum'] - d
 		im.write_image(trg, 0)
 	else:
 		ERROR('destination is not a file name', 'drop_png_image', 1)
