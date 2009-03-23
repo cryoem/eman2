@@ -5241,7 +5241,7 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, maxit=10, nas
 	from utilities      import amoeba, bcast_string_to_all, model_circle, get_arb_params, set_arb_params, drop_spider_doc
 	from utilities      import bcast_number_to_all, bcast_list_to_all,get_image, drop_image, bcast_EMData_to_all, send_attr_dict
 	from utilities      import get_params_proj, set_params_proj, print_msg, read_spider_doc, get_im
-	from utilities      import print_begin_msg, print_msg, print_end_msg, file_type
+	from utilities      import model_blank, print_begin_msg, print_msg, print_end_msg, file_type
 	from reconstruction import rec3D_MPI
 	from statistics     import ccc
 	from math           import pi, sqrt
