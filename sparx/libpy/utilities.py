@@ -637,7 +637,22 @@ def drop_image(imagename, destination, itype="h"):
 		else:  ERROR("unknown image type","drop_image",1)
 		imagename.write_image(destination, 0, imgtype)
 	else:
-		ERROR("`destination` is not a file name","drop_image",1)
+		ERROR("destination is not a file name","drop_image",1)
+
+def drop_png_image(im, trg):
+	"""Write an image with the proper png save
+	Usage: drop_png_image(name_of_existing_image, 'path/to/image.png')
+	"""
+
+	if trg[-4:] != '.png':
+		ERROR('destination name must be png extension', 'drop_png_image', 1)
+
+	if isinstance(trg, basestring):
+		im['render_min'] = im['minimum']
+		im['render_max'] = im['maximum']
+		im.write_image(trg, 0)
+	else:
+		ERROR('destination is not a file name', 'drop_png_image', 1)
 
 def drop_spider_doc(filename, data, comment = None):
 	"""Create a spider-compatible "Doc" file.
