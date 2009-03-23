@@ -217,8 +217,6 @@ def drop_angle_doc(filename, phis, thetas, psis, comment=None):
 
 ###############################################################################################
 ## COMMON LINES NEW VERSION ###################################################################
-# 11/11/08 
-# TODO: refinement, trials and MPI
 
 # plot angles, map on half-sphere
 # agls: [[phi0, theta0, psi0], [phi1, theta1, psi1], ..., [phin, thetan, psin]]
@@ -299,11 +297,6 @@ def get_line(im, li):
 	e  = model_blank(nx)
 	for n in xrange(nx): e.set_value_at(n, 0, im.get_value_at(n, li))
 	return e
-
-
-
-
-
 
 # transform an image to sinogram (mirror include)
 def cml_sinogram_(image2D, diameter = 53, d_psi = 1):
@@ -390,6 +383,8 @@ def cml_sinogram(image2D, diameter, d_psi = 1):
 
 	return Util.window(e, diameter, len(data), 1, 0, 0, 0)
 
+'''
+# NOT USED WILL BE REMOVED jb 2009-03-23 11:41:13
 def common_line_in3D(ph1, th1, ph2, th2):
 	from math import pi, sqrt, cos, sin, asin, acos
 
@@ -428,7 +423,10 @@ def common_line_in3D(ph1, th1, ph2, th2):
 		thetaCom *= (180 / pi)
 
 	return phiCom , thetaCom
+'''
 
+'''
+# OBSOLETE WILL BE REMOVED jb 2009-03-23 11:40:30
 def cml_weights_full(Ori):
 	from projection   import common_line_in3D
 
@@ -488,8 +486,10 @@ def cml_weights_full(Ori):
 		weights = [6.28/float(g_n_lines)] * g_n_lines
 
 	return weights
+'''
 	
-
+'''
+# OBSOLETE WILL BE REMOVED jb 2009-03-23 11:39:54
 # compute the weight of the common lines
 def cml_weights_iagl(Ori, iagl, iprj):
 	from projection   import common_line_in3D
@@ -553,6 +553,7 @@ def cml_weights_iagl(Ori, iagl, iprj):
 		weights = [6.28/float(g_n_lines)] * g_n_lines
 
 	return weights
+'''
 
 # open and transform projections
 def cml_open_proj(stack, ir, ou, d_psi, lf, hf):
@@ -738,6 +739,8 @@ def cml_export_progress(outdir, ite, iprj, iagl, psi, disc, cmd):
 	infofile.write(txt + '\n')
 	infofile.close()
 
+'''
+# WILL BE REMOVED jb 2009-03-23 11:43:30
 # compute the common lines in sino
 def get_common_line_angles(phi1, theta1, psi1, phi2, theta2, psi2, nangle, STOP=False):
 	from math import fmod
@@ -758,10 +761,10 @@ def get_common_line_angles(phi1, theta1, psi1, phi2, theta2, psi2, nangle, STOP=
 	n2 = int(nangle * fmod(alphain2 + 360, 360) / 360.0)
 	
 	return n1, n2
+'''
 
 # compute discrepancy according the projections and orientations
 def cml_disc(Prj, Ori, flag_weights):
-	from projection  import get_common_line_angles, cml_weights_full
 	from math        import pi, fmod
 
 	# gbl vars
@@ -770,18 +773,15 @@ def cml_disc(Prj, Ori, flag_weights):
 	if flag_weights:
 		cml = Util.cml_line_in3d_full(Ori)    # c-code
 		weights = Util.cml_weights(cml)       # c-code
-		#weights = cml_weights_full_dev(Ori)  # py-code
-		
+		weights = cml_norm_weights(weights)
 	else:   weights = [1.0] * g_n_lines
 
-	#com = [[] for i in xrange(g_n_lines)]
 	com = [0] * 2 * g_n_lines
 
 	# compute the common lines
 	count = 0
 	for i in xrange(g_n_prj - 1):
 		for j in xrange(i + 1, g_n_prj):
-			#com[count], com[count + 1] = get_common_line_angles(Ori[4*i], Ori[4*i+1], Ori[4*i+2], Ori[4*j], Ori[4*j+1], Ori[4*j+2], g_n_psi)    # py code
 			[com[count], com[count + 1]] = Util.cml_line_pos(Ori[4*i], Ori[4*i+1], Ori[4*i+2], Ori[4*j], Ori[4*j+1], Ori[4*j+2], g_n_psi)        # c  code
 			count += 2
 
@@ -851,38 +851,12 @@ def cml_spin(Prj, iprj, Ori, iagl, weights, flag):
 
 	# compute the common line (only for iprj)
 	com = Util.cml_list_line_pos(Ori, g_anglst[iagl][0], g_anglst[iagl][1], iprj, g_n_prj, g_n_psi, g_n_lines)
-        #print com
-	#import sys
-	#sys.exit()
-	'''
-	if g_anglst[iagl][0] > 179 and g_anglst[iagl][0] < 200 and g_anglst[iagl][1] == 80:
-		print iprj, iagl, g_anglst[iagl][0], g_anglst[iagl][1]
-		#print Ori
-		for i in xrange(0, 2*g_n_lines, 2):
-			print com[i], com[i+1]
-	'''
-
-	#import sys
-	#sys.exit()
-	# 337 100
-	# 251 40
-	#if g_anglst[iagl][0] > 251 and g_anglst[iagl][0] < 252 and g_anglst[iagl][1] == 40 and iprj == 0:
-	#	print '====', iprj, iagl, g_anglst[iagl][0], g_anglst[iagl][1]
-	
-	# do spin over all psi
-	#if iprj == 01 and iagl == 256:
-	#	print 'iprj 01 iagl 256'
 	res = Util.cml_spin(g_n_psi, iprj, g_n_prj, weights, com, Prj, flag)
-	#else:
-	#	res = Util.cml_spin(g_n_psi, iprj, g_n_prj, weights, com, Prj, 0)
-	#else:
-	#	res = [1e9, 0]
 
-	#return best_disc, best_psi
 	return res[0], int(res[1])
 
 def cml_norm_weights(w):
-	wm = 6.28 #max(w)
+	wm = max(w)
 	nw = []
 	for i in xrange(len(w)): nw.append(wm - w[i])
 	sw = sum(nw)
@@ -891,7 +865,7 @@ def cml_norm_weights(w):
 
 # find structure
 def cml_find_structure(Prj, Ori, outdir, maxit, first_zero, flag_weights):
-	from projection import cml_spin, cml_export_progress, cml_weights_iagl
+	from projection import cml_spin, cml_export_progress
 	import time
 	import sys
 	
@@ -913,7 +887,6 @@ def cml_find_structure(Prj, Ori, outdir, maxit, first_zero, flag_weights):
 		# loop over i prj
 		change = False
 		for iprj in listprj:
-			
 
 			# Store current index of angles assign
 			cur_agl      = Ori[4*iprj+3]
@@ -924,44 +897,18 @@ def cml_find_structure(Prj, Ori, outdir, maxit, first_zero, flag_weights):
 			best_psi  = -1
 			best_iagl = -1
 			for iagl in xrange(g_n_anglst):
-				#if g_debug: print 'iprj:', iprj, 'iagl', iagl
-
 				# if agls free
 				if ocp[iagl] == -1:
+					#t1 = time.time()
+
 					# weights
 					if flag_weights:
 						cml = Util.cml_line_in3d_iagl(Ori, g_anglst[iagl][0], g_anglst[iagl][1], iprj)   # c-code
-						
-						#if g_debug: print ite, iprj, iagl
-						'''
-						if iprj == 11 and iagl == 177 and ite == 1:
-							for i in xrange(g_n_prj):
-								print '%10.3f\t%10.3f\t%10.3f' % (Ori[4*i], Ori[4*i+1], Ori[4*i+2])
-							print 'projection:', iprj, g_anglst[iagl]
-							print '-------------------------'
-							for i in xrange(0, len(cml), 2):
-								print cml[i], cml[i+1]
-							sys.exit()
-						'''
 						weights = Util.cml_weights(cml)                                                  # c-code
 						weights = cml_norm_weights(weights)
-						
-                                                #if sum(weights) < 6.28:
-						#	print 'WARNING ite', ite, 'iprj', iprj, 'iagl', iagl 
-                                                #weights = cml_weights_iagl(Ori, iagl, iprj)                                     # py-code
-						
 					else:   weights = [1.0] * g_n_lines
-					
-					# spin
-					#if g_anglst[iagl][1] == 100:
-					#print g_anglst[iagl][0], g_anglst[iagl][1]
-					#if iagl == 0 and iprj == 1 and ite == 0:
-					#	disc, ind_psi = cml_spin(Prj, iprj, Ori, iagl, weights, 1)
-					#	sys.exit()
-					#else:
+
 					disc, ind_psi = cml_spin(Prj, iprj, Ori, iagl, weights, 0)
-					#else:
-					#	disc, ind_psi = 1e9, 0
 
 					# select the best
 					if disc < best_disc:
@@ -969,10 +916,11 @@ def cml_find_structure(Prj, Ori, outdir, maxit, first_zero, flag_weights):
 						best_psi  = ind_psi
 						best_iagl = iagl
 
+					#print 'time', time.time() - t1, 's'
+
 					if g_debug: cml_export_progress(outdir, ite, iprj, iagl, ind_psi * g_d_psi, disc, 'progress')
 				else:
 					if g_debug: cml_export_progress(outdir, ite, iprj, iagl, -1, -1, 'progress')
-
 
 			# if change, assign
 			if best_iagl != cur_agl:
