@@ -4726,21 +4726,22 @@ def ali3d_m(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=1,
 
 def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=1, 
             xr ="4 2  2  1", yr="-1", ts="1 1 0.5 0.25",   delta="10  6  4  4", an="-1",
-	      center = 0, nassign = 3, nrefine= 1, CTF = False, snr = 1.0,  ref_a="S", sym="c1",
+	      center = -1, nassign = 3, nrefine= 1, CTF = False, snr = 1.0,  ref_a="S", sym="c1",
 	      user_func_name="ref_ali3d", debug = False, fourvar=False):
 	from utilities      import model_circle, reduce_EMData_to_root, bcast_EMData_to_all, bcast_number_to_all, drop_image
 	from utilities      import bcast_string_to_all, bcast_list_to_all, get_image, get_input_from_string, get_im
 	from utilities      import get_arb_params, set_arb_params, drop_spider_doc, send_attr_dict
 	from utilities      import get_params_proj, set_params_proj, model_blank
 	from filter         import filt_params, filt_btwl, filt_ctf, filt_table, fit_tanh, filt_tanl
+	from utilities      import rotate_3D_shift,estimate_3D_center_MPI
 	from alignment      import proj_ali_incore
-	from random          import randint
+	from random         import randint
 	from fundamentals   import fshift
 	from utilities      import print_begin_msg, print_end_msg, print_msg
 	from projection     import prep_vol, prgs, project
 	import os
 	import types
-	from mpi            import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD, mpi_barrier
+	from mpi            import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
 
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid           = mpi_comm_rank(MPI_COMM_WORLD)
@@ -4912,7 +4913,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 		else:
  			peaks = [[-1.0e23, tr_dummy] for im in xrange(nima) ]
 	
-		
+		cs = [0.0]*3	
 		for iref in xrange(numref):
 			vol = get_im(os.path.join(outdir, "volf%04d.hdf"%(total_iter-1)), iref)
 			vol *= mask3D
@@ -4965,9 +4966,19 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 							finfo.write( "\n" )
 							finfo.flush()
 
+		
 		if runtype=="REFINEMENT":
 			for im in xrange(nima):
 				data[im].set_attr('xform.projection', peaks[im][1])
+
+			if(center == -1):
+				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node)				
+				if myid == main_node:
+					msg = " Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
+					print_msg(msg)
+				cs = mpi_bcast(cs, 3, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+				cs = [float(cs[0]), float(cs[1]), float(cs[2])]
+				rotate_3D_shift(data, cs)
 
 		del peaks
 		if CTF: del vol
