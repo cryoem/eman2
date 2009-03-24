@@ -500,6 +500,14 @@ def display(img):
 	#	os.system("v2 /tmp/img.hed")
 		os.system("e2display.py "+fsp)
 		
+def browse():
+	if GUIMode:
+		from emselector import EMBrowserModule
+		dialog = EMBrowserModule(app)
+		app.show_specific(dialog)
+	else:
+		os.system("e2display.py")
+		
 class EMImage(object):
 	"""This is basically a factory class that will return an instance of the appropriate EMImage* class """
 	def __new__(cls,data=None,old=None,parent=1):

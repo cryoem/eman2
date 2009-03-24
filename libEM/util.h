@@ -543,6 +543,9 @@ namespace EMAN
 		 * @return The best FFT size.
 		 */
 		static int calc_best_fft_size(int low);
+		
+		
+		static EMData* calc_bessel(const int n, const float& x);
 
 		/** Calculate a number's square.
 		 * @param[in] n Given number.
