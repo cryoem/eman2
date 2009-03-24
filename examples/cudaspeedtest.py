@@ -78,20 +78,20 @@ def test_main():
 	print "Testing calc_ccfx"
 	print "Dims","\t", "GPU speedup"
 	for dims in test_dims:
-		a = test_image(0,size=(dims,dims))
-		a.set_gpu_rw_current()
+		a = [test_image(0,size=(dims,dims)) for i in test_range]
+		for i in a: i.set_gpu_rw_current()
 		t = time()
 		for i in test_range:
-			c = a.calc_ccfx(a,0,-1,True)
+			c = a[i].calc_ccfx(a[i],0,-1,True)
 			#c.print_this()
 
 		gpu_times.append(time()-t)
 		#print dims, "B"
-		a = test_image(0,size=(dims,dims))
+		a = [test_image(0,size=(dims,dims)) for i in test_range]
 		#a.print_this()
 		t = time()
 		for i in test_range:
-			c = a.calc_ccfx(a,0,-1,True)
+			c = a[i].calc_ccfx(a[i],0,-1,True)
 			#print "the other stuff is ", a.get_cuda_handle()
 			#a.print_this()
 			#b.print_this()

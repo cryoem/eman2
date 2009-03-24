@@ -233,7 +233,6 @@ def main():
 							image = EMData()
 							image.read_image(args[0],p)
 						else:
-							print images[p],p
 							image = images[p].copy()
 						image.transform(t3d)
 						
@@ -467,7 +466,7 @@ def main():
 			#avg.process_inplace("xform.centerofmass")
 			#avg.process_inplace("mask.sharp",{"outer_radius":ta.get_xsize()/2})
 		if average == None: continue
-		# extract euler data from the ref image, if it was specified
+		# Align to the reference and extract euler data if it was specified
 		if ( options.ref):
 			e = EMData()
 			if options.iter > 0:
@@ -500,10 +499,17 @@ def main():
 					#ct.printme()
 					#fine_transform.printme()
 					image.transform(ct)
-				
+					
 					np += 1
 					averager.add_image(image)
-			
+					
+					# Don't forget to store the alignment parameters
+					params = ct.get_params("2d")
+					dx.set(c,p, params["tx"])
+					dy.set(c,p, params["ty"])
+					da.set(c,p, params["alpha"])
+					dflip.set(c,p, params["mirror"])
+				
 				if np == 0:
 					if (options.verbose):
 						print "Class",cl,"...no particles on iteration",it

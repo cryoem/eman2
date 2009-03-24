@@ -586,7 +586,51 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 	
 #	def get_inspector(self):
 #		pass
+
+def get_alignment(dir_tag="00",iter="00",ptcl=0,post_align=False):
+	directory = "refine_"+str(dir_tag)
+	if not os.path.isdir("refine_"+dir_tag):
+		print "The directory",directory,"does not exist"
+		return None
 	
+	if post_align:
+		db_ali = "bdb:"+directory+"#cls_result_"+iter
+	else:
+		db_ali = "bdb:"+directory+"#classify_"+iter
+	if not db_check_dict(db_ali):
+		print  "Error, can't open database:", db_ali,".. please check your arguments"
+
+	prj_file = "bdb:"+directory+"#projections_"+iter
+	if not db_check_dict(prj_file):
+		print  "Error, can't open database:", prj_file,".. please check your arguments"
+	
+	classes  = EMData(db_ali,0)
+	dx = EMData(db_ali,2)
+	dy = EMData(db_ali,3)
+	da = EMData(db_ali,4)
+	dflip  = EMData(db_ali,5)
+	
+	class_idx = int(classes.get(ptcl))
+	
+	projection = EMData(prj_file,class_idx)
+	
+	x = dx.get(ptcl)
+	y = dy.get(ptcl)
+	a = da.get(ptcl)
+	m = dflip.get(ptcl)
+	
+	print "Class and ali parms are",class_idx,x,y,a,m
+	
+	t = Transform({"type":"2d","alpha":a,"mirror":int(m)})
+	t.set_trans(x,y)
+	
+	ptcl_db = "bdb:"+directory+"#all"
+	ptcl = EMData(ptcl_db,ptcl)
+	ptcl_c = ptcl.copy()
+	ptcl_c.transform(t)
+	print directory,db_ali,prj_file,ptcl_db
+	return [projection["xform.projection"], t,[projection,ptcl,ptcl_c]]
+
 class EMAsymmetricUnitInspector(EMSymInspector):
 	def get_desktop_hint(self):
 		return "inspector"
