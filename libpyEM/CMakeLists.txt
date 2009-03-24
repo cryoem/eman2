@@ -42,7 +42,10 @@ ENDIF(CMAKE_SYSTEM MATCHES "IRIX.*")
 MACRO(ADD_PYSTE_LIB_WITH_SRC libname srcfile)
 	IF(WIN32)
 		ADD_LIBRARY(lib${libname} SHARED lib${libname}.cpp ${srcfile})
-		INSTALL_TARGETS(/lib lib${libname})
+		#INSTALL_TARGETS(/lib RUNTIME_DIRECTORY /lib lib${libname})
+		INSTALL(FILES ${LIBRARY_OUTPUT_PATH}/release/lib${libname}.dll
+				DESTINATION	lib
+				RENAME lib${libname}.pyd)
 	ELSE(WIN32)
 		ADD_LIBRARY(${libname} SHARED lib${libname}.cpp ${srcfile})
 		INSTALL_TARGETS(/lib ${libname})
