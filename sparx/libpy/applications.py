@@ -4756,7 +4756,6 @@ def ali3d_m_MPI(stack, ref_vol, outdir, cccmaskfile=None, alimaskfile=None, maxi
 		print_msg("Reference volume            : %s\n"%(ref_vol))	
 		print_msg("Number of reference volumes : %i\n"%(numref))
 		print_msg("Output directory            : %s\n"%(outdir))
-		print_msg("CCC Maskfile                : %s\n"%(cccmaskfile))
 		print_msg("ALI Maskfile                : %s\n"%(alimaskfile))
 		print_msg("Inner radius                : %i\n"%(first_ring))
 		print_msg("Outer radius                : %i\n"%(last_ring))
@@ -4775,19 +4774,14 @@ def ali3d_m_MPI(stack, ref_vol, outdir, cccmaskfile=None, alimaskfile=None, maxi
 		print_msg("Reference projection method : %s\n"%(ref_a))
 		print_msg("Symmetry group              : %s\n\n"%(sym))
 
-	if(cccmaskfile):
-		if(type(cccmaskfile) is types.StringType): cccmask3D = get_image(cccmaskfile)
-		else: 	                                   cccmask3D = cccmaskfile
-	else        :  cccmask3D = model_circle(last_ring, nx, nx, nx)
-	
 
 	if(alimaskfile):
-		if(type(alimaskfile) is types.StringType): alimask3D = get_image(alimaskfile)
-		else: 	                                   alimask3D = alimaskfile
-	else        :  alimask3D = model_circle(last_ring, nx, nx, nx)
+		if(type(alimaskfile) is types.StringType): mask3D = get_image(alimaskfile)
+		else: 	                                   mask3D = alimaskfile
+	else        :  mask3D = model_circle(last_ring, nx, nx, nx)
 	
 
-	mask = model_circle(last_ring, nx, nx)
+	mask2D = model_circle(last_ring, nx, nx)
 
 	if(myid == main_node):
 		active = EMUtil.get_all_attributes(stack, 'active')
@@ -4812,11 +4806,8 @@ def ali3d_m_MPI(stack, ref_vol, outdir, cccmaskfile=None, alimaskfile=None, maxi
 		finfo.flush()
 
 	data = EMData.read_images(stack, list_of_particles)
-	masks = [None]*len(data)
-	for im in xrange(len(data)):
-		data[im].set_attr('ID', list_of_particles[im])
-		phi,tht,psi,s2x,s2y = get_params_proj( data[im] )
-		masks[im] = project( cccmask3D, [phi,tht,psi,-s2x,-s2y],int(ou) )
+ 	for im in xrange(len(data)):
+ 		data[im].set_attr('ID', list_of_particles[im])
 
 	if fourvar:
 		from reconstruction import rec3D_MPI
@@ -4850,7 +4841,6 @@ def ali3d_m_MPI(stack, ref_vol, outdir, cccmaskfile=None, alimaskfile=None, maxi
 		finfo.write( '%d loaded  \n' % len(data) )
 		finfo.flush()
 	nima = len(list_of_particles)
-	#del list_of_particles
 
 	total_iter = 0
 	tr_dummy = Transform({"type":"spider"})
@@ -4876,22 +4866,19 @@ def ali3d_m_MPI(stack, ref_vol, outdir, cccmaskfile=None, alimaskfile=None, maxi
 		
 		for iref in xrange(numref):
 			vol = get_im(os.path.join(outdir, "volf%04d.hdf"%(total_iter-1)), iref)
-			if(CTF):
-				previous_defocus = -1.0
-			else:
-				volref, kb = prep_vol(vol)
-
+			vol *= mask3D
 	
 			if runtype=="ASSIGNMENT":	
 				for im in xrange(nima):
+					img = data[im].process( "normalize.mask", {"mask":mask2D, "no_sigma":0} )
+					phi,tht,psi,s2x,s2y = get_params_proj(data[im])
+					ref = project( vol,[phi,tht,psi,-s2x,-s2y],int(ou))
+					ref.process_inplace( "normalize.mask", {"mask":mask2D, "no_sigma":1} )
 					if(CTF):
 						ctf_params = data[im].get_attr( "ctf" )
-						if(ctf_params.defocus != previous_defocus):
-							previous_defocus = ctf_params.defocus
-							vol = filt_ctf(vol, ctf_params)
-
-					phi,tht,psi,s2x,s2y = get_params_proj(data[im])
-					peak = project(vol,[phi,tht,psi,-s2x,-s2y],int(ou)).cmp("ccc",data[im],{"mask":masks[im], "negative":0})
+						ref = filt_ctf( ref, ctf_params )
+	
+					peak = ref.cmp("dot",img,{"mask":mask2D, "negative":0})
 
 					if not(finfo is None):
 						finfo.write( "ID,iref,peak: %6d %d %8.5f" % (list_of_particles[im],iref,peak) )
@@ -4908,10 +4895,9 @@ def ali3d_m_MPI(stack, ref_vol, outdir, cccmaskfile=None, alimaskfile=None, maxi
 							finfo.flush()
 
 			else:
-				if(an[N_step] == -1):	proj_ali_incore(vol, alimask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], ref_a, sym, CTF, MPI=False)
-				else:	           proj_ali_incore_local(vol, alimask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], an[N_step], ref_a, sym, CTF, MPI=False)
+				if(an[N_step] == -1):	proj_ali_incore(vol, None, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], ref_a, sym, CTF, MPI=False)
+				else:	           proj_ali_incore_local(vol, None, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], an[N_step], ref_a, sym, CTF, MPI=False)
 				for im in xrange(nima):
-	
 					peak = data[im].get_attr('peak')
 					if not(finfo is None):
 						phi,tht,psi,s2x,s2y = get_params_proj(data[im])
@@ -4961,10 +4947,6 @@ def ali3d_m_MPI(stack, ref_vol, outdir, cccmaskfile=None, alimaskfile=None, maxi
 				if myid == main_node:   
 					varf = 1.0/varf
 					varf.write_image( os.path.join(outdir,"varf%04d.hdf"%total_iter) )
-			for im in xrange(len(data)):
-				phi,tht,psi,s2x,s2y = get_params_proj( data[im] )
-				masks[im] = project( cccmask3D, [phi,tht,psi,-s2x,-s2y], last_ring)
-
 
 		if(myid == main_node):
 			refdata = [None]*7
