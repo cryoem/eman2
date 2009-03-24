@@ -617,7 +617,13 @@ class EMSelectorDialog(QtGui.QDialog):
 		return
 	
 	def keyPressEvent(self,event):
-		pass
+		if event.key() == Qt.Key_F1:
+			try:
+				import webbrowser
+				webbrowser.open("http://blake.bcm.edu/emanwiki/e2display")
+			except:
+				pass
+	
 	
 	def list_widget_clicked(self,item):
 		self.list_widget_clickerooni(item,False)

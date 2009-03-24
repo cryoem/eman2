@@ -218,13 +218,17 @@ class EMGUIModule(EventsEmitterAndReciever,QtCore.QObject):
 	
 		try:
 			try:
-				test = self.browser
-			except: 
-				self.browser = QtWebKit.QWebView()
-				self.browser.load(QtCore.QUrl("http://blake.bcm.edu/emanwiki/e2display"))
-				self.browser.resize(800,800)
-			
-			if not self.browser.isVisible(): self.browser.show()
+				import webbrowser
+				webbrowser.open("http://blake.bcm.edu/emanwiki/e2display")
+			except:
+				try:
+					test = self.browser
+				except: 
+					self.browser = QtWebKit.QWebView()
+					self.browser.load(QtCore.QUrl())
+					self.browser.resize(800,800)
+				
+				if not self.browser.isVisible(): self.browser.show("http://blake.bcm.edu/emanwiki/e2display")
 		except:
 			pass
 			#self.browser2 = QtGui.QTextBrowser()

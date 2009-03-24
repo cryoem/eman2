@@ -61,10 +61,7 @@ class EMLightsDrawer:
 	Base clase, works with EMLightsInspectorBase
 	'''
 	def __init__(self):
-		global glut_inited
-		if not glut_inited:  #and not get_platform() == "Darwin":
-			GLUT.glutInit("")
-			glut_inited = True
+		
 		self.gl_lights = get_gl_lights_vector()
 		self.colors = get_default_gl_colors()
 		self.mouse_target = None
@@ -145,6 +142,11 @@ class EMLightsDrawer:
 	
 	
 	def draw_lights(self):
+		global glut_inited
+		if not glut_inited:  #and not get_platform() == "Darwin":
+			GLUT.glutInit("")
+			glut_inited = True
+		
 		if ( self.cylinderdl == 0 ):
 			self.cylinderdl=glGenLists(1)
 				
@@ -456,6 +458,10 @@ class EMLights(EMLightsDrawer,EMImage3DGUIModule):
 		return "lights"
 
 	def render(self):
+		global glut_inited
+		if not glut_inited:  #and not get_platform() == "Darwin":
+			GLUT.glutInit("")
+			glut_inited = True
 		#if (not isinstance(self.data,EMData)): return
 		lighting = glIsEnabled(GL_LIGHTING)
 		cull = glIsEnabled(GL_CULL_FACE)
