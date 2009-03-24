@@ -1085,7 +1085,6 @@ def rec3D_MPI(data, snr, symmetry, mask3D, fsc_curve, myid, main_node = 0, rstep
 		return volall,fscdat
                  
 	if myid == main_node_eve:
-		print "fftvol_eve_file: ", fftvol_eve_file
 		fftvol = get_image( fftvol_eve_file )
 		send_EMData(fftvol, main_node_all, tag_fftvol_eve )
 
