@@ -588,6 +588,20 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 #		pass
 
 def get_alignment(dir_tag="00",iter="00",ptcl=0,post_align=False):
+	'''
+	Get alignment data.
+	dir_tag corresponds to the refinement directory. If you specify "01" this will look in "refine_01"
+	iter corresponds to the refinement iteration. For example if you specify "02", data from "projections_02", "classify_02" will be used, etc.
+	ptcl is the particle number.
+	post_align, if False, gets alignment parameters from before class averaging (classify_XX). If true it is after (cls_result_XX) 
+	Return value is [Projection transfrom, Alignment transform, [projection,particle,aligned particle]]
+	
+	For example, 
+	a = get_alignment("00","00",0,False)
+	display(a[2])
+	a[0].get_params("eman")
+	a[1].get_params("2d")
+	'''
 	directory = "refine_"+str(dir_tag)
 	if not os.path.isdir("refine_"+dir_tag):
 		print "The directory",directory,"does not exist"
@@ -619,7 +633,7 @@ def get_alignment(dir_tag="00",iter="00",ptcl=0,post_align=False):
 	a = da.get(ptcl)
 	m = dflip.get(ptcl)
 	
-	print "Class and ali parms are",class_idx,x,y,a,m
+	#print "Class and ali parms are",class_idx,x,y,a,m
 	
 	t = Transform({"type":"2d","alpha":a,"mirror":int(m)})
 	t.set_trans(x,y)
@@ -628,7 +642,7 @@ def get_alignment(dir_tag="00",iter="00",ptcl=0,post_align=False):
 	ptcl = EMData(ptcl_db,ptcl)
 	ptcl_c = ptcl.copy()
 	ptcl_c.transform(t)
-	print directory,db_ali,prj_file,ptcl_db
+	#print directory,db_ali,prj_file,ptcl_db
 	return [projection["xform.projection"], t,[projection,ptcl,ptcl_c]]
 
 class EMAsymmetricUnitInspector(EMSymInspector):
