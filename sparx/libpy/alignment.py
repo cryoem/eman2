@@ -933,8 +933,9 @@ def proj_ali_incore(volref, mask3D, projdata, first_ring, last_ring, rstep, xrng
 			finfo.flush()
 		if  CTF:
 			ctf_params = projdata[imn].get_attr("ctf")
-			ima = filt_ctf(projdata[imn], ctf_params, True)
-			[ang, sxs, sys, mirror, nref, peak] = Util.multiref_polar_ali_2d(ima.process("normalize.mask", {"mask":mask2D, "no_sigma":1}), ref_proj_rings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo)
+			ima = projdata[imn].process("normalize.mask", {"mask":mask2D, "no_sigma":0})
+			ima = filt_ctf(ima, ctf_params, True)
+			[ang, sxs, sys, mirror, nref, peak] = Util.multiref_polar_ali_2d(ima, ref_proj_rings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo)
 		else:
 			[ang, sxs, sys, mirror, nref, peak] = Util.multiref_polar_ali_2d(projdata[imn].process("normalize.mask", {"mask":mask2D, "no_sigma":1}), ref_proj_rings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo)
 		numref=int(nref)
@@ -1012,8 +1013,9 @@ def proj_ali_incore_local(volref, mask3D, projdata, first_ring, last_ring, rstep
 			finfo.flush()
 		if CTF:
 			ctf_params = projdata[imn].get_attr("ctf")
-			ima = filt_ctf(projdata[imn], ctf_params, True)
-			[ang, sxs, sys, mirror, nref, peak] = Util.multiref_polar_ali_2d_local(ima.process("normalize.mask", {"mask":mask2D, "no_sigma":1}), ref_proj_rings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
+                        ima = projdata[imn].process("normalize.mask", {"mask":mask2D, "no_sigma":0})
+			ima = filt_ctf(ima, ctf_params, True)
+			[ang, sxs, sys, mirror, nref, peak] = Util.multiref_polar_ali_2d_local(ima, ref_proj_rings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
 		else:
 			[ang, sxs, sys, mirror, nref, peak] = Util.multiref_polar_ali_2d_local(projdata[imn].process("normalize.mask", {"mask":mask2D, "no_sigma":1}), ref_proj_rings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
 		numref=int(nref)
