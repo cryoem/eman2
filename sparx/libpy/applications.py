@@ -4421,12 +4421,12 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 	if myid == main_node: print_end_msg("ali3d_d_MPI")
 
 
-def ali3d_m(stack, ref_vol, outdir, cccmaskfile=None, alimaskfile=None, maxit=1, ir=1, ou=-1, rs=1, 
+def ali3d_m(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=1, 
            xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta="10 6 4 4", an="-1", 
 	     center = 1.0, nassign = 3, nrefine = 1, CTF = False, snr = 1.0,  ref_a = "S", sym="c1",
 	     user_func_name="ref_ali3d", MPI=False, debug = False, fourvar=False):
 	if MPI:
-		ali3d_m_MPI(stack, ref_vol, outdir, cccmaskfile,alimaskfile, maxit, ir, ou, rs, xr, yr, ts,
+		ali3d_m_MPI(stack, ref_vol, outdir, maskfile, maxit, ir, ou, rs, xr, yr, ts,
 		 delta, an, center, nassign, nrefine, CTF, snr, ref_a, sym, user_func_name, debug, fourvar)
 		return
 	from utilities      import model_circle, drop_image, get_image, get_input_from_string
@@ -4675,7 +4675,7 @@ def ali3d_m(stack, ref_vol, outdir, cccmaskfile=None, alimaskfile=None, maxit=1,
 			write_headers( stack, data, list_of_particles)
 	print_end_msg("ali3d_m")
 
-def ali3d_m_MPI(stack, ref_vol, outdir, cccmaskfile=None, alimaskfile=None, maxit=1, ir=1, ou=-1, rs=1, 
+def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=1, 
             xr ="4 2  2  1", yr="-1", ts="1 1 0.5 0.25",   delta="10  6  4  4", an="-1",
 	      center = 0, nassign = 3, nrefine= 1, CTF = False, snr = 1.0,  ref_a="S", sym="c1",
 	      user_func_name="ref_ali3d", debug = False, fourvar=False):
@@ -4756,7 +4756,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, cccmaskfile=None, alimaskfile=None, maxi
 		print_msg("Reference volume            : %s\n"%(ref_vol))	
 		print_msg("Number of reference volumes : %i\n"%(numref))
 		print_msg("Output directory            : %s\n"%(outdir))
-		print_msg("ALI Maskfile                : %s\n"%(alimaskfile))
+		print_msg("Maskfile                    : %s\n"%(maskfile))
 		print_msg("Inner radius                : %i\n"%(first_ring))
 		print_msg("Outer radius                : %i\n"%(last_ring))
 		print_msg("Ring step                   : %i\n"%(rstep))
@@ -4775,9 +4775,9 @@ def ali3d_m_MPI(stack, ref_vol, outdir, cccmaskfile=None, alimaskfile=None, maxi
 		print_msg("Symmetry group              : %s\n\n"%(sym))
 
 
-	if(alimaskfile):
-		if(type(alimaskfile) is types.StringType): mask3D = get_image(alimaskfile)
-		else: 	                                   mask3D = alimaskfile
+	if(maskfile):
+		if(type(maskfile) is types.StringType): mask3D = get_image(maskfile)
+		else: 	                                mask3D = maskfile
 	else        :  mask3D = model_circle(last_ring, nx, nx, nx)
 	
 
