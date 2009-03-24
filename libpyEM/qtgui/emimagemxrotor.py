@@ -504,8 +504,8 @@ class EMImageMXRotorModule(EMGUIModule):
 		render_width = self.gl_widget.width()
 		render_height = self.gl_widget.height()
 		try:
-			self.mx_rows = render_width/self.emdata_list_cache.get_image_width()
-			self.mx_cols = render_height/self.emdata_list_cache.get_image_height()
+			self.mx_rows = render_width/self.emdata_list_cache.get_xsize()
+			self.mx_cols = render_height/self.emdata_list_cache.get_ysize()
 			if self.mx_rows == 0: self.mx_rows = 1
 			if self.mx_cols == 0: self.mx_cols = 1
 		except: return
@@ -599,8 +599,8 @@ class EMImageMXRotorModule(EMGUIModule):
 		
 		self.render_width = self.gl_widget.width()
 		self.render_height = self.gl_widget.height()
-		width = self.mx_rows*(self.emdata_list_cache.get_image_width()+2)-2
-		height = self.mx_cols*(self.emdata_list_cache.get_image_height()+2)-2
+		width = self.mx_rows*(self.emdata_list_cache.get_xsize()+2)-2
+		height = self.mx_cols*(self.emdata_list_cache.get_ysize()+2)-2
 		scale1 = self.render_height/float(height)
 		scale2 = self.render_width/float(width)
 		
@@ -615,11 +615,11 @@ class EMImageMXRotorModule(EMGUIModule):
 			e = self.rotor[idx]
 			w = e.get_drawable().get_drawable()
 
-			w.set_scale(scale,False,False)
+			w.set_scale(scale,False)
 			e.set_width(self.render_width)
 			e.set_height(self.render_height)
 			e.set_update_frame(True)
-			w.set_mx_cols(self.mx_rows,False)
+			##w.set_mx_cols(self.mx_rows,False)
 			
 		self.rotor.update()
 

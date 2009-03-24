@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: David Woolford, 9/12/2007 (woolford@bcm.edu)
+# Author: Philip Baldwin, 9/12/2007 (woolford@bcm.edu)
 # Copyright (c) 2000-2007 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -119,20 +119,19 @@ def main():
 	
 #	Section 1.
 #     get the average alignment for each particle, and the maximum; renormalize
-#     the values of the similarities to get simMatB
+#     the values of the similarities to get normalized_Sim
 #           create lists that will eventually be used to write out the images
 	if ( options.verbose ):
 		print "Getting similarity statistics..."
-	msimMat=range(NumPart)
+	average_sim_value=range(NumPart)
 	for iPart in range(NumPart):
 		vv=[Simimg.get_value_at(iProj, iPart) for iProj in range(NumProj)];
-		msimMat[iPart]=sum(vv)/NumProj;
+		average_sim_value[iPart]=sum(vv)/NumProj;
 
-	
 	NumPeaks=min(options.sep,NumPart);
 	
-	simMatA       = [ range(NumPart) for j in range(NumProj)]
-	simMatB       = [ range(NumPart) for j in range(NumProj)]
+	centered_Sim  = [ range(NumPart) for j in range(NumProj)] # Sim values minus the mean
+	normalized_Sim= [ range(NumPart) for j in range(NumProj)] # Centered sim values divided by the max value
 	ReturnPart    = [ range(NumPart) for j in range(NumPeaks)]
 	ReturnVal     = [ range(NumPart) for j in range(NumPeaks)]
 	ReturnWt      = [ range(NumPart) for j in range(NumPeaks)]
@@ -143,20 +142,20 @@ def main():
 	
 	for iPart in range(NumPart):
 		for iProj in range(NumProj):
-			simMatA[iProj][iPart]= - ( Simimg.get_value_at(iProj,iPart) - msimMat[iPart]);
-
+			centered_Sim[iProj][iPart]= - ( Simimg.get_value_at(iProj,iPart) - average_sim_value[iPart]);
 
 	maxSim = -10000000
 	for iPart in range(NumPart):
-		for iProj in range(NumProj):
-			if ( simMatA[iProj][iPart] > maxSim ):
-				maxSim = simMatA[iProj][iPart]
+		if ( centered_Sim[iProj][iPart] > maxSim ):
+			maxSim = centered_Sim[iProj][iPart]
 				
-	for iPart in range(NumPart):
-		for iProj in range(NumProj):
-			simMatB[iProj][iPart]=10* simMatA[iProj][iPart]/maxSim;
-	
-	
+	if maxSim == 0:
+		if (options.verbose):
+			print "There is no variation in the similarity scores"
+	else:
+		for iPart in range(NumPart):
+			for iProj in range(NumProj):
+				normalized_Sim[iProj][iPart]=10* centered_Sim[iProj][iPart]/maxSim;
 #	Section 2.
 #       i) sort the alignment data [vvCp], 
 #      ii) find the projections corresponding to the sorted list [RelProj]
@@ -167,7 +166,7 @@ def main():
 		print "Determining particle classes and contribution weights..."
 	
 	for iPart in range(NumPart):
-		vv=[ simMatB[j][iPart] for j in range(NumProj)];
+		vv=[ normalized_Sim[j][iPart] for j in range(NumProj)];
 		vvCp=[ vv[j] for j in range(NumProj)];
 		vvCp.sort();
 		vvCp.reverse();
