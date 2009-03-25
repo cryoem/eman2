@@ -5286,6 +5286,18 @@ def ali3d_em_MPI_origin(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit
 
 
 
+def get_refiparams(nx):
+	M = nx
+	npad = 2
+	N = M*npad
+	K = 6
+	alpha = 1.75
+	r = M/2
+	v = K/2.0/N
+	return {"filter_type": Processor.fourier_filter_types.KAISER_SINH_INVERSE, "alpha":alpha, "K":K, "r":r, "v":v, "N":N}
+
+
+
 def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, maxit=10, nassign=4, nrefine=1, CTF = None, snr=1.0, sym="c1", user_func_name="ref_ali3d", fourvar=False, debug=False ):
 	"""
 		
@@ -5294,7 +5306,7 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, maxit=10, nas
 	from filter         import filt_ctf, filt_params, filt_table, filt_from_fsc, filt_btwl, filt_tanl, filt_vols
 	from fundamentals   import fshift, rot_avg_image
 	from projection     import prep_vol, prgs, project
-	from utilities      import amoeba, bcast_string_to_all, model_circle, get_arb_params, set_arb_params, drop_spider_doc
+	from utilities      import amoeba_multi_level, bcast_string_to_all, model_circle, get_arb_params, set_arb_params, drop_spider_doc
 	from utilities      import bcast_number_to_all, bcast_list_to_all,get_image, drop_image, bcast_EMData_to_all, send_attr_dict
 	from utilities      import get_params_proj, set_params_proj, print_msg, read_spider_doc, get_im
 	from utilities      import model_blank, print_begin_msg, print_msg, print_end_msg, file_type
@@ -5425,6 +5437,7 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, maxit=10, nas
 	
 	nima = len(list_of_particles)
 	
+        refiparams = get_refiparams(nx)
 
 	maxit = maxit*(nassign+nrefine)
 	for Iter in xrange(maxit):
@@ -5443,38 +5456,38 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, maxit=10, nas
 		for krf in xrange(numref):
 			vol = get_im(os.path.join(outdir, "volf%04d.hdf"%(iteration-1)), krf)
 			vol *= mask3D
+			volft,kb = prep_vol(vol)
+				
 
 			for im in xrange(nima):
 				img = data[im]
-
+				ctf = img.get_attr( "ctf" )
 				phi,tht,psi,s2x,s2y = get_params_proj(img)
-
+				refi = img.process( "normalize.mask", {"mask":mask2D, "no_sigma":0} )
+				refi = filt_ctf(refi, ctf )
+				refi = refi.FourInterpol(nx*2,nx*2,0,True)
+				refi = Processor.EMFourierFilter(refi, refiparams)
+				refdata = [None]*7
+				refdata[0] = volft
+				refdata[1] = kb
+				refdata[2] = img
+				refdata[3] = mask2D
+				refdata[4] = refi
+				refdata[5] = [-s2x,-s2y]
+				
 				if runtype=="ASSIGNMENT":
-					tmp = img.process( "normalize.mask", {"mask":mask2D, "no_sigma":0} )
-					ref = project( vol, [phi,tht,psi,-s2x,-s2y], ou)
-					ref.process_inplace( "normalize.mask", {"mask":mask2D, "no_sigma":1} )
-					if(CTF):
-						ctf = img.get_attr("ctf")
-						ref = filt_ctf( ref, ctf )
-					peak = ref.cmp( "dot", tmp, {"mask":mask2D, "negative":0} )
+					refdata[6] = False
+					peak = eqproj_cascaded_ccc([phi,tht,psi], refdata)
 					if not(finfo is None):
 						finfo.write( "ID,iref,peak: %6d %d %f"%(list_of_particles[im],krf,peak) )
 						finfo.flush()
 				else:
-
+					refdata[6] = True
 					weight_phi = max(delta, delta*abs((tht-90.0)/180.0*pi))
 					# running refinement
-					refdata = []
-					refdata.append(vol)
-					refdata.append(img)     
-					refdata.append(s2x)
-					refdata.append(s2y)
-					refdata.append(mask2D)
-					refdata.append(CTF)
-					refdata.append(ou)
-					[ang,peak,iter] = amoeba([phi,tht,psi], [weight_phi,delta,weight_phi], eqprojDot, 1.e-4, 1.e-4, 500, refdata)
+					[ang,peak,iter,sft] = amoeba_multi_level([phi,tht,psi], [weight_phi,delta,weight_phi], eqproj_cascaded_ccc, 1.e-4, 1.e-4, 500, refdata)
 					if not(finfo is None):
-						finfo.write( "ID,iref,peak,trans: %6d %d %f %f %f %f %f %f"%(list_of_particles[im],krf,peak,ang[0],ang[1],ang[2],s2x,s2y) )
+						finfo.write( "ID,iref,peak,trans: %6d %d %f %f %f %f %f %f"%(list_of_particles[im],krf,peak,ang[0],ang[1],ang[2],-sft[0],-sft[1]) )
 						finfo.flush()
 
 
@@ -5482,7 +5495,7 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, maxit=10, nas
 					peaks[im] = peak
 					img.set_attr( "group",  krf )
 					if runtype=="REFINEMENT": 
-						set_params_proj( img, [ang[0],ang[1],ang[2],s2x,s2y] )
+						set_params_proj( img, [ang[0],ang[1],ang[2],-sft[0],-sft[1]] )
 
 					if not(finfo is None):
 						finfo.write( " current best" )
@@ -5753,36 +5766,47 @@ def ali3d_en_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CT
 def eqproj_cascaded_ccc(args, data):
 	from utilities import peak_search, amoeba
 	from fundamentals import fft, ccf, fpol
+	from projection import prgs
 
-	R = Transform({"type":"spider", "phi":args[0], "theta":args[1], "psi":args[2], "tx":0.0, "ty":0.0, "tz":0.0, "mirror":0, "scale":1.0})
-	temp = data[0].extract_plane(R, data[1])
-	temp.fft_shuffle()
-	temp.center_origin_fft()
-	temp.do_ift_inplace()
-	M = temp.get_ysize()/2
-	temp = temp.window_center(M)
-	
-	nx = temp.get_ysize()
+	phi = args[0]
+        tht = args[1]
+        psi = args[2]
+
+        volft = data[0]
+        kb    = data[1]
+        img   = data[2]
+        mask  = data[3]
+        refi  = data[4]
+        sft   = data[5]
+	opt   = data[6]
+
+        prj  = prgs( volft, kb, [phi,tht,psi,0.0,0.0] )
+	prj.process_inplace( "normalize.mask", {"mask":mask, "no_sigma":1} )	
+
+	nx = prj.get_ysize()
 	sx = (nx-data[5][0]*2)/2
 	sy = (nx-data[5][1]*2)/2
 	
-	aaa = fpol(temp, 2*M, 2*M)
-	product = ccf(aaa, data[4])
-
+        M  = nx
+	aaa = fpol(prj, 2*M, 2*M)
+	product = ccf(aaa, refi)
 	data2 = [0]*2
 	data2[0] = product
 	data2[1] = data[1]
-	ps = amoeba([sx, sy], [1.0, 1.0], twoD_fine_search, 1.e-4, 1.e-4, 500, data2)
 
-	s2x = nx/2-ps[0][0]
-	s2y = nx/2-ps[0][1]
-	params2 = {"filter_type":Processor.fourier_filter_types.SHIFT, "x_shift":s2x, "y_shift":s2y, "z_shift":0.0}
-	temp2 = Processor.EMFourierFilter(temp, params2)
+	if opt:
+		ps = amoeba([sx, sy], [1.0, 1.0], twoD_fine_search, 1.e-4, 1.e-4, 500, data2)
+		s2x = nx/2-ps[0][0]
+		s2y = nx/2-ps[0][1]
+		return ps[1], [s2x,s2y]
+	else:
+		return twoD_fine_search( [sx,sy], data2 )
+	#params2 = {"filter_type":Processor.fourier_filter_types.SHIFT, "x_shift":s2x, "y_shift":s2y, "z_shift":0.0}
+	#prj = Processor.EMFourierFilter(prj, params2)
 	#v = -temp2.cmp("SqEuclidean", data[2], {"mask":data[3]})
-	v = temp2.cmp("ccc", data[2], {"mask":data[3], "negative":0})
+	#v = prj.cmp("dot", img, {"mask":mask, "negative":0})
 	
-	return v, [s2x, s2y]
-
+	#return v, [s2x, s2y]
 
 def twoD_fine_search(args, data):
 	return data[0].get_pixel_conv7(args[0]*2, args[1]*2, 0.0, data[1])
@@ -5906,7 +5930,7 @@ def ali3d_e(stack, outdir, maskfile = None, ou = -1,  delta = 2, center = -1, ma
 	v = K/2.0/N
 	params = {"filter_type": Processor.fourier_filter_types.KAISER_SINH_INVERSE, "alpha":alpha, "K":K, "r":r, "v":v, "N":N}
 
-	data = [None]*6
+	data = [None]*7
 	data[3] = mask2D
 	cs = [0.0]*3
 
@@ -5977,7 +6001,7 @@ def ali3d_e(stack, outdir, maskfile = None, ou = -1,  delta = 2, center = -1, ma
 				phi, theta, psi, tx, ty = get_params_proj(dataim[imn])
 				atparams = [phi, theta, psi]
 				data[5] = [tx, ty]
-				
+				data[6] = True # whether run amoeba to get optimized shift,always true for ali3d_d
 				if debug:
 					initial, dummy  = eqproj_cascaded_ccc(atparams, data)  # this is if we need initial discrepancy
 					outf.write("Image "+str(imn)+"\n")
