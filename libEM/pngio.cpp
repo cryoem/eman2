@@ -5,32 +5,32 @@
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
 
 #ifdef EM_PNG
@@ -46,7 +46,7 @@ using namespace EMAN;
 PngIO::PngIO(const string & file, IOMode rw)
 :	filename(file), rw_mode(rw), png_file(0), initialized(false),
 	png_ptr(0), info_ptr(0), end_info(0), nx(0), ny(0),
-	depth_type(PNG_INVALID_DEPTH), number_passes(0) 
+	depth_type(PNG_INVALID_DEPTH), number_passes(0), rendermin(0), rendermax(0)
 {}
 
 PngIO::~PngIO()
@@ -55,7 +55,7 @@ PngIO::~PngIO()
 		fclose(png_file);
 		png_file = 0;
 	}
-	
+
 	png_ptr = 0;
 	info_ptr = 0;
 	end_info = 0;
@@ -154,7 +154,7 @@ bool PngIO::is_valid(const void *first_block)
 {
 	ENTERFUNC;
 	bool result = false;
-	
+
 	if (!first_block) {
 		result = false;
 	}
@@ -170,7 +170,7 @@ bool PngIO::is_valid(const void *first_block)
 int PngIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
-	
+
 	//single image format, index can only be zero
 	image_index = 0;
 	check_read_access(image_index);
@@ -180,11 +180,11 @@ int PngIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	check_region(area, IntSize(nx1, ny1));
 	int xlen = 0, ylen = 0;
 	EMUtil::get_region_dims(area, nx1, &xlen, ny1, &ylen);
-			
+
 	dict["nx"] = xlen;
 	dict["ny"] = ylen;
 	dict["nz"] = 1;
-			
+
 	if (depth_type == PNG_CHAR_DEPTH) {
 		dict["datatype"] = EMUtil::EM_UCHAR;
 	}
@@ -203,7 +203,7 @@ int PngIO::write_header(const Dict & dict, int image_index, const Region*,
 						EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
-	
+
 	//single image format, index can only be zero
 	image_index = 0;
 	check_write_access(rw_mode, image_index);
@@ -312,7 +312,7 @@ int PngIO::write_data(float *data, int image_index, const Region*,
 					  EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
-	
+
 	//single image format, index can only be zero
 	image_index = 0;
 	check_write_access(rw_mode, image_index, 1, data);
@@ -322,7 +322,7 @@ int PngIO::write_data(float *data, int image_index, const Region*,
 
 	if (depth_type == PNG_CHAR_DEPTH) {
 		unsigned char *cdata = new unsigned char[nx];
-		
+
 		for (unsigned int y = 0; y < ny; y++) {
 			for (unsigned int x = 0; x < nx; x++) {
 				if(data[y * nx + x] < rendermin){
@@ -337,7 +337,7 @@ int PngIO::write_data(float *data, int image_index, const Region*,
 			}
 			png_write_row(png_ptr, (png_byte *) cdata);
 		}
-		
+
 		if( cdata )
 		{
 			delete[]cdata;
@@ -359,7 +359,7 @@ int PngIO::write_data(float *data, int image_index, const Region*,
 					sdata[x] = (unsigned short)((data[y * nx + x] - rendermin) / (rendermax - rendermin) * 65536);
 				}
 			}
-			
+
 			png_write_row(png_ptr, (png_byte *) sdata);
 		}
 
@@ -372,7 +372,7 @@ int PngIO::write_data(float *data, int image_index, const Region*,
 
 	png_write_end(png_ptr, info_ptr);
 	png_destroy_write_struct(&png_ptr, &info_ptr);
-	
+
 	EXITFUNC;
 	return 0;
 }
