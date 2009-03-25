@@ -44,36 +44,38 @@ def test_main():
 	test_dims = [64*i for i in [1,2,3,4,8]]
 	test_dims_3d = [64*i for i in [1,2,3,4]]
 	
-	test_range = range(30)
+	test_range = range(20)
 	
 	gpu_times = []
 	cpu_times = []
 	
 	
-	#print "Testing rotational align"
-	#print "Dims","\t", "GPU speedup"
-	#for dims in test_dims:
-		#a = [test_image(0,size=(dims,dims)) for i in test_range]
-		#b = [test_image(0,size=(dims,dims)) for i in test_range]
-		#for d in a: d.set_gpu_rw_current()
-		#for d in b: d.set_gpu_rw_current()
-		
-		#t = time()
-		#for i in test_range:
-			#a[i].set_gpu_rw_current()
-			#b[i].set_gpu_rw_current()
-			#c = a[i].align("rotational",b[i])
-			##c.print_this()
-
-		#gpu_times.append(time()-t)
-		##print dims, "B"
-		#a = [test_image(0,size=(dims,dims)) for i in test_range]
-		#b = [test_image(0,size=(dims,dims)) for i in test_range]
-		#t = time()
-		#for i in test_range:
-			#c = a[i].align("rotational",b[i])
-		#cpu_times.append(time()-t)
-		#print dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1]
+	alis = ["translational","rotational","rotate_translate","rotate_translate_flip"]
+	for ali in alis:
+		print "Testing",ali,"alignment"
+		print "Dims","\t", "GPU speedup"
+		for dims in test_dims:
+			a = [test_image(0,size=(dims,dims)) for i in test_range]
+			b = [test_image(0,size=(dims,dims)) for i in test_range]
+			for d in a: d.set_gpu_rw_current()
+			for d in b: d.set_gpu_rw_current()
+			
+			t = time()
+			for i in test_range:
+				a[i].set_gpu_rw_current()
+				b[i].set_gpu_rw_current()
+				c = a[i].align(ali,b[i])
+				#c.print_this()
+	
+			gpu_times.append(time()-t)
+			#print dims, "B"
+			a = [test_image(0,size=(dims,dims)) for i in test_range]
+			b = [test_image(0,size=(dims,dims)) for i in test_range]
+			t = time()
+			for i in test_range:
+				c = a[i].align("rotational",b[i])
+			cpu_times.append(time()-t)
+			print dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1]
 	
 	print "Testing calc_ccfx"
 	print "Dims","\t", "GPU speedup"
@@ -102,44 +104,36 @@ def test_main():
 	print "Testing calc_ccfx column sum"
 	print "Dims","\t", "GPU speedup"
 	for dims in test_dims:
-		a = test_image(0,size=(dims,dims))
-		a.set_gpu_rw_current()
+		a = [test_image(0,size=(dims,dims)) for i in test_range]
+		for i in a: i.set_gpu_rw_current()
 		t = time()
 		for i in test_range:
-			#b = a.unwrap()
-			c = a.calc_ccfx(a)
-			#c.print_this()
+			c = a[i].calc_ccfx(a[i])
 
 		gpu_times.append(time()-t)
-		#print dims, "B"
-		a = test_image(0,size=(dims,dims))
-		#a.print_this()
+		a = [test_image(0,size=(dims,dims)) for i in test_range]
 		t = time()
 		for i in test_range:
-			#b = a.unwrap()
-			c = a.calc_ccfx(a)
-			#print "the other stuff is ", a.get_cuda_handle()
-			#a.print_this()
-			#b.print_this()
-			#c.print_this()
+			c = a[i].calc_ccfx(a[i])
+
 		cpu_times.append(time()-t)
 		print dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1]
 	
 	print "Testing get_clip, lose edge pixels"
 	print "Dims","\t", "GPU speedup"
 	for dims in test_dims:
-		a = test_image(0,size=(dims,dims))
+		a = [test_image(0,size=(dims,dims)) for i in test_range]
+		for i in a: i.set_gpu_rw_current()
 		r = Region(1,1,dims-2,dims-2)
-		a.set_gpu_rw_current()
 		t = time()
 		for i in test_range:
-			b = a.get_clip(r)
+			b = a[i].get_clip(r)
 		gpu_times.append(time()-t)
 		
-		a = test_image(0,size=(dims,dims))
+		a = [test_image(0,size=(dims,dims)) for i in test_range]
 		t = time()
 		for i in test_range:
-			b = a.get_clip(r)
+			b = a[i].get_clip(r)
 			
 		cpu_times.append(time()-t)
 		print dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1]

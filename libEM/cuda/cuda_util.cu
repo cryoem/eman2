@@ -135,6 +135,7 @@ __global__ void  calc_max_location_wrap(int* const soln, const float* data,const
 	if (maxdz == -1) maxshiftz = nz/4;
 
 	float max_value = -10000000000000;
+	int nxy = nx*ny;
 
 	for (int k = -maxshiftz; k <= maxshiftz; k++) {
 		for (int j = -maxshifty; j <= maxshifty; j++) {
@@ -142,17 +143,18 @@ __global__ void  calc_max_location_wrap(int* const soln, const float* data,const
 				
 				int kk = k;
 				if (kk < 0) {
-					kk = nz-kk;
+					kk = nz+kk;
 				}
 				int jj = j;
 				if (jj < 0) {
-					jj = nz-jj;
+					jj = ny+jj;
 				}
+				
 				int ii = i;
 				if (ii < 0) {
-					ii = nz-ii;
+					ii = nx+ii;
 				}
-				float value = data[ii+jj*nx+kk*nx*ny];
+				float value = data[ii+jj*nx+kk*nxy];
 
 				if (value > max_value) {
 					max_value = value;
@@ -168,16 +170,20 @@ __global__ void  calc_max_location_wrap(int* const soln, const float* data,const
 int* calc_max_location_wrap_cuda(const EMDataForCuda* data, const int maxdx, const int maxdy, const int maxdz) {
 	
 	int * device_soln=0;
-	cudaMalloc((void **)&device_soln, 3*sizeof(int));
+	cudaError_t error = cudaMalloc((void **)&device_soln, 3*sizeof(int));
+	if ( error != cudaSuccess ){
+		printf("Cuda malloc failed in calc_max_location_wrap_cuda");
+		return 0;	
+	}
 		
 	int * host_soln = 0;
 	host_soln = (int*) malloc(3*sizeof(int));
 	
 	const dim3 blockSize(1,1, 1);
 	const dim3 gridSize(1,1,1);
-		
-	calc_max_location_wrap<<<blockSize,gridSize>>>(device_soln,data->data,maxdx,maxdy,maxdz,data->nx,data->ny,data->nz);
 	
+	calc_max_location_wrap<<<blockSize,gridSize>>>(device_soln,data->data,maxdx,maxdy,maxdz,data->nx,data->ny,data->nz);
+	cudaThreadSynchronize();
 	cudaMemcpy(host_soln,device_soln,3*sizeof(int),cudaMemcpyDeviceToHost);
 	cudaFree(device_soln);
 	return host_soln;

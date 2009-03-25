@@ -1246,12 +1246,12 @@ The basic design of EMAN Processors: <br>\
 				return "The image is transformed the Transform parameter.";
 			}
 		private:
-			float* transform(const EMData* const image, const Transform& t);
+			float* transform(const EMData* const image, const Transform& t) const;
 			
-			void update_emdata_attributes(EMData* const image, const Dict& attr_dict, const float& scale);
+			void update_emdata_attributes(EMData* const image, const Dict& attr_dict, const float& scale) const;
 			
 			
-			void assert_valid_aspect(const EMData* const image);
+			void assert_valid_aspect(const EMData* const image) const;
 	};
 
 

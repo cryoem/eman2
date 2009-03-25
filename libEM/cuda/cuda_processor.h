@@ -19,4 +19,6 @@ void emdata_unwrap(EMDataForCuda* data, int r1, int r2, int xs, int num_pi, int 
 
 void emdata_phaseorigin_to_center(EMDataForCuda* cuda_data);
 
+EMDataForCuda* emdata_transform_cuda(const float* const m,const int nx, const int ny, const int nz);
+
 #endif // cuda_processor_h__

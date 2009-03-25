@@ -7081,19 +7081,32 @@ int EMAN::multi_processors(EMData * image, vector < string > processornames)
 }
 
 
-float* TransformProcessor::transform(const EMData* const image, const Transform& t) {
+float* TransformProcessor::transform(const EMData* const image, const Transform& t) const {
 
 	ENTERFUNC;
 
 	Transform inv = t.inverse();
-
-
-	const float * const src_data = image->get_const_data();
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
 	int nxy = nx*ny;
 
+#ifdef EMAN2_USING_CUDA
+	if (image->gpu_operation_preferred()) {
+		float * m = new float[12];
+		inv.copy_matrix_into_array(m);
+		
+		image->bind_cuda_texture();
+		EMDataForCuda* tmp = emdata_transform_cuda(m,nx,ny,nz);
+		// if tmp == 0: serious problem
+		float* ret = tmp->data;
+		free(tmp);
+		return ret;
+	}
+
+#endif
+	
+	const float * const src_data = image->get_const_data();
 	float *des_data = (float *) EMUtil::em_malloc(nx*ny*nz* sizeof(float));
 
 	if (nz == 1) {
@@ -7203,7 +7216,7 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 	return des_data;
 }
 
-void TransformProcessor::assert_valid_aspect(const EMData* const image) {
+void TransformProcessor::assert_valid_aspect(const EMData* const image) const {
 	int ndim = image->get_ndim();
 	if (ndim != 2 && ndim != 3) throw ImageDimensionException("Transforming an EMData only works if it's 2D or 3D");
 
@@ -7211,7 +7224,7 @@ void TransformProcessor::assert_valid_aspect(const EMData* const image) {
 	if (t == 0) throw InvalidParameterException("You must specify a Transform in order to perform this operation");
 }
 
-void TransformProcessor::update_emdata_attributes(EMData* const p, const Dict& attr_dict, const float& scale) {
+void TransformProcessor::update_emdata_attributes(EMData* const p, const Dict& attr_dict, const float& scale) const {
 	
 	float inv_scale = 1.0f/scale;
 	vector<string> inv_scale_attrs;
@@ -7247,7 +7260,16 @@ EMData* TransformProcessor::process(const EMData* const image) {
 	Transform* t = params["transform"];
 
 	float* des_data = transform(image,*t);
-	EMData* p = new EMData(des_data,image->get_xsize(),image->get_ysize(),image->get_zsize(),image->get_attr_dict());
+	EMData* p  = 0;
+#ifdef EMAN2_USING_CUDA
+	if (image->gpu_operation_preferred()) {
+		p = new EMData();
+		p->set_gpu_rw_data(des_data,image->get_xsize(),image->get_ysize(),image->get_zsize());
+	}
+#endif
+	if ( p == 0 ) {
+		p = new EMData(des_data,image->get_xsize(),image->get_ysize(),image->get_zsize(),image->get_attr_dict());
+	}
 	
 	// 	all_translation += transform.get_trans();
 
@@ -7271,15 +7293,22 @@ void TransformProcessor::process_inplace(EMData* image) {
 	float* des_data = transform(image,*t);
 
 	// 	all_translation += transform.get_trans();
-
-	image->set_data(des_data,image->get_xsize(),image->get_ysize(),image->get_zsize());
-
+	bool use_cpu = true;
+#ifdef EMAN2_USING_CUDA
+	if (image->gpu_operation_preferred()) {
+		image->set_gpu_rw_data(des_data,image->get_xsize(),image->get_ysize(),image->get_zsize());
+		// set_gpu.... does gpu_update
+		use_cpu = false;
+	}
+#endif
+	if ( use_cpu ) {
+		image->set_data(des_data,image->get_xsize(),image->get_ysize(),image->get_zsize());
+		image->update();
+	}
 	float scale = t->get_scale();
 	if (scale != 1.0) {
 		update_emdata_attributes(image,image->get_attr_dict(),scale);
 	}
-
-	image->update();
 
 	EXITFUNC;
 }

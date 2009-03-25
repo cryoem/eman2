@@ -181,7 +181,7 @@ __global__ void correlation_kernel(float *ldata, float* rdata,const int num_thre
 	const float u2 = rdata[idxp1];
 	
 	ldata[idx] = v1*u1 + v2*u2;
-	ldata[idxp1] = v1*u2 - v2*u1;
+	ldata[idxp1] = v2*u1 - v1*u2;
 }
 
 __global__ void auto_correlation_kernel(float *ldata, float* rdata,const int num_threads)
@@ -220,7 +220,7 @@ __global__ void correlation_kernel_texture_2D(float *ldata,const int num_threads
 	const float u2 =  tex2D(tex2d,tx+1,ty);
 	
 	ldata[idx] = v1*u1 + v2*u2;
-	ldata[idxp1] = v1*u2 - v2*u1;
+	ldata[idxp1] = v2*u1 - v1*u2;
 }
 
 
@@ -243,7 +243,7 @@ __global__ void correlation_kernel_texture_3D(float *ldata,const int num_threads
 	const float u2 = tex3D(tex,tx+1,ty,tz);
 	
 	ldata[idx] = v1*u1 + v2*u2;
-	ldata[idxp1] = v1*u2 - v2*u1;
+	ldata[idxp1] = v2*u1 - v1*u2;
 }
 
 void emdata_processor_correlation_texture( const EMDataForCuda* cuda_data, const int center ) {
@@ -630,6 +630,105 @@ void emdata_phaseorigin_to_center(EMDataForCuda* cuda_data) {
 	} else {
 		throw;
 	}
+}
+
+__global__ void transform_kernel_3D(float *out,int nx,int ny,int nz,int num_threads, float3 mxx,float3 mxy, float3 mxz, float3 trans,int offset)
+{
+	const uint x=threadIdx.x;
+	const uint y=blockIdx.x;
+
+	const uint idx = 2*x + y*num_threads + offset;
+	
+	const uint nxy = nx*ny;
+	const float fx = idx % nx - nx/2.0;
+	const float fz = idx / ny - nz/2.0;
+	const float fy = (idx - ((int)fz)*nxy)/nx - ny/2.0;
+	
+
+	// The 0.5f offsets for x,y and z are required - Read section D.2 in Appendix D of the CUDA
+	// Programming Guide (version 2.0).
+	// Thankyou http://sites.google.com/site/cudaiap2009/cookbook-1
+	float tx=fx*mxx.x+fy*mxx.y+fz*mxx.z+nx/2.0+trans.x+0.5;
+	float ty=fx*mxy.x+fy*mxy.y+fz*mxy.z+ny/2.0+trans.y+0.5;
+	float tz=fx*mxz.x+fy*mxz.y+fz*mxz.z+nz/2.0+trans.z+0.5;
+
+	out[idx]=tex3D(tex, tx,ty,tz);
+}
+
+__global__ void transform_kernel_2D(float *out,int nx,int ny,int num_threads, float3 mxx,float3 mxy, float3 mxz, float3 trans,int offset)
+{
+	const uint x=threadIdx.x;
+	const uint y=blockIdx.x;
+
+	const uint idx = 2*x + y*num_threads + offset;
+	
+	const float fx = idx % nx - nx/2.0;
+	const float fy = idx/nx - ny/2.0;
+	
+
+	// The 0.5f offsets for x,y and z are required - Read section D.2 in Appendix D of the CUDA
+	// Programming Guide (version 2.0).
+	// Thankyou http://sites.google.com/site/cudaiap2009/cookbook-1
+	float tx=fx*mxx.x+fy*mxx.y+nx/2.0+trans.x+0.5;
+	float ty=fx*mxy.x+fy*mxy.y+ny/2.0+trans.y+0.5;
+
+	out[idx]=tex2D(tex2d, tx,ty);
+}
+
+EMDataForCuda* emdata_transform_cuda(const float* const matrix,const int nx,const int ny,const int nz) {
+	EMDataForCuda* t = (EMDataForCuda*) malloc(sizeof(EMDataForCuda));
+	
+	float3 mxx,mxy,mxz,trans;
+	
+	mxx.x=matrix[0];
+	mxx.y=matrix[1];
+	mxx.z=matrix[2];
+	mxy.x=matrix[4];
+	mxy.y=matrix[5];
+	mxy.z=matrix[6];
+	mxz.x=matrix[8];
+	mxz.y=matrix[9];
+	mxz.z=matrix[10];
+	trans.x =matrix[3];
+	trans.y =matrix[7];
+	trans.z =matrix[11];
+	
+	int max_threads = 512;
+	int num_calcs = ny*nx*nz;
+	
+	int grid_y = num_calcs/(max_threads);
+	int res_y = num_calcs - grid_y*max_threads;
+	
+	float* data;
+	cudaError_t error = cudaMalloc((void**)&data,nx*ny*nz*sizeof(float));
+	if ( error != cudaSuccess ) {
+		return 0; //Calling function should know something went wrong
+	}
+	
+	if (grid_y > 0) {
+		const dim3 blockSize(max_threads,1, 1);
+		const dim3 gridSize(grid_y,1,1);
+		if ( nz > 1 ) {
+			transform_kernel_3D<<<gridSize,blockSize>>>(data,nx,ny,nz,max_threads,mxx,mxy,mxz,trans,0);
+		}
+		else if ( ny > 1 ) {
+			transform_kernel_2D<<<gridSize,blockSize>>>(data,nx,ny,max_threads,mxx,mxy,mxz,trans,0);
+		} else throw;
+	}
+		
+	if (res_y) {
+		const dim3 blockSize(res_y,1, 1);
+		const dim3 gridSize(1,1,1);
+		if ( nz > 1 ) {
+			transform_kernel_3D<<<gridSize,blockSize>>>(data,nx,ny,nz,max_threads,mxx,mxy,mxz,trans,grid_y*max_threads);
+		}
+		else if ( ny > 1 ) {
+			transform_kernel_2D<<<gridSize,blockSize>>>(data,nx,ny,max_threads,mxx,mxy,mxz,trans,grid_y*max_threads);
+		} else throw;
+	}
+	
+	
+	return t;
 }
 
 

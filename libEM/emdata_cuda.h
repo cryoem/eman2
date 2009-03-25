@@ -135,9 +135,10 @@ public:
 	bool gpu_rw_is_current() const;
 	
 	bool cpu_rw_is_current() const;
+	void set_gpu_rw_data(float* data, const int x, const int y, const int z);
 private:
 	
-	void set_gpu_rw_data(float* data, const int x, const int y, const int z) ;
+	
 	
 	/** Check whether the CUDA-cached read-only version of the data pointer is current
 	 * Used to double check before copying the cuda ro data. It might be the case that the

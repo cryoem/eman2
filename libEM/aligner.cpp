@@ -103,8 +103,15 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 	
 	EMData *cf = 0;
 
-	cf = this_img->calc_ccf(to);
-// 	cf = this_img->calc_ccf_cuda(to);
+	bool use_cpu = true;
+#ifdef EMAN2_USING_CUDA
+	if (this_img->gpu_operation_preferred() ) {
+		use_cpu = false;
+		cf = this_img->calc_ccf_cuda(to,false,false);
+	}
+#endif // EMAN2_USING_CUDA
+	if (use_cpu) cf = this_img->calc_ccf(to);
+
 // 
 	int nx = this_img->get_xsize();
 	int ny = this_img->get_ysize();
@@ -130,13 +137,22 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 	if (nz == 1) maxshiftz = 0;
 
 	// If nozero the portion of the image in the center (and its 8-connected neighborhood) is zeroed
-	if (nozero) cf->zero_corner_circulant(1);
+	if (nozero) {
+		cf->zero_corner_circulant(1);
+	}
 	
-	
-	IntPoint peak = cf->calc_max_location_wrap(maxshiftx, maxshifty, maxshiftz);
-// 	int* peak = calc_max_location_wrap_cuda(&cf->get_data_struct_for_cuda(),maxshiftx, maxshifty, maxshiftz);
-// 	float maxscore = cf->get_value_at_wrap(peak[0],peak[1],peak[2]);
-// 	Vec3f pre_trans = this_img->get_translation();
+	IntPoint peak;
+#ifdef EMAN2_USING_CUDA
+	if (!use_cpu) {
+		EMDataForCuda tmp = cf->get_data_struct_for_cuda();
+		int* p = calc_max_location_wrap_cuda(&tmp,maxshiftx, maxshifty, maxshiftz);
+		peak = IntPoint(p[0],p[1],p[2]);
+		free(p);
+	} 
+#endif // EMAN2_USING_CUDA
+	if (use_cpu) {
+		peak = cf->calc_max_location_wrap(maxshiftx, maxshifty, maxshiftz);
+	}
 	Vec3f cur_trans = Vec3f ( (float)-peak[0], (float)-peak[1], (float)-peak[2]);
 
 	if (!to) {
@@ -208,8 +224,8 @@ EMData * RotationalAligner::align_180_ambiguous(EMData * this_img, EMData * to, 
 	float rot_angle = (float) (peak_index * 180.0f / this_img_rfp_nx);
 	
 	// Return the result
-	cf=this_img->copy();
-	cf->transform( Transform(Dict("type","2d","alpha",rot_angle)));
+	cf=this_img->process("math.transform",Dict("type","2d","alpha",rot_angle));
+// 	cf->transform( Transform(Dict("type","2d","alpha",rot_angle)));
 	Transform* t = get_set_align_attr("xform.align2d",cf,this_img);
 	t->set_rotation(Dict("type","2d","alpha",rot_angle));
 	
