@@ -553,7 +553,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					num = msg[index]
 				print_msg(msg_string)
 	bcast_EMData_to_all(tavg, key, group_main_node, group_comm)
-		
+
 	N_step = 0
 	tnull = Transform({"type":"2D"})
 
@@ -635,7 +635,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				sumsq = fft(tavg)
 				if CTF: 
 					tavg = fft(Util.divn_img(sumsq, ctf_2_sum))
-					Util.mul_img(sumsq, sumsq.conjg())
+					Util.mul_img(sumsq, sumsq.conjg())		
 					Util.div_img(sumsq, ctf_2_sum)
 					Util.sub_img(vav, sumsq)
 				else:
@@ -648,6 +648,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				Util.div_filter(SSNR, vav)
 				a0 = Util.infomask(SSNR, maskI, True)
 				sum_SSNR = a0[0]
+				tavg = fft(SSNR)
 
 				ref_data[2] = tavg
 				#  call user-supplied function to prepare reference image, i.e., center and filter it
