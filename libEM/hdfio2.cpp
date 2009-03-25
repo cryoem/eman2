@@ -5,32 +5,32 @@
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
 
 #ifdef EM_HDF5
@@ -63,11 +63,11 @@ HdfIO2::HdfIO2(const string & hdf_filename, IOMode rw)
 	file=-1;
 	group=-1;
 	accprop=H5Pcreate(H5P_FILE_ACCESS);
-	
+
 	//STDIO file driver has 2G size limit on 32 bit Linux system
 	H5Pset_fapl_sec2( accprop );
 	//H5Pset_fapl_stdio( accprop );
-	
+
 //	H5Pset_fapl_core( accprop, 1048576, 0  );
 //	H5Pset_cache(accprop)
 	hsize_t dims=1;
@@ -110,12 +110,12 @@ EMObject HdfIO2::read_attr(hid_t attr) {
 	vector <float> fv(pts);
 	vector <int> iv(pts);
 //	vector <unsigned int> uiv(pts);
-	
+
 	float *matrix;
 	Transform* t;
 	Ctf* ctf;
 // 	int r, c, k=0;
-	
+
 	switch (cls) {
 	case H5T_INTEGER:
 		if(pts==1) {
@@ -185,14 +185,14 @@ EMObject HdfIO2::read_attr(hid_t attr) {
 		break;
 	case H5T_COMPOUND:
 		matrix = (float*)malloc(12*sizeof(float));
-		H5Aread(attr, type, matrix);				
+		H5Aread(attr, type, matrix);
 //		ret.create_transform3d_by_array(trans3d);
 		t = new Transform(matrix);
 		ret = EMObject(t);
 		free(matrix);
-		
+
 // 		trans3d = (float*)malloc(16*sizeof(float));	//16 float for a Transform3D object
-// 		H5Aread(attr, type, trans3d);				
+// 		H5Aread(attr, type, trans3d);
 // //		ret.create_transform3d_by_array(trans3d);
 // 		trans = new Transform3D();
 // 		for(r=0; r<4; ++r) {
@@ -200,7 +200,7 @@ EMObject HdfIO2::read_attr(hid_t attr) {
 // 				trans->set(r, c, trans3d[k]);
 // 				++k;
 // 			}
-// 		}		
+// 		}
 // 		ret = EMObject(trans);
 // 		free(trans3d);
 		break;
@@ -225,25 +225,25 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 	switch(obj.get_type())
 	{
 	case EMObject::BOOL: std::cout << "implement this later" << std::endl; break;
-	case EMObject::INT: 
-		type=H5Tcopy(H5T_STD_I32LE); 
-		spc=H5Scopy(simple_space); 
+	case EMObject::INT:
+		type=H5Tcopy(H5T_STD_I32LE);
+		spc=H5Scopy(simple_space);
 		break;
-	case EMObject::UNSIGNEDINT: 
-		type=H5Tcopy(H5T_STD_U32LE); 
-		spc=H5Scopy(simple_space); 
+	case EMObject::UNSIGNEDINT:
+		type=H5Tcopy(H5T_STD_U32LE);
+		spc=H5Scopy(simple_space);
 		break;
 	case EMObject::FLOAT:
-		type=H5Tcopy(H5T_IEEE_F32LE); 
-		spc=H5Scopy(simple_space); 
+		type=H5Tcopy(H5T_IEEE_F32LE);
+		spc=H5Scopy(simple_space);
 		break;
-	case EMObject::DOUBLE: 
-		type=H5Tcopy(H5T_IEEE_F64LE); 
+	case EMObject::DOUBLE:
+		type=H5Tcopy(H5T_IEEE_F64LE);
 		spc=H5Scopy(simple_space);
 		break;
 	case EMObject::STRING:
 	case EMObject::CTF:
-		type=H5Tcopy(H5T_C_S1); 
+		type=H5Tcopy(H5T_C_S1);
 		H5Tset_size(type,strlen((const char *)obj)+1);
 		spc=H5Screate(H5S_SCALAR);
 		break;
@@ -278,9 +278,9 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 // 		H5Tinsert(type, "32", 14*sizeof(float), H5T_NATIVE_FLOAT);
 // 		H5Tinsert(type, "33", 15*sizeof(float), H5T_NATIVE_FLOAT);
 // 		H5Tpack(type);
-// 		
+//
 // 		dims = 1;	//one compound type
-// 		spc = H5Screate_simple(1, &dims, NULL);		
+// 		spc = H5Screate_simple(1, &dims, NULL);
 // 		break;
 	case EMObject::TRANSFORM:
 		type = H5Tcreate(H5T_COMPOUND, 12 * sizeof(float)); //Transform is a 3x4 matrix
@@ -297,9 +297,9 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 		H5Tinsert(type, "22", 10*sizeof(float), H5T_NATIVE_FLOAT);
 		H5Tinsert(type, "23", 11*sizeof(float), H5T_NATIVE_FLOAT);
 		H5Tpack(type);
-	
+
 		dims = 1;	//one compound type
-		spc = H5Screate_simple(1, &dims, NULL);		
+		spc = H5Screate_simple(1, &dims, NULL);
 		break;
 	case EMObject::STRINGARRAY:
 	case EMObject::EMDATA:
@@ -318,13 +318,13 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 	if( H5Adelete(loc,name) < 0 ) {
 #ifdef DEBUGHDF
 		LOGERR("Attribute %s deletion error in write_attr().\n", name);
-#endif	
+#endif
 	}
 	else {
-#ifdef DEBUGHDF		
+#ifdef DEBUGHDF
 		printf("delete attribute %s successfully in write_attr().\n", name);
-#endif	
-	} 
+#endif
+	}
 	hid_t attr = H5Acreate(loc,name,type,spc,H5P_DEFAULT);
 
 	unsigned int i;
@@ -391,7 +391,7 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 //		break;
 	default:
 		LOGERR("Unhandled HDF5 metadata '%s'", name);
-		
+
 	}
 
 	herr_t ret1 = H5Tclose(type);
@@ -420,7 +420,7 @@ void HdfIO2::init()
 	if (initialized) {
 		return;
 	}
-#ifdef DEBUGHDF	
+#ifdef DEBUGHDF
 	printf("init\n");
 #endif
 
@@ -438,13 +438,13 @@ void HdfIO2::init()
 				throw FileAccessException(filename);
 			}
 			else {
-#ifdef DEBUGHDF	
+#ifdef DEBUGHDF
 				printf("File truncated or new file created\n");
-#endif			
+#endif
 			}
 		}
 	}
-	
+
 	group=H5Gopen(file,"/MDF/images");
 	if (group<0) {
 		if (rw_mode == READ_ONLY) throw ImageReadException(filename,"HDF5 file has no image data (no /MDF group)");
@@ -467,16 +467,16 @@ int HdfIO2::init_test()
 	if (initialized) {
 		return 1;
 	}
-#ifdef DEBUGHDF	
+#ifdef DEBUGHDF
 	printf("init_test\n");
 #endif
 
 	H5Eset_auto(0, 0);	// Turn off console error logging.
-	
-	hid_t fileid = H5Fopen(filename.c_str(), H5F_ACC_RDWR, H5Pcreate(H5P_FILE_ACCESS));
+
+	hid_t fileid = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, H5Pcreate(H5P_FILE_ACCESS));
 	hid_t groupid = H5Gopen(fileid, "/");
 	hid_t attid = H5Aopen_name(groupid, "num_dataset");
-	
+
 	if (attid < 0) {
 		H5Gclose(groupid);
 		H5Fclose(fileid);
@@ -513,7 +513,7 @@ int HdfIO2::read_header(Dict & dict, int image_index, const Region *, bool)
 {
 	ENTERFUNC;
 	init();
-#ifdef DEBUGHDF	
+#ifdef DEBUGHDF
 	printf("read_head %d\n", image_index);
 #endif
 	int i;
@@ -521,7 +521,7 @@ int HdfIO2::read_header(Dict & dict, int image_index, const Region *, bool)
 	char ipath[50];
 	sprintf(ipath,"/MDF/images/%d", image_index);
 	hid_t igrp=H5Gopen(file, ipath);
-	
+
 	int nattr=H5Aget_num_attrs(igrp);
 
 	char name[ATTR_NAME_LEN];
@@ -548,11 +548,11 @@ int HdfIO2::read_header(Dict & dict, int image_index, const Region *, bool)
 int HdfIO2::erase_header(int image_index)
 {
 	ENTERFUNC;
-	
-	if(image_index < 0) return 0; //image_index<0 for appending image, no need for erasing 
-	
+
+	if(image_index < 0) return 0; //image_index<0 for appending image, no need for erasing
+
 	init();
-#ifdef DEBUGHDF	
+#ifdef DEBUGHDF
 	printf("erase_head %d\n",image_index);
 #endif
 	int i;
@@ -560,7 +560,7 @@ int HdfIO2::erase_header(int image_index)
 	char ipath[50];
 	sprintf(ipath,"/MDF/images/%d", image_index);
 	hid_t igrp=H5Gopen(file, ipath);
-	
+
 	int nattr=H5Aget_num_attrs(igrp);
 
 	char name[ATTR_NAME_LEN];
@@ -582,7 +582,7 @@ int HdfIO2::erase_header(int image_index)
 int HdfIO2::read_data(float *data, int image_index, const Region *, bool)
 {
 	ENTERFUNC;
-#ifdef DEBUGHDF	
+#ifdef DEBUGHDF
 	printf("read_data %d\n",image_index);
 #endif
 	char ipath[50];
@@ -592,7 +592,7 @@ int HdfIO2::read_data(float *data, int image_index, const Region *, bool)
 	hid_t spc=H5Dget_space(ds);
 
 	H5Dread(ds,H5T_NATIVE_FLOAT,spc,spc,H5P_DEFAULT,data);
-	
+
 	H5Sclose(spc);
 	H5Dclose(ds);
 	EXITFUNC;
@@ -605,18 +605,18 @@ int HdfIO2::read_data(float *data, int image_index, const Region *, bool)
 int HdfIO2::write_header(const Dict & dict, int image_index, const Region*,
 						EMUtil::EMDataType, bool)
 {
-#ifdef DEBUGHDF	
+#ifdef DEBUGHDF
 	printf("write_head %d\n",image_index);
 #endif
 	ENTERFUNC;
-	init();	
-	
+	init();
+
 	// If image_index<0 append, and make sure the max value in the file is correct
 	// though this is normally handled by EMData.write_image()
 	hid_t attr=H5Aopen_name(group,"imageid_max");
 	int nimg = read_attr(attr);
 	H5Aclose(attr);
-	
+
 	unsigned int i;
 	if (image_index<0) image_index=nimg+1;
 	if (image_index>nimg) {
@@ -626,15 +626,15 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region*,
 	// Each image is in a group for later expansion. Open the group, create if necessary
 	char ipath[50];
 	sprintf(ipath,"/MDF/images/%d",image_index);
-	hid_t igrp=H5Gopen(file,ipath);	
-	
+	hid_t igrp=H5Gopen(file,ipath);
+
 	if (igrp<0) {	//group not existed
 		// Need to create a new image group
 		igrp=H5Gcreate(file,ipath,64);		// The image is a group, with attributes on the group
 		if (igrp<0) throw ImageWriteException(filename,"Unable to add /MDF/images/# to HDF5 file");
-		
+
 		sprintf(ipath,"/MDF/images/%d/image",image_index);
-		// Now create the actual image dataset				
+		// Now create the actual image dataset
 		hid_t space;
 		hid_t ds;
 		if ((int)dict["nz"]==1)  {
@@ -649,10 +649,10 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region*,
 		H5Dclose(ds);
 		H5Sclose(space);
 	}
-	//if group already existed, and the overwiting image is in different size, 
+	//if group already existed, and the overwiting image is in different size,
 	//need unlink the existing dataset first
-	else {	 
-		int nattr=H5Aget_num_attrs(igrp);		
+	else {
+		int nattr=H5Aget_num_attrs(igrp);
 		char name[ATTR_NAME_LEN];
 		Dict dict2;
 		for (int i=0; i<nattr; i++) {
@@ -666,16 +666,16 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region*,
 			dict2[name+5]=val;
 			H5Aclose(attr);
 		}
-		
+
 		erase_header(image_index);
-		
-		if((int)dict["nx"]!=(int)dict2["nx"] 
-				|| (int)dict["ny"]!=(int)dict2["ny"] 
-				|| (int)dict["nz"]!=(int)dict2["nz"]) {					
+
+		if((int)dict["nx"]!=(int)dict2["nx"]
+				|| (int)dict["ny"]!=(int)dict2["ny"]
+				|| (int)dict["nz"]!=(int)dict2["nz"]) {
 			sprintf(ipath,"/MDF/images/%d/image",image_index);
 			H5Gunlink(igrp, ipath);
-			
-			// Now create the actual image dataset		
+
+			// Now create the actual image dataset
 			hid_t space;
 			hid_t ds;
 			if ((int)dict["nz"]==1) {
@@ -691,14 +691,14 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region*,
 			H5Sclose(space);
 		}
 	}
-		
+
 	// Write the attributes to the group
 	vector <string> keys=dict.keys();
 
 	for (i=0; i<keys.size(); i++) {
 		string s("EMAN.");
 		s+=keys[i];
-		write_attr(igrp,s.c_str(),dict[keys[i]]); 
+		write_attr(igrp,s.c_str(),dict[keys[i]]);
 	}
 
 	H5Gclose(igrp);
@@ -712,7 +712,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region*,
 					  EMUtil::EMDataType dt, bool)
 {
 	ENTERFUNC;
-#ifdef DEBUGHDF	
+#ifdef DEBUGHDF
 	printf("write_data %d\n",image_index);
 #endif
 	if (dt!=EMUtil::EM_FLOAT) throw ImageWriteException(filename,"HDF5 write only supports float format");
@@ -730,7 +730,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region*,
 	hid_t spc=H5Dget_space(ds);
 
 	H5Dwrite(ds,H5T_NATIVE_FLOAT,spc,spc,H5P_DEFAULT,data);
-	
+
 	H5Sclose(spc);
 	H5Dclose(ds);
 	EXITFUNC;
