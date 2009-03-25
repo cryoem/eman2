@@ -598,7 +598,14 @@ void EMData::CudaDeviceEMDataCache::debug_print() const {
 
 void EMData::CudaDeviceEMDataCache::replace_gpu_rw(const int idx,float* cuda_rw_data)
 {
-	clear_item(idx); // The ro data goes out of date anyway
+	//clear_item(idx); // The ro data goes out of date anyway
+	if  ( rw_cache[idx] != 0) {
+		mem_allocated -= get_emdata_bytes(idx);
+		cudaError_t error = cudaFree(rw_cache[idx]);
+		if ( error != cudaSuccess)
+			throw UnexpectedBehaviorException( "CudaFree error : " + string(cudaGetErrorString(error)));
+	}
+	rw_cache[idx] = 0;
 	
 	const EMData* d = caller_cache[idx];
 	int nx = d->get_xsize();
@@ -607,7 +614,7 @@ void EMData::CudaDeviceEMDataCache::replace_gpu_rw(const int idx,float* cuda_rw_
 	size_t num_bytes = nx*ny*nz*sizeof(float);
 	mem_allocated += num_bytes;
 	
-	rw_cache[current_insert_idx] = cuda_rw_data;
+	rw_cache[idx] = cuda_rw_data;
 }
 
 void EMData::CudaDeviceEMDataCache::check_for_space() {

@@ -201,7 +201,7 @@ float* EMData::get_data() const
 #ifdef EMAN2_USING_CUDA
 	if ( num_bytes > 0 && gpu_rw_is_current()  && (EMDATA_CPU_NEEDS_UPDATE & flags)) {
 		cudaError_t error = cudaMemcpy(rdata,get_cuda_data(),num_bytes,cudaMemcpyDeviceToHost);
-		if (error != cudaSuccess ) throw UnexpectedBehaviorException("The host to device cudaMemcpy failed : " + string(cudaGetErrorString(error)));
+		if (error != cudaSuccess ) throw UnexpectedBehaviorException("The device to host cudaMemcpy failed : " + string(cudaGetErrorString(error)));
 	} else if ( gpu_ro_is_current()  && (EMDATA_CPU_NEEDS_UPDATE & flags)) {
 		cout << "Copy ro to cpu" << endl;
 		copy_gpu_ro_to_cpu();

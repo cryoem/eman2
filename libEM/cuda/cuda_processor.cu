@@ -637,13 +637,13 @@ __global__ void transform_kernel_3D(float *out,int nx,int ny,int nz,int num_thre
 	const uint x=threadIdx.x;
 	const uint y=blockIdx.x;
 
-	const uint idx = 2*x + y*num_threads + offset;
+	const uint idx = x + y*num_threads + offset;
 	
 	const uint nxy = nx*ny;
 	const float fx = idx % nx - nx/2.0;
-	const float fz = idx / ny - nz/2.0;
+	float fz = idx / nxy;
 	const float fy = (idx - ((int)fz)*nxy)/nx - ny/2.0;
-	
+	fz -= nz/2.0;
 
 	// The 0.5f offsets for x,y and z are required - Read section D.2 in Appendix D of the CUDA
 	// Programming Guide (version 2.0).
@@ -660,7 +660,7 @@ __global__ void transform_kernel_2D(float *out,int nx,int ny,int num_threads, fl
 	const uint x=threadIdx.x;
 	const uint y=blockIdx.x;
 
-	const uint idx = 2*x + y*num_threads + offset;
+	const uint idx = x + y*num_threads + offset;
 	
 	const float fx = idx % nx - nx/2.0;
 	const float fy = idx/nx - ny/2.0;
@@ -679,7 +679,7 @@ EMDataForCuda* emdata_transform_cuda(const float* const matrix,const int nx,cons
 	EMDataForCuda* t = (EMDataForCuda*) malloc(sizeof(EMDataForCuda));
 	
 	float3 mxx,mxy,mxz,trans;
-	
+		
 	mxx.x=matrix[0];
 	mxx.y=matrix[1];
 	mxx.z=matrix[2];
@@ -699,8 +699,7 @@ EMDataForCuda* emdata_transform_cuda(const float* const matrix,const int nx,cons
 	int grid_y = num_calcs/(max_threads);
 	int res_y = num_calcs - grid_y*max_threads;
 	
-	float* data;
-	cudaError_t error = cudaMalloc((void**)&data,nx*ny*nz*sizeof(float));
+	cudaError_t error = cudaMalloc((void**)&t->data,nx*ny*nz*sizeof(float));
 	if ( error != cudaSuccess ) {
 		return 0; //Calling function should know something went wrong
 	}
@@ -709,10 +708,10 @@ EMDataForCuda* emdata_transform_cuda(const float* const matrix,const int nx,cons
 		const dim3 blockSize(max_threads,1, 1);
 		const dim3 gridSize(grid_y,1,1);
 		if ( nz > 1 ) {
-			transform_kernel_3D<<<gridSize,blockSize>>>(data,nx,ny,nz,max_threads,mxx,mxy,mxz,trans,0);
+			transform_kernel_3D<<<gridSize,blockSize>>>(t->data,nx,ny,nz,max_threads,mxx,mxy,mxz,trans,0);
 		}
 		else if ( ny > 1 ) {
-			transform_kernel_2D<<<gridSize,blockSize>>>(data,nx,ny,max_threads,mxx,mxy,mxz,trans,0);
+			transform_kernel_2D<<<gridSize,blockSize>>>(t->data,nx,ny,max_threads,mxx,mxy,mxz,trans,0);
 		} else throw;
 	}
 		
@@ -720,13 +719,17 @@ EMDataForCuda* emdata_transform_cuda(const float* const matrix,const int nx,cons
 		const dim3 blockSize(res_y,1, 1);
 		const dim3 gridSize(1,1,1);
 		if ( nz > 1 ) {
-			transform_kernel_3D<<<gridSize,blockSize>>>(data,nx,ny,nz,max_threads,mxx,mxy,mxz,trans,grid_y*max_threads);
+			transform_kernel_3D<<<gridSize,blockSize>>>(t->data,nx,ny,nz,max_threads,mxx,mxy,mxz,trans,grid_y*max_threads);
 		}
 		else if ( ny > 1 ) {
-			transform_kernel_2D<<<gridSize,blockSize>>>(data,nx,ny,max_threads,mxx,mxy,mxz,trans,grid_y*max_threads);
+			transform_kernel_2D<<<gridSize,blockSize>>>(t->data,nx,ny,max_threads,mxx,mxy,mxz,trans,grid_y*max_threads);
 		} else throw;
 	}
+	cudaThreadSynchronize();
 	
+	t->nx = nx;
+	t->ny = ny;
+	t->nz = nz;
 	
 	return t;
 }

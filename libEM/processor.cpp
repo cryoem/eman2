@@ -7090,21 +7090,6 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
 	int nxy = nx*ny;
-
-#ifdef EMAN2_USING_CUDA
-	if (image->gpu_operation_preferred()) {
-		float * m = new float[12];
-		inv.copy_matrix_into_array(m);
-		
-		image->bind_cuda_texture();
-		EMDataForCuda* tmp = emdata_transform_cuda(m,nx,ny,nz);
-		// if tmp == 0: serious problem
-		float* ret = tmp->data;
-		free(tmp);
-		return ret;
-	}
-
-#endif
 	
 	const float * const src_data = image->get_const_data();
 	float *des_data = (float *) EMUtil::em_malloc(nx*ny*nz* sizeof(float));
@@ -7259,15 +7244,27 @@ EMData* TransformProcessor::process(const EMData* const image) {
 
 	Transform* t = params["transform"];
 
-	float* des_data = transform(image,*t);
+	
 	EMData* p  = 0;
 #ifdef EMAN2_USING_CUDA
 	if (image->gpu_operation_preferred()) {
+		
+		float * m = new float[12];
+		Transform inv = t->inverse();
+		inv.copy_matrix_into_array(m);
+		image->bind_cuda_texture();
+		EMDataForCuda* tmp = emdata_transform_cuda(m,image->get_xsize(),image->get_ysize(),image->get_zsize());
+		image->unbind_cuda_texture();
+		delete [] m;
+		if (tmp == 0) throw;
+
 		p = new EMData();
-		p->set_gpu_rw_data(des_data,image->get_xsize(),image->get_ysize(),image->get_zsize());
+		p->set_gpu_rw_data(tmp->data,tmp->nx,tmp->ny,tmp->nz);
+		free(tmp);
 	}
 #endif
 	if ( p == 0 ) {
+		float* des_data = transform(image,*t);
 		p = new EMData(des_data,image->get_xsize(),image->get_ysize(),image->get_zsize(),image->get_attr_dict());
 	}
 	
@@ -7290,18 +7287,25 @@ void TransformProcessor::process_inplace(EMData* image) {
 
 	Transform* t = params["transform"];
 
-	float* des_data = transform(image,*t);
-
 	// 	all_translation += transform.get_trans();
 	bool use_cpu = true;
 #ifdef EMAN2_USING_CUDA
 	if (image->gpu_operation_preferred()) {
-		image->set_gpu_rw_data(des_data,image->get_xsize(),image->get_ysize(),image->get_zsize());
-		// set_gpu.... does gpu_update
 		use_cpu = false;
+		float * m = new float[12];
+		Transform inv = t->inverse();
+		inv.copy_matrix_into_array(m);
+		image->bind_cuda_texture();
+		EMDataForCuda* tmp = emdata_transform_cuda(m,image->get_xsize(),image->get_ysize(),image->get_zsize());
+		image->unbind_cuda_texture();
+		delete [] m;
+		if (tmp == 0) throw;
+		image->set_gpu_rw_data(tmp->data,tmp->nx,tmp->ny,tmp->nz);
+		free(tmp);
 	}
 #endif
 	if ( use_cpu ) {
+		float* des_data = transform(image,*t);
 		image->set_data(des_data,image->get_xsize(),image->get_ysize(),image->get_zsize());
 		image->update();
 	}
