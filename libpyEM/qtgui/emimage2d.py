@@ -1318,14 +1318,10 @@ class EMImage2DModule(EMGUIModule):
 	def inspector_update(self,use_fourier=False):
 		if self.inspector:
 			if not use_fourier:
-				self.inspector.set_bc_range(self.minden,self.maxden)
-				self.inspector.set_minden(self.minden)
-				self.inspector.set_maxden(self.maxden)
+				self.inspector.set_limits(self.minden,self.maxden,self.minden,self.maxden)
 				self.inspector.set_gamma(self.gamma)
 			else:
-				self.inspector.set_bc_range(self.fminden,self.fmaxden)
-				self.inspector.set_minden(self.fminden)
-				self.inspector.set_maxden(self.fmaxden)
+				self.inspector.set_limits(self.fminden,self.fmaxden,self.fminden,self.fmaxden)
 				
 				self.inspector.set_gamma(self.fgamma)
 				
@@ -1946,14 +1942,14 @@ class EMImageInspector2D(QtGui.QWidget):
 		c=(self.mins.value-self.maxs.value)/(2.0*(self.lowlim-self.highlim))
 		brts = -b
 		conts = 1.0-c
-		self.brts.setValue(brts)
-		self.conts.setValue(conts)
+		self.brts.setValue(brts,1)
+		self.conts.setValue(conts,1)
 		
 	def update_min_max(self):
 		x0=((self.lowlim+self.highlim)/2.0-(self.highlim-self.lowlim)*(1.0-self.conts.value)-self.brts.value*(self.highlim-self.lowlim))
 		x1=((self.lowlim+self.highlim)/2.0+(self.highlim-self.lowlim)*(1.0-self.conts.value)-self.brts.value*(self.highlim-self.lowlim))
-		self.mins.setValue(x0)
-		self.maxs.setValue(x1)
+		self.mins.setValue(x0,1)
+		self.maxs.setValue(x1,1)
 		self.target().set_density_range(x0,x1)
 		
 	def set_hist(self,hist,minden,maxden):
@@ -1968,14 +1964,13 @@ class EMImageInspector2D(QtGui.QWidget):
 		
 	def set_limits(self,lowlim,highlim,curmin,curmax):
 		if highlim<=lowlim : highlim=lowlim+.001
-		#print "in set limits", self.conts.getValue(), self.conts.getValue()
+		print "in set limits", self.conts.getValue(), self.conts.getValue()
 		self.lowlim=lowlim
 		self.highlim=highlim
 		self.mins.setRange(lowlim,highlim)
 		self.maxs.setRange(lowlim,highlim)
-		self.mins.setValue(curmin)
-		self.maxs.setValue(curmax)
-		self.target().set_density_range(curmin,curmax)
+		self.mins.setValue(curmin,1)
+		self.maxs.setValue(curmax,1)
 		#print "leave set limits", self.conts.getValue(), self.conts.getValue()
 		
 
