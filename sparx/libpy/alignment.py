@@ -197,6 +197,27 @@ def eqproj(args, data):
 	#print  " AMOEBA o", args, v
 	return v
 
+def eqprojDot(args, data):
+	from projection import project
+	from filter import filt_ctf
+	phi = args[0]
+	tht = args[1]
+	psi = args[2]
+	vol = data[0]
+	img = data[1]
+	s2x = data[2]
+	s2y = data[3]
+	msk = data[4]
+	CTF = data[5]
+        ou  = data[6]
+
+	tmp = img.process( "normalize.mask", {"mask":msk, "no_sigma":0} )
+	ref = project( vol, [phi,tht,psi,-s2x,-s2y], ou )
+	if CTF:
+		ctf = img.get_attr( "ctf" )
+		ref = filt_ctf( ref, ctf )
+	return ref.cmp( "dot", tmp, {"mask":msk, "negative":0} )
+
 def eqprojEuler(args, data):
 	from projection import prgs
 	prj = prgs(data[0], data[1], [args[0], args[1], args[2], data[3], data[4]])
