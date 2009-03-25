@@ -726,8 +726,8 @@ class EMImage2DModule(EMGUIModule):
 			sigma=self.data.get_attr("sigma")
 			m0=self.data.get_attr("minimum")
 			m1=self.data.get_attr("maximum")
-			self.minden=max(m0,mean-3.0*sigma)
-			self.maxden=min(m1,mean+3.0*sigma)
+			self.minden=max(m0,mean-8.0*sigma)
+			self.maxden=min(m1,mean+8.0*sigma)
 			if inspector_update: self.inspector_update()
 			if display_update: self.force_display_update()
 		else:
@@ -739,7 +739,7 @@ class EMImage2DModule(EMGUIModule):
 			m1=self.display_fft.get_attr("maximum")
 		
 			self.fminden=0
-			self.fmaxden=min(m1,mean+5.0*sigma)
+			self.fmaxden=min(m1,mean+10.0*sigma)
 			
 			self.force_display_update()
 			
@@ -1950,7 +1950,6 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.conts.setValue(conts)
 		
 	def update_min_max(self):
-		
 		x0=((self.lowlim+self.highlim)/2.0-(self.highlim-self.lowlim)*(1.0-self.conts.value)-self.brts.value*(self.highlim-self.lowlim))
 		x1=((self.lowlim+self.highlim)/2.0+(self.highlim-self.lowlim)*(1.0-self.conts.value)-self.brts.value*(self.highlim-self.lowlim))
 		self.mins.setValue(x0)
@@ -1962,6 +1961,8 @@ class EMImageInspector2D(QtGui.QWidget):
 
 	def set_bc_range(self,lowlim,highlim):
 		#print "set range",lowlim,highlim
+		self.lowlim=lowlim
+		self.highlim=highlim
 		self.mins.setRange(lowlim,highlim)
 		self.maxs.setRange(lowlim,highlim)
 		

@@ -805,10 +805,10 @@ class EMImageMXModule(EMGUIModule):
 		m0=d.get_attr("minimum")
 		m1=d.get_attr("maximum")
 		
-		self.minden=max(m0,mean-3.0*sigma)
-		self.maxden=min(m1,mean+3.0*sigma)
-		self.mindeng=max(m0,mean-5.0*sigma)
-		self.maxdeng=min(m1,mean+5.0*sigma)
+		self.minden=max(m0,mean-8.0*sigma)
+		self.maxden=min(m1,mean+8.0*sigma)
+		self.mindeng=max(m0,mean-8.0*sigma)
+		self.maxdeng=min(m1,mean+8.0*sigma)
 		
 		start_guess = 5
 		if start_guess > len(self.data):start_guess = len(self.data)
@@ -825,11 +825,12 @@ class EMImageMXModule(EMGUIModule):
 			m1=i.get_attr("maximum")
 			if sigma == 0: continue
 
-			self.minden=min(self.minden,max(m0,mean-3.0*sigma))
-			self.maxden=max(self.maxden,min(m1,mean+3.0*sigma))
-			self.mindeng=min(self.mindeng,max(m0,mean-5.0*sigma))
-			self.maxdeng=max(self.maxdeng,min(m1,mean+5.0*sigma))
+			self.minden=min(self.minden,max(m0,mean-8.0*sigma))
+			self.maxden=max(self.maxden,min(m1,mean+8.0*sigma))
+			self.mindeng=min(self.mindeng,max(m0,mean-8.0*sigma))
+			self.maxdeng=max(self.maxdeng,min(m1,mean+8.0*sigma))
 
+		if self.inspector: self.inspector.set_limits(self.mindeng,self.maxdeng,self.minden,self.maxden)
 		
 		#if update_gl: self.updateGL()
 
@@ -1672,6 +1673,8 @@ class EMImageMXModule(EMGUIModule):
 		
 		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
 			self.show_inspector(1)
+			self.inspector.set_limits(self.mindeng,self.maxdeng,self.minden,self.maxden)
+
 #			self.emit(QtCore.SIGNAL("inspector_shown"),event)
 		elif event.button()==Qt.RightButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
 			if not self.draw_scroll: return # if the (vertical) scroll bar isn't drawn then mouse movement is disabled (because the images occupy the whole view)
@@ -2167,26 +2170,30 @@ class EMImageInspectorMX(QtGui.QWidget):
 		vbl.addWidget(self.scale)
 		
 		self.mins = ValSlider(self,label="Min:")
-		minden = self.target().get_density_min()
-		maxden = self.target().get_density_max()
-		self.mins.setValue(minden)
-		self.mins.setRange(minden,maxden)
 		self.mins.setObjectName("mins")
 		vbl.addWidget(self.mins)
+		minden = self.target().get_density_min()
+		maxden = self.target().get_density_max()
+		self.mins.setRange(minden,maxden)
+		self.mins.setValue(minden)
 		
 		self.maxs = ValSlider(self,label="Max:")
-		self.maxs.setValue(maxden)
-		self.maxs.setRange(minden,maxden)
 		self.maxs.setObjectName("maxs")
 		vbl.addWidget(self.maxs)
+		self.maxs.setRange(minden,maxden)
+		self.maxs.setValue(maxden)
 		
-		self.brts = ValSlider(self,(-1.0,1.0),"Brt:")
+		self.brts = ValSlider(self,label="Brt:")
 		self.brts.setObjectName("brts")
 		vbl.addWidget(self.brts)
+		self.brts.setValue(0.0)
+		self.brts.setRange(-1.0,1.0)
 		
-		self.conts = ValSlider(self,(0.0,1.0),"Cont:")
+		self.conts = ValSlider(self,label="Cont:")
 		self.conts.setObjectName("conts")
 		vbl.addWidget(self.conts)
+		self.conts.setValue(0.5)
+		self.conts.setRange(-1.0,1.0)
 		
 		self.gammas = ValSlider(self,(.5,2.0),"Gam:")
 		self.gammas.setObjectName("gamma")
@@ -2199,6 +2206,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 		QtCore.QObject.connect(self.brts, QtCore.SIGNAL("valueChanged"), self.newBrt)
 		QtCore.QObject.connect(self.conts, QtCore.SIGNAL("valueChanged"), self.newCont)
 		QtCore.QObject.connect(self.gammas, QtCore.SIGNAL("valueChanged"), self.newGamma)
+
 		
 		return self.impage
 		
@@ -2457,14 +2465,14 @@ class EMImageInspectorMX(QtGui.QWidget):
 	def update_brightness_contrast(self):
 		b=0.5*(self.mins.value+self.maxs.value-(self.lowlim+self.highlim))/((self.highlim-self.lowlim))
 		c=(self.mins.value-self.maxs.value)/(2.0*(self.lowlim-self.highlim))
-		self.brts.setValue(-b)
-		self.conts.setValue(1.0-c)
+		self.brts.setValue(-b,1)
+		self.conts.setValue(1.0-c,1)
 		
 	def update_min_max(self):
 		x0=((self.lowlim+self.highlim)/2.0-(self.highlim-self.lowlim)*(1.0-self.conts.value)-self.brts.value*(self.highlim-self.lowlim))
 		x1=((self.lowlim+self.highlim)/2.0+(self.highlim-self.lowlim)*(1.0-self.conts.value)-self.brts.value*(self.highlim-self.lowlim))
-		self.mins.setValue(x0)
-		self.maxs.setValue(x1)
+		self.mins.setValue(x0,1)
+		self.maxs.setValue(x1,1)
 		self.target().set_den_range(x0,x1)
 		
 	def set_hist(self,hist,minden,maxden):
@@ -2475,9 +2483,13 @@ class EMImageInspectorMX(QtGui.QWidget):
 		self.highlim=highlim
 		self.mins.setRange(lowlim,highlim)
 		self.maxs.setRange(lowlim,highlim)
-		self.mins.setValue(curmin)
-		self.maxs.setValue(curmax)
-		 
+		self.mins.setValue(curmin,1)
+		self.maxs.setValue(curmax,1)
+		self.brts.setRange(-1.0,1.0)
+		self.conts.setRange(0,1.0)
+		self.update_brightness_contrast()
+
+
 class EMDataListCache:
 	'''
 	This class designed primarily for memory management in the context of large lists of EMData objects. It is only efficient
