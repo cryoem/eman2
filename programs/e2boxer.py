@@ -114,9 +114,10 @@ for single particle analysis."""
 	parser.add_option("--subsample_method",help="The method used to subsample images prior to generation of the correlation image. Available methods are standard,careful",default="standard")	
 	parser.add_option("--method", help="boxer method, Swarm or Gauss", default="Swarm")
 	parser.add_option("--outformat", help="Format of the output particles images, should be bdb,img, or hdf", default="bdb")
-	parser.add_option("--just_output", help="Applicable if doing auto boxing using the database. Bypasses autoboxing and just writes boxes that are currently stored in the database. Useful for changing the boxsize, for example", default=False)
+	parser.add_option("--just_output",action="store_true", help="Applicable if doing auto boxing using the database. Bypasses autoboxing and just writes boxes that are currently stored in the database. Useful for changing the boxsize, for example", default=False)
 	parser.add_option("--normproc", help="Normalization processor to apply to particle images. Should be normalize, normalize.edgemean or none", default="normalize.edgemean")
-
+	parser.add_option("--invert_output",action="store_true",help="If writing output only, this will invert the pixel intensities of the boxed files",default=False)
+	
 	# options added for cmdline calling of screening with gauss convolution. parameters for Gauss are passed as
 	#    commandline arguments and will have to be parsed only if auto="cmd" option is specified. note that these parameters
 	#    are applicable only to Gauss...
@@ -144,7 +145,7 @@ for single particle analysis."""
 	parser.add_option("--out_dir",default=False,help="Directory to write particle files to")
 
 	(options, args) = parser.parse_args()
-	
+	print options,args
 	filenames = []
 	error_message = []
 	for arg in args:
@@ -948,7 +949,7 @@ class EMBoxerModuleEventsMediator:
 
 class RawDatabaseAutoBoxer:
 	def __init__(self,logid=None):
-		self.required_options = ["boxsize","write_coord_files","write_box_images","force","normproc","outformat","just_output"]
+		self.required_options = ["boxsize","write_coord_files","write_box_images","force","normproc","outformat","just_output","invert_output"]
 		self.logid = logid
 		
 	def go(self,options):
@@ -1007,7 +1008,7 @@ class RawDatabaseAutoBoxer:
 			if options.write_box_images:
 				if options.normproc == "none":normalize=False
 				else: normalize=True
-				boxable.write_box_images(options.boxsize,options.force,imageformat=options.outformat,normalize=normalize,norm_method=options.normproc)
+				boxable.write_box_images(options.boxsize,options.force,imageformat=options.outformat,normalize=normalize,norm_method=options.normproc,invert=options.invert_output)
 		
 			if self.logid:  E2progress(self.logid,float(i+1)/len(image_names))
 		project_db.close()
@@ -2436,7 +2437,7 @@ class EMBoxerModule(QtCore.QObject):
 	def write_all_box_image_files(self,box_size,forceoverwrite=False,imageformat="hdf",normalize=True,norm_method="normalize.edgemean"):
 		self.write_box_image_files(self.image_names,box_size,forceoverwrite,imageformat,normalize,norm_method)
 		
-	def write_box_image_files(self,image_names,box_size,forceoverwrite=False,imageformat="hdf",normalize=True,norm_method="normalize.edgemean"):
+	def write_box_image_files(self,image_names,box_size,forceoverwrite=False,imageformat="hdf",normalize=True,norm_method="normalize.edgemean",invert=False):
 		self.boxable.cache_exc_to_db()
 		progress = EMProgressDialogModule(self.application(),"Writing boxed images", "Abort", 0, len(image_names),None)
 		progress.qt_widget.show()
@@ -2467,7 +2468,7 @@ class EMBoxerModule(QtCore.QObject):
 				self.autoboxer.auto_box(boxable,False)
 				self.autoboxer.set_mode_explicit(mode)
 				
-				boxable.write_box_images(box_size,forceoverwrite,imageformat,normalize,norm_method)
+				boxable.write_box_images(box_size,forceoverwrite,imageformat,normalize,norm_method,invert)
 		
 			else: 
 				self.autoboxer.write_box_images(self.boxable, normalize, norm_method)

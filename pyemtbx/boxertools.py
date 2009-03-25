@@ -1665,7 +1665,7 @@ class Boxable:
 			
 			return name+"_particles."+imageformat
 
-	def write_box_images(self,box_size=-1,force=False,imageformat="hdf",normalize=True,norm_method="normalize.edgemean",verbose=True):
+	def write_box_images(self,box_size=-1,force=False,imageformat="hdf",normalize=True,norm_method="normalize.edgemean",invert=False,verbose=True):
 		'''
 		If box_size is -1 then the current box_size is used to write output
 		If force is True then output is written over (if it already exists) - else an error is printed and nothing happens
@@ -1717,6 +1717,8 @@ class Boxable:
 					box.change_box_size(box_size)
 						
 				image = box.get_box_image(normalize,norm_method)
+				if (invert):
+					image.mult(-1)
 				
 				image.set_attr("original_x_corner",box.xcorner)
 				image.set_attr("original_y_corner",box.ycorner)

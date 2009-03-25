@@ -1748,11 +1748,12 @@ class E2BoxerOutputTask(E2BoxerTask):
 		pfo = ParamDef(name="force",vartype="boolean",desc_short="Force overwrite",desc_long="Whether or not to force overwrite files that already exist",property=None,defaultunits=db.get("force",dfl=False),choices=None)
 		pwc = ParamDef(name="write_coord_files",vartype="boolean",desc_short="Write box coord files",desc_long="Whether or not box db files should be written",property=None,defaultunits=db.get("write_coord_files",dfl=False),choices=None)
 		pwb = ParamDef(name="write_box_images",vartype="boolean",desc_short="Write box image files",desc_long="Whether or not box images should be written",property=None,defaultunits=db.get("write_box_images",dfl=True),choices=None)
+		pinv = ParamDef(name="invert_output",vartype="boolean",desc_short="Invert",desc_long="Do you want the pixel intensities in the output inverted?",property=None,defaultunits=db.get("invert_output",dfl=False),choices=None)
 		pn =  ParamDef(name="normproc",vartype="string",desc_short="Normalize images",desc_long="How the output box images should be normalized",property=None,defaultunits=db.get("normproc",dfl="normalize.edgemean"),choices=["normalize","normalize.edgemean","none"])
 		pop = ParamDef(name="outformat",vartype="string",desc_short="Output image format",desc_long="The format of the output box images",property=None,defaultunits=db.get("outformat",dfl="bdb"),choices=["bdb","img","hdf"])
 		#db_close_dict(self.form_db_name)
 		params.append([pbox,pfo])
-		params.append([pwc,pwb])
+		params.append([pwc,pwb,pinv])
 		params.append(pn)
 		params.append(pop)
 		
@@ -1785,7 +1786,7 @@ class E2BoxerOutputTask(E2BoxerTask):
 			options.just_output=True # this is implicit, it has to happen
 			
 			string_args = ["normproc","outformat","boxsize"]
-			bool_args = ["force","write_coord_files","write_box_images","just_output"]
+			bool_args = ["force","write_coord_files","write_box_images","just_output","invert_output"]
 			additional_args = ["--method=Swarm", "--auto=db"]
 			temp_file_name = "e2boxer_autobox_stdout.txt"
 			self.spawn_task("e2boxer.py",options,string_args,bool_args,additional_args,temp_file_name)
@@ -1909,7 +1910,7 @@ class E2BoxerProgramOutputTask(E2BoxerOutputTask):
 				normproc = False
 				if params["normproc"] != "none":
 					normproc=True
-				self.target().write_box_image_files(params["filenames"],params["output_boxsize"],params["force"],params["outformat"],normproc,params["normproc"])
+				self.target().write_box_image_files(params["filenames"],params["output_boxsize"],params["force"],params["outformat"],normproc,params["normproc"],params["invert_output"])
 				
 			self.emit(QtCore.SIGNAL("task_idle"))
 			self.form.closeEvent(None)
