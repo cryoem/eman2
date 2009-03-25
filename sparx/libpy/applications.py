@@ -531,8 +531,13 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		Util.mul_scalar(vav, 1.0/(nima-1))
 		SSNR = sumsq.copy()
 		Util.div_filter(SSNR, vav)
-		
-		drop_image(tavg, os.path.join(outdir, "initial%05d.hdf"%(color)))
+
+		drop_image(tavg, os.path.join(outdir, "initial_aqc%02d.hdf"%(color)))
+		drop_image(vav, os.path.join(outdir, "initial_vav%02d.hdf"%(color)))
+
+		tavg = fft(Util.divn_img(fft(tavg), vav))
+
+		drop_image(tavg, os.path.join(outdir, "initial_SSNR%02d.hdf"%(color)))
 		a0 = Util.infomask(SSNR, maskI, True)
 		sum_SSNR = a0[0]
 		#a0 = tavg.cmp("dot", tavg, dict(negative = 0, mask = mask))
@@ -653,7 +658,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					drop_image(tavg, os.path.join(outdir, "aqc%02d_%02d.hdf"%(ipt, color)))
 					drop_image(vav, os.path.join(outdir, "vav%02d_%02d.hdf"%(ipt, color)))
 
-				tavg = fft(SSNR)
+				tavg = fft(Util.divn_img(fft(tavg), vav))
 
 				if Iter == max_iter-1:
 					drop_image(tavg, os.path.join(outdir, "SSNR%02d_%02d.hdf"%(ipt, color)))

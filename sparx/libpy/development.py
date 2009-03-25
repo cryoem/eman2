@@ -6767,7 +6767,7 @@ def ave_ali_err(stack):
 	mirror_same = 0 
 	for im in xrange(nima):
 		img = EMData()
-		img.read_image(stack,im)
+		img.read_image(stack, im)
 		alpha, sx, sy, mirror, dummy = get_params2D(img)
 		v1.append(alpha)
 		v1.append(sx)
@@ -6785,6 +6785,7 @@ def ave_ali_err(stack):
 		v2.append(mirror_i)
 
 	same_rate = float(mirror_same)/nima
+	print same_rate
 	mirror_flip = False
 	if same_rate < 0.5:
 		mirror_flip = True
@@ -6800,29 +6801,19 @@ def ave_ali_err(stack):
 	data.append(mirror_same)
 	data.append(mirror_flip)
 
-	ic = 0
 	min_err = 1e10
-	min_ali = []
-	break_flag = False
-	for i in xrange(36):
-		alpha = 10*i
-		for x in xrange(7):
-			sx = x-3
-			for y in xrange(7):
-				sy = y-3
-				args = [alpha, sx, sy]
-				ic += 1  
-				ps = amoeba(args, [1.0, 1.0, 1.0], err_func, 1.e-5, 1.e-5, 1000, data)
-				err = -ps[1]
-				if err < min_err:
-					min_err = err
-					min_ali = ps[0]
-				# Our experenice shows that 20 trials is already more than enough to get 
-				if ic==10: 
-					break_flag = True
-					break
-			if break_flag: break
-		if break_flag: break
+	trial = 20
+	for i in xrange(trial):
+		alpha = random()*360.0
+		sx = random()*6.0-3.0
+		sy = random()*6.0-3.0
+		if i==0: args = [0.0, 0.0, 0.0]
+		else: args = [alpha, sx, sy]
+		ps = amoeba(args, [1.0, 1.0, 1.0], err_func, 1.e-5, 1.e-5, 1000, data)
+		err = -ps[1]
+		if err < min_err:
+			min_err = err
+			min_ali = ps[0]
 	return min_err
 	
 
