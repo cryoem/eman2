@@ -3984,7 +3984,6 @@ vector<float> Util::cml_spin(int n_psi, int i_prj, int n_prj, vector<float> weig
 		    if(j==i_prj){com[count+1] = (com[count+1]+1)%n_psi;}
 		    count+=2;
 		}
-
 	    }
 	}
 	// do the distance with weighting
@@ -3998,7 +3997,7 @@ vector<float> Util::cml_spin(int n_psi, int i_prj, int n_prj, vector<float> weig
 		    e = data[i]->cm_euc(data[j], com[n], com[n+1]) * weights[int(n/2)];
 		    //if(flag) {tmp += weights[int(n/2)];}
 		    //if(ipsi==316){printf("%i %i %f\n", com[n], com[n+1], e);}
-		    L_tot = L_tot + e;
+		    L_tot += e;
 		}
 		n+=2;
 	    }
