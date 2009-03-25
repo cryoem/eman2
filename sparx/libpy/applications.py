@@ -648,7 +648,15 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				Util.div_filter(SSNR, vav)
 				a0 = Util.infomask(SSNR, maskI, True)
 				sum_SSNR = a0[0]
+
+				if Iter == max_iter-1 or again == 0:
+					drop_image(tavg, os.path.join(outdir, "aqc%02d_%02d.hdf"%(ipt, color)))
+					drop_image(vav, os.path.join(outdir, "vav%02d_%02d.hdf"%(ipt, color)))
+
 				tavg = fft(SSNR)
+
+				if Iter == max_iter-1 or again == 0:
+					drop_image(tavg, os.path.join(outdir, "SSNR%02d_%02d.hdf"%(ipt, color)))
 
 				ref_data[2] = tavg
 				#  call user-supplied function to prepare reference image, i.e., center and filter it
