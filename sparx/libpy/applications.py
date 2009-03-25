@@ -5285,7 +5285,7 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, maxit=10, nas
 	"""
 		
 	"""
-	from alignment	    import eqprojEuler
+	from alignment	    import eqprojDot
 	from filter         import filt_ctf, filt_params, filt_table, filt_from_fsc, filt_btwl, filt_tanl, filt_vols
 	from fundamentals   import fshift, rot_avg_image
 	from projection     import prep_vol, prgs, project
@@ -5298,7 +5298,8 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, maxit=10, nas
 	from math           import pi, sqrt
 	from string         import replace
 	from mpi 	    import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
-	from mpi 	    import mpi_barrier, mpi_bcast, MPI_INT
+	from mpi 	    import mpi_barrier, mpi_bcast, MPI_INT, MPI_FLOAT
+	from utilities      import estimate_3D_center_MPI,rotate_3D_shift
 	import os
 	import sys
 	
@@ -5392,11 +5393,8 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, maxit=10, nas
 		finfo.write( '%d loaded  \n' % len(data) )	
 		finfo.flush()
 
-	masks = [None]*len(data)
 	for im in xrange(len(data)):
 		data[im].set_attr('ID', list_of_particles[im])
-		phi,tht,psi,s2x,s2y = get_params_proj( data[im] )
-		masks[im] = project(mask3D, [phi,tht,psi,-s2x,-s2y], int(ou))
 
 	if fourvar:
 		from reconstruction import rec3D_MPI
@@ -5436,64 +5434,71 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, maxit=10, nas
 			print_msg( runtype + (" ITERATION #%3d\n"%iteration) )
 
 
-		bestccc = [-1.0e23] * nima
+		peaks = [-1.0e23] * nima
 		for krf in xrange(numref):
-			vol = get_im( refvol, krf )
-			if CTF:
-				previous_defocus = -1.0
-			else:
-				volft,kb = prep_vol(vol)
+			vol = get_im(os.path.join(outdir, "volf%04d.hdf"%(iteration-1)), krf)
+			vol *= mask3D
 
 			for im in xrange(nima):
-				ima = data[im]
+				img = data[im]
 
-				if CTF:
-					ctf_params = ima.get_attr( "ctf" )
-					if ctf_params.defocus != previous_defocus :
-						previous_defocus = ctf_params.defocus
-						ctfvol = filt_ctf(vol,ctf_params)
-						volft,kb  = prep_vol( ctfvol )
+				phi,tht,psi,s2x,s2y = get_params_proj(img)
 
-				phi,tht,psi,s2x,s2y = get_params_proj(ima)
-
-				if runtype=="REFINEMENT":
+				if runtype=="ASSIGNMENT":
+					tmp = img.process( "normalize.mask", {"mask":mask2D, "no_sigma":0} )
+					ref = project( vol, [phi,tht,psi,-s2x,-s2y], ou)
+					ref.process_inplace( "normalize.mask", {"mask":mask2D, "no_sigma":1} )
+					if(CTF):
+						ctf = img.get_attr("ctf")
+						ref = filt_ctf( ref, ctf )
+					peak = ref.cmp( "dot", tmp, {"mask":mask2D, "negative":0} )
+					if not(finfo is None):
+						finfo.write( "ID,iref,peak: %6d %d %f"%(list_of_particles[im],krf,peak) )
+						finfo.flush()
+				else:
 
 					weight_phi = max(delta, delta*abs((tht-90.0)/180.0*pi))
 					# running refinement
 					refdata = []
-					refdata.append(volft)
-					refdata.append(kb)
-					refdata.append(ima)     
-					refdata.append(-s2x)
-					refdata.append(-s2y)
+					refdata.append(vol)
+					refdata.append(img)     
+					refdata.append(s2x)
+					refdata.append(s2y)
 					refdata.append(mask2D)
-					[curtang,curtccc,niter] = amoeba([phi,tht,psi], [weight_phi, delta, weight_phi], eqprojEuler, 1.e-4, 1.e-4, 500, refdata)
+					refdata.append(CTF)
+					refdata.append(ou)
+					[ang,peak,iter] = amoeba([phi,tht,psi], [weight_phi,delta,weight_phi], eqprojDot, 1.e-4, 1.e-4, 500, refdata)
 					if not(finfo is None):
-						finfo.write( "ID,iref,peak,trans: %6d %d %f %f %f %f %f %f"%(list_of_particles[im],krf,curtccc,curtang[0],curtang[1],curtang[2],s2x,s2y) )
+						finfo.write( "ID,iref,peak,trans: %6d %d %f %f %f %f %f %f"%(list_of_particles[im],krf,peak,ang[0],ang[1],ang[2],s2x,s2y) )
 						finfo.flush()
 
 
-				else:
-					# assignment only
-					prj = prgs( volft, kb, [phi,tht,psi,-s2x,-s2y] )
-					curtccc = prj.cmp( "ccc", ima, {"mask":masks[im], "negative":0} )
-
-					if not(finfo is None):
-						finfo.write( "ID,iref,peak: %6d %d %f"%(list_of_particles[im],krf,curtccc) )
-						finfo.flush()
-
-
-				if(bestccc[im] < curtccc):
-					bestccc[im] = curtccc
-					ima.set_attr( "group",  krf )
+				if(peaks[im] < peak):
+					peaks[im] = peak
+					img.set_attr( "group",  krf )
 					if runtype=="REFINEMENT": 
-						set_params_proj( ima, [curtang[0],curtang[1],curtang[2],s2x,s2y] )
+						set_params_proj( img, [ang[0],ang[1],ang[2],s2x,s2y] )
 
 					if not(finfo is None):
 						finfo.write( " current best" )
 
 				if not(finfo is None):
 					finfo.write( "\n" )
+
+
+		if runtype=="REFINEMENT":
+			if(True):
+				cs = [0.0]*3
+				cs[0],cs[1],cs[2],dummy,dummy = estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node)				
+				if myid == main_node:
+					msg = " Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
+					print_msg(msg)
+				cs = mpi_bcast(cs, 3, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+				cs = [float(cs[0]), float(cs[1]), float(cs[2])]
+				rotate_3D_shift(data, cs)
+
+
+
 		fscc = [None]*numref
 		if fourvar and runtype=="REFINEMENT":
 			sumvol = model_blank(nx, nx, nx)
@@ -5515,9 +5520,6 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, maxit=10, nas
 				if myid == main_node:   
 					varf = 1.0/varf
 					varf.write_image( os.path.join(outdir,"varf%04d.hdf"%iteration) )
-			for im in xrange(len(data)):
-				phi,tht,psi,s2x,s2y = get_params_proj( data[im] )
-				masks[im] = project( mask3D, [phi,tht,psi,-s2x,-s2y], last_ring)
 
 
 		if(myid == main_node):
