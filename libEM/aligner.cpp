@@ -224,7 +224,8 @@ EMData * RotationalAligner::align_180_ambiguous(EMData * this_img, EMData * to, 
 	float rot_angle = (float) (peak_index * 180.0f / this_img_rfp_nx);
 	
 	// Return the result
-	cf=this_img->process("math.transform",Dict("type","2d","alpha",rot_angle));
+	Transform tmp(Dict("type","2d","alpha",rot_angle));
+	cf=this_img->process("math.transform",Dict("transform",(Transform*)&tmp));
 // 	cf->transform( Transform(Dict("type","2d","alpha",rot_angle)));
 	Transform* t = get_set_align_attr("xform.align2d",cf,this_img);
 	t->set_rotation(Dict("type","2d","alpha",rot_angle));
