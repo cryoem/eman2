@@ -3920,7 +3920,6 @@ class EMBoxerModulePanel(QtGui.QWidget):
 	
 	def set_box_size(self,box_size):
 		self.bs.setText(str(box_size))
-		self.usingbox_size.setText(str(box_size))
 	
 	def new_threshold(self,val):
 		#print "new threshold"
