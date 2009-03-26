@@ -658,6 +658,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					drop_image(tavg, os.path.join(outdir, "aqc%02d_%02d.hdf"%(ipt, color)))
 					drop_image(vav, os.path.join(outdir, "vav%02d_%02d.hdf"%(ipt, color)))
 
+				real_tavg = tavg.copy()
 				tavg = fft(Util.divn_img(fft(tavg), vav))
 
 				if Iter == max_iter-1:
@@ -703,7 +704,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		if key == group_main_node:
 			if myid != main_node:
 				mpi_send(msg, len(msg), MPI_INT, main_node, color+100, MPI_COMM_WORLD)
-				send_EMData(tavg, main_node, color+200)
+				send_EMData(real_tavg, main_node, color+200)
 				tavg = recv_EMData(main_node, color+300)
 			else:
 				# Print the message on the main node
@@ -734,8 +735,8 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 						print_msg("The stability between Group %d and Group %d is %f\n"%(iii, jjj, mirror_change/float(nima)))				
 				print_msg("The average mirror stability rate is %f\n"%(avg_mirror_stable/float(nima*(number_of_ave-1)*number_of_ave/2)))
 
-				savg = [tavg.copy()]
-				tavg.write_image(os.path.join(outdir, "avg_before_ali%02d.hdf"%(ipt)), 0)
+				savg = [real_tavg.copy()]
+				real_tavg.write_image(os.path.join(outdir, "avg_before_ali%02d.hdf"%(ipt)), 0)
 				for isav in xrange(1, number_of_ave):
 					img = recv_EMData(isav, isav+200)
 					savg.append(img.copy())
