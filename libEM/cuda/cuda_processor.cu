@@ -736,3 +736,19 @@ EMDataForCuda* emdata_transform_cuda(const float* const matrix,const int nx,cons
 
 
 
+// EMDataForCuda* emdata_translate_int_cuda(const EMDataForCuda* const data, const int dx, const int dy, const int dz)
+// {
+// 	EMDataForCuda* t = (EMDataForCuda*) malloc(sizeof(EMDataForCuda));
+// 	cudaError_t error = cudaMalloc((void**)&t->data,data->nx*data->ny*data->nz*sizeof(float));
+// 	if ( error != cudaSuccess ) {
+// 		return 0; //Calling function should know something went wrong
+// 	}
+// 	
+// 	int max_threads = 512;
+// 	int num_calcs = data->nx*data->nx*data->nz;
+// 	
+// 	int grid_y = num_calcs/(max_threads);
+// 	int res_y = num_calcs - grid_y*max_threads;
+// }
+
+

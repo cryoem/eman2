@@ -836,74 +836,11 @@ void EMData::translate(const Vec3i &translation)
 		EXITFUNC;
 		return;
 	}
-
-	float *this_data = get_data();
-	int data_size = sizeof(float)*get_xsize()*get_ysize()*get_zsize();
-	float *tmp_data = (float *)EMUtil::em_malloc(data_size);
-	EMUtil::em_memcpy(tmp_data, this_data, data_size);
-
-	int x0, x1, x2;
-	if( translation[0] < 0 ) {
-		x0 = 0;
-		x1 = nx;
-		x2 = 1;
-	}
-	else {
-		x0 = nx-1;
-		x1 = -1;
-		x2 = -1;
-	}
-
-	int y0, y1, y2;
-	if( translation[1] < 0 ) {
-		y0 = 0;
-		y1 = ny;
-		y2 = 1;
-	}
-	else {
-		y0 = ny-1;
-		y1 = -1;
-		y2 = -1;
-	}
-
-	int z0, z1, z2;
-	if( translation[2] < 0 ) {
-		z0 = 0;
-		z1 = nz;
-		z2 = 1;
-	}
-	else {
-		z0 = nz-1;
-		z1 = -1;
-		z2 = -1;
-	}
-
-	int xp, yp, zp;
-	int tx = translation[0];
-	int ty = translation[1];
-	int tz = translation[2];
-	for (int y = y0; y != y1; y += y2) {
-		for (int x = x0; x != x1; x += x2) {
-			for (int z = z0; z != z1; z+=z2) {
-				xp = x - tx;
-				yp = y - ty;
-				zp = z - tz;
-				if (xp < 0 || yp < 0 || zp<0 || xp >= nx || yp >= ny || zp >= nz) {
-					this_data[x + y * nx + z * nxy] = 0;
-				}
-				else {
-					this_data[x + y * nx + z * nxy] = tmp_data[xp + yp * nx + zp * nxy];
-				}
-			}
-		}
-	}
-
-	if( tmp_data ) {
-		EMUtil::em_free(tmp_data);
-		tmp_data = 0;
-	}
-
-	update();
+	
+	Dict params("trans",static_cast< vector<int> >(translation));
+	process_inplace("math.translate.int",params);
+	
+	// update() - clip_inplace does the update
 	all_translation += translation;
 
 	EXITFUNC;
@@ -1024,7 +961,6 @@ void EMData::translate(const Vec3f &translation)
 
 void EMData::rotate(float az, float alt, float phi)
 {
-	cout << "Deprecation warning in EMData::rotate. Please consider using EMData::transform() instead " << endl; 
 	Dict d("type","eman");
 	d["az"] = az;
 	d["alt"] = alt;

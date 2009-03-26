@@ -337,6 +337,12 @@ namespace EMAN
 			vec[2] = static_cast<Type>(vec[2]/d);
 			return *this;
 		}
+		
+		template<typename Type2>
+		operator vector<Type2>() const {
+			vector<Type2> v(vec,vec+3);
+			return v;
+		}
 	
 		
 		private:

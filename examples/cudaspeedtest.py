@@ -41,13 +41,33 @@ from time import time
 
 def test_main():
 	
-	test_dims = [64*i for i in [1,2,3,4,8]]
+	test_dims = [64*i for i in [1,2,3,4]]
 	test_dims_3d = [64*i for i in [1,2,3,4]]
 	
 	test_range = range(20)
 	
 	gpu_times = []
 	cpu_times = []
+	
+	print "Testing transform"
+	for dims in test_dims:
+		a = [test_image(0,size=(dims,dims)) for i in test_range]
+		for d in a: d.set_gpu_rw_current()
+		tr = Transform()
+		
+		t = time()
+		for i in test_range:
+			b = a[i].process("math.transform",{"transform":tr})
+			#c.print_this()
+
+		gpu_times.append(time()-t)
+		#print dims, "B"
+		a = [test_image(0,size=(dims,dims)) for i in test_range]
+		t = time()
+		for i in test_range:
+			b = a[i].process("math.transform",{"transform":tr})
+		cpu_times.append(time()-t)
+		print dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1]
 	
 	
 	alis = ["translational","rotational","rotate_translate","rotate_translate_flip"]

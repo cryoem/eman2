@@ -1207,6 +1207,7 @@ The basic design of EMAN Processors: <br>\
 	};
 	
 	/** Transform the image using a Transform object
+	 * @ingroup CUDA_ENABLED
 	 * @author David Woolford
 	 * @date September 2008
 	 */
@@ -1243,7 +1244,7 @@ The basic design of EMAN Processors: <br>\
 			
 			virtual string get_desc() const
 			{
-				return "The image is transformed the Transform parameter.";
+				return "The image is transformed using Transform parameter.";
 			}
 		private:
 			float* transform(const EMData* const image, const Transform& t) const;
@@ -1252,6 +1253,62 @@ The basic design of EMAN Processors: <br>\
 			
 			
 			void assert_valid_aspect(const EMData* const image) const;
+	};
+	
+	/** Translate the image an integer amount
+	 * Uses EMData::clip_inplace (inplace) and EMData::get_clip (out of place) to do the translation
+	 * @ingroup CUDA_ENABLED
+	 * @author David Woolford
+	 * @date March 2009
+	 */
+	class IntTranslateProcessor:public Processor
+	{
+		public:
+			virtual string get_name() const
+			{
+				return "math.translate.int";
+			}
+			
+			static Processor *NEW()
+			{
+				return new IntTranslateProcessor();
+			}
+			
+			/**
+			 * @exception ImageDimensionException if the image is not 1,2 or 3D
+			 * @exception InvalidParameterException if the Transform parameter is not specified
+			 */
+			virtual void process_inplace(EMData* image);
+
+			/**
+			 * @exception ImageDimensionException if the image is not 1,2 or 3D
+			 * @exception InvalidParameterException if the Transform parameter is not specified
+			 */
+			virtual EMData* process(const EMData* const image);
+			
+			virtual TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("trans", EMObject::INTARRAY, "The displacement array, can be length 1-3" );
+				return d;
+			}
+			
+			virtual string get_desc() const
+			{
+				return "The image is translated an integer amount";
+			}
+		private:
+			/** Check that the particular aspect is valid
+		 	* @exception ImageDimensionException if the image is not 1,2 or 3D
+			*/
+			void assert_valid_aspect(const vector<int>& translation, const EMData* const image) const;
+
+			/** Get the clip region that will achieve the desired translation
+			 * @exception ImageDimensionException if the image is not 1,2 or 3D
+			 * @param translation the amount by which to translate
+			 * @param image the image that will eventually used for the translation operation
+			 */
+			Region get_clip_region(vector<int>& translation, const EMData* const image) const;
 	};
 
 

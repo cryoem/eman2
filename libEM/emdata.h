@@ -342,6 +342,7 @@ namespace EMAN
 		inline void transform(const Transform& t) {
 			ENTERFUNC;
 			process_inplace("math.transform",Dict("transform",(Transform*)(&t)));
+			//update(); no need, process_inplace did it
 			EXITFUNC;
 		}
 

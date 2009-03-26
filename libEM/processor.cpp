@@ -80,6 +80,7 @@ template <> Factory < Processor >::Factory()
 	force_add(&ValueSqrtProcessor::NEW);
 	force_add(&Rotate180Processor::NEW);
 	force_add(&TransformProcessor::NEW);
+	force_add(&IntTranslateProcessor::NEW);
 	force_add(&InvertCarefullyProcessor::NEW);
 
 	force_add(&ClampingProcessor::NEW);
@@ -7317,7 +7318,53 @@ void TransformProcessor::process_inplace(EMData* image) {
 	EXITFUNC;
 }
 
+void IntTranslateProcessor::assert_valid_aspect(const vector<int>& translation, const EMData* const image) const {
+	if (translation.size() == 0 ) throw InvalidParameterException("You must specify the trans argument");
+}
 
+Region IntTranslateProcessor::get_clip_region(vector<int>& translation, const EMData* const image) const {
+	unsigned int dim = static_cast<unsigned int> (image->get_ndim());
+	
+	if ( translation.size() != dim ) {
+		for(unsigned int i = translation.size(); i < dim; ++i ) translation.push_back(0);
+	}
+	
+	Region clip_region;
+	if (dim == 1) {
+		clip_region = Region(-translation[0],image->get_xsize());
+	} else if ( dim == 2 ) {
+		clip_region = Region(-translation[0],-translation[1],image->get_xsize(),image->get_ysize());
+	} else if ( dim == 3 ) {
+		clip_region = Region(-translation[0],-translation[1],-translation[2],image->get_xsize(),image->get_ysize(),image->get_zsize());
+	} else throw ImageDimensionException("Only 1,2 and 3D images are supported");
+	
+	return clip_region;
+}
+
+void IntTranslateProcessor::process_inplace(EMData* image) {
+	
+	vector<int> translation = params.set_default("trans",vector<int>() );
+	
+	
+	assert_valid_aspect(translation,image);
+	
+	Region clip_region = get_clip_region(translation,image);
+	
+	image->clip_inplace(clip_region);
+	// clip_inplace does the update!
+}
+
+EMData* IntTranslateProcessor::process(const EMData* const image) {
+	
+	vector<int> translation = params.set_default("trans",vector<int>() );
+	
+	assert_valid_aspect(translation,image);
+	
+	Region clip_region = get_clip_region(translation,image);
+	
+	return image->get_clip(clip_region,0);
+	// clip_inplace does the update!
+}
 
 void Rotate180Processor::process_inplace(EMData* image) {
 	ENTERFUNC;

@@ -169,9 +169,8 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 		delete cf;
 		cf = 0;
 	}
-	cf=this_img->copy();
-	cf->translate(cur_trans[0],cur_trans[1],cur_trans[2]);
-	cf->update();
+	Dict params("trans",static_cast< vector<int> >(cur_trans));
+	cf=this_img->process("math.translate.int",params);
 	
 	if ( nz != 1 ) {
 		Transform* t = get_set_align_attr("xform.align3d",cf,this_img);
@@ -245,9 +244,8 @@ EMData *RotationalAligner::align(EMData * this_img, EMData *to,
 	Dict rot = tmp->get_rotation("2d");
 	float rotate_angle_solution = rot["alpha"];
 	
-	// Make a copy of the rotationally aligned image and then rotate it 180
-	EMData *rot_align_180= rot_aligned->copy();
-	rot_align_180->process_inplace("math.rotate.180");
+	// Get a copy of the rotationally aligned image that is rotated 180
+	EMData *rot_align_180 = rot_aligned->process("math.rotate.180");
 	
 	// Generate the comparison metrics for both rotational candidates
 	float rot_cmp = rot_aligned->cmp(cmp_name, to, cmp_params);
