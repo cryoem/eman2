@@ -8241,6 +8241,327 @@ def GA_MPI(stack, rad, K, sizepop, maxgen, pcross, pmut, pselect, elit = False, 
 ###############################################################################################
 ## COMMON LINES NEW VERSION ############ 2009-03-26 14:06:22 ####################### JB #######
 
+# init global variables used toa quick acces with many function of common-lines
+def cml2_init_global_var(dpsi, delta, nprj, debug):
+	from utilities import even_angles
+
+	global g_anglst, g_d_psi, g_n_psi, g_i_prj, g_n_lines, g_n_prj, g_n_anglst, g_debug, g_seq
+	
+	g_anglst   = even_angles(delta, 0.0, 179.9, 0.0, 359.9, 'P')
+	g_n_anglst = len(g_anglst)
+	g_d_psi    = dpsi
+	g_n_psi    = int(360 / dpsi)
+	g_i_prj    = -1
+	g_n_lines  = (nprj - 1) * nprj / 2
+	g_n_prj    = nprj
+	g_debug    = debug
+	g_seq      = [0] * 2 * g_n_lines
+	c          = 0
+	# prepare pairwise indexes ij
+	for i in xrange(g_n_prj):
+		for j in xrange(i+1, g_n_prj):
+			g_seq[c]   = i
+			g_seq[c+1] = j
+			c += 2
+
+# open and transform projections to sinogram
+def cml2_open_proj(stack, ir, ou, d_psi, lf, hf):
+	#from projection   import cml_sinogram
+	from utilities    import model_circle, get_params_proj, model_blank, get_im
+	from fundamentals import fft
+
+	nprj = EMUtil.get_image_count(stack)               # number of projections
+	Prj  = []                                          # list of projections
+	Ori  = [-1] * 4 * nprj                             # orientation intial (phi, theta, psi, index) for each projection
+
+	for i in xrange(nprj):
+		image = get_im(stack, i)
+
+		# read initial angles if given
+		try:	Ori[4*i], Ori[4*i+1], Ori[4*i+2], s2x, s2y = get_params_proj(image)
+		except:	pass
+		
+		if(i == 0):
+			nx = image.get_xsize()
+			if(ou < 1): ou = nx // 2 - 1
+			diameter = 2 * ou + 1
+			diameter = int(diameter)
+			mask2D   = model_circle(ou, nx, nx)
+			circ     = mask2D.copy()
+			if ou > 1:  circ   -= model_circle(ou - 1, nx, nx)
+			if ir > 0:  mask2D -= model_circle(ir, nx, nx)
+
+		# normalize under the mask
+		[mean_a, sigma, imin, imax] = Util.infomask(image, circ, True)
+		image = (image - mean_a) / sigma
+		Util.mul_img(image, mask2D)
+
+		# sinogram
+		sino = cml2_sinogram(image, diameter, d_psi)
+
+		# prepare the cut positions in order to filter (lf: low freq; hf: high freq)
+		ihf = min(int(2 * hf * diameter), diameter + (diameter + 1) % 2)
+		ihf = ihf + (ihf + 1) % 2    # index ihf must be odd to take the img part
+		ilf = max(int(2 * lf * diameter), 0)
+		ilf = ilf + ilf % 2          # index ilf must be even to fall in the real part
+		bdf = ihf - ilf + 1
+
+		# process lines
+		nxe = sino.get_xsize()
+		nye = sino.get_ysize()
+		prj = model_blank(bdf, nye)
+		prj.set_complex(True)
+		for li in xrange(nye):
+
+			# get the line li
+			line = model_blank(nxe)
+			for ci in xrange(nxe): line.set_value_at(ci, 0, sino.get_value_at(ci, li))
+
+			# normalize this line
+			[mean_l, sigma_l, imin, imax] = Util.infomask(line, None, True)
+			line = (line - mean_l) / sigma_l
+
+			# fft
+			line = fft(line)
+	
+			# filter (cut part of coef)
+			ct = 0
+			for ci in xrange(ilf, ihf + 1):
+				prj.set_value_at(ct, li, line.get_value_at(ci, 0))
+				ct += 1
+	
+		# store the projection
+		Prj.append(prj)
+
+	return Prj, Ori
+
+# transform an image to sinogram (mirror include)
+def cml2_sinogram(image2D, diameter, d_psi = 1):
+	from math         import cos, sin
+	from fundamentals import fft
+	
+	M_PI  = 3.141592653589793238462643383279502884197
+	
+	# prepare 
+	M = image2D.get_xsize()
+	# padd two times
+	npad  = 2
+	N     = M * npad
+	# support of the window
+	K     = 6
+	alpha = 1.75
+	r     = M / 2
+	v     = K / 2.0 / N
+
+	kb     = Util.KaiserBessel(alpha, K, r, K / (2. * N), N)
+	volft  = image2D.average_circ_sub()  	# ASTA - in spider
+	volft.divkbsinh(kb)		  	# DIVKB2 - in spider
+	volft  = volft.norm_pad(False, npad)
+	volft.do_fft_inplace()
+	volft.center_origin_fft()
+	volft.fft_shuffle()
+
+	# get line projection
+	nangle = int(360 / d_psi)     
+	dangle = 2 * M_PI / float(nangle)
+	data   = []
+	for j in xrange(nangle):
+		nuxnew =  cos(dangle * j)
+		nuynew = -sin(dangle * j)
+		line   = volft.extractline(kb, nuxnew, nuynew)
+		rlines = fft(line)
+		data.append(rlines.copy())
+
+	# copy each line in the same im
+	e = EMData()
+	e.set_size(data[0].get_xsize() ,len(data), 1)
+	for n in xrange(len(data)):
+		nx = data[n].get_xsize()
+		for i in xrange(nx): e.set_value_at(i, n, data[n].get_value_at(i))
+
+	Util.cyclicshift(e, {"dx":M, "dy":0, "dz":0} )
+
+	return Util.window(e, diameter, len(data), 1, 0, 0, 0)
+
+# find structure
+def cml_find_structure(Prj, Ori, outdir, maxit, first_zero, flag_weights):
+	#from projection import cml_spin, cml_export_progress
+	import time, sys
+	
+	# global vars
+	global g_i_prj, g_n_prj, g_n_anglst, g_anglst, g_d_psi, g_debug, g_n_lines, g_seq
+
+	# list of free orientation
+	ocp = [-1] * g_n_anglst
+
+	if first_zero:
+		listprj = range(1, g_n_prj)
+		ocp[0]  = 0 
+	else:   listprj = range(g_n_prj)
+
+	# prepare rotation matrix
+	Rot = Util.cml_init_rot(Ori)
+
+	# iteration loop
+	for ite in xrange(maxit):
+		t_start = time.time()
+
+		# loop over i prj
+		change = False
+		for iprj in listprj:
+
+			# Store current the current orientation
+			ind          = 4*iprj
+			store_phi    = Ori[ind]
+			store_theta  = Ori[ind+1]
+			store_psi    = Ori[ind+2]
+			cur_agl      = Ori[ind+3]
+			if cur_agl  != -1: ocp[cur_agl] = -1
+
+			# TODO optimize that
+			iw = [0] * (g_n_prj - 1)
+			c  = 0
+			for i in xrange(g_n_prj):
+				for j in xrange(i, g_n_prj):
+					if i == iprj or j == iprj:
+						iw[c] = c
+					c += 1
+
+			# loop over all angles
+			best_disc = 1e20
+			best_psi  = -1
+			best_iagl = -1
+			for iagl in xrange(g_n_anglst):
+				# if orientation is free
+				if ocp[iagl] == -1:
+					# assign new orientation
+					Ori[ind]   = g_anglst[iagl][0]
+					Ori[ind+1] = g_anglst[iagl][1]
+					Rot        = Util.cml_update_rot(Rot, iprj, Ori[ind], Ori[ind+1], 0.0)
+					# weights
+					if flag_weights:
+						cml = Util.cml_line_in3d(Ori, g_seq, g_n_prj, g_n_lines)
+						weights = Util.cml_weights(cml)
+						# TODO optimize that
+						wm = max(weights)
+						for i in xrange(g_n_lines): weights[i]  = wm - weights[i]
+						sw = sum(weights)
+						for i in xrange(g_n_lines): weights[i] /= sw
+					else:   weights = [1.0] * g_n_lines
+
+					# spin all psi
+					com = Util.cml_line_insino(Rot, iprj, g_n_prj)
+					res = Util.cml_spin_psi(Prj, com, weights, g_seq, iw, g_n_psi, g_n_prj)
+
+					# select the best
+					if res[0] < best_disc:
+						best_disc = res[0]
+						best_psi  = res[1]
+						best_iagl = iagl
+
+				#if g_debug: cml_export_progress(outdir, ite, iprj, iagl, ind_psi * g_d_psi, disc, 'progress')
+				#else:
+				#if g_debug: cml_export_progress(outdir, ite, iprj, iagl, -1, -1, 'progress')
+
+			# if change, assign
+			if best_iagl != cur_agl:
+				ocp[best_iagl] = iprj
+				Ori[ind]       = g_anglst[best_iagl][0] # phi
+				Ori[ind+1]     = g_anglst[best_iagl][1] # theta
+				Ori[ind+2]     = best_psi * g_d_psi     # psi
+				Ori[ind+3]     = best_iagl              # index
+
+				change = True
+			else:
+				if cur_agl != -1: ocp[cur_agl] = iprj
+				Ori[ind]    = store_phi
+				Ori[ind+1]  = store_theta
+				Ori[ind+2]  = store_psi
+				Ori[ind+3]  = cur_agl
+
+			#if g_debug: cml_export_progress(outdir, ite, iprj, best_iagl, best_psi * g_d_psi, best_disc, 'choose')
+
+		print 'time', time.time() - t_start, 's'
+
+		# if one change, compute new full disc
+		#disc = cml_disc(Prj, Ori, flag_weights)
+
+		# display in the progress file
+		#cml_export_txtagls(outdir, Ori, disc, 'Ite: %s' % str(ite + 1).rjust(3, '0'))
+
+		if not change: break
+
+	return Ori, disc, ite
+
+# application find structure
+def cml2_main(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit, given = False, first_zero = False, flag_weights = False, debug = False):
+	from utilities import print_begin_msg, print_msg, print_end_msg, start_time, running_time
+	from random    import seed, random
+	import time, sys, os
+
+	# logfile
+	t_start = start_time()
+	print_begin_msg('find_struct')
+
+	out_dir = out_dir.rstrip('/')
+	if os.path.exists(out_dir): os.system('rm -rf ' + out_dir)
+	os.mkdir(out_dir)
+
+	# import
+	#from projection  import cml_open_proj, cml_init_global_var, cml_head_log
+	#from projection  import cml_disc, cml_export_txtagls, cml_export_struc
+	#from projection  import cml_end_log, cml_find_structure
+	#from projection import cml_open_proj(stack, ir, ou, dpsi, lf, hf)
+
+	# Open and transform projections
+	Prj, Ori = cml2_open_proj(stack, ir, ou, dpsi, lf, hf)
+	
+	# if not angles given select randomly orientation for each projection
+	if not given:
+		if rand_seed > 0: seed(rand_seed)
+		else:             seed()
+		j = 0
+		for n in xrange(len(Prj)):
+			if first_zero and n == 0:
+				Ori[j]   = 0.0
+				Ori[j+1] = 0.0
+				Ori[j+2] = 0.0
+			else:
+				Ori[j]   = random() * 360  # phi
+				Ori[j+1] = random() * 180  # theta
+				Ori[j+2] = random() * 360  # psi
+			j += 4
+
+	# Init the global vars
+	cml2_init_global_var(dpsi, delta, len(Prj), debug)
+	
+	# Update logfile
+	#cml_head_log(stack, outdir, delta, ir, ou, lf, hf, rand_seed, maxit, given)
+
+	# Compute the first disc
+	#disc = cml_disc(Prj, Ori, flag_weights)
+
+	# Update progress file
+	#cml_export_txtagls(outdir, Ori, disc, 'Init')
+
+	# Find structure
+	Ori, disc, ite = cml2_find_structure(Prj, Ori, outdir, maxit, first_zero, flag_weights)
+
+	# Export structure
+	#cml_export_struc(stack, out_seedname, Ori, BDB)
+
+	# Compute disc without weights
+	#disc_now = cml_disc(Prj, Ori, False)
+
+	# Update logfile
+	#cml_end_log(Ori, disc, disc_now, ite)
+	running_time(t_start)
+	print_end_msg('find_struct')
+
+	return disc_now
+
+
+
 
 ## END COMMON LINES NEW VERSION ###############################################################
 ###############################################################################################
