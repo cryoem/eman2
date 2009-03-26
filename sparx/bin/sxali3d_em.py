@@ -74,6 +74,9 @@ def main():
 			from mpi import mpi_init
    			sys.argv = mpi_init( len(sys.argv), sys.argv )
  
+			from utilities import init_mpi_bdb
+			init_mpi_bdb()
+
 		from applications import ali3d_em_MPI
 		global_def.BATCH = True
 		if options.MPI:
