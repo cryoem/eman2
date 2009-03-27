@@ -5486,7 +5486,7 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, maxit=10, nas
 					refdata[6] = True
 					weight_phi = max(delta, delta*abs((tht-90.0)/180.0*pi))
 					# running refinement
-					[ang,peak,iter,sft] = amoeba_multi_level([phi,tht,psi], [weight_phi,delta,weight_phi], eqproj_cascaded_ccc, 1.e-4, 1.e-4, 500, refdata)
+					[ang,peak,iter,sft] = amoeba_multi_level([phi,tht,psi],[weight_phi,delta,weight_phi],eqproj_cascaded_ccc, 1.0,1.e-2, 500, refdata)
 					if not(finfo is None):
 						finfo.write( "ID,iref,peak,trans: %6d %d %f %f %f %f %f %f"%(list_of_particles[im],krf,peak,ang[0],ang[1],ang[2],-sft[0],-sft[1]) )
 						finfo.flush()
@@ -5796,7 +5796,7 @@ def eqproj_cascaded_ccc(args, data):
 	data2[1] = data[1]
 
 	if opt:
-		ps = amoeba([sx, sy], [1.0, 1.0], twoD_fine_search, 1.e-4, 1.e-4, 500, data2)
+		ps = amoeba([sx, sy], [0.25, 0.25], twoD_fine_search, 1.0, 1.e-2, 500, data2)
 		s2x = nx/2-ps[0][0]
 		s2y = nx/2-ps[0][1]
 		return ps[1], [s2x,s2y]
