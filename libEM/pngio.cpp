@@ -319,16 +319,16 @@ int PngIO::write_data(float *data, int image_index, const Region*,
 
 	// If we didn't get any parameters in 'render_min' or 'render_max', we need to find some good ones
 	if (!rendermin && !rendermax) getRenderMinMax(data, nx, ny, rendermin, rendermax);
-
+	
 	if (depth_type == PNG_CHAR_DEPTH) {
 		unsigned char *cdata = new unsigned char[nx];
 
 		for (unsigned int y = 0; y < ny; y++) {
 			for (unsigned int x = 0; x < nx; x++) {
-				if(data[y * nx + x] < rendermin){
+				if(data[y * nx + x] <= rendermin){
 					cdata[x] = 0;
 				}
-				else if(data[y * nx + x] > rendermax) {
+				else if(data[y * nx + x] >= rendermax) {
 					cdata[x] = UCHAR_MAX;
 				}
 				else {
@@ -349,10 +349,10 @@ int PngIO::write_data(float *data, int image_index, const Region*,
 
 		for (unsigned int y = 0; y < ny; y++) {
 			for (unsigned int x = 0; x < nx; x++) {
-				if(data[y * nx + x] < rendermin){
+				if(data[y * nx + x] <= rendermin){
 					sdata[x] = 0;
 				}
-				else if(data[y * nx + x] > rendermax) {
+				else if(data[y * nx + x] >= rendermax) {
 					sdata[x] = USHRT_MAX;
 				}
 				else {
