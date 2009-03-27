@@ -82,8 +82,8 @@ def add_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None):
 				#    while calculation of average (and in general principle) CTF should be applied before rot/shift
 				#    here we use the first possibility
 	 		ctf_params = ima.get_attr("ctf")
-	 		oc = filt_ctf(ima, ctf_params, dopad=False)
-			Util.add_img(ave, oc)
+	 		ima_filt = filt_ctf(ima, ctf_params, dopad=False)
+			Util.add_img(ave, ima_filt)
  			Util.add_img2(var, fft(ima))
 	 		if get_ctf2: Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
 		sumsq = fft(ave)
@@ -99,8 +99,7 @@ def add_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None):
 			else:
 				ima = data[i].copy()
 			Util.add_img(ave, ima)
-			fim = fft(ima)
-			Util.add_img2(var, fim)
+			Util.add_img2(var, fft(ima))
 		sumsq = fft(ave)
 		Util.mul_scalar(ave, 1.0/float(n))
 		Util.mul_img(sumsq, sumsq.conjg())
@@ -109,7 +108,7 @@ def add_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None):
 		
 	Util.mul_scalar(var, 1.0/float(n-1))	
 	st = Util.infomask(var, None, True)
-	if st[2] < 0.0:  ERROR("Negative variance!", "add_oe_ave_varf", 1)
+	if st[2] < 0.0:  ERROR("Negative variance!", "add_ave_varf", 1)
 	return ave, var, sumsq
 	
 
