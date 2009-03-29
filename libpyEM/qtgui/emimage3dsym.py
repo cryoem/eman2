@@ -617,7 +617,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 				
 				if (j == 0):
 					glPushMatrix()
-					d = T.get_rotation()
+					d = T.get_rotation("eman")
 					glRotate(-d["phi"],0,0,1)
 					glRotate(-d["alt"],1,0,0)
 					glRotate(-d["az"],0,0,1)
@@ -1001,11 +1001,11 @@ class EMSymInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.symtogdisplay, QtCore.SIGNAL("clicked(bool)"), target.toggle_sym_display)
 		QtCore.QObject.connect(self.triangletog, QtCore.SIGNAL("clicked(bool)"), target.triangletog)
 		QtCore.QObject.connect(self.arctog, QtCore.SIGNAL("clicked(bool)"), target.arctog)
-#		QtCore.QObject.connect(self.tracetog, QtCore.SIGNAL("clicked(bool)"), self.toggle_trace)
-#		QtCore.QObject.connect(self.reducetog, QtCore.SIGNAL("clicked(bool)"), self.target().reducetog)
-#		QtCore.QObject.connect(self.lowrange, QtCore.SIGNAL("editingFinished()"), self.trace_update)
-#		QtCore.QObject.connect(self.highrange, QtCore.SIGNAL("editingFinished()"), self.trace_update)
-#		QtCore.QObject.connect(self.tracefile, QtCore.SIGNAL("editingFinished()"), self.trace_update)
+		QtCore.QObject.connect(self.tracetog, QtCore.SIGNAL("clicked(bool)"), self.toggle_trace)
+		QtCore.QObject.connect(self.reducetog, QtCore.SIGNAL("clicked(bool)"), self.target().reducetog)
+		QtCore.QObject.connect(self.lowrange, QtCore.SIGNAL("editingFinished()"), self.trace_update)
+		QtCore.QObject.connect(self.highrange, QtCore.SIGNAL("editingFinished()"), self.trace_update)
+		QtCore.QObject.connect(self.tracefile, QtCore.SIGNAL("editingFinished()"), self.trace_update)
 		#QtCore.QObject.connect(self.cbb, QtCore.SIGNAL("currentIndexChanged(QString)"), target.setColor)
 		QtCore.QObject.connect(self.angle_label, QtCore.SIGNAL("currentIndexChanged(QString)"), self.angle_label_changed)
 		QtCore.QObject.connect(self.orient_label, QtCore.SIGNAL("currentIndexChanged(QString)"), self.orient_label_changed)
@@ -1213,53 +1213,53 @@ class EMSymInspector(QtGui.QWidget):
 		self.hbl_sym2.addWidget(self.orient_label)
 
 		#here		
-#		self.hbl_pt = QtGui.QHBoxLayout()
-#		self.hbl_pt.setMargin(0)
-#		self.hbl_pt.setSpacing(6)
-#		self.hbl_pt.setObjectName("Ptl Trace")
-#		
-#		
-#		self.tracetog = QtGui.QPushButton("Trace")
-#		self.tracetog.setCheckable(1)
-#		self.tracetog.setChecked(0)
-#		self.hbl_pt.addWidget(self.tracetog)
-#		
-#		self.tracefile = QtGui.QLineEdit(self)
-#		self.tracefile.setText("filename.txt")
-#		self.tracefile.setFixedWidth(100)
-#		self.hbl_pt.addWidget(self.tracefile)
-#		self.tracefile.setEnabled(False)
-#		
-#		self.pt_label = QtGui.QLabel()
-#		self.pt_label.setText('Range')
-#		self.hbl_pt.addWidget(self.pt_label)
-#		
-#		self.pos_int_validator2 = QtGui.QIntValidator(self)
-#		self.pos_int_validator2.setBottom(0)
-#		self.lowrange = QtGui.QLineEdit(self)
-#		self.lowrange.setValidator(self.pos_int_validator2)
-#		self.lowrange.setText("1")
-#		self.lowrange.setFixedWidth(50)
-#		self.hbl_pt.addWidget(self.lowrange)
-#		self.lowrange.setEnabled(False)
-#		
-#		self.pt_label_to = QtGui.QLabel()
-#		self.pt_label_to.setText('to')
-#		self.hbl_pt.addWidget(self.pt_label_to)
-#		
-#		self.highrange = QtGui.QLineEdit(self)
-#		self.highrange.setValidator(self.pos_int_validator2)
-#		self.highrange.setText("1")
-#		self.highrange.setFixedWidth(50)
-#		self.hbl_pt.addWidget(self.highrange)
-#		self.highrange.setEnabled(False)
-#		
-#		self.reducetog = QtGui.QPushButton("Reduce")
-#		self.reducetog.setCheckable(1)
-#		self.reducetog.setChecked(0)
-#		self.hbl_pt.addWidget(self.reducetog)
-#		
-#		maintab.vbl.addLayout(self.hbl_pt)
+		self.hbl_pt = QtGui.QHBoxLayout()
+		self.hbl_pt.setMargin(0)
+		self.hbl_pt.setSpacing(6)
+		self.hbl_pt.setObjectName("Ptl Trace")
+		
+		
+		self.tracetog = QtGui.QPushButton("Trace")
+		self.tracetog.setCheckable(1)
+		self.tracetog.setChecked(0)
+		self.hbl_pt.addWidget(self.tracetog)
+		
+		self.tracefile = QtGui.QLineEdit(self)
+		self.tracefile.setText("filename.txt")
+		self.tracefile.setFixedWidth(100)
+		self.hbl_pt.addWidget(self.tracefile)
+		self.tracefile.setEnabled(False)
+		
+		self.pt_label = QtGui.QLabel()
+		self.pt_label.setText('Range')
+		self.hbl_pt.addWidget(self.pt_label)
+		
+		self.pos_int_validator2 = QtGui.QIntValidator(self)
+		self.pos_int_validator2.setBottom(0)
+		self.lowrange = QtGui.QLineEdit(self)
+		self.lowrange.setValidator(self.pos_int_validator2)
+		self.lowrange.setText("1")
+		self.lowrange.setFixedWidth(50)
+		self.hbl_pt.addWidget(self.lowrange)
+		self.lowrange.setEnabled(False)
+		
+		self.pt_label_to = QtGui.QLabel()
+		self.pt_label_to.setText('to')
+		self.hbl_pt.addWidget(self.pt_label_to)
+		
+		self.highrange = QtGui.QLineEdit(self)
+		self.highrange.setValidator(self.pos_int_validator2)
+		self.highrange.setText("1")
+		self.highrange.setFixedWidth(50)
+		self.hbl_pt.addWidget(self.highrange)
+		self.highrange.setEnabled(False)
+		
+		self.reducetog = QtGui.QPushButton("Reduce")
+		self.reducetog.setCheckable(1)
+		self.reducetog.setChecked(0)
+		self.hbl_pt.addWidget(self.reducetog)
+		
+		maintab.vbl.addLayout(self.hbl_pt)
 #		#end here
 #		
 		self.mirror_checkbox = QtGui.QCheckBox("Mirror")

@@ -251,7 +251,7 @@ def reduce(orienttracedata,sym):
 		for orient in particle:
 			t = Transform({"type":"eman","az":orient[1],"alt":orient[0],"phi":orient[2]})
 			t = sym.reduce(t,0)
-			d = t.get_rotation()
+			d = t.get_rotation("eman")
 			orient[1] = d["az"]
 			orient[0] = d["alt"]
 			orient[2] = d["phi"]
@@ -271,7 +271,8 @@ def reduce(orienttracedata,sym):
 			angle = angular_deviation(t1,t2)
 			
 			for t in touching:
-				t2 = Transform3D(o2[1],o2[0],o2[2])*t
+				t2 = Transform({"type":"eman","az":o2[1],"alt":o2[0],"phi":o2[2]})
+				#t2 = Transform3D(o2[1],o2[0],o2[2])*t
 				
 				tmp = angular_deviation(t1,t2)
 				
