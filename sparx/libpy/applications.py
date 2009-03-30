@@ -4865,7 +4865,10 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 	
 	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
 	# create a list of images for each node
+	total_nima = nima
 	list_of_particles = list_of_particles[image_start: image_end]
+	nima = len(list_of_particles)
+
 	if debug:
 		finfo.write( "image_start, image_end: %d %d\n" %(image_start, image_end) )
 		finfo.flush()
@@ -4905,7 +4908,6 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 	if(debug) :
 		finfo.write( '%d loaded  \n' % len(data) )
 		finfo.flush()
-	nima = len(list_of_particles)
 
 	total_iter = 0
 	tr_dummy = Transform({"type":"spider"})
@@ -4987,7 +4989,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 				data[im].set_attr('xform.projection', peaks[im][1])
 
 			if(center == -1):
-				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node)				
+				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center_MPI(data, total_nima, myid, number_of_proc, main_node)				
 				if myid == main_node:
 					msg = " Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
 					print_msg(msg)
@@ -5400,8 +5402,10 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, maxit=10, nas
 	
 	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
 	# create a list of images for each node
+	total_nima = nima
 	list_of_particles = list_of_particles[image_start: image_end]
-	
+	nima = len(list_of_particles)	
+
 	if debug:
 		finfo.write( "image_start, image_end: %d %d\n" % (image_start, image_end) )
 		finfo.flush()
@@ -5436,7 +5440,6 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, maxit=10, nas
 	else:
 		from reconstruction import rec3D_MPI_noCTF
 	
-	nima = len(list_of_particles)
 	
         refiparams = get_refiparams(nx)
 
@@ -5508,7 +5511,7 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, maxit=10, nas
 		if runtype=="REFINEMENT":
 			if(True):
 				cs = [0.0]*3
-				cs[0],cs[1],cs[2],dummy,dummy = estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node)				
+				cs[0],cs[1],cs[2],dummy,dummy = estimate_3D_center_MPI(data, total_nima, myid, number_of_proc, main_node)				
 				if myid == main_node:
 					msg = " Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
 					print_msg(msg)
