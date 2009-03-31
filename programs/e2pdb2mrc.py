@@ -74,13 +74,22 @@ using 1/2 width of Gaussian in Fourier space."""
 	
 	(options, args) = parser.parse_args()
 	if len(args)<2 : parser.error("Input and output files required")
+	
 	try: chains=options.chains
 	except: chains=None
 	
-	try : infile=open(args[0],"r")
-	except : parser.error("Cannot open input file")
+	try: box =options.box
+	except: box=None
 	
-	if options.res<=options.apix : print "Warning: res<=apix. Generally res should be 2x apix or more"
+	outmap = pdb_2_mrc(args[0],options.apix,options.res,box,options.het,chains,options.quiet)
+	outmap.write_image(args[1])
+	
+def pdb_2_mrc(file_name,apix=1.0,res=2.8,box=None,het=False,chains=None,quiet=False):
+	
+	try : infile=open(file_name,"r")
+	except : raise #"Cannot open input file"
+	
+	if res<= apix : print "Warning: res<=apix. Generally res should be 2x apix or more"
 	
 	aavg=[0,0,0]	# calculate atomic center
 	amin=[1.0e20,1.0e20,1.0e20]		# coords of lower left front corner of bounding box
@@ -92,7 +101,7 @@ using 1/2 width of Gaussian in Fourier space."""
 
 	# parse the pdb file and pull out relevant atoms
 	for line in infile:
-		if (line[:4]=='ATOM' or (line[:6]=='HETATM' and options.het)) :
+		if (line[:4]=='ATOM' or (line[:6]=='HETATM' and het)) :
 			if chains and not (line[21] in chains) : continue
 			
 			try:
@@ -130,7 +139,7 @@ using 1/2 width of Gaussian in Fourier space."""
 							
 	infile.close()
 	
-	if not options.quiet:
+	if not quiet:
 		print "%d atoms used with a total charge of %d e- and a mass of %d kDa"%(natm,nelec,mass/1000)
 		print "atomic center at %1.1f,%1.1f,%1.1f (center of volume at 0,0,0)"%(aavg[0]/natm,aavg[1]/natm,aavg[2]/natm)
 		print "Bounding box: x: %7.2f - %7.2f"%(amin[0],amax[0])
@@ -147,22 +156,22 @@ using 1/2 width of Gaussian in Fourier space."""
 	# find the output box size, either user specified or from bounding box
 	box=[0,0,0]
 	try:
-		spl=options.box.split(',')
+		spl=box.split(',')
 		if len(spl)==1 : box[0]=box[1]=box[2]=int(spl[0])
 		else :
 			box[0]=int(spl[0])
 			box[1]=int(spl[1])
 			box[2]=int(spl[2])
 	except:
-		pad=int(2.0*options.res/options.apix)
-		box[0]=int(2*max(fabs(amin[0]),fabs(amax[0]))/options.apix)+pad
-		box[1]=int(2*max(fabs(amin[1]),fabs(amax[1]))/options.apix)+pad
-		box[2]=int(2*max(fabs(amin[2]),fabs(amax[2]))/options.apix)+pad
+		pad=int(2.0*res/apix)
+		box[0]=int(2*max(fabs(amin[0]),fabs(amax[0]))/apix)+pad
+		box[1]=int(2*max(fabs(amin[1]),fabs(amax[1]))/apix)+pad
+		box[2]=int(2*max(fabs(amin[2]),fabs(amax[2]))/apix)+pad
 		box[0]+=box[0]%2
 		box[1]+=box[1]%2
 		box[2]+=box[2]%2
 		
-	if not options.quiet: print "Box size: %d x %d x %d"%(box[0],box[1],box[2])
+	if not quiet: print "Box size: %d x %d x %d"%(box[0],box[1],box[2])
 	
 	# initialize the final output volume
 	outmap=EMData()
@@ -171,19 +180,20 @@ using 1/2 width of Gaussian in Fourier space."""
 	
 	# fill in the atom gaussians
 	for i,a in enumerate(atoms):
-		if not options.quiet and i%1000==0 : 
+		if not quiet and i%1000==0 : 
 			print '\r   %d'%i,
 			sys.stdout.flush()
 		try:
 			elec=atomdefs[a[0].upper()][0]
-			outmap.insert_scaled_sum(gaus,(a[1]/options.apix+box[0]/2,a[2]/options.apix+box[1]/2,a[3]/options.apix+box[2]/2),options.res/(pi*12.0*options.apix),elec)
+			outmap.insert_scaled_sum(gaus,(a[1]/apix+box[0]/2,a[2]/apix+box[1]/2,a[3]/apix+box[2]/2),res/(pi*12.0*apix),elec)
 		except: print "Skipping %d '%s'"%(i,a[0])
 		
-	if not options.quiet: print '\r   %d\nConversion complete'%len(atoms)
-	outmap.set_attr("apix_x",options.apix)
-	outmap.set_attr("apix_y",options.apix)
-	outmap.set_attr("apix_z",options.apix)
-	outmap.write_image(args[1])
+	if not quiet: print '\r   %d\nConversion complete'%len(atoms)
+	outmap.set_attr("apix_x",apix)
+	outmap.set_attr("apix_y",apix)
+	outmap.set_attr("apix_z",apix)
+	return outmap
+	
 				
 if __name__ == "__main__":
     main()
