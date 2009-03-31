@@ -268,6 +268,13 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		glMaterial(GL_FRONT,GL_EMISSION,(0,0,0,1.0))
 		glMaterial(GL_FRONT,GL_SHININESS,4.0)
 		
+	def black(self):
+		glMaterial(GL_FRONT,GL_AMBIENT,(0.05375,  0.05,     0.06625 ,1.0))
+		glMaterial(GL_FRONT,GL_DIFFUSE,(0.18275,  0.17,     0.22525,1.0))
+		glMaterial(GL_FRONT,GL_SPECULAR,(0.66, 0.65, 0.69,1.0))
+		glMaterial(GL_FRONT,GL_EMISSION,(0,0,0,1.0))
+		glMaterial(GL_FRONT,GL_SHININESS, 128.0)
+		
 	def green(self):
 		glColor(.2,.9,.2)
 		# this is a nice light blue color (when lighting is on)
@@ -359,7 +366,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		glRotatef(90+phi,0,0,1)
 		glRotatef(alt,1,0,0)
 		
-		glScalef(0.2,0.2,length)
+		glScalef(0.5,0.5,length)
 		glCallList(self.cylinderdl)
 		glPopMatrix()
 
@@ -532,13 +539,17 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		return angle
 		
 	def trace_update(self,f,lr,hr):
-		if f != self.file:
+		if not hasattr(self,"trace_file_name"):
+			self.trace_file_name = None
+		if f != self.trace_file_name:
+			
+			print "parsing file",f,self.file
 			try:
-				f=file(f,'r')
+				ff=file(f,'r')
 			except:
 				print 'couldnt read',f 
 				return
-			lines=f.readlines()
+			lines=ff.readlines()
 			self.tracedata = []
 			for line in lines:
 				s = str.split(str.strip(line))
@@ -557,20 +568,23 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 					#print [alt,az,0]
 					self.tracedata[n-1].append([alt,az,0])
 			
-			self.file = f
+			self.file = ff
+			self.trace_file_name = f
+		else:
+			print "that file is already loaded"
 		
 		self.lr = lr
 		self.hr = hr
 		
 		
 		if self.reduce:
-			
+			print "reducing"
 			for k in range(lr,hr):
 				particle = self.tracedata[k]
 				for orient in particle:
 					t = Transform({"type":"eman","az":orient[1],"alt":orient[0],"phi":orient[2]})
 					t = self.sym_object.reduce(t,0)
-					d = t.get_rotation()
+					d = t.get_rotation("eman")
 					orient[1] = d["az"]
 					orient[0] = d["alt"]
 					orient[2] = d["phi"]
@@ -595,7 +609,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 						if tmp < angle:
 							angle = tmp
 							
-							d = t2.get_rotation()
+							d = t2.get_rotation("eman")
 							particle[i][1] = d["az"]
 							particle[i][0] = d["alt"]
 							particle[i][2] = d["phi"]
@@ -604,13 +618,13 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		self.trace_dl = glGenLists(1)
 		
 		glNewList( self.trace_dl,GL_COMPILE)
+		print "going through range",self.lr,self.hr
 		for i in range(self.lr,self.hr):
-			print len(self.tracedata[i])-1
 			for j in range(0,len(self.tracedata[i])-1):
 				alt = self.tracedata[i][j][0]
 				az = self.tracedata[i][j][1]
 				phi = self.tracedata[i][j][2]
-				print "a",alt,az
+				#print "a",alt,az
 				T = Transform({"type":"eman","az":az,"alt":alt})
 				T.invert()
 				a = T*Vec3f(0,0,1)
@@ -762,7 +776,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 			glColor(.9,.2,.8)
 			# this is a nice light blue color (when lighting is on)
 			# and is the default color of the frame
-			self.gold()
+			self.black()
 			glStencilFunc(GL_EQUAL,self.rank,0)
 			glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE)
 			#print "rendering trace"

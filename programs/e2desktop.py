@@ -1577,7 +1577,6 @@ class EMDesktopFrame(EMFrame):
 		self.bgob2.render()
 		glPopMatrix()
 	def read_EMAN2_image(self):
-		#self.p = QtGui.QPixmap("EMAN2.0.big2.jpg")
 		if EMDesktopFrame.image == None:
 			appscreen = self.parent.get_app_screen()
 			sysdesktop = self.parent.get_sys_desktop()
