@@ -241,24 +241,24 @@ class EMIsosurfaceModule(EMImage3DGUIModule):
 		self.maxden=data.get_attr("maximum")
 		mean=data.get_attr("mean")
 		sigma=data.get_attr("sigma")
-		d = data.get_attr_dict()
-		x,y,z,act = 0,0,0,False
-		if d.has_key("origin_row"):
+		#d = data.get_attr_dict()
+		#x,y,z,act = 0,0,0,False
+		#if d.has_key("origin_row"):
 			
-			x =  d["origin_row"]/d["apix_x"] + data.get_xsize()/2
-			act = True
-		if d.has_key("origin_col"):
-			y =  d["origin_col"]/d["apix_y"] + data.get_ysize()/2
-			act = True
-		if d.has_key("origin_sec"):
-			z =  d["origin_sec"]/d["apix_z"] + data.get_zsize()/2
-			act = True
+			#x =  d["origin_row"]/d["apix_x"] + data.get_xsize()/2
+			#act = True
+		#if d.has_key("origin_col"):
+			#y =  d["origin_col"]/d["apix_y"] + data.get_ysize()/2
+			#act = True
+		#if d.has_key("origin_sec"):
+			#z =  d["origin_sec"]/d["apix_z"] + data.get_zsize()/2
+			#act = True
 
 		if not self.inspector or self.inspector == None:
 			self.inspector=EMIsoInspector(self)
 		
-		if act:
-			self.inspector.set_xyz_trans(x,y,z)
+		#if act:
+			#self.inspector.set_xyz_trans(x,y,z)
 		
 		hist = data.calc_hist(256,self.minden,self.maxden)
 		self.inspector.set_hist(hist,self.minden,self.maxden) 
