@@ -3962,95 +3962,314 @@ vector<double> Util::cml_weights(const vector<float>& cml){
 
 }
 
-#undef	QUADPI
-#undef	PI2
-#undef  deg_rad
-#undef  rad_deg
+/****************************************************
+ * New code for common-lines
+ ****************************************************/
 
-//helper function for Cml
-vector<float> Util::cml_spin(int n_psi, int i_prj, int n_prj, vector<float> weights, vector<int> com, const vector<EMData*>& data, int flag){
+// 2009-03-25 15:35:05 JB. This function prepare rotation matrix for common-lines
+vector<double> Util::cml_init_rot(vector<float> Ori){
+    int nb_ori = Ori.size() / 4;
+    int i, ind;
+    float ph, th, ps;
+    double cph, cth, cps, sph, sth, sps;
+    vector<double> Rot(nb_ori*9);
+    for (i=0; i<nb_ori; ++i){
+	ind = i*4;
+	// spider convention phi=psi-90, psi=phi+90
+	ph = Ori[ind+2]-90;
+	th = Ori[ind+1];
+	ps = Ori[ind]+90;
+	ph *= deg_rad;
+	th *= deg_rad;
+	ps *= deg_rad;
+	// pre-calculate some trigo stuffs
+	cph = cos(ph);
+	cth = cos(th);
+	cps = cos(ps);
+	sph = sin(ph);
+	sth = sin(th);
+	sps = sin(ps);
+	// fill rotation matrix
+	ind = i*9;
+	Rot[ind] = cph*cps-cth*sps*sph;
+	Rot[ind+1] = cph*sps+cth*cps*sph;
+	Rot[ind+2] = sth*sph;
+	Rot[ind+3] = -sph*cps-cth*sps*cph;
+	Rot[ind+4] = -sph*sps+cth*cps*cph;
+	Rot[ind+5] = sth*cph;
+	Rot[ind+6] = sth*sps;
+	Rot[ind+7] = -sth*cps;
+	Rot[ind+8] = cth;
+    }
 
-    vector<float> res(2);    // [best_disc, best_ipsi]
-    double best_disc=1.0e20;
-    int best_psi=-1;
-    // loop psi
-    for(int ipsi=0; ipsi<=n_psi-1; ipsi++){
-	// after psi != 0 update the common lines
-	if(ipsi!=0){
-	    int count=0;
-	    for(int i=0; i<=n_prj-2; i++){
-		for(int j=i+1; j<=n_prj-1; j++){
-		    if(i==i_prj){com[count] = (com[count]+1)%n_psi;}
-		    if(j==i_prj){com[count+1] = (com[count+1]+1)%n_psi;}
-		    count+=2;
-		}
+    return Rot;
+}
+
+// 2009-03-25 15:35:37 JB. this function update only one rotation amtrix according a new orientation
+vector<float> Util::cml_update_rot(vector<float> Rot, int iprj, float nph, float th, float nps){
+    float ph, ps;
+    double cph, cth, cps, sph, sth, sps;
+    int ind = iprj*9;
+    // spider convention phi=psi-90, psi=phi+90
+    ph = nps-90;
+    ps = nph+90;
+    ph *= deg_rad;
+    th *= deg_rad;
+    ps *= deg_rad;
+    // pre-calculate some trigo stuffs
+    cph = cos(ph);
+    cth = cos(th);
+    cps = cos(ps);
+    sph = sin(ph);
+    sth = sin(th);
+    sps = sin(ps);
+    // fill rotation matrix
+    Rot[ind] = cph*cps-cth*sps*sph;
+    Rot[ind+1] = cph*sps+cth*cps*sph;
+    Rot[ind+2] = sth*sph;
+    Rot[ind+3] = -sph*cps-cth*sps*cph;
+    Rot[ind+4] = -sph*sps+cth*cps*cph;
+    Rot[ind+5] = sth*cph;
+    Rot[ind+6] = sth*sps;
+    Rot[ind+7] = -sth*cps;
+    Rot[ind+8] = cth;
+
+    return Rot;
+}
+
+// 2009-03-25 15:35:53 JB. This function calculates common-lines between sinogram
+vector<int> Util::cml_line_insino(vector<float> Rot, int i_prj, int n_prj){
+    vector<int> com(2*(n_prj - 1));
+    int a = i_prj*9;
+    int i, b, c;
+    int n1, n2;
+    float vmax = 1 - 1.0e-6;
+    double r11, r12, r13, r23, r31, r32, r33;
+    
+    c = 0;
+    for (i=0; i<n_prj; ++i){
+	if (i!=i_prj){
+	    b = i*9;
+	    // this is equivalent to R = A*B'
+	    r11 = Rot[a]*Rot[b]+Rot[a+1]*Rot[b+1]+Rot[a+2]*Rot[b+2];
+	    r12 = Rot[a]*Rot[b+3]+Rot[a+1]*Rot[b+4]+Rot[a+2]*Rot[b+5];
+	    r13 = Rot[a]*Rot[b+6]+Rot[a+1]*Rot[b+7]+Rot[a+2]*Rot[b+8];
+	    r23 = Rot[a+3]*Rot[b+6]+Rot[a+4]*Rot[b+7]+Rot[a+5]*Rot[b+8];
+	    r31 = Rot[a+6]*Rot[b]+Rot[a+7]*Rot[b+1]+Rot[a+8]*Rot[b+2];
+	    r32 = Rot[a+6]*Rot[b+3]+Rot[a+7]*Rot[b+4]+Rot[a+8]*Rot[b+5];
+	    r33 = Rot[a+6]*Rot[b+6]+Rot[a+7]*Rot[b+7]+Rot[a+8]*Rot[b+8];
+	    if (r33 > vmax) {
+		n2 = 270;
+		n1 = (int)(270 + rad_deg*atan2(r12, r11));
+		if (n1 >= 360){n1 = n1 % 360;}
 	    }
-	}
-	// do the distance with weighting
-	int n=0;
-	double L_tot=0.0;
-	double e=0.0;
-	double tmp=0.0;
-	for(int i=0; i<=n_prj-2; i++){
-	    for(int j=i+1; j<=n_prj-1; j++){
-		if(i==i_prj||j==i_prj){
-		    e = data[i]->cm_euc(data[j], com[n], com[n+1]) * weights[int(n/2)];
-		    //if(flag) {tmp += weights[int(n/2)];}
-		    //if(ipsi==316){printf("%i %i %f\n", com[n], com[n+1], e);}
-		    L_tot += e;
-		}
-		n+=2;
+	    else if (r33 < -vmax) {
+		n2 = 270;
+		n1 = (int)(270 - rad_deg*atan2(r12, r11));
+		if (n1 >= 360){n1 = n1 % 360;}
+	    } else {
+		n2 = int(rad_deg*atan2(r31, -r32));
+		n1 = int(rad_deg*atan2(r13, r23));
+		if (n1 < 0) {n1 += 360;}
+		if (n2 <= 0) {n2 = abs(n2);}
+		else {n2 = 360 - n2;}
 	    }
-
-	}
-	
-	// display disc
-	//if(flag) {printf("%f\n", tmp);}
-	if(flag) {printf("%i disc %f\n", ipsi, L_tot);}
-
-	// select the best discrepancy and index ipsi
-	if(L_tot<=best_disc){
-	    best_disc = L_tot;
-	    best_psi = ipsi;
+	    // store common-lines
+	    b = c*2;
+	    com[b] = n1;
+	    com[b+1] = n2;
+	    ++c;
 	}
     }
 
-    res[0] = float(best_disc);
-    res[1] = float(best_psi);
+    return com;
+
+}
+
+// 2009-03-30 15:35:07 JB. This function calculates all common-lines between sinogram
+vector<int> Util::cml_line_insino_all(vector<float> Rot, vector<int> seq, int n_prj, int n_lines) {
+    vector<int> com(2*n_lines);
+    int a=0, b, c, l;
+    int n1, n2, mem=-1;
+    float vmax = 1 - 1.0e-6;
+    double r11, r12, r13, r23, r31, r32, r33;
+    c = 0;
+    for (l=0; l<n_lines; ++l){
+	c = 2*l;
+	if (seq[c]!=mem){
+	    mem = seq[c];
+	    a = seq[c]*9;
+	}
+	b = seq[c+1]*9;
+
+	// this is equivalent to R = A*B'
+	r11 = Rot[a]*Rot[b]+Rot[a+1]*Rot[b+1]+Rot[a+2]*Rot[b+2];
+	r12 = Rot[a]*Rot[b+3]+Rot[a+1]*Rot[b+4]+Rot[a+2]*Rot[b+5];
+	r13 = Rot[a]*Rot[b+6]+Rot[a+1]*Rot[b+7]+Rot[a+2]*Rot[b+8];
+	r23 = Rot[a+3]*Rot[b+6]+Rot[a+4]*Rot[b+7]+Rot[a+5]*Rot[b+8];
+	r31 = Rot[a+6]*Rot[b]+Rot[a+7]*Rot[b+1]+Rot[a+8]*Rot[b+2];
+	r32 = Rot[a+6]*Rot[b+3]+Rot[a+7]*Rot[b+4]+Rot[a+8]*Rot[b+5];
+	r33 = Rot[a+6]*Rot[b+6]+Rot[a+7]*Rot[b+7]+Rot[a+8]*Rot[b+8];
+	if (r33 > vmax) {
+	    n2 = 270;
+	    n1 = (int)(270 + rad_deg*atan2(r12, r11));
+	    if (n1 >= 360){n1 = n1 % 360;}
+	}
+	else if (r33 < -vmax) {
+	    n2 = 270;
+	    n1 = (int)(270 - rad_deg*atan2(r12, r11));
+	    if (n1 >= 360){n1 = n1 % 360;}
+	} else {
+	    n2 = int(rad_deg*atan2(r31, -r32));
+	    n1 = int(rad_deg*atan2(r13, r23));
+	    if (n1 < 0) {n1 += 360;}
+	    if (n2 <= 0) {n2 = abs(n2);}
+	    else {n2 = 360 - n2;}
+	}
+	// store common-lines
+	com[c] = n1;
+	com[c+1] = n2;
+    }
+
+    return com;
+
+}
+
+
+// 2009-03-26 10:46:14 JB. This function calculate all common-lines in space, for latter the weighting
+vector<double> Util::cml_line_in3d(vector<float> Ori, vector<int> seq, int nprj, int nlines){
+    // seq is the pairwise index ij: 0, 1, 0, 2, 0, 3, 1, 2, 1, 3, 2, 3
+    vector<double> cml(2*nlines); // [phi, theta] / line
+    float ph1, th1;
+    float ph2, th2;
+    double nx, ny, nz;
+    double norm;
+    double sth1=0, sph1=0, cth1=0, cph1=0;
+    double sth2, sph2, cth2, cph2;
+    int l, ind, c;
+    int mem = -1;
+    for (l=0; l<nlines; ++l){
+	c = 2*l;
+	if (seq[c]!=mem){
+	    mem = seq[c];
+	    ind = 4*seq[c];
+	    ph1 = Ori[ind]*deg_rad;
+	    th1 = Ori[ind+1]*deg_rad;
+	    sth1 = sin(th1);
+	    sph1 = sin(ph1);
+	    cth1 = cos(th1);
+	    cph1 = cos(ph1);
+	}
+	ind = 4*seq[c+1];
+	ph2 = Ori[ind]*deg_rad;
+	th2 = Ori[ind+1]*deg_rad;
+	sth2 = sin(th2);
+	cth2 = cos(th2);
+	sph2 = sin(ph2);
+	cph2 = cos(ph2);
+	// cross product
+	nx = sth1*sph1*cth2 - cth1*sth2*sph2;
+	ny = cth1*sth2*cph2 - cth2*sth1*cph1;
+	nz = sth1*cph1*sth2*sph2 - sth1*sph1*sth2*cph2;
+	norm = sqrt(nx*nx+ny*ny+nz*nz);
+	nx /= norm;
+	ny /= norm;
+	nz /= norm;
+	// apply mirror if need
+	if (nz<0) {nx=-nx; ny=-ny; nz=-nz;}
+	// compute theta and phi
+	cml[c+1] = acos(nz);
+	if (cml[c+1] == 0) {cml[c] = 0;}
+	else {
+	    cml[c+1] *= rad_deg;
+	    if (cml[c+1] > 89.99) {cml[c+1] = 89.99;} // this fix some pb in Voronoi
+	    cml[c] = rad_deg * acos(abs(nx) / sqrt(nx*nx+ny*ny));
+	    if (nx < 0 && ny >= 0) {cml[c] += 90.0;}
+	    if (nx < 0 && ny < 0) {cml[c] += 180.0;}
+	    if (nx >=0 && ny < 0) {cml[c] += 270.0;}
+	}
+    }
+    
+    return cml;
+}
+
+// 2009-03-30 15:44:05 JB. Compute the discrepancy belong all common-lines
+double Util::cml_disc(const vector<EMData*>& data, vector<int> com, vector<int> seq, vector<float> weights, int n_lines) {
+    double res = 0;
+    double buf = 0;
+    float* line_1;
+    float* line_2;
+    int i, n, ind;
+    int lnlen = data[0]->get_xsize();
+    for (n=0; n<n_lines; ++n) {
+	ind = n*2;
+	line_1 = data[seq[ind]]->get_data() + com[ind] * lnlen;
+	line_2 = data[seq[ind+1]]->get_data() + com[ind+1] *lnlen;
+	buf = 0;
+	for (i=0; i<lnlen; ++i) {
+	    buf += (line_1[i]-line_2[i])*(line_1[i]-line_2[i]);
+	}
+	res += buf * weights[n];
+    }
+
+    return res;
+
+}
+
+// 2009-03-26 11:37:53 JB. This function spin all angle psi and evaluate the partial discrepancy belong common-lines
+vector<double> Util::cml_spin_psi(const vector<EMData*>& data, vector<int> com, vector<float> weights, \
+				 int iprj, vector<int> iw, int n_psi, int d_psi, int n_prj){  
+    // res: [best_disc, best_ipsi]
+    // seq: pairwise indexes ij, 0, 1, 0, 2, 0, 3, 1, 2, 1, 3, 2, 3
+    // iw : index to know where is the weight for the common-lines on the current projection in the all weights, [12, 4, 2, 7]
+    vector<double> res(2);
+    int lnlen = data[0]->get_xsize();
+    int end = 2*(n_prj-1);
+    double disc, buf, bdisc;
+    int n, i, ipsi, ind, bipsi, c;
+    float* line_1;
+    float* line_2;
+    bdisc = 1.0e6;
+    bipsi = -1;
+    // loop psi
+    for(ipsi=0; ipsi<n_psi; ipsi += d_psi) {
+	// discrepancy
+	disc = 0;
+	c = 0;
+	for (n=0; n<n_prj; ++n) {
+	    if(n!=iprj) {
+		ind = 2*c;
+		line_1 = data[iprj]->get_data() + com[ind] *lnlen;
+		line_2 = data[n]->get_data() + com[ind+1] * lnlen;
+		buf = 0;
+		for (i=0; i<lnlen; ++i) {
+		    buf += (line_1[i]-line_2[i])*(line_1[i]-line_2[i]);
+		}
+		disc += buf * weights[iw[c]];
+		++c;
+		
+	    }
+	}
+	// select the best value
+	if (disc <= bdisc) {
+	    bdisc = disc;
+	    bipsi = ipsi;
+	}
+	// update common-lines
+	for (i=0; i<end; i+=2){
+	    com[i] += d_psi;
+	    if (com[i] >= n_psi) {com[i] = com[i] % n_psi;}
+	}
+    }
+    res[0] = bdisc;
+    res[1] = float(bipsi);
     return res;
 }
 
-//helper function for Cml
-vector<int> Util::cml_line_pos(float phi1, float theta1, float psi1, float phi2, float theta2, float psi2, int nangle){
+/****************************************************
+ * END OF NEW CODE FOR COMMON-LINES
+ ****************************************************/
 
-    vector<int> Res(2);
-    Dict d1;
-    Dict d2;
-    d1["type"] = "SPIDER";
-    d1["phi"] = phi1;
-    d1["theta"] = theta1;
-    d1["psi"] = psi1;
-    d2["type"] = "SPIDER";
-    d2["phi"] = phi2;
-    d2["theta"] = theta2;
-    d2["psi"] = psi2;
-
-    Transform R1(d1);
-    Transform R2(d2);
-    Transform R2T = R2.inverse();
-    Transform R2to1 = R1*R2T;
-
-    Dict eulerR2to1 = R2to1.get_rotation("SPIDER");
-    float phiR2to1 = eulerR2to1["phi"];
-    float psiR2to1 = eulerR2to1["psi"];
-
-    int a1 = int(psiR2to1+270) % 360;
-    int a2 = int(phiR2to1*(-1)+270) % 360;
-    Res[0] = int(nangle * float((a1+360)%360) / 360.0);
-    Res[1] = int(nangle * float((a2+360)%360) / 360.0);
-
-    return Res;
-}
 
 //helper function for Cml
 vector<int> Util::cml_list_line_pos(vector<float> Ori, float newphi, float newtheta, int i_prj, int n_prj, int nangle, int nlines){
@@ -4074,7 +4293,6 @@ vector<int> Util::cml_list_line_pos(vector<float> Ori, float newphi, float newth
 		    Transform R2(d2);
 		    Transform R2T = R2.inverse();
 		    Transform R2to1 = R1*R2T;
-
 		    Dict eulerR2to1 = R2to1.get_rotation("SPIDER");
 		    float phiR2to1 = eulerR2to1["phi"];
 		    float psiR2to1 = eulerR2to1["psi"];
@@ -4115,7 +4333,96 @@ vector<int> Util::cml_list_line_pos(vector<float> Ori, float newphi, float newth
 
 }
 
+#undef	QUADPI
+#undef	PI2
+#undef  deg_rad
+#undef  rad_deg
 
+//helper function for Cml
+vector<float> Util::cml_spin(int n_psi, int i_prj, int n_prj, vector<float> weights, vector<int> com, const vector<EMData*>& data, int flag){
+
+    vector<float> res(2);    // [best_disc, best_ipsi]
+    double best_disc=1.0e20;
+    int best_psi=-1;
+    // loop psi
+    for(int ipsi=0; ipsi<=n_psi-1; ipsi++){
+	// after psi != 0 update the common lines
+	
+	if(ipsi!=0){
+	    int count=0;
+	    for(int i=0; i<=n_prj-2; i++){
+		for(int j=i+1; j<=n_prj-1; j++){
+		    if(i==i_prj){com[count] = (com[count]+1)%n_psi;}
+		    if(j==i_prj){com[count+1] = (com[count+1]+1)%n_psi;}
+		    count+=2;
+		}
+	    }
+	}
+	
+	// do the distance with weighting
+	int n=0;
+	double L_tot=0.0;
+	double e=0.0;
+	//double tmp=0.0;
+	for(int i=0; i<=n_prj-2; i++){
+	    for(int j=i+1; j<=n_prj-1; j++){
+		if(i==i_prj||j==i_prj){
+		    e = data[i]->cm_euc(data[j], com[n], com[n+1]) * weights[int(n/2)];
+		    L_tot += e;
+		}
+		n+=2;
+	    }
+
+	}
+
+	// select the best discrepancy and index ipsi
+	if(L_tot<=best_disc){
+	    best_disc = L_tot;
+	    best_psi = ipsi;
+	}
+    }
+
+    res[0] = float(best_disc);
+    res[1] = float(best_psi);
+    return res;
+}
+
+//helper function for Cml
+vector<int> Util::cml_line_pos(float phi1, float theta1, float psi1, float phi2, float theta2, float psi2, int nangle){
+
+    vector<int> Res(2);
+    Dict d1;
+    Dict d2;
+    d1["type"] = "SPIDER";
+    d1["phi"] = phi1;
+    d1["theta"] = theta1;
+    d1["psi"] = psi1;
+    d2["type"] = "SPIDER";
+    d2["phi"] = phi2;
+    d2["theta"] = theta2;
+    d2["psi"] = psi2;
+
+    Transform R1(d1);
+    Transform R2(d2);
+
+    Transform R2T = R2.inverse();
+    Transform R2to1 = R1*R2T;
+
+    Dict eulerR2to1 = R2to1.get_rotation("SPIDER");
+    float phiR2to1 = eulerR2to1["phi"];
+    float psiR2to1 = eulerR2to1["psi"];
+
+    int a1 = int(psiR2to1+270) % 360;
+    int a2 = int(phiR2to1*(-1)+270) % 360;
+    Res[0] = int(nangle * float((a1+360)%360) / 360.0);
+    Res[1] = int(nangle * float((a2+360)%360) / 360.0);
+
+    return Res;
+}
+
+/*
+// temporaly comment, before removing
+// 2009-03-31 09:34:40 JB
 float Util::SqEuc_dist(EMData* image, EMData* with){
         ENTERFUNC;
 
@@ -4127,17 +4434,17 @@ float Util::SqEuc_dist(EMData* image, EMData* with){
 	int ny = image->get_ysize();
 	long totsize = nx * ny;
 	for (long i = 0; i < totsize; i++) {
-	    double temp = x_data[i]- y_data[i];
+	    double temp = x_data[i] - y_data[i];
 	    result += temp*temp;
 	}
 
-	result/=totsize;
+	result /= totsize;
 
 	EXITFUNC;
 	return static_cast<float>(result);
 
 }
-
+*/
 
 // helper function for k-means
 Dict Util::min_dist_real(EMData* image, const vector<EMData*>& data) {
