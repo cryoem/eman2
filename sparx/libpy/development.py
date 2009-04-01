@@ -6392,6 +6392,7 @@ def err_func(args, data):
 def ave_ali_err(stack):
 	from utilities import inverse_transform2, amoeba, get_params2D
 	from math import sqrt
+	from random import random
 
 	nima = EMUtil.get_image_count(stack)
 	v1 = []
@@ -6417,7 +6418,6 @@ def ave_ali_err(stack):
 		v2.append(mirror_i)
 
 	same_rate = float(mirror_same)/nima
-	print same_rate
 	mirror_flip = False
 	if same_rate < 0.5:
 		mirror_flip = True
@@ -6464,8 +6464,8 @@ def ave_ali_err_MPI(stack):
 	v1 = []
 	v2 = []
 	mirror_same = 0 
+	img = EMData()
 	for im in xrange(nima):
-		img = EMData()
 		img.read_image(stack, im)
 		alpha, sx, sy, mirror, dummy = get_params2D(img)
 		v1.append(alpha)
@@ -6482,7 +6482,7 @@ def ave_ali_err_MPI(stack):
 		v2.append(sx_i2)
 		v2.append(sy_i2)
 		v2.append(mirror_i)
-
+	
 	same_rate = float(mirror_same)/nima
 	mirror_flip = False
 	if same_rate < 0.5:
@@ -7190,7 +7190,7 @@ def ali_SSNR_MPI(stack, maskfile=None, ou=-1, maxit=10, CTF=False, opti_method="
 	from numpy import Inf
 	from scipy.optimize.lbfgsb import fmin_l_bfgs_b
 	from scipy.optimize.optimize import fmin_cg
-	from mpi import mpi_comm_size, mpi_comm_rank, mpi_bcast, MPI_COMM_WORLD
+	from mpi import mpi_comm_size, mpi_comm_rank, mpi_bcast, MPI_COMM_WORLD, mpi_barrier
 	from utilities import get_image, set_params2D, get_params2D, print_begin_msg, print_end_msg, print_msg
 	from utilities import model_circle
 	
@@ -7376,8 +7376,9 @@ def ali_SSNR_MPI(stack, maskfile=None, ou=-1, maxit=10, CTF=False, opti_method="
 				set_params2D(ima, [ps[im*3], ps[im*3+1], ps[im*3+2], 0, 1.0])
 			else:
 				set_params2D(ima, [360.0-ps[im*3], -ps[im*3+1], ps[im*3+2], 1, 1.0])
-			ima.write_image(stack, im)	
+			ima.write_image(stack, im)
 
+	mpi_barrier(MPI_COMM_WORLD)	
 	if myid == main_node:	print_end_msg("ali_SSNR_MPI")
 
 
