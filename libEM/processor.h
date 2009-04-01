@@ -1182,6 +1182,7 @@ The basic design of EMAN Processors: <br>\
 	/**Rotate by 180 using pixel swapping, works for 2D only
 	 * @author David Woolford
 	 * @date July 29th 2008
+	 * @ingroup CUDA_ENABLED
 	 */
 	class Rotate180Processor:public Processor
 	{
@@ -1207,9 +1208,9 @@ The basic design of EMAN Processors: <br>\
 	};
 	
 	/** Transform the image using a Transform object
-	 * @ingroup CUDA_ENABLED
 	 * @author David Woolford
 	 * @date September 2008
+	 * @ingroup CUDA_ENABLED
 	 */
 	class TransformProcessor:public Processor
 	{

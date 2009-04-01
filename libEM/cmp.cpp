@@ -652,6 +652,14 @@ float OptVarianceCmp::cmp(EMData * image, EMData *with) const
 float PhaseCmp::cmp(EMData * image, EMData *with) const
 {
 	ENTERFUNC;
+	//In the middle of this - Not quite yet... I'm heading to D.C.... March 31st
+// #ifdef EMAN2_USING_CUDA
+// 	if (image->gpu_operation_preferred()) {
+// 		EXITFUNC;
+// 		return cuda_cmp(image,with);
+// 		
+// 	}
+// #endif
 	validate_input_args(image, with);
 
 	static float *dfsnr = 0;
@@ -730,6 +738,85 @@ float PhaseCmp::cmp(EMData * image, EMData *with) const
 #endif
 	return (float)(sum / norm);
 }
+
+#ifdef EMAN2_USING_CUDA
+#include "cuda/cuda_cmp.h"
+float PhaseCmp::cuda_cmp(EMData * image, EMData *with) const
+{
+	ENTERFUNC;
+	validate_input_args(image, with);
+
+	typedef vector<EMData> EMDatas;
+	static EMDatas hist_pyramid;
+	static EMDatas norm_pyramid;
+	static EMData weighting;
+	static int image_size = 0;
+	
+	int size;
+	if (image->is_complex()) {
+		size = image->get_xsize();
+	} else {
+		int nx = image->get_xsize()+2;
+		nx -= nx%2;
+		size = nx*image->get_ysize()*image->get_zsize();
+	}
+	if (size != image_size) {
+		hist_pyramid.clear();
+		norm_pyramid.clear();
+		int s = size;
+		if (s != 1) s = size/2 + size%2;
+		while (true) {
+			hist_pyramid.push_back(EMData());
+			EMDatas::iterator p = (hist_pyramid.begin()+(hist_pyramid.size()-1));
+			p->set_size_cuda(s);
+			p->to_value(0.0);
+			norm_pyramid.push_back(EMData());
+			p = (norm_pyramid.begin()+(norm_pyramid.size()-1));
+			p->set_size_cuda(s);
+			p->to_value(0.0);
+			if ( s == 1) break;
+			int ns = s/2;
+			if ( s != 1) ns += s%2;
+			s = ns;
+		}
+		int nx = image->get_xsize()+2;
+		nx -= nx%2; // for Fourier stuff
+		int ny = image->get_ysize();
+		int nz = image->get_zsize();
+		weighting.set_size_cuda(nx,ny,nz);
+		float np = (int) ceil(Ctf::CTFOS * sqrt(2.0f) * ny / 2) + 2;
+		EMDataForCuda tmp = weighting.get_data_struct_for_cuda();
+		calc_phase_weights_cuda(&tmp,np);
+	}
+	
+	EMDataForCuda hist[hist_pyramid.size()];
+	EMDataForCuda norm[hist_pyramid.size()];
+	
+	for(unsigned int i = 0; i < hist_pyramid.size(); ++i ) {
+		hist[i] = hist_pyramid[i].get_data_struct_for_cuda();
+		norm[i] = norm_pyramid[i].get_data_struct_for_cuda();
+	}
+	
+	EMData *image_fft = image->do_fft_cuda();
+	EMDataForCuda left = image_fft->get_data_struct_for_cuda();
+// 	image_fft->ri2ap();
+	EMData *with_fft = with->do_fft_cuda();
+	EMDataForCuda right = with_fft->get_data_struct_for_cuda();
+	EMDataForCuda wt = weighting.get_data_struct_for_cuda();
+	mean_phase_error_cuda(&left,&right,&wt,hist,norm,hist_pyramid.size());
+	
+	float result;
+	float* gpu_result = hist_pyramid[hist_pyramid.size()-1].get_cuda_data();
+	cudaError_t error = cudaMemcpy(&result,gpu_result,sizeof(float),cudaMemcpyDeviceToHost);
+	if ( error != cudaSuccess) throw UnexpectedBehaviorException( "CudaMemcpy (host to device) in the phase comparator failed:" + string(cudaGetErrorString(error)));
+	
+	delete image_fft; image_fft=0;
+	delete with_fft; with_fft=0;
+	return result;
+
+}
+
+#endif // EMAN2_USING_CUDA
 
 
 float FRCCmp::cmp(EMData * image, EMData * with) const

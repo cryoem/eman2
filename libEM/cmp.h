@@ -392,6 +392,10 @@ namespace EMAN
 			TypeDict d;
 			return d;
 		}
+		
+#ifdef EMAN2_USING_CUDA
+		 float cuda_cmp(EMData * image, EMData *with) const;
+#endif //EMAN2_USING_CUDA
 	};
 
 	/** FRCCmp returns a quality factor based on FRC between images.

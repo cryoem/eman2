@@ -84,7 +84,7 @@ def test_main():
 			for i in test_range:
 				a[i].set_gpu_rw_current()
 				b[i].set_gpu_rw_current()
-				c = a[i].align(ali,b[i])
+				c = a[i].align(ali,b[i],{},"phase",{})
 				#c.print_this()
 	
 			gpu_times.append(time()-t)

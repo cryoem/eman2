@@ -146,12 +146,14 @@ namespace EMAN
 
 		/** Construct from an EMData (copy constructor).
 		 * Performs a deep copy
+		 * @ingroup CUDA_ENABLED
 		 * @param that the EMData to copy
 		*/
 		EMData(const EMData& that);
 
 		/** EMData assignment operator
 		 * Performs a deep copy
+		 * @ingroup CUDA_ENABLED
 		 * @param that the EMData to copy
 		*/
 		EMData& operator=(const EMData& that);
@@ -204,7 +206,7 @@ namespace EMAN
 
 		/** Get an inclusive clip. Pads to fill if larger than this image.
 		 * area can be 2D/3D.
-		 * CUDA sensitive - will clip on the GPU if the gpu data is present and up to date
+		 * @ingroup CUDA_ENABLED
 		 * @param area The clip area.
 		 * @param fill the value to assign new pixels outside the area of the original image
 		 * @exception ImageDimensionException if any of the dimensions of the argument region are negative
@@ -480,7 +482,7 @@ namespace EMAN
 		 * WARNING: this routine will modify the 'this' and 'with' to contain
 		 * 1D fft's without setting some flags. This is an optimization
 		 * for rotational alignment.
-		 *
+		 * @ingroup CUDA_ENABLED
 		 * @param with The image used to calculate CCF.
 		 * @param y0 Starting position in x-direction.
 		 * @param y1 Ending position in x-direction. '-1' means the
@@ -499,7 +501,7 @@ namespace EMAN
 		/** Makes a 'rotational footprint', which is an 'unwound'
 		 * autocorrelation function. generally the image should be
 		 * edge-normalized and masked before using this.
-		 *
+		 * @ingroup CUDA_ENABLED
 		 * @param unwrap RFP undergoes polar->cartesian x-form
 		 * @exception ImageFormatException If image size is not even.
 		 * @return The rotaional footprint image.
@@ -536,6 +538,7 @@ namespace EMAN
 		/** Maps to polar coordinates from Cartesian coordinates. Optionaly radially weighted.
 		 * When used with RFP, this provides 1 pixel accuracy at 75% radius.
 		 * 2D only.
+		 * @ingroup CUDA_ENABLED
 		 * @param r1
 		 * @param r2
 		 * @param xs
@@ -763,6 +766,7 @@ namespace EMAN
 #ifdef EMAN2_USING_CUDA
 		
 		/** cuda equivalent of get_cut_slice
+		 * @ingroup CUDA_ENABLED
 		 * @param tr orientation of the slice as encapsulated in a Transform object
 		 * @exception ImageDimensionException If this image is not 3D.
 		 * @exception ImageFormatException If this image is complex
@@ -942,8 +946,6 @@ namespace EMAN
 	EMData * operator*(const EMData & a, const EMData & b);
 	EMData * operator/(const EMData & a, const EMData & b);
 
-	// This one useful for testing purposes
-// 	bool operator==(const EMData&, const EMData&);
 
 /*   Next  is Modified by PRB      Transform3D::EMAN,
 	inline Transform3D EMData::get_transform() const

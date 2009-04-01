@@ -542,7 +542,7 @@ int EMData::CudaDeviceEMDataCache::cache_rw_data(const EMData* const emdata, con
 	if (data != 0 ) { // If rdata is zero it means we're working exclusively on the GPU
 		size_t num_bytes = nx*ny*nz*sizeof(float);
 		cudaError_t error = cudaMemcpy(cuda_rw_data,data,num_bytes,cudaMemcpyHostToDevice);
-		if ( error != cudaSuccess) throw UnexpectedBehaviorException( "CudaMemcpy (host to device) error:" + string(cudaGetErrorString(error)));	
+		if ( error != cudaSuccess) throw UnexpectedBehaviorException( "CudaMemcpy (host to device) error:" + string(cudaGetErrorString(error)));
 	}
 	
 	return force_store_rw_data(emdata,cuda_rw_data);

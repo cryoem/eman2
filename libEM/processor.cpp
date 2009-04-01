@@ -3608,12 +3608,33 @@ void RadialSubstractProcessor::process_inplace(EMData * image)
 
 void FlipProcessor::process_inplace(EMData * image)
 {
+	ENTERFUNC;
 	if (!image) {
 		LOGWARN("NULL Image");
 		return;
 	}
-
 	string axis = (const char*)params["axis"];
+#ifdef EMAN2_USING_CUDA
+	if (image->gpu_operation_preferred()) {
+		float array[12] = {1.0, 0.0, 0.0, 0.0,
+						   0.0, 1.0, 0.0, 0.0,
+		 				   0.0, 0.0, 1.0, 0.0};
+		if (axis == "x" || axis == "X") {		// horizontal flip
+			array[0] = -1.0;
+		}else if (axis == "y" || axis == "Y") {		// vertical flip
+			array[5] = -1.0;
+		}
+		else if (axis == "z" || axis == "Z") {		// vertical flip
+			array[10] = -1.0;
+		}
+		Transform t(array);
+		Dict params("transform",(Transform*)&t);
+		image->process_inplace("math.transform",params);
+		EXITFUNC;
+		return;
+	}
+#endif
+	
 
 	float *d = image->get_data();
 	int nx = image->get_xsize();
@@ -3651,6 +3672,7 @@ void FlipProcessor::process_inplace(EMData * image)
 	}
 
 	image->update();
+	EXITFUNC;
 }
 
 void AddNoiseProcessor::process_inplace(EMData * image)
@@ -7369,10 +7391,22 @@ EMData* IntTranslateProcessor::process(const EMData* const image) {
 void Rotate180Processor::process_inplace(EMData* image) {
 	ENTERFUNC;
 
+	
 	if (image->get_ndim() != 2) {
 		throw ImageDimensionException("2D only");
 	}
 
+#ifdef EMAN2_USING_CUDA
+	if (image->gpu_operation_preferred() ) {
+		Transform t(Dict("type","2d","alpha",180));
+// 		cout << "rotate 180 cuda" << endl;
+		Dict params("transform",(Transform*)&t);
+		image->process_inplace("math.transform",params);
+		EXITFUNC;
+		return;
+	}
+#endif
+	
 	float *d = image->get_data();
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();

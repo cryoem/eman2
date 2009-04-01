@@ -80,11 +80,22 @@ using 1/2 width of Gaussian in Fourier space."""
 	except: box=None
 	outmap = pdb_2_mrc(args[0],options.apix,options.res,options.het,box,chains,options.quiet)
 	outmap.write_image(args[1])
-	
+
+# this function originally added so that it could be accessed independently (for Junjie Zhang by David Woolford)
 def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,quiet=False):
+	'''
+	file_name is the name of a pdb file
+	apix is the angstrom per pixel
+	res is requested resolution, quivalent to Gaussian lowpass with 1/e width at 1/res
+	het is a flag inidicating whether HET atoms should be included in the map
+	box is the boxsize, can be a single int (e.g. 128), a tuple (e.g. [128,64,54]), or a string (e.g. "128" or "128,64,57")
+	chains is a string list of chain identifiers, eg 'ABEFG'
+	quiet can be used to turn of helpful print outs
+	'''
 	
 	try : infile=open(file_name,"r")
-	except : raise "Cannot open input file"
+	except : raise IOError("%s is an invalid file name" %file_name)
+	
 	
 	if res<=apix : print "Warning: res<=apix. Generally res should be 2x apix or more"
 	
@@ -153,6 +164,7 @@ def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,quiet=Fa
 	# find the output box size, either user specified or from bounding box
 	outbox=[0,0,0]
 	try:
+		# made
 		if isinstance(box,int):
 			outbox[0]=outbox[1]=outbox[2]=box
 		elif isinstance(box,list):
@@ -168,19 +180,13 @@ def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,quiet=Fa
 				outbox[2]=int(spl[2])
 	except:
 		pad=int(2.0*res/apix)
-		#outbox[0]=int(2*max(fabs(amin[0]),fabs(amax[0]))/apix)+pad
-		#outbox[1]=int(2*max(fabs(amin[1]),fabs(amax[1]))/apix)+pad
-		#outbox[2]=int(2*max(fabs(amin[2]),fabs(amax[2]))/apix)+pad
 		outbox[0]=int((amax[0]-amin[0])/apix)+pad
 		outbox[1]=int((amax[1]-amin[1])/apix)+pad
 		outbox[2]=int((amax[2]-amin[2])/apix)+pad
-		#outbox[1]=int(2*max(fabs(amin[1]),fabs(amax[1]))/apix)+pad
-		#outbox[2]=int(2*max(fabs(amin[2]),fabs(amax[2]))/apix)+pad
 		outbox[0]+=outbox[0]%2
 		outbox[1]+=outbox[1]%2
 		outbox[2]+=outbox[2]%2
 		
-	print amax,amin
 	if not quiet: print "Box size: %d x %d x %d"%(outbox[0],outbox[1],outbox[2])
 	
 	# initialize the final output volume
@@ -194,12 +200,12 @@ def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,quiet=Fa
 	xt = outbox[0]/2 - (amax[0]-amin[0])/(2*apix)
 	yt = outbox[1]/2 - (amax[1]-amin[1])/(2*apix)
 	zt = outbox[2]/2 - (amax[2]-amin[2])/(2*apix)
-	print xt,yt,zt
 	for i,a in enumerate(atoms):
 		if not quiet and i%1000==0 : 
 			print '\r   %d'%i,
 			sys.stdout.flush()
 		try:
+			# This insertion strategy ensures the output is centered.
 			elec=atomdefs[a[0].upper()][0]
 			outmap.insert_scaled_sum(gaus,(a[1]/apix+xt-amin[0]/apix,a[2]/apix+yt-amin[1]/apix,a[3]/apix+zt-amin[2]/apix),res/(pi*12.0*apix),elec)
 		except: print "Skipping %d '%s'"%(i,a[0])

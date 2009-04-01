@@ -147,6 +147,7 @@ namespace EMAN
 	/** Translational 2D Alignment using cross correlation.
      * It calculates the shift for a translational alignment, then
      * do the translation.
+	 * @ingroup CUDA_ENABLED
      */
 	class TranslationalAligner:public Aligner
 	{

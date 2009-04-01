@@ -35,13 +35,13 @@
  *    <li> Documentation (<a href="../EMAN2.dvi"> dvi</a>, <a href="../EMAN2.ps"> ps</a>, <a href="../EMAN2.pdf"> pdf</a>, <a href="../EMAN2.html/index.html"> html</a>)
  *  </ul>
  */
- 
+/** @defgroup CUDA_ENABLED a function or class that is CUDA enabled */
 /** @defgroup tested0 code not yet complete  */
 /** @defgroup tested1 code complete but untested */
 /** @defgroup tested2 code complete but contains bugs */
 /** @defgroup tested3 tested */
 /** @defgroup tested3a manual testing
- *  	@ingroup tested3 */
+ *  @ingroup tested3 */
 /** @defgroup tested3b unit test in C++
  * 		@ingroup tested3 */
 /** @defgroup tested3c unit test in Python
