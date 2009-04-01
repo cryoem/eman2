@@ -1,5 +1,7 @@
 #include "cuda_util.h"
 
+typedef unsigned int uint;
+
 __global__ void phase_cmp_weights(float* out, int num_threads, int nx, int ny, int nz, int nxy, float np, int offset) {
 	
 	const uint x=threadIdx.x;
