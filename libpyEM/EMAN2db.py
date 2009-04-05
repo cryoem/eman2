@@ -647,8 +647,10 @@ class DBDict:
 #		print "open ",self.path+"/"+file,self.name,ro
 		self.opencount+=1	# how many times we have had to reopen this database
 		if ro : 
-			self.bdb.open(self.path+"/"+file,self.name,db.DB_BTREE,db.DB_RDONLY)
-			self.isro=True
+			try:
+				self.bdb.open(self.path+"/"+file,self.name,db.DB_BTREE,db.DB_RDONLY)
+				self.isro=True
+			except: raise Exception,"No such database : %s"%self.path+"/"+file
 		else : 
 			try: self.bdb.open(self.path+"/"+file,self.name,db.DB_BTREE,db.DB_CREATE)
 			except: raise Exception,"Cannot create database : %s"%self.path+"/"+file

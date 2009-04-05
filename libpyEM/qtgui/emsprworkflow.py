@@ -1314,26 +1314,36 @@ class ParticleImportTask(ParticleWorkFlowTask):
 			return
 		
 		v = params["import_particle_files"]
-		progress = EMProgressDialogModule(self.application(),"Importing files into database...", "Abort import", 0, len(v),None)
+		progress = EMProgressDialogModule(self.application(),"Importing files into database...", "Abort import", 0, len(v)*10,None)
 		progress.qt_widget.show()
 #			self.application().show_specific(progress)
 	
 		cancelled_dbs = []
 		for i,name in enumerate(v):
-			progress.qt_widget.setValue(i)
+			progress.qt_widget.setValue(i*10)
 			self.application().processEvents()
 
 			tag = get_file_tag(name)
 			db_name = "bdb:particles#"+tag+"_ptcls"
-			imgs = EMData().read_images(name)
+
+			n=EMUtil.get_image_count(name)
+
+			img=EMData()
 			cancelled_dbs.append(db_name)
-			for img in imgs: img.write_image(db_name,-1)
-				
-			if progress.qt_widget.wasCanceled():
-				cancelled = True
-				for db_name in cancelled_dbs:
-					db_remove_dict(db_name)
-				break
+			cancelled=False
+			for j in range(n):
+				if j%25==0 : progress.qt_widget.setValue(i*10+j*10/n)
+
+				img.read_image(name,j)
+				img.write_image(db_name,-1)
+
+				if progress.qt_widget.wasCanceled():
+					cancelled = True
+					for db_name in cancelled_dbs:
+						db_remove_dict(db_name)
+					break
+			
+			if cancelled : break
 		
 				
 		progress.qt_widget.setValue(len(v))
