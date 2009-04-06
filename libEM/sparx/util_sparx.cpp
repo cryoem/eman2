@@ -4168,9 +4168,9 @@ vector<double> Util::cml_line_in3d(vector<float> Ori, vector<int> seq, int nprj,
 	sph2 = sin(ph2);
 	cph2 = cos(ph2);
 	// cross product
-	nx = sth1*sph1*cth2 - cth1*sth2*sph2;
-	ny = cth1*sth2*cph2 - cth2*sth1*cph1;
-	nz = sth1*cph1*sth2*sph2 - sth1*sph1*sth2*cph2;
+  	nx = sth1*cph1*cth2 - cth1*sth2*cph2;
+	ny = cth1*sth2*sph2 - cth2*sth1*sph1;
+	nz = sth1*sph1*sth2*cph2 - sth1*cph1*sth2*sph2;
 	norm = sqrt(nx*nx+ny*ny+nz*nz);
 	nx /= norm;
 	ny /= norm;
@@ -4183,10 +4183,13 @@ vector<double> Util::cml_line_in3d(vector<float> Ori, vector<int> seq, int nprj,
 	else {
 	    cml[c+1] *= rad_deg;
 	    if (cml[c+1] > 89.99) {cml[c+1] = 89.99;} // this fix some pb in Voronoi
-	    cml[c] = rad_deg * acos(abs(nx) / sqrt(nx*nx+ny*ny));
-	    if (nx < 0 && ny >= 0) {cml[c] += 90.0;}
-	    if (nx < 0 && ny < 0) {cml[c] += 180.0;}
-	    if (nx >=0 && ny < 0) {cml[c] += 270.0;}
+	    cml[c] = rad_deg * atan2(nx, ny);
+	    cml[c] = fmod(360 + cml[c], 360);
+	    //cml[c] = rad_deg * acos(abs(nx) / sqrt(nx*nx+ny*ny));
+	    //if (nx < 0 && ny >= 0) {cml[c] += 90.0;}
+	    //if (nx < 0 && ny < 0) {cml[c] += 180.0;}
+	    //if (nx >=0 && ny < 0) {cml[c] += 270.0;}
+	    
 	}
     }
     
@@ -4225,7 +4228,7 @@ vector<double> Util::cml_spin_psi(const vector<EMData*>& data, vector<int> com, 
     vector<double> res(2);
     int lnlen = data[0]->get_xsize();
     int end = 2*(n_prj-1);
-    double disc, buf, bdisc;
+    double disc, buf, bdisc, tmp;
     int n, i, ipsi, ind, bipsi, c;
     float* line_1;
     float* line_2;
@@ -4243,11 +4246,11 @@ vector<double> Util::cml_spin_psi(const vector<EMData*>& data, vector<int> com, 
 		line_2 = data[n]->get_data() + com[ind+1] * lnlen;
 		buf = 0;
 		for (i=0; i<lnlen; ++i) {
-		    buf += (line_1[i]-line_2[i])*(line_1[i]-line_2[i]);
+		    tmp = line_1[i]-line_2[i];
+		    buf += tmp*tmp;
 		}
 		disc += buf * weights[iw[c]];
 		++c;
-		
 	    }
 	}
 	// select the best value
@@ -4263,6 +4266,7 @@ vector<double> Util::cml_spin_psi(const vector<EMData*>& data, vector<int> com, 
     }
     res[0] = bdisc;
     res[1] = float(bipsi);
+    
     return res;
 }
 
