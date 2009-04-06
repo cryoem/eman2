@@ -2347,7 +2347,15 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		if myid == i: 
 			data = EMData.read_images(stack, range(image_start, image_end))
 		if ftp == "bdb": mpi_barrier(MPI_COMM_WORLD)
-		 
+	
+	### temp  ### 
+	from fundamentals import fft
+	from statistics import add_ave_varf_MPI
+	if CTF: 
+		from morphology import ctf_img
+		ctf_2_sum = EMData(nx, nx, 1, False)
+	### temp  ### 
+	
 	for im in xrange(image_start, image_end):
 		data[im-image_start].set_attr('ID', im)
 		if CTF:
@@ -2358,12 +2366,13 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			if data[im-image_start].get_attr( "ctf_applied" ) == 0:
 				st = Util.infomask(data[im-image_start], mask, False)
 				data[im-image_start] -= st[0]
-				from filter import filt_ctf
-				data[im-image_start] = filt_ctf(data[im-image_start], ctf_params)
-				data[im-image_start].set_attr('ctf_applied', 1)
+				#from filter import filt_ctf
+				#data[im-image_start] = filt_ctf(data[im-image_start], ctf_params)
+				#data[im-image_start].set_attr('ctf_applied', 1)
+	 		Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
 		
-	
 	if CTF:
+		reduce_EMData_to_root(ctf_2_sum, myid, main_node)
 		# bring ctf2 together, keep them only on main node,  strange trick required because mpi_reduce changes the nformat to numarray
 		s = shape(ctf2)
 		ctf2  = mpi_reduce(ctf2, 2*lctf, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
@@ -2407,13 +2416,40 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			#  bring all partial sums together
 			reduce_EMData_to_root(av1, myid, main_node)
 			reduce_EMData_to_root(av2, myid, main_node)
+
+			############ Temp stuff (begin) #####################
+			tavg, vav = add_ave_varf_MPI(data, None, "a", CTF)
+			reduce_EMData_to_root(tavg, myid, main_node)
+			reduce_EMData_to_root(vav, myid, main_node)
+			############ Temp stuff (end) #######################
+	
+
 			if myid == main_node:
+				############ Temp stuff (begin) ###################
+				sumsq = fft(tavg)
+				if CTF: 
+					tavg = fft(Util.divn_img(sumsq, ctf_2_sum))
+					Util.mul_img(sumsq, sumsq.conjg())
+					Util.div_img(sumsq, ctf_2_sum)
+					Util.sub_img(vav, sumsq)
+				else:
+					Util.mul_scalar(tavg, 1.0/float(nima))
+					Util.mul_img(sumsq, sumsq.conjg())
+					Util.mul_scalar(sumsq, 1.0/float(nima))
+					Util.sub_img(vav, sumsq)
+				Util.mul_scalar(vav, 1.0/(nima-1))
+				SSNR = sumsq.copy()
+				Util.div_filter(SSNR, vav)
+				tavg = fft(Util.divn_img(fft(tavg), vav))
+				############ Temp stuff (end) #####################
+
 				if CTF:
-					tavg = filt_table(Util.addn_img(av1, av2), ctfb2)
+					#tavg = filt_table(Util.addn_img(av1, av2), ctfb2)
 					av1  = filt_table(av1, ctf2n[0])
 					av2  = filt_table(av2, ctf2n[1])
 				else:
-					tavg = (av1 + av2)/nima
+					pass
+					#tavg = (av1 + av2)/nima
 
 				# write the current average
 				drop_image(tavg, os.path.join(outdir, "aqc_%03d.hdf"%(total_iter)))
@@ -2421,7 +2457,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				frsc = fsc_mask(av1, av2, ref_data[0], 1.0, os.path.join(outdir, "resolution%03d"%(total_iter)))
 				ref_data[2] = tavg
 				ref_data[3] = frsc
-
+				
 				#  call user-supplied function to prepare reference image, i.e., center and filter it
 				if center == -1:
 					# When center = -1, which is by default, we use the average center method
