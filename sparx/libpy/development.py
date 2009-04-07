@@ -8242,15 +8242,15 @@ def GA_MPI(stack, rad, K, sizepop, maxgen, pcross, pmut, pselect, elit = False, 
 ###############################################################################################
 ## COMMON LINES NEW VERSION ############ 2009-03-26 14:06:22 ####################### JB #######
 
-## CRAP just to test
-def cml2_disc(Prj, Ori, flag_weights):
+# calculate the discrepancy allong all common-lines 
+def cml2_disc(Prj, Ori, Rot, flag_weights):
 	from math        import pi, fmod
 
 	# gbl vars
-	global g_n_prj, g_n_psi, g_n_lines
+	global g_n_prj, g_n_psi, g_n_lines, g_seq
 
 	if flag_weights:
-		cml = Util.cml_line_in3d_full(Ori)    # c-code
+		cml = Util.cml_line_in3d(Ori, g_seq, g_n_prj, g_n_lines)
 		weights = Util.cml_weights(cml)       # c-code
 		wm = max(weights)
 		for i in xrange(g_n_lines): weights[i]  = wm - weights[i]
@@ -8259,29 +8259,13 @@ def cml2_disc(Prj, Ori, flag_weights):
 				
 	else:   weights = [1.0] * g_n_lines
 
-	com = [0] * 2 * g_n_lines
-
-	# compute the common lines
-	count = 0
-	for i in xrange(g_n_prj - 1):
-		for j in xrange(i + 1, g_n_prj):
-			[com[count], com[count + 1]] = Util.cml_line_pos(Ori[4*i], Ori[4*i+1], Ori[4*i+2], Ori[4*j], Ori[4*j+1], Ori[4*j+2], g_n_psi)        # c  code
-			count += 2
-
-	n = 0
-	L_tot = 0.0
-
-	# compute the discrepancy for all sinograms
-	for i in xrange(g_n_prj - 1):
-		for j in xrange(i + 1, g_n_prj):
-			L      = Prj[i].cm_euc(Prj[j], com[n], com[n + 1])
-			L_tot += (L * weights[int(n/2)])
-			n     += 2
-
-	return L_tot
+	com  = Util.cml_line_insino_all(Rot, g_seq, g_n_prj, g_n_lines)
+	disc = Util.cml_disc(Prj, com, g_seq, weights, g_n_lines)
+	
+	return disc
 
 # export the progress of the find_struc function
-def cml2_export_progress(outdir, ite, iprj, iagl, psi, disc, cmd):
+def cml2_export_progress(outdir, ite, iprj, iagl, psi, mir, disc, cmd):
 	infofile = open(outdir + '/progress', 'a')
 	global g_anglst
 
@@ -8289,11 +8273,16 @@ def cml2_export_progress(outdir, ite, iprj, iagl, psi, disc, cmd):
 		txt_ite = str(ite).rjust(3, '0')
 		txt_i   = str(iprj).rjust(3, '0')
 		txt_a   = str(iagl).rjust(3, '0')
-		txt     = 'Ite: %s Prj: %s Agls: %s >> Agls (phi, theta, psi): %10.3f %10.3f %10.3f   Disc: %10.7f' % (txt_ite, txt_i, txt_a, g_anglst[iagl][0], g_anglst[iagl][1], psi, disc)
-		
+		if mir:
+			txt     = 'Ite: %s Prj: %s Agls: %s >> Agls (phi, theta, psi): %10.3f %10.3f %10.3f * Disc: %10.7f' % (txt_ite, txt_i, txt_a, g_anglst[iagl][0], g_anglst[iagl][1], psi, disc)
+		else:
+			txt     = 'Ite: %s Prj: %s Agls: %s >> Agls (phi, theta, psi): %10.3f %10.3f %10.3f   Disc: %10.7f' % (txt_ite, txt_i, txt_a, g_anglst[iagl][0], g_anglst[iagl][1], psi, disc)
 
 	elif cmd == 'choose':
-		txt   = 'Ite: %s  Select Agls: %s >> Agls (phi, theta, psi): %10.3f %10.3f %10.3f   Disc: %10.7f\n' % (str(ite).rjust(3, '0'), str(iagl).rjust(3, '0'), g_anglst[iagl][0], g_anglst[iagl][1], psi, disc)
+		if mir:
+			txt   = 'Ite: %s  Select Agls: %s >> Agls (phi, theta, psi): %10.3f %10.3f %10.3f * Disc: %10.7f\n' % (str(ite).rjust(3, '0'), str(iagl).rjust(3, '0'), g_anglst[iagl][0], g_anglst[iagl][1], psi, disc)
+		else:
+			txt   = 'Ite: %s  Select Agls: %s >> Agls (phi, theta, psi): %10.3f %10.3f %10.3f   Disc: %10.7f\n' % (str(ite).rjust(3, '0'), str(iagl).rjust(3, '0'), g_anglst[iagl][0], g_anglst[iagl][1], psi, disc)
 
 	infofile.write(txt + '\n')
 	infofile.close()
@@ -8334,6 +8323,28 @@ def cml2_init_global_var(dpsi, delta, nprj, debug):
 			g_seq[c]   = i
 			g_seq[c+1] = j
 			c += 2
+
+# export result obtain by the function find_struct
+def cml2_export_struc(stack, outdir, Ori):
+	from projection import plot_angles
+	from utilities  import set_params_proj, get_im
+
+	global g_n_prj
+	
+	pagls = []
+	for i in xrange(g_n_prj):
+		data = get_im(stack, i)
+		p = [Ori[4*i], Ori[4*i+1], Ori[4*i+2], 0.0, 0.0]
+		set_params_proj(data, p)
+		data.set_attr('active', 1)
+		data.write_image(stack, i)
+
+		# prepare angles to plot
+		pagls.append([Ori[4*i], Ori[4*i+1], Ori[4*i+2]])
+
+	# plot angles
+	im = plot_angles(pagls)
+	im.write_image(outdir + '/plot_agls.hdf')
 
 # open and transform projections to sinogram
 def cml2_open_proj(stack, ir, ou, lf, hf):
@@ -8454,8 +8465,158 @@ def cml2_sinogram(image2D, diameter, d_psi = 1):
 
 	return Util.window(e, diameter, len(data), 1, 0, 0, 0)
 
+# given two set of orientations (structure), determine the error between them after 3D LSQ registration
+def cml2_error_ori(Ori1, Ori2):
+	from math  import sin, cos, pi, sqrt
+	from numpy import array, linalg, matrix
+
+	rad2deg = 180 / pi
+	deg2rad = 1 / rad2deg
+	nori    = len(Ori1) // 4
+
+	U1 = []
+	for n in xrange(nori):
+		ind = 4*n
+		phi, theta, psi = Ori1[ind], Ori1[ind+1], Ori1[ind+2]
+		map = False
+		if theta > 90:
+			theta = theta - 2 * (theta - 90)
+			map   = True
+		phi   *= deg2rad
+		theta *= deg2rad
+		x      = sin(theta) * sin(phi)
+		y      = sin(theta) * cos(phi)
+		val = 1 - x*x - y*y
+		if val < 0: val = 0
+		z = sqrt(val)
+		if map: z = -z
+		
+		U1.append([x, y, z])
+
+	U2 = []
+	for n in xrange(nori):
+		ind = 4*n
+		phi, theta, psi = Ori2[ind], Ori2[ind+1], Ori2[ind+2]
+		map = False
+		if theta > 90:
+			theta = theta - 2 * (theta - 90)
+			map   = True
+		phi   *= deg2rad
+		theta *= deg2rad
+		x      = sin(theta) * sin(phi)
+		y      = sin(theta) * cos(phi)
+		val = 1 - x*x - y*y
+		if val < 0: val = 0
+		z = sqrt(val)
+		if map: z = -z
+		
+		U2.append([x, y, z])
+
+	# compute all Suv with uv = {xx, xy, xz, yx, ..., zz}
+	Suv   = [0] * 9
+	c     = 0
+	for i in xrange(3):
+		for j in xrange(3):
+			for s in xrange(nori):
+				Suv[c] += (U2[s][i] * U1[s][j])
+			c += 1
+
+        # create matrix N
+	N = array([[Suv[0]+Suv[4]+Suv[8], Suv[5]-Suv[7],         Suv[6]-Suv[2],                 Suv[1]-Suv[3]], 
+		   [Suv[5]-Suv[7],        Suv[0]-Suv[4]-Suv[8],  Suv[1]+Suv[3],                 Suv[6]+Suv[2]], 
+		   [Suv[6]-Suv[2],        Suv[1]+Suv[3],        -Suv[0]+Suv[4]-Suv[8],          Suv[5]+Suv[7]],
+		   [Suv[1]-Suv[3],        Suv[6]+Suv[2],         Suv[5]+Suv[7],         -Suv[0]-Suv[4]+Suv[8]]])
+
+        # eigenvector corresponding to the most positive eigenvalue
+	val, vec = linalg.eig(N)
+	q0, qx, qy, qz = vec[:, val.argmax()]
+
+        # create quaternion Rot matrix
+	Rot = matrix([[q0*q0+qx*qx-qy*qy-qz*qz, 2*(qx*qy-q0*qz),                 2*(qx*qz+q0*qy)],
+		      [2*(qy*qx+q0*qz),         q0*q0-qx*qx+qy*qy-qz*qz,         2*(qy*qz-q0*qx)],
+		      [2*(qz*qx-q0*qy),         2*(qz*qy+q0*qx),         q0*q0-qx*qx-qy*qy+qz*qz]])
+
+        # calculate error between the two sets of marker (err = sum p1t * Rot * p2)
+	sum_err = 0
+	for n in xrange(nori):
+		p1  = matrix([U1[n]]) # row
+		p2  = matrix([U2[n]])
+		p2t = p2.transpose()  # column
+		err = p1 * Rot * p2t
+		sum_err += err.getA()[0][0]
+	
+	# reverse the error, like that if is the same orientation err = 0 and not err = nori
+	sum_err = nori - sum_err
+
+	return sum_err
+
+# this function is used in find_structure MPI version, to merge and mutatted solution
+def cml2_GA(Ori1, Ori2, npop, pcross, pmut):
+	from random import randint, random
+	import sys
+
+	# reduce to 9 bits (value max of phi and theta is 360)
+	def int2bin(n):
+		n = int(n)
+		res = ''
+		while n > 0:
+			res = str(n % 2) + res
+			n   = n >> 1
+		return res.rjust(9, '0')
+
+	nori = len(Ori1) // 4
+	ngen = nori * 2 * 9
+
+	# first map Ori to binary string
+	chromo1 = ''
+	chromo2 = ''
+	for n in xrange(nori):
+		ind      = n*4
+		chromo1 += (int2bin(Ori1[ind]) + int2bin(Ori1[ind+1]))
+		chromo2 += (int2bin(Ori2[ind]) + int2bin(Ori2[ind+1]))
+
+	POP = []
+	for ipop in xrange(npop):
+		# Cycle crossover
+		#co = ''
+		#co = co.join([str(randint(0, 1)) for i in xrange(ngen)])
+		#child = ''
+		#for i in xrange(ngen):
+		#	if co[i] == '0': child += chromo1[i]
+		#	else:            child += chromo2[i]
+
+		if random() <= pcross:
+			# One-point crossover
+			pt = randint(0, ngen)
+			if   pt == 0:    child = chromo1
+			elif pt == ngen: child = chromo2
+			else:		 child = chromo1[:pt] + chromo2[pt:] 
+		else:
+			child = chromo1
+
+		# mutation
+		for n in xrange(ngen):
+			if random() <= pmut:
+				pt = randint(0, ngen - 1)
+				if child[pt] == '0': child = child[:pt] + '1' + child[pt+1:]
+				else:                child = child[:pt] + '0' + child[pt+1:]
+
+		Ori = []
+		for n in xrange(nori):
+			ind = n*18
+			Ori.extend([int(child[ind:ind+9], 2), int(child[ind+9:ind+18], 2), 0, -1]) 
+
+		POP.append(Ori)
+
+	#seq  = range(int(vmin), int(vmax), 10)
+	#p1   = choice(seq)
+	#seq.remove(p1)
+	#p2   = choice(seq)
+
+	return POP
+
 # find structure
-def cml2_find_structure(Prj, Ori, outdir, maxit, first_zero, flag_weights):
+def cml2_find_structure(Prj, Ori, Rot, outdir, maxit, first_zero, flag_weights):
 	#from projection import cml_spin, cml_export_progress
 	import time, sys
 	
@@ -8469,9 +8630,6 @@ def cml2_find_structure(Prj, Ori, outdir, maxit, first_zero, flag_weights):
 		listprj = range(1, g_n_prj)
 		ocp[0]  = 0 
 	else:   listprj = range(g_n_prj)
-
-	# prepare rotation matrix
-	Rot = Util.cml_init_rot(Ori)
 	
 	# iteration loop
 	for ite in xrange(maxit):
@@ -8516,7 +8674,8 @@ def cml2_find_structure(Prj, Ori, outdir, maxit, first_zero, flag_weights):
 					if flag_weights:
 						#t1 = time.time()
 						cml = Util.cml_line_in3d(Ori, g_seq, g_n_prj, g_n_lines)
-						#print 'cml 3D', time.time() - t1, 's'
+						#print cml
+                                                #print 'cml 3D', time.time() - t1, 's'
 						#t1 = time.time()
 						weights = Util.cml_weights(cml)
 						# TODO optimize that
@@ -8530,11 +8689,11 @@ def cml2_find_structure(Prj, Ori, outdir, maxit, first_zero, flag_weights):
 					# spin all psi
 					#t1 = time.time()
 					com = Util.cml_line_insino(Rot, iprj, g_n_prj)
-					#print 'cml', time.time() - t1, 's'
+                                        #print 'cml', time.time() - t1, 's'
 					#t1 =time.time()
-					res = Util.cml_spin_psi(Prj, com, weights, g_seq, iw, g_n_psi, g_d_psi, g_n_prj)
+					res = Util.cml_spin_psi(Prj, com, weights, iprj, iw, g_n_psi, g_d_psi, g_n_prj)
 					#print 'spin', time.time() - t1, 's'
-							
+				
 					# select the best
 					if res[0] < best_disc:
 						best_disc = res[0]
@@ -8543,11 +8702,12 @@ def cml2_find_structure(Prj, Ori, outdir, maxit, first_zero, flag_weights):
 
 					#print 'tot', time.time() - t2, 's'
 					#sys.exit()
+					#print res[0], res[1]
+					#sys.exit()
 				
 					if g_debug: cml2_export_progress(outdir, ite, iprj, iagl, res[1], res[0], 'progress')
 				else:
 					if g_debug: cml2_export_progress(outdir, ite, iprj, iagl, -1, -1, 'progress')
-						
 
 			# if change, assign
 			if best_iagl != cur_agl:
@@ -8556,7 +8716,6 @@ def cml2_find_structure(Prj, Ori, outdir, maxit, first_zero, flag_weights):
 				Ori[ind+1]     = g_anglst[best_iagl][1] # theta
 				Ori[ind+2]     = best_psi * g_d_psi     # psi
 				Ori[ind+3]     = best_iagl              # index
-
 				change = True
 			else:
 				if cur_agl != -1: ocp[cur_agl] = iprj
@@ -8565,19 +8724,20 @@ def cml2_find_structure(Prj, Ori, outdir, maxit, first_zero, flag_weights):
 				Ori[ind+2]  = store_psi
 				Ori[ind+3]  = cur_agl
 
+			Rot = Util.cml_update_rot(Rot, iprj, Ori[ind], Ori[ind+1], Ori[ind+2])
+	
 			if g_debug: cml2_export_progress(outdir, ite, iprj, best_iagl, best_psi * g_d_psi, best_disc, 'choose')
 
-		print 'time', time.time() - t_start, 's'
-
 		# if one change, compute new full disc
-		disc = cml2_disc(Prj, Ori, flag_weights)
-
+		disc = cml2_disc(Prj, Ori, Rot, flag_weights)
+		#disc = 0
+		#print 'time', time.time() - t_start, 's', disc
+		
 		# display in the progress file
 		cml2_export_txtagls(outdir, Ori, disc, 'Ite: %03i' % (ite + 1))
 
 		if not change: break
 
-	disc = 0
 	return Ori, disc, ite
 
 # application find structure
@@ -8625,17 +8785,20 @@ def cml2_main(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit, giv
 	# Update logfile
 	#cml_head_log(stack, outdir, delta, ir, ou, lf, hf, rand_seed, maxit, given)
 
+	# prepare rotation matrix
+	Rot = Util.cml_init_rot(Ori)
+
 	# Compute the first disc
-	disc = cml2_disc(Prj, Ori, flag_weights)
+	disc = cml2_disc(Prj, Ori, Rot, flag_weights)
 
 	# Update progress file
 	cml2_export_txtagls(out_dir, Ori, disc, 'Init')
 
 	# Find structure
-	Ori, disc, ite = cml2_find_structure(Prj, Ori, out_dir, maxit, first_zero, flag_weights)
+	Ori, disc, ite = cml2_find_structure(Prj, Ori, Rot, out_dir, maxit, first_zero, flag_weights)
 
 	# Export structure
-	#cml_export_struc(stack, out_seedname, Ori, BDB)
+	cml2_export_struc(stack, out_dir, Ori)
 
 	# Compute disc without weights
 	#disc_now = cml_disc(Prj, Ori, False)
@@ -8646,6 +8809,145 @@ def cml2_main(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit, giv
 	print_end_msg('find_struct')
 
 	#return disc_now
+
+
+# application find structure MPI version
+def cml2_main_mpi(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit, given = False, first_zero = False, flag_weights = False, debug = False):
+	from mpi       import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier, MPI_COMM_WORLD
+	from mpi       import mpi_bcast, MPI_INT
+	from utilities import print_begin_msg, print_msg, print_end_msg, start_time, running_time
+	from random    import seed, random
+	import time, sys, os, cPickle, logging
+	
+	# init
+	sys.argv = mpi_init(len(sys.argv), sys.argv)
+	ncpu     = mpi_comm_size(MPI_COMM_WORLD)
+	myid     = mpi_comm_rank(MPI_COMM_WORLD)
+
+	# chose a main one
+	main_node = 0
+
+	if myid == main_node:
+		# logfile
+		#print_begin_msg('find_struct')
+
+		out_dir = out_dir.rstrip('/')
+		if os.path.exists(out_dir): os.system('rm -rf ' + out_dir)
+		os.mkdir(out_dir)
+
+	mpi_barrier(MPI_COMM_WORLD)
+	logging.basicConfig(filename = out_dir + '/main_log.txt', format = '%(asctime)s     %(message)s', level = logging.INFO)
+
+	# manage random seed
+	rnd = []
+	for n in xrange(1, ncpu + 1): rnd.append(n * (10**n))
+	if rand_seed > 0: seed(rnd[myid])
+	else:             seed()
+	
+	# Open and transform projections
+	Prj, Ori = cml2_open_proj(stack, ir, ou, lf, hf)
+	
+	# if not angles given select randomly orientation for each projection
+	if not given:
+		j = 0
+		for n in xrange(len(Prj)):
+			if first_zero and n == 0:
+				Ori[j]   = 0.0
+				Ori[j+1] = 0.0
+				Ori[j+2] = 0.0
+			else:
+				Ori[j]   = random() * 360  # phi
+				Ori[j+1] = random() * 180  # theta
+				Ori[j+2] = random() * 360  # psi
+			j += 4
+
+	# Init the global vars
+	cml2_init_global_var(dpsi, delta, len(Prj), debug)
+	
+	# Update logfile
+	#cml_head_log(stack, outdir, delta, ir, ou, lf, hf, rand_seed, maxit, given)
+
+	# prepare rotation matrix
+	Rot = Util.cml_init_rot(Ori)
+
+	# Compute the first disc
+	disc = cml2_disc(Prj, Ori, Rot, flag_weights)
+	logging.info('[node: %02i gen: %03i]  first disc: %f' % (myid, 0, disc))
+
+	# Update progress file
+	#cml2_export_txtagls(out_dir, Ori, disc, 'Init')
+
+	maxgen = 4
+	pcross = 0.95
+	pmut   = 0.1
+	F      = 0.9
+	global g_n_prj
+	for igen in xrange(maxgen):
+		t_start = start_time()
+
+		if igen != 0:
+			f = open(out_dir + '/node_%02i_gen_%03i' % (myid, igen), 'r')
+			Ori = cPickle.load(f)
+			f.close()
+			Rot = Util.cml_init_rot(Ori)
+
+		# Find structure
+		Ori, disc, ite = cml2_find_structure(Prj, Ori, Rot, out_dir, maxit, first_zero, flag_weights)
+		f = open(out_dir + '/node_%02i_gen_%03i' % (myid, igen), 'w')
+		cPickle.dump(Ori, f)
+		f.close()
+		logging.info('[node: %02i gen: %03i]  disc: %f  nb ite: %i' % (myid, igen, disc, ite))
+
+		mpi_barrier(MPI_COMM_WORLD)
+		if myid == main_node:
+			all_ori = []
+			for n in xrange(ncpu):
+				f = open(out_dir + '/node_%02i_gen_%03i' % (n, igen), 'r')
+				buf = cPickle.load(f)
+				f.close()
+				all_ori.append(buf)
+				del buf
+
+			minerr = 1e6
+			mem    = [-1, -1]
+			for i in xrange(ncpu):
+				for j in xrange(i+1, ncpu):
+					err = cml2_error_ori(all_ori[i], all_ori[j])
+					if err < minerr:
+						minerr = err
+						mem    = [i, j]
+			logging.info('>>> best pair is %s with err = %f' % (mem, minerr))
+			
+			pop = cml2_GA(all_ori[mem[0]], all_ori[mem[1]], ncpu, pcross, pmut)
+			logging.info('>>> new populations pcross: %f pmut: %f' % (pcross, pmut))
+
+			pmut *= F
+			
+			for n in xrange(ncpu):
+				f = open(out_dir + '/node_%02i_gen_%03i' % (n, igen + 1), 'w')
+				cPickle.dump(pop[n], f)
+				f.close()
+
+		mpi_barrier(MPI_COMM_WORLD)
+	
+	#if myid == main_node:
+	        # Export structure
+		#cml2_export_struc(stack, out_dir, Ori)
+	if myid == main_node:
+		logging.info('=== END ===')
+	mpi_barrier(MPI_COMM_WORLD)
+
+	# Update logfile
+	#cml_end_log(Ori, disc, disc_now, ite)
+
+	#running_time(t_start)
+	#print_end_msg('find_struct')
+
+	#return disc_now
+
+
+
+
 
 
 
