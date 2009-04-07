@@ -38,12 +38,12 @@ from   optparse   import OptionParser
 import sys
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage    = progname + " stack outdir --ir --ou --delta --dpsi --lf --hf --rand_seed --maxit --given --first_zero --weights"
+	usage    = progname + " stack outdir --ir --ou --delta --dpsi --lf --hf --rand_seed --maxit --given --first_zero --weights --new --mpi"
 	parser   = OptionParser(usage, version = SPARXVERSION)
 	parser.add_option("--ir",         type="float",        default=-1,       help=" Inner radius of particle (set to )")
 	parser.add_option("--ou",         type="float",        default=-1,       help=" Outer radius of particle < int(nx/2)-1")
 	parser.add_option("--delta",      type="float",        default=10.0,     help=" Angle step " )
-	parser.add_option("--dpsi",       type="float",        default=1.0,      help=" Angle accuracy for sinogram (set to 1)")
+	parser.add_option("--dpsi",       type="int",          default=1.0,      help=" Angle accuracy for sinogram (set to 1)")
 	parser.add_option("--lf",         type="float",        default=0.0,      help=" Filter, minimum frequency (set to 0.0)")
 	parser.add_option("--hf",         type="float",        default=0.5,      help=" Filter, maximum frequency (set to 0.5)")
 	parser.add_option("--given",      action="store_true", default=False,    help=" Start from given projections orientation (set to False, means start with randomize orientations)")
@@ -52,6 +52,8 @@ def main():
 	parser.add_option("--debug",      action="store_true", default=False,    help=" Help to debug")
 	parser.add_option("--first_zero", action="store_true", default=False,    help=" Assign the first projection orientation to 0")
 	parser.add_option("--weights",    action="store_true", default=False,    help=" Use Voronoi weighting (set to 0)")
+	parser.add_option("--new",        action="store_true", default=False,    help=" The new code")
+	parser.add_option("--mpi",        action="store_true", default=False,    help=" MPI version")
 
 	(options, args) = parser.parse_args()
 	if len(args) != 2:
@@ -59,11 +61,26 @@ def main():
 		print "Please run '" + progname + " -h' for detailed options"
 	else:
 		if options.maxit < 1: options.maxit = 1
-		
-		from applications import find_struct
-		global_def.BATCH = True
-		find_struct(args[0], args[1], options.ir, options.ou, options.delta, options.dpsi, options.lf, options.hf, options.rand_seed, options.maxit, options.given, options.first_zero, options.weights, options.debug)
-		global_def.BATCH = False
+
+		if options.new:
+			if options.mpi:
+				from development import cml2_main_mpi
+				global_def.BATCH = True
+				cml2_main_mpi(args[0], args[1], options.ir, options.ou, options.delta, options.dpsi, options.lf, options.hf, options.rand_seed, options.maxit, options.given, options.first_zero, options.weights, options.debug)
+				global_def.BATCH = False
+			else:
+				from development import cml2_main
+				global_def.BATCH = True
+				cml2_main(args[0], args[1], options.ir, options.ou, options.delta, options.dpsi, options.lf, options.hf, options.rand_seed, options.maxit, options.given, options.first_zero, options.weights, options.debug)
+				global_def.BATCH = False
+
+		else:
+			from applications import find_struct
+			global_def.BATCH = True
+			find_struct(args[0], args[1], options.ir, options.ou, options.delta, options.dpsi, options.lf, options.hf, options.rand_seed, options.maxit, options.given, options.first_zero, options.weights, options.debug)
+			global_def.BATCH = False
+
+
 
 if __name__ == "__main__":
 	main()
