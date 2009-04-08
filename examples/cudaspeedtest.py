@@ -49,6 +49,28 @@ def test_main():
 	gpu_times = []
 	cpu_times = []
 	
+	print "Testing phase comparison"
+	for dims in test_dims:
+		a = [test_image(0,size=(dims,dims)) for i in test_range]
+		for d in a: d.set_gpu_rw_current()
+		tr = Transform()
+		
+		t = time()
+		for i in test_range:
+			b = a[i].cmp("phase",a[i])
+			#c.print_this()
+
+		gpu_times.append(time()-t)
+		#print dims, "B"
+		a = [test_image(0,size=(dims,dims)) for i in test_range]
+		t = time()
+		for i in test_range:
+			b = a[i].cmp("phase",a[i])
+		cpu_times.append(time()-t)
+		print dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1]
+	
+	
+	
 	print "Testing transform"
 	for dims in test_dims:
 		a = [test_image(0,size=(dims,dims)) for i in test_range]

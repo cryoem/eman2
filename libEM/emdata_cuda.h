@@ -33,22 +33,64 @@
 #define eman__emdatacuda_h__ 1
 
 #ifdef EMAN2_USING_CUDA
-private:
+public:
 
+	/** Class CudaDataLock is a very basic object that you can use to
+	 * temporarily 'lock' the cached cuda data (that is associated with a particular
+	 * EMData), thus preventing it from being deleted inadvertently (see the CudaCache).
+	 * When an object of this type is destructed it automatically unlocks the
+	 * associated data. 
+	 * The following code demontrates use of this object
+	 *@code
+	 *    {
+     *    EMData e("something.mrc"); 
+     *    e.set_gpu_rw_current(); // Copy data to GPU
+     *    CudaDataLock tmp_lock(&e); // GPU data is locked
+     *    EMData f("somethingelse.mrc");
+     * 	  f.set_gpu_rw_current(); // This could have inadvertently deleted e's GPU data if it was not locked
+     *    // Cuda processing
+     *    }// tmp_lock is destructed as it goes out of scope ( which unlocks e's CUDA data) 
+     *@endcode
+     * You could achieve the same thing using the EMData member functions cuda_lock and cuda_unlock,
+     * demonstrated as follows
+     * @code
+     *    e.cuda_lock()
+     *    // processing
+	 *    e.cuda_unlock()
+	 * @endcode
+	 * 
+	 * Thoughts: The need for locking is due solely to the CudaCache, which would indiscriminately devour
+	 * whatever occupied the next slot if there were no mechanism for stopping it. Is there a better solution?
+	 * @date April 6th 2009
+	 * @author David Woolford
+	 */
 	class CudaDataLock {
 	public:
-		CudaDataLock(const EMData* const);
-		CudaDataLock(const int handle);
+		/** Constructor
+		 * @param that the EMData object which will have its cuda data locked.
+		 */
+		CudaDataLock(const EMData* const that);
+		
+		/** Destructor
+		 * Unlocks the associated CUDA data 
+		 */
 		~CudaDataLock();
 		
 	private:
-		// Disallow assignment
+		/** Disallow assignment by declaring the method private
+		 * Supporting this would add unnecessary complexity
+		 */
 		CudaDataLock& operator=(const CudaDataLock&);
-		// Disallow copy construction
+		/** Disallow copy construction by declaring the method private
+		 * Supporting this would add unnecessary complexity
+		 */
 		CudaDataLock(const CudaDataLock& );
-		// Disallow default construction
+		/** Disallow default construction
+		 *  Supporting this does not make sense
+		 */
 		CudaDataLock();
 		
+		/// The CudaCache index of the associated EMData
 		int data_cuda_handle;
 	};
 
@@ -59,10 +101,14 @@ public:
 	 * Presently the 3D texture is called "tex" and the 2D texture is called "tex2d", these are currently
 	 * defined in cuda_util.cu. The number of available textures and naming is likely to change
 	 * to accommodate the need for accessing many textures using a single kernel
-	 * @param interp_mode if true the texture will be bound using the cudaFilterModeLinear filtermode,  otherwise cudaFilterModePoint is usedddd
+	 * @param interp_mode if true the texture will be bound using the cudaFilterModeLinear filtermode, 
+	 * otherwise cudaFilterModePoint is used
 	 */
 	void bind_cuda_texture(const bool interp_mode =true) const;
 	
+	/** Unbind the cuda texture that was bound by the call to bind_cuda_texture
+	 * Should be called once the texture is no longer needed
+	 */
 	void unbind_cuda_texture() const;
 	
 	/** Get the cuda device pointer to the raw data
@@ -83,6 +129,7 @@ public:
 	 * @return a real space correlation image
 	 */
 	EMData* calc_ccf_cuda(EMData* image, bool use_texturing,bool center=false ) const;
+	
 	EMData* calc_ccfx_cuda( EMData * const with, int y0=0, int y1=-1, bool no_sum=false);
 		
 	EMData * make_rotational_footprint_cuda( bool unwrap=true);
@@ -97,6 +144,11 @@ public:
 		flags |= EMDATA_NEEDUPD | EMDATA_CPU_NEEDS_UPDATE | EMDATA_GPU_RO_NEEDS_UPDATE;
 	}
 	
+	/* Get the column sum as an EMData object using CUDA
+	 * Return object exists solely on the GPU
+	 * @exception ImageDimensionException if this image is not 2D
+	 * @return an EMData object that stores the column sum of this image and exists on the GPU
+	 */
 	EMData* column_sum_cuda() const;
 	
 	
@@ -106,11 +158,12 @@ public:
 	void copy_gpu_rw_to_cpu();
 
 	void copy_cpu_to_gpu_rw();
-	// A long term solution
+	
+	// A long term solution?
 	inline void set_gpu_rw_current() { 
 		get_cuda_data();
 	}
-
+	
 	bool gpu_operation_preferred() const;
 	
 	void copy_cpu_to_gpu_ro();
@@ -122,9 +175,19 @@ public:
 	void copy_gpu_ro_to_cpu() const;
 	
 	void print_this() const { cout << "this " << this << " " << cuda_cache_handle << endl; }
-	int get_cuda_handle() const { return cuda_cache_handle; };
 	
+	
+	/** Lock the associated cuda data
+	 * A method for prevented the deletion of associated CUDA memory
+	 * Note that this does not prevent its alteration (be it rw or ro)
+	 */
 	void cuda_lock() const;
+	
+	/** Unlock the assocated cuda data
+	 * Tells the CudaCache that it no longer needs to prevent deletion
+	 * of GPU memory associated with this object.
+	 * Used exclusively in conjuntion with cuda_unlock
+	 */
 	void cuda_unlock() const;
 	
 	/** Check whether the CUDA-cached read-write version of the data pointer is current
@@ -134,10 +197,22 @@ public:
 	 */
 	bool gpu_rw_is_current() const;
 	
+	/** Check whether the cpu data is both available and up-to-date. It may be the case
+	 * that the CPU data is null (i.e. GPU operations are being used exclusively). Alternatively
+	 * it may be that the EMDATA_CPU_NEEDS_UPDATE flag is toggled, which means
+	 * the GPU version of the image is the current one and it is different to that which
+	 * is stored on the CPU
+	 */
 	bool cpu_rw_is_current() const;
+	
+	
 	void set_gpu_rw_data(float* data, const int x, const int y, const int z);
 private:
-	
+	/** Get the cuda handle
+	 * This is the entry index in the CudaCache that contains
+	 * the associated GPU ro/rw data.
+	 */
+	int get_cuda_handle() const { return cuda_cache_handle; };
 	
 	
 	/** Check whether the CUDA-cached read-only version of the data pointer is current
@@ -154,25 +229,29 @@ private:
 	 */
 	void free_cuda_memory() const;
 	
-	/// A handle which may used to retrieve the device float pointer from the CudaDeviceEMDataCache using its [] operator
+	/// A handle which may used to retrieve the device float pointer from the CudaCache using its [] operator
 	mutable int cuda_cache_handle;
 		
 	
-	/** CudaDeviceEMDataCache stores the CUDA device pointers and cudaArray pointers associated with EMData objects
+	/** CudaCache stores the CUDA device pointers and cudaArray pointers associated with EMData objects
 	 * The cudaArray pointers may be bound to CUDA textures and used as read only memory. They are sometimes referred to as read-only or ro data.
 	 * The cuda device pointers may be used for general GPU applications. They are sometimes referred to as read-write or rw data.
 	 * This is a "snake cache" that eats its own tail once the available slots are all taken. 
 	 * In the event of a random slot becoming free it is simply left that way, waiting empty until the snake head devours it.
+	 * Slots may be locked to prevent the snake head from consuming them using the lock member function
+	 * Slots that are locked must be unlocked using the unlock member function. Note that when an EMData
+	 * object is destructed it calls unlock, so calling unlock after calling lock is not strictly necessary. But it IS recommended as
+	 * a good practice.  
 	 * @author David Woolford
 	 * @date February 2009
 	*/
-	class CudaDeviceEMDataCache {
+	class CudaCache {
 		/** Class EMData is a friend to reflect the tight coupling of these two classes
 		 * The EMData's use of this class' protected functions is somewhat specialized -
 		 * It is presently hard to envisage any other class calling these functions directly. 
 		 * It could be possible to move some of the code in EMData::get_cuda_data
 		 * and EMData::bind_cuda_texture into this object, however it remains as is because
-		 * most of that code is based on the EMData.flags member variable.
+		 * most of that code is based on the EMData::flags member variable.
 		 */
 		friend class EMData;
 		friend class CudaDataLock;
@@ -180,12 +259,15 @@ private:
 		/** Constructor
 		 * @param size the size of the cache
 		 */
-		CudaDeviceEMDataCache(const int size);
+		CudaCache(const int size);
 		
-		/** Destructor, frees any non zero CUDA memory 
+		/** Destructor, indiscriminately frees any non zero CUDA memory 
 		 */
-		~CudaDeviceEMDataCache();
+		~CudaCache();
 	protected:
+		/// I separated functions into protected and private groups - protected functions are those
+		/// which are called by the (friend) EMData object. Private functions are called internally by
+		/// member functions exclusively. I know this is not conventional, but it does document something usefully.
 		
 		/** Cache a read-write (CUDA device pointer) version of the  data and return an index reflecting its position in the cache
 		 * @param emdata the EMData object making the call
@@ -196,6 +278,22 @@ private:
 		 * @return the index which can be used to retrieve the CUDA device pointer using get_rw_data
 		 */
 		int cache_rw_data(const EMData* const emdata, const float* const data,const int nx, const int ny, const int nz);
+		
+		
+		/** A way of storing CUDA allocated rw memory directly
+		 * called from EMData::set_gpu_rw_data 
+		 * @param emdata the associated EMData object
+		 * @param cuda_rw_data device allocated rw memory
+		 * @return the index where the data was stored
+		 */
+		int store_rw_data(const EMData* const emdata, float* cuda_rw_data);
+		
+		/** A way of replacing CUDA allocated rw memory directly
+		 * called from EMData::set_gpu_rw_data 
+		 * @param emdata the associated EMData object
+		 * @param handle the index of the slot that will have its gpu rw data replaced
+		 */
+		void replace_gpu_rw(const int handle, float* cuda_rw_data);
 		
 		/** Cache a read-only (cudaArray) version of the  data and return an index reflecting its position in the cache
 		 * @param emdata the EMData object making the call
@@ -257,6 +355,11 @@ private:
 		 */
 		void copy_ro_to_rw(const int idx);
 		
+		/** Copy the read-only data to given the CPU read-write data 
+		 * This is primary for testing purposes
+		 * @param idx the cache index defining where the copying operation will occur
+		 * @param data the cpu allocated data that will be copied into
+		 */
 		void copy_ro_to_cpu(const int idx,float* data);
 		
 		/** Get the number of dimensions of the EMData object the is associated with a specific cached object
@@ -268,17 +371,71 @@ private:
 			return caller_cache[idx]->get_ndim();
 		}
 		
+		/** Lock the data stored at the given index, preventing it from inadvertent deletion
+		 * Locking that same item more than once is allowable. The lock is really an index that is incremented
+		 * when this function is called.
+		 * @param idx the index corresponding the cache slot that will be locked
+		 * @exception InvalidValueException if the idx is outside the limits of the internal cache
+		 */
 		void lock(const int idx);
+		
+		/** Unlock data stored at the given index, signalling that it can be deleted by the traveling snake head.
+		 * NOTE that this may not truly unlock the slot, for all that really happens is an integer that tallies the number
+		 * of times lock has been called is decremented.
+		 * @param the index corresponding to the cache slot that will be unlocked
+		 * @exception InvalidValueException if the idx is outside the limits of the internal cache
+		 */
 		void unlock(const int idx);
+		
+		/** Print the contents of the cache to standard out
+		 * Useful for debug
+		 */
 		void debug_print() const;
 	private:
+		/** Prevent copying it doesn't make sense */
+		CudaCache(const CudaCache&);
+		/** Prevent assignment it doesn't make sense */
+		CudaCache& operator=(const CudaCache&);
+		/** Prevent the default constructor it doesn't make sense*/
+		CudaCache();
+		
 		/** Allocate a CUDA device pointer using cudaMalloc
 		 * @param nx the length of the x dimension
 		 * @param ny the length of the y dimension
 		 * @param nz the length of the z dimension
 		 * @return the cuda malloced device pointer
+		 * @exception BadAllocException if the cudaMalloc call failed
 		 */
 		float* alloc_rw_data(const int nx, const int ny, const int nz);
+		
+		
+		/** Get the size in bytes of the EMData object that is associated with the slot at a particular index
+		 * @param idx the slot index 
+		 * @return the size in bytes
+		 */
+		inline size_t get_emdata_bytes(const int idx) {
+			if (idx < 0 || idx >= cache_size) throw InvalidValueException(idx,"The idx is beyond the cache size");
+			
+			const EMData* e = caller_cache[idx];
+			return e->get_size()*sizeof(float);
+		}
+		
+		/** Called internally to make sure that the slot corresponding to current_insert_idx is empty/available
+		 * May cause emptying of a slot. 
+		 * May changed current_insert_idx if locked slots are encountered
+		 */
+		void ensure_slot_space();
+		
+		/** Store the rw_data directly into the slot at current_insert_idx
+		 * This is an encapsulation of a commonly used fragment of code.
+		 * Called "blind" because it doesn't check to make sure the slot is empty,
+		 * this is okay because the functions that call this have already called ensure_slot_space.
+		 * If this function was used naively it could cause a memory leak.
+		 * @param emdata the associated EMData object
+		 * @param cuda_rw_data device allocated rw memory
+		 * @return the index where the data was stored
+		 */
+		int blind_store_rw_data(const EMData* const emdata, float*  cuda_rw_data);
 		
 		/// The size of the cache
 		int cache_size;
@@ -286,25 +443,6 @@ private:
 		int current_insert_idx;
 		/// Keep track of how much memory has been allocated
 		size_t mem_allocated;
-		
-		inline size_t get_emdata_bytes(const int idx) {
-			
-			if (idx < 0 || idx >= cache_size) throw InvalidValueException(idx,"The idx is beyond the cache size");
-			// This function can be called at program exit, in which case the EMData objects could
-			// Already be deallocated.
-// 			try {
-				const EMData* e = caller_cache[idx];
-				return e->get_size()*sizeof(float);
-// 			} except (...) {
-// 				return 0;	
-// 			}
-		}
-		
-		void check_for_space();
-		int store_rw_data(const EMData* const emdata, float* cuda_rw_data);
-		int force_store_rw_data(const EMData* const emdata, float*  cuda_rw_data);
-		void replace_gpu_rw(const int handle, float* cuda_rw_data);
-		
 		/// The CUDA device rw pointer cache
 		float** rw_cache;
 		/// A cache of the objects that called the cache_data function, so EMData::cuda_cache_lost_imminently can be called if necessary
@@ -315,20 +453,20 @@ private:
 		vector<int> locked;
 	};
 	
-	/// CudaDeviceEMDataCache is a friend because it calls cuda_cache_lost_imminently, a specialized function that should not be made public.
-	friend class CudaDeviceEMDataCache;
+	/// CudaCache is a friend because it calls cuda_cache_lost_imminently, a specialized function that should not be made public.
+	friend class CudaCache;
 	
 	/// CudaDataLock is a friend because it needs to know the cuda_cache_handle
 	friend class CudaDataLock;
 	
-	/** Called by the CudaDeviceEMDataCache just before it frees the associated cuda device pointer
+	/** Called by the CudaCache just before it frees the associated cuda device pointer
 	 * Internally the EMData object will update its CPU version of the raw data if it is out of data as a result of GPU processing.
 	 * Currently based loosely on the assumption that the host will always have more memory than the device, this may change, but works for the time being
 	 */
 	void cuda_cache_lost_imminently() const;
 	
 	/// Cuda device pointer cache
-	static CudaDeviceEMDataCache cuda_cache;
+	static CudaCache cuda_cache;
 	
 #endif // EMAN2_USING_CUDA
 	

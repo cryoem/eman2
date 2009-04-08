@@ -18,7 +18,7 @@ __global__ void phase_cmp_weights(float* out, int num_threads, int nx, int ny, i
 	
 	float rad = sqrtf(tx*tx+ty*ty+tz*tz);
 	float x2 = 10.0*rad/np;
-	out[idx] = x2*exp(x2);
+	out[idx] = x2*exp(-x2);
 }
 
 void calc_phase_weights_cuda(EMDataForCuda* t,float np) {
@@ -118,7 +118,7 @@ __global__ void mean_phase_error_kernel(float *ldata,float *rdata,float *wdata,f
 
 __global__ void single_normal_kernel(float *ldata,float *rdata)
 {
-	ldata[0] = (*ldata)*(*rdata);
+	ldata[0] = (*ldata)/(*rdata);
 }
 	
 void mean_phase_error_cuda(EMDataForCuda* left, EMDataForCuda* right, EMDataForCuda* wt,EMDataForCuda* hist, EMDataForCuda* norm, const int num_hist) {

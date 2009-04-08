@@ -321,7 +321,6 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("print_this", &EMAN::EMData::print_this)
 	.def("cuda_lock", &EMAN::EMData::cuda_lock)
 	.def("cuda_unlock", &EMAN::EMData::cuda_unlock)
-	.def("get_cuda_handle", &EMAN::EMData::get_cuda_handle)
 #endif // EMAN2_USING_CUDA
 	.def("render_amp8", &EMAN::EMData::render_amp8)
 	.def("render_ap24", &EMAN::EMData::render_ap24)

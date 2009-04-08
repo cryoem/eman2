@@ -575,3 +575,34 @@ class ImgHistogram(QtGui.QWidget):
 	
 	def mouseReleaseEvent(self, event):
 		self.probe=None
+		
+class EMMetaDataTable(object):
+	"""This is basically a factory class that will return an instance of QtWidget
+	"""
+	def __new__(cls,parent,metadata):
+		'''
+		metadata should be a dict
+		'''
+		if not isinstance(metadata,dict): raise
+		
+		left = [str(k) for k in metadata.keys()]
+		right = [str(v) for v in metadata.values()]
+		
+		from emform import ParamTable, ParamDef,EMFormWidget
+		
+		params = []
+		a = ParamTable(name="Metadata",desc_short="Useful information",desc_long="The left most column is what you're choosing from, the extra columns are used only to assist in the decision making process")
+		pleft = ParamDef(name="Name",vartype="stringlist",desc_short="stringlist",desc_long="Choose from a list of ints",property=None,choices=left)
+		pright = ParamDef(name="Value",vartype="stringlist",desc_short="striglist",desc_long="Choose from a list of floats",property=None,choices=right)
+
+		
+		a.append(pleft)
+		a.append(pright)
+		params.append(a)
+		
+		form = EMFormWidget(parent,params,disable_ok_cancel)
+		return form
+		
+		
+		
+		

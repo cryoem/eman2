@@ -3248,20 +3248,20 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.ab_sel_mediator.toggle_frozen(self.col1[self.currentlyselected].text(),bool)
 		self.lock = False
 	
-	def write_box_images(self,unused):
-		box_size = int(str(self.usingbox_size.text()))
-		realbox_size = int(str(self.bs.text()))
-		if realbox_size == box_size:
-			box_size = -1 # negative one is a flag that tells the boxes they don't need to be resized... all the way in the Box Class
-		self.target().write_all_box_image_files(box_size,self.outputforceoverwrite.isChecked(),str(self.outputformats.currentText()),self.normalize_box_images.isChecked(),str(self.normalization_options.currentText()))
+#	def write_box_images(self,unused):
+#		box_size = int(str(self.usingbox_size.text()))
+#		realbox_size = int(str(self.bs.text()))
+#		if realbox_size == box_size:
+#			box_size = -1 # negative one is a flag that tells the boxes they don't need to be resized... all the way in the Box Class
+#		self.target().write_all_box_image_files(box_size,self.outputforceoverwrite.isChecked(),str(self.outputformats.currentText()),self.normalize_box_images.isChecked(),str(self.normalization_options.currentText()))
 		
-	def write_box_coords(self,unused):
-		box_size = int(str(self.usingbox_size.text()))
-		realbox_size = int(str(self.bs.text()))
-		if realbox_size == box_size:
-			box_size = -1 # negative one is a flag that tells the boxes they don't need to be resized... all the way in the Box Class
-		self.target().write_all_coord_files(box_size,self.outputforceoverwrite.isChecked(),)
-	
+#	def write_box_coords(self,unused):
+#		box_size = int(str(self.usingbox_size.text()))
+#		realbox_size = int(str(self.bs.text()))
+#		if realbox_size == box_size:
+#			box_size = -1 # negative one is a flag that tells the boxes they don't need to be resized... all the way in the Box Class
+#		self.target().write_all_coord_files(box_size,self.outputforceoverwrite.isChecked())
+#	
 	def setChecked(self,tag):
 		
 		for i,col in enumerate(self.col1):
@@ -3912,7 +3912,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 			return
 		
 		
-		self.usingbox_size.setText(self.bs.text())
+#		self.usingbox_size.setText(self.bs.text())
 		app = QtGui.QApplication.instance()
 		app.setOverrideCursor(Qt.BusyCursor)
 		self.target().update_box_size(v,1)

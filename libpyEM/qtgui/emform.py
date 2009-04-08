@@ -77,7 +77,7 @@ class EMFormWidget(QtGui.QWidget):
 	If ok is clicked the "emform_ok" signal is emitted along with a dictionary containing all of the form entries
 	If cancel is clicked the "emform_cancel" signal is emmitted. No extra information is sent in this case
 	'''
-	def __init__(self,parent,params=None):
+	def __init__(self,parent,params=None,disable_ok_cancel=False):
 		QtGui.QWidget.__init__(self,None)
 		self.parent = weakref.ref(parent)
 		self.params = params
@@ -104,7 +104,7 @@ class EMFormWidget(QtGui.QWidget):
 		
 		self.vbl = QtGui.QVBoxLayout()
 		self.incorporate_params(self.params,self.vbl)
-		self.__add_ok_cancel_buttons(self.vbl)
+		if not disable_ok_cancel: self.__add_ok_cancel_buttons(self.vbl)
 		self.setLayout(self.vbl)
 	def __init_icons(self):
 		self.emdata_icon = QtGui.QIcon(get_image_directory() + "/single_image.png")

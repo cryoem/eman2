@@ -44,7 +44,7 @@
 
 using namespace EMAN;
 // Static init
-EMData::CudaDeviceEMDataCache EMData::cuda_cache(50);
+EMData::CudaCache EMData::cuda_cache(50);
 
 float* EMData::get_cuda_data() const {
 	if (get_size() == 0 ) throw UnexpectedBehaviorException("The size of the data is 0?");
@@ -372,14 +372,14 @@ EMData* EMData::calc_ccfx_cuda( EMData * const with, int y0, int y1, bool no_sum
 		ny_defice_fft = height;
 	}
 	
-	{ // Make a local scope so that the locks are destructed
+	{// Make a local scope so that the locks are destructed
 		float * cd = get_cuda_data();
 		CudaDataLock lock(this);
 		float * f1cd = f1.get_cuda_data(); 
 		CudaDataLock lock2(&f1);
 		cuda_dd_fft_real_to_complex_1d(cd,f1cd,nx,height);
 	}
-	{
+	{// Make a local scope so that the locks are destructed
 		float * wcd = with->get_cuda_data();
 		CudaDataLock lock(this);
 		float * f2cd = f2.get_cuda_data(); 
@@ -402,7 +402,7 @@ EMData* EMData::calc_ccfx_cuda( EMData * const with, int y0, int y1, bool no_sum
 		emdata_processor_correlation(&left,&right,center);
 	}
 	
-	{
+	{// Make a local scope so that the locks are destructed
 		float* rcd = rslt.get_cuda_data();
 		CudaDataLock rlock(&rslt);
 		float * f1cd = f1.get_cuda_data(); 
@@ -424,6 +424,7 @@ EMData* EMData::calc_ccfx_cuda( EMData * const with, int y0, int y1, bool no_sum
 
 EMData* EMData::column_sum_cuda() const {
 	ENTERFUNC;
+	if (get_ndim() != 2) throw ImageDimensionException("Column sum cuda has been prgogrammed work exclusively with 2D data.");
 	EMData *cf = new EMData();
 	cf->set_size_cuda(nx, 1, 1);
 	EMDataForCuda left = cf->get_data_struct_for_cuda();
@@ -481,7 +482,7 @@ void EMData::copy_gpu_ro_to_cpu() const {
 }
 
 
-EMData::CudaDeviceEMDataCache::CudaDeviceEMDataCache(const int size) : cache_size(size), current_insert_idx(0), mem_allocated(0), locked(size,0)
+EMData::CudaCache::CudaCache(const int size) : cache_size(size), current_insert_idx(0), mem_allocated(0), locked(size,0)
 {
 	device_init();
 	rw_cache = new float *[cache_size];
@@ -495,7 +496,7 @@ EMData::CudaDeviceEMDataCache::CudaDeviceEMDataCache(const int size) : cache_siz
 	}
 }
 
-EMData::CudaDeviceEMDataCache::~CudaDeviceEMDataCache()
+EMData::CudaCache::~CudaCache()
 {
 	for (int i = 0; i < cache_size; i++) {
 		clear_item(i);
@@ -517,12 +518,12 @@ EMData::CudaDeviceEMDataCache::~CudaDeviceEMDataCache()
 	cleanup_cuda_fft_dd_plan_cache();
 }
 
-void EMData::CudaDeviceEMDataCache::lock(const int idx) {
+void EMData::CudaCache::lock(const int idx) {
 	if (idx < 0 || idx >= cache_size) throw InvalidValueException(idx,"The idx is beyond the cache size");
 	locked[idx] += 1;
 // 	debug_print();
 }
-void EMData::CudaDeviceEMDataCache::unlock(const int idx) {
+void EMData::CudaCache::unlock(const int idx) {
 	if (idx < 0 || idx >= cache_size) throw InvalidValueException(idx,"The idx is beyond the cache size");
 	if (locked[idx] == 0) {
 // // 		cout << "Warning - unlocked something that didn't need it" << endl;
@@ -533,9 +534,9 @@ void EMData::CudaDeviceEMDataCache::unlock(const int idx) {
 	locked[idx] -=1;
 }
 
-int EMData::CudaDeviceEMDataCache::cache_rw_data(const EMData* const emdata, const float* const data,const int nx, const int ny, const int nz)
+int EMData::CudaCache::cache_rw_data(const EMData* const emdata, const float* const data,const int nx, const int ny, const int nz)
 {
-	check_for_space();
+	ensure_slot_space();
 	
 	float* cuda_rw_data = alloc_rw_data(nx,ny,nz);
 	
@@ -545,10 +546,10 @@ int EMData::CudaDeviceEMDataCache::cache_rw_data(const EMData* const emdata, con
 		if ( error != cudaSuccess) throw UnexpectedBehaviorException( "CudaMemcpy (host to device) error:" + string(cudaGetErrorString(error)));
 	}
 	
-	return force_store_rw_data(emdata,cuda_rw_data);
+	return blind_store_rw_data(emdata,cuda_rw_data);
 }
 
-int EMData::CudaDeviceEMDataCache::force_store_rw_data(const EMData* const emdata, float*  cuda_rw_data)
+int EMData::CudaCache::blind_store_rw_data(const EMData* const emdata, float*  cuda_rw_data)
 {	
 // 	debug_print();
 	rw_cache[current_insert_idx] = cuda_rw_data;
@@ -562,9 +563,9 @@ int EMData::CudaDeviceEMDataCache::force_store_rw_data(const EMData* const emdat
 	return ret;
 }
 
-int EMData::CudaDeviceEMDataCache::store_rw_data(const EMData* const emdata, float* cuda_rw_data)
+int EMData::CudaCache::store_rw_data(const EMData* const emdata, float* cuda_rw_data)
 {	
-	check_for_space();
+	ensure_slot_space();
 	
 	int nx = emdata->get_xsize();
 	int ny = emdata->get_ysize();
@@ -572,10 +573,10 @@ int EMData::CudaDeviceEMDataCache::store_rw_data(const EMData* const emdata, flo
 	size_t num_bytes = nx*ny*nz*sizeof(float);
 	mem_allocated += num_bytes;
 	
-	return force_store_rw_data(emdata, cuda_rw_data);
+	return blind_store_rw_data(emdata, cuda_rw_data);
 }
 
-void EMData::CudaDeviceEMDataCache::debug_print() const {
+void EMData::CudaCache::debug_print() const {
 // 	cout << "Cuda device cache debug" << endl;
 	for(int i = 0; i < cache_size; ++i) {
 		int handle = -1;
@@ -596,7 +597,7 @@ void EMData::CudaDeviceEMDataCache::debug_print() const {
 	}
 }
 
-void EMData::CudaDeviceEMDataCache::replace_gpu_rw(const int idx,float* cuda_rw_data)
+void EMData::CudaCache::replace_gpu_rw(const int idx,float* cuda_rw_data)
 {
 	//clear_item(idx); // The ro data goes out of date anyway
 	if  ( rw_cache[idx] != 0) {
@@ -617,7 +618,7 @@ void EMData::CudaDeviceEMDataCache::replace_gpu_rw(const int idx,float* cuda_rw_
 	rw_cache[idx] = cuda_rw_data;
 }
 
-void EMData::CudaDeviceEMDataCache::check_for_space() {
+void EMData::CudaCache::ensure_slot_space() {
 	
 	int checked_entries = 0;
 	while ( checked_entries < cache_size) {
@@ -644,12 +645,12 @@ void EMData::CudaDeviceEMDataCache::check_for_space() {
 	}	
 }
 
-float* EMData::CudaDeviceEMDataCache::alloc_rw_data(const int nx, const int ny, const int nz) {
+float* EMData::CudaCache::alloc_rw_data(const int nx, const int ny, const int nz) {
 	float* cuda_rw_data;
 	size_t num_bytes = nx*ny*nz*sizeof(float);
 
 	cudaError_t error = cudaMalloc((void**)&cuda_rw_data,num_bytes);
-	if ( error != cudaSuccess) throw UnexpectedBehaviorException( "cudaMalloc error:" + string(cudaGetErrorString(error)));	
+	if ( error != cudaSuccess) throw BadAllocException( "cudaMalloc error :" + string(cudaGetErrorString(error)));	
 
 	
 //	float* testing;
@@ -657,23 +658,15 @@ float* EMData::CudaDeviceEMDataCache::alloc_rw_data(const int nx, const int ny, 
 //	cudaMallocPitch( (void**)&testing, &pitch, nx*sizeof(float), ny*nz);
 //	cout << "The pitch of that malloc as " << pitch << endl;
 //	cudaFree(testing);
-	if (cuda_rw_data == 0) {
-		stringstream ss;
-		string gigs;
-		ss << (float) num_bytes/1000000000.0;
-		ss >> gigs;
-		string message = "GPU - Can't allocate " + gigs + " GB - not enough memory.";
-		throw BadAllocException(message);
-		//throw BadAllocException("Cuda malloc failed, memory may be exhaused");
-	}
+
 	mem_allocated += num_bytes;
 // 	cout << "Allocation went up, it is currently " << (float)mem_allocated/1000000.0f << " MB " << endl;
 	return cuda_rw_data;
 	
 }
 
-int EMData::CudaDeviceEMDataCache::cache_ro_data(const EMData* const emdata, const float* const data,const int nx, const int ny, const int nz) {
-	check_for_space();
+int EMData::CudaCache::cache_ro_data(const EMData* const emdata, const float* const data,const int nx, const int ny, const int nz) {
+	ensure_slot_space();
 		
 	cudaArray *array = get_cuda_array_host(data,nx,ny,nz);
 	if (array != 0) {
@@ -694,7 +687,7 @@ int EMData::CudaDeviceEMDataCache::cache_ro_data(const EMData* const emdata, con
 }
 
 
-void  EMData::CudaDeviceEMDataCache::copy_rw_to_ro(const int idx) {
+void  EMData::CudaCache::copy_rw_to_ro(const int idx) {
 // 	cout << "Copy rw to ro " << idx << endl;
 	if (rw_cache[idx] == 0) throw UnexpectedBehaviorException("Can not update RO CUDA data: RW data is null.");
 
@@ -714,7 +707,7 @@ void  EMData::CudaDeviceEMDataCache::copy_rw_to_ro(const int idx) {
 	ro_cache[idx] = array;
 }
 
-void  EMData::CudaDeviceEMDataCache::copy_ro_to_rw(const int idx) {
+void  EMData::CudaCache::copy_ro_to_rw(const int idx) {
 // 	cout << "Copy ro to rw " << idx << endl;
 	if (ro_cache[idx] == 0) throw UnexpectedBehaviorException("Can not update RW CUDA data: RO data is null.");
 
@@ -757,7 +750,7 @@ void  EMData::CudaDeviceEMDataCache::copy_ro_to_rw(const int idx) {
 }
 
 
-void  EMData::CudaDeviceEMDataCache::copy_ro_to_cpu(const int idx,float* data) {
+void  EMData::CudaCache::copy_ro_to_cpu(const int idx,float* data) {
 	if (ro_cache[idx] == 0) throw UnexpectedBehaviorException("Can not update RW CUDA data: RO data is null.");
 	if (data == 0) throw NullPointerException("The cpu data pointer is NULL in copy_ro_to_cpu");
 
@@ -788,7 +781,7 @@ void  EMData::CudaDeviceEMDataCache::copy_ro_to_cpu(const int idx,float* data) {
 	} else throw UnexpectedBehaviorException("Cuda infrastructure has not been designed to work on 1D data");
 	
 }
-void EMData::CudaDeviceEMDataCache::clear_item(const int idx) {
+void EMData::CudaCache::clear_item(const int idx) {
 // 	debug_print();
 	if  ( rw_cache[idx] != 0) {
 		mem_allocated -= get_emdata_bytes(idx);
@@ -811,10 +804,6 @@ void EMData::CudaDeviceEMDataCache::clear_item(const int idx) {
 	locked[idx] = 0;
 }
 
-EMData::CudaDataLock::CudaDataLock(const int handle) : data_cuda_handle(handle)
-{
-	EMData::cuda_cache.lock(data_cuda_handle);
-}
 
 EMData::CudaDataLock::CudaDataLock(const EMData* const emdata) : data_cuda_handle(emdata->cuda_cache_handle)
 {
@@ -825,15 +814,5 @@ EMData::CudaDataLock::~CudaDataLock() {
 	EMData::cuda_cache.unlock(data_cuda_handle);
 }
 
-		
-//CudaDataLock& EMData::CudaDataLock::operator=(const CudaDataLock& that)  {
-//	if (this != &that) {
-//		data_cuda_handle = that.data_cuda_handle;
-//	}
-//	return  *this;
-//}
-//CudaDataLock(const CudaDataLock& that ) : data_cuda_handle(that.data_cuda_handle) {
-//	
-//}
 
 #endif //EMAN2_USING_CUDA

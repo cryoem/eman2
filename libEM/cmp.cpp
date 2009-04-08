@@ -653,13 +653,12 @@ float PhaseCmp::cmp(EMData * image, EMData *with) const
 {
 	ENTERFUNC;
 	//In the middle of this - Not quite yet... I'm heading to D.C.... March 31st
-// #ifdef EMAN2_USING_CUDA
-// 	if (image->gpu_operation_preferred()) {
-// 		EXITFUNC;
-// 		return cuda_cmp(image,with);
-// 		
-// 	}
-// #endif
+#ifdef EMAN2_USING_CUDA
+ 	if (image->gpu_operation_preferred()) {
+ 		EXITFUNC;
+ 		return cuda_cmp(image,with);
+ 	}
+#endif
 	validate_input_args(image, with);
 
 	static float *dfsnr = 0;
@@ -669,9 +668,9 @@ float PhaseCmp::cmp(EMData * image, EMData *with) const
 // 		throw ImageDimensionException("2D only");
 // 	}
 
-	int nx = image->get_xsize();
+	//int nx = image->get_xsize();
 	int ny = image->get_ysize();
-	int nz = image->get_zsize();
+	//int nz = image->get_zsize();
 
 	int np = (int) ceil(Ctf::CTFOS * sqrt(2.0f) * ny / 2) + 2;
 
@@ -702,16 +701,26 @@ float PhaseCmp::cmp(EMData * image, EMData *with) const
 	double norm = FLT_MIN;
 	int i = 0;
 
-	for (float z = 0; z < nz; ++z){
-		for (float y = 0; y < ny; y++) {
-			for (int x = 0; x < nx + 2; x += 2) {
+	for (float z = 0; z < image_fft->get_zsize(); ++z){
+		for (float y = 0; y < image_fft->get_ysize(); y++) {
+			for (int x = 0; x < image_fft->get_xsize(); x += 2) {
 				int r;
 #ifdef	_WIN32
-				if (y<ny/2) r = Util::round(_hypot(x / 2, y) * Ctf::CTFOS);
-				else r = Util::round(_hypot(x / 2, y-ny) * Ctf::CTFOS);
+//				if ( nz == 1 ) {
+					if (y<ny/2) r = Util::round(_hypot(x / 2, y) * Ctf::CTFOS);
+					else r = Util::round(_hypot(x / 2, y-ny) * Ctf::CTFOS);
+//				}
 #else
-				if (y<ny/2) r = Util::round(hypot(x / 2, y) * Ctf::CTFOS);
-				else r = Util::round(hypot(x / 2, y-ny) * Ctf::CTFOS);
+//				if ( nz == 1 ) {
+					if (y<ny/2) r = Util::round(hypot(x / 2, y) * Ctf::CTFOS);
+					else r = Util::round(hypot(x / 2, y-ny) * Ctf::CTFOS);
+//				} else {
+//					int yy = y;
+//					int zz = z;
+//					if (y >= ny/2) yy = y - ny;
+//					if (z >= nz/2) zz = z - nz;
+//					r = Util::round(hypot3(x / 2, yy,zz) * Ctf::CTFOS);
+//				}
 #endif
 				float a = dfsnr[r] * with_fft_data[i];
 // 				cout << a << " " << Util::angle_sub_2pi(image_fft_data[i + 1], with_fft_data[i + 1]) << " " <<image_fft_data[i + 1] << " " << with_fft_data[i + 1] << endl;
@@ -784,25 +793,35 @@ float PhaseCmp::cuda_cmp(EMData * image, EMData *with) const
 		int ny = image->get_ysize();
 		int nz = image->get_zsize();
 		weighting.set_size_cuda(nx,ny,nz);
+		// Size of weighting need only be half this, but does that translate into faster code?
+		//weighting.set_size_cuda(nx/2,ny,nz);
 		float np = (int) ceil(Ctf::CTFOS * sqrt(2.0f) * ny / 2) + 2;
 		EMDataForCuda tmp = weighting.get_data_struct_for_cuda();
 		calc_phase_weights_cuda(&tmp,np);
+		//weighting.write_image("phase_wieghts.hdf");
+		image_size = size;
 	}
 	
 	EMDataForCuda hist[hist_pyramid.size()];
 	EMDataForCuda norm[hist_pyramid.size()];
 	
+	EMDataForCuda wt = weighting.get_data_struct_for_cuda();
+	EMData::CudaDataLock lock1(&weighting);
 	for(unsigned int i = 0; i < hist_pyramid.size(); ++i ) {
 		hist[i] = hist_pyramid[i].get_data_struct_for_cuda();
+		hist_pyramid[i].cuda_lock();
 		norm[i] = norm_pyramid[i].get_data_struct_for_cuda();
+		norm_pyramid[i].cuda_lock();
 	}
 	
 	EMData *image_fft = image->do_fft_cuda();
 	EMDataForCuda left = image_fft->get_data_struct_for_cuda();
+	EMData::CudaDataLock lock2(image_fft);
 // 	image_fft->ri2ap();
 	EMData *with_fft = with->do_fft_cuda();
 	EMDataForCuda right = with_fft->get_data_struct_for_cuda();
-	EMDataForCuda wt = weighting.get_data_struct_for_cuda();
+	EMData::CudaDataLock lock3(image_fft);
+	
 	mean_phase_error_cuda(&left,&right,&wt,hist,norm,hist_pyramid.size());
 	
 	float result;
@@ -812,6 +831,14 @@ float PhaseCmp::cuda_cmp(EMData * image, EMData *with) const
 	
 	delete image_fft; image_fft=0;
 	delete with_fft; with_fft=0;
+
+	for(unsigned int i = 0; i < hist_pyramid.size(); ++i ) {
+//		hist_pyramid[i].write_image("hist.hdf",-1); // debug
+//		norm_pyramid[i].write_image("norm.hdf",-1); // debug
+		hist_pyramid[i].cuda_unlock();
+		norm_pyramid[i].cuda_unlock();
+	}
+	
 	return result;
 
 }

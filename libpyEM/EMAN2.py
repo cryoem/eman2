@@ -1016,7 +1016,9 @@ def check_eman2_type(modoptstring, object, objectname, verbose=True):
 
 
 def qplot(img):
-	"""This will plot a 1D image using qplot"""
+	"""This will plot a 1D image using qplot
+	Note that display(img) will automatically plot 1D images.
+	"""
 	out=file("/tmp/plt.txt","w")
 	for i in range(img.get_xsize()):
 		out.write("%d\t%f\n"%(i,img.get_value_at(i,0)))
@@ -1030,6 +1032,10 @@ def error_exit(s) :
 	exit(1)
 
 def write_test_refine_data(num_im=1000):
+	'''
+	This is for testing purposes - for instance if you want to see if e2refine.py is working
+	Writes some crudely simulated particle data and a starting model to disk
+	'''
 	threed = test_image_3d()
 	sym = Symmetries.get("c1")
 	angles = sym.gen_orientations("rand",{"n":num_im})
@@ -1044,7 +1050,9 @@ def write_test_refine_data(num_im=1000):
 	threed.write_image("bdb:refine_1#starting_model",-1)
 	
 def write_test_boxing_images(name="test_box",num_im=10,type=0,n=100):
+	'''
 	
+	'''	
 	if type == 0:
 		window_size=(128,128)
 		image_size=(4096,4096)

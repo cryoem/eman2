@@ -2845,7 +2845,7 @@ class PawelAutoBoxer(AutoBoxer):
 		self.parent.guictl.gauss_width.setText( str(self.gauss_width) )
 		self.parent.guictl.use_variance.setChecked( self.use_variance )
 		self.parent.guictl.invert_contrast_mic.setChecked( self.invert )
-		self.parent.guictl.normalization_options.setCurrentIndex( 1 )
+		#self.parent.guictl.ssetCurrentIndex( 1 )
 
 		if self.source == "loaded":
 			"show the reduced map"

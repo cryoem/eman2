@@ -52,6 +52,7 @@ from pickle import dumps,loads
 
 from emglobjects import EMOpenGLFlagsAndTools, EMGUIModule
 from emapplication import EMGUIModule
+from emimageutil import EMMetaDataTable
 
 from emanimationutil import SingleValueIncrementAnimation, LineAnimation
 
@@ -396,8 +397,9 @@ class EMImage2DModule(EMGUIModule):
 				#self.load_default_scale_origin()
 				self.qt_context_parent.restoreGeometry(self.parent_geometry)
 			else:
-				self.qt_context_parent.resize(*self.get_parent_suggested_size())
-				self.load_default_scale_origin()
+				new_size = self.get_parent_suggested_size()
+				self.qt_context_parent.resize(*new_size)
+				self.load_default_scale_origin(new_size)
 		else:
 			self.gl_widget.resize(*self.get_parent_suggested_size())
 			self.load_default_scale_origin()
@@ -407,10 +409,10 @@ class EMImage2DModule(EMGUIModule):
 		data = self.data
 		if data == None: data = self.fft
 		
-		if data != None and  data.get_xsize()<800 and data.get_ysize()<800: 
+		if data != None and  data.get_xsize()<640 and data.get_ysize()<640: 
 			return (data.get_xsize()+12,data.get_ysize()+12)
 		else:
-			return (800,800)
+			return (640,640)
 	
 	allim=WeakKeyDictionary()
 	def __init__(self, image=None,application=None):
@@ -435,7 +437,7 @@ class EMImage2DModule(EMGUIModule):
 		self.display_fft = None		# a cached version of the FFT
 		self.fft=None				# The FFT of the current target if currently displayed
 		self.rmousedrag=None		# coordinates during a right-drag operation
-		self.mmode=0				# current mouse mode as selected by the inspector
+		self.mmode=-1				# current mouse mode as selected by the inspector
 		self.curfft=0				# current FFT mode (when starting with real images only)
 		self.mag = 1.1				# magnification factor
 		self.invmag = 1.0/self.mag	# inverse magnification factor
@@ -525,16 +527,20 @@ class EMImage2DModule(EMGUIModule):
 	
 	
 	def set_mouse_mode(self,mode):
-		self.mmode = mode
+		if self.mmode == mode: return
+		
 		if mode == 0:
 			self.mouse_event_handler = self.mouse_event_handlers["emit"]
 		elif mode == 1:
 			self.mouse_event_handler = self.mouse_event_handlers["measure"]
 		elif mode == 2:
 			self.mouse_event_handler = self.mouse_event_handlers["draw"]
+		elif mode == 3: # metadata mode, just go to emit mode, it's fine
+			self.mouse_event_handler = self.mouse_event_handlers["emit"]
 		else:
 			print "unknown mouse mode:",mode
 			return
+		self.mmode = mode
 		
 	def get_minden(self): return self.minden
 	def get_maxden(self): return self.maxden
@@ -702,12 +708,20 @@ class EMImage2DModule(EMGUIModule):
 		if not isinstance(data,list):
 			self.get_inspector().disable_image_range()
 		
-	def load_default_scale_origin(self):
+	def load_default_scale_origin(self,size_specified=None):
+		'''
+		Size specified is just a way of saying that the height of self.gl_widget is not
+		currently correct, for example. It's used in self.optimally_resize
+		'''
 		self.scale=1.0				# self.origin=(0,0)Scale factor for display
 		self.origin = (0,0)
 		##try: 
-		w = self.gl_widget.width()
-		h = self.gl_widget.height()
+		if size_specified:
+			w = size_specified[0]
+			h = size_specified[1]
+		else:
+			w = self.gl_widget.width()
+			h = self.gl_widget.height()
 		data = self.get_data_dims()
 		if data[0] == 0 or data[1] == 0: raise
 		scalew = float(w)/data[0]
@@ -1741,6 +1755,14 @@ class EMImageInspector2D(QtGui.QWidget):
 		
 		self.mmtab.addTab(self.drawtab,"Draw")
 		
+		try:
+			md = self.target().data.get_attr_dict()
+			self.metadatatab = EMMetaDataTable(self,md)
+			self.mmtab.addTab(self.metadatatab,"Meta Data")
+		except:
+			# the target doesn't have data yet?
+			pass
+		
 		self.vbl.addWidget(self.mmtab)
 		
 		# histogram level horiz layout
@@ -1964,7 +1986,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		
 	def set_limits(self,lowlim,highlim,curmin,curmax):
 		if highlim<=lowlim : highlim=lowlim+.001
-		print "in set limits", self.conts.getValue(), self.conts.getValue()
+		#print "in set limits", self.conts.getValue(), self.conts.getValue()
 		self.lowlim=lowlim
 		self.highlim=highlim
 		self.mins.setRange(lowlim,highlim)

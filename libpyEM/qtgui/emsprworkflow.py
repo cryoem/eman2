@@ -1761,7 +1761,11 @@ class E2BoxerOutputTask(E2BoxerTask):
 		pinv = ParamDef(name="invert_output",vartype="boolean",desc_short="Invert",desc_long="Do you want the pixel intensities in the output inverted?",property=None,defaultunits=db.get("invert_output",dfl=False),choices=None)
 		pn =  ParamDef(name="normproc",vartype="string",desc_short="Normalize images",desc_long="How the output box images should be normalized",property=None,defaultunits=db.get("normproc",dfl="normalize.edgemean"),choices=["normalize","normalize.edgemean","none"])
 		pop = ParamDef(name="outformat",vartype="string",desc_short="Output image format",desc_long="The format of the output box images",property=None,defaultunits=db.get("outformat",dfl="bdb"),choices=["bdb","img","hdf"])
+		
 		#db_close_dict(self.form_db_name)
+		pwb.dependents = ["invert_output","normproc","outformat"] # these are things that become disabled when the pwb checkbox is unchecked etc
+		
+		
 		params.append([pbox,pfo])
 		params.append([pwc,pwb,pinv])
 		params.append(pn)

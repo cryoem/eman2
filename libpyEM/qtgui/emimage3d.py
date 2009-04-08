@@ -103,7 +103,7 @@ class EMImage3DGeneralWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionVi
 		glLightfv(GL_LIGHT0, GL_POSITION, [-4,.1,1.,0.])
 		GL.glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
 		glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_TRUE)
-		GL.glClearColor(1,1,1,1)
+		GL.glClearColor(.8,.8,.8,1)
 		#GL.glClearAccum(0,0,0,0)
 	
 		glShadeModel(GL_SMOOTH)
@@ -238,7 +238,7 @@ class EMImage3DWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMatri
 		
 		glClearStencil(0)
 		glEnable(GL_STENCIL_TEST)
-		glClearColor(1,1,1,1)
+		glClearColor(.8,.8,.8,1)
 		try:
 			self.target().initializeGL()
 		except:

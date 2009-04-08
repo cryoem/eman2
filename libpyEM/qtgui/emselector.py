@@ -182,23 +182,24 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.application = weakref.ref(app)
 		
 	def __init_icons(self):
-		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "/display_icon.png"))
-		self.folder_icon = QtGui.QIcon(get_image_directory() + "/Folder.png")
-		self.folder_files_icon = QtGui.QIcon(get_image_directory() + "/FolderFiles.png")
-		self.file_icon = QtGui.QIcon(get_image_directory() + "/File.png")
-		self.database_icon = QtGui.QIcon(get_image_directory() + "/database.png")
-		self.key_icon = QtGui.QIcon(get_image_directory() + "/Key.png")
-		self.basic_python_icon = QtGui.QIcon(get_image_directory() + "/boxhabanosclose.png")
-		self.dict_python_icon = QtGui.QIcon(get_image_directory() + "/Bag.png")
-		self.ab_refboxes_icon = QtGui.QIcon(get_image_directory() + "/black_box.png")
-		self.ab_manboxes_icon = QtGui.QIcon(get_image_directory() + "/black_box.png")
-		self.ab_autoboxes_icon = QtGui.QIcon(get_image_directory() + "/green_boxes.png")
-		self.emdata_icon = QtGui.QIcon(get_image_directory() + "/single_image.png")
-		self.emdata_3d_icon = QtGui.QIcon(get_image_directory() + "/single_image_3d.png")
-		self.emdata_matrix_icon = QtGui.QIcon(get_image_directory() + "/multiple_images.png")
-		self.emdata_matrix_3d_icon = QtGui.QIcon(get_image_directory() + "/multiple_images_3d.png")
-		self.up_arrow_icon = QtGui.QIcon(get_image_directory() + "/up_arrow.png")
-		self.plot_icon = QtGui.QIcon(get_image_directory() + "/plot.png")
+		directory = get_image_directory()
+		self.setWindowIcon(QtGui.QIcon(directory + "/display_icon.png"))
+		self.folder_icon = QtGui.QIcon(directory + "/Folder.png")
+		self.folder_files_icon = QtGui.QIcon(directory + "/FolderFiles.png")
+		self.file_icon = QtGui.QIcon(directory + "/File.png")
+		self.database_icon = QtGui.QIcon(directory + "/database.png")
+		self.key_icon = QtGui.QIcon(directory + "/Key.png")
+		self.basic_python_icon = QtGui.QIcon(directory + "/boxhabanosclose.png")
+		self.dict_python_icon = QtGui.QIcon(directory + "/Bag.png")
+		self.ab_refboxes_icon = QtGui.QIcon(directory + "/black_box.png")
+		self.ab_manboxes_icon = QtGui.QIcon(directory + "/black_box.png")
+		self.ab_autoboxes_icon = QtGui.QIcon(directory + "/green_boxes.png")
+		self.emdata_icon = QtGui.QIcon(directory + "/single_image.png")
+		self.emdata_3d_icon = QtGui.QIcon(directory + "/single_image_3d.png")
+		self.emdata_matrix_icon = QtGui.QIcon(directory + "/multiple_images.png")
+		self.emdata_matrix_3d_icon = QtGui.QIcon(directory + "/multiple_images_3d.png")
+		self.up_arrow_icon = QtGui.QIcon(directory + "/up_arrow.png")
+		self.plot_icon = QtGui.QIcon(directory + "/plot.png")
 
 	def __init_plot_options(self):
 		self.replace = QtGui.QRadioButton("Replace")
@@ -344,6 +345,10 @@ class EMSelectorDialog(QtGui.QDialog):
 		first_item = selected_items[0]
 		
 		md = first_item.get_metadata()
+		nx = md["nx"]
+		ny = md["ny"]
+		nz = md["nz"]
+
 		multi_images_all_same_dims = False
 		if md != None and len(selected_items) > 1:
 			req_keys = ["nx","ny","nz"]
@@ -356,10 +361,7 @@ class EMSelectorDialog(QtGui.QDialog):
 				multi_images_all_same_dims = True
 				# this means I think it's an emdata. This is potentially a fatal assumption, but unlikely for the time being
 				# now check to make sure all other selected items have the samve value
-				nx = md["nx"]
-				ny = md["ny"]
-				nz = md["nz"]
-
+				
 				for i in range(1,len(selected_items)):
 					mdt = selected_items[i].get_metadata()
 					gtgt = True # good to go tmp
@@ -396,7 +398,10 @@ class EMSelectorDialog(QtGui.QDialog):
 			# These are customized actions that somewhat break the modularity, but I don't think it's too bad
 			menu.addSeparator()
 			menu.addAction("Save As Stack")
-			if nz == 1: menu.addAction("Preview Subset")
+			if nz == 1: 
+				menu.addAction("Preview Subset")
+		
+		if nz == 1 and ny > 1:	menu.addAction("Open in e2boxer")
 			
 		QtCore.QObject.connect(menu,QtCore.SIGNAL("triggered(QAction*)"),self.menu_action_triggered)
 		self.action_list_widget = l # only set if the menu acutally triggers
@@ -420,6 +425,25 @@ class EMSelectorDialog(QtGui.QDialog):
 			for item in self.menu_selected_items:
 				data.append(item.get_data())
 			self.preview_data(data,"")
+		elif action.text() == "Open in e2boxer":
+			names = []
+			for item in self.menu_selected_items:
+				names.append(item.get_path())
+			from e2boxer import EMBoxerModule, EmptyObject
+			options = EmptyObject()
+			options.filenames = names
+			cwd = e2getcwd()
+			options.running_mode = "gui"
+			options.method = "Swarm"
+			options.boxsize=128
+			if db_check_dict("bdb:e2boxer.project"):
+				db = db_open_dict("bdb:e2boxer.project")
+				if db.has_key("working_boxsize"):
+					options.boxsize = db["working_boxsize"] 
+			
+			self.boxer_module = EMBoxerModule(self.application(),options)
+			self.boxer_module.show_guis()
+				
 		else:		
 			msg = QtGui.QMessageBox()
 			
@@ -1093,6 +1117,13 @@ class EMListingItem:
 		Returns a dictionary if defined
 		'''
 		return None
+	
+	def get_path(self):
+		'''
+		Returns the file name path
+		DB items have to use a special syntax
+		'''
+		return None
 
 
 class EMFSListingItem(EMListingItem):
@@ -1111,6 +1142,9 @@ class EMFSListingItem(EMListingItem):
 		
 	def save_as(self,target):
 		return save_as(self.full_path,target.application())
+	
+	def get_path(self):
+		return self.full_path
 	
 class EMFS2DImageStackItem(EMFSListingItem):
 	def __init__(self,type,full_name):
@@ -1628,22 +1662,25 @@ class EMDB2DImageStackItem(EMListingItem):
 		self.context_menu_options["Save As"] = self.save_as
 		
 	def do_preview(self,target):
-		db_name = "bdb:"+self.database_directory+"#"+self.database
+		db_name = self.get_path()
 		target.preview_data(None,db_name)	
 		return True
 	
 	def is_previewable(self): return True
 
 	def delete(self,target):
-		db_name = "bdb:"+self.database_directory+"#"+self.database
+		db_name = self.get_path()
 		try:
 			remove_file(db_name)
 			return True
 		except: return False
 		
 	def save_as(self,target):
-		db_name = "bdb:"+self.database_directory+"#"+self.database
+		db_name = self.get_path()
 		return save_as(db_name,target.application())
+	
+	def get_path(self):
+		return "bdb:"+self.database_directory+"#"+self.database
 
 class EMDBDictSingleImageItem(EMListingItem):
 	def __init__(self,type,db_directory,key,dictionary_keys):
@@ -1654,7 +1691,7 @@ class EMDBDictSingleImageItem(EMListingItem):
 		self.database_dictionary_keys = database_dictionary_keys
 	
 	def do_preview(self,target):
-		db_name = "bdb:"+self.database_directory+"#"+self.database
+		db_name = self.get_path()
 		db = db_open_dict(db_name)
 
 		for key in self.database_dictionary_keys:
@@ -1666,13 +1703,15 @@ class EMDBDictSingleImageItem(EMListingItem):
 	def is_previewable(self): return True
 	
 	def get_metadata(self):
-		db_name = "bdb:"+self.database_directory+"#"+self.database
+		db_name = self.get_path()
 		db = db_open_dict(db_name,ro=True)
 		for key in self.database_dictionary_keys:
 			db = db[key]
 		
 		return db.get_attr_dict()
-	
+
+	def get_path(self):
+		return "bdb:"+self.database_directory+"#"+self.database
 
 class EMDBSingleImageItem(EMListingItem):
 	def __init__(self,type,db_directory,key,k):
@@ -1684,7 +1723,7 @@ class EMDBSingleImageItem(EMListingItem):
 		self.context_menu_options["Save As"] = self.save_as
 
 	def do_preview(self,target):
-		db_name = "bdb:"+self.database_directory+"#"+self.database
+		db_name = self.get_path()
 		db = db_open_dict(db_name,ro=True)
 		
 		data = db[self.database_key]
@@ -1694,18 +1733,21 @@ class EMDBSingleImageItem(EMListingItem):
 	def is_previewable(self): return True
 
 	def get_metadata(self):
-		db_name = "bdb:"+self.database_directory+"#"+self.database
+		db_name = self.get_path()
 		db = db_open_dict(db_name,ro=True)
 		data = db.get_header(self.database_key)
 		return data
 	
 	def get_data(self):
-		db_name = "bdb:"+self.database_directory+"#"+self.database
+		db_name = self.get_path()
 		return EMData(db_name,self.database_key)
 		
 	def save_as(self,target):
-		db_name = "bdb:"+self.database_directory+"#"+self.database
+		db_name = self.get_path()
 		return save_as(db_name,target.application(),self.database_key)
+	
+	def get_path(self):
+		return "bdb:"+self.database_directory+"#"+self.database
 
 class EMDBPlotItem(EMListingItem):
 	def __init__(self,type,db_directory,key,k):
