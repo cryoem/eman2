@@ -367,13 +367,13 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	from utilities    import set_params2D, get_params2D
 	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, bcast_number_to_all, send_attr_dict, file_type
 	from utilities    import send_EMData, recv_EMData
-	from statistics   import add_ave_varf_MPI, add_ave_varf_ML_MPI, ave_series
+	from statistics   import add_ave_varf_MPI, ave_series
 	from alignment    import Numrinit, ringwe, ali2d_random_ccf, ali2d_single_iter
 	from filter       import filt_tophatb
 	from morphology   import ctf_2
 	from numpy        import reshape, shape
 	from utilities    import print_msg, print_begin_msg, print_end_msg
-	from fundamentals import fft, rot_avg_table, rot_shift2D
+	from fundamentals import fft, rot_shift2D, fshift
 	from random       import randint, random
 	from math         import sqrt, sin, pi
 	import os
@@ -661,9 +661,6 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				real_tavg = tavg.copy()
 				tavg = fft(Util.divn_img(fft(tavg), vav))
 
-				if Iter == max_iter-1:
-					drop_image(tavg, os.path.join(outdir, "SSNR%02d_%02d.hdf"%(ipt, color)))
-
 				ref_data[2] = tavg
 				#  call user-supplied function to prepare reference image, i.e., center and filter it
 				if center == -1:
@@ -674,13 +671,15 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					cs[1] = float(sy_sum[0])/nima
 					pixel_error = float(pixel_error[0])/(nima-mirror_change)
 					mirror_change = float(mirror_change[0])/nima
-					from fundamentals import fshift
 					tavg = fshift(tavg, -cs[0], -cs[1])
 					msg += "Average center x =	 %10.3f	   Center y 	= %10.3f\n"%(cs[0], cs[1])
 					msg += "Mirror change =   	 %10.3f	   Pixel error 	= %10.3f\n"%(mirror_change, pixel_error)
 					#if mirror_change < 0.004 and pixel_error < 0.2: again = 0
 				else:
 					tavg, cs = user_func(ref_data)
+
+				if Iter == max_iter-1:
+					drop_image(tavg, os.path.join(outdir, "aqf%02d_%02d.hdf"%(ipt, color)))
 					
 				#a1 = tavg.cmp("dot", tavg, dict(negative = 0, mask = ref_data[0]))
 				select = float(select)/float(nima)
@@ -2063,6 +2062,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	from statistics   import fsc_mask, add_oe_series
 	from alignment    import Numrinit, ringwe, ali2d_single_iter
 	from filter       import filt_ctf, filt_table
+	from fundamentals import fshift
 	from morphology   import ctf_2
 	from utilities    import print_begin_msg, print_end_msg, print_msg
 	import os
@@ -2204,7 +2204,6 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 				tavg, cs = user_func(ref_data)
 				cs[0] = sx_sum/float(nima)
 				cs[1] = sy_sum/float(nima)
-				from fundamentals import fshift
 				tavg = fshift(tavg, -cs[0], -cs[1])
 				msg = "Average center x =      %10.3f        Center y       = %10.3f\n"%(cs[0], cs[1])
 				print_msg(msg)
@@ -2242,6 +2241,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	from filter       import filt_table, filt_ctf
 	from morphology   import ctf_2
 	from numpy        import reshape, shape
+	from fundamentals import fshift
 	from utilities    import print_msg, print_begin_msg, print_end_msg
 	import os
 	import sys
@@ -2465,7 +2465,6 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					tavg, cs = user_func(ref_data)
 					cs[0] = float(sx_sum)/nima
 					cs[1] = float(sy_sum)/nima
-					from fundamentals import fshift
 					tavg = fshift(tavg, -cs[0], -cs[1])
 					msg = "Average center x =      %10.3f        Center y       = %10.3f\n"%(cs[0], cs[1])
 					print_msg(msg)
@@ -2480,16 +2479,17 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				# write the current filtered average
 				drop_image(tavg, os.path.join(outdir, "aqf_%03d.hdf"%(total_iter)))
 				if a1 < a0:
-					if auto_stop == True: 
+					if auto_stop: 
 						again = False
 						break
 				else:	a0 = a1
 
-			again = mpi_bcast(again, 1, MPI_INT, main_node, MPI_COMM_WORLD)
 			bcast_EMData_to_all(tavg, myid, main_node)
 			cs = mpi_bcast(cs, 2, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 			cs = [float(cs[0]), float(cs[1])]
-			if not again: break
+			if auto_stop:
+				again = mpi_bcast(again, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+				if not again: break
 			if total_iter == len(xrng)*Iter: break 
 
 			sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode)
