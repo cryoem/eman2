@@ -46,6 +46,7 @@ def minfilt( fscc ):
 	flmax = -1.0
 	for iref in xrange(numref):
 		fl, aa = fit_tanh( fscc[iref] )
+		print "fl,aa: ", fl, aa
 		if (fl < flmin):
 			flmin = fl
 			aamin = aa
@@ -567,11 +568,14 @@ def spruce_up_var_m( refdata ):
 
 
 	flmin,aamin=minfilt( fscc )
+        if aamin > 0.2:
+            aamin = aamin/2
 	print 'flmin,aamin:', flmin, aamin
+
 	for i in xrange(numref):
 		v = get_im( outdir + ("/vol%04d.hdf"% total_iter) , i )
 		v.filter_by_image( varf )
-		volf = filt_tanl(v, flmin, aamin/2)
+		volf = filt_tanl(v, flmin, aamin)
 		stat = Util.infomask(v, None, True)
 		volf -= stat[0]
 		Util.mul_scalar(volf, 1.0/stat[1])
@@ -582,7 +586,7 @@ def spruce_up_var_m( refdata ):
 		Util.mul_img( volf, mask )
 
 		volf = threshold(volf)
-		volf = filt_gaussl( volf, 0.4 )
+		volf = filt_tanl( volf, flmin, aamin)
 
 		if ali50S:
 			if i==0:
@@ -638,7 +642,7 @@ def constant( ref_data ):
 	global  ref_ali2d_counter
 	ref_ali2d_counter += 1
 	#print_msg("steady   #%6d\n"%(ref_ali2d_counter))
-	fl = 0.4
+	fl = 0.1
 	aa = 0.1
 	#msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
 	#print_msg(msg)
