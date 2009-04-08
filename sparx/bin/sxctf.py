@@ -76,11 +76,11 @@ images far from focus."""
 	parser.add_option("--ac",type="float",help="Amplitude contrast (percentage, default=10)",default=10)
 	parser.add_option("--autohp",action="store_true",help="Automatic high pass filter of the SNR only to remove initial sharp peak, phase-flipped data is not directly affected (default false)",default=False)
 	#parser.add_option("--invert",action="store_true",help="Invert the contrast of the particles in output files (default false)",default=False)
-	#parser.add_option("--nonorm",action="store_true",help="Suppress per image real-space normalization",default=False)
+	parser.add_option("--nonorm",action="store_true",help="Suppress per image real-space normalization",default=False)
 	parser.add_option("--nosmooth",action="store_true",help="Disable smoothing of the background (running-average of the log with adjustment at the zeroes of the CTF)",default=False)
 	#parser.add_option("--phaseflip",action="store_true",help="Perform phase flipping after CTF determination and writes to specified file.",default=False)
 	#parser.add_option("--wiener",action="store_true",help="Wiener filter (optionally phaseflipped) particles.",default=False)
-	#parser.add_option("--oversamp",type="int",help="Oversampling factor",default=1)
+	parser.add_option("--oversamp",type="int",help="Oversampling factor",default=1)
 	parser.add_option("--sf",type="string",help="The name of a file containing a structure factor curve. Can improve B-factor determination.",default=None)
 	parser.add_option("--debug",action="store_true",default=False)
 	
