@@ -537,7 +537,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 
 		tavg = fft(Util.divn_img(fft(tavg), vav))
 
-		drop_image(tavg, os.path.join(outdir, "initial_SSNR%02d.hdf"%(color)))
+		drop_image(tavg, os.path.join(outdir, "initial_aqf%02d.hdf"%(color)))
 		a0 = Util.infomask(SSNR, maskI, True)
 		sum_SSNR = a0[0]
 		#a0 = tavg.cmp("dot", tavg, dict(negative = 0, mask = mask))
