@@ -3928,6 +3928,7 @@ vector<double> Util::cml_weights(const vector<float>& cml){
 
     if(num_agl>2){
 	vector<double> w=Util::vrdg(newphi, newtht);
+	
         Assert( w.size()==newphi.size() );
         Assert( indices.size()==newphi.size() );
 
@@ -7021,7 +7022,7 @@ void Util::voronoi(double *phi, double *theta, double *weight, int nt)
 	free(iwk);
 	free(good);
 	free(key);
-
+	free(lptr);
 	free(indx);
 	free(lcnt);
 	free(ds);
