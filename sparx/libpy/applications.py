@@ -3113,6 +3113,8 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 			# replace the name of the stack with reference with the current one
 			refim = os.path.join(outdir,"aqm%03d.hdf"%Iter)
 			a1 = 0.0
+			ave_fsc = [0] * 33
+			c_fsc   = 0
 			for j in xrange(numref):
 				if refi[j][2] < 4:
 					#ERROR("One of the references vanished","ali2d_m_MPI",1)
@@ -3120,6 +3122,7 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 					assign[j] = []
 					assign[j].append( randint(image_start, image_end-1) - image_start )
 					refi[j][0] = data[assign[j][0]].copy()
+					#print 'ERROR', j
 				else:
 					if CTF:
 						for i in xrange(lctf):  ctm[i] = 1.0 / (ctf2[j][0][i] + 1.0/snr)
@@ -3139,17 +3142,32 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 						frsc = fsc(refi[j][0], refi[j][1], 1.0, os.path.join(outdir,"drm%03d%04d"%(Iter,j)))
 						Util.add_img( refi[j][0], refi[j][1] )
 						Util.mul_scalar( refi[j][0], 1.0/float(refi[j][2]) )
-					"""
+					
 					#  low pass filter references
-					lowfq, highfq = filt_params(frsc, low = 0.1)
-					refi[j][0] = filt_btwl(refi[j][0], lowfq, highfq)
-					refi[j][0], csx, csy = center_2D(refi[j][0], center)
-					msg = "   group #%3d   filter parameters = %6.4f, %6.4f,  center parameters (x,y) = %10.3e, %10.3e\n"%(j, lowfq, highfq, csx, csy)
-					print_msg(msg)
-					"""
-					ref_data[2] = refi[j][0]
-					ref_data[3] = frsc
-					refi[j][0], cs = user_func(ref_data)
+					#lowfq, highfq = filt_params(frsc, low = 0.1)
+					#refi[j][0] = filt_btwl(refi[j][0], lowfq, highfq)
+					#refi[j][0], csx, csy = center_2D(refi[j][0], center)
+					#msg = '   group' #%3d   filter parameters = %6.4f, %6.4f,  center parameters (x,y) = %10.3e, %10.3e\n"%(j, lowfq, highfq, csx, csy)
+					#print_msg(msg)
+				        	
+					if frsc[1][0] == frsc[1][0]: # this manage the problem of NaN				
+						for i in xrange(len(frsc[1])): ave_fsc[i] += frsc[1][i]
+						c_fsc += 1
+					#print 'OK', j, len(frsc[1]), frsc[1][0:5], ave_fsc[0:5]			
+
+
+			print 'sum', sum(ave_fsc)
+			if sum(ave_fsc) != 0:		
+				for i in xrange(len(ave_fsc)):
+					ave_fsc[i] /= float(c_fsc)
+					frsc[1][i]  = ave_fsc[i]
+			
+			for j in xrange(numref):
+						
+				ref_data[2]    = refi[j][0]
+				ref_data[3]    = frsc
+				refi[j][0], cs = user_func(ref_data)	
+
 				# write the current average
 				TMP = []
 				for i_tmp in xrange(len(assign[j])): TMP.append(float(assign[j][i_tmp]))
@@ -6599,7 +6617,7 @@ def ali3d_eB_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CT
 				ref_data.append( fscc )
 				#  call user-supplied function to prepare reference image, i.e., filter it
 				vol = user_func( ref_data )
-				#  HERE CS SHOULD BE USED TO MODIFY PROJECTIONS' PARAMETERS  !!!
+				#  HERE CS SHOULD BE USED TO MODIFY PROJECTIONS PARAMETERS  !!!
 				del ref_data[2]
 				del ref_data[2]
 				drop_image(vol, os.path.join(outdir, replace("volf%3d_%3d.hdf"%(iteration, ic),' ','0') ))
