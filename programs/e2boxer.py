@@ -145,7 +145,6 @@ for single particle analysis."""
 	parser.add_option("--out_dir",default=False,help="Directory to write particle files to")
 
 	(options, args) = parser.parse_args()
-	print options,args
 	filenames = []
 	error_message = []
 	for arg in args:
@@ -1876,51 +1875,6 @@ class EMBoxerModule(QtCore.QObject):
 
 	def gen_thumbs(self):
 		self.imagethumbs = gen_thumbs(self.image_names,self.application(),self.get_image_thumb_shrink())
-#		import gc
-#		try: nim = len(self.image_names)
-#		except: 
-#			# warning - bad hacking going on
-#			print "the image name ", image_name, "probably doesn't exist"
-#			return
-#		progress = EMProgressDialogModule(self.application(),"Generating thumbnails", "Abort", 0, nim,None)
-#		progress.qt_widget.show()
-#		prog = 0
-#		n = self.get_image_thumb_shrink()
-#		for i in range(n):
-#			
-##				thumb = self.get_image_thumb(i)
-#			thumb = get_idd_image_entry(self.image_names[i],"image_thumb")
-#			if thumb == None:
-#				
-#				#global BigImageCache
-#				thumb=EMData(self.image_names[i],0)
-#				#while n > 1:
-#					#image = image.process("math.meanshrink",{"n":2})
-#					#n /= 2
-#				
-#				thumb.process_inplace("math.meanshrink",{"n":n})
-#	   	   	   	#thumb.process_inplace("testimage.noise.uniform.rand")
-#				thumb.process_inplace("normalize.edgemean") # if there are lots than they =should all have the same contrast
-##				#set_idd_image_entry(self.image_names[i],"image_thumb",thumb)
-##				image = None
-##					print sys.getrefcount(image)
-##				return thumb
-#	   	   	gc.collect()
-#	   	   	print "collected"
-#			prog += 1
-#			progress.qt_widget.setValue(prog)
-#			self.application().processEvents()
-#			#print "got thumb",i
-#			self.imagethumbs[i] = thumb
-#				
-#			if progress.qt_widget.wasCanceled():
-#				progress.qt_widget.setValue(nim)
-#				progress.qt_widget.close()
-#				self.done()
-#				return -1 # woh don't know if this will work
-#		progress.qt_widget.setValue(nim)
-#		progress.qt_widget.close()
-				
 
 	def __gen_image_thumbnails_widget(self):
 		'''
@@ -1941,28 +1895,9 @@ class EMBoxerModule(QtCore.QObject):
 		
 		app = QtGui.QApplication.instance()
 		app.setOverrideCursor(QtCore.Qt.BusyCursor)
-	
-#		try:
-	#	if True:
-#		n = self.get_image_thumb_shrink()
-#		
-##			a = time()
-#		self.imagethumbs = []
-#		
-#		for i in range(0,nim):
-#			self.imagethumbs.append(None)
 		
 		self.gen_thumbs()
 
-#				
-		
-#		glflags = EMOpenGLFlagsAndTools()
-#		emftgl_supported = True
-#		try: a = EMFTGL()
-#		except: emftgl_supported = False
-		#if not glflags.npt_textures_unsupported() and emftgl_supported:
-			#self.guimxit=EMImageRotorModule(application=self.application)
-		#else:
 		self.guimxit=EMImageMXModule(application=self.application())
 		self.guimxit.desktop_hint = "rotor"
 			
@@ -2085,12 +2020,6 @@ class EMBoxerModule(QtCore.QObject):
 	
 	def mouse_drag(self,event) :
 		self.mousehandler.mouse_drag(event)
-	
-	#def update_ppc(self):
-		#if self.mouseclicks > 0:
-			#self.guictl.ppc_changed(len(self.get_boxes())/float(self.mouseclicks))
-		#else:
-			#self.guictl.ppc_changed(0)
 	
 	def collision_detect(self,m,boxes):
 			

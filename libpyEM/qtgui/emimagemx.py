@@ -368,12 +368,18 @@ class EMMatrixPanel:
 		
 		self.scale_cache = {}
 	
-	def update_panel_params(self,view_width,view_height,view_scale,view_data,y):
+	def update_panel_params(self,view_width,view_height,view_scale,view_data,y,target):
 		rendered_image_width = (view_data.get_xsize())*view_scale
 		rendered_image_height = view_data.get_ysize()*view_scale
 		
 		[self.ystart,self.visiblerows,self.visiblecols] = self.visible_row_col(view_width,view_height,view_scale,view_data,y)
-		if self.ystart == None: return 
+		if self.ystart == None: 
+			scale = self.get_min_scale(view_width,view_height,view_scale,view_data)
+			target.scale = scale
+			view_scale = scale
+			[self.ystart,self.visiblerows,self.visiblecols] = self.visible_row_col(view_width,view_height,view_scale,view_data,y)
+			if self.ystart == None: 
+				print "kill me now....please"
 		xsep = view_width - self.visiblecols*(rendered_image_width+self.min_sep)
 		self.xoffset = xsep/2		
 		
@@ -387,7 +393,8 @@ class EMMatrixPanel:
 		visiblecols = int(floor(view_width/(rendered_image_width+self.min_sep)))
 		
 		if visiblecols == 0: 
-			print "scale is too large - the panel can not be rendered"
+			#print "scale is too large - the panel can not be rendered"
+			# The calling function should be sophisticated enough to handle this
 			return [None,None,None]
 		
 		
@@ -881,7 +888,7 @@ class EMImageMXModule(EMGUIModule):
 		
 		oldscale = self.scale
 		self.scale=newscale
-		self.matrix_panel.update_panel_params(self.view_width(),self.gl_widget.height(),self.scale,self.data,self.origin[1])
+		self.matrix_panel.update_panel_params(self.view_width(),self.gl_widget.height(),self.scale,self.data,self.origin[1],self)
 		
 		
 		view_height = self.gl_widget.height()
@@ -890,7 +897,7 @@ class EMImageMXModule(EMGUIModule):
 			if oldscale > newscale: self.scale =  self.matrix_panel.get_min_scale(self.view_width(),self.gl_widget.height(),self.scale,self.data) # this is to prevent locking
 			self.draw_scroll = False
 			self.origin=(self.matrix_panel.min_sep,self.matrix_panel.min_sep)
-			self.matrix_panel.update_panel_params(self.view_width(),self.gl_widget.height(),self.scale,self.data,self.origin[1])
+			self.matrix_panel.update_panel_params(self.view_width(),self.gl_widget.height(),self.scale,self.data,self.origin[1],self)
 		else:
 			self.draw_scroll = True
 			self.scroll_bar.update_target_ypos()	
@@ -901,14 +908,14 @@ class EMImageMXModule(EMGUIModule):
 	def resize_event(self, width, height):
 		self.scroll_bar.height = height
 		
-		self.matrix_panel.update_panel_params(self.view_width(),height,self.scale,self.data,self.origin[1])
+		self.matrix_panel.update_panel_params(self.view_width(),height,self.scale,self.data,self.origin[1],self)
 		view_height = self.gl_widget.height()
 		panel_height = self.matrix_panel.height
 		if panel_height < view_height :
 			self.scale =  self.matrix_panel.get_min_scale(self.view_width(),self.gl_widget.height(),self.scale,self.data) # this is to prevent locking
 			self.draw_scroll = False
 			self.origin=(self.matrix_panel.min_sep,self.matrix_panel.min_sep)
-			self.matrix_panel.update_panel_params(self.view_width(),self.gl_widget.height(),self.scale,self.data,self.origin[1])
+			self.matrix_panel.update_panel_params(self.view_width(),self.gl_widget.height(),self.scale,self.data,self.origin[1],self)
 		else:
 			self.draw_scroll = True
 			self.scroll_bar.update_target_ypos()	
@@ -1030,7 +1037,7 @@ class EMImageMXModule(EMGUIModule):
 				render = True
 		else: render = True
 		
-		self.matrix_panel.update_panel_params(self.view_width(),self.gl_widget.height(),self.scale,self.data,self.origin[1])
+		self.matrix_panel.update_panel_params(self.view_width(),self.gl_widget.height(),self.scale,self.data,self.origin[1],self)
 		
 		if render: 
 			if self.draw_background:
@@ -1079,6 +1086,7 @@ class EMImageMXModule(EMGUIModule):
 			nsets = len(self.data.visible_sets)
 			current_sets = copy.copy(self.data.visible_sets)
 			current_sets.sort()
+			
 			for row in range(self.matrix_panel.ystart,self.matrix_panel.visiblerows):
 				for col in range(0,self.matrix_panel.visiblecols):
 					i = int((row)*self.matrix_panel.visiblecols+col)
