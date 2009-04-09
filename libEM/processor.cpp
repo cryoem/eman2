@@ -7271,7 +7271,7 @@ EMData* TransformProcessor::process(const EMData* const image) {
 	EMData* p  = 0;
 #ifdef EMAN2_USING_CUDA
 	if (image->gpu_operation_preferred()) {
-		
+// 		cout << "cuda transform" << endl;
 		float * m = new float[12];
 		Transform inv = t->inverse();
 		inv.copy_matrix_into_array(m);

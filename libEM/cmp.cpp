@@ -655,6 +655,7 @@ float PhaseCmp::cmp(EMData * image, EMData *with) const
 	//In the middle of this - Not quite yet... I'm heading to D.C.... March 31st
 #ifdef EMAN2_USING_CUDA
  	if (image->gpu_operation_preferred()) {
+// 		cout << "Cuda cmp" << endl;
  		EXITFUNC;
  		return cuda_cmp(image,with);
  	}
@@ -755,13 +756,16 @@ float PhaseCmp::cuda_cmp(EMData * image, EMData *with) const
 	ENTERFUNC;
 	validate_input_args(image, with);
 
-	typedef vector<EMData> EMDatas;
+	typedef vector<EMData*> EMDatas;
 	static EMDatas hist_pyramid;
 	static EMDatas norm_pyramid;
 	static EMData weighting;
 	static int image_size = 0;
 	
 	int size;
+	EMData::CudaDataLock imagelock(image);
+	EMData::CudaDataLock withlock(with);
+	
 	if (image->is_complex()) {
 		size = image->get_xsize();
 	} else {
@@ -770,23 +774,33 @@ float PhaseCmp::cuda_cmp(EMData * image, EMData *with) const
 		size = nx*image->get_ysize()*image->get_zsize();
 	}
 	if (size != image_size) {
+		for(unsigned int i =0; i < hist_pyramid.size(); ++i) {
+			delete hist_pyramid[i];
+			delete norm_pyramid[i];
+		}
 		hist_pyramid.clear();
 		norm_pyramid.clear();
 		int s = size;
-		if (s != 1) s = size/2 + size%2;
+		if (s < 1) throw UnexpectedBehaviorException("The image is 0 size");
+		int p2 = 1;
+		while ( s != 1 ) {
+			s /= 2;
+			p2 *= 2;
+		}
+		if ( p2 != size ) {
+			p2 *= 2;
+			s = p2;
+		}
+		if (s != 1) s /= 2;
 		while (true) {
-			hist_pyramid.push_back(EMData());
-			EMDatas::iterator p = (hist_pyramid.begin()+(hist_pyramid.size()-1));
-			p->set_size_cuda(s);
-			p->to_value(0.0);
-			norm_pyramid.push_back(EMData());
-			p = (norm_pyramid.begin()+(norm_pyramid.size()-1));
-			p->set_size_cuda(s);
-			p->to_value(0.0);
+			EMData* h = new EMData();
+			h->set_size_cuda(s); h->to_value(0.0);
+			hist_pyramid.push_back(h);
+			EMData* n = new EMData();
+			n->set_size_cuda(s); n->to_value(0.0);
+			norm_pyramid.push_back(n);
 			if ( s == 1) break;
-			int ns = s/2;
-			if ( s != 1) ns += s%2;
-			s = ns;
+			s /= 2;
 		}
 		int nx = image->get_xsize()+2;
 		nx -= nx%2; // for Fourier stuff
@@ -794,38 +808,36 @@ float PhaseCmp::cuda_cmp(EMData * image, EMData *with) const
 		int nz = image->get_zsize();
 		weighting.set_size_cuda(nx,ny,nz);
 		// Size of weighting need only be half this, but does that translate into faster code?
-		//weighting.set_size_cuda(nx/2,ny,nz);
+		weighting.set_size_cuda(nx/2,ny,nz);
 		float np = (int) ceil(Ctf::CTFOS * sqrt(2.0f) * ny / 2) + 2;
 		EMDataForCuda tmp = weighting.get_data_struct_for_cuda();
 		calc_phase_weights_cuda(&tmp,np);
 		//weighting.write_image("phase_wieghts.hdf");
 		image_size = size;
 	}
-	
+
 	EMDataForCuda hist[hist_pyramid.size()];
 	EMDataForCuda norm[hist_pyramid.size()];
 	
 	EMDataForCuda wt = weighting.get_data_struct_for_cuda();
 	EMData::CudaDataLock lock1(&weighting);
 	for(unsigned int i = 0; i < hist_pyramid.size(); ++i ) {
-		hist[i] = hist_pyramid[i].get_data_struct_for_cuda();
-		hist_pyramid[i].cuda_lock();
-		norm[i] = norm_pyramid[i].get_data_struct_for_cuda();
-		norm_pyramid[i].cuda_lock();
+		hist[i] = hist_pyramid[i]->get_data_struct_for_cuda();
+		hist_pyramid[i]->cuda_lock();
+		norm[i] = norm_pyramid[i]->get_data_struct_for_cuda();
+		norm_pyramid[i]->cuda_lock();
 	}
 	
 	EMData *image_fft = image->do_fft_cuda();
 	EMDataForCuda left = image_fft->get_data_struct_for_cuda();
 	EMData::CudaDataLock lock2(image_fft);
-// 	image_fft->ri2ap();
 	EMData *with_fft = with->do_fft_cuda();
 	EMDataForCuda right = with_fft->get_data_struct_for_cuda();
 	EMData::CudaDataLock lock3(image_fft);
 	
 	mean_phase_error_cuda(&left,&right,&wt,hist,norm,hist_pyramid.size());
-	
 	float result;
-	float* gpu_result = hist_pyramid[hist_pyramid.size()-1].get_cuda_data();
+	float* gpu_result = hist_pyramid[hist_pyramid.size()-1]->get_cuda_data();
 	cudaError_t error = cudaMemcpy(&result,gpu_result,sizeof(float),cudaMemcpyDeviceToHost);
 	if ( error != cudaSuccess) throw UnexpectedBehaviorException( "CudaMemcpy (host to device) in the phase comparator failed:" + string(cudaGetErrorString(error)));
 	
@@ -833,12 +845,13 @@ float PhaseCmp::cuda_cmp(EMData * image, EMData *with) const
 	delete with_fft; with_fft=0;
 
 	for(unsigned int i = 0; i < hist_pyramid.size(); ++i ) {
-//		hist_pyramid[i].write_image("hist.hdf",-1); // debug
-//		norm_pyramid[i].write_image("norm.hdf",-1); // debug
-		hist_pyramid[i].cuda_unlock();
-		norm_pyramid[i].cuda_unlock();
+// 		hist_pyramid[i]->write_image("hist.hdf",-1); // debug
+// 		norm_pyramid[i]->write_image("norm.hdf",-1); // debug
+		hist_pyramid[i]->cuda_unlock();
+		norm_pyramid[i]->cuda_unlock();
 	}
 	
+	EXITFUNC;
 	return result;
 
 }

@@ -13,6 +13,8 @@ __global__ void phase_cmp_weights(float* out, int num_threads, int nx, int ny, i
 	int tz = idx / nxy;
 	int ty = (idx - tz*nxy)/nx;
 	
+	tx /= 2;
+	
 	if (ty > ny/2) ty = ny-ty;
 	if (tz > nz/2) tz = nz-tz;
 	
@@ -61,7 +63,8 @@ void histogram_sum(EMDataForCuda* hist, const int num_hist){
 		EMDataForCuda* l = hist+i;
 		EMDataForCuda* r = hist+(i+1);
 		int max_threads = 512;
-		int num_calcs = r->nx*r->ny*r->nz;
+		int num_calcs = (l->nx*l->ny*l->nz)/2;
+		num_calcs += num_calcs%2;
 		int grid_y = num_calcs/(max_threads);
 		int res_y = num_calcs - grid_y*max_threads;
 	
@@ -100,18 +103,19 @@ __global__ void mean_phase_error_kernel(float *ldata,float *rdata,float *wdata,f
 
 	const uint idx = 2*x + y*num_threads;
 	const uint idxp1 = idx+1;
-	const uint idx2 = idx/2;	
 	
 	float l1 = ldata[idx];
 	float l2 = ldata[idxp1];
 	float amp = sqrtf(l1*l1+l2*l2);
 	float phase1 = atan2(l2,l1);
 	float r1 = rdata[idx];
-	float r2 = rdata[idx2];
+	float r2 = rdata[idxp1];
 	float phase2 = atan2(r2,r1);
 	
-	float a = wdata[idx2] * amp;
+	float a = wdata[idx] * amp;
 	float f = angle_sub_2pi(phase1,phase2) * a;
+	
+	const uint idx2 = idx/2;
 	hdata[idx2] = f;
 	ndata[idx2] = a;
 }

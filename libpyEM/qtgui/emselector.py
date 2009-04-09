@@ -345,9 +345,11 @@ class EMSelectorDialog(QtGui.QDialog):
 		first_item = selected_items[0]
 		
 		md = first_item.get_metadata()
-		nx = md["nx"]
-		ny = md["ny"]
-		nz = md["nz"]
+		nx,ny,nz=1,1,1
+		if md != None:
+			nx = md["nx"]
+			ny = md["ny"]
+			nz = md["nz"]
 
 		multi_images_all_same_dims = False
 		if md != None and len(selected_items) > 1:

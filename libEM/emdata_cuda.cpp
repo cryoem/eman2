@@ -44,7 +44,7 @@
 
 using namespace EMAN;
 // Static init
-EMData::CudaCache EMData::cuda_cache(50);
+EMData::CudaCache EMData::cuda_cache(100);
 
 float* EMData::get_cuda_data() const {
 	if (get_size() == 0 ) throw UnexpectedBehaviorException("The size of the data is 0?");
@@ -323,7 +323,7 @@ EMData *EMData::make_rotational_footprint_cuda( bool unwrap)
 EMData* EMData::calc_ccfx_cuda( EMData * const with, int y0, int y1, bool no_sum)
 {
 	ENTERFUNC;
-
+// 	cout << "calc_ccfx cuda" << endl;
 	if (!with) {
 		LOGERR("NULL 'with' image. ");
 		throw NullPointerException("NULL input image");
@@ -560,6 +560,7 @@ int EMData::CudaCache::blind_store_rw_data(const EMData* const emdata, float*  c
 	current_insert_idx += 1;
 	current_insert_idx %= cache_size; // Potentially inefficient to do this every time, the alternative is an if statement. Which is faster?
 	if ( current_insert_idx > cache_size ) throw;// This is just for debug
+// 	cout << "Inserted at " << ret  << " inc to " << current_insert_idx << " size " << get_emdata_bytes(ret)/sizeof(float) << endl;
 	return ret;
 }
 
@@ -577,7 +578,7 @@ int EMData::CudaCache::store_rw_data(const EMData* const emdata, float* cuda_rw_
 }
 
 void EMData::CudaCache::debug_print() const {
-// 	cout << "Cuda device cache debug" << endl;
+	cout << "Cuda device cache debug. Total mem allocated: " << static_cast<float>(mem_allocated)/1000000.0 << "MB" << endl;
 	for(int i = 0; i < cache_size; ++i) {
 		int handle = -1;
 		int nx = 0;
@@ -591,7 +592,7 @@ void EMData::CudaCache::debug_print() const {
 		}
 // 		if (caller_cache[i] == 0) continue; // temporary debug
 // 		if ( handle == -1 )  {
-		cout << i << ": " << handle << " " << caller_cache[i] << " " << nx << " " << ny << " " << nz << " locked: " << locked[i] << " rw " << rw_cache[i] << " ro " << ro_cache[i] << endl;
+		cout << i << ": " << handle << " " << caller_cache[i] << " dims: " << nx << " " << ny << " " << nz << " locked: " << locked[i] << " rw " << rw_cache[i] << " ro " << ro_cache[i] << endl;
 // 			throw UnexpectedBehaviorException("Weird, th handle was -1!");
 // 		}
 	}
@@ -650,7 +651,10 @@ float* EMData::CudaCache::alloc_rw_data(const int nx, const int ny, const int nz
 	size_t num_bytes = nx*ny*nz*sizeof(float);
 
 	cudaError_t error = cudaMalloc((void**)&cuda_rw_data,num_bytes);
-	if ( error != cudaSuccess) throw BadAllocException( "cudaMalloc error :" + string(cudaGetErrorString(error)));	
+	if ( error != cudaSuccess) {
+		debug_print();
+		throw BadAllocException( "cudaMalloc error :" + string(cudaGetErrorString(error)));	
+	}
 
 	
 //	float* testing;
@@ -679,6 +683,7 @@ int EMData::CudaCache::cache_ro_data(const EMData* const emdata, const float* co
 		int ret = current_insert_idx;
 		current_insert_idx += 1;
 		current_insert_idx %= cache_size; // Potentially inefficient to do this everytime, the alternative is an if statement. Which is faster?
+// 		cout << "Inserted at " << ret  << " inc to " << current_insert_idx << " size " << nx*ny*nz << endl;
 		return ret; 
 	}
 	else {
@@ -805,8 +810,10 @@ void EMData::CudaCache::clear_item(const int idx) {
 }
 
 
-EMData::CudaDataLock::CudaDataLock(const EMData* const emdata) : data_cuda_handle(emdata->cuda_cache_handle)
+EMData::CudaDataLock::CudaDataLock(const EMData* const emdata) : data_cuda_handle(-1)
 {
+	emdata->set_gpu_rw_current();
+	data_cuda_handle = emdata->cuda_cache_handle;
 	EMData::cuda_cache.lock(data_cuda_handle);
 }
 

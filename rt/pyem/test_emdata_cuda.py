@@ -46,8 +46,20 @@ IS_TEST_EXCEPTION = False
 class TestEMDataCuda(unittest.TestCase):
 	"""this is the unit test that verifies the CUDA functionality of the EMData class"""
 	
+	def test_cuda_phase_comparator(self):
+		"""test cuda phase comparator ......................."""
+		for z in [1,15,16]:
+			for y in [15,16]:
+				for x in [15,16]:
+					e = EMData()
+					e.set_size(x,y,1)
+					e.process_inplace("testimage.noise.uniform.rand")
+					f = e.copy()
+					c = e.cmp("phase",f)
+					self.assertAlmostEqual(c,0,4)
+	
 	def test_cuda_calc_ccfx(self):
-		"""test cuda calc_ccfx ..............................."""
+		"""test cuda calc_ccfx .............................."""
 		for y in [15,16]:
 			for x in [15,16]:
 				e = EMData()
@@ -185,7 +197,7 @@ class TestEMDataCuda(unittest.TestCase):
 		self.__test_cuda_basic_operation("mult",2.0)
 	
 	def test_cuda_basic_division(self):
-		"""test cuda basic division ;........................"""
+		"""test cuda basic division ........................."""
 		self.__test_cuda_basic_operation("div",2.0)
 	
 	def test_cuda_basic_addition(self):

@@ -106,6 +106,7 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 	bool use_cpu = true;
 #ifdef EMAN2_USING_CUDA
 	if (this_img->gpu_operation_preferred() ) {
+// 		cout << "Translate on GPU" << endl;
 		use_cpu = false;
 		cf = this_img->calc_ccf_cuda(to,false,false);
 	}
@@ -187,7 +188,6 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 EMData * RotationalAligner::align_180_ambiguous(EMData * this_img, EMData * to, int rfp_mode) {
 	
 	// Make translationally invariant rotational footprints
-	
 	EMData* this_img_rfp, * to_rfp;
 	if (rfp_mode == 0) {
 		this_img_rfp = this_img->make_rotational_footprint_e1();
@@ -203,14 +203,14 @@ EMData * RotationalAligner::align_180_ambiguous(EMData * this_img, EMData * to, 
 	}
 	int this_img_rfp_nx = this_img_rfp->get_xsize();
 
-	// Perform the column wise FT (or something like that, unsure of precise details)
+	// Do row-wise correlation, returning a sum.
 	EMData *cf = this_img_rfp->calc_ccfx(to_rfp, 0, this_img->get_ysize());
 
 	// Delete them, they're no longer needed
 	delete this_img_rfp; this_img_rfp = 0;
 	delete to_rfp; to_rfp = 0;
 
-	// Now solve the rotational alignment directly
+	// Now solve the rotational alignment by finding the max in the column sum
 	float *data = cf->get_data();
 	float peak = 0;
 	int peak_index = 0;
@@ -245,12 +245,14 @@ EMData *RotationalAligner::align(EMData * this_img, EMData *to,
 	float rotate_angle_solution = rot["alpha"];
 	
 	// Get a copy of the rotationally aligned image that is rotated 180
+// 	cout << "rot aligned gpu? " << rot_aligned->gpu_operation_preferred() << endl;
 	EMData *rot_align_180 = rot_aligned->process("math.rotate.180");
-	
+// 	cout << "rot aligned 180 gpu? " << rot_align_180->gpu_operation_preferred() << to->gpu_operation_preferred() << endl;;
 	// Generate the comparison metrics for both rotational candidates
 	float rot_cmp = rot_aligned->cmp(cmp_name, to, cmp_params);
+// 	cout << "And then " << to->gpu_operation_preferred() << endl;
 	float rot_180_cmp = rot_align_180->cmp(cmp_name, to, cmp_params);
-
+// 	cout << "sssrot aligned 180 gpu? " << rot_align_180->gpu_operation_preferred() <<	endl;
 	// Decide on the result
 	float score = 0.0;
 	EMData* result = NULL;

@@ -1941,13 +1941,13 @@ The basic design of EMAN Processors: <br>\
 		void set_params(const Dict & new_params)
 		{
 			CircularMaskProcessor::set_params(new_params);
-			value = params["value"];
+			value = params.set_default("value",0);
 		}
 
 		TypeDict get_param_types() const
 		{
 			TypeDict d = CircularMaskProcessor::get_param_types();
-			d.put("value", EMObject::FLOAT, "step cutoff to this value.");
+			d.put("value", EMObject::FLOAT, "step cutoff to this value. Default is 0.");
 			return d;
 		}
 		

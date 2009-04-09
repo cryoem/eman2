@@ -42,7 +42,7 @@ public:
 	 * associated data. 
 	 * The following code demontrates use of this object
 	 *@code
-	 *    {
+	 *    {//make a temporary scope
      *    EMData e("something.mrc"); 
      *    e.set_gpu_rw_current(); // Copy data to GPU
      *    CudaDataLock tmp_lock(&e); // GPU data is locked
@@ -144,7 +144,7 @@ public:
 		flags |= EMDATA_NEEDUPD | EMDATA_CPU_NEEDS_UPDATE | EMDATA_GPU_RO_NEEDS_UPDATE;
 	}
 	
-	/* Get the column sum as an EMData object using CUDA
+	/** Get the column sum as an EMData object using CUDA
 	 * Return object exists solely on the GPU
 	 * @exception ImageDimensionException if this image is not 2D
 	 * @return an EMData object that stores the column sum of this image and exists on the GPU
@@ -160,7 +160,7 @@ public:
 	void copy_cpu_to_gpu_rw();
 	
 	// A long term solution?
-	inline void set_gpu_rw_current() { 
+	inline void set_gpu_rw_current() const { 
 		get_cuda_data();
 	}
 	
@@ -175,6 +175,8 @@ public:
 	void copy_gpu_ro_to_cpu() const;
 	
 	void print_this() const { cout << "this " << this << " " << cuda_cache_handle << endl; }
+	
+	
 	
 	
 	/** Lock the associated cuda data
@@ -467,6 +469,9 @@ private:
 	
 	/// Cuda device pointer cache
 	static CudaCache cuda_cache;
+	
+public:
+	void cuda_cache_debug_print() const { cuda_cache.debug_print(); }
 	
 #endif // EMAN2_USING_CUDA
 	
