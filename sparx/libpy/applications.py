@@ -2398,6 +2398,10 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				for k in xrange(2):
 					ctf2n[k][i] = 1.0/(ctf2[k][i] + 1.0/snr)
 		del  ctf2
+		# need_CTF_again = False
+		need_CTF_again = True
+	else:
+		need_CTF_again = False
 
 	numr = Numrinit(first_ring, last_ring, rstep, mode) 	#precalculate rings
  	wr = ringwe(numr, mode)
@@ -2513,7 +2517,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				again = mpi_bcast(again, 1, MPI_INT, main_node, MPI_COMM_WORLD)
 				if not again: break
 			if total_iter != max_iter*len(xrng): 
-				sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode)
+				sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, need_CTF_again)
 				sx_sum = mpi_reduce(sx_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 				sy_sum = mpi_reduce(sy_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 
