@@ -3323,6 +3323,17 @@ c
 }
 
 
+vector<float> Util::Crosrng_msg_vec_p(EMData* circ1, EMData* circ2, vector<int> numr ) {
+
+	int maxrin = numr[numr.size()-1];
+
+        vector<float> r(2*maxrin);
+
+        Crosrng_msg_vec( circ1, circ2, numr, &r[0], &r[maxrin] );
+
+        return r;
+}
+
 #define  dout(i,j)        dout[i+maxrin*j]
 #define  circ1b(i)        circ1b[i-1]
 #define  circ2b(i)        circ2b[i-1]

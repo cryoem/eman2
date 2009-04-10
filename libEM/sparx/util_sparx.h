@@ -425,6 +425,7 @@ class FakeKaiserBessel : public KaiserBessel {
 	static EMData* Crosrng_msg_s(EMData* circ1, EMData* circ2, vector<int> numr);
 	static EMData* Crosrng_msg_m(EMData* circ1, EMData* circ2, vector<int> numr);
 
+	static vector<float> Crosrng_msg_vec_p(EMData* circ1, EMData* circ2, vector<int> numr );
 	static void  prb1d(double *b, int npoint, float *pos);
 
 	static void update_fav(EMData* ave,EMData* dat, float tot, int mirror, vector<int> numr);
