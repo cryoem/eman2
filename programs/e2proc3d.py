@@ -250,7 +250,7 @@ def main():
                     zc = z/2
                     
                 if x != nx or y != ny or z != nz:
-                	data = data.get_clip(Region(xc-nx/2, yc-ny/2, zc-nz/2, nx, ny, nz))
+                	data.clip_inplace(Region(xc-nx/2, yc-ny/2, zc-nz/2, nx, ny, nz))
                 	index_d[option1] += 1
 
             elif option1 == "sym":
