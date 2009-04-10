@@ -2354,6 +2354,17 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	if CTF: 
 		from morphology import ctf_img
 		ctf_2_sum = EMData(nx, nx, 1, False)
+
+	# generate the mask in Fourier space
+	maskI = EMData(nx, nx, 1, False)
+	for x in xrange((nx+2)/2):
+		for y in xrange(nx):
+ 			if y > nx/2-1: yy = y-nx
+			else: yy = y
+			if x**2+yy**2 < (nx*0.49)**2:
+				maskI.set_value_at(x*2, y, 1) 
+	maskI.set_value_at(0, 0, 0)
+	maskI.set_value_at(1, 0, 0)
 	#################################### Temp stuff (end) ####################################
 	
 	for im in xrange(image_start, image_end):
@@ -2457,6 +2468,8 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				#################################### Temp stuff (begin) #################################
 				drop_image(vav, os.path.join(outdir, "vav_%03d.hdf"%(total_iter)))
 				tavg = fft(Util.divn_img(fft(tavg), vav))
+				sum_SSNR = Util.infomask(SSNR, maskI, True)
+				sum_SSNR = sum_SSNR[0]
 				#################################### Temp stuff (end) ####################################
 
 				frsc = fsc_mask(av1, av2, ref_data[0], 1.0, os.path.join(outdir, "resolution%03d"%(total_iter)))
@@ -2478,7 +2491,8 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 
 				# a0 should increase; stop algorithm when it decreases.    
 				a1 = tavg.cmp("dot", tavg, dict(negative = 0, mask = ref_data[0]))
-				msg = "Iteration   #%5d	     criterion = %20.7e\n"%(total_iter, a1)
+				#msg = "Iteration   #%5d	     criterion = %20.7e\n"%(total_iter, a1)
+				msg = "Iteration   #%5d	     criterion = %20.7e\n"%(total_iter, sum_SSNR)
 				print_msg(msg)
 				
 				# write the current filtered average
@@ -2488,6 +2502,9 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 						again = False
 						break
 				else:	a0 = a1
+			else:
+				tavg = EMData(nx, nx, 1, True)
+				cs = [0.0]*2
 
 			bcast_EMData_to_all(tavg, myid, main_node)
 			cs = mpi_bcast(cs, 2, MPI_FLOAT, main_node, MPI_COMM_WORLD)
@@ -2495,11 +2512,10 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			if auto_stop:
 				again = mpi_bcast(again, 1, MPI_INT, main_node, MPI_COMM_WORLD)
 				if not again: break
-			if total_iter == len(xrng)*Iter: break 
-
-			sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode)
-			sx_sum = mpi_reduce(sx_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
-			sy_sum = mpi_reduce(sy_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
+			if total_iter != max_iter*len(xrng): 
+				sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode)
+				sx_sum = mpi_reduce(sx_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
+				sy_sum = mpi_reduce(sy_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 
 	if myid == main_node:  drop_image(tavg, os.path.join(outdir, "aqfinal.hdf"))
 	# write out headers  and STOP, under MPI writing has to be done sequentially
