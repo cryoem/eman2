@@ -74,7 +74,7 @@ run e2parallel.py dcclient on as many other machines as possible, pointing at th
 	parser.add_option("--idleonly",action="store_true",help="Will only use CPUs on the local machine when idle",default=False)
 	
 	(options, args) = parser.parse_args()
-	if len(args)<1 or args[0] not in commandlist: parser.error("command required: "+commandlist)
+	if len(args)<1 or args[0] not in commandlist: parser.error("command required: "+str(commandlist))
 
 	if args[0]=="dcserver" :
 		rundcserver(options.port,options.verbose)
