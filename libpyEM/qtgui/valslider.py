@@ -100,6 +100,8 @@ class ValSlider(QtGui.QWidget):
 		
 		QtCore.QObject.connect(self.text, QtCore.SIGNAL("editingFinished()"), self.textChange)
 		QtCore.QObject.connect(self.slider, QtCore.SIGNAL("valueChanged(int)"), self.sliderChange)
+		QtCore.QObject.connect(self.slider, QtCore.SIGNAL("sliderReleased()"), self.sliderReleased)
+		QtCore.QObject.connect(self.slider, QtCore.SIGNAL("sliderPressed()"), self.sliderPressed)
 
 	def setRange(self,minv,maxv):
 		if maxv<=minv : maxv=minv+.001
@@ -155,6 +157,7 @@ class ValSlider(QtGui.QWidget):
 					self.value=float(x)
 				self.updates()
 				self.emit(QtCore.SIGNAL("valueChanged"),self.value)
+				self.emit(QtCore.SIGNAL("textChanged"),self.value)
 			except:
 				self.updateboth()
 				
@@ -167,6 +170,12 @@ class ValSlider(QtGui.QWidget):
 			if self.value==ov : return
 		self.updatet()
 		self.emit(QtCore.SIGNAL("valueChanged"),self.value)
+	
+	def sliderReleased(self):
+		self.emit(QtCore.SIGNAL("sliderReleased"),self.value)
+		
+	def sliderPressed(self):
+		self.emit(QtCore.SIGNAL("sliderPressed"),self.value)
 	
 	def setLabel(self,label):
 		self.label.setText(label)

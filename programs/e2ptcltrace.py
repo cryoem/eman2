@@ -286,7 +286,7 @@ def reduce(orienttracedata,sym):
 			angle = angular_deviation(t1,t2)
 			
 			for t in touching:
-				t2 = Transform({"type":"eman","az":o2[1],"alt":o2[0],"phi":o2[2]})
+				t2 = Transform({"type":"eman","az":o2[1],"alt":o2[0],"phi":o2[2]})*t
 				#t2 = Transform3D(o2[1],o2[0],o2[2])*t
 				
 				tmp = angular_deviation(t1,t2)

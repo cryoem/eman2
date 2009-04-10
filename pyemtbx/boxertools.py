@@ -361,7 +361,7 @@ class Box:
 			ccf  = image.calc_ccf(template)
 			#sig = image.calc_fast_sigma_image(None)
 			#ccf.div(sig)
-			trans = ccf.calc_max_location_wrap(-1,-1,-1)
+			trans = ccf.calc_max_location_wrap(image.get_xsize()/2,image.get_ysize()/2,image.get_zsize()/2)
 			dx = trans[0]
 			dy = trans[1]
 			
@@ -890,7 +890,9 @@ class CoarsenedFlattenedImage:
 			self.smallimage = tmp.copy()
 		else:
 			self.smallimage = tmp.process("math.meanshrink",{"n":shrink})
+			self.smallimage.process_inplace("filter.ramp")
 			self.smallimage.process_inplace("filter.flattenbackground",{"radius":flattenradius})
+			
 			
 		self.smallimage.set_attr("flatten_radius",flattenradius)
 		self.smallimage.set_attr("shrink_factor",shrink)
@@ -1479,7 +1481,7 @@ class Boxable:
 			return
 		
 		if oldimage != newimage:
-			print "warning with respect to",self.image_name,"- you are using information in the database that was generated using image",oldimage,"but now you're using", newimage,". This will potentially cause problems if the images are not equivalent. Suggest renaming the image or boxing it in a separate directory"
+#			print "warning with respect to",self.image_name,"- you are using information in the database that was generated using image",oldimage,"but now you're using", newimage,". This will potentially cause problems if the images are not equivalent. Suggest renaming the image or boxing it in a separate directory"
 			data["e2boxer_image_name"] = newimage
 			project_db.set_key_entry(self.get_dd_key(),data)
 		else:
@@ -2407,8 +2409,9 @@ class SwarmTemplate(Template):
 		
 		#ave.write_image("prealigned.hdf")
 		ave.mult(1.0/len(images_copy))
-		ave.process_inplace("math.radialaverage")
 		ave.process_inplace("xform.centeracf")
+		ave.process_inplace("math.radialaverage")
+		ave.process_inplace("normalize")
 		ave.process_inplace("mask.sharp",{'outer_radius':ave.get_xsize()/2})
 		
 		#for image in images_copy:
@@ -2419,7 +2422,7 @@ class SwarmTemplate(Template):
 		#black = EMData(image.get_xsize(),image.get_ysize())
 		#black.to_zero()
 		#black.write_image("aligned_refs.img",-1)
-		
+		ave.write_image("running_ave.hdf",-1)
 		#ave.write_image("ave.hdf")
 		shrink = self.autoboxer.get_subsample_rate()
 		# 4 is a magic number
@@ -2452,11 +2455,14 @@ class SwarmTemplate(Template):
 				ave.add(t[i])
 				
 			ave.mult(1.0/len(t))
-			ave.process_inplace("math.radialaverage")
 			ave.process_inplace("xform.centeracf")
+			ave.process_inplace("math.radialaverage")
+			ave.process_inplace("normalize")
+			
 			# edge normalize here SL before
 			ave.process_inplace("mask.sharp",{'outer_radius':ave.get_xsize()/2})
 			# or normalize and no mask
+			ave.write_image("running_ave.hdf",-1)
 		
 		#debug, un-comment to see the aligned refs and the final template
 		#for image in t:
@@ -2468,7 +2474,6 @@ class SwarmTemplate(Template):
 		#black.to_zero()
 		#black.write_image("aligned_refs.img",-1)
 		#END uncomment block
-		#ave.write_image("template.hdf",-1)
 		self.template = ave
 		ave.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.25})
 
@@ -3149,6 +3154,9 @@ class TrimSwarmAutoBoxer:
 		self.template = TrimSwarmTemplate(swarmAutoBoxer.template)
 		self.creation_ts= swarmAutoBoxer.creation_ts
 		self.convenienceString = swarmAutoBoxer.convenienceString
+		self.dummy_box = None
+		if swarmAutoBoxer.dummy_box != None:
+			self.dummy_box = TrimBox(swarmAutoBoxer.dummy_box)
 	
 	
 	def set_convenience_name(self,string):
@@ -3254,7 +3262,9 @@ class SwarmAutoBoxer(AutoBoxer):
 		self.convenienceString = trimSwarmAutoBoxer.convenienceString
 		self.template = SwarmTemplate(self)
 		self.template.become(trimSwarmAutoBoxer.template)
-		
+		if (trimSwarmAutoBoxer.dummy_box != None):
+			self.dummy_box = Box()
+			self.dummy_box.become(trimSwarmAutoBoxer.dummy_box)
 		# Things that only the SwarmAutoBoxer (not necessary for the TrimSwarmAutoBoxer to do this in its constructor
 		self.__update_ref_params()
 		
@@ -3440,7 +3450,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		'''
 		Returns what will be or is the template radius
 		'''
-		return int(self.box_size/2/self.get_subsample_rate())
+		return int(self.box_size/(2*self.get_subsample_rate()))
 	
 	def reference_moved(self,box):
 		'''
@@ -3548,7 +3558,7 @@ class SwarmAutoBoxer(AutoBoxer):
 			return -1
 			
 		if self.shrink == -1 or force:	
-			self.shrink = ceil(float(self.box_size)/float(self.templatedimmin))	
+			self.shrink = ceil(float(self.box_size)/float(self.templatedimmin))
 			
 		return self.shrink
 		
@@ -3611,7 +3621,7 @@ class SwarmAutoBoxer(AutoBoxer):
 			self.__paint_excluded_box_areas(exclusion,boxable.get_boxes()) # add circles where particles already exist
 
 			boxes = self.__auto_box(correlation,boxable,exclusion) # do the actual autoboxing 
-			print "Auto boxed",len(boxes)
+			#print "Auto boxed",len(boxes)
 
 			# Store the results in the database - for that we need "Trim
 			trimboxes = []
@@ -3635,7 +3645,7 @@ class SwarmAutoBoxer(AutoBoxer):
 			return 1
 
 		else: 
-			print 'no auto boxing was necessary, up-2-date' # DEBUG
+			#print 'no auto boxing was necessary, up-2-date' # DEBUG
 			
 			return 0
 		
@@ -3719,7 +3729,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		elif self.selection_mode == SwarmAutoBoxer.MORESELECTIVE:
 			mode = 2
 		
-		shrink = self.get_subsample_rate()
+		scale = self.get_subsample_rate()
 		# Warning, this search radius value should be the same as the one used by the BoxSets that contributed the reference boxes
 		# to this AutoBoxer object. There should be one place/function in the code where both parties access this value
 		searchradius = self.get_search_radius()
@@ -3736,8 +3746,8 @@ class SwarmAutoBoxer(AutoBoxer):
 		for b in soln:
 			x = b[0]
 			y = b[1]
-			xx = int(x*shrink)
-			yy = int(y*shrink)
+			xx = int(x*scale)
+			yy = int(y*scale)
 			box = Box(xx-self.box_size/2,yy-self.box_size/2,self.box_size,self.box_size,0)
 			box.set_image_name(boxable.get_image_name())
 			box.set_correlation_score(correlation.get(x,y))
@@ -3867,21 +3877,22 @@ class SwarmAutoBoxer(AutoBoxer):
 				profile = box.get_opt_profile()
 				for j in range(0,n):
 					if profile[j] < self.opt_profile[j]: self.opt_profile[j] = profile[j]
+		
 		if self.dummy_box != None:
 			box = self.dummy_box
 			
-			if found == False:
-				self.opt_threshold = box.get_correlation_score()
-				found = True
-			else:	
-				if box.get_correlation_score() < self.opt_threshold: self.opt_threshold = box.get_correlation_score()
+#			if found == False:
+			self.opt_threshold = box.get_correlation_score()
+#				found = True
+#			else:	
+#				if box.get_correlation_score() < self.opt_threshold: self.opt_threshold = box.get_correlation_score()
 			
-			if found == False:
-				self.opt_profile = copy(box.get_opt_profile())
-			else:
-				profile = box.get_opt_profile()
-				for j in range(0,n):
-					if profile[j] < self.opt_profile[j]: self.opt_profile[j] = profile[j]
+			#if found == False:
+				#self.opt_profile = copy(box.get_opt_profile())
+			#else:
+				#profile = box.get_opt_profile()
+				#for j in range(0,n):
+					#if profile[j] < self.opt_profile[j]: self.opt_profile[j] = profile[j]
 					
 					
 			#self.opt_profile = self.dummy_box.get_opt_profile()
@@ -3889,13 +3900,13 @@ class SwarmAutoBoxer(AutoBoxer):
 		
 	
 		# determine the point in the profile where the drop in correlation score is the greatest, store it in radius
-		self.opt_profile_radius = -1
-		tmp = self.opt_profile[0]
-		for i in range(1,self.get_constraining_radius()):
-			# the tmp > 0 is a
-			if self.opt_profile[i] > tmp and tmp > 0:
-				tmp = self.opt_profile[i]
-				self.opt_profile_radius = i
+		#self.opt_profile_radius = -1
+		#tmp = self.opt_profile[0]
+		#for i in range(1,self.get_constraining_radius()):
+			## the tmp > 0 is a
+			#if self.opt_profile[i] > tmp and tmp > 0:
+				#tmp = self.opt_profile[i]
+				#self.opt_profile_radius = i
 		
 		self.__plot_update()
 		#print 'NOW THEY ARE'

@@ -431,9 +431,14 @@ class EMImage2DModule(EMGUIModule):
 		self.gamma=1.0				# gamma for display (impact on inverted contrast ?
 		self.minden=0
 		self.maxden=1.0
+		self.curmin=0.0
+		self.curmax=0.0
+		self.maxden=1.0
 		self.fgamma = 1.0
 		self.fminden=0
 		self.fmaxden=1.0
+		self.fcurmin=0.0
+		self.fcurmax=0.0
 		self.display_fft = None		# a cached version of the FFT
 		self.fft=None				# The FFT of the current target if currently displayed
 		self.rmousedrag=None		# coordinates during a right-drag operation
@@ -550,27 +555,27 @@ class EMImage2DModule(EMGUIModule):
 	def set_density_range(self,x0,x1):
 		"""Set the range of densities to be mapped to the 0-255 pixel value range"""
 		if self.curfft == 0:
-			self.minden=x0
-			self.maxden=x1
+			self.curmin=x0
+			self.curmax=x1
 		else:
-			self.fminden=x0
-			self.fmaxden=x1
+			self.fcurmin=x0
+			self.fcurnax=x1
 		self.force_display_update()
 		self.updateGL()
 	
 	def set_density_min(self,val):
 		if self.curfft == 0:
-			self.minden=val
+			self.curmin=val
 		else:
-			self.fminden=val
+			self.curmax=val
 		self.force_display_update()
 		self.updateGL()
 		
 	def set_density_max(self,val):
 		if self.curfft == 0:
-			self.maxden=val
+			self.curmax=val
 		else:
-			self.fmaxden=val
+			self.fcurmax=val
 		self.force_display_update()
 		self.updateGL()
 	
@@ -733,17 +738,21 @@ class EMImage2DModule(EMGUIModule):
 		#print "scale is ", self.scale
 		#except: pass
 	
-	def auto_contrast(self,bool=False,inspector_update=True,display_update=True):
+	def auto_contrast(self,bool=False,inspector_update=False,display_update=True):
 		if self.curfft == 0:
 			if self.data == None: return
 			mean=self.data.get_attr("mean")
 			sigma=self.data.get_attr("sigma")
 			m0=self.data.get_attr("minimum")
 			m1=self.data.get_attr("maximum")
-			self.minden=max(m0,mean-8.0*sigma)
-			self.maxden=min(m1,mean+8.0*sigma)
+			self.minden=m0
+			self.maxden=m1
+			self.curmin = max(m0,mean-3.0*sigma)
+			self.curmax = min(m1,mean+3.0*sigma)
 			if inspector_update: self.inspector_update()
-			if display_update: self.force_display_update()
+			if display_update: 
+				self.force_display_update()
+				self.updateGL()
 		else:
 			if self.display_fft == None: return
 			
@@ -754,15 +763,18 @@ class EMImage2DModule(EMGUIModule):
 		
 			self.fminden=0
 			self.fmaxden=min(m1,mean+10.0*sigma)
+			self.fcurmin = max(0)
+			self.fcurmax = min(m1,mean+3.0*sigma)
 			
 			self.force_display_update()
 			
 			if inspector_update: self.inspector_update(use_fourier=True)
-			if display_update: self.updateGL()
+			if display_update:
+				self.force_display_update()
+				self.updateGL()
 
 	def __load_display_settings_from_db(self,inspector_update=True,display_update=True):
 		if self.file_name == "": return # there is no file name, we have no means to stores information
-		
 		try:
 			global HOMEDB
 			HOMEDB=EMAN2db.EMAN2DB.open_db()
@@ -778,8 +790,13 @@ class EMImage2DModule(EMGUIModule):
 		try:
 			self.minden = data["min"]
 			self.maxden = data["max"]
+			self.minden = data["min"]
 			self.fminden = data["fourier_min"]
 			self.fmaxden = data["fourier_max"]
+			self.curmin = data["curmin"]
+			self.curmax = data["curmax"]
+			self.fcurmin = data["fcurmin"]
+			self.fcurmax = data["fcurmax"]
 			self.fgamma = data["fourier_gamma"]
 			self.gamma = data["gamma"]
 			self.scale = data["scale"] 
@@ -818,8 +835,12 @@ class EMImage2DModule(EMGUIModule):
 		data = {}	
 		data["min"] = self.minden
 		data["max"] = self.maxden
+		data["curmin"] = self.curmin
+		data["curmax"] = self.curmax
 		data["fourier_min"] = self.fminden
 		data["fourier_max"] = self.fmaxden
+		data["fcurmin"] = self.fcurmin
+		data["fcurmax"] = self.fcurmax
 		data["fourier_gamma"] = self.fgamma
 		data["gamma"] = self.gamma
 		data["origin"] = self.origin
@@ -975,6 +996,7 @@ class EMImage2DModule(EMGUIModule):
 
 	def display_state_changed(self):
 		display_states = []
+		# FIXME - this should really be static
 		display_states.append(self.gl_widget.width())
 		display_states.append(self.gl_widget.height())
 		display_states.append(self.origin[0])
@@ -985,6 +1007,10 @@ class EMImage2DModule(EMGUIModule):
 		display_states.append(self.maxden)
 		display_states.append(self.gamma)
 		display_states.append(self.curfft)
+		display_states.append(self.curmin)
+		display_states.append(self.fcurmin)
+		display_states.append(self.fcurmax)
+		display_states.append(self.curmax)
 		if len(self.display_states) == 0:
 			self.display_states = display_states
 			return True
@@ -1046,14 +1072,14 @@ class EMImage2DModule(EMGUIModule):
 				if self.display_fft.is_complex() == False:
 					print "error, the fft is not complex, internal error"
 					return
-				a=self.display_fft.render_ap24(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.gl_widget.width(),self.gl_widget.height(),(self.gl_widget.width()*3-1)/4*4+4,self.scale,pixden[0],pixden[1],self.fminden,self.fmaxden,self.fgamma,3)
+				a=self.display_fft.render_ap24(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.gl_widget.width(),self.gl_widget.height(),(self.gl_widget.width()*3-1)/4*4+4,self.scale,pixden[0],pixden[1],self.fcurmin,self.fcurmax,self.fgamma,3)
 				gl_render_type = GL_RGB
 				
 			elif self.curfft in (2,3) :
-				a=self.display_fft.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.gl_widget.width(),self.gl_widget.height(),(self.gl_widget.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.fminden,self.fmaxden,self.fgamma,2)
+				a=self.display_fft.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.gl_widget.width(),self.gl_widget.height(),(self.gl_widget.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.fcurmin,self.fcurmax,self.fgamma,2)
 				gl_render_type = GL_LUMINANCE
 			else : 
-				a=self.data.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.gl_widget.width(),self.gl_widget.height(),(self.gl_widget.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
+				a=self.data.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.gl_widget.width(),self.gl_widget.height(),(self.gl_widget.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.curmin,self.curmax,self.gamma,2)
 				gl_render_type = GL_LUMINANCE
 			if not self.glflags.npt_textures_unsupported():
 				
@@ -1332,10 +1358,10 @@ class EMImage2DModule(EMGUIModule):
 	def inspector_update(self,use_fourier=False):
 		if self.inspector:
 			if not use_fourier:
-				self.inspector.set_limits(self.minden,self.maxden,self.minden,self.maxden)
+				self.inspector.set_limits(self.minden,self.maxden,self.curmin,self.curmax)
 				self.inspector.set_gamma(self.gamma)
 			else:
-				self.inspector.set_limits(self.fminden,self.fmaxden,self.fminden,self.fmaxden)
+				self.inspector.set_limits(self.fminden,self.fmaxden,self.fcurmin,self.fcurmax)
 				
 				self.inspector.set_gamma(self.fgamma)
 				

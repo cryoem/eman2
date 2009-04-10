@@ -591,16 +591,16 @@ class EMMetaDataTable(object):
 		from emform import ParamTable, ParamDef,EMFormWidget
 		
 		params = []
-		a = ParamTable(name="Metadata",desc_short="Useful information",desc_long="The left most column is what you're choosing from, the extra columns are used only to assist in the decision making process")
-		pleft = ParamDef(name="Name",vartype="stringlist",desc_short="stringlist",desc_long="Choose from a list of ints",property=None,choices=left)
-		pright = ParamDef(name="Value",vartype="stringlist",desc_short="striglist",desc_long="Choose from a list of floats",property=None,choices=right)
+		a = ParamTable(name="Metadata",desc_short="",desc_long="Meta data associated with this image")
+		pleft = ParamDef(name="key",vartype="stringlist",desc_short="Key",desc_long="The key of the metadata value object",property=None,choices=left)
+		pright = ParamDef(name="value",vartype="stringlist",desc_short="Value",desc_long="The value of the metadata object as a string",property=None,choices=right)
 
 		
 		a.append(pleft)
 		a.append(pright)
 		params.append(a)
 		
-		form = EMFormWidget(parent,params,disable_ok_cancel)
+		form = EMFormWidget(parent,params,disable_ok_cancel=True)
 		return form
 		
 		

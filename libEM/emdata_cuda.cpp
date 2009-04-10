@@ -590,10 +590,7 @@ void EMData::CudaCache::debug_print() const {
 			ny = caller_cache[i]->get_ysize();
 			nz = caller_cache[i]->get_zsize();
 		}
-// 		if (caller_cache[i] == 0) continue; // temporary debug
-// 		if ( handle == -1 )  {
 		cout << i << ": " << handle << " " << caller_cache[i] << " dims: " << nx << " " << ny << " " << nz << " locked: " << locked[i] << " rw " << rw_cache[i] << " ro " << ro_cache[i] << endl;
-// 			throw UnexpectedBehaviorException("Weird, th handle was -1!");
 // 		}
 	}
 }

@@ -2884,15 +2884,31 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.lock = False
 		self.connect(self.bs,QtCore.SIGNAL("editingFinished()"),self.new_box_size)
 	
-		self.connect(self.thr,QtCore.SIGNAL("valueChanged"),self.new_threshold)
+		self.connect(self.thr,QtCore.SIGNAL("textChanged"),self.new_threshold)
+		self.threshold_press = -1
+		self.connect(self.thr,QtCore.SIGNAL("sliderReleased"),self.new_threshold_release)
+		self.connect(self.thr,QtCore.SIGNAL("sliderPressed"),self.new_threshold_press)
 		
 #		self.connect(self.trythat,QtCore.SIGNAL("clicked(bool)"),self.try_dummy_parameters)
 #		self.connect(self.reset,QtCore.SIGNAL("clicked(bool)"),self.target.remove_dummy)
 		self.connect(self.thrbut, QtCore.SIGNAL("clicked(bool)"), self.selection_mode_changed)
 	
-#		self.target.connect(self.target,QtCore.SIGNAL("nboxes"),self.num_boxes_changed)
+	def new_threshold_press(self,value):
+		self.threshold_press = value
+    	
+	def new_threshold_release(self,value):
+		if ( value != self.threshold_press ):
+			self.threshold_press = value
+			self.new_threshold(value)
+
 	def keyPressEvent(self,event):
 		if event.key() == Qt.Key_F1:
+			try:
+				import webbrowser
+				webbrowser.open("http://blake.bcm.edu/emanwiki/e2boxer")
+				return
+			except: pass
+			
 			try: from PyQt4 import QtWebKit
 			except: return
 			try:
@@ -2913,15 +2929,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		# this is the box layout that will store everything
 		self.main_inspector = QtGui.QWidget()
 		self.main_vbl =  QtGui.QVBoxLayout(self.main_inspector)
-		
-		
-		#self.infohbl.addWidget(self.ppc)
-		
-		
-		#self.statsbox = QtGui.QGroupBox("Stats")
-		#self.statsbox.setLayout(self.infohbl)
-		#self.main_vbl.addWidget(self.statsbox)
-		
+
 		self.boxingvbl = QtGui.QVBoxLayout()
 		
 		self.boxinghbl1=QtGui.QHBoxLayout()
@@ -2956,7 +2964,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.method=QtGui.QComboBox()
 		self.swarm_icon = QtGui.QIcon(get_image_directory() + "swarm_icon.png")
 		self.method.addItem( self.swarm_icon, "Swarm" )
-		self.setWindowIcon( self.swarm_icon )
+		self.setWindowIcon( QtGui.QIcon(get_image_directory() + "green_boxes.png") )
 		self.pp_icon = QtGui.QIcon(get_image_directory() + "pp_boxer_icon.png");
 		self.method.addItem( self.pp_icon,"Gauss Conv" )
 		self.boxinghbl3.addWidget( self.method )
@@ -3022,56 +3030,6 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.interactiveboxing = QtGui.QGroupBox("Interactive Boxing")
 		self.interactiveboxing.setLayout(self.boxingvbl)
 		self.main_vbl.addWidget(self.interactiveboxing)
-		
-		# output
-		#self.outputvbl = QtGui.QVBoxLayout()
-		#self.outputhbl1=QtGui.QHBoxLayout()
-		#self.write_all_box_image_files = QtGui.QPushButton("Write Box Images")
-		#self.outputhbl1.addWidget(self.write_all_box_image_files,0)
-		#self.normalize_box_images = QtGui.QCheckBox("Normalize Box Images")
-		#self.normalize_box_images.setChecked(True)
-		#self.outputhbl1.addWidget(self.normalize_box_images,0, Qt.AlignLeft)
-		#self.outputvbl.addLayout(self.outputhbl1)
-		
-		#self.outputhbl2=QtGui.QHBoxLayout()
-		#self.write_all_coord_files = QtGui.QPushButton("Write Coord Files")
-		#self.outputhbl2.addWidget(self.write_all_coord_files,0)
-		#self.outputforceoverwrite = QtGui.QCheckBox("Force Overwrite")
-		#self.outputforceoverwrite.setChecked(False)
-		#self.outputhbl2.addWidget(self.outputforceoverwrite,0, Qt.AlignRight)
-		#self.outputvbl.addLayout(self.outputhbl2)
-		
-		#self.output_gridl = QtGui.QGridLayout()
-		
-		#self.usingbox_sizetext=QtGui.QLabel("Using Box Size:",self)
-		#self.output_gridl.addWidget(self.usingbox_sizetext,0,0,Qt.AlignRight)
-		
-		#self.usingbox_size = QtGui.QLineEdit(str(self.target().box_size),self)
-		#self.usingbox_size.setValidator(self.pos_int_validator)
-		#self.output_gridl.addWidget(self.usingbox_size,0,1,Qt.AlignLeft)
-		
-		#self.outputformat=QtGui.QLabel("Image Format:",self)
-		#self.output_gridl.addWidget(self.outputformat,1,0, Qt.AlignRight)
-		
-		#self.outputformats = QtGui.QComboBox(self)
-		#self.outputformats.addItem("bdb")
-		#self.outputformats.addItem("hdf")
-		#self.outputformats.addItem("img")
-		#self.output_gridl.addWidget(self.outputformats,1,1,Qt.AlignLeft)
-		
-		#self.normalization_method=QtGui.QLabel("Normalization Method:",self)
-		#self.output_gridl.addWidget(self.normalization_method,2,0,Qt.AlignRight)
-		
-		#self.normalization_options = QtGui.QComboBox(self)
-		#self.normalization_options.addItem("normalize.edgemean")
-		#self.normalization_options.addItem("normalize.ramp.normvar")
-		#self.output_gridl.addWidget(self.normalization_options,2,1, Qt.AlignLeft)
-		
-		#self.outputvbl.addLayout(self.output_gridl)
-		
-		#self.outputbox = QtGui.QGroupBox("Output")
-		#self.outputbox.setLayout(self.outputvbl)
-		#self.main_vbl.addWidget(self.outputbox)
 
 		self.gen_output_but=QtGui.QPushButton("Write output")
 		self.main_vbl.addWidget(self.gen_output_but)
@@ -3095,24 +3053,15 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		
 		self.connect(self.refbutton, QtCore.SIGNAL("clicked(bool)"), self.ref_button_toggled)
 		self.connect(self.manualbutton, QtCore.SIGNAL("clicked(bool)"), self.manual_button_toggled)
-
-		#self.connect(self.write_all_box_image_files,QtCore.SIGNAL("clicked(bool)"),self.write_box_images)
-		#self.connect(self.write_all_coord_files,QtCore.SIGNAL("clicked(bool)"),self.write_box_coords)
 		
 		self.connect(self.method, QtCore.SIGNAL("activated(int)"), self.method_changed)
-
-		#self.connect(self.normalize_box_images,QtCore.SIGNAL("clicked(bool)"),self.normalize_box_images_toggled)
 
 		QtCore.QObject.connect(self.imagequalities, QtCore.SIGNAL("currentIndexChanged(QString)"), self.image_quality_changed)
 		
 		self.connect(self.done,QtCore.SIGNAL("clicked(bool)"),self.target().done)
 		self.connect(self.classifybut,QtCore.SIGNAL("clicked(bool)"),self.target().classify)
 		self.connect(self.gen_output_but,QtCore.SIGNAL("clicked(bool)"),self.target().run_output_dialog)
-	#def normalize_box_images_toggled(self):
-		#val = self.normalize_box_images.isChecked()
-		#self.normalization_options.setEnabled(val)
-		#self.normalization_method.setEnabled(val)
-	
+
 	def invert_contrast_mic_toggled(self):
 		from EMAN2 import Util
 		image_name = self.target().boxable.get_image_name()
@@ -3135,7 +3084,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 				self.tabwidget.removeTab( tabid )
 				self.tabwidget.insertTab( tabid, self.david_option, "Swarm Advanced" )
 				self.autobox.setText("Autobox")
-				self.setWindowIcon( self.swarm_icon )
+				self.setWindowIcon( QtGui.QIcon(get_image_directory() + "green_boxes.png") )
 				self.invert_contrast_mic.setEnabled(False)
 		else:
 			assert name[0:5]=="Gauss"
@@ -3176,20 +3125,6 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.lock = True
 		self.ab_sel_mediator.toggle_frozen(self.col1[self.currentlyselected].text(),bool)
 		self.lock = False
-	
-#	def write_box_images(self,unused):
-#		box_size = int(str(self.usingbox_size.text()))
-#		realbox_size = int(str(self.bs.text()))
-#		if realbox_size == box_size:
-#			box_size = -1 # negative one is a flag that tells the boxes they don't need to be resized... all the way in the Box Class
-#		self.target().write_all_box_image_files(box_size,self.outputforceoverwrite.isChecked(),str(self.outputformats.currentText()),self.normalize_box_images.isChecked(),str(self.normalization_options.currentText()))
-		
-#	def write_box_coords(self,unused):
-#		box_size = int(str(self.usingbox_size.text()))
-#		realbox_size = int(str(self.bs.text()))
-#		if realbox_size == box_size:
-#			box_size = -1 # negative one is a flag that tells the boxes they don't need to be resized... all the way in the Box Class
-#		self.target().write_all_coord_files(box_size,self.outputforceoverwrite.isChecked())
 #	
 	def setChecked(self,tag):
 		
@@ -3410,17 +3345,20 @@ class EMBoxerModulePanel(QtGui.QWidget):
 #		
 #		self.plothbl.addLayout(self.plotbuttonvbl)
 #		
-		self.advanced_vbl2 = QtGui.QVBoxLayout()
+		self.advanced_hbl2 = QtGui.QHBoxLayout()
 		
 #		self.advanced_vbl2.addLayout(self.plothbl)
 		
+		self.enable_interactive_params  = QtGui.QCheckBox("Enable")
+		self.enable_interactive_params.setChecked(True) #FIXME should this be related to the state of the autoboxer?
 		self.thr = ValSlider(self,(0.0,3.0),"Threshold:")
 		self.thr.setValue(1.0)
-		self.advanced_vbl2.addWidget(self.thr)
+		self.advanced_hbl2.addWidget(self.enable_interactive_params)
+		self.advanced_hbl2.addWidget(self.thr)
 		
 		
 		self.interbox = QtGui.QGroupBox("Interactive Parameters")
-		self.interbox.setLayout(self.advanced_vbl2)
+		self.interbox.setLayout(self.advanced_hbl2)
 		self.advanced_vbl.addWidget(self.interbox)
 		
 		self.thrbut = QtGui.QRadioButton(SwarmAutoBoxer.THRESHOLD)
@@ -3602,7 +3540,8 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.connect(self.difbut, QtCore.SIGNAL("clicked(bool)"), self.cmp_box_changed)
 		self.connect(self.gauss_width_slider, QtCore.SIGNAL("valueChanged(int)"), self.gauss_width_changed)
 		self.connect(self.gauss_width, QtCore.SIGNAL("editingFinished()"), self.gauss_width_edited)
-		
+		self.connect(self.enable_interactive_params,QtCore.SIGNAL("clicked(bool)"),self.enable_interactive_params_toggled)
+	
 
 	# --------------------
 	# XXX: calculate ctf and defocus from current image		
@@ -3797,15 +3736,25 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.target().set_selection_mode(str(s))
 	
 	def try_dummy_parameters(self):
-		self.dummybox.set_opt_profile(self.window.getData())
+		#self.dummybox.set_opt_profile(self.window.getData())
 		self.dummybox.set_correlation_score(float(self.thr.getValue()))
 		self.target().set_dummy_box(self.dummybox)
-	
+		
+	def enable_interactive_params_toggled(self):
+		enabled = self.enable_interactive_params.isChecked()
+		if enabled:
+			self.thr.setEnabled(True)
+			self.try_dummy_parameters()
+		else:
+			self.thr.setEnabled(False)
+			self.target().set_dummy_box(None)
+			
+			
 	def update_data(self,thresh,data,datar):
 		#print data
-		self.window.set_data(data,datar)
+#		self.window.set_data(data,datar)
 		self.thr.setValue(thresh,True)
-		self.resize(self.width(),self.height())
+#		self.resize(self.width(),self.height())
 		#self.window.resizeGL(self.window.width(),self.window.height())
 		#self.window.updateGL()
 	def num_boxes_changed(self,n):
@@ -3851,9 +3800,6 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.bs.setText(str(box_size))
 	
 	def new_threshold(self,val):
-		#print "new threshold"
-		print "option currently disabled"
-		return
 		self.try_dummy_parameters()
 
 

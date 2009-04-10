@@ -1388,6 +1388,7 @@ class ParticleImportTask(ParticleWorkFlowTask):
 
 			
 			for name in v:
+				#FIXME - it may be that there is 
 				fine, message = is_2d_image_mx(name)
 				if not fine:
 					error_message.append(message)

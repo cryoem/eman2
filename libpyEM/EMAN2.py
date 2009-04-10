@@ -795,7 +795,8 @@ def gm_time_string():
 
 def is_2d_image_mx(filename):
 	'''
-	Returns true if the filename exists, is an EM image type, is 2D, and has more than one image
+	Returns true if the filename exists, is an EM image type, is 2D, and has more than zero images in it
+	Note that a single 2D image is by definition a in "image matrix" that has only one member
 	'''
 	if not file_exists(filename): return False, "File doesn't exist : "+filename
 	
@@ -805,8 +806,8 @@ def is_2d_image_mx(filename):
 	a.read_image(filename,0,read_header_only)
 	if a.get_ndim() != 2:
 		return False, "Image is not 2D :", filename
-	elif EMUtil.get_image_count(filename) < 2:
-		return False, "Image is not a matrix :", filename
+	elif EMUtil.get_image_count(filename) < 1:
+		return False, "Image has not particles in it :", filename
 	else:
 		return True, "Image is a 2D stack"
 

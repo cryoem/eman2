@@ -254,6 +254,12 @@ class EMTaskMonitorWidget(QtGui.QWidget,Animator):
 			
 	def keyPressEvent(self,event):
 		if event.key() == Qt.Key_F1:
+			try:
+				import webbrowser
+				webbrowser.open("http://blake.bcm.edu/emanwiki/e2workflow")
+				return
+			except: pass
+
 			try: from PyQt4 import QtWebKit
 			except: return
 			try:
@@ -699,6 +705,12 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 				
 	def keyPressEvent(self,event):
 		if event.key() == Qt.Key_F1:
+			try:
+				import webbrowser
+				webbrowser.open("http://blake.bcm.edu/emanwiki/e2workflow")
+				return
+			except: pass
+			
 			try: from PyQt4 import QtWebKit
 			except: return
 			try:
