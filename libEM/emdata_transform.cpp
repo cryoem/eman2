@@ -39,13 +39,24 @@
 #include <cstring>
 #include <cstdio>
 
+#include  "gsl_sf_result.h"
+#include  "gsl_sf_bessel.h"
+#include <iostream>
+#include <algorithm>
+#include <vector>
+#include <utility>
+#include "util.h"
+
+
 #ifdef EMAN2_USING_OPENGL
 #include "GL/gl.h"
 #endif //EMAN2_USING_OPENGL
 
 
 using namespace EMAN;
-
+using namespace std;
+typedef vector< pair<float,int> > vp;
+#include <math.h>
 
 #ifdef EMAN2_USING_CUDA
 
@@ -1267,6 +1278,283 @@ void EMData::ri2ap()
 	EXITFUNC;
 }
 
+
+float calc_bessel(const int n, const float& x) {
+	gsl_sf_result result;
+//	int success = 
+	gsl_sf_bessel_Jn_e(n,(double)x, &result);
+	return result.val;
+}
+
+EMData*   EMData::bispecRotTransInvN(int N, int NK)
+{
+
+	int EndP = this -> get_xsize(); // length(fTrueVec);
+	int Mid  = (int) ((1+EndP)/2);
+	int End = 2*Mid-1;
+
+        int CountxyMax = End*End;
+	
+	int   *SortfkInds       = new    int[CountxyMax];
+	int   *kVecX            = new    int[CountxyMax];
+	int   *kVecY            = new    int[CountxyMax];
+	float *fkVecR           = new  float[CountxyMax];
+	float *fkVecI           = new  float[CountxyMax];
+	float *absD1fkVec       = new  float[CountxyMax];
+	float *absD1fkVecSorted = new  float[CountxyMax];
+
+
+	EMData * ThisCopy = new EMData(End,End);
+
+	for (int jx=0; jx <End ; jx++) {
+		for (int jy=0; jy <End ; jy++) {
+			float ValNow = this -> get_value_at(jx,jy);
+			ThisCopy -> set_value_at(jx,jy,ValNow);
+//		cout<< " jxM= " << jx+1<<" jyM= " << jy+1<< "ValNow" << ValNow << endl; //    Works
+	}}
+       
+	
+	EMData* fk = ThisCopy -> do_fft();
+	fk          ->process_inplace("xform.fourierorigin.tocenter");
+
+//	EMData* fk
+	EMData* fkRCopy = new EMData(End,End);
+	EMData* fkICopy = new EMData(End,End);
+	EMData* fkCopy  = new EMData(End,End);
+		
+
+	for (int kEx= 0; kEx<2*Mid; kEx=kEx+2) { // kEx twice the value of the Fourier 
+						// x variable: EMAN index for real, imag 
+		int kx    = kEx/2;		// kx  is  the value of the Fourier variable
+	        int kIx   = kx+Mid-1; // This is the value of the index for a matlab image (-1)
+		int kCx   =  -kx ; 
+		int kCIx  = kCx+ Mid-1 ; 
+		for (int kEy= 0 ; kEy<End; kEy++) { // This is the value of the EMAN index
+    		 	int kIy              =  kEy       ; //  This is the value of the index for a matlab image (-1)
+			int ky               =  kEy+1-Mid; // (kEy+ Mid-1)%End - Mid+1 ;  // This is the actual value of the Fourier variable
+			float realVal        =  fk -> get_value_at(kEx  ,kEy) ;
+			float imagVal        =  fk -> get_value_at(kEx+1,kEy) ;
+			float absVal         =  ::sqrt(realVal*realVal+imagVal*imagVal);
+			float fkAng 	     =  atan2(imagVal,realVal);
+
+			float NewRealVal   ;
+			float NewImagVal   ;
+			float AngMatlab    ;
+
+			if (kIx==Mid-1) { 
+//				AngMatlab = -fkAng - 2.*M_PI*(kIy+ 1-Mid)*(Mid)/End;
+//			cout<< "i= " << i << " kIx= " << kIx << " kIy=" << kIy << " fkVecR[i] =" << fkVecR[i]<< " fkVecI[i]="  << fkVecI[i] <<"  angle[i]= "  << AngMatlab << endl;
+			}
+
+			if (kIx>Mid-1){ 
+//			cout<< "i= " << i << " kIx= " << kIx << " kIy=" << kIy << " fkVecR[i] =" << fkVecR[i]<< " fkVecI[i]="  << fkVecI[i] <<"  angle[i]= "  << AngMatlab << endl;
+			}
+
+			AngMatlab = fkAng - 2.*M_PI*(kx +ky)*(Mid)/End; 
+			NewRealVal  =   absVal*cos(AngMatlab);
+			NewImagVal  =   absVal*sin(AngMatlab);
+
+
+			fkVecR[kIy+kIx *End] =  NewRealVal ;
+			fkVecR[kIy+kCIx*End] =  NewRealVal ;
+			fkVecI[kIy+kIx *End] =  NewImagVal ;
+			fkVecI[kIy+kCIx*End] = -NewImagVal ;
+        		absD1fkVec[kIy + kIx  *End] = absVal;
+        		absD1fkVec[kIy + kCIx *End] = absVal;
+			kVecX[kIy+kIx  *End] =  kx      ;
+        		kVecX[kIy+kCIx *End] =  kCx    ;
+			kVecY[kIy+kIx  *End] =  ky     ;
+			kVecY[kIy+kCIx *End] =  ky     ;
+//			printf("kx=%d,ky=%d,tempVal =%f+ i %4.2f \n",kx,ky,realVal,imagVal );
+//			cout << "kx = " << kx << "; ky = "<< ky << "; val is" << realVal<<"+ i "<<imagVal<< endl;
+
+//			cout << "kIMx = "<< kIx+1 << "; kIMy = "<< kIy+1 <<"; fkAng*9/ 2pi is " << fkAng*9/2/M_PI<<  endl;
+//			cout << "kIMx = "<< kIx+1 << "; kIMy = "<< kIy+1 <<"; absval is " << absVal<<  "; realval is " << NewRealVal<< "; imagval is " << NewImagVal<< endl;
+			fkCopy  -> set_value_at(kIx ,kIy, absVal);
+			fkCopy  -> set_value_at(kCIx,kIy, absVal);
+			fkRCopy -> set_value_at(kIx, kIy, NewRealVal);
+			fkRCopy -> set_value_at(kCIx,kIy, NewRealVal);
+			fkICopy -> set_value_at(kIx, kIy, NewImagVal);
+			fkICopy -> set_value_at(kCIx,kIy,-NewImagVal);
+
+		}
+	}
+	system("rm -f fkCopy.???");
+	system("rm -f fk?Copy.???");
+	fkCopy  -> write_image("fkCopy.img");
+	fkRCopy -> write_image("fkRCopy.img");
+	fkICopy -> write_image("fkICopy.img");
+	
+	cout << "Starting the sort "<< endl;
+
+	vector< pair<float, int> > absInds;
+	for(int i  = 0; i < CountxyMax; ++i ) {
+		pair<float,int> p;
+		p = make_pair(absD1fkVec[i],i);	// p = make_pair(rand(),i);
+		absInds.push_back( p);
+	}
+
+	std::sort(absInds.begin(),absInds.end());
+
+	for(int i  = 0; i < CountxyMax; ++i ) {
+		pair<float,int> p   ;
+		p = absInds[i]         ;
+		absD1fkVecSorted[CountxyMax-1-i] =  p.first ;
+		SortfkInds[CountxyMax-1-i]       =  p.second ;
+	}
+
+	cout << "Ending the sort "<< endl;
+
+// float AngsMat[] ={2.8448, -0.3677,-0.2801,-1.0494,-1.7836,-2.5179, 2.9959, 3.0835,-0.1290,-0.8876,2.1829, 2.2705,1.5011,0.7669,0.0327,-0.7366,-0.6489,2.4215,-1.6029,1.4676,1.5552,0.7859,0.0517,-0.6825,-1.4518,-1.3642,1.7063,-1.7845,1.2859,1.3736,0.6043,-0.1299,-0.8642,-1.6335,-1.5459,1.5247,-1.6546,1.4159,1.5036,0.7342,0,-0.7342,-1.5036,-1.4159,1.6546,-1.5247,1.5459,1.6335,0.8642,0.1299,-0.6043,-1.3736,-1.286,1.7846,-1.7063,1.3642,1.4519,0.6825,-0.0517,-0.7859,-1.5553,-1.4676,1.6029,-2.4216,0.649,0.7366,-0.0327,-0.767,-1.5012,-2.2705,-2.1829,0.8877,0.1291,-3.0836,-2.9959,2.5179,1.7837,1.0495,0.2801,0.3677,-2.8449};
+
+
+ 	for(int i  = 0; i < CountxyMax; ++i ) {  // creates a new fkVec
+		int Si  = SortfkInds[i];
+		int kIx = (int)  Si/End;  kIx = (int)  i/End; // i = kIx*End+kIy
+		int kIy = Si  - kIx*End;  kIy = i  - kIx*End; 
+		int iC = (End-1-kIx)*End + (End-1-kIy);
+//		if (i<30) { cout<< "i= " << i << " kIx= " << kIx << " kIy=" << kIy << " valAft=" << absD1fkVecSorted[i]<< " valBef="  <<     absD1fkVec[Si] << "  SortfkInds = " << Si <<endl; }// This worked
+//		cout<< "i= " << i << " kIx= " << kIx << " kIy=" << kIy << " fkVecR[i] =" << fkVecR[i]<< " fkVecI[i]="  << fkVecI[i] <<"  angle[i]= "  << fkAng << endl;
+ 	}
+	cout<< "Ratio of Last Amplitude to First Amplitude= " << absD1fkVecSorted[NK] /absD1fkVecSorted[0]  << endl;
+
+//	pause;
+
+ 	for(int i  = 0; i < NK; ++i ) { // Prints out the new fkVec ,  CountxyMax
+		int Si= SortfkInds[i]; 
+		int kIx = (int)  Si/End; // i = kIx*End+kIy
+		int kIy = Si  - kIx*End; 
+ //		cout << " kIxM= " << kIx+1 << " kIyM=" << kIy+1 << " fkVecAbs=" << ::sqrt(fkVecR[Si]*fkVecR[Si] +  fkVecI[Si]* fkVecI[Si]) << " fkVecAbs=" << absD1fkVecSorted[i] << " kx= " << kVecX[Si] <<  " ky=" << kVecY[Si] <<  endl;
+ 	}
+
+//       angEMAN+angMat+angDiff    =0  mod 2 pi
+
+// 	angDiff=  2*pi*((-4):4)*(Mid)/End; angEMAN+angMat+angDiff= integer*2 *pi
+//		[  absD1fkVecSorted, SortfkInds] =sort( absD1fkVec,'descend') ;
+//	Util::sort_mat(&absD1fkVec[0],&absD1fkVec[Countxy],&SortfkInds[0],&SortfkInds[Countxy]);
+
+
+//      Let radial sampling be 0:0.5:(Mid-1)
+
+ //	int NK=  min(12,CountxyMax) ;
+	cout << "NK = " << NK << endl;
+	float frR= 3.0/4.0;
+	int LradRange= (int) (floor(Mid/frR)) ;
+
+        float *radRange = new float[LradRange]; //= 0:.75:(Mid-1);
+	radRange[0]=0;
+	for (int irad=1; irad < LradRange; irad++){
+			radRange[irad] = radRange[irad-1] + frR; }
+	
+
+
+         // should equal to (2*Mid-1)
+	cout << "Starting the calculation of invariants for N= " << N << endl;
+
+/*	int NMax=5;            */
+
+	EMData* RotTransInv = new EMData();
+	RotTransInv -> set_size(LradRange,LradRange);
+
+
+//	float  *RotTransInv       = new float[LradRange*LradRange ] ;
+//	float  *RotTransInvN      = new float[LradRange*LradRange*(NMax+1) ] ;
+
+//	for (int N=0 ; N<NMax; N++) {
+
+	for (int jr1=0; jr1 < LradRange ; jr1++ ) { // LradRange
+		float r1= radRange[jr1];
+//		cout << "Pre jr2 "<< endl;
+		for (int jr2=0;  jr2<LradRange;  jr2++ ) { //LradRange
+			float r2= radRange[jr2];
+			float RotTransInvTemp=0;
+			for (int jCountkxy =0; jCountkxy<NK; jCountkxy++){
+				int Countkxy =SortfkInds[jCountkxy] ;   // 1: CountxyMax
+				int kx = kVecX[Countkxy] ;
+				int ky = kVecY[Countkxy] ;  
+				float k2 = kx*kx+ky*ky;
+				float fkR     = fkVecR[Countkxy] ; 
+				float fkI     = fkVecI[Countkxy]  ;
+/*				printf("jCountkxy=%d, Countkxy=%d,absD1fkVec(Countkxy)=%f,\t\t kx=%d, ky=%d \n", jCountkxy, Countkxy, absD1fkVec[Countkxy], kx, ky);*/
+				
+				for (int jCountqxy =0; jCountqxy<NK; jCountqxy++){
+					int Countqxy =SortfkInds[jCountqxy] ;   // Countqxy is the index for absD1fkVec 
+					int qx   = kVecX[Countqxy] ; 
+					int qy   = kVecY[Countqxy] ; 
+					int q2   = qx*qx+qy*qy;
+					float fqR     = fkVecR[Countqxy]  ;
+					float fqI     = fkVecI[Countqxy]  ;
+					int kCx  = (-kx-qx);  
+					int kCy  = (-ky-qy);
+					int kCIx = ((kCx+Mid+2*End)%End);// labels of the image in C
+					int kCIy = ((kCy+Mid+2*End)%End);
+					kCx  = kCIx-Mid; // correct
+					kCy  = kCIy-Mid; // correct
+					int CountCxy = kCIx*End+kCIy;
+					float fCR     = fkVecR[CountCxy];
+					float fCI     = fkVecI[CountCxy];
+					if (jr1+jr2==-1) {
+					printf("jCountqxy=%d , Countqxy=%d, absD1fkVec(Countqxy)=%f,qx=%d, qy=%d \n", jCountqxy, Countqxy, absD1fkVec[Countqxy],qx, qy);
+					printf(" CountCxy=%d,absD1fkVec[CountCxy]=%f,  kCx=%d,     kCy=%d \n",CountCxy, absD1fkVec[CountCxy], kCx, kCy );
+					}
+					for (int p=0; p<NK; p++){
+//						printf("p=%d, SortfkInds[p]=%d, CountCxy =%d \n", p,SortfkInds[p], CountCxy);
+						if (SortfkInds[p]==CountCxy){
+							float Arg1 = 2.*M_PI*r1*::sqrt((float) q2)/End;
+							float Arg2 = 2.*M_PI*r2*::sqrt((float) k2)/End;
+//							printf("Arg1=%4.2f, Arg2=%4.2f,  \n",Arg1, Arg2 );
+//							if (Arg1+ Arg2<15) {
+								float bispectemp  = fkR*(fqR*fCR -fqI*fCI) -fkI*fqI*fCR - fkI*fqR*fCI;
+								float bess1 = calc_bessel(N, Arg1 );
+								float bess2 = calc_bessel(N, Arg2 );
+//			printf("fkr=%4.2f, fqr=%4.2f, bess1=%4.2f,bess2=%4.2f \n",fkR, fqR, bess1, bess2);
+/*			printf("p =%d, SortfkInds[p]=%d, CountCxy=%d, Arg1 =%4.2f, bess1=%4.2f,  \n",
+				p, SortfkInds[p],CountCxy, Arg1, bess1);*/
+								RotTransInvTemp   = RotTransInvTemp  + bispectemp  * bess1*bess2 ;
+//							}
+						}
+					}
+				} // jCountqxy
+			} // jCountkxy
+			RotTransInv -> set_value_at(jr1,jr2, RotTransInvTemp)   ;
+/*		RotTransInvN[jr1 + LradRange*jr2+LradRange*LradRange*N] = RotTransInvTemp  ;*/
+		} //jr2  
+	} //jr1
+// }//N
+
+	return  RotTransInv ;
+         
+
+}
+
+
+
+/*
+// find example
+#include <iostream>
+#include <algorithm>
+#include <vector>
+using namespace std;
+
+int main () {
+  int myints[] = { 10, 20, 30 ,40 };
+  int * p;
+
+  // pointer to array element:
+  p = find(myints,myints+4,30);
+  ++p;
+  cout << "The element following 30 is " << *p << endl;
+
+  vector<int> myvector (myints,myints+4);
+  vector<int>::iterator it;
+
+  // iterator to vector element:
+  it = find (myvector.begin(), myvector.end(), 30);
+  ++it;
+  cout << "The element following 30 is " << *it << endl;
+
+  return 0;
+}*/
 
 void EMData::ap2ri()
 {
