@@ -159,13 +159,25 @@ void render_amp24(int x, int y, int xsize, int ysize,
 /** convert the complex image from real/imaginary to amplitude/phase */
 void ri2ap();
 
-
 /** convert the complex image from amplitude/phase to real/imaginary */
 void ap2ri();
 
 /** convert the complex image from real/imaginary to Intensity/0.
 This conversion cannot be reversed, and the image remains marked as R/I */
 void ri2inten();
+
+/**   This computes the rotational and translational bispectral
+        invariants of an image. The invariants are labelled by the Fourier
+    Harmonic label given by N. 
+     fVec is the real input image
+      NK is the number of Fourier components one wishes to use in calculating this bispectrum
+   the output is a single 2D image whose x,y labels are lengths, corresponding to the two lengths of sides of
+         a triangle  */
+EMData*   bispecRotTransInvN(int N, int NK);
+
+
+
+
 
 /** Insert a clip into this image.
  * Very robust clip insertion code works in all way you might think possible
