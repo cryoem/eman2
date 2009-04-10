@@ -2358,7 +2358,10 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	
 	for im in xrange(image_start, image_end):
 		data[im-image_start].set_attr('ID', im)
-		if CTF:
+		
+	if CTF:
+		#from filter import filt_ctf
+		for im in xrange(image_start, image_end):
 			ctf_params = data[im-image_start].get_attr("ctf")
 			ctm = ctf_2(nx, ctf_params)
 			k = im%2
@@ -2366,12 +2369,10 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			if data[im-image_start].get_attr( "ctf_applied" ) == 0:
 				st = Util.infomask(data[im-image_start], mask, False)
 				data[im-image_start] -= st[0]
-				#from filter import filt_ctf
 				#data[im-image_start] = filt_ctf(data[im-image_start], ctf_params)
 				#data[im-image_start].set_attr('ctf_applied', 1)
 	 		Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
 		
-	if CTF:
 		reduce_EMData_to_root(ctf_2_sum, myid, main_node)
 		# bring ctf2 together, keep them only on main node,  strange trick required because mpi_reduce changes the nformat to numarray
 		s = shape(ctf2)
