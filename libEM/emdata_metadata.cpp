@@ -639,7 +639,6 @@ void EMData::set_size(int x, int y, int z)
 		rdata = (float*)EMUtil::em_malloc(size);
 	}
 // 	rdata = static_cast < float *>(realloc(rdata, size));
-	
 	if ( rdata == 0 )
 	{
 		stringstream ss;
