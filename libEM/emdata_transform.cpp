@@ -1473,6 +1473,8 @@ EMData*   EMData::bispecRotTransInvN(int N, int NK)
 				int kx = kVecX[Countkxy] ;
 				int ky = kVecY[Countkxy] ;  
 				float k2 = kx*kx+ky*ky;
+				if (k2==0) { continue;}
+				float phiK =0; 	if (k2>0) { phiK=atan2(ky,kx);}
 				float fkR     = fkVecR[Countkxy] ; 
 				float fkI     = fkVecI[Countkxy]  ;
 /*				printf("jCountkxy=%d, Countkxy=%d,absD1fkVec(Countkxy)=%f,\t\t kx=%d, ky=%d \n", jCountkxy, Countkxy, absD1fkVec[Countkxy], kx, ky);*/
@@ -1482,6 +1484,8 @@ EMData*   EMData::bispecRotTransInvN(int N, int NK)
 					int qx   = kVecX[Countqxy] ; 
 					int qy   = kVecY[Countqxy] ; 
 					int q2   = qx*qx+qy*qy;
+					if (q2==0) {continue;}
+					float phiQ =0; 	if (q2>0) { phiQ=atan2(qy,qx);}
 					float fqR     = fkVecR[Countqxy]  ;
 					float fqI     = fkVecI[Countqxy]  ;
 					int kCx  = (-kx-qx);  
@@ -1504,7 +1508,10 @@ EMData*   EMData::bispecRotTransInvN(int N, int NK)
 							float Arg2 = 2.*M_PI*r2*::sqrt((float) k2)/End;
 //							printf("Arg1=%4.2f, Arg2=%4.2f,  \n",Arg1, Arg2 );
 //							if (Arg1+ Arg2<15) {
-								float bispectemp  = fkR*(fqR*fCR -fqI*fCI) -fkI*fqI*fCR - fkI*fqR*fCI;
+								float bispectemp  = (fkR*(fqR*fCR -fqI*fCI) -fkI*(fqI*fCR  +fqR*fCI))
+								* cos(N*(phiK-phiQ+M_PI));
+								bispectemp  -= (fkR*(fqR*fCI + fqI*fCR) +fkI*(fqR*fCR - fqI*fCI))
+								* sin(N*(phiK-phiQ+M_PI));
 								float bess1 = calc_bessel(N, Arg1 );
 								float bess2 = calc_bessel(N, Arg2 );
 //			printf("fkr=%4.2f, fqr=%4.2f, bess1=%4.2f,bess2=%4.2f \n",fkR, fqR, bess1, bess2);
