@@ -2695,4 +2695,77 @@ def init_mpi_bdb():
 	else:
 		EMAN2db.MPIMODE = True
 
+# according two lists of orientation or marker (phi, theta, psi for each one)
+# return the global rotation (dphi, dtheta, dpsi) between the two systems
+def get_rotation_angles(agls1, agls2):
+	from math  import sin, cos, pi, sqrt, atan2, acos, atan
+	from numpy import array, linalg, matrix
 
+	rad2deg = 180 / pi
+	deg2rad = 1 / rad2deg
+
+	def ori2xyz(ori):
+	    phi, theta, psi = ori	
+	    map = False
+	    if theta > 90:
+		theta = theta - 2 * (theta - 90)
+		map   = True
+	    phi   *= deg2rad
+	    theta *= deg2rad
+	    x = sin(theta) * sin(phi)
+	    y = sin(theta) * cos(phi)
+	    val = 1 - x*x - y*y
+	    if val < 0: val = 0
+	    z = sqrt(val)
+	    if map: z = -z
+
+	    return [x, y, z]
+
+	N = len(agls1)
+	if N != len(agls2):
+		print 'Both lists must be the same size'
+		return -1
+	if N < 2:
+		print 'At least two orientations are required in each list'
+		return -1
+	U1, U2 = [], []
+	for n in xrange(N):
+		p1 = ori2xyz(agls1[n])
+		p2 = ori2xyz(agls2[n])
+		U1.append(p1)
+		U2.append(p2)
+
+	# compute all Suv with uv = {xx, xy, xz, yx, ..., zz}
+	Suv   = [0] * 9
+	c     = 0
+	nbori = len(U1)
+	for i in xrange(3):
+		for j in xrange(3):
+			for s in xrange(nbori):
+				Suv[c] += (U2[s][i] * U1[s][j])
+			c += 1
+
+        # create matrix N
+	N = array([[Suv[0]+Suv[4]+Suv[8], Suv[5]-Suv[7],        Suv[6]-Suv[2],                 Suv[1]-Suv[3]], 
+		   [Suv[5]-Suv[7],        Suv[0]-Suv[4]-Suv[8], Suv[1]+Suv[3],                 Suv[6]+Suv[2]], 
+		   [Suv[6]-Suv[2],        Suv[1]+Suv[3],        -Suv[0]+Suv[4]-Suv[8],         Suv[5]+Suv[7]],
+		   [Suv[1]-Suv[3],        Suv[6]+Suv[2],        Suv[5]+Suv[7],         -Suv[0]-Suv[4]+Suv[8]]])
+
+        # eigenvector corresponding to the most positive eigenvalue
+	val, vec = linalg.eig(N)
+	q0, qx, qy, qz = vec[:, val.argmax()]
+
+        # create quaternion Rot matrix
+	Rot = matrix([[q0*q0+qx*qx-qy*qy-qz*qz, 2*(qx*qy-q0*qz),                 2*(qx*qz+q0*qy)],
+		      [2*(qy*qx+q0*qz),         q0*q0-qx*qx+qy*qy-qz*qz,         2*(qy*qz-q0*qx)],
+		      [2*(qz*qx-q0*qy),         2*(qz*qy+q0*qx),         q0*q0-qx*qx-qy*qy+qz*qz]])
+
+	r = list(Rot.getA().reshape((9)))
+	r.insert(9, 1)
+	r.insert(6, 0)
+	r.insert(3, 0)
+	
+	R = Transform(r)
+	dictR = R.get_rotation('SPIDER')
+
+	return dictR['phi'], dictR['theta'], dictR['psi']
