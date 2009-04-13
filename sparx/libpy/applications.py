@@ -5562,10 +5562,11 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, maxit=10, nas
 
 			for im in xrange(nima):
 				img = data[im]
-				ctf = img.get_attr( "ctf" )
-				if ctf.defocus != previous_defocus:
-					ctfvol = filt_ctf( vol, ctf )
-					volft, kb = prep_vol( ctfvol )
+				if CTF:
+					ctf = img.get_attr( "ctf" )
+					if ctf.defocus != previous_defocus:
+						ctfvol = filt_ctf( vol, ctf )
+						volft, kb = prep_vol( ctfvol )
 
 				phi,tht,psi,s2x,s2y = get_params_proj(img)
 				if runtype=="ASSIGNMENT":
