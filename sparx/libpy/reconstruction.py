@@ -230,7 +230,7 @@ def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4, snr=None, weig
 def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None):
 	from utilities import reduce_EMData_to_root
 	if( len(prjlist) == 0 ):
-	    ERROR("empty input list","recons3d_4nn_ctf_MPI",1)
+		ERROR("empty input list","recons3d_4nn_ctf_MPI",1)
 
 	imgsize = prjlist[0].get_xsize()
 	if prjlist[0].get_ysize() != imgsize:
@@ -251,18 +251,16 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None):
 		if(active == 1):
 			xform_proj = prj.get_attr( "xform.projection" )
 			r.insert_slice(prj, xform_proj )
-		if( not (info is None) ):
-			nimg += 1
-			info.write(" %4d inserted\n" %(nimg) )
-			info.flush()
+			if( not (info is None) ):
+				nimg += 1
+				info.write(" %4d inserted\n" %(nimg) )
+				info.flush()
 	#  Wei, what if none are active?
 	if( not (info is None) ): 
 		info.write( "begin reduce\n" )
 		info.flush()
-
 	reduce_EMData_to_root(fftvol, myid)
 	reduce_EMData_to_root(weight, myid)
-
 	if( not (info is None) ): 
 		info.write( "after reduce\n" )
 		info.flush()

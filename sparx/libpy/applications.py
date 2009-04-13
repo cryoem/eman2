@@ -5286,8 +5286,8 @@ def ali3d_em_MPI_origin(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit
 					best = optm_params[1]
 					ngroup = krf
 					best_optm_params = optm_params
-			best_optm_params[0].append(imn)																													     
-			#new_params.append(optm_params[0])		
+			best_optm_params[0].append(imn)																							     
+			#new_params.append(optm_params[0])
 
 			'''														     
 			outf.write('New %6.1f  %6.1f  %6.1f  %6.1f  %6.1f   %7.4f    %d4   %7.1f\n'%(optm_params[0][0], optm_params[0][1], optm_params[0][2], optm_params[0][3], optm_params[0][4],optm_params[1], optm_params[2], ctf_params[1]))						     

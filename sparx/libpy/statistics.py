@@ -1170,7 +1170,6 @@ def varf3d_MPI(prjlist,ssnr_text_file = None, mask2D = None, reference_structure
 	from reconstruction import   recons3d_nn_SSNR_MPI, recons3d_4nn_MPI, recons3d_4nn_ctf_MPI
 	from utilities      import   bcast_EMData_to_all, model_blank
 	from projection     import   prep_vol, prgs
-
 	if myid == 0: [ssnr1, vol_ssnr1] = recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, rw, npad, sign, sym, CTF)
 	else:                              recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, rw, npad, sign, sym, CTF)
 
@@ -1185,8 +1184,10 @@ def varf3d_MPI(prjlist,ssnr_text_file = None, mask2D = None, reference_structure
 				recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym)
 				reference_structure = model_blank(nx, nx, nx)
 		else  :
-			if myid == 0 : reference_structure = recons3d_4nn_MPI(myid, prjlist, sym)
-			else:           recons3d_4nn_MPI(myid, prjlist, sym)
+			if myid == 0 :  reference_structure = recons3d_4nn_MPI(myid, prjlist, sym)
+			else :
+				recons3d_4nn_MPI(myid, prjlist, sym)
+				reference_structure = model_blank(nx, nx, nx)
 		bcast_EMData_to_all(reference_structure, myid, 0)
 	#if myid == 0:  reference_structure.write_image("refer.hdf",0)
 	#vol *= model_circle(radius, nx, nx, nx)
