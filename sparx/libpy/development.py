@@ -1382,10 +1382,12 @@ def ali3d_e_G4(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, m
 	"""
 	An experimental version of ali3d_e, using ccf in the real space		
 	"""
-	from filter     import filt_ctf
-	from projection import prep_vol
-	from utilities  import amoeba_multi_level, model_circle, get_params_proj, set_params_proj
-	from math       import pi
+	from filter       import filt_ctf
+	from projection   import prep_vol
+	from utilities    import amoeba_multi_level, model_circle, get_params_proj, set_params_proj
+	from math         import pi
+	from applications import eqproj_cascaded_ccc
+	from fundamentals import acf, fpol
 	import os 
 	from time import time
 
@@ -1417,6 +1419,8 @@ def ali3d_e_G4(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, m
 				from filter import filt_ctf
 				if im == 0: print  " APPLYING CTF"
 				ima = filt_ctf(ima, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5])
+		ima *= mask2D
+		ima.process_inplace("normalize.mask", {"mask":mask2D, "no_sigma":1})
 		dataim.append(ima)
 	
 	M = nx
@@ -1453,7 +1457,7 @@ def ali3d_e_G4(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, m
 			weight_phi = max(dtheta, dtheta*abs((atparams[1]-90.0)/180.0*pi))			
 			
 			# For downhill simplex method 
-			optm_params = amoeba_multi_level(atparams, [weight_phi, dtheta, weight_phi], eqprojG4, 1.e-5, 1.e-5, 500, data)
+			optm_params = amoeba_multi_level(atparams, [weight_phi, dtheta, weight_phi], eqproj_cascaded_ccc, 1.e-5, 1.e-5, 500, data)
 			set_params_proj(dataim[imn], [optm_params[0][0], optm_params[0][1], optm_params[0][2], -optm_params[3][0], -optm_params[3][1]])
 
 			end_time = time()
@@ -6696,10 +6700,23 @@ def SSNR_grad(args, data):
 		Util.mul_img(dSSNR, C)
 	
 	g = zeros(args.shape, float64)
+	accurate = True
+
 	for im in xrange(nima):
 		img_new = img_data_new[im].copy()
-
 		dSSNR_copy = dSSNR.copy()
+
+		if accurate: 
+			img_new_copy = img_new.copy()
+			Util.sub_img(img_new_copy, avgimg)
+			Util.mul_img(img_new_copy, dSSNR)
+			img_new_copy = img_new_copy.conjg()
+			Util.mul_scalar(img_new_copy, nima/float(nima-1))
+			C = maskI.copy()
+			Util.sub_img(C, img_new_copy)
+			Util.mul_img(dSSNR_copy, C)
+			
+
 		Util.mul_img(dSSNR_copy, d_img[im])
 		if CTF:
 			Util.mul_img(dSSNR_copy, ctfimg_list[index_list[im]])
@@ -6708,6 +6725,8 @@ def SSNR_grad(args, data):
 		g[im*3] = -a0[0]
 		
 		dSSNR_copy = dSSNR.copy()
+		if accurate:
+			Util.mul_img(dSSNR_copy, C)
 		Util.mul_img(dSSNR_copy, img_new)
 		if CTF:
 			Util.mul_img(dSSNR_copy, ctfimg_list[index_list[im]])

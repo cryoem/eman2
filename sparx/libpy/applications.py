@@ -5864,47 +5864,39 @@ def ali3d_en_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CT
 def eqproj_cascaded_ccc(args, data):
 	from utilities import peak_search, amoeba
 	from fundamentals import fft, ccf, fpol
-	from projection import prgs
 
-	phi = args[0]
-        tht = args[1]
-        psi = args[2]
-
-        volft = data[0]
-        kb    = data[1]
-        img   = data[2]
-        mask  = data[3]
-        refi  = data[4]
-        sft   = data[5]
-	opt   = data[6]
-
-        prj  = prgs( volft, kb, [phi,tht,psi,0.0,0.0] )
-	prj.process_inplace( "normalize.mask", {"mask":mask, "no_sigma":1} )	
-
-	nx = prj.get_ysize()
+	R = Transform({"type":"spider", "phi":args[0], "theta":args[1], "psi":args[2], "tx":0.0, "ty":0.0, "tz":0.0, "mirror":0, "scale":1.0})
+	temp = data[0].extract_plane(R, data[1])
+	temp.fft_shuffle()
+	temp.center_origin_fft()
+	temp.do_ift_inplace()
+	M = temp.get_ysize()/2
+	proj = temp.window_center(M)
+	
+	proj.process_inplace("normalize.mask", {"mask":data[3], "no_sigma":1})
+	proj *= data[3]
+	
+	nx = proj.get_ysize()
 	sx = (nx-data[5][0]*2)/2
 	sy = (nx-data[5][1]*2)/2
 	
-        M  = nx
-	aaa = fpol(prj, 2*M, 2*M)
-	product = ccf(aaa, refi)
+	proj2x = fpol(proj, 2*M, 2*M)
+	product = ccf(proj2x, data[4])
+
 	data2 = [0]*2
 	data2[0] = product
 	data2[1] = data[1]
+	ps = amoeba([sx, sy], [1.0, 1.0], twoD_fine_search, 1.e-4, 1.e-4, 500, data2)
 
-	if opt:
-		ps = amoeba([sx, sy], [0.25, 0.25], twoD_fine_search, 1.0, 1.e-2, 500, data2)
-		s2x = nx/2-ps[0][0]
-		s2y = nx/2-ps[0][1]
-		return ps[1], [s2x,s2y]
-	else:
-		return twoD_fine_search( [sx,sy], data2 )
+	s2x = nx/2-ps[0][0]
+	s2y = nx/2-ps[0][1]
 	#params2 = {"filter_type":Processor.fourier_filter_types.SHIFT, "x_shift":s2x, "y_shift":s2y, "z_shift":0.0}
-	#prj = Processor.EMFourierFilter(prj, params2)
-	#v = -temp2.cmp("SqEuclidean", data[2], {"mask":data[3]})
-	#v = prj.cmp("dot", img, {"mask":mask, "negative":0})
+	#temp2 = Processor.EMFourierFilter(temp, params2)
+	##v = -temp2.cmp("SqEuclidean", data[2], {"mask":data[3]})
+	#v = temp2.cmp("ccc", data[2], {"mask":data[3], "negative":0})
+	v = ps[1]
 	
-	#return v, [s2x, s2y]
+	return v, [s2x, s2y]
 
 def twoD_fine_search(args, data):
 	return data[0].get_pixel_conv7(args[0]*2, args[1]*2, 0.0, data[1])
