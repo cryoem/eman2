@@ -790,7 +790,8 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		# the cost of not recording the partial run results is too high 
 		mpi_barrier(MPI_COMM_WORLD)
 		#par_str = ["xform.align2d", "ID"]
-		par_str = ["xform.align2d"]
+		if ipt == 9: par_str = ["xform.align2d"]
+		else: par_str = ["xform.align2d_%02d"%(ipt)]
 		if color == 0:    # We can only use one group of alignment as the final results
 			if key == group_main_node:
 				if file_type(stack) == "bdb":
@@ -4953,8 +4954,11 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 		finfo.flush()
 
 	data = EMData.read_images(stack, list_of_particles)
+	masks = [None]*len(data)
  	for im in xrange(len(data)):
  		data[im].set_attr('ID', list_of_particles[im])
+		phi,tht,psi,s2x,s2y = get_params_proj( data[im] )
+		masks[im] = project( mask3D, [phi,tht,psi,-s2x,-s2y], int(ou) )
 
 	if fourvar:
 		from reconstruction import rec3D_MPI
@@ -5012,19 +5016,26 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 		cs = [0.0]*3	
 		for iref in xrange(numref):
 			vol = get_im(os.path.join(outdir, "volf%04d.hdf"%(total_iter-1)), iref)
-			vol *= mask3D
+			if CTF:
+				previous_defocus = -1.0
+			else:
+				volft, kb = prep_vol(vol)
 	
+
 			if runtype=="ASSIGNMENT":	
 				for im in xrange(nima):
-					img = data[im].process( "normalize.mask", {"mask":mask2D, "no_sigma":0} )
-					phi,tht,psi,s2x,s2y = get_params_proj(data[im])
-					ref = project( vol,[phi,tht,psi,-s2x,-s2y],int(ou))
-					ref.process_inplace( "normalize.mask", {"mask":mask2D, "no_sigma":1} )
 					if(CTF):
-						ctf_params = data[im].get_attr( "ctf" )
-						ref = filt_ctf( ref, ctf_params )
+						ctf = data[im].get_attr( "ctf" )
+						if(ctf.defocus != previous_defocus):
+							previous_defocus = ctf.defocus
+							ctfvol = filt_ctf(vol, ctf)
+							volft,kb = prep_vol( ctfvol )
+
+
+					phi,tht,psi,s2x,s2y = get_params_proj(data[im])
+					ref = prgs( volft, kb, [phi,tht,psi,-s2x,-s2y])
 	
-					peak = ref.cmp("dot",img,{"mask":mask2D, "negative":0})
+					peak = ref.cmp("ccc",data[im],{"mask":masks[im], "negative":0})
 
 					if not(finfo is None):
 						finfo.write( "ID,iref,peak: %6d %d %8.5f" % (list_of_particles[im],iref,peak) )
@@ -5103,6 +5114,10 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 				if myid == main_node:   
 					varf = 1.0/varf
 					varf.write_image( os.path.join(outdir,"varf%04d.hdf"%total_iter) )
+			for im in xrange(len(data)):
+				phi,tht,psi,s2x,s2y = get_params_proj( data[im] )
+				masks[im] = project( mask3D, [phi,tht,psi,-s2x,-s2y],int(ou) )
+
 
 		if(myid == main_node):
 			refdata = [None]*7
