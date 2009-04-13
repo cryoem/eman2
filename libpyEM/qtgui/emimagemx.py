@@ -1516,6 +1516,10 @@ class EMImageMXModule(EMGUIModule):
 			event.accept()
 
 	def save_data(self):
+		'''
+		Overwrites existing data (the old file is removed)
+		'''
+		
 		msg = QtGui.QMessageBox()
 		msg.setWindowTitle("Woops")
 		if self.data==None or len(self.data)==0:
@@ -1524,65 +1528,84 @@ class EMImageMXModule(EMGUIModule):
 			return
 
 		# Get the output filespec
-		fsp=QtGui.QFileDialog.getSaveFileName(None, "Specify file name",self.file_name,"*.hdf *.img *.spi *.lst bdb:","")
-		fsp=str(fsp)
-		
-		# BDB has issues on Windows and MAC
-		
-		bdb_idx = fsp.find("bdb:")
-		if bdb_idx != -1:
-			fsp = fsp[bdb_idx:]
-
-		if fsp != '':
+		while True:
+			fsp=QtGui.QFileDialog.getSaveFileName(None, "Specify file name","","*.hdf *.img *.spi *.lst bdb:","")
+			fsp=str(fsp)
 			
-			if len(fsp) < 3 or ( fsp[-4:] not in [".hdf",".img",".spi",".hed",".lst"] and fsp[:4] != "bdb:" ):
-				msg.setText("%s is an invalid image name" %fsp)
-				msg.exec_()
-				return
-				
-			if fsp[:4] == "bdb:" and len(fsp) == 4:
-				msg.setText("%s is an invalid bdb name" %fsp)
-				msg.exec_()
-				return
-			elif fsp[-4:] == ".lst":
-				self.data.save_lst(fsp)
-				return
+			# BDB has issues on Windows and MAC
 			
-			if db_check_dict(fsp):
-				 msg = QtGui.QMessageBox()
-				 msg.setWindowTitle("Caution")
-				 msg.setText("Are you sure you want to overwrite the bdb file?");
-				 msg.setInformativeText("Clicking ok to remove this file")
-				 msg.setStandardButtons(QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel);
-				 msg.setDefaultButton(QtGui.QMessageBox.Cancel);
-				 ret = msg.exec_()
+			bdb_idx = fsp.find("bdb:")
+			if bdb_idx != -1:
+				fsp = fsp[bdb_idx:]
+	
+			if fsp != '':
 				
-			
-			progress = EMProgressDialogModule(self.application(),"Writing files", "abort", 0, len(self.data),None)
-			progress.qt_widget.show()
-			for i in xrange(0,len(self.data)):
-			#for i,d in enumerate(self.data):
-				d = self.data[i]
-				if d == None: continue # this is the equivalent of the particle being deleted, in certain modes for the cache
-				
-				try:
-					d.write_image(fsp,-1)
-				except:
-					msg.setText("An exception occured while writing %s, please try again" %fsp)
+				if len(fsp) < 3 or ( fsp[-4:] not in [".hdf",".img",".spi",".hed",".lst"] and fsp[:4] != "bdb:" ):
+					msg.setText("%s is an invalid image name" %fsp)
 					msg.exec_()
-					progress.qt_widget.close()
-					return
+					continue
 					
-				progress.qt_widget.setValue(i)
-				self.application().processEvents()
-				if progress.qt_widget.wasCanceled():
-					#remove_file(fsp)# we could do this but if they're overwriting the original data then they lose it all
-					progress.qt_widget.close()
+				if fsp[:4] == "bdb:" and len(fsp) == 4:
+					msg.setText("%s is an invalid bdb name" %fsp)
+					msg.exec_()
+					continue
+				elif fsp[-4:] == ".lst":
+					self.data.save_lst(fsp)
 					return
 				
-			
-			progress.qt_widget.setValue(len(self.data)-1)
-			progress.qt_widget.close()
+				tmp_name = None
+				if db_check_dict(fsp):
+					msg = QtGui.QMessageBox()
+					msg.setWindowTitle("Caution")
+					msg.setText("Are you sure you want to overwrite the bdb file?");
+					msg.setInformativeText("Clicking ok to remove this file")
+					msg.setStandardButtons(QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel);
+					msg.setDefaultButton(QtGui.QMessageBox.Cancel);
+					ret = msg.exec_()
+					if ret == QtGui.QMessageBox.Ok:
+						print "we got the go ahead"
+						db_remove_dict(fsp)
+					else:
+						continue
+						
+				elif file_exists(fsp):
+					# I did  a bit of thinking about this, and I think it's best just to
+					# remove the old file. Yes, if they hit cancel while the progress dialog
+					# is running they might expect the old file to be there, but supporting this
+					# could be too expensive in terms of disk space. If the user wants to recover
+					# their file than they should just undo the deletions in the interface (assuming
+					# that is why they are overwriting their file, or equivalent) and save again.
+					remove_file(fsp)
+				
+				progress = EMProgressDialogModule(self.application(),"Writing files", "abort", 0, len(self.data),None)
+				progress.qt_widget.show()
+				for i in xrange(0,len(self.data)):
+				#for i,d in enumerate(self.data):
+					d = self.data[i]
+					if d == None: continue # this is the equivalent of the particle being deleted, in certain modes for the cache
+					
+					try:
+						d.write_image(fsp,-1)
+					except:
+						msg.setText("An exception occured while writing %s, please try again" %fsp)
+						msg.exec_()
+						progress.qt_widget.close()
+						return
+						
+					progress.qt_widget.setValue(i)
+					self.application().processEvents()
+					if progress.qt_widget.wasCanceled():
+						#remove_file(fsp)# we could do this but if they're overwriting the original data then they lose it all
+						progress.qt_widget.close()
+						return
+				
+				progress.qt_widget.setValue(len(self.data)-1)
+				progress.qt_widget.close()
+				
+				if tmp_name != None:
+					remove_file
+		
+			break
 		
 	def save_lst(self,fsp):
 		'''

@@ -604,5 +604,114 @@ class EMMetaDataTable(object):
 		return form
 		
 		
+
+class TmpRenamedFile:
+	'''
+	This class is used to temporarily rename a file. This is useful, for example,
+	when a user has chosen to overwrite a particle stack. If the user cancel the progress
+	dialog while overwriting the old file it is reasonable to expect that the old file 
+	will not have been removed from the operating system. If the user does not cancel the progress
+	dialog then the name of the temporary file can be retrieved from this object and it can be deleted,
+	or equivalent.
+	'''
+	
+	def __init__(self):
+		pass
+	def get_name(): raise
+	def get_new(): raise
+	def remove_tmp_file(): raise
+	def recover_tmp_file(): raise
+	
+class GenericTmpRenamedFile(TmpRenamedFile):
+	
+	'''
+	This class is for general file renaming. This means that no special considerations
+	need to be given to the file, that is, it's a regular file on the operating system
+	that has not dependent files
+	'''
+	def __init__(self,old_file_name):
+		'''
+		@exception if the old_file_name does not exist on the file system
+		'''
+		if not os.path.exists(old_file_name): raise
+		TmpRenamedFile.__init__(self)
+		self.__old_file_name = old_file_name
+		self.__rename_file()
+	
+	def __rename_file():
+		'''
+		Actually renames by appending the result of gm_time_string to the input file name
+		'''
+		new_ending = gm_time_string()
+		new_ending.replace(" ","_") #just because I hate " "
+		self.__tmp_file_name = self.__old_file_name + new_ending
+		while os.path.exists(self.__tmp_file_name):
+			new_ending = gm_time_string()
+			new_ending.replace(" ","_") #just because I hate " "
+			self.__tmp_file_name = self.__old_file_name + new_ending
+			
+		os.rename(self.__old_file_name,self.__tmp_file_name)
+			
+	def remove_tmp_file():
+		'''
+		removes the temporary file
+		'''
+		os.remove(self.__tmp_file_name)
 		
+	def recover_tmp_file():
+		'''
+		recovers the temporary file (renaming it the original name)
+		'''
+		os.rename(self.__tmp_file_name,self.__old_file_name)
+	
+class ImagicTmpRenamedFile(TmpRenamedFile):
+	'''
+	This class is for temporarily renaming .img/.hed files
+	'''
+	def __init__(self,old_file_name):
+		'''
+		@exception if either the .hed or .img file corrsponding to the old_file_name does not exist on the file system
+		@exception if the old_file_name is not an imagic file
+		'''
 		
+		splt = old_file_name.split(".")
+		if len(splt) < 2 or splt[-1] not in ["img","hed"]: raise
+		
+		self.__old_file_name_root = get_file_tag(splt)
+		
+		if not os.path.exists(self.__old_file_name_root+".img"): raise
+		if not os.path.exists(self.__old_file_name_root+".hed"): raise
+		
+		TmpRenamedFile.__init__(self)
+		self.__old_file_name_root_hed = self.__old_file_name_root+".hed"
+		self.__old_file_name_root_img = self.__old_file_name_root+".img"
+		self.__rename_file()
+		
+	def __rename_file():
+		new_ending = gm_time_string()
+		new_ending.replace(" ","_") #just because I hate " "
+		self.__tmp_file_name_hed = self.self.__old_file_name_root_hed + new_ending
+		self.__tmp_file_name_img = self.self.__old_file_name_root_img + new_ending
+		while (os.path.exists(self.__tmp_file_name_hed) or os.path.exists(self.__tmp_file_name_img)):
+			new_ending = gm_time_string()
+			new_ending.replace(" ","_") #just because I hate " "
+			self.__tmp_file_name_hed = self.self.__old_file_name_root_hed + new_ending
+			self.__tmp_file_name_img = self.self.__old_file_name_root_img + new_ending
+			
+		os.rename(self.__old_file_name_root_hed,self.__tmp_file_name_hed)
+		os.rename(self.__old_file_name_root_img,self.__tmp_file_name_img)
+		
+	def remove_tmp_file():
+		'''
+		removes the temporary file
+		'''
+		os.remove(self.__tmp_file_name_hed)
+		os.remove(self.__tmp_file_name_img)
+		
+	def recover_tmp_file():
+		'''
+		recovers the temporary file (renaming it the original name)
+		'''
+		
+		os.rename(self.__old_file_name_root_hed,self.__tmp_file_name_hed)
+		os.rename(self.__old_file_name_root_img,self.__tmp_file_name_img)

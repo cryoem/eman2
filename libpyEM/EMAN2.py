@@ -1171,6 +1171,12 @@ def test_image(type=0,size=(128,128)):
 		tmp = EMData(*size)
 		tmp.process_inplace("testimage.noise.gauss")
 		ret.add(tmp)
+	elif type==10:
+		ret.process_inplace("testimage.scurve")
+		t = Transform({"type":"2d","alpha":Util.get_frand(0,360)})
+		t.set_trans(int(size[0]/10),int(size[1]/10),0)
+		#t.set_mirror(Util.get_irand(0,1))
+		ret.transform(t)
 	else:
 		raise	
 	
