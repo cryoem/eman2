@@ -237,5 +237,5 @@ class EMDCTaskClient(EMTaskClient):
 	def run():
 		sock=socket()
 		sock.connect((server,port))
-		self.sockf=
+#		self.sockf=
 		
