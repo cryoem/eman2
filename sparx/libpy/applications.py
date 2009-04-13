@@ -5433,7 +5433,6 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, maxit=10, nas
 			print  "Node ",myid,"  waiting..."
 			sleep(5)
 
-
 		info_file = outdir+("/progress%04d"%myid)
 		finfo = open(info_file, 'w')
 	else:
@@ -5549,40 +5548,45 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, maxit=10, nas
 		if(myid == main_node) :
 			print_msg( runtype + (" ITERATION #%3d\n"%iteration) )
 
+		
+
 
 		peaks = [-1.0e23] * nima
 		for krf in xrange(numref):
 			vol = get_im(os.path.join(outdir, "volf%04d.hdf"%(iteration-1)), krf)
-			vol *= mask3D
-			volft,kb = prep_vol(vol)
+			if CTF:
+				previous_defocus = -1
+			else:
+				volft,kb = prep_vol(vol)
 				
 
 			for im in xrange(nima):
 				img = data[im]
 				ctf = img.get_attr( "ctf" )
+				if ctf.defocus != previous_defocus:
+					ctfvol = filt_ctf( vol, ctf )
+					volft, kb = prep_vol( ctfvol )
+
 				phi,tht,psi,s2x,s2y = get_params_proj(img)
-				refi = img.process( "normalize.mask", {"mask":mask2D, "no_sigma":0} )
-				refi = filt_ctf(refi, ctf )
-				refi = refi.FourInterpol(nx*2,nx*2,0,True)
-				refi = Processor.EMFourierFilter(refi, refiparams)
-				refdata = [None]*7
-				refdata[0] = volft
-				refdata[1] = kb
-				refdata[2] = img
-				refdata[3] = mask2D
-				refdata[4] = refi
-				refdata[5] = [-s2x,-s2y]
-				
 				if runtype=="ASSIGNMENT":
-					refdata[6] = False
-					peak = eqproj_cascaded_ccc([phi,tht,psi], refdata)
+					ref  = prgs( volft, kb, [phi,tht,psi,-s2x,-s2y] )
+					peak = ref.cmp("ccc",img,{"mask":mask2D, "negative":0})
 					if not(finfo is None):
 						finfo.write( "ID,iref,peak: %6d %d %f"%(list_of_particles[im],krf,peak) )
 						finfo.flush()
 				else:
-					refdata[6] = True
+					refi = img.process( "normalize.mask", {"mask":mask2D, "no_sigma":0} )
+					refi = refi.FourInterpol(nx*2,nx*2,0,True)
+					refi = Processor.EMFourierFilter(refi, refiparams)
+					refdata = [None]*6
+					refdata[0] = volft
+					refdata[1] = kb
+					refdata[2] = img
+					refdata[3] = mask2D
+					refdata[4] = refi
+					refdata[5] = [-s2x,-s2y]
+				
 					weight_phi = max(delta, delta*abs((tht-90.0)/180.0*pi))
-					# running refinement
 					[ang,peak,iter,sft] = amoeba_multi_level([phi,tht,psi],[weight_phi,delta,weight_phi],eqproj_cascaded_ccc, 1.0,1.e-2, 500, refdata)
 					if not(finfo is None):
 						finfo.write( "ID,iref,peak,trans: %6d %d %f %f %f %f %f %f"%(list_of_particles[im],krf,peak,ang[0],ang[1],ang[2],-sft[0],-sft[1]) )
@@ -5865,6 +5869,12 @@ def eqproj_cascaded_ccc(args, data):
 	from utilities import peak_search, amoeba
 	from fundamentals import fft, ccf, fpol
 
+	volft 	= data[0]
+	kb	= data[1]
+	mask2D	= data[3]
+	refi	= data[4]
+
+
 	R = Transform({"type":"spider", "phi":args[0], "theta":args[1], "psi":args[2], "tx":0.0, "ty":0.0, "tz":0.0, "mirror":0, "scale":1.0})
 	temp = data[0].extract_plane(R, data[1])
 	temp.fft_shuffle()
@@ -5888,13 +5898,13 @@ def eqproj_cascaded_ccc(args, data):
 	data2[1] = data[1]
 	ps = amoeba([sx, sy], [1.0, 1.0], twoD_fine_search, 1.e-4, 1.e-4, 500, data2)
 
+	v = ps[1]
 	s2x = nx/2-ps[0][0]
 	s2y = nx/2-ps[0][1]
+
 	#params2 = {"filter_type":Processor.fourier_filter_types.SHIFT, "x_shift":s2x, "y_shift":s2y, "z_shift":0.0}
 	#temp2 = Processor.EMFourierFilter(temp, params2)
-	##v = -temp2.cmp("SqEuclidean", data[2], {"mask":data[3]})
 	#v = temp2.cmp("ccc", data[2], {"mask":data[3], "negative":0})
-	v = ps[1]
 	
 	return v, [s2x, s2y]
 
