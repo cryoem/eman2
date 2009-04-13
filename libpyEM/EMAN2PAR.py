@@ -41,17 +41,17 @@ import socket
 # used to make sure servers and clients are running the same version
 EMAN2PARVER=1
 
-class EMTaskProxy:
+class EMTaskCustomer:
 	"""This will communicate with the specified task server on behalf of an application needing to
 	have tasks completed"""
 
 class EMTaskHandler:
-	"""This will respond to client requests"""
+	"""This is the actual server object which talks to clients and customers. It coordinates task execution
+ acts as a data clearinghouse"""
 	
 	def __init__(self,path=None):
 		self.queue=EMTaskQueue(path)
 		
-	
 class EMTaskClient:
 	"""This class executes tasks on behalf of the server. This parent class implements the actual task functionality.
 Communications are handled by subclasses."""
@@ -62,16 +62,19 @@ Communications are handled by subclasses."""
 #  Here we define the classes for publish and subscribe parallelism
 
 def sendobj(sock,obj):
-	"""Sends an object as a (binary) size then a binary pickled object"""
+	"""Sends an object as a (binary) size then a binary pickled object to a socket file object"""
+	if obj==None : 
+		sock.write("\0\0\0\0")
+		return
 	strobj=dumps(obj,-1)
-	sock.send(pack("I",len(strobj)))
-	sock.send(strobj)
+	sock.write(pack("I",len(strobj)))
+	sock.write(strobj)
 
 def recvobj(sock):
-	"""receives a packed length followed by a binary (pickled) object and returns"""
-	datlen=unpack("I",sock.recv(4))
+	"""receives a packed length followed by a binary (pickled) object from a socket file object and returns"""
+	datlen=unpack("I",sock.read(4))[0]
 	if datlen<=0 :return None
-	return loads(sock.recv(datlen))
+	return loads(sock.read(datlen))
 
 def EMDCsendonecom(host,port,cmd,data):
 	"""Connects to an EMAN EMDCServer sends one command then disconnects"""
@@ -82,13 +85,15 @@ def EMDCsendonecom(host,port,cmd,data):
 	# 12-15: count of bytes in pickled data following header
 	sock=socket.socket()
 	sock.connect((host,port))
-	if sock.recv(4)!="EMAN" : raise Exception,"Not an EMAN server"
-	sock.send("EMAN")
-	sock.send(pack("I4s",EMAN2PARVER,cmd))
-	sendobj(sock,data)
+	sockf=sock.makefile()
+	if sockf.read(4)!="EMAN" : raise Exception,"Not an EMAN server"
+	sockf.write("EMAN")
+	sockf.write(pack("I4s",EMAN2PARVER,cmd))
+	sendobj(sockf,data)
+	sockf.flush()
 	
-	ret=recvobj(sock)
-	sock.close()
+	ret=recvobj(sockf)
+	sockf.close()
 	return ret
 
 def runEMDCServer(port,verbose):
@@ -98,12 +103,17 @@ def runEMDCServer(port,verbose):
 
 	if port!=None and port>0 : 
 		server = SocketServer.TCPServer(("", port), EMDCTaskHandler)	# "" is the hostname and will bind to any IPV4 interface/address
-
+		print server
 	# EMAN2 will use ports in the range 9900-9999
-	for port in range(9900,10000):
-		try: server = SocketServer.TCPServer(("", port), self)
-		except: continue
-		break
+	else :
+		for port in range(9990,10000):
+			try: 
+				server = SocketServer.TCPServer(("", port), EMDCTaskHandler)
+				print "Server started on port %d"%port
+			except:
+				print "Port %d unavailable"%port
+				continue
+			break
 
 	server.serve_forever()
 
@@ -117,8 +127,9 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 		# if a port is specified, just try to open it directly. No error detection
 
 		EMTaskHandler.__init__(self)
-		SocketServer.BaseRequestHandler(request,client_address,server)
 		self.verbose=EMDCTaskHandler.verbose
+		self.sockf=request.makefile()		# this turns our socket into a buffered file-like object
+		SocketServer.BaseRequestHandler.__init__(self,request,client_address,server)
 
 
 	
@@ -130,22 +141,34 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 	send command, data len, data (if len not 0)
 	close"""
 
+		print self.sockf
+		if self.verbose>1 : print "connection from %s"%(str(self.client_address))
+
+		# initial exchange to make sure we're talking to a client
+		self.sockf.write("EMAN")
+		self.sockf.flush()
+		msg = self.sockf.read(4)
+		if msg!="EMAN" : raise Exception,"Non EMAN client"
+		
 		while (1):
 			# the beginning of a message is a struct containing
 			# 0-3  : EMAN
 			# 4-7  : int, EMAN2PARVER
 			# 8-11 : 4 char command
 			# 12-15: count of bytes in pickled data following header
-			self.request.send("EMAN")
-			msg = sel.request.recv(4)
-			if msg!="EMAN" : raise Exception,"Non EMAN client"
-			msg = sel.request.recv(12)
-			ver,cmd,datlen=unpack("I4sI",msg)
+			msg = self.sockf.read(8)
+			if len(msg)<8 :
+				if self.verbose>1 : print "connection closed %s"%(str(self.client_address))
+				return
+				
+			ver,cmd=unpack("I4s",msg)
 			if ver!=EMAN2PARVER : raise Exception,"Version mismatch in parallelism"
 			
-			data = loads(sel.request.recv(datlen))
+			data = recvobj(self.sockf)
 			
-			if self.verbose : print "Command %s: %s (%d)"%(str(self.client_address),cmd,datlen)
+			if self.verbose : 
+				try: print "Command %s: %s (%d)"%(str(self.client_address),cmd,len(data))
+				except: print "Command %s: %s (-)"%(str(self.client_address),cmd)
 
 			######################  These are issued by clients
 			# Ready for a task
@@ -154,10 +177,11 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				task=self.queue.get_task()
 				task.starttime=time.time()
 				sendobj(self.request,task)
+				self.sockf.flush()
 				
 				# check for an ACK, if not, requeue
 				try:
-					if sel.request.recv(4)!="ACK " : raise Exception
+					if sel.sockf.read(4)!="ACK " : raise Exception
 				except: 
 					task.starttime=None		# requeue
 			
@@ -181,8 +205,8 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 			###################### These are utility commands
 			# Returns whatever is sent as data
 			elif cmd=="TEST":
-				ret=dumps(data)
-				if data : sel.request.send(dumps(data))
+				sendobj(self.sockf,("TEST",data))
+				self.sockf.flush()
 				
 			
 			# Cause this server to exit (cleanly)
@@ -202,7 +226,16 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 #		self.request.send(self.data.upper())
 
 class EMDCTaskClient(EMTaskClient):
-	"""Distributed Computing Task Client. This client will connect to an EMDCTaskServer and request jobs to run
+	"""Distributed Computing Task Client. This client will connect to an EMDCTaskServer, request jobs to run
  and run them ..."""
+ 
+	def __init__(self,server,port):
+		EMTaskClient.__init__(self)
+		self.addr=(server,port)
 
+
+	def run():
+		sock=socket()
+		sock.connect((server,port))
+		self.sockf=
 		

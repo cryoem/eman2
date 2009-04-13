@@ -358,9 +358,7 @@ class EMTaskQueue:
 
 		if not self.active.has_key("max") : self.active["max"]=-1
 		if not self.active.has_key("min") : self.active["min"]=0
-		
-		db.open_dict('tasks_complete')
-		if not db.tasks_done.has_key("max") : db.tasks_done["max"]=0
+		if not self.complete.has_key("max") : self.complete["max"]=0
 	
 	def get_task(self):
 		"""This will return the next task waiting for execution"""
@@ -410,7 +408,7 @@ class EMTaskQueue:
 		task.endtime=time.time()
 		if self.active["min"]==taskid : self.active["min"]=min(self.active.keys())
 		self.complete[tid]=task
-		self.db,tasks_active[tid]=None
+		self.active[tid]=None
 		
 		# if our parent is waiting for us
 		if task.parent :
