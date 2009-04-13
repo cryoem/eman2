@@ -59,12 +59,12 @@ write_text_file(ppp, "params.txt")
 del ppp
 nprojdata = EMUtil.get_image_count(stack_data)
 snr = 1.0e20
-vol1   = recons3d_4nn_ctf(stack_data, range(0,nprojdata,2), snr)
-#vol1   = recons3d_4nn(stack_data, range(0,nprojdata,2))
+#vol1   = recons3d_4nn_ctf(stack_data, range(0,nprojdata,2), snr)
+vol1   = recons3d_4nn(stack_data, range(0,nprojdata,2))
 vol1.write_image("v1.hdf", 0)
 
-vol2   = recons3d_4nn_ctf(stack_data, range(1,nprojdata,2), snr)
-#vol2   = recons3d_4nn(stack_data, range(1,nprojdata,2))
+#vol2   = recons3d_4nn_ctf(stack_data, range(1,nprojdata,2), snr)
+vol2   = recons3d_4nn(stack_data, range(1,nprojdata,2))
 
 #mask3d = model_circle(nx//2-5,nx,nx,nx)
 
@@ -100,7 +100,7 @@ for iter in xrange(1):
 	#proj_ali(vol, mask3D, stack_data, first_ring, last_ring, rstep, xrng, yrng, step, dtheta)
 
 	#calculate new and improved 3D
-	stack_data = "data.hdf"
+	#stack_data = "data.hdf"
 	nprojdata = EMUtil.get_image_count(stack_data)
 	list_p = range(nprojdata)
 	vol = recons3d_4nn_ctf(stack_data, list_p, snr, 1, "c2")
