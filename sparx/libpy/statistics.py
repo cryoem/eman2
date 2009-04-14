@@ -31,7 +31,7 @@
 from EMAN2_cppwrap import *
 from global_def import *
 #test
-def add_oe_series(data):
+def add_oe_series(data, params="xform.align2d"):
 	"""
 		Calculate odd and even sum of an image series using current alignment parameters
 	"""
@@ -43,7 +43,7 @@ def add_oe_series(data):
 	ave1 = model_blank(nx,ny)
 	ave2 = model_blank(nx,ny)
 	for i in xrange(n):
-		alpha, sx, sy, mirror, scale = get_params2D(data[i])
+		alpha, sx, sy, mirror, scale = get_params2D(data[i], params)
 		temp = rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
 		if i%2 == 0: Util.add_img(ave1, temp)
 		else:          Util.add_img(ave2, temp)

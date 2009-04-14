@@ -10157,7 +10157,6 @@ def header(stack, params, zero, one, randomize, rand_alpha, fimport, fexport, fp
 					img.set_attr(params[j], extract_value(parmvalues[j]))
 
 			write_header(stack, img, i)
-			print i, 'done'
 		else:
 			for p in params:
 				if zero:
