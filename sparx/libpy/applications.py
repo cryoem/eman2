@@ -368,14 +368,13 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, bcast_number_to_all, send_attr_dict, file_type
 	from utilities    import send_EMData, recv_EMData
 	from statistics   import add_ave_varf_MPI, ave_series
-	from alignment    import Numrinit, ringwe, ali2d_random_ccf, ali2d_single_iter
+	from alignment    import Numrinit, ringwe, ali2d_random_ccf, ali2d_single_iter, max_pixel_error
 	from filter       import filt_tophatb
 	from morphology   import ctf_2
 	from numpy        import reshape, shape
 	from utilities    import print_msg, print_begin_msg, print_end_msg
 	from fundamentals import fft, rot_shift2D, fshift
 	from random       import randint, random
-	from math         import sqrt, sin, pi
 	import os
 
 	from mpi 	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
@@ -559,9 +558,6 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				print_msg(msg_string)
 	bcast_EMData_to_all(tavg, key, group_main_node, group_comm)
 
-	N_step = 0
-	tnull = Transform({"type":"2D"})
-
 	# precalculate rings
 	numr = Numrinit(first_ring, last_ring, rstep, mode) 
  	wr = ringwe(numr, mode)
@@ -587,19 +583,24 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				mix_y1.set_value_at(jj, ii, temp_value)
 				mix_y2.set_value_at(jj, ii, 1-temp_value)
 
+	N_step = 0
 	cs = [0.0]*2
 	sx_sum = 0.0
 	sy_sum = 0.0
+	N_merge = 10
 
-	for ipt in xrange(10):
+	for ipt in xrange(N_merge):
 		if ipt !=0 : T0 = T0*0.5
 
 		total_iter = 0
 		#again = 1
 		T = T0
 		
+		if ipt == N_merge-1: ali_params = "xform.align2d"
+		else: ali_params = "xform.align2d_%02d"%(ipt)		
+		
 		for im in data:
-			im.set_attr_dict({'xform.align2d':tnull})
+			set_params2D(im, [0.0, 0.0, 0.0, 0, 1.0], ali_params)
 		if key == group_main_node:
 			msg = ""
 		for Iter in xrange(max_iter):
@@ -609,7 +610,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			for im in data:
 				alphan, sxn, syn, mirror, scale = get_params2D(im)
 				old_ali.append([alphan, sxn, syn, mirror, scale])
-			sx_sum, sy_sum = ali2d_random_ccf(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF, random_method, T)
+			sx_sum, sy_sum = ali2d_random_ccf(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF, random_method, T, ali_params)
 			sx_sum = mpi_reduce(sx_sum, 1, MPI_FLOAT, MPI_SUM, group_main_node, group_comm)
 			sy_sum = mpi_reduce(sy_sum, 1, MPI_FLOAT, MPI_SUM, group_main_node, group_comm)
 
@@ -617,16 +618,16 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			pixel_error = 0.0
 			mirror_change = 0
 			for im in xrange(len(data)):
-				alphan, sxn, syn, mirror, scale = get_params2D(data[im]) 
+				alphan, sxn, syn, mirror, scale = get_params2D(data[im], ali_params) 
 				if old_ali[im][3] == mirror:
-					this_error = abs(sin((old_ali[im][0]-alphan)/180.0*pi/2))*(last_ring*2)+sqrt((old_ali[im][1]-sxn)**2+(old_ali[im][2]-syn)**2)
+					this_error = max_pixel_error(old_ali[im][0], old_ali[im][1], old_ali[im][2], alphan, sxn, syn, last_ring*2)
 					pixel_error += this_error
 				else:
 					mirror_change += 1
 				this_select = data[im].get_attr("select")
 				select += this_select
 
-			tavg, vav = add_ave_varf_MPI(data, None, "a", CTF)
+			tavg, vav = add_ave_varf_MPI(data, None, "a", CTF, ali_params)
 			
 			# bring all partial sums together
 			reduce_EMData_to_root(tavg, key, group_main_node, group_comm)
@@ -747,7 +748,8 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					savg[isav].set_attr_dict({'xform.align2d':tnull, 'active':1})
 				"""
 				for isav in xrange(number_of_ave):
-					savg[isav].set_attr_dict({'xform.align2d':tnull, 'active':1})
+					savg[isav].set_attr_dict({'active':1})
+					set_params2D(savg[isav], [0.0, 0.0, 0.0, 0, 1.0])
 				for inp in xrange(5):
 					sx_sum, sy_sum = ali2d_single_iter(savg, numr, wr, [0.0, 0.0], tavg, cnx, cny, 3.0, 3.0, 0.5, mode, False)
 					tavg = ave_series(savg)
@@ -784,14 +786,9 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				del tsavg
 		bcast_EMData_to_all(tavg, key, group_main_node, group_comm)
 		
-		# write out headers and STOP, under MPI writing has to be done sequentially
-		# Commented by Yang on 03/02/09
-		# I have decided to permanently move this block into the 'for' loop, 
-		# the cost of not recording the partial run results is too high 
 		mpi_barrier(MPI_COMM_WORLD)
-		#par_str = ["xform.align2d", "ID"]
-		if ipt == 9: par_str = ["xform.align2d"]
-		else: par_str = ["xform.align2d_%02d"%(ipt)]
+		#par_str = [ali_params, "ID"]
+		par_str = [ali_params]
 		if color == 0:    # We can only use one group of alignment as the final results
 			if key == group_main_node:
 				if file_type(stack) == "bdb":

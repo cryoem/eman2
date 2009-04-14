@@ -31,7 +31,7 @@
 from EMAN2_cppwrap import *
 from global_def import *
 	
-def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, CTF=False, random_method="", T=1.0):
+def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, CTF=False, random_method="", T=1.0, ali_params="xform.align2d"):
 	"""
 		single iteration of 2D alignment using ormq
 		if CTF = True, apply CTF to data (not to reference!)
@@ -57,7 +57,7 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode
 			ima = filt_ctf(data[im], ctf_params, True)
 		else:
 			ima = data[im]
-		alpha, sx, sy, mirror, dummy = get_params2D(ima)
+		alpha, sx, sy, mirror, dummy = get_params2D(ima, ali_params)
 		alpha, sx, sy, mirror        = combine_params2(alpha, sx, sy, mirror, 0.0, -cs[0], -cs[1], 0)
 		alphai, sxi, syi, scalei     = inverse_transform2(alpha, sx, sy, 1.0)
 
@@ -67,12 +67,12 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode
 			[angt, sxst, syst, mirrort, peakt, select] = sim_anneal(peaks, T, step, mode, maxrin)
 			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
 			data[im].set_attr_dict({"select":select, "peak":peakt})
-			set_params2D(data[im], [alphan, sxn, syn, mn, 1.0])
+			set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], ali_params)
 		else:
 			[angt, sxst, syst, mirrort, peakt] = ormq(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
 			# combine parameters and set them to the header, ignore previous angle and mirror
 			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
-			set_params2D(data[im], [alphan, sxn, syn, mn, 1.0])
+			set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], ali_params)
 
 		if mn == 0: sx_sum += sxn
 		else:       sx_sum -= sxn
@@ -81,7 +81,7 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode
 	return sx_sum, sy_sum
 
 
-def ali2d_random_ccf(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, CTF=False, random_method="", T=1.0):
+def ali2d_random_ccf(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, CTF=False, random_method="", T=1.0, ali_params="xform.align2d"):
 	"""
 		single iteration of 2D alignment using ormq
 		if CTF = True, apply CTF to data (not to reference!)
@@ -107,7 +107,7 @@ def ali2d_random_ccf(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode,
 			ima = filt_ctf(data[im], ctf_params, True)
 		else:
 			ima = data[im]
-		alpha, sx, sy, mirror, dummy = get_params2D(ima)
+		alpha, sx, sy, mirror, dummy = get_params2D(ima, ali_params)
 		alpha, sx, sy, mirror        = combine_params2(alpha, sx, sy, mirror, 0.0, -cs[0], -cs[1], 0)
 		alphai, sxi, syi, scalei     = inverse_transform2(alpha, sx, sy, 1.0)
 
@@ -117,12 +117,12 @@ def ali2d_random_ccf(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode,
 			[angt, sxst, syst, mirrort, peakt, select] = sim_ccf(peak, T, step, mode, maxrin)
 			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
 			data[im].set_attr_dict({"select":select, "peak":peakt})
-			set_params2D(data[im], [alphan, sxn, syn, mn, 1.0])
+			set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], ali_params)
 		else:
 			[angt, sxst, syst, mirrort, peakt] = ormq(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
 			# combine parameters and set them to the header, ignore previous angle and mirror
 			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
-			set_params2D(data[im], [alphan, sxn, syn, mn, 1.0])
+			set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], ali_params)
 
 		if mn == 0: sx_sum += sxn
 		else:       sx_sum -= sxn
@@ -1498,3 +1498,8 @@ def align2d_g(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, r
 	numr = Numrinit(first_ring, last_ring, rstep, mode)
 
 	return ormy2(image,refim,crefim,xrng,yrng,step,mode,numr,cnx,cny,"gridding")
+
+def max_pixel_error(alpha1, sx1, sy1, alpha2, sx2, sy2, d):
+	from math import sin, pi, sqrt
+	
+	return abs(sin((alpha1-alpha2)/180.0*pi/2))*d+sqrt((sx1-sx2)**2+(sy1-sy2)**2)

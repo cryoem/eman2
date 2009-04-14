@@ -31,7 +31,7 @@
 from EMAN2_cppwrap import *
 from global_def import *
 #test
-def add_oe_series(data, params="xform.align2d"):
+def add_oe_series(data, ali_params="xform.align2d"):
 	"""
 		Calculate odd and even sum of an image series using current alignment parameters
 	"""
@@ -43,13 +43,13 @@ def add_oe_series(data, params="xform.align2d"):
 	ave1 = model_blank(nx,ny)
 	ave2 = model_blank(nx,ny)
 	for i in xrange(n):
-		alpha, sx, sy, mirror, scale = get_params2D(data[i], params)
+		alpha, sx, sy, mirror, scale = get_params2D(data[i], ali_params)
 		temp = rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
 		if i%2 == 0: Util.add_img(ave1, temp)
 		else:          Util.add_img(ave2, temp)
 	return ave1, ave2
 
-def add_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None):
+def add_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None, ali_params = "xform.align2d"):
 	"""
 		Calculate average of an image series and variance, sum of squares in Fourier space
 		mode - "a": use current alignment parameters
@@ -76,7 +76,7 @@ def add_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None):
 	 	for i in xrange(n):
 	 		ima = data[i].copy()
 	 		if mode == "a":
-				alpha, sx, sy, mirror, scale = get_params2D(ima)
+				alpha, sx, sy, mirror, scale = get_params2D(ima, ali_params)
 				ima = rot_shift2D(ima, alpha, sx, sy, mirror, scale, "quadratic")
 				#  Here we have a possible problem: varf works only if CTF is applied after rot/shift
 				#    while calculation of average (and in general principle) CTF should be applied before rot/shift
@@ -94,7 +94,7 @@ def add_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None):
 	else:
 		for i in xrange(n):
 			if mode == "a":
-				alpha, sx, sy, mirror, scale = get_params2D(data[i])
+				alpha, sx, sy, mirror, scale = get_params2D(data[i], ali_params)
 				ima = rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
 			else:
 				ima = data[i].copy()
@@ -112,7 +112,7 @@ def add_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None):
 	return ave, var, sumsq
 	
 
-def add_ave_varf_MPI(data, mask = None, mode = "a", CTF = False):
+def add_ave_varf_MPI(data, mask = None, mode = "a", CTF = False, ali_params = "xform.align2d"):
 	"""
 		Calculate sum of an image series and sum of squares in Fourier space
 		Since this is the MPI version, we need to reduce sum and sum of squares 
@@ -135,7 +135,7 @@ def add_ave_varf_MPI(data, mask = None, mode = "a", CTF = False):
 	 		ERROR("data cannot be ctf-applied", "add_ave_varf_MPI", 1)
 	 	for i in xrange(n):
 	 		if mode == "a":
-				alpha, sx, sy, mirror, scale = get_params2D(data[i])
+				alpha, sx, sy, mirror, scale = get_params2D(data[i], ali_params)
 				ima = rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
 			else:
 				ima = data[i]
@@ -146,7 +146,7 @@ def add_ave_varf_MPI(data, mask = None, mode = "a", CTF = False):
 	else:
 		for i in xrange(n):
 			if mode == "a":
-				alpha, sx, sy, mirror, scale = get_params2D(data[i])
+				alpha, sx, sy, mirror, scale = get_params2D(data[i], ali_params)
 				ima = rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
 			else:
 				ima = data[i]
