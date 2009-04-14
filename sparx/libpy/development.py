@@ -8484,6 +8484,37 @@ def cml2_sinogram(image2D, diameter, d_psi = 1):
 
 	return Util.window(e, diameter, len(data), 1, 0, 0, 0)
 
+# write the head of the logfile
+def cml2_head_log(stack, outdir, delta, ir, ou, lf, hf, rand_seed, maxit, given, flag_weights):
+	from utilities import print_msg
+
+	# call global var
+	global g_anglst, g_n_prj, g_d_psi, g_n_anglst
+	
+	print_msg('Input stack                  : %s\n'     % stack)
+	print_msg('Number of projections        : %d\n'     % g_n_prj)
+	print_msg('Output directory             : %s\n'     % outdir)
+	print_msg('Angular step                 : %5.2f\n'  % delta)
+	print_msg('Sinogram angle accuracy      : %5.2f\n'  % g_d_psi)
+	print_msg('Inner particle radius        : %5.2f\n'  % ir)	
+	print_msg('Outer particle radius        : %5.2f\n'  % ou)
+	print_msg('Filter, minimum frequency    : %5.3f\n'  % lf)
+	print_msg('Filter, maximum frequency    : %5.3f\n'  % hf)
+	print_msg('Random seed                  : %i\n'     % rand_seed)
+	print_msg('Number of maximum iterations : %d\n'     % maxit)
+	print_msg('Start from given orientations: %s\n'     % given)
+	print_msg('Number of angles             : %i\n'     % g_n_anglst)
+	print_msg('Use Voronoi weights          : %s\n\n'   % flag_weights)
+
+# write the end of the logfile
+def cml2_end_log(Ori, disc, ite):
+	from utilities import print_msg
+	global g_n_prj
+	print_msg('\n\n')
+	for i in xrange(g_n_prj): print_msg('Projection #%s: phi %10.5f    theta %10.5f    psi %10.5f\n' % (str(i).rjust(3, '0'), Ori[4*i], Ori[4*i+1], Ori[4*i+2]))
+	print_msg('\nNumber of iterations: %d\n' % ite)
+	print_msg('Discrepancy: %10.3f\n' % abs(disc))
+
 # given two set of orientations (structure), determine the error between them after 3D LSQ registration
 def cml2_error_ori(Ori1, Ori2):
 	from math  import sin, cos, pi, sqrt
@@ -8802,7 +8833,7 @@ def cml2_main(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit, giv
 	cml2_init_global_var(dpsi, delta, len(Prj), debug)
 	
 	# Update logfile
-	#cml_head_log(stack, outdir, delta, ir, ou, lf, hf, rand_seed, maxit, given)
+	cml2_head_log(stack, out_dir, delta, ir, ou, lf, hf, rand_seed, maxit, given, flag_weights)
 
 	# prepare rotation matrix
 	Rot = Util.cml_init_rot(Ori)
@@ -8823,7 +8854,7 @@ def cml2_main(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit, giv
 	#disc_now = cml_disc(Prj, Ori, False)
 
 	# Update logfile
-	#cml_end_log(Ori, disc, disc_now, ite)
+	cml_end_log(Ori, disc, ite)
 	running_time(t_start)
 	print_end_msg('find_struct')
 
@@ -8833,7 +8864,7 @@ def cml2_main(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit, giv
 # application find structure MPI version
 def cml2_main_mpi(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit, given = False, first_zero = False, flag_weights = False, debug = False):
 	from mpi       import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier, MPI_COMM_WORLD
-	from mpi       import mpi_bcast, MPI_INT
+	from mpi       import mpi_reduce, mpi_bcast, MPI_INT, MPI_LOR
 	from utilities import print_begin_msg, print_msg, print_end_msg, start_time, running_time
 	from random    import seed, random
 	import time, sys, os, cPickle, logging
@@ -8891,70 +8922,93 @@ def cml2_main_mpi(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit,
 
 	# Compute the first disc
 	disc = cml2_disc(Prj, Ori, Rot, flag_weights)
-	logging.info('[node: %02i gen: %03i]  first disc: %f' % (myid, 0, disc))
+	logging.info('[gen: %03i node: %02i]  first disc: %f' % (0, myid, disc))
 
 	# Update progress file
 	#cml2_export_txtagls(out_dir, Ori, disc, 'Init')
 
-	maxgen = 4
-	pcross = 0.95
-	pmut   = 0.1
-	F      = 0.9
+	maxgen  = 10 #24
+	pcross  = 0.95
+	pmut    = 0.05
+	#pmutmin = 0.01
+	#pmutmax = 0.3
+	#F       = 0.5
 	global g_n_prj
+	flag_stop = 0
 	for igen in xrange(maxgen):
 		t_start = start_time()
 
 		if igen != 0:
-			f = open(out_dir + '/node_%02i_gen_%03i' % (myid, igen), 'r')
+			f = open(out_dir + '/gen_%03i_node_%02i' % (igen, myid), 'r')
 			Ori = cPickle.load(f)
 			f.close()
 			Rot = Util.cml_init_rot(Ori)
 
 		# Find structure
 		Ori, disc, ite = cml2_find_structure(Prj, Ori, Rot, out_dir, maxit, first_zero, flag_weights)
-		f = open(out_dir + '/node_%02i_gen_%03i' % (myid, igen), 'w')
+
+		f = open(out_dir + '/gen_%03i_node_%02i' % (igen, myid), 'w')
 		cPickle.dump(Ori, f)
 		f.close()
-		logging.info('[node: %02i gen: %03i]  disc: %f  nb ite: %i' % (myid, igen, disc, ite))
+		f = open(out_dir + '/comm_node_%02i' % myid, 'w')
+		f.write('%f\n' % disc)
+		f.close()
+		logging.info('[gen: %03i node: %02i]  disc: %f  nb ite: %i' % (igen, myid, disc, ite))
 
 		mpi_barrier(MPI_COMM_WORLD)
 		if myid == main_node:
 			all_ori = []
 			for n in xrange(ncpu):
-				f = open(out_dir + '/node_%02i_gen_%03i' % (n, igen), 'r')
+				f = open(out_dir + '/gen_%03i_node_%02i' % (igen, n), 'r')
 				buf = cPickle.load(f)
 				f.close()
 				all_ori.append(buf)
 				del buf
 
+			alldisc = []
+			for n in xrange(ncpu):
+				data = open(out_dir + '/comm_node_%02i' % n, 'r').readlines()
+				alldisc.append(float(data[0]))
+			meandisc = sum(alldisc) / float(ncpu)
+
 			minerr = 1e6
 			mem    = [-1, -1]
+			serr   = 0
 			for i in xrange(ncpu):
 				for j in xrange(i+1, ncpu):
-					err = cml2_error_ori(all_ori[i], all_ori[j])
+					err   = cml2_error_ori(all_ori[i], all_ori[j])
+					serr += err
 					if err < minerr:
 						minerr = err
 						mem    = [i, j]
-			logging.info('>>> best pair is %s with err = %f' % (mem, minerr))
+
+			serr /= float((ncpu-1)*ncpu/2.0)
+			logging.info('>>> best pair is %s with err = %f     disc ave: %f   err ave: %f' % (mem, minerr, meandisc, serr))
 			
 			pop = cml2_GA(all_ori[mem[0]], all_ori[mem[1]], ncpu, pcross, pmut)
 			logging.info('>>> new populations pcross: %f pmut: %f' % (pcross, pmut))
 
-			pmut *= F
+			#pmut *= F
 			
 			for n in xrange(ncpu):
-				f = open(out_dir + '/node_%02i_gen_%03i' % (n, igen + 1), 'w')
+				f = open(out_dir + '/gen_%03i_node_%02i' % (igen + 1, n), 'w')
 				cPickle.dump(pop[n], f)
 				f.close()
 
+			if minerr == 0: flag_stop = 1
+
 		mpi_barrier(MPI_COMM_WORLD)
+		flag_stop = mpi_reduce(flag_stop, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
+		flag_stop = mpi_bcast(flag_stop, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+		flag_stop = flag_stop.tolist()[0]
+		if flag_stop: break
+
 	
 	#if myid == main_node:
 	        # Export structure
 		#cml2_export_struc(stack, out_dir, Ori)
 	if myid == main_node:
 		logging.info('=== END ===')
-	mpi_barrier(MPI_COMM_WORLD)
 
 	# Update logfile
 	#cml_end_log(Ori, disc, disc_now, ite)
