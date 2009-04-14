@@ -37,7 +37,7 @@ from PyQt4.QtCore import Qt
 import os
 import re
 from EMAN2 import get_image_directory,e2getcwd,get_dtag,EMData,get_files_and_directories,db_open_dict,strip_file_tag,remove_file
-from EMAN2 import remove_directories_from_name,Util,EMUtil,IMAGE_UNKNOWN,get_file_tag,db_check_dict,file_exists
+from EMAN2 import remove_directories_from_name,Util,EMUtil,IMAGE_UNKNOWN,get_file_tag,db_check_dict,file_exists,gimme_image_dimensions3D, gm_time_string
 from emimage2d import EMImage2DModule
 from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMProgressDialogModule
 from EMAN2db import EMAN2DB
@@ -425,7 +425,7 @@ class EMSelectorDialog(QtGui.QDialog):
 		elif action.text() == "Preview Subset":
 			data = []
 			for item in self.menu_selected_items:
-				data.append(item.get_data())
+				data.append(item.get_emdata())
 			self.preview_data(data,"")
 		elif action.text() == "Open in e2boxer":
 			names = []
@@ -1133,6 +1133,12 @@ class EMListingItem:
 		DB items have to use a special syntax
 		'''
 		return None
+	
+	def get_emdata(self):
+		'''
+		supposed to return an EMData object, if possible
+		'''
+		return None
 
 class EMFSListingItem(EMListingItem):
 	def __init__(self,type,full_name):
@@ -1149,10 +1155,16 @@ class EMFSListingItem(EMListingItem):
 		except: return False
 		
 	def save_as(self,target):
-		return save_as(self.full_path,target.application())
+		save_data(self.get_emdata())
+		#return save_as(self.full_path,target.application())
 	
 	def get_path(self):
 		return self.full_path
+	
+	def get_emdata(self):
+		e = EMData()
+		e.read_image(self.full_path)
+		return e
 	
 class EMFS2DImageStackItem(EMFSListingItem):
 	def __init__(self,type,full_name):
@@ -1164,12 +1176,20 @@ class EMFS2DImageStackItem(EMFSListingItem):
 		
 	def is_previewable(self): return True
 	
+	def get_emdata(self):
+		'''This one returns a list'''
+		from emimagemx import EMDataListCache
+		return EMDataListCache(self.full_path)
+	
 class EMFS3DImageStackItem(EMFSListingItem):
 	def __init__(self,type,full_name):
 		EMFSListingItem.__init__(self,type,full_name)
 
 	# no preview for this item as of Feb 2009
-
+	def get_emdata(self):
+		'''This one returns a list'''
+		e = EMData().read_images(self.full_path)
+		return e
 	
 class EMFSImageStackMemberItem(EMFSListingItem):
 	def __init__(self,type,full_name,idx):
@@ -1188,14 +1208,10 @@ class EMFSImageStackMemberItem(EMFSListingItem):
 		e.read_image(self.full_path,self.idx, read_header_only)
 		return e.get_attr_dict()
 	
-	def get_data(self):
+	def get_emdata(self):
 		e = EMData()
 		e.read_image(self.full_path,self.idx)
 		return e
-	
-	def save_as(self,target):
-		return save_as(self.full_path,target.application(),self.idx)
-	
 	
 class EMFSSingleImageItem(EMFSListingItem):
 	def __init__(self,type,full_name):
@@ -1212,7 +1228,7 @@ class EMFSSingleImageItem(EMFSListingItem):
 		e.read_image(self.full_path,0, read_header_only)
 		return e.get_attr_dict()
 	
-	def get_data(self):
+	def get_emdata(self):
 		return EMData(self.full_path)
 
 class EMFSPlotItem(EMFSListingItem):
@@ -1683,8 +1699,13 @@ class EMDB2DImageStackItem(EMListingItem):
 		except: return False
 		
 	def save_as(self,target):
-		db_name = self.get_path()
-		return save_as(db_name,target.application())
+		save_data(self.get_emdata())
+#		db_name = self.get_path()
+#		return save_as(db_name,target.application())
+#	
+	def get_emdata(self):
+		from emimagemx import EMDataListCache
+		return EMDataListCache(self.get_path())
 	
 	def get_path(self):
 		return "bdb:"+self.database_directory+"#"+self.database
@@ -1716,6 +1737,11 @@ class EMDBDictSingleImageItem(EMListingItem):
 			db = db[key]
 		
 		return db.get_attr_dict()
+	
+	def get_emdata(self):
+		e = EMData()
+		e.read_image(self.get_path(),0)
+		return e
 
 	def get_path(self):
 		return "bdb:"+self.database_directory+"#"+self.database
@@ -1745,7 +1771,7 @@ class EMDBSingleImageItem(EMListingItem):
 		data = db.get_header(self.database_key)
 		return data
 	
-	def get_data(self):
+	def get_emdata(self):
 		db_name = self.get_path()
 		return EMData(db_name,self.database_key)
 		
@@ -1847,7 +1873,7 @@ def save_stack(item_list,application):
 			progress.qt_widget.show()
 			tally = 0
 			for i in range(total_images):
-				d = item_list[i].get_data()
+				d = item_list[i].get_emdata()
 				progress.qt_widget.setValue(tally)
 				tally += 1
 				application.processEvents()
@@ -1874,27 +1900,160 @@ def save_stack(item_list,application):
 	
 	return True
 
+
+def save_data(item_object):
+	from emimagemx import EMDataListCache
+	saver = None
+	if isinstance(item_object,EMData):
+		saver = EMSingleImageSaveDialog()
+	elif isinstance(item_object,list) or isinstance(item_object,EMDataListCache):
+		saver = EMStackSaveDialog()
+	else:
+		raise
+	
+	saver.save(item_object)
+	
+	return saver.get_file_name()
+
 class EMFileSaveDialog(QtGui.QFileDialog):
 	'''
 	A custom file saving dialog for EM image data. Originally added because special
 	consideration was need when overwriting files.
 	'''
 	def __init__(self,parent=None,caption="",directory="",filter=""):
-		QtGui.QFileDialog.__init__(self,application,parent,caption,directory,filter)
+		QtGui.QFileDialog.__init__(self,parent,caption,directory,filter)
 		self.setAcceptMode(QtGui.QFileDialog.AcceptSave)
 		
 		self.setFileMode(QtGui.QFileDialog.AnyFile)
 		self.setWindowTitle("EMAN2 file save dialog")
-		self.application = weakref.ref(application)
+		
+	def get_file_name(self):
+		'''
+		Get the file name that was used to write to disk
+		Can be empty if file save was cancelled
+		'''
+		raise
+	
+class EMSingleImageSaveDialog(EMFileSaveDialog):
+	def __init__(self,parent=None,caption="",directory="",filter=""):
+		EMFileSaveDialog.__init__(self,parent,caption,directory,filter)
+		self.setConfirmOverwrite(False) #we do this ourselves
+		self.setWindowTitle("Save a single image")
+		
+		self.__item = None # this will be a reference to the item
+		self.__file_filt = [".hdf", ".img", ".hed",".spi","bdb:",".tif",".mrc",".dm3",".pif"]
+		self.file_name_used
+	def __get_file_filt_string(self):
+		'''
+		Get the file filt string for the save file dialog
+		'''
+		# Make the file filter string	
+		file_filt_string = ""
+		for f in self.__file_filt:
+			if f != self.__file_filt[0]:
+				file_filt_string += " "
+			file_filt_string += "*"+f
+		
+		return file_filt_string
+	
+	def save(self,item):
+		self.__item = item
+		self.setNameFilter(self.__get_file_filt_string())
+		while True:
+			if (self.exec_()):
+				msg = QtGui.QMessageBox()
+				files = self.selectedFiles()
+				if len(files) != 1:
+					msg.setText("You must specify precisely one file when saving")
+					msg.exec_()
+					continue
+			
+				if not self.__save_file(str(files[0])): continue
+				else: break
+			else: break
+	
+	
+	def __validate_file_name(self,file_name):
+		'''
+		Checks to see if the file_name is valid in terms of what EMAN2 knows it can write
+		@param file_name the file_name that is to be checked
+		@return an error string if an error was encountered. Otherwise return None
+		'''
+		splt = file_name.split(".")
+		if len(splt) < 2:
+			if len(file) > 4 and file[:4] == "bdb:":
+				return None # The user has specified a file in bdb format
+			else:
+				return "The file name you specified is invalid - can't determine the file type"
+			
+		# the length of splt is at least 2
+		if ("."+splt[-1]) not in self.__file_filt:
+			 return "The file type you specified: %s, is not valid in this context" %splt[-1]
+			
+		return None
+	
+	def __save_file(self,file):
+		'''
+		Called internally to save the file. Checks to make sure it's a valid file name
+		and may run a dialog asking if the user wants to overwrite or append data.
+		@param file the file name
+		@return 0 if there was an error, 1 if there was not
+		@exception raised when the EMFileExistsDialog returns an unknown code
+		'''
+		msg = QtGui.QMessageBox()
+		error = self.__validate_file_name(file)
+		if error != None:
+			# error is therefore a string
+			msg.setText(error)
+			msg.exec_()
+			return 0
+		
+		# If we make it here the file name is fine, but it may exist
+		overwrite = False
+		append = False
+		if file_exists(file):
+			file_exists_dialog = EMFileExistsDialog(file,[self.__item])
+			code = file_exists_dialog.exec_()
+			if code == 0:
+				return 1
+			elif code == 1:
+				overwrite = True
+			elif code == 2:
+				append = True
+			else: raise # this shouldn't happen. Someone has altered the code
+
+		tmp_file_object = NoTmpFileHandle(file)
+		if overwrite:
+			tmp_file_object = TmpFileHandle(file)
+
+		out_file = tmp_file_object.get_tmp_file_name()
+		try:
+			self.__item.write_image(out_file,-1)
+		except:
+			msg.setText("An exception occured while writing %s, please try again" %out_file)
+			msg.exec_()
+			tmp_file_object.remove_tmp_file()
+			return 1
+		
+		tmp_file_object.finalize_renaming()		
+		self.file_name_used = tmp_file_object.get_final_file_name()	
+		return 1
+	
+	def get_file_name(self):
+		'''
+		Get the file name that was used to write to disk
+		Can be empty if file save was cancelled
+		'''
+		return self.file_name_used
 	
 class EMStackSaveDialog(EMFileSaveDialog):
-	def __init__(self,application,parent=None,caption="",directory="",filter=""):
+	def __init__(self,parent=None,caption="",directory="",filter=""):
 		EMFileSaveDialog.__init__(self,parent,caption,directory,filter)
 		self.setConfirmOverwrite(False) #we do this ourselves
 		self.setWindowTitle("Save a stack")
 		
 		self.__item_list = None # this will be a reference to the item list'
-		
+		self.file_name_used = ""
 	def __get_file_filt_string(self,item_list):
 		'''
 		Get the file filt string for the save file dialog
@@ -1916,7 +2075,7 @@ class EMStackSaveDialog(EMFileSaveDialog):
 		@param item_list the item list that is used for accessing image metadata
 		'''
 		if item_list[0].get_attr_dict()["nz"] == 1:
-			file_filt=[".hdf", ".img", ".spi","bdb:"]
+			file_filt=[".hdf", ".img",".hed",".spi","bdb:"]
 		else:
 			file_filt =[".hdf"] # 3D only works for hdf (and bdb)
 			
@@ -1983,66 +2142,81 @@ class EMStackSaveDialog(EMFileSaveDialog):
 		overwrite = False
 		append = False
 		if file_exists(file):
-			file_exists_dialog = EMFileExistsDialog(None,file)
-			msg = file_exists_dialog.exec_()
-			if msg == 0:
+			file_exists_dialog = EMFileExistsDialog(file,self.__item_list)
+			code = file_exists_dialog.exec_()
+			if code == 0:
 				return 1
-			elif msg == 1:
+			elif code == 1:
 				overwrite = True
-			elif msg == 2:
+			elif code == 2:
 				append = True
 			else: raise # this shouldn't happen. Someone has altered the code
 			
-		from emimageutil import NoTmpFileHandle
 		tmp_file_object = NoTmpFileHandle(file)
 		if overwrite:
-			from emimageutil import TmpFileHandle 
 			tmp_file_object = TmpFileHandle(file)
 		
 		total_images = len(self.__item_list)
 
 		out_file = tmp_file_object.get_tmp_file_name()
 		
-		progress = EMProgressDialogModule(application,"Writing files", "abort", 0, 2*total_images,None)
-		progress.qt_widget.show()
+		progress = QtGui.QProgressDialog("Writing files", "abort", 0, 2*total_images,None)
+		progress.show()
 		tally = 0
 		for i in range(total_images):
 			try:
-				d = item_list[i].get_data() # this will be called from the selector
+					d = self.__item_list[i].get_emdata() # this will be case from the selector
 			except:
-				d = item_list[i] # this will be called from emimagemx
-			if not isinstance(d,EMData): raise
+				d = self.__item_list[i] # this will be the case from emimagemx
 			
-			progress.qt_widget.setValue(tally)
+			progress.setValue(tally)
 			tally += 1
-			application.processEvents()
 			
-			try:
-				d.write_image(out_file,-1)
-			except:
-				msg.setText("An exception occured while writing %s, please try again" %out_file)
-				msg.exec_()
-				progress.qt_widget.close()
-				return False
+			
+			# this is necessary to cause the progress bar to update on Mac, not sure about windows
+			QtCore.QCoreApplication.instance().processEvents()
+			
+			if not d.has_attr("excluded") or d["excluded"] == False:
+				try:
+					d.write_image(out_file,-1)
+				except:
+					msg.setText("An exception occured while writing %s, please try again" %out_file)
+					msg.exec_()
+					tmp_file_object.remove_tmp_file()
+					progress.close()
+					return 1
+			#else if d == None this is the equivalent of the particle being deleted, which makes sense for the EMDataListCache
 				
-			progress.qt_widget.setValue(tally)
+				
+			progress.setValue(tally)
 			tally += 1
-			application.processEvents()
-			if progress.qt_widget.wasCanceled():
+			# this is necessary to cause the progress bar to update on Mac, not sure about windows
+			QtCore.QCoreApplication.instance().processEvents()
+			if progress.wasCanceled():
 				tmp_file_object.remove_tmp_file()
-				progress.qt_widget.close()
+				progress.close()
 				return 1
 			
 		
 		tmp_file_object.finalize_renaming()			
-		progress.qt_widget.close()
+		progress.close()
+		self.file_name_used = tmp_file_object.get_final_file_name()		
 		return 1
+	
+	def get_file_name(self):
+		'''
+		Get the file name that was used to write to disk
+		Can be empty if file save was cancelled
+		'''
+		return self.file_name_used
 
 class EMFileExistsDialog(QtGui.QDialog):
-	def __init__(self,parent=None,filename=""):
-		QtGui.QDialog.__init__(self,parent)
+	def __init__(self,filename,item_list):
+		QtGui.QDialog.__init__(self,None)
+		self.resize(480,320)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "/eman.png"))
 		self.setWindowTitle("File already exists")
+		self.appendable_types = ["hed","img","spi","hdf"]
 		vbl = QtGui.QVBoxLayout(self)
 		
 		hbl = QtGui.QHBoxLayout()
@@ -2050,9 +2224,25 @@ class EMFileExistsDialog(QtGui.QDialog):
 		overwrite = QtGui.QPushButton("Overwrite")
 		cancel = QtGui.QPushButton("Cancel")
 		
-		hbl.addWidget(append)
-		hbl.addWidget(overwrite)
+		append_enable = False 
+		
+		splt = filename.split(".")
+		if splt[-1] in self.appendable_types:
+			(nx,ny,nz) = gimme_image_dimensions3D(filename)
+			d = item_list[0].get_attr_dict()
+			nz1 = d["nz"]
+			ny1 = d["ny"]
+			nx1 = d["nx"]
+			if nx != nx1 or ny != ny1 or nz != nz1:
+				append_enable=False
+			else:
+				append_enable=True
+		
 		hbl.addWidget(cancel)
+		if append_enable:
+			hbl.addWidget(append)
+		hbl.addWidget(overwrite)
+		
 		
 		hbl2 = QtGui.QHBoxLayout()
 		text_edit = QtGui.QTextEdit("",self)
@@ -2206,7 +2396,194 @@ def validate_file_name(fsp,file_filt):
 		 if ret != 0: return False # need to double check this is the right return code
 
 	return True
+		
+class TmpFileHandle(object):
+	'''
+	A factory for getting a TmpFileHandle
+	In the original design the type (e.g. hdf, img) of the file_name is critically important,
+	seeing as it will be eventually renamed
+	@param file_name the file_name used to deduce a temporary file name.
+	@exception raised if the file_name does not exist on the file system
+	@exception raised if the file_name is a BDB type (not yet supported)
+	@exception raised if the file_name has a unrecognized (or no) type
+	'''
+	def __new__(cls, file_name):
+		if not file_exists(file_name): raise
+		splt = file_name.split(".")
+		if len(splt) < 2: raise
+		if len(file_name) > 4 and file_name[:-4] == "bdb:": raise
+		if EMUtil.get_image_ext_type(splt[-1]) == EMUtil.ImageType.IMAGE_UNKNOWN:
+			raise
+		
+		if splt[-1] in ["img","hed"]: return ImagicTmpFileHandle(file_name)
+		else: return GenericEMImageTmpFileHandle(file_name)
+		# okay lots of tests, now return the right one
 
+class TmpFileHandleBase:
+	'''
+	This class originally added to deal with issues that arise when users overwrite data on disk
+	using file saving dialogs. You want to write to a temporary file, and when writing is finished,
+	rename the temporary file to the original file (reasons not discussed).
+	Hence this class will determine a temporary file name, supply it, and then rename
+	it to the original file name once you have completed writing. Recovery functionality is also
+	incorporated in that if there is a progress dialog and the user hits cancel, then you
+	may call remove_tmp_file to clean up.
+	The need for several classes arises from the existence of the Imagic and BDB formats
+	'''
+	
+	def __init__(self):
+		pass
+	def get_tmp_file_name(): raise
+	def get_final_file_name(self): raise
+	def finalize_renaming(): raise
+	def remove_tmp_file(): raise
+	
+class NoTmpFileHandle(TmpFileHandleBase):
+	'''
+	This class is for convenience in emselector.py - in the case where
+	no tmp file is needed but the code wants to act in a uniform fashion, then
+	I just use this  object to mimic the function calls that otherwise happen
+	'''
+	def __init__(self,file_name):
+		TmpFileHandleBase.__init__(self)
+		self.__file_name = file_name
+	
+	def get_tmp_file_name(self): return self.__file_name
+	def get_final_file_name(self): return self.__file_name
+	def finalize_renaming(self):pass
+	def remove_tmp_file(): pass
+	
+	
+class GenericEMImageTmpFileHandle(TmpFileHandleBase):
+	
+	'''
+	This tmp file handle works for most EM image types, such as mrc, hdf, spi, etc - e.g.
+	all file types that have a single entry on disk.
+	See TmpFileHandleBase for more information
+	'''
+	def __init__(self,file_name):
+		'''
+		@param file_name the name of the file that which is being overwritten
+		@exception raised if the file_name does not exist on the file system
+		@exception raised if the file_name has a unrecognized (or no) type
+		'''
+		if not os.path.exists(file_name): raise
+		splt = file_name.split(".")
+		if len(splt) < 2: raise
+		if EMUtil.get_image_ext_type(splt[-1]) == EMUtil.ImageType.IMAGE_UNKNOWN:
+			raise
+		self.__file_ext = "."+splt[-1]
+		
+		TmpFileHandleBase.__init__(self)
+		self.__file_name = get_file_tag(file_name)
+		self.__full_file_name = file_name
+		self.__tmp_file_name = None
+		self.__establish_tmp_file_name()
+
+	def get_final_file_name(self): return self.__full_file_name
+	def get_tmp_file_name(self):
+		'''
+		Get the name of the temporary file 
+		'''
+		return self.__tmp_file_name
+
+	def __gen_tmp_file_name(self):
+		'''
+		Called internally - attempts to make a unique file name using gm_time_string
+		'''
+		new_ending = gm_time_string()
+		new_ending = new_ending.replace(" ","_") #just because 
+		new_ending = new_ending.replace(":","_") #just because
+		self.__tmp_file_name = self.__file_name + new_ending + self.__file_ext
+	def __establish_tmp_file_name(self):
+		'''
+		establish self.__tmp_file_name
+		'''
+		self.__gen_tmp_file_name()
+		while os.path.exists(self.__tmp_file_name):
+			self.__gen_tmp_file_name()
+			
+	def remove_tmp_file():
+		'''
+		removes the temporary file
+		'''
+		if os.path.exists(self.__tmp_file_name):
+			os.remove(self.__tmp_file_name)
+		else:
+			pass
+				
+	def finalize_renaming(self):
+		'''
+		Overwrite the original file, called when writing is done 
+		'''
+		os.rename(self.__tmp_file_name,self.__full_file_name)
+	
+class ImagicTmpFileHandle(TmpFileHandleBase):
+	'''
+	This tmp file handle works for Imagic file types.
+	See TmpFileHandleBase for more information
+	'''
+	def __init__(self,file_name):
+		'''
+		@param file_name the name of the file that which is being overwritten
+		@exception if either the .hed or .img file corrsponding to the old_file_name does not exist on the file system
+		@exception if the old_file_name is not an imagic file
+		'''
+		
+		splt = file_name.split(".")
+		if len(splt) < 2 or splt[-1] not in ["img","hed"]: raise
+		
+		self.__file_name_root = get_file_tag(file_name)
+		
+		if not os.path.exists(self.__file_name_root+".img"): raise
+		if not os.path.exists(self.__file_name_root+".hed"): raise
+		
+		TmpFileHandleBase.__init__(self)
+		self.__file_name_root_hed = self.__file_name_root+".hed"
+		self.__file_name_root_img = self.__file_name_root+".img"
+		self.__establish_tmp_file_name()
+		
+	def get_tmp_file_name(self):
+		'''
+		Get the name of the temporary file - 
+		@return the filename that ends in an "img" 
+		'''
+		return self.__tmp_file_name_img
+	
+	def __gen_tmp_file_names(self):
+		'''
+		Called internally - attempts to make a unique file name using gm_time_string
+		'''
+		new_ending = gm_time_string()
+		new_ending = new_ending.replace(" ","_") #just because 
+		new_ending = new_ending.replace(":","_") #just because
+		self.__tmp_file_name_hed = self.__file_name_root + new_ending + ".hed"
+		self.__tmp_file_name_img = self.__file_name_root + new_ending + ".img"
+		
+	def __establish_tmp_file_name(self):
+		self.__gen_tmp_file_names()
+		while (os.path.exists(self.__tmp_file_name_hed) or os.path.exists(self.__tmp_file_name_img)):
+			self.__gen_tmp_file_names()
+
+		
+	def remove_tmp_file():
+		'''
+		removes the temporary file
+		'''
+		if (os.path.exists(self.__tmp_file_name_hed) and os.path.exists(self.__tmp_file_name_img)):
+			os.remove(self.__tmp_file_name_hed)
+			os.remove(self.__tmp_file_name_img)
+		else:
+			pass
+	
+	def finalize_renaming(self):
+		'''
+		Overwrite the original file, called when writing is done. Overwrites the img and hed files
+		'''
+		os.rename(self.__tmp_file_name_hed,self.__file_name_root_hed)
+		os.rename(self.__tmp_file_name_img,self.__file_name_root_img)
+
+	def get_final_file_name(self): return self.__file_name_root_img
 
 app = None
 def on_done(string_list):
