@@ -912,7 +912,7 @@ def prepare_refrings( volft, kb, delta, ref_a, sym, numr, MPI=False):
 		ncpu = 1
 		myid = 0
 	from applications import MPI_start_end
-	ref_start,ref_end = MPI_start_end
+	ref_start,ref_end = MPI_start_end( num_ref, ncpu, myid )
 
 	refrings = []     # list of (image objects) reference projections in Fourier representation
 
