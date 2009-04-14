@@ -604,114 +604,196 @@ class EMMetaDataTable(object):
 		return form
 		
 		
-
-class TmpRenamedFile:
+class TmpFileHandle(object):
 	'''
-	This class is used to temporarily rename a file. This is useful, for example,
-	when a user has chosen to overwrite a particle stack. If the user cancel the progress
-	dialog while overwriting the old file it is reasonable to expect that the old file 
-	will not have been removed from the operating system. If the user does not cancel the progress
-	dialog then the name of the temporary file can be retrieved from this object and it can be deleted,
-	or equivalent.
+	A factory for getting a TmpFileHandle
+	In the original design the type (e.g. hdf, img) of the file_name is critically important,
+	seeing as it will be eventually renamed
+	@param file_name the file_name used to deduce a temporary file name.
+	@exception raised if the file_name does not exist on the file system
+	@exception raised if the file_name is a BDB type (not yet supported)
+	@exception raised if the file_name has a unrecognized (or no) type
+	'''
+	def __new__(cls, file_name):
+		if not file_exists(file_name): raise
+		splt = file_name.split(".")
+		if len(splt) < 2: raise
+		if len(file_name) > 4 and file_name[:-4] == "bdb:": raise
+		if EMUtil.get_image_ext_type(splt[-1]) == EMUtil.ImageType.IMAGE_UNKNOWN:
+			raise
+		
+		if splt[-1] in ["img","hed"]: return ImagicTmpFileHandle(file_name)
+		else: return GenericEMImageTmpFileHandle(file_name)
+		# okay lots of tests, now return the right one
+
+class TmpFileHandleBase:
+	'''
+	This class originally added to deal with issues that arise when users overwrite data on disk
+	using file saving dialogs. You want to write to a temporary file, and when writing is finished,
+	rename the temporary file to the original file (reasons not discussed).
+	Hence this class will determine a temporary file name, supply it, and then rename
+	it to the original file name once you have completed writing. Recovery functionality is also
+	incorporated in that if there is a progress dialog and the user hits cancel, then you
+	may call remove_tmp_file to clean up.
+	The need for several classes arises from the existence of the Imagic and BDB formats
 	'''
 	
 	def __init__(self):
 		pass
-	def get_name(): raise
-	def get_new(): raise
+	def get_tmp_file_name(): raise
+	def finalize_renaming(): raise
 	def remove_tmp_file(): raise
-	def recover_tmp_file(): raise
 	
-class GenericTmpRenamedFile(TmpRenamedFile):
+class NoTmpFileHandle(TmpFileHandleBase):
+	'''
+	This class is for convenience in emselector.py - in the case where
+	no tmp file is needed but the code wants to act in a uniform fashion, then
+	I just use this  object to mimic the function calls that otherwise happen
+	'''
+	def __init__(self,file_name):
+		TmpFileHandleBase.__init__(self)
+		self.__file_name = file_name
+	
+	def get_tmp_file_name(self): return self.__file_name
+	
+	def finalize_renaming(self):pass
+	
+	def remove_tmp_file(): pass
+	
+	
+class GenericEMImageTmpFileHandle(TmpFileHandleBase):
 	
 	'''
-	This class is for general file renaming. This means that no special considerations
-	need to be given to the file, that is, it's a regular file on the operating system
-	that has not dependent files
+	This tmp file handle works for most EM image types, such as mrc, hdf, spi, etc - e.g.
+	all file types that have a single entry on disk.
+	See TmpFileHandleBase for more information
 	'''
-	def __init__(self,old_file_name):
+	def __init__(self,file_name):
 		'''
-		@exception if the old_file_name does not exist on the file system
+		@param file_name the name of the file that which is being overwritten
+		@exception raised if the file_name does not exist on the file system
+		@exception raised if the file_name has a unrecognized (or no) type
 		'''
-		if not os.path.exists(old_file_name): raise
-		TmpRenamedFile.__init__(self)
-		self.__old_file_name = old_file_name
-		self.__rename_file()
-	
-	def __rename_file():
+		if not os.path.exists(file_name): raise
+		splt = file_name.split(".")
+		if len(splt) < 2: raise
+		if EMUtil.get_image_ext_type(splt[-1]) == EMUtil.ImageType.IMAGE_UNKNOWN:
+			raise
+		self.__file_ext = "."+splt[-1]
+		
+		TmpFileHandleBase.__init__(self)
+		self.__file_name = get_file_tag(file_name)
+		self.__tmp_file_name = None
+		self.__establish_tmp_file_name()
+
+	def get_tmp_file_name(self):
 		'''
-		Actually renames by appending the result of gm_time_string to the input file name
+		Get the name of the temporary file 
+		'''
+		return self.__tmp_file_name
+
+	def __gen_tmp_file_name(self):
+		'''
+		Called internally - attempts to make a unique file name using gm_time_string
 		'''
 		new_ending = gm_time_string()
-		new_ending.replace(" ","_") #just because I hate " "
-		self.__tmp_file_name = self.__old_file_name + new_ending
+		new_ending = new_ending.replace(" ","_") #just because 
+		new_ending = new_ending.replace(":","_") #just because
+		self.__tmp_file_name = self.__file_name + new_ending + self.__file_ext
+	def __establish_tmp_file_name(self):
+		'''
+		establish self.__tmp_file_name
+		'''
+		self.__gen_tmp_file_name()
 		while os.path.exists(self.__tmp_file_name):
-			new_ending = gm_time_string()
-			new_ending.replace(" ","_") #just because I hate " "
-			self.__tmp_file_name = self.__old_file_name + new_ending
-			
-		os.rename(self.__old_file_name,self.__tmp_file_name)
+			self.__gen_tmp_file_name()
 			
 	def remove_tmp_file():
 		'''
 		removes the temporary file
+		@exception raised if the temporary file does not exist
 		'''
-		os.remove(self.__tmp_file_name)
+		if os.path.exists(self.__tmp_file_name):
+			os.remove(self.__tmp_file_name)
+		else:
+			raise
 		
-	def recover_tmp_file():
+	def finalize_renaming(self):
 		'''
-		recovers the temporary file (renaming it the original name)
+		Overwrite the original file, called when writing is done 
 		'''
-		os.rename(self.__tmp_file_name,self.__old_file_name)
+		os.rename(self.__tmp_file_name,self.__file_name)
 	
-class ImagicTmpRenamedFile(TmpRenamedFile):
+class ImagicTmpFileHandle(TmpFileHandleBase):
 	'''
-	This class is for temporarily renaming .img/.hed files
+	This tmp file handle works for Imagic file types.
+	See TmpFileHandleBase for more information
 	'''
-	def __init__(self,old_file_name):
+	def __init__(self,file_name):
 		'''
+		@param file_name the name of the file that which is being overwritten
 		@exception if either the .hed or .img file corrsponding to the old_file_name does not exist on the file system
 		@exception if the old_file_name is not an imagic file
 		'''
 		
-		splt = old_file_name.split(".")
+		splt = file_name.split(".")
 		if len(splt) < 2 or splt[-1] not in ["img","hed"]: raise
 		
-		self.__old_file_name_root = get_file_tag(splt)
+		self.__file_name_root = get_file_tag(file_name)
 		
-		if not os.path.exists(self.__old_file_name_root+".img"): raise
-		if not os.path.exists(self.__old_file_name_root+".hed"): raise
+		if not os.path.exists(self.__file_name_root+".img"): raise
+		if not os.path.exists(self.__file_name_root+".hed"): raise
 		
-		TmpRenamedFile.__init__(self)
-		self.__old_file_name_root_hed = self.__old_file_name_root+".hed"
-		self.__old_file_name_root_img = self.__old_file_name_root+".img"
-		self.__rename_file()
+		TmpFileHandleBase.__init__(self)
+		self.__file_name_root_hed = self.__file_name_root+".hed"
+		self.__file_name_root_img = self.__file_name_root+".img"
+		self.__establish_tmp_file_name()
 		
-	def __rename_file():
+	def get_tmp_file_name(self):
+		'''
+		Get the name of the temporary file - 
+		@return the filename that ends in an "img" 
+		'''
+		return self.__tmp_file_name_img
+	
+	def __gen_tmp_file_names(self):
+		'''
+		Called internally - attempts to make a unique file name using gm_time_string
+		'''
 		new_ending = gm_time_string()
-		new_ending.replace(" ","_") #just because I hate " "
-		self.__tmp_file_name_hed = self.self.__old_file_name_root_hed + new_ending
-		self.__tmp_file_name_img = self.self.__old_file_name_root_img + new_ending
+		new_ending = new_ending.replace(" ","_") #just because 
+		new_ending = new_ending.replace(":","_") #just because
+		self.__tmp_file_name_hed = self.__file_name_root + new_ending + ".hed"
+		self.__tmp_file_name_img = self.__file_name_root + new_ending + ".img"
+		
+	def __establish_tmp_file_name(self):
+		self.__gen_tmp_file_names()
 		while (os.path.exists(self.__tmp_file_name_hed) or os.path.exists(self.__tmp_file_name_img)):
-			new_ending = gm_time_string()
-			new_ending.replace(" ","_") #just because I hate " "
-			self.__tmp_file_name_hed = self.self.__old_file_name_root_hed + new_ending
-			self.__tmp_file_name_img = self.self.__old_file_name_root_img + new_ending
-			
-		os.rename(self.__old_file_name_root_hed,self.__tmp_file_name_hed)
-		os.rename(self.__old_file_name_root_img,self.__tmp_file_name_img)
+			self.__gen_tmp_file_names()
+
 		
 	def remove_tmp_file():
 		'''
 		removes the temporary file
+		@exception raised if either of the tmp hed or img files does not exist
 		'''
-		os.remove(self.__tmp_file_name_hed)
-		os.remove(self.__tmp_file_name_img)
-		
+		if (os.path.exists(self.__tmp_file_name_hed) and os.path.exists(self.__tmp_file_name_img)):
+			os.remove(self.__tmp_file_name_hed)
+			os.remove(self.__tmp_file_name_img)
+		else:
+			raise
+	
+	def finalize_renaming(self):
+		'''
+		Overwrite the original file, called when writing is done. Overwrites the img and hed files
+		'''
+		os.rename(self.__tmp_file_name,self.__file_name)
+	
+	
 	def recover_tmp_file():
 		'''
 		recovers the temporary file (renaming it the original name)
 		'''
 		
-		os.rename(self.__old_file_name_root_hed,self.__tmp_file_name_hed)
-		os.rename(self.__old_file_name_root_img,self.__tmp_file_name_img)
+		os.rename(self.__tmp_file_name_hed,self.__file_name_root_hed)
+		os.rename(self.__tmp_file_name_img,self.__file_name_root_img)
