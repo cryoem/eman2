@@ -1942,7 +1942,7 @@ class EMSingleImageSaveDialog(EMFileSaveDialog):
 		
 		self.__item = None # this will be a reference to the item
 		self.__file_filt = [".hdf", ".img", ".hed",".spi","bdb:",".tif",".mrc",".dm3",".pif"]
-		self.file_name_used
+		self.file_name_used = ""
 	def __get_file_filt_string(self):
 		'''
 		Get the file filt string for the save file dialog
