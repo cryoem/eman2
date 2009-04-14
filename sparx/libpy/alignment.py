@@ -311,6 +311,49 @@ def ringwe(numr, mode="F"):
 	for i in xrange(0,nring): wr[i] = numr[i*3]*dpi/float(numr[2+i*3])*maxrin/float(numr[2+i*3])
 	return wr
 
+def normalize_ring(circ, numr):
+	"""
+	  Apply weights to FTs of rings
+	"""
+	from math import sqrt,pi
+	av=0.0
+	sq=0.0
+	nn=0
+	nring = len(numr)/3
+	maxrin = numr[len(numr)-1]
+	for i in xrange(nring):
+		numr3i = numr[2+i*3]
+		numr2i = numr[1+i*3]-1
+		w = numr[3*i]*2*pi/float(numr[3*i+2])
+		for j in xrange(numr3i):
+			jc = j+numr2i
+			av += circ[jc] * w
+			sq += circ[jc] * circ[jc]* w
+			nn += w
+        avg = av/nn
+        sgm = sqrt( (sq-av*av/nn)/nn )
+
+        circ -= avg
+        circ /= sgm
+
+
+
+def ringw_real(numr, mode="F"):
+	"""Calculate ring weights for rotational alignment
+	   Roughly speaking, this weight is inversely proportional to the radius of the ring.
+	"""
+	from math import pi
+	if (mode == 'f' or mode == 'F'):
+		dpi = 2*pi
+	else:
+		dpi = pi
+	nring = len(numr)/3
+	wr=[0.0]*nring
+	for i in xrange(nring): wr[i] = numr[i*3]*dpi/float(numr[2+i*3])
+	return wr
+
+
+
 def ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 	"""Determine shift and rotation between image and reference image (crefim)
 		crefim should be as FT of polar coords with applied weights
@@ -844,58 +887,74 @@ def prep_vol_kb(vol, kb, npad=2):
 	volft.fft_shuffle()
 	return  volft
 
-def prepare_refprojs( volref,  ref_angles, last_ring, mask2D, cnx, cny, numr, mode, wr, MPI=False ):
+def prepare_refrings( volft, kb, delta, ref_a, sym, numr, MPI=False):
         from projection import prep_vol, prgs
         from math       import sin, cos, pi
 	from applications import MPI_start_end
-
-        nx = volref.get_xsize()
+	from utilities  import even_angles
+	# generate list of Eulerian angles for reference projections
+	#  phi, theta, psi
+	mode = "F"
+	ref_angles = even_angles(delta, symmetry=sym, method = ref_a, phiEqpsi = "Minus")
+	wr_four  = ringwe(numr, "F")
+	ny = volft.get_ysize()/2
+        nx = ny
+	cnx = nx//2 + 1
+	cny = ny//2 + 1
 	qv = pi/180.
         num_ref = len(ref_angles)
 
 	if MPI:
-		from mpi import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
-        	from utilities import bcast_EMData_to_all
-        	ncpu = mpi_comm_size(MPI_COMM_WORLD)
-        	myid = mpi_comm_rank(MPI_COMM_WORLD)
+		from mpi import mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
+		myid = mpi_comm_rank( MPI_COMM_WORLD )
+		ncpu = mpi_comm_size( MPI_COMM_WORLD )
 	else:
 		ncpu = 1
 		myid = 0
+	from applications import MPI_start_end
+	ref_start,ref_end = MPI_start_end
 
-	#ref_per_node = num_ref/ncpu
-	#ref_start = ref_per_node * myid
-	#ref_end   = ref_start + ref_per_node
-	#if myid==ncpu-1:  ref_end = num_ref
-	ref_start, ref_end = MPI_start_end(num_ref, ncpu, myid)
-
-	ref_proj_rings = []     # list of (image objects) reference projections in Fourier representation
+	refrings = []     # list of (image objects) reference projections in Fourier representation
 
 	sizex = numr[ len(numr)-2 ] + numr[ len(numr)-1 ] - 1
 
         for i in xrange(num_ref):
 		prjref = EMData()
 		prjref.set_size(sizex, 1, 1)
-		ref_proj_rings.append(prjref)
+		refrings.append(prjref)
 
-	volft,kb=prep_vol(volref)
         for i in xrange(ref_start, ref_end):
-		#prjref = project(volref, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0], last_ring)
 		prjref = prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0])
-		prjref.process_inplace("normalize.mask", {"mask":mask2D, "no_sigma":1})  # (i-a)/s
 		cimage = Util.Polar2Dm(prjref, cnx, cny, numr, mode)  # currently set to quadratic....
-		Util.Frngs(cimage, numr)
-		Applyws(cimage, numr, wr)
-		ref_proj_rings[i] = cimage
+		normalize_ring(cimage, numr)
 
-	if MPI:	
+		Util.Frngs(cimage, numr)
+		Applyws(cimage, numr, wr_four)
+		refrings[i] = cimage
+
+	if MPI:
+		from utilities import bcast_EMData_to_all
 		for i in xrange(num_ref):
-			#rootid = i / ref_per_node 
-			#if rootid > ncpu-1:  rootid = ncpu-1
 			for j in xrange(ncpu):
-				ref_start, ref_end = MPI_start_end(num_ref, ncpu, j)
-				if i in xrange(ref_start, ref_end):	rootid = j				
-			bcast_EMData_to_all( ref_proj_rings[i], myid, rootid )
-	return ref_proj_rings
+				ref_start,ref_end = MPI_start_end(num_ref,ncpu,j)
+				if i >= ref_start and i < ref_end: rootid = j
+			
+			bcast_EMData_to_all( refrings[i], myid, rootid )
+
+	
+	for i in xrange(len(ref_angles)):
+		n1 = sin(ref_angles[i][1]*qv)*cos(ref_angles[i][0]*qv)
+		n2 = sin(ref_angles[i][1]*qv)*sin(ref_angles[i][0]*qv)
+		n3 = cos(ref_angles[i][1]*qv)
+		refrings[i].set_attr_dict( {"n1":n1, "n2":n2, "n3":n3} )
+		refrings[i].set_attr("phi", ref_angles[i][0])
+		refrings[i].set_attr("theta", ref_angles[i][1])
+		refrings[i].set_attr("psi", ref_angles[i][2])
+
+
+
+
+	return refrings
 
 def refprojs( volft, kb, ref_angles, last_ring, mask2D, cnx, cny, numr, mode, wr ):
         from projection import prgs
@@ -912,161 +971,93 @@ def refprojs( volft, kb, ref_angles, last_ring, mask2D, cnx, cny, numr, mode, wr
 
 	return ref_proj_rings
 
-def proj_ali_incore(volref, mask3D, projdata, first_ring, last_ring, rstep, xrng, yrng, step, delta, ref_a, symmetry, CTF = False, finfo=None, MPI=False):
+def proj_ali_incore(data, refrings, numr, mask2D, xrng, yrng, step):
 	from utilities    import even_angles, model_circle, compose_transform2, print_msg
 	from alignment    import prepare_refprojs
 	from utilities    import get_params_proj, set_params_proj
 
-	mode    = "F"
-	# generate list of Eulerian angles for reference projections
-	#  phi, theta, psi
-	ref_angles = even_angles(delta, symmetry = symmetry, method = ref_a, phiEqpsi = "Minus")
-
-	#  begin from applying the mask, i.e., subtract the average outside the mask and multiply by the mask
-	if mask3D:
-		[mean, sigma, xmin, xmax ] =  Util.infomask(volref, mask3D, False)
-		volref -= mean
-		Util.mul_img(volref, mask3D)
-	if CTF:
-		from filter    import filt_ctf
-
-	nx   = volref.get_xsize()
-	ny   = volref.get_ysize()
+	mode = "F"
 	#  center is in SPIDER convention
+	nx   = data.get_xsize()
+	ny   = data.get_ysize()
 	cnx  = nx//2 + 1
 	cny  = ny//2 + 1
 	#precalculate rings
 	numr = Numrinit(first_ring, last_ring, rstep, mode)
-	wr   = ringwe(numr ,mode)
 
 	# prepare 2-D mask for normalization
 	mask2D = model_circle(last_ring, nx, ny)
 	if(first_ring > 0): mask2D -= model_circle(first_ring, nx, ny)
 
-	# generate reference projections in polar coords
-	ref_proj_rings = prepare_refprojs( volref, ref_angles, last_ring, mask2D, cnx, cny, numr, mode, wr, MPI )
 
-	for imn in xrange(len(projdata)):
-		#if(imn%10 == 0):  print_msg("%d  "%(imn))
-		phi, theta, psi, sxo, syo = get_params_proj( projdata[imn] )
-		if not(finfo is None):
-			finfo.write( "proj %4d old params: %8.3f %8.3f %8.3f %8.3f %8.3f\n" %(imn, phi, theta, psi, sxo, syo) )
-			finfo.flush()
-		if  CTF:
-			ctf_params = projdata[imn].get_attr("ctf")
-			ima = projdata[imn].process("normalize.mask", {"mask":mask2D, "no_sigma":0})
-			ima = filt_ctf(ima, ctf_params, True)
-			[ang, sxs, sys, mirror, nref, peak] = Util.multiref_polar_ali_2d(ima, ref_proj_rings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo)
-		else:
-			[ang, sxs, sys, mirror, nref, peak] = Util.multiref_polar_ali_2d(projdata[imn].process("normalize.mask", {"mask":mask2D, "no_sigma":1}), ref_proj_rings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo)
-		numref=int(nref)
-		#[ang,sxs,sys,mirror,peak,numref] = apmq(projdata[imn], ref_proj_rings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo)
-		#ang = (ang+360.0)%360.0
-		# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
-		#  What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
-		angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
-		if mirror:
-                        phi   = (ref_angles[numref][0]+540.0)%360.0
-                        theta = 180.0-ref_angles[numref][1]
-                        psi   = (540.0-ref_angles[numref][2]+angb)%360.0
-                        s2x   = sxb + sxo
-                        s2y   = syb + syo
-                else:
-                        phi   = ref_angles[numref][0]
-                        theta = ref_angles[numref][1]
-                        psi   = (ref_angles[numref][2]+angb+360.0)%360.0
-                        s2x   = sxb + sxo
-                        s2y   = syb + syo
-		set_params_proj(projdata[imn], [phi, theta, psi, s2x, s2y])
-		projdata[imn].set_attr('peak', peak)
-		if not (finfo is None):
-			finfo.write( "proj %4d new params: %8.3f %8.3f %8.3f %8.3f %8.3f\n" %(imn, phi, theta, psi, s2x, s2y) )
-			finfo.flush()
+	phi, theta, psi, sxo, syo = get_params_proj( projdata[imn] )
+	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d(data, refrings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo)
+	iref=int(iref)
+	#[ang,sxs,sys,mirror,peak,numref] = apmq(projdata[imn], ref_proj_rings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo)
+	#ang = (ang+360.0)%360.0
+	# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
+	#  What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
+	angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
+	if mirror:
+		phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
+		theta = 180.0-ref_angles[iref].get_attr("theta")
+		psi   = (540.0-ref_angles[iref].get_attr("psi")+angb)%360.0
+		s2x   = sxb + sxo
+		s2y   = syb + syo
+	else:
+		phi   = refrings[iref].get_attr("phi")
+		theta = refrings[iref].get_attr("theta")
+		psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
+		s2x   = sxb + sxo
+		s2y   = syb + syo
+	set_params_proj(data, [phi, theta, psi, s2x, s2y])
+	return peak
 
-def proj_ali_incore_local(volref, mask3D, projdata, first_ring, last_ring, rstep, xrng, yrng, step, delta, an, ref_a, symmetry, CTF = False, finfo=None, MPI=False):
+def proj_ali_incore_local(data, refrings, numr, mask2D, xrng, yrng, step, an):
 	from utilities    import even_angles, model_circle, compose_transform2, bcast_EMData_to_all
-	from alignment    import prepare_refprojs
+	from utilities import set_params_proj, get_params_proj
 	from math         import cos, sin, pi
-	qv = pi/180.
-        
-	mode    = "F"
-	# generate list of Eulerian angles for reference projections
-	#  phi, theta, psi
-	ref_angles = even_angles(delta, symmetry = symmetry, method = ref_a, phiEqpsi = "Minus")
 
+	mode = "F"
 	#  begin from applying the mask, i.e., subtract the average outside the mask and multiply by the mask
-	if mask3D:
-		[mean, sigma, xmin, xmax ] =  Util.infomask(volref, mask3D, False)
-		volref -= mean
-		Util.mul_img(volref, mask3D)
-	if CTF:
-		from filter    import filt_ctf
-
-	nx   = volref.get_xsize()
-	ny   = volref.get_ysize()
+	nx   = data.get_xsize()
+	ny   = data.get_ysize()
 	#  center is in SPIDER convention
 	cnx  = nx//2 + 1
 	cny  = ny//2 + 1
-	#precalculate rings
-	numr = Numrinit(first_ring, last_ring, rstep, mode)
-	wr   = ringwe(numr ,mode)
 
-	# prepare 2-D mask for normalization
-	mask2D = model_circle(last_ring, nx, ny)
-	if first_ring > 0: mask2D -= model_circle(first_ring, nx, ny)
 
-	# generate reference projections in polar coords
-	ref_proj_rings = prepare_refprojs( volref, ref_angles, last_ring, mask2D, cnx, cny, numr, mode, wr, MPI )
-
-	for i in xrange(len(ref_angles)):
-		n1 = sin(ref_angles[i][1]*qv)*cos(ref_angles[i][0]*qv)
-		n2 = sin(ref_angles[i][1]*qv)*sin(ref_angles[i][0]*qv)
-		n3 = cos(ref_angles[i][1]*qv)
-		ref_proj_rings[i].set_attr_dict( {"n1":n1, "n2":n2, "n3":n3} )
-
+	qv = pi/180.
 	ant = abs(cos(an*qv))
-	for imn in xrange(len(projdata)):
-		from utilities import set_params_proj, get_params_proj
-		phi, theta, psi, sxo, syo = get_params_proj( projdata[imn] )
+	phi, theta, psi, sxo, syo = get_params_proj(data)
 
-		if not (finfo is None):
-			finfo.write( "prj %4d old params: %8.3f %8.3f %8.3f %8.3f %8.3f\n" %(imn, phi, theta, psi, sxo, syo) )
-			finfo.flush()
-		if CTF:
-			ctf_params = projdata[imn].get_attr("ctf")
-                        ima = projdata[imn].process("normalize.mask", {"mask":mask2D, "no_sigma":0})
-			ima = filt_ctf(ima, ctf_params, True)
-			[ang, sxs, sys, mirror, nref, peak] = Util.multiref_polar_ali_2d_local(ima, ref_proj_rings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
+	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_local(data,refrings,xrng,yrng,step,ant,mode,numr,cnx-sxo,cny-syo)
+	iref=int(iref)
+	#[ang,sxs,sys,mirror,peak,numref] = apmq_local(projdata[imn], ref_proj_rings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
+	#ang = (ang+360.0)%360.0
+	if iref > -1:
+		# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
+		# What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
+		angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1,  -ang, 0.,0.,1)
+		if  mirror:
+			phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
+			theta = 180.0-refrings[iref].get_attr("theta")
+			psi   = (540.0-ref_angles[iref].get_attr("psi")+angb)%360.0
+			s2x   = sxb + sxo
+			s2y   = syb + syo
 		else:
-			[ang, sxs, sys, mirror, nref, peak] = Util.multiref_polar_ali_2d_local(projdata[imn].process("normalize.mask", {"mask":mask2D, "no_sigma":1}), ref_proj_rings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
-		numref=int(nref)
-		#[ang,sxs,sys,mirror,peak,numref] = apmq_local(projdata[imn], ref_proj_rings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
-		#ang = (ang+360.0)%360.0
-		if numref > -1:
-			# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
-			#  What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
-			angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1,  -ang, 0.,0.,1)
-			if  mirror:
-				phi   = (ref_angles[numref][0]+540.0)%360.0
-				theta = 180.0-ref_angles[numref][1]
-				psi   = (540.0-ref_angles[numref][2]+angb)%360.0
-				s2x   = sxb + sxo
-				s2y   = syb + syo
-			else:
-				phi   = ref_angles[numref][0]
-				theta = ref_angles[numref][1]
-				psi   = (ref_angles[numref][2]+angb+360.0)%360.0
-				s2x   = sxb+sxo
-				s2y   = syb+syo
+			phi   = refrings[iref].get_attr("phi")
+			theta = refrings[iref].get_attr("theta")
+			psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
+			s2x   = sxb+sxo
+			s2y   = syb+syo
 
-			from utilities import set_params_proj, get_params_proj
-			set_params_proj( projdata[imn], [phi, theta, psi, s2x, s2y] )
-			projdata[imn].set_attr('peak',peak)
+		from utilities import set_params_proj, get_params_proj
+		set_params_proj( data, [phi, theta, psi, s2x, s2y] )
+		return peak
+	else:
+		return -1.0e23
 
-			# if -1 local search did not have any neighbors, simply skip it
-			if not(finfo is None):
-				finfo.write( "prj %4d new params: %8.3f %8.3f %8.3f %8.3f %8.3f\n" %(imn, phi, theta, psi, s2x, s2y) )
-				finfo.flush()
 
 def proj_ali_incore_peaks(volref, mask3D, projdata, first_ring, last_ring, rstep, xrng, yrng, step, delta, ref_a, symmetry, CTF = False, finfo=None, MPI=False):
 	from utilities    import even_angles, model_circle, compose_transform2, print_msg
