@@ -202,6 +202,9 @@ class EMMXCoreMouseEventsMediator:
 		
 		self.target = weakref.ref(target)
 		
+	def get_image_file_name(self):
+		return self.target().get_image_file_name()
+	
 	def scr_to_img(self,vec):
 		return self.target().scr_to_img(vec)
 	
@@ -320,6 +323,22 @@ class EMMAppMouseEvents(EMMXCoreMouseEvents):
 				self.mediator.emit(QtCore.SIGNAL("mx_image_selected"),event,lc)
 				#print "setting selected"
 				self.mediator.set_selected([lc[0]],True)
+			xians_stuff = False
+			if xians_stuff:
+				if lc[0] != None:
+					image = self.mediator.get_box_image(lc[0])
+    				cx = image.get_xsize()/2
+    				cy = image.get_ysize()/2
+    				x = lc[1]-cx
+    				y = lc[2]-cy
+    				angle = atan2(y,x)*180.0/pi
+    				# convert from clockwise to anti clockwise and convert to Xian's axis definition
+    				angle = 270-angle
+    				angle %= 360
+    				print "Filename: ", self.mediator.get_image_file_name()
+    				print "Sequence#: ",lc[0]
+    				print "Angle: ", angle
+    			 	
 			
 	def mouse_move(self,event):
 		if event.buttons()&Qt.LeftButton:
@@ -335,23 +354,6 @@ class EMMAppMouseEvents(EMMXCoreMouseEvents):
 				if lc != None:
 					self.mediator.pop_box_image(lc[0],event,True)
 					self.mediator.force_display_update()
-					
-	
-	#def mousePressEvent(self, event):
-		#lc=self.scr_to_img((event.x(),event.y()))
-##		print lc
-		#if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier):
-			#self.show_inspector(1)
-		#elif event.button()==Qt.RightButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
-			#app =  QtGui.QApplication.instance()
-			#try:
-				#self.application.setOverrideCursor(Qt.ClosedHandCursor)
-				##app.setOverrideCursor(Qt.ClosedHandCursor)
-			#except: # if we're using a version of qt older than 4.2 than we have to use this...
-				#self.application.setOverrideCursor(Qt.SizeAllCursor)
-				##app.setOverrideCursor(Qt.SizeAllCursor)
-				
-			#self.mousedrag=(event.x(),event.y())
 			
 class EMMatrixPanel:
 	'''
@@ -748,8 +750,7 @@ class EMImageMXModule(EMGUIModule):
 	def get_image(self,idx): return self.data[idx]
 	def get_image_file_name(self):
 		''' warning - could return none in some circumstances'''
-		try: return self.gl_widget.get_image_file_name()
-		except: return None
+		return self.file_name
 	
 	def optimally_resize(self):
 		# I disabled this because it was giving me problems from e2.py
@@ -1531,86 +1532,7 @@ class EMImageMXModule(EMGUIModule):
 		file_name = save_data(self.data)
 		if file_name == self.file_name and file_exists(file_name): # the file we are working with was overwritten
 			self.set_data(file_name)
-#		# Get the output filespec
-#		while True:
-#			fsp=QtGui.QFileDialog.getSaveFileName(None, "Specify file name","","*.hdf *.img *.spi *.lst bdb:","")
-#			fsp=str(fsp)
-#			
-#			# BDB has issues on Windows and MAC
-#			
-#			bdb_idx = fsp.find("bdb:")
-#			if bdb_idx != -1:
-#				fsp = fsp[bdb_idx:]
-#	
-#			if fsp != '':
-#				
-#				if len(fsp) < 3 or ( fsp[-4:] not in [".hdf",".img",".spi",".hed",".lst"] and fsp[:4] != "bdb:" ):
-#					msg.setText("%s is an invalid image name" %fsp)
-#					msg.exec_()
-#					continue
-#					
-#				if fsp[:4] == "bdb:" and len(fsp) == 4:
-#					msg.setText("%s is an invalid bdb name" %fsp)
-#					msg.exec_()
-#					continue
-#				elif fsp[-4:] == ".lst":
-#					self.data.save_lst(fsp)
-#					return
-#				
-#				tmp_name = None
-#				if db_check_dict(fsp):
-#					msg = QtGui.QMessageBox()
-#					msg.setWindowTitle("Caution")
-#					msg.setText("Are you sure you want to overwrite the bdb file?");
-#					msg.setInformativeText("Clicking ok to remove this file")
-#					msg.setStandardButtons(QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel);
-#					msg.setDefaultButton(QtGui.QMessageBox.Cancel);
-#					ret = msg.exec_()
-#					if ret == QtGui.QMessageBox.Ok:
-#						print "we got the go ahead"
-#						db_remove_dict(fsp)
-#					else:
-#						continue
-#						
-#				elif file_exists(fsp):
-#					# I did  a bit of thinking about this, and I think it's best just to
-#					# remove the old file. Yes, if they hit cancel while the progress dialog
-#					# is running they might expect the old file to be there, but supporting this
-#					# could be too expensive in terms of disk space. If the user wants to recover
-#					# their file than they should just undo the deletions in the interface (assuming
-#					# that is why they are overwriting their file, or equivalent) and save again.
-#					remove_file(fsp)
-#				
-#				progress = EMProgressDialogModule(self.application(),"Writing files", "abort", 0, len(self.data),None)
-#				progress.qt_widget.show()
-#				for i in xrange(0,len(self.data)):
-#				#for i,d in enumerate(self.data):
-#					d = self.data[i]
-#					if d == None: continue # this is the equivalent of the particle being deleted, in certain modes for the cache
-#					
-#					try:
-#						d.write_image(fsp,-1)
-#					except:
-#						msg.setText("An exception occured while writing %s, please try again" %fsp)
-#						msg.exec_()
-#						progress.qt_widget.close()
-#						return
-#						
-#					progress.qt_widget.setValue(i)
-#					self.application().processEvents()
-#					if progress.qt_widget.wasCanceled():
-#						#remove_file(fsp)# we could do this but if they're overwriting the original data then they lose it all
-#						progress.qt_widget.close()
-#						return
-#				
-#				progress.qt_widget.setValue(len(self.data)-1)
-#				progress.qt_widget.close()
-#				
-#				if tmp_name != None:
-#					remove_file
-#		
-#			break
-		
+
 	def save_lst(self,fsp):
 		'''
 		If we make it here the dialog has taken care of check whether or not overwrite should occur
@@ -1722,7 +1644,9 @@ class EMImageMXModule(EMGUIModule):
 				#app.setOverrideCursor(Qt.SizeAllCursor)
 				
 			self.mousedrag=(event.x(),event.y())
-		else: self.mouse_event_handler.mouse_down(event)
+		else:
+			print "That happened"
+			self.mouse_event_handler.mouse_down(event)
 		
 	def mouseMoveEvent(self, event):
 		if self.scroll_bar_has_mouse:
