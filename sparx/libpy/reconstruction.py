@@ -414,7 +414,6 @@ def recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, ring_width=1, npad =1, sign=1, s
 				prj -= stats[0]
 				prj *= mask2D
 			r.insert_slice(prj, xform_proj )
-	#  WEI: what if none inserted
 	#from utilities import info
 	reduce_EMData_to_root(weight,  myid, 0)
 	reduce_EMData_to_root(fftvol,  myid, 0)
@@ -430,7 +429,7 @@ def recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, ring_width=1, npad =1, sign=1, s
 				outlist[1].append(max(0.0,(SSNR(i,0,0)/SSNR(i,1,0)-1.)))     # SSNR
 			else:
 				outlist[1].append(0.0)
-		for i in xrange(1,nn): outlist[2].append(SSNR(i,1,0)/SSNR(i,2,0))	         # variance
+		for i in xrange(1,nn): outlist[2].append(SSNR(i,1,0)/SSNR(i,2,0))	          # variance
 		for i in xrange(1,nn): outlist[3].append(SSNR(i,2,0))				  # number of points in the shell
 		for i in xrange(1,nn): outlist[4].append(SSNR(i,3,0))				  # number of added Fourier points
 		for i in xrange(1,nn): outlist[5].append(SSNR(i,0,0))				  # square of signal

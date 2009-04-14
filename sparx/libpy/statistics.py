@@ -1161,7 +1161,7 @@ def varf3d(prjlist,ssnr_text_file = None, mask2D = None, reference_structure = N
 def varf3d_MPI(prjlist,ssnr_text_file = None, mask2D = None, reference_structure = None, ou = -1, rw = 1.0, npad = 1, CTF = False, sign = 1, sym ="c1", myid = 0):
 	"""
 	  Calculate variance in Fourier space of an object reconstructed from projections
-	  
+
 	  Known problems: properly speaking, the SSNR has to be calculated using snr=inf and this is what recons3d_nn_SSNR_MPI does.
 	  So, when one computes reference structure, snr should be 1.0e20.  However, when the reference structure is passed
 	  from the reconstruction program, it was computed using different snr.  I tested it and in practice there is no difference,
@@ -1200,7 +1200,7 @@ def varf3d_MPI(prjlist,ssnr_text_file = None, mask2D = None, reference_structure
 		phi,theta,psi,tx,ty = get_params_proj(prj)
 		proj = prgs(volft, kb, [phi,theta,psi,-tx,-ty])
 		if CTF:
-			ctf_params = prj.get_attr("ctf")			
+			ctf_params = prj.get_attr("ctf")
 			proj = filt_ctf(proj, ctf_params)
 			proj.set_attr('sign', 1)
 		re_prjlist.append(proj)
@@ -1230,8 +1230,7 @@ def varf3d_MPI(prjlist,ssnr_text_file = None, mask2D = None, reference_structure
 	else:  return  model_blank(2,2,2)
 
 def ccc(img1, img2, mask=None):
-	"""Cross-correlation coefficient.
-	   
+	"""Cross-correlation coefficient.	   
 	   Usage: result = ccc(image1, image2 [, mask])
 	"""
 	if mask: return img1.cmp("ccc", img2, {"mask":mask,"negative":0})
