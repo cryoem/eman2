@@ -1042,7 +1042,7 @@ def proj_ali_incore_local(data, refrings, numr, mask2D, xrng, yrng, step, an):
 		if  mirror:
 			phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
 			theta = 180.0-refrings[iref].get_attr("theta")
-			psi   = (540.0-ref_angles[iref].get_attr("psi")+angb)%360.0
+			psi   = (540.0-refrings[iref].get_attr("psi")+angb)%360.0
 			s2x   = sxb + sxo
 			s2y   = syb + syo
 		else:
