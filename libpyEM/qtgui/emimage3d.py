@@ -554,23 +554,23 @@ class EMImage3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		return self.viewables[self.currentselection].get_inspector()
 	
 	def add_sym(self):
-		module = EM3DSymViewerModule()
+		module = EM3DSymViewerModule(None,True,False)
 		module.set_radius(self.data.get_zsize()/2.0)
 		self.num_sym += 1
 		self.__add_module(module,self.num_sym)
 	
 	def add_isosurface(self):
-		module = EMIsosurfaceModule(self.data)
+		module = EMIsosurfaceModule(self.data,None,False)
 		self.num_iso += 1
 		self.__add_module(module,self.num_iso)
 		
 	def add_volume(self):
-		module = EMVolumeModule(self.data)
+		module = EMVolumeModule(self.data,None,False)
 		self.num_vol += 1
 		self.__add_module(module,self.num_vol)
 	
 	def add_slice_viewer(self):
-		module = EM3DSliceViewerModule(self.data)
+		module = EM3DSliceViewerModule(self.data,None,False)
 		self.num_sli += 1
 		self.__add_module(module,self.num_sli)
 	

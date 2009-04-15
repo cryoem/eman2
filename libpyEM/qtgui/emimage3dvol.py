@@ -65,9 +65,9 @@ class EMVolumeModule(EMImage3DGUIModule):
 #				self.parent.set_camera_defaults(self.data)
 #		return EMGUIModule.darwin_check(self)
 	
-	def __init__(self,image=None,application=None):
+	def __init__(self,image=None,application=None,ensure_gl_context=True):
 		self.data = None
-		EMImage3DGUIModule.__init__(self,application,ensure_gl_context=True)
+		EMImage3DGUIModule.__init__(self,application,ensure_gl_context)
 		self.parent = None
 		
 		self.init()

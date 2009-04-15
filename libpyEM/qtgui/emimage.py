@@ -81,6 +81,7 @@ def image_update():
 def get_app():
 	'''
 	Deprecated
+	But being replaced by emapplication.get_application (in progress, April 15th 2009)
 	'''
 	app=QtGui.QApplication.instance()
 	if not app : app = QtGui.QApplication([])

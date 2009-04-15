@@ -343,7 +343,6 @@ class EMStandAloneApplication(EMApplication):
 		# Stuff for display synchronization in e2.py
 		self.timer_function = None
 		self.tmr = None
-		self.initglcalled = False
 		
 		EMApplication.__init__(self,qt_application_control)
 		
@@ -364,9 +363,7 @@ class EMStandAloneApplication(EMApplication):
 		self.children.append(child)
 		
 	def ensure_gl_context(self,child):
-		if not self.initglcalled:
-			child.get_qt_widget().initGL()
-			self.initglcalled = True
+		child.get_qt_widget().initGL()
 	
 	def isVisible(self,child):
 		if child.gl_widget != None:

@@ -59,9 +59,9 @@ class EMIsosurfaceModule(EMImage3DGUIModule):
 	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
 		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
 
-	def __init__(self,image=None,application=None):
+	def __init__(self,image=None,application=None,ensure_gl_context=True):
 		self.data = None
-		EMImage3DGUIModule.__init__(self,application,ensure_gl_context=True)
+		EMImage3DGUIModule.__init__(self,application,ensure_gl_context)
 		self.init()
 		self.initialized = True
 		

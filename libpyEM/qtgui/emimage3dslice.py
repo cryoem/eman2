@@ -58,9 +58,9 @@ MAG_INCREMENT_FACTOR = 1.1
 
 class EM3DSliceViewerModule(EMImage3DGUIModule):
 	
-	def __init__(self,image=None, application=None):
+	def __init__(self,image=None, application=None,ensure_gl_context=True):
 		self.data = None
-		EMImage3DGUIModule.__init__(self,application,ensure_gl_context=True)
+		EMImage3DGUIModule.__init__(self,application,ensure_gl_context)
 		self.init()
 		self.initialized = True
 		

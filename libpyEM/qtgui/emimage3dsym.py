@@ -70,8 +70,8 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		return self.qt_context_parent
 
 
-	def __init__(self,application=None,inspector_go=True):
-		EMImage3DGUIModule.__init__(self,application,ensure_gl_context=True)
+	def __init__(self,application=None,inspector_go=True,ensure_gl_context=True):
+		EMImage3DGUIModule.__init__(self,application,ensure_gl_context)
 		
 		
 		self.eulers = [] # will eventually store Transform objects
