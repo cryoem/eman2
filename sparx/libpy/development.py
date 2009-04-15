@@ -8854,7 +8854,7 @@ def cml2_main(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit, giv
 	#disc_now = cml_disc(Prj, Ori, False)
 
 	# Update logfile
-	cml_end_log(Ori, disc, ite)
+	cml2_end_log(Ori, disc, ite)
 	running_time(t_start)
 	print_end_msg('find_struct')
 
