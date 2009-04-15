@@ -38,7 +38,7 @@ from EMAN2db import db_check_dict, db_open_dict,db_remove_dict,db_list_dicts,db_
 from EMAN2 import *
 import os
 import copy
-from emapplication import EMProgressDialogModule
+from emapplication import EMProgressDialogModule,get_application
 from e2ctf import pspec_and_ctf_fit,GUIctfModule,write_e2ctf_output,get_gui_arg_img_sets
 import subprocess
 from pyemtbx.boxertools import set_idd_image_entry, TrimBox
@@ -65,10 +65,10 @@ class WorkFlowTask(QtCore.QObject):
 		self.project_db_entries = ["global.num_cpus","global.apix","global.microscope_voltage","global.microscope_cs","global.memory_available","global.particle_mass"] # used to write entries to a specific db
 	
 	def run_form(self):
-		self.form = EMFormModule(self.get_params(),self.application())
+		self.form = EMFormModule(self.get_params(),get_application())
 		self.form.qt_widget.resize(*self.preferred_size)
 		self.form.setWindowTitle(self.window_title)
-		self.application().show_specific(self.form)
+		get_application().show_specific(self.form)
 		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
 		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
 		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_close"),self.on_form_close)
@@ -410,11 +410,11 @@ class HistoryTask(WorkFlowTask,HistoryForm):
 		self.window_title = "History"
 	
 	def run_form(self):	
-		self.form = EMFormModule(self.get_history_table(),self.application())
+		self.form = EMFormModule(self.get_history_table(),get_application())
 		self.form.qt_widget.resize(*self.preferred_size)
 		self.form.setWindowTitle(self.window_title)
 		self.form.qt_widget.setWindowIcon(QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/feather.png"))
-		self.application().show_specific(self.form)
+		get_application().show_specific(self.form)
 		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
 		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
 		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_close"),self.on_form_close)
@@ -584,7 +584,7 @@ class MicrographCCDImportTask(WorkFlowTask):
 		
 		
 		# now add the files to db (if they don't already exist
-		progress = EMProgressDialogModule(self.application(),"Importing files into database...", "Abort import", 0, len(filenames)*num_processing_operations,None)
+		progress = EMProgressDialogModule(get_application(),"Importing files into database...", "Abort import", 0, len(filenames)*num_processing_operations,None)
 		progress.qt_widget.show()
 		i = 0
 		cancelled = False # if the user cancels the import then we must act
@@ -598,33 +598,33 @@ class MicrographCCDImportTask(WorkFlowTask):
 			e.read_image(name,0)
 			i += 1
 			progress.qt_widget.setValue(i)	
-			self.application().processEvents()
+			get_application().processEvents()
 			e.set_attr("disk_file_name",name)
 			
 			if params["norm.edgemean"]:
 				e.process_inplace("normalize.edgemean")
 				i += 1
 				progress.qt_widget.setValue(i)
-				self.application().processEvents()
+				get_application().processEvents()
 			
 			if params["invert"]:
 				e.mult(-1)
 				i += 1
 				progress.qt_widget.setValue(i)
-				self.application().processEvents()
+				get_application().processEvents()
 			
 			if params["xraypixel"]:
 				e.process_inplace("threshold.clampminmax.nsigma",{"nsigma":4,"tomean":True})
 				i += 1
 				progress.qt_widget.setValue(i)
-				self.application().processEvents()
+				get_application().processEvents()
 				
 			e.write_image(db_name,0)
 			#db_close_dict(db_name)
 			cancelled_dbs.append(db_name)
 			i += 1
 			progress.qt_widget.setValue(i)
-			self.application().processEvents()
+			get_application().processEvents()
 			current_project_files.append(db_name)
 				
 			if params["thumbs"]:
@@ -634,7 +634,7 @@ class MicrographCCDImportTask(WorkFlowTask):
 				set_idd_image_entry(db_name,"image_thumb",thumb) # boxer uses the full name
 				i += 1
 				progress.qt_widget.setValue(i)
-				self.application().processEvents()
+				get_application().processEvents()
 				
 			if progress.qt_widget.wasCanceled():
 				cancelled = True
@@ -1314,14 +1314,14 @@ class ParticleImportTask(ParticleWorkFlowTask):
 			return
 		
 		v = params["import_particle_files"]
-		progress = EMProgressDialogModule(self.application(),"Importing files into database...", "Abort import", 0, len(v)*10,None)
+		progress = EMProgressDialogModule(get_application(),"Importing files into database...", "Abort import", 0, len(v)*10,None)
 		progress.qt_widget.show()
-#			self.application().show_specific(progress)
+#			get_application().show_specific(progress)
 	
 		cancelled_dbs = []
 		for i,name in enumerate(v):
 			progress.qt_widget.setValue(i*10)
-			self.application().processEvents()
+			get_application().processEvents()
 
 			tag = get_file_tag(name)
 			db_name = "bdb:particles#"+tag+"_ptcls"
@@ -1347,7 +1347,7 @@ class ParticleImportTask(ParticleWorkFlowTask):
 		
 				
 		progress.qt_widget.setValue(len(v))
-		#self.application().close_specific(progress)
+		#get_application().close_specific(progress)
 		progress.qt_widget.close()
 				
 			
@@ -1687,7 +1687,7 @@ class E2BoxerGuiTask(E2BoxerTask):
 			options.method = "Swarm"
 			
 			from e2boxer import EMBoxerModule
-			self.boxer_module = EMBoxerModule(self.application(),options)
+			self.boxer_module = EMBoxerModule(get_application(),options)
 			self.emit(QtCore.SIGNAL("gui_running"),"Boxer",self.boxer_module) # The controlled program should intercept this signal and keep the E2BoxerTask instance in memory, else signals emitted internally in boxer won't work
 			
 			QtCore.QObject.connect(self.boxer_module, QtCore.SIGNAL("module_idle"), self.on_boxer_idle)
@@ -2614,7 +2614,7 @@ class E2CTFGuiTask(E2CTFWorkFlowTask):
 			img_sets = get_gui_arg_img_sets(options.filenames)
 		
 			
-			self.gui=GUIctfModule(self.application(),img_sets)
+			self.gui=GUIctfModule(get_application(),img_sets)
 			self.emit(QtCore.SIGNAL("gui_running"), "CTF", self.gui) # so the desktop can prepare some space!
 			self.form.closeEvent(None)
 			QtCore.QObject.connect(self.gui,QtCore.SIGNAL("module_closed"), self.on_ctf_closed)
@@ -2952,9 +2952,9 @@ class E2Refine2DTask(ClassificationTask):
 		 			cmd += " "+options.input
 		 			cmd += " --process=math.meanshrink:n="+str(options.shrink)
 		 			
-		 			self.application().setOverrideCursor(Qt.BusyCursor)
+		 			get_application().setOverrideCursor(Qt.BusyCursor)
 		 			success = (os.system(cmd) in (0,12))
-		 			self.application().setOverrideCursor(Qt.ArrowCursor)
+		 			get_application().setOverrideCursor(Qt.ArrowCursor)
 		 			
 		 			if not success:
 		 				return ["e2proc2d.py shrinking command failed. This command was\n" + cmd +"\nTry again please. If the failure occurs a second time please contact developers."]
@@ -3026,9 +3026,9 @@ class E2Refine2DTask(ClassificationTask):
 		 			cmd += " "+options.input
 		 			cmd += " --process=math.meanshrink:n="+str(options.shrink)
 		 			
-		 			self.application().setOverrideCursor(Qt.BusyCursor)
+		 			get_application().setOverrideCursor(Qt.BusyCursor)
 		 			success = (os.system(cmd) in (0,12))
-		 			self.application().setOverrideCursor(Qt.ArrowCursor)
+		 			get_application().setOverrideCursor(Qt.ArrowCursor)
 		 			
 		 			if not success:
 		 				mesbox.setText("e2proc2d.py shrinking command failed. This command was\n" + cmd +"\nTry again please. If the failure occurs a second time please contact developers.")
@@ -3054,11 +3054,11 @@ class E2Refine2DTask(ClassificationTask):
 	 	
 	 	cmd += " --makevstack=bdb:"+options.path+"#all"
 	 	
-	 	self.application().setOverrideCursor(Qt.BusyCursor)
+	 	get_application().setOverrideCursor(Qt.BusyCursor)
 	 	success = os.system(cmd)
 		print "mvs ",success
 		success = (success in (0,12))
-	 	self.application().setOverrideCursor(Qt.ArrowCursor)
+	 	get_application().setOverrideCursor(Qt.ArrowCursor)
 	 	return success,cmd
 	 
 	def run_e2refine2d(self,options):
@@ -3147,10 +3147,10 @@ class E2Refine2DRunTask(E2Refine2DTask):
 		
 	
 	def run_form(self):
-		self.form = EMTableFormModule(self.get_params(),self.application())
+		self.form = EMTableFormModule(self.get_params(),get_application())
 		self.form.qt_widget.resize(*self.preferred_size)
 		self.form.setWindowTitle(self.window_title)
-		self.application().show_specific(self.form)
+		get_application().show_specific(self.form)
 		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
 		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
 		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_close"),self.on_form_close)
@@ -3293,7 +3293,7 @@ class E2Refine2DWithGenericTask(E2Refine2DRunTask):
 		options.input = None
 		options.filenames = [] # important - makes the spawn_process task work
 		if len(params["filenames"]) > 1 or options.shrink > 1:
-			progress = EMProgressDialogModule(self.application(),"Processing files...", "Abort import", 0, len(params["filenames"]),None)
+			progress = EMProgressDialogModule(get_application(),"Processing files...", "Abort import", 0, len(params["filenames"]),None)
 			progress.qt_widget.show()
 		
 			for i,file in enumerate(params["filenames"]):
@@ -3310,12 +3310,12 @@ class E2Refine2DWithGenericTask(E2Refine2DRunTask):
 	 			if options.shrink > 1: 
 	 				cmd += " --process=math.meanshrink:n="+str(options.shrink)
 	 			
-	 			self.application().setOverrideCursor(Qt.BusyCursor)
+	 			get_application().setOverrideCursor(Qt.BusyCursor)
 	 			success = (os.system(cmd) in (0,12))
-	 			self.application().setOverrideCursor(Qt.ArrowCursor)
+	 			get_application().setOverrideCursor(Qt.ArrowCursor)
 	 			
 	 			progress.qt_widget.setValue(i+1)
-	 			self.application().processEvents()
+	 			get_application().processEvents()
 	 			if progress.qt_widget.wasCanceled():
 	 				db_remove_dict(options.input)
 	 				progress.qt_widget.close()
@@ -3488,7 +3488,7 @@ class ImportInitialModels(ParticleWorkFlowTask):
 	 	# if we make it here we're all good, 
 	 	self.write_db_entries(params) # so store the parameters for recollection later
 	 	num_processing_operations = 2 # one read and one write
-	 	progress = EMProgressDialogModule(self.application(),"Importing files into database...", "Abort import", 0, len(params["filenames"])*num_processing_operations,None)
+	 	progress = EMProgressDialogModule(get_application(),"Importing files into database...", "Abort import", 0, len(params["filenames"])*num_processing_operations,None)
 		progress.qt_widget.show()
 		
 		i = 0
@@ -3647,10 +3647,10 @@ class E2RefineParticlesTask(ClassificationTask):
 		self.usefilt_display_names = ["Wiener"]
 	 	
 	def run_form(self):
-		self.form = EMTableFormModule(self.get_params(),self.application())
+		self.form = EMTableFormModule(self.get_params(),get_application())
 		self.form.qt_widget.resize(*self.preferred_size)
 		self.form.setWindowTitle(self.window_title)
-		self.application().show_specific(self.form)
+		get_application().show_specific(self.form)
 		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
 		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
 		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_close"),self.on_form_close)
@@ -3924,7 +3924,7 @@ class E2RefineParticlesTask(ClassificationTask):
 				
 			if fail: # we can't make a vstack
 				# potentially lots of e2proc2d
-				progress = EMProgressDialogModule(self.application(),"Importing files into database...", "Abort import", 0, len(filenames),None)
+				progress = EMProgressDialogModule(get_application(),"Importing files into database...", "Abort import", 0, len(filenames),None)
 				progress.qt_widget.show()
 		  	   	i = 0
 		  	   	setattr(options,attr, "bdb:"+options.path+"#"+out_name)
@@ -3953,10 +3953,10 @@ class E2RefineParticlesTask(ClassificationTask):
 	 	
 	 	print "executing cmd", cmd
 	 	
-	 	self.application().setOverrideCursor(Qt.BusyCursor)
+	 	get_application().setOverrideCursor(Qt.BusyCursor)
 	 	success = os.system(cmd)
 	 	success = (success in (0,11,12))
-	 	self.application().setOverrideCursor(Qt.ArrowCursor)
+	 	get_application().setOverrideCursor(Qt.ArrowCursor)
 	 	
 	 	setattr(options,attr,"bdb:"+options.path+"#"+out_name) # Note important 
 	 	
@@ -4519,10 +4519,10 @@ class E2EotestTask(E2RefineParticlesTask):
 	 	self.dir_and_iter = {} # will eventually be useful information about directories that will work for e2eotest
 	 	
 #	def run_form(self):
-#		self.form = EMTableFormModule(self.get_params(),self.application())
+#		self.form = EMTableFormModule(self.get_params(),get_application())
 #		self.form.qt_widget.resize(*self.preferred_size)
 #		self.form.setWindowTitle(self.window_title)
-#		self.application().show_specific(self.form)
+#		get_application().show_specific(self.form)
 #		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
 #		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
 #		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_close"),self.on_form_close)

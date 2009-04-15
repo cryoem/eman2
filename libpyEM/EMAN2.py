@@ -503,7 +503,7 @@ def display(img):
 def browse():
 	if GUIMode:
 		from emselector import EMBrowserModule
-		dialog = EMBrowserModule(app)
+		dialog = EMBrowserModule()
 		app.show_specific(dialog)
 	else:
 		os.system("e2display.py")

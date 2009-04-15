@@ -755,7 +755,7 @@ from emapplication import EMQtWidgetModule
 class GUIctfModule(EMQtWidgetModule):
 	def __init__(self,application,data):
 		self.guictf = GUIctf(application,data,self)
-		EMQtWidgetModule.__init__(self,self.guictf,application)
+		EMQtWidgetModule.__init__(self,self.guictf)
 		self.application = weakref.ref(application)
 		self.setWindowTitle("CTF")
 		

@@ -1089,9 +1089,9 @@ class DatabaseAutoBoxer(QtCore.QObject,RawDatabaseAutoBoxer):
 
 	def __run_form_initialization(self,options):
 		from emform import EMFormModule
-		self.form = EMFormModule(self.get_params(options),self.application())
+		self.form = EMFormModule(self.get_params(options),get_application())
 		self.form.setWindowTitle("Auto boxing parameters")
-		self.application().show_specific(self.form)
+		get_application().show_specific(self.form)
 		#print emitter
 		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
 		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
@@ -1110,11 +1110,11 @@ class DatabaseAutoBoxer(QtCore.QObject,RawDatabaseAutoBoxer):
 				print "a parameters is missing"
 				return
 		
-		self.application().close_specific(self.form)
+		get_application().close_specific(self.form)
 		self.autobox_images(options)
 		
 	def on_form_cancel(self):
-		self.application().close_specific(self.form)
+		get_application().close_specific(self.form)
 	
 	def get_params(self,options):
 		from emdatastorage import ParamDef
@@ -1154,7 +1154,7 @@ class DatabaseAutoBoxer(QtCore.QObject,RawDatabaseAutoBoxer):
 
 	def close(self):
 		if self.form != None:
-			self.application().close_specific(self.form)
+			get_application().close_specific(self.form)
 			self.form = None
 
 class EmptyObject:
@@ -1229,16 +1229,16 @@ class EMBoxerModule(QtCore.QObject):
 		for gui in [self.form,self.guimxit,self.guimx,self.guictl_module,self.guiim]:
 			if gui != None:
 				something_shown = True
-				self.application().show_specific(gui)
+				get_application().show_specific(gui)
 				
 		if not something_shown:
 			self.emit(QtCore.SIGNAL("module_idle"))
 	
 	def __run_form_initialization(self,options):
 		from emform import EMFormModule
-		self.form = EMFormModule(self.get_params(options),self.application())
+		self.form = EMFormModule(self.get_params(options),get_application())
 		self.form.setWindowTitle("Boxer input variables")
-		emitter = self.application().get_qt_emitter(self.form)
+		emitter = get_application().get_qt_emitter(self.form)
 		QtCore.QObject.connect(emitter,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
 		QtCore.QObject.connect(emitter,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
 		QtCore.QObject.connect(emitter,QtCore.SIGNAL("emform_close"),self.on_form_cancel)
@@ -1253,18 +1253,18 @@ class EMBoxerModule(QtCore.QObject):
 			return
 		elif options.running_mode == "gui":
 			self.__disconnect_form_signals()
-			self.application().close_specific(self.form)
+			get_application().close_specific(self.form)
 			self.form = None
 			self.__gui_init(options)
 			self.show_guis()
 		elif options.running_mode == "auto_db":
 			self.__disconnect_form_signals()
-			self.application().close_specific(self.form)
+			get_application().close_specific(self.form)
 			self.form = None
 			self.__auto_box_from_db(options)
 			
 	def __disconnect_form_signals(self):
-		emitter = self.application().get_qt_emitter(self.form)
+		emitter = get_application().get_qt_emitter(self.form)
 		QtCore.QObject.disconnect(emitter,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
 		QtCore.QObject.disconnect(emitter,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
 		QtCore.QObject.disconnect(emitter,QtCore.SIGNAL("emform_close"),self.on_form_cancel)	
@@ -1272,7 +1272,7 @@ class EMBoxerModule(QtCore.QObject):
 	def on_form_cancel(self):
 		# this means e2boxer isn't doing anything. The application should probably be told to close the EMBoxerModule
 #		self.__disconnect_form_signals()
-		self.application().close_specific(self.form)
+		get_application().close_specific(self.form)
 		self.form = None
 		self.emit(QtCore.SIGNAL("module_idle"))
 	
@@ -1280,7 +1280,7 @@ class EMBoxerModule(QtCore.QObject):
 		print "auto data base boxing"
 		
 		if not hasattr(options,"logid"): options.logid =None
-		self.dab = DatabaseAutoBoxer(self.application(),options.logid)
+		self.dab = DatabaseAutoBoxer(get_application(),options.logid)
 		QtCore.QObject.connect(self.dab,QtCore.SIGNAL("db_auto_boxing_done"),self.on_db_autoboxing_done)
 		
 		self.dab.go(options)
@@ -1373,13 +1373,13 @@ class EMBoxerModule(QtCore.QObject):
 		self.guictlrotor.setWindowTitle("e2boxer Controllers")
 
 	def __init_guictl(self):
-		self.guictl_module = EMBoxerModulePanelModule(self.application(),self,self.ab_sel_mediator)
+		self.guictl_module = EMBoxerModulePanelModule(get_application(),self,self.ab_sel_mediator)
 		self.guictl = self.guictl_module.qt_widget
 		self.guictl.set_image_quality(self.boxable.get_quality())
 		self.guictl.setWindowTitle("e2boxer Controller")
 		self.guictl.set_dynapix(self.dynapix)
 		#if self.fancy_mode == EMBoxerModule.FANCY_MODE: self.guictl.hide()
-		#self.application().show_specific(self.guictl_module)
+		#get_application().show_specific(self.guictl_module)
 		if isinstance(self.autoboxer,PawelAutoBoxer):
 			print "Setting GUI for Gauss boxing method"
 			gauss_method_id = 1
@@ -1397,9 +1397,9 @@ class EMBoxerModule(QtCore.QObject):
 		if self.guimxit != None:
 			if isinstance(self.guimxit,EMImageRotorModule):
 				self.guimxit.optimally_resize()
-				QtCore.QObject.connect(self.application().get_qt_emitter(self.guimxit),QtCore.SIGNAL("image_selected"),self.image_selected)
+				QtCore.QObject.connect(get_application().get_qt_emitter(self.guimxit),QtCore.SIGNAL("image_selected"),self.image_selected)
 			else:
-				QtCore.QObject.connect(self.application().get_qt_emitter(self.guimxit),QtCore.SIGNAL("mx_image_selected"),self.image_selected)
+				QtCore.QObject.connect(get_application().get_qt_emitter(self.guimxit),QtCore.SIGNAL("mx_image_selected"),self.image_selected)
 		
 			if isinstance(self.guimxit,EMImageRotorModule):
 				self.guimxit.set_frozen(self.boxable.is_frozen(),self.current_image_idx)
@@ -1418,13 +1418,13 @@ class EMBoxerModule(QtCore.QObject):
 			##self.fancy_mode = EMBoxerModule.FANCY_MODE
 			
 		#else:
-		self.guimx=EMImageMXModule(application=self.application())
+		self.guimx=EMImageMXModule(application=get_application())
 		self.guimx.desktop_hint = "rotor"
 		self.fancy_mode = EMBoxerModule.PLAIN_MODE
 		
 		self.guimx.set_mouse_mode("app")
 		
-		qt_target = self.application().get_qt_emitter(self.guimx)
+		qt_target = get_application().get_qt_emitter(self.guimx)
 
 		if self.fancy_mode == EMBoxerModule.FANCY_MODE:
 			 QtCore.QObject.connect(self.guiim,QtCore.SIGNAL("inspector_shown"),self.guiim_inspector_requested)
@@ -1442,15 +1442,15 @@ class EMBoxerModule(QtCore.QObject):
 			global BigImageCache
 			image=BigImageCache.get_object(imagename).get_image(use_alternate=True)
 		
-		self.guiim= EMImage2DModule(application=self.application())
+		self.guiim= EMImage2DModule(application=get_application())
 		self.guiim.set_data(image,imagename)
 		self.guiim.force_display_update()
-		#self.application().show_specific(self.guiim)
+		#get_application().show_specific(self.guiim)
 
 		self.__update_guiim_states()
 		self.guiim.set_mouse_mode(0)
 		
-		qt_target = self.application().get_qt_emitter(self.guiim)
+		qt_target = get_application().get_qt_emitter(self.guiim)
 			
 		self.guiim.setWindowTitle(imagename)
 		
@@ -1557,22 +1557,22 @@ class EMBoxerModule(QtCore.QObject):
 	
 	def view_boxes_clicked(self,bool):
 		if bool:
-			self.application().show_specific(self.guimx)
+			get_application().show_specific(self.guimx)
 		else:
-			self.application().hide_specific(self.guimx)
+			get_application().hide_specific(self.guimx)
 			
 	def view_image_clicked(self,bool):
 		if bool:
-			self.application().show_specific(self.guiim)
+			get_application().show_specific(self.guiim)
 		else:
-			self.application().hide_specific(self.guiim)
+			get_application().hide_specific(self.guiim)
 			
 	def view_thumbs_clicked(self,bool):
 		if  self.guimxit== None: return
 		if bool:
-			self.application().show_specific(self.guimxit)
+			get_application().show_specific(self.guimxit)
 		else:
-			self.application().hide_specific(self.guimxit)
+			get_application().hide_specific(self.guimxit)
 			
 	def within_main_image_bounds(self,coords):
 		x = coords[0]
@@ -1778,12 +1778,12 @@ class EMBoxerModule(QtCore.QObject):
 			if self.guimx == None:
 				self.__init_guimx()
 			if len(data) != 0:
-				#self.application().show_specific(self.guimx) #NEED TO CHANGE THIS IN THE MIDDLE OF REFURBISHMENT
+				#get_application().show_specific(self.guimx) #NEED TO CHANGE THIS IN THE MIDDLE OF REFURBISHMENT
 				self.guimx.set_data(data)
 			
 				#qt_target = self.guimx.get_parent()
 				#if not qt_target.isVisible():
-					#self.application().show_specific(self.guimx)
+					#get_application().show_specific(self.guimx)
 	
 	def clear_displays(self):
 		self.ptcl = []
@@ -1874,7 +1874,7 @@ class EMBoxerModule(QtCore.QObject):
 			
 
 	def gen_thumbs(self):
-		self.imagethumbs = gen_thumbs(self.image_names,self.application(),self.get_image_thumb_shrink())
+		self.imagethumbs = gen_thumbs(self.image_names,get_application(),self.get_image_thumb_shrink())
 
 	def __gen_image_thumbnails_widget(self):
 		'''
@@ -1898,14 +1898,14 @@ class EMBoxerModule(QtCore.QObject):
 		
 		self.gen_thumbs()
 
-		self.guimxit=EMImageMXModule(application=self.application())
+		self.guimxit=EMImageMXModule(application=get_application())
 		self.guimxit.desktop_hint = "rotor"
 			
 		try:
 			self.guimxit.setWindowTitle("Image Thumbs")
 		except:
 			pass
-		#self.application().show_specific(self.guimxit)
+		#get_application().show_specific(self.guimxit)
 		self.guimxit.set_data(self.imagethumbs)
 		
 		try:
@@ -2092,7 +2092,7 @@ class EMBoxerModule(QtCore.QObject):
 		#if self.guimxit != None: self.guimxit.get_parent()
 		
 	def update_mx_display(self):
-		#self.application().get_qt_gl_updategl_target(self.guimx).updateGL()
+		#get_application().get_qt_gl_updategl_target(self.guimx).updateGL()
 		self.guimx.updateGL()
 
 	def delete_display_boxes(self,numbers):
@@ -2356,7 +2356,7 @@ class EMBoxerModule(QtCore.QObject):
 			if get_idd_key_entry(name,"quality") == 0:
 				exclusions.append(name)
 		if self.output_task != None: return
-		self.output_task = E2BoxerProgramOutputTask(self.application(),self.image_names,self,exclusions)
+		self.output_task = E2BoxerProgramOutputTask(get_application(),self.image_names,self,exclusions)
 		QtCore.QObject.connect(self.output_task,QtCore.SIGNAL("task_idle"),self.on_output_task_idle)
 		self.output_task.run_form()
 		
@@ -2368,7 +2368,7 @@ class EMBoxerModule(QtCore.QObject):
 		
 	def write_box_image_files(self,image_names,box_size,forceoverwrite=False,imageformat="hdf",normalize=True,norm_method="normalize.edgemean",invert=False):
 		self.boxable.cache_exc_to_db()
-		progress = EMProgressDialogModule(self.application(),"Writing boxed images", "Abort", 0, len(image_names),None)
+		progress = EMProgressDialogModule(get_application(),"Writing boxed images", "Abort", 0, len(image_names),None)
 		progress.qt_widget.show()
 		app = QtGui.QApplication.instance()
 		app.setOverrideCursor(Qt.BusyCursor)
@@ -2407,7 +2407,7 @@ class EMBoxerModule(QtCore.QObject):
 				break
 				
 			progress.qt_widget.setValue(i+1)
-			self.application().processEvents()
+			get_application().processEvents()
 		app.setOverrideCursor(Qt.ArrowCursor)
 		progress.qt_widget.close()
  
@@ -2416,7 +2416,7 @@ class EMBoxerModule(QtCore.QObject):
 
 	def write_coord_files(self,image_names,box_size,forceoverwrite=False):
 		self.boxable.cache_exc_to_db()
-		progress = EMProgressDialogModule(self.application(),"Writing Coordinate  Files", "Abort", 0, len(image_names),None)
+		progress = EMProgressDialogModule(get_application(),"Writing Coordinate  Files", "Abort", 0, len(image_names),None)
 		progress.qt_widget.show()
 		app = QtGui.QApplication.instance()
 		app.setOverrideCursor(Qt.BusyCursor)
@@ -2453,7 +2453,7 @@ class EMBoxerModule(QtCore.QObject):
 			
 				
 			progress.qt_widget.setValue(i+1)
-			self.application().processEvents()
+			get_application().processEvents()
 		app.setOverrideCursor(Qt.ArrowCursor)
 		progress.qt_widget.close()
  
@@ -2850,7 +2850,7 @@ class EMBoxerModulePanelModule(EMQtWidgetModule):
 	def __init__(self,application,target,ab_sel_mediator):
 		self.application = weakref.ref(application)
 		self.widget = EMBoxerModulePanel(self,target,ab_sel_mediator)
-		EMQtWidgetModule.__init__(self,self.widget,application)
+		EMQtWidgetModule.__init__(self,self.widget)
 		
 	def get_desktop_hint(self):
 		return "inspector"

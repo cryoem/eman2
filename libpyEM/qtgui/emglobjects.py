@@ -1794,7 +1794,7 @@ class EMImage3DGUIModule(EMGUIModule):
 		self.data = None # should eventually be an EMData object
 		self.file_name = None # stores the file name of the associated EMData, if applicable (use setter/getter)
 		self.help_window = None # eventually will become a Qt help widget of some kind
-		EMGUIModule.__init__(self,application,ensure_gl_context)
+		EMGUIModule.__init__(self,ensure_gl_context)
 	
 	
 		self.rank = 0 # rank is to do with shading and using the stencil buffer. Each object should have a unique rank... if it is using the OpenGL contrast enhancement stuff
@@ -1815,6 +1815,7 @@ class EMImage3DGUIModule(EMGUIModule):
 			from emimage3d import EMImage3DGeneralWidget
 			self.gl_context_parent = EMImage3DGeneralWidget(self)
 			self.qt_context_parent = EMParentWin(self.gl_context_parent)
+			self.qt_context_parent.initGL()
 			self.gl_widget = self.gl_context_parent
 			if isinstance(self.data,EMData):
 				self.gl_context_parent.set_camera_defaults(self.data)

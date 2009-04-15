@@ -292,7 +292,6 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		glMaterial(GL_FRONT,GL_SHININESS,32.0)
 		
 	def trace_great_arcs(self, points):
-		# this functionality is momentarily disabled for the night
 		if ( self.cylinderdl == 0 ):
 			self.cylinderdl=glGenLists(1)
 				

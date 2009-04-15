@@ -485,11 +485,11 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 		first = False
 		if self.mx_viewer == None:
 			first = True
-			self.mx_viewer = EMImageMXModule(data=None,application=self.application())
+			self.mx_viewer = EMImageMXModule(data=None,application=get_application())
 			self.connect(self.mx_viewer,QtCore.SIGNAL("module_closed"),self.on_mx_view_closed)
 			self.mx_viewer.set_mouse_mode("app" )
 			self.connect(self.mx_viewer,QtCore.SIGNAL("mx_image_selected"), self.mx_image_selected)
-			self.application().show_specific(self.mx_viewer)
+			get_application().show_specific(self.mx_viewer)
 			
 		
 		disp = []
@@ -522,9 +522,9 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 			first = False
 			if self.mx_particle_viewer == None:
 				first = True
-				self.mx_particle_viewer = EMImageMXModule(data=None,application=self.application())
+				self.mx_particle_viewer = EMImageMXModule(data=None,application=get_application())
 				self.connect(self.mx_particle_viewer,QtCore.SIGNAL("module_closed"),self.on_particle_mx_view_closed)
-				self.application().show_specific(self.mx_particle_viewer)
+				get_application().show_specific(self.mx_particle_viewer)
 			
 			
 			if self.sel== 0 or self.alignment_file == None:
@@ -581,7 +581,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 		if self.inspector !=None: self.inspector.close()
 		if self.mx_viewer !=None: self.mx_viewer.closeEvent(None)
 		if self.mx_particle_viewer != None: self.mx_particle_viewer.closeEvent(None)
-		self.application().close_specific(self)
+		get_application().close_specific(self)
 		
 	
 #	def get_inspector(self):

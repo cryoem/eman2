@@ -51,7 +51,7 @@ from emfloatingwidgets import EMGLRotorWidget, EM2DGLView, EM3DGLWindowOverride,
 from emimagemx import EMImageInspectorMX, EMImageMXModule,EMDataListCache
 from emimageutil import  EMEventRerouter
 from emglobjects import EMOpenGLFlagsAndTools, EMGUIModule, EMGLProjectionViewMatrices
-from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
+from emapplication import EMStandAloneApplication, EMGUIModule,get_application
 
 
 class EMImageMXRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMatrices):
@@ -252,7 +252,7 @@ class EMImageMXRotorModule(EMGUIModule):
 		self.mx_cols = 4 # the number of columns in any given imagemx
 		self.start_mx = 0 # the starting index for the currently visible set of imagemxs
 		
-		EMGUIModule.__init__(self,application,ensure_gl_context=True)
+		EMGUIModule.__init__(self,ensure_gl_context=True)
 		
 		self.inspector = None
 		self.minden=0
@@ -278,7 +278,7 @@ class EMImageMXRotorModule(EMGUIModule):
 
 	def __del__(self):
 		for widget in self.rotor.get_widgets():
-			self.application().deregister_qt_emitter(widget.get_drawable().get_drawable())
+			get_application().deregister_qt_emitter(widget.get_drawable().get_drawable())
 		
 	def __init_gl_widget(self):
 		self.widget = EM3DGLWindowOverride(self,self.rotor)
@@ -625,7 +625,7 @@ class EMImageMXRotorModule(EMGUIModule):
 
 	def __regenerate_rotor(self):
 		for widget in self.rotor.get_widgets():
-			self.application().deregister_qt_emitter(widget.get_drawable().get_drawable())
+			get_application().deregister_qt_emitter(widget.get_drawable().get_drawable())
 			self.rotor.clear_widgets()
 #		self.parent.updateGL() # i can't figure out why I have to do this (when this function is called from set_mxs
 		num_per_view = self.mx_rows*self.mx_cols
@@ -652,8 +652,8 @@ class EMImageMXRotorModule(EMGUIModule):
 				for i in range(start_idx,start_idx+num_per_view): d.append(self.emdata_list_cache[i])
 
 			e = EM2DGLView(self,d)
-			e.get_drawable().set_app(self.application())
-			self.application().register_qt_emitter(e.get_drawable(),self.application().get_qt_emitter(self))
+			e.get_drawable().set_app(get_application())
+			get_application().register_qt_emitter(e.get_drawable(),get_application().get_qt_emitter(self))
 			x = EM2DGLWindow(self,e)
 			x.decoration.draw_x_enabled = False
 			x.decoration.color_flag = "black"

@@ -36,7 +36,7 @@ from PyQt4 import QtGui,QtCore
 from PyQt4.QtCore import Qt
 import os
 from emselector import EMSelectorModule
-from emapplication import EMQtWidgetModule
+from emapplication import EMQtWidgetModule,get_application
 from EMAN2 import Util, get_image_directory	
 import weakref
 
@@ -63,7 +63,7 @@ class EMFormModule(EMQtWidgetModule):
 	def __init__(self,params,application):
 		self.application = weakref.ref(application)
 		self.widget = EMFormWidget(self,params)
-		EMQtWidgetModule.__init__(self,self.widget,application)
+		EMQtWidgetModule.__init__(self,self.widget)
 		
 	def get_desktop_hint(self):
 		return "form"
@@ -800,17 +800,17 @@ class UrlEventHandler:
 		
 	def browse_pressed(self,bool):
 		if self.browser == None:
-			self.browser = EMSelectorModule(self.application())
+			self.browser = EMSelectorModule(get_application())
 			self.browser.widget.desktop_hint = "form" # this is to make things work as expected in the desktop
 			self.browser.setWindowTitle(self.browser_title)
-			self.application().show_specific(self.browser)
+			get_application().show_specific(self.browser)
 			QtCore.QObject.connect(self.browser,QtCore.SIGNAL("ok"),self.on_browser_ok)
 			QtCore.QObject.connect(self.browser,QtCore.SIGNAL("cancel"),self.on_browser_cancel)
 		else:
-			self.application().show_specific(self.browser)
+			get_application().show_specific(self.browser)
 
 	def on_browser_cancel(self):
-		self.application().close_specific(self.browser)
+		get_application().close_specific(self.browser)
 		self.browser = None
 		
 	def on_browser_ok(self,stringlist):
@@ -824,7 +824,7 @@ class UrlEventHandler:
 
 		self.text_edit.setText(new_string)
 		self.target().update_texture()# in the desktop the texture would have to be updated
-		self.application().close_specific(self.browser)
+		get_application().close_specific(self.browser)
 		self.browser = None
 	def clear_pressed(self,bool):
 		#self.target().update_texture()# in the desktop the texture would have to be updated
@@ -883,7 +883,7 @@ class EMTableFormModule(EMQtWidgetModule):
 	def __init__(self,params,application):
 		self.application = weakref.ref(application)
 		self.widget = EMTableFormWidget(self,params)
-		EMQtWidgetModule.__init__(self,self.widget,application)
+		EMQtWidgetModule.__init__(self,self.widget)
 		
 	def get_desktop_hint(self):
 		return "form"

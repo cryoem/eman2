@@ -202,7 +202,7 @@ class EMRotorModule(EMGUIModule):
 		return self.qt_context_parent
 	
 	def __init__(self, data=None,application=None):
-		EMGUIModule.__init__(self,application,ensure_gl_context=True)
+		EMGUIModule.__init__(self,ensure_gl_context=True)
 		self.parent = None
 		try: self.parent.setAcceptDrops(True)
 		except:	pass

@@ -39,7 +39,7 @@ import re
 from EMAN2 import get_image_directory,e2getcwd,get_dtag,EMData,get_files_and_directories,db_open_dict,strip_file_tag,remove_file
 from EMAN2 import remove_directories_from_name,Util,EMUtil,IMAGE_UNKNOWN,get_file_tag,db_check_dict,file_exists,gimme_image_dimensions3D, gm_time_string
 from emimage2d import EMImage2DModule
-from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMProgressDialogModule
+from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMProgressDialogModule, get_application
 from EMAN2db import EMAN2DB
 from emplot2d import EMPlot2DModule
 from emapplication import EMQtWidgetModule, ModuleEventsManager
@@ -49,10 +49,9 @@ import copy
 read_header_only = True
 
 class EMSelectorModule(EMQtWidgetModule):
-	def __init__(self,application=None):
-		self.application = weakref.ref(application)
-		self.widget = EMSelectorDialog(self,application)
-		EMQtWidgetModule.__init__(self,self.widget,application)
+	def __init__(self):
+		self.widget = EMSelectorDialog(self)
+		EMQtWidgetModule.__init__(self,self.widget)
 		
 	def exec_(self):
 		'''
@@ -63,7 +62,7 @@ class EMSelectorModule(EMQtWidgetModule):
 		
 
 class EMSelectorDialog(QtGui.QDialog):
-	def __init__(self,module,application,single_selection=False):
+	def __init__(self,module,single_selection=False):
 		'''
 		@param module - should be an EMSelectorModule
 		@param application - should be a type of application as supplied in emapplication
@@ -71,7 +70,6 @@ class EMSelectorDialog(QtGui.QDialog):
 		'''
 		QtGui.QDialog.__init__(self,None)
 		self.setFocusPolicy(Qt.StrongFocus)
-		self.application=weakref.ref(application)
 		self.module=weakref.ref(module)
 		self.desktop_hint = "dialog"
 		self.single_selection = single_selection
@@ -200,9 +198,6 @@ class EMSelectorDialog(QtGui.QDialog):
 				
 	def get_desktop_hint(self):
 		return self.desktop_hint
-		
-	def set_application(self,app):
-		self.application = weakref.ref(app)
 		
 	def __init_icons(self):
 		directory = get_image_directory()
@@ -466,7 +461,7 @@ class EMSelectorDialog(QtGui.QDialog):
 				if db.has_key("working_boxsize"):
 					options.boxsize = db["working_boxsize"] 
 			
-			self.boxer_module = EMBoxerModule(self.application(),options)
+			self.boxer_module = EMBoxerModule(get_application(),options)
 			self.boxer_module.show_guis()
 				
 		else:		
@@ -658,7 +653,7 @@ class EMSelectorDialog(QtGui.QDialog):
 
 	def hide_preview(self):
 		if self.gl_image_preview  != None:
-			self.application().hide_specific(self.gl_image_preview)
+			get_application().hide_specific(self.gl_image_preview)
 	
 	def list_widget_item_entered(self,item):
 		self.current_list_widget = item.listWidget()
@@ -740,9 +735,9 @@ class EMSelectorDialog(QtGui.QDialog):
 			self.list_widget_data[i] = None
 	
 	def try_preview_item(self,item):
-		self.application().setOverrideCursor(Qt.BusyCursor)
+		get_application().setOverrideCursor(Qt.BusyCursor)
 		preview_occured = item.do_preview(self)
-		self.application().setOverrideCursor(Qt.ArrowCursor)
+		get_application().setOverrideCursor(Qt.ArrowCursor)
 		return preview_occured
 
 	def check_preview_item_wants_to_list(self,item):
@@ -756,32 +751,32 @@ class EMSelectorDialog(QtGui.QDialog):
 	def preview_plot(self,filename):
 		if self.single_preview_only():
 			if not isinstance(self.gl_image_preview,EMPlot2DModule):
-				if self.gl_image_preview != None: self.application().close_specific(self.gl_image_preview)
-				self.gl_image_preview = EMPlot2DModule(self.application())
+				if self.gl_image_preview != None: get_application().close_specific(self.gl_image_preview)
+				self.gl_image_preview = EMPlot2DModule(get_application())
 	
 			self.gl_image_preview.set_data_from_file(filename,self.replace.isChecked())
-			self.application().show_specific(self.gl_image_preview)
+			get_application().show_specific(self.gl_image_preview)
 			self.gl_image_preview.updateGL()
 			
 		else:
-			preview =EMPlot2DModule(self.application())
+			preview = EMPlot2DModule(get_application())
 			preview.set_data_from_file(filename,self.replace.isChecked())
-			self.application().show_specific(preview)
+			get_application().show_specific(preview)
 			
 	def preview_plot_list(self,title,list_data):
 		if self.single_preview_only():
 			if not isinstance(self.gl_image_preview,EMPlot2DModule):
-				if self.gl_image_preview != None: self.application().close_specific(self.gl_image_preview)
-				self.gl_image_preview = EMPlot2DModule(self.application())
+				if self.gl_image_preview != None: get_application().close_specific(self.gl_image_preview)
+				self.gl_image_preview = EMPlot2DModule(get_application())
 	
 			self.gl_image_preview.set_data(title,list_data,self.replace.isChecked())
-			self.application().show_specific(self.gl_image_preview)
+			get_application().show_specific(self.gl_image_preview)
 			self.gl_image_preview.updateGL()
 			
 		else:
-			preview =EMPlot2DModule(self.application())
+			preview =EMPlot2DModule(get_application())
 			preview.set_data_from_file(filename,self.replace.isChecked())
-			self.application().show_specific(preview)
+			get_application().show_specific(preview)
 			
 	def preview_data(self,a,filename=""):
 		from emimage import EMImageModule, EMModuleFromFile
@@ -795,9 +790,9 @@ class EMSelectorDialog(QtGui.QDialog):
 		if self.single_preview_only() and len(self.previews) != 0:
 			old_preview = self.previews[-1] # this means we always choose the last preview if the user suddenly goes from multipreview to single preview
 			if not using_file_names_only:
-				preview = EMImageModule(data=a,app=self.application(),force_2d=f_2d,force_plot=f_plot,old=old_preview,filename=filename,replace=self.replace.isChecked())
+				preview = EMImageModule(data=a,app=get_application(),force_2d=f_2d,force_plot=f_plot,old=old_preview,filename=filename,replace=self.replace.isChecked())
 			else:
-				preview = EMModuleFromFile(filename,application=self.application(), force_2d=f_2d,force_plot=f_plot,old=old_preview)
+				preview = EMModuleFromFile(filename,application=get_application(), force_2d=f_2d,force_plot=f_plot,old=old_preview)
 			if preview != old_preview:
 				self.module_closed(old_preview)
 				old_preview.closeEvent(None)
@@ -807,19 +802,19 @@ class EMSelectorDialog(QtGui.QDialog):
 				except: pass
 		else:
 			if not using_file_names_only:
-				preview = EMImageModule(data=a,app=self.application(),force_2d=f_2d,force_plot=f_plot,filename=filename)
+				preview = EMImageModule(data=a,app=get_application(),force_2d=f_2d,force_plot=f_plot,filename=filename)
 			else:
-				preview = EMModuleFromFile(filename,application=self.application(), force_2d=f_2d,force_plot=f_plot)
+				preview = EMModuleFromFile(filename,application=get_application(), force_2d=f_2d,force_plot=f_plot)
 			self.previews.append(preview)
 			self.module_events.append(ModuleEventsManager(self,preview))
 			try: preview.optimally_resize()
 			except: pass
 					
-		self.application().show_specific(preview)
+		get_application().show_specific(preview)
 				
 		preview.updateGL()
 			
-		self.application().setOverrideCursor(Qt.ArrowCursor)	
+		get_application().setOverrideCursor(Qt.ArrowCursor)	
 	
 	def module_closed(self,module):
 		import sys
@@ -985,7 +980,6 @@ class EMFSListing:
 		e = EMData()
 		dtag = get_dtag()
 		read_header_only = True
-		plot = EMPlot2DModule()
 		
 		dirs, files = get_files_and_directories(directory)
 		if len(files) == 0 and len(dirs) == 0:
@@ -1056,7 +1050,7 @@ class EMFSListing:
 					b = EMGenericItem("regular_file",file)
 					accrue_public_attributes(a,b)
 			
-			elif plot.is_file_readable(full_name):
+			elif EMPlot2DModule.is_file_readable(full_name):
 				a = QtGui.QListWidgetItem(self.target().plot_icon,file,list_widget)
 				b = EMFSPlotItem(self.plot_data,full_name)
 				accrue_public_attributes(a,b)
@@ -1068,7 +1062,6 @@ class EMFSListing:
 
 		return True
 			
-	
 	def do_preview(self,item):
 		return item.do_preview(self.target())
 	
@@ -1804,7 +1797,7 @@ class EMDBSingleImageItem(EMListingItem):
 		
 	def save_as(self,target):
 		db_name = self.get_path()
-		return save_as(db_name,target.application(),self.database_key)
+		return save_data(self.get_emdata())
 	
 	def get_path(self):
 		return "bdb:"+self.database_directory+"#"+self.database
@@ -1853,18 +1846,17 @@ class EMGenericItem(EMListingItem):
 
 		
 class EMBrowserDialog(EMSelectorDialog):
-	def __init__(self,target,application):
-		EMSelectorDialog.__init__(self,target,application)
+	def __init__(self,target):
+		EMSelectorDialog.__init__(self,target)
 		self.preview_options.setCurrentIndex(1)
 		self.preview_options_changed(self.preview_options.currentText())
 		self.ok_button.setEnabled(False)
 		self.cancel_button.setEnabled(False)
 
 class EMBrowserModule(EMQtWidgetModule):
-	def __init__(self,application=None):
-		self.application = weakref.ref(application)
-		self.widget = EMBrowserDialog(self,application)
-		EMQtWidgetModule.__init__(self,self.widget,application)
+	def __init__(self):
+		self.widget = EMBrowserDialog(self)
+		EMQtWidgetModule.__init__(self,self.widget)
 
 class InvalidFunctionArgumentException(Exception):
 	'''Exception raised when an invalid function argument is passed'''
@@ -1875,9 +1867,7 @@ class InvalidFunctionArgumentException(Exception):
 	def __str__(self):
 			return repr(self.expression)+ " "+repr(self.message)
 
-class Callable:
-	def __init__(self, anycallable):
-	    self.__call__ = anycallable
+from emimageutil import Callable
 
 
 def save_data(item_object):
@@ -1978,7 +1968,7 @@ class EMSingleImageSaveDialog(EMFileSaveDialog):
 	# mimic a static function
 	validate_save_argument = Callable(validate_save_argument)
 	
-	def save(self,item,application=QtCore.QCoreApplication.instance()):
+	def save(self,item):
 		'''
 		Runs a file saving dialog and prompts the user to make sure nothing goes awry
 		@param item and EMData object
@@ -1990,7 +1980,7 @@ class EMSingleImageSaveDialog(EMFileSaveDialog):
 		
 		self.__item = item
 		self.setNameFilter(self.__get_file_filt_string())
-		em_qt_widget = EMSelectorModule(em_app)
+		em_qt_widget = EMSelectorModule()
 		while True:
 			
 			files = (em_qt_widget.exec_())
@@ -2714,9 +2704,8 @@ def on_cancel(string_list):
 
 if __name__ == '__main__':
 	em_app = EMStandAloneApplication()
-	app = em_app
 	#dialog = EMSelectorDialog(None,em_app)
-	em_qt_widget = EMSelectorModule(em_app)
+	em_qt_widget = EMSelectorModule()
 	QtCore.QObject.connect(em_qt_widget,QtCore.SIGNAL("ok"),on_done)
 	QtCore.QObject.connect(em_qt_widget,QtCore.SIGNAL("cancel"),on_cancel)
 	em_app.show()

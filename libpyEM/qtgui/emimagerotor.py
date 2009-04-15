@@ -209,7 +209,7 @@ class EMImageRotorModule(EMGUIModule):
 	
 	def __init__(self, data=None,application=None):
 		self.rotor = EMGLRotorWidget(self,15,10,45,EMGLRotorWidget.LEFT_ROTARY)
-		EMGUIModule.__init__(self,application,ensure_gl_context=True)
+		EMGUIModule.__init__(self,ensure_gl_context=True)
 		self.data=None
 		
 		self.initsizeflag = True

@@ -2102,7 +2102,7 @@ class EMBrowserSettings(object):
 		widget.hide()
 		#widget.resize(150,150)
 		#gl_view = EMQtGLView(EMDesktop.main_widget,widget)
-		module = EMQtWidgetModule(widget,application)
+		module = EMQtWidgetModule(widget)
 		application.show_specific(module)
 		#desktop_task_widget = EM2DGLWindow(gl_view)
 		return module

@@ -51,7 +51,7 @@ import weakref
 from pickle import dumps,loads
 
 from emglobjects import EMOpenGLFlagsAndTools, EMGUIModule
-from emapplication import EMGUIModule
+from emapplication import EMGUIModule,get_application
 from emimageutil import EMMetaDataTable
 
 from emanimationutil import SingleValueIncrementAnimation, LineAnimation
@@ -420,7 +420,7 @@ class EMImage2DModule(EMGUIModule):
 		self.data = image 	   # EMData object to display
 		self.file_name = ""# stores the filename of the image, if None then member functions should be smart enough to handle it
 		self.enable_clip = False
-		EMGUIModule.__init__(self,application,ensure_gl_context=True)
+		EMGUIModule.__init__(self,ensure_gl_context=True)
 		EMImage2DModule.allim[self] = 0
 		
 		self.init_gl_flag = True
@@ -1509,9 +1509,9 @@ class EMImage2DModule(EMGUIModule):
 			self.show_inspector(1)
 		elif event.button()==Qt.RightButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
 			try:
-				self.application().setOverrideCursor(Qt.ClosedHandCursor)
+				get_application().setOverrideCursor(Qt.ClosedHandCursor)
 			except: # if we're using a version of qt older than 4.2 than we have to use this...
-				self.application().setOverrideCursor(Qt.SizeAllCursor)
+				get_application().setOverrideCursor(Qt.SizeAllCursor)
 			self.rmousedrag=(event.x(),event.y() )
 		else:
 			self.mouse_event_handler.mouse_down(event)
@@ -1531,7 +1531,7 @@ class EMImage2DModule(EMGUIModule):
 		self.origin = new_origin
 	
 	def mouseReleaseEvent(self, event):
-		self.application().setOverrideCursor(Qt.ArrowCursor)
+		get_application().setOverrideCursor(Qt.ArrowCursor)
 		lc=self.scr_to_img(event.x(),event.y())
 		if self.rmousedrag:
 			self.rmousedrag=None
@@ -1636,7 +1636,7 @@ class EMImage2DModule(EMGUIModule):
 			self.updateGL()
 
 	def leaveEvent(self,event):
-		self.application().setOverrideCursor(Qt.ArrowCursor)
+		get_application().setOverrideCursor(Qt.ArrowCursor)
 		if self.rmousedrag:
 			self.rmousedrag=None
 		

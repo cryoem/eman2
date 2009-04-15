@@ -50,7 +50,7 @@ class EMTaskMonitorModule(EMQtWidgetModule):
 		self.application = application
 		self.widget = EMTaskMonitorWidget(self,application)
 		self.widget.resize(256,200)
-		EMQtWidgetModule.__init__(self,self.widget,application)
+		EMQtWidgetModule.__init__(self,self.widget)
 
 class EMTaskMonitorWidget(QtGui.QWidget,Animator):
 	def get_desktop_hint(self):
@@ -282,7 +282,7 @@ class EMWorkFlowSelector(EMQtWidgetModule):
 		self.application = application
 		self.widget = EMWorkFlowSelectorWidget(self,application,task_monitor)
 		self.widget.resize(256,200)
-		EMQtWidgetModule.__init__(self,self.widget,application)
+		EMQtWidgetModule.__init__(self,self.widget)
 
 
 #class EMWorkFlowSelector(object):
@@ -465,7 +465,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.module().emit(QtCore.SIGNAL("module_closed"),"module_string",module)
 	
 	def display_file(self,filename):
-		self.application().setOverrideCursor(Qt.BusyCursor)
+		get_application().setOverrideCursor(Qt.BusyCursor)
 		
 		if len(filename) > 18 and filename[-19:] == "convergence.results":
 			
@@ -475,7 +475,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 			eo = get_e2eotest_results_list(keys)
 			conv = get_convergence_results_list(keys)
 			from emplot2d import EMPlot2DModule,colortypes
-			module = EMPlot2DModule(self.application())
+			module = EMPlot2DModule(get_application())
 			i = 0
 			max = len(colortypes)
 			
@@ -488,31 +488,31 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 					module.set_data(k,db[k],color=(i%max),linewidth=3) # there are only a ceratin number of  colors
 					i += 1
 					
-			self.application().show_specific(module)
+			get_application().show_specific(module)
 			self.add_module([str(module),"Display",module])
 		else:
-			module = EMModuleFromFile(filename,self.application())
+			module = EMModuleFromFile(filename,get_application())
 			if module != None:
 				self.module().emit(QtCore.SIGNAL("launching_module"),"Browser",module)
-				self.application().show_specific(module)
+				get_application().show_specific(module)
 				self.add_module([str(module),"Display",module])
-		self.application().setOverrideCursor(Qt.ArrowCursor)
+		get_application().setOverrideCursor(Qt.ArrowCursor)
 		
 	def launch_asym_unit(self):
-		self.application().setOverrideCursor(Qt.BusyCursor)
-		module = EMAsymmetricUnitViewer(self.application())
+		get_application().setOverrideCursor(Qt.BusyCursor)
+		module = EMAsymmetricUnitViewer(get_application())
 		self.module().emit(QtCore.SIGNAL("launching_module"),"Eulers",module)
-		self.application().show_specific(module)
+		get_application().show_specific(module)
 		self.add_module([str(module),"Eulerxplor",module])
-		self.application().setOverrideCursor(Qt.ArrowCursor)
+		get_application().setOverrideCursor(Qt.ArrowCursor)
 		
 	def launch_browser(self):
-		self.application().setOverrideCursor(Qt.BusyCursor)
-		module = EMBrowserModule(self.application())
+		get_application().setOverrideCursor(Qt.BusyCursor)
+		module = EMBrowserModule()
 		self.module().emit(QtCore.SIGNAL("launching_module"),"Browser",module)
-		self.application().show_specific(module)
+		get_application().show_specific(module)
 		self.add_module([str(module),"Browse",module])
-		self.application().setOverrideCursor(Qt.ArrowCursor)
+		get_application().setOverrideCursor(Qt.ArrowCursor)
 	
 	def launch_refine2d_general(self):
 		self.launch_task(E2Refine2DWithGenericTask,"e2refine2d generic")
@@ -525,7 +525,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	
 	def launch_boxer_general(self):
 		self.launch_task(E2BoxerGenericTask,"e2boxer general")
-#		module = EMBoxerModule(self.application(),None)
+#		module = EMBoxerModule(get_application(),None)
 #		self.module.emit(QtCore.SIGNAL("launching_module"),"Boxer",module)
 #		module.show_guis()
 #		self.add_module([str(module),"Boxer",module])
@@ -610,7 +610,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 			
 		self.module().emit(QtCore.SIGNAL("task_selected"),"Workflow","Workflow")
 		if not self.tasks.has_key("Change directory"):
-			task = ChangeDirectoryTask(self.application())
+			task = ChangeDirectoryTask(get_application())
 			
 			wd = task.run_form()
 			if wd != None: self.directory.setToolTip(0,wd)
@@ -624,13 +624,13 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		
 		self.module().emit(QtCore.SIGNAL("task_selected"),"Workflow","Workflow")
 		if not self.tasks.has_key(task_unique_identifier):
-			task = task_type(self.application())
+			task = task_type(get_application())
 			
 			task.run_form()
 			self.tasks[task_unique_identifier] = task
 			self.event_managers[task_unique_identifier] = TaskEventsManager(task,self,task_unique_identifier)
 		else:
-			self.application().show_specific(self.tasks[task_unique_identifier])
+			get_application().show_specific(self.tasks[task_unique_identifier])
 			
 		self.update_task_list()
 	
@@ -657,7 +657,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	def __clear_tasks(self):
 		for v in self.tasks.values():
 			v.closeEvent(None)
-			#self.application().close_specific(v)
+			#get_application().close_specific(v)
 		self.tasks = {}
 		self.event_managers = {}
 	
@@ -776,7 +776,7 @@ class EMWorkFlowManager:
 		self.application = weakref.ref(application)
 		
 	
-		self.task_monitor = EMTaskMonitorModule(self.application())
+		self.task_monitor = EMTaskMonitorModule(get_application())
 		self.selector = EMWorkFlowSelector(application,self.task_monitor.qt_widget)
 		QtCore.QObject.connect(self.selector, QtCore.SIGNAL("tasks_updated"),self.task_monitor.qt_widget.set_entries)
 		QtCore.QObject.connect(self.task_monitor, QtCore.SIGNAL("task_killed"),self.selector.qt_widget.task_killed)
@@ -786,8 +786,8 @@ class EMWorkFlowManager:
 	def close(self):
 		self.selector().closeEvent(None)
 		self.task_monitor.closeEvent(None)
-		#self.application().close_specific(self.selector)
-		#self.application().close_specific(self.task_monitor)
+		#get_application().close_specific(self.selector)
+		#get_application().close_specific(self.task_monitor)
 
 if __name__ == '__main__':
 	logid=E2init(sys.argv)

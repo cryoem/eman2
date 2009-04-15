@@ -56,7 +56,7 @@ from matplotlib.figure import Figure
 #matplotlib.use('Agg')
 
 from emapplication import EMStandAloneApplication, EMGUIModule
-from emimageutil import EMEventRerouter, EMParentWin
+from emimageutil import EMEventRerouter, EMParentWin, Callable
 from emglobjects import EMOpenGLFlagsAndTools
 
 linetypes=["-","--",":","-."]
@@ -75,6 +75,7 @@ class EMPlot2DWidget(QtOpenGL.QGLWidget,EMEventRerouter,):
 	"""A QT widget for drawing 2-D plots using matplotlib
 	"""
 	def __init__(self, em_plot_module):
+		print "emplot2d init"
 		assert(isinstance(em_plot_module,EMPlot2DModule))
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True);
@@ -160,7 +161,7 @@ class EMPlot2DModule(EMGUIModule):
 	
 	
 	def __init__(self,application=None):
-		EMGUIModule.__init__(self,application)
+		EMGUIModule.__init__(self)
 		self.axes={}
 		self.pparm={}
 		self.inspector=None
@@ -321,7 +322,7 @@ class EMPlot2DModule(EMGUIModule):
 				
 		return True
 
-	def is_file_readable(self,filename):
+	def is_file_readable(filename):
 		'''
 		Called by file browsing interfaces to determine if the file is plottable
 		Tries to parse two lines, convert the values into floats, make sure
@@ -355,6 +356,8 @@ class EMPlot2DModule(EMGUIModule):
 			#print "couldn't read",filename
 			return False
 
+	# make the function static
+	is_file_readable = Callable(is_file_readable)
 	def render(self):
 		if not self.data : return
 		

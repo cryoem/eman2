@@ -93,12 +93,9 @@ class ModuleEventsManager:
 class EMGUIModule(EventsEmitterAndReciever,QtCore.QObject):
 	FTGL = "ftgl"
 	GLUT = "glut"
-	def __init__(self,application=None,ensure_gl_context=False):
+	def __init__(self,ensure_gl_context=False):
 		QtCore.QObject.__init__(self)
 		self.under_qt_control = False
-		if application != None:
-			self.application = weakref.ref(application)
-		else: self.application = None
 		self.em_qt_inspector_widget = None # shoudl be = EMQtWidgetModule(application) somewher 
 		self.suppress_inspector = False # turn on to suppress showing the inspector
 		self.inspector = None # this should be a qt widget, otherwise referred to as an inspector in eman
@@ -115,11 +112,12 @@ class EMGUIModule(EventsEmitterAndReciever,QtCore.QObject):
 		self.image_change_count =  0# this is important when the user has more than one display instance of the same image, for instance in e2.py if 
 		
 		self.file_name = ""
-		if application != None: application.attach_child(self)
+		app = get_application()
+		if app != None: app.attach_child(self)
 
-		if ensure_gl_context and application != None:
-			application.ensure_gl_context(self)
-			
+		if ensure_gl_context and app != None:
+			app.ensure_gl_context(self)
+		
 		EventsEmitterAndReciever.__init__(self)
 		
 	def __del__(self):
@@ -131,9 +129,6 @@ class EMGUIModule(EventsEmitterAndReciever,QtCore.QObject):
 	
 	def is_visible(self):
 		return self.qt_context_parent.isVisible()
-		
-	def set_app(self,application): self.application = weakref.ref(application)
-	def get_app(self): return self.application
 	
 	def set_gl_context_parent(self,parent): self.gl_context_parent = parent
 	def get_gl_context_parent(self): return self.gl_context_parent
@@ -159,7 +154,8 @@ class EMGUIModule(EventsEmitterAndReciever,QtCore.QObject):
 	
 	def show_inspector(self,force=0):
 		self.emit(QtCore.SIGNAL("inspector_shown")) # debug only
-		if self.application == None:
+		app = get_application()
+		if app == None:
 			print "can't show an inspector with having an associated application"
 		
 		if self.suppress_inspector: return
@@ -168,26 +164,26 @@ class EMGUIModule(EventsEmitterAndReciever,QtCore.QObject):
 			self.inspector = self.get_inspector()
 			if self.inspector == None: return # sometimes this happens
 		if not self.em_qt_inspector_widget:
-			self.em_qt_inspector_widget = EMQtWidgetModule(self.inspector,self.application())
+			self.em_qt_inspector_widget = EMQtWidgetModule(self.inspector)
 			self.em_qt_inspector_widget.setWindowTitle(remove_directories_from_name(self.file_name))
 			if self.gl_widget != None:
 				try:
 					self.em_qt_inspector_widget.set_selected(self.gl_widget.decoration.is_selected())
 				except: pass
 
-		if not self.application().child_is_attached(self.em_qt_inspector_widget):
-			self.application().attach_child(self.em_qt_inspector_widget)
-		self.application().show_specific(self.em_qt_inspector_widget)
+		if not app.child_is_attached(self.em_qt_inspector_widget):
+			app.attach_child(self.em_qt_inspector_widget)
+		app.show_specific(self.em_qt_inspector_widget)
 	
 	def update_inspector_texture(self):
 		if self.em_qt_inspector_widget != None:
 			self.em_qt_inspector_widget.force_texture_update()
 	
 	def closeEvent(self,event):
-		if self.application() != None:
+		if get_application() != None:
 			if self.em_qt_inspector_widget != None: 
 				self.em_qt_inspector_widget.closeEvent(event)
-			self.application().close_specific(self)
+			get_application().close_specific(self)
 		self.emit(QtCore.SIGNAL("module_closed")) # this could be a useful signal, especially for something like the selector module, which can potentially show a lot of images but might want to close them all when it is closed
 		
 	def load_font_renderer(self):
@@ -241,6 +237,24 @@ class EMGUIModule(EventsEmitterAndReciever,QtCore.QObject):
 			#self.browser2.show()
 			#self.browser2.resize(800,800)
 
+class EMInstance:
+	'''
+	Holds a reference to an instance, supports a static interface
+	'''
+	instance = None
+	from emimageutil import Callable
+	
+	def __init__(self):pass
+	
+	def get_instance(): return EMInstance.instance
+	get_instance = Callable(get_instance)
+	def set_instance(instance): EMInstance.instance = instance
+	set_instance = Callable(set_instance)
+	
+em_app_instance = EMInstance()
+
+get_application = em_app_instance.get_instance
+
 class EMApplication:
 	def __init__(self,qt_application_control=True):
 		self.children = []
@@ -249,7 +263,9 @@ class EMApplication:
 		else: self.app = None
 		
 		self.qt_emission_registry = {}
-	
+		
+		if em_app_instance.get_instance() == None:
+			em_app_instance.set_instance(self)
 	def child_is_attached(self,query_child):
 		if query_child in self.children: return True
 		else: return False
@@ -316,7 +332,10 @@ class EMApplication:
 		#if self.app != None:
 			#if QtGui.QApplication.startingUp():
 			#a = QtGui.QApplication.QApplication(sys.argv)
-			
+
+
+	
+
 class EMStandAloneApplication(EMApplication):
 	def __init__(self,qt_application_control=True):
 		
@@ -324,6 +343,7 @@ class EMStandAloneApplication(EMApplication):
 		# Stuff for display synchronization in e2.py
 		self.timer_function = None
 		self.tmr = None
+		self.initglcalled = False
 		
 		EMApplication.__init__(self,qt_application_control)
 		
@@ -344,7 +364,9 @@ class EMStandAloneApplication(EMApplication):
 		self.children.append(child)
 		
 	def ensure_gl_context(self,child):
-		child.get_qt_widget().initGL()
+		if not self.initglcalled:
+			child.get_qt_widget().initGL()
+			self.initglcalled = True
 	
 	def isVisible(self,child):
 		if child.gl_widget != None:
@@ -451,10 +473,10 @@ class EMStandAloneApplication(EMApplication):
 
 		
 class EMQtWidgetModule(EMGUIModule):
-	def __init__(self,qt_widget,application):
+	def __init__(self,qt_widget):
 		self.qt_widget = qt_widget
 		self.gl_widget = None
-		EMGUIModule.__init__(self,application)
+		EMGUIModule.__init__(self)
 		
 		self.selected = False
 	
@@ -517,8 +539,9 @@ class EMQtWidgetModule(EMGUIModule):
 		
 		self.qt_widget = None
 		
-		if self.application != None:
-			self.application().close_specific(self)
+		app = get_application()
+		if app != None:
+			app.close_specific(self)
 		
 		self.gl_widget = None
 		self.qt_widget = None
@@ -527,12 +550,12 @@ class EMQtWidgetModule(EMGUIModule):
 		
 	
 	def connect_qt_pop_up_application_event(self,signal):
-		self.application().connect_qt_pop_up_application_event(signal,self)
+		get_application().connect_qt_pop_up_application_event(signal,self)
 	
 	
 	def force_texture_update(self,val=True):
 		if not self.under_qt_control and val == True:
-			if self.application().isVisible(self):
+			if get_application().isVisible(self):
 				#self.gl_widget.drawable.gen_texture = True
 				self.gl_widget.drawable.set_refresh_dl()
 				
@@ -557,7 +580,7 @@ class EMProgressDialogModule(EMQtWidgetModule):
 		self.application = weakref.ref(application)
 		self.widget = EMProgressDialog(label_text,cancel_button_text, minimum, maximum, parent)
 		self.widget.setWindowIcon(QtGui.QIcon(get_image_directory() + "/eman.png"))
-		EMQtWidgetModule.__init__(self,self.widget,application)
+		EMQtWidgetModule.__init__(self,self.widget)
 		
 	def get_desktop_hint(self):
 		return "dialog"

@@ -50,7 +50,7 @@ from PyQt4.QtGui import QImage
 from PyQt4.QtCore import QTimer
 
 from emglobjects import EMOpenGLFlagsAndTools,EMGLProjectionViewMatrices,EMBasicOpenGLObjects
-from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
+from emapplication import EMStandAloneApplication, EMGUIModule,get_application
 from emanimationutil import LineAnimation
 import weakref
 
@@ -540,7 +540,7 @@ class EMImageMXModule(EMGUIModule):
 		self.desktop_hint = "image"
 		self.init_size_flag = True
 		self.data=None
-		EMGUIModule.__init__(self,application,ensure_gl_context=True)
+		EMGUIModule.__init__(self,ensure_gl_context=True)
 		EMImageMXModule.allim[self] = 0
 		self.file_name = ''
 		self.datasize=(1,1)
@@ -1543,13 +1543,13 @@ class EMImageMXModule(EMGUIModule):
 		f = file(fsp,'w')
 		f.write('#LST\n')
 		
-		progress = EMProgressDialogModule(self.application(),"Writing files", "abort", 0, len(self.data),None)
+		progress = EMProgressDialogModule(get_application(),"Writing files", "abort", 0, len(self.data),None)
 		progress.qt_widget.show()
 		for i in xrange(0,len(self.data)):
 			d = self.data[i]
 			if d == None: continue # the image has been excluded
 			progress.qt_widget.setValue(i)
-			self.application().processEvents()
+			get_application().processEvents()
 			if progress.qt_widget.wasCanceled():
 				#remove_file(fsp)# we could do this but if they're overwriting the original data then they lose it all
 				f.close()
@@ -1612,11 +1612,8 @@ class EMImageMXModule(EMGUIModule):
 		
 	def check_newy(self,y):
 		newy = y
-		
 		if newy > self.matrix_panel.min_sep: newy = self.matrix_panel.min_sep # this is enforcing a strong boundary at the bottom
 		elif newy < -self.matrix_panel.max_y: newy = -self.matrix_panel.max_y
-		
-		 
 		return newy
 	
 	def origin_update(self,new_origin):
@@ -1637,15 +1634,14 @@ class EMImageMXModule(EMGUIModule):
 			if not self.draw_scroll: return # if the (vertical) scroll bar isn't drawn then mouse movement is disabled (because the images occupy the whole view)
 			app =  QtGui.QApplication.instance()
 			try:
-				self.application().setOverrideCursor(Qt.ClosedHandCursor)
+				get_application().setOverrideCursor(Qt.ClosedHandCursor)
 				#app.setOverrideCursor(Qt.ClosedHandCursor)
 			except: # if we're using a version of qt older than 4.2 than we have to use this...
-				self.application().setOverrideCursor(Qt.SizeAllCursor)
+				get_application().setOverrideCursor(Qt.SizeAllCursor)
 				#app.setOverrideCursor(Qt.SizeAllCursor)
 				
 			self.mousedrag=(event.x(),event.y())
 		else:
-			print "That happened"
 			self.mouse_event_handler.mouse_down(event)
 		
 	def mouseMoveEvent(self, event):
@@ -1674,7 +1670,7 @@ class EMImageMXModule(EMGUIModule):
 			self.scroll_bar_has_mouse = False
 			return
 		
-		self.application().setOverrideCursor(Qt.ArrowCursor)
+		get_application().setOverrideCursor(Qt.ArrowCursor)
 		lc=self.scr_to_img((event.x(),event.y()))
 		if self.mousedrag:
 			self.mousedrag=None
@@ -1693,7 +1689,7 @@ class EMImageMXModule(EMGUIModule):
 		pass
 	
 	def leaveEvent(self,event):
-		self.application().setOverrideCursor(Qt.ArrowCursor)
+		get_application().setOverrideCursor(Qt.ArrowCursor)
 		if self.mousedrag:
 			self.mousedrag=None
 			

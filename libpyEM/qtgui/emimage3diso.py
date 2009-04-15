@@ -56,8 +56,6 @@ from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
 MAG_INCREMENT_FACTOR = 1.1
 
 class EMIsosurfaceModule(EMImage3DGUIModule):
-	
-	
 	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
 		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
 
@@ -115,7 +113,6 @@ class EMIsosurfaceModule(EMImage3DGUIModule):
 	
 	def render(self):
 		if (not isinstance(self.data,EMData)): return
-		
 		#a = time()
 		lighting = glIsEnabled(GL_LIGHTING)
 		cull = glIsEnabled(GL_CULL_FACE)
@@ -188,7 +185,7 @@ class EMIsosurfaceModule(EMImage3DGUIModule):
 		#else: glPolygonMode(GL_BACK, GL_FILL)
 		
 		#print "total time is", time()-a
-			
+		
 	def init(self):
 		self.mmode = 0
 		self.inspector=None
@@ -676,8 +673,7 @@ if __name__ == '__main__':
 	if len(sys.argv)==1 : 
 		data = []
 		#for i in range(0,200):
-		e = EMData(64,64,64)
-		e.process_inplace('testimage.axes')
+		e = test_image_3d(1,size=(64,64,64))
 		window.set_data(e)
 	else :
 		a=EMData(sys.argv[1])

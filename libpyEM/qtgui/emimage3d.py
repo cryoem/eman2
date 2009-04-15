@@ -55,7 +55,7 @@ from emlights import EMLightsInspectorBase,EMLightsDrawer
 
 from emglobjects import Camera2, EMViewportDepthTools, Camera, EMImage3DGUIModule,EMGLProjectionViewMatrices,EMOpenGLFlagsAndTools
 from emimageutil import EMEventRerouter, EMTransformPanel, EMParentWin
-from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
+from emapplication import EMStandAloneApplication, EMGUIModule,get_application
 
 
 MAG_INCREMENT_FACTOR = 1.1
@@ -103,7 +103,7 @@ class EMImage3DGeneralWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionVi
 		glLightfv(GL_LIGHT0, GL_POSITION, [-4,.1,1.,0.])
 		GL.glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
 		glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_TRUE)
-		GL.glClearColor(.8,.8,.8,1)
+		GL.glClearColor(0.,0.,0.,1)
 		#GL.glClearAccum(0,0,0,0)
 	
 		glShadeModel(GL_SMOOTH)
@@ -176,13 +176,13 @@ class EMImage3DWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMatri
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True)
 		fmt.setDepth(True)
-#		fmt.setStencil(True)
+		fmt.setStencil(True)
 		fmt.setSampleBuffers(True)
-		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
+		QtOpenGL.QGLWidget.__init__(self,fmt)
 		EMEventRerouter.__init__(self,image_3d_module)
 		EMGLProjectionViewMatrices.__init__(self)
 		self.aspect=1.0
-		self.fov = 20 # field of view angle used by gluPerspective
+		self.fov = 50 # field of view angle used by gluPerspective
 		self.d = 0
 		self.zwidth = 0
 		self.perspective = True
@@ -228,17 +228,17 @@ class EMImage3DWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMatri
 #		glLightfv(GL_LIGHT1, GL_POSITION, [0,0,1,1]) # set the is self.radius when it's known
 #		glLightfv(GL_LIGHT1, GL_SPOT_DIRECTION, [0,0,-1])
 #		glLightfv(GL_LIGHT1, GL_QUADRATIC_ATTENUATION,0.0037)
-		GL_SPOT_DIRECTION,GL_SPOT_CUTOFF,GL_QUADRATIC_ATTENUATION
+		#GL_SPOT_DIRECTION,GL_SPOT_CUTOFF,GL_QUADRATIC_ATTENUATION
 		
 		
 		GL.glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
 		glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_TRUE)
-
+		glShadeModel(GL_SMOOTH)
 		#glLightModelfv(GL_LIGHT_MODEL_AMBIENT, [0.1,0.1,0.1,1.0]);
 		
 		glClearStencil(0)
 		glEnable(GL_STENCIL_TEST)
-		glClearColor(.8,.8,.8,1)
+		GL.glClearColor(0.0,.0,.0,1)
 		try:
 			self.target().initializeGL()
 		except:
@@ -388,6 +388,7 @@ class EMImage3DModule(EMLightsDrawer,EMImage3DGUIModule):
 	
 	def get_desktop_hint(self):
 		return "image"
+	
 	allim=WeakKeyDictionary()
 	def __init__(self, image=None,application=None):
 		self.viewables = []
@@ -461,7 +462,6 @@ class EMImage3DModule(EMLightsDrawer,EMImage3DGUIModule):
 	def initializeGL(self):
 		glEnable(GL_NORMALIZE)
 	
-	
 	def render(self):
 		self.image_change_count = self.data.get_changecount() # this is important when the user has more than one display instance of the same image, for instance in e2.py if 
 		glPushMatrix()
@@ -475,12 +475,10 @@ class EMImage3DModule(EMLightsDrawer,EMImage3DGUIModule):
 			glMatrixMode(GL_PROJECTION)
 			glPushMatrix() 
 			self.gl_context_parent.load_orthographic()
-			
 			glMatrixMode(GL_MODELVIEW)
 		
 		glPushMatrix()
 		self.cam.position()
-		
 		
 		for i in self.viewables:
 			glPushMatrix()
@@ -493,8 +491,6 @@ class EMImage3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		self.cam.translate_only()
 		EMLightsDrawer.draw(self)
 		glPopMatrix()
-		
-		
 		
 		if not self.perspective:
 			glMatrixMode(GL_PROJECTION)
@@ -599,7 +595,6 @@ class EMImage3DModule(EMLightsDrawer,EMImage3DGUIModule):
 			v.set_qt_context_parent(self.qt_context_parent)
 			v.set_gl_context_parent(self.gl_context_parent)
 			v.set_gl_widget(self.gl_context_parent)
-			v.set_app(self.application())
 			#self.application.register_qt_emitter(v,self.application.get_qt_emitter(self))
 	
 	def load_last_viewable_camera(self):
@@ -619,14 +614,14 @@ class EMImage3DModule(EMLightsDrawer,EMImage3DGUIModule):
 	def get_current_name(self):
 		if self.currentselection == -1 : return ""
 		elif self.currentselection >= len(self.viewables):
-			print "error, current seletion too large", self.currentselection,len(self.viewables)
+			print "error, current selection too large", self.currentselection,len(self.viewables)
 			return ""
 		return self.viewables[self.currentselection].get_name()
 	
 	def get_current_inspector(self):
 		if self.currentselection == -1 : return None
 		elif self.currentselection >= len(self.viewables):
-			print "error, current seletion too large", self.currentselection,len(self.viewables)
+			print "error, current selection too large", self.currentselection,len(self.viewables)
 			return None
 		return self.viewables[self.currentselection].get_inspector()
 	
@@ -900,7 +895,6 @@ class EM3DAdvancedInspector(QtGui.QWidget,EMLightsInspectorBase):
 		self.rotation_sliders = EMTransformPanel(self.target(),self)
 		self.rotation_sliders.addWidgets(maintab.vbl)
 		
-		
 		return self.maintab
 		
 	def get_transform_layout(self):
@@ -931,8 +925,7 @@ if __name__ == '__main__':
 	if len(sys.argv)==1 : 
 		data = []
 		#for i in range(0,200):
-		e = EMData(64,64,64)
-		e.process_inplace('testimage.axes')
+		e = test_image_3d(1,size=(64,64,64))
 		window.set_data(e)
 	else :
 		a=EMData(sys.argv[1])
