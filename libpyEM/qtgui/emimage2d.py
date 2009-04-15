@@ -763,7 +763,7 @@ class EMImage2DModule(EMGUIModule):
 		
 			self.fminden=0
 			self.fmaxden=min(m1,mean+10.0*sigma)
-			self.fcurmin = max(0)
+			self.fcurmin = max(0,0)
 			self.fcurmax = min(m1,mean+3.0*sigma)
 			
 			self.force_display_update()

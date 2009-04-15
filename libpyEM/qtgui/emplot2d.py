@@ -75,7 +75,6 @@ class EMPlot2DWidget(QtOpenGL.QGLWidget,EMEventRerouter,):
 	"""A QT widget for drawing 2-D plots using matplotlib
 	"""
 	def __init__(self, em_plot_module):
-		print "emplot2d init"
 		assert(isinstance(em_plot_module,EMPlot2DModule))
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True);

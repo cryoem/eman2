@@ -41,6 +41,7 @@ from OpenGL.GLU import *
 import weakref
 from optparse import OptionParser
 from EMAN2 import Util, E2init, E2end,EMANVERSION,is_2d_image_mx, EMUtil, db_open_dict, EMData, Transform, db_check_dict, db_close_dict, get_files_and_directories
+from emapplication import get_application
 from emimagemx import EMImageMXModule
 import os
 import sys
