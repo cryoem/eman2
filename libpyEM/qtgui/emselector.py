@@ -62,7 +62,7 @@ class EMSelectorModule(EMQtWidgetModule):
 		
 
 class EMSelectorDialog(QtGui.QDialog):
-	def __init__(self,module,single_selection=False):
+	def __init__(self,module,single_selection=False,save_as_mode=True):
 		'''
 		@param module - should be an EMSelectorModule
 		@param application - should be a type of application as supplied in emapplication
@@ -107,6 +107,18 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.__load_directory_data(self.starting_directory,self.first_list_widget)
 		#self.first_list_widget.setCurrentRow(-1)
 
+		self.save_as_mode = False
+		if save_as_mode:
+			hbl2=QtGui.QHBoxLayout()
+			hbl2.setMargin(0)
+			hbl2.setSpacing(2)
+			label = QtGui.QLabel("Save as",self)
+			hbl2.addWidget(label)
+			self.save_as_line_edit = QtGui.QLineEdit("",self)
+			hbl2.addWidget(self.save_as_line_edit,0)
+			self.hbl.addLayout(hbl2)
+			self.save_as_mode = True
+
 		self.bottom_hbl = QtGui.QHBoxLayout()
 		self.bottom_hbl.addWidget(self.filter_text,0)
 		self.bottom_hbl.addWidget(self.filter_combo,1)
@@ -114,30 +126,32 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.bottom_hbl.addWidget(self.cancel_button,0)
 		self.bottom_hbl.addWidget(self.ok_button,0)
 		self.hbl.addLayout(self.bottom_hbl)
-		self.gl_image_preview = None
 		
-		self.bottom_hbl2 = QtGui.QHBoxLayout()
-		self.__init_preview_options()
-		self.bottom_hbl2.addWidget(self.preview_options,0)
-		self.hbl.addLayout(self.bottom_hbl2)
-		
-		self.__init__force_2d_tb()
-		self.__init__force_plot_tb()
-		self.bottom_hbl2.addWidget(self.force_2d,0)
-		self.bottom_hbl2.addWidget(self.force_plot,0)
-		
-		self.bottom_hbl3 = QtGui.QHBoxLayout()
-		self.__init_plot_options()
-		self.bottom_hbl3.addWidget(self.replace,0)
-		self.bottom_hbl3.addWidget(self.include,0)
-		
-		#self.hbl.addLayout(self.bottom_hbl3)
-		
-		self.groupbox = QtGui.QGroupBox("Plot/3D options")
-		self.groupbox.setLayout(self.bottom_hbl3)
-		self.groupbox.setEnabled(False)
-		
-		self.bottom_hbl2.addWidget(self.groupbox)
+		if not save_as_mode:
+			self.gl_image_preview = None
+			
+			self.bottom_hbl2 = QtGui.QHBoxLayout()
+			self.__init_preview_options()
+			self.bottom_hbl2.addWidget(self.preview_options,0)
+			self.hbl.addLayout(self.bottom_hbl2)
+			
+			self.__init__force_2d_tb()
+			self.__init__force_plot_tb()
+			self.bottom_hbl2.addWidget(self.force_2d,0)
+			self.bottom_hbl2.addWidget(self.force_plot,0)
+			
+			self.bottom_hbl3 = QtGui.QHBoxLayout()
+			self.__init_plot_options()
+			self.bottom_hbl3.addWidget(self.replace,0)
+			self.bottom_hbl3.addWidget(self.include,0)
+			
+			#self.hbl.addLayout(self.bottom_hbl3)
+			
+			self.groupbox = QtGui.QGroupBox("Plot/3D options")
+			self.groupbox.setLayout(self.bottom_hbl3)
+			self.groupbox.setEnabled(False)
+			
+			self.bottom_hbl2.addWidget(self.groupbox)
 		
 		self.resize(480,480)
 		
@@ -253,6 +267,8 @@ class EMSelectorDialog(QtGui.QDialog):
 			self.force_plot.setEnabled(True)
 	
 	def previews_allowed(self):
+		if self.save_as_mode: return False
+		
 		return str(self.preview_options.currentText()) != "No preview"
 	
 	def single_preview_only(self):
@@ -303,10 +319,16 @@ class EMSelectorDialog(QtGui.QDialog):
 		#print "not supported"
 	
 	def cancel_button_clicked(self,bool):
-		self.module().emit(QtCore.SIGNAL("cancel"),self.selections)
+		if self.save_as_mode:
+			self.accept()
+		else:
+			self.module().emit(QtCore.SIGNAL("cancel"),self.selections)
 	
 	def ok_button_clicked(self,bool):
-		self.module().emit(QtCore.SIGNAL("ok"),self.selections)
+		if self.save_as_mode:
+			self.accept()
+		else:
+			self.module().emit(QtCore.SIGNAL("ok"),self.selections)
 		
 	def __init_filter_combo(self):
 		self.filter_text = QtGui.QLabel("Filter:",self)
@@ -681,6 +703,16 @@ class EMSelectorDialog(QtGui.QDialog):
 		if self.current_list_widget == None: return
 		if item.type_of_me == "value": return #it's just a value in the db
 		self.__update_selections()
+		
+		if self.save_as_mode:
+			text = ""
+			try:
+				text = item.get_path()
+				if text == None: text = ""
+				if os.path.isdir(text): text = ""
+			except:pass
+			
+			self.save_as_line_edit.setText(text)
 
 		if item == None: return
 		
@@ -710,7 +742,7 @@ class EMSelectorDialog(QtGui.QDialog):
 				self.list_widget_data[i] = None
 				
 			if not self.check_preview_item_wants_to_list(item):
-				print "error 101"
+				print "error 101" # facetiousness?
 				return
 		
 	
@@ -749,6 +781,8 @@ class EMSelectorDialog(QtGui.QDialog):
 		return False
 	
 	def preview_plot(self,filename):
+		if self.save_as_mode: return
+		
 		if self.single_preview_only():
 			if not isinstance(self.gl_image_preview,EMPlot2DModule):
 				if self.gl_image_preview != None: get_application().close_specific(self.gl_image_preview)
@@ -764,6 +798,8 @@ class EMSelectorDialog(QtGui.QDialog):
 			get_application().show_specific(preview)
 			
 	def preview_plot_list(self,title,list_data):
+		if self.save_as_mode: return
+		
 		if self.single_preview_only():
 			if not isinstance(self.gl_image_preview,EMPlot2DModule):
 				if self.gl_image_preview != None: get_application().close_specific(self.gl_image_preview)
@@ -779,6 +815,8 @@ class EMSelectorDialog(QtGui.QDialog):
 			get_application().show_specific(preview)
 			
 	def preview_data(self,a,filename=""):
+		if self.save_as_mode: return
+		
 		from emimage import EMImageModule, EMModuleFromFile
 		
 		using_file_names_only = False
@@ -1847,7 +1885,7 @@ class EMGenericItem(EMListingItem):
 		
 class EMBrowserDialog(EMSelectorDialog):
 	def __init__(self,target):
-		EMSelectorDialog.__init__(self,target)
+		EMSelectorDialog.__init__(self,target,False,False)
 		self.preview_options.setCurrentIndex(1)
 		self.preview_options_changed(self.preview_options.currentText())
 		self.ok_button.setEnabled(False)
