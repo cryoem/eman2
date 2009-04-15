@@ -4276,7 +4276,8 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 		if type(maskfile) is types.StringType: mask3D = get_image(maskfile)
 		else                                  : mask3D = maskfile
 	else          :   mask3D = model_circle(last_ring, nx, nx, nx)
-	mask = model_circle(last_ring, nx, nx)
+	mask2D = model_circle(last_ring, nx, nx) - model_circle(first_ring, nx, nx)
+	numr   = Numrinit(first_ring, last_ring, rstep, "F")
 
 	if CTF:	from reconstruction import recons3d_4nn_ctf
 	else: from reconstruction import recons3d_4nn
@@ -4291,16 +4292,6 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	del active
 	data = EMData.read_images(stack, list_of_particles)
 	nima = len(data)
-	for im in xrange(nima):
-		if CTF:
-			ctf_params = data[im].get_attr("ctf")
-			if im == 0: data_had_ctf = data[im].get_attr("ctf_applied")
-			if data[im].get_attr("ctf_applied") == 0:
-				st = Util.infomask(data[im], mask, False)
-				data[im] -= st[0]
-				from filter import filt_ctf
-				data[im] = filt_ctf(data[im], ctf_params)
-				data[im].set_attr('ctf_applied', 1)
 	# initialize data for the reference preparation function
 	ref_data = []
 	ref_data.append( mask3D )
@@ -4313,8 +4304,26 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	for N_step in xrange(lstp):
  		for Iter in xrange(max_iter):
 			print_msg("\nITERATION #%3d\n"%(N_step*max_iter+Iter+1))
-			if an[N_step] == -1:	proj_ali_incore(vol, mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], ref_a, sym, finfo = outf, MPI=False)
-			else:	           proj_ali_incore_local(vol, mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], an[N_step], ref_a, sym, finfo = outf, MPI=False)
+
+			if CTF:
+				previous_defocus = -1.0
+			else:
+				volft,kb = prep_vol( vol )
+				refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, sym, numr, MPI=False)
+
+			for im in xrange( len(data) ):
+				if CTF:
+					ctf = data[im].get_attr( "ctf" )
+					if ctf.defocus != previous_defocus:
+						previous_defocus = ctf.defocus
+						ctfvol = filt_ctf(vol, ctf)
+						volft,kb = prep_vol( ctfvol )
+						refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, sym, numr, MPI=False)
+
+				if an[N_step] == -1:	
+					proj_ali_incore(data[im],refrings,first_ring,last_ring,rstep,xrng[N_step],yrng[N_step],step[N_step])
+				else:
+					proj_ali_incore_local(data[im],refrings,first_ring,last_ring,rstep,xrng[N_step],yrng[N_step],step[N_step],an[N_step])
 
 			if center == -1:
 				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center(data)
@@ -4506,7 +4515,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 				previous_defocus = -1.0
 			else:
 				volft,kb = prep_vol( vol )
-				refrings = prepare_refrings( volft, kb, delta, ref_a, sym, numr, MPI=True)
+				refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, sym, numr, MPI=True)
 
 			for im in xrange( len(data) ):
 				if CTF:
@@ -4515,7 +4524,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 						previous_defocus = ctf.defocus
 						ctfvol = filt_ctf(vol, ctf)
 						volft,kb = prep_vol( ctfvol )
-						refrings = prepare_refrings( volft, kb, delta, ref_a, sym, numr, MPI=True )
+						refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, sym, numr, MPI=True )
 
 				if an[N_step] == -1: 
 					proj_ali_incore(data[im],refrings,numr,mask2D,xrng[N_step],yrng[N_step],step[N_step])
@@ -5045,7 +5054,6 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 					peak = ref.cmp("ccc",data[im],{"mask":masks[im], "negative":0})
 					if not(finfo is None):
 						finfo.write( "ID,iref,peak: %6d %d %8.5f" % (list_of_particles[im],iref,peak) )
-	
 				else:
 					if(an[N_step] == -1):	
 						peak = proj_ali_incore(data[im],refrings,numr,mask2D,xrng[N_step],yrng[N_step],step[N_step])
@@ -5072,7 +5080,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 							
 		if runtype=="REFINEMENT":
 			for im in xrange(nima):
-				data[im].set_attr('xform.projection', peaks[im][1])
+				data[im].set_attr('xform.projection', trans[im])
 
 			if(center == -1):
 				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center_MPI(data, total_nima, myid, number_of_proc, main_node)				
