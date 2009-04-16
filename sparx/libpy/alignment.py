@@ -953,7 +953,6 @@ def prepare_refrings( volft, kb, delta, ref_a, sym, numr, MPI=False):
 
 
 
-
 	return refrings
 
 def refprojs( volft, kb, ref_angles, last_ring, mask2D, cnx, cny, numr, mode, wr ):
@@ -971,11 +970,17 @@ def refprojs( volft, kb, ref_angles, last_ring, mask2D, cnx, cny, numr, mode, wr
 
 	return ref_proj_rings
 
-def proj_ali_incore(data, refrings, numr, mask2D, xrng, yrng, step):
+def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None):
 	from utilities    import even_angles, model_circle, compose_transform2, print_msg
-	from alignment    import prepare_refprojs
 	from utilities    import get_params_proj, set_params_proj
 
+	id = data.get_attr("ID")
+
+	if finfo:
+		phi,tht,psi,s2x,s2y = get_params_proj(data)
+		finfo.write( "im,oldparams: %6d %8.3f %8.3f %8.3f %8.3f %8.3f\n" %(id,phi,tht,psi,s2x,s2y))
+		finfo.flush()
+	
 	mode = "F"
 	#  center is in SPIDER convention
 	nx   = data.get_xsize()
@@ -983,14 +988,11 @@ def proj_ali_incore(data, refrings, numr, mask2D, xrng, yrng, step):
 	cnx  = nx//2 + 1
 	cny  = ny//2 + 1
 	#precalculate rings
-	numr = Numrinit(first_ring, last_ring, rstep, mode)
 
 	# prepare 2-D mask for normalization
-	mask2D = model_circle(last_ring, nx, ny)
-	if(first_ring > 0): mask2D -= model_circle(first_ring, nx, ny)
 
 
-	phi, theta, psi, sxo, syo = get_params_proj( projdata[imn] )
+	phi, theta, psi, sxo, syo = get_params_proj( data )
 	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d(data, refrings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo)
 	iref=int(iref)
 	#[ang,sxs,sys,mirror,peak,numref] = apmq(projdata[imn], ref_proj_rings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo)
@@ -1011,9 +1013,14 @@ def proj_ali_incore(data, refrings, numr, mask2D, xrng, yrng, step):
 		s2x   = sxb + sxo
 		s2y   = syb + syo
 	set_params_proj(data, [phi, theta, psi, s2x, s2y])
+	
+	if finfo:
+		finfo.write( "im,newparams: %6d %8.3f %8.3f %8.3f %8.3f %8.3f\n" %(id,phi,theta,psi,s2x,s2y))
+		finfo.flush()
+
 	return peak
 
-def proj_ali_incore_local(data, refrings, numr, mask2D, xrng, yrng, step, an):
+def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an):
 	from utilities    import even_angles, model_circle, compose_transform2, bcast_EMData_to_all
 	from utilities import set_params_proj, get_params_proj
 	from math         import cos, sin, pi
