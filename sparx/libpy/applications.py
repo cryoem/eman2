@@ -4534,7 +4534,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 				if an[N_step] == -1: 
 					proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],finfo)
 				else:           
-					proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],Yrngp[N_step],step[N_step],an[N_step],finfo)
+					proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step],finfo)
 
 
 			if myid == main_node:
@@ -4575,8 +4575,6 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 			bcast_EMData_to_all(vol, myid, main_node)
 			# write out headers, under MPI writing has to be done sequentially
 			mpi_barrier(MPI_COMM_WORLD)
-			if CTF and data_had_ctf == 0:
-				for im in xrange(len(data)): data[im].set_attr('ctf_applied', 0)
 			par_str = ['xform.projection', 'ID']
 	        	if myid == main_node:
 	        		if(file_type(stack) == "bdb"):
@@ -4586,8 +4584,6 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 	        			from utilities import recv_attr_dict
 	        			recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 	        	else:	       send_attr_dict(main_node, data, par_str, image_start, image_end)
-	        	if CTF and data_had_ctf == 0:
-	        		for im in xrange(len(data)): data[im].set_attr('ctf_applied', 1)
 	if myid == main_node: print_end_msg("ali3d_d_MPI")
 
 

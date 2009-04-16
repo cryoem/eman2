@@ -1020,7 +1020,7 @@ def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None):
 
 	return peak
 
-def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an):
+def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None):
 	from utilities    import even_angles, model_circle, compose_transform2, bcast_EMData_to_all
 	from utilities import set_params_proj, get_params_proj
 	from math         import cos, sin, pi
