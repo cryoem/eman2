@@ -1690,7 +1690,6 @@ class E2BoxerOutputTask(E2BoxerTask):
 		#db_close_dict(self.form_db_name)
 		pwb.dependents = ["invert_output","normproc","outformat"] # these are things that become disabled when the pwb checkbox is unchecked etc
 		
-		
 		params.append([pbox,pfo])
 		params.append([pwc,pwb,pinv])
 		params.append(pn)

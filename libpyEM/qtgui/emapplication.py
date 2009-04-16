@@ -242,14 +242,13 @@ class EMInstance:
 	Holds a reference to an instance, supports a static interface
 	'''
 	instance = None
-	from emimageutil import Callable
 	
 	def __init__(self):pass
 	
 	def get_instance(): return EMInstance.instance
-	get_instance = Callable(get_instance)
+	get_instance = staticmethod(get_instance)
 	def set_instance(instance): EMInstance.instance = instance
-	set_instance = Callable(set_instance)
+	set_instance = staticmethod(set_instance)
 	
 em_app_instance = EMInstance()
 

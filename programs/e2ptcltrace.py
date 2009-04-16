@@ -449,7 +449,7 @@ class JiangWenLstFile(TraceOuputMixin):
 		
 	def parse_data(self,filenames):
 		
-		data = []
+		self.data = []
 		
 		for name in filenames:
 			table = {}
@@ -462,15 +462,15 @@ class JiangWenLstFile(TraceOuputMixin):
 				parm1=[float(tmp[2]),float(tmp[3]),float(tmp[4]),float(tmp[5]),float(tmp[6])]
 				table[index]=parm1
 			
-			data.append(table)
+			self.data.append(table)
 		
 		common_keys = []
 		 
 		for i in range(len(filenames)):
 			if i == 0:
-				common_keys = set(data[0].keys())
+				common_keys = set(self.data[0].keys())
 			else:
-				common_keys = common_keys & set(data[i].keys())
+				common_keys = common_keys & set(self.data[i].keys())
 		
 		self.key_list = list(common_keys)
 		self.euler_data = []
@@ -481,7 +481,7 @@ class JiangWenLstFile(TraceOuputMixin):
 			trans_data = []
 			dummy_data = []
 			for i in range(len(filenames)):
-				[alt,az,phi,dx,dy]=data[i][k]
+				[alt,az,phi,dx,dy]=self.data[i][k]
 				orient_data.append([alt,az,phi])
 				trans_data.append([dx,dy])
 				dummy_data.append([0,0])
@@ -513,7 +513,10 @@ class JiangWenLstFile(TraceOuputMixin):
 		classdata = self.class_dummy_data
 		d = self.euler_data[number]
 		
-		lst.write(self.key_list[number]+"\n")
+		s = self.data[0][self.key_list[number]]
+		ss ='%-8.3f%-8.3f%-8.3f%-8.3f%-8.3f'%(s[0],s[1],s[2],s[3],s[4])
+		
+		lst.write(self.key_list[number]+"\t"+ss+"\n")
 				
 		good_data.write(str(number) + '. ******** ' + self.key_list[number] + '\n')
 		if optional == None:

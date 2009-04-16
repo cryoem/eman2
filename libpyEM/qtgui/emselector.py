@@ -380,7 +380,7 @@ class EMSelectorDialog(QtGui.QDialog):
 				self.dialog_result = file
 				self.accept()
 			else:
-				if not self.validator.validate_and_prepare(file): return
+				if not self.validator.validate_and_prepare_for_save(file): return
 				else: 
 					self.dialog_result = file
 					self.accept()
@@ -1963,16 +1963,10 @@ class InvalidFunctionArgumentException(Exception):
 	def __str__(self):
 			return repr(self.expression)+ " "+repr(self.message)
 
-from emimageutil import Callable
-
-
 def save_data(item_object):
 	'''
-	Prompts the user to supply a file name using PyQt file dialogs and then saves to disk.
 	Intended to be the only function you need ever call if you want to save EM image data, be it one or many.
-	Asks the user whether they want to append (where appropriate e.g. hdf, img, spi) or overwrite files that
-	already exist.
-	@param item_object can be an EMData, a list of EMDatas, or an EMDataListCache
+	@param item_object can be an EMData, a list of EMDatas, an EMDataListCache, or a list of listing items in the selector
 	@return the name of the file that was written to disk. May be and empty string ("") if no writing occurred
 	'''
 	from emimagemx import EMDataListCache
@@ -1988,30 +1982,18 @@ def save_data(item_object):
 	
 	return saver.get_file_name()
 
-class EMFileSaveDialog(QtGui.QFileDialog):
+class EMFileSaver():
 	'''
-	A custom file saving dialog for EM image data. Originally added because special
-	consideration was need when overwriting files. This is the base class for single image
-	and stack image saving classes
+	Base class for file savers. This function is tightly linked to the save_data function in this
+	file.
 	'''
-	def __init__(self,parent=None,caption="",directory="",filter=""):
+	def __init__(self): pass
+	def validate_and_prepare_for_save(self,file_name):
 		'''
-		@param parent see Qt documentation
-		@param caption see Qt documentation
-		@param directory see Qt documentation
-		@param filter see Qtt documentaton
-		'''
-		QtGui.QFileDialog.__init__(self,parent,caption,directory,filter)
-		self.setAcceptMode(QtGui.QFileDialog.AcceptSave)
-		
-		self.setFileMode(QtGui.QFileDialog.AnyFile)
-		self.setWindowTitle("EMAN2 file save dialog")
-		
-	def get_file_name(self):
-		'''
-		Get the file name that was used to write to disk
-		Can be empty string if file save was cancelled.
-		Must be supplied by inheriting class
+		Validate the file name and do any internal preparation for the impending call to
+		save.
+		Preparation includes checking whether any appending or overwriting needs to occur
+		@return 1 if ready for save to be called, 0 if not
 		'''
 		raise NotImplementedError("Inheriting classes must supply the get_file_name function")
 	
@@ -2021,36 +2003,38 @@ class EMFileSaveDialog(QtGui.QFileDialog):
 		internally in the save function and externally by the file scope save_data function
 		MUST be made static by adding this line 
 		validate_save_argument = Callable(validate_save_argument)
-		After the function definition
-	
+		@param item_object the argument that will ultimately be given to the save function
 		'''
 		raise NotImplementedError("Inheriting classes must supply the validate_save_argument function, and also make it static")
 	
-class EMSingleImageSaveDialog(EMFileSaveDialog):
+	def save(self,item_object):
+		'''
+		Save EMAN2 style image data to disk
+		This function is the main saving interface, The item_object can be anything, but
+		it should first have been validated by a call to validate_save_argument
+		@param item_object an object that has all of the attributes required to save data (this is intentionally a broad definition)
+		'''
+		raise NotImplementedError("Inheriting classes must supply the save function")
+	
+	def get_file_name(self):
+		'''
+		This function should return the name of the file that was saved. If no
+		file was saved, it should return ""
+		@return the name of the file that was saved
+		'''
+		raise NotImplementedError("Inheriting classes must supply the get_file_name function")
+	
+class EMSingleImageSaveDialog(EMFileSaver):
 	'''
 	A class used for saving single images. Will append if the file exists and the type allows it
 	'''
-	def __init__(self,parent=None,caption="",directory="",filter=""):
-		EMFileSaveDialog.__init__(self,parent,caption,directory,filter)
-		self.setConfirmOverwrite(False) #we do this ourselves
-		self.setWindowTitle("Save a single image")
-		
+	def __init__(self):
+		EMFileSaver.__init__(self)
+
 		self.__item = None # this will be a reference to the item
 		self.__file_filt = [".hdf", ".img", ".hed",".spi","bdb:",".tif",".mrc",".dm3",".pif"] # allowable file types, be good if this was automatic
 		self.file_name_used = "" # ultimately stores the name of the file that was stored to disk, if it actually occurred
-	def __get_file_filt_string(self):
-		'''
-		Get the file filt string for the save file dialog
-		'''
-		# Make the file filter string	
-		file_filt_string = ""
-		for f in self.__file_filt:
-			if f != self.__file_filt[0]:
-				file_filt_string += " "
-			file_filt_string += "*"+f
-		
-		return file_filt_string
-	
+
 	def validate_save_argument(item):
 		'''
 		Verify that the function argument will work if supplied to the save function
@@ -2061,38 +2045,24 @@ class EMSingleImageSaveDialog(EMFileSaveDialog):
 		return True
 			
 	# mimic a static function
-	validate_save_argument = Callable(validate_save_argument)
+	validate_save_argument = staticmethod(validate_save_argument)
 	
 	def save(self,item):
 		'''
 		Runs a file saving dialog and prompts the user to make sure nothing goes awry
-		@param item and EMData object
+		@param item an EMData object
 		@exception RuntimeError raised if item is not of type EMData
 		'''
-		print "in save"
 		fine = EMSingleImageSaveDialog.validate_save_argument(item)
 		if not fine: raise RuntimeError("item is not an EMData instance")
 		
 		self.__item = item
-		#self.setNameFilter(self.__get_file_filt_string())
 		em_qt_widget = EMSelectorModule()
 		em_qt_widget.widget.set_validator(self)
 		file = em_qt_widget.exec_()
 		if file != "":
 			self.__save_file(file)
-#		while True:
-#			
-#			files = ()
-#			
-#			msg = QtGui.QMessageBox()
-#			if len(files) != 1: # just to be sure
-#				msg.setText("You must specify precisely one file when saving")
-#				msg.exec_()
-#				continue
-#			
-#			if not self.__save_file(str(files[0])): continue
-#			else: break
-	
+
 	
 	def __validate_file_name(self,file_name):
 		'''
@@ -2100,12 +2070,12 @@ class EMSingleImageSaveDialog(EMFileSaveDialog):
 		@param file_name the file_name that is to be checked
 		@return an error string if an error was encountered. Otherwise return None
 		'''
+		if len(file_name) > 4 and file_name[:4] == "bdb:":
+			return None # The user has specified a file in bdb format
+			
 		splt = file_name.split(".")
 		if len(splt) < 2:
-			if len(file_name) > 4 and file_name[:4] == "bdb:":
-				return None # The user has specified a file in bdb format
-			else:
-				return "The file name you specified is invalid - can't determine the file type"
+			return "The file name you specified is invalid - can't determine the file type"
 			
 		# the length of splt is at least 2
 		if ("."+splt[-1]) not in self.__file_filt:
@@ -2113,7 +2083,14 @@ class EMSingleImageSaveDialog(EMFileSaveDialog):
 			
 		return None
 	
-	def validate_and_prepare(self,file):
+	def validate_and_prepare_for_save(self,file):
+		'''
+		Validate the file name and do any internal preparation for the impending call to
+		save.
+		Checks to make sure the file name is valid
+		Confirms overwrite and asks to append
+		@return 0 if something went wrong (e.g. the user cancelled), 1 if it's okay to call save now
+		'''
 		msg = QtGui.QMessageBox()
 		error = self.__validate_file_name(file)
 		if error != None:
@@ -2138,7 +2115,6 @@ class EMSingleImageSaveDialog(EMFileSaveDialog):
 			
 		return 1
 		
-	
 	def __save_file(self,file):
 		'''
 		Called internally to save the file. Checks to make sure it's a valid file name
@@ -2153,7 +2129,6 @@ class EMSingleImageSaveDialog(EMFileSaveDialog):
 			tmp_file_object = EMTmpFileHandle(file)
 
 		out_file = tmp_file_object.get_tmp_file_name()
-		print "saving",out_file
 		try:
 			self.__item.write_image(out_file,-1)
 		except:
@@ -2173,15 +2148,13 @@ class EMSingleImageSaveDialog(EMFileSaveDialog):
 		'''
 		return self.file_name_used
 	
-class EMStackSaveDialog(EMFileSaveDialog):
+class EMStackSaveDialog(EMFileSaver):
 	'''
 	A class used for saving stacks, should work for stacks of all dimensions
 	'''
-	def __init__(self,parent=None,caption="",directory="",filter=""):
-		EMFileSaveDialog.__init__(self,parent,caption,directory,filter)
-		self.setConfirmOverwrite(False) #we do this ourselves
-		self.setWindowTitle("Save a stack")
-		
+	def __init__(self):
+		EMFileSaver.__init__(self)
+
 		self.__item_list = None # this will be a reference to the item list'
 		self.file_name_used = "" #ultimately used to store the filename that was written to disk - if it occurred
 		self.overwrite = False
@@ -2204,22 +2177,8 @@ class EMStackSaveDialog(EMFileSaveDialog):
 			
 		return fine
 	# mimic a static function
-	validate_save_argument = Callable(validate_save_argument)
+	validate_save_argument = staticmethod(validate_save_argument)
 	
-	def __get_file_filt_string(self,item_list):
-		'''
-		Get the file filt string for the save file dialog
-		'''
-		file_filt = self.__get_file_filt_list(item_list)
-		
-		# Make the file filter string	
-		file_filt_string = ""
-		for f in file_filt:
-			if f != file_filt[0]:
-				file_filt_string += " "
-			file_filt_string += "*"+f
-		
-		return file_filt_string
 	
 	def __get_file_filt_list(self,item_list):
 		'''
@@ -2249,21 +2208,16 @@ class EMStackSaveDialog(EMFileSaveDialog):
 		file = em_qt_widget.exec_()
 		if file != "":
 			self.__save_file(str(file))
-#		self.setNameFilter(self.__get_file_filt_string(self.__item_list))
-#		while True:
-#			if (self.exec_()):
-#				msg = QtGui.QMessageBox()
-#				files = self.selectedFiles()
-#				if len(files) != 1:
-#					msg.setText("You must specify precisely one file when saving")
-#					msg.exec_()
-#					continue
-#			
-#				if not self.__save_file(str(files[0])): continue
-#				else: break
-#			else: break
-	
-	def validate_and_prepare(self,file):
+
+	def validate_and_prepare_for_save(self,file):
+		'''
+		Validate the file name and do any internal preparation for the impending call to
+		save.
+		Checks to make sure the file name is valid
+		Confirms overwrite and asks to append
+		@return 0 if something went wrong (e.g. the user cancelled), 1 if it's okay to call save now
+		'''
+		
 		msg = QtGui.QMessageBox()
 		error = self.__validate_file_name(file)
 		if error != None:
@@ -2293,12 +2247,11 @@ class EMStackSaveDialog(EMFileSaveDialog):
 		@param file_name the file_name that is to be checked
 		@return an error string if an error was encountered. Otherwise return None
 		'''
+		if len(file_name) > 4 and file_name[:4] == "bdb:":
+			return None # The user has specified a file in bdb format
 		splt = file_name.split(".")
 		if len(splt) < 2:
-			if len(file_name) > 4 and file_name[:4] == "bdb:":
-				return None # The user has specified a file in bdb format
-			else:
-				return "The file name you specified is invalid - can't determine the file type"
+			return "The file name you specified is invalid - can't determine the file type"
 			
 		# the length of splt is at least 2
 		file_filt_list = self.__get_file_filt_list(self.__item_list)
@@ -2324,7 +2277,6 @@ class EMStackSaveDialog(EMFileSaveDialog):
 		total_images = len(self.__item_list)
 
 		out_file = tmp_file_object.get_tmp_file_name()
-		print "saving",out_file
 		progress = QtGui.QProgressDialog("Writing files", "abort", 0, 2*total_images,None)
 		progress.show()
 		tally = 0
@@ -2493,120 +2445,6 @@ class EMFileExistsDialog(QtGui.QDialog):
 		QtGui.QDialog.exec_(self)
 		return self.__result
 	
-		
-#def save_as(file_name,application=None,idx=-1):
-#	
-#	if idx == -1: total_images = EMUtil.get_image_count(file_name)
-#	else: total_images = 1
-#	print file_name,idx,total_images
-#	if total_images == 1:
-#		file_filt = [".hdf", ".img", ".spi", ".mrc", ".dm3", ".pgm", ".pif"]
-#	else: # logic dictates that total_images > 1
-#		file_filt = [".hdf", ".img", ".spi"]
-#	
-#	file_filt_string = ""
-#	for f in file_filt:
-#		if f != file_filt[0]:
-#			file_filt_string += " "
-#		file_filt_string += "*"+f
-#
-#	fsp = get_file_tag(file_name)+".hdf"
-#
-#	while True:
-#		fsp=QtGui.QFileDialog.getSaveFileName(None, "Specify file name (%s)" %file_name,fsp,file_filt_string,"")
-#		fsp=str(fsp)
-#		
-#		# BDB works but it's not advertised as working
-#		# BDB has issues on Windows and MAC
-#		bdb_idx = fsp.find("bdb:")
-#		if bdb_idx != -1:
-#			fsp = fsp[bdb_idx:]
-#	
-#		if fsp != '':
-#			
-#			if not validate_file_name(fsp,file_filt): continue
-#			if file_exists(fsp):
-#				remove_file(fsp)
-#				 
-#			
-#			using_progress = (total_images > 1)
-#			if using_progress:
-#				progress = EMProgressDialogModule(application,"Writing files", "abort", 0, 2*total_images,None)
-#				progress.qt_widget.show()
-#				tally = 0
-#				for i in range(total_images):
-#					d = EMData()
-#					if idx == -1: d.read_image(file_name,i)
-#					else: d.read_image(file_name,idx)
-#					progress.qt_widget.setValue(tally)
-#					tally += 1
-#					application.processEvents()
-#					try:
-#						d.write_image(fsp,-1)
-#					except:
-#						msg.setText("An exception occured while writing %s, please try again" %fsp)
-#						msg.exec_()
-#						progress.qt_widget.close()
-#						return False
-#						
-#					progress.qt_widget.setValue(tally)
-#					tally += 1
-#					application.processEvents()
-#					if progress.qt_widget.wasCanceled():
-#						remove_file(fsp)
-#						progress.qt_widget.close()
-#						return True
-#					
-#				progress.qt_widget.close()
-#			else:
-#				d = EMData()
-#				d.read_image(file_name,0)
-#				try:
-#					d.write_image(fsp)
-#				except:
-#					msg = QtGui.QMessageBox()
-#					msg.setWindowTitle("Attention")
-#					msg.setText("An exception occured while writing %s, please try again" %fsp)
-#					msg.exec_()
-#					return False
-#			
-#			#progress.qt_widget.setValue(len(self.data)-1)
-#			
-#			
-#			break
-#		else: return False
-#		
-#	return True
-
-#def validate_file_name(fsp,file_filt):
-#	msg = QtGui.QMessageBox()
-#	msg.setWindowTitle("Achtung")
-#	if len(fsp) < 3 or ( fsp[-4:] not in file_filt and fsp[:4] != "bdb:" ):
-#		m = "%s is an invalid image name. Please choose from one of these formats:" %fsp
-#		for f in file_filt:
-#			if f == file_filt[-1]: m += " or " + f	
-#			else: m += " " + f
-#		
-#		msg.setText(m)
-#		msg.exec_()
-#		return False
-#		
-#	if fsp[:4] == "bdb:" and len(fsp) == 4:
-#		msg.setText("%s is an invalid bdb name" %fsp)
-#		msg.exec_()
-#		return False
-#	
-#	if db_check_dict(fsp):
-#		 # Check this - something isn't quite right
-#		 msg.setText("Are you sure you want to overwrite the bdb file?");
-#		 msg.setInformativeText("Clicking ok to remove this file")
-#		 msg.setStandardButtons(QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel);
-#		 msg.setDefaultButton(QMessageBox.Cancel);
-#		 ret = msg.exec_()
-#		 if ret != 0: return False # need to double check this is the right return code
-#
-#	return True
-		
 class EMTmpFileHandle(object):
 	'''
 	A factory for getting a EMTmpFileHandle

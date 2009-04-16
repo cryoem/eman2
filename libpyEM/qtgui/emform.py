@@ -787,7 +787,6 @@ class ParamTableEventHandler:
 class UrlEventHandler:
 	'''
 	The browse and cancel events have to be sent to the correct line edit, so this handles it
-	Basically to simplify things when there is more than one url type.
 	'''
 	def __init__(self,target,text_edit,browse_button,clear_button,application,title=""):
 		self.target = weakref.ref(target)
