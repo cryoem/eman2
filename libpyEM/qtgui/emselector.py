@@ -50,8 +50,8 @@ import copy
 read_header_only = True
 
 class EMSelectorModule(EMQtWidgetModule):
-	def __init__(self):
-		self.widget = EMSelectorDialog(self)
+	def __init__(self,single_selection=False,save_as_mode=True):
+		self.widget = EMSelectorDialog(self,single_selection,save_as_mode)
 		EMQtWidgetModule.__init__(self,self.widget)
 		
 	def exec_(self):

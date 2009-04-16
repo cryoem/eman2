@@ -800,7 +800,7 @@ class UrlEventHandler:
 		
 	def browse_pressed(self,bool):
 		if self.browser == None:
-			self.browser = EMSelectorModule(get_application())
+			self.browser = EMSelectorModule(False,False)
 			self.browser.widget.desktop_hint = "form" # this is to make things work as expected in the desktop
 			self.browser.setWindowTitle(self.browser_title)
 			get_application().show_specific(self.browser)
