@@ -4366,7 +4366,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 	    center = -1, maxit = 5, CTF = False, snr = 1.0,  ref_a = "S", sym = "c1",  user_func_name = "ref_ali3d",
 	    fourvar = True, debug = False):
 
-	from alignment      import prepare_refrings, proj_ali_incore, proj_ali_incore_local
+	from alignment      import Numrinit, prepare_refrings, proj_ali_incore, proj_ali_incore_local
 	from utilities      import model_circle, get_image, drop_image, get_input_from_string
 	from utilities      import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all, reduce_array_to_root 
 	from utilities      import send_attr_dict
@@ -4378,6 +4378,9 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 	from utilities      import print_begin_msg, print_end_msg, print_msg
 	from mpi 	    import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
 	from mpi 	    import mpi_barrier, mpi_bcast, MPI_FLOAT
+	from filter         import filt_ctf
+	from projection     import prep_vol, prgs
+
 
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid           = mpi_comm_rank(MPI_COMM_WORLD)
@@ -4452,7 +4455,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 		else:                                  mask3D = maskfile
 	else: mask3D = model_circle(last_ring, nx, nx, nx)
 	
-	numr	= Numrinit(first_ring, last_ring, step, "F")
+	numr	= Numrinit(first_ring, last_ring, rstep, "F")
 	mask2D  = model_circle(last_ring,nx,nx) - model_circle(first_ring,nx,nx)
 
 	fscmask = model_circle(last_ring,nx,nx,nx)
@@ -4491,7 +4494,6 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 	if debug:
 		finfo.write( '%d loaded  \n' % len(data) )
 		finfo.flush()
-	del list_of_particles
 	if myid == main_node:
 		# initialize data for the reference preparation function
 		ref_data = []
@@ -4515,7 +4517,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 				previous_defocus = -1.0
 			else:
 				volft,kb = prep_vol( vol )
-				refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, sym, numr, MPI=True)
+				refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, sym, numr)
 
 			for im in xrange( len(data) ):
 				if CTF:
@@ -4524,12 +4526,16 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 						previous_defocus = ctf.defocus
 						ctfvol = filt_ctf(vol, ctf)
 						volft,kb = prep_vol( ctfvol )
-						refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, sym, numr, MPI=True )
+						start_prepare = time()
+						refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, sym, numr)
+						if myid== main_node:
+							print_msg( "Time for prepare ring: %d\n" % (time()-start_prepare) )
 
 				if an[N_step] == -1: 
-					proj_ali_incore(data[im],refrings,numr,mask2D,xrng[N_step],yrng[N_step],step[N_step])
+					proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],finfo)
 				else:           
-					proj_ali_incore_local(data[im],refrings,numr,mask2D,xrng[N_step],Yrngp[N_step],step[N_step],an[N_step])
+					proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],Yrngp[N_step],step[N_step],an[N_step],finfo)
+
 
 			if myid == main_node:
 				print_msg("Time Used = %d"%(time()-start_time))
@@ -5036,7 +5042,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 			else:
 				volft, kb = prep_vol(vol)
 				if runtype=="REFINEMENT":
-					refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, sym, numr, MPI=True)
+					refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, sym, numr)
 
 			for im in xrange(nima):
 				if(CTF):
@@ -5046,7 +5052,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 						ctfvol = filt_ctf(vol, ctf)
 						volft,kb = prep_vol( ctfvol )
 						if runtype=="REFINEMENT":
-							refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, sym, numr, MPI=True)
+							refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, sym, numr)
 
 				if runtype=="ASSIGNMENT":	
 					phi,tht,psi,s2x,s2y = get_params_proj(data[im])
