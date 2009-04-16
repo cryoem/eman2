@@ -99,6 +99,36 @@ def e2getcwd() :
 	url=url.replace("\\","/")
 	return url
 
+def db_convert_path(path):
+	'''
+	Converts a path to bdb syntax. The path pass must contain "EMAN2DB".
+	For instance, if the path is particles/EMAN2DB/1000_ptcls,
+	will return bdb:particles#1000_ptcls
+	This function is in infancy. It may not foresee all circumstances
+	
+	'''
+	if not isinstance(path,str): raise RuntimeError("Path has to be a string")
+	d = path.split("/")
+	
+	if len(d) < 2: raise ValueError("The path is invalid, try something like 'EMAN2DB/ptcls'")
+	
+	if d[-2] != "EMAN2DB": raise ValueError("The path is invalid, try something like 'EMAN2DB/ptcls'")
+	# all right we should be in business
+	
+	dir = ""
+	if len(d) > 2:
+		for i in range(0,len(d)-2):
+			if i != 0:
+				dir += "/"
+			dir += d[i] # accrue the directory
+	
+	ret = "bdb:"
+	if dir != "":
+		ret += dir+"#"
+	ret += d[-1]
+	return ret
+	
+	
 def db_parse_path(url):
 	"""Takes a bdb: url and splits out (path,dict name,keylist). If keylist is None,
 	implies all of the images in the file. Acceptable urls are of the form:

@@ -38,6 +38,7 @@ import os
 import re
 from EMAN2 import get_image_directory,e2getcwd,get_dtag,EMData,get_files_and_directories,db_open_dict,strip_file_tag,remove_file
 from EMAN2 import remove_directories_from_name,Util,EMUtil,IMAGE_UNKNOWN,get_file_tag,db_check_dict,file_exists,gimme_image_dimensions3D, gm_time_string
+from EMAN2db import db_convert_path
 from emimage2d import EMImage2DModule
 from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMProgressDialogModule, get_application
 from EMAN2db import EMAN2DB
@@ -373,6 +374,8 @@ class EMSelectorDialog(QtGui.QDialog):
 				msg.exec_()
 				return
 			file = directory + str(self.save_as_line_edit.text())
+			if file.find("EMAN2DB/") != -1: # this test should be sufficient for establishing that bdb is the desired format
+				file = db_convert_path(file)
 			if self.validator == None:
 				self.dialog_result = file
 				self.accept()
@@ -2099,7 +2102,7 @@ class EMSingleImageSaveDialog(EMFileSaveDialog):
 		'''
 		splt = file_name.split(".")
 		if len(splt) < 2:
-			if len(file) > 4 and file[:4] == "bdb:":
+			if len(file_name) > 4 and file_name[:4] == "bdb:":
 				return None # The user has specified a file in bdb format
 			else:
 				return "The file name you specified is invalid - can't determine the file type"
@@ -2144,12 +2147,13 @@ class EMSingleImageSaveDialog(EMFileSaveDialog):
 		@return 0 if there was an error, 1 if there was not
 		@exception NotImplementedError raised when the EMFileExistsDialog returns an unknown code
 		'''
-		
+		msg = QtGui.QMessageBox()
 		tmp_file_object = EMDummyTmpFileHandle(file)
 		if self.overwrite:
 			tmp_file_object = EMTmpFileHandle(file)
 
 		out_file = tmp_file_object.get_tmp_file_name()
+		print "saving",out_file
 		try:
 			self.__item.write_image(out_file,-1)
 		except:
@@ -2291,7 +2295,7 @@ class EMStackSaveDialog(EMFileSaveDialog):
 		'''
 		splt = file_name.split(".")
 		if len(splt) < 2:
-			if len(file) > 4 and file[:4] == "bdb:":
+			if len(file_name) > 4 and file_name[:4] == "bdb:":
 				return None # The user has specified a file in bdb format
 			else:
 				return "The file name you specified is invalid - can't determine the file type"
@@ -2311,7 +2315,7 @@ class EMStackSaveDialog(EMFileSaveDialog):
 		@return 0 if there was an error, 1 if there was not
 		@exception NotImplementedError raised when the EMFileExistsDialog returns an unknown code
 		'''
-		
+		msg = QtGui.QMessageBox()
 			
 		tmp_file_object = EMDummyTmpFileHandle(file)
 		if self.overwrite:
@@ -2320,7 +2324,7 @@ class EMStackSaveDialog(EMFileSaveDialog):
 		total_images = len(self.__item_list)
 
 		out_file = tmp_file_object.get_tmp_file_name()
-		
+		print "saving",out_file
 		progress = QtGui.QProgressDialog("Writing files", "abort", 0, 2*total_images,None)
 		progress.show()
 		tally = 0
@@ -2616,12 +2620,12 @@ class EMTmpFileHandle(object):
 	def __new__(cls, file_name):
 		if not file_exists(file_name): raise
 		splt = file_name.split(".")
-		if len(splt) < 2: raise
-		if len(file_name) > 4 and file_name[:-4] == "bdb:": raise
-		if EMUtil.get_image_ext_type(splt[-1]) == EMUtil.ImageType.IMAGE_UNKNOWN:
+		if len(file_name) > 4 and file_name[:4] == "bdb:": pass
+		elif EMUtil.get_image_ext_type(splt[-1]) == EMUtil.ImageType.IMAGE_UNKNOWN:
 			raise
 		
 		if splt[-1] in ["img","hed"]: return EMImagicTmpFileHandle(file_name)
+		elif file_name[:4] == "bdb:": return EMDBTmpFileHandle(file_name)
 		else: return EMGeneralTmpFileHandle(file_name)
 		# okay lots of tests, now return the right one
 
@@ -2798,6 +2802,65 @@ class EMImagicTmpFileHandle(EMTmpFileHandleBase):
 		os.rename(self.__tmp_file_name_img,self.__file_name_root_img)
 
 	def get_final_file_name(self): return self.__file_name_root_img
+
+
+class EMDBTmpFileHandle(EMTmpFileHandleBase):
+	'''
+	This tmp file handle works for Imagic file types.
+	See EMTmpFileHandleBase for more information
+	'''
+	def __init__(self,file_name):
+		'''
+		@param file_name the name of the file that which is being overwritten
+		@exception RuntimeError raised of the file_name is not a valid bdb style database handle
+		'''
+		
+		if not db_check_dict(file_name): raise RuntimeError("%s is not a valid database name" %file_name)
+		self.__orig_db_name = file_name
+		EMTmpFileHandleBase.__init__(self)
+		self.__tmp_db_name = ""
+		self.__establish_tmp_file_name()
+	def get_tmp_file_name(self):
+		'''
+		Get the name of the temporary file - 
+		@return the filename that ends in an "img" 
+		'''
+		return self.__tmp_db_name
+	
+	def __gen_tmp_file_name(self):
+		'''
+		Called internally - attempts to make a unique file name using gm_time_string
+		'''
+		new_ending = gm_time_string()
+		new_ending = new_ending.replace(" ","_") #just because 
+		new_ending = new_ending.replace(":","_") #just because
+		self.__tmp_db_name = self.__orig_db_name + new_ending
+		
+	def __establish_tmp_file_name(self):
+		'''
+		Called internally to establish temporary file name member variables
+		'''
+		self.__gen_tmp_file_name()
+		while (db_check_dict(self.__tmp_db_name)):
+			self.__gen_tmp_file_name()
+
+	def remove_tmp_file(self):
+		'''
+		removes the temporary file
+		'''
+		if (db_check_dict(self.__tmp_db_name)):
+			db_remove_dict(self.__tmp_db_name)
+		else:
+			pass
+	
+	def finalize_renaming(self):
+		'''
+		Overwrite the original file, called when writing is done. Overwrites the img and hed files
+		'''
+		raise NotimplementedError("Woops waiting on an email")
+
+	def get_final_file_name(self): return self.__orig_db_name
+
 
 app = None
 def on_done(string_list):

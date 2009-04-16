@@ -45,6 +45,8 @@ from pyemtbx.boxertools import set_idd_image_entry, TrimBox
 import weakref
 from e2history import HistoryForm
 import time
+from emselector import save_data
+from emimagemx import EMDataListCache
 
 class EmptyObject:
 	'''
@@ -1166,89 +1168,11 @@ def image_db_save_as(text_list,application):
 			msg.exec_()
 			continue
 		else:
-			db = db_open_dict(text,ro=True)
-			if not db.has_key("maxrec") or db["maxrec"] ==None:
-				msg.setText("The database (%s) has no particles in it" %text) # this could happen in funny situations
-				msg.exec_()
-				continue
-			else: total_images = db["maxrec"]+1
-	
-			# Get the output filespec
-			if total_images == 1:
-				file_filt = [".hdf", ".img", ".spi", ".mrc", ".dm3", ".pgm", ".pif"]
-			else: # logic dictates that total_images > 1
-				file_filt = [".hdf", ".img", ".spi"]
-			
-			file_filt_string = ""
-			for f in file_filt:
-				if f != file_filt[0]:
-					file_filt_string += " "
-				file_filt_string += "*"+f
-	
-			fsp = get_file_tag(text)+".hdf"
-			while True:
-				fsp=QtGui.QFileDialog.getSaveFileName(None, "Specify file name (%s)" %text,fsp,file_filt_string,"")
-				fsp=str(fsp)
-				
-				# BDB works but it's not advertised as working
-				# BDB has issues on Windows and MAC
-				bdb_idx = fsp.find("bdb:")
-				if bdb_idx != -1:
-					fsp = fsp[bdb_idx:]
-			
-				if fsp != '':
-					
-					# remove the file if it exists - the save file dialog already made sure the user wanted to overwrite the file
-					if file_exists(fsp):
-						remove_file(fsp)
-					
-					if len(fsp) < 3 or ( fsp[-4:] not in file_filt and fsp[:4] != "bdb:" ):
-						m = "%s is an invalid image name. Please choose from one of these formats:" %fsp
-						for f in file_filt:
-							if f == file_filt[-1]: m += " or " + f	
-							else: m += " " + f
-						msg.setText(m)
-						msg.exec_()
-						continue
-						
-					if fsp[:4] == "bdb:" and len(fsp) == 4:
-						msg.setText("%s is an invalid bdb name" %fsp)
-						msg.exec_()
-						continue
-					
-					if db_check_dict(fsp):
-						 msg = QtGui.QMessageBox()
-						 msg.setWindowTitle("Caution")
-						 msg.setText("Are you sure you want to overwrite the bdb file?");
-						 msg.setInformativeText("Clicking ok to remove this file")
-						 msg.setStandardButtons(QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel);
-						 msg.setDefaultButton(QMessageBox.Cancel);
-						 ret = msg.exec_()
-					
-					progress = EMProgressDialogModule(application,"Writing files", "abort", 0, total_images,None)
-					progress.qt_widget.show()
-					for i in range(total_images):
-						d = db[i]
-						try:
-							d.write_image(fsp,-1)
-						except:
-							msg.setText("An exception occured while writing %s, please try again" %fsp)
-							msg.exec_()
-							progress.qt_widget.close()
-							return
-							
-						progress.qt_widget.setValue(i)
-						application.processEvents()
-						if progress.qt_widget.wasCanceled():
-							remove_file(fsp)
-							progress.qt_widget.close()
-							return	
-					
-					#progress.qt_widget.setValue(len(self.data)-1)
-					
-					progress.qt_widget.close()
-					break
-				else: return
+			if EMUtil.get_image_count(text) > 0:
+				name = save_data(EMDataListCache(text))
+			else:
+				name = save_data(EMData(text))
+			if name == "": break # a way to cancel 
 
 def ptable_convert_2(text):
 	return text

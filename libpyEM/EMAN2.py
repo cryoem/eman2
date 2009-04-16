@@ -53,7 +53,7 @@ HOMEDB=None
 # behavior appropriately
 #try:
 import EMAN2db
-from EMAN2db import EMAN2DB,db_open_dict,db_close_dict,db_remove_dict,db_list_dicts,db_check_dict,db_parse_path
+from EMAN2db import EMAN2DB,db_open_dict,db_close_dict,db_remove_dict,db_list_dicts,db_check_dict,db_parse_path,db_convert_path
 #except:
 #	HOMEDB=None
 
