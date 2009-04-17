@@ -1,4 +1,5 @@
-#!/usr/bin/env python
+#!/usr/local/EMAN2/python/Python-2.5.4-ucs4/bin/python
+# -*- coding: utf-8 -*-
 
 #
 # Author: Benjamin Bammes, 12/08/2008 (bammes@bcm.edu)
@@ -80,11 +81,13 @@ adjustment in the EMAN1 ctfit program."""
 		debug = True
 	
 	pid=E2init(sys.argv)
+	db_parms = db_open_dict("bdb:e2ctf.parms")
+	ptcls = db_parms.keys( )
 	
-	ptcls = glob.glob( "particles/EMAN2DB/*_ptcls.bdb" )
+	#ptcls = glob.glob( "particles/EMAN2DB/*_ptcls.bdb" )
 	
 	if len(ptcls) < 1 :
-		parser.error("No particles found. Please run Particles -> Generate Output in e2workflow.py." )
+		parser.error("No particles found in bdb:e2ctf.parms" )
 	
 	newctflines = [ ]
 	loadsf(options.sf)

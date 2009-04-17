@@ -55,7 +55,7 @@ import signal
 from copy import *
 #from OpenGL import contextdata
 from emglplot import *
-from emapplication import EMProgressDialogModule
+from emapplication import EMProgressDialogModule,get_application
 # import SPARX definitions
 import global_def
 from global_def import *

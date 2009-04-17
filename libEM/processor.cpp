@@ -2038,6 +2038,10 @@ void FlattenBackgroundProcessor::process_inplace(EMData * image)
 	// Double check that that mask isn't too big
 	int mnx = mask->get_xsize(); int mny = mask->get_ysize(); int mnz = mask->get_zsize();
 	int nx = image->get_xsize(); int ny = image->get_ysize(); int nz = image->get_zsize();
+	int nxc = nx+mnx; int nyc = ny+mny; int nzc = nz+mnz;
+	if (nz == 1) nzc = 1; // Sanity check
+	if (ny == 1) nyc = 1; // Sanity check
+	
 	if ( mnx > nx || mny > ny || mnz > nz)
 		throw ImageDimensionException("Can not flatten using a mask that is larger than the image.");
 
@@ -2053,13 +2057,25 @@ void FlattenBackgroundProcessor::process_inplace(EMData * image)
 	normfac = 1.0f/normfac;
 
 	// The mask can now be automatically resized to the dimensions of the image
-	bool undoclip = false;
-	if ( mnx < nx || mny < ny || mnz < nz) {
-		Region r((mnx-nx)/2, (mny-ny)/2,(mnz-nz)/2,nx,ny,nz);
-		mask->clip_inplace(r);
-		undoclip = true;
-	}
+//	bool undoclip = false;
+	
+	Region r;
+	if (ny == 1) r = Region((mnx-nxc)/2,nxc);
+	else if (nz == 1) r = Region((mnx-nxc)/2, (mny-nyc)/2,nxc,nyc);
+	else r = Region((mnx-nxc)/2, (mny-nyc)/2,(mnz-nzc)/2,nxc,nyc,nzc);
+	mask->clip_inplace(r,0);
+//	undoclip = true;
+//	if ( mnx < nx || mny < ny || mnz < nz) {
+//		Region r((mnx-nx)/2, (mny-ny)/2,(mnz-nz)/2,nx,ny,nz);
+//		mask->clip_inplace(r);
+//		undoclip = true;
+//	}
 
+	Region r2;
+	if (ny == 1) r2 = Region((nx-nxc)/2,nxc);
+	else if (nz == 1) r2 = Region((nx-nxc)/2, (ny-nyc)/2,nxc,nyc);
+	else r2 = Region((nx-nxc)/2, (ny-nyc)/2,(nz-nzc)/2,nxc,nyc,nzc);
+	image->clip_inplace(r2,image->get_edge_mean());
 	// Finally do the convolution
 	EMData* m = image->convolute(mask);
 	// Normalize so that m is truly the local mean
@@ -2068,17 +2084,27 @@ void FlattenBackgroundProcessor::process_inplace(EMData * image)
 	m->process_inplace("xform.phaseorigin.tocenter");
 	// Subtract the local mean
 	image->sub(*m); // WE'RE DONE!
-
 	delete m;
 
 	if (deletemask) {
 		delete mask;
-	}
-
-	if ( undoclip ) {
-		Region r((nx-mnx)/2, (ny-mny)/2, (nz-mnz)/2,mnx,mny,mnz);
+	} else { // I clipped it inplace, so undo this clipping so the user gets back what the put in
+		Region r;
+		if (ny == 1) r = Region((nxc-mnx)/2,mnx);
+		else if (nz == 1) r = Region((nxc-mnx)/2, (nyc-mny)/2,mnx,mny);
+		else r = Region((nxc-mnx)/2, (nyc-mny)/2,(nzc-mnz)/2,mnx,mny,mnz);
 		mask->clip_inplace(r);
 	}
+
+	Region r3;
+	if (ny == 1) r3 = Region((nxc-nx)/2,nx);
+	else if (nz == 1) r3 = Region((nxc-nx)/2, (nyc-ny)/2,nx,ny);
+	else r3 = Region((nxc-nx)/2, (nyc-ny)/2,(nzc-nz)/2,nx,ny,nz);
+	image->clip_inplace(r3);
+//	if ( undoclip ) {
+//		Region r((nx-mnx)/2, (ny-mny)/2, (nz-mnz)/2,mnx,mny,mnz);
+//		mask->clip_inplace(r);
+//	}
 
 }
 

@@ -218,8 +218,9 @@ namespace EMAN
 		 * internally memory is reallocated
 		 * @exception ImageDimensionException if any of the dimensions of the argument region are negative
 		 * @param area The clip area, can be 2D/3D.
+		 * @param fill_value the value that new region
 		 */
-		void clip_inplace(const Region & area);
+		void clip_inplace(const Region & area,const float& fill_value=0);
 
 		/** Get the top half of this 3D image.
 		 * @exception ImageDimensionException If this image is not 3D.

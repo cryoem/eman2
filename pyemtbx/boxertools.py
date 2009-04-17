@@ -892,6 +892,7 @@ class CoarsenedFlattenedImage:
 			self.smallimage = tmp.process("math.meanshrink",{"n":shrink})
 			self.smallimage.process_inplace("filter.ramp")
 			self.smallimage.process_inplace("filter.flattenbackground",{"radius":flattenradius})
+			self.smallimage.process_inplace("normalize.edgemean")
 			
 			
 		self.smallimage.set_attr("flatten_radius",flattenradius)
@@ -1113,9 +1114,19 @@ class FLCFImage:
 		shrink_factor = params_mediator.get_subsample_rate()
 		template = params_mediator.get_template_object()
 		
-		self.flcfimage = cfimage.calc_ccf( template.get_template() )
-		self.flcfimage.mult(inv_sigma_image)
+		t = template.get_template()
+		tx = t.get_xsize()
+		ty = t.get_ysize()
+		nx = cfimage.get_xsize()
+		ny = cfimage.get_ysize()
+		r = Region(-tx/2,-ty/2,tx+nx,ty+ny)
+		cfimage.clip_inplace(r,cfimage.get_edge_mean())
+		self.flcfimage = cfimage.calc_ccf( t)
 		self.flcfimage.process_inplace("xform.phaseorigin.tocenter")
+		r2 = Region(tx/2,ty/2,nx,ny)
+		cfimage.clip_inplace(r2)
+		self.flcfimage.clip_inplace(r2)
+		self.flcfimage.mult(inv_sigma_image)
 		self.flcfimage.set_attr("template_time_stamp",template.get_template_ts())
 		self.flcfimage.set_attr("get_sigma_image_shrink_factor",shrink_factor)
 		self.flcfimage.set_attr("get_sigma_image_flatten_radius",flatten_radius)
@@ -2191,12 +2202,12 @@ def set_idd_key_entry_in_memory(image_name,key,object):
 	project_db.set_key_entry_in_memory(dbkey,data)
 
 
-def set_idd_image_entry(image_name,key,image):
+def set_idd_image_entry(image_name,key,image,db_title="bdb:e2boxercache#"):
 	'''
 	Using EMAN2 style image dbs has efficiency payoffs in various ways... 
 	'''
 	image.set_attr("e2boxer_image_name",image_name)
-	db_name =  "bdb:e2boxercache#"+key
+	db_name =  db_title+key
 	# first have to make sure it's not already there
 	db = db_open_dict(db_name)
 	
@@ -2213,14 +2224,14 @@ def set_idd_image_entry(image_name,key,image):
 				pass
 
 	# if we make it here then go ahead and append
-	image.write_image("bdb:e2boxercache#"+key,-1)
+	image.write_image(db_title+key,-1)
 	db_close_dict(db_name)
 
-def get_idd_image_entry(image_name,key):
+def get_idd_image_entry(image_name,key,db_title="bdb:e2boxercache#"):
 	'''
 	Using EMAN2 style image dbs has efficiency payoffs in various ways... 
 	'''
-	db_name =  "bdb:e2boxercache#"+key
+	db_name =  db_title+key
 	if not db_check_dict(db_name): 
 #		print "db failed",db_name
 		return None # t
@@ -2422,7 +2433,7 @@ class SwarmTemplate(Template):
 		#black = EMData(image.get_xsize(),image.get_ysize())
 		#black.to_zero()
 		#black.write_image("aligned_refs.img",-1)
-		ave.write_image("running_ave.hdf",-1)
+		#ave.write_image("running_ave.hdf",-1)
 		#ave.write_image("ave.hdf")
 		shrink = self.autoboxer.get_subsample_rate()
 		# 4 is a magic number
@@ -2462,7 +2473,7 @@ class SwarmTemplate(Template):
 			# edge normalize here SL before
 			ave.process_inplace("mask.sharp",{'outer_radius':ave.get_xsize()/2})
 			# or normalize and no mask
-			ave.write_image("running_ave.hdf",-1)
+			#ave.write_image("running_ave.hdf",-1)
 		
 		#debug, un-comment to see the aligned refs and the final template
 		#for image in t:
@@ -3550,7 +3561,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		return int(0.9*(self.box_size)/float(self.get_subsample_rate()))
 	
 	def get_constraining_radius(self):
-		return int(0.8*(self.box_size)/float(self.get_subsample_rate()))
+		return int(0.5*(self.box_size)/float(self.get_subsample_rate()))
 	
 	def get_subsample_rate(self,force=True):	
 		if self.box_size == -1:

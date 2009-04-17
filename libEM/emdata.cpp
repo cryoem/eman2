@@ -300,7 +300,7 @@ EMData::~EMData()
 	EXITFUNC;
 }
 
-void EMData::clip_inplace(const Region & area)
+void EMData::clip_inplace(const Region & area,const float& fill_value)
 {
 	// Added by d.woolford
 	ENTERFUNC;
@@ -446,51 +446,63 @@ void EMData::clip_inplace(const Region & area)
 
 	// Now set all the edges to zero
 
-	// Set the extra bottom z slices to zero
+	// Set the extra bottom z slices to the fill_value
 	if (  z0 < 0 )
 	{
-		EMUtil::em_memset(rdata, 0, (-z0)*new_sec_size*sizeof(float));
+		//EMUtil::em_memset(rdata, 0, (-z0)*new_sec_size*sizeof(float));
+		int inc = (-z0)*new_sec_size;
+		std::fill(rdata,rdata+inc,fill_value);
 	}
 
-	// Set the extra top z slices to zero
+	// Set the extra top z slices to the fill_value
 	if (  civ.new_z_top > 0 )
 	{
 		float* begin_pointer = rdata + (new_nz-civ.new_z_top)*new_sec_size;
-		EMUtil::em_memset(begin_pointer, 0, (civ.new_z_top)*new_sec_size*sizeof(float));
+		//EMUtil::em_memset(begin_pointer, 0, (civ.new_z_top)*new_sec_size*sizeof(float));
+		float* end_pointer = begin_pointer+(civ.new_z_top)*new_sec_size;
+		std::fill(begin_pointer,end_pointer,fill_value);
 	}
 
 	// Next deal with x and y edges by iterating through each slice
 	for ( int i = civ.new_z_bottom; i < civ.new_z_bottom + civ.z_iter; ++i )
 	{
-		// Set the extra front y components to 0
+		// Set the extra front y components to the fill_value
 		if ( y0 < 0 )
 		{
 			float* begin_pointer = rdata + i*new_sec_size;
-			EMUtil::em_memset(begin_pointer, 0, (-y0)*new_nx*sizeof(float));
+			//EMUtil::em_memset(begin_pointer, 0, (-y0)*new_nx*sizeof(float));
+			float* end_pointer = begin_pointer+(-y0)*new_nx;
+			std::fill(begin_pointer,end_pointer,fill_value);
 		}
 	
-		// Set the extra back y components to 0
+		// Set the extra back y components to the fill_value
 		if ( civ.new_y_back > 0 )
 		{
 			float* begin_pointer = rdata + i*new_sec_size + (new_ny-civ.new_y_back)*new_nx;
-			EMUtil::em_memset(begin_pointer, 0, (civ.new_y_back)*new_nx*sizeof(float));
+			//EMUtil::em_memset(begin_pointer, 0, (civ.new_y_back)*new_nx*sizeof(float));
+			float* end_pointer = begin_pointer+(civ.new_y_back)*new_nx;
+			std::fill(begin_pointer,end_pointer,fill_value);
 		}
 
-		// Iterate through the y to set each correct x component to 0
+		// Iterate through the y to set each correct x component to the fill_value
 		for (int j = civ.new_y_front; j <civ.new_y_front + civ.y_iter; ++j)
 		{
-			// Set the extra left x components to 0
+			// Set the extra left x components to the fill_value
 			if ( x0 < 0 )
 			{
 				float* begin_pointer = rdata + i*new_sec_size + j*new_nx;
-				EMUtil::em_memset(begin_pointer, 0, (-x0)*sizeof(float));
+				//EMUtil::em_memset(begin_pointer, 0, (-x0)*sizeof(float));
+				float* end_pointer = begin_pointer+(-x0);
+				std::fill(begin_pointer,end_pointer,fill_value);
 			}
 
-			// Set the extra right x components to 0
+			// Set the extra right x components to the fill_value
 			if ( civ.new_x_right > 0 )
 			{
 				float* begin_pointer = rdata + i*new_sec_size + j*new_nx + (new_nx - civ.new_x_right);
-				EMUtil::em_memset(begin_pointer, 0, (civ.new_x_right)*sizeof(float));
+				//EMUtil::em_memset(begin_pointer, 0, (civ.new_x_right)*sizeof(float));
+				float* end_pointer = begin_pointer+(civ.new_x_right);
+				std::fill(begin_pointer,end_pointer,fill_value);
 			}
 
 		}
@@ -2907,42 +2919,67 @@ EMData * EMData::calc_fast_sigma_image( EMData* mask)
 	}
 	float normfac = 1.0f/(float)P;
 	
-	bool undoclip = false;
+//	bool undoclip = false;
 	
-	if ( mnx < nx || mny < ny || mnz < nz) {
-		Region r((mnx-nx)/2, (mny-ny)/2,(mnz-nz)/2,nx,ny,nz);
-		mask->clip_inplace(r);
-		undoclip = true;
-	}
+	int nxc = nx+mnx; int nyc = ny+mny; int nzc = nz+mnz;
+//	if ( mnx < nx || mny < ny || mnz < nz) {
+	Region r;
+	if (ny == 1) r = Region((mnx-nxc)/2,nxc);
+	else if (nz == 1) r = Region((mnx-nxc)/2, (mny-nyc)/2,nxc,nyc);
+	else r = Region((mnx-nxc)/2, (mny-nyc)/2,(mnz-nzc)/2,nxc,nyc,nzc);
+	mask->clip_inplace(r,0);
+	//Region r((mnx-nxc)/2, (mny-nyc)/2,(mnz-nzc)/2,nxc,nyc,nzc);
+	//mask->clip_inplace(r);
+	//undoclip = true;
+	//}
 	
+	
+	// Here we generate the local average of the squares
+	Region r2;
+	if (ny == 1) r2 = Region((nx-nxc)/2,nxc);
+	else if (nz == 1) r2 = Region((nx-nxc)/2, (ny-nyc)/2,nxc,nyc);
+	else r2 = Region((nx-nxc)/2, (ny-nyc)/2,(nz-nzc)/2,nxc,nyc,nzc);
+	EMData* squared = get_clip(r2,get_edge_mean());
+	EMData* tmp = squared->copy();
 	Dict pow;
 	pow["pow"] = 2.0f;
-	EMData* squared = process("math.pow",pow);
-	// Here we generate the local average of the squares
+	squared->process_inplace("math.pow",pow);
 	EMData* s = squared->convolute(mask);
 	squared->mult(normfac);
 
-	EMData* m = convolute(mask);
+	EMData* m = tmp->convolute(mask);
 	m->mult(normfac);
 	m->process_inplace("math.pow",pow);
-
+	delete tmp; tmp = 0;
 	s->sub(*m);
 	// Here we finally generate the standard deviation image
 	s->process_inplace("math.sqrt");
 	
-	if ( undoclip ) {
-		Region r((nx-mnx)/2, (ny-mny)/2, (nz-mnz)/2,mnx,mny,mnz);
-		mask->clip_inplace(r);
-	}
+//	if ( undoclip ) {
+//		Region r((nx-mnx)/2, (ny-mny)/2, (nz-mnz)/2,mnx,mny,mnz);
+//		mask->clip_inplace(r);
+//	}
 	
 	if (maskflag) {
 		delete mask;
 		mask = 0;
+	} else {
+		Region r;
+		if (ny == 1) r = Region((nxc-mnx)/2,mnx);
+		else if (nz == 1) r = Region((nxc-mnx)/2, (nyc-mny)/2,mnx,mny);
+		else r = Region((nxc-mnx)/2, (nyc-mny)/2,(nzc-mnz)/2,mnx,mny,mnz);
+		mask->clip_inplace(r);
 	}
 	
 	delete squared;
 	delete m;
 
+	s->process_inplace("xform.phaseorigin.tocenter");
+	Region r3;
+	if (ny == 1) r3 = Region((nxc-nx)/2,nx);
+	else if (nz == 1) r3 = Region((nxc-nx)/2, (nyc-ny)/2,nx,ny);
+	else r3 = Region((nxc-nx)/2, (nyc-ny)/2,(nzc-nz)/2,nx,ny,nz);
+	s->clip_inplace(r3);
 	EXITFUNC;
 	return s;
 	

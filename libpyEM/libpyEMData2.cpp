@@ -73,6 +73,8 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_set_complex_size_overloads_1_
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_get_attr_default_overloads_1_2, get_attr_default, 1, 2)
 
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_clip_inplace_overloads_1_2,clip_inplace, 1, 2)
+
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_process_inplace_overloads_1_2, process_inplace, 1, 2)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_process_overloads_1_2, process, 1, 2)
@@ -442,7 +444,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("replace_amplitudes", &EMAN::EMData::replace_amplitudes, EMAN_EMData_replace_amplitudes_overloads_1_2()[ return_value_policy< manage_new_object >() ])
 	.def("norm_pad", &EMAN::EMData::norm_pad, EMAN_EMData_norm_pad_overloads_2_3() [ return_value_policy< manage_new_object >()])
 	.def("get_clip", &EMAN::EMData::get_clip, EMAN_EMData_get_clip_overloads_1_2() [ return_value_policy< manage_new_object >()])
-	.def("clip_inplace", &EMAN::EMData::clip_inplace, return_value_policy< reference_existing_object >())
+	.def("clip_inplace", &EMAN::EMData::clip_inplace, EMAN_EMData_clip_inplace_overloads_1_2()[return_value_policy< reference_existing_object >()])
 	.def("get_top_half", &EMAN::EMData::get_top_half, return_value_policy< manage_new_object >())
 	.def("get_rotated_clip", &EMAN::EMData::get_rotated_clip, EMAN_EMData_get_rotated_clip_overloads_2_3()[ return_value_policy< manage_new_object >() ])
 	.def("window_center", &EMAN::EMData::window_center, return_value_policy< manage_new_object >())
