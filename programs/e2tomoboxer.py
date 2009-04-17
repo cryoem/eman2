@@ -106,7 +106,16 @@ class EMBoxerTomoStorage:
 		'''
 		if not file_exists(file_name): raise RuntimeError("The file %s does not exist" %file_name)
 		self.file_name = file_name
-		
+
+
+class EMTomoBoxerModule:
+	'''
+	This module displays all interfaces and coordinates all events associated with
+	TomoBoxing
+	'''
+	def __init__(self):
+		pass
+
 if __name__ == "__main__":
 	main()
 		
