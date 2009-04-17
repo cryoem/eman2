@@ -40,13 +40,6 @@ from emanimationutil import Animator
 import weakref
 
 
-class Callable:
-	'''
-	Used for the creation of static functions
-	'''
-	def __init__(self, anycallable):
-	    self.__call__ = anycallable
-
 class EventsEmitterAndReciever:
 	def __init__(self):
 		self.emit_events = False

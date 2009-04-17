@@ -56,7 +56,7 @@ from matplotlib.figure import Figure
 #matplotlib.use('Agg')
 
 from emapplication import EMStandAloneApplication, EMGUIModule
-from emimageutil import EMEventRerouter, EMParentWin, Callable
+from emimageutil import EMEventRerouter, EMParentWin
 from emglobjects import EMOpenGLFlagsAndTools
 
 linetypes=["-","--",":","-."]
@@ -356,7 +356,7 @@ class EMPlot2DModule(EMGUIModule):
 			return False
 
 	# make the function static
-	is_file_readable = Callable(is_file_readable)
+	is_file_readable = staticmethod(is_file_readable)
 	def render(self):
 		if not self.data : return
 		
