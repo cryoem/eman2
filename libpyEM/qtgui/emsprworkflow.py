@@ -45,7 +45,7 @@ from pyemtbx.boxertools import set_idd_image_entry, TrimBox
 import weakref
 from e2history import HistoryForm
 import time
-from emselector import save_data
+from emsave import save_data
 from emimagemx import EMDataListCache
 
 class EmptyObject:

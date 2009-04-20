@@ -1528,7 +1528,7 @@ class EMImageMXModule(EMGUIModule):
 			msg.exec_()
 			return
 		
-		from emselector import save_data
+		from emsave import save_data
 		file_name = save_data(self.data)
 		if file_name == self.file_name and file_exists(file_name): # the file we are working with was overwritten
 			self.set_data(file_name)
