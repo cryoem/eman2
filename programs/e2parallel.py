@@ -80,21 +80,24 @@ run e2parallel.py dcclient on as many other machines as possible, pointing at th
 		rundcserver(options.port,options.verbose)
 		
 	elif args[0]=="dcclient" :
-		rundcclient(options.server,options.port)
+		rundcclient(options.server,options.port,options.verbose)
 		
 	elif args[0]=="dckill" :
-		sock=socket()
-		sock.connect((server,port))
-
+		killdcserver(options.server,options.port,options.verbose)
+	
 def rundcserver(port,verbose):
 	"""Launches a DCServer. If port is <1 or None, will autodetermine. Does not return."""
 
 	server=runEMDCServer(port,verbose)			# never returns
 
 
-def rundcclient(host,port):
-	sock=socket()
-	sock.connect((host,port))
+def rundcclient(host,port,verbose):
+	"""Starts a DC client running, runs forever"""
+	client=EMDCTaskClient(host,port,verbose)
+	client.run()
+
+def killdcserver(server,port,verbose):
+	EMDCsendonecom(server,port,"QUIT",None)
 
 if __name__== "__main__":
 	main()

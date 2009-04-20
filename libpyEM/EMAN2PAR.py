@@ -36,7 +36,9 @@ from EMAN2db import EMTask,EMTaskQueue
 import SocketServer
 from cPickle import dumps,loads
 from struct import pack,unpack
+import time
 import socket
+import sys
 
 # used to make sure servers and clients are running the same version
 EMAN2PARVER=1
@@ -55,6 +57,9 @@ class EMTaskHandler:
 class EMTaskClient:
 	"""This class executes tasks on behalf of the server. This parent class implements the actual task functionality.
 Communications are handled by subclasses."""
+	def __init__(self):
+		pass
+	
 	def process_task(self,task):
 		"""This method implements the actual image processing by calling appropriate module functions"""
 		
@@ -175,15 +180,18 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 			if cmd=="RDYT" :
 				# Get the first task and send it (pickled)
 				task=self.queue.get_task()
-				task.starttime=time.time()
-				sendobj(self.request,task)
+				if task==None :
+					sendobj(self.sockf,None)
+				else:
+					task.starttime=time.time()
+					sendobj(self.sockf,task)
 				self.sockf.flush()
 				
 				# check for an ACK, if not, requeue
 				try:
 					if sel.sockf.read(4)!="ACK " : raise Exception
 				except: 
-					task.starttime=None		# requeue
+					if task: task.starttime=None		# requeue
 			
 			
 			# Job is completed, results returned
@@ -192,7 +200,8 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 			
 			# Request data from the server
 			elif cmd=="DATA" :
-				pass
+				datac=
+				sendobj(self.sockf,datac)
 			
 			# Notify that a task has been aborted
 			elif cmd=="ABOR" : 
@@ -211,9 +220,20 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 			
 			# Cause this server to exit (cleanly)
 			elif cmd=="QUIT" :
-				pass
+				sendobj(self.sockf,None)
+				self.sockf.flush()
+				self.server.server_close()
+				if self.verbose : print "Server exited cleanly"
+#				sys.exit(0)
 			
 			################### These are issued by customers
+			# A new task to enqueue
+			elif cmd=="TASK":
+				try: 
+					self.queue.add_task(data)
+					if self.verbose>1 : print "TASK %s.%s"%(data.module,data.command)
+				
+
 			# status request
 			elif cmd=="STAT":
 				pass
@@ -229,13 +249,42 @@ class EMDCTaskClient(EMTaskClient):
 	"""Distributed Computing Task Client. This client will connect to an EMDCTaskServer, request jobs to run
  and run them ..."""
  
-	def __init__(self,server,port):
+	def __init__(self,server,port,verbose=0):
 		EMTaskClient.__init__(self)
 		self.addr=(server,port)
+		self.verbose=verbose
 
-
-	def run():
-		sock=socket()
-		sock.connect((server,port))
-#		self.sockf=
+	def run(self):
+		while (1):
+			# connect to the server
+			if self.verbose>1 : print "Connect to (%s,%d)"%self.addr
+			sock=socket.socket()
+			sock.connect(self.addr)
+			sockf=sock.makefile()
+			
+			# Introduce ourselves and ask for a task to execute
+			if sockf.read(4)!="EMAN" : raise Exception,"Not an EMAN server"
+			sockf.write("EMAN")
+			sockf.write(pack("I4s",EMAN2PARVER,"RDYT"))
+			sendobj(sockf,None)
+			sockf.flush()
+			
+			# Get a task from the server
+			task=recvobj(sockf)
+			if task==None:
+				if self.verbose : print "No tasks to run :^("
+				sockf.close()
+				sock.close()
+				time.sleep(10)
+				continue
+			
+			# Process the task
+			for k,i in task.data.items():
+				try:
+					if i[0]=="cache" :
+						sockf.write("DATA")
+						task.data[k]=sockf.sendobj(sockf,i)
+				except: pass
+			
+	#		self.sockf=
 		

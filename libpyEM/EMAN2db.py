@@ -401,11 +401,12 @@ class EMTaskQueue:
 	def add_task(self,task,parentid=None,wait_for=None):
 		"""Adds a new task to the active queue, scheduling it for execution. If parentid is
 		specified, a doubly linked list is established. parentid MUST be the id of a task
-		currently in the active queue."""
+		currently in the active queue. parentid and wait_for may be set in the task instead"""
 		if not isinstance(task,EMTask) : raise Exception,"Invalid Task"
 		self.active["max"]+=1
 		tid=self.active["max"]
 		task.taskid=tid
+		if task.parent!=None : parentid=task.parent
 		if parentid:
 			task.parent=parentid
 			t2=self.active[parentid]
@@ -504,11 +505,14 @@ class EMTask:
 		self.parent=None		# single parent id
 		self.module=module		# module to import to execute this task
 		self.command=command	# name of a function in module
-		self.data=data			# dictionary of named data specifiers value may be:
+		self.data=data			# dictionary of named data specifiers value may be (before transmission):
 								# - actual data object (no caching)
-								# - (filename,#)
-								# - (filename/url,min,max)  (max is exclusive, not inclusive)
-								# - (filename/url,(list))
+								# - ('cache',filename,#)
+								# - ('cache',filename/url,min,max)  (max is exclusive, not inclusive)
+								# - ('cache',filename/url,(list))
+								# (after transmission):
+								# - actual data item
+								# - ('cache',identifier)
 		self.options=options	# dictionary of options
 		self.wait_for=None		# in the active queue, this identifies an exited class which needs to be rerun when all wait_for jobs are complete
 		self.failcount==0		# Number of times this task failed to reach completion after starting
