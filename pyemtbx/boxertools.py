@@ -624,8 +624,6 @@ class Cache:
 			encapsulated_image = getattr(Cache.factory,self.accessor_name)(construction_argument)
 			self.add_to_cache(encapsulated_image)
 			
-		
-			
 		image = encapsulated_image.get_image()
 		if image != None:
 			return image

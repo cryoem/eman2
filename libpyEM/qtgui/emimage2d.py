@@ -415,7 +415,7 @@ class EMImage2DModule(EMGUIModule):
 			return (640,640)
 	
 	allim=WeakKeyDictionary()
-	def __init__(self, image=None,application=None):
+	def __init__(self, image=None,application=get_application()):
 		self.desktop_hint = "image"
 		self.data = image 	   # EMData object to display
 		self.file_name = ""# stores the filename of the image, if None then member functions should be smart enough to handle it
@@ -551,6 +551,17 @@ class EMImage2DModule(EMGUIModule):
 	def get_maxden(self): return self.maxden
 	def get_gamma(self): return self.gamma
 	def get_shapes(self): return self.shapes
+	
+	def coords_within_image_bounds(self,coords):
+		x = coords[0]
+		y = coords[1]
+		if x < 0 or y < 0:
+			return False
+		
+		if x >= self.data.get_xsize() or y >= self.data.get_ysize():
+			return False
+		
+		return True
 	
 	def set_density_range(self,x0,x1):
 		"""Set the range of densities to be mapped to the 0-255 pixel value range"""

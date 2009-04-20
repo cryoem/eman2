@@ -38,12 +38,12 @@ from emimagemx import EMDataListCache
 from EMAN2db import db_check_dict, db_remove_dict
 import os
 
-# see http://blake.bcm.edu/emanwiki/EMAN2ImageFormats#SavingEMDatafromPython
+# For example usage see http://blake.bcm.edu/emanwiki/EMAN2ImageFormats#SavingEMDatafromPython
 
 def save_data(item_object):
 	'''
 	Intended to be the only function you need ever call if you want to save EM image data, be it one or many.
-	@param item_object can be an EMData, a list of EMDatas, an EMDataListCache, or a list of listing items in the selector
+	@param item_object can be an EMData, a list of EMDatas, an EMDataListCache, or a list of EMListingItems in the selector
 	@return the name of the file that was written to disk. May be and empty string ("") if no writing occurred
 	'''
 	from emimagemx import EMDataListCache

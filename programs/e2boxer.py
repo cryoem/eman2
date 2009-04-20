@@ -743,6 +743,7 @@ class EMBoxerModuleParticleManipEvents(EMBoxerModuleMouseEventsObject):
 			self.get_2d_gui_image().add_shape("cen",EMShape([self.mediator.get_shape_string(),.9,.9,.4,x0,y0,x0+2,y0+2,1.0]))
 			
 			self.mediator.add_box(box)
+			self.moving=[box,m,box_num]
 			#self.mediator.mouse_click_update_ppc()
 		
 		elif event.modifiers()&Qt.ShiftModifier :

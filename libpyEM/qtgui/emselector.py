@@ -64,11 +64,21 @@ class EMSelectorModule(EMQtWidgetModule):
 		
 
 class EMSelectorDialog(QtGui.QDialog):
+	'''
+	This class is somewhat of an aberration. It can be used both as a file system browser
+	and as a save-file dialog. To see an example of using it as a system browser, see the
+	EMBrowserModule. To see an example of using it as a save-file dialog, see emsave.py.
+	Also, emsprworkflow uses this class as a browser for selecting files.  
+	I wish I had time to correct the design... but that said, it's not too far from where it should
+	be - the code is relatively clean, and correcting the design involves breaking some of the member
+	functions into separate classes.
+	'''
 	def __init__(self,module,single_selection=False,save_as_mode=True):
 		'''
 		@param module - should be an EMSelectorModule
 		@param application - should be a type of application as supplied in emapplication
 		@param single_selection - should selections be limited to singles?
+		@param save_as_mode - should be True if using this object as a pure dialog (using exec_).
 		'''
 		QtGui.QDialog.__init__(self,None)
 		self.setFocusPolicy(Qt.StrongFocus)
@@ -120,7 +130,7 @@ class EMSelectorDialog(QtGui.QDialog):
 			hbl2.addWidget(self.save_as_line_edit,0)
 			self.hbl.addLayout(hbl2)
 			self.save_as_mode = True
-			self.validator = None # an optional feature which makes the behavior of the dialog more sophisticated
+			self.validator = None # an optional feature which makes the behavior of the dialog more sophisticated - see emsave.py
 			self.dialog_result = ""
 
 		self.bottom_hbl = QtGui.QHBoxLayout()
@@ -177,7 +187,7 @@ class EMSelectorDialog(QtGui.QDialog):
 	def set_validator(self,validator):
 		'''
 		Sets the validator which is used only in save_as mode (when this is being used as a file selecting dialog)
-		validator should be either a EMSingleImageSaveDialog or an EMStackSaveDialog
+		An example validator is an emsave.EMSaveImageValidator
 		'''
 		self.validator = validator
 	
