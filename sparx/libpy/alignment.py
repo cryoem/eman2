@@ -46,7 +46,7 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode
 	cimage = Util.Polar2Dm(tavg, cnx, cny, numr, mode)
 	Util.Frngs(cimage, numr)
 	Applyws(cimage, numr, wr)
-	
+
 	maxrin = numr[-1]
 	sx_sum = 0.0
 	sy_sum = 0.0

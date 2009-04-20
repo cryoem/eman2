@@ -2353,7 +2353,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		if myid == i: 
 			data = EMData.read_images(stack, range(image_start, image_end))
 		if ftp == "bdb": mpi_barrier(MPI_COMM_WORLD)
-	
+	"""
 	#################################### Temp stuff (begin) ##################################
 	from fundamentals import fft
 	from statistics import add_ave_varf_MPI
@@ -2372,12 +2372,12 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	maskI.set_value_at(0, 0, 0)
 	maskI.set_value_at(1, 0, 0)
 	#################################### Temp stuff (end) ####################################
-	
+	"""
 	for im in xrange(image_start, image_end):
 		data[im-image_start].set_attr('ID', im)
 		
 	if CTF:
-		#from filter import filt_ctf
+		from filter import filt_ctf
 		for im in xrange(image_start, image_end):
 			ctf_params = data[im-image_start].get_attr("ctf")
 			ctm = ctf_2(nx, ctf_params)
@@ -2386,8 +2386,8 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			if data[im-image_start].get_attr( "ctf_applied" ) == 0:
 				st = Util.infomask(data[im-image_start], mask, False)
 				data[im-image_start] -= st[0]
-				#data[im-image_start] = filt_ctf(data[im-image_start], ctf_params)
-				#data[im-image_start].set_attr('ctf_applied', 1)
+				data[im-image_start] = filt_ctf(data[im-image_start], ctf_params)
+				data[im-image_start].set_attr('ctf_applied', 1)
 	 		Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
 
 		reduce_EMData_to_root(ctf_2_sum, myid, main_node)
@@ -2404,8 +2404,8 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				for k in xrange(2):
 					ctf2n[k][i] = 1.0/(ctf2[k][i] + 1.0/snr)
 		del  ctf2
-		# need_CTF_again = False
-		need_CTF_again = True
+		need_CTF_again = False
+		#need_CTF_again = True
 	else:
 		need_CTF_again = False
 
@@ -2438,15 +2438,16 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			#  bring all partial sums together
 			reduce_EMData_to_root(av1, myid, main_node)
 			reduce_EMData_to_root(av2, myid, main_node)
-
+			"""
 			#################################### Temp stuff (begin) #################################
 			tavg, vav = add_ave_varf_MPI(data, None, "a", CTF)
 			reduce_EMData_to_root(tavg, myid, main_node)
 			reduce_EMData_to_root(vav, myid, main_node)
 			#################################### Temp stuff (end) ####################################
-	
+			"""
 
 			if myid == main_node:
+				"""
 				#################################### Temp stuff (begin) #################################
 				sumsq = fft(tavg)
 				if CTF: 
@@ -2463,24 +2464,25 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				SSNR = sumsq.copy()
 				Util.div_filter(SSNR, vav)
 				#################################### Temp stuff (end) ####################################
+				"""
 
 				if CTF:
 					#tavg = filt_table(Util.addn_img(av1, av2), ctfb2)
 					av1  = filt_table(av1, ctf2n[0])
 					av2  = filt_table(av2, ctf2n[1])
-				#else:
-				#	pass
-				#	#tavg = (av1 + av2)/nima
+				else:
+					tavg = (av1 + av2)/nima
 
 				# write the current average
 				drop_image(tavg, os.path.join(outdir, "aqc_%03d.hdf"%(total_iter)))
-				
+				"""
 				#################################### Temp stuff (begin) #################################
 				drop_image(vav, os.path.join(outdir, "vav_%03d.hdf"%(total_iter)))
 				tavg = fft(Util.divn_img(fft(tavg), vav))
 				sum_SSNR = Util.infomask(SSNR, maskI, True)
 				sum_SSNR = sum_SSNR[0]
-				#################################### Temp stuff (end) ####################################
+				#################################### Temp stuff (end) ###################################
+				"""
 
 				frsc = fsc_mask(av1, av2, ref_data[0], 1.0, os.path.join(outdir, "resolution%03d"%(total_iter)))
 				ref_data[2] = tavg
