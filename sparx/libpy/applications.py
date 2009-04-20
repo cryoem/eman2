@@ -2357,7 +2357,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	#################################### Temp stuff (begin) ##################################
 	from fundamentals import fft
 	from statistics import add_ave_varf_MPI
-	if CTF: 
+	if CTF:
 		from morphology import ctf_img
 		ctf_2_sum = EMData(nx, nx, 1, False)
 
@@ -2389,7 +2389,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				#data[im-image_start] = filt_ctf(data[im-image_start], ctf_params)
 				#data[im-image_start].set_attr('ctf_applied', 1)
 	 		Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
-		
+
 		reduce_EMData_to_root(ctf_2_sum, myid, main_node)
 		# bring ctf2 together, keep them only on main node,  strange trick required because mpi_reduce changes the nformat to numarray
 		s = shape(ctf2)
@@ -2468,9 +2468,9 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					#tavg = filt_table(Util.addn_img(av1, av2), ctfb2)
 					av1  = filt_table(av1, ctf2n[0])
 					av2  = filt_table(av2, ctf2n[1])
-				else:
-					pass
-					#tavg = (av1 + av2)/nima
+				#else:
+				#	pass
+				#	#tavg = (av1 + av2)/nima
 
 				# write the current average
 				drop_image(tavg, os.path.join(outdir, "aqc_%03d.hdf"%(total_iter)))
