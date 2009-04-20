@@ -76,8 +76,8 @@ def ref_ali2d( ref_data ):
 	print_msg(msg)
 	tavg = filt_tanl(ref_data[2], fl, aa)
 	cs = [0.0]*2
-	tavg, cs[0], cs[1] = center_2D(tavg, ref_data[1])
 	if(ref_data[1] > 0):
+		tavg, cs[0], cs[1] = center_2D(tavg, ref_data[1])
 		msg = "Center x =      %10.3f        Center y       = %10.3f\n"%(cs[0], cs[1])
 		print_msg(msg)
 	return  tavg, cs
@@ -104,8 +104,8 @@ def ref_ali2d_c( ref_data ):
 	print_msg(msg)
 	tavg = filt_tanl(ref_data[2], fl, aa)
 	cs = [0.0]*2
-	tavg, cs[0], cs[1] = center_2D(tavg, ref_data[1])
 	if(ref_data[1] > 0):
+		tavg, cs[0], cs[1] = center_2D(tavg, ref_data[1])
 		msg = "Center x =      %10.3f        Center y       = %10.3f\n"%(cs[0], cs[1])
 		print_msg(msg)
 	return  tavg, cs
