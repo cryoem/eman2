@@ -357,7 +357,7 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	print_end_msg("ali2d_a")
 
 
-def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, CTF=False, user_func_name="ref_ali2d", random_method="SA", T0=1.0, F=0.996):
+def ali2d_a_MPI_(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, CTF=False, user_func_name="ref_ali2d", random_method="SA", T0=1.0, F=0.996):
 
 	"""
 	In this version of ali2d_a_MPI, we use MPI group management trying to increase the speedup of the program
@@ -1784,8 +1784,6 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 '''
 
 
-'''
-
 def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, CTF=False, user_func_name="ref_ali2d", random_method="SA", T0=1.0, F=0.996):
 
 	from utilities    import model_circle, combine_params2, drop_image, get_image, get_input_from_string, get_params2D, set_params2D, model_blank
@@ -1900,14 +1898,16 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	data = EMData.read_images(stack, range(image_start, image_end))
 	interpolation = "linear"
 	dali = [None]*len(data)
-	#  Initial parameters have to be applied!
+	#  Initial parameters have to be applied to get the first average!
 	tavg = model_blank(nx, nx)
 	for it in xrange(len(data)):
 		alpha, sx, sy, mirror, scale = get_params2D(data[it])
-		data[it] = rot_shift2D(data[it], alpha, sx, sy, mirror, 1.0, interpolation)
-		set_params2D(data[it], [0.0, 0.0, 0.0, 0, 1.0])
-		dali[it] = data[it].copy()
-		Util.add_img(tavg, dali[it])
+		#   Consider only rotation
+		#sx=sy=0
+		ima = rot_shift2D(data[it], alpha, sx, sy, mirror, 1.0, interpolation)
+		#set_params2D(data[it], [0.0, 0.0, 0.0, 0, 1.0])
+		dali[it] = ima
+		Util.add_img(tavg, ima)
 	reduce_EMData_to_root(tavg, myid, main_node)
 	total_iter=0
 	if myid == main_node:
@@ -1958,6 +1958,8 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	degree_to_radian = pi/180.0
 	klr = int(last_ring*2*pi + 0.5)
 	delta = 360.0/klr
+	msg = "\nklr = %5i  delta = %8.5f   \n"%(klr, delta)
+	if myid == main_node: print_msg(msg)
 	klr -= 1
 	for N_step in xrange(len(xrng)):
 		msg = "\nX range = %5.2f   Y range = %5.2f   Step = %5.2f\n"%(xrng[N_step], yrng[N_step], step[N_step])
@@ -1982,7 +1984,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					dali[it] = timg.copy()
 					set_params2D(dali[it], [ang, sx, sy, mirror, 1.0])
 					#print  " IMPROVED ",it, dc
-					tavg = Util.addn_img(subn, dali[it])
+					Util.add_img(tavg, Util.addn_img(subn, dali[it]))
 				else:
 					qt = random()
 					# figure whether to accept
@@ -1990,7 +1992,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 						dali[it] = timg.copy()
 						set_params2D(dali[it], [ang, sx, sy, mirror, 1.0])
 						#print  " ACCEPTED ",it, dc
-						tavg = Util.addn_img(subn, dali[it])
+						Util.add_img(tavg, Util.addn_img(subn, dali[it]))
 				
 				#  This looks like a duplication, but it is to reduce interpolation errors, eventually btavg will replace tavg
 				Util.add_img(ntavg, dali[it])
@@ -2010,7 +2012,12 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				cs = [0.0]*2
 
 
-				if(total_iter%100 == 0):  drop_image(tavg, os.path.join(outdir, "aqc_%06d.hdf"%(total_iter)))
+				from statistics import ave_var
+				#ave,var = ave_var(dali, mode = "")
+				#drop_image(ave, os.path.join(outdir, "Aqc_%06d.hdf"%(total_iter)))
+				#drop_image(var, os.path.join(outdir, "Vqc_%06d.hdf"%(total_iter)))
+				#if(total_iter%1 == 0):  drop_image(tavg, os.path.join(outdir, "tqc_%06d.hdf"%(total_iter)))
+				tavg.write_image(os.path.join(outdir, "tqc.hdf"),total_iter)
 				a1 = tavg.cmp("dot", tavg, dict(negative = 0, mask = mask))
 				msg = "ITERATION   #%7d    criterion = %15.7e    T = %12.3e\n"%(total_iter, a1, T)
 				print_msg(msg)
@@ -2036,6 +2043,8 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 
 	# write out headers and STOP, under MPI writing has to be done sequentially
 	mpi_barrier(MPI_COMM_WORLD)
+	for i in xrange(len(data)):
+		data[i].set_attr( "xform.align2d", dali[i].get_attr("xform.align2d") )
 	#par_str = ["xform.align2d", "ID"]
 	par_str = ["xform.align2d"]
 	if myid == main_node:
@@ -2048,7 +2057,6 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 	else:           send_attr_dict(main_node, data, par_str, image_start, image_end)
 	if myid == main_node:  print_end_msg("ali2d_a_MPI")
-'''
 
 
 def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, CTF=False, snr=1.0, user_func_name="ref_ali2d", rand_alpha = False, MPI=False):
