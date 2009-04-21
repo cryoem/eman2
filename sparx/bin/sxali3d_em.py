@@ -48,6 +48,7 @@ def main():
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ou",     type="float",        default=-1,    help="  radius < int(nx/2)-1 (set to int(nx/2)-1)")
 	parser.add_option("--delta",  type="float",        default=2,     help="  angular bracket (set to 2)")
+	parser.add_option("--ts",     type="float",        default=0.25,  help="  shift bracket (set to 2)")
 	parser.add_option("--maxit",  type="int",          default=2,     help="  maximum number of iterations (set to 10) ")
 	parser.add_option("--nassign",type="int",          default=4,     help="  number of assignment steps in one iteration")
 	parser.add_option("--nrefine",type="int",          default=1,     help="  number of refinement steps in one iteration")
@@ -80,7 +81,7 @@ def main():
 		from applications import ali3d_em_MPI
 		global_def.BATCH = True
 		if options.MPI:
-			ali3d_em_MPI(args[0], args[1], args[2], mask, options.ou, options.delta, options.maxit, options.nassign, options.nrefine, options.CTF, options.snr, options.sym,options.function, options.fourvar, options.debug)
+			ali3d_em_MPI(args[0], args[1], args[2], mask, options.ou, options.delta,options.ts, options.maxit, options.nassign, options.nrefine, options.CTF, options.snr, options.sym,options.function, options.fourvar, options.debug)
 		else:
 			print 'ali3d_em serial version not implemented'
 
