@@ -5593,7 +5593,7 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxi
 					refi = img.process( "normalize.mask", {"mask":mask2D, "no_sigma":0} )
 					refi = refi.FourInterpol(nx*2,nx*2,0,True)
 					refi = Processor.EMFourierFilter(refi, refiparams)
-					refdata = [None]*6
+					refdata = [None]*7
 					refdata[0] = volft
 					refdata[1] = kb
 					refdata[2] = img
@@ -5883,6 +5883,7 @@ def ali3d_en_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CT
 def eqproj_cascaded_ccc(args, data):
 	from utilities import peak_search, amoeba
 	from fundamentals import fft, ccf, fpol
+	from statistics  import ccc
 
 	volft 	= data[0]
 	kb	= data[1]
@@ -5906,7 +5907,7 @@ def eqproj_cascaded_ccc(args, data):
 	refprj = temp.window_center(M)
 
 	if ts==0.0:
-		return ccc(prj,refprj,mask2D)
+		return ccc(prj,refprj,mask2D),shift
 	
 	refprj.process_inplace("normalize.mask", {"mask":mask2D, "no_sigma":1})
 	refprj *= mask2D
@@ -5923,7 +5924,7 @@ def eqproj_cascaded_ccc(args, data):
 	data2[1] = kb
 	ps = amoeba([sx, sy], [ts, ts], twoD_fine_search, 1.e-4, 1.e-4, 500, data2)
 
-	if abs(ps[0][0] > ts or abs(ps[0][1]) > ts:
+	if abs(ps[0][0]) > ts or abs(ps[0][1]) > ts:
 		v = twoD_fine_search([sx,sy], data2)
 		s2x = shift[0]
 		s2y = shift[1]
@@ -5949,7 +5950,7 @@ def ali3d_e(stack, outdir, maskfile = None, ou = -1,  delta = 2, ts=0.25, center
 	"""
 
 	if MPI:
-		ali3d_e_MPI(stack, outdir, maskfile, ou, delta, ts=0.25, center, maxit,
+		ali3d_e_MPI(stack, outdir, maskfile, ou, delta, ts, center, maxit,
 				CTF, snr, sym, chunk, user_func_name, 
 				fourvar, debug)
 		return
@@ -6138,7 +6139,7 @@ def ali3d_e(stack, outdir, maskfile = None, ou = -1,  delta = 2, ts=0.25, center
 				if debug:
 					initial, dummy  = eqproj_cascaded_ccc(atparams, data)  # this is if we need initial discrepancy
 					outf.write("Image "+str(imn)+"\n")
-					outf.write('Old  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f  %11.4f'%(atparams[0], atparams[1], atparams[2], data[5][0], data[5][1], initial))
+					outf.write('Old  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f  %11.4f'%(phi,theta,psi,tx,ty,initial))
 					outf.write("\n")
 					
 				# change signs of shifts for projections
@@ -6327,7 +6328,7 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, center = 
 	v = K/2.0/N
 	params = {"filter_type": Processor.fourier_filter_types.KAISER_SINH_INVERSE, "alpha":alpha, "K":K, "r":r, "v":v, "N":N}
 
-	data = [None]*6
+	data = [None]*7
 	data[3] = mask2D
 	cs = [0.0]*3
 
@@ -6343,7 +6344,7 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, center = 
 				if debug:
 					finfo.write("  begin centering \n")
 					finfo.flush()
-				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center_MPI(dataim, nima, myid, number_of_proc, main_node)				
+				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center_MPI(dataim, nima, myid, number_of_proc, main_node)
 				cs = mpi_bcast(cs, 3, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 				cs = [float(cs[0]), float(cs[1]), float(cs[2])]
 				rotate_3D_shift(dataim, cs)
@@ -6423,7 +6424,7 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, center = 
 				if debug:
 					initial, dummy = eqproj_cascaded_ccc(atparams, data)  # this is if we need initial discrepancy
 					finfo.write("Image "+str(imn)+"\n")
-					finfo.write('Old  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f  %11.4f'%(atparams[0], atparams[1], atparams[2], data[5][0], data[5][1], initial))
+					finfo.write('Old  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f  %11.4f'%(phi,theta,psi,tx,ty, initial))
 					finfo.write("\n")
 				# change signs of shifts for projections
 
