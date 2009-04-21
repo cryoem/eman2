@@ -1478,14 +1478,14 @@ def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, listID = None):
 
 # k-means init for MPI version
 def k_means_init_MPI(stack):
-	from mpi 	  import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier, MPI_COMM_WORLD
-	from mpi          import mpi_bcast, MPI_INT
+	from mpi   import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier, MPI_COMM_WORLD
+	from mpi   import mpi_bcast, MPI_INT
 	import sys
 	
 	# init
-	sys.argv       = mpi_init(len(sys.argv),sys.argv)
-	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
-	myid           = mpi_comm_rank(MPI_COMM_WORLD)
+	sys.argv = mpi_init(len(sys.argv),sys.argv)
+	ncpu     = mpi_comm_size(MPI_COMM_WORLD)
+	myid     = mpi_comm_rank(MPI_COMM_WORLD)
 
 	# chose a main one
 	main_node = 0
@@ -1497,14 +1497,15 @@ def k_means_init_MPI(stack):
 	N = mpi_bcast(N, 1, MPI_INT, main_node, MPI_COMM_WORLD)
 	N = N.tolist()[0]
 
-	im_per_node = max(N / number_of_proc, 1)
-	N_start     = myid * im_per_node
-	if myid == (number_of_proc -1):
-		N_stop = N
-	else:
-		N_stop = min(N_start + im_per_node, N)
+	base = N // ncpu
+	left = N % ncpu
+	im_per_node = [base] * ncpu
+	for i in xrange(left): im_per_node[i] += 1
+	acum = [0] * (ncpu + 1)
+	for i in xrange(1, ncpu + 1): acum[i] += (acum[i - 1] + im_per_node[i - 1])
+	N_start, N_stop = acum[myid], acum[myid + 1]
 
-	return main_node, myid, number_of_proc, N_start, N_stop, N
+	return main_node, myid, ncpu, N_start, N_stop, N
 
 # k-means write the head of the logfile
 def k_means_headlog(stackname, outname, method, N, K, crit, maskname, trials, maxit, CTF, T0, F, rnd, ncpu):
@@ -2741,7 +2742,7 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 			Je         = 0
 			if SA:
 			   ct_pert = 0
-
+						
 			# [id] assign each images with err_min between all clusters averages
 			for im in xrange(N_start, N_stop):
 
@@ -3235,7 +3236,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 			print_msg('\n__ Trials: %2d _________________________________%s\n'%(ntrials, time.strftime('%a_%d_%b_%Y_%H_%M_%S', time.localtime())))
 			print_msg('Criterion: %11.6e \n' % Je)
 		th_update   = max(N // ncpu // 10, 10)
-		nb_update   = N // ncpu // th_update
+		#nb_update   = N // ncpu // th_update
 		flag_update = 0
 		
 		while change and watch_dog < maxit:
@@ -3250,7 +3251,6 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 			   ct_pert = 0
 			shuffle(loc_order)	
 			ct_update  = 0
-			ct_nupdate = 0
 			# [id] random number to image
 			for n in xrange(N_start, N_stop):
 				order[n] = loc_order[index]
@@ -3258,11 +3258,13 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 			imn = N_start
 			all_proc_end = 0
 
-			toto = 1
+			#if myid == main_node:
+			#	Cls['ave'][0].write_image('test.hdf', ite-1)
+
 			while imn < N_stop:
 				# to select random image
-				im        = order[imn]
-				imn      +=  1
+				im  = order[imn]
+				imn +=  1
 					
 				# [all] compute min dist between object and centroids
 				if CTF:
@@ -3302,14 +3304,10 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 				if res['pos'] != assign[im]:
 					assign[im] = res['pos']
 					change     = 1
-
-				'''
-				JB: Need to check
+				
 				# [all] update to SSE method
 				ct_update += 1
-				if ct_update >= th_update and ct_nupdate <= nb_update:
-					ct_nupdate += 1
-					ct_update = 0
+				if ct_update % th_update == 0:
 					mpi_barrier(MPI_COMM_WORLD)
 	
 				        # [id] compute the number of objects
@@ -3380,9 +3378,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 
 					# [all] waiting the result
 					mpi_barrier(MPI_COMM_WORLD)
-
-				toto += 1
-				'''
+		
 														
 			# [sync]
 			mpi_barrier(MPI_COMM_WORLD)
