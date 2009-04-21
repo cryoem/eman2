@@ -1903,9 +1903,9 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	for it in xrange(len(data)):
 		alpha, sx, sy, mirror, scale = get_params2D(data[it])
 		#   Consider only rotation
-		#sx=sy=0
+		#sx=sy=mirror = 0
 		ima = rot_shift2D(data[it], alpha, sx, sy, mirror, 1.0, interpolation)
-		#set_params2D(data[it], [0.0, 0.0, 0.0, 0, 1.0])
+		#set_params2D(data[it], [alpha, sx, sy, mirror, 1.0])
 		dali[it] = ima
 		Util.add_img(tavg, ima)
 	reduce_EMData_to_root(tavg, myid, main_node)
@@ -1961,6 +1961,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	msg = "\nklr = %5i  delta = %8.5f   \n"%(klr, delta)
 	if myid == main_node: print_msg(msg)
 	klr -= 1
+	witer = -1
 	for N_step in xrange(len(xrng)):
 		msg = "\nX range = %5.2f   Y range = %5.2f   Step = %5.2f\n"%(xrng[N_step], yrng[N_step], step[N_step])
 		kxr = int(xrng[N_step]/step[N_step] + 0.5)
@@ -2012,12 +2013,14 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				cs = [0.0]*2
 
 
-				from statistics import ave_var
+				#from statistics import ave_var
 				#ave,var = ave_var(dali, mode = "")
 				#drop_image(ave, os.path.join(outdir, "Aqc_%06d.hdf"%(total_iter)))
 				#drop_image(var, os.path.join(outdir, "Vqc_%06d.hdf"%(total_iter)))
 				#if(total_iter%1 == 0):  drop_image(tavg, os.path.join(outdir, "tqc_%06d.hdf"%(total_iter)))
-				tavg.write_image(os.path.join(outdir, "tqc.hdf"),total_iter)
+				if(total_iter%20 == 0):
+					witer += 1
+					tavg.write_image(os.path.join(outdir, "tqc.hdf"),witer)
 				a1 = tavg.cmp("dot", tavg, dict(negative = 0, mask = mask))
 				msg = "ITERATION   #%7d    criterion = %15.7e    T = %12.3e\n"%(total_iter, a1, T)
 				print_msg(msg)
