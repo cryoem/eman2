@@ -96,9 +96,10 @@ class TomogramZProjectionImage:
 	
 	def get_image(self):
 		if self.image == None:
-			tmp = EMData(self.file_name)
+			tmp = EMData()
+			tmp.read_image(self.file_name,0)
 			self.image = tmp.project("standard",Transform())
-			self.image.write_image("result.mrc")
+			self.image.set_attr("z_height",tmp.get_zsize())
 #			nx,ny,nz = gimme_image_dimensions3D(self.file_name)
 #			self.image = EMData(nx,ny)
 #			self.image.to_zero()
@@ -151,7 +152,9 @@ class EMTBBoxManipulations():
 		'''
 		@param a QtGui.QMouseEvent sent from the EMImage2DModule
 		'''
-		coord_data = self.main_2d_window.scr_to_img((event.x(),event.y()))
+		coord_data = list(self.main_2d_window.scr_to_img((event.x(),event.y())))
+		coord_data[0] = int(coord_data[0])
+		coord_data[1] = int(coord_data[1])
 		box_num =  self.__box_collision_detect(coord_data)
 		if box_num == -1:
 			if not self.main_2d_window.coords_within_image_bounds(coord_data):	return
@@ -166,10 +169,6 @@ class EMTBBoxManipulations():
 			
 			self.target().add_box(box)
 			self.moving=[coord_data,box_num]
-			
-			self.main_2d_window.set_active(box_num,.9,.9,.2)
-			self.main_2d_window.updateGL()
-			
 		
 		elif event.modifiers()&Qt.ShiftModifier : # box removal
 			self.target().remove_box(box_num)
@@ -184,7 +183,9 @@ class EMTBBoxManipulations():
 		@param a QtGui.QMouseEvent sent from the EMImage2DModule
 		'''
 		
-		coord_data = self.main_2d_window.scr_to_img((event.x(),event.y()))
+		coord_data = list(self.main_2d_window.scr_to_img((event.x(),event.y())))
+		coord_data[0] = int(coord_data[0])
+		coord_data[1] = int(coord_data[1])
 		
 		if event.modifiers()&Qt.ShiftModifier:
 			box_num = self.__box_collision_detect(coord_data)
@@ -216,7 +217,6 @@ class EMTBBoxManipulations():
 		'''
 		pass
 	
-
 class EMBoxList:
 	'''
 	Meant to store the primary data associated with a box, namely its bottom left and top right
@@ -267,7 +267,7 @@ class EMBoxList:
 		'''
 		@param the box size - this is much more like diameter than it is radius
 		@exception RuntimeError raised if the box_size is less than 1
-		#exception RuntimeError raised if the first internally stored box is not a square - to alert developers if things change
+		#exception RuntimeError raised if the first internally stored box is not a square - to alert developers if they have changed this
 		'''
 		if new_box_size < 1: raise RuntimeError("The boxsize must be at least 1")
 		if len(self.boxes) == 0: return # this is fine, the calling program might not know and there is not box_size attribute
@@ -276,6 +276,7 @@ class EMBoxList:
 		old_box_size = box_0[2]-box_0[0] # note no consideration 
 		check_box_size = box_0[3]-box_0[1]
 		if old_box_size != check_box_size:
+			print box_0,old_box_size,check_box_size
 			raise NotImplementedError("This code does not currently handle uneven box dimensions - developer alert") 
 	
 		box_shift = (new_box_size - old_box_size)/2 # this should be fine for odd sizes
@@ -287,8 +288,6 @@ class EMBoxList:
 		
 		self.boxes = new_boxes
 			
-		
-	
 	def move_box(self,idx,dx,dy):
 		'''
 		move box at idx in the x and y direction
@@ -376,6 +375,7 @@ class EMTomoBoxerModule:
 		self.box_size = 256
 		self.box_list = EMBoxList()
 		self.active_box = -1 # an index storing which box the user had clicked on
+		self.positioning_2d_window = None # will eventually be used to position boxed images in the z direction
 		
 		# initialize mouse  handlers first
 		self.__init_signal_handlers()
@@ -399,19 +399,25 @@ class EMTomoBoxerModule:
 	def __init_main_2d_window(self):
 		'''
 		Called internally to initialize the main 2D image viewing window.
-		Also connects signals to their corresponding slots
+		Also creates a signal handler for managing box addition, movement and removal
 		'''
-		from PyQt4 import QtCore
 		
 		self.main_2d_window = EMImage2DModule()
 		self.main_2d_window.set_data(ZProjectionCache.get_image_directly(self.file_name),self.file_name)
-		get_application().show_specific(self.main_2d_window)
-		
 		self.main_2d_window.setWindowTitle(self.file_name)
 		
 		self.signal_slot_handlers["box_manipulation"] = EMTBBoxManipulations(self,self.main_2d_window)
+	
+	def __init_positioning_2d_window(self):
+		'''
+		Called internally to intiialize the 2D window used to center the box in the z direction
+		Also connects signals to their corresponding 
+		'''
+		self.positioning_2d_window = EMImage2DModule()
+		self.positioning_2d_window.setWindowTitle("Z positioning")
 		
-				
+		self.signal_slot_handlers["position_manipulation"] = EMTBBoxManipulations(self,self.positioning_2d_window)
+		
 	def show_guis(self):
 		'''
 		Called in the context of an application - generally one creates and application, then
@@ -487,6 +493,7 @@ class EMTomoBoxerModule:
 		self.main_2d_window.set_active(self.active_box,.9,.9,.1)
 		self.main_2d_window.shapechange = 1
 		self.main_2d_window.updateGL()
+		self.__refresh_positioner()
 	
 	def __refresh_box_display(self):
 		'''
@@ -496,9 +503,32 @@ class EMTomoBoxerModule:
 		shapes = EMBoxDisplayShapes.gen_shapes(self.box_list,self.get_shape_string())
 		self.main_2d_window.set_shapes(shapes,1.0)
 		self.main_2d_window.set_active(self.active_box,.9,.9,.1)
-		print self.active_box
 		self.main_2d_window.updateGL()
 		
+		self.__refresh_positioner()
+		
+	def __refresh_positioner(self):
+		if self.active_box != -1:
+			box = self.box_list[self.active_box]
+			nz = ZProjectionCache.get_image_directly(self.file_name).get_attr("z_height")
+			nx = box[2]-box[0]
+			ny = box[3]-box[1]
+			
+			region = Region(box[0],box[1],0,nx,ny,nz)
+			a = EMData()
+			a.read_image(self.file_name,0,False,region)
+			b = a.process("misc.directional_sum",{"direction":"y"})
+			b.set_size(int(nx),int(nz),1)
+			if self.positioning_2d_window == None:
+				self.__init_positioning_2d_window()
+				self.positioning_2d_window.set_data(b)
+				get_application().show_specific(self.positioning_2d_window)
+				self.positioning_2d_window.optimally_resize()
+			else:
+				self.positioning_2d_window.set_data(b)
+				
+			self.positioning_2d_window.updateGL()
+			
 
 class EMTomoBoxerInspectorModule(EMQtWidgetModule):
 	'''

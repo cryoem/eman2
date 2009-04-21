@@ -255,6 +255,8 @@ template <> Factory < Processor >::Factory()
 	force_add(&FFTProcessor::NEW);
 	force_add(&RadialProcessor::NEW);
 	
+	force_add(&DirectionalSumProcessor::NEW);
+	
 #ifdef EMAN2_USING_CUDA
 	force_add(&CudaMultProcessor::NEW);
 	force_add(&CudaCorrelationProcessor::NEW);
@@ -5891,6 +5893,46 @@ void IterBinMaskProcessor::process_inplace(EMData * image)
 
 	image->update();
 	delete image2;
+}
+
+EMData* DirectionalSumProcessor::process(const EMData* const image ) {
+	string dir = params.set_default("direction", "");
+	if ( dir == "" || ( dir != "x" && dir != "y" && dir != "z" ) )
+		throw InvalidParameterException("The direction parameter must be either x, y, or z");
+	
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+	
+	// compress one of the dimensions
+	if ( dir == "x" ) nx = 1;
+	else if ( dir == "y" ) ny = 1;
+	else if ( dir == "z" ) nz = 1;
+	
+	EMData* ret = new EMData;
+	ret->set_size(nx,ny,nz);
+	ret->to_zero();
+	
+	float* d = image->get_data();
+	for(int k = 0; k < image->get_zsize(); ++k ) {
+		for(int j = 0; j < image->get_ysize(); ++j ) {
+			for(int i = 0; i < image->get_xsize(); ++i, ++d ) {
+				if ( dir == "x" ) {
+					float v = ret->get_value_at(0,j,k);
+					ret->set_value_at(0,j,k,*d+v);
+				}else if ( dir == "y" ) {
+					float v = ret->get_value_at(i,0,k);
+					ret->set_value_at(i,0,k,*d+v);
+				}
+				else if ( dir == "z" ) {
+					float v = ret->get_value_at(i,j,0);
+					ret->set_value_at(i,j,0,*d+v);
+				}
+			}
+		}
+	}
+	ret->update();
+	return ret;
 }
 
 void TestImageProcessor::preprocess(EMData * image)

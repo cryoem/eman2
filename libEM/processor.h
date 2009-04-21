@@ -4810,6 +4810,48 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	};
 
 
+	/**Does a projection in one the axial directions
+	 * Doesn't support process_inplace (because the output has potentially been compressed in one dimension)
+	 */
+	class DirectionalSumProcessor : public Processor
+	{
+	  public:
+		virtual string get_name() const
+		{
+			return "misc.directional_sum";
+		}
+		
+		static Processor *NEW()
+		{
+			return new DirectionalSumProcessor();
+		}
+		
+		/**
+		 * @exception InvalidParameterException raised if the direction parameter is not "x", "y" or "z"
+		 */
+		virtual EMData* process(const EMData* const image);
+		
+		/**
+		 * @exception InvalidCallException raised if this function is called
+		 */
+		virtual void process_inplace(EMData* image ) {
+			throw InvalidCallException("The directional sum processor does not work inplace");
+		}
+		
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("direction", EMObject::STRING,"The direction of the sum, either x,y or z");
+			return d;
+		}
+
+		string get_desc() const
+		{
+			return "Calculates the projection of the image along one of the axial directions, either x, y or z";
+		}
+
+	};
+	
 	/**'paints' a circle into the image at x,y,z with values inside r1 set to v1, values between r1 and r2 will be set to a
 	 *	value between v1 and v2, and values outside r2 will be unchanged
 	 */
