@@ -2388,9 +2388,9 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				data[im-image_start] -= st[0]
 				data[im-image_start] = filt_ctf(data[im-image_start], ctf_params)
 				data[im-image_start].set_attr('ctf_applied', 1)
-	 		Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
+	 		#Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
 
-		reduce_EMData_to_root(ctf_2_sum, myid, main_node)
+		#reduce_EMData_to_root(ctf_2_sum, myid, main_node)
 		# bring ctf2 together, keep them only on main node,  strange trick required because mpi_reduce changes the nformat to numarray
 		s = shape(ctf2)
 		ctf2  = mpi_reduce(ctf2, 2*lctf, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
@@ -2422,7 +2422,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		sx_sum = 0.0
 		sy_sum = 0.0
 		a0 = -1.0e22
-		
+
 	again = True
 	total_iter = 0
 	cs = [0.0]*2
@@ -2467,7 +2467,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				"""
 
 				if CTF:
-					#tavg = filt_table(Util.addn_img(av1, av2), ctfb2)
+					tavg = filt_table(Util.addn_img(av1, av2), ctfb2)
 					av1  = filt_table(av1, ctf2n[0])
 					av2  = filt_table(av2, ctf2n[1])
 				else:
@@ -2503,8 +2503,8 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 
 				# a0 should increase; stop algorithm when it decreases.    
 				a1 = tavg.cmp("dot", tavg, dict(negative = 0, mask = ref_data[0]))
-				#msg = "Iteration   #%5d	     criterion = %20.7e\n"%(total_iter, a1)
-				msg = "Iteration   #%5d	     criterion = %20.7e\n"%(total_iter, sum_SSNR)
+				msg = "Iteration   #%5d	     criterion = %20.7e\n"%(total_iter, a1)
+				#msg = "Iteration   #%5d	     criterion = %20.7e\n"%(total_iter, sum_SSNR)
 				print_msg(msg)
 				
 				# write the current filtered average
