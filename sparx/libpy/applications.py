@@ -386,7 +386,7 @@ def ali2d_a_MPI_(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", 
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
 
-	number_of_ave = 8
+	number_of_ave = 4
 	color = myid%number_of_ave
 	key = myid/number_of_ave
 	group_comm = mpi_comm_split(MPI_COMM_WORLD, color, key)
@@ -5408,7 +5408,7 @@ def get_refiparams(nx):
 
 
 
-def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, maxit=10, nassign=4, nrefine=1, CTF = None, snr=1.0, sym="c1", user_func_name="ref_ali3d", fourvar=False, debug=False ):
+def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxit=10, nassign=4, nrefine=1, CTF = None, snr=1.0, sym="c1", user_func_name="ref_ali3d", fourvar=False, debug=False ):
 	"""
 		
 	"""
@@ -5484,7 +5484,7 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, maxit=10, nas
 		print_msg("Output directory            : %s\n"%(outdir))
 		print_msg("Maskfile                    : %s\n"%(maskfile))
 		print_msg("Angular step                : %f\n"%(delta))
-
+		print_msg("Shift search range          : %f\n"%(ts))
 
 	if(myid == main_node):
        		if(file_type(stack) == "bdb"):
@@ -5580,6 +5580,7 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, maxit=10, nas
 					if ctf.defocus != previous_defocus:
 						ctfvol = filt_ctf( vol, ctf )
 						volft, kb = prep_vol( ctfvol )
+						previous_defocus = ctf.defocus
 
 				phi,tht,psi,s2x,s2y = get_params_proj(img)
 				if runtype=="ASSIGNMENT":
@@ -5599,7 +5600,7 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, maxit=10, nas
 					refdata[3] = mask2D
 					refdata[4] = refi
 					refdata[5] = [-s2x,-s2y]
-				
+					refdata[6] = ts
 					weight_phi = max(delta, delta*abs((tht-90.0)/180.0*pi))
 					[ang,peak,iter,sft] = amoeba_multi_level([phi,tht,psi],[weight_phi,delta,weight_phi],eqproj_cascaded_ccc, 1.0,1.e-2, 500, refdata)
 					if not(finfo is None):
@@ -5663,7 +5664,7 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, maxit=10, nas
 			refdata[2] = fscc
 			refdata[3] = iteration
 			refdata[4] = varf
-			refdata[5] = fscmask
+			refdata[5] = mask3D
 			refdata[6] = False
 			user_func( refdata )
 
@@ -5677,16 +5678,16 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, maxit=10, nas
 		else:
 			par_str = ["group", "ID"]
 
-		if myid == main_node:
-			from utilities import file_type
-			if(file_type(stack) == "bdb"):
-				from utilities import recv_attr_dict_bdb
-				recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
-			else:
-				from utilities import recv_attr_dict
-				recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
-		else:           
-			send_attr_dict(main_node, data, par_str, image_start, image_end)
+		#if myid == main_node:
+		#	from utilities import file_type
+		#	if(file_type(stack) == "bdb"):
+		#		from utilities import recv_attr_dict_bdb
+		#		recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+		#	else:
+		#		from utilities import recv_attr_dict
+		#		recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+		#else:           
+		#	send_attr_dict(main_node, data, par_str, image_start, image_end)
 
 def ali3d_en_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CTF = None, snr=1.0, sym="c1", chunk=0.101):
 	"""
@@ -5885,48 +5886,62 @@ def eqproj_cascaded_ccc(args, data):
 
 	volft 	= data[0]
 	kb	= data[1]
+	prj	= data[2]
 	mask2D	= data[3]
 	refi	= data[4]
-
+	shift	= data[5]
+	ts	= data[6]
 
 	R = Transform({"type":"spider", "phi":args[0], "theta":args[1], "psi":args[2], "tx":0.0, "ty":0.0, "tz":0.0, "mirror":0, "scale":1.0})
-	temp = data[0].extract_plane(R, data[1])
+	temp = volft.extract_plane(R, kb)
 	temp.fft_shuffle()
 	temp.center_origin_fft()
+	if ts==0 and (shift[0]!=0. or shift[1]!=0.):
+		filt_params = {"filter_type" : Processor.fourier_filter_types.SHIFT,
+			       "x_shift" : shift[0], "y_shift" : shift[1], "z_shift" : 0.0}
+		temp=Processor.EMFourierFilter(temp, filt_params)
+	
 	temp.do_ift_inplace()
 	M = temp.get_ysize()/2
-	proj = temp.window_center(M)
+	refprj = temp.window_center(M)
+
+	if ts==0.0:
+		return ccc(prj,refprj,mask2D)
 	
-	proj.process_inplace("normalize.mask", {"mask":data[3], "no_sigma":1})
-	proj *= data[3]
+	refprj.process_inplace("normalize.mask", {"mask":mask2D, "no_sigma":1})
+	refprj *= mask2D
 	
 	nx = proj.get_ysize()
-	sx = (nx-data[5][0]*2)/2
-	sy = (nx-data[5][1]*2)/2
+	sx = (nx-shift[0]*2)/2
+	sy = (nx-shift[1]*2)/2
 	
-	proj2x = fpol(proj, 2*M, 2*M)
+	proj2x = fpol(refprj, 2*M, 2*M, 0, False)
 	product = ccf(proj2x, data[4])
 
 	data2 = [0]*2
 	data2[0] = product
-	data2[1] = data[1]
-	ps = amoeba([sx, sy], [1.0, 1.0], twoD_fine_search, 1.e-4, 1.e-4, 500, data2)
+	data2[1] = kb
+	ps = amoeba([sx, sy], [ts, ts], twoD_fine_search, 1.e-4, 1.e-4, 500, data2)
 
-	v = ps[1]
-	s2x = nx/2-ps[0][0]
-	s2y = nx/2-ps[0][1]
+	if abs(ps[0][0] > ts or abs(ps[0][1]) > ts:
+		v = twoD_fine_search([sx,sy], data2)
+		s2x = shift[0]
+		s2y = shift[1]
+	else:
+		v = ps[1]
+		s2x = nx/2-ps[0][0]
+		s2y = nx/2-ps[0][1]
 
 	#params2 = {"filter_type":Processor.fourier_filter_types.SHIFT, "x_shift":s2x, "y_shift":s2y, "z_shift":0.0}
-	#temp2 = Processor.EMFourierFilter(temp, params2)
+	#temp2 = Processor.EMFourierFilter(temp.window_center(M), params2)
 	#v = temp2.cmp("ccc", data[2], {"mask":data[3], "negative":0})
-	
 	return v, [s2x, s2y]
 
 def twoD_fine_search(args, data):
 	return data[0].get_pixel_conv7(args[0]*2, args[1]*2, 0.0, data[1])
 
 
-def ali3d_e(stack, outdir, maskfile = None, ou = -1,  delta = 2, center = -1, maxit = 10, 
+def ali3d_e(stack, outdir, maskfile = None, ou = -1,  delta = 2, ts=0.25, center = -1, maxit = 10, 
            CTF = False, snr = 1.0, sym = "c1", chunk = -1.0, user_func_name = "ref_ali3d",
 	     fourvar = True, debug = False, MPI = False):
 	"""
@@ -5934,7 +5949,7 @@ def ali3d_e(stack, outdir, maskfile = None, ou = -1,  delta = 2, center = -1, ma
 	"""
 
 	if MPI:
-		ali3d_e_MPI(stack, outdir, maskfile, ou, delta, center, maxit,
+		ali3d_e_MPI(stack, outdir, maskfile, ou, delta, ts=0.25, center, maxit,
 				CTF, snr, sym, chunk, user_func_name, 
 				fourvar, debug)
 		return
@@ -5982,6 +5997,7 @@ def ali3d_e(stack, outdir, maskfile = None, ou = -1,  delta = 2, center = -1, ma
 	print_msg("Maskfile                    : %s\n"%(maskfile))
 	print_msg("Outer radius                : %i\n"%(last_ring))
 	print_msg("Angular search range        : %s\n"%(delta))
+	print_msg("Translation search range    : %f\n"%(ts))
 	print_msg("Maximum iteration           : %i\n"%(max_iter))
 	print_msg("Center type                 : %i\n"%(center))
 	print_msg("Data with CTF               : %s\n"%(CTF))
@@ -6108,14 +6124,17 @@ def ali3d_e(stack, outdir, maskfile = None, ou = -1,  delta = 2, center = -1, ma
 
 				data[2] = dataim[imn]
 
-				refi = dataim[imn].copy()
-				refi = refi.FourInterpol(nx*2, nx*2, 0, True)
-				data[4] = Processor.EMFourierFilter(refi, params)
+				if ts > 0.0:
+					refi = dataim[imn].FourInterpol(nx*2, nx*2, 0, False)
+					data[4] = Processor.EMFourierFilter(refi, params)
 				
 				phi, theta, psi, tx, ty = get_params_proj(dataim[imn])
 				atparams = [phi, theta, psi]
 				data[5] = [tx, ty]
-				data[6] = True # whether run amoeba to get optimized shift,always true for ali3d_d
+				data[6] = ts
+				data[5][0] *= -1
+				data[5][1] *= -1
+
 				if debug:
 					initial, dummy  = eqproj_cascaded_ccc(atparams, data)  # this is if we need initial discrepancy
 					outf.write("Image "+str(imn)+"\n")
@@ -6123,9 +6142,7 @@ def ali3d_e(stack, outdir, maskfile = None, ou = -1,  delta = 2, center = -1, ma
 					outf.write("\n")
 					
 				# change signs of shifts for projections
-				data[5][0] *= -1
-				data[5][1] *= -1
-
+			
 				weight_phi = max(delta, delta*abs((atparams[1]-90.0)/180.0*pi))
 
 				optm_params = amoeba_multi_level(atparams, [weight_phi, delta, weight_phi], eqproj_cascaded_ccc, 1.e-4, 1.e-4, 500, data)
@@ -6146,7 +6163,7 @@ def ali3d_e(stack, outdir, maskfile = None, ou = -1,  delta = 2, center = -1, ma
 			#write_headers(stack, dataim, list_of_particles)
 
 
-def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, center = -1, maxit = 10, 
+def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, center = -1, maxit = 10, 
                 CTF = False, snr = 1.0, sym = "c1", chunk = -1.0, user_func_name = "ref_ali3d",
 		    fourvar = True, debug = False):
 	"""
@@ -6246,6 +6263,7 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, center = -1, maxit
 		print_msg("Maskfile                    : %s\n"%(maskfile))
 		print_msg("Outer radius                : %i\n"%(last_ring))
 		print_msg("Angular search range        : %s\n"%(delta))
+		print_msg("Shift search range          : %f\n"%(ts))
 		print_msg("Maximum iteration           : %i\n"%(max_iter))
 		print_msg("Center type                 : %i\n"%(center))
 		print_msg("Data with CTF               : %s\n"%(CTF))
@@ -6391,13 +6409,16 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, center = -1, maxit
 						data[0], data[1] = prep_vol(filt_ctf(vol, ctf_params))
 
 				data[2] = dataim[imn-image_start]
-				refi = dataim[imn-image_start].copy()
-				refi = refi.FourInterpol(nx*2, nx*2, 0, True)
-				data[4] = Processor.EMFourierFilter(refi, params)
+				if ts > 0.0:
+					refi = dataim[imn-image_start].FourInterpol(nx*2, nx*2, 0, True)
+					data[4] = Processor.EMFourierFilter(refi, params)
 
 				phi, theta, psi, tx, ty = get_params_proj(dataim[imn-image_start])
 				atparams = [phi, theta, psi]
 				data[5] = [tx, ty]
+				data[6] = ts
+				data[5][0] *= -1
+				data[5][1] *= -1
 
 				if debug:
 					initial, dummy = eqproj_cascaded_ccc(atparams, data)  # this is if we need initial discrepancy
@@ -6405,8 +6426,6 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, center = -1, maxit
 					finfo.write('Old  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f  %11.4f'%(atparams[0], atparams[1], atparams[2], data[5][0], data[5][1], initial))
 					finfo.write("\n")
 				# change signs of shifts for projections
-				data[5][0] *= -1
-				data[5][1] *= -1
 
 				weight_phi = max(delta, delta*abs((atparams[1]-90.0)/180.0*pi))
 
