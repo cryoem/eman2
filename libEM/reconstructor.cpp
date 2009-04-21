@@ -2810,6 +2810,8 @@ void nn4_ctfReconstructor::setup()
 	string symmetry = params.has_key("symmetry")? params["symmetry"].to_str() : "c1";
 
 	float snr = params["snr"];
+
+    m_varsnr = params.has_key("varsnr") ? int(params["varsnr"]) : 0;
 	setup( symmetry, size, npad, snr, sign );
 
 }
@@ -3005,8 +3007,17 @@ EMData* nn4_ctfReconstructor::finish()
 				if ( (*m_wptr)(ix,iy,iz) > 0.0f) {//(*v) should be treated as complex!!
                     int iyp = (iy<=m_vnyc) ? iy - 1 : iy-m_vnyp-1;
                     int izp = (iz<=m_vnzc) ? iz - 1 : iz-m_vnzp-1;
-					float freq = sqrt( (float)(ix*ix+iyp*iyp+izp*izp) );
-					float  tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+freq*osnr)*m_sign;
+                    float tmp=0.0;
+                    if( m_varsnr )
+                    {
+					    float freq = sqrt( (float)(ix*ix+iyp*iyp+izp*izp) );
+                        tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+freq*osnr)*m_sign;
+                    }
+                    else
+                    {
+                        tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+osnr)*m_sign;
+                    }
+
 					if( m_weighting == ESTIMATE ) {
 						int cx = ix;
 						int cy = (iy<=m_vnyc) ? iy - 1 : iy - 1 - m_vnyp;

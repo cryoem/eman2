@@ -952,7 +952,8 @@ namespace EMAN
 			d.put("snr",		EMObject::FLOAT);
 			d.put("fftvol",		EMObject::EMDATA);
 			d.put("weight",		EMObject::EMDATA);
-                        d.put("weighting",      EMObject::INT);
+            d.put("weighting",  EMObject::INT);
+            d.put("varsnr",     EMObject::INT);
 			return d;
 		}
 
@@ -972,6 +973,7 @@ namespace EMAN
 		int m_vnxc, m_vnyc, m_vnzc;
 		int m_npad;
 		int m_sign;
+        int m_varsnr;
 		int m_weighting;
 		float m_wghta, m_wghtb;
 		float m_snr;
