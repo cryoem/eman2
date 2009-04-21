@@ -141,9 +141,16 @@ class EMTBBoxManipulations():
 		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mousewheel"),self.mouse_wheel)
 
 	def __box_collision_detect(self,coord_data):
+		'''
+		A wrapper function that could easily disappear
+		@param coord_data a coordinate interms of the main image's pixel coordinate system
+		'''
 		return self.target().detect_box_collision(coord_data)
 	
 	def mouse_down(self,event) :
+		'''
+		@param a QtGui.QMouseEvent sent from the EMImage2DModule
+		'''
 		coord_data = self.main_2d_window.scr_to_img((event.x(),event.y()))
 		box_num =  self.__box_collision_detect(coord_data)
 		if box_num == -1:
@@ -156,8 +163,13 @@ class EMTBBoxManipulations():
 			lbx = coord_data[0]-box_size/2
 			lby = coord_data[1]-box_size/2
 			box = [lbx,lby,lbx+box_size,lby+box_size]
+			
 			self.target().add_box(box)
 			self.moving=[coord_data,box_num]
+			
+			self.main_2d_window.set_active(box_num,.9,.9,.2)
+			self.main_2d_window.updateGL()
+			
 		
 		elif event.modifiers()&Qt.ShiftModifier : # box removal
 			self.target().remove_box(box_num)
@@ -165,9 +177,13 @@ class EMTBBoxManipulations():
 			# if we make it here than the we're moving a box
 			box = self.target().get_box(box_num)
 			self.moving=[coord_data,box_num]
-			self.main_2d_window.set_active(box_num,.9,.9,.4)
+			self.target().set_active_box(box_num)
 							
 	def mouse_drag(self,event) :
+		'''
+		@param a QtGui.QMouseEvent sent from the EMImage2DModule
+		'''
+		
 		coord_data = self.main_2d_window.scr_to_img((event.x(),event.y()))
 		
 		if event.modifiers()&Qt.ShiftModifier:
@@ -183,11 +199,22 @@ class EMTBBoxManipulations():
 			self.moving[0] = coord_data
 	
 	def mouse_up(self,event) :
+		'''
+		@param a QtGui.QMouseEvent sent from the EMImage2DModule
+		'''
 		if self.moving != None:
 			self.moving=None
-			
-	def key_press(self,event): pass
-	def mouse_wheel(self,event): pass
+		
+	def key_press(self,event):
+		'''
+		@param a QtGui.QKeyEvent sent from the EMImage2DModule
+		'''
+		pass 
+	def mouse_wheel(self,event):
+		'''
+		@param a QtGui.QMouseEvent sent from the EMImage2DModule
+		'''
+		pass
 	
 
 class EMBoxList:
@@ -195,7 +222,9 @@ class EMBoxList:
 	Meant to store the primary data associated with a box, namely its bottom left and top right
 	coordinates. Stores coordinates as a list of length 4, e.g.
 	[bottom left x, bottom left y, top right x, top right y]
-	Provides additional collision detection functionality 
+	Provides additional collision detection functionality
+	Provides additional box size changing and box moving functionality
+	Supports list-style iterator support 
 	'''
 	def __init__(self):
 		self.boxes = [] # main data container
@@ -346,6 +375,7 @@ class EMTomoBoxerModule:
 		self.file_name = file_name
 		self.box_size = 256
 		self.box_list = EMBoxList()
+		self.active_box = -1 # an index storing which box the user had clicked on
 		
 		# initialize mouse  handlers first
 		self.__init_signal_handlers()
@@ -429,6 +459,7 @@ class EMTomoBoxerModule:
 		See EMBoxList.append help
 		'''
 		self.box_list.append(box)
+		self.active_box = len(self.box_list)-1
 		self.__refresh_box_display()
 	
 	def remove_box(self,box_idx):
@@ -450,7 +481,13 @@ class EMTomoBoxerModule:
 		See EMBoxList.__getitem__ for help
 		'''
 		return self.box_list[box_idx]
-							
+	
+	def set_active_box(self,box_idx):
+		self.active_box = box_idx
+		self.main_2d_window.set_active(self.active_box,.9,.9,.1)
+		self.main_2d_window.shapechange = 1
+		self.main_2d_window.updateGL()
+	
 	def __refresh_box_display(self):
 		'''
 		Refreshes the display of boxes. Typically called when a box has been added or moved.
@@ -458,6 +495,8 @@ class EMTomoBoxerModule:
 		'''
 		shapes = EMBoxDisplayShapes.gen_shapes(self.box_list,self.get_shape_string())
 		self.main_2d_window.set_shapes(shapes,1.0)
+		self.main_2d_window.set_active(self.active_box,.9,.9,.1)
+		print self.active_box
 		self.main_2d_window.updateGL()
 		
 
@@ -485,8 +524,6 @@ class EMTomoBoxerInspector(QtGui.QWidget):
 		self.vbl.setMargin(0)
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
-		
-		
 		
 		box_size_hbl=QtGui.QHBoxLayout()
 		box_size_hbl.setMargin(0)

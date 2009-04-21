@@ -1352,6 +1352,11 @@ class EMImage2DModule(EMGUIModule):
 		
 		
 		for k,s in self.shapes.items():
+			if k == self.active[0]:
+				vals = s.shape[1:8]
+				vals[0:3] = self.active[1:4]
+				Util.colored_rectangle(vals,alpha)
+				continue
 			try:
 				Util.colored_rectangle(s.shape[1:8],alpha)
 			except: pass
