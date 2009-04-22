@@ -805,6 +805,13 @@ class EMImageMXModule(EMGUIModule):
 		self.nimg=len(self.data)
 		self.max_idx = len(self.data)
 		if self.nimg == 0: return # the list is empty
+			
+		global HOMEDB
+		HOMEDB=EMAN2db.EMAN2DB.open_db()
+		HOMEDB.open_dict("display_preferences")
+		db = HOMEDB.display_preferences
+		auto_contrast = db.get("display_stack_auto_contrast",dfl=True)
+		start_guess = db.get("display_stack_np_for_auto",dfl=5)
 		
 		d = self.data[0]
 
@@ -813,13 +820,20 @@ class EMImageMXModule(EMGUIModule):
 		m0=d.get_attr("minimum")
 		m1=d.get_attr("maximum")
 		
-		self.minden=max(m0,mean-8.0*sigma)
-		self.maxden=min(m1,mean+8.0*sigma)
-		self.mindeng=max(m0,mean-8.0*sigma)
-		self.maxdeng=min(m1,mean+8.0*sigma)
 		
-		start_guess = 5
-		if start_guess > len(self.data):start_guess = len(self.data)
+		if auto_contrast:
+			mn=max(m0,mean-3.0*sigma)
+			mx=min(m1,mean+3.0*sigma)
+		else:
+			mn=m0
+			mx=m1
+			
+		self.minden=mn
+		self.maxden=mx
+		self.mindeng=m0
+		self.maxdeng=m1
+
+		if start_guess > len(self.data) or start_guess < 0 :start_guess = len(self.data)
 		for j in range(1,5): # just have a look at the first 5 to see if we've got the stats about right
 			i = self.data[j]
 			if i == None: continue
@@ -833,10 +847,19 @@ class EMImageMXModule(EMGUIModule):
 			m1=i.get_attr("maximum")
 			if sigma == 0: continue
 
-			self.minden=min(self.minden,max(m0,mean-8.0*sigma))
-			self.maxden=max(self.maxden,min(m1,mean+8.0*sigma))
-			self.mindeng=min(self.mindeng,max(m0,mean-8.0*sigma))
-			self.maxdeng=max(self.maxdeng,min(m1,mean+8.0*sigma))
+
+			if auto_contrast:
+				mn=max(m0,mean-3.0*sigma)
+				mx=min(m1,mean+3.0*sigma)
+			else:
+				mn=m0
+				mx=m1
+		
+			
+			self.minden=min(self.minden,mn)
+			self.maxden=max(self.maxden,mx)
+			self.mindeng=min(self.mindeng,m0)
+			self.maxdeng=max(self.maxdeng,m1)
 
 		if self.inspector: self.inspector.set_limits(self.mindeng,self.maxdeng,self.minden,self.maxden)
 		

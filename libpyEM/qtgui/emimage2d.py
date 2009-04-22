@@ -750,6 +750,11 @@ class EMImage2DModule(EMGUIModule):
 		#except: pass
 	
 	def auto_contrast(self,bool=False,inspector_update=False,display_update=True):
+		global HOMEDB
+		HOMEDB=EMAN2db.EMAN2DB.open_db()
+		HOMEDB.open_dict("display_preferences")
+		db = HOMEDB.display_preferences
+		auto_contrast = db.get("display_2d_auto_contrast",dfl=True)
 		if self.curfft == 0:
 			if self.data == None: return
 			mean=self.data.get_attr("mean")
@@ -758,8 +763,12 @@ class EMImage2DModule(EMGUIModule):
 			m1=self.data.get_attr("maximum")
 			self.minden=m0
 			self.maxden=m1
-			self.curmin = max(m0,mean-3.0*sigma)
-			self.curmax = min(m1,mean+3.0*sigma)
+			if auto_contrast:
+				self.curmin = max(m0,mean-3.0*sigma)
+				self.curmax = min(m1,mean+3.0*sigma)
+			else:
+				self.curmin = m0
+				self.curmax = m1
 			if inspector_update: self.inspector_update()
 			if display_update: 
 				self.force_display_update()
@@ -774,8 +783,11 @@ class EMImage2DModule(EMGUIModule):
 		
 			self.fminden=0
 			self.fmaxden=min(m1,mean+10.0*sigma)
-			self.fcurmin = max(0,0)
-			self.fcurmax = min(m1,mean+3.0*sigma)
+			self.fcurmin = 0
+			if auto_contrast:
+				self.fcurmax = min(m1,mean+3.0*sigma)
+			else:
+				self.fcurmax = m1
 			
 			self.force_display_update()
 			

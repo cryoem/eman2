@@ -354,6 +354,9 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.directory.setIcon(0,QtGui.QIcon(get_image_directory() + "desktop.png"))
 		self.directory.setToolTip(0,os.getcwd())
 		self.tree_widget_entries.append(self.directory)
+		preferences = QtGui.QTreeWidgetItem(QtCore.QStringList("Preferences"))
+		self.tree_widget_entries.append(preferences)
+		self.launchers["Preferences"] = self.launch_view_preferences
 		self.launchers["Working directory"] = self.launch_change_directory
 		self.tree_widget.insertTopLevelItems(0,self.tree_widget_entries)
 		self.tree_widget.insertTopLevelItems(0,self.tree_widget_entries)
@@ -599,6 +602,10 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		
 	def launch_view_history(self):
 		self.launch_task(HistoryTask,"History")
+		
+	def launch_view_preferences(self):
+		from e2preferences import EMPreferencesTask
+		self.launch_task(EMPreferencesTask,"Preferences")
 	
 	
 	def launch_import_mic_ccd(self):

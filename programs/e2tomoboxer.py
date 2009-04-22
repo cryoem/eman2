@@ -41,6 +41,8 @@ import weakref
 from emshape import EMShape
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
+import math
+import EMAN2db
 
 tomo_db_name = "bdb:e2tomoboxercache#"
 
@@ -68,34 +70,159 @@ for tomographic analysis."""
 	application.execute()
 	
 #	print args[0]
-#	a = TomogramZProjectionImage(args[0])
+#	a = TomogramProjection(args[0])
 #	a.get_image()
 
-
-class TomogramZProjectionImage:
+class ShrunkenTomogram:
 	'''
-	Sums the tomograph (3D image) along z, stores and returns the result
+	Takes care of the automatic shrinking of tomogram, if necessary
+	It may be true that the shrink factor was 1, in which case shrink didn't really occur.
+	Could be made generic for other applications if the need arises
 	'''
 	def __init__(self,file_name):
 		'''
-		@param file_name the name of the file on disk - should be a 3D tomogram
+		@param file_name the name of the file, which is a tomographic reconstruction sitting on disk
 		@exception RuntimeError raised if the file_name is not a file on disk
-		@exception RuntimeError raised if the file on disk is not 3D (nz > 1)
+		@exception RuntimeError raised if the file on disk is not 3D (nx,ny,nz > 1)
 		'''
 		if not file_exists(file_name): raise RuntimeError("The file %s does not exist" %file_name)
 		nx,ny,nz = gimme_image_dimensions3D(file_name)
-		if nz <= 1: raise RuntimeError("The file must be 3D (nz>1)")
+		if nx <=1 or ny <= 1 or nz <= 1: raise RuntimeError("The file must be 3D (nx,ny,nz>1)")
+		
 		self.file_name = file_name
-		# this will be either None or an EMData object
-		self.image = get_idd_image_entry(self.file_name,"tomogram_z_projection",tomo_db_name)
-	def get_image_name(self):
-		return self.file_name
-	
+		self.image = get_idd_image_entry(self.file_name,"shrunken_tomogram",tomo_db_name)
+		self.progress_dialog = None
+		
 	def get_construction_argument(self):
 		return self.file_name
 	
 	def get_image(self):
 		if self.image == None:
+			global HOMEDB
+			HOMEDB=EMAN2db.EMAN2DB.open_db()
+			HOMEDB.open_dict("e2tomoboxer_preferences")
+			db = HOMEDB.e2tomoboxer_preferences
+			if not db.has_key("largest_allowable_dimension"):
+				# this is defaul setting behavior. The user can easily change this in e2preferences.py
+				db["largest_allowable_dimension"] = 512			
+			target_max_dim = db["largest_allowable_dimension"]
+			nx,ny,nz = gimme_image_dimensions3D(self.file_name)
+			shrink = 1
+			for val in [nx,ny,nz]:
+				s = int(math.ceil(float(val)/target_max_dim))
+				if s > shrink: shrink = s
+			
+			if shrink > 1:
+				shrink_thread = ShrinkThread(self.file_name,shrink)
+				progress = QtGui.QProgressDialog(shrink_thread.get_action_string(), "abort", 0, shrink_thread.get_total_steps(),None)
+				progress.setWindowTitle("Shrinking tomogram by %i" %shrink)
+				progress.show()
+				tally = -1
+				shrink_thread.start()
+				while 1:
+					get_application().processEvents()
+					if progress.wasCanceled():
+						shrink_thread.quit()
+						progress.close()
+						# probably the calling program should do something about this
+						# the image returned is going to be None
+						break
+					
+					if shrink_thread.get_status() > tally:
+						tally = shrink_thread.get_status()
+						progress.setValue(tally)
+						progress.setLabelText(shrink_thread.get_action_string())
+											
+					if shrink_thread.get_status() == shrink_thread.get_total_steps()-1:
+						progress.close()
+						self.image = shrink_thread.get_image()
+						break
+			else:
+				self.image = EMData()
+				self.image.read_image(self.file_name,0)
+		
+		return self.image
+
+class ShrinkThread(QtCore.QThread):
+	def __init__(self,file_name,shrink):
+		QtCore.QThread.__init__(self)
+		self.file_name = file_name
+		self.shrink = shrink
+		self.current_step = 0
+		self.total_steps = 3
+		self.image = None
+		self.action_string = "Reading image"
+		
+	def get_total_steps(self):
+		return self.total_steps
+	
+	def get_status(self):
+		return self.current_step
+	
+	def get_action_string(self):
+		return self.action_string
+	
+	def get_image(self): return self.image
+	
+	def run(self):
+		try:
+			self.image = EMData()
+			self.image.read_image(self.file_name,0)
+			#self.emit(QtCore.SIGNAL("step_done"),0)
+			self.current_step = 0
+			self.action_string = "Shrinking by %i" %self.shrink
+			self.image.process_inplace("math.meanshrink",{"n":self.shrink})
+			self.current_step = 1
+			self.action_string = "Caching to disk"
+			self.image.set_attr("shrunken_by",self.shrink)
+			self.image.set_attr("shrunken_from",self.file_name)
+			set_idd_image_entry(self.file_name,"shrunken_tomogram",self.image,tomo_db_name)	
+			self.current_step = 2
+		except: pass
+		self.exit()
+		
+		
+class TomogramProjection:
+	'''
+	Sums a tomograph (3D image) along the narrowest dimension, this is not necessarily the z dimension
+	Caches this compressed image on disk and in memory. Disk cache is to prevent the projection operation from
+	occurring more than once.
+	Designed to be used the the boxertools.Cache object - in particular using the get_image_directly interface 
+	Stores the dimension that was compressed as a header attribute ("sum_direction")
+	Stores the number of pixels along the compressed dimension as a header attribute ("sum_pixels")
+	'''
+	def __init__(self,file_name):
+		'''
+		@param file_name the name of the file on disk - should be a 3D tomogram
+		@exception RuntimeError raised if the file_name is not a file on disk
+		@exception RuntimeError raised if the file on disk is not 3D (nx,ny,nz > 1)
+		'''
+		if not file_exists(file_name): raise RuntimeError("The file %s does not exist" %file_name)
+		nx,ny,nz = gimme_image_dimensions3D(file_name)
+		if nx <=1 or ny <= 1 or nz <= 1: raise RuntimeError("The file must be 3D (nx,ny,nz>1)")
+		self.file_name = file_name
+		# this will be either None or an EMData object
+		self.image = get_idd_image_entry(self.file_name,"tomogram_z_projection",tomo_db_name)
+	def get_image_name(self):
+		'''
+		@return the file name of the image 
+		'''
+		return self.file_name
+
+	def get_construction_argument(self):
+		'''
+		@return the file name of the image 
+		'''
+		return self.file_name
+	
+	def get_image(self):
+		'''
+		@return a version of the tomogram that has been compressed/projected along the narrowest dimension 
+		If this projection did not previously exist then it is created, and the "sum_direction" and "sum_pixels" 
+		header attributes are created so that the original dimensions can be recalled if necessary.
+		'''
+		if self.image == None:
+			
 			tmp = EMData()
 			tmp.read_image(self.file_name,0)
 		
@@ -117,22 +244,10 @@ class TomogramZProjectionImage:
 				self.image.set_attr("sum_pixels",tmp.get_zsize())
 				self.image.set_attr("sum_direction","z")
 				
-			
-			
-#			self.image = EMData(nx,ny)
-#			self.image.to_zero()
-#			tmp = EMData()
-#			for i in range(nz):
-#				print i
-#				tmp.read_image(self.file_name,0,False,Region(0,0,i,nx,ny,i+1))
-#				tmp.set_size(nx,ny)
-#				self.image = self.image + tmp
-#			
-			# cache to database
 			set_idd_image_entry(self.file_name,"tomogram_z_projection",self.image,tomo_db_name)	
 		return self.image
 	
-ZProjectionCache = Cache(TomogramZProjectionImage)
+ZProjectionCache = Cache(TomogramProjection)
 
 
 class EMTBBoxManipulations():
@@ -178,12 +293,6 @@ class EMTBBoxManipulations():
 			if not self.main_2d_window.coords_within_image_bounds(coord_data):	return
 			
 			if event.modifiers() & Qt.ShiftModifier : return # the user tried to delete nothing
-			
-			# If we get here, we need to add a new box
-#			box_size = self.target().get_box_size()
-#			lbx = coord_data[0]-box_size/2
-#			lby = coord_data[1]-box_size/2
-#			box = [lbx,lby,lbx+box_size,lby+box_size]
 			
 			self.target().add_box(coord_data)
 			self.moving=[coord_data,box_num]

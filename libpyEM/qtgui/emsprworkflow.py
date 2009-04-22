@@ -55,8 +55,60 @@ class EmptyObject:
 	def __init__(self):
 		pass
 	
-	
 
+class EMFormTask(QtCore.QObject):
+	'''
+	Something that reflects the common interface for all of the tasks
+	'''
+	def __init__(self):
+		QtCore.QObject.__init__(self)
+		self.window_title = "Set me please" # inheriting classes should set this
+		self.preferred_size = (480,640) # inheriting classes can change this if they choose
+	
+	
+	def run_form(self): 
+		self.form = EMFormModule(self.get_params(),get_application())
+		self.form.qt_widget.resize(*self.preferred_size)
+		self.form.setWindowTitle(self.window_title)
+		get_application().show_specific(self.form)
+		self.make_form_connections()
+	def make_form_connections(self):
+		'''
+		Make the necesessary form connections
+		'''
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_close"),self.on_form_close)
+		
+	def get_params(self): raise NotImplementedError
+	
+	def on_form_ok(self,params):
+		self.write_db_entries(params)			
+		self.form.closeEvent(None)
+		self.form = None
+		self.emit(QtCore.SIGNAL("task_idle"))
+		
+	def on_form_cancel(self):
+		self.form.closeEvent(None)
+		self.form = None
+		self.emit(QtCore.SIGNAL("task_idle"))
+	
+	def on_form_close(self):
+		self.emit(QtCore.SIGNAL("task_idle"))
+
+	def closeEvent(self,event):
+		self.form.closeEvent(None)
+		#self.emit(QtCore.SIGNAL("task_idle")
+		
+	def write_db_entries(self,dictionary):
+		'''
+		Write the dictionary key/entries into the database using self.form_db_name
+		Writes all keys except for "blurb" - note the the "blurb" key is mostly used in the context
+		of these forms to display helpful information to the user - it doesn't need to be stored in the
+		database 
+		'''
+		raise NotImplementedError
+		
 class WorkFlowTask(QtCore.QObject):
 	def __init__(self,application):
 		QtCore.QObject.__init__(self)
@@ -75,7 +127,9 @@ class WorkFlowTask(QtCore.QObject):
 		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
 		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_close"),self.on_form_close)
 		QtCore.QObject.connect(self.form,QtCore.SIGNAL("display_file"),self.on_display_file)
-		
+	
+	def get_params(self): raise NotImplementedError
+	
 	def on_display_file(self,filename):
 		self.emit(QtCore.SIGNAL("display_file"),filename)	
 		
