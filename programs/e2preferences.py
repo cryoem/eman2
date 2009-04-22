@@ -53,9 +53,9 @@ class EMPreferencesTask(EMFormTask):
 	def __get_display_preference_params(self):
 		HOMEDB.open_dict("display_preferences")
 		db = HOMEDB.display_preferences
-		p2d_auto_contrast = ParamDef(name="display_2d_auto_contrast",vartype="boolean",desc_short="2D image auto contrast",desc_long="Should 2D image display adjust contrast settings automatically?",property=None,defaultunits=db.get("display_2d_auto_contrast",dfl=True),choices=None)
-		p2d_stack_auto_contrast = ParamDef(name="display_stack_auto_contrast",vartype="boolean",desc_short="Stack (2D) - auto contrast",desc_long="Should 2D stack display adjust contrast settings automatically?",property=None,defaultunits=db.get("display_stack_auto_contrast",dfl=True),choices=None)
-		p2d_stack_n = ParamDef(name="display_stack_np_for_auto",vartype="int",desc_short="Stack (2D) - # particles used to determine settings",desc_long="When the stack viewer starts up it investigates the parameters of the first n particles to determine display settings. Specify -1 to force the stack viewer to investigate all particles.",property=None,defaultunits=db.get("display_stack_np_for_auto",dfl=5),choices=None)
+		p2d_auto_contrast = ParamDef(name="display_2d_auto_contrast",vartype="boolean",desc_short="2D image auto contrast",desc_long="Should the 2D image display module adjust contrast settings automatically?",property=None,defaultunits=db.get("display_2d_auto_contrast",dfl=True),choices=None)
+		p2d_stack_auto_contrast = ParamDef(name="display_stack_auto_contrast",vartype="boolean",desc_short="Stack (2D) - auto contrast",desc_long="Should the stack display module adjust contrast settings automatically?",property=None,defaultunits=db.get("display_stack_auto_contrast",dfl=True),choices=None)
+		p2d_stack_n = ParamDef(name="display_stack_np_for_auto",vartype="int",desc_short="Stack (2D) - # particles used for contrast settings",desc_long="When the stack viewer starts up it investigates the parameters of the first n particles to determine contrast settings. Specify -1 to force the stack viewer to investigate all particles.",property=None,defaultunits=db.get("display_stack_np_for_auto",dfl=5),choices=None)
 
 		params = []
 		params.append(p2d_auto_contrast)
