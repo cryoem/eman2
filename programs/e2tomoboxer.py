@@ -79,6 +79,7 @@ class ShrunkenTomogram:
 	It may be true that the shrink factor was 1, in which case shrink didn't really occur.
 	Could be made generic for other applications if the need arises
 	'''
+	db_name = "shrunken_image"
 	def __init__(self,file_name):
 		'''
 		@param file_name the name of the file, which is a tomographic reconstruction sitting on disk
@@ -90,10 +91,41 @@ class ShrunkenTomogram:
 		if nx <=1 or ny <= 1 or nz <= 1: raise RuntimeError("The file must be 3D (nx,ny,nz>1)")
 		
 		self.file_name = file_name
-		self.image = get_idd_image_entry(self.file_name,"shrunken_tomogram",tomo_db_name)
+		self.image = get_idd_image_entry(self.file_name,ShrunkenTomogram.db_name,tomo_db_name)
 		self.progress_dialog = None
 		
+	def get_shrunken_resident_name(file_name):
+		'''
+		asks whether or not this file name has a corresponding shrunken image in the
+		e2tomoboxer cache, and if so, for its name (embeded in list - [db_name, image_index] ([string,int])
+		return None if there is no shrunken cached image, or [string,int], which can be used as the arguments to EMData.read_image(string,int)
+		'''
+
+		db_name =  tomo_db_name+ShrunkenTomogram.db_name
+		if not db_check_dict(db_name): 
+		#		print "db failed",db_name
+			return None #
+		
+		db = db_open_dict(db_name)
+		
+		if db.has_key("maxrec"):
+			for idx in range(0,db["maxrec"]+1):
+				header = db.get_header(idx)
+				try:
+					if header["shrunken_from"] == image_name:
+						return [db_name,idx]
+				except:
+					pass
+				
+		db_close_dict(db_name)
+		return None
+	
+	get_shrunken_resident_name = staticmethod(get_shrunken_resident_name)
+		
 	def get_construction_argument(self):
+		'''
+		Used by the cache for retrieving the correct object
+		'''
 		return self.file_name
 	
 	def get_image(self):
@@ -135,7 +167,7 @@ class ShrunkenTomogram:
 						self.image = shrink_thread.get_image()
 						self.image.set_attr("shrunken_by",shrink)
 						self.image.set_attr("shrunken_from",self.file_name)
-						set_idd_image_entry(self.file_name,"shrunken_tomogram",self.image,tomo_db_name) #cache to disk
+						set_idd_image_entry(self.file_name,ShrunkenTomogram.db_name,self.image,tomo_db_name) #cache to disk
 						break
 			else:
 				self.image = EMData()
@@ -243,10 +275,13 @@ class TomogramProjection:
 		'''
 		if self.image == None:
 			
-			tmp = EMData()
-			tmp.read_image(self.file_name,0)
+			st = ShrunkenTomogram(self.file_name)
 		
-			nx,ny,nz = gimme_image_dimensions3D(self.file_name)
+			tmp = st.get_image()
+			if tmp == None: # this means the shrink operation was cancelled
+				return None # the calling function should be sophisticated to handle this!
+		
+			nx,ny,nz = tmp["nx"],tmp["ny"],tmp["nz"]
 			if ny < nz:
 				self.image = tmp.process("misc.directional_sum",{"direction":"y"})
 				self.image.set_size(nx,nz,1)
@@ -267,7 +302,7 @@ class TomogramProjection:
 			set_idd_image_entry(self.file_name,"tomogram_z_projection",self.image,tomo_db_name)	
 		return self.image
 	
-ZProjectionCache = Cache(TomogramProjection)
+TomoProjectionCache = Cache(TomogramProjection)
 
 
 class EMTBBoxManipulations():
@@ -573,9 +608,10 @@ class EMBoxDisplayShapes:
 	
 class EMTomoBoxerModule:
 	'''
-	This module is essentially a Mediator (see GoF) - it coordinates the activities of several EMAN2 modules
+	This module is essentially a Mediator (see Design Patterns) - it coordinates the activities of several EMAN2 modules
 	that would otherwise not necessary interact. For tomographic boxing we need a main display (for
-	these purposes that is a projection along z) and a display for the isolated ("boxed") objects
+	these purposes that is a projection along z) and a display for the isolated ("boxed") objects. The user can manipulate the
+	location of the boxed sub tomograms and the display in both windows is updated
 	'''
 	def __init__(self,file_name):
 		'''
@@ -615,7 +651,10 @@ class EMTomoBoxerModule:
 		'''
 		
 		self.main_2d_window = EMImage2DModule()
-		self.main_2d_window.set_data(ZProjectionCache.get_image_directly(self.file_name),self.file_name)
+		image = TomoProjectionCache.get_image_directly(self.file_name)
+		if image == None: # the user cancelled the shrink operation
+			sys.exit(1)
+		self.main_2d_window.set_data(image,self.file_name)
 		self.main_2d_window.setWindowTitle(self.file_name)
 		
 		self.signal_slot_handlers["box_manipulation"] = EMTBBoxManipulations(self,self.main_2d_window)
@@ -648,7 +687,7 @@ class EMTomoBoxerModule:
 		@exception RuntimeError raised if the the box_size is bigger than the current image's dimensions
 		'''
 		if box_size < 1: raise RuntimeError("The boxsize must be at least 1")
-		image = ZProjectionCache.get_image_directly(self.file_name)
+		image = TomoProjectionCache.get_image_directly(self.file_name)
 		if box_size > image.get_xsize() or box_size > image.get_ysize():
 			raise RuntimeError("The box size can not be larger than any of the image's dimensions")
 	
@@ -680,7 +719,6 @@ class EMTomoBoxerModule:
 		ty = by+self.box_size
 		if coords[1]<by or coords[1]>ty: return -1
 		else: return self.active_box
-
 	
 	def add_box(self,coord):
 		'''
@@ -732,7 +770,7 @@ class EMTomoBoxerModule:
 	def __refresh_positioner(self):
 		if self.active_box != -1:
 			coord = self.coord_list[self.active_box]
-			image = ZProjectionCache.get_image_directly(self.file_name)
+			image = TomoProjectionCache.get_image_directly(self.file_name)
 			a = EMData()
 			direction = image.get_attr("sum_direction")
 			half_box = self.box_size/2

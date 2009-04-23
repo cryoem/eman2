@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: David Woolford (woolford@bcm.edu)
+# Author: David Woolford (woolford@bcm.edu) April 2009
 # Copyright (c) 2000-2006 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -201,7 +201,7 @@ class EMSaveImageValidator:
 	def is_overwriting(self):
 		'''
 		Ask whether or not overwriting has been chosen as the write method
-		@ return True or False
+		@return True or False
 		'''
 		return self.overwrite
 	
@@ -497,7 +497,6 @@ class EMTmpFileHandle(object):
 	seeing as it will be eventually renamed
 	@param file_name the file_name used to deduce a temporary file name.
 	@exception raised if the file_name does not exist on the file system
-	@exception raised if the file_name is a BDB type (not yet supported)
 	@exception raised if the file_name has a unrecognized (or no) type
 	'''
 	def __new__(cls, file_name):
@@ -743,3 +742,4 @@ class EMDBTmpFileHandle(EMTmpFileHandleBase):
 		raise NotimplementedError("Woops waiting on an email")
 
 	def get_final_file_name(self): return self.__orig_db_name
+	
