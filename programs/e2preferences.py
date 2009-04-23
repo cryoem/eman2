@@ -43,6 +43,7 @@ class EMPreferencesTask(EMFormTask):
 	def __init__(self,application=None):
 		EMFormTask.__init__(self)
 		self.preferred_size = [240,240]
+		self.window_title = "EMAN2 preferences"
 		
 	def get_params(self):
 		params = []

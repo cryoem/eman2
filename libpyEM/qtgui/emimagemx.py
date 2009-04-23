@@ -820,7 +820,6 @@ class EMImageMXModule(EMGUIModule):
 		m0=d.get_attr("minimum")
 		m1=d.get_attr("maximum")
 		
-		
 		if auto_contrast:
 			mn=max(m0,mean-3.0*sigma)
 			mx=min(m1,mean+3.0*sigma)
@@ -834,17 +833,17 @@ class EMImageMXModule(EMGUIModule):
 		self.maxdeng=m1
 
 		if start_guess > len(self.data) or start_guess < 0 :start_guess = len(self.data)
-		for j in range(1,5): # just have a look at the first 5 to see if we've got the stats about right
-			i = self.data[j]
-			if i == None: continue
-			if i.get_zsize()!=1 :
+		for j in range(1,start_guess): #
+			d = self.data.get_image_header(j)
+			if d == None: continue
+			if d["nz"] !=1 :
 				self.data=None
 				if update_gl: self.updateGL()
 				return
-			mean=i.get_attr("mean")
-			sigma=i.get_attr("sigma")
-			m0=i.get_attr("minimum")
-			m1=i.get_attr("maximum")
+			mean=d["mean"]
+			sigma=d["sigma"]
+			m0=d["minimum"]
+			m1=d["maximum"]
 			if sigma == 0: continue
 
 
@@ -2574,6 +2573,15 @@ class EMDataListCache:
 						break
 					except: pass
 		return self.ysize
+	
+	def get_image_header(self,idx):
+		if self.mode == EMDataListCache.FILE_MODE:
+			e = EMData()
+			e.read_image(self.file_name,idx,True)
+			return e.get_attr_dict()
+		elif self.mode == EMDataListCache.LIST_MODE:
+			return self.images[idx].get_attr_dict()
+
 	
 	def get_image_keys(self):
 		if self.keys == None:

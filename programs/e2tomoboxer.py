@@ -101,11 +101,8 @@ class ShrunkenTomogram:
 			global HOMEDB
 			HOMEDB=EMAN2db.EMAN2DB.open_db()
 			HOMEDB.open_dict("e2tomoboxer_preferences")
-			db = HOMEDB.e2tomoboxer_preferences
-			if not db.has_key("largest_allowable_dimension"):
-				# this is defaul setting behavior. The user can easily change this in e2preferences.py
-				db["largest_allowable_dimension"] = 512			
-			target_max_dim = db["largest_allowable_dimension"]
+			db = HOMEDB.e2tomoboxer_preferences	
+			target_max_dim = db.get("largest_allowable_dimension",dfl=1024)
 			nx,ny,nz = gimme_image_dimensions3D(self.file_name)
 			shrink = 1
 			for val in [nx,ny,nz]:
@@ -128,14 +125,17 @@ class ShrunkenTomogram:
 						# the image returned is going to be None
 						break
 					
-					if shrink_thread.get_status() > tally:
-						tally = shrink_thread.get_status()
+					if shrink_thread.get_progress() > tally:
+						tally = shrink_thread.get_progress()
 						progress.setValue(tally)
 						progress.setLabelText(shrink_thread.get_action_string())
 											
-					if shrink_thread.get_status() == shrink_thread.get_total_steps()-1:
+					if shrink_thread.get_progress() == shrink_thread.get_total_steps()-1:
 						progress.close()
 						self.image = shrink_thread.get_image()
+						self.image.set_attr("shrunken_by",shrink)
+						self.image.set_attr("shrunken_from",self.file_name)
+						set_idd_image_entry(self.file_name,"shrunken_tomogram",self.image,tomo_db_name) #cache to disk
 						break
 			else:
 				self.image = EMData()
@@ -144,42 +144,62 @@ class ShrunkenTomogram:
 		return self.image
 
 class ShrinkThread(QtCore.QThread):
+	'''
+	A thread for running the shrink operation - so the user can cancel if it's taking too long or
+	they think twice.
+	Designed to be used with a progress dialog - you can get the progress (get_progress) to update the
+	progress bar, and get the action string (get_action_string) to update the label on the progress dialog.
+	See ShrunkenTomogram for an example of how this object is used
+	Once the job is done call get_image to get the result 
+	'''
 	def __init__(self,file_name,shrink):
+		'''
+		@param file_name the name of the file on disk, or in bdb format
+		@param shrink the shrink factor, should be an integer greater than 1
+		@exception RuntimeError raised if the file_name is not a file on disk
+		@exception RuntimeError raised if shrink is not an int
+		@exception RuntimeError raised if shrink is not greater than 1
+		'''
+		if not file_exists(file_name): raise RuntimError("The file %s does not exist" %file_name)
+		if not isinstance(shrink,int) or shrink < 2: raise RuntimeError("The shrink factor must be an integer greater than 1")
+		
 		QtCore.QThread.__init__(self)
-		self.file_name = file_name
-		self.shrink = shrink
-		self.current_step = 0
-		self.total_steps = 3
-		self.image = None
-		self.action_string = "Reading image"
+		self.file_name = file_name # store the file name
+		self.shrink = shrink # store the shrink
+		self.current_step = -1 # so the calling function can ask about the progress and update a progress dialog
+		self.total_steps = 2 # the total number of steps I chose this object to have (read,shrink,write)
+		self.image = None # the final image - so the calling object can retrieve it
+		self.action_string = "Reading image" # so the progress dialog can display a useful string
 		
 	def get_total_steps(self):
+		''' @return the total number of operations this object will perform, i.e. for initializing a progress dialgo
+		'''
 		return self.total_steps
 	
-	def get_status(self):
+	def get_progress(self):
+		''' @return the current progress as an int. Before run is called this is -1.'''
 		return self.current_step
 	
 	def get_action_string(self):
+		''' @return a useful string saying what this is currently doing, i.e. for a progress dialog'''
 		return self.action_string
 	
-	def get_image(self): return self.image
+	def get_image(self):
+		''' @return the shrunken image, or None if for example the thread was terminatea'''
+		return self.image
 	
 	def run(self):
+		''' run - overwrites QtThread.run - all work is done here
+		'''
 		try:
 			self.image = EMData()
 			self.image.read_image(self.file_name,0)
-			#self.emit(QtCore.SIGNAL("step_done"),0)
 			self.current_step = 0
 			self.action_string = "Shrinking by %i" %self.shrink
 			self.image.process_inplace("math.meanshrink",{"n":self.shrink})
 			self.current_step = 1
-			self.action_string = "Caching to disk"
-			self.image.set_attr("shrunken_by",self.shrink)
-			self.image.set_attr("shrunken_from",self.file_name)
-			set_idd_image_entry(self.file_name,"shrunken_tomogram",self.image,tomo_db_name)	
-			self.current_step = 2
 		except: pass
-		self.exit()
+		self.exit() # is this necessary
 		
 		
 class TomogramProjection:
@@ -262,7 +282,6 @@ class EMTBBoxManipulations():
 		
 		self.__connect_signals_to_slots()
 	def __connect_signals_to_slots(self):
-		
 		'''
 		connects the signals of the main 2D window to the slots of this object
 		'''
@@ -426,21 +445,19 @@ class EMTBPositionBoxManipulations():
 class EMCoordList:
 	'''
 	Meant to store the primary data associated with a box, namely its bottom left and top right
-	coordinates. Stores central coordinates as a list of length 4, e.g.
-	[bottom left x, bottom left y, top right x, top right y]
+	coordinates. Stores central coordinates as a list of length 3, e.g. [center x, center y, center z]
 	Provides additional collision detection functionality
 	Provides additional box size changing and box moving functionality
 	Supports list-style iterator support 
 	'''
 	def __init__(self):
 		self.coords = [] # main data container, entries are lists of length 4
-		self.z_boxes = [] # z coordinate data boxes
 		self.current_iter = 0 # iterator support
 		self.max_idx = 0 # iterator support
 		
 	def append(self,box_coords):
 		'''
-		@param box_coords should be a list like [bottom left x, bottom left y, top right x, top right y]
+		@param box_coords should be a list like [center_x,center_y] or [center_x,center_y,center_z] - if unsure of z don't specify it, will set it -1 internally
 		@exception RuntimeError raised if box_coords is not a list
 		@exception RuntimeError raised if box_coords is not of length 2 or 3
 		'''
@@ -455,7 +472,8 @@ class EMCoordList:
 	def detect_collision(self,coords,box_size):
 		'''
 		@param coords a coordinate list, the first two values are the coordinates
-		@exception RuntimeError raised if coords is not a list
+		@param boxsize the size of the boxed centered on the coordinate used as the basis of collision detection
+		@exception RuntimeError raised if coords is not a list or a tuple
 		@exception RuntimeError raised if coords is not at least length 2
 		The last exception is an aberration because we already have a framework where coordinate
 		data is embedded in a list that is longer than 2 in length 
@@ -479,10 +497,11 @@ class EMCoordList:
 		
 	def move_box(self,idx,dx,dy,dz=0):
 		'''
-		move box at idx in the x and y direction
+		move box at idx in the x and y and z direction
 		@param idx the index of the object to be moved
 		@param dx the amount by which to move in the x direction
 		@param dy the amount to move in the y direction
+		@param dz the amount to move in the z direction
 		'''
 		box = self.coords[idx]
 		box[0] += dx
