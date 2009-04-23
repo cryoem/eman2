@@ -8370,6 +8370,7 @@ def cml2_open_proj(stack, ir, ou, lf, hf):
 	#from projection   import cml_sinogram
 	from utilities    import model_circle, get_params_proj, model_blank, get_im
 	from fundamentals import fft
+	from filter       import filt_tanh
 
 	nprj = EMUtil.get_image_count(stack)               # number of projections
 	Prj  = []                                          # list of projections
@@ -8417,6 +8418,9 @@ def cml2_open_proj(stack, ir, ou, lf, hf):
 			# get the line li
 			line = model_blank(nxe)
 			for ci in xrange(nxe): line.set_value_at(ci, 0, sino.get_value_at(ci, li))
+
+			# u2
+			line = filt_tanh(line, ou / float(nx), ou / float(nx))
 
 			# normalize this line
 			[mean_l, sigma_l, imin, imax] = Util.infomask(line, None, True)
@@ -8600,7 +8604,73 @@ def cml2_error_ori(Ori1, Ori2):
 
 	return sum_err
 
-# this function is used in find_structure MPI version, to merge and mutatted solution
+
+# this function is used in find_structure MPI version, to merge and mutatted solution, GA string digit
+def cml2_GA_digit(Ori1, Ori2, npop, pcross, pmut):
+	from random import randint, random
+	import sys
+
+	nori = len(Ori1) // 4
+	ngen = nori * 2
+
+	# encode each gen to 3 digit 000
+	parent1 = ''
+	parent2 = ''
+	for n in xrange(nori):
+		ind1 = n * 4
+		ind2 = ind1 + 1
+		parent1 += '%03i%03i' % (Ori1[ind], Ori1[ind1])
+		parent2 += '%03i%03i' % (Ori2[ind], Ori2[ind1])
+
+	# create new pop
+	POP = []
+	for ipop in xrange(npop // 2):
+		# uniform cross-over
+		if random() < pcross:
+			child1 = ''
+			child2 = ''
+			for igen in xrange(ngen):
+				ind1 = 3 * igen
+				ind2 = ind1 + 3
+				if random() < 0.6:
+					child1 += parent1[ind1:ind2]
+					child2 += parent2[ind1:ind2]
+				else:
+					child1 += parent2[ind1:ind2]
+					child2 += parent1[ind1:ind2]
+		else:
+			child1 = parent1
+			child2 = parent2
+
+		# mutation
+		mut1 = ''
+		mut2 = ''
+		for igen in xrange(ngen):
+			ind1 = 3 * igen
+			ind2 = ind1 + 3
+			if random() < pmut:
+				v = randint(0, 359)
+				mut1 += '%03i' % v
+			else:	mut1 += child1[ind1:ind2]
+			if random() < pmut:
+				v = randint(0, 359)
+				mut2 += '%03i' % v
+			else:	mut2 += child2[ind1:ind2]
+		
+		# decode
+		pop1 = []
+		pop2 = []
+		for igen in xrange(ngen):
+			ind1 = 3 * igen
+			ind2 = ind1 + 3
+			pop1.append(float(mut1[ind1:ind2]))
+			pop2.append(float(mut2[ind1:ind2]))
+		POP.append(pop1)
+		POP.append(pop2)
+		
+
+
+# this function is used in find_structure MPI version, to merge and mutatted solution, GA string binary
 def cml2_GA(Ori1, Ori2, npop, pcross, pmut):
 	from random import randint, random
 	import sys
@@ -8681,6 +8751,11 @@ def cml2_find_structure(Prj, Ori, Rot, outdir, maxit, first_zero, flag_weights):
 		ocp[0]  = 0 
 	else:   listprj = range(g_n_prj)
 	
+	# to stop when the solution oscillate
+	period_disc = [0, 0, 0]
+	period_ct   = 0
+	period_th   = 2
+
 	# iteration loop
 	for ite in xrange(maxit):
 		t_start = time.time()
@@ -8787,6 +8862,20 @@ def cml2_find_structure(Prj, Ori, Rot, outdir, maxit, first_zero, flag_weights):
 		cml2_export_txtagls(outdir, Ori, disc, 'Ite: %03i' % (ite + 1))
 
 		if not change: break
+
+		# to stop when the solution oscillate
+		period_disc.pop(0)
+		period_disc.append(disc)
+		if period_disc[0] == period_disc[2]:
+			periode_ct += 1
+			if periode_ct >= periode_th and min(period_disc) == disc:
+				angfile = open(outdir + '/angles', 'a')
+				angfile.write('\nSTOP SOLUTION UNSTABLE\n')
+				angfile.write('Discrepancy periode: %s\n' % period_disc)
+				angfile.close()
+				break
+		else:
+			periode_ct = 0
 
 	return Ori, disc, ite
 
