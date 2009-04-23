@@ -226,6 +226,7 @@ void EMData::read_data(string fsp,size_t loc) {
 	FILE *f = 0;
 	f=fopen(fsp.c_str(), "rb");
 	if (!f) throw FileAccessException(fsp);
+	
 	portable_fseek(f,loc,SEEK_SET);
 	if (fread(get_data(),nx*ny,nz*4,f)!=(size_t)(nz*4)) throw FileAccessException(fsp);
 	fclose(f);

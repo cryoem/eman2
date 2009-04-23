@@ -628,9 +628,9 @@ namespace EMAN
 		float z_origin() { return origin[2]; }
 		
 		/** get the size of each dimension as a vector */
-		vector<float> get_size() { return size; }
+		vector<float> get_size() const { return size; }
 		/** get the origin as a vector */
-		vector<float> get_origin() { return origin; }
+		vector<float> get_origin() const { return origin; }
 		/** set the origin using a vector */
 		void set_origin(const vector<float>& v) { origin = v; }
 		

@@ -681,12 +681,17 @@ void EMUtil::get_region_dims(const Region * area, int nx, int *area_x,
 		}
 	}
 	else {
-		*area_x = (int)area->size[0];
-		*area_y = (int)area->size[1];
-
+		Vec3i origin = area->get_origin();
+		Vec3i size = area->get_size();
+		*area_x = size[0];
+		*area_y = size[1];
+		if (origin[0] < 0) *area_x += origin[0];
+		if (origin[1] < 0) *area_y += origin[1];
+		
 		if (area_z) {
 			if (area->get_ndim() > 2 && nz > 1) {
-				*area_z = (int)area->size[2];
+				*area_z = size[2];
+				if (origin[2] < 0) *area_z += origin[2];
 			}
 			else {
 				*area_z = 1;
@@ -748,6 +753,10 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 		if (nz > 1 && area->get_ndim() > 2) {
 			z0 = static_cast < int >(area->origin[2]);
 		}
+		// get_region_dims already accommodated for negative origin values
+		if (x0 < 0) x0 = 0;
+		if (y0 < 0) y0 = 0;
+		if (z0 < 0) z0 = 0;
 	}
 
 	size_t area_sec_size = xlen * ylen * mode_size;
