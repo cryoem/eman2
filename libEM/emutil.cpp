@@ -5,32 +5,32 @@
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
 
 #include "all_imageio.h"
@@ -62,103 +62,103 @@ EMUtil::ImageType EMUtil::get_image_ext_type(const string & file_ext)
 	if (!initialized) {
 		imagetypes["mrc"] = IMAGE_MRC;
 		imagetypes["MRC"] = IMAGE_MRC;
-		
+
 		imagetypes["tnf"] = IMAGE_MRC;
 		imagetypes["TNF"] = IMAGE_MRC;
-		
+
 		imagetypes["dm3"] = IMAGE_DM3;
 		imagetypes["DM3"] = IMAGE_DM3;
-		
+
 		imagetypes["spi"] = IMAGE_SPIDER;
 		imagetypes["SPI"] = IMAGE_SPIDER;
-		
+
 		imagetypes["spider"] = IMAGE_SPIDER;
 		imagetypes["SPIDER"] = IMAGE_SPIDER;
-		
+
 		imagetypes["spidersingle"] = IMAGE_SINGLE_SPIDER;
 		imagetypes["SPIDERSINGLE"] = IMAGE_SINGLE_SPIDER;
 
 		imagetypes["singlespider"] = IMAGE_SINGLE_SPIDER;
 		imagetypes["SINGLESPIDER"] = IMAGE_SINGLE_SPIDER;
-		
+
 		imagetypes["img"] = IMAGE_IMAGIC;
 		imagetypes["IMG"] = IMAGE_IMAGIC;
-		
+
 		imagetypes["hed"] = IMAGE_IMAGIC;
 		imagetypes["HED"] = IMAGE_IMAGIC;
 
 		imagetypes["imagic"] = IMAGE_IMAGIC;
 		imagetypes["IMAGIC"] = IMAGE_IMAGIC;
-		
+
 		imagetypes["pgm"] = IMAGE_PGM;
 		imagetypes["PGM"] = IMAGE_PGM;
-		
+
 		imagetypes["lst"] = IMAGE_LST;
 		imagetypes["LST"] = IMAGE_LST;
 
 		imagetypes["lsx"] = IMAGE_LSTFAST;	// but .lst or another extension would also be ok
 		imagetypes["LSX"] = IMAGE_LSTFAST;
-		
+
 		imagetypes["pif"] = IMAGE_PIF;
 		imagetypes["PIF"] = IMAGE_PIF;
-		
+
 		imagetypes["png"] = IMAGE_PNG;
 		imagetypes["PNG"] = IMAGE_PNG;
-		
+
 		imagetypes["h5"] = IMAGE_HDF;
 		imagetypes["H5"] = IMAGE_HDF;
-		
+
 		imagetypes["hd5"] = IMAGE_HDF;
 		imagetypes["HD5"] = IMAGE_HDF;
-		
+
 		imagetypes["hdf"] = IMAGE_HDF;
 		imagetypes["HDF"] = IMAGE_HDF;
-		
+
 		imagetypes["tif"] = IMAGE_TIFF;
 		imagetypes["TIF"] = IMAGE_TIFF;
-		
+
 		imagetypes["tiff"] = IMAGE_TIFF;
 		imagetypes["TIFF"] = IMAGE_TIFF;
 
 		imagetypes["fts"] = IMAGE_FITS;
 		imagetypes["FTS"] = IMAGE_FITS;
-		
+
 		imagetypes["vtk"] = IMAGE_VTK;
 		imagetypes["VTK"] = IMAGE_VTK;
-		
+
 		imagetypes["hdr"] = IMAGE_SAL;
 		imagetypes["HDR"] = IMAGE_SAL;
-		
+
 		imagetypes["sal"] = IMAGE_SAL;
 		imagetypes["SAL"] = IMAGE_SAL;
-		
+
 		imagetypes["map"] = IMAGE_ICOS;
 		imagetypes["MAP"] = IMAGE_ICOS;
 
 		imagetypes["icos"] = IMAGE_ICOS;
 		imagetypes["ICOS"] = IMAGE_ICOS;
-		
+
 		imagetypes["am"] = IMAGE_AMIRA;
 		imagetypes["AM"] = IMAGE_AMIRA;
-		
+
 		imagetypes["amira"] = IMAGE_AMIRA;
 		imagetypes["AMIRA"] = IMAGE_AMIRA;
-		
+
 		imagetypes["emim"] = IMAGE_EMIM;
 		imagetypes["EMIM"] = IMAGE_EMIM;
-		
+
 		imagetypes["xplor"] = IMAGE_XPLOR;
 		imagetypes["XPLOR"] = IMAGE_XPLOR;
-		
+
 		imagetypes["em"] = IMAGE_EM;
 		imagetypes["EM"] = IMAGE_EM;
-		
+
 		imagetypes["dm2"] = IMAGE_GATAN2;
 		imagetypes["DM2"] = IMAGE_GATAN2;
 
 		imagetypes["v4l"] = IMAGE_V4L;
 		imagetypes["V4L"] = IMAGE_V4L;
-		
+
 		imagetypes["jpg"] = IMAGE_JPEG;
 		imagetypes["JPG"] = IMAGE_JPEG;
 		imagetypes["jpeg"] = IMAGE_JPEG;
@@ -166,13 +166,13 @@ EMUtil::ImageType EMUtil::get_image_ext_type(const string & file_ext)
 
 		initialized = true;
 	}
-	
+
 	ImageType result = IMAGE_UNKNOWN;
-	
+
 	if (imagetypes.find(file_ext) != imagetypes.end()) {
 		result = imagetypes[file_ext];
 	}
-	
+
 	EXITFUNC;
 	return result;
 }
@@ -192,7 +192,7 @@ EMUtil::ImageType EMUtil::fast_get_image_type(const string & filename,
 	Assert(filename != "");
 	Assert(first_block != 0);
 	Assert(file_size > 0);
-	
+
 #ifdef ENABLE_V4L2
 	if (filename.compare(0,5,"/dev/")==0) return IMAGE_V4L;
 #endif
@@ -322,18 +322,18 @@ EMUtil::ImageType EMUtil::get_image_type(const string & in_filename)
 {
 	ENTERFUNC;
 	Assert(in_filename != "");
-	
+
 #ifdef ENABLE_V4L2
 	if (in_filename.compare(0,5,"/dev/")==0) return IMAGE_V4L;
 #endif
-	
+
 	string filename = in_filename;
 
 	string old_ext = Util::get_filename_ext(filename);
 	if (old_ext == ImagicIO::IMG_EXT) {
 		filename = Util::change_filename_ext(filename, ImagicIO::HED_EXT);
 	}
-	
+
 	FILE *in = fopen(filename.c_str(), "rb");
 	if (!in) {
 		throw FileAccessException(filename);
@@ -439,7 +439,7 @@ int EMUtil::get_image_count(const string & filename)
 {
 	ENTERFUNC;
 	Assert(filename != "");
-	
+
 	int nimg = 0;
 	ImageIO *imageio = get_imageio(filename, ImageIO::READ_ONLY);
 
@@ -466,7 +466,7 @@ ImageIO *EMUtil::get_imageio(const string & filename, int rw,
 	Assert(rw == ImageIO::READ_ONLY ||
 		   rw == ImageIO::READ_WRITE ||
 		   rw == ImageIO::WRITE_ONLY);
-	
+
 	ImageIO *imageio = 0;
 #ifdef IMAGEIO_CACHE
 	imageio = GlobalCache::instance()->get_imageio(filename, rw);
@@ -474,14 +474,14 @@ ImageIO *EMUtil::get_imageio(const string & filename, int rw,
 		return imageio;
 	}
 #endif
-	
+
 	ImageIO::IOMode rw_mode = static_cast < ImageIO::IOMode > (rw);
-	
+
 	if (image_type == IMAGE_UNKNOWN) {
 		if(rw == ImageIO::WRITE_ONLY || rw == ImageIO::READ_WRITE) {
 			throw ImageFormatException("writing to this image format not supported.");
 		}
-		
+
 		image_type = get_image_type(filename);
 	}
 
@@ -672,7 +672,7 @@ void EMUtil::get_region_dims(const Region * area, int nx, int *area_x,
 {
 	Assert(area_x);
 	Assert(area_y);
-	
+
 	if (!area) {
 		*area_x = nx;
 		*area_y = ny;
@@ -681,22 +681,20 @@ void EMUtil::get_region_dims(const Region * area, int nx, int *area_x,
 		}
 	}
 	else {
-		Vec3i origin = area->get_origin();
 		Vec3i size = area->get_size();
 		*area_x = size[0];
 		*area_y = size[1];
-		if (origin[0] < 0) *area_x += origin[0];
-		if (origin[1] < 0) *area_y += origin[1];
-		
+
+
 		if (area_z) {
 			if (area->get_ndim() > 2 && nz > 1) {
 				*area_z = size[2];
-				if (origin[2] < 0) *area_z += origin[2];
 			}
 			else {
 				*area_z = 1;
 			}
 		}
+
 	}
 }
 
@@ -705,7 +703,7 @@ void EMUtil::get_region_origins(const Region * area, int *p_x0, int *p_y0, int *
 {
 	Assert(p_x0);
 	Assert(p_y0);
-	
+
 	if (area) {
 		*p_x0 = static_cast < int >(area->origin[0]);
 		*p_y0 = static_cast < int >(area->origin[1]);
@@ -727,7 +725,7 @@ void EMUtil::get_region_origins(const Region * area, int *p_x0, int *p_y0, int *
 void EMUtil::process_region_io(void *vdata, FILE * file,
 							   int rw_mode, int image_index,
 							   size_t mode_size, int nx, int ny, int nz,
-							   const Region * area, bool need_flip, 
+							   const Region * area, bool need_flip,
 							   ImageType imgtype, int pre_row, int post_row)
 {
 	Assert(vdata != 0);
@@ -735,9 +733,9 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 	Assert(rw_mode == ImageIO::READ_ONLY ||
 		   rw_mode == ImageIO::READ_WRITE ||
 		   rw_mode == ImageIO::WRITE_ONLY);
-	
+
 	unsigned char * cdata = (unsigned char *)vdata;
-	
+
 	int x0 = 0;
 	int y0 = 0;
 	int z0 = nz > 1 ? 0 : image_index;
@@ -748,20 +746,42 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 	get_region_dims(area, nx, &xlen, ny, &ylen, nz, &zlen);
 
 	if (area) {
-		x0 = static_cast < int >(area->origin[0]);
-		y0 = static_cast < int >(area->origin[1]);
+		Vec3i origin = area->get_origin();
+		x0 = origin[0];
+		y0 = origin[1];
 		if (nz > 1 && area->get_ndim() > 2) {
-			z0 = static_cast < int >(area->origin[2]);
+			z0 = origin[2];
 		}
-		// get_region_dims already accommodated for negative origin values
-		if (x0 < 0) x0 = 0;
-		if (y0 < 0) y0 = 0;
-		if (z0 < 0) z0 = 0;
+
+		if (x0 < 0) {
+			x0 = 0;
+			xlen += origin[0];
+		}
+		if (y0 < 0) {
+			y0 = 0;
+			ylen += origin[1];
+		}
+		if (z0 < 0) {
+			z0 = 0;
+			zlen += origin[2];
+		}
+
+		if ((x0 + xlen)> nx) xlen = nx-x0;
+		if ((y0 + ylen)> ny) ylen = ny-y0;
+		if ((z0 + zlen)> nz) zlen = nz-z0;
+
+		if ( xlen <= 0 || ylen <= 0 || zlen <= 0 ) return; // This is fine the region was entirely outside the image
 	}
 
-	size_t area_sec_size = xlen * ylen * mode_size;
+	Vec3i size;
+	if (area != 0) size = area->get_size();
+	else size = Vec3d(nx,ny,nz);
+
+	//size_t area_sec_size = xlen * ylen * mode_size;
+	size_t memory_sec_size = size[0] * size[1] * mode_size;
 	size_t img_row_size = nx * mode_size + pre_row + post_row;
 	size_t area_row_size = xlen * mode_size;
+	size_t memory_row_size = size[0] * mode_size;
 
 	size_t x_pre_gap = x0 * mode_size;
 	size_t x_post_gap = (nx - x0 - xlen) * mode_size;
@@ -774,13 +794,14 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 	float nxlendata[1];
 	int floatsize = (int) sizeof(float);
 	nxlendata[0] = (float)(nx * floatsize);
-	
+
 	for (int k = 0; k < zlen; k++) {
 		if (y_pre_gap > 0) {
 			portable_fseek(file, y_pre_gap, SEEK_CUR);
 		}
-		long k2 = k * area_sec_size;
-		
+		//long k2 = k * area_sec_size;
+		long k2 = k*memory_sec_size;
+
 		for (int j = 0; j < ylen; j++) {
 			if (pre_row > 0) {
 				if (imgtype == IMAGE_ICOS && rw_mode != ImageIO::READ_ONLY && !area) {
@@ -801,19 +822,19 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 			}
 
 			if (rw_mode == ImageIO::READ_ONLY) {
-				if (fread(&cdata[k2 + jj * area_row_size],
+				if (fread(&cdata[k2 + jj * memory_row_size],
 						  area_row_size, 1, file) != 1) {
 					throw ImageReadException("", "incomplete data read");
 				}
 			}
 			else {
-				if (fwrite(&cdata[k2 + jj * area_row_size],
+				if (fwrite(&cdata[k2 + jj * memory_row_size],
 						   area_row_size, 1, file) != 1) {
 					throw ImageWriteException("", "incomplete data write");
 				}
 			}
-				
-			if (x_post_gap > 0) {                
+
+			if (x_post_gap > 0) {
 				portable_fseek(file, x_post_gap, SEEK_CUR);
 			}
 
@@ -843,11 +864,11 @@ void EMUtil::dump_dict(const Dict & dict)
 		EMObject obj = values[i];
 		if( !obj.is_null() ) {
 			string val = obj.to_str();
-	
+
 			if (keys[i] == "datatype") {
 				val = get_datatype_string((EMDataType) (int) obj);
 			}
-	
+
 			fprintf(stdout, "%25s\t%s\n", keys[i].c_str(), val.c_str());
 		}
 	}
@@ -880,7 +901,7 @@ EMData *EMUtil::vertical_acf(const EMData * image, int maxdy)
 	if (!image) {
 		throw NullPointerException("NULL Image");
 	}
-	
+
 	EMData *ret = new EMData();
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
@@ -984,7 +1005,7 @@ bool EMUtil::is_same_ctf(const EMData * image1, const EMData * image2)
 	if (!image2) {
 		throw NullPointerException("image2 is NULL");
 	}
-	
+
 	Ctf *ctf1 = image1->get_ctf();
 	Ctf *ctf2 = image2->get_ctf();
 
@@ -1002,7 +1023,7 @@ static int imgscore_cmp(const void *imgscore1, const void *imgscore2)
 {
 	Assert(imgscore1 != 0);
 	Assert(imgscore2 != 0);
-	
+
 	float c = ((ImageScore *)imgscore1)->score - ((ImageScore *)imgscore2)->score;
 	if (c<0) {
 		return 1;
@@ -1071,10 +1092,10 @@ void EMUtil::process_ascii_region_io(float *data, FILE * file, int rw_mode,
 	Assert(rw_mode == ImageIO::READ_ONLY ||
 		   rw_mode == ImageIO::READ_WRITE ||
 		   rw_mode == ImageIO::WRITE_ONLY);
-	
+
 	int xlen = 0, ylen = 0, zlen = 0;
-	EMUtil::get_region_dims(area, nx, &xlen, ny, &ylen, nz, &zlen);
-	
+	get_region_dims(area, nx, &xlen, ny, &ylen, nz, &zlen);
+
 	int x0 = 0;
 	int y0 = 0;
 	int z0 = 0;
@@ -1084,17 +1105,17 @@ void EMUtil::process_ascii_region_io(float *data, FILE * file, int rw_mode,
 		y0 = (int)area->origin[1];
 		z0 = (int)area->origin[2];
 	}
-	
+
 	int nlines_per_sec = (nx *ny) / nitems_per_line;
 	int nitems_last_line = (nx * ny) % nitems_per_line;
 	if (nitems_last_line != 0) {
 		nlines_per_sec++;
 	}
-	
+
 	if (has_index_line) {
 		nlines_per_sec++;
 	}
-	
+
 	if (z0 > 0) {
 		jump_lines(file, z0 * nlines_per_sec);
 	}
@@ -1104,31 +1125,31 @@ void EMUtil::process_ascii_region_io(float *data, FILE * file, int rw_mode,
 	int gap_nitems = nx - xlen;
 	int ti = 0;
 	int rlines = 0;
-	
-	for (int k = 0; k < zlen; k++) {		
+
+	for (int k = 0; k < zlen; k++) {
 		EMUtil::jump_lines(file, nlines_pre_sec+1);
-		
+
 		int head_nitems = (y0 * nx + x0) % nitems_per_line;
 		int tail_nitems = 0;
 		bool is_head_read = false;
-		
+
 		for (int j = 0; j < ylen; j++) {
-			
+
 			if (head_nitems > 0 && !is_head_read) {
 				EMUtil::process_numbers_io(file, rw_mode, nitems_per_line, mode_size,
 										   nitems_per_line-head_nitems,
 										   nitems_per_line-1, data, &ti, outformat);
 				rlines++;
 			}
-			
+
 			EMUtil::process_lines_io(file, rw_mode, nitems_per_line,
 									 mode_size, (xlen - head_nitems),
 									 data, &ti, outformat);
 
 			rlines += ((xlen - head_nitems)/nitems_per_line);
-			
+
 			tail_nitems = (xlen - head_nitems) % nitems_per_line;
-			
+
 			if ((gap_nitems + tail_nitems) > 0) {
 				head_nitems = nitems_per_line -
 					(gap_nitems + tail_nitems) % nitems_per_line;
@@ -1136,14 +1157,14 @@ void EMUtil::process_ascii_region_io(float *data, FILE * file, int rw_mode,
 			else {
 				head_nitems = 0;
 			}
-			
+
 			is_head_read = false;
-			
+
 			if (tail_nitems > 0) {
 				if ((gap_nitems < (nitems_per_line-tail_nitems)) &&
 					(j != (ylen-1))) {
 					EMUtil::exclude_numbers_io(file, rw_mode, nitems_per_line,
-											   mode_size, tail_nitems, 
+											   mode_size, tail_nitems,
 											   tail_nitems+gap_nitems-1, data, &ti, outformat);
 					is_head_read = true;
 					rlines++;
@@ -1163,7 +1184,7 @@ void EMUtil::process_ascii_region_io(float *data, FILE * file, int rw_mode,
 				}
 			}
 		}
-		
+
 		int ytail_nitems = (ny-ylen-y0) * nx + (nx-xlen-x0) - (nitems_per_line-tail_nitems);
 		EMUtil::jump_lines_by_items(file, ytail_nitems, nitems_per_line);
 	}
@@ -1174,11 +1195,11 @@ void EMUtil::jump_lines_by_items(FILE * file, int nitems, int nitems_per_line)
 {
 	Assert(file);
 	Assert(nitems_per_line > 0);
-	
+
 	if (nitems <= 0) {
 		return;
 	}
-	
+
 	int nlines = nitems / nitems_per_line;
 	if ((nitems % nitems_per_line) != 0) {
 		nlines++;
@@ -1192,7 +1213,7 @@ void EMUtil::jump_lines_by_items(FILE * file, int nitems, int nitems_per_line)
 void EMUtil::jump_lines(FILE * file, int nlines)
 {
 	Assert(file);
-	
+
 	if (nlines > 0) {
 		char line[MAXPATHLEN];
 		for (int l = 0; l < nlines; l++) {
@@ -1214,25 +1235,25 @@ void EMUtil::process_numbers_io(FILE * file, int rw_mode,
 	Assert(data);
 	Assert(p_i);
 	Assert(outformat);
-	
+
 	char line[MAXPATHLEN];
-	
+
 	if (rw_mode == ImageIO::READ_ONLY) {
 		if (!fgets(line, sizeof(line), file)) {
 			Assert("read xplor file failed");
 		}
-		
+
 		int nitems_in_line = (int) (strlen(line) / mode_size);
 		Assert(end <= nitems_in_line);
 		vector<float> d(nitems_in_line);
 		char * pline = line;
-		
+
 		for (int i = 0; i < nitems_in_line; i++) {
 			sscanf(pline, "%f", &d[i]);
 			pline += (int)mode_size;
 		}
-		
-		
+
+
 		for (int i = start; i <= end; i++) {
 			data[*p_i] = d[i];
 			(*p_i)++;
@@ -1244,8 +1265,8 @@ void EMUtil::process_numbers_io(FILE * file, int rw_mode,
 			fprintf(file, outformat, data[*p_i]);
 			(*p_i)++;
 		}
-		
-		portable_fseek(file, mode_size * (nitems_per_line - end-1)+1, SEEK_CUR);		
+
+		portable_fseek(file, mode_size * (nitems_per_line - end-1)+1, SEEK_CUR);
 	}
 }
 
@@ -1261,32 +1282,32 @@ void EMUtil::exclude_numbers_io(FILE * file, int rw_mode,
 	Assert(data);
 	Assert(p_i);
 	Assert(outformat);
-	
+
 	char line[MAXPATHLEN];
-	
+
 	if (rw_mode == ImageIO::READ_ONLY) {
-		
+
 		if (!fgets(line, sizeof(line), file)) {
 			Assert("read xplor file failed");
 		}
 
 		int nitems_in_line =  (int) (strlen(line) / mode_size);
 		Assert(end <= nitems_in_line);
-		
+
 		vector<float> d(nitems_in_line);
 		char *pline = line;
-		
+
 		for (int i = 0; i < nitems_in_line; i++) {
 			sscanf(pline, "%f", &d[i]);
 			pline = pline + (int)mode_size;
 		}
-		
-	
+
+
 		for (int i = 0; i < start; i++) {
 			data[*p_i] = d[i];
 			(*p_i)++;
 		}
-		
+
 		for (int i = end+1; i < nitems_in_line; i++) {
 			data[*p_i] = d[i];
 			(*p_i)++;
@@ -1320,7 +1341,7 @@ void EMUtil::process_lines_io(FILE * file, int rw_mode,
 	if (nitems > 0) {
 		int nlines = nitems / nitems_per_line;
 		for (int i = 0; i < nlines; i++) {
-			EMUtil::process_numbers_io(file, rw_mode, nitems_per_line, mode_size, 0, 
+			EMUtil::process_numbers_io(file, rw_mode, nitems_per_line, mode_size, 0,
 									   nitems_per_line-1, data, p_i, outformat);
 		}
 	}
@@ -1330,7 +1351,7 @@ vector<string> EMUtil::get_euler_names(const string & euler_type)
 {
     vector<string> v;
     string b = "euler_";
-    
+
     if (euler_type == "EMAN") {
         v.push_back(b + "alt");
         v.push_back(b + "az");
@@ -1373,16 +1394,16 @@ vector<string> EMUtil::get_euler_names(const string & euler_type)
 vector<EMObject> EMUtil::get_all_attributes(const string & file_name, const string & attr_name)
 {
 	vector<EMObject> v;
-	
+
 	Assert(file_name != "");
 	Assert(attr_name != "");
-	
+
 	vector<EMData *> vpImg = EMData::read_images(file_name, vector<int>(), true);
 	vector<EMData *>::iterator iter;
 	for(iter = vpImg.begin(); iter!=vpImg.end(); ++iter) {
 		v.push_back((*iter)->get_attr_default(attr_name));
 	}
-	
+
 	return v;
 }
 

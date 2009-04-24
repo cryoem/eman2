@@ -199,6 +199,7 @@ class EMModuleFromFile(object):
 		if em_file_type != IMAGE_UNKNOWN or filename[:4] == "bdb:":
 			n = EMUtil.get_image_count(filename)
 			nx,ny,nz = gimme_image_dimensions3D(filename)
+			print n,nx,ny,nz
 			if n > 1 and nz == 1: 
 				if force_2d:
 					a = EMData()

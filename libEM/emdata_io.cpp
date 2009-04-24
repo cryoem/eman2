@@ -1,39 +1,39 @@
 /**
  * $Id$
  */
- 
+
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
- 
-#include <iomanip> 
+
+#include <iomanip>
 
 #include "emdata.h"
 #include "all_imageio.h"
@@ -84,12 +84,16 @@ void EMData::read_image(const string & filename, int img_index, bool nodata,
 			else {
 				flags &= ~EMDATA_HASCTFF;
 			}
-			
+
 			if (!nodata) {
 				set_size(nx, ny, nz);
+				if (region) {
+					to_zero(); // This could be avoided in favor of setting only the regions that were not read to to zero... but tedious
+				} // else the dimensions of the file being read match those of this
+
 				// If GPU features are enabled there is  danger that rdata will
-				// not be allocated, but set_size takes care of this, so this 
-				// should be safe. 
+				// not be allocated, but set_size takes care of this, so this
+				// should be safe.
 				int err = imageio->read_data(rdata, img_index, region, is_3d);
 				if (err) {
 					throw ImageReadException(filename, "imageio read data failed");
@@ -332,7 +336,7 @@ vector <EMData* > EMData::read_images(const string & filename, vector < int >img
 		else
 			throw ImageReadException(filename, "imageio read data failed");
 	}
-	
+
 	EXITFUNC;
 	return v;
 }

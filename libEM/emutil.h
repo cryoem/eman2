@@ -5,32 +5,32 @@
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
 
 #ifndef eman__emutil__h__
@@ -45,7 +45,7 @@ using std::vector;
 
 // Defining EMDelete using templates
 // Use EMDelete instead of delete as this will be very clean.
-// This should perhaps be moved to somewhere else later to make it 
+// This should perhaps be moved to somewhere else later to make it
 // more widely accessible. (C. Yang 04/27/06)
 template <class T>
 inline void EMDeletePtr(T & x)
@@ -86,7 +86,7 @@ namespace EMAN
 	{
 	public:
 		/** Image pixel data type used in EMAN.
-		 * EM_U means "EM unsigned". for example, EM_USHORT means 
+		 * EM_U means "EM unsigned". for example, EM_USHORT means
 		 * EM unsigned short.
 		 */
 		enum EMDataType
@@ -144,15 +144,15 @@ namespace EMAN
 		 * @return image format type.
 		 */
 		static ImageType get_image_ext_type(const string & file_ext);
-		
+
 		/** Get an image's format type by processing the first 1K of the image.
 		 * @param filename Image file name.
 		 * @return image format type.
 		 */
 		static ImageType get_image_type(const string & filename);
-		
+
 		/** Ask whether or not the given filename is a valid EM image filename
-		 * This is the same thing as checking whether or not the return value of EMUtil.get_image_ext_type 
+		 * This is the same thing as checking whether or not the return value of EMUtil.get_image_ext_type
 		 * is IMAGE_UNKNOWN
 		 * @param filename Image file name.
 		 * @return whether or not it is a valid filename
@@ -172,7 +172,7 @@ namespace EMAN
 		 * @param image_type Image format type.
 		 * @return An ImageIO object.
 		 */
-		static ImageIO *get_imageio(const string & filename, int rw_mode, 
+		static ImageIO *get_imageio(const string & filename, int rw_mode,
 									ImageType image_type = IMAGE_UNKNOWN);
 
 		/** Give each image type a meaningful name.
@@ -180,7 +180,7 @@ namespace EMAN
 		 * @return A name for that type.
 		 */
 		static const char *get_imagetype_name(EMUtil::ImageType type);
-		
+
 		/** Give each data type a meaningful name
 		 * @param type the EMDataType
 		 * @return a name for that data type
@@ -207,11 +207,12 @@ namespace EMAN
 		 * @param nz  Image z size.
 		 * @param image_index Image index.
 		 */
-		static void get_region_origins(const Region * area, int *p_x0, int *p_y0, 
+		static void get_region_origins(const Region * area, int *p_x0, int *p_y0,
 									   int *p_z0 = 0, int nz = 1, int image_index = 0);
 
 		/** Process image region IO. It eithers read a region from an
 		 * image file. Or write a region to an image file.
+		 * Works for regions that are outside the image data dimension area.(David Woolford, April 23 2009)
 		 * @param cdata Data array.
 		 * @param file The image file pointer.
 		 * @param rw_mode Read/write mode. It is either READ_ONLY or WRITE_ONLY.
@@ -229,19 +230,24 @@ namespace EMAN
 		 * @exception ImageWriteException If the write has some error.
 		 */
 		static void process_region_io(void *cdata, FILE * file, int rw_mode,
-									  int image_index, size_t mode_size, int nx, 
-									  int ny, int nz = 1, const Region * area = 0, 
+									  int image_index, size_t mode_size, int nx,
+									  int ny, int nz = 1, const Region * area = 0,
 									  bool need_flip = false, ImageType imgtype=IMAGE_UNKNOWN,
 									  int pre_row = 0, int post_row = 0);
 
 
+		/**
+		 * Works for regions that are outside the image data dimension area.
+		 * The only function that calls this is in xplorio.cpp - that function
+		 * throws if the region is invalid.
+		 */
 		static void process_ascii_region_io(float *data, FILE * file, int rw_mode,
 											int image_index, size_t mode_size,
 											int nx, int ny, int nz,
 											const Region * area, bool has_index_line,
 											int nitems_per_line, const char *outformat);
 
-		
+
 		/** Dump a Dict object.
 		 * @param dict A Dict object.
 		 */
@@ -261,32 +267,32 @@ namespace EMAN
 		 * @return whether two EMData images have the same CTF.
 		 */
 		static bool is_same_ctf(const EMData * image1, const EMData * image2);
-		
+
 
 		static bool is_complex_type(EMDataType datatype);
-		
+
 		static void jump_lines(FILE * file, int nlines);
-		
+
         static vector<string> get_euler_names(const string & euler_type);
 
 		/** Get an attribute from a stack of image, returned as a vector
-		 * 
+		 *
 		 * @param file_name the image file name
 		 * @param attr_name The header attribute name.
-		 * @return the vector of attribute value 
+		 * @return the vector of attribute value
 		 * @exception NotExistingObjectException when access an non-existing attribute
 		 * @exception InvalidCallException when call this function for a non-stack image */
 		static vector<EMObject> get_all_attributes(const string & file_name, const string & attr_name);
-        
-		
+
+
 		static bool cuda_available() {
 #ifdef EMAN2_USING_CUDA
-			return true;	
+			return true;
 #else
 			return false;
 #endif
 		}
-		
+
 		inline static void* em_malloc(const size_t size) {
 			return malloc(size);
 		}
@@ -314,27 +320,27 @@ namespace EMAN
 											 off_t file_size);
 
 		static void jump_lines_by_items(FILE * file, int nitems, int nitems_per_line);
-		
-		
+
+
 
 		static void process_numbers_io(FILE * file, int rw_mode,
 									   int nitems_per_line,
 									   size_t mode_size, int start, int end,
 									   float *data, int *p_i,
 									   const char *outformat);
-		
+
 		static void exclude_numbers_io(FILE * file, int rw_mode,
 									   int nitems_per_line,
 									   size_t mode_size, int start, int end,
 									   float * data, int *p_i,
 									   const char *outformat);
-		
+
 		static void process_lines_io(FILE * file, int rw_mode,
 									 int nitems_per_line, size_t mode_size,
 									 int nitems, float *data, int *p_i,
 									 const char *outformat);
 
-        
+
 	};
 
 	struct ImageScore {
@@ -349,7 +355,7 @@ namespace EMAN
 		~ImageSort();
 
 		void sort();
-		
+
 		void set(int i, float score);
 		int get_index(int i) const;
 		float get_score(int i) const;
@@ -359,7 +365,7 @@ namespace EMAN
 		ImageScore* image_scores;
 		int n;
 
-	};		
+	};
 }
 
 #endif	//eman__emutil__h__

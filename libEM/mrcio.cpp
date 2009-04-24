@@ -874,7 +874,7 @@ int MrcIO::generate_machine_stamp()
 		p[3] = 0;
 	}
 	else {
-		p[0] = 0x44;	
+		p[0] = 0x44;
 		p[1] = 0x41;
 		p[2] = 0;
 		p[3] = 0;

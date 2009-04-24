@@ -108,6 +108,30 @@ class EMFormTask(QtCore.QObject):
 		database 
 		'''
 		raise NotImplementedError
+	
+class EMErrorMessageDisplay:
+	'''
+	A step towards a better design
+	'''
+	def __init__(self): pass
+	def run(error_message):
+		'''
+		error_message is a list of error messages
+		'''
+		msg = QtGui.QMessageBox()
+		msg.setWindowTitle("Almost")
+		mes = ""
+		for error in error_message:
+			mes += error
+			
+			if len(error) > 0 and error[-1] != '.':
+				# correct my own inconsistencies....AWESOME
+				mes += '.'
+			if error != error_message[-1]: mes += "\n"
+		msg.setText(mes)
+		msg.exec_()
+	
+	run = staticmethod(run)
 		
 class WorkFlowTask(QtCore.QObject):
 	def __init__(self,application):
@@ -330,18 +354,19 @@ class WorkFlowTask(QtCore.QObject):
 		'''
 		error_message is a list of error messages
 		'''
-		msg = QtGui.QMessageBox()
-		msg.setWindowTitle("Almost")
-		mes = ""
-		for error in error_message:
-			mes += error
-			
-			if len(error) > 0 and error[-1] != '.':
-				# correct my own inconsistencies....AWESOME
-				mes += '.'
-			if error != error_message[-1]: mes += "\n"
-		msg.setText(mes)
-		msg.exec_()
+		EMErrorMessageDisplay.run(error_message)
+#		msg = QtGui.QMessageBox()
+#		msg.setWindowTitle("Almost")
+#		mes = ""
+#		for error in error_message:
+#			mes += error
+#			
+#			if len(error) > 0 and error[-1] != '.':
+#				# correct my own inconsistencies....AWESOME
+#				mes += '.'
+#			if error != error_message[-1]: mes += "\n"
+#		msg.setText(mes)
+#		msg.exec_()
 		
 	def get_latest_r2d_classes(self):
 		dirs = get_numbered_directories("r2d_")

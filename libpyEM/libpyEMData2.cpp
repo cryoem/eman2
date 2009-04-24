@@ -179,6 +179,8 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_mult_overloads_1_2, mult, 1, 
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_norm_pad_overloads_2_3, EMAN::EMData::norm_pad, 2, 3)
 
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_read_data_2_3, read_data, 2, 6)
+
 }// namespace
 
 
@@ -292,7 +294,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("get_supp_pickle", &EMAN::EMData::get_supp_pickle)
 	.def("set_supp_pickle", &EMAN::EMData::set_supp_pickle)
 	.def("write_data",&EMAN::EMData::write_data)
-	.def("read_data",&EMAN::EMData::read_data)
+	.def("read_data",&EMAN::EMData::read_data,EMAN_EMData_read_data_2_3())
 	.def("process_inplace", (void (EMAN::EMData::*)(const std::string&, const EMAN::Dict&) )&EMAN::EMData::process_inplace, EMAN_EMData_process_inplace_overloads_1_2())
 	.def("process_inplace", (void (EMAN::EMData::*)(EMAN::Processor*) )&EMAN::EMData::process_inplace)
 	.def("process", (EMAN::EMData* (EMAN::EMData::*)(const std::string&, const EMAN::Dict&) const )&EMAN::EMData::process, EMAN_EMData_process_overloads_1_2()[ return_value_policy< manage_new_object >() ])

@@ -728,14 +728,24 @@ def gimme_image_dimensions3D( imagefilename ):
 	#pdb.set_trace()
 	
 	read_header_only = True
-	e = EMData();
+	e = EMData()
 	e.read_image(imagefilename,0, read_header_only)
-	
-	xsize = e.get_xsize()
-	ysize = e.get_ysize()
-	zsize = e.get_zsize()
+	d = e.get_attr_dict()
+	xsize = d["nx"]
+	ysize = d["ny"]
+	zsize = d["nz"]
 	
 	return (xsize, ysize,zsize)
+
+def get_supported_3d_stack_formats():
+	'''
+	@return a list of the IMAGE formats in EMAN2 that support 3D stacks
+	Return is formatted like ['hdf','spi']
+	Note using http://blake.bcm.tmc.edu/emanwiki/EMAN2ImageFormats as of April 23 2009
+	Note that "bdb:" is not returned though, represented an aberration. Currently the 
+	calling function must be aware of this
+	'''
+	return ["hdf","spi","pif","emim"]
 
 def remove_file( file_name, img_couples_too=True ):
 	'''

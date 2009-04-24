@@ -5,38 +5,38 @@
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
 
 #include <cmath>
 
 #ifdef _WIN32
-	#include <cfloat> 
+	#include <cfloat>
 #endif	//_WIN32
 
 #include "imageio.h"
@@ -67,20 +67,21 @@ void ImageIO::check_region(const Region * area, const FloatSize & max_size,
 		}
 		int img_ndim = max_size.get_ndim();
 		int area_ndim = area->get_ndim();
-		
+
 		if (area_ndim > img_ndim) {
 			char desc[256];
 			sprintf(desc, "Image is %dD. Cannot read %dD region", img_ndim, area_ndim);
 			throw ImageReadException("", desc);
 		}
-		
-		if (!area->is_region_in_box(max_size)) {
-			char desc[1024];
-			sprintf(desc, "Region box %s is outside image area (%d,%d,%d)",
-					area->get_string().c_str(), (int)max_size[0],
-					(int)max_size[1], (int)max_size[2]);
-			throw ImageReadException("", desc);
-		}
+
+		// No longer need this - EMUtil::process_region_io handles regions that are outside the image
+//		if (!area->is_region_in_box(max_size)) {
+//			char desc[1024];
+//			sprintf(desc, "Region box %s is outside image area (%d,%d,%d)",
+//					area->get_string().c_str(), (int)max_size[0],
+//					(int)max_size[1], (int)max_size[2]);
+//			throw ImageReadException("", desc);
+//		}
 	}
 }
 
@@ -169,7 +170,7 @@ FILE *ImageIO::sfopen(const string & filename, IOMode mode,
 			*is_new = true;
 		}
 	}
-	
+
 	if (!f) {
 		throw FileAccessException(filename);
 	}
@@ -191,10 +192,10 @@ void ImageIO::getRenderMinMax(float * data, const int nx, const int ny, float& r
 	if (rendermax<=rendermin || std::isnan(rendermin) || std::isnan(rendermax)) {
 #endif
 		float m=0.0f,s=0.0f;
-		
+
 		int size = nx*ny*nz;
 		float min=data[0],max=data[0];
-		
+
 		for (int i=0; i<size; ++i) { m+=data[i]; s+=data[i]*data[i]; min=data[i]<min?data[i]:min; max=data[i]>max?data[i]:max; }
 		m/=(float)(size);
 		s=sqrt(s/(float)(size)-m*m);
@@ -202,9 +203,9 @@ void ImageIO::getRenderMinMax(float * data, const int nx, const int ny, float& r
 		if (s<=0 || _isnan(s)) s=1.0;	// this means all data values are the same
 #else
 		if (s<=0 || std::isnan(s)) s=1.0;	// this means all data values are the same
-#endif	//_WIN32	
+#endif	//_WIN32
 		rendermin=m-s*5.0f;
-		rendermax=m+s*5.0f;	
+		rendermax=m+s*5.0f;
 		if (rendermin<=min) rendermin=min;
 		if (rendermax>=max) rendermax=max;
 	}

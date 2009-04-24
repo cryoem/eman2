@@ -5,32 +5,32 @@
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
 
 #include <cstring>
@@ -63,7 +63,7 @@ XplorIO::XplorIO(const string & file, IOMode rw)
 	is_big_endian = ByteOrder::is_host_big_endian();
 	is_new_file = false;
 	nlines_in_header = 0;
-	
+
 	nx = 0;
 	ny = 0;
 	nz = 0;
@@ -116,7 +116,7 @@ void XplorIO::init()
 		float cellx = 0;
 		float celly = 0;
 		float cellz = 0;
-		
+
 		while(fgets(line, sizeof(line), xplor_file)) {
 			line[strlen(line)-1] = '\0';
 			if (i == 2) {
@@ -137,7 +137,7 @@ void XplorIO::init()
 			else if (i == (ntitle+5)) {
 				break;
 			}
-			
+
 			i++;
 		}
 		nlines_in_header = i;
@@ -145,7 +145,7 @@ void XplorIO::init()
 		apix_y = celly / ny;
 		apix_z = cellz / nz;
 	}
-			
+
 	EXITFUNC;
 }
 
@@ -158,14 +158,14 @@ bool XplorIO::is_valid(const void *first_block)
 	char *buf = (char *)(first_block);
 	string line1 = Util::get_line_from_string(&buf);
 	bool result = true;
-	
+
 	if (line1.size() != 0) {
 		result = false;
 	}
 	else {
 		string line2 = Util::get_line_from_string(&buf);
 		int ntitle = 0;
-	
+
 		if ((int)line2.size() != INTEGER_SIZE) {
 			result = false;
 		}
@@ -179,7 +179,7 @@ bool XplorIO::is_valid(const void *first_block)
 				for (int i = 0; i < ntitle+2; i++) {
 					Util::get_line_from_string(&buf);
 				}
-				
+
 				string modeline = Util::get_line_from_string(&buf);
 				if (modeline != SECTION_MODE) {
 					result = false;
@@ -187,7 +187,7 @@ bool XplorIO::is_valid(const void *first_block)
 			}
 		}
 	}
-	
+
 	EXITFUNC;
 	return result;
 }
@@ -195,15 +195,15 @@ bool XplorIO::is_valid(const void *first_block)
 int XplorIO::read_header(Dict &dict, int image_index, const Region *area, bool)
 {
 	ENTERFUNC;
-	
+
 	//single image format, index can only be zero
 	image_index = 0;
 	check_read_access(image_index);
 	check_region(area, FloatSize(nx, ny, nz), is_new_file);
-	
+
 	int xlen = 0, ylen = 0, zlen = 0;
 	EMUtil::get_region_dims(area, nx, &xlen, ny, &ylen, nz, &zlen);
-	
+
 	dict["nx"] = xlen;
 	dict["ny"] = ylen;
 	dict["nz"] = zlen;
@@ -215,7 +215,7 @@ int XplorIO::read_header(Dict &dict, int image_index, const Region *area, bool)
 	dict["XPLOR.alpha"] = cell_alpha;
 	dict["XPLOR.beta"] = cell_beta;
 	dict["XPLOR.gama"] = cell_gama;
-	
+
 	EXITFUNC;
 	return 0;
 }
@@ -232,7 +232,7 @@ int XplorIO::write_header(const Dict & dict, int image_index, const Region* area
 		EXITFUNC;
 		return 0;
 	}
-	
+
 	nx = dict["nx"];
 	ny = dict["ny"];
 	nz = dict["nz"];
@@ -242,11 +242,11 @@ int XplorIO::write_header(const Dict & dict, int image_index, const Region* area
 	time_t t0 = time(0);
 	struct tm *t = localtime(&t0);
 	rewind(xplor_file);
-	
+
 	fprintf(xplor_file, "\n");
 	fprintf(xplor_file, "%8d\n", 1);
 	fprintf(xplor_file, "\"%s\" written by EMAN at %s", filename.c_str(), asctime(t));
-	
+
 	int z0 = -nz / 2;
 	int z1 = (nz - 1) / 2;
 
@@ -262,13 +262,13 @@ int XplorIO::write_header(const Dict & dict, int image_index, const Region* area
 	char fformat[256];
 	sprintf(fformat, "%s%s%s%s%s%s\n",
 			OUTFORMAT, OUTFORMAT,OUTFORMAT, OUTFORMAT, OUTFORMAT,OUTFORMAT);
-	
-	fprintf(xplor_file, fformat, 
+
+	fprintf(xplor_file, fformat,
 			nx * pixel, ny * pixel, nz * pixel, 90.0, 90.0, 90.0);
 	fprintf(xplor_file, "ZYX\n");
 	nlines_in_header = 5;
 	flush();
-	
+
 	EXITFUNC;
 	return 0;
 }
@@ -276,11 +276,24 @@ int XplorIO::write_header(const Dict & dict, int image_index, const Region* area
 int XplorIO::read_data(float *data, int image_index, const Region *area, bool)
 {
 	ENTERFUNC;
-	
+
 	//single image format, index can only be zero
 	image_index = 0;
 	check_read_access(image_index);
-	check_region(area, FloatSize(nx, ny, nz), is_new_file);
+	FloatSize max_size = FloatSize(nx, ny, nz);
+	check_region(area, max_size, is_new_file);
+
+	// Had to put this here because this is the only function that calls
+	// EMUtil::process_ascii_region_io - this function does not allow regions that
+	// are outside the image dimensions. This is opposed to those functions which
+	// call EMUtil::process_region_io, which can handle it. David Woolford, April 23 2009
+	if (!area->is_region_in_box(max_size)) {
+		char desc[1024];
+		sprintf(desc, "Region box %s is outside image area (%d,%d,%d)",
+				area->get_string().c_str(), (int)max_size[0],
+				(int)max_size[1], (int)max_size[2]);
+		throw ImageReadException("", desc);
+	}
 
 	Assert(nlines_in_header > 0);
 	rewind(xplor_file);
@@ -289,7 +302,7 @@ int XplorIO::read_data(float *data, int image_index, const Region *area, bool)
 	EMUtil::process_ascii_region_io(data, xplor_file, ImageIO::READ_ONLY, image_index,
 									FLOAT_SIZE, nx, ny, nz, area, true,
 									NFLOAT_PER_LINE, OUTFORMAT);
-	
+
 	EXITFUNC;
 	return 0;
 }
@@ -304,7 +317,7 @@ int XplorIO::read_data(float *data, int, const Region *, bool)
 	int nxy = nx * ny;
 	int nlines = nxy / step;
 	int nleft = nxy - nlines * step;
-	
+
 	for (int k = 0; k < nz; k++) {
 		fgets(line, sizeof(line), xplor_file);
 		int kk = 0;
@@ -312,17 +325,17 @@ int XplorIO::read_data(float *data, int, const Region *, bool)
 		if (kk != (k+1)) {
 			LOGERR("section index = %d. It should be %d\n", kk, (k+1));
 		}
-		
+
 		int k2 = k * nxy;
-		
+
 		for (int i = 0; i < nlines; i++) {
 			fgets(line, sizeof(line), xplor_file);
 			int i2 = k2 + i * step;
 			sscanf(line, "%f %f %f %f %f %f",
-				   &data[i2], &data[i2+1], &data[i2+2], 
+				   &data[i2], &data[i2+1], &data[i2+2],
 				   &data[i2+3], &data[i2+4], &data[i2+5]);
 		}
-		
+
 		if (nleft > 0) {
 			int i2 = k2 + nlines * step;
 			fgets(line, sizeof(line), xplor_file);
@@ -333,8 +346,8 @@ int XplorIO::read_data(float *data, int, const Region *, bool)
 			}
 		}
 	}
-			
-	
+
+
 	EXITFUNC;
 	return 0;
 }
@@ -355,10 +368,10 @@ int XplorIO::write_data(float *data, int image_index, const Region* area,
 		rewind(xplor_file);
 		EMUtil::jump_lines(xplor_file, nlines_in_header);
 	}
-	
+
 	int nsecs = nx * ny;
 	int step = NFLOAT_PER_LINE;
-	
+
 	if (!area) {
 		for (int k = 0; k < nz; k++) {
 			fprintf(xplor_file, "%8d\n", (k+1));
@@ -378,7 +391,7 @@ int XplorIO::write_data(float *data, int image_index, const Region* area,
 		}
 
 		// not sure what this is doing. so comment out.
-		//fprintf(xplor_file, "%8d\n", -9999); 
+		//fprintf(xplor_file, "%8d\n", -9999);
 	}
 	else {
 		EMUtil::process_ascii_region_io(data, xplor_file, ImageIO::WRITE_ONLY,
@@ -386,9 +399,9 @@ int XplorIO::write_data(float *data, int image_index, const Region* area,
 										area, true, NFLOAT_PER_LINE, OUTFORMAT);
 
 	}
-	
+
 	EXITFUNC;
-	
+
 	return 0;
 }
 

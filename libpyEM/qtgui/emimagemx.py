@@ -840,10 +840,15 @@ class EMImageMXModule(EMGUIModule):
 				self.data=None
 				if update_gl: self.updateGL()
 				return
-			mean=d["mean"]
-			sigma=d["sigma"]
-			m0=d["minimum"]
-			m1=d["maximum"]
+			try:
+				mean=d["mean"]
+				sigma=d["sigma"]
+				m0=d["minimum"]
+				m1=d["maximum"]
+			except:
+				print d
+				print "failed key"
+			
 			if sigma == 0: continue
 
 
@@ -2576,9 +2581,13 @@ class EMDataListCache:
 	
 	def get_image_header(self,idx):
 		if self.mode == EMDataListCache.FILE_MODE:
-			e = EMData()
-			e.read_image(self.file_name,idx,True)
-			return e.get_attr_dict()
+			if len(self.file_name) > 3 and self.file_name[:4] == "bdb:":
+				db = db_open_dict(self.file_name)
+				return db.get_header(idx)
+			else:
+				e = EMData()
+				e.read_image(self.file_name,idx,True)
+				return e.get_attr_dict()
 		elif self.mode == EMDataListCache.LIST_MODE:
 			return self.images[idx].get_attr_dict()
 

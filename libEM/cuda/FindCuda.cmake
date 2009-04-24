@@ -117,7 +117,7 @@ ELSE(CUDA_BUILD_TYPE MATCHES "Emulation")
 ENDIF(CUDA_BUILD_TYPE MATCHES "Emulation")
 
 SET(CUDA_BUILD_CUBIN TRUE CACHE BOOL "Generate and parse .cubin files in Device mode.")
-SET(CUDA_NVCC_FLAGS "" CACHE STRING "Semi-colon delimit multiple arguments.")
+SET(CUDA_NVCC_FLAGS "--host-compilation c++" CACHE STRING "Semi-colon delimit multiple arguments.")
 
 # Search for the cuda distribution.
 IF(NOT CUDA_INSTALL_PREFIX)
@@ -341,7 +341,7 @@ MACRO(CUDA_add_custom_commands cuda_target)
 
     SET(source_file ${CMAKE_CURRENT_SOURCE_DIR}/${file})
 
-    # MESSAGE("${CUDA_NVCC} ${source_file} ${CUDA_NVCC_FLAGS} ${nvcc_flags} -cuda -o ${generated_file} ${CUDA_NVCC_INCLUDE_ARGS}")
+    MESSAGE("${CUDA_NVCC} ${source_file} ${CUDA_NVCC_FLAGS} ${nvcc_flags} -cuda -o ${generated_file} ${CUDA_NVCC_INCLUDE_ARGS}")
     
     # Bring in the dependencies.  Creates a variable CUDA_NVCC_DEPEND
 	SET(cmake_dependency_file "${generated_file}.depend")

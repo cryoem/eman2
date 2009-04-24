@@ -36,6 +36,7 @@
 #include "emdata.h"
 #include "ctf.h"
 #include "portable_fileio.h"
+#include "imageio.h"
 
 #include <cstring>
 #include <sstream>
@@ -43,7 +44,7 @@ using std::stringstream;
 
 #include <iomanip>
 using std::setprecision;
-		 
+
 
 using namespace EMAN;
 
@@ -191,7 +192,7 @@ EMData* EMData::get_fft_phase()
 #ifdef EMAN2_USING_CUDA
 #include <cuda_runtime_api.h>
 #endif
-float* EMData::get_data() const 
+float* EMData::get_data() const
 {
 	size_t num_bytes = nx*ny*nz*sizeof(float);
 	if (num_bytes > 0 && rdata == 0) {
@@ -208,7 +209,7 @@ float* EMData::get_data() const
 	}
 	flags &= ~EMDATA_CPU_NEEDS_UPDATE;
 #endif
-	return rdata; 
+	return rdata;
 
 }
 
@@ -222,13 +223,22 @@ void EMData::write_data(string fsp,size_t loc) {
 	fclose(f);
 }
 
-void EMData::read_data(string fsp,size_t loc) {
+void EMData::read_data(string fsp,size_t loc,const Region* area, const int file_nx, const int file_ny, const int file_nz) {
 	FILE *f = 0;
 	f=fopen(fsp.c_str(), "rb");
 	if (!f) throw FileAccessException(fsp);
-	
+	int fnx = nx;
+	if (file_nx != 0) fnx = file_nx;
+	int fny = ny;
+	if (file_ny != 0) fny = file_ny;
+	int fnz = nz;
+	if (file_nz != 0) fnz = file_nz;
+
 	portable_fseek(f,loc,SEEK_SET);
-	if (fread(get_data(),nx*ny,nz*4,f)!=(size_t)(nz*4)) throw FileAccessException(fsp);
+	EMUtil::process_region_io(get_data(), f, ImageIO::READ_ONLY,
+							  0, 4,fnx,fny,fnz,area);
+//	portable_fseek(f,loc,SEEK_SET);
+//	if (fread(get_data(),nx*ny,nz*4,f)!=(size_t)(nz*4)) throw FileAccessException(fsp);
 	fclose(f);
 }
 
@@ -579,7 +589,7 @@ float EMData::get_circle_mean()
 	for (int i = 0; i < nx*ny*nz; i++) {
 		if (d[i]) { n+=1.0; s+=data[i]; }
 	}
-	
+
 
 	float result = (float)(s/n);
 	busy = false;
@@ -631,9 +641,9 @@ void EMData::set_size(int x, int y, int z)
 	}
 
 	int old_nx = nx;
-	
+
 	size_t size = (size_t)(x) * (size_t)y * (size_t)z * sizeof(float);
-	
+
 	if (rdata != 0) {
 		rdata = (float*)EMUtil::em_realloc(rdata,size);
 	} else {
@@ -650,7 +660,7 @@ void EMData::set_size(int x, int y, int z)
 		throw BadAllocException(message);
 	}
 
-	
+
 	if (old_nx == 0) {
 		EMUtil::em_memset(rdata,0,size);
 	}
@@ -659,22 +669,22 @@ void EMData::set_size(int x, int y, int z)
 		EMUtil::em_free(supp);
 		supp = 0;
 	}
-	
+
 #ifdef EMAN2_USING_CUDA
 	// This is important
  	free_cuda_memory();
 #endif // EMAN2_USING_CUDA
-	
+
 	nx = x;
 	ny = y;
 	nz = z;
 	nxy = nx*ny;
-	
+
 	attr_dict["nx"] = x;
 	attr_dict["ny"] = y;
 	attr_dict["nz"] = z;
 
-	
+
 	update();
 	EXITFUNC;
 }
@@ -705,21 +715,21 @@ void EMData::set_size_cuda(int x, int y, int z)
 	nx = x;
 	ny = y;
 	nz = z;
-	
+
 	nxy = nx*ny;
 
 	attr_dict["nx"] = x;
 	attr_dict["ny"] = y;
 	attr_dict["nz"] = z;
-	
+
 	get_cuda_data();
-	
+
 // 	cuda_cache_handle = cuda_rw_cache.cache_data(this,rdata,nx,ny,nz); Let's be lazy
 	// This is important
 	free_memory(); // Now release CPU memory, seeing as a GPU resize invalidates it - Actually let's be lazy about it instead
-	
+
 	gpu_update();
-	
+
 	EXITFUNC;
 }
 
@@ -1000,7 +1010,7 @@ void EMData::set_attr(const string & key, EMObject val)
 	}
 
 	attr_dict[key] = val;
-	
+
 
 	/* data attribute nx, ny, nz will resize the image */
 	if(rdata != 0) {
@@ -1154,17 +1164,17 @@ vector<Vec3i > find_region(EMData* image,const vector<Vec3i >& coords, const flo
 			}
 		}
 	}
-	
+
 	vector<Vec3i> ret;
 	for(vector<Vec3i>::const_iterator it = two_six_connected.begin(); it != two_six_connected.end(); ++it ) {
 		for(vector<Vec3i>::const_iterator it2 = coords.begin(); it2 != coords.end(); ++it2 ) {
 			if  (image->get_value_at((*it2)[0],(*it2)[1],(*it2)[2]) != value) throw;
 			Vec3i c = (*it)+(*it2);
-			
+
 			if ( c[0] < 0 || c[0] >= image->get_xsize()) continue;
 			if ( c[1] < 0 || c[1] >= image->get_ysize()) continue;
 			if ( c[2] < 0 || c[2] >= image->get_zsize()) continue;
-			
+
 			if( image->get_value_at(c[0],c[1],c[2]) == value ) {
 				if (find(ret.begin(),ret.end(),c) == ret.end()) {
 					if (find(region.begin(),region.end(),c) == region.end()) {

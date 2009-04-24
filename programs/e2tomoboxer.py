@@ -33,7 +33,7 @@
 from optparse import OptionParser
 import sys
 import os
-from EMAN2 import file_exists, gimme_image_dimensions3D,EMANVERSION,EMData,Region,Transform,get_image_directory
+from EMAN2 import file_exists, gimme_image_dimensions3D,EMANVERSION,EMData,Region,Transform,get_image_directory,db_check_dict,db_open_dict,db_close_dict
 from pyemtbx.boxertools import Cache,get_idd_image_entry,set_idd_image_entry, Box
 from emapplication import get_application, EMStandAloneApplication,EMQtWidgetModule
 from emimage2d import EMImage2DModule
@@ -104,7 +104,7 @@ class ShrunkenTomogram:
 		db_name =  tomo_db_name+ShrunkenTomogram.db_name
 		if not db_check_dict(db_name): 
 		#		print "db failed",db_name
-			return None #
+			return [None,None] #
 		
 		db = db_open_dict(db_name)
 		
@@ -112,13 +112,13 @@ class ShrunkenTomogram:
 			for idx in range(0,db["maxrec"]+1):
 				header = db.get_header(idx)
 				try:
-					if header["shrunken_from"] == image_name:
+					if header["shrunken_from"] == file_name:
 						return [db_name,idx]
 				except:
 					pass
 				
 		db_close_dict(db_name)
-		return None
+		return [None,None]
 	
 	get_shrunken_resident_name = staticmethod(get_shrunken_resident_name)
 		
@@ -146,9 +146,12 @@ class ShrunkenTomogram:
 				progress = QtGui.QProgressDialog(shrink_thread.get_action_string(), "abort", 0, shrink_thread.get_total_steps(),None)
 				progress.setWindowTitle("Shrinking tomogram by %i" %shrink)
 				progress.show()
+				print "showed the progress dialog"
 				tally = -1
 				shrink_thread.start()
+				print "started thread"
 				while 1:
+					print "in while"
 					get_application().processEvents()
 					if progress.wasCanceled():
 						shrink_thread.quit()
@@ -226,9 +229,11 @@ class ShrinkThread(QtCore.QThread):
 		try:
 			self.image = EMData()
 			self.image.read_image(self.file_name,0)
+			print "read image"
 			self.current_step = 0
 			self.action_string = "Shrinking by %i" %self.shrink
 			self.image.process_inplace("math.meanshrink",{"n":self.shrink})
+			print "shrunk the image"
 			self.current_step = 1
 		except: pass
 		self.exit() # is this necessary
@@ -774,13 +779,18 @@ class EMTomoBoxerModule:
 			a = EMData()
 			direction = image.get_attr("sum_direction")
 			half_box = self.box_size/2
+			
+			[file_name,idx] = ShrunkenTomogram.get_shrunken_resident_name(self.file_name)
+			if file_name ==  None: 
+				file_name = self.file_name
+				idx = 0
 			if direction == "z":
 				nz = image.get_attr("sum_pixels")
 				nx = self.box_size
 				ny = self.box_size
 				region = Region(coord[0]-half_box,coord[1]-half_box,0,nx,ny,nz)
 				
-				a.read_image(self.file_name,0,False,region)
+				a.read_image(file_name,idx,False,region)
 				b = a.process("misc.directional_sum",{"direction":"y"})
 				b.set_size(int(nx),int(nz),1)
 			elif direction == "y":
@@ -788,7 +798,7 @@ class EMTomoBoxerModule:
 				nx = self.box_size
 				nz = self.box_size
 				region = Region(coord[0]-half_box,0,coord[1]-half_box,nx,ny,nz)
-				a.read_image(self.file_name,0,False,region)
+				a.read_image(file_name,idx,False,region)
 				b = a.process("misc.directional_sum",{"direction":"z"})
 				b.set_size(int(nx),int(ny),1)
 			elif direction == "x":
@@ -796,7 +806,7 @@ class EMTomoBoxerModule:
 				ny = self.box_size
 				nz = self.box_size
 				region = Region(0,coord[0]-half_box,coord[1]-half_box,nx,ny,nz)
-				a.read_image(self.file_name,0,False,region)
+				a.read_image(file_name,idx,False,region)
 				b = a.process("misc.directional_sum",{"direction":"z"})
 				b.set_size(int(nx),int(ny),1)
 			
@@ -821,7 +831,84 @@ class EMTomoBoxerModule:
 			self.positioning_2d_window.updateGL()
 	
 	def run_output_dialog(self):
-		pass
+		[file_name,idx] = ShrunkenTomogram.get_shrunken_resident_name(self.file_name)
+		file_names = [self.file_name]
+		file_indices = [0]
+		if file_name !=  None: 
+			file_names.append(file_name)
+			file_indices.append(idx)
+		
+		self.form = TomoBoxerOutputForm(self,file_names,file_indices)
+		self.form.run_form()
+		
+	def get_num_boxes(self):
+		''' @return the number of boxes currently in the image '''
+		return len(self.coord_list)
+
+from emsprworkflow import EMFormTask
+from emdatastorage import ParamDef
+class TomoBoxerOutputForm(EMFormTask):
+	def __init__(self,target,file_names,file_indices):
+		EMFormTask.__init__(self)
+		self.window_title = "e2tomoboxer write output"
+		self.preferred_size = [240,240]
+		self.target = weakref.ref(target)
+		self.file_names = file_names # a list of file_names
+		self.file_indices = file_indices # list the file indices, import if accessing images from stacks
+	def get_params(self):
+		params = []
+		box_size = self.target().get_box_size()
+		xout = ParamDef(name="xout",vartype="int",desc_short="Output nx",desc_long="The number of pixels of the output sub regions will have in the x direction",property=None,defaultunits=box_size,choices=None)
+		yout = ParamDef(name="yout",vartype="int",desc_short="Output ny",desc_long="The number of pixels of the output sub regions will have in the y direction",property=None,defaultunits=box_size,choices=None)
+		zout = ParamDef(name="zout",vartype="int",desc_short="Output nz",desc_long="The number of pixels of the output sub regions will have in the z direction",property=None,defaultunits=box_size,choices=None)
+		
+		pdatafile = ParamDef(name="data_file",vartype="string",desc_short="Extract from",desc_long="The name of the file that will be used for the subvolume extraction.",property=None,defaultunits=[],choices=self.file_names)
+		pwrite_stack = ParamDef(name="write_stack",vartype="boolean",desc_short="Write to 3D stack",desc_long="Tick if you want the output files written to a stack.",property=None,defaultunits=False,choices=None)
+		poutname = ParamDef(name="out_file",vartype="string",desc_short="Output file name",desc_long="If writing to a stack this is literally the name of the output file.\nIf writing many output image names the name you specify will be altered, e.g. by adding '00' for the first image and so on.\nYou will be told if any files already exist.\nEMAN2 style bdb syntax is supported.",property=None,defaultunits="something.hdf",choices=None)
+	
+		params.append([xout,yout,zout])
+		params.append(pdatafile)
+		params.append(pwrite_stack)
+		params.append(poutname)
+		return params
+	
+	def on_form_ok(self,params):
+		from EMAN2 import get_supported_3d_stack_formats
+		print params
+		# check file_names
+		error_message = []
+		if params["write_stack"]:
+			fine = True
+			out_file = params["out_file"]
+			if len(out_file) > 4 and out_file[:4] == "bdb:":
+				if db_check_dict(out_file):
+					error_message.append("The bdb file name you specified exists")
+					fine = False
+			elif file_exists(out_file):
+				# should prompt the user to see if they want to append or overwrite
+				error_message.append("The file name you specified exists")
+				fine = False
+			else:
+				d = out_file.split('.')
+				if len(d) < 2: fine = False
+				else:
+					fmts = get_supported_3d_stack_formats()
+					if d[-1] not in fmts:
+						e = "The format you specifed is not supported. We support ["
+						for f in fmts:
+							if f != fmts[0]:
+								e += " ,"
+							e+= f
+						e+="]"
+						error_message.append(e)
+						fine = False
+						
+			if not fine:
+				from emsprworkflow import EMErrorMessageDisplay
+				print "running error message"
+				EMErrorMessageDisplay.run(error_message)
+				return
+			
 			
 
 class EMTomoBoxerInspectorModule(EMQtWidgetModule):

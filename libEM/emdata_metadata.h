@@ -106,7 +106,7 @@ void write_data(string fsp,size_t loc);
  * @author Steve Ludtke
  * @date Mon Jun 23, 2008
 */
-void read_data(string fsp,size_t loc);
+void read_data(string fsp,size_t loc,const Region* area=0,const int file_nx=0, const int file_ny=0, const int file_nz=0);
 
 
 

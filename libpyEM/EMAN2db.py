@@ -266,14 +266,18 @@ def db_read_image(self,fsp,*parms):
 	Region reading is not supported for bdb:entries yet."""
 	if fsp[:4].lower()=="bdb:" :
 		db,keys=db_open_dict(fsp,True,True)
-		
+		 
 		if len(parms)>1 and parms[1] : nodata=1
 		else: nodata=0
+		
+		if len(parms)>2 and parms[2] : region=parms[2]
+		else: region = None
+		
 		if keys:
 			key=keys[parms[0]]
 		else: key=parms[0]
 #		try :
-		x=db.get(key,target=self,nodata=nodata)
+		x=db.get(key,target=self,nodata=nodata,region=region)
 #		except: 
 #			raise Exception("Could not access "+str(fsp)+" "+str(key))
 		return None
@@ -881,7 +885,7 @@ class DBDict:
 			else : return "%s*%d"%(pkey+fkey,n*4*r["nx"]*r["ny"]*r["nz"])
 		return None
 
-	def get(self,key,dfl=None,txn=None,target=None,nodata=0):
+	def get(self,key,dfl=None,txn=None,target=None,nodata=0,region=None):
 		"""Alternate method for retrieving records. Permits specification of an EMData 'target'
 		object in which to place the read object"""
 		self.open(self.rohint)
@@ -889,26 +893,42 @@ class DBDict:
 		except: return dfl
 		if isinstance(r,dict) and r.has_key("is_complex_x") :
 			pkey="%s/%s_"%(self.path,self.name)
-			fkey="%dx%dx%d"%(r["nx"],r["ny"],r["nz"])
+			rnx,rny,rnz = r["nx"],r["ny"],r["nz"]
+			fkey="%dx%dx%d"%(rnx,rny,rnz)
+			
 #			print "r",fkey
-			if target :
-				target.set_size(r["nx"],r["ny"],r["nz"])
-				ret=target
-			else: ret=EMData(r["nx"],r["ny"],r["nz"])
+			if region != None:
+				size = region.get_size()
+				# zeros are annoyingly necessary
+				for i in range(len(size)):
+					if size[i] == 0: size[i] = 1
+				nx,ny,nz = int(size[0]),int(size[1]),int(size[2])
+			else:
+				nx,ny,nz = rnx,rny,rnz
+			ret = EMData()
+			if target : ret = target
+			
 			# metadata
 			k=set(r.keys())
 			k-=DBDict.fixedkeys
-			for i in k: ret.set_attr(i,r[i])
-
+			for i in k: 
+				ret.set_attr(i,r[i])
+			ret.set_attr("nx",nx)
+			ret.set_attr("ny",ny)
+			ret.set_attr("nz",nz)
+				
 			# binary data
 			if not nodata:
+				ret.set_size(nx,ny,nz)
+
+				if region != None: ret.to_zero() # this has to occur in situations where the clip region goes outside the image
 				if r.has_key("data_path"):
 					p,l=r["data_path"].split("*")
-					ret.read_data(p,int(l))
+					ret.read_data(p,int(l),region,rnx,rny,rnz)
 				else:
 					try: n=loads(self.bdb.get(fkey+dumps(key,-1)))
 					except: raise KeyError,"Undefined data location key for : ",key
-					ret.read_data(pkey+fkey,n*4*r["nx"]*r["ny"]*r["nz"])
+					ret.read_data(pkey+fkey,n*4*nx*ny*nz,region,rnx,rny,rnz)
 			return ret
 		return r
 		
