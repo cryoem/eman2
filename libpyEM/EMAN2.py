@@ -747,6 +747,16 @@ def get_supported_3d_stack_formats():
 	'''
 	return ["hdf","spi","pif","emim"]
 
+def get_supported_3d_formats():
+	'''
+	@return a list of the IMAGE formats in EMAN2 that 3D images
+	Return is formatted like ['hdf','spi']
+	Note using http://blake.bcm.tmc.edu/emanwiki/EMAN2ImageFormats as of April 23 2009
+	Note that "bdb:" is not returned though, represented an aberration. Currently the 
+	calling function must be aware of this
+	'''
+	return ["hdf","spi","pif","emim","img","vtk","icos","xplor","em","fits"]
+
 def remove_file( file_name, img_couples_too=True ):
 	'''
 	A function for removing a file from disk. Works for database style file names.

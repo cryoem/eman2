@@ -92,7 +92,6 @@ class ShrunkenTomogram:
 		
 		self.file_name = file_name
 		self.image = get_idd_image_entry(self.file_name,ShrunkenTomogram.db_name,tomo_db_name)
-		self.progress_dialog = None
 		
 	def get_shrunken_resident_name(file_name):
 		'''
@@ -146,12 +145,9 @@ class ShrunkenTomogram:
 				progress = QtGui.QProgressDialog(shrink_thread.get_action_string(), "abort", 0, shrink_thread.get_total_steps(),None)
 				progress.setWindowTitle("Shrinking tomogram by %i" %shrink)
 				progress.show()
-				print "showed the progress dialog"
 				tally = -1
 				shrink_thread.start()
-				print "started thread"
 				while 1:
-					print "in while"
 					get_application().processEvents()
 					if progress.wasCanceled():
 						shrink_thread.quit()
@@ -601,8 +597,8 @@ class EMBoxDisplayShapes:
 		shapes = {}
 		
 		for i,box in enumerate(box_list):
-			lbx = box[0]-box_size/2
-			lby = box[1]-box_size/2
+			lbx = int(box[0])-box_size/2+(box_size+1)%2
+			lby = int(box[1])-box_size/2+(box_size+1)%2
 			rtx = lbx+box_size
 			rty = lby+box_size
 			shape = EMShape([shape_string,0,0.9,0.4,lbx,lby,rtx,rty,2.0])
@@ -702,6 +698,19 @@ class EMTomoBoxerModule:
 	def get_box_size(self):
 		''' @return the current box size'''
 		return self.box_size
+	
+	def get_anticipated_output_box_size(self):
+		''' Look at the images, see if there's a large unshrunken one, use the scaling factors to guess what a good output is'''
+		[file_name,idx] = ShrunkenTomogram.get_shrunken_resident_name(self.file_name)
+		if file_name ==  None: 
+			scale = 1
+		else:
+			db = db_open_dict(file_name)
+			hdr = db.get_header(idx)
+			scale = hdr["shrunken_by"]
+		
+		return scale*self.box_size
+	
 	def get_current_image_name(self):
 		''' @return the name of the current file '''
 		return self.file_name
@@ -823,14 +832,79 @@ class EMTomoBoxerModule:
 				com = b.calc_center_of_mass()
 				coord[2] = b.get_ysize() - com[1]
 				
-			l = coord[2]  - self.box_size/2
+			l = int(coord[2])  - self.box_size/2+(self.box_size+1)%2
 			r = l + self.box_size
 			shape = EMShape(["rectpoint",0,0.9,0.4,0,l,self.box_size,r,2.0])
 			shapes = {0:shape}
 			self.positioning_2d_window.set_shapes(shapes,1)
 			self.positioning_2d_window.updateGL()
 	
+	def write_stack(self,out_file_name, input_file_name,xout,yout,zout):
+		[file_name,idx] = ShrunkenTomogram.get_shrunken_resident_name(self.file_name)
+		if file_name ==  None: 
+			file_name = self.file_name
+			idx = 0
+		
+		out_idx = -1
+		image = TomoProjectionCache.get_image_directly(self.file_name)
+		direction = image.get_attr("sum_direction")
+		if input_file_name == file_name: # then we do not need to scale
+			half_box = self.box_size/2
+			box = self.box_size
+			fname = file_name
+			scale = 1.0
+		else: # we need to scale
+			db = db_open_dict(file_name)
+			hdr = db.get_header(idx)
+			orig_file = hdr["shrunken_from"]
+			scale = hdr["shrunken_by"]
+			half_box = self.box_size/2*scale
+			box = self.box_size*scale
+			fname = orig_file
+		
+		progress = QtGui.QProgressDialog("Writing_files", "abort", 0, 2*len(self.coord_list),None)
+		progress.show()
+		tally = -1
+		for i,coord in enumerate(self.coord_list):	
+			a = EMData()
+			if direction == "z":
+				region = Region(scale*coord[0]-xout/2,scale*coord[1]--yout/2,scale*coord[2]-zout/2,xout,yout,zout)
+				a.read_image(fname,idx,False,region)
+			elif direction == "y":
+				region = Region(scale*coord[0]-xout/2,scale*coord[2]-zout/2,scale*coord[1]-yout/2,xout,zout,yout)
+				a.read_image(fname,idx,False,region)
+			elif direction == "x":
+				region = Region(scale*coord[2]-zout/2,scale*coord[0]-xout/2,scale*coord[1]-yout/2,zout,xout,yout)
+				a.read_image(fname,idx,False,region)
+			else:
+				progress.close()
+				raise NotImplementedException
+			
+			if progress.wasCanceled():
+				# Should probably delete the file
+				break
+			
+			tally += 1
+			progress.setValue(tally)
+
+			if isinstance(out_file_name,list):
+				print out_file_name[i]
+				a.write_image(out_file_name[i],0)
+			else:
+				a.write_image(out_file_name,-1)
+			
+			tally += 1
+			progress.setValue(tally)
+			
+		progress.close()
+			
+		
+	def write_images(self,out_file_names, input_file_name,xout,yout,zout):
+		self.write_stack(out_file_names, input_file_name,xout,yout,zout)
+	
 	def run_output_dialog(self):
+		if self.get_num_boxes() == 0: return
+		
 		[file_name,idx] = ShrunkenTomogram.get_shrunken_resident_name(self.file_name)
 		file_names = [self.file_name]
 		file_indices = [0]
@@ -855,9 +929,10 @@ class TomoBoxerOutputForm(EMFormTask):
 		self.target = weakref.ref(target)
 		self.file_names = file_names # a list of file_names
 		self.file_indices = file_indices # list the file indices, import if accessing images from stacks
+		self.output_file_names = None
 	def get_params(self):
 		params = []
-		box_size = self.target().get_box_size()
+		box_size = self.target().get_anticipated_output_box_size()
 		xout = ParamDef(name="xout",vartype="int",desc_short="Output nx",desc_long="The number of pixels of the output sub regions will have in the x direction",property=None,defaultunits=box_size,choices=None)
 		yout = ParamDef(name="yout",vartype="int",desc_short="Output ny",desc_long="The number of pixels of the output sub regions will have in the y direction",property=None,defaultunits=box_size,choices=None)
 		zout = ParamDef(name="zout",vartype="int",desc_short="Output nz",desc_long="The number of pixels of the output sub regions will have in the z direction",property=None,defaultunits=box_size,choices=None)
@@ -874,41 +949,115 @@ class TomoBoxerOutputForm(EMFormTask):
 	
 	def on_form_ok(self,params):
 		from EMAN2 import get_supported_3d_stack_formats
-		print params
 		# check file_names
 		error_message = []
+		error_message.extend(self.__out_file_name_ok(params["out_file"],params["write_stack"]))
+		error_message.extend(self.__out_sizes_ok(params["xout"],params["yout"],params["zout"]))
+						
+		if len(error_message) != 0:
+			from emsprworkflow import EMErrorMessageDisplay
+			EMErrorMessageDisplay.run(error_message)
+			return
+	
+		# if we make it here we can go ahead and write
 		if params["write_stack"]:
-			fine = True
-			out_file = params["out_file"]
-			if len(out_file) > 4 and out_file[:4] == "bdb:":
-				if db_check_dict(out_file):
-					error_message.append("The bdb file name you specified exists")
-					fine = False
-			elif file_exists(out_file):
-				# should prompt the user to see if they want to append or overwrite
-				error_message.append("The file name you specified exists")
+			self.target().write_stack(self.output_file_names,params["data_file"],params["xout"],params["yout"],params["zout"])
+		else:
+			self.target().write_images(self.output_file_names,params["data_file"],params["xout"],params["yout"],params["zout"])
+			
+		self.form.closeEvent(None)
+		self.form = None
+		self.emit(QtCore.SIGNAL("task_idle"))
+	
+	def __out_sizes_ok(self,nx,ny,nz):
+		'''
+		Check to make sure nx,ny and nz are greater than 1
+		'''
+		l1_warning = False
+		g2048_warning = False
+		error_messages = []
+		for i in nx,ny,nz:
+			if i < 1 and not l1_warning:
+				error_messages.append("dimensions must be greater than 1")
+				l1_warning = True
+			if i > 2048 and not g2048_warning:
+				error_messages.append("dimensions must be less than 2048. If this is a problem contact developers")
+				g2048_warning = True
+		
+		return error_messages
+
+	def __out_file_name_ok(self,out_file,write_stack):
+		'''
+		checks to make sure the out_file_name is ok
+		returns a list of error messages. If the list is empty everything is fine
+		'''
+		error_messages = []
+		fine = True
+		
+		if len(out_file) > 4 and out_file[:4] == "bdb:":
+			if db_check_dict(out_file):
+				error_messages.append("The bdb file name you specified exists")
+				fine = False
+		elif file_exists(out_file):
+			# should prompt the user to see if they want to append or overwrite
+			error_messages.append("The file name you specified exists")
+			fine = False
+		else:
+			d = out_file.split('.')
+			if len(d) < 2: 
+				error_messages.append("The file name has no type")
 				fine = False
 			else:
-				d = out_file.split('.')
-				if len(d) < 2: fine = False
-				else:
+				from EMAN2 import get_supported_3d_stack_formats,get_supported_3d_formats
+				if write_stack:
 					fmts = get_supported_3d_stack_formats()
-					if d[-1] not in fmts:
-						e = "The format you specifed is not supported. We support ["
-						for f in fmts:
-							if f != fmts[0]:
-								e += " ,"
-							e+= f
-						e+="]"
-						error_message.append(e)
-						fine = False
-						
-			if not fine:
-				from emsprworkflow import EMErrorMessageDisplay
-				print "running error message"
-				EMErrorMessageDisplay.run(error_message)
-				return
+				else:
+					fmts = get_supported_3d_formats()
 			
+				if d[-1] not in fmts:
+					e = "The format you specifed is not supported. We support ["
+					for f in fmts:
+						if f != fmts[0]:
+							e += ", "
+						e+= f
+					e+=", bdb:]"
+					error_messages.append(e)
+					fine = False
+					
+		if not write_stack:
+			self.output_file_names = []
+			bdb_type = False
+			if len(out_file) > 4 and out_file[:4] == "bdb:": 
+				bdb_type = True
+				name = out_file_name
+				ext = ''
+			else:
+				# this is guaranteed to be safe
+				d = out_file.split('.')
+				ext = "."+d[-1]
+				from EMAN2 import get_file_tag
+				name = get_file_tag(out_file)
+			
+			n = self.target().get_num_boxes()
+			digits = len(str(n))
+			for i in range(self.target().get_num_boxes()):
+				si = str(i)
+				this_digits = len(si)
+				s = '_'
+				for j in range(digits-this_digits): s+= '0'
+				s += si
+				this_name =  name+s+ext
+				if file_exists(this_name):
+					error_messages.append("%s exists" %this_name)
+				else:
+					self.output_file_names.append(this_name)
+		else:
+			self.output_file_names = out_file
+					
+		return error_messages
+				
+			
+				
 			
 
 class EMTomoBoxerInspectorModule(EMQtWidgetModule):

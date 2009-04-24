@@ -480,7 +480,6 @@ class EMImage2DModule(EMGUIModule):
 		self.init_size_flag = True
 		self.frozen = False
 		self.isexcluded = False
-		self.hack_shrink = 1
 		self.parent_geometry = None
 		self.font_renderer = None
 		
@@ -887,7 +886,6 @@ class EMImage2DModule(EMGUIModule):
 		self.set_origin(x*self.scale-self.gl_widget.width()/2,y*self.scale-self.gl_widget.height()/2)
 
 	def set_shapes(self,shapes,shrink):
-		self.hack_shrink = shrink
 		self.shapes = shapes
 		self.shapechange=1
 		
@@ -1210,17 +1208,8 @@ class EMImage2DModule(EMGUIModule):
 	
 		if self.shapelist != 0:
 			GL.glPushMatrix()
-			GL.glTranslate(-self.origin[0],-self.origin[1],0.1)
+			GL.glTranslate(-int(self.origin[0]),-int(self.origin[1]),0.1)
 			GL.glScalef(self.scale,self.scale,1.0)
-			if self.hack_shrink != 1:
-	#			print len(self.shapes),self.hack_shrink
-	#			print self.hack_shrink
-				GL.glScale(1.0/self.hack_shrink,1.0/self.hack_shrink,1.0)
-				#for k,s in self.shapes.items():
-					#if self.active[0]==k: s.draw(None,self.active[1:])
-					#else: s.draw()
-			#else:
-				##print self.shapelist
 			GL.glCallList(self.shapelist)
 			GL.glPopMatrix()
 		
