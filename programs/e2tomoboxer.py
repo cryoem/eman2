@@ -881,7 +881,7 @@ class EMTomoBoxerModule:
 				raise NotImplementedException
 			
 			if progress.wasCanceled():
-				# Should probably delete the file
+				# Should probably delete the file(s)
 				break
 			
 			tally += 1
