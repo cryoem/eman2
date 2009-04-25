@@ -890,7 +890,7 @@ class CoarsenedFlattenedImage:
 			self.smallimage = tmp.process("math.meanshrink",{"n":shrink})
 			self.smallimage.process_inplace("filter.ramp")
 			self.smallimage.process_inplace("filter.flattenbackground",{"radius":flattenradius})
-			self.smallimage.process_inplace("normalize.edgemean")
+			self.smallimage.process_inplace("normalize") # this is really bad for some reason
 			
 			
 		self.smallimage.set_attr("flatten_radius",flattenradius)
@@ -3402,12 +3402,11 @@ class SwarmAutoBoxer(AutoBoxer):
 			else:
 				print 'error, unknown mode in SwarmAutoBoxer'
 				return 0
-		
 			return 1
 		else:
 			print "error, you cannot add a reference to the AutoBoxer if it is not in the format of a Box object"
 			return 0
-	
+		
 	# this is just for remembering what I might do when a dummy is added or removed
 	#def dummy_stuff(self):
 		#if not self.__accrue_opt_params() :
@@ -3417,6 +3416,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		#self.state_ts = gm_time_string()
 		#self.regressiveflag = True
 		#self.auto_box(self.get_boxable())
+		
 		
 	def remove_reference(self,boxes):
 		'''
@@ -3556,7 +3556,8 @@ class SwarmAutoBoxer(AutoBoxer):
 			print 'error, unknown mode in SwarmAutoBoxer'
 		
 	def get_search_radius(self):
-		return int(0.9*(self.box_size)/float(self.get_subsample_rate()))
+		# 0.7 is the 1 on sqrt(2) 
+		return int(0.7*(self.box_size)/float(self.get_subsample_rate()))
 	
 	def get_constraining_radius(self):
 		return int(0.5*(self.box_size)/float(self.get_subsample_rate()))
@@ -3580,7 +3581,6 @@ class SwarmAutoBoxer(AutoBoxer):
 		
 		Returns 1 if autoboxing occurred implying that a display update should occur. Returns 0 if no display update should occur
 		'''
-		
 		# this is fine - if a boxable is excluded this is more or less a flag for the autoboxer not to autobox it..
 		if boxable.is_excluded():
 			print "Image is excluded, doing nothing"
@@ -3630,7 +3630,7 @@ class SwarmAutoBoxer(AutoBoxer):
 			self.__paint_excluded_box_areas(exclusion,boxable.get_boxes()) # add circles where particles already exist
 
 			boxes = self.__auto_box(correlation,boxable,exclusion) # do the actual autoboxing 
-			#print "Auto boxed",len(boxes)
+			print "Auto boxed",len(boxes)
 
 			# Store the results in the database - for that we need "Trim
 			trimboxes = []
@@ -3654,7 +3654,7 @@ class SwarmAutoBoxer(AutoBoxer):
 			return 1
 
 		else: 
-			#print 'no auto boxing was necessary, up-2-date' # DEBUG
+			print 'no auto boxing was necessary, up-2-date' # DEBUG
 			
 			return 0
 		
@@ -3742,8 +3742,9 @@ class SwarmAutoBoxer(AutoBoxer):
 		# Warning, this search radius value should be the same as the one used by the BoxSets that contributed the reference boxes
 		# to this AutoBoxer object. There should be one place/function in the code where both parties access this value
 		searchradius = self.get_search_radius()
+#		correlation.write_image("correlation.hdf",-1)
+#		exclusion.write_image("exclusion.hdf",-1)
 		soln = BoxingTools.auto_correlation_pick(correlation,self.opt_threshold,searchradius,self.opt_profile,exclusion,self.opt_profile_radius,mode)
-
 
 		template = self.get_high_res_template_image()
 #		template.write_image("template.hdf")
@@ -3888,6 +3889,7 @@ class SwarmAutoBoxer(AutoBoxer):
 					if profile[j] < self.opt_profile[j]: self.opt_profile[j] = profile[j]
 		
 		if self.dummy_box != None:
+			print "using dummy box"
 			box = self.dummy_box
 			
 #			if found == False:
@@ -3908,14 +3910,14 @@ class SwarmAutoBoxer(AutoBoxer):
 			#self.opt_threshold = self.dummy_box.get_correlation_score()
 		
 	
-		# determine the point in the profile where the drop in correlation score is the greatest, store it in radius
-		#self.opt_profile_radius = -1
-		#tmp = self.opt_profile[0]
-		#for i in range(1,self.get_constraining_radius()):
-			## the tmp > 0 is a
-			#if self.opt_profile[i] > tmp and tmp > 0:
-				#tmp = self.opt_profile[i]
-				#self.opt_profile_radius = i
+		#determine the point in the profile where the drop in correlation score is the greatest, store it in radius
+		self.opt_profile_radius = -1
+		tmp = self.opt_profile[0]
+		for i in range(1,self.get_constraining_radius()):
+			# the tmp > 0 is a
+			if self.opt_profile[i] > tmp and tmp > 0:
+				tmp = self.opt_profile[i]
+				self.opt_profile_radius = i
 		
 		self.__plot_update()
 		#print 'NOW THEY ARE'

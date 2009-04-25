@@ -743,7 +743,7 @@ class EMBoxerModuleParticleManipEvents(EMBoxerModuleMouseEventsObject):
 			self.get_2d_gui_image().add_shape("cen",EMShape([self.mediator.get_shape_string(),.9,.9,.4,x0,y0,x0+2,y0+2,1.0]))
 			
 			self.mediator.add_box(box)
-			self.moving=[box,m,box_num]
+			#self.moving=[box,m,box_num]
 			#self.mediator.mouse_click_update_ppc()
 		
 		elif event.modifiers()&Qt.ShiftModifier :
@@ -3351,9 +3351,10 @@ class EMBoxerModulePanel(QtGui.QWidget):
 #		self.advanced_vbl2.addLayout(self.plothbl)
 		
 		self.enable_interactive_params  = QtGui.QCheckBox("Enable")
-		self.enable_interactive_params.setChecked(True) #FIXME should this be related to the state of the autoboxer?
+		self.enable_interactive_params.setChecked(False) #FIXME should this be related to the state of the autoboxer?
 		self.thr = ValSlider(self,(0.0,3.0),"Threshold:")
 		self.thr.setValue(1.0)
+		self.thr.setEnabled(False)
 		self.advanced_hbl2.addWidget(self.enable_interactive_params)
 		self.advanced_hbl2.addWidget(self.thr)
 		

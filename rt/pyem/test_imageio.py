@@ -108,13 +108,16 @@ class TestPGMIO(unittest.TestCase):
     def test_read_write_pgm(self):
         """test pgm file read/write ........................."""
         try:
-	        e = EMData()
-	        e.set_size(64,64)
-	        e.process_inplace('testimage.noise.uniform.rand')
-	        e.write_image('test_image.pgm')
+			e = EMData()
+			e.set_size(64,64)
+			e.process_inplace('testimage.noise.uniform.rand')
+			e.write_image('test_image.pgm')
+			
+			f = EMData()
+			f.read_image('test_image.pgm')
+			
+			#self.assertEqual(f==e,True)
 	        
-	        f = EMData()
-	        f.read_image('test_image.pgm')
         finally:
         	testlib.safe_unlink('test_image.pgm')
     

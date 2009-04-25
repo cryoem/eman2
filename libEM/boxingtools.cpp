@@ -615,6 +615,15 @@ vector<IntPoint> BoxingTools::auto_correlation_pick(const EMData* const image, f
 		throw InvalidValueException(mode,"Error, the mode can only be 0,1, or 2.");
 	}
 	
+	if ( radius < 0) {
+		throw InvalidValueException(radius,"Radius must be greater than 1");
+	}
+		
+	if ( cradius < 0) {
+		throw InvalidValueException(cradius,"CRadius must be greater than 1");
+	}
+			
+	
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	
@@ -628,7 +637,6 @@ vector<IntPoint> BoxingTools::auto_correlation_pick(const EMData* const image, f
 			if (exclusion->get_value_at(k,j) != 0 ) continue;
 			
 			if (image->get_value_at(k,j) < threshold) continue;
-			
 			if ( mode == 0 ) {
 				solution.push_back(IntPoint(k,j));
 				set_radial_non_zero(exclusion,k,j,radius);
