@@ -3744,7 +3744,6 @@ class SwarmAutoBoxer(AutoBoxer):
 		searchradius = self.get_search_radius()
 #		correlation.write_image("correlation.hdf",-1)
 #		exclusion.write_image("exclusion.hdf",-1)
-		print mode
 		soln = BoxingTools.auto_correlation_pick(correlation,self.opt_threshold,searchradius,self.opt_profile,exclusion,self.opt_profile_radius,mode)
 
 		template = self.get_high_res_template_image()
