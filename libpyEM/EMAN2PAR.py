@@ -62,7 +62,79 @@ Communications are handled by subclasses."""
 	
 	def process_task(self,task):
 		"""This method implements the actual image processing by calling appropriate module functions"""
-		
+
+#######################
+#  Here are classes for implementing xmlrpc based parallelism
+
+from SimpleXMLRPCServer import SimpleXMLRPCServer
+from SimpleXMLRPCServer import SimpleXMLRPCRequestHandler
+
+
+def runXMLRPCServer(port,verbose):
+	"""This will create a ThreadingTCPServer instance and execute it"""
+	try: EMDCTaskHandler.verbose=int(verbose)
+	except: EMDCTaskHandler.verbose=0
+
+	if port!=None and port>0 : 
+		server = SimpleXMLRPCServer(("", port),SimpleXMLRPCRequestHandler,False,allow_none=True)
+		print "Server started on port %d"%port
+	# EMAN2 will use ports in the range 9900-9999
+	else :
+		for port in range(9990,10000):
+			try: 
+				server = SimpleXMLRPCServer(("", port),SimpleXMLRPCRequestHandler,False,allow_none=True)
+				if verbose: print "Server started on port %d"%port
+			except:
+				if verbose>1 : print "Port %d unavailable"%port
+				continue
+			break
+	server.register_introspection_functions()
+	handler=XMLRPCTaskHandler(verbose)
+	server.register_instance(handler)
+
+	server.serve_forever()
+
+class XMLRPCTaskHandler(EMTaskHandler):
+	def __init__(self, verbose=0):
+		# if a port is specified, just try to open it directly. No error detection
+
+		EMTaskHandler.__init__(self)
+		self.verbose=verbose
+
+	# Customer routines 
+	def customer_task_add(self,task):
+		"""Enqueue a new task to be executed. Any data passed by reference in the task.data must be 
+accessible to the server."""
+		pass
+	
+	def customer_task_check(self,tidlist):
+		"""Check a set of tasks for completion. Returns a list of completed task ids from tidlist."""
+		pass
+	
+	def customer_task_results(self,tid):
+		"""Retrieve the return value from a completed task. This should be done only once per task. """
+		pass
+	
+	# Client routines
+	def client_task_get(self):
+		"""This is how the client asks the server for work to perform. A task object will be returned."""
+		pass
+	
+	def client_data_get(self,did):
+		pass
+	
+	def client_task_status(self,state):
+		pass
+	
+	# Utility routines
+	def test(self,data):
+		print "Test message (%d) : %s"%(self.verbose,data)
+		return EMTask()
+
+	def quit(self):
+		pass
+	
+
 #######################
 #  Here we define the classes for publish and subscribe parallelism
 
@@ -122,7 +194,6 @@ def runEMDCServer(port,verbose):
 
 	server.serve_forever()
 
-
 class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 	"""Distributed Computing Taskserver. In this system, clients run on hosts with free cycles and request jobs
 	from the server, which runs on a host with access to the data to be processed."""
@@ -133,11 +204,10 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 
 		EMTaskHandler.__init__(self)
 		self.verbose=EMDCTaskHandler.verbose
+		if self.verbose>1 : print len(self.queue)
 		self.sockf=request.makefile()		# this turns our socket into a buffered file-like object
 		SocketServer.BaseRequestHandler.__init__(self,request,client_address,server)
 
-
-	
 	def handle(self):
 		"""Process requests from a client. The exchange is:
 	send EMAN,version
@@ -149,26 +219,27 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 		print self.sockf
 		if self.verbose>1 : print "connection from %s"%(str(self.client_address))
 
+		# the beginning of a message is a struct containing
+		# 0-3  : EMAN
+		# 4-7  : int, EMAN2PARVER
+		# 8-11 : 4 char command
+		# 12-15: count of bytes in pickled data following header
+
 		# initial exchange to make sure we're talking to a client
 		self.sockf.write("EMAN")
 		self.sockf.flush()
 		msg = self.sockf.read(4)
 		if msg!="EMAN" : raise Exception,"Non EMAN client"
-		
+
+		ver=unpack("I",self.sockf.read(4))[0]
+		if ver!=EMAN2PARVER : raise Exception,"Version mismatch in parallelism (%d!=%d)"%(ver,EMAN2PARVER)
+
 		while (1):
-			# the beginning of a message is a struct containing
-			# 0-3  : EMAN
-			# 4-7  : int, EMAN2PARVER
-			# 8-11 : 4 char command
-			# 12-15: count of bytes in pickled data following header
-			msg = self.sockf.read(8)
-			if len(msg)<8 :
+			cmd = self.sockf.read(4)
+			if len(cmd)<4 :
 				if self.verbose>1 : print "connection closed %s"%(str(self.client_address))
 				return
 				
-			ver,cmd=unpack("I4s",msg)
-			if ver!=EMAN2PARVER : raise Exception,"Version mismatch in parallelism"
-			
 			data = recvobj(self.sockf)
 			
 			if self.verbose : 
@@ -181,9 +252,9 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				# Get the first task and send it (pickled)
 				task=self.queue.get_task()
 				if task==None :
-					sendobj(self.sockf,None)
+					sendobj(self.sockf,None)			# no tasks available
 				else:
-					task.starttime=time.time()
+					task.starttime=time.time()			# send the task
 					sendobj(self.sockf,task)
 				self.sockf.flush()
 				
@@ -196,20 +267,52 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 			
 			# Job is completed, results returned
 			elif cmd=="DONE" :
-				pass
-			
+				# the first object we get is the task identifier
+				tid=data
+				
+				# then we get a sequence of key,value objects, ending with a final None key
+				result=db_open_dict("bdb:%s#result_%d"%self.queue.path,tid)		# active tasks keyed by id
+				
+				while (1) :
+					key=recvobj(self.sockf)
+					if key==None : break
+					val=recvobj(self.sockf)
+					result[key]=val				# store each key in the database
+
+				result.close()
+
+				self.queue.task_done(tid)		# don't mark the task as done until we've stored the results
+
 			# Request data from the server
+			# the request should be of the form ["queue",did,image#]
+			# Returns requested object
 			elif cmd=="DATA" :
-				datac=
-				sendobj(self.sockf,datac)
-			
+				try:
+					fsp=self.queue.didtoname[data[1]]
+					obj=EMData(fsp,data[2])
+					sendobj(self.sockf,obj)
+					if self.verbose>2 : print "Data sent %s(%d)"%(fsp,data[2])
+				except:
+					sendobj(self.sockf,None)
+					if self.verbose : print "Error sending %s(%d)"%(fsp,data[2])
+				self.sockf.flush()
+				
 			# Notify that a task has been aborted
+			# request should be taskid
+			# no return
 			elif cmd=="ABOR" : 
-				pass
-		
+				self.queue.task_rerun(data)
+				if self.verbose>1 : print "Task execution abort : ",data
+
 			# Progress message indicating that processing continues
+			# request should be (taskid,percent complete)
+			# returns "OK  " if processing should continue
+			# retunrs "ABOR" if processing should be aborted
 			elif cmd=="PROG" :
-				pass
+				ret=self.queue.task_progress(data[0],data[1])
+				if self.verbose>2 : print "Task progress report : ",data
+				if ret : self.sockf.send("OK  ")
+				else : self.sockf.send("ABOR")
 
 			###################### These are utility commands
 			# Returns whatever is sent as data
@@ -217,26 +320,43 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				sendobj(self.sockf,("TEST",data))
 				self.sockf.flush()
 				
-			
 			# Cause this server to exit (cleanly)
+			# actually this may be partially broken...
 			elif cmd=="QUIT" :
 				sendobj(self.sockf,None)
 				self.sockf.flush()
 				self.server.server_close()
 				if self.verbose : print "Server exited cleanly"
+				break
 #				sys.exit(0)
 			
 			################### These are issued by customers
 			# A new task to enqueue
+			# the request contains the EMTask object
+			# return is the task id or None upon error
 			elif cmd=="TASK":
+				tid=self.queue.add_task(data)
+				if self.verbose>1 : print "new TASK %s.%s"%(data.command,str(data.data))
 				try: 
-					self.queue.add_task(data)
-					if self.verbose>1 : print "TASK %s.%s"%(data.module,data.command)
+					sendobj(self.sockf,tid)
+					self.sockf.flush()
+				except: 
+					sendobj(self.sockf,None)
+					self.sockf.flush()
+			# Cancel a pending task
+			# request contains the taskid to cancel
+			elif cmd=="CNCL":
+				self.queue.task_aborted(data)
 				
-
 			# status request
+			# request contains a list/tuple of taskids
+			# return is a list/tuple with the same number of elements containing % complete for each task
+			# if percent complete is exactly 100, then results are ready for pickup. if -1, task not yet started
 			elif cmd=="STAT":
-				pass
+				ret=[self.queue.task_check(i) for i in data]
+				sendobj(self.sockf,ret)
+				self.sockf.flush()
+				
 		
 		# self.request is the TCP socket connected to the client
 #		self.data = self.request.recv(1024).strip()
@@ -278,13 +398,38 @@ class EMDCTaskClient(EMTaskClient):
 				time.sleep(10)
 				continue
 			
-			# Process the task
+			# Translate and retrieve (if necessary) data for task
 			for k,i in task.data.items():
 				try:
 					if i[0]=="cache" :
-						sockf.write("DATA")
-						task.data[k]=sockf.sendobj(sockf,i)
+						cname="bdb:cache_%d.%d"%(i[1][0],i[1][1])
+						cache=db_open_dict(cname)
+						
+						# form min,max
+						if len(i) == 4:
+							for j in range(i[2],i[3]):
+								if not cache.has_key(j):
+									cache[j]=self.get_data(sockf,i[1],j)
+						# form image number
+						elif isinstance(i[2],int):
+							if not cache.has_key(i[2]) :
+								cache[i[2]]=self.get_data(sockf,i[1],i[2])
+						# form list of numbers
+						else:
+							for j in i[2]:
+								if cache.has_key(j) : continue
+								cache[j]=self.get_data(sockf,i[1],j)
+								
+						i[1]=cname
 				except: pass
 			
+	def get_data(self,sockf,did,imnum):
+		"""request data from the server on an open connection"""
+		if self.verbose>2 : print "Retrieve %s : %d"%(str(did),imnum)
+		sockf.write("DATA")
+		sendobj(sockf,["cache",did,imnum])
+		sockf.flush()
+		return recvobj(sockf)
+		
 	#		self.sockf=
 		

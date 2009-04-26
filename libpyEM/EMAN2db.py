@@ -39,6 +39,7 @@ import os
 import signal
 import sys
 import fnmatch
+import random
 try:
 	from bsddb3 import db
 except:
@@ -83,6 +84,14 @@ atexit.register(DB_cleanup)
 
 # if we are killed 'nicely', also clean up (assuming someone else doesn't grab this signal)
 signal.signal(2,DB_cleanup)
+
+def e2filemodtime(path):
+	"""This will determine the last modification time for a file or bdb: database in seconds"""
+	if path[:4].lower()=="bdb:" :
+		p=db_parse_path(path)
+		path=p[0]+"/EMAN2DB/"+p[1]+".bdb"
+
+	return int(os.stat(path)[8])
 
 def e2gethome() :
 	"""platform independent path with '/'"""
@@ -387,12 +396,17 @@ class EMTaskQueue:
 	def __init__(self,path=None):
 		"""path should point to the directory where the disk-based task queue will reside without bdb:"""
 		if path==None or len(path)==0 : path="."
-		self.active=db_open_dict("bdb:%s#tasks_active"%path)
-		self.complete=db_open_dict("bdb:%s#tasks_complete"%path)
+		self.path=path
+		self.active=db_open_dict("bdb:%s#tasks_active"%path)		# active tasks keyed by id
+		self.complete=db_open_dict("bdb:%s#tasks_complete"%path)	# complete tasks
+		self.nametodid=db_open_dict("bdb:%s#tasks_name2did"%path)	# map local data filenames to did codes
+		self.didtoname=db_open_dict("bdb:%s#tasks_did2name"%path)	# map data id to local filename
 
 		if not self.active.has_key("max") : self.active["max"]=-1
 		if not self.active.has_key("min") : self.active["min"]=0
 		if not self.complete.has_key("max") : self.complete["max"]=0
+	
+	def __len__(self) : return len(self.active)
 	
 	def get_task(self):
 		"""This will return the next task waiting for execution"""
@@ -401,6 +415,7 @@ class EMTaskQueue:
 			if task.starttime==None and (task.waitfor==None or len(task.waitfor)==0): return tid
 			
 		return None
+	
 	
 	def add_task(self,task,parentid=None,wait_for=None):
 		"""Adds a new task to the active queue, scheduling it for execution. If parentid is
@@ -419,8 +434,30 @@ class EMTaskQueue:
 			self.active[parentid]=t2
 		task.queuetime=time.time()
 		task.wait_for=wait_for
-		self.active[tid]=task
 
+		# map data file specifiers to ids
+		for j,k in task.data.items():
+			try: 
+				if k[0]!="cache" : continue
+			except: continue
+			
+			fmt=e2filemodtime(k[1])
+			try : 
+				did=self.nametodid[k[1]]			# get the existing did from the cache (modtime,int)
+				if fmt!=did[0]	:					# if the file has been changed, we need to assign a new did
+					del self.didtoname[did]
+					raise Exception
+			except: 
+				did=(fmt,random.randint(0,999999))	# since there may be multiple files with the same timestamp, we also use a random int
+				while (self.didtoname.has_key(did)):
+					did=(fmt,random.randint(0,999999))
+			
+			self.nametodid[k[1]]=did
+			self.didtoname[did]=k[1]
+			k[1]=did
+
+		self.active[tid]=task		# store the task in the queue
+		return tid
 		
 	def task_wait(self,taskid,wait_for=None):
 		"""Permits deferred execution. The task remains in the execution queue, but will
@@ -432,7 +469,30 @@ class EMTaskQueue:
 		if not wait_for : task.wait_for=task.children
 		else : task.wait_for=wait_for
 		
-		
+	def task_progress(self,taskid,percent):
+		"""Update task progress, unless task is already complete/aborted. Returns True if progress
+		update successful"""
+		try : task=self.active[tid]
+		except :
+			task=self.complete[tid]
+			return False
+		task.progtime=(time.time(),percent)
+		self.active[tid]=task
+		return True
+
+	def task_check(self,tid):
+		"""This will check the status of a task. It will return -1 if a task is queued but not yet running,
+		0-99.999 while running (% complete) or exactly 100 when the task is done"""
+		try : 
+			task=self.active[tid]
+		except:
+			task=self.complete[tid]		# if we succeed in retrieving it from the complete list, it's done (or aborted)
+			return 100
+			
+		if task.starttime==None or task.starttime<1 : return -1
+		if task.progtime==None : return 0
+		return task.progtime[1]
+	
 	def task_done(self, taskid):
 		"""Mark a Task as complete, by shifting a task to the tasks_complete queue"""
 		try:
@@ -497,30 +557,30 @@ class EMTaskQueue:
 class EMTask:
 	"""This class represents a task to be completed. Generally it will be subclassed. This is effectively
 	an abstract superclass to define common member variables and methods. Note that the data dictionary,
-	which contains a mix of actual data elements, and (filename,#|min,max|(list)) image references, will
-	be transparently remapped on the client to similar specifiers which are valid locally"""
-	def __init__(self,data=None,module=None,command=None,options=None):
+	which contains a mix of actual data elements, and ["cache",filename,#|min,max|(list)] image references, will
+	be transparently remapped on the client to similar specifiers which are valid locally. Over the network
+	such data requests are remapped into data identifiers (did)."""
+	def __init__(self,data=None,command=None,options=None):
 		self.taskid=None		# unique task identifier (in this directory)
 		self.queuetime=None		# Time (as returned by time.time()) when task queued
 		self.starttime=None		# Time when execution began
+		self.progtime=None		# (time,% complete) from client
 		self.endtime=None		# Time when task completed
 		self.exechost=None		# hostname where task was executed
 		self.children=None		# list of child task ids
 		self.parent=None		# single parent id
-		self.module=module		# module to import to execute this task
 		self.command=command	# name of a function in module
 		self.data=data			# dictionary of named data specifiers value may be (before transmission):
 								# - actual data object (no caching)
-								# - ('cache',filename,#)
-								# - ('cache',filename/url,min,max)  (max is exclusive, not inclusive)
-								# - ('cache',filename/url,(list))
+								# - ['cache',filename,#]
+								# - ['cache',filename/url,min,max]  (max is exclusive, not inclusive)
+								# - ['cache',filename/url,(list)]
 								# (after transmission):
 								# - actual data item
-								# - ('cache',identifier)
+								# - ['cache',didEMD, did is a (modtime,int) tuple
 		self.options=options	# dictionary of options
 		self.wait_for=None		# in the active queue, this identifies an exited class which needs to be rerun when all wait_for jobs are complete
-		self.failcount==0		# Number of times this task failed to reach completion after starting
-		self.result=None		# Results of the job, type is 'command' specific
+		self.failcount=0		# Number of times this task failed to reach completion after starting
 
 ##########
 ### This is the 'database' object, representing a BerkeleyDB environment
