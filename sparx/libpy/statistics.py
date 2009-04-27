@@ -247,7 +247,7 @@ def sum_oe(data, mode = "a", CTF = False, ctf_2_sum = None):
 	 	for i in xrange(n):
 	 		ctf_params = data[i].get_attr("ctf")
 	 		if mode == "a":
-				alpha, sx, sy, mirror, scale = get_params2D(ima, "xform.align2d")
+				alpha, sx, sy, mirror, scale = get_params2D(data[i])
 				ima = rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
 			else:
 				ima = data[i]
@@ -255,19 +255,19 @@ def sum_oe(data, mode = "a", CTF = False, ctf_2_sum = None):
 			if(i%2 == 0):	Util.add_img(ave1, ima_filt)
 			else:	        Util.add_img(ave2, ima_filt)
 	 		if get_ctf2: Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
-		ave = fft(Util.divn_img(fft(Util.addn_img(av1, ave2)), ctf_2_sum))
+		ave = fft(Util.divn_img(fft(Util.addn_img(ave1, ave2)), ctf_2_sum))
 	else:
 		for i in xrange(n):
 			if mode == "a":
-				alpha, sx, sy, mirror, scale = get_params2D(data[i], "xform.align2d")
+				alpha, sx, sy, mirror, scale = get_params2D(data[i])
 				ima = rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
 			else:
 				ima = data[i]
 			if(i%2 == 0):	Util.add_img(ave1, ima)
-			else:	        Util.add_img(ave1, ima)
+			else:	        Util.add_img(ave2, ima)
 		ave = Util.addn_img(ave1, ave2)/n
 		
-	return ave, av1, ave2
+	return ave, ave1, ave2
 
 def ave_var(data, mode = "a"):
 	"""
