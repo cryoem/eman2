@@ -477,7 +477,7 @@ def ali2d_a_MPI_(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", 
 			if myid == main_node: 		print_msg("Maskfile                    : user provided in-core mask\n\n")
 			mask = maskfile
 	else: 
-		if myid == main_node: 	print_msg("Maskfile                    : default, a circle with radius %i\n\n"%(last_ring))
+		if myid == main_node: 	print_msg("*Maskfile                    : default, a circle with radius %i\n\n"%(last_ring))
 		mask = model_circle(last_ring, nx, nx)
 
 	cnx  = nx/2+1
@@ -507,9 +507,11 @@ def ali2d_a_MPI_(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", 
 	 		Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
 		reduce_EMData_to_root(ctf_2_sum, key, group_main_node, group_comm)
 
-	for im in data:
-		set_params2D(im, [random()*360.0, 0.0, 0.0, randint(0, 1), 1.0])
-	#tavg = ave_series(data, False)
+	## TO TEST
+	#for im in data:
+	#	set_params2D(im, [random()*360.0, 0.0, 0.0, randint(0, 1), 1.0])
+	
+        #tavg = ave_series(data, False)
 	tavg, vav = add_ave_varf_MPI(data, None, "a", CTF)
 	
 	reduce_EMData_to_root(tavg, key, group_main_node, group_comm)
@@ -1877,7 +1879,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		if auto_stop: print_msg("Stop iteration with         : criterion\n")
 		else:         print_msg("Stop iteration with         : maxit\n")
 		print_msg("User function               : %s\n"%(user_func_name))
-		print_msg("Number of processors used   : %d\n"%(number_of_proc))
+		print_msg("*Number of processors used   : %d\n"%(number_of_proc))
 
 	if maskfile:
 		import  types
@@ -2304,7 +2306,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	ftp = file_type(stack)
 
 	if myid == main_node:
-		print_begin_msg("ali2d_c_MPI")
+		print_begin_msg("*ali2d_c_MPI")
 		if os.path.exists(outdir):  os.system('rm -rf '+outdir)
 		os.mkdir(outdir)
 
@@ -2395,7 +2397,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		if myid == i: 
 			data = EMData.read_images(stack, range(image_start, image_end))
 		if ftp == "bdb": mpi_barrier(MPI_COMM_WORLD)
-	"""
+	
 	#################################### Temp stuff (begin) ##################################
 	from fundamentals import fft
 	from statistics import add_ave_varf_MPI
@@ -2414,7 +2416,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	maskI.set_value_at(0, 0, 0)
 	maskI.set_value_at(1, 0, 0)
 	#################################### Temp stuff (end) ####################################
-	"""
+	
 	for im in xrange(image_start, image_end):
 		data[im-image_start].set_attr('ID', im)
 		
@@ -2425,14 +2427,17 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			ctm = ctf_2(nx, ctf_params)
 			k = im%2
 			for i in xrange(lctf):  ctf2[k][i] += ctm[i]
+			""" TO TEST
 			if data[im-image_start].get_attr( "ctf_applied" ) == 0:
 				st = Util.infomask(data[im-image_start], mask, False)
 				data[im-image_start] -= st[0]
 				data[im-image_start] = filt_ctf(data[im-image_start], ctf_params)
 				data[im-image_start].set_attr('ctf_applied', 1)
-	 		#Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
+	 		
+			"""
+			Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params)) ## TO TEST
 
-		#reduce_EMData_to_root(ctf_2_sum, myid, main_node)
+		reduce_EMData_to_root(ctf_2_sum, myid, main_node) ## TO TEST
 		# bring ctf2 together, keep them only on main node,  strange trick required because mpi_reduce changes the nformat to numarray
 		s = shape(ctf2)
 		ctf2  = mpi_reduce(ctf2, 2*lctf, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
@@ -2480,16 +2485,16 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			#  bring all partial sums together
 			reduce_EMData_to_root(av1, myid, main_node)
 			reduce_EMData_to_root(av2, myid, main_node)
-			"""
+			
 			#################################### Temp stuff (begin) #################################
-			tavg, vav = add_ave_varf_MPI(data, None, "a", CTF)
+			tavg, vav = add_ave_varf_MPI(data, mask, "a", CTF)
 			reduce_EMData_to_root(tavg, myid, main_node)
 			reduce_EMData_to_root(vav, myid, main_node)
 			#################################### Temp stuff (end) ####################################
-			"""
+			
 
 			if myid == main_node:
-				"""
+				
 				#################################### Temp stuff (begin) #################################
 				sumsq = fft(tavg)
 				if CTF: 
@@ -2506,7 +2511,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				SSNR = sumsq.copy()
 				Util.div_filter(SSNR, vav)
 				#################################### Temp stuff (end) ####################################
-				"""
+				
 
 				if CTF:
 					tavg = filt_table(Util.addn_img(av1, av2), ctfb2)
@@ -2517,14 +2522,14 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 
 				# write the current average
 				drop_image(tavg, os.path.join(outdir, "aqc_%03d.hdf"%(total_iter)))
-				"""
+				
 				#################################### Temp stuff (begin) #################################
 				drop_image(vav, os.path.join(outdir, "vav_%03d.hdf"%(total_iter)))
 				tavg = fft(Util.divn_img(fft(tavg), vav))
 				sum_SSNR = Util.infomask(SSNR, maskI, True)
 				sum_SSNR = sum_SSNR[0]
 				#################################### Temp stuff (end) ###################################
-				"""
+				
 
 				frsc = fsc_mask(av1, av2, ref_data[0], 1.0, os.path.join(outdir, "resolution%03d"%(total_iter)))
 				ref_data[2] = tavg
@@ -3238,6 +3243,7 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 				ref_data[2]    = refi[j][0]
 				ref_data[3]    = frsc
 				refi[j][0], cs = user_func(ref_data)	
+
 
 				# write the current average
 				TMP = []
@@ -4276,6 +4282,10 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	import types
 	from utilities      import print_begin_msg, print_end_msg, print_msg
 	print_begin_msg("ali3d_d")
+
+	# DEBUG
+	from alignment import Numrinit, prepare_refrings
+	from projection import prep_vol
 
 	import user_functions
 	user_func = user_functions.factory[user_func_name]
@@ -11632,13 +11642,14 @@ def k_means_stab_CUDA(stack, outdir, maskname, K, npart = 5, F = 0, FK = 0, maxr
 			status = KmeansCUDA.kmeans()
 			if   status == 0:
 				pass
-			elif status == 4:
+			elif status == 5 or status == 4:
 				logging.info('[WARNING] Empty cluster')
 				k_means_cuda_error(status)
 				flag_cluster = True
 				break
 			else:
 				k_means_cuda_error(status)
+				logging.info('[ERROR] CUDA status %i' % status)
 				sys.exit()
 
 			# get back the partition and its infos
