@@ -846,7 +846,7 @@ def aves_wiener(input_stack, mode="a", SNR=1.0):
 	nx = ima.get_xsize()
 	ny = ima.get_xsize()
 	
-	if ima.get_attr_default('ctf_applied', 2) > 0:	ERROR("data cannot be ctf-applied", "prepare_2d_forPCA", 1)
+	if ima.get_attr_default('ctf_applied', 2) > 0:	ERROR("data cannot be ctf-applied", "aves_wiener", 1)
 
 	nx2 = 2*nx
 	ny2 = 2*ny
