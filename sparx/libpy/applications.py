@@ -2087,11 +2087,12 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	from utilities    import model_circle, drop_image, get_image, get_input_from_string
 	from statistics   import fsc_mask, add_oe_series
 	from alignment    import Numrinit, ringwe, ali2d_single_iter
-	from filter       import filt_ctf, filt_table
+	from filter       import filt_ctf, filt_table, filt_tophatb
 	from fundamentals import fshift
 	from morphology   import ctf_2
 	from utilities    import print_begin_msg, print_end_msg, print_msg
 	from fundamentals import fft, rot_avg_table
+	from utilities    import write_text_file
 	import os
 		
 	print_begin_msg("ali2d_c")
@@ -2121,7 +2122,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 
 	nima = EMUtil.get_image_count(stack)
 	ima = EMData()
-	ima.read_image(stack, 0, True)
+	ima.read_image(stack, 0)#, True)
 	nx = ima.get_xsize()
 	# default value for the last ring
 	if last_ring == -1:  last_ring = nx/2-2
@@ -2214,12 +2215,13 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 		for Iter in xrange(max_iter):
 			total_iter += 1 
 
-			av1, av2 = add_oe_series(data)
 			if CTF:
+				
 				tavg = filt_table(Util.addn_img(av1, av2), ctfb2)
 				av1  = filt_table(av1, ctf2[0])
 				av2  = filt_table(av2, ctf2[1])
 			else:
+				av1, av2 = add_oe_series(data)
 				tavg = (av1+av2)/nima
 			# write the current average
 			drop_image(tavg, os.path.join(outdir, "aqc_%03d.hdf"%(total_iter)))
@@ -2229,13 +2231,19 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 				tavg    = fft(Util.divn_img(fft(tavg), vav))
 
 				vav_r	= Util.pack_complex_to_real(vav)
+				drop_image(vav_r, os.path.join(outdir, "varf_%03d.hdf"%(total_iter)))
 				sumsq_r = Util.pack_complex_to_real(sumsq)
 				rvar    = rot_avg_table(vav_r)
 				rsumsq  = rot_avg_table(sumsq_r)
 				frsc = []
+				freq = []
 				for i in xrange(len(rvar)):
 					qt = max(0.0, rsumsq[i]/rvar[i] - 1.0)
-					frsc.append([i/(len(rvar)-1)*0.5, qt/(qt+1)])
+					frsc.append(qt/(qt+1.0))
+					freq.append(float(i)/(len(rvar)-1)*0.5)
+				frsc = [freq, frsc]
+				del freq
+				write_text_file(frsc, os.path.join(outdir, "resolution%03d"%(total_iter)) )
 
 			else:
 				frsc = fsc_mask(av1, av2, ref_data[0], 1.0, os.path.join(outdir, "resolution%03d"%(total_iter)))

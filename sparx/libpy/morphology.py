@@ -143,9 +143,8 @@ def ctf_2(nx, ctf):
 	b_factor = dict["bfactor"]
 	ampcont = dict["ampcont"]
 
-
 	ctf_2  = []
-	scl    = 1./pixel_size/nx
+	scl    = 1.0/pixel_size/nx
 	length = int(1.41*float(nx/2)) + 1
 	ctf_2 = [0.0]*length
 	for i in xrange(length):
