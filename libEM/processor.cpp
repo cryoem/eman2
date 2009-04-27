@@ -254,9 +254,9 @@ template <> Factory < Processor >::Factory()
 	force_add(&WaveletProcessor::NEW);
 	force_add(&FFTProcessor::NEW);
 	force_add(&RadialProcessor::NEW);
-	
+
 	force_add(&DirectionalSumProcessor::NEW);
-	
+
 #ifdef EMAN2_USING_CUDA
 	force_add(&CudaMultProcessor::NEW);
 	force_add(&CudaCorrelationProcessor::NEW);
@@ -319,9 +319,9 @@ void FourierProcessor::process_inplace(EMData * image)
 		LOGWARN("NULL Image");
 		return;
 	}
-	
+
 	preprocess(image);
-	
+
 	int array_size = FFTRADIALOVERSAMPLE * image->get_ysize();
 	float step=0.5f/array_size;
 
@@ -367,7 +367,7 @@ void LowpassFourierProcessor::preprocess(const EMData * const image)
 		lowpass = (float)params["cutoff_freq"] * (float)dict["apix_x"] * (float)dict["nx"] / 2.0f;
 	}
 	else if( params.has_key("cutoff_pixels") ) {
-		lowpass = (float)params["cutoff_pixels"] / (float)dict["nx"];			
+		lowpass = (float)params["cutoff_pixels"] / (float)dict["nx"];
 	}
 }
 
@@ -381,7 +381,7 @@ void HighpassFourierProcessor::preprocess(const EMData * const image)
 		highpass = (float)params["cutoff_freq"] * (float)dict["apix_x"] * (float)dict["nx"] / 2.0f;
 	}
 	else if( params.has_key("cutoff_pixels") ) {
-		highpass = (float)params["cutoff_pixels"] / (float)dict["nx"];			
+		highpass = (float)params["cutoff_pixels"] / (float)dict["nx"];
 	}
 }
 
@@ -769,14 +769,14 @@ void WatershedProcessor::process_inplace(EMData * image) {
 	vector<float> xpoints = params["xpoints"];
 	vector<float> ypoints = params["ypoints"];
 	vector<float> zpoints = params["zpoints"];
-	
+
 	vector<int> x(xpoints.begin(),xpoints.end());
 	vector<int> y(ypoints.begin(),ypoints.end());
 	vector<int> z(zpoints.begin(),zpoints.end());
-	
-	
+
+
 	// throw if vector lengths are unequal
-	
+
 //	float maxval = -99999;
 	/*
 	for(unsigned int i = 0; i < xpoints.size(); ++i) {
@@ -785,12 +785,12 @@ void WatershedProcessor::process_inplace(EMData * image) {
 			maxval = val;
 		}
 	}*/
-	
+
 	float minval = params["minval"];
-	
+
 	EMData* mask = new EMData(*image);
 	mask->to_zero();
-	
+
 	// Set the original mask values
 	for(unsigned int i = 0; i < xpoints.size(); ++i) {
 		try {
@@ -802,16 +802,16 @@ void WatershedProcessor::process_inplace(EMData * image) {
 	mask->write_image("seeds2.mrc");
 //	int dis = 500;
 // 	float dx = (maxval-minval)/((float) dis - 1);
-	
-	
+
+
 //	for(int i = 0; i < dis; ++i) {
 //		float val = maxval-i*dx;
-		
+
 		while( true ) {
 			bool cont= false;
 			for(unsigned int j = 0; j < xpoints.size(); ++j)
 			{
-				
+
 				Vec3i coord(x[j],y[j],z[j]);
 				vector<Vec3i> region;
 				region.push_back(coord);
@@ -821,7 +821,7 @@ void WatershedProcessor::process_inplace(EMData * image) {
 					if (v.size() == 0 ) break;
 					else find_region_input = v;
 				}
-				
+
 				vector<Vec3i> tmp(region.begin(),region.end());
 				region.clear();
 				for(vector<Vec3i>::const_iterator it = tmp.begin(); it != tmp.end(); ++it ) {
@@ -830,11 +830,11 @@ void WatershedProcessor::process_inplace(EMData * image) {
 				}
 				if (region.size() != 0) cont = true;
 			}
-			
+
 			if (!cont) break;
 		}
 //	}
-	
+
 	memcpy(image->get_data(),mask->get_data(),sizeof(float)*image->get_size());
 	image->update();
 }
@@ -854,17 +854,17 @@ vector<Vec3i > WatershedProcessor::find_region(EMData* mask,const vector<Vec3i >
 			}
 		}
 	}
-	
+
 	vector<Vec3i> ret;
 	for(vector<Vec3i>::const_iterator it = two_six_connected.begin(); it != two_six_connected.end(); ++it ) {
 		for(vector<Vec3i>::const_iterator it2 = coords.begin(); it2 != coords.end(); ++it2 ) {
 			if  (mask->get_value_at((*it2)[0],(*it2)[1],(*it2)[2]) != mask_value) throw;
 			Vec3i c = (*it)+(*it2);
-			
+
 			if ( c[0] < 0 || c[0] >= mask->get_xsize()) continue;
 			if ( c[1] < 0 || c[1] >= mask->get_ysize()) continue;
 			if ( c[2] < 0 || c[2] >= mask->get_zsize()) continue;
-			
+
 			if( mask->get_value_at(c[0],c[1],c[2]) == mask_value ) {
 				if (find(ret.begin(),ret.end(),c) == ret.end()) {
 					if (find(region.begin(),region.end(),c) == region.end()) {
@@ -892,17 +892,17 @@ vector<Vec3i > WatershedProcessor::watershed(EMData* mask, EMData* image, const 
 			}
 		}
 	}
-	
+
 	if  (mask->get_value_at(coordinate[0],coordinate[1],coordinate[2]) != mask_value) throw;
-	
+
 	vector<Vec3i> ret;
 	for(vector<Vec3i>::const_iterator it = two_six_connected.begin(); it != two_six_connected.end(); ++it ) {
 		Vec3i c = (*it)+coordinate;
-		
+
 		if ( c[0] < 0 || c[0] >= image->get_xsize()) continue;
 		if ( c[1] < 0 || c[1] >= image->get_ysize()) continue;
 		if ( c[2] < 0 || c[2] >= image->get_zsize()) continue;
-		
+
 	//	cout << image->get_value_at(c[0],c[1],c[2] ) << " " << threshold << endl;
 		if( image->get_value_at(c[0],c[1],c[2]) != 0 && (mask->get_value_at(c[0],c[1],c[2]) == 0 )) {
 			//cout << "Added something " << mask_value << endl;
@@ -1553,7 +1553,6 @@ EMData* MeanShrinkProcessor::process(const EMData *const image)
 //	EMData* result = new EMData(shrunken_nx,shrunken_ny,shrunken_nz);
 	EMData* result = image->copy_head();
 	result->set_size(shrunken_nx,shrunken_ny,shrunken_nz);
-
 	accrue_mean(result,image,shrink_factor);
 
 	result->update();
@@ -1672,7 +1671,6 @@ void MeanShrinkProcessor::accrue_mean(EMData* to, const EMData* const from,const
 			}
 		}
 	}
-
 	to->scale_pixel((float)shrink_factor);
 }
 
@@ -2043,7 +2041,7 @@ void FlattenBackgroundProcessor::process_inplace(EMData * image)
 	int nxc = nx+mnx; int nyc = ny+mny; int nzc = nz+mnz;
 	if (nz == 1) nzc = 1; // Sanity check
 	if (ny == 1) nyc = 1; // Sanity check
-	
+
 	if ( mnx > nx || mny > ny || mnz > nz)
 		throw ImageDimensionException("Can not flatten using a mask that is larger than the image.");
 
@@ -2060,7 +2058,7 @@ void FlattenBackgroundProcessor::process_inplace(EMData * image)
 
 	// The mask can now be automatically resized to the dimensions of the image
 //	bool undoclip = false;
-	
+
 	Region r;
 	if (ny == 1) r = Region((mnx-nxc)/2,nxc);
 	else if (nz == 1) r = Region((mnx-nxc)/2, (mny-nyc)/2,nxc,nyc);
@@ -2950,26 +2948,26 @@ void NormalizeRampNormVar::process_inplace(EMData * image)
 void NormalizeByMassProcessor::process_inplace(EMData * image)
 {
 	float mass = params.set_default("mass",-1.0f);
-	
+
 	if (mass <= 0) throw InvalidParameterException("You must specify a positive non zero mass");
-	
+
 	float thr = params.set_default("thr",(float)image->get_attr("mean")+(float)image->get_attr("sigma"));
-	
+
 	float apix = params.set_default("apix",-1.123456789);
 	if (apix == -1.123456789 ) {
 		if (image->has_attr("apix_x")) {
 			apix = image->get_attr("apix_x");
 		}
 	}
-	
+
 	if (apix <= 0) throw InvalidParameterException("You must specify a positive non zero apix");
-	
+
 	float step = ((float)image->get_attr("sigma"))/2.0f;
-	
+
 	int count=0;
 	int n = image->get_size();
 	float* d = image->get_data();
-	
+
 	for (int i=0; i<n; i++) {
 		if (d[i]>=thr) count++;
 	}
@@ -2984,9 +2982,9 @@ void NormalizeByMassProcessor::process_inplace(EMData * image)
 				if (d[i]>=thr) count++;
 			}
 		}
-		
+
 		step/=4.0;
-	
+
 		while (thr>min && count*apix*apix*apix*.81/1000.0<mass) {
 			thr-=step;
 			count=0;
@@ -2994,10 +2992,10 @@ void NormalizeByMassProcessor::process_inplace(EMData * image)
 				if (d[i]>=thr) count++;
 			}
 		}
-		
+
 		step/=4.0;
 	}
-	
+
 	image->mult((float)1.0/thr);
 	image->update();
 }
@@ -3662,7 +3660,7 @@ void FlipProcessor::process_inplace(EMData * image)
 		return;
 	}
 #endif
-	
+
 
 	float *d = image->get_data();
 	int nx = image->get_xsize();
@@ -4364,7 +4362,7 @@ void PhaseToCenterProcessor::process_inplace(EMData * image)
 	}
 #endif // EMAN2_USING_CUDA
 	if (!proceed) return; // GPU processing occurred
-	
+
 	if (image->is_complex()) {
 		fourier_phaseshift180(image);
 		return;
@@ -4513,14 +4511,14 @@ void AutoMaskAsymUnit::process_inplace(EMData* image) {
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
-	
+
 	int ox = nx/2;
 	int oy = ny/2;
 	int oz = nz/2;
-	
+
 	Symmetry3D* sym = Factory<Symmetry3D>::get((string)params["sym"]);
 	int au = params.set_default("au",0);
-	
+
 	float *d = image->get_data();
 	for(int k = 0; k < nz; ++k ) {
 		for(int j = 0; j < ny; ++j ) {
@@ -4540,7 +4538,7 @@ void AutoMaskAsymUnit::process_inplace(EMData* image) {
 	}
 
 	delete sym;
-			
+
 }
 
 void AutoMask2DProcessor::process_inplace(EMData * image)
@@ -5747,11 +5745,11 @@ void AutoMask3D2Processor::process_inplace(EMData * image)
 		LOGWARN("NULL Image");
 		return;
 	}
-	
+
 	if (image->get_ndim() != 3) {
 		throw ImageDimensionException("This processor was only ever designed to work on 3D images.");
 	}
-	
+
 	/*
 	 The mask writing functionality was removed to comply with an EMAN2 policy which dictates that file io is not allowed from within a processor
 	 To get around this just use the return_mask parameter.
@@ -5819,13 +5817,13 @@ void AutoMask3D2Processor::process_inplace(EMData * image)
 	} else {
 		image->mult(*amask);
 	}
-	
+
 	// EMAN2 policy is not to allow file io from with a processor
 	//if (mask_output != "") {
 	//	amask->write_image(mask_output);
 	//}
-	
-	
+
+
 	delete amask;
 }
 
@@ -5838,7 +5836,7 @@ void IterBinMaskProcessor::process_inplace(EMData * image)
 
 	float val1 = params["val1"];
 	float val2 = params["val2"];
-	
+
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
@@ -5899,20 +5897,20 @@ EMData* DirectionalSumProcessor::process(const EMData* const image ) {
 	string dir = params.set_default("direction", "");
 	if ( dir == "" || ( dir != "x" && dir != "y" && dir != "z" ) )
 		throw InvalidParameterException("The direction parameter must be either x, y, or z");
-	
+
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
-	
+
 	// compress one of the dimensions
 	if ( dir == "x" ) nx = 1;
 	else if ( dir == "y" ) ny = 1;
 	else if ( dir == "z" ) nz = 1;
-	
+
 	EMData* ret = new EMData;
 	ret->set_size(nx,ny,nz);
 	ret->to_zero();
-	
+
 	float* d = image->get_data();
 	for(int k = 0; k < image->get_zsize(); ++k ) {
 		for(int j = 0; j < image->get_ysize(); ++j ) {
@@ -5941,7 +5939,7 @@ void TestImageProcessor::preprocess(EMData * image)
 		LOGWARN("NULL Image");
 		return;
 	}
-	
+
 	nx = image->get_xsize();
 	ny = image->get_ysize();
 	nz = image->get_zsize();
@@ -6546,35 +6544,35 @@ void TestImageHollowEllipse::process_inplace(EMData * image)
 	preprocess(image);
 
 	float width = params.set_default("width",2.0);
-	
+
 	float a2 = params.set_default("a",nx/2.0f-1.0f);
 	float b2 = params.set_default("b",ny/2.0f-1.0f);
 	float c2 = params.set_default("c",nz/2.0f-1.0f);
-	
+
 	float a1 = params.set_default("xwidth",a2-width);
 	float b1 = params.set_default("ywidth",b2-width);
 	float c1 = params.set_default("zwidth",c2-width);
-	
+
 	float fill = params.set_default("fill",1.0);
 	Transform* t = params.set_default("transform",(Transform*)0);
-	
+
 	int mz = 2*(int)c2+1;
 	if ( nz < mz ) mz = nz;
 	int my = 2*(int)b2+1;
 	if ( ny < my ) my = ny;
 	int mx = 2*(int)a2+1;
 	if ( nx < mx ) mx = nx;
-	
+
 	float ai1 = 1/(a1*a1);
 	float bi1 = 1/(b1*b1);
 	float ci1 = 1/(c1*c1);
-	
+
 	float ai2 = 1/(a2*a2);
 	float bi2 = 1/(b2*b2);
 	float ci2 = 1/(c2*c2);
-	
+
 	Vec3f origin(nx/2,ny/2,nz/2);
-	
+
 	for (int k = 0; k < mz; k++) {
 		for (int j = 0; j < my; j++) {
 			for (int i = 0; i < mx; i++) {
@@ -6584,22 +6582,22 @@ void TestImageHollowEllipse::process_inplace(EMData * image)
 				float r1 = (x2*x2)*ai1 + (y2*y2)*bi1 + (z2*z2)*ci1;
 				float r2 = (x2*x2)*ai2 + (y2*y2)*bi2 + (z2*z2)*ci2;
 				if (r2 <= 1 && r1 >= 1) {
-				
+
 					if (t != 0) {
 						Vec3f v(x2,y2,z2);
 						v = (*t)*v;
 						v += origin;
-						
+
 						// THIS ISN'T THE BEST STRATEGY BUT IT'S A STOP GAP. A FLOOD FILL IS PROBABLY BETTER
 						// I fill in 3x3 cubes to make sure there are no gaps...
-						
-						for( int kk = -1; kk <= 1; ++kk) 
-							for( int jj = -1; jj <= 1; ++jj) 
+
+						for( int kk = -1; kk <= 1; ++kk)
+							for( int jj = -1; jj <= 1; ++jj)
 								for( int ii = -1; ii <= 1; ++ii) {
 									int xl = (int)v[0]+ii;
 									int yl = (int)v[1]+jj;
 									int zl = (int)v[2]+kk;
-									if (xl >= 0 && xl < nx && yl >= 0 && yl < ny && zl >= 0 && zl < nz) 
+									if (xl >= 0 && xl < nx && yl >= 0 && yl < ny && zl >= 0 && zl < nz)
 										image->set_value_at(xl,yl,zl,1.0);
 								}
 					} else {
@@ -6617,29 +6615,29 @@ void TestImageEllipse::process_inplace(EMData * image)
 {
 	preprocess(image);
 
-	
+
 	float a = params.set_default("a",nx/2.0f-1.0f);
 	float b = params.set_default("b",ny/2.0f-1.0f);
 	float c = params.set_default("c",nz/2.0f-1.0f);
 	float fill = params.set_default("fill",1.0);
 	//bool hollow = params.set_default("hollow",false);
 	Transform* t = params.set_default("transform",(Transform*)0);
-	
-	
+
+
 	int mz = 2*(int)c+1;
 	if ( nz < mz ) mz = nz;
 	int my = 2*(int)b+1;
 	if ( ny < my ) my = ny;
 	int mx = 2*(int)a+1;
 	if ( nx < mx ) mx = nx;
-	
-	
+
+
 	float ai = 1/(a*a);
 	float bi = 1/(b*b);
 	float ci = 1/(c*c);
-	
+
 	Vec3f origin(nx/2,ny/2,nz/2);
-	
+
 	for (int k = 0; k < mz; k++) {
 		for (int j = 0; j < my; j++) {
 			for (int i = 0; i < mx; i++) {
@@ -6648,22 +6646,22 @@ void TestImageEllipse::process_inplace(EMData * image)
 				float z2 = (float)(k - mz/2);
 				float r = (x2*x2)*ai + (y2*y2)*bi + (z2*z2)*ci;
 				if (r <= 1) {
-				
+
 					if (t != 0) {
 						Vec3f v(x2,y2,z2);
 						v = (*t)*v;
 						v += origin;
-						
+
 						// THIS ISN'T THE BEST STRATEGY BUT IT'S A STOP GAP. A FLOOD FILL IS PROBABLY BETTER
 						// I fill in 3x3 cubes to make sure there are no gaps...
-						
-						for( int kk = -1; kk <= 1; ++kk) 
-							for( int jj = -1; jj <= 1; ++jj) 
+
+						for( int kk = -1; kk <= 1; ++kk)
+							for( int jj = -1; jj <= 1; ++jj)
 								for( int ii = -1; ii <= 1; ++ii) {
 									int xl = (int)v[0]+ii;
 									int yl = (int)v[1]+jj;
 									int zl = (int)v[2]+kk;
-									if (xl >= 0 && xl < nx && yl >= 0 && yl < ny && zl >= 0 && zl < nz) 
+									if (xl >= 0 && xl < nx && yl >= 0 && yl < ny && zl >= 0 && zl < nz)
 										image->set_value_at(xl,yl,zl,fill);
 								}
 					} else {
@@ -7181,7 +7179,7 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
 	int nxy = nx*ny;
-	
+
 	const float * const src_data = image->get_const_data();
 	float *des_data = (float *) EMUtil::em_malloc(nx*ny*nz* sizeof(float));
 
@@ -7301,31 +7299,31 @@ void TransformProcessor::assert_valid_aspect(const EMData* const image) const {
 }
 
 void TransformProcessor::update_emdata_attributes(EMData* const p, const Dict& attr_dict, const float& scale) const {
-	
+
 	float inv_scale = 1.0f/scale;
 	vector<string> inv_scale_attrs;
 	inv_scale_attrs.push_back("origin_row");
 	inv_scale_attrs.push_back("origin_col");
 	inv_scale_attrs.push_back("origin_sec");
-	
+
 	for(vector<string>::const_iterator it = inv_scale_attrs.begin(); it != inv_scale_attrs.end(); ++it) {
 		if (attr_dict.has_key(*it)) {
 			p->set_attr(*it,(float) attr_dict[*it] * inv_scale);
 		}
 	}
-	
+
 	vector<string> scale_attrs;
 	scale_attrs.push_back("apix_x");
 	scale_attrs.push_back("apix_y");
 	scale_attrs.push_back("apix_z");
-	
-	
+
+
 	for(vector<string>::const_iterator it = scale_attrs.begin(); it != scale_attrs.end(); ++it) {
 		if (attr_dict.has_key(*it)) {
 			p->set_attr(*it,(float) attr_dict[*it] * scale);
 		}
 	}
-		
+
 }
 
 EMData* TransformProcessor::process(const EMData* const image) {
@@ -7335,7 +7333,7 @@ EMData* TransformProcessor::process(const EMData* const image) {
 
 	Transform* t = params["transform"];
 
-	
+
 	EMData* p  = 0;
 #ifdef EMAN2_USING_CUDA
 	if (image->gpu_operation_preferred()) {
@@ -7358,7 +7356,7 @@ EMData* TransformProcessor::process(const EMData* const image) {
 		float* des_data = transform(image,*t);
 		p = new EMData(des_data,image->get_xsize(),image->get_ysize(),image->get_zsize(),image->get_attr_dict());
 	}
-	
+
 	// 	all_translation += transform.get_trans();
 
 	float scale = t->get_scale();
@@ -7414,11 +7412,11 @@ void IntTranslateProcessor::assert_valid_aspect(const vector<int>& translation, 
 
 Region IntTranslateProcessor::get_clip_region(vector<int>& translation, const EMData* const image) const {
 	unsigned int dim = static_cast<unsigned int> (image->get_ndim());
-	
+
 	if ( translation.size() != dim ) {
 		for(unsigned int i = translation.size(); i < dim; ++i ) translation.push_back(0);
 	}
-	
+
 	Region clip_region;
 	if (dim == 1) {
 		clip_region = Region(-translation[0],image->get_xsize());
@@ -7427,31 +7425,31 @@ Region IntTranslateProcessor::get_clip_region(vector<int>& translation, const EM
 	} else if ( dim == 3 ) {
 		clip_region = Region(-translation[0],-translation[1],-translation[2],image->get_xsize(),image->get_ysize(),image->get_zsize());
 	} else throw ImageDimensionException("Only 1,2 and 3D images are supported");
-	
+
 	return clip_region;
 }
 
 void IntTranslateProcessor::process_inplace(EMData* image) {
-	
+
 	vector<int> translation = params.set_default("trans",vector<int>() );
-	
-	
+
+
 	assert_valid_aspect(translation,image);
-	
+
 	Region clip_region = get_clip_region(translation,image);
-	
+
 	image->clip_inplace(clip_region);
 	// clip_inplace does the update!
 }
 
 EMData* IntTranslateProcessor::process(const EMData* const image) {
-	
+
 	vector<int> translation = params.set_default("trans",vector<int>() );
-	
+
 	assert_valid_aspect(translation,image);
-	
+
 	Region clip_region = get_clip_region(translation,image);
-	
+
 	return image->get_clip(clip_region,0);
 	// clip_inplace does the update!
 }
@@ -7459,7 +7457,7 @@ EMData* IntTranslateProcessor::process(const EMData* const image) {
 void Rotate180Processor::process_inplace(EMData* image) {
 	ENTERFUNC;
 
-	
+
 	if (image->get_ndim() != 2) {
 		throw ImageDimensionException("2D only");
 	}
@@ -7474,7 +7472,7 @@ void Rotate180Processor::process_inplace(EMData* image) {
 		return;
 	}
 #endif
-	
+
 	float *d = image->get_data();
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
@@ -7604,7 +7602,7 @@ void TestTomoImage::process_inplace( EMData* image )
 	float nx = (float) image->get_xsize();
 	float ny = (float) image->get_ysize();
 	float nz = (float) image->get_zsize();
-	
+
 	// This increment is used to simplified positioning
 	// It's an incremental factor that matches the grid size of the paper
 	// that I drew this design on before implementing it in code
@@ -7619,7 +7617,7 @@ void TestTomoImage::process_inplace( EMData* image )
 	d["c"] = (float) .4*nz+3;
 	d["fill"] = 0.2;
 	image->process_inplace("testimage.ellipsoid",d);
-	
+
 	d["a"] = (float) .4*nx;
 	d["b"] = (float) .4*ny;
 	d["c"] = (float) .4*nz;
@@ -7674,7 +7672,7 @@ void TestTomoImage::process_inplace( EMData* image )
 		d["fill"] = 0.0;
 		image->process_inplace("testimage.ellipsoid",d);
 	}
-	
+
 	// Center x, center z, bottom y ellipsoids that grow progessively smaller
 	{
 		Transform t;
@@ -7726,7 +7724,7 @@ void TestTomoImage::process_inplace( EMData* image )
 
 	// Left ellipsoids from the bottom up
 	{
-		
+
 		Transform t;
 		t.set_trans(nx*6*xinc-nx/2,ny*5*yinc-ny/2,0);
 		Dict d;
@@ -7737,8 +7735,8 @@ void TestTomoImage::process_inplace( EMData* image )
 		d["fill"] = 0.25;
 		image->process_inplace("testimage.ellipsoid",d);
 	}
-	
-	{	
+
+	{
 		Transform t;
 		t.set_trans(nx*6*xinc-nx/2,ny*7*yinc-ny/2,0);
 		Dict d;
@@ -7858,16 +7856,16 @@ void TestTomoImage::process_inplace( EMData* image )
 		d["c"] = (float) .5*zinc*nz;
 		d["fill"] = 2.05;
 		image->process_inplace("testimage.ellipsoid",d);
-		
+
 		t.set_trans(nx*8*xinc-nx/2,ny*18*yinc-ny/2,0);
 		image->process_inplace("testimage.ellipsoid",d);
-		
+
 		t.set_trans(nx*14*xinc-nx/2,ny*18.2*yinc-ny/2,0);
 		image->process_inplace("testimage.ellipsoid",d);
-		
+
 		t.set_trans(nx*18*xinc-nx/2,ny*14*yinc-ny/2,0);
 		image->process_inplace("testimage.ellipsoid",d);
-		
+
 		t.set_trans(nx*17*xinc-nx/2,ny*7.5*yinc-ny/2,0);
 		image->process_inplace("testimage.ellipsoid",d);
 	}
@@ -7907,31 +7905,31 @@ void TestTomoImage::process_inplace( EMData* image )
 		d["c"] = (float) .25*zinc*nz;
 		d["fill"] = .35;
 		image->process_inplace("testimage.ellipsoid",d);
-		
+
 		t.set_trans(nx*13.5*xinc-nx/2,ny*6.5*yinc-ny/2,0);
 		image->process_inplace("testimage.ellipsoid",d);
-		
+
 		t.set_trans(nx*14.5*xinc-nx/2,ny*6.5*yinc-ny/2,0);
 		image->process_inplace("testimage.ellipsoid",d);
-		
+
 		t.set_trans(nx*15.5*xinc-nx/2,ny*6.5*yinc-ny/2,0);
 		image->process_inplace("testimage.ellipsoid",d);
-		
+
 		t.set_trans(nx*14*xinc-nx/2,ny*5.5*yinc-ny/2,0);
 		image->process_inplace("testimage.ellipsoid",d);
-		
+
 		t.set_trans(nx*14*xinc-nx/2,ny*5.5*yinc-ny/2,0);
 		image->process_inplace("testimage.ellipsoid",d);
-				
+
 		t.set_trans(nx*15*xinc-nx/2,ny*5.5*yinc-ny/2,0);
 		image->process_inplace("testimage.ellipsoid",d);
-		
+
 		t.set_trans(nx*16*xinc-nx/2,ny*5.5*yinc-ny/2,0);
 		image->process_inplace("testimage.ellipsoid",d);
-		
+
 		t.set_trans(nx*14.5*xinc-nx/2,ny*4.5*yinc-ny/2,0);
 		image->process_inplace("testimage.ellipsoid",d);
-		
+
 		t.set_trans(nx*15.5*xinc-nx/2,ny*4.5*yinc-ny/2,0);
 		image->process_inplace("testimage.ellipsoid",d);
 	}
@@ -8318,7 +8316,7 @@ CUDA_kmeans::CUDA_kmeans() {
     h_ASG = NULL;
     h_INFO = NULL;
 }
-	
+
 CUDA_kmeans::~CUDA_kmeans() {
     if (h_IM) delete h_IM;
     if (h_ASG) delete h_ASG;
@@ -8361,7 +8359,7 @@ void CUDA_kmeans::append_flat_image(EMData* im, int pos) {
 // cuda k-means core
 #include "sparx/cuda/cuda_kmeans.h"
 int CUDA_kmeans::kmeans() {
-    return cuda_kmeans(h_IM, h_AVE, h_ASG, h_INFO, N, m, K, maxite, F, T0, rnd);	
+    return cuda_kmeans(h_IM, h_AVE, h_ASG, h_INFO, N, m, K, maxite, F, T0, rnd);
 }
 
 // change the value of K
@@ -8379,7 +8377,7 @@ void CUDA_kmeans::set_rnd(int valrnd) {
 // get back the averages
 vector<EMData*> CUDA_kmeans::get_averages() {
     vector<EMData*> ave(K);
-    
+
     for (int k = 0; k < K; ++k) {
 	EMData* im = new EMData();
 	im->set_size(m, 1, 1);
@@ -8426,16 +8424,16 @@ void CudaMultProcessor::process_inplace(EMData* image) {
 void CudaCorrelationProcessor::process_inplace(EMData* image) {
 	EMData* with = params.set_default("with",(EMData*)0);
 	if (with == 0) throw InvalidParameterException("You must supply the with parameter, and it must be valid. It is NULL.");
-	
+
 	EMDataForCuda left = image->get_data_struct_for_cuda();
 	with->bind_cuda_texture(false);
 	emdata_processor_correlation_texture(&left,1);
 	image->gpu_update();
-	
+
 }
 
-#endif //EMAN2_USING_CUDA	
-	
+#endif //EMAN2_USING_CUDA
+
 void EMAN::dump_processors()
 {
 	dump_factory < Processor > ();

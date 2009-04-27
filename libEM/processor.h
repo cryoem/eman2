@@ -5,32 +5,32 @@
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
 
 #ifndef eman_processor_h__
@@ -95,18 +95,18 @@ namespace EMAN
 		{
 		}
 
-		/** To process an image in-place. 
-		 * For those processors which can only be processed out-of-place, override this function 
+		/** To process an image in-place.
+		 * For those processors which can only be processed out-of-place, override this function
 		 * to just print out some error message to remind user call the out-of-place version.
 		 * @param image The image to be processed.
 		 */
 		virtual void process_inplace(EMData *image) = 0;
-		
-		/** To proccess an image out-of-place. 
-		 * For those processors which can only be processed out-of-place, override this function 
+
+		/** To proccess an image out-of-place.
+		 * For those processors which can only be processed out-of-place, override this function
 		 * to give the right behavior.
 		 * @param image The image will be copied, actual process happen on copy of image.
-		 * @return the image processing result, may or may not be the same size of the input image  
+		 * @return the image processing result, may or may not be the same size of the input image
 		 * */
 		virtual EMData* process(const EMData * const image);
 
@@ -124,7 +124,7 @@ namespace EMAN
 		 * @return The processor's name.
 		 */
 		virtual string get_name() const = 0;
-		
+
 		/** Get the processor parameters in a key/value dictionary.
 		 * @return A key/value pair dictionary containing the parameters.
 		 */
@@ -132,7 +132,7 @@ namespace EMAN
 		{
 			return params;
 		}
-		
+
 		/** Set the processor parameters using a key/value dictionary.
 		 * @param new_params A dictionary containing the new parameters.
 		 */
@@ -140,13 +140,13 @@ namespace EMAN
 		{
 			params = new_params;
 		}
-		
+
 		/** Get processor parameter information in a dictionary. Each
 		 * parameter has one record in the dictionary. Each record
 		 * contains its name, data-type, and description.
 		 *
 		 * @return A dictionary containing the parameter info.
-		 */	 
+		 */
 		virtual TypeDict get_param_types() const
 		{
 			return TypeDict();
@@ -177,7 +177,7 @@ The basic design of EMAN Processors: <br>\
 
 		/** Fourier filter Processor type enum.
 		 *  New Fourier filter processors are computed in a single function,
-		 *  EMFourierFilterFunc, that uses a large switch statement to 
+		 *  EMFourierFilterFunc, that uses a large switch statement to
 		 *  apply the correct filter processor.  This enum specifies the
 		 *  filter processor to be applied.
 		 */
@@ -202,7 +202,7 @@ The basic design of EMAN Processors: <br>\
 			TANH_LOW_PASS,
 			TANH_HIGH_PASS,
 			TANH_HOMOMORPHIC,
-			TANH_BAND_PASS,	
+			TANH_BAND_PASS,
 			RADIAL_TABLE,
 		        CTF_,
 		};
@@ -210,20 +210,20 @@ The basic design of EMAN Processors: <br>\
 		/** Compute a Fourier-filter processed image in place.
 		 *
 		 *  @par Purpose: Apply selected Fourier space processor to 1-,2-, or 3-D image.
-		 *  @par Method: 
-		 *  
+		 *  @par Method:
+		 *
 		 *  @param     fimage  Input image object to be processed, either
 		 *                     a real-space image or a Fourier-space image.
 		 *                     Image may be 1-, 2-, or 3-dimensional.  The
-		 *                     original input image is not touched by 
+		 *                     original input image is not touched by
 		 *                     this routine.
 		 *
 		 *  @param[in] params  Processor parameters.  Different processors require
 		 *                     different parameters, so we this routine accepts
 		 *                     a dictionary of parameters and looks up the
 		 *                     appropriate params for the chosen processor at
-		 *                     run time.  All processors use the "dopad" 
-		 *                     parameter to determine whether the 
+		 *                     run time.  All processors use the "dopad"
+		 *                     parameter to determine whether the
 		 *                     Fourier workspace array should be zero-
 		 *                     padded to twice the original length
 		 *                     (dopad == 1) or not zero-padded at all
@@ -236,29 +236,29 @@ The basic design of EMAN Processors: <br>\
 			bool doInPlace = true;
 			EMFourierFilterFunc(fimage, params, doInPlace);
 		}
-		
+
 		/** Compute a Fourier-processor processed image without altering the original image.
 		 *
 		 *  @par Purpose: Apply selected Fourier space processor to 1-,2-, or 3-D image.
-		 *  @par Method: 
-		 *  
+		 *  @par Method:
+		 *
 		 *  @param     fimage  Input image object to be processeded, either
 		 *                     a real-space image or a Fourier-space image.
-		 *                     Image may be 1-, 2-, or 3-dimensional.  
+		 *                     Image may be 1-, 2-, or 3-dimensional.
 		 *
 		 *  @param[in] params  Processor parameters.  Different processors require
 		 *                     different parameters, so we this routine accepts
 		 *                     a dictionary of parameters and looks up the
 		 *                     appropriate params for the chosen processor processor at
-		 *                     run time.  All processors use the "dopad" 
-		 *                     parameter to determine whether the 
+		 *                     run time.  All processors use the "dopad"
+		 *                     parameter to determine whether the
 		 *                     Fourier workspace array should be zero-
 		 *                     padded to twice the original length
 		 *                     (dopad == 1) or not zero-padded at all
 		 *                     (dopad == 0).
 		 *  @return 1-, 2-, or 3-dimensional filter processed image.  If the
 		 *          input image is a real-space image, then the returned
-		 *          output image will also be a real-space image.  
+		 *          output image will also be a real-space image.
 		 *          Similarly, if the input image is already a Fourier image,
 		 *          then the output image will be a Fourier image.
 		 */
@@ -267,46 +267,46 @@ The basic design of EMAN Processors: <br>\
 			bool doInPlace = false;
 			return EMFourierFilterFunc(fimage, params, doInPlace);
 		}
-		
+
 	  private:
 		/** Compute a Fourier-filter processed image.
 		 *  This function is called by either of the convience functions
 		 *  EMFourierFilter or EMFourierFilterInPlace.
 		 *
 		 *  @par Purpose: Apply selected Fourier space processor to 1-,2-, or 3-D image.
-		 *  @par Method: 
-		 *  
+		 *  @par Method:
+		 *
 		 *  @param     fimage  Input image object to be processed, either
 		 *                     a real-space image or a Fourier-space image.
 		 *                     Image may be 1-, 2-, or 3-dimensional.  Image
-		 *                     fimage will not be changed unless 
+		 *                     fimage will not be changed unless
 		 *                     inplace == true.
 		 *  @param[in] params  Processor parameters.  Different processor processors require
 		 *                     different parameters, so we this routine accepts
 		 *                     a dictionary of parameters and looks up the
 		 *                     appropriate params for the chosen processor processor at
-		 *                     run time.  All processors use the "dopad" 
-		 *                     parameter to determine whether the 
+		 *                     run time.  All processors use the "dopad"
+		 *                     parameter to determine whether the
 		 *                     Fourier workspace array should be zero-
 		 *                     padded to twice the original length
 		 *                     (dopad == 1) or not zero-padded at all
 		 *                     (dopad == 0).
-		 *  @param[in] doInPlace Inplace flag.  If this flag is true then 
-		 *                     fimage will contain the processeded image 
+		 *  @param[in] doInPlace Inplace flag.  If this flag is true then
+		 *                     fimage will contain the processeded image
 		 *                     when this function returns.
 		 *
 		 *  @return 1-, 2-, or 3-dimensional filter processed image.  If the
 		 *          input image is a real-space image, then the returned
-		 *          output image will also be a real-space image.  
+		 *          output image will also be a real-space image.
 		 *          Similarly, if the input image is already a Fourier image,
 		 *          then the output image will be a Fourier image.
 		 *          In either case, if inplace == true then the output
 		 *          image (pointer) will be the same as the input image
 		 *          (pointer).
 		 */
-		static EMData* 
+		static EMData*
 		EMFourierFilterFunc(EMData* fimage, Dict params, bool doInPlace=true);
-	
+
 	  protected:
 		mutable Dict params;
 	};
@@ -315,12 +315,12 @@ The basic design of EMAN Processors: <br>\
 	{
 	  public:
 		void process_inplace(EMData * image);
-		
+
 		static string get_group_desc()
 		{
 			return "An Image Processor defines a way to create a processor image. The processor image is used to multiply the input-image in the fourier space. ImageFilter class is the base class. Each specific ImageFilter class must define function create_processor_image(). ";
 		}
-		
+
 	  protected:
 		virtual EMData * create_processor_image() const = 0;
 	};
@@ -331,12 +331,12 @@ The basic design of EMAN Processors: <br>\
 	{
 	  public:
 		void process_inplace(EMData * image);
-		
+
 		static string get_group_desc()
 		{
 			return "Fourier Filter processors are a group of processor in the frequency domain. Before using such processors on an image, the image must be transformed from real space to the fourier space. FourierProcessor class is the base class of fourier space processors. Each specific processor is either a lowpass filter processor, or a highpass filter processor, or neighter. The unit of lowpass and highpass parameters are in terms of Nyquist, valid range is [0,0.5]. ";
 		}
-		
+
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
@@ -345,7 +345,7 @@ The basic design of EMAN Processors: <br>\
 			d.put("cutoff_freq", EMObject::FLOAT, "0 - 1.0/(get_xsize()*apix_x) same for y and z");
 			return d;
 		}
-		
+
 	  protected:
 		  virtual void preprocess(const EMData * const image) {}
 		  virtual void create_radial_func(vector < float >&radial_mask) const = 0;
@@ -360,7 +360,7 @@ The basic design of EMAN Processors: <br>\
 		}
 
 		void process_inplace(EMData * image);
-		
+
 		void set_params(const Dict & new_params)
 		{
 			params = new_params;
@@ -396,16 +396,16 @@ The basic design of EMAN Processors: <br>\
 	 *@author David Woolford
 	 *@date 2007/12/04
 	 */
-	class ConvolutionProcessor : public Processor 
+	class ConvolutionProcessor : public Processor
 	{
 		public:
 			ConvolutionProcessor() {}
-		  
+
 			string get_name() const
 			{
 				return "math.convolution";
 			}
-		
+
 			void process_inplace(EMData *image);
 
 			static Processor *NEW()
@@ -425,23 +425,23 @@ The basic design of EMAN Processors: <br>\
 				return d;
 			}
 	};
-	
+
 	/** Determines the partial derivatives in the x direction
 	 * Does this by constructing edge kernels in real space but convoluting in Fourier space
 	 *
 	 *@author David Woolford
 	 *@date 2007/12/04
 	 */
-	class XGradientProcessor : public Processor 
+	class XGradientProcessor : public Processor
 	{
 	 public:
 		XGradientProcessor() {}
-		  
+
 		string get_name() const
 		{
 			return "math.edge.xgradient";
 		}
-		
+
 		void process_inplace(EMData *image);
 
 		static Processor *NEW()
@@ -460,17 +460,17 @@ The basic design of EMAN Processors: <br>\
 			return d;
 		}
 	};
-	
-	class YGradientProcessor : public Processor 
+
+	class YGradientProcessor : public Processor
 	{
 		public:
 			YGradientProcessor() {}
-		  
+
 			string get_name() const
 			{
 				return "math.edge.ygradient";
 			}
-		
+
 			void process_inplace(EMData *image);
 
 			static Processor *NEW()
@@ -482,7 +482,7 @@ The basic design of EMAN Processors: <br>\
 			{
 				return "Determines the image gradient in the y direction";
 			}
-	
+
 
 			TypeDict get_param_types() const
 			{
@@ -490,17 +490,17 @@ The basic design of EMAN Processors: <br>\
 				return d;
 			}
 	};
-	
-	class ZGradientProcessor : public Processor 
+
+	class ZGradientProcessor : public Processor
 	{
 		public:
 			ZGradientProcessor() {}
-		  
+
 			string get_name() const
 			{
 				return "math.edge.zgradient";
 			}
-		
+
 			void process_inplace(EMData *image);
 
 			static Processor *NEW()
@@ -512,17 +512,17 @@ The basic design of EMAN Processors: <br>\
 			{
 				return "Determines the image gradient in the z direction";
 			}
-		
+
 			TypeDict get_param_types() const
 			{
 				TypeDict d;
 				return d;
 			}
 	};
-	
+
 	/** Automatically determines the background for the image then uses this to perform
-	 * Wiener filters on overlapping subregions of the image, which are then 
-	 * combined using linear interpolation 
+	 * Wiener filters on overlapping subregions of the image, which are then
+	 * combined using linear interpolation
 	 *@param size[in] size in pixels of the boxes to chop the image into during processing
 	 *
 	 *@author Steve Ludtke
@@ -537,7 +537,7 @@ The basic design of EMAN Processors: <br>\
 		}
 
 		virtual EMData* process(const EMData * const image);
-		
+
 		void process_inplace(EMData *image);
 
 		void set_params(const Dict & new_params)
@@ -570,7 +570,7 @@ The basic design of EMAN Processors: <br>\
 
 
 	/**Wiener filter based on a Ctf object either in the image header
-	 *@param ctf[in] A Ctf object to use 
+	 *@param ctf[in] A Ctf object to use
 	 *
 	 *@author Steve Ludtke
 	 *@date 2008/11/03
@@ -584,7 +584,7 @@ The basic design of EMAN Processors: <br>\
 		}
 
 		virtual EMData* process(const EMData * const image);
-		
+
 		void process_inplace(EMData *image);
 
 		void set_params(const Dict & new_params)
@@ -640,17 +640,17 @@ The basic design of EMAN Processors: <br>\
 			d.put("lowpass", EMObject::FLOAT, "Processor radius in terms of Nyquist (0-.5)");
 			return d;
 		}
-		
-		static string get_group_desc() 
+
+		static string get_group_desc()
 		{
 			return "Low-pass processor attenuates amplitudes at high spatial frequencies. It has the result of blurring the image, and of eliminating sharp edges and noise. The base class for all low pass fourier processors.";
 		}
-		
+
 	  protected:
 		  virtual void preprocess(const EMData * const image);
 		  float lowpass;
 	};
-	
+
 	class LinearRampFourierProcessor:public FourierProcessor
 	{
 		public:
@@ -660,12 +660,12 @@ The basic design of EMAN Processors: <br>\
 			{
 				return "";
 			}
-		
+
 			static Processor *NEW()
 			{
 				return new LinearRampFourierProcessor();
 			}
-			
+
 		protected:
 			virtual void create_radial_func(vector < float >&radial_mask) const ;
 	};
@@ -694,12 +694,12 @@ The basic design of EMAN Processors: <br>\
 			d.put("highpass", EMObject::FLOAT, "Processor radius in terms of Nyquist (0-.5)");
 			return d;
 		}
-		
+
 		static string get_group_desc()
 		{
 			return "High-pass processor is rotationally symmetric 2D function. It attenuates amplitudes at low spatial frequencies, and increases amplitudes for high spatial frequencies. It has the result of enhancing the edges in the image while suppressing all slow-moving variations.	<br> HighpassFourierProcessor class is the base class for all high pass fourier processors.";
 		}
-		
+
 	  protected:
 		  virtual void preprocess(const EMData * const image);
 		  float highpass;
@@ -724,7 +724,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "processor radial function: if x <= lowpass, f(x) = 1; else f(x) = 0;";
 		}
-		
+
 	  protected:
 		void create_radial_func(vector < float >&radial_mask) const;
 	};
@@ -749,7 +749,7 @@ The basic design of EMAN Processors: <br>\
 			return "processor radial function: if x >= highpass, f(x) = 1; else f(x) = 0;";
 		}
 
-		
+
 	  protected:
 		void create_radial_func(vector < float >&radial_mask) const;
 	};
@@ -940,7 +940,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "The base class for real space processor working on individual pixels. The processor won't consider the pixel's coordinates and neighbors.";
 		}
-		
+
 	  protected:
 		virtual void process_pixel(float *x) const = 0;
 		virtual void calc_locals(EMData *)
@@ -979,9 +979,9 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "f(x) = |x|";
 		}
-		
+
 	};
-	
+
 
 	/**f(x) = 0 if x = 0; f(x) = 1 if x != 0
 	 */
@@ -1001,7 +1001,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "f(x) = 0 if x = 0; f(x) = 1 if x != 0;";
 		}
-		
+
 	  protected:
 		void process_pixel(float *x) const
 		{
@@ -1041,17 +1041,17 @@ The basic design of EMAN Processors: <br>\
 			{
 				return "if f(x) != 0: f(x) = 1/f(x) else: f(x) = zero_to";
 			}
-		
+
 		protected:
 			void process_pixel(float *x) const
 			{
 				if (*x == 0) *x = zero_to;
-				else *x = 1/(*x); 
+				else *x = 1/(*x);
 			}
 		private:
 			float zero_to;
 	};
-	
+
 	class ValuePowProcessor:public RealPixelProcessor
 	{
 	  public:
@@ -1081,7 +1081,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "f(x) = x ^ pow;";
 		}
-		
+
 	  protected:
 		void process_pixel(float *x) const
 		{
@@ -1110,7 +1110,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "f(x) = x * x;";
 		}
-		
+
 	  protected:
 		void process_pixel(float *x) const
 		{
@@ -1136,14 +1136,14 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "f(x) = sqrt(x)";
 		}
-		
+
 	  protected:
 		void process_pixel(float *x) const
 		{
 			*x = sqrt(*x);
 		}
 	};
-	
+
 	/**f(x) = x if x >= minval; f(x) = 0 if x < minval
 	*@param minval
 	 */
@@ -1169,7 +1169,7 @@ The basic design of EMAN Processors: <br>\
 			{
 				return "f(x) = x if x >= minval; f(x) = 0 if x < minval.";
 			}
-		
+
 		protected:
 			inline void process_pixel(float *x) const
 			{
@@ -1178,7 +1178,7 @@ The basic design of EMAN Processors: <br>\
 				}
 			}
 	};
-	
+
 	/**Rotate by 180 using pixel swapping, works for 2D only
 	 * @author David Woolford
 	 * @date July 29th 2008
@@ -1195,7 +1195,7 @@ The basic design of EMAN Processors: <br>\
 			{
 				return new Rotate180Processor();
 			}
-			
+
 			/**
 			 * @exception ImageDimensionException if the image dimensions are not 2D
 			 */
@@ -1206,7 +1206,7 @@ The basic design of EMAN Processors: <br>\
 				return "The 2D image is rotated by 180 degree by carefully swapping image pixel values. No explicit matrix multiplication is performed. If image dimensions are even will change pixels along x=0 and y=0. Works for all combinations of even and oddness.";
 			}
 	};
-	
+
 	/** Transform the image using a Transform object
 	 * @author David Woolford
 	 * @date September 2008
@@ -1223,7 +1223,7 @@ The basic design of EMAN Processors: <br>\
 			{
 				return new TransformProcessor();
 			}
-			
+
 			/**
 			 * @exception ImageDimensionException if the image is not 2D or 3D
 			 * @exception InvalidParameterException if the Transform parameter is not specified
@@ -1235,27 +1235,27 @@ The basic design of EMAN Processors: <br>\
 			 * @exception InvalidParameterException if the Transform parameter is not specified
 			 */
 			virtual EMData* process(const EMData* const image);
-			
+
 			virtual TypeDict get_param_types() const
 			{
 				TypeDict d;
 				d.put("transform", EMObject::TRANSFORM, "The transform that will be applied to the image" );
 				return d;
 			}
-			
+
 			virtual string get_desc() const
 			{
 				return "The image is transformed using Transform parameter.";
 			}
 		private:
 			float* transform(const EMData* const image, const Transform& t) const;
-			
+
 			void update_emdata_attributes(EMData* const image, const Dict& attr_dict, const float& scale) const;
-			
-			
+
+
 			void assert_valid_aspect(const EMData* const image) const;
 	};
-	
+
 	/** Translate the image an integer amount
 	 * Uses EMData::clip_inplace (inplace) and EMData::get_clip (out of place) to do the translation
 	 * @ingroup CUDA_ENABLED
@@ -1269,12 +1269,12 @@ The basic design of EMAN Processors: <br>\
 			{
 				return "math.translate.int";
 			}
-			
+
 			static Processor *NEW()
 			{
 				return new IntTranslateProcessor();
 			}
-			
+
 			/**
 			 * @exception ImageDimensionException if the image is not 1,2 or 3D
 			 * @exception InvalidParameterException if the Transform parameter is not specified
@@ -1286,14 +1286,14 @@ The basic design of EMAN Processors: <br>\
 			 * @exception InvalidParameterException if the Transform parameter is not specified
 			 */
 			virtual EMData* process(const EMData* const image);
-			
+
 			virtual TypeDict get_param_types() const
 			{
 				TypeDict d;
 				d.put("trans", EMObject::INTARRAY, "The displacement array, can be length 1-3" );
 				return d;
 			}
-			
+
 			virtual string get_desc() const
 			{
 				return "The image is translated an integer amount";
@@ -1322,7 +1322,7 @@ The basic design of EMAN Processors: <br>\
 	{
 	  public:
 		ClampingProcessor() : default_max(1.0), default_min(0.0) {}
-		
+
 		string get_name() const
 		{
 			return "threshold.clampminmax";
@@ -1331,9 +1331,9 @@ The basic design of EMAN Processors: <br>\
 		{
 			return new ClampingProcessor();
 		}
-		
+
 		void process_inplace(EMData *image);
-		
+
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
@@ -1347,7 +1347,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "This function clamps the min and max vals in the image at minval and maxval, respectively. In a sense this a bi-truncation of the data.";
 		}
-		
+
 	  protected:
 		float default_max, default_min;
 	};
@@ -1356,17 +1356,17 @@ The basic design of EMAN Processors: <br>\
 	{
 		public:
 			NSigmaClampingProcessor() : default_sigma(2.0) {}
-			
+
 			string get_name() const
 			{
 				return "threshold.clampminmax.nsigma";
 			}
-			
+
 			static Processor *NEW()
 			{
 				return new NSigmaClampingProcessor();
 			}
-			
+
 			TypeDict get_param_types() const
 			{
 				TypeDict d;
@@ -1374,14 +1374,14 @@ The basic design of EMAN Processors: <br>\
 				d.put("tomean", EMObject::BOOL, "Replace outlying pixels values with the mean pixel value instead" );
 				return d;
 			}
-		
+
 			void process_inplace(EMData *image);
-			
+
 			string get_desc() const
 			{
 				return "This function clamps the min and max vals in the image at minval and maxval at mean-n*sigma and mean+n*sigma, respectively. The parameter specified by the user is n, the default value of n is 2.";
 			}
-			
+
 		protected:
 			float default_sigma;
 	};
@@ -1400,7 +1400,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			return new ToMinvalProcessor();
 		}
-		
+
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
@@ -1412,7 +1412,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "f(x) = x if x >= minval; f(x) = minval if x < minval.";
 		}
-		
+
 	protected:
 		inline void process_pixel(float *x) const
 		{
@@ -1448,7 +1448,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "f(x) = x-minval if x >= minval; f(x) = 0 if x < minval.";
 		}
-		
+
 	  protected:
 		void process_pixel(float *x) const
 		{
@@ -1458,7 +1458,7 @@ The basic design of EMAN Processors: <br>\
 			}
 		}
 	};
-	
+
 	/**f(x) = 0 if x < value; f(x) = 1 if x >= value.
 	 *@param value
 	 */
@@ -1484,7 +1484,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "f(x) = 0 if x < value; f(x) = 1 if x >= value.";
 		}
-		
+
 	  protected:
 		void process_pixel(float *x) const
 		{
@@ -1534,7 +1534,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "f(x): if v-r<x<v+r -> v; if x>v+r -> x-r; if x<v-r -> x+r";
 		}
-		
+
 	  protected:
 		void process_pixel(float *x) const
 		{
@@ -1584,7 +1584,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "linear transform processor: f(x) = x * scale + shift. This is equivalent to a regular contrast stretching operation";
 		}
-		
+
 	  protected:
 		void process_pixel(float *x) const
 		{
@@ -1694,7 +1694,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "Range thresholding. A range of values is set to 1, all else is set to 0. f(x) = 1 if (low <= x <= high); else f(x) = 0";
 		}
-		
+
 	  protected:
 		void process_pixel(float *x) const
 		{
@@ -1873,7 +1873,7 @@ The basic design of EMAN Processors: <br>\
 			if (params.has_key("dy")) dy = params["dy"];
 			if (params.has_key("dz")) dz = params["dz"];
 		}
-		
+
 		string get_desc() const
 		{
 			return "CircularMaskProcessor applies a circular mask to the data.This is the base class for specific circular mask processors.Its subclass must implement process_dist_pixel().";
@@ -1950,7 +1950,7 @@ The basic design of EMAN Processors: <br>\
 			d.put("value", EMObject::FLOAT, "step cutoff to this value. Default is 0.");
 			return d;
 		}
-		
+
 		string get_desc() const
 		{
 			return "step cutoff to a user-given value in both inner and outer circles.";
@@ -1968,7 +1968,7 @@ The basic design of EMAN Processors: <br>\
 		float value;
 	};
 
-	
+
 	/**A step cutoff to the the mean value in a ring centered on the outer radius
 	 *@param ring_width The width of the mask ring.
 	 */
@@ -2074,7 +2074,7 @@ outer radius specifies width of Gaussian starting at inner_radius rather than to
 		void process_dist_pixel(float *pixel, float dist) const
 		{
 			if (inner_radius_square>0) {
-				if (dist>inner_radius_square) 
+				if (dist>inner_radius_square)
 					(*pixel) *= exp(-pow(sqrt(dist)-inner_radius,2.0f) / outer_radius_square);
 			}
 			else (*pixel) *= exp(-dist / outer_radius_square);
@@ -2172,7 +2172,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return "f(x) = f(x) / exp(-radius*radius * gauss_width / (ny*ny))";
 		}
-		
+
 	  protected:
 		void calc_locals(EMData *)
 		{
@@ -2274,12 +2274,12 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	{
 	  public:
 		void process_inplace(EMData * image);
-		
+
 		static string get_group_desc()
 		{
 			return "The base class for fourier space processor working on individual pixels. ri2ap() is called before processing, so individual pixels will be A/P rather than R/I. The processor won't consider the pixel's coordinates and neighbors.";
 		}
-		
+
 	  protected:
 		virtual void process_pixel(float *x) const = 0;
 	};
@@ -2339,7 +2339,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return "AreaProcessor use pixel values and coordinates of a real-space square area. This is the base class. Specific AreaProcessor needs to implement function create_kernel().";
 		}
-		
+
 	  protected:
 		virtual void process_pixel(float *pixel, float, float, float, float *area_matrix) const
 		{
@@ -2401,7 +2401,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return "Contraction of data, if any nearest neighbor is 0, value -> 0, generally used iteratively";
 		}
-		
+
 	  protected:
 		void process_pixel(float *pixel, float, float, float, float *matrix) const
 		{
@@ -2431,14 +2431,14 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return "BoxStatProcessor files are a kind of neighborhood processors. These processors compute every output pixel using information from a reduced region on the neighborhood of the input pixel. The classical form are the 3x3 processors. BoxStatProcessors could perform diverse tasks ranging from noise reduction, to differential , to mathematical morphology. BoxStatProcessor class is the base class. Specific BoxStatProcessor needs to define process_pixel(float *pixel, const float *array, int n).";
 		}
-		
+
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
 			d.put("radius", EMObject::INT, "The radius of the search box, default is 1 which results in a 3x3 box (3 = 2xradius + 1)");
 			return d;
 		}
-		
+
 	  protected:
 		virtual void process_pixel(float *pixel, const float *array, int n) const = 0;
 	};
@@ -2660,7 +2660,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	{
 	  public:
 		void process_inplace(EMData * image);
-		
+
 		string get_name() const
 		{
 			return "eman1.filter.blockrange";
@@ -2674,7 +2674,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return "averages over cal_half_width, then sets the value in a local block";
 		}
-		
+
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
@@ -2692,7 +2692,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	{
 	  public:
 		void process_inplace(EMData * image);
-		
+
 		string get_name() const
 		{
 			return "eman1.filter.blockcutoff";
@@ -2714,7 +2714,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return "Block processor, val1 is dx/dy, val2 is lp freq cutoff in pixels. Mystery processor.";
 		}
-		
+
 	};
 
 	/** BooleanShrinkProcessor encapsulates code common to
@@ -2734,7 +2734,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			 */
 			template<class LogicOp>
 			EMData* process(const EMData *const image, Dict& params);
-			
+
 			/** Boolean shrink an image inplace
 			 * @param image the image to operate on
 			 * @param params parameter dictionary
@@ -2743,10 +2743,10 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			 */
 			template<class LogicOp>
 			void process_inplace(EMData * image, Dict& params);
-			
+
 	};
-	
-	/** MaxShrinkProcessors shrinks an image by in an integer amount, 
+
+	/** MaxShrinkProcessors shrinks an image by in an integer amount,
 	 * keeping the maximum pixel value - useful when constructing binary search
 	 * trees in the marching cubes algorithm
 	 * @author David Woolford
@@ -2765,18 +2765,18 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			{
 				return BooleanShrinkProcessor::process<GreaterThan>(image, params);
 			}
-			
+
 			// resizes the image
 			virtual void process_inplace(EMData * image)
 			{
 				BooleanShrinkProcessor::process_inplace<GreaterThan>(image, params);
 			}
-			
+
 			string get_desc() const
 			{
 				return "Shrink an image by a given amount (default 2), using the maximum value found in the pixel neighborhood.";
 			}
-			
+
 			string get_name() const
 			{
 				return "math.maxshrink";
@@ -2785,7 +2785,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			{
 				return new MaxShrinkProcessor();
 			}
-			
+
 			TypeDict get_param_types() const
 			{
 				TypeDict d;
@@ -2793,7 +2793,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 				d.put("search", EMObject::INT, "The search area (cubic volume width, usually the same as shrink)");
 				return d;
 			}
-		
+
 		private:
 			struct GreaterThan
 			{
@@ -2801,8 +2801,8 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 				inline float get_start_val() { return -10000000; }
 			};
 	};
-	
-	/** MinShrinkProcessor shrinks an image by in an integer amount, 
+
+	/** MinShrinkProcessor shrinks an image by in an integer amount,
 	 * keeping the minimum pixel value - useful when constructing binary search
 	 * trees in the marching cubes algorithm
 	 * @author David Woolford
@@ -2821,7 +2821,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			{
 				return BooleanShrinkProcessor::process<LessThan>(image, params);
 			}
-			
+
 			// resizes the image
 			virtual void process_inplace(EMData * image)
 			{
@@ -2831,7 +2831,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			{
 				return "Shrink an image by a given amount (default 2), using the minimum value found in the pixel neighborhood.";
 			}
-			
+
 			string get_name() const
 			{
 				return "math.minshrink";
@@ -2840,7 +2840,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			{
 				return new MinShrinkProcessor();
 			}
-			
+
 			TypeDict get_param_types() const
 			{
 				TypeDict d;
@@ -2848,7 +2848,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 				d.put("search", EMObject::INT, "The search area (cubic volume width, usually the same as shrink)");
 				return d;
 			}
-		
+
 		private:
 		struct LessThan
 		{
@@ -2856,7 +2856,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			inline float get_start_val() { return 9999999999.0f; }
 		};
 	};
-	/** MeanShrinkProcessor shrinks an image by in an integer amount (and optionally by 1.5) 
+	/** MeanShrinkProcessor shrinks an image by in an integer amount (and optionally by 1.5)
 	 * taking the mean of the pixel neighbourhood
 	 * @author David Woolford (But is basically a copy of the old EMData::mean_shrink, probably written by Steven Ludtke )
 	 * @date May 2008
@@ -2875,7 +2875,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			* @exception InvalidValueException if the shrink amount is a nonzero integer, unless it is 1.5, which is an exceptional circumstance
 			 */
 			virtual EMData* process(const EMData *const image);
-			
+
 			/** Mean shrink inplace
 			* @param image the image that will be 'mean shrunken' inplace
 			* @exception ImageFormatException if the image is complex
@@ -2883,12 +2883,12 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			* @exception InvalidValueException if the shrink amount is a nonzero integer, unless it is 1.5, which is an exceptional circumstance
 			*/
 			virtual void process_inplace(EMData * image);
-			
+
 			string get_desc() const
 			{
 				return "Shrink an image by a given amount , using the mean value found in the pixel neighborhood.";
 			}
-			
+
 			virtual string get_name() const
 			{
 				return "math.meanshrink";
@@ -2897,7 +2897,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			{
 				return new MeanShrinkProcessor();
 			}
-			
+
 			virtual TypeDict get_param_types() const
 			{
 				TypeDict d;
@@ -2906,23 +2906,23 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			}
 		private:
 			/** Accrue the local mean in the image 'from' to the image 'to' using the given shrinkfactor
-			 * An internal function that encapsulates a routine common to both process and 
+			 * An internal function that encapsulates a routine common to both process and
 			 * process inplace
 			 * @param to the smaller image that will store the mean values
 			 * @param from the larger image that will be used to calculate the mean values
 			 * @param shrinkfactor the shrink amount
 			*/
 			void accrue_mean(EMData* to, const EMData *const from, const int shrinkfactor);
-			
+
 			/** Accrue the local mean in the image 'from' to the image 'to' using the the special case shrink factor of 1.5
-			 * This is an internal function that encapsulates a routine common to both process and 
+			 * This is an internal function that encapsulates a routine common to both process and
 			 * process inplace
 			 * @param to the smaller image that will store the mean values
 			 * @param from the larger image that will be used to calculate the mean values
 			 */
 			void accrue_mean_one_p_five(EMData* to, const EMData * const from);
 	};
-	
+
 
 	/** MeanShrinkProcessor shrinks an image by in an integer amount
 	* taking the median of the pixel neighbourhood
@@ -2940,23 +2940,23 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		* @param image the image that will be used to generate a 'median shrunken' image
 		* @exception ImageFormatException  if the image is complex
 		* @exception InvalidValueException if the shrink amount is not a non zero, positive integer
-		* @exception InvalidValueException if any of the image dimensions are not divisible by the the shrink amount 
+		* @exception InvalidValueException if any of the image dimensions are not divisible by the the shrink amount
 		*/
 		virtual EMData* process(const EMData *const image);
-			
+
 		/** Median shrink the image
 		* @param image the image the image that will be 'median shrunken' inplace
 		* @exception ImageFormatException  if the image is complex
 		* @exception InvalidValueException if the shrink amount is not a non zero, positive integer
-		* @exception InvalidValueException if any of the image dimensions are not divisible by the the shrink amount 
+		* @exception InvalidValueException if any of the image dimensions are not divisible by the the shrink amount
 		*/
 		virtual void process_inplace(EMData * image);
-			
+
 		string get_desc() const
 		{
 			return "Shrink an image by a given amount , using the median value found in the pixel neighborhood.";
 		}
-			
+
 		virtual string get_name() const
 		{
 			return "math.medianshrink";
@@ -2965,7 +2965,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return new MedianShrinkProcessor();
 		}
-			
+
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
@@ -2974,7 +2974,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		}
 	private:
 		/** Accrue the local median in the image 'from' to the image 'to' using the given shrinkfactor
-		* An internal function that encapsulates a routine common to both process and 
+		* An internal function that encapsulates a routine common to both process and
 		* process inplace
 		* @param to the smaller image that will store the calculated median values
 		* @param from the larger image that will be used to calculate the median values
@@ -2982,8 +2982,8 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			*/
 		void accrue_median(EMData* to, const EMData* const from,const int shrink_factor);
 	};
-	
-	
+
+
 	/** FFTShrinkProcessor shrinks an image by a floating point amount by clipping the Fourier Transform
 	 * This is the same as multipyling the FT by a box window, in real space this is a convolution that will induce rippling.
 	 * Hence it is not recommended to be used for scientific processing - rather, it can be used to rapidly generate shrunken
@@ -2995,14 +2995,14 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	{
 		public:
 			virtual EMData* process(const EMData *const image);
-			
+
 			virtual void process_inplace(EMData * image);
-			
+
 			string get_desc() const
 			{
 				return "Shrink an image by a floating point amount by clipping the Fourier transform.";
 			}
-			
+
 			string get_name() const
 			{
 				return "math.fftshrink";
@@ -3011,7 +3011,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			{
 				return new FFTShrinkProcessor();
 			}
-			
+
 			TypeDict get_param_types() const
 			{
 				TypeDict d;
@@ -3019,24 +3019,24 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 				return d;
 			}
 		private:
-			/** An internal function that encapsulates a routine common to both process and 
+			/** An internal function that encapsulates a routine common to both process and
 			* process inplace
 			* @param to the smaller image that will store the shrunken values
 			* @param from the larger image that will be used to calculate the shrunken values
 			* @param shrinkfactor the shrink amount
 			 */
 			void fft_shrink(EMData* to, const EMData *const from, const float& shrinkfactor);
-			
+
 	};
-	
-	
+
+
 	/**Gradient remover, does a rough plane fit to find linear gradients.
 	 */
 	class GradientRemoverProcessor:public Processor
 	{
 	  public:
 		void process_inplace(EMData * image);
-		
+
 		string get_name() const
 		{
 			return "math.lineargradientfix";
@@ -3050,7 +3050,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return "Gradient remover, does a rough plane fit to find linear gradients.";
 		}
-		
+
 	};
 
 	/**Gradient removed by least square plane fit
@@ -3065,7 +3065,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
     {
 	  public:
 		void process_inplace(EMData * image);
-		
+
 		string get_name() const
 		{
 			return "filter.gradientPlaneRemover";
@@ -3079,7 +3079,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return "Remove gradient by least square plane fit";
 		}
-		
+
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
@@ -3087,26 +3087,26 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			d.put("changeZero", EMObject::INT, "if zero pixels are modified when removing gradient. default = 0");
 			d.put("planeParam", EMObject::FLOATARRAY, "fitted plane parameters output");
 			return d;
-		}	
+		}
 	};
-	
-	
+
+
 	/** Flattens the background by subtracting the local mean
 	 *@param map an EMData object that defines the extent of the local neighbourhood - will be used for convolution
 	 *@param radius exclusive of the mask parameter, this defines the radius of a circle/sphere that will be used for local mean subtraction
-	 *@author David Woolford 
+	 *@author David Woolford
 	 *@date April 2008
 	 */
 	class FlattenBackgroundProcessor:public Processor
 	{
 		public:
 			void process_inplace(EMData * image);
-		
+
 			string get_name() const
 			{
 				return "filter.flattenbackground";
 			}
-			
+
 			static Processor *NEW()
 			{
 				return new FlattenBackgroundProcessor();
@@ -3116,24 +3116,24 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			{
 				return "Flattens the background by subtracting the local mean";
 			}
-		
+
 			TypeDict get_param_types() const
 			{
 				TypeDict d;
 				d.put("mask", EMObject::EMDATA, "A mask the defines the local neighborhood that will be used to find the local mean. Exclusive of the radius argument");
 				d.put("radius", EMObject::INT, "The radius of circle/sphere that defines the local neighborhood. Exclusive of the mask argument");
 				return d;
-			}	
+			}
 	};
-	
-	
+
+
 	/**Ramp processor -- Fits a least-squares plane to the picture, and subtracts the plane from the picture.  A wedge-shaped overall density profile can thus be removed from the picture.
 	 */
 	class RampProcessor:public Processor
     {
 	  public:
 		void process_inplace(EMData * image);
-		
+
 		string get_name() const
 		{
 			return "filter.ramp";
@@ -3150,7 +3150,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 				   "the picture.  A wedge-shaped overall density "
 				   "profile can thus be removed from the picture.";
 		}
-		
+
 	};
 
 	/**Tries to fix images scanned on the zeiss for poor ccd normalization.
@@ -3174,16 +3174,16 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return "Tries to fix images scanned on the zeiss for poor ccd normalization.";
 		}
-		
+
 	};
-	
+
 	/**This will replace the image with a full-circle 2D fft amplitude rendering.
 	 */
 	class RealToFFTProcessor:public Processor
 	{
 		public:
 		void process_inplace(EMData *image);
-	
+
 		string get_name() const
 		{
 			return "math.realtofft";
@@ -3200,7 +3200,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		}
 
 	};
-			
+
 
 	/**Fill zeroes at edges with nearest horizontal/vertical value.
 	 */
@@ -3222,7 +3222,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return "Fill zeroes at edges with nearest horizontal/vertical value.";
 		}
-		
+
 	};
 
 	/**Try to eliminate beamstop in electron diffraction patterns. If value1<0 also does radial subtract.
@@ -3281,7 +3281,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return "Fill zeroes at edges with nearest horizontal/vertical value damped towards Mean2.";
 		}
-		
+
 	};
 
 
@@ -3306,7 +3306,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return "Average along Y and replace with average";
 		}
-		
+
 	};
 
 	/**Decay edges of image to zero
@@ -3463,7 +3463,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return "Base class for normalization processors. Each specific normalization processor needs to define how to calculate mean and how to calculate sigma.";
 		}
-		
+
 	  protected:
 		virtual float calc_sigma(EMData * image) const;
 		virtual float calc_mean(EMData * image) const = 0;
@@ -3493,7 +3493,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		float calc_sigma(EMData * image) const;
 		float calc_mean(EMData * image) const;
 	};
-	
+
 	inline float NormalizeUnitProcessor::calc_mean(EMData *) const { return 0; }
 
 	/**Normalize an image so its elements sum to 1.0 (fails if mean=0)
@@ -3520,10 +3520,10 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		float calc_sigma(EMData * image) const;
 		float calc_mean(EMData * image) const;
 	};
-	
+
 	inline float NormalizeUnitSumProcessor::calc_mean(EMData *) const { return 0; }
 
-		
+
 	/**do a standard normalization on an image.
 	 */
 	class NormalizeStdProcessor:public NormalizeProcessor
@@ -3605,11 +3605,11 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			{
 				return "First call filter.ramp on the image, then make the mean 0 and norm 1";
 			}
-			
+
 			void process_inplace(EMData * image);
 	};
-	
-	/** Normalize the mass of the image assuming a density of 1.35 g/ml (0.81 Da/A^3). 
+
+	/** Normalize the mass of the image assuming a density of 1.35 g/ml (0.81 Da/A^3).
 	 * Only works for 3D images. Essentially a replica of Volume.C in EMAN1.
 	 * @author David Woolford (a direct port of Steve Ludtke's code)
 	 * @date 01/17/09
@@ -3631,7 +3631,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			{
 				return "Normalize the mass of the image assuming a density of 1.35 g/ml (0.81 Da/A^3) (3D only)";
 			}
-			
+
 			TypeDict get_param_types() const
 			{
 				TypeDict d;
@@ -3640,11 +3640,11 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 				d.put("thr", EMObject::FLOAT,"The isosurface threshold which encapsulates the structure");
 				return d;
 			}
-			
+
 			void process_inplace(EMData * image);
 	};
-	
-	
+
+
 	/**normalizes an image, mean value equals to edge mean.
 	 */
 	class NormalizeEdgeMeanProcessor:public NormalizeProcessor
@@ -3806,7 +3806,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	};
 
 	/**Multiply this image by a constant so it is scaled to the signal in 'noisyfile'
-	 * @param noisyfile 
+	 * @param noisyfile
 	 * @param keepzero  exclude zero values
 	 *@param invert
 	 *@param mult
@@ -3840,13 +3840,13 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return "Multiply this image by a constant so it is scaled to the signal in 'noisyfile'";
 		}
-		
+
 	};
 
 	/**use least square method to normalize
-	 * @param to 
-	 * @param low_threshold 
-	 * @param high_threshold 
+	 * @param to
+	 * @param low_threshold
+	 * @param high_threshold
 	 */
 	class NormalizeToLeastSquareProcessor:public Processor
 	{
@@ -3876,7 +3876,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return "use least square method to normalize";
 		}
-		
+
 	};
 
 	/**makes image circularly symmetric.
@@ -3900,7 +3900,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return "makes image circularly symmetric.";
 		}
-		
+
 	};
 
 	/**subtracts circularly symmetric part of an image.
@@ -3924,7 +3924,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return "subtracts circularly symmetric part of an image.";
 		}
-		
+
 	};
 
 
@@ -3957,9 +3957,9 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return "flip an image around an axis.";
 		}
-		
+
 	};
-	
+
 	/*class FlipProcessor1:public Processor
 	{
 	  public:
@@ -3986,11 +3986,11 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return "flip an image around an axis.";
 		}
-		
+
 	};*/
 
 	/** add noise to an image
-	 * @param noise 
+	 * @param noise
 	 */
 	class AddNoiseProcessor:public Processor
 	{
@@ -4046,17 +4046,17 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return "add sigma noise.";
 		}
-		
+
 	  protected:
 		float get_sigma(EMData * image);
 	};
 
 	/**add random noise
-	 *@param n 
-	 *@param x0 
-	 *@param dx 
-	 *@param y 
-	 *@param interpolation 
+	 *@param n
+	 *@param x0
+	 *@param dx
+	 *@param y
+	 *@param interpolation
 	 */
 	class AddRandomNoiseProcessor:public Processor
 	{
@@ -4091,9 +4091,9 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		}
 
 	};
-	
+
 	/** Undo the effects of the FourierToCenterProcessor
-	 * @author David Woolford <woolford@bcm.edu> 
+	 * @author David Woolford <woolford@bcm.edu>
 	 * @date October 2007
 	 * @ingroup tested3c
 	 */
@@ -4122,7 +4122,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 				return "Undoes the xform.fourierorigin.tocenter processor";
 			}
 	};
-			
+
 
 	/** Translates the origin in Fourier space from the corner to the center in y and z
 	 * Handles 2D and 3D, and handles all combinations of even and oddness
@@ -4131,7 +4131,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	 * you call FourierToCornerProcessor (above) and then inverse FT to get to the
 	 * original image
 	 *
-	 * @author David Woolford <woolford@bcm.edu> 
+	 * @author David Woolford <woolford@bcm.edu>
 	 * @date October 2007
 	 * @ingroup tested3c
 	 */
@@ -4161,12 +4161,12 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			}
 
 	};
-	
+
 	/**
 	 * This class is abstract. It contains functionality common to the PhaseToCenterProcessor and PhaseToCornerProcessor
 	 * processors
 	 *
-	 * @author David Woolford <woolford@bcm.edu> 
+	 * @author David Woolford <woolford@bcm.edu>
 	 * @date October 2007
 	 * @ingroup tested3c
 	 * though the testing of this processor is really implicit
@@ -4175,10 +4175,10 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	{
 		protected:
 			/** swap_corners_180 - works on 2D and 3D images
-			* 
+			*
 			* Implements the conventional 180 degree phase shift required to put the center of the image
 			* at the bottom left of the image - is used in conjunction with swap_central_slices_180
-			* if any of the image dimensions are odd, but by itself will perform the entire operation on even 
+			* if any of the image dimensions are odd, but by itself will perform the entire operation on even
 			* images. This functions is never called by anyone except for the PhaseToCenterProcessor and
 			* PhaseToCornerProcessor classes.
 			* Highly specialised function to handle all cases of even and oddness
@@ -4187,9 +4187,9 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			* @exception NullPointerException if the image is null
 			*/
 			void swap_corners_180(EMData * image);
-			
+
 			/** swap_central_slices_180 - works on 2D and 3D images
-			 * 
+			 *
 			 * swaps pixels values in central slices, only required if the image has one or more
 			 * odd dimensions. Should be used striclty in conjunction with swap_central_slices_180 function
 			 * and never called by anyone except for PhaseToCenterProcessor and PhaseToCornerProcessor
@@ -4200,7 +4200,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			 * @exception NullPointerException if the image is null
 			 */
 			void swap_central_slices_180(EMData * image);
-			
+
 			/** fourier_phaseshift180 - fourier phase shift by 180
 			 * this function is called internally if the argument to the process_inplace function
 			 * is complex.
@@ -4210,13 +4210,13 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			void fourier_phaseshift180(EMData * image);
 
 	};
-	
+
 	/** Translates a cornered image to the center
 	 * Undoes the PhaseToCornerProcessor
 	 *
 	 * works for 1D, 2D and 3D images, for all combinations of even and oddness
 	 *
-	 * @author David Woolford <woolford@bcm.edu> 
+	 * @author David Woolford <woolford@bcm.edu>
 	 * @date October 2007
 	 * @ingroup tested3c
 	 */
@@ -4234,18 +4234,18 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			{
 				return new PhaseToCenterProcessor();
 			}
-		
+
 			virtual string get_desc() const
 			{
 				return "Undoes the effect of the xform.phaseorigin.tocorner processor";
 			}
 
 	};
-	
+
 	/** Translates a centered image to the corner
 	 * works for 1D, 2D and 3D images, for all combinations of even and oddness
 	 *
-	 * @author David Woolford <woolford@bcm.edu> 
+	 * @author David Woolford <woolford@bcm.edu>
 	 * @date October 2007
 	 * @ingroup tested3c
 	 */
@@ -4263,7 +4263,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			{
 				return new PhaseToCornerProcessor();
 			}
-		
+
 			virtual string get_desc() const
 			{
 				return "Translates a centered image to the corner in a forward fashion";
@@ -4297,7 +4297,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			d.put("filter", EMObject::FLOAT, "is expressed as a fraction of the fourier radius.");
 			return d;
 		}
-		
+
 		virtual string get_desc() const
 		{
 			return "Attempts to automatically mask out the particle, excluding other particles in the box, etc.";
@@ -4305,10 +4305,10 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 
 	};
 
-	
+
 	/**Tries to mask out only interesting density
 	 * @param au  The asymmetric unit to mask, if -1 masks all asymmetric units but assigns each a unique value
-	 * @param sym The symmetry type, for example, "tet" 
+	 * @param sym The symmetry type, for example, "tet"
 	 * @author David Woolford
 	 * @date February 2009
 	*/
@@ -4341,10 +4341,10 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			}
 
 	};
-	
+
 	/**Tries to mask out only interesting density
-	 * @param threshold1 
-	 * @param threshold2 
+	 * @param threshold1
+	 * @param threshold2
 	 */
 	class AutoMask3DProcessor:public Processor
 	{
@@ -4379,9 +4379,9 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	};
 
 	/** Tries to mask out only interesting density
-	 * @param radius 
-	 * @param threshold 
-	 * @param nshells 
+	 * @param radius
+	 * @param threshold
+	 * @param nshells
 	 * @param nshellsgauss
 	 * @return_mask
 	 */
@@ -4414,7 +4414,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			d.put("nshellsgauss", EMObject::INT);
 			d.put("return_mask", EMObject::BOOL, "If true the result of the operation will produce the mask, not the masked volume.");
 			return d;
-			
+
 		}
 	};
 
@@ -4450,7 +4450,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	};
 
 	/**ToMassCenterProcessor centers image at center of mass, ignores old dx, dy.
-	 * @param int_shift_only 
+	 * @param int_shift_only
 	 * @ingroup tested3c
 	 */
 	class PhaseToMassCenterProcessor:public Processor
@@ -4472,7 +4472,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			{
 				return "centers the image the center of mass, which is calculated using Fourier phases, ignores old dx, dy.";
 			}
-		
+
 			virtual TypeDict get_param_types() const
 			{
 				TypeDict d;
@@ -4480,9 +4480,9 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 				return d;
 			}
 	};
-	
+
 	/**ToMassCenterProcessor centers image at center of mass, ignores old dx, dy.
-	 * @param int_shift_only 
+	 * @param int_shift_only
 	 * @ingroup tested3c
 	 */
 	class ToMassCenterProcessor:public Processor
@@ -4504,7 +4504,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return "ToMassCenterProcessor centers image at center of mass, ignores old dx, dy.";
 		}
-		
+
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
@@ -4544,8 +4544,8 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	};
 
 	/** Processor the images by the estimated SNR in each image.if parameter 'wiener' is 1, then wiener processor the images using the estimated SNR with CTF amplitude correction.
-	 * @param wiener 
-	 * @param snrfile 
+	 * @param wiener
+	 * @param snrfile
 	 */
 	class SNRProcessor:public Processor
 	{
@@ -4577,7 +4577,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	};
 
 	/** A fourier processor specified in a 2 column text file.
-	 * @param filename 
+	 * @param filename
 	*/
 	class FileFourierProcessor:public Processor
 	{
@@ -4609,7 +4609,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 
 	/** Identifiy the best symmetry in the given symmetry list for each pixel and then apply the best symmetry to each pixel
 	 *
-	 * @author Wen Jiang <wjiang@bcm.tmc.edu> 
+	 * @author Wen Jiang <wjiang@bcm.tmc.edu>
 	 * @date 2005-1-9
 	 * @param sym[in] the list of symmetries to search
 	 * @param thresh[in] the minimal level of symmetry to be accepted (0-1)
@@ -4820,24 +4820,24 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return "misc.directional_sum";
 		}
-		
+
 		static Processor *NEW()
 		{
 			return new DirectionalSumProcessor();
 		}
-		
+
 		/**
 		 * @exception InvalidParameterException raised if the direction parameter is not "x", "y" or "z"
 		 */
 		virtual EMData* process(const EMData* const image);
-		
+
 		/**
 		 * @exception InvalidCallException raised if this function is called
 		 */
 		virtual void process_inplace(EMData* image ) {
 			throw InvalidCallException("The directional sum processor does not work inplace");
 		}
-		
+
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
@@ -4851,7 +4851,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		}
 
 	};
-	
+
 	/**'paints' a circle into the image at x,y,z with values inside r1 set to v1, values between r1 and r2 will be set to a
 	 *	value between v1 and v2, and values outside r2 will be unchanged
 	 */
@@ -4859,7 +4859,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	{
 	  public:
 		virtual void process_inplace(EMData * image);
-		
+
 		virtual string get_name() const
 		{
 			return "watershed";
@@ -4872,7 +4872,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 
 		virtual string get_desc() const
 		{
-			return "Does a watershed"; 
+			return "Does a watershed";
 		}
 
 		virtual TypeDict get_param_types() const
@@ -4889,7 +4889,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		  vector<Vec3i > find_region(EMData* mask,const vector<Vec3i >& coords, const int mask_value, vector<Vec3i >& region);
 
 	};
-	
+
 	/**Sets the structure factor based on a 1D x/y text file.
 	 *@param filename
 	 */
@@ -4992,35 +4992,35 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return "This is a group of 'processors' used to create test image.";
 		}
-	
+
 	protected:
 		void preprocess(EMData * image);
 		int nx, ny, nz; //this is the size of the source image
 	};
-	
-	/**Replace a source image as a strict Gaussian 
+
+	/**Replace a source image as a strict Gaussian
 	 *@param sigma sigma value for this Gaussian blob
 	 */
 	class TestImagePureGaussian : public TestImageProcessor
 	{
 	public:
 		virtual void process_inplace(EMData * image);
-		
+
 		virtual string get_name() const
 		{
 			return "testimage.puregaussian";
 		}
-		
+
 		virtual string get_desc() const
 		{
 			return "Replace a source image as a strict Gaussian ";
 		}
-		
+
 		static Processor * NEW()
 		{
 			return new TestImagePureGaussian();
 		}
-		
+
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
@@ -5033,9 +5033,9 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			return d;
 		}
 	};
-	
-	
-		
+
+
+
 	/** Treats the pixels as though they are 1D (even if the image is 2D or 3D),
 	 * inserting a sine wave of pixel period extracted from the parameters (default is 10)
 	 *@param period the period of the sine wave
@@ -5044,22 +5044,22 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	{
 		public:
 			virtual void process_inplace(EMData * image);
-		
+
 			virtual string get_name() const
 			{
 				return "testimage.linewave";
 			}
-		
+
 			virtual string get_desc() const
 			{
 				return "Insert an oscillating sine wave into the pixel data";
 			}
-		
+
 			static Processor * NEW()
 			{
 				return new TestImageLineWave();
 			}
-		
+
 			virtual TypeDict get_param_types() const
 			{
 				TypeDict d;
@@ -5067,8 +5067,8 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 				return d;
 			}
 	};
-	
-	
+
+
 	/**Make an image useful for tomographic reconstruction testing
 	 * this is a 3D phantom image based on the 2D phantom described in
 	 * Delaney and Bresler, "Globally convergent edge-preserving regularized reconstruction: An application to limited-angle tomography". IEEE
@@ -5079,21 +5079,21 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	class TestTomoImage : public TestImageProcessor
 	{
 		public:
-			/** Make a useful tomographic phantom image 
+			/** Make a useful tomographic phantom image
 			 * @param image the image to operate upon
 			 */
 			virtual void process_inplace(EMData * image);
-		
+
 			virtual string get_name() const
 			{
 				return "testimage.tomo.objects";
 			}
-		
+
 			virtual string get_desc() const
 			{
 				return "Make an image consisting various objects, useful for tomographic testing";
 			}
-		
+
 			static Processor * NEW()
 			{
 				return new TestTomoImage();
@@ -5103,7 +5103,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			void insert_hollow_ellipse( EMData* image, const Region& region, const float& value, const int& radius, const Transform& t3d = Transform() );
 			void insert_rectangle( EMData* image, const Region& region, const float& value, const Transform& t3d = Transform() );
 	};
-	
+
 	/** Put a gradient in the image of the form y = mx+b : "x" is a string indicating any of the image axes, i.e., x,y or z.
 	 * @author David Woolford <woolford@bcm.edu>
 	 * @date 01/10/2008
@@ -5115,22 +5115,22 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	{
 		public:
 			virtual void process_inplace(EMData * image);
-		
+
 			virtual string get_name() const
 			{
 				return "testimage.gradient";
 			}
-		
+
 			virtual string get_desc() const
 			{
 				return "Make a gradient image of the form y=mx+b, where x is any of the image axes.";
 			}
-		
+
 			static Processor * NEW()
 			{
 				return new TestImageGradient();
 			}
-		
+
 			virtual TypeDict get_param_types() const
 			{
 				TypeDict d;
@@ -5140,7 +5140,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 				return d;
 			}
 	};
-	
+
 	/**Make an image consisting of a single cross, with lines
 	 * going in the axial directions, intersecting at the origin.
 	 * @author David Woolford <woolford@bcm.edu>
@@ -5156,22 +5156,22 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			* @param image the image to operate upon
 			 */
 			virtual void process_inplace(EMData * image);
-		
+
 			virtual string get_name() const
 			{
 				return "testimage.axes";
 			}
-		
+
 			virtual string get_desc() const
 			{
 				return "Make an image consisting of a single cross";
 			}
-		
+
 			static Processor * NEW()
 			{
 				return new TestImageAxes();
 			}
-		
+
 			virtual TypeDict get_param_types() const
 			{
 				TypeDict d;
@@ -5180,7 +5180,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 				return d;
 			}
 	};
-	
+
 	/** Replace a source image as a Gaussian Blob
 	 *@param sigma sigma value for this Gaussian blob
 	 *@param axis specify a major axis for asymmetric features
@@ -5190,22 +5190,22 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	{
 	public:
 		virtual void process_inplace(EMData * image);
-		
+
 		virtual string get_name() const
 		{
 			return "testimage.gaussian";
 		}
-		
+
 		virtual string get_desc() const
 		{
 			return "Replace a source image as a Gaussian Blob";
 		}
-		
+
 		static Processor * NEW()
 		{
 			return new TestImageGaussian();
 		}
-		
+
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
@@ -5215,29 +5215,29 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			return d;
 		}
 	};
-	
+
 	/**Replace a source image with a lumpy S-curve used for alignment testing
 	 */
 	class TestImageScurve : public TestImageProcessor
 	{
 	public:
 		virtual void process_inplace(EMData * image);
-		
+
 		virtual string get_name() const
 		{
 			return "testimage.scurve";
 		}
-		
+
 		virtual string get_desc() const
 		{
 			return "Replace a source image with a lumpy S-curve used for alignment testing";
 		}
-		
+
 		static Processor * NEW()
 		{
 			return new TestImageScurve();
 		}
-		
+
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
@@ -5256,22 +5256,22 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	{
 	public:
 		virtual void process_inplace(EMData * image);
-		
+
 		virtual string get_name() const
 		{
 			return "testimage.sphericalwave";
 		}
-		
+
 		virtual string get_desc() const
 		{
 			return "Replace a source image in 2d or 3d with a spherical wave cos(2*pi*r/wavelength+phase) also 1/r (2d) or 1/r^2 (3d)";
 		}
-		
+
 		static Processor * NEW()
 		{
 			return new TestImageSphericalWave();
 		}
-		
+
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
@@ -5283,7 +5283,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			return d;
 		}
 	};
-	
+
 
 	/**Replace a source image as a sine wave in specified wave length
 	 *@param wavelength this value is the d in function |sin(x/d)|
@@ -5295,22 +5295,22 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	{
 	public:
 		virtual void process_inplace(EMData * image);
-		
+
 		virtual string get_name() const
 		{
 			return "testimage.sinewave";
 		}
-		
+
 		virtual string get_desc() const
 		{
 			return "Replace a source image as a sine wave in specified wave length";
 		}
-		
+
 		static Processor * NEW()
 		{
 			return new TestImageSinewave();
 		}
-		
+
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
@@ -5319,12 +5319,12 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			d.put("phase", EMObject::FLOAT, "(optional) the phase in equation sin(x*2*PI/wavelength - phase*180/PI)");
 			d.put("az", EMObject::FLOAT, "(optional) angle in degree. for 2D image, this is the rotated angle of the image, \
 												in 3D image, it's az for euler angle. default is zero");
-			d.put("alt", EMObject::FLOAT, "(optional) angle in degree. only in 3D case, alt for euler angle, default is zero"); 
-			d.put("phi", EMObject::FLOAT, "(optional) angle in degree. only in 3D case, phi for euler angle, default is zero"); 
+			d.put("alt", EMObject::FLOAT, "(optional) angle in degree. only in 3D case, alt for euler angle, default is zero");
+			d.put("phi", EMObject::FLOAT, "(optional) angle in degree. only in 3D case, phi for euler angle, default is zero");
 			return d;
 		}
 	};
-	
+
 	/**Replace a source image as a circular sine wave in specified wave length
 	 *@param wavelength float this value is the d in function |sin(x/d)|
 	 *@param axis char (optional) specify a major axis for asymmetric features
@@ -5335,22 +5335,22 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	{
 	public:
 		virtual void process_inplace(EMData * image);
-		
+
 		virtual string get_name() const
 		{
 			return "testimage.sinewave.circular";
 		}
-		
+
 		virtual string get_desc() const
 		{
 			return "Replace a source image as a circular sine wave in specified wave length";
 		}
-		
+
 		static Processor * NEW()
 		{
 			return new TestImageSinewaveCircular();
 		}
-		
+
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
@@ -5361,7 +5361,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			return d;
 		}
 	};
-	
+
 	/**Replace a source image as a square or cube depends on 2D or 3D of the source image
 	 *@param edge_length edge length of the square or cube
 	 *@param axis specify a major axis for asymmetric features
@@ -5372,22 +5372,22 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	{
 	public:
 		virtual void process_inplace(EMData * image);
-		
+
 		virtual string get_name() const
 		{
 			return "testimage.squarecube";
 		}
-		
+
 		virtual string get_desc() const
 		{
 			return "Replace a source image as a square or cube depends on 2D or 3D of the source image";
 		}
-		
+
 		static Processor * NEW()
 		{
 			return new TestImageSquarecube();
 		}
-		
+
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
@@ -5398,27 +5398,27 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			return d;
 		}
 	};
-	
+
 	class TestImageEllipse : public TestImageProcessor
 	{
 	public:
 		virtual void process_inplace(EMData * image);
-				
+
 		virtual string get_name() const
 		{
 			return "testimage.ellipsoid";
 		}
-		
+
 		virtual string get_desc() const
 		{
 			return "Insert an ellipse into the image.";
 		}
-		
+
 		static Processor * NEW()
 		{
 			return new TestImageEllipse();
 		}
-		
+
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
@@ -5430,27 +5430,27 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			return d;
 		}
 	};
-	
+
 	class TestImageHollowEllipse : public TestImageProcessor
 		{
 		public:
 			virtual void process_inplace(EMData * image);
-					
+
 			virtual string get_name() const
 			{
 				return "testimage.ellipsoid.hollow";
 			}
-			
+
 			virtual string get_desc() const
 			{
 				return "Insert a hollow ellipse into the image.";
 			}
-			
+
 			static Processor * NEW()
 			{
 				return new TestImageHollowEllipse();
 			}
-			
+
 			virtual TypeDict get_param_types() const
 			{
 				TypeDict d;
@@ -5466,7 +5466,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 				return d;
 			}
 		};
-	
+
 	/**Replace a source image as a circle or sphere depends on 2D or 3D of the source image
 	 *@param radius radius of circle or sphere
 	 *@param axis specify a major axis for asymmetric features
@@ -5477,22 +5477,22 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	{
 	public:
 		virtual void process_inplace(EMData * image);
-		
+
 		virtual string get_name() const
 		{
 			return "testimage.circlesphere";
 		}
-		
+
 		virtual string get_desc() const
 		{
 			return "Replace a source image as a circle or sphere depends on 2D or 3D of the source image";
 		}
-		
+
 		static Processor * NEW()
 		{
 			return new TestImageCirclesphere();
 		}
-		
+
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
@@ -5503,30 +5503,30 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			return d;
 		}
 	};
-	
-	/**Replace a source image as a uniform random noise, random number generated from gsl_rng_mt19937, 
+
+	/**Replace a source image as a uniform random noise, random number generated from gsl_rng_mt19937,
 	 * the pixel value is from 0 to 1, [0, 1)
 	 */
 	class TestImageNoiseUniformRand : public TestImageProcessor
 	{
 	public:
 		virtual void process_inplace(EMData * image);
-		
+
 		virtual string get_name() const
 		{
 			return "testimage.noise.uniform.rand";
 		}
-		
+
 		virtual string get_desc() const
 		{
 			return "Replace a source image as a uniform random noise, random number generated from gsl_rng_mt19937, the pixel value is [0, 1)";
 		}
-		
+
 		static Processor * NEW()
 		{
 			return new TestImageNoiseUniformRand();
 		}
-		
+
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
@@ -5534,34 +5534,34 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			return d;
 		}
 	};
-	
+
 	/**Replace a source image with gaussian distributed random noise
 	 * If you don't provide a seed at all, it should be seeded using the best available
 	 * source of randomness( time(0) in this implementation).
 	 * The testimage classes using random numbers should take an int 'seed'
-	 * parameter. If this parameter is provided, it will be cast into an unsigned int. 
+	 * parameter. If this parameter is provided, it will be cast into an unsigned int.
 	 * This will permit initialization to a known state if desired.
 	 */
 	class TestImageNoiseGauss : public TestImageProcessor
 	{
 	public:
 		virtual void process_inplace(EMData * image);
-		
+
 		virtual string get_name() const
 		{
 			return "testimage.noise.gauss";
 		}
-		
+
 		virtual string get_desc() const
 		{
 			return "Replace a source image as a random noise, the random value is gaussian distributed";
 		}
-		
+
 		static Processor * NEW()
 		{
 			return new TestImageNoiseGauss();
 		}
-		
+
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
@@ -5572,40 +5572,40 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			return d;
 		}
 	};
-	
+
 	/** Replace a source image with a cylinder */
 	class TestImageCylinder : public TestImageProcessor
 	{
 	public:
 		virtual void process_inplace(EMData * image);
-		
+
 		virtual string get_name() const
 		{
 			return "testimage.cylinder";
-		}	
-		
+		}
+
 		virtual string get_desc() const
 		{
 			return "Replace a source image as a cylinder";
 		}
-		
+
 		static Processor * NEW()
 		{
 			return new TestImageCylinder();
 		}
-		
+
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
 			d.put("radius", EMObject::FLOAT, "radius for the cylinder");
 			d.put("height", EMObject::FLOAT, "height for the cylinder, by default it's the nz");
-			
+
 			return d;
 		}
 	};
 
 	/** Try to normalize the 4 quadrants of a CCD image
-	 * @author Deepy Mann <dsmann@bcm.tmc.edu> 
+	 * @author Deepy Mann <dsmann@bcm.tmc.edu>
 	 * @date 9-2005
 	 * @param width number of pixels on either side of the seam to sample
 	 */
@@ -5672,13 +5672,13 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return "Computes the DWT (discrete wavelet transform) of an image in one of 3 possible bases";
 		}
-		
+
 	};
-	
+
 	/** A processor designed specifically for tomographic tilt series data.
 	 * This processors masks out 'mass' in tilted images that is not present in the zero-tilt (0 degrees) image.
 	 * It does this based on the tilt angle. The tilt angle can be extracted from the image metadata (stored as the euler_alt attribute),
-	 * or it may be specified explicitly (specifying the angle is the default behavior). The masked out regions at both sides of the image are set to 0 by default, 
+	 * or it may be specified explicitly (specifying the angle is the default behavior). The masked out regions at both sides of the image are set to 0 by default,
 	 * but can  also be set to the mean of the nearest non-masked data edge (in the y direction), or similarly the mean of both non-masked data
 	 * edges on either side of the image. A gaussian fall-off is optional (but off by default).
 	 * @author David Woolford <woolford@bcm.edu>
@@ -5694,12 +5694,12 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	{
 	public:
 		virtual void process_inplace(EMData* image);
-			
+
 		virtual string get_name() const
 		{
 			return "tomo.tiltedgemask";
 		}
-		
+
 		static Processor *NEW()
 		{
 			return new TomoTiltEdgeMaskProcessor();
@@ -5728,8 +5728,8 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			public:
 				GaussianFunctoid(const float sigma, const float mean = 0.0) : m_mean(mean), m_sigma_squared(sigma*sigma) {}
 				~GaussianFunctoid() {}
-	
-				float operator()(const float distance ) 
+
+				float operator()(const float distance )
 				{
 					return exp( -(distance-m_mean)*(distance-m_mean)/ (m_sigma_squared ));
 				}
@@ -5738,11 +5738,11 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		};
 
 	};
-	
+
 	/** A processor that can be used to weight an image by 1/cos(angle)
 	 * This processor evolved originally as an experimental tool for weighting tomographic data
 	 * by the width of its cross section relative to the electron beam. The relative width
-	 * can be derived using elementary trigonometry to be 1/cos(tiltangle). This processor 
+	 * can be derived using elementary trigonometry to be 1/cos(tiltangle). This processor
 	 * should hence probably be called OneOverCosineWeightingProcessor. You can specify the
 	 * angle explicitly (which is the default behavior), or you can force the angle
 	 * to be the altitude angle as derived from the EMData metadata. The processor could obviously
@@ -5757,12 +5757,12 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	{
 		public:
 			virtual void process_inplace(EMData* image);
-			
+
 			virtual string get_name() const
 			{
 				return "tomo.tiltangleweight";
 			}
-		
+
 			static Processor *NEW()
 			{
 				return new TomoTiltAngleWeightProcessor();
@@ -5790,30 +5790,30 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	{
 	  public:
 		void process_inplace(EMData * image);
-		
+
 		string get_name() const
 		{
 			return "basis.fft";
-		}	
-		
+		}
+
 		static Processor *NEW()
 		{
 			return new FFTProcessor();
 		}
-		
+
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
 			d.put("dir", EMObject::INT, "1 for forward transform, -1 for inverse transform");
 			return d;
 		}
-		
+
 		string get_desc() const
 		{
 			return "Computes the DFFT (Discrete Fast Fourier Transform) of an image";
 		}
 	};
-	
+
 	/** Perform a multiplication of real image with a radial table
 	 * @param table a radial table for multiplication
 	 * @exception ImageFormatException this filter only apply to real image
@@ -5822,47 +5822,47 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	{
 	public:
 		void process_inplace(EMData * image);
-		
+
 		string get_name() const
 		{
 			return "filter.radialtable";
 		}
-		
+
 		static Processor *NEW()
 		{
 			return new RadialProcessor();
 		}
-		
+
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
 			d.put("table", EMObject::FLOATARRAY, "radial float array for multiplication");
 			return d;
 		}
-		
+
 		string get_desc() const
 		{
 			return "multiply an image in real-space by a radial function";
 		}
 	};
-	
+
 	class HistogramBin : public Processor
 	{
 		public:
 			HistogramBin() : default_bins(1024) {}
-			
+
 			void process_inplace(EMData * image);
-		
+
 			string get_name() const
 			{
 				return "histogram.bin";
 			}
-		
+
 			static Processor *NEW()
 			{
 				return new HistogramBin();
 			}
-		
+
 			TypeDict get_param_types() const
 			{
 				TypeDict d;
@@ -5870,7 +5870,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 				d.put("debug", EMObject::BOOL, "Outputs debugging information (number of pixels per bin)");
 				return d;
 			}
-		
+
 			string get_desc() const
 			{
 				return "Bins pixel values, similar to calculating a histogram. The histogram is comprised of 'nbins' bins, and the value assigned to each pixel in the bin is the midpoint of the bin's upper and lower limits. Defaults to 256 bins";
@@ -5878,8 +5878,8 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		protected:
 			int default_bins;
 	};
-	
-	
+
+
 #ifdef EMAN2_USING_CUDA
 	/** Cuda based constant multiplication processor
 	 * @author David Woolford
@@ -5888,33 +5888,33 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	class CudaMultProcessor: public Processor
 	{
 		public:
-			
+
 			virtual void process_inplace(EMData * image);
-		
+
 			virtual string get_name() const
 			{
 				return "cuda.math.mult";
 			}
-		
+
 			static Processor *NEW()
 			{
 				return new CudaMultProcessor();
 			}
-		
+
 			virtual TypeDict get_param_types() const
 			{
 				TypeDict d;
 				d.put("scale", EMObject::FLOAT, "The amount to multiply each pixel by");
 				return d;
 			}
-		
+
 			virtual string get_desc() const
 			{
 				return "Multiplies each pixel by a constant value";
 			}
 		protected:
 	};
-	
+
 	/** Cuda based auto correlation processor
 	 * @author David Woolford
 	 * @date Feb 24 2009
@@ -5922,34 +5922,34 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	class CudaCorrelationProcessor: public Processor
 	{
 		public:
-			
+
 			virtual void process_inplace(EMData * image);
-		
+
 			string get_name() const
 			{
 				return "cuda.correlate";
 			}
-		
+
 			static Processor *NEW()
 			{
 				return new CudaCorrelationProcessor();
 			}
-		
+
 			virtual TypeDict get_param_types() const
 			{
 				TypeDict d;
 				d.put("with", EMObject::EMDATA, "That which to perform the cross correlation with.");
 				return d;
 			}
-		
+
 			virtual string get_desc() const
 			{
 				return "Performs Fourier based cross correlation on the GPU";
 			}
 		protected:
 	};
-	
-	
+
+
 	/* class CUDA kmeans processor
 	* 02/13/2009 JB
 	* python wrap for cuda_kmeans.cu
@@ -5983,7 +5983,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		unsigned short int* h_ASG;
 	};
 #endif //EMAN2_USING_CUDA
-	
+
 #if 0
 
 	class XYZProcessor:public Processor
@@ -6005,7 +6005,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return "N/A";
 		}
-		
+
 		TypeDict get_param_types() const
 		{
 			TypeDict d;

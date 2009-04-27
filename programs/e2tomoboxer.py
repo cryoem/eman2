@@ -43,6 +43,7 @@ from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
 import math
 import EMAN2db
+import time
 
 tomo_db_name = "bdb:e2tomoboxercache#"
 
@@ -139,40 +140,146 @@ class ShrunkenTomogram:
 			for val in [nx,ny,nz]:
 				s = int(math.ceil(float(val)/target_max_dim))
 				if s > shrink: shrink = s
+			self.shrink = shrink
 			
 			if shrink > 1:
-				shrink_thread = ShrinkThread(self.file_name,shrink)
-				progress = QtGui.QProgressDialog(shrink_thread.get_action_string(), "abort", 0, shrink_thread.get_total_steps(),None)
-				progress.setWindowTitle("Shrinking tomogram by %i" %shrink)
-				progress.show()
-				tally = -1
-				shrink_thread.start()
-				while 1:
-					get_application().processEvents()
-					if progress.wasCanceled():
-						shrink_thread.quit()
-						progress.close()
-						# probably the calling program should do something about this
-						# the image returned is going to be None
-						break
-					
-					if shrink_thread.get_progress() > tally:
-						tally = shrink_thread.get_progress()
-						progress.setValue(tally)
-						progress.setLabelText(shrink_thread.get_action_string())
-											
-					if shrink_thread.get_progress() == shrink_thread.get_total_steps()-1:
-						progress.close()
-						self.image = shrink_thread.get_image()
-						self.image.set_attr("shrunken_by",shrink)
-						self.image.set_attr("shrunken_from",self.file_name)
-						set_idd_image_entry(self.file_name,ShrunkenTomogram.db_name,self.image,tomo_db_name) #cache to disk
-						break
+				self.do_shrinking()
+#				shrink_thread = ShrinkThread(self.file_name,shrink)
+#				progress = QtGui.QProgressDialog(shrink_thread.get_action_string(), "abort", 0, shrink_thread.get_total_steps(),None)
+#				progress.setWindowTitle("Shrinking tomogram by %i" %shrink)
+#				progress.setWindowModality(Qt.WindowModal)
+#				progress.show()
+#				tally = -1
+#				shrink_thread.start()#QtCore.QThread.LowPriority)
+#				get_application().setOverrideCursor(Qt.BusyCursor)
+#		
+#				while 1:
+#					progress.setValue(tally)
+#					progress.setLabelText(shrink_thread.get_action_string())
+#					get_application().processEvents()
+#					time.sleep(1)
+#					if progress.wasCanceled():
+#						shrink_thread.quit()
+#						progress.close()
+#						# probably the calling program should do something about this
+#						# the image returned is going to be None
+#						break
+#					
+#					if shrink_thread.get_progress() > tally:
+#						tally = shrink_thread.get_progress()
+##						progress.setValue(tally)
+##						progress.setLabelText(shrink_thread.get_action_string())
+##						get_application().processEvents()
+#											
+#					if shrink_thread.get_progress() == shrink_thread.get_total_steps()-1:
+#						progress.close()
+#						self.image = shrink_thread.get_image()
+#						self.image.set_attr("shrunken_by",shrink)
+#						self.image.set_attr("shrunken_from",self.file_name)
+#						set_idd_image_entry(self.file_name,ShrunkenTomogram.db_name,self.image,tomo_db_name) #cache to disk
+#						break
+#				get_application().setOverrideCursor(Qt.ArrowCursor)
 			else:
 				self.image = EMData()
 				self.image.read_image(self.file_name,0)
 		
 		return self.image
+
+	def do_shrinking(self):
+		self.__init_parameters()
+		
+		
+		t1 = time.time()
+		progress = QtGui.QProgressDialog("", "abort", 0, self.total_steps,None)
+		progress.setWindowIcon(QtGui.QIcon(get_image_directory() +"eman.png"))
+		progress.setWindowTitle("Shrinking tomogram by %i" %self.shrink)
+		progress.show()
+		tally = -1
+		get_application().setOverrideCursor(Qt.BusyCursor)
+		
+		if self.read_operations == 1:
+			self.image = EMData()
+			progress.setLabelText("Reading %s" %self.file_name)
+			self.image.read_image(self.file_name,0)
+			tally += 1
+			progress.setValue(tally)
+			progress.setLabelText("Shrinking by %i" %self.shrink)
+			self.image.process_inplace("math.meanshrink",{"n":self.shrink})
+			tally += 1
+			progress.setValue(tally)
+		else:
+			cancelled = False
+			self.image = EMData(self.output_image_nx,self.output_image_ny,self.output_image_nz)
+			self.tmp_image = EMData()
+			for i in range(self.read_operations):
+				t = time.time()
+				z_start = i*self.xy_planes_in_mem
+				slices = self.xy_planes_in_mem
+				if z_start+slices > self.nz: slices = self.nz-z_start # this happens if shrink doesn't divide self.nz - it's fine
+				progress.setLabelText("Reading z section %i / %i" %(i,self.read_operations))
+				get_application().processEvents()
+				r = Region(0,0,z_start,self.nx,self.ny,slices)
+				self.tmp_image.read_image(self.file_name,0,False,r)
+				tally += 1
+				progress.setValue(tally)
+				progress.setLabelText("Shrinking z section %i / %i" %(i,self.read_operations))
+				get_application().processEvents()
+				self.tmp_image.process_inplace("math.meanshrink",{"n":self.shrink})
+				out_z_start = z_start/self.shrink
+				self.image.insert_clip(self.tmp_image,[0,0,out_z_start])
+				tally += 1
+				progress.setValue(tally)
+				get_application().processEvents()
+				
+				if progress.wasCanceled():
+					cancelled = True
+					progress.close()
+					break
+				print time.time()-t
+				
+			if cancelled: self.image = None # because it was cancelled
+		
+		print "in total, the shrink took ", time.time()-t1, "seconds"
+		
+		if self.image != None:
+			self.image.set_attr("shrunken_by",self.shrink)
+			self.image.set_attr("shrunken_from",self.file_name)
+			set_idd_image_entry(self.file_name,ShrunkenTomogram.db_name,self.image,tomo_db_name) #cache to disk
+	
+		get_application().setOverrideCursor(Qt.ArrowCursor)
+	
+	def __init_parameters(self):
+		'''
+		Called internally to initialize the parameters of the shrinking operation.
+		Because we could be shrink a very large image (20Gb, for example), we have
+		to be careful to make sure we don't read too much data into memory. So instead
+		we do it in steps, which requires certain parameters
+		'''
+		GB = 1000000000.0
+		from EMAN2 import memory_stats
+		gb_avail = memory_stats()[0] #giga bytes available
+		memory_for_use = gb_avail/4.0 #so on a 4gb machine I'm using 1gb
+		self.nx,self.ny,self.nz = gimme_image_dimensions3D(self.file_name)
+		memory_occ = self.nx*self.ny*self.nz*4/GB # working in gb
+		
+		self.output_image_nz = self.nz/self.shrink
+		self.output_image_ny = self.ny/self.shrink
+		self.output_image_nx = self.nx/self.shrink
+		if memory_occ > memory_for_use:
+			# "we're in business"
+			
+			#first I am assuming that a single slab (nx * ny * self.shrink) is less than memory available for use
+			#this should hold generally. But I throw if not
+			slab_memory = self.nx*self.ny*4/GB
+			if slab_memory > memory_for_use: raise NotImplementedException("This image is large for your machine. Please email developers and tell them the shrinking scheme needs to become more sophisticated")
+			else:
+				self.xy_planes_in_mem = int(memory_for_use/slab_memory) # this is the number of xy image planes I can have in memory
+				self.xy_planes_in_mem -=  self.xy_planes_in_mem % self.shrink # the shrinking will only work consistently if this is true
+				self.read_operations = int(math.ceil(self.nz/float(self.xy_planes_in_mem))) # this is the total number of read operations
+		else:
+			self.read_operations = 1
+		
+		self.total_steps = 2*self.read_operations # two times, one for read, one for shrink
 
 class ShrinkThread(QtCore.QThread):
 	'''
@@ -202,6 +309,41 @@ class ShrinkThread(QtCore.QThread):
 		self.image = None # the final image - so the calling object can retrieve it
 		self.action_string = "Reading image" # so the progress dialog can display a useful string
 		
+		self.__init_parameters()
+		
+	def __init_parameters(self):
+		'''
+		Called internally to initialize the parameters of the shrinking operation.
+		Because we could be shrink a very large image (20Gb, for example), we have
+		to be careful to make sure we don't read too much data into memory. So instead
+		we do it in steps, which requires certain parameters
+		'''
+		GB = 1000000000.0
+		from EMAN2 import memory_stats
+		gb_avail = memory_stats()[0] #giga bytes available
+		memory_for_use = gb_avail/4.0 #so on a 4gb machine I'm using 500mb
+		self.nx,self.ny,self.nz = gimme_image_dimensions3D(self.file_name)
+		memory_occ = self.nx*self.ny*self.nz*4/GB # working in gb
+		
+		self.output_image_nz = self.nz/self.shrink
+		self.output_image_ny = self.ny/self.shrink
+		self.output_image_nx = self.nx/self.shrink
+		if memory_occ > memory_for_use:
+			# "we're in business"
+			
+			#first I am assuming that a single slab (nx * ny * self.shrink) is less than memory available for use
+			#this should hold generally. But I throw if not
+			slab_memory = self.nx*self.ny*4/GB
+			if slab_memory > memory_for_use: raise NotImplementedException("This image is large for your machine. Please email developers and tell them the shrinking scheme needs to become more sophisticated")
+			else:
+				self.xy_planes_in_mem = int(memory_for_use/slab_memory) # this is the number of xy image planes I can have in memory
+				self.xy_planes_in_mem -=  self.xy_planes_in_mem % self.shrink # the shrinking will only work consistently if this is true
+				print self.xy_planes_in_mem, "planes in mem"
+				self.read_operations = int(math.ceil(self.nz/float(self.xy_planes_in_mem))) # this is the total number of read operations
+		else:
+			self.read_operations = 1
+		
+		self.total_steps = 2*self.read_operations # two times, one for read, one for shrink
 	def get_total_steps(self):
 		''' @return the total number of operations this object will perform, i.e. for initializing a progress dialgo
 		'''
@@ -222,7 +364,7 @@ class ShrinkThread(QtCore.QThread):
 	def run(self):
 		''' run - overwrites QtThread.run - all work is done here
 		'''
-		try:
+		if self.read_operations == 1:
 			self.image = EMData()
 			self.image.read_image(self.file_name,0)
 			print "read image"
@@ -231,7 +373,29 @@ class ShrinkThread(QtCore.QThread):
 			self.image.process_inplace("math.meanshrink",{"n":self.shrink})
 			print "shrunk the image"
 			self.current_step = 1
-		except: pass
+		else:
+			self.image = EMData(self.output_image_nx,self.output_image_ny,self.output_image_nz)
+			self.tmp_image = EMData()
+			self.current_step = -1
+			for i in range(self.read_operations):
+				z_start = i*self.xy_planes_in_mem
+				slices = self.xy_planes_in_mem
+				if z_start+slices > self.nz: slices = self.nz-z_start # this happens if shrink doesn't divide self.nz - it's fine
+				self.action_string = "Reading z section [%i %i]" %(z_start,z_start+slices)
+				print self.action_string
+				r = Region(0,0,z_start,self.nx,self.ny,slices)
+				self.tmp_image.read_image(self.file_name,0,False,r)
+				self.current_step += 1
+				self.action_string = "Shrinking z section [%i %i]" %(z_start,z_start+slices)
+				print self.action_string
+				self.tmp_image.process_inplace("math.meanshrink",{"n":self.shrink})
+				out_z_start = z_start/self.shrink
+				self.image.insert_clip(self.tmp_image,[0,0,out_z_start])
+				self.current_step += 1
+				#self.tmp_image.set_size(0,0,0)
+				
+			
+			
 		self.exit() # is this necessary
 		
 		
@@ -244,6 +408,7 @@ class TomogramProjection:
 	Stores the dimension that was compressed as a header attribute ("sum_direction")
 	Stores the number of pixels along the compressed dimension as a header attribute ("sum_pixels")
 	'''
+	dict_ref_name = "tomogram_projection"
 	def __init__(self,file_name):
 		'''
 		@param file_name the name of the file on disk - should be a 3D tomogram
@@ -255,7 +420,7 @@ class TomogramProjection:
 		if nx <=1 or ny <= 1 or nz <= 1: raise RuntimeError("The file must be 3D (nx,ny,nz>1)")
 		self.file_name = file_name
 		# this will be either None or an EMData object
-		self.image = get_idd_image_entry(self.file_name,"tomogram_z_projection",tomo_db_name)
+		self.image = get_idd_image_entry(self.file_name,TomogramProjection.dict_ref_name,tomo_db_name)
 	def get_image_name(self):
 		'''
 		@return the file name of the image 
@@ -300,7 +465,7 @@ class TomogramProjection:
 				self.image.set_attr("sum_pixels",tmp.get_zsize())
 				self.image.set_attr("sum_direction","z")
 				
-			set_idd_image_entry(self.file_name,"tomogram_z_projection",self.image,tomo_db_name)	
+			set_idd_image_entry(self.file_name,TomogramProjection.dict_ref_name,self.image,tomo_db_name)	
 		return self.image
 	
 TomoProjectionCache = Cache(TomogramProjection)
@@ -863,6 +1028,7 @@ class EMTomoBoxerModule:
 			fname = orig_file
 		
 		progress = QtGui.QProgressDialog("Writing_files", "abort", 0, 2*len(self.coord_list),None)
+		progress.setWindowIcon(QtGui.QIcon(get_image_directory() +"eman.png"))
 		progress.show()
 		tally = -1
 		for i,coord in enumerate(self.coord_list):	
@@ -886,6 +1052,7 @@ class EMTomoBoxerModule:
 			
 			tally += 1
 			progress.setValue(tally)
+			get_application().processEvents()
 
 			if isinstance(out_file_name,list):
 				print out_file_name[i]
@@ -895,6 +1062,7 @@ class EMTomoBoxerModule:
 			
 			tally += 1
 			progress.setValue(tally)
+			get_application().processEvents()
 			
 		progress.close()
 			

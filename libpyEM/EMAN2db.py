@@ -967,6 +967,7 @@ class DBDict:
 				nx,ny,nz = rnx,rny,rnz
 			ret = EMData()
 			if target : ret = target
+			ret.set_size(nx,ny,nz)
 			
 			# metadata
 			k=set(r.keys())
@@ -979,7 +980,7 @@ class DBDict:
 				
 			# binary data
 			if not nodata:
-				ret.set_size(nx,ny,nz)
+				
 
 				if region != None: ret.to_zero() # this has to occur in situations where the clip region goes outside the image
 				if r.has_key("data_path"):
