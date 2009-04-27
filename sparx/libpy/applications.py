@@ -1899,6 +1899,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	interpolation = "linear"
 	dali = [None]*len(data)
 	#  Initial parameters have to be applied to get the first average!
+	from utilities import info
 	tavg = model_blank(nx, nx)
 	for it in xrange(len(data)):
 		alpha, sx, sy, mirror, scale = get_params2D(data[it])
@@ -1906,9 +1907,13 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		#sx=sy=mirror = 0
 		ima = rot_shift2D(data[it], alpha, sx, sy, mirror, 1.0, interpolation)
 		#set_params2D(data[it], [alpha, sx, sy, mirror, 1.0])
-		dali[it] = ima
+		dali[it] = ima.copy()
+		#info(data[it])
+		#info(ima)
+		#info(tavg)
 		Util.add_img(tavg, ima)
 	reduce_EMData_to_root(tavg, myid, main_node)
+	#info(tavg)
 	total_iter=0
 	if myid == main_node:
 
@@ -1969,6 +1974,8 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		if myid == main_node: print_msg(msg)
 		for Iter in xrange(max_iter):
 			ntavg = model_blank(nx,nx)
+			accepted = 0
+			improved = 0
 			for it in xrange(len(data)):
 				ang = randint(0,klr) * delta
 				tx  = randint(-kxr, kxr) * step[N_step]
@@ -1979,26 +1986,33 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				sx = tx*co - ty*so
 				sy = tx*so + ty*co
 				timg = rot_shift2D(data[it], ang, sx, sy, mirror, 1.0, interpolation)
+				#info(tavg)
+				#info(timg)
+				#info(data[it])
+				#info(dali[it])
 				subn = Util.subn_img(tavg, dali[it])
 				dc = ccc(subn, timg, mask) - ccc(subn, dali[it], mask)
 				if(dc > 0.0):
 					dali[it] = timg.copy()
 					set_params2D(dali[it], [ang, sx, sy, mirror, 1.0])
-					#print  " IMPROVED ",it, dc
-					Util.add_img(tavg, Util.addn_img(subn, dali[it]))
+					tavg = Util.addn_img(subn, dali[it])
+					improved += 1
 				else:
 					qt = random()
 					# figure whether to accept
+					#print  qt , dc, exp(dc/T)
 					if(qt < exp(dc/T)):
 						dali[it] = timg.copy()
 						set_params2D(dali[it], [ang, sx, sy, mirror, 1.0])
-						#print  " ACCEPTED ",it, dc
-						Util.add_img(tavg, Util.addn_img(subn, dali[it]))
+						tavg = Util.addn_img(subn, dali[it])
+						accepted += 1
 				
 				#  This looks like a duplication, but it is to reduce interpolation errors, eventually btavg will replace tavg
 				Util.add_img(ntavg, dali[it])
 			reduce_EMData_to_root(ntavg, myid, main_node)
 			tavg = ntavg.copy()
+			accepted = mpi_reduce(accepted, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
+			improved = mpi_reduce(improved, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
 			if myid == main_node:
 
 				"""
@@ -2018,11 +2032,11 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				#drop_image(ave, os.path.join(outdir, "Aqc_%06d.hdf"%(total_iter)))
 				#drop_image(var, os.path.join(outdir, "Vqc_%06d.hdf"%(total_iter)))
 				#if(total_iter%1 == 0):  drop_image(tavg, os.path.join(outdir, "tqc_%06d.hdf"%(total_iter)))
-				if(total_iter%20 == 0):
+				if(total_iter%5 == 0):
 					witer += 1
 					tavg.write_image(os.path.join(outdir, "tqc.hdf"),witer)
 				a1 = tavg.cmp("dot", tavg, dict(negative = 0, mask = mask))
-				msg = "ITERATION   #%7d    criterion = %15.7e    T = %12.3e\n"%(total_iter, a1, T)
+				msg = "ITERATION   #%7d    criterion = %15.7e    T = %12.3e  accepted = %5.1f  improved = %5.1f\n"%(total_iter, a1, T, 100.0*accepted/len(data), 100.0*improved/len(data))
 				print_msg(msg)
 				# write the current average
 				#drop_image(tavg, os.path.join(outdir, "aqf_%06d.hdf"%(total_iter)))
@@ -2062,9 +2076,10 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	if myid == main_node:  print_end_msg("ali2d_a_MPI")
 
 
-def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, CTF=False, snr=1.0, user_func_name="ref_ali2d", rand_alpha = False, MPI=False):
+def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, \
+		CTF=False, snr=1.0, Fourvar = False, user_func_name="ref_ali2d", rand_alpha = False, MPI=False):
 	if MPI:
-		ali2d_c_MPI(stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, center, maxit, CTF, snr, user_func_name, rand_alpha)
+		ali2d_c_MPI(stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, center, maxit, CTF, snr, Fourvar, user_func_name, rand_alpha)
 		return
 
 	from utilities    import model_circle, drop_image, get_image, get_input_from_string
@@ -2074,6 +2089,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	from fundamentals import fshift
 	from morphology   import ctf_2
 	from utilities    import print_begin_msg, print_end_msg, print_msg
+	from fundamentals import fft, rot_avg_table
 	import os
 		
 	print_begin_msg("ali2d_c")
@@ -2140,29 +2156,33 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	data = []
 	if CTF:
 		ctf_params = ima.get_attr("ctf")
-		ctf_applied = ima.get_attr("ctf_applied")
+		if ima.get_attr_default('ctf_applied', 2) > 0:	ERROR("data cannot be ctf-applied", "ali2d_c_MPI", 1)
 		ctm = ctf_2(nx, ctf_params)
 		lctf = len(ctm)
 		ctf2 = []
 		ctf2.append([0.0]*lctf)
 		ctf2.append([0.0]*lctf)
 		ctfb2 = [0.0]*lctf
+	if  Fourvar:
+		from statistics   import add_ave_varf
+		if CTF:
+			from morphology   import ctf_img
+			ctf_2_sum = EMData(nx, nx, 1, False)
+		else:
+			ctf_2_sum = None
+
 	del ima
 	data = EMData.read_images(stack)
 	for im in xrange(nima):
 		data[im].set_attr('ID', im)
 		if CTF:
 			ctf_params = data[im].get_attr("ctf")
+			st = Util.infomask(data[im], mask, False)
+			data[im] -= st[0]
+	 		if  Fourvar:  Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
 			ctm = ctf_2(nx, ctf_params)
 			k = im%2
 			for i in xrange(lctf): 	ctf2[k][i] = ctf2[k][i] + ctm[i]
-			if data[im].get_attr("ctf_applied") == 0:
-				st = Util.infomask(data[im], mask, False)
-				data[im] -= st[0]
-				data[im] = filt_ctf(data[im], ctf_params)
-				data[im].set_attr('ctf_applied', 1)
-
-	
 	if CTF:
 		for i in xrange(lctf):
 			ctfb2[i] = 1.0/(ctf2[0][i] + ctf2[1][i] + 1.0/snr)
@@ -2202,7 +2222,21 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 			# write the current average
 			drop_image(tavg, os.path.join(outdir, "aqc_%03d.hdf"%(total_iter)))
 
-			frsc = fsc_mask(av1, av2, ref_data[0], 1.0, os.path.join(outdir, "resolution%03d"%(total_iter)))
+			if  Fourvar:  
+				Ftavg, vav, sumsq = add_ave_varf(data, mask, "a", CTF, ctf_2_sum)
+				tavg    = fft(Util.divn_img(fft(tavg), vav))
+
+				vav_r	= Util.pack_complex_to_real(vav)
+				sumsq_r = Util.pack_complex_to_real(sumsq)
+				rvar    = rot_avg_table(vav_r)
+				rsumsq  = rot_avg_table(sumsq_r)
+				frsc = []
+				for i in xrange(len(rvar)):
+					qt = max(0.0, rsumsq[i]/rvar[i] - 1.0)
+					frsc.append([i/(len(rvar)-1)*0.5, qt/(qt+1)])
+
+			else:
+				frsc = fsc_mask(av1, av2, ref_data[0], 1.0, os.path.join(outdir, "resolution%03d"%(total_iter)))
 
 			ref_data[2] = tavg
 			ref_data[3] = frsc
@@ -2222,26 +2256,31 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 			# write the current filtered average
 			drop_image(tavg, os.path.join(outdir, "aqf_%03d.hdf"%(total_iter)))
 
-			# a0 should increase; stop algorithm when it decreases.    
-			a1 = tavg.cmp("dot", tavg, dict(negative = 0, mask = ref_data[0]))
+			# a0 should increase; stop algorithm when it decreases.
+			if Fourvar:  
+				Util.div_filter(sumsq, vav)
+				sumsq = filt_tophatb(sumsq, 0.01, 0.49)
+				a1 = Util.infomask(sumsq, None, True)
+				a1 = a1[0]
+			else:
+				a1 = tavg.cmp("dot", tavg, dict(negative = 0, mask = ref_data[0]))
 			msg = "Iteration   #%5d	     criterion = %20.7e\n"%(total_iter,a1)
 			print_msg(msg)
 			if total_iter == len(xrng)*max_iter: break
 			if a1 < a0:
 				if auto_stop == True: break
 			else:	a0 = a1
-			sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode)
+			sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF)
 			
 	drop_image(tavg, os.path.join(outdir, "aqfinal.hdf"))
 	# write out headers
-	if CTF and ctf_applied == 0:
-		for im in xrange(nima):	data[im].set_attr('ctf_applied', 0)
 	from utilities import write_headers
 	write_headers(stack, data, range(nima))
 	print_end_msg("ali2d_c")
 
 
-def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, CTF=False, snr=1.0, user_func_name="ref_ali2d", rand_alpha=False):
+def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, CTF=False, snr=1.0, \
+			Fourvar = False, user_func_name="ref_ali2d", rand_alpha=False):
 
 	from utilities    import model_circle, model_blank, drop_image, get_image, get_input_from_string
 	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type
