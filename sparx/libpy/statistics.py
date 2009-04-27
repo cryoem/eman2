@@ -220,6 +220,55 @@ def add_ave_varf_ML_MPI(data, mask = None, mode = "a", CTF = False):
 	
 	return ave, var
 
+def sum_oe(data, mode = "a", CTF = False, ctf_2_sum = None):
+	"""
+		Calculate average of an image series
+		mode - "a": use current alignment parameters
+		CTF  - if True, use CTF for calculations of the average.
+		In addition, calculate odd and even sums, these are not divided by the ctf^2
+	"""
+	from utilities    import    model_blank, get_params2D
+	from fundamentals import    rot_shift2D, fft
+
+	n      = len(data)
+	nx     = data[0].get_xsize()
+	ny     = data[0].get_ysize()
+	ave1   = model_blank(nx, ny)
+	ave2   = model_blank(nx, ny)
+
+	if CTF:
+		from morphology   import ctf_img
+		from filter       import filt_ctf, filt_table
+		if data[0].get_attr_default('ctf_applied', 1) == 1:
+			ERROR("data cannot be ctf-applied", "sum_oe", 1)
+		if ctf_2_sum:  get_ctf2 = False
+		else:          get_ctf2 = True
+		if get_ctf2: ctf_2_sum = EMData(nx, ny, 1, False)
+	 	for i in xrange(n):
+	 		ctf_params = data[i].get_attr("ctf")
+	 		if mode == "a":
+				alpha, sx, sy, mirror, scale = get_params2D(ima, "xform.align2d")
+				ima = rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
+			else:
+				ima = data[i]
+	 		ima_filt = filt_ctf(ima, ctf_params, dopad=True)
+			if(i%2 == 0):	Util.add_img(ave1, ima_filt)
+			else:	        Util.add_img(ave2, ima_filt)
+	 		if get_ctf2: Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
+		ave = fft(Util.divn_img(fft(Util.addn_img(av1, ave2)), ctf_2_sum))
+	else:
+		for i in xrange(n):
+			if mode == "a":
+				alpha, sx, sy, mirror, scale = get_params2D(data[i], "xform.align2d")
+				ima = rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
+			else:
+				ima = data[i]
+			if(i%2 == 0):	Util.add_img(ave1, ima)
+			else:	        Util.add_img(ave1, ima)
+		ave = Util.addn_img(ave1, ave2)/n
+		
+	return ave, av1, ave2
+
 def ave_var(data, mode = "a"):
 	"""
 		Calculate average and variance of a 2 or 3D image series

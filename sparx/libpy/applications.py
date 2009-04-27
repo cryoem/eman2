@@ -2085,7 +2085,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 		return
 
 	from utilities    import model_circle, drop_image, get_image, get_input_from_string
-	from statistics   import fsc_mask, add_oe_series
+	from statistics   import fsc_mask, sum_oe
 	from alignment    import Numrinit, ringwe, ali2d_single_iter
 	from filter       import filt_ctf, filt_table, filt_tophatb
 	from fundamentals import fshift
@@ -2122,7 +2122,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 
 	nima = EMUtil.get_image_count(stack)
 	ima = EMData()
-	ima.read_image(stack, 0)#, True)
+	ima.read_image(stack, 0, True)
 	nx = ima.get_xsize()
 	# default value for the last ring
 	if last_ring == -1:  last_ring = nx/2-2
@@ -2160,19 +2160,12 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	if CTF:
 		ctf_params = ima.get_attr("ctf")
 		if ima.get_attr_default('ctf_applied', 2) > 0:	ERROR("data cannot be ctf-applied", "ali2d_c_MPI", 1)
-		ctm = ctf_2(nx, ctf_params)
-		lctf = len(ctm)
-		ctf2 = []
-		ctf2.append([0.0]*lctf)
-		ctf2.append([0.0]*lctf)
-		ctfb2 = [0.0]*lctf
+		from morphology   import ctf_img
+		ctf_2_sum = EMData(nx, nx, 1, False)
+	else:
+		ctf_2_sum = None
 	if  Fourvar:
 		from statistics   import add_ave_varf
-		if CTF:
-			from morphology   import ctf_img
-			ctf_2_sum = EMData(nx, nx, 1, False)
-		else:
-			ctf_2_sum = None
 
 	del ima
 	data = EMData.read_images(stack)
@@ -2182,15 +2175,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 			ctf_params = data[im].get_attr("ctf")
 			st = Util.infomask(data[im], mask, False)
 			data[im] -= st[0]
-	 		if  Fourvar:  Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
-			ctm = ctf_2(nx, ctf_params)
-			k = im%2
-			for i in xrange(lctf): 	ctf2[k][i] = ctf2[k][i] + ctm[i]
-	if CTF:
-		for i in xrange(lctf):
-			ctfb2[i] = 1.0/(ctf2[0][i] + ctf2[1][i] + 1.0/snr)
-			for k in xrange(2):
-				ctf2[k][i] = 1.0/(ctf2[k][i] + 1.0/snr)
+	 		Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
 
 	# startup
 	numr = Numrinit(first_ring, last_ring, rstep, mode) 	#precalculate rings
@@ -2214,12 +2199,8 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 		print_msg(msg)
 		for Iter in xrange(max_iter):
 			total_iter += 1 
-
 			if CTF:
-				
-				tavg = filt_table(Util.addn_img(av1, av2), ctfb2)
-				av1  = filt_table(av1, ctf2[0])
-				av2  = filt_table(av2, ctf2[1])
+				tavg, ave1, ave2 = sum_oe(data, "a", CTF, ctf_2_sum)
 			else:
 				av1, av2 = add_oe_series(data)
 				tavg = (av1+av2)/nima
@@ -2246,7 +2227,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 				write_text_file(frsc, os.path.join(outdir, "resolution%03d"%(total_iter)) )
 
 			else:
-				frsc = fsc_mask(av1, av2, ref_data[0], 1.0, os.path.join(outdir, "resolution%03d"%(total_iter)))
+				frsc = fsc_mask(av1, av2, mask, 1.0, os.path.join(outdir, "resolution%03d"%(total_iter)))
 
 			ref_data[2] = tavg
 			ref_data[3] = frsc
@@ -2287,7 +2268,6 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	from utilities import write_headers
 	write_headers(stack, data, range(nima))
 	print_end_msg("ali2d_c")
-
 
 def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, CTF=False, snr=1.0, \
 			Fourvar = False, user_func_name="ref_ali2d", rand_alpha=False):
