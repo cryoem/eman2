@@ -1437,17 +1437,13 @@ def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, listID = None):
 		image = DATA[ct].copy()
 		# 3D object
 		if nz > 1:
-			try:
-				phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(image)
-				image  = rot_shift3D(image, phi, theta, psi, s3x, s3y, s3z, scale)
-				if mirror: image.process_inplace('mirror', {'axis':'x'})
-			except:	pass
+			phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(image)
+			image  = rot_shift3D(image, phi, theta, psi, s3x, s3y, s3z, scale)
+			if mirror: image.process_inplace('mirror', {'axis':'x'})
 		# 2D object
 		elif ny > 1:
-			try:
-				alpha, sx, sy, mirror, scale = get_params2D(image)
-				image = rot_shift2D(image, alpha, sx, sy, mirror, scale)
-			except: pass
+			alpha, sx, sy, mirror, scale = get_params2D(image)
+			image = rot_shift2D(image, alpha, sx, sy, mirror, scale)
 			
 		# obtain ctf
 		if CTF:
@@ -1496,14 +1492,8 @@ def k_means_init_MPI(stack):
 	mpi_barrier(MPI_COMM_WORLD)
 	N = mpi_bcast(N, 1, MPI_INT, main_node, MPI_COMM_WORLD)
 	N = N.tolist()[0]
-
-	base = N // ncpu
-	left = N % ncpu
-	im_per_node = [base] * ncpu
-	for i in xrange(left): im_per_node[i] += 1
-	acum = [0] * (ncpu + 1)
-	for i in xrange(1, ncpu + 1): acum[i] += (acum[i - 1] + im_per_node[i - 1])
-	N_start, N_stop = acum[myid], acum[myid + 1]
+	N_start = int(round(float(N) / ncpu * myid))
+	N_stop  = int(round(float(N) / ncpu * (myid + 1)))
 
 	return main_node, myid, ncpu, N_start, N_stop, N
 
@@ -5190,10 +5180,8 @@ def k_means_stab_export(PART, stack, num_run, outdir):
 		if nobjs > 0:
 			for ID in PART[k]:
 				im.read_image(stack, int(ID))
-				try:
-					alpha, sx, sy, mirror, scale = get_params2D(im)
-					im = rot_shift2D(im, alpha, sx, sy, mirror)
-				except: pass
+				alpha, sx, sy, mirror, scale = get_params2D(im)
+				im = rot_shift2D(im, alpha, sx, sy, mirror)
 				
 				Util.add_img(AVE[k], im)
 			Util.mul_scalar(AVE[k], 1.0 / float(nobjs))
@@ -5287,13 +5275,13 @@ def k_means_open_unstable(stack, maskname, CTF):
 	if ext == 'bdb':
 		DB = db_open_dict(stack)
 		for n in xrange(N):
-			if DB.get_attr(n, 'stab_active'): lim.append(n)
+			if DB.get_attr(n, 'active'): lim.append(n)
 		DB.close()
 	else:
 		im = EMData()
 		for n in xrange(N):
 			im.read_image(stack, n, True)
-			if im.get_attr('stab_active'): lim.append(n)
+			if im.get_attr('active'): lim.append(n)
 
 	N = len(lim)
 	im_M, mask, ctf, ctf2 = k_means_open_im(stack, maskname, 0, N, N, CTF, lim)
