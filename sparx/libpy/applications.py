@@ -11690,6 +11690,29 @@ def k_means_stab_CUDA(stack, outdir, maskname, K, npart = 5, F = 0, FK = 0, maxr
 		stb, nb_stb, STB_PART = k_means_stab_H(ALL_PART)
 		logging.info('... Stability: %5.2f %% (%d objects)' % (stb, nb_stb))
 
+		# security to stop k-means stable cuda properly
+		if os.path.exists('control'):
+			try:
+				cmd = open('control', 'r').readline()
+				cmd = cmd.strip(' \n')
+				if cmd == 'stop':
+					logging.info('[STOP] request by the user')
+
+					# export the stable class averages
+					logging.info('... Export stable class averages: average_stb_run%02d.hdf' % num_run)
+					k_means_stab_export(STB_PART, stack, num_run, outdir)
+
+					# tag informations to the header
+					logging.info('... Update info to the header')
+					k_means_stab_update_tag(stack, ALL_PART, STB_PART, num_run)
+					try:
+						import os
+						os.system('rm control')
+					except: pass
+
+					break
+			except: pass
+
 		# manage the stability
 		if stb < th_stab_max:
 			newK = int(float(K) * FK)   # cooling factor on K
