@@ -2089,7 +2089,6 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	from alignment    import Numrinit, ringwe, ali2d_single_iter
 	from filter       import filt_ctf, filt_table, filt_tophatb
 	from fundamentals import fshift
-	from morphology   import ctf_2
 	from utilities    import print_begin_msg, print_end_msg, print_msg
 	from fundamentals import fft, rot_avg_table
 	from utilities    import write_text_file
@@ -2176,7 +2175,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 			st = Util.infomask(data[im], mask, False)
 			data[im] -= st[0]
 	 		Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
-
+	if CTF:  ctf_2_sum += 1.0/snr  # note this is complex addition (1.0/snr,0.0)
 	# startup
 	numr = Numrinit(first_ring, last_ring, rstep, mode) 	#precalculate rings
  	wr = ringwe(numr, mode)
@@ -2199,11 +2198,9 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 		print_msg(msg)
 		for Iter in xrange(max_iter):
 			total_iter += 1 
-			if CTF:
-				tavg, ave1, ave2 = sum_oe(data, "a", CTF, ctf_2_sum)
-			else:
-				av1, av2 = add_oe_series(data)
-				tavg = (av1+av2)/nima
+			ave1, ave2 = sum_oe(data, "a", CTF, ctf_2_sum)
+			if CTF:  tavg = fft(Util.divn_img(fft(Util.addn_img(ave1, ave2)), ctf_2_sum))
+			else:	 tavg = (ave1+ave2)/nima
 			# write the current average
 			drop_image(tavg, os.path.join(outdir, "aqc_%03d.hdf"%(total_iter)))
 
@@ -2225,9 +2222,8 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 				frsc = [freq, frsc]
 				del freq
 				write_text_file(frsc, os.path.join(outdir, "resolution%03d"%(total_iter)) )
-
 			else:
-				frsc = fsc_mask(av1, av2, mask, 1.0, os.path.join(outdir, "resolution%03d"%(total_iter)))
+				frsc = fsc_mask(ave1, ave2, mask, 1.0, os.path.join(outdir, "resolution%03d"%(total_iter)))
 
 			ref_data[2] = tavg
 			ref_data[3] = frsc
@@ -2277,7 +2273,6 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	from statistics   import fsc_mask, add_oe_series
 	from alignment    import Numrinit, ringwe, ali2d_single_iter
 	from filter       import filt_table, filt_ctf
-	from morphology   import ctf_2
 	from numpy        import reshape, shape
 	from fundamentals import fshift
 	from utilities    import print_msg, print_begin_msg, print_end_msg
@@ -2371,79 +2366,35 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	data = []
 	if CTF:
 		ctf_params = ima.get_attr("ctf")
-		ctf_applied = ima.get_attr("ctf_applied")
-		ctm = ctf_2(nx, ctf_params)
-		lctf = len(ctm)
-		ctf2 = []
-		ctf2.append([0.0]*lctf)
-		ctf2.append([0.0]*lctf)
-		# the next only required for the total average
-		if myid == main_node:  ctfb2 = [0.0]*lctf
+		if ima.get_attr_default('ctf_applied', 2) > 0:	ERROR("data cannot be ctf-applied", "ali2d_c_MPI", 1)
+		from filter import filt_ctf
+		from morphology   import ctf_img
+		ctf_2_sum = EMData(nx, nx, 1, False)
+	else:
+		ctf_2_sum = None
+	if  Fourvar:
+		from statistics   import add_ave_varf
 
 	del ima
+
 	for i in xrange(number_of_proc):
 		if myid == i: 
 			data = EMData.read_images(stack, range(image_start, image_end))
 		if ftp == "bdb": mpi_barrier(MPI_COMM_WORLD)
 	
-	#################################### Temp stuff (begin) ##################################
-	from fundamentals import fft
-	from statistics import add_ave_varf_MPI
-	if CTF:
-		from morphology import ctf_img
-		ctf_2_sum = EMData(nx, nx, 1, False)
-
-	# generate the mask in Fourier space
-	maskI = EMData(nx, nx, 1, False)
-	for x in xrange((nx+2)/2):
-		for y in xrange(nx):
- 			if y > nx/2-1: yy = y-nx
-			else: yy = y
-			if x**2+yy**2 < (nx*0.49)**2:
-				maskI.set_value_at(x*2, y, 1) 
-	maskI.set_value_at(0, 0, 0)
-	maskI.set_value_at(1, 0, 0)
-	#################################### Temp stuff (end) ####################################
-	
 	for im in xrange(image_start, image_end):
 		data[im-image_start].set_attr('ID', im)
-		
-	if CTF:
-		from filter import filt_ctf
-		for im in xrange(image_start, image_end):
+		if CTF:
 			ctf_params = data[im-image_start].get_attr("ctf")
-			ctm = ctf_2(nx, ctf_params)
-			k = im%2
-			for i in xrange(lctf):  ctf2[k][i] += ctm[i]
-			""" TO TEST
-			if data[im-image_start].get_attr( "ctf_applied" ) == 0:
-				st = Util.infomask(data[im-image_start], mask, False)
-				data[im-image_start] -= st[0]
-				data[im-image_start] = filt_ctf(data[im-image_start], ctf_params)
-				data[im-image_start].set_attr('ctf_applied', 1)
-	 		
-			"""
-			Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params)) ## TO TEST
-
+			st = Util.infomask(data[im-image_start], mask, False)
+			data[im-image_start] -= st[0]
+			Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
+	if CTF:
 		reduce_EMData_to_root(ctf_2_sum, myid, main_node) ## TO TEST
-		# bring ctf2 together, keep them only on main node,  strange trick required because mpi_reduce changes the nformat to numarray
-		s = shape(ctf2)
-		ctf2  = mpi_reduce(ctf2, 2*lctf, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
-		if myid == main_node:
-			ctf2 = reshape(ctf2, s)
-			ctf2n = []
-			ctf2n.append([0.0]*lctf)
-			ctf2n.append([0.0]*lctf)
-			for i in xrange(lctf):
-				ctfb2[i] = 1.0/(ctf2[0][i] + ctf2[1][i] + 1.0/snr)
-				for k in xrange(2):
-					ctf2n[k][i] = 1.0/(ctf2[k][i] + 1.0/snr)
-		del  ctf2
-		need_CTF_again = False
-		#need_CTF_again = True
-	else:
-		need_CTF_again = False
 
+		if( myid != main_node):  del ctf_2_sum
+		else:  ctf_2_sum += 1.0/snr # this is complex addition (1.0/snr,0)
+	#s tartup
 	numr = Numrinit(first_ring, last_ring, rstep, mode) 	#precalculate rings
  	wr = ringwe(numr, mode)
 	
@@ -2468,58 +2419,47 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		if myid == main_node: print_msg(msg)
 		for Iter in xrange(max_iter):
 			total_iter += 1
-
-			av1, av2 = add_oe_series(data)
+			ave1, ave2 = sum_oe(data, "a", CTF, ctf_2_sum)
 			#  bring all partial sums together
-			reduce_EMData_to_root(av1, myid, main_node)
-			reduce_EMData_to_root(av2, myid, main_node)
+			reduce_EMData_to_root(ave1, myid, main_node)
+			reduce_EMData_to_root(ave2, myid, main_node)
 			
-			#################################### Temp stuff (begin) #################################
-			tavg, vav = add_ave_varf_MPI(data, mask, "a", CTF)
-			reduce_EMData_to_root(tavg, myid, main_node)
-			reduce_EMData_to_root(vav, myid, main_node)
-			#################################### Temp stuff (end) ####################################
+			if  Fourvar:  
+				tavg, vav = add_ave_varf_MPI(data, mask, "a", CTF)
+				#reduce_EMData_to_root(tavg, myid, main_node)
+				reduce_EMData_to_root(vav, myid, main_node)
 			
 
 			if myid == main_node:
 				
-				#################################### Temp stuff (begin) #################################
-				sumsq = fft(tavg)
-				if CTF: 
-					tavg = fft(Util.divn_img(sumsq, ctf_2_sum))
-					Util.mul_img(sumsq, sumsq.conjg())
-					Util.div_img(sumsq, ctf_2_sum)
-					Util.sub_img(vav, sumsq)
-				else:
-					Util.mul_scalar(tavg, 1.0/float(nima))
-					Util.mul_img(sumsq, sumsq.conjg())
-					Util.mul_scalar(sumsq, 1.0/float(nima))
-					Util.sub_img(vav, sumsq)
-				Util.mul_scalar(vav, 1.0/(nima-1))
-				SSNR = sumsq.copy()
-				Util.div_filter(SSNR, vav)
-				#################################### Temp stuff (end) ####################################
-				
+				if CTF:  tavg = fft(Util.divn_img(fft(Util.addn_img(ave1, ave2)), ctf_2_sum))
+				else:	 tavg = (ave1+ave2)/nima
 
-				if CTF:
-					tavg = filt_table(Util.addn_img(av1, av2), ctfb2)
-					av1  = filt_table(av1, ctf2n[0])
-					av2  = filt_table(av2, ctf2n[1])
+				if  Fourvar:  
+					Ftavg, vav, sumsq = add_ave_varf(data, mask, "a", CTF, ctf_2_sum)
+					tavg	= fft(Util.divn_img(fft(tavg), vav))
+
+					vav_r	= Util.pack_complex_to_real(vav)
+					drop_image(vav_r, os.path.join(outdir, "varf_%03d.hdf"%(total_iter)))
+					sumsq_r = Util.pack_complex_to_real(sumsq)
+					rvar	= rot_avg_table(vav_r)
+					rsumsq  = rot_avg_table(sumsq_r)
+					frsc = []
+					freq = []
+					for i in xrange(len(rvar)):
+						qt = max(0.0, rsumsq[i]/rvar[i] - 1.0)
+						frsc.append(qt/(qt+1.0))
+						freq.append(float(i)/(len(rvar)-1)*0.5)
+					frsc = [freq, frsc]
+					del freq
+					write_text_file(frsc, os.path.join(outdir, "resolution%03d"%(total_iter)) )
 				else:
-					tavg = (av1 + av2)/nima
+					frsc = fsc_mask(ave1, ave2, mask, 1.0, os.path.join(outdir, "resolution%03d"%(total_iter)))
+
 
 				# write the current average
 				drop_image(tavg, os.path.join(outdir, "aqc_%03d.hdf"%(total_iter)))
-				
-				#################################### Temp stuff (begin) #################################
-				drop_image(vav, os.path.join(outdir, "vav_%03d.hdf"%(total_iter)))
-				tavg = fft(Util.divn_img(fft(tavg), vav))
-				sum_SSNR = Util.infomask(SSNR, maskI, True)
-				sum_SSNR = sum_SSNR[0]
-				#################################### Temp stuff (end) ###################################
-				
 
-				frsc = fsc_mask(av1, av2, ref_data[0], 1.0, os.path.join(outdir, "resolution%03d"%(total_iter)))
 				ref_data[2] = tavg
 				ref_data[3] = frsc
 				
@@ -2536,14 +2476,20 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				else:
 					tavg, cs = user_func(ref_data)
 
-				# a0 should increase; stop algorithm when it decreases.    
-				a1 = tavg.cmp("dot", tavg, dict(negative = 0, mask = ref_data[0]))
-				msg = "Iteration   #%5d	     criterion = %20.7e\n"%(total_iter, a1)
-				#msg = "Iteration   #%5d	     criterion = %20.7e\n"%(total_iter, sum_SSNR)
-				print_msg(msg)
-				
 				# write the current filtered average
 				drop_image(tavg, os.path.join(outdir, "aqf_%03d.hdf"%(total_iter)))
+
+				# a0 should increase; stop algorithm when it decreases.    
+				if Fourvar:  
+					Util.div_filter(sumsq, vav)
+					sumsq = filt_tophatb(sumsq, 0.01, 0.49)
+					a1 = Util.infomask(sumsq, None, True)
+					a1 = a1[0]
+				else:
+					a1 = tavg.cmp("dot", tavg, dict(negative = 0, mask = ref_data[0]))
+				msg = "Iteration   #%5d	     criterion = %20.7e\n"%(total_iter, a1)
+				print_msg(msg)
+				
 				if a1 < a0:
 					if auto_stop: 
 						again = False

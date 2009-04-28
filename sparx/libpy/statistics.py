@@ -238,9 +238,8 @@ def sum_oe(data, mode = "a", CTF = False, ctf_2_sum = None):
 
 	if CTF:
 		from morphology   import ctf_img
-		from filter       import filt_ctf, filt_table
-		if data[0].get_attr_default('ctf_applied', 1) == 1:
-			ERROR("data cannot be ctf-applied", "sum_oe", 1)
+		from filter       import filt_ctf
+		if data[0].get_attr_default('ctf_applied', 1) == 1:  ERROR("data cannot be ctf-applied", "sum_oe", 1)
 		if ctf_2_sum:  get_ctf2 = False
 		else:          get_ctf2 = True
 		if get_ctf2: ctf_2_sum = EMData(nx, ny, 1, False)
@@ -255,7 +254,6 @@ def sum_oe(data, mode = "a", CTF = False, ctf_2_sum = None):
 			if(i%2 == 0):	Util.add_img(ave1, ima_filt)
 			else:	        Util.add_img(ave2, ima_filt)
 	 		if get_ctf2: Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
-		ave = fft(Util.divn_img(fft(Util.addn_img(ave1, ave2)), ctf_2_sum))
 	else:
 		for i in xrange(n):
 			if mode == "a":
@@ -265,9 +263,9 @@ def sum_oe(data, mode = "a", CTF = False, ctf_2_sum = None):
 				ima = data[i]
 			if(i%2 == 0):	Util.add_img(ave1, ima)
 			else:	        Util.add_img(ave2, ima)
-		ave = Util.addn_img(ave1, ave2)/n
 		
-	return ave, ave1, ave2
+	if get_ctf2: return ave1, ave2, ctf_2_sum
+	else:        return  ave1, ave2
 
 def ave_var(data, mode = "a"):
 	"""
