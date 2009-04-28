@@ -55,15 +55,15 @@ def add_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None, a
 		mode - "a": use current alignment parameters
 		CTF  - if True, use CTF for calculations of both average and variance.
 	"""
-	from utilities    import    model_blank, get_params2D
+	from utilities    import    model_blank, get_params2D, info
 	from fundamentals import    rot_shift2D, fft
 
 	n = len(data)
 	nx = data[0].get_xsize()
 	ny = data[0].get_ysize()
-	ave   = model_blank(nx, ny)
-	sumsq = EMData(nx, ny, 1, False)
-	var   = EMData(nx, ny, 1, False)
+	ave1 = EMData(nx, ny, 1, False)
+	ave2 = EMData(nx, ny, 1, False)
+	var  = EMData(nx, ny, 1, False)
 	
 	if CTF:
 		from morphology   import ctf_img
@@ -74,20 +74,21 @@ def add_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None, a
 		else:          get_ctf2 = True
 		if get_ctf2: ctf_2_sum = EMData(nx, ny, 1, False)
 	 	for i in xrange(n):
-	 		ima = data[i].copy()
 	 		if mode == "a":
-				alpha, sx, sy, mirror, scale = get_params2D(ima, ali_params)
-				ima = rot_shift2D(ima, alpha, sx, sy, mirror, scale, "quadratic")
+				alpha, sx, sy, mirror, scale = get_params2D(data[i], ali_params)
+				ima = fft(rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic"))
 				#  Here we have a possible problem: varf works only if CTF is applied after rot/shift
 				#    while calculation of average (and in general principle) CTF should be applied before rot/shift
 				#    here we use the first possibility
-	 		ctf_params = ima.get_attr("ctf")
+			else:
+				ima = fft(data[i])
+	 		ctf_params = data[i].get_attr("ctf")
 	 		ima_filt = filt_ctf(ima, ctf_params, dopad=False)
-			Util.add_img(ave, ima_filt)
- 			Util.add_img2(var, fft(ima))
+			if(i%2 == 0):  Util.add_img(ave1, ima_filt)
+			else:          Util.add_img(ave2, ima_filt)
+ 			Util.add_img2(var, ima)
 	 		if get_ctf2: Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
-		sumsq = fft(ave)
-		ave = fft(Util.divn_img(sumsq, ctf_2_sum))
+		sumsq = Util.addn_img(ave1, ave2)
 		Util.mul_img(sumsq, sumsq.conjg())
 		Util.div_img(sumsq, ctf_2_sum)
 	 	Util.sub_img(var, sumsq)
@@ -95,22 +96,21 @@ def add_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None, a
 		for i in xrange(n):
 			if mode == "a":
 				alpha, sx, sy, mirror, scale = get_params2D(data[i], ali_params)
-				ima = rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
+				ima = fft(rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic"))
 			else:
-				ima = data[i].copy()
-			Util.add_img(ave, ima)
-			Util.add_img2(var, fft(ima))
-		sumsq = fft(ave)
-		Util.mul_scalar(ave, 1.0/float(n))
+				ima = fft(data[i])
+			if(i%2 == 0):   Util.add_img(ave1, ima)
+			else:           Util.add_img(ave2, ima)
+			Util.add_img2(var, ima)
+		sumsq = Util.addn_img(ave1, ave2)
 		Util.mul_img(sumsq, sumsq.conjg())
 		Util.mul_scalar(sumsq, 1.0/float(n))
 		Util.sub_img(var, sumsq)
 		
-	Util.mul_scalar(var, 1.0/float(n-1))	
+	Util.mul_scalar(var, 1.0/float(n-1))
 	st = Util.infomask(var, None, True)
 	if st[2] < 0.0:  ERROR("Negative variance!", "add_ave_varf", 1)
-	return ave, var, sumsq
-	
+	return ave1, ave2, var, sumsq
 
 def add_ave_varf_MPI(data, mask = None, mode = "a", CTF = False, ali_params = "xform.align2d"):
 	"""
@@ -126,8 +126,9 @@ def add_ave_varf_MPI(data, mask = None, mode = "a", CTF = False, ali_params = "x
 	n = len(data)
 	nx = data[0].get_xsize()
 	ny = data[0].get_ysize()
-	sumf = model_blank(nx, ny)
-	sumsq = EMData(nx, ny, 1, False)
+	ave1 = EMData(nx, ny, 1, False)
+	ave2 = EMData(nx, ny, 1, False)
+	var  = EMData(nx, ny, 1, False)
 	
 	if CTF:
 		from filter       import filt_ctf
@@ -136,25 +137,29 @@ def add_ave_varf_MPI(data, mask = None, mode = "a", CTF = False, ali_params = "x
 	 	for i in xrange(n):
 	 		if mode == "a":
 				alpha, sx, sy, mirror, scale = get_params2D(data[i], ali_params)
-				ima = rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
+				ima = fft(rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic"))
 			else:
-				ima = data[i]
-	 		ctf_params = ima.get_attr("ctf")
+				ima = fft(data[i])
+	 		ctf_params = data[i].get_attr("ctf")
 	 		ima_filt = filt_ctf(ima, ctf_params, dopad=False)
-			Util.add_img(sumf, ima_filt)
- 			Util.add_img2(sumsq, fft(ima))
+			if(i%2 == 0):   Util.add_img(ave1, ima_filt)
+			else:           Util.add_img(ave2, ima_filt)
+ 			Util.add_img2(var, ima)
 	else:
 		for i in xrange(n):
 			if mode == "a":
 				alpha, sx, sy, mirror, scale = get_params2D(data[i], ali_params)
-				ima = rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
+				ima = fft(rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic"))
 			else:
-				ima = data[i]
-			Util.add_img(sumf, ima)
-			Util.add_img2(sumsq, fft(ima))
+				ima = fft(data[i])
+			if(i%2 == 0):   Util.add_img(ave1, ima)
+			else:           Util.add_img(ave2, ima)
+			Util.add_img2(var, ima)
 	
-	return sumf, sumsq
+	return ave1, ave2, var
 
+'''
+This does not appear ot be right, Yang - can it be removed?  PAP 04/28/09
 def add_ave_varf_ML_MPI(data, mask = None, mode = "a", CTF = False):
 	"""
 		Calculate sum of an image series and sum of squares in Fourier space
@@ -219,6 +224,7 @@ def add_ave_varf_ML_MPI(data, mask = None, mode = "a", CTF = False):
 			Util.add_img2(var, fft(ima))
 	
 	return ave, var
+'''
 
 def sum_oe(data, mode = "a", CTF = False, ctf_2_sum = None):
 	"""
@@ -264,7 +270,9 @@ def sum_oe(data, mode = "a", CTF = False, ctf_2_sum = None):
 			if(i%2 == 0):	Util.add_img(ave1, ima)
 			else:	        Util.add_img(ave2, ima)
 		
-	if get_ctf2: return ave1, ave2, ctf_2_sum
+	if  CTF:
+		if get_ctf2: return ave1, ave2, ctf_2_sum
+		else:        return  ave1, ave2
 	else:        return  ave1, ave2
 
 def ave_var(data, mode = "a"):
@@ -1010,13 +1018,13 @@ def ssnr2d_ctf(data, mask = None, mode=""):
 		ima = EMData()
 		ima.read_image(data, 0, True)
 		if(ima.get_attr_default('ctf_applied', 1) == 1):
-			ERROR("data cannot be ctf-applied","varfctf",1)
+			ERROR("data cannot be ctf-applied","ssnr2d",1)
 		nx = ima.get_xsize()
 		ny = ima.get_ysize()
 		nz = ima.get_zsize()
 	else:
 		if(data[0].get_attr_default('ctf_applied', 1) == 1):
-			ERROR("data cannot be ctf-applied","varfctf",1)
+			ERROR("data cannot be ctf-applied","ssnr2d",1)
 		n = len(data)
 		nx = data[0].get_xsize()
 		ny = data[0].get_ysize()

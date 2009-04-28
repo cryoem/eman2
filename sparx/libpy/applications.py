@@ -2198,15 +2198,13 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 		print_msg(msg)
 		for Iter in xrange(max_iter):
 			total_iter += 1 
-			ave1, ave2 = sum_oe(data, "a", CTF, ctf_2_sum)
-			if CTF:  tavg = fft(Util.divn_img(fft(Util.addn_img(ave1, ave2)), ctf_2_sum))
-			else:	 tavg = (ave1+ave2)/nima
-			# write the current average
-			drop_image(tavg, os.path.join(outdir, "aqc_%03d.hdf"%(total_iter)))
-
 			if  Fourvar:  
-				Ftavg, vav, sumsq = add_ave_varf(data, mask, "a", CTF, ctf_2_sum)
-				tavg    = fft(Util.divn_img(fft(tavg), vav))
+				ave1, ave2, vav, sumsq = add_ave_varf(data, mask, "a", CTF, ctf_2_sum)
+				if CTF:  tavg = Util.divn_img(Util.addn_img(ave1, ave2), ctf_2_sum)
+				else:	 tavg = (ave1+ave2)/nima
+				# write the current average
+				drop_image(fft(tavg), os.path.join(outdir, "aqc_%03d.hdf"%(total_iter)))
+				tavg    = fft(Util.divn_img(tavg, vav))
 
 				vav_r	= Util.pack_complex_to_real(vav)
 				drop_image(vav_r, os.path.join(outdir, "varf_%03d.hdf"%(total_iter)))
@@ -2223,6 +2221,9 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 				del freq
 				write_text_file(frsc, os.path.join(outdir, "resolution%03d"%(total_iter)) )
 			else:
+				ave1, ave2 = sum_oe(data, "a", CTF, ctf_2_sum)
+				if CTF:  tavg = fft(Util.divn_img(fft(Util.addn_img(ave1, ave2)), ctf_2_sum))
+				else:	 tavg = (ave1+ave2)/nima
 				frsc = fsc_mask(ave1, ave2, mask, 1.0, os.path.join(outdir, "resolution%03d"%(total_iter)))
 
 			ref_data[2] = tavg
@@ -2270,11 +2271,11 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 
 	from utilities    import model_circle, model_blank, drop_image, get_image, get_input_from_string
 	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type
-	from statistics   import fsc_mask, add_oe_series
+	from statistics   import fsc_mask, sum_oe, add_ave_varf_MPI
 	from alignment    import Numrinit, ringwe, ali2d_single_iter
 	from filter       import filt_table, filt_ctf
 	from numpy        import reshape, shape
-	from fundamentals import fshift
+	from fundamentals import fshift, fft, rot_avg_table
 	from utilities    import print_msg, print_begin_msg, print_end_msg
 	import os
 	import sys
@@ -2412,53 +2413,62 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	again = True
 	total_iter = 0
 	cs = [0.0]*2
-	tavg = model_blank(nx, nx)
 
 	for N_step in xrange(len(xrng)):
 		msg = "\nX range = %5.2f   Y range = %5.2f   Step = %5.2f\n"%(xrng[N_step], yrng[N_step], step[N_step])
 		if myid == main_node: print_msg(msg)
 		for Iter in xrange(max_iter):
 			total_iter += 1
-			ave1, ave2 = sum_oe(data, "a", CTF, ctf_2_sum)
-			#  bring all partial sums together
-			reduce_EMData_to_root(ave1, myid, main_node)
-			reduce_EMData_to_root(ave2, myid, main_node)
 			
 			if  Fourvar:  
-				tavg, vav = add_ave_varf_MPI(data, mask, "a", CTF)
-				#reduce_EMData_to_root(tavg, myid, main_node)
+				ave1, ave2, vav = add_ave_varf_MPI(data, mask, "a", CTF)
+				reduce_EMData_to_root(ave1, myid, main_node)
+				reduce_EMData_to_root(ave2, myid, main_node)
 				reduce_EMData_to_root(vav, myid, main_node)
+			else:
+				ave1, ave2 = sum_oe(data, "a", CTF, EMData())  # pass empty object to prevent calculation of ctf^2
+				reduce_EMData_to_root(ave1, myid, main_node)
+				reduce_EMData_to_root(ave2, myid, main_node)
 			
 
 			if myid == main_node:
 				
-				if CTF:  tavg = fft(Util.divn_img(fft(Util.addn_img(ave1, ave2)), ctf_2_sum))
-				else:	 tavg = (ave1+ave2)/nima
-
-				if  Fourvar:  
-					Ftavg, vav, sumsq = add_ave_varf(data, mask, "a", CTF, ctf_2_sum)
-					tavg	= fft(Util.divn_img(fft(tavg), vav))
-
-					vav_r	= Util.pack_complex_to_real(vav)
-					drop_image(vav_r, os.path.join(outdir, "varf_%03d.hdf"%(total_iter)))
-					sumsq_r = Util.pack_complex_to_real(sumsq)
-					rvar	= rot_avg_table(vav_r)
-					rsumsq  = rot_avg_table(sumsq_r)
-					frsc = []
-					freq = []
-					for i in xrange(len(rvar)):
-						qt = max(0.0, rsumsq[i]/rvar[i] - 1.0)
-						frsc.append(qt/(qt+1.0))
-						freq.append(float(i)/(len(rvar)-1)*0.5)
-					frsc = [freq, frsc]
-					del freq
-					write_text_file(frsc, os.path.join(outdir, "resolution%03d"%(total_iter)) )
+				if  Fourvar:
+					if CTF:
+						sumsq = Util.addn_img(ave1, ave2)
+						tavg = Util.divn_img(sumsq, ctf_2_sum)
+						drop_image(fft(tavg), os.path.join(outdir, "aqc_%03d.hdf"%(total_iter)))
+						Util.mul_img(sumsq, sumsq.conjg())
+						Util.div_img(sumsq, ctf_2_sum)
+	 					Util.sub_img(vav, sumsq)
+						vav_r	= Util.pack_complex_to_real(vav)
+						drop_image(vav_r, os.path.join(outdir, "varf_%03d.hdf"%(total_iter)))
+						sumsq_r = Util.pack_complex_to_real(sumsq)
+						rvar	= rot_avg_table(vav_r)
+						rsumsq  = rot_avg_table(sumsq_r)
+						frsc = []
+						freq = []
+						for i in xrange(len(rvar)):
+							qt = max(0.0, rsumsq[i]/rvar[i] - 1.0)
+							frsc.append(qt/(qt+1.0))
+							freq.append(float(i)/(len(rvar)-1)*0.5)
+						frsc = [freq, frsc]
+						del freq
+						write_text_file(frsc, os.path.join(outdir, "resolution%03d"%(total_iter)) )
+					else:
+						sumsq = Util.addn_img(ave1, ave2)
+						tavg = sumsq/nima
+						Util.mul_img(sumsq, sumsq.conjg())
+						Util.mul_scalar(sumsq, 1.0/float(n))
+						Util.sub_img(vav, sumsq)
+					Util.mul_scalar(vav, 1.0/float(n-1))
+					st = Util.infomask(var, None, True)
+					if st[2] < 0.0:  ERROR("Negative variance!", "ali2d_c_MPI", 1)
 				else:
+					if CTF:  tavg = fft(Util.divn_img(fft(Util.addn_img(ave1, ave2)), ctf_2_sum))
+					else:	 tavg = (ave1+ave2)/nima
+					drop_image(avg, os.path.join(outdir, "aqc_%03d.hdf"%(total_iter)))
 					frsc = fsc_mask(ave1, ave2, mask, 1.0, os.path.join(outdir, "resolution%03d"%(total_iter)))
-
-
-				# write the current average
-				drop_image(tavg, os.path.join(outdir, "aqc_%03d.hdf"%(total_iter)))
 
 				ref_data[2] = tavg
 				ref_data[3] = frsc
@@ -8726,7 +8736,7 @@ def cpy(ins_list, ous):
 	# iterate over all images in the list, even if it's only one...
 	for ins in image_list:
 
-		print ins
+		#print ins
 		nima = EMUtil.get_image_count(ins)
 		data = EMData()
 		iextension = file_type(ins)
