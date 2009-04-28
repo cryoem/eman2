@@ -56,29 +56,36 @@ for tomographic analysis."""
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
-	parser.add_option("--gui",action="store_true",help="Start the GUI for interactive boxing",default=False)
-	parser.add_option("--boxsize","-B",type="int",help="Box size in pixels",default=-1)
-	parser.add_option("--auto","-A",type="string",action="append",help="Autobox using specified method: ref, grid, db, cmd",default=[])
+	parser.add_option("--boxsize","-B",type="int",help="Box size in pixels",default=64)
 
 	(options, args) = parser.parse_args()
 	
 	
+	if not file_exists(args[0]): parser.error("%s does not exist" %args[0])
+	if options.boxsize < 2: parser.error("The boxsize you specified is too small")
+	# The program will not run very rapidly at such large box sizes anyhow
+	if options.boxsize > 2048: parser.error("The boxsize you specified is too large.\nCurrently there is a hard coded max which is 2048.\nPlease contact developers if this is a problem.")
+	
 	application = EMStandAloneApplication()
 	tomo_mediator= EMTomoBoxerModule(args[0])
+	tomo_mediator.set_box_size(options.boxsize)
 	
 	tomo_mediator.show_guis()
-#	QtCore.QObject.connect(gui, QtCore.SIGNAL("module_idle"), on_idle)
 	application.execute()
 	
-#	print args[0]
-#	a = TomogramProjection(args[0])
-#	a.get_image()
 
 class ShrunkenTomogram:
 	'''
-	Takes care of the automatic shrinking of tomogram, if necessary
+	Shrinks a tomogram and caches the result on disk.
+	Caching is to prevent the operation from occurring more than once.
+	Determines shrinking factor automatically using settings specified in e2preferences.py 
+	Will read blocks from disk and shrink incrementally if input image is too large.
 	It may be true that the shrink factor was 1, in which case shrink didn't really occur.
-	Could be made generic for other applications if the need arises
+	Could be made generic for other applications if the need arises.
+	@code
+	a = ShrunkenTomogram("tomogram.mrc")
+	b = a.get_image() # could take a while - will see a progress dialog
+	@endcode
 	'''
 	db_name = "shrunken_image"
 	def __init__(self,file_name):
@@ -92,13 +99,15 @@ class ShrunkenTomogram:
 		if nx <=1 or ny <= 1 or nz <= 1: raise RuntimeError("The file must be 3D (nx,ny,nz>1)")
 		
 		self.file_name = file_name
+		# self.image could still be None
 		self.image = get_idd_image_entry(self.file_name,ShrunkenTomogram.db_name,tomo_db_name)
 		
 	def get_shrunken_resident_name(file_name):
 		'''
-		asks whether or not this file name has a corresponding shrunken image in the
-		e2tomoboxer cache, and if so, for its name (embeded in list - [db_name, image_index] ([string,int])
-		return None if there is no shrunken cached image, or [string,int], which can be used as the arguments to EMData.read_image(string,int)
+		STATIC
+		asks whether or not this file name has a corresponding shrunken image in the e2tomoboxercache - 
+		if so, will return its name and index. (embeded in list - [name, image_index] ([string,int])
+		@return [None,None] if there is no shrunken cached image, or [string,int] if there is, which can be used as the arguments to EMData.read_image(string,int)
 		'''
 
 		db_name =  tomo_db_name+ShrunkenTomogram.db_name
@@ -119,7 +128,7 @@ class ShrunkenTomogram:
 				
 		db_close_dict(db_name)
 		return [None,None]
-	
+	# Static assignment
 	get_shrunken_resident_name = staticmethod(get_shrunken_resident_name)
 		
 	def get_construction_argument(self):
@@ -129,6 +138,10 @@ class ShrunkenTomogram:
 		return self.file_name
 	
 	def get_image(self):
+		'''
+		The main external interface. Get the image.
+		If the image was not already stored in memory it will be generated
+		'''
 		if self.image == None:
 			global HOMEDB
 			HOMEDB=EMAN2db.EMAN2DB.open_db()
@@ -143,71 +156,53 @@ class ShrunkenTomogram:
 			self.shrink = shrink
 			
 			if shrink > 1:
-				self.do_shrinking()
-#				shrink_thread = ShrinkThread(self.file_name,shrink)
-#				progress = QtGui.QProgressDialog(shrink_thread.get_action_string(), "abort", 0, shrink_thread.get_total_steps(),None)
-#				progress.setWindowTitle("Shrinking tomogram by %i" %shrink)
-#				progress.setWindowModality(Qt.WindowModal)
-#				progress.show()
-#				tally = -1
-#				shrink_thread.start()#QtCore.QThread.LowPriority)
-#				get_application().setOverrideCursor(Qt.BusyCursor)
-#		
-#				while 1:
-#					progress.setValue(tally)
-#					progress.setLabelText(shrink_thread.get_action_string())
-#					get_application().processEvents()
-#					time.sleep(1)
-#					if progress.wasCanceled():
-#						shrink_thread.quit()
-#						progress.close()
-#						# probably the calling program should do something about this
-#						# the image returned is going to be None
-#						break
-#					
-#					if shrink_thread.get_progress() > tally:
-#						tally = shrink_thread.get_progress()
-##						progress.setValue(tally)
-##						progress.setLabelText(shrink_thread.get_action_string())
-##						get_application().processEvents()
-#											
-#					if shrink_thread.get_progress() == shrink_thread.get_total_steps()-1:
-#						progress.close()
-#						self.image = shrink_thread.get_image()
-#						self.image.set_attr("shrunken_by",shrink)
-#						self.image.set_attr("shrunken_from",self.file_name)
-#						set_idd_image_entry(self.file_name,ShrunkenTomogram.db_name,self.image,tomo_db_name) #cache to disk
-#						break
-#				get_application().setOverrideCursor(Qt.ArrowCursor)
+				self.__do_careful_shrinking()
 			else:
 				self.image = EMData()
 				self.image.read_image(self.file_name,0)
+				
+			if self.image != None:
+				self.image.set_attr("shrunken_by",self.shrink)
+				self.image.set_attr("shrunken_from",self.file_name)
+				set_idd_image_entry(self.file_name,ShrunkenTomogram.db_name,self.image,tomo_db_name) #cache to disk
+	
 		
 		return self.image
 
-	def do_shrinking(self):
+	def __do_careful_shrinking(self):
+		'''
+		Called internally to oversee the process of memory-miser shrinking
+		Reads sub blocks of the large image, shrinks them, and inserts them as
+		clipped regions into the output image. 
+		'''
+		# very important to do this first
 		self.__init_parameters()
-		
 		
 		t1 = time.time()
 		progress = QtGui.QProgressDialog("", "abort", 0, self.total_steps,None)
 		progress.setWindowIcon(QtGui.QIcon(get_image_directory() +"eman.png"))
 		progress.setWindowTitle("Shrinking tomogram by %i" %self.shrink)
 		progress.show()
-		tally = -1
+		get_application().processEvents()
+		tally = 0
 		get_application().setOverrideCursor(Qt.BusyCursor)
 		
 		if self.read_operations == 1:
+			# this means we don't have to be careful about saturating memory - just read the image and shrink it
 			self.image = EMData()
 			progress.setLabelText("Reading %s" %self.file_name)
+			get_application().processEvents()
 			self.image.read_image(self.file_name,0)
 			tally += 1
 			progress.setValue(tally)
 			progress.setLabelText("Shrinking by %i" %self.shrink)
+			get_application().processEvents()
 			self.image.process_inplace("math.meanshrink",{"n":self.shrink})
 			tally += 1
 			progress.setValue(tally)
+			get_application().processEvents()
 		else:
+			# read blocks of pixel data from disk and shrink them, then insert clips
 			cancelled = False
 			self.image = EMData(self.output_image_nx,self.output_image_ny,self.output_image_nz)
 			self.tmp_image = EMData()
@@ -241,11 +236,6 @@ class ShrunkenTomogram:
 		
 		print "in total, the shrink took ", time.time()-t1, "seconds"
 		
-		if self.image != None:
-			self.image.set_attr("shrunken_by",self.shrink)
-			self.image.set_attr("shrunken_from",self.file_name)
-			set_idd_image_entry(self.file_name,ShrunkenTomogram.db_name,self.image,tomo_db_name) #cache to disk
-	
 		get_application().setOverrideCursor(Qt.ArrowCursor)
 	
 	def __init_parameters(self):
@@ -253,7 +243,8 @@ class ShrunkenTomogram:
 		Called internally to initialize the parameters of the shrinking operation.
 		Because we could be shrink a very large image (20Gb, for example), we have
 		to be careful to make sure we don't read too much data into memory. So instead
-		we do it in steps, which requires certain parameters
+		we do it in steps, which requires certain parameters, which are determined here
+		and then used in do_shrinking
 		'''
 		GB = 1000000000.0
 		from EMAN2 import memory_stats
@@ -281,123 +272,7 @@ class ShrunkenTomogram:
 		
 		self.total_steps = 2*self.read_operations # two times, one for read, one for shrink
 
-class ShrinkThread(QtCore.QThread):
-	'''
-	A thread for running the shrink operation - so the user can cancel if it's taking too long or
-	they think twice.
-	Designed to be used with a progress dialog - you can get the progress (get_progress) to update the
-	progress bar, and get the action string (get_action_string) to update the label on the progress dialog.
-	See ShrunkenTomogram for an example of how this object is used
-	Once the job is done call get_image to get the result 
-	'''
-	def __init__(self,file_name,shrink):
-		'''
-		@param file_name the name of the file on disk, or in bdb format
-		@param shrink the shrink factor, should be an integer greater than 1
-		@exception RuntimeError raised if the file_name is not a file on disk
-		@exception RuntimeError raised if shrink is not an int
-		@exception RuntimeError raised if shrink is not greater than 1
-		'''
-		if not file_exists(file_name): raise RuntimError("The file %s does not exist" %file_name)
-		if not isinstance(shrink,int) or shrink < 2: raise RuntimeError("The shrink factor must be an integer greater than 1")
-		
-		QtCore.QThread.__init__(self)
-		self.file_name = file_name # store the file name
-		self.shrink = shrink # store the shrink
-		self.current_step = -1 # so the calling function can ask about the progress and update a progress dialog
-		self.total_steps = 2 # the total number of steps I chose this object to have (read,shrink,write)
-		self.image = None # the final image - so the calling object can retrieve it
-		self.action_string = "Reading image" # so the progress dialog can display a useful string
-		
-		self.__init_parameters()
-		
-	def __init_parameters(self):
-		'''
-		Called internally to initialize the parameters of the shrinking operation.
-		Because we could be shrink a very large image (20Gb, for example), we have
-		to be careful to make sure we don't read too much data into memory. So instead
-		we do it in steps, which requires certain parameters
-		'''
-		GB = 1000000000.0
-		from EMAN2 import memory_stats
-		gb_avail = memory_stats()[0] #giga bytes available
-		memory_for_use = gb_avail/4.0 #so on a 4gb machine I'm using 500mb
-		self.nx,self.ny,self.nz = gimme_image_dimensions3D(self.file_name)
-		memory_occ = self.nx*self.ny*self.nz*4/GB # working in gb
-		
-		self.output_image_nz = self.nz/self.shrink
-		self.output_image_ny = self.ny/self.shrink
-		self.output_image_nx = self.nx/self.shrink
-		if memory_occ > memory_for_use:
-			# "we're in business"
-			
-			#first I am assuming that a single slab (nx * ny * self.shrink) is less than memory available for use
-			#this should hold generally. But I throw if not
-			slab_memory = self.nx*self.ny*4/GB
-			if slab_memory > memory_for_use: raise NotImplementedException("This image is large for your machine. Please email developers and tell them the shrinking scheme needs to become more sophisticated")
-			else:
-				self.xy_planes_in_mem = int(memory_for_use/slab_memory) # this is the number of xy image planes I can have in memory
-				self.xy_planes_in_mem -=  self.xy_planes_in_mem % self.shrink # the shrinking will only work consistently if this is true
-				print self.xy_planes_in_mem, "planes in mem"
-				self.read_operations = int(math.ceil(self.nz/float(self.xy_planes_in_mem))) # this is the total number of read operations
-		else:
-			self.read_operations = 1
-		
-		self.total_steps = 2*self.read_operations # two times, one for read, one for shrink
-	def get_total_steps(self):
-		''' @return the total number of operations this object will perform, i.e. for initializing a progress dialgo
-		'''
-		return self.total_steps
-	
-	def get_progress(self):
-		''' @return the current progress as an int. Before run is called this is -1.'''
-		return self.current_step
-	
-	def get_action_string(self):
-		''' @return a useful string saying what this is currently doing, i.e. for a progress dialog'''
-		return self.action_string
-	
-	def get_image(self):
-		''' @return the shrunken image, or None if for example the thread was terminatea'''
-		return self.image
-	
-	def run(self):
-		''' run - overwrites QtThread.run - all work is done here
-		'''
-		if self.read_operations == 1:
-			self.image = EMData()
-			self.image.read_image(self.file_name,0)
-			print "read image"
-			self.current_step = 0
-			self.action_string = "Shrinking by %i" %self.shrink
-			self.image.process_inplace("math.meanshrink",{"n":self.shrink})
-			print "shrunk the image"
-			self.current_step = 1
-		else:
-			self.image = EMData(self.output_image_nx,self.output_image_ny,self.output_image_nz)
-			self.tmp_image = EMData()
-			self.current_step = -1
-			for i in range(self.read_operations):
-				z_start = i*self.xy_planes_in_mem
-				slices = self.xy_planes_in_mem
-				if z_start+slices > self.nz: slices = self.nz-z_start # this happens if shrink doesn't divide self.nz - it's fine
-				self.action_string = "Reading z section [%i %i]" %(z_start,z_start+slices)
-				print self.action_string
-				r = Region(0,0,z_start,self.nx,self.ny,slices)
-				self.tmp_image.read_image(self.file_name,0,False,r)
-				self.current_step += 1
-				self.action_string = "Shrinking z section [%i %i]" %(z_start,z_start+slices)
-				print self.action_string
-				self.tmp_image.process_inplace("math.meanshrink",{"n":self.shrink})
-				out_z_start = z_start/self.shrink
-				self.image.insert_clip(self.tmp_image,[0,0,out_z_start])
-				self.current_step += 1
-				#self.tmp_image.set_size(0,0,0)
-				
-			
-			
-		self.exit() # is this necessary
-		
+
 		
 class TomogramProjection:
 	'''
@@ -442,7 +317,6 @@ class TomogramProjection:
 		if self.image == None:
 			
 			st = ShrunkenTomogram(self.file_name)
-		
 			tmp = st.get_image()
 			if tmp == None: # this means the shrink operation was cancelled
 				return None # the calling function should be sophisticated to handle this!
@@ -470,11 +344,12 @@ class TomogramProjection:
 	
 TomoProjectionCache = Cache(TomogramProjection)
 
-
 class EMTBBoxManipulations():
 	'''
 	A class that responds to added, moved and removed box signals emitted
-	by the EMImage2DModule
+	by the by the main 2d image in e2tomoboxer.py  - this is the image
+	display that shows the summed tomogram projection. Users move boxes
+	left and right, up and down. They also delete the box and move it.
 	'''
 	def __init__(self,target,main_2d_window):
 		self.target = weakref.ref(target) # prevent a strong cycle
@@ -482,6 +357,7 @@ class EMTBBoxManipulations():
 		self.moving = None
 		
 		self.__connect_signals_to_slots()
+		self.collision_function = self.target().detect_box_collision
 	def __connect_signals_to_slots(self):
 		'''
 		connects the signals of the main 2D window to the slots of this object
@@ -494,12 +370,12 @@ class EMTBBoxManipulations():
 		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("keypress"),self.key_press)
 		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mousewheel"),self.mouse_wheel)
 
-	def __box_collision_detect(self,coord_data):
+	def box_collision_detect(self,coord_data):
 		'''
 		A wrapper function that could easily disappear
 		@param coord_data a coordinate interms of the main image's pixel coordinate system
 		'''
-		return self.target().detect_box_collision(coord_data)
+		return self.collision_function(coord_data)
 	
 	def mouse_down(self,event) :
 		'''
@@ -508,7 +384,7 @@ class EMTBBoxManipulations():
 		coord_data = list(self.main_2d_window.scr_to_img((event.x(),event.y())))
 		coord_data[0] = int(coord_data[0])
 		coord_data[1] = int(coord_data[1])
-		box_num =  self.__box_collision_detect(coord_data)
+		box_num =  self.box_collision_detect(coord_data)
 		if box_num == -1:
 			if not self.main_2d_window.coords_within_image_bounds(coord_data):	return
 			
@@ -564,36 +440,16 @@ class EMTBBoxManipulations():
 		'''
 		pass
 	
-class EMTBPositionBoxManipulations():
+class EMTBZYViewBoxManipulations(EMTBBoxManipulations):
 	'''
-	A class that responds to added, moved and removed box signals emitted
-	by the EMImage2DModule
+	A class that responds boxes that are manipulated in the side view
+	display (2d projection image) in e2tomoboxer.py, Users move boxes
+	left and right, up and down. They can not delete the box (that must
+	be done in the main 2d view)
 	'''
 	def __init__(self,target,main_2d_window):
-		self.target = weakref.ref(target) # prevent a strong cycle
-		self.main_2d_window = main_2d_window
-		self.moving = None
-		
-		self.__connect_signals_to_slots()
-	def __connect_signals_to_slots(self):
-		
-		'''
-		connects the signals of the main 2D window to the slots of this object
-		'''
-		qt_target = get_application().get_qt_emitter(self.main_2d_window)
-		
-		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mousedown"),self.mouse_down)
-		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mousedrag"),self.mouse_drag)
-		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mouseup")  ,self.mouse_up  )
-		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("keypress"),self.key_press)
-		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mousewheel"),self.mouse_wheel)
-
-	def __box_collision_detect(self,coord_data):
-		'''
-		A wrapper function that could easily disappear
-		@param coord_data a coordinate interms of the main image's pixel coordinate system
-		'''
-		return self.target().detect_side_view_box_collision(coord_data)
+		EMTBBoxManipulations.__init__(self,target,main_2d_window)
+		self.collision_function = self.target().detect_side_view_zy_box_collision
 	
 	def mouse_down(self,event) :
 		'''
@@ -602,7 +458,7 @@ class EMTBPositionBoxManipulations():
 		coord_data = list(self.main_2d_window.scr_to_img((event.x(),event.y())))
 		coord_data[0] = int(coord_data[0])
 		coord_data[1] = int(coord_data[1])
-		box_num =  self.__box_collision_detect(coord_data)
+		box_num =  self.box_collision_detect(coord_data)
 		if box_num != -1:
 
 #			# if we make it here than the we're moving a box
@@ -632,27 +488,73 @@ class EMTBPositionBoxManipulations():
 		if self.moving != None:
 			self.moving=None
 		
-	def key_press(self,event):
-		'''
-		@param a QtGui.QKeyEvent sent from the EMImage2DModule
-		'''
-		pass 
-	def mouse_wheel(self,event):
+	def key_press(self,event):  pass 
+	def mouse_wheel(self,event): pass
+
+	
+class EMTBZXViewBoxManipulations(EMTBBoxManipulations):
+	'''
+	A class that responds boxes that are manipulated in the side view
+	display (2d projection image) in e2tomoboxer.py, Users move boxes
+	left and right, up and down. They can not delete the box (that must
+	be done in the main 2d view)
+	'''
+	def __init__(self,target,main_2d_window):
+		EMTBBoxManipulations.__init__(self,target,main_2d_window)
+		self.collision_function = self.target().detect_side_view_zy_box_collision
+	
+	def mouse_down(self,event) :
 		'''
 		@param a QtGui.QMouseEvent sent from the EMImage2DModule
 		'''
-		pass
-	
+		coord_data = list(self.main_2d_window.scr_to_img((event.x(),event.y())))
+		coord_data[0] = int(coord_data[0])
+		coord_data[1] = int(coord_data[1])
+		box_num =  self.box_collision_detect(coord_data)
+		if box_num != -1:
+
+#			# if we make it here than the we're moving a box
+			box = self.target().get_box(box_num)
+			self.moving=[coord_data,box_num]
+#			self.target().set_active_box(box_num)
+							
+	def mouse_drag(self,event) :
+		'''
+		@param a QtGui.QMouseEvent sent from the EMImage2DModule
+		'''
+		
+		coord_data = list(self.main_2d_window.scr_to_img((event.x(),event.y())))
+		coord_data[0] = int(coord_data[0])
+		coord_data[1] = int(coord_data[1])
+#		print "mouse drag"#
+		if self.moving != None:
+			old_coord = self.moving[0]
+			
+			self.target().move_box(self.moving[1],0,coord_data[0]-old_coord[0],coord_data[1]-old_coord[1])
+			self.moving[0] = coord_data
+#	
+	def mouse_up(self,event) :
+		'''
+		@param a QtGui.QMouseEvent sent from the EMImage2DModule
+		'''
+		if self.moving != None:
+			self.moving=None
+		
+	def key_press(self,event):  pass 
+	def mouse_wheel(self,event): pass
+
+
+
 class EMCoordList:
 	'''
-	Meant to store the primary data associated with a box, namely its bottom left and top right
-	coordinates. Stores central coordinates as a list of length 3, e.g. [center x, center y, center z]
+	A list of central coordinates
+	Stores central coordinates internally as a list of length 3, e.g. [center x, center y, center z]
 	Provides additional collision detection functionality
-	Provides additional box size changing and box moving functionality
+	Provides additional box moving functionality
 	Supports list-style iterator support 
 	'''
 	def __init__(self):
-		self.coords = [] # main data container, entries are lists of length 4
+		self.coords = [] # main data container, entries are lists of length 3 (coordinate  data)
 		self.current_iter = 0 # iterator support
 		self.max_idx = 0 # iterator support
 		
@@ -789,7 +691,8 @@ class EMTomoBoxerModule:
 		self.box_size = 64
 		self.coord_list = EMCoordList()
 		self.active_box = -1 # an index storing which box the user had clicked on
-		self.positioning_2d_window = None # will eventually be used to position boxed images in the z direction
+		self.zy_side_view_window = None # will eventually be used to position boxed images in the z direction
+		self.zx_side_view_window = None
 		
 		# initialize mouse  handlers first
 		self.__init_signal_handlers()
@@ -825,16 +728,28 @@ class EMTomoBoxerModule:
 		
 		self.signal_slot_handlers["box_manipulation"] = EMTBBoxManipulations(self,self.main_2d_window)
 	
-	def __init_positioning_2d_window(self):
+	def __init_side_view_window(self):
 		'''
 		Called internally to intiialize the 2D window used to center the box in the z direction
 		Also connects signals to their corresponding 
 		'''
-		self.positioning_2d_window = EMImage2DModule()
-		self.positioning_2d_window.setWindowTitle("Z positioning")
+		self.zy_side_view_window = EMImage2DModule()
+		self.zy_side_view_window.setWindowTitle("Y projection")
 		
-		self.signal_slot_handlers["position_manipulation"] = EMTBPositionBoxManipulations(self,self.positioning_2d_window)
+		handler =  EMTBZYViewBoxManipulations(self,self.zy_side_view_window)
+		self.signal_slot_handlers["position_manipulation"] = handler
+	
+	def __init_side_view_window_2(self):
+		'''
+		Called internally to intiialize the 2D window used to center the box in the z direction
+		Also connects signals to their corresponding 
+		'''
+		self.zx_side_view_window = EMImage2DModule()
+		self.zx_side_view_window.setWindowTitle("X projection")
 		
+		self.signal_slot_handlers["position_manipulation_2"] = EMTBZXViewBoxManipulations(self,self.zx_side_view_window)
+		
+	
 	def show_guis(self):
 		'''
 		Called in the context of an application - generally one creates and application, then
@@ -889,7 +804,7 @@ class EMTomoBoxerModule:
 		'''
 		return self.coord_list.detect_collision(coords,self.box_size)
 	
-	def detect_side_view_box_collision(self,coords):
+	def detect_side_view_zy_box_collision(self,coords):
 		if self.active_box == None: return
 		
 		active_box =  self.coord_list[self.active_box]
@@ -898,6 +813,17 @@ class EMTomoBoxerModule:
 		ty = by+self.box_size
 		if coords[1]<by or coords[1]>ty: return -1
 		else: return self.active_box
+	
+	def detect_side_view_zx_box_collision(self,coords):
+		if self.active_box == None: return
+		
+		active_box =  self.coord_list[self.active_box]
+		
+		bx = active_box[2]-self.box_size/2
+		tx = bx+self.box_size
+		if coords[0]<bx or coords[0]>tx: return -1
+		else: return self.active_box
+	
 	
 	def add_box(self,coord):
 		'''
@@ -932,7 +858,7 @@ class EMTomoBoxerModule:
 		self.main_2d_window.set_active(self.active_box,.9,.9,.1)
 		self.main_2d_window.shapechange = 1
 		self.main_2d_window.updateGL()
-		self.__refresh_positioner()
+		self._refresh_side_view()
 	
 	def __refresh_box_display(self):
 		'''
@@ -944,17 +870,24 @@ class EMTomoBoxerModule:
 		self.main_2d_window.set_active(self.active_box,.9,.9,.1)
 		self.main_2d_window.updateGL()
 		
-		self.__refresh_positioner()
+		self._refresh_side_view()
 		
-	def __refresh_positioner(self):
+	def _refresh_side_view(self):
+		'''
+		Called internally to do the bulk of the work associated with updating the side view display.
+		This involves recalculating bounding regions and regenerating directional sums, and making
+		sure the side view display is showing the box in the correct position.
+		If the tomogram's smallest dimension is not z, then some automatic dimension swapping occurs.
+		'''
 		if self.active_box != -1:
 			coord = self.coord_list[self.active_box]
 			image = TomoProjectionCache.get_image_directly(self.file_name)
 			a = EMData()
 			direction = image.get_attr("sum_direction")
 			half_box = self.box_size/2
-			
 			[file_name,idx] = ShrunkenTomogram.get_shrunken_resident_name(self.file_name)
+			c = None
+			two_displays = True
 			if file_name ==  None: 
 				file_name = self.file_name
 				idx = 0
@@ -963,10 +896,12 @@ class EMTomoBoxerModule:
 				nx = self.box_size
 				ny = self.box_size
 				region = Region(coord[0]-half_box,coord[1]-half_box,0,nx,ny,nz)
-				
 				a.read_image(file_name,idx,False,region)
 				b = a.process("misc.directional_sum",{"direction":"y"})
 				b.set_size(int(nx),int(nz),1)
+				if two_displays:
+					c = a.process("misc.directional_sum",{"direction":"x"})
+					c.set_size(int(ny),int(nz),1)
 			elif direction == "y":
 				ny = image.get_attr("sum_pixels")
 				nx = self.box_size
@@ -974,8 +909,13 @@ class EMTomoBoxerModule:
 				region = Region(coord[0]-half_box,0,coord[1]-half_box,nx,ny,nz)
 				a.read_image(file_name,idx,False,region)
 				b = a.process("misc.directional_sum",{"direction":"z"})
-				b.set_size(int(nx),int(ny),1)
+				b.set_size(int(nz),int(ny),1)
+				if two_displays:
+					c = a.process("misc.directional_sum",{"direction":"x"})
+					c.set_size(int(ny),int(nx),1)
+					c.process_inplace("xform.transpose")
 			elif direction == "x":
+				print "x direction not tested"
 				nx = image.get_attr("sum_pixels")
 				ny = self.box_size
 				nz = self.box_size
@@ -983,14 +923,25 @@ class EMTomoBoxerModule:
 				a.read_image(file_name,idx,False,region)
 				b = a.process("misc.directional_sum",{"direction":"z"})
 				b.set_size(int(nx),int(ny),1)
-			
-			if self.positioning_2d_window == None:
-				self.__init_positioning_2d_window()
-				self.positioning_2d_window.set_data(b)
-				get_application().show_specific(self.positioning_2d_window)
-				self.positioning_2d_window.optimally_resize()
+				if two_displays:
+					c = a.process("misc.directional_sum",{"direction":"y"})
+					c.set_size(int(nx),int(ny),1)
+					
+			if self.zy_side_view_window == None:
+				self.__init_side_view_window()
+				self.zy_side_view_window.set_data(b)
+				get_application().show_specific(self.zy_side_view_window)
+				self.zy_side_view_window.optimally_resize()
 			else:
-				self.positioning_2d_window.set_data(b)
+				self.zy_side_view_window.set_data(b)
+				
+			if self.zx_side_view_window == None:
+				self.__init_side_view_window_2()
+				self.zx_side_view_window.set_data(c)
+				get_application().show_specific(self.zx_side_view_window)
+				self.zx_side_view_window.optimally_resize()
+			else:
+				self.zx_side_view_window.set_data(c)
 			
 			
 			if coord[2] == -1:
@@ -1001,8 +952,11 @@ class EMTomoBoxerModule:
 			r = l + self.box_size
 			shape = EMShape(["rectpoint",0,0.9,0.4,0,l,self.box_size,r,2.0])
 			shapes = {0:shape}
-			self.positioning_2d_window.set_shapes(shapes,1)
-			self.positioning_2d_window.updateGL()
+			self.zy_side_view_window.set_shapes(shapes,1)
+			self.zy_side_view_window.updateGL()
+			
+			self.zx_side_view_window.set_shapes(shapes,1)
+			self.zx_side_view_window.updateGL()
 	
 	def write_stack(self,out_file_name, input_file_name,xout,yout,zout):
 		[file_name,idx] = ShrunkenTomogram.get_shrunken_resident_name(self.file_name)
@@ -1029,9 +983,12 @@ class EMTomoBoxerModule:
 		
 		progress = QtGui.QProgressDialog("Writing_files", "abort", 0, 2*len(self.coord_list),None)
 		progress.setWindowIcon(QtGui.QIcon(get_image_directory() +"eman.png"))
+		get_application().setOverrideCursor(Qt.BusyCursor)
 		progress.show()
-		tally = -1
-		for i,coord in enumerate(self.coord_list):	
+		get_application().processEvents()
+
+		tally = 0
+		for i,coord in enumerate(self.coord_list):
 			a = EMData()
 			if direction == "z":
 				region = Region(scale*coord[0]-xout/2,scale*coord[1]--yout/2,scale*coord[2]-zout/2,xout,yout,zout)
@@ -1044,6 +1001,7 @@ class EMTomoBoxerModule:
 				a.read_image(fname,idx,False,region)
 			else:
 				progress.close()
+				get_application().setOverrideCursor(Qt.ArrowCursor)
 				raise NotImplementedException
 			
 			if progress.wasCanceled():
@@ -1063,7 +1021,8 @@ class EMTomoBoxerModule:
 			tally += 1
 			progress.setValue(tally)
 			get_application().processEvents()
-			
+		
+		get_application().setOverrideCursor(Qt.ArrowCursor)
 		progress.close()
 			
 		
@@ -1224,10 +1183,6 @@ class TomoBoxerOutputForm(EMFormTask):
 					
 		return error_messages
 				
-			
-				
-			
-
 class EMTomoBoxerInspectorModule(EMQtWidgetModule):
 	'''
 	'''

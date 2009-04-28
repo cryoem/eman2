@@ -170,6 +170,7 @@ template <> Factory < Processor >::Factory()
 	force_add(&RadialAverageProcessor::NEW);
 	force_add(&RadialSubstractProcessor::NEW);
 	force_add(&FlipProcessor::NEW);
+	force_add(&TransposeProcessor::NEW);
 	force_add(&MirrorProcessor::NEW);
 
 	force_add(&AddNoiseProcessor::NEW);
@@ -1728,6 +1729,7 @@ void MeanShrinkProcessor::accrue_mean_one_p_five(EMData* to, const EMData * cons
 	to->scale_pixel((float)1.5);
 }
 
+// This would have to be moved into the header if it were required in other source files
 template<class LogicOp>
 EMData* BooleanShrinkProcessor::process(const EMData *const image, Dict& params)
 {
@@ -3631,6 +3633,38 @@ void RadialSubstractProcessor::process_inplace(EMData * image)
 }
 
 
+EMData* TransposeProcessor::process(const EMData* const image) {
+	if (image->get_ndim() != 2) throw UnexpectedBehaviorException("Transpose processor only works with 2D images");
+	if (image->is_complex()) throw UnexpectedBehaviorException("Transpose processor only works with real images");
+
+	EMData* ret = new EMData(image->get_ysize(),image->get_xsize(),1); // transpose dimensions
+
+	for(int j = 0; j< image->get_ysize();++j) {
+		for(int i = 0; i< image->get_xsize();++i) {
+			ret->set_value_at(j,i,image->get_value_at(i,j));
+		}
+	}
+
+	return ret;
+
+}
+
+void TransposeProcessor::process_inplace(EMData* image) {
+	if (image->get_ndim() != 2) throw UnexpectedBehaviorException("Transpose processor only works with 2D images");
+	if (image->is_complex()) throw UnexpectedBehaviorException("Transpose processor only works with real images");
+
+	float* data = (float*)malloc(image->get_ysize()*image->get_xsize()*sizeof(float));
+
+	int nx = image->get_ysize(); // note tranpose
+	for(int j = 0; j< image->get_ysize();++j) {
+		for(int i = 0; i< image->get_xsize();++i) {
+			data[i*nx+j] = image->get_value_at(i,j);
+		}
+	}
+
+	image->set_data(data,image->get_ysize(),image->get_xsize(),1);
+
+}
 
 void FlipProcessor::process_inplace(EMData * image)
 {

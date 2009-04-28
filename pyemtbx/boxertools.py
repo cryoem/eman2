@@ -3630,7 +3630,7 @@ class SwarmAutoBoxer(AutoBoxer):
 			self.__paint_excluded_box_areas(exclusion,boxable.get_boxes()) # add circles where particles already exist
 
 			boxes = self.__auto_box(correlation,boxable,exclusion) # do the actual autoboxing 
-			print "Auto boxed",len(boxes)
+#			print "Auto boxed",len(boxes)
 
 			# Store the results in the database - for that we need "Trim
 			trimboxes = []
@@ -3654,7 +3654,7 @@ class SwarmAutoBoxer(AutoBoxer):
 			return 1
 
 		else: 
-			print 'no auto boxing was necessary, up-2-date' # DEBUG
+#			print 'no auto boxing was necessary, up-2-date' # DEBUG
 			
 			return 0
 		
@@ -3889,11 +3889,10 @@ class SwarmAutoBoxer(AutoBoxer):
 					if profile[j] < self.opt_profile[j]: self.opt_profile[j] = profile[j]
 		
 		if self.dummy_box != None:
-			print "using dummy box"
-			box = self.dummy_box
-			
 #			if found == False:
-			self.opt_threshold = box.get_correlation_score()
+			self.opt_threshold = self.dummy_box.get_correlation_score()
+			# the profile stuff is disabled in the interface for now
+			
 #				found = True
 #			else:	
 #				if box.get_correlation_score() < self.opt_threshold: self.opt_threshold = box.get_correlation_score()

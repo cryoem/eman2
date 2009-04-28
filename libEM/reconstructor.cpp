@@ -321,7 +321,7 @@ void FourierReconstructor::load_interp_FRC_calculator()
 	ss << (int)params["mode"];
 	string mode;
 	ss >> mode;
-	
+
 	interp_FRC_calculator = Factory<InterpolatedFRC>::get(mode, init_parms);
 }
 
@@ -437,7 +437,7 @@ EMData* FourierReconstructor::preprocess_slice( const EMData* const slice,  cons
 
 	// Fourier transform the slice
 	return_slice->do_fft_inplace();
-	
+
 	return_slice->mult((float)sqrt(1.0f/(return_slice->get_ysize())*return_slice->get_xsize()));
 
 	// Shift the Fourier transform so that it's origin is in the center (bottom) of the image.
@@ -450,31 +450,31 @@ void FourierReconstructor::zero_memory()
 {
 	if (tmp_data != 0 ) tmp_data->to_zero();
 	if (image != 0 ) image->to_zero();
-	
+
 	EMData* start_model = params.set_default("start_model",(EMData*)0);
-	
+
 	if (start_model != 0) {
 		if (!start_model->is_complex()) {
 			start_model->do_fft_inplace();
 			start_model->process_inplace("xform.phaseorigin.tocenter");
 		}
-		
+
 		if (start_model->get_xsize() != nx || start_model->get_ysize() != ny || start_model->get_zsize() != nz ) {
 			throw ImageDimensionException("The dimensions of the start_model are incorrect");
 		}
-		
+
 		if (!start_model->is_shuffled()) {
-			start_model->process_inplace("xform.fourierorigin.tocenter"); 
+			start_model->process_inplace("xform.fourierorigin.tocenter");
 		}
-		
+
 		memcpy(image->get_data(),start_model->get_data(),nx*ny*nz*sizeof(float));
-		
+
 		float start_model_weight =  params.set_default("start_model_weight",1.0f);
-		
+
 		if (start_model_weight != 1.0) {
 			image->mult(start_model_weight);
 		}
-		
+
 		tmp_data->add(start_model_weight);
 	}
 }
@@ -758,7 +758,7 @@ int FourierReconstructor::determine_slice_agreement(const EMData* const input_sl
 			}
 			// FIXME: this could be replaced in favor of a class implementation with no switch statement, similar to the
 			// inserter in the Fourier reconstructor do_insert_slice_work method
-			
+
 			interp_FRC_calculator->continue_frc_calc(xx, yy, zz, dt, weight);
 		}
 	}
@@ -895,7 +895,7 @@ EMData *FourierReconstructor::finish()
 
 	// If the image was padded it should be the original size, as the client would expect
 	//  I blocked the rest, it is almost certainly incorrect  PAP 07/31/08
-	// No, it's not incorrect. You have the meaning of nx mixed up. DSAW 09/23/
+	// No, it's not incorrect. You are wrong. You have the meaning of nx mixed up. DSAW 09/23/cd
 	bool is_fftodd = (nx % 2 == 1);
 	if ( (nx-2*(!is_fftodd)) != output_x || ny != output_y || nz != output_z )
 	{

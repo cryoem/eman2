@@ -61,6 +61,9 @@ def main():
 
     parser.add_option("--meanshrink", metavar="n", type="int", action="append", 
                                 help="Shrinks the image by integer n using mean filter")
+    
+#    parser.add_option("--tomoshrink", metavar="n", type="int", action="append", 
+#                                help="Mean shrinks the image but is careful of memory - reads small pixel blocks from disk and slowly builds up the result")
 
     parser.add_option("--scale", metavar="n", type="float", action="append",
                                 help="Rescales the image by 'n', generally used with clip option.")
@@ -229,6 +232,12 @@ def main():
 
             elif option1 == "mult":
                 data.mult(options.mult)
+                
+#            elif option1 == "tomoshrink":
+#                from e2tomoboxer import ShrunkenTomogram
+#                st = ShrunkenTomogram(args[0])
+#                st.set_cache_to_db(False)
+#                tmp = st.get_image()
 
             elif option1 == "add":
                 data.add(options.add)

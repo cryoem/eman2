@@ -3927,6 +3927,49 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 
 	};
 
+	/** Transpose a 2D image
+	 * @author David Woolford
+	 * @date April 27th 2009
+	 */
+	class TransposeProcessor:public Processor
+	{
+	  public:
+
+		/** See Processor comments for more details
+		 * @exception UnexpectedBehaviorException if the image is not 2D
+		 * @exception UnexpectedBehaviorException if the image is complex
+		 */
+		virtual void process_inplace(EMData * image);
+
+		/** See Processor comments for more details
+		 * @exception UnexpectedBehaviorException if the image is not 2D
+		 * @exception UnexpectedBehaviorException if the image is complex
+		 */
+		virtual EMData* process(const EMData * const image);
+
+		virtual string get_name() const
+		{
+			return "xform.transpose";
+		}
+
+		static Processor *NEW()
+		{
+			return new TransposeProcessor();
+		}
+
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			return d;
+		}
+
+		virtual string get_desc() const
+		{
+			return "Get the transpose of an image. Works for 2D only";
+		}
+
+	};
+
 
 	/** flip an image around an axis
 	 * @param axis  'x', 'y', or 'z' axis. 'x' means horizonal flip; 'y' means vertical flip;

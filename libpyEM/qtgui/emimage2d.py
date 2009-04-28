@@ -665,7 +665,7 @@ class EMImage2DModule(EMGUIModule):
 			self.__write_display_settings_to_db()
 			
 		self.set_file_name(file_name,load_cache_settings=False)
-		self.setWindowTitle(self.file_name)
+		if self.file_name != "": self.setWindowTitle(self.file_name)
 		
 		data = incoming_data
 		

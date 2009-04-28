@@ -508,7 +508,7 @@ class EMQtWidgetModule(EMGUIModule):
 	
 	def setWindowTitle(self,title):
 		self.file_name = title
-		if self.gl_widget != None: self.gl_widget.setWindowTitle(self.file_name)
+		if self.qt_context_parent != None: self.qt_context_parent.setWindowTitle(self.file_name)
 	
 	def get_desktop_hint(self):
 		return self.qt_widget.get_desktop_hint()
