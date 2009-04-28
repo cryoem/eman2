@@ -51,11 +51,11 @@ def main():
     		print "Please run '" + progname + " -h' for detailed options"
 	# 2 is file to file copying
 	elif (2 == len(args)):
-		print "file to file"
+		#print "file to file"
 		cpy(args[0], args[1])
 	# more than 2, this means a wildcard is transformed to a list of filenams
 	else:
-		print "list to file"
+		#print "list to file"
 		#
 		# XXX: note that wildcards only work for filenames! wildcards in files
 		#    are processed by the shell and read in as a space-delimited list
