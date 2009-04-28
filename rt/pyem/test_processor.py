@@ -54,6 +54,37 @@ class TestProcessor(unittest.TestCase):
             except RuntimeError, runtime_err:
                 err_type = exception_type(runtime_err)
                 self.assertEqual(err_type, "NotExistingObjectException")
+                
+    def test_transpose(self):
+        """test xform.transpose processor ..................."""
+        
+        for y in [15,16]:
+        	for x in [15,16]:
+        		e = EMData(x,y,1)
+                f = e.process('xform.transpose')
+                f.process_inplace('xform.transpose')
+                self.assertEqual(f==e,True)
+                
+                g = e.copy()
+                g.process_inplace('xform.transpose')
+                g.process_inplace('xform.transpose')
+                self.assertEqual(g==e,True)
+                
+        if(IS_TEST_EXCEPTION):
+        	# Check to make we throw for 3D and complex images
+			e1 = EMData(2,2,2)
+			e2 = EMData(2,2)
+			e2.set_complex(True)
+			for e in [e1,e2]:
+				try:
+				    e.process_inplace('xform.transpose')
+				except RuntimeError, runtime_err:
+					self.assertEqual(exception_type(runtime_err), "UnexpectedBehaviorException")
+					
+				try:
+				    f =  e.process('xform.transpose')
+				except RuntimeError, runtime_err:
+					self.assertEqual(exception_type(runtime_err), "UnexpectedBehaviorException")
 
     def test_flattenbackground(self):
         """test filter.flattenbackground processor .........."""

@@ -3806,8 +3806,8 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	};
 
 	/**Multiply this image by a constant so it is scaled to the signal in 'noisyfile'
-	 * @param noisyfile
-	 * @param keepzero  exclude zero values
+	 *@param noisyfile
+	 *@param keepzero  exclude zero values
 	 *@param invert
 	 *@param mult
 	 *@param add dfgd
@@ -3930,6 +3930,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	/** Transpose a 2D image
 	 * @author David Woolford
 	 * @date April 27th 2009
+	 * @ingroup tested3c
 	 */
 	class TransposeProcessor:public Processor
 	{
