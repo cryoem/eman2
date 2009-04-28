@@ -8420,7 +8420,7 @@ def cml2_open_proj(stack, ir, ou, lf, hf):
 			for ci in xrange(nxe): line.set_value_at(ci, 0, sino.get_value_at(ci, li))
 
 			# u2
-			line = filt_tanh(line, ou / float(nx), ou / float(nx))
+			#line = filt_tanh(line, ou / float(nx), ou / float(nx))
 
 			# normalize this line
 			[mean_l, sigma_l, imin, imax] = Util.infomask(line, None, True)
@@ -8867,15 +8867,15 @@ def cml2_find_structure(Prj, Ori, Rot, outdir, maxit, first_zero, flag_weights):
 		period_disc.pop(0)
 		period_disc.append(disc)
 		if period_disc[0] == period_disc[2]:
-			periode_ct += 1
-			if periode_ct >= periode_th and min(period_disc) == disc:
+			period_ct += 1
+			if period_ct >= period_th and min(period_disc) == disc:
 				angfile = open(outdir + '/angles', 'a')
 				angfile.write('\nSTOP SOLUTION UNSTABLE\n')
 				angfile.write('Discrepancy periode: %s\n' % period_disc)
 				angfile.close()
 				break
 		else:
-			periode_ct = 0
+			period_ct = 0
 
 	return Ori, disc, ite
 
@@ -8887,7 +8887,7 @@ def cml2_main(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit, giv
 
 	# logfile
 	t_start = start_time()
-	print_begin_msg('find_struct')
+	print_begin_msg('find_struct new')
 
 	out_dir = out_dir.rstrip('/')
 	if os.path.exists(out_dir): os.system('rm -rf ' + out_dir)
