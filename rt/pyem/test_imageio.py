@@ -121,6 +121,19 @@ class TestEMIO(ImageI0Tester):
 		os.unlink(outfile)
 		testlib.unlink_data_header_files(outfile)
 
+class TestPifIO(ImageI0Tester):
+	"""PIF file IO test"""
+	def no_test_read_write_pif(self):
+		"""test read write pif .............................."""
+		self.do_test_read_write("pif")
+
+class TestFitsIO(ImageI0Tester):
+	"""fits file IO test"""
+	''' Cant write to FITs '''
+	def no_test_read_write_fits(self):
+		"""test read write fits .............................."""
+		self.do_test_read_write("fits")
+
 class TestIcosIO(ImageI0Tester):
 	"""ICOS file IO test"""
 	
@@ -1182,6 +1195,8 @@ def test_main():
 	suite9 = unittest.TestLoader().loadTestsFromTestCase(TestHdfIO)
 	suite10 = unittest.TestLoader().loadTestsFromTestCase(TestMrcIO)
 	suite11 = unittest.TestLoader().loadTestsFromTestCase(TestImagicIO)
+	suite12 = unittest.TestLoader().loadTestsFromTestCase(TestPifIO)
+#	suite13 = unittest.TestLoader().loadTestsFromTestCase(TestFitsIO)
 	unittest.TextTestRunner(verbosity=2).run(suite1)
 	unittest.TextTestRunner(verbosity=2).run(suite2)
 	unittest.TextTestRunner(verbosity=2).run(suite3)
@@ -1192,7 +1207,9 @@ def test_main():
 	unittest.TextTestRunner(verbosity=2).run(suite8)
 	unittest.TextTestRunner(verbosity=2).run(suite9)
 	unittest.TextTestRunner(verbosity=2).run(suite10)
-	unittest.TextTestRunner(verbosity=2).run(suite11) 
+	unittest.TextTestRunner(verbosity=2).run(suite11)
+	unittest.TextTestRunner(verbosity=2).run(suite12)
+#	unittest.TextTestRunner(verbosity=2).run(suite13) 
 	
 if __name__ == '__main__':
 	test_main()
