@@ -959,6 +959,16 @@ class EMTomoBoxerModule:
 			self.zx_side_view_window.updateGL()
 	
 	def write_stack(self,out_file_name, input_file_name,xout,yout,zout):
+		'''
+		Write the stack of images as identifed by the EMCoordList to a file on disk
+		Actually a hybrid function that also writes to multiple files if the out_file_name variable is a list
+		Scales coords automatically
+		@param out_file_name the name of the file that will be written. Can also be a list of names, of the same length as the number of coordinates
+		@param input_file_name the name of the file that particles will be extracted from. Names are used to automatically scale
+		@param xout the xdimension of the output images
+		@param yout the ydimension of the output images
+		@param zout the zdimension of the output images
+		'''
 		[file_name,idx] = ShrunkenTomogram.get_shrunken_resident_name(self.file_name)
 		if file_name ==  None: 
 			file_name = self.file_name
@@ -968,8 +978,6 @@ class EMTomoBoxerModule:
 		image = TomoProjectionCache.get_image_directly(self.file_name)
 		direction = image.get_attr("sum_direction")
 		if input_file_name == file_name: # then we do not need to scale
-			half_box = self.box_size/2
-			box = self.box_size
 			fname = file_name
 			scale = 1.0
 		else: # we need to scale
@@ -977,8 +985,6 @@ class EMTomoBoxerModule:
 			hdr = db.get_header(idx)
 			orig_file = hdr["shrunken_from"]
 			scale = hdr["shrunken_by"]
-			half_box = self.box_size/2*scale
-			box = self.box_size*scale
 			fname = orig_file
 		
 		progress = QtGui.QProgressDialog("Writing_files", "abort", 0, 2*len(self.coord_list),None)
@@ -988,10 +994,12 @@ class EMTomoBoxerModule:
 		get_application().processEvents()
 
 		tally = 0
+		print scale,fname,xout,yout,zout
 		for i,coord in enumerate(self.coord_list):
+			print coord,direction
 			a = EMData()
 			if direction == "z":
-				region = Region(scale*coord[0]-xout/2,scale*coord[1]--yout/2,scale*coord[2]-zout/2,xout,yout,zout)
+				region = Region(scale*coord[0]-xout/2,scale*coord[1]-yout/2,scale*coord[2]-zout/2,xout,yout,zout)
 				a.read_image(fname,idx,False,region)
 			elif direction == "y":
 				region = Region(scale*coord[0]-xout/2,scale*coord[2]-zout/2,scale*coord[1]-yout/2,xout,zout,yout)
@@ -1027,9 +1035,13 @@ class EMTomoBoxerModule:
 			
 		
 	def write_images(self,out_file_names, input_file_name,xout,yout,zout):
+		''' See write_stack documentation'''
 		self.write_stack(out_file_names, input_file_name,xout,yout,zout)
 	
 	def run_output_dialog(self):
+		'''
+		runs an output dialog
+		'''
 		if self.get_num_boxes() == 0: return
 		
 		[file_name,idx] = ShrunkenTomogram.get_shrunken_resident_name(self.file_name)
