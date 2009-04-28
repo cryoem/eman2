@@ -747,6 +747,17 @@ def get_supported_3d_stack_formats():
 	'''
 	return ["hdf","spi","pif","emim"]
 
+
+def get_supported_2d_stack_formats():
+	'''
+	@return a list of the IMAGE formats in EMAN2 that support 2D stacks
+	Return is formatted like ['hdf','spi']
+	Note using http://blake.bcm.tmc.edu/emanwiki/EMAN2ImageFormats as of April 23 2009
+	Note that "bdb:" is not returned though, represented an aberration. Currently the 
+	calling function must be aware of this
+	'''
+	return ["hdf","spi","pif","emim","img"]
+
 def get_supported_3d_formats():
 	'''
 	@return a list of the IMAGE formats in EMAN2 that 3D images

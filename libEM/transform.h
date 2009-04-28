@@ -65,10 +65,10 @@ namespace EMAN
 	 * T is a Translation matrix
 	 * S is a uniform scaling matrix
 	 * R is a rotation matrix
-	 * This mean you can call set_scale, set_trans, set_rotation in any order but still have the operations arranged
+	 * This means you can call set_scale, set_trans, set_rotation in any order but still have the operations arranged
 	 * internally in the order of MTSR. This is somewhat restrictive, for example in the context of how OpenGL handles
 	 * transformations, but in practice is nicely suited to the situations that arise in EMAN2 - namely, alignment and
-	 * projection characterization.
+	 * projection orientation characterization.
 	 *
 	 * Note that you can fool the Transform object into storing any matrix by using the constructors that take array arguments.
 	 * This can useful, for example, for shearing your image.
