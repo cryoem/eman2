@@ -172,9 +172,10 @@ int ImagicIO::read_header(Dict & dict, int image_index, const Region * area, boo
 	check_read_access(image_index);
 
 	int nimg = 1;
-
-	if (is_3d) {
+	
+	if (is_3d || imagich.count>1) {
 		nimg = imagich.count + 1;
+		
 		if (nimg <= 1) {
 			LOGWARN("this is not a 3D IMAGIC. Read as a 2D");
 		}
@@ -197,7 +198,7 @@ int ImagicIO::read_header(Dict & dict, int image_index, const Region * area, boo
     
 	int xlen = 0, ylen = 0, zlen = 0;
 	EMUtil::get_region_dims(area, hed.nx, &xlen, hed.ny, &ylen, nimg, &zlen);
-
+	
 	dict["nx"] = xlen;
 	dict["ny"] = ylen;
 	dict["nz"] = zlen;
