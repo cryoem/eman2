@@ -331,6 +331,10 @@ int EmIO::get_machine_type()
 	m = EM_MAC;
 #elif defined macintosh
 	m = EM_MAC;
+#elif defined __darwin__
+	m = EM_MAC;
+#elif defined __APPLE__
+	m = EM_MAC;
 #else
 	m = EM_UNKNOWN_MACHINE;
 #endif
