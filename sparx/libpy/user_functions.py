@@ -149,9 +149,6 @@ def ref_ali3dm( refdata ):
 	fscc   = refdata[2]
 	total_iter = refdata[3]
 	varf   = refdata[4]
-
-
-
 	'''
 	'''
 	print 'filter every volume at (0.4, 0.1)'

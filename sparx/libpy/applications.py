@@ -2133,6 +2133,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	print_msg("Translational step          : %s\n"%(step))
 	print_msg("Center type                 : %i\n"%(center))
 	print_msg("Maximum iteration           : %i\n"%(max_iter))
+	print_msg("Use Fourier variance        : %s\n"%(Fourvar))
 	print_msg("Data with CTF               : %s\n"%(CTF))
 	print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
 	if auto_stop:  print_msg("Stop iteration with         : criterion\n")
@@ -2273,9 +2274,10 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type
 	from statistics   import fsc_mask, sum_oe, add_ave_varf_MPI
 	from alignment    import Numrinit, ringwe, ali2d_single_iter
-	from filter       import filt_table, filt_ctf
+	from filter       import filt_table, filt_ctf, filt_tophatb
 	from numpy        import reshape, shape
 	from fundamentals import fshift, fft, rot_avg_table
+	from utilities    import write_text_file
 	from utilities    import print_msg, print_begin_msg, print_end_msg
 	import os
 	import sys
@@ -2339,6 +2341,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		print_msg("Translational step          : %s\n"%(step))
 		print_msg("Center type                 : %i\n"%(center))
 		print_msg("Maximum iteration           : %i\n"%(max_iter))
+		print_msg("Use Fourier variance        : %s\n"%(Fourvar))
 		print_msg("Data with CTF               : %s\n"%(CTF))
 		print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
 		if auto_stop:
@@ -2419,7 +2422,6 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		if myid == main_node: print_msg(msg)
 		for Iter in xrange(max_iter):
 			total_iter += 1
-			
 			if  Fourvar:  
 				ave1, ave2, vav = add_ave_varf_MPI(data, mask, "a", CTF)
 				reduce_EMData_to_root(ave1, myid, main_node)
@@ -2429,45 +2431,44 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				ave1, ave2 = sum_oe(data, "a", CTF, EMData())  # pass empty object to prevent calculation of ctf^2
 				reduce_EMData_to_root(ave1, myid, main_node)
 				reduce_EMData_to_root(ave2, myid, main_node)
-			
 
 			if myid == main_node:
-				
+
 				if  Fourvar:
+					sumsq = Util.addn_img(ave1, ave2)
 					if CTF:
-						sumsq = Util.addn_img(ave1, ave2)
-						tavg = Util.divn_img(sumsq, ctf_2_sum)
-						drop_image(fft(tavg), os.path.join(outdir, "aqc_%03d.hdf"%(total_iter)))
+						tavg  = fft(Util.divn_img(sumsq, ctf_2_sum))
+						drop_image(tavg, os.path.join(outdir, "aqc_%03d.hdf"%(total_iter)))
 						Util.mul_img(sumsq, sumsq.conjg())
 						Util.div_img(sumsq, ctf_2_sum)
-	 					Util.sub_img(vav, sumsq)
-						vav_r	= Util.pack_complex_to_real(vav)
-						drop_image(vav_r, os.path.join(outdir, "varf_%03d.hdf"%(total_iter)))
-						sumsq_r = Util.pack_complex_to_real(sumsq)
-						rvar	= rot_avg_table(vav_r)
-						rsumsq  = rot_avg_table(sumsq_r)
-						frsc = []
-						freq = []
-						for i in xrange(len(rvar)):
-							qt = max(0.0, rsumsq[i]/rvar[i] - 1.0)
-							frsc.append(qt/(qt+1.0))
-							freq.append(float(i)/(len(rvar)-1)*0.5)
-						frsc = [freq, frsc]
-						del freq
-						write_text_file(frsc, os.path.join(outdir, "resolution%03d"%(total_iter)) )
 					else:
-						sumsq = Util.addn_img(ave1, ave2)
-						tavg = sumsq/nima
+						tavg  = fft(sumsq)/nima
+						drop_image(tavg, os.path.join(outdir, "aqc_%03d.hdf"%(total_iter)))
 						Util.mul_img(sumsq, sumsq.conjg())
-						Util.mul_scalar(sumsq, 1.0/float(n))
-						Util.sub_img(vav, sumsq)
-					Util.mul_scalar(vav, 1.0/float(n-1))
-					st = Util.infomask(var, None, True)
+						Util.mul_scalar(sumsq, 1.0/float(nima))
+					Util.sub_img(vav, sumsq)
+					Util.mul_scalar(vav, 1.0/float(nima-1))
+					st = Util.infomask(vav, None, True)
 					if st[2] < 0.0:  ERROR("Negative variance!", "ali2d_c_MPI", 1)
+
+					vav_r	= Util.pack_complex_to_real(vav)
+					drop_image(vav_r, os.path.join(outdir, "varf_%03d.hdf"%(total_iter)))
+					sumsq_r = Util.pack_complex_to_real(sumsq)
+					rvar	= rot_avg_table(vav_r)
+					rsumsq  = rot_avg_table(sumsq_r)
+					frsc = []
+					freq = []
+					for i in xrange(len(rvar)):
+						qt = max(0.0, rsumsq[i]/rvar[i] - 1.0)
+						frsc.append(qt/(qt+1.0))
+						freq.append(float(i)/(len(rvar)-1)*0.5)
+					frsc = [freq, frsc]
+					del freq
+					write_text_file(frsc, os.path.join(outdir, "resolution%03d"%(total_iter)) )
 				else:
 					if CTF:  tavg = fft(Util.divn_img(fft(Util.addn_img(ave1, ave2)), ctf_2_sum))
 					else:	 tavg = (ave1+ave2)/nima
-					drop_image(avg, os.path.join(outdir, "aqc_%03d.hdf"%(total_iter)))
+					drop_image(tavg, os.path.join(outdir, "aqc_%03d.hdf"%(total_iter)))
 					frsc = fsc_mask(ave1, ave2, mask, 1.0, os.path.join(outdir, "resolution%03d"%(total_iter)))
 
 				ref_data[2] = tavg
@@ -2515,16 +2516,14 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			if auto_stop:
 				again = mpi_bcast(again, 1, MPI_INT, main_node, MPI_COMM_WORLD)
 				if not again: break
-			if total_iter != max_iter*len(xrng): 
-				sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, need_CTF_again)
+			if total_iter != max_iter*len(xrng):
+				sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF)
 				sx_sum = mpi_reduce(sx_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 				sy_sum = mpi_reduce(sy_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 
 	if myid == main_node:  drop_image(tavg, os.path.join(outdir, "aqfinal.hdf"))
 	# write out headers  and STOP, under MPI writing has to be done sequentially
 	mpi_barrier(MPI_COMM_WORLD)
-	if CTF and ctf_applied == 0:
-		for im in xrange(len(data)):  data[im].set_attr('ctf_applied', 0)
 	par_str = ["xform.align2d", "ID"]
 	if myid == main_node:
 		from utilities import file_type

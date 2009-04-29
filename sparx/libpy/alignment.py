@@ -36,7 +36,7 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode
 		single iteration of 2D alignment using ormq
 		if CTF = True, apply CTF to data (not to reference!)
 	"""
-	from utilities import model_circle, combine_params2, inverse_transform2, get_params2D, set_params2D
+	from utilities import combine_params2, inverse_transform2, get_params2D, set_params2D
 	from alignment import Applyws, ormq
 
 	if CTF:
@@ -57,7 +57,7 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode
 			ima = filt_ctf(data[im], ctf_params, True)
 		else:
 			ima = data[im]
-		alpha, sx, sy, mirror, dummy = get_params2D(ima, ali_params)
+		alpha, sx, sy, mirror, dummy = get_params2D(data[im], ali_params)
 		alpha, sx, sy, mirror        = combine_params2(alpha, sx, sy, mirror, 0.0, -cs[0], -cs[1], 0)
 		alphai, sxi, syi, scalei     = inverse_transform2(alpha, sx, sy, 1.0)
 
@@ -86,7 +86,7 @@ def ali2d_random_ccf(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode,
 		single iteration of 2D alignment using ormq
 		if CTF = True, apply CTF to data (not to reference!)
 	"""
-	from utilities import model_circle, combine_params2, inverse_transform2, get_params2D, set_params2D
+	from utilities import combine_params2, inverse_transform2, get_params2D, set_params2D
 	from alignment import Applyws, ormq
 
 	if CTF:
