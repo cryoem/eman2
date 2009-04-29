@@ -1,4 +1,3 @@
-
 IF(WIN32)	
     LINK_LIBRARIES(${BOOST_LIBRARY} ${PYTHON_LIBRARY} EM2 EMext)
 ELSE(WIN32)
@@ -41,14 +40,21 @@ ENDIF(CMAKE_SYSTEM MATCHES "IRIX.*")
 
 MACRO(ADD_PYSTE_LIB_WITH_SRC libname srcfile)
 	IF(WIN32)
-		ADD_LIBRARY(lib${libname} SHARED lib${libname}.cpp ${srcfile})
+		ADD_LIBRARY(lib${libname} SHARED lib${libname}.cpp ${srcfile})		
 		#INSTALL_TARGETS(/lib RUNTIME_DIRECTORY /lib lib${libname})
 		INSTALL(FILES ${LIBRARY_OUTPUT_PATH}/release/lib${libname}.dll
 				DESTINATION	lib
 				RENAME lib${libname}.pyd)
 	ELSE(WIN32)
-		ADD_LIBRARY(${libname} SHARED lib${libname}.cpp ${srcfile})
-		INSTALL_TARGETS(/lib ${libname})
+		IF(APPLE)
+			ADD_LIBRARY(${libname} SHARED lib${libname}.cpp ${srcfile})
+			INSTALL(FILES ${LIBRARY_OUTPUT_PATH}/lib${libname}.dylib
+				DESTINATION	lib
+				RENAME lib${libname}.so)	
+		ELSE(APPLE)
+			ADD_LIBRARY(${libname} SHARED lib${libname}.cpp ${srcfile})
+			INSTALL_TARGETS(/lib ${libname})
+		ENDIF(APPLE)
 	ENDIF(WIN32)
 ENDMACRO(ADD_PYSTE_LIB_WITH_SRC)
 
@@ -84,3 +90,4 @@ INSTALL_FILES(/lib FILES qtgui/emplot2d.py qtgui/emimage.py qtgui/emimage2d.py q
 INSTALL_FILES(/lib FILES qtgui/emimage3diso.py qtgui/emglobjects.py qtgui/emimage3dslice.py qtgui/emimage3dvol.py qtgui/emimage3dsym.py qtgui/emglplot.py qtgui/emimagemxrotor.py qtgui/emfloatingwidgets.py qtgui/emimagerotor.py qtgui/emrotor.py qtgui/emapplication.py qtgui/emanimationutil.py qtgui/emborderdecoration.py qtgui/embrowse.py  qtgui/emselector.py qtgui/emdatastorage.py qtgui/emform.py qtgui/emsprworkflow.py qtgui/emlights.py qtgui/emplot3d.py qtgui/emsave.py)
 INSTALL_FILES(/lib FILES wxgui/wxemimage.py wxgui/wximagecontrol.py wxgui/wxValSlider.py)
 INSTALL_PROGRAMS(/bin qtgui/emselector.py)
+
