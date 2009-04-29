@@ -3611,6 +3611,9 @@ void EMData::uncut_slice(EMData * const map, const Transform& transform) const
 	int map_ny = map->get_ysize();
 	int map_nz = map->get_zsize();
 	int map_nxy = map_nx * map_ny;
+	float map_nz_round_limit = (float) map_nz-0.5;
+	float map_ny_round_limit = (float) map_ny-0.5;
+	float map_nx_round_limit = (float) map_nx-0.5;
 /*
 	Vec3f posttrans = ort->get_posttrans();
 	Vec3f pretrans = ort->get_pretrans();*/
@@ -3635,7 +3638,8 @@ void EMData::uncut_slice(EMData * const map, const Transform& transform) const
 			float yy = soln[1]+map_ny/2;
 			float zz = soln[2]+map_nz/2;
 			
-			if (xx < 0 || yy < 0 || zz < 0 || xx >= map_nx || yy >= map_ny || zz >= map_nz) continue;
+			// These 0.5 offsets are here because the round function rounds to the nearest whole number. 
+			if (xx < -0.5 || yy < -0.5 || zz < -0.5 || xx >= map_nx_round_limit || yy >= map_ny_round_limit || zz >= map_nz_round_limit) continue;
 			
 			int k = Util::round(xx) + Util::round(yy) * map_nx + Util::round(zz) * map_nxy;
 			int l = (x+nx/2) + (y+ny/2) * nx;
