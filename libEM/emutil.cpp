@@ -737,8 +737,8 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 
 	int dx0 = 0; // data x0
 	int dy0 = 0; // data y0
-	int dz0 = nz > 1 ? 0 : image_index; // data z0
-
+	int dz0 = 0; // data z0
+	
 	int fx0 = 0; // file x0
 	int fy0 = 0; // file y0
 	int fz0 = nz > 1 ? 0 : image_index; // file z0
@@ -748,7 +748,7 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 	int ylen = 0;
 	int zlen = 0;
 	get_region_dims(area, nx, &xlen, ny, &ylen, nz, &zlen);
-
+	
 	if (area) { // Accommodate for all boundary overlaps of the region
 
 		Vec3i origin = area->get_origin();
@@ -810,7 +810,7 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 	float nxlendata[1];
 	int floatsize = (int) sizeof(float);
 	nxlendata[0] = (float)(nx * floatsize);
-
+	
 	for (int k = dz0; k < (dz0+zlen); k++) {
 		if (y_pre_gap > 0) {
 			portable_fseek(file, y_pre_gap, SEEK_CUR);
@@ -834,7 +834,7 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 
 			int jj = j;
 			if (need_flip) {
-				jj = ylen - 1 - j;
+				jj = (dy0+ylen) - 1 - j;
 			}
 
 			if (rw_mode == ImageIO::READ_ONLY) {

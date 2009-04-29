@@ -43,7 +43,7 @@ from OpenGL import GL,GLU,GLUT
 from emapplication import EMStandAloneApplication, EMProgressDialogModule
 from emselector import EMBrowserModule
 import os
-
+import EMAN2db
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -60,7 +60,8 @@ def main():
 	parser.add_option("--classes",type="string",help="<rawptcl>,<classmx> Show particles associated class-averages")
 	parser.add_option("--plot",action="store_true",default=False,help="Data file(s) should be plotted rather than displayed in 2-D")
 	parser.add_option("--plot3",action="store_true",default=False,help="Data file(s) should be plotted rather than displayed in 3-D")
-	
+	parser.add_option("--fullrange",action="store_true",default=False,help="A specialized flag that disables auto contrast for the display of particles stacks and 2D images only.")
+
 	(options, args) = parser.parse_args()
 	
 
@@ -72,6 +73,11 @@ def main():
 	#QtGui.QApplication(sys.argv)
 	win=[]
 
+	if options.fullrange:
+		fullrangeparms = set_full_range()
+		
+		
+		
 	if len(args)<1 :
 		dialog = EMBrowserModule()
 		QtCore.QObject.connect(dialog,QtCore.SIGNAL("ok"),on_browser_done)
@@ -103,10 +109,58 @@ def main():
 				print "file doesn't exist:",i
 				sys.exit(1)
 			display_file(i,app)
+			
+	if options.fullrange:
+		revert_full_range(fullrangeparms)
 	
 	app.exec_()
 
 	E2end(logid)
+	
+def set_full_range():
+	'''
+	Turns all auto contrasting flags to False etc.
+	This is just a convenience function for "unusual" users who do no want to use e2preferences.
+	This makes sense if the user would like auto contrasting to be on or off in a regular basis (i.e. at one moment they
+	want it off, and at the next they want it on, on a regular basis).
+	Note if auto contrast is on that it is not difficult to manipulate the contrast settings manually anyway.
+	Regular users are advised to just use e2preferences.
+	@return the current settings - so the calling function can call revert_full_range
+	'''
+	current_settings = {}
+	global HOMEDB
+	HOMEDB=EMAN2db.EMAN2DB.open_db()
+	HOMEDB.open_dict("display_preferences")
+	db = HOMEDB.display_preferences
+	auto_contrast = db.get("display_2d_auto_contrast",dfl=True)
+	db["display_2d_auto_contrast"] = False
+	current_settings["display_2d_auto_contrast"] = auto_contrast
+	
+	stack_auto_contrast = db.get("display_stack_auto_contrast",dfl=True)
+	stack_np_for_auto = db.get("display_stack_np_for_auto",dfl=5)
+	
+	db["display_stack_auto_contrast"] = False
+	current_settings["display_stack_auto_contrast"] = stack_auto_contrast
+	
+	db["display_stack_np_for_auto"] = -1
+	current_settings["display_stack_np_for_auto"] = stack_np_for_auto
+	
+	return current_settings
+	
+def revert_full_range(d):
+	'''
+	Reverts the call to set_full_range.
+	@param d - that which was returned by set_full_range
+	'''
+	global HOMEDB
+	HOMEDB=EMAN2db.EMAN2DB.open_db()
+	HOMEDB.open_dict("display_preferences")
+	db = HOMEDB.display_preferences
+	
+	for key,value in d.items():
+		db[key] = d[key]
+		
+	
 	
 def on_browser_done(string_list):
 	if len(string_list) != 0:

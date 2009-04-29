@@ -750,21 +750,21 @@ class TestImagicIO(ImageI0Tester):
 		infile = "test_append_image.hed"
 		TestUtil.make_image_file(infile, IMAGE_IMAGIC, EM_FLOAT, 16, 16, 10)
 			   
-#		e = EMData()
-#		all_imgs = e.read_images(infile)
+		e = EMData()
+		all_imgs = e.read_images(infile)
 
-#		outfile1 = "test_append_image_out_" + str(os.getpid()) + ".hed"
-#		
-#		for img in all_imgs:
-#			img.append_image(outfile1)
-#		
-#		(infilehed, infileimg) = testlib.get_imagic_filename_pair(infile)
-#		(outfilehed, outfileimg) = testlib.get_imagic_filename_pair(outfile1)
-#
-#		os.unlink(infilehed)
-#		os.unlink(infileimg)
-#		os.unlink(outfilehed)
-#		os.unlink(outfileimg)
+		outfile1 = "test_append_image_out_" + str(os.getpid()) + ".hed"
+		
+		for img in all_imgs:
+			img.append_image(outfile1)
+		
+		(infilehed, infileimg) = testlib.get_imagic_filename_pair(infile)
+		(outfilehed, outfileimg) = testlib.get_imagic_filename_pair(outfile1)
+
+		os.unlink(infilehed)
+		os.unlink(infileimg)
+		os.unlink(outfilehed)
+		os.unlink(outfileimg)
 
 	def test_append_to_newfile(self):
 		"""test append image to new file ...................."""
@@ -1120,7 +1120,7 @@ class TestImageIO(unittest.TestCase):
 		
 		
 	def test_region_equiv_to_clip(self):
-		"""test read region identical to clip ..............."""
+		"""test read region is identical to get clip ........"""
 		
 		# note support for going beyond regions is tested, which was the main purpose of this function
 		
@@ -1132,10 +1132,9 @@ class TestImageIO(unittest.TestCase):
 		
 		fmts = get_supported_3d_formats()
 		fmts =  ["spi","mrc","icos","em"]
-		unsupported = ["hdf","img","xplor","pif","emim","vtk"]
+		unsupported = ["hdf","img","xplor","pif","emim","vtk"] # so many that we can't use :(
 		for fmt in fmts:
 			name = "testregionimage."+fmt
-			
 			e.write_image(name)
 			try:
 				for i in range(-1,2):
@@ -1160,8 +1159,7 @@ class TestImageIO(unittest.TestCase):
 		fmts = ["mrc","spi","em"]
 		
 		for fmt in fmts:
-			name = "testimage."+fmt
-			
+			name = "testregionimage."+fmt
 			e.write_image(name)
 			try:
 				

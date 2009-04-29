@@ -457,7 +457,6 @@ int ImagicIO::read_data(float *data, int image_index, const Region * area, bool 
 	unsigned short *sdata = (unsigned short *) data;
 	unsigned char *cdata = (unsigned char *) data;
 	size_t mode_size = get_datatype_size(datatype);
-
 	EMUtil::process_region_io(cdata, img_file, READ_ONLY, image_index, mode_size,
 							  imagich.nx, imagich.ny, nimg, area, true);
 
