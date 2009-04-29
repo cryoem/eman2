@@ -685,7 +685,6 @@ void EMUtil::get_region_dims(const Region * area, int nx, int *area_x,
 		*area_x = size[0];
 		*area_y = size[1];
 
-
 		if (area_z) {
 			if (area->get_ndim() > 2 && nz > 1) {
 				*area_z = size[2];
@@ -736,40 +735,57 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 
 	unsigned char * cdata = (unsigned char *)vdata;
 
-	int x0 = 0;
-	int y0 = 0;
-	int z0 = nz > 1 ? 0 : image_index;
+	int dx0 = 0; // data x0
+	int dy0 = 0; // data y0
+	int dz0 = nz > 1 ? 0 : image_index; // data z0
+
+	int fx0 = 0; // file x0
+	int fy0 = 0; // file y0
+	int fz0 = nz > 1 ? 0 : image_index; // file z0
+
 
 	int xlen = 0;
 	int ylen = 0;
 	int zlen = 0;
 	get_region_dims(area, nx, &xlen, ny, &ylen, nz, &zlen);
 
-	if (area) {
+	if (area) { // Accommodate for all boundary overlaps, etc
+
 		Vec3i origin = area->get_origin();
-		x0 = origin[0];
-		y0 = origin[1];
+		fx0 = origin[0]; dx0 = origin[0];
+		fy0 = origin[1]; dy0 = origin[1];
 		if (nz > 1 && area->get_ndim() > 2) {
-			z0 = origin[2];
+			fz0 = origin[2]; dz0 = origin[2];
 		}
 
-		if (x0 < 0) {
-			x0 = 0;
-			xlen += origin[0];
+		if (fx0 < 0) {
+			dx0 *= -1;
+			xlen = xlen + fx0; // because there are less reads
+			fx0 = 0;
+		}else {
+			dx0 = 0;
+			//fx0 *= -1;
 		}
-		if (y0 < 0) {
-			y0 = 0;
-			ylen += origin[1];
+		if (fy0 < 0) {
+			dy0 *= -1;
+			ylen = ylen + fy0; // because there are less reads
+			fy0 = 0;
+		}else {
+			dy0 = 0;
+			//fy0 *= -1;
 		}
-		if (z0 < 0) {
-			z0 = 0;
-			zlen += origin[2];
+		if (fz0 < 0) {
+			dz0 *= -1;
+			zlen = zlen + fz0; // because there are less reads
+			fz0 = 0;
+		}else {
+			dz0 = 0;
+			//fz0 *= -1;
 		}
 
-		if ((x0 + xlen)> nx) xlen = nx-x0;
-		if ((y0 + ylen)> ny) ylen = ny-y0;
-		if ((z0 + zlen)> nz) zlen = nz-z0;
-
+		if ((fx0 + xlen)> nx) xlen = nx-fx0;
+		if ((fy0 + ylen)> ny) ylen = ny-fy0;
+		if ((fz0 + zlen)> nz) zlen = nz-fz0;
 		if ( xlen <= 0 || ylen <= 0 || zlen <= 0 ) return; // This is fine the region was entirely outside the image
 	}
 
@@ -783,26 +799,26 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 	size_t area_row_size = xlen * mode_size;
 	size_t memory_row_size = size[0] * mode_size;
 
-	size_t x_pre_gap = x0 * mode_size;
-	size_t x_post_gap = (nx - x0 - xlen) * mode_size;
+	size_t x_pre_gap = fx0 * mode_size;
+	size_t x_post_gap = (nx - fx0 - xlen) * mode_size;
 
-	size_t y_pre_gap = y0 * img_row_size;
-	size_t y_post_gap = (ny - y0 - ylen) * img_row_size;
+	size_t y_pre_gap = fy0 * img_row_size;
+	size_t y_post_gap = (ny - fy0 - ylen) * img_row_size;
 
-	portable_fseek(file, img_row_size * ny * z0, SEEK_CUR);
+	portable_fseek(file, img_row_size * ny * fz0, SEEK_CUR);
 
 	float nxlendata[1];
 	int floatsize = (int) sizeof(float);
 	nxlendata[0] = (float)(nx * floatsize);
 
-	for (int k = 0; k < zlen; k++) {
+	for (int k = dz0; k < (dz0+zlen); k++) {
 		if (y_pre_gap > 0) {
 			portable_fseek(file, y_pre_gap, SEEK_CUR);
 		}
 		//long k2 = k * area_sec_size;
 		long k2 = k*memory_sec_size;
 
-		for (int j = 0; j < ylen; j++) {
+		for (int j = dy0; j < (dy0+ylen); j++) {
 			if (pre_row > 0) {
 				if (imgtype == IMAGE_ICOS && rw_mode != ImageIO::READ_ONLY && !area) {
 					fwrite(nxlendata, floatsize, 1, file);
@@ -822,7 +838,7 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 			}
 
 			if (rw_mode == ImageIO::READ_ONLY) {
-				if (fread(&cdata[k2 + jj * memory_row_size],
+				if (fread(&cdata[k2 + jj * memory_row_size+dx0*mode_size],
 						  area_row_size, 1, file) != 1) {
 					throw ImageReadException("", "incomplete data read");
 				}

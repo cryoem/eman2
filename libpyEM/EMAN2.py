@@ -744,6 +744,7 @@ def get_supported_3d_stack_formats():
 	Note using http://blake.bcm.tmc.edu/emanwiki/EMAN2ImageFormats as of April 23 2009
 	Note that "bdb:" is not returned though, represented an aberration. Currently the 
 	calling function must be aware of this
+	@Note - it would be nice if this was automatic, not hard coded.
 	'''
 	return ["hdf","spi","pif","emim"]
 
@@ -755,6 +756,7 @@ def get_supported_2d_stack_formats():
 	Note using http://blake.bcm.tmc.edu/emanwiki/EMAN2ImageFormats as of April 23 2009
 	Note that "bdb:" is not returned though, represented an aberration. Currently the 
 	calling function must be aware of this
+	@Note - it would be nice if this was automatic, not hard coded.
 	'''
 	return ["hdf","spi","pif","emim","img"]
 
@@ -765,8 +767,9 @@ def get_supported_3d_formats():
 	Note using http://blake.bcm.tmc.edu/emanwiki/EMAN2ImageFormats as of April 23 2009
 	Note that "bdb:" is not returned though, represented an aberration. Currently the 
 	calling function must be aware of this
+	@Note - it would be nice if this was automatic, not hard coded.
 	'''
-	return ["hdf","spi","pif","emim","img","vtk","icos","xplor","em","fits"]
+	return ["hdf","spi","mrc","pif","emim","img","vtk","icos","xplor","em","fits"]
 
 def remove_file( file_name, img_couples_too=True ):
 	'''

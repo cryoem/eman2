@@ -51,7 +51,7 @@ class ImageI0Tester(unittest.TestCase):
 	threed_stack_formats = get_supported_3d_stack_formats()
 	def do_test_read_write(self,ext_type):
 		"""
-		Test read write of an image type. Automatically tests read/write fidelity
+		test write-read of an image type. Automatically tests read/write fidelity
 		in 2D, and also 3D, 2D stack, and 3D stack formats (where applicable)
 		"""
 		filename = 'testimage.'+ext_type
@@ -103,7 +103,7 @@ class TestEMIO(ImageI0Tester):
 		os.unlink(filename)
 		
 	def test_read_write_em(self):
-		"""test read write em  .............................."""
+		"""test write-read em  .............................."""
 		self.do_test_read_write("em")
 		
 	def test_emio_write(self):
@@ -124,14 +124,14 @@ class TestEMIO(ImageI0Tester):
 class TestPifIO(ImageI0Tester):
 	"""PIF file IO test"""
 	def no_test_read_write_pif(self):
-		"""test read write pif .............................."""
+		"""test write-read pif .............................."""
 		self.do_test_read_write("pif")
 
 class TestFitsIO(ImageI0Tester):
 	"""fits file IO test"""
 	''' Cant write to FITs '''
 	def no_test_read_write_fits(self):
-		"""test read write fits .............................."""
+		"""test write-read fits .............................."""
 		self.do_test_read_write("fits")
 
 class TestIcosIO(ImageI0Tester):
@@ -147,7 +147,7 @@ class TestIcosIO(ImageI0Tester):
 		os.unlink(filename)
 		
 	def test_read_write_icos(self):
-		"""test read write icos.............................."""
+		"""test write-read icos.............................."""
 		self.do_test_read_write("icos")
 
 class TestPNGIO(ImageI0Tester):
@@ -163,7 +163,7 @@ class TestPNGIO(ImageI0Tester):
 		os.unlink(filename)
 		
 	def no_test_read_write_png(self):
-		"""test read write png .............................."""
+		"""test write-read png .............................."""
 		self.do_test_read_write("png")  
 		
 class TestVTKIO(ImageI0Tester):
@@ -179,7 +179,7 @@ class TestVTKIO(ImageI0Tester):
 		os.unlink(filename)
 	
 	def test_read_write_vtk(self):
-		"""test read write vtk .............................."""
+		"""test write-read vtk .............................."""
 		self.do_test_read_write("vtk")
 
 class TestXPLORIO(ImageI0Tester):
@@ -195,7 +195,7 @@ class TestXPLORIO(ImageI0Tester):
 		os.unlink(filename)
 
 	def no_test_read_write_xplor(self):
-		"""test read write xplor  ..........................."""
+		"""test write-read xplor  ..........................."""
 		self.do_test_read_write("xplor")
 
 class TestPGMIO(unittest.TestCase):
@@ -357,7 +357,7 @@ class TestSpiderIO(ImageI0Tester):
 		testlib.safe_unlink(filename2+'spi')
 		
 	def test_read_write_spi(self):
-		"""test read write spi .............................."""
+		"""test write-read spi .............................."""
 		self.do_test_read_write("spi")
 
 
@@ -545,7 +545,7 @@ class TestHdfIO(ImageI0Tester):
 		os.unlink(testimage)
 
 	def test_read_write_hdf(self):
-		"""test read write hdf .............................."""
+		"""test write-read hdf .............................."""
 		self.do_test_read_write("hdf")
 
 
@@ -722,7 +722,7 @@ class TestMrcIO(ImageI0Tester):
 		testlib.safe_unlink(filename2+'mrc')
 
 	def test_read_write_mrc(self):
-		"""test read write mrc .............................."""
+		"""test write-read mrc .............................."""
 		self.do_test_read_write("mrc")
 
 
@@ -750,21 +750,21 @@ class TestImagicIO(ImageI0Tester):
 		infile = "test_append_image.hed"
 		TestUtil.make_image_file(infile, IMAGE_IMAGIC, EM_FLOAT, 16, 16, 10)
 			   
-		e = EMData()
-		all_imgs = e.read_images(infile)
+#		e = EMData()
+#		all_imgs = e.read_images(infile)
 
-		outfile1 = "test_append_image_out_" + str(os.getpid()) + ".hed"
-		
-		for img in all_imgs:
-			img.append_image(outfile1)
-		
-		(infilehed, infileimg) = testlib.get_imagic_filename_pair(infile)
-		(outfilehed, outfileimg) = testlib.get_imagic_filename_pair(outfile1)
-
-		os.unlink(infilehed)
-		os.unlink(infileimg)
-		os.unlink(outfilehed)
-		os.unlink(outfileimg)
+#		outfile1 = "test_append_image_out_" + str(os.getpid()) + ".hed"
+#		
+#		for img in all_imgs:
+#			img.append_image(outfile1)
+#		
+#		(infilehed, infileimg) = testlib.get_imagic_filename_pair(infile)
+#		(outfilehed, outfileimg) = testlib.get_imagic_filename_pair(outfile1)
+#
+#		os.unlink(infilehed)
+#		os.unlink(infileimg)
+#		os.unlink(outfilehed)
+#		os.unlink(outfileimg)
 
 	def test_append_to_newfile(self):
 		"""test append image to new file ...................."""
@@ -941,7 +941,7 @@ class TestImagicIO(ImageI0Tester):
 		testlib.safe_unlink(filename)
 		
 	def test_read_write_img(self):
-		"""test read write img .............................."""
+		"""test write-read img .............................."""
 		self.do_test_read_write("img")
 
 
@@ -1117,6 +1117,65 @@ class TestImageIO(unittest.TestCase):
 		"""test region read and write ......................."""
 		self.region_read_test(imgtype, imgfile, outtype)
 		self.region_write_test(imgtype, imgfile, outtype)
+		
+		
+	def test_region_equiv_to_clip(self):
+		"""test read region same as clip ...................."""
+		
+		# note support for going beyond regions is tested, which was the main purpose of this function
+		
+		from EMAN2 import get_supported_3d_formats
+		
+		size = 8
+		e = EMData(size,size,size)
+		e.process_inplace('testimage.axes')
+		
+		fmts = get_supported_3d_formats()
+		fmts =  ["spi","mrc","icos","em"]
+		unsupported = ["hdf","img","xplor","pif","emim","vtk"]
+		for fmt in fmts:
+			name = "testregionimage."+fmt
+			
+			e.write_image(name)
+			try:
+				for i in range(-1,2):
+					for j in range(-1,2):
+						for k in range(-1,2):
+							for l in range(-1,2):
+								for m in range(-1,2):
+									for n in range(-1,2):
+										region = Region(i,j,k,size+l,size+m,size+n)
+										f = EMData()
+										f.read_image(name,0,False,region)
+										g = e.get_clip(region)
+										self.assertEqual(f==g,True)
+			finally:
+				remove_file(name)
+			
+		size = 8
+		e = EMData()
+		e.set_size(size,size)
+		e.process_inplace("testimage.noise.uniform.rand")
+		
+		fmts = ["mrc","spi","em"]
+		
+		for fmt in fmts:
+			name = "testimage."+fmt
+			
+			e.write_image(name)
+			try:
+				
+				for i in range(-1,2):
+					for j in range(-1,2):
+							for l in range(-1,2):
+								for m in range(-1,2):
+									region = Region(i,j,size+l,size+m)
+									f = EMData()
+									f.read_image(name,0,False,region)
+									g = e.get_clip(region)
+									self.assertEqual(f==g,True)
+			finally:
+				remove_file(name)
 		
 	def test_mrcio_region(self):
 		"""test mrc io region ..............................."""

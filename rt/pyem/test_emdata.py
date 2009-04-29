@@ -72,16 +72,10 @@ class TestEMData(unittest.TestCase):
         e1.write_image(testfile, 1)
         
         f = EMData(testfile, 1)
-        for k in range(32):
-            for j in range(32):
-                for i in range(32):
-                    self.assertEqual(e1.get_3dview()[i][j][k], f.get_3dview()[i][j][k])
+        self.assertEqual(e1==f,True)
 
         g = EMData(testfile)
-        for k in range(32):
-            for j in range(32):
-                for i in range(32):
-                    self.assertEqual(e0.get_3dview()[i][j][k], g.get_3dview()[i][j][k])
+        self.assertEqual(e0==g,True)
         
         testlib.safe_unlink(testfile)
                     
@@ -139,10 +133,7 @@ class TestEMData(unittest.TestCase):
         e2 = e.copy()
         
         self.assertEqual(e.get_attr_dict(), e2.get_attr_dict())
-        for k in range(32):
-            for j in range(32):
-                for i in range(32):
-                    self.assertEqual(e.get_3dview()[i][j][k], e2.get_3dview()[i][j][k])
+        self.assertEqual(e==e2,True)
 
     def test_copy_head(self):
         """test copy_head() function ........................"""
@@ -167,10 +158,7 @@ class TestEMData(unittest.TestCase):
         e.process_inplace("testimage.noise.uniform.rand")
         e.do_fft_inplace()
         e2 = e.copy()
-        for k in range(e.get_zsize()):
-            for j in range(e.get_ysize()):
-                for i in range(e.get_xsize()):
-                    self.assertEqual(e.get_3dview()[k][j][i], e2.get_3dview()[k][j][i])
+        self.assertEqual(e==e2,True)
 
         self.assertEqual(e.get_attr_dict(), e2.get_attr_dict())
                     
@@ -243,9 +231,7 @@ class TestEMData(unittest.TestCase):
 							f = e.copy()
 							g = e.get_clip(region)
 							f.clip_inplace(region)
-							for r in range(f.get_zsize()):
-								for s in range(f.get_ysize()):
-										self.assertEqual(g.get(r,s),f.get(r,s))
+							self.assertEqual(g==f,True)
 		
 		e = EMData()
 		e.set_size(size,size,size)
@@ -263,10 +249,7 @@ class TestEMData(unittest.TestCase):
 								f = e.copy()
 								g = e.get_clip(region)
 								f.clip_inplace(region)
-								for r in range(size+n):
-									for s in range(size+m):
-										for t in range(size+l):
-											self.assertEqual(g.get_3dview()[r][s][t], f.get_3dview()[r][s][t])
+								self.assertEqual(g==f,True)
 		
 		if(IS_TEST_EXCEPTION):
 			region = Region(0,0,0,-1,1,1)
