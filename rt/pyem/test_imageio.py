@@ -1120,7 +1120,7 @@ class TestImageIO(unittest.TestCase):
 		
 		
 	def test_region_equiv_to_clip(self):
-		"""test read region same as clip ...................."""
+		"""test read region identical to clip ..............."""
 		
 		# note support for going beyond regions is tested, which was the main purpose of this function
 		

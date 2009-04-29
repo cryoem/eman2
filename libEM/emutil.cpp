@@ -749,7 +749,7 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 	int zlen = 0;
 	get_region_dims(area, nx, &xlen, ny, &ylen, nz, &zlen);
 
-	if (area) { // Accommodate for all boundary overlaps, etc
+	if (area) { // Accommodate for all boundary overlaps of the region
 
 		Vec3i origin = area->get_origin();
 		fx0 = origin[0]; dx0 = origin[0];
