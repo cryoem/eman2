@@ -5,32 +5,32 @@
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
 
 #ifndef eman__imageio_h__
@@ -51,13 +51,13 @@ namespace EMAN
 
 	/** ImageIO classes are designed for reading/writing various
 	 * electron micrography image formats, including MRC, IMAGIC,
-	 * SPIDER, PIF, etc. 
-	 * 
+	 * SPIDER, PIF, etc.
+	 *
 	 * ImageIO class is the base class for all image io classes.
 	 * Each subclass defines the IO routines for reading/writing a
 	 * type of image format. For example, MrcIO is for reading/writing
 	 * MRC images.
-	 * 
+	 *
 	 * A subclass should implement functions declared in
 	 * DEFINE_IMAGEIO_FUNC macro.
 	 *
@@ -76,7 +76,7 @@ namespace EMAN
 	 *
 	 * Some image formats (e.g. HDF, PIF) can store a stack of images. Each
 	 * image can be 2D or 3D.
-	 * 
+	 *
 	 * For image formats storing multiple images, valid image_index = [0, n].
 	 *
 	 * For image formats storing multiple images, the image append and
@@ -88,7 +88,7 @@ namespace EMAN
 	 *
 	 *   - it should support insert image in existing file with gap
 	 *     between EOF and the new image. The gap should be zeroed.
-	 * 
+	 *
 	 *   - it should support insert image in new file with image index != 0.
 	 *
 	 *   - insert image in existing file overwriting existing image.
@@ -104,7 +104,7 @@ namespace EMAN
 	 *
 	 *   - The region must be inside the original image.
 	 *
-	 *   - If the new data are in different endian from the endian of 
+	 *   - If the new data are in different endian from the endian of
 	 *     the original image, swap the new data.
 	 *
 	 *   - If the new data are of different data type from the data
@@ -113,7 +113,7 @@ namespace EMAN
      *     shorter data type.
 	 *
 	 * Each ImageIO subclass XYZ must define a static function to determine
-	 * whether a given image is a valid XYZ image or not. It looks like: 
+	 * whether a given image is a valid XYZ image or not. It looks like:
 	 *     static bool is_valid(const void *first_block);
 	 * 'first_block' is the first block of binary data in that image file.
 	 *
@@ -198,7 +198,7 @@ namespace EMAN
 
 		/** Read CTF data from this image.
 		 *
-		 * @param ctf Used to store the CTF data. 
+		 * @param ctf Used to store the CTF data.
 		 * @param image_index The index of the image to read.
 		 * @return 0 if OK; 1 if error.
 		 */
@@ -215,7 +215,7 @@ namespace EMAN
 		/** Flush the IO buffer.
 		 */
 		virtual void flush() = 0;
-		
+
 		/** Return the number of images in this image file. */
 		virtual int get_nimg();
 
@@ -227,7 +227,7 @@ namespace EMAN
 
 		/** Is this image format only storing 1 image or not.
 		 * Some image formats like MRC only store 1 image in a file,
-		 * so this function returns 'true' for them.		 
+		 * so this function returns 'true' for them.
 		 * Other image formats like IMAGIC/HDF5 may store mutliple
 		 * images, so this function returns 'false' for them.
 		 */
@@ -235,7 +235,7 @@ namespace EMAN
 		{
 			return true;
 		}
-		
+
 		/** Convert data of this image into host endian format.
 		 *
 		 * @param data An array of data. It can be any type, short,
@@ -253,7 +253,7 @@ namespace EMAN
 		/** Do some initialization beforing doing the read/write.
 		 */
 		virtual void init() = 0;
-		
+
 		/** Validate 'image_index' in file reading.
 		 * @param image_index  The 'image_index'th image. Valid value
 		 * = [0, nimg-1].
@@ -300,10 +300,11 @@ namespace EMAN
 		 * @param max_size The upper limit of the region's size. The region
 		 * must be within 'max_size'.
 		 * @param is_new_file Whether it is on a new file or not.
+		 * @param inbounds_only if true verifies that the region is inside the image, otherwise no check is performed
 		 * @exception ImageReadException Any image reading problem.
 		 */
 		void check_region(const Region * area, const FloatSize & max_size,
-						  bool is_new_file = false);
+						  bool is_new_file = false, bool inbounds_only=true);
 
 		/** Validate image I/O region.
 		 *
@@ -311,10 +312,11 @@ namespace EMAN
 		 * @param max_size The upper limit of the region's size. The region
 		 * must be within 'max_size'.
 		 * @param is_new_file Whether it is on a new file or not.
+		 * @param inbounds_only if true verifies that the region is inside the image, otherwise no check is performed
 		 * @exception ImageReadException Any image reading problem.
 		 */
 		void check_region(const Region * area, const IntSize & max_size,
-						  bool is_new_file = false);
+						  bool is_new_file = false, bool inbounds_only=true);
 
 		/** Run fopen safely.
 		 *
@@ -323,17 +325,17 @@ namespace EMAN
 		 * @param is_new Is this a new file?
 		 * @param overwrite If the file exists, should we truncate it?
 		 * @exception FileAccessException The file has access error.
-		 * @return The opened file pointer.		 
+		 * @return The opened file pointer.
 		 */
 		FILE *sfopen(const string & filename, IOMode mode,
 					 bool * is_new = 0, bool overwrite = false);
-		
+
 		/** Calculate the min and max pixel value acceptedfor image nomalization,
 		 * if we did not get them from image attribute dictionary, or they are not
 		 * valid values
 		 * rendermin = mean - 3*sigma
 		 * rendermax = mean + 3*sigma
-		 * 
+		 *
 		 * @param[in] data 2D image's data array
 		 * @param[in] nx x dimension size
 		 * @param[in] ny y dimension size

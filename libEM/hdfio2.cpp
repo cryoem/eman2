@@ -579,12 +579,14 @@ int HdfIO2::erase_header(int image_index)
 }
 
 
-int HdfIO2::read_data(float *data, int image_index, const Region *, bool)
+int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
 {
 	ENTERFUNC;
 #ifdef DEBUGHDF
 	printf("read_data %d\n",image_index);
 #endif
+	//if (area != 0) throw InvalidParameterException("Region reading is not supported for hdf2");
+
 	char ipath[50];
 	sprintf(ipath,"/MDF/images/%d/image",image_index);
 	hid_t ds=H5Dopen(file,ipath);

@@ -5,32 +5,32 @@
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
 
 #include <cstring>
@@ -63,10 +63,10 @@ void IcosIO::init()
 	if (initialized) {
 		return ;
 	}
-	
+
 	initialized = true;
 	icos_file = sfopen(filename, rw_mode, &is_new_file);
-	
+
 	if (!is_new_file) {
 		if (fread(&icosh, sizeof(IcosHeader), 1, icos_file) != 1) {
 			throw ImageReadException(filename, "ICOS header");
@@ -115,22 +115,22 @@ bool IcosIO::is_valid(const void *first_block)
 int IcosIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
-	
+
 	//single image format, index can only be zero
 	image_index = 0;
 	check_read_access(image_index);
-	check_region(area, IntSize(icosh.nx, icosh.ny, icosh.nz));
+	check_region(area, IntSize(icosh.nx, icosh.ny, icosh.nz),false,false);
 
 	int xlen = 0, ylen = 0, zlen = 0;
 	EMUtil::get_region_dims(area, icosh.nx, &xlen, icosh.ny, &ylen, icosh.nz, &zlen);
-			
+
 	dict["nx"] = xlen;
 	dict["ny"] = ylen;
 	dict["nz"] = zlen;
 	dict["datatype"] = EMUtil::EM_FLOAT;
 	dict["minimum"] = icosh.min;
 	dict["maximum"] = icosh.max;
-	
+
 	EXITFUNC;
 	return 0;
 }
@@ -155,9 +155,9 @@ int IcosIO::write_header(const Dict & dict, int image_index, const Region* ,
 
 	icosh.min = dict["minimum"];
 	icosh.max = dict["maximum"];
-		
+
 	rewind(icos_file);
-		
+
 	if (fwrite(&icosh, sizeof(IcosHeader), 1, icos_file) != 1) {
 		throw ImageWriteException(filename, "ICOS header write");
 	}
@@ -169,19 +169,19 @@ int IcosIO::write_header(const Dict & dict, int image_index, const Region* ,
 int IcosIO::read_data(float *data, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
-	
+
 	//single image format, index can only be zero
 	image_index = 0;
 	check_read_access(image_index, data);
-	check_region(area, IntSize(icosh.nx, icosh.ny, icosh.nz));
+	check_region(area, IntSize(icosh.nx, icosh.ny, icosh.nz),false,false);
 
 	portable_fseek(icos_file, sizeof(IcosHeader), SEEK_SET);
-			
+
 	EMUtil::process_region_io((unsigned char *) data, icos_file,
 							  READ_ONLY, image_index,
-							  sizeof(float), icosh.nx, icosh.ny, icosh.nz, 
+							  sizeof(float), icosh.nx, icosh.ny, icosh.nz,
 							  area, false, EMUtil::IMAGE_ICOS, sizeof(int), sizeof(int));
-			
+
 	int xlen = 0, ylen = 0, zlen = 0;
 	EMUtil::get_region_dims(area, icosh.nx, &xlen, icosh.ny, &ylen, icosh.nz, &zlen);
 	become_host_endian(data, xlen * ylen * zlen);
@@ -203,7 +203,7 @@ int IcosIO::write_data(float *data, int image_index, const Region* area,
 	EMUtil::process_region_io(data, icos_file, rw_mode, image_index,
 							  sizeof(float), icosh.nx, icosh.ny, icosh.nz, area,
 							  false, EMUtil::IMAGE_ICOS, sizeof(int), sizeof(int));
-	
+
 #if 0
 	int float_size = sizeof(float);
 	int nx = icosh.nx;
@@ -213,7 +213,7 @@ int IcosIO::write_data(float *data, int image_index, const Region* area,
 	int nrows = icosh.ny * icosh.nz;
 
 	int row_size = (nx + 2) * float_size;
-	
+
 
 	for (int j = 0; j < nrows; j++) {
 		memcpy(&buf[1], &data[nx * j], nx * float_size);

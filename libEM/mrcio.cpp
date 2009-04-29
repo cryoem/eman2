@@ -184,7 +184,7 @@ int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool )
 	//single image format, index can only be zero
 	image_index = 0;
 	check_read_access(image_index);
-	check_region(area, FloatSize(mrch.nx, mrch.ny, mrch.nz), is_new_file);
+	check_region(area, FloatSize(mrch.nx, mrch.ny, mrch.nz), is_new_file,false);
 
 	dict["apix_x"] = mrch.xlen / mrch.mx;
 	dict["apix_y"] = mrch.ylen / mrch.my;
@@ -487,7 +487,7 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool )
 		return 1;
 	}
 
-	check_region(area, FloatSize(mrch.nx, mrch.ny, mrch.nz), is_new_file);
+	check_region(area, FloatSize(mrch.nx, mrch.ny, mrch.nz), is_new_file, false);
 
 	unsigned char *cdata = (unsigned char *) rdata;
 	short *sdata = (short *) rdata;

@@ -59,7 +59,7 @@ void ImageIO::write_ctf(const Ctf &, int)
 }
 
 void ImageIO::check_region(const Region * area, const FloatSize & max_size,
-						   bool is_new_file)
+						   bool is_new_file,bool inbounds_only)
 {
 	if (area) {
 		if (is_new_file) {
@@ -74,22 +74,25 @@ void ImageIO::check_region(const Region * area, const FloatSize & max_size,
 			throw ImageReadException("", desc);
 		}
 
-		// No longer need this - EMUtil::process_region_io handles regions that are outside the image
-//		if (!area->is_region_in_box(max_size)) {
-//			char desc[1024];
-//			sprintf(desc, "Region box %s is outside image area (%d,%d,%d)",
-//					area->get_string().c_str(), (int)max_size[0],
-//					(int)max_size[1], (int)max_size[2]);
-//			throw ImageReadException("", desc);
-//		}
+		// EMUtil::process_region_io handles regions that are outside the image. So some image types don't mind if the
+		// region is beyond the boundary. It would be ideal if they all could do this, but it would take some work.
+		if (inbounds_only ){
+			if (!area->is_region_in_box(max_size)) {
+				char desc[1024];
+				sprintf(desc, "Region box %s is outside image area (%d,%d,%d)",
+						area->get_string().c_str(), (int)max_size[0],
+						(int)max_size[1], (int)max_size[2]);
+				throw ImageReadException("", desc);
+			}
+		}
 	}
 }
 
 void ImageIO::check_region(const Region * area, const IntSize & max_size,
-						   bool is_new_file)
+						   bool is_new_file, bool inbounds_only)
 {
 	check_region(area, FloatSize(max_size[0], max_size[1], max_size[2]),
-				 is_new_file);
+				 is_new_file,inbounds_only);
 }
 
 void ImageIO::check_read_access(int image_index)

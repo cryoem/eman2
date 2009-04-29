@@ -5,32 +5,32 @@
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
 
 #include "spiderio.h"
@@ -49,7 +49,7 @@ SpiderIO::SpiderIO(const string & spider_filename, IOMode rw)
 :	filename(spider_filename), rw_mode(rw),
 	spider_file(0), first_h(0), cur_h(0),
 	is_big_endian(ByteOrder::is_host_big_endian()),
-	initialized(false)	
+	initialized(false)
 {
 	is_new_file = !Util::is_file_exist(filename);
 }
@@ -65,7 +65,7 @@ SpiderIO::~SpiderIO()
 		free(first_h);
 		first_h = 0;
 	}
-	
+
 	if (cur_h) {
 		free(cur_h);
 		cur_h = 0;
@@ -96,11 +96,11 @@ void SpiderIO::init()
 
 		is_big_endian = ByteOrder::is_float_big_endian(nslice);
 		become_host_endian((float *) first_h, NUM_FLOATS_IN_HEADER);
-		
+
 		if (first_h->istack == SINGLE_IMAGE_HEADER && rw_mode == WRITE_ONLY) {
 			fclose(spider_file);
 			spider_file = 0;
-			
+
 			spider_file = fopen(filename.c_str(), "wb");
 		}
 	}
@@ -117,7 +117,7 @@ bool SpiderIO::is_valid(const void *first_block)
 {
 	ENTERFUNC;
 	bool result = false;
-	
+
 	if (first_block) {
 		const float *data = static_cast < const float *>(first_block);
 		float nslice = data[0];
@@ -128,7 +128,7 @@ bool SpiderIO::is_valid(const void *first_block)
 		float labbyt = data[21];	//total NO. of bytes in header
 		float lenbyt = data[22];	//record length in bytes
 		float istack = data[23];
-		
+
 		bool big_endian = ByteOrder::is_float_big_endian(nslice);
 		if (big_endian != ByteOrder::is_host_big_endian()) {
 			ByteOrder::swap_bytes(&nslice);
@@ -140,9 +140,9 @@ bool SpiderIO::is_valid(const void *first_block)
 			ByteOrder::swap_bytes(&lenbyt);
 			ByteOrder::swap_bytes(&istack);
 		}
-		
+
 		if( int(nslice) != nslice || int(nrow) != nrow
-				|| int(iform) != iform || int(nsam) != nsam 
+				|| int(iform) != iform || int(nsam) != nsam
 				|| int(labrec) != labrec || int(labbyt) != labbyt
 				|| int(lenbyt) != lenbyt ) {
 			result =  false;
@@ -153,7 +153,7 @@ bool SpiderIO::is_valid(const void *first_block)
 				result = true; //istack>0 for overall header, istack<0 for indexed stack of image
 			}
 		}
-		
+
 		int ilabrec = static_cast<int>(labrec);
 		int ilabbyt = static_cast<int>(labbyt);
 		int ilenbyt = static_cast<int>(lenbyt);
@@ -177,15 +177,15 @@ int SpiderIO::read_header(Dict & dict, int image_index, const Region * area, boo
         is_read_overall_header = true;
         image_index = 0;
     }
-    
+
 	check_read_access(image_index);
-	
+
 	if (!first_h) {
 		throw ImageReadException(filename, "empty spider header");
 	}
-	
-	check_region(area, FloatSize(first_h->nsam, first_h->nrow,first_h->nslice), is_new_file);
-	
+
+	check_region(area, FloatSize(first_h->nsam, first_h->nrow,first_h->nslice), is_new_file,false);
+
 	float size = first_h->nsam * first_h->nrow * first_h->nslice;
 	int overall_headlen = 0;
 
@@ -200,11 +200,11 @@ int SpiderIO::read_header(Dict & dict, int image_index, const Region * area, boo
                 throw ImageReadException(filename, desc);
             }
         }
-        else {	//complex spider image not supported 
+        else {	//complex spider image not supported
         	throw ImageFormatException("complex spider image not supported.");
         }
     }
-    
+
 	size_t single_image_size = (size_t) (first_h->headlen + size * sizeof(float));
 	size_t offset = overall_headlen + single_image_size * image_index;
 
@@ -223,13 +223,13 @@ int SpiderIO::read_header(Dict & dict, int image_index, const Region * area, boo
 		}
 
 		become_host_endian((float *) cur_image_hed, NUM_FLOATS_IN_HEADER);
-		
+
 		if (cur_image_hed->nsam != first_h->nsam || cur_image_hed->nrow != first_h->nrow
 			|| cur_image_hed->nslice != first_h->nslice) {
 			char desc[1024];
 			sprintf(desc, "%dth image size %dx%dx%d != overall size %dx%dx%d",
 					image_index, (int)cur_image_hed->nsam, (int)cur_image_hed->nrow,
-					(int)cur_image_hed->nslice, 
+					(int)cur_image_hed->nslice,
 					(int)first_h->nsam, (int)first_h->nrow, (int)first_h->nslice);
 			throw ImageReadException(filename, desc);
 		}
@@ -245,7 +245,7 @@ int SpiderIO::read_header(Dict & dict, int image_index, const Region * area, boo
 	dict["nz"] = zlen;
 
 	dict["datatype"] = EMUtil::EM_FLOAT;
-	
+
 	if(cur_image_hed->mmvalid == 1) {
 		dict["minimum"] = cur_image_hed->min;
 		dict["maximum"] = cur_image_hed->max;
@@ -257,7 +257,7 @@ int SpiderIO::read_header(Dict & dict, int image_index, const Region * area, boo
 	dict["SPIDER.type"] = (int) cur_image_hed->type;
 
 	dict["SPIDER.irec"] = cur_image_hed->irec;
-	
+
 	dict["SPIDER.angvalid"] = (int)cur_image_hed->angvalid;
 	if((int)dict["SPIDER.angvalid"] != 0) {
 		dict["SPIDER.phi"] = cur_image_hed->phi;
@@ -268,17 +268,17 @@ int SpiderIO::read_header(Dict & dict, int image_index, const Region * area, boo
 	dict["SPIDER.headrec"] = (int) cur_image_hed->headrec;
 	dict["SPIDER.headlen"] = (int) cur_image_hed->headlen;
 	dict["SPIDER.reclen"] = (int) cur_image_hed->reclen;
-	
+
 	dict["SPIDER.dx"] = cur_image_hed->dx;
 	dict["SPIDER.dy"] = cur_image_hed->dy;
 	dict["SPIDER.dz"] = cur_image_hed->dz;
-	
+
 	dict["SPIDER.istack"] = (int) cur_image_hed->istack;
-	if((int)dict["SPIDER.istack"] > 0) {	//maxim only for overall header 
+	if((int)dict["SPIDER.istack"] > 0) {	//maxim only for overall header
 		dict["SPIDER.maxim"] = (int)cur_image_hed->maxim;
 	}
 	dict["SPIDER.imgnum"] = (int)cur_image_hed->imgnum;
-	
+
 	dict["SPIDER.Kangle"] = (int)cur_image_hed->Kangle;
 	if((int)dict["SPIDER.Kangle"] == 1) {
 		dict["SPIDER.phi1"] = cur_image_hed->phi1;
@@ -293,12 +293,12 @@ int SpiderIO::read_header(Dict & dict, int image_index, const Region * area, boo
 		dict["SPIDER.theta2"] = cur_image_hed->theta2;
 		dict["SPIDER.psi2"] = cur_image_hed->psi2;
 	}
-	
+
 	dict["SPIDER.date"] = string(cur_image_hed->date).substr(0, 11);
 	dict["SPIDER.time"] = string(cur_image_hed->time).substr(0, 8);
-	
+
 	dict["SPIDER.title"] = string(cur_image_hed->title);
-	
+
 	if(cur_image_hed->scale>0) {
 		dict["SPIDER.scale"] = cur_image_hed->scale;
 		Dict dic;
@@ -318,13 +318,13 @@ int SpiderIO::read_header(Dict & dict, int image_index, const Region * area, boo
 			dict["xform.align3d"] = trans;
 		}
 	}
-	
-	
+
+
 /**	No complex image support for SPIDER in EMAN2
  * 	// complex check is in is_complex_mode, but even/odd check needs to be here
 	int type = dict["SPIDER.type"];
 	if ( type == IMAGE_2D_FFT_ODD
-			|| type == IMAGE_3D_FFT_ODD ) 
+			|| type == IMAGE_3D_FFT_ODD )
 		dict["is_fftodd"] = 1;
 	else dict["is_fftodd"] = 0;
 	// complex spider files are always ri, so we just set it unconditionally
@@ -353,24 +353,24 @@ int SpiderIO::write_header(const Dict & dict, int image_index, const Region* are
 	else {
 		swap_header(first_h);
 	}
-	
+
 	if(!initialized) {
 		init();
 	}
-	
-	if(!((int)dict["nx"]==first_h->nsam && (int)dict["ny"]==first_h->nrow && 
+
+	if(!((int)dict["nx"]==first_h->nsam && (int)dict["ny"]==first_h->nrow &&
 			(int)dict["nz"]==first_h->nslice)) {
 		char desc[1024];
 		sprintf(desc, "%dth image size %dx%dx%d != overall size %dx%dx%d",
-				image_index, (int)dict["nx"], (int)dict["ny"], (int)dict["nz"], 
+				image_index, (int)dict["nx"], (int)dict["ny"], (int)dict["nz"],
 				(int)first_h->nsam, (int)first_h->nrow, (int)first_h->nslice);
 		throw ImageReadException(filename, desc);
 	}
-		
+
 	if (!cur_h) {
 		cur_h = (SpiderHeader *) calloc(1, static_cast<size_t>(first_h->headlen));
 	}
-	
+
 	int MAXIM;
 	float size = first_h->nsam * first_h->nrow * first_h->nslice;
 	size_t single_image_size = (int) (first_h->headlen + size * sizeof(float));
@@ -383,16 +383,16 @@ int SpiderIO::write_header(const Dict & dict, int image_index, const Region* are
 		offset = (int) first_h->headlen + single_image_size * image_index;
 		MAXIM = image_index>=(int)first_h->maxim ? image_index+1 : (int)first_h->maxim;
 	}
-	
+
 	//update overall header
-	if(MAXIM > (int)first_h->maxim) {	
+	if(MAXIM > (int)first_h->maxim) {
 		portable_fseek(spider_file, 0, SEEK_SET);
 		write_single_header(dict, area, image_index, 0, first_h, OVERALL_STACK_HEADER, MAXIM, 0, use_host_endian);
 	}
-	
+
 	portable_fseek(spider_file, offset, SEEK_SET);
 	write_single_header(dict, area, image_index, offset, cur_h, SINGLE_IMAGE_HEADER, 0, image_index+1, use_host_endian);
-		
+
 	EXITFUNC;
 	return 0;
 }
@@ -409,7 +409,7 @@ int SpiderIO::write_single_header(const Dict & dict, const Region *area, int ima
 		EXITFUNC;
 		return 0;
 	}
-	
+
 	int nx = dict["nx"];
 	int ny = dict["ny"];
 	int nz = dict["nz"];
@@ -435,7 +435,7 @@ int SpiderIO::write_single_header(const Dict & dict, const Region *area, int ima
 	hp->mean = dict["mean"];
 	hp->sigma = dict["sigma"];
 	hp->mmvalid = 1;
-	
+
 	if(nz<=1 && dict.has_key("xform.projection")) {
 		hp->angvalid = 1;
 		Transform * t = dict["xform.projection"];
@@ -447,7 +447,7 @@ int SpiderIO::write_single_header(const Dict & dict, const Region *area, int ima
 		hp->dy = d["ty"];
 		hp->dz = d["tz"];
 		hp->scale = d["scale"];
-		
+
 	}
 	else if(nz>1 && dict.has_key("xform.align3d")) {
 		hp->angvalid = 1;
@@ -461,27 +461,27 @@ int SpiderIO::write_single_header(const Dict & dict, const Region *area, int ima
 		hp->dz = d["tz"];
 		hp->scale = d["scale"];
 	}
-	
+
 	if(nz == 1) {
-		hp->type = IMAGE_2D;	
+		hp->type = IMAGE_2D;
 	}
 	else {
 		hp->type = IMAGE_3D;
 	}
 
-// complex image file not supported in EMAN2 
+// complex image file not supported in EMAN2
 
 	hp->reclen = (float)record_size;
 	hp->headrec = (float)num_records;
 	hp->headlen = (float)header_length;
-	
+
 	if(ISTACK == OVERALL_STACK_HEADER) {
-		hp->maxim = (float)MAXIM;		
+		hp->maxim = (float)MAXIM;
 	}
 	hp->irec = (float)(num_records + ny*nz);
-	
+
 	hp->imgnum = (float)IMGNUM;
-		
+
 	time_t tod;
  	time(&tod);
  	struct tm * ttt = localtime(&tod);
@@ -491,7 +491,7 @@ int SpiderIO::write_single_header(const Dict & dict, const Region *area, int ima
  	std::copy(&ctime[0], &ctime[8], hp->time);
  	strftime(cdate, 12, "%d-%b-%Y", ttt);
 	std::copy(&cdate[0], &cdate[11], hp->date);
-	
+
 	if(dict.has_key("SPIDER.title")) {
 		string title = static_cast<string>(dict["SPIDER.title"]);
 		std::copy(&(title[0]), &(title[title.length()]), hp->title);
@@ -521,7 +521,7 @@ int SpiderIO::write_single_header(const Dict & dict, const Region *area, int ima
 		free(pad);
 		pad = 0;
 	}
-	
+
 	EXITFUNC;
 	return 0;
 }
@@ -534,7 +534,7 @@ int SpiderIO::read_data(float *data, int image_index, const Region * area, bool)
 	check_read_access(image_index, data);
 
 	check_region(area, FloatSize((int) first_h->nsam, (int) first_h->nrow,
-								 (int) first_h->nslice), is_new_file);
+								 (int) first_h->nslice), is_new_file,false);
 
 	int overall_headlen = 0;
 	if (first_h->istack >0) {	//for over all header length
@@ -552,12 +552,12 @@ int SpiderIO::read_data(float *data, int image_index, const Region * area, bool)
 	size_t single_image_size = static_cast < size_t > (first_h->headlen + size * sizeof(float));
 	off_t offset = overall_headlen + single_image_size * image_index;
 	portable_fseek(spider_file, offset, SEEK_SET);
-        
+
 	portable_fseek(spider_file, (int) first_h->headlen, SEEK_CUR);
-   
+
 #if 1
-	EMUtil::process_region_io(data, spider_file, READ_ONLY, 0, sizeof(float), 
-							  (int) first_h->nsam, (int) first_h->nrow, 
+	EMUtil::process_region_io(data, spider_file, READ_ONLY, 0, sizeof(float),
+							  (int) first_h->nsam, (int) first_h->nrow,
 							  (int) first_h->nslice, area);
 #endif
 #if 0
@@ -588,20 +588,20 @@ int SpiderIO::write_data(float *data, int image_index, const Region* area,
 	if(!cur_h) {
 		throw ImageWriteException(filename, "Please write header before write data");
 	}
-	
+
 	if(first_h->istack == SINGLE_IMAGE_HEADER) {
 		throw ImageWriteException(filename, "Cannot mix single spider and stack spider");
 	}
-	
+
 	size_t offset;
 	float size = first_h->nsam * first_h->nrow * first_h->nslice;
 	size_t single_image_size = (int) (first_h->headlen + size * sizeof(float));
 	offset = (int) first_h->headlen + single_image_size * image_index + (int) first_h->headlen;
-	
+
 	swap_data(data, (size_t)size);
-	
+
 	write_single_data(data, area, cur_h, offset, image_index, (int)first_h->maxim+1, use_host_endian);
-	
+
 	EXITFUNC;
 	return 0;
 }
@@ -612,31 +612,31 @@ void SpiderIO::flush()
 	fflush(spider_file);
 }
 
-int SpiderIO::write_single_data(float *data, const Region * area, SpiderHeader *& hp, 
+int SpiderIO::write_single_data(float *data, const Region * area, SpiderHeader *& hp,
 								size_t offset, int img_index, int max_nimg, bool use_host_endian)
 {
 	ENTERFUNC;
-	
+
 	check_write_access(rw_mode, img_index, max_nimg, data);
 
 	if (area) {
 		check_region(area, FloatSize(hp->nsam, hp->nrow, hp->nslice), is_new_file);
 	}
-	
+
 	if (!hp) {
 		throw ImageWriteException(filename, "NULL image header");
 	}
-	
+
 	portable_fseek(spider_file, offset, SEEK_SET);
-	
+
 	int size = (int)(hp->nsam * hp->nrow * hp->nslice);
 	if(!use_host_endian) {
 		ByteOrder::swap_bytes(data, size);
 	}
-	
+
 	// remove the stuff in #if 0 ... #endif if the following works.
-	EMUtil::process_region_io(data, spider_file, WRITE_ONLY,0, sizeof(float), 
-							  (int) hp->nsam, (int) hp->nrow, 
+	EMUtil::process_region_io(data, spider_file, WRITE_ONLY,0, sizeof(float),
+							  (int) hp->nsam, (int) hp->nrow,
 							  (int) hp->nslice, area);
 
 	EXITFUNC;
@@ -675,7 +675,7 @@ bool SpiderIO::is_image_big_endian()
 }
 
 int SpiderIO::get_nimg()
-{	
+{
 	init();
 	if (!first_h) {
 		Assert(is_new_file);
@@ -689,7 +689,7 @@ int SpiderIO::get_nimg()
 	}
 	else {												//complex image
 		throw ImageFormatException("complex spider image not supported.");
-	}	
+	}
 }
 
 bool SpiderIO::need_swap() const
