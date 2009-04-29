@@ -2437,19 +2437,19 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				if  Fourvar:
 					sumsq = Util.addn_img(ave1, ave2)
 					if CTF:
-						tavg  = fft(Util.divn_img(sumsq, ctf_2_sum))
-						drop_image(tavg, os.path.join(outdir, "aqc_%03d.hdf"%(total_iter)))
+						tavg  = Util.divn_img(sumsq, ctf_2_sum)
 						Util.mul_img(sumsq, sumsq.conjg())
 						Util.div_img(sumsq, ctf_2_sum)
 					else:
-						tavg  = fft(sumsq)/nima
-						drop_image(tavg, os.path.join(outdir, "aqc_%03d.hdf"%(total_iter)))
+						tavg  = sumsq/nima
 						Util.mul_img(sumsq, sumsq.conjg())
 						Util.mul_scalar(sumsq, 1.0/float(nima))
+					drop_image(fft(tavg), os.path.join(outdir, "aqc_%03d.hdf"%(total_iter)))
 					Util.sub_img(vav, sumsq)
 					Util.mul_scalar(vav, 1.0/float(nima-1))
 					st = Util.infomask(vav, None, True)
 					if st[2] < 0.0:  ERROR("Negative variance!", "ali2d_c_MPI", 1)
+					tavg    = fft(Util.divn_img(tavg, vav))
 
 					vav_r	= Util.pack_complex_to_real(vav)
 					drop_image(vav_r, os.path.join(outdir, "varf_%03d.hdf"%(total_iter)))
