@@ -46,7 +46,7 @@ class TestProcessor(unittest.TestCase):
     def test_get_processor_list(self):
         """test get processor list .........................."""
         processor_names = Processors.get_list()
-        self.assertEqual(len(processor_names), 164)
+        self.assertEqual(len(processor_names), 167)
         
         if(IS_TEST_EXCEPTION):
             try:
@@ -85,6 +85,25 @@ class TestProcessor(unittest.TestCase):
 				    f =  e.process('xform.transpose')
 				except RuntimeError, runtime_err:
 					self.assertEqual(exception_type(runtime_err), "UnexpectedBehaviorException")
+					
+    def test_threshold_binary_fourier(self):
+		"""test threshold.binary.fourier  ..................."""
+		a = [test_image(0,(16,16)),test_image_3d(0,(16,16,16))]
+		for e in a:
+			af = e.do_fft()
+			b = af.process("threshold.binary.fourier",{"value":0})
+			self.assertAlmostEqual(b["mean"], 0.5, 8)
+				
+		if(IS_TEST_EXCEPTION):
+			try:
+				b = a[0].process("threshold.binary.fourier",{"value":0})
+			except RuntimeError, runtime_err: # doesn't work on real images
+				self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+				
+			try:
+				b = a[0].process("threshold.binary.fourier",{"value":-1})
+			except RuntimeError, runtime_err: # doesn't work for negative thresholds
+				self.assertEqual(exception_type(runtime_err), "InvalidParameterException")
 
     def test_flattenbackground(self):
         """test filter.flattenbackground processor .........."""
