@@ -1156,7 +1156,7 @@ class TestImageIO(unittest.TestCase):
 		e.set_size(size,size)
 		e.process_inplace("testimage.noise.uniform.rand")
 		
-		fmts = ["mrc","spi","em"]
+		fmts = ["img","mrc","spi","em"]
 		
 		for fmt in fmts:
 			name = "testregionimage."+fmt
@@ -1171,6 +1171,8 @@ class TestImageIO(unittest.TestCase):
 									f = EMData()
 									f.read_image(name,0,False,region)
 									g = e.get_clip(region)
+									f.write_image("img.hdf",0)
+									g.write_image("img.hdf",1)
 									self.assertEqual(f==g,True)
 			finally:
 				remove_file(name)

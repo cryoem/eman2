@@ -1,38 +1,38 @@
 /**
  * $Id$
  */
- 
+
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
- 
+
 #include "emdata.h"
 #include "emfft.h"
 
@@ -74,7 +74,7 @@ EMData *EMData::do_fft_cuda() const
 	int offset;
 	int ndim = get_ndim();
 	EMData* dat = new EMData();
-	
+
 	offset = 2 - nx%2;
 	dat->set_size_cuda(nx+offset,ny, nz);
 	float *d = dat->get_cuda_data();
@@ -85,7 +85,7 @@ EMData *EMData::do_fft_cuda() const
 	} else if (ndim == 3) {
 		cuda_dd_fft_real_to_complex_nd(get_cuda_data(), d, nz, ny, nx);
 	} else throw ImageDimensionException("No cuda FFT support of images with dimensions exceeding 3");
-	
+
 	if (offset == 1) dat->set_fftodd(true);
 	else             dat->set_fftodd(false);
 
@@ -111,7 +111,7 @@ EMData *EMData::do_ift_cuda(bool preserve_input) const
 	if (!is_ri()) {
 		throw ImageFormatException("complex ri expected. Got amplitude/phase.");
 	}
-	
+
 	int offset = is_fftodd() ? 1 : 2;
 	EMData* dat = new EMData();
 	int ndim = get_ndim();
@@ -132,19 +132,19 @@ EMData *EMData::do_ift_cuda(bool preserve_input) const
 	} else if (ndim == 3) {
 		cuda_dd_fft_complex_to_real_nd(this_d,d, nz,ny,nx-offset);
 	} else throw ImageDimensionException("No cuda FFT support of images with dimensions exceeding 3");
-	
+
 	if (tmp != 0) delete tmp;
-	
+
 	// SCALE the inverse FFT
 	float scale = 1.0f/static_cast<float>((dat->get_size()));
 	dat->mult(scale); // Use of GPU should be automatic
-	
+
 	dat->set_fftpad(false);
 	dat->set_complex(false);
 	if(dat->get_ysize()==1 && dat->get_zsize()==1)  dat->set_complex_x(false);
 	dat->set_ri(false);
 	dat->gpu_update();
-	
+
 	EXITFUNC;
 	return dat;
 }
@@ -191,7 +191,7 @@ EMData *EMData::do_fft_inplace()
 		LOGERR("real image expected. Input image is complex image.");
 		throw ImageFormatException("real image expected. Input image is complex image.");
 	}
-	
+
 	size_t offset;
 	int nxreal;
 	get_data(); // Required call if GPU caching is being used. Otherwise harmless
@@ -251,8 +251,8 @@ EMData *EMData::do_ift()
 
 	float *d = dat->get_data();
 	int ndim = get_ndim();
-	
-	/* Do inplace IFT on a image copy, because the complex to real transform of 
+
+	/* Do inplace IFT on a image copy, because the complex to real transform of
 	 * nd will destroy its input array even for out-of-place transforms.
 	 */
 	memcpy((char *) d, (char *) rdata, nx * ny * nz * sizeof(float));
@@ -283,15 +283,15 @@ EMData *EMData::do_ift()
 	if(dat->get_ysize()==1 && dat->get_zsize()==1)  dat->set_complex_x(false);
 	dat->set_ri(false);
 	dat->update();
-	
-	
+
+
 	EXITFUNC;
 	return dat;
 }
 
 /*
    FFT in place does not depad, return real x-extended image
-   use 
+   use
 */
 EMData *EMData::do_ift_inplace()
 {
@@ -322,7 +322,7 @@ EMData *EMData::do_ift_inplace()
 	set_fftpad(true);
 #else
 	set_size(nx - offset, ny, nz);
-#endif 
+#endif
 	set_complex(false);
 	if(ny==1 && nz==1) set_complex_x(false);
 	set_ri(false);
@@ -468,7 +468,7 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 					}
 					else k = nx * ny - (l + 2 * ll) - 2;
 					if (k>=mid) k-=mid;		// These 2 lines handle the Fourier origin being in the corner, not the middle
-					else k+=mid; 
+					else k+=mid;
 					float t = image_data[k];
 					if (t <= rm)  p = mingray;
 					else if (t >= render_max) p = maxgray;
@@ -510,7 +510,7 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 					}
 					else k = nx * ny - (l + 2 * ll) - 2;
 					if (k>=mid) k-=mid;		// These 2 lines handle the Fourier origin being in the corner, not the middle
-					else k+=mid; 
+					else k+=mid;
 
 					float t = image_data[k];
 					if (t <= rm)
@@ -834,7 +834,7 @@ std::string EMData::render_ap24(int x0, int y0, int ixsize, int iysize,
 					ph = (int)(-image_data[k+1]*768/(2.0*M_PI))+384;	// complex phase as integer 0-767
 				}
 				if (k>=mid) k-=mid;		// These 2 lines handle the Fourier origin being in the corner, not the middle
-				else k+=mid; 
+				else k+=mid;
 				float t = image_data[k];
 				if (t <= rm)  p = mingray;
 				else if (t >= render_max) p = maxgray;
@@ -891,7 +891,7 @@ std::string EMData::render_ap24(int x0, int y0, int ixsize, int iysize,
 					ph = (int)(-image_data[k+1]*768/(2.0*M_PI))+384;	// complex phase as integer 0-767
 				}
 				if (k>=mid) k-=mid;		// These 2 lines handle the Fourier origin being in the corner, not the middle
-				else k+=mid; 
+				else k+=mid;
 
 				float t = image_data[k];
 				if (t <= rm)
@@ -1263,7 +1263,7 @@ void EMData::ri2ap()
 		float f = (float)_hypot(data[i], data[i + 1]);
 #else
 		float f = (float)hypot(data[i], data[i + 1]);
-#endif	
+#endif
 		if (data[i] == 0 && data[i + 1] == 0) {
 			data[i + 1] = 0;
 		}
@@ -1281,7 +1281,7 @@ void EMData::ri2ap()
 
 float calc_bessel(const int n, const float& x) {
 	gsl_sf_result result;
-//	int success = 
+//	int success =
 	gsl_sf_bessel_Jn_e(n,(double)x, &result);
 	return result.val;
 }
@@ -1294,7 +1294,7 @@ EMData*   EMData::bispecRotTransInvN(int N, int NK)
 	int End = 2*Mid-1;
 
         int CountxyMax = End*End;
-	
+
 	int   *SortfkInds       = new    int[CountxyMax];
 	int   *kVecX            = new    int[CountxyMax];
 	int   *kVecY            = new    int[CountxyMax];
@@ -1312,8 +1312,8 @@ EMData*   EMData::bispecRotTransInvN(int N, int NK)
 			ThisCopy -> set_value_at(jx,jy,ValNow);
 //		cout<< " jxM= " << jx+1<<" jyM= " << jy+1<< "ValNow" << ValNow << endl; //    Works
 	}}
-       
-	
+
+
 	EMData* fk = ThisCopy -> do_fft();
 	fk          ->process_inplace("xform.fourierorigin.tocenter");
 
@@ -1321,14 +1321,14 @@ EMData*   EMData::bispecRotTransInvN(int N, int NK)
 	EMData* fkRCopy = new EMData(End,End);
 	EMData* fkICopy = new EMData(End,End);
 	EMData* fkCopy  = new EMData(End,End);
-		
 
-	for (int kEx= 0; kEx<2*Mid; kEx=kEx+2) { // kEx twice the value of the Fourier 
-						// x variable: EMAN index for real, imag 
+
+	for (int kEx= 0; kEx<2*Mid; kEx=kEx+2) { // kEx twice the value of the Fourier
+						// x variable: EMAN index for real, imag
 		int kx    = kEx/2;		// kx  is  the value of the Fourier variable
 	        int kIx   = kx+Mid-1; // This is the value of the index for a matlab image (-1)
-		int kCx   =  -kx ; 
-		int kCIx  = kCx+ Mid-1 ; 
+		int kCx   =  -kx ;
+		int kCIx  = kCx+ Mid-1 ;
 		for (int kEy= 0 ; kEy<End; kEy++) { // This is the value of the EMAN index
     		 	int kIy              =  kEy       ; //  This is the value of the index for a matlab image (-1)
 			int ky               =  kEy+1-Mid; // (kEy+ Mid-1)%End - Mid+1 ;  // This is the actual value of the Fourier variable
@@ -1341,16 +1341,16 @@ EMData*   EMData::bispecRotTransInvN(int N, int NK)
 			float NewImagVal   ;
 			float AngMatlab    ;
 
-			if (kIx==Mid-1) { 
+			if (kIx==Mid-1) {
 //				AngMatlab = -fkAng - 2.*M_PI*(kIy+ 1-Mid)*(Mid)/End;
 //			cout<< "i= " << i << " kIx= " << kIx << " kIy=" << kIy << " fkVecR[i] =" << fkVecR[i]<< " fkVecI[i]="  << fkVecI[i] <<"  angle[i]= "  << AngMatlab << endl;
 			}
 
-			if (kIx>Mid-1){ 
+			if (kIx>Mid-1){
 //			cout<< "i= " << i << " kIx= " << kIx << " kIy=" << kIy << " fkVecR[i] =" << fkVecR[i]<< " fkVecI[i]="  << fkVecI[i] <<"  angle[i]= "  << AngMatlab << endl;
 			}
 
-			AngMatlab = fkAng - 2.*M_PI*(kx +ky)*(Mid)/End; 
+			AngMatlab = fkAng - 2.*M_PI*(kx +ky)*(Mid)/End;
 			NewRealVal  =   absVal*cos(AngMatlab);
 			NewImagVal  =   absVal*sin(AngMatlab);
 
@@ -1384,7 +1384,7 @@ EMData*   EMData::bispecRotTransInvN(int N, int NK)
 	fkCopy  -> write_image("fkCopy.img");
 	fkRCopy -> write_image("fkRCopy.img");
 	fkICopy -> write_image("fkICopy.img");
-	
+
 	cout << "Starting the sort "<< endl;
 
 	vector< pair<float, int> > absInds;
@@ -1411,7 +1411,7 @@ EMData*   EMData::bispecRotTransInvN(int N, int NK)
  	for(int i  = 0; i < CountxyMax; ++i ) {  // creates a new fkVec
 		int Si  = SortfkInds[i];
 		int kIx = (int)  Si/End;  kIx = (int)  i/End; // i = kIx*End+kIy
-		int kIy = Si  - kIx*End;  kIy = i  - kIx*End; 
+		int kIy = Si  - kIx*End;  kIy = i  - kIx*End;
 		int iC = (End-1-kIx)*End + (End-1-kIy);
 //		if (i<30) { cout<< "i= " << i << " kIx= " << kIx << " kIy=" << kIy << " valAft=" << absD1fkVecSorted[i]<< " valBef="  <<     absD1fkVec[Si] << "  SortfkInds = " << Si <<endl; }// This worked
 //		cout<< "i= " << i << " kIx= " << kIx << " kIy=" << kIy << " fkVecR[i] =" << fkVecR[i]<< " fkVecI[i]="  << fkVecI[i] <<"  angle[i]= "  << fkAng << endl;
@@ -1421,9 +1421,9 @@ EMData*   EMData::bispecRotTransInvN(int N, int NK)
 //	pause;
 
  	for(int i  = 0; i < NK; ++i ) { // Prints out the new fkVec ,  CountxyMax
-		int Si= SortfkInds[i]; 
+		int Si= SortfkInds[i];
 		int kIx = (int)  Si/End; // i = kIx*End+kIy
-		int kIy = Si  - kIx*End; 
+		int kIy = Si  - kIx*End;
  //		cout << " kIxM= " << kIx+1 << " kIyM=" << kIy+1 << " fkVecAbs=" << ::sqrt(fkVecR[Si]*fkVecR[Si] +  fkVecI[Si]* fkVecI[Si]) << " fkVecAbs=" << absD1fkVecSorted[i] << " kx= " << kVecX[Si] <<  " ky=" << kVecY[Si] <<  endl;
  	}
 
@@ -1445,7 +1445,7 @@ EMData*   EMData::bispecRotTransInvN(int N, int NK)
 	radRange[0]=0;
 	for (int irad=1; irad < LradRange; irad++){
 			radRange[irad] = radRange[irad-1] + frR; }
-	
+
 
 
          // should equal to (2*Mid-1)
@@ -1471,24 +1471,24 @@ EMData*   EMData::bispecRotTransInvN(int N, int NK)
 			for (int jCountkxy =0; jCountkxy<NK; jCountkxy++){
 				int Countkxy =SortfkInds[jCountkxy] ;   // 1: CountxyMax
 				int kx = kVecX[Countkxy] ;
-				int ky = kVecY[Countkxy] ;  
+				int ky = kVecY[Countkxy] ;
 				float k2 = kx*kx+ky*ky;
 				if (k2==0) { continue;}
 				float phiK =0; 	if (k2>0) { phiK=atan2(ky,kx);}
-				float fkR     = fkVecR[Countkxy] ; 
+				float fkR     = fkVecR[Countkxy] ;
 				float fkI     = fkVecI[Countkxy]  ;
 /*				printf("jCountkxy=%d, Countkxy=%d,absD1fkVec(Countkxy)=%f,\t\t kx=%d, ky=%d \n", jCountkxy, Countkxy, absD1fkVec[Countkxy], kx, ky);*/
-				
+
 				for (int jCountqxy =0; jCountqxy<NK; jCountqxy++){
-					int Countqxy =SortfkInds[jCountqxy] ;   // Countqxy is the index for absD1fkVec 
-					int qx   = kVecX[Countqxy] ; 
-					int qy   = kVecY[Countqxy] ; 
+					int Countqxy =SortfkInds[jCountqxy] ;   // Countqxy is the index for absD1fkVec
+					int qx   = kVecX[Countqxy] ;
+					int qy   = kVecY[Countqxy] ;
 					int q2   = qx*qx+qy*qy;
 					if (q2==0) {continue;}
 					float phiQ =0; 	if (q2>0) { phiQ=atan2(qy,qx);}
 					float fqR     = fkVecR[Countqxy]  ;
 					float fqI     = fkVecI[Countqxy]  ;
-					int kCx  = (-kx-qx);  
+					int kCx  = (-kx-qx);
 					int kCy  = (-ky-qy);
 					int kCIx = ((kCx+Mid+2*End)%End);// labels of the image in C
 					int kCIy = ((kCy+Mid+2*End)%End);
@@ -1525,12 +1525,12 @@ EMData*   EMData::bispecRotTransInvN(int N, int NK)
 			} // jCountkxy
 			RotTransInv -> set_value_at(jr1,jr2, RotTransInvTemp)   ;
 /*		RotTransInvN[jr1 + LradRange*jr2+LradRange*LradRange*N] = RotTransInvTemp  ;*/
-		} //jr2  
+		} //jr2
 	} //jr1
 // }//N
 
 	return  RotTransInv ;
-         
+
 
 }
 
@@ -1584,7 +1584,7 @@ void EMData::insert_clip(const EMData * const block, const IntPoint &origin) {
 	int nz1 = block->get_zsize();
 
 	Region area(origin[0], origin[1], origin[2],nx1, ny1, nz1);
-	
+
 	int x0 = (int) area.origin[0];
 	x0 = x0 < 0 ? 0 : x0;
 
@@ -1609,7 +1609,9 @@ void EMData::insert_clip(const EMData * const block, const IntPoint &origin) {
 	int xd0 = (int) (area.origin[0] < 0 ? -area.origin[0] : 0);
 	int yd0 = (int) (area.origin[1] < 0 ? -area.origin[1] : 0);
 	int zd0 = (int) (area.origin[2] < 0 ? -area.origin[2] : 0);
-	
+
+	if (x1 < x0 || y1 < y0 || z1 < z0) return; // out of bounds, this is fine, nothing happens
+
 	size_t clipped_row_size = (x1-x0) * sizeof(float);
 	int src_secsize =  nx1 * ny1;
 	int dst_secsize = nx * ny;
@@ -1641,8 +1643,8 @@ void EMData::insert_clip(const EMData * const block, const IntPoint &origin) {
 		for (int i = 0; i < (z1-z0); i++) {
 			float* ldst = get_cuda_data() + (z0+i) * dst_secsize + y0 * nx + x0;
 			float* lsrc = block->get_cuda_data() + (zd0+i) * src_secsize + yd0 * nx1 + xd0;
-			
-			
+
+
 // 			float* ldst = result->get_cuda_data() + (zd0+i) * dst_secsize + yd0 * (int)area.size[0] + xd0;
 // 			float* lsrc = get_cuda_data() + (z0+i) * src_secsize + y0 * nx + x0;
 			cudaError_t error =  cudaMemcpy2D( ldst, (nx)*sizeof(float), lsrc,nx1*sizeof(float), clipped_row_size, (y1-y0), cudaMemcpyDeviceToDevice );
@@ -1658,7 +1660,7 @@ void EMData::insert_clip(const EMData * const block, const IntPoint &origin) {
 #endif
 	float *src = block->get_data() + zd0 * src_secsize + yd0 * nx1 + xd0;
 	float *dst = get_data() + z0 * dst_secsize + y0 * nx + x0;
-		
+
 // 		float *src = get_data() + z0 * src_secsize + y0 * nx + x0;
 // 		float *dst = result->get_data();
 // 		dst += zd0 * dst_secsize + yd0 * (int)area.size[0] + xd0;
@@ -1674,7 +1676,7 @@ void EMData::insert_clip(const EMData * const block, const IntPoint &origin) {
 		src += src_gap;
 		dst += dst_gap;
 	}
-	
+
 	update();
 	EXITFUNC;
 }
@@ -1837,7 +1839,7 @@ void EMData::insert_scaled_sum(EMData *block, const FloatPoint &center,
 // 				for (int y = 0; y < return_slice->get_ysize(); ++y) {
 // 					for (int x = 0; x < return_slice->get_xsize(); ++x) {
 // 						double cur_val = return_slice->get_value_at(x,y);
-// 						return_slice->set_value_at(x,y,cur_val+2*amp*cos(ndash*y+M_PI*x+phase)); 
+// 						return_slice->set_value_at(x,y,cur_val+2*amp*cos(ndash*y+M_PI*x+phase));
 // 					}
 // 				}
 // 			}

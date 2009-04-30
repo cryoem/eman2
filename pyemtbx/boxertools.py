@@ -245,8 +245,8 @@ class Box:
 	def update_box_image(self,norm=True,norm_method="normalize.edgemean"):
 		image = BigImageCache.image=BigImageCache.get_object(self.image_name).get_image(use_alternate=True)
 		#print "getting ", self.image_name, " region ",self.xcorner,self.ycorner,self.xsize,self.ysize
-		if self.xcorner + self.xsize > image.get_xsize(): self.xcorner = image.get_xsize()-self.xsize
-		if self.ycorner + self.ysize > image.get_ysize(): self.ycorner = image.get_ysize()-self.ysize
+		#if self.xcorner + self.xsize > image.get_xsize(): self.xcorner = image.get_xsize()-self.xsize
+		#if self.ycorner + self.ysize > image.get_ysize(): self.ycorner = image.get_ysize()-self.ysize
 		
 		self.image = image.get_clip(Region(self.xcorner,self.ycorner,self.xsize,self.ysize))
 		self.footprint = None
@@ -359,6 +359,10 @@ class Box:
 			template = extrasomething
 			image =self.get_box_image()
 			ccf  = image.calc_ccf(template)
+			#image.write_image("image.hdf",-1)
+			#template.write_image("template.hdf",-1)
+			#ccf.write_image("ccf.hdf",-1)
+			
 			#sig = image.calc_fast_sigma_image(None)
 			#ccf.div(sig)
 			trans = ccf.calc_max_location_wrap(image.get_xsize()/2,image.get_ysize()/2,image.get_zsize()/2)
@@ -3783,7 +3787,6 @@ class SwarmAutoBoxer(AutoBoxer):
 		oldy = template.get_ysize()
 		
 		scale = float(newx)/float(oldx)
-		
 		new_center = [newx/2.0,newy/2.0]
 		scale_center = [scale*oldx/2.0,scale*oldy/2.0]
 

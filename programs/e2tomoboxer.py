@@ -207,7 +207,7 @@ class ShrunkenTomogram:
 			self.image = EMData(self.output_image_nx,self.output_image_ny,self.output_image_nz)
 			self.tmp_image = EMData()
 			for i in range(self.read_operations):
-				t = time.time()
+				#t = time.time()
 				z_start = i*self.xy_planes_in_mem
 				slices = self.xy_planes_in_mem
 				if z_start+slices > self.nz: slices = self.nz-z_start # this happens if shrink doesn't divide self.nz - it's fine
@@ -230,7 +230,7 @@ class ShrunkenTomogram:
 					cancelled = True
 					progress.close()
 					break
-				print time.time()-t
+				#print time.time()-t
 				
 			if cancelled: self.image = None # because it was cancelled
 		
@@ -996,7 +996,6 @@ class EMTomoBoxerModule:
 		tally = 0
 		print scale,fname,xout,yout,zout
 		for i,coord in enumerate(self.coord_list):
-			print coord,direction
 			a = EMData()
 			if direction == "z":
 				region = Region(scale*coord[0]-xout/2,scale*coord[1]-yout/2,scale*coord[2]-zout/2,xout,yout,zout)

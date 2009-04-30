@@ -5,32 +5,32 @@
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
 
 #include <cstring>
@@ -84,7 +84,7 @@ ImagicIO::~ImagicIO()
 void ImagicIO::init()
 {
 	ENTERFUNC;
-	
+
 	if (initialized) {
 		return;
 	}
@@ -153,14 +153,14 @@ bool ImagicIO::is_valid(const void *first_block)
 
 	const int max_dim = 1 << 20;
 	bool result = false;
-	
+
 	if (headrec == 1 &&
 		count >= 0 && count < max_dim &&
 		nx > 0 && nx < max_dim &&
 		ny > 0 && ny < max_dim && month >= 0 && month <= 12 && hour >= 0 && hour <= 24) {
 		result = true;
 	}
-	
+
 	EXITFUNC;
 	return result;
 }
@@ -192,10 +192,10 @@ int ImagicIO::read_header(Dict & dict, int image_index, const Region * area, boo
 		make_header_host_endian(hed);
 	}
 
-	check_region(area, FloatSize(hed.nx, hed.ny, nimg), is_new_hed);
+	check_region(area, FloatSize(hed.nx, hed.ny, nimg), is_new_hed,false);
 
     datatype = get_datatype_from_name(imagich.type);
-    
+
 	int xlen = 0, ylen = 0, zlen = 0;
 	EMUtil::get_region_dims(area, hed.nx, &xlen, hed.ny, &ylen, nimg, &zlen);
 	
@@ -209,7 +209,7 @@ int ImagicIO::read_header(Dict & dict, int image_index, const Region * area, boo
 	dict["maximum"] = hed.max;
 	dict["mean"] = hed.avdens;
 	dict["sigma"] = hed.sigma;
-	
+
 	dict["IMAGIC.imgnum"] = hed.imgnum;
 	dict["IMAGIC.count"] = hed.count;
 	dict["IMAGIC.error"] = hed.error;
@@ -233,7 +233,7 @@ int ImagicIO::read_header(Dict & dict, int image_index, const Region * area, boo
 	dict["IMAGIC.oldav"] = hed.oldav;
 	dict["IMAGIC.label"] = hed.label;
 	dict["ptcl_repr"] = hed.mrc2;			// raw images represented by this image
-	
+
 	dict["orientation_convention"] = "EMAN";
     const float alt = hed.mrc1[1]*180.0f/M_PI;
     const float az = hed.mrc1[2]*180.0f/M_PI;
@@ -250,12 +250,12 @@ int ImagicIO::read_header(Dict & dict, int image_index, const Region * area, boo
 		dict["xform.projection"] = trans;
 		dict["xform.align3d"] = trans;
 	}
-	
+
 	Ctf * ctf_ = read_ctf(hed);
 	if( ctf_ != 0) {
 		dict["ctf"] = ctf_;
 	}
-		
+
 	EXITFUNC;
 	return 0;
 }
@@ -270,22 +270,22 @@ int ImagicIO::write_header(const Dict & dict, int image_index,
 	if (nz > 1 && image_index != 0) {
 		throw ImageWriteException(filename, "to write 3D IMAGIC image, image index must be 0");
 	}
-	
+
 	if (area) {
 		check_region(area, FloatSize(imagich.nx, imagich.ny, imagich.count+1),
 					 is_new_hed);
 		EXITFUNC;
 		return 0;
 	}
-	
+
 	int nx = dict["nx"];
 	int ny = dict["ny"];
 	int nimg=0;		//# images currently in file
-		
+
 
 	if (!is_new_hed) {
         datatype = get_datatype_from_name(imagich.type);
-        
+
 		if (imagich.nx != nx || imagich.ny != ny) {
 			char desc[256];
 			sprintf(desc, "new IMAGIC size %dx%d is not equal to existing size %dx%d",
@@ -300,7 +300,7 @@ int ImagicIO::write_header(const Dict & dict, int image_index,
         rewind(hed_file);
 		nimg=imagich.count+1;
 	}
-	
+
 	ImagicHeader new_hed;
 	memset(&new_hed, 0, sizeof(ImagicHeader));
 
@@ -330,7 +330,7 @@ int ImagicIO::write_header(const Dict & dict, int image_index,
 	new_hed.max = (float)dict["maximum"];
 	new_hed.avdens = (float)dict["mean"];
 	new_hed.sigma = (float)dict["sigma"];
-	
+
 	if(nz<=1 && dict.has_key("xform.projection")) {
 		Transform * t = dict["xform.projection"];
 		Dict d = t->get_rotation("eman");
@@ -350,12 +350,12 @@ int ImagicIO::write_header(const Dict & dict, int image_index,
 		if(dict.has_key("euler_az")) new_hed.mrc1[2] = (float)dict["euler_az"]*M_PI/180.0f;
 		if(dict.has_key("euler_phi")) new_hed.mrc1[0] = (float)dict["euler_phi"]*M_PI/180.0f;
 	}
-	
+
 	if(dict.has_key("ptcl_repr")) new_hed.mrc2 = (int)dict["ptcl_repr"];
 
 	string new_label = dict.has_key("IMAGIC.label") ? (string) dict["IMAGIC.label"] : "";
 	sprintf(new_hed.label, new_label.c_str() );
-	
+
 	new_hed.lbuf = nx;
 	new_hed.inn = 1;
 	new_hed.iblp = ny;
@@ -389,11 +389,11 @@ int ImagicIO::write_header(const Dict & dict, int image_index,
 	if (image_index>=0 && image_index<nimg) {
 		portable_fseek(hed_file, sizeof(ImagicHeader)*image_index, SEEK_SET);
 		new_hed.imgnum=image_index+1;
-		if (is_big_endian != ByteOrder::is_host_big_endian()) 
+		if (is_big_endian != ByteOrder::is_host_big_endian())
 				ByteOrder::swap_bytes((int *) &new_hed.imgnum,1);
-		fwrite(&new_hed, sizeof(ImagicHeader),1,hed_file);		
+		fwrite(&new_hed, sizeof(ImagicHeader),1,hed_file);
 	}
-		
+
 	// How many images does the file need when we're done ?
 	int required_len;
 	if (nz>1) required_len=nz;
@@ -408,7 +408,7 @@ int ImagicIO::write_header(const Dict & dict, int image_index,
 	while (nimg<required_len) {
 		nimg++;
 		new_hed.imgnum=nimg;
-		if (is_big_endian != ByteOrder::is_host_big_endian()) 
+		if (is_big_endian != ByteOrder::is_host_big_endian())
 				ByteOrder::swap_bytes((int *) &new_hed.imgnum,1);
 		fwrite(&new_hed, sizeof(ImagicHeader),1,hed_file);
 	}
@@ -416,21 +416,21 @@ int ImagicIO::write_header(const Dict & dict, int image_index,
 	// update the 1st header with total # images
 	portable_fseek(hed_file, sizeof(int), SEEK_SET);
 	nimg--;
-	if (is_big_endian != ByteOrder::is_host_big_endian()) 
+	if (is_big_endian != ByteOrder::is_host_big_endian())
 			ByteOrder::swap_bytes((int *) &nimg,1);
 	fwrite(&nimg, sizeof(int), 1, hed_file);
-	
+
 	// header in machine order
 	if ( (is_big_endian != ByteOrder::is_host_big_endian()) || !use_host_endian)  swap_header(new_hed);
 	imagich=new_hed;
 	imagich.count=nimg;
 	is_new_hed = false;
-	
+
 	if( dict.has_key("ctf") ) {
 		Ctf * ctf_ = dict["ctf"];
 		write_ctf(ctf_);
 	}
-	
+
 	EXITFUNC;
 	return 0;
 }
@@ -450,8 +450,8 @@ int ImagicIO::read_data(float *data, int image_index, const Region * area, bool 
 		LOGWARN("this is not a 3D IMAGIC. Read as a 2D");
 		is_3d = false;
 	}
-	
-	check_region(area, FloatSize(imagich.nx, imagich.ny, nimg), is_new_hed);
+
+	check_region(area, FloatSize(imagich.nx, imagich.ny, nimg), is_new_hed,false);
 
 	rewind(img_file);
 
@@ -491,7 +491,7 @@ int ImagicIO::read_data(float *data, int image_index, const Region * area, bool 
 	else {
 		throw ImageReadException(filename, "unknown imagic data type");
 	}
- 	
+
 	EXITFUNC;
 	return 0;
 }
@@ -504,7 +504,7 @@ int ImagicIO::write_data(float *data, int image_index, const Region* area,
 	check_write_access(rw_mode, image_index, 0, data);
 	check_region(area, FloatSize(imagich.nx, imagich.ny, imagich.count+1),
 				 is_new_hed);
-	
+
 	if (nz == 1) {
 		if (image_index == -1) {
 			portable_fseek(img_file, 0, SEEK_END);
@@ -514,7 +514,7 @@ int ImagicIO::write_data(float *data, int image_index, const Region* area,
 			portable_fseek(img_file, ((off_t) sec_size) * image_index, SEEK_SET);
 		}
 	}
-	
+
 	if(is_new_img) {
 		if(!use_host_endian) {
 			ByteOrder::swap_bytes(data, imagich.nx * imagich.ny * nz);
@@ -525,7 +525,7 @@ int ImagicIO::write_data(float *data, int image_index, const Region* area,
 	}
 #if 0
 	int n_pad_imgs = 0;
-	int old_num_imgs = imagich.count + 1;	
+	int old_num_imgs = imagich.count + 1;
 	if (image_index > old_num_imgs) {
 		n_pad_imgs = image_index - old_num_imgs;
 	}
@@ -558,7 +558,7 @@ int ImagicIO::write_data(float *data, int image_index, const Region* area,
 }
 
 void ImagicIO::flush()
-{	
+{
 	fflush(img_file);
 	fflush(hed_file);
 }
@@ -566,16 +566,16 @@ void ImagicIO::flush()
 Ctf * ImagicIO::read_ctf(const ImagicHeader& hed) const
 {
 	ENTERFUNC;
-	
+
 	Ctf * ctf_ = 0;
 	size_t n = strlen(CTF_MAGIC);
-	
+
 	if (strncmp(imagich.label, CTF_MAGIC, n) == 0) {
 		string sctf = "O" + string(hed.label).substr(2);
 		ctf_ = new EMAN1Ctf();
 		ctf_->from_string(sctf);
 	}
-	
+
 	EXITFUNC;
 	return ctf_;
 }
@@ -594,7 +594,7 @@ void ImagicIO::write_ctf(const Ctf * const ctf, int image_index)
 	if (fwrite(&imagich, sizeof(ImagicHeader), 1, hed_file) != 1) {
 		throw ImageWriteException(hed_filename, "Imagic Header");
 	}
-	
+
 	EXITFUNC;
 }
 

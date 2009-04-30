@@ -715,7 +715,7 @@ class EMBoxerModuleParticleManipEvents(EMBoxerModuleMouseEventsObject):
 		m = self.get_2d_gui_image().scr_to_img((event.x(),event.y()))
 		box_num = self.mediator.detect_box_collision(m)
 		if box_num == -1:
-			if not self.mediator.within_main_image_bounds(m):	return
+			#if not self.mediator.within_main_image_bounds(m):	return
 			#if we make it here, that means the user has clicked on an area that is not in any box
 			
 			if event.modifiers()&Qt.ShiftModifier : return # the user tried to delete nothing
