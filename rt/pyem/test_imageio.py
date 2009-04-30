@@ -1125,7 +1125,8 @@ class TestImageIO(unittest.TestCase):
 	def test_region_equiv_to_clip(self):
 		"""test read region is identical to get clip ........"""
 		
-		# note support for going beyond regions is tested, which was the main purpose of this function
+		# note support for going beyond image boundaries, which was the main purpose of this function, is tested here,
+		# but that getting the entire region of the image as a clip is also tested.
 		
 		from EMAN2 import get_supported_3d_formats
 		
@@ -1140,12 +1141,12 @@ class TestImageIO(unittest.TestCase):
 			name = "testregionimage."+fmt
 			e.write_image(name)
 			try:
-				for i in range(-1,2):
-					for j in range(-1,2):
-						for k in range(-1,2):
-							for l in range(-1,2):
-								for m in range(-1,2):
-									for n in range(-1,2):
+				for i in range(-2,3):
+					for j in range(-2,3):
+						for k in range(-2,3):
+							for l in range(-2,3):
+								for m in range(-2,3):
+									for n in range(-2,3):
 										region = Region(i,j,k,size+l,size+m,size+n)
 										f = EMData()
 										f.read_image(name,0,False,region)
@@ -1159,23 +1160,20 @@ class TestImageIO(unittest.TestCase):
 		e.set_size(size,size)
 		e.process_inplace("testimage.noise.uniform.rand")
 		
-		fmts = ["img","mrc","spi","em"]
+		fmts = ["mrc","spi","em","img"]
 		
 		for fmt in fmts:
 			name = "testregionimage."+fmt
 			e.write_image(name)
 			try:
-				
-				for i in range(-1,2):
-					for j in range(-1,2):
-							for l in range(-1,2):
-								for m in range(-1,2):
+				for i in range(-2,3):
+					for j in range(-2,3):
+							for l in range(-2,3):
+								for m in range(-2,3):
 									region = Region(i,j,size+l,size+m)
 									f = EMData()
 									f.read_image(name,0,False,region)
 									g = e.get_clip(region)
-									f.write_image("img.hdf",0)
-									g.write_image("img.hdf",1)
 									self.assertEqual(f==g,True)
 			finally:
 				remove_file(name)
