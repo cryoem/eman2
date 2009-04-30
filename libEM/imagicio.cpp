@@ -173,7 +173,7 @@ int ImagicIO::read_header(Dict & dict, int image_index, const Region * area, boo
 
 	int nimg = 1;
 	
-	if (is_3d || imagich.count>1) {
+	if (is_3d) {
 		nimg = imagich.count + 1;
 		
 		if (nimg <= 1) {
