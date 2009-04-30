@@ -65,7 +65,10 @@ class ImageI0Tester(unittest.TestCase):
 			e.process_inplace("testimage.noise.uniform.rand")
 			e.write_image(filename,0)
 			f = EMData()
-			f.read_image(filename,0)
+			if(e.get_zsize()>1):
+				f.read_image(filename,0,False,None,True)
+			else:
+				f.read_image(filename,0)
 			try:
 				self.assertEqual(e==f,True)
 			finally:
