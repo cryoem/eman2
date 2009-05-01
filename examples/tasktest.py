@@ -63,7 +63,23 @@ for i in range(10):
 	sockf.write("STAT")
 	sendobj(sockf,[tid])
 	sockf.flush()
-	result=recvobj(sockf)
+	result=recvobj(sockf)[0]
 	print result
-
+	if result==100 :
+		print "Task completed"
+		sockf.write("RSLT")
+		sendobj(sockf,tid)
+		sockf.flush()
+		
+		task=recvobj(sockf)
+		print task.__dict__
+		
+		k=0
+		while 1:
+			k=recvobj(sockf)
+			if k==None: break
+			v=recvobj(sockf)
+			print k,": ",v
+		
+		break
 

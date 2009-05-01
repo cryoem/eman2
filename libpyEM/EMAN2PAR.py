@@ -32,7 +32,8 @@
 
 # This file contains functions related to running jobs in parallel in EMAN2
 
-from EMAN2db import EMTask,EMTaskQueue
+from EMAN2 import test_image
+from EMAN2db import EMTask,EMTaskQueue,db_open_dict
 import SocketServer
 from cPickle import dumps,loads
 from struct import pack,unpack
@@ -138,6 +139,17 @@ accessible to the server."""
 #######################
 #  Here we define the classes for publish and subscribe parallelism
 
+def openEMDCsock(addr):
+	sock=socket.socket()
+	sock.connect(addr)
+	sockf=sock.makefile()
+			
+	# Introduce ourselves and ask for a task to execute
+	if sockf.read(4)!="EMAN" : raise Exception,"Not an EMAN server"
+	sockf.write("EMAN")
+	sockf.write(pack("I4",EMAN2PARVER))
+	return(sock,sockf)
+
 def sendobj(sock,obj):
 	"""Sends an object as a (binary) size then a binary pickled object to a socket file object"""
 	if obj==None : 
@@ -173,19 +185,21 @@ def EMDCsendonecom(host,port,cmd,data):
 	sockf.close()
 	return ret
 
+class ThreadingTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer): pass
+
 def runEMDCServer(port,verbose):
 	"""This will create a ThreadingTCPServer instance and execute it"""
 	try: EMDCTaskHandler.verbose=int(verbose)
 	except: EMDCTaskHandler.verbose=0
 
 	if port!=None and port>0 : 
-		server = SocketServer.TCPServer(("", port), EMDCTaskHandler)	# "" is the hostname and will bind to any IPV4 interface/address
+		server = SocketServer.ThreadingTCPServer(("", port), EMDCTaskHandler)	# "" is the hostname and will bind to any IPV4 interface/address
 		print server
 	# EMAN2 will use ports in the range 9900-9999
 	else :
 		for port in range(9990,10000):
 			try: 
-				server = SocketServer.TCPServer(("", port), EMDCTaskHandler)
+				server = SocketServer.ThreadingTCPServer(("", port), EMDCTaskHandler)
 				print "Server started on port %d"%port
 			except:
 				print "Port %d unavailable"%port
@@ -240,11 +254,16 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				if self.verbose>1 : print "connection closed %s"%(str(self.client_address))
 				return
 				
+			if cmd=="ACK " :
+				print "Warning : Out of band ACK"
+				continue		# some sort of protocol error, just ignore
+
 			data = recvobj(self.sockf)
-			
+				
 			if self.verbose : 
 				try: print "Command %s: %s (%d)"%(str(self.client_address),cmd,len(data))
 				except: print "Command %s: %s (-)"%(str(self.client_address),cmd)
+			
 
 			######################  These are issued by clients
 			# Ready for a task
@@ -256,12 +275,14 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				else:
 					task.starttime=time.time()			# send the task
 					sendobj(self.sockf,task)
+					if self.verbose>1: print "Send task: ",task.taskid
 				self.sockf.flush()
 				
 				# check for an ACK, if not, requeue
 				try:
-					if sel.sockf.read(4)!="ACK " : raise Exception
-				except: 
+					if self.sockf.read(4)!="ACK " : raise Exception
+				except:
+					if self.verbose: print "Task sent, no ACK"
 					if task: task.starttime=None		# requeue
 			
 			
@@ -270,16 +291,21 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				# the first object we get is the task identifier
 				tid=data
 				
-				# then we get a sequence of key,value objects, ending with a final None key
-				result=db_open_dict("bdb:%s#result_%d"%self.queue.path,tid)		# active tasks keyed by id
+				if self.verbose>1 : print "DONE task ",tid
 				
+				# then we get a sequence of key,value objects, ending with a final None key
+				result=db_open_dict("bdb:%s#result_%d"%(self.queue.path,tid))
+				
+				cnt=0
 				while (1) :
 					key=recvobj(self.sockf)
 					if key==None : break
 					val=recvobj(self.sockf)
 					result[key]=val				# store each key in the database
+					cnt+=1
 
 				result.close()
+				if self.verbose>2 : print "Task %d: %d data elements"%(tid,cnt)
 
 				self.queue.task_done(tid)		# don't mark the task as done until we've stored the results
 
@@ -356,8 +382,28 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				ret=[self.queue.task_check(i) for i in data]
 				sendobj(self.sockf,ret)
 				self.sockf.flush()
+			
+			# Retreieve results for completed task
+			# request contains taskid
+			# return is a task object followed by a series of key/value pairs terminating with a None key
+			# initial return None if task incomplete
+			elif cmd=="RSLT":
+				try: ret=self.queue.complete[data]
+				except:
+					sendobj(self.sockf,None)
+					self.sendobj.flush()
+					continue
+				sendobj(self.sockf,ret)
+
+				result=db_open_dict("bdb:%s#result_%d"%(self.queue.path,tid))
+				for k in result.keys():
+					if k=="maxrec": continue
+					sendobj(self.sockf,k)
+					sendobj(self.sockf,result[k])
+					
+				sendobj(self.sockf,None)
+				self.sockf.flush()
 				
-		
 		# self.request is the TCP socket connected to the client
 #		self.data = self.request.recv(1024).strip()
 #		print "%s wrote:" % self.client_address[0]
@@ -378,28 +424,25 @@ class EMDCTaskClient(EMTaskClient):
 		while (1):
 			# connect to the server
 			if self.verbose>1 : print "Connect to (%s,%d)"%self.addr
-			sock=socket.socket()
-			sock.connect(self.addr)
-			sockf=sock.makefile()
-			
-			# Introduce ourselves and ask for a task to execute
-			if sockf.read(4)!="EMAN" : raise Exception,"Not an EMAN server"
-			sockf.write("EMAN")
-			sockf.write(pack("I4s",EMAN2PARVER,"RDYT"))
+			sock,sockf=openEMDCsock(self.addr)
+			sockf.write("RDYT")
 			sendobj(sockf,None)
 			sockf.flush()
 			
 			# Get a task from the server
 			task=recvobj(sockf)
+			sockf.write("ACK ")
 			if task==None:
 				if self.verbose : print "No tasks to run :^("
 				sockf.close()
 				sock.close()
 				time.sleep(10)
 				continue
+			sockf.flush()
 			
 			# Translate and retrieve (if necessary) data for task
 			for k,i in task.data.items():
+				if self.verbose>1 : print "Data translate ",k,i
 				try:
 					if i[0]=="cache" :
 						cname="bdb:cache_%d.%d"%(i[1][0],i[1][1])
@@ -422,6 +465,26 @@ class EMDCTaskClient(EMTaskClient):
 								
 						i[1]=cname
 				except: pass
+			sockf.close()
+			sock.close()
+			
+			# Execute translated task
+			
+			# Return results
+			if self.verbose>1 : print "Task done"
+			sock,sockf=openEMDCsock(self.addr)
+			sockf.write("DONE")
+			sendobj(sockf,task.taskid)
+			sendobj(sockf,"result")
+			sendobj(sockf,"TEST")
+			sendobj(sockf,"img")
+			sendobj(sockf,test_image())
+			sendobj(sockf,None)
+			sockf.flush()
+			sockf.close()
+			sock.close()
+			
+			time.sleep(5)
 			
 	def get_data(self,sockf,did,imnum):
 		"""request data from the server on an open connection"""

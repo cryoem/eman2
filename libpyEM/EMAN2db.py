@@ -402,17 +402,21 @@ class EMTaskQueue:
 		self.nametodid=db_open_dict("bdb:%s#tasks_name2did"%path)	# map local data filenames to did codes
 		self.didtoname=db_open_dict("bdb:%s#tasks_did2name"%path)	# map data id to local filename
 
-		if not self.active.has_key("max") : self.active["max"]=-1
-		if not self.active.has_key("min") : self.active["min"]=0
-		if not self.complete.has_key("max") : self.complete["max"]=0
+		#if not self.active.has_key("max") : self.active["max"]=-1
+		#if not self.active.has_key("min") : self.active["min"]=0
+		#if not self.complete.has_key("max") : self.complete["max"]=0
 	
 	def __len__(self) : return len(self.active)
 	
 	def get_task(self):
 		"""This will return the next task waiting for execution"""
-		for tid in range(self.active["min"],self.active["max"]+1):
+		for tid in sorted(self.active.keys()):
 			task=self.active[tid]
-			if task.starttime==None and (task.waitfor==None or len(task.waitfor)==0): return tid
+			if isinstance(task,int) : continue
+			if task==None :
+				print "Missing task ",tid
+				continue
+			if task.starttime==None and (task.wait_for==None or len(task.wait_for)==0): return task
 			
 		return None
 	
@@ -422,8 +426,11 @@ class EMTaskQueue:
 		specified, a doubly linked list is established. parentid MUST be the id of a task
 		currently in the active queue. parentid and wait_for may be set in the task instead"""
 		if not isinstance(task,EMTask) : raise Exception,"Invalid Task"
-		self.active["max"]+=1
-		tid=self.active["max"]
+		#self.active["max"]+=1
+		#tid=self.active["max"]
+		tid=max(self.active["maxrec"],self.complete["maxrec"])+1
+#		try: tid=max(self.active.keys()+self.complete.keys())+1
+#		except: tid=1
 		task.taskid=tid
 		if task.parent!=None : parentid=task.parent
 		if parentid:
@@ -483,17 +490,19 @@ class EMTaskQueue:
 	def task_check(self,tid):
 		"""This will check the status of a task. It will return -1 if a task is queued but not yet running,
 		0-99.999 while running (% complete) or exactly 100 when the task is done"""
+		print "task_check ",tid
 		try : 
 			task=self.active[tid]
+			if task==None: raise Exception
 		except:
 			task=self.complete[tid]		# if we succeed in retrieving it from the complete list, it's done (or aborted)
 			return 100
-			
+		
 		if task.starttime==None or task.starttime<1 : return -1
 		if task.progtime==None : return 0
 		return task.progtime[1]
 	
-	def task_done(self, taskid):
+	def task_done(self, tid):
 		"""Mark a Task as complete, by shifting a task to the tasks_complete queue"""
 		try:
 			task=self.active[tid]
@@ -501,16 +510,17 @@ class EMTaskQueue:
 			return
 		
 		task.endtime=time.time()
-		if self.active["min"]==taskid : self.active["min"]=min(self.active.keys())
 		self.complete[tid]=task
-		self.active[tid]=None
+		del self.active[tid]
+		#if self.complete["max"]<tid : self.complete["max"]=tid
+		#self.active["min"]=min(self.active.keys())
 		
 		# if our parent is waiting for us
 		if task.parent :
 			try: 
 				t2=self.active[task.parent]
 				if taskid in t2.wait_for : 
-					t2.wait_for.remove(taskid)
+					t2.wait_for.remove(tid)
 					self.active[task.parent]=t2
 			except:
 				pass
@@ -538,7 +548,7 @@ class EMTaskQueue:
 		except:
 			return
 		
-		if self.active["min"]==taskid : self.active["min"]=min(self.active.keys())
+		#if self.active["min"]==taskid : self.active["min"]=min(self.active.keys())
 		self.complete[tid]=task
 		self.active[tid]=None
 		
