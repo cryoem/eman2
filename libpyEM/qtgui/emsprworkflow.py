@@ -536,7 +536,7 @@ class TomographyTask(WorkFlowTask):
 		targetimage = ParamDef(name="targetimage",vartype="url",desc_short="target image file name",desc_long="target image file name",property=None,defaultunits=project_db.get("targetimage",dfl=[]),choices=[])
 		probeimage = ParamDef(name="probeimage",vartype="url",desc_short="probe image file name",desc_long="probe image file name",property=None,defaultunits=project_db.get("probeimage",dfl=[]),choices=[])
 		norm = ParamDef(name="normalization",vartype="int",desc_short="normalization",desc_long="if the normalization needed",property=None,defaultunits=0,choices=[0,1])
-		nsoln = ParamDef(name="nsoln",vartype="int",desc_short="#solution",desc_long="number of solution",property=None,defaultunits=1,choices=None)
+		nsoln = ParamDef(name="nsoln",vartype="int",desc_short="#solution",desc_long="number of solution",property=None,defaultunits=0,choices=None)
 		thresh = ParamDef(name="thresh",vartype="float",desc_short="threshold",desc_long="threshold",property=None,defaultunits=1.0,choices=None)
 		searchx = ParamDef(name="searchx",vartype="int",desc_short="searchx",desc_long="searchx",property=None,defaultunits=0,choices=None)
 		searchy = ParamDef(name="searchy",vartype="int",desc_short="searchy",desc_long="searchy",property=None,defaultunits=0,choices=None)
