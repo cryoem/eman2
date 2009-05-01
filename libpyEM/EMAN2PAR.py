@@ -273,7 +273,6 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				if task==None :
 					sendobj(self.sockf,None)			# no tasks available
 				else:
-					task.starttime=time.time()			# send the task
 					sendobj(self.sockf,task)
 					if self.verbose>1: print "Send task: ",task.taskid
 				self.sockf.flush()
@@ -283,7 +282,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 					if self.sockf.read(4)!="ACK " : raise Exception
 				except:
 					if self.verbose: print "Task sent, no ACK"
-					if task: task.starttime=None		# requeue
+					self.queue.task_rerun(task.taskid)
 			
 			
 			# Job is completed, results returned

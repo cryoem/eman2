@@ -59,7 +59,7 @@ tid=recvobj(sockf)
 print "Taskid = ",tid
 
 for i in range(10):
-	time.sleep(30.0)
+	time.sleep(15.0)
 	sockf.write("STAT")
 	sendobj(sockf,[tid])
 	sockf.flush()

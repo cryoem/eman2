@@ -416,7 +416,10 @@ class EMTaskQueue:
 			if task==None :
 				print "Missing task ",tid
 				continue
-			if task.starttime==None and (task.wait_for==None or len(task.wait_for)==0): return task
+			if task.starttime==None and (task.wait_for==None or len(task.wait_for)==0): 
+				task.starttime=time.time()
+				self.active[tid]=task
+				return task
 			
 		return None
 	
@@ -428,9 +431,8 @@ class EMTaskQueue:
 		if not isinstance(task,EMTask) : raise Exception,"Invalid Task"
 		#self.active["max"]+=1
 		#tid=self.active["max"]
-		tid=max(self.active["maxrec"],self.complete["maxrec"])+1
-#		try: tid=max(self.active.keys()+self.complete.keys())+1
-#		except: tid=1
+		try: tid=max(self.active["maxrec"],self.complete["maxrec"])+1
+		except: tid=1
 		task.taskid=tid
 		if task.parent!=None : parentid=task.parent
 		if parentid:
