@@ -1506,6 +1506,11 @@ def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, listID = None):
 			ctf[i]  = ctf_1d(nx, ctf_params)
 			ctf2[i] = ctf_2(nx, ctf_params)
 
+		# normalize
+		ave, std, mi, mx = Util.infomask(image, mask, True)
+		image -= ave
+		image /= std
+
 		# apply mask
 		if mask != None:
 			if CTF: Util.mul_img(image, mask)
@@ -2390,8 +2395,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 						buf = Util.mult_scalar(Cls['ave'][assign_to], float(Cls['n'][assign_to]))
 						Util.add_img(buf, im_M[im])
 						Cls['ave'][assign_to] = Util.mult_scalar(buf, 1.0/float(Cls['n'][assign_to]+1))
-				
-					
+								
 					# new number of objects in clusters
 					Cls['n'][assign_from] -= 1
 					assign[im]             = assign_to
@@ -2447,6 +2451,11 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 				if DEBUG: print '> iteration: %5d    criterion: %11.6e'%(ite, Je)
 
 			old_Je = Je
+
+			## TO TEST
+			if (ite-1) % 10 == 0:
+				Cls['ave'][4].write_image('ave_ite.hdf', int((ite-1)/10))
+				
 
 		# if no empty cluster
 		if not flag_empty:
@@ -3550,6 +3559,11 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 			change = mpi_reduce(change, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
 			change = mpi_bcast(change, 1, MPI_INT, main_node, MPI_COMM_WORLD)
 			change = change.tolist()[0]
+
+			## TO TEST
+			#if myid == main_node:
+			#	if (ite-1) % 10 == 0:
+			#		Cls['ave'][0].write_image('ave_ite.hdf', int((ite-1)/10))
 			
 		# [all] waiting the result
 		mpi_barrier(MPI_COMM_WORLD)
