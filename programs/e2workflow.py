@@ -331,6 +331,12 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.launchers["SPR"] = self.launch_spr
 		
 		self.tree_widget_entries.append(spr)
+		
+		tomo = QtGui.QTreeWidgetItem(QtCore.QStringList("Tomography"))
+		self.launchers["Tomography"] = self.launch_tomography
+		self.tree_widget_entries.append(tomo)
+		
+		
 		browser_entry = QtGui.QTreeWidgetItem(QtCore.QStringList("Browse"))
 		browser_entry.setIcon(0,QtGui.QIcon(get_image_directory() + "/display_icon.png"))
 		self.tree_widget_entries.append(browser_entry)
@@ -596,6 +602,9 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	
 	def launch_spr(self):
 		self.launch_task(SPRInitTask,"SPR")
+
+	def launch_tomography(self):
+		self.launch_task(TomographyTask,"Tomography")
 			
 	def launch_mic_ccd(self):
 		self.launch_task(MicrographCCDTask,"Micrograph/CCD report")

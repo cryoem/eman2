@@ -518,6 +518,80 @@ class ChangeDirectoryTask(WorkFlowTask):
 		pass
 		#self.form.closeEvent(None)
 
+class TomographyTask(WorkFlowTask):
+	'''
+	A class that manages the initialization component of a Tomography workflow
+	'''
+	
+	documentation_string = "This is useful information about this task."
+
+	def __init__(self,application):
+		WorkFlowTask.__init__(self,application)
+		self.window_title = "Tomography input form"
+		self.preferred_size = (640,480)
+	def get_params(self):
+		params = []
+		project_db = db_open_dict("bdb:tomography")
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="SPR",desc_long="Information regarding this task",property=None,defaultunits=TomographyTask.documentation_string,choices=None))
+		targetimage = ParamDef(name="targetimage",vartype="url",desc_short="target image file name",desc_long="target image file name",property=None,defaultunits=project_db.get("targetimage",dfl=[]),choices=[])
+		probeimage = ParamDef(name="probeimage",vartype="url",desc_short="probe image file name",desc_long="probe image file name",property=None,defaultunits=project_db.get("probeimage",dfl=[]),choices=[])
+		norm = ParamDef(name="normalization",vartype="int",desc_short="normalization",desc_long="if the normalization needed",property=None,defaultunits=0,choices=[0,1])
+		nsoln = ParamDef(name="nsoln",vartype="int",desc_short="#solution",desc_long="number of solution",property=None,defaultunits=1,choices=None)
+		thresh = ParamDef(name="thresh",vartype="float",desc_short="threshold",desc_long="threshold",property=None,defaultunits=1.0,choices=None)
+		searchx = ParamDef(name="searchx",vartype="int",desc_short="searchx",desc_long="searchx",property=None,defaultunits=0,choices=None)
+		searchy = ParamDef(name="searchy",vartype="int",desc_short="searchy",desc_long="searchy",property=None,defaultunits=0,choices=None)
+		searchz = ParamDef(name="searchz",vartype="int",desc_short="searchz",desc_long="searchz",property=None,defaultunits=0,choices=None)
+		ralt = ParamDef(name="ralt",vartype="float",desc_short="ralt",desc_long="Altitude range",property=None,defaultunits=180.0,choices=None)
+		dalt = ParamDef(name="dalt",vartype="float",desc_short="dalt",desc_long="Altitude delta",property=None,defaultunits=10.0,choices=None)
+		daz = ParamDef(name="daz",vartype="float",desc_short="daz",desc_long="Azimuth delta",property=None,defaultunits=10.0,choices=None)
+		rphi = ParamDef(name="rphi",vartype="float",desc_short="rphi",desc_long="Phi range",property=None,defaultunits=180.0,choices=None)
+		dphi = ParamDef(name="dphi",vartype="float",desc_short="dphi",desc_long="Phi delta",property=None,defaultunits=10.0,choices=None)
+		params.append([targetimage,probeimage])
+		params.append([norm,thresh,nsoln])
+		params.append([searchx,searchy,searchz])
+		params.append([ralt,dalt,daz,rphi,dphi])
+		#db_close_dict("bdb:project")
+		return params
+
+	def write_db_entry(self,key,value):
+		WorkFlowTask.write_db_entry(self,key,value)
+	
+	def check_params(self,params):
+		error_msg = []
+		if len(params["targetimage"]) != 1: error_msg.append("Please choose a single target file to proceed")
+		if len(params["probeimage"]) != 1: error_msg.append("Please choose a single probe file to proceed")
+		return error_msg
+	
+	def on_form_ok(self,params):
+		print params
+		
+		error_message = self.check_params(params)
+		if len(error_message):
+			self.show_error_message(error_message)
+			return
+		
+		self.write_db_entries(params) # will only write filenames
+		options = EmptyObject()
+		string_args = ["dalt","ralt","dphi","rphi","raz","daz","thresh","nsoln","searchx","searchy","searchz"]
+		options.filenames = [params['targetimage'][0], params['probeimage'][0]]
+		options.dalt = params['dalt']
+		options.ralt = params['ralt']
+		options.dphi = params['dphi']
+		options.rphi = params['rphi']
+		options.raz = params['ralt']
+		options.daz = params['dalt']
+		options.thresh = params['thresh']
+		options.nsoln = params['nsoln']
+		options.searchx = params['searchx']
+		options.searchy = params['searchy']
+		options.searchz = params['searchz']
+		bool_args = []
+		additional_args = []
+		temp_file_name = "e2tomohunter_stdout.txt"
+		self.spawn_single_task('e2tomohunter.py',options,string_args,bool_args,additional_args,temp_file_name)
+		self.emit(QtCore.SIGNAL("task_idle"))
+		self.form.closeEvent(None)
+		self.form = None
 		
 class SPRInitTask(WorkFlowTask):
 	'''
