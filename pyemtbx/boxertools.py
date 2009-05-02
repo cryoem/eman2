@@ -1125,6 +1125,8 @@ class FLCFImage:
 		#cfimage.clip_inplace(r,cfimage.get_edge_mean())
 		self.flcfimage = cfimage.calc_ccf( t)
 		self.flcfimage.process_inplace("xform.phaseorigin.tocenter")
+#		self.flcfimage.process_inplace("normalize.edgemean") # I think Mike Schmid might say that we should do this - I'm not sure (d.woolford)
+
 #		r2 = Region(tx/2,ty/2,nx,ny)
 #		cfimage.clip_inplace(r2)
 #		self.flcfimage.clip_inplace(r2)

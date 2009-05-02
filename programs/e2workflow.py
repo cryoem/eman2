@@ -369,8 +369,9 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 
 		spr_list = []
 		
-		rd = QtGui.QTreeWidgetItem(QtCore.QStringList("Micrograph/CCD"))
-		self.launchers["Micrograph/CCD"] = self.launch_mic_ccd
+		rd = QtGui.QTreeWidgetItem(QtCore.QStringList("Raw files"))
+		self.launchers["Raw files"] = self.launch_mic_ccd_report#MicrographReportTask
+ 
 		spr_list.append(rd)
 		
 		ap = QtGui.QTreeWidgetItem(QtCore.QStringList("Particles"))
@@ -425,6 +426,8 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		ap.addChildren(ap_list)
 		
 		rd_list = []
+		rd_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Associate micrograph/CCD")))
+		self.launchers["Associate micrograph/CCD"] = self.launch_mic_ccd
 		rd_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Import micrograph/ccd")))
 		self.launchers["Import micrograph/ccd"] = self.launch_import_mic_ccd
 		rd.addChildren(rd_list)
@@ -578,21 +581,14 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	def launch_refine2d_create_dataset(self): self.launch_task(E2Refine2DChooseDataTask,"refine2d create data set")	
 	def launch_e2ctf_write_ouptut(self): self.launch_task(E2CTFOutputTask,"e2ctf write output")
 	def launch_e2ctf_tune(self): self.launch_task(E2CTFGuiTask,"e2ctf intreface")
-	
-	def launch_e2ctf_auto_ft(self):
-		self.launch_task(E2CTFAutoFitTask,"e2ctf auto fitting")
-	
-	#def launch_e2ctf_management(self):
-		#self.launch_task(E2CTFTask,"e2ctf interface")
-	
-	def launch_ctf_report(self):
-		self.launch_task(CTFReportTask,"CTF report")
-	
-	def launch_particle_report(self):
-		self.launch_task(ParticleReportTask,"Particle report")
+	def launch_e2ctf_auto_ft(self): self.launch_task(E2CTFAutoFitTask,"e2ctf auto fitting")
+	def launch_ctf_report(self):self.launch_task(CTFReportTask,"CTF report")
+	def launch_particle_report(self): self.launch_task(ParticleReportTask,"Particle report")
 	
 	def launch_particle_import(self):
 		self.launch_task(ParticleImportTask,"Import particles")
+		
+	def launch_mic_ccd_report(self): self.launch_task(MicrographReportTask,"Raw file report")
 		
 	def launch_e2boxer_auto(self):
 		self.launch_task(E2BoxerAutoTask,"e2boxer automated boxing")

@@ -94,7 +94,7 @@ void EMData::read_image(const string & filename, int img_index, bool nodata,
 				// If GPU features are enabled there is  danger that rdata will
 				// not be allocated, but set_size takes care of this, so this
 				// should be safe.
-				int err = imageio->read_data(rdata, img_index, region, is_3d);
+				int err = imageio->read_data(get_data(), img_index, region, is_3d);
 				if (err) {
 					throw ImageReadException(filename, "imageio read data failed");
 				}

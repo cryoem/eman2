@@ -52,7 +52,7 @@ float* EMData::get_cuda_data() const {
 		if (cuda_cache_handle != -1 && gpu_ro_is_current() ) {
 			cuda_cache.copy_ro_to_rw(cuda_cache_handle);
 		} else {
-			if (cuda_cache_handle !=-1 ) { 
+			if (cuda_cache_handle !=-1 ) {
 				cuda_cache.clear_item(cuda_cache_handle);
 			}
 			cuda_cache_handle = cuda_cache.cache_rw_data(this,rdata,nx,ny,nz);
@@ -126,7 +126,7 @@ void EMData::cuda_unlock() const {
 	if (cuda_cache_handle == -1) throw UnexpectedBehaviorException("No cuda handle, can't lock");
 	cuda_cache.unlock(cuda_cache_handle);
 }
-EMDataForCuda EMData::get_data_struct_for_cuda() const { 
+EMDataForCuda EMData::get_data_struct_for_cuda() const {
 	EMDataForCuda tmp = {get_cuda_data(),nx,ny,nz};
 	return tmp;
 }
@@ -134,20 +134,22 @@ EMDataForCuda EMData::get_data_struct_for_cuda() const {
 bool EMData::gpu_operation_preferred() const {
 	bool cpu = cpu_rw_is_current();
 	bool gpu = gpu_rw_is_current();
-	if ( cpu==0 &&  gpu==0 ) {		
-		cout << (!(EMDATA_CPU_NEEDS_UPDATE & flags) && rdata != 0) << " " << (cuda_cache_handle !=-1 && !(EMDATA_GPU_NEEDS_UPDATE & flags) && cuda_cache.has_rw_data(cuda_cache_handle)) << endl;
-		cout << "GPU flag " << !(EMDATA_GPU_NEEDS_UPDATE & flags) << endl;
-		cout << "CPU flag " << !(EMDATA_CPU_NEEDS_UPDATE & flags) << endl;
-		cout << "Rdata " << rdata << endl;
-		cout << "Cuda handle " << cuda_cache_handle << endl;
-		throw UnexpectedBehaviorException("Neither the CPU or GPU data are current");
+	if ( cpu==0 &&  gpu==0 ) {
+		// This is what happens when set_size doesn't allocate
+		return false;
+//		cout << (!(EMDATA_CPU_NEEDS_UPDATE & flags) && rdata != 0) << " " << (cuda_cache_handle !=-1 && !(EMDATA_GPU_NEEDS_UPDATE & flags) && cuda_cache.has_rw_data(cuda_cache_handle)) << endl;
+//		cout << "GPU flag " << !(EMDATA_GPU_NEEDS_UPDATE & flags) << endl;
+//		cout << "CPU flag " << !(EMDATA_CPU_NEEDS_UPDATE & flags) << endl;
+//		cout << "Rdata " << rdata << endl;
+//		cout << "Cuda handle " << cuda_cache_handle << endl;
+//		throw UnexpectedBehaviorException("Neither the CPU or GPU data are current");
 	}
 	if (gpu) return true;
 	return false;
 }
 
 EMData* EMData::calc_ccf_cuda( EMData*  image, bool use_texturing,bool center ) const {
-	
+
 	EMData* tmp;
 	if (is_complex()) {
 // 		cout << "Tmp is a copy of this" << endl;
@@ -156,7 +158,7 @@ EMData* EMData::calc_ccf_cuda( EMData*  image, bool use_texturing,bool center ) 
 // 		cout << "Tmp is this fftd" << endl;
 		tmp = do_fft_cuda();
 	}
-	
+
 	Dict d;
 	EMData* with = 0;
 	if (image == this) {
@@ -165,7 +167,7 @@ EMData* EMData::calc_ccf_cuda( EMData*  image, bool use_texturing,bool center ) 
 		if (!image->is_complex()) {
 			int wnx = image->get_xsize(); int wny = image->get_ysize(); int wnz = image->get_zsize();
 			if ( wnx != nx || wny != ny || wnz != nz ) {
-				
+
 				Region r;
 				if (nz > 1) {
 					r = Region((wnx-nx)/2, (wny-ny)/2, (wnz-nz)/2,nx,ny,nz);
@@ -186,8 +188,8 @@ EMData* EMData::calc_ccf_cuda( EMData*  image, bool use_texturing,bool center ) 
 			d["with"] = (EMData*)image;
 		}
 	}
-	
-	
+
+
 	EMDataForCuda left = tmp->get_data_struct_for_cuda();
 	CudaDataLock lock(tmp);
 	if (use_texturing) {
@@ -200,7 +202,7 @@ EMData* EMData::calc_ccf_cuda( EMData*  image, bool use_texturing,bool center ) 
 		emdata_processor_correlation(&left,&right,center);
 	}
 	tmp->gpu_update();
-	
+
 // 	tmp->process_inplace("cuda.correlate",d);
 // 	return tmp;
 	if (with != 0 && image != this) {
@@ -212,7 +214,7 @@ EMData* EMData::calc_ccf_cuda( EMData*  image, bool use_texturing,bool center ) 
 	soln->gpu_update();
 	delete tmp;
 	tmp = 0;
-	
+
 	return soln;
 }
 
@@ -227,7 +229,7 @@ EMData *EMData::make_rotational_footprint_cuda( bool unwrap)
 	if ( rot_fp != 0 && unwrap == true) {
 		return new EMData(*rot_fp);
 	}
-//	
+//
 //	//static EMData obj_filt;
 //	//EMData* filt = &obj_filt;
 //	//filt->set_complex(true);
@@ -246,12 +248,12 @@ EMData *EMData::make_rotational_footprint_cuda( bool unwrap)
 	if ( nz != 1 ) {
 		big_z = nz+2*cs;
 	}
-	
-	
+
+
 	if ( big_clip.get_xsize() != big_x || big_clip.get_ysize() != big_y || big_clip.get_zsize() != big_z ) {
 		big_clip.set_size_cuda(big_x,big_y,big_z);
 		big_clip.get_cuda_data();
-		big_clip.cuda_lock(); // Just lock for the entire duration of the program, it's static anyway...	
+		big_clip.cuda_lock(); // Just lock for the entire duration of the program, it's static anyway...
 	}
 	big_clip.to_value(edge_mean);
 
@@ -261,19 +263,19 @@ EMData *EMData::make_rotational_footprint_cuda( bool unwrap)
 		big_clip.insert_clip(this,IntPoint(cs,cs,0));
 	}
 //	// The filter object is nothing more than a cached high pass filter
-//	// Ultimately it is used an argument to the EMData::mult(EMData,prevent_complex_multiplication (bool)) 
-//	// function in calc_mutual_correlation. Note that in the function the prevent_complex_multiplication 
-//	// set to true, which is used for speed reasons. 
+//	// Ultimately it is used an argument to the EMData::mult(EMData,prevent_complex_multiplication (bool))
+//	// function in calc_mutual_correlation. Note that in the function the prevent_complex_multiplication
+//	// set to true, which is used for speed reasons.
 //	if (filt->get_xsize() != clipped->get_xsize() +2-(clipped->get_xsize()%2) || filt->get_ysize() != clipped->get_ysize() ||
 //		   filt->get_zsize() != clipped->get_zsize()) {
 //		filt->set_size(clipped->get_xsize() + 2-(clipped->get_xsize()%2), clipped->get_ysize(), clipped->get_zsize());
 //		filt->to_one();
 //		filt->process_inplace("eman1.filter.highpass.gaussian", Dict("highpass", 1.5f/nx));
 //	}
-//	
+//
 	EMData *mc = big_clip.calc_ccf_cuda(&big_clip,false,true);
 	mc->sub(mc->get_edge_mean());
-	
+
 	static EMData sml_clip;
 	int sml_x = nx * 3 / 2;
 	int sml_y = ny * 3 / 2;
@@ -281,11 +283,11 @@ EMData *EMData::make_rotational_footprint_cuda( bool unwrap)
 	if ( nz != 1 ) {
 		sml_z = nz * 3 / 2;
 	}
-	
+
 	if ( sml_clip.get_xsize() != sml_x || sml_clip.get_ysize() != sml_y || sml_clip.get_zsize() != sml_z ) {
 		sml_clip.set_size_cuda(sml_x,sml_y,sml_z);
 		sml_clip.get_cuda_data();
-		sml_clip.cuda_lock(); // Just lock for the entire duration of the program, it's static anyway...	
+		sml_clip.cuda_lock(); // Just lock for the entire duration of the program, it's static anyway...
 	}
 	if (nz != 1) {
 		sml_clip.insert_clip(mc,IntPoint(-cs+nx/4,-cs+ny/4,-cs+nz/4));
@@ -302,16 +304,16 @@ EMData *EMData::make_rotational_footprint_cuda( bool unwrap)
 	else {
 		result = sml_clip.unwrap();
 	}
-	
+
 	result->gpu_update();
 
 	if ( unwrap == true)
 	{ // this if statement reflects a strict policy of caching in only one scenario see comments at beginning of function block
-		
+
 		// Note that the if statement at the beginning of this function ensures that rot_fp is not zero, so there is no need
 		// to throw any exception
 		// if ( rot_fp != 0 ) throw UnexpectedBehaviorException("The rotational foot print is only expected to be cached if it is not NULL");
-		
+
 		// Here is where the caching occurs - the rot_fp takes ownsherhip of the pointer, and a deep copied EMData object is returned.
 		// The deep copy invokes a cost in terms of CPU cycles and memory, but prevents the need for complicated memory management (reference counting)
 		rot_fp = result;
@@ -361,7 +363,7 @@ EMData* EMData::calc_ccfx_cuda( EMData * const with, int y0, int y1, bool no_sum
 	static EMData f1;
 	static EMData f2;
 	static EMData rslt;
-	
+
 	int height = y1-y0;
 	int width = (nx+2-(nx%2));
 	if (width != nx_device_fft || height != ny_defice_fft ) {
@@ -371,25 +373,25 @@ EMData* EMData::calc_ccfx_cuda( EMData * const with, int y0, int y1, bool no_sum
 		nx_device_fft = width;
 		ny_defice_fft = height;
 	}
-	
+
 	{// Make a local scope so that the locks are destructed
 		float * cd = get_cuda_data();
 		CudaDataLock lock(this);
-		float * f1cd = f1.get_cuda_data(); 
+		float * f1cd = f1.get_cuda_data();
 		CudaDataLock lock2(&f1);
 		cuda_dd_fft_real_to_complex_1d(cd,f1cd,nx,height);
 	}
 	{// Make a local scope so that the locks are destructed
 		float * wcd = with->get_cuda_data();
 		CudaDataLock lock(this);
-		float * f2cd = f2.get_cuda_data(); 
+		float * f2cd = f2.get_cuda_data();
 		CudaDataLock lock2(&f2);
 		cuda_dd_fft_real_to_complex_1d(wcd,f2cd,nx,height);
 	}
 
 	EMDataForCuda left = f1.get_data_struct_for_cuda();
 	CudaDataLock lock(&f1);
-	
+
 	bool use_texturing = false;
 	bool center = false;
 	if (use_texturing) {
@@ -401,15 +403,15 @@ EMData* EMData::calc_ccfx_cuda( EMData * const with, int y0, int y1, bool no_sum
 		CudaDataLock lock2(&f2);
 		emdata_processor_correlation(&left,&right,center);
 	}
-	
+
 	{// Make a local scope so that the locks are destructed
 		float* rcd = rslt.get_cuda_data();
 		CudaDataLock rlock(&rslt);
-		float * f1cd = f1.get_cuda_data(); 
+		float * f1cd = f1.get_cuda_data();
 		CudaDataLock lock2(&f1);
 		cuda_dd_fft_complex_to_real_1d(f1cd,rcd,nx,height);
 	}
-	
+
 	if (no_sum) {
 		rslt.gpu_update();
 		EXITFUNC;
@@ -419,7 +421,7 @@ EMData* EMData::calc_ccfx_cuda( EMData * const with, int y0, int y1, bool no_sum
 		EXITFUNC;
 		return rslt.column_sum_cuda();
 	}
-		
+
 }
 
 EMData* EMData::column_sum_cuda() const {
@@ -488,7 +490,7 @@ EMData::CudaCache::CudaCache(const int size) : cache_size(size), current_insert_
 	rw_cache = new float *[cache_size];
 	caller_cache = new const EMData*[cache_size];
 	ro_cache = new cudaArray *[cache_size];
-	
+
 	for(int i = 0; i < cache_size; ++ i ) {
 		rw_cache[i] = 0;
 		caller_cache[i] = 0;
@@ -507,7 +509,7 @@ EMData::CudaCache::~CudaCache()
 		delete[]rw_cache;
 		rw_cache = 0;
 	}
-	
+
 	// No deletion responsibility for the caller_cache
 	if( caller_cache )
 	{
@@ -528,7 +530,7 @@ void EMData::CudaCache::unlock(const int idx) {
 	if (locked[idx] == 0) {
 // // 		cout << "Warning - unlocked something that didn't need it" << endl;
 		return;
-		
+
 // 		 throw UnexpectedBehaviorException("Can't unlock, it wasn't locked!");
 	}
 	locked[idx] -=1;
@@ -537,25 +539,25 @@ void EMData::CudaCache::unlock(const int idx) {
 int EMData::CudaCache::cache_rw_data(const EMData* const emdata, const float* const data,const int nx, const int ny, const int nz)
 {
 	ensure_slot_space();
-	
+
 	float* cuda_rw_data = alloc_rw_data(nx,ny,nz);
-	
+
 	if (data != 0 ) { // If rdata is zero it means we're working exclusively on the GPU
 		size_t num_bytes = nx*ny*nz*sizeof(float);
 		cudaError_t error = cudaMemcpy(cuda_rw_data,data,num_bytes,cudaMemcpyHostToDevice);
 		if ( error != cudaSuccess) throw UnexpectedBehaviorException( "CudaMemcpy (host to device) error:" + string(cudaGetErrorString(error)));
 	}
-	
+
 	return blind_store_rw_data(emdata,cuda_rw_data);
 }
 
 int EMData::CudaCache::blind_store_rw_data(const EMData* const emdata, float*  cuda_rw_data)
-{	
+{
 // 	debug_print();
 	rw_cache[current_insert_idx] = cuda_rw_data;
 	caller_cache[current_insert_idx] = emdata;
 	ro_cache[current_insert_idx] = 0;
-	
+
 	int ret = current_insert_idx;
 	current_insert_idx += 1;
 	current_insert_idx %= cache_size; // Potentially inefficient to do this every time, the alternative is an if statement. Which is faster?
@@ -565,15 +567,15 @@ int EMData::CudaCache::blind_store_rw_data(const EMData* const emdata, float*  c
 }
 
 int EMData::CudaCache::store_rw_data(const EMData* const emdata, float* cuda_rw_data)
-{	
+{
 	ensure_slot_space();
-	
+
 	int nx = emdata->get_xsize();
 	int ny = emdata->get_ysize();
 	int nz = emdata->get_zsize();
 	size_t num_bytes = nx*ny*nz*sizeof(float);
 	mem_allocated += num_bytes;
-	
+
 	return blind_store_rw_data(emdata, cuda_rw_data);
 }
 
@@ -605,19 +607,19 @@ void EMData::CudaCache::replace_gpu_rw(const int idx,float* cuda_rw_data)
 			throw UnexpectedBehaviorException( "CudaFree error : " + string(cudaGetErrorString(error)));
 	}
 	rw_cache[idx] = 0;
-	
+
 	const EMData* d = caller_cache[idx];
 	int nx = d->get_xsize();
 	int ny = d->get_ysize();
 	int nz = d->get_zsize();
 	size_t num_bytes = nx*ny*nz*sizeof(float);
 	mem_allocated += num_bytes;
-	
+
 	rw_cache[idx] = cuda_rw_data;
 }
 
 void EMData::CudaCache::ensure_slot_space() {
-	
+
 	int checked_entries = 0;
 	while ( checked_entries < cache_size) {
 		const EMData* previous = caller_cache[current_insert_idx];
@@ -637,10 +639,10 @@ void EMData::CudaCache::ensure_slot_space() {
 			}
 		} else break; // There IS space!
 	}
-	
+
 	if (checked_entries == cache_size) {
 		throw UnexpectedBehaviorException("All of the data objects in the cuda cache are locked! There is no space.");
-	}	
+	}
 }
 
 float* EMData::CudaCache::alloc_rw_data(const int nx, const int ny, const int nz) {
@@ -650,10 +652,10 @@ float* EMData::CudaCache::alloc_rw_data(const int nx, const int ny, const int nz
 	cudaError_t error = cudaMalloc((void**)&cuda_rw_data,num_bytes);
 	if ( error != cudaSuccess) {
 		debug_print();
-		throw BadAllocException( "cudaMalloc error :" + string(cudaGetErrorString(error)));	
+		throw BadAllocException( "cudaMalloc error :" + string(cudaGetErrorString(error)));
 	}
 
-	
+
 //	float* testing;
 //	size_t pitch;
 //	cudaMallocPitch( (void**)&testing, &pitch, nx*sizeof(float), ny*nz);
@@ -663,12 +665,12 @@ float* EMData::CudaCache::alloc_rw_data(const int nx, const int ny, const int nz
 	mem_allocated += num_bytes;
 // 	cout << "Allocation went up, it is currently " << (float)mem_allocated/1000000.0f << " MB " << endl;
 	return cuda_rw_data;
-	
+
 }
 
 int EMData::CudaCache::cache_ro_data(const EMData* const emdata, const float* const data,const int nx, const int ny, const int nz) {
 	ensure_slot_space();
-		
+
 	cudaArray *array = get_cuda_array_host(data,nx,ny,nz);
 	if (array != 0) {
 		mem_allocated += nx*ny*nz*sizeof(float);
@@ -676,12 +678,12 @@ int EMData::CudaCache::cache_ro_data(const EMData* const emdata, const float* co
 		rw_cache[current_insert_idx] = 0;
 		caller_cache[current_insert_idx] = emdata;
 		ro_cache[current_insert_idx] = array;
-		
+
 		int ret = current_insert_idx;
 		current_insert_idx += 1;
 		current_insert_idx %= cache_size; // Potentially inefficient to do this everytime, the alternative is an if statement. Which is faster?
 // 		cout << "Inserted at " << ret  << " inc to " << current_insert_idx << " size " << nx*ny*nz << endl;
-		return ret; 
+		return ret;
 	}
 	else {
 		throw BadAllocException("The allocation of the CUDA array failed");
@@ -698,12 +700,12 @@ void  EMData::CudaCache::copy_rw_to_ro(const int idx) {
 		if ( error != cudaSuccess) throw UnexpectedBehaviorException( "CudaFreeArray error " + string(cudaGetErrorString(error)));
 		ro_cache[idx] = 0;
 	}
-	
+
 	const EMData* d = caller_cache[idx];
 	int nx = d->get_xsize();
 	int ny = d->get_ysize();
 	int nz = d->get_zsize();
-	
+
 	cudaArray *array = get_cuda_array_device(rw_cache[idx],nx,ny,nz);
 	if (array == 0) throw BadAllocException("The allocation of the CUDA array failed");
 	ro_cache[idx] = array;
@@ -725,9 +727,9 @@ void  EMData::CudaCache::copy_ro_to_rw(const int idx) {
 	int ny = d->get_ysize();
 	int nz = d->get_zsize();
 	size_t num_bytes = nx*ny*nz*sizeof(float);
-	
+
 	float* cuda_rw_data = alloc_rw_data(nx,ny,nz);
-	
+
 	if (nz > 1) {
 		cudaExtent extent;
 		extent.width  = nx;
@@ -741,13 +743,13 @@ void  EMData::CudaCache::copy_ro_to_rw(const int idx) {
 		cudaError_t error = cudaMemcpy3D(&copyParams);
 		if ( error != cudaSuccess)
 			throw UnexpectedBehaviorException( "Copying device array to device pointer - CudaMemcpy3D error : " + string(cudaGetErrorString(error)));
-		
+
 	} else if ( ny > 1 ) {
 		cudaError_t error = cudaMemcpyFromArray(cuda_rw_data,ro_cache[idx],0,0,num_bytes,cudaMemcpyDeviceToDevice);
 		if ( error != cudaSuccess)
 			throw UnexpectedBehaviorException( "Copying device array to device pointer - cudaMemcpyFromArray error : " + string(cudaGetErrorString(error)));
 	} else throw UnexpectedBehaviorException("Cuda infrastructure has not been designed to work on 1D data");
-	
+
 	rw_cache[idx] = cuda_rw_data;
 }
 
@@ -761,7 +763,7 @@ void  EMData::CudaCache::copy_ro_to_cpu(const int idx,float* data) {
 	int ny = d->get_ysize();
 	int nz = d->get_zsize();
 	size_t num_bytes = nx*ny*nz*sizeof(float);
-	
+
 	if (nz > 1) {
 		cudaExtent extent;
 		extent.width  = nx;
@@ -775,13 +777,13 @@ void  EMData::CudaCache::copy_ro_to_cpu(const int idx,float* data) {
 		cudaError_t error = cudaMemcpy3D(&copyParams);
 		if ( error != cudaSuccess)
 			throw UnexpectedBehaviorException( "Copying device array to device pointer - CudaMemcpy3D error : " + string(cudaGetErrorString(error)));
-		
+
 	} else if ( ny > 1 ) {
 		cudaError_t error = cudaMemcpyFromArray(data,ro_cache[idx],0,0,num_bytes,cudaMemcpyDeviceToHost);
 		if ( error != cudaSuccess)
 			throw UnexpectedBehaviorException( "Copying device array to device pointer - cudaMemcpyFromArray error : " + string(cudaGetErrorString(error)));
 	} else throw UnexpectedBehaviorException("Cuda infrastructure has not been designed to work on 1D data");
-	
+
 }
 void EMData::CudaCache::clear_item(const int idx) {
 // 	debug_print();
@@ -792,7 +794,7 @@ void EMData::CudaCache::clear_item(const int idx) {
 			throw UnexpectedBehaviorException( "CudaFree error : " + string(cudaGetErrorString(error)));
 	}
 	rw_cache[idx] = 0;
-	
+
 	if  ( ro_cache[idx] != 0) {
 		mem_allocated -= get_emdata_bytes(idx);
 		cudaError_t error = cudaFreeArray(ro_cache[idx]);
@@ -800,9 +802,9 @@ void EMData::CudaCache::clear_item(const int idx) {
 
 	}
 	ro_cache[idx] = 0;
-	
+
 	caller_cache[idx] = 0;
-	
+
 	locked[idx] = 0;
 }
 

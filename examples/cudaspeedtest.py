@@ -68,54 +68,54 @@ def test_main():
 		cpu_times.append(time()-t)
 		print dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1]
 	
-	print "Testing phase comparison"
-	for dims in test_dims:
-		a = [test_image(0,size=(dims,dims)) for i in test_range]
-		for d in a: d.set_gpu_rw_current()
-		tr = Transform()
-		
-		t = time()
-		for i in test_range:
-			b = a[i].cmp("phase",a[i])
-			#c.print_this()
-
-		gpu_times.append(time()-t)
-		#print dims, "B"
-		a = [test_image(0,size=(dims,dims)) for i in test_range]
-		t = time()
-		for i in test_range:
-			b = a[i].cmp("phase",a[i])
-		cpu_times.append(time()-t)
-		print dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1]
+#	print "Testing phase comparison"
+#	for dims in test_dims:
+#		a = [test_image(0,size=(dims,dims)) for i in test_range]
+#		for d in a: d.set_gpu_rw_current()
+#		tr = Transform()
+#		
+#		t = time()
+#		for i in test_range:
+#			b = a[i].cmp("phase",a[i])
+#			#c.print_this()
+#
+#		gpu_times.append(time()-t)
+#		#print dims, "B"
+#		a = [test_image(0,size=(dims,dims)) for i in test_range]
+#		t = time()
+#		for i in test_range:
+#			b = a[i].cmp("phase",a[i])
+#		cpu_times.append(time()-t)
+#		print dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1]
+#	
+#	alis = ["translational","rotational","rotate_translate","rotate_translate_flip"]
+#	for ali in alis:
+#		print "Testing",ali,"alignment"
+#		print "Dims","\t", "GPU speedup"
+#		for dims in test_dims:
+#			a = [test_image(0,size=(dims,dims)) for i in test_range]
+#			b = [test_image(0,size=(dims,dims)) for i in test_range]
+#			for d in a: d.set_gpu_rw_current()
+#			for d in b: d.set_gpu_rw_current()
+#			
+#			t = time()
+#			for i in test_range:
+#				a[i].set_gpu_rw_current()
+#				b[i].set_gpu_rw_current()
+#				c = a[i].align(ali,b[i],{},"phase",{})
+#				#c.print_this()
+#	
+#			gpu_times.append(time()-t)
+#			#print dims, "B"
+#			a = [test_image(0,size=(dims,dims)) for i in test_range]
+#			b = [test_image(0,size=(dims,dims)) for i in test_range]
+#			t = time()
+#			for i in test_range:
+#				c = a[i].align(ali,b[i],{},"phase",{})
+#			cpu_times.append(time()-t)
+#			print dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1]
 	
-	alis = ["translational","rotational","rotate_translate","rotate_translate_flip"]
-	for ali in alis:
-		print "Testing",ali,"alignment"
-		print "Dims","\t", "GPU speedup"
-		for dims in test_dims:
-			a = [test_image(0,size=(dims,dims)) for i in test_range]
-			b = [test_image(0,size=(dims,dims)) for i in test_range]
-			for d in a: d.set_gpu_rw_current()
-			for d in b: d.set_gpu_rw_current()
-			
-			t = time()
-			for i in test_range:
-				a[i].set_gpu_rw_current()
-				b[i].set_gpu_rw_current()
-				c = a[i].align(ali,b[i],{},"phase",{})
-				#c.print_this()
-	
-			gpu_times.append(time()-t)
-			#print dims, "B"
-			a = [test_image(0,size=(dims,dims)) for i in test_range]
-			b = [test_image(0,size=(dims,dims)) for i in test_range]
-			t = time()
-			for i in test_range:
-				c = a[i].align(ali,b[i],{},"phase",{})
-			cpu_times.append(time()-t)
-			print dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1]
-	
-	print "Testing transform"
+	print "Testing transform (2D)"
 	for dims in test_dims:
 		a = [test_image(0,size=(dims,dims)) for i in test_range]
 		for d in a: d.set_gpu_rw_current()
@@ -127,41 +127,32 @@ def test_main():
 			#c.print_this()
 
 		gpu_times.append(time()-t)
-		#print dims, "B"
 		a = [test_image(0,size=(dims,dims)) for i in test_range]
 		t = time()
 		for i in test_range:
 			b = a[i].process("math.transform",{"transform":tr})
 		cpu_times.append(time()-t)
 		print dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1]
-	
-	
-	alis = ["translational","rotational","rotate_translate","rotate_translate_flip"]
-	for ali in alis:
-		print "Testing",ali,"alignment"
-		print "Dims","\t", "GPU speedup"
-		for dims in test_dims:
-			a = [test_image(0,size=(dims,dims)) for i in test_range]
-			b = [test_image(0,size=(dims,dims)) for i in test_range]
-			for d in a: d.set_gpu_rw_current()
-			for d in b: d.set_gpu_rw_current()
-			
-			t = time()
-			for i in test_range:
-				a[i].set_gpu_rw_current()
-				b[i].set_gpu_rw_current()
-				c = a[i].align(ali,b[i],{},"phase",{})
-				#c.print_this()
-	
-			gpu_times.append(time()-t)
-			#print dims, "B"
-			a = [test_image(0,size=(dims,dims)) for i in test_range]
-			b = [test_image(0,size=(dims,dims)) for i in test_range]
-			t = time()
-			for i in test_range:
-				c = a[i].align("rotational",b[i])
-			cpu_times.append(time()-t)
-			print dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1]
+		
+	print "Testing transform (3D)"
+	for dims in [64,96,128,256]:
+		a = [test_image_3d(0,size=(dims,dims,dims)) for i in range(1)]
+		for d in a: d.set_gpu_rw_current()
+		tr = Transform()
+		
+		t = time()
+		for i in range(10):
+			b = a[0].process("math.transform",{"transform":tr})
+			#c.print_this()
+
+		gpu_times.append(time()-t)
+		#print dims, "B"
+		a = [test_image_3d(0,size=(dims,dims,dims)) for i in range(1)]
+		t = time()
+		for i in range(10):
+			b = a[0].process("math.transform",{"transform":tr})
+		cpu_times.append(time()-t)
+		print dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1]
 	
 	print "Testing calc_ccfx"
 	print "Dims","\t", "GPU speedup"

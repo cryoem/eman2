@@ -197,6 +197,15 @@ float* EMData::get_data() const
 	size_t num_bytes = nx*ny*nz*sizeof(float);
 	if (num_bytes > 0 && rdata == 0) {
 		rdata = (float*)EMUtil::em_malloc(num_bytes);
+		if ( rdata == 0 )
+		{
+			stringstream ss;
+			string gigs;
+			ss << (float) get_size()/1000000000.0;
+			ss >> gigs;
+			string message = "Cannot allocate " + gigs + " GB - not enough memory.";
+			throw BadAllocException(message);
+		}
 		if (rdata == 0) throw BadAllocException("The allocation of the raw data failed");
 	}
 #ifdef EMAN2_USING_CUDA
@@ -647,9 +656,10 @@ void EMData::set_size(int x, int y, int z)
 	if (rdata != 0) {
 		rdata = (float*)EMUtil::em_realloc(rdata,size);
 	} else {
+		// Just pass on this for a while....see what happens
 		rdata = (float*)EMUtil::em_malloc(size);
 	}
-// 	rdata = static_cast < float *>(realloc(rdata, size));
+ 	rdata = static_cast < float *>(realloc(rdata, size));
 	if ( rdata == 0 )
 	{
 		stringstream ss;
@@ -658,16 +668,6 @@ void EMData::set_size(int x, int y, int z)
 		ss >> gigs;
 		string message = "Cannot allocate " + gigs + " GB - not enough memory.";
 		throw BadAllocException(message);
-	}
-
-
-	if (old_nx == 0) {
-		EMUtil::em_memset(rdata,0,size);
-	}
-
-	if (supp) {
-		EMUtil::em_free(supp);
-		supp = 0;
 	}
 
 #ifdef EMAN2_USING_CUDA
@@ -682,8 +682,19 @@ void EMData::set_size(int x, int y, int z)
 
 	attr_dict["nx"] = x;
 	attr_dict["ny"] = y;
+
+
 	attr_dict["nz"] = z;
 
+
+	if (old_nx == 0) {
+		EMUtil::em_memset(get_data(),0,size);
+	}
+
+	if (supp) {
+		EMUtil::em_free(supp);
+		supp = 0;
+	}
 
 	update();
 	EXITFUNC;

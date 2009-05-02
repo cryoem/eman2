@@ -536,7 +536,7 @@ class TomographyTask(WorkFlowTask):
 		targetimage = ParamDef(name="targetimage",vartype="url",desc_short="target image file name",desc_long="target image file name",property=None,defaultunits=project_db.get("targetimage",dfl=[]),choices=[])
 		probeimage = ParamDef(name="probeimage",vartype="url",desc_short="probe image file name",desc_long="probe image file name",property=None,defaultunits=project_db.get("probeimage",dfl=[]),choices=[])
 		norm = ParamDef(name="normalization",vartype="int",desc_short="normalization",desc_long="if the normalization needed",property=None,defaultunits=0,choices=[0,1])
-		nsoln = ParamDef(name="nsoln",vartype="int",desc_short="#solution",desc_long="number of solution",property=None,defaultunits=0,choices=None)
+		nsoln = ParamDef(name="nsoln",vartype="int",desc_short="#solution",desc_long="number of solution",property=None,defaultunits=1,choices=None)
 		thresh = ParamDef(name="thresh",vartype="float",desc_short="threshold",desc_long="threshold",property=None,defaultunits=1.0,choices=None)
 		searchx = ParamDef(name="searchx",vartype="int",desc_short="searchx",desc_long="searchx",property=None,defaultunits=0,choices=None)
 		searchy = ParamDef(name="searchy",vartype="int",desc_short="searchy",desc_long="searchy",property=None,defaultunits=0,choices=None)
@@ -592,7 +592,8 @@ class TomographyTask(WorkFlowTask):
 		self.emit(QtCore.SIGNAL("task_idle"))
 		self.form.closeEvent(None)
 		self.form = None
-		
+	
+	
 class SPRInitTask(WorkFlowTask):
 	'''
 	A class that manages the initialization component of a Single Particle
@@ -630,6 +631,144 @@ class SPRInitTask(WorkFlowTask):
 
 	def write_db_entry(self,key,value):
 		WorkFlowTask.write_db_entry(self,key,value)		
+
+
+class MicrographReportTask(WorkFlowTask):	
+	documentation_string = "This forms displays the micrograph and/or ccds images that  you currently have associated with this project"
+	warning_string = "\n\n\nNOTE: There are no images currenty associated with the project. Please associate or import images"
+	def __init__(self,application):
+		WorkFlowTask.__init__(self,application)
+		self.window_title = "Micrographs In Project"
+		self.boxer_module = None # this will actually point to an EMBoxerModule, potentially
+
+	def get_raw_files_in_project(self):
+		'''
+		
+		Returns a table like this:
+		
+		|| File name  || Dimensions || Mean || Sigma|| Min || Max ||
+
+		'''
+		project_db = db_open_dict("bdb:project")
+		project_names = project_db.get("global.micrograph_ccd_filenames",dfl=[])
+		
+		dims = [] # will be a string list
+		mean = [] # will be a float list
+		sigma = [] # will be a float \ist
+		min = [] # will be a float list
+		max = [] # will be a float
+		
+#		for name in project_names:
+#			e = EMData()
+#			e.read_image(name,0,True) # read header only
+#			d = e.get_attr_dict()
+#			dims.append("%ix%ix%i" %(d["nx"],d["ny"],d["nz"]))
+#			
+#			val = 0
+#			if d.has_key("mean"): val = d["mean"]
+#			mean.append(val)
+#			val = 0
+#			if d.has_key("sigma"): val = d["sigma"]
+#			sigma.append(val)
+#			val = 0
+#			if d.has_key("maximum"): val = d["maximum"]
+#			max.append(val)
+#			val = 0
+#			if d.has_key("minimum"): val = d["minimum"]
+#			min.append(val)
+		
+		pnames = ParamDef(name="global.micrograph_ccd_filenames",vartype="stringlist",desc_short="File names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=None,choices=project_names)
+		pdims = ParamDef(name="Dimensions",vartype="stringlist",desc_short="Dimensions",desc_long="The dimensions of the particle images",property=None,defaultunits=None,choices=dims)
+		pmean = ParamDef(name="Mean",vartype="floatlist",desc_short="Mean",desc_long="Mean pixel value",property=None,defaultunits=None,choices=mean)
+		psigma = ParamDef(name="Sigma",vartype="floatlist",desc_short="Sigma",desc_long="Pixel value standard deviation",property=None,defaultunits=None,choices=sigma)
+		pmax = ParamDef(name="Max",vartype="floatlist",desc_short="Maximum",desc_long="Largest pixel value",property=None,defaultunits=None,choices=max)
+		pmin = ParamDef(name="Min",vartype="floatlist",desc_short="Minimum",desc_long="Smallest pixel value",property=None,defaultunits=None,choices=min)
+		
+		
+		p = ParamTable(name="filenames",desc_short="Project files",desc_long="")
+		p.append(pnames)
+#		p.append(pdims)
+#		p.append(pmean)
+#		p.append(psigma)
+#		p.append(pmax)
+#		p.append(pmin)
+
+		setattr(p,"convert_text", ptable_convert_2)
+#		context_menu_dict = {"Save as":image_save_as}
+		context_menu_dict = {}
+		context_menu_dict["remove"] = MicrographReportTask.remove_file_from_project
+		setattr(p,"context_menu", context_menu_dict)
+		setattr(p,"icon_type","single_image")
+		
+		
+		#p.append(pdims) # don't think this is really necessary
+		return p,len(project_names)
+
+	def remove_file_from_project(file_name,unused_variable):
+		print file_name
+		
+		
+	remove_file_from_project = staticmethod(remove_file_from_project)
+
+	def get_params(self):
+		params = []
+		
+		p,n = self.get_raw_files_in_project()
+		
+		if n == 0:
+			params.append(ParamDef(name="blurb",vartype="text",desc_short="Files",desc_long="",property=None,defaultunits=MicrographReportTask.documentation_string+MicrographReportTask.warning_string,choices=None))
+		else:
+			params.append(ParamDef(name="blurb",vartype="text",desc_short="Files",desc_long="",property=None,defaultunits=MicrographReportTask.documentation_string,choices=None))
+			params.append(p)
+		return params
+			
+	def on_form_ok(self,params):
+		return
+#		if not params.has_key("filenames"): return
+#		
+#		if  params.has_key("filenames") and len(params["filenames"]) == 0:
+#			self.run_select_files_msg()
+#			return
+#
+#		if  params.has_key("interface_boxsize") and params["interface_boxsize"] < 1:
+#			self.show_error_message(["Must specify a positive, non zero boxsize."])
+#			return
+#		else:
+#			self.write_db_entries(params)
+#			options = EmptyObject()
+#			for key in params.keys():
+#				setattr(options,key,params[key])
+#			options.boxsize = params["interface_boxsize"]
+#			options.running_mode = "gui"
+#			options.method = "Swarm"
+#			
+#			from e2boxer import EMBoxerModule
+#			self.boxer_module = EMBoxerModule(get_application(),options)
+#			self.emit(QtCore.SIGNAL("gui_running"),"Boxer",self.boxer_module) # The controlled program should intercept this signal and keep the E2BoxerTask instance in memory, else signals emitted internally in boxer won't work
+#			
+#			QtCore.QObject.connect(self.boxer_module, QtCore.SIGNAL("module_idle"), self.on_boxer_idle)
+#			QtCore.QObject.connect(self.boxer_module, QtCore.SIGNAL("module_closed"), self.on_boxer_closed)
+#			self.form.closeEvent(None)
+#			self.boxer_module.show_guis()
+#			self.form = None
+			
+#	def on_form_close(self):
+#		# this is to avoid a task_idle signal, which would be incorrect if e2boxer is running
+#		if self.boxer_module == None:
+#			self.emit(QtCore.SIGNAL("task_idle"))
+#		else: pass
+#	
+#	def on_boxer_closed(self): 
+#		if self.boxer_module != None:
+#			self.boxer_module = None
+#			self.emit(QtCore.SIGNAL("gui_exit"))
+#	
+#	def on_boxer_idle(self):
+#		'''
+#		Presently this means boxer did stuff but never opened any guis, so it's safe just to emit the signal
+#		'''
+#		self.boxer_module = None
+#		self.emit(QtCore.SIGNAL("gui_exit"))
 
 
 class MicrographCCDImportTask(WorkFlowTask):	
@@ -827,7 +966,7 @@ class MicrographCCDImportTask(WorkFlowTask):
 	
 class MicrographCCDTask(WorkFlowTask):
 	
-	documentation_string = "This is a list of micrographs or CCD frames that you choose to associate with this project. You can add and remove file names by editing the text entries directly and or by using the browse and clear buttons. In addition to being able to specify images that are stored on your hard drive in the usual way, you can also choose images from EMAN2 style databases."
+	documentation_string = "This is a list of micrographs or CCD frames that you choose to associate with this project. You can add and remove file names by editing the text entries directly and or by using the browse and clear buttons."
 	
 	
 	def __init__(self,application):

@@ -1,39 +1,39 @@
 /**
  * $Id$
  */
- 
+
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
- 
-#include "emdata.h" 
+
+#include "emdata.h"
 #include "ctf.h"
 #include "emfft.h"
 #include "cmp.h"
@@ -43,7 +43,7 @@ using namespace EMAN;
 // debug only
 #include <iostream>
 #include <cstring>
-				 
+
 using std::cout;
 using std::endl;
 
@@ -63,7 +63,7 @@ void EMData::free_memory()
 		EMUtil::em_free(supp);
 		supp = 0;
 	}
-	
+
 	if (rot_fp != 0)
 	{
 		delete rot_fp;
@@ -75,14 +75,14 @@ void EMData::free_memory()
 	nz = 0;
 	nxy = 0;
 	 */
-	
+
 	EXITFUNC;
 }
 
 EMData * EMData::copy() const
 {
 	ENTERFUNC;
-	
+
 	EMData *ret = new EMData(*this);
 
 	EXITFUNC;
@@ -95,8 +95,8 @@ EMData *EMData::copy_head() const
 	ENTERFUNC;
 	EMData *ret = new EMData();
 	ret->attr_dict = attr_dict;
-// // This call doesn't make sense. I found an 
-	ret->set_size(nx, ny, nz); 
+// // This call doesn't make sense. I found an
+	ret->set_size(nx, ny, nz);
 	ret->flags = flags;
 
 	ret->all_translation = all_translation;
@@ -124,8 +124,8 @@ void EMData::add(float f,int keepzero)
 	if( is_real() )
 	{
 		if (f != 0) {
-			
-			
+
+
 #ifdef EMAN2_USING_CUDA
 			if ( gpu_operation_preferred () && !keepzero ) {
 				EMDataForCuda tmp = get_data_struct_for_cuda();
@@ -192,7 +192,7 @@ void EMData::add(const EMData & image)
 		throw ImageFormatException( "not support add between real image and complex image");
 	}
 	else {
-		
+
 		const float *src_data = image.get_data();
 		int size = nxy * nz;
 		float* data = get_data();
@@ -217,7 +217,7 @@ void EMData::addsquare(const EMData & image)
 		throw ImageFormatException( "Cannot addsquare() with complex images");
 	}
 	else {
-		
+
 		const float *src_data = image.get_data();
 		int size = nxy * nz;
 		float* data = get_data();
@@ -242,7 +242,7 @@ void EMData::subsquare(const EMData & image)
 		throw ImageFormatException( "Cannot addsquare() with complex images");
 	}
 	else {
-		
+
 		const float *src_data = image.get_data();
 		int size = nxy * nz;
 		float* data = get_data();
@@ -272,7 +272,7 @@ void EMData::sub(float f)
 			EXITFUNC;
 			return;
 		}
-#endif // EMAN2_USING_CUDA		
+#endif // EMAN2_USING_CUDA
 			size_t size = nxy * nz;
 			for (size_t i = 0; i < size; i++) {
 				data[i] -= f;
@@ -330,8 +330,8 @@ void EMData::sub(const EMData & em)
 void EMData::mult(float f)
 {
 	ENTERFUNC;
-	
-	
+
+
 	if (is_complex()) {
 		ap2ri();
 	}
@@ -396,37 +396,37 @@ void EMData::mult(const EMData & em, bool prevent_complex_multiplication)
 	EXITFUNC;
 }
 
-void EMData::mult_complex_efficient(const EMData & em, const int radius) 
+void EMData::mult_complex_efficient(const EMData & em, const int radius)
 {
 	ENTERFUNC;
 
 	if( is_real() || em.is_real() )throw ImageFormatException( "can call mult_complex_efficient unless both images are complex");
-	
-	
+
+
 	const float *src_data = em.get_data();
-	
+
 	size_t i_radius = radius;
 	size_t k_radius = 1;
 	size_t j_radius = 1;
 	int ndim = get_ndim();
-	
+
 	if (ndim != em.get_ndim()) throw ImageDimensionException("Can't do that");
-	
+
 	if ( ndim == 3 ) {
-		k_radius = radius; 
+		k_radius = radius;
 		j_radius = radius;
 	} else if ( ndim == 2 ) {
 		j_radius = radius;
 	}
-	
-	
+
+
 	int s_nx = em.get_xsize();
 	int s_nxy = s_nx*em.get_ysize();
-	
+
 	int r_size = nxy*nz;
 	int s_size = s_nxy*em.get_zsize();
 	float* data = get_data();
-	
+
 	for (size_t k = 0; k < k_radius; ++k ) {
 		for (size_t j = 0; j < j_radius; j++) {
 			for (size_t i = 0; i < i_radius; i++) {
@@ -437,7 +437,7 @@ void EMData::mult_complex_efficient(const EMData & em, const int radius)
 			}
 		}
 	}
-	
+
 	update();
 
 	EXITFUNC;
@@ -451,7 +451,7 @@ void EMData::div(float f)
 	if ( f == 0 ) {
 		throw InvalidValueException(f,"Can not divide by zero");
 	}
-	
+
 	mult(1.0f/f);
 	EXITFUNC;
 }
@@ -607,7 +607,7 @@ float& EMData::get_value_at_wrap(int x, int y)
 {
 	if (x < 0) x = nx + x;
 	if (y < 0) y = ny + y;
-	
+
 	return get_data()[x + y * nx];
 }
 
@@ -619,7 +619,7 @@ float& EMData::get_value_at_wrap(int x, int y, int z)
 	if (lx < 0) lx = nx + lx;
 	if (ly < 0) ly = ny + ly;
 	if (lz < 0) lz = nz + lz;
-	
+
 	return get_data()[lx + ly * nx + lz * nxy];
 }
 
@@ -634,7 +634,7 @@ float EMData::get_value_at_wrap(int x, int y) const
 {
 	if (x < 0) x = nx - x;
 	if (y < 0) y = ny - y;
-	
+
 	return get_data()[x + y * nx];
 }
 
@@ -646,7 +646,7 @@ float EMData::get_value_at_wrap(int x, int y, int z) const
 	if (lx < 0) lx = nx + lx;
 	if (ly < 0) ly = ny + ly;
 	if (lz < 0) lz = nz + lz;
-	
+
 	return get_data()[lx + ly * nx + lz * nxy];
 }
 
@@ -688,7 +688,7 @@ float EMData::sget_value_at_interp(float xx, float yy) const
 	float p2 = sget_value_at(x + 1, y);
 	float p3 = sget_value_at(x, y + 1);
 	float p4 = sget_value_at(x + 1, y + 1);
-	
+
 	float result = Util::bilinear_interpolate(p1, p2, p3, p4, xx - x, yy - y);
 	return result;
 }
@@ -786,11 +786,11 @@ EMData & EMData::operator/=(const EMData & em)
 EMData * EMData::power(int n) const
 {
 	ENTERFUNC;
-	
+
 	if( n<0 ) {
 		throw InvalidValueException(n, "the power of negative integer not supported.");
 	}
-	
+
 	EMData * r = this->copy();
 	if( n == 0 ) {
 		r->to_one();
@@ -803,37 +803,37 @@ EMData * EMData::power(int n) const
 
 	r->update();
 	return r;
-	
+
 	EXITFUNC;
 }
 
 
-EMData * EMData::sqrt() const 
+EMData * EMData::sqrt() const
 {
 	ENTERFUNC;
-	
+
 	if (is_complex()) {
 		throw ImageFormatException("real image only");
 	}
-	
+
 	EMData * r = this->copy();
 	float * new_data = r->get_data();
 	float * data = get_data();
 	size_t size = nxy * nz;
 	for (size_t i = 0; i < size; ++i) {
-		if(data[i] < 0) {	
+		if(data[i] < 0) {
 			throw InvalidValueException(data[i], "pixel value must be non-negative for logrithm");
 		}
 		else {
-			if(data[i]) {	//do nothing with pixel has value zero 
+			if(data[i]) {	//do nothing with pixel has value zero
 				new_data[i] = std::sqrt(data[i]);
 			}
 		}
 	}
-	
+
 	r->update();
 	return r;
-	
+
 	EXITFUNC;
 }
 
@@ -841,29 +841,29 @@ EMData * EMData::sqrt() const
 EMData * EMData::log() const
 {
 	ENTERFUNC;
-	
+
 	if (is_complex()) {
 		throw ImageFormatException("real image only");
 	}
-	
+
 	EMData * r = this->copy();
 	float * new_data = r->get_data();
 	float * data = get_data();
 	size_t size = nxy * nz;
 	for (size_t i = 0; i < size; ++i) {
-		if(data[i] < 0) {	
+		if(data[i] < 0) {
 			throw InvalidValueException(data[i], "pixel value must be non-negative for logrithm");
 		}
 		else {
-			if(data[i]) {	//do nothing with pixel has value zero 
+			if(data[i]) {	//do nothing with pixel has value zero
 				new_data[i] = std::log(data[i]);
 			}
 		}
 	}
-	
+
 	r->update();
 	return r;
-	
+
 	EXITFUNC;
 }
 
@@ -871,29 +871,29 @@ EMData * EMData::log() const
 EMData * EMData::log10() const
 {
 	ENTERFUNC;
-	
+
 	if (is_complex()) {
 		throw ImageFormatException("real image only");
 	}
-	
+
 	EMData * r = this->copy();
 	float * new_data = r->get_data();
 	float * data = get_data();
 	size_t size = nxy * nz;
 	for (size_t i = 0; i < size; ++i) {
-		if(data[i] < 0) {	
+		if(data[i] < 0) {
 			throw InvalidValueException(data[i], "pixel value must be non-negative for logrithm");
 		}
 		else {
-			if(data[i]) {	//do nothing with pixel has value zero 
+			if(data[i]) {	//do nothing with pixel has value zero
 				new_data[i] = std::log10(data[i]);
 			}
 		}
 	}
-	
+
 	r->update();
 	return r;
-	
+
 	EXITFUNC;
 }
 
@@ -901,7 +901,7 @@ EMData * EMData::log10() const
 EMData * EMData::real() const //real part has half of x dimension for a complex image
 {
 	ENTERFUNC;
-	
+
 	EMData * e = new EMData();
 
 	if( is_real() ) // a real image, return a copy of itself
@@ -910,7 +910,7 @@ EMData * EMData::real() const //real part has half of x dimension for a complex 
 	}
 	else //for a complex image
 	{
-		if( !is_ri() ) 
+		if( !is_ri() )
 		{
 			delete e;
 			throw InvalidCallException("This image is in amplitude/phase format, this function call require a complex image in real/imaginary format.");
@@ -936,7 +936,7 @@ EMData * EMData::real() const //real part has half of x dimension for a complex 
 			}
 		}
 	}
-	
+
 	e->set_complex(false);
 	if(e->get_ysize()==1 && e->get_zsize()==1) {
 		e->set_complex_x(false);
@@ -958,7 +958,7 @@ EMData * EMData::imag() const
 		throw InvalidCallException("No imaginary part for a real image, this function call require a complex image.");
 	}
 	else {	//for complex image
-		if( !is_ri() ) {	
+		if( !is_ri() ) {
 			throw InvalidCallException("This image is in amplitude/phase format, this function call require a complex image in real/imaginary format.");
 		}
 		int nx = get_xsize();
@@ -978,7 +978,7 @@ EMData * EMData::imag() const
 			}
 		}
 	}
-	
+
 	e->set_complex(false);
 	if(e->get_ysize()==1 && e->get_zsize()==1) {
 		e->set_complex_x(false);
@@ -992,7 +992,7 @@ EMData * EMData::imag() const
 EMData * EMData::absi() const//abs has half of x dimension for a complex image
 {
 	ENTERFUNC;
-	
+
 	EMData * e = new EMData();
 
 	if( is_real() ) // a real image
@@ -1003,7 +1003,7 @@ EMData * EMData::absi() const//abs has half of x dimension for a complex image
 		int nz = get_zsize();
 		float *edata = e->get_data();
 		float * data = get_data();
-		
+
 		for( int i=0; i<nx; i++ ) {
 			for( int j=0; j<ny; j++ ) {
 				for( int k=0; k<nz; k++ ) {
@@ -1014,7 +1014,7 @@ EMData * EMData::absi() const//abs has half of x dimension for a complex image
 	}
 	else //for a complex image
 	{
-		if( !is_ri() ) 
+		if( !is_ri() )
 		{
 			throw InvalidCallException("This image is in amplitude/phase format, this function call require a complex image in real/imaginary format.");
 		}
@@ -1040,7 +1040,7 @@ EMData * EMData::absi() const//abs has half of x dimension for a complex image
 			}
 		}
 	}
-	
+
 	e->set_complex(false);
 	if(e->get_ysize()==1 && e->get_zsize()==1) {
 		e->set_complex_x(false);
@@ -1055,17 +1055,17 @@ EMData * EMData::absi() const//abs has half of x dimension for a complex image
 EMData * EMData::amplitude() const
 {
 	ENTERFUNC;
-	
+
 	EMData * e = new EMData();
-	
-	if( is_real() ) {	
+
+	if( is_real() ) {
 		throw InvalidCallException("No imaginary part for a real image, this function call require a complex image.");
 	}
 	else {
 		if(is_ri()) {
 			throw InvalidCallException("This image is in real/imaginary format, this function call require a complex image in amplitude/phase format.");
 		}
-		
+
 		int nx = get_xsize();
 		int ny = get_ysize();
 		int nz = get_zsize();
@@ -1087,23 +1087,23 @@ EMData * EMData::amplitude() const
 			}
 		}
 	}
-	
+
 	e->set_complex(false);
 	if(e->get_ysize()==1 && e->get_zsize()==1) {
 		e->set_complex_x(false);
 	}
 	e->update();
-	return e; 	
-	
+	return e;
+
 	EXITFUNC;
 }
 
 EMData * EMData::phase() const
 {
 	ENTERFUNC;
-	
+
 	EMData * e = new EMData();
-	
+
 	if( is_real() ) {
 		delete e;
 		throw InvalidCallException("No imaginary part for a real image, this function call require a complex image.");
@@ -1113,7 +1113,7 @@ EMData * EMData::phase() const
 			delete e;
 			throw InvalidCallException("This image is in real/imaginary format, this function call require a complex image in amplitude/phase format.");
 		}
-		
+
 		int nx = get_xsize();
 		int ny = get_ysize();
 		int nz = get_zsize();
@@ -1131,14 +1131,14 @@ EMData * EMData::phase() const
 			}
 		}
 	}
-	
+
 	e->set_complex(false);
 	if(e->get_ysize()==1 && e->get_zsize()==1) {
 		e->set_complex_x(false);
 	}
 	e->update();
 	return e;
-	
+
 	EXITFUNC;
 }
 
@@ -1149,22 +1149,22 @@ EMData * EMData::real2complex(const float img) const
 	if( is_complex() ) {
 		throw InvalidCallException("This function call only apply to real image");
 	}
-	
+
 	EMData * e = new EMData();
 	int nx = get_xsize();
 	int ny = get_ysize();
 	int nz = get_zsize();
 	e->set_size(nx*2, ny, nz);
-	
+
 	for( int k=0; k<nz; k++ ) {
 		for( int j=0; j<ny; j++ ) {
-			for( int i=0; i<nx; i++ ) {			
+			for( int i=0; i<nx; i++ ) {
 				(*e)(i*2,j,k) = (*this)(i,j,k);
 				(*e)(i*2+1,j,k) = img;
 			}
 		}
 	}
-	
+
 	e->set_complex(true);
 	if(e->get_ysize()==1 && e->get_zsize()==1) {
 		e->set_complex_x(true);
@@ -1187,7 +1187,8 @@ void EMData::to_zero()
 		set_ri(false);
 	}
 
-	EMUtil::em_memset(rdata, 0, nxy * nz * sizeof(float));
+	//EMUtil::em_memset(get_data(), 0, nxy * nz * sizeof(float));
+	to_value(0.0);
 	update();
 	EXITFUNC;
 }
@@ -1202,10 +1203,7 @@ void EMData::to_one()
 	else {
 		set_ri(false);
 	}
-	float* data = get_data();
-	for (int i = 0; i < nxy * nz; i++) {
-		data[i] = 1.0f;
-	}
+	to_value(1.0);
 
 	update();
 	EXITFUNC;
@@ -1225,7 +1223,8 @@ void EMData::to_value(const float& value)
 	}
 #endif // EMAN2_USING_CUDA
 	float* data = get_data();
-	std::fill(data,data+get_size(),value);
+	if ( value != 0 ) std::fill(data,data+get_size(),value);
+	else EMUtil::em_memset(data, 0, nxy * nz * sizeof(float)); // This might be faster, I don't know
 
 	update();
 	EXITFUNC;
