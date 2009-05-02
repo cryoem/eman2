@@ -217,7 +217,9 @@ def bootstrap( prjfile, wgts, outdir, bufprefix, nbufvol, nvol, seedbase, snr, g
 		rectors, fftvols, wgtvols = bootstrap_prepare( prjfile, nbufvol, snr, CTF, npad )
 		bootstrap_insert( bufprefix, fftvols, wgtvols, mults, CTF, npad, finfo )
 		bootstrap_finish( rectors, fftvols, wgtvols, volfile, iter, finfo )
-		
+		rectors = None
+		fftvols = None
+		wgtvols = None
 		finfo.write( "time for iteration: %10.3f\n" % (time() - iter_start) )
 		finfo.flush()
 
@@ -253,7 +255,10 @@ def main():
 	if options.MPI:
 		from mpi import mpi_init, mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
 		sys.argv = mpi_init( len(sys.argv), sys.argv )
-	
+		
+		from utilities import init_mpi_bdb
+		init_mpi_bdb()
+
 	wgts = read_text_file( args[1], 0 )
 	outdir = args[2]
 	bufprefix = args[3]
