@@ -89,6 +89,7 @@ def add_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None, a
  			Util.add_img2(var, ima)
 	 		if get_ctf2: Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
 		sumsq = Util.addn_img(ave1, ave2)
+		tavg = Util.divn_img(susmq, ctf_2_sum)
 		Util.mul_img(sumsq, sumsq.conjg())
 		Util.div_img(sumsq, ctf_2_sum)
 	 	Util.sub_img(var, sumsq)
@@ -103,6 +104,7 @@ def add_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None, a
 			else:           Util.add_img(ave2, ima)
 			Util.add_img2(var, ima)
 		sumsq = Util.addn_img(ave1, ave2)
+		tavg = Util.muln_scalar(sumsq, 1.0/float(n))
 		Util.mul_img(sumsq, sumsq.conjg())
 		Util.mul_scalar(sumsq, 1.0/float(n))
 		Util.sub_img(var, sumsq)
@@ -110,9 +112,9 @@ def add_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None, a
 	Util.mul_scalar(var, 1.0/float(n-1))
 	st = Util.infomask(var, None, True)
 	if st[2] < 0.0:  ERROR("Negative variance!", "add_ave_varf", 1)
-	return ave1, ave2, var, sumsq
+	return tavg, ave1, ave2, var, sumsq
 
-def add_ave_varf_MPI(data, mask = None, mode = "a", CTF = False, ali_params = "xform.align2d"):
+def add_ave_varf_MPI(myid, data, mask = None, mode = "a", CTF = False, ctf_2_sum = None, ali_params = "xform.align2d", main_node = 0):
 	"""
 		Calculate sum of an image series and sum of squares in Fourier space
 		Since this is the MPI version, we need to reduce sum and sum of squares 
@@ -122,6 +124,8 @@ def add_ave_varf_MPI(data, mask = None, mode = "a", CTF = False, ali_params = "x
 	"""
 	from utilities    import    model_blank, get_params2D
 	from fundamentals import    rot_shift2D, fft
+	from utilities    import    reduce_EMData_to_root
+	from mpi          import    mpi_reduce, MPI_INT, MPI_SUM, MPI_COMM_WORLD
 
 	n = len(data)
 	nx = data[0].get_xsize()
@@ -132,8 +136,12 @@ def add_ave_varf_MPI(data, mask = None, mode = "a", CTF = False, ali_params = "x
 	
 	if CTF:
 		from filter       import filt_ctf
+		from morphology   import ctf_img
 		if data[0].get_attr_default('ctf_applied', 1) == 1:
 	 		ERROR("data cannot be ctf-applied", "add_ave_varf_MPI", 1)
+		if ctf_2_sum:  get_ctf2 = False
+		else:          get_ctf2 = True
+		if get_ctf2: ctf_2_sum = EMData(nx, ny, 1, False)
 	 	for i in xrange(n):
 	 		if mode == "a":
 				alpha, sx, sy, mirror, scale = get_params2D(data[i], ali_params)
@@ -145,7 +153,9 @@ def add_ave_varf_MPI(data, mask = None, mode = "a", CTF = False, ali_params = "x
 			if(i%2 == 0):   Util.add_img(ave1, ima_filt)
 			else:           Util.add_img(ave2, ima_filt)
  			Util.add_img2(var, ima)
+	 		if get_ctf2: Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
 	else:
+		get_ctf2 = False
 		for i in xrange(n):
 			if mode == "a":
 				alpha, sx, sy, mirror, scale = get_params2D(data[i], ali_params)
@@ -155,11 +165,34 @@ def add_ave_varf_MPI(data, mask = None, mode = "a", CTF = False, ali_params = "x
 			if(i%2 == 0):   Util.add_img(ave1, ima)
 			else:           Util.add_img(ave2, ima)
 			Util.add_img2(var, ima)
-	
-	return ave1, ave2, var
+	reduce_EMData_to_root(ave1, myid, main_node)
+	reduce_EMData_to_root(ave2, myid, main_node)
+	reduce_EMData_to_root(var, myid, main_node)
+	if get_ctf2: reduce_EMData_to_root(ctf_2_sum, myid, main_node)
+	nima = n
+	nima = mpi_reduce(nima, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
+	if myid == 0:
+		nima = int(nima)
+		sumsq = Util.addn_img(ave1, ave2)
+		if CTF:
+			tavg  = Util.divn_img(sumsq, ctf_2_sum)
+			Util.mul_img(sumsq, sumsq.conjg())
+			Util.div_img(sumsq, ctf_2_sum)
+		else:
+			tavg  = sumsq/nima
+			Util.mul_img(sumsq, sumsq.conjg())
+			Util.mul_scalar(sumsq, 1.0/float(nima))
+		Util.sub_img(var, sumsq)
+		Util.mul_scalar(var, 1.0/float(nima-1))
+		st = Util.infomask(var, None, True)
+		if st[2] < 0.0:  ERROR("Negative variance!", "add_ave_varf_MPI", 1)
+	else:
+		tavg  = EMData()
+		sumsq = EMData()
+	return tavg, ave1, ave2, var, sumsq
 
 '''
-This does not appear ot be right, Yang - can it be removed?  PAP 04/28/09
+This does not appear to be right, Yang - can it be removed?  PAP 04/28/09
 def add_ave_varf_ML_MPI(data, mask = None, mode = "a", CTF = False):
 	"""
 		Calculate sum of an image series and sum of squares in Fourier space

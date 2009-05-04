@@ -2200,9 +2200,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 		for Iter in xrange(max_iter):
 			total_iter += 1 
 			if  Fourvar:  
-				ave1, ave2, vav, sumsq = add_ave_varf(data, mask, "a", CTF, ctf_2_sum)
-				if CTF:  tavg = Util.divn_img(Util.addn_img(ave1, ave2), ctf_2_sum)
-				else:	 tavg = (ave1+ave2)/nima
+				tavg, ave1, ave2, vav, sumsq = add_ave_varf(data, mask, "a", CTF, ctf_2_sum)
 				# write the current average
 				drop_image(fft(tavg), os.path.join(outdir, "aqc_%03d.hdf"%(total_iter)))
 				tavg    = fft(Util.divn_img(tavg, vav))
@@ -2394,10 +2392,10 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			data[im-image_start] -= st[0]
 			Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
 	if CTF:
-		reduce_EMData_to_root(ctf_2_sum, myid, main_node) ## TO TEST
+		reduce_EMData_to_root(ctf_2_sum, myid, main_node)
 
-		if( myid != main_node):  del ctf_2_sum
-		else:  ctf_2_sum += 1.0/snr # this is complex addition (1.0/snr,0)
+		ctf_2_sum += 1.0/snr # this is complex addition (1.0/snr,0)
+	else:  ctf_2_sum = None
 	#s tartup
 	numr = Numrinit(first_ring, last_ring, rstep, mode) 	#precalculate rings
  	wr = ringwe(numr, mode)
@@ -2423,10 +2421,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		for Iter in xrange(max_iter):
 			total_iter += 1
 			if  Fourvar:  
-				ave1, ave2, vav = add_ave_varf_MPI(data, mask, "a", CTF)
-				reduce_EMData_to_root(ave1, myid, main_node)
-				reduce_EMData_to_root(ave2, myid, main_node)
-				reduce_EMData_to_root(vav, myid, main_node)
+				tavg, ave1, ave2, vav, sumsq = add_ave_varf_MPI(myid, data, mask, "a", CTF, ctf_2_sum)
 			else:
 				ave1, ave2 = sum_oe(data, "a", CTF, EMData())  # pass empty object to prevent calculation of ctf^2
 				reduce_EMData_to_root(ave1, myid, main_node)
@@ -2435,27 +2430,13 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			if myid == main_node:
 
 				if  Fourvar:
-					sumsq = Util.addn_img(ave1, ave2)
-					if CTF:
-						tavg  = Util.divn_img(sumsq, ctf_2_sum)
-						Util.mul_img(sumsq, sumsq.conjg())
-						Util.div_img(sumsq, ctf_2_sum)
-					else:
-						tavg  = sumsq/nima
-						Util.mul_img(sumsq, sumsq.conjg())
-						Util.mul_scalar(sumsq, 1.0/float(nima))
 					drop_image(fft(tavg), os.path.join(outdir, "aqc_%03d.hdf"%(total_iter)))
-					Util.sub_img(vav, sumsq)
-					Util.mul_scalar(vav, 1.0/float(nima-1))
-					st = Util.infomask(vav, None, True)
-					if st[2] < 0.0:  ERROR("Negative variance!", "ali2d_c_MPI", 1)
 					tavg    = fft(Util.divn_img(tavg, vav))
 
 					vav_r	= Util.pack_complex_to_real(vav)
 					drop_image(vav_r, os.path.join(outdir, "varf_%03d.hdf"%(total_iter)))
-					sumsq_r = Util.pack_complex_to_real(sumsq)
 					rvar	= rot_avg_table(vav_r)
-					rsumsq  = rot_avg_table(sumsq_r)
+					rsumsq  = rot_avg_table(Util.pack_complex_to_real(sumsq))
 					frsc = []
 					freq = []
 					for i in xrange(len(rvar)):
