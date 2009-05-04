@@ -17103,9 +17103,43 @@ float Util::ang_n(float peakp, string mode, int maxrin)
         return fmodf(((peakp-1.0f) / maxrin+1.0f)*180.0f,180.0f);
 }
 
+
+void Normalize_ring( EMData* ring, const vector<int>& numr )
+{
+    float* data = ring->get_data();
+    float av=0.0;
+    float sq=0.0;
+    float nn=0.0;
+    int nring = numr.size()/3;
+    for( int i=0; i < nring; ++i )
+    {
+        int numr3i = numr[3*i+2];
+        int numr2i = numr[3*i+1]-1;
+        float w = numr[3*i]*2*M_PI/float(numr[3*i+2]);
+        for( int j=0; j < numr3i; ++j )
+        {
+            int jc = numr2i+j;
+            av += data[jc] * w;
+            sq += data[jc] * data[jc] * w;
+            nn += w;
+        }
+    }
+
+    float avg = av/nn;
+    float sgm = sqrt( (sq-av*av/nn)/nn );
+    int n = ring->get_xsize() * ring->get_ysize() * ring->get_zsize();
+    for( int i=0; i < n; ++i )
+    {
+        data[i] -= avg;
+        data[i] /= sgm;
+    }
+
+    ring->update();
+}
+
 vector<float> Util::multiref_polar_ali_2d(EMData* image, const vector< EMData* >& crefim,
                 float xrng, float yrng, float step, string mode,
-                vector< int >numr, float cnx, float cny) {
+                vector<int>numr, float cnx, float cny) {
 
 // formerly known as apmq
     // Determine shift and rotation between image and many reference
@@ -17137,6 +17171,8 @@ vector<float> Util::multiref_polar_ali_2d(EMData* image, const vector< EMData* >
 		for (int j = -kx; j <= kx; j++) {
 			ix = j*step ;
 			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
+
+			Normalize_ring( cimage, numr );
 
 			Frngs(cimage, numr);
 			//  compare with all reference images
@@ -17242,7 +17278,7 @@ vector<float> Util::multiref_polar_ali_2d_nom(EMData* image, const vector< EMDat
 
 vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMData* >& crefim,
                 float xrng, float yrng, float step, float ant, string mode,
-                vector< int >numr, float cnx, float cny) {
+                vector<int>numr, float cnx, float cny) {
 
 // formerly known as apmq
     // Determine shift and rotation between image and many reference
@@ -17289,6 +17325,9 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 	    for (int j = -kx; j <= kx; j++) {
 		ix = j*step;
 		EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
+
+                Normalize_ring( cimage, numr );
+
 		Frngs(cimage, numr);
 		//  compare with all reference images
 		// for iref in xrange(len(crefim)):
