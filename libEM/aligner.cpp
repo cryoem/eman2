@@ -64,7 +64,7 @@ template <> Factory < Aligner >::Factory()
 
 Transform* Aligner::get_set_align_attr(const string& key, EMData* const image, const EMData* const from_image  )
 {
-	// WARNING - THIS APPROACH CURRENTLY CAUSES A MEMORY LEAK. GRANT TANG IS WORKING ON A SOLUTION
+	// WARNING - THIS APPROACH CURRENTLY CAUSES A MEMORY LEAK.
 	Transform* t;
 	if (from_image->has_attr(key) ) {
 		t = new Transform( *((Transform*)from_image->get_attr(key)) );
@@ -73,6 +73,7 @@ Transform* Aligner::get_set_align_attr(const string& key, EMData* const image, c
 		t = new Transform;
 	}
 	image->set_attr(key,t);
+	image->set_attr_owned(key);
 	return t;
 }
 
@@ -390,6 +391,7 @@ EMData* RotateTranslateFlipAligner::align(EMData * this_img, EMData *to,
 		flipped = to->process("xform.flip", Dict("axis", "x"));
 		delete_flag = true;
 	}
+	
 	EMData * rot_trans_align_flip = this_img->align("rotate_translate", flipped, rt_params, cmp_name, cmp_params);
 	Transform* t = get_align_attr("xform.align2d",rot_trans_align_flip);
 	t->set_mirror(true);
@@ -404,7 +406,7 @@ EMData* RotateTranslateFlipAligner::align(EMData * this_img, EMData *to,
 	}
 	
 	EMData *result = 0;
-	if (cmp1 < cmp2) {
+	if (cmp1 < cmp2 || true )  {
 
 		if( rot_trans_align_flip ) {
 			delete rot_trans_align_flip;

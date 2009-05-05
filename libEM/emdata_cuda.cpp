@@ -295,6 +295,7 @@ EMData *EMData::make_rotational_footprint_cuda( bool unwrap)
 		sml_clip.insert_clip(mc,IntPoint(-cs+nx/4,-cs+ny/4,0));
 	}
 
+	delete mc; mc = 0;
 	EMData * result = NULL;
 
 	if (!unwrap || nz != 1) {

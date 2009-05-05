@@ -841,6 +841,7 @@ namespace EMAN
 	private:
 		/** to store all image header info */
 		mutable Dict attr_dict;
+		vector<string> attr_owned; // used to prevent memory leaks
 		/** image real data */
 		mutable float *rdata;
 		/** supplementary data array */

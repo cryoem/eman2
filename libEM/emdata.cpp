@@ -297,6 +297,13 @@ EMData::~EMData()
 #ifdef MEMDEBUG
 	printf("EMDATA-  %4d    %p\n",EMData::totalalloc,this);
 #endif
+//	for(vector<string>::const_iterator it = attr_owned.begin(); it != attr_owned.end(); ++it ) {
+//		EMObject tmp = attr_dict[*it];
+//		if (tmp.get_type() == EMObject::TRANSFORM) {
+//			Transform* t = attr_dict[*it];
+//			delete t;
+//		}
+//	}
 	EXITFUNC;
 }
 
@@ -1776,9 +1783,9 @@ EMData *EMData::make_rotational_footprint_e1( bool unwrap)
 		filt->set_size(big_clip.get_xsize() + 2-(big_clip.get_xsize()%2), big_clip.get_ysize(), big_clip.get_zsize());
 	filt->to_one();
 	filt->process_inplace("eman1.filter.highpass.gaussian", Dict("highpass", 1.5f/nx));
-		}
+	}
 	EMData *mc = big_clip.calc_mutual_correlation(&big_clip, true,filt);
-// 	mc->sub(mc->get_edge_mean());
+ 	mc->sub(mc->get_edge_mean());
 	
 	static EMData sml_clip;
 	int sml_x = nx * 3 / 2;
@@ -1796,6 +1803,7 @@ EMData *EMData::make_rotational_footprint_e1( bool unwrap)
 		sml_clip.insert_clip(mc,IntPoint(-cs+nx/4,-cs+ny/4,0));
 	}
 
+	delete mc; mc = 0;
 	EMData * result = NULL;
 
 	if (nz == 1) {
@@ -1820,7 +1828,7 @@ EMData *EMData::make_rotational_footprint_e1( bool unwrap)
 		
 		// Note that the if statement at the beginning of this function ensures that rot_fp is not zero, so there is no need
 		// to throw any exception
-		// if ( rot_fp != 0 ) throw UnexpectedBehaviorException("The rotational foot print is only expected to be cached if it is not NULL");
+		if ( rot_fp != 0 ) throw UnexpectedBehaviorException("The rotational foot print is only expected to be cached if it is not NULL");
 		
 		// Here is where the caching occurs - the rot_fp takes ownsherhip of the pointer, and a deep copied EMData object is returned.
 		// The deep copy invokes a cost in terms of CPU cycles and memory, but prevents the need for complicated memory management (reference counting)
@@ -2567,7 +2575,7 @@ void EMData::update_stat() const
 {
 	ENTERFUNC;
 	float* data = get_data();
-	if (!(flags & EMDATA_NEEDUPD) || data == 0) // rdata == 0 condition may exist when using GPU 
+	if (!(flags & EMDATA_NEEDUPD)) 
 	{
 		EXITFUNC;
 		return;
@@ -2631,7 +2639,7 @@ void EMData::update_stat() const
 	
 	if (rot_fp != 0)
 	{
-		delete rot_fp; rot_fp = NULL;
+		delete rot_fp; rot_fp = 0;
 	}
 	
 	EXITFUNC;

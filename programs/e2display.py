@@ -106,7 +106,7 @@ def main():
 	else:
 		for i in args:
 			if not file_exists(i):
-				print "file doesn't exist:",i
+				print "%s doesn't exist" %i
 				sys.exit(1)
 			display_file(i,app)
 			
@@ -120,8 +120,8 @@ def main():
 def set_full_range():
 	'''
 	Turns all auto contrasting flags to False etc.
-	This is just a convenience function for "unusual" users who do no want to use e2preferences.
-	This makes sense if the user would like auto contrasting to be on or off in a regular basis (i.e. at one moment they
+	This is just a convenience function for users who do no want to use e2preferences.
+	This makes sense if the user would like auto contrasting to be on or off at the same time (i.e. at one moment they
 	want it off, and at the next they want it on, on a regular basis).
 	Note if auto contrast is on that it is not difficult to manipulate the contrast settings manually anyway.
 	Regular users are advised to just use e2preferences.
