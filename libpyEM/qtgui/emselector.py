@@ -748,6 +748,16 @@ class EMSelectorDialog(QtGui.QDialog):
 			previewable,previewer= self.__is_previewable(a)
 			
 			self.selections = previewer.paths(items)
+			
+		# Make sure the save as line is updated if we're in that mode
+		if self.save_as_mode:
+			text = ""
+			for i,name in enumerate(self.selections):
+				if i > 0:
+					text+= "; "
+				text += os.path.basename(name)
+				
+			self.save_as_line_edit.setText(text)
 
 	def hide_preview(self):
 		if self.save_as_mode: return
@@ -781,22 +791,7 @@ class EMSelectorDialog(QtGui.QDialog):
 		if item.type_of_me == "value": return #it's just a value in the db
 		self.__update_selections()
 		
-		if self.save_as_mode:
-			text = ""
-			for i,name in enumerate(self.selections):
-				if i > 0:
-					text+= "; "
-				text += os.path.basename(name)
-				
-					
-#				try:
-#					text = item.get_path()
-#					if text == None: text = ""
-#					if os.path.isdir(text): text = ""
-#					text = os.path.basename(text)
-#				except:pass
-			
-			self.save_as_line_edit.setText(text)
+		
 
 		if item == None: return
 		

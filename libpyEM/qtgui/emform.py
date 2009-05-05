@@ -82,24 +82,25 @@ class EMParamTable(list):
 				setattr(table_widget,opt,getattr(self,opt))
 		
 	
-class EMRawDataEMParamTable(EMParamTable):
+class EMRawDataParamTable(EMParamTable):
 	
 	def __init__(self,name=None,desc_short=None,desc_long=""):
 		EMParamTable.__init__(self,name,desc_short,desc_long)
-		self.context_menu_dict["Save as"] = EMRawDataEMParamTable.save_as
-		self.add_files_function = EMRawDataEMParamTable.add_files # this is so the add files function is customizable 
+		self.context_menu_dict["Save as"] = EMRawDataParamTable.save_as
+		self.context_menu_dict["Add"] = EMRawDataParamTable.add_files
+		self.add_files_function = EMRawDataParamTable.add_files # this is so the add files function is customizable 
 		self.browse_button = None
-		
+	
 	def custom_addition(self,layout,table_widget,event_handlers):
 		'''
-		The beginnings of an idea\
+		The beginnings of an idea
 		'''
 		self.browse_button = QtGui.QPushButton("Add",None)
 		self.table_widget = table_widget
 		layout.addWidget(self.browse_button)
-		QtCore.QObject.connect(self.browse_button,QtCore.SIGNAL("clicked(bool)"),self.browse_pressed)
+		QtCore.QObject.connect(self.browse_button,QtCore.SIGNAL("clicked(bool)"),self.add_pressed)
 		
-	def browse_pressed(self,bool):
+	def add_pressed(self,bool):
 		self.add_files_function([],self.table_widget)
 		
 	def set_add_files_function(self,function):
@@ -121,28 +122,51 @@ class EMRawDataEMParamTable(EMParamTable):
 				break
 
 	def add_files(list_of_names,table_widget):
-		r = table_widget.rowCount()
-		table_widget.setRowCount(r+len(list_of_names))
-		for i in xrange(0,len(list_of_names)):
-			item = QtGui.QTableWidgetItem(QtGui.QIcon(get_image_directory() + "/single_image.png"),list_of_names[i])
-			flag2 = Qt.ItemFlags(Qt.ItemIsSelectable)
-			flag3 = Qt.ItemFlags(Qt.ItemIsEnabled)
-			flag4 = Qt.ItemFlags(Qt.ItemIsEditable)
-			item.setFlags(flag2|flag3)
-			item.setTextAlignment(QtCore.Qt.AlignHCenter)
-			table_widget.setItem(r+i, 0, item)
 		
-		if r == 0:
-			table_widget.resizeColumnsToContents()
+		from emselector import EMSelectorModule
+		em_qt_widget = EMSelectorModule()
+		#validator = AddFilesToProjectValidator()
+		#em_qt_widget.widget.set_validator(validator)
+		files = em_qt_widget.exec_()
+		if files != "":
+			if isinstance(files,str): files = [files]
+			
+			entries = get_table_items_in_column(table_widget,0)
+			entrie_tags = [EMAN2.get_file_tag(str(i.text())) for i in entries]
+			file_tags = [EMAN2.get_file_tag(i) for i in files]
+			error_messages = []
+			for idx,tag in enumerate(file_tags):
+				if tag in entrie_tags:
+					error_messages.append("%s is already listed" %files[idx])
+			
+		
+			if len(error_messages) > 0:
+				from emsprworkflow import EMErrorMessageDisplay
+				EMErrorMessageDisplay.run(error_messages)
+				return
+		
+			r = table_widget.rowCount()
+			table_widget.setRowCount(r+len(files))
+			for i in xrange(0,len(files)):
+				item = QtGui.QTableWidgetItem(QtGui.QIcon(get_image_directory() + "/single_image.png"),files[i])
+				flag2 = Qt.ItemFlags(Qt.ItemIsSelectable)
+				flag3 = Qt.ItemFlags(Qt.ItemIsEnabled)
+				flag4 = Qt.ItemFlags(Qt.ItemIsEditable)
+				item.setFlags(flag2|flag3)
+				item.setTextAlignment(QtCore.Qt.AlignHCenter)
+				table_widget.setItem(r+i, 0, item)
+			
+			if r == 0:
+				table_widget.resizeColumnsToContents()
 		
 	save_as = staticmethod(save_as)
+	add_files = staticmethod(add_files)
 	
 	def add_context_menu(self,table_widget):
 		optional_attr = ["convert_text"]
 		for opt in optional_attr:
 			if hasattr(self,opt):
 				setattr(table_widget,opt,getattr(self,opt))
-		
 		setattr(table_widget,"context_menu",self.get_context_menu_data())
 		
 	
@@ -369,7 +393,7 @@ class EMFormWidget(QtGui.QWidget):
 		if len(paramtable[0].choices) > 0:
 			type_of = type(paramtable[0].choices[0])
 		else:
-			type_of = type(str) # this really doesn't matter
+			type_of = str # This case arise when the table is empty and the user had an add button.
 	
 		for item in selected_items: 
 			item.setSelected(True)

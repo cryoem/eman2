@@ -30,7 +30,7 @@
 #
 #
 
-from emform import EMFormModule,EMParamTable,EMTableFormModule
+from emform import EMFormModule,EMParamTable,EMTableFormModule,EMRawDataParamTable
 from emdatastorage import ParamDef
 from PyQt4 import QtGui,QtCore
 from PyQt4.QtCore import Qt
@@ -685,8 +685,8 @@ class MicrographReportTask(WorkFlowTask):
 		pmin = ParamDef(name="Min",vartype="floatlist",desc_short="Minimum",desc_long="Smallest pixel value",property=None,defaultunits=None,choices=min)
 		
 		
-		from emform import EMRawDataEMParamTable
-		p = EMRawDataEMParamTable(name="filenames",desc_short="Project files",desc_long="")
+		from emform import EMRawDataParamTable
+		p = EMRawDataParamTable(name="filenames",desc_short="Project files",desc_long="")
 		p.append(pnames)
 #		p.append(pdims)
 #		p.append(pmean)
@@ -1765,7 +1765,7 @@ class E2BoxerTask(ParticleWorkFlowTask):
 		pdims = ParamDef(name="DB Box Dims",vartype="stringlist",desc_short="Dims in DB",desc_long="The dimensions boxes",property=None,defaultunits=None,choices=dimensions)
 		
 		
-		p_reordered = EMParamTable(name="filenames",desc_short="Choose a subset of these images",desc_long="") # because I want the boxes in db to come first
+		p_reordered = EMRawDataParamTable(name="filenames",desc_short="Choose a subset of these images",desc_long="") # because I want the boxes in db to come first
 		p_reordered.append(p[0])
 		p_reordered.append(pboxes)
 		p_reordered.extend(p[1:])
@@ -1994,7 +1994,7 @@ class E2BoxerGuiTask(E2BoxerTask):
 		
 		p,n = self.get_e2boxer_boxes_and_project_particles_table()
 		
-		if n == 0:
+		if n == 0 and False:
 			params.append(ParamDef(name="blurb",vartype="text",desc_short="Interactive use of e2boxer",desc_long="",property=None,defaultunits=E2BoxerGuiTask.documentation_string+E2BoxerGuiTask.warning_string,choices=None))
 		else:
 			params.append(ParamDef(name="blurb",vartype="text",desc_short="Interactive use of e2boxer",desc_long="",property=None,defaultunits=E2BoxerGuiTask.documentation_string,choices=None))
