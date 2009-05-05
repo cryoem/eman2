@@ -818,46 +818,6 @@ def aves(stack, mode="a", i1 = 0, i2 = 0):
 
 	return ave, var
 
-def ave_ali(name_stack, name_out = None, start = 0, end = -1, ali = False):
-	from statistics import aves
-	from sys        import exit
-	
-	"""
-	   Calculate the average and variance for
-	   1. mode="a" for alignment
-	   2. mode=else for normal summation
-
-	   Export the result into two separate stacks
-
-	   This function is called by sxave_ali.py
-	"""
-	
-	# check var
-	N = EMUtil.get_image_count(name_stack)
-	if end == -1:
-		end = N - 1
-	elif end >= N:
-		print 'Error: the last image is %d' % (N-1)
-		exit()
-
-	# choose the mode with or without alignment parameters
-	if ali:
-		mode = 'a'
-	else:
-		mode = 'nothing'
-		
-	
-	# compute the ave and var
-	ave, var = aves(name_stack, mode, start, end)
-
-	if name_out is None:
-		ave.write_image('ave_' + name_stack)
-		var.write_image('var_' + name_stack)
-	else:
-		ave.write_image('ave_' + name_out)
-		var.write_image('var_' + name_out)
-
-
 def aves_w(stack, mode="a"):
 	"""
 		Apply alignment parameters, and calculate Wiener 

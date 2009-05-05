@@ -12126,3 +12126,27 @@ def tomo(box):
 	from os import system
 	status = system( cmd )
         print 'status: ', status
+
+# Calculate averages to a given stack (wrap for ave_var in statistics)
+def ave_ali(name_stack, name_out = None, ali = False, active = False):
+	from statistics import ave_var, add_ave_varf, k_means_list_active
+	from utilities  import file_type
+	"""
+	   This function is called by sxave_ali.py
+	"""
+	N = EMUtil.get_image_count(name_stack)
+	if ali:	mode = 'a'
+	else:	mode = ''
+	if active: listID, N = k_means_list_active(name_stack)
+	else:      listID    = range(N)
+	data = EMData().read_images(name_stack, listID)
+	ave, var = ave_var(data, mode)
+
+	ext = file_type(name_stack)
+	if name_out is None:
+		if ext == 'bdb': name = name_stack.splot(':')[1] + '.hdf'
+		else:            name = name_stack
+		ave.write_image('ave_' + name, 0)
+	else:
+		ave.write_image(name_out, 0)
+

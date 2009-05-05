@@ -40,11 +40,10 @@ import sys
 def main():
 	
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack <name_output> --start=first_image --end=last_image --ali"
+	usage = progname + " stack <name_output> --ali --active"
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--start",  type="int", default=0, help="  first image")
-	parser.add_option("--end",  type="int", default=-1, help="  last_image")
-	parser.add_option("--ali",action="store_true", default=False, help="Perform average and variance using alignment parameters")
+	parser.add_option("--ali",    action = "store_true", default=False, help="Perform average using alignment parameters")
+	parser.add_option("--active", action = "store_true", default=False, help="Perform average only for active images")
 	(options, args) = parser.parse_args()
     	if len(args) < 1 or len(args) > 2:
 				print "usage: " + usage
@@ -53,9 +52,9 @@ def main():
 		if len(args) == 1: name_output = None
 		else:              name_output = args[1]
 		 
-		from  statistics  import  ave_ali
+		from applications import ave_ali
 		global_def.BATCH = True
-		ave_ali(args[0], name_output, options.start, options.end, options.ali)
+		ave_ali(args[0], name_output, options.ali, options.active)
 		global_def.BATCH = False
 
 if __name__ == "__main__":
