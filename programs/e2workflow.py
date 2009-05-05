@@ -327,8 +327,8 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.gui_modules = [] # keeps track of all gui modules that are running
 		self.module_events = [] # keeks track of gui module events managers
 		
-		spr = QtGui.QTreeWidgetItem(QtCore.QStringList("SPR"))
-		self.launchers["SPR"] = self.launch_spr
+		spr = QtGui.QTreeWidgetItem(QtCore.QStringList("Single particle reconstruction"))
+		self.launchers["Single particle reconstruction"] = self.launch_spr
 		
 		self.tree_widget_entries.append(spr)
 		
@@ -426,9 +426,11 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		ap.addChildren(ap_list)
 		
 		rd_list = []
-		rd_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Associate micrograph/CCD")))
-		self.launchers["Associate micrograph/CCD"] = self.launch_mic_ccd
+#		rd_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Associate micrograph/CCD")))
+#		rd_list[-1].setIcon(0,QtGui.QIcon(get_image_directory() + "single_image.png"))
+#		self.launchers["Associate micrograph/CCD"] = self.launch_mic_ccd
 		rd_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Import micrograph/ccd")))
+		rd_list[-1].setIcon(0,QtGui.QIcon(get_image_directory() + "single_image.png"))
 		self.launchers["Import micrograph/ccd"] = self.launch_import_mic_ccd
 		rd.addChildren(rd_list)
 		
@@ -452,17 +454,25 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		
 		resolution_list = []
 		resolution_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Run e2eotest")))
+		resolution_list[-1].setIcon(0,QtGui.QIcon(get_image_directory() + "plot.png"))
 		self.launchers["Run e2eotest"] = self.launch_e2eotest
 		resolution_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Run e2resolution")))
+		resolution_list[-1].setIcon(0,QtGui.QIcon(get_image_directory() + "plot.png"))
 		self.launchers["Run e2resolution"] = self.launch_e2resolution
 		resolution.addChildren(resolution_list)
 		
 		
 		self.tree_widget.setHeaderLabel("Choose a task")
 		
+		self.tree_widget.expandItem(spr)
+		self.tree_widget.expandItem(rd)
+		self.tree_widget.expandItem(ap)
+		self.tree_widget.expandItem(ctf)	
+		self.tree_widget.expandItem(refine2d)
+		self.tree_widget.expandItem(init_model)
+		self.tree_widget.expandItem(refinement)
+		self.tree_widget.expandItem(resolution)
 		self.hbl_buttons2.addWidget(self.tree_widget)
-		
-		#self.close = QtGui.QPushButton("")
 		
 		self.vbl.addLayout(self.hbl_buttons2)
 		#self.vbl.addWidget(self.close)
@@ -602,8 +612,8 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	def launch_tomography(self):
 		self.launch_task(TomographyTask,"Tomography")
 			
-	def launch_mic_ccd(self):
-		self.launch_task(MicrographCCDTask,"Micrograph/CCD report")
+#	def launch_mic_ccd(self):
+#		self.launch_task(MicrographCCDTask,"Micrograph/CCD report")
 		
 	def launch_view_history(self):
 		self.launch_task(HistoryTask,"History")

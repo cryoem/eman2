@@ -30,7 +30,7 @@
 #
 #
 
-from emform import EMFormModule,ParamTable,EMTableFormModule
+from emform import EMFormModule,EMParamTable,EMTableFormModule
 from emdatastorage import ParamDef
 from PyQt4 import QtGui,QtCore
 from PyQt4.QtCore import Qt
@@ -421,7 +421,7 @@ class WorkFlowTask(QtCore.QObject):
 					
 		if len(class_files) > 0:
 			
-			p = ParamTable(name="filenames",desc_short="Most current reference free class averages",desc_long="")
+			p = EMParamTable(name="filenames",desc_short="Most current reference free class averages",desc_long="")
 			
 			default_filenames = self.get_default_filenames_from_form_db()
 			pclassnames = ParamDef(name="Files names",vartype="intlist",desc_short="Class avarerage file",desc_long="The location of the class average files",property=None,defaultunits=default_filenames,choices=class_files)
@@ -685,7 +685,8 @@ class MicrographReportTask(WorkFlowTask):
 		pmin = ParamDef(name="Min",vartype="floatlist",desc_short="Minimum",desc_long="Smallest pixel value",property=None,defaultunits=None,choices=min)
 		
 		
-		p = ParamTable(name="filenames",desc_short="Project files",desc_long="")
+		from emform import EMRawDataEMParamTable
+		p = EMRawDataEMParamTable(name="filenames",desc_short="Project files",desc_long="")
 		p.append(pnames)
 #		p.append(pdims)
 #		p.append(pmean)
@@ -693,29 +694,124 @@ class MicrographReportTask(WorkFlowTask):
 #		p.append(pmax)
 #		p.append(pmin)
 
+		p.add_context_menu_data("Remove",MicrographReportTask.remove_files_from_project)
+		p.add_context_menu_data("Add",MicrographReportTask.add_files_from_context_menu)
+		p.set_add_files_function(MicrographReportTask.add_files_from_context_menu)
 		setattr(p,"convert_text", ptable_convert_2)
 #		context_menu_dict = {"Save as":image_save_as}
-		context_menu_dict = {}
-		context_menu_dict["remove"] = MicrographReportTask.remove_file_from_project
-		setattr(p,"context_menu", context_menu_dict)
 		setattr(p,"icon_type","single_image")
 		
 		
 		#p.append(pdims) # don't think this is really necessary
 		return p,len(project_names)
 
-	def remove_file_from_project(file_name,unused_variable):
-		print file_name
+	def remove_files_from_project(names,table_widget):
+		if len(names) == 0: return # nothing happened
 		
+		from emform import get_table_items_in_column
+		entries = get_table_items_in_column(table_widget,0)
+		text_entries = [str(i.text()) for i in entries]
 		
-	remove_file_from_project = staticmethod(remove_file_from_project)
+		project_db = db_open_dict("bdb:project")
+		project_names = project_db.get("global.micrograph_ccd_filenames",dfl=[])
+		
+		for name in names:
+			if name not in text_entries: # this should probably not happen
+				print name,text_entries
+				EMErrorMessageDisplay.run(["The name is not in the list"])
+				return
+			
+			if name not in project_names:
+				EMErrorMessageDisplay.run(["The name is not in the project list"])
+				return
+		
+		indices = [ text_entries.index(name) for name in names]
+		indices.sort()
+		indices.reverse()
+		for idx in indices:
+			table_widget.removeRow(idx)
+			project_names.remove(text_entries[idx])
+			
+		
+		project_db["global.micrograph_ccd_filenames"] = project_names
+	
+	def add_files_to_project(list_of_names,table_widget):
+		'''
+		
+		'''
+		
+		project_db = db_open_dict("bdb:project")
+		project_names = project_db.get("global.micrograph_ccd_filenames",dfl=[])
+		project_name_tags = [get_file_tag(name) for name in project_names]
+		
+		for name in list_of_names:
+			if not file_exists(name):
+				EMErrorMessageDisplay.run(["%s does not exists" %name])
+				return
+		
+		for name in list_of_names:
+			if get_file_tag(name) in project_name_tags:
+				EMErrorMessageDisplay.run(["%s is already in the project" %name])
+				return
+		
+		# if we make it here we're good
+		# first add entries to the table
+		r = table_widget.rowCount()
+		table_widget.setRowCount(r+len(list_of_names))
+		for i in xrange(0,len(list_of_names)):
+			item = QtGui.QTableWidgetItem(QtGui.QIcon(get_image_directory() + "/single_image.png"),list_of_names[i])
+			flag2 = Qt.ItemFlags(Qt.ItemIsSelectable)
+			flag3 = Qt.ItemFlags(Qt.ItemIsEnabled)
+			flag4 = Qt.ItemFlags(Qt.ItemIsEditable)
+			item.setFlags(flag2|flag3)
+			item.setTextAlignment(QtCore.Qt.AlignHCenter)
+			table_widget.setItem(r+i, 0, item)
+		if r == 0:
+			table_widget.resizeColumnsToContents()
+
+		
+		# then add names to the database
+		project_names.extend(list_of_names)
+		project_db["global.micrograph_ccd_filenames"] = project_names
+	
+	
+	def add_files_from_context_menu(list_of_names,table_widget):
+		from emselector import EMSelectorModule
+		em_qt_widget = EMSelectorModule()
+		validator = AddFilesToProjectValidator()
+		em_qt_widget.widget.set_validator(validator)
+		files = em_qt_widget.exec_()
+		if files != "":
+			if isinstance(files,str): files = [files]
+			
+			from emform import get_table_items_in_column
+			entries = get_table_items_in_column(table_widget,0)
+			entrie_tags = [get_file_tag(str(i.text())) for i in entries]
+			file_tags = [get_file_tag(i) for i in files]
+			error_messages = []
+			for idx,tag in enumerate(file_tags):
+				if tag in entrie_tags:
+					error_messages.append("%s is already listed" %files[idx])
+			
+		
+			if len(error_messages) > 0:
+				from emsprworkflow import EMErrorMessageDisplay
+				EMErrorMessageDisplay.run(error_messages)
+				return
+		
+			
+			MicrographReportTask.add_files_to_project(files,table_widget)
+		
+	remove_files_from_project = staticmethod(remove_files_from_project)
+	add_files_to_project = staticmethod(add_files_to_project)
+	add_files_from_context_menu = staticmethod(add_files_from_context_menu)
 
 	def get_params(self):
 		params = []
 		
 		p,n = self.get_raw_files_in_project()
 		
-		if n == 0:
+		if n == 0 and False:
 			params.append(ParamDef(name="blurb",vartype="text",desc_short="Files",desc_long="",property=None,defaultunits=MicrographReportTask.documentation_string+MicrographReportTask.warning_string,choices=None))
 		else:
 			params.append(ParamDef(name="blurb",vartype="text",desc_short="Files",desc_long="",property=None,defaultunits=MicrographReportTask.documentation_string,choices=None))
@@ -723,52 +819,37 @@ class MicrographReportTask(WorkFlowTask):
 		return params
 			
 	def on_form_ok(self,params):
-		return
-#		if not params.has_key("filenames"): return
-#		
-#		if  params.has_key("filenames") and len(params["filenames"]) == 0:
-#			self.run_select_files_msg()
-#			return
-#
-#		if  params.has_key("interface_boxsize") and params["interface_boxsize"] < 1:
-#			self.show_error_message(["Must specify a positive, non zero boxsize."])
-#			return
-#		else:
-#			self.write_db_entries(params)
-#			options = EmptyObject()
-#			for key in params.keys():
-#				setattr(options,key,params[key])
-#			options.boxsize = params["interface_boxsize"]
-#			options.running_mode = "gui"
-#			options.method = "Swarm"
-#			
-#			from e2boxer import EMBoxerModule
-#			self.boxer_module = EMBoxerModule(get_application(),options)
-#			self.emit(QtCore.SIGNAL("gui_running"),"Boxer",self.boxer_module) # The controlled program should intercept this signal and keep the E2BoxerTask instance in memory, else signals emitted internally in boxer won't work
-#			
-#			QtCore.QObject.connect(self.boxer_module, QtCore.SIGNAL("module_idle"), self.on_boxer_idle)
-#			QtCore.QObject.connect(self.boxer_module, QtCore.SIGNAL("module_closed"), self.on_boxer_closed)
-#			self.form.closeEvent(None)
-#			self.boxer_module.show_guis()
-#			self.form = None
+		self.form.closeEvent(None)
+		self.form = None
+		
+class AddFilesToProjectValidator():
+	def __init__(self): pass
+	def validate_file_name(self,list_of_names):
+		'''
+		a validator for the select module
+		@exception RuntimeError thrown if list_of_names is not a list
+		@return 0 if something went wrong , 1 if it's okay to call save now
+		'''
+		if not isinstance(list_of_names,list):
+			if isinstance(list_of_names,str): list_of_names = [list_of_names]
+			else: raise RuntimeError("Files needs to be a list")
+		
+		project_db = db_open_dict("bdb:project")
+		project_names = project_db.get("global.micrograph_ccd_filenames",dfl=[])
+		project_name_tags = [get_file_tag(name) for name in project_names]
+		
+		for name in list_of_names:
+			if not file_exists(name):
+				EMErrorMessageDisplay.run(["%s does not exists" %name])
+				return 0
+		
+		for name in list_of_names:
+			if get_file_tag(name) in project_name_tags:
+				EMErrorMessageDisplay.run(["%s is already in the project" %name])
+				return 0
 			
-#	def on_form_close(self):
-#		# this is to avoid a task_idle signal, which would be incorrect if e2boxer is running
-#		if self.boxer_module == None:
-#			self.emit(QtCore.SIGNAL("task_idle"))
-#		else: pass
-#	
-#	def on_boxer_closed(self): 
-#		if self.boxer_module != None:
-#			self.boxer_module = None
-#			self.emit(QtCore.SIGNAL("gui_exit"))
-#	
-#	def on_boxer_idle(self):
-#		'''
-#		Presently this means boxer did stuff but never opened any guis, so it's safe just to emit the signal
-#		'''
-#		self.boxer_module = None
-#		self.emit(QtCore.SIGNAL("gui_exit"))
+		return 1
+	
 
 
 class MicrographCCDImportTask(WorkFlowTask):	
@@ -964,76 +1045,117 @@ class MicrographCCDImportTask(WorkFlowTask):
 		print "canceled"
 		
 	
-class MicrographCCDTask(WorkFlowTask):
-	
-	documentation_string = "This is a list of micrographs or CCD frames that you choose to associate with this project. You can add and remove file names by editing the text entries directly and or by using the browse and clear buttons."
-	
-	
-	def __init__(self,application):
-		WorkFlowTask.__init__(self,application)
-		self.window_title = "Project micrographs"
-
-	def get_params(self):
-		params = []
-		project_db = db_open_dict("bdb:project")
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="Raw image data",desc_long="",property=None,defaultunits=MicrographCCDTask.documentation_string,choices=None))
-		params.append(ParamDef(name="global.micrograph_ccd_filenames",vartype="url",desc_short="File names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=project_db.get("global.micrograph_ccd_filenames",dfl=[]),choices=[]))
-		
-		#db_close_dict("bdb:project")
-		return params
-
-	def on_form_ok(self,params):
-		
-		filenames = params["global.micrograph_ccd_filenames"]
-		s_names =  [get_file_tag(name) for name in filenames]
-		error_message = []
-		for name in s_names:
-			if s_names.count(name) > 1:
-				error_message.append("you can't use images with the same file tag (%s)" %name)
-		
-		for i,name in enumerate(filenames):
-					
-			if os.path.exists(name) or db_check_dict(name):
-				try:
-					e = EMData()
-					e.read_image(name,0,True)
-					if EMUtil.get_image_count(name) > 1: error_message.append("%s contains more than one image" %name)
-				except:
-					error_message.append("%s is not a valid EM image type" %name)
-					continue
-			else:
-				error_message.append("%s doesn't exist please remove it from this list" %name)
-
-		if len(error_message) > 0:
-			self.show_error_message(error_message)
-			return
-		
-		for k,v in params.items():
-			self.write_db_entry(k,v)
-			
-			
-		
-		self.form.closeEvent(None)
-		self.form = None
-	
-		self.emit(QtCore.SIGNAL("task_idle"))
-
-	def write_db_entry(self,key,value):
-		if key == "global.micrograph_ccd_filenames":
-			if value != None:
-
-				new_names = []
-		
-				# now just update the static list of project file names
-				e = EMData()
-				read_header_only = True
-				for i,name in enumerate(value):
-					new_names.append(name)
-						
-				project_db = db_open_dict("bdb:project")
-				project_db["global.micrograph_ccd_filenames"] = new_names
-				#db_close_dict("bdb:project")
-		else:  pass
+#class MicrographCCDTask(WorkFlowTask):
+#	#DEPRECATED
+#	documentation_string = "This is a list of micrographs or CCD frames that you choose to associate with this project. You can add and remove file names by editing the text entries directly and or by using the browse and clear buttons."
+#	
+#	
+#	def __init__(self,application):
+#		WorkFlowTask.__init__(self,application)
+#		self.window_title = "Project micrographs"
+#
+#	def get_params(self):
+#		params = []
+#		project_db = db_open_dict("bdb:project")
+#		params.append(ParamDef(name="blurb",vartype="text",desc_short="Raw image data",desc_long="",property=None,defaultunits=MicrographCCDTask.documentation_string,choices=None))
+#		params.append(ParamDef(name="global.micrograph_ccd_filenames",vartype="url",desc_short="File names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=project_db.get("global.micrograph_ccd_filenames",dfl=[]),choices=[]))
+#		
+#		#db_close_dict("bdb:project")
+#		return params
+#	
+#	def on_form_ok(self,params):
+#		project_db = db_open_dict("bdb:project")
+#		existing_names = project_db.get("global.micrograph_ccd_filenames",dfl=[])
+#		s_existing_names =  [get_file_tag(name) for name in existing_names]
+#		
+#		new_names = params["global.micrograph_ccd_filenames"]
+#		s_names =  [get_file_tag(name) for name in filenames]
+#		error_message = []
+#		for name in s_names:
+#			if s_names.count(name) > 1:
+#				error_message.append("you can't use images with the same file tag (%s)" %name)
+#		
+#		for i,name in enumerate(new_names):
+#			
+#			if name in s_existing_names:
+#				error_message.append("%s " %name)
+#			if os.path.exists(name) or db_check_dict(name):
+#				try:
+#					e = EMData()
+#					e.read_image(name,0,True)
+#					if EMUtil.get_image_count(name) > 1: error_message.append("%s contains more than one image" %name)
+#				except:
+#					error_message.append("%s is not a valid EM image type" %name)
+#					continue
+#			else:
+#				error_message.append("%s doesn't exist please remove it from this list" %name)
+#
+#		if len(error_message) > 0:
+#			self.show_error_message(error_message)
+#			return
+#		
+#		for k,v in params.items():
+#			self.write_db_entry(k,v)
+#			
+#			
+#		
+#		self.form.closeEvent(None)
+#		self.form = None
+#	
+#		self.emit(QtCore.SIGNAL("task_idle"))
+#
+#	def on_form_ok(self,params):
+#		
+#		filenames = params["global.micrograph_ccd_filenames"]
+#		s_names =  [get_file_tag(name) for name in filenames]
+#		error_message = []
+#		for name in s_names:
+#			if s_names.count(name) > 1:
+#				error_message.append("you can't use images with the same file tag (%s)" %name)
+#		
+#		for i,name in enumerate(filenames):
+#					
+#			if os.path.exists(name) or db_check_dict(name):
+#				try:
+#					e = EMData()
+#					e.read_image(name,0,True)
+#					if EMUtil.get_image_count(name) > 1: error_message.append("%s contains more than one image" %name)
+#				except:
+#					error_message.append("%s is not a valid EM image type" %name)
+#					continue
+#			else:
+#				error_message.append("%s doesn't exist please remove it from this list" %name)
+#
+#		if len(error_message) > 0:
+#			self.show_error_message(error_message)
+#			return
+#		
+#		for k,v in params.items():
+#			self.write_db_entry(k,v)
+#			
+#			
+#		
+#		self.form.closeEvent(None)
+#		self.form = None
+#	
+#		self.emit(QtCore.SIGNAL("task_idle"))
+#
+#	def write_db_entry(self,key,value):
+#		if key == "global.micrograph_ccd_filenames":
+#			if value != None:
+#
+#				new_names = []
+#		
+#				# now just update the static list of project file names
+#				e = EMData()
+#				read_header_only = True
+#				for i,name in enumerate(value):
+#					new_names.append(name)
+#						
+#				project_db = db_open_dict("bdb:project")
+#				project_db["global.micrograph_ccd_filenames"] = new_names
+#				#db_close_dict("bdb:project")
+#		else:  pass
 
 
 class ParticleWorkFlowTask(WorkFlowTask):
@@ -1189,7 +1311,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 	def get_project_particle_param_table(self):
 		'''
 		Use the names in the global.micrograph_ccd_filenames to build a table showing the corresponding and  current number of boxed particles in the particles directory, and also lists their dimensions
-		Puts the information in a ParamTable.
+		Puts the information in a EMParamTable.
 		'''
 		project_db = db_open_dict("bdb:project")	
 		project_names = project_db.get("global.micrograph_ccd_filenames",dfl=[])
@@ -1204,7 +1326,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 		
 	def get_particle_param_table(self):
 		'''
-		Inspects the particle databases in the particles directory, gathering their names, number of particles and dimenions. Puts the information in a ParamTable.
+		Inspects the particle databases in the particles directory, gathering their names, number of particles and dimenions. Puts the information in a EMParamTable.
 		'''
 		project_names = self.get_particle_db_names(strip_ptcls=True)
 		ptable,n = self.__make_particle_param_table(project_names)
@@ -1226,7 +1348,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 		pboxes = ParamDef(name="Num boxes",vartype="intlist",desc_short="Particles on disk",desc_long="The number of box images stored for this image in the database",property=None,defaultunits=None,choices=num_boxes)
 		pdims = ParamDef(name="Dimensions",vartype="stringlist",desc_short="Particle dims",desc_long="The dimensions of the particle images",property=None,defaultunits=None,choices=dimensions)
 		
-		p = ParamTable(name="filenames",desc_short="Choose a subset of these images",desc_long="")
+		p = EMParamTable(name="filenames",desc_short="Choose a subset of these images",desc_long="")
 		p.append(pnames)
 		p.append(pboxes)
 		p.append(pdims)
@@ -1325,7 +1447,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 				snr.append("")
 				defocus.append("")
 		
-		p = ParamTable(name="filenames",desc_short="Choose a subset of these images",desc_long="")
+		p = EMParamTable(name="filenames",desc_short="Choose a subset of these images",desc_long="")
 		
 		
 		default_selections = self.get_default_filenames_from_form_db()
@@ -1386,7 +1508,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 						
 		default_selections = self.get_default_filenames_from_form_db(key)
 		
-		p = ParamTable(name=key,desc_short=title,desc_long="")
+		p = EMParamTable(name=key,desc_short=title,desc_long="")
 		pnames = ParamDef(name="Files names",vartype="stringlist",desc_short="Initial model name",desc_long="The name of the initial model in the EMAN2 database",property=None,defaultunits=default_selections,choices=names)
 		pdims = ParamDef(name="dims",vartype="stringlist",desc_short="Dimensions",desc_long="The dimensions of the 3D image",property=None,defaultunits=None,choices=dims)
 		pmax = ParamDef(name="max",vartype="stringlist",desc_short="Maximum",desc_long="The maximum voxel value in this 3D image",property=None,defaultunits=None,choices=max)
@@ -1414,7 +1536,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 		
 		return p,len(names)
 
-# these ptable functions are used by the ParamTable class for converting entries into absolute file paths, for the purpose of displaying things (like 2D images and plots etc)
+# these ptable functions are used by the EMParamTable class for converting entries into absolute file paths, for the purpose of displaying things (like 2D images and plots etc)
 def ptable_convert(text):
 	return "bdb:particles#"+text+"_ptcls"
 
@@ -1631,7 +1753,7 @@ class E2BoxerTask(ParticleWorkFlowTask):
 		if n is zero there are no entries in the table and the calling function can act appropriately
 		'''
 		
-		p,n = self.get_project_particle_param_table() # now p is a ParamTable with rows for as many files as there in the project
+		p,n = self.get_project_particle_param_table() # now p is a EMParamTable with rows for as many files as there in the project
 		# also, p contains columns with filename | particle number | particle dimensions
 		 
 		project_db = db_open_dict("bdb:project")	
@@ -1643,7 +1765,7 @@ class E2BoxerTask(ParticleWorkFlowTask):
 		pdims = ParamDef(name="DB Box Dims",vartype="stringlist",desc_short="Dims in DB",desc_long="The dimensions boxes",property=None,defaultunits=None,choices=dimensions)
 		
 		
-		p_reordered = ParamTable(name="filenames",desc_short="Choose a subset of these images",desc_long="") # because I want the boxes in db to come first
+		p_reordered = EMParamTable(name="filenames",desc_short="Choose a subset of these images",desc_long="") # because I want the boxes in db to come first
 		p_reordered.append(p[0])
 		p_reordered.append(pboxes)
 		p_reordered.extend(p[1:])
@@ -1683,7 +1805,7 @@ class E2BoxerTask(ParticleWorkFlowTask):
 		pdbboxes = ParamDef(name="Boxes in DB",vartype="intlist",desc_short="Boxes in DB",desc_long="The number of boxes stored for this image in the database",property=None,defaultunits=None,choices=db_boxes)
 		pdvdims = ParamDef(name="DB Box Dims",vartype="stringlist",desc_short="Dims in DB",desc_long="The dimensions boxes",property=None,defaultunits=None,choices=db_dims)
 		
-		p = ParamTable(name="filenames",desc_short="Choose a subset of these images",desc_long="")
+		p = EMParamTable(name="filenames",desc_short="Choose a subset of these images",desc_long="")
 		p.append(pnames)
 		p.append(pdbboxes)
 		p.append(pboxes)
@@ -2045,7 +2167,7 @@ class E2BoxerOutputTaskGeneral(E2BoxerOutputTask):
 	
 	def get_e2boxer_boxes_table(self,project_check=True):
 		db_name = "bdb:e2boxer.cache"
-		p = ParamTable(name="filenames",desc_short="Current boxes generated by e2boxer",desc_long="")
+		p = EMParamTable(name="filenames",desc_short="Current boxes generated by e2boxer",desc_long="")
 		names = []
 		nboxes = []
 		dimensions = []
@@ -2085,7 +2207,7 @@ class E2BoxerOutputTaskGeneral(E2BoxerOutputTask):
 		pboxes = ParamDef(name="Num boxes",vartype="intlist",desc_short="Boxes in DB",desc_long="The number of boxes stored for this image in the database",property=None,defaultunits=None,choices=nboxes)
 		pdims = ParamDef(name="Dimensions",vartype="stringlist",desc_short="Dimensions",desc_long="The dimensions boxes",property=None,defaultunits=None,choices=dimensions)
 		
-		p = ParamTable(name="filenames",desc_short="Choose a subset of these images",desc_long="")
+		p = EMParamTable(name="filenames",desc_short="Choose a subset of these images",desc_long="")
 		p.append(pnames)
 		p.append(pboxes)
 		p.append(pdims)
@@ -2108,7 +2230,7 @@ class E2BoxerProgramOutputTask(E2BoxerOutputTask):
 		params = []
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="E2Boxer output form",desc_long="",property=None,defaultunits=E2BoxerProgramOutputTask.documentation_string,choices=None))
 		
-		p = ParamTable(name="filenames",desc_short="Choose a subset of these images",desc_long="")
+		p = EMParamTable(name="filenames",desc_short="Choose a subset of these images",desc_long="")
 		pnames = ParamDef(name="Filenames",vartype="stringlist",desc_short="File names",desc_long="The filenames",property=None,defaultunits=None,choices=self.filenames)
 		p.append(pnames)
 		setattr(p,"convert_text", ptable_convert_2)
@@ -2180,7 +2302,7 @@ class E2CTFWorkFlowTask(ParticleWorkFlowTask):
 		
 		#print len(num_phase),len(num_wiener),len(num_particles),len(phase_dims),len(wiener_dims),len(particle_dims)
 		
-		p = ParamTable(name="filenames",desc_short="Current CTF parameters",desc_long="")
+		p = EMParamTable(name="filenames",desc_short="Current CTF parameters",desc_long="")
 		
 		p.append(pnames)
 		p.append(pdefocus)
@@ -3815,7 +3937,7 @@ class RefinementReportTask(ParticleWorkFlowTask):
 				threed_min.append(min)
 		if len(threed_files) > 0:
 			
-			p = ParamTable(name="filenames",desc_short="Most current 3D reconstructions",desc_long="")
+			p = EMParamTable(name="filenames",desc_short="Most current 3D reconstructions",desc_long="")
 			pnames = ParamDef(name="Files names",vartype="intlist",desc_short="3D image file",desc_long="The location of 3D reconstructions",property=None,defaultunits=None,choices=threed_files)
 			pmean = ParamDef(name="Mean",vartype="stringlist",desc_short="Mean",desc_long="The mean voxel value",property=None,defaultunits=None,choices=threed_mean)
 			psigma = ParamDef(name="Standard deviation",vartype="stringlist",desc_short="Standard deviation",desc_long="The standard deviation of the voxel values",property=None,defaultunits=None,choices=threed_sigma)
@@ -4644,7 +4766,7 @@ class ResolutionReportTask(ParticleWorkFlowTask):
 				#db_close_dict(db_name)
 
 		if len(available_dirs) > 0:
-			p = ParamTable(name="filenames",desc_short="Resolution evaluation",desc_long="")
+			p = EMParamTable(name="filenames",desc_short="Resolution evaluation",desc_long="")
 			pnames = ParamDef(name="Dirs",vartype="stringlist",desc_short="Refinement directory", desc_long="EMAN2 refinement directory", property=None,defaultunits=None,choices=available_dirs)
 			piter = ParamDef(name="Iterations",vartype="intlist",desc_short="Total iterations",desc_long="The number of 3D refinement iterations that have occured in this directory",property=None,defaultunits=None,choices=total_iterations)
 			peo = ParamDef(name="eo",vartype="stringlist",desc_short="e2eotest",desc_long="0.5 e2eotest resolution estimate",property=None,defaultunits=None,choices=eotest_res)

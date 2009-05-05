@@ -347,10 +347,10 @@ class EMSelectorDialog(QtGui.QDialog):
 		directory = self.starting_directory 
 		for i in range(len(self.list_widgets)-1):
 			items = self.list_widgets[i].selectedItems()
-			if len(items) == 1:
+			if len(items) >  0:
 				directory += "/" + items[0].text()
-			elif len(items) > 1:
-				raise
+#			elif len(items) > 1:
+#				raise
 			else:
 				break
 		
@@ -384,9 +384,18 @@ class EMSelectorDialog(QtGui.QDialog):
 				msg.setText("Can not deduce the current directory. Please update your selection")
 				msg.exec_()
 				return
-			file = directory + str(self.save_as_line_edit.text())
-			if file.find("EMAN2DB/") != -1: # this test should be sufficient for establishing that bdb is the desired format
-				file = db_convert_path(file)
+			names = str(self.save_as_line_edit.text()).split()
+			names = [name.strip(";") for name in names]
+			
+			for i,name in enumerate(names):
+				if name.find("EMAN2DB/") != -1: # this test should be sufficient for establishing that bdb is the desired format
+					names[i] = db_convert_path(name)
+			
+			if len(names)== 1:
+				file = directory + names[0]
+			else:
+				file = [directory + name for name in names]
+			
 			if self.validator == None:
 				self.dialog_result = file
 				self.accept()
@@ -774,12 +783,18 @@ class EMSelectorDialog(QtGui.QDialog):
 		
 		if self.save_as_mode:
 			text = ""
-			try:
-				text = item.get_path()
-				if text == None: text = ""
-				if os.path.isdir(text): text = ""
-				text = os.path.basename(text)
-			except:pass
+			for i,name in enumerate(self.selections):
+				if i > 0:
+					text+= "; "
+				text += os.path.basename(name)
+				
+					
+#				try:
+#					text = item.get_path()
+#					if text == None: text = ""
+#					if os.path.isdir(text): text = ""
+#					text = os.path.basename(text)
+#				except:pass
 			
 			self.save_as_line_edit.setText(text)
 

@@ -59,6 +59,28 @@ def save_data(item_object):
 	
 	return saver.get_file_name()
 
+class LightEMDataSave:
+	'''
+	Used for file io
+	'''
+	def __init__(self,file_name,idx=0):
+		'''
+		@exception RuntimeError raised if the file_name does not exist
+		'''
+		if not file_exists(file_name): raise RuntimeError("%s does not exist" %file_name)
+		self.file_name = file_name
+		self.idx = idx
+		
+	def write_image(self,*args):
+		a = EMData()
+		a.read_image(self.file_name,self.idx)
+		a.write_image(*args)
+
+	def get_attr_dict(self):
+		a = EMData()
+		a.read_image(self.file_name,self.idx,True)
+		return a.get_attr_dict()
+	
 class EMFileSaver():
 	'''
 	Base class for file savers. This function is tightly linked to the save_data function in this
@@ -117,7 +139,7 @@ class EMSingleImageSaveDialog(EMFileSaver):
 		@param item the item you want to test
 		@return true or False
 		'''
-		if not isinstance(item,EMData):return False
+		if not isinstance(item,EMData) and not isinstance(item,LightEMDataSave):return False
 		return True
 	
 	# mimic a static function
@@ -135,7 +157,7 @@ class EMSingleImageSaveDialog(EMFileSaver):
 		self.validator = EMSaveImageValidator([item])
 		self.__item = item
 		from emselector import EMSelectorModule
-		em_qt_widget = EMSelectorModule()
+		em_qt_widget = EMSelectorModule(True,True)
 		em_qt_widget.widget.set_validator(self.validator)
 		file = em_qt_widget.exec_()
 		if file != "":
@@ -300,7 +322,7 @@ class EMStackSaveDialog(EMFileSaver):
 
 		self.__item_list = item_list
 		from emselector import EMSelectorModule
-		em_qt_widget = EMSelectorModule()
+		em_qt_widget = EMSelectorModule(True,True)
 		self.validator = EMSaveImageValidator(item_list)
 		em_qt_widget.widget.set_validator(self.validator)
 		file = em_qt_widget.exec_()

@@ -37,21 +37,165 @@ from PyQt4.QtCore import Qt
 import os
 from emselector import EMSelectorModule
 from emapplication import EMQtWidgetModule,get_application
-from EMAN2 import Util, get_image_directory	
+from EMAN2 import Util, get_image_directory
+import EMAN2
 import weakref
 
-class ParamTable(list):
+class EMParamTable(list):
 	'''
-	This is just a list of ParamDef objects
+	This is just a list of ParamDef objects, each of the ParamDef objects are generally a list-type of some sort, such
+	as intlist, floatlist, stringlist etc
 	'''
 	def __init__(self,name=None,desc_short=None,desc_long=""):
 		list.__init__(self)
-		self.vartype = "paramtable"
+		self.vartype = "EMParamTable"
 		self.name = name
 		self.desc_short = desc_short
 		self.desc_long = desc_long
 		self.enable_multiple_selection = True
+		self.context_menu_dict = {}
 		
+	def custom_addition(self,layout,table_widget,event_handlers):
+		'''
+		The beginnings of an idea\
+		'''
+		pass
+	
+	def get_context_menu_data(self):
+		'''
+		@return a dictionary - keys are used to add context menu items, values are functions which are called
+		'''
+		return {}
+	
+	def add_context_menu_data(self,key,value):
+		'''
+		@param key The name of the action, as will appear in the context menu
+		@value the function that is called when the user selects the item in the context menu. 
+		The function referenced by should take two arguments -  list of names and the table widget itself
+		'''
+		self.context_menu_dict[key] = value
+	
+	def add_context_menu(self,table_widget):
+		optional_attr = ["convert_text","context_menu"]
+		for opt in optional_attr:
+			if hasattr(self,opt):
+				setattr(table_widget,opt,getattr(self,opt))
+		
+	
+class EMRawDataEMParamTable(EMParamTable):
+	
+	def __init__(self,name=None,desc_short=None,desc_long=""):
+		EMParamTable.__init__(self,name,desc_short,desc_long)
+		self.context_menu_dict["Save as"] = EMRawDataEMParamTable.save_as
+		self.add_files_function = EMRawDataEMParamTable.add_files # this is so the add files function is customizable 
+		self.browse_button = None
+		
+	def custom_addition(self,layout,table_widget,event_handlers):
+		'''
+		The beginnings of an idea\
+		'''
+		self.browse_button = QtGui.QPushButton("Add",None)
+		self.table_widget = table_widget
+		layout.addWidget(self.browse_button)
+		QtCore.QObject.connect(self.browse_button,QtCore.SIGNAL("clicked(bool)"),self.browse_pressed)
+		
+	def browse_pressed(self,bool):
+		self.add_files_function([],self.table_widget)
+		
+	def set_add_files_function(self,function):
+		self.add_files_function = function
+
+	def get_context_menu_data(self):
+		'''
+		@return a dictionary - keys are used to add context menu items, values are functions which are called
+		'''
+
+		return self.context_menu_dict
+		
+	def save_as(list_of_names,table_widget):
+		for name in list_of_names:
+			from emsave import LightEMDataSave, save_data
+			tmp = LightEMDataSave(name)
+			val = save_data(tmp)
+			if val == "":
+				break
+
+	def add_files(list_of_names,table_widget):
+		r = table_widget.rowCount()
+		table_widget.setRowCount(r+len(list_of_names))
+		for i in xrange(0,len(list_of_names)):
+			item = QtGui.QTableWidgetItem(QtGui.QIcon(get_image_directory() + "/single_image.png"),list_of_names[i])
+			flag2 = Qt.ItemFlags(Qt.ItemIsSelectable)
+			flag3 = Qt.ItemFlags(Qt.ItemIsEnabled)
+			flag4 = Qt.ItemFlags(Qt.ItemIsEditable)
+			item.setFlags(flag2|flag3)
+			item.setTextAlignment(QtCore.Qt.AlignHCenter)
+			table_widget.setItem(r+i, 0, item)
+		
+		if r == 0:
+			table_widget.resizeColumnsToContents()
+		
+	save_as = staticmethod(save_as)
+	
+	def add_context_menu(self,table_widget):
+		optional_attr = ["convert_text"]
+		for opt in optional_attr:
+			if hasattr(self,opt):
+				setattr(table_widget,opt,getattr(self,opt))
+		
+		setattr(table_widget,"context_menu",self.get_context_menu_data())
+		
+	
+
+class EMBrowseEventHandler:
+	'''
+	Base class for browse event handlers - came into existence because there are many different ways of handler the results
+	of the browsing operation.
+	It's a MIXIN because it actually supplies functionality
+	'''
+	def __init__(self,browse_button):
+		self.browser = None
+		self.browser_title = "Set this to be clear"
+		QtCore.QObject.connect(browse_button,QtCore.SIGNAL("clicked(bool)"),self.browse_pressed)
+		
+	def browse_pressed(self,bool):
+		if self.browser == None:
+			self.browser = EMSelectorModule(False,False)
+			self.browser.widget.desktop_hint = "form" # this is to make things work as expected in the desktop
+			self.browser.setWindowTitle(self.browser_title)
+			get_application().show_specific(self.browser)
+			QtCore.QObject.connect(self.browser,QtCore.SIGNAL("ok"),self.on_browser_ok)
+			QtCore.QObject.connect(self.browser,QtCore.SIGNAL("cancel"),self.on_browser_cancel)
+		else:
+			get_application().show_specific(self.browser)
+
+	def on_browser_cancel(self):
+		get_application().close_specific(self.browser)
+		self.browser = None
+
+	def on_browser_ok(self,string_list):
+		'''
+		The list is return from the browser, these are the things that user selected
+		'''
+		raise NotImplementedError("Browser ok not implemented. Inheriting class is supposed to do this")
+
+		
+def get_table_items_in_column(table_widget,column):
+	'''
+	Gets the table items from a particular column
+	'''
+	r = table_widget.rowCount()
+	entries = []
+	for i in xrange(0,r):
+		entries.append(table_widget.item(i,column))
+		
+	return entries
+	
+	
+def table_browse_addition(self):
+	''' hi '''
+	pass
+	
 		
 class EMFormModule(EMQtWidgetModule):
 	'''
@@ -100,12 +244,13 @@ class EMFormWidget(QtGui.QWidget):
 		self.auto_incorporate["intlist"] = self.__incorporate_intlist
 		self.auto_incorporate["floatlist"] = self.__incorporate_floatlist
 		self.auto_incorporate["dict"] = self.__incorporate_dict
-		self.auto_incorporate["paramtable"] = self.__incorporate_paramtable
+		self.auto_incorporate["EMParamTable"] = self.__incorporate_paramtable
 		
 		self.vbl = QtGui.QVBoxLayout()
 		self.incorporate_params(self.params,self.vbl)
 		if not disable_ok_cancel: self.__add_ok_cancel_buttons(self.vbl)
 		self.setLayout(self.vbl)
+		
 	def __init_icons(self):
 		self.emdata_icon = QtGui.QIcon(get_image_directory() + "/single_image.png")
 		self.emdata_3d_icon = QtGui.QIcon(get_image_directory() + "/single_image_3d.png")
@@ -115,7 +260,7 @@ class EMFormWidget(QtGui.QWidget):
 	def incorporate_params(self,params,layout):
 		for param in self.params:
 			try:
-				if len(param) != 1 and not isinstance(param,ParamTable):
+				if len(param) != 1 and not isinstance(param,EMParamTable):
 					hbl=QtGui.QHBoxLayout()
 					for iparam in param:
 						self.auto_incorporate[iparam.vartype](iparam,hbl)
@@ -126,6 +271,7 @@ class EMFormWidget(QtGui.QWidget):
 			self.auto_incorporate[param.vartype](param,layout)
 		
 		self.enable_boolean_dependents()
+		
 	def enable_boolean_dependents(self):
 		''' This just takes care of making sure any dependent widgets are correctly enabled by default
 		'''
@@ -133,9 +279,9 @@ class EMFormWidget(QtGui.QWidget):
 			if isinstance(event_handler,BoolDependentsEventHandler):
 				event_handler.checkbox_state_changed() # the argument is essentially unused
 				
-	def get_ptable_icon(self,paramtable):
-		if hasattr(paramtable,"icon_type"):
-			icon_type = paramtable.icon_type
+	def get_ptable_icon(self,EMParamTable):
+		if hasattr(EMParamTable,"icon_type"):
+			icon_type = EMParamTable.icon_type
 			if icon_type == "single_image": return self.emdata_icon
 			elif icon_type == "matrix_image": return self.emdata_matrix_icon
 			elif icon_type == "3d_image": return self.emdata_3d_icon
@@ -155,9 +301,12 @@ class EMFormWidget(QtGui.QWidget):
 					print "error, the number of choices is not consistent in __incorporate_paramtable"
 					return
 		
+		vbl=QtGui.QVBoxLayout()
 		hbl=QtGui.QHBoxLayout()
 		hbl.setMargin(0)
 		hbl.setSpacing(2)
+		
+		vbl.addLayout(hbl)
 		
 		table_widget = QtGui.QTableWidget(num_choices, len(paramtable), None)
 		icon = self.get_ptable_icon(paramtable)
@@ -167,7 +316,8 @@ class EMFormWidget(QtGui.QWidget):
 			
 		selected_items = [] # used to ensure default selection is correct
 		exclusions = []
-		if hasattr(paramtable,"exclusions"): exclusions = paramtable.exclusions
+		if hasattr(paramtable,"exclusions"): exclusions = paramtable.exclusions # exclusions are a list of highlight entries - they get colored green
+		
 		table_widget.setSortingEnabled(False)
 		max_len_sum = 0
 		for i,param in enumerate(paramtable):
@@ -206,15 +356,12 @@ class EMFormWidget(QtGui.QWidget):
 		
 		groupbox = QtGui.QGroupBox(paramtable.desc_short)
 		groupbox.setToolTip(paramtable.desc_long)
-		groupbox.setLayout(hbl)
+		groupbox.setLayout(vbl)
 		layout.addWidget(groupbox,10)
 		
-		optional_attr = ["convert_text","context_menu"]
-		for opt in optional_attr:
-			if hasattr(paramtable,opt):
-				setattr(table_widget,opt,getattr(paramtable,opt))
+		paramtable.add_context_menu(table_widget)
 		
-		table_event_handler = ParamTableEventHandler(self,table_widget)
+		table_event_handler = EMParamTableEventHandler(self,table_widget)
 		self.event_handlers.append(table_event_handler)
 		self.resize_event_handlers.append(table_event_handler)
 		table_widget.resizeColumnsToContents()
@@ -226,7 +373,10 @@ class EMFormWidget(QtGui.QWidget):
 	
 		for item in selected_items: 
 			item.setSelected(True)
-		self.output_writers.append(ParamTableWriter(paramtable.name,table_widget,type_of))
+		self.output_writers.append(EMParamTableWriter(paramtable.name,table_widget,type_of))
+		
+		paramtable.custom_addition(vbl,table_widget,self.event_handlers)
+		
 		self.name_widget_map[paramtable.name] = groupbox
 		
 	def __incorporate_stringlist(self,param,layout):
@@ -566,7 +716,7 @@ class EMFormWidget(QtGui.QWidget):
 		self.parent().emit(QtCore.SIGNAL("display_file"),filename)
 
 		
-class ParamTableWriter:
+class EMParamTableWriter:
 	def __init__(self,param_name,table_widget,type_of):
 		self.param_name = param_name
 		self.table_widget = table_widget
@@ -732,7 +882,7 @@ class ChoiceParamWriter:
 				choice = self.correct_type(str(button.text()))
 		dict[self.param_name] = choice
 
-class ParamTableEventHandler:
+class EMParamTableEventHandler:
 	'''
 	handles events for param tables, atm this is only the double click event, which can
 	be used to trigger image display, for example
@@ -760,7 +910,7 @@ class ParamTableEventHandler:
 	def menu_action_triggered(self,action):
 		items = self.table_widget.selectedItems()
 		names = [self.table_widget.convert_text(str(item.text())) for item in items]
-		self.table_widget.context_menu[str(action.text())](names,self.target().parent().application())
+		self.table_widget.context_menu[str(action.text())](names,self.table_widget)
 	
 	def table_item_clicked(self,item):
 		#
@@ -784,7 +934,7 @@ class ParamTableEventHandler:
 		
 		
 		
-class UrlEventHandler:
+class UrlEventHandler(EMBrowseEventHandler):
 	'''
 	The browse and cancel events have to be sent to the correct line edit, so this handles it
 	'''
@@ -792,25 +942,10 @@ class UrlEventHandler:
 		self.target = weakref.ref(target)
 		self.application = weakref.ref(application)
 		self.text_edit = text_edit
-		self.browser = None # this will be the browser itself
+		EMBrowseEventHandler.__init__(self,browse_button)
 		self.browser_title = title
-		QtCore.QObject.connect(browse_button,QtCore.SIGNAL("clicked(bool)"),self.browse_pressed)
-		QtCore.QObject.connect(clear_button,QtCore.SIGNAL("clicked(bool)"),self.clear_pressed)
 		
-	def browse_pressed(self,bool):
-		if self.browser == None:
-			self.browser = EMSelectorModule(False,False)
-			self.browser.widget.desktop_hint = "form" # this is to make things work as expected in the desktop
-			self.browser.setWindowTitle(self.browser_title)
-			get_application().show_specific(self.browser)
-			QtCore.QObject.connect(self.browser,QtCore.SIGNAL("ok"),self.on_browser_ok)
-			QtCore.QObject.connect(self.browser,QtCore.SIGNAL("cancel"),self.on_browser_cancel)
-		else:
-			get_application().show_specific(self.browser)
-
-	def on_browser_cancel(self):
-		get_application().close_specific(self.browser)
-		self.browser = None
+		QtCore.QObject.connect(clear_button,QtCore.SIGNAL("clicked(bool)"),self.clear_pressed)
 		
 	def on_browser_ok(self,stringlist):
 		new_string = str(self.text_edit.toPlainText())
@@ -907,7 +1042,7 @@ class EMTableFormWidget(EMFormWidget):
 			for param in paramlist:
 				
 				try:
-					if len(param) != 1 and not isinstance(param,ParamTable):
+					if len(param) != 1 and not isinstance(param,EMParamTable):
 						hbl=QtGui.QHBoxLayout()
 						for iparam in param:
 							self.auto_incorporate[iparam.vartype](iparam,hbl)
@@ -950,7 +1085,7 @@ def get_example_form_params():
 	
 	pil = ParamDef(name="Int 1 to 10 from a list",vartype="intlist",desc_short="intlist",desc_long="Choose from a list of ints",property=None,defaultunits=[5],choices=[1,2,3,4,5,6,7,8,9,10])
 	pfl = ParamDef(name="Float 1 to 10 from a list",vartype="floatlist",desc_short="floatlist",desc_long="Choose from a list of floats",property=None,defaultunits=[2.1],choices=[1.1,2.1,3.1,4.1,5.1,6.1,7.1,8.1,9.1,10.11111111111111111111111111111])
-	a = ParamTable(name="table_choice",desc_short="Please choose using this information",desc_long="The left most column is what you're choosing from, the extra columns are used only to assist in the decision making process")
+	a = EMParamTable(name="table_choice",desc_short="Please choose using this information",desc_long="The left most column is what you're choosing from, the extra columns are used only to assist in the decision making process")
 	a.append(pil)
 	a.append(pfl)
 	params.append([pil,pfl,a])
