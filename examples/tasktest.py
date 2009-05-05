@@ -40,46 +40,29 @@ from optparse import OptionParser
 from math import *
 import time
 import os
+import os.path
 import sys
 import socket
 
-sock=socket.socket()
-sock.connect(("localhost",9990))
-sockf=sock.makefile()
+#sock=socket.socket()
+#sock.connect(("localhost",9990))
+#sockf=sock.makefile()
 
-task=EMTask({1:"Testing"},"Test",{})
+if not os.path.exists("testdata.hdf") :
+	for i in range(5):
+		t=test_image(i)
+		t.write_image("testdata.hdf",-1)
 
-if sockf.read(4)!="EMAN" : raise Exception,"Not an EMAN server"
-sockf.write("EMAN")
-sockf.write(pack("I4s",EMAN2PARVER,"TASK"))
-sendobj(sockf,task)
-sockf.flush()
-tid=recvobj(sockf)
+task=EMTask("test",{"input":("cache","testdata.hdf",0,5)},{})
 
-print "Taskid = ",tid
+etc=EMTaskCustomer("dc:localhost:9990")
+tid=etc.send_task(task)
+print "Task submitted tid=",tid
 
-for i in range(10):
-	time.sleep(15.0)
-	sockf.write("STAT")
-	sendobj(sockf,[tid])
-	sockf.flush()
-	result=recvobj(sockf)[0]
-	print result
-	if result==100 :
-		print "Task completed"
-		sockf.write("RSLT")
-		sendobj(sockf,tid)
-		sockf.flush()
-		
-		task=recvobj(sockf)
-		print task.__dict__
-		
-		k=0
-		while 1:
-			k=recvobj(sockf)
-			if k==None: break
-			v=recvobj(sockf)
-			print k,": ",v
-		
-		break
+while 1:
+	st=etc.check_task((tid,))[0]
+	print "%d%%"%st
+	if st==100: break
+	time.sleep(15)
 
+print etc.get_results(tid)

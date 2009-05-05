@@ -419,7 +419,7 @@ class EMTaskQueue:
 			if task.starttime==None and (task.wait_for==None or len(task.wait_for)==0): 
 				task.starttime=time.time()
 				self.active[tid]=task
-				return task
+				return task 
 			
 		return None
 	
@@ -463,7 +463,10 @@ class EMTaskQueue:
 			
 			self.nametodid[k[1]]=did
 			self.didtoname[did]=k[1]
-			k[1]=did
+			try: k[1]=did
+			except:
+				task.data[j]=list(k)
+				task.data[j][1]=did
 
 		self.active[tid]=task		# store the task in the queue
 		return tid
@@ -572,7 +575,7 @@ class EMTask:
 	which contains a mix of actual data elements, and ["cache",filename,#|min,max|(list)] image references, will
 	be transparently remapped on the client to similar specifiers which are valid locally. Over the network
 	such data requests are remapped into data identifiers (did)."""
-	def __init__(self,data=None,command=None,options=None):
+	def __init__(self,command=None,data=None,options=None):
 		self.taskid=None		# unique task identifier (in this directory)
 		self.queuetime=None		# Time (as returned by time.time()) when task queued
 		self.starttime=None		# Time when execution began

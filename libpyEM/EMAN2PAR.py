@@ -47,6 +47,56 @@ EMAN2PARVER=1
 class EMTaskCustomer:
 	"""This will communicate with the specified task server on behalf of an application needing to
 	have tasks completed"""
+	def __init__(self,target):
+		"""Specify the type and target host of the parallelism server to use. 
+	dc[:hostname[:port]] - default hostname localhost, default port 9990
+	"""
+		target=target.lower()
+		self.servtype=target.split(":")[0]
+		if self.servtype!="dc" : raise Exception,"Only 'dc' servertype currently supported"
+		
+		self.addr=target.split(":")[1:]
+		if len(self.addr)==0 : self.addr=("",9990)
+		elif len(self.addr)==1 : self.addr.append(9990)
+		else : self.addr[1]=int(self.addr[1])
+		self.addr=tuple(self.addr)
+	
+	def send_task(self,task):
+		"""Send a task to the server. Returns a taskid."""
+		
+		if self.servtype=="dc" :
+			return EMDCsendonecom(self.addr,"TASK",task)
+
+		raise Exception,"Unknown server type"
+
+	def check_task(self,taskid_list):
+		"""Check on the status of a list of tasks. Returns a list of ints, -1 to 100. -1 for a task
+		that hasn't been started. 0-99 for tasks that have begun, but not completed. 100 for completed tasks."""
+		if self.servtype=="dc":
+			return EMDCsendonecom(self.addr,"STAT",taskid_list)
+			
+		raise Exception,"Unknown server type"
+	
+	def get_results(self,taskid):
+		"""Get the results for a completed task. Returns a tuple with the task object and dictionary."""
+		if self.servtype=="dc":
+			sock,sockf=openEMDCsock(self.addr)
+			sockf.write("RSLT")
+			sendobj(sockf,taskid)
+			sockf.flush()
+			
+			task=recvobj(sockf)
+			
+			k=0
+			rd={}
+			while 1:
+				k=recvobj(sockf)
+				if k==None: break
+				v=recvobj(sockf)
+				rd[k]=v
+			
+			return (task,rd)
+		
 
 class EMTaskHandler:
 	"""This is the actual server object which talks to clients and customers. It coordinates task execution
@@ -63,6 +113,30 @@ Communications are handled by subclasses."""
 	
 	def process_task(self,task):
 		"""This method implements the actual image processing by calling appropriate module functions"""
+		
+		# test command. takes a set of images, inverts them and returns the results
+		# data should contain one element "input"
+		if task.command=="test":
+			data=task.data["input"]
+#			print data[1]
+#			cname="bdb:cache_%d.%d"%(data[1][0],data[1][1])		# name of the file containing the cache for these images
+			cname=data[1]
+			cache=db_open_dict(cname)
+			
+			ret=[]
+			for i in image_range(data[2:]):		# this allows us to iterate over the specified image numbers
+				ret.append(cache[i]*-1)
+				
+			return {"inverted":ret}
+			
+
+def image_range(a,b=None):
+	"""This is an iterator which handles the (#), (min,max), (1,2,3,...) image number convention for passed data"""
+	if b!=None:
+		for i in range(a,b): yield i
+	elif isinstance(a,int) : yield a
+	else: 
+		for i in a : yield i
 
 #######################
 #  Here are classes for implementing xmlrpc based parallelism
@@ -165,15 +239,18 @@ def recvobj(sock):
 	if datlen<=0 :return None
 	return loads(sock.read(datlen))
 
-def EMDCsendonecom(host,port,cmd,data):
-	"""Connects to an EMAN EMDCServer sends one command then disconnects"""
+def EMDCsendonecom(addr,cmd,data):
+	"""Connects to an EMAN EMDCServer sends one command then disconnects.
+	addr is the standard (host,port) tuple. cmd is a 4 character string, and data is the payload.
+	Returns the response from the server."""
 	# the beginning of a message is a struct containing
 	# 0-3  : EMAN
 	# 4-7  : int, EMAN2PARVER
 	# 8-11 : 4 char command
 	# 12-15: count of bytes in pickled data following header
+	addr=tuple(addr)
 	sock=socket.socket()
-	sock.connect((host,port))
+	sock.connect(addr)
 	sockf=sock.makefile()
 	if sockf.read(4)!="EMAN" : raise Exception,"Not an EMAN server"
 	sockf.write("EMAN")
@@ -394,7 +471,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 					continue
 				sendobj(self.sockf,ret)
 
-				result=db_open_dict("bdb:%s#result_%d"%(self.queue.path,tid))
+				result=db_open_dict("bdb:%s#result_%d"%(self.queue.path,data))
 				for k in result.keys():
 					if k=="maxrec": continue
 					sendobj(self.sockf,k)
@@ -447,19 +524,8 @@ class EMDCTaskClient(EMTaskClient):
 						cname="bdb:cache_%d.%d"%(i[1][0],i[1][1])
 						cache=db_open_dict(cname)
 						
-						# form min,max
-						if len(i) == 4:
-							for j in range(i[2],i[3]):
-								if not cache.has_key(j):
-									cache[j]=self.get_data(sockf,i[1],j)
-						# form image number
-						elif isinstance(i[2],int):
-							if not cache.has_key(i[2]) :
-								cache[i[2]]=self.get_data(sockf,i[1],i[2])
-						# form list of numbers
-						else:
-							for j in i[2]:
-								if cache.has_key(j) : continue
+						for j in image_range(*i[2:]):
+							if not cache.has_key(j):
 								cache[j]=self.get_data(sockf,i[1],j)
 								
 						i[1]=cname
@@ -468,16 +534,21 @@ class EMDCTaskClient(EMTaskClient):
 			sock.close()
 			
 			# Execute translated task
-			
+#			try:
+			ret=self.process_task(task)
+#			except Exception,err:
+#				ret={"error (%d)"%task.taskid:err}
+
 			# Return results
 			if self.verbose>1 : print "Task done"
 			sock,sockf=openEMDCsock(self.addr)
 			sockf.write("DONE")
 			sendobj(sockf,task.taskid)
-			sendobj(sockf,"result")
-			sendobj(sockf,"TEST")
-			sendobj(sockf,"img")
-			sendobj(sockf,test_image())
+
+			for k,v in ret.items():
+				sendobj(sockf,k)
+				sendobj(sockf,v)
+
 			sendobj(sockf,None)
 			sockf.flush()
 			sockf.close()
