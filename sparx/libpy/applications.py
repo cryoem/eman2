@@ -2091,7 +2091,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	from fundamentals import fshift
 	from utilities    import print_begin_msg, print_end_msg, print_msg
 	from fundamentals import fft, rot_avg_table
-	from utilities    import write_text_file
+	from utilities    import write_text_file, file_type
 	import os
 		
 	print_begin_msg("ali2d_c")
@@ -2119,9 +2119,17 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	print_msg("Output directory            : %s\n"%(outdir))
 	print_msg("Inner radius                : %i\n"%(first_ring))
 
-	nima = EMUtil.get_image_count(stack)
-	ima = EMData()
-	ima.read_image(stack, 0, True)
+	if(file_type(stack) == "bdb"):
+		from EMAN2db import db_open_dict
+		dummy = db_open_dict(stack, True)
+	active = EMUtil.get_all_attributes(stack, 'active')
+	list_of_particles = []
+	for im in xrange(len(active)):
+		if active[im]:  list_of_particles.append(im)
+	del active
+	nima = len(list_of_particles)
+	ima  = EMData()
+	ima.read_image(stack, list_of_particles[0], True)
 	nx = ima.get_xsize()
 	# default value for the last ring
 	if last_ring == -1:  last_ring = nx/2-2
@@ -2152,7 +2160,6 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 		print_msg("Maskfile                    : default, a circle with radius %i\n\n"%(last_ring))
 		mask = model_circle(last_ring, nx, nx)
 
-
 	cnx = nx/2+1
  	cny = cnx
  	mode = "F"
@@ -2168,9 +2175,9 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 		from statistics   import add_ave_varf
 
 	del ima
-	data = EMData.read_images(stack)
+	data = EMData.read_images(stack, list_of_particles)
 	for im in xrange(nima):
-		data[im].set_attr('ID', im)
+		data[im].set_attr('ID', list_of_particles[im])
 		if CTF:
 			ctf_params = data[im].get_attr("ctf")
 			st = Util.infomask(data[im], mask, False)
@@ -2262,7 +2269,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	drop_image(tavg, os.path.join(outdir, "aqfinal.hdf"))
 	# write out headers
 	from utilities import write_headers
-	write_headers(stack, data, range(nima))
+	write_headers(stack, data, list_of_particles)
 	print_end_msg("ali2d_c")
 
 def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, CTF=False, snr=1.0, \
