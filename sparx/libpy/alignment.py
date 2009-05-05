@@ -978,7 +978,7 @@ def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None):
 
 	if finfo:
 		phi,tht,psi,s2x,s2y = get_params_proj(data)
-		finfo.write( "im,oldparams: %6d %8.3f %8.3f %8.3f %8.3f %8.3f\n" %(id,phi,tht,psi,s2x,s2y))
+		finfo.write( "im,oldparams: %6d %9.4f %9.4f %9.4f %9.4f %9.4f\n" %(id,phi,tht,psi,s2x,s2y))
 		finfo.flush()
 	
 	mode = "F"
@@ -1002,8 +1002,8 @@ def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None):
 	angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
 	if mirror:
 		phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
-		theta = 180.0-ref_angles[iref].get_attr("theta")
-		psi   = (540.0-ref_angles[iref].get_attr("psi")+angb)%360.0
+		theta = 180.0-refrings[iref].get_attr("theta")
+		psi   = (540.0-refrings[iref].get_attr("psi")+angb)%360.0
 		s2x   = sxb + sxo
 		s2y   = syb + syo
 	else:
@@ -1015,7 +1015,7 @@ def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None):
 	set_params_proj(data, [phi, theta, psi, s2x, s2y])
 	
 	if finfo:
-		finfo.write( "im,newparams: %6d %8.3f %8.3f %8.3f %8.3f %8.3f\n" %(id,phi,theta,psi,s2x,s2y))
+		finfo.write( "im,newparams: %6d %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f\n" %(id,phi,theta,psi,s2x,s2y,peak))
 		finfo.flush()
 
 	return peak
