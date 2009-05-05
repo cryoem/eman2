@@ -2269,7 +2269,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			Fourvar = False, user_func_name="ref_ali2d", rand_alpha=False):
 
 	from utilities    import model_circle, model_blank, drop_image, get_image, get_input_from_string
-	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type
+	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type, bcast_number_to_all, bcast_list_to_all
 	from statistics   import fsc_mask, sum_oe, add_ave_varf_MPI
 	from alignment    import Numrinit, ringwe, ali2d_single_iter
 	from filter       import filt_table, filt_ctf, filt_tophatb
@@ -2314,18 +2314,31 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		print_msg("Output directory            : %s\n"%(outdir))
 		print_msg("Inner radius                : %i\n"%(first_ring))
 	
-	nima = 0
 	if myid == main_node:
-		nima = EMUtil.get_image_count(stack)
-	nima = mpi_bcast(nima, 1, MPI_INT, main_node, MPI_COMM_WORLD)
-	nima = int(nima)
-
+       		if(file_type(stack) == "bdb"):
+			from EMAN2db import db_open_dict
+			dummy = db_open_dict(stack, True)
+		active = EMUtil.get_all_attributes(stack, 'active')
+		list_of_particles = []
+		for im in xrange(len(active)):
+			if active[im]:  list_of_particles.append(im)
+		del active
+		nima = len(list_of_particles)
+	else:
+		nima =0
+	nima = bcast_number_to_all(nima, source_node = main_node)
+	
+	if myid != main_node:
+		list_of_particles = [-1]*nima
+	list_of_particles = bcast_list_to_all(list_of_particles, source_node = main_node)
+	
 	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
+	list_of_particles = list_of_particles[image_start: image_end]
 
 	ima = EMData()
 	for i in xrange(number_of_proc):
 		if myid == i:
-			ima.read_image(stack, image_start, True)
+			ima.read_image(stack, list_of_particles[0], True)
 		if ftp == "bdb": mpi_barrier(MPI_COMM_WORLD)
 	nx = ima.get_xsize()
 	# default value for the last ring
@@ -2381,15 +2394,15 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 
 	for i in xrange(number_of_proc):
 		if myid == i: 
-			data = EMData.read_images(stack, range(image_start, image_end))
+			data = EMData.read_images(stack, list_of_particles)
 		if ftp == "bdb": mpi_barrier(MPI_COMM_WORLD)
 	
-	for im in xrange(image_start, image_end):
-		data[im-image_start].set_attr('ID', im)
+	for im in xrange(len(data)):
+		data[im].set_attr('ID', list_of_particles[im])
 		if CTF:
-			ctf_params = data[im-image_start].get_attr("ctf")
-			st = Util.infomask(data[im-image_start], mask, False)
-			data[im-image_start] -= st[0]
+			ctf_params = data[im].get_attr("ctf")
+			st = Util.infomask(data[im], mask, False)
+			data[im] -= st[0]
 			Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
 	if CTF:
 		reduce_EMData_to_root(ctf_2_sum, myid, main_node)
@@ -11199,7 +11212,7 @@ def refvol( vollist, fsclist, output, mask ):
 def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, trials, critname,
 		 CTF = False, F = 0, T0 = 0, MPI = False, CUDA = False, DEBUG = False):
 	from utilities 	import print_begin_msg, print_end_msg, print_msg, file_type
-	from statistics import k_means_criterion, k_means_export, k_means_open_im, k_means_headlog
+	from statistics import k_means_criterion, k_means_export, k_means_open_im, k_means_headlog, k_means_locasg2glbasg, k_means_list_active
 	import sys
 
 	ext = file_type(stack)
@@ -11211,28 +11224,43 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		sys.exit()
 
 	if MPI:
-		from statistics import k_means_cla_MPI, k_means_SSE_MPI, k_means_init_MPI
-		from mpi 	import mpi_barrier, MPI_COMM_WORLD
-		
-		main_node, myid, ncpu, N_start, N_stop, N = k_means_init_MPI(stack)
+		from statistics import k_means_cla_MPI, k_means_SSE_MPI
+		from mpi 	import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier, MPI_COMM_WORLD, mpi_bcast, MPI_INT
+
+		sys.argv  = mpi_init(len(sys.argv), sys.argv)
+		nb_cpu    = mpi_comm_size(MPI_COMM_WORLD)
+		myid      = mpi_comm_rank(MPI_COMM_WORLD)
+		main_node = 0
+		mpi_barrier(MPI_COMM_WORLD)
 
 		if myid == main_node:
 			print_begin_msg('k-means')
-			k_means_headlog(stack, out_dir, opt_method, N, K, critname, maskname, trials, maxit, CTF, T0, F, rand_seed, ncpu)
+			listID, N = k_means_list_active(stack)
+			k_means_headlog(stack, out_dir, opt_method, N, K, critname, maskname, trials, maxit, CTF, T0, F, rand_seed, nb_cpu)
+		
+		mpi_barrier(MPI_COMM_WORLD)
+		if myid != main_node: N = 0
+		N = mpi_bcast(N, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+		N = N.tolist()[0]
+		if myid != main_node: listID = 0
+		listID = mpi_bcast(listID, N, MPI_INT, main_node, MPI_COMM_WORLD)
+		listID = listID.tolist()
 
+		N_start = int(round(float(N) / nb_cpu * myid))
+		N_stop  = int(round(float(N) / nb_cpu * (myid + 1)))
 		if BDB:
 			# with BDB all node can not read the same data base in the same time
 			import os
 			for i in xrange(ncpu):
-				if myid == i: [im_M, mask, ctf, ctf2] = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF)
+				if myid == i: [im_M, mask, ctf, ctf2] = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, listID)
 				mpi_barrier(MPI_COMM_WORLD)
 		else:
-			[im_M, mask, ctf, ctf2] = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF)
+			[im_M, mask, ctf, ctf2] = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, listID)
 	
 		if   opt_method == 'cla':
 			[Cls, assign] = k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, [CTF, ctf, ctf2], myid, main_node, N_start, N_stop, F, T0)
 		elif opt_method == 'SSE':
-			[Cls, assign] = k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, [CTF, ctf, ctf2], myid, main_node, ncpu, N_start, N_stop, F, T0)
+			[Cls, assign] = k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, [CTF, ctf, ctf2], myid, main_node, nb_cpu, N_start, N_stop, F, T0)
 		else:
 			ERROR('opt_method %s unknown!' % opt_method, 'k-means', 1)
 			sys.exit()
@@ -11244,9 +11272,10 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 			pickle.dump(assign, f)
 			f.close()
 			"""
-
+			N = EMUtil.get_image_count(stack)
+			glb_assign = k_means_locasg2glbasg(assign, listID, N)
 			crit = k_means_criterion(Cls, critname)
-			k_means_export(Cls, crit, assign, out_dir)
+			k_means_export(Cls, crit, glb_assign, out_dir)
 			print_end_msg('k-means')
 
 		mpi_barrier(MPI_COMM_WORLD)
@@ -11282,12 +11311,16 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 			sys.exit()
 	
 		# get back partition, averages and info about the classification
-		PART = KmeansCUDA.get_partition()
+		ASG  = KmeansCUDA.get_partition()
 		INFO = KmeansCUDA.get_info()
 		AVE  = KmeansCUDA.get_averages() # return flat images
 
+		# local to absolue index
+		N    = EMUtil.get_image_count(stack)
+		GASG = k_means_locasg2glbasg(ASG, LUT, N)
+
 		# export data
-		k_means_cuda_export(PART, INFO, AVE, out_dir, mask)
+		k_means_cuda_export(GASG, INFO, AVE, out_dir, mask)
 
 		# destroy obj
 		del KmeansCUDA
@@ -11300,8 +11333,9 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 
 	else:
 		from statistics import k_means_classical, k_means_SSE
-		N = EMUtil.get_image_count(stack)
-		[im_M, mask, ctf, ctf2] = k_means_open_im(stack, maskname, 0, N, N, CTF)
+
+		listID, N = k_means_list_active(stack)
+		[im_M, mask, ctf, ctf2] = k_means_open_im(stack, maskname, 0, N, N, CTF, listID)
 
 		if T0 == -1:
 			from development import k_means_SA_T0
@@ -11319,6 +11353,8 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 			sys.exit()
 			
 		crit = k_means_criterion(Cls, critname)
+		N = EMUtil.get_image_count(stack)
+		glb_assign = k_means_locasg2glbasg(assign, listID, N)
 		k_means_export(Cls, crit, assign, out_dir)
 		print_end_msg('k-means')
 

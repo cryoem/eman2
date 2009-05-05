@@ -1486,6 +1486,47 @@ def im_diff(im1, im2, mask = None):
 ##############################################################################################
 ### K-MEANS ##################################################################################
 
+# Convert local assignment to absolute assignment
+def k_means_locasg2glbasg(ASG, LUT, N):
+	Nloc = len(ASG)
+	GASG = [-1] * N
+	for n in xrange(Nloc): GASG[LUT[n]] = ASG[n]
+
+	return GASG
+
+# k-means open and prepare images, only unstable objects (active = 1)
+def k_means_list_active(stack):
+	from utilities     import file_type
+	
+	N    = EMUtil.get_image_count(stack)
+
+	image = EMData()
+	image.read_image(stack, 0, True)
+	flagactive = True
+	try:	active = image.get_attr('active')
+	except: flagactive = False
+	del image
+
+	if flagactive:
+		LUT  = []
+		ext  = file_type(stack)
+		if ext == 'bdb':
+			DB = db_open_dict(stack)
+			for n in xrange(N):
+				if DB.get_attr(n, 'active'): LUT.append(n)
+			DB.close()
+		else:
+			im = EMData()
+			for n in xrange(N):
+				im.read_image(stack, n, True)
+				if im.get_attr('active'): LUT.append(n)
+
+		N = len(LUT)
+	else:
+		LUT = range(N)
+
+	return LUT, N
+
 # k-means open and prepare images
 def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, listID = None):
 	from utilities     import get_params2D, get_image, get_params3D
@@ -1499,7 +1540,7 @@ def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, listID = None):
 
 	im_M = [0] * N
 	im   = EMData()
-	im.read_image(stack, N_start, True)
+	im.read_image(stack, listID[N_start], True)
 	nx = im.get_xsize()
 	ny = im.get_ysize()
 	nz = im.get_zsize()
@@ -2484,11 +2525,6 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 				if DEBUG: print '> iteration: %5d    criterion: %11.6e'%(ite, Je)
 
 			old_Je = Je
-
-			## TO TEST
-			if (ite-1) % 10 == 0:
-				Cls['ave'][4].write_image('ave_ite.hdf', int((ite-1)/10))
-				
 
 		# if no empty cluster
 		if not flag_empty:
@@ -3592,11 +3628,6 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 			change = mpi_reduce(change, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
 			change = mpi_bcast(change, 1, MPI_INT, main_node, MPI_COMM_WORLD)
 			change = change.tolist()[0]
-
-			## TO TEST
-			#if myid == main_node:
-			#	if (ite-1) % 10 == 0:
-			#		Cls['ave'][0].write_image('ave_ite.hdf', int((ite-1)/10))
 			
 		# [all] waiting the result
 		mpi_barrier(MPI_COMM_WORLD)
@@ -5307,14 +5338,14 @@ def k_means_stab_init_tag(stack):
 	if ext == 'bdb':
 		DB = db_open_dict(stack)
 		for n in xrange(N):
-			DB.set_attr(n, 'active', 1)
+			DB.set_attr(n, 'stab_active', 1)
 			DB.set_attr(n, 'stab_part', -2)
 		DB.close()
 	else:
 		im = EMData()
 		for n in xrange(N):
 			im.read_image(stack, n, True)
-			im.set_attr('active', 1)
+			im.set_attr('stab_active', 1)
 			im.set_attr('stab_part', -2)
 			write_header(stack, im, n) 
 
@@ -5350,12 +5381,8 @@ def k_means_open_unstable_MPI(stack, maskname, CTF, nb_cpu, main_node, myid):
 	lim = mpi_bcast(lim, N, MPI_INT, main_node, MPI_COMM_WORLD)
 	lim = lim.tolist()
 
-	im_per_node = max(N / nb_cpu, 1)
-	N_start     = myid * im_per_node
-	if myid == (nb_cpu -1):
-		N_stop = N
-	else:
-		N_stop = min(N_start + im_per_node, N)
+	N_start = int(round(float(N) / nb_cpu * myid))
+	N_stop  = int(round(float(N) / nb_cpu * (myid + 1)))
 
 	# Now each node read his part of data (unsynchronise due to bdb)
 	for cpu in xrange(nb_cpu):
@@ -5377,13 +5404,13 @@ def k_means_open_unstable(stack, maskname, CTF):
 	if ext == 'bdb':
 		DB = db_open_dict(stack)
 		for n in xrange(N):
-			if DB.get_attr(n, 'active'): lim.append(n)
+			if DB.get_attr(n, 'stab_active'): lim.append(n)
 		DB.close()
 	else:
 		im = EMData()
 		for n in xrange(N):
 			im.read_image(stack, n, True)
-			if im.get_attr('active'): lim.append(n)
+			if im.get_attr('stab_active'): lim.append(n)
 
 	N = len(lim)
 	im_M, mask, ctf, ctf2 = k_means_open_im(stack, maskname, 0, N, N, CTF, lim)
@@ -5444,7 +5471,7 @@ def k_means_stab_update_tag(stack, ALL_PART, STB_PART, num_run):
 			DB.set_attr(n, 'stab_part', val)
 
 		# active or not (unstable or not)
-		for ID in list_stb: DB.set_attr(ID, 'active', 0)
+		for ID in list_stb: DB.set_attr(ID, 'stab_active', 0)
 
 		DB.close()
 	else:
@@ -5468,7 +5495,7 @@ def k_means_stab_update_tag(stack, ALL_PART, STB_PART, num_run):
 		# active or not (unstable or not)
 		for ID in list_stb:
 			im.read_image(stack, ID, True)
-			im.set_attr('active', 0)
+			im.set_attr('stab_active', 0)
 			write_header(stack, im, ID)
 
 # Gather all stable class averages in the same stack
