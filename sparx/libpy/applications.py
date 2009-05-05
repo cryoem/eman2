@@ -3155,13 +3155,6 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 						frsc = fsc(refi[j][0], refi[j][1], 1.0, os.path.join(outdir,"drm%03d%04d"%(Iter,j)))
 						Util.add_img( refi[j][0], refi[j][1] )
 						Util.mul_scalar( refi[j][0], 1.0/float(refi[j][2]) )
-					
-					#  low pass filter references
-					#lowfq, highfq = filt_params(frsc, low = 0.1)
-					#refi[j][0] = filt_btwl(refi[j][0], lowfq, highfq)
-					#refi[j][0], csx, csy = center_2D(refi[j][0], center)
-					#msg = '   group' #%3d   filter parameters = %6.4f, %6.4f,  center parameters (x,y) = %10.3e, %10.3e\n"%(j, lowfq, highfq, csx, csy)
-					#print_msg(msg)
 				        	
 					if frsc[1][0] == frsc[1][0]: # this manage the problem of NaN				
 						for i in xrange(len(frsc[1])): ave_fsc[i] += frsc[1][i]
@@ -3188,9 +3181,6 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 				TMP.sort()
 				refi[j][0].set_attr_dict({'ave_n': refi[j][2],  'members': TMP })
 				del TMP
-				#  high pass filter references  (activate two lines below)
-				#from filter import filt_btwo
-				#refi[j][0] = filt_btwo(refi[j][0], 0.01, 0.1, 0.1)
 				refi[j][0].process_inplace("normalize.mask", {"mask":mask, "no_sigma":1})
 				refi[j][0].write_image(refim, j)
 				a1 += refi[j][0].cmp("dot", refi[j][0], {"negative":0, "mask":mask})
