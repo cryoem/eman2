@@ -11416,9 +11416,9 @@ def k_means_stab(stack, outdir, maskname, opt_method, K, npart = 5, CTF = False,
 	logging.info('Init list random seed: %s' % rnd)
 
 	# init tag to the header for the stack file
-	if restart == 1:
-		logging.info('Init header to the stack file')
-		k_means_stab_init_tag(stack)
+	#if restart == 1:
+	#	logging.info('Init header to the stack file')
+	#	k_means_stab_init_tag(stack)
 
 	# loop over run
 	stb          = 6.0
@@ -11435,6 +11435,7 @@ def k_means_stab(stack, outdir, maskname, opt_method, K, npart = 5, CTF = False,
 		logging.info('... %d unstable images found' % N)
 		if N < 2:
 			logging.info('[STOP] Not enough images')
+			num_run -= 1
 			break
 		if F != 0:
 			try:
@@ -11442,6 +11443,7 @@ def k_means_stab(stack, outdir, maskname, opt_method, K, npart = 5, CTF = False,
 				logging.info('... Select first temperature T0: %4.2f (dst %d)' % (T0, ct_pert))
 			except SystemExit:
 				logging.info('[STOP] Not enough images')
+				num_run -= 1
 				break
 		else: T0 = 0
 
@@ -11506,21 +11508,20 @@ def k_means_stab(stack, outdir, maskname, opt_method, K, npart = 5, CTF = False,
 			continue
 
 		# export the stable class averages
-		logging.info('... Export stable class averages: average_stb_run%02d.hdf' % num_run)
-		k_means_stab_export(STB_PART, stack, num_run, outdir)
-
+		count_k, id_rejected = k_means_stab_export(STB_PART, stack, num_run, outdir, th_nobj)
+		logging.info('... Export %i stable class averages: average_stb_run%02d.hdf (rejected %i images)' % (count_k, num_run, len(id_rejected)))
+		
 		# tag informations to the header
 		logging.info('... Update info to the header')
-		k_means_stab_update_tag(stack, ALL_PART, STB_PART, num_run)
+		k_means_stab_update_tag(stack, ALL_PART, STB_PART, num_run, id_rejected)
 
 		# stop if max run is reach
 		if num_run >= maxrun:
 			flag_run = False
 			logging.info('[STOP] Max number of runs is reached (%d)' % maxrun)
 
-	# merge and clean all stable averages
-	logging.info('Remove class average with nb objs < %d' % th_nobj)
-	ct = k_means_stab_gather(num_run, th_nobj, maskname, outdir)
+	# merge all stable averages
+	ct = k_means_stab_gather(num_run, maskname, outdir)
 	logging.info('Gather and normalize all stable class averages: averages.hdf (%d images)' % ct)
 	
 	logging.info('::: END k-means stability :::')
@@ -11556,9 +11557,9 @@ def k_means_stab_CUDA(stack, outdir, maskname, K, npart = 5, F = 0, FK = 0, maxr
 	logging.info('Init list random seed: %s' % rnd)
 
 	# init tag to the header for the stack file
-	if restart == 1:
-		logging.info('Init header to the stack file')
-		k_means_stab_init_tag(stack)
+	#if restart == 1:
+	#	logging.info('Init header to the stack file')
+	#	k_means_stab_init_tag(stack)
 
 	# loop over run
 	flag_run     = True
@@ -11579,6 +11580,7 @@ def k_means_stab_CUDA(stack, outdir, maskname, K, npart = 5, F = 0, FK = 0, maxr
 		logging.info('... %d unstable images found' % N)
 		if N < 2:
 			logging.info('[STOP] Not enough images')
+			num_run -= 1
 			break
 		KmeansCUDA.setup(m, N, K, F, T0, maxit, 0)
 		k_means_cuda_open_im(KmeansCUDA, stack, LUT, mask)
@@ -11656,12 +11658,12 @@ def k_means_stab_CUDA(stack, outdir, maskname, K, npart = 5, F = 0, FK = 0, maxr
 					logging.info('[STOP] request by the user')
 
 					# export the stable class averages
-					logging.info('... Export stable class averages: average_stb_run%02d.hdf' % num_run)
-					k_means_stab_export(STB_PART, stack, num_run, outdir)
+					count_k, id_rejected = k_means_stab_export(STB_PART, stack, num_run, outdir, th_nobj)
+					logging.info('... Export %i stable class averages: average_stb_run%02d.hdf (rejected %i images)' % (count_k, num_run, len(id_rejected)))
 
 					# tag informations to the header
 					logging.info('... Update info to the header')
-					k_means_stab_update_tag(stack, ALL_PART, STB_PART, num_run)
+					k_means_stab_update_tag(stack, ALL_PART, STB_PART, num_run, id_rejected)
 					try:
 						import os
 						os.system('rm control')
@@ -11686,8 +11688,8 @@ def k_means_stab_CUDA(stack, outdir, maskname, K, npart = 5, F = 0, FK = 0, maxr
 			continue
 	
 		# export the stable class averages
+		count_k, id_rejected = k_means_stab_export(STB_PART, stack, num_run, outdir, th_nobj)
 		logging.info('... Export stable class averages: average_stb_run%02d.hdf' % num_run)
-		k_means_stab_export(STB_PART, stack, num_run, outdir)
 
 		# tag informations to the header
 		logging.info('... Update info to the header')

@@ -104,7 +104,7 @@ def add_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None, a
 			else:           Util.add_img(ave2, ima)
 			Util.add_img2(var, ima)
 		sumsq = Util.addn_img(ave1, ave2)
-		tavg = Util.muln_scalar(sumsq, 1.0/float(n))
+		tavg = Util.mult_scalar(sumsq, 1.0/float(n))
 		Util.mul_img(sumsq, sumsq.conjg())
 		Util.mul_scalar(sumsq, 1.0/float(n))
 		Util.sub_img(var, sumsq)
@@ -5255,41 +5255,50 @@ def k_means_stab_H(ALL_PART):
 	return stability, nb_stb, ALL_PART[0]
 
 # Build and export the stable class averages 
-def k_means_stab_export(PART, stack, num_run, outdir):
+def k_means_stab_export(PART, stack, num_run, outdir, th_nobj):
 	from utilities    import model_blank, get_params2D
 	from fundamentals import rot_shift2D
 	
 	K    = len(PART)
 	im   = EMData()
-	#im.read_image(stack, 0, True)  # Sometime this line not works for bdb
 	im.read_image(stack, 0)
 	nx   = im.get_xsize()
 	ny   = im.get_ysize()
 	imbk = model_blank(nx, ny)
 	AVE  = []
-	for k in xrange(K): AVE.append(imbk.copy())
+	lrej = []
+	Kr   = 0
+	ck   = 0
+	for k in xrange(K):
+		if len(PART[k]) >= th_nobj:
+			Kr += 1
+	if Kr == 0:
+		imbk.write_image(outdir + '/average_stb_run%02d.hdf' % num_run, 0)
+		return 0, []
+	for k in xrange(Kr): AVE.append(imbk.copy())
 	for k in xrange(K):
 		nobjs = len(PART[k])
-		if nobjs > 0:
+		if nobjs >= th_nobj:
 			for ID in PART[k]:
 				im.read_image(stack, int(ID))
 				alpha, sx, sy, mirror, scale = get_params2D(im)
 				im = rot_shift2D(im, alpha, sx, sy, mirror)
 				
-				Util.add_img(AVE[k], im)
-			Util.mul_scalar(AVE[k], 1.0 / float(nobjs))
+				Util.add_img(AVE[ck], im)
+			Util.mul_scalar(AVE[ck], 1.0 / float(nobjs))
 
-			AVE[k].set_attr('Class_average', 1.0)
-			AVE[k].set_attr('nobjects', nobjs)
-			AVE[k].set_attr('members', PART[k])
+			AVE[ck].set_attr('Class_average', 1.0)
+			AVE[ck].set_attr('nobjects', nobjs)
+			AVE[ck].set_attr('members', PART[k])
+			AVE[ck].write_image(outdir + '/average_stb_run%02d.hdf' % num_run, ck)
+			ck += 1
 		else:
-			AVE[k].set_attr('Class_average', 1.0)
-			AVE[k].set_attr('nobjects', 0)
-			AVE[k].set_attr('members', -1)
+			lrej.extend(PART[k])
 
-		AVE[k].write_image(outdir + '/average_stb_run%02d.hdf' % num_run, k)
+	return ck, lrej
 
 # Init the header for the stack file
+# TODO this function need to be removed (not used)
 def k_means_stab_init_tag(stack):
 	from utilities import file_type, write_header
 	
@@ -5323,13 +5332,13 @@ def k_means_open_unstable_MPI(stack, maskname, CTF, nb_cpu, main_node, myid):
 		if ext == 'bdb':
 			DB = db_open_dict(stack)
 			for n in xrange(N):
-				if DB.get_attr(n, 'stab_active'): lim.append(n)
+				if DB.get_attr(n, 'active'): lim.append(n)
 			DB.close()
 		else:
 			im = EMData()
 			for n in xrange(N):
 				im.read_image(stack, n, True)
-				if im.get_attr('stab_active'): lim.append(n)
+				if im.get_attr('active'): lim.append(n)
 
 		N = len(lim)
 
@@ -5348,7 +5357,6 @@ def k_means_open_unstable_MPI(stack, maskname, CTF, nb_cpu, main_node, myid):
 	for cpu in xrange(nb_cpu):
 		if cpu == myid:			
 			im_M, mask, ctf, ctf2 = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, lim)
-			print myid, 'ok'
 		mpi_barrier(MPI_COMM_WORLD)
 
 	return im_M, mask, ctf, ctf2, lim, N, N_start, N_stop
@@ -5364,13 +5372,13 @@ def k_means_open_unstable(stack, maskname, CTF):
 	if ext == 'bdb':
 		DB = db_open_dict(stack)
 		for n in xrange(N):
-			if DB.get_attr(n, 'stab_active'): lim.append(n)
+			if DB.get_attr(n, 'active'): lim.append(n)
 		DB.close()
 	else:
 		im = EMData()
 		for n in xrange(N):
 			im.read_image(stack, n, True)
-			if im.get_attr('stab_active'): lim.append(n)
+			if im.get_attr('active'): lim.append(n)
 
 	N = len(lim)
 	im_M, mask, ctf, ctf2 = k_means_open_im(stack, maskname, 0, N, N, CTF, lim)
@@ -5390,11 +5398,13 @@ def k_means_stab_asg2part(ALL_ASG, LUT):
 	return ALL_PART
 
 # Update information to the header of the stack file
-def k_means_stab_update_tag(stack, ALL_PART, STB_PART, num_run):
+# TODO this function need to be clean up
+def k_means_stab_update_tag(stack, ALL_PART, STB_PART, num_run, lrej):
 	from utilities import file_type, write_header
 
 	N  = EMUtil.get_image_count(stack)
 
+	'''
 	# prepare partitions given by the run
 	nb_part = len(ALL_PART)
 	K       = len(ALL_PART[0])
@@ -5409,7 +5419,7 @@ def k_means_stab_update_tag(stack, ALL_PART, STB_PART, num_run):
 	STB_ASG = [-1] * N
 	for k in xrange(K):
 		for ID in STB_PART[k]: STB_ASG[ID] = k
-
+	'''
 	# prepare for active images
 	list_stb = []
 	for part in STB_PART: list_stb.extend(part)
@@ -5417,7 +5427,7 @@ def k_means_stab_update_tag(stack, ALL_PART, STB_PART, num_run):
 	ext = file_type(stack)
 	if ext == 'bdb':
 		DB = db_open_dict(stack)
-		#N = 1
+		'''
 		for n in xrange(N):
 			# run partitions
 			vec = []
@@ -5429,37 +5439,41 @@ def k_means_stab_update_tag(stack, ALL_PART, STB_PART, num_run):
 			elif  val == -2: val = [STB_ASG[n]]              # if first run  (no value define by -2)
 			else: val == [val, STB_ASG[n]]                   # if second run (scalar)
 			DB.set_attr(n, 'stab_part', val)
-
-		# active or not (unstable or not)
-		for ID in list_stb: DB.set_attr(ID, 'stab_active', 0)
-
+		'''
+		# those are stable
+		for ID in list_stb: DB.set_attr(ID, 'active', 0)
+		# those are still unstable
+		for ID in lrej: DB.set_attr(ID, 'active', 1)
 		DB.close()
 	else:
 		im = EMData()
+		'''
 		for n in xrange(N):
 			im.read_image(stack, n, True)
-
 			vec = []
 			for i in xrange(nb_part): vec.append(ALL_ASG[i][n])
 			im.set_attr('stab_run%02d' % num_run, vec)
-
 			# stab partitions
 			val = im.get_attr('stab_part')
 			if isinstance(val, list): val.append(STB_ASG[n]) # if n-ieme run (list of value)
 			elif  val == -2: val = [STB_ASG[n]]              # if first run  (no value define by -2)
 			else: val = [val, STB_ASG[n]]                    # if second run (scalar)
 			im.set_attr('stab_part', val)
-
 			write_header(stack, im, n)
-
-		# active or not (unstable or not)
+		'''
+		# those are stable
 		for ID in list_stb:
 			im.read_image(stack, ID, True)
-			im.set_attr('stab_active', 0)
+			im.set_attr('active', 0)
+			write_header(stack, im, ID)
+		# those are still unstable
+		for ID in lrej:
+			im.read_image(stack, ID, True)
+			im.set_attr('active', 1.0)
 			write_header(stack, im, ID)
 
 # Gather all stable class averages in the same stack
-def k_means_stab_gather(nb_run, th, maskname, outdir):
+def k_means_stab_gather(nb_run, maskname, outdir):
 	from utilities import get_image
 
 	ct   = 0
@@ -5472,11 +5486,13 @@ def k_means_stab_gather(nb_run, th, maskname, outdir):
 			else: mask   = None
 		for n in xrange(N):
 			im.read_image(name, n)
-			if im.get_attr('nobjects') > th:
+			try:
+				nobjs = im.get_attr('nobjects') # check if ave not empty
 				ret = Util.infomask(im, mask, True) # 
 				im  = (im - ret[0]) / ret[1]        # normalize
 				im.write_image(outdir + '/averages.hdf', ct)
 				ct += 1
+			except: pass
 
 	return ct
 
