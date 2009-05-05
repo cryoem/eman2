@@ -252,6 +252,9 @@ def main():
 		from mpi import mpi_init, mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
 		sys.argv = mpi_init( len(sys.argv), sys.argv )
 	
+		from utilities import init_mpi_bdb
+		init_mpi_bdb()
+
 	bootstrap_calcwgts( prjfile, wgtfile, options.voronoi, options.delta,refvol, options.fl, options.fh, options.CTF, options.nexclude, options.exclude_bothside, options.MPI )
 
 
