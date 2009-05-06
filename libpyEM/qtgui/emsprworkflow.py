@@ -639,7 +639,7 @@ class MicrographReportTask(WorkFlowTask):
 	def __init__(self,application):
 		WorkFlowTask.__init__(self,application)
 		self.window_title = "Micrographs In Project"
-		self.boxer_module = None # this will actually point to an EMBoxerModule, potentially
+		self.project_files_at_init = None # stores the known project files when the form is created and shown - that way if cancel is hit we can restore the original parameters
 
 	def get_raw_files_in_project(self):
 		'''
@@ -694,8 +694,8 @@ class MicrographReportTask(WorkFlowTask):
 #		p.append(pmax)
 #		p.append(pmin)
 
-		p.add_context_menu_data("Remove",MicrographReportTask.remove_files_from_project)
-		p.add_context_menu_data("Add",MicrographReportTask.add_files_from_context_menu)
+		p.add_optional_table_attr_data("Remove",MicrographReportTask.remove_files_from_project)
+		p.add_optional_table_attr_data("Add",MicrographReportTask.add_files_from_context_menu)
 		p.set_add_files_function(MicrographReportTask.add_files_from_context_menu)
 		setattr(p,"convert_text", ptable_convert_2)
 #		context_menu_dict = {"Save as":image_save_as}
@@ -807,6 +807,10 @@ class MicrographReportTask(WorkFlowTask):
 	add_files_from_context_menu = staticmethod(add_files_from_context_menu)
 
 	def get_params(self):
+		
+		project_db = db_open_dict("bdb:project")
+		self.project_files_at_init = project_db.get("global.micrograph_ccd_filenames",dfl=[]) # so if the user hits cancel this can be reset
+		
 		params = []
 		
 		p,n = self.get_raw_files_in_project()
@@ -817,7 +821,15 @@ class MicrographReportTask(WorkFlowTask):
 			params.append(ParamDef(name="blurb",vartype="text",desc_short="Files",desc_long="",property=None,defaultunits=MicrographReportTask.documentation_string,choices=None))
 			params.append(p)
 		return params
-			
+	
+	def on_form_cancel(self):
+		project_db = db_open_dict("bdb:project")
+		project_db["global.micrograph_ccd_filenames"] = self.project_files_at_init
+		
+		self.form.closeEvent(None)
+		self.form = None
+		self.emit(QtCore.SIGNAL("task_idle"))
+	
 	def on_form_ok(self,params):
 		self.form.closeEvent(None)
 		self.form = None

@@ -3268,12 +3268,12 @@ void NormalizeToLeastSquareProcessor::process_inplace(EMData * image)
 void BinarizeFourierProcessor::process_inplace(EMData* image) {
 
 	if (!image->is_complex()) throw ImageFormatException("Fourier binary thresholding processor only works for complex images");
-	
+
 	float threshold = params.set_default("value",-1.0f);
 	if (threshold < 0) throw InvalidParameterException("For fourier amplitude-based thresholding, the threshold must be greater than or equal to 0.");
-	
+
 	image->ri2ap(); //
-	
+
 	float* d = image->get_data();
 	for( int i = 0; i < image->get_size()/2; ++i, d+=2) {
 		float v = *d;
@@ -3285,7 +3285,7 @@ void BinarizeFourierProcessor::process_inplace(EMData* image) {
 			*(d+1) = 0;
 		}
 	}
-	
+
 	// No need to run ap2ri, because 1+0i is the same in either notation
 	image->set_ri(true); // So it can be used for fourier multiplaction, for example
 	image->update();
@@ -5040,10 +5040,7 @@ void ACFCenterProcessor::process_inplace(EMData * image)
 	Dict params1;
 	params1["intonly"] = 1;
 	params1["maxshift"] = image->get_xsize() / 2;
-	// phaseorigin shift only needs to be used until P.Penczek resolves convolution issues relating to odd dimensions. This is as of July 24th 2008 FIXME
-	image->process_inplace("xform.phaseorigin.tocorner");
 	EMData* aligned = image->align("translational", 0, params1);
-	image->process_inplace("xform.phaseorigin.tocenter");
 	if ( image->get_ndim() == 3 ) {
 		Transform* t = aligned->get_attr("xform.align3d");
 		image->translate(t->get_trans());
@@ -5053,7 +5050,6 @@ void ACFCenterProcessor::process_inplace(EMData * image)
 		Transform* t = aligned->get_attr("xform.align2d");
 		image->translate(t->get_trans());
 	}
-
 
 	delete aligned;
 

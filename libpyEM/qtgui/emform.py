@@ -43,77 +43,111 @@ import weakref
 
 class EMParamTable(list):
 	'''
-	This is just a list of ParamDef objects, each of the ParamDef objects are generally a list-type of some sort, such
-	as intlist, floatlist, stringlist etc
+	This object is constructed as a table in the EMFormModule
+	This object list of ParamDef objects : each of these ParamDef objects are generally a list-type of some sort, such
+	as intlist, floatlist, stringlist etc. They should all be the same length, but this is not tested - to do so would 
+	require the list.append function to be redefined
+	Presently, the user selects their options only from the first column. The other columns are useful only for displaying helpful metadata, such as image mean and image dimensions
 	'''
 	def __init__(self,name=None,desc_short=None,desc_long=""):
+		'''
+		@param name the all important name of the parameter supplied by this object, becomes a key in a dictionary.
+		@param desc_short a concise (short) descriptive title. Will become a general title for the associated table in EMFormModule
+		@param desc_long will be used as a tool tip. Text that is helpful but not too long
+		'''
 		list.__init__(self)
 		self.vartype = "EMParamTable"
-		self.name = name
-		self.desc_short = desc_short
-		self.desc_long = desc_long
-		self.enable_multiple_selection = True
-		self.context_menu_dict = {}
+		self.name = name #
+		self.desc_short = desc_short # Will become a general title for the associated table
+		self.desc_long = desc_long # For the tool tip
+		self.enable_multiple_selection = True # use by EMFormModule when it creates the associated table - the user can select more than one entry if this is true
 		
-	def custom_addition(self,layout,table_widget,event_handlers):
+	def custom_addition(self,layout,table_widget):
 		'''
-		The beginnings of an idea\
+		When the associated table is being created and added in the form module, this function is called, enabling
+		different things to be added to the layout in a custom fashion (such as an "Add" button).
+		@param layout a Qt Layout (e.g. QVBoxLayout, QHBoxLayout - objects that support the 'addWidget' and 'addLayout' syntax
+		@param table_widget - the table widget itself, which is an instance of a QtGui.QTableWidget
 		'''
 		pass
 	
-	def get_context_menu_data(self):
+	def add_optional_table_attr(self,table_widget):
 		'''
-		@return a dictionary - keys are used to add context menu items, values are functions which are called
+		Called by the EMFormModule to add extra attributes to the the table widget, and this is used
+		as the basis for creating context menus (context_menu attribute, which is a dictionary), and for
+		converting the name in the table to the absolute file system path (convert_text attribute,
+		which is a function)
+		@param table_widget the QtGui.QTableWidget which will have the new attributes
 		'''
-		return {}
-	
-	def add_context_menu_data(self,key,value):
-		'''
-		@param key The name of the action, as will appear in the context menu
-		@value the function that is called when the user selects the item in the context menu. 
-		The function referenced by should take two arguments -  list of names and the table widget itself
-		'''
-		self.context_menu_dict[key] = value
-	
-	def add_context_menu(self,table_widget):
-		optional_attr = ["convert_text","context_menu"]
+		optional_attr = ["convert_text","context_menu"] # these two attributes are the only ones currently used (even for inheriting classes)
 		for opt in optional_attr:
 			if hasattr(self,opt):
 				setattr(table_widget,opt,getattr(self,opt))
 		
 	
 class EMRawDataParamTable(EMParamTable):
-	
+	'''
+	The metadata and functions used to create a table that displays a list of 2D images.
+	2D (and not 3D) restriction is in place because of the icon, basically (remove this line when resolved)
+	Provides the data for a context menu that facilitates adding to the table, and also saving listed in the table
+	'''
 	def __init__(self,name=None,desc_short=None,desc_long=""):
+		'''
+		See EMParamTable comments for parameter help
+		'''
 		EMParamTable.__init__(self,name,desc_short,desc_long)
+		self.context_menu_dict = {} # key is the context menu entry, value is the function which is called
 		self.context_menu_dict["Save as"] = EMRawDataParamTable.save_as
-		self.context_menu_dict["Add"] = EMRawDataParamTable.add_files
+		self.context_menu_dict["Add"] = EMRawDataParamTable.add_files 
 		self.add_files_function = EMRawDataParamTable.add_files # this is so the add files function is customizable 
-		self.browse_button = None
-	
-	def custom_addition(self,layout,table_widget,event_handlers):
+		self.add_button = None  # eventually is a QtGui.QPushButton - see custom_addition function
+		
+	def add_optional_table_attr_data(self,key,value):
 		'''
-		The beginnings of an idea
+		@param key The name of the action, as will appear in the context menu
+		@value the function that is called when the user selects the item in the context menu. 
+		The function referenced by should take two arguments -  list of names and the table widget itself
 		'''
-		self.browse_button = QtGui.QPushButton("Add",None)
+		self.context_menu_dict[key] = value
+
+	def custom_addition(self,layout,table_widget):
+		'''
+		See EMParamTable.custom_addition for comments on parameters
+		Inserts an "Add" button which triggers the self.add_files_function
+		'''
+		self.add_button = QtGui.QPushButton("Add",None)
 		self.table_widget = table_widget
-		layout.addWidget(self.browse_button)
-		QtCore.QObject.connect(self.browse_button,QtCore.SIGNAL("clicked(bool)"),self.add_pressed)
+		layout.addWidget(self.add_button)
+		QtCore.QObject.connect(self.add_button,QtCore.SIGNAL("clicked(bool)"),self.add_pressed)
 		
 	def add_pressed(self,bool):
+		'''
+		Slot for self.add_button's QtCore.SIGNAL("clicked(bool)")
+		@param bool unused variable that comes with the Qt Signal
+		'''
+		# have to pass an empty list to preserve the generic interface
 		self.add_files_function([],self.table_widget)
 		
 	def set_add_files_function(self,function):
+		'''
+		Set the add files function
+		@param function a static function that takes two arguments, the first being a list of strings the second being a QtGui.QTableWidget
+		'''
 		self.add_files_function = function
 
 	def get_context_menu_data(self):
 		'''
 		@return a dictionary - keys are used to add context menu items, values are functions which are called
+		These functions (which are the dictionary values) take two arguments, the first being a list of strings
+		the second being a QtGui.QTableWidget
 		'''
-
 		return self.context_menu_dict
 		
 	def save_as(list_of_names,table_widget):
+		'''
+		Made static
+		See the context menu dictionary in __init__, called when the user clicks "Save as"
+		'''
 		for name in list_of_names:
 			from emsave import LightEMDataSave, save_data
 			tmp = LightEMDataSave(name)
@@ -122,9 +156,15 @@ class EMRawDataParamTable(EMParamTable):
 				break
 
 	def add_files(list_of_names,table_widget):
+		'''
+		Made static
+		See the context menu dictionary in __init__, called when the user clicks "Add"
+		Also the function which is called by the self.add_button
+		'''
 		
 		from emselector import EMSelectorModule
 		em_qt_widget = EMSelectorModule()
+		# Should really make a validator that verifies the images are 2D
 		#validator = AddFilesToProjectValidator()
 		#em_qt_widget.widget.set_validator(validator)
 		files = em_qt_widget.exec_()
@@ -133,7 +173,7 @@ class EMRawDataParamTable(EMParamTable):
 			
 			entries = get_table_items_in_column(table_widget,0)
 			entrie_tags = [EMAN2.get_file_tag(str(i.text())) for i in entries]
-			file_tags = [EMAN2.get_file_tag(i) for i in files]
+			file_tags = [EMAN2.get_file_tag(i) for i in files] # have to use file_tags in case bdb and flat files are mixed in
 			error_messages = []
 			for idx,tag in enumerate(file_tags):
 				if tag in entrie_tags:
@@ -148,6 +188,7 @@ class EMRawDataParamTable(EMParamTable):
 			r = table_widget.rowCount()
 			table_widget.setRowCount(r+len(files))
 			for i in xrange(0,len(files)):
+				# here we are assuming the image is 2D
 				item = QtGui.QTableWidgetItem(QtGui.QIcon(get_image_directory() + "/single_image.png"),files[i])
 				flag2 = Qt.ItemFlags(Qt.ItemIsSelectable)
 				flag3 = Qt.ItemFlags(Qt.ItemIsEnabled)
@@ -159,15 +200,20 @@ class EMRawDataParamTable(EMParamTable):
 			if r == 0:
 				table_widget.resizeColumnsToContents()
 		
-	save_as = staticmethod(save_as)
-	add_files = staticmethod(add_files)
-	
-	def add_context_menu(self,table_widget):
+	def add_optional_table_attr(self,table_widget):
+		'''
+		See the EMParamTable.add_optional_table_attr for help
+		'''
 		optional_attr = ["convert_text"]
 		for opt in optional_attr:
 			if hasattr(self,opt):
 				setattr(table_widget,opt,getattr(self,opt))
 		setattr(table_widget,"context_menu",self.get_context_menu_data())
+		
+	## Static init
+	save_as = staticmethod(save_as)
+	add_files = staticmethod(add_files)
+
 		
 	
 
@@ -176,6 +222,8 @@ class EMBrowseEventHandler:
 	Base class for browse event handlers - came into existence because there are many different ways of handler the results
 	of the browsing operation.
 	It's a MIXIN because it actually supplies functionality
+	May 2009: This class might be going out of fashion, since the SelectModule can be used as a dialog it is no longer necessary to
+	intercept the "ok" and "cancel" signals.... instead just use exec_ ... 
 	'''
 	def __init__(self,browse_button):
 		self.browser = None
@@ -207,6 +255,9 @@ class EMBrowseEventHandler:
 def get_table_items_in_column(table_widget,column):
 	'''
 	Gets the table items from a particular column
+	@param table_widget a QtGui.QTableWidget
+	@param column the column from which you want to retrieve the table items
+	@return a list of QtGui.QTableWidgetItemsW 
 	'''
 	r = table_widget.rowCount()
 	entries = []
@@ -214,11 +265,6 @@ def get_table_items_in_column(table_widget,column):
 		entries.append(table_widget.item(i,column))
 		
 	return entries
-	
-	
-def table_browse_addition(self):
-	''' hi '''
-	pass
 	
 		
 class EMFormModule(EMQtWidgetModule):
@@ -383,7 +429,7 @@ class EMFormWidget(QtGui.QWidget):
 		groupbox.setLayout(vbl)
 		layout.addWidget(groupbox,10)
 		
-		paramtable.add_context_menu(table_widget)
+		paramtable.add_optional_table_attr(table_widget)
 		
 		table_event_handler = EMParamTableEventHandler(self,table_widget)
 		self.event_handlers.append(table_event_handler)
@@ -399,7 +445,7 @@ class EMFormWidget(QtGui.QWidget):
 			item.setSelected(True)
 		self.output_writers.append(EMParamTableWriter(paramtable.name,table_widget,type_of))
 		
-		paramtable.custom_addition(vbl,table_widget,self.event_handlers)
+		paramtable.custom_addition(vbl,table_widget)
 		
 		self.name_widget_map[paramtable.name] = groupbox
 		

@@ -890,6 +890,19 @@ def check_files_are_em_images(filenames):
 	return True,"images are fine"
 	
 
+def base_name( file_name ):
+	'''
+	wraps os.path.basename but returns something sensible for bdb syntax
+	'''
+	
+	if db_check_dict(file_name):
+		vals = file_name.split("#")
+		if len(vals) == 1: return file_name # this is as simple as it gets
+		else:
+			return "bdb:"+vals[-1]
+	else:
+		return os.path.basename(file_name)
+
 def file_exists( file_name ):
 	'''
 	A function for checking if a file exists

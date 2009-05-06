@@ -37,7 +37,7 @@ from PyQt4.QtCore import Qt
 import os
 import re
 from EMAN2 import get_image_directory,e2getcwd,get_dtag,EMData,get_files_and_directories,db_open_dict,strip_file_tag,remove_file
-from EMAN2 import remove_directories_from_name,Util,EMUtil,IMAGE_UNKNOWN,get_file_tag,db_check_dict,file_exists
+from EMAN2 import remove_directories_from_name,Util,EMUtil,IMAGE_UNKNOWN,get_file_tag,db_check_dict,file_exists, base_name
 from emimage2d import EMImage2DModule
 from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMProgressDialogModule, get_application
 from EMAN2db import EMAN2DB
@@ -390,7 +390,12 @@ class EMSelectorDialog(QtGui.QDialog):
 			for i,name in enumerate(names):
 				if name.find("EMAN2DB/") != -1: # this test should be sufficient for establishing that bdb is the desired format
 					names[i] = db_convert_path(name)
+				if len(name) > 3 and name[0:4] == "bdb:":
+					if len(directory) > 0:
+						last_bit = name[4:]
+						names[i] = "bdb:"+directory+"#"+last_bit
 			
+			print names
 			if len(names)== 1:
 				file = directory + names[0]
 			else:
@@ -752,10 +757,11 @@ class EMSelectorDialog(QtGui.QDialog):
 		# Make sure the save as line is updated if we're in that mode
 		if self.save_as_mode:
 			text = ""
+			print self.selections
 			for i,name in enumerate(self.selections):
 				if i > 0:
 					text+= "; "
-				text += os.path.basename(name)
+				text += base_name(name)
 				
 			self.save_as_line_edit.setText(text)
 
