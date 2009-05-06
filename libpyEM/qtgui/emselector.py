@@ -387,19 +387,11 @@ class EMSelectorDialog(QtGui.QDialog):
 			names = str(self.save_as_line_edit.text()).split()
 			names = [name.strip(";") for name in names]
 			
-			for i,name in enumerate(names):
-				if name.find("EMAN2DB/") != -1: # this test should be sufficient for establishing that bdb is the desired format
-					names[i] = db_convert_path(name)
-				if len(name) > 3 and name[0:4] == "bdb:":
-					if len(directory) > 0:
-						last_bit = name[4:]
-						names[i] = "bdb:"+directory+"#"+last_bit
-			
-			print names
 			if len(names)== 1:
-				file = directory + names[0]
+				file = self.__convert_name_to_write_image_format(names[0],directory)
+#				file = directory + names[0]
 			else:
-				file = [directory + name for name in names]
+				file = [self.__convert_name_to_write_image_format(name,directory) for name in names]
 			
 			if self.validator == None:
 				self.dialog_result = file
@@ -412,7 +404,20 @@ class EMSelectorDialog(QtGui.QDialog):
 			
 		else:
 			self.module().emit(QtCore.SIGNAL("ok"),self.selections)
-		
+			
+	def __convert_name_to_write_image_format(self,name,directory):
+		if len(name) > 3 and name[0:4] == "bdb:":
+			if len(directory) > 0:
+				last_bit = name[4:]
+				dir = directory.rstrip("EMAN2DB/")
+				dir = dir.rstrip("EMAN2DB")
+				ret = "bdb:"+dir+"#"+last_bit
+		elif directory.find("EMAN2DB/") != -1 or directory.find("EMAN2DB") != -1: # this test should be sufficient for establishing that bdb is the desired format
+			ret = db_convert_path(directory+name)
+		else: ret = directory + name
+			
+		return ret
+	
 	def __init_filter_combo(self):
 		self.filter_text = QtGui.QLabel("Filter:",self)
 		self.filter_combo = QtGui.QComboBox(None)
@@ -757,7 +762,6 @@ class EMSelectorDialog(QtGui.QDialog):
 		# Make sure the save as line is updated if we're in that mode
 		if self.save_as_mode:
 			text = ""
-			print self.selections
 			for i,name in enumerate(self.selections):
 				if i > 0:
 					text+= "; "
@@ -797,10 +801,7 @@ class EMSelectorDialog(QtGui.QDialog):
 		if item.type_of_me == "value": return #it's just a value in the db
 		self.__update_selections()
 		
-		
-
-		if item == None: return
-		
+		if item == None: return		
 		
 		if item.text() == "../": 
 			self.__go_back_a_directory()

@@ -899,7 +899,9 @@ def base_name( file_name ):
 		vals = file_name.split("#")
 		if len(vals) == 1: return file_name # this is as simple as it gets
 		else:
-			return "bdb:"+vals[-1]
+			v = vals[-1].rstrip("EMAN2DB/") # strip this out if it's there
+			v = v.rstrip("EMAN2DB") # strip this out if it's there
+			return "bdb:"+v
 	else:
 		return os.path.basename(file_name)
 

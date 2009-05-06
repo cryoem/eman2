@@ -61,7 +61,8 @@ def save_data(item_object):
 
 class LightEMDataSave:
 	'''
-	Used for file io
+	Used for file io - never reads the image until you actually call write_image, so if the user hits cancel
+	they will not experience any time lags due to file io
 	'''
 	def __init__(self,file_name,idx=0):
 		'''
@@ -171,7 +172,7 @@ class EMSingleImageSaveDialog(EMFileSaver):
 		@return 0 if there was an error, 1 if there was not
 		@exception NotImplementedError raised when the EMFileExistsDialog returns an unknown code
 		'''
-		msg = QtGui.QMessageBox()
+		
 		tmp_file_object = EMDummyTmpFileHandle(file)
 		if self.validator.is_overwriting():
 			tmp_file_object = EMTmpFileHandle(file)
@@ -180,6 +181,7 @@ class EMSingleImageSaveDialog(EMFileSaver):
 		try:
 			self.__item.write_image(out_file,-1)
 		except:
+			msg = QtGui.QMessageBox()
 			msg.setText("An exception occured while writing %s, please try again" %out_file)
 			msg.exec_()
 			tmp_file_object.remove_tmp_file()
@@ -429,7 +431,7 @@ class EMFileExistsDialog(QtGui.QDialog):
 		append_enable = False 
 		
 		splt = filename.split(".")
-		if splt[-1] in self.appendable_types:
+		if splt[-1] in self.appendable_types or (len(filename) > 3 and filename[:4] == "bdb:"):
 			(nx,ny,nz) = gimme_image_dimensions3D(filename)
 			d = item_list[0].get_attr_dict()
 			nz1 = d["nz"]
@@ -451,6 +453,9 @@ class EMFileExistsDialog(QtGui.QDialog):
 			append = QtGui.QPushButton("Append")
 			hbl.addWidget(append)
 		hbl.addWidget(overwrite)
+		if (len(filename) > 3 and filename[:4] == "bdb:"):
+			overwrite.setEnabled(False)
+			overwrite.setToolTip("Overwriting bdb files is currently disabled.")
 		
 		# Text to alert the user
 		hbl2 = QtGui.QHBoxLayout()
@@ -458,9 +463,19 @@ class EMFileExistsDialog(QtGui.QDialog):
 		text_edit.setReadOnly(True)
 		text_edit.setWordWrapMode(QtGui.QTextOption.WordWrap)
 		if (filename == ""):
-			text_edit.setText("The file already exists. You can choose to append to it, to overwrite it, or to cancel this operation.\n\nBe careful about overwriting data as it may cause errors when using EMAN2 virtual stacks.")
+			if append_enable:
+				help = "The file already exists. You can choose to append to it, to overwrite it, or to cancel this operation."
+			else:
+				help = "The file already exists. You can choose to overwrite it, or to cancel this operation."			
 		else:
-			text_edit.setText("The file %s already exists. You can choose to append to it, to overwrite it, or to cancel this operation.\n\nBe careful about overwriting data as it may cause errors when using EMAN2 virtual stacks." %filename)
+			if append_enable:
+				help = "The file %s already exists. You can choose to append to it, to overwrite it, or to cancel this operation." %filename
+			else:
+				help = "The file %s already exists. You can choose to to overwrite it, or to cancel this operation." %filename
+		
+		help += "\n\nBe careful about overwriting data as it may cause errors when using EMAN2 virtual stacks."
+		
+		text_edit.setText(help)
 		hbl2.addWidget(text_edit,0)
 		
 		groupbox = QtGui.QGroupBox("Warning")
@@ -761,7 +776,7 @@ class EMDBTmpFileHandle(EMTmpFileHandleBase):
 		'''
 		Overwrite the original file, called when writing is done. Overwrites the img and hed files
 		'''
-		raise NotimplementedError("Woops waiting on an email")
+		raise NotImplementedError("Woops waiting on an email")
 
 	def get_final_file_name(self): return self.__orig_db_name
 	

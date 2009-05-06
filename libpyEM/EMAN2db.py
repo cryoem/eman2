@@ -130,6 +130,9 @@ def db_convert_path(path):
 			if i != 0:
 				dir += "/"
 			dir += d[i] # accrue the directory
+			
+	if path[0] == "/" and dir[0] != "/": # need to double check that this is needed
+		dir = "/" + dir
 	
 	ret = "bdb:"
 	if dir != "":
@@ -338,6 +341,7 @@ def db_write_image(self,fsp,*parms):
 		if parms[0]<0 : parms=(len(db),)+parms[1:]
 		db[parms[0]]=self
 		return
+	print "using emdata write"
 	return self.write_image_c(fsp,*parms)
 
 EMData.write_image_c=EMData.write_image
