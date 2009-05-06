@@ -803,12 +803,12 @@ def ali2d_a_MPI_(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", 
 	if myid == main_node:  print_end_msg("ali2d_a_MPI")
 
 
-"""
+'''
 def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, CTF=False, user_func_name="ref_ali2d", random_method="SA", T0=1.0, F=0.996):
 	
-	'''
+	"""
 	This version is almost same as the above one, the only difference is the above one uses group communicators to increases the speed up.
-	'''
+	"""
 
 	from utilities    import model_circle, combine_params2, drop_image, get_image, get_input_from_string, model_blank, get_params2D
 	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, bcast_number_to_all, send_attr_dict, file_type
@@ -1068,11 +1068,11 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		if myid == main_node:
 			for isav in xrange(nsav-1):
 				Util.add_img(tavg, savg[isav])
-			'''
+			"""
 			for isav in xrange(nsav):
 				savg[isav] = rot_shift2D(savg[isav], randint(0, 360), randint(-2, 2), randint(-2, 2), randint(0,1))
 				savg[isav].set_attr_dict({'xform.align2d':tnull, 'active':1})
-			'''
+			"""
 			for isav in xrange(nsav):
 				savg[isav].set_attr_dict({'xform.align2d':tnull, 'active':1})
 			for inp in xrange(5):
@@ -1120,7 +1120,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 	else:           send_attr_dict(main_node, data, par_str, image_start, image_end)
 	if myid == main_node:  print_end_msg("ali2d_a_MPI")
-"""
+'''
 
 '''
 def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, CTF=False, user_func_name="ref_ali2d", random_method="SA", T0=1.0, F=0.996):
@@ -2131,6 +2131,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	ima  = EMData()
 	ima.read_image(stack, list_of_particles[0], True)
 	nx = ima.get_xsize()
+
 	# default value for the last ring
 	if last_ring == -1:  last_ring = nx/2-2
 
@@ -11536,7 +11537,7 @@ def k_means_stab_CUDA(stack, outdir, maskname, K, npart = 5, F = 0, FK = 0, maxr
 
 	from statistics  import k_means_stab_update_tag, k_means_stab_gather, k_means_stab_init_tag
 	from statistics  import k_means_stab_asg2part, k_means_stab_H, k_means_stab_export
-	import sys, logging, os
+	import sys, logging, os, pickle
 
 	# if is the first round
 	if restart == 1:
@@ -11638,12 +11639,20 @@ def k_means_stab_CUDA(stack, outdir, maskname, K, npart = 5, F = 0, FK = 0, maxr
 		logging.info('... Convert local assign to abs partition')
 		ALL_PART = k_means_stab_asg2part(ALL_ASG, LUT)
 
-		# if backup required do it
 		if bck:
-			import cPickle
-			f = open('run%02d_allpart.pck' % num_run, 'w')
-			cPickle.dump(ALL_PART, f)
+			f = open('run%02d_partition.pck' % num_run, 'w')
+			pickle.dump(PART, f)
 			f.close()
+
+
+		# glooton control
+		try:
+			cmd = open('control', 'r').readline()
+			cmd = cmd.strip(' \n')
+			if cmd == 'stop':
+				logging.info('[STOP] request by the user')
+				break
+		except: pass
 
 		# calculate the stability
 		stb, nb_stb, STB_PART = k_means_stab_H(ALL_PART)
@@ -11689,20 +11698,19 @@ def k_means_stab_CUDA(stack, outdir, maskname, K, npart = 5, F = 0, FK = 0, maxr
 	
 		# export the stable class averages
 		count_k, id_rejected = k_means_stab_export(STB_PART, stack, num_run, outdir, th_nobj)
-		logging.info('... Export stable class averages: average_stb_run%02d.hdf' % num_run)
+		logging.info('... Export %i stable class averages: average_stb_run%02d.hdf (rejected %i images)' % (count_k, num_run, len(id_rejected)))
 
 		# tag informations to the header
 		logging.info('... Update info to the header')
-		k_means_stab_update_tag(stack, ALL_PART, STB_PART, num_run)
+		k_means_stab_update_tag(stack, ALL_PART, STB_PART, num_run, id_rejected)
 
 		# stop if max run is reach
 		if num_run >= maxrun:
 			flag_run = False
 			logging.info('[STOP] Max number of runs is reached (%d)' % maxrun)
 
-	# merge and clean all stable averages
-	logging.info('Remove class average with nb objs < %d' % th_nobj)
-	ct = k_means_stab_gather(num_run, th_nobj, maskname, outdir)
+	# merge stable averages
+	ct = k_means_stab_gather(num_run, maskname, outdir)
 	logging.info('Gather and normalize all stable class averages: averages.hdf (%d images)' % ct)
 	
 	logging.info('::: END k-means stability :::')
@@ -12143,7 +12151,7 @@ def ave_ali(name_stack, name_out = None, ali = False, active = False):
 
 	ext = file_type(name_stack)
 	if name_out is None:
-		if ext == 'bdb': name = name_stack.splot(':')[1] + '.hdf'
+		if ext == 'bdb': name = name_stack.split(':')[1] + '.hdf'
 		else:            name = name_stack
 		ave.write_image('ave_' + name, 0)
 	else:
