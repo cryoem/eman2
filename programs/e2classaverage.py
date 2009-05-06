@@ -66,7 +66,6 @@ def main():
 	parser.add_option("--debug","-d",action="store_true",help="Print debugging infromation while the program is running. Default is off.",default=False)
 	parser.add_option("--nofilecheck",action="store_true",help="Turns file checking off in the check functionality - used by e2refine.py.",default=False)
 	parser.add_option("--check","-c",action="store_true",help="Performs a command line argument check only.",default=False)
-	parser.add_option("--lowmem","-L",action="store_true",help="Causes images to be read from disk as they are needed, as opposed to having them all read from disk and stored in memory for the duration of the program. Saves on memory but causes more disk accesses.",default=False)
 	parser.add_option("--bootstrap",action="store_true",help="Bootstraps iterative alignment by using the first particle in each class to seed the iterative alignment. Only works if the number of iterations is greater than 0.")
 	parser.add_option("--resultmx",type="string",help="Specify an output image to store the result matrix. This contains 5 images where row is particle number. Rows in the first image contain the class numbers and in the second image consist of 1s or 0s indicating whether or not the particle was included in the class. The corresponding rows in the third, fourth and fifth images are the refined x, y and angle (respectively) used in the final alignment, these are updated and accurate, even if the particle was excluded from the class.", default=None)
 	parser.add_option("--normproc",type="string",help="The normalization processor. Default is normalize.edgemean. If you want to turn this option off specify \'None\'", default="normalize.edgemean")
@@ -109,11 +108,11 @@ def main():
 			remove_file(options.outfile)
 	
 	(num_classes, num_part ) = gimme_image_dimensions2D(args[1]);
-	
-	if ( not options.lowmem ) :
-		images = EMData.read_images(args[0])
-		if options.usefilt: 
-			filt_images = EMData.read_images(options.usefilt) # check should already have determined that this is safe
+#	
+#	if ( not options.lowmem ) :
+#		images = EMData.read_images(args[0])
+#		if options.usefilt: 
+#			filt_images = EMData.read_images(options.usefilt) # check should already have determined that this is safe
 	
 	
 	if (options.verbose):
@@ -205,7 +204,7 @@ def main():
 		
 		# this should work, if it doesn't it should have been caught by check function
 		averager_parms=parsemodopt(options.averager)
-		
+		average = None
 		if ( not options.bootstrap ):
 			if options.verbose: print "generating the original class average using alignment parameters in the classification matrix"
 			# generate the first class average by applying the transformations, adding and finally normalizing...
@@ -229,12 +228,12 @@ def main():
 						#t3d.set_posttrans(dx.get(c,p),dy.get(c,p))
 						t3d = Transform({"type":"2d","alpha":da.get(c,p),"mirror":int(dflip(c,p))})
 						t3d.set_trans(dx.get(c,p),dy.get(c,p))
-						if (options.lowmem):
-							image = EMData()
-							image.read_image(args[0],p)
-						else:
-							image = images[p].copy()
-						image.transform(t3d)
+#						if (options.lowmem):
+						image = EMData()
+						image.read_image(args[0],p)
+#						else:
+#							image = images[p].copy()
+						image.process_inplace("math.transform",{"transform":t3d})
 						
 						np += 1
 						weight = weights(c,p)
@@ -272,11 +271,11 @@ def main():
 						if (options.iter > 0 or options.verbose): ccache.append((p,c))
 						
 						if (average == None):
-							if (options.lowmem):
-								average = EMData()
-								average.read_image(args[0],p)
-							else:
-								average = images[p].copy()
+#							if (options.lowmem):
+							average = EMData()
+							average.read_image(args[0],p)
+#							else:
+#								average = images[p].copy()
 								#average.process_inplace("xform.centerofmass")
 								#average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 							if str(options.normproc) != "None": average.process_inplace(options.norm[0],options.norm[1])
@@ -288,10 +287,10 @@ def main():
 							# an improvement on what happens here, but it suffices
 							if not options.usefilt:
 								
-								if (options.lowmem): 
-									image = EMData()
-									image.read_image(args[0],p)
-								else: image = images[p].copy()
+#								if (options.lowmem): 
+								image = EMData()
+								image.read_image(args[0],p)
+#								else: image = images[p].copy()
 								if str(options.normproc) != "None": image.process_inplace(options.norm[0],options.norm[1])
 								ta = align(average,image,options)
 								t = ta.get_attr("xform.align2d")
@@ -301,14 +300,14 @@ def main():
 								# FIXME this doesn'twork
 #								ta = image.process("math.transform",{"transform":(t)})
 							else:
-								if (options.lowmem): 
-									filt_image = EMData()
-									filt_image.read_image(usefilt,p)
-									image = EMData()
-									image.read_image(args[0],p)
-								else:
-									image = images[p].copy()
-									filt_image = filt_images[p].copy()
+#								if (options.lowmem): 
+								filt_image = EMData()
+								filt_image.read_image(usefilt,p)
+								image = EMData()
+								image.read_image(args[0],p)
+#								else:
+#									image = images[p].copy()
+#									filt_image = filt_images[p].copy()
 									
 								if str(options.normproc) != "None":
 									image.process_inplace(options.norm[0],options.norm[1])
@@ -335,7 +334,6 @@ def main():
 			#average.process_inplace("normalize.edgemean")
 			#average.write_image("e2_bootstrapped.img",-1)
 		
-		
 		if options.idxcache:
 			class_db[str(cl)] = class_indices
 				
@@ -359,16 +357,16 @@ def main():
 				
 				if not options.usefilt:
 					
-					if (options.lowmem): 
-						image = EMData()
-						image.read_image(args[0],p)
-					else: image = images[p].copy()
+#					if (options.lowmem): 
+					image = EMData()
+					image.read_image(args[0],p)
+#					else: image = images[p].copy()
 				else:
-					if (options.lowmem): 
-						image = EMData()
-						image.read_image(usefilt,p)
-					else:
-						image = filt_images[p].copy()
+#					if (options.lowmem): 
+					image = EMData()
+					image.read_image(usefilt,p)
+#					else:
+#					image = filt_images[p].copy()
 						
 				if str(options.normproc) != "None": image.process_inplace(options.norm[0],options.norm[1])
 				ta = align(average,image,options)
@@ -429,11 +427,11 @@ def main():
 					else: weights.set(c,p,1)
 				else: weights.set(c,p,1)
 				
-				if (options.lowmem):
-					image = EMData(args[0],p)
+#				if (options.lowmem):
+				image = EMData(args[0],p)
 					#image.read_image(args[0],p)
-				else:
-					image = images[p].copy()
+#				else:
+#					image = images[p].copy()
 				
 				if str(options.normproc) != "None": image.process_inplace(options.norm[0],options.norm[1])
 
@@ -484,10 +482,10 @@ def main():
 					if (options.cull ):
 						if ( weights.get(c,p) == 0 ) : continue
 					
-					if (options.lowmem):
-						image = EMData(args[0],p)
-					else:
-						image = images[p].copy()
+#					if (options.lowmem):
+					image = EMData(args[0],p)
+#					else:
+#						image = images[p].copy()
 					
 					if str(options.normproc) != "None": image.process_inplace(options.norm[0],options.norm[1])
 	

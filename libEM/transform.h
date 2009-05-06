@@ -287,7 +287,6 @@ namespace EMAN
 				cout << matrix[1][0] << " " << matrix[1][1] << " " << matrix[1][2] << " " << matrix[1][3] << endl;
 				cout << matrix[2][0] << " " << matrix[2][1] << " " << matrix[2][2] << " " << matrix[2][3] << endl;
 				cout << 0 << " " << 0 << " " << 0 << " " << 1 << endl;
-				cout << "Also, " << sizeof(Transform) << " " << sizeof(string) << "  " << sizeof(vector<int>) << endl;
 			}
 
 			//=============== get set matrix ============================

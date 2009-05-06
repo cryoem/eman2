@@ -1092,31 +1092,41 @@ void EMData::set_attr_python(const string & key, EMObject val)
 	float * data = get_data();
 	/* reset attribute nx, ny, nz will resize the image */
 	if(data != 0) {
-		EMData * new_image =0;
+		// clip inplace would be more efficient in terms of memory usage
+		//EMData * new_image =0;
+		bool act = false;
+		Region r;
 		if( key == "nx" ) {
 			int nd = (int) val;
 			if( nx != (int)val ) {
-				new_image = get_clip(Region((nx-nd)/2, 0, 0, nd, ny, nz));
+				//new_image = get_clip(Region((nx-nd)/2, 0, 0, nd, ny, nz));
+				r = Region((nx-nd)/2, 0, 0, nd, ny, nz);
+				act = true;
 			}
 		}
 		else if( key == "ny" ) {
 			int nd = (int) val;
 			if( ny != (int)val ) {
-				new_image = get_clip(Region(0, (ny-nd)/2, 0, nx, nd, nz));
+				//new_image = get_clip(Region(0, (ny-nd)/2, 0, nx, nd, nz));
+				r = Region(0, (ny-nd)/2, 0, nx, nd, nz);
+				act = true;
 			}
 		}
 		else if( key == "nz" ) {
 			int nd = (int) val;
 			if( nz != (int)val ) {
-				new_image = get_clip(Region(0, 0, (nz-nd)/2, nz, ny, nd));
+				//new_image = get_clip(Region(0, 0, (nz-nd)/2, nz, ny, nd));
+				r = Region(0, 0, (nz-nd)/2, nz, ny, nd);
+				act = true;
 			}
 		}
 
-		if(new_image) {
-			this->operator=(*new_image);
-			delete new_image;
-			new_image = 0;
-		}
+		if (act) clip_inplace(r);
+//		if(new_image) {
+//			this->operator=(*new_image);
+//			delete new_image;
+//			new_image = 0;
+//		}
 	}
 }
 

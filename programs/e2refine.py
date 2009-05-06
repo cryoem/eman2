@@ -309,7 +309,8 @@ def get_classaverage_cmd(options,check=False,nofilecheck=False):
 	if (options.verbose):
 		e2cacmd += " -v"
 		
-	if (options.lowmem): e2cacmd += " --lowmem"
+	#lowmem becamoe the only supportable behaviour as of May 5th 2009
+#	if (options.lowmem): e2cacmd += " --lowmem"
 	
 	if ( check ):
 		e2cacmd += " --check"	

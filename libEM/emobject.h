@@ -266,6 +266,7 @@ namespace EMAN
 		vector < int > iarray;
 		vector < float >farray;
 		vector < string> strarray;
+		//Transform transform; // This is an idea
 		ObjectType type;
 		
 		/** A debug function that prints as much information as possibe to cout
