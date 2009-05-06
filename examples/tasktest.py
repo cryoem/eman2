@@ -56,6 +56,7 @@ if not os.path.exists("testdata.hdf") :
 task=EMTask("test",{"input":("cache","testdata.hdf",0,5)},{})
 
 etc=EMTaskCustomer("dc:localhost:9990")
+print "Est %d CPUs"%etc.cpu_est()
 tid=etc.send_task(task)
 print "Task submitted tid=",tid
 

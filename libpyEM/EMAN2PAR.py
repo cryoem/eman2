@@ -61,7 +61,13 @@ class EMTaskCustomer:
 		elif len(self.addr)==1 : self.addr.append(9990)
 		else : self.addr[1]=int(self.addr[1])
 		self.addr=tuple(self.addr)
-	
+
+	def cpu_est(self):
+		"""Returns an estimate of the number of available CPUs based on the number
+		of different nodes we have talked to. Doesn't handle multi-core machines as
+		separate entities yet"""
+		return EMDCsendonecom(self.addr,"NCPU",None)
+
 	def send_task(self,task):
 		"""Send a task to the server. Returns a taskid."""
 		
@@ -277,18 +283,19 @@ def runEMDCServer(port,verbose):
 	"""This will create a ThreadingTCPServer instance and execute it"""
 	try: EMDCTaskHandler.verbose=int(verbose)
 	except: EMDCTaskHandler.verbose=0
+	EMDCTaskHandler.clients=set()
 
 	if port!=None and port>0 : 
 		server = SocketServer.ThreadingTCPServer(("", port), EMDCTaskHandler)	# "" is the hostname and will bind to any IPV4 interface/address
-		print server
+		if verbose: print server
 	# EMAN2 will use ports in the range 9900-9999
 	else :
 		for port in range(9990,10000):
 			try: 
 				server = SocketServer.ThreadingTCPServer(("", port), EMDCTaskHandler)
-				print "Server started on port %d"%port
+				if verbose: print "Server started on port %d"%port
 			except:
-				print "Port %d unavailable"%port
+				if verbose: print "Port %d unavailable"%port
 				continue
 			break
 
@@ -307,6 +314,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 		if self.verbose>1 : print len(self.queue)
 		self.sockf=request.makefile()		# this turns our socket into a buffered file-like object
 		SocketServer.BaseRequestHandler.__init__(self,request,client_address,server)
+		EMDCTaskHandler.clients.add(client_address[0])
 
 	def handle(self):
 		"""Process requests from a client. The exchange is:
@@ -454,6 +462,14 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				except: 
 					sendobj(self.sockf,None)
 					self.sockf.flush()
+					
+			# Get an estimate of the number of CPUs available to run jobs
+			# At the moment, this is the number of hosts that have communicated with us
+			# so it doesn't handle multiple cores
+			elif cmd=="NCPU" :
+				sendobj(self.sockf,len(EMDCTaskHandler.clients))
+				self.sockf.flush()
+			
 			# Cancel a pending task
 			# request contains the taskid to cancel
 			elif cmd=="CNCL":
