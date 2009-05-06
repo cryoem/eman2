@@ -8308,11 +8308,11 @@ def cml2_export_progress(outdir, ite, iprj, iagl, psi, mir, disc, cmd):
 
 
 # display the list of angles for each iterations
-def cml2_export_txtagls(outdir, Ori, disc, title):
+def cml2_export_txtagls(outdir, outname, Ori, disc, title):
 	import time
 	global g_n_prj, g_i_prj
 
-	angfile = open(outdir + '/angles', 'a')
+	angfile = open(outdir + '/' + outname, 'a')
 
 	angfile.write('|%s|-----------------------------------------------%s---------\n' % (title, time.ctime()))
 	for i in xrange(g_n_prj): angfile.write('%10.3f\t%10.3f\t%10.3f\n' % (Ori[4*i], Ori[4*i+1], Ori[4*i+2]))
@@ -8365,8 +8365,30 @@ def cml2_export_struc(stack, outdir, Ori):
 	im = plot_angles(pagls)
 	im.write_image(outdir + '/plot_agls.hdf')
 
+# export result obtain by the function find_struct MPI GA
+def cml2_export_struc_GA(stack, outdir, Ori, igen):
+	from projection import plot_angles
+	from utilities  import set_params_proj, get_im
+
+	global g_n_prj
+	
+	pagls = []
+	for i in xrange(g_n_prj):
+		data = get_im(stack, i)
+		p = [Ori[4*i], Ori[4*i+1], Ori[4*i+2], 0.0, 0.0]
+		set_params_proj(data, p)
+		data.set_attr('active', 1)
+		data.write_image(outdir + '/structure_gen_%03i.hdf' % igen, i)
+
+		# prepare angles to plot
+		pagls.append([Ori[4*i], Ori[4*i+1], Ori[4*i+2]])
+
+	# plot angles
+	im = plot_angles(pagls)
+	im.write_image(outdir + '/plot_agls_gen_%03i.hdf' % igen)
+
 # open and transform projections to sinogram
-def cml2_open_proj(stack, ir, ou, lf, hf):
+def cml2_open_proj(stack, ir, ou, lf, hf, dpsi = 1):
 	#from projection   import cml_sinogram
 	from utilities    import model_circle, get_params_proj, model_blank, get_im
 	from fundamentals import fft
@@ -8399,7 +8421,7 @@ def cml2_open_proj(stack, ir, ou, lf, hf):
 		Util.mul_img(image, mask2D)
 
 		# sinogram
-		sino = cml2_sinogram(image, diameter, 1) # dpsi set always to one
+		sino = cml2_sinogram(image, diameter, dpsi) 
 
 		# prepare the cut positions in order to filter (lf: low freq; hf: high freq)
 		ihf = min(int(2 * hf * diameter), diameter + (diameter + 1) % 2)
@@ -8611,7 +8633,7 @@ def cml2_GA_digit(Ori1, Ori2, npop, pcross, pmut):
 	import sys
 
 	nori = len(Ori1) // 4
-	ngen = nori * 2
+	ngen = nori * 3
 
 	# encode each gen to 3 digit 000
 	parent1 = ''
@@ -8619,8 +8641,12 @@ def cml2_GA_digit(Ori1, Ori2, npop, pcross, pmut):
 	for n in xrange(nori):
 		ind1 = n * 4
 		ind2 = ind1 + 1
-		parent1 += '%03i%03i' % (Ori1[ind], Ori1[ind1])
-		parent2 += '%03i%03i' % (Ori2[ind], Ori2[ind1])
+		ind3 = ind1 + 2
+		parent1 += '%03i%03i%03i' % (Ori1[ind1], Ori1[ind2], Ori1[ind3])
+		parent2 += '%03i%03i%03i' % (Ori2[ind1], Ori2[ind2], Ori2[ind3])
+
+	#print 'p1 ', parent1
+	#print 'p2 ', parent2
 
 	# create new pop
 	POP = []
@@ -8629,46 +8655,72 @@ def cml2_GA_digit(Ori1, Ori2, npop, pcross, pmut):
 		if random() < pcross:
 			child1 = ''
 			child2 = ''
-			for igen in xrange(ngen):
-				ind1 = 3 * igen
-				ind2 = ind1 + 3
+			#pat    = ''
+			for iori in xrange(nori):
+				ind1 = 9 * iori
+				ind2 = ind1 + 9
 				if random() < 0.6:
 					child1 += parent1[ind1:ind2]
 					child2 += parent2[ind1:ind2]
+					#pat += '111111111'
 				else:
 					child1 += parent2[ind1:ind2]
 					child2 += parent1[ind1:ind2]
+					#pat += '000000000'
 		else:
 			child1 = parent1
 			child2 = parent2
+		
+		#print '\npa ', pat
+		#print 'c1 ', child1
+		#print 'c2 ', child2
 
 		# mutation
 		mut1 = ''
 		mut2 = ''
+		#pat  = ''
 		for igen in xrange(ngen):
 			ind1 = 3 * igen
 			ind2 = ind1 + 3
 			if random() < pmut:
 				v = randint(0, 359)
 				mut1 += '%03i' % v
-			else:	mut1 += child1[ind1:ind2]
+				#pat += 'xxx'
+			else:	
+				mut1 += child1[ind1:ind2]
+				#pat += '___'
 			if random() < pmut:
 				v = randint(0, 359)
 				mut2 += '%03i' % v
 			else:	mut2 += child2[ind1:ind2]
 		
+		#print '\npa ', pat
+		#print 'm1 ', mut1
+		#print 'm2 ', mut2
+			
 		# decode
 		pop1 = []
 		pop2 = []
-		for igen in xrange(ngen):
-			ind1 = 3 * igen
+
+		for iori in xrange(nori):
+			ind1 = 9 * iori
 			ind2 = ind1 + 3
-			pop1.append(float(mut1[ind1:ind2]))
-			pop2.append(float(mut2[ind1:ind2]))
+			for i in xrange(3):
+				pop1.append(float(mut1[ind1:ind2]))
+				pop2.append(float(mut2[ind1:ind2]))
+				ind1 += 3
+				ind2 += 3
+			pop1.append(-1)
+			pop2.append(-1)
+
+		#print 'p1 ', pop1
+		#print 'p2 ', pop2
+
 		POP.append(pop1)
 		POP.append(pop2)
-		
-
+	
+		#sys.exit()
+	return POP
 
 # this function is used in find_structure MPI version, to merge and mutatted solution, GA string binary
 def cml2_GA(Ori1, Ori2, npop, pcross, pmut):
@@ -8736,7 +8788,7 @@ def cml2_GA(Ori1, Ori2, npop, pcross, pmut):
 	return POP
 
 # find structure
-def cml2_find_structure(Prj, Ori, Rot, outdir, maxit, first_zero, flag_weights):
+def cml2_find_structure(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_weights):
 	#from projection import cml_spin, cml_export_progress
 	import time, sys
 	
@@ -8859,7 +8911,7 @@ def cml2_find_structure(Prj, Ori, Rot, outdir, maxit, first_zero, flag_weights):
 		#print 'time', time.time() - t_start, 's', disc
 		
 		# display in the progress file
-		cml2_export_txtagls(outdir, Ori, disc, 'Ite: %03i' % (ite + 1))
+		cml2_export_txtagls(outdir, outname, Ori, disc, 'Ite: %03i' % (ite + 1))
 
 		if not change: break
 
@@ -8869,7 +8921,7 @@ def cml2_find_structure(Prj, Ori, Rot, outdir, maxit, first_zero, flag_weights):
 		if period_disc[0] == period_disc[2]:
 			period_ct += 1
 			if period_ct >= period_th and min(period_disc) == disc:
-				angfile = open(outdir + '/angles', 'a')
+				angfile = open(outdir + '/' + outname, 'a')
 				angfile.write('\nSTOP SOLUTION UNSTABLE\n')
 				angfile.write('Discrepancy periode: %s\n' % period_disc)
 				angfile.close()
@@ -8900,7 +8952,7 @@ def cml2_main(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit, giv
 	#from projection import cml_open_proj(stack, ir, ou, dpsi, lf, hf)
 	
 	# Open and transform projections
-	Prj, Ori = cml2_open_proj(stack, ir, ou, lf, hf)
+	Prj, Ori = cml2_open_proj(stack, ir, ou, lf, hf, dpsi)
 	
 	# if not angles given select randomly orientation for each projection
 	if not given:
@@ -8931,10 +8983,10 @@ def cml2_main(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit, giv
 	disc = cml2_disc(Prj, Ori, Rot, flag_weights)
 
 	# Update progress file
-	cml2_export_txtagls(out_dir, Ori, disc, 'Init')
+	cml2_export_txtagls(out_dir, 'angles', Ori, disc, 'Init')
 
 	# Find structure
-	Ori, disc, ite = cml2_find_structure(Prj, Ori, Rot, out_dir, maxit, first_zero, flag_weights)
+	Ori, disc, ite = cml2_find_structure(Prj, Ori, Rot, out_dir, 'angles', maxit, first_zero, flag_weights)
 
 	# Export structure
 	cml2_export_struc(stack, out_dir, Ori)
@@ -8951,11 +9003,12 @@ def cml2_main(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit, giv
 
 
 # application find structure MPI version
-def cml2_main_mpi(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit, given = False, first_zero = False, flag_weights = False, debug = False):
+def cml2_main_mpi(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit, given = False, first_zero = False, flag_weights = False, debug = False, maxgen = 10, pcross = 0.95, pmut = 0.05):
 	from mpi       import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier, MPI_COMM_WORLD
-	from mpi       import mpi_reduce, mpi_bcast, MPI_INT, MPI_LOR
+	from mpi       import mpi_reduce, mpi_bcast, MPI_INT, MPI_LOR, MPI_FLOAT, MPI_SUM, mpi_send, mpi_recv
 	from utilities import print_begin_msg, print_msg, print_end_msg, start_time, running_time
 	from random    import seed, random
+	from copy      import deepcopy
 	import time, sys, os, cPickle, logging
 	
 	# init
@@ -9006,19 +9059,9 @@ def cml2_main_mpi(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit,
 	# Update logfile
 	#cml_head_log(stack, outdir, delta, ir, ou, lf, hf, rand_seed, maxit, given)
 
-	# prepare rotation matrix
-	Rot = Util.cml_init_rot(Ori)
+	POP       = [[] for i in xrange(ncpu)]
+	POP[myid] = deepcopy(Ori)
 
-	# Compute the first disc
-	disc = cml2_disc(Prj, Ori, Rot, flag_weights)
-	logging.info('[gen: %03i node: %02i]  first disc: %f' % (0, myid, disc))
-
-	# Update progress file
-	#cml2_export_txtagls(out_dir, Ori, disc, 'Init')
-
-	maxgen  = 10 #24
-	pcross  = 0.95
-	pmut    = 0.05
 	#pmutmin = 0.01
 	#pmutmax = 0.3
 	#F       = 0.5
@@ -9027,45 +9070,47 @@ def cml2_main_mpi(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit,
 	for igen in xrange(maxgen):
 		t_start = start_time()
 
-		if igen != 0:
-			f = open(out_dir + '/gen_%03i_node_%02i' % (igen, myid), 'r')
-			Ori = cPickle.load(f)
-			f.close()
-			Rot = Util.cml_init_rot(Ori)
+		Ori = deepcopy(POP[myid])
+		Rot = Util.cml_init_rot(Ori)
+		disc = cml2_disc(Prj, Ori, Rot, flag_weights)
+		cml2_export_txtagls(out_dir, 'angles_node_%02i' % myid, Ori, disc, 'Init')
+		logging.info('[gen: %03i node: %02i]  first disc: %f' % (igen, myid, disc))
 
 		# Find structure
-		Ori, disc, ite = cml2_find_structure(Prj, Ori, Rot, out_dir, maxit, first_zero, flag_weights)
-
+		Ori, disc, ite = cml2_find_structure(Prj, Ori, Rot, out_dir, 'angles_node_%02i' % myid, maxit, first_zero, flag_weights)
+		logging.info('[gen: %03i node: %02i]  disc: %f  nb ite: %i' % (igen, myid, disc, ite))
 		f = open(out_dir + '/gen_%03i_node_%02i' % (igen, myid), 'w')
 		cPickle.dump(Ori, f)
 		f.close()
-		f = open(out_dir + '/comm_node_%02i' % myid, 'w')
-		f.write('%f\n' % disc)
-		f.close()
-		logging.info('[gen: %03i node: %02i]  disc: %f  nb ite: %i' % (igen, myid, disc, ite))
 
+		# gather disc
+		all_disc = [0.0] * ncpu
+		all_disc[myid] = disc
 		mpi_barrier(MPI_COMM_WORLD)
-		if myid == main_node:
-			all_ori = []
-			for n in xrange(ncpu):
-				f = open(out_dir + '/gen_%03i_node_%02i' % (igen, n), 'r')
-				buf = cPickle.load(f)
-				f.close()
-				all_ori.append(buf)
-				del buf
+		all_disc = mpi_reduce(all_disc, ncpu, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
+		all_disc = all_disc.tolist()
 
-			alldisc = []
-			for n in xrange(ncpu):
-				data = open(out_dir + '/comm_node_%02i' % n, 'r').readlines()
-				alldisc.append(float(data[0]))
-			meandisc = sum(alldisc) / float(ncpu)
+		# gather Ori
+		POP[myid] = deepcopy(Ori)
+		for icpu in xrange(ncpu):
+			if icpu != main_node:
+				if myid == icpu:
+					mpi_send(Ori, len(Ori), MPI_FLOAT, main_node, 0, MPI_COMM_WORLD)
+				if myid == main_node:
+					loc_ORI   = mpi_recv(len(Ori), MPI_FLOAT, icpu, 0, MPI_COMM_WORLD)
+					loc_ORI   = loc_ORI.tolist()
+					POP[icpu] = deepcopy(loc_ORI)
+			mpi_barrier(MPI_COMM_WORLD)
+
+		if myid == main_node:
+			meandisc = sum(all_disc) / float(ncpu)
 
 			minerr = 1e6
 			mem    = [-1, -1]
 			serr   = 0
 			for i in xrange(ncpu):
 				for j in xrange(i+1, ncpu):
-					err   = cml2_error_ori(all_ori[i], all_ori[j])
+					err   = cml2_error_ori(POP[i], POP[j])
 					serr += err
 					if err < minerr:
 						minerr = err
@@ -9074,18 +9119,23 @@ def cml2_main_mpi(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit,
 			serr /= float((ncpu-1)*ncpu/2.0)
 			logging.info('>>> best pair is %s with err = %f     disc ave: %f   err ave: %f' % (mem, minerr, meandisc, serr))
 			
-			pop = cml2_GA(all_ori[mem[0]], all_ori[mem[1]], ncpu, pcross, pmut)
+			cml2_export_struc_GA(stack, out_dir, POP[mem[0]], igen)
+			logging.info('>>> export best structure given by node %i' % mem[0])
+
+			POP = cml2_GA_digit(POP[mem[0]], POP[mem[1]], ncpu, pcross, pmut)
 			logging.info('>>> new populations pcross: %f pmut: %f' % (pcross, pmut))
-
-			#pmut *= F
-			
-			for n in xrange(ncpu):
-				f = open(out_dir + '/gen_%03i_node_%02i' % (igen + 1, n), 'w')
-				cPickle.dump(pop[n], f)
-				f.close()
-
+		
 			if minerr == 0: flag_stop = 1
 
+		# Broadcast new POP
+		mpi_barrier(MPI_COMM_WORLD)
+		if myid != main_node: POP = [[] for i in xrange(ncpu)]
+		for icpu in xrange(ncpu):
+			Ori       = deepcopy(POP[icpu])
+			Ori       = mpi_bcast(Ori, g_n_prj * 4, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+			Ori       = Ori.tolist()
+			POP[icpu] = deepcopy(Ori)
+			
 		mpi_barrier(MPI_COMM_WORLD)
 		flag_stop = mpi_reduce(flag_stop, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
 		flag_stop = mpi_bcast(flag_stop, 1, MPI_INT, main_node, MPI_COMM_WORLD)

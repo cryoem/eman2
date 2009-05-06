@@ -53,8 +53,10 @@ def main():
 	parser.add_option("--first_zero", action="store_true", default=False,    help=" Assign the first projection orientation to 0")
 	parser.add_option("--weights",    action="store_true", default=True,     help=" Use Voronoi weighting (set to 0)")
 	parser.add_option("--new",        action="store_true", default=False,    help=" The new code")
-	parser.add_option("--mpi",        action="store_true", default=False,    help=" MPI version")
-
+	parser.add_option("--MPIGA",      action="store_true", default=False,    help=" MPI version (Genetic algorithm)")
+	parser.add_option("--pcross",     type="float",        default=0.95,     help=" Cross-over probability (set to 0.95)")
+	parser.add_option("--pmut",       type="float",        default=0.05,     help=" Mutation probability (set to 0.05)")
+	parser.add_option("--maxgen",     type="int",          default=10,       help=" Maximum number of generations (set to 10)")
 	(options, args) = parser.parse_args()
 	if len(args) != 2:
 		print "usage: " + usage
@@ -63,21 +65,27 @@ def main():
 		if options.maxit < 1: options.maxit = 1
 
 		if options.new:
-			if options.mpi:
+			if options.MPIGA:
 				from development import cml2_main_mpi
 				global_def.BATCH = True
-				cml2_main_mpi(args[0], args[1], options.ir, options.ou, options.delta, options.dpsi, options.lf, options.hf, options.rand_seed, options.maxit, options.given, options.first_zero, options.weights, options.debug)
+				cml2_main_mpi(args[0], args[1], options.ir, options.ou, options.delta, options.dpsi, 
+					      options.lf, options.hf, options.rand_seed, options.maxit, options.given, options.first_zero, 
+					      options.weights, options.debug, options.maxgen, options.pcross, options.pmut)
 				global_def.BATCH = False
 			else:
 				from development import cml2_main
 				global_def.BATCH = True
-				cml2_main(args[0], args[1], options.ir, options.ou, options.delta, options.dpsi, options.lf, options.hf, options.rand_seed, options.maxit, options.given, options.first_zero, options.weights, options.debug)
+				cml2_main(args[0], args[1], options.ir, options.ou, options.delta, options.dpsi, 
+					  options.lf, options.hf, options.rand_seed, options.maxit, options.given, options.first_zero, 
+					  options.weights, options.debug)
 				global_def.BATCH = False
 
 		else:
 			from applications import find_struct
 			global_def.BATCH = True
-			find_struct(args[0], args[1], options.ir, options.ou, options.delta, options.dpsi, options.lf, options.hf, options.rand_seed, options.maxit, options.given, options.first_zero, options.weights, options.debug)
+			find_struct(args[0], args[1], options.ir, options.ou, options.delta, options.dpsi, 
+				    options.lf, options.hf, options.rand_seed, options.maxit, options.given, options.first_zero, 
+				    options.weights, options.debug)
 			global_def.BATCH = False
 
 
