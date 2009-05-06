@@ -32,11 +32,12 @@
 
 # This file contains functions related to running jobs in parallel in EMAN2
 
-from EMAN2 import test_image
+from EMAN2 import test_image,EMData
 from EMAN2db import EMTask,EMTaskQueue,db_open_dict
 import SocketServer
 from cPickle import dumps,loads
 from struct import pack,unpack
+import os.path
 import time
 import socket
 import sys
@@ -63,6 +64,13 @@ class EMTaskCustomer:
 	
 	def send_task(self,task):
 		"""Send a task to the server. Returns a taskid."""
+		
+		for k in task.data:
+			try :
+				if task.data[k][0]=="cache" :
+					task.data[k]=list(task.data[k])
+					task.data[k][1]=os.path.abspath(task.data[k][1])
+			except: pass
 		
 		if self.servtype=="dc" :
 			return EMDCsendonecom(self.addr,"TASK",task)
@@ -124,7 +132,8 @@ Communications are handled by subclasses."""
 			cache=db_open_dict(cname)
 			
 			ret=[]
-			for i in image_range(data[2:]):		# this allows us to iterate over the specified image numbers
+			for i in image_range(*data[2:]):		# this allows us to iterate over the specified image numbers
+				print i,cache[i]
 				ret.append(cache[i]*-1)
 				
 			return {"inverted":ret}
@@ -527,6 +536,7 @@ class EMDCTaskClient(EMTaskClient):
 						for j in image_range(*i[2:]):
 							if not cache.has_key(j):
 								cache[j]=self.get_data(sockf,i[1],j)
+								print j,cache[j]
 								
 						i[1]=cname
 				except: pass
