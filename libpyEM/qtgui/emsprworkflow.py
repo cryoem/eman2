@@ -609,7 +609,7 @@ class SPRInitTask(WorkFlowTask):
 	def get_params(self):
 		params = []
 		project_db = db_open_dict("bdb:project")
-		#params.append(ParamDef(name="global.micrograph_ccd_filenames",vartype="url",desc_short="File names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=db_entry("global.micrograph_ccd_filenames","bdb:project",[]),choices=[]))
+		#params.append(ParamDef(name="global.spr_raw_file_names",vartype="url",desc_short="File Names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=db_entry("global.spr_raw_file_names","bdb:project",[]),choices=[]))
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="SPR",desc_long="Information regarding this task",property=None,defaultunits=SPRInitTask.documentation_string,choices=None))
 		
 		papix = ParamDef(name="global.apix",vartype="float",desc_short="A/pix for project",desc_long="The physical distance represented by the pixel spacing",property=None,defaultunits=project_db.get("global.apix",dfl=1.1),choices=None)
@@ -633,7 +633,7 @@ class SPRInitTask(WorkFlowTask):
 		WorkFlowTask.write_db_entry(self,key,value)		
 
 
-class MicrographReportTask(WorkFlowTask):	
+class EMRawDataReportTask(WorkFlowTask):	
 	documentation_string = "This forms displays the micrograph and/or ccds images that  you currently have associated with this project"
 	warning_string = "\n\n\nNOTE: There are no images currenty associated with the project. Please associate or import images"
 	def __init__(self,application):
@@ -641,29 +641,43 @@ class MicrographReportTask(WorkFlowTask):
 		self.window_title = "Micrographs In Project"
 		self.project_files_at_init = None # stores the known project files when the form is created and shown - that way if cancel is hit we can restore the original parameters
 
-	def get_raw_files_in_project(self):
+	def get_image_dimensions(file_name):
+		'''
+		A static function for getting the dimensions of a file as a string
+		'''
+		nx,ny,nz = gimme_image_dimensions3D(file_name)
+		return "%ix%ix%i" %(nx,ny,nz)
+	
+	get_image_dimensions = staticmethod(get_image_dimensions)
+
+	def get_raw_data_table(self):
 		'''
 		
 		Returns a table like this:
 		
-		|| File name  || Dimensions || Mean || Sigma|| Min || Max ||
+		|| File name  || Dimensions ||
+		
+		Could also add  || Mean || Sigma|| Min || Max || in future if reading the header of images only is made faster in future
 
 		'''
 		project_db = db_open_dict("bdb:project")
-		project_names = project_db.get("global.micrograph_ccd_filenames",dfl=[])
-		
+		project_names = project_db.get("global.spr_raw_file_names",dfl=[])
+		self.project_files_at_init = project_names # so if the user hits cancel this can be reset
+
 		dims = [] # will be a string list
 		mean = [] # will be a float list
 		sigma = [] # will be a float \ist
 		min = [] # will be a float list
 		max = [] # will be a float
 		
-#		for name in project_names:
+		# mean, min, max and sigma currently disabled because set_size actually allocates memory, so it makes it slow
+		
+		for name in project_names:
 #			e = EMData()
 #			e.read_image(name,0,True) # read header only
 #			d = e.get_attr_dict()
-#			dims.append("%ix%ix%i" %(d["nx"],d["ny"],d["nz"]))
-#			
+			nx,ny,nz = gimme_image_dimensions3D(name)
+			dims.append("%ix%ix%i" %(nx,ny,nz))
 #			val = 0
 #			if d.has_key("mean"): val = d["mean"]
 #			mean.append(val)
@@ -677,7 +691,7 @@ class MicrographReportTask(WorkFlowTask):
 #			if d.has_key("minimum"): val = d["minimum"]
 #			min.append(val)
 		
-		pnames = ParamDef(name="global.micrograph_ccd_filenames",vartype="stringlist",desc_short="File names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=None,choices=project_names)
+		pnames = ParamDef(name="global.spr_raw_file_names",vartype="stringlist",desc_short="File Names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=None,choices=project_names)
 		pdims = ParamDef(name="Dimensions",vartype="stringlist",desc_short="Dimensions",desc_long="The dimensions of the particle images",property=None,defaultunits=None,choices=dims)
 		pmean = ParamDef(name="Mean",vartype="floatlist",desc_short="Mean",desc_long="Mean pixel value",property=None,defaultunits=None,choices=mean)
 		psigma = ParamDef(name="Sigma",vartype="floatlist",desc_short="Sigma",desc_long="Pixel value standard deviation",property=None,defaultunits=None,choices=sigma)
@@ -688,15 +702,16 @@ class MicrographReportTask(WorkFlowTask):
 		from emform import EMRawDataParamTable
 		p = EMRawDataParamTable(name="filenames",desc_short="Project files",desc_long="")
 		p.append(pnames)
-#		p.append(pdims)
+		#p.append(pdims)
+		p.add_column("Dimensions",EMRawDataReportTask.get_image_dimensions)
 #		p.append(pmean)
 #		p.append(psigma)
 #		p.append(pmax)
 #		p.append(pmin)
 
-		p.add_optional_table_attr_data("Remove",MicrographReportTask.remove_files_from_project)
-		p.add_optional_table_attr_data("Add",MicrographReportTask.add_files_from_context_menu)
-		p.set_add_files_function(MicrographReportTask.add_files_from_context_menu)
+		p.add_optional_table_attr_data("Remove",EMRawDataReportTask.remove_files_from_project)
+		p.add_optional_table_attr_data("Add",EMRawDataReportTask.add_files_from_context_menu)
+		p.set_add_files_function(EMRawDataReportTask.add_files_from_context_menu)
 		setattr(p,"convert_text", ptable_convert_2)
 #		context_menu_dict = {"Save as":image_save_as}
 		setattr(p,"icon_type","single_image")
@@ -713,7 +728,7 @@ class MicrographReportTask(WorkFlowTask):
 		text_entries = [str(i.text()) for i in entries]
 		
 		project_db = db_open_dict("bdb:project")
-		project_names = project_db.get("global.micrograph_ccd_filenames",dfl=[])
+		project_names = project_db.get("global.spr_raw_file_names",dfl=[])
 		
 		for name in names:
 			if name not in text_entries: # this should probably not happen
@@ -733,7 +748,7 @@ class MicrographReportTask(WorkFlowTask):
 			project_names.remove(text_entries[idx])
 			
 		
-		project_db["global.micrograph_ccd_filenames"] = project_names
+		project_db["global.spr_raw_file_names"] = project_names
 	
 	def add_files_to_project(list_of_names,table_widget):
 		'''
@@ -741,7 +756,7 @@ class MicrographReportTask(WorkFlowTask):
 		'''
 		
 		project_db = db_open_dict("bdb:project")
-		project_names = project_db.get("global.micrograph_ccd_filenames",dfl=[])
+		project_names = project_db.get("global.spr_raw_file_names",dfl=[])
 		project_name_tags = [get_file_tag(name) for name in project_names]
 		
 		for name in list_of_names:
@@ -756,6 +771,8 @@ class MicrographReportTask(WorkFlowTask):
 		
 		# if we make it here we're good
 		# first add entries to the table
+		sorting = table_widget.isSortingEnabled()
+		table_widget.setSortingEnabled(False)
 		r = table_widget.rowCount()
 		table_widget.setRowCount(r+len(list_of_names))
 		for i in xrange(0,len(list_of_names)):
@@ -766,13 +783,21 @@ class MicrographReportTask(WorkFlowTask):
 			item.setFlags(flag2|flag3)
 			item.setTextAlignment(QtCore.Qt.AlignHCenter)
 			table_widget.setItem(r+i, 0, item)
+			if hasattr(table_widget,"extra_columns"):
+				for j,[name,function] in enumerate(table_widget.extra_columns):
+					item = QtGui.QTableWidgetItem(function(table_widget.convert_text(str(item.text()))))
+					item.setTextAlignment(QtCore.Qt.AlignHCenter)
+					flag3 = Qt.ItemFlags(Qt.ItemIsEnabled)
+					item.setFlags(flag3)
+					table_widget.setItem(r+i,j+1, item)
+		table_widget.setSortingEnabled(sorting)
 		if r == 0:
 			table_widget.resizeColumnsToContents()
 
 		
 		# then add names to the database
 		project_names.extend(list_of_names)
-		project_db["global.micrograph_ccd_filenames"] = project_names
+		project_db["global.spr_raw_file_names"] = project_names
 	
 	
 	def add_files_from_context_menu(list_of_names,table_widget):
@@ -800,7 +825,7 @@ class MicrographReportTask(WorkFlowTask):
 				return
 		
 			
-			MicrographReportTask.add_files_to_project(files,table_widget)
+			EMRawDataReportTask.add_files_to_project(files,table_widget)
 		
 	remove_files_from_project = staticmethod(remove_files_from_project)
 	add_files_to_project = staticmethod(add_files_to_project)
@@ -809,26 +834,33 @@ class MicrographReportTask(WorkFlowTask):
 	def get_params(self):
 		
 		project_db = db_open_dict("bdb:project")
-		self.project_files_at_init = project_db.get("global.micrograph_ccd_filenames",dfl=[]) # so if the user hits cancel this can be reset
 		
 		params = []
 		
-		p,n = self.get_raw_files_in_project()
+		p,n = self.get_raw_data_table()
 		
 		if n == 0 and False:
-			params.append(ParamDef(name="blurb",vartype="text",desc_short="Files",desc_long="",property=None,defaultunits=MicrographReportTask.documentation_string+MicrographReportTask.warning_string,choices=None))
+			params.append(ParamDef(name="blurb",vartype="text",desc_short="Files",desc_long="",property=None,defaultunits=EMRawDataReportTask.documentation_string+EMRawDataReportTask.warning_string,choices=None))
 		else:
-			params.append(ParamDef(name="blurb",vartype="text",desc_short="Files",desc_long="",property=None,defaultunits=MicrographReportTask.documentation_string,choices=None))
+			params.append(ParamDef(name="blurb",vartype="text",desc_short="Files",desc_long="",property=None,defaultunits=EMRawDataReportTask.documentation_string,choices=None))
 			params.append(p)
 		return params
 	
 	def on_form_cancel(self):
-		project_db = db_open_dict("bdb:project")
-		project_db["global.micrograph_ccd_filenames"] = self.project_files_at_init
+		self.recover_original_raw_data_list()
 		
 		self.form.closeEvent(None)
 		self.form = None
 		self.emit(QtCore.SIGNAL("task_idle"))
+	
+	def recover_original_raw_data_list(self):
+		'''
+		Called if the user hits cancel - if they removed some files or added files the changes
+		are not saved unless the user hits ok
+		'''
+		project_db = db_open_dict("bdb:project")
+		project_db["global.spr_raw_file_names"] = self.project_files_at_init
+		
 	
 	def on_form_ok(self,params):
 		self.form.closeEvent(None)
@@ -847,7 +879,7 @@ class AddFilesToProjectValidator():
 			else: raise RuntimeError("Files needs to be a list")
 		
 		project_db = db_open_dict("bdb:project")
-		project_names = project_db.get("global.micrograph_ccd_filenames",dfl=[])
+		project_names = project_db.get("global.spr_raw_file_names",dfl=[])
 		project_name_tags = [get_file_tag(name) for name in project_names]
 		
 		for name in list_of_names:
@@ -875,7 +907,7 @@ class MicrographCCDImportTask(WorkFlowTask):
 		params = []
 		project_db = db_open_dict("bdb:project")
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="Importing image data",desc_long="",property=None,defaultunits=MicrographCCDImportTask.documentation_string,choices=None))
-		params.append(ParamDef(name="import_micrograph_ccd_files",vartype="url",desc_short="File names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=[],choices=[]))
+		params.append(ParamDef(name="import_micrograph_ccd_files",vartype="url",desc_short="File Names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=[],choices=[]))
 		pinvert = ParamDef(name="invert",vartype="boolean",desc_short="Invert",desc_long="Tick this if you want eman2 to invert your images while importing",property=None,defaultunits=False,choices=None)
 		pxray = ParamDef(name="xraypixel",vartype="boolean",desc_short="X-ray pixel",desc_long="Tick this if you want eman2 to automatically filter out X-ray pixels while importing",property=None,defaultunits=False,choices=None)
 		pnorm = ParamDef(name="norm.edgemean",vartype="boolean",desc_short="Edge norm",desc_long="Tick this if you want eman2 to automatically normalize your images using the edgmean approach",property=None,defaultunits=True,choices=None)
@@ -939,7 +971,7 @@ class MicrographCCDImportTask(WorkFlowTask):
 				error_message.append("Can't import files with the same name : %s " %name)
 
 		project_db = db_open_dict("bdb:project")
-		current_project_files = project_db.get("global.micrograph_ccd_filenames",dfl=[])
+		current_project_files = project_db.get("global.spr_raw_file_names",dfl=[])
 		cpft = [get_file_tag(file) for file in current_project_files]
 		
 		for name in filenames:
@@ -960,7 +992,7 @@ class MicrographCCDImportTask(WorkFlowTask):
 		
 		project_db = db_open_dict("bdb:project")
 #		
-		current_project_files = project_db.get("global.micrograph_ccd_filenames",dfl=[])
+		current_project_files = project_db.get("global.spr_raw_file_names",dfl=[])
 
 		# get the number of process operation - the progress dialog reflects image copying and image processing operations
 		num_processing_operations = 2 # there is atleast a copy and a disk write
@@ -1036,7 +1068,7 @@ class MicrographCCDImportTask(WorkFlowTask):
 		progress.qt_widget.close()
 		
 		if not cancelled:
-			project_db["global.micrograph_ccd_filenames"] = current_project_files
+			project_db["global.spr_raw_file_names"] = current_project_files
 			#db_close_dict("bdb:project")
 		
 	def get_thumb_shrink(self,nx,ny):
@@ -1070,17 +1102,17 @@ class MicrographCCDImportTask(WorkFlowTask):
 #		params = []
 #		project_db = db_open_dict("bdb:project")
 #		params.append(ParamDef(name="blurb",vartype="text",desc_short="Raw image data",desc_long="",property=None,defaultunits=MicrographCCDTask.documentation_string,choices=None))
-#		params.append(ParamDef(name="global.micrograph_ccd_filenames",vartype="url",desc_short="File names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=project_db.get("global.micrograph_ccd_filenames",dfl=[]),choices=[]))
+#		params.append(ParamDef(name="global.spr_raw_file_names",vartype="url",desc_short="File Names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=project_db.get("global.spr_raw_file_names",dfl=[]),choices=[]))
 #		
 #		#db_close_dict("bdb:project")
 #		return params
 #	
 #	def on_form_ok(self,params):
 #		project_db = db_open_dict("bdb:project")
-#		existing_names = project_db.get("global.micrograph_ccd_filenames",dfl=[])
+#		existing_names = project_db.get("global.spr_raw_file_names",dfl=[])
 #		s_existing_names =  [get_file_tag(name) for name in existing_names]
 #		
-#		new_names = params["global.micrograph_ccd_filenames"]
+#		new_names = params["global.spr_raw_file_names"]
 #		s_names =  [get_file_tag(name) for name in filenames]
 #		error_message = []
 #		for name in s_names:
@@ -1118,7 +1150,7 @@ class MicrographCCDImportTask(WorkFlowTask):
 #
 #	def on_form_ok(self,params):
 #		
-#		filenames = params["global.micrograph_ccd_filenames"]
+#		filenames = params["global.spr_raw_file_names"]
 #		s_names =  [get_file_tag(name) for name in filenames]
 #		error_message = []
 #		for name in s_names:
@@ -1153,7 +1185,7 @@ class MicrographCCDImportTask(WorkFlowTask):
 #		self.emit(QtCore.SIGNAL("task_idle"))
 #
 #	def write_db_entry(self,key,value):
-#		if key == "global.micrograph_ccd_filenames":
+#		if key == "global.spr_raw_file_names":
 #			if value != None:
 #
 #				new_names = []
@@ -1165,7 +1197,7 @@ class MicrographCCDImportTask(WorkFlowTask):
 #					new_names.append(name)
 #						
 #				project_db = db_open_dict("bdb:project")
-#				project_db["global.micrograph_ccd_filenames"] = new_names
+#				project_db["global.spr_raw_file_names"] = new_names
 #				#db_close_dict("bdb:project")
 #		else:  pass
 
@@ -1221,7 +1253,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 		ptcl_dbs = self.get_particle_db_names()
 		
 		project_db = db_open_dict("bdb:project")
-		project_files = project_db.get("global.micrograph_ccd_filenames",dfl=[])
+		project_files = project_db.get("global.spr_raw_file_names",dfl=[])
 		for name in project_files:
 			stripped = get_file_tag(name)
 			if stripped not in ptcl_dbs:
@@ -1322,18 +1354,20 @@ class ParticleWorkFlowTask(WorkFlowTask):
 
 	def get_project_particle_param_table(self):
 		'''
-		Use the names in the global.micrograph_ccd_filenames to build a table showing the corresponding and  current number of boxed particles in the particles directory, and also lists their dimensions
+		Use the names in the global.spr_raw_file_names to build a table showing the corresponding and  current number of boxed particles in the particles directory, and also lists their dimensions
 		Puts the information in a EMParamTable.
 		'''
-		project_db = db_open_dict("bdb:project")	
-		project_names = project_db.get("global.micrograph_ccd_filenames",dfl=[])
-		
-		ptable,n = self.__make_particle_param_table(project_names)
-		setattr(ptable,"convert_text", ptable_convert_2)
-		context_menu_dict = {"Save as":image_db_save_as}
-		#context_menu_dict["Delete"] = image_db_delete
-		setattr(ptable,"context_menu", context_menu_dict)
-		setattr(ptable,"icon_type","single_image")
+#		project_db = db_open_dict("bdb:project")	
+#		project_names = project_db.get("global.spr_raw_file_names",dfl=[])
+#		
+#		ptable,n = self.__make_particle_param_table(project_names)
+#		setattr(ptable,"convert_text", ptable_convert_2)
+#		context_menu_dict = {"Save as":image_db_save_as}
+#		#context_menu_dict["Delete"] = image_db_delete
+#		setattr(ptable,"context_menu", context_menu_dict)
+#		setattr(ptable,"icon_type","single_image")
+		task = EMRawDataReportTask(get_application())
+		ptable, n = task.get_raw_data_table()
 		return ptable,n
 		
 	def get_particle_param_table(self):
@@ -1356,7 +1390,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 		num_boxes = self.get_num_particles(project_names)
 		dimensions = self.get_particle_dims(project_names)
 		
-		pnames = ParamDef(name="global.micrograph_ccd_filenames",vartype="stringlist",desc_short="File names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=None,choices=project_names)
+		pnames = ParamDef(name="global.spr_raw_file_names",vartype="stringlist",desc_short="File Names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=None,choices=project_names)
 		pboxes = ParamDef(name="Num boxes",vartype="intlist",desc_short="Particles on disk",desc_long="The number of box images stored for this image in the database",property=None,defaultunits=None,choices=num_boxes)
 		pdims = ParamDef(name="Dimensions",vartype="stringlist",desc_short="Particle dims",desc_long="The dimensions of the particle images",property=None,defaultunits=None,choices=dimensions)
 		
@@ -1372,7 +1406,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 		A way to get the total number of particles that have a certain 
 		'''
 		project_db = db_open_dict("bdb:project")	
-		project_names = project_db.get("global.micrograph_ccd_filenames",dfl=[])
+		project_names = project_db.get("global.spr_raw_file_names",dfl=[])
 		stripped_project_names = [get_file_tag(name) for name in project_names ]
 		particle_names = self.get_particle_db_names_versatile(tag,strip_end=True)
 		
@@ -1464,7 +1498,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 		
 		default_selections = self.get_default_filenames_from_form_db()
 		
-		pnames = ParamDef(name="names",vartype="stringlist",desc_short="File names",desc_long="The particles that will be used",property=None,defaultunits=default_selections,choices=particle_names)
+		pnames = ParamDef(name="names",vartype="stringlist",desc_short="File Names",desc_long="The particles that will be used",property=None,defaultunits=default_selections,choices=particle_names)
 		pboxes = ParamDef(name="Num boxes",vartype="intlist",desc_short="Particles on disk",desc_long="The number of box images stored for this image in the database",property=None,defaultunits=None,choices=n)
 		pdims = ParamDef(name="Dimensions",vartype="stringlist",desc_short="Particle dims",desc_long="The dimensions of the particle images",property=None,defaultunits=None,choices=dims)
 		psnr = ParamDef(name="SNR",vartype="stringlist",desc_short="SNR",desc_long="The average SNR of the particle images",property=None,defaultunits=None,choices=snr)
@@ -1715,7 +1749,7 @@ class ParticleImportTask(ParticleWorkFlowTask):
 			error_message.append("Please specify files to import")
 		else:
 			project_db = db_open_dict("bdb:project")
-			project_file_names = project_db.get("global.micrograph_ccd_filenames",dfl=[])
+			project_file_names = project_db.get("global.spr_raw_file_names",dfl=[])
 			pfnt = [ get_file_tag(name) for name in project_file_names]
 			
 			v = params["import_particle_files"]
@@ -1753,7 +1787,31 @@ class E2BoxerTask(ParticleWorkFlowTask):
 	def __init__(self,application):
 		ParticleWorkFlowTask.__init__(self,application)
 		self.form_db_name = "bdb:emform.e2boxer"
+		self.report_task = None  #will eventually store a EMRawDataReportTask
+	
+	def get_boxes_in_database(file_name):
 		
+		db_name = "bdb:e2boxer.cache"		
+		box_maps = {}
+		nbox = 0
+		if db_check_dict(db_name):
+			e2boxer_db = db_open_dict(db_name,ro=True)
+			for name in e2boxer_db.keys():
+				d = e2boxer_db[name]
+				if not isinstance(d,dict): continue
+				if not d.has_key("e2boxer_image_name"): # this is the test, if something else has this key then we're screwed.
+					continue
+				name = d["e2boxer_image_name"]
+				if name != file_name: continue
+				
+				for key in ["auto_boxes","manual_boxes","reference_boxes"]:
+					if d.has_key(key):
+						boxes = d[key]
+						if boxes != None: nbox += len(boxes)
+		return str(nbox)
+
+	get_boxes_in_database = staticmethod(get_boxes_in_database)
+	
 	def get_e2boxer_boxes_and_project_particles_table(self):
 		'''
 		
@@ -1765,11 +1823,13 @@ class E2BoxerTask(ParticleWorkFlowTask):
 		if n is zero there are no entries in the table and the calling function can act appropriately
 		'''
 		
-		p,n = self.get_project_particle_param_table() # now p is a EMParamTable with rows for as many files as there in the project
+		self.report_task = EMRawDataReportTask(get_application())
+		p,n = self.report_task.get_raw_data_table()# now p is a EMParamTable with rows for as many files as there in the project
+		#p,n = self.get_project_particle_param_table() # now p is a EMParamTable with rows for as many files as there in the project
 		# also, p contains columns with filename | particle number | particle dimensions
 		 
 		project_db = db_open_dict("bdb:project")	
-		project_names = project_db.get("global.micrograph_ccd_filenames",dfl=[])
+		project_names = project_db.get("global.spr_raw_file_names",dfl=[])
 		
 		
 		nboxes,dimensions = self.__get_e2boxer_data(project_names)
@@ -1779,14 +1839,20 @@ class E2BoxerTask(ParticleWorkFlowTask):
 		
 		p_reordered = EMRawDataParamTable(name="filenames",desc_short="Choose a subset of these images",desc_long="") # because I want the boxes in db to come first
 		p_reordered.append(p[0])
-		p_reordered.append(pboxes)
-		p_reordered.extend(p[1:])
+		#p_reordered.append(pboxes)
+		#p_reordered.extend(p[1:])
+		p_reordered.add_column("Stored Boxes",E2BoxerTask.get_boxes_in_database)
+		p_reordered.add_column("Dimensions",EMRawDataReportTask.get_image_dimensions) # this needs some thought
 		
 
 		setattr(p_reordered,"convert_text", ptable_convert_2)
-		context_menu_dict = {"Save as":image_db_save_as}
+#		context_menu_dict = {"Save as":image_db_save_as}
 		#context_menu_dict["Delete"] = image_db_delete
-		setattr(p_reordered,"context_menu", context_menu_dict)
+		
+		p_reordered.add_optional_table_attr_data("Remove",EMRawDataReportTask.remove_files_from_project)
+		p_reordered.add_optional_table_attr_data("Add",EMRawDataReportTask.add_files_from_context_menu)
+		
+#		setattr(p_reordered,"context_menu", context_menu_dict)
 		setattr(p_reordered,"icon_type","single_image")
 		
 		
@@ -1795,7 +1861,7 @@ class E2BoxerTask(ParticleWorkFlowTask):
 	
 	def get_project_files_that_have_db_boxes_in_table(self):
 		project_db = db_open_dict("bdb:project")	
-		project_names = project_db.get("global.micrograph_ccd_filenames",dfl=[])
+		project_names = project_db.get("global.spr_raw_file_names",dfl=[])
 		
 		flat_boxes = self.get_num_particles(project_names)
 		flat_dims = self.get_particle_dims(project_names)
@@ -1811,7 +1877,7 @@ class E2BoxerTask(ParticleWorkFlowTask):
 					data.pop(i)
 		
 		
-		pnames = ParamDef(name="global.micrograph_ccd_filenames",vartype="stringlist",desc_short="File names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=None,choices=project_names)
+		pnames = ParamDef(name="global.spr_raw_file_names",vartype="stringlist",desc_short="File Names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=None,choices=project_names)
 		pboxes = ParamDef(name="Particles on disk",vartype="intlist",desc_short="Particles on disk",desc_long="The number of box images stored for this image in the database",property=None,defaultunits=None,choices=flat_boxes)
 		pdims = ParamDef(name="Particle dimensions",vartype="stringlist",desc_short="Particle dims",desc_long="The dimensions of the particle images",property=None,defaultunits=None,choices=flat_dims)
 		pdbboxes = ParamDef(name="Boxes in DB",vartype="intlist",desc_short="Boxes in DB",desc_long="The number of boxes stored for this image in the database",property=None,defaultunits=None,choices=db_boxes)
@@ -1870,6 +1936,13 @@ class E2BoxerTask(ParticleWorkFlowTask):
 				nboxes.append("")
 				
 		return nboxes,dimensions
+	
+	def on_form_cancel(self):
+		if self.report_task != None:
+			self.report_task.recover_original_raw_data_list()
+		self.form.closeEvent(None)
+		self.form = None
+		self.emit(QtCore.SIGNAL("task_idle"))
 
 
 class E2BoxerGenericTask(ParticleWorkFlowTask):
@@ -1987,7 +2060,7 @@ class E2BoxerAutoTaskGeneral(E2BoxerAutoTask):
 			params.append(ParamDef(name="blurb",vartype="text",desc_short="Using e2boxer",desc_long="",property=None,defaultunits=E2BoxerAutoTask.documentation_string+E2BoxerAutoTask.warning_string,choices=None))
 		else:
 			params.append(ParamDef(name="blurb",vartype="text",desc_short="Using e2boxer",desc_long="",property=None,defaultunits=E2BoxerAutoTask.documentation_string,choices=None))
-			params.append(ParamDef(name="filenames",vartype="url",desc_short="File names",desc_long="The names of the particle files you want to interactively box using e2boxer",property=None,defaultunits=[],choices=[]))
+			params.append(ParamDef(name="filenames",vartype="url",desc_short="File Names",desc_long="The names of the particle files you want to interactively box using e2boxer",property=None,defaultunits=[],choices=[]))
 		
 		return params
 
@@ -2073,7 +2146,7 @@ class E2BoxerGuiTaskGeneral(E2BoxerGuiTask):
 	def get_params(self):
 		params = []
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="Using e2boxer",desc_long="",property=None,defaultunits=E2BoxerGuiTask.documentation_string,choices=None))
-		params.append(ParamDef(name="filenames",vartype="url",desc_short="File names",desc_long="The names of the particle files you want to interactively box using e2boxer",property=None,defaultunits=[],choices=[]))
+		params.append(ParamDef(name="filenames",vartype="url",desc_short="File Names",desc_long="The names of the particle files you want to interactively box using e2boxer",property=None,defaultunits=[],choices=[]))
 		db = db_open_dict(self.form_db_name)
 		params.append(ParamDef(name="interface_boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=db.get("interface_boxsize",dfl=128),choices=[]))
 		#db_close_dict(self.form_db_name)
@@ -2186,7 +2259,7 @@ class E2BoxerOutputTaskGeneral(E2BoxerOutputTask):
 		
 		if project_check:
 			project_db = db_open_dict("bdb:project")	
-			project_names = project_db.get("global.micrograph_ccd_filenames",dfl=[])
+			project_names = project_db.get("global.spr_raw_file_names",dfl=[])
 		
 		if db_check_dict(db_name):
 			e2boxer_db = db_open_dict(db_name,ro=True)
@@ -2215,7 +2288,7 @@ class E2BoxerOutputTaskGeneral(E2BoxerOutputTask):
 				nboxes.append(nbox)
 				dimensions.append(dim)
 			
-		pnames = ParamDef(name="Filenames",vartype="stringlist",desc_short="File names",desc_long="The filenames",property=None,defaultunits=None,choices=names)
+		pnames = ParamDef(name="Filenames",vartype="stringlist",desc_short="File Names",desc_long="The filenames",property=None,defaultunits=None,choices=names)
 		pboxes = ParamDef(name="Num boxes",vartype="intlist",desc_short="Boxes in DB",desc_long="The number of boxes stored for this image in the database",property=None,defaultunits=None,choices=nboxes)
 		pdims = ParamDef(name="Dimensions",vartype="stringlist",desc_short="Dimensions",desc_long="The dimensions boxes",property=None,defaultunits=None,choices=dimensions)
 		
@@ -2243,7 +2316,7 @@ class E2BoxerProgramOutputTask(E2BoxerOutputTask):
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="E2Boxer output form",desc_long="",property=None,defaultunits=E2BoxerProgramOutputTask.documentation_string,choices=None))
 		
 		p = EMParamTable(name="filenames",desc_short="Choose a subset of these images",desc_long="")
-		pnames = ParamDef(name="Filenames",vartype="stringlist",desc_short="File names",desc_long="The filenames",property=None,defaultunits=None,choices=self.filenames)
+		pnames = ParamDef(name="Filenames",vartype="stringlist",desc_short="File Names",desc_long="The filenames",property=None,defaultunits=None,choices=self.filenames)
 		p.append(pnames)
 		setattr(p,"convert_text", ptable_convert_2)
 		setattr(p,"icon_type","single_image")
@@ -2297,7 +2370,7 @@ class E2CTFWorkFlowTask(ParticleWorkFlowTask):
 		
 		defocus,dfdiff,dfang,bfactor,noise,snr = self.get_ctf_info(project_names)
 		
-		pnames = ParamDef(name="micrograph_ccd_filenames",vartype="stringlist",desc_short="File names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=None,choices=project_names)
+		pnames = ParamDef(name="spr_raw_file_names",vartype="stringlist",desc_short="File Names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=None,choices=project_names)
 		pdefocus = ParamDef(name="Defocus",vartype="stringlist",desc_short="Defocus",desc_long="Estimated defocus of the microscope",property=None,defaultunits=None,choices=defocus)
 		pbfactor = ParamDef(name="Bfactor",vartype="stringlist",desc_short="B factor",desc_long="Estimated B factor of the microscope",property=None,defaultunits=None,choices=bfactor)
 		pnoise = ParamDef(name="Noise",vartype="intlist",desc_short="Sampling",desc_long="The number of sample points used to generate the parameters and accompanying noise profile",property=None,defaultunits=None,choices=noise)
@@ -2314,7 +2387,7 @@ class E2CTFWorkFlowTask(ParticleWorkFlowTask):
 		
 		#print len(num_phase),len(num_wiener),len(num_particles),len(phase_dims),len(wiener_dims),len(particle_dims)
 		
-		p = EMParamTable(name="filenames",desc_short="Current CTF parameters",desc_long="")
+		p = EMRawDataParamTable(name="filenames",desc_short="Current CTF parameters",desc_long="")
 		
 		p.append(pnames)
 		p.append(pdefocus)
@@ -2562,7 +2635,7 @@ class E2CTFAutoFitTask(E2CTFWorkFlowTask):
 		params = []
 		p,n= self.get_ctf_param_table(self.get_particle_db_names(strip_ptcls=False),no_particles=True)
 		
-		if n == 0:
+		if n == 0 and False:
 			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFAutoFitTask.documentation_string+E2CTFAutoFitTask.warning_string,choices=None))
 		else:
 			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFAutoFitTask.documentation_string,choices=None))
@@ -2703,7 +2776,7 @@ class E2CTFAutoFitTaskGeneral(E2CTFAutoFitTask):
 		params = []		
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFAutoFitTask.documentation_string,choices=None))
 		
-		params.append(ParamDef(name="filenames",vartype="url",desc_short="File names",desc_long="The names of the particle files you want to generate automated ctf parameters for",property=None,defaultunits=[],choices=[]))
+		params.append(ParamDef(name="filenames",vartype="url",desc_short="File Names",desc_long="The names of the particle files you want to generate automated ctf parameters for",property=None,defaultunits=[],choices=[]))
 		
 		self.add_general_params(params)
 

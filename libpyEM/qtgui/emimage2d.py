@@ -748,7 +748,7 @@ class EMImage2DModule(EMGUIModule):
 		#print "scale is ", self.scale
 		#except: pass
 	
-	def auto_contrast(self,bool=False,inspector_update=False,display_update=True):
+	def auto_contrast(self,bool=False,inspector_update=True,display_update=True):
 		global HOMEDB
 		HOMEDB=EMAN2db.EMAN2DB.open_db()
 		HOMEDB.open_dict("display_preferences")

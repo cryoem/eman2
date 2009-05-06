@@ -370,7 +370,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		spr_list = []
 		
 		rd = QtGui.QTreeWidgetItem(QtCore.QStringList("Raw files"))
-		self.launchers["Raw files"] = self.launch_mic_ccd_report#MicrographReportTask
+		self.launchers["Raw files"] = self.launch_mic_ccd_report#EMRawDataReportTask
  
 		spr_list.append(rd)
 		
@@ -598,7 +598,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	def launch_particle_import(self):
 		self.launch_task(ParticleImportTask,"Import particles")
 		
-	def launch_mic_ccd_report(self): self.launch_task(MicrographReportTask,"Raw file report")
+	def launch_mic_ccd_report(self): self.launch_task(EMRawDataReportTask,"Raw data report")
 		
 	def launch_e2boxer_auto(self):
 		self.launch_task(E2BoxerAutoTask,"e2boxer automated boxing")

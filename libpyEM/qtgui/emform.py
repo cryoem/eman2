@@ -83,6 +83,41 @@ class EMParamTable(list):
 		for opt in optional_attr:
 			if hasattr(self,opt):
 				setattr(table_widget,opt,getattr(self,opt))
+				
+	def build_table(self,table_widget,icon):
+		
+		exclusions = []
+		if hasattr(self,"exclusions"): exclusions = paramtable.exclusions # exclusions are a list of highlight entries - they get colored green
+		
+		flag2 = Qt.ItemFlags(Qt.ItemIsSelectable)
+		flag3 = Qt.ItemFlags(Qt.ItemIsEnabled)
+		flag4 = Qt.ItemFlags(Qt.ItemIsEditable)
+		for i,param in enumerate(self):
+			for j,choice in enumerate(param.choices):
+				if i == 0 and icon != None: item = QtGui.QTableWidgetItem(icon,str(choice))
+				else: item = QtGui.QTableWidgetItem(str(choice))
+				if i == 0:
+					if str(choice) not in exclusions:
+						item.setFlags(flag2|flag3)
+					else:
+						# exluded items are displayed but they are not selectable
+						# this was originally added for e2boxer -the write output form needs to show which images are are excluded
+						item.setFlags(flag3)
+						item.setTextColor(QtGui.QColor(0,128,0))
+						item.setToolTip("This item is excluded")
+					if param.defaultunits != None and len(param.defaultunits) > 0:
+						if choice in param.defaultunits:
+							selected_items.append(item)
+				else:
+					item.setFlags(flag3)
+				item.setTextAlignment(QtCore.Qt.AlignHCenter)
+				
+				table_widget.setItem(j, i, item)
+				
+			item = QtGui.QTableWidgetItem(param.desc_short)
+			item.setTextAlignment(QtCore.Qt.AlignHCenter)
+			item.setToolTip(param.desc_long)
+			table_widget.setHorizontalHeaderItem(i,item)
 		
 	
 class EMRawDataParamTable(EMParamTable):
@@ -101,6 +136,18 @@ class EMRawDataParamTable(EMParamTable):
 		self.context_menu_dict["Add"] = EMRawDataParamTable.add_files 
 		self.add_files_function = EMRawDataParamTable.add_files # this is so the add files function is customizable 
 		self.add_button = None  # eventually is a QtGui.QPushButton - see custom_addition function
+		
+		self.extra_columns = [] # a list of 2-length lists, used for automatic column addition
+								# First entry in the 2-length list is the name of the column, second entry is a
+								# functoin that returns the data to go in the table
+	
+	def add_column(self,name,function):
+		'''
+		Add a column to the table
+		@param name the name of the column, as will appear in the QtGui.QTableWidget
+		@param function a function that takes a filename as an argument and returns a string that goes in the table
+		'''
+		self.extra_columns.append([name,function])
 		
 	def add_optional_table_attr_data(self,key,value):
 		'''
@@ -164,7 +211,7 @@ class EMRawDataParamTable(EMParamTable):
 		
 		from emselector import EMSelectorModule
 		em_qt_widget = EMSelectorModule()
-		# Should really make a validator that verifies the images are 2D
+		#Should really make a validator that verifies the images are 2D
 		#validator = AddFilesToProjectValidator()
 		#em_qt_widget.widget.set_validator(validator)
 		files = em_qt_widget.exec_()
@@ -209,7 +256,35 @@ class EMRawDataParamTable(EMParamTable):
 			if hasattr(self,opt):
 				setattr(table_widget,opt,getattr(self,opt))
 		setattr(table_widget,"context_menu",self.get_context_menu_data())
+	
+	
+	def add_extra_columns(self,table_widget,starting_row=0):
+		sorting = table_widget.isSortingEnabled()
+		table_widget.setSortingEnabled(False)
+		col = table_widget.columnCount()
+		table_widget.setColumnCount(col+len(table_widget.extra_columns))
+		row = table_widget.rowCount()
+		for [name,function] in table_widget.extra_columns:
+			item = QtGui.QTableWidgetItem(name)
+			item.setTextAlignment(QtCore.Qt.AlignHCenter)
+			#item.setToolTip(param.desc_long)
+			table_widget.setHorizontalHeaderItem(col,item)
+			for i in xrange(starting_row,row):
+				item = QtGui.QTableWidgetItem(function(table_widget.convert_text(str(table_widget.item(i,0).text()))))
+				item.setTextAlignment(QtCore.Qt.AlignHCenter)
+				flag3 = Qt.ItemFlags(Qt.ItemIsEnabled)
+				item.setFlags(flag3)
+				table_widget.setItem(i, col, item)
+			col += 1
+			
+		table_widget.setSortingEnabled(sorting)
+
+	def build_table(self,table_widget,icon):
 		
+		EMParamTable.build_table(self,table_widget,icon)
+		table_widget.extra_columns = self.extra_columns
+		self.add_extra_columns(table_widget,0)
+	
 	## Static init
 	save_as = staticmethod(save_as)
 	add_files = staticmethod(add_files)
@@ -385,40 +460,40 @@ class EMFormWidget(QtGui.QWidget):
 			table_widget.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
 			
 		selected_items = [] # used to ensure default selection is correct
-		exclusions = []
-		if hasattr(paramtable,"exclusions"): exclusions = paramtable.exclusions # exclusions are a list of highlight entries - they get colored green
 		
 		table_widget.setSortingEnabled(False)
-		max_len_sum = 0
-		for i,param in enumerate(paramtable):
-			for j,choice in enumerate(param.choices):
-				if i == 0 and icon != None: item = QtGui.QTableWidgetItem(icon,str(choice))
-				else: item = QtGui.QTableWidgetItem(str(choice))
-				flag2 = Qt.ItemFlags(Qt.ItemIsSelectable)
-				flag3 = Qt.ItemFlags(Qt.ItemIsEnabled)
-				flag4 = Qt.ItemFlags(Qt.ItemIsEditable)
-				if i == 0:
-					if str(choice) not in exclusions:
-						item.setFlags(flag2|flag3)
-					else:
-						# exluded items are displayed but they are not selectable
-						# this was originally added for e2boxer -the write output form needs to show which images are are excluded
-						item.setFlags(flag3)
-						item.setTextColor(QtGui.QColor(0,128,0))
-						item.setToolTip("This item is excluded")
-					if param.defaultunits != None and len(param.defaultunits) > 0:
-						if choice in param.defaultunits:
-							selected_items.append(item)
-				else:
-					item.setFlags(flag3)
-				item.setTextAlignment(QtCore.Qt.AlignHCenter)
-				
-				table_widget.setItem(j, i, item)
-				
-			item = QtGui.QTableWidgetItem(param.desc_short)
-			item.setTextAlignment(QtCore.Qt.AlignHCenter)
-			item.setToolTip(param.desc_long)
-			table_widget.setHorizontalHeaderItem(i,item)
+		
+		paramtable.add_optional_table_attr(table_widget)
+		paramtable.build_table(table_widget,icon)
+#		for i,param in enumerate(paramtable):
+#			for j,choice in enumerate(param.choices):
+#				if i == 0 and icon != None: item = QtGui.QTableWidgetItem(icon,str(choice))
+#				else: item = QtGui.QTableWidgetItem(str(choice))
+#				flag2 = Qt.ItemFlags(Qt.ItemIsSelectable)
+#				flag3 = Qt.ItemFlags(Qt.ItemIsEnabled)
+#				flag4 = Qt.ItemFlags(Qt.ItemIsEditable)
+#				if i == 0:
+#					if str(choice) not in exclusions:
+#						item.setFlags(flag2|flag3)
+#					else:
+#						# exluded items are displayed but they are not selectable
+#						# this was originally added for e2boxer -the write output form needs to show which images are are excluded
+#						item.setFlags(flag3)
+#						item.setTextColor(QtGui.QColor(0,128,0))
+#						item.setToolTip("This item is excluded")
+#					if param.defaultunits != None and len(param.defaultunits) > 0:
+#						if choice in param.defaultunits:
+#							selected_items.append(item)
+#				else:
+#					item.setFlags(flag3)
+#				item.setTextAlignment(QtCore.Qt.AlignHCenter)
+#				
+#				table_widget.setItem(j, i, item)
+#				
+#			item = QtGui.QTableWidgetItem(param.desc_short)
+#			item.setTextAlignment(QtCore.Qt.AlignHCenter)
+#			item.setToolTip(param.desc_long)
+#			table_widget.setHorizontalHeaderItem(i,item)
 		
 		table_widget.setSortingEnabled(True)
 		table_widget.setToolTip(paramtable.desc_long)
@@ -428,8 +503,6 @@ class EMFormWidget(QtGui.QWidget):
 		groupbox.setToolTip(paramtable.desc_long)
 		groupbox.setLayout(vbl)
 		layout.addWidget(groupbox,10)
-		
-		paramtable.add_optional_table_attr(table_widget)
 		
 		table_event_handler = EMParamTableEventHandler(self,table_widget)
 		self.event_handlers.append(table_event_handler)
