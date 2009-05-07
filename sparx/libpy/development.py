@@ -9001,6 +9001,16 @@ def cml2_main(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit, giv
 
 	#return disc_now
 
+# plot for each individu in the population all orientation on the top hemisphere
+def cml2_plot_POP(POP, out_dir, igen):
+	from projection import plot_angles
+	npop  = len(POP)
+	nagls = len(POP[0]) // 4
+	for n in xrange(npop):
+		agls = []
+		for i in xrange(nagls):	agls.append([POP[n][4*i], POP[n][4*i+1], POP[n][4*i+2]])
+		im = plot_angles(agls)
+		im.write_image(out_dir + '/plot_angles_pop_%03i.hdf' % igen, n)
 
 # application find structure MPI version
 def cml2_main_mpi(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit, given = False, first_zero = False, flag_weights = False, debug = False, maxgen = 10, pcross = 0.95, pmut = 0.05):
@@ -9140,6 +9150,8 @@ def cml2_main_mpi(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit,
 			logging.info('>>> best pair is %s with err = %f   err mean: %f' % (mem, minerr, serr))
 			cml2_export_struc_GA(stack, out_dir, POP[mem[0]], igen)
 			logging.info('>>> export best structure given by node %i' % mem[0])
+
+			cml2_plot_POP(POP, out_dir, igen)
 
 			POP = cml2_GA_digit(POP[mem[0]], POP[mem[1]], ncpu, pcross, pmut)
 			#logging.info('>>> new populations pcross: %f pmut: %f' % (pcross, pmut))
