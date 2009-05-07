@@ -9070,18 +9070,34 @@ def cml2_main_mpi(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit,
 	for igen in xrange(maxgen):
 		t_start = start_time()
 
+		if myid == main_node: logging.info('----- GEN %03i -----' % igen)
+
 		Ori = deepcopy(POP[myid])
 		Rot = Util.cml_init_rot(Ori)
 		disc = cml2_disc(Prj, Ori, Rot, flag_weights)
 		cml2_export_txtagls(out_dir, 'angles_node_%02i' % myid, Ori, disc, 'Init')
-		logging.info('[gen: %03i node: %02i]  first disc: %f' % (igen, myid, disc))
+
+		# gather first disc
+		first_disc = [0.0] * ncpu
+		first_disc[myid] = disc
+		mpi_barrier(MPI_COMM_WORLD)
+		first_disc = mpi_reduce(first_disc, ncpu, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
+		first_disc = first_disc.tolist()
+		if myid == main_node:
+			meandisc = sum(first_disc) / float(ncpu)
+			logging.info('>>> FIRST DISC: min %7.2f max %7.2f mean %7.2f' % (min(first_disc), max(first_disc), meandisc))
+			first_disc = tuple(first_disc)
+			txt = '%6.1f ' * len(first_disc)
+			logging.info(txt % first_disc)
+
+		#logging.info('[gen: %03i node: %02i]  first disc: %f' % (igen, myid, disc))
 
 		# Find structure
 		Ori, disc, ite = cml2_find_structure(Prj, Ori, Rot, out_dir, 'angles_node_%02i' % myid, maxit, first_zero, flag_weights)
-		logging.info('[gen: %03i node: %02i]  disc: %f  nb ite: %i' % (igen, myid, disc, ite))
-		f = open(out_dir + '/gen_%03i_node_%02i' % (igen, myid), 'w')
-		cPickle.dump(Ori, f)
-		f.close()
+		#logging.info('[gen: %03i node: %02i]  disc: %f  nb ite: %i' % (igen, myid, disc, ite))
+		#f = open(out_dir + '/gen_%03i_node_%02i' % (igen, myid), 'w')
+		#cPickle.dump(Ori, f)
+		#f.close()
 
 		# gather disc
 		all_disc = [0.0] * ncpu
@@ -9117,15 +9133,18 @@ def cml2_main_mpi(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit,
 						mem    = [i, j]
 
 			serr /= float((ncpu-1)*ncpu/2.0)
-			logging.info('>>> best pair is %s with err = %f     disc ave: %f   err ave: %f' % (mem, minerr, meandisc, serr))
-			
+			logging.info('>>> END DISC:   min %7.2f max %7.2f mean %7.2f' % (min(all_disc), max(all_disc), meandisc))
+			all_disc = tuple(all_disc)
+			txt = '%6.1f ' * len(all_disc)
+			logging.info(txt % all_disc)
+			logging.info('>>> best pair is %s with err = %f   err mean: %f' % (mem, minerr, serr))
 			cml2_export_struc_GA(stack, out_dir, POP[mem[0]], igen)
 			logging.info('>>> export best structure given by node %i' % mem[0])
 
 			POP = cml2_GA_digit(POP[mem[0]], POP[mem[1]], ncpu, pcross, pmut)
-			logging.info('>>> new populations pcross: %f pmut: %f' % (pcross, pmut))
+			#logging.info('>>> new populations pcross: %f pmut: %f' % (pcross, pmut))
 		
-			if minerr == 0: flag_stop = 1
+			#if minerr == 0: flag_stop = 1
 
 		# Broadcast new POP
 		mpi_barrier(MPI_COMM_WORLD)
