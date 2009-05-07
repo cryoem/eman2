@@ -341,7 +341,7 @@ def db_write_image(self,fsp,*parms):
 		if parms[0]<0 : parms=(len(db),)+parms[1:]
 		db[parms[0]]=self
 		return
-	print "using emdata write"
+#	print "using emdata write"
 	return self.write_image_c(fsp,*parms)
 
 EMData.write_image_c=EMData.write_image
