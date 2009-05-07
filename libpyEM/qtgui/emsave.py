@@ -62,7 +62,7 @@ def save_data(item_object):
 class LightEMDataSave:
 	'''
 	Used for file io - never reads the image until you actually call write_image, so if the user hits cancel
-	they will not experience any time lags due to file io
+	they will not experience any time lags due to file reading (which would have then been in vain)
 	'''
 	def __init__(self,file_name,idx=0):
 		'''

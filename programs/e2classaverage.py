@@ -212,7 +212,7 @@ def main():
 			# do the initial average, based on the program inputs
 			weightsum = 0 # used to normalize the average
 			np = 0 # number of particles in the average
-			for p in range(0,num_part):
+			for p in xrange(0,num_part):
 				if options.odd and p % 2 == 0: continue # enforce even/odd constraints
 				if options.even and p % 2 == 1: continue # enforce even/odd constraints
 				for c in range(0,num_classes):
@@ -260,7 +260,7 @@ def main():
 			if options.verbose: print "bootstrapping the original class average"
 			average = None
 			np = 0
-			for p in range(0,num_part):
+			for p in xrange(0,num_part):
 				if options.odd and p % 2 == 0: continue # enforce even/odd constraints
 				if options.even and p % 2 == 1: continue # enforce even/odd constraints
 				for c in range(0,num_classes):

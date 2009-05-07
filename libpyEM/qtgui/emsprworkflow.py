@@ -652,95 +652,49 @@ class EMRawDataReportTask(WorkFlowTask):
 
 	def get_raw_data_table(self):
 		'''
-		
-		Returns a table like this:
-		
-		|| File name  || Dimensions ||
-		
-		Could also add  || Mean || Sigma|| Min || Max || in future if reading the header of images only is made faster in future
-
+		Gets an EM2DFileTable - this is type of class that the emform knows how to handle 
 		'''
 		project_db = db_open_dict("bdb:project")
 		project_names = project_db.get("global.spr_raw_file_names",dfl=[])
 		self.project_files_at_init = project_names # so if the user hits cancel this can be reset
 
-		dims = [] # will be a string list
-		mean = [] # will be a float list
-		sigma = [] # will be a float \ist
-		min = [] # will be a float list
-		max = [] # will be a float
-		
-		# mean, min, max and sigma currently disabled because set_size actually allocates memory, so it makes it slow
-		
-		for name in project_names:
-#			e = EMData()
-#			e.read_image(name,0,True) # read header only
-#			d = e.get_attr_dict()
-			nx,ny,nz = gimme_image_dimensions3D(name)
-			dims.append("%ix%ix%i" %(nx,ny,nz))
-#			val = 0
-#			if d.has_key("mean"): val = d["mean"]
-#			mean.append(val)
-#			val = 0
-#			if d.has_key("sigma"): val = d["sigma"]
-#			sigma.append(val)
-#			val = 0
-#			if d.has_key("maximum"): val = d["maximum"]
-#			max.append(val)
-#			val = 0
-#			if d.has_key("minimum"): val = d["minimum"]
-#			min.append(val)
-		
-		pnames = ParamDef(name="global.spr_raw_file_names",vartype="stringlist",desc_short="File Names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=None,choices=project_names)
-		pdims = ParamDef(name="Dimensions",vartype="stringlist",desc_short="Dimensions",desc_long="The dimensions of the particle images",property=None,defaultunits=None,choices=dims)
-		pmean = ParamDef(name="Mean",vartype="floatlist",desc_short="Mean",desc_long="Mean pixel value",property=None,defaultunits=None,choices=mean)
-		psigma = ParamDef(name="Sigma",vartype="floatlist",desc_short="Sigma",desc_long="Pixel value standard deviation",property=None,defaultunits=None,choices=sigma)
-		pmax = ParamDef(name="Max",vartype="floatlist",desc_short="Maximum",desc_long="Largest pixel value",property=None,defaultunits=None,choices=max)
-		pmin = ParamDef(name="Min",vartype="floatlist",desc_short="Minimum",desc_long="Smallest pixel value",property=None,defaultunits=None,choices=min)
-		
-		
-		from emform import EMRawDataParamTable
-		p = EMRawDataParamTable(name="filenames",desc_short="Project files",desc_long="")
-		p.append(pnames)
-		#p.append(pdims)
-		p.add_column("Dimensions",EMRawDataReportTask.get_image_dimensions)
-#		p.append(pmean)
-#		p.append(psigma)
-#		p.append(pmax)
-#		p.append(pmin)
-
-		p.add_optional_table_attr_data("Remove",EMRawDataReportTask.remove_files_from_project)
-		p.add_optional_table_attr_data("Add",EMRawDataReportTask.add_files_from_context_menu)
-		p.set_add_files_function(EMRawDataReportTask.add_files_from_context_menu)
-		setattr(p,"convert_text", ptable_convert_2)
-#		context_menu_dict = {"Save as":image_save_as}
-		setattr(p,"icon_type","single_image")
-		
-		
+		from emform import EM2DFileTable,EMFileTable
+		table = EM2DFileTable(project_names,desc_short="Raw Data Files",desc_long="")
+		table.add_column_data(EMFileTable.EMColumnData("Dimensions",EMRawDataReportTask.get_image_dimensions,"The dimensions of the file on disk"))
+		table.add_context_menu_action("Remove",EMRawDataReportTask.remove_files_from_project)
+		table.add_context_menu_action("Add",EMRawDataReportTask.add_files_from_context_menu)
+		table.add_button_data(EMRawDataReportTask.AddProjectRawDataButton(table))
+	
 		#p.append(pdims) # don't think this is really necessary
-		return p,len(project_names)
+		return table,len(project_names)
+	
+	class AddProjectRawDataButton():
+		def __init__(self,table_widget):
+			self.table_widget = weakref.ref(table_widget)
+			self.name = "Browse File System"
+			
+		def function(self,bool):
+			EMRawDataReportTask.add_files_from_context_menu([],self.table_widget())
+			
 
 	def remove_files_from_project(names,table_widget):
 		if len(names) == 0: return # nothing happened
 		
 		from emform import get_table_items_in_column
 		entries = get_table_items_in_column(table_widget,0)
-		text_entries = [str(i.text()) for i in entries]
+		text_entries = [table_widget.convert_text(str(i.text())) for i in entries]
 		
 		project_db = db_open_dict("bdb:project")
 		project_names = project_db.get("global.spr_raw_file_names",dfl=[])
 		
-		for name in names:
-			if name not in text_entries: # this should probably not happen
-				print name,text_entries
-				EMErrorMessageDisplay.run(["The name is not in the list"])
-				return
-			
+		full_names = [table_widget.convert_text(name) for name in names]
+
+		for name in full_names:
 			if name not in project_names:
-				EMErrorMessageDisplay.run(["The name is not in the project list"])
+				EMErrorMessageDisplay.run(["%s is not in the project list" %name])
 				return
 		
-		indices = [ text_entries.index(name) for name in names]
+		indices = [ text_entries.index(name) for name in full_names]
 		indices.sort()
 		indices.reverse()
 		for idx in indices:
@@ -752,7 +706,7 @@ class EMRawDataReportTask(WorkFlowTask):
 	
 	def add_files_to_project(list_of_names,table_widget):
 		'''
-		
+		becomes static
 		'''
 		
 		project_db = db_open_dict("bdb:project")
@@ -768,32 +722,10 @@ class EMRawDataReportTask(WorkFlowTask):
 			if get_file_tag(name) in project_name_tags:
 				EMErrorMessageDisplay.run(["%s is already in the project" %name])
 				return
-		
+				
 		# if we make it here we're good
 		# first add entries to the table
-		sorting = table_widget.isSortingEnabled()
-		table_widget.setSortingEnabled(False)
-		r = table_widget.rowCount()
-		table_widget.setRowCount(r+len(list_of_names))
-		for i in xrange(0,len(list_of_names)):
-			item = QtGui.QTableWidgetItem(QtGui.QIcon(get_image_directory() + "/single_image.png"),list_of_names[i])
-			flag2 = Qt.ItemFlags(Qt.ItemIsSelectable)
-			flag3 = Qt.ItemFlags(Qt.ItemIsEnabled)
-			flag4 = Qt.ItemFlags(Qt.ItemIsEditable)
-			item.setFlags(flag2|flag3)
-			item.setTextAlignment(QtCore.Qt.AlignHCenter)
-			table_widget.setItem(r+i, 0, item)
-			if hasattr(table_widget,"extra_columns"):
-				for j,[name,function] in enumerate(table_widget.extra_columns):
-					item = QtGui.QTableWidgetItem(function(table_widget.convert_text(str(item.text()))))
-					item.setTextAlignment(QtCore.Qt.AlignHCenter)
-					flag3 = Qt.ItemFlags(Qt.ItemIsEnabled)
-					item.setFlags(flag3)
-					table_widget.setItem(r+i,j+1, item)
-		table_widget.setSortingEnabled(sorting)
-		if r == 0:
-			table_widget.resizeColumnsToContents()
-
+		table_widget.add_entries(list_of_names)
 		
 		# then add names to the database
 		project_names.extend(list_of_names)
@@ -844,6 +776,7 @@ class EMRawDataReportTask(WorkFlowTask):
 		else:
 			params.append(ParamDef(name="blurb",vartype="text",desc_short="Files",desc_long="",property=None,defaultunits=EMRawDataReportTask.documentation_string,choices=None))
 			params.append(p)
+			
 		return params
 	
 	def on_form_cancel(self):
@@ -1088,118 +1021,6 @@ class MicrographCCDImportTask(WorkFlowTask):
 	def on_import_cancel(self):
 		print "canceled"
 		
-	
-#class MicrographCCDTask(WorkFlowTask):
-#	#DEPRECATED
-#	documentation_string = "This is a list of micrographs or CCD frames that you choose to associate with this project. You can add and remove file names by editing the text entries directly and or by using the browse and clear buttons."
-#	
-#	
-#	def __init__(self,application):
-#		WorkFlowTask.__init__(self,application)
-#		self.window_title = "Project micrographs"
-#
-#	def get_params(self):
-#		params = []
-#		project_db = db_open_dict("bdb:project")
-#		params.append(ParamDef(name="blurb",vartype="text",desc_short="Raw image data",desc_long="",property=None,defaultunits=MicrographCCDTask.documentation_string,choices=None))
-#		params.append(ParamDef(name="global.spr_raw_file_names",vartype="url",desc_short="File Names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=project_db.get("global.spr_raw_file_names",dfl=[]),choices=[]))
-#		
-#		#db_close_dict("bdb:project")
-#		return params
-#	
-#	def on_form_ok(self,params):
-#		project_db = db_open_dict("bdb:project")
-#		existing_names = project_db.get("global.spr_raw_file_names",dfl=[])
-#		s_existing_names =  [get_file_tag(name) for name in existing_names]
-#		
-#		new_names = params["global.spr_raw_file_names"]
-#		s_names =  [get_file_tag(name) for name in filenames]
-#		error_message = []
-#		for name in s_names:
-#			if s_names.count(name) > 1:
-#				error_message.append("you can't use images with the same file tag (%s)" %name)
-#		
-#		for i,name in enumerate(new_names):
-#			
-#			if name in s_existing_names:
-#				error_message.append("%s " %name)
-#			if os.path.exists(name) or db_check_dict(name):
-#				try:
-#					e = EMData()
-#					e.read_image(name,0,True)
-#					if EMUtil.get_image_count(name) > 1: error_message.append("%s contains more than one image" %name)
-#				except:
-#					error_message.append("%s is not a valid EM image type" %name)
-#					continue
-#			else:
-#				error_message.append("%s doesn't exist please remove it from this list" %name)
-#
-#		if len(error_message) > 0:
-#			self.show_error_message(error_message)
-#			return
-#		
-#		for k,v in params.items():
-#			self.write_db_entry(k,v)
-#			
-#			
-#		
-#		self.form.closeEvent(None)
-#		self.form = None
-#	
-#		self.emit(QtCore.SIGNAL("task_idle"))
-#
-#	def on_form_ok(self,params):
-#		
-#		filenames = params["global.spr_raw_file_names"]
-#		s_names =  [get_file_tag(name) for name in filenames]
-#		error_message = []
-#		for name in s_names:
-#			if s_names.count(name) > 1:
-#				error_message.append("you can't use images with the same file tag (%s)" %name)
-#		
-#		for i,name in enumerate(filenames):
-#					
-#			if os.path.exists(name) or db_check_dict(name):
-#				try:
-#					e = EMData()
-#					e.read_image(name,0,True)
-#					if EMUtil.get_image_count(name) > 1: error_message.append("%s contains more than one image" %name)
-#				except:
-#					error_message.append("%s is not a valid EM image type" %name)
-#					continue
-#			else:
-#				error_message.append("%s doesn't exist please remove it from this list" %name)
-#
-#		if len(error_message) > 0:
-#			self.show_error_message(error_message)
-#			return
-#		
-#		for k,v in params.items():
-#			self.write_db_entry(k,v)
-#			
-#			
-#		
-#		self.form.closeEvent(None)
-#		self.form = None
-#	
-#		self.emit(QtCore.SIGNAL("task_idle"))
-#
-#	def write_db_entry(self,key,value):
-#		if key == "global.spr_raw_file_names":
-#			if value != None:
-#
-#				new_names = []
-#		
-#				# now just update the static list of project file names
-#				e = EMData()
-#				read_header_only = True
-#				for i,name in enumerate(value):
-#					new_names.append(name)
-#						
-#				project_db = db_open_dict("bdb:project")
-#				project_db["global.spr_raw_file_names"] = new_names
-#				#db_close_dict("bdb:project")
-#		else:  pass
 
 
 class ParticleWorkFlowTask(WorkFlowTask):
@@ -1824,40 +1645,12 @@ class E2BoxerTask(ParticleWorkFlowTask):
 		'''
 		
 		self.report_task = EMRawDataReportTask(get_application())
-		p,n = self.report_task.get_raw_data_table()# now p is a EMParamTable with rows for as many files as there in the project
-		#p,n = self.get_project_particle_param_table() # now p is a EMParamTable with rows for as many files as there in the project
-		# also, p contains columns with filename | particle number | particle dimensions
-		 
-		project_db = db_open_dict("bdb:project")	
-		project_names = project_db.get("global.spr_raw_file_names",dfl=[])
-		
-		
-		nboxes,dimensions = self.__get_e2boxer_data(project_names)
-		pboxes = ParamDef(name="Num boxes",vartype="intlist",desc_short="Boxes in DB",desc_long="The number of boxes stored for this image in the database",property=None,defaultunits=None,choices=nboxes)
-		pdims = ParamDef(name="DB Box Dims",vartype="stringlist",desc_short="Dims in DB",desc_long="The dimensions boxes",property=None,defaultunits=None,choices=dimensions)
-		
-		
-		p_reordered = EMRawDataParamTable(name="filenames",desc_short="Choose a subset of these images",desc_long="") # because I want the boxes in db to come first
-		p_reordered.append(p[0])
-		#p_reordered.append(pboxes)
-		#p_reordered.extend(p[1:])
-		p_reordered.add_column("Stored Boxes",E2BoxerTask.get_boxes_in_database)
-		p_reordered.add_column("Dimensions",EMRawDataReportTask.get_image_dimensions) # this needs some thought
-		
+		table,n = self.report_task.get_raw_data_table()# now p is a EMParamTable with rows for as many files as there in the project
 
-		setattr(p_reordered,"convert_text", ptable_convert_2)
-#		context_menu_dict = {"Save as":image_db_save_as}
-		#context_menu_dict["Delete"] = image_db_delete
+		from emform import EMFileTable
+		table.insert_column_data(0,EMFileTable.EMColumnData("Stored Boxes",E2BoxerTask.get_boxes_in_database,"Boxes currently stored in the EMAN2 database"))
 		
-		p_reordered.add_optional_table_attr_data("Remove",EMRawDataReportTask.remove_files_from_project)
-		p_reordered.add_optional_table_attr_data("Add",EMRawDataReportTask.add_files_from_context_menu)
-		
-#		setattr(p_reordered,"context_menu", context_menu_dict)
-		setattr(p_reordered,"icon_type","single_image")
-		
-		
-		#p.append(pdims) # don't think this is really necessary
-		return p_reordered,len(nboxes)
+		return table, n
 	
 	def get_project_files_that_have_db_boxes_in_table(self):
 		project_db = db_open_dict("bdb:project")	

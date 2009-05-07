@@ -84,6 +84,10 @@ class EMParamTable(list):
 			if hasattr(self,opt):
 				setattr(table_widget,opt,getattr(self,opt))
 				
+	def convert_text(file_name): return file_name
+	
+	convert_text = staticmethod(convert_text)
+				
 	def build_table(self,table_widget,icon):
 		
 		exclusions = []
@@ -289,7 +293,296 @@ class EMRawDataParamTable(EMParamTable):
 	save_as = staticmethod(save_as)
 	add_files = staticmethod(add_files)
 
+class EMFileTable(QtGui.QTableWidget):
+	def __init__(self,listed_names=[],name="filenames",desc_short="File Names",desc_long="A list of file names"):
+		'''
+		@param listed_names The names that will be listed in the first column of the table
+		@param column_data A list of EMFileTable.EMContextMenuData objects
+		'''
 		
+		QtGui.QTableWidget.__init__(self)
+		self.name = name # the name of the parameter ultimately return form the form
+		self.listed_names = listed_names # listed names in first column
+		self.column_data = [] # list of EMColumnData objects
+		self.button_data = [] # extra button info which can be used to add things to the table
+		self.icon = None # set be inheriting function
+		self.exclusions = [] # Correspond to listed names that will be colored green and disabled
+		self.default_selections = [] # Default selected names in first column
+		self.desc_short = desc_short
+		self.desc_long = desc_long
+		self.vartype = "file_table" # This is used by the EMFormModule to insert this object correctly into a widget
+		self.name_conversions = {} # This is used to convert the displayed name to the real name of the file on the operating system
+		self.context_menu_data = {} # see self.get_context_menu_dict help
+		QtCore.QObject.connect(self, QtCore.SIGNAL("itemDoubleClicked(QTableWidgetItem*)"),self.table_item_double_clicked)
+		
+		self.context_menu_data["Save As"] = EMFileTable.save_as
+		
+	def convert_text(self,name):
+		'''
+		Sometimes the first column displays a shortened version of the name of a file on
+		disk, but it occurs that you want to recall the full name. This function does that
+		'''
+		for key,value in self.name_conversions.items():
+			if value == name:
+				return key
+		return None
+	
+	def get_context_menu_dict(self):
+		'''
+		@return a dictionary - keys are used to add context menu items, values are functions which are called
+		These functions (which are the dictionary values) take two arguments, the first being a list of strings
+		the second being a QtGui.QTableWidget
+		'''
+		return self.context_menu_data
+	
+	def add_context_menu_action(self,name,action):
+		'''
+		For these purposes, a context menu action consists of a name and an action
+		The name is a string, the action is a function - this function takes two arguments,
+		one being a list of strings, the other being a table_widget. Note there is not self argument
+		for these "action-functions"
+		'''
+		self.context_menu_data[name] = action
+		
+	def add_column_data(self,column_data):
+		'''
+		@param column_data an instance of (or something that has the attributes of) EMColumnData
+		Only works if you call this before the table is constructed - doesn't "update" the table  
+		'''
+		self.column_data.append(column_data)
+		
+	def insert_column_data(self,idx,column_data):
+		'''
+		@param column_data an instance of (or something that has the attributes of) EMColumnData
+		Only works if you call this before the table is constructed - doesn't "update" the table  
+		'''
+		self.column_data.insert(idx,column_data)
+		
+	def add_button_data(self,button_data):
+		'''
+		Buttons are added to the layout containing the table. They are below the table
+		@param button_data an instance of (or something that has the attributes of) EMButton data
+		Only works if you call this before the table is constructed - doesn't "update" the table  
+		'''
+		self.button_data.append(button_data)
+	
+	def convert_name(self,name):
+		'''
+		This is used to get the display name of the file. For instance, to display the base name not the entire name
+		@param name a file name - The file should exist on disk
+		@return the desired converted name
+		'''
+		return EMAN2.base_name(name)
+	
+	def display_name(self,name):
+		'''
+		Get the display name for this file name
+		@param name a file name - The file should exist on disk
+		@return the display nane
+		Internally caches the originally name in a dictionary so it can be recovered
+		Redefine self.convert_name to achieve your custom-desired display name
+		'''
+		if not self.name_conversions.has_key(name):
+			converted = self.convert_name(name) 
+			self.name_conversions[name] = converted
+			return converted # for efficiency
+		
+		return self.name_conversions[name]
+			
+	def build_table(self):
+		'''
+		Builds the table contents. Should only need to be called once, just prior to this objects
+		insertion into a widget or layout
+		'''
+		sorting = self.isSortingEnabled()
+		self.setSortingEnabled(False)
+		self.setRowCount(len(self.listed_names))
+		self.setColumnCount(len(self.column_data)+(len(self.listed_names)> 0))
+			
+		flag2 = Qt.ItemFlags(Qt.ItemIsSelectable)
+		flag3 = Qt.ItemFlags(Qt.ItemIsEnabled)
+		flag4 = Qt.ItemFlags(Qt.ItemIsEditable)
+		
+		selected_items = []
+
+		# first step is to insert the first column, which is the file names
+		for i,name in enumerate(self.listed_names):
+			if self.icon != None: item = QtGui.QTableWidgetItem(self.icon,self.display_name(name))
+			else: item = QtGui.QTableWidgetItem(self.display_name(name))
+
+			if name not in self.exclusions:
+				item.setFlags(flag2|flag3)
+			else:
+				# exluded items are displayed but they are not selectable
+				# this was originally added for e2boxer -the write output form needs to show which images are are excluded
+				item.setFlags(flag3)
+				item.setTextColor(QtGui.QColor(0,128,0))
+				item.setToolTip("This item is excluded")
+			
+			if name in self.default_selections:
+				selected_items.append(item)
+	
+			item.setTextAlignment(QtCore.Qt.AlignHCenter)
+				
+			self.setItem(i, 0, item)
+				
+		item = QtGui.QTableWidgetItem(self.desc_short)
+		item.setTextAlignment(QtCore.Qt.AlignHCenter)
+		item.setToolTip(self.desc_long)
+		self.setHorizontalHeaderItem(0,item)
+		
+		# second step is to add the columns
+		col = 1
+		for cd in self.column_data:
+			item = QtGui.QTableWidgetItem(cd.name)
+			item.setTextAlignment(QtCore.Qt.AlignHCenter)
+			item.setToolTip(cd.tooltip)
+			self.setHorizontalHeaderItem(col,item)
+			for i in xrange(0,len(self.listed_names)):
+				item = QtGui.QTableWidgetItem(cd.function(self.listed_names[i]))
+				item.setTextAlignment(QtCore.Qt.AlignHCenter)
+				item.setFlags(flag3)
+				self.setItem(i, col, item)
+			col += 1
+
+		self.resizeColumnsToContents()
+		
+	def add_entries(self,list_of_names):
+		'''
+		A dynamic way of adding entries to the table, for instance as a result of the user adding a file name from
+		within the interface
+		@param list_of_names the list of names to be added to the table
+		Fills out all columns automatically
+		'''
+		sorting = self.isSortingEnabled()
+		self.setSortingEnabled(False)
+		r = self.rowCount()
+		self.setRowCount(r+len(list_of_names))
+		flag2 = Qt.ItemFlags(Qt.ItemIsSelectable)
+		flag3 = Qt.ItemFlags(Qt.ItemIsEnabled)
+		flag4 = Qt.ItemFlags(Qt.ItemIsEditable)
+		for i in xrange(0,len(list_of_names)):
+			if self.icon != None: item = QtGui.QTableWidgetItem(self.icon,self.display_name(list_of_names[i]))
+			else: item = QtGui.QTableWidgetItem(self.display_name(list_of_names[i]))
+			item.setFlags(flag2|flag3)
+			item.setTextAlignment(QtCore.Qt.AlignHCenter)
+			self.setItem(r+i, 0, item)
+			for j, cd in enumerate(self.column_data):
+				item = QtGui.QTableWidgetItem(cd.function(list_of_names[i]))
+				item.setTextAlignment(QtCore.Qt.AlignHCenter)
+				flag3 = Qt.ItemFlags(Qt.ItemIsEnabled)
+				item.setFlags(flag3)
+				self.setItem(r+i,j+1, item)
+		self.setSortingEnabled(sorting)
+		
+		if r == 0:
+			self.resizeColumnsToContents()
+
+	def contextMenuEvent(self,event):
+		'''
+		Redefinition of QtGui.QTableWidget.contextMenuEvent
+		Creates a context menu using self.context_menu_data, which is a dictionary
+		@param event a QtGui.QContextMenuEvent - it is accepted
+		'''
+		menu = QtGui.QMenu()
+		cmenu = self.context_menu_data
+		for k in cmenu.keys():
+			menu.addAction(k)
+		QtCore.QObject.connect(menu,QtCore.SIGNAL("triggered(QAction*)"),self.menu_action_triggered)
+		menu.exec_(event.globalPos())
+		event.accept()
+	
+	def menu_action_triggered(self,action):
+		'''
+		Slot for context menu triggering
+		@param action The context menu action that was triggered
+		'''
+		items = self.selectedItems()
+		names = [str(item.text()) for item in items]
+		self.context_menu_data[str(action.text())](names,self)
+
+	def table_item_double_clicked(self,item):
+		'''If an item is double clicked this function is called. Redefine it to 
+		enable the displaying of a file, for example. You should probably check
+		to make sure that the item is from the first column (column 0)
+		'''
+		pass
+	
+	def save_as(list_of_names,table_widget):
+		'''
+		Made static
+		See the context menu dictionary in __init__, called when the user clicks "Save as"
+		Iterates through the names and prompts the user for file names
+		@param list_of_names a list table_widget column 0 entries, 
+		@table_widget The table widget from which the entries were selected
+		'''
+		for name in list_of_names:
+			from emsave import LightEMDataSave, save_data
+			tmp = LightEMDataSave(table_widget.convert_text(name))
+			val = save_data(tmp)
+			if val == "":
+				break
+	save_as = staticmethod(save_as)
+	
+	def custom_addition(self,layout):
+		'''
+		When the associated table is being created and added in the form module, this function is called, enabling
+		different things to be added to the layout in a custom fashion (such as an "Add" button).
+		@param layout a Qt Layout (e.g. QVBoxLayout, QHBoxLayout - objects that support the 'addWidget' and 'addLayout' syntax
+		'''
+		for button_data in self.button_data:
+			button = QtGui.QPushButton(button_data.name,None)
+			layout.addWidget(button)
+			QtCore.QObject.connect(button,QtCore.SIGNAL("clicked(bool)"),button_data.function)
+	
+	class EMColumnData():
+		'''
+		This class defines what's required to add column data to the EMFileTable
+		'''
+		def __init__(self,name,function,tooltip):
+			self.name = name # The name of the column of data
+			self.function = function # The function which is called to populate the column with meta data - takes a file name as an argument, returns a string
+			self.tooltip = tooltip # The helpful tooltip
+			
+	class EMButtonData():
+		'''
+		This class defines what's required to add button data to the EMFileTable
+		'''
+		def __init__(self,name,function):
+			self.name = name # The name of the button
+			self.function = function # that which is called when the button is clicked (takes a single argument)
+	
+class EM2DFileTable(EMFileTable):
+	def __init__(self,listed_names=[],name="filenames",desc_short="File Names",desc_long="A list of file names"):
+		'''
+		see EMFileTable for comments on parameters
+		'''
+		EMFileTable.__init__(self,listed_names,name,desc_short,desc_long)
+		self.icon = QtGui.QIcon(get_image_directory() + "/single_image.png")
+		self.display_module = None
+	
+	def table_item_double_clicked(self,item):
+		'''
+		See EMFileTable.table_item_double_clicked for comments
+		'''
+		if item.column() != 0: return # only can display files from the first column
+		get_application().setOverrideCursor(Qt.BusyCursor)
+		filename = self.convert_text(str(item.text()))
+		if self.display_module == None:
+			from emimage import EMModuleFromFile
+			self.display_module = EMModuleFromFile(filename,get_application())
+		else:
+			from EMAN2 import EMData
+			a = EMData()
+			a.read_image(filename,0)
+			self.display_module.set_data(a)
+			self.display_module.updateGL()
+					
+		#self.module().emit(QtCore.SIGNAL("launching_module"),"Browser",module)
+		get_application().show_specific(self.display_module)
+		#self.add_module([str(module),"Display",module])
+		get_application().setOverrideCursor(Qt.ArrowCursor)
+
 	
 
 class EMBrowseEventHandler:
@@ -390,6 +683,7 @@ class EMFormWidget(QtGui.QWidget):
 		self.auto_incorporate["floatlist"] = self.__incorporate_floatlist
 		self.auto_incorporate["dict"] = self.__incorporate_dict
 		self.auto_incorporate["EMParamTable"] = self.__incorporate_paramtable
+		self.auto_incorporate["file_table"] = self.__incorporate_filetable
 		
 		self.vbl = QtGui.QVBoxLayout()
 		self.incorporate_params(self.params,self.vbl)
@@ -434,6 +728,30 @@ class EMFormWidget(QtGui.QWidget):
 			else: return None
 			
 		return None
+	
+	def __incorporate_filetable(self,paramtable,layout):
+		
+		num_choices = None
+		# first check that there are no inconsistencies in the number of parameter choices
+		
+		vbl=QtGui.QVBoxLayout()
+		hbl=QtGui.QHBoxLayout()
+		hbl.setMargin(0)
+		hbl.setSpacing(2)
+		
+		paramtable.build_table()
+		hbl.addWidget(paramtable,1)
+		vbl.addLayout(hbl)
+		
+		paramtable.custom_addition(vbl)
+		
+		groupbox = QtGui.QGroupBox(paramtable.desc_short)
+		groupbox.setToolTip(paramtable.desc_long)
+		groupbox.setLayout(vbl)
+		layout.addWidget(groupbox,10)
+		self.output_writers.append(EMFileTableWriter(paramtable.name,paramtable,str))
+		
+
 	def __incorporate_paramtable(self,paramtable,layout):
 		
 		num_choices = None
@@ -867,6 +1185,16 @@ class EMParamTableWriter:
 		
 	def write_data(self,dict):
 		sel = [self.type_of(item.text()) for item in self.table_widget.selectedItems()]
+		dict[self.param_name] = sel
+		
+class EMFileTableWriter:
+	def __init__(self,param_name,table_widget,type_of=str):
+		self.param_name = param_name
+		self.table_widget = table_widget
+		self.type_of = type_of
+		
+	def write_data(self,dict):
+		sel = [self.table_widget.convert_text(self.type_of(item.text())) for item in self.table_widget.selectedItems()]
 		dict[self.param_name] = sel
 
 class BoolParamWriter:
