@@ -564,7 +564,7 @@ class EM2DFileTable(EMFileTable):
 		EMFileTable.__init__(self,listed_names,name,desc_short,desc_long)
 		self.icon = QtGui.QIcon(get_image_directory() + "/single_image.png")
 		self.display_module = None
-	
+		self.module_events_manager = None
 	def table_item_double_clicked(self,item):
 		'''
 		See EMFileTable.table_item_double_clicked for comments
@@ -575,6 +575,8 @@ class EM2DFileTable(EMFileTable):
 		if self.display_module == None:
 			from emimage import EMModuleFromFile
 			self.display_module = EMModuleFromFile(filename,get_application())
+			from emapplication import ModuleEventsManager
+			self.module_events_manager = ModuleEventsManager(self,self.display_module)
 		else:
 			from EMAN2 import EMData
 			a = EMData()
@@ -587,6 +589,8 @@ class EM2DFileTable(EMFileTable):
 		#self.add_module([str(module),"Display",module])
 		get_application().setOverrideCursor(Qt.ArrowCursor)
 
+	def module_closed(self,module_instance):
+		self.display_module = None
 	
 
 class EMBrowseEventHandler:
