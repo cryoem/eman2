@@ -518,7 +518,7 @@ class ChangeDirectoryTask(WorkFlowTask):
 		pass
 		#self.form.closeEvent(None)
 
-class TomographyTask(WorkFlowTask):
+class TomohunterTask(WorkFlowTask):
 	'''
 	A class that manages the initialization component of a Tomography workflow
 	'''
@@ -532,7 +532,7 @@ class TomographyTask(WorkFlowTask):
 	def get_params(self):
 		params = []
 		project_db = db_open_dict("bdb:tomography")
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="SPR",desc_long="Information regarding this task",property=None,defaultunits=TomographyTask.documentation_string,choices=None))
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="SPR",desc_long="Information regarding this task",property=None,defaultunits=TomohunterTask.documentation_string,choices=None))
 		targetimage = ParamDef(name="targetimage",vartype="url",desc_short="target image file name",desc_long="target image file name",property=None,defaultunits=project_db.get("targetimage",dfl=[]),choices=[])
 		probeimage = ParamDef(name="probeimage",vartype="url",desc_short="probe image file name",desc_long="probe image file name",property=None,defaultunits=project_db.get("probeimage",dfl=[]),choices=[])
 		norm = ParamDef(name="normalization",vartype="int",desc_short="normalization",desc_long="if the normalization needed",property=None,defaultunits=0,choices=[0,1])
@@ -640,7 +640,7 @@ class EMRawDataReportTask(WorkFlowTask):
 		WorkFlowTask.__init__(self,application)
 		self.window_title = "Micrographs In Project"
 		self.project_files_at_init = None # stores the known project files when the form is created and shown - that way if cancel is hit we can restore the original parameters
-
+		self.project_list = "global.spr_raw_file_names"
 	def get_image_dimensions(file_name):
 		'''
 		A static function for getting the dimensions of a file as a string
@@ -655,28 +655,130 @@ class EMRawDataReportTask(WorkFlowTask):
 		Gets an EM2DFileTable - this is type of class that the emform knows how to handle 
 		'''
 		project_db = db_open_dict("bdb:project")
-		project_names = project_db.get("global.spr_raw_file_names",dfl=[])
+		project_names = project_db.get(self.project_list,dfl=[])
 		self.project_files_at_init = project_names # so if the user hits cancel this can be reset
 
 		from emform import EM2DFileTable,EMFileTable
 		table = EM2DFileTable(project_names,desc_short="Raw Data Files",desc_long="")
-		table.add_column_data(EMFileTable.EMColumnData("Dimensions",EMRawDataReportTask.get_image_dimensions,"The dimensions of the file on disk"))
-		table.add_context_menu_action("Remove",EMRawDataReportTask.remove_files_from_project)
-		table.add_context_menu_action("Add",EMRawDataReportTask.add_files_from_context_menu)
-		table.add_button_data(EMRawDataReportTask.AddProjectRawDataButton(table))
+		context_menu_data = EMRawDataReportTask.EMProjectDataContextMenu(self.project_list)
+		table.add_context_menu_data(context_menu_data)
+		table.add_button_data(EMRawDataReportTask.AddProjectRawDataButton(table,context_menu_data))
 	
 		#p.append(pdims) # don't think this is really necessary
 		return table,len(project_names)
 	
+	def get_raw_data_table_custom(self):
+		'''
+		Calls get_raew_data_table and then adds the Dimensions column
+		'''
+		table,n = self.get_raw_data_table()
+		from emform import EMFileTable
+		table.add_column_data(EMFileTable.EMColumnData("Dimensions",EMRawDataReportTask.get_image_dimensions,"The dimensions of the file on disk"))
+		return table,n
+	
 	class AddProjectRawDataButton():
-		def __init__(self,table_widget):
+		def __init__(self,table_widget,context_menu_data):
 			self.table_widget = weakref.ref(table_widget)
-			self.name = "Browse File System"
+			self.context_menu_data = context_menu_data
+			self.name = "Browse To Add"
 			
 		def function(self,bool):
-			EMRawDataReportTask.add_files_from_context_menu([],self.table_widget())
+			self.context_menu_data.add_files_from_context_menu([],self.table_widget())
 			
 
+	class EMProjectDataContextMenu:
+		def __init__(self,project_list="global.spr_raw_file_names"):
+			self.project_list = project_list
+			self.validator = AddFilesToProjectValidator(self.project_list)
+			self.context_menu = {}
+			self.context_menu["Remove"] = self.remove_files_from_project
+			self.context_menu["Add"] = self.add_files_from_context_menu
+		
+		def set_project_list(self,project_list):
+			self.project_list = project_list
+			
+		def set_validator(self,validator):
+			self.validator = validator
+		
+		def items(self):
+			return self.context_menu.items()
+		
+		def remove_files_from_project(self,names,table_widget):
+			if len(names) == 0: return # nothing happened
+		
+			from emform import get_table_items_in_column
+			entries = get_table_items_in_column(table_widget,0)
+			text_entries = [table_widget.convert_text(str(i.text())) for i in entries]
+			
+			project_db = db_open_dict("bdb:project")
+			project_names = project_db.get(self.project_list,dfl=[])
+			
+			full_names = [table_widget.convert_text(name) for name in names]
+	
+			for name in full_names:
+				if name not in project_names:
+					EMErrorMessageDisplay.run(["%s is not in the project list" %name])
+					return
+			
+			indices = [ text_entries.index(name) for name in full_names]
+			indices.sort()
+			indices.reverse()
+			for idx in indices:
+				table_widget.removeRow(idx)
+				project_names.remove(text_entries[idx])
+				
+			
+			project_db[self.project_list] = project_names
+		
+		def add_files_to_project(self,list_of_names,table_widget):	
+			project_db = db_open_dict("bdb:project")
+			project_names = project_db.get(self.project_list,dfl=[])
+			project_name_tags = [get_file_tag(name) for name in project_names]
+			
+			for name in list_of_names:
+				if not file_exists(name):
+					EMErrorMessageDisplay.run(["%s does not exists" %name])
+					return
+			
+			for name in list_of_names:
+				if get_file_tag(name) in project_name_tags:
+					EMErrorMessageDisplay.run(["%s is already in the project" %name])
+					return
+					
+			# if we make it here we're good
+			# first add entries to the table
+			table_widget.add_entries(list_of_names)
+			
+			# then add names to the database
+			project_names.extend(list_of_names)
+			project_db[self.project_list] = project_names
+			
+		def add_files_from_context_menu(self,list_of_names,table_widget):
+			from emselector import EMSelectorModule
+			em_qt_widget = EMSelectorModule()
+			
+			em_qt_widget.widget.set_validator(self.validator)
+			files = em_qt_widget.exec_()
+			if files != "":
+				if isinstance(files,str): files = [files]
+				
+				from emform import get_table_items_in_column
+				entries = get_table_items_in_column(table_widget,0)
+				entrie_tags = [get_file_tag(str(i.text())) for i in entries]
+				file_tags = [get_file_tag(i) for i in files]
+				error_messages = []
+				for idx,tag in enumerate(file_tags):
+					if tag in entrie_tags:
+						error_messages.append("%s is already listed" %files[idx])
+				
+			
+				if len(error_messages) > 0:
+					from emsprworkflow import EMErrorMessageDisplay
+					EMErrorMessageDisplay.run(error_messages)
+					return
+			
+			self.add_files_to_project(files,table_widget)
+			
 	def remove_files_from_project(names,table_widget):
 		if len(names) == 0: return # nothing happened
 		
@@ -769,7 +871,7 @@ class EMRawDataReportTask(WorkFlowTask):
 		
 		params = []
 		
-		p,n = self.get_raw_data_table()
+		p,n = self.get_raw_data_table_custom()
 		
 		if n == 0 and False:
 			params.append(ParamDef(name="blurb",vartype="text",desc_short="Files",desc_long="",property=None,defaultunits=EMRawDataReportTask.documentation_string+EMRawDataReportTask.warning_string,choices=None))
@@ -799,8 +901,14 @@ class EMRawDataReportTask(WorkFlowTask):
 		self.form.closeEvent(None)
 		self.form = None
 		
+class EMTomoRawDataReportTask(EMRawDataReportTask):
+	def __init__(self,application):
+		EMRawDataReportTask.__init__(self,application)
+		self.project_list = "global.tomo_raw_file_names"
+		
 class AddFilesToProjectValidator():
-	def __init__(self): pass
+	def __init__(self,project_list="global.spr_raw_file_names"):
+		self.project_list = project_list
 	def validate_file_name(self,list_of_names):
 		'''
 		a validator for the select module
@@ -812,7 +920,7 @@ class AddFilesToProjectValidator():
 			else: raise RuntimeError("Files needs to be a list")
 		
 		project_db = db_open_dict("bdb:project")
-		project_names = project_db.get("global.spr_raw_file_names",dfl=[])
+		project_names = project_db.get(self.project_list,dfl=[])
 		project_name_tags = [get_file_tag(name) for name in project_names]
 		
 		for name in list_of_names:
@@ -826,8 +934,6 @@ class AddFilesToProjectValidator():
 				return 0
 			
 		return 1
-	
-
 
 class MicrographCCDImportTask(WorkFlowTask):	
 	documentation_string = "Use this tool for importing flat files into the raw_data directory in the project database. Files that you import in this way will be automatically added the list of files in the project."
@@ -1476,129 +1582,146 @@ class ParticleReportTask(ParticleWorkFlowTask):
 		ParticleWorkFlowTask.__init__(self,application)
 		self.window_title = "Project particles"
 
-	def get_params(self):
-		params = []
-		
-		p,n = self.get_particle_param_table()
-		if n == 0:
-			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=ParticleReportTask.documentation_string+ParticleReportTask.warning_string,choices=None))
-		else:
-			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=ParticleReportTask.documentation_string,choices=None))
-			params.append(p)  
-		
-		return params
 
-
-class ParticleImportTask(ParticleWorkFlowTask):	
-	'''
-	
-	A task for importing particles into the project particles directory
-	'''
-	documentation_string = "Use this tool for importing particle images into the particle directory in the project database. Files that you import in this way will be automatically added the list of particle files in the project."
-	
-	def __init__(self,application):
-		ParticleWorkFlowTask.__init__(self,application)
-		self.window_title = "Import particles"
-
-	def get_params(self):
-		params = []
+	def get_project_particle_table(self):
 		project_db = db_open_dict("bdb:project")
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="Description",desc_long="",property=None,defaultunits=ParticleImportTask.documentation_string,choices=None))
-		params.append(ParamDef(name="import_particle_files",vartype="url",desc_short="Imported particles",desc_long="A list of particle files that have been or will be imported into this project",property=None,defaultunits=[],choices=[]))
-		#db_close_dict("bdb:project")
+		particle_list_name = "global.spr_particle_file_names"
+		particle_names = project_db.get(particle_list_name,dfl=[])
+		self.project_files_at_init = particle_names # so if the user hits cancel this can be reset
+
+		from emform import EM2DStackTable,EMFileTable
+		table = EM2DStackTable(particle_names,desc_short="Raw Data Files",desc_long="")
+		context_menu_data = EMRawDataReportTask.EMProjectDataContextMenu()
+		context_menu_data.set_project_list(particle_list_name)
+		context_menu_data.set_validator(AddFilesToProjectValidator(particle_list_name))
+		table.add_context_menu_data(context_menu_data)
+		table.add_button_data(EMRawDataReportTask.AddProjectRawDataButton(table,context_menu_data))
+		
+		return table
+	
+	def get_params(self):
+		params = []
+		
+	
+		table = self.get_project_particle_table()
+		
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=ParticleReportTask.documentation_string,choices=None))
+		params.append(table)  
+		
 		return params
-
-	def on_form_ok(self,params):
-		
-		mesbox = QtGui.QMessageBox()
-		mesbox.setWindowTitle("Almost but not quite")
-		
-		error_message = self.check_args(params)
-		if len(error_message) > 0:
-			self.show_error_message(error_message)
-			return
-		
-		v = params["import_particle_files"]
-		progress = EMProgressDialogModule(get_application(),"Importing files into database...", "Abort import", 0, len(v)*10,None)
-		progress.qt_widget.show()
-#			get_application().show_specific(progress)
 	
-		cancelled_dbs = []
-		for i,name in enumerate(v):
-			progress.qt_widget.setValue(i*10)
-			get_application().processEvents()
 
-			tag = get_file_tag(name)
-			db_name = "bdb:particles#"+tag+"_ptcls"
 
-			n=EMUtil.get_image_count(name)
-
-			img=EMData()
-			cancelled_dbs.append(db_name)
-			cancelled=False
-			for j in range(n):
-				if j%25==0 : progress.qt_widget.setValue(i*10+j*10/n)
-
-				img.read_image(name,j)
-				img.write_image(db_name,-1)
-
-				if progress.qt_widget.wasCanceled():
-					cancelled = True
-					for db_name in cancelled_dbs:
-						db_remove_dict(db_name)
-					break
-			
-			if cancelled : break
-		
-				
-		progress.qt_widget.setValue(len(v))
-		#get_application().close_specific(progress)
-		progress.qt_widget.close()
-				
-			
-		for k,v in params.items():
-			self.write_db_entry(k,v)
-			
-		self.form.closeEvent(None)
-		self.form = None
-	
-		self.emit(QtCore.SIGNAL("task_idle"))
-	
-	def check_args(self,params):
-		error_message = []
-		if len(params["import_particle_files"]) == 0:
-			error_message.append("Please specify files to import")
-		else:
-			project_db = db_open_dict("bdb:project")
-			project_file_names = project_db.get("global.spr_raw_file_names",dfl=[])
-			pfnt = [ get_file_tag(name) for name in project_file_names]
-			
-			v = params["import_particle_files"]
-			for name in v:
-				if get_file_tag(name) in pfnt:
-					error_message.append("error, you can't import particles that have the same file name as one of the project files - the problem is with : %s" %get_file_tag(name))
-					
-			# now check to see if there are duplicated filetags in the incoming list
-			# Actually the url form widget may have already dealt with this?
-			nt = [ get_file_tag(name) for name in v]
-			for name in v:
-				if nt.count(get_file_tag(name)) > 1:
-					error_message.append("you can't import particles that have the same file names! The problem is with : %s" %get_file_tag(name))
-			
-			# now check to see if there isn't already an entry in the particle directory that corresponds to this name
-			particle_dbs = self.get_particle_db_names()
-			for name in v:
-				if get_file_tag(name) in particle_dbs:
-					error_message.append("error, you can't import particles that already have entries in the particle database! The problem is with : %s" %get_file_tag(name))
-
-			
-			for name in v:
-				#FIXME - it may be that there is 
-				fine, message = is_2d_image_mx(name)
-				if not fine:
-					error_message.append(message)
-
-		return error_message
+#class ParticleImportTask(ParticleWorkFlowTask):	
+#	'''
+#	
+#	A task for importing particles into the project particles directory
+#	'''
+#	documentation_string = "Use this tool for importing particle images into the particle directory in the project database. Files that you import in this way will be automatically added the list of particle files in the project."
+#	
+#	def __init__(self,application):
+#		ParticleWorkFlowTask.__init__(self,application)
+#		self.window_title = "Import particles"
+#
+#	def get_params(self):
+#		params = []
+#		project_db = db_open_dict("bdb:project")
+#		params.append(ParamDef(name="blurb",vartype="text",desc_short="Description",desc_long="",property=None,defaultunits=ParticleImportTask.documentation_string,choices=None))
+#		params.append(ParamDef(name="import_particle_files",vartype="url",desc_short="Imported particles",desc_long="A list of particle files that have been or will be imported into this project",property=None,defaultunits=[],choices=[]))
+#		#db_close_dict("bdb:project")
+#		return params
+#
+#	def on_form_ok(self,params):
+#		
+#		mesbox = QtGui.QMessageBox()
+#		mesbox.setWindowTitle("Almost but not quite")
+#		
+#		error_message = self.check_args(params)
+#		if len(error_message) > 0:
+#			self.show_error_message(error_message)
+#			return
+#		
+#		v = params["import_particle_files"]
+#		progress = EMProgressDialogModule(get_application(),"Importing files into database...", "Abort import", 0, len(v)*10,None)
+#		progress.qt_widget.show()
+##			get_application().show_specific(progress)
+#	
+#		cancelled_dbs = []
+#		for i,name in enumerate(v):
+#			progress.qt_widget.setValue(i*10)
+#			get_application().processEvents()
+#
+#			tag = get_file_tag(name)
+#			db_name = "bdb:particles#"+tag+"_ptcls"
+#
+#			n=EMUtil.get_image_count(name)
+#
+#			img=EMData()
+#			cancelled_dbs.append(db_name)
+#			cancelled=False
+#			for j in range(n):
+#				if j%25==0 : progress.qt_widget.setValue(i*10+j*10/n)
+#
+#				img.read_image(name,j)
+#				img.write_image(db_name,-1)
+#
+#				if progress.qt_widget.wasCanceled():
+#					cancelled = True
+#					for db_name in cancelled_dbs:
+#						db_remove_dict(db_name)
+#					break
+#			
+#			if cancelled : break
+#		
+#				
+#		progress.qt_widget.setValue(len(v))
+#		#get_application().close_specific(progress)
+#		progress.qt_widget.close()
+#				
+#			
+#		for k,v in params.items():
+#			self.write_db_entry(k,v)
+#			
+#		self.form.closeEvent(None)
+#		self.form = None
+#	
+#		self.emit(QtCore.SIGNAL("task_idle"))
+#	
+#	def check_args(self,params):
+#		error_message = []
+#		if len(params["import_particle_files"]) == 0:
+#			error_message.append("Please specify files to import")
+#		else:
+#			project_db = db_open_dict("bdb:project")
+#			project_file_names = project_db.get("global.spr_raw_file_names",dfl=[])
+#			pfnt = [ get_file_tag(name) for name in project_file_names]
+#			
+#			v = params["import_particle_files"]
+#			for name in v:
+#				if get_file_tag(name) in pfnt:
+#					error_message.append("error, you can't import particles that have the same file name as one of the project files - the problem is with : %s" %get_file_tag(name))
+#					
+#			# now check to see if there are duplicated filetags in the incoming list
+#			# Actually the url form widget may have already dealt with this?
+#			nt = [ get_file_tag(name) for name in v]
+#			for name in v:
+#				if nt.count(get_file_tag(name)) > 1:
+#					error_message.append("you can't import particles that have the same file names! The problem is with : %s" %get_file_tag(name))
+#			
+#			# now check to see if there isn't already an entry in the particle directory that corresponds to this name
+#			particle_dbs = self.get_particle_db_names()
+#			for name in v:
+#				if get_file_tag(name) in particle_dbs:
+#					error_message.append("error, you can't import particles that already have entries in the particle database! The problem is with : %s" %get_file_tag(name))
+#
+#			
+#			for name in v:
+#				#FIXME - it may be that there is 
+#				fine, message = is_2d_image_mx(name)
+#				if not fine:
+#					error_message.append(message)
+#
+#		return error_message
 		
 
 class E2BoxerTask(ParticleWorkFlowTask):
@@ -1630,15 +1753,55 @@ class E2BoxerTask(ParticleWorkFlowTask):
 						boxes = d[key]
 						if boxes != None: nbox += len(boxes)
 		return str(nbox)
+	
+	def get_num_particles_project(file_name):
+		'''
+		Get the particles in the project that are associated with a specific file name
+		This is useful for the e2boxer forms, which are used to take raw data files and
+		produce boxed output - i.e. if the user wants to know if they've already
+		written boxed output for a given raw file
+		@param file_name a file name, should be a file that's in global.spr_raw_file_names - this is not checked though
+		Note that the only thing that defines the relationship is whether or not the particle's 
+		'''
+		
+		project_db = db_open_dict("bdb:project")	
+		particle_names = project_db.get("global.spr_particle_file_names",dfl=[])
+		for name in particle_names:
+			a = EMData()
+			a.read_image(name,0,True) # header only
+			d = a.get_attr_dict()
+			if d.has_key("ptcl_source_image"):
+				if a["ptcl_source_image"] == file_name:
+					return str(EMUtil.get_image_count(name))
+				
+		return "0"
+	
+	def get_particle_dims_project(file_name):
+		'''
+		'''
+		project_db = db_open_dict("bdb:project")	
+		particle_names = project_db.get("global.spr_particle_file_names",dfl=[])
+		
+		for name in particle_names:
+			a = EMData()
+			a.read_image(name,0,True) # header only
+			d = a.get_attr_dict()
+			if d.has_key("ptcl_source_image"):
+				if a["ptcl_source_image"] == file_name:
+					nx,ny,nz = gimme_image_dimensions3D(name)
+					return "%ix%ix%i" %(nx,ny,nz)
+		return ""
 
 	get_boxes_in_database = staticmethod(get_boxes_in_database)
+	get_num_particles_project = staticmethod(get_num_particles_project)
+	get_particle_dims_project = staticmethod(get_particle_dims_project)
 	
-	def get_e2boxer_boxes_and_project_particles_table(self):
+	def get_boxer_basic_table(self):
 		'''
 		
 		Returns a table like this:
 		
-		|| Project image name || Particles currently in desktop || Dimensions of Particles || Boxes in e2boxer db || Dims of boxes in e2boxer db|
+		|| Project image name || Boxes in e2boxer db ||
 		
 		Returns the table, and the the number of entries (p,n)
 		if n is zero there are no entries in the table and the calling function can act appropriately
@@ -1646,51 +1809,61 @@ class E2BoxerTask(ParticleWorkFlowTask):
 		
 		self.report_task = EMRawDataReportTask(get_application())
 		table,n = self.report_task.get_raw_data_table()# now p is a EMParamTable with rows for as many files as there in the project
-
 		from emform import EMFileTable
 		table.insert_column_data(0,EMFileTable.EMColumnData("Stored Boxes",E2BoxerTask.get_boxes_in_database,"Boxes currently stored in the EMAN2 database"))
 		
 		return table, n
 	
 	def get_project_files_that_have_db_boxes_in_table(self):
-		project_db = db_open_dict("bdb:project")	
-		project_names = project_db.get("global.spr_raw_file_names",dfl=[])
 		
-		flat_boxes = self.get_num_particles(project_names)
-		flat_dims = self.get_particle_dims(project_names)
+		self.report_task = EMRawDataReportTask(get_application())
+		table,n = self.report_task.get_raw_data_table()# now p is a EMParamTable with rows for as many files as there in the project
+		from emform import EMFileTable
+		table.insert_column_data(0,EMFileTable.EMColumnData("Stored Boxes",E2BoxerTask.get_boxes_in_database,"Boxes currently stored in the EMAN2 database"))
+		table.insert_column_data(1,EMFileTable.EMColumnData("Particles On Disk",E2BoxerTask.get_num_particles_project,"Particles currently stored on disk that are associated with this image"))
+		table.insert_column_data(2,EMFileTable.EMColumnData("Particles Dims",E2BoxerTask.get_particle_dims_project,"The dimensions of the particles that are stored on disk"))
 		
-		
-		db_boxes,db_dims = self.__get_e2boxer_data(project_names)
-		
-		
-		
-		for i in range(len(db_dims)-1,-1,-1):
-			if db_boxes[i] == "":
-				for data in [project_names,flat_boxes,flat_dims,db_boxes,db_dims]:
-					data.pop(i)
+		return table, n
 		
 		
-		pnames = ParamDef(name="global.spr_raw_file_names",vartype="stringlist",desc_short="File Names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=None,choices=project_names)
-		pboxes = ParamDef(name="Particles on disk",vartype="intlist",desc_short="Particles on disk",desc_long="The number of box images stored for this image in the database",property=None,defaultunits=None,choices=flat_boxes)
-		pdims = ParamDef(name="Particle dimensions",vartype="stringlist",desc_short="Particle dims",desc_long="The dimensions of the particle images",property=None,defaultunits=None,choices=flat_dims)
-		pdbboxes = ParamDef(name="Boxes in DB",vartype="intlist",desc_short="Boxes in DB",desc_long="The number of boxes stored for this image in the database",property=None,defaultunits=None,choices=db_boxes)
-		pdvdims = ParamDef(name="DB Box Dims",vartype="stringlist",desc_short="Dims in DB",desc_long="The dimensions boxes",property=None,defaultunits=None,choices=db_dims)
-		
-		p = EMParamTable(name="filenames",desc_short="Choose a subset of these images",desc_long="")
-		p.append(pnames)
-		p.append(pdbboxes)
-		p.append(pboxes)
-		p.append(pdims)
-		
-		setattr(p,"convert_text", ptable_convert_2)
-		context_menu_dict = {"Save as":image_db_save_as}
-		#context_menu_dict["Delete"] = image_db_delete
-		setattr(p,"context_menu", context_menu_dict)
-		setattr(p,"icon_type","single_image")
-		#p.append(pdvdims) # decided this wasn't necessary
-		
-		return p,len(db_dims)
-		
+#		project_db = db_open_dict("bdb:project")	
+#		project_names = project_db.get("global.spr_raw_file_names",dfl=[])
+#		
+#		flat_boxes = self.get_num_particles(project_names)
+#		flat_dims = self.get_particle_dims(project_names)
+#		
+#		
+#		db_boxes,db_dims = self.__get_e2boxer_data(project_names)
+#		
+#		
+#		
+#		for i in range(len(db_dims)-1,-1,-1):
+#			if db_boxes[i] == "":
+#				for data in [project_names,flat_boxes,flat_dims,db_boxes,db_dims]:
+#					data.pop(i)
+#		
+#		
+#		pnames = ParamDef(name="global.spr_raw_file_names",vartype="stringlist",desc_short="File Names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=None,choices=project_names)
+#		pboxes = ParamDef(name="Particles on disk",vartype="intlist",desc_short="Particles on disk",desc_long="The number of box images stored for this image in the database",property=None,defaultunits=None,choices=flat_boxes)
+#		pdims = ParamDef(name="Particle dimensions",vartype="stringlist",desc_short="Particle dims",desc_long="The dimensions of the particle images",property=None,defaultunits=None,choices=flat_dims)
+#		pdbboxes = ParamDef(name="Boxes in DB",vartype="intlist",desc_short="Boxes in DB",desc_long="The number of boxes stored for this image in the database",property=None,defaultunits=None,choices=db_boxes)
+#		pdvdims = ParamDef(name="DB Box Dims",vartype="stringlist",desc_short="Dims in DB",desc_long="The dimensions boxes",property=None,defaultunits=None,choices=db_dims)
+#		
+#		p = EMParamTable(name="filenames",desc_short="Choose a subset of these images",desc_long="")
+#		p.append(pnames)
+#		p.append(pdbboxes)
+#		p.append(pboxes)
+#		p.append(pdims)
+#		
+#		setattr(p,"convert_text", ptable_convert_2)
+#		context_menu_dict = {"Save as":image_db_save_as}
+#		#context_menu_dict["Delete"] = image_db_delete
+#		setattr(p,"context_menu", context_menu_dict)
+#		setattr(p,"icon_type","single_image")
+#		#p.append(pdvdims) # decided this wasn't necessary
+#		
+#		return p,len(db_dims)
+#		
 	def __get_e2boxer_data(self,project_names):
 		
 		db_name = "bdb:e2boxer.cache"		
@@ -1806,7 +1979,7 @@ class E2BoxerAutoTask(E2BoxerTask):
 			params.append(ParamDef(name="blurb",vartype="text",desc_short="Using e2boxer",desc_long="",property=None,defaultunits=E2BoxerAutoTask.documentation_string+E2BoxerAutoTask.warning_string,choices=None))
 		else:
 			params.append(ParamDef(name="blurb",vartype="text",desc_short="Using e2boxer",desc_long="",property=None,defaultunits=E2BoxerAutoTask.documentation_string,choices=None))
-			p,n = self.get_e2boxer_boxes_and_project_particles_table()
+			p,n = self.get_boxer_basic_table()
 			params.append(p)
 	
 		return params
@@ -1870,7 +2043,7 @@ class E2BoxerGuiTask(E2BoxerTask):
 	def get_params(self):
 		params = []
 		
-		p,n = self.get_e2boxer_boxes_and_project_particles_table()
+		p,n = self.get_boxer_basic_table()
 		
 		if n == 0 and False:
 			params.append(ParamDef(name="blurb",vartype="text",desc_short="Interactive use of e2boxer",desc_long="",property=None,defaultunits=E2BoxerGuiTask.documentation_string+E2BoxerGuiTask.warning_string,choices=None))
@@ -1952,12 +2125,13 @@ class E2BoxerOutputTask(E2BoxerTask):
 	def __init__(self,application):
 		E2BoxerTask.__init__(self,application)
 		self.window_title = "e2boxer output"
+		self.output_formats = ["bdb","hdf"]
 	
 	def get_params(self):
 		params = []
 		
 		p,n = self.get_project_files_that_have_db_boxes_in_table()
-		if n == 0:
+		if n == 0 and False:
 			params.append(ParamDef(name="blurb",vartype="text",desc_short="Using e2boxer",desc_long="",property=None,defaultunits=E2BoxerOutputTask.documentation_string+E2BoxerOutputTask.warning_string,choices=None))
 		else:
 			params.append(ParamDef(name="blurb",vartype="text",desc_short="Using e2boxer",desc_long="",property=None,defaultunits=E2BoxerOutputTask.documentation_string,choices=None))
@@ -1977,7 +2151,7 @@ class E2BoxerOutputTask(E2BoxerTask):
 		pwb = ParamDef(name="write_box_images",vartype="boolean",desc_short="Write box image files",desc_long="Whether or not box images should be written",property=None,defaultunits=db.get("write_box_images",dfl=True),choices=None)
 		pinv = ParamDef(name="invert_output",vartype="boolean",desc_short="Invert",desc_long="Do you want the pixel intensities in the output inverted?",property=None,defaultunits=db.get("invert_output",dfl=False),choices=None)
 		pn =  ParamDef(name="normproc",vartype="string",desc_short="Normalize images",desc_long="How the output box images should be normalized",property=None,defaultunits=db.get("normproc",dfl="normalize.edgemean"),choices=["normalize","normalize.edgemean","none"])
-		pop = ParamDef(name="outformat",vartype="string",desc_short="Output image format",desc_long="The format of the output box images",property=None,defaultunits=db.get("outformat",dfl="bdb"),choices=["bdb","img","hdf"])
+		pop = ParamDef(name="outformat",vartype="string",desc_short="Output image format",desc_long="The format of the output box images",property=None,defaultunits=db.get("outformat",dfl="bdb"),choices=self.output_formats)
 		
 		#db_close_dict(self.form_db_name)
 		pwb.dependents = ["invert_output","normproc","outformat"] # these are things that become disabled when the pwb checkbox is unchecked etc
@@ -2017,7 +2191,7 @@ class E2BoxerOutputTask(E2BoxerTask):
 			
 			string_args = ["normproc","outformat","boxsize"]
 			bool_args = ["force","write_coord_files","write_box_images","just_output","invert_output"]
-			additional_args = ["--method=Swarm", "--auto=db"]
+			additional_args = ["--method=Swarm", "--auto=db","--dbls=global.spr_particle_file_names"]
 			temp_file_name = "e2boxer_autobox_stdout.txt"
 			self.spawn_task("e2boxer.py",options,string_args,bool_args,additional_args,temp_file_name)
 			self.emit(QtCore.SIGNAL("task_idle"))
@@ -2103,6 +2277,7 @@ class E2BoxerProgramOutputTask(E2BoxerOutputTask):
 		self.filenames = filenames
 		self.target = weakref.ref(target)
 		self.exclusions = exclusions
+		self.output_formats = ["bdb","img","hdf"]
 		
 	def get_params(self):
 		params = []
@@ -2146,15 +2321,33 @@ class E2BoxerProgramOutputTask(E2BoxerOutputTask):
 			self.form.closeEvent(None)
 			self.form = None
 
-class E2CTFWorkFlowTask(ParticleWorkFlowTask):
+class E2CTFWorkFlowTask(ParticleReportTask):
 	'''
 	Common functionality for E2CTF Work flow taskss
 	'''
 	def __init__(self,application):
-		ParticleWorkFlowTask.__init__(self,application)
+		ParticleReportTask.__init__(self,application)
 		self.form_db_name = "bdb:emform.e2ctf"
-		
+	
 	def get_ctf_param_table(self,project_names=None,no_particles=False):
+		'''
+		
+		'''
+		project_db = db_open_dict("bdb:project",ro=True)
+		particle_list_name = "global.spr_particle_file_names"
+		particle_names = project_db.get(particle_list_name,dfl=[])
+		
+		table = self.get_project_particle_table()
+		
+		from emform import EMFileTable
+		table.add_column_data(EMFileTable.EMColumnData("Defocus",E2CTFWorkFlowTask.get_defocus,"The estimated defocus"))
+		table.add_column_data(EMFileTable.EMColumnData("B Factor",E2CTFWorkFlowTask.get_bfactor,"The estimated B factor, note this is ~4x greater than in EMAN1"))
+		table.add_column_data(EMFileTable.EMColumnData("SNR",E2CTFWorkFlowTask.get_snr,"The averaged SNR"))
+		table.add_column_data(EMFileTable.EMColumnData("Sampling",E2CTFWorkFlowTask.get_sampling,"The amount of sampling used for generating CTF parameters"))
+		return table,len(particle_names)
+		
+	
+	def get_ctf_param_table_old(self,project_names=None,no_particles=False):
 		'''
 		particle_files_names should be the return variable of self.get_particle_db_names(strip_ptcls=False), or get_ctf_project_names
 		'''
@@ -2202,6 +2395,61 @@ class E2CTFWorkFlowTask(ParticleWorkFlowTask):
 		setattr(p,"icon_type","matrix_image")
 		
 		return p,len(defocus)
+	
+	def get_defocus(name):
+		if db_check_dict("bdb:e2ctf.parms"):
+			ctf_db = db_open_dict("bdb:e2ctf.parms",ro=True)
+			try:
+				vals = ctf_db[get_file_tag(name)][0]
+				ctf = EMAN2Ctf()
+				ctf.from_string(vals)
+				return "%.3f" %ctf.defocus
+			except: pass
+			
+		return ""
+	
+	def get_bfactor(name):
+		if db_check_dict("bdb:e2ctf.parms"):
+			ctf_db = db_open_dict("bdb:e2ctf.parms",ro=True)
+			try:
+				vals = ctf_db[get_file_tag(name)][0]
+				ctf = EMAN2Ctf()
+				ctf.from_string(vals)
+				return "%.3f" %ctf.bfactor
+			except: pass
+			
+		return ""
+			
+	def get_sampling(name):
+		if db_check_dict("bdb:e2ctf.parms"):
+			ctf_db = db_open_dict("bdb:e2ctf.parms",ro=True)
+			try:
+				vals = ctf_db[get_file_tag(name)][0]
+				ctf = EMAN2Ctf()
+				ctf.from_string(vals)
+				return str(len(ctf.background))
+			except: pass
+		
+		return ""
+			
+	def get_snr(name):
+		if db_check_dict("bdb:e2ctf.parms"):
+			ctf_db = db_open_dict("bdb:e2ctf.parms",ro=True)
+			try:
+				vals = ctf_db[get_file_tag(name)][0]
+				ctf = EMAN2Ctf()
+				ctf.from_string(vals)
+				snr = 0
+				try: snr = sum(ctf.snr)/len(ctf.snr)
+				except: pass
+				return "%.3f" %snr
+			except: pass
+		return ""
+			
+	get_defocus = staticmethod(get_defocus)
+	get_bfactor = staticmethod(get_bfactor)
+	get_sampling = staticmethod(get_sampling)
+	get_snr = staticmethod(get_snr)
 	
 	def get_ctf_info(self,project_names):
 		if db_check_dict("bdb:e2ctf.parms"):
@@ -2427,13 +2675,12 @@ class E2CTFAutoFitTask(E2CTFWorkFlowTask):
 	def get_params(self):
 		params = []
 		p,n= self.get_ctf_param_table(self.get_particle_db_names(strip_ptcls=False),no_particles=True)
-		
-		if n == 0 and False:
-			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFAutoFitTask.documentation_string+E2CTFAutoFitTask.warning_string,choices=None))
-		else:
-			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFAutoFitTask.documentation_string,choices=None))
-			params.append(p)
-			self.add_general_params(params)
+#		if n == 0 and False:
+#			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFAutoFitTask.documentation_string+E2CTFAutoFitTask.warning_string,choices=None))
+#		else:
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFAutoFitTask.documentation_string,choices=None))
+		params.append(p)
+		self.add_general_params(params)
 
 		return params
 	
@@ -2471,23 +2718,25 @@ class E2CTFAutoFitTask(E2CTFWorkFlowTask):
 			return None
 		
 		filenames = params["filenames"]
-		
 		boxsize = None
 		db_file_names = []
 		for i,name in enumerate(filenames):
-			db_name="bdb:particles#"+name
+			db_name= name
 			db_file_names.append(db_name)
-			if not db_check_dict(db_name):
-				error_message.append("error, can't particle entry doesn't exist for %s." %name)
+			if not file_exists(db_name):
+				error_message.append("error, %s does not exist." %name)
+				continue
 			
 			if boxsize == None:
-				db = db_open_dict(db_name,ro=True)
-				hdr = db.get_header(0)
+				a = EMData()
+				a.read_image(db_name,0,True)
+				hdr = a.get_attr_dict()
 				boxsize = hdr["nx"] # no consideration is given for non square images
 				#db_close_dict(db_name)
 			else:
-				db = db_open_dict(db_name,ro=True)
-				hdr = db.get_header(0)
+				a = EMData()
+				a.read_image(db_name,0,True)
+				hdr = a.get_attr_dict()
 				#db_close_dict(db_name)
 				if boxsize != hdr["nx"]: # no consideration is given for non square images
 					error_message.append("Can't run e2ctf on images with different box sizes.")
@@ -2495,6 +2744,11 @@ class E2CTFAutoFitTask(E2CTFWorkFlowTask):
 		if boxsize == None or boxsize < 2:
 			error_message.append("error, boxsize is less than 2.")
 		
+		
+		if boxsize == None:
+			error_message.append("Something went wrong in the form")
+			self.show_error_message(error_message)
+			return None
 		
 		options = EmptyObject()
 		options.bgmask = boxsize/2
@@ -2656,9 +2910,9 @@ class E2CTFOutputTask(E2CTFWorkFlowTask):
 #
 		db_file_names = []
 		for i,name in enumerate(filenames):
-			db_name="bdb:particles#"+name
+			db_name=name
 			db_file_names.append(db_name)
-			if not db_check_dict(db_name):
+			if not file_exists(db_name):
 				print "error, particle entry doesn't exist for",name,"aborting."
 				return None
 			
@@ -2809,9 +3063,9 @@ class E2CTFGuiTask(E2CTFWorkFlowTask):
 #
 		db_file_names = []
 		for i,name in enumerate(filenames):
-			db_name="bdb:particles#"+name
+			db_name=name
 			db_file_names.append(db_name)
-			if not db_check_dict(db_name):
+			if not file_exists(db_name):
 				print "No project particles entry exists for",name,"aborting."
 				return None
 		options.filenames = db_file_names

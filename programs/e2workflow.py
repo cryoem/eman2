@@ -332,9 +332,16 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		
 		self.tree_widget_entries.append(spr)
 		
-		tomo = QtGui.QTreeWidgetItem(QtCore.QStringList("Tomography"))
-		self.launchers["Tomography"] = self.launch_tomography
+		tomo = QtGui.QTreeWidgetItem(QtCore.QStringList("Tomographic particle reconstruction"))
+		self.launchers["Tomographic particle reconstruction"] = self.launch_tomography
 		self.tree_widget_entries.append(tomo)
+		
+		tomo_list = []
+		tomo_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Raw Tomogram Files")))
+		tomo_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Tomohunter")))
+		self.launchers["Tomohunter"] = self.launch_tomohunter
+		self.launchers["Raw Tomogram Files"] = self.launch_tomo_raw_files
+		tomo.addChildren(tomo_list)
 		
 		
 		browser_entry = QtGui.QTreeWidgetItem(QtCore.QStringList("Browse"))
@@ -364,6 +371,9 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.tree_widget_entries.append(preferences)
 		self.launchers["Preferences"] = self.launch_view_preferences
 		self.launchers["Working directory"] = self.launch_change_directory
+		lights = QtGui.QTreeWidgetItem(QtCore.QStringList("Lights"))
+		self.tree_widget_entries.append(lights)
+		self.launchers["Lights"] = self.launch_lights_tool
 		self.tree_widget.insertTopLevelItems(0,self.tree_widget_entries)
 		self.tree_widget.insertTopLevelItems(0,self.tree_widget_entries)
 
@@ -418,11 +428,11 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.launchers["Auto boxing - e2boxer"] = self.launch_e2boxer_auto
 		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Generate output - e2boxer")))
 		self.launchers["Generate output - e2boxer"] = self.launch_e2boxer_output
-		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Particle import")))
+#		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Particle import")))
 		ap_list[0].setIcon(0,QtGui.QIcon(get_image_directory() + "green_boxes.png"))
 		ap_list[1].setIcon(0,QtGui.QIcon(get_image_directory() + "green_boxes.png"))
 		ap_list[2].setIcon(0,QtGui.QIcon(get_image_directory() + "green_boxes.png"))
-		self.launchers["Particle import"] = self.launch_particle_import
+		#self.launchers["Particle import"] = self.launch_particle_import
 		ap.addChildren(ap_list)
 		
 		rd_list = []
@@ -480,8 +490,6 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		#QtCore.QObject.connect(self.tree_widget, QtCore.SIGNAL("itemDoubleClicked(QTreeWidgetItem*,int)"), self.tree_widget_double_click)
 		QtCore.QObject.connect(self.tree_widget, QtCore.SIGNAL("itemClicked(QTreeWidgetItem*,int)"), self.tree_widget_click)
 		#QtCore.QObject.connect(self.close, QtCore.SIGNAL("clicked()"), self.target.close)
-	
-	
 	def task_killed(self,module_string,module):
 		module.closeEvent(None)
 		self.module().emit(QtCore.SIGNAL("module_closed"),"module_string",module)
@@ -528,6 +536,15 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.add_module([str(module),"Eulerxplor",module])
 		get_application().setOverrideCursor(Qt.ArrowCursor)
 		
+	def launch_lights_tool(self):
+		from emlights import EMLights
+		get_application().setOverrideCursor(Qt.BusyCursor)
+		module = EMLights(application=em_app)
+		self.module().emit(QtCore.SIGNAL("launching_module"),"EMLights",module)
+		get_application().show_specific(module)
+		self.add_module([str(module),"EMLights",module])
+		get_application().setOverrideCursor(Qt.ArrowCursor)
+		
 	def launch_browser(self):
 		get_application().setOverrideCursor(Qt.BusyCursor)
 		module = EMBrowserModule()
@@ -543,7 +560,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.launch_task(E2CTFGenericTask,"e2ctf generic")
 	
 	def launch_e2boxer_output(self):
-		self.launch_task(E2BoxerOutputTask,"e3boxer output")
+		self.launch_task(E2BoxerOutputTask,"e2boxer output")
 	
 	def launch_boxer_general(self):
 		self.launch_task(E2BoxerGenericTask,"e2boxer general")
@@ -595,8 +612,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	def launch_ctf_report(self):self.launch_task(CTFReportTask,"CTF report")
 	def launch_particle_report(self): self.launch_task(ParticleReportTask,"Particle report")
 	
-	def launch_particle_import(self):
-		self.launch_task(ParticleImportTask,"Import particles")
+#	def launch_particle_import(self):self.launch_task(ParticleImportTask,"Import particles")
 		
 	def launch_mic_ccd_report(self): self.launch_task(EMRawDataReportTask,"Raw data report")
 		
@@ -610,7 +626,11 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.launch_task(SPRInitTask,"SPR")
 
 	def launch_tomography(self):
-		self.launch_task(TomographyTask,"Tomography")
+		self.launch_task(EMTomoRawDataReportTask,"Tomo Raw Files")
+	def launch_tomohunter(self):
+		self.launch_task(TomohunterTask,"Tomohunter")
+	def launch_tomo_raw_files(self):
+		self.launch_task(EMTomoRawDataReportTask,"Tomo Raw Files")
 			
 #	def launch_mic_ccd(self):
 #		self.launch_task(MicrographCCDTask,"Micrograph/CCD report")
@@ -800,6 +820,7 @@ class EMWorkFlowManager:
 	
 		self.task_monitor = EMTaskMonitorModule(get_application())
 		self.selector = EMWorkFlowSelector(application,self.task_monitor.qt_widget)
+		self.selector.qt_widget.resize(300,540)
 		QtCore.QObject.connect(self.selector, QtCore.SIGNAL("tasks_updated"),self.task_monitor.qt_widget.set_entries)
 		QtCore.QObject.connect(self.task_monitor, QtCore.SIGNAL("task_killed"),self.selector.qt_widget.task_killed)
 		

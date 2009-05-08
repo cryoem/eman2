@@ -1679,8 +1679,8 @@ class Boxable:
 		if imageformat == "bdb":
 			return "bdb:particles#"+get_file_tag(self.image_name)+"_ptcls"
 		else:
-			
-			return name+"_particles."+imageformat
+			# please can we just use ptcls??? pretty please??
+			return name+"_ptcls."+imageformat
 
 	def write_box_images(self,box_size=-1,force=False,imageformat="hdf",normalize=True,norm_method="normalize.edgemean",invert=False,verbose=True):
 		'''
@@ -1737,12 +1737,9 @@ class Boxable:
 				if (invert):
 					image.mult(-1)
 				
-				image.set_attr("original_x_corner",box.xcorner)
-				image.set_attr("original_y_corner",box.ycorner)
-				image.set_attr("original_x_size",box.xsize)
-				image.set_attr("original_y_size",box.ysize)
-				
-				image.set_attr("originating_image_name",self.get_image_name())
+				# These attributes are hopefully generic and easily digestible
+				image.set_attr("ptcl_source_coord",[int(box.xcorner+box.xsize/2),int(box.ycorner+box.ysize/2)])
+				image.set_attr("ptcl_source_image",self.get_image_name())
 
 				image.write_image(image_name,-1)
 				

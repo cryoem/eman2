@@ -117,6 +117,7 @@ for single particle analysis."""
 	parser.add_option("--just_output",action="store_true", help="Applicable if doing auto boxing using the database. Bypasses autoboxing and just writes boxes that are currently stored in the database. Useful for changing the boxsize, for example", default=False)
 	parser.add_option("--normproc", help="Normalization processor to apply to particle images. Should be normalize, normalize.edgemean or none", default="normalize.edgemean")
 	parser.add_option("--invert_output",action="store_true",help="If writing output only, this will invert the pixel intensities of the boxed files",default=False)
+	parser.add_option("--dbls",type="string",help="data base list storage, used by the workflow. You can ignore this argument.",default=None)
 	
 	# options added for cmdline calling of screening with gauss convolution. parameters for Gauss are passed as
 	#    commandline arguments and will have to be parsed only if auto="cmd" option is specified. note that these parameters
@@ -1009,6 +1010,16 @@ class RawDatabaseAutoBoxer:
 				if options.normproc == "none":normalize=False
 				else: normalize=True
 				boxable.write_box_images(options.boxsize,options.force,imageformat=options.outformat,normalize=normalize,norm_method=options.normproc,invert=options.invert_output)
+				if options.dbls != None:
+					from EMAN2 import get_file_tag
+					db = db_open_dict("bdb:project")	
+					particle_names = db.get(options.dbls,dfl=[])
+					out_names = [boxable.get_image_file_name(imageformat=options.outformat)]
+					strip_out_name = get_file_tag(out_names[0])
+					for name in particle_names:
+						if get_file_tag(name) != strip_out_name:
+							out_names.append(name)
+					db[options.dbls] = out_names
 		
 			if self.logid:  E2progress(self.logid,float(i+1)/len(image_names))
 		project_db.close()

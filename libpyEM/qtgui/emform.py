@@ -320,6 +320,7 @@ class EMFileTable(QtGui.QTableWidget):
 		QtCore.QObject.connect(self, QtCore.SIGNAL("itemDoubleClicked(QTableWidgetItem*)"),self.table_item_double_clicked)
 		
 		self.context_menu_data["Save As"] = EMFileTable.save_as
+		self.context_menu_refs = [] # to keep a reference to context menus
 		
 	def convert_text(self,name):
 		'''
@@ -347,13 +348,38 @@ class EMFileTable(QtGui.QTableWidget):
 		for these "action-functions"
 		'''
 		self.context_menu_data[name] = action
-		
+	
+	def add_context_menu_data(self,context_menu_data):
+		'''
+		For these purposes, a context menu action consists of a name and an action
+		The name is a string, the action is a function - this function takes two arguments,
+		one being a list of strings, the other being a table_widget. Note there is not self argument
+		for these "action-functions"
+		'''
+		self.context_menu_refs.append(context_menu_data)
+		for key,value in context_menu_data.items():
+			self.add_context_menu_action(key,value)
+
 	def add_column_data(self,column_data):
 		'''
 		@param column_data an instance of (or something that has the attributes of) EMColumnData
 		Only works if you call this before the table is constructed - doesn't "update" the table  
 		'''
 		self.column_data.append(column_data)
+		
+	def remove_column_data(self,column_data_name):
+		'''
+		@param column_data_name the name attribute of the column data attribute that you wish to remove
+		@exception RuntimeError raised if there is not column_data entry that has that specific name
+		Will not work if there is more than one column data entry with the same name
+		'''
+		for i,column_data in enumerate(self.column_data):
+			if column_data.name == column_data_name:
+				self.column_data.pop(i)
+				break
+		else:
+			raise RuntimeError("Attempt to remove a column data that didn't exist (%s)" %column_data_name)
+			
 		
 	def insert_column_data(self,idx,column_data):
 		'''
@@ -401,7 +427,7 @@ class EMFileTable(QtGui.QTableWidget):
 		sorting = self.isSortingEnabled()
 		self.setSortingEnabled(False)
 		self.setRowCount(len(self.listed_names))
-		self.setColumnCount(len(self.column_data)+(len(self.listed_names)> 0))
+		self.setColumnCount(len(self.column_data)+1)
 			
 		flag2 = Qt.ItemFlags(Qt.ItemIsSelectable)
 		flag3 = Qt.ItemFlags(Qt.ItemIsEnabled)
@@ -450,6 +476,7 @@ class EMFileTable(QtGui.QTableWidget):
 			col += 1
 
 		self.resizeColumnsToContents()
+		self.setSortingEnabled(True)
 		
 	def add_entries(self,list_of_names):
 		'''
@@ -591,6 +618,41 @@ class EM2DFileTable(EMFileTable):
 
 	def module_closed(self,module_instance):
 		self.display_module = None
+
+class EM2DStackTable(EMFileTable):
+	def __init__(self,listed_names=[],name="filenames",desc_short="File Names",desc_long="A list of file names"):
+		'''
+		see EMFileTable for comments on parameters
+		'''
+		EMFileTable.__init__(self,listed_names,name,desc_short,desc_long)
+		self.icon = QtGui.QIcon(get_image_directory() + "/multiple_images.png")
+		self.display_module = None
+		self.module_events_manager = None
+		
+	def table_item_double_clicked(self,item):
+		'''
+		See EMFileTable.table_item_double_clicked for comments
+		'''
+		if item.column() != 0: return # only can display files from the first column
+		get_application().setOverrideCursor(Qt.BusyCursor)
+		filename = self.convert_text(str(item.text()))
+		if self.display_module == None:
+			from emimage import EMModuleFromFile
+			self.display_module = EMModuleFromFile(filename,get_application())
+			from emapplication import ModuleEventsManager
+			self.module_events_manager = ModuleEventsManager(self,self.display_module)
+		else:
+			self.display_module.set_data(filename,filename) #  I know this looks stupid, but c'est la vie
+			self.display_module.updateGL()
+					
+		#self.module().emit(QtCore.SIGNAL("launching_module"),"Browser",module)
+		get_application().show_specific(self.display_module)
+		#self.add_module([str(module),"Display",module])
+		get_application().setOverrideCursor(Qt.ArrowCursor)
+
+	def module_closed(self,module_instance):
+		self.display_module = None
+		
 	
 
 class EMBrowseEventHandler:
