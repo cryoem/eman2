@@ -364,7 +364,7 @@ def get_simmx_cmd(options,check=False,nofilecheck=False):
 	if (options.verbose):
 		e2simmxcmd += " -v"
 	
-	if (options.lowmem): e2simmxcmd += " --lowmem"	
+	#if (options.lowmem): e2simmxcmd += " --lowmem"	
 	
 	if (options.shrink):
 		e2simmxcmd += " --shrink="+str(options.shrink)

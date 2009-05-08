@@ -187,12 +187,12 @@ def main():
 			print "error with db terminology: can't call numbered_bdb with this argument:", "bdb:"+options.dbdir+"#class_indices"
 			sys.exit(1)
 	# do one class at a time
-	for cl in range(class_min,class_max+1):
+	for cl in xrange(class_min,class_max+1):
 		E2progress(logger,float(cl-class_min)/(class_max+1-class_min))
 		class_cache = ClassCache(args,options,num_part,num_classes,classes)
 		class_cache.update_cache(cl)
 		
-		if (options.verbose): ndata = []
+		ndata = []
 			
 		if options.idxcache:
 			class_indices = class_cache.class_indices
@@ -230,33 +230,15 @@ def main():
 			if ( options.keepsig == False and options.keep == 1.0 ) : options.cull = False
 		
 		for it in range(0,options.iter):
-			itfrac=it/float(options.iter)
+			itfrac=(it+1)/float(options.iter)
 			# do alignment
 			align_to_average_and_store_metadata(class_cache,options,average,dx,dy,da,dflip,weights)
 #			
 			# get the culling threshold
+			cullthresh = None
 			if options.cull:
-				qual_scores = []
-				for d in ccache:
-					p = d[0]
-					c = d[1]
-					qual_scores.append(weights.get(c,p))
-				
-				if ( options.keepsig ):
-					a = Util.get_stats_cstyle(qual_scores)
-					mean = a["mean"]
-					std_dev = a["std_dev"]
-					cullthresh = mean + (5.0*(1.0-itfrac)+itfrac*options.keep)*std_dev
-				else:
-					b = deepcopy(qual_scores)
-					b.sort()
-					# The ceil reflects a conservative policy. If the user specified keep=0.93
-					# and there were 10 particles, then they would all be kept. If floor were
-					# used instead of ceil, the last particle would be thrown away (in the
-					# class average)
-					idx = int(math.ceil(((1.0-itfrac)+itfrac*options.keep)*len(b))-1)
-					cullthresh = b[idx]
-			
+				cullthresh = get_cull_threshold(class_cache,weights,options,itfrac)
+							
 			#finally average with culling
 			average,np = get_basic_average_with_cull(averager_parms,class_cache,options,weights,da,dx,dy,dflip,ndata,cullthresh)			
 			if options.verbose: print "done iteration",it
@@ -269,65 +251,17 @@ def main():
 				e.read_image(options.ref, cl)
 				
 				average_to_ref = align(e,average,options)
-				averager=Averagers.get(averager_parms[0], averager_parms[1]) # need an empty averager
 				fine_transform = average_to_ref.get_attr("xform.align2d")
 				fine_transform.invert()
 				
-				#average,np = get_basic_average_with_tweak(averager_parms,class_cache,options,weights,da,dx,dy,dflip,fine_transform)
-				#avg = None
-				np = 0 # number of particles in the average
-				for d in ccache:
-					p = d[0]
-					c = d[1]
-					if (options.cull ):
-						if ( weights.get(c,p) == 0 ) : continue
-					
-#					if (options.lowmem):
-	   	   	   	   	image = image_cache[p]
-					#image = EMData(args[0],p)
-#					else:
-#						image = images[p].copy()
-					
-	#				if str(options.normproc) != "None": image.process_inplace(options.norm[0],options.norm[1])
-	
-					t = Transform({"type":"2d","alpha":da.get(c,p)})
-					t.set_trans(dx.get(c,p),dy.get(c,p))
-					if dflip.get(c,p) != 0: t.set_mirror(True)
-					ct = fine_transform*t
-					#print "final transform is"
-					#ct.printme()
-					#fine_transform.printme()
-					rslt = image.process("math.transform",{"transform":ct})
-					
-					np += 1
-					averager.add_image(rslt)
-					
-					# Don't forget to store the alignment parameters
-					params = ct.get_params("2d")
-					dx.set(c,p, params["tx"])
-					dy.set(c,p, params["ty"])
-					da.set(c,p, params["alpha"])
-					dflip.set(c,p, params["mirror"])
-				
-				if np == 0:
-					if (options.verbose):
-						print "Class",cl,"...no particles on iteration",it
-					continue
-#				
-				average = averager.finish()
-#				average.transform(fine_transform)
-				
-				if str(options.normproc) != "None": average.process_inplace(options.norm[0],options.norm[1])
-				#average.process_inplace("xform.centerofmass") this shouldn't be necessary if we aligned to the projection
-				average.process_inplace("mask.sharp",{"outer_radius":ta.get_xsize()/2})
+				average,np = get_basic_average_with_tweak(averager_parms,class_cache,options,weights,da,dx,dy,dflip,fine_transform)
 			else:
 				e.read_image(options.ref, cl, READ_HEADER_ONLY)
 
 			average.set_attr("xform.projection", e.get_attr("xform.projection"))
 			average.set_attr("projection_image",options.ref)
 			average.set_attr("projection_image_idx",cl)
-			#average.set_attr("euler_az",e.get_attr("euler_az"))
-			#average.set_attr("euler_phi",e.get_attr("euler_phi"))
+
 			if options.verbose:
 				edata = []
 				t = e.get_attr("xform.projection")
@@ -373,10 +307,32 @@ def main():
 			elif options.odd: name += "_odd"
 			db_name = numbered_bdb(name)
 			#db_close_dict(db_name)
-		
-	
+
 	E2end(logger)
+
+def get_cull_threshold(class_cache,weights,options,itfrac):
+	qual_scores = []
+	for d in class_cache.ccache:
+		p = d[0]
+		c = d[1]
+		qual_scores.append(weights.get(c,p))
 	
+	if ( options.keepsig ):
+		a = Util.get_stats_cstyle(qual_scores)
+		mean = a["mean"]
+		std_dev = a["std_dev"]
+		cullthresh = mean + ((options.keep+1)*(1.0-itfrac)+itfrac*options.keep)*std_dev
+	else:
+		b = deepcopy(qual_scores)
+		b.sort()
+		# The ceil reflects a conservative policy. If the user specified keep=0.93
+		# and there were 10 particles, then they would all be kept. If floor were
+		# used instead of ceil, the last particle would be thrown away (in the
+		# class average)
+		idx = int(math.ceil(((1.0-itfrac)+itfrac*options.keep)*len(b)))
+		cullthresh = b[idx]
+	
+	return cullthresh
 	
 def align_to_average_and_store_metadata(class_cache,options,average,dx,dy,da,dflip,weights):
 	if options.usefilt: image_cache = class_cache.filtered_image_cache
@@ -434,7 +390,7 @@ def get_basic_average_with_tweak(averager_parms,class_cache,options,weights,da,d
 		
 		if str(options.normproc) != "None": average.process_inplace(options.norm[0],options.norm[1])
 		#average.process_inplace("xform.centerofmass") this shouldn't be necessary if we aligned to the projection
-		average.process_inplace("mask.sharp",{"outer_radius":ta.get_xsize()/2})
+		average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 		
 	return average,np
 
@@ -568,7 +524,7 @@ def get_basic_average(averager_parms,class_cache,da,dflip,dx,dy,weights,options)
 class ClassCache:
 	
 	'''
-	Stores useful information at each iteration
+	Stores useful information during each iteration
 	'''
 	def __init__(self,args,options,num_part,num_classes,class_data):
 		self.args = args

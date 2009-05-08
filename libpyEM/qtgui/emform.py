@@ -96,6 +96,7 @@ class EMParamTable(list):
 		flag2 = Qt.ItemFlags(Qt.ItemIsSelectable)
 		flag3 = Qt.ItemFlags(Qt.ItemIsEnabled)
 		flag4 = Qt.ItemFlags(Qt.ItemIsEditable)
+		selected_items = []
 		for i,param in enumerate(self):
 			for j,choice in enumerate(param.choices):
 				if i == 0 and icon != None: item = QtGui.QTableWidgetItem(icon,str(choice))
@@ -122,6 +123,9 @@ class EMParamTable(list):
 			item.setTextAlignment(QtCore.Qt.AlignHCenter)
 			item.setToolTip(param.desc_long)
 			table_widget.setHorizontalHeaderItem(i,item)
+			
+		for item in selected_items: 
+			item.setSelected(True)
 		
 	
 class EMRawDataParamTable(EMParamTable):
@@ -832,8 +836,8 @@ class EMFormWidget(QtGui.QWidget):
 		else:
 			type_of = str # This case arise when the table is empty and the user had an add button.
 	
-		for item in selected_items: 
-			item.setSelected(True)
+#		for item in selected_items: 
+#			item.setSelected(True)
 		self.output_writers.append(EMParamTableWriter(paramtable.name,table_widget,type_of))
 		
 		paramtable.custom_addition(vbl,table_widget)

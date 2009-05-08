@@ -59,7 +59,7 @@ def main():
 	parser.add_option("--range",type="string",help="Range of images to process (c0,r0,c1,r1) c0,r0 inclusive c1,r1 exclusive", default=None)
 	parser.add_option("--saveali",action="store_true",help="Save alignment values, output is c x r x 4 instead of c x r x 1",default=True)
 	parser.add_option("--verbose","-v",type="int",help="Verbose display during run",default=0)
-	parser.add_option("--lowmem",action="store_true",help="prevent the bulk reading of the reference images - this will save memory but potentially increase CPU time",default=False)
+#	parser.add_option("--lowmem",action="store_true",help="prevent the bulk reading of the reference images - this will save memory but potentially increase CPU time",default=False)
 	parser.add_option("--init",action="store_true",help="Initialize the output matrix file before performing 'range' calculations",default=False)
 	parser.add_option("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists")
 	parser.add_option("--exclude", type="string",default=None,help="The named file should contain a set of integers, each representing an image from the input file to exclude. Matrix elements will still be created, but will be zeroed.")
@@ -153,16 +153,16 @@ def main():
 		for image in cimgs:
 			image.process_inplace("math.meanshrink",{"n":options.shrink})
 	
-	if (options.lowmem):
-		rimg=EMData()
-	else:
-		rimages = EMData.read_images(args[1],range(*rrange))
-		if options.shrink != None: # the check function guarantees that shrink is an integer greater than 1
-			#d = [ image.process("math.meanshrink",{"n":options.shrink}) for image in rimages]
-			#rimages = d
-			# I chose this way in the end for memory efficiency. There's probably a better way to do it
-			for image in rimages:
-				image.process_inplace("math.meanshrink",{"n":options.shrink})
+#	if (options.lowmem):
+	rimg=EMData()
+#	else:
+#		rimages = EMData.read_images(args[1],range(*rrange))
+#		if options.shrink != None: # the check function guarantees that shrink is an integer greater than 1
+#			#d = [ image.process("math.meanshrink",{"n":options.shrink}) for image in rimages]
+#			#rimages = d
+#			# I chose this way in the end for memory efficiency. There's probably a better way to do it
+#			for image in rimages:
+#				image.process_inplace("math.meanshrink",{"n":options.shrink})
 		
 	#dimages =  EMData.read_images(args[1],range(*rrange))
 	#d = [ image.process_inplace("math.meanshrink",{"n":options.shrink}) for image in dimages]
@@ -174,12 +174,12 @@ def main():
 			print "%d/%d\r"%(r,rrange[1]),
 			sys.stdout.flush()
 			
-		if ( options.lowmem ):
-			rimg.read_image(args[1],r)
-			if options.shrink != None: # the check function guarantees that shrink is an integer greater than 
-				rimg.process_inplace("math.meanshrink",{"n":options.shrink})
-		else:
-			rimg = rimages[r]
+#		if ( options.lowmem ):
+		rimg.read_image(args[1],r)
+		if options.shrink != None: # the check function guarantees that shrink is an integer greater than 
+			rimg.process_inplace("math.meanshrink",{"n":options.shrink})
+#		else:
+#			rimg = rimages[r]
 		
 		E2progress(E2n,float(r-rrange[0])/(rrange[1]-rrange[0]))
 		row=cmponetomany(cimgs,rimg,options.align,options.aligncmp,options.cmp, options.ralign, options.raligncmp)
