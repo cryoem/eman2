@@ -8626,6 +8626,44 @@ def cml2_error_ori(Ori1, Ori2):
 
 	return sum_err
 
+# this function return the degree of colinearity of the orientations found (if colinear the value is close to zero)
+def cml2_ori_collinearity(Ori):
+	from math  import sin, cos, pi
+	from numpy import array, linalg, matrix, zeros, power
+
+	# ori 3d sphere map to 2d plan
+	rad2deg = 180 / pi
+	deg2rad = 1 / rad2deg
+	nori    = len(Ori) // 4
+	lx, ly  = [], []
+	for n in xrange(nori):
+		ind     = n * 4
+		ph, th  = Ori[ind:ind+2]
+		ph     *= deg2rad
+		th     *= deg2rad
+		lx.append(sin(th) * sin(ph))
+		ly.append(sin(th) * cos(ph))
+
+	# direct least square fitting of ellipse (IEEE ICIP Pilu96)
+	D = zeros((nori, 6))
+	for c in xrange(nori):
+		D[c, :] = [lx[c]*lx[c], lx[c]*ly[c], ly[c]*ly[c], lx[c], ly[c], 1.0]
+	D = matrix(D)
+	S = D.transpose() * D
+	C = zeros((6, 6))
+	C[5, 5] = 0
+	C[0, 2] = -2
+	C[1, 2] = 1
+	C[2, 0] = -2
+	C = matrix(C)
+	val, vec = linalg.eig(S.getI() * C)
+	ell = vec[:, val.argmin()]
+	verr = D * ell
+	verr = power(verr, 2)
+	serr = sum(verr)
+
+	# sum squared error
+	return serr.getA()[0][0]
 
 # this function is used in find_structure MPI version, to merge and mutatted solution, GA string digit
 def cml2_GA_digit(Ori1, Ori2, npop, pcross, pmut):
@@ -8859,7 +8897,10 @@ def cml2_find_structure(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_
 						wm = max(weights)
 						for i in xrange(g_n_lines): weights[i]  = wm - weights[i]
 						sw = sum(weights)
-						for i in xrange(g_n_lines): weights[i] /= sw
+						if sw == 0:
+							weights = [1.0] * g_n_lines
+						else:
+							for i in xrange(g_n_lines): weights[i] /= sw
 						#print 'weights', time.time() - t1, 's'
 					else:   weights = [1.0] * g_n_lines
 
@@ -9129,14 +9170,32 @@ def cml2_main_mpi(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit,
 			mpi_barrier(MPI_COMM_WORLD)
 
 		if myid == main_node:
-			meandisc = sum(all_disc) / float(ncpu)
+			## TO TEST
+			from projection import plot_angles
+			for iori in xrange(ncpu):
+				cml = Util.cml_line_in3d(POP[iori], g_seq, g_n_prj, g_n_lines)
+				tmp_agls = []
+				for i in xrange(len(cml) // 2):
+					ind = i * 2
+					tmp_agls.append([cml[ind], cml[ind+1], 1])
+				im = plot_angles(tmp_agls)
+				im.write_image(out_dir + '/cml_pop_%03i.hdf' % igen, iori)
 
+			# degree of collinearity
+			colli = []
+			for i in xrange(ncpu): colli.append(cml2_ori_collinearity(POP[i]))
+			colli = tuple(colli)
+			txt = '%5.3f ' * ncpu
+			logging.info(txt % colli)
+
+			meandisc = sum(all_disc) / float(ncpu)
 			minerr = 1e6
 			mem    = [-1, -1]
 			serr   = 0
 			for i in xrange(ncpu):
 				for j in xrange(i+1, ncpu):
 					err   = cml2_error_ori(POP[i], POP[j])
+					err  /= (colli[i] * colli[j]) 
 					serr += err
 					if err < minerr:
 						minerr = err
@@ -9145,11 +9204,16 @@ def cml2_main_mpi(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit,
 			serr /= float((ncpu-1)*ncpu/2.0)
 			logging.info('>>> END DISC:   min %7.2f max %7.2f mean %7.2f' % (min(all_disc), max(all_disc), meandisc))
 			all_disc = tuple(all_disc)
-			txt = '%6.1f ' * len(all_disc)
+			txt = '%6.1f ' * ncpu
 			logging.info(txt % all_disc)
-			logging.info('>>> best pair is %s with err = %f   err mean: %f' % (mem, minerr, serr))
-			cml2_export_struc_GA(stack, out_dir, POP[mem[0]], igen)
-			logging.info('>>> export best structure given by node %i' % mem[0])
+			
+			logging.info('>>> best pair is %s (disc %6.1f %6.1f) with err = %f   err mean: %f' % (mem, all_disc[mem[0]], all_disc[mem[1]], minerr, serr))
+			if all_disc[mem[0]] < all_disc[mem[1]]:
+				best_mem = mem[0]
+			else:
+				best_mem = mem[1]
+			cml2_export_struc_GA(stack, out_dir, POP[best_mem], igen)
+			logging.info('>>> export best structure given by node %i (disc %6.1f)' % (best_mem, all_disc[best_mem]))
 
 			cml2_plot_POP(POP, out_dir, igen)
 
