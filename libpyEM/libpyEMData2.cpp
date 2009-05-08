@@ -310,6 +310,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("do_ift", &EMAN::EMData::do_ift, return_value_policy< manage_new_object >())
 	.def("do_ift_inplace", &EMAN::EMData::do_ift_inplace, return_value_policy< reference_existing_object >())
 	.def("bispecRotTransInvN", &EMAN::EMData::bispecRotTransInvN, return_value_policy< reference_existing_object >())
+	.def("bispecRotTransInvDirect", &EMAN::EMData::bispecRotTransInvDirect, return_value_policy< reference_existing_object >())
 #ifdef EMAN2_USING_CUDA
 	.def("do_fft_cuda", &EMAN::EMData::do_fft_cuda, return_value_policy< manage_new_object >())
 	.def("do_ift_cuda", &EMAN::EMData::do_ift_cuda, EMAN_EMData_do_ift_cuda_overloads_0_1()[ return_value_policy< manage_new_object >() ])

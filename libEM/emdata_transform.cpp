@@ -1562,6 +1562,360 @@ int main () {
 
   return 0;
 }*/
+EMData*   EMData::bispecRotTransInvDirect()
+{
+
+	int EndP = this -> get_xsize(); // length(fTrueVec);
+	int Mid  = (int) ((1+EndP)/2);
+	int End = 2*Mid-1;
+
+        int CountxyMax = End*End;
+	
+	int   *SortfkInds       = new    int[CountxyMax];
+	int   *kVecX            = new    int[CountxyMax];
+	int   *kVecY            = new    int[CountxyMax];
+	float *fkVecR           = new  float[CountxyMax];
+	float *fkVecI           = new  float[CountxyMax];
+	float *absD1fkVec       = new  float[CountxyMax];
+	float *absD1fkVecSorted = new  float[CountxyMax];
+
+
+	EMData * ThisCopy = new EMData(End,End);
+
+	for (int jx=0; jx <End ; jx++) {
+		for (int jy=0; jy <End ; jy++) {
+			float ValNow = this -> get_value_at(jx,jy);
+			ThisCopy -> set_value_at(jx,jy,ValNow);
+//		cout<< " jxM= " << jx+1<<" jyM= " << jy+1<< "ValNow" << ValNow << endl; //    Works
+	}}
+       
+	
+	EMData* fk = ThisCopy -> do_fft();
+	fk          ->process_inplace("xform.fourierorigin.tocenter");
+
+//	EMData* fk
+	EMData* fkRCopy = new EMData(End,End);
+	EMData* fkICopy = new EMData(End,End);
+	EMData* fkCopy  = new EMData(End,End);
+		
+
+	for (int kEx= 0; kEx<2*Mid; kEx=kEx+2) { // kEx twice the value of the Fourier 
+						// x variable: EMAN index for real, imag 
+		int kx    = kEx/2;		// kx  is  the value of the Fourier variable
+	        int kIx   = kx+Mid-1; // This is the value of the index for a matlab image (-1)
+		int kCx   = -kx ; 
+		int kCIx  = kCx+ Mid-1 ; 
+		for (int kEy= 0 ; kEy<End; kEy++) { // This is the value of the EMAN index
+    		 	int kIy              =  kEy       ; //  This is the value of the index for a matlab image (-1)
+			int ky               =  kEy+1-Mid; // (kEy+ Mid-1)%End - Mid+1 ;  // This is the actual value of the Fourier variable
+			float realVal        =  fk -> get_value_at(kEx  ,kEy) ;
+			float imagVal        =  fk -> get_value_at(kEx+1,kEy) ;
+			float absVal         =  ::sqrt(realVal*realVal+imagVal*imagVal);
+			float fkAng 	     =  atan2(imagVal,realVal);
+
+			float NewRealVal   ;
+			float NewImagVal   ;
+			float AngMatlab    ;
+
+			if (kIx==Mid-1) { 
+//				AngMatlab = -fkAng - 2.*M_PI*(kIy+ 1-Mid)*(Mid)/End;
+			}
+
+			if (kIx>Mid-1){ 
+//			cout<< "i= " << i << " kIx= " << kIx << " kIy=" << kIy << " fkVecR[i] =" << fkVecR[i]<< " fkVecI[i]="  << fkVecI[i] <<"  angle[i]= "  << AngMatlab << endl;
+			}
+
+			AngMatlab = fkAng - 2.*M_PI*(kx +ky)*(Mid)/End; 
+			NewRealVal  =   absVal*cos(AngMatlab);
+			NewImagVal  =   absVal*sin(AngMatlab);
+
+
+			fkVecR[ kIy +kIx *End] =  NewRealVal ;
+			fkVecR[(End-1-kIy)+kCIx*End] =  NewRealVal ;
+			fkVecI[ kIy +kIx *End] =  NewImagVal ;
+			fkVecI[(End-1-kIy)+kCIx*End] = -NewImagVal ;
+        		absD1fkVec[(End-1-kIy) + kIx  *End] = absVal;
+        		absD1fkVec[(End-1-kIy) + kCIx *End] = absVal;
+			kVecX[kIy+kIx  *End] =  kx      ;
+        		kVecX[kIy+kCIx *End] =  kCx    ;
+			kVecY[kIy+kIx  *End] =  ky     ;
+			kVecY[kIy+kCIx *End] =  ky     ;
+
+ //			cout << " kIxM= " << kIx+1 << " kIy=" << kIy+1 << " fkVecR[i] =" << NewRealVal << " fkVecI[i]="  << NewImagVal <<"  angle[i]= "  << AngMatlab << " Total Index" << kIy+kIx *End << endl;
+
+//			printf("kx=%d,ky=%d,tempVal =%f+ i %4.2f \n",kx,ky,realVal,imagVal );
+//			cout << "kx = " << kx << "; ky = "<< ky << "; val is" << realVal<<"+ i "<<imagVal<< endl;
+
+//			cout << "kIMx = "<< kIx+1 << "; kIMy = "<< kIy+1 <<"; fkAng*9/ 2pi is " << fkAng*9/2/M_PI<<  endl;
+//			cout << "kIMx = "<< kIx+1 << "; kIMy = "<< kIy+1 <<"; absval is " << absVal<<  "; realval is " << NewRealVal<< "; imagval is " << NewImagVal<< endl;
+			fkCopy  -> set_value_at(kIx ,kIy, absVal);
+			fkCopy  -> set_value_at(kCIx,kIy, absVal);
+			fkRCopy -> set_value_at(kIx, kIy, NewRealVal);
+			fkRCopy -> set_value_at(kCIx,kIy, NewRealVal);
+			fkICopy -> set_value_at(kIx, kIy, NewImagVal);
+			fkICopy -> set_value_at(kCIx,kIy,-NewImagVal);
+
+		}
+	}
+	system("rm -f fkCopy.???");
+	system("rm -f fk?Copy.???");
+	fkCopy  -> write_image("fkCopy.img");
+	fkRCopy -> write_image("fkRCopy.img");
+	fkICopy -> write_image("fkICopy.img");
+
+
+
+	for (int TotalInd = 0 ;  TotalInd < CountxyMax ; TotalInd++){
+	        int kx     = kVecX[TotalInd]; // This is the value of the index for a matlab image (-1)
+	        int kIx    = kx+Mid-1; // This is the value of the index for a matlab image (-1)
+	        int ky     = kVecY[TotalInd]; 
+	        int kIy    = ky+Mid-1; // This is the value of the index for a matlab image (-1)
+		float fkR  = fkVecR[kIy+kIx *End]  ;
+		float fkI  = fkVecI[kIy+kIx *End]  ;
+//		cout << " kIx= " << kIx << " kIy=" << kIy << " fkR =" << fkR<< " fkI="  << fkI << endl;
+	}
+
+	float frR= 3.0/4.0;
+	frR= 1;
+	int LradRange= (int) (1+floor(Mid/frR -.1)) ;
+
+        float *radRange = new float[LradRange]; //= 0:.75:(Mid-1);
+	for (int irad=0; irad < LradRange; irad++){
+			radRange[irad] =  frR*irad; 
+//			cout << " irad = " << irad << " radRange[irad]= " <<  radRange[irad] <<  " LradRange= " << LradRange << endl;
+			}
+
+
+	int LthetaRange  = 59;
+	float ftR        = (2.0*M_PI/LthetaRange );
+        float *thetaRange = new float[LthetaRange]; //= 0:.75:(Mid-1);
+
+	for (int ith=0; ith < LthetaRange; ith++){
+			thetaRange[ith] =  ftR*ith; }
+
+
+        // should equal to (2*Mid-1)
+
+	cout << "Starting the calculation of invariants" << endl;
+
+/*	int NMax=5;            */
+	
+	int TotalVol = LradRange*LradRange*LthetaRange;
+
+	float *RotTransInv   = new  float[TotalVol];
+	float *WeightInv     = new  float[TotalVol];
+
+	for (int jW=0; jW<TotalVol; jW++) {
+		RotTransInv[jW] = 0;
+		WeightInv[jW]   = 0;
+	}
+
+//	float  *RotTransInv       = new float[LradRange*LradRange ] ;
+//	float  *RotTransInvN      = new float[LradRange*LradRange*(NMax+1) ] ;
+
+	for (int Countkxy =0; Countkxy<CountxyMax; Countkxy++){
+		int kx = kVecX[Countkxy] ;
+		int ky = kVecY[Countkxy] ;  
+		float k2 = ::sqrt(kx*kx+ky*ky);
+		float phiK =0; 	if (k2>0) { phiK=atan2(ky,kx);}
+		float fkR     = fkVecR[(ky+Mid-1) + (kx+Mid-1) *End] ; 
+		float fkI     = fkVecI[(ky+Mid-1) + (kx+Mid-1) *End]  ;
+//		printf("Countkxy=%d,\t kx=%d, ky=%d, fkR=%3.2f,fkI=%3.2f \n", Countkxy, kx, ky, fkR, fkI);
+	
+		if ((k2==0)|| (k2>Mid) ) { continue;}
+
+		for (int Countqxy =0; Countqxy<CountxyMax; Countqxy++){
+			int qx   = kVecX[Countqxy] ; 
+			int qy   = kVecY[Countqxy] ; 
+			float q2   = ::sqrt(qx*qx+qy*qy);
+			if ((q2==0)|| (q2>Mid) ) {continue;} 
+			float phiQ =0; 	if (q2>0) { phiQ=atan2(qy,qx);}
+			float fqR     = fkVecR[(qy+Mid-1) + (qx+Mid-1) *End] ; 
+			float fqI     = fkVecI[(qy+Mid-1) + (qx+Mid-1) *End]  ;
+			int kCx  = (-kx-qx);  
+			int kCy  = (-ky-qy);
+			int kCIx = ((kCx+Mid+2*End)%End);// labels of the image in C
+			int kCIy = ((kCy+Mid+2*End)%End);
+			kCx  = ((kCIx+End-1)%End)+1-Mid; // correct
+			kCy  = ((kCIy+End-1)%End)+1-Mid ; // correct
+
+			float C2   = ::sqrt(kCx*kCx+ kCy*kCy);
+			int CountCxy  = (kCx+Mid-1)*End+(kCy+Mid-1);
+			float fCR     = fkVecR[CountCxy];
+			float fCI     = fkVecI[CountCxy];
+/*			if (Countkxy==1) {	
+				printf(" Countqxy=%d, absD1fkVec(Countqxy)=%f,qx=%d, qy=%d \n", Countqxy, absD1fkVec[Countqxy],qx, qy);
+				printf(" CountCxy=%d, absD1fkVec[CountCxy]=%f,kCx=%d,kCy=%d \n",CountCxy, absD1fkVec[CountCxy], kCx, kCy );
+			}*/
+			float   phiC = atan2(kCy,kCx);
+			float   phiQK = (4*M_PI+phiQ-phiK);
+			while (phiQK> (2*M_PI)) phiQK -= (2*M_PI);
+
+
+
+			float bispectemp  = (fkR*(fqR*fCR -fqI*fCI) -fkI*(fqI*fCR  +fqR*fCI));
+
+			if  ((q2<k2) || (C2<k2) || (C2<q2))  continue;
+
+			if ((ky==-2)&&(ky==1)) {	
+			printf("  CountkxyM=%d, CountqxyM=%d,  CountCxyM=%d, kx=%d, ky=%d, qx=%d, qy=%d, kCx=%d, kCy=%d \n",Countkxy+1, Countqxy+1, CountCxy+1, kx,ky, qx, qy, kCx,kCy);
+			printf("  fkR=%3.2f, fqR=%3.2f,  fCR=%3.2f, bispectemp=%3.2f, k2=%2.2f, q2=%2.2f, C2=%2.2f \n",fkR, fqR, fCR, bispectemp,k2,q2,C2);
+}
+
+//				printf(" CountCxy=%d, absD1fkVec[CountCxy]=%f,kCx=%d,kCy=%d \n",CountCxy, absD1fkVec[CountCxy], kCx, kCy );
+
+//                      up to here, matched perfectly with Matlab			
+
+        		int k2IndLo  = 0; while ((k2>=radRange[k2IndLo+1]) && (k2IndLo+1 < LradRange ) ) k2IndLo +=1;
+			int k2IndHi = k2IndLo;
+			float k2Lo= radRange[k2IndLo];
+        		if (k2IndLo+1< LradRange) {
+				k2IndHi   = k2IndLo+1;
+			}
+			float k2Hi= radRange[k2IndHi]; 
+
+			float kCof =k2-k2Lo;
+			if ((kCof<0) || (kCof >1) ) {
+				printf("  CountkxyM=%d, CountqxyM=%d, kx=%d, ky=%d, qx=%d, qy=%d, kCx=%d, kCy=%d \n",Countkxy+1, Countqxy+1,kx,ky, qx, qy, kCx,kCy);
+
+				printf("rfkVec= %4.4e, rfqVec= %4.4e, rfCVec= %4.4e, , bispectemp= %4.4e \n", fkR, fqR, fCR, bispectemp);
+
+				cout<< "Weird! kCof="<< kCof <<  " k2="<< k2 << " k2IndLo="<< k2IndLo <<endl ;
+				int x   ;
+				cin >>x ;
+			}
+
+			int q2IndLo  = 0; while ((q2>=radRange[q2IndLo+1]) && (q2IndLo+1 < LradRange ) ) q2IndLo +=1;
+			int q2IndHi=q2IndLo;
+			float q2Lo= radRange[q2IndLo];
+        		if (q2IndLo+1 < LradRange)  { 
+				q2IndHi   = q2IndLo+1 ;
+			}
+		        float qCof = q2-q2Lo;
+
+			if ((qCof<0) || (qCof >1) ) {
+				cout<< "Weird! qCof="<< qCof <<  " q2="<< q2 << " q2IndLo="<< q2IndLo << endl ;
+				int x    ;
+				cin >> x ;
+			}
+
+			int thetaIndLo = 0; while ((phiQK>=thetaRange[thetaIndLo+1])&& (thetaIndLo+1<LthetaRange)) thetaIndLo +=1; 
+			int thetaIndHi = thetaIndLo;
+			
+			float thetaLo  = thetaRange[thetaIndLo];
+			float thetaHi = thetaLo;
+			float thetaCof = 0;
+
+			if (thetaIndLo+1< LthetaRange) { 
+				thetaIndHi = thetaIndLo +1; 
+			}else{
+				thetaIndHi=0;
+			}
+
+			thetaHi    = thetaRange[thetaIndHi];
+
+			if (thetaHi==thetaLo) {
+				thetaCof =0 ;
+			} else {
+            			thetaCof   = (phiQK-thetaLo)/(thetaHi-thetaLo);
+			}
+
+			if ((thetaCof>2*M_PI)  ) {
+				cout<< "Weird! thetaCof="<< thetaCof <<endl ;
+				thetaCof=0;
+			}
+
+			
+// 			if ((thetaIndLo>=58) || (k2IndLo >= LradRange-1) || (q2IndLo >= LradRange-1) ) { 
+ 			if ((Countkxy +Countqxy>-3) && (abs(bispectemp) < -1.0) ) {  //CHANGE ME
+ 				printf("  CountkxyM=%d, CountqxyM=%d,  CountCxyM=%d, kx=%d, ky=%d, qx=%d, qy=%d, kCx=%d, kCy=%d \n",Countkxy+1, Countqxy+1, CountCxy+1, kx,ky, qx, qy, kCx,kCy);
+
+				printf("rfkVec= %4.4e, rfqVec= %4.4e, rfCVec= %4.4e, , bispectemp= %4.4e \n", fkR, fqR, fCR, bispectemp);
+
+				cout << " tILo= " << thetaIndLo  << " tIHi="<< thetaIndHi   << " kILo= "     << k2IndLo      << " kIHi="    << k2IndHi   << " qILo= "     << q2IndLo      << " qIHi="    << q2IndHi    << " kCof= " <<  round(kCof*1000)/1000.0 << " qCof="<< round(qCof*1000)/1000.0   << " tCof= "     <<  round(thetaCof*1000)/1000.0     << endl;
+ 			}
+
+
+			for (int jk =1; jk<=2; jk++){
+			for (int jq =1; jq<=2; jq++){
+			for (int jtheta =1; jtheta<=2; jtheta++){
+
+				float Weight = (kCof+(1-2*kCof)*(jk==1))*(qCof+(1-2*qCof)*(jq==1))
+                        			* (thetaCof+(1-2*thetaCof)*(jtheta==1));
+
+				
+				int k2Ind      =  k2IndLo*(jk==1)      +   k2IndHi*(jk==2);
+				int q2Ind      =  q2IndLo*(jq==1)      +   q2IndHi*(jq==2);
+				int thetaInd   =  thetaIndLo*(jtheta==1)  + thetaIndHi*(jtheta ==2);
+				int TotalInd   = thetaInd*LradRange*LradRange+q2Ind*LradRange+k2Ind;
+/*				if (TotalInd+1 >=  LthetaRange*LradRange*LradRange) {
+					cout << "Weird!!! TotalInd="<< TotalInd << " IndMax" << LthetaRange*LradRange*LradRange << " LradRange=" << LradRange << endl;
+					cout << "k2Ind= "<< k2Ind  << " q2Ind="<< q2Ind  << " thetaInd="<< thetaInd  << " q2IndLo="<< q2IndLo  << " q2IndHi="<< q2IndHi  <<  endl;
+					cout << "k2=" << k2 << "q2=" << q2 << " phiQK=" << phiQK*180.0/M_PI<< endl;
+				}*/
+				if ((WeightInv[TotalInd])  <-0.2) { //    CHANGE ME
+
+					cout << " Weight=" << Weight  << "  jtheta=" << jtheta << " jq=" << jq << " jk=" << jk << " RotTransInv[TotalInd]=" << RotTransInv[TotalInd] << " bispectemp=" << bispectemp << endl;
+					printf("  CountkxyM=%d, CountqxyM=%d,  CountCxyM=%d, kx=%d, ky=%d, qx=%d, qy=%d, kCx=%d, kCy=%d \n",Countkxy+1, Countqxy+1, CountCxy+1, kx,ky, qx, qy, kCx,kCy);	
+					printf("rfkVec= %4.4e, rfqVec= %4.4e, rfCVec= %4.4e, , bispectemp= %4.4e \n", fkR, fqR, fCR,bispectemp);
+					char text[5];
+					printf("Press Enter to Continue ... ");
+					fgets(text, 5, stdin);
+				}
+
+				RotTransInv[TotalInd] += Weight*bispectemp;
+				WeightInv[TotalInd]   +=  Weight;
+//				cout << "k2Ind= "<< k2Ind  << " q2Ind="<< q2Ind  << "Weight=" << Weight << endl;
+			}}}
+		} // Countqxy
+	} // Countkxy
+
+	cout << "Finished Main Section " << endl;
+
+/*		RotTransInvN[jr1 + LradRange*jr2+LradRange*LradRange*N] = RotTransInvTemp  ;*/
+
+	cout << " LradRange " <<LradRange <<" LthetaRange " << LthetaRange << endl;
+	EMData *RotTransInvF  = new  EMData(LradRange,LradRange,LthetaRange);
+	EMData *WeightImage   = new  EMData(LradRange,LradRange,LthetaRange);
+
+// 	cout << "FFFFFFF" << endl;
+// 
+// 	RotTransInvF -> set_size(LradRange,LradRange,LthetaRange);
+// 
+// 	cout << "GGGG" << endl;
+
+	for (int jtheta =0; jtheta < LthetaRange; jtheta++){
+	for (int jq =0; jq<LradRange; jq++){ // LradRange
+	for (int jk =0; jk<LradRange ; jk++){// LradRange
+//		cout << "Hi There" << endl;
+		int TotalInd   = jtheta*LradRange*LradRange+jq*LradRange+jk;
+		float Weight = WeightInv[TotalInd];
+		WeightImage    -> set_value_at(jk,jq,jtheta,Weight);
+		RotTransInvF -> set_value_at(jk,jq,jtheta,0);
+		if ((Weight)<0) {
+			cout << " RotTransInv[TotalInd]=" << RotTransInv[TotalInd] << endl;
+			cout << " Weight=" << Weight  << "  jtheta=" << jtheta << " jq=" << jq << " jk=" << jk << endl;
+		}
+
+
+		if (  (isnan(Weight)) || (Weight <0)   ) {
+			cout << "TotalInd=" << TotalInd << " Weight=" << Weight << " bispec=" << RotTransInv[TotalInd]/Weight << endl;
+			cout << "jtheta=" << jtheta << " jq=" << jq << " jk=" << jk << endl;
+			Weight=0;
+		}
+		if (Weight <= 0) continue;
+		RotTransInvF -> set_value_at(jk,jq,jtheta,RotTransInv[TotalInd] );//  include /Weight
+	}}}
+
+	cout << " Almost Done " << endl;
+	system("rm -f WeightImage.???");
+	WeightImage  -> write_image("WeightImage.img");
+
+	return  RotTransInvF ;
+ 
+
+}
+
 
 void EMData::ap2ri()
 {

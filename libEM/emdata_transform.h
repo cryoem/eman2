@@ -177,6 +177,12 @@ EMData*   bispecRotTransInvN(int N, int NK);
 
 
 
+/**   This computes the rotational and translational bispectral
+        invariants of an image. 
+   the output is a single 3d Volume whose x,y labels are lengths, corresponding to the two lengths of sides of
+         a triangle 
+         the z label is for the angle  */
+EMData*  bispecRotTransInvDirect();
 
 
 /** Insert a clip into this image.
