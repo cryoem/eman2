@@ -108,12 +108,7 @@ def main():
 			remove_file(options.outfile)
 	
 	(num_classes, num_part ) = gimme_image_dimensions2D(args[1]);
-#	
-#	if ( not options.lowmem ) :
-#		images = EMData.read_images(args[0])
-#		if options.usefilt: 
-#			filt_images = EMData.read_images(options.usefilt) # check should already have determined that this is safe
-	
+
 	
 	if (options.verbose):
 		print "Classifications per particle %d, particles %d" %(num_classes, num_part)
@@ -194,145 +189,30 @@ def main():
 	# do one class at a time
 	for cl in range(class_min,class_max+1):
 		E2progress(logger,float(cl-class_min)/(class_max+1-class_min))
-		if (options.verbose):
-			ndata = []
+		class_cache = ClassCache(args,options,num_part,num_classes,classes)
+		class_cache.update_cache(cl)
+		
+		if (options.verbose): ndata = []
 			
 		if options.idxcache:
-			class_indices = []
-		
-		if (options.iter > 0 or options.verbose): ccache = [] # class cache
+			class_indices = class_cache.class_indices
+
+		if (options.iter > 0 or options.verbose):
+			ccache = class_cache.ccache
 		
 		# this should work, if it doesn't it should have been caught by check function
 		averager_parms=parsemodopt(options.averager)
 		average = None
+		image_cache = class_cache.image_cache
+		filtered_image_cache = class_cache.filtered_image_cache
 		if ( not options.bootstrap ):
 			if options.verbose: print "generating the original class average using alignment parameters in the classification matrix"
-			# generate the first class average by applying the transformations, adding and finally normalizing...
-			averager=Averagers.get(averager_parms[0], averager_parms[1])
-			# do the initial average, based on the program inputs
-			weightsum = 0 # used to normalize the average
-			np = 0 # number of particles in the average
-			for p in xrange(0,num_part):
-				if options.odd and p % 2 == 0: continue # enforce even/odd constraints
-				if options.even and p % 2 == 1: continue # enforce even/odd constraints
-				for c in range(0,num_classes):
-					if classes.get(c,p) == cl:
-						if options.idxcache: class_indices.append(p)
-						# cache the hit if necessary - this is if there is more than one iteration, and/or the user has specifed verbose. In the
-						# latter case the class cache is used to print information
-						if (options.iter > 0 or options.verbose): ccache.append((p,c))
-						
-						# Position the image correctly
-#						print da.get(c,p)
-						#t3d = Transform3D(EULER_EMAN,da.get(c,p),0,0)
-						#t3d.set_posttrans(dx.get(c,p),dy.get(c,p))
-						t3d = Transform({"type":"2d","alpha":da.get(c,p),"mirror":int(dflip(c,p))})
-						t3d.set_trans(dx.get(c,p),dy.get(c,p))
-#						if (options.lowmem):
-						image = EMData()
-						image.read_image(args[0],p)
-#						else:
-#							image = images[p].copy()
-						image.process_inplace("math.transform",{"transform":t3d})
-						
-						np += 1
-						weight = weights(c,p)
-						weightsum += weight
-						image.mult(weight)
-						
-						# Add the image to the averager
-						averager.add_image(image)
-			
-			if np == 0 or weightsum == 0:
-				if options.verbose:
-					print "Class",cl,"...no particles"
-				# FIXME
-				
-				# write blank image? Write meta data?
-				continue
-				
-			average = averager.finish()
-			average.mult(float(np)) # Undo the division of np by the averager - this was incorrect because the particles were weighted.
-			average.mult(1.0/weightsum) # Do the correct division
-			average.process_inplace("xform.centeracf")
+			# generate the first class average by applying the transformations, adding and finally normalizing...		
+			average,np = get_basic_average(averager_parms,class_cache,da,dflip,dx,dy,weights,options)
 		else:
 			# generate a bootstrapped initial average. Do this 'inductively' by aligning the 2nd image to the first, then adding. Continue until done...
 			if options.verbose: print "bootstrapping the original class average"
-			average = None
-			np = 0
-			for p in xrange(0,num_part):
-				if options.odd and p % 2 == 0: continue # enforce even/odd constraints
-				if options.even and p % 2 == 1: continue # enforce even/odd constraints
-				for c in range(0,num_classes):
-					if classes.get(c,p) == cl:
-						if options.idxcache: class_indices.append(p)
-						# cache the hit if necessary - this is if there is more than one iteration, and/or the user has specifed verbose. In the
-						# latter case the class cache is used to print information
-						if (options.iter > 0 or options.verbose): ccache.append((p,c))
-						
-						if (average == None):
-#							if (options.lowmem):
-							average = EMData()
-							average.read_image(args[0],p)
-#							else:
-#								average = images[p].copy()
-								#average.process_inplace("xform.centerofmass")
-								#average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
-							if str(options.normproc) != "None": average.process_inplace(options.norm[0],options.norm[1])
-							average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
-							#average.write_image("ave_.hdf",-1)
-							np = 1
-						else:
-							# there are a lot of ways to do and there is probably
-							# an improvement on what happens here, but it suffices
-							if not options.usefilt:
-								
-#								if (options.lowmem): 
-								image = EMData()
-								image.read_image(args[0],p)
-#								else: image = images[p].copy()
-								if str(options.normproc) != "None": image.process_inplace(options.norm[0],options.norm[1])
-								ta = align(average,image,options)
-								t = ta.get_attr("xform.align2d")
-								t.invert()
-								ta = image.copy()
-								ta.process_inplace("math.transform",{"transform":(t)})
-								# FIXME this doesn'twork
-#								ta = image.process("math.transform",{"transform":(t)})
-							else:
-#								if (options.lowmem): 
-								filt_image = EMData()
-								filt_image.read_image(usefilt,p)
-								image = EMData()
-								image.read_image(args[0],p)
-#								else:
-#									image = images[p].copy()
-#									filt_image = filt_images[p].copy()
-									
-								if str(options.normproc) != "None":
-									image.process_inplace(options.norm[0],options.norm[1])
-									filt_image.process_inplace(options.norm[0],options.norm[1])
-								
-								ta = align(average,filt_image,options)
-								t = ta.get_attr("xform.align2d")
-								t.invert()
-								ta = image.copy()
-								ta.process_inplace("math.transform",{"transform":(t)})
-								# FIXME this doesn'twork
-								#ta = image.process("math.transform",{"transform":(t)})
-								
-							ta.process_inplace("mask.sharp",{"outer_radius":ta.get_xsize()/2})				
-							np += 1
-							average.add(ta) # now add the image
-			
-			#average/=np
-			if np != 0:
-				if str(options.normproc) != "None": average.process_inplace(options.norm[0],options.norm[1])
-				average.process_inplace("xform.centeracf")
-				#average.write_image("avg.hdf",-1)
-				average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
-			#average.process_inplace("normalize.edgemean")
-			#average.write_image("e2_bootstrapped.img",-1)
+			average,np = get_boot_strapped_average(class_cache,options,args)
 		
 		if options.idxcache:
 			class_db[str(cl)] = class_indices
@@ -343,6 +223,7 @@ def main():
 			# FIXME
 			continue
 		
+		if options.verbose: print "done original average"
 	
 		if (options.iter > 0):
 			options.cull = True
@@ -351,39 +232,8 @@ def main():
 		for it in range(0,options.iter):
 			itfrac=it/float(options.iter)
 			# do alignment
-			for d in ccache:
-				p = d[0]
-				c = d[1]
-				
-				if not options.usefilt:
-					
-#					if (options.lowmem): 
-					image = EMData()
-					image.read_image(args[0],p)
-#					else: image = images[p].copy()
-				else:
-#					if (options.lowmem): 
-					image = EMData()
-					image.read_image(usefilt,p)
-#					else:
-#					image = filt_images[p].copy()
-						
-				if str(options.normproc) != "None": image.process_inplace(options.norm[0],options.norm[1])
-				ta = align(average,image,options)
-				t = ta.get_attr("xform.align2d")
-				t.invert() # because we aligned the average to the image, and not the other way around
-				params = t.get_params("2d")
-				
-				# store the refined translational and rotational values
-				dx.set(c,p, params["tx"])
-				dy.set(c,p, params["ty"])
-				da.set(c,p, params["alpha"])
-				dflip.set(c,p, params["mirror"])
-				
-				# store the quality score on top of the weights, seeing as the starting weights are no longer required
-				if (options.cull): # but only if we need to
-					weights.set(c,p, ta.cmp(options.cmp[0],image,options.cmp[1]))
-			
+			align_to_average_and_store_metadata(class_cache,options,average,dx,dy,da,dflip,weights)
+#			
 			# get the culling threshold
 			if options.cull:
 				qual_scores = []
@@ -407,62 +257,10 @@ def main():
 					idx = int(math.ceil(((1.0-itfrac)+itfrac*options.keep)*len(b))-1)
 					cullthresh = b[idx]
 			
-			#finally average
-			averager=Averagers.get(averager_parms[0], averager_parms[1]) # need an empty averager
-			#avg = None
-			np = 0 # number of particles in the average
-			for d in ccache:
-				p = d[0]
-				c = d[1]
-				if (options.cull ):
-					# if we're culling then find the bad particles here...
-					# Also store whether or not culling occured by placing 1s and 0s in the weights object
-					# This is in case users ever want to know which particles were excluded. This information
-					# is written to disk if the resultmx option is specfied
-					# FIXME setting the weights matrix to 1 and 0 should probably only occur if we're at the
-					# last iteration
-					if ( weights.get(c,p) >= cullthresh ) :
-						weights.set(c,p,0)
-						continue
-					else: weights.set(c,p,1)
-				else: weights.set(c,p,1)
-				
-#				if (options.lowmem):
-				image = EMData(args[0],p)
-					#image.read_image(args[0],p)
-#				else:
-#					image = images[p].copy()
-				
-				if str(options.normproc) != "None": image.process_inplace(options.norm[0],options.norm[1])
+			#finally average with culling
+			average,np = get_basic_average_with_cull(averager_parms,class_cache,options,weights,da,dx,dy,dflip,ndata,cullthresh)			
+			if options.verbose: print "done iteration",it
 
-				t = Transform({"type":"2d","alpha":da.get(c,p)})
-				t.set_trans(dx.get(c,p),dy.get(c,p))
-				if dflip.get(c,p) != 0: t.set_mirror(True)
-		
-				image.transform(t)
-			
-				np += 1
-				averager.add_image(image)
-				
-			if options.verbose:
-				ndata.append(np)
-		
-			if np == 0:
-				if (options.verbose):
-					print "Class",cl,"...no particles on iteration",it
-				# FIXME
-				average = None
-				break
-		
-			average = averager.finish()
-			#should this be centeracf?
-			if str(options.normproc) != "None": average.process_inplace(options.norm[0],options.norm[1])
-			average.process_inplace("xform.centerofmass")
-			average.process_inplace("mask.sharp",{"outer_radius":ta.get_xsize()/2})
-			
-			#avg.process_inplace("normalize.edgemean")
-			#avg.process_inplace("xform.centerofmass")
-			#avg.process_inplace("mask.sharp",{"outer_radius":ta.get_xsize()/2})
 		if average == None: continue
 		# Align to the reference and extract euler data if it was specified
 		if ( options.ref):
@@ -474,6 +272,8 @@ def main():
 				averager=Averagers.get(averager_parms[0], averager_parms[1]) # need an empty averager
 				fine_transform = average_to_ref.get_attr("xform.align2d")
 				fine_transform.invert()
+				
+				#average,np = get_basic_average_with_tweak(averager_parms,class_cache,options,weights,da,dx,dy,dflip,fine_transform)
 				#avg = None
 				np = 0 # number of particles in the average
 				for d in ccache:
@@ -483,11 +283,12 @@ def main():
 						if ( weights.get(c,p) == 0 ) : continue
 					
 #					if (options.lowmem):
-					image = EMData(args[0],p)
+	   	   	   	   	image = image_cache[p]
+					#image = EMData(args[0],p)
 #					else:
 #						image = images[p].copy()
 					
-					if str(options.normproc) != "None": image.process_inplace(options.norm[0],options.norm[1])
+	#				if str(options.normproc) != "None": image.process_inplace(options.norm[0],options.norm[1])
 	
 					t = Transform({"type":"2d","alpha":da.get(c,p)})
 					t.set_trans(dx.get(c,p),dy.get(c,p))
@@ -496,10 +297,10 @@ def main():
 					#print "final transform is"
 					#ct.printme()
 					#fine_transform.printme()
-					image.transform(ct)
+					rslt = image.process("math.transform",{"transform":ct})
 					
 					np += 1
-					averager.add_image(image)
+					averager.add_image(rslt)
 					
 					# Don't forget to store the alignment parameters
 					params = ct.get_params("2d")
@@ -575,6 +376,239 @@ def main():
 		
 	
 	E2end(logger)
+	
+	
+def align_to_average_and_store_metadata(class_cache,options,average,dx,dy,da,dflip,weights):
+	if options.usefilt: image_cache = class_cache.filtered_image_cache
+	else: image_cache = class_cache.image_cache
+	for p,image in image_cache.items():
+		
+		c = class_cache.idx_cache[p]
+		ta = align(average,image,options)
+		t = ta.get_attr("xform.align2d")
+		t.invert() # because we aligned the average to the image, and not the other way around
+		params = t.get_params("2d")
+		
+		# store the refined translational and rotational values
+		dx.set(c,p, params["tx"])
+		dy.set(c,p, params["ty"])
+		da.set(c,p, params["alpha"])
+		dflip.set(c,p, params["mirror"])
+		
+		# store the quality score on top of the weights, seeing as the starting weights are no longer required
+		if (options.cull): # but only if we need to
+			weights.set(c,p, ta.cmp(options.cmp[0],image,options.cmp[1]))
+
+def get_basic_average_with_tweak(averager_parms,class_cache,options,weights,da,dx,dy,dflip,fine_transform):
+	averager=Averagers.get(averager_parms[0], averager_parms[1]) # need an empty averager
+	np = 0 # number of particles in the average
+	for p,image in class_cache.image_cache.items():
+		c = class_cache.idx_cache[p]
+		if (options.cull ):
+			if ( weights.get(c,p) == 0 ) : continue
+		
+		t = Transform({"type":"2d","alpha":da.get(c,p)})
+		t.set_trans(dx.get(c,p),dy.get(c,p))
+		if dflip.get(c,p) != 0: t.set_mirror(True)
+		ct = fine_transform*t
+
+		rslt = image.process("math.transform",{"transform":ct})
+		
+		np += 1
+		averager.add_image(rslt)
+		
+		# Don't forget to store the alignment parameters
+		params = ct.get_params("2d")
+		dx.set(c,p, params["tx"])
+		dy.set(c,p, params["ty"])
+		da.set(c,p, params["alpha"])
+		dflip.set(c,p, params["mirror"])
+	
+	if np == 0:
+		if (options.verbose):
+			print "Class",cl,"...no particles on iteration",it
+		average = None
+	else:	
+		average = averager.finish()
+		#				average.transform(fine_transform)
+		
+		if str(options.normproc) != "None": average.process_inplace(options.norm[0],options.norm[1])
+		#average.process_inplace("xform.centerofmass") this shouldn't be necessary if we aligned to the projection
+		average.process_inplace("mask.sharp",{"outer_radius":ta.get_xsize()/2})
+		
+	return average,np
+
+def get_basic_average_with_cull(averager_parms,class_cache,options,weights,da,dx,dy,dflip,ndata,cullthresh):
+	averager=Averagers.get(averager_parms[0], averager_parms[1]) # need an empty averager
+	#avg = None
+	np = 0 # number of particles in the average
+	for p,image in class_cache.image_cache.items():
+		c = class_cache.idx_cache[p]
+		if (options.cull ):
+			# if we're culling then find the bad particles here...
+			# Also store whether or not culling occured by placing 1s and 0s in the weights object
+			# This is in case users ever want to know which particles were excluded. This information
+			# is written to disk if the resultmx option is specfied
+			# FIXME setting the weights matrix to 1 and 0 should probably only occur if we're at the
+			# last iteration
+			if ( weights.get(c,p) >= cullthresh ) :
+				weights.set(c,p,0)
+				continue
+			else: weights.set(c,p,1)
+		else: weights.set(c,p,1)
+
+		t = Transform({"type":"2d","alpha":da.get(c,p)})
+		t.set_trans(dx.get(c,p),dy.get(c,p))
+		if dflip.get(c,p) != 0: t.set_mirror(True)
+
+		rslt = image.process("math.transform",{"transform":t})
+	
+		np += 1
+		averager.add_image(rslt)
+		
+	if options.verbose:
+		ndata.append(np)
+
+	if np == 0:
+		if (options.verbose):
+			print "Class",cl,"...no particles on iteration",it
+		# FIXME
+		average = None
+	else:
+
+		average = averager.finish()
+		#should this be centeracf?
+		if str(options.normproc) != "None": average.process_inplace(options.norm[0],options.norm[1])
+		average.process_inplace("xform.centerofmass")
+		average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
+	
+	return average,np
+			
+
+def get_boot_strapped_average(class_cache,options,args):
+	average = None
+	np = 0
+	
+	for p,image in class_cache.image_cache.items():
+		c = class_cache.idx_cache[p]
+
+				
+		if (average == None):
+			average = EMData()
+			average.read_image(args[0],p)
+
+			if str(options.normproc) != "None": average.process_inplace(options.norm[0],options.norm[1])
+			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
+			#average.write_image("ave_.hdf",-1)
+			np = 1
+		else:
+			# there are a lot of ways to do and there is probably
+			# an improvement on what happens here, but it suffices
+			if not options.usefilt:
+				ta = align(average,image,options)
+				t = ta.get_attr("xform.align2d")
+				t.invert()
+				ta = image.copy()
+				ta.process_inplace("math.transform",{"transform":(t)})
+			else:
+				filt_image = class_cache.filtered_image_cache[p]
+					
+				ta = align(average,filt_image,options)
+				t = ta.get_attr("xform.align2d")
+				t.invert()
+				ta = image.process("math.transform",{"transform":(t)})
+				ta.process_inplace("mask.sharp",{"outer_radius":ta.get_xsize()/2})				
+				np += 1
+				average.add(ta) # now add the image
+	
+	if np != 0:
+		if str(options.normproc) != "None": average.process_inplace(options.norm[0],options.norm[1])
+		average.process_inplace("xform.centeracf")
+		average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
+	
+	return average,np
+
+def get_basic_average(averager_parms,class_cache,da,dflip,dx,dy,weights,options):
+	averager=Averagers.get(averager_parms[0], averager_parms[1])
+	# do the initial average, based on the program inputs
+	weightsum = 0 # used to normalize the average
+	np = 0 # number of particles in the average
+	
+	for p,image in class_cache.image_cache.items():
+		c = class_cache.idx_cache[p]
+
+		t = Transform({"type":"2d","alpha":da.get(c,p),"mirror":int(dflip(c,p))})
+		t.set_trans(dx.get(c,p),dy.get(c,p))
+		
+		rslt = image.process("math.transform",{"transform":t})
+				
+		np += 1
+		weight = weights(c,p)
+		weightsum += weight
+		rslt.mult(weight)
+		
+		# Add the image to the averager
+		averager.add_image(rslt)
+	
+	if np == 0 or weightsum == 0:
+		if options.verbose:
+			print "Class",cl,"...no particles"
+		# FIXME
+		
+		# write blank image? Write meta data?
+		return None
+		
+	average = averager.finish()
+	average.mult(float(np)) # Undo the division of np by the averager - this was incorrect because the particles were weighted.
+	average.mult(1.0/weightsum) # Do the correct division
+	average.process_inplace("xform.centeracf")
+	
+	return average,np
+
+class ClassCache:
+	
+	'''
+	Stores useful information at each iteration
+	'''
+	def __init__(self,args,options,num_part,num_classes,class_data):
+		self.args = args
+		self.options = options
+		self.num_part = num_part
+		self.num_classes = num_classes
+		self.class_data = class_data
+		self.image_cache = {}
+		self.filtered_image_cache= {}
+		self.idx_cache = {}
+		self.class_indices = []
+		self.ccache = []
+		
+	def update_cache(self,class_number):
+		
+		for p in xrange(0,self.num_part):
+			if self.options.odd and p % 2 == 0: continue # enforce even/odd constraints
+			if self.options.even and p % 2 == 1: continue # enforce even/odd constraints
+			for c in xrange(0,self.num_classes):
+				if self.class_data.get(c,p) == class_number:
+					
+					if self.options.idxcache: self.class_indices.append(p)
+					# cache the hit if necessary - this is if there is more than one iteration, and/or the user has specifed verbose. In the
+					# latter case the class cache is used to print information
+					if (self.options.iter > 0 or self.options.verbose): self.ccache.append((p,c))
+					
+					self.idx_cache[p] = c
+					
+					image = EMData()
+					image.read_image(self.args[0],p)
+					if str(self.options.normproc) != "None": image.process_inplace(self.options.norm[0],self.options.norm[1])
+					self.image_cache[p] = image
+					
+					if self.options.usefilt:
+						filt_image = EMData()
+						filt_image.read_image(options.usefilt,p)
+						if str(self.options.normproc) != "None": filt_image.process_inplace(self.options.norm[0],self.options.norm[1])
+						self.filtered_image_cache[p] = filt_image
+
+						
 
 def set_aligner_params_in_options(options):
 	'''
