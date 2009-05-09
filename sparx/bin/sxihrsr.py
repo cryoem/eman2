@@ -1,4 +1,4 @@
-#!/usr/local/EMAN2/python/Python-2.4.4/bin/python
+#!/usr/bin/env python
 #
 # Author: Pawel A.Penczek and Edward H. Egelman 05/27/2008 (Pawel.A.Penczek@uth.tmc.edu)
 # Copyright (c) 2000-2006 The University of Texas - Houston Medical School
@@ -38,9 +38,6 @@ from global_def import *
 from optparse import OptionParser
 import sys
 def main():
-	if(MPI):
-		from mpi import mpi_init
-   		sys.argv = mpi_init( len(sys.argv), sys.argv )
         arglist = []
         for arg in sys.argv:
         	arglist.append( arg )
@@ -56,12 +53,14 @@ def main():
 	parser.add_option("--yr",       type="string", default= "-1",               help="  range for translation search in y direction, search is +/yr (if = -1 then same as xr)")
 	parser.add_option("--max_y_shift", type="float", default= 6.0,              help="  threshold for translation in y direction")
 	parser.add_option("--max_tilt", type="float",  default= 10.0,               help="  threshold for in-plane rotation angle")
-	parser.add_option("--ts", 	type="string", default= 6.0,                help="  step size of the translation search in both directions, search is -xr, -xr+ts, 0, xr-ts, xr ")
+	parser.add_option("--ts", 	type="string", default= "1 1 1 0.5 0.25",                help="  step size of the translation search in both directions, search is -xr, -xr+ts, 0, xr-ts, xr ")
 	parser.add_option("--delta",    type="string", default= " 10 6 4  3   2",   help="  angular step of reference projections")
 	parser.add_option("--an",       type="string", default= "-1",               help="  angular neighborhood for local searches")
 	parser.add_option("--maxit",    type="float",  default= 30,                 help="  maximum number of iterations performed for each angular step (set to 5) ")
 	parser.add_option("--CTF",      action="store_true", default=False,         help="  Consider CTF correction during the alignment ")
 	parser.add_option("--snr",      type="float",  default= 1.0,                help="  Signal-to-Noise Ratio of the data")   
+	parser.add_option("--MPI",      action="store_true", default=False,         help="whether to use MPI version")
+	parser.add_option("--Fourvar",  action="store_true", default=False,         help="compute Fourier variance")
 	parser.add_option("--dp",       type="float",  default= 1.0,                help="  delta z - translation in Angstroms")   
 	parser.add_option("--dphi",     type="float",  default= 1.0,                help="  delta phi - rotation in degrees")   
 	parser.add_option("--pixel",    type="float",  default= 2.39,               help="  Pixel size in Angstroms")   
@@ -83,9 +82,20 @@ def main():
 			mask = None
 		else:
 			mask = args[3]
+		if options.MPI:
+			from mpi import mpi_init
+			sys.argv = mpi_init(len(sys.argv), sys.argv)
+
+			from utilities import init_mpi_bdb
+			init_mpi_bdb()
+
 		from applications import ihrsr
 		global_def.BATCH = True
-		ihrsr(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.min_cc_peak, options.xr, options.max_x_shift, options.yr, options.max_y_shift, options.max_tilt, options.ts, options.delta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.dphi, options.pixel, options.rmin, options.rmax, options.fract, options.pol_ang_step, options.step_a, options.step_r, options.sym, options.function, options.datasym) 
+		ihrsr(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.min_cc_peak, options.xr, 
+			options.max_x_shift, options.yr, options.max_y_shift, options.max_tilt, options.ts, options.delta, 
+			options.an, options.maxit, options.CTF, options.snr, options.dp, options.dphi, options.pixel, 
+			options.rmin, options.rmax, options.fract, options.pol_ang_step, options.step_a, options.step_r, 
+			options.sym, options.function, options.datasym, options.Fourvar, options.MPI) 
 		global_def.BATCH = False
 
 if __name__ == "__main__":

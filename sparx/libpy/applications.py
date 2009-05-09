@@ -4219,8 +4219,8 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	print_begin_msg("ali3d_d")
 
 	# DEBUG
-	from alignment import Numrinit, prepare_refrings
-	from projection import prep_vol
+	from alignment      import Numrinit, prepare_refrings
+	from projection     import prep_vol
 
 	import user_functions
 	user_func = user_functions.factory[user_func_name]
@@ -4308,7 +4308,7 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 				volft,kb = prep_vol( vol )
 				refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, sym, numr, MPI=False)
 
-			for im in xrange( len(data) ):
+			for im in xrange( nima ):
 				if CTF:
 					ctf = data[im].get_attr( "ctf" )
 					if ctf.defocus != previous_defocus:
@@ -4350,12 +4350,8 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 
 			drop_image(vol, os.path.join(outdir, "volf%04d.hdf"%(N_step*max_iter+Iter+1)))
 			#  here we write header info
-			if CTF and data_had_ctf == 0:
-				for im in xrange(nima): data[im].set_attr('ctf_applied', 0)
 			from utilities import write_headers
 			write_headers(stack, data, list_of_particles)
-			if CTF and data_had_ctf == 0:
-				for im in xrange(nima): data[im].set_attr('ctf_applied', 1)
 	print_end_msg("ali3d_d")
 
 def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, 
@@ -7464,8 +7460,6 @@ def ali3d_eB_MPI_(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, C
 	# write out headers  and STOP, under MPI writing has to be done sequentially
 	mpi_barrier(MPI_COMM_WORLD)
      
-	#if(CTF and data_had_ctf == 0):
-	#	for im in xrange(image_start, image_end): data[im-image_start].set_attr('ctf_applied', 0)
 	#if(myid == main_node): recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 	#else: send_attr_dict(main_node, data, par_str, image_start, image_end)
 
@@ -8072,8 +8066,6 @@ def ali3d_f_MPI(stack, ref_vol, outdir, maskfile, ali_maskfile, radius=-1, snr=1
 		#  here we should write header info, just in case the program crashes...
 	# write out headers  and STOP, under MPI writing has to be done sequentially
 	mpi_barrier(MPI_COMM_WORLD)
-	if(CTF and data_had_ctf == 0):
-		for im in xrange(image_start, image_end): data[im-image_start].set_attr('ctf_applied', 0)
 	#  ID should be added
 	if myid == main_node:
 		from utilities import file_type
@@ -8342,17 +8334,20 @@ def autowin_MPI(indir,outdir, noisedoc, noisemic, templatefile, deci, CC_method,
 			outlist[2].write_image(file_particle, k)
 		out.close()
 
-
 def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_shift, yr, 
           max_y_shift, max_tilt, ts, delta, an, maxit, CTF, snr, dp, dphi, pixel_size, 
-	  rmin, rmax, fract, pol_ang_step, step_a, step_r, sym, user_func_name, datasym):
+	  rmin, rmax, fract, pol_ang_step, step_a, step_r, sym, user_func_name, datasym,
+	  fourvar, MPI):
 	if MPI:
-		#ihrsr_MPI
+		ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_shift, yr, 
+			max_y_shift, max_tilt, ts, delta, an, maxit, CTF, snr, dp, dphi, pixel_size, 
+			rmin, rmax, fract, pol_ang_step, step_a, step_r, sym, user_func_name, datasym,
+			fourvar)
 		return
 
 	from utilities      import model_circle, drop_image, read_spider_doc
 	from utilities      import get_image, get_input_from_string
-	from utilities      import get_arb_params, set_arb_params
+	from utilities      import get_params2D, set_params2D
 	#from filter	    import filt_params, filt_btwl, filt_from_fsc, filt_table, fit_tanh, filt_tanl
 	from alignment	    import proj_ali_incore, proj_ali_incore_local, helios
 	from statistics     import ccc
@@ -8366,12 +8361,6 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 	import user_functions
 	user_func = user_functions.factory[user_func_name]
 
-	if CTF :
-		from reconstruction import recons3d_4nn_ctf
-		ctf_dicts = ["defocus", "Cs", "voltage", "Pixel_size", "amp_contrast", "B_factor", "ctf_applied" ]
-		#                     0          1         2             3                 4                   5               6
-	else   : from reconstruction import recons3d_4nn
-
 	if os.path.exists(outdir):  os.system('rm -rf '+outdir)
 	os.mkdir(outdir)
 
@@ -8382,8 +8371,7 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 	delta       = get_input_from_string(delta)
 	lstp = min( len(xrng), len(yrng), len(step), len(delta) )
 	if (an == "-1"):
-		an = []
-		for i in xrange(lstp):   an.append(-1)
+		an = [-1] * lstp
 	else:
 		an = get_input_from_string(an)
 	first_ring  = int(ir)
@@ -8429,41 +8417,54 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 		if (type(maskfile) is types.StringType): mask3D = get_image(maskfile)
 		else                                  : mask3D = maskfile
 	else          :   mask3D = model_circle(last_ring, nx, nx, nx)
-	mask = model_circle(last_ring, nx, nx)
+	mask2D = model_circle(last_ring, nx, nx) - model_circle(first_ring, nx, nx)
+	numr   = Numrinit(first_ring, last_ring, rstep, "F")
+
+	if CTF:	from reconstruction import recons3d_4nn_ctf
+	else: from reconstruction import recons3d_4nn
+
+
 	#drop_image(vol, os.path.join(outdir,"ref_vol00.hdf"))
 	ref_a = "s"
-	names_params = ["psi", "s2x", "s2y", "peak"]
-	data = EMData.read_images(stack)
-	for im in xrange(nima):
-		data[im].set_attr('ID', im)
-		if(CTF):
-			ctf_params = data[im].get_attr( "ctf" )
-			if(im == 0): data_had_ctf = data[im].get_attr( "ctf_applied" )
-			if( data[im].get_attr("ctf_applied") == 0):
-				st = Util.infomask(data[im], mask, False)
-				data[im] -= st[0]
-				from filter import filt_ctf
-				data[im] = filt_ctf(data[im], ctf_params)
-				data[im].set_attr('ctf_applied', 1)
+
+
+	active = EMUtil.get_all_attributes(stack, 'active')
+	list_of_particles = []
+	for im in xrange(len(active)):
+		if(active[im]):  list_of_particles.append(im)
+	del active
+	data = EMData.read_images(stack, list_of_particles)
+	nima = len(data)
 
 	finfo = None#open("desperado", 'w')
 	# do the projection matching
-	drop_image(vol, os.path.join(outdir, "aligned0000.spi"), "s")
+	drop_image(vol, os.path.join(outdir, "aligned0000.hdf"))
 	for N_step in xrange(lstp):
- 		# max_iter=30
 		for Iter in xrange(max_iter):
 			print_msg("ITERATION #%3d\n"%(N_step*max_iter + Iter+1))
-			#from filter import filt_gaussinv
-			#vol = filt_gaussinv(vol, 0.175, True)
-			#drop_image(vol, os.path.join(outdir, replace("vhl%4d.spi"%(N_step*max_iter+Iter+1),' ','0')), "s")
 
-			if(an[N_step] == -1):  proj_ali_incore(vol, mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], ref_a, sym, finfo = finfo)
-			else:	               proj_ali_incore_local(vol, mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], an[N_step], ref_a, sym)
-			
-			# exclusion code
-			# psi, s2x s2y, peak
-			for i in xrange(nima):
-				paramali = get_arb_params(data[i], names_params)
+			if CTF:
+				previous_defocus = -1.0
+			else:
+				volft,kb = prep_vol( vol )
+				refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, sym, numr, MPI=False)
+
+			for im in xrange( nima ):
+				if CTF:
+					ctf = data[im].get_attr( "ctf" )
+					if ctf.defocus != previous_defocus:
+						previous_defocus = ctf.defocus
+						ctfvol = filt_ctf(vol, ctf)
+						volft,kb = prep_vol( ctfvol )
+						refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, sym, numr, MPI=False)
+
+				if an[N_step] == -1:	
+					proj_ali_incore(data[im],refrings,first_ring,last_ring,rstep,xrng[N_step],yrng[N_step],step[N_step])
+				else:
+					proj_ali_incore_local(data[im],refrings,first_ring,last_ring,rstep,xrng[N_step],yrng[N_step],step[N_step],an[N_step])
+
+				paramali = get_params2D(data[im])
+				#  conflict with meaning of active  PAP 05/09
 				active = 1
 				# peak
 				if(paramali[3] < min_cc_peak): active = 0
@@ -8474,18 +8475,19 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 				# psi correct value should be 90 +/- max_tilt, or 270 +/- max_tilt!
 				elif(abs(paramali[0]-270.0) >max_tilt and paramali[0] >180.0): active = 0
 				elif(abs(paramali[0]-90.0) >max_tilt and paramali[0] <180.0): active = 0
-				data[i].set_attr_dict({'active':active})
+				data[im].set_attr_dict({'active':active})
 				#print the alignment parameters into the LOG file!
 				print_msg("image status                : %i\n"%(active))
 				print_msg("image psi                   : %i\n"%(paramali[0]))
 				print_msg("image s2x                   : %i\n"%(paramali[1]))
 				print_msg("image s2y                   : %i\n"%(paramali[2]))
 				print_msg("image peak                  : %i\n"%(paramali[3]))
+
 			#  3D stuff
 			#  I removed symmetry, by default the volume is not symmetrized
 			#  calculate new and improved 3D
-			if(CTF): vol = recons3d_4nn_ctf(data, range(nima), snr, npad = 2)
-			else:	 vol = recons3d_4nn(data, range(nima), npad = 2)
+			if(CTF): vol = recons3d_4nn_ctf(data, range(nima), snr, npad = 4)
+			else:	 vol = recons3d_4nn(data, range(nima), npad = 4)
 			# store the reference volume
 			vof  = os.path.join(outdir, "unsymmetrized%04d.spi"%(N_step*max_iter+Iter+1))
 			drop_image(vol, vof, "s")
@@ -8534,12 +8536,66 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 					if(peaks>peakmax[0]):  peakmax=[peaks, i, zs]
 			vol = cyclic_shift(rot_shift3D(vol, peakmax[1]),  0, 0, peakmax[2])
 			drop_image(vol, os.path.join(outdir, "aligned%04d.spi"%(N_step*max_iter+Iter+1)), "s")
-	#  here we  write header info
-	if(CTF and data_had_ctf == 0):
-		for im in xrange(nima): data[im].set_attr('ctf_applied', 0)
-	from utilities import write_headers
-	write_headers( stack, data, range(nima))
+			#  here we  write header info
+			from utilities import write_headers
+			write_headers( stack, data, list_of_particles)
 	print_end_msg("ihrsr")
+
+def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_shift, yr, 
+	max_y_shift, max_tilt, ts, delta, an, maxit, CTF, snr, dp, dphi, pixel_size, 
+	rmin, rmax, fract, pol_ang_step, step_a, step_r, sym, user_func_name, datasym,
+	Fourvar):
+	from utilities      import model_circle, drop_image, read_spider_doc
+	from utilities      import get_image, get_input_from_string
+	from utilities      import get_params2D, set_params2D
+	#from filter	    import filt_params, filt_btwl, filt_from_fsc, filt_table, fit_tanh, filt_tanl
+	from alignment	    import proj_ali_incore, proj_ali_incore_local, helios
+	from statistics     import ccc
+	from fundamentals   import cyclic_shift, rot_shift3D
+	#from statistics    import fsc_mask
+	import os
+	import types
+	from utilities      import print_begin_msg, print_end_msg, print_msg
+	from mpi 	    import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
+	from mpi 	    import mpi_barrier, mpi_bcast, MPI_FLOAT
+	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
+	myid           = mpi_comm_rank(MPI_COMM_WORLD)
+	main_node = 0
+	if myid == main_node:
+		if os.path.exists(outdir):  os.system('rm -rf '+outdir)
+		os.mkdir(outdir)
+	mpi_barrier(MPI_COMM_WORLD)
+
+	
+	debug = False
+	if debug:
+		from time import sleep
+		while not os.path.exists(outdir):
+			print  "Node ",myid,"  waiting..."
+			sleep(5)
+
+
+		info_file = outdir+("/progress%04d"%myid)
+		finfo = open(info_file, 'w')
+	else:
+		finfo = None
+
+	xrng        = get_input_from_string(xr)
+	if  yr == "-1":  yrng = xrng
+	else          :  yrng = get_input_from_string(yr)
+	step        = get_input_from_string(ts)
+	delta       = get_input_from_string(delta)
+	lstp = min( len(xrng), len(yrng), len(step), len(delta) )
+	if (an == "-1"):
+		an = [-1] * lstp
+	else:
+		an = get_input_from_string(an)
+	first_ring  = int(ir)
+	rstep       = int(rs)
+	last_ring   = int(ou)
+	max_iter    = int(maxit)
+	return
+
 
 def copyfromtif(indir, outdir=None, input_extension="tif", film_or_CCD="f", output_extension="hdf", contrast_invert=1, Pixel_size=1, scanner_param_a=1,scanner_param_b=1, scan_step=63.5, magnification=40, MPI=False):
 	"""
