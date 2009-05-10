@@ -78,12 +78,12 @@ void EMData::read_image(const string & filename, int img_index, bool nodata,
 			ny = attr_dict["ny"];
 			nz = attr_dict["nz"];
 
-			if(attr_dict.has_key("ctf")) {
-				flags |= EMDATA_HASCTFF;
-			}
-			else {
-				flags &= ~EMDATA_HASCTFF;
-			}
+//			if(attr_dict.has_key("ctf")) {
+//				flags |= EMDATA_HASCTFF;
+//			}
+//			else {
+//				flags &= ~EMDATA_HASCTFF;
+//			}
 
 			if (!nodata) {
 				set_size(nx, ny, nz);

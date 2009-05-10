@@ -5,32 +5,32 @@
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
 
 #include "emdata.h"
@@ -85,7 +85,7 @@ EMData::EMData() :
 	attr_dict["is_complex"] = int(0);
 	attr_dict["is_complex_x"] = int(0);
 	attr_dict["is_complex_ri"] = int(1);
-	
+
 	attr_dict["datatype"] = (int)EMUtil::EM_FLOAT;
 
 	EMData::totalalloc++;
@@ -113,10 +113,10 @@ EMData::EMData(const string& filename, int image_index) :
 	attr_dict["is_complex_ri"] = int(1);
 
 	this->read_image(filename, image_index);
-	
+
 	update();
 	EMData::totalalloc++;
-	
+
 	EXITFUNC;
 }
 
@@ -124,7 +124,7 @@ EMData::EMData(const EMData& that) :
 #ifdef EMAN2_USING_CUDA
 		cuda_cache_handle(-1),
 #endif //EMAN2_USING_CUDA
-		attr_dict(that.attr_dict), rdata(0), supp(0), flags(that.flags), changecount(0), nx(that.nx), ny(that.ny), nz(that.nz), 
+		attr_dict(that.attr_dict), rdata(0), supp(0), flags(that.flags), changecount(0), nx(that.nx), ny(that.ny), nz(that.nz),
 		nxy(that.nx*that.ny), xoff(that.xoff), yoff(that.yoff), zoff(that.zoff),all_translation(that.all_translation),	path(that.path),
 		pathnum(that.pathnum), rot_fp(0)
 {
@@ -153,18 +153,18 @@ EMData::EMData(const EMData& that) :
 	if (that.rot_fp != 0) rot_fp = new EMData(*(that.rot_fp));
 
 	EMData::totalalloc++;
-	
-	ENTERFUNC;	
+
+	ENTERFUNC;
 }
 
 EMData& EMData::operator=(const EMData& that)
 {
 	ENTERFUNC;
-	
+
 	if ( this != &that )
 	{
 		free_memory(); // Free memory sets nx,ny and nz to 0
-		
+
 		// Only copy the rdata if it exists, we could be in a scenario where only the header has been read
 		float* data = that.rdata;
 		size_t num_bytes = that.nx*that.ny*that.nz*sizeof(float);
@@ -176,17 +176,17 @@ EMData& EMData::operator=(const EMData& that)
 		}
 
 		flags = that.flags;
-	
+
 		all_translation = that.all_translation;
-	
+
 		path = that.path;
 		pathnum = that.pathnum;
 		attr_dict = that.attr_dict;
 
 		xoff = that.xoff;
 		yoff = that.yoff;
-		zoff = that.zoff;	
-		
+		zoff = that.zoff;
+
 #ifdef EMAN2_USING_CUDA
 		free_cuda_memory();
 		// There should also be the case where we deal with ro data...
@@ -204,7 +204,7 @@ EMData& EMData::operator=(const EMData& that)
 #endif //EMAN2_USING_CUDA
 
 		changecount = that.changecount;
-		
+
 		if (that.rot_fp != 0) rot_fp = new EMData(*(that.rot_fp));
 		else rot_fp = 0;
 	}
@@ -226,7 +226,6 @@ EMData::EMData(int nx, int ny, int nz, bool is_real) :
 	attr_dict["apix_y"] = 1.0f;
 	attr_dict["apix_z"] = 1.0f;
 
-	
 	if(is_real) {	// create a real image [nx, ny, nz]
 		attr_dict["is_complex"] = int(0);
 		attr_dict["is_complex_x"] = int(0);
@@ -236,28 +235,28 @@ EMData::EMData(int nx, int ny, int nz, bool is_real) :
 	else {	//create a complex image which real dimension is [ny, ny, nz]
 		int new_nx = nx + 2 - nx%2;
 		set_size(new_nx, ny, nz);
-		
+
 		attr_dict["is_complex"] = int(1);
-		
+
 		if(ny==1 && nz ==1)	{
 			attr_dict["is_complex_x"] = int(1);
 		}
 		else {
-			attr_dict["is_complex_x"] = int(0);	
+			attr_dict["is_complex_x"] = int(0);
 		}
-		
+
 		attr_dict["is_complex_ri"] = int(1);
 		attr_dict["is_fftpad"] = int(1);
-		
+
 		if(nx%2 == 1) {
 			attr_dict["is_fftodd"] = 1;
 		}
 	}
-	
+
 	this->to_zero();
 	update();
 	EMData::totalalloc++;
-	
+
 	EXITFUNC;
 }
 
@@ -372,7 +371,7 @@ void EMData::clip_inplace(const Region & area,const float& fill_value)
 	int dst_it_begin = civ.new_z_bottom*new_sec_size + civ.new_y_front*new_nx + civ.new_x_left;
 
 	// This loop is in the forward direction (starting at points nearest to the beginning of the volume)
-	// it copies memory only when the destination pointer is less the source pointer - therefore 
+	// it copies memory only when the destination pointer is less the source pointer - therefore
 	// ensuring that no memory "copied to" is yet to be "copied from"
 	for (int i = 0; i < civ.z_iter; ++i) {
 		for (int j = 0; j < civ.y_iter; ++j) {
@@ -383,7 +382,7 @@ void EMData::clip_inplace(const Region & area,const float& fill_value)
 			int src_inc = src_it_begin + j*prev_nx + i*prev_sec_size;
 			float* local_dst = rdata + dst_inc;
 			float* local_src = rdata + src_inc;
-			
+
 			if ( dst_inc >= src_inc )
 			{
 				// this is fine, it will happen now and then and it will be necessary to continue.
@@ -407,7 +406,7 @@ void EMData::clip_inplace(const Region & area,const float& fill_value)
 	int dst_it_end = new_size - civ.new_z_top*new_sec_size - civ.new_y_back*new_nx - new_nx + civ.new_x_left;
 
 	// This loop is in the reverse direction (starting at points nearest to the end of the volume).
-	// It copies memory only when the destination pointer is greater than  the source pointer therefore 
+	// It copies memory only when the destination pointer is greater than  the source pointer therefore
 	// ensuring that no memory "copied to" is yet to be "copied from"
 	for (int i = 0; i < civ.z_iter; ++i) {
 		for (int j = 0; j < civ.y_iter; ++j) {
@@ -431,16 +430,16 @@ void EMData::clip_inplace(const Region & area,const float& fill_value)
 
 					// memmove handles overlapping cases.
 					// memmove could use a temporary buffer, or could go just go backwards
-					// the specification doesn't say how the function behaves... 
+					// the specification doesn't say how the function behaves...
 					// If memmove creates a temporary buffer is clip_inplace no longer inplace?
 					memmove(local_dst, local_src, clipped_row_size);
 				}
 				continue;
 			}
-			
+
 			// This situation not encountered in testing thus far
 			Assert( dst_inc < new_size && src_inc < prev_size && dst_inc >= 0 && src_inc >= 0 );
-			
+
 			// Perform the memory copy
 			EMUtil::em_memcpy(local_dst, local_src, clipped_row_size);
 		}
@@ -481,7 +480,7 @@ void EMData::clip_inplace(const Region & area,const float& fill_value)
 			float* end_pointer = begin_pointer+(-y0)*new_nx;
 			std::fill(begin_pointer,end_pointer,fill_value);
 		}
-	
+
 		// Set the extra back y components to the fill_value
 		if ( civ.new_y_back > 0 )
 		{
@@ -541,7 +540,7 @@ void EMData::clip_inplace(const Region & area,const float& fill_value)
 			yorigin + apix_y * area.origin[1],
 			zorigin + apix_z * area.origin[2]);
 	}
-	
+
 	// Set the update flag because the size of the image has changed and stats should probably be recalculated if requested.
 	update();
 
@@ -582,7 +581,7 @@ EMData *EMData::get_clip(const Region & area, const float fill) const
 		//CudaDataLock lock(this); // Just so we never have to recopy this data to and from the GPU
 		result->get_cuda_data(); // Force the allocation - set_size_cuda is lazy
 		// Setting the value is necessary seeing as cuda data is not automatically zeroed
-		result->to_value(fill); // This will automatically use the GPU. 
+		result->to_value(fill); // This will automatically use the GPU.
 		use_gpu = true;
 	} else { // cpu == True
 		result->set_size((int)area.size[0], ysize, zsize);
@@ -613,7 +612,7 @@ EMData *EMData::get_clip(const Region & area, const float fill) const
 	if (z1 <= 0) {
 		z1 = 1;
 	}
-	
+
 	result->insert_clip(this,-((IntPoint)area.origin));
 
 	if( attr_dict.has_key("apix_x") && attr_dict.has_key("apix_y") &&
@@ -635,14 +634,14 @@ EMData *EMData::get_clip(const Region & area, const float fill) const
 							       zorigin + apix_z * area.origin[2]);
 		}
 	}
-	
+
 #ifdef EMAN2_USING_CUDA
 	if (use_gpu) result->gpu_update();
 	else result->update();
 #else
 	result->update();
 #endif // EMAN2_USING_CUDA
-	
+
 
 	result->set_path(path);
 	result->set_pathnum(pathnum);
@@ -855,10 +854,10 @@ void EMData::translate(const Vec3i &translation)
 		EXITFUNC;
 		return;
 	}
-	
+
 	Dict params("trans",static_cast< vector<int> >(translation));
 	process_inplace("math.translate.int",params);
-	
+
 	// update() - clip_inplace does the update
 	all_translation += translation;
 
@@ -999,7 +998,7 @@ void EMData::rotate(const Transform3D & t)
 
 void EMData::rotate_translate(float az, float alt, float phi, float dx, float dy, float dz)
 {
-	cout << "Deprecation warning in EMData::rotate_translate. Please consider using EMData::transform() instead " << endl; 
+	cout << "Deprecation warning in EMData::rotate_translate. Please consider using EMData::transform() instead " << endl;
 	Transform3D t( az, alt, phi,Vec3f(dx, dy, dz));
 	rotate_translate(t);
 }
@@ -1008,17 +1007,17 @@ void EMData::rotate_translate(float az, float alt, float phi, float dx, float dy
 void EMData::rotate_translate(float az, float alt, float phi, float dx, float dy,
 							  float dz, float pdx, float pdy, float pdz)
 {
-	cout << "Deprecation warning in EMData::rotate_translate. Please consider using EMData::transform() instead " << endl; 
+	cout << "Deprecation warning in EMData::rotate_translate. Please consider using EMData::transform() instead " << endl;
 	Transform3D t(Vec3f(dx, dy, dz), az, alt, phi, Vec3f(pdx,pdy,pdz));
 	rotate_translate(t);
 }
 
 void EMData::rotate_translate(const Transform3D & RA)
 {
-	cout << "Deprecation warning in EMData::rotate_translate. Please consider using EMData::transform() instead " << endl; 
+	cout << "Deprecation warning in EMData::rotate_translate. Please consider using EMData::transform() instead " << endl;
 	ENTERFUNC;
 
-#if EMDATA_EMAN2_DEBUG	
+#if EMDATA_EMAN2_DEBUG
 	std::cout << "start rotate_translate..." << std::endl;
 #endif
 
@@ -1035,7 +1034,7 @@ void EMData::rotate_translate(const Transform3D & RA)
 	for(it=keys.begin(); it!=keys.end(); ++it) {
 //		std::cout << *it << " : " << rotation[*it] << std::endl;
 		std::cout << *it << " : " << (float)rotation.get(*it) << std::endl;
-	} 
+	}
 #endif
 	float inv_scale = 1.0f;
 
@@ -1082,7 +1081,7 @@ void EMData::rotate_translate(const Transform3D & RA)
 
 					float t = x2 - ii;
 					float u = y2 - jj;
-					
+
 					des_data[i + j * nx] = Util::bilinear_interpolate(src_data[k0],src_data[k1], src_data[k2], src_data[k3],t,u); // This is essentially basic interpolation
 				}
 			}
@@ -1112,7 +1111,7 @@ void EMData::rotate_translate(const Transform3D & RA)
 
 
 		for (int k = 0; k < nz; k++, z += 1.0f) {
-			float y   = -ny / 2 + dcenter[1]; // 
+			float y   = -ny / 2 + dcenter[1]; //
 			for (int j = 0; j < ny; j++,   y += 1.0f) {
 				float x = -nx / 2 + dcenter[0];
 				for (int i = 0; i < nx; i++, l++ ,  x += 1.0f) {
@@ -1142,7 +1141,7 @@ void EMData::rotate_translate(const Transform3D & RA)
 						int k5 = k1 + nxy;
 						int k6 = k2 + nxy;
 						int k7 = k3 + nxy;
-						
+
 						if (ix == nx - 1) {
 							k1--;
 							k3--;
@@ -1161,7 +1160,7 @@ void EMData::rotate_translate(const Transform3D & RA)
 							k6 -= nxy;
 							k7 -= nxy;
 						}
-						
+
 						des_data[l] = Util::trilinear_interpolate(src_data[k0],
 							  src_data[k1],
 							  src_data[k2],
@@ -1251,7 +1250,7 @@ double EMData::dot_rotate_translate(EMData * with, float dx, float dy, float da,
 	this_data = get_data();
 
 	float da_rad = da*(float)M_PI/180.0f;
-	
+
 	float *with_data = with->get_data();
 	float mx0 = cos(da_rad);
 	float mx1 = sin(da_rad);
@@ -1309,7 +1308,7 @@ double EMData::dot_rotate_translate(EMData * with, float dx, float dy, float da,
 		}
 		y += 1.0f;
 	}
-	
+
 	EXITFUNC;
 	return result;
 }
@@ -1398,7 +1397,7 @@ EMData *EMData::little_big_dot(EMData * with, bool do_sigma)
 			}
 		}
 	}
-	
+
 	ret->update();
 
 	EXITFUNC;
@@ -1460,20 +1459,20 @@ void EMData::zero_corner_circulant(const int radius)
 	if ( nz > 1 && nz < (2*radius+1) ) throw ImageDimensionException("Error: cannot zero corner - nz is too small");
 	if ( ny > 1 && ny < (2*radius+1) ) throw ImageDimensionException("Error: cannot zero corner - ny is too small");
 	if ( nx > 1 && nx < (2*radius+1) ) throw ImageDimensionException("Error: cannot zero corner - nx is too small");
-	
+
 	int it_z = radius;
 	int it_y = radius;
 	int it_x = radius;
-	
+
 	if ( nz == 1 ) it_z = 0;
 	if ( ny == 1 ) it_y = 0;
 	if ( nx == 1 ) it_z = 0;
-	
+
 	if ( nz == 1 && ny == 1 )
 	{
 		for ( int x = -it_x; x <= it_x; ++x )
 			get_value_at_wrap(x) = 0;
-			
+
 	}
 	else if ( nz == 1 )
 	{
@@ -1489,12 +1488,12 @@ void EMData::zero_corner_circulant(const int radius)
 					get_value_at_wrap(x,y,z) = 0;
 
 	}
-	
+
 }
 
 EMData *EMData::calc_ccf(EMData * with, fp_flag fpflag,bool center)
 {
-	
+
 	if( with == 0 ) {
 		return convolution(this,this,fpflag, center);
 	}
@@ -1510,15 +1509,15 @@ EMData *EMData::calc_ccf(EMData * with, fp_flag fpflag,bool center)
 			with->clip_inplace(r);
 			undoresize = true;
 		}
-		
+
 		EMData* cor = correlation(this, with, fpflag, center);
-		
+
 		// If the argument EMData pointer was resized, it is returned to its original dimensions
 		if ( undoresize ) {
 			Region r((nx-wnx)/2, (ny-wny)/2,(nz-wnz)/2,wnx,wny,wnz);
 			with->clip_inplace(r);
 		}
-		
+
 		return cor;
 	}
 }
@@ -1526,7 +1525,7 @@ EMData *EMData::calc_ccf(EMData * with, fp_flag fpflag,bool center)
 EMData *EMData::calc_ccfx( EMData * const with, int y0, int y1, bool no_sum)
 {
 	ENTERFUNC;
-	
+
 #ifdef EMAN2_USING_CUDA
 	if (gpu_operation_preferred() ) {
 		EXITFUNC;
@@ -1564,7 +1563,7 @@ EMData *EMData::calc_ccfx( EMData * const with, int y0, int y1, bool no_sum)
 
 	if (y1 > ny) {
 		y1 = ny;
-	}	
+	}
 	if (is_complex_x() || with->is_complex_x() ) throw; // Woops don't support this anymore!
 
 	static int nx_fft = 0;
@@ -1572,7 +1571,7 @@ EMData *EMData::calc_ccfx( EMData * const with, int y0, int y1, bool no_sum)
 	static EMData f1;
 	static EMData f2;
 	static EMData rslt;
-	
+
 	int height = y1-y0;
 	int width = (nx+2-(nx%2));
 	if (width != nx_fft || height != ny_fft ) {
@@ -1582,7 +1581,7 @@ EMData *EMData::calc_ccfx( EMData * const with, int y0, int y1, bool no_sum)
 		nx_fft = width;
 		ny_fft = height;
 	}
-	
+
 	float *d1 = get_data();
 	float *d2 = with->get_data();
 	float *f1d = f1.get_data();
@@ -1591,12 +1590,12 @@ EMData *EMData::calc_ccfx( EMData * const with, int y0, int y1, bool no_sum)
 		EMfft::real_to_complex_1d(d1 + j * nx, f1d+j*width, nx);
 		EMfft::real_to_complex_1d(d2 + j * nx, f2d+j*width, nx);
 	}
-	
-	for (int j = 0; j < height; j++) {
-		float *f1a = f1d + j * width;  
-		float *f2a = f2d + j * width; 
 
-		for (int i = 0; i < width / 2; i++) { 
+	for (int j = 0; j < height; j++) {
+		float *f1a = f1d + j * width;
+		float *f2a = f2d + j * width;
+
+		for (int i = 0; i < width / 2; i++) {
 			float re1 = f1a[2*i];
 			float re2 = f2a[2*i];
 			float im1 = f1a[2*i+1];
@@ -1606,12 +1605,12 @@ EMData *EMData::calc_ccfx( EMData * const with, int y0, int y1, bool no_sum)
 			f1d[j*width+i*2+1] = im1 * re2 - re1 * im2;
 		}
 	}
-	
+
 	float* rd = rslt.get_data();
 	for (int j = y0; j < y1; j++) {
 		EMfft::complex_to_real_1d(f1d+j*width, rd+j*nx, nx);
 	}
-	
+
 	if (no_sum) {
 		rslt.update(); // This is important in terms of the copy - the returned object won't have the correct flags unless we do this
 		EXITFUNC;
@@ -1635,7 +1634,7 @@ EMData *EMData::make_rotational_footprint_cmc( bool unwrap) {
 	ENTERFUNC;
 	update_stat();
 	// Note that rotational_footprint caching saves a large amount of time
-	// but this is at the expense of memory. Note that a policy is hardcoded here, 
+	// but this is at the expense of memory. Note that a policy is hardcoded here,
 	// that is that caching is only employed when premasked is false and unwrap
 	// is true - this is probably going to be what is used in most scenarios
 	// as advised by Steve Ludtke - In terms of performance this caching doubles the metric
@@ -1643,24 +1642,24 @@ EMData *EMData::make_rotational_footprint_cmc( bool unwrap) {
 	if ( rot_fp != 0 && unwrap == true) {
 		return new EMData(*rot_fp);
 	}
-	
+
 	static EMData obj_filt;
 	EMData* filt = &obj_filt;
 	filt->set_complex(true);
-	
-	
+
+
 	// The filter object is nothing more than a cached high pass filter
-	// Ultimately it is used an argument to the EMData::mult(EMData,prevent_complex_multiplication (bool)) 
-	// function in calc_mutual_correlation. Note that in the function the prevent_complex_multiplication 
-	// set to true, which is used for speed reasons. 
+	// Ultimately it is used an argument to the EMData::mult(EMData,prevent_complex_multiplication (bool))
+	// function in calc_mutual_correlation. Note that in the function the prevent_complex_multiplication
+	// set to true, which is used for speed reasons.
 	if (filt->get_xsize() != nx+2-(nx%2) || filt->get_ysize() != ny ||
 		   filt->get_zsize() != nz ) {
 		filt->set_size(nx+2-(nx%2), ny, nz);
 		filt->to_one();
-	
+
 		filt->process_inplace("eman1.filter.highpass.gaussian", Dict("highpass", 1.5f/nx));
 	}
-	
+
 	EMData *ccf = this->calc_mutual_correlation(this, true,filt);
 	ccf->sub(ccf->get_edge_mean());
 	EMData *result = ccf->unwrap();
@@ -1687,7 +1686,7 @@ EMData *EMData::make_rotational_footprint( bool unwrap) {
 	ENTERFUNC;
 	update_stat();
 	// Note that rotational_footprint caching saves a large amount of time
-	// but this is at the expense of memory. Note that a policy is hardcoded here, 
+	// but this is at the expense of memory. Note that a policy is hardcoded here,
 	// that is that caching is only employed when premasked is false and unwrap
 	// is true - this is probably going to be what is used in most scenarios
 	// as advised by Steve Ludtke - In terms of performance this caching doubles the metric
@@ -1695,7 +1694,7 @@ EMData *EMData::make_rotational_footprint( bool unwrap) {
 	if ( rot_fp != 0 && unwrap == true) {
 		return new EMData(*rot_fp);
 	}
-	
+
 	EMData* ccf = this->calc_ccf(this,CIRCULANT,true);
 	ccf->sub(ccf->get_edge_mean());
 	//ccf->process_inplace("xform.phaseorigin.tocenter"); ccf did the centering
@@ -1725,12 +1724,12 @@ EMData *EMData::make_rotational_footprint_e1( bool unwrap)
 	if (gpu_operation_preferred()) {
 		EXITFUNC;
 		return make_rotational_footprint_cuda(unwrap);
-	} 
+	}
 #endif
-	
+
 	update_stat();
 	// Note that rotational_footprint caching saves a large amount of time
-	// but this is at the expense of memory. Note that a policy is hardcoded here, 
+	// but this is at the expense of memory. Note that a policy is hardcoded here,
 	// that is that caching is only employed when premasked is false and unwrap
 	// is true - this is probably going to be what is used in most scenarios
 	// as advised by Steve Ludtke - In terms of performance this caching doubles the metric
@@ -1738,7 +1737,7 @@ EMData *EMData::make_rotational_footprint_e1( bool unwrap)
 	if ( rot_fp != 0 && unwrap == true) {
 		return new EMData(*rot_fp);
 	}
-	
+
 	static EMData obj_filt;
 	EMData* filt = &obj_filt;
 	filt->set_complex(true);
@@ -1757,14 +1756,14 @@ EMData *EMData::make_rotational_footprint_e1( bool unwrap)
 	if ( nz != 1 ) {
 		big_z = nz+2*cs;
 	}
-	
-	
+
+
 	if ( big_clip.get_xsize() != big_x || big_clip.get_ysize() != big_y || big_clip.get_zsize() != big_z ) {
 		big_clip.set_size(big_x,big_y,big_z);
 	}
 	// It is important to set all newly established pixels around the boundaries to the mean
 	// If this is not done then the associated rotational alignment routine breaks, in fact
-	// everythin just goes foo. 
+	// everythin just goes foo.
 	big_clip.to_value(get_edge_mean());
 
 	if (nz != 1) {
@@ -1772,12 +1771,12 @@ EMData *EMData::make_rotational_footprint_e1( bool unwrap)
 	} else  {
 		big_clip.insert_clip(this,IntPoint(cs,cs,0));
 	}
-	
+
 
 	// The filter object is nothing more than a cached high pass filter
-	// Ultimately it is used an argument to the EMData::mult(EMData,prevent_complex_multiplication (bool)) 
-	// function in calc_mutual_correlation. Note that in the function the prevent_complex_multiplication 
-	// set to true, which is used for speed reasons. 
+	// Ultimately it is used an argument to the EMData::mult(EMData,prevent_complex_multiplication (bool))
+	// function in calc_mutual_correlation. Note that in the function the prevent_complex_multiplication
+	// set to true, which is used for speed reasons.
 	if (filt->get_xsize() != big_clip.get_xsize() +2-(big_clip.get_xsize()%2) || filt->get_ysize() != big_clip.get_ysize() ||
 		   filt->get_zsize() != big_clip.get_zsize()) {
 		filt->set_size(big_clip.get_xsize() + 2-(big_clip.get_xsize()%2), big_clip.get_ysize(), big_clip.get_zsize());
@@ -1786,7 +1785,7 @@ EMData *EMData::make_rotational_footprint_e1( bool unwrap)
 	}
 	EMData *mc = big_clip.calc_mutual_correlation(&big_clip, true,filt);
  	mc->sub(mc->get_edge_mean());
-	
+
 	static EMData sml_clip;
 	int sml_x = nx * 3 / 2;
 	int sml_y = ny * 3 / 2;
@@ -1794,7 +1793,7 @@ EMData *EMData::make_rotational_footprint_e1( bool unwrap)
 	if ( nz != 1 ) {
 		sml_z = nz * 3 / 2;
 	}
-	
+
 	if ( sml_clip.get_xsize() != sml_x || sml_clip.get_ysize() != sml_y || sml_clip.get_zsize() != sml_z ) {
 		sml_clip.set_size(sml_x,sml_y,sml_z);	}
 	if (nz != 1) {
@@ -1825,11 +1824,11 @@ EMData *EMData::make_rotational_footprint_e1( bool unwrap)
 	EXITFUNC;
 	if ( unwrap == true)
 	{ // this if statement reflects a strict policy of caching in only one scenario see comments at beginning of function block
-		
+
 		// Note that the if statement at the beginning of this function ensures that rot_fp is not zero, so there is no need
 		// to throw any exception
 		if ( rot_fp != 0 ) throw UnexpectedBehaviorException("The rotational foot print is only expected to be cached if it is not NULL");
-		
+
 		// Here is where the caching occurs - the rot_fp takes ownsherhip of the pointer, and a deep copied EMData object is returned.
 		// The deep copy invokes a cost in terms of CPU cycles and memory, but prevents the need for complicated memory management (reference counting)
 		rot_fp = result;
@@ -1839,7 +1838,7 @@ EMData *EMData::make_rotational_footprint_e1( bool unwrap)
 }
 
 
-EMData *EMData::make_footprint() 
+EMData *EMData::make_footprint()
 {
 	//EMData *ccf=calc_ccf(this);
 //	EMData *ccf=calc_mutual_correlation(this);
@@ -1873,16 +1872,16 @@ EMData *EMData::calc_mutual_correlation(EMData * with, bool tocenter, EMData * f
 
 	EMData *this_fft = 0;
 	this_fft = do_fft();
-	
+
 	if (!this_fft) {
-		
+
 		LOGERR("FFT returns NULL image");
 		throw NullPointerException("FFT returns NULL image");
 	}
 
 	this_fft->ap2ri();
 	EMData *cf = 0;
-	
+
 	if (with && with != this) {
 		cf = with->do_fft();
 		if (!cf) {
@@ -1942,7 +1941,7 @@ EMData *EMData::calc_mutual_correlation(EMData * with, bool tocenter, EMData * f
 	}
 
 	EMData *f2 = cf->do_ift();
-	
+
 	if (tocenter) {
 		f2->process_inplace("xform.phaseorigin.tocenter");
 	}
@@ -2034,9 +2033,9 @@ vector < float > EMData::calc_hist(int hist_size, float histmin, float histmax)
 			hist[i] = hist[i] / norm;
 		}
 	}
-*/	
+*/
 	return hist;
-	
+
 	EXITFUNC;
 }
 
@@ -2058,7 +2057,7 @@ vector<float> EMData::calc_az_dist(int n, float a0, float da, float rmin, float 
 	for (int i = 0; i < n; i++) {
 		yc[i] = 0.00001f;
 	}
-	
+
 	float * data = get_data();
 	if (is_complex()) {
 		int c = 0;
@@ -2097,7 +2096,7 @@ vector<float> EMData::calc_az_dist(int n, float a0, float da, float rmin, float 
 							h = (float)_hypot(data[c], data[c + 1]);
 #else
 							h = (float)hypot(data[c], data[c + 1]);
-#endif	//_WIN32			
+#endif	//_WIN32
 						}
 						else {
 							h = data[c];
@@ -2169,7 +2168,7 @@ vector<float> EMData::calc_az_dist(int n, float a0, float da, float rmin, float 
 		delete[]yc;
 		yc = 0;
 	}
-	
+
 	return vd;
 
 	EXITFUNC;
@@ -2203,14 +2202,14 @@ EMData *EMData::unwrap(int r1, int r2, int xs, int dx, int dy, bool do360, bool 
 	int rr = ny / 2 - 2 - (int) Util::fast_floor(static_cast<float>(_hypot(dx, dy)));
 #else
 	int rr = ny / 2 - 2 - (int) Util::fast_floor(static_cast<float>(hypot(dx, dy)));
-#endif	//_WIN32	
+#endif	//_WIN32
 	rr-=rr%2;
 	if (r2 <= r1 || r2 > rr) {
 		r2 = rr;
 	}
 
 	if ( (r2-r1) < 0 ) throw UnexpectedBehaviorException("The combination of function the arguments and the image dimensions causes unexpected behavior internally. Use a larger image, or a smaller value of r1, or a combination of both");
-	
+
 #ifdef EMAN2_USING_CUDA
 	if ( gpu_operation_preferred() ) {
 // 		cout << "Binding " << cuda_cache_handle << endl;
@@ -2227,7 +2226,7 @@ EMData *EMData::unwrap(int r1, int r2, int xs, int dx, int dy, bool do360, bool 
 		return  rslt;
 	}
 #endif
-	
+
 	EMData *ret = new EMData();
 	ret->set_size(xs, r2 - r1, 1);
 	const float *const d = get_const_data();
@@ -2255,7 +2254,7 @@ EMData *EMData::unwrap(int r1, int r2, int xs, int dx, int dy, bool do360, bool 
 			if (weight_radial) val *=  ypr1;
 			dd[x + y * xs] = val;
 		}
-				
+
 	}
 	ret->update();
 
@@ -2290,7 +2289,7 @@ void EMData::apply_radial_func(float x0, float step, vector < float >array, bool
 #else
 				if (j<ny/2) r = (float)hypot(i/(float)(nx*2), j/(float)ny);
 				else r = (float)hypot(i/(float)(nx*2), (ny-j)/(float)ny);
-#endif	//_WIN32			
+#endif	//_WIN32
 				r = (r - x0) / step;
 
 				int l = 0;
@@ -2382,7 +2381,7 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, bool inten)
 	int x,y,z,i;
 	int step=is_complex()?2:1;
 	int isinten=get_attr_default("is_intensity",0);
-	
+
 	if (isinten&&!inten) { throw InvalidParameterException("Must set inten for calc_radial_dist with intensity image"); }
 
 	for (i=0; i<n; i++) ret[i]=norm[i]=0.0;
@@ -2403,7 +2402,7 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, bool inten)
 					r=static_cast<float>(hypot(x/2.0,y<ny/2?y:ny-y));		// origin at 0,0; periodic
 					if (!inten) {
 						if (is_ri()) v=static_cast<float>(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
-#endif	//_WIN32	
+#endif	//_WIN32
 						else v=data[i];							// amp/phase, just get amp
 					} else {
 						if (isinten) v=data[i];
@@ -2416,7 +2415,7 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, bool inten)
 					r=static_cast<float>(_hypot(x-nx/2,y-ny/2));
 #else
 					r=static_cast<float>(hypot(x-nx/2,y-ny/2));
-#endif	//_WIN32			
+#endif	//_WIN32
 					if (inten) v=data[i]*data[i];
 					else v=data[i];
 				}
@@ -2448,7 +2447,7 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, bool inten)
 							if (is_ri()) v=static_cast<float>(_hypot(data[i],data[i+1]));	// real/imag, compute amplitude
 #else
 							if (is_ri()) v=static_cast<float>(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
-#endif	//_WIN32			
+#endif	//_WIN32
 							else v=data[i];							// amp/phase, just get amp
 						} else {
 							if (isinten) v=data[i];
@@ -2483,7 +2482,7 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, bool inten)
 
 	return ret;
 }
-	
+
 vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int nwedge, bool inten)
 {
 	ENTERFUNC;
@@ -2511,14 +2510,14 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int nwedge, bo
 				r=static_cast<float>(_hypot(x/2.0,y<ny/2?y:ny-y));		// origin at 0,0; periodic
 #else
 				r=static_cast<float>(hypot(x/2.0,y<ny/2?y:ny-y));		// origin at 0,0; periodic
-#endif			
+#endif
 				a=atan2(float(y<ny/2?y:ny-y),x/2.0f);
 				if (!inten) {
 #ifdef	_WIN32
 					if (is_ri()) v=static_cast<float>(_hypot(data[i],data[i+1]));	// real/imag, compute amplitude
 #else
 					if (is_ri()) v=static_cast<float>(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
-#endif	//_WIN32			
+#endif	//_WIN32
 					else v=data[i];							// amp/phase, just get amp
 				} else {
 					if (is_ri()) v=data[i]*data[i]+data[i+1]*data[i+1];
@@ -2530,7 +2529,7 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int nwedge, bo
 				r=static_cast<float>(_hypot(x-nx/2,y-ny/2));
 #else
 				r=static_cast<float>(hypot(x-nx/2,y-ny/2));
-#endif	//_WIN32			
+#endif	//_WIN32
 				a=atan2(float(y-ny/2),float(x-nx/2));
 				if (inten) v=data[i]*data[i];
 				else v=data[i];
@@ -2575,7 +2574,7 @@ void EMData::update_stat() const
 {
 	ENTERFUNC;
 	float* data = get_data();
-	if (!(flags & EMDATA_NEEDUPD)) 
+	if (!(flags & EMDATA_NEEDUPD))
 	{
 		EXITFUNC;
 		return;
@@ -2596,7 +2595,7 @@ void EMData::update_stat() const
 
 	//cout << "point 1" << endl;
 	//cout << "size is " << nx << " " << ny << " " << nz << endl;
-	
+
 	for (int i = 0; i < nx*ny*nz; i += step) {
 		float v = data[i];
 	#ifdef _WIN32
@@ -2624,7 +2623,7 @@ void EMData::update_stat() const
 	double sigma_nonzero = std::sqrt(std::max<double>(0,(square_sum  - sum*sum/n_nonzero)/(n_nonzero-1)));
 #endif	//_WIN32
 	double mean_nonzero = sum / n_nonzero; // previous version overcounted! G2
-	
+
 	attr_dict["minimum"] = min;
 	attr_dict["maximum"] = max;
 	attr_dict["mean"] = (float)(mean);
@@ -2636,26 +2635,26 @@ void EMData::update_stat() const
 	attr_dict["is_complex_ri"] = (int) is_ri();
 
 	flags &= ~EMDATA_NEEDUPD;
-	
+
 	if (rot_fp != 0)
 	{
 		delete rot_fp; rot_fp = 0;
 	}
-	
+
 	EXITFUNC;
 }
 
 bool EMData::operator==(const EMData& that) const {
 	if (that.get_xsize() != nx || that.get_ysize() != ny || that.get_zsize() != nz ) return false;
-	
+
 	const float*  d1 = that.get_const_data();
 	float* d2 = get_data();
-	
+
 	for(int i =0; i < get_size(); ++i,++d1,++d2) {
 		if ((*d1) != (*d2)) return false;
 	}
 	return true;
-	
+
 }
 
 EMData * EMAN::operator+(const EMData & em, float n)
@@ -2863,7 +2862,7 @@ void EMData::add_incoherent(EMData * obj)
 		dest[j] = (float) _hypot(src[j], dest[j]);
 #else
 		dest[j] = (float) hypot(src[j], dest[j]);
-#endif	//_WIN32	
+#endif	//_WIN32
 		dest[j + 1] = 0;
 	}
 
@@ -2904,21 +2903,21 @@ float EMData::calc_dist(EMData * second_img, int y_index) const
 EMData * EMData::calc_fast_sigma_image( EMData* mask)
 {
 	ENTERFUNC;
-	
+
 	bool maskflag = false;
 	if (mask == 0) {
 		mask = new EMData(nx,ny,nz);
 		mask->process_inplace("testimage.circlesphere");
 		maskflag = true;
 	}
-	
+
 	if (get_ndim() != mask->get_ndim() ) throw ImageDimensionException("The dimensions do not match");
-	
+
 	int mnx = mask->get_xsize(); int mny = mask->get_ysize(); int mnz = mask->get_zsize();
-	
+
 	if ( mnx > nx || mny > ny || mnz > nz)
 		throw ImageDimensionException("Can not calculate variance map using an image that is larger than this image");
-		
+
 	int P = 0;
 	for(int i = 0; i < mask->get_xsize()*mask->get_ysize()*mask->get_zsize(); ++i){
 		if (mask->get_value_at(i) != 0){
@@ -2926,9 +2925,9 @@ EMData * EMData::calc_fast_sigma_image( EMData* mask)
 		}
 	}
 	float normfac = 1.0f/(float)P;
-	
+
 //	bool undoclip = false;
-	
+
 	int nxc = nx+mnx; int nyc = ny+mny; int nzc = nz+mnz;
 //	if ( mnx < nx || mny < ny || mnz < nz) {
 	Region r;
@@ -2940,8 +2939,8 @@ EMData * EMData::calc_fast_sigma_image( EMData* mask)
 	//mask->clip_inplace(r);
 	//undoclip = true;
 	//}
-	
-	
+
+
 	// Here we generate the local average of the squares
 	Region r2;
 	if (ny == 1) r2 = Region((nx-nxc)/2,nxc);
@@ -2962,12 +2961,12 @@ EMData * EMData::calc_fast_sigma_image( EMData* mask)
 	s->sub(*m);
 	// Here we finally generate the standard deviation image
 	s->process_inplace("math.sqrt");
-	
+
 //	if ( undoclip ) {
 //		Region r((nx-mnx)/2, (ny-mny)/2, (nz-mnz)/2,mnx,mny,mnz);
 //		mask->clip_inplace(r);
 //	}
-	
+
 	if (maskflag) {
 		delete mask;
 		mask = 0;
@@ -2978,7 +2977,7 @@ EMData * EMData::calc_fast_sigma_image( EMData* mask)
 		else r = Region((nxc-mnx)/2, (nyc-mny)/2,(nzc-mnz)/2,mnx,mny,mnz);
 		mask->clip_inplace(r);
 	}
-	
+
 	delete squared;
 	delete m;
 
@@ -2990,7 +2989,7 @@ EMData * EMData::calc_fast_sigma_image( EMData* mask)
 	s->clip_inplace(r3);
 	EXITFUNC;
 	return s;
-	
+
 }
 
 //  The following code looks strange - does anybody know it?  Please let me know, pawel.a.penczek@uth.tmc.edu  04/09/06.
@@ -3002,7 +3001,7 @@ EMData *EMData::calc_flcf(EMData * with)
 	// Ones is a circlular/spherical mask, consisting of 1s.
 	EMData* ones = new EMData(with->get_xsize(), with->get_ysize(),with->get_zsize());
 	ones->process_inplace("testimage.circlesphere");
-	
+
 	// Get a copy of with, we will eventually resize it
 	EMData* with_resized = with->copy();
 	// Circular/Spherical mask
@@ -3018,10 +3017,10 @@ EMData *EMData::calc_flcf(EMData * with)
 	// The local normalized correlation
 	EMData* corr = calc_ccf(with_resized);
 	corr->div(*s);
-		
+
 	delete with_resized; delete ones;
 	delete s;
-	
+
 	EXITFUNC;
 	return corr;
 }
@@ -3267,7 +3266,7 @@ void EMData::common_lines(EMData * image1, EMData * image2,
 							float a1 = (float) _hypot(im1[i2], im1[i2 + 1]);
 #else
 							float a1 = (float) hypot(im1[i2], im1[i2 + 1]);
-#endif	//_WIN32			
+#endif	//_WIN32
 							float p1 = atan2(im1[i2 + 1], im1[i2]);
 							float p2 = atan2(im2[j2 + 1], im2[j2]);
 
@@ -3511,22 +3510,22 @@ void EMData::cut_slice(const EMData *const map, const Transform& transform, bool
 		for (int x = -nx/2; x < xmax; x++) {
 			Vec3f coord(x,y,0);
 			Vec3f soln = transform*coord;
-			
+
 // 			float xx = (x+pretrans[0]) * (*ort)[0][0] +  (y+pretrans[1]) * (*ort)[0][1] + pretrans[2] * (*ort)[0][2] + posttrans[0];
 // 			float yy = (x+pretrans[0]) * (*ort)[1][0] +  (y+pretrans[1]) * (*ort)[1][1] + pretrans[2] * (*ort)[1][2] + posttrans[1];
 // 			float zz = (x+pretrans[0]) * (*ort)[2][0] +  (y+pretrans[1]) * (*ort)[2][1] + pretrans[2] * (*ort)[2][2] + posttrans[2];
-			
-			
+
+
 // 			xx += map_nx/2;
 // 			yy += map_ny/2;
 // 			zz += map_nz/2;
-			
+
 			float xx = soln[0]+map_nx/2;
 			float yy = soln[1]+map_ny/2;
 			float zz = soln[2]+map_nz/2;
-			
+
 			int l = (x+nx/2) + (y+ny/2) * nx;
-			
+
 			float t = xx - floor(xx);
 			float u = yy - floor(yy);
 			float v = zz - floor(zz);
@@ -3555,10 +3554,10 @@ void EMData::cut_slice(const EMData *const map, const Transform& transform, bool
 				int k = Util::round(xx) + Util::round(yy) * map_nx + Util::round(zz) * map_nxy;
 				ddata[l] = sdata[k];
 			}
-			
-		}	
+
+		}
 	}
-	
+
 	update();
 
 	EXITFUNC;
@@ -3568,26 +3567,26 @@ void EMData::cut_slice(const EMData *const map, const Transform& transform, bool
 EMData* EMData::cut_slice_cuda(const Transform& transform)
 {
 	ENTERFUNC;
-// 
+//
 	// These restrictions should be ultimately restricted so that all that matters is get_ndim() = (map->get_ndim() -1)
 	if ( get_ndim() != 3 ) throw ImageDimensionException("Can not cut slice from an image that is not 3D");
 	// Now check for complex images - this is really just being thorough
 	if ( is_complex() ) throw ImageFormatException("Can not call cut slice an image that is complex");
-// 
+//
 
 	EMData* ret = new EMData();
 	ret->set_size_cuda(nx,ny,1);
-	
+
 	float * m = new float[12];
 	transform.copy_matrix_into_array(m);
-	
+
 	EMDataForCuda tmp = ret->get_data_struct_for_cuda();
 	bind_cuda_texture(); // Binds this image to the global texture
 	cut_slice_cuda_(&tmp,m);
-	
+
 	ret->gpu_update();
 	delete [] m;
-	
+
 	EXITFUNC;
 	return ret;
 }
@@ -3625,7 +3624,7 @@ void EMData::uncut_slice(EMData * const map, const Transform& transform) const
 /*
 	Vec3f posttrans = ort->get_posttrans();
 	Vec3f pretrans = ort->get_pretrans();*/
-	
+
 	int ymax = ny/2;
 	if ( ny % 2 == 1 ) ymax += 1;
 	int xmax = nx/2;
@@ -3637,24 +3636,24 @@ void EMData::uncut_slice(EMData * const map, const Transform& transform) const
 // 			float xx = (x+pretrans[0]) * (*ort)[0][0] +  (y+pretrans[1]) * (*ort)[0][1] + pretrans[2] * (*ort)[0][2] + posttrans[0];
 // 			float yy = (x+pretrans[0]) * (*ort)[1][0] +  (y+pretrans[1]) * (*ort)[1][1] + pretrans[2] * (*ort)[1][2] + posttrans[1];
 // 			float zz = (x+pretrans[0]) * (*ort)[2][0] +  (y+pretrans[1]) * (*ort)[2][1] + pretrans[2] * (*ort)[2][2] + posttrans[2];
-// 			
+//
 // 			xx += map_nx/2;
 // 			yy += map_ny/2;
 // 			zz += map_nz/2;
-// 			
+//
 			float xx = soln[0]+map_nx/2;
 			float yy = soln[1]+map_ny/2;
 			float zz = soln[2]+map_nz/2;
-			
-			// These 0.5 offsets are here because the round function rounds to the nearest whole number. 
+
+			// These 0.5 offsets are here because the round function rounds to the nearest whole number.
 			if (xx < -0.5 || yy < -0.5 || zz < -0.5 || xx >= map_nx_round_limit || yy >= map_ny_round_limit || zz >= map_nz_round_limit) continue;
-			
+
 			int k = Util::round(xx) + Util::round(yy) * map_nx + Util::round(zz) * map_nxy;
 			int l = (x+nx/2) + (y+ny/2) * nx;
 			ddata[k] = sdata[l];
 		}
 	}
-	
+
 	map->update();
 	EXITFUNC;
 }

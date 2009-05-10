@@ -123,11 +123,12 @@ inline void update()
 */
 inline bool has_ctff() const
 {
-	if ((flags & EMDATA_HASCTFF)) {
+	if (this->has_attr("ctf")) {
 		return true;
 	}
-
-	return false;
+	else {
+		return false;
+	}
 }
 
 
@@ -612,9 +613,12 @@ inline bool is_shuffled() const
 	if (flags & EMDATA_SHUFFLE) {
 		return true;
 	}
-	else {
-		return false;
+
+	if(has_attr("is_shuffled")) {
+		return get_attr("is_shuffled");
 	}
+
+	return false;
 }
 
 
@@ -626,9 +630,12 @@ inline bool is_FH() const
 	if (flags & EMDATA_FH) {
 		return true;
 	}
-	else {
-		return false;
+
+	if(has_attr("is_fh")) {
+		return get_attr("is_fh");
 	}
+
+	return false;
 }
 
 
@@ -668,10 +675,12 @@ inline void set_shuffled(bool is_shuffled)
 { // PRB
 	if (is_shuffled) {
 //		printf("entered correct part of set_shuffled \n");
-		flags |=  EMDATA_SHUFFLE;
+//		flags |=  EMDATA_SHUFFLE;
+		set_attr("is_shuffled", (int)1);
 	}
 	else {
-		flags &= ~EMDATA_SHUFFLE;
+//		flags &= ~EMDATA_SHUFFLE;
+		set_attr("is_shuffled", (int)0);
 	}
 }
 
@@ -683,10 +692,12 @@ inline void set_shuffled(bool is_shuffled)
 inline void set_FH(bool is_FH)
 { // PRB
 	if (is_FH) {
-		flags |=  EMDATA_FH;
+//		flags |=  EMDATA_FH;
+		set_attr("is_fh", (int)1);
 	}
 	else {
-		flags &= ~EMDATA_FH;
+//		flags &= ~EMDATA_FH;
+		set_attr("is_fh", (int)0);
 	}
 }
 
@@ -746,12 +757,18 @@ inline void set_complex_x(bool is_complex_x)
  */
 inline bool is_flipped() const
 {
-	if (flags & EMDATA_FLIP) {
+	if (flags & EMDATA_FLIP) { //keep here for back compatibility
 		return true;
 	}
-	else {
-		return false;
+
+	if(attr_dict.has_key("is_flipped")) {
+		if(get_attr("is_flipped")) {
+			return true;
+		}
 	}
+
+	return false;
+
 }
 
 
@@ -762,10 +779,10 @@ inline bool is_flipped() const
 inline void set_flipped(bool is_flipped)
 {
 	if (is_flipped) {
-		flags |= EMDATA_FLIP;
+		set_attr("is_flipped", (int)1);
 	}
 	else {
-		flags &= ~EMDATA_FLIP;
+		set_attr("is_flipped", (int)0);
 	}
 }
 
@@ -813,9 +830,13 @@ inline bool is_fftpadded() const
 	if (flags & EMDATA_PAD) {
 		return true;
 	}
-	else {
-		return false;
+
+	if(has_attr("is_fftpad")) {
+		return get_attr("is_fftpad");
 	}
+
+	return false;
+
 }
 
 
@@ -826,11 +847,9 @@ inline bool is_fftpadded() const
 inline void set_fftpad(bool is_fftpadded)
 {
 	if (is_fftpadded) {
-		flags |= EMDATA_PAD;
 		set_attr("is_fftpad", int(1));
 	}
 	else {
-		flags &= ~EMDATA_PAD;
 		set_attr("is_fftpad", int(0));
 	}
 }
@@ -841,7 +860,7 @@ inline void set_fftpad(bool is_fftpadded)
  */
 inline bool is_fftodd() const
 {
-	if (flags & EMDATA_FFTODD) {
+	if(flags & EMDATA_FFTODD || (int)attr_dict["is_fftodd"] == 1) {
 		return true;
 	}
 	else {
@@ -857,11 +876,9 @@ inline bool is_fftodd() const
 inline void set_fftodd(bool is_fftodd)
 {
 	if (is_fftodd) {
-		flags |= EMDATA_FFTODD;
 		set_attr("is_fftodd", int(1));
 	}
 	else {
-		flags &= ~EMDATA_FFTODD;
 		set_attr("is_fftodd", int(0));
 	}
 }

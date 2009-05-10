@@ -70,14 +70,14 @@ namespace EMAN
 	class Transform3D;
 	class Transform;
 
-	
+
 	typedef boost::multi_array_ref<float, 2> MArray2D;
 	typedef boost::multi_array_ref<float, 3> MArray3D;
 	typedef boost::multi_array_ref<std::complex<float>, 2> MCArray2D;
 	typedef boost::multi_array_ref<std::complex<float>, 3> MCArray3D;
 	typedef boost::multi_array<int, 2> MIArray2D;
 	typedef boost::multi_array<int, 3> MIArray3D;
-	
+
 	/** @ingroup tested3c */
 	/** EMData stores an image's data and defines core image processing routines.
      * The image is 1D, 2D or 3D, in real space or fourier space (complex image).
@@ -697,7 +697,7 @@ namespace EMAN
 		 * @return The result image.
 		 */
 		EMData *convolute(EMData * with);
-		
+
 #if 0
 		void create_ctf_map(CtfMapType type, XYData * sf = 0);
 #endif
@@ -754,7 +754,7 @@ namespace EMAN
 		 * @date Feb 2008
 		 */
 		void cut_slice(const EMData * const map, const Transform& tr, bool interpolate = true);
-		
+
 		/** cut a 2D slice out of a this 3D image and return it
 		 * An alternative to cut_slice
 		 * @param tr orientation of the slice as encapsulated in a Transform object
@@ -765,7 +765,7 @@ namespace EMAN
 		 */
 // 		EMData* get_cut_slice(const Transform& tr);
 #ifdef EMAN2_USING_CUDA
-		
+
 		/** cuda equivalent of get_cut_slice
 		 * @ingroup CUDA_ENABLED
 		 * @param tr orientation of the slice as encapsulated in a Transform object
@@ -818,6 +818,12 @@ namespace EMAN
 
 		void set_xyz_origin(float origin_x, float origin_y, float origin_z);
 	private:
+		/** This EMDataFlags is deprecated. For anything which is currently handled by setting a
+		 * bit in 'flags', instead, set or read an appropriately named attribute
+		 * in the attributes dictionary. While there is a small overhead in the
+		 * string lookup, none of these things should be called in the innermost
+		 * loop anywhere, so it should be fine. --Grant
+		 * */
 		enum EMDataFlags {
 //			EMDATA_COMPLEX = 1 << 1,
 //			EMDATA_RI = 1 << 2,	       // real/imaginary or amp/phase
@@ -869,7 +875,7 @@ namespace EMAN
 
 		/** This is a cached rotational footprint, can save much time */
 		mutable EMData* rot_fp;
-		
+
 		// Clip inplace variables is a local class used from convenience in EMData::clip_inplace
 		// Added by d.woolford
 		class ClipInplaceVariables
@@ -887,7 +893,7 @@ namespace EMAN
 				if ( ztrans > 0 ) z_iter -= ztrans;
 				if ( z_iter < 0 ) z_iter = 0;
 
-				// Get the depth in the new volume where slices are inserted 
+				// Get the depth in the new volume where slices are inserted
 				// if this value is zero it means that the last z-slice in the new
 				// volume contains image data
 				if ( (new_nz + ztrans) > prv_nz ) new_z_top = new_nz + ztrans - prv_nz;
