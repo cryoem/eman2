@@ -391,7 +391,7 @@ class EMStandAloneApplication(EMApplication):
 					inspector.close()
 				return
 			
-		print "couldn't close",child
+		#print "couldn't close",child
 	
 	def hide_specific(self,child,inspector_too=True):
 		for child_ in self.children:

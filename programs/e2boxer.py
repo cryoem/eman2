@@ -2119,15 +2119,17 @@ class EMBoxerModule(QtCore.QObject):
 		sh=self.guiim.get_shapes()
 		
 		for num in numbers:
-			sh=self.guiim.get_shapes()
+			#sh=self.guiim.get_shapes()
 			k=sh.keys()
 			k.sort()
-			del sh[int(num)]
+			#del sh[int(num)]
+			sh.pop(int(num))
 			for j in k:
 				if isinstance(j,int):
 					if j>num :
 						sh[j-1]=sh[j]
-						del sh[j]
+						sh.pop(j)
+						#del sh[j]
 			self.ptcl.pop(num)
 						
 			
@@ -2181,6 +2183,7 @@ class EMBoxerModule(QtCore.QObject):
 			if val == 2:
 				self.boxable.clear_and_cache(True)
 				self.clear_displays()
+			self.box_display_update()
 				
 		return box
 	
