@@ -344,6 +344,9 @@ class EMStandAloneApplication(EMApplication):
 		self.tmr = None
 		
 		EMApplication.__init__(self,qt_application_control)
+	
+#	def __del__(self):
+#		print "stand alone application death"
 		
 	#def detach_child(self,child):
 		#for i,child_ in enumerate(self.children):
@@ -371,6 +374,7 @@ class EMStandAloneApplication(EMApplication):
 	
 	def show(self):
 		for child in self.children:
+#			print "showing all",child
 			widget = child.get_qt_widget()
 			if widget.isVisible() == False:
 				widget.show()
@@ -380,13 +384,14 @@ class EMStandAloneApplication(EMApplication):
 			if child == child_:
 				widget = child.get_qt_widget()
 				self.children.pop(i) # need to double check that this is the correct behavior
+#				print "popped",widget
 				if widget != None: widget.close() # widget was already closed ?
 				if inspector_too and child.inspector != None:
 					inspector = child.get_inspector()
 					inspector.close()
 				return
 			
-		#print "couldn't close",child
+		print "couldn't close",child
 	
 	def hide_specific(self,child,inspector_too=True):
 		for child_ in self.children:
@@ -424,6 +429,7 @@ class EMStandAloneApplication(EMApplication):
 		for child_ in self.children:
 			if child == child_:
 				widget = child.get_qt_widget()
+#				print "show",child
 				if widget.isVisible() == False:
 					widget.show()
 					widget.setFocus()
@@ -476,6 +482,11 @@ class EMQtWidgetModule(EMGUIModule):
 		
 		self.selected = False
 	
+#	def __del__(self): 
+#		print "qt widget module death"
+#		import sys
+#		print sys.getrefcount(self.qt_widget),"for self.widget"
+	
 	#def __del__(self):
 		#print "in qt delete"
 		#if self.qt_widget != None:
@@ -488,6 +499,7 @@ class EMQtWidgetModule(EMGUIModule):
 			
 	def get_qt_widget(self):
 		self.under_qt_control = True
+#		print "returning self.qt_widget"
 		return self.qt_widget
 		
 	def get_gl_widget(self,qt_context_parent,gl_context_parent):
@@ -532,9 +544,7 @@ class EMQtWidgetModule(EMGUIModule):
 	def closeEvent(self,event) :
 		if self.qt_widget != None:
 			self.qt_widget.close()
-		
-		self.qt_widget = None
-		
+				
 		app = get_application()
 		if app != None:
 			app.close_specific(self)
@@ -543,8 +553,6 @@ class EMQtWidgetModule(EMGUIModule):
 		self.qt_widget = None
 		self.emit(QtCore.SIGNAL("module_closed")) # this could be a useful signal, especially for something like the selector module, which can potentially show a lot of images but might want to close them all when it is closed
 		
-		
-	
 	def connect_qt_pop_up_application_event(self,signal):
 		get_application().connect_qt_pop_up_application_event(signal,self)
 	

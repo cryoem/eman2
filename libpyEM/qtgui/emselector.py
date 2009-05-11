@@ -55,6 +55,10 @@ class EMSelectorModule(EMQtWidgetModule):
 		self.widget = EMSelectorDialog(self,single_selection,save_as_mode)
 		EMQtWidgetModule.__init__(self,self.widget)
 		
+#	def __del__(self):
+#		import sys
+#		print "selector module death", sys.getrefcount(self.widget)
+		
 	def exec_(self):
 		'''
 		Wraps self.widget.exec_
@@ -1981,6 +1985,10 @@ class EMBrowserModule(EMQtWidgetModule):
 		self.widget = EMBrowserDialog(self)
 		EMQtWidgetModule.__init__(self,self.widget)
 
+	def __del__(self):
+#		import sys
+#		print "browser module death", sys.getrefcount(self.widget)
+		self.widget.destroy()
 
 app = None
 def on_done(string_list):

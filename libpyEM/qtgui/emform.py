@@ -308,6 +308,7 @@ class EMFileTable(QtGui.QTableWidget):
 		self.name = name # the name of the parameter ultimately return form the form
 		self.listed_names = listed_names # listed names in first column
 		self.column_data = [] # list of EMColumnData objects
+		self.column_data_refs = [] # keep a reference to more complicated to column data objects - someone has to
 		self.button_data = [] # extra button info which can be used to add things to the table
 		self.icon = None # set be inheriting function
 		self.exclusions = [] # Correspond to listed names that will be colored green and disabled
@@ -320,7 +321,7 @@ class EMFileTable(QtGui.QTableWidget):
 		QtCore.QObject.connect(self, QtCore.SIGNAL("itemDoubleClicked(QTableWidgetItem*)"),self.table_item_double_clicked)
 		
 		self.context_menu_data["Save As"] = EMFileTable.save_as
-		self.context_menu_refs = [] # to keep a reference to context menus
+		self.context_menu_refs = [] # to keep a reference to context menus related objects - somebody has to
 		
 	def convert_text(self,name):
 		'''
@@ -365,8 +366,12 @@ class EMFileTable(QtGui.QTableWidget):
 		@param column_data an instance of (or something that has the attributes of) EMColumnData
 		Only works if you call this before the table is constructed - doesn't "update" the table  
 		'''
-		self.column_data.append(column_data)
-		
+		if isinstance(column_data,EMFileTable.EMColumnData):
+			self.column_data.append(column_data)
+		else:
+			self.column_data_refs.append(column_data)
+			for key,value in column_data.column_data.items():
+				self.column_data.append(EMFileTable.EMColumnData(key,value,""))
 	def remove_column_data(self,column_data_name):
 		'''
 		@param column_data_name the name attribute of the column data attribute that you wish to remove
@@ -592,6 +597,10 @@ class EM2DFileTable(EMFileTable):
 		self.icon = QtGui.QIcon(get_image_directory() + "/single_image.png")
 		self.display_module = None
 		self.module_events_manager = None
+	
+	def __del__(self):
+		print "2D table dies"
+	
 	def table_item_double_clicked(self,item):
 		'''
 		See EMFileTable.table_item_double_clicked for comments
@@ -628,6 +637,27 @@ class EM2DStackTable(EMFileTable):
 		self.icon = QtGui.QIcon(get_image_directory() + "/multiple_images.png")
 		self.display_module = None
 		self.module_events_manager = None
+		self.context_menu_data["Save As"] = EM2DStackTable.save_as
+		
+	def __del__(self):
+		print "stack table dies"
+		
+	def save_as(list_of_names,table_widget):
+		'''
+		Made static
+		See the context menu dictionary in __init__, called when the user clicks "Save as"
+		Iterates through the names and prompts the user for file names
+		@param list_of_names a list table_widget column 0 entries, 
+		@table_widget The table widget from which the entries were selected
+		'''
+		for name in list_of_names:
+			from emimagemx import EMDataListCache
+			tmp = EMDataListCache(table_widget.convert_text(name))
+			from emsave import save_data
+			val = save_data(tmp)
+			if val == "":
+				break
+	save_as = staticmethod(save_as)
 		
 	def table_item_double_clicked(self,item):
 		'''
@@ -714,8 +744,15 @@ class EMFormModule(EMQtWidgetModule):
 	'''
 	def __init__(self,params,application):
 		self.application = weakref.ref(application)
-		self.widget = EMFormWidget(self,params)
-		EMQtWidgetModule.__init__(self,self.widget)
+		EMQtWidgetModule.__init__(self, EMFormWidget(self,params))
+		#self.test_ref = weakref.ref(self.qt_widget)
+		
+#	def __del__(self):
+#		print "form module death"
+#		import sys
+#		self.test_ref().destroy()
+#		print "form module death", sys.getrefcount(self.test_ref()),self.test_ref(),self.test_ref
+		
 		
 	def get_desktop_hint(self):
 		return "form"
@@ -739,27 +776,30 @@ class EMFormWidget(QtGui.QWidget):
 		self.name_widget_map = {} # used to map parameter names to qt widgets - used by booleans to automatically disable and enable widgets
 		self.__init_icons()
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "/eman.png"))
-		
+
 		self.auto_incorporate = {}
-		self.auto_incorporate["float"] = self.__incorporate_float
-		self.auto_incorporate["int"] = self.__incorporate_int
-		self.auto_incorporate["url"] = self.__incorporate_url
-		self.auto_incorporate["choice"] = self.__incorporate_choice
-		self.auto_incorporate["string"] = self.__incorporate_string
-		self.auto_incorporate["text"] = self.__incorporate_text
-		self.auto_incorporate["boolean"] = self.__incorporate_boolean
-		self.auto_incorporate["stringlist"] = self.__incorporate_stringlist
-		self.auto_incorporate["intlist"] = self.__incorporate_intlist
-		self.auto_incorporate["floatlist"] = self.__incorporate_floatlist
-		self.auto_incorporate["dict"] = self.__incorporate_dict
-		self.auto_incorporate["EMParamTable"] = self.__incorporate_paramtable
-		self.auto_incorporate["file_table"] = self.__incorporate_filetable
+		self.auto_incorporate["float"] = EMFormWidget.IncorpFloat()
+		self.auto_incorporate["int"] = EMFormWidget.IncorpInt()
+		self.auto_incorporate["url"] = EMFormWidget.IncorpUrl()
+		self.auto_incorporate["choice"] =EMFormWidget.IncorpChoice()
+		self.auto_incorporate["string"] = EMFormWidget.IncorpString()
+		self.auto_incorporate["text"] = EMFormWidget.IncorpText()
+		self.auto_incorporate["boolean"] = EMFormWidget.IncorpBool()
+		self.auto_incorporate["stringlist"] = EMFormWidget.IncorpStringList()
+		self.auto_incorporate["intlist"] = EMFormWidget.IncorpIntList()
+		self.auto_incorporate["floatlist"] = EMFormWidget.IncorpFloatList()
+		self.auto_incorporate["dict"] = EMFormWidget.IncorpDict()
+		self.auto_incorporate["EMParamTable"] = EMFormWidget.IncorpParamTable()
+		self.auto_incorporate["file_table"] = EMFormWidget.IncorpFileTable()
 		
-		self.vbl = QtGui.QVBoxLayout()
-		self.incorporate_params(self.params,self.vbl)
-		if not disable_ok_cancel: self.__add_ok_cancel_buttons(self.vbl)
-		self.setLayout(self.vbl)
-		
+		vbl = QtGui.QVBoxLayout()
+		self.incorporate_params(self.params,vbl)
+		if not disable_ok_cancel: self.__add_ok_cancel_buttons(vbl)
+		self.setLayout(vbl)
+#		
+#	def __del__(self): 
+#		print "form widget death"
+#		
 	def __init_icons(self):
 		self.emdata_icon = QtGui.QIcon(get_image_directory() + "/single_image.png")
 		self.emdata_3d_icon = QtGui.QIcon(get_image_directory() + "/single_image_3d.png")
@@ -772,12 +812,12 @@ class EMFormWidget(QtGui.QWidget):
 				if len(param) != 1 and not isinstance(param,EMParamTable):
 					hbl=QtGui.QHBoxLayout()
 					for iparam in param:
-						self.auto_incorporate[iparam.vartype](iparam,hbl)
+						self.auto_incorporate[iparam.vartype](iparam,hbl,self)
 					layout.addLayout(hbl)
 					continue
 					
 			except: pass
-			self.auto_incorporate[param.vartype](param,layout)
+			self.auto_incorporate[param.vartype](param,layout,self)
 		
 		self.enable_boolean_dependents()
 		
@@ -799,127 +839,105 @@ class EMFormWidget(QtGui.QWidget):
 			
 		return None
 	
-	def __incorporate_filetable(self,paramtable,layout):
-		
-		num_choices = None
-		# first check that there are no inconsistencies in the number of parameter choices
-		
-		vbl=QtGui.QVBoxLayout()
-		hbl=QtGui.QHBoxLayout()
-		hbl.setMargin(0)
-		hbl.setSpacing(2)
-		
-		paramtable.build_table()
-		hbl.addWidget(paramtable,1)
-		vbl.addLayout(hbl)
-		
-		paramtable.custom_addition(vbl)
-		
-		groupbox = QtGui.QGroupBox(paramtable.desc_short)
-		groupbox.setToolTip(paramtable.desc_long)
-		groupbox.setLayout(vbl)
-		layout.addWidget(groupbox,10)
-		self.output_writers.append(EMFileTableWriter(paramtable.name,paramtable,str))
-		
-
-	def __incorporate_paramtable(self,paramtable,layout):
-		
-		num_choices = None
-		# first check that there are no inconsistencies in the number of parameter choices
-		for param in paramtable:
-			if num_choices == None:
-				num_choices = len(param.choices)
-			else:
-				if len(param.choices) != num_choices:
-					print "error, the number of choices is not consistent in __incorporate_paramtable"
-					return
-		
-		vbl=QtGui.QVBoxLayout()
-		hbl=QtGui.QHBoxLayout()
-		hbl.setMargin(0)
-		hbl.setSpacing(2)
-		
-		vbl.addLayout(hbl)
-		
-		table_widget = QtGui.QTableWidget(num_choices, len(paramtable), None)
-		icon = self.get_ptable_icon(paramtable)
-		
-		if not paramtable.enable_multiple_selection:
-			table_widget.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
+	class IncorpFileTable():
+		def __init__(self): pass
+		def __call__(self,paramtable,layout,target=None):
+			num_choices = None
+			# first check that there are no inconsistencies in the number of parameter choices
 			
-		selected_items = [] # used to ensure default selection is correct
-		
-		table_widget.setSortingEnabled(False)
-		
-		paramtable.add_optional_table_attr(table_widget)
-		paramtable.build_table(table_widget,icon)
-#		for i,param in enumerate(paramtable):
-#			for j,choice in enumerate(param.choices):
-#				if i == 0 and icon != None: item = QtGui.QTableWidgetItem(icon,str(choice))
-#				else: item = QtGui.QTableWidgetItem(str(choice))
-#				flag2 = Qt.ItemFlags(Qt.ItemIsSelectable)
-#				flag3 = Qt.ItemFlags(Qt.ItemIsEnabled)
-#				flag4 = Qt.ItemFlags(Qt.ItemIsEditable)
-#				if i == 0:
-#					if str(choice) not in exclusions:
-#						item.setFlags(flag2|flag3)
-#					else:
-#						# exluded items are displayed but they are not selectable
-#						# this was originally added for e2boxer -the write output form needs to show which images are are excluded
-#						item.setFlags(flag3)
-#						item.setTextColor(QtGui.QColor(0,128,0))
-#						item.setToolTip("This item is excluded")
-#					if param.defaultunits != None and len(param.defaultunits) > 0:
-#						if choice in param.defaultunits:
-#							selected_items.append(item)
-#				else:
-#					item.setFlags(flag3)
-#				item.setTextAlignment(QtCore.Qt.AlignHCenter)
-#				
-#				table_widget.setItem(j, i, item)
-#				
-#			item = QtGui.QTableWidgetItem(param.desc_short)
-#			item.setTextAlignment(QtCore.Qt.AlignHCenter)
-#			item.setToolTip(param.desc_long)
-#			table_widget.setHorizontalHeaderItem(i,item)
-		
-		table_widget.setSortingEnabled(True)
-		table_widget.setToolTip(paramtable.desc_long)
-		hbl.addWidget(table_widget,1)
-		
-		groupbox = QtGui.QGroupBox(paramtable.desc_short)
-		groupbox.setToolTip(paramtable.desc_long)
-		groupbox.setLayout(vbl)
-		layout.addWidget(groupbox,10)
-		
-		table_event_handler = EMParamTableEventHandler(self,table_widget)
-		self.event_handlers.append(table_event_handler)
-		self.resize_event_handlers.append(table_event_handler)
-		table_widget.resizeColumnsToContents()
-		
-		if len(paramtable[0].choices) > 0:
-			type_of = type(paramtable[0].choices[0])
-		else:
-			type_of = str # This case arise when the table is empty and the user had an add button.
+			vbl=QtGui.QVBoxLayout()
+			hbl=QtGui.QHBoxLayout()
+			hbl.setMargin(0)
+			hbl.setSpacing(2)
+			
+			paramtable.build_table()
+			hbl.addWidget(paramtable,1)
+			vbl.addLayout(hbl)
+			
+			paramtable.custom_addition(vbl)
+			
+			groupbox = QtGui.QGroupBox(paramtable.desc_short)
+			groupbox.setToolTip(paramtable.desc_long)
+			groupbox.setLayout(vbl)
+			layout.addWidget(groupbox,10)
+			if target != None: target.output_writers.append(EMFileTableWriter(paramtable.name,paramtable,str))
 	
-#		for item in selected_items: 
-#			item.setSelected(True)
-		self.output_writers.append(EMParamTableWriter(paramtable.name,table_widget,type_of))
+	class IncorpParamTable():
+		def __init__(self): pass
+		def __call__(self,paramtable,layout,target):
 		
-		paramtable.custom_addition(vbl,table_widget)
+			num_choices = None
+			# first check that there are no inconsistencies in the number of parameter choices
+			for param in paramtable:
+				if num_choices == None:
+					num_choices = len(param.choices)
+				else:
+					if len(param.choices) != num_choices:
+						print "error, the number of choices is not consistent in __incorporate_paramtable"
+						return
+			
+			vbl=QtGui.QVBoxLayout()
+			hbl=QtGui.QHBoxLayout()
+			hbl.setMargin(0)
+			hbl.setSpacing(2)
+			
+			vbl.addLayout(hbl)
+			
+			table_widget = QtGui.QTableWidget(num_choices, len(paramtable), None)
+			icon = target.get_ptable_icon(paramtable)
+			
+			if not paramtable.enable_multiple_selection:
+				table_widget.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
+				
+			selected_items = [] # used to ensure default selection is correct
+			
+			table_widget.setSortingEnabled(False)
+			
+			paramtable.add_optional_table_attr(table_widget)
+			paramtable.build_table(table_widget,icon)			
+			table_widget.setSortingEnabled(True)
+			table_widget.setToolTip(paramtable.desc_long)
+			hbl.addWidget(table_widget,1)
+			
+			groupbox = QtGui.QGroupBox(paramtable.desc_short)
+			groupbox.setToolTip(paramtable.desc_long)
+			groupbox.setLayout(vbl)
+			layout.addWidget(groupbox,10)
+			
+			table_event_handler = EMParamTableEventHandler(target,table_widget)
+			target.event_handlers.append(table_event_handler)
+			target.resize_event_handlers.append(table_event_handler)
+			table_widget.resizeColumnsToContents()
+			
+			if len(paramtable[0].choices) > 0:
+				type_of = type(paramtable[0].choices[0])
+			else:
+				type_of = str # This case arise when the table is empty and the user had an add button.
 		
-		self.name_widget_map[paramtable.name] = groupbox
-		
-	def __incorporate_stringlist(self,param,layout):
-		return self.__incorporate_list(param,layout,str)
+	#		for item in selected_items: 
+	#			item.setSelected(True)
+			target.output_writers.append(EMParamTableWriter(paramtable.name,table_widget,type_of))
+			
+			paramtable.custom_addition(vbl,table_widget)
+			
+			target.name_widget_map[paramtable.name] = groupbox
+			
+	class IncorpStringList():
+		def __init__(self): pass
+		def __call__(self,param,layout,target):
+			target.incorporate_list(param,layout,target,str)
 	
-	def __incorporate_floatlist(self,param,layout):
-		return self.__incorporate_list(param,layout,float)
+	class IncorpFloatList():
+		def __init__(self): pass
+		def __call__(self,param,layout,target):
+			target.incorporate_list(param,layout,target,float)
 	
-	def __incorporate_intlist(self,param,layout):
-		return self.__incorporate_list(param,layout,int)
+	class IncorpIntList():
+		def __init__(self): pass
+		def __call__(self,param,layout,target):
+			target.incorporate_list(param,layout,target,int)
 	
-	def __incorporate_list(self,param,layout,type_of):
+	def incorporate_list(self,param,layout,target,type_of):
 		hbl=QtGui.QHBoxLayout()
 		hbl.setMargin(0)
 		hbl.setSpacing(2)
@@ -941,213 +959,229 @@ class EMFormWidget(QtGui.QWidget):
 		
 		layout.addWidget(groupbox,0)
 
-		self.output_writers.append(ListWidgetParamWriter(param.name,list_widget,type_of))
-		self.name_widget_map[param.name] = groupbox
+		target.output_writers.append(ListWidgetParamWriter(param.name,list_widget,type_of))
+		target.name_widget_map[param.name] = groupbox
 		#layout.addLayout(hbl)
 	
-	def __incorporate_boolean(self,param,layout):
-		hbl=QtGui.QHBoxLayout()
-		hbl.setMargin(0)
-		hbl.setSpacing(2)
-		check_box = QtGui.QCheckBox(str(param.desc_short),self)
-		check_box.setChecked(bool(param.defaultunits))
-		check_box.setToolTip(param.desc_long)
-		hbl.addWidget(check_box,0)
-		layout.addLayout(hbl)
-		self.output_writers.append(BoolParamWriter(param.name,check_box))
-		self.name_widget_map[param.name] = check_box
-		
-		if hasattr(param,"dependents"):
-			self.event_handlers.append(BoolDependentsEventHandler(self,check_box,param.dependents))    
-	
-	def __incorporate_string(self,param,layout):
-		if param.choices != None and len(param.choices) > 1:
-			self.__incorporate_string_with_choices(param,layout)
-		else:
+	class IncorpBool():
+		def __init__(self): pass
+		def __call__(self,param,layout,target):
 			hbl=QtGui.QHBoxLayout()
 			hbl.setMargin(0)
 			hbl.setSpacing(2)
-			label = QtGui.QLabel(param.desc_short+":",self)
-			label.setToolTip(param.desc_long)
-			hbl.addWidget(label)
-			line_edit = QtGui.QLineEdit(str(param.defaultunits),self)
-			hbl.addWidget(line_edit,0)
-			hbl.name = param.name
+			check_box = QtGui.QCheckBox(str(param.desc_short),target)
+			check_box.setChecked(bool(param.defaultunits))
+			check_box.setToolTip(param.desc_long)
+			hbl.addWidget(check_box,0)
 			layout.addLayout(hbl)
-			self.output_writers.append(StringParamWriter(param.name,line_edit))
-			self.name_widget_map[param.name] =  [line_edit,label]
-		
-	def __incorporate_float(self,param,layout):
-		if param.choices != None and len(param.choices) > 1:
-			self.__incorporate_float_with_choices(param,layout)
-		else:
-			hbl=QtGui.QHBoxLayout()
-			hbl.setMargin(0)
-			hbl.setSpacing(2)
-			label = QtGui.QLabel(param.desc_short+":",self)
-			label.setToolTip(param.desc_long)
-			hbl.addWidget(label)
-			double_validator = QtGui.QDoubleValidator(self)
-			line_edit = QtGui.QLineEdit(str(param.defaultunits),self)
-			line_edit.setValidator(double_validator)
-			hbl.addWidget(line_edit,0)
-			hbl.name = param.name
-			layout.addLayout(hbl)
-			self.output_writers.append(FloatParamWriter(param.name,line_edit))
-			self.name_widget_map[param.name] = [line_edit,label]
-		
-	def __incorporate_int(self,param,layout):
-		if param.choices != None and len(param.choices) > 1:
-			self.__incorporate_int_with_choices(param,layout)
-		else:
-			hbl=QtGui.QHBoxLayout()
-			hbl.setMargin(0)
-			hbl.setSpacing(2)
-			label = QtGui.QLabel(param.desc_short+":",self)
-			label.setToolTip(param.desc_long)
-			hbl.addWidget(label)
-			pos_int_validator = QtGui.QIntValidator(self)
-			line_edit = QtGui.QLineEdit(str(param.defaultunits),self)
-			line_edit.setValidator(pos_int_validator)
-			hbl.addWidget(line_edit,0)
-			hbl.name = param.name
-			layout.addLayout(hbl)
-			self.output_writers.append(IntParamWriter(param.name,line_edit))
-			self.name_widget_map[param.name] = [line_edit,label]
-		
-	def __incorporate_text(self,param,layout):
-		hbl=QtGui.QHBoxLayout()
-		hbl.setMargin(0)
-		hbl.setSpacing(2)
-				
-		text_edit = QtGui.QTextEdit("",self)
-		text_edit.setReadOnly(True)
-		text_edit.setWordWrapMode(QtGui.QTextOption.WordWrap)
-		text_edit.setText(param.defaultunits)
-		hbl.addWidget(text_edit,0)
-		
-		groupbox = QtGui.QGroupBox(param.desc_short)
-		groupbox.setToolTip(param.desc_long)
-		groupbox.setLayout(hbl)
-		
-		layout.addWidget(groupbox,1)
-
-		self.output_writers.append(TextParamWriter(param.name,text_edit))	
-		self.name_widget_map[param.name] = groupbox
-	
-	def __incorporate_url(self,param,layout):
-		vbl=QtGui.QVBoxLayout()
-		hbl=QtGui.QHBoxLayout()
-		hbl.setMargin(0)
-		hbl.setSpacing(2)
-		defaults = ""
-		if param.defaultunits != None:
-			for i,d in enumerate(param.defaultunits):
-				defaults += d
-				if i != (len(param.defaultunits)-1): 
-					defaults += '\n'
-				
-		text_edit = QtGui.QTextEdit("",self)
-		text_edit.setWordWrapMode(QtGui.QTextOption.NoWrap)
-		text_edit.setText(defaults)
-		hbl.addWidget(text_edit,0)
-		vbl.addLayout(hbl)
-		
-		hbl2=QtGui.QHBoxLayout()
-		hbl2.setMargin(0)
-		hbl2.setSpacing(2)
-		
-		browse_button = QtGui.QPushButton("Browse",self)
-		hbl2.addWidget(browse_button)
-		clear_button = QtGui.QPushButton("Clear",self)
-		hbl2.addWidget(clear_button,0)
-		vbl.addLayout(hbl2)
-		
-		groupbox = QtGui.QGroupBox(param.desc_short)
-		groupbox.setToolTip(param.desc_long)
-		groupbox.setLayout(vbl)
-		
-		layout.addWidget(groupbox,0)
-		
-		self.event_handlers.append(UrlEventHandler(self,text_edit,browse_button,clear_button,self.parent().application(),param.desc_short))
-		self.output_writers.append(UrlParamWriter(param.name,text_edit))
-		self.name_widget_map[param.name] = groupbox
-
-	def __incorporate_dict(self,param,layout):
-		'''
-		A dictionary is turned into two combo boxes - An event handler recognises when the first combo value changes (the dictionary keys), and if so
-		changes the entries in the second combo to values in the dictionary corresponding to the keys
-		'''
-		# hbl - tht
-		hbl=QtGui.QHBoxLayout()
-		hbl.setMargin(0)
-		hbl.setSpacing(2)
-		
-		keys = param.choices.keys()
-		keys.sort() # yes this is somewhat restrictive but it was my only way around something
-#		label = QtGui.QLabel(param.desc_short+":",self)
-#		label.setToolTip(param.desc_long)
-#		hbl.addWidget(label)
-		
-		combo = QtGui.QComboBox(self)
-		idx_default = 0
-		for i,k in enumerate(keys):
-			combo.addItem(str(k))
+			target.output_writers.append(BoolParamWriter(param.name,check_box))
+			target.name_widget_map[param.name] = check_box
 			
-			if str(k) == str(param.defaultunits):
-				idx_default = i
-				
-		combo.setCurrentIndex(idx_default)
-		combo_default = keys[idx_default]
-		hbl.addWidget(combo)
-		
-		
-		combo2 = QtGui.QComboBox(self)
-		for v in param.choices[combo_default]:
-			combo2.addItem(str(v))
-			
-		hbl.addWidget(combo2)
-		
-		groupbox = QtGui.QGroupBox(param.desc_short)
-		groupbox.setToolTip(param.desc_long)
-		groupbox.setLayout(hbl)
-		
-		layout.addWidget(groupbox)
-		
-		self.output_writers.append(DictParamWriter(param,combo,combo2))
-		self.event_handlers.append(DictEventHandler(param.choices,combo,combo2))
-		
-		self.name_widget_map[param.name] = groupbox
-
-	def __incorporate_choice(self,param,layout):
-		
-		hbl = QtGui.QHBoxLayout()
-		buttons = []
-		for choice in param.choices:
-			button = QtGui.QRadioButton(str(choice))
-			if choice == param.defaultunits: button.setChecked(True)
-			hbl.addWidget( button)
-			buttons.append(button)
-		
-		groupbox = QtGui.QGroupBox(param.desc_short)
-		groupbox.setToolTip(param.desc_long)
-		groupbox.setLayout(hbl)
-		layout.addWidget(groupbox,0)
-		self.output_writers.append(ChoiceParamWriter(param.name,buttons,type(param.choices[0])))
-		
-		self.name_widget_map[param.name] = groupbox
+			if hasattr(param,"dependents"):
+				target.event_handlers.append(BoolDependentsEventHandler(target,check_box,param.dependents))    
 	
-	def __incorporate_float_with_choices(self,param,layout):
+	class IncorpString():
+		def __init__(self): pass
+		def __call__(self,param,layout,target):
+			if param.choices != None and len(param.choices) > 1:
+				target.incorporate_string_with_choices(param,layout,target)
+			else:
+				hbl=QtGui.QHBoxLayout()
+				hbl.setMargin(0)
+				hbl.setSpacing(2)
+				label = QtGui.QLabel(param.desc_short+":",target)
+				label.setToolTip(param.desc_long)
+				hbl.addWidget(label)
+				line_edit = QtGui.QLineEdit(str(param.defaultunits),target)
+				hbl.addWidget(line_edit,0)
+				hbl.name = param.name
+				layout.addLayout(hbl)
+				target.output_writers.append(StringParamWriter(param.name,line_edit))
+				target.name_widget_map[param.name] =  [line_edit,label]
+		
+	class IncorpFloat():
+		def __init__(self): pass
+		def __call__(self,param,layout,target):
+			if param.choices != None and len(param.choices) > 1:
+				target.incorporate_float_with_choices(param,layout,target)
+			else:
+				hbl=QtGui.QHBoxLayout()
+				hbl.setMargin(0)
+				hbl.setSpacing(2)
+				label = QtGui.QLabel(param.desc_short+":",target)
+				label.setToolTip(param.desc_long)
+				hbl.addWidget(label)
+				double_validator = QtGui.QDoubleValidator(target)
+				line_edit = QtGui.QLineEdit(str(param.defaultunits),target)
+				line_edit.setValidator(double_validator)
+				hbl.addWidget(line_edit,0)
+				hbl.name = param.name
+				layout.addLayout(hbl)
+				target.output_writers.append(FloatParamWriter(param.name,line_edit))
+				target.name_widget_map[param.name] = [line_edit,label]
+		
+	class IncorpInt():
+		def __init__(self): pass
+		def __call__(self,param,layout,target):
+			if param.choices != None and len(param.choices) > 1:
+				target.incorporate_int_with_choices(param,layout,target)
+			else:
+				hbl=QtGui.QHBoxLayout()
+				hbl.setMargin(0)
+				hbl.setSpacing(2)
+				label = QtGui.QLabel(param.desc_short+":",target)
+				label.setToolTip(param.desc_long)
+				hbl.addWidget(label)
+				pos_int_validator = QtGui.QIntValidator(target)
+				line_edit = QtGui.QLineEdit(str(param.defaultunits),target)
+				line_edit.setValidator(pos_int_validator)
+				hbl.addWidget(line_edit,0)
+				hbl.name = param.name
+				layout.addLayout(hbl)
+				target.output_writers.append(IntParamWriter(param.name,line_edit))
+				target.name_widget_map[param.name] = [line_edit,label]
+		
+	class IncorpText():
+		def __init__(self): pass
+		def __call__(self,param,layout,target):
+			hbl=QtGui.QHBoxLayout()
+			hbl.setMargin(0)
+			hbl.setSpacing(2)
+					
+			text_edit = QtGui.QTextEdit("",target)
+			text_edit.setReadOnly(True)
+			text_edit.setWordWrapMode(QtGui.QTextOption.WordWrap)
+			text_edit.setText(param.defaultunits)
+			hbl.addWidget(text_edit,0)
+			
+			groupbox = QtGui.QGroupBox(param.desc_short)
+			groupbox.setToolTip(param.desc_long)
+			groupbox.setLayout(hbl)
+			
+			layout.addWidget(groupbox,1)
+	
+			target.output_writers.append(TextParamWriter(param.name,text_edit))	
+			target.name_widget_map[param.name] = groupbox
+		
+	class IncorpUrl():
+		def __init__(self): pass
+		def __call__(self,param,layout,target):
+			vbl=QtGui.QVBoxLayout()
+			hbl=QtGui.QHBoxLayout()
+			hbl.setMargin(0)
+			hbl.setSpacing(2)
+			defaults = ""
+			if param.defaultunits != None:
+				for i,d in enumerate(param.defaultunits):
+					defaults += d
+					if i != (len(param.defaultunits)-1): 
+						defaults += '\n'
+					
+			text_edit = QtGui.QTextEdit("",target)
+			text_edit.setWordWrapMode(QtGui.QTextOption.NoWrap)
+			text_edit.setText(defaults)
+			hbl.addWidget(text_edit,0)
+			vbl.addLayout(hbl)
+			
+			hbl2=QtGui.QHBoxLayout()
+			hbl2.setMargin(0)
+			hbl2.setSpacing(2)
+			
+			browse_button = QtGui.QPushButton("Browse",target)
+			hbl2.addWidget(browse_button)
+			clear_button = QtGui.QPushButton("Clear",target)
+			hbl2.addWidget(clear_button,0)
+			vbl.addLayout(hbl2)
+			
+			groupbox = QtGui.QGroupBox(param.desc_short)
+			groupbox.setToolTip(param.desc_long)
+			groupbox.setLayout(vbl)
+			
+			layout.addWidget(groupbox,0)
+			
+			target.event_handlers.append(UrlEventHandler(target,text_edit,browse_button,clear_button,target.parent().application(),param.desc_short))
+			target.output_writers.append(UrlParamWriter(param.name,text_edit))
+			target.name_widget_map[param.name] = groupbox
+
+	class IncorpDict():
+		def __init__(self): pass
+		def __call__(self,param,layout,target):
+			'''
+			A dictionary is turned into two combo boxes - An event handler recognises when the first combo value changes (the dictionary keys), and if so
+			changes the entries in the second combo to values in the dictionary corresponding to the keys
+			'''
+			# hbl - tht
+			hbl=QtGui.QHBoxLayout()
+			hbl.setMargin(0)
+			hbl.setSpacing(2)
+			
+			keys = param.choices.keys()
+			keys.sort() # yes this is somewhat restrictive but it was my only way around something
+	#		label = QtGui.QLabel(param.desc_short+":",target)
+	#		label.setToolTip(param.desc_long)
+	#		hbl.addWidget(label)
+			
+			combo = QtGui.QComboBox(target)
+			idx_default = 0
+			for i,k in enumerate(keys):
+				combo.addItem(str(k))
+				
+				if str(k) == str(param.defaultunits):
+					idx_default = i
+					
+			combo.setCurrentIndex(idx_default)
+			combo_default = keys[idx_default]
+			hbl.addWidget(combo)
+			
+			
+			combo2 = QtGui.QComboBox(target)
+			for v in param.choices[combo_default]:
+				combo2.addItem(str(v))
+				
+			hbl.addWidget(combo2)
+			
+			groupbox = QtGui.QGroupBox(param.desc_short)
+			groupbox.setToolTip(param.desc_long)
+			groupbox.setLayout(hbl)
+			
+			layout.addWidget(groupbox)
+			
+			target.output_writers.append(DictParamWriter(param,combo,combo2))
+			target.event_handlers.append(DictEventHandler(param.choices,combo,combo2))
+			
+			target.name_widget_map[param.name] = groupbox
+
+	class IncorpChoice():
+		def __init__(self): pass
+		def __call__(self,param,layout,target):
+		
+			hbl = QtGui.QHBoxLayout()
+			buttons = []
+			for choice in param.choices:
+				button = QtGui.QRadioButton(str(choice))
+				if choice == param.defaultunits: button.setChecked(True)
+				hbl.addWidget( button)
+				buttons.append(button)
+			
+			groupbox = QtGui.QGroupBox(param.desc_short)
+			groupbox.setToolTip(param.desc_long)
+			groupbox.setLayout(hbl)
+			layout.addWidget(groupbox,0)
+			target.output_writers.append(ChoiceParamWriter(param.name,buttons,type(param.choices[0])))
+			
+			target.name_widget_map[param.name] = groupbox
+	
+	def incorporate_float_with_choices(self,param,layout,target):
 		hbl=QtGui.QHBoxLayout()
 		hbl.setMargin(0)
 		hbl.setSpacing(2)
 		
 		hbl=QtGui.QHBoxLayout()
-		label = QtGui.QLabel(param.desc_short,self)
+		label = QtGui.QLabel(param.desc_short,target)
 		label.setToolTip(param.desc_long)
 		hbl.addWidget(label)
 				
-		combo = QtGui.QComboBox(self)
+		combo = QtGui.QComboBox(target)
 		idx_default = 0
 		for i,float_p in enumerate(param.choices):
 			combo.addItem(str(float_p))
@@ -1159,20 +1193,20 @@ class EMFormWidget(QtGui.QWidget):
 		hbl.addWidget(combo,0)
 		layout.addLayout(hbl)
 		
-		self.output_writers.append(FloatChoiceParamWriter(param.name,combo))
-		self.name_widget_map[param.name] = [combo,label]
+		target.output_writers.append(FloatChoiceParamWriter(param.name,combo))
+		target.name_widget_map[param.name] = [combo,label]
 	
-	def __incorporate_int_with_choices(self,param,layout):
+	def incorporate_int_with_choices(self,param,layout,target):
 		hbl=QtGui.QHBoxLayout()
 		hbl.setMargin(0)
 		hbl.setSpacing(2)
 		
 		hbl=QtGui.QHBoxLayout()
-		label = QtGui.QLabel(param.desc_short,self)
+		label = QtGui.QLabel(param.desc_short,target)
 		label.setToolTip(param.desc_long)
 		hbl.addWidget(label)
 				
-		combo = QtGui.QComboBox(self)
+		combo = QtGui.QComboBox(target)
 		idx_default = 0
 		for i,integer in enumerate(param.choices):
 			combo.addItem(str(integer))
@@ -1183,20 +1217,20 @@ class EMFormWidget(QtGui.QWidget):
 		hbl.addWidget(combo,0)
 		layout.addLayout(hbl)
 		
-		self.output_writers.append(IntChoiceParamWriter(param.name,combo))
-		self.name_widget_map[param.name] = [combo,label]
+		target.output_writers.append(IntChoiceParamWriter(param.name,combo))
+		target.name_widget_map[param.name] = [combo,label]
 	
-	def __incorporate_string_with_choices(self,param,layout):
+	def incorporate_string_with_choices(self,param,layout,target):
 		hbl=QtGui.QHBoxLayout()
 		hbl.setMargin(0)
 		hbl.setSpacing(2)
 		
 		hbl=QtGui.QHBoxLayout()
-		label = QtGui.QLabel(param.desc_short,self)
+		label = QtGui.QLabel(param.desc_short,target)
 		label.setToolTip(param.desc_long)
 		hbl.addWidget(label,0)
 				
-		combo = QtGui.QComboBox(self)
+		combo = QtGui.QComboBox(target)
 		idx_default = 0
 		for i,string in enumerate(param.choices):
 			combo.addItem(string)
@@ -1207,18 +1241,18 @@ class EMFormWidget(QtGui.QWidget):
 		hbl.addWidget(combo,0)
 		layout.addLayout(hbl)
 		
-		self.output_writers.append(StringChoiceParamWriter(param.name,combo))
-		self.name_widget_map[param.name] = [combo,label]
+		target.output_writers.append(StringChoiceParamWriter(param.name,combo))
+		target.name_widget_map[param.name] = [combo,label]
 	
 	def __add_ok_cancel_buttons(self,layout):
 		hbl=QtGui.QHBoxLayout()
-		label = QtGui.QLabel("Form commands:",self)
+		label = QtGui.QLabel("Form commands:")
 		hbl.addWidget(label)
 		
-		ok_button = QtGui.QPushButton("Ok",self)
+		ok_button = QtGui.QPushButton("Ok")
 		ok_button.setToolTip("When you click ok the values in the form are sent to the calling program")
 		hbl.addWidget(ok_button)
-		cancel_button = QtGui.QPushButton("Cancel",self)
+		cancel_button = QtGui.QPushButton("Cancel")
 		hbl.addWidget(cancel_button,0)
 		layout.addLayout(hbl)
 		QtCore.QObject.connect(ok_button,QtCore.SIGNAL("clicked(bool)"),self.ok_pressed)
@@ -1235,14 +1269,18 @@ class EMFormWidget(QtGui.QWidget):
 
 	def update_texture(self):
 		self.parent().force_texture_update()
-		
-	def closeEvent(self,event):
-		self.parent().emit(QtCore.SIGNAL("emform_close"))
-		
-	def resizeEvent(self,event):
-		for event_handler in self.resize_event_handlers:
-			event_handler.resizeEvent(event)
-
+#		
+#	def closeEvent(self,event):
+#		return
+#		self.parent().closeEvent(event)
+#		self.parent().emit(QtCore.SIGNAL("emform_close"))
+#		event.accept()
+#		
+#	def resizeEvent(self,event):
+#		return
+#		for event_handler in self.resize_event_handlers:
+#			event_handler.resizeEvent(event)
+#
 	def display_file(self,filename):
 		self.parent().emit(QtCore.SIGNAL("display_file"),filename)
 
@@ -1557,11 +1595,14 @@ class BoolDependentsEventHandler:
 class EMTableFormModule(EMQtWidgetModule):
 	def __init__(self,params,application):
 		self.application = weakref.ref(application)
-		self.widget = EMTableFormWidget(self,params)
-		EMQtWidgetModule.__init__(self,self.widget)
+		EMQtWidgetModule.__init__(self,EMTableFormWidget(self,params))
 		
 	def get_desktop_hint(self):
 		return "form"
+	
+	def __del__(self):
+		print "table form module death"
+		
 		
 class EMTableFormWidget(EMFormWidget):
 	'''
@@ -1571,7 +1612,8 @@ class EMTableFormWidget(EMFormWidget):
 	'''
 	def __init__(self,parent,params=None):
 		EMFormWidget.__init__(self,parent,params)
-		
+	
+	def __del__(self): print "del table form widget"
 		
 	def incorporate_params(self,params,layout):
 		tabwidget = QtGui.QTabWidget(self)
@@ -1586,12 +1628,12 @@ class EMTableFormWidget(EMFormWidget):
 					if len(param) != 1 and not isinstance(param,EMParamTable):
 						hbl=QtGui.QHBoxLayout()
 						for iparam in param:
-							self.auto_incorporate[iparam.vartype](iparam,hbl)
+							self.auto_incorporate[iparam.vartype](iparam,hbl,self)
 						vbl.addLayout(hbl)
 						continue
 						
 				except: pass
-				self.auto_incorporate[param.vartype](param,vbl)
+				self.auto_incorporate[param.vartype](param,vbl,self)
 			
 			tabwidget.addTab(widget,title)
 		
@@ -1649,23 +1691,50 @@ def on_ok(dict):
 	
 def on_cancel():
 	print "got the cancel signal"
+
+class TestWidgetModule(EMQtWidgetModule):
+	def __init__(self):
+		EMQtWidgetModule.__init__(self, TestWidget())
+#	def __del__(self):
+#		import sys
+#		self.test_ref().destroy()
+#		print "form module death", sys.getrefcount(self.test_ref()),self.test_ref(),self.test_ref
+	def __del__(self):
+		print "test widget module died"
+
+class TestWidget(QtGui.QWidget):
+	def __init__(self):
+		QtGui.QWidget.__init__(self)
 	
+	def __del__(self):
+		print "test widget died"
+	
+	def closeEvent(self,event):
+		QtGui.QWidget.closeEvent(self,event)
+		event.accept()
+
 # This is just for testing, of course
 if __name__ == '__main__':
 	
 	from emapplication import EMStandAloneApplication
 	em_app = EMStandAloneApplication()
-	window = EMFormModule(params=get_example_form_params(),application=em_app)
-	window.setWindowTitle("A test form")
-	QtCore.QObject.connect(window,QtCore.SIGNAL("emform_ok"),on_ok)
-	QtCore.QObject.connect(window,QtCore.SIGNAL("emform_cancel"),on_cancel)
+#	window = EMFormModule(params=get_example_form_params(),application=em_app)
+#	window.setWindowTitle("A test form")
+#	QtCore.QObject.connect(window,QtCore.SIGNAL("emform_ok"),on_ok)
+#	QtCore.QObject.connect(window,QtCore.SIGNAL("emform_cancel"),on_cancel)
 	
-	window2= EMTableFormModule(params=get_example_table_form_params(),application=em_app)
-	window2.setWindowTitle("A test form")
-	QtCore.QObject.connect(window2,QtCore.SIGNAL("emform_ok"),on_ok)
-	QtCore.QObject.connect(window2,QtCore.SIGNAL("emform_cancel"),on_cancel)
+#	window2= EMTableFormModule(params=get_example_table_form_params(),application=em_app)
+#	window2.setWindowTitle("A test form")
+#	QtCore.QObject.connect(window2,QtCore.SIGNAL("emform_ok"),on_ok)
+#	QtCore.QObject.connect(window2,QtCore.SIGNAL("emform_cancel"),on_cancel)
 	
-	em_app.show()
+#	
+	import sys
+	tt = TestWidget()
+	#test = TestWidgetModule()
+	tt.show()
+	print sys.getrefcount(tt)
+	#em_app.show()
 	em_app.execute()
 	
 	

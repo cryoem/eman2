@@ -1010,7 +1010,7 @@ class RawDatabaseAutoBoxer:
 				if options.normproc == "none":normalize=False
 				else: normalize=True
 				boxable.write_box_images(options.boxsize,options.force,imageformat=options.outformat,normalize=normalize,norm_method=options.normproc,invert=options.invert_output)
-				if options.dbls != None:
+				if options.dbls != None and len(boxable.boxes)>0:
 					from EMAN2 import get_file_tag
 					db = db_open_dict("bdb:project")	
 					particle_names = db.get(options.dbls,dfl=[])
