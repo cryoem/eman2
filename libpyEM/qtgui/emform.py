@@ -91,7 +91,7 @@ class EMParamTable(list):
 	def build_table(self,table_widget,icon):
 		
 		exclusions = []
-		if hasattr(self,"exclusions"): exclusions = paramtable.exclusions # exclusions are a list of highlight entries - they get colored green
+		if hasattr(self,"exclusions"): exclusions = self.exclusions # exclusions are a list of highlight entries - they get colored green
 		
 		flag2 = Qt.ItemFlags(Qt.ItemIsSelectable)
 		flag3 = Qt.ItemFlags(Qt.ItemIsEnabled)
