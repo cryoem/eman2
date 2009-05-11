@@ -82,6 +82,7 @@ images far from focus."""
 	parser.add_option("--oversamp",type="int",help="Oversampling factor",default=1)
 	parser.add_option("--sf",type="string",help="The name of a file containing a structure factor curve. Can improve B-factor determination.",default=None)
 	parser.add_option("--debug",action="store_true",default=False)
+	parser.add_option("--dbds",type="string",default=None,help="Data base dictionary storage, used by the workflow for storing which files have been filtered. You can ignore this argument")
 	
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
@@ -220,6 +221,21 @@ def write_e2ctf_output(options):
 			ctf=EMAN2Ctf()
 			ctf.from_string(db_parms[name][0])
 			process_stack(filename,phaseout,wienerout,not options.nonorm,options.oversamp,ctf,invert=options.invert)
+			if options.dbds != None:
+				pdb = db_open_dict("bdb:project")
+				dbds = pdb.get(options.dbds,dfl={})
+				data_entry = {}
+				if dbds.has_key(filename):
+					data_entry = dbds[filename]
+				
+				if phaseout:
+					data_entry["phase"] = phaseout
+				if wienerout:
+					data_entry["wiener"] = wienerout
+					
+				dbds[filename] = data_entry
+				pdb[options.dbds] = dbds
+					
 			if logid : E2progress(logid,float(i+1)/len(options.filenames))
 			
 			

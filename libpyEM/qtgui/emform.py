@@ -598,9 +598,9 @@ class EM2DFileTable(EMFileTable):
 		self.display_module = None
 		self.module_events_manager = None
 	
-	def __del__(self):
-		print "2D table dies"
-	
+#	def __del__(self):
+#		print "2D table dies"
+#	
 	def table_item_double_clicked(self,item):
 		'''
 		See EMFileTable.table_item_double_clicked for comments
@@ -639,8 +639,8 @@ class EM2DStackTable(EMFileTable):
 		self.module_events_manager = None
 		self.context_menu_data["Save As"] = EM2DStackTable.save_as
 		
-	def __del__(self):
-		print "stack table dies"
+#	def __del__(self):
+#		print "stack table dies"
 		
 	def save_as(list_of_names,table_widget):
 		'''
@@ -1270,11 +1270,10 @@ class EMFormWidget(QtGui.QWidget):
 	def update_texture(self):
 		self.parent().force_texture_update()
 #		
-#	def closeEvent(self,event):
-#		return
-#		self.parent().closeEvent(event)
-#		self.parent().emit(QtCore.SIGNAL("emform_close"))
-#		event.accept()
+	def closeEvent(self,event):
+		self.parent().closeEvent(event)
+		self.parent().emit(QtCore.SIGNAL("emform_close"))
+		event.accept()
 #		
 #	def resizeEvent(self,event):
 #		return

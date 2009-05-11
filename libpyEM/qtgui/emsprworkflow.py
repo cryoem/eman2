@@ -683,7 +683,7 @@ class EMRawDataReportTask(WorkFlowTask):
 			self.name = "Browse To Add"
 			
 		def function(self,bool):
-			self.context_menu_data.add_files_from_context_menu([],self.table_widget())
+			self.context_menu_data.context_menu["Add"]([],self.table_widget())
 			
 
 	class ProjectListContextMenu:
@@ -693,12 +693,6 @@ class EMRawDataReportTask(WorkFlowTask):
 			self.context_menu = {}
 			self.context_menu["Remove"] = EMRawDataReportTask.ProjectListContextMenu.RemoveFilesFromProject(self.project_list)
 			self.context_menu["Add"] = EMRawDataReportTask.ProjectListContextMenu.AddFilesToProjectViaContext(self.project_list)
-		
-		def set_project_list(self,project_list):
-			self.project_list = project_list
-			
-		def set_validator(self,validator):
-			self.validator = validator
 		
 		def items(self):
 			return self.context_menu.items()
@@ -1604,16 +1598,19 @@ class ParticleReportTask(ParticleWorkFlowTask):
 
 	def get_project_particle_table(self):
 		project_db = db_open_dict("bdb:project")
-		particle_list_name = "global.spr_particle_file_names"
+		particle_list_name = "global.spr_ptcls"
 		particle_names = project_db.get(particle_list_name,dfl=[])
 		self.project_files_at_init = particle_names # so if the user hits cancel this can be reset
 
 		from emform import EM2DStackTable,EMFileTable
 		table = EM2DStackTable(particle_names,desc_short="Raw Data Files",desc_long="")
-		context_menu_data = EMRawDataReportTask.ProjectListContextMenu()
-		context_menu_data.set_project_list(particle_list_name)
+		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(particle_list_name)
 		table.add_context_menu_data(context_menu_data)
 		table.add_button_data(EMRawDataReportTask.ProjectAddRawDataButton(table,context_menu_data))
+		self.columns_object = E2BoxerTask.ParticleColumns()
+		table.insert_column_data(1,EMFileTable.EMColumnData("Particles On Disk",self.columns_object.get_num_particles_project,"Particles currently stored on disk that are associated with this image"))
+		table.insert_column_data(2,EMFileTable.EMColumnData("Particles Dims",self.columns_object.get_particle_dims_project,"The dimensions of the particles that are stored on disk"))
+	
 		
 		return table
 	
@@ -1669,7 +1666,7 @@ class E2BoxerTask(ParticleWorkFlowTask):
 #		'''
 #		
 #		project_db = db_open_dict("bdb:project")	
-#		particle_names = project_db.get("global.spr_particle_file_names",dfl=[])
+#		particle_names = project_db.get("global.spr_ptcls",dfl=[])
 #		for name in particle_names:
 #			a = EMData()
 #			a.read_image(name,0,True) # header only
@@ -1684,7 +1681,7 @@ class E2BoxerTask(ParticleWorkFlowTask):
 #		'''
 #		'''
 #		project_db = db_open_dict("bdb:project")	
-#		particle_names = project_db.get("global.spr_particle_file_names",dfl=[])
+#		particle_names = project_db.get("global.spr_ptcls",dfl=[])
 #		
 #		for name in particle_names:
 #			a = EMData()
@@ -1700,7 +1697,7 @@ class E2BoxerTask(ParticleWorkFlowTask):
 #	get_num_particles_project = staticmethod(get_num_particles_project)
 #	get_particle_dims_project = staticmethod(get_particle_dims_project)
 	
-	class BoxerColumns:
+	class ParticleColumns:
 		def __init__(self):
 			self.header_cache = {}
 			self.translation_cache = {}
@@ -1725,7 +1722,7 @@ class E2BoxerTask(ParticleWorkFlowTask):
 						return str(EMUtil.get_image_count(name))
 			
 			project_db = db_open_dict("bdb:project")	
-			particle_names = project_db.get("global.spr_particle_file_names",dfl=[])
+			particle_names = project_db.get("global.spr_ptcls",dfl=[])
 			for name in particle_names:
 				a = EMData()
 				a.read_image(name,0,True) # header only
@@ -1751,7 +1748,7 @@ class E2BoxerTask(ParticleWorkFlowTask):
 						return "%ix%ix%i" %(nx,ny,nz)
 			
 			project_db = db_open_dict("bdb:project")	
-			particle_names = project_db.get("global.spr_particle_file_names",dfl=[])
+			particle_names = project_db.get("global.spr_ptcls",dfl=[])
 			
 			for name in particle_names:
 				a = EMData()
@@ -1790,7 +1787,7 @@ class E2BoxerTask(ParticleWorkFlowTask):
 		table,n = self.report_task.get_raw_data_table()# now p is a EMParamTable with rows for as many files as there in the project
 		from emform import EMFileTable
 		table.insert_column_data(0,EMFileTable.EMColumnData("Stored Boxes",E2BoxerTask.get_boxes_in_database,"Boxes currently stored in the EMAN2 database"))
-		self.columns_object = E2BoxerTask.BoxerColumns()
+		self.columns_object = E2BoxerTask.ParticleColumns()
 		table.insert_column_data(1,EMFileTable.EMColumnData("Particles On Disk",self.columns_object.get_num_particles_project,"Particles currently stored on disk that are associated with this image"))
 		table.insert_column_data(2,EMFileTable.EMColumnData("Particles Dims",self.columns_object.get_particle_dims_project,"The dimensions of the particles that are stored on disk"))
 		#self.tmp = E2BoxerTask.Tmp()
@@ -2059,10 +2056,10 @@ class E2BoxerOutputTask(E2BoxerTask):
 	def __init__(self,application):
 		E2BoxerTask.__init__(self,application)
 		self.window_title = "e2boxer output"
-		self.output_formats = ["bdb","hdf"]
+		self.output_formats = ["bdb","hdf"] # disable img from the workflow because in EMAN2 we want to store more metadata in the header
 	
-	def __del__(self):
-		print "output task dies"
+#	def __del__(self):
+#		print "output task dies"
 	
 	def get_params(self):
 		params = []
@@ -2128,7 +2125,7 @@ class E2BoxerOutputTask(E2BoxerTask):
 			
 			string_args = ["normproc","outformat","boxsize"]
 			bool_args = ["force","write_coord_files","write_box_images","just_output","invert_output"]
-			additional_args = ["--method=Swarm", "--auto=db","--dbls=global.spr_particle_file_names"]
+			additional_args = ["--method=Swarm", "--auto=db","--dbls=global.spr_ptcls"]
 			temp_file_name = "e2boxer_autobox_stdout.txt"
 			self.spawn_task("e2boxer.py",options,string_args,bool_args,additional_args,temp_file_name)
 			self.emit(QtCore.SIGNAL("task_idle"))
@@ -2271,7 +2268,7 @@ class E2CTFWorkFlowTask(ParticleReportTask):
 		
 		'''
 		project_db = db_open_dict("bdb:project",ro=True)
-		particle_list_name = "global.spr_particle_file_names"
+		particle_list_name = "global.spr_ptcls"
 		particle_names = project_db.get(particle_list_name,dfl=[])
 		
 		table = self.get_project_particle_table()
@@ -2577,6 +2574,8 @@ class CTFReportTask(E2CTFWorkFlowTask):
 	def get_params(self):
 		params = []
 		p,n = self.get_ctf_param_table(None)
+		
+		self.columns_object = E2BoxerTask.ParticleColumns()
 		
 		if n == 0:
 			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=CTFReportTask.documentation_string+CTFReportTask.warning_string,choices=None))
@@ -2902,7 +2901,7 @@ class E2CTFOutputTask(E2CTFWorkFlowTask):
 			self.write_db_entries(params)
 			string_args = []
 			bool_args = ["wiener","phaseflip"]
-			additional_args = []
+			additional_args = ["--dbds="+"global.spr_filt_ptcls_map"]
 			temp_file_name = "e2ctf_output_stdout.txt"
 			self.spawn_task("e2ctf.py",options,string_args,bool_args,additional_args,temp_file_name)
 			
@@ -3517,8 +3516,20 @@ class E2Refine2DChooseDataTask(ParticleWorkFlowTask):
 		self.window_title = "e2refine2d - getting starting"
 		self.form_db_name = "bdb:emform.e2refine2d"
 		self.preferred_size = (480,300)
+	
+	def get_params_new(self):
+		db = db_open_dict("bdb:project")
+		import time
+		t = time.time()
+		if db.has_key("global.spr_ptcls"):
+			n = 0
+			for name in db["global.spr_ptcls"]:
+				n += EMUtil.get_image_count(name)
 		
+		print "it took",time.time()-t,"for",n
+	
 	def get_params(self):
+		self.get_params_new()
 		params = []		
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2Refine2DChooseDataTask.documentation_string,choices=None))
 		
