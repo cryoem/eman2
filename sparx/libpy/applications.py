@@ -8734,7 +8734,22 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max
 				vol, dp, dphi = helios(vol, pixel_size, dp, dphi, fract, rmax)
 				print_msg("new delta z and delta phi      : %s,    %s\n\n"%(dp,dphi))
 				previous_vol=get_image(os.path.join(outdir, "aligned%04d.hdf"%(N_step*max_iter+Iter)))
-				drop_image(vol, os.path.join(outdir, "volf%04d.hdf"%(N_step*max_iter+Iter+1)))
+				#Here we align the volume with the previous one to keep the polarity fixed.
+				#peakmax - any large negative value for the CC peak to start from
+				#360 - literaly 360 degrees
+				peakmax=[-1000000.0]*3
+				for i in xrange(0, 360, pol_ang_step):
+					vtm = rot_shift3D(vol,float(i))
+					s_r = int(dp/pixel_size)
+					#s_r - search range, should be at least +/- 1 pixel, if s_r < 2 then we set it to 2
+					if(int(s_r) < 2): s_r = 2 
+					for j in xrange(s_r):
+						zs = j-s_r//2
+						peaks = ccc(cyclic_shift(vtm, 0, 0, zs), previous_vol)
+						if(peaks>peakmax[0]):  peakmax=[peaks, i, zs]
+				vol = cyclic_shift(rot_shift3D(vol, peakmax[1]),  0, 0, peakmax[2])
+				drop_image(vol, os.path.join(outdir, "aligned%04d.hdf"%(N_step*max_iter+Iter+1)) )
+				#drop_image(vol, os.path.join(outdir, "volf%04d.hdf"%(N_step*max_iter+Iter+1)))
 
 			del varf
 			bcast_EMData_to_all(vol, myid, main_node)
