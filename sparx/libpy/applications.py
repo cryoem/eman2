@@ -8459,22 +8459,22 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 						refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, sym, numr, MPI=False)
 
 				if an[N_step] == -1:	
-					proj_ali_incore(data[im],refrings,first_ring,last_ring,rstep,xrng[N_step],yrng[N_step],step[N_step])
+					peak = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step])
 				else:
-					proj_ali_incore_local(data[im],refrings,first_ring,last_ring,rstep,xrng[N_step],yrng[N_step],step[N_step],an[N_step])
+					peak = proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step])
 
-				paramali = get_params2D(data[im])
-				#  conflict with meaning of active  PAP 05/09
+				paramali = get_params_proj(data[im])
+				#  conflict with the meaning of active  PAP 05/09
 				active = 1
 				# peak
-				if(paramali[3] < min_cc_peak): active = 0
+				if(peak < min_cc_peak): active = 0
 				# s2x
-				elif(abs(paramali[1]) > max_x_shift): active = 0
+				elif(abs(paramali[3]) > max_x_shift): active = 0
 				# s2y
-				elif(abs(paramali[2]) > max_y_shift): active = 0
+				elif(abs(paramali[4]) > max_y_shift): active = 0
 				# psi correct value should be 90 +/- max_tilt, or 270 +/- max_tilt!
-				elif(abs(paramali[0]-270.0) >max_tilt and paramali[0] >180.0): active = 0
-				elif(abs(paramali[0]-90.0) >max_tilt and paramali[0] <180.0): active = 0
+				elif(abs(paramali[2]-270.0) >max_tilt and paramali[2] >180.0): active = 0
+				elif(abs(paramali[2]-90.0) >max_tilt and paramali[2] <180.0): active = 0
 				data[im].set_attr_dict({'active':active})
 				#print the alignment parameters into the LOG file!
 				print_msg("image status                : %i\n"%(active))
@@ -8520,7 +8520,7 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 			'''
 			vol, dp, dphi = helios(vol, pixel_size, dp, dphi, fract, rmax)
 			print_msg("new delta z and delta phi      : %s,    %s\n\n"%(dp,dphi))
-			previous_vol=get_image(os.path.join(outdir, "aligned%04d.spi"%(N_step*max_iter+Iter)))
+			previous_vol=get_image(os.path.join(outdir, "aligned%04d.hdf"%(N_step*max_iter+Iter)))
 			#Here we align the volume with the previous one to keep the polarity fixed.
 			#peakmax - any large negative value for the CC peak to start from
 			#360 - literaly 360 degrees
@@ -8535,7 +8535,7 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 					peaks = ccc(cyclic_shift(vtm, 0, 0, zs), previous_vol)
 					if(peaks>peakmax[0]):  peakmax=[peaks, i, zs]
 			vol = cyclic_shift(rot_shift3D(vol, peakmax[1]),  0, 0, peakmax[2])
-			drop_image(vol, os.path.join(outdir, "aligned%04d.spi"%(N_step*max_iter+Iter+1)), "s")
+			drop_image(vol, os.path.join(outdir, "aligned%04d.hdf"%(N_step*max_iter+Iter+1)) )
 			#  here we  write header info
 			from utilities import write_headers
 			write_headers( stack, data, list_of_particles)
@@ -8594,8 +8594,162 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max
 	rstep       = int(rs)
 	last_ring   = int(ou)
 	max_iter    = int(maxit)
-	return
 
+	vol     = EMData()
+	vol.read_image(ref_vol)
+	nx      = vol.get_xsize()
+	if last_ring < 0:	last_ring = int(nx/2) - 2
+
+	if myid == main_node:
+		import user_functions
+		user_func = user_functions.factory[user_func_name]
+
+		print_begin_msg("ihrsr_MPI")
+		print_msg("Input stack  	       : %s\n"%(stack))
+		print_msg("Reference volume	       : %s\n"%(ref_vol))	
+		print_msg("Output directory	       : %s\n"%(outdir))
+		print_msg("Maskfile		       : %s\n"%(maskfile))
+		print_msg("Inner radius 	       : %i\n"%(first_ring))
+		print_msg("Outer radius 			     : %i\n"%(last_ring))
+		print_msg("Ring step				     : %i\n"%(rstep))
+		print_msg("threshold for the CC peak		     : %f\n"%(min_cc_peak))
+		print_msg("X search range			     : %s\n"%(xrng))
+		print_msg("threshold for translation in X direction  : %f\n"%(max_x_shift))
+		print_msg("Y search range			     : %s\n"%(yrng))
+		print_msg("threshold for translation in Y direction  : %f\n"%(max_y_shift))
+		print_msg("Translational step			     : %s\n"%(step))
+		print_msg("Angular step 			     : %s\n"%(delta))
+		print_msg("Angular search range 		     : %s\n"%(an))
+		print_msg("pixel size in Angstoms		     : %f\n"%(pixel_size))
+		print_msg("max radius for helical search (in Ang)    : %f\n"%(rmax))
+		print_msg("search step for hsearch - angle	     : %f\n"%(step_a))
+		print_msg("search step for hsearch - rise	     : %f\n"%(step_r))
+		print_msg("fraction of volume used for helical search: %f\n"%(fract))
+		print_msg("initial symmetry - angle		     : %f\n"%(dphi))
+		print_msg("initial symmetry - axial rise	     : %f\n"%(dp))
+		print_msg("Maximum iteration			     : %i\n"%(max_iter))
+		print_msg("Data with CTF			     : %s\n"%(CTF))
+		print_msg("Signal-to-Noise Ratio		     : %f\n"%(snr))
+		print_msg("Symmetry group			     : %s\n\n"%(sym))
+		print_msg("symmetry doc file			     : %s\n\n"%(datasym))
+	if maskfile:
+		if type(maskfile) is types.StringType: mask3D = get_image(maskfile)
+		else:                                  mask3D = maskfile
+	else: mask3D = model_circle(last_ring, nx, nx, nx)
+	
+	numr	= Numrinit(first_ring, last_ring, rstep, "F")
+	mask2D  = model_circle(last_ring,nx,nx) - model_circle(first_ring,nx,nx)
+
+	fscmask = model_circle(last_ring,nx,nx,nx)
+	if CTF:	from reconstruction import rec3D_MPI
+	else:	from reconstruction import rec3D_MPI_noCTF
+	ref_a = "s"
+	
+	if myid == main_node:
+       		if(file_type(stack) == "bdb"):
+			from EMAN2db import db_open_dict
+			dummy = db_open_dict(stack, True)
+		active = EMUtil.get_all_attributes(stack, 'active')
+		list_of_particles = []
+		for im in xrange(len(active)):
+			if active[im]:  list_of_particles.append(im)
+		del active
+		nima = len(list_of_particles)
+	else:
+		nima =0
+	nima = bcast_number_to_all(nima, source_node = main_node)
+	
+	if myid != main_node:
+		list_of_particles = [-1]*nima
+	list_of_particles = bcast_list_to_all(list_of_particles, source_node = main_node)
+	
+	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
+	# create a list of images for each node
+	list_of_particles = list_of_particles[image_start: image_end]
+	if debug:
+		finfo.write("image_start, image_end: %d %d\n" %(image_start, image_end))
+		finfo.flush()
+
+	data = EMData.read_images(stack, list_of_particles)
+	for im in xrange(len(data)):
+		data[im].set_attr('ID', list_of_particles[im])
+	
+	if debug:
+		finfo.write( '%d loaded  \n' % len(data) )
+		finfo.flush()
+	
+	if myid == main_node:  drop_image(vol, os.path.join(outdir, "aligned0000.hdf"))
+	for N_step in xrange(lstp):
+ 		for Iter in xrange(max_iter):
+			if myid == main_node:
+				start_time = time()
+				print_msg("\nITERATION #%3d\n"%(N_step*max_iter+Iter+1))
+			if CTF:
+				previous_defocus = -1.0
+			else:
+				volft,kb = prep_vol( vol )
+				refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, sym, numr)
+
+			for im in xrange( len(data) ):
+				if CTF:
+					ctf = data[im].get_attr( "ctf" )
+					if( ctf.defocus != previous_defocus):
+						previous_defocus = ctf.defocus
+						ctfvol = filt_ctf(vol, ctf)
+						volft,kb = prep_vol( ctfvol )
+						start_prepare = time()
+						refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, sym, numr)
+						if myid== main_node:
+							print_msg( "Time for prepare ring: %d\n" % (time()-start_prepare) )
+
+				if an[N_step] == -1: 
+					peak = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],finfo)
+				else:           
+					peak = proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step],finfo)
+
+				paramali = get_params_proj(data[im])
+				#  conflict with the meaning of active  PAP 05/09
+				active = 1
+				# peak
+				if(peak < min_cc_peak): active = 0
+				# s2x
+				elif(abs(paramali[3]) > max_x_shift): active = 0
+				# s2y
+				elif(abs(paramali[4]) > max_y_shift): active = 0
+				# psi correct value should be 90 +/- max_tilt, or 270 +/- max_tilt!
+				elif(abs(paramali[2]-270.0) >max_tilt and paramali[2] >180.0): active = 0
+				elif(abs(paramali[2]-90.0) >max_tilt and paramali[2] <180.0): active = 0
+				data[im].set_attr_dict({'active':active})
+	
+			if CTF: vol, fscc = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution%04d"%(N_step*max_iter+Iter+1)), myid, main_node)
+			else:    vol, fscc = rec3D_MPI_noCTF(data, sym, fscmask, os.path.join(outdir, "resolution%04d"%(N_step*max_iter+Iter+1)), myid, main_node)
+
+			if fourvar:
+			#  Compute Fourier variance
+				varf = varf3d_MPI(dataim, ssnr_text_file = os.path.join(outdir, "ssnr%04d"%(N_step*max_iter+Iter+1)), mask2D = None, reference_structure = vol, ou = last_ring, rw = 1.0, npad = 1, CTF = CTF, sign = 1, sym =sym, myid = myid)
+				if myid == main_node:   varf = 1.0/varf
+			else:  varf = None
+			if myid == main_node:
+				drop_image(vol, os.path.join(outdir, "unsymmetrized%04d.hdf"%(N_step*max_iter+Iter+1)))
+				vol, dp, dphi = helios(vol, pixel_size, dp, dphi, fract, rmax)
+				print_msg("new delta z and delta phi      : %s,    %s\n\n"%(dp,dphi))
+				previous_vol=get_image(os.path.join(outdir, "aligned%04d.hdf"%(N_step*max_iter+Iter)))
+				drop_image(vol, os.path.join(outdir, "volf%04d.hdf"%(N_step*max_iter+Iter+1)))
+
+			del varf
+			bcast_EMData_to_all(vol, myid, main_node)
+			# write out headers, under MPI writing has to be done sequentially
+			mpi_barrier(MPI_COMM_WORLD)
+			par_str = ['xform.projection', 'ID']
+	        	if myid == main_node:
+	        		if(file_type(stack) == "bdb"):
+	        			from utilities import recv_attr_dict_bdb
+	        			recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+	        		else:
+	        			from utilities import recv_attr_dict
+	        			recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+	        	else:	       send_attr_dict(main_node, data, par_str, image_start, image_end)
+	if myid == main_node: print_end_msg("ihrsr_MPI")
 
 def copyfromtif(indir, outdir=None, input_extension="tif", film_or_CCD="f", output_extension="hdf", contrast_invert=1, Pixel_size=1, scanner_param_a=1,scanner_param_b=1, scan_step=63.5, magnification=40, MPI=False):
 	"""
