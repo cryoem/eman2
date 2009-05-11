@@ -308,9 +308,9 @@ class Box:
 				print "error, you can not make a footprint if there is no image"
 				exit(1)
 			if shrink == 1:
-				self.footprint = self.image.make_footprint()
+				self.footprint = self.image.make_footprint(0)
 			else :
-				self.footprint = self.image.process("math.meanshrink",{"n":shrink}).make_footprint()
+				self.footprint = self.image.process("math.meanshrink",{"n":shrink}).make_footprint(0)
 				
 		return self.footprint
 			
@@ -2136,7 +2136,7 @@ class Boxable:
 			image.process_inplace("normalize.edgemean")
 			if self.get_subsample_rate() != 1:
 				image = image.process("math.meanshrink",{"n":self.get_footprint_shrink()})	
-			ef.append(image.make_footprint())
+			ef.append(image.make_footprint(0))
 		
 		for box in self.boxes:
 			best = -1

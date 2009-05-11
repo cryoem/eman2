@@ -1837,8 +1837,7 @@ EMData *EMData::make_rotational_footprint_e1( bool unwrap)
 	else return result;
 }
 
-
-EMData *EMData::make_footprint()
+EMData *EMData::make_footprint(int type) 
 {
 	//EMData *ccf=calc_ccf(this);
 //	EMData *ccf=calc_mutual_correlation(this);
@@ -1847,17 +1846,26 @@ EMData *EMData::make_footprint()
 //	EMData *un=ccf->unwrap();
 // This should probably be make_rotational_footprint_e1
 // 	EMData *un=make_rotational_footprint();
-	EMData *un=make_rotational_footprint_e1(); // Use EMAN1's footprint strategy
-	if (un->get_ysize() <= 6) {
-		throw UnexpectedBehaviorException("In EMData::make_footprint. The rotational footprint is too small");
+
+	if (type==0) {
+		EMData *un=make_rotational_footprint_e1(); // Use EMAN1's footprint strategy
+		if (un->get_ysize() <= 6) {
+			throw UnexpectedBehaviorException("In EMData::make_footprint. The rotational footprint is too small");
+		}
+		EMData *tmp=un->get_clip(Region(0,4,un->get_xsize(),un->get_ysize()-6));	// 4 and 6 are empirical
+		EMData *cx=tmp->calc_ccfx(tmp,0,-1,1);
+		EMData *fp=cx->get_clip(Region(0,0,cx->get_xsize()/2,cx->get_ysize()));
+		delete un;
+		delete tmp;
+		delete cx;
+		return fp;
 	}
-	EMData *tmp=un->get_clip(Region(0,4,un->get_xsize(),un->get_ysize()-6));	// 4 and 6 are empirical
-	EMData *cx=tmp->calc_ccfx(tmp,0,-1,1);
-	EMData *fp=cx->get_clip(Region(0,0,cx->get_xsize()/2,cx->get_ysize()));
-	delete un;
-	delete tmp;
-	delete cx;
-	return fp;
+	else if (type==1) {
+		EMData *fft=do_fft();
+		EMData *fp=new EMData(get_ysize()/2+2,get_ysize()/2,1);
+		fp->set_complex(1);
+		
+	}
 }
 
 

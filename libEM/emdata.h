@@ -511,14 +511,18 @@ namespace EMAN
 		EMData *make_rotational_footprint_e1(bool unwrap = true);
 		EMData *make_rotational_footprint_cmc(bool unwrap = true);
 
-		/** Makes a 'footprint' for the current image. This is another
-		 * image constructed from the 'rotational footprint' to produce
-		 * a rotationally and translationally invariant image.
+		/** Makes a 'footprint' for the current image. This is image containing
+		 * a rotational & translational invariant of the parent image. The size of the
+		 * resulting image depends on the selected type.
+		 * 
+		 * type 0- The original, default footprint derived from the rotational footprint
+		 * type 1- a bispectrum-based footprint
 		 *
+		 * @param type Select one of several possible algorithms for producing the invariants
 		 * @exception ImageFormatException If image size is not even.
 		 * @return The footprint image.
 		 */
-		EMData *make_footprint();
+		EMData *make_footprint(int type=0);
 
 
 		/** Calculates mutual correlation function (MCF) between 2 images.
