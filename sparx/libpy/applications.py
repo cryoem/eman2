@@ -2179,10 +2179,10 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	data = EMData.read_images(stack, list_of_particles)
 	for im in xrange(nima):
 		data[im].set_attr('ID', list_of_particles[im])
+		st = Util.infomask(data[im], mask, False)
+		data[im] -= st[0]
 		if CTF:
 			ctf_params = data[im].get_attr("ctf")
-			st = Util.infomask(data[im], mask, False)
-			data[im] -= st[0]
 	 		Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
 	if CTF:  ctf_2_sum += 1.0/snr  # note this is complex addition (1.0/snr,0.0)
 	# startup
@@ -2407,10 +2407,10 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	
 	for im in xrange(len(data)):
 		data[im].set_attr('ID', list_of_particles[im])
+		st = Util.infomask(data[im], mask, False)
+		data[im] -= st[0]
 		if CTF:
 			ctf_params = data[im].get_attr("ctf")
-			st = Util.infomask(data[im], mask, False)
-			data[im] -= st[0]
 			Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
 	if CTF:
 		reduce_EMData_to_root(ctf_2_sum, myid, main_node)
