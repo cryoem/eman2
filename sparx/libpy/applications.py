@@ -10223,7 +10223,7 @@ def params_3D_to_2D(stack):
 
 
 # application find structure
-def cml_find_structure_main(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit, given = False, first_zero = False, flag_weights = False, debug = False):
+def cml_find_structure_main(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit, given = False, first_zero = False, flag_weights = False, debug = False, trials = 1):
 	from projection import cml_open_proj, cml_init_global_var, cml_head_log, cml_disc, cml_export_txtagls
 	from projection import cml_find_structure, cml_export_struc, cml_end_log
 	from utilities  import print_begin_msg, print_msg, print_end_msg, start_time, running_time
@@ -10233,58 +10233,77 @@ def cml_find_structure_main(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_se
 	# logfile
 	t_start = start_time()
 	print_begin_msg('find_struct')
+	print_msg('\n')
 
 	out_dir = out_dir.rstrip('/')
 	if os.path.exists(out_dir): os.system('rm -rf ' + out_dir)
 	os.mkdir(out_dir)
-	
+
+	if rand_seed > 0: seed(rand_seed)
+	else:             seed()
+			
 	# Open and transform projections
 	Prj, Ori = cml_open_proj(stack, ir, ou, lf, hf, dpsi)
-	
-	# if not angles given select randomly orientation for each projection
-	if not given:
-		if rand_seed > 0: seed(rand_seed)
-		else:             seed()
-		j = 0
-		for n in xrange(len(Prj)):
-			if first_zero and n == 0:
-				Ori[j]   = 0.0
-				Ori[j+1] = 0.0
-				Ori[j+2] = 0.0
-			else:
-				Ori[j]   = random() * 360  # phi
-				Ori[j+1] = random() * 180  # theta
-				Ori[j+2] = random() * 360  # psi
-			j += 4
-
 	# Init the global vars
 	cml_init_global_var(dpsi, delta, len(Prj), debug)
+	# Update logfile
+	cml_head_log(stack, out_dir, delta, ir, ou, lf, hf, rand_seed, maxit, given, flag_weights, trials)
+
+	ibest    = -1
+	bestdisc = 1e20
+	for itrial in xrange(trials):
+		# if not angles given select randomly orientation for each projection
+		if not given:
+			j = 0
+			for n in xrange(len(Prj)):
+				if first_zero and n == 0:
+					Ori[j]   = 0.0
+					Ori[j+1] = 0.0
+					Ori[j+2] = 0.0
+				else:
+					Ori[j]   = random() * 360  # phi
+					Ori[j+1] = random() * 180  # theta
+					Ori[j+2] = random() * 360  # psi
+				j += 4
+
+		# prepare rotation matrix
+		Rot = Util.cml_init_rot(Ori)
+		# Compute the first disc
+		disc_init = cml_disc(Prj, Ori, Rot, flag_weights)
+		# Update progress file
+		cml_export_txtagls(out_dir, 'angles_%03i' % itrial, Ori, disc, 'Init')
+		# Find structure
+		Ori, disc, ite = cml_find_structure(Prj, Ori, Rot, out_dir, 'angles_%03i' % itrial, maxit, first_zero, flag_weights)
+		print_msg('trials %03i\tdisc init: %10.7f\tnb ite: %i\tdisc end: %10.7f\n' % (i, disc_init, ite + 1, disc))
+		if disc < bestdisc:
+			bestdisc = disc
+			ibest    = itrial
+
+		# Export structure
+		cml_export_struc(stack, out_dir, itrial, Ori)
+
+	# Update logfile
+	#cml_end_log(Ori, disc, ite)
+
 	
-	# Update logfile
-	cml_head_log(stack, out_dir, delta, ir, ou, lf, hf, rand_seed, maxit, given, flag_weights)
+	for i in xrange(trials):
 
-	# prepare rotation matrix
-	Rot = Util.cml_init_rot(Ori)
 
-	# Compute the first disc
-	disc = cml_disc(Prj, Ori, Rot, flag_weights)
+		ibest = disc_end.index(min(disc_end))
+		print_msg('\n Selected trial #%03i with disc %10.7f\n' % (ibest, disc_end[ibest]))
+		os.system('cp %s/structure_%03i.hdf %s/structure.hdf' % (out_dir, ibest, out_dir))
 
-	# Update progress file
-	cml_export_txtagls(out_dir, 'angles', Ori, disc, 'Init')
+		running_time(t_start)
+		print_end_msg('find_struct')
 
-	# Find structure
-	Ori, disc, ite = cml_find_structure(Prj, Ori, Rot, out_dir, 'angles', maxit, first_zero, flag_weights)
 
-	# Export structure
-	cml_export_struc(stack, out_dir, Ori)
 
-	# Update logfile
-	cml_end_log(Ori, disc, ite)
+
 	running_time(t_start)
 	print_end_msg('find_struct')
 
 # application find structure
-def cml_find_structure_MPI(stack, base_dir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit, given = False, first_zero = False, flag_weights = False, debug = False, trials = 10):
+def cml_find_structure_MPI(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit, given = False, first_zero = False, flag_weights = False, debug = False, trials = 10):
 	from projection import cml_open_proj, cml_init_global_var, cml_head_log, cml_disc, cml_export_txtagls
 	from projection import cml_find_structure, cml_export_struc, cml_end_log, cml_init_MPI, cml_init_rnd
 	from utilities  import print_begin_msg, print_msg, print_end_msg, start_time, running_time
@@ -10294,13 +10313,14 @@ def cml_find_structure_MPI(stack, base_dir, ir, ou, delta, dpsi, lf, hf, rand_se
 
 	# init
 	main_node, myid, nbcpu, N_start, N_stop = cml_init_MPI(trials)
-	lrnd = cml_init_rnd(trials, rand_seed)
+	lrnd    = cml_init_rnd(trials, rand_seed)
+	out_dir = out_dir.rstrip('/')
 
 	if myid == main_node:
 		t_start = start_time()
 		print_begin_msg('find_struct')
-
-	base_dir  = base_dir.rstrip('/')
+		if os.path.exists(out_dir): os.system('rm -rf ' + out_dir)
+		os.mkdir(out_dir)
 	
 	# Open and transform projections
 	Prj, Ori = cml_open_proj(stack, ir, ou, lf, hf, dpsi)
@@ -10309,15 +10329,13 @@ def cml_find_structure_MPI(stack, base_dir, ir, ou, delta, dpsi, lf, hf, rand_se
 	cml_init_global_var(dpsi, delta, len(Prj), debug)
 
 	# Update logfile
-	if myid == main_node: cml_head_log(stack, base_dir, delta, ir, ou, lf, hf, rand_seed, maxit, given, flag_weights)
+	if myid == main_node: cml_head_log(stack, out_dir, delta, ir, ou, lf, hf, rand_seed, maxit, given, flag_weights, trials)
 
 	disc_init = [0.0] * trials
 	disc_end  = [0.0] * trials
 	ite       = [0]   * trials
+	coll      = [0.0] * trials
 	for itrial in xrange(N_start, N_stop):
-		out_dir = base_dir + '_%03i' % itrial
-		if os.path.exists(out_dir): os.system('rm -rf ' + out_dir)
-		os.mkdir(out_dir)
 
 		# if not angles given select randomly orientation for each projection
 		if not given:
@@ -10339,11 +10357,16 @@ def cml_find_structure_MPI(stack, base_dir, ir, ou, delta, dpsi, lf, hf, rand_se
 		# Compute the first disc
 		disc_init[itrial] = cml_disc(Prj, Ori, Rot, flag_weights)
 		# Update progress file
-		cml_export_txtagls(out_dir, 'angles', Ori, disc_init[itrial], 'Init')
+		cml_export_txtagls(out_dir, 'angles_%03i' % itrial, Ori, disc_init[itrial], 'Init')
 		# Find structure
-		Ori, disc_end[itrial], ite[itrial] = cml_find_structure(Prj, Ori, Rot, out_dir, 'angles', maxit, first_zero, flag_weights)
+		Ori, disc_end[itrial], ite[itrial] = cml_find_structure(Prj, Ori, Rot, out_dir, 'angles_%03i' % itrial, maxit, first_zero, flag_weights)
 		# Export structure
-		cml_export_struc(stack, out_dir, Ori)
+		cml_export_struc(stack, out_dir, itrial, Ori)
+
+		from development import cml2_ori_collinearity
+		coll[itrial] = cml2_ori_collinearity(Ori)
+
+
 
 	mpi_barrier(MPI_COMM_WORLD)
 	disc_init = mpi_reduce(disc_init, trials, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
@@ -10352,11 +10375,20 @@ def cml_find_structure_MPI(stack, base_dir, ir, ou, delta, dpsi, lf, hf, rand_se
 	disc_end  = disc_end.tolist()
 	ite       = mpi_reduce(ite, trials, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
 	ite       = ite.tolist()
+	coll      = mpi_reduce(coll, trials, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
+	coll      = coll.tolist()
 	
 	if myid == main_node:
+		score = [0.0] * trials
 		print_msg('\n')
 		for i in xrange(trials):
-			print_msg('trials %03i\trnd %i\tdisc init: %10.7f\tnb ite: %i\tdisc end: %10.7f\n' % (i, lrnd[i], disc_init[i], ite[i] + 1, disc_end[i]))
+			score[i] = disc_end[i] * (1 - coll[i])
+			print_msg('trials %03i\trnd %i\tdisc init: %10.7f\tnb ite: %i\tdisc end: %10.7f\tcollinearity: %f\tscore: %f\n' % (i, lrnd[i], disc_init[i], ite[i] + 1, disc_end[i], coll[i], score[i]))
+			
+		#ibest = disc_end.index(min(disc_end))
+		ibest = score.index(min(score))
+		print_msg('\n Selected trial #%03i with disc %10.7f\n' % (ibest, disc_end[ibest]))
+		os.system('cp %s/structure_%03i.hdf %s/structure.hdf' % (out_dir, ibest, out_dir))
 
 		running_time(t_start)
 		print_end_msg('find_struct')
