@@ -3170,7 +3170,7 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 					#print 'OK', j, len(frsc[1]), frsc[1][0:5], ave_fsc[0:5]			
 
 
-			print 'sum', sum(ave_fsc)
+			#print 'sum', sum(ave_fsc)
 			if sum(ave_fsc) != 0:		
 				for i in xrange(len(ave_fsc)):
 					ave_fsc[i] /= float(c_fsc)
@@ -10219,36 +10219,25 @@ def params_3D_to_2D(stack):
 		ima.write_image(stack, im, EMUtil.ImageType.IMAGE_HDF, True)
 	print_end_msg("params_3D_to_2D")
 
+
 # application find structure
-def find_struct(stack, out_seedname, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit, given = False, first_zero = False, flag_weights = False, debug = False):
-	from utilities import print_begin_msg, print_msg, print_end_msg, start_time, running_time
-	import time
-	import sys
+def cml_find_structure_main(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit, given = False, first_zero = False, flag_weights = False, debug = False):
+	from projection import cml_open_proj, cml_init_global_var, cml_head_log, cml_disc, cml_export_txtagls
+	from projection import cml_find_structure, cml_export_struc, cml_end_log
+	from utilities  import print_begin_msg, print_msg, print_end_msg, start_time, running_time
+	from random     import seed, random
+	import time, sys, os
 
 	# logfile
 	t_start = start_time()
 	print_begin_msg('find_struct')
 
-	if out_seedname.split(':')[0] == 'bdb':
-		BDB = True
-		outdir = ''
-		out_seedname = out_seedname[4:]
-	else:
-		BDB = False
-		import os
-		if os.path.exists(out_seedname):  os.system('rm -rf ' + out_seedname)
-		os.mkdir(out_seedname)
-		out_seedname += '/'
-		outdir = out_seedname
-
-	# import
-	from projection  import cml_open_proj, cml_init_global_var, cml_head_log
-	from projection  import cml_disc, cml_export_txtagls, cml_export_struc
-	from projection  import cml_end_log, cml_find_structure
-	from random      import seed, random
-
+	out_dir = out_dir.rstrip('/')
+	if os.path.exists(out_dir): os.system('rm -rf ' + out_dir)
+	os.mkdir(out_dir)
+	
 	# Open and transform projections
-	Prj, Ori = cml_open_proj(stack, ir, ou, dpsi, lf, hf)
+	Prj, Ori = cml_open_proj(stack, ir, ou, lf, hf, dpsi)
 	
 	# if not angles given select randomly orientation for each projection
 	if not given:
@@ -10270,29 +10259,108 @@ def find_struct(stack, out_seedname, ir, ou, delta, dpsi, lf, hf, rand_seed, max
 	cml_init_global_var(dpsi, delta, len(Prj), debug)
 	
 	# Update logfile
-	cml_head_log(stack, outdir, delta, ir, ou, lf, hf, rand_seed, maxit, given)
+	cml_head_log(stack, out_dir, delta, ir, ou, lf, hf, rand_seed, maxit, given, flag_weights)
+
+	# prepare rotation matrix
+	Rot = Util.cml_init_rot(Ori)
 
 	# Compute the first disc
-	disc = cml_disc(Prj, Ori, flag_weights)
+	disc = cml_disc(Prj, Ori, Rot, flag_weights)
 
 	# Update progress file
-	cml_export_txtagls(outdir, Ori, disc, 'Init')
+	cml_export_txtagls(out_dir, 'angles', Ori, disc, 'Init')
 
 	# Find structure
-	Ori, disc, ite = cml_find_structure(Prj, Ori, outdir, maxit, first_zero, flag_weights)
+	Ori, disc, ite = cml_find_structure(Prj, Ori, Rot, out_dir, 'angles', maxit, first_zero, flag_weights)
 
 	# Export structure
-	cml_export_struc(stack, out_seedname, Ori, BDB)
-
-	# Compute disc without weights
-	disc_now = cml_disc(Prj, Ori, False)
+	cml_export_struc(stack, out_dir, Ori)
 
 	# Update logfile
-	cml_end_log(Ori, disc, disc_now, ite)
+	cml_end_log(Ori, disc, ite)
 	running_time(t_start)
 	print_end_msg('find_struct')
 
-	return disc_now
+# application find structure
+def cml_find_structure_MPI(stack, base_dir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit, given = False, first_zero = False, flag_weights = False, debug = False, trials = 10):
+	from projection import cml_open_proj, cml_init_global_var, cml_head_log, cml_disc, cml_export_txtagls
+	from projection import cml_find_structure, cml_export_struc, cml_end_log, cml_init_MPI, cml_init_rnd
+	from utilities  import print_begin_msg, print_msg, print_end_msg, start_time, running_time
+	from random     import seed, random
+	from mpi        import mpi_barrier, MPI_COMM_WORLD, mpi_reduce, MPI_FLOAT, MPI_INT, MPI_SUM
+	import time, sys, os
+
+	# init
+	main_node, myid, nbcpu, N_start, N_stop = cml_init_MPI(trials)
+	lrnd = cml_init_rnd(trials, rand_seed)
+
+	if myid == main_node:
+		t_start = start_time()
+		print_begin_msg('find_struct')
+
+	base_dir  = base_dir.rstrip('/')
+	
+	# Open and transform projections
+	Prj, Ori = cml_open_proj(stack, ir, ou, lf, hf, dpsi)
+
+	# Init the global vars
+	cml_init_global_var(dpsi, delta, len(Prj), debug)
+
+	# Update logfile
+	if myid == main_node: cml_head_log(stack, base_dir, delta, ir, ou, lf, hf, rand_seed, maxit, given, flag_weights)
+
+	disc_init = [0.0] * trials
+	disc_end  = [0.0] * trials
+	ite       = [0]   * trials
+	for itrial in xrange(N_start, N_stop):
+		out_dir = base_dir + '_%03i' % itrial
+		if os.path.exists(out_dir): os.system('rm -rf ' + out_dir)
+		os.mkdir(out_dir)
+
+		# if not angles given select randomly orientation for each projection
+		if not given:
+			seed(lrnd[itrial])
+			j = 0
+			for n in xrange(len(Prj)):
+				if first_zero and n == 0:
+					Ori[j]   = 0.0
+					Ori[j+1] = 0.0
+					Ori[j+2] = 0.0
+				else:
+					Ori[j]   = random() * 360  # phi
+					Ori[j+1] = random() * 180  # theta
+					Ori[j+2] = random() * 360  # psi
+				j += 4
+
+		# prepare rotation matrix
+		Rot = Util.cml_init_rot(Ori)
+		# Compute the first disc
+		disc_init[itrial] = cml_disc(Prj, Ori, Rot, flag_weights)
+		# Update progress file
+		cml_export_txtagls(out_dir, 'angles', Ori, disc_init[itrial], 'Init')
+		# Find structure
+		Ori, disc_end[itrial], ite[itrial] = cml_find_structure(Prj, Ori, Rot, out_dir, 'angles', maxit, first_zero, flag_weights)
+		# Export structure
+		cml_export_struc(stack, out_dir, Ori)
+
+	mpi_barrier(MPI_COMM_WORLD)
+	disc_init = mpi_reduce(disc_init, trials, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
+	disc_init = disc_init.tolist()
+	disc_end  = mpi_reduce(disc_end, trials, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
+	disc_end  = disc_end.tolist()
+	ite       = mpi_reduce(ite, trials, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
+	ite       = ite.tolist()
+	
+	if myid == main_node:
+		print_msg('\n')
+		for i in xrange(trials):
+			print_msg('trials %03i\trnd %i\tdisc init: %10.7f\tnb ite: %i\tdisc end: %10.7f\n' % (i, lrnd[i], disc_init[i], ite[i] + 1, disc_end[i]))
+
+		running_time(t_start)
+		print_end_msg('find_struct')
+	
+	# Update logfile
+	#cml_end_log(Ori, disc, ite)
 
 def extract_value( s ):
 	from string import atoi, atof
@@ -11474,7 +11542,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		if BDB:
 			# with BDB all node can not read the same data base in the same time
 			import os
-			for i in xrange(ncpu):
+			for i in xrange(nb_cpu):
 				if myid == i: [im_M, mask, ctf, ctf2] = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, listID)
 				mpi_barrier(MPI_COMM_WORLD)
 		else:
