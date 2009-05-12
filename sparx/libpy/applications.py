@@ -4288,6 +4288,9 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 		if(active[im]):  list_of_particles.append(im)
 	del active
 	data = EMData.read_images(stack, list_of_particles)
+        for im in xrange(len(data)):
+                data[im].set_attr('ID', list_of_particles[im])
+
 	nima = len(data)
 	# initialize data for the reference preparation function
 	ref_data = []
@@ -4318,9 +4321,9 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 						refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, sym, numr, MPI=False)
 
 				if an[N_step] == -1:	
-					proj_ali_incore(data[im],refrings,first_ring,last_ring,rstep,xrng[N_step],yrng[N_step],step[N_step])
+					proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step])
 				else:
-					proj_ali_incore_local(data[im],refrings,first_ring,last_ring,rstep,xrng[N_step],yrng[N_step],step[N_step],an[N_step])
+					proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step])
 
 			if center == -1:
 				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center(data)
@@ -5895,7 +5898,7 @@ def eqproj_cascaded_ccc(args, data):
 	refprj.process_inplace("normalize.mask", {"mask":mask2D, "no_sigma":1})
 	refprj *= mask2D
 	
-	nx = proj.get_ysize()
+	nx = refprj.get_ysize()
 	sx = (nx-shift[0]*2)/2
 	sy = (nx-shift[1]*2)/2
 	
@@ -5907,7 +5910,7 @@ def eqproj_cascaded_ccc(args, data):
 	data2[1] = kb
 	ps = amoeba([sx, sy], [ts, ts], twoD_fine_search, 1.e-4, 1.e-4, 500, data2)
 
-	if abs(ps[0][0]) > ts or abs(ps[0][1]) > ts:
+	if abs(ps[0][0]-sx) > ts or abs(ps[0][1]-sy) > ts:
 		v = twoD_fine_search([sx,sy], data2)
 		s2x = shift[0]
 		s2y = shift[1]
@@ -6356,7 +6359,6 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, center = 
 				varf = varf3d_MPI(dataim, ssnr_text_file = os.path.join(outdir, "ssnr%03d_%03d"%(iteration, ic)), mask2D = None, reference_structure = vol, ou = ou, rw = 1.0, npad = 1, CTF = CTF, sign = 1, sym =sym, myid = myid)
 				if myid == main_node:   varf = 1.0/varf
 			else:  varf = None
-
 			if myid == main_node:
 				ref_data[2] = vol
 				ref_data[3] = fscc
@@ -6368,7 +6370,7 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, center = 
 				drop_image(vol, os.path.join(outdir, "volf%03d_%03d.hdf"%(iteration, ic)))
 
 			del varf
-
+			
 			# in last iteration return here
 			if(iteration == maxit):
 				if myid == main_node: print_end_msg("ali3d_e_MPI")
