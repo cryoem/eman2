@@ -1861,11 +1861,45 @@ EMData *EMData::make_footprint(int type)
 		return fp;
 	}
 	else if (type==1) {
+		int i,j,kx,ky,lx,ly;
+
 		EMData *fft=do_fft();
-		EMData *fp=new EMData(get_ysize()/2+2,get_ysize()/2,1);
+
+		// map for x,y -> radius for speed
+		int rmax=(get_xsize()+1)/2;
+		float *rmap=(float *)malloc(rmax*rmax*sizeof(float));
+		for (i=0; i<rmax; i++) {
+			for (j=0; j<rmax; j++) {
+				rmap[i+j*rmax]=hypot((float)i,(float)j);
+			}
+		}
+		
+		EMData *fp=new EMData(rmax*2,get_ysize(),1);
 		fp->set_complex(1);
 		
-	}
+		// Two vectors in to complex space (kx,ky) and (lx,ly)
+		// We are computing the bispectrum, f(k).f(l).f*(k+l)
+		// but integrating out two dimensions, leaving |k|,|l|
+		for (kx=-rmax; kx<rmax; kx++) {
+			for (ky=-rmax; ky<rmax; ky++) {
+				for (lx=-rmax; lx<rmax; lx++) {
+					for (ly=-rmax; ly<rmax; ly++) {
+						int ax=abs(kx+lx);
+						int ay=abs(ky+ly);
+						if (ax>=rmax || ay>=ay) continue;
+						int akx=abs(kx);
+						int aky=abs(ky);
+						int alx=abs(lx);
+						int aly=abs(ly);
+						float r1=rmap[akx+rmax*aky];
+						float r2=rmap[alx+rmax*aly];
+						float r3=rmap[abs(kx+lx)+rmax*abs(ky+ly)];
+					}
+				}
+			}
+		}
+
+}
 }
 
 
