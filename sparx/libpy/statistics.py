@@ -56,7 +56,7 @@ def add_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None, a
 		CTF  - if True, use CTF for calculations of both average and variance.
 	"""
 	from utilities    import    model_blank, get_params2D, info
-	from fundamentals import    rot_shift2D, fft
+	from fundamentals import    rot_shift2D, fft, fftip
 
 	n = len(data)
 	nx = data[0].get_xsize()
@@ -76,12 +76,15 @@ def add_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None, a
 	 	for i in xrange(n):
 	 		if mode == "a":
 				alpha, sx, sy, mirror, scale = get_params2D(data[i], ali_params)
-				ima = fft(rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic"))
+				ima = rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
+				if mask:  Util.mul_img(ima, mask)
+				fftip(ima)
 				#  Here we have a possible problem: varf works only if CTF is applied after rot/shift
 				#    while calculation of average (and in general principle) CTF should be applied before rot/shift
 				#    here we use the first possibility
 			else:
-				ima = fft(data[i])
+				if  mask:   ima = fft(Util.muln_img(data[i], mask))
+				else:       ima = fft(data[i])
 	 		ctf_params = data[i].get_attr("ctf")
 	 		ima_filt = filt_ctf(ima, ctf_params, dopad=False)
 			if(i%2 == 0):  Util.add_img(ave1, ima_filt)
@@ -97,9 +100,12 @@ def add_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None, a
 		for i in xrange(n):
 			if mode == "a":
 				alpha, sx, sy, mirror, scale = get_params2D(data[i], ali_params)
-				ima = fft(rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic"))
+				ima = rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
+				if mask:  Util.mul_img(ima, mask)
+				fftip(ima)
 			else:
-				ima = fft(data[i])
+				if  mask:   ima = fft(Util.muln_img(data[i], mask))
+				else:       ima = fft(data[i])
 			if(i%2 == 0):   Util.add_img(ave1, ima)
 			else:           Util.add_img(ave2, ima)
 			Util.add_img2(var, ima)
@@ -123,7 +129,7 @@ def add_ave_varf_MPI(myid, data, mask = None, mode = "a", CTF = False, ctf_2_sum
 		CTF  - if True, use CTF for calculations of the sum.
 	"""
 	from utilities    import    model_blank, get_params2D
-	from fundamentals import    rot_shift2D, fft
+	from fundamentals import    rot_shift2D, fft, fftip
 	from utilities    import    reduce_EMData_to_root
 	from mpi          import    mpi_reduce, MPI_INT, MPI_SUM, MPI_COMM_WORLD
 
@@ -145,9 +151,12 @@ def add_ave_varf_MPI(myid, data, mask = None, mode = "a", CTF = False, ctf_2_sum
 	 	for i in xrange(n):
 	 		if mode == "a":
 				alpha, sx, sy, mirror, scale = get_params2D(data[i], ali_params)
-				ima = fft(rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic"))
+				ima = rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
+				if mask:  Util.mul_img(ima, mask)
+				fftip(ima)
 			else:
-				ima = fft(data[i])
+				if  mask:   ima = fft(Util.muln_img(data[i], mask))
+				else:       ima = fft(data[i])
 	 		ctf_params = data[i].get_attr("ctf")
 	 		ima_filt = filt_ctf(ima, ctf_params, dopad=False)
 			if(i%2 == 0):   Util.add_img(ave1, ima_filt)
@@ -159,9 +168,12 @@ def add_ave_varf_MPI(myid, data, mask = None, mode = "a", CTF = False, ctf_2_sum
 		for i in xrange(n):
 			if mode == "a":
 				alpha, sx, sy, mirror, scale = get_params2D(data[i], ali_params)
-				ima = fft(rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic"))
+				ima = rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
+				if mask:  Util.mul_img(ima, mask)
+				fftip(ima)
 			else:
-				ima = fft(data[i])
+				if  mask:   ima = fft(Util.muln_img(data[i], mask))
+				else:       ima = fft(data[i])
 			if(i%2 == 0):   Util.add_img(ave1, ima)
 			else:           Util.add_img(ave2, ima)
 			Util.add_img2(var, ima)
@@ -302,7 +314,7 @@ def sum_oe(data, mode = "a", CTF = False, ctf_2_sum = None):
 				ima = data[i]
 			if(i%2 == 0):	Util.add_img(ave1, ima)
 			else:	        Util.add_img(ave2, ima)
-		
+
 	if  CTF:
 		if get_ctf2: return ave1, ave2, ctf_2_sum
 		else:        return  ave1, ave2
