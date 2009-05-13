@@ -554,16 +554,16 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		get_application().setOverrideCursor(Qt.ArrowCursor)
 	
 	def launch_refine2d_general(self):
-		self.launch_task(E2Refine2DWithGenericTask,"e2refine2d generic")
+		self.launch_task(E2Refine2DWithGenericTask(),"e2refine2d generic")
 	
 	def launch_ctf_general(self):
-		self.launch_task(E2CTFGenericTask,"e2ctf generic")
+		self.launch_task(E2CTFGenericTask(),"e2ctf generic")
 	
 	def launch_e2boxer_output(self):
-		self.launch_task(E2BoxerOutputTask,"e2boxer output")
+		self.launch_task(E2BoxerOutputTask(),"e2boxer output")
 	
 	def launch_boxer_general(self):
-		self.launch_task(E2BoxerGenericTask,"e2boxer general")
+		self.launch_task(E2BoxerGenericTask(),"e2boxer general")
 #		module = EMBoxerModule(get_application(),None)
 #		self.module.emit(QtCore.SIGNAL("launching_module"),"Boxer",module)
 #		module.show_guis()
@@ -595,56 +595,56 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 			
 		print "failed to close module?" # this shouldn't happen if I have managed everything correctly
 
-	def launch_e2resolution(self): self.launch_task(E2ResolutionTask,"e2resolution form")
-	def launch_e2eotest(self): self.launch_task(E2EotestTask,"e2eotest form")
-	def launch_resolution_report(self): self.launch_task(ResolutionReportTask,"resolution report")
-	def launch_e2refine(self): self.launch_task(E2RefineChooseDataTask,"e2refine init")
-	def launch_refinement_report(self): self.launch_task(RefinementReportTask,"refinement report")
-	def launch_import_initial_model(self): self.launch_task(ImportInitialModels,"import initial models")
-	def launch_e2makeinitial(self): self.launch_task(E2MakeInitialModel,"e2makeinitialmodel")
-	def launch_initmodel_report(self): self.launch_task(InitialModelReportTask,"initial model report")
-	def launch_refine2d_report(self): self.launch_task(E2Refine2DReportTask,"refine2d report")
-	def launch_refine2d_exec(self): self.launch_task(E2Refine2DRunTask,"e2refine2d params")
-	def launch_refine2d_create_dataset(self): self.launch_task(E2Refine2DChooseDataTask,"refine2d create data set")	
-	def launch_e2ctf_write_ouptut(self): self.launch_task(E2CTFOutputTask,"e2ctf write output")
-	def launch_e2ctf_tune(self): self.launch_task(E2CTFGuiTask,"e2ctf intreface")
-	def launch_e2ctf_auto_ft(self): self.launch_task(E2CTFAutoFitTask,"e2ctf auto fitting")
-	def launch_ctf_report(self):self.launch_task(CTFReportTask,"CTF report")
-	def launch_particle_report(self): self.launch_task(ParticleReportTask,"Particle report")
+	def launch_e2resolution(self): self.launch_task(E2ResolutionTask(),"e2resolution form")
+	def launch_e2eotest(self): self.launch_task(E2EotestTask(),"e2eotest form")
+	def launch_resolution_report(self): self.launch_task(ResolutionReportTask(),"resolution report")
+	def launch_e2refine(self): self.launch_task(E2RefineChooseDataTask(),"e2refine init")
+	def launch_refinement_report(self): self.launch_task(RefinementReportTask(),"refinement report")
+	def launch_import_initial_model(self): self.launch_task(ImportInitialModels(),"import initial models")
+	def launch_e2makeinitial(self): self.launch_task(E2MakeInitialModel(),"e2makeinitialmodel")
+	def launch_initmodel_report(self): self.launch_task(InitialModelReportTask(),"initial model report")
+	def launch_refine2d_report(self): self.launch_task(E2Refine2DReportTask(),"refine2d report")
+	def launch_refine2d_exec(self): self.launch_task(E2Refine2DRunTask(),"e2refine2d params")
+	def launch_refine2d_create_dataset(self): self.launch_task(E2Refine2DChooseDataTask(),"refine2d create data set")	
+	def launch_e2ctf_write_ouptut(self): self.launch_task(E2CTFOutputTask(),"e2ctf write output")
+	def launch_e2ctf_tune(self): self.launch_task(E2CTFGuiTask(),"e2ctf intreface")
+	def launch_e2ctf_auto_ft(self): self.launch_task(E2CTFAutoFitTask(),"e2ctf auto fitting")
+	def launch_ctf_report(self):self.launch_task(CTFReportTask(),"CTF report")
+	def launch_particle_report(self): self.launch_task(ParticleReportTask(),"Particle report")
 	
-#	def launch_particle_import(self):self.launch_task(ParticleImportTask,"Import particles")
+#	def launch_particle_import(self):self.launch_task(ParticleImportTask(),"Import particles")
 		
-	def launch_mic_ccd_report(self): self.launch_task(EMRawDataReportTask,"Raw data report")
+	def launch_mic_ccd_report(self): self.launch_task(EMRawDataReportTask(),"Raw data report")
 		
 	def launch_e2boxer_auto(self):
-		self.launch_task(E2BoxerAutoTask,"e2boxer automated boxing")
+		self.launch_task(E2BoxerAutoTask(),"e2boxer automated boxing")
 		
 	def launch_e2boxer_gui(self):
-		self.launch_task(E2BoxerGuiTask,"e2boxer interface")
+		self.launch_task(E2BoxerGuiTask(),"e2boxer interface")
 	
 	def launch_spr(self):
-		self.launch_task(SPRInitTask,"SPR")
+		self.launch_task(SPRInitTask(),"SPR")
 
 	def launch_tomography(self):
-		self.launch_task(EMTomoRawDataReportTask,"Tomo Raw Files")
+		self.launch_task(EMTomoRawDataReportTask(),"Tomo Raw Files")
 	def launch_tomohunter(self):
-		self.launch_task(TomohunterTask,"Tomohunter")
+		self.launch_task(TomohunterTask(),"Tomohunter")
 	def launch_tomo_raw_files(self):
-		self.launch_task(EMTomoRawDataReportTask,"Tomo Raw Files")
+		self.launch_task(EMTomoRawDataReportTask(),"Tomo Raw Files")
 			
 #	def launch_mic_ccd(self):
-#		self.launch_task(MicrographCCDTask,"Micrograph/CCD report")
+#		self.launch_task(MicrographCCDTask(),"Micrograph/CCD report")
 		
 	def launch_view_history(self):
-		self.launch_task(HistoryTask,"History")
+		self.launch_task(HistoryTask(),"History")
 		
 	def launch_view_preferences(self):
 		from e2preferences import EMPreferencesTask
-		self.launch_task(EMPreferencesTask,"Preferences")
+		self.launch_task(EMPreferencesTask(),"Preferences")
 	
 	
 	def launch_import_mic_ccd(self):
-		self.launch_task(MicrographCCDImportTask,"Import micrographs")
+		self.launch_task(MicrographCCDImportTask(),"Import micrographs")
 	
 	def launch_change_directory(self):
 		if len(self.tasks) > 0: 
@@ -652,12 +652,12 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 			
 		self.module().emit(QtCore.SIGNAL("task_selected"),"Workflow","Workflow")
 		if not self.tasks.has_key("Change directory"):
-			task = ChangeDirectoryTask(get_application())
+			task = ChangeDirectoryTask()
 			
 			wd = task.run_form()
 			if wd != None: self.directory.setToolTip(0,wd)
 			
-	def launch_task(self,task_type,task_unique_identifier):
+	def launch_task(self,task,task_unique_identifier):
 		'''
 		You can only have one of the task forms showing at any time
 		'''
@@ -666,7 +666,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		
 		self.module().emit(QtCore.SIGNAL("task_selected"),"Workflow","Workflow")
 		if not self.tasks.has_key(task_unique_identifier):
-			task = task_type(get_application())
+			#task = task_type()
 			
 			task.run_form()
 			self.tasks[task_unique_identifier] = task

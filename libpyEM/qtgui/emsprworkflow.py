@@ -133,9 +133,8 @@ class EMErrorMessageDisplay:
 	run = staticmethod(run)
 		
 class WorkFlowTask(QtCore.QObject):
-	def __init__(self,application):
+	def __init__(self):
 		QtCore.QObject.__init__(self)
-		self.application = weakref.ref(application)
 		self.window_title = "Set me please" # inheriting classes should set this
 		self.preferred_size = (480,640) # inheriting classes can change this if they choose
 		self.form_db_name = None # specify this to make use of automated parameter storage (see write_db_entries(self,...) ) - don't forget the "bdb:"
@@ -483,8 +482,8 @@ class WorkFlowTask(QtCore.QObject):
 #		cmps.append("None") I think this is necessary
 		
 class HistoryTask(WorkFlowTask,HistoryForm):
-	def __init__(self,application):
-		WorkFlowTask.__init__(self,application)
+	def __init__(self):
+		WorkFlowTask.__init__(self)
 		# don't need HistoryFrom init
 		self.wd = os.getcwd()
 		self.window_title = "History"
@@ -500,8 +499,8 @@ class HistoryTask(WorkFlowTask,HistoryForm):
 		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_close"),self.on_form_close)
 		
 class ChangeDirectoryTask(WorkFlowTask):
-	def __init__(self,application):
-		WorkFlowTask.__init__(self,application)
+	def __init__(self):
+		WorkFlowTask.__init__(self)
 		self.window_title = "Change project directory"
 	
 	def run_form(self):	
@@ -524,8 +523,8 @@ class TomohunterTask(WorkFlowTask):
 	
 	documentation_string = "This is useful information about this task."
 
-	def __init__(self,application):
-		WorkFlowTask.__init__(self,application)
+	def __init__(self):
+		WorkFlowTask.__init__(self)
 		self.window_title = "Tomography input form"
 		self.preferred_size = (640,480)
 	def get_params(self):
@@ -602,8 +601,8 @@ class SPRInitTask(WorkFlowTask):
 	# stolen from wikipedia
 	Ddocumentation_string = "In physics, in the area of microscopy, single particle reconstruction is a technique in which large numbers of images (10,000 - 1,000,000) of ostensibly identical individual molecules or macromolecular assemblies are combined to produce a 3 dimensional reconstruction. This is a complementary technique to crystallography of biological molecules. As molecules/assembies become larger, it becomes more difficult to prepare high resolution crystals. For single particle reconstruction, the opposite is true. Larger objects actually improve the resolution of the final structure. In single particle reconstruction, the molecules/assemblies in solution are prepared in a thin layer of vitreous (glassy) ice, then imaged on an electron cryomicroscope (see Transmission electron microscopy). Images of individual molecules/assemblies are then selected from the micrograph and then a complex series of algorithms is applied to produce a full volumetric reconstruction of the molecule/assembly. In the 1990s this technique was limited to roughly 2 nm resolution, providing only gross features of the objects being studied. However, recent improvements in both microscope technology as well as available computational capabilities now make 0.5 nm resolution possible."
 	documentation_string = "Welcome to the EMAN2 workflow. Use this tool to step through and manage the process of generating single particle reconstructions. Get started by entering what you can of the parameters in this form and then proceed to the next step task in the workflow."
-	def __init__(self,application):
-		WorkFlowTask.__init__(self,application)
+	def __init__(self):
+		WorkFlowTask.__init__(self)
 		self.window_title = "Project information"
 	def get_params(self):
 		params = []
@@ -635,8 +634,8 @@ class SPRInitTask(WorkFlowTask):
 class EMRawDataReportTask(WorkFlowTask):	
 	documentation_string = "This forms displays the micrograph and/or ccds images that  you currently have associated with this project"
 	warning_string = "\n\n\nNOTE: There are no images currenty associated with the project. Please associate or import images"
-	def __init__(self,application):
-		WorkFlowTask.__init__(self,application)
+	def __init__(self):
+		WorkFlowTask.__init__(self)
 		self.window_title = "Micrographs In Project"
 		self.project_files_at_init = None # stores the known project files when the form is created and shown - that way if cancel is hit we can restore the original parameters
 		self.project_list = "global.spr_raw_file_names"
@@ -792,92 +791,6 @@ class EMRawDataReportTask(WorkFlowTask):
 				a(files,table_widget)
 				#self.add_files_to_project(files,table_widget)
 			
-#	def remove_files_from_project(names,table_widget):
-#		if len(names) == 0: return # nothing happened
-#		
-#		from emform import get_table_items_in_column
-#		entries = get_table_items_in_column(table_widget,0)
-#		text_entries = [table_widget.convert_text(str(i.text())) for i in entries]
-#		
-#		project_db = db_open_dict("bdb:project")
-#		project_names = project_db.get("global.spr_raw_file_names",dfl=[])
-#		
-#		full_names = [table_widget.convert_text(name) for name in names]
-#
-#		for name in full_names:
-#			if name not in project_names:
-#				EMErrorMessageDisplay.run(["%s is not in the project list" %name])
-#				return
-#		
-#		indices = [ text_entries.index(name) for name in full_names]
-#		indices.sort()
-#		indices.reverse()
-#		for idx in indices:
-#			table_widget.removeRow(idx)
-#			project_names.remove(text_entries[idx])
-#			
-#		
-#		project_db["global.spr_raw_file_names"] = project_names
-#	
-#	def add_files_to_project(list_of_names,table_widget):
-#		'''
-#		becomes static
-#		'''
-#		
-#		project_db = db_open_dict("bdb:project")
-#		project_names = project_db.get("global.spr_raw_file_names",dfl=[])
-#		project_name_tags = [get_file_tag(name) for name in project_names]
-#		
-#		for name in list_of_names:
-#			if not file_exists(name):
-#				EMErrorMessageDisplay.run(["%s does not exists" %name])
-#				return
-#		
-#		for name in list_of_names:
-#			if get_file_tag(name) in project_name_tags:
-#				EMErrorMessageDisplay.run(["%s is already in the project" %name])
-#				return
-#				
-#		# if we make it here we're good
-#		# first add entries to the table
-#		table_widget.add_entries(list_of_names)
-#		
-#		# then add names to the database
-#		project_names.extend(list_of_names)
-#		project_db["global.spr_raw_file_names"] = project_names
-#	
-#	
-#	def add_files_from_context_menu(list_of_names,table_widget):
-#		from emselector import EMSelectorModule
-#		em_qt_widget = EMSelectorModule()
-#		validator = AddFilesToProjectValidator()
-#		em_qt_widget.widget.set_validator(validator)
-#		files = em_qt_widget.exec_()
-#		if files != "":
-#			if isinstance(files,str): files = [files]
-#			
-#			from emform import get_table_items_in_column
-#			entries = get_table_items_in_column(table_widget,0)
-#			entrie_tags = [get_file_tag(str(i.text())) for i in entries]
-#			file_tags = [get_file_tag(i) for i in files]
-#			error_messages = []
-#			for idx,tag in enumerate(file_tags):
-#				if tag in entrie_tags:
-#					error_messages.append("%s is already listed" %files[idx])
-#			
-#		
-#			if len(error_messages) > 0:
-#				from emsprworkflow import EMErrorMessageDisplay
-#				EMErrorMessageDisplay.run(error_messages)
-#				return
-#		
-#			
-#			EMRawDataReportTask.add_files_to_project(files,table_widget)
-#		
-#	remove_files_from_project = staticmethod(remove_files_from_project)
-#	add_files_to_project = staticmethod(add_files_to_project)
-#	add_files_from_context_menu = staticmethod(add_files_from_context_menu)
-
 	def get_params(self):
 		
 		project_db = db_open_dict("bdb:project")
@@ -915,9 +828,26 @@ class EMRawDataReportTask(WorkFlowTask):
 		self.form = None
 		
 class EMTomoRawDataReportTask(EMRawDataReportTask):
-	def __init__(self,application):
+	def __init__(self):
 		EMRawDataReportTask.__init__(self,application)
 		self.project_list = "global.tomo_raw_file_names"
+		
+	def get_raw_data_table(self):
+		'''
+		Gets an EMTomographicFileTable - this is type of class that the emform knows how to handle 
+		'''
+		project_db = db_open_dict("bdb:project")
+		project_names = project_db.get(self.project_list,dfl=[])
+		self.project_files_at_init = project_names # so if the user hits cancel this can be reset
+
+		from emform import EMTomographicFileTable,EMFileTable
+		table = EMTomographicFileTable(project_names,desc_short="Raw Data Files",desc_long="")
+		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(self.project_list)
+		table.add_context_menu_data(context_menu_data)
+		table.add_button_data(EMRawDataReportTask.ProjectAddRawDataButton(table,context_menu_data))
+	
+		#p.append(pdims) # don't think this is really necessary
+		return table,len(project_names)
 		
 class AddFilesToProjectValidator():
 	def __init__(self,project_list="global.spr_raw_file_names"):
@@ -951,8 +881,8 @@ class AddFilesToProjectValidator():
 class MicrographCCDImportTask(WorkFlowTask):	
 	documentation_string = "Use this tool for importing flat files into the raw_data directory in the project database. Files that you import in this way will be automatically added the list of files in the project."
 	
-	def __init__(self,application):
-		WorkFlowTask.__init__(self,application)
+	def __init__(self):
+		WorkFlowTask.__init__(self)
 		self.window_title = "Import micrographs"
 		self.thumb_shrink = -1
 	def get_params(self):
@@ -1147,8 +1077,8 @@ class ParticleWorkFlowTask(WorkFlowTask):
 	Encapsulates some functionality  common to the particle based work flow tasks
 	Such tasks should inherit from this class, not the the WorkFlowTask
 	'''
-	def __init__(self,application):
-		WorkFlowTask.__init__(self,application)
+	def __init__(self):
+		WorkFlowTask.__init__(self)
 	
 	
 	def get_particle_db_names_versatile(self,end_string="_ptcls",strip_end=False):
@@ -1387,6 +1317,84 @@ class ParticleWorkFlowTask(WorkFlowTask):
 						n += val+1 # maxrec is always one less than the actual number stored
 						
 		return n
+
+	def get_particle_selection_table_new(self,ptcl_list):
+		'''
+		
+		'''
+		from emform import EM2DStackTable,EMFileTable
+		table = EM2DStackTable(ptcl_list,desc_short="Particles",desc_long="")
+		
+		a = EMData(ptcl_list[0],0,True)
+		d = a.get_attr_dict()
+		if d.has_attr["ctf"]:
+			self.column_data = ParticleWorkFlowTask.CTFColumns()
+			table.add_column_data(EMFileTable.EMColumnData("SNR",self.column_data.get_snr,"The averaged SNR"))
+			table.add_column_data(EMFileTable.EMColumnData("Defocus",self.column_data.get_defocus,"The estimated defocus"))
+			table.add_column_data(EMFileTable.EMColumnData("B Factor",self.column_data.get_bfactor,"The estimated B factor, note this is ~4x greater than in EMAN1"))
+			table.add_column_data(EMFileTable.EMColumnData("Sampling",self.column_data.get_sampling,"The amount of sampling used for generating CTF parameters"))
+		
+		table.add_column_data(1,EMFileTable.EMColumnData("Particles On Disk",ParticleReportTask.get_num_ptcls,"Particles currently stored on disk that are associated with this image"))
+		table.add_column_data(2,EMFileTable.EMColumnData("Particles Dims",ParticleReportTask.get_particle_dims,"The dimensions of the particles that are stored on disk"))
+
+		return table, len(ptcl_list)
+
+	class CTFColumns:
+		'''
+		Basically some functions with a cache - the cache is to avoid
+		re-reading stuff from disk multiple times
+		'''
+		def __init__(self):
+			self.ctf_cache = {}
+						
+#		def __del__(self):
+#			print "CTF columns dies"
+			
+		def get_defocus(self,name):
+			if self.ctf_cache.has_key(name):
+				return "%.3f" %self.ctf_cache[name].defocus
+			
+			ctf = self.__get_ctf(name)
+			self.ctf_cache[name] = ctf
+			return "%.3f" %ctf.defocus
+		
+		def __get_ctf(self,name):
+			a = EMData(name,0,True)
+			d = a.get_attr_dict()
+			return d["ctf"]
+		
+		def get_bfactor(self,name):
+			if self.ctf_cache.has_key(name):
+				return "%.3f" %self.ctf_cache[name].bfactor
+			
+			ctf = self.__get_ctf(name)
+			self.ctf_cache[name] = ctf
+			return "%.3f" %ctf.bfactor
+			
+				
+		def get_sampling(self,name):
+			if self.ctf_cache.has_key(name):
+				ctf = self.ctf_cache[name]
+				return str(len(ctf.background))
+			
+			ctf = self.__get_ctf(name)
+			self.ctf_cache[name] = ctf
+			return str(len(ctf.background))
+				
+		def get_snr(self,name):
+			if self.ctf_cache.has_key(name):
+				snr = 0
+				ctf = self.ctf_cache[name]
+				try: snr = sum(ctf.snr)/len(ctf.snr)
+				except: pass
+				return "%.3f" %snr
+			
+			ctf = self.__get_ctf(name)
+			self.ctf_cache[name] = ctf
+			snr = 0
+			try: snr = sum(ctf.snr)/len(ctf.snr)
+			except: pass
+			return "%.3f" %snr
 	
 	def get_particle_selection_table(self,tag="_ptcls"):
 		'''
@@ -1591,8 +1599,8 @@ class ParticleReportTask(ParticleWorkFlowTask):
 	
 	documentation_string = "This tool is for displaying the particles that are currently associated with this project. This list is generating by inspecting the contents of the project particles directory."
 	warning_string = "\n\n\nNOTE: There are no particles currently associated with the project. You can add particles to the project using e2boxer or by importing them directly - see from the list of options associated with this task." 
-	def __init__(self,application):
-		ParticleWorkFlowTask.__init__(self,application)
+	def __init__(self):
+		ParticleWorkFlowTask.__init__(self)
 		self.window_title = "Project particles"
 
 
@@ -1607,12 +1615,20 @@ class ParticleReportTask(ParticleWorkFlowTask):
 		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(particle_list_name)
 		table.add_context_menu_data(context_menu_data)
 		table.add_button_data(EMRawDataReportTask.ProjectAddRawDataButton(table,context_menu_data))
-		self.columns_object = E2BoxerTask.ParticleColumns()
-		table.insert_column_data(1,EMFileTable.EMColumnData("Particles On Disk",self.columns_object.get_num_particles_project,"Particles currently stored on disk that are associated with this image"))
-		table.insert_column_data(2,EMFileTable.EMColumnData("Particles Dims",self.columns_object.get_particle_dims_project,"The dimensions of the particles that are stored on disk"))
-	
+		table.insert_column_data(1,EMFileTable.EMColumnData("Particles On Disk",ParticleReportTask.get_num_ptcls,"Particles currently stored on disk that are associated with this image"))
+		table.insert_column_data(2,EMFileTable.EMColumnData("Particles Dims",ParticleReportTask.get_particle_dims,"The dimensions of the particles that are stored on disk"))
 		
 		return table
+	
+	def get_particle_dims(file_name):
+		nx,ny,nz = gimme_image_dimensions3D(file_name)
+		return "%ix%ix%i" %(nx,ny,nz)
+	
+	def get_num_ptcls(file_name):
+		return str(EMUtil.get_image_count(file_name))
+	
+	get_particle_dims = staticmethod(get_particle_dims)
+	get_num_ptcls = staticmethod(get_num_ptcls)
 	
 	def get_params(self):
 		params = []
@@ -1629,8 +1645,8 @@ class E2BoxerTask(ParticleWorkFlowTask):
 	'''
 	Provides some common functions for the e2boxer tasks
 	'''
-	def __init__(self,application):
-		ParticleWorkFlowTask.__init__(self,application)
+	def __init__(self):
+		ParticleWorkFlowTask.__init__(self)
 		self.form_db_name = "bdb:emform.e2boxer"
 		self.report_task = None  #will eventually store a EMRawDataReportTask
 	
@@ -1738,7 +1754,6 @@ class E2BoxerTask(ParticleWorkFlowTask):
 		def get_particle_dims_project(self,file_name):
 			'''
 			'''
-			
 			if self.translation_cache.has_key(file_name):
 				name = self.translation_cache[file_name]
 				d = self.header_cache[name]
@@ -1754,8 +1769,9 @@ class E2BoxerTask(ParticleWorkFlowTask):
 				a = EMData()
 				a.read_image(name,0,True) # header only
 				d = a.get_attr_dict()
+				#print d
 				if d.has_key("ptcl_source_image"):
-					if a["ptcl_source_image"] == file_name:
+					if d["ptcl_source_image"] == file_name:
 						nx,ny,nz = gimme_image_dimensions3D(name)
 						self.header_cache[name] = d
 						self.translation_cache[file_name] = name
@@ -1774,7 +1790,7 @@ class E2BoxerTask(ParticleWorkFlowTask):
 		if n is zero there are no entries in the table and the calling function can act appropriately
 		'''
 		
-		self.report_task = EMRawDataReportTask(get_application())
+		self.report_task = EMRawDataReportTask()
 		table,n = self.report_task.get_raw_data_table()# now p is a EMParamTable with rows for as many files as there in the project
 		from emform import EMFileTable
 		table.insert_column_data(0,EMFileTable.EMColumnData("Stored Boxes",E2BoxerTask.get_boxes_in_database,"Boxes currently stored in the EMAN2 database"))
@@ -1783,7 +1799,7 @@ class E2BoxerTask(ParticleWorkFlowTask):
 	
 	def get_project_files_that_have_db_boxes_in_table(self):
 		
-		self.report_task = EMRawDataReportTask(get_application())
+		self.report_task = EMRawDataReportTask()
 		table,n = self.report_task.get_raw_data_table()# now p is a EMParamTable with rows for as many files as there in the project
 		from emform import EMFileTable
 		table.insert_column_data(0,EMFileTable.EMColumnData("Stored Boxes",E2BoxerTask.get_boxes_in_database,"Boxes currently stored in the EMAN2 database"))
@@ -1844,8 +1860,8 @@ class E2BoxerTask(ParticleWorkFlowTask):
 
 class E2BoxerGenericTask(ParticleWorkFlowTask):
 	documentation_string = "Fill me in"
-	def __init__(self,application):
-		ParticleWorkFlowTask.__init__(self,application)
+	def __init__(self):
+		ParticleWorkFlowTask.__init__(self)
 		self.window_title = "e2boxer"
 		self.preferred_size = (480,200)
 		self.form_db_name = "bdb:emform.e2boxer"
@@ -1860,15 +1876,15 @@ class E2BoxerGenericTask(ParticleWorkFlowTask):
 
 	def on_form_ok(self,params):
 		if params["running_mode"] == "Interactive boxing":
-			self.emit(QtCore.SIGNAL("replace_task"),E2BoxerGuiTaskGeneral,"e2boxer interface launcher")
+			self.emit(QtCore.SIGNAL("replace_task"),E2BoxerGuiTaskGeneral(),"e2boxer interface launcher")
 			self.form.closeEvent(None)
 			self.form = None
 		elif params["running_mode"] == "Autoboxing":
-			self.emit(QtCore.SIGNAL("replace_task"),E2BoxerAutoTaskGeneral,"e2boxer automated boxing")
+			self.emit(QtCore.SIGNAL("replace_task"),E2BoxerAutoTaskGeneral(),"e2boxer automated boxing")
 			self.form.closeEvent(None)
 			self.form = None
 		elif params["running_mode"] == "Write output":
-			self.emit(QtCore.SIGNAL("replace_task"),E2BoxerOutputTaskGeneral,"e2boxer write output")
+			self.emit(QtCore.SIGNAL("replace_task"),E2BoxerOutputTaskGeneral(),"e2boxer write output")
 			self.form.closeEvent(None)
 			self.form = None	
 		else:
@@ -1889,8 +1905,8 @@ class E2BoxerAutoTask(E2BoxerTask):
 	documentation_string = "Select the images you wish to run autoboxing on and hit OK.\nThis will cause the workflow to spawn processes based on the available CPUs.\nData will be autoboxed using the current autoboxer in the database, which is placed there by e2boxer."
 	warning_string = "\n\n\nNOTE: This feature is currently disabled as there is no autoboxing information in the EMAN2 database. You can fix this situation by using e2boxer to interactively box a few images first"
 	
-	def __init__(self,application):
-		E2BoxerTask.__init__(self,application)
+	def __init__(self):
+		E2BoxerTask.__init__(self)
 		self.window_title = "e2boxer autobox"
 		self.boxer_module = None # this will actually point to an EMBoxerModule, potentially
 
@@ -1936,7 +1952,7 @@ class E2BoxerAutoTask(E2BoxerTask):
 			self.form = None
 
 class E2BoxerAutoTaskGeneral(E2BoxerAutoTask):
-	def __init__(self,application):
+	def __init__(self):
 		E2BoxerAutoTask.__init__(self,application)
 		self.window_title = "e2boxer autobox"
 		self.boxer_module = None # this will actually point to an EMBoxerModule, potentially
@@ -1966,8 +1982,8 @@ class E2BoxerGuiTask(E2BoxerTask):
 	
 	warning_string = "\n\n\nNOTE: There are no images currenty associated with the project. Please import or specify which images you want as part of this project in step 1 of the workflow and try again."
 	
-	def __init__(self,application):
-		E2BoxerTask.__init__(self,application)
+	def __init__(self):
+		E2BoxerTask.__init__(self)
 		self.window_title = "e2boxer interface"
 		self.boxer_module = None # this will actually point to an EMBoxerModule, potentially
 
@@ -2035,8 +2051,8 @@ class E2BoxerGuiTask(E2BoxerTask):
 		self.emit(QtCore.SIGNAL("gui_exit"))
 
 class E2BoxerGuiTaskGeneral(E2BoxerGuiTask):	
-	def __init__(self,application):
-		E2BoxerTask.__init__(self,application)
+	def __init__(self):
+		E2BoxerTask.__init__(self)
 		self.window_title = "e2boxer interface"
 		self.boxer_module = None # this will actually point to an EMBoxerModule, potentially
 
@@ -2053,8 +2069,8 @@ class E2BoxerGuiTaskGeneral(E2BoxerGuiTask):
 class E2BoxerOutputTask(E2BoxerTask):	
 	documentation_string = "Select the images you wish to generate output for, enter the box size and normalization etc, and then hit OK.\nThis will cause the workflow to spawn output writing processes using the available CPUs. Note that the bdb option is the preferred output format, in this mode output particles are written directly to the EMAN project database."
 	warning_string = "\n\n\nNOTE: There are no boxes currently stored in the database. To rectify this situation use e2boxer to interactively box your images, or alternatively used autoboxing information stored in the database to autobox your images."
-	def __init__(self,application):
-		E2BoxerTask.__init__(self,application)
+	def __init__(self):
+		E2BoxerTask.__init__(self)
 		self.window_title = "e2boxer output"
 		self.output_formats = ["bdb","hdf"] # disable img from the workflow because in EMAN2 we want to store more metadata in the header
 	
@@ -2134,7 +2150,7 @@ class E2BoxerOutputTask(E2BoxerTask):
 
 class E2BoxerOutputTaskGeneral(E2BoxerOutputTask):
 	documentation_string = "Write me"
-	def __init__(self,application):
+	def __init__(self):
 		E2BoxerOutputTask.__init__(self,application)
 		self.window_title = "e2boxer output"
 		
@@ -2259,8 +2275,8 @@ class E2CTFWorkFlowTask(ParticleReportTask):
 	'''
 	Common functionality for E2CTF Work flow taskss
 	'''
-	def __init__(self,application):
-		ParticleReportTask.__init__(self,application)
+	def __init__(self):
+		ParticleReportTask.__init__(self)
 		self.form_db_name = "bdb:emform.e2ctf"
 	
 	def get_ctf_param_table(self,project_names=None,no_particles=False):
@@ -2282,6 +2298,10 @@ class E2CTFWorkFlowTask(ParticleReportTask):
 		return table,len(particle_names)
 	
 	class CTFColumns:
+		'''
+		Basically some functions with a cache - the cache is to avoid
+		re-reading stuff from disk multiple times
+		'''
 		def __init__(self):
 			self.ctf_cache = {}
 						
@@ -2567,8 +2587,8 @@ class CTFReportTask(E2CTFWorkFlowTask):
 	
 	documentation_string = "This tool is for displaying the currently determined CTF parameters for the particles associated with the project. It also displays the number of phase flipped and/or wiener filtered images corresponding to each particle set."
 	warning_string = "\n\n\nNOTE: There are no particles currently associated with the project. Please go to the \"Particles\" task and import/box particles first."
-	def __init__(self,application):
-		E2CTFWorkFlowTask.__init__(self,application)
+	def __init__(self):
+		E2CTFWorkFlowTask.__init__(self)
 		self.window_title = "Particle CTF parameters"
 
 	def get_params(self):
@@ -2589,8 +2609,8 @@ class CTFReportTask(E2CTFWorkFlowTask):
 		
 class E2CTFGenericTask(ParticleWorkFlowTask):
 	documentation_string = "Fill me in"
-	def __init__(self,application):
-		ParticleWorkFlowTask.__init__(self,application)
+	def __init__(self):
+		ParticleWorkFlowTask.__init__(self)
 		self.window_title = "e2ctf"
 		self.preferred_size = (480,200)
 		self.form_db_name = "bdb:emform.e2ctf"
@@ -2606,15 +2626,15 @@ class E2CTFGenericTask(ParticleWorkFlowTask):
 
 	def on_form_ok(self,params):
 		if params["running_mode"] == "auto params":
-			self.emit(QtCore.SIGNAL("replace_task"),E2CTFAutoFitTaskGeneral,"ctf auto fit")
+			self.emit(QtCore.SIGNAL("replace_task"),E2CTFAutoFitTaskGeneral(),"ctf auto fit")
 			self.form.closeEvent(None)
 			self.form = None
 		elif params["running_mode"] == "interactively fine tune":
-			self.emit(QtCore.SIGNAL("replace_task"),E2CTFGuiTaskGeneral,"fine tune ctf")
+			self.emit(QtCore.SIGNAL("replace_task"),E2CTFGuiTaskGeneral(),"fine tune ctf")
 			self.form.closeEvent(None)
 			self.form = None
 		elif params["running_mode"] == "write output":
-			self.emit(QtCore.SIGNAL("replace_task"),E2CTFOutputTaskGeneral,"ctf output")
+			self.emit(QtCore.SIGNAL("replace_task"),E2CTFOutputTaskGeneral(),"ctf output")
 			self.form.closeEvent(None)
 			self.form = None	
 		else:
@@ -2629,8 +2649,8 @@ class E2CTFAutoFitTask(E2CTFWorkFlowTask):
 	documentation_string = "Select the particles you wish to generate CTF parameters for, enter the appropriate parameters such as microscope voltage etc, and hit OK.\nThis will cause the workflow to spawn processes based on the available CPUs. Once finished the automatically determined CTF parameters will be stored in the EMAN2 database."
 	warning_string = "\n\n\nNOTE: There are no particles currently associated with the project. Please go to the \"Particles\" task and import/box particles first."
 
-	def __init__(self,application):
-		E2CTFWorkFlowTask.__init__(self,application)
+	def __init__(self):
+		E2CTFWorkFlowTask.__init__(self)
 		self.window_title = "e2ctf auto fitting"
 
 	def get_params(self):
@@ -2776,7 +2796,7 @@ class E2CTFAutoFitTaskGeneral(E2CTFAutoFitTask):
 	'''
 	documentation_string = "Use this tool to use e2ctf to generate ctf parameters for the particles located anywhere on disk. Use the browse buttons to locate the files on disk, enter the fitting parameters such as microscope voltage and angstrom per pixel, and hit OK. \nThis will cause the workflow to spawn processes based on the available CPUs. Once finished the automatically determined CTF parameters will be stored in the EMAN2 database."
 	
-	def __init__(self,application):
+	def __init__(self):
 		E2CTFAutoFitTask.__init__(self,application)
 		self.window_title = "e2ctf auto fitting"
 		self.file_check = True
@@ -2832,8 +2852,8 @@ class E2CTFAutoFitTaskGeneral(E2CTFAutoFitTask):
 class E2CTFOutputTask(E2CTFWorkFlowTask):	
 	documentation_string = "Select the particle data for which you wish to generate phase flipped and/or Wiener filtered output and hit OK.\nThis will cause the workflow to spawn processes based on the available CPUs that write the output into a predefined location in the EMAN2 database.\nNote that the Wiener filtered output images are also phase flipped."
 	warning_string = "\n\n\nNOTE: There are no particles associated with the project and/or there are no previously generated CTF parameters for these particles. To establish project particles go to the \"Particles\" task. To generate CTF parameters go to the \"Automated fitting - e2ctf\" task" 
-	def __init__(self,application):
-		E2CTFWorkFlowTask.__init__(self,application)
+	def __init__(self):
+		E2CTFWorkFlowTask.__init__(self)
 		self.window_title = "e2ctf output"
 
 	def get_params(self):
@@ -2923,7 +2943,7 @@ class E2CTFOutputTaskGeneral(E2CTFOutputTask):
 	'''
 	warning_string = "\n\n\nNOTE: There are no CTF parameters currently stored for any images in the local database. You can change this by running automated fitting with e2ctf."
 	
-	def __init__(self,application):
+	def __init__(self):
 		E2CTFOutputTask.__init__(self,application)
 		self.window_title = "e2ctf output"
 
@@ -2991,8 +3011,8 @@ class E2CTFOutputTaskGeneral(E2CTFOutputTask):
 class E2CTFGuiTask(E2CTFWorkFlowTask):	
 	documentation_string = "Select the particle data you wish to evaluate/tweak in the e2ctf interactive interface and hit OK. This will launch e2ctf and the selected images will automatically be loaded for viewing. Once inside the e2ctf interface you can save your tweaked parameters to the database using the Save button."
 	warning_string = "\n\n\nNOTE: There are no particles associated with the project and/or there are no previously generated CTF parameters for these particles. To establish project particles go to the \"Particles\" task. To generate CTF parameters go to the \"Automated fitting - e2ctf\" task" 
-	def __init__(self,application):
-		E2CTFWorkFlowTask.__init__(self,application)
+	def __init__(self):
+		E2CTFWorkFlowTask.__init__(self)
 		self.window_title = "e2ctf interface"
 		self.gui = None # will eventually be a e2ctf gui
 
@@ -3070,7 +3090,7 @@ class E2CTFGuiTaskGeneral(E2CTFGuiTask):
 	warning_string = "\n\n\nNOTE: There are there are no previously generated CTF parameters. Please run automated fitting using e2ctf first." 
 	
 	documentation_string = "Write me"
-	def __init__(self,application):
+	def __init__(self):
 		E2CTFGuiTask.__init__(self,application)
 
 	def get_params(self):
@@ -3115,8 +3135,8 @@ class E2Refine2DReportTask(ParticleWorkFlowTask):
 	documentation_string = "This form displays the current sets of reference free class averages that have been generated by 2D refinement processess."
 	warning_string = "\n\n\nNote: There are no reference free class averages currently associated with the project. Try running e2refine2d in the options below."
 	
-	def __init__(self,application):
-		ParticleWorkFlowTask.__init__(self,application)
+	def __init__(self):
+		ParticleWorkFlowTask.__init__(self)
 		self.window_title = "Refine 2D class averages "
 		
 		
@@ -3132,10 +3152,10 @@ class E2Refine2DReportTask(ParticleWorkFlowTask):
 		return params
 
 
-class ClassificationTask(ParticleWorkFlowTask):
+class EMClassificationTask(ParticleWorkFlowTask):
 	
-	def __init__(self,application):
-		ParticleWorkFlowTask.__init__(self,application)
+	def __init__(self):
+		ParticleWorkFlowTask.__init__(self)
 		
 	def get_simmx_page(self):
 		
@@ -3313,13 +3333,13 @@ class ClassificationTask(ParticleWorkFlowTask):
 		
 		return error_message
 
-class E2Refine2DTask(ClassificationTask):
+class E2Refine2DTask(EMClassificationTask):
 	'''
 	Common e2refine2D functionality
 	'''
 	documentation_string = "This form is a way for the user to supply arguments to and execute e2refine2d.py"
-	def __init__(self,application):
-		ClassificationTask.__init__(self,application)
+	def __init__(self):
+		EMClassificationTask.__init__(self)
 		self.window_title = "Run e2refine2d"
 		self.form_db_name = "bdb:emform.e2refine2d"
 		
@@ -3511,25 +3531,55 @@ class E2Refine2DTask(ClassificationTask):
  		 	
 class E2Refine2DChooseDataTask(ParticleWorkFlowTask):
 	documentation_string = "Choose the data you wish to use for use for running e2refine2d from the list of options below and hit OK. This will pop up a second form asking you to fill in more details.\n\nNote that usually you should have 4 options to choose from below. If you are not seeing all 4 options it means you should go back in the work flow, import particles, and generate phase flipped and Wiener filtered output." 
-	def __init__(self,application):
-		ParticleWorkFlowTask.__init__(self,application)
+	def __init__(self):
+		ParticleWorkFlowTask.__init__(self)
 		self.window_title = "e2refine2d - getting starting"
 		self.form_db_name = "bdb:emform.e2refine2d"
 		self.preferred_size = (480,300)
+		self.particles_map = {} # used to cache data in get_params
+		self.particles_name_map = {} # used to recall which selection was taken
 	
 	def get_params_new(self):
 		db = db_open_dict("bdb:project")
-		import time
-		t = time.time()
+		n = 0
 		if db.has_key("global.spr_ptcls"):
-			n = 0
-			for name in db["global.spr_ptcls"]:
+			ptcls = db["global.spr_ptcls"]
+			for name in ptcls:
 				n += EMUtil.get_image_count(name)
+				
+			self.particles_map["Particles"] = ptcls
+				
+		# now build up the list of filtered things
+		filter_opts = {} # key is the filter type, value is the number of images with this filter type
+		if db.has_key("global.spr_filt_ptcls_map"):
+			for name,d in db["global.spr_filt_ptcls_map"].items():
+				for filt,ptcl_name in d.items():
+					if filter_opts.has_key(filt):
+						filter_opts[filt] += EMUtil.get_image_count(ptcl_name)
+						self.particles_map[filt].append(ptcl_name)
+					else:
+						filter_opts[filt] = EMUtil.get_image_count(ptcl_name)
+						self.particles_map[filt] = [ptcl_name]
 		
-		print "it took",time.time()-t,"for",n
+		choices = []
+		ptcl_name = "Particles ("+str(n)+")"
+		choices.append(ptcl_name)
+		self.particles_name_map[ptcl_name] = "Particles"
+		for filt,num in filter_opts.items():
+			name = filt+" ("+str(num)+")"
+			choices.append( name )
+			self.particles_name_map[name] = filt
+		
+		params = []		
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2Refine2DChooseDataTask.documentation_string,choices=None))
+			
+		db = db_open_dict(self.form_db_name)
+		params.append(ParamDef(name="particle_set_choice",vartype="choice",desc_long="Choose the particle data set you wish to use to generate a starting data for e2refine2d",desc_short="Choose data",property=None,defaultunits=db.get("particle_set_choice",dfl=""),choices=choices))
+		#db_close_dict(self.form_db_name)
+		return params
 	
 	def get_params(self):
-		self.get_params_new()
+		return self.get_params_new()
 		params = []		
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2Refine2DChooseDataTask.documentation_string,choices=None))
 		
@@ -3557,36 +3607,41 @@ class E2Refine2DChooseDataTask(ParticleWorkFlowTask):
 
 		choice = params["particle_set_choice"]
 		
-		if choice == None: return # the user has selected anything but they hit ok 
 		
-		if choice[:9] == "Particles":
-			self.emit(QtCore.SIGNAL("replace_task"),E2Refine2DRunTask,"e2refine2d options")
-			self.form.closeEvent(None)
-			self.form = None
-		elif choice[:5] == "Phase":
-			self.emit(QtCore.SIGNAL("replace_task"),E2Refine2DWithPhasePtclsTask,"e2refine2d options")
-			self.form.closeEvent(None)
-			self.form = None
-		elif choice[:6] == "Wiener":
-			self.emit(QtCore.SIGNAL("replace_task"),E2Refine2DWithWienPtclsTask,"e2refine2d options")
-			self.form.closeEvent(None)
-			self.form = None
-		elif choice == "Specify files":
-			self.emit(QtCore.SIGNAL("replace_task"),E2Refine2DWithGenericTask,"e2refine2d options")
-			self.form.closeEvent(None)
-			self.form = None
-		else:
-			print "the code has changed since the original author wrote it, something is wrong!!"
-			return
+		self.emit(QtCore.SIGNAL("replace_task"),E2Refine2DRunTask(self.particles_map[self.particles_name_map[choice]]),"e2refine2d options")
+		self.form = None
+		
+#		if choice == None: return # the user has selected anything but they hit ok 
+#		
+#		if choice[:9] == "Particles":
+#			self.emit(QtCore.SIGNAL("replace_task"),E2Refine2DRunTask(),"e2refine2d options")
+#			self.form.closeEvent(None)
+#			self.form = None
+#		elif choice[:5] == "Phase":
+#			self.emit(QtCore.SIGNAL("replace_task"),E2Refine2DWithPhasePtclsTask(),"e2refine2d options")
+#			self.form.closeEvent(None)
+#			self.form = None
+#		elif choice[:6] == "Wiener":
+#			self.emit(QtCore.SIGNAL("replace_task"),E2Refine2DWithWienPtclsTask(),"e2refine2d options")
+#			self.form.closeEvent(None)
+#			self.form = None
+#		elif choice == "Specify files":
+#			self.emit(QtCore.SIGNAL("replace_task"),E2Refine2DWithGenericTask(),"e2refine2d options")
+#			self.form.closeEvent(None)
+#			self.form = None
+#		else:
+#			print "the code has changed since the original author wrote it, something is wrong!!"
+#			return
 		
 		self.write_db_entries(params)
 
 class E2Refine2DRunTask(E2Refine2DTask):
 	documentation_string = "Choose which files you want to be part of the input data set, enter the appropriate e2refine2d input parameters, and hit OK. This will cause the workflow to spawn e2refine2d in a separate process. Output data will automatically be stored in the EMAN2 database."
-	def __init__(self,application):
-		E2Refine2DTask.__init__(self,application)
+	def __init__(self):
+		E2Refine2DTask.__init__(self,particles=[])
 		self.window_title = "run e2refine2d"
 		self.end_tag = "_ptcls"
+		self.particles = []
 		
 	
 	def run_form(self):
@@ -3611,12 +3666,13 @@ class E2Refine2DRunTask(E2Refine2DTask):
 	def get_main_params(self):
 		params = []
 		
-		if self.end_tag != "generic":
-			p,n = self.get_particle_selection_table(tag=self.end_tag)
-		else:
-			p = ParamDef(name="filenames",vartype="url",desc_short="Input file name(s)",desc_long="The names of the particle files you want to use as in the input data for e2refine2d.py",property=None,defaultunits=[],choices=[])
-			n = 1 # just to fool the next bit, that's all
-			
+#		if self.end_tag != "generic":
+#			p,n = self.get_particle_selection_table(tag=self.end_tag)
+#		else:
+#			p = ParamDef(name="filenames",vartype="url",desc_short="Input file name(s)",desc_long="The names of the particle files you want to use as in the input data for e2refine2d.py",property=None,defaultunits=[],choices=[])
+#			n = 1 # just to fool the next bit, that's all
+#			
+	   	p,n = self.get_particle_selection_table(self.particles)
 		if n == 0:
 			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2Refine2DRunTask.documentation_string+E2Refine2DRunTask.warning_string,choices=None))
 		else:
@@ -3675,20 +3731,43 @@ class E2Refine2DRunTask(E2Refine2DTask):
 #		
 #		else:
 #			self.run_e2refine2d(options) # this does everything, even close the form
+class E2Refine2DCustomRunTask(E2Refine2DRunTask):
+	def __init__(self):
+		E2Refine2DRunTask.__init__(self,application)
+		
+	def get_main_params(self):
+		params = []
+		
+		p,n = self.get_particle_selection_table(tag=self.end_tag)
 			
+		if n == 0:
+			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2Refine2DRunTask.documentation_string+E2Refine2DRunTask.warning_string,choices=None))
+		else:
+			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2Refine2DRunTask.documentation_string,choices=None))
+			params.append(p)  
+			
+		other_params = self.get_general_params()
+		
+		params.extend(other_params)
+		return ["General",params]
+
+class E2Refine2DCustomPtclsTask(E2Refine2DCustomRunTask):
+	end_tag = None
+	def __init__(self):
+		E2Refine2DCustomRunTask.__init__(self,application)			
 
 class E2Refine2DWithPhasePtclsTask(E2Refine2DRunTask):
-	def __init__(self,application):
+	def __init__(self):
 		E2Refine2DRunTask.__init__(self,application)
 		self.end_tag = "_ptcls_ctf_flip"
 		
 class E2Refine2DWithWienPtclsTask(E2Refine2DRunTask):
-	def __init__(self,application):
+	def __init__(self):
 		E2Refine2DRunTask.__init__(self,application)
 		self.end_tag = "_ptcls_ctf_wiener"
 		
 class E2Refine2DWithGenericTask(E2Refine2DRunTask):
-	def __init__(self,application):
+	def __init__(self):
 		E2Refine2DRunTask.__init__(self,application)
 		self.end_tag = "generic"
 
@@ -3778,8 +3857,8 @@ class E2Refine2DWithGenericTask(E2Refine2DRunTask):
 class InitialModelReportTask(ParticleWorkFlowTask):
 	documentation_string = "This form displays the initial models currently associated with the project. You can associate initial models with the project using e2makeinitialmodel or by importing them directly, see the options below."
 	warning_string = "\n\n\nNOTE: There are no initial models currently associated with the project."
-	def __init__(self,application):
-		ParticleWorkFlowTask.__init__(self,application)
+	def __init__(self):
+		ParticleWorkFlowTask.__init__(self)
 		self.window_title = "Project initial models"
 	
 	def get_params(self):
@@ -3799,8 +3878,8 @@ class InitialModelReportTask(ParticleWorkFlowTask):
 class E2MakeInitialModel(ParticleWorkFlowTask):
 	documentation_string = "Make an initial model with e2initialmodel."
 	warning_string = "\n\n\nNOTE: there are no reference free classes in the project. Go back a step and try running e2refine2d" 
-	def __init__(self,application):
-		ParticleWorkFlowTask.__init__(self,application)
+	def __init__(self):
+		ParticleWorkFlowTask.__init__(self)
 		self.window_title = "run e2makeinitialmodel"
 		self.form_db_name = "bdb:emform.e2initialmodel"
 		
@@ -3878,8 +3957,8 @@ class E2MakeInitialModel(ParticleWorkFlowTask):
 class ImportInitialModels(ParticleWorkFlowTask):
 	documentation_string = "Import initial models into the EMAN2 database. Browse for the images you wish to import or type them directly into the entry form. If you tick force overwrite initial models in the EMAN2 database with the same name will automatically be over written."
 	
-	def __init__(self,application):
-		ParticleWorkFlowTask.__init__(self,application)
+	def __init__(self):
+		ParticleWorkFlowTask.__init__(self)
 		self.window_title = "Import initial models"
 		self.form_db_name = "bdb:emform.e2initialmodel"
 		
@@ -3956,8 +4035,8 @@ class ImportInitialModels(ParticleWorkFlowTask):
 class RefinementReportTask(ParticleWorkFlowTask):
 	documentation_string = "This form displays the models produced at the end of each refinement."
 	warning_string = "\n\n\nNOTE: There are no results available."
-	def __init__(self,application):
-		ParticleWorkFlowTask.__init__(self,application)
+	def __init__(self):
+		ParticleWorkFlowTask.__init__(self)
 		self.window_title = "Refinement results"
 	
 	def get_params(self):
@@ -4070,7 +4149,7 @@ class RefinementReportTask(ParticleWorkFlowTask):
 			return None,0
 			
 
-class E2RefineParticlesTask(ClassificationTask):
+class E2RefineParticlesTask(EMClassificationTask):
 	'''
 	This task will harness the parameters for, and launch, e2refine.py
 	'''
@@ -4081,8 +4160,8 @@ class E2RefineParticlesTask(ClassificationTask):
 	class_documentation = "Most of these parameters are for e2classaverage with the exception of the \"Class separation\" parameter which is the solely used by e2classify. Classification is first performed using this latter program and the output from e2simmx. This is followed by the class averaging stage. The critical argument for the class averaging procedure is the number of iterations. In early stages of refinement this should be relatively large and it should gradually be reduced as your model converges to the answer."
 	make3d_documentation = "Iterative Fourier inversion is the preferred method of 3D reconstruction in EMAN2."
 
-	def __init__(self,application):
-	 	ClassificationTask.__init__(self,application)
+	def __init__(self):
+	 	EMClassificationTask.__init__(self)
 	 	self.end_tag = "_ptcls"
 	 	self.window_title = "e2refine parameters"
 	 	self.form_db_name = "bdb:emform.e2refine"
@@ -4683,17 +4762,17 @@ class E2RefineParticlesTask(ClassificationTask):
 		return ["Make3d", params]
 
 class E2RefineGeneralTask(E2RefineParticlesTask):
-	def __init__(self,application):
+	def __init__(self):
 		E2RefineParticlesTask.__init__(self,application)
 		self.end_tag = "generic"		 
 
 class E2RefinePhaseTask(E2RefineParticlesTask):
-	def __init__(self,application):
+	def __init__(self):
 		E2RefineParticlesTask.__init__(self,application)
 		self.end_tag = "_ptcls_ctf_flip"
 
 class E2RefineWienerTask(E2RefineParticlesTask):
-	def __init__(self,application):
+	def __init__(self):
 		E2RefineParticlesTask.__init__(self,application)
 		self.end_tag = "_ptcls_ctf_wiener"
 		 
@@ -4702,8 +4781,8 @@ class E2RefineWienerTask(E2RefineParticlesTask):
 class E2RefineChooseDataTask(ParticleWorkFlowTask):
 	documentation_string = "This form assists you in providing all of the necessary parameters for 3D refinement in EMAN2. First choose the data you wish to use for use for running e2refine from the list of options below and hit OK. This will pop up a second form asking you to fill in more details." 
 	warning_string = "\n\n\nNOTE: There are no initial models currently associated with the project. Please go back to the \'Initial model\' task and create/import initial models."
-	def __init__(self,application):
-		ParticleWorkFlowTask.__init__(self,application)
+	def __init__(self):
+		ParticleWorkFlowTask.__init__(self)
 		self.window_title = "e2refine- getting starting"
 		self.preferred_size = (480,300)
 		self.form_db_name = "bdb:emform.e2refine"
@@ -4748,19 +4827,19 @@ class E2RefineChooseDataTask(ParticleWorkFlowTask):
 		choice = params["particle_set_choice"]
 		
 		if choice[:9] == "Particles":
-			self.emit(QtCore.SIGNAL("replace_task"),E2RefineParticlesTask,"e2refine params")
+			self.emit(QtCore.SIGNAL("replace_task"),E2RefineParticlesTask(),"e2refine params")
 			self.form.closeEvent(None)
 			self.form = None
 		elif choice[:5] == "Phase":
-			self.emit(QtCore.SIGNAL("replace_task"),E2RefinePhaseTask,"e2refine params")
+			self.emit(QtCore.SIGNAL("replace_task"),E2RefinePhaseTask(),"e2refine params")
 			self.form.closeEvent(None)
 			self.form = None
 		elif choice[:6] == "Wiener":
-			self.emit(QtCore.SIGNAL("replace_task"),E2RefineWienerTask,"e2refine params")
+			self.emit(QtCore.SIGNAL("replace_task"),E2RefineWienerTask(),"e2refine params")
 			self.form.closeEvent(None)
 			self.form = None
 		elif choice == "Specify files":
-			self.emit(QtCore.SIGNAL("replace_task"),E2RefineGeneralTask,"e2refine params")
+			self.emit(QtCore.SIGNAL("replace_task"),E2RefineGeneralTask(),"e2refine params")
 			self.form.closeEvent(None)
 			self.form = None
 		else:
@@ -4777,8 +4856,8 @@ class E2RefineChooseDataTask(ParticleWorkFlowTask):
 class ResolutionReportTask(ParticleWorkFlowTask):
 	documentation_string = "This form displays information related to the estimated resolution of refinement results.\nIf you double click on any of the entries in the table you will see the convergence plot and any associated resolution curves."
 	warning_string = "\n\n\nNOTE: There are no results available."
-	def __init__(self,application):
-		ParticleWorkFlowTask.__init__(self,application)
+	def __init__(self):
+		ParticleWorkFlowTask.__init__(self)
 		self.window_title = "Resolution estimation"
 	
 	def get_params(self):
@@ -4955,7 +5034,7 @@ class E2EotestTask(E2RefineParticlesTask):
 	general_documentation = "These are parameters required to run an even-odd test in EMAN2"
 	documentation_string = "This form is used to run e2eotest."
 	warning_string = "\n\n\nThere are no refinement results available to use as the basis of running e2eotest"
-	def __init__(self,application):
+	def __init__(self):
 	 	E2RefineParticlesTask.__init__(self,application)
 	 	self.window_title = "e2eotest parameters"
 	 	self.form_db_name = "bdb:emform.e2eotest"
@@ -5139,8 +5218,8 @@ class E2ResolutionTask(WorkFlowTask):
 	 
 	general_documentation = "These are parameters required to run an e2resolution.py."
 	warning_string = "\n\n\nThere are no refinement results available to use as the basis of running e2resolution"
-	def __init__(self,application):
-	 	WorkFlowTask.__init__(self,application)
+	def __init__(self):
+	 	WorkFlowTask.__init__(self)
 	 	self.window_title = "e2resolution parameters"
 	 	self.dir_and_iter = {} # will eventually be useful information about directories that will work for e2eotest
 	 	

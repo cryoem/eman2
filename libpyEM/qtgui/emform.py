@@ -627,6 +627,22 @@ class EM2DFileTable(EMFileTable):
 
 	def module_closed(self,module_instance):
 		self.display_module = None
+		
+class EMTomographicFileTable(EMFileTable):
+	'''
+	Basically makes sure the correct icon is displayed.
+	Passes on image display - because tomographic images are huge
+	'''
+	def __init__(self,listed_names=[],name="filenames",desc_short="File Names",desc_long="A list of file names"):
+		'''
+		see EMFileTable for comments on parameters
+		'''
+		EMFileTable.__init__(self,listed_names,name,desc_short,desc_long)
+		self.icon = QtGui.QIcon(get_image_directory() + "/single_image_3d.png")
+	
+	def table_item_double_clicked(self,item):
+		''' Just pass because it's probably a really big image'''
+		pass
 
 class EM2DStackTable(EMFileTable):
 	def __init__(self,listed_names=[],name="filenames",desc_short="File Names",desc_long="A list of file names"):
@@ -1717,22 +1733,22 @@ if __name__ == '__main__':
 	
 	from emapplication import EMStandAloneApplication
 	em_app = EMStandAloneApplication()
-#	window = EMFormModule(params=get_example_form_params(),application=em_app)
-#	window.setWindowTitle("A test form")
-#	QtCore.QObject.connect(window,QtCore.SIGNAL("emform_ok"),on_ok)
-#	QtCore.QObject.connect(window,QtCore.SIGNAL("emform_cancel"),on_cancel)
+	window = EMFormModule(params=get_example_form_params(),application=em_app)
+	window.setWindowTitle("A test form")
+	QtCore.QObject.connect(window,QtCore.SIGNAL("emform_ok"),on_ok)
+	QtCore.QObject.connect(window,QtCore.SIGNAL("emform_cancel"),on_cancel)
 	
-#	window2= EMTableFormModule(params=get_example_table_form_params(),application=em_app)
-#	window2.setWindowTitle("A test form")
-#	QtCore.QObject.connect(window2,QtCore.SIGNAL("emform_ok"),on_ok)
-#	QtCore.QObject.connect(window2,QtCore.SIGNAL("emform_cancel"),on_cancel)
+	window2= EMTableFormModule(params=get_example_table_form_params(),application=em_app)
+	window2.setWindowTitle("A test form")
+	QtCore.QObject.connect(window2,QtCore.SIGNAL("emform_ok"),on_ok)
+	QtCore.QObject.connect(window2,QtCore.SIGNAL("emform_cancel"),on_cancel)
 	
 #	
 	import sys
 	tt = TestWidget()
 	#test = TestWidgetModule()
 	tt.show()
-	print sys.getrefcount(tt)
+	#print sys.getrefcount(tt)
 	#em_app.show()
 	em_app.execute()
 	

@@ -229,9 +229,9 @@ def write_e2ctf_output(options):
 					data_entry = dbds[filename]
 				
 				if phaseout:
-					data_entry["phase"] = phaseout
+					data_entry["Phase flipped"] = phaseout
 				if wienerout:
-					data_entry["wiener"] = wienerout
+					data_entry["Wiener filtered"] = wienerout
 					
 				dbds[filename] = data_entry
 				pdb[options.dbds] = dbds
