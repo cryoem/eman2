@@ -24,7 +24,7 @@ mpirun -np 2 sxk_means.py bdb:data kmeans --K=12 --opt_method=cla --maxit=100 --
 mpirun -np 2 sxali2d_m.py bdb:data kmeans/averages.hdf ali2d_m --ou=30 --xr=3 --yr=3 --ts=1 --center=1 --maxit=5 --function="ref_ali2d_m" --rand_seed=10 --CTF --MPI || exit
 
 # Determination of the initial structure using class averages and common-lines
-mpirun -np 2 sxfind_struct.py ali2d_m/multi_ref.hdf structure --ir=1 --ou=30 --delta=6 --dpsi=1 --lf=0.05 --hf=0.25 --maxit=20 --rand_seed=10 --weights --trials=4 --MPI || exit
+mpirun -np 2 sxfind_struct.py ali2d_m/multi_ref.hdf structure --ou=30 --delta=6 --lf=0.05 --hf=0.25 --maxit=20 --rand_seed=10 --trials=2 --MPI || exit
 
 # 3D reconstruction to compute initial structure based on Euler angles determined in the previous step 
 mpirun -np 2 sxrecons3d_n.py structure/structure.hdf ab_initio_vol.hdf --MPI || exit
