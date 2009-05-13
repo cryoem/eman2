@@ -91,9 +91,15 @@ float CccCmp::cmp(EMData * image, EMData *with) const
 	double avg1 = 0.0, var1 = 0.0, avg2 = 0.0, var2 = 0.0, ccc = 0.0;
 	long n = 0;
 	long totsize = image->get_xsize()*image->get_ysize()*image->get_zsize();
+	
+	bool has_mask = false;
+	EMData* mask = 0;
 	if (params.has_key("mask")) {
-		EMData* mask;
 		mask = params["mask"];
+		if(mask!=0) {has_mask=true;}
+	}
+	
+	if (has_mask) {
 		float* dm = mask->get_data();
 		for (long i = 0; i < totsize; i++) {
 			if (dm[i] > 0.5) {
