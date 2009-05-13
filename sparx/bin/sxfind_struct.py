@@ -38,7 +38,7 @@ from   optparse   import OptionParser
 import sys
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage    = progname + " stack outdir --ir --ou --delta --dpsi --lf --hf --rand_seed --maxit --given --first_zero --weights --new --mpi"
+	usage    = progname + " stack outdir --ir --ou --delta --dpsi --lf --hf --rand_seed --maxit --given --first_zero --weights --MPI --trials"
 	parser   = OptionParser(usage, version = SPARXVERSION)
 	parser.add_option("--ir",         type="float",        default=-1,       help=" Inner radius of particle (set to )")
 	parser.add_option("--ou",         type="float",        default=-1,       help=" Outer radius of particle < int(nx/2)-1")
@@ -51,8 +51,9 @@ def main():
 	parser.add_option("--maxit",      type="int",          default=100,      help=" Maximum iterations ")
 	parser.add_option("--debug",      action="store_true", default=False,    help=" Help to debug")
 	parser.add_option("--first_zero", action="store_true", default=False,    help=" Assign the first projection orientation to 0")
-	parser.add_option("--weights",    action="store_true", default=False,     help=" Use Voronoi weighting (set to 0)")
-	parser.add_option("--new",        action="store_true", default=False,    help=" The new code")
+	parser.add_option("--weights",    action="store_true", default=False,    help=" Use Voronoi weighting (set to 0)")
+	parser.add_option("--MPI",        action="store_true", default=False,    help=" MPI version")
+	parser.add_option("--trials",     type="int",          default=1,        help=" Number of trials for the MPI version")
 	parser.add_option("--MPIGA",      action="store_true", default=False,    help=" MPI version (Genetic algorithm)")
 	parser.add_option("--pcross",     type="float",        default=0.95,     help=" Cross-over probability (set to 0.95)")
 	parser.add_option("--pmut",       type="float",        default=0.05,     help=" Mutation probability (set to 0.05)")
@@ -64,28 +65,26 @@ def main():
 	else:
 		if options.maxit < 1: options.maxit = 1
 
-		if options.new:
-			if options.MPIGA:
-				from development import cml2_main_mpi
-				global_def.BATCH = True
-				cml2_main_mpi(args[0], args[1], options.ir, options.ou, options.delta, options.dpsi, 
-					      options.lf, options.hf, options.rand_seed, options.maxit, options.given, options.first_zero, 
-					      options.weights, options.debug, options.maxgen, options.pcross, options.pmut)
-				global_def.BATCH = False
-			else:
-				from development import cml2_main
-				global_def.BATCH = True
-				cml2_main(args[0], args[1], options.ir, options.ou, options.delta, options.dpsi, 
-					  options.lf, options.hf, options.rand_seed, options.maxit, options.given, options.first_zero, 
-					  options.weights, options.debug)
-				global_def.BATCH = False
-
-		else:
-			from applications import find_struct
+		if options.MPIGA:
+			from development import cml2_main_mpi
 			global_def.BATCH = True
-			find_struct(args[0], args[1], options.ir, options.ou, options.delta, options.dpsi, 
+			cml2_main_mpi(args[0], args[1], options.ir, options.ou, options.delta, options.dpsi, 
+				      options.lf, options.hf, options.rand_seed, options.maxit, options.given, options.first_zero, 
+				      options.weights, options.debug, options.maxgen, options.pcross, options.pmut)
+			global_def.BATCH = False
+		elif options.MPI:
+			from applications import cml_find_structure_MPI
+			global_def.BATCH = True
+			cml_find_structure_MPI(args[0], args[1], options.ir, options.ou, options.delta, options.dpsi, 
 				    options.lf, options.hf, options.rand_seed, options.maxit, options.given, options.first_zero, 
-				    options.weights, options.debug)
+				    options.weights, options.debug, options.trials)
+			global_def.BATCH = False
+		else:
+			from applications import cml_find_structure_main
+			global_def.BATCH = True
+			cml_find_structure_main(args[0], args[1], options.ir, options.ou, options.delta, options.dpsi, 
+				    options.lf, options.hf, options.rand_seed, options.maxit, options.given, options.first_zero, 
+				    options.weights, options.debug, options.trials)
 			global_def.BATCH = False
 
 
