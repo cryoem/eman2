@@ -51,7 +51,7 @@ def main():
 	parser.add_option("--maxit",      type="int",          default=100,      help=" Maximum iterations ")
 	parser.add_option("--debug",      action="store_true", default=False,    help=" Help to debug")
 	parser.add_option("--first_zero", action="store_true", default=False,    help=" Assign the first projection orientation to 0")
-	parser.add_option("--weights",    action="store_true", default=False,    help=" Use Voronoi weighting (set to 0)")
+	parser.add_option("--weights",    action="store_true", default=True,     help=" Use Voronoi weighting (set to 0)")
 	parser.add_option("--MPI",        action="store_true", default=False,    help=" MPI version")
 	parser.add_option("--trials",     type="int",          default=1,        help=" Number of trials for the MPI version")
 	parser.add_option("--MPIGA",      action="store_true", default=False,    help=" MPI version (Genetic algorithm)")
