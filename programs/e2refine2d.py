@@ -91,6 +91,7 @@ def main():
 
 	# Parallelism
 	parser.add_option("--parallel","-P",type="string",help="Run in parallel, specify type:n=<proc>:option:option",default=None)
+	parser.add_option("--dbls",type="string",default=None,help="data base list storage, used by the workflow. You can ignore this argument.",default=None)
 	
 		
 	global options
@@ -134,6 +135,10 @@ def main():
 	
 	total_procs = options.iter*7 + 5 # one for every run command
 	proc_tally = 0.0
+	if options.dbls:
+		pdb = db_open_dict("bdb:project")
+		orig_class_aves = pdb.get("global.spr_ref_free_class_aves", dfl=[])	
+			
 	# if we aren't given starting class-averages, make some
 	if not options.initial and not "classes_init" in dcts:
 		print "Building initial averages"
@@ -170,6 +175,13 @@ def main():
 		
 		cls_cmd = "e2classaverage.py %s %s#classmx_00 %s#classes_init --iter=6 " %(options.input,options.path,options.path)
 		cls_cmd += get_classaverage_extras(options)
+		
+		if options.dbls:
+			pdb = db_open_dict("bdb:project")
+			tmp_list = list(orig_class_aves)
+			tmp_list.append("%s#classes_init" %options.path)
+			# global.spr_ref_free_class_aves
+			pdb[options.dbls] = tmp_list
 		
 		#run("e2classaverage.py %s %s#classmx_00 %s#classes_init --iter=6 --align=%s:maxshift=%d --averager=%s -vf --bootstrap --keep=%f --cmp=%s --aligncmp=%s --normproc=%s"%(options.input,options.path,options.path,options.classalign,options.maxshift,options.classaverager,options.classkeep,options.classcmp,options.classaligncmp,options.classnormproc))
 		run (cls_cmd)
@@ -223,6 +235,13 @@ def main():
 		cls_cmd += get_classaverage_extras(options)
 		#run("e2classaverage.py %s %s#classmx_%02d %s#classes_%02d --iter=%d --align=%s:maxshift=%d --averager=%s -vf  --keep=%f --cmp=%s --aligncmp=%s"%(options.input,options.path,it,options.path,it,options.classiter,options.classalign,options.maxshift,options.classaverager,options.classkeep,options.classcmp,options.classaligncmp))
 		run(cls_cmd)
+		
+		if options.dbls:
+			pdb = db_open_dict("bdb:project")
+			tmp_list = list(orig_class_aves)
+			tmp_list.append("%s#classes_%02d" %(options.path,it))
+			# global.spr_ref_free_class_aves
+			pdb[options.dbls] = tmp_list
 		
 		proc_tally += 1.0
 		if logid : E2progress(logid,proc_tally/total_procs)

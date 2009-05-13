@@ -1615,8 +1615,8 @@ class EMTableFormModule(EMQtWidgetModule):
 	def get_desktop_hint(self):
 		return "form"
 	
-	def __del__(self):
-		print "table form module death"
+#	def __del__(self):
+#		print "table form module death"
 		
 		
 class EMTableFormWidget(EMFormWidget):
@@ -1628,7 +1628,7 @@ class EMTableFormWidget(EMFormWidget):
 	def __init__(self,parent,params=None):
 		EMFormWidget.__init__(self,parent,params)
 	
-	def __del__(self): print "del table form widget"
+#	def __del__(self): print "del table form widget"
 		
 	def incorporate_params(self,params,layout):
 		tabwidget = QtGui.QTabWidget(self)

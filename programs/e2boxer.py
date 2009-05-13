@@ -102,7 +102,7 @@ for single particle analysis."""
 
 	parser.add_option("--gui",action="store_true",help="Start the GUI for interactive boxing",default=False)
 	parser.add_option("--boxsize","-B",type="int",help="Box size in pixels",default=-1)
-	parser.add_option("--auto","-A",type="string",action="append",help="Autobox using specified method: ref, grid, db, cmd",default=[])
+	parser.add_option("--auto","-A",type="string",action="append",help="Autobox using specified method: swarm,gauss",default=[])
 	parser.add_option("--write_coord_files",action="store_true",help="Write data box files",default=False)
 	parser.add_option("--write_box_images",action="store_true",help="Write data box files",default=False)
 	parser.add_option("--force","-f",action="store_true",help="Force overwrites old files",default=False)
@@ -1015,6 +1015,7 @@ class RawDatabaseAutoBoxer:
 					db = db_open_dict("bdb:project")	
 					particle_names = db.get(options.dbls,dfl=[])
 					out_names = [boxable.get_image_file_name(imageformat=options.outformat)]
+					print out_names
 					strip_out_name = get_file_tag(out_names[0])
 					for name in particle_names:
 						if get_file_tag(name) != strip_out_name:

@@ -390,8 +390,8 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		ctf = QtGui.QTreeWidgetItem(QtCore.QStringList("CTF"))
 		self.launchers["CTF"] = self.launch_ctf_report
 		spr_list.append(ctf)
-		refine2d = QtGui.QTreeWidgetItem(QtCore.QStringList("Refine 2D"))
-		self.launchers["Refine 2D"] = self.launch_refine2d_report
+		refine2d = QtGui.QTreeWidgetItem(QtCore.QStringList("Reference Free Class Averages"))
+		self.launchers["Reference Free Class Averages"] = self.launch_refine2d_report
 		spr_list.append(refine2d)
 		init_model = QtGui.QTreeWidgetItem(QtCore.QStringList("Initial Model"))
 		self.launchers["Initial Model"] = self.launch_initmodel_report
@@ -554,7 +554,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		get_application().setOverrideCursor(Qt.ArrowCursor)
 	
 	def launch_refine2d_general(self):
-		self.launch_task(E2Refine2DWithGenericTask(),"e2refine2d generic")
+		self.launch_task(E2Refine2DWithGenericTask(False),"e2refine2d generic")
 	
 	def launch_ctf_general(self):
 		self.launch_task(E2CTFGenericTask(),"e2ctf generic")

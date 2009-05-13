@@ -1861,8 +1861,11 @@ class EMImage3DGUIModule(EMGUIModule):
 		if self.inspector: self.inspector.set_scale(self.cam.scale)
 
 	def get_translate_scale(self):
-	
-		[rx,ry] = self.gl_context_parent.get_render_dims_at_depth(self.cam.cam_z)
+		try:
+			[rx,ry] = self.gl_context_parent.get_render_dims_at_depth(self.cam.cam_z)
+		except:
+			print "fixme"
+			return 0,0
 		
 		#print "render area is %f %f " %(xx,yy)
 		xscale = rx/float(self.get_parent().width())
@@ -1916,9 +1919,12 @@ class EMImage3DGUIModule(EMGUIModule):
 		'''
 		Assumes the gl_context_parent is an EMGLProjectionViewMatrices instance
 		'''
-		
-		vh = self.gl_context_parent.viewport_height()
-		vw = self.gl_context_parent.viewport_width()
+		try:
+			vh = self.gl_context_parent.viewport_height()
+			vw = self.gl_context_parent.viewport_width()
+		except:
+			print "fixme 2"
+			return
 		
 		if vh == 0 or vw == 0: return
 		glMatrixMode(GL_PROJECTION)
