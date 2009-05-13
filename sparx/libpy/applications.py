@@ -10285,18 +10285,13 @@ def cml_find_structure_main(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_se
 	# Update logfile
 	#cml_end_log(Ori, disc, ite)
 
-	
 	for i in xrange(trials):
-
-
 		ibest = disc_end.index(min(disc_end))
 		print_msg('\n Selected trial #%03i with disc %10.7f\n' % (ibest, disc_end[ibest]))
 		os.system('cp %s/structure_%03i.hdf %s/structure.hdf' % (out_dir, ibest, out_dir))
 
 		running_time(t_start)
 		print_end_msg('find_struct')
-
-
 
 
 	running_time(t_start)
@@ -10385,8 +10380,8 @@ def cml_find_structure_MPI(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_see
 			score[i] = disc_end[i] * (1 - coll[i])
 			print_msg('trials %03i\trnd %i\tdisc init: %10.7f\tnb ite: %i\tdisc end: %10.7f\tcollinearity: %f\tscore: %f\n' % (i, lrnd[i], disc_init[i], ite[i] + 1, disc_end[i], coll[i], score[i]))
 			
-		#ibest = disc_end.index(min(disc_end))
-		ibest = score.index(min(score))
+		ibest = disc_end.index(min(disc_end))
+		#ibest = score.index(min(score))
 		print_msg('\n Selected trial #%03i with disc %10.7f\n' % (ibest, disc_end[ibest]))
 		os.system('cp %s/structure_%03i.hdf %s/structure.hdf' % (out_dir, ibest, out_dir))
 
