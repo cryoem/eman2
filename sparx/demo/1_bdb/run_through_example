@@ -18,18 +18,16 @@ e2boxer.py --method=Gauss -A cmd -B 64 --write_box_images --var --pix_in=5.2 --p
 sxali2d_c.py bdb:data ali2d_c --ou=30 --xr=3 --yr=3 --ts=1 --maxit=5 || exit
 
 # K-mean clustering of the 2D dataset
-sxk_means.py bdb:data Kmeans --K=12 --trials=3 --opt_method=cla --maxit=100 --rand_seed=10 || exit
+sxk_means.py bdb:data kmeans --K=12 --opt_method=cla --maxit=100 --rand_seed=10 --T0=0.2 --F=0.97 || exit
 
 # Multireference alignment of the 2D dataset
-sxali2d_m.py bdb:data Kmeans/averages.hdf ali2d_m --ou=30 --xr=3 --yr=3 --ts=1 --center=1 --maxit=5 --function="ref_ali2d_m" --rand_seed=10 || exit
+sxali2d_m.py bdb:data kmeans/averages.hdf ali2d_m --ou=30 --xr=3 --yr=3 --ts=1 --center=1 --maxit=5 --function="ref_ali2d_m" --rand_seed=10 || exit
 
-# Determination of the initial structure using class averages and a reference structure
-sxheader.py ali2d_m/multi_ref.hdf --one --params="active"
-sxheader.py ali2d_m/multi_ref.hdf --zero --params="xform.projection"
-sxali3d_d.py ali2d_m/multi_ref.hdf ../fmodel_structure.hdf abinitio --ou=30 --xr='0' --ts='1' --delta='20' --maxit=1 --ref_a=P  --function=reference3
+# Determination of the initial structure using class averages and common-lines
+sxfind_struct.py ali2d_m/multi_ref.hdf structure --ir=1 --ou=30 --delta=6 --lf=0.05 --hf=0.25 --maxit=50 --rand_seed=10 || exit
 
 # 3D reconstruction to compute initial structure based on Euler angles determined in the previous step 
-sxrecons3d_n.py ali2d_m/multi_ref.hdf ab_initio_vol.hdf || exit
+sxrecons3d_n.py structure/structure.hdf ab_initio_vol.hdf || exit
 
 # Low-pass filtration of the initial structure
 e2proc3d.py ab_initio_vol.hdf ab_initio_volf.hdf --filter=sxTANH_LOW_PASS:cutoff_frequency=0.15:fall_off=0.2 || exit
