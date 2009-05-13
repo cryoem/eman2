@@ -720,7 +720,9 @@ def cml_find_structure(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_w
 						if sw == 0:
 							weights = [1.0] * g_n_lines
 						else:
-							for i in xrange(g_n_lines): weights[i] /= sw
+							for i in xrange(g_n_lines):
+								weights[i] /= sw
+								weights[i] *= weights[i]
 					else:   weights = [1.0] * g_n_lines
 
 					# spin all psi
@@ -777,6 +779,33 @@ def cml_find_structure(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_w
 				break
 		else:
 			period_ct = 0
+
+	'''
+	cml = Util.cml_line_in3d(Ori, g_seq, g_n_prj, g_n_lines)
+	w1 = Util.cml_weights(cml)
+	wm = max(w1)
+	w2 = [0.0] * g_n_lines
+	for i in xrange(g_n_lines): w2[i]  = wm - w1[i]
+	sw = sum(w2)
+	if sw == 0:
+		w2 = [1.0] * g_n_lines
+	else:
+		for i in xrange(g_n_lines):
+			w2[i] /= sw
+			w2[i] *= w2[i]
+
+	f = open('weights.txt', 'w')
+	for i in xrange(g_n_lines):
+		f.write('%f\t%f\n' % (w1[i], w2[i]))
+	f.close()
+
+	la = []
+	for i in xrange(g_n_lines // 2):
+		ind = i*2
+		la.append([cml[ind], cml[ind+1], 0.0])
+	im = plot_angles(la)
+	im.write_image('plot_cml.hdf', 0)
+	'''
 
 	return Ori, disc, ite
 
