@@ -42,21 +42,21 @@ from math import *
 from EMAN2 import *
 import sys
 import numpy
-from emimageutil import ImgHistogram,EMParentWin
+from emimageutil import ImgHistogram,EMParentWin,EMTransformPanel
 from weakref import WeakKeyDictionary
 from time import time
 from PyQt4.QtCore import QTimer
-
+import weakref
 from time import *
 
-from emglobjects import EMImage3DGUIModule, Camera2,EMViewportDepthTools
+from emglobjects import EMImage3DGUIModule, Camera2,EMViewportDepthTools, EMGLProjectionViewMatrices
 
 MAG_INCREMENT_FACTOR = 1.1
 
 class EM3DFontWidget(EMImage3DGUIModule):
-	def __init__(self, parent=None):
+	def __init__(self):
 		EMImage3DGUIModule.__init__(self)
-		self.parent = parent
+		#self.parent = parent
 		
 		self.init()
 		self.initialized = True
@@ -72,12 +72,13 @@ class EM3DFontWidget(EMImage3DGUIModule):
 		
 		self.vdtools = EMViewportDepthTools(self)
 		self.font_renderer = get_3d_font_renderer()
+		#self.font_renderer.set_font_mode(FTGLFontMode.POLYGON) # or EXTRUDE, PIXMAP, BITMAP, POLYGON or OUTLINE
+		self.font_renderer.set_font_mode(FTGLFontMode.EXTRUDE) # or EXTRUDE, PIXMAP, BITMAP, POLYGON or OUTLINE
+		self.font_renderer.set_depth(100)
+		#self.font_renderer.set_font_mode(FTGLFontMode.OUTLINE)
 		
 	def get_type(self):
 		return "Font"
-	
-	def updateGL(self):
-		self.parent.updateGL()
 
 	def render(self):
 		#if (not isinstance(self.data,EMData)): return
@@ -123,23 +124,12 @@ class EM3DFontWidget(EMImage3DGUIModule):
 		glEnable(GL_NORMALIZE)
 		#HERE
 		glPushMatrix()
+		glNormal(0,0,1)
 		glEnable(GL_TEXTURE_2D)
 		bbox = self.font_renderer.bounding_box("hello world")
 		glTranslate((bbox[0]-bbox[3])/2,(bbox[1]-bbox[4])/2,(bbox[2]-bbox[5])/2)
 		self.font_renderer.render_string("hello world");
-		
-		#glScalef(10,10,1)
-		
-		#glBegin(GL_QUADS)
-		#glNormal(-1,-1,1)
-		#glVertex(-0.5,-0.5,0)
-		#glNormal(-1,1,1)
-		#glVertex( 0.5,-0.5,0)
-		#glNormal(1,1,1)
-		#glVertex( 0.5, 0.5,0)
-		#glNormal(1,-1,1)
-		#glVertex(-0.5, 0.5,0)
-		#glEnd()
+
 		glPopMatrix()
 		
 		glStencilFunc(GL_EQUAL,self.rank,self.rank)
@@ -173,8 +163,8 @@ class EM3DFontWidget(EMImage3DGUIModule):
 	
 	def setInit(self):
 
-		self.cam.default_z = -1.25*32
-		self.cam.cam_z = -1.25*32
+		self.cam.default_z = -2*32
+		self.cam.cam_z = -2*32
 		
 		if not self.inspector or self.inspector ==None:
 			self.inspector=EMFontInspector(self)
@@ -252,15 +242,15 @@ class EM3DFontWidget(EMImage3DGUIModule):
 	def setColor(self,val):
 		#print val
 		self.currentcolor = str(val)
-		self.parent.updateGL()
+		self.updateGL()
 	
 	def toggle_wire(self,val):
 		self.wire = not self.wire
-		self.parent.updateGL()
+		self.updateGL()
 		
 	def toggle_light(self,val):
 		self.light = not self.light
-		self.parent.updateGL()
+		self.updateGL()
 	
 	def update_inspector(self,t3d):
 		if not self.inspector or self.inspector ==None:
@@ -271,139 +261,42 @@ class EM3DFontWidget(EMImage3DGUIModule):
 		if not self.inspector : self.inspector=EMFontInspector(self)
 		return self.inspector
 		
-	def mousePressEvent(self, event):
-#		lc=self.scrtoimg((event.x(),event.y()))
-		if event.button()==Qt.MidButton:
-			if not self.inspector or self.inspector ==None:
-				return
-			self.inspector.update_rotations(self.cam.t3d_stack[len(self.cam.t3d_stack)-1])
-			self.resizeEvent()
-			self.show_inspector(1)
-		else:
-			self.cam.mousePressEvent(event)
+#	def mousePressEvent(self, event):
+##		lc=self.scrtoimg((event.x(),event.y()))
+#		if event.button()==Qt.MidButton:
+#			if not self.inspector or self.inspector ==None:
+#				return
+#			self.inspector.update_rotations(self.cam.t3d_stack[len(self.cam.t3d_stack)-1])
+#			self.resizeEvent()
+#			self.show_inspector(1)
+#		else:
+#			self.cam.mousePressEvent(event)
+#		
+#		self.updateGL()
 		
-		self.updateGL()
-		
-	def mouseMoveEvent(self, event):
-		self.cam.mouseMoveEvent(event)
-		self.updateGL()
-	
-	def mouseReleaseEvent(self, event):
-		self.cam.mouseReleaseEvent(event)
-		self.updateGL()
-			
-	def wheelEvent(self, event):
-		self.cam.wheelEvent(event)
-		self.updateGL()
-		
+#	def mouseMoveEvent(self, event):
+#		self.cam.mouseMoveEvent(event)
+#		self.updateGL()
+#	
+#	def mouseReleaseEvent(self, event):
+#		self.cam.mouseReleaseEvent(event)
+#		self.updateGL()
+#			
+#	def wheelEvent(self, event):
+#		self.cam.wheelEvent(event)
+#		self.updateGL()
+#		
 	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
 		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
-		
-class EM3DFontWidgetWidget(QtOpenGL.QGLWidget):
-	""" This class is not yet complete.
-	A QT widget for rendering 3D EMData objects.
-	"""
-	allim=WeakKeyDictionary()
-	def __init__(self, parent=None):
-		fmt=QtOpenGL.QGLFormat()
-		fmt.setDoubleBuffer(True)
-		fmt.setDepth(1)
-		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
-
-		EM3DFontWidgetWidget.allim[self]=0
-		self.font_renderer = EM3DFontWidget(self)
-		self.timer = QTimer()
-		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
-
-		self.aspect=1.0
-		self.fov = 50 # field of view angle used by gluPerspective
-	def timeout(self):
-		self.updateGL()
-		
-	def initializeGL(self):
-		
-		glEnable(GL_NORMALIZE)
-		
-		glEnable(GL_LIGHTING)
-		glEnable(GL_LIGHT0)
-		glEnable(GL_DEPTH_TEST)
-		#print "Initializing"
-		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.9, 0.9, 0.9, 1.0])
-		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_POSITION, [0.5,0.7,11.,0.])
-
-		GL.glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
-		
-		GL.glClearColor(0,0,0,0)
-		
-		# For the time being
-		
-	def paintGL(self):
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-		
-		glMatrixMode(GL_MODELVIEW)
-		glLoadIdentity()
-		
-		
-		glPushMatrix()
-		self.font_renderer.render()
-		glPopMatrix()
-
-	def resizeGL(self, width, height):
-		if width<=0 or height<=0 : 
-			print "bad size"
-			return
-		# just use the whole window for rendering
-		glViewport(0,0,self.width(),self.height())
-		
-		# maintain the aspect ratio of the window we have
-		self.aspect = float(self.width())/float(self.height())
-		
-		glMatrixMode(GL_PROJECTION)
-		glLoadIdentity()
-		# using gluPerspective for simplicity
-		gluPerspective(self.fov,self.aspect,1,5000)
-		
-		# switch back to model view mode
-		glMatrixMode(GL_MODELVIEW)
-		glLoadIdentity()
-		
-		self.font_renderer.resizeEvent()
-
-	def setInit(self):
-		self.font_renderer.setInit()
-
-	def show_inspector(self,force=0):
-		self.font_renderer.show_inspector()
 	
-	def closeEvent(self,event) :
-		self.font_renderer.closeEvent(event)
-		
-	def mousePressEvent(self, event):
-		self.font_renderer.mousePressEvent(event)
-		
-	def mouseMoveEvent(self, event):
-		self.font_renderer.mouseMoveEvent(event)
-	
-	def mouseReleaseEvent(self, event):
-		self.font_renderer.mouseReleaseEvent(event)
-			
-	def wheelEvent(self, event):
-		self.font_renderer.wheelEvent(event)
-
-	def get_render_dims_at_depth(self, depth):
-		# This function returns the width and height of the renderable 
-		# area at the origin of the data volume
-		height = -2*tan(self.fov/2.0*pi/180.0)*(depth)
-		width = self.aspect*height
-		
-		return [width,height]
+	def resizeEvent(self,width=0,height=0):
+		self.vdtools.set_update_P_inv()
 
 class EMFontInspector(QtGui.QWidget):
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
 		self.target=target
+		self.transform_panel = EMTransformPanel(target,self)
 		
 		self.vbl = QtGui.QVBoxLayout(self)
 		self.vbl.setMargin(0)
@@ -415,11 +308,7 @@ class EMFontInspector(QtGui.QWidget):
 		self.hbl.setSpacing(6)
 		self.hbl.setObjectName("hbl")
 		self.vbl.addLayout(self.hbl)
-		
-		self.hist = ImgHistogram(self)
-		self.hist.setObjectName("hist")
-		self.hbl.addWidget(self.hist)
-		
+
 		self.vbl2 = QtGui.QVBoxLayout()
 		self.vbl2.setMargin(0)
 		self.vbl2.setSpacing(6)
@@ -441,19 +330,24 @@ class EMFontInspector(QtGui.QWidget):
 		self.vbl.addWidget(self.tabwidget)
 		self.n3_showing = False
 		
-		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.set_scale)
-		QtCore.QObject.connect(self.az, QtCore.SIGNAL("valueChanged"), self.slider_rotate)
-		QtCore.QObject.connect(self.alt, QtCore.SIGNAL("valueChanged"), self.slider_rotate)
-		QtCore.QObject.connect(self.phi, QtCore.SIGNAL("valueChanged"), self.slider_rotate)
+		
 		QtCore.QObject.connect(self.cbb, QtCore.SIGNAL("currentIndexChanged(QString)"), target.setColor)
-		QtCore.QObject.connect(self.src, QtCore.SIGNAL("currentIndexChanged(QString)"), self.set_src)
-		QtCore.QObject.connect(self.x_trans, QtCore.SIGNAL("valueChanged(double)"), target.set_cam_x)
-		QtCore.QObject.connect(self.y_trans, QtCore.SIGNAL("valueChanged(double)"), target.set_cam_y)
-		QtCore.QObject.connect(self.z_trans, QtCore.SIGNAL("valueChanged(double)"), target.set_cam_z)
 		QtCore.QObject.connect(self.wiretog, QtCore.SIGNAL("toggled(bool)"), target.toggle_wire)
 		QtCore.QObject.connect(self.lighttog, QtCore.SIGNAL("toggled(bool)"), target.toggle_light)
 		QtCore.QObject.connect(self.glcontrast, QtCore.SIGNAL("valueChanged"), target.set_GL_contrast)
 		QtCore.QObject.connect(self.glbrightness, QtCore.SIGNAL("valueChanged"), target.set_GL_brightness)
+	
+	def update_rotations(self,t3d):
+		self.transform_panel.update_rotations(t3d)
+	
+	def set_scale(self,val):
+		self.transform_panel.set_scale(val)
+	
+	def set_xy_trans(self, x, y):
+		self.transform_panel.set_xy_trans(x,y)
+		
+	def set_xyz_trans(self,x,y,z):
+		self.transform_panel.set_xyz_trans(x,y,z)	
 	
 	def get_GL_tab(self):
 		self.gltab = QtGui.QWidget()
@@ -486,11 +380,6 @@ class EMFontInspector(QtGui.QWidget):
 			maintab.vbl.setSpacing(6)
 			maintab.vbl.setObjectName("Main")
 			
-			self.scale = ValSlider(maintab,(0.01,30.0),"Zoom:")
-			self.scale.setObjectName("scale")
-			self.scale.setValue(1.0)
-			maintab.vbl.addWidget(self.scale)
-			
 			self.hbl_color = QtGui.QHBoxLayout()
 			self.hbl_color.setMargin(0)
 			self.hbl_color.setSpacing(6)
@@ -504,195 +393,62 @@ class EMFontInspector(QtGui.QWidget):
 			self.cbb = QtGui.QComboBox(maintab)
 			self.hbl_color.addWidget(self.cbb)
 	
-			self.hbl_trans = QtGui.QHBoxLayout()
-			self.hbl_trans.setMargin(0)
-			self.hbl_trans.setSpacing(6)
-			self.hbl_trans.setObjectName("Trans")
-			maintab.vbl.addLayout(self.hbl_trans)
-			
-			self.x_label = QtGui.QLabel()
-			self.x_label.setText('x')
-			self.hbl_trans.addWidget(self.x_label)
-			
-			self.x_trans = QtGui.QDoubleSpinBox(self)
-			self.x_trans.setMinimum(-10000)
-			self.x_trans.setMaximum(10000)
-			self.x_trans.setValue(0.0)
-			self.hbl_trans.addWidget(self.x_trans)
-			
-			self.y_label = QtGui.QLabel()
-			self.y_label.setText('y')
-			self.hbl_trans.addWidget(self.y_label)
-			
-			self.y_trans = QtGui.QDoubleSpinBox(maintab)
-			self.y_trans.setMinimum(-10000)
-			self.y_trans.setMaximum(10000)
-			self.y_trans.setValue(0.0)
-			self.hbl_trans.addWidget(self.y_trans)
-			
-			
-			self.z_label = QtGui.QLabel()
-			self.z_label.setText('z')
-			self.hbl_trans.addWidget(self.z_label)
-			
-			self.z_trans = QtGui.QDoubleSpinBox(maintab)
-			self.z_trans.setMinimum(-10000)
-			self.z_trans.setMaximum(10000)
-			self.z_trans.setValue(0.0)
-			self.hbl_trans.addWidget(self.z_trans)
-			
-			self.hbl_src = QtGui.QHBoxLayout()
-			self.hbl_src.setMargin(0)
-			self.hbl_src.setSpacing(6)
-			self.hbl_src.setObjectName("hbl")
-			maintab.vbl.addLayout(self.hbl_src)
-			
-			self.label_src = QtGui.QLabel()
-			self.label_src.setText('Rotation Convention')
-			self.hbl_src.addWidget(self.label_src)
-			
-			self.src = QtGui.QComboBox(maintab)
-			self.load_src_options(self.src)
-			self.hbl_src.addWidget(self.src)
-			
-			# set default value -1 ensures that the val slider is updated the first time it is created
-			self.az = ValSlider(self,(-360.0,360.0),"az",-1)
-			self.az.setObjectName("az")
-			maintab.vbl.addWidget(self.az)
-			
-			self.alt = ValSlider(self,(-180.0,180.0),"alt",-1)
-			self.alt.setObjectName("alt")
-			maintab.vbl.addWidget(self.alt)
-			
-			self.phi = ValSlider(self,(-360.0,360.0),"phi",-1)
-			self.phi.setObjectName("phi")
-			maintab.vbl.addWidget(self.phi)
+			self.transform_panel.addWidgets(maintab.vbl)
 		
-			self.current_src = EULER_EMAN
-		
-		return self.maintab
+		return maintab
+	
+#	def slider_rotate(self):
+#		self.target.load_rotation(self.get_current_rotation())
 
-	def set_xy_trans(self, x, y):
-		self.x_trans.setValue(x)
-		self.y_trans.setValue(y)
+#	def set_xy_trans(self, x, y):
+#		self.x_trans.setValue(x)
+#		self.y_trans.setValue(y)
 	
-	def set_translate_scale(self, xscale,yscale,zscale):
-		self.x_trans.setSingleStep(xscale)
-		self.y_trans.setSingleStep(yscale)
-		self.z_trans.setSingleStep(zscale)
+#	def set_translate_scale(self, xscale,yscale,zscale):
+#		self.x_trans.setSingleStep(xscale)
+#		self.y_trans.setSingleStep(yscale)
+#		self.z_trans.setSingleStep(zscale)
 
-	def update_rotations(self,t3d):
-		rot = t3d.get_rotation(self.src_map[str(self.src.itemText(self.src.currentIndex()))])
-		
-		convention = self.src.currentText()
-		if ( self.src_map[str(convention)] == EULER_SPIN ):
-			self.n3.setValue(rot[self.n3.getLabel()],True)
-		
-		self.az.setValue(rot[self.az.getLabel()],True)
-		self.alt.setValue(rot[self.alt.getLabel()],True)
-		self.phi.setValue(rot[self.phi.getLabel()],True)
+#	def update_rotations(self,t3d):
+#		rot = t3d.get_rotation(self.src_map[str(self.src.itemText(self.src.currentIndex()))])
+#		
+#		convention = self.src.currentText()
+#		if ( self.src_map[str(convention)] == EULER_SPIN ):
+#			self.n3.setValue(rot[self.n3.getLabel()],True)
+#		
+#		self.az.setValue(rot[self.az.getLabel()],True)
+#		self.alt.setValue(rot[self.alt.getLabel()],True)
+#		self.phi.setValue(rot[self.phi.getLabel()],True)
 	
-	def slider_rotate(self):
-		self.target.load_rotation(self.get_current_rotation())
-	
-	def get_current_rotation(self):
-		convention = self.src.currentText()
-		rot = {}
-		if ( self.current_src == EULER_SPIN ):
-			rot[self.az.getLabel()] = self.az.getValue()
-			
-			n1 = self.alt.getValue()
-			n2 = self.phi.getValue()
-			n3 = self.n3.getValue()
-			
-			norm = sqrt(n1*n1 + n2*n2 + n3*n3)
-			
-			n1 /= norm
-			n2 /= norm
-			n3 /= norm
-			
-			rot[self.alt.getLabel()] = n1
-			rot[self.phi.getLabel()] = n2
-			rot[self.n3.getLabel()] = n3
-			
-		else:
-			rot[self.az.getLabel()] = self.az.getValue()
-			rot[self.alt.getLabel()] = self.alt.getValue()
-			rot[self.phi.getLabel()] = self.phi.getValue()
-		
-		return Transform3D(self.current_src, rot)
-	
-	def set_src(self, val):
-		t3d = self.get_current_rotation()
-		
-		if (self.n3_showing) :
-			self.vbl.removeWidget(self.n3)
-			self.n3.deleteLater()
-			self.n3_showing = False
-			self.az.setRange(-360,360)
-			self.alt.setRange(-180,180)
-			self.phi.setRange(-360,660)
-		
-		if ( self.src_map[str(val)] == EULER_SPIDER ):
-			self.az.setLabel('phi')
-			self.alt.setLabel('theta')
-			self.phi.setLabel('psi')
-		elif ( self.src_map[str(val)] == EULER_EMAN ):
-			self.az.setLabel('az')
-			self.alt.setLabel('alt')
-			self.phi.setLabel('phi')
-		elif ( self.src_map[str(val)] == EULER_IMAGIC ):
-			self.az.setLabel('alpha')
-			self.alt.setLabel('beta')
-			self.phi.setLabel('gamma')
-		elif ( self.src_map[str(val)] == EULER_XYZ ):
-			self.az.setLabel('xtilt')
-			self.alt.setLabel('ytilt')
-			self.phi.setLabel('ztilt')
-		elif ( self.src_map[str(val)] == EULER_MRC ):
-			self.az.setLabel('phi')
-			self.alt.setLabel('theta')
-			self.phi.setLabel('omega')
-		elif ( self.src_map[str(val)] == EULER_SPIN ):
-			self.az.setLabel('Omega')
-			self.alt.setRange(-1,1)
-			self.phi.setRange(-1,1)
-			
-			self.alt.setLabel('n1')
-			self.phi.setLabel('n2')
-			
-			self.n3 = ValSlider(self,(-360.0,360.0),"n3",-1)
-			self.n3.setRange(-1,1)
-			self.n3.setObjectName("n3")
-			self.vbl.addWidget(self.n3)
-			QtCore.QObject.connect(self.n3, QtCore.SIGNAL("valueChanged"), self.slider_rotate)
-			self.n3_showing = True
-		
-		self.current_src = self.src_map[str(val)]
-		self.update_rotations(t3d)
-	
-	def load_src_options(self,widgit):
-		self.load_src()
-		for i in self.src_strings:
-			widgit.addItem(i)
-	
-	# read src as 'supported rotation conventions'
-	def load_src(self):
-		# supported_rot_conventions
-		src_flags = []
-		src_flags.append(EULER_EMAN)
-		src_flags.append(EULER_SPIDER)
-		src_flags.append(EULER_IMAGIC)
-		src_flags.append(EULER_MRC)
-		src_flags.append(EULER_SPIN)
-		src_flags.append(EULER_XYZ)
-		
-		self.src_strings = []
-		self.src_map = {}
-		for i in src_flags:
-			self.src_strings.append(str(i))
-			self.src_map[str(i)] = i
-		
+#	def slider_rotate(self):
+#		self.target.load_rotation(self.get_current_rotation())
+#	
+#	def get_current_rotation(self):
+#		convention = self.src.currentText()
+#		rot = {}
+#		if ( self.current_src == EULER_SPIN ):
+#			rot[self.az.getLabel()] = self.az.getValue()
+#			
+#			n1 = self.alt.getValue()
+#			n2 = self.phi.getValue()
+#			n3 = self.n3.getValue()
+#			
+#			norm = sqrt(n1*n1 + n2*n2 + n3*n3)
+#			
+#			n1 /= norm
+#			n2 /= norm
+#			n3 /= norm
+#			
+#			rot[self.alt.getLabel()] = n1
+#			rot[self.phi.getLabel()] = n2
+#			rot[self.n3.getLabel()] = n3
+#			
+#		else:
+#			rot[self.az.getLabel()] = self.az.getValue()
+#			rot[self.alt.getLabel()] = self.alt.getValue()
+#			rot[self.phi.getLabel()] = self.phi.getValue()
+#		
+#		return Transform3D(self.current_src, rot)
 	
 	def setColors(self,colors,current_color):
 		a = 0
@@ -702,15 +458,14 @@ class EMFontInspector(QtGui.QWidget):
 				self.cbb.setCurrentIndex(a)
 			a += 1
 
-	def set_scale(self,newscale):
-		self.scale.setValue(newscale)
-		
+#	def set_scale(self,newscale):
+#		self.scale.setValue(newscale)
+#		
 # This is just for testing, of course
 if __name__ == '__main__':
-	app = QtGui.QApplication(sys.argv)
-	window = EM3DFontWidgetWidget()
+	from emapplication import EMStandAloneApplication
+	em_app = EMStandAloneApplication()
+	window = EM3DFontWidget()
 	window.setInit()
-	window2=EMParentWin(window)
-	window2.show()
-	
-	sys.exit(app.exec_())
+	em_app.show()
+	em_app.execute()

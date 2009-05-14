@@ -1861,13 +1861,9 @@ class EMImage3DGUIModule(EMGUIModule):
 		if self.inspector: self.inspector.set_scale(self.cam.scale)
 
 	def get_translate_scale(self):
-		try:
-			[rx,ry] = self.gl_context_parent.get_render_dims_at_depth(self.cam.cam_z)
-		except:
-			print "fixme"
-			return 0,0
-		
-		#print "render area is %f %f " %(xx,yy)
+#		try:
+		[rx,ry] = self.gl_context_parent.get_render_dims_at_depth(self.cam.cam_z)
+
 		xscale = rx/float(self.get_parent().width())
 		yscale = ry/float(self.get_parent().height())
 		
@@ -2006,7 +2002,7 @@ class EMImage3DGUIModule(EMGUIModule):
 				self.inspector.update_rotations(self.get_current_transform())
 			elif event.buttons()&Qt.RightButton:
 				self.inspector.set_xy_trans(self.cam.cam_x,self.cam.cam_y)
-				self.inspector.set_xyz_trans(self.cam.cam_x,self.cam.cam_y,self.cam.cam_z)
+				#self.inspector.set_xyz_trans(self.cam.cam_x,self.cam.cam_y,self.cam.cam_z)
 		self.updateGL()
 	
 	def mouseReleaseEvent(self, event):

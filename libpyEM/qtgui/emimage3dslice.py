@@ -463,7 +463,7 @@ class EM3DSliceViewerModule(EMImage3DGUIModule):
 class EM3DSliceInspector(QtGui.QWidget):
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
-		self.rotation_sliders = EMTransformPanel(target,self)
+		self.transform_panel = EMTransformPanel(target,self)
 		self.target=target
 		
 		self.vbl = QtGui.QVBoxLayout(self)
@@ -508,16 +508,16 @@ class EM3DSliceInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.defaults, QtCore.SIGNAL("clicked(bool)"), self.set_defaults)
 	
 	def update_rotations(self,t3d):
-		self.rotation_sliders.update_rotations(t3d)
+		self.transform_panel.update_rotations(t3d)
 	
 	def set_scale(self,val):
-		self.rotation_sliders.set_scale(val)
+		self.transform_panel.set_scale(val)
 	
 	def set_xy_trans(self, x, y):
-		self.rotation_sliders.set_xy_trans(x,y)
+		self.transform_panel.set_xy_trans(x,y)
 		
 	def set_xyz_trans(self,x,y,z):
-		self.rotation_sliders.set_xyz_trans(x,y,z)	
+		self.transform_panel.set_xyz_trans(x,y,z)	
 	
 	def get_transform_layout(self):
 		return self.maintab.vbl
@@ -525,7 +525,7 @@ class EM3DSliceInspector(QtGui.QWidget):
 	def set_defaults(self):
 		self.glcontrast.setValue(1.0)
 		self.glbrightness.setValue(0.0)
-		self.rotation_sliders.set_defaults()
+		self.transform_panel.set_defaults()
 
 	def get_main_tab(self):
 	
@@ -565,7 +565,7 @@ class EM3DSliceInspector(QtGui.QWidget):
 		self.glbrightness.setValue(0.0)
 		maintab.vbl.addWidget(self.glbrightness)
 	
-		self.rotation_sliders.addWidgets(maintab.vbl)
+		self.transform_panel.addWidgets(maintab.vbl)
 		
 		return maintab
 	
