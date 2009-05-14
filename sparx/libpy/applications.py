@@ -3164,7 +3164,7 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 						Util.add_img( refi[j][0], refi[j][1] )
 						Util.mul_scalar( refi[j][0], 1.0/float(refi[j][2]) )
 				        	
-					if frsc[1][0] == frsc[1][0]: # this manage the problem of NaN				
+					if frsc[1][0] == frsc[1][0]: # this manage the problem of NaN return by the function fsc ??				
 						for i in xrange(len(frsc[1])): ave_fsc[i] += frsc[1][i]
 						c_fsc += 1
 					#print 'OK', j, len(frsc[1]), frsc[1][0:5], ave_fsc[0:5]			
@@ -3177,11 +3177,9 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 					frsc[1][i]  = ave_fsc[i]
 			
 			for j in xrange(numref):
-						
 				ref_data[2]    = refi[j][0]
 				ref_data[3]    = frsc
 				refi[j][0], cs = user_func(ref_data)	
-
 
 				# write the current average
 				TMP = []
@@ -10271,10 +10269,10 @@ def cml_find_structure_main(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_se
 		# Compute the first disc
 		disc_init = cml_disc(Prj, Ori, Rot, flag_weights)
 		# Update progress file
-		cml_export_txtagls(out_dir, 'angles_%03i' % itrial, Ori, disc, 'Init')
+		cml_export_txtagls(out_dir, 'angles_%03i' % itrial, Ori, disc_init, 'Init')
 		# Find structure
 		Ori, disc, ite = cml_find_structure(Prj, Ori, Rot, out_dir, 'angles_%03i' % itrial, maxit, first_zero, flag_weights)
-		print_msg('trials %03i\tdisc init: %10.7f\tnb ite: %i\tdisc end: %10.7f\n' % (i, disc_init, ite + 1, disc))
+		print_msg('trials %03i\tdisc init: %10.7f\tnb ite: %i\tdisc end: %10.7f\n' % (0, disc_init, ite + 1, disc))
 		if disc < bestdisc:
 			bestdisc = disc
 			ibest    = itrial
@@ -10285,14 +10283,8 @@ def cml_find_structure_main(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_se
 	# Update logfile
 	#cml_end_log(Ori, disc, ite)
 
-	for i in xrange(trials):
-		ibest = disc_end.index(min(disc_end))
-		print_msg('\n Selected trial #%03i with disc %10.7f\n' % (ibest, disc_end[ibest]))
-		os.system('cp %s/structure_%03i.hdf %s/structure.hdf' % (out_dir, ibest, out_dir))
-
-		running_time(t_start)
-		print_end_msg('find_struct')
-
+	print_msg('\n Selected trial #%03i with disc %10.7f\n' % (ibest, bestdisc))
+	os.system('cp %s/structure_%03i.hdf %s/structure.hdf' % (out_dir, ibest, out_dir))
 
 	running_time(t_start)
 	print_end_msg('find_struct')
@@ -10378,7 +10370,7 @@ def cml_find_structure_MPI(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_see
 		print_msg('\n')
 		for i in xrange(trials):
 			score[i] = disc_end[i] * (1 - coll[i])
-			print_msg('trials %03i\trnd %i\tdisc init: %10.7f\tnb ite: %i\tdisc end: %10.7f\tcollinearity: %f\tscore: %f\n' % (i, lrnd[i], disc_init[i], ite[i] + 1, disc_end[i], coll[i], score[i]))
+			print_msg('trials %03i\trnd %10i disc init: %10.7f\tnb ite: %i\tdisc end: %10.7f\tcollinearity: %f\tscore: %f\n' % (i, lrnd[i], disc_init[i], ite[i] + 1, disc_end[i], coll[i], score[i]))
 			
 		ibest = disc_end.index(min(disc_end))
 		#ibest = score.index(min(score))

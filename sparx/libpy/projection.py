@@ -713,16 +713,23 @@ def cml_find_structure(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_w
 					if flag_weights:
 						cml = Util.cml_line_in3d(Ori, g_seq, g_n_prj, g_n_lines)
 						weights = Util.cml_weights(cml)
+						minw = min(weights)
+						sc   = max(weights) - minw
+						if sc == 0.0: sc = 1.0
+						for i in xrange(g_n_lines):
+							weights[i]  = (weights[i] - minw) / sc
+							weights[i]  = 1 - weights[i]
+							weights[i] *= weights[i]
 						# TODO optimize that
-						wm = max(weights)
-						for i in xrange(g_n_lines): weights[i]  = wm - weights[i]
-						sw = sum(weights)
-						if sw == 0:
-							weights = [1.0] * g_n_lines
-						else:
-							for i in xrange(g_n_lines):
-								weights[i] /= sw
-								weights[i] *= weights[i]
+						#wm = max(weights)
+						#for i in xrange(g_n_lines): weights[i]  = wm - weights[i]
+						#sw = sum(weights)
+						#if sw == 0:
+						#	weights = [1.0] * g_n_lines
+						#else:
+						#	for i in xrange(g_n_lines):
+						#		weights[i] /= sw
+						#		weights[i] *= weights[i]
 					else:   weights = [1.0] * g_n_lines
 
 					# spin all psi
