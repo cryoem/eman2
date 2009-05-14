@@ -385,7 +385,7 @@ inline void set_value_at_fast(int x, int y, int z, float v)
 
 		
 /** Set the pixel density value at coordinates (x,y).
- * 2D image only. The validity of x, y, and z is not checked.
+ * 2D image only.
  *
  * @param x The x cooridinate.
  * @param y The y cooridinate.

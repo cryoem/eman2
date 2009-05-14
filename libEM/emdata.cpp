@@ -1871,6 +1871,7 @@ EMData *EMData::make_footprint(int type)
 		for (i=0; i<rmax; i++) {
 			for (j=0; j<rmax; j++) {
 				rmap[i+j*rmax]=hypot((float)i,(float)j);
+//				printf("%d\t%d\t%f\n",i,j,rmap[i+j*rmax]);
 			}
 		}
 		
@@ -1880,33 +1881,38 @@ EMData *EMData::make_footprint(int type)
 		// Two vectors in to complex space (kx,ky) and (lx,ly)
 		// We are computing the bispectrum, f(k).f(l).f*(k+l)
 		// but integrating out two dimensions, leaving |k|,|l|
-		for (kx=-rmax; kx<rmax; kx++) {
-			for (ky=-rmax; ky<rmax; ky++) {
-				for (lx=-rmax; lx<rmax; lx++) {
-					for (ly=-rmax; ly<rmax; ly++) {
+		for (kx=-rmax+1; kx<rmax; kx++) {
+			for (ky=-rmax+1; ky<rmax; ky++) {
+				for (lx=-rmax+1; lx<rmax; lx++) {
+					for (ly=-rmax+1; ly<rmax; ly++) {
 						int ax=kx+lx;
 						int ay=ky+ly;
-						if (abs(ax)>rmax || abs(ay)>rmax) continue;
-						int r1=floor(.5+rmap[abs(kx)+rmax*abs(ky)]);
-						int r2=floor(.5+rmap[abs(lx)+rmax*abs(ly)]);
+						if (abs(ax)>=rmax || abs(ay)>=rmax) continue;
+						int r1=(int)floor(.5+rmap[abs(kx)+rmax*abs(ky)]);
+						int r2=(int)floor(.5+rmap[abs(lx)+rmax*abs(ly)]);
+//						if (r1>500 ||r2>500) printf("%d\t%d\t%d\t%d\t%d\t%d\n",kx,ky,lx,ly,r1,r2);
 //						float r3=rmap[ax+rmax*ay];
-						if (r1+r2>rmax) continue;
+						if (r1+r2>=rmax) continue;
 						
 						std::complex<float> p=fft->get_complex_at(kx,ky)*fft->get_complex_at(lx,ly)*conj(fft->get_complex_at(ax,ay));
-						fp->set_value_at(r1*2,r2,p.real()+fp->get_value_at(r1*2,r2));							// We keep only the real component in anticipation of zero phase sum
-						fp->set_value_at(r1*2+1,r2,fp->get_value_at(r1*2+1,r2)+1);	// a normalization counter
+						fp->set_value_at(r1*2,r2,p.real()+fp->get_value_at(r1*2,r2));		// We keep only the real component in anticipation of zero phase sum
+						fp->set_value_at(r1*2+1,r2,p.real()+fp->get_value_at(r1*2+1,r2));		// We keep only the real component in anticipation of zero phase sum
+//						fp->set_value_at(r1*2+1,r2,fp->get_value_at(r1*2+1,r2)+1);			// a normalization counter
 					}
 				}
 			}
 		}
+		return fp;
 		// Normalizes the pixels based on the accumulated counts then sets the imaginary components back to zero
 		for (i=0; i<rmax*2; i+=2) {
 			for (j=0; j<rmax*2; j++) {
-				fp->set_value_at(i,j,fp->get_value_at(i,j)/fp->get_value_at(i+1,j));
+				float norm=fp->get_value_at(i+1,j);
+				fp->set_value_at(i,j,fp->get_value_at(i,j)/(norm==0?1.0:norm));
 				fp->set_value_at(i+1,j,0.0);
 			}
 		}
 		
+		free(rmap);
 		return fp;
 	}
 }

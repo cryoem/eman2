@@ -548,6 +548,7 @@ class EMDCTaskClient(EMTaskClient):
 					if i[0]=="cache" :
 						cname="bdb:cache_%d.%d"%(i[1][0],i[1][1])
 						cache=db_open_dict(cname)
+						if self.verbose>2 : print "Open cache : ",cname
 						
 						for j in image_range(*i[2:]):
 							if not cache.has_key(j):
