@@ -327,60 +327,48 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.gui_modules = [] # keeps track of all gui modules that are running
 		self.module_events = [] # keeks track of gui module events managers
 		
-		spr = QtGui.QTreeWidgetItem(QtCore.QStringList("Single particle reconstruction"))
-		self.launchers["Single particle reconstruction"] = self.launch_spr
-		
+		spr = self.__get_spr_tree(self.tree_widget)
 		self.tree_widget_entries.append(spr)
-		
-		tomo = QtGui.QTreeWidgetItem(QtCore.QStringList("Tomographic particle reconstruction"))
-		self.launchers["Tomographic particle reconstruction"] = self.launch_tomography
-		self.tree_widget_entries.append(tomo)
-		
-		tomo_list = []
-		tomo_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Raw Tomogram Files")))
-		tomo_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Tomohunter")))
-		self.launchers["Tomohunter"] = self.launch_tomohunter
-		self.launchers["Raw Tomogram Files"] = self.launch_tomo_raw_files
-		tomo.addChildren(tomo_list)
-		
+
+		self.tree_widget_entries.append(self.__get_tomo_part_recon_tree(self.tree_widget))
+		self.tree_widget_entries.append(self.__get_utilities_tree(self.tree_widget))
+		self.tree_widget_entries.append(self.__get_generic_interfaces_tree(self.tree_widget))
 		
 		browser_entry = QtGui.QTreeWidgetItem(QtCore.QStringList("Browse"))
 		browser_entry.setIcon(0,QtGui.QIcon(get_image_directory() + "/display_icon.png"))
 		self.tree_widget_entries.append(browser_entry)
 		self.launchers["Browse"] = self.launch_browser
-		self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Boxer")))
-		self.tree_widget_entries[-1].setIcon(0,QtGui.QIcon(get_image_directory() + "green_boxes.png"))
-		self.launchers["Boxer"] = self.launch_boxer_general
-		self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("CTF ")))
-		self.launchers["CTF "] = self.launch_ctf_general
-		self.tree_widget_entries[-1].setIcon(0,QtGui.QIcon(get_image_directory() + "ctf.png"))
-		self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Refine2D ")))
-		self.launchers["Refine2D "] = self.launch_refine2d_general
-		self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Eulers")))
-		self.tree_widget_entries[-1].setIcon(0,QtGui.QIcon(get_image_directory() + "eulerxplor.png"))
-		self.launchers["Eulers"] = self.launch_asym_unit
-		history = QtGui.QTreeWidgetItem(QtCore.QStringList("History"))
-		history.setIcon(0,QtGui.QIcon(get_image_directory() + "feather.png"))
-		self.tree_widget_entries.append(history)
-		self.launchers["History"] = self.launch_view_history
-		self.directory = QtGui.QTreeWidgetItem(QtCore.QStringList("Working directory"))
-		self.directory.setIcon(0,QtGui.QIcon(get_image_directory() + "desktop.png"))
-		self.directory.setToolTip(0,os.getcwd())
-		self.tree_widget_entries.append(self.directory)
-		preferences = QtGui.QTreeWidgetItem(QtCore.QStringList("Preferences"))
-		self.tree_widget_entries.append(preferences)
-		self.launchers["Preferences"] = self.launch_view_preferences
-		self.launchers["Working directory"] = self.launch_change_directory
-		lights = QtGui.QTreeWidgetItem(QtCore.QStringList("Lights"))
-		self.tree_widget_entries.append(lights)
-		self.launchers["Lights"] = self.launch_lights_tool
-		self.tree_widget.insertTopLevelItems(0,self.tree_widget_entries)
-		self.tree_widget.insertTopLevelItems(0,self.tree_widget_entries)
 
+		
+		self.tree_widget.insertTopLevelItems(0,self.tree_widget_entries)
+		self.tree_widget.setHeaderLabel("Choose a task")
+
+		self.hbl_buttons2.addWidget(self.tree_widget)
+		
+		self.vbl.addLayout(self.hbl_buttons2)
+		#self.vbl.addWidget(self.close)
+		
+		#QtCore.QObject.connect(self.tree_widget, QtCore.SIGNAL("itemDoubleClicked(QTreeWidgetItem*,int)"), self.tree_widget_double_click)
+		QtCore.QObject.connect(self.tree_widget, QtCore.SIGNAL("itemClicked(QTreeWidgetItem*,int)"), self.tree_widget_click)
+		#QtCore.QObject.connect(self.close, QtCore.SIGNAL("clicked()"), self.target.close)
+		
+		
+	def __get_spr_tree(self,tree_widget):
+		
+		spr = QtGui.QTreeWidgetItem(QtCore.QStringList("Single Particle Reconstruction"))
+		self.launchers["Single Particle Reconstruction"] = self.launch_spr
+		
+		
 		spr_list = []
 		
 		rd = QtGui.QTreeWidgetItem(QtCore.QStringList("Raw files"))
 		self.launchers["Raw files"] = self.launch_mic_ccd_report#EMRawDataReportTask
+		
+		rd_list = []
+		rd_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Import micrograph/ccd")))
+		rd_list[-1].setIcon(0,QtGui.QIcon(get_image_directory() + "single_image.png"))
+		self.launchers["Import micrograph/ccd"] = self.launch_import_mic_ccd
+		rd.addChildren(rd_list)
  
 		spr_list.append(rd)
 		
@@ -435,14 +423,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		#self.launchers["Particle import"] = self.launch_particle_import
 		ap.addChildren(ap_list)
 		
-		rd_list = []
-#		rd_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Associate micrograph/CCD")))
-#		rd_list[-1].setIcon(0,QtGui.QIcon(get_image_directory() + "single_image.png"))
-#		self.launchers["Associate micrograph/CCD"] = self.launch_mic_ccd
-		rd_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Import micrograph/ccd")))
-		rd_list[-1].setIcon(0,QtGui.QIcon(get_image_directory() + "single_image.png"))
-		self.launchers["Import micrograph/ccd"] = self.launch_import_mic_ccd
-		rd.addChildren(rd_list)
+		
 		
 		refine2d_list = []
 		refine2d_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Generate classes - e2refine2d")))
@@ -471,25 +452,78 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.launchers["Run e2resolution"] = self.launch_e2resolution
 		resolution.addChildren(resolution_list)
 		
+		tree_widget.expandItem(spr)
+		tree_widget.expandItem(rd)
+		tree_widget.expandItem(ap)
+		tree_widget.expandItem(ctf)	
+		tree_widget.expandItem(refine2d)
+		tree_widget.expandItem(init_model)
+		tree_widget.expandItem(refinement)
+		tree_widget.expandItem(resolution)
 		
-		self.tree_widget.setHeaderLabel("Choose a task")
+		return spr
+	
+	def __get_utilities_tree(self,tree_widget):
 		
-		self.tree_widget.expandItem(spr)
-		self.tree_widget.expandItem(rd)
-		self.tree_widget.expandItem(ap)
-		self.tree_widget.expandItem(ctf)	
-		self.tree_widget.expandItem(refine2d)
-		self.tree_widget.expandItem(init_model)
-		self.tree_widget.expandItem(refinement)
-		self.tree_widget.expandItem(resolution)
-		self.hbl_buttons2.addWidget(self.tree_widget)
+		util = QtGui.QTreeWidgetItem(QtCore.QStringList("Utilities"))
+
+		util_list = []
+		util_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Eulers")))
+		util_list[-1].setIcon(0,QtGui.QIcon(get_image_directory() + "eulerxplor.png"))
+		self.launchers["Eulers"] = self.launch_asym_unit
+		history = QtGui.QTreeWidgetItem(QtCore.QStringList("History"))
+		history.setIcon(0,QtGui.QIcon(get_image_directory() + "feather.png"))
+		util_list.append(history)
+		self.launchers["History"] = self.launch_view_history
+		self.directory = QtGui.QTreeWidgetItem(QtCore.QStringList("Working directory"))
+		self.directory.setIcon(0,QtGui.QIcon(get_image_directory() + "desktop.png"))
+		self.directory.setToolTip(0,os.getcwd())
+		util_list.append(self.directory)
+		preferences = QtGui.QTreeWidgetItem(QtCore.QStringList("Preferences"))
+		util_list.append(preferences)
+		self.launchers["Preferences"] = self.launch_view_preferences
+		self.launchers["Working directory"] = self.launch_change_directory
+		lights = QtGui.QTreeWidgetItem(QtCore.QStringList("Lights"))
+		util_list.append(lights)
+		self.launchers["Lights"] = self.launch_lights_tool
+		fonts = QtGui.QTreeWidgetItem(QtCore.QStringList("3D Fonts"))
+		util_list.append(fonts)
+		self.launchers["3D Fonts"] = self.launch_fonts_tool
 		
-		self.vbl.addLayout(self.hbl_buttons2)
-		#self.vbl.addWidget(self.close)
+		util.addChildren(util_list)
+		return util
+	
+	def __get_generic_interfaces_tree(self,tree_widget):
 		
-		#QtCore.QObject.connect(self.tree_widget, QtCore.SIGNAL("itemDoubleClicked(QTreeWidgetItem*,int)"), self.tree_widget_double_click)
-		QtCore.QObject.connect(self.tree_widget, QtCore.SIGNAL("itemClicked(QTreeWidgetItem*,int)"), self.tree_widget_click)
-		#QtCore.QObject.connect(self.close, QtCore.SIGNAL("clicked()"), self.target.close)
+		gi = QtGui.QTreeWidgetItem(QtCore.QStringList("Generic Interfaces"))
+
+		gi_list = []
+		gi_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Boxer")))
+		gi_list[-1].setIcon(0,QtGui.QIcon(get_image_directory() + "green_boxes.png"))
+		self.launchers["Boxer"] = self.launch_boxer_general
+		gi_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("CTF ")))
+		self.launchers["CTF "] = self.launch_ctf_general
+		gi_list[-1].setIcon(0,QtGui.QIcon(get_image_directory() + "ctf.png"))
+		gi_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Refine2D ")))
+		self.launchers["Refine2D "] = self.launch_refine2d_general
+
+		gi.addChildren(gi_list)
+		return gi
+	
+	def __get_tomo_part_recon_tree(self,tree_widget):
+		
+		tomo = QtGui.QTreeWidgetItem(QtCore.QStringList("Tomographic particle reconstruction"))
+		self.launchers["Tomographic particle reconstruction"] = self.launch_tomography
+		
+		tomo_list = []
+		tomo_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Raw Tomogram Files")))
+		tomo_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Tomohunter")))
+		self.launchers["Tomohunter"] = self.launch_tomohunter
+		self.launchers["Raw Tomogram Files"] = self.launch_tomo_raw_files
+		tomo.addChildren(tomo_list)
+		
+		return tomo
+		
 	def task_killed(self,module_string,module):
 		module.closeEvent(None)
 		self.module().emit(QtCore.SIGNAL("module_closed"),"module_string",module)
@@ -544,7 +578,16 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		get_application().show_specific(module)
 		self.add_module([str(module),"EMLights",module])
 		get_application().setOverrideCursor(Qt.ArrowCursor)
-		
+	
+	def launch_fonts_tool(self):
+		from em3Dfonts import EM3DFontWidget
+		get_application().setOverrideCursor(Qt.BusyCursor)
+		module = EM3DFontWidget()
+		self.module().emit(QtCore.SIGNAL("launching_module"),"EMLights",module)
+		get_application().show_specific(module)
+		self.add_module([str(module),"EMLights",module])
+		get_application().setOverrideCursor(Qt.ArrowCursor)
+	
 	def launch_browser(self):
 		get_application().setOverrideCursor(Qt.BusyCursor)
 		module = EMBrowserModule()

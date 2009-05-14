@@ -75,6 +75,7 @@ class EM3DFontWidget(EMImage3DGUIModule):
 		#self.font_renderer.set_font_mode(FTGLFontMode.POLYGON) # or EXTRUDE, PIXMAP, BITMAP, POLYGON or OUTLINE
 		self.font_renderer.set_font_mode(FTGLFontMode.EXTRUDE) # or EXTRUDE, PIXMAP, BITMAP, POLYGON or OUTLINE
 		self.font_renderer.set_depth(100)
+		self.setInit()
 		#self.font_renderer.set_font_mode(FTGLFontMode.OUTLINE)
 		
 	def get_type(self):
@@ -163,8 +164,8 @@ class EM3DFontWidget(EMImage3DGUIModule):
 	
 	def setInit(self):
 
-		self.cam.default_z = -2*32
-		self.cam.cam_z = -2*32
+		self.cam.default_z = -10*32
+		self.cam.cam_z = -10*32
 		
 		if not self.inspector or self.inspector ==None:
 			self.inspector=EMFontInspector(self)
@@ -237,7 +238,7 @@ class EM3DFontWidget(EMImage3DGUIModule):
 		self.colors["turquoise"] = turquoise
 		self.colors["yellow"] = yellow
 		
-		self.currentcolor = "obsidian"
+		self.currentcolor = "turquoise"
 	
 	def setColor(self,val):
 		#print val
@@ -466,6 +467,6 @@ if __name__ == '__main__':
 	from emapplication import EMStandAloneApplication
 	em_app = EMStandAloneApplication()
 	window = EM3DFontWidget()
-	window.setInit()
+#	window.setInit()
 	em_app.show()
 	em_app.execute()
