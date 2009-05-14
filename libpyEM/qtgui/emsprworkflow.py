@@ -409,12 +409,29 @@ class WorkFlowTask(QtCore.QObject):
 					
 		return class_files,class_ptcls,class_dims
 	
+	def get_reference_free_class_averages_table_new(self):
+	
+		project_db = db_open_dict("bdb:project")
+		list_name = "global.spr_ref_free_class_aves"
+		names = project_db.get(list_name,dfl=[])
+		self.project_files_at_init = names # so if the user hits cancel this can be reset
+
+		from emform import EM2DStackTable,EMFileTable
+		table = EM2DStackTable(names,desc_short="Class Averages",desc_long="")
+		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(list_name)
+		table.add_context_menu_data(context_menu_data)
+		table.add_button_data(EMRawDataReportTask.ProjectAddRawDataButton(table,context_menu_data))
+		table.insert_column_data(1,EMFileTable.EMColumnData("Particles On Disk",ParticleReportTask.get_num_ptcls,"Particles currently stored on disk that are associated with this image"))
+		table.insert_column_data(2,EMFileTable.EMColumnData("Particles Dims",ParticleReportTask.get_particle_dims,"The dimensions of the particles that are stored on disk"))
+		
+		return table, len(names)
 	def get_reference_free_class_averages_table(self):
 		'''
 		Looks for bdb:r2d_??#classes_?? and the bdb:r2d_??#classes_init file, finds the most recent one, then fills in the number of particles in
 		in the class average file and also its dimensions.
 		'''
-
+		return self.get_reference_free_class_averages_table_new()
+		
 		class_files,class_ptcls,class_dims = self.get_latest_r2d_classes()
 					
 		if len(class_files) > 0:
@@ -828,7 +845,7 @@ class EMRawDataReportTask(WorkFlowTask):
 		
 class EMTomoRawDataReportTask(EMRawDataReportTask):
 	def __init__(self):
-		EMRawDataReportTask.__init__(self,application)
+		EMRawDataReportTask.__init__(self)
 		self.project_list = "global.tomo_raw_file_names"
 		
 	def get_raw_data_table(self):
@@ -1544,11 +1561,42 @@ class ParticleWorkFlowTask(WorkFlowTask):
 		setattr(p,"icon_type","matrix_image")
 		
 		return p,len(pnames)
+	
+	def get_initial_models_table_new(self):
+		list_name = "global.spr_init_models"
+		project_db = db_open_dict("bdb:project")
+		init_model_names = project_db.get(list_name,dfl=[])
+		self.names_at_init = init_model_names # so if the user hits cancel this can be reset
+
+		from emform import EM3DFileTable,EMFileTable
+		table = EM3DFileTable(init_model_names,desc_short="Initial Models",desc_long="")
+		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(list_name)
+		table.add_context_menu_data(context_menu_data)
+		table.add_button_data(EMRawDataReportTask.ProjectAddRawDataButton(table,context_menu_data))
+		table.add_column_data(EMFileTable.EMColumnData("Quality",ParticleWorkFlowTask.get_quality_score,"This the quality score as determined by e2initialmodel.py"))
+
+		table.add_column_data(EMFileTable.EMColumnData("Dimensions",EMRawDataReportTask.get_image_dimensions,"The dimensions of the file on disk"))
+
+		#p.append(pdims) # don't think this is really necessary
+		return table,len(init_model_names)
+	
+	def get_quality_score(image_name):
+		'''
+		Used by the initial models table to get a quality score
+		'''
+		a = EMData()
+		a.read_image(image_name,0,True)
+		d = a.get_attr_dict()
+		if d.has_key("quality"): return "%.3f" %(d["quality"])
+		else: return "-"
+	
+	get_quality_score = staticmethod(get_quality_score)
 
 	def get_initial_models_table(self,key="filenames",title="Current initial models"):
 		'''
 		Get the initial models table, used in the initial models table report widget, and also in the e2refine form
 		'''		
+		return self.get_initial_models_table_new()
 		db = "bdb:initial_models#"
 		names = []
 		quality = []
@@ -2874,7 +2922,7 @@ class E2CTFAutoFitTaskGeneral(E2CTFAutoFitTask):
 	documentation_string = "Use this tool to use e2ctf to generate ctf parameters for the particles located anywhere on disk. Use the browse buttons to locate the files on disk, enter the fitting parameters such as microscope voltage and angstrom per pixel, and hit OK. \nThis will cause the workflow to spawn processes based on the available CPUs. Once finished the automatically determined CTF parameters will be stored in the EMAN2 database."
 	
 	def __init__(self):
-		E2CTFAutoFitTask.__init__(self,application)
+		E2CTFAutoFitTask.__init__(self)
 		self.window_title = "e2ctf auto fitting"
 		self.file_check = True
 	def get_params(self):
@@ -3595,21 +3643,25 @@ class E2Refine2DTask(EMClassificationTask):
 	 	get_application().setOverrideCursor(Qt.ArrowCursor)
 	 	return success,cmd
 	 
-	def run_e2refine2d(self,options):
-		
-		string_args = ["iter","iterclassav","naliref","nbasisfp","path","input","parallel","ncls"]
-		bool_args = ["normproj"]
-		optionals = ["simalign","simaligncmp","simralign","simraligncmp","simcmp","initial"]
-		for opt in optionals:
-			if getattr(options,opt) != None: string_args.append(opt)
-		
-		if self.workflow_setting: additional_args = ["--dbls=global.spr_ref_free_class_aves"]
-		else: additional_args = []
-		temp_file_name = "e2refine2d_stdout.txt"
-		self.spawn_single_task("e2refine2d.py",options,string_args,bool_args,additional_args,temp_file_name)
-		self.emit(QtCore.SIGNAL("task_idle"))
-		self.form.closeEvent(None)
-		self.form = None
+#	def run_e2refine2d(self,options):
+#		
+#		string_args = ["iter","iterclassav","naliref","nbasisfp","path","input","parallel","ncls"]
+#		bool_args = ["normproj"]
+#		optionals = ["simalign","simaligncmp","simralign","simraligncmp","simcmp","initial"]
+#		for opt in optionals:
+#			if getattr(options,opt) != None: string_args.append(opt)
+#		
+#		if self.workflow_setting: 
+#			additional_args = ["--dbls=global.spr_ref_free_class_aves"]
+#		else: 
+#			additional_args = []
+#		print "addition args",additional_args
+#		
+#		temp_file_name = "e2refine2d_stdout.txt"
+#		#self.spawn_single_task("e2refine2d.py",options,string_args,bool_args,additional_args,temp_file_name)
+#		self.emit(QtCore.SIGNAL("task_idle"))
+#		self.form.closeEvent(None)
+#		self.form = None
 		
  		 	
 class E2Refine2DChooseDataTask(ParticleWorkFlowTask):
@@ -3663,7 +3715,6 @@ class E2Refine2DChooseDataTask(ParticleWorkFlowTask):
 		choices.append("Specify")
 		return params
 
-	
 	def on_form_ok(self,params):
 
 		choice = params["particle_set_choice"]
@@ -3760,7 +3811,11 @@ class E2Refine2DRunTask(E2Refine2DTask):
 				self.show_error_message([error])
 				return
 		print "launching"
-		
+		if self.workflow_setting: 
+			additional_args = ["--dbls=global.spr_ref_free_class_aves"]
+		else: 
+			additional_args = []
+		print "addition args",additional_args
 		temp_file_name = "e2refine2d_stdout.txt"
 		self.spawn_single_task("e2refine2d.py",options,string_args,bool_args,additional_args,temp_file_name)
 		self.emit(QtCore.SIGNAL("task_idle"))
@@ -3774,8 +3829,30 @@ class E2Refine2DRunTask(E2Refine2DTask):
 #		
 #		else:
 #			self.run_e2refine2d(options) # this does everything, even close the form
-
-
+#class E2Refine2DCustomRunTask(E2Refine2DRunTask):
+#	def __init__(self):
+#		E2Refine2DRunTask.__init__(self,application)
+#		
+#	def get_main_params(self):
+#		params = []
+#		
+#		p,n = self.get_particle_selection_table(tag=self.end_tag)
+#			
+#		if n == 0:
+#			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2Refine2DRunTask.documentation_string+E2Refine2DRunTask.warning_string,choices=None))
+#		else:
+#			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2Refine2DRunTask.documentation_string,choices=None))
+#			params.append(p)  
+#			
+#		other_params = self.get_general_params()
+#		
+#		params.extend(other_params)
+#		return ["General",params]
+#
+#class E2Refine2DCustomPtclsTask(E2Refine2DCustomRunTask):
+#	end_tag = None
+#	def __init__(self):
+#		E2Refine2DCustomRunTask.__init__(self,application)			
 #class E2Refine2DWithPhasePtclsTask(E2Refine2DRunTask):
 #	def __init__(self):
 #		E2Refine2DRunTask.__init__(self)
@@ -3785,7 +3862,7 @@ class E2Refine2DRunTask(E2Refine2DTask):
 #	def __init__(self):
 #		E2Refine2DRunTask.__init__(self)
 #		self.end_tag = "_ptcls_ctf_wiener"
-		
+
 class E2Refine2DWithGenericTask(E2Refine2DRunTask):
 	def __init__(self,workflow_setting=True):
 		E2Refine2DRunTask.__init__(self,[])
@@ -3888,11 +3965,11 @@ class InitialModelReportTask(ParticleWorkFlowTask):
 		
 		p,n = self.get_initial_models_table()
 		
-		if n == 0:
-			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=InitialModelReportTask.documentation_string+InitialModelReportTask.warning_string,choices=None))
-		else:
-			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=InitialModelReportTask.documentation_string,choices=None))
-			params.append(p)
+#		if n == 0:
+#			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=InitialModelReportTask.documentation_string+InitialModelReportTask.warning_string,choices=None))
+#		else:
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=InitialModelReportTask.documentation_string,choices=None))
+		params.append(p)
 		return params
 
 	
@@ -3920,10 +3997,12 @@ class E2MakeInitialModel(ParticleWorkFlowTask):
 			psym =  ParamDef(name="symname",vartype="string",desc_short="Symmetry",desc_long="Symmetry to be imposed during refinement",property=None,defaultunits=db.get("symname",dfl="c"),choices=syms)
 			psymnum = ParamDef(name="symnumber",vartype="string",desc_short="Symmetry number",desc_long="In C,D and H symmetry, this is the symmetry number",property=None,defaultunits=db.get("symnumber",dfl=""),choices=None)
 			#db_close_dict(self.form_db_name)
-			
+			orientgens = self.get_orientgens_list()
+			porientgens =  ParamDef(name="orientgen",vartype="string",desc_short="Orientation generator",desc_long="The method of orientation generation",property=None,defaultunits=db.get("orientgen",dfl="eman"),choices=orientgens)
+	
 			p.enable_multiple_selection = False
 			params.append(p)
-			params.append([piter,ptries])
+			params.append([piter,ptries,porientgens])
 			params.append([psym,psymnum])
 		
 	
@@ -3954,6 +4033,7 @@ class E2MakeInitialModel(ParticleWorkFlowTask):
 		options = EmptyObject()
 		
 		error_message.extend(self.check_sym(params,options))
+		options.orientgen = params["orientgen"]
 		
 		if len(error_message) > 0:
 			self.show_error_message(error_message)
@@ -3967,92 +4047,92 @@ class E2MakeInitialModel(ParticleWorkFlowTask):
 			options.tries = params["tries"]
 			options.filenames = []
 			#options.sym - taken care of by check_sum
-			string_args = ["iter","input","tries","sym"]
+			string_args = ["iter","input","tries","sym","orientgen"]
 			bool_args = []
-			additional_args = []
+			additional_args = ["--dbls=global.spr_init_models"]
 			temp_file_name = "e2initialmodel_stdout.txt"
 			self.spawn_single_task("e2initialmodel.py",options,string_args,bool_args,additional_args,temp_file_name)
 			self.emit(QtCore.SIGNAL("task_idle"))
 			self.form.closeEvent(None)
 			self.form = None
-		
-class ImportInitialModels(ParticleWorkFlowTask):
-	documentation_string = "Import initial models into the EMAN2 database. Browse for the images you wish to import or type them directly into the entry form. If you tick force overwrite initial models in the EMAN2 database with the same name will automatically be over written."
-	
-	def __init__(self):
-		ParticleWorkFlowTask.__init__(self)
-		self.window_title = "Import initial models"
-		self.form_db_name = "bdb:emform.e2initialmodel"
-		
-	def get_params(self):
-		params = []
-		
-		db = db_open_dict(self.form_db_name)
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=ImportInitialModels.documentation_string,choices=None))
-		params.append(ParamDef(name="filenames",vartype="url",desc_short="Import models",desc_long="A list of 3D images that you wish to import into the EMAN2 database scheme.",property=None,defaultunits=[],choices=[]))
-		pfo = ParamDef(name="force",vartype="boolean",desc_short="Force overwrite",desc_long="Whether or not to force overwrite files that already exist",property=None,defaultunits=db.get("force",dfl=False),choices=None)
-		params.append(pfo)
-		
-		#db_close_dict(self.form_db_name)
-		
-		return params
-	
-	def on_form_ok(self,params):
-		error_message = []
-		
-		
-		mesbox = QtGui.QMessageBox()
-		mesbox.setWindowTitle("Almost but not quite")
-		if params.has_key("filenames") and len(params["filenames"])==0:
-			mesbox.setText("Please provide at least one filename to proceed")
-	 		mesbox.exec_()
-	 		return
-	 	
-	 	
-	 	for name in params["filenames"]:
-	 		if not file_exists(name):
-	 			error_message.append("The file "+name+" does not exist")
-	 		else:
-	 			e = EMData()
-	 			e.read_image(name,0,True)
-	 			if e.get_xsize() != e.get_ysize() or e.get_xsize() != e.get_zsize():
-	 				error_message.append("The file "+name+" is not cubic")
-	 				
-	 	if params["force"] == False:	
-		 	for file in params["filenames"]:
-		 		output_name = "bdb:initial_models#"+get_file_tag(file)
-				if file_exists(output_name):
-					error_message.append("An entry exists in the initial_models database with the same name as this file "+file+", please rename your file or choose force over write")
-		 	
-	 			
-	 	if len(error_message) > 0:
-	 		self.show_error_message(error_message)
-	 		return
-	 	
-	 	# if we make it here we're all good, 
-	 	self.write_db_entries(params) # so store the parameters for recollection later
-	 	num_processing_operations = 2 # one read and one write
-	 	progress = EMProgressDialogModule(get_application(),"Importing files into database...", "Abort import", 0, len(params["filenames"])*num_processing_operations,None)
-		progress.qt_widget.show()
-		
-		i = 0
-		for file in params["filenames"]:
-			e = EMData()
-			e.read_image(file,0)
-			i +=1
-			progress.qt_widget.setValue(i)
-			output_name = "bdb:initial_models#"+get_file_tag(file)
-			e.write_image(output_name,0)
-			#db_close_dict(output_name)
-			i +=1
-			progress.qt_widget.setValue(i)
-		
-		progress.qt_widget.close()
-		
-	 	self.emit(QtCore.SIGNAL("task_idle"))
-		self.form.closeEvent(None)
-		self.form = None
-	 			
+#		
+#class ImportInitialModels(ParticleWorkFlowTask):
+#	documentation_string = "Import initial models into the EMAN2 database. Browse for the images you wish to import or type them directly into the entry form. If you tick force overwrite initial models in the EMAN2 database with the same name will automatically be over written."
+#	
+#	def __init__(self):
+#		ParticleWorkFlowTask.__init__(self)
+#		self.window_title = "Import initial models"
+#		self.form_db_name = "bdb:emform.e2initialmodel"
+#		
+#	def get_params(self):
+#		params = []
+#		
+#		db = db_open_dict(self.form_db_name)
+#		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=ImportInitialModels.documentation_string,choices=None))
+#		params.append(ParamDef(name="filenames",vartype="url",desc_short="Import models",desc_long="A list of 3D images that you wish to import into the EMAN2 database scheme.",property=None,defaultunits=[],choices=[]))
+#		pfo = ParamDef(name="force",vartype="boolean",desc_short="Force overwrite",desc_long="Whether or not to force overwrite files that already exist",property=None,defaultunits=db.get("force",dfl=False),choices=None)
+#		params.append(pfo)
+#		
+#		#db_close_dict(self.form_db_name)
+#		
+#		return params
+#	
+#	def on_form_ok(self,params):
+#		error_message = []
+#		
+#		
+#		mesbox = QtGui.QMessageBox()
+#		mesbox.setWindowTitle("Almost but not quite")
+#		if params.has_key("filenames") and len(params["filenames"])==0:
+#			mesbox.setText("Please provide at least one filename to proceed")
+#	 		mesbox.exec_()
+#	 		return
+#	 	
+#	 	
+#	 	for name in params["filenames"]:
+#	 		if not file_exists(name):
+#	 			error_message.append("The file "+name+" does not exist")
+#	 		else:
+#	 			e = EMData()
+#	 			e.read_image(name,0,True)
+#	 			if e.get_xsize() != e.get_ysize() or e.get_xsize() != e.get_zsize():
+#	 				error_message.append("The file "+name+" is not cubic")
+#	 				
+#	 	if params["force"] == False:	
+#		 	for file in params["filenames"]:
+#		 		output_name = "bdb:initial_models#"+get_file_tag(file)
+#				if file_exists(output_name):
+#					error_message.append("An entry exists in the initial_models database with the same name as this file "+file+", please rename your file or choose force over write")
+#		 	
+#	 			
+#	 	if len(error_message) > 0:
+#	 		self.show_error_message(error_message)
+#	 		return
+#	 	
+#	 	# if we make it here we're all good, 
+#	 	self.write_db_entries(params) # so store the parameters for recollection later
+#	 	num_processing_operations = 2 # one read and one write
+#	 	progress = EMProgressDialogModule(get_application(),"Importing files into database...", "Abort import", 0, len(params["filenames"])*num_processing_operations,None)
+#		progress.qt_widget.show()
+#		
+#		i = 0
+#		for file in params["filenames"]:
+#			e = EMData()
+#			e.read_image(file,0)
+#			i +=1
+#			progress.qt_widget.setValue(i)
+#			output_name = "bdb:initial_models#"+get_file_tag(file)
+#			e.write_image(output_name,0)
+#			#db_close_dict(output_name)
+#			i +=1
+#			progress.qt_widget.setValue(i)
+#		
+#		progress.qt_widget.close()
+#		
+#	 	self.emit(QtCore.SIGNAL("task_idle"))
+#		self.form.closeEvent(None)
+#		self.form = None
+#	 			
 
 class RefinementReportTask(ParticleWorkFlowTask):
 	documentation_string = "This form displays the models produced at the end of each refinement."
@@ -5057,7 +5137,7 @@ class E2EotestTask(E2RefineParticlesTask):
 	documentation_string = "This form is used to run e2eotest."
 	warning_string = "\n\n\nThere are no refinement results available to use as the basis of running e2eotest"
 	def __init__(self):
-	 	E2RefineParticlesTask.__init__(self,application)
+	 	E2RefineParticlesTask.__init__(self)
 	 	self.window_title = "e2eotest parameters"
 	 	self.form_db_name = "bdb:emform.e2eotest"
 	 	self.dir_and_iter = {} # will eventually be useful information about directories that will work for e2eotest

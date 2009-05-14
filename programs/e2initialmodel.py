@@ -57,7 +57,11 @@ def main():
 	parser.add_option("--sym", dest = "sym", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos",default="c1")
 	parser.add_option("--savemore",action="store_true",help="Will cause intermediate results to be written to flat files",default=False)
 	parser.add_option("--verbose","-v", type="int", default=0,help="Verbosity of output (1-9)")
+	parser.add_option("--orientgen",type="string", default="eman",help="The type of orientation generator. Default is safe. See e2help.py orientgens")
 
+	# Database Metadata storage
+	parser.add_option("--dbls",type="string",default=None,help="data base list storage, used by the workflow. You can ignore this argument.",default=None)
+	
 	(options, args) = parser.parse_args()
 	verbose=options.verbose
 
@@ -71,7 +75,10 @@ def main():
 	sym_object = parsesym(options.sym)
 #	orts = sym_object.gen_orientations("eman",{"delta":7.5})
 	#orts = sym_object.gen_orientations("rand",{"n":15})
-   	orts = sym_object.gen_orientations("eman",{"delta":9.0})
+	if options.orientgen == "rand":
+		orts = sym_object.gen_orientations(options.orientgen,{"n":15})
+	else:
+   		orts = sym_object.gen_orientations(options.orientgen,{"delta":9.0})
 
 	logid=E2init(sys.argv)
 	results=[]
@@ -170,8 +177,15 @@ def main():
 		#for i,j in enumerate(results): dct[i]=j[1]
 		#dct.close()
 		
-		for i,j in enumerate(results): 
-			j[1].write_image(results_name+"_%02d"%(i+1),0)
+		for i,j in enumerate(results):
+			out_name = results_name+"_%02d"%(i+1)
+			j[1].write_image(out_name,0)
+			if options.dbls: # database list storage
+				pdb = db_open_dict("bdb:project")
+				old_names = pdb.get(options.dbls,dfl=[])
+				if old_names.count(out_name) == 0:
+					old_names.append(out_name)
+					pdb[options.dbls] = old_names
 			for k,l in enumerate(j[3]): l.write_image(results_name+"_%02d_proj"%(i+1),k)	# set of projection images
 			for k,l in enumerate(j[2]): 
 				l.write_image(results_name+"_%02d_aptcl"%(i+1),k*2)						# set of aligned particles

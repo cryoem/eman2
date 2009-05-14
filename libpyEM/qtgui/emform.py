@@ -407,7 +407,7 @@ class EMFileTable(QtGui.QTableWidget):
 		@param name a file name - The file should exist on disk
 		@return the desired converted name
 		'''
-		return EMAN2.base_name(name)
+		return EMAN2.base_name(name,bdb_keep_dir=True)
 	
 	def display_name(self,name):
 		'''
@@ -627,7 +627,19 @@ class EM2DFileTable(EMFileTable):
 
 	def module_closed(self,module_instance):
 		self.display_module = None
-		
+
+class EM3DFileTable(EM2DFileTable):
+	'''
+	Basically makes sure the correct icon is displayed.
+	'''
+	def __init__(self,listed_names=[],name="filenames",desc_short="File Names",desc_long="A list of file names"):
+		'''
+		see EMFileTable for comments on parameters
+		'''
+		EM2DFileTable.__init__(self,listed_names,name,desc_short,desc_long)
+		self.icon = QtGui.QIcon(get_image_directory() + "/single_image_3d.png")
+	
+
 class EMTomographicFileTable(EMFileTable):
 	'''
 	Basically makes sure the correct icon is displayed.

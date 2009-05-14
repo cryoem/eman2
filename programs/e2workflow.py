@@ -452,8 +452,8 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		init_model_list = []
 		init_model_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Make model- e2initialmodel")))
 		self.launchers["Make model- e2initialmodel"] = self.launch_e2makeinitial
-		init_model_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Import model")))
-		self.launchers["Import model"] = self.launch_import_initial_model
+#		init_model_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Import model")))
+#		self.launchers["Import model"] = self.launch_import_initial_model
 		init_model.addChildren(init_model_list)
 		
 		refine_list = []
@@ -600,7 +600,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	def launch_resolution_report(self): self.launch_task(ResolutionReportTask(),"resolution report")
 	def launch_e2refine(self): self.launch_task(E2RefineChooseDataTask(),"e2refine init")
 	def launch_refinement_report(self): self.launch_task(RefinementReportTask(),"refinement report")
-	def launch_import_initial_model(self): self.launch_task(ImportInitialModels(),"import initial models")
+#	def launch_import_initial_model(self): self.launch_task(ImportInitialModels(),"import initial models")
 	def launch_e2makeinitial(self): self.launch_task(E2MakeInitialModel(),"e2makeinitialmodel")
 	def launch_initmodel_report(self): self.launch_task(InitialModelReportTask(),"initial model report")
 	def launch_refine2d_report(self): self.launch_task(E2Refine2DReportTask(),"refine2d report")

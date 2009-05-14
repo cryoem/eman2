@@ -890,18 +890,24 @@ def check_files_are_em_images(filenames):
 	return True,"images are fine"
 	
 
-def base_name( file_name ):
+def base_name( file_name,bdb_keep_dir=False ):
 	'''
 	wraps os.path.basename but returns something sensible for bdb syntax
 	'''
 	
 	if db_check_dict(file_name):
 		vals = file_name.split("#")
+		if bdb_keep_dir: dirs = vals[0].split("/")
 		if len(vals) == 1: return file_name # this is as simple as it gets
 		else:
 			v = vals[-1].rstrip("EMAN2DB/") # strip this out if it's there
 			v = v.rstrip("EMAN2DB") # strip this out if it's there
-			return "bdb:"+v
+			if bdb_keep_dir:
+				if len(dirs) > 1:
+					return "bdb:"+dirs[-1]+"#"+v
+				else: return file_name
+			else:
+				return "bdb:"+v
 	else:
 		return os.path.basename(file_name)
 
