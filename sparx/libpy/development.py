@@ -8943,7 +8943,8 @@ def cml2_export_struc_GA(stack, outdir, Ori, igen):
 	from projection import plot_angles
 	from utilities  import set_params_proj, get_im
 
-	global g_n_prj
+	#global g_n_prj
+	g_n_prj = len(Ori) // 4
 	
 	pagls = []
 	for i in xrange(g_n_prj):
@@ -9259,11 +9260,12 @@ def cml2_plot_POP(POP, out_dir, igen):
 
 # application find structure MPI version
 def cml2_main_mpi(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit, given = False, first_zero = False, flag_weights = False, debug = False, maxgen = 10, pcross = 0.95, pmut = 0.05):
-	from mpi       import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier, MPI_COMM_WORLD
-	from mpi       import mpi_reduce, mpi_bcast, MPI_INT, MPI_LOR, MPI_FLOAT, MPI_SUM, mpi_send, mpi_recv
-	from utilities import print_begin_msg, print_msg, print_end_msg, start_time, running_time
-	from random    import seed, random
-	from copy      import deepcopy
+	from mpi        import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier, MPI_COMM_WORLD
+	from mpi        import mpi_reduce, mpi_bcast, MPI_INT, MPI_LOR, MPI_FLOAT, MPI_SUM, mpi_send, mpi_recv
+	from utilities  import print_begin_msg, print_msg, print_end_msg, start_time, running_time
+	from random     import seed, random
+	from copy       import deepcopy
+	from projection import cml_open_proj, cml_init_global_var, cml_disc, cml_export_txtagls, cml_find_structure
 	import time, sys, os, cPickle, logging
 	
 	# init
@@ -9292,7 +9294,7 @@ def cml2_main_mpi(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit,
 	else:             seed()
 	
 	# Open and transform projections
-	Prj, Ori = cml2_open_proj(stack, ir, ou, lf, hf)
+	Prj, Ori = cml_open_proj(stack, ir, ou, lf, hf)
 	
 	# if not angles given select randomly orientation for each projection
 	if not given:
@@ -9309,7 +9311,7 @@ def cml2_main_mpi(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit,
 			j += 4
 
 	# Init the global vars
-	cml2_init_global_var(dpsi, delta, len(Prj), debug)
+	cml_init_global_var(dpsi, delta, len(Prj), debug)
 	
 	# Update logfile
 	#cml_head_log(stack, outdir, delta, ir, ou, lf, hf, rand_seed, maxit, given)
@@ -9320,7 +9322,7 @@ def cml2_main_mpi(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit,
 	#pmutmin = 0.01
 	#pmutmax = 0.3
 	#F       = 0.5
-	global g_n_prj
+	g_n_prj = len(Ori) // 4
 	flag_stop = 0
 	for igen in xrange(maxgen):
 		t_start = start_time()
@@ -9329,8 +9331,8 @@ def cml2_main_mpi(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit,
 
 		Ori = deepcopy(POP[myid])
 		Rot = Util.cml_init_rot(Ori)
-		disc = cml2_disc(Prj, Ori, Rot, flag_weights)
-		cml2_export_txtagls(out_dir, 'angles_node_%02i' % myid, Ori, disc, 'Init')
+		disc = cml_disc(Prj, Ori, Rot, flag_weights)
+		cml_export_txtagls(out_dir, 'angles_node_%02i' % myid, Ori, disc, 'Init')
 
 		# gather first disc
 		first_disc = [0.0] * ncpu
@@ -9348,7 +9350,7 @@ def cml2_main_mpi(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit,
 		#logging.info('[gen: %03i node: %02i]  first disc: %f' % (igen, myid, disc))
 
 		# Find structure
-		Ori, disc, ite = cml2_find_structure(Prj, Ori, Rot, out_dir, 'angles_node_%02i' % myid, maxit, first_zero, flag_weights)
+		Ori, disc, ite = cml_find_structure(Prj, Ori, Rot, out_dir, 'angles_node_%02i' % myid, maxit, first_zero, flag_weights)
 		#logging.info('[gen: %03i node: %02i]  disc: %f  nb ite: %i' % (igen, myid, disc, ite))
 		#f = open(out_dir + '/gen_%03i_node_%02i' % (igen, myid), 'w')
 		#cPickle.dump(Ori, f)
@@ -9375,6 +9377,7 @@ def cml2_main_mpi(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit,
 
 		if myid == main_node:
 			## TO TEST
+			'''
 			from projection import plot_angles
 			for iori in xrange(ncpu):
 				cml = Util.cml_line_in3d(POP[iori], g_seq, g_n_prj, g_n_lines)
@@ -9384,7 +9387,7 @@ def cml2_main_mpi(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit,
 					tmp_agls.append([cml[ind], cml[ind+1], 1])
 				im = plot_angles(tmp_agls)
 				im.write_image(out_dir + '/cml_pop_%03i.hdf' % igen, iori)
-
+			'''
 			# degree of collinearity
 			colli = []
 			for i in xrange(ncpu): colli.append(cml2_ori_collinearity(POP[i]))
