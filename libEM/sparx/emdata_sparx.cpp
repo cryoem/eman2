@@ -3396,6 +3396,67 @@ ostream& operator<< (ostream& os, const Pixel& peak) {
     return os;
 }
 
+vector<float> EMData::max_search() {
+
+	EMData& buf = *this;
+	
+	int nx = buf.get_xsize();
+	int ny = buf.get_ysize();
+	int nz = buf.get_zsize();
+	
+	int dim = buf.get_ndim();
+	
+	vector<float> result;
+	
+	if (dim == 1) {
+		float max = -1e20;
+		int index = -1;
+		for (int i=0; i<nx; i++) {
+			if (buf(i)>max) {
+				max = buf(i);
+				index = i;
+			}
+		}
+		result.push_back(index);
+	} else if (dim == 2) {
+		float max = -1e20;
+		int index1 = -1;
+		int index2 = -1;
+		for (int i=0; i<nx; i++) {
+			for (int j=0; j<ny; j++) {
+				if (buf(i, j)>max) {
+					max = buf(i, j);
+					index1 = i;
+					index2 = j;
+				}
+			}
+		}
+		result.push_back(index1);
+		result.push_back(index2);
+	} else {
+		float max = -1e20;
+		int index1 = -1;
+		int index2 = -1;
+		int index3 = -1;
+		for (int i=0; i<nx; i++) {
+			for (int j=0; j<ny; j++) {
+				for (int k=0; k<nz; k++) {
+					if (buf(i, j, k)>max) {
+						max = buf(i, j, k);
+						index1 = i;
+						index2 = j;
+						index3 = k;
+					}
+				}
+			}
+		}
+		result.push_back(index1);
+		result.push_back(index2);
+		result.push_back(index3);
+	}
+	return result;
+}
+
 vector<float> EMData::peak_search(int ml, float invert) {
 
 	EMData& buf = *this;
