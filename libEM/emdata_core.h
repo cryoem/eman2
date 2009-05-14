@@ -233,6 +233,18 @@ inline float get_value_at(size_t i) const
 	return get_data()[i];
 }
 
+/** Get complex<float> value at x,y. This assumes the image is
+ * a standard real/imaginary image with the complex origin in the first memory location.
+ * If you take the fft of a real nx x ny image, a nx+2 x ny image will be produced, and
+ * values using this function can go from -nx/2-1 to nx/2+1 and -ny/2 to ny/2. It will
+ * automatically deal with wraparound and complex conjugate issues for -x. This function
+ * differs from cmplx() which will interpret x,y directly as pixel coordinates
+ *
+ * @param x	x coordinate
+ * @param y	y coordinate
+ * @return The complex pixel at x,y
+ */
+std::complex<float> get_complex_at(int x,int y);
 
 /** Get the pixel density value at coordinates (x,y,z).
  * Should only be called on 3D images - no errors are thrown

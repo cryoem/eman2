@@ -116,6 +116,14 @@ EMData *EMData::copy_head() const
 	return ret;
 }
 
+std::complex<float> EMData::get_complex_at(int x,int y) {
+	if (abs(x)>nx || abs(y)>ny) return std::complex<float>(0,0);
+	if (x>=0 && y>=0) return std::complex<float>(rdata[ x*2+y*nx],      rdata[x*2+y*nx+1]);
+	if (x>0 && y<0) return std::complex<float>(  rdata[ x*2+(ny+y)*nx], rdata[x*2+(ny+y)*nx+1]);
+	if (x<0 && y>0) return std::complex<float>(  rdata[-x*2+(ny-y)*nx],-rdata[-x*2+(ny-y)*nx+1]);
+	return std::complex<float>(rdata[-x*2-y*nx],-rdata[-x*2+-y*nx+1]);
+}
+
 void EMData::add(float f,int keepzero)
 {
 	ENTERFUNC;

@@ -1874,7 +1874,7 @@ EMData *EMData::make_footprint(int type)
 			}
 		}
 		
-		EMData *fp=new EMData(rmax*2,get_ysize(),1);
+		EMData *fp=new EMData(rmax*2+2,rmax*2,1);
 		fp->set_complex(1);
 		
 		// Two vectors in to complex space (kx,ky) and (lx,ly)
@@ -1884,22 +1884,31 @@ EMData *EMData::make_footprint(int type)
 			for (ky=-rmax; ky<rmax; ky++) {
 				for (lx=-rmax; lx<rmax; lx++) {
 					for (ly=-rmax; ly<rmax; ly++) {
-						int ax=abs(kx+lx);
-						int ay=abs(ky+ly);
-						if (ax>=rmax || ay>=ay) continue;
-						int akx=abs(kx);
-						int aky=abs(ky);
-						int alx=abs(lx);
-						int aly=abs(ly);
-						float r1=rmap[akx+rmax*aky];
-						float r2=rmap[alx+rmax*aly];
-						float r3=rmap[abs(kx+lx)+rmax*abs(ky+ly)];
+						int ax=kx+lx;
+						int ay=ky+ly;
+						if (abs(ax)>rmax || abs(ay)>rmax) continue;
+						int r1=floor(.5+rmap[abs(kx)+rmax*abs(ky)]);
+						int r2=floor(.5+rmap[abs(lx)+rmax*abs(ly)]);
+//						float r3=rmap[ax+rmax*ay];
+						if (r1+r2>rmax) continue;
+						
+						std::complex<float> p=fft->get_complex_at(kx,ky)*fft->get_complex_at(lx,ly)*conj(fft->get_complex_at(ax,ay));
+						fp->set_value_at(r1*2,r2,p.real()+fp->get_value_at(r1*2,r2));							// We keep only the real component in anticipation of zero phase sum
+						fp->set_value_at(r1*2+1,r2,fp->get_value_at(r1*2+1,r2)+1);	// a normalization counter
 					}
 				}
 			}
 		}
-
-}
+		// Normalizes the pixels based on the accumulated counts then sets the imaginary components back to zero
+		for (i=0; i<rmax*2; i+=2) {
+			for (j=0; j<rmax*2; j++) {
+				fp->set_value_at(i,j,fp->get_value_at(i,j)/fp->get_value_at(i+1,j));
+				fp->set_value_at(i+1,j,0.0);
+			}
+		}
+		
+		return fp;
+	}
 }
 
 

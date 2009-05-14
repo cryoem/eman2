@@ -41,6 +41,7 @@
 #endif	//_WIN32
 
 #include <cfloat>
+#include <complex>
 #include <fstream>
 
 #include "sparx/fundamentals.h"
