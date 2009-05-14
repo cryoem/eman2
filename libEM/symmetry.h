@@ -219,6 +219,11 @@ namespace EMAN {
 		/** Clear the asymmetric unit planes cache
 		*/
 		void delete_au_planes();
+	private:
+		//Disallow copy constructor
+		Symmetry3D(const Symmetry3D&);
+		//Disallow assignment
+		Symmetry3D& operator=(const Symmetry3D&);
 };
 	
 	/** An encapsulation of cyclic 3D symmetry
@@ -320,6 +325,11 @@ namespace EMAN {
 		 * @param inc_mirror whether to include the mirror portion of the asymmetric unit
 		 */
 		virtual vector<vector<Vec3f> > get_asym_unit_triangles(bool inc_mirror) const;
+	private:
+		//Disallow copy constructor
+		CSym(const CSym&);
+		//Disallow assignment
+		CSym& operator=(const CSym&);
 		
 };
 	
@@ -422,6 +432,11 @@ namespace EMAN {
 		 * @param inc_mirror whether to include the mirror portion of the asymmetric unit
 		 */
 		virtual vector<vector<Vec3f> > get_asym_unit_triangles(bool inc_mirror) const;
+	private:
+		//Disallow copy constructor
+		DSym(const DSym&);
+		//Disallow assignment
+		DSym& operator=(const DSym&);
 };
 	
 	/** An encapsulation of helical 3D symmetry
@@ -544,6 +559,11 @@ namespace EMAN {
 		 * @param inc_mirror whether to include the mirror portion of the asymmetric unit
 			 */
 		virtual vector<vector<Vec3f> > get_asym_unit_triangles(bool inc_mirror) const;
+	private:
+		//Disallow copy constructor
+		HSym(const HSym&);
+		//Disallow assignment
+		HSym& operator=(const HSym&);
 };
 	
 	/** A base (or parent) class for the Platonic symmetries. It cannot be instantieted on its own.
@@ -638,6 +658,11 @@ namespace EMAN {
 		 * @param inc_mirror whether to include the mirror portion of the asymmetric unit
 		 */
 		virtual vector<vector<Vec3f> > get_asym_unit_triangles(bool inc_mirror) const;
+	private:
+		//Disallow copy constructor
+		PlatonicSym(const PlatonicSym&);
+		//Disallow assignment
+		PlatonicSym& operator=(const PlatonicSym&);
 };
 	
 	/** An encapsulation of tetrahedral symmetry
@@ -733,6 +758,12 @@ namespace EMAN {
 		 */
 		virtual bool is_tet_sym() const { return true; }
 		
+	private:
+		//Disallow copy constructor
+		TetrahedralSym(const TetrahedralSym&);
+		//Disallow assignment
+		TetrahedralSym& operator=(const TetrahedralSym&);
+		
 		
 };
 	
@@ -805,6 +836,11 @@ namespace EMAN {
 		
 		/// The name of this class - used to access it from factories etc. Should be "oct"
 		static const string NAME;
+	private:
+		//Disallow copy constructor
+		OctahedralSym(const OctahedralSym&);
+		//Disallow assignment
+		OctahedralSym& operator=(const OctahedralSym&);
 };
 	
 	/** An encapsulation of icosahedral symmetry
@@ -873,6 +909,11 @@ namespace EMAN {
 		
 		/// The name of this class - used to access it from factories etc. Should be "icos"
 		static const string NAME;
+	private:
+		//Disallow copy constructor
+		IcosahedralSym(const IcosahedralSym&);
+		//Disallow assignment
+		IcosahedralSym& operator=(const IcosahedralSym&);
 };
 	/// A template specialization for the Symmetry3D factory. Adds all of the symmetries
 	template <> Factory < Symmetry3D >::Factory();
