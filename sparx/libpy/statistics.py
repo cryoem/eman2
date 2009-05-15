@@ -1314,8 +1314,7 @@ def ccc(img1, img2, mask=None):
 	"""Cross-correlation coefficient.	   
 	   Usage: result = ccc(image1, image2 [, mask])
 	"""
-	if mask: return img1.cmp("ccc", img2, {"mask":mask,"negative":0})
-	else:    return img1.cmp("ccc", img2, {"negative":0})
+	return img1.cmp("ccc", img2, {"mask":mask,"negative":0})
 
 def fsc(img1, img2, w = 1.0, filename=None):
 	"""Fourier Shell (or Ring) Correlation.
