@@ -316,7 +316,7 @@ def main():
 				d = d.make_rotational_footprint()
 
 			elif option1 == "fp":
-				d = d.make_footprint(0)
+				d = d.make_footprint(2)
 
 			elif option1 == "scale":
 				scale_f = options.scale[index_d[option1]]

@@ -1860,7 +1860,7 @@ EMData *EMData::make_footprint(int type)
 		delete cx;
 		return fp;
 	}
-	else if (type==1) {
+	else if (type==1 || type==2) {
 		int i,j,kx,ky,lx,ly;
 
 		EMData *fft=do_fft();
@@ -1877,6 +1877,7 @@ EMData *EMData::make_footprint(int type)
 		
 		EMData *fp=new EMData(rmax*2+2,rmax*2,1);
 		fp->set_complex(1);
+		fp->to_zero();
 		
 		// Two vectors in to complex space (kx,ky) and (lx,ly)
 		// We are computing the bispectrum, f(k).f(l).f*(k+l)
@@ -1896,23 +1897,30 @@ EMData *EMData::make_footprint(int type)
 						
 						std::complex<float> p=fft->get_complex_at(kx,ky)*fft->get_complex_at(lx,ly)*conj(fft->get_complex_at(ax,ay));
 						fp->set_value_at(r1*2,r2,p.real()+fp->get_value_at(r1*2,r2));		// We keep only the real component in anticipation of zero phase sum
-						fp->set_value_at(r1*2+1,r2,p.real()+fp->get_value_at(r1*2+1,r2));		// We keep only the real component in anticipation of zero phase sum
-//						fp->set_value_at(r1*2+1,r2,fp->get_value_at(r1*2+1,r2)+1);			// a normalization counter
+//						fp->set_value_at(r1*2,rmax*2-r2-1,  fp->get_value_at(r1*2,r2));		// We keep only the real component in anticipation of zero phase sum
+//						fp->set_value_at(r1*2+1,r2,p.real()+fp->get_value_at(r1*2+1,r2));		// We keep only the real component in anticipation of zero phase sum
+						fp->set_value_at(r1*2+1,r2,fp->get_value_at(r1*2+1,r2)+1);			// a normalization counter
 					}
 				}
 			}
 		}
-		return fp;
+
 		// Normalizes the pixels based on the accumulated counts then sets the imaginary components back to zero
 		for (i=0; i<rmax*2; i+=2) {
-			for (j=0; j<rmax*2; j++) {
+			for (j=0; j<rmax; j++) {
 				float norm=fp->get_value_at(i+1,j);
+				fp->set_value_at(i,rmax*2-j-1,fp->get_value_at(i,j)/(norm==0?1.0:norm));
 				fp->set_value_at(i,j,fp->get_value_at(i,j)/(norm==0?1.0:norm));
 				fp->set_value_at(i+1,j,0.0);
 			}
 		}
 		
 		free(rmap);
+		if (type==2) {
+			EMData *f2=fp->do_ift();
+			delete fp;
+			return f2;
+		}
 		return fp;
 	}
 }
