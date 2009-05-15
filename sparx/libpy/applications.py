@@ -10267,7 +10267,7 @@ def cml_find_structure_main(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_se
 		# prepare rotation matrix
 		Rot = Util.cml_init_rot(Ori)
 		# Compute the first disc
-		disc_init = cml_disc(Prj, Ori, Rot, flag_weights)
+		disc_init = cml_disc(Prj, Ori, Rot, 0) #flag_weights)
 		# Update progress file
 		cml_export_txtagls(out_dir, 'angles_%03i' % itrial, Ori, disc_init, 'Init')
 		# Find structure
@@ -10342,7 +10342,7 @@ def cml_find_structure_MPI(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_see
 		# prepare rotation matrix
 		Rot = Util.cml_init_rot(Ori)
 		# Compute the first disc
-		disc_init[itrial] = cml_disc(Prj, Ori, Rot, flag_weights)
+		disc_init[itrial] = cml_disc(Prj, Ori, Rot, 0) #flag_weights)
 		# Update progress file
 		cml_export_txtagls(out_dir, 'angles_%03i' % itrial, Ori, disc_init[itrial], 'Init')
 		# Find structure
