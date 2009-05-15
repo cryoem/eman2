@@ -230,6 +230,9 @@ def main():
 			if ( options.keepsig == False and options.keep == 1.0 ) : options.cull = False
 		
 		for it in range(0,options.iter):
+			if average == None:
+				print "error, the average was None"
+				break
 			itfrac=(it+1)/float(options.iter)
 			# do alignment
 			align_to_average_and_store_metadata(class_cache,options,average,dx,dy,da,dflip,weights)
@@ -243,7 +246,8 @@ def main():
 			average,np = get_basic_average_with_cull(averager_parms,class_cache,options,weights,da,dx,dy,dflip,ndata,cullthresh)			
 			if options.verbose: print "done iteration",it
 
-		if average == None: continue
+		if average == None: 
+			continue
 		# Align to the reference and extract euler data if it was specified
 		if ( options.ref):
 			e = EMData()
@@ -426,8 +430,8 @@ def get_basic_average_with_cull(averager_parms,class_cache,options,weights,da,dx
 		ndata.append(np)
 
 	if np == 0:
-		if (options.verbose):
-			print "Class",cl,"...no particles on iteration",it
+#		if (options.verbose):
+#			print "Class",cl,"...no particles on iteration",it
 		# FIXME
 		average = None
 	else:

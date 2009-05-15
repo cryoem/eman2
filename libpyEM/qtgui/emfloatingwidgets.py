@@ -1786,10 +1786,16 @@ class EM2DGLWindow(EMGLWindow,EM3DVolume):
 		pass
 	
 	def set_width(self,w):
+		if w == None: 
+			print "wo"
+			return
 		self.left = -w/2
 		self.right = w/2
 		
 	def set_height(self,h):
+		if h == None: 
+			print "wo"
+			return
 		self.bottom = -h/2
 		self.top = h/2
 	
@@ -1919,7 +1925,7 @@ class EM2DGLView(EMEventRerouter,GLView):
 			elif isinstance(image,EMData):
 				self.become_2d_image(image)
 			else:
-				print "error, the EMGLView2D class must be initialized with data"
+				print "error, the EM2DGLView class must be initialized with data"
 				return
 			
 		self.drawable().suppressInspector = True
@@ -1933,6 +1939,9 @@ class EM2DGLView(EMEventRerouter,GLView):
 		self.sizescale = 1.0
 		self.changefactor = 1.1
 		self.invchangefactor = 1.0/self.changefactor
+	
+	def get_inspector(self):
+		return self.drawable().get_inspector()
 	
 	def get_drawable(self):
 		return self.drawable()
@@ -2409,7 +2418,7 @@ class EMQtGLView(GLView):
 
 class EMGLViewQtWidget:
 	def __init__(self, parent=None, qwidget=None, widget_parent=None):
-		self.parent = parent
+		self.parent = weakref.ref(parent)
 		self.qwidget = qwidget
 		self.draw_frame = False
 		self.mapcoords = True
@@ -2437,6 +2446,7 @@ class EMGLViewQtWidget:
 		self.texture_dl = 0
 		self.texture_lock = 0
 		self.decoration = EM3DPlainBorderDecoration(self,parent)
+
 	def get_decoration(self):
 		return self.decoration
 	
@@ -2448,7 +2458,7 @@ class EMGLViewQtWidget:
 	
 	def __del__(self):
 		if (self.itex != 0 ):
-			self.parent.deleteTexture(self.itex)
+			self.parent().deleteTexture(self.itex)
 		
 	def set_update_P_inv(self,val=True):
 		self.vdtools.set_update_P_inv(val)
@@ -2482,7 +2492,7 @@ class EMGLViewQtWidget:
 			self.refresh_dl = True
 			if (self.itex != 0 ):
 				#passpyth
-				self.parent.deleteTexture(self.itex)
+				self.parent().deleteTexture(self.itex)
 			self.gen_texture = False
 			##print "binding texture"
 			#self.qwidget.setVisible(True)
@@ -2493,7 +2503,7 @@ class EMGLViewQtWidget:
 				pixmap = QtGui.QPixmap.grabWidget(self.qwidget.widget())
 			#self.qwidget.setVisible(False)
 			if (pixmap.isNull() == True ): print 'error, the pixmap was null'
-			self.itex = self.parent.bindTexture(pixmap)
+			self.itex = self.parent().bindTexture(pixmap)
 			if ( self.itex == 0 ): print 'Error - I could not generate the texture'
 		
 			if self.texture_dl != 0:
@@ -2577,7 +2587,7 @@ class EMGLViewQtWidget:
 		return self.vdtools.mouseinwin(x,y,width,height)
 
 	def mouse_in_win_args(self,event):
-		return [event.x(),self.parent.viewport_height()-event.y(),self.width(),self.height()]
+		return [event.x(),self.parent().viewport_height()-event.y(),self.width(),self.height()]
 
 	def toolTipEvent(self,event):
 		if ( self.childreceiver != None ):
@@ -2595,7 +2605,7 @@ class EMGLViewQtWidget:
 			return
 	
 		p1 = QtCore.QPoint(event.x(),event.y())
-		p2 = self.parent.mapToGlobal(p1)
+		p2 = self.parent().mapToGlobal(p1)
 		QtGui.QToolTip.showText(p2,cw.toolTip())
 	
 	def wheelEvent(self,event):
@@ -2650,7 +2660,7 @@ class EMGLViewQtWidget:
 		self.updateTexture()
 		
 	def get_depth_for_height(self,height_plane):
-		return self.parent.get_depth_for_height(height_plane)
+		return self.parent().get_depth_for_height(height_plane)
 	
 	def mousePressEvent(self, event):
 		if event.modifiers() == Qt.AltModifier:
@@ -2677,7 +2687,7 @@ class EMGLViewQtWidget:
 			if (isinstance(cw,QtGui.QComboBox)):
 				cw.showPopup()
 				cw.hidePopup()
-				widget = EMGLViewQtWidget(self.parent,None,cw);
+				widget = EMGLViewQtWidget(self.parent(),None,cw);
 				widget.setQtWidget(cw.view())
 				widget.cam.loadIdentity()	
 				widget.cam.setCamTrans("x",cw.geometry().x()-self.width()/2.0+cw.view().width()/2.0)
@@ -2754,7 +2764,7 @@ class EMGLViewQtWidget:
 			self.childreceiver = None
 			return
 		else:
-			pos = self.parent.mapFromGlobal(QtGui.QCursor.pos())
+			pos = self.parent().mapFromGlobal(QtGui.QCursor.pos())
 			l=self.mouseinwin(*self.mouse_in_win_args(pos))
 			cw=self.qwidget.childAt(l[0],l[1])
 			self.current = cw
@@ -2859,17 +2869,19 @@ class EMGLViewQtWidget:
 		#self.cam.motion_rotate(.2,.2)
 
 
-class EMFloatingWidgets(QtOpenGL.QGLWidget):
+
+class EMFloatingWidgets(EMImage3DGUIModule):
 	def __init__(self,parent=None):
-		fmt=QtOpenGL.QGLFormat()
-		fmt.setDoubleBuffer(True)
+		EMImage3DGUIModule.__init__(self)
+		#fmt=QtOpenGL.QGLFormat()
+		#fmt.setDoubleBuffer(True)
 		# enable multisampling to combat aliasing
-		fmt.setSampleBuffers(True)
+		#fmt.setSampleBuffers(True)
 		# stenciling is for object dependent shading
-		fmt.setStencil(True)
-		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
+		#fmt.setStencil(True)
+		#QtOpenGL.QGLWidget.__init__(self,fmt, parent)
 		
-		self.setMouseTracking(True)
+		#self.setMouseTracking(True)
 		self.fov = 2*180*atan2(1,5)/pi
 		self.zNear= 1000
 		self.zFar = 3000
@@ -2938,10 +2950,10 @@ class EMFloatingWidgets(QtOpenGL.QGLWidget):
 		else: glDisable(GL_MULTISAMPLE)
 	
 	def paintGL(self):
-		self.draw()
+		self.render()
 	
-	def draw(self):
-		#print "draw"
+	def render(self):
+		print "draw"
 		glClear(GL_COLOR_BUFFER_BIT)
 		if glIsEnabled(GL_DEPTH_TEST):
 			glClear(GL_DEPTH_BUFFER_BIT)
@@ -2951,7 +2963,6 @@ class EMFloatingWidgets(QtOpenGL.QGLWidget):
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 	
-		print "rendering"
 		self.floatwidget.render()
 		
 	def resizeGL(self, width, height):
@@ -3078,9 +3089,10 @@ class EMFloatingWidgetsCore:
 		
 		#print "initializeGL done"
 	def render(self):
+		print "render"
 		if ( self.initFlag == True ):
 			self.initFlag = False
-			self.fd = QtGui.QFileDialog(self.parent,"Open File",QtCore.QDir.currentPath(),QtCore.QString("Image files (*.img *.hed *.mrc)"))
+			self.fd = QtGui.QFileDialog(None,"Open File",QtCore.QDir.currentPath(),QtCore.QString("Image files (*.img *.hed *.mrc)"))
 			QtCore.QObject.connect(self.fd, QtCore.SIGNAL("finished(int)"), self.finished)
 			self.fd.show()
 			self.fd.hide()
@@ -3093,57 +3105,57 @@ class EMFloatingWidgetsCore:
 			#self.qwidgets[1].setQtWidget(self.fd2)
 			#self.qwidgets[1].cam.set_cam_x(-200)
 			
-			a = EMGLViewQtWidget(self.parent)
-			a.setQtWidget(self.fd)
+#			a = EMGLViewQtWidget(self.parent)
+#			a.setQtWidget(self.fd)
 			rotor = EMGLRotorWidget(self)
-			rotor.add_widget(a)
 			#rotor.add_widget(d)
 			
 			
-			w = EMGLView2D(self,test_image(0,size=(256,256)))
+			w = EM2DGLView(self,test_image(0,size=(256,256)))
 			rotor.add_widget(w)
-			insp = w.get_inspector()
-			e = EMGLViewQtWidget(self.parent)
-			e.setQtWidget(insp)
-			rotor.add_widget(e)
+#			insp = w.get_inspector()
+#			e = EMGLViewQtWidget(self.parent)
+#			e.setQtWidget(insp)
+#			rotor.add_widget(e)
 			
-			w2 = EMGLView2D(self,[test_image(0,size=(512,512)),test_image(1,size=(512,512))]*4)
+			w2 = EM2DGLView(self,[test_image(0,size=(512,512)),test_image(1,size=(512,512))]*4)
 			rotor.add_widget(w2)
-			insp2 = w2.get_inspector()
-			f = EMGLViewQtWidget(self.parent)
-			f.setQtWidget(insp2)
-			rotor.add_widget(f)
+#			insp2 = w2.get_inspector()
+#			f = EMGLViewQtWidget(self.parent)
+#			f.setQtWidget(insp2)
+#			rotor.add_widget(f)
 			
 			w3 = EM3DGLView(self,test_image_3d(3))
 			ww = EM3DGLWindow(self.parent,w3)
 			rotor.add_widget(ww)
-			insp3 = w3.get_inspector()
-			g = EMGLViewQtWidget(self.parent)
-			g.setQtWidget(insp3)
-			rotor.add_widget(g)
+#			insp3 = w3.get_inspector()
+#			g = EMGLViewQtWidget(self.parent)
+#			g.setQtWidget(insp3)
+#			rotor.add_widget(g)
 		
 			self.qwidgets.append(EM3DGLWindow(self,rotor))
 			
 			rotor2 = EMGLRotorWidget(self,45,50,15,EMGLRotorWidget.BOTTOM_ROTARY,60)
-			rotor2.add_widget(a)
-			rotor2.add_widget(e)
-			rotor2.add_widget(g)
+#			rotor2.add_widget(a)
+#			rotor2.add_widget(e)
+#			rotor2.add_widget(g)
 			rotor2.add_widget(w2)
+			
 			
 			self.qwidgets.append(EM3DGLWindow(self,rotor2))
 			
 			rotor3 = EMGLRotorWidget(self,-15,50,-15,EMGLRotorWidget.TOP_ROTARY,60)
 			rotor3.add_widget(w)
-			rotor3.add_widget(e)
-			rotor3.add_widget(f)
+#			rotor3.add_widget(e)
+#			rotor3.add_widget(f)
 			#rotor3.add_widget(w2)
 			
 			self.qwidgets.append(EM3DGLWindow(self,rotor3))
 			
 			rotor4 = EMGLRotorWidget(self,-25,10,40,EMGLRotorWidget.LEFT_ROTARY)
 			#rotor4.add_widget(w2)
-			rotor4.add_widget(e)
-			rotor4.add_widget(g)
+#			rotor4.add_widget(e)
+#			rotor4.add_widget(g)
 			#rotor4.add_widget(ww)
 			
 			self.qwidgets.append(EM3DGLWindow(self,rotor4))
@@ -3170,10 +3182,10 @@ class EMFloatingWidgetsCore:
 						w = EM3DGLView(self,a)
 						self.qwidgets.append(w)
 					else:
-						w = EMGLView2D(self,a)
+						w = EM2DGLView(self,a)
 						self.qwidgets.append(w)
 				else:
-					w = EMGLView2D(self,a)
+					w = EM2DGLView(self,a)
 					self.qwidgets.append(w)
 					
 	def timer(self):
@@ -3293,9 +3305,13 @@ class EMFloatingWidgetsCore:
 
 # This is just for testing, of course
 if __name__ == '__main__':
-	app = QtGui.QApplication(sys.argv)
+	from emapplication import EMStandAloneApplication
+	em_app = EMStandAloneApplication()
 	window = EMFloatingWidgets()
-	window2 = EMParentWin(window)
-	window2.show()
+	em_app.show()
+	em_app.execute()
 	
-	sys.exit(app.exec_())
+#	window2 = EMParentWin(window)
+#	window2.show()
+#	
+#	sys.exit(app.exec_())

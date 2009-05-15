@@ -306,8 +306,8 @@ class EMImageRotorModule(EMGUIModule):
 		self.rotor.clear_widgets()
 		for d in self.data:
 			w = EM2DGLView(self,d)
-			w.get_drawable().set_app(self.application)
-			self.application.register_qt_emitter(w.get_drawable(),self.application.get_qt_emitter(self))
+			#w.get_drawable().set_app(self.application)
+#			self.application.register_qt_emitter(w.get_drawable(),self.application.get_qt_emitter(self))
 			x = EM2DGLWindow(self,w)
 			x.set_width(w.width())
 			x.set_height(w.height())

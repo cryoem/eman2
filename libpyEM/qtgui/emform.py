@@ -1756,12 +1756,12 @@ if __name__ == '__main__':
 	QtCore.QObject.connect(window2,QtCore.SIGNAL("emform_cancel"),on_cancel)
 	
 #	
-	import sys
-	tt = TestWidget()
-	#test = TestWidgetModule()
-	tt.show()
-	#print sys.getrefcount(tt)
-	#em_app.show()
+#	import sys
+#	tt = TestWidget()
+#	#test = TestWidgetModule()
+#	tt.show()
+#	#print sys.getrefcount(tt)
+	em_app.show()
 	em_app.execute()
 	
 	

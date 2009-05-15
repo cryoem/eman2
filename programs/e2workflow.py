@@ -644,7 +644,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	def launch_e2refine(self): self.launch_task(E2RefineChooseDataTask(),"e2refine init")
 	def launch_refinement_report(self): self.launch_task(RefinementReportTask(),"refinement report")
 #	def launch_import_initial_model(self): self.launch_task(ImportInitialModels(),"import initial models")
-	def launch_e2makeinitial(self): self.launch_task(E2MakeInitialModel(),"e2makeinitialmodel")
+	def launch_e2makeinitial(self): self.launch_task(E2InitialModel(),"e2makeinitialmodel")
 	def launch_initmodel_report(self): self.launch_task(InitialModelReportTask(),"initial model report")
 	def launch_refine2d_report(self): self.launch_task(E2Refine2DReportTask(),"refine2d report")
 	def launch_refine2d_exec(self): self.launch_task(E2Refine2DRunTask(),"e2refine2d params")
@@ -684,7 +684,6 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	def launch_view_preferences(self):
 		from e2preferences import EMPreferencesTask
 		self.launch_task(EMPreferencesTask(),"Preferences")
-	
 	
 	def launch_import_mic_ccd(self):
 		self.launch_task(MicrographCCDImportTask(),"Import micrographs")

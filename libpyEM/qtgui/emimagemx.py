@@ -794,7 +794,7 @@ class EMImageMXModule(EMGUIModule):
 		if isinstance(data_or_filename,str):
 			nx,ny,nz = gimme_image_dimensions3D(data_or_filename)
 			bytes_per_image = nx*ny*4.0
-			cache_size = int(250000000/bytes_per_image) # 250 MB
+			cache_size = int(75000000/bytes_per_image) # 75 MB
 			
 		
 		self.data = EMDataListCache(data_or_filename,cache_size)
@@ -2524,6 +2524,7 @@ class EMDataListCache:
 			else:
 				self.cache_size = cache_size
 			self.start_idx = start_idx - self.cache_size/2
+			if self.start_idx < 0: self.start_idx = 0
 		
 			self.__refresh_cache()
 		else:
