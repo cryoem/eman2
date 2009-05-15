@@ -168,7 +168,7 @@ bool ImagicIO::is_valid(const void *first_block)
 int ImagicIO::read_header(Dict & dict, int image_index, const Region * area, bool is_3d)
 {
 	ENTERFUNC;
-
+	
 	check_read_access(image_index);
 
 	int nimg = 1;
@@ -191,7 +191,6 @@ int ImagicIO::read_header(Dict & dict, int image_index, const Region * area, boo
 		fread(&hed, sizeof(ImagicHeader), 1, hed_file);
 		make_header_host_endian(hed);
 	}
-
 	check_region(area, FloatSize(hed.nx, hed.ny, nimg), is_new_hed,false);
 
     datatype = get_datatype_from_name(imagich.type);
@@ -250,12 +249,10 @@ int ImagicIO::read_header(Dict & dict, int image_index, const Region * area, boo
 		dict["xform.projection"] = trans;
 		dict["xform.align3d"] = trans;
 	}
-
 	Ctf * ctf_ = read_ctf(hed);
 	if( ctf_ != 0) {
 		dict["ctf"] = ctf_;
 	}
-
 	EXITFUNC;
 	return 0;
 }
@@ -571,11 +568,16 @@ Ctf * ImagicIO::read_ctf(const ImagicHeader& hed) const
 	size_t n = strlen(CTF_MAGIC);
 
 	if (strncmp(imagich.label, CTF_MAGIC, n) == 0) {
-		string sctf = "O" + string(hed.label).substr(2);
 		ctf_ = new EMAN1Ctf();
-		ctf_->from_string(sctf);
+		string header_label(hed.label);
+		// Note: this block was making things crash because it assumed the following if statement
+		// was true - I added the if statement (d.woolford)
+		if (header_label.size() > 2) {
+			string sctf = "O" + header_label.substr(2);
+			ctf_->from_string(sctf);
+		}
 	}
-
+	
 	EXITFUNC;
 	return ctf_;
 }
