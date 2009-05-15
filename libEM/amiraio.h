@@ -65,9 +65,12 @@ namespace EMAN
 
 		bool is_big_endian;
 		bool initialized;
+		EMUtil::EMDataType dt;
 		int nx;
 		int ny;
 		int nz;
+		float pixel;		// A/pixel (or voxel)
+		float xorigin, yorigin, zorigin;	// the origin coordinates in Angstrom for the first pixel (0,0,0).
 
 		static const char *MAGIC;
 	};
