@@ -392,7 +392,9 @@ def get_cull_threshold(class_cache,weights,options,itfrac):
 		# and there were 10 particles, then they would all be kept. If floor were
 		# used instead of ceil, the last particle would be thrown away (in the
 		# class average)
-		idx = int(math.ceil(((1.0-itfrac)+itfrac*options.keep)*len(b)))
+		idx = int(math.ceil(((1.0-itfrac)+itfrac*options.keep)*(len(b)-1)))
+		if idx >= len(b):
+			raise RuntimeError("Cull thresh idx was too large, something is wrong with the formula")
 		cullthresh = b[idx]
 	
 	return cullthresh
