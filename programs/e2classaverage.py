@@ -179,6 +179,16 @@ def main():
 	class_max = int(classes.get_attr("maximum"))
 	class_min = int(classes.get_attr("minimum"))
 	
+		# double check that the argument reference image makes sense
+	if (options.ref):
+		if not os.path.exists(options.ref) and not db_check_dict(options.ref):
+			parser.error("File %s does not exist" %options.ref)
+			
+		num_ref= EMUtil.get_image_count(options.ref)
+		if ( class_max > num_ref ):
+			print "Error, the classification matrix refers to a class number (%d) that is beyond the number of images (%d) in the reference image (%s)." %(class_max,num_ref,options.ref)
+			exit(1)
+	
 	# double check that the number of particles in the particle image matches the rows in the classification matrix (image)
 	num_part_check =  EMUtil.get_image_count(args[0])
 	if ( num_part != num_part_check ):
@@ -730,15 +740,7 @@ def check(options, verbose=False):
 				if (verbose):
 					print "Error - the dimensions of the reference and particle images do not match"
 
-		# double check that the argument reference image makes sense
-		if (options.ref):
-			if not os.path.exists(options.ref) and not db_check_dict(options.ref):
-				parser.error("File %s does not exist" %options.ref)
-				
-			num_ref= EMUtil.get_image_count(options.ref)
-			if ( class_max > num_ref ):
-				print "Error, the classification matrix refers to a class number (%d) that is beyond the number of images (%d) in the reference image (%s)." %(class_max,num_ref,options.ref)
-				exit(1)
+
 			
 	if (options.iter > 1 or options.bootstrap) and options.align == None:
 		print "Error: you must specify the align argument"
