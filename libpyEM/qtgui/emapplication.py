@@ -137,9 +137,7 @@ class EMGUIModule(EventsEmitterAndReciever,QtCore.QObject):
 	def get_qt_context_parent(self): return self.qt_context_parent
 	
 	def set_parent(self,parent): self.parent = parent
-	def get_parent(self): 
-		print "got asked for parent"
-		return self.parent()
+	def get_parent(self): return self.parent()
 	
 	def set_gl_parent(self,parent): self.gl_parent = parent
 	def get_gl_parent(self): return self.gl_parent

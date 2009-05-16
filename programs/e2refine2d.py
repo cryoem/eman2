@@ -137,10 +137,10 @@ def main():
 	
 	total_procs = options.iter*7 + 5 # one for every run command
 	proc_tally = 0.0
+	
 	if options.dbls:
-		pdb = db_open_dict("bdb:project")
-		orig_class_aves = pdb.get("global.spr_ref_free_class_aves", dfl=[])	
-			
+		most_recent_classes = None
+	
 	# if we aren't given starting class-averages, make some
 	if not options.initial and not "classes_init" in dcts:
 		print "Building initial averages"
@@ -180,8 +180,9 @@ def main():
 		
 		if options.dbls:
 			pdb = db_open_dict("bdb:project")
-			tmp_list = list(orig_class_aves)
-			tmp_list.append("%s#classes_init" %options.path)
+			tmp_list = pdb.get("global.spr_ref_free_class_aves", dfl=[])	
+			most_recent_classes = "%s#classes_init" %options.path
+			tmp_list.append(most_recent_classes)
 			# global.spr_ref_free_class_aves
 			pdb[options.dbls] = tmp_list
 		
@@ -240,8 +241,11 @@ def main():
 		
 		if options.dbls:
 			pdb = db_open_dict("bdb:project")
-			tmp_list = list(orig_class_aves)
-			tmp_list.append("%s#classes_%02d" %(options.path,it))
+			tmp_list = pdb.get("global.spr_ref_free_class_aves", dfl=[])
+			if most_recent_classes != None:
+				tmp_list.remove(most_recent_classes)
+			most_recent_classes = "%s#classes_%02d" %(options.path,it)
+			tmp_list.append(most_recent_classes)
 			# global.spr_ref_free_class_aves
 			pdb[options.dbls] = tmp_list
 		
