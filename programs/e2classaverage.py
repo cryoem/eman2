@@ -40,6 +40,65 @@ import sys
 
 READ_HEADER_ONLY = True
 
+#def run_par(args,options):
+#	# classes contains the classifications - row is particle number, column data contains class numbers (could be greater than 1)
+#	classes = EMData()
+#	classes.read_image(args[1], 0)
+#	class_max = int(classes.get_attr("maximum"))
+#	class_min = int(classes.get_attr("minimum"))
+#	
+#	# weights contains the weighting of the classification scheme stored in the EMData object "classes" - above
+#	# dx contains the x translation of the alignment
+#	# dy contains the y translation of the alignment
+#	# da contains is the azimuthal rotation of the alignment
+#	# dflip contains is the mirror alignment
+#	# row is particle number, column data contains weights - rows should add to 1, but this is not checked.
+#	weights, dx, dy, da, dflip = EMData(),EMData(),EMData(),EMData(),EMData()
+#	if options.bootstrap:
+#		weights.set_size(classes.get_xsize(),classes.get_ysize())
+#		weights.to_zero()
+#		dx.set_size(classes.get_xsize(),classes.get_ysize())
+#		dx.to_zero()
+#		dy.set_size(classes.get_xsize(),classes.get_ysize())
+#		dy.to_zero()
+#		da.set_size(classes.get_xsize(),classes.get_ysize())
+#		da.to_zero()
+#		dflip.set_size(classes.get_xsize(),classes.get_ysize())
+#		dflip.to_zero()
+#	else:
+#		if EMUtil.get_image_count(args[1]) != 6:
+#			print "error, the classification matrix is the wrong size, it needs to contain one image for the classes, weights, dx, dy, da, and dflip. You can bypass this requirement if you supply the bootstrap argument"
+#			sys.exit(1)	
+#		else:
+#			weights.read_image(args[1], 1)
+#			dx.read_image(args[1],2)
+#			dy.read_image(args[1],3)
+#			da.read_image(args[1],4)
+#			dflip.read_image(args[1],5)
+#	
+#	# empty space for storing x-flipping flags (0s or 1s, if a 1 is stored it will be used at the necessary point to flip prior to adding to the average)
+#	# sometimes this will not be used at all (it depends on whether or not the aligners that the user has specified do flipping and set flip flags)
+#	# dflip = EMData(da.get_xsize(),da.get_ysize())
+#	# dflip.to_zero()
+#	
+#	options.norm = parsemodopt(options.normproc)
+#	
+#	if (options.iter > 0 or options.bootstrap):
+#		set_aligner_params_in_options(options)
+#	
+#	if options.idxcache:
+#		try:
+#			name = "bdb:"+options.dbpath+"#class_indices"
+#			if options.even: name += "_even"
+#			elif options.odd: name += "_odd"
+#			db_name = numbered_bdb(name)
+#			class_db = db_open_dict(db_name)
+#		except:
+#			print "error with db terminology: can't call numbered_bdb with this argument:", "bdb:"+options.dbdir+"#class_indices"
+#			sys.exit(1)
+#	# do one class at a time
+#	for cl in xrange(class_min,class_max+1):
+
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog <input particles> <class mx> <output> [options]
@@ -74,7 +133,8 @@ def main():
 	parser.add_option("--dbpath", help="Use in conjunction with --idxcache to specify a directory where the database entries should be stored, e.g. \"refine_01\" ", default=".")
 	parser.add_option("--odd", default=False, help="Used by EMAN2 when running eotests. Includes only odd numbered particles in class averages.", action="store_true")
 	parser.add_option("--even", default=False, help="Used by EMAN2 when running eotests. Includes only even numbered particles in class averages.", action="store_true")
-	
+	parser.add_option("--parallel", default=None, help="parallelism argument")
+
 	
 	(options, args) = parser.parse_args()
 	
@@ -119,17 +179,6 @@ def main():
 	class_max = int(classes.get_attr("maximum"))
 	class_min = int(classes.get_attr("minimum"))
 	
-	# NOT SURE IF THiS IS ALREADY IN THE CHECK FUNCTION FIXME 
-	# double check that the argument reference image makes sense
-	if (options.ref):
-		if not os.path.exists(options.ref) and not db_check_dict(options.ref):
-			parser.error("File %s does not exist" %options.ref)
-			
-		num_ref= EMUtil.get_image_count(options.ref)
-		if ( class_max > num_ref ):
-			print "Error, the classification matrix refers to a class number (%d) that is beyond the number of images (%d) in the reference image (%s)." %(class_max,num_ref,options.ref)
-			exit(1)
-	
 	# double check that the number of particles in the particle image matches the rows in the classification matrix (image)
 	num_part_check =  EMUtil.get_image_count(args[0])
 	if ( num_part != num_part_check ):
@@ -168,8 +217,8 @@ def main():
 	
 	# empty space for storing x-flipping flags (0s or 1s, if a 1 is stored it will be used at the necessary point to flip prior to adding to the average)
 	# sometimes this will not be used at all (it depends on whether or not the aligners that the user has specified do flipping and set flip flags)
-#	dflip = EMData(da.get_xsize(),da.get_ysize())
-#	dflip.to_zero()
+	# dflip = EMData(da.get_xsize(),da.get_ysize())
+	# dflip.to_zero()
 	
 	options.norm = parsemodopt(options.normproc)
 	
@@ -610,6 +659,7 @@ def align(this,to,options):
 		
 		#ta.set_attr("align.flip",flip)
 	return ta
+
 		
 def check(options, verbose=False):
 
@@ -680,6 +730,16 @@ def check(options, verbose=False):
 				if (verbose):
 					print "Error - the dimensions of the reference and particle images do not match"
 
+		# double check that the argument reference image makes sense
+		if (options.ref):
+			if not os.path.exists(options.ref) and not db_check_dict(options.ref):
+				parser.error("File %s does not exist" %options.ref)
+				
+			num_ref= EMUtil.get_image_count(options.ref)
+			if ( class_max > num_ref ):
+				print "Error, the classification matrix refers to a class number (%d) that is beyond the number of images (%d) in the reference image (%s)." %(class_max,num_ref,options.ref)
+				exit(1)
+			
 	if (options.iter > 1 or options.bootstrap) and options.align == None:
 		print "Error: you must specify the align argument"
 		error = True

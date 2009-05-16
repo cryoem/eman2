@@ -1764,45 +1764,7 @@ class E2BoxerTask(ParticleWorkFlowTask):
 						boxes = d[key]
 						if boxes != None: nbox += len(boxes)
 		return str(nbox)
-#	
-#	def get_num_particles_project(file_name):
-#		'''
-#		Get the particles in the project that are associated with a specific file name
-#		This is useful for the e2boxer forms, which are used to take raw data files and
-#		produce boxed output - i.e. if the user wants to know if they've already
-#		written boxed output for a given raw file
-#		@param file_name a file name, should be a file that's in global.spr_raw_file_names - this is not checked though
-#		Note that the only thing that defines the relationship is whether or not the particle's 
-#		'''
-#		
-#		project_db = db_open_dict("bdb:project")	
-#		particle_names = project_db.get("global.spr_ptcls",dfl=[])
-#		for name in particle_names:
-#			a = EMData()
-#			a.read_image(name,0,True) # header only
-#			d = a.get_attr_dict()
-#			if d.has_key("ptcl_source_image"):
-#				if a["ptcl_source_image"] == file_name:
-#					return str(EMUtil.get_image_count(name))
-#				
-#		return "0"
-#	
-#	def get_particle_dims_project(file_name):
-#		'''
-#		'''
-#		project_db = db_open_dict("bdb:project")	
-#		particle_names = project_db.get("global.spr_ptcls",dfl=[])
-#		
-#		for name in particle_names:
-#			a = EMData()
-#			a.read_image(name,0,True) # header only
-#			d = a.get_attr_dict()
-#			if d.has_key("ptcl_source_image"):
-#				if a["ptcl_source_image"] == file_name:
-#					nx,ny,nz = gimme_image_dimensions3D(name)
-#					return "%ix%ix%i" %(nx,ny,nz)
-#		return ""
-#
+
 	get_boxes_in_database = staticmethod(get_boxes_in_database)
 #	get_num_particles_project = staticmethod(get_num_particles_project)
 #	get_particle_dims_project = staticmethod(get_particle_dims_project)
@@ -3125,7 +3087,7 @@ class E2Refine2DReportTask(ParticleWorkFlowTask):
 		self.emit(QtCore.SIGNAL("task_idle"))
 
 
-class EMClassificationTask(ParticleWorkFlowTask):
+class EMClassificationTools(ParticleWorkFlowTask):
 	'''
 	Encapsulation of common functionality.
 	Specifically - e2classaverage and e2simmx pages - both of which are used by e2refine and e2refine2d
@@ -3309,13 +3271,13 @@ class EMClassificationTask(ParticleWorkFlowTask):
 		
 		return error_message
 
-class E2Refine2DTask(EMClassificationTask):
+class E2Refine2DTask(EMClassificationTools):
 	'''
 	Common e2refine2D functionality
 	'''
 	documentation_string = "This form is a way for the user to supply arguments to and execute e2refine2d.py"
 	def __init__(self):
-		EMClassificationTask.__init__(self)
+		EMClassificationTools.__init__(self)
 		self.window_title = "Run e2refine2d"
 		self.form_db_name = "bdb:emform.e2refine2d"
 		self.workflow_setting = True # you can turn this off if you don't want results stored workflow list of reference free class averages
@@ -4020,6 +3982,7 @@ class E2InitialModel(ParticleWorkFlowTask):
 #		self.form = None
 #	 			
 
+
 class RefinementReportTask(ParticleWorkFlowTask):
 	documentation_string = "This form displays the models produced at the end of each refinement."
 	warning_string = "\n\n\nNOTE: There are no results available."
@@ -4136,9 +4099,92 @@ class RefinementReportTask(ParticleWorkFlowTask):
 		else:
 			return None,0
 			
-
+class E2Make3DTools:
+	'''
+	e2eotest and e2refine tasks both need the functionality embodied here
+	'''
+	def __init__(self):pass
 	
-class E2RefineParticlesTask(EMClassificationTask):
+	def add_make3d_args(self,options,string_args,bool_args,additional_args):
+		
+		string_args.extend(["m3diter","m3dkeep","recon"])
+		bool_args.append("m3dkeepsig")
+		if hasattr(options,"m3dpreprocess"): string_args.append("m3dpreprocess")
+		if hasattr(options,"pad"): string_args.append("pad")
+
+	def check_make3d_page(self,params,options):
+		error_message = []
+		
+		if params["m3diter"] < 0:
+			error_message.append("The number of make3d iterations must be atleast 0")
+		
+		if params["m3dkeepsig"] == False:
+			if params["m3dkeep"] < 0 or params["m3dkeep"] > 1:
+				error_message.append("The keep parameter in the Make3D page must be between 0 and 1. This does not hold if the \'Sigma based\' option is selected.")
+		
+		if len(error_message) > 0 : return error_message # calling program should discontinue
+		
+		
+		
+		if len(params["pad"]) > 0:
+			try: int(params["pad"])
+			except: error_message.append("The value you entered for padding is nonsensical")
+			pad = int(params["pad"])
+			if params["filenames"] > 0:
+#				try:
+					if self.end_tag != "generic":
+						nx,ny = gimme_image_dimensions2D("bdb:particles#"+params["filenames"][0])
+					else:
+						nx,ny = gimme_image_dimensions2D(params["filenames"][0])
+					if nx >= pad or ny >= pad:
+						error_message.append("You must specify a value for padding that is larger than the image dimensions - the image dimensions are %i x %i and your pad value is %i" %(nx,ny,pad))				
+					else:
+						options.pad = int(params["pad"])
+#				except:
+#					error_message.append("Can't get the dimensions of the first image???")
+			else:
+				pass # the user not entering filenames is an error, so after they've correct that we'll with the issues here
+		
+		options.m3diter = params["m3diter"]
+		options.m3dkeep = params["m3dkeep"]
+		options.m3dkeepsig = params["m3dkeepsig"]
+		
+		options.recon = params["recon"]
+		
+		if params["m3dpreprocess"] != "None":
+			options.m3dpreprocess = params["m3dpreprocess"]
+
+			
+		return error_message
+
+	def get_make3d_page(self):
+		
+		db = db_open_dict(self.form_db_name)
+		pkeep = ParamDef(name="m3dkeep",vartype="float",desc_short="keep",desc_long="The fraction of particles to keep in each class average. If sigma based is checked this value is interpreted in standard deviations from the mean instead",property=None,defaultunits=db.get("m3dkeep",dfl=0.8),choices=[])
+		pkeepsig = ParamDef(name="m3dkeepsig",vartype="boolean",desc_short="Sigma based",desc_long="If checked the keep value is interpreted in standard deviations from the mean instead of basic ratio",property=None,defaultunits=db.get("m3dkeepsig",dfl=True),choices=[])
+		
+		piter = ParamDef(name="m3diter",vartype="int",desc_short="Reconstruction iterations",desc_long="The number of times the reconstruction algorithm is iterated",property=None,defaultunits=db.get("m3diter",dfl=3),choices=[])
+	
+		pnormproc =  ParamDef("m3dpreprocess",vartype="string",desc_short="Normalization processor",desc_long="The normalization method applied to the class averages",property=None,defaultunits=db.get("m3dpreprocess",dfl="normalize.edgemean"),choices=["normalize","normalize.edgemean","None"])
+		
+		precon = ParamDef("recon",vartype="string",desc_short="Reconstruction technique",desc_long="The method used to perform 3D reconstruction",property=None,defaultunits=db.get("recon",dfl="fourier"),choices=["fourier","back_projection"])
+		ppad = ParamDef("pad",vartype="string",desc_short="Pad to",desc_long="The amount to which you want to pad the 3D volume when Fourier inversion is being used. At least 25% is recommended", defaultunits=db.get("pad",dfl=""),choices=[])
+		params = []
+		
+		#db_close_dict(self.form_db_name)
+		
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2RefineParticlesTask.make3d_documentation,choices=None))
+
+		
+		params.append([precon,piter])
+		params.append([pnormproc,ppad])
+		params.append([pkeep,pkeepsig])
+		
+		return ["Make3d", params]
+		
+		
+	
+class E2RefineParticlesTask(EMClassificationTools, E2Make3DTools):
 	'''
 	This task will harness the parameters for, and launch, e2refine.py
 	'''
@@ -4157,7 +4203,8 @@ class E2RefineParticlesTask(EMClassificationTask):
 		self.ptcls = ptcls_list
 		self.usefilt_ptcls = usefilt_ptcls_list
 		self.imf = None # will eventually become an E2IntialModelsTool
-	 	EMClassificationTask.__init__(self)
+	 	EMClassificationTools.__init__(self)
+	 	E2Make3DTools.__init__(self)
 	 	
 	 	self.window_title = "e2refine parameters"
 	 	self.form_db_name = "bdb:emform.e2refine"
@@ -4648,84 +4695,9 @@ class E2RefineParticlesTask(EMClassificationTask):
 		
 		return error_message
 	
-	def add_make3d_args(self,options,string_args,bool_args,additional_args):
-		
-		string_args.extend(["m3diter","m3dkeep","recon"])
-		bool_args.append("m3dkeepsig")
-		if hasattr(options,"m3dpreprocess"): string_args.append("m3dpreprocess")
-		if hasattr(options,"pad"): string_args.append("pad")
-
-	def check_make3d_page(self,params,options):
-		error_message = []
-		
-		if params["m3diter"] < 0:
-			error_message.append("The number of make3d iterations must be atleast 0")
-		
-		if params["m3dkeepsig"] == False:
-			if params["m3dkeep"] < 0 or params["m3dkeep"] > 1:
-				error_message.append("The keep parameter in the Make3D page must be between 0 and 1. This does not hold if the \'Sigma based\' option is selected.")
-		
-		if len(error_message) > 0 : return error_message # calling program should discontinue
-		
-		
-		
-		if len(params["pad"]) > 0:
-			try: int(params["pad"])
-			except: error_message.append("The value you entered for padding is nonsensical")
-			pad = int(params["pad"])
-			if params["filenames"] > 0:
-#				try:
-					if self.end_tag != "generic":
-						nx,ny = gimme_image_dimensions2D("bdb:particles#"+params["filenames"][0])
-					else:
-						nx,ny = gimme_image_dimensions2D(params["filenames"][0])
-					if nx >= pad or ny >= pad:
-						error_message.append("You must specify a value for padding that is larger than the image dimensions - the image dimensions are %i x %i and your pad value is %i" %(nx,ny,pad))				
-					else:
-						options.pad = int(params["pad"])
-#				except:
-#					error_message.append("Can't get the dimensions of the first image???")
-			else:
-				pass # the user not entering filenames is an error, so after they've correct that we'll with the issues here
-		
-		options.m3diter = params["m3diter"]
-		options.m3dkeep = params["m3dkeep"]
-		options.m3dkeepsig = params["m3dkeepsig"]
-		
-		options.recon = params["recon"]
-		
-		if params["m3dpreprocess"] != "None":
-			options.m3dpreprocess = params["m3dpreprocess"]
-
-			
-		return error_message
-
-	def get_make3d_page(self):
-		
-		db = db_open_dict(self.form_db_name)
-		pkeep = ParamDef(name="m3dkeep",vartype="float",desc_short="keep",desc_long="The fraction of particles to keep in each class average. If sigma based is checked this value is interpreted in standard deviations from the mean instead",property=None,defaultunits=db.get("m3dkeep",dfl=0.8),choices=[])
-		pkeepsig = ParamDef(name="m3dkeepsig",vartype="boolean",desc_short="Sigma based",desc_long="If checked the keep value is interpreted in standard deviations from the mean instead of basic ratio",property=None,defaultunits=db.get("m3dkeepsig",dfl=True),choices=[])
-		
-		piter = ParamDef(name="m3diter",vartype="int",desc_short="Reconstruction iterations",desc_long="The number of times the reconstruction algorithm is iterated",property=None,defaultunits=db.get("m3diter",dfl=3),choices=[])
 	
-		pnormproc =  ParamDef("m3dpreprocess",vartype="string",desc_short="Normalization processor",desc_long="The normalization method applied to the class averages",property=None,defaultunits=db.get("m3dpreprocess",dfl="normalize.edgemean"),choices=["normalize","normalize.edgemean","None"])
-		
-		precon = ParamDef("recon",vartype="string",desc_short="Reconstruction technique",desc_long="The method used to perform 3D reconstruction",property=None,defaultunits=db.get("recon",dfl="fourier"),choices=["fourier","back_projection"])
-		ppad = ParamDef("pad",vartype="string",desc_short="Pad to",desc_long="The amount to which you want to pad the 3D volume when Fourier inversion is being used. At least 25% is recommended", defaultunits=db.get("pad",dfl=""),choices=[])
-		params = []
-		
-		#db_close_dict(self.form_db_name)
-		
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2RefineParticlesTask.make3d_documentation,choices=None))
 
-		
-		params.append([precon,piter])
-		params.append([pnormproc,ppad])
-		params.append([pkeep,pkeepsig])
-		
-		return ["Make3d", params]
-
-#class E2RefineParticlesTask(EMClassificationTask):
+#class E2RefineParticlesTask(EMClassificationTools):
 #	'''
 #	This task will harness the parameters for, and launch, e2refine.py
 #	'''
@@ -4743,7 +4715,7 @@ class E2RefineParticlesTask(EMClassificationTask):
 #		'''
 #		self.ptcls = ptcls_list
 #		self.usefilt_ptcls = usefilt_ptcls_list
-#	 	EMClassificationTask.__init__(self)
+#	 	EMClassificationTools.__init__(self)
 #	 	
 #	 	self.window_title = "e2refine parameters"
 #	 	self.form_db_name = "bdb:emform.e2refine"
@@ -5218,7 +5190,7 @@ def get_convergence_results_list(keys):
 	
 	return solns
 
-class E2EotestTask(E2RefineParticlesTask):
+class E2EotestTask(EMClassificationTools,E2Make3DTools):
 	'''
 	Run e2eotest from the workflow setting
 	Inherits from E2RefineParticlesTask because it uses some forms that are/almost identical
@@ -5228,7 +5200,8 @@ class E2EotestTask(E2RefineParticlesTask):
 	documentation_string = "This form is used to run e2eotest."
 	warning_string = "\n\n\nThere are no refinement results available to use as the basis of running e2eotest"
 	def __init__(self):
-	 	E2RefineParticlesTask.__init__(self)
+	 	EMClassificationTools.__init__(self)
+	 	E2Make3DTools.__init__(self)
 	 	self.window_title = "e2eotest parameters"
 	 	self.form_db_name = "bdb:emform.e2eotest"
 	 	self.dir_and_iter = {} # will eventually be useful information about directories that will work for e2eotest
@@ -5242,7 +5215,18 @@ class E2EotestTask(E2RefineParticlesTask):
 #		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
 #		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_close"),self.on_form_close)
 #		QtCore.QObject.connect(self.form,QtCore.SIGNAL("display_file"),self.on_display_file)
+	
+	def run_form(self):
+		self.form = EMTableFormModule(self.get_params(),get_application())
+		self.form.qt_widget.resize(*self.preferred_size)
+		self.form.setWindowTitle(self.window_title)
+		get_application().show_specific(self.form)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_close"),self.on_form_close)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("display_file"),self.on_display_file)
 		
+	
 	def get_params(self):
 	 	params = []
 		
@@ -5405,8 +5389,7 @@ class E2EotestTask(E2RefineParticlesTask):
 #	
 class E2ResolutionTask(WorkFlowTask):
 	'''
-	Run e2eotest from the workflow setting
-	Inherits from E2RefineParticlesTask because it uses some forms that are/almost identical
+
 	'''
 	 
 	general_documentation = "These are parameters required to run an e2resolution.py."

@@ -143,7 +143,9 @@ Communications are handled by subclasses."""
 				ret.append(cache[i]*-1)
 				
 			return {"inverted":ret}
-			
+		
+		elif task.command == "e2classaverage":
+			pass			
 
 def image_range(a,b=None):
 	"""This is an iterator which handles the (#), (min,max), (1,2,3,...) image number convention for passed data"""
