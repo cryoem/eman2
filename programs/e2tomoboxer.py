@@ -674,7 +674,7 @@ class EMBoxDisplayShapes:
 		return shapes
 	gen_shapes = staticmethod(gen_shapes)
 	
-class EMTomoBoxerModule:
+class EMTomoBoxerModule(QtCore.QObject):
 	'''
 	This module is essentially a Mediator (see Design Patterns) - it coordinates the activities of several EMAN2 modules
 	that would otherwise not necessary interact. For tomographic boxing we need a main display (for
@@ -686,6 +686,7 @@ class EMTomoBoxerModule:
 		@file_name the name of a file on disk
 		@exception RuntimeError raised if the file does not exist
 		'''
+		QtCore.QObject.__init__(self)
 		if not file_exists(file_name): raise RuntimeError("The file (%s) does not exist" %file_name)
 		self.file_name = file_name
 		self.box_size = 64

@@ -179,7 +179,8 @@ namespace EMAN
 
 	};
 
-	/** A class object encapsulating the volume data required by Reconstructors
+	/** This is a Mixin class 
+	 *  A class object encapsulating the volume data required by Reconstructors
 	 *  It basically stores two (pointers) to EMData objectsd stores the dimensions of the image volume.
 	 *  One EMData object basically stores the real pixel data, the other is used for storing normalization values.
 	 *  This class was originally added simply to encapsulate the
@@ -192,29 +193,52 @@ namespace EMAN
 	class ReconstructorVolumeData
 	{
 		public:
+			/** Only constructor
+			 * All member variables are zeroed
+			 */
 			inline ReconstructorVolumeData() : image(0), tmp_data(0), nx(0), ny(0), nz(0) {}
+			
+			/** Destructor safely frees memory
+			 */
 			virtual ~ReconstructorVolumeData() { free_memory(); }
 
+			/** Get the main image pointer, probably redundant (not used)
+			 */
 			const EMData* const get_emdata() { return image; }
 		protected:
+			//These EMData pointers will most probably be allocated in setup() and released in finish()
+			/// Inheriting class allocates this, probably in setup().
 			EMData* image;
-		//tmp_data is the substitute of misused parent in reconstruction
-		//the memory will be allocated in setup() and released in finish()
+			/// Inheriting class may allocate this, probably in setup()
 			EMData* tmp_data;
 
+			// nx,ny,nz generally will store the dimensions of image
 			int nx;
 			int ny;
 			int nz;
 
 		protected:
+			/** Free allocated memorys 
+			 * The inherited class may have allocated image of tmp_data
+			 * In either case you can safely call this function to delete
+			 * either of those pointers, even if they are NULL
+			 */
 			void free_memory()
 			{
 				if (image != 0)  {delete image; image = 0;}
 				if ( tmp_data != 0 ) { delete tmp_data; tmp_data = 0; }
 			}
 
+			/** Normalize on the assumption that image is a Fourier volume
+			 * and that tmp_data is a volume of weights corresponding in size
+			 * to this Fourier volume. This means tmp_data is assumed to 
+			 * have have as many x pixels as image.
+			 */
 			virtual void normalize_threed();
 
+			/** Sends the pixels in tmp_data and image to zero
+			 * Convenience only
+			 */
 			virtual void zero_memory()
 			{
 				if (tmp_data != 0 ) tmp_data->to_zero();
@@ -222,13 +246,18 @@ namespace EMAN
 			}
 
 		private:
-		// Disallow copy construction
-			ReconstructorVolumeData(const ReconstructorVolumeData& that);
-		// Disallow  assignment
-			ReconstructorVolumeData& operator=(const ReconstructorVolumeData& );
+		/** Disallow copy construction */
+		ReconstructorVolumeData(const ReconstructorVolumeData& that);
+		/** Disallow  assignment */
+		ReconstructorVolumeData& operator=(const ReconstructorVolumeData& );
 
 	};
 
+	/** This class originally added for 2D experimentation and prototying.
+	 * It is basically a replica of the FourierReconstructor, but works in 2D
+	 * @author David Woolford and Phil Baldwin
+	 * @date early 2008
+	 */
 	class FourierReconstructorSimple2D : public Reconstructor, public ReconstructorVolumeData
 	{
 		public:
@@ -395,7 +424,7 @@ namespace EMAN
 			return "Reconstruction via direct Fourier methods using a combination of nearest neighbour and Gaussian kernels";
 		}
 
-		/** Factory themed method allocating a new FourierReconstructor
+		/** Factory incorporation uses the pointer of this function
 		* @return a Reconstructor pointer to a newly allocated FourierReconstructor
 		*/
 		static Reconstructor *NEW()
@@ -452,13 +481,7 @@ namespace EMAN
 	  	 * @exception InvalidValueException when the specified padding value is less than the size of the images
 		 */
 		EMData* preprocess_slice( const EMData* const slice, const Transform& t = Transform() );
-		/** Disallow copy construction
-		 */
-		FourierReconstructor( const FourierReconstructor& that );
-		/**Disallow assignment
-		 */
-		FourierReconstructor& operator=( const FourierReconstructor& );
-
+		
 		/** Load default settings
 		*/
 		void load_default_settings()
@@ -483,11 +506,6 @@ namespace EMAN
 		/** Load the pixel inserter based on the information in params
 		 */
 		void load_inserter();
-
-//#ifdef _WIN32
-//		FourierPixelInserter3D* get_inserter(const string& mode, const Dict& params);
-//#endif
-
 
 		/** Load the pixel inserter based on the information in params
 		 */
@@ -527,8 +545,21 @@ namespace EMAN
 
 		/// Keeps track of the eventual size of the output real space volume
 		int output_x, output_y, output_z;
+	  private:
+		 /** Disallow copy construction
+  		 */
+  		FourierReconstructor( const FourierReconstructor& that );
+  		/**Disallow assignment
+  		 */
+  		FourierReconstructor& operator=( const FourierReconstructor& );
+
 	};
 
+	/** A more mathematically rigorou Fourier reconstructor
+	 * That did not seem to outperform the FourierReconstructor
+	 * @author David Woolford (programming) and Phil Baldwin (mathematics)
+	 * @date early 2008  
+	 */
 	class BaldwinWoolfordReconstructor : public FourierReconstructor
 	{
 		public:
@@ -619,6 +650,12 @@ namespace EMAN
 		}
 
 		private:
+		/** Disallow copy construction
+  		 */
+		BaldwinWoolfordReconstructor( const BaldwinWoolfordReconstructor& that );
+  		/**Disallow assignment
+  		 */
+		BaldwinWoolfordReconstructor& operator=( const BaldwinWoolfordReconstructor& );
 
 		float* W;
 		float dfreq;

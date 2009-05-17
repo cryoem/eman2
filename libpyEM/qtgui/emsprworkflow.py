@@ -30,7 +30,7 @@
 #
 #
 
-from emform import EMFormModule,EMParamTable,EMTableFormModule,EMRawDataParamTable
+from emform import EMFormModule,EMParamTable,EMTableFormModule
 from emdatastorage import ParamDef
 from PyQt4 import QtGui,QtCore
 from PyQt4.QtCore import Qt
@@ -1038,8 +1038,6 @@ class MicrographCCDImportTask(WorkFlowTask):
 	def on_import_cancel(self):
 		print "canceled"
 		
-
-
 class ParticleWorkFlowTask(WorkFlowTask):
 	'''
 	Encapsulates some functionality  common to the particle based work flow tasks
@@ -1047,246 +1045,8 @@ class ParticleWorkFlowTask(WorkFlowTask):
 	'''
 	def __init__(self):
 		WorkFlowTask.__init__(self)
-	
-	
-#	def get_particle_db_names_versatile(self,end_string="_ptcls",strip_end=False):
-#		'''
-#		
-#		'''
-#		if os.path.exists("particles/EMAN2DB"):
-#			dbs = db_list_dicts("bdb:particles#")
-#			ptcl_dbs = []
-#			for db in dbs:
-#				# why did I use strip?
-#				#db_strip = get_file_tag(db)
-#				#print db,db_strip
-#				# I think it can be removed (d.woolford)
-#				db_strip = db
-#				if len(db_strip) > len(end_string)-1:
-#					if db_strip[-len(end_string):] == end_string:
-#						if strip_end:
-#							ptcl_dbs.append(db_strip[:-len(end_string)])
-#						else:
-#							ptcl_dbs.append(db_strip)
-#			return ptcl_dbs
-#		else: return []
-#	
-#	def get_particle_db_names(self,strip_ptcls=True):
-#		'''
-#		returns a list of particle databases in the project
-#		for instance if these dbs files exist in the particle bdb directory:
-#		image_001_ptcls.bdb
-#		image_1000_a_ptcls.bdb
-#		image_001_ctf.bdbs
-#		then this function will return [ image_001, image_1000_a]
-#		Note the if strip_ptcls is False then the return list would instead be [ image_001_ptcls, image_1000_a_ptcls]
-#		If there are no such dbs then an empty list is returned
-#		'''
-#		return self.get_particle_db_names_versatile(end_string="_ptcls",strip_end=strip_ptcls)
-#
-#	def get_particle_and_project_names(self):
-#		'''
-#		
-#		'''
-#		ptcl_dbs = self.get_particle_db_names()
-#		
-#		project_db = db_open_dict("bdb:project")
-#		project_files = project_db.get("global.spr_raw_file_names",dfl=[])
-#		for name in project_files:
-#			stripped = get_file_tag(name)
-#			if stripped not in ptcl_dbs:
-#				ptcl_dbs.append(stripped)
-#		#db_close_dict("bdb:project")
-#		return ptcl_dbs
-#	
-#	def get_num_particles(self,project_files_names):
-#		ptcl_dbs = self.get_particle_db_names()
-#		vals = []
-#		for name in project_files_names:
-#			name_strip = get_file_tag(name)
-#			if name_strip in ptcl_dbs:
-#				db_name = "bdb:particles#"+name_strip+"_ptcls"
-#				if db_check_dict(db_name):
-#					db = db_open_dict(db_name,ro=True)
-#					if db.has_key("maxrec") and db["maxrec"] != None:
-#						vals.append(db["maxrec"]+1)
-#						#db_close_dict(db_name)
-#					else: vals.append("")
-#					#db_close_dict(db_name)
-#				else:
-#					vals.append("")
-#			else:
-#				vals.append("")
-#		return vals
-#	
-#	def get_particle_dims(self,project_names):
-#		if not os.path.exists("particles/EMAN2DB"):
-#			vals = [ "" for i in range(len(project_names))]
-#			return vals
-#		else:
-#			vals = []
-#			for name in project_names:
-#				name_strip = get_file_tag(name)
-#				db_name = "bdb:particles#"+name_strip+"_ptcls"
-#				if db_check_dict(db_name):
-#					try:
-#						db = db_open_dict(db_name,ro=True)
-#						hdr = db.get_header(0)
-#						vals.append(str(hdr["nx"])+'x'+str(hdr["ny"])+'x'+str(hdr["nz"]))
-#						#db_close_dict(db_name)
-#					except:vals.append("")
-#				else: vals.append("")
-#			return vals
-#		
-#	def get_particle_dims_direct(self,file_names):
-#		'''
-#		Iterates through the given names opening the bdb:particles#name
-#		and returning the dimensions as string e.g. 128x128x1, in a list
-#		You can use this function if the file_names are exactly those that exist in the particles BDB
-#		otherwise use get_particle_dims
-#		'''
-#		vals = []
-#		for name in file_names:
-#			db_name = "bdb:particles#"+name
-#			if db_check_dict(db_name):
-#				db = db_open_dict(db_name,ro=True)
-#				hdr = db.get_header(0)
-#				vals.append(str(hdr["nx"])+'x'+str(hdr["ny"])+'x'+str(hdr["nz"]))
-#				#db_close_dict(db_name)
-#			else: vals.append("No data")
-#		return vals
-#
-#	def get_num_particles_direct(self,file_names):
-#		'''
-#		Iterates through the given names opening the bdb:particles#name
-#		and returning the number of particles in each db, in a list. If for some reason the dictionary doesn't exist will
-#		return a -1 in the list instead
-#		You can use this function if the file_names are exactly those that exist in the particles BDB
-#		otherwise use get_num_particles
-#		'''
-#		vals = []
-#		for name in file_names:
-#			db_name = "bdb:particles#"+name
-#			if db_check_dict(db_name):
-#				db = db_open_dict(db_name,ro=True)
-#				vals.append(db["maxrec"]+1)
-#				#db_close_dict(db_name)
-#			else:
-#				vals.append(-1)
-#		return vals
-#	
-#	def get_available_initial_models(self):
-#			
-#		db = "bdb:initial_models#"
-#		names = []
-#		for d in db_list_dicts("bdb:initial_models#"):
-#			if len(d) != 0 and db_check_dict(db+d):
-#				model_db = db_open_dict(db+d,ro=True)
-#				if model_db.has_key("maxrec"):
-#					hdr = model_db.get_header(0)
-#					if hdr["nx"] == hdr["ny"] and hdr["nx"] == hdr["nz"]:
-#						names.append(d)
-#				#db_close_dict(db+d)
-#							
-#		return names
-#
-#	def get_project_particle_param_table(self):
-#		'''
-#		Use the names in the global.spr_raw_file_names to build a table showing the corresponding and  current number of boxed particles in the particles directory, and also lists their dimensions
-#		Puts the information in a EMParamTable.
-#		'''
-##		project_db = db_open_dict("bdb:project")	
-##		project_names = project_db.get("global.spr_raw_file_names",dfl=[])
-##		
-##		ptable,n = self.__make_particle_param_table(project_names)
-##		setattr(ptable,"convert_text", ptable_convert_2)
-##		context_menu_dict = {"Save as":image_db_save_as}
-##		#context_menu_dict["Delete"] = image_db_delete
-##		setattr(ptable,"context_menu", context_menu_dict)
-##		setattr(ptable,"icon_type","single_image")
-#		task = EMRawDataReportTask(get_application())
-#		ptable, n = task.get_raw_data_table()
-#		return ptable,n
-		
-#	def get_particle_param_table(self):
-#		'''
-#		Inspects the particle databases in the particles directory, gathering their names, number of particles and dimenions. Puts the information in a EMParamTable.
-#		'''
-#		project_names = self.get_particle_db_names(strip_ptcls=True)
-#		ptable,n = self.__make_particle_param_table(project_names)
-#		setattr(ptable,"convert_text", ptable_convert)
-#		context_menu_dict = {"Save as":image_db_save_as}
-#		#context_menu_dict["Delete"] = image_db_delete
-#		setattr(ptable,"context_menu", context_menu_dict)
-#		setattr(ptable,"icon_type","matrix_image")
-#		return ptable,n
-#	def __make_particle_param_table(self,project_names):
-#		'''
-#		Functionality used in two places (directly above)
-#		'''
-#		
-#		num_boxes = self.get_num_particles(project_names)
-#		dimensions = self.get_particle_dims(project_names)
-#		
-#		pnames = ParamDef(name="global.spr_raw_file_names",vartype="stringlist",desc_short="File Names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=None,choices=project_names)
-#		pboxes = ParamDef(name="Num boxes",vartype="intlist",desc_short="Particles on disk",desc_long="The number of box images stored for this image in the database",property=None,defaultunits=None,choices=num_boxes)
-#		pdims = ParamDef(name="Dimensions",vartype="stringlist",desc_short="Particle dims",desc_long="The dimensions of the particle images",property=None,defaultunits=None,choices=dimensions)
-#		
-#		p = EMParamTable(name="filenames",desc_short="Choose a subset of these images",desc_long="")
-#		p.append(pnames)
-#		p.append(pboxes)
-#		p.append(pdims)
-#		
-#		return p, len(num_boxes)
-#	
-#	def get_total_particles_project_exclusive(self,tag="_ptcls"):
-#		'''
-#		A way to get the total number of particles that have a certain 
-#		'''
-#		project_db = db_open_dict("bdb:project")	
-#		project_names = project_db.get("global.spr_raw_file_names",dfl=[])
-#		stripped_project_names = [get_file_tag(name) for name in project_names ]
-#		particle_names = self.get_particle_db_names_versatile(tag,strip_end=True)
-#		
-#		good_names = []
-#		for name in particle_names:
-#			if name in stripped_project_names:
-#				good_names.append(name+tag)
-#		
-#		n = 0
-#		for name in good_names:
-#			db_name = "bdb:particles#"+name
-#			if db_check_dict(db_name):
-#				pt_db = db_open_dict(db_name,ro=True)
-#				if pt_db.has_key("maxrec"):
-#					val = pt_db["maxrec"]
-#					if val != None:
-#						n += val+1 # maxrec is always one less than the actual number stored
-#						
-#		return n
-#	
-#	def get_total_particles(self,tag="_ptcls"):
-#		'''
-#		A way to get the total number of particles that have a certain ending
-#		tag = "_ptcls"
-#		tag = "_ptcls_ctf_wiener"
-#		tag = "_ptcls_ctf_phase" ALL WORK
-#		'''
-#		particle_names = self.get_particle_db_names_versatile(tag,strip_end=False)
-#		
-#		n = 0
-#		for name in particle_names:
-#			db_name = "bdb:particles#"+name
-#			if db_check_dict(db_name):
-#				pt_db = db_open_dict(db_name,ro=True)
-#				if pt_db.has_key("maxrec"):
-#					val = pt_db["maxrec"]
-#					if val != None:
-#						n += val+1 # maxrec is always one less than the actual number stored
-#						
-#		return n
 
-	def get_particle_selection_table_new(self,ptcl_list):
+	def get_particle_selection_table(self,ptcl_list):
 		'''
 		
 		'''
@@ -1308,11 +1068,11 @@ class ParticleWorkFlowTask(WorkFlowTask):
 			table.add_context_menu_data(context_menu_data)
 			table.add_button_data(ParticleWorkFlowTask.AddDataButton(table,context_menu_data))
 		#table.insert_column_data(1,EMFileTable.EMColumnData("Particles On Disk",ParticleReportTask.get_num_ptcls,"Particles currently stored on disk that are associated with this image"))
-		#table.insert_column_data(2,EMFileTable.EMColumnData("Particles Dims",ParticleReportTask.get_particle_dims,"The dimensions of the particles that are stored on disk"))
+		#table.insert_column_data(2,EMFileTable.EMColumnData("Particle Dims",ParticleReportTask.get_particle_dims,"The dimensions of the particles that are stored on disk"))
 	
 				
 		table.add_column_data(EMFileTable.EMColumnData("Particles On Disk",ParticleReportTask.get_num_ptcls,"Particles currently stored on disk that are associated with this image"))
-		table.add_column_data(EMFileTable.EMColumnData("Particles Dims",ParticleReportTask.get_particle_dims,"The dimensions of the particles that are stored on disk"))
+		table.add_column_data(EMFileTable.EMColumnData("Particle Dims",ParticleReportTask.get_particle_dims,"The dimensions of the particles that are stored on disk"))
 
 		return table, len(ptcl_list)
 
@@ -1442,78 +1202,6 @@ class ParticleWorkFlowTask(WorkFlowTask):
 					return
 				
 				table_widget.add_entries(files)
-	
-#	def get_particle_selection_table(self,tag="_ptcls"):
-#		'''
-#		tag = "_ptcls"
-#		tag = "_ptcls_ctf_wiener"
-#		tag = "_ptcls_ctf_phase" ALL WORK
-#		'''
-#		
-#		
-#		particle_names = self.get_particle_db_names_versatile(tag,strip_end=False)
-#		n = []
-#		dims = []
-#		snr = []
-#		defocus = []
-#		for name in particle_names:
-#			db_name = "bdb:particles#"+name
-#			act = True
-#			act_d = True
-#			if db_check_dict(db_name):
-#				pt_db = db_open_dict(db_name,ro=True)
-#				if pt_db.has_key("maxrec"):
-#					val = pt_db["maxrec"]
-#					if val != None:
-#						n.append(val)
-#						hdr = pt_db.get_header(0)
-#						dims.append(str(hdr["nx"])+'x'+str(hdr["ny"])+'x'+str(hdr["nz"]))
-#						act = False
-#					if hdr.has_key("ctf"):
-#						ctf = hdr["ctf"]
-#						if ctf != None:
-#							s = 0.0
-#							try:
-#								s = sum(ctf.snr)/len(ctf.snr)
-#							except: pass
-#							
-#							snr.append("%.3f" %s )
-#							defocus.append("%.3f" %ctf.defocus)
-#							act_d = False
-#			if act:
-#				n.append("")
-#				dims.append("")
-#
-#			if act_d:
-#				snr.append("")
-#				defocus.append("")
-#		
-#		p = EMParamTable(name="filenames",desc_short="Choose a subset of these images",desc_long="")
-#		
-#		
-#		default_selections = self.get_default_filenames_from_form_db()
-#		
-#		pnames = ParamDef(name="names",vartype="stringlist",desc_short="File Names",desc_long="The particles that will be used",property=None,defaultunits=default_selections,choices=particle_names)
-#		pboxes = ParamDef(name="Num boxes",vartype="intlist",desc_short="Particles on disk",desc_long="The number of box images stored for this image in the database",property=None,defaultunits=None,choices=n)
-#		pdims = ParamDef(name="Dimensions",vartype="stringlist",desc_short="Particle dims",desc_long="The dimensions of the particle images",property=None,defaultunits=None,choices=dims)
-#		psnr = ParamDef(name="SNR",vartype="stringlist",desc_short="SNR",desc_long="The average SNR of the particle images",property=None,defaultunits=None,choices=snr)
-#		pdefocus = ParamDef(name="Defocus",vartype="stringlist",desc_short="Defocus",desc_long="The defocus of the particle images",property=None,defaultunits=None,choices=defocus)
-#		
-#	
-#		
-#		p.append(pnames)
-#		p.append(pboxes)
-#		p.append(psnr)
-#		p.append(pdefocus)
-#		p.append(pdims)
-#		
-#		setattr(p,"convert_text", ptable_convert_3)
-#		context_menu_dict = {"Save as":image_db_save_as}
-#		#context_menu_dict["Delete"] = image_db_delete
-#		setattr(p,"context_menu", context_menu_dict)
-#		setattr(p,"icon_type","matrix_image")
-#		
-#		return p,len(pnames)
 	
 	def get_initial_models_table_new(self):
 		list_name = "global.spr_init_models"
@@ -1669,7 +1357,39 @@ def ptable_convert_3(text):
 
 def ptable_convert_4(text):
 	return "bdb:initial_models#"+text
+
+class TomoParticleReportTask(WorkFlowTask):
+	documentation_string = "This form display the boxed tomographic particles that you currently have associated with the project"
+	def __init__(self):
+		WorkFlowTask.__init__(self)
+
+	def get_project_particle_table(self):
+		project_db = db_open_dict("bdb:project")
+		particle_list_name = "global.tpr_ptcls"
+		particle_names = project_db.get(particle_list_name,dfl=[])
+		self.project_files_at_init = particle_names # so if the user hits cancel this can be reset
+
+		from emform import EM3DFileTable,EMFileTable
+		table = EM3DFileTable(particle_names,desc_short="Boxed Tomographic Particles",desc_long="")
+		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(particle_list_name)
+		table.add_context_menu_data(context_menu_data)
+		table.add_button_data(EMRawDataReportTask.ProjectAddRawDataButton(table,context_menu_data))
+	#	table.insert_column_data(1,EMFileTable.EMColumnData("Particles On Disk",ParticleReportTask.get_num_ptcls,"Particles currently stored on disk that are associated with this image"))
+		table.insert_column_data(2,EMFileTable.EMColumnData("Particle Dims",ParticleReportTask.get_particle_dims,"The dimensions of the particles that are stored on disk"))
 		
+		return table
+	
+	def get_params(self):
+		params = []
+		
+	
+		table = self.get_project_particle_table()
+		
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=TomoParticleReportTask.documentation_string,choices=None))
+		params.append(table)  
+		
+		return params
+
 class ParticleReportTask(ParticleWorkFlowTask):
 	'''
 	
@@ -1695,7 +1415,7 @@ class ParticleReportTask(ParticleWorkFlowTask):
 		table.add_context_menu_data(context_menu_data)
 		table.add_button_data(EMRawDataReportTask.ProjectAddRawDataButton(table,context_menu_data))
 		table.insert_column_data(1,EMFileTable.EMColumnData("Particles On Disk",ParticleReportTask.get_num_ptcls,"Particles currently stored on disk that are associated with this image"))
-		table.insert_column_data(2,EMFileTable.EMColumnData("Particles Dims",ParticleReportTask.get_particle_dims,"The dimensions of the particles that are stored on disk"))
+		table.insert_column_data(2,EMFileTable.EMColumnData("Particle Dims",ParticleReportTask.get_particle_dims,"The dimensions of the particles that are stored on disk"))
 		
 		return table
 	
@@ -1861,7 +1581,7 @@ class E2BoxerTask(ParticleWorkFlowTask):
 		table.insert_column_data(0,EMFileTable.EMColumnData("Stored Boxes",E2BoxerTask.get_boxes_in_database,"Boxes currently stored in the EMAN2 database"))
 		self.columns_object = E2BoxerTask.ParticleColumns()
 		table.insert_column_data(1,EMFileTable.EMColumnData("Particles On Disk",self.columns_object.get_num_particles_project,"Particles currently stored on disk that are associated with this image"))
-		table.insert_column_data(2,EMFileTable.EMColumnData("Particles Dims",self.columns_object.get_particle_dims_project,"The dimensions of the particles that are stored on disk"))
+		table.insert_column_data(2,EMFileTable.EMColumnData("Particle Dims",self.columns_object.get_particle_dims_project,"The dimensions of the particles that are stored on disk"))
 		#self.tmp = E2BoxerTask.Tmp()
 		return table, n
 		
@@ -2032,6 +1752,88 @@ class E2BoxerAutoTaskGeneral(E2BoxerAutoTask):
 			params.append(ParamDef(name="filenames",vartype="url",desc_short="File Names",desc_long="The names of the particle files you want to interactively box using e2boxer",property=None,defaultunits=[],choices=[]))
 		
 		return params
+	
+class E2TomoBoxerGuiTask(WorkFlowTask):
+	documentation_string = "Select the file you want to process and hit okay, this will launch e2tomoboxer"
+	
+	def __init__(self):
+		WorkFlowTask.__init__(self)
+		self.tomo_boxer_module = None
+	
+	def get_tomo_boxer_basic_table(self):
+		'''
+		
+		Returns a table like this:
+		
+		|| Project image name || Boxes in e2boxer db ||
+		
+		Returns the table, and the the number of entries (p,n)
+		if n is zero there are no entries in the table and the calling function can act appropriately
+		'''
+		
+		self.report_task = EMTomoRawDataReportTask()
+		table,n = self.report_task.get_raw_data_table()# now p is a EMParamTable with rows for as many files as there in the project
+		from emform import EMFileTable
+		table.insert_column_data(0,EMFileTable.EMColumnData("Stored Boxes",E2TomoBoxerGuiTask.get_tomo_boxes_in_database,"Boxes currently stored in the EMAN2 database"))
+		
+		return table, n
+
+	def get_tomo_boxes_in_database(name):
+		return ""
+	
+	get_tomo_boxes_in_database = staticmethod(get_tomo_boxes_in_database)
+	
+	def get_params(self):
+		params = []
+		
+		p,n = self.get_tomo_boxer_basic_table() # note n is unused, it's a refactoring residual		
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="Interactive use of e2boxer",desc_long="",property=None,defaultunits=E2TomoBoxerGuiTask.documentation_string,choices=None))
+		params.append(p)
+#		db = db_open_dict(self.form_db_name)
+#		params.append(ParamDef(name="interface_boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=db.get("interface_boxsize",dfl=128),choices=[]))
+#		#db_close_dict(self.form_db_name)
+		return params
+	
+	def on_form_ok(self,params):
+		
+		if not params.has_key("filenames"):
+			EMErrorMessageDisplay.run(["Please select files for processing"])
+			return
+		
+		if  params.has_key("filenames") and len(params["filenames"]) == 0:
+			EMErrorMessageDisplay.run(["Please select files for processing"])
+			return
+
+#		if  params.has_key("interface_boxsize") and params["interface_boxsize"] < 1:
+#			self.show_error_message(["Must specify a positive, non zero boxsize."])
+#			return
+#		else:
+		self.write_db_entries(params)
+#		options = EmptyObject()
+#		for key in params.keys():
+#			setattr(options,key,params[key])
+#		options.boxsize = params["interface_boxsize"]
+#		options.running_mode = "gui"
+#		options.method = "Swarm"
+		
+		from e2tomoboxer import EMTomoBoxerModule
+		
+		print params["filenames"][0], "is thei file name"
+		self.tomo_boxer_module = EMTomoBoxerModule(params["filenames"][0])
+		self.emit(QtCore.SIGNAL("gui_running"),"Boxer",self.tomo_boxer_module) # The controlled program should intercept this signal and keep the E2BoxerTask instance in memory, else signals emitted internally in boxer won't work
+		
+		QtCore.QObject.connect(self.tomo_boxer_module, QtCore.SIGNAL("module_idle"), self.on_boxer_idle)
+		QtCore.QObject.connect(self.tomo_boxer_module, QtCore.SIGNAL("module_closed"), self.on_boxer_closed)
+		self.form.closeEvent(None)
+		print 'saying show guies'
+		self.tomo_boxer_module.show_guis()
+		self.form = None
+			
+	def write_db_entires(self,params):
+		pass
+
+	def on_boxer_idle(self):pass
+	def on_boxer_closed(self):pass
 
 class E2BoxerGuiTask(E2BoxerTask):	
 	documentation_string = "Select the images you want to box, enter your boxsize, and hit OK. This will lauch e2boxer and automatically load the selected images for boxing."
@@ -2046,15 +1848,11 @@ class E2BoxerGuiTask(E2BoxerTask):
 	def get_params(self):
 		params = []
 		
-		p,n = self.get_boxer_basic_table()
-		
-		if n == 0 and False:
-			params.append(ParamDef(name="blurb",vartype="text",desc_short="Interactive use of e2boxer",desc_long="",property=None,defaultunits=E2BoxerGuiTask.documentation_string+E2BoxerGuiTask.warning_string,choices=None))
-		else:
-			params.append(ParamDef(name="blurb",vartype="text",desc_short="Interactive use of e2boxer",desc_long="",property=None,defaultunits=E2BoxerGuiTask.documentation_string,choices=None))
-			params.append(p)
-			db = db_open_dict(self.form_db_name)
-			params.append(ParamDef(name="interface_boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=db.get("interface_boxsize",dfl=128),choices=[]))
+		p,n = self.get_boxer_basic_table() # note n is unused, it's a refactoring residual		
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="Interactive use of e2boxer",desc_long="",property=None,defaultunits=E2BoxerGuiTask.documentation_string,choices=None))
+		params.append(p)
+		db = db_open_dict(self.form_db_name)
+		params.append(ParamDef(name="interface_boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=db.get("interface_boxsize",dfl=128),choices=[]))
 			#db_close_dict(self.form_db_name)
 		return params
 			
@@ -3552,7 +3350,7 @@ class E2RefFreeClassAveTool():
 		table.add_context_menu_data(context_menu_data)
 		table.add_button_data(EMRawDataReportTask.ProjectAddRawDataButton(table,context_menu_data))
 		table.insert_column_data(1,EMFileTable.EMColumnData("Particles On Disk",ParticleReportTask.get_num_ptcls,"Particles currently stored on disk that are associated with this image"))
-		table.insert_column_data(2,EMFileTable.EMColumnData("Particles Dims",ParticleReportTask.get_particle_dims,"The dimensions of the particles that are stored on disk"))
+		table.insert_column_data(2,EMFileTable.EMColumnData("Particle Dims",ParticleReportTask.get_particle_dims,"The dimensions of the particles that are stored on disk"))
 		
 		return table, len(names)
 	
@@ -3603,7 +3401,7 @@ class E2Refine2DRunTask(E2Refine2DTask):
 #			p = ParamDef(name="filenames",vartype="url",desc_short="Input file name(s)",desc_long="The names of the particle files you want to use as in the input data for e2refine2d.py",property=None,defaultunits=[],choices=[])
 #			n = 1 # just to fool the next bit, that's all
 #			
-	   	p,n = self.get_particle_selection_table_new(self.particles)
+	   	p,n = self.get_particle_selection_table(self.particles)
 #		if n == 0:
 #			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2Refine2DRunTask.documentation_string+E2Refine2DRunTask.warning_string,choices=None))
 #		else:
@@ -4317,9 +4115,9 @@ class E2RefineParticlesTask(EMClassificationTools, E2Make3DTools):
 
 		
 		if self.ptcls == None:
-			p,n = self.get_particle_selection_table_new([])
+			p,n = self.get_particle_selection_table([])
 		else:
-			p,n = self.get_particle_selection_table_new(self.ptcls)
+			p,n = self.get_particle_selection_table(self.ptcls)
 			if self.usefilt_ptcls != None and len(self.usefilt_ptcls) > 0:
 				from emform import EMFileTable
 				self.column_data = E2RefineParticlesTask.UsefiltColumn(self.ptcls,self.usefilt_ptcls)
@@ -4695,195 +4493,6 @@ class E2RefineParticlesTask(EMClassificationTools, E2Make3DTools):
 		
 		return error_message
 	
-	
-
-#class E2RefineParticlesTask(EMClassificationTools):
-#	'''
-#	This task will harness the parameters for, and launch, e2refine.py
-#	'''
-#	 
-#	general_documentation = "These are the general parameters for 3D refinement in EMAN2. Please select which particles you wish to use as part of this process, specify your starting model, and fill in other parameters such as symmetry and whether or not the usefilt option should be used."
-#	project3d_documentation = "These  parameters are used by e2project3d. Several orientation generation techniques provide alternative methods for distributing orientations in the asymmetric unit. Orientations can be generated based on your desired angular spacing, or alternatively on the desired total number of projections. In the latter case EMAN2 will generate a number as close as possible to the specified number, but note that there is no guarantee of a perfect match. You can also vary the method by which projections are generated. If you check the \'include mirror\' option you should be sure to use aligners to that do not perform mirror alignment."
-#	simmx_documentation = "These  parameters are used by e2simmx, a program that compares each particle to each projection and records quality scores. To do this the particles must first be aligned to the projections using the aligners you specify. Once aligned the \'Main comparator\' is used to record the quality score. These quality values are recorded to an image matrix on handed on to the next stage in the refinement process.\n\nThe shrink parameter causes all projections and particles to be shrunken by the given amount prior to comparison. This can provide a significant time boost, though at the expense of resolution. Note however that the class averaging stage, which  can involve iterative alignment, does not use shrunken data."
-#	class_documentation = "Most of these parameters are for e2classaverage with the exception of the \"Class separation\" parameter which is the solely used by e2classify. Classification is first performed using this latter program and the output from e2simmx. This is followed by the class averaging stage. The critical argument for the class averaging procedure is the number of iterations. In early stages of refinement this should be relatively large and it should gradually be reduced as your model converges to the answer."
-#	make3d_documentation = "Iterative Fourier inversion is the preferred method of 3D reconstruction in EMAN2."
-#
-#	def __init__(self,ptcls_list,usefilt_ptcls_list):
-#		'''
-#		@param ptcls_list the list of particle files that will form the primary input to e2refine
-#		@param usefilt_ptcls_list the list of usefilt particles corresponding in length to the ptcls_list, or None
-#		'''
-#		self.ptcls = ptcls_list
-#		self.usefilt_ptcls = usefilt_ptcls_list
-#	 	EMClassificationTools.__init__(self)
-#	 	
-#	 	self.window_title = "e2refine parameters"
-#	 	self.form_db_name = "bdb:emform.e2refine"
-#		 	
-#	
-#	
-#		
-#	def get_main_params(self):
-#		'''
-#		General/broad refine params
-#		'''
-#		params = []
-##		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits="Choose the particles you wish to refine",choices=None))
-#
-#		
-#		if self.ptcls == None:
-#			p,n = self.get_particle_selection_table_new([])
-#		else:
-#			p,n = self.get_particle_selection_table_new(self.ptcls)
-#			if self.usefilt_ptcls != None and len(self.usefilt_ptcls) > 0:
-#				from emform import EMFileTable
-#				self.column_data = E2NewRefineParticlesTask.UsefiltColumn(self.ptcls,self.usefilt_ptcls)
-#				p.add_column_data(EMFileTable.EMColumnData("Usefilt data",self.column_data.get_usefilt_name,"The usefilt data"))
-#				
-##			p = ParamDef(name="filenames",vartype="url",desc_short="Input file name(s)",desc_long="The names of the particle files you want to use as in the input data for e2refine2d.py",property=None,defaultunits=[],choices=[])
-##			n = 1
-#		
-#		# I could check to see if the database exists but it seems unnecessary
-#		# In the event that the database doesn't exist it is created and 
-#		# a new entry is created on disk. The only inconvenient aspect of this comes
-#		# if the user hits cancel - then there is a file on disk even though
-#		# the user never agreed to anything
-#		db = db_open_dict(self.form_db_name) # see eman wiki for a list of what args are kept in this db
-#		project_db = db_open_dict("bdb:project")
-#		
-#		params.append(p)
-#		
-#	   	pmass = ParamDef(name="global.particle_mass",vartype="float",desc_short="Particle mass (kda)",desc_long="The mass of the particle in kilodaltons. Leave blank if unknown",property=None,defaultunits=project_db.get("global.particle_mass",dfl=800),choices=None)
-#		papix = ParamDef(name="global.apix",vartype="float",desc_short="Angtsrom per pixel",desc_long="The physical distance represented by the pixel spacing",property=None,defaultunits=project_db.get("global.apix",dfl=1.1),choices=None)
-#		
-#		params.append([papix,pmass])
-#		
-#		piter = ParamDef(name="iter",vartype="int",desc_short="Refinement iterations",desc_long="The number of times 3D refinement should be iterated",property=None,defaultunits=db.get("iter",dfl=3),choices=[])
-#		plowmem = ParamDef(name="lowmem",vartype="boolean",desc_short="Low mem",desc_long="Causes various programs to restrict memory usage but results in increased CPU time.",property=None,defaultunits=db.get("lowmem",dfl=False),choices=None)
-#
-#	   	params.append([piter,plowmem])
-#	
-#		return ["Particles",params]
-#		 
-#	def get_main_params_2(self):
-#		
-#		params = []
-##		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits="",choices=None))
-#
-#		# I could check to see if the database exists but it seems unnecessary
-#		# In the event that the database doesn't exist it is created and 
-#		# a new entry is created on disk. The only inconvenient aspect of this comes
-#		# if the user hits cancel - then there is a file on disk even though
-#		# the user never agreed to anything
-#		db = db_open_dict(self.form_db_name) # see eman wiki for a list of what args are kept in this db
-#		project_db = db_open_dict("bdb:project")
-#		
-#		
-#		p1,n1 = self.get_initial_models_table(key="model", title="Select an initial model")
-#		p1.enable_multiple_selection = False
-#		params.append(p1)
-#		
-#			
-#		syms = ["icos","oct","tet","d","c","h"]
-#		
-#		psym =  ParamDef(name="symname",vartype="string",desc_short="Symmetry",desc_long="Symmetry to be imposed during refinement",property=None,defaultunits=db.get("symname",dfl="c"),choices=syms)
-#		psymnum = ParamDef(name="symnumber",vartype="string",desc_short="Symmetry number",desc_long="In C,D and H symmetry, this is the symmetry number",property=None,defaultunits=db.get("symnumber",dfl="1"),choices=None)
-#
-#		params.append([psym,psymnum])
-#		
-#		pautomask = ParamDef(name="automask3d",vartype="boolean",desc_short="Auto mask 3D",desc_long="Causes automasking of the 3D volume to occur at the end of each iteration",property=None,defaultunits=db.get("automask3d",dfl=False),choices=None)
-#		
-#		params.append(pautomask)
-#		
-#		pamthreshold =  ParamDef(name="amthreshold",vartype="float",desc_short="Threshold",desc_long="An isosurface threshold that well defines your structure.",property=None,defaultunits=db.get("amthreshold",dfl=1.1),choices=None)
-#		pamradius =  ParamDef(name="amradius",vartype="int",desc_short="Radius",desc_long="The radius of a sphere at the the origin which contains seeding points for the flood file operation using the given threshold",property=None,defaultunits=db.get("amradius",dfl=30),choices=None)
-#		pamnshells =  ParamDef(name="amnshells",vartype="int",desc_short="Mask dilations",desc_long="The number of dilations to apply to the mask after the flood fill operation has finished. Suggest 5% of the boxsize",property=None,defaultunits=db.get("amnshells",dfl=5),choices=None)
-#		pamngaussshells =  ParamDef(name="amnshellsgauss",vartype="int",desc_short="Post Gaussian dilations",desc_long="The number of dilations to apply to the dilated mask, using a gaussian fall off. Suggest 5% of the boxsize",property=None,defaultunits=db.get("amnshellsgauss",dfl=5),choices=None)
-#		
-#		pautomask.dependents = ["amthreshold","amradius","amnshells","amnshellsgauss"] # these are things that become disabled when the pautomask checkbox is checked etc
-#		
-#		params.append([pamthreshold,pamradius])
-#		params.append([pamnshells,pamngaussshells])
-#
-#		#db_close_dict(self.form_db_name)
-#		#db_close_dict("bdb:project")
-#		
-#		return ["Model",params]
-#	
-#	def check_main_page(self,params,options):
-#		'''
-#		Called internally to check that the user has entered correct parameters in the main page
-#		returns a potentially empty list of error messages, if it is empty it means there are no errors
-#		Also sets argument attributes of the options object, killing two birds with one stone
-#		'''
-#		error_message = []
-#		#filenames
-#		if len(params["filenames"]) == 0:
-#			error_message.append("Please choose files to form the input data set.")
-#			
-#		if len(params["model"]) == 0:
-#			error_message.append("Please choose a starting model.")
-#			
-#		if self.end_tag != "generic":
-#			options.filenames = params["filenames"]
-#			#print options.filenames
-#		#usefilt
-#		
-#		if self.usefilt_ptcls != None and len(self.usefilt_ptcls) > 0:
-#			usefilt_names = [self.column_data.get_usefilt_name(name) for name in params["filenames"]]
-#			options.usefilt_names = usefilt_names
-#
-#		
-#		if params.has_key("global.particle_mass"): 
-#			if params["global.particle_mass"] <= 0:
-#				error_message.append("The particle mass must be greater than 0")
-#			else:
-#				options.mass = params["global.particle_mass"]
-#			
-#		if params.has_key("global.apix"):
-#			if params["global.apix"] <= 0:
-#				error_message.append("The angstrom per pixel must be greater than  0")
-#			else:
-#				options.apix = params["global.apix"]
-#				
-#		if params["automask3d"]:
-#			# the user wants to do automasking
-#			names = ["amthreshold","amradius","amnshells","amnshellsgauss"]
-#			arg = ""
-#			for i,name in enumerate(names):
-#				if not params.has_key(name):
-#					error_message.append("Missing automask parameter %s" %name[2:])
-#					continue
-#				elif i == 1:
-#					if params[name] <=0:
-#						error_message.append("The automask radius parameter must be greater than 0")
-#						continue
-#				elif i in [2,3]:
-#					if params[name] < 0:
-#						error_message.append("The automask dilation parameters must be atleast 0")
-#						continue
-#				# if we make it here than no error conditions were encountered, so we're safe to just append the argument
-#				if i != 0:
-#					arg +=","
-#				arg+= str(params[name])
-#		
-#			options.automask3d=arg
-#				
-#		#symmetry
-#		error_message.extend(self.check_sym(params,options))
-#		
-#		# iterations
-#		if params["iter"] < 1:
-#			error_message.append("The number of refinement iterations must be atleast 1.")
-#		else:
-#			options.iter = params["iter"]
-#			
-#		options.lowmem = params["lowmem"]
-#		options.model = params["model"] # can't get this one wrong
-#		
-#		return error_message
-
-
 class E2RefineChooseDataTask(ParticleWorkFlowTask):
 	documentation_string = "This form is for choosing e2refine input and usefilt data. After you hit ok a second form will appear asking for more parameters." 
 	def __init__(self):
@@ -5490,9 +5099,5 @@ if __name__ == '__main__':
 	em_app = EMStandAloneApplication()
 	sprinit = SPRInitTask(em_app)
 	window = sprinit.run_form() 
-	
-	
-	
-	
 	#em_app.show()
 	em_app.execute()	

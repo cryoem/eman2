@@ -281,7 +281,7 @@ class EMWorkFlowSelector(EMQtWidgetModule):
 	def __init__(self,application,task_monitor):
 		self.application = application
 		self.widget = EMWorkFlowSelectorWidget(self,application,task_monitor)
-		self.widget.resize(256,200)
+		#self.widget.resize(256,200)
 		EMQtWidgetModule.__init__(self,self.widget)
 
 
@@ -306,7 +306,8 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		task_monitor should probably be supplied, it should be an instance of a EMTaskMonitorWidget
 		'''
 		QtGui.QWidget.__init__(self,None)
-		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "desktop.png"))
+		self.__init_icons()
+		self.setWindowIcon(self.icons["desktop"])
 		self.setWindowTitle("EMAN2 tasks")
 		self.application = weakref.ref(application)
 		self.module = weakref.ref(module)
@@ -335,7 +336,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.tree_widget_entries.append(self.__get_generic_interfaces_tree(self.tree_widget))
 		
 		browser_entry = QtGui.QTreeWidgetItem(QtCore.QStringList("Browse"))
-		browser_entry.setIcon(0,QtGui.QIcon(get_image_directory() + "/display_icon.png"))
+		browser_entry.setIcon(0,self.icons["display_icon"])
 		self.tree_widget_entries.append(browser_entry)
 		self.launchers["Browse"] = self.launch_browser
 
@@ -351,7 +352,21 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		#QtCore.QObject.connect(self.tree_widget, QtCore.SIGNAL("itemDoubleClicked(QTreeWidgetItem*,int)"), self.tree_widget_double_click)
 		QtCore.QObject.connect(self.tree_widget, QtCore.SIGNAL("itemClicked(QTreeWidgetItem*,int)"), self.tree_widget_click)
 		#QtCore.QObject.connect(self.close, QtCore.SIGNAL("clicked()"), self.target.close)
-		
+
+	def __init_icons(self):
+		self.icons = {}
+		self.icons["single_image"] = QtGui.QIcon(get_image_directory() + "single_image.png")
+		self.icons["single_image_3d"] = QtGui.QIcon(get_image_directory() + "single_image_3d.png")
+		self.icons["eulerxplor"] = QtGui.QIcon(get_image_directory() + "eulerxplor.png")
+		self.icons["ctf"] = QtGui.QIcon(get_image_directory() + "ctf.png")
+		self.icons["green_boxes"] = QtGui.QIcon(get_image_directory() + "green_boxes.png")
+		self.icons["desktop"] = QtGui.QIcon(get_image_directory() + "desktop.png")
+		self.icons["eman"] = QtGui.QIcon(get_image_directory() + "eman.png")
+		self.icons["multiple_images"] = QtGui.QIcon(get_image_directory() + "multiple_images.png")
+		self.icons["refine"] = QtGui.QIcon(get_image_directory() + "refine.png")
+		self.icons["plot"] = QtGui.QIcon(get_image_directory() + "plot.png")
+		self.icons["display_icon"] = QtGui.QIcon(get_image_directory() + "display_icon.png")		
+		self.icons["feather"] = QtGui.QIcon(get_image_directory() + "feather.png")
 		
 	def __get_spr_tree(self,tree_widget):
 		
@@ -362,93 +377,105 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		spr_list = []
 		
 		rd = QtGui.QTreeWidgetItem(QtCore.QStringList("Raw files"))
+		rd.setIcon(0,self.icons["single_image"])
 		self.launchers["Raw files"] = self.launch_mic_ccd_report#EMRawDataReportTask
 		
 		rd_list = []
-		rd_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Import micrograph/ccd")))
-		rd_list[-1].setIcon(0,QtGui.QIcon(get_image_directory() + "single_image.png"))
-		self.launchers["Import micrograph/ccd"] = self.launch_import_mic_ccd
+		rd_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Import Micrograph/CCD")))
+		rd_list[-1].setIcon(0,self.icons["single_image"])
+		self.launchers["Import Micrograph/CCD"] = self.launch_import_mic_ccd
 		rd.addChildren(rd_list)
  
 		spr_list.append(rd)
 		
 		ap = QtGui.QTreeWidgetItem(QtCore.QStringList("Particles"))
+		ap.setIcon(0,self.icons["green_boxes"])
 		self.launchers["Particles"] = self.launch_particle_report
 		spr_list.append(ap)
 		ctf = QtGui.QTreeWidgetItem(QtCore.QStringList("CTF"))
+		ctf.setIcon(0,self.icons["ctf"])
 		self.launchers["CTF"] = self.launch_ctf_report
 		spr_list.append(ctf)
 		refine2d = QtGui.QTreeWidgetItem(QtCore.QStringList("Reference Free Class Averages"))
 		self.launchers["Reference Free Class Averages"] = self.launch_refine2d_report
+		refine2d.setIcon(0,self.icons["multiple_images"])
 		spr_list.append(refine2d)
 		init_model = QtGui.QTreeWidgetItem(QtCore.QStringList("Initial Model"))
+		init_model.setIcon(0,self.icons["single_image_3d"])
 		self.launchers["Initial Model"] = self.launch_initmodel_report
 		spr_list.append(init_model)
 		refinement = QtGui.QTreeWidgetItem(QtCore.QStringList("3D Refinement"))
+		refinement.setIcon(0,self.icons["refine"])
 		self.launchers["3D Refinement"] = self.launch_refinement_report
 		spr_list.append(refinement)
 		resolution = QtGui.QTreeWidgetItem(QtCore.QStringList("Resolution"))
+		resolution.setIcon(0,self.icons["plot"])
 		self.launchers["Resolution"] = self.launch_resolution_report
 		spr_list.append(resolution)
+		spr_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Eulers")))
+		spr_list[-1].setIcon(0,self.icons["eulerxplor"])
+		self.launchers["Eulers"] = self.launch_eulers
 		#spr_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Initial model")))
 		#spr_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Refinement")))
 		spr.addChildren(spr_list)
 		
 		
 		ctf_list = []
-		ctf_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Automated fitting - e2ctf")))
-		self.launchers["Automated fitting - e2ctf"] = self.launch_e2ctf_auto_ft
-		ctf_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Interactive tuning - e2ctf")))
-		self.launchers["Interactive tuning - e2ctf"] = self.launch_e2ctf_tune
-		ctf_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Generate output - e2ctf")))
-		self.launchers["Generate output - e2ctf"] =  self.launch_e2ctf_write_ouptut
-		ctf_list[0].setIcon(0,QtGui.QIcon(get_image_directory() + "ctf.png"))
-		ctf_list[1].setIcon(0,QtGui.QIcon(get_image_directory() + "ctf.png"))
-		ctf_list[2].setIcon(0,QtGui.QIcon(get_image_directory() + "ctf.png"))
+		ctf_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Automated Fitting - e2ctf")))
+		self.launchers["Automated Fitting - e2ctf"] = self.launch_e2ctf_auto_ft
+		ctf_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Interactive Tuning - e2ctf")))
+		self.launchers["Interactive Tuning - e2ctf"] = self.launch_e2ctf_tune
+		ctf_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Generate Output - e2ctf")))
+		self.launchers["Generate Output - e2ctf"] =  self.launch_e2ctf_write_ouptut
+		ctf_list[0].setIcon(0,self.icons["ctf"])
+		ctf_list[1].setIcon(0,self.icons["ctf"])
+		ctf_list[2].setIcon(0,self.icons["ctf"])
 		ctf.addChildren(ctf_list)
 		#self.launchers["e2ctf"] = self.launch_e2ctf_management
 		
 		
 		ap_list = []
-		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Interactive boxing - e2boxer")))
-		self.launchers["Interactive boxing - e2boxer"] = self.launch_e2boxer_gui
-		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Auto boxing - e2boxer")))
-		self.launchers["Auto boxing - e2boxer"] = self.launch_e2boxer_auto
-		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Generate output - e2boxer")))
-		self.launchers["Generate output - e2boxer"] = self.launch_e2boxer_output
+		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Interactive Boxing - e2boxer")))
+		self.launchers["Interactive Boxing - e2boxer"] = self.launch_e2boxer_gui
+		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Auto Boxing - e2boxer")))
+		self.launchers["Auto Boxing - e2boxer"] = self.launch_e2boxer_auto
+		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Generate Output - e2boxer")))
+		self.launchers["Generate Output - e2boxer"] = self.launch_e2boxer_output
 #		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Particle import")))
-		ap_list[0].setIcon(0,QtGui.QIcon(get_image_directory() + "green_boxes.png"))
-		ap_list[1].setIcon(0,QtGui.QIcon(get_image_directory() + "green_boxes.png"))
-		ap_list[2].setIcon(0,QtGui.QIcon(get_image_directory() + "green_boxes.png"))
+		ap_list[0].setIcon(0,self.icons["green_boxes"])
+		ap_list[1].setIcon(0,self.icons["green_boxes"])
+		ap_list[2].setIcon(0,self.icons["green_boxes"])
 		#self.launchers["Particle import"] = self.launch_particle_import
 		ap.addChildren(ap_list)
 		
 		
 		
 		refine2d_list = []
-		refine2d_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Generate classes - e2refine2d")))
-		self.launchers["Generate classes - e2refine2d"] = self.launch_refine2d_create_dataset
+		refine2d_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Generate Classes - e2refine2d")))
+		self.launchers["Generate Classes - e2refine2d"] = self.launch_refine2d_create_dataset
+		refine2d_list[-1].setIcon(0,self.icons["multiple_images"])
 		refine2d.addChildren(refine2d_list)
 		
 		init_model_list = []
-		init_model_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Make model- e2initialmodel")))
-		self.launchers["Make model- e2initialmodel"] = self.launch_e2makeinitial
+		init_model_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Make Model- e2initialmodel")))
+		init_model_list[-1].setIcon(0,self.icons["single_image_3d"])
+		self.launchers["Make Model- e2initialmodel"] = self.launch_e2makeinitial
 #		init_model_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Import model")))
 #		self.launchers["Import model"] = self.launch_import_initial_model
 		init_model.addChildren(init_model_list)
 		
 		refine_list = []
 		refine_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Run e2refine")))
-		refine_list[0].setIcon(0,QtGui.QIcon(get_image_directory() + "refine.png"))
+		refine_list[0].setIcon(0,self.icons["refine"])
 		self.launchers["Run e2refine"] = self.launch_e2refine
 		refinement.addChildren(refine_list)
 		
 		resolution_list = []
 		resolution_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Run e2eotest")))
-		resolution_list[-1].setIcon(0,QtGui.QIcon(get_image_directory() + "plot.png"))
+		resolution_list[-1].setIcon(0,self.icons["plot"])
 		self.launchers["Run e2eotest"] = self.launch_e2eotest
 		resolution_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Run e2resolution")))
-		resolution_list[-1].setIcon(0,QtGui.QIcon(get_image_directory() + "plot.png"))
+		resolution_list[-1].setIcon(0,self.icons["plot"])
 		self.launchers["Run e2resolution"] = self.launch_e2resolution
 		resolution.addChildren(resolution_list)
 		
@@ -468,27 +495,73 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		util = QtGui.QTreeWidgetItem(QtCore.QStringList("Utilities"))
 
 		util_list = []
-		util_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Eulers")))
-		util_list[-1].setIcon(0,QtGui.QIcon(get_image_directory() + "eulerxplor.png"))
-		self.launchers["Eulers"] = self.launch_asym_unit
+		util_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Eulers Tool")))
+		util_list[-1].setIcon(0,self.icons["eulerxplor"])
+		self.launchers["Eulers Tool"] = self.launch_asym_unit
 		history = QtGui.QTreeWidgetItem(QtCore.QStringList("History"))
-		history.setIcon(0,QtGui.QIcon(get_image_directory() + "feather.png"))
+		history.setIcon(0,self.icons["feather"])
 		util_list.append(history)
 		self.launchers["History"] = self.launch_view_history
 		self.directory = QtGui.QTreeWidgetItem(QtCore.QStringList("Working directory"))
-		self.directory.setIcon(0,QtGui.QIcon(get_image_directory() + "desktop.png"))
+		self.directory.setIcon(0,self.icons["desktop"])
 		self.directory.setToolTip(0,os.getcwd())
 		util_list.append(self.directory)
 		preferences = QtGui.QTreeWidgetItem(QtCore.QStringList("Preferences"))
+		preferences.setIcon(0,self.icons["desktop"])
 		util_list.append(preferences)
 		self.launchers["Preferences"] = self.launch_view_preferences
 		self.launchers["Working directory"] = self.launch_change_directory
-		lights = QtGui.QTreeWidgetItem(QtCore.QStringList("Lights"))
+		lights = QtGui.QTreeWidgetItem(QtCore.QStringList("3D Lights"))
+		lights.setIcon(0,self.icons["desktop"])
 		util_list.append(lights)
-		self.launchers["Lights"] = self.launch_lights_tool
+		self.launchers["3D Lights"] = self.launch_lights_tool
 		fonts = QtGui.QTreeWidgetItem(QtCore.QStringList("3D Fonts"))
+		fonts.setIcon(0,self.icons["desktop"])
 		util_list.append(fonts)
 		self.launchers["3D Fonts"] = self.launch_fonts_tool
+		plot3d = QtGui.QTreeWidgetItem(QtCore.QStringList("3D Plot"))
+		plot3d.setIcon(0,self.icons["plot"])
+		util_list.append(plot3d)
+		self.launchers["3D Plot"] = self.launch_3d_plot_tool
+		self.launchers["3D Volume Viewer"] = self.launch_3d_volume_viewer
+		desktop = QtGui.QTreeWidgetItem(QtCore.QStringList("3D Desktop"))
+		desktop.setIcon(0,self.icons["desktop"])
+		util_list.append(desktop)
+		self.launchers["3D Desktop"] = self.launch_desktop
+		iso3d = QtGui.QTreeWidgetItem(QtCore.QStringList("3D Isosurface Viewer"))
+		iso3d.setIcon(0,self.icons["single_image_3d"])
+		util_list.append(iso3d)
+		vol3d = QtGui.QTreeWidgetItem(QtCore.QStringList("3D Volume Viewer"))
+		vol3d.setIcon(0,self.icons["single_image_3d"])
+		util_list.append(vol3d)
+		self.launchers["3D Isosurface Viewer"] = self.launch_3d_iso_viewer
+		slice3d = QtGui.QTreeWidgetItem(QtCore.QStringList("3D Slice Viewer"))
+		slice3d.setIcon(0,self.icons["single_image_3d"])
+		util_list.append(slice3d)
+		self.launchers["3D Slice Viewer"] = self.launch_3d_slice_viewer
+		image3d = QtGui.QTreeWidgetItem(QtCore.QStringList("3D Image Viewer"))
+		image3d.setIcon(0,self.icons["single_image_3d"])
+		util_list.append(image3d)
+		self.launchers["3D Image Viewer"] = self.launch_3d_image_viewer
+		image2d = QtGui.QTreeWidgetItem(QtCore.QStringList("2D Image Viewer"))
+		image2d.setIcon(0,self.icons["single_image"])
+		util_list.append(image2d)
+		self.launchers["2D Image Viewer"] = self.launch_2d_image_viewer
+		stack2d = QtGui.QTreeWidgetItem(QtCore.QStringList("2D Stack Viewer"))
+		stack2d.setIcon(0,self.icons["multiple_images"])
+		util_list.append(stack2d)
+		self.launchers["2D Stack Viewer"] = self.launch_2d_stack_viewer
+		
+		flatform = QtGui.QTreeWidgetItem(QtCore.QStringList("Flat Form"))
+		flatform.setIcon(0,self.icons["eman"])
+		util_list.append(flatform)
+		self.launchers["Flat Form"] = self.launch_flat_form
+		
+		tabform = QtGui.QTreeWidgetItem(QtCore.QStringList("Tab Form"))
+		tabform.setIcon(0,self.icons["eman"])
+		util_list.append(tabform)
+		self.launchers["Tab Form"] = self.launch_table_form
+		
 		
 		util.addChildren(util_list)
 		return util
@@ -499,11 +572,11 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 
 		gi_list = []
 		gi_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Boxer")))
-		gi_list[-1].setIcon(0,QtGui.QIcon(get_image_directory() + "green_boxes.png"))
+		gi_list[-1].setIcon(0,self.icons["green_boxes"])
 		self.launchers["Boxer"] = self.launch_boxer_general
 		gi_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("CTF ")))
 		self.launchers["CTF "] = self.launch_ctf_general
-		gi_list[-1].setIcon(0,QtGui.QIcon(get_image_directory() + "ctf.png"))
+		gi_list[-1].setIcon(0,self.icons["ctf"])
 		gi_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Refine2D ")))
 		self.launchers["Refine2D "] = self.launch_refine2d_general
 
@@ -512,15 +585,34 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	
 	def __get_tomo_part_recon_tree(self,tree_widget):
 		
-		tomo = QtGui.QTreeWidgetItem(QtCore.QStringList("Tomographic particle reconstruction"))
-		self.launchers["Tomographic particle reconstruction"] = self.launch_tomography
+		tomo = QtGui.QTreeWidgetItem(QtCore.QStringList("Tomographic Particle Reconstruction"))
+
+		self.launchers["Tomographic Particle Reconstruction"] = self.launch_tomography
 		
 		tomo_list = []
+		
 		tomo_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Raw Tomogram Files")))
+		tomo_list[-1].setIcon(0,self.icons["single_image_3d"])
+		
+		self.launchers["Raw Tomogram Files"] = self.launch_tomo_raw_files
+		
+		ap = QtGui.QTreeWidgetItem(QtCore.QStringList("Tomogram Particles"))
+		ap.setIcon(0,self.icons["green_boxes"])
+		self.launchers["Tomogram Particles"] = self.launch_tomo_particle_report
+		tomo_list.append(ap)
+		
 		tomo_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Tomohunter")))
 		self.launchers["Tomohunter"] = self.launch_tomohunter
-		self.launchers["Raw Tomogram Files"] = self.launch_tomo_raw_files
+		
+		ap_list = []
+		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Interactive Boxing - e2tomoboxer")))
+		self.launchers["Interactive Boxing - e2tomoboxer"] = self.launch_e2tomoboxer_gui
+		ap_list[0].setIcon(0,self.icons["green_boxes"])
+		ap.addChildren(ap_list)
+		
 		tomo.addChildren(tomo_list)
+		
+		tree_widget.expandItem(ap)
 		
 		return tomo
 		
@@ -564,6 +656,14 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		
 	def launch_asym_unit(self):
 		get_application().setOverrideCursor(Qt.BusyCursor)
+		module = EMAsymmetricUnitViewer(get_application(),False)
+		self.module().emit(QtCore.SIGNAL("launching_module"),"Eulers Tool",module)
+		get_application().show_specific(module)
+		self.add_module([str(module),"Eulerxplor",module])
+		get_application().setOverrideCursor(Qt.ArrowCursor)
+		
+	def launch_eulers(self):
+		get_application().setOverrideCursor(Qt.BusyCursor)
 		module = EMAsymmetricUnitViewer(get_application())
 		self.module().emit(QtCore.SIGNAL("launching_module"),"Eulers",module)
 		get_application().show_specific(module)
@@ -586,6 +686,88 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.module().emit(QtCore.SIGNAL("launching_module"),"EMLights",module)
 		get_application().show_specific(module)
 		self.add_module([str(module),"EMLights",module])
+		get_application().setOverrideCursor(Qt.ArrowCursor)
+	
+	def launch_desktop(self):
+		os.system("e2desktop.py")
+	
+	def launch_3d_volume_viewer(self):
+		from emimage3dvol import EMVolumeModule
+		self.launch_3d_viewer(EMVolumeModule(application=em_app),"3D Volumer Viewer")
+	
+	def launch_3d_iso_viewer(self):
+		from emimage3diso import EMIsosurfaceModule
+		self.launch_3d_viewer(EMIsosurfaceModule(application=em_app),"3D Isosurface Viewer")
+		
+	def launch_3d_slice_viewer(self):
+		from emimage3dslice import EM3DSliceViewerModule
+		self.launch_3d_viewer(EM3DSliceViewerModule(application=em_app),"3D Slice Viewer")
+	
+	def launch_3d_image_viewer(self):
+		from emimage3d import EMImage3DModule
+		self.launch_3d_viewer(EMImage3DModule(application=em_app),"3D Image Viewer")
+
+	def launch_3d_viewer(self,module,name):
+		from emimage3dvol import EMVolumeModule
+		
+		get_application().setOverrideCursor(Qt.BusyCursor)
+		#module = EMVolumeModule(application=em_app)
+		module.set_data(test_image_3d(1,size=(64,64,64)))
+		self.module().emit(QtCore.SIGNAL("launching_module"),name,module)
+		get_application().show_specific(module)
+		self.add_module([str(module),name,module])
+		get_application().setOverrideCursor(Qt.ArrowCursor)
+
+	def launch_2d_image_viewer(self):
+		get_application().setOverrideCursor(Qt.BusyCursor)
+		from emimage2d import EMImage2DModule
+		module = EMImage2DModule(application=em_app)
+		module.set_data(test_image(Util.get_irand(0,10),size=(256,256)))
+		self.module().emit(QtCore.SIGNAL("launching_module"),"2D Image Viewer",module)
+		get_application().show_specific(module)
+		self.add_module([str(module),"2D Image Viewer",module])
+		get_application().setOverrideCursor(Qt.ArrowCursor)
+		module.optimally_resize()
+		
+	def launch_2d_stack_viewer(self):
+		get_application().setOverrideCursor(Qt.BusyCursor)
+		from emimagemx import EMImageMXModule
+		module = EMImageMXModule(application=em_app)
+		data = [test_image(Util.get_irand(0,9)) for i in range(64)]
+		module.set_data(data)
+		self.module().emit(QtCore.SIGNAL("launching_module"),"2D Stack Viewer",module)
+		get_application().show_specific(module)
+		self.add_module([str(module),"2D Stack Viewer",module])
+		get_application().setOverrideCursor(Qt.ArrowCursor)
+		module.optimally_resize()
+		
+	def launch_flat_form(self):
+		get_application().setOverrideCursor(Qt.BusyCursor)
+		from emform import get_small_example_form_params,EMFormModule
+		module = EMFormModule(params=get_small_example_form_params(),application=em_app)
+		self.module().emit(QtCore.SIGNAL("launching_module"),"Flat Form",module)
+		get_application().show_specific(module)
+		self.add_module([str(module),"Flat Form",module])
+		get_application().setOverrideCursor(Qt.ArrowCursor)
+		
+	def launch_table_form(self):
+		get_application().setOverrideCursor(Qt.BusyCursor)
+		from emform import get_example_table_form_params,EMTableFormModule
+		module = EMTableFormModule(params=get_example_table_form_params(),application=em_app)
+		self.module().emit(QtCore.SIGNAL("launching_module"),"Flat Form",module)
+		get_application().show_specific(module)
+		self.add_module([str(module),"Flat Form",module])
+		get_application().setOverrideCursor(Qt.ArrowCursor)
+	  	
+	def launch_3d_plot_tool(self):
+		from emplot3d import EMPlot3DModule,get_test_data,get_other_test_data
+		get_application().setOverrideCursor(Qt.BusyCursor)
+		module = EMPlot3DModule(application=em_app)
+		module.set_data("test data",get_test_data())
+		module.set_data("other data",get_other_test_data(),shape="Cube")
+		self.module().emit(QtCore.SIGNAL("launching_module"),"Plot3D",module)
+		get_application().show_specific(module)
+		self.add_module([str(module),"Plot3D",module])
 		get_application().setOverrideCursor(Qt.ArrowCursor)
 	
 	def launch_browser(self):
@@ -638,35 +820,38 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 			
 		print "failed to close module?" # this shouldn't happen if I have managed everything correctly
 
-	def launch_e2resolution(self): self.launch_task(E2ResolutionTask(),"e2resolution form")
-	def launch_e2eotest(self): self.launch_task(E2EotestTask(),"e2eotest form")
-	def launch_resolution_report(self): self.launch_task(ResolutionReportTask(),"resolution report")
-	def launch_e2refine(self): self.launch_task(E2RefineChooseDataTask(),"e2refine init")
-	def launch_refinement_report(self): self.launch_task(RefinementReportTask(),"refinement report")
+	def launch_e2resolution(self): self.launch_task(E2ResolutionTask(),"Run e2resolution")
+	def launch_e2eotest(self): self.launch_task(E2EotestTask(),"Run e2eotest")
+	def launch_resolution_report(self): self.launch_task(ResolutionReportTask(),"Resolution Report")
+	def launch_e2refine(self): self.launch_task(E2RefineChooseDataTask(),"e2refine Choose Data")
+	def launch_refinement_report(self): self.launch_task(RefinementReportTask(),"Refinement Report")
 #	def launch_import_initial_model(self): self.launch_task(ImportInitialModels(),"import initial models")
 	def launch_e2makeinitial(self): self.launch_task(E2InitialModel(),"e2makeinitialmodel")
-	def launch_initmodel_report(self): self.launch_task(InitialModelReportTask(),"initial model report")
-	def launch_refine2d_report(self): self.launch_task(E2Refine2DReportTask(),"refine2d report")
-	def launch_refine2d_exec(self): self.launch_task(E2Refine2DRunTask(),"e2refine2d params")
-	def launch_refine2d_create_dataset(self): self.launch_task(E2Refine2DChooseDataTask(),"refine2d create data set")	
-	def launch_e2ctf_write_ouptut(self): self.launch_task(E2CTFOutputTask(),"e2ctf write output")
-	def launch_e2ctf_tune(self): self.launch_task(E2CTFGuiTask(),"e2ctf intreface")
-	def launch_e2ctf_auto_ft(self): self.launch_task(E2CTFAutoFitTask(),"e2ctf auto fitting")
-	def launch_ctf_report(self):self.launch_task(CTFReportTask(),"CTF report")
-	def launch_particle_report(self): self.launch_task(ParticleReportTask(),"Particle report")
-	
+	def launch_initmodel_report(self): self.launch_task(InitialModelReportTask(),"Initial Model Report")
+	def launch_refine2d_report(self): self.launch_task(E2Refine2DReportTask(),"e2refine2d Report")
+	def launch_refine2d_exec(self): self.launch_task(E2Refine2DRunTask(),"e2refine2d Parameters")
+	def launch_refine2d_create_dataset(self): self.launch_task(E2Refine2DChooseDataTask(),"refine2d Choose Data")	
+	def launch_e2ctf_write_ouptut(self): self.launch_task(E2CTFOutputTask(),"e2ctf Write Output")
+	def launch_e2ctf_tune(self): self.launch_task(E2CTFGuiTask(),"e2ctf Intreface")
+	def launch_e2ctf_auto_ft(self): self.launch_task(E2CTFAutoFitTask(),"e2ctf Auto Fitting")
+	def launch_ctf_report(self):self.launch_task(CTFReportTask(),"CTF Report")
+	def launch_particle_report(self): self.launch_task(ParticleReportTask(),"Particle Report")
+	def launch_tomo_particle_report(self): self.launch_task(TomoParticleReportTask(),"Tomogram Particle Report")
 #	def launch_particle_import(self):self.launch_task(ParticleImportTask(),"Import particles")
 		
-	def launch_mic_ccd_report(self): self.launch_task(EMRawDataReportTask(),"Raw data report")
+	def launch_mic_ccd_report(self): self.launch_task(EMRawDataReportTask(),"Raw Data")
 		
 	def launch_e2boxer_auto(self):
-		self.launch_task(E2BoxerAutoTask(),"e2boxer automated boxing")
+		self.launch_task(E2BoxerAutoTask(),"e2boxer Automated Boxing")
 		
 	def launch_e2boxer_gui(self):
-		self.launch_task(E2BoxerGuiTask(),"e2boxer interface")
+		self.launch_task(E2BoxerGuiTask(),"e2boxer Interface")
+	
+	def launch_e2tomoboxer_gui(self):
+		self.launch_task(E2TomoBoxerGuiTask(),"e2tomoboxer Interface")
 	
 	def launch_spr(self):
-		self.launch_task(SPRInitTask(),"SPR")
+		self.launch_task(SPRInitTask(),"Single Particle Reconstruction")
 
 	def launch_tomography(self):
 		self.launch_task(EMTomoRawDataReportTask(),"Tomo Raw Files")

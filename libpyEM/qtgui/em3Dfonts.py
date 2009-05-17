@@ -128,7 +128,7 @@ class EM3DFontWidget(EMImage3DGUIModule):
 		glNormal(0,0,1)
 		glEnable(GL_TEXTURE_2D)
 		bbox = self.font_renderer.bounding_box("hello world")
-		glTranslate((bbox[0]-bbox[3])/2,(bbox[1]-bbox[4])/2,(bbox[2]-bbox[5])/2)
+		glTranslate((bbox[0]-bbox[3])/2,(bbox[1]-bbox[4])/2,-(bbox[2]-bbox[5])/2)
 		self.font_renderer.render_string("hello world");
 
 		glPopMatrix()

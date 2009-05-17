@@ -88,31 +88,31 @@ namespace EMAN {
 		
 		
 		/** A function that is used to determine if this is a platonic symmetry object
-		 * This function is only virtually overloaded by the PlatonicSym symmetry, which returns true, not false
+		 * This function is only virtually overidden by the PlatonicSym symmetry, which returns true, not false
 		 * @return false - indicating that this is not a platonic symmetry object
 		 */
 		virtual bool is_platonic_sym() const { return false; }
 		
 		/** A function that is used to determine if this is a Helical symmetry object
-		 * This function is only virtually overloaded by the HSym symmetry, which returns true, not false
+		 * This function is only virtually overidden by the HSym symmetry, which returns true, not false
 		 * @return false - indicating that this is not a helical symmetry object
 		 */
 		virtual bool is_h_sym() const { return false; }
 		
 		/** A function that is used to determine if this is a c symmetry object
-		 * This function is only virtually overloaded by the CSym object, which returns true
+		 * This function is only virtually overidden by the CSym object, which returns true
 		 * @return false - indicating that this is not a helical symmetry object
 		 */
 		virtual bool is_c_sym() const { return false; }
 		
 		/** A function that is used to determine if this is a d symmetry object
-		 * This function is only virtually overloaded by the DSym object, which returns true
+		 * This function is only virtually overidden by the DSym object, which returns true
 		 * @return false - indicating that this is not a helical symmetry object
 		 */
 		virtual bool is_d_sym() const { return false; }
 		
 		/** A function that is used to determine if this is the tetrahedral symmetry object
-		 * This function is only virtually overloaded by the TetSym object, which returns true
+		 * This function is only virtually overidden by the TetSym object, which returns true
 		 * @return false - indicating that this is not a tetrahedral symmetry object
 		 */
 		virtual bool is_tet_sym() const { return false; }
@@ -188,7 +188,7 @@ namespace EMAN {
 		 */
 		virtual vector<vector<Vec3f> > get_asym_unit_triangles(bool inc_mirror) const = 0;
 		
-		/** Gets a vector of Transfor3D objects that define the set of asymmetric units that touch the default	
+		/** Gets a vector of Transform objects that define the set of asymmetric units that touch the default	
 		 * asymmetric unit. The 'default asymmetric unit' is defined by the results of Symmetry3d::get_asym_unit_points
 		 * and is sensitive to whether or not you want to include the mirror part of the asymmetric unit.
 		 * This function is useful when used in conjunction with Symmetry3D::reduce, and particularly when finding
@@ -220,9 +220,9 @@ namespace EMAN {
 		*/
 		void delete_au_planes();
 	private:
-		//Disallow copy constructor
+		/** Disallow copy construction */
 		Symmetry3D(const Symmetry3D&);
-		//Disallow assignment
+		/** Disallow assignment */
 		Symmetry3D& operator=(const Symmetry3D&);
 };
 	
@@ -326,9 +326,9 @@ namespace EMAN {
 		 */
 		virtual vector<vector<Vec3f> > get_asym_unit_triangles(bool inc_mirror) const;
 	private:
-		//Disallow copy constructor
+		/** Disallow copy construction */
 		CSym(const CSym&);
-		//Disallow assignment
+		/** Disallow assignment */
 		CSym& operator=(const CSym&);
 		
 };
@@ -433,9 +433,9 @@ namespace EMAN {
 		 */
 		virtual vector<vector<Vec3f> > get_asym_unit_triangles(bool inc_mirror) const;
 	private:
-		//Disallow copy constructor
+		/** Disallow copy construction */
 		DSym(const DSym&);
-		//Disallow assignment
+		/** Disallow assignment */
 		DSym& operator=(const DSym&);
 };
 	
@@ -560,9 +560,9 @@ namespace EMAN {
 			 */
 		virtual vector<vector<Vec3f> > get_asym_unit_triangles(bool inc_mirror) const;
 	private:
-		//Disallow copy constructor
+		/** Disallow copy construction */
 		HSym(const HSym&);
-		//Disallow assignment
+		/** Disallow assignment */
 		HSym& operator=(const HSym&);
 };
 	
@@ -659,9 +659,9 @@ namespace EMAN {
 		 */
 		virtual vector<vector<Vec3f> > get_asym_unit_triangles(bool inc_mirror) const;
 	private:
-		//Disallow copy constructor
+		/** Disallow copy construction */
 		PlatonicSym(const PlatonicSym&);
-		//Disallow assignment
+		/** Disallow assignment */
 		PlatonicSym& operator=(const PlatonicSym&);
 };
 	
@@ -759,9 +759,9 @@ namespace EMAN {
 		virtual bool is_tet_sym() const { return true; }
 		
 	private:
-		//Disallow copy constructor
+		/** Disallow copy construction */
 		TetrahedralSym(const TetrahedralSym&);
-		//Disallow assignment
+		/** Disallow assignment */
 		TetrahedralSym& operator=(const TetrahedralSym&);
 		
 		
@@ -837,9 +837,9 @@ namespace EMAN {
 		/// The name of this class - used to access it from factories etc. Should be "oct"
 		static const string NAME;
 	private:
-		//Disallow copy constructor
+		/** Disallow copy construction */
 		OctahedralSym(const OctahedralSym&);
-		//Disallow assignment
+		/** Disallow assignment */
 		OctahedralSym& operator=(const OctahedralSym&);
 };
 	
@@ -910,9 +910,9 @@ namespace EMAN {
 		/// The name of this class - used to access it from factories etc. Should be "icos"
 		static const string NAME;
 	private:
-		//Disallow copy constructor
+		/** Disallow copy construction */
 		IcosahedralSym(const IcosahedralSym&);
-		//Disallow assignment
+		/** Disallow assignment */
 		IcosahedralSym& operator=(const IcosahedralSym&);
 };
 	/// A template specialization for the Symmetry3D factory. Adds all of the symmetries
@@ -997,12 +997,17 @@ namespace EMAN {
 
 	protected:
 		void get_az_max(const Symmetry3D* const sym, const float& altmax, const bool inc_mirror, const float& alt_iterator,const float& h,bool& d_odd_mirror_flag, float& azmax_adjusted) const;
-
+	
+	private:
+		/** Disallow copy construction */
+		OrientationGenerator(const OrientationGenerator&);
+		/** Disallow assignment */
+		OrientationGenerator& operator=(const OrientationGenerator&);
 };
 	
 	
 		
-	 /** EmanOrientationGenerator generates orientations quasi-evenly distributed in the asymmetric unit.
+ /** EmanOrientationGenerator generates orientations quasi-evenly distributed in the asymmetric unit.
  * Historically, it is an adaptation of the method first used in EMAN1 and developed by Steve
  * Ludtke. In EMAN2 it is more or less the same thing, but with more precise treatmeant of the
  * platonic symmetries. In terms of approach, the altitude angles in the asymmetric unit are traversed
@@ -1010,8 +1015,8 @@ namespace EMAN {
  * to altitude, and this helps to achieve a more even distribution of orientations.
  * @author David Woolford (based on previous work by Phil Baldwin and Steve Ludtke)
  * @date Feb 2008
-	  */
-	class EmanOrientationGenerator : public OrientationGenerator
+  */
+class EmanOrientationGenerator : public OrientationGenerator
 {
 	public:
 		EmanOrientationGenerator() {};
@@ -1058,11 +1063,16 @@ namespace EMAN {
 		/// The name of this class - used to access it from factories etc. Should be "icos"
 		static const string NAME;
 	private:
+		/** Disallow copy construction */
+		EmanOrientationGenerator(const EmanOrientationGenerator&);
+		/** Disallow assignment */
+		EmanOrientationGenerator& operator=(const EmanOrientationGenerator&);
+		
 		/** This function returns how many orientations will be generated for a given delta (angular spacing)
-	 * It does this by simulated gen_orientations.
-	 * @param sym the symmetry which defines the interesting asymmetric unit
-	 * @param delta the desired angular spacing of the orientations
-	 * @return the number of orientations that will be generated using these parameters
+		 * It does this by simulated gen_orientations.
+		 * @param sym the symmetry which defines the interesting asymmetric unit
+		 * @param delta the desired angular spacing of the orientations
+		 * @return the number of orientations that will be generated using these parameters
 		 */
 		virtual int get_orientations_tally(const Symmetry3D* const sym, const float& delta) const;
 		
@@ -1079,13 +1089,13 @@ namespace EMAN {
 		
 };	
 	
-	/** Random Orientation Generator - carefully generates uniformly random orientations in any asymmetric unit.
+/** Random Orientation Generator - carefully generates uniformly random orientations in any asymmetric unit.
  *  For points distributed in the unit sphere, just use the CSym type with nysm = 1.
  * (i.e. c1 symmetry)
  * @author David Woolford
  * @date March 2008
-	 */
-	class RandomOrientationGenerator : public OrientationGenerator
+ */
+class RandomOrientationGenerator : public OrientationGenerator
 {
 	public:
 		RandomOrientationGenerator() {}
@@ -1131,9 +1141,14 @@ namespace EMAN {
 		static const string NAME;
 		
 		virtual int get_orientations_tally(const Symmetry3D* const sym, const float& delta) const { (void)sym; (void)delta; return 0; }
+	private:
+		/** Disallow copy construction */
+		RandomOrientationGenerator(const RandomOrientationGenerator&);
+		/** Disallow assignment */
+		RandomOrientationGenerator& operator=(const RandomOrientationGenerator&);
 };
 	
-	/**Sparx even orientation generator - see util_sparx.cpp - Util::even_angles(...)
+/**Sparx even orientation generator - see util_sparx.cpp - Util::even_angles(...)
  * This orientation generator is based on work presented in Penczek et al., 1994 P.A. Penczek, R.A.
  * Grassucci and J. Frank, The ribosome at improved resolution: new techniques for merging and 
  * orientation refinement in 3D cryo-electron microscopy of biological particles, Ultramicroscopy 53 (1994).
@@ -1143,7 +1158,7 @@ namespace EMAN {
  *
  * @author David Woolford (ported directly from Sparx utilities.py, which is written by Pawel Penczek)
  * @date March 2008
-	 */
+ */
 	class EvenOrientationGenerator : public OrientationGenerator
 {
 	public:
@@ -1191,48 +1206,53 @@ namespace EMAN {
 		/// The name of this class - used to access it from factories etc. Should be "icos"
 		static const string NAME;
 	private:
+		/** Disallow copy construction */
+		EvenOrientationGenerator(const EvenOrientationGenerator&);
+		/** Disallow assignment */
+		EvenOrientationGenerator& operator=(const EvenOrientationGenerator&);
 		/** This function returns how many orientations will be generated for a given delta (angular spacing)
-	 * It does this by simulated gen_orientations.
-	 * @param sym the symmetry which defines the interesting asymmetric unit
-	 * @param delta the desired angular spacing of the orientations
-	 * @return the number of orientations that will be generated using these parameters
+		 * It does this by simulated gen_orientations.
+		 * @param sym the symmetry which defines the interesting asymmetric unit
+		 * @param delta the desired angular spacing of the orientations
+		 * @return the number of orientations that will be generated using these parameters
 		 */
 		virtual int get_orientations_tally(const Symmetry3D* const sym, const float& delta) const;
+	
 };
 	
-	/** Saff orientation generator - based on the work of Saff and Kuijlaars, 1997 E.B. Saff and A.B.J. Kuijlaars, Distributing many points on a sphere,
+/** Saff orientation generator - based on the work of Saff and Kuijlaars, 1997 E.B. Saff and A.B.J. Kuijlaars, Distributing many points on a sphere,
  * Mathematical Intelligencer 19 (1997), pp. 5–11. This is a spiral based approach
  * @author David Woolford (ported directly from Sparx utilities.py, which is written by Pawel Penczek)
  * @date March 2008
-	 */
-	class SaffOrientationGenerator : public OrientationGenerator
+ */
+class SaffOrientationGenerator : public OrientationGenerator
 {
 	public:
 		SaffOrientationGenerator() {}
 		virtual ~SaffOrientationGenerator() {}
 		
-			/** Factory support function NEW
+		/** Factory support function NEW
 		 * @return a newly instantiated class of this type
-			 */
+		 */
 		static OrientationGenerator *NEW()
 		{
 			return new SaffOrientationGenerator();
 		}
 			
-			/** Return 	"saff"
+		/** Return 	"saff"
 		 * @return the unique name of this class
-			 */
+		 */
 		virtual string get_name() const { return NAME; }
 
-			/** Get a description
+		/** Get a description
 		 * @return a clear desciption of this class
-			 */
+		 */
 		virtual string get_desc() const { return "Generate quasi-evenly distributed orientations within an asymmetric unit using a spiraling method attributed to Saff"; }
 		
-			/** Get a dictionary containing the permissable parameters of this class
+		/** Get a dictionary containing the permissable parameters of this class
 		 * @return a dictionary containing the permissable parameters of this class
 		 * parameters are explained in the dictionary itself
-			 */
+		 */
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d = OrientationGenerator::get_param_types(); 
@@ -1242,66 +1262,70 @@ namespace EMAN {
 			return d;
 		}
 		
-			/** Generate Saff orientations in the asymmetric unit of the symmetry
+		/** Generate Saff orientations in the asymmetric unit of the symmetry
 		 * @param sym the symmetry which defines the interesting asymmetric unit
 		 * @return a vector of Transform objects containing the set of evenly distributed orientations
-			 */
+		 */
 		virtual vector<Transform> gen_orientations(const Symmetry3D* const sym) const;
 			
-			/// The name of this class - used to access it from factories etc. Should be "icos"
+		/// The name of this class - used to access it from factories etc. Should be "icos"
 		static const string NAME;
 	private:
-			/** This function returns how many orientations will be generated for a given delta (angular spacing)
-	 * It does this by simulated gen_orientations.
-	 * @param sym the symmetry which defines the interesting asymmetric unit
-	 * @param delta the desired angular spacing of the orientations
-	 * @return the number of orientations that will be generated using these parameters
-			 */
+		/** Disallow copy construction */
+		SaffOrientationGenerator(const SaffOrientationGenerator&);
+		/** Disallow assignment */
+		SaffOrientationGenerator& operator=(const SaffOrientationGenerator&);
+		/** This function returns how many orientations will be generated for a given delta (angular spacing)
+		 * It does this by simulated gen_orientations.
+		 * @param sym the symmetry which defines the interesting asymmetric unit
+		 * @param delta the desired angular spacing of the orientations
+		 * @return the number of orientations that will be generated using these parameters
+		 */
 		virtual int get_orientations_tally(const Symmetry3D* const sym, const float& delta) const;
 			
-			// This was a function that paid special considerations to the overall algorithm in the
-			// case of the Platonic symmetries, which have non trivial asymmetric units. But unfortunately
-			// it was bug-prone, and the approach in place already seemed good enough
-// 			vector<Transform> gen_platonic_orientations(const Symmetry3D* const sym, const float& delta) const;
+		// This was a function that paid special considerations to the overall algorithm in the
+		// case of the Platonic symmetries, which have non trivial asymmetric units. But unfortunately
+		// it was bug-prone, and the approach in place already seemed good enough
+		//vector<Transform> gen_platonic_orientations(const Symmetry3D* const sym, const float& delta) const;
 };
 	
 	
-	/** Optimum orientation generator. Optimally distributes points on a unit sphere, then slices out
+/** Optimum orientation generator. Optimally distributes points on a unit sphere, then slices out
  * a correctly sized asymmetric unit, depending on the symmetry type. The approach relies on an initial
  * distribution of points on the unit sphere, which may be generated using any of the other orientation
  * generators. By default, the Saff orientation generator is used.
  *
  * @author David Woolford 
  * @date March 2008
-	 */
-	class OptimumOrientationGenerator : public OrientationGenerator
+ */
+class OptimumOrientationGenerator : public OrientationGenerator
 {
 	public:
 		OptimumOrientationGenerator() {}
 		virtual ~OptimumOrientationGenerator() {}
 		
-			/** Factory support function NEW
+		/** Factory support function NEW
 		 * @return a newly instantiated class of this type
-			 */
+		 */
 		static OrientationGenerator *NEW()
 		{
 			return new OptimumOrientationGenerator();
 		}
 			
-			/** Return 	"opt"
+		/** Return 	"opt"
 		 * @return the unique name of this class
-			 */
+		 */
 		virtual string get_name() const { return NAME; }
 
-			/** Get a description
+		/** Get a description
 		 * @return a clear desciption of this class
-			 */
+		*/
 		virtual string get_desc() const { return "Generate optimally distributed orientations within an asymmetric using a basic optimization technique"; }
 		
-			/** Get a dictionary containing the permissable parameters of this class
+		/** Get a dictionary containing the permissable parameters of this class
 		 * @return a dictionary containing the permissable parameters of this class
 		 * parameters are explained in the dictionary itself
-			 */
+		 */
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d = OrientationGenerator::get_param_types(); 
@@ -1312,26 +1336,30 @@ namespace EMAN {
 			return d;
 		}
 		
-			/** Generate Saff orientations in the asymmetric unit of the symmetry
+		/** Generate Saff orientations in the asymmetric unit of the symmetry
 		 * @param sym the symmetry which defines the interesting asymmetric unit
 		 * @return a vector of Transform objects containing the set of evenly distributed orientations
-			 */
+		 */
 		virtual vector<Transform> gen_orientations(const Symmetry3D* const sym) const;
 			
-			/// The name of this class - used to access it from factories etc. Should be "icos"
+		/// The name of this class - used to access it from factories etc. Should be "icos"
 		static const string NAME;
 	private:
-			/** This function returns how many orientations will be generated for a given delta (angular spacing)
-	 * It does this by simulated gen_orientations.
-	 * @param sym the symmetry which defines the interesting asymmetric unit
-	 * @param delta the desired angular spacing of the orientations
-	 * @return the number of orientations that will be generated using these parameters
-			 */
+		/** Disallow copy construction */
+		OptimumOrientationGenerator(const OptimumOrientationGenerator&);
+		/** Disallow assignment */
+		OptimumOrientationGenerator& operator=(const OptimumOrientationGenerator&);
+		/** This function returns how many orientations will be generated for a given delta (angular spacing)
+		 * It does this by simulated gen_orientations.
+		 * @param sym the symmetry which defines the interesting asymmetric unit
+		 * @param delta the desired angular spacing of the orientations
+		 * @return the number of orientations that will be generated using these parameters
+		 */
 		virtual int get_orientations_tally(const Symmetry3D* const sym, const float& delta) const;
 			
 			
-			/// Optimize the distances in separating points on the unit sphere, as described by the
-			/// the rotations in Transform objects.
+		/// Optimize the distances in separating points on the unit sphere, as described by the
+		/// the rotations in Transform objects.
 		vector<Vec3f> optimize_distances(const vector<Transform>& v) const;
 };
 	

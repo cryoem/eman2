@@ -126,176 +126,6 @@ class EMParamTable(list):
 			
 		for item in selected_items: 
 			item.setSelected(True)
-		
-	
-class EMRawDataParamTable(EMParamTable):
-	'''
-	The metadata and functions used to create a table that displays a list of 2D images.
-	2D (and not 3D) restriction is in place because of the icon, basically (remove this line when resolved)
-	Provides the data for a context menu that facilitates adding to the table, and also saving listed in the table
-	'''
-	def __init__(self,name=None,desc_short=None,desc_long=""):
-		'''
-		See EMParamTable comments for parameter help
-		'''
-		EMParamTable.__init__(self,name,desc_short,desc_long)
-		self.context_menu_dict = {} # key is the context menu entry, value is the function which is called
-		self.context_menu_dict["Save as"] = EMRawDataParamTable.save_as
-		self.context_menu_dict["Add"] = EMRawDataParamTable.add_files 
-		self.add_files_function = EMRawDataParamTable.add_files # this is so the add files function is customizable 
-		self.add_button = None  # eventually is a QtGui.QPushButton - see custom_addition function
-		
-		self.extra_columns = [] # a list of 2-length lists, used for automatic column addition
-								# First entry in the 2-length list is the name of the column, second entry is a
-								# functoin that returns the data to go in the table
-	
-	def add_column(self,name,function):
-		'''
-		Add a column to the table
-		@param name the name of the column, as will appear in the QtGui.QTableWidget
-		@param function a function that takes a filename as an argument and returns a string that goes in the table
-		'''
-		self.extra_columns.append([name,function])
-		
-	def add_optional_table_attr_data(self,key,value):
-		'''
-		@param key The name of the action, as will appear in the context menu
-		@value the function that is called when the user selects the item in the context menu. 
-		The function referenced by should take two arguments -  list of names and the table widget itself
-		'''
-		self.context_menu_dict[key] = value
-
-	def custom_addition(self,layout,table_widget):
-		'''
-		See EMParamTable.custom_addition for comments on parameters
-		Inserts an "Add" button which triggers the self.add_files_function
-		'''
-		self.add_button = QtGui.QPushButton("Add",None)
-		self.table_widget = table_widget
-		layout.addWidget(self.add_button)
-		QtCore.QObject.connect(self.add_button,QtCore.SIGNAL("clicked(bool)"),self.add_pressed)
-		
-	def add_pressed(self,bool):
-		'''
-		Slot for self.add_button's QtCore.SIGNAL("clicked(bool)")
-		@param bool unused variable that comes with the Qt Signal
-		'''
-		# have to pass an empty list to preserve the generic interface
-		self.add_files_function([],self.table_widget)
-		
-	def set_add_files_function(self,function):
-		'''
-		Set the add files function
-		@param function a static function that takes two arguments, the first being a list of strings the second being a QtGui.QTableWidget
-		'''
-		self.add_files_function = function
-
-	def get_context_menu_data(self):
-		'''
-		@return a dictionary - keys are used to add context menu items, values are functions which are called
-		These functions (which are the dictionary values) take two arguments, the first being a list of strings
-		the second being a QtGui.QTableWidget
-		'''
-		return self.context_menu_dict
-		
-	def save_as(list_of_names,table_widget):
-		'''
-		Made static
-		See the context menu dictionary in __init__, called when the user clicks "Save as"
-		'''
-		for name in list_of_names:
-			from emsave import LightEMDataSave, save_data
-			tmp = LightEMDataSave(name)
-			val = save_data(tmp)
-			if val == "":
-				break
-
-	def add_files(list_of_names,table_widget):
-		'''
-		Made static
-		See the context menu dictionary in __init__, called when the user clicks "Add"
-		Also the function which is called by the self.add_button
-		'''
-		
-		from emselector import EMSelectorModule
-		em_qt_widget = EMSelectorModule()
-		#Should really make a validator that verifies the images are 2D
-		#validator = AddFilesToProjectValidator()
-		#em_qt_widget.widget.set_validator(validator)
-		files = em_qt_widget.exec_()
-		if files != "":
-			if isinstance(files,str): files = [files]
-			
-			entries = get_table_items_in_column(table_widget,0)
-			entrie_tags = [EMAN2.get_file_tag(str(i.text())) for i in entries]
-			file_tags = [EMAN2.get_file_tag(i) for i in files] # have to use file_tags in case bdb and flat files are mixed in
-			error_messages = []
-			for idx,tag in enumerate(file_tags):
-				if tag in entrie_tags:
-					error_messages.append("%s is already listed" %files[idx])
-			
-		
-			if len(error_messages) > 0:
-				from emsprworkflow import EMErrorMessageDisplay
-				EMErrorMessageDisplay.run(error_messages)
-				return
-		
-			r = table_widget.rowCount()
-			table_widget.setRowCount(r+len(files))
-			for i in xrange(0,len(files)):
-				# here we are assuming the image is 2D
-				item = QtGui.QTableWidgetItem(QtGui.QIcon(get_image_directory() + "/single_image.png"),files[i])
-				flag2 = Qt.ItemFlags(Qt.ItemIsSelectable)
-				flag3 = Qt.ItemFlags(Qt.ItemIsEnabled)
-				flag4 = Qt.ItemFlags(Qt.ItemIsEditable)
-				item.setFlags(flag2|flag3)
-				item.setTextAlignment(QtCore.Qt.AlignHCenter)
-				table_widget.setItem(r+i, 0, item)
-			
-			if r == 0:
-				table_widget.resizeColumnsToContents()
-		
-	def add_optional_table_attr(self,table_widget):
-		'''
-		See the EMParamTable.add_optional_table_attr for help
-		'''
-		optional_attr = ["convert_text"]
-		for opt in optional_attr:
-			if hasattr(self,opt):
-				setattr(table_widget,opt,getattr(self,opt))
-		setattr(table_widget,"context_menu",self.get_context_menu_data())
-	
-	
-	def add_extra_columns(self,table_widget,starting_row=0):
-		sorting = table_widget.isSortingEnabled()
-		table_widget.setSortingEnabled(False)
-		col = table_widget.columnCount()
-		table_widget.setColumnCount(col+len(table_widget.extra_columns))
-		row = table_widget.rowCount()
-		for [name,function] in table_widget.extra_columns:
-			item = QtGui.QTableWidgetItem(name)
-			item.setTextAlignment(QtCore.Qt.AlignHCenter)
-			#item.setToolTip(param.desc_long)
-			table_widget.setHorizontalHeaderItem(col,item)
-			for i in xrange(starting_row,row):
-				item = QtGui.QTableWidgetItem(function(table_widget.convert_text(str(table_widget.item(i,0).text()))))
-				item.setTextAlignment(QtCore.Qt.AlignHCenter)
-				flag3 = Qt.ItemFlags(Qt.ItemIsEnabled)
-				item.setFlags(flag3)
-				table_widget.setItem(i, col, item)
-			col += 1
-			
-		table_widget.setSortingEnabled(sorting)
-
-	def build_table(self,table_widget,icon):
-		
-		EMParamTable.build_table(self,table_widget,icon)
-		table_widget.extra_columns = self.extra_columns
-		self.add_extra_columns(table_widget,0)
-	
-	## Static init
-	save_as = staticmethod(save_as)
-	add_files = staticmethod(add_files)
 
 class EMFileTable(QtGui.QTableWidget):
 	def __init__(self,listed_names=[],name="filenames",desc_short="File Names",desc_long="A list of file names"):
@@ -1701,6 +1531,41 @@ def get_example_form_params():
 	params.append([pil,pfl,a])
 	
 	return params
+
+
+def get_small_example_form_params():
+	params = []
+	params.append(ParamDef(name="box size",vartype="int",desc_short="int",desc_long="An integer value",property=None,defaultunits=128,choices=[]))
+	params.append(ParamDef(name="apix",vartype="float",desc_short="float",desc_long="A floating point value",property=None,defaultunits=1.0,choices=[]))
+	ps = ParamDef(name="model",vartype="string",desc_short="string",desc_long="A string value",property=None,defaultunits="Three thousand series",choices=None)
+	params.append(ParamDef(name="Is there a God?",vartype="boolean",desc_short="boolean",desc_long="Something that is true or false",property=None,defaultunits=Util.get_irand(0,1),choices=None))
+	p1 = ParamDef(name="True or false",vartype="boolean",desc_short="boolean",desc_long="Something that is true or false",property=None,defaultunits=Util.get_irand(0,1),choices=None)
+	p2 = ParamDef(name="integer length",vartype="int",desc_short="int",desc_long="An integer value",property=None,defaultunits=128,choices=[])
+	#params.append([p1,p2,ps])
+	#params.append(ParamDef(name="Normalization method",vartype="string",desc_short="string",desc_long="Choose from a list of strings",property=None,defaultunits="normalize",choices=["normalize","normalize.edgemean","normalize.other"]))
+	
+	pi = ParamDef(name="Int 1 to 10",vartype="int",desc_short="int",desc_long="Choose from a list of ints",property=None,defaultunits=5,choices=[1,2,3,4,5,6,7,8,9,10])
+	pf = ParamDef(name="Float 1 to 10",vartype="float",desc_short="float",desc_long="Choose from a list of floats",property=None,defaultunits=2.1,choices=[1.1,2.1,3.1,4.1,5.1,6.1,7.1,8.1,9.1,10.1])
+	#params.append([pi,pf])
+	#params.append(ParamDef(name="file_names",vartype="url",desc_short="url",desc_long="This is an editable list of file names with convenient browse and clear buttons",property=None,defaultunits=["tmp.txt","other.mrc"],choices=[]))
+	params.append(ParamDef(name="comparator",vartype="choice",desc_short="choice",desc_long="This is a string choice",property=None,defaultunits="frc",choices=["frc","phase","sqeuclidean"]))
+	params.append(ParamDef(name="lucky number",vartype="choice",desc_short="choice",desc_long="This is to demonstrate that the type of choice is preserved. When you click ok the value in the return dictionary corresponding to this form entry will be an integer",property=None,defaultunits=3,choices=[1,2,3,98]))
+	
+	#params.append(ParamDef(name="song",vartype="text",desc_short="text",desc_long="A potentially very long description",property=None,defaultunits="Jack and Jill went up the hill\nTo fetch a pail of water.\nJack fell down and broke his crown,\nAnd Jill came tumbling after.",choices=None))
+	
+	params.append(ParamDef(name="Selected Files",vartype="stringlist",desc_short="stringlist",desc_long="Choose from a list of strings",property=None,defaultunits=["C.mrc","E.mrc"],choices=[chr(i)+".mrc" for i in range(65,91)]))
+	
+	params.append(ParamDef(name="Combo1 and combo2", vartype="dict",desc_short="dict",desc_long="Choose from the combo on the left and the combo box on the right will be updated. The 'and' in the the name differentiates the key in the return dictionary", property=None, defaultunits="reconstructors", choices={"reconstructors":["a","b","c"],"processors":["1","2","3"]} ))
+	
+	pil = ParamDef(name="Int 1 to 10 from a list",vartype="intlist",desc_short="intlist",desc_long="Choose from a list of ints",property=None,defaultunits=[5],choices=[1,2,3,4,5,6,7,8,9,10])
+	pfl = ParamDef(name="Float 1 to 10 from a list",vartype="floatlist",desc_short="floatlist",desc_long="Choose from a list of floats",property=None,defaultunits=[2.1],choices=[1.1,2.1,3.1,4.1,5.1,6.1,7.1,8.1,9.1,10.11111111111111111111111111111])
+	a = EMParamTable(name="table_choice",desc_short="Please choose using this information",desc_long="The left most column is what you're choosing from, the extra columns are used only to assist in the decision making process")
+	a.append(pil)
+	a.append(pfl)
+	params.append([pil,pfl,a])
+	
+	return params
+
 def get_example_table_form_params():
 	params = get_example_form_params()
 	p1 = params[0:len(params)/3]

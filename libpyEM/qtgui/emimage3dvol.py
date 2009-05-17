@@ -813,8 +813,7 @@ if __name__ == '__main__':
 	if len(sys.argv)==1 : 
 		data = []
 		#for i in range(0,200):
-		e = EMData(64,64,64)
-		e.process_inplace('testimage.axes')
+		e = test_image_3d(1,size=(64,64,64))
 		window.set_data(e)
 	else :
 		a=EMData(sys.argv[1])
