@@ -56,6 +56,7 @@ class EMGenClassAverages:
 		self.args = args
 		
 		self.__task_options = None # will eventually be the options parameter of the EMClassAverageTask
+		
 	def __get_task_options(self,options):
 		'''
 		Get the options required by each task as a dict
@@ -92,33 +93,28 @@ class EMGenClassAverages:
 		return self.__task_options
 	
 	def __get_class_data(self,class_number,options):
-		class_indices = []
-		ccache.append = []
-		idx_cache = {}
+		image_idx = [] # this stores a particle index, for each partice in the class
+		col_idx_cache.append = [] # a list of tuples, [particle index, column idx) - can be used to get information from the input matrices
+		dcol_idx_cache = {}# a dictionary version of the col_idx_cache 
 		for p in xrange(0,self.num_part):
 			if options.odd and p % 2 == 0: continue # enforce even/odd constraints
 			if options.even and p % 2 == 1: continue # enforce even/odd constraints
 			for c in xrange(0,self.num_classes):
 				if self.class_data.get(c,p) == class_number:
 					
-					class_indices.append(p)
+					image_idx.append(p)
 					# cache the hit if necessary - this is if there is more than one iteration, and/or the user has specifed verbose. In the
 					# latter case the class cache is used to print information
-					self.ccache.append((p,c))
+					col_idx_cache.append((p,c))
 					
-					idx_cache[p] = c
+					dcol_idx_cache[p] = c
 					
-#					image = EMData()
-#					image.read_image(self.args[0],p)
-#					if str(self.options.normproc) != "None": image.process_inplace(self.options.norm[0],self.options.norm[1])
-#					self.image_cache[p] = image
+	def __get_alignment_data(self,col_idx_cache):
+		'''
+		
+		'''
+		pass
 					
-#					if self.options.usefilt:
-#						filt_image = EMData()
-#						filt_image.read_image(options.usefilt,p)
-#						if str(self.options.normproc) != "None": filt_image.process_inplace(self.options.norm[0],self.options.norm[1])
-#						self.filtered_image_cache[p] = filt_image
-
 	
 	def __init_memory(self,args,options):
 		'''
@@ -132,7 +128,6 @@ class EMGenClassAverages:
 		(self.num_classes, self.num_part ) = gimme_image_dimensions2D(args[1]);
 		self.class_max = int(classes.get_attr("maximum"))
 		self.class_min = int(classes.get_attr("minimum"))
-	
 	
 		# weights contains the weighting of the classification scheme stored in the EMData object "classes" - above
 		# dx contains the x translation of the alignment
@@ -168,14 +163,14 @@ class EMGenClassAverages:
 				sys.exit(1)
 				
 				
-	def do_your_thing(self,options):
+	def do_your_thing(self):
 		'''
 		Moment of inspiration just resulted in the most awesome function name ever
 		'''
 		
-		if hasattr(options,"parallel"):
-			# just assume it's dc
-			pass
+		if hasattr(self.options,"parallel"):
+			self.__init_memory(self.args, self.options)
+			print self.__get_class_data(0, self.options)
 		else:
 			"wo"
 			
@@ -297,6 +292,10 @@ def main():
 	# information to execute this script
 	if error : exit(1)
 	if options.check: exit(0)
+	
+	if options.parallel:
+		class_gen = EMGenClassAverages(options,args)
+		class_gen.do_your_thing()
 	
 	logger=E2init(sys.argv)
 	
