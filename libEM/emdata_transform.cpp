@@ -1303,6 +1303,7 @@ EMData*   EMData::bispecRotTransInvN(int N, int NK)
 	float *absD1fkVec       = new  float[CountxyMax];
 	float *absD1fkVecSorted = new  float[CountxyMax];
 
+	float *jxjyatan2         = new  float[End*End]; //  jxjyatan2[jy*End + jx]  = atan2(jy+1-Mid , jx +1 -Mid);
 
 	EMData * ThisCopy = new EMData(End,End);
 
@@ -1321,6 +1322,14 @@ EMData*   EMData::bispecRotTransInvN(int N, int NK)
 	EMData* fkRCopy = new EMData(End,End);
 	EMData* fkICopy = new EMData(End,End);
 	EMData* fkCopy  = new EMData(End,End);
+
+
+	for  (int jCount= 0; jCount<End*End; jCount++) { 
+//		jCount = jy*End + jx;
+		int jx             = jCount%End ;					
+		int jy             = (jCount-jx)/End ;
+		jxjyatan2[jCount]  = atan2(jy+1-Mid , jx +1 -Mid);
+	}					
 
 
 	for (int kEx= 0; kEx<2*Mid; kEx=kEx+2) { // kEx twice the value of the Fourier
@@ -1437,6 +1446,9 @@ EMData*   EMData::bispecRotTransInvN(int N, int NK)
 //      Let radial sampling be 0:0.5:(Mid-1)
 
  //	int NK=  min(12,CountxyMax) ;
+
+	
+
 	cout << "NK = " << NK << endl;
 	float frR= 3.0/4.0;
 	int LradRange= (int) (floor(Mid/frR)) ;
@@ -1474,7 +1486,9 @@ EMData*   EMData::bispecRotTransInvN(int N, int NK)
 				int ky = kVecY[Countkxy] ;
 				float k2 = kx*kx+ky*ky;
 				if (k2==0) { continue;}
-				float phiK =0; 	if (k2>0) { phiK=atan2(ky,kx);}
+				float phiK =0; 	
+				if (k2>0) phiK= jxjyatan2[ (ky+Mid-1)*End + kx+Mid-1];  phiK= atan2(ky,kx);
+
 				float fkR     = fkVecR[Countkxy] ;
 				float fkI     = fkVecI[Countkxy]  ;
 /*				printf("jCountkxy=%d, Countkxy=%d,absD1fkVec(Countkxy)=%f,\t\t kx=%d, ky=%d \n", jCountkxy, Countkxy, absD1fkVec[Countkxy], kx, ky);*/
@@ -1485,7 +1499,8 @@ EMData*   EMData::bispecRotTransInvN(int N, int NK)
 					int qy   = kVecY[Countqxy] ;
 					int q2   = qx*qx+qy*qy;
 					if (q2==0) {continue;}
-					float phiQ =0; 	if (q2>0) { phiQ=atan2(qy,qx);}
+					float phiQ =0; 	
+					if (q2>0) phiQ = jxjyatan2[ (qy+Mid-1)*End + qx+Mid-1];   phiQ=atan2(qy,qx);
 					float fqR     = fkVecR[Countqxy]  ;
 					float fqI     = fkVecI[Countqxy]  ;
 					int kCx  = (-kx-qx);
@@ -1562,6 +1577,7 @@ int main () {
 
   return 0;
 }*/
+
 EMData*   EMData::bispecRotTransInvDirect()
 {
 
@@ -1580,12 +1596,16 @@ EMData*   EMData::bispecRotTransInvDirect()
 	float *absD1fkVecSorted = new  float[CountxyMax];
 
 
+	float *jxjyatan2         = new  float[End*End]; 
+
+
 	EMData * ThisCopy = new EMData(End,End);
 
 	for (int jx=0; jx <End ; jx++) {
 		for (int jy=0; jy <End ; jy++) {
 			float ValNow = this -> get_value_at(jx,jy);
 			ThisCopy -> set_value_at(jx,jy,ValNow);
+			jxjyatan2[jy*End + jx]  = atan2(jy+1-Mid , jx +1 -Mid);
 //		cout<< " jxM= " << jx+1<<" jyM= " << jy+1<< "ValNow" << ValNow << endl; //    Works
 	}}
        
@@ -1594,10 +1614,6 @@ EMData*   EMData::bispecRotTransInvDirect()
 	fk          ->process_inplace("xform.fourierorigin.tocenter");
 
 //	EMData* fk
-	EMData* fkRCopy = new EMData(End,End);
-	EMData* fkICopy = new EMData(End,End);
-	EMData* fkCopy  = new EMData(End,End);
-		
 
 	for (int kEx= 0; kEx<2*Mid; kEx=kEx+2) { // kEx twice the value of the Fourier 
 						// x variable: EMAN index for real, imag 
@@ -1648,21 +1664,8 @@ EMData*   EMData::bispecRotTransInvDirect()
 
 //			cout << "kIMx = "<< kIx+1 << "; kIMy = "<< kIy+1 <<"; fkAng*9/ 2pi is " << fkAng*9/2/M_PI<<  endl;
 //			cout << "kIMx = "<< kIx+1 << "; kIMy = "<< kIy+1 <<"; absval is " << absVal<<  "; realval is " << NewRealVal<< "; imagval is " << NewImagVal<< endl;
-			fkCopy  -> set_value_at(kIx ,kIy, absVal);
-			fkCopy  -> set_value_at(kCIx,kIy, absVal);
-			fkRCopy -> set_value_at(kIx, kIy, NewRealVal);
-			fkRCopy -> set_value_at(kCIx,kIy, NewRealVal);
-			fkICopy -> set_value_at(kIx, kIy, NewImagVal);
-			fkICopy -> set_value_at(kCIx,kIy,-NewImagVal);
-
 		}
 	}
-	system("rm -f fkCopy.???");
-	system("rm -f fk?Copy.???");
-	fkCopy  -> write_image("fkCopy.img");
-	fkRCopy -> write_image("fkRCopy.img");
-	fkICopy -> write_image("fkICopy.img");
-
 
 
 	for (int TotalInd = 0 ;  TotalInd < CountxyMax ; TotalInd++){
@@ -1717,19 +1720,21 @@ EMData*   EMData::bispecRotTransInvDirect()
 		int kx = kVecX[Countkxy] ;
 		int ky = kVecY[Countkxy] ;  
 		float k2 = ::sqrt(kx*kx+ky*ky);
-		float phiK =0; 	if (k2>0) { phiK=atan2(ky,kx);}
+		float phiK =0; 	
+		if (k2>0)    phiK = jxjyatan2[ (ky+Mid-1)*End + kx+Mid-1]; //  phiK=atan2(ky,kx);  
 		float fkR     = fkVecR[(ky+Mid-1) + (kx+Mid-1) *End] ; 
 		float fkI     = fkVecI[(ky+Mid-1) + (kx+Mid-1) *End]  ;
 //		printf("Countkxy=%d,\t kx=%d, ky=%d, fkR=%3.2f,fkI=%3.2f \n", Countkxy, kx, ky, fkR, fkI);
 	
 		if ((k2==0)|| (k2>Mid) ) { continue;}
 
-		for (int Countqxy =0; Countqxy<CountxyMax; Countqxy++){
+		for (int Countqxy =0; Countqxy<CountxyMax; Countqxy++){   // This is the innermost loop
 			int qx   = kVecX[Countqxy] ; 
 			int qy   = kVecY[Countqxy] ; 
 			float q2   = ::sqrt(qx*qx+qy*qy);
 			if ((q2==0)|| (q2>Mid) ) {continue;} 
-			float phiQ =0; 	if (q2>0) { phiQ=atan2(qy,qx);}
+			float phiQ =0; 	
+			if (q2>0)   phiQ = jxjyatan2[ (qy+Mid-1)*End + qx+Mid-1]; // phiQ=atan2(qy,qx); 
 			float fqR     = fkVecR[(qy+Mid-1) + (qx+Mid-1) *End] ; 
 			float fqI     = fkVecI[(qy+Mid-1) + (qx+Mid-1) *End]  ;
 			int kCx  = (-kx-qx);  
@@ -1747,7 +1752,7 @@ EMData*   EMData::bispecRotTransInvDirect()
 				printf(" Countqxy=%d, absD1fkVec(Countqxy)=%f,qx=%d, qy=%d \n", Countqxy, absD1fkVec[Countqxy],qx, qy);
 				printf(" CountCxy=%d, absD1fkVec[CountCxy]=%f,kCx=%d,kCy=%d \n",CountCxy, absD1fkVec[CountCxy], kCx, kCy );
 			}*/
-			float   phiC = atan2(kCy,kCx);
+			float   phiC = jxjyatan2[ (kCy+Mid-1)*End + kCx+Mid-1]; 
 			float   phiQK = (4*M_PI+phiQ-phiK);
 			while (phiQK> (2*M_PI)) phiQK -= (2*M_PI);
 
@@ -1760,7 +1765,7 @@ EMData*   EMData::bispecRotTransInvDirect()
 			if ((ky==-2)&&(ky==1)) {	
 			printf("  CountkxyM=%d, CountqxyM=%d,  CountCxyM=%d, kx=%d, ky=%d, qx=%d, qy=%d, kCx=%d, kCy=%d \n",Countkxy+1, Countqxy+1, CountCxy+1, kx,ky, qx, qy, kCx,kCy);
 			printf("  fkR=%3.2f, fqR=%3.2f,  fCR=%3.2f, bispectemp=%3.2f, k2=%2.2f, q2=%2.2f, C2=%2.2f \n",fkR, fqR, fCR, bispectemp,k2,q2,C2);
-}
+			}
 
 //				printf(" CountCxy=%d, absD1fkVec[CountCxy]=%f,kCx=%d,kCy=%d \n",CountCxy, absD1fkVec[CountCxy], kCx, kCy );
 
@@ -1904,7 +1909,9 @@ EMData*   EMData::bispecRotTransInvDirect()
 			Weight=0;
 		}
 		if (Weight <= 0) continue;
-		RotTransInvF -> set_value_at(jk,jq,jtheta,RotTransInv[TotalInd] );//  include /Weight
+		RotTransInvF -> set_value_at(jk,jq,jtheta,RotTransInv[TotalInd] / Weight);//  include /Weight
+		int newjtheta = (LthetaRange- jtheta)%LthetaRange;
+		RotTransInvF -> set_value_at(jq,jk,newjtheta,RotTransInv[TotalInd]/Weight );//  include /Weight
 	}}}
 
 	cout << " Almost Done " << endl;
