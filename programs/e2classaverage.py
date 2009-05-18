@@ -91,7 +91,7 @@ class EMGenClassAverages:
 			
 		return self.__task_options
 	
-	def __get_dc_data(self,class_number,options):
+	def __get_class_data(self,class_number,options):
 		class_indices = []
 		ccache.append = []
 		idx_cache = {}
