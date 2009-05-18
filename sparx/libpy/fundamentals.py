@@ -556,7 +556,7 @@ def smallprime(arbit_num, numprime=3):
 
 def welch_pw2(img, win_size=512, overlp_x=50, overlp_y=50, edge_x=0, edge_y=0):
 	""" 
-		Caclulate power spectrum use Welch periodograms(overlapped periodogram)
+		Calculate the power spectrum using Welch periodograms (overlapped periodogram)
 	"""
 	from fundamentals import window2d, ramp
 	nx = img.get_xsize()
