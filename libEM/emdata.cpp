@@ -1909,6 +1909,8 @@ EMData *EMData::make_footprint(int type)
 		for (i=0; i<rmax*2; i+=2) {
 			for (j=0; j<rmax; j++) {
 				float norm=fp->get_value_at(i+1,j);
+//				fp->set_value_at(i,rmax*2-j-1,cbrt(fp->get_value_at(i,j)/(norm==0?1.0:norm)));
+//				fp->set_value_at(i,j,cbrt(fp->get_value_at(i,j)/(norm==0?1.0:norm)));
 				fp->set_value_at(i,rmax*2-j-1,fp->get_value_at(i,j)/(norm==0?1.0:norm));
 				fp->set_value_at(i,j,fp->get_value_at(i,j)/(norm==0?1.0:norm));
 				fp->set_value_at(i+1,j,0.0);
@@ -1918,11 +1920,91 @@ EMData *EMData::make_footprint(int type)
 		free(rmap);
 		if (type==2) {
 			EMData *f2=fp->do_ift();
+			if (f2->get_value_at(0,0)<0) f2->mult(-1.0f); 
+			f2->process_inplace("xform.phaseorigin.tocorner");
 			delete fp;
 			return f2;
 		}
 		return fp;
 	}
+	else if (type==3 || type==4) {
+		int h,i,j,kx,ky,lx,ly;
+
+		EMData *fft=do_fft();
+
+		// map for x,y -> radius for speed
+		int rmax=(get_xsize()+1)/2;
+		float *rmap=(float *)malloc(rmax*rmax*sizeof(float));
+		for (i=0; i<rmax; i++) {
+			for (j=0; j<rmax; j++) {
+				rmap[i+j*rmax]=hypot((float)i,(float)j);
+//				printf("%d\t%d\t%f\n",i,j,rmap[i+j*rmax]);
+			}
+		}
+		
+		EMData *fp=new EMData(rmax*2+2,rmax*2,16);
+
+		fp->set_complex(1);
+		fp->to_zero();
+		
+		// Two vectors in to complex space (kx,ky) and (lx,ly)
+		// We are computing the bispectrum, f(k).f(l).f*(k+l)
+		// but integrating out two dimensions, leaving |k|,|l|
+		for (kx=-rmax+1; kx<rmax; kx++) {
+			for (ky=-rmax+1; ky<rmax; ky++) {
+				for (lx=-rmax+1; lx<rmax; lx++) {
+					for (ly=-rmax+1; ly<rmax; ly++) {
+						int ax=kx+lx;
+						int ay=ky+ly;
+						if (abs(ax)>=rmax || abs(ay)>=rmax) continue;
+						float rr1=rmap[abs(kx)+rmax*abs(ky)];
+						float rr2=rmap[abs(lx)+rmax*abs(ly)];
+						int r1=(int)floor(.5+rr1);
+						int r2=(int)floor(.5+rr2);
+//						if (r1>500 ||r2>500) printf("%d\t%d\t%d\t%d\t%d\t%d\n",kx,ky,lx,ly,r1,r2);
+//						float r3=rmap[ax+rmax*ay];
+						if (r1+r2>=rmax || rr1==0 ||rr2==0) continue;
+						
+						std::complex<float> p=fft->get_complex_at(kx,ky)*fft->get_complex_at(lx,ly)*conj(fft->get_complex_at(ax,ay));
+						int dot=(int)floor((kx*lx+ky*ly)/(rr1*rr2)*7.5);					// projection of k on l 0-31
+						if (dot<0) dot=16+dot;
+//						int dot=(int)floor((kx*lx+ky*ly)/(rr1*rr2)*7.5+8.0);					// projection of k on l 0-15
+						fp->set_value_at(r1*2,r2,dot,p.real()+fp->get_value_at(r1*2,r2,dot));		// We keep only the real component in anticipation of zero phase sum
+//						fp->set_value_at(r1*2,rmax*2-r2-1,  fp->get_value_at(r1*2,r2));		// We keep only the real component in anticipation of zero phase sum
+//						fp->set_value_at(r1*2+1,r2,p.real()+fp->get_value_at(r1*2+1,r2));		// We keep only the real component in anticipation of zero phase sum
+						fp->set_value_at(r1*2+1,r2,dot,fp->get_value_at(r1*2+1,r2,dot)+1);			// a normalization counter
+					}
+				}
+			}
+		}
+
+		// Normalizes the pixels based on the accumulated counts then sets the imaginary components back to zero
+		for (i=0; i<rmax*2; i+=2) {
+			for (j=0; j<rmax; j++) {
+				for (h=0; h<16; h++) {
+					float norm=fp->get_value_at(i+1,j,h);
+//					fp->set_value_at(i,rmax*2-j-1,h,cbrt(fp->get_value_at(i,j,h)/(norm==0?1.0:norm)));
+//					fp->set_value_at(i,j,h,cbrt(fp->get_value_at(i,j,h)/(norm==0?1.0:norm)));
+					fp->set_value_at(i,rmax*2-j-1,h,(fp->get_value_at(i,j,h)/(norm==0?1.0:norm)));
+					fp->set_value_at(i,j,h,(fp->get_value_at(i,j,h)/(norm==0?1.0:norm)));
+	//				fp->set_value_at(i,rmax*2-j-1,fp->get_value_at(i,j)/(norm==0?1.0:norm));
+	//				fp->set_value_at(i,j,fp->get_value_at(i,j)/(norm==0?1.0:norm));
+					fp->set_value_at(i+1,j,h,0.0);
+				}
+			}
+		}
+		
+		free(rmap);
+		if (type==4) {
+			EMData *f2=fp->do_ift();
+			if (f2->get_value_at(0,0,0)<0) f2->mult(-1.0f); 
+			f2->process_inplace("xform.phaseorigin.tocorner");
+			delete fp;
+			return f2;
+		}
+		return fp;
+	}
+
 }
 
 
