@@ -132,6 +132,7 @@ Communications are handled by subclasses."""
 		# data should contain one element "input"
 		if task.command=="test":
 			data=task.data["input"]
+			print task.data["transform"]
 #			print data[1]
 #			cname="bdb:cache_%d.%d"%(data[1][0],data[1][1])		# name of the file containing the cache for these images
 			cname=data[1]

@@ -40,64 +40,202 @@ import sys
 
 READ_HEADER_ONLY = True
 
-#def run_par(args,options):
-#	# classes contains the classifications - row is particle number, column data contains class numbers (could be greater than 1)
-#	classes = EMData()
-#	classes.read_image(args[1], 0)
-#	class_max = int(classes.get_attr("maximum"))
-#	class_min = int(classes.get_attr("minimum"))
-#	
-#	# weights contains the weighting of the classification scheme stored in the EMData object "classes" - above
-#	# dx contains the x translation of the alignment
-#	# dy contains the y translation of the alignment
-#	# da contains is the azimuthal rotation of the alignment
-#	# dflip contains is the mirror alignment
-#	# row is particle number, column data contains weights - rows should add to 1, but this is not checked.
-#	weights, dx, dy, da, dflip = EMData(),EMData(),EMData(),EMData(),EMData()
-#	if options.bootstrap:
-#		weights.set_size(classes.get_xsize(),classes.get_ysize())
-#		weights.to_zero()
-#		dx.set_size(classes.get_xsize(),classes.get_ysize())
-#		dx.to_zero()
-#		dy.set_size(classes.get_xsize(),classes.get_ysize())
-#		dy.to_zero()
-#		da.set_size(classes.get_xsize(),classes.get_ysize())
-#		da.to_zero()
-#		dflip.set_size(classes.get_xsize(),classes.get_ysize())
-#		dflip.to_zero()
-#	else:
-#		if EMUtil.get_image_count(args[1]) != 6:
-#			print "error, the classification matrix is the wrong size, it needs to contain one image for the classes, weights, dx, dy, da, and dflip. You can bypass this requirement if you supply the bootstrap argument"
-#			sys.exit(1)	
-#		else:
-#			weights.read_image(args[1], 1)
-#			dx.read_image(args[1],2)
-#			dy.read_image(args[1],3)
-#			da.read_image(args[1],4)
-#			dflip.read_image(args[1],5)
-#	
-#	# empty space for storing x-flipping flags (0s or 1s, if a 1 is stored it will be used at the necessary point to flip prior to adding to the average)
-#	# sometimes this will not be used at all (it depends on whether or not the aligners that the user has specified do flipping and set flip flags)
-#	# dflip = EMData(da.get_xsize(),da.get_ysize())
-#	# dflip.to_zero()
-#	
-#	options.norm = parsemodopt(options.normproc)
-#	
-#	if (options.iter > 0 or options.bootstrap):
-#		set_aligner_params_in_options(options)
-#	
-#	if options.idxcache:
-#		try:
-#			name = "bdb:"+options.dbpath+"#class_indices"
-#			if options.even: name += "_even"
-#			elif options.odd: name += "_odd"
-#			db_name = numbered_bdb(name)
-#			class_db = db_open_dict(db_name)
-#		except:
-#			print "error with db terminology: can't call numbered_bdb with this argument:", "bdb:"+options.dbdir+"#class_indices"
-#			sys.exit(1)
-#	# do one class at a time
-#	for cl in xrange(class_min,class_max+1):
+from EMAN2db import EMTask
+
+class EMGenClassAverages:
+	'''
+	A utility class that knows how to break the command line into EMClassAverageTasks
+	'''
+	def __init__(self,options,args):
+		'''
+		@param options the options produced by (options, args) = parser.parse_args()
+		@param args the options produced by (options, args) = parser.parse_args()
+		assumes you have already called the check function.
+		'''
+		self.options = options
+		self.args = args
+		
+		self.__task_options = None # will eventually be the options parameter of the EMClassAverageTask
+	def __get_task_options(self,options):
+		'''
+		Get the options required by each task as a dict
+		'''
+		
+		if self.__task_options == None:
+			d = {}
+			d["iter"] = options.iter
+			d["align"] = parsemodopt(options.align)
+			d["aligncmp"] = parsemodopt(options.aligncmp)
+			d["cmp"] = parsemodopt(options.cmp)
+			d["averager"] = parsemodopt(options.averager)
+			
+			if hasattr(options,"ralign") and options.ralign != None: 
+				d["ralign"] = parsemodopt(options.ralign)
+				d["raligncmp"] = parsemodopt(options.raligncmp)  # raligncmp must be specified if using ralign
+			else: 
+				d["ralign"] = None
+				d["raligncmp"] = None
+			
+			d["keep"] = options.keep
+			
+			if hasattr(options,"keepsig") and options.keepsig != None: d["keepsig"] = options.keepsig 
+			else: d["keepsig"] = False
+			
+			if hasattr(options,"bootstrap") and options.bootstrap != None: d["bootstrap"] = options.bootstrap 
+			else: d["bootstrap"] = False
+			
+			if hasattr(options,"normproc") and options.normproc != None: d["normproc"] = parsemodopt(options.normproc)
+			else: d["normproc"] = None
+			
+			self.__task_options = d
+			
+		return self.__task_options
+	
+	def __get_dc_data(self,class_number,options):
+		class_indices = []
+		ccache.append = []
+		idx_cache = {}
+		for p in xrange(0,self.num_part):
+			if options.odd and p % 2 == 0: continue # enforce even/odd constraints
+			if options.even and p % 2 == 1: continue # enforce even/odd constraints
+			for c in xrange(0,self.num_classes):
+				if self.class_data.get(c,p) == class_number:
+					
+					class_indices.append(p)
+					# cache the hit if necessary - this is if there is more than one iteration, and/or the user has specifed verbose. In the
+					# latter case the class cache is used to print information
+					self.ccache.append((p,c))
+					
+					idx_cache[p] = c
+					
+#					image = EMData()
+#					image.read_image(self.args[0],p)
+#					if str(self.options.normproc) != "None": image.process_inplace(self.options.norm[0],self.options.norm[1])
+#					self.image_cache[p] = image
+					
+#					if self.options.usefilt:
+#						filt_image = EMData()
+#						filt_image.read_image(options.usefilt,p)
+#						if str(self.options.normproc) != "None": filt_image.process_inplace(self.options.norm[0],self.options.norm[1])
+#						self.filtered_image_cache[p] = filt_image
+
+	
+	def __init_memory(self,args,options):
+		'''
+		Called internally to read the alignment and classification images into memory
+		Also opens a local database for storing classification data, if the options has the idxcache attribute 
+		@param args a list of filenames, the command line arguments
+		'''
+		# classes contains the classifications - row is particle number, column data contains class numbers (could be greater than 1)
+		self.classes = EMData()
+		self.classes.read_image(args[1], 0)
+		(self.num_classes, self.num_part ) = gimme_image_dimensions2D(args[1]);
+		self.class_max = int(classes.get_attr("maximum"))
+		self.class_min = int(classes.get_attr("minimum"))
+	
+	
+		# weights contains the weighting of the classification scheme stored in the EMData object "classes" - above
+		# dx contains the x translation of the alignment
+		# dy contains the y translation of the alignment
+		# da contains is the azimuthal rotation of the alignment
+		# dflip contains is the mirror alignment
+		# row is particle number, column data contains weights - rows should add to 1, but this is not checked.
+		self.weights, self.dx, self.dy, self.da, self.dflip = EMData(),EMData(),EMData(),EMData(),EMData()
+		if options.bootstrap:
+			for image in [self.weights,self.dx,self.dy,self.da,self.dflip]:
+				image.set_size(classes.get_xsize(),classes.get_ysize())
+				image.to_zero()
+			
+		elif EMUtil.get_image_count(args[1]) != 6:
+			print "error, the classification matrix is the wrong size, it needs to contain one image for the classes, weights, dx, dy, da, and dflip. You can bypass this requirement if you supply the bootstrap argument"
+			sys.exit(1)
+		else:
+			self.weights.read_image(args[1], 1)
+			self.dx.read_image(args[1],2)
+			self.dy.read_image(args[1],3)
+			self.da.read_image(args[1],4)
+			self.dflip.read_image(args[1],5)
+			
+		if options.idxcache:
+			try:
+				name = "bdb:"+options.dbpath+"#class_indices"
+				if options.even: name += "_even"
+				elif options.odd: name += "_odd"
+				self.db_name = numbered_bdb(name)
+				self.class_db = db_open_dict(db_name)
+			except:
+				print "error with db terminology: can't call numbered_bdb with this argument:", "bdb:"+options.dbdir+"#class_indices"
+				sys.exit(1)
+				
+				
+	def do_your_thing(self,options):
+		'''
+		Moment of inspiration just resulted in the most awesome function name ever
+		'''
+		
+		if hasattr(options,"parallel"):
+			# just assume it's dc
+			pass
+		else:
+			"wo"
+			
+	def __dc_process(self):
+		"Makes as many tasks as there are averages and spawns them"
+		for cl in xrange(self.class_min,self.class_max+1):
+			pass
+		
+	
+	def __single_cpu_process(self):
+		'''
+		Called if all of the class averaging is going to occur on a single cpu
+		'''
+		pass
+				
+
+class EMClassAverageTask:
+	def __init__(self,command="e2classaverage",data=None,options=None):
+		EMTask.__init__(self,command,data,options)
+		# options should have these keys:
+		# iter - the total number of iterations. 0 is fine
+		# align - the main aligner, a list of two strings
+		# alligncmp - the main align cmp - a list of two strings
+		# ralign - the refine aligner, a list of two string. May be None which turns it off
+		# raligncmp - the refinealigncmp - a list of two strings. Needs to specified if ralign is not None
+		# averager - the averager - a list of two strings
+		# cmp - the final cmp - a list of two strings
+		# keep - keep argument, interpreted as a percentage or a number of sigmas depending on the keepsig argument
+		# keepsig - if True turns the keep into a sigma based threshold. May be None, False, or unspecified
+		# bootstrap - if True causes the initial average to be calculated in a bootstrapped fashion. Otherwise Transforms are used for initial alignments
+		# normproc - A normalization processor - a list of two strings. May be None or unspecified	
+		
+		# data should 
+		
+#	parser.add_option("--ref", type="string", help="Reference image. If specified, the metadata in this image is used to assign euler angles to the generated classes. This is typically the projections that were used for the classification.", default=None)
+#	parser.add_option("--align",type="string",help="This is the aligner used to align particles to the previous class average. Default is None.", default=None)
+#	parser.add_option("--aligncmp",type="string",help="The comparitor used for the --align aligner. Default is dot.",default="phase")
+#	parser.add_option("--ralign",type="string",help="This is the second stage aligner used to refine the first alignment. This is usually the \'refine\' aligner.", default=None)
+#	parser.add_option("--raligncmp",type="string",help="The comparitor used by the second stage aligner.",default="phase")
+#	parser.add_option("--averager",type="string",help="The type of averager used to produce the class average.",default="mean")
+#	parser.add_option("--cmp",type="string",help="The comparitor used to generate quality scores for the purpose of particle exclusion in classes, strongly linked to the keep argument.", default="phase")
+#	parser.add_option("--keep",type="float",help="The fraction of particles to keep in each class.",default=1.0)
+#	parser.add_option("--keepsig", action="store_true", help="Causes the keep argument to be interpreted in standard deviations.",default=False)
+#	parser.add_option("--verbose","-v",action="store_true",help="Print useful information while the program is running. Default is off.",default=False)
+#	parser.add_option("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists.")
+#	parser.add_option("--debug","-d",action="store_true",help="Print debugging infromation while the program is running. Default is off.",default=False)
+#	parser.add_option("--nofilecheck",action="store_true",help="Turns file checking off in the check functionality - used by e2refine.py.",default=False)
+#	parser.add_option("--check","-c",action="store_true",help="Performs a command line argument check only.",default=False)
+#	parser.add_option("--bootstrap",action="store_true",help="Bootstraps iterative alignment by using the first particle in each class to seed the iterative alignment. Only works if the number of iterations is greater than 0.")
+#	parser.add_option("--resultmx",type="string",help="Specify an output image to store the result matrix. This contains 5 images where row is particle number. Rows in the first image contain the class numbers and in the second image consist of 1s or 0s indicating whether or not the particle was included in the class. The corresponding rows in the third, fourth and fifth images are the refined x, y and angle (respectively) used in the final alignment, these are updated and accurate, even if the particle was excluded from the class.", default=None)
+#	parser.add_option("--normproc",type="string",help="The normalization processor. Default is normalize.edgemean. If you want to turn this option off specify \'None\'", default="normalize.edgemean")
+#	parser.add_option("--usefilt", dest="usefilt", default=None, help="Specify a particle data file that has been low pass or Wiener filtered. Has a one to one correspondence with your particle data. If specified will be used to align particles to the running class average, however the original particle will be used to generate the actual class average")
+#	parser.add_option("--idxcache", default=False, action="store_true", help="Stores the indices of all particles in the given class in the Python list in the e2classaverage.indices database")
+#	parser.add_option("--dbpath", help="Use in conjunction with --idxcache to specify a directory where the database entries should be stored, e.g. \"refine_01\" ", default=".")
+#	parser.add_option("--odd", default=False, help="Used by EMAN2 when running eotests. Includes only odd numbered particles in class averages.", action="store_true")
+#	parser.add_option("--even", default=False, help="Used by EMAN2 when running eotests. Includes only even numbered particles in class averages.", action="store_true")
+#	parser.add_option("--parallel", default=None, help="parallelism argument")
+
+		
+		
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -178,22 +316,6 @@ def main():
 	classes.read_image(args[1], 0)
 	class_max = int(classes.get_attr("maximum"))
 	class_min = int(classes.get_attr("minimum"))
-	
-		# double check that the argument reference image makes sense
-	if (options.ref):
-		if not os.path.exists(options.ref) and not db_check_dict(options.ref):
-			parser.error("File %s does not exist" %options.ref)
-			
-		num_ref= EMUtil.get_image_count(options.ref)
-		if ( class_max > num_ref ):
-			print "Error, the classification matrix refers to a class number (%d) that is beyond the number of images (%d) in the reference image (%s)." %(class_max,num_ref,options.ref)
-			exit(1)
-	
-	# double check that the number of particles in the particle image matches the rows in the classification matrix (image)
-	num_part_check =  EMUtil.get_image_count(args[0])
-	if ( num_part != num_part_check ):
-		print "Error, the number of rows (%d) in the classification matrix (image) does not match the number of particles (%d) in the input image." %(num_part,num_part_check)
-		exit(1)
 	
 	# weights contains the weighting of the classification scheme stored in the EMData object "classes" - above
 	# dx contains the x translation of the alignment
@@ -731,7 +853,7 @@ def check(options, verbose=False):
 					print "Error - the number of rows (%d) in the classification matrix image %s does not match the number of images (%d) in %s" %(ysize, options.classifyfile,numimg,options.datafile)
 				
 			
-		if options.ref != None and not os.path.exists(options.ref) and not db_check_dict(options.ref):
+		if options.ref != None and not file_exists(options.ref):
 			print "Error: the file expected to contain the reference images (%s) does not exist" %(options.ref)
 			error = True
 		elif options.ref and (os.path.exists(options.datafile) or db_check_dict(options.datafile)):
@@ -741,8 +863,14 @@ def check(options, verbose=False):
 				error = True
 				if (verbose):
 					print "Error - the dimensions of the reference and particle images do not match"
-
-
+		elif len(args) > 1:
+				# classes contains the classifications - row is particle number, column data contains class numbers (could be greater than 1)
+			classes = EMData()
+			classes.read_image(args[1], 0,True)
+			class_max = int(classes["maximum"])
+			num_ref= EMUtil.get_image_count(options.ref)
+			if ( class_max > num_ref ):
+				print "Error, the classification matrix refers to a class number (%d) that is beyond the number of images (%d) in the reference image (%s)." %(class_max,num_ref,options.ref)
 			
 	if (options.iter > 1 or options.bootstrap) and options.align == None:
 		print "Error: you must specify the align argument"

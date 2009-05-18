@@ -53,7 +53,7 @@ if not os.path.exists("testdata.hdf") :
 		t=test_image(i)
 		t.write_image("testdata.hdf",-1)
 
-task=EMTask("test",{"input":("cache","testdata.hdf",0,5)},{})
+task=EMTask("test",{"input":("cache","testdata.hdf",0,5),"transform":Transform()},{})
 
 etc=EMTaskCustomer("dc:localhost:9990")
 print "Est %d CPUs"%etc.cpu_est()
