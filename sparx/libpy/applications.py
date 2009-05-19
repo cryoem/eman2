@@ -9324,7 +9324,7 @@ def ali_vol_2(vol, refv, ang_scale, shift_scale, radius=None, discrepancy = "ccc
 	new_params = amoeba(new_params, scale, ali_vol_func, 1.e-1, 1.e-1, 500, data)
 	vol = rot_shift3D(vol, new_params[0][0], new_params[0][1], new_params[0][2], new_params[0][3], new_params[0][4], new_params[0][5],1.0)
 	return vol
-        
+
 def ali_vol_3(vol, refv, ang_scale, shift_scale, radius=None, discrepancy = "ccc", mask=None):
 	#rotation and shift
 	from alignment    import ali_vol_func
@@ -9342,7 +9342,7 @@ def ali_vol_3(vol, refv, ang_scale, shift_scale, radius=None, discrepancy = "ccc
 	new_params = [0.0]*6
 	opt_params,funval,niter = amoeba(new_params, scale, ali_vol_func, 1.e-1, 1.e-1, 500, data)
 	return opt_params
- 
+
 def ali_vol(vol, refv, ang_scale, shift_scale, radius=None, discrepancy = "ccc"):
 	#rotation and shift
 	from alignment    import ali_vol_func

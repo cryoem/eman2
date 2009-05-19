@@ -208,7 +208,6 @@ def ref_ali3dm_ali_50S( refdata ):
 			v.filter_by_image( varf )
 	
 		v.write_image(os.path.join(outdir, "volf%04d.hdf"%( total_iter)), iref)
-	
 
 def ref_random( ref_data ):
 	from utilities    import print_msg
@@ -558,8 +557,6 @@ def spruce_up_var_m( refdata ):
 	mask   = refdata[5]
 	ali50S = refdata[6]
 
-	print 'spruce up using variance'
-
 	if ali50S:
 		mask_50S = get_im( "mask-50S.spi" )
 
@@ -595,7 +592,6 @@ def spruce_up_var_m( refdata ):
 				v50S_i = volf.copy()
 				v50S_i *= mask_50S
 
-				print "aligning ", i
 				params = ali_vol_3(v50S_i, v50S_0, 10.0, 0.5, mask=mask_50S)
 				volf = rot_shift3D( volf, params[0], params[1], params[2], params[3], params[4], params[5], 1.0)
 
