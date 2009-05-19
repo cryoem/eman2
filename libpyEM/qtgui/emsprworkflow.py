@@ -324,7 +324,7 @@ class WorkFlowTask(QtCore.QObject):
 #		print "command is ",program
 #		for i in args: print i,
 #		print ""
-		
+#		
 		#print args
 		file = open(temp_file_name,"w+")
 		if(sys.platform != 'win32'):
@@ -2870,11 +2870,9 @@ class E2Refine2DReportTask(ParticleWorkFlowTask):
 		
 		self.rfcat = E2RefFreeClassAveTool()
 		p,n = self.rfcat.get_reference_free_class_averages_table()
-		if n == 0:
-			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2Refine2DReportTask.documentation_string+E2Refine2DReportTask.warning_string,choices=None))
-		else:
-			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2Refine2DReportTask.documentation_string,choices=None))
-			params.append(p)
+
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2Refine2DReportTask.documentation_string,choices=None))
+		params.append(p)
 		return params
 	
 	def on_form_cancel(self):
@@ -3130,7 +3128,7 @@ class E2Refine2DTask(EMClassificationTools):
 	 	
 	 	# if we make it here we are almost definitely good to go, the only thing that can fail is the e2bdb or e2proc2d commands
 	 	options.path = numbered_path("r2d",True)
-	 	if self.end_tag != "generic": 
+	 	if options.filenames[:4] == "bdb:": 
 	 		bdb_success, bdb_cmd = self.make_v_stack(options)
 		 	if bdb_success:
 		 		if options.shrink > 1:
@@ -3205,7 +3203,7 @@ class E2Refine2DTask(EMClassificationTools):
 	 	
 	 	# if we make it here we are almost definitely good to go, the only thing that can fail is the e2bdb or e2proc2d commands
 	 	options.path = numbered_path("r2d",True)
-	 	if self.end_tag != "generic": 
+	 	if options.filenames[:4] == "bdb:": 
 	 		bdb_success, bdb_cmd = self.make_v_stack(options)
 		 	if bdb_success:
 		 		if options.shrink > 1:
@@ -3250,6 +3248,93 @@ class E2Refine2DTask(EMClassificationTools):
 		success = (success in (0,12))
 	 	get_application().setOverrideCursor(Qt.ArrowCursor)
 	 	return success,cmd
+
+	def process_specified_files(self,options,params):
+		error_message = []
+		if not params.has_key("filenames") or len(params["filenames"]) == 0:
+			return ["Please specify files to process"]
+#			error_message.append("Please specify files to process")
+#			self.show_error_message(error_message)
+#			return None
+		
+		rx = -1
+		a = EMData()
+		for file in params["filenames"]:
+			if not file_exists(file): error_message.append("%s does not exist" %s)
+			else:
+				try:
+					nx,ny,nz = gimme_image_dimensions3D(file)
+				except:
+					error_message.append("%s is not a valid EM image" %file)
+					continue
+				
+				
+				if nz > 1:
+					error_message.append("%s is 3D, refine2d works on 2D images only" &file)
+					break
+				else:
+					if nx != ny:
+						error_message.append("%s contains images that are not square. Refine2d requires square images" %file)
+						break
+					if rx == -1:
+						rx = nx
+					elif nx != rx:
+						error_message.append("The dimensions of the image files you specified are not uniform")
+						break
+						
+		if rx == -1:
+			error_message.append("Couldn't determine image dimensions")
+		
+		if len(error_message) != 0:
+			return error_message
+			#self.show_error_message(error_message)
+			#return None
+		
+		# if we make it here we are good to go
+		options.input = None
+		options.filenames = [] # important - makes the spawn_process task work
+		if len(params["filenames"]) > 1 or options.shrink > 1:
+			progress = EMProgressDialogModule(get_application(),"Processing files...", "Abort import", 0, len(params["filenames"]),None)
+			progress.qt_widget.show()
+		
+			for i,file in enumerate(params["filenames"]):
+				cmd = "e2proc2d.py"
+				cmd += " %s" %file # the input name
+				
+				if options.shrink > 1: out_name = "bdb:"+options.path+"#all"+str(options.shrink)
+				else: out_name = "bdb:"+options.path+"#all"
+				
+				if options.input == None: options.input = out_name
+	 			
+	 			cmd += " %s" %out_name # the output name
+	 			
+	 			if options.shrink > 1: 
+	 				cmd += " --process=math.meanshrink:n="+str(options.shrink)
+	 			
+	 			get_application().setOverrideCursor(Qt.BusyCursor)
+	 			success = (os.system(cmd) in (0,12))
+	 			get_application().setOverrideCursor(Qt.ArrowCursor)
+	 			if not success:
+	 				return ["Command %s failed" %cmd]
+	 			
+	 			
+	 			progress.qt_widget.setValue(i+1)
+	 			get_application().processEvents()
+	 			if progress.qt_widget.wasCanceled():
+	 				db_remove_dict(options.input)
+	 				progress.qt_widget.close()
+	 				return ["Processing was cancelled"]
+	 			
+	 		try: db_close_dict(out_name)
+	 		except:
+	 			print "db close dict failed",out_name
+	 			
+	 		progress.qt_widget.close()
+	 		
+	 	else:
+	 		options.input = params["filenames"][0]
+	 	
+	 	return []
 
 class EMParticleOptions:
 	''' 
@@ -3461,92 +3546,6 @@ class E2Refine2DWithGenericTask(E2Refine2DRunTask):
 		E2Refine2DRunTask.__init__(self,[])
 		self.end_tag = "generic"
 		self.workflow_setting = workflow_setting
-
-
-	def process_specified_files(self,options,params):
-		error_message = []
-		if not params.has_key("filenames") or len(params["filenames"]) == 0:
-			return ["Please specify files to process"]
-#			error_message.append("Please specify files to process")
-#			self.show_error_message(error_message)
-#			return None
-		
-		rx = -1
-		a = EMData()
-		for file in params["filenames"]:
-			if not file_exists(file): error_message.append("%s does not exist" %s)
-			else:
-				try:
-					nx,ny,nz = gimme_image_dimensions3D(file)
-				except:
-					error_message.append("%s is not a valid EM image" %file)
-					continue
-				
-				
-				if nz > 1:
-					error_message.append("%s is 3D, refine2d works on 2D images only" &file)
-					break
-				else:
-					if nx != ny:
-						error_message.append("%s contains images that are not square. Refine2d requires square images" %file)
-						break
-					if rx == -1:
-						rx = nx
-					elif nx != rx:
-						error_message.append("The dimensions of the image files you specified are not uniform")
-						break
-						
-		if rx == -1:
-			error_message.append("Couldn't determine image dimensions")
-		
-		if len(error_message) != 0:
-			return error_message
-			#self.show_error_message(error_message)
-			#return None
-		
-		# if we make it here we are good to go
-		options.input = None
-		options.filenames = [] # important - makes the spawn_process task work
-		if len(params["filenames"]) > 1 or options.shrink > 1:
-			progress = EMProgressDialogModule(get_application(),"Processing files...", "Abort import", 0, len(params["filenames"]),None)
-			progress.qt_widget.show()
-		
-			for i,file in enumerate(params["filenames"]):
-				cmd = "e2proc2d.py"
-				cmd += " %s" %file # the input name
-				
-				if options.shrink > 1: out_name = "bdb:"+options.path+"#all"+str(options.shrink)
-				else: out_name = " bdb:"+options.path+"#all"
-				
-				if options.input == None: options.input = out_name
-	 			
-	 			cmd += " %s" %out_name # the output name
-	 			
-	 			if options.shrink > 1: 
-	 				cmd += " --process=math.meanshrink:n="+str(options.shrink)
-	 			
-	 			get_application().setOverrideCursor(Qt.BusyCursor)
-	 			success = (os.system(cmd) in (0,12))
-	 			get_application().setOverrideCursor(Qt.ArrowCursor)
-	 			if not success:
-	 				return ["Command %s failed" %cmd]
-	 			
-	 			
-	 			progress.qt_widget.setValue(i+1)
-	 			get_application().processEvents()
-	 			if progress.qt_widget.wasCanceled():
-	 				db_remove_dict(options.input)
-	 				progress.qt_widget.close()
-	 				return ["Processing was cancelled"]
-	 			
-	 		db_close_dict(out_name)
-	 			
-	 		progress.qt_widget.close()
-	 		
-	 	else:
-	 		options.input = params["filenames"][0]
-	 	
-	 	return []
 			
 							
 class E2InitialModelsTool:

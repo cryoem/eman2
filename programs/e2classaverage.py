@@ -589,7 +589,8 @@ class EMClassAverageTask(EMTask):
 			average = averager.finish()
 			if self.norm != None: average.process_inplace(self.norm[0],self.norm[1])
 			#should this be centeracf?
-			average.process_inplace("xform.centerofmass", {"int_shift_only":1})
+			#average.process_inplace("xform.centerofmass", {"int_shift_only":1})
+			average.process_inplace("xform.centeracf")
 			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 			average.set_attr("ptcl_repr",np)
 		return average,inclusion
@@ -615,6 +616,7 @@ class EMClassAverageTask(EMTask):
 			if self.norm != None: average.process_inplace(self.norm[0],self.norm[1])
 			#should this be centeracf?
 			#average.process_inplace("xform.centerofmass")
+			average.process_inplace("xform.centeracf")
 			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 			average.set_attr("ptcl_repr",np)
 		return average
@@ -1028,7 +1030,8 @@ def get_basic_average_with_cull(averager_parms,class_cache,options,weights,da,dx
 		average = averager.finish()
 		#should this be centeracf?
 		if str(options.normproc) != "None": average.process_inplace(options.norm[0],options.norm[1])
-		average.process_inplace("xform.centerofmass",{"int_shift_only":1})
+		#average.process_inplace("xform.centerofmass",{"int_shift_only":1})
+		average.process_inplace("xform.centeracf")
 		average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 		average.set_attr("ptcl_repr",np)
 	
