@@ -327,7 +327,7 @@ class EMClassAverageTask(EMTask):
 			
 			ref_alis = {}
 			for ptcl_idx,ali in self.all_alis[-1].items():
-				ref_alis[ptcl_idx] =  ali * ref_ali
+				ref_alis[ptcl_idx] = ref_ali * ali # this is correct it is easily verified
 			self.all_alis.append(ref_alis)
 			average = self.__get_average(ref_alis,inclusions)
 			self.averages.append(average)
