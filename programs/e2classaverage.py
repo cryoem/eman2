@@ -760,6 +760,7 @@ def main():
 			sys.exit(1)
 	# do one class at a time
 	for cl in xrange(class_min,class_max+1):
+		print cl
 		E2progress(logger,float(cl-class_min)/(class_max+1-class_min))
 		class_cache = ClassCache(args,options,num_part,num_classes,classes)
 		class_cache.update_cache(cl)
@@ -786,16 +787,17 @@ def main():
 			if options.verbose: print "bootstrapping the original class average"
 			average,np = get_boot_strapped_average(class_cache,options,args)
 		
-		average.write_image("dc_test_cmp.hdf",-1)
-		
-		if options.idxcache:
-			class_db[str(cl)] = class_indices
-				
 		if np == 0:
 			if options.verbose:
 				print "Class",cl,"...no particles"
 			# FIXME
 			continue
+		average.write_image("dc_test_cmp.hdf",-1)
+		
+		if options.idxcache:
+			class_db[str(cl)] = class_indices
+				
+		
 		
 		if options.verbose: print "done original average"
 	
@@ -1097,12 +1099,12 @@ def get_basic_average(averager_parms,class_cache,da,dflip,dx,dy,weights,options)
 		averager.add_image(rslt)
 	
 	if np == 0 or weightsum == 0:
-		if options.verbose:
-			print "Class",cl,"...no particles"
+#		if options.verbose:
+#			print "Class",cl,"...no particles"
 		# FIXME
 		
 		# write blank image? Write meta data?
-		return None
+		return None,0
 		
 	average = averager.finish()
 	average.mult(float(np)) # Undo the division of np by the averager - this was incorrect because the particles were weighted.
