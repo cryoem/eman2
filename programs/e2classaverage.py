@@ -154,7 +154,7 @@ class EMGenClassAverages:
 		self.weights, self.dx, self.dy, self.da, self.dflip = EMData(),EMData(),EMData(),EMData(),EMData()
 		if options.bootstrap:
 			for image in [self.weights,self.dx,self.dy,self.da,self.dflip]:
-				image.set_size(classes.get_xsize(),classes.get_ysize())
+				image.set_size(self.classes.get_xsize(),self.classes.get_ysize())
 				image.to_zero()
 			
 		elif EMUtil.get_image_count(args[1]) != 6:
@@ -173,7 +173,6 @@ class EMGenClassAverages:
 				if options.even: name += "_even"
 				elif options.odd: name += "_odd"
 				self.db_name = numbered_bdb(name)
-				print "db_open_dict"
 				self.class_db = db_open_dict(self.db_name)
 			except:
 				print "error with db terminology: can't call numbered_bdb with this argument:", "bdb:"+options.dbpath+"#class_indices"
@@ -190,16 +189,17 @@ class EMGenClassAverages:
 			self.task_customers = []
 			self.tids = []
 			self.__init_memory(self.args, self.options)
-			for class_idx in range(self.class_min,self.class_max):
+			for class_idx in xrange(self.class_min,self.class_max+1):
 				ptcl_indices,col_idx_cache,dcol_idx_cache =  self.__get_class_data(class_idx, self.options)
-				#print self.__get_task_options(self.options)
+
+
 				init_alis = None
 				init_weights = None
 				if not self.options.bootstrap:
 					init_alis =  self.__get_alignment_data(dcol_idx_cache)
 					init_weights = self.__get_weight_data(dcol_idx_cache)
-					for t in init_alis.values(): print t
-					for t in init_weights.values(): print t
+#					for t in init_alis.values(): print t
+#					for t in init_weights.values(): print t
 					
 				data = {}
 				data["input"] = ("cache",self.args[0],ptcl_indices)
@@ -218,14 +218,14 @@ class EMGenClassAverages:
 				
 				from EMAN2PAR import EMTaskCustomer
 				etc=EMTaskCustomer("dc:localhost:9990")
-				print "Est %d CPUs"%etc.cpu_est()
+				#print "Est %d CPUs"%etc.cpu_est()
 				tid=etc.send_task(task)
-				print "Task submitted tid=",tid
+				#print "Task submitted tid=",tid
 				
 				self.task_customers.append(etc)
 				self.tids.append(tid)
 			
-			
+			classes = range(self.class_min,self.class_max+1)
 			while 1:
 				if len(self.task_customers) == 0: break
 				print len(self.task_customers),"loop"
@@ -233,13 +233,15 @@ class EMGenClassAverages:
 					task_customer = self.task_customers[i]
 					tid = self.tids[i] 
 					st=task_customer.check_task((tid,))[0]
-					print "%d%%"%st
 					if st==100:
+
 						rslts = task_customer.get_results(tid)
 						for image in rslts[1]["averages"]:
 							image.write_image("dc_average.hdf",-1)
 							
 						if hasattr(self.options,"ref") and self.options.ref != None:
+							classes.remove(rslts[1]["class_idx"])
+							print classes
 							a = EMData(self.options.ref,rslts[1]["class_idx"])
 							a.write_image("dc_average.hdf",-1)
 						
@@ -314,10 +316,10 @@ class EMClassAverageTask(EMTask):
 	   			itfrac = float(i+1)/float(self.options["iter"])
 	   			threshold = self.__get_cull_threshold(sims,itfrac)
 	   			
-	   		print sims,threshold
+	   		#print sims,threshold
 	   		
 	   		average, inclusions = self.__get_average_with_culling(alis,sims,threshold)
-	   		print inclusions
+	   		#print inclusions
 	   		self.averages.append(average)
 	   		
 	   	if self.ref != None:
@@ -369,7 +371,6 @@ class EMClassAverageTask(EMTask):
 				if norm != None:
 					usefilt_image.process_inplace(norm[0],norm[1])
 				self.usefilt_images[ptcl_idx] = usefilt_image
-		
 		# set a flag that can be used to decide if quality scores need to be
 		# evaluated and used for culling the worst, or least similar, particles
 		# from the class
@@ -384,6 +385,10 @@ class EMClassAverageTask(EMTask):
 			cache_name=self.data["ref"][1]
 			ref_cache=db_open_dict(cache_name)
 			self.ref = ref_cache[self.data["ref"][2]]
+		
+		self.verbose = 0
+		if self.options.has_key("verbose") and self.options["verbose"] != None:
+			self.verbose = self.options["verbose"]
 			
 	def __get_cull_threshold(self,sim_values,itfrac):
 		
@@ -403,7 +408,7 @@ class EMClassAverageTask(EMTask):
 			# class average)
 			wf = (1.0-itfrac)+itfrac*self.options["keep"] # weighting function
 			idx = int(math.ceil(wf*len(qual_scores)))-1
-			print idx,"was the idx",itfrac*self.options["keep"],wf
+			#print idx,"was the idx",itfrac*self.options["keep"],wf
 			if idx >= len(qual_scores): idx = len(qual_scores)-1
 			#raise RuntimeError("Cull thresh idx was too large, something is wrong with the formula")
 			cullthresh = qual_scores[idx]
@@ -504,7 +509,7 @@ class EMClassAverageTask(EMTask):
 					
 			if (average == None):
 				average = image.copy()
-				alis.append(Transform()) # the identity
+				alis[ptcl_idx] = Transform() # the identity
 				np = 1
 			else:
 
@@ -512,8 +517,7 @@ class EMClassAverageTask(EMTask):
 				ali_parms = aligned.get_attr("xform.align2d")
 				ali_parms.invert()
 				alis[ptcl_idx] = ali_parms
-				aligned = image.copy()
-				aligned.process_inplace("math.transform",{"transform":(ali_parms)})
+				aligned = image.process("math.transform",{"transform":(ali_parms)})
 								
 				np += 1
 				average.add(aligned) # now add the image
@@ -522,7 +526,7 @@ class EMClassAverageTask(EMTask):
 			if self.norm != None: average.process_inplace(self.norm[0],self.norm[1])
 			average.process_inplace("xform.centeracf")
 			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
-		
+			average.set_attr("ptcl_repr",np)
 		return average,alis
 
 	def __get_init_average_from_ali(self):
@@ -556,6 +560,7 @@ class EMClassAverageTask(EMTask):
 		if self.norm != None: average.process_inplace(self.norm[0],self.norm[1])
 		average.process_inplace("xform.centeracf")
 		average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
+		average.set_attr("ptcl_repr",np)
 		
 		return average
 		
@@ -586,7 +591,7 @@ class EMClassAverageTask(EMTask):
 			#should this be centeracf?
 			average.process_inplace("xform.centerofmass", {"int_shift_only":1})
 			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
-		
+			average.set_attr("ptcl_repr",np)
 		return average,inclusion
 	
 	def __get_average(self,alis,inclusions):
@@ -611,7 +616,7 @@ class EMClassAverageTask(EMTask):
 			#should this be centeracf?
 			#average.process_inplace("xform.centerofmass")
 			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
-			
+			average.set_attr("ptcl_repr",np)
 		return average
 		
 		return average,inclusion
@@ -781,6 +786,8 @@ def main():
 			if options.verbose: print "bootstrapping the original class average"
 			average,np = get_boot_strapped_average(class_cache,options,args)
 		
+		average.write_image("dc_test_cmp.hdf",-1)
+		
 		if options.idxcache:
 			class_db[str(cl)] = class_indices
 				
@@ -812,6 +819,7 @@ def main():
 			#finally average with culling
 			average,np = get_basic_average_with_cull(averager_parms,class_cache,options,weights,da,dx,dy,dflip,ndata,cullthresh)			
 			if options.verbose: print "done iteration",it
+			average.write_image("dc_test_cmp.hdf",-1)
 
 		if average == None: 
 			continue
@@ -832,6 +840,9 @@ def main():
 			average.set_attr("xform.projection", e.get_attr("xform.projection"))
 			average.set_attr("projection_image",options.ref)
 			average.set_attr("projection_image_idx",cl)
+			
+			average.write_image("dc_test_cmp.hdf",-1)
+			e.write_image("dc_test_cmp.hdf",-1)
 
 			if options.verbose:
 				edata = []
@@ -900,9 +911,15 @@ def get_cull_threshold(class_cache,weights,options,itfrac):
 		# and there were 10 particles, then they would all be kept. If floor were
 		# used instead of ceil, the last particle would be thrown away (in the
 		# class average)
-		idx = int(math.ceil(((1.0-itfrac)+itfrac*options.keep)*(len(b)-1)))
-		if idx >= len(b):
-			raise RuntimeError("Cull thresh idx was too large, something is wrong with the formula")
+		wf = (1.0-itfrac)+itfrac*options.keep # weighting function
+		idx = int(math.ceil(wf*len(b)))-1
+		#print idx,"was the idx",itfrac*self.options["keep"],wf
+		if idx >= len(qual_scores): idx = len(b)-1
+			#raise RuntimeError("Cull thresh idx was too large, something is wrong with the formula")
+#		cullthresh = b[idx]
+#		idx = int(math.ceil(((1.0-itfrac)+itfrac*options.keep)*(len(b)-1)))
+#		if idx >= len(b):
+#			raise RuntimeError("Cull thresh idx was too large, something is wrong with the formula")
 		cullthresh = b[idx]
 	
 	return cullthresh
@@ -964,6 +981,7 @@ def get_basic_average_with_tweak(averager_parms,class_cache,options,weights,da,d
 		if str(options.normproc) != "None": average.process_inplace(options.norm[0],options.norm[1])
 		#average.process_inplace("xform.centerofmass") this shouldn't be necessary if we aligned to the projection
 		average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
+		average.set_attr("ptcl_repr",np)
 		
 	return average,np
 
@@ -980,7 +998,7 @@ def get_basic_average_with_cull(averager_parms,class_cache,options,weights,da,dx
 			# is written to disk if the resultmx option is specfied
 			# FIXME setting the weights matrix to 1 and 0 should probably only occur if we're at the
 			# last iteration
-			if ( weights.get(c,p) >= cullthresh ) :
+			if ( weights.get(c,p) > cullthresh ) :
 				weights.set(c,p,0)
 				continue
 			else: weights.set(c,p,1)
@@ -1010,6 +1028,7 @@ def get_basic_average_with_cull(averager_parms,class_cache,options,weights,da,dx
 		if str(options.normproc) != "None": average.process_inplace(options.norm[0],options.norm[1])
 		average.process_inplace("xform.centerofmass",{"int_shift_only":1})
 		average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
+		average.set_attr("ptcl_repr",np)
 	
 	return average,np
 			
@@ -1023,11 +1042,11 @@ def get_boot_strapped_average(class_cache,options,args):
 
 				
 		if (average == None):
-			average = EMData()
-			average.read_image(args[0],p)
+			average = class_cache.image_cache[p].copy()
+			#average.read_image(args[0],p)
 
 			if str(options.normproc) != "None": average.process_inplace(options.norm[0],options.norm[1])
-			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
+			#average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 			#average.write_image("ave_.hdf",-1)
 			np = 1
 		else:
@@ -1035,14 +1054,15 @@ def get_boot_strapped_average(class_cache,options,args):
 			# an improvement on what happens here, but it suffices
 			if options.usefilt:
 				image = class_cache.filtered_image_cache[p]
+			else:
+				image = class_cache.image_cache[p]
 				
 			ta = align(average,image,options)
 			t = ta.get_attr("xform.align2d")
 			t.invert()
-			ta = image.copy()
-			ta.process_inplace("math.transform",{"transform":(t)})
+			ta = image.process("math.transform",{"transform":(t)})
 
-			ta.process_inplace("mask.sharp",{"outer_radius":ta.get_xsize()/2})				
+			#ta.process_inplace("mask.sharp",{"outer_radius":ta.get_xsize()/2})				
 			np += 1
 			average.add(ta) # now add the image
 	
@@ -1050,6 +1070,7 @@ def get_boot_strapped_average(class_cache,options,args):
 		if str(options.normproc) != "None": average.process_inplace(options.norm[0],options.norm[1])
 		average.process_inplace("xform.centeracf")
 		average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
+		average.set_attr("ptcl_repr",np)
 	
 	return average,np
 
@@ -1086,7 +1107,10 @@ def get_basic_average(averager_parms,class_cache,da,dflip,dx,dy,weights,options)
 	average = averager.finish()
 	average.mult(float(np)) # Undo the division of np by the averager - this was incorrect because the particles were weighted.
 	average.mult(1.0/weightsum) # Do the correct division
+	if str(options.normproc) != "None": average.process_inplace(options.norm[0],options.norm[1])
 	average.process_inplace("xform.centeracf")
+	average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
+	average.set_attr("ptcl_repr",np)
 	
 	return average,np
 
