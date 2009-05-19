@@ -671,7 +671,7 @@ def main():
 		options.datafile = args[0]
 		options.outfile = args[2]
 	
-	error = check(options,True)
+	error = check(options,True,args)
 	
 	if (options.verbose):
 		if (error):
@@ -1192,7 +1192,7 @@ def align(this,to,options):
 	return ta
 
 		
-def check(options, verbose=False):
+def check(options,verbose=False,args=[]):
 
 	error = False
 	if ( options.nofilecheck == False ):
@@ -1260,7 +1260,7 @@ def check(options, verbose=False):
 				error = True
 				if (verbose):
 					print "Error - the dimensions of the reference and particle images do not match"
-		elif len(args) > 1:
+		elif len(args) > 1 and options.ref:
 				# classes contains the classifications - row is particle number, column data contains class numbers (could be greater than 1)
 			classes = EMData()
 			classes.read_image(args[1], 0,True)

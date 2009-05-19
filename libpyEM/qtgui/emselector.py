@@ -536,7 +536,7 @@ class EMSelectorDialog(QtGui.QDialog):
 			if nz == 1: 
 				menu.addAction("Preview Subset")
 		
-		if nz == 1 and ny > 1:	menu.addAction("Open in e2boxer")
+#		if nz == 1 and ny > 1:	menu.addAction("Open in e2boxer")
 			
 		QtCore.QObject.connect(menu,QtCore.SIGNAL("triggered(QAction*)"),self.menu_action_triggered)
 		self.action_list_widget = l # only set if the menu acutally triggers

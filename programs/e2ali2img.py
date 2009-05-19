@@ -60,23 +60,29 @@ def main():
 	lines=f.readlines()
 	angles=[]
 	for line in lines:
-		print str.strip(line)
 		angles.append(float(line))
 		
-	print angles
+	
 
 	input_image=EMData()
 	input_image.read_image(str(ali_filename),0,HEADER_ONLY)
 	nx = input_image.get_attr('nx')
 	ny = input_image.get_attr('ny')
 	nz = input_image.get_attr('nz')
+	
+	print len(angles),nz
+	if len(angles) != nz:
+		print len(angles),nz,ny,nx
+		raise RuntimeError("The number of angles in the tlt file does not match the number of images in the input image")
 
 	print nx,ny,nz
 	for z_index in range(0,nz):
 		roi=Region(0,0,z_index,nx,ny,1)
 		input_image=EMData()
 		input_image.read_image(ali_filename,0, HEADER_AND_DATA, roi)
-		input_image.set_rotation(90,angles[z_index],90)
+		print angles[z_index]
+		input_image.set_attr("xform.projection",Transform({"type":"eman","az":90,"alt":angles[z_index],"phi":90}))
+		#input_image.set_rotation(90,angles[z_index],90)
 		input_image.set_attr('ptcl_repr',1)
 		input_image.write_image(output_stack,-1)
 		

@@ -8162,7 +8162,9 @@ void TomoTiltEdgeMaskProcessor::process_inplace( EMData* image )
 	bool fim = params.set_default("angle_fim", false);
 	float alt;
 	if ( fim ) {
-		alt = image->get_attr("euler_alt");
+		Transform* t = (Transform*)image->get_attr("xform.projection");
+		Dict d = t->get_params("eman");
+		alt = (float) d["alt"];
 	}
 	else alt = params.set_default("angle", 0.0f);
 
