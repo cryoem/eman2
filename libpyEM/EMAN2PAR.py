@@ -32,8 +32,9 @@
 
 # This file contains functions related to running jobs in parallel in EMAN2
 
-from EMAN2 import test_image,EMData
+from EMAN2 import test_image,EMData,abs_path
 from EMAN2db import EMTask,EMTaskQueue,db_open_dict
+from e2classaverage import EMClassAverageTask
 import SocketServer
 from cPickle import dumps,loads
 from struct import pack,unpack
@@ -75,7 +76,8 @@ class EMTaskCustomer:
 			try :
 				if task.data[k][0]=="cache" :
 					task.data[k]=list(task.data[k])
-					task.data[k][1]=os.path.abspath(task.data[k][1])
+					task.data[k][1]=abs_path(task.data[k][1])
+					print abs_path(task.data[k][1])
 			except: pass
 		
 		if self.servtype=="dc" :
@@ -146,7 +148,8 @@ Communications are handled by subclasses."""
 			return {"inverted":ret}
 		
 		elif task.command == "e2classaverage":
-			pass			
+			task.execute()
+			return task.get_return_data()
 
 def image_range(a,b=None):
 	"""This is an iterator which handles the (#), (min,max), (1,2,3,...) image number convention for passed data"""

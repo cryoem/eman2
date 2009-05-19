@@ -888,7 +888,16 @@ def check_files_are_em_images(filenames):
 			return False, "File is not a valid EM image:"+file
 			
 	return True,"images are fine"
-	
+
+def abs_path(name):
+	'''
+	wraps os.path.absname but detects bdb naming
+	'''
+	if len(name) > 3 and name[:4] == "bdb:":
+		[dir,db_name,something] = db_parse_path(name)
+		return "bdb:"+dir+"#"+db_name
+	else:
+		return os.path.absname(name)
 
 def base_name( file_name,bdb_keep_dir=False ):
 	'''

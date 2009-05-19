@@ -61,7 +61,6 @@ class EMGenClassAverages:
 		'''
 		Get the options required by each task as a dict
 		'''
-		
 		if self.__task_options == None:
 			d = {}
 			d["iter"] = options.iter
@@ -88,33 +87,50 @@ class EMGenClassAverages:
 			if hasattr(options,"normproc") and options.normproc != None: d["normproc"] = parsemodopt(options.normproc)
 			else: d["normproc"] = None
 			
+			print d
 			self.__task_options = d
 			
 		return self.__task_options
 	
 	def __get_class_data(self,class_number,options):
-		image_idx = [] # this stores a particle index, for each partice in the class
-		col_idx_cache.append = [] # a list of tuples, [particle index, column idx) - can be used to get information from the input matrices
+		ptcl_indices = [] # this stores a particle index, for each partice in the class
+		col_idx_cache = [] # a list of tuples, [particle index, column idx) - can be used to get information from the input matrices
 		dcol_idx_cache = {}# a dictionary version of the col_idx_cache 
 		for p in xrange(0,self.num_part):
 			if options.odd and p % 2 == 0: continue # enforce even/odd constraints
 			if options.even and p % 2 == 1: continue # enforce even/odd constraints
 			for c in xrange(0,self.num_classes):
-				if self.class_data.get(c,p) == class_number:
+				if self.classes.get(c,p) == class_number:
 					
-					image_idx.append(p)
+					ptcl_indices.append(p)
 					# cache the hit if necessary - this is if there is more than one iteration, and/or the user has specifed verbose. In the
 					# latter case the class cache is used to print information
 					col_idx_cache.append((p,c))
 					
 					dcol_idx_cache[p] = c
-					
-	def __get_alignment_data(self,col_idx_cache):
+		
+		return ptcl_indices,col_idx_cache,dcol_idx_cache
+		
+	def __get_alignment_data(self,dcol_idx_cache):
 		'''
 		
 		'''
-		pass
-					
+		transforms = {}
+		for ptcl_idx,col in dcol_idx_cache.items():
+			t = Transform({"type":"2d","alpha":self.da.get(col,ptcl_idx),"mirror":int(self.dflip(col,ptcl_idx))})
+			t.set_trans(self.dx.get(col,ptcl_idx),self.dy.get(col,ptcl_idx))
+			transforms[ptcl_idx] = t
+		return transforms
+	
+	def __get_weight_data(self,dcol_idx_cache):
+		'''
+		
+		'''
+		weights = {}
+		for ptcl_idx,col in dcol_idx_cache.items():
+			weight = self.weights.get(col,ptcl_idx)
+			weights[ptcl_idx] = weight
+		return weights				
 	
 	def __init_memory(self,args,options):
 		'''
@@ -126,8 +142,8 @@ class EMGenClassAverages:
 		self.classes = EMData()
 		self.classes.read_image(args[1], 0)
 		(self.num_classes, self.num_part ) = gimme_image_dimensions2D(args[1]);
-		self.class_max = int(classes.get_attr("maximum"))
-		self.class_min = int(classes.get_attr("minimum"))
+		self.class_max = int(self.classes.get_attr("maximum"))
+		self.class_min = int(self.classes.get_attr("minimum"))
 	
 		# weights contains the weighting of the classification scheme stored in the EMData object "classes" - above
 		# dx contains the x translation of the alignment
@@ -157,9 +173,10 @@ class EMGenClassAverages:
 				if options.even: name += "_even"
 				elif options.odd: name += "_odd"
 				self.db_name = numbered_bdb(name)
-				self.class_db = db_open_dict(db_name)
+				print "db_open_dict"
+				self.class_db = db_open_dict(self.db_name)
 			except:
-				print "error with db terminology: can't call numbered_bdb with this argument:", "bdb:"+options.dbdir+"#class_indices"
+				print "error with db terminology: can't call numbered_bdb with this argument:", "bdb:"+options.dbpath+"#class_indices"
 				sys.exit(1)
 				
 				
@@ -169,15 +186,76 @@ class EMGenClassAverages:
 		'''
 		
 		if hasattr(self.options,"parallel"):
+			
+			self.task_customers = []
+			self.tids = []
 			self.__init_memory(self.args, self.options)
-			print self.__get_class_data(0, self.options)
+			for class_idx in range(self.class_min,self.class_max):
+				ptcl_indices,col_idx_cache,dcol_idx_cache =  self.__get_class_data(class_idx, self.options)
+				#print self.__get_task_options(self.options)
+				init_alis = None
+				init_weights = None
+				if not self.options.bootstrap:
+					init_alis =  self.__get_alignment_data(dcol_idx_cache)
+					init_weights = self.__get_weight_data(dcol_idx_cache)
+					for t in init_alis.values(): print t
+					for t in init_weights.values(): print t
+					
+				data = {}
+				data["input"] = ("cache",self.args[0],ptcl_indices)
+				if self.options.usefilt:
+					data["usefilt"] = ("cache",options.usefilt,ptcl_indices)
+				if init_alis != None:
+					data["init_alis"] = init_alis
+				if init_weights != None:
+					data["weights"] = init_weights
+				data["class_idx"] = class_idx 
+				
+				if hasattr(self.options,"ref") and self.options.ref != None:
+					data["ref"] = ("cache",self.options.ref,class_idx)
+				
+				task = EMClassAverageTask(data=data,options=self.__get_task_options(self.options))
+				
+				from EMAN2PAR import EMTaskCustomer
+				etc=EMTaskCustomer("dc:localhost:9990")
+				print "Est %d CPUs"%etc.cpu_est()
+				tid=etc.send_task(task)
+				print "Task submitted tid=",tid
+				
+				self.task_customers.append(etc)
+				self.tids.append(tid)
+			
+			
+			while 1:
+				if len(self.task_customers) == 0: break
+				print len(self.task_customers),"loop"
+				for i in xrange(len(self.task_customers)-1,-1,-1):
+					task_customer = self.task_customers[i]
+					tid = self.tids[i] 
+					st=task_customer.check_task((tid,))[0]
+					print "%d%%"%st
+					if st==100:
+						rslts = task_customer.get_results(tid)
+						for image in rslts[1]["averages"]:
+							image.write_image("dc_average.hdf",-1)
+							
+						if hasattr(self.options,"ref") and self.options.ref != None:
+							a = EMData(self.options.ref,rslts[1]["class_idx"])
+							a.write_image("dc_average.hdf",-1)
+						
+						self.task_customers.pop(i)
+						self.tids.pop(i)
+				
+				time.sleep(5)
 		else:
 			"wo"
-			
+				
+						
 	def __dc_process(self):
 		"Makes as many tasks as there are averages and spawns them"
 		for cl in xrange(self.class_min,self.class_max+1):
 			pass
+
 		
 	
 	def __single_cpu_process(self):
@@ -187,9 +265,14 @@ class EMGenClassAverages:
 		pass
 				
 
-class EMClassAverageTask:
+class EMClassAverageTask(EMTask):
 	def __init__(self,command="e2classaverage",data=None,options=None):
 		EMTask.__init__(self,command,data,options)
+		self.averages = [] # will eventually store a list of averages.
+		self.all_alis = [] # will eventually contain all of the alignment parameters of each iteration
+		self.final_average = None
+		self.final_alis = None # will be a dictionary of 
+		self.class_idx = data["class_idx"] # so it's easy to tell the calling function which class this is
 		# options should have these keys:
 		# iter - the total number of iterations. 0 is fine
 		# align - the main aligner, a list of two strings
@@ -200,35 +283,338 @@ class EMClassAverageTask:
 		# cmp - the final cmp - a list of two strings
 		# keep - keep argument, interpreted as a percentage or a number of sigmas depending on the keepsig argument
 		# keepsig - if True turns the keep into a sigma based threshold. May be None, False, or unspecified
-		# bootstrap - if True causes the initial average to be calculated in a bootstrapped fashion. Otherwise Transforms are used for initial alignments
 		# normproc - A normalization processor - a list of two strings. May be None or unspecified	
 		
 		# data should 
 		
-#	parser.add_option("--ref", type="string", help="Reference image. If specified, the metadata in this image is used to assign euler angles to the generated classes. This is typically the projections that were used for the classification.", default=None)
-#	parser.add_option("--align",type="string",help="This is the aligner used to align particles to the previous class average. Default is None.", default=None)
-#	parser.add_option("--aligncmp",type="string",help="The comparitor used for the --align aligner. Default is dot.",default="phase")
-#	parser.add_option("--ralign",type="string",help="This is the second stage aligner used to refine the first alignment. This is usually the \'refine\' aligner.", default=None)
-#	parser.add_option("--raligncmp",type="string",help="The comparitor used by the second stage aligner.",default="phase")
-#	parser.add_option("--averager",type="string",help="The type of averager used to produce the class average.",default="mean")
-#	parser.add_option("--cmp",type="string",help="The comparitor used to generate quality scores for the purpose of particle exclusion in classes, strongly linked to the keep argument.", default="phase")
-#	parser.add_option("--keep",type="float",help="The fraction of particles to keep in each class.",default=1.0)
-#	parser.add_option("--keepsig", action="store_true", help="Causes the keep argument to be interpreted in standard deviations.",default=False)
-#	parser.add_option("--verbose","-v",action="store_true",help="Print useful information while the program is running. Default is off.",default=False)
-#	parser.add_option("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists.")
-#	parser.add_option("--debug","-d",action="store_true",help="Print debugging infromation while the program is running. Default is off.",default=False)
-#	parser.add_option("--nofilecheck",action="store_true",help="Turns file checking off in the check functionality - used by e2refine.py.",default=False)
-#	parser.add_option("--check","-c",action="store_true",help="Performs a command line argument check only.",default=False)
-#	parser.add_option("--bootstrap",action="store_true",help="Bootstraps iterative alignment by using the first particle in each class to seed the iterative alignment. Only works if the number of iterations is greater than 0.")
-#	parser.add_option("--resultmx",type="string",help="Specify an output image to store the result matrix. This contains 5 images where row is particle number. Rows in the first image contain the class numbers and in the second image consist of 1s or 0s indicating whether or not the particle was included in the class. The corresponding rows in the third, fourth and fifth images are the refined x, y and angle (respectively) used in the final alignment, these are updated and accurate, even if the particle was excluded from the class.", default=None)
-#	parser.add_option("--normproc",type="string",help="The normalization processor. Default is normalize.edgemean. If you want to turn this option off specify \'None\'", default="normalize.edgemean")
-#	parser.add_option("--usefilt", dest="usefilt", default=None, help="Specify a particle data file that has been low pass or Wiener filtered. Has a one to one correspondence with your particle data. If specified will be used to align particles to the running class average, however the original particle will be used to generate the actual class average")
-#	parser.add_option("--idxcache", default=False, action="store_true", help="Stores the indices of all particles in the given class in the Python list in the e2classaverage.indices database")
-#	parser.add_option("--dbpath", help="Use in conjunction with --idxcache to specify a directory where the database entries should be stored, e.g. \"refine_01\" ", default=".")
-#	parser.add_option("--odd", default=False, help="Used by EMAN2 when running eotests. Includes only odd numbered particles in class averages.", action="store_true")
-#	parser.add_option("--even", default=False, help="Used by EMAN2 when running eotests. Includes only even numbered particles in class averages.", action="store_true")
-#	parser.add_option("--parallel", default=None, help="parallelism argument")
+	def execute(self):
+		
+		self.__init_memory()
+		
+	   	if self.options.has_key("bootstrap") and self.options["bootstrap"] == True:
+	   		average,alis = self.__get_bootstrapped_average()
+	   	else:
+	   		average = self.__get_init_average_from_ali()
+	   		alis = self.data["init_alis"]
 
+	   	self.all_alis.append(alis)
+	   	self.averages.append(average)
+	   	inclusions = None
+	   	for i in xrange(0,self.options["iter"]):
+	   		print "iteration",i
+	   		
+	   		if i != 0:
+	   			alis = self.__align_all(self.averages[-1])
+	   			self.all_alis.append(alis)
+	   		
+	   		threshold = None
+	   		sims = None
+	   		if self.culling:
+	   			sims = self.__cmp_using_ali(self.averages[-1],self.all_alis[-1])
+	   			itfrac = float(i+1)/float(self.options["iter"])
+	   			threshold = self.__get_cull_threshold(sims,itfrac)
+	   			
+	   		print sims,threshold
+	   		
+	   		average, inclusions = self.__get_average_with_culling(alis,sims,threshold)
+	   		print inclusions
+	   		self.averages.append(average)
+	   		
+	   	if self.ref != None:
+	   		ref_to_average = self.__align(self.ref,average)
+			ref_ali = ref_to_average.get_attr("xform.align2d")
+			ref_ali.invert()
+			
+			ref_alis = {}
+			for ptcl_idx,ali in self.all_alis[-1].items():
+				ref_alis[ptcl_idx] =  ali * ref_ali
+			self.all_alis.append(ref_alis)
+			average = self.__get_average(ref_alis,inclusions)
+			self.averages.append(average)
+	
+	def get_return_data(self):
+		d = {"averages":self.averages}
+		d["all_alis"] = self.all_alis
+		d["class_idx"] = self.class_idx
+		return d
+
+	def __init_memory(self):
+		'''
+		Reads images into memory, normalize them if the options dictate it
+		'''
+		cache_name=self.data["input"][1]
+		image_cache=db_open_dict(cache_name)
+		
+		self.images = {}
+		if self.data.has_key("usefilt") and self.data["usefilt"] != None:
+			self.usefilt_images = {}
+			usefilt_cache_name=self.data["usefilt"][1]
+			usefilt_image_cache=db_open_dict(usefilt_cache_name)
+		else:
+			self.usefilt_images = None
+		
+		norm = None
+		if self.options.has_key("normproc") and self.options["normproc"] != None:
+			norm = self.options["normproc"] # a list of length two
+		self.norm = norm
+			
+		for ptcl_idx in self.data["input"][2]:
+			image = image_cache[ptcl_idx]
+			if norm != None:
+				image.process_inplace(norm[0],norm[1])
+			self.images[ptcl_idx] = image
+			
+			if self.usefilt_images != None:
+				usefilt_image = usefilt_image_cache[ptcl_idx]
+				if norm != None:
+					usefilt_image.process_inplace(norm[0],norm[1])
+				self.usefilt_images[ptcl_idx] = usefilt_image
+		
+		# set a flag that can be used to decide if quality scores need to be
+		# evaluated and used for culling the worst, or least similar, particles
+		# from the class
+		self.culling = False
+		if (self.options["iter"] > 0):
+			self.culling = True
+			if (self.options.has_key("keepsig") and self.options["keepsig"] == False) and self.options["keep"] == 1.0 : self.culling=False
+		
+		# the reference is used to perform a final alignment, if specified
+		self.ref = None
+		if self.data.has_key('ref') and self.data['ref'] != None:
+			cache_name=self.data["ref"][1]
+			ref_cache=db_open_dict(cache_name)
+			self.ref = ref_cache[self.data["ref"][2]]
+			
+	def __get_cull_threshold(self,sim_values,itfrac):
+		
+#		def get_cull_threshold(class_cache,weights,options,itfrac):
+		qual_scores = sim_values.values()
+		
+		if (self.options.has_key("keepsig") and self.options["keepsig"] == True):
+			a = Util.get_stats_cstyle(qual_scores)
+			mean = a["mean"]
+			std_dev = a["std_dev"]
+			cullthresh = mean + ((self.options["keep"]+1)*(1.0-itfrac)+itfrac*self.options["keep"])*std_dev
+		else:
+			qual_scores.sort()
+			# The ceil reflects a conservative policy. If the user specified keep=0.93
+			# and there were 10 particles, then they would all be kept. If floor were
+			# used instead of ceil, the last particle would be thrown away (in the
+			# class average)
+			wf = (1.0-itfrac)+itfrac*self.options["keep"] # weighting function
+			idx = int(math.ceil(wf*len(qual_scores)))-1
+			print idx,"was the idx",itfrac*self.options["keep"],wf
+			if idx >= len(qual_scores): idx = len(qual_scores)-1
+			#raise RuntimeError("Cull thresh idx was too large, something is wrong with the formula")
+			cullthresh = qual_scores[idx]
+		
+		return cullthresh
+		
+	def __align(self,this,to):
+		# Align the particle to "to"
+		options = self.options
+		aligned=this.align(options["align"][0],to,options["align"][1],options["aligncmp"][0],options["aligncmp"][1])
+		
+		if options.has_key("ralign") and options["ralign"] != None: # potentially employ refine alignment
+			refine_parms=options["ralign"][1]
+			# this parameters I think west best with the refine aligner, but they're not well tested
+			# i.e. I need to do some rigorous testing before I can claim anything
+			#refineparms[1]["az"] = ta.get_attr_default("align.az",0)-1
+			#refineparms[1]["dx"] = ta.get_attr_default("align.dx",0)-1
+			#refineparms[1]["dy"] = ta.get_attr_default("align.dy",0)-1
+			#refineparms[1]["mode"] = 0
+			#refineparms[1]["stepx"] = 2
+			#refineparms[1]["stepy"] = 2
+			#refineparms[1]["stepaz"] = 5
+			
+			refine_parms["xform.align2d"] = aligned.get_attr("xform.align2d")
+			aligned = this.align(options["ralign"][0],to,refine_parms,options["raligncmp"][0],options["raligncmp"][1])
+			
+		return aligned
+	
+	def __cmp_using_ali(self,average,alis):
+		
+		sims = {} # stores similarity score, a measure of quality
+			
+		for ptcl_idx,ali in alis.items():
+			if self.usefilt_images == None:
+				image = self.images[ptcl_idx]
+			else:
+				image = self.usefilt_images[ptcl_idx]
+			
+			aligned = image.process("math.transform",{"transform":ali})
+			
+			sims[ptcl_idx] = aligned.cmp(self.options["cmp"][0],average,self.options["cmp"][1])
+				
+		return sims
+	
+	def __align_all(self,to):
+		alis = {} # stores Transforms that have alignment parameters in them
+		
+		for ptcl_idx in self.data["input"][2]:
+			if self.usefilt_images == None:
+				image = self.images[ptcl_idx]
+			else:
+				images = self.usefilt_images[ptcl_idx]
+				
+			aligned = self.__align(to,image)
+			ali_parms = aligned.get_attr("xform.align2d")
+			ali_parms.invert()
+			alis[ptcl_idx] = ali_parms
+				
+		return alis
+	
+	
+	def __align_and_cmp_all_to(self,to):
+		
+		alis = {} # stores Transforms that have alignment parameters in them
+		if self.culling:
+			sims = {} # stores similarity score, a measure of quality
+		else:
+			sims = None
+			
+		for ptcl_idx in self.data["input"][2]:
+			if self.usefilt_images == None:
+				image = self.images[ptcl_idx]
+			else:
+				images = self.usefilt_images[ptcl_idx]
+				
+			aligned = self.__align(to,image)
+			ali_parms = aligned.get_attr("xform.align2d")
+			ali_parms.invert()
+			alis[ptcl_idx] = ali_parms
+
+			
+			
+			# store the quality score on top of the weights, seeing as the starting weights are no longer required
+			if (self.culling): # but only if we need to
+				sims[ptcl_idx] = aligned.cmp(self.options["cmp"][0],image,self.options["cmp"][1])
+				
+		return alis,sims
+
+	def __get_bootstrapped_average(self):
+		average = None
+		np = 0
+		alis = {} # holds the transformation matrices that define the alignment 
+		for ptcl_idx in self.data["input"][2]:
+			if self.usefilt_images == None:
+				image = self.images[ptcl_idx]
+			else:
+				images = self.usefilt_images[ptcl_idx]
+					
+			if (average == None):
+				average = image.copy()
+				alis.append(Transform()) # the identity
+				np = 1
+			else:
+
+				aligned = self.__align(average,image)
+				ali_parms = aligned.get_attr("xform.align2d")
+				ali_parms.invert()
+				alis[ptcl_idx] = ali_parms
+				aligned = image.copy()
+				aligned.process_inplace("math.transform",{"transform":(ali_parms)})
+								
+				np += 1
+				average.add(aligned) # now add the image
+	
+		if np != 0:
+			if self.norm != None: average.process_inplace(self.norm[0],self.norm[1])
+			average.process_inplace("xform.centeracf")
+			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
+		
+		return average,alis
+
+	def __get_init_average_from_ali(self):
+		averager_parms =  self.options["averager"]
+		averager=Averagers.get(averager_parms[0], averager_parms[1])
+		
+		weightsum = 0 # used to normalize the average
+		np = 0 # number of particles in the average
+		
+		for ptcl_idx,ali in self.data["init_alis"].items():
+			image = self.images[ptcl_idx]			
+			rslt = image.process("math.transform",{"transform":ali})
+					
+			np += 1
+			weight = self.data["weights"][ptcl_idx]
+			weightsum += weight
+			rslt.mult(weight)
+			
+			# Add the image to the averager
+			averager.add_image(rslt)
+		
+		if np == 0 or weightsum == 0:
+#			if options.verbose:
+#				print "Class",cl,"...no particles"
+			# write blank image? Write meta data?
+			return None
+			
+		average = averager.finish()
+		average.mult(float(np)) # Undo the division of np by the averager - this was incorrect because the particles were weighted.
+		average.mult(1.0/weightsum) # Do the correct division
+		if self.norm != None: average.process_inplace(self.norm[0],self.norm[1])
+		average.process_inplace("xform.centeracf")
+		average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
+		
+		return average
+		
+	def __get_average_with_culling(self,alis,sims,cullthresh):
+		averager_parms =  self.options["averager"]
+		averager=Averagers.get(averager_parms[0], averager_parms[1])
+		
+		inclusion = {} # stores a flag, True or False, indicating whether the particle was included in the class average
+		np = 0 # number of particles
+		for ptcl_idx,ali in alis.items():
+			if ( cullthresh != None ):
+				if ( sims[ptcl_idx] > cullthresh ) :
+					inclusion[ptcl_idx] = False
+					continue
+				
+			inclusion[ptcl_idx] = True
+			image = self.images[ptcl_idx]			
+			rslt = image.process("math.transform",{"transform":ali})
+		
+			np += 1
+			averager.add_image(rslt)
+	
+		if np == 0:
+			average = None
+		else:
+			average = averager.finish()
+			if self.norm != None: average.process_inplace(self.norm[0],self.norm[1])
+			#should this be centeracf?
+			average.process_inplace("xform.centerofmass", {"int_shift_only":1})
+			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
+		
+		return average,inclusion
+	
+	def __get_average(self,alis,inclusions):
+		averager_parms =  self.options["averager"]
+		averager=Averagers.get(averager_parms[0], averager_parms[1])
+		
+		np = 0 # number of particles
+		for ptcl_idx,ali in alis.items():
+			if inclusions != None and inclusions[ptcl_idx] == False: continue
+			
+			image = self.images[ptcl_idx]			
+			rslt = image.process("math.transform",{"transform":ali})
+		
+			np += 1
+			averager.add_image(rslt)
+			
+		if np == 0:
+			average = None
+		else:
+			average = averager.finish()
+			if self.norm != None: average.process_inplace(self.norm[0],self.norm[1])
+			#should this be centeracf?
+			#average.process_inplace("xform.centerofmass")
+			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
+			
+		return average
+		
+		return average,inclusion
 		
 		
 
@@ -296,6 +682,7 @@ def main():
 	if options.parallel:
 		class_gen = EMGenClassAverages(options,args)
 		class_gen.do_your_thing()
+		return
 	
 	logger=E2init(sys.argv)
 	
@@ -621,7 +1008,7 @@ def get_basic_average_with_cull(averager_parms,class_cache,options,weights,da,dx
 		average = averager.finish()
 		#should this be centeracf?
 		if str(options.normproc) != "None": average.process_inplace(options.norm[0],options.norm[1])
-		average.process_inplace("xform.centerofmass")
+		average.process_inplace("xform.centerofmass",{"int_shift_only":1})
 		average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 	
 	return average,np
@@ -646,22 +1033,18 @@ def get_boot_strapped_average(class_cache,options,args):
 		else:
 			# there are a lot of ways to do and there is probably
 			# an improvement on what happens here, but it suffices
-			if not options.usefilt:
-				ta = align(average,image,options)
-				t = ta.get_attr("xform.align2d")
-				t.invert()
-				ta = image.copy()
-				ta.process_inplace("math.transform",{"transform":(t)})
-			else:
-				filt_image = class_cache.filtered_image_cache[p]
-					
-				ta = align(average,filt_image,options)
-				t = ta.get_attr("xform.align2d")
-				t.invert()
-				ta = image.process("math.transform",{"transform":(t)})
-				ta.process_inplace("mask.sharp",{"outer_radius":ta.get_xsize()/2})				
-				np += 1
-				average.add(ta) # now add the image
+			if options.usefilt:
+				image = class_cache.filtered_image_cache[p]
+				
+			ta = align(average,image,options)
+			t = ta.get_attr("xform.align2d")
+			t.invert()
+			ta = image.copy()
+			ta.process_inplace("math.transform",{"transform":(t)})
+
+			ta.process_inplace("mask.sharp",{"outer_radius":ta.get_xsize()/2})				
+			np += 1
+			average.add(ta) # now add the image
 	
 	if np != 0:
 		if str(options.normproc) != "None": average.process_inplace(options.norm[0],options.norm[1])
@@ -780,17 +1163,8 @@ def align(this,to,options):
 		#refineparms[1]["stepaz"] = 5
 		
 		refineparms[1]["xform.align2d"] = ta.get_attr("xform.align2d")
-		#refineparms[1]["dx"] = ta.get_attr_default("align.dx",0)
-		#refineparms[1]["dy"] = ta.get_attr_default("align.dy",0)
-		#flip = ta.get_attr_default("align.flip",0)
-		
-		#refine_this = this
-		#if flip:
-			#refine_this = this.process("xform.flip",{"axis":"x"})
-		
 		ta = this.align(refineparms[0],to,refineparms[1],options.alircmp[0],options.alircmp[1])
 		
-		#ta.set_attr("align.flip",flip)
 	return ta
 
 		
