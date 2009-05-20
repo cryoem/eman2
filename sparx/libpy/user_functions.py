@@ -46,14 +46,14 @@ def minfilt( fscc ):
 	flmax = -1.0
 	for iref in xrange(numref):
 		fl, aa = fit_tanh( fscc[iref] )
-		print "fl,aa: ", fl, aa
 		if (fl < flmin):
 			flmin = fl
 			aamin = aa
+			idmin = iref
 		if (fl > flmax):
 			flmax = fl
 			aamax = aa
-	return flmin,aamin
+	return flmin,aamin,idmin
 
 ref_ali2d_counter = -1
 def ref_ali2d( ref_data ):
@@ -149,15 +149,13 @@ def ref_ali3dm( refdata ):
 	fscc   = refdata[2]
 	total_iter = refdata[3]
 	varf   = refdata[4]
-	'''
-	'''
+	mask   = refdata[5]
+
 	print 'filter every volume at (0.4, 0.1)'
 	for iref in xrange(numref):
 		v = get_im(os.path.join(outdir, "vol%04d.hdf"%(total_iter)), iref)
 		v = filt_tanl(v, 0.4, 0.1)
-		if not(varf is None):
-			print 'filtering by fourier variance'
-			v.filter_by_image( varf )
+		v *= mask
 		v.write_image(os.path.join(outdir, "volf%04d.hdf"%( total_iter)), iref)
 					
 
@@ -514,16 +512,21 @@ def spruce_up_variance( ref_data ):
 	#   4 1.0/variance
 	#  Output: filtered, centered, and masked reference image
 	#  apply filtration (FSC) to reference image:
+	mask = ref_data[0]
+	center = ref_data[1]
+	vol  = ref_data[2]
+	fscc = ref_data[3]
+	varf = ref_data[4]
 
 	print_msg("spruce_up with variance\n")
 	cs = [0.0]*3
 
-	volf = ref_data[2].filter_by_image(ref_data[4])
+	if not(varf is None):
+		volf = vol.filter_by_image(varf)
 
-	fl, aa = fit_tanh(ref_data[3])
-	#fl = 0.35
-	#aa = 0.1
-	aa /= 2
+	#fl, aa = fit_tanh(ref_data[3])
+	fl = 0.30
+	aa = 0.15
 	msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
 	print_msg(msg)
 	volf = filt_tanl(volf, fl, aa)
@@ -537,12 +540,56 @@ def spruce_up_variance( ref_data ):
 	stat = Util.infomask(volf, model_circle(nx//2-2,nx,nx,nx)-model_circle(nx//2-6,nx,nx,nx), True)
 
 	volf -= stat[0]
-	Util.mul_img(volf, ref_data[0])
+	Util.mul_img(volf, mask)
 
 	volf = threshold(volf)
-	# The next line is to smooth edges
+	
 	volf = filt_gaussl(volf, 0.4)
 	return  volf, cs
+
+
+
+
+def ref_ali3dm_new( refdata ):
+        from utilities import model_circle, get_im
+        from filter    import filt_tanl, filt_gaussl, filt_table
+        from morphology import threshold
+	from fundamentals import rops_table
+	from math import sqrt
+	print "ref_ali3dm_new"
+
+        numref = refdata[0]
+        outdir = refdata[1]
+        fscc   = refdata[2]
+        total_iter = refdata[3]
+        varf   = refdata[4]
+        mask   = refdata[5]
+
+        flmin,aamin,idmin = minfilt( fscc )
+	aamin = aamin/2
+	print "flmin,aamin: ", flmin, aamin
+
+        vref = get_im( outdir + ("/vol%04d.hdf"%total_iter) , idmin)
+        stat = Util.infomask( vref, mask, True )
+
+        vref -= stat[0]
+        vref /= stat[1]
+        vref *= mask
+        rtab = rops_table( vref )
+        for i in xrange(numref):
+                vol = get_im( outdir + ("/vol%04d.hdf"%total_iter), i )
+                stat = Util.infomask( vref, mask, True )
+                vol -= stat[0]
+                vol /= stat[1]
+                vol *= mask
+
+                vtab = rops_table( vol )
+                ftab = [None]*len(vtab)
+                for j in xrange(len(vtab)):
+                        ftab[j] = sqrt( rtab[j]/vtab[j] )
+                volf = filt_table( vol, ftab )
+                volf = filt_tanl( volf, flmin, aamin )
+                volf.write_image( outdir+("/volf%04d.hdf" % total_iter), i )
 
 def spruce_up_var_m( refdata ):
 	from utilities import model_circle, get_im
@@ -561,16 +608,20 @@ def spruce_up_var_m( refdata ):
 		mask_50S = get_im( "mask-50S.spi" )
 
 
-	flmin,aamin=minfilt( fscc )
-        if aamin > 0.2:
-            aamin = aamin/2
+	if fscc is None:
+		flmin = 0.25
+		aamin = 0.15
+	else:
+		flmin,aamin,idmin=minfilt( fscc )
+		aamin = aamin
+	
 	print 'flmin,aamin:', flmin, aamin
 
 	for i in xrange(numref):
 		v = get_im( outdir + ("/vol%04d.hdf"% total_iter) , i )
-		v.filter_by_image( varf )
-		volf = filt_tanl(v, flmin, aamin)
-		stat = Util.infomask(v, None, True)
+		volf = v.filter_by_image( varf )
+		volf = filt_tanl(volf, flmin, aamin)
+		stat = Util.infomask(volf, None, True)
 		volf -= stat[0]
 		Util.mul_scalar(volf, 1.0/stat[1])
 
@@ -580,7 +631,7 @@ def spruce_up_var_m( refdata ):
 		Util.mul_img( volf, mask )
 
 		volf = threshold(volf)
-		volf = filt_tanl( volf, flmin, aamin)
+		volf = filt_gaussl( volf, 0.4)
 
 		if ali50S:
 			if i==0:
@@ -635,7 +686,7 @@ def constant( ref_data ):
 	global  ref_ali2d_counter
 	ref_ali2d_counter += 1
 	#print_msg("steady   #%6d\n"%(ref_ali2d_counter))
-	fl = 0.1
+	fl = 0.22
 	aa = 0.1
 	#msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
 	#print_msg(msg)
@@ -660,6 +711,7 @@ class factory_class:
 		self.contents["ref_random"]         = ref_random
 		self.contents["ref_ali3d"]          = ref_ali3d
 		self.contents["ref_ali3dm"]         = ref_ali3dm
+		self.contents["ref_ali3dm_new"]     = ref_ali3dm_new
 		self.contents["ref_ali3dm_ali_50S"] = ref_ali3dm_ali_50S
 		self.contents["spruce_up_var_m"]    = spruce_up_var_m
 		self.contents["reference3"]         = reference3
