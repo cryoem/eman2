@@ -140,6 +140,7 @@ EMData *EMData::do_ift_cuda(bool preserve_input) const
 	dat->mult(scale); // Use of GPU should be automatic
 
 	dat->set_fftpad(false);
+	dat->set_fftodd(false);
 	dat->set_complex(false);
 	if(dat->get_ysize()==1 && dat->get_zsize()==1)  dat->set_complex_x(false);
 	dat->set_ri(false);
@@ -278,6 +279,7 @@ EMData *EMData::do_ift()
 	float scale = 1.0f / ((nx - offset) * ny * nz);
 	dat->mult(scale);
 #endif	//FFTW2 || FFTW3
+	dat->set_fftodd(false);
 	dat->set_fftpad(false);
 	dat->set_complex(false);
 	if(dat->get_ysize()==1 && dat->get_zsize()==1)  dat->set_complex_x(false);
