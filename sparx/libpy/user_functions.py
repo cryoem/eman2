@@ -55,6 +55,36 @@ def minfilt( fscc ):
 			aamax = aa
 	return flmin,aamin,idmin
 
+def alivol_mask_getref( v, mask ):
+	from utilities import set_params3D
+	v50S_ref = v.copy()
+	v50S_ref *= mask
+	cnt = v50S_ref.phase_cog()
+	set_params3D( v50S_ref, (0.0,0.0,0.0,-cnt[0],-cnt[1],-cnt[2],0,1.0) )
+	return v50S_ref
+
+def alivol_mask( v, vref, mask ):
+	from utilities import set_params3D, get_params3D,compose_transform3
+	from fundamentals import rot_shift3D
+	from applications import ali_vol_shift, ali_vol_rotate
+	v50S_i = v.copy()
+	v50S_i *= mask
+	cnt = v50S_i.phase_cog()
+	set_params3D( v50S_i,   (0.0,0.0,0.0,-cnt[0],-cnt[1],-cnt[2],0,1.0) )
+
+	v50S_i = ali_vol_shift( v50S_i, vref, 1.0 )
+	v50S_i = ali_vol_rotate(v50S_i, vref, 5.0 )
+	v50S_i = ali_vol_shift( v50S_i, vref, 0.5 )
+	v50S_i = ali_vol_rotate(v50S_i, vref, 1.0 )
+	phi,tht,psi,s3x,s3y,s3z,mirror,scale = get_params3D( v50S_i )
+	phi,tht,psi,s3x,s3y,s3z,scale = compose_transform3(phi,tht,psi,s3x,s3y,s3z,1.0,0.0,0.0,0.0,cnt[0],cnt[1],cnt[2],1.0)
+	v = rot_shift3D( v, phi,tht,psi,s3x,s3y,s3z )
+	print "final params: ", phi,tht,psi,s3x,s3y,s3z
+	return v
+
+
+
+
 ref_ali2d_counter = -1
 def ref_ali2d( ref_data ):
 	from utilities    import print_msg
@@ -159,6 +189,7 @@ def ref_ali3dm( refdata ):
 		v.write_image(os.path.join(outdir, "volf%04d.hdf"%( total_iter)), iref)
 					
 
+
 def ref_ali3dm_ali_50S( refdata ):
 	from filter import fit_tanh, filt_tanl
 	from utilities import get_im
@@ -188,19 +219,15 @@ def ref_ali3dm_ali_50S( refdata ):
 	for iref in xrange(numref):
 		v = get_im(os.path.join(outdir, "vol%04d.hdf"%(total_iter)), iref)
 		v = filt_tanl(v, flmin, aamin)
-		'''
-		if iref==0:
-			v50S_0 = v.copy()
-			v50S_0 *= mask_50S
-		else:
-			from applications import ali_vol_3
-			v50S_i = v.copy()
-			v50S_i *= mask_50S
+		
+		if ali50s:
+			from utilities import get_params3D, set_params3D, combine_params3
+			from applications import ali_vol_shift, ali_vol_rotate
+			if iref==0:
+				v50S_ref = alivol_mask_getref( v, mask_50S )
+			else:
+				v = alivol_mask( v, v50S_ref, mask_50S )
 
-			print "aligning ", iref
-			params = ali_vol_3(v50S_i, v50S_0, 10.0, 0.5, mask=mask_50S)
-			v = rot_shift3D( v, params[0], params[1], params[2], params[3], params[4], params[5], 1.0)
-		'''
 		if not(varf is None):
 			print 'filtering by fourier variance'
 			v.filter_by_image( varf )
@@ -567,18 +594,19 @@ def ref_ali3dm_new( refdata ):
 
         flmin,aamin,idmin = minfilt( fscc )
 	aamin = aamin/2
-	print "flmin,aamin: ", flmin, aamin
+	print "flmin,aamin,idmin: ", flmin,aamin,idmin
 
         vref = get_im( outdir + ("/vol%04d.hdf"%total_iter) , idmin)
-        stat = Util.infomask( vref, mask, True )
+        stat = Util.infomask( vref, mask, False )
 
         vref -= stat[0]
         vref /= stat[1]
         vref *= mask
         rtab = rops_table( vref )
+	del vref
         for i in xrange(numref):
                 vol = get_im( outdir + ("/vol%04d.hdf"%total_iter), i )
-                stat = Util.infomask( vref, mask, True )
+                stat = Util.infomask( vol, mask, False )
                 vol -= stat[0]
                 vol /= stat[1]
                 vol *= mask
