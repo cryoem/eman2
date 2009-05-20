@@ -225,7 +225,8 @@ int ImagicIO::read_header(Dict & dict, int image_index, const Region * area, boo
 	dict["IMAGIC.reals"] = hed.reals;
 	dict["IMAGIC.pixels"] = hed.pixels;
 
-	dict["IMAGIC.type"] = hed.type;
+	char tmp[5] = { hed.type[0],hed.type[1],hed.type[2],hed.type[3],0 };
+	dict["IMAGIC.type"] = tmp;
 	dict["IMAGIC.ixold"] = hed.ixold;
 	dict["IMAGIC.iyold"] = hed.iyold;
 
@@ -625,19 +626,19 @@ ImagicIO::DataType ImagicIO::get_datatype_from_name(const char *name)
 {
 	DataType t = IMAGIC_UNKNOWN_TYPE;
 
-	if (strcmp(name, "PACK") == 0) {
+	if (strncmp(name, "PACK",4) == 0) {
 		t = IMAGIC_UCHAR;
 	}
-	else if (strcmp(name, "INTG") == 0 || strcmp(name, "INTGR") == 0 ) {
+	else if (strncmp(name, "INTG",4) == 0) {
 		t = IMAGIC_USHORT;
 	}
-	else if (strcmp(name, REAL_TYPE_MAGIC) == 0) {
+	else if (strncmp(name, REAL_TYPE_MAGIC,4) == 0) {
 		t = IMAGIC_FLOAT;
 	}
-	else if (strcmp(name, "COMP") == 0) {
+	else if (strncmp(name, "COMP",4) == 0) {
 		t = IMAGIC_FLOAT_COMPLEX;
 	}
-	else if (strcmp(name, "RECO") == 0) {
+	else if (strncmp(name, "RECO",4) == 0) {
 		t = IMAGIC_FFT_FLOAT_COMPLEX;
 	}
 	return t;

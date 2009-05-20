@@ -1909,10 +1909,10 @@ EMData *EMData::make_footprint(int type)
 		for (i=0; i<rmax*2; i+=2) {
 			for (j=0; j<rmax; j++) {
 				float norm=fp->get_value_at(i+1,j);
-//				fp->set_value_at(i,rmax*2-j-1,cbrt(fp->get_value_at(i,j)/(norm==0?1.0:norm)));
-//				fp->set_value_at(i,j,cbrt(fp->get_value_at(i,j)/(norm==0?1.0:norm)));
-				fp->set_value_at(i,rmax*2-j-1,fp->get_value_at(i,j)/(norm==0?1.0:norm));
-				fp->set_value_at(i,j,fp->get_value_at(i,j)/(norm==0?1.0:norm));
+				fp->set_value_at(i,rmax*2-j-1,cbrt(fp->get_value_at(i,j)/(norm==0?1.0:norm)));
+				fp->set_value_at(i,j,cbrt(fp->get_value_at(i,j)/(norm==0?1.0:norm)));
+/*				fp->set_value_at(i,rmax*2-j-1,fp->get_value_at(i,j)/(norm==0?1.0:norm));
+				fp->set_value_at(i,j,fp->get_value_at(i,j)/(norm==0?1.0:norm));*/
 				fp->set_value_at(i+1,j,0.0);
 			}
 		}
