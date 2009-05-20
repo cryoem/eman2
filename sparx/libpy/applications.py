@@ -4593,7 +4593,7 @@ def ali3d_m(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=1,
 	from utilities      import get_arb_params, set_arb_params, get_im, write_headers
 	from projection     import prep_vol, prgs
 	from utilities      import get_params_proj
-
+	from alignment      import proj_ali_incore,proj_ali_incore_local,Numrinit,prepare_refrings
 	from filter	    import filt_params, filt_tanl
 	from fundamentals   import fshift
 	from statistics     import fsc_mask
@@ -4637,6 +4637,10 @@ def ali3d_m(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=1,
 	nx      = volref.get_xsize()
 	if last_ring < 0:	last_ring = nx//2 - 2
 
+	fscmask = model_circle(last_ring, nx, nx, nx)
+
+	import user_functions
+	user_func = user_functions.factory[user_func_name]
 
 	print_msg("Input stack                 : %s\n"%(stack))
 	print_msg("Reference volume            : %s\n"%(ref_vol))	
@@ -4663,11 +4667,13 @@ def ali3d_m(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=1,
 		if(type(maskfile) is types.StringType):	 mask3D = get_image(maskfile)
 		else: 	                                 mask3D = maskfile
 	else        :   mask3D = model_circle(last_ring, nx, nx, nx)
-	mask = model_circle(last_ring, nx, nx)
+	
+	numr = Numrinit(first_ring, last_ring, rstep, "F")
+	mask2D = model_circle(last_ring,nx,nx) - model_circle(first_ring,nx,nx)
 
 
-	if debug:  outf = file(os.path.join(outdir, "progress"), "w")
-	else:      outf = None
+	if debug:  finfo = file(os.path.join(outdir, "progress"), "w")
+	else:      finfo = None
 
 	active = EMUtil.get_all_attributes(stack, 'active')
 	list_of_particles = []
@@ -4694,145 +4700,116 @@ def ali3d_m(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=1,
 	# do the projection matching
 	total_iter = 0
 	tr_dummy = Transform({"type":"spider"})
-	for N_step in xrange(lstp):
-		for Iter in xrange(nassign):
-			total_iter += 1
-			print_msg("ASSIGNMENT ITERATION #%3d\n"%(total_iter))
-			peaks = [-1.0e23]*nima
-			for iref in xrange(numref):
-				if(CTF):
-					previous_defocus = -1.0
-					vol = get_im(os.path.join(outdir, "volf%04d.hdf"%( total_iter-1)), iref)
-				else:
-					volref, kb = prep_vol(get_im(os.path.join(outdir, "volf%04d.hdf"%( total_iter-1)), iref) )
-				for im in xrange(nima):
-					if(CTF):
-						ctf_params = data[im].get_attr("ctf")
-						if(ctf_params.defocus != previous_defocus):
-							previous_defocus = ctf_params.defocus
-							volref, kb = prep_vol(filt_ctf(vol, ctf_params))
-					phi, theta, psi, tx, ty = get_params_proj(data[im])
-					peak = prgs(volref, kb, [phi, theta, psi, tx, ty]).cmp("ccc", data[im], {"mask":mask, "negative":0})
-					if(peak > peaks[im]):
-						peaks[im] = peak
-						data[im].set_attr('group', iref)
-			del peaks
-			if CTF: del vol
-			fscc = []
-			for iref in xrange(numref):
-				list_p = []
-				for im in xrange(nima):
-					if(iref == data[im].get_attr('group')):
-						list_p.append(im)
-				print_msg("Group number : %i"%(iref) + ",  number of objects: %i\n"%(len(list_p)))
-				#  3D stuff
-				if(CTF): vol1 = recons3d_4nn_ctf(data, [list_p[im] for im in xrange(0,len(list_p), 2)], snr, 1, sym)
-				else:    vol1 = recons3d_4nn(data, [list_p[im] for im in xrange(1,len(list_p), 2)], sym)
-				if(CTF): vol2 = recons3d_4nn_ctf(data, [list_p[im] for im in xrange(0,len(list_p), 2)], snr, 1, sym)
-				else:    vol2 = recons3d_4nn(data,[list_p[im] for im in xrange(1,len(list_p), 2)], sym)
 
-				fscc.append(fsc_mask(vol1, vol2, mask3D, 1.0, os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter))))
-				del vol1
-				del vol2
-			
-				# calculate new and improved 3D
-				if(CTF): volref = recons3d_4nn_ctf(data, list_p, snr, 1, sym)
-				else:	   volref = recons3d_4nn(data, list_p, sym)
-				volref.write_image(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref)
-			del list_p
-			from filter import fit_tanh, filt_tanl
-			flmin = 1.0
-			flmax = -1.0
-			for iref in xrange(numref):
-				fl, aa = fit_tanh( fscc[iref] )
-				if (fl < flmin):
-					flmin = fl
-					aamin = aa
-				if (fl > flmax):
-					flmax = fl
-					aamax = aa
-			# filter to minimum resolution
-			for iref in xrange(numref):
-				filt_tanl(get_im(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref), flmin, aamin).write_image(os.path.join(outdir, "volf%04d.hdf"%( total_iter)), iref)
-					
-			#  here we  write header info
-			write_headers( stack, data, list_of_particles)
- 		for Iter in xrange(nrefine):
-			total_iter += 1
-			print_msg("ALIGNMENT ITERATION #%3d\n"%(total_iter))
+	Niter = int(lstp*maxit*(nassign+nrefine))
+	for Iter in xrange(Niter):
+		N_step = (Iter%(lstp*(nassign+nrefine)))/(nassign+nrefine)
+		if Iter%(nassign+nrefine) < nassign:
+			runtype = "ASSIGNMENT"
+		else:
+			runtype = "REFINEMENT"
 
-			peaks = [[-1.0e23, tr_dummy] for im in xrange(nima) ]
-			for iref in xrange(numref):
-				volref.read_image(os.path.join(outdir, "volf%04d.hdf"%( total_iter-1)), iref)
-				if(an[N_step] == -1):	proj_ali_incore(volref, mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], ref_a, sym, finfo = outf, MPI=False)
-				else:	           proj_ali_incore_local(volref, mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], an[N_step], ref_a, sym, finfo = outf, MPI=False)
-				for im in xrange(nima):
-					peak = data[im].get_attr('peak')
-					if(peak > peaks[im][0]):
-						peaks[im][0] = peak
-						peaks[im][1] = data[im].get_attr('xform.projection')
-						data[im].set_attr('group', iref)
 
+		total_iter += 1
+		print_msg("%s ITERATION #%3d\n"%(runtype,total_iter))
+		peaks = [-1.0e23]*nima
+		trans = [tr_dummy]*nima
+
+		cs = [0.0]*3
+		for iref in xrange(numref):
+			vol = get_im(os.path.join(outdir, "volf%04d.hdf"%( total_iter-1)), iref)
+			if(CTF):
+				previous_defocus = -1.0
+			else:
+				volft, kb = prep_vol(vol)
+				if runtype=="REFINEMENT":
+					refrings = prepare_refrings(volft,kb,delta[N_step],ref_a,sym,numr)
 			for im in xrange(nima):
-				#group = data[im].get_attr('group')  ???
-				data[im].set_attr('xform.projection', peaks[im][1])
-			del peaks
-			fscc = []
-			for iref in xrange(numref):
-				list_p = []
-				for im in xrange(nima):
-					if(iref == data[im].get_attr('group')):
-						list_p.append(im)
-				print_msg("Group number : %i"%(iref) + ",  number of objects: %i\n"%(len(list_p)))
-				#  3D stuff
-				if(CTF): vol1 = recons3d_4nn_ctf(data, [list_p[im] for im in xrange(0,len(list_p), 2)], snr, 1, sym)
-				else:    vol1 = recons3d_4nn(data, [list_p[im] for im in xrange(1,len(list_p), 2)], sym)
-				if(CTF): vol2 = recons3d_4nn_ctf(data, [list_p[im] for im in xrange(0,len(list_p), 2)], snr, 1, sym)
-				else:    vol2 = recons3d_4nn(data,[list_p[im] for im in xrange(1,len(list_p), 2)], sym)
+				if(CTF):
+					ctf_params = data[im].get_attr("ctf")
+					if(ctf_params.defocus != previous_defocus):
+						previous_defocus = ctf_params.defocus
+						volft,kb = prep_vol(filt_ctf(vol, ctf_params))
+					if runtype=="REFINEMENT":
+						refrings = prepare_refrings(volft,kb,delta[N_step],ref_a,sym,numr)
 
-				fscc.append(fsc_mask(vol1, vol2, mask3D, 1.0, os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter))))
-				del vol1
-				del vol2
+				if runtype=="ASSIGNMENT":
+					phi,tht,psi,s2x,s2y = get_params_proj(data[im])
+					ref = prgs( volft,kb,[phi,tht,psi,-s2x,-s2y] )
+					peak = ref.cmp("ccc", data[im], {"mask":mask2D, "negative":0})
+					if not(finfo is None):
+						finfo.write( "ID,iref,peak: %6d %d %8.5f" % (list_of_particles[im],iref,peak) )
+						finfo.flush()
+				else:		
+					if(an[N_step] == -1):	
+						peak = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step])
+					else:	           
+						peak = proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step])
+					if not(finfo is None):
+						phi,tht,psi,s2x,s2y = get_params_proj(data[im])
+						finfo.write( "ID,iref,peak,trans: %6d %d %f %f %f %f %f %f"%(list_of_particles[im],iref,peak,phi,tht,psi,s2x,s2y) )
+						finfo.flush()
+
+
+				if(peak > peaks[im]):
+					peaks[im] = peak
+					data[im].set_attr('group', iref)
+					if runtype=="REFINEMENT":
+						trans[im] = data[im].get_attr( "xform.projection" )
+					if not(finfo is None):
+						finfo.write( " current best\n" )
+						finfo.flush()
+				else:
+					if not(finfo is None):
+						finfo.write( "\n" )
+						finfo.flush()
+
+		if runtype=="REFINEMENT":
+			for im in xrange(nima):
+				data[im].set_attr('xform.projection', trans[im])
+
+			if(center == -1):
+				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center(data, total_nima, myid, number_of_proc, main_node)
+				msg = " Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
+				print_msg(msg)
+				cs = [float(cs[0]), float(cs[1]), float(cs[2])]
+				rotate_3D_shift(data, cs)
+
+
+		fscc = [None]*numref
+		for iref in xrange(numref):
+			list_p = []
+			for im in xrange(nima):
+				if(iref == data[im].get_attr('group')):
+					list_p.append(im)
+			print_msg("Group number : %i"%(iref) + ",  number of objects: %i\n"%(len(list_p)))
+			#  3D stuff
+			if(CTF): vodd = recons3d_4nn_ctf(data, [list_p[im] for im in xrange(0,len(list_p), 2)], snr, 1, sym)
+			else:    vodd = recons3d_4nn(data, [list_p[im] for im in xrange(1,len(list_p), 2)], sym)
+			if(CTF): veve = recons3d_4nn_ctf(data, [list_p[im] for im in xrange(0,len(list_p), 2)], snr, 1, sym)
+			else:    veve = recons3d_4nn(data,[list_p[im] for im in xrange(1,len(list_p), 2)], sym)
+
+			fscc[iref] = fsc_mask(vodd, veve, mask3D, 1.0, os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)))
 			
-				# calculate new and improved 3D
-				if(CTF): volref = recons3d_4nn_ctf(data, list_p, snr, 1, sym)
-				else:	   volref = recons3d_4nn(data, list_p, sym)
-				volref.write_image(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref)
-			del list_p
-
-			# add all volumes
-			volref = get_im(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), 0)
-			for iref in xrange(numref):
-				Util.add_img(volref, get_im(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref))
-			Util.mul_scalar(volref, 1.0/float(numref))
-			# filter the average volume
-			from filter import fit_tanh, filt_tanl
-			flmin = 1.0
-			flmax = -1.0
-			for iref in xrange(numref):
-				fl, aa = fit_tanh( fscc[iref] )
-				if (fl < flmin):
-					flmin = fl
-					aamin = aa
-				if (fl > flmax):
-					flmax = fl
-					aamax = aa
-			# filter to minimum resolution
-			for iref in xrange(numref):
-				filt_tanl(get_im(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref), flmin, aamin).write_image(os.path.join(outdir, "volf%04d.hdf"%( total_iter)), iref)
-			volref = filt_tanl(volref, (flmax+flmin)/2.0, (aamax+aamin)/2.0)
+			# calculate new and improved 3D
+			if(CTF): volref = recons3d_4nn_ctf(data, list_p, snr, 1, sym)
+			else:	 volref = recons3d_4nn(data, list_p, sym)
+			volref.write_image(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref)
 			
-			if(center == 1):
-				from fundamentals import fshift
-				cs   = volref.phase_cog()
-				volref = fshift(volref, -cs[0], -cs[1] -cs[2])
 
-			# align each volume to the average - BORING!
-			for iref in xrange(numref):
-				vol = get_im(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref)
+		refdata = [None]*7
+		refdata[0] = numref
+		refdata[1] = outdir
+		refdata[2] = fscc
+		refdata[3] = total_iter
+		refdata[4] = None #varf
+		refdata[5] = fscmask
+		refdata[6] = False
+		user_func( refdata )
 
-			#  here we write header info
-			write_headers( stack, data, list_of_particles)
+		#  here we  write header info
+		write_headers( stack, data, list_of_particles)
+	
 	print_end_msg("ali3d_m")
 
 def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=1, 
@@ -9373,16 +9350,19 @@ def ali_vol(vol, refv, ang_scale, shift_scale, radius=None, discrepancy = "ccc")
 	cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= compose_transform3(params[0], params[1], params[2], params[3], params[4], params[5], params[7], new_params[0][0], new_params[0][1], new_params[0][2], new_params[0][3], new_params[0][4], new_params[0][5],1.0)
 	print  " new params ", cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale, new_params[1]
 	set_params3D(e, [cphi, ctheta, cpsi, cs2x, cs2y, cs2z, 0, cscale])
-	from utilities import write_headers
-	write_headers( vol, [e], [0])
+	if type(vol)==type(""):
+		from utilities import write_headers
+		write_headers( vol, [e], [0])
+	else:
+		return e
 
 def ali_vol_rotate(vol, refv, ang_scale, radius=None, discrepancy = "ccc"):
 	#rotation 
 	from alignment    import ali_vol_func_rotate
-	from utilities    import get_im, model_circle, get_params3D, set_params3D
+	from utilities    import get_image, model_circle, get_params3D, set_params3D
 	from utilities    import amoeba, compose_transform3
 	from fundamentals import rot_shift3D
-	ref = get_im(refv)
+	ref = get_image(refv)
 	nx = ref.get_xsize()
 	ny = ref.get_ysize()
 	nz = ref.get_zsize()
@@ -9393,27 +9373,28 @@ def ali_vol_rotate(vol, refv, ang_scale, radius=None, discrepancy = "ccc"):
 	params = get_params3D(ref)
 	print  " params of the reference volume",params
 	ref = rot_shift3D(ref, params[0], params[1], params[2], params[3], params[4], params[5], params[7])
-	e = get_im(vol)
+	e = get_image(vol)
 	params = get_params3D(e)
 	#print  " input params ", params
-	params2 = list(params)
-	del params2[6]
-	data=[e, ref, mask, params2, discrepancy]
+	data=[e, ref, mask, params, discrepancy]
 	new_params = [0.0, 0.0, 0.0]
 	new_params = amoeba(new_params, [ang_scale, ang_scale, ang_scale], ali_vol_func_rotate, 1.e-1, 1.e-1, 500, data)
 	cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= compose_transform3(params[0], params[1], params[2], params[3], params[4], params[5], params[7], new_params[0][0], new_params[0][1], new_params[0][2],0.0,0.0,0.0,1.0)
 	print  " new params ", cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale, new_params[1]
 	set_params3D(e, [cphi, ctheta, cpsi, cs2x, cs2y, cs2z, 0, cscale])
-	from utilities import write_headers
-	write_headers( vol, [e], [0])
+	if type(vol)==type(""):
+		from utilities import write_headers
+		write_headers( vol, [e], [0])
+	else:
+		return e
 
 def ali_vol_shift(vol, refv, shift_scale, radius=None, discrepancy = "ccc"):
 	# shift
 	from alignment    import ali_vol_func_shift
-	from utilities    import get_im, model_circle, get_params3D, set_params3D
+	from utilities    import get_image, model_circle, get_params3D, set_params3D
 	from utilities    import amoeba, compose_transform3
 	from fundamentals import rot_shift3D
-	ref = get_im(refv)
+	ref = get_image(refv)
 	nx = ref.get_xsize()
 	ny = ref.get_ysize()
 	nz = ref.get_zsize()
@@ -9425,7 +9406,7 @@ def ali_vol_shift(vol, refv, shift_scale, radius=None, discrepancy = "ccc"):
 	print  " params of the reference volume",params
 	ref = rot_shift3D(ref, params[0], params[1], params[2], params[3], params[4], params[5], params[7])
 
-	e = get_im(vol)
+	e = get_image(vol)
 	params = get_params3D(e)
 	print  " input params ",params
 	data=[e, ref, mask, params, discrepancy]
@@ -9434,16 +9415,19 @@ def ali_vol_shift(vol, refv, shift_scale, radius=None, discrepancy = "ccc"):
 	cphi, ctheta, cpsi, cs3x, cs3y, cs3z, cscale= compose_transform3(params[0], params[1], params[2], params[3], params[4], params[5], params[7], 0.0,0.0,0.0, new_params[0][0], new_params[0][1], new_params[0][2],1.0)
 	print  " new params ", cphi, ctheta, cpsi, cs3x, cs3y, cs3z, cscale, new_params[1]
 	set_params3D(e, [cphi, ctheta, cpsi, cs3x, cs3y, cs3z, 0, cscale])
-	from utilities import write_headers
-	write_headers( vol, [e], [0])
+	if type(vol)==type(""):
+		from utilities import write_headers
+		write_headers( vol, [e], [0])
+	else:
+		return e
 
 def ali_vol_scale(vol, refv, ang_scale, shift_scale, mag_scale, radius=None, discrepancy = "ccc"):
 	# rotation shift and scale
 	from alignment    import ali_vol_func_scale
-	from utilities    import get_im, model_circle, get_params3D, set_params3D
+	from utilities    import get_image, model_circle, get_params3D, set_params3D
 	from utilities    import amoeba, compose_transform3
 	from fundamentals import rot_shift3D
-	ref = get_im(refv)
+	ref = get_image(refv)
 	nx = ref.get_xsize()
 	ny = ref.get_ysize()
 	nz = ref.get_zsize()
@@ -9455,7 +9439,7 @@ def ali_vol_scale(vol, refv, ang_scale, shift_scale, mag_scale, radius=None, dis
 	print  " params of the reference volume",params
 	ref = rot_shift3D(ref, params[0], params[1], params[2], params[3], params[4], params[5], params[7])
 
-	e = get_im(vol)
+	e = get_image(vol)
 	params = get_params3D(e)
 	print  " input params ",params
 	data=[e, ref, mask, params, discrepancy]
@@ -9464,16 +9448,20 @@ def ali_vol_scale(vol, refv, ang_scale, shift_scale, mag_scale, radius=None, dis
 	cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= compose_transform3(params[0], params[1], params[2], params[3], params[4], params[5], params[7], new_params[0][0], new_params[0][1], new_params[0][2], new_params[0][3], new_params[0][4], new_params[0][5], new_params[0][6])
 	print  " new params ", cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale, new_params[1]
 	set_params3D(e, [cphi, ctheta, cpsi, cs2x, cs2y, cs2z, 0, cscale])
-	from utilities import write_headers
-	write_headers( vol, [e], [0])
+	
+	if type(vol)==type(""):
+		from utilities import write_headers
+		write_headers( vol, [e], [0])
+	else:
+		return e
 
 def ali_vol_only_scale(vol, refv, mag_scale, radius=None, discrepancy = "ccc"):
 	# scale
 	from alignment    import ali_vol_func_only_scale
-	from utilities    import get_im, model_circle, get_params3D, set_params3D
+	from utilities    import get_image, model_circle, get_params3D, set_params3D
 	from utilities    import amoeba, compose_transform3
 	from fundamentals import rot_shift3D
-	ref = get_im(refv)
+	ref = get_image(refv)
 	nx = ref.get_xsize()
 	ny = ref.get_ysize()
 	nz = ref.get_zsize()
@@ -9486,7 +9474,7 @@ def ali_vol_only_scale(vol, refv, mag_scale, radius=None, discrepancy = "ccc"):
 	print  " params of the reference volume",params
 	ref = rot_shift3D(ref, params[0], params[1], params[2], params[3], params[4], params[5], params[6])
 
-	e = get_im(vol)
+	e = get_image(vol)
 	params = get_params3D(e)
 	print  " input params ",params
 	data=[e, ref, mask, params, discrepancy]
@@ -9495,8 +9483,12 @@ def ali_vol_only_scale(vol, refv, mag_scale, radius=None, discrepancy = "ccc"):
 	cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= compose_transform3(params[0], params[1], params[2], params[3], params[4], params[5], params[7], 0.0,0.0,0.0,0.0,0.0,0.0, new_params[0][0])
 	print  " new params ", cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale, new_params[1]
 	set_params3D(e, [cphi, ctheta, cpsi, cs2x, cs2y, cs2z, 0, cscale])
-	from utilities import write_headers
-	write_headers( vol, [e], [0])
+	
+	if type(vol) == type(""):
+		from utilities import write_headers
+		write_headers( vol, [e], [0])
+	else:
+		return e
 
 def rot_sym(infile, outfile, sym_gp="d4", \
 			radius=None, phi=0, theta=0, psi=0, phirange=20, thetarange=20, psirange=20, ftolerance=1.e-4, xtolerance=1.e-4):
