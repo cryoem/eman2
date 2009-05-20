@@ -148,7 +148,6 @@ Communications are handled by subclasses."""
 		
 		elif task.command == "e2classaverage":
 			task.execute()
-			print "task executed"
 			return task.get_return_data()
 
 def image_range(a,b=None):

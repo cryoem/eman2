@@ -44,7 +44,7 @@ from EMAN2db import EMTask
 
 class EMGenClassAverages:
 	'''
-	A utility class that knows how to break the command line into EMDCClassAverageTasks
+	A utility class that knows how to break the command line into EMClassAverageTasks
 	'''
 	def __init__(self,options,args,logger=None):
 		'''
@@ -365,7 +365,6 @@ class EMClassAverageTask(EMTask):
 		# data should 
 		
 	def execute(self):
-		print "entry"
 		self.init_memory()
 		
 		if self.verbose:
