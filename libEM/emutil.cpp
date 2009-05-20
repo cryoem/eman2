@@ -733,6 +733,8 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 		   rw_mode == ImageIO::READ_WRITE ||
 		   rw_mode == ImageIO::WRITE_ONLY);
 
+	if (mode_size == 0) throw UnexpectedBehaviorException("The mode size was 0?");
+
 	unsigned char * cdata = (unsigned char *)vdata;
 
 	int dx0 = 0; // data x0
@@ -799,6 +801,11 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 		if ( xlen <= 0 || ylen <= 0 || zlen <= 0 ) return; // This is fine the region was entirely outside the image
 	}
 
+	if ( xlen <= 0 ) {
+		cout << "Xlen was too small " << xlen << endl;
+		return;
+	}
+
 	Vec3i size;
 	if (area != 0) size = area->get_size();
 	else size = Vec3d(nx,ny,nz);
@@ -808,6 +815,11 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 	size_t img_row_size = nx * mode_size + pre_row + post_row;
 	size_t area_row_size = xlen * mode_size;
 	size_t memory_row_size = size[0] * mode_size;
+
+	if ( area_row_size <= 0 ) {
+		cout << "Xlen was too small " << xlen << " mode_size " << mode_size << endl;
+		return;
+	}
 
 	size_t x_pre_gap = fx0 * mode_size;
 	size_t x_post_gap = (nx - fx0 - xlen) * mode_size;
@@ -853,6 +865,7 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 			if (rw_mode == ImageIO::READ_ONLY) {
 				if (fread(&cdata[k2 + jj * memory_row_size+dx0*mode_size],
 						  area_row_size, 1, file) != 1) {
+					cout << jj << " " << k2 << " " << memory_row_size << " " << dx0 << " " << mode_size << " " << area_row_size << " " << cdata << "done" << endl;
 					throw ImageReadException("", "incomplete data read");
 				}
 			}

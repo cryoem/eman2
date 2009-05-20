@@ -168,14 +168,14 @@ bool ImagicIO::is_valid(const void *first_block)
 int ImagicIO::read_header(Dict & dict, int image_index, const Region * area, bool is_3d)
 {
 	ENTERFUNC;
-	
+
 	check_read_access(image_index);
 
 	int nimg = 1;
-	
+
 	if (is_3d) {
 		nimg = imagich.count + 1;
-		
+
 		if (nimg <= 1) {
 			LOGWARN("this is not a 3D IMAGIC. Read as a 2D");
 		}
@@ -197,7 +197,7 @@ int ImagicIO::read_header(Dict & dict, int image_index, const Region * area, boo
 
 	int xlen = 0, ylen = 0, zlen = 0;
 	EMUtil::get_region_dims(area, hed.nx, &xlen, hed.ny, &ylen, nimg, &zlen);
-	
+
 	dict["nx"] = xlen;
 	dict["ny"] = ylen;
 	dict["nz"] = zlen;
@@ -577,7 +577,7 @@ Ctf * ImagicIO::read_ctf(const ImagicHeader& hed) const
 			ctf_->from_string(sctf);
 		}
 	}
-	
+
 	EXITFUNC;
 	return ctf_;
 }
@@ -628,7 +628,7 @@ ImagicIO::DataType ImagicIO::get_datatype_from_name(const char *name)
 	if (strcmp(name, "PACK") == 0) {
 		t = IMAGIC_UCHAR;
 	}
-	else if (strcmp(name, "INTG") == 0) {
+	else if (strcmp(name, "INTG") == 0 || strcmp(name, "INTGR") == 0 ) {
 		t = IMAGIC_USHORT;
 	}
 	else if (strcmp(name, REAL_TYPE_MAGIC) == 0) {

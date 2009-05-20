@@ -102,7 +102,7 @@ class EMGenClassAverages:
 	def __get_class_data(self,class_number,options):
 		'''
 		Return a dict and a list with useful class data in them
-		The dict's keys are the particle index (image row), and dict's values are the class number (image col)
+		The dict's keys are the particle index (image row), and dict's values are the image column number
 		The list contains the particle indices
 		self.__init_memory must be called before this function is called
 		@param class_number the class number
@@ -375,7 +375,7 @@ class EMGenClassAverages:
 class EMClassAveTask(EMTask):
 	'''
 	This is the class average task used to generate class average sequentially in a single program
-	Its build to be generic - you can inherit from it and redefine your own init_memory function,
+	Its built to be generic - you can inherit from it and redefine your own init_memory function,
 	As in the case of the EMClassAveTaskDC
 	'''
 

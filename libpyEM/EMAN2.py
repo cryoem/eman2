@@ -897,7 +897,7 @@ def abs_path(name):
 		[dir,db_name,something] = db_parse_path(name)
 		return "bdb:"+dir+"#"+db_name
 	else:
-		return os.path.absname(name)
+		return os.path.abspath(name)
 
 def base_name( file_name,bdb_keep_dir=False ):
 	'''
