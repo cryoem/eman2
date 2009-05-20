@@ -34,7 +34,7 @@
 
 from EMAN2 import test_image,EMData,abs_path
 from EMAN2db import EMTask,EMTaskQueue,db_open_dict
-from e2classaverage import EMClassAverageTask
+from e2classaverage import EMClassAveTaskDC
 import SocketServer
 from cPickle import dumps,loads
 from struct import pack,unpack
