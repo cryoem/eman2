@@ -377,6 +377,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 	def depth(self): return 2*self.radius
 	
 	def gen_refinement_data(self):
+		print "generating refinement data"
 		dirs,files = get_files_and_directories()
 		
 		dirs.sort()

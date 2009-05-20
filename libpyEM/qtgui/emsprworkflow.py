@@ -3128,7 +3128,7 @@ class E2Refine2DTask(EMClassificationTools):
 	 	
 	 	# if we make it here we are almost definitely good to go, the only thing that can fail is the e2bdb or e2proc2d commands
 	 	options.path = numbered_path("r2d",True)
-	 	if options.filenames[:4] == "bdb:": 
+	 	if options.filenames[0][:4] == "bdb:": 
 	 		bdb_success, bdb_cmd = self.make_v_stack(options)
 		 	if bdb_success:
 		 		if options.shrink > 1:
@@ -3203,7 +3203,7 @@ class E2Refine2DTask(EMClassificationTools):
 	 	
 	 	# if we make it here we are almost definitely good to go, the only thing that can fail is the e2bdb or e2proc2d commands
 	 	options.path = numbered_path("r2d",True)
-	 	if options.filenames[:4] == "bdb:": 
+	 	if options.filenames[0][:4] == "bdb:": 
 	 		bdb_success, bdb_cmd = self.make_v_stack(options)
 		 	if bdb_success:
 		 		if options.shrink > 1:
@@ -4313,7 +4313,9 @@ class E2RefineParticlesTask(EMClassificationTools, E2Make3DTools):
 		 				progress.setValue(i+1)
 		 				get_application().processEvents()
 				
-				progress.close()	
+				progress.close()
+				
+				return True,cmd
 			else:
 				return self.make_input_v_stack(filenames,out_names,options,attr)
 
@@ -4352,8 +4354,7 @@ class E2RefineParticlesTask(EMClassificationTools, E2Make3DTools):
 		if len(params["model"]) == 0:
 			error_message.append("Please choose a starting model.")
 			
-		if self.end_tag != "generic":
-			options.filenames = params["filenames"]
+		options.filenames = params["filenames"]
 			#print options.filenames
 		#usefilt
 		

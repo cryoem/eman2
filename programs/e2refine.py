@@ -287,7 +287,7 @@ def get_classaverage_cmd(options,check=False,nofilecheck=False):
 	
 	e2cacmd = "e2classaverage.py %s %s %s" %(options.input,options.classifyfile,options.cafile)
 	
-	e2cacmd += " --ref=%s --iter=%d -f --result=%s --normproc=%s --averager=%s" %(options.projfile,options.classiter,options.resultfile,options.classnormproc,options.classaverager)
+	e2cacmd += " --ref=%s --iter=%d -f --resultmx=%s --normproc=%s --averager=%s" %(options.projfile,options.classiter,options.resultfile,options.classnormproc,options.classaverager)
 	
 	e2cacmd += " --idxcache --dbpath=%s" %options.path
 	

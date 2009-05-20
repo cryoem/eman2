@@ -77,7 +77,6 @@ class EMTaskCustomer:
 				if task.data[k][0]=="cache" :
 					task.data[k]=list(task.data[k])
 					task.data[k][1]=abs_path(task.data[k][1])
-					print abs_path(task.data[k][1])
 			except: pass
 		
 		if self.servtype=="dc" :
@@ -149,6 +148,7 @@ Communications are handled by subclasses."""
 		
 		elif task.command == "e2classaverage":
 			task.execute()
+			print "task executed"
 			return task.get_return_data()
 
 def image_range(a,b=None):
