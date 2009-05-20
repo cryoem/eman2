@@ -82,7 +82,7 @@ class LightEMDataSave:
 		a.read_image(self.file_name,self.idx,True)
 		return a.get_attr_dict()
 	
-class EMFileSaver():
+class EMFileSaver:
 	'''
 	Base class for file savers. This function is tightly linked to the save_data function in this
 	file.
