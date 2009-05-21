@@ -94,6 +94,7 @@ class EMParallelSimMX:
 		'''
 		Gets the blocks that will be processed in parallel, these are essentially ranges
 		'''
+		
 		total_jobs = self.num_cpus
 		block_c = self.clen/total_jobs
 		block_r = self.rlen/total_jobs
