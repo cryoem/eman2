@@ -1170,7 +1170,7 @@ def ali_vol_func(params, data):
 	#rint  cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale
 	x = rot_shift3D(data[0], params[0], params[1], params[2], params[3], params[4], params[5], 1.0)
 	res = -x.cmp("ccc", data[1], {"mask":data[2]})
-	print  " %9.3f %9.3f %9.3f %9.3f %9.3f %9.3f  %10.5f" %(params[0], params[1], params[2],params[3], params[4], params[5], -res)
+	#print  " %9.3f %9.3f %9.3f %9.3f %9.3f %9.3f  %10.5f" %(params[0], params[1], params[2],params[3], params[4], params[5], -res)
 	return res
 
 def ali_vol_func_rotate(params, data):
@@ -1179,7 +1179,7 @@ def ali_vol_func_rotate(params, data):
 	cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= compose_transform3(data[3][0], data[3][1], data[3][2], data[3][3], data[3][4], data[3][5], data[3][7], params[0], params[1], params[2],0.0,0.0,0.0,1.0)
 	x = rot_shift3D(data[0], cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale)
 	res = -x.cmp(data[4], data[1], {"mask":data[2]})
-	print  " %9.3f %9.3f %9.3f  %12.3e" %(params[0], params[1], params[2], -res)
+	#print  " %9.3f %9.3f %9.3f  %12.3e" %(params[0], params[1], params[2], -res)
 	return res
 
 def ali_vol_func_shift(params, data):
@@ -1188,7 +1188,7 @@ def ali_vol_func_shift(params, data):
 	cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= compose_transform3(data[3][0], data[3][1], data[3][2], data[3][3], data[3][4], data[3][5], data[3][7], 0.0,0.0,0.0, params[0], params[1], params[2],1.0)
 	x = rot_shift3D(data[0], cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale)
 	res = -x.cmp(data[4], data[1], {"mask":data[2]})
-	print  " %9.3f %9.3f %9.3f  %12.3e" %(params[0], params[1], params[2], -res)
+	#print  " %9.3f %9.3f %9.3f  %12.3e" %(params[0], params[1], params[2], -res)
 	return res
 
 def ali_vol_func_scale(params, data):
@@ -1197,7 +1197,7 @@ def ali_vol_func_scale(params, data):
 	cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= compose_transform3(data[3][0], data[3][1], data[3][2], data[3][3], data[3][4], data[3][5], data[3][7], params[0], params[1], params[2], params[3], params[4], params[5], params[6])
 	x = rot_shift3D(data[0], cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale)
 	res = -x.cmp(data[4], data[1], {"mask":data[2]})
-	print  " %9.3f %9.3f %9.3f %9.3f %9.3f %9.3f %9.3f  %12.3e" %(params[0], params[1], params[2],params[3], params[4], params[5], params[6], -res)
+	#print  " %9.3f %9.3f %9.3f %9.3f %9.3f %9.3f %9.3f  %12.3e" %(params[0], params[1], params[2],params[3], params[4], params[5], params[6], -res)
 	return res
 
 def ali_vol_func_only_scale(params, data):
@@ -1206,7 +1206,7 @@ def ali_vol_func_only_scale(params, data):
 	cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= compose_transform3(data[3][0], data[3][1], data[3][2], data[3][3], data[3][4], data[3][5], data[3][7], 0.0,0.0,0.0,0.0,0.0,0.0, params[0])
 	x = rot_shift3D(data[0], cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale)
 	res = -x.cmp(data[4], data[1], {"mask":data[2]})
-	print  " %9.3f  %12.3e" %(params[0], -res)
+	#print  " %9.3f  %12.3e" %(params[0], -res)
 	return res
 
 def helios_func(params, data):
