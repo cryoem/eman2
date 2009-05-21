@@ -42,70 +42,30 @@ import sys
 
 
 def opt_rectangular_subdivision(x,y,n):
-	xparts = 1 # x partitions
-	yparts = 1 # y partitions
 	
-	width = x
-	height = y
-	part_width = width
-	part_height = height
-	
-	
-	candidates = []
-	
-	min = None
+	candidates = []	
 	best = None
-	for cn in xrange(1,n/2+1):
-		rn = n/cn
+	for a in xrange(1,int(ceil(sqrt(n)))):
+		candidates.append([a,n/a])
+	
+	#print candidates
+	min = None
+	for rn,cn in candidates:
 		
-		f = rn*x + cn*y
-		print f,rn,cn
+		f = (x/rn + y/cn)*rn*cn
+		#print f,rn,cn,(x/rn + y/cn)
 		if min == None or f < min:
-			best = [rn,cn,y/cn,x/rn]
+			#print f,rn,cn
+			best = [rn,cn,x/rn,y/cn]
 			min = f
-	return best
-#	for xdiv in xrange(1,width/2+1):
-#		ydiv = n/xdiv
-#		if ydiv == 0: ydiv = 1
-#		total = xdiv*ydiv
-#		if total > n-5 and total <= n:candidates.append([xdiv,ydiv])
-#		
-#	for ydiv in xrange(1,height/2+1):
-#		xdiv = y/ydiv
-#		if xdiv == 0: xdiv = 1
-#		if total > n-5 and total <= n:candidates.append([xdiv,ydiv])
-#		
-#	
-#	if len(candidates) == 0: raise RuntimeError
-#	
-#	min = None
-#	solution = []
-#	
-#	for xdiv,ydiv in candidates:
-#		nx = width/xdiv
-#		ny = height/ydiv
-#		total = nx + ny
-#		if min == None or total < min:
-#			solution = [nx,ny,xdiv*ydiv,total,width-nx*xdiv,height-ny*ydiv]
-#			min = total
-#			
-#	return solution
-	
-	
-#	while xparts*yparts < n:
-#		if part_height > part_width:
-#			yparts += 1 
-#			part_height = height/yparts
-#		else:
-#			xparts += 1
-#			part_width = width/xparts
-#			
-#		solutions.append([part_width,part_height,xparts*yparts])
 			
+		f = (y/rn + x/cn)*rn*cn
+		if min == None or f < min:
+			#print f,rn,cn
+			best = [cn,rn,x/cn,y/rn]
+			min = f
+	return best	
 	
-	
-	
-
 
 class EMParallelSimMX:
 	def __init__(self,options,args,logger=None):
@@ -171,10 +131,6 @@ class EMParallelSimMX:
 		self.__init_memory()
 		print self.__get_blocks()
 		pass
-	
-		
-		
-	
 
 def main():
 	progname = os.path.basename(sys.argv[0])
