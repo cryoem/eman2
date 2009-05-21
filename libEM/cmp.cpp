@@ -1,38 +1,38 @@
 /**
  * $Id$
  */
- 
+
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
- 
+
 #include "cmp.h"
 #include "emdata.h"
 #include "ctf.h"
@@ -58,7 +58,7 @@ void Cmp::validate_input_args(const EMData * image, const EMData *with) const
 	if (!with) {
 		throw NullPointerException("compare-with image");
 	}
-	
+
 	if (!EMUtil::is_same_size(image, with)) {
 		throw ImageFormatException( "images not same size");
 	}
@@ -67,7 +67,7 @@ void Cmp::validate_input_args(const EMData * image, const EMData *with) const
 	if (!d1) {
 		throw NullPointerException("image contains no data");
 	}
-	
+
 	float *d2 = with->get_data();
 	if (!d2) {
 		throw NullPointerException("compare-with image data");
@@ -91,14 +91,14 @@ float CccCmp::cmp(EMData * image, EMData *with) const
 	double avg1 = 0.0, var1 = 0.0, avg2 = 0.0, var2 = 0.0, ccc = 0.0;
 	long n = 0;
 	long totsize = image->get_xsize()*image->get_ysize()*image->get_zsize();
-	
+
 	bool has_mask = false;
 	EMData* mask = 0;
 	if (params.has_key("mask")) {
 		mask = params["mask"];
 		if(mask!=0) {has_mask=true;}
 	}
-	
+
 	if (has_mask) {
 		float* dm = mask->get_data();
 		for (long i = 0; i < totsize; i++) {
@@ -154,7 +154,7 @@ float SqEuclideanCmp::cmp(EMData * image, EMData *with) const
 
 		int ixb = 2*((nx+1)%2);
 		int iyb = ny%2;
-		// 
+		//
 		if(nz == 1) {
 		//  it looks like it could work in 3D, but it is not, really.
 		for ( int iz = 0; iz <= nz-1; iz++) {
@@ -176,26 +176,26 @@ float SqEuclideanCmp::cmp(EMData * image, EMData *with) const
 					part += (x_data[ii] - y_data[ii])*double(x_data[ii] - y_data[ii]);
 					part += (x_data[ii+1] - y_data[ii+1])*double(x_data[ii+1] - y_data[ii+1]);
 				}
-			
+
 			}
 			part *= 2;
 			part += (x_data[0] - y_data[0])*double(x_data[0] - y_data[0]);
 			if(ny%2 == 0) {
 				int ii = (ny/2  + iz * ny)* lsd2;
-				part += (x_data[ii] - y_data[ii])*double(x_data[ii] - y_data[ii]);				
+				part += (x_data[ii] - y_data[ii])*double(x_data[ii] - y_data[ii]);
 			}
 			if(nx%2 == 0) {
 				int ii = lsd2 - 2 + (0  + iz * ny)* lsd2;
-				part += (x_data[ii] - y_data[ii])*double(x_data[ii] - y_data[ii]);				
+				part += (x_data[ii] - y_data[ii])*double(x_data[ii] - y_data[ii]);
 				if(ny%2 == 0) {
 					int ii = lsd2 - 2 +(ny/2  + iz * ny)* lsd2;
-					part += (x_data[ii] - y_data[ii])*double(x_data[ii] - y_data[ii]);				
+					part += (x_data[ii] - y_data[ii])*double(x_data[ii] - y_data[ii]);
 				}
 			}
 			result += part;
 		}
 		n = (float)nx*(float)ny*(float)nz*(float)nx*(float)ny*(float)nz;
-		
+
 		}else{ //This 3D code is incorrect, but it is the best I can do now 01/09/06 PAP
 		int ky, kz;
 		int ny2 = ny/2; int nz2 = nz/2;
@@ -236,7 +236,7 @@ float SqEuclideanCmp::cmp(EMData * image, EMData *with) const
 		}
 	}
 	result/=n;
-	
+
 	EXITFUNC;
 	return static_cast<float>(result);
 }
@@ -268,7 +268,7 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 
 		int ixb = 2*((nx+1)%2);
 		int iyb = ny%2;
-		// 
+		//
 		if(nz == 1) {
 		//  it looks like it could work in 3D, but does not
 		for ( int iz = 0; iz <= nz-1; iz++) {
@@ -290,20 +290,20 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 					part += x_data[ii] * double(y_data[ii]);
 					part += x_data[ii+1] * double(y_data[ii+1]);
 				}
-			
+
 			}
 			part *= 2;
 			part += x_data[0] * double(y_data[0]);
 			if(ny%2 == 0) {
 				int ii = (ny/2  + iz * ny)* lsd2;
-				part += x_data[ii] * double(y_data[ii]);				
+				part += x_data[ii] * double(y_data[ii]);
 			}
 			if(nx%2 == 0) {
 				int ii = lsd2 - 2 + (0  + iz * ny)* lsd2;
-				part += x_data[ii] * double(y_data[ii]);				
+				part += x_data[ii] * double(y_data[ii]);
 				if(ny%2 == 0) {
 					int ii = lsd2 - 2 +(ny/2  + iz * ny)* lsd2;
-					part += x_data[ii] * double(y_data[ii]);				
+					part += x_data[ii] * double(y_data[ii]);
 				}
 			}
 			result += part;
@@ -334,7 +334,7 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 					square_sum2 += y_data[ii] * double(y_data[ii]);
 					square_sum2 += y_data[ii+1] * double(y_data[ii+1]);
 				}
-			
+
 			}
 			square_sum1 *= 2;
 			square_sum1 += x_data[0] * double(x_data[0]);
@@ -342,23 +342,23 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 			square_sum2 += y_data[0] * double(y_data[0]);
 			if(ny%2 == 0) {
 				int ii = (ny/2  + iz * ny)* lsd2;
-				square_sum1 += x_data[ii] * double(x_data[ii]);				
-				square_sum2 += y_data[ii] * double(y_data[ii]);				
+				square_sum1 += x_data[ii] * double(x_data[ii]);
+				square_sum2 += y_data[ii] * double(y_data[ii]);
 			}
 			if(nx%2 == 0) {
 				int ii = lsd2 - 2 + (0  + iz * ny)* lsd2;
-				square_sum1 += x_data[ii] * double(x_data[ii]);				
-				square_sum2 += y_data[ii] * double(y_data[ii]);				
+				square_sum1 += x_data[ii] * double(x_data[ii]);
+				square_sum2 += y_data[ii] * double(y_data[ii]);
 				if(ny%2 == 0) {
 					int ii = lsd2 - 2 +(ny/2  + iz * ny)* lsd2;
-					square_sum1 += x_data[ii] * double(x_data[ii]);				
-					square_sum2 += y_data[ii] * double(y_data[ii]);				
+					square_sum1 += x_data[ii] * double(x_data[ii]);
+					square_sum2 += y_data[ii] * double(y_data[ii]);
 				}
 			}
 		}
 		result /= sqrt(square_sum1*square_sum2);
 		} else  result /= ((float)nx*(float)ny*(float)nz*(float)nx*(float)ny*(float)nz);
-		
+
 		} else { //This 3D code is incorrect, but it is the best I can do now 01/09/06 PAP
 		int ky, kz;
 		int ny2 = ny/2; int nz2 = nz/2;
@@ -433,8 +433,8 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 		}
 		if (normalize) result /= (sqrt(square_sum1*square_sum2)); else result /= n;
 	}
-	
-			
+
+
 	EXITFUNC;
 	return (float) (negative*result);
 }
@@ -447,13 +447,13 @@ float QuadMinDotCmp::cmp(EMData * image, EMData *with) const
 	validate_input_args(image, with);
 
 	if (image->get_zsize()!=1) throw InvalidValueException(0, "QuadMinDotCmp supports 2D only");
-	
+
 	int nx=image->get_xsize();
 	int ny=image->get_ysize();
 
 	int normalize = params.set_default("normalize", 0);
 	float negative = (float)params.set_default("negative", 1);
-	
+
 	if (negative) negative=-1.0; else negative=1.0;
 
 	double result[4] = { 0,0,0,0 }, sq1[4] = { 0,0,0,0 }, sq2[4] = { 0,0,0,0 } ;
@@ -475,16 +475,16 @@ float QuadMinDotCmp::cmp(EMData * image, EMData *with) const
 	}
 	image->set_array_offsets(image_saved_offsets);
 	with->set_array_offsets(with_saved_offsets);
-	
+
 	if (normalize) {
 		for (i=0; i<4; i++) result[i]/=sqrt(sq1[i]*sq2[i]);
 	} else {
 		for (i=0; i<4; i++) result[i]/=nx*ny/4;
 	}
-	
+
 	float worst=static_cast<float>(result[0]);
 	for (i=1; i<4; i++) if (static_cast<float>(result[i])<worst) worst=static_cast<float>(result[i]);
-	
+
 	EXITFUNC;
 	return (float) (negative*worst);
 }
@@ -500,63 +500,63 @@ float OptVarianceCmp::cmp(EMData * image, EMData *with) const
 	int matchamp = params.set_default("matchamp",0);
 	int radweight = params.set_default("radweight",0);
 	int dbug = params.set_default("debug",0);
-	
+
 	size_t size = image->get_xsize() * image->get_ysize() * image->get_zsize();
-	
-	
+
+
 	EMData *with2=NULL;
 	if (matchfilt) {
 		EMData *a = image->do_fft();
 		EMData *b = with->do_fft();
-		
+
 		vector <float> rfa=a->calc_radial_dist(a->get_ysize()/2,0.0f,1.0f,1);
 		vector <float> rfb=b->calc_radial_dist(b->get_ysize()/2,0.0f,1.0f,1);
-		
+
 		for (size_t i=0; i<a->get_ysize()/2.0f; i++) rfa[i]/=(rfb[i]==0?1.0f:rfb[i]);
-		
+
 		b->apply_radial_func(0.0f,1.0f/a->get_ysize(),rfa);
 		with2=b->do_ift();
 
 		delete a;
-		delete b;	
+		delete b;
 		if (dbug) with2->write_image("a.hdf",-1);
 
 //		with2->process_inplace("matchfilt",Dict("to",this));
 //		x_data = with2->get_data();
 	}
 
-	// This applies the individual Fourier amplitudes from 'image' and 
+	// This applies the individual Fourier amplitudes from 'image' and
 	// applies them to 'with'
 	if (matchamp) {
 		EMData *a = image->do_fft();
 		EMData *b = with->do_fft();
 		size_t size2 = a->get_xsize() * a->get_ysize() * a->get_zsize();
-		
+
 		a->ri2ap();
 		b->ri2ap();
-		
+
 		float *ad=a->get_data();
 		float *bd=b->get_data();
-		
+
 		for (size_t i=0; i<size2; i+=2) bd[i]=ad[i];
 		b->update();
-	
+
 		b->ap2ri();
 		with2=b->do_ift();
 //with2->write_image("a.hdf",-1);
 		delete a;
 		delete b;
 	}
-	
+
 	float *x_data;
 	if (with2) x_data=with2->get_data();
 	else x_data = with->get_data();
 	float *y_data = image->get_data();
-	
+
 	size_t nx = image->get_xsize();
 	float m = 0;
 	float b = 0;
-	
+
 	// This will write the x vs y file used to calculate the density
 	// optimization. This behavior may change in the future
 	if (dbug) {
@@ -642,23 +642,23 @@ float OptVarianceCmp::cmp(EMData * image, EMData *with) const
 	}
 	scale = m;
 	shift = b;
-	
+
 	image->set_attr("ovcmp_m",m);
 	image->set_attr("ovcmp_b",b);
 	if (with2) delete with2;
 	EXITFUNC;
-	
+
 #if 0
 	return (1 - result);
 #endif
-	
+
 	return static_cast<float>(result);
 }
 
 float PhaseCmp::cmp(EMData * image, EMData *with) const
 {
 	ENTERFUNC;
-	//In the middle of this - Not quite yet... I'm heading to D.C.... March 31st
+
 #ifdef EMAN2_USING_CUDA
  	if (image->gpu_operation_preferred()) {
 // 		cout << "Cuda cmp" << endl;
@@ -738,7 +738,7 @@ float PhaseCmp::cmp(EMData * image, EMData *with) const
 		}
 	}
 	EXITFUNC;
-	
+
 	if( image_fft )
 	{
 		delete image_fft;
@@ -767,11 +767,11 @@ float PhaseCmp::cuda_cmp(EMData * image, EMData *with) const
 	static EMDatas norm_pyramid;
 	static EMData weighting;
 	static int image_size = 0;
-	
+
 	int size;
 	EMData::CudaDataLock imagelock(image);
 	EMData::CudaDataLock withlock(with);
-	
+
 	if (image->is_complex()) {
 		size = image->get_xsize();
 	} else {
@@ -824,7 +824,7 @@ float PhaseCmp::cuda_cmp(EMData * image, EMData *with) const
 
 	EMDataForCuda hist[hist_pyramid.size()];
 	EMDataForCuda norm[hist_pyramid.size()];
-	
+
 	EMDataForCuda wt = weighting.get_data_struct_for_cuda();
 	EMData::CudaDataLock lock1(&weighting);
 	for(unsigned int i = 0; i < hist_pyramid.size(); ++i ) {
@@ -833,20 +833,20 @@ float PhaseCmp::cuda_cmp(EMData * image, EMData *with) const
 		norm[i] = norm_pyramid[i]->get_data_struct_for_cuda();
 		norm_pyramid[i]->cuda_lock();
 	}
-	
+
 	EMData *image_fft = image->do_fft_cuda();
 	EMDataForCuda left = image_fft->get_data_struct_for_cuda();
 	EMData::CudaDataLock lock2(image_fft);
 	EMData *with_fft = with->do_fft_cuda();
 	EMDataForCuda right = with_fft->get_data_struct_for_cuda();
 	EMData::CudaDataLock lock3(image_fft);
-	
+
 	mean_phase_error_cuda(&left,&right,&wt,hist,norm,hist_pyramid.size());
 	float result;
 	float* gpu_result = hist_pyramid[hist_pyramid.size()-1]->get_cuda_data();
 	cudaError_t error = cudaMemcpy(&result,gpu_result,sizeof(float),cudaMemcpyDeviceToHost);
 	if ( error != cudaSuccess) throw UnexpectedBehaviorException( "CudaMemcpy (host to device) in the phase comparator failed:" + string(cudaGetErrorString(error)));
-	
+
 	delete image_fft; image_fft=0;
 	delete with_fft; with_fft=0;
 
@@ -856,7 +856,7 @@ float PhaseCmp::cuda_cmp(EMData * image, EMData *with) const
 		hist_pyramid[i]->cuda_unlock();
 		norm_pyramid[i]->cuda_unlock();
 	}
-	
+
 	EXITFUNC;
 	return result;
 
@@ -872,7 +872,7 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 
 	if (!image->is_complex()) { image=image->do_fft(); image->set_attr("free_me",1); }
 	if (!with->is_complex()) { with=with->do_fft(); with->set_attr("free_me",1); }
-	
+
 	int snrweight = params.set_default("snrweight", 0);
 	int ampweight = params.set_default("ampweight", 1);
 	int sweight = params.set_default("sweight", 1);
@@ -898,12 +898,12 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 		float ds=1.0f/(ctf->apix*ny);
 		snr=ctf->compute_1d(ny/2,ds,Ctf::CTF_SNR);
 	}
-	
+
 	vector<float> amp;
 	if (ampweight) amp=image->calc_radial_dist(ny/2,0,1,0);
 
 	double sum=0.0, norm=0.0;
-	
+
 	for (int i=0; i<ny/2; i++) {
 		double weight=1.0;
 		if (sweight) weight*=fsc[(ny/2+1)*2+i];
@@ -926,8 +926,8 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 	if (with->has_attr("free_me")) delete with;
 
 	EXITFUNC;
-	
-	
+
+
 	//.Note the negative! This is because EMAN2 follows the convention that
 	// smaller return values from comparitors indicate higher similarity -
 	// this enables comparitors to be used in a generic fashion.

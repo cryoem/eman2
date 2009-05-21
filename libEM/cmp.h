@@ -359,7 +359,7 @@ namespace EMAN
 	};
 	/** Amplitude weighted mean phase difference (radians) with optional
      * SNR weight. SNR should be an array as returned by ctfcurve()
-     * 'data' should be the less noisy image, since it's amplitudes
+     * 'with' should be the less noisy image, since it's amplitudes
      * will be used to weight the phase residual. 2D only.
 	 *
      * Use Phase Residual as a measure of similarity
@@ -392,7 +392,7 @@ namespace EMAN
 			TypeDict d;
 			return d;
 		}
-		
+
 #ifdef EMAN2_USING_CUDA
 		 float cuda_cmp(EMData * image, EMData *with) const;
 #endif //EMAN2_USING_CUDA
