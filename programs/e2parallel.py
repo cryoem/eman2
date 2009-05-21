@@ -65,13 +65,11 @@ run e2parallel.py dcclient on as many other machines as possible, pointing at th
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
-#	parser.add_option("--bgmask",type="int",help="Compute the background power spectrum from the edge of the image, specify a mask radius in pixels which would largely mask out the particles. Default is boxsize/2.",default=0)
-#	parser.add_option("--apix",type="float",help="Angstroms per pixel for all images",default=0)
 	parser.add_option("--server",type="string",help="Specifies host of the server to connect to",default="localhost")
 	parser.add_option("--port",type="int",help="Specifies server port, default is automatic assignment",default=-1)
 	parser.add_option("--verbose",type="int",help="debugging level (0-9) default=0)",default=0)
-	parser.add_option("--cpus",type="int",help="Number of CPUs/Cores for the clients to use on the local machine")
-	parser.add_option("--idleonly",action="store_true",help="Will only use CPUs on the local machine when idle",default=False)
+#	parser.add_option("--cpus",type="int",help="Number of CPUs/Cores for the clients to use on the local machine")
+#	parser.add_option("--idleonly",action="store_true",help="Will only use CPUs on the local machine when idle",default=False)
 	
 	(options, args) = parser.parse_args()
 	if len(args)<1 or args[0] not in commandlist: parser.error("command required: "+str(commandlist))

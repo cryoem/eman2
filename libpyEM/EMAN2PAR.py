@@ -298,7 +298,7 @@ def runEMDCServer(port,verbose):
 		for port in range(9990,10000):
 			try: 
 				server = SocketServer.ThreadingTCPServer(("", port), EMDCTaskHandler)
-				if verbose: print "Server started on port %d"%port
+				print "Server started on port %d"%port
 			except:
 				if verbose: print "Port %d unavailable"%port
 				continue

@@ -484,7 +484,7 @@ class EMClassAveTask(EMTask):
 	   	
 	   	for i in xrange(0,self.options["iter"]):
 	   		
-	   		if i != 0 and False:
+	   		if i != 0 :
 	   			alis = self.__align_all(self.averages[-1])
 	   			self.all_alis.append(alis)
 	   		
@@ -609,6 +609,7 @@ class EMClassAveTask(EMTask):
 		# Align the particle to "to"
 		options = self.options
 		aligned=this.align(options["align"][0],to,options["align"][1],options["aligncmp"][0],options["aligncmp"][1])
+#		print "__align",options["align"][0],to,options["align"][1],options["aligncmp"][0],options["aligncmp"][1]
 		
 		if options.has_key("ralign") and options["ralign"] != None: # potentially employ refine alignment
 			refine_parms=options["ralign"][1]
