@@ -70,7 +70,7 @@ namespace EMAN
 	class XYData;
 	class Transform3D;
 	class Transform;
-
+	class GLUtil;
 
 	typedef boost::multi_array_ref<float, 2> MArray2D;
 	typedef boost::multi_array_ref<float, 3> MArray3D;
@@ -87,6 +87,8 @@ namespace EMAN
 	*/
 	class EMData
 	{
+		friend class GLUtil;
+
 		/** For all image I/O */
 		#include "emdata_io.h"
 
@@ -515,7 +517,7 @@ namespace EMAN
 		/** Makes a 'footprint' for the current image. This is image containing
 		 * a rotational & translational invariant of the parent image. The size of the
 		 * resulting image depends on the selected type.
-		 * 
+		 *
 		 * type 0- The original, default footprint derived from the rotational footprint
 		 * type 1- a bispectrum-based footprint
 		 *
