@@ -2676,7 +2676,7 @@ class E2CTFOutputTaskGeneral(E2CTFOutputTask):
 		params = []
 		names = self.get_names_with_ctf_params()
 		n = [l[0] for l in names]
-		p,num = self.get_ctf_param_table(n)
+		p,num = self.get_ctf_param_table()
 		
 		if num == 0:
 			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFOutputTask.documentation_string+E2CTFOutputTaskGeneral.warning_string,choices=None))
@@ -4286,6 +4286,7 @@ class E2RefineParticlesTask(EMClassificationTools, E2Make3DTools):
 		'''
 		if len(filenames) == 1:
 			setattr(options,attr,filenames[0])
+			return True,""
 		else:
 			fail = False
 			# check if they're all bdb files, in which case we can make a v stack

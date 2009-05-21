@@ -953,7 +953,7 @@ class GUIctf(QtGui.QWidget):
 	
 	def on_output(self):
 		from emsprworkflow import E2CTFOutputTaskGeneral
-		self.form = E2CTFOutputTaskGeneral(self.app())
+		self.form = E2CTFOutputTaskGeneral()
 		self.form.run_form()
 	
 	def show_guis(self):
@@ -988,6 +988,7 @@ class GUIctf(QtGui.QWidget):
 		self.setlist.setCurrentRow(self.curset)
 
 	def update_plot(self):
+		if self.guiplot == None: return # it's closed/not visible
 		val=self.curset
 		ctf=self.data[val][1]
 		ds=self.data[val][1].dsbg
@@ -1064,7 +1065,7 @@ class GUIctf(QtGui.QWidget):
 		self.svoltage.setValue(self.data[val][1].voltage,True)
 		self.scs.setValue(self.data[val][1].cs,True)
 		
-		self.guiim.set_data(self.data[val][4])
+		if self.guiim != None: self.guiim.set_data(self.data[val][4])
 		self.update_plot()
 
 	def newPlotMode(self,mode):

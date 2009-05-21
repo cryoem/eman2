@@ -96,33 +96,42 @@ class EMParallelSimMX:
 		'''
 		
 		total_jobs = self.num_cpus
-		block_c = self.clen/total_jobs
-		block_r = self.rlen/total_jobs
+		
+		
+		[col_div,row_div,foo,foo1] = opt_rectangular_subdivision(self.clen,self.rlen,total_jobs)
+		
+	
+		block_c = self.clen/col_div
+		block_r = self.rlen/row_div
 		
 		residual_c = self.clen-block_c*total_jobs # residual left over by integer division
 		residual_r = self.rlen-block_r*total_jobs # residual left over by integer division
 
+		blocks = []
+		
 		current_c = 0
-		current_r = 0
-
-		ranges = []
-		for i in xrange(0,total_jobs):
+		for c in xrange(0,col_div):
 			last_c = current_c + block_c
 			if residual_c > 0:
 				last_c += 1
 				residual_c -= 1
+					
+			current_r = 0
+			for r in xrange(0,row_div) :
+				last_r = current_r + block_r
+				if residual_r > 0:
+					last_r += 1
+					residual_r -= 1
 			
-			last_r = current_r + block_r
-			if residual_r > 0:
-				last_r += 1
-				residual_r -= 1
 			
-			
-			ranges.append([current_c,last_c,current_r,last_r])
+				blocks.append([current_c,last_c,current_r,last_r])
+				current_r = last_r
+				
 			current_c = last_c
-			current_r = last_r
 		
-		return ranges
+		print col_div,row_div,col_div*row_div
+		print self.clen,self.rlen,residual_c,residual_r
+		return blocks
 	
 	
 	def execute(self):
@@ -130,8 +139,104 @@ class EMParallelSimMX:
 		The main function to be called
 		'''
 		self.__init_memory()
-		print self.__get_blocks()
+		blocks = self.__get_blocks()
 		pass
+
+from EMAN2db import EMTask
+class EMSimTaskDC(EMTask):
+	'''
+	Originally added to encapsulate a similarity matrix generation task 
+	'''
+	def __init__(self,command="e2simmx",data=None,options=None):
+		EMTask.__init__(self,command,data,options)
+		# options should have these keys:
+		# align - the main aligner, a list of two strings
+		# alligncmp - the main align cmp - a list of two strings
+		# ralign - the refine aligner, a list of two string. May be None which turns it off
+		# raligncmp - the refinealigncmp - a list of two strings. Needs to specified if ralign is not None
+		# averager - the averager - a list of two strings
+		# cmp - the final cmp - a list of two strings
+		# shrink - a shrink value (int), may be None or unspecified - shrink the data by an integer amount prior to computing similarity scores
+
+	
+		# data should have
+		# particles - a Task-style cached list of input images
+		# references - a Task-style cached list of reference images
+		
+	def __init_memory(self):
+		'''
+		This function assigns critical attributes
+		'''
+
+		shrink = None
+		if self.options.has_key("shrink") and self.options["shrink"] != None and self.options["shrink"] > 1:
+			shrink = self.options["shrink"]
+		
+		ref_data_name=self.data["references"][0]
+		self.ref_indices = self.data["references"][1]
+		
+		self.refs = {}
+		for idx in self.ref_indices:
+			image = EMData(ref_data_name,idx)
+			if shrink != None:
+				image.process_inplace("math.meanshrink",{"n":options.shrink})
+			self.refs[idx] = image
+			
+		ptcl_data_name=self.data["particles"][0]
+		self.ptcl_indices = self.data["particles"][1]
+			
+		self.ptcls = {}
+		for idx in self.ptcl_indices:
+			image = EMData(ptcl_data_name,idx)
+			if shrink != None:
+				image.process_inplace("math.meanshrink",{"n":options.shrink})
+			self.ptcls[idx] = image
+			
+	
+	
+	def __cmp_one_to_many(self,idx):
+	
+		options = self.options
+		image = self.ptcl[idx]
+		
+		aligned=image.align(options["align"][0],to,options["align"][1],options["aligncmp"][0],options["aligncmp"][1])
+		
+		if options.has_key("ralign") and options["ralign"] != None: # potentially employ refine alignment
+			refine_parms=options["ralign"][1]
+			# this parameters I think west best with the refine aligner, but they're not well tested
+			# i.e. I need to do some rigorous testing before I can claim anything
+			#refineparms[1]["az"] = ta.get_attr_default("align.az",0)-1
+			#refineparms[1]["dx"] = ta.get_attr_default("align.dx",0)-1
+			#refineparms[1]["dy"] = ta.get_attr_default("align.dy",0)-1
+			#refineparms[1]["mode"] = 0
+			#refineparms[1]["stepx"] = 2
+			#refineparms[1]["stepy"] = 2
+			#refineparms[1]["stepaz"] = 5
+			
+			refine_parms["xform.align2d"] = aligned.get_attr("xform.align2d")
+			aligned = this.align(options["ralign"][0],to,refine_parms,options["raligncmp"][0],options["raligncmp"][1])
+			
+		return aligned
+	
+		ret=[None for i in reflist]
+		for i,r in enumerate(reflist):
+			if options[0] :
+				ta=target.align(align[0],r,align[1],alicmp[0],alicmp[1])
+				#ta.debug_print_params()
+				
+				if ralign and ralign[0]:
+					ralign[1]["xform.align2d"] = ta.get_attr("xform.align2d")
+					ta = target.align(ralign[0],r,ralign[1],alircmp[0],alircmp[1])
+				
+				t = ta.get_attr("xform.align2d")
+				p = t.get_params("2d")
+				
+				ret[i]=(ta.cmp(cmp[0],r,cmp[1]),p["tx"],p["ty"],p["alpha"],p["mirror"])
+			else :
+				ret[i]=(target.cmp(cmp[0],r,cmp[1]),0,0,0,False)
+			
+		return ret
+
 
 def main():
 	progname = os.path.basename(sys.argv[0])
