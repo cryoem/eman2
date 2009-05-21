@@ -77,7 +77,8 @@ def alivol_mask( v, vref, mask ):
 	v50S_i = ali_vol_shift( v50S_i, vref, 0.5 )
 	v50S_i = ali_vol_rotate(v50S_i, vref, 1.0 )
 	phi,tht,psi,s3x,s3y,s3z,mirror,scale = get_params3D( v50S_i )
-	phi,tht,psi,s3x,s3y,s3z,scale = compose_transform3(phi,tht,psi,s3x,s3y,s3z,1.0,0.0,0.0,0.0,cnt[0],cnt[1],cnt[2],1.0)
+	dun,dum,dum,cnx,cny,cnz,mirror,scale = get_params3D( vref )
+	phi,tht,psi,s3x,s3y,s3z,scale = compose_transform3(phi,tht,psi,s3x,s3y,s3z,1.0,0.0,0.0,0.0,-cnx,-cny,-cnz,1.0)
 	v = rot_shift3D( v, phi,tht,psi,s3x,s3y,s3z )
 	print "final params: ", phi,tht,psi,s3x,s3y,s3z
 	return v
