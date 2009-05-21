@@ -25,7 +25,6 @@ SET(LIB_EM_SOURCE byteorder.cpp
     emdata_io.cpp
     emdata_core.cpp
     emdata_cuda.cpp
-    emdata_gl.cpp
     glutil.cpp
     emdata_modular.cpp
     emdata_metadata.cpp

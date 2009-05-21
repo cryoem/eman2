@@ -98,7 +98,7 @@ class EMImageFrame(wx.Window):
 		render_x = int( ((self.x_per - x_offset) * self.emdatasize[0]) ) 
 		render_y = int( ((self.y_per - y_offset) * self.emdatasize[1]) ) 
 
-		d=self.data.render_amp8(render_x,render_y,self.GetSize()[0],self.GetSize()[1],self.GetSize()[0]*3,self.scale,1,254, self.mingrayval,self.maxgrayval,1)
+		d=GLUtil.render_amp8(self.data,render_x,render_y,self.GetSize()[0],self.GetSize()[1],self.GetSize()[0]*3,self.scale,1,254, self.mingrayval,self.maxgrayval,1)
 
 		#print "... "
 		#print render_x

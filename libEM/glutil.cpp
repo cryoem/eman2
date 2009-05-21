@@ -116,7 +116,7 @@ unsigned int GLUtil::gen_gl_texture(const EMData* const emdata)
 
 unsigned int GLUtil::render_amp8_gl_texture(EMData* emdata, int x0, int y0, int ixsize, int iysize, int bpl, float scale, int mingray, int maxgray,	float render_min, float render_max,float gamma,int flags) {
 
-	string pixels = emdata->render_amp8(x0, y0, ixsize,iysize, bpl, scale, mingray, maxgray, render_min, render_max, gamma,flags);
+	string pixels = render_amp8(emdata, x0, y0, ixsize,iysize, bpl, scale, mingray, maxgray, render_min, render_max, gamma,flags);
 
 	unsigned int tex_name;
 	glGenTextures(1, &tex_name);
@@ -131,5 +131,443 @@ unsigned int GLUtil::render_amp8_gl_texture(EMData* emdata, int x0, int y0, int 
 #ifdef GL_GLEXT_PROTOTYPES
 #undef GL_GLEXT_PROTOTYPES
 #endif
+
+int GLUtil::nearest_projected_points(const vector<float>& model_matrix, const vector<float>& proj_matrix, const vector<int>& view_matrix,
+		const vector<Vec3f>& points, const float mouse_x, const float mouse_y,const float& nearness)
+{
+	double proj[16];
+	double model[16];
+	int view[4];
+
+	copy(proj_matrix.begin(), proj_matrix.end(), proj);
+	copy(model_matrix.begin(), model_matrix.end(), model);
+	copy(view_matrix.begin(), view_matrix.end(), view);
+
+	vector<Vec3f> unproj_points;
+	double x,y,z;
+	double r,s,t;
+	for(vector<Vec3f>::const_iterator it = points.begin(); it != points.end(); ++it) {
+		r = (double) (*it)[0];
+		s = (double) (*it)[1];
+		t = (double) (*it)[2];
+		gluProject(r,s,t, model, proj, view, &x,&y,&z);
+		unproj_points.push_back(Vec3f(x,y,z));
+	}
+
+	vector<int> intersections;
+
+	float n_squared = nearness*nearness;
+	for(unsigned int i = 0; i < unproj_points.size(); ++i){
+		Vec3f& v = unproj_points[i];
+		float dx = v[0] - mouse_x;
+		dx *= dx;
+		float dy = v[1] - mouse_y;
+		dy *= dy;
+		if ((dx+dy) <= n_squared) intersections.push_back((int)i);
+	}
+
+	int intersection = -1;
+	float near_z = 0;
+	for(vector<int>::const_iterator it = intersections.begin(); it != intersections.end(); ++it) {
+		if (intersection == -1 || unproj_points[*it][2] < near_z) {
+			intersection = *it;
+			near_z = unproj_points[*it][2];
+		}
+	}
+
+	return intersection;
+}
+
+void GLUtil::colored_rectangle(const vector<float>& data,const float& alpha){
+
+	glBegin(GL_LINE_LOOP);
+	glColor4f(data[0],data[1],data[2],alpha);
+	glVertex2f(data[3],data[4]);
+	glVertex2f(data[5],data[4]);
+	glVertex2f(data[5],data[6]);
+	glVertex2f(data[3],data[6]);
+	glEnd();
+}
+
+void GLUtil::mx_bbox(const vector<float>& data, const vector<float>& text_color, const vector<float>& bg_color) {
+	glColor4f(bg_color[0],bg_color[1],bg_color[2],bg_color[3]);
+	glDisable(GL_TEXTURE_2D);
+	glBegin(GL_QUADS);
+
+	glVertex3f(data[0]-1,data[1]-1,-.1);
+	glVertex3f(data[3]+1,data[1]-1,-.1);
+	glVertex3f(data[3]+1,data[4]+1,-.1);
+	glVertex3f(data[0]-1,data[4]+1,-.1);
+	glEnd();
+	glEnable(GL_TEXTURE_2D);
+	glColor4f(text_color[0],text_color[1],text_color[2],text_color[3]);
+}
+
+std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int iysize,
+						 int bpl, float scale, int mingray, int maxgray,
+						 float render_min, float render_max,float gamma,int flags)
+{
+	ENTERFUNC;
+
+	int asrgb;
+	int hist=(flags&2)/2;
+	int invy=(flags&4)?1:0;
+
+	int nx = emdata->nx;
+	int ny = emdata->ny;
+//	int nz = emdata->nz;
+	int nxy = emdata->nx * emdata->ny;
+
+	if (emdata->get_ndim() > 2) {
+		throw ImageDimensionException("1D/2D only");
+	}
+
+	if (emdata->is_complex()) {
+		emdata->ri2ap();
+	}
+
+	if (render_max <= render_min) {
+		render_max = render_min + 0.01f;
+	}
+
+	if (gamma<=0) gamma=1.0;
+
+	// Calculating a full floating point gamma for
+	// each pixel in the image slows rendering unacceptably
+	// however, applying a gamma-mapping to an 8 bit colorspace
+	// has unacceptable coarse accuracy. So, we oversample the 8 bit colorspace
+	// as a 12 bit colorspace and apply the gamma mapping to that
+	// This should produce good accuracy for gamma values
+	// larger than 0.5 (and a high upper limit)
+	static int smg0=0,smg1=0;	// while this destroys threadsafety in the rendering process
+	static float sgam=0;		// it is necessary for speed when rendering large numbers of small images
+	static unsigned char gammamap[4096];
+	if (gamma!=1.0 && (smg0!=mingray || smg1!=maxgray || sgam!=gamma)) {
+		for (int i=0; i<4096; i++) {
+			if (mingray<maxgray) gammamap[i]=(unsigned char)(mingray+(maxgray-mingray+0.999)*pow(((float)i/4096.0f),gamma));
+			else gammamap[4095-i]=(unsigned char)(mingray+(maxgray-mingray+0.999)*pow(((float)i/4096.0f),gamma));
+		}
+	}
+	smg0=mingray;	// so we don't recompute the map unless something changes
+	smg1=maxgray;
+	sgam=gamma;
+
+	if (flags&8) asrgb=4;
+	else if (flags&1) asrgb=3;
+	else asrgb=1;
+
+	std::string ret=std::string();
+//	ret.resize(iysize*bpl);
+	ret.assign(iysize*bpl+hist*1024,char(mingray));
+	unsigned char *data=(unsigned char *)ret.data();
+	unsigned int *histd=(unsigned int *)(data+iysize*bpl);
+	if (hist) {
+		for (int i=0; i<256; i++) histd[i]=0;
+	}
+
+	float rm = render_min;
+	float inv_scale = 1.0f / scale;
+	int ysize = iysize;
+	int xsize = ixsize;
+
+	int ymin = 0;
+	if (iysize * inv_scale > ny) {
+		ymin = (int) (iysize - ny / inv_scale);
+	}
+
+	float gs = (maxgray - mingray) / (render_max - render_min);
+	float gs2 = 4095.999f / (render_max - render_min);
+//	float gs2 = 1.0 / (render_max - render_min);
+	if (render_max < render_min) {
+		gs = 0;
+		rm = FLT_MAX;
+	}
+
+	int dsx = -1;
+	int dsy = 0;
+	int remx = 0;
+	int remy = 0;
+	const int scale_n = 100000;
+
+	int addi = 0;
+	int addr = 0;
+	if (inv_scale == floor(inv_scale)) {
+		dsx = (int) inv_scale;
+		dsy = (int) (inv_scale * nx);
+	}
+	else {
+		addi = (int) floor(inv_scale);
+		addr = (int) (scale_n * (inv_scale - floor(inv_scale)));
+	}
+
+	int xmin = 0;
+	if (x0 < 0) {
+		xmin = (int) (-x0 / inv_scale);
+		xsize -= (int) floor(x0 / inv_scale);
+		x0 = 0;
+	}
+
+	if ((xsize - xmin) * inv_scale > (nx - x0)) {
+		xsize = (int) ((nx - x0) / inv_scale + xmin);
+	}
+	int ymax = ysize - 1;
+	if (y0 < 0) {
+		ymax = (int) (ysize + y0 / inv_scale - 1);
+		ymin += (int) floor(y0 / inv_scale);
+		y0 = 0;
+	}
+
+	if (xmin < 0) xmin = 0;
+	if (ymin < 0) ymin = 0;
+	if (xsize > ixsize) xsize = ixsize;
+	if (ymax > iysize) ymax = iysize;
+
+	int lmax = nx * ny - 1;
+
+	int mid=nx*ny/2;
+	float * image_data = emdata->get_data();
+	if (emdata->is_complex()) {
+		if (dsx != -1) {
+			int l = y0 * nx;
+			for (int j = ymax; j >= ymin; j--) {
+				int ll = x0;
+				for (int i = xmin; i < xsize; i++) {
+					if (l + ll > lmax || ll >= nx - 2) break;
+
+					int k = 0;
+					unsigned char p;
+					if (ll >= nx / 2) {
+						if (l >= (ny - inv_scale) * nx) k = 2 * (ll - nx / 2) + 2;
+						else k = 2 * (ll - nx / 2) + l + 2 + nx;
+					}
+					else k = nx * ny - (l + 2 * ll) - 2;
+					if (k>=mid) k-=mid;		// These 2 lines handle the Fourier origin being in the corner, not the middle
+					else k+=mid;
+					float t = image_data[k];
+					if (t <= rm)  p = mingray;
+					else if (t >= render_max) p = maxgray;
+					else if (gamma!=1.0) {
+						k=(int)(gs2 * (t-render_min));		// map float value to 0-4096 range
+						p = gammamap[k];					// apply gamma using precomputed gamma map
+//						p = (unsigned char) (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma);
+//						p += mingray;
+//						k = static_cast<int>( (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma) );
+//						k += mingray;
+					}
+					else {
+						p = (unsigned char) (gs * (t - render_min));
+						p += mingray;
+					}
+					data[i * asrgb + j * bpl] = p;
+					if (hist) histd[p]++;
+					ll += dsx;
+				}
+				l += dsy;
+			}
+		}
+		else {
+			remy = 10;
+			int l = y0 * nx;
+			for (int j = ymax; j >= ymin; j--) {
+				int br = l;
+				remx = 10;
+				int ll = x0;
+				for (int i = xmin; i < xsize - 1; i++) {
+					if (l + ll > lmax || ll >= nx - 2) {
+						break;
+					}
+					int k = 0;
+					unsigned char p;
+					if (ll >= nx / 2) {
+						if (l >= (ny * nx - nx)) k = 2 * (ll - nx / 2) + 2;
+						else k = 2 * (ll - nx / 2) + l + 2 + nx;
+					}
+					else k = nx * ny - (l + 2 * ll) - 2;
+					if (k>=mid) k-=mid;		// These 2 lines handle the Fourier origin being in the corner, not the middle
+					else k+=mid;
+
+					float t = image_data[k];
+					if (t <= rm)
+						p = mingray;
+					else if (t >= render_max) {
+						p = maxgray;
+					}
+					else if (gamma!=1.0) {
+						k=(int)(gs2 * (t-render_min));		// map float value to 0-4096 range
+						p = gammamap[k];					// apply gamma using precomputed gamma map
+//						p = (unsigned char) (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma);
+//						p += mingray;
+//						k = static_cast<int>( (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma) );
+//						k += mingray;
+					}
+					else {
+						p = (unsigned char) (gs * (t - render_min));
+						p += mingray;
+					}
+					data[i * asrgb + j * bpl] = p;
+					if (hist) histd[p]++;
+					ll += addi;
+					remx += addr;
+					if (remx > scale_n) {
+						remx -= scale_n;
+						ll++;
+					}
+				}
+				l = br + addi * nx;
+				remy += addr;
+				if (remy > scale_n) {
+					remy -= scale_n;
+					l += nx;
+				}
+			}
+		}
+	}
+	else {
+		if (dsx != -1) {
+			int l = x0 + y0 * nx;
+			for (int j = ymax; j >= ymin; j--) {
+				int br = l;
+				for (int i = xmin; i < xsize; i++) {
+					if (l > lmax) {
+						break;
+					}
+					int k = 0;
+					unsigned char p;
+					float t;
+					if (dsx==1) t=image_data[l];
+					else {						// This block does local pixel averaging for nicer reduced views
+						t=0;
+						for (int iii=0; iii<dsx; iii++) {
+							for (int jjj=0; jjj<dsy; jjj+=nx) {
+								t+=image_data[l+iii+jjj];
+							}
+						}
+						t/=dsx*(dsy/nx);
+					}
+
+					if (t <= rm) p = mingray;
+					else if (t >= render_max) p = maxgray;
+					else if (gamma!=1.0) {
+						k=(int)(gs2 * (t-render_min));		// map float value to 0-4096 range
+						p = gammamap[k];					// apply gamma using precomputed gamma map
+//						k = (int) (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma);
+//						k += mingray;
+//						k = static_cast<int>( (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma) );
+//						k += mingray;
+					}
+					else {
+						p = (unsigned char) (gs * (t - render_min));
+						p += mingray;
+					}
+					data[i * asrgb + j * bpl] = p;
+					if (hist) histd[p]++;
+					l += dsx;
+				}
+				l = br + dsy;
+			}
+		}
+		else {
+			remy = 10;
+			int l = x0 + y0 * nx;
+			for (int j = ymax; j >= ymin; j--) {
+				int addj = addi;
+				// There seems to be some overflow issue happening
+				// where the statement if (l > lmax) break (below) doesn't work
+				// because the loop that iterates jjj can inadvertantly go out of bounds
+				if (( l + addi*nx ) >= nxy ) {
+					addj = (nxy-l)/nx;
+					if (addj <= 0) continue;
+				}
+				int br = l;
+				remx = 10;
+				for (int i = xmin; i < xsize; i++) {
+					if (l > lmax) break;
+					int k = 0;
+					unsigned char p;
+					float t;
+					if (addi<=1) t = image_data[l];
+					else {						// This block does local pixel averaging for nicer reduced views
+						t=0;
+						for (int jjj=0; jjj<addj; jjj++) {
+							for (int iii=0; iii<addi; iii++) {
+								t+=image_data[l+iii+jjj*nx];
+							}
+						}
+						t/=addi*addi;
+					}
+					if (t <= rm) p = mingray;
+					else if (t >= render_max) p = maxgray;
+					else if (gamma!=1.0) {
+						k=(int)(gs2 * (t-render_min));		// map float value to 0-4096 range
+						p = gammamap[k];					// apply gamma using precomputed gamma map
+//						k = (int) (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma);
+//						k += mingray;
+//						k = static_cast<int>( (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma) );
+//						k += mingray;
+					}
+					else {
+						p = (unsigned char) (gs * (t - render_min));
+						p += mingray;
+					}
+					data[i * asrgb + j * bpl] = p;
+					if (hist) histd[p]++;
+					l += addi;
+					remx += addr;
+					if (remx > scale_n) {
+						remx -= scale_n;
+						l++;
+					}
+				}
+				l = br + addi * nx;
+				remy += addr;
+				if (remy > scale_n) {
+					remy -= scale_n;
+					l += nx;
+				}
+			}
+		}
+	}
+
+	// this replicates r -> g,b
+	if (asrgb==3) {
+		for (int j=ymin*bpl; j<=ymax*bpl; j+=bpl) {
+			for (int i=xmin; i<xsize*3; i+=3) {
+				data[i+j+1]=data[i+j+2]=data[i+j];
+			}
+		}
+	}
+	if (asrgb==4) {
+		for (int j=ymin*bpl; j<=ymax*bpl; j+=bpl) {
+			for (int i=xmin; i<xsize*4; i+=4) {
+				data[i+j+1]=data[i+j+2]=data[i+j+3]=data[i+j];
+				data[i+j+3]=255;
+			}
+		}
+	}
+
+	EXITFUNC;
+
+	// ok, ok, not the most efficient place to do this, but it works
+	if (invy) {
+		int x,y;
+		char swp;
+		for (y=0; y<iysize/2; y++) {
+			for (x=0; x<ixsize; x++) {
+				swp=ret[y*bpl+x];
+				ret[y*bpl+x]=ret[(iysize-y-1)*bpl+x];
+				ret[(iysize-y-1)*bpl+x]=swp;
+			}
+		}
+	}
+
+    //	return PyString_FromStringAndSize((const char*) data,iysize*bpl);
+	if (flags&16) {
+#ifdef EMAN2_USING_OPENGL
+		glDrawPixels(ixsize,iysize,GL_LUMINANCE,GL_UNSIGNED_BYTE,(const GLvoid *)ret.data());
+#endif //EMAN2_USING_OPENGL
+	}
+
+	return ret;
+}
 
 #endif // EMAN2_USING_OPENGL

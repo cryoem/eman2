@@ -85,7 +85,7 @@ class EMImage(wx.Dialog):
 #		sys.stdout.flush()
 		if self.origin[0]<0 : self.origin[0]=0
 		if self.origin[1]<0 : self.origin[1]=0
-		d=self.data.render_amp8(self.origin[0],self.origin[1],self.GetSize()[0],self.GetSize()[1],self.GetSize()[0]*3,self.scale,1,254, self.mingrayval,self.maxgrayval,1)
+		d=GLUtil.render_amp8(self.data,self.origin[0],self.origin[1],self.GetSize()[0],self.GetSize()[1],self.GetSize()[0]*3,self.scale,1,254, self.mingrayval,self.maxgrayval,1)
 		
 		image=wx.EmptyImage(self.GetSize()[0],self.GetSize()[1])
 		image.SetDataBuffer(d)

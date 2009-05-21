@@ -32,6 +32,13 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  *
  * */
+#ifndef glutil_h__
+#define glutil_h__
+
+#include <vector>
+#include "vec3.h"
+
+using std::vector;
 
 namespace EMAN
 {
@@ -53,5 +60,36 @@ namespace EMAN
 		 * @return the texture id used in the call to glBindTextures
 		 */
 		static unsigned int render_amp8_gl_texture(EMData* emdata, int x0, int y0, int ixsize, int iysize, int bpl, float scale, int mingray, int maxgray,	float render_min, float render_max,float gamma,int flags);
+
+		/** Determine the intersection of .... just ask David Woolford
+		 *
+		 */
+		static int nearest_projected_points(const vector<float>& model_matrix, const vector<float>& proj_matrix, const vector<int>& view_matrix, const vector<Vec3f>& points, const float mouse_x, const float mouse_y,const float& nearnes);
+		static void colored_rectangle(const vector<float>& data,const float& alpha);
+		static void mx_bbox(const vector<float>& data, const vector<float>& text_color, const vector<float>& bg_color);
+
+		/** Render the image into an 8-bit image. 2D images only.
+		 * flags provide a way to do unusual things with this function, such
+		 * as calculating a histogram of the rendered area.
+		 *
+		 * @param x	origin of the area to render
+		 * @param y
+		 * @param xsize	size of the area to render in output pixels
+		 * @param ysize
+		 * @param bpl	bytes per line, if asrgb remember *3
+		 * @param scale	scale factor for rendering
+		 * @param min_gray	minimum gray value to render (0-255)
+		 * @param max_gray	maximum gray value to render (0-255)
+		 * @param min_render	float image density corresponding to min_gray
+		 * @param max_render	float image density corresponding to max_gray
+		 * @param gamma
+		 * @param flags	1-duplicate each output pixel 3x for RGB rendering,2-add a 256 int greyscale histogram to the end of the image array,4-invert y axis,8-render 32 bit 0xffRRGGBB
+		 * @exception ImageDimensionException If the image is not 2D.
+		 */
+		static std::string render_amp8(EMData * emdata, int x, int y, int xsize, int ysize,
+						 int bpl, float scale, int min_gray, int max_gray,
+						 float min_render, float max_render,float gamma,int flags);
 	};
 }
+
+#endif	//glutil_h__

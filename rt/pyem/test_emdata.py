@@ -1234,16 +1234,16 @@ class TestEMData(unittest.TestCase):
         e = EMData()
         e.set_size(32,32,1)
         e.process_inplace("testimage.noise.uniform.rand")
-        str = e.render_amp8(0, 0, 32, 32, 96, 1.2, 1, 254, 100.0, 200.0, 2.0, 3)
+        str = GLUtil.render_amp8(e, 0, 0, 32, 32, 96, 1.2, 1, 254, 100.0, 200.0, 2.0, 3)
         
         if(IS_TEST_EXCEPTION):
             #only apply to 2D image
             e2 = EMData()
             e2.set_size(32,32,32)
             e2.process_inplace("testimage.noise.uniform.rand")
-            self.assertRaises( RuntimeError, e2.render_amp8, 0, 0, 32, 32, 96, 1.2, 1, 254, 100.0, 200.0, 2.0, 3)
+            self.assertRaises( RuntimeError, GLUtil.render_amp8, e2, 0, 0, 32, 32, 96, 1.2, 1, 254, 100.0, 200.0, 2.0, 3)
             try:
-                str = e2.render_amp8(0, 0, 32, 32, 96, 1.2, 1, 254, 100.0, 200.0, 2.0, 3)
+                str = GLUtil.render_amp8(e2, 0, 0, 32, 32, 96, 1.2, 1, 254, 100.0, 200.0, 2.0, 3)
             except RuntimeError, runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
 

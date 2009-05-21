@@ -230,12 +230,6 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("set_complex_size", &EMAN::EMData::set_complex_size, EMAN_EMData_set_complex_size_overloads_1_3())
 	.def("set_path", &EMAN::EMData::set_path)
 	.def("set_pathnum", &EMAN::EMData::set_pathnum)
-#ifdef EMAN2_USING_OPENGL
-	.def("gen_glu_mipmaps", (unsigned int (EMAN::EMData::*)() const)&EMAN::EMData::gen_glu_mipmaps)
-	.def("gen_gl_texture", (unsigned int (EMAN::EMData::*)() const)&EMAN::EMData::gen_gl_texture)
-// 	.def("get_data_void_pointer", (EMAN::Dict (EMAN::EMData::*)() const)&EMAN::EMData::get_data_void_pointer) removed by d.woolford - we never got the idea off the ground
-	.def("render_amp8_gl_texture", &EMAN::EMData::render_amp8_gl_texture)
-#endif //EMAN2_USING_OPENGL
 	.def("get_2dview", (EMAN::MArray2D (EMAN::EMData::*)() const)&EMAN::EMData::get_2dview)
 	.def("get_3dview", (EMAN::MArray3D (EMAN::EMData::*)() const)&EMAN::EMData::get_3dview)
 	.def("get_2dcview", (EMAN::MCArray2D (EMAN::EMData::*)() const)&EMAN::EMData::get_2dcview)
@@ -330,7 +324,6 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("cuda_lock", &EMAN::EMData::cuda_lock)
 	.def("cuda_unlock", &EMAN::EMData::cuda_unlock)
 #endif // EMAN2_USING_CUDA
-	.def("render_amp8", &EMAN::EMData::render_amp8)
 	.def("render_ap24", &EMAN::EMData::render_ap24)
 	.def("ri2ap", &EMAN::EMData::ri2ap)
 	.def("ap2ri", &EMAN::EMData::ap2ri)

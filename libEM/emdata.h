@@ -110,10 +110,6 @@ namespace EMAN
 		/** This is for CUDA related functionality */
 		#include "emdata_cuda.h"
 #endif // EMAN2_USING_CUDA
-#ifdef EMAN2_USING_OPENGL
-		/** GL Texturing */
-		#include  "emdata_gl.h"
-#endif //EMAN2_USING_OPENGL
 
 	static int totalalloc;
 	public:

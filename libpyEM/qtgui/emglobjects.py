@@ -1098,9 +1098,9 @@ class EMOpenGLFlagsAndTools:
 		
 		def gen_textureName(self,data):
 			if ( not data_dims_power_of(data,2) and self.npt_textures_unsupported()):
-				return data.gen_glu_mipmaps()
+				return GLUtil.gen_glu_mipmaps(data)
 			else:
-				return data.gen_gl_texture() 
+				return GLUtil.gen_gl_texture(data) 
 
 		def blend_equation_supported(self):
 			if (self.force_blend_equation_off): return False

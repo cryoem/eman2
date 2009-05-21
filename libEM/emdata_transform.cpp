@@ -45,18 +45,13 @@
 #include <algorithm>
 #include <vector>
 #include <utility>
+#include <cmath>
 #include "util.h"
-
-
-#ifdef EMAN2_USING_OPENGL
-#include "GL/gl.h"
-#endif //EMAN2_USING_OPENGL
 
 
 using namespace EMAN;
 using namespace std;
 typedef vector< pair<float,int> > vp;
-#include <math.h>
 
 #ifdef EMAN2_USING_CUDA
 
@@ -336,367 +331,367 @@ EMData *EMData::do_ift_inplace()
 }
 #undef rdata
 
-std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
-						 int bpl, float scale, int mingray, int maxgray,
-						 float render_min, float render_max,float gamma,int flags)
-{
-	ENTERFUNC;
-
-	int asrgb;
-	int hist=(flags&2)/2;
-	int invy=(flags&4)?1:0;
-
-	if (get_ndim() > 2) {
-		throw ImageDimensionException("1D/2D only");
-	}
-
-	if (is_complex()) {
-		ri2ap();
-	}
-
-	if (render_max <= render_min) {
-		render_max = render_min + 0.01f;
-	}
-
-	if (gamma<=0) gamma=1.0;
-
-	// Calculating a full floating point gamma for
-	// each pixel in the image slows rendering unacceptably
-	// however, applying a gamma-mapping to an 8 bit colorspace
-	// has unacceptable coarse accuracy. So, we oversample the 8 bit colorspace
-	// as a 12 bit colorspace and apply the gamma mapping to that
-	// This should produce good accuracy for gamma values
-	// larger than 0.5 (and a high upper limit)
-	static int smg0=0,smg1=0;	// while this destroys threadsafety in the rendering process
-	static float sgam=0;		// it is necessary for speed when rendering large numbers of small images
-	static unsigned char gammamap[4096];
-	if (gamma!=1.0 && (smg0!=mingray || smg1!=maxgray || sgam!=gamma)) {
-		for (int i=0; i<4096; i++) {
-			if (mingray<maxgray) gammamap[i]=(unsigned char)(mingray+(maxgray-mingray+0.999)*pow(((float)i/4096.0f),gamma));
-			else gammamap[4095-i]=(unsigned char)(mingray+(maxgray-mingray+0.999)*pow(((float)i/4096.0f),gamma));
-		}
-	}
-	smg0=mingray;	// so we don't recompute the map unless something changes
-	smg1=maxgray;
-	sgam=gamma;
-
-	if (flags&8) asrgb=4;
-	else if (flags&1) asrgb=3;
-	else asrgb=1;
-
-	std::string ret=std::string();
-//	ret.resize(iysize*bpl);
-	ret.assign(iysize*bpl+hist*1024,char(mingray));
-	unsigned char *data=(unsigned char *)ret.data();
-	unsigned int *histd=(unsigned int *)(data+iysize*bpl);
-	if (hist) {
-		for (int i=0; i<256; i++) histd[i]=0;
-	}
-
-	float rm = render_min;
-	float inv_scale = 1.0f / scale;
-	int ysize = iysize;
-	int xsize = ixsize;
-
-	int ymin = 0;
-	if (iysize * inv_scale > ny) {
-		ymin = (int) (iysize - ny / inv_scale);
-	}
-
-	float gs = (maxgray - mingray) / (render_max - render_min);
-	float gs2 = 4095.999f / (render_max - render_min);
-//	float gs2 = 1.0 / (render_max - render_min);
-	if (render_max < render_min) {
-		gs = 0;
-		rm = FLT_MAX;
-	}
-
-	int dsx = -1;
-	int dsy = 0;
-	int remx = 0;
-	int remy = 0;
-	const int scale_n = 100000;
-
-	int addi = 0;
-	int addr = 0;
-	if (inv_scale == floor(inv_scale)) {
-		dsx = (int) inv_scale;
-		dsy = (int) (inv_scale * nx);
-	}
-	else {
-		addi = (int) floor(inv_scale);
-		addr = (int) (scale_n * (inv_scale - floor(inv_scale)));
-	}
-
-	int xmin = 0;
-	if (x0 < 0) {
-		xmin = (int) (-x0 / inv_scale);
-		xsize -= (int) floor(x0 / inv_scale);
-		x0 = 0;
-	}
-
-	if ((xsize - xmin) * inv_scale > (nx - x0)) {
-		xsize = (int) ((nx - x0) / inv_scale + xmin);
-	}
-	int ymax = ysize - 1;
-	if (y0 < 0) {
-		ymax = (int) (ysize + y0 / inv_scale - 1);
-		ymin += (int) floor(y0 / inv_scale);
-		y0 = 0;
-	}
-
-	if (xmin < 0) xmin = 0;
-	if (ymin < 0) ymin = 0;
-	if (xsize > ixsize) xsize = ixsize;
-	if (ymax > iysize) ymax = iysize;
-
-	int lmax = nx * ny - 1;
-
-	int mid=nx*ny/2;
-	float * image_data = get_data();
-	if (is_complex()) {
-		if (dsx != -1) {
-			int l = y0 * nx;
-			for (int j = ymax; j >= ymin; j--) {
-				int ll = x0;
-				for (int i = xmin; i < xsize; i++) {
-					if (l + ll > lmax || ll >= nx - 2) break;
-
-					int k = 0;
-					unsigned char p;
-					if (ll >= nx / 2) {
-						if (l >= (ny - inv_scale) * nx) k = 2 * (ll - nx / 2) + 2;
-						else k = 2 * (ll - nx / 2) + l + 2 + nx;
-					}
-					else k = nx * ny - (l + 2 * ll) - 2;
-					if (k>=mid) k-=mid;		// These 2 lines handle the Fourier origin being in the corner, not the middle
-					else k+=mid;
-					float t = image_data[k];
-					if (t <= rm)  p = mingray;
-					else if (t >= render_max) p = maxgray;
-					else if (gamma!=1.0) {
-						k=(int)(gs2 * (t-render_min));		// map float value to 0-4096 range
-						p = gammamap[k];					// apply gamma using precomputed gamma map
-//						p = (unsigned char) (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma);
+//std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
+//						 int bpl, float scale, int mingray, int maxgray,
+//						 float render_min, float render_max,float gamma,int flags)
+//{
+//	ENTERFUNC;
+//
+//	int asrgb;
+//	int hist=(flags&2)/2;
+//	int invy=(flags&4)?1:0;
+//
+//	if (get_ndim() > 2) {
+//		throw ImageDimensionException("1D/2D only");
+//	}
+//
+//	if (is_complex()) {
+//		ri2ap();
+//	}
+//
+//	if (render_max <= render_min) {
+//		render_max = render_min + 0.01f;
+//	}
+//
+//	if (gamma<=0) gamma=1.0;
+//
+//	// Calculating a full floating point gamma for
+//	// each pixel in the image slows rendering unacceptably
+//	// however, applying a gamma-mapping to an 8 bit colorspace
+//	// has unacceptable coarse accuracy. So, we oversample the 8 bit colorspace
+//	// as a 12 bit colorspace and apply the gamma mapping to that
+//	// This should produce good accuracy for gamma values
+//	// larger than 0.5 (and a high upper limit)
+//	static int smg0=0,smg1=0;	// while this destroys threadsafety in the rendering process
+//	static float sgam=0;		// it is necessary for speed when rendering large numbers of small images
+//	static unsigned char gammamap[4096];
+//	if (gamma!=1.0 && (smg0!=mingray || smg1!=maxgray || sgam!=gamma)) {
+//		for (int i=0; i<4096; i++) {
+//			if (mingray<maxgray) gammamap[i]=(unsigned char)(mingray+(maxgray-mingray+0.999)*pow(((float)i/4096.0f),gamma));
+//			else gammamap[4095-i]=(unsigned char)(mingray+(maxgray-mingray+0.999)*pow(((float)i/4096.0f),gamma));
+//		}
+//	}
+//	smg0=mingray;	// so we don't recompute the map unless something changes
+//	smg1=maxgray;
+//	sgam=gamma;
+//
+//	if (flags&8) asrgb=4;
+//	else if (flags&1) asrgb=3;
+//	else asrgb=1;
+//
+//	std::string ret=std::string();
+////	ret.resize(iysize*bpl);
+//	ret.assign(iysize*bpl+hist*1024,char(mingray));
+//	unsigned char *data=(unsigned char *)ret.data();
+//	unsigned int *histd=(unsigned int *)(data+iysize*bpl);
+//	if (hist) {
+//		for (int i=0; i<256; i++) histd[i]=0;
+//	}
+//
+//	float rm = render_min;
+//	float inv_scale = 1.0f / scale;
+//	int ysize = iysize;
+//	int xsize = ixsize;
+//
+//	int ymin = 0;
+//	if (iysize * inv_scale > ny) {
+//		ymin = (int) (iysize - ny / inv_scale);
+//	}
+//
+//	float gs = (maxgray - mingray) / (render_max - render_min);
+//	float gs2 = 4095.999f / (render_max - render_min);
+////	float gs2 = 1.0 / (render_max - render_min);
+//	if (render_max < render_min) {
+//		gs = 0;
+//		rm = FLT_MAX;
+//	}
+//
+//	int dsx = -1;
+//	int dsy = 0;
+//	int remx = 0;
+//	int remy = 0;
+//	const int scale_n = 100000;
+//
+//	int addi = 0;
+//	int addr = 0;
+//	if (inv_scale == floor(inv_scale)) {
+//		dsx = (int) inv_scale;
+//		dsy = (int) (inv_scale * nx);
+//	}
+//	else {
+//		addi = (int) floor(inv_scale);
+//		addr = (int) (scale_n * (inv_scale - floor(inv_scale)));
+//	}
+//
+//	int xmin = 0;
+//	if (x0 < 0) {
+//		xmin = (int) (-x0 / inv_scale);
+//		xsize -= (int) floor(x0 / inv_scale);
+//		x0 = 0;
+//	}
+//
+//	if ((xsize - xmin) * inv_scale > (nx - x0)) {
+//		xsize = (int) ((nx - x0) / inv_scale + xmin);
+//	}
+//	int ymax = ysize - 1;
+//	if (y0 < 0) {
+//		ymax = (int) (ysize + y0 / inv_scale - 1);
+//		ymin += (int) floor(y0 / inv_scale);
+//		y0 = 0;
+//	}
+//
+//	if (xmin < 0) xmin = 0;
+//	if (ymin < 0) ymin = 0;
+//	if (xsize > ixsize) xsize = ixsize;
+//	if (ymax > iysize) ymax = iysize;
+//
+//	int lmax = nx * ny - 1;
+//
+//	int mid=nx*ny/2;
+//	float * image_data = get_data();
+//	if (is_complex()) {
+//		if (dsx != -1) {
+//			int l = y0 * nx;
+//			for (int j = ymax; j >= ymin; j--) {
+//				int ll = x0;
+//				for (int i = xmin; i < xsize; i++) {
+//					if (l + ll > lmax || ll >= nx - 2) break;
+//
+//					int k = 0;
+//					unsigned char p;
+//					if (ll >= nx / 2) {
+//						if (l >= (ny - inv_scale) * nx) k = 2 * (ll - nx / 2) + 2;
+//						else k = 2 * (ll - nx / 2) + l + 2 + nx;
+//					}
+//					else k = nx * ny - (l + 2 * ll) - 2;
+//					if (k>=mid) k-=mid;		// These 2 lines handle the Fourier origin being in the corner, not the middle
+//					else k+=mid;
+//					float t = image_data[k];
+//					if (t <= rm)  p = mingray;
+//					else if (t >= render_max) p = maxgray;
+//					else if (gamma!=1.0) {
+//						k=(int)(gs2 * (t-render_min));		// map float value to 0-4096 range
+//						p = gammamap[k];					// apply gamma using precomputed gamma map
+////						p = (unsigned char) (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma);
+////						p += mingray;
+////						k = static_cast<int>( (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma) );
+////						k += mingray;
+//					}
+//					else {
+//						p = (unsigned char) (gs * (t - render_min));
 //						p += mingray;
-//						k = static_cast<int>( (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma) );
-//						k += mingray;
-					}
-					else {
-						p = (unsigned char) (gs * (t - render_min));
-						p += mingray;
-					}
-					data[i * asrgb + j * bpl] = p;
-					if (hist) histd[p]++;
-					ll += dsx;
-				}
-				l += dsy;
-			}
-		}
-		else {
-			remy = 10;
-			int l = y0 * nx;
-			for (int j = ymax; j >= ymin; j--) {
-				int br = l;
-				remx = 10;
-				int ll = x0;
-				for (int i = xmin; i < xsize - 1; i++) {
-					if (l + ll > lmax || ll >= nx - 2) {
-						break;
-					}
-					int k = 0;
-					unsigned char p;
-					if (ll >= nx / 2) {
-						if (l >= (ny * nx - nx)) k = 2 * (ll - nx / 2) + 2;
-						else k = 2 * (ll - nx / 2) + l + 2 + nx;
-					}
-					else k = nx * ny - (l + 2 * ll) - 2;
-					if (k>=mid) k-=mid;		// These 2 lines handle the Fourier origin being in the corner, not the middle
-					else k+=mid;
-
-					float t = image_data[k];
-					if (t <= rm)
-						p = mingray;
-					else if (t >= render_max) {
-						p = maxgray;
-					}
-					else if (gamma!=1.0) {
-						k=(int)(gs2 * (t-render_min));		// map float value to 0-4096 range
-						p = gammamap[k];					// apply gamma using precomputed gamma map
-//						p = (unsigned char) (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma);
+//					}
+//					data[i * asrgb + j * bpl] = p;
+//					if (hist) histd[p]++;
+//					ll += dsx;
+//				}
+//				l += dsy;
+//			}
+//		}
+//		else {
+//			remy = 10;
+//			int l = y0 * nx;
+//			for (int j = ymax; j >= ymin; j--) {
+//				int br = l;
+//				remx = 10;
+//				int ll = x0;
+//				for (int i = xmin; i < xsize - 1; i++) {
+//					if (l + ll > lmax || ll >= nx - 2) {
+//						break;
+//					}
+//					int k = 0;
+//					unsigned char p;
+//					if (ll >= nx / 2) {
+//						if (l >= (ny * nx - nx)) k = 2 * (ll - nx / 2) + 2;
+//						else k = 2 * (ll - nx / 2) + l + 2 + nx;
+//					}
+//					else k = nx * ny - (l + 2 * ll) - 2;
+//					if (k>=mid) k-=mid;		// These 2 lines handle the Fourier origin being in the corner, not the middle
+//					else k+=mid;
+//
+//					float t = image_data[k];
+//					if (t <= rm)
+//						p = mingray;
+//					else if (t >= render_max) {
+//						p = maxgray;
+//					}
+//					else if (gamma!=1.0) {
+//						k=(int)(gs2 * (t-render_min));		// map float value to 0-4096 range
+//						p = gammamap[k];					// apply gamma using precomputed gamma map
+////						p = (unsigned char) (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma);
+////						p += mingray;
+////						k = static_cast<int>( (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma) );
+////						k += mingray;
+//					}
+//					else {
+//						p = (unsigned char) (gs * (t - render_min));
 //						p += mingray;
-//						k = static_cast<int>( (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma) );
-//						k += mingray;
-					}
-					else {
-						p = (unsigned char) (gs * (t - render_min));
-						p += mingray;
-					}
-					data[i * asrgb + j * bpl] = p;
-					if (hist) histd[p]++;
-					ll += addi;
-					remx += addr;
-					if (remx > scale_n) {
-						remx -= scale_n;
-						ll++;
-					}
-				}
-				l = br + addi * nx;
-				remy += addr;
-				if (remy > scale_n) {
-					remy -= scale_n;
-					l += nx;
-				}
-			}
-		}
-	}
-	else {
-		if (dsx != -1) {
-			int l = x0 + y0 * nx;
-			for (int j = ymax; j >= ymin; j--) {
-				int br = l;
-				for (int i = xmin; i < xsize; i++) {
-					if (l > lmax) {
-						break;
-					}
-					int k = 0;
-					unsigned char p;
-					float t;
-					if (dsx==1) t=image_data[l];
-					else {						// This block does local pixel averaging for nicer reduced views
-						t=0;
-						for (int iii=0; iii<dsx; iii++) {
-							for (int jjj=0; jjj<dsy; jjj+=nx) {
-								t+=image_data[l+iii+jjj];
-							}
-						}
-						t/=dsx*(dsy/nx);
-					}
-
-					if (t <= rm) p = mingray;
-					else if (t >= render_max) p = maxgray;
-					else if (gamma!=1.0) {
-						k=(int)(gs2 * (t-render_min));		// map float value to 0-4096 range
-						p = gammamap[k];					// apply gamma using precomputed gamma map
-//						k = (int) (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma);
-//						k += mingray;
-//						k = static_cast<int>( (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma) );
-//						k += mingray;
-					}
-					else {
-						p = (unsigned char) (gs * (t - render_min));
-						p += mingray;
-					}
-					data[i * asrgb + j * bpl] = p;
-					if (hist) histd[p]++;
-					l += dsx;
-				}
-				l = br + dsy;
-			}
-		}
-		else {
-			remy = 10;
-			int l = x0 + y0 * nx;
-			for (int j = ymax; j >= ymin; j--) {
-				int addj = addi;
-				// There seems to be some overflow issue happening
-				// where the statement if (l > lmax) break (below) doesn't work
-				// because the loop that iterates jjj can inadvertantly go out of bounds
-				if (( l + addi*nx ) >= nxy ) {
-					addj = (nxy-l)/nx;
-					if (addj <= 0) continue;
-				}
-				int br = l;
-				remx = 10;
-				for (int i = xmin; i < xsize; i++) {
-					if (l > lmax) break;
-					int k = 0;
-					unsigned char p;
-					float t;
-					if (addi<=1) t = image_data[l];
-					else {						// This block does local pixel averaging for nicer reduced views
-						t=0;
-						for (int jjj=0; jjj<addj; jjj++) {
-							for (int iii=0; iii<addi; iii++) {
-								t+=image_data[l+iii+jjj*nx];
-							}
-						}
-						t/=addi*addi;
-					}
-					if (t <= rm) p = mingray;
-					else if (t >= render_max) p = maxgray;
-					else if (gamma!=1.0) {
-						k=(int)(gs2 * (t-render_min));		// map float value to 0-4096 range
-						p = gammamap[k];					// apply gamma using precomputed gamma map
-//						k = (int) (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma);
-//						k += mingray;
-//						k = static_cast<int>( (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma) );
-//						k += mingray;
-					}
-					else {
-						p = (unsigned char) (gs * (t - render_min));
-						p += mingray;
-					}
-					data[i * asrgb + j * bpl] = p;
-					if (hist) histd[p]++;
-					l += addi;
-					remx += addr;
-					if (remx > scale_n) {
-						remx -= scale_n;
-						l++;
-					}
-				}
-				l = br + addi * nx;
-				remy += addr;
-				if (remy > scale_n) {
-					remy -= scale_n;
-					l += nx;
-				}
-			}
-		}
-	}
-
-	// this replicates r -> g,b
-	if (asrgb==3) {
-		for (int j=ymin*bpl; j<=ymax*bpl; j+=bpl) {
-			for (int i=xmin; i<xsize*3; i+=3) {
-				data[i+j+1]=data[i+j+2]=data[i+j];
-			}
-		}
-	}
-	if (asrgb==4) {
-		for (int j=ymin*bpl; j<=ymax*bpl; j+=bpl) {
-			for (int i=xmin; i<xsize*4; i+=4) {
-				data[i+j+1]=data[i+j+2]=data[i+j+3]=data[i+j];
-				data[i+j+3]=255;
-			}
-		}
-	}
-
-	EXITFUNC;
-
-	// ok, ok, not the most efficient place to do this, but it works
-	if (invy) {
-		int x,y;
-		char swp;
-		for (y=0; y<iysize/2; y++) {
-			for (x=0; x<ixsize; x++) {
-				swp=ret[y*bpl+x];
-				ret[y*bpl+x]=ret[(iysize-y-1)*bpl+x];
-				ret[(iysize-y-1)*bpl+x]=swp;
-			}
-		}
-	}
-
-    //	return PyString_FromStringAndSize((const char*) data,iysize*bpl);
-	if (flags&16) {
-#ifdef EMAN2_USING_OPENGL
-		glDrawPixels(ixsize,iysize,GL_LUMINANCE,GL_UNSIGNED_BYTE,(const GLvoid *)ret.data());
-#endif //EMAN2_USING_OPENGL
-	}
-
-	return ret;
-}
+//					}
+//					data[i * asrgb + j * bpl] = p;
+//					if (hist) histd[p]++;
+//					ll += addi;
+//					remx += addr;
+//					if (remx > scale_n) {
+//						remx -= scale_n;
+//						ll++;
+//					}
+//				}
+//				l = br + addi * nx;
+//				remy += addr;
+//				if (remy > scale_n) {
+//					remy -= scale_n;
+//					l += nx;
+//				}
+//			}
+//		}
+//	}
+//	else {
+//		if (dsx != -1) {
+//			int l = x0 + y0 * nx;
+//			for (int j = ymax; j >= ymin; j--) {
+//				int br = l;
+//				for (int i = xmin; i < xsize; i++) {
+//					if (l > lmax) {
+//						break;
+//					}
+//					int k = 0;
+//					unsigned char p;
+//					float t;
+//					if (dsx==1) t=image_data[l];
+//					else {						// This block does local pixel averaging for nicer reduced views
+//						t=0;
+//						for (int iii=0; iii<dsx; iii++) {
+//							for (int jjj=0; jjj<dsy; jjj+=nx) {
+//								t+=image_data[l+iii+jjj];
+//							}
+//						}
+//						t/=dsx*(dsy/nx);
+//					}
+//
+//					if (t <= rm) p = mingray;
+//					else if (t >= render_max) p = maxgray;
+//					else if (gamma!=1.0) {
+//						k=(int)(gs2 * (t-render_min));		// map float value to 0-4096 range
+//						p = gammamap[k];					// apply gamma using precomputed gamma map
+////						k = (int) (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma);
+////						k += mingray;
+////						k = static_cast<int>( (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma) );
+////						k += mingray;
+//					}
+//					else {
+//						p = (unsigned char) (gs * (t - render_min));
+//						p += mingray;
+//					}
+//					data[i * asrgb + j * bpl] = p;
+//					if (hist) histd[p]++;
+//					l += dsx;
+//				}
+//				l = br + dsy;
+//			}
+//		}
+//		else {
+//			remy = 10;
+//			int l = x0 + y0 * nx;
+//			for (int j = ymax; j >= ymin; j--) {
+//				int addj = addi;
+//				// There seems to be some overflow issue happening
+//				// where the statement if (l > lmax) break (below) doesn't work
+//				// because the loop that iterates jjj can inadvertantly go out of bounds
+//				if (( l + addi*nx ) >= nxy ) {
+//					addj = (nxy-l)/nx;
+//					if (addj <= 0) continue;
+//				}
+//				int br = l;
+//				remx = 10;
+//				for (int i = xmin; i < xsize; i++) {
+//					if (l > lmax) break;
+//					int k = 0;
+//					unsigned char p;
+//					float t;
+//					if (addi<=1) t = image_data[l];
+//					else {						// This block does local pixel averaging for nicer reduced views
+//						t=0;
+//						for (int jjj=0; jjj<addj; jjj++) {
+//							for (int iii=0; iii<addi; iii++) {
+//								t+=image_data[l+iii+jjj*nx];
+//							}
+//						}
+//						t/=addi*addi;
+//					}
+//					if (t <= rm) p = mingray;
+//					else if (t >= render_max) p = maxgray;
+//					else if (gamma!=1.0) {
+//						k=(int)(gs2 * (t-render_min));		// map float value to 0-4096 range
+//						p = gammamap[k];					// apply gamma using precomputed gamma map
+////						k = (int) (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma);
+////						k += mingray;
+////						k = static_cast<int>( (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma) );
+////						k += mingray;
+//					}
+//					else {
+//						p = (unsigned char) (gs * (t - render_min));
+//						p += mingray;
+//					}
+//					data[i * asrgb + j * bpl] = p;
+//					if (hist) histd[p]++;
+//					l += addi;
+//					remx += addr;
+//					if (remx > scale_n) {
+//						remx -= scale_n;
+//						l++;
+//					}
+//				}
+//				l = br + addi * nx;
+//				remy += addr;
+//				if (remy > scale_n) {
+//					remy -= scale_n;
+//					l += nx;
+//				}
+//			}
+//		}
+//	}
+//
+//	// this replicates r -> g,b
+//	if (asrgb==3) {
+//		for (int j=ymin*bpl; j<=ymax*bpl; j+=bpl) {
+//			for (int i=xmin; i<xsize*3; i+=3) {
+//				data[i+j+1]=data[i+j+2]=data[i+j];
+//			}
+//		}
+//	}
+//	if (asrgb==4) {
+//		for (int j=ymin*bpl; j<=ymax*bpl; j+=bpl) {
+//			for (int i=xmin; i<xsize*4; i+=4) {
+//				data[i+j+1]=data[i+j+2]=data[i+j+3]=data[i+j];
+//				data[i+j+3]=255;
+//			}
+//		}
+//	}
+//
+//	EXITFUNC;
+//
+//	// ok, ok, not the most efficient place to do this, but it works
+//	if (invy) {
+//		int x,y;
+//		char swp;
+//		for (y=0; y<iysize/2; y++) {
+//			for (x=0; x<ixsize; x++) {
+//				swp=ret[y*bpl+x];
+//				ret[y*bpl+x]=ret[(iysize-y-1)*bpl+x];
+//				ret[(iysize-y-1)*bpl+x]=swp;
+//			}
+//		}
+//	}
+//
+//    //	return PyString_FromStringAndSize((const char*) data,iysize*bpl);
+//	if (flags&16) {
+//#ifdef EMAN2_USING_OPENGL
+//		glDrawPixels(ixsize,iysize,GL_LUMINANCE,GL_UNSIGNED_BYTE,(const GLvoid *)ret.data());
+//#endif //EMAN2_USING_OPENGL
+//	}
+//
+//	return ret;
+//}
 
 std::string EMData::render_ap24(int x0, int y0, int ixsize, int iysize,
 						 int bpl, float scale, int mingray, int maxgray,
@@ -1326,12 +1321,12 @@ EMData*   EMData::bispecRotTransInvN(int N, int NK)
 	EMData* fkCopy  = new EMData(End,End);
 
 
-	for  (int jCount= 0; jCount<End*End; jCount++) { 
+	for  (int jCount= 0; jCount<End*End; jCount++) {
 //		jCount = jy*End + jx;
-		int jx             = jCount%End ;					
+		int jx             = jCount%End ;
 		int jy             = (jCount-jx)/End ;
 		jxjyatan2[jCount]  = atan2(jy+1-Mid , jx +1 -Mid);
-	}					
+	}
 
 
 	for (int kEx= 0; kEx<2*Mid; kEx=kEx+2) { // kEx twice the value of the Fourier
@@ -1449,7 +1444,7 @@ EMData*   EMData::bispecRotTransInvN(int N, int NK)
 
  //	int NK=  min(12,CountxyMax) ;
 
-	
+
 
 	cout << "NK = " << NK << endl;
 	float frR= 3.0/4.0;
@@ -1488,7 +1483,7 @@ EMData*   EMData::bispecRotTransInvN(int N, int NK)
 				int ky = kVecY[Countkxy] ;
 				float k2 = kx*kx+ky*ky;
 				if (k2==0) { continue;}
-				float phiK =0; 	
+				float phiK =0;
 				if (k2>0) phiK= jxjyatan2[ (ky+Mid-1)*End + kx+Mid-1];  phiK= atan2(ky,kx);
 
 				float fkR     = fkVecR[Countkxy] ;
@@ -1501,7 +1496,7 @@ EMData*   EMData::bispecRotTransInvN(int N, int NK)
 					int qy   = kVecY[Countqxy] ;
 					int q2   = qx*qx+qy*qy;
 					if (q2==0) {continue;}
-					float phiQ =0; 	
+					float phiQ =0;
 					if (q2>0) phiQ = jxjyatan2[ (qy+Mid-1)*End + qx+Mid-1];   phiQ=atan2(qy,qx);
 					float fqR     = fkVecR[Countqxy]  ;
 					float fqI     = fkVecI[Countqxy]  ;
@@ -1588,7 +1583,7 @@ EMData*   EMData::bispecRotTransInvDirect()
 	int End = 2*Mid-1;
 
         int CountxyMax = End*End;
-	
+
 	int   *SortfkInds       = new    int[CountxyMax];
 	int   *kVecX            = new    int[CountxyMax];
 	int   *kVecY            = new    int[CountxyMax];
@@ -1598,7 +1593,7 @@ EMData*   EMData::bispecRotTransInvDirect()
 	float *absD1fkVecSorted = new  float[CountxyMax];
 
 
-	float *jxjyatan2         = new  float[End*End]; 
+	float *jxjyatan2         = new  float[End*End];
 
 
 	EMData * ThisCopy = new EMData(End,End);
@@ -1610,19 +1605,19 @@ EMData*   EMData::bispecRotTransInvDirect()
 			jxjyatan2[jy*End + jx]  = atan2(jy+1-Mid , jx +1 -Mid);
 //		cout<< " jxM= " << jx+1<<" jyM= " << jy+1<< "ValNow" << ValNow << endl; //    Works
 	}}
-       
-	
+
+
 	EMData* fk = ThisCopy -> do_fft();
 	fk          ->process_inplace("xform.fourierorigin.tocenter");
 
 //	EMData* fk
 
-	for (int kEx= 0; kEx<2*Mid; kEx=kEx+2) { // kEx twice the value of the Fourier 
-						// x variable: EMAN index for real, imag 
+	for (int kEx= 0; kEx<2*Mid; kEx=kEx+2) { // kEx twice the value of the Fourier
+						// x variable: EMAN index for real, imag
 		int kx    = kEx/2;		// kx  is  the value of the Fourier variable
 	        int kIx   = kx+Mid-1; // This is the value of the index for a matlab image (-1)
-		int kCx   = -kx ; 
-		int kCIx  = kCx+ Mid-1 ; 
+		int kCx   = -kx ;
+		int kCIx  = kCx+ Mid-1 ;
 		for (int kEy= 0 ; kEy<End; kEy++) { // This is the value of the EMAN index
     		 	int kIy              =  kEy       ; //  This is the value of the index for a matlab image (-1)
 			int ky               =  kEy+1-Mid; // (kEy+ Mid-1)%End - Mid+1 ;  // This is the actual value of the Fourier variable
@@ -1635,15 +1630,15 @@ EMData*   EMData::bispecRotTransInvDirect()
 			float NewImagVal   ;
 			float AngMatlab    ;
 
-			if (kIx==Mid-1) { 
+			if (kIx==Mid-1) {
 //				AngMatlab = -fkAng - 2.*M_PI*(kIy+ 1-Mid)*(Mid)/End;
 			}
 
-			if (kIx>Mid-1){ 
+			if (kIx>Mid-1){
 //			cout<< "i= " << i << " kIx= " << kIx << " kIy=" << kIy << " fkVecR[i] =" << fkVecR[i]<< " fkVecI[i]="  << fkVecI[i] <<"  angle[i]= "  << AngMatlab << endl;
 			}
 
-			AngMatlab = fkAng - 2.*M_PI*(kx +ky)*(Mid)/End; 
+			AngMatlab = fkAng - 2.*M_PI*(kx +ky)*(Mid)/End;
 			NewRealVal  =   absVal*cos(AngMatlab);
 			NewImagVal  =   absVal*sin(AngMatlab);
 
@@ -1673,7 +1668,7 @@ EMData*   EMData::bispecRotTransInvDirect()
 	for (int TotalInd = 0 ;  TotalInd < CountxyMax ; TotalInd++){
 	        int kx     = kVecX[TotalInd]; // This is the value of the index for a matlab image (-1)
 	        int kIx    = kx+Mid-1; // This is the value of the index for a matlab image (-1)
-	        int ky     = kVecY[TotalInd]; 
+	        int ky     = kVecY[TotalInd];
 	        int kIy    = ky+Mid-1; // This is the value of the index for a matlab image (-1)
 		float fkR  = fkVecR[kIy+kIx *End]  ;
 		float fkI  = fkVecI[kIy+kIx *End]  ;
@@ -1686,7 +1681,7 @@ EMData*   EMData::bispecRotTransInvDirect()
 
         float *radRange = new float[LradRange]; //= 0:.75:(Mid-1);
 	for (int irad=0; irad < LradRange; irad++){
-			radRange[irad] =  frR*irad; 
+			radRange[irad] =  frR*irad;
 //			cout << " irad = " << irad << " radRange[irad]= " <<  radRange[irad] <<  " LradRange= " << LradRange << endl;
 			}
 
@@ -1704,7 +1699,7 @@ EMData*   EMData::bispecRotTransInvDirect()
 	cout << "Starting the calculation of invariants" << endl;
 
 /*	int NMax=5;            */
-	
+
 	int TotalVol = LradRange*LradRange*LthetaRange;
 
 	float *RotTransInv   = new  float[TotalVol];
@@ -1720,26 +1715,26 @@ EMData*   EMData::bispecRotTransInvDirect()
 
 	for (int Countkxy =0; Countkxy<CountxyMax; Countkxy++){
 		int kx = kVecX[Countkxy] ;
-		int ky = kVecY[Countkxy] ;  
+		int ky = kVecY[Countkxy] ;
 		float k2 = ::sqrt(kx*kx+ky*ky);
-		float phiK =0; 	
-		if (k2>0)    phiK = jxjyatan2[ (ky+Mid-1)*End + kx+Mid-1]; //  phiK=atan2(ky,kx);  
-		float fkR     = fkVecR[(ky+Mid-1) + (kx+Mid-1) *End] ; 
+		float phiK =0;
+		if (k2>0)    phiK = jxjyatan2[ (ky+Mid-1)*End + kx+Mid-1]; //  phiK=atan2(ky,kx);
+		float fkR     = fkVecR[(ky+Mid-1) + (kx+Mid-1) *End] ;
 		float fkI     = fkVecI[(ky+Mid-1) + (kx+Mid-1) *End]  ;
 //		printf("Countkxy=%d,\t kx=%d, ky=%d, fkR=%3.2f,fkI=%3.2f \n", Countkxy, kx, ky, fkR, fkI);
-	
+
 		if ((k2==0)|| (k2>Mid) ) { continue;}
 
 		for (int Countqxy =0; Countqxy<CountxyMax; Countqxy++){   // This is the innermost loop
-			int qx   = kVecX[Countqxy] ; 
-			int qy   = kVecY[Countqxy] ; 
+			int qx   = kVecX[Countqxy] ;
+			int qy   = kVecY[Countqxy] ;
 			float q2   = ::sqrt(qx*qx+qy*qy);
-			if ((q2==0)|| (q2>Mid) ) {continue;} 
-			float phiQ =0; 	
-			if (q2>0)   phiQ = jxjyatan2[ (qy+Mid-1)*End + qx+Mid-1]; // phiQ=atan2(qy,qx); 
-			float fqR     = fkVecR[(qy+Mid-1) + (qx+Mid-1) *End] ; 
+			if ((q2==0)|| (q2>Mid) ) {continue;}
+			float phiQ =0;
+			if (q2>0)   phiQ = jxjyatan2[ (qy+Mid-1)*End + qx+Mid-1]; // phiQ=atan2(qy,qx);
+			float fqR     = fkVecR[(qy+Mid-1) + (qx+Mid-1) *End] ;
 			float fqI     = fkVecI[(qy+Mid-1) + (qx+Mid-1) *End]  ;
-			int kCx  = (-kx-qx);  
+			int kCx  = (-kx-qx);
 			int kCy  = (-ky-qy);
 			int kCIx = ((kCx+Mid+2*End)%End);// labels of the image in C
 			int kCIy = ((kCy+Mid+2*End)%End);
@@ -1750,11 +1745,11 @@ EMData*   EMData::bispecRotTransInvDirect()
 			int CountCxy  = (kCx+Mid-1)*End+(kCy+Mid-1);
 			float fCR     = fkVecR[CountCxy];
 			float fCI     = fkVecI[CountCxy];
-/*			if (Countkxy==1) {	
+/*			if (Countkxy==1) {
 				printf(" Countqxy=%d, absD1fkVec(Countqxy)=%f,qx=%d, qy=%d \n", Countqxy, absD1fkVec[Countqxy],qx, qy);
 				printf(" CountCxy=%d, absD1fkVec[CountCxy]=%f,kCx=%d,kCy=%d \n",CountCxy, absD1fkVec[CountCxy], kCx, kCy );
 			}*/
-			float   phiC = jxjyatan2[ (kCy+Mid-1)*End + kCx+Mid-1]; 
+			float   phiC = jxjyatan2[ (kCy+Mid-1)*End + kCx+Mid-1];
 			float   phiQK = (4*M_PI+phiQ-phiK);
 			while (phiQK> (2*M_PI)) phiQK -= (2*M_PI);
 
@@ -1764,14 +1759,14 @@ EMData*   EMData::bispecRotTransInvDirect()
 
 			if  ((q2<k2) || (C2<k2) || (C2<q2))  continue;
 
-			if ((ky==-2)&&(ky==1)) {	
+			if ((ky==-2)&&(ky==1)) {
 			printf("  CountkxyM=%d, CountqxyM=%d,  CountCxyM=%d, kx=%d, ky=%d, qx=%d, qy=%d, kCx=%d, kCy=%d \n",Countkxy+1, Countqxy+1, CountCxy+1, kx,ky, qx, qy, kCx,kCy);
 			printf("  fkR=%3.2f, fqR=%3.2f,  fCR=%3.2f, bispectemp=%3.2f, k2=%2.2f, q2=%2.2f, C2=%2.2f \n",fkR, fqR, fCR, bispectemp,k2,q2,C2);
 			}
 
 //				printf(" CountCxy=%d, absD1fkVec[CountCxy]=%f,kCx=%d,kCy=%d \n",CountCxy, absD1fkVec[CountCxy], kCx, kCy );
 
-//                      up to here, matched perfectly with Matlab			
+//                      up to here, matched perfectly with Matlab
 
         		int k2IndLo  = 0; while ((k2>=radRange[k2IndLo+1]) && (k2IndLo+1 < LradRange ) ) k2IndLo +=1;
 			int k2IndHi = k2IndLo;
@@ -1779,7 +1774,7 @@ EMData*   EMData::bispecRotTransInvDirect()
         		if (k2IndLo+1< LradRange) {
 				k2IndHi   = k2IndLo+1;
 			}
-			float k2Hi= radRange[k2IndHi]; 
+			float k2Hi= radRange[k2IndHi];
 
 			float kCof =k2-k2Lo;
 			if ((kCof<0) || (kCof >1) ) {
@@ -1795,7 +1790,7 @@ EMData*   EMData::bispecRotTransInvDirect()
 			int q2IndLo  = 0; while ((q2>=radRange[q2IndLo+1]) && (q2IndLo+1 < LradRange ) ) q2IndLo +=1;
 			int q2IndHi=q2IndLo;
 			float q2Lo= radRange[q2IndLo];
-        		if (q2IndLo+1 < LradRange)  { 
+        		if (q2IndLo+1 < LradRange)  {
 				q2IndHi   = q2IndLo+1 ;
 			}
 		        float qCof = q2-q2Lo;
@@ -1806,15 +1801,15 @@ EMData*   EMData::bispecRotTransInvDirect()
 				cin >> x ;
 			}
 
-			int thetaIndLo = 0; while ((phiQK>=thetaRange[thetaIndLo+1])&& (thetaIndLo+1<LthetaRange)) thetaIndLo +=1; 
+			int thetaIndLo = 0; while ((phiQK>=thetaRange[thetaIndLo+1])&& (thetaIndLo+1<LthetaRange)) thetaIndLo +=1;
 			int thetaIndHi = thetaIndLo;
-			
+
 			float thetaLo  = thetaRange[thetaIndLo];
 			float thetaHi = thetaLo;
 			float thetaCof = 0;
 
-			if (thetaIndLo+1< LthetaRange) { 
-				thetaIndHi = thetaIndLo +1; 
+			if (thetaIndLo+1< LthetaRange) {
+				thetaIndHi = thetaIndLo +1;
 			}else{
 				thetaIndHi=0;
 			}
@@ -1832,8 +1827,8 @@ EMData*   EMData::bispecRotTransInvDirect()
 				thetaCof=0;
 			}
 
-			
-// 			if ((thetaIndLo>=58) || (k2IndLo >= LradRange-1) || (q2IndLo >= LradRange-1) ) { 
+
+// 			if ((thetaIndLo>=58) || (k2IndLo >= LradRange-1) || (q2IndLo >= LradRange-1) ) {
  			if ((Countkxy +Countqxy>-3) && (abs(bispectemp) < -1.0) ) {  //CHANGE ME
  				printf("  CountkxyM=%d, CountqxyM=%d,  CountCxyM=%d, kx=%d, ky=%d, qx=%d, qy=%d, kCx=%d, kCy=%d \n",Countkxy+1, Countqxy+1, CountCxy+1, kx,ky, qx, qy, kCx,kCy);
 
@@ -1850,7 +1845,7 @@ EMData*   EMData::bispecRotTransInvDirect()
 				float Weight = (kCof+(1-2*kCof)*(jk==1))*(qCof+(1-2*qCof)*(jq==1))
                         			* (thetaCof+(1-2*thetaCof)*(jtheta==1));
 
-				
+
 				int k2Ind      =  k2IndLo*(jk==1)      +   k2IndHi*(jk==2);
 				int q2Ind      =  q2IndLo*(jq==1)      +   q2IndHi*(jq==2);
 				int thetaInd   =  thetaIndLo*(jtheta==1)  + thetaIndHi*(jtheta ==2);
@@ -1863,7 +1858,7 @@ EMData*   EMData::bispecRotTransInvDirect()
 				if ((WeightInv[TotalInd])  <-0.2) { //    CHANGE ME
 
 					cout << " Weight=" << Weight  << "  jtheta=" << jtheta << " jq=" << jq << " jk=" << jk << " RotTransInv[TotalInd]=" << RotTransInv[TotalInd] << " bispectemp=" << bispectemp << endl;
-					printf("  CountkxyM=%d, CountqxyM=%d,  CountCxyM=%d, kx=%d, ky=%d, qx=%d, qy=%d, kCx=%d, kCy=%d \n",Countkxy+1, Countqxy+1, CountCxy+1, kx,ky, qx, qy, kCx,kCy);	
+					printf("  CountkxyM=%d, CountqxyM=%d,  CountCxyM=%d, kx=%d, ky=%d, qx=%d, qy=%d, kCx=%d, kCy=%d \n",Countkxy+1, Countqxy+1, CountCxy+1, kx,ky, qx, qy, kCx,kCy);
 					printf("rfkVec= %4.4e, rfqVec= %4.4e, rfCVec= %4.4e, , bispectemp= %4.4e \n", fkR, fqR, fCR,bispectemp);
 					char text[5];
 					printf("Press Enter to Continue ... ");
@@ -1886,9 +1881,9 @@ EMData*   EMData::bispecRotTransInvDirect()
 	EMData *WeightImage   = new  EMData(LradRange,LradRange,LthetaRange);
 
 // 	cout << "FFFFFFF" << endl;
-// 
+//
 // 	RotTransInvF -> set_size(LradRange,LradRange,LthetaRange);
-// 
+//
 // 	cout << "GGGG" << endl;
 
 	for (int jtheta =0; jtheta < LthetaRange; jtheta++){
@@ -1921,7 +1916,7 @@ EMData*   EMData::bispecRotTransInvDirect()
 	WeightImage  -> write_image("WeightImage.img");
 
 	return  RotTransInvF ;
- 
+
 
 }
 

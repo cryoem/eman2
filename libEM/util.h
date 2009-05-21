@@ -543,8 +543,8 @@ namespace EMAN
 		 * @return The best FFT size.
 		 */
 		static int calc_best_fft_size(int low);
-		
-		
+
+
 		static EMData* calc_bessel(const int n, const float& x);
 
 		/** Calculate a number's square.
@@ -911,15 +911,7 @@ namespace EMAN
 			return (float)result;
 #endif
 		}
-#ifdef EMAN2_USING_OPENGL
 
-		/** Determine the intersection of .... just ask David Woolford
-		 * 
-		 */
-		static int nearest_projected_points(const vector<float>& model_matrix, const vector<float>& proj_matrix, const vector<int>& view_matrix, const vector<Vec3f>& points, const float mouse_x, const float mouse_y,const float& nearnes);
-		static void colored_rectangle(const vector<float>& data,const float& alpha);
-		static void mx_bbox(const vector<float>& data, const vector<float>& text_color, const vector<float>& bg_color);
-#endif
 		/** Determine the equation of a plane that intersects 3 points in 3D space.
 		* Required by Symmetry3D::reduce
 		* IMPORTANT - does no error checking, if the float pointer is less than 4 in size will get unknown behavior
@@ -994,10 +986,10 @@ namespace EMAN
 //		 * @exception ImageDimensionException 3D image only
 //		 * */
 //		static Dict get_isosurface(EMData * image, float surface_value, bool smooth);
-		
-		/** 
+
+		/**
 		 *
-		 * @param[in] freq_cutoff 
+		 * @param[in] freq_cutoff
 		 * @param[in] P
 		 * @param[in] r
 		 * @param[in] dfreq

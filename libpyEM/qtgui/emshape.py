@@ -265,7 +265,7 @@ class EMShape:
 						
 						GL.glTranslate(s[4],s[5],.2)
 						bbox = self.font_renderer.bounding_box(s[6])
-						Util.mx_bbox(bbox,(0,0,0,0),(1,1,1,1))
+						GLUtil.mx_bbox(bbox,(0,0,0,0),(1,1,1,1))
 						EMShape.font_renderer.render_string(s[6])
 					else:
 						if not glut_inited:

@@ -107,9 +107,9 @@ class EMIsosurfaceModule(EMImage3DGUIModule):
 			glDeleteTextures(self.tex_name)
 		
 		if ( self.data_copy == None ):
-			self.tex_name = self.data.gen_gl_texture()
+			self.tex_name = GLUtil.gen_gl_texture(self.data)
 		else:
-			self.tex_name = self.data_copy.gen_gl_texture()
+			self.tex_name = GLUtil.gen_gl_texture(self.data_copy)
 	
 	def render(self):
 		if (not isinstance(self.data,EMData)): return

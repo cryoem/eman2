@@ -230,7 +230,7 @@ float* get_fptr( array& a )
 		//PyErr_SetString(PyExc_ValueError, "expected a float PyArrayObject for get_fptr");
 		//return NULL;
 		throw std::runtime_error( "Expected a float array for get_fptr" );
-	
+
 	}
 
 	return (float*)(aptr->data);
@@ -262,7 +262,7 @@ int* get_iptr( array& a )
 
 int pysstevd(const string& jobz, int n, array& diag, array& subdiag, array& qmat, int kstep, array& fwork, int lfwrk, array& iwork, int liwrk )
 {
-    int info; 
+    int info;
 
     float* d = get_fptr( diag );
     float* e = get_fptr( subdiag );
@@ -481,14 +481,6 @@ BOOST_PYTHON_MODULE(libpyUtils2)
 		.def("saxpy",  &pysaxpy )
 		.def("sdot",   &pysdot  )
 		.def("readarray", &readarray )
-#ifdef EMAN2_USING_OPENGL
-		.def("nearest_projected_points", &EMAN::Util::nearest_projected_points )
-		.staticmethod("nearest_projected_points")
-		.def("colored_rectangle", &EMAN::Util::colored_rectangle )
-		.staticmethod("colored_rectangle")
-		.def("mx_bbox", &EMAN::Util::mx_bbox )
-		.staticmethod("mx_bbox")
-#endif
 		.staticmethod("point_is_in_triangle_2d")
 		.staticmethod("point_is_in_convex_polygon_2d")
 		.staticmethod("infomask")
@@ -509,7 +501,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
 		.staticmethod("cml_line_insino_all")
 		.staticmethod("cml_line_in3d")
 		.staticmethod("cml_spin_psi")
-	        .staticmethod("cml_disc")
+		.staticmethod("cml_disc")
 		.staticmethod("sstrncmp")
 		.staticmethod("int2str")
 		.staticmethod("square_sum")

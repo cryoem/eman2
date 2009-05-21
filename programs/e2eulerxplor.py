@@ -274,7 +274,7 @@ class ClassOrientationEvents(NavigationEvents,QtCore.QObject):
 		points = self.parent().points
 		mouse_x = event.x()
 		mouse_y = view_matrix[-1]-event.y()
-		intersection = Util.nearest_projected_points(model_matrix,proj_matrix,view_matrix,points,float(mouse_x),float(mouse_y),6.0)
+		intersection = GLUtil.nearest_projected_points(model_matrix,proj_matrix,view_matrix,points,float(mouse_x),float(mouse_y),6.0)
 		
 		new_colors = {}
 		

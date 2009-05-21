@@ -28,6 +28,8 @@
  *
  * */
 
+#ifdef EMAN2_USING_OPENGL
+
 // Boost Includes ==============================================================
 #include <boost/python.hpp>
 #include <boost/cstdint.hpp>
@@ -47,11 +49,22 @@ BOOST_PYTHON_MODULE(libpyGLUtils2)
 		.def("gen_glu_mipmaps", &EMAN::GLUtil::gen_glu_mipmaps)
 		.def("gen_gl_texture", &EMAN::GLUtil::gen_gl_texture)
 		.def("render_amp8_gl_texture", &EMAN::GLUtil::render_amp8_gl_texture)
+		.def("nearest_projected_points", &EMAN::GLUtil::nearest_projected_points )
+		.def("colored_rectangle", &EMAN::GLUtil::colored_rectangle )
+		.def("mx_bbox", &EMAN::GLUtil::mx_bbox )
+		.def("render_amp8", &EMAN::GLUtil::render_amp8)
 		.staticmethod("gen_glu_mipmaps")
 		.staticmethod("gen_gl_texture")
 		.staticmethod("render_amp8_gl_texture")
+		.staticmethod("nearest_projected_points")
+		.staticmethod("colored_rectangle")
+		.staticmethod("mx_bbox")
+		.staticmethod("render_amp8")
 	);
 
 	delete EMAN_GLUtil_scope;
 
 }
+
+#endif //EMAN2_USING_OPENGL
+

@@ -299,12 +299,12 @@ class EMMXDragMouseEvents(EMMXCoreMouseEvents):
 			
 			EMAN2.GUIbeingdragged= box_image	# This deals with within-application dragging between windows
 			mime_data.setText( str(lc[0])+"\n")
-			di=QImage(box_image.render_amp8(0,0,xs,ys,xs*4,1.0,0,255,self.mediator.get_density_min(),self.mediator.get_density_max(),1.0,14),xs,ys,QImage.Format_RGB32)
+			di=QImage(GLUtil.render_amp8(box_image, 0,0,xs,ys,xs*4,1.0,0,255,self.mediator.get_density_min(),self.mediator.get_density_max(),1.0,14),xs,ys,QImage.Format_RGB32)
 			mime_data.setImageData(QtCore.QVariant(di))
 			drag.setMimeData(mime_data)
 	
 			# This (mini image drag) looks cool, but seems to cause crashing sometimes in the pixmap creation process  :^(
-			#di=QImage(self.data[lc[0]].render_amp8(0,0,xs,ys,xs*4,1.0,0,255,self.minden,self.maxden,14),xs,ys,QImage.Format_RGB32)
+			#di=QImage(GLUtil.render_amp8(elf.data[lc[0]],0,0,xs,ys,xs*4,1.0,0,255,self.minden,self.maxden,14),xs,ys,QImage.Format_RGB32)
 			#if xs>64 : pm=QtGui.QPixmap.fromImage(di).scaledToWidth(64)
 			#else: pm=QtGui.QPixmap.fromImage(di)
 			#drag.setPixmap(pm)
@@ -1092,7 +1092,7 @@ class EMImageMXModule(EMGUIModule):
 				try:
 					# we render the 16x16 corner of the image and decide if it's light or dark to decide the best way to 
 					# contrast the text labels...
-					a=self.data[0].render_amp8(0,0,16,16,16,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,4)
+					a=GLUtil.render_amp8(self.data[0],0,0,16,16,16,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,4)
 					ims=[ord(pv) for pv in a]
 					if sum(ims)>32768 : txtcol=(0.0,0.0,0.0,1.0)
 					else : txtcol=(1.0,1.0,1.0,1.0)
@@ -1164,10 +1164,10 @@ class EMImageMXModule(EMGUIModule):
 					if not d.has_attr("excluded"):
 						#print rx,ry,tw,th,self.gl_widget.width(),self.gl_widget.height(),self.origin
 						if not self.glflags.npt_textures_unsupported():
-							a=self.data[i].render_amp8(rx,ry,tw,th,(tw-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
+							a=GLUtil.render_amp8(self.data[i],rx,ry,tw,th,(tw-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
 							self.texture(a,tx,ty,tw,th)
 						else:
-							a=self.data[i].render_amp8(rx,ry,tw,th,(tw-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,6)
+							a=GLUtil.render_amp8(self.data[i],rx,ry,tw,th,(tw-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,6)
 							glRasterPos(tx,ty)
 							glDrawPixels(tw,th,GL_LUMINANCE,GL_UNSIGNED_BYTE,a)
 							
@@ -1364,7 +1364,7 @@ class EMImageMXModule(EMGUIModule):
 					if idx != 0: idx = idx%self.max_idx
 					sidx = str(idx)
 					bbox = self.font_renderer.bounding_box(sidx)
-					Util.mx_bbox(bbox,txtcol,bgcol)
+					GLUtil.mx_bbox(bbox,txtcol,bgcol)
 					self.font_renderer.render_string(sidx)
 					
 				else : 
@@ -1380,7 +1380,7 @@ class EMImageMXModule(EMGUIModule):
 					except:avs ="---"
 					bbox = self.font_renderer.bounding_box(avs)
 					
-					Util.mx_bbox(bbox,txtcol,bgcol)
+					GLUtil.mx_bbox(bbox,txtcol,bgcol)
 					self.font_renderer.render_string(avs)
 
 				tagy+=self.font_renderer.get_face_size()

@@ -1097,10 +1097,10 @@ class EMImage2DModule(EMGUIModule):
 				gl_render_type = GL_RGB
 				
 			elif self.curfft in (2,3) :
-				a=self.display_fft.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.gl_widget.width(),self.gl_widget.height(),(self.gl_widget.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.fcurmin,self.fcurmax,self.fgamma,2)
+				a=GLUtil.render_amp8(self.display_fft, int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.gl_widget.width(),self.gl_widget.height(),(self.gl_widget.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.fcurmin,self.fcurmax,self.fgamma,2)
 				gl_render_type = GL_LUMINANCE
 			else : 
-				a=self.data.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.gl_widget.width(),self.gl_widget.height(),(self.gl_widget.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.curmin,self.curmax,self.gamma,2)
+				a=GLUtil.render_amp8(self.data, int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.gl_widget.width(),self.gl_widget.height(),(self.gl_widget.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.curmin,self.curmax,self.gamma,2)
 				gl_render_type = GL_LUMINANCE
 			if not self.glflags.npt_textures_unsupported():
 				
@@ -1153,7 +1153,7 @@ class EMImage2DModule(EMGUIModule):
 				if self.other_tex_name != 0: glDeleteTextures(self.other_tex_name)
 				
 				scale = self.scale*self.otherdatascale
-				b=self.otherdata.render_amp8(int(self.origin[0]/scale),int(self.origin[1]/scale),self.gl_widget.width(),self.gl_widget.height(),(self.gl_widget.width()-1)/4*4+4,scale,pixden[0],pixden[1],0,1,1,2)
+				b=GLUtil.render_amp8(self.otherdata, int(self.origin[0]/scale),int(self.origin[1]/scale),self.gl_widget.width(),self.gl_widget.height(),(self.gl_widget.width()-1)/4*4+4,scale,pixden[0],pixden[1],0,1,1,2)
 				gl_render_type = GL_LUMINANCE
 				
 				if self.other_tex_name != 0: GL.glDeleteTextures(self.other_tex_name)
@@ -1356,10 +1356,10 @@ class EMImage2DModule(EMGUIModule):
 			if k == self.active[0]:
 				vals = s.shape[1:8]
 				vals[0:3] = self.active[1:4]
-				Util.colored_rectangle(vals,alpha)
+				GLUtil.colored_rectangle(vals,alpha)
 				continue
 			try:
-				Util.colored_rectangle(s.shape[1:8],alpha)
+				GLUtil.colored_rectangle(s.shape[1:8],alpha)
 			except: pass
 			
 		if isanimated:
