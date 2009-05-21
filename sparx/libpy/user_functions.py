@@ -80,7 +80,7 @@ def alivol_mask( v, vref, mask ):
 	dun,dum,dum,cnx,cny,cnz,mirror,scale = get_params3D( vref )
 	phi,tht,psi,s3x,s3y,s3z,scale = compose_transform3(phi,tht,psi,s3x,s3y,s3z,1.0,0.0,0.0,0.0,-cnx,-cny,-cnz,1.0)
 	v = rot_shift3D( v, phi,tht,psi,s3x,s3y,s3z )
-	print "final params: ", phi,tht,psi,s3x,s3y,s3z
+	print "final align3d params: %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f" % (phi,tht,psi,s3x,s3y,s3z)
 	return v
 
 
@@ -592,14 +592,18 @@ def ref_ali3dm_new( refdata ):
         total_iter = refdata[3]
         varf   = refdata[4]
         mask   = refdata[5]
+	ali50S = refdata[6]
 
         flmin,aamin,idmin = minfilt( fscc )
 	aamin = aamin/2
 	print "flmin,aamin,idmin: ", flmin,aamin,idmin
 
         vref = get_im( outdir + ("/vol%04d.hdf"%total_iter) , idmin)
-        stat = Util.infomask( vref, mask, False )
+	if ali50S:
+		m50S = get_im( "mask-50S.spi" )
+		aliref = alivol_mask_getref( vref, m50S )
 
+        stat = Util.infomask( vref, mask, False )
         vref -= stat[0]
         vref /= stat[1]
         vref *= mask
@@ -607,6 +611,9 @@ def ref_ali3dm_new( refdata ):
 	del vref
         for i in xrange(numref):
                 vol = get_im( outdir + ("/vol%04d.hdf"%total_iter), i )
+		if ali50S:
+			vol = alivol_mask( vol, aliref, m50S )
+
                 stat = Util.infomask( vol, mask, False )
                 vol -= stat[0]
                 vol /= stat[1]
