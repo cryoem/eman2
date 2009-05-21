@@ -40,6 +40,142 @@ from math import *
 import os
 import sys
 
+
+def opt_rectangular_subdivision(x,y,n):
+	xparts = 1 # x partitions
+	yparts = 1 # y partitions
+	
+	width = x
+	height = y
+	part_width = width
+	part_height = height
+	
+	
+	candidates = []
+	
+	min = None
+	best = None
+	for cn in xrange(1,n/2+1):
+		rn = n/cn
+		
+		f = rn*x + cn*y
+		print f,rn,cn
+		if min == None or f < min:
+			best = [rn,cn,y/cn,x/rn]
+			min = f
+	return best
+#	for xdiv in xrange(1,width/2+1):
+#		ydiv = n/xdiv
+#		if ydiv == 0: ydiv = 1
+#		total = xdiv*ydiv
+#		if total > n-5 and total <= n:candidates.append([xdiv,ydiv])
+#		
+#	for ydiv in xrange(1,height/2+1):
+#		xdiv = y/ydiv
+#		if xdiv == 0: xdiv = 1
+#		if total > n-5 and total <= n:candidates.append([xdiv,ydiv])
+#		
+#	
+#	if len(candidates) == 0: raise RuntimeError
+#	
+#	min = None
+#	solution = []
+#	
+#	for xdiv,ydiv in candidates:
+#		nx = width/xdiv
+#		ny = height/ydiv
+#		total = nx + ny
+#		if min == None or total < min:
+#			solution = [nx,ny,xdiv*ydiv,total,width-nx*xdiv,height-ny*ydiv]
+#			min = total
+#			
+#	return solution
+	
+	
+#	while xparts*yparts < n:
+#		if part_height > part_width:
+#			yparts += 1 
+#			part_height = height/yparts
+#		else:
+#			xparts += 1
+#			part_width = width/xparts
+#			
+#		solutions.append([part_width,part_height,xparts*yparts])
+			
+	
+	
+	
+
+
+class EMParallelSimMX:
+	def __init__(self,options,args,logger=None):
+		'''
+		@param options the options produced by (options, args) = parser.parse_args()
+		@param args the options produced by (options, args) = parser.parse_args()
+		@param logger and EMAN2 logger, i.e. logger=E2init(sys.argv)
+		assumes you have already called the check function.
+		'''
+		self.options = options
+		self.args = args
+		self.logger = logger
+		
+	
+		from EMAN2PAR import EMTaskCustomer
+		etc=EMTaskCustomer("dc:localhost:9990")
+		self.num_cpus = etc.cpu_est()
+		self.num_cpus = 32
+	
+	
+	def __init_memory(self):
+		self.clen=EMUtil.get_image_count(self.args[0])
+		self.rlen=EMUtil.get_image_count(self.args[1])
+	
+	def __get_blocks(self):
+		'''
+		Gets the blocks that will be processed in parallel, these are essentially ranges
+		'''
+		total_jobs = self.num_cpus
+		block_c = self.clen/total_jobs
+		block_r = self.rlen/total_jobs
+		
+		residual_c = self.clen-block_c*total_jobs # residual left over by integer division
+		residual_r = self.rlen-block_r*total_jobs # residual left over by integer division
+
+		current_c = 0
+		current_r = 0
+
+		ranges = []
+		for i in xrange(0,total_jobs):
+			last_c = current_c + block_c
+			if residual_c > 0:
+				last_c += 1
+				residual_c -= 1
+			
+			last_r = current_r + block_r
+			if residual_r > 0:
+				last_r += 1
+				residual_r -= 1
+			
+			
+			ranges.append([current_c,last_c,current_r,last_r])
+			current_c = last_c
+			current_r = last_r
+		
+		return ranges
+	
+	
+	def execute(self):
+		'''
+		The main function to be called
+		'''
+		self.__init_memory()
+		print self.__get_blocks()
+		pass
+	
+		
+		
+	
+
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] <c input> <r input> <output>
@@ -66,7 +202,8 @@ def main():
 	parser.add_option("--shrink", type="int",default=None,help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. This will speed the process up.")
 	parser.add_option("--nofilecheck",action="store_true",help="Turns file checking off in the check functionality - used by e2refine.py.",default=False)
 	parser.add_option("--check","-c",action="store_true",help="Performs a command line argument check only.",default=False)
-	
+	parser.add_option("--parallel",type="string",help="Parallelism string",default=None)
+
 	(options, args) = parser.parse_args()
 	
 	if len(args)<3 : parser.error("Input and output files required")
@@ -90,6 +227,13 @@ def main():
 	if options.check: exit(0)
 	
 	E2n=E2init(sys.argv)
+	
+	if options.parallel:
+		parsimmx = EMParallelSimMX(options,args,E2n)
+		parsimmx.execute()
+		E2end(E2n)
+		sys.exit(0)
+		
 	
 	# just remove the file - if the user didn't specify force then the error should have been found in the check function
 	if os.path.exists(options.outfile):

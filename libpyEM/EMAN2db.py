@@ -268,7 +268,8 @@ EMData.__initc=EMData.__init__
 EMData.__init__=db_emd_init
 
 def transform_to_str(self):
-	s = "%.3f %.3f %.3f %.3f\n" %(self.at(0,0),self.at(0,1),self.at(0,2),self.at(0,3))
+	# I added the initial return so that it looks good in the eman2 file browser
+	s = "\n%.3f %.3f %.3f %.3f\n" %(self.at(0,0),self.at(0,1),self.at(0,2),self.at(0,3))
 	s += "%.3f %.3f %.3f %.3f\n" %(self.at(1,0),self.at(1,1),self.at(1,2),self.at(1,3))
 	s += "%.3f %.3f %.3f %.3f\n" %(self.at(2,0),self.at(2,1),self.at(2,2),self.at(2,3))
 	s += "0.000 0.000 0.000 1.000"

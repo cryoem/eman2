@@ -53,6 +53,7 @@ class EMGenClassAverages:
 		'''
 		@param options the options produced by (options, args) = parser.parse_args()
 		@param args the options produced by (options, args) = parser.parse_args()
+		@param logger and EMAN2 logger, i.e. logger=E2init(sys.argv)
 		assumes you have already called the check function.
 		'''
 		self.options = options
