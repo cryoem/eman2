@@ -512,14 +512,39 @@ float OptVarianceCmp::cmp(EMData * image, EMData *with) const
 		vector <float> rfa=a->calc_radial_dist(a->get_ysize()/2,0.0f,1.0f,1);
 		vector <float> rfb=b->calc_radial_dist(b->get_ysize()/2,0.0f,1.0f,1);
 
-		for (size_t i=0; i<a->get_ysize()/2.0f; i++) rfa[i]/=(rfb[i]==0?1.0f:rfb[i]);
+		float avg=0;
+		for (size_t i=0; i<a->get_ysize()/2.0f; i++) {
+			rfa[i]=(rfb[i]==0?0.0f:(rfa[i]/rfb[i]));
+			avg+=rfa[i];
+		}
+		
+		avg/=a->get_ysize()/2.0f;
+		for (size_t i=0; i<a->get_ysize()/2.0f; i++) {
+			if (rfa[i]>avg*10.0) rfa[i]=10.0;			// If some particular location has a small but non-zero value, we don't want to overcorrect it
+		}
+		rfa[0]=0.0;
+		
+		if (dbug) b->write_image("a.hdf",-1);
 
 		b->apply_radial_func(0.0f,1.0f/a->get_ysize(),rfa);
 		with2=b->do_ift();
 
+		if (dbug) b->write_image("a.hdf",-1);
+		if (dbug) a->write_image("a.hdf",-1);
+
+/*		if (dbug) {
+			FILE *out=fopen("a.txt","w");
+			for (int i=0; i<a->get_ysize()/2.0; i++) fprintf(out,"%d\t%f\n",i,rfa[i]);
+			fclose(out);
+
+			out=fopen("b.txt","w");
+			for (int i=0; i<a->get_ysize()/2.0; i++) fprintf(out,"%d\t%f\n",i,rfb[i]);
+			fclose(out);
+		}*/
+			
+
 		delete a;
 		delete b;
-		if (dbug) with2->write_image("a.hdf",-1);
 
 //		with2->process_inplace("matchfilt",Dict("to",this));
 //		x_data = with2->get_data();

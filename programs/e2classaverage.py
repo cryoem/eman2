@@ -233,7 +233,7 @@ class EMGenClassAverages:
 		The main function
 		'''
 		
-		if len(self.options.parallel) > 2 and self.options.parallel[:2] == "dc":
+		if self.options.parallel and len(self.options.parallel) > 2 and self.options.parallel[:2] == "dc":
 			
 			self.task_customers = []
 			self.tids = []
