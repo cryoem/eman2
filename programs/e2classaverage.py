@@ -233,7 +233,7 @@ class EMGenClassAverages:
 		The main function
 		'''
 		
-		if hasattr(self.options,"parallel") and self.options.parallel != None:
+		if len(self.options.parallel) > 2 and self.options.parallel[:2] == "dc":
 			
 			self.task_customers = []
 			self.tids = []
@@ -267,7 +267,7 @@ class EMGenClassAverages:
 				task = EMClassAveTaskDC(data=data,options=self.__get_task_options(self.options))
 				
 				from EMAN2PAR import EMTaskCustomer
-				etc=EMTaskCustomer("dc:localhost:9990")
+				etc=EMTaskCustomer(self.options.parallel)
 				#print "Est %d CPUs"%etc.cpu_est()
 				tid=etc.send_task(task)
 				#print "Task submitted tid=",tid
@@ -278,7 +278,7 @@ class EMGenClassAverages:
 			
 			while 1:
 				if len(self.task_customers) == 0: break
-				print len(self.task_customers),"tasks left in main loop"
+				print len(self.task_customers),"class averaging tasks left in main loop"
 				for i in xrange(len(self.task_customers)-1,-1,-1):
 					task_customer = self.task_customers[i]
 					tid = self.tids[i] 
@@ -1105,6 +1105,18 @@ def check(options,verbose=False):
 		if ( str(options.normproc) != "None" ):
 			if ( check_eman2_type(options.normproc,Processors,"Processor") == False ):
 				error = True
+
+
+	if hasattr(options,"parallel") and options.parallel != None:
+  		if len(options.parallel) < 2:
+  			print "The parallel option %s does not make sense" %options.parallel
+  			error = True
+  		elif options.parallel[:2] != "dc":
+  			print "Only dc parallelism is currently supported"
+  			error = True
+  		elif len(options.parallel.split(":")) != 3:
+  			print "dc parallel options must be formatted like 'dc:localhost:9990'"
+  			error = True
 
 	return error
 	

@@ -90,7 +90,7 @@ def main():
 	parser.add_option("--normproj", default=False, action="store_true",help="Normalizes each projected vector into the MSA subspace. Note that this is different from normalizing the input images since the subspace is not expected to fully span the image")
 
 	# Parallelism
-	parser.add_option("--parallel","-P",type="string",help="Run in parallel, specify type:n=<proc>:option:option",default=None)
+	parser.add_option("--parallel","-P",type="string",help="Run in parallel, specify type:<option>=<value>:<option>:<value>",default=None)
 	
 	# Database Metadata storage
 	parser.add_option("--dbls",type="string",default=None,help="data base list storage, used by the workflow. You can ignore this argument.",default=None)
@@ -220,6 +220,7 @@ def main():
 		#e2simmxcmd = "e2simmx.py %s#aliref_%02d %s %s#simmx_%02d -f --saveali --cmp=%s --align=%s --aligncmp=%s --verbose=%d %s %s"%(options.path,it, options.input,options.path,it,options.simcmp,options.simalign,options.simaligncmp,subverbose,excludestr,parstr) # e2simmx doesn't do parallel
 		e2simmxcmd = "e2simmx.py %s#aliref_%02d %s %s#simmx_%02d -f --saveali --cmp=%s --align=%s --aligncmp=%s --verbose=%d %s"%(options.path,it, options.input,options.path,it,options.simcmp,options.simalign,options.simaligncmp,subverbose,excludestr)
 		if options.simralign : e2simmxcmd += " --ralign=%s --raligncmp=%s" %(options.simralign,options.simraligncmp)
+		if options.parallel: e2simmxcmd += " --parallel=%s" %options.parallel
 		run(e2simmxcmd)
 		proc_tally += 1.0
 		if logid : E2progress(logid,proc_tally/total_procs)
@@ -263,8 +264,11 @@ def get_classaverage_extras(options):
 		s += " --keepsig"
 	if options.classralign != None:
 		s += " --ralign=%s --raligncmp=%s" %(options.classralign,options.classraligncmp)
+	if options.parallel != None:
+		s += " --parallel=%s" %options.parallel
 	
 	return s
+
 def run(command):
 	"Execute a command with optional verbose output"
 	global options
@@ -365,6 +369,14 @@ def check_e2refin2d_args(options): # this function is required by the workflow, 
   	if options.simraligncmp != None and  not check_eman2_type(options.simraligncmp,Cmps,"Cmps"):
   		error_message.append("There is problem with the refine aligner comparitor arguments.")
 
+  	if hasattr(options,"parallel") and options.parallel != None:
+  		if len(options.parallel) < 2:
+  			error_message.append("The parallel option %s does not make sense" %options.parallel)
+  		elif options.parallel[:2] != "dc":
+  			error_message.append("Only dc parallelism is currently supported")
+ 		elif len(options.parallel.split(":")) != 3:
+  			error_messages.append("dc parallel options must be formatted like 'dc:localhost:9990'")
+  		
   	return error_message
 
 if __name__ == "__main__":

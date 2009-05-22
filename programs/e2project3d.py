@@ -77,7 +77,7 @@ class EMParallelProject3D:
 		self.logger = logger
 		
 		from EMAN2PAR import EMTaskCustomer
-		etc=EMTaskCustomer("dc:localhost:9990")
+		etc=EMTaskCustomer(options.parallel)
 		self.num_cpus = etc.cpu_est()
 		self.num_cpus = 4
 		
@@ -102,67 +102,70 @@ class EMParallelProject3D:
 	
 	def execute(self):
 		
-		self.__init_memory(self.options)
-		
-		num_tasks = self.num_cpus
-		# In the worst case we can only spawn as many tasks as there are eulers
-		if self.num_cpus > len(self.eulers): num_tasks = len(self.eulers)
-		
-		eulers_per_task = len(self.eulers)/num_tasks
-		resid_eulers = len(self.eulers) - eulers_per_task*num_tasks # we can distribute the residual evenly
-		
-		first = 0
-		self.task_customers = []
-		self.tids = []
-		for i in xrange(0,num_tasks):
-			last = first+eulers_per_task
-			if resid_eulers > 0:
-				last +=1
-				resid_eulers -= 1
-				
-			tmp_eulers = self.eulers[first:last]
-			indices = range(first,last)
+		if len(self.options.parallel) > 2 and self.options.parallel[:2] == "dc":
+			self.__init_memory(self.options)
 			
-			data = {}
-			data["input"] = ("cache",self.args[0],0)
-			data["eulers"] = tmp_eulers
-			data["indices"] = indices
+			num_tasks = self.num_cpus
+			# In the worst case we can only spawn as many tasks as there are eulers
+			if self.num_cpus > len(self.eulers): num_tasks = len(self.eulers)
 			
-			task = EMProject3DTaskDC(data=data,options=self.__get_task_options(self.options))
+			eulers_per_task = len(self.eulers)/num_tasks
+			resid_eulers = len(self.eulers) - eulers_per_task*num_tasks # we can distribute the residual evenly
 			
-			from EMAN2PAR import EMTaskCustomer
-			etc=EMTaskCustomer("dc:localhost:9990")
-			#print "Est %d CPUs"%etc.cpu_est()
-			tid=etc.send_task(task)
-				#print "Task submitted tid=",tid
-				
-			self.task_customers.append(etc)
-			self.tids.append(tid)
-			
-			first = last
-			
-		while 1:
-			if len(self.task_customers) == 0: break
-			print len(self.task_customers),"tasks left in main loop"
-			for i in xrange(len(self.task_customers)-1,-1,-1):
-				task_customer = self.task_customers[i]
-				tid = self.tids[i] 
-				st=task_customer.check_task((tid,))[0]
-				if st==100:
+			first = 0
+			self.task_customers = []
+			self.tids = []
+			for i in xrange(0,num_tasks):
+				last = first+eulers_per_task
+				if resid_eulers > 0:
+					last +=1
+					resid_eulers -= 1
 					
-					self.task_customers.pop(i)
-					self.tids.pop(i)
-
-					rslts = task_customer.get_results(tid)
-					self.__write_output_data(rslts[1])
-					if self.logger != None:
-						E2progress(self.logger,1.0-len(self.task_customers)/float(num_tasks))
-						if self.options.verbose: 
-							print "%d/%d\r"%(num_tasks-len(self.task_customers),num_tasks)
-							sys.stdout.flush()
-			
-			time.sleep(5)
-			
+				tmp_eulers = self.eulers[first:last]
+				indices = range(first,last)
+				
+				data = {}
+				data["input"] = ("cache",self.args[0],0)
+				data["eulers"] = tmp_eulers
+				data["indices"] = indices
+				
+				task = EMProject3DTaskDC(data=data,options=self.__get_task_options(self.options))
+				
+				from EMAN2PAR import EMTaskCustomer
+				etc=EMTaskCustomer(self.options.parallel)
+				#print "Est %d CPUs"%etc.cpu_est()
+				tid=etc.send_task(task)
+					#print "Task submitted tid=",tid
+					
+				self.task_customers.append(etc)
+				self.tids.append(tid)
+				
+				first = last
+				
+			while 1:
+				if len(self.task_customers) == 0: break
+				print len(self.task_customers),"projection tasks left in main loop"
+				for i in xrange(len(self.task_customers)-1,-1,-1):
+					task_customer = self.task_customers[i]
+					tid = self.tids[i] 
+					st=task_customer.check_task((tid,))[0]
+					if st==100:
+						
+						self.task_customers.pop(i)
+						self.tids.pop(i)
+	
+						rslts = task_customer.get_results(tid)
+						self.__write_output_data(rslts[1])
+						if self.logger != None:
+							E2progress(self.logger,1.0-len(self.task_customers)/float(num_tasks))
+							if self.options.verbose: 
+								print "%d/%d\r"%(num_tasks-len(self.task_customers),num_tasks)
+								sys.stdout.flush()
+				
+				time.sleep(5)
+		else:
+			raise NotImplementedError("The parallelism option you specified (%s) is not suppored" %self.options.parallel )
+				
 	def __write_output_data(self,rslts):
 		for idx,image in rslts["projections"].items():
 			image.write_image(self.options.outfile,idx)
@@ -403,6 +406,17 @@ def check(options, verbose=False):
 			if verbose:
 				print "Error: output file exists, use -f to overwrite or -a to append. No action taken"
 			error = True
+			
+	if hasattr(options,"parallel") and options.parallel != None:
+  		if len(options.parallel) < 2:
+  			print "The parallel option %s does not make sense" %options.parallel
+  			error = True
+  		elif options.parallel[:2] != "dc":
+  			print "Only dc parallelism is currently supported"
+  			error = True
+  		elif len(options.parallel.split(":")) != 3:
+  			print "dc parallel options must be formatted like 'dc:localhost:9990'"
+  			error = True
 	
 	return error
 

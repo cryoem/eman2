@@ -58,7 +58,7 @@ class EMParallelSimMX:
 		
 	
 		from EMAN2PAR import EMTaskCustomer
-		etc=EMTaskCustomer("dc:localhost:9990")
+		etc=EMTaskCustomer(options.parallel)
 		self.num_cpus = etc.cpu_est()
 		self.num_cpus = 32
 		
@@ -195,12 +195,12 @@ class EMParallelSimMX:
 		'''
 		The main function to be called
 		'''
-		self.__init_memory(self.options)
-		blocks = self.__get_blocks()
-#		print blocks
-
-		if hasattr(self.options,"parallel") and self.options.parallel != None:
-			
+		if len(self.options.parallel) > 2 and self.options.parallel[:2] == "dc":
+			self.__init_memory(self.options)
+			blocks = self.__get_blocks()
+	#		print blocks
+	
+				
 			self.task_customers = []
 			self.tids = []
 			for block in blocks:
@@ -212,7 +212,7 @@ class EMParallelSimMX:
 				task = EMSimTaskDC(data=data,options=self.__get_task_options(self.options))
 				
 				from EMAN2PAR import EMTaskCustomer
-				etc=EMTaskCustomer("dc:localhost:9990")
+				etc=EMTaskCustomer(self.options.parallel)
 				#print "Est %d CPUs"%etc.cpu_est()
 				tid=etc.send_task(task)
 				#print "Task submitted tid=",tid
@@ -223,7 +223,7 @@ class EMParallelSimMX:
 #			
 			while 1:
 				if len(self.task_customers) == 0: break
-				print len(self.task_customers),"tasks left in main loop"
+				print len(self.task_customers),"simmx tasks left in main loop"
 				for i in xrange(len(self.task_customers)-1,-1,-1):
 					task_customer = self.task_customers[i]
 					tid = self.tids[i] 
@@ -237,13 +237,14 @@ class EMParallelSimMX:
 						self.__store_output_data(rslts[1])
 						if self.logger != None:
 							E2progress(self.logger,1.0-len(self.task_customers)/float(len(blocks)))
-							if options.verbose: 
+							if self.options.verbose: 
 								print "%d/%d\r"%(len(self.task_customers),len(blocks))
 								sys.stdout.flush()
 				
 				time.sleep(5)
-				
-		self.__finalize_writing()
+					
+			self.__finalize_writing()
+		else: raise NotImplementedError("The parallelism option you specified (%s) is not supported" %self.options.parallel )
 				
 	def __store_output_data(self,rslts):
 		'''
@@ -632,6 +633,17 @@ def check(options,verbose):
 			else:
 				if ( check_eman2_type(options.raligncmp,Cmps,"Comparitor") == False ):
 					error = True
+	
+	if hasattr(options,"parallel") and options.parallel != None:
+  		if len(options.parallel) < 2:
+  			print "The parallel option %s does not make sense" %options.parallel
+  			error = True
+  		elif options.parallel[:2] != "dc":
+  			print "Only dc parallelism is currently supported"
+  			error = True
+  		elif len(options.parallel.split(":")) != 3:
+  			print "dc parallel options must be formatted like 'dc:localhost:9990'"
+  			error = True
 	
 	return error
 	

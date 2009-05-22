@@ -96,6 +96,8 @@ def main():
 
 	#lowmem!
 	parser.add_option("--lowmem", default=False, action="store_true",help="Make limited use of memory when possible - useful on lower end machines")
+	parser.add_option("--parallel","-P",type="string",help="Run in parallel, specify type:<option>=<value>:<option>:<value>",default=None)
+
 	
 	(options, args) = parser.parse_args()
 	error = False
@@ -309,6 +311,9 @@ def get_classaverage_cmd(options,check=False,nofilecheck=False):
 	if (options.verbose):
 		e2cacmd += " -v"
 		
+	if options.parallel: e2cacmd += " --parallel=%s" %options.parallel
+
+		
 	#lowmem becamoe the only supportable behaviour as of May 5th 2009
 #	if (options.lowmem): e2cacmd += " --lowmem"
 	
@@ -364,6 +369,8 @@ def get_simmx_cmd(options,check=False,nofilecheck=False):
 	if (options.verbose):
 		e2simmxcmd += " -v"
 	
+	if options.parallel: e2simmxcmd += " --parallel=%s" %options.parallel
+	
 	#if (options.lowmem): e2simmxcmd += " --lowmem"	
 	
 	if (options.shrink):
@@ -392,7 +399,9 @@ def get_projection_cmd(options,check=False):
 		model = options.filtered_model
 		
 	e2projcmd = "e2project3d.py %s -f --sym=%s --projector=%s --outfile=%s --orientgen=%s --postprocess=normalize.circlemean" %(model,options.sym,options.projector,options.projfile,options.orientgen)
-		
+	
+	if options.parallel: e2projcmd += " --parallel=%s" %options.parallel
+	
 	if ( check ):
 		e2projcmd += " --check"	
 		
@@ -510,6 +519,19 @@ def check(options,verbose=False):
 		if not os.path.exists(options.path):
 			print "Error: the path %s does not exist" %options.path
 			error = True
+			
+	if hasattr(options,"parallel") and options.parallel != None:
+  		if len(options.parallel) < 2:
+  			print "The parallel option %s does not make sense" %options.parallel
+  			error = True
+  		elif options.parallel[:2] != "dc":
+  			print "Only dc parallelism is currently supported"
+  			error = True
+  		elif len(options.parallel.split(":")) != 3:
+  			print "dc parallel options must be formatted like 'dc:localhost:9990'"
+  			error = True
+  		
+  	return error_message
 	
 	if (verbose):
 		if (error):
