@@ -614,7 +614,7 @@ public:
 	}
 
         static inline int nint180(float arg) {
-	    float res = int(arg + 180.5) - 180.0;
+	    int res = int(arg + 180.5) - 180;
 	    return res;
         }
 
