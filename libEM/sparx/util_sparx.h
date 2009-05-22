@@ -457,7 +457,7 @@ class FakeKaiserBessel : public KaiserBessel {
         static vector<double> cml_line_in3d(vector<float> Ori, vector<int> seq, int nprj, int nlines);
         static vector<double> cml_spin_psi(const vector<EMData*>& data, vector<int> com, vector<float> weights, int iprj, vector<int> iw, int n_psi, int d_psi, int n_prj); 
         static double cml_disc(const vector<EMData*>& data, vector<int> com, vector<int> seq, vector<float> weights, int n_lines);
-
+static void set_line(EMData* img, int posline, EMData* line);
 
 	/* Decimates the image with respect to the image center.
 	 * (i.e) the center of the original image is kept the same
@@ -612,6 +612,11 @@ public:
 		return  std::min(k1,k2) + mk*(mk-1)/2;
 #endif	//_WIN32
 	}
+
+        static inline int nint180(float arg) {
+	    float res = int(arg + 180.5) - 180.0;
+	    return res;
+        }
 
 	static vector<float> cluster_pairwise(EMData* d, int K, float T, float F);
 	//static vector<float> cluster_equalsize(EMData* d, int m);
