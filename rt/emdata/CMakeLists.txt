@@ -1,4 +1,4 @@
-LINK_LIBRARIES(EM2)
+LINK_LIBRARIES(GLEM2)
 
 # all of these commented out by david woolford, because when i started writing testing code
 # none of them where being compile anyway...
