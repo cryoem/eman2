@@ -363,6 +363,7 @@ class EMGenClassAverages:
 		Store alignment and inclusion metadata in internal images
 		@param rslts a dictionary that was returned by an EMClassAveTask or an EMClassAveTaskDC 
 		'''
+		average = rslts["final_average"]
 		if average != None:
 			if hasattr(self.options,"ref") and self.options.ref != None:
 				average.set_attr("projection_image",self.options.ref)
