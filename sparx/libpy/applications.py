@@ -10375,6 +10375,44 @@ def cml_find_structure_MPI(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_see
 	# Update logfile
 	#cml_end_log(Ori, disc, ite)
 
+# application find subset to structure
+def cml_find_sub_main(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit, given = False, first_zero = False, flag_weights = False, debug = False, trials = 1):
+	from projection import cml_open_proj, cml_init_global_var, cml_head_log, cml_disc, cml_export_txtagls
+	from projection import cml_find_sub, cml_export_struc, cml_end_log
+	from utilities  import print_begin_msg, print_msg, print_end_msg, start_time, running_time
+	from random     import seed, random
+	import time, sys, os
+
+	# logfile
+	t_start = start_time()
+	print_begin_msg('find_sub')
+	print_msg('\n')
+
+	out_dir = out_dir.rstrip('/')
+	if os.path.exists(out_dir): os.system('rm -rf ' + out_dir)
+	os.mkdir(out_dir)
+
+	# Open and transform projections
+	Prj, Ori = cml_open_proj(stack, ir, ou, lf, hf, dpsi)
+	# Init the global vars
+	cml_init_global_var(dpsi, delta, len(Prj), debug)
+	# Update logfile
+	cml_head_log(stack, out_dir, delta, ir, ou, lf, hf, rand_seed, maxit, given, flag_weights, trials)
+	# prepare rotation matrix
+	Rot = Util.cml_init_rot(Ori)
+	# Compute the first disc
+	disc_init = cml_disc(Prj, Ori, Rot, 0) #flag_weights)
+	# Update progress file
+	cml_export_txtagls(out_dir, 'angles_%03i' % itrial, Ori, disc_init, 'Init')
+	# Find structure
+	Ori, disc, ite = cml_find_sub(Prj, Ori, Rot, out_dir, 'angles_%03i' % itrial, maxit, first_zero, flag_weights)
+	# Export structure
+	#cml_export_struc(stack, out_dir, itrial, Ori)
+
+	running_time(t_start)
+	print_end_msg('find_sub')
+
+
 def extract_value( s ):
 	from string import atoi, atof
 

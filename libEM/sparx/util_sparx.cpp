@@ -3956,7 +3956,7 @@ vector<double> Util::cml_weights(const vector<float>& cml){
             for(unsigned int j=0; j < indices[i].size(); ++j )
             {
                 int id = indices[i][j];
-                weights[id] = w[i]/indices[i].size();
+		weights[id] = w[i]/indices[i].size();
                 //std::cout << id << " ";
             }
 
@@ -4054,7 +4054,7 @@ vector<int> Util::cml_line_insino(vector<float> Rot, int i_prj, int n_prj){
     vector<int> com(2*(n_prj - 1));
     int a = i_prj*9;
     int i, b, c;
-    int n1, n2;
+    int n1=0, n2=0;
     float vmax = 1 - 1.0e-6;
     double r11, r12, r13, r23, r31, r32, r33;
     
@@ -4072,20 +4072,22 @@ vector<int> Util::cml_line_insino(vector<float> Rot, int i_prj, int n_prj){
 	    r33 = Rot[a+6]*Rot[b+6]+Rot[a+7]*Rot[b+7]+Rot[a+8]*Rot[b+8];
 	    if (r33 > vmax) {
 		n2 = 270;
-		n1 = (int)(270 + rad_deg*atan2(r12, r11));
-		if (n1 >= 360){n1 = n1 % 360;}
+		n1 = 270 + nint180(rad_deg*atan2(r12, r11));
 	    }
 	    else if (r33 < -vmax) {
 		n2 = 270;
-		n1 = (int)(270 - rad_deg*atan2(r12, r11));
-		if (n1 >= 360){n1 = n1 % 360;}
+		n1 = 270 - nint180(rad_deg*atan2(r12, r11));
 	    } else {
-		n2 = int(rad_deg*atan2(r31, -r32));
-		n1 = int(rad_deg*atan2(r13, r23));
+		n2 = nint180(rad_deg*atan2(r31, -r32));
+		n1 = nint180(rad_deg*atan2(r13, r23));
 		if (n1 < 0) {n1 += 360;}
 		if (n2 <= 0) {n2 = abs(n2);}
 		else {n2 = 360 - n2;}
 	    }
+
+	    if (n1 >= 360){n1 = n1 % 360;}
+	    if (n2 >= 360){n2 = n2 % 360;}
+
 	    // store common-lines
 	    b = c*2;
 	    com[b] = n1;
@@ -4102,7 +4104,7 @@ vector<int> Util::cml_line_insino(vector<float> Rot, int i_prj, int n_prj){
 vector<int> Util::cml_line_insino_all(vector<float> Rot, vector<int> seq, int n_prj, int n_lines) {
     vector<int> com(2*n_lines);
     int a=0, b, c, l;
-    int n1, n2, mem=-1;
+    int n1=0, n2=0, mem=-1;
     float vmax = 1 - 1.0e-6;
     double r11, r12, r13, r23, r31, r32, r33;
     c = 0;
@@ -4124,20 +4126,21 @@ vector<int> Util::cml_line_insino_all(vector<float> Rot, vector<int> seq, int n_
 	r33 = Rot[a+6]*Rot[b+6]+Rot[a+7]*Rot[b+7]+Rot[a+8]*Rot[b+8];
 	if (r33 > vmax) {
 	    n2 = 270;
-	    n1 = (int)(270 + rad_deg*atan2(r12, r11));
-	    if (n1 >= 360){n1 = n1 % 360;}
+	    n1 = 270 + nint180(rad_deg*atan2(r12, r11));
 	}
 	else if (r33 < -vmax) {
 	    n2 = 270;
-	    n1 = (int)(270 - rad_deg*atan2(r12, r11));
-	    if (n1 >= 360){n1 = n1 % 360;}
+	    n1 = 270 - nint180(rad_deg*atan2(r12, r11));
 	} else {
-	    n2 = int(rad_deg*atan2(r31, -r32));
-	    n1 = int(rad_deg*atan2(r13, r23));
+	    n2 = nint180(rad_deg*atan2(r31, -r32));
+	    n1 = nint180(rad_deg*atan2(r13, r23));
 	    if (n1 < 0) {n1 += 360;}
 	    if (n2 <= 0) {n2 = abs(n2);}
 	    else {n2 = 360 - n2;}
 	}
+	if (n1 >= 360){n1 = n1 % 360;}
+	if (n2 >= 360){n2 = n2 % 360;}
+
 	// store common-lines
 	com[c] = n1;
 	com[c+1] = n2;
@@ -4254,7 +4257,7 @@ vector<double> Util::cml_spin_psi(const vector<EMData*>& data, vector<int> com, 
 	for (n=0; n<n_prj; ++n) {
 	    if(n!=iprj) {
 		ind = 2*c;
-		line_1 = data[iprj]->get_data() + com[ind] *lnlen;
+		line_1 = data[iprj]->get_data() + com[ind] * lnlen;
 		line_2 = data[n]->get_data() + com[ind+1] * lnlen;
 		buf = 0;
 		for (i=0; i<lnlen; ++i) {
@@ -18829,6 +18832,22 @@ EMData* Util::get_slice(EMData *vol, int dim, int index) {
 	return slice;
 }
 
+/*  This function drop a line (line) to an 2D image (img).
+ *  The position of the line to the image is defined by (postline).
+ *  The part of the line paste is defined by (offset), the begin position
+ *  and (length) the size.
+ */ 
+void Util::set_line(EMData* img, int posline, EMData* line) //, int posline, EMData* line, int offset, int length)
+{
+    /*
+	int i;
+	int nx=img->get_xsize();
+	float *img_ptr  = img->get_data();
+	float *line_ptr = line->get_data();
+	for (i=0;i<length;i++) img_ptr[nx*posline + i] = line_ptr[offset + i];
+    */
+	img->update();
+}
 
 
 
