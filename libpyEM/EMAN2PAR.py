@@ -36,6 +36,7 @@ from EMAN2 import test_image,EMData,abs_path
 from EMAN2db import EMTask,EMTaskQueue,db_open_dict
 from e2classaverage import EMClassAveTaskDC
 from e2simmx import EMSimTaskDC
+from e2project3d import EMProject3DTaskDC
 import SocketServer
 from cPickle import dumps,loads
 from struct import pack,unpack
@@ -152,6 +153,10 @@ Communications are handled by subclasses."""
 			return task.get_return_data()
 	
 		elif task.command == "e2simmx":
+			task.execute()
+			return task.get_return_data()
+	
+		elif task.command == "e2project3d":
 			task.execute()
 			return task.get_return_data()
 

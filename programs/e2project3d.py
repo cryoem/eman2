@@ -32,10 +32,6 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 #
-
-# initial version of project3d; more features/documentation to come
-# try "e2project3d --help"
-
 # References
 # 1. Baldwin, P.R. and Penczek, P.A. 2007. The Transform Class in SPARX and EMAN2. J. Struct. Biol. 157, 250-261.
 # 2. http://blake.bcm.edu/emanwiki/EMAN2/Symmetry
@@ -67,6 +63,149 @@ EMAN1_OCT = False
 MIRROR_DEBUG = True
 NO_MIRROR = False
 
+
+class EMParallelProject3D:
+	def __init__(self,options,args,logger=None):
+		'''
+		@param options the options produced by (options, args) = parser.parse_args()
+		@param args the options produced by (options, args) = parser.parse_args()
+		@param logger and EMAN2 logger, i.e. logger=E2init(sys.argv)
+		assumes you have already called the check function.
+		'''
+		self.options = options
+		self.args = args
+		self.logger = logger
+		
+		from EMAN2PAR import EMTaskCustomer
+		etc=EMTaskCustomer("dc:localhost:9990")
+		self.num_cpus = etc.cpu_est()
+		self.num_cpus = 4
+		
+		self.__task_options = None
+	
+	def __init_memory(self,options):
+		'''
+		
+		'''
+		sym_object = parsesym(options.sym)
+		[og_name,og_args] = parsemodopt(options.orientgen)
+		self.eulers = sym_object.gen_orientations(og_name, og_args)
+	
+	def __get_task_options(self,options):
+		
+		if self.__task_options == None:
+			d = {}
+			d["projector"] = parsemodopt(options.projector)
+			self.__task_options = d
+			
+		return self.__task_options
+	
+	def execute(self):
+		
+		self.__init_memory(self.options)
+		
+		num_tasks = self.num_cpus
+		# In the worst case we can only spawn as many tasks as there are eulers
+		if self.num_cpus > len(self.eulers): num_tasks = len(self.eulers)
+		
+		eulers_per_task = len(self.eulers)/num_tasks
+		resid_eulers = len(self.eulers) - eulers_per_task*num_tasks # we can distribute the residual evenly
+		
+		first = 0
+		self.task_customers = []
+		self.tids = []
+		for i in xrange(0,num_tasks):
+			last = first+eulers_per_task
+			if resid_eulers > 0:
+				last +=1
+				resid_eulers -= 1
+				
+			tmp_eulers = self.eulers[first:last]
+			indices = range(first,last)
+			
+			data = {}
+			data["input"] = ("cache",self.args[0],0)
+			data["eulers"] = tmp_eulers
+			data["indices"] = indices
+			
+			task = EMProject3DTaskDC(data=data,options=self.__get_task_options(self.options))
+			
+			from EMAN2PAR import EMTaskCustomer
+			etc=EMTaskCustomer("dc:localhost:9990")
+			#print "Est %d CPUs"%etc.cpu_est()
+			tid=etc.send_task(task)
+				#print "Task submitted tid=",tid
+				
+			self.task_customers.append(etc)
+			self.tids.append(tid)
+			
+			first = last
+			
+		while 1:
+			if len(self.task_customers) == 0: break
+			print len(self.task_customers),"tasks left in main loop"
+			for i in xrange(len(self.task_customers)-1,-1,-1):
+				task_customer = self.task_customers[i]
+				tid = self.tids[i] 
+				st=task_customer.check_task((tid,))[0]
+				if st==100:
+					
+					self.task_customers.pop(i)
+					self.tids.pop(i)
+
+					rslts = task_customer.get_results(tid)
+					self.__write_output_data(rslts[1])
+					if self.logger != None:
+						E2progress(self.logger,1.0-len(self.task_customers)/float(num_tasks))
+						if self.options.verbose: 
+							print "%d/%d\r"%(num_tasks-len(self.task_customers),num_tasks)
+							sys.stdout.flush()
+			
+			time.sleep(5)
+			
+	def __write_output_data(self,rslts):
+		for idx,image in rslts["projections"].items():
+			image.write_image(self.options.outfile,idx)
+			
+	
+from EMAN2db import EMTask
+class EMProject3DTaskDC(EMTask):
+	def __init__(self,command="e2project3d",data=None,options=None):
+		EMTask.__init__(self,command,data,options)
+		
+		# data has these keys:
+		# input - which is the name of the threed model - a Task-style cache
+		# eulers - a list of Transforms with which to generate projections
+		# indices - indices that correspond to the ordering, has to be the same length as eulers. Returned to calling routine - use to write output in order. Not sure about this.
+		
+		# options has these keys
+		# projector - [string,dict] convention
+		
+		self.projections = {} # key will be index, value will be projection
+		
+	def execute(self):
+		input_name=self.data["input"][1]
+		threed_image = EMData(input_name,self.data["input"][2]) # so the idx should always be 0, but it doesn't have to be
+		
+		options = self.options
+		eulers = self.data["eulers"]
+		indices = self.data["indices"]
+		projector,projector_opts = options["projector"][0],options["projector"][1]
+		for i in xrange(len(eulers)):
+			euler = eulers[i]
+			projector_opts["transform"] = euler
+			projection = threed_image.project(projector,projector_opts)
+			projection.set_attr("xform.projection",euler)
+			projection.set_attr("ptcl_repr",0)
+			self.projections[indices[i]] = projection
+		
+	
+	def get_return_data(self):
+		d = {}
+		d["projections"] = self.projections
+		return d
+	
+
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog image [options] 
@@ -75,7 +214,7 @@ def main():
 	
 	parser.add_option("--sym", dest = "sym", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos")
 	parser.add_option("--orientgen", dest="orientgen", help="The orientation generator to use. See e2help.py orientgen")
-	parser.add_option("--out", dest = "outfile", default = "e2proj.hdf", help = "Output file. Default is 'e2proj.img'")
+	parser.add_option("--outfile", dest = "outfile", default = "e2proj.hdf", help = "Output file. Default is 'e2proj.img'")
 	# add --perturb
 	parser.add_option("--smear", dest = "smear", type = "int", default=0,help="Used in conjunction with --phitoo, this will rotationally smear between phi steps. The user must specify the amount of smearing (typically 2-10)")
 	parser.add_option("--projector", dest = "projector", default = "standard",help = "Projector to use")
@@ -86,7 +225,8 @@ def main():
 	parser.add_option("--check","-c", default=False, action="store_true",help="Checks to see if the command line arguments will work.")
 	parser.add_option("--nofilecheck",action="store_true",help="Turns file checking off in the check functionality - used by e2refine.py.",default=False)
 	parser.add_option("--postprocess", metavar="processor_name(param1=value1:param2=value2)", type="string", action="append", help="postprocessor to be applied to each projection. There can be more than one postprocessor, and they are applied in the order in which they are specified. See e2help.py processors for a complete list of available processors.")
-	
+	parser.add_option("--parallel",help="Parallelism string",default=None,type="string")
+
 	(options, args) = parser.parse_args()
 	
 	if ( options.check ): options.verbose = True
@@ -103,7 +243,7 @@ def main():
 		else:
 			if (options.verbose):
 				print "e2project3.py command line arguments test.... PASSED"
-	
+
 	# returning a different error code is currently important to e2refine.py - returning 0 tells e2refine.py that it has enough
 	# information to execute this script
 	if error : exit(1)
@@ -115,6 +255,15 @@ def main():
 			remove_file(options.outfile)
 
 	logger=E2init(sys.argv)
+	
+		
+	if options.parallel:
+		job = EMParallelProject3D(options,args,logger)
+		job.execute()
+		E2end(logger)
+		exit(0)
+	
+	
 	eulers = []
 	
 	data = EMData()
@@ -135,8 +284,6 @@ def main():
 	E2end(logger)
 	exit(0)
 	
-	
-	#TODO - determine whether or not to add this functionality
 	#if options.verifymirror:
 		#if options.sym:
 			#verify_mirror_test(data, eulers, options.sym, options.projector)

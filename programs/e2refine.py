@@ -391,7 +391,7 @@ def get_projection_cmd(options,check=False):
 	if hasattr(options,"filtered_model"): # sometimes there is a filtered model, i.e. if mass or automask3d is specified
 		model = options.filtered_model
 		
-	e2projcmd = "e2project3d.py %s -f --sym=%s --projector=%s --out=%s --orientgen=%s --postprocess=normalize.circlemean" %(model,options.sym,options.projector,options.projfile,options.orientgen)
+	e2projcmd = "e2project3d.py %s -f --sym=%s --projector=%s --outfile=%s --orientgen=%s --postprocess=normalize.circlemean" %(model,options.sym,options.projector,options.projfile,options.orientgen)
 		
 	if ( check ):
 		e2projcmd += " --check"	

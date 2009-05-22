@@ -41,30 +41,7 @@ import os
 import sys
 
 
-def opt_rectangular_subdivision(x,y,n):
-	
-	candidates = []	
-	best = None
-	for a in xrange(1,int((sqrt(n)+1))):
-		candidates.append([a,n/a])
-	print candidates
-	#print candidates
-	min = None
-	for rn,cn in candidates:
-		
-		f = (float(x)/rn + float(y)/cn)*rn*cn
-		#print f,rn,cn,(x/rn + y/cn)
-		if min == None or f < min:
-			#print f,rn,cn
-			best = [rn,cn]
-			min = f
-			
-		f = (float(y)/rn + float(x)/cn)*rn*cn
-		if min == None or f < min:
-			#print f,rn,cn
-			best = [cn,rn]
-			min = f
-	return best	
+
 	
 
 class EMParallelSimMX:
@@ -113,8 +90,48 @@ class EMParallelSimMX:
 			
 		return self.__task_options
 	
+	def __opt_rectangular_subdivision(self,x,y,n):
+		'''
+		@param x the x dimension of a matrix
+		@param y the y dimensons of a matrix
+		@param the number of subdivisions you wish to partition the matrix into
+		@return [number of x subdivisions, number of y subdivisions]
+		Note that this routine needs a little bit of work - it returns good results when
+		x >> y or y >> x, but when y ~= x it's not quite optimal. Good, but not optimal.
+		'''
+		candidates = []	
+		best = None
+		for a in xrange(1,int((sqrt(n)+1))):
+			candidates.append([a,n/a])
+			
+		#print candidates
+		min = None
+		for rn,cn in candidates:
+			
+			f = (float(x)/rn + float(y)/cn)*rn*cn # yes this could be simplified, but leaving as is for clarity
+			#print f,rn,cn,(x/rn + y/cn)
+			if min == None or f < min:
+				#print f,rn,cn
+				best = [rn,cn]
+				min = f
+				
+			f = (float(y)/rn + float(x)/cn)*rn*cn # yes this could be simplified, but leaving as is for clarity
+			if min == None or f < min:
+				#print f,rn,cn
+				best = [cn,rn]
+				min = f
+		return best	
+	
 	
 	def __init_memory(self,options):
+		'''
+		@param options is always self.options - the initialization argument. Could be changed.
+		Establishes several important attributes they are:
+		----
+		self.clen - the number of images in the image defined by args[0], the number of columns in the similarity matrix
+		self.rlen - the number of images in the image defined by args[1], the number of rows in the similarity matrix
+		self.mxout - a list of output images of dimensions self.clen x self.rlen. 
+		'''
 		self.clen=EMUtil.get_image_count(self.args[0])
 		self.rlen=EMUtil.get_image_count(self.args[1])
 		
@@ -138,7 +155,7 @@ class EMParallelSimMX:
 		total_jobs = self.num_cpus
 		
 		
-		[col_div,row_div] = opt_rectangular_subdivision(self.clen,self.rlen,total_jobs)
+		[col_div,row_div] = self.__opt_rectangular_subdivision(self.clen,self.rlen,total_jobs)
 		
 	
 		block_c = self.clen/col_div
@@ -192,8 +209,6 @@ class EMParallelSimMX:
 				data["references"] = ("cache",self.args[0],block[0],block[1])
 				data["particles"] = ("cache",self.args[1],block[2],block[3])
 				
-				
-				
 				task = EMSimTaskDC(data=data,options=self.__get_task_options(self.options))
 				
 				from EMAN2PAR import EMTaskCustomer
@@ -221,14 +236,20 @@ class EMParallelSimMX:
 						rslts = task_customer.get_results(tid)
 						self.__store_output_data(rslts[1])
 						if self.logger != None:
-							E2progress(self.logger,1.0-len(self.task_customers)/len(blocks))
+							E2progress(self.logger,1.0-len(self.task_customers)/float(len(blocks)))
+							if options.verbose: 
+								print "%d/%d\r"%(len(self.task_customers),len(blocks))
+								sys.stdout.flush()
 				
 				time.sleep(5)
 				
 		self.__finalize_writing()
 				
 	def __store_output_data(self,rslts):
-		
+		'''
+		Store output data to internal images (matrices)
+		@param a dictionary return by the EMSimTaskDC
+		'''
 		for r,d in rslts["sim_data"].items():
 			for c,data in d.items():
 				cmp = data[0]
@@ -242,7 +263,9 @@ class EMParallelSimMX:
 					self.mxout[4].set(c,r,params["mirror"])
 	
 	def __finalize_writing(self):
-		
+		'''
+		Called after all task have completed - writes the output data to disk
+		'''
 		for i,mxout in enumerate(self.mxout):
 			mxout.write_image(self.args[2],i)
 
@@ -298,8 +321,6 @@ class EMSimTaskDC(EMTask):
 				image.process_inplace("math.meanshrink",{"n":options["shrink"]})
 			self.ptcls[idx] = image
 			
-	
-	
 	def __cmp_one_to_many(self,idx):
 	
 		options = self.options
