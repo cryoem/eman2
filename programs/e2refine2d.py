@@ -234,7 +234,7 @@ def main():
 		if logid : E2progress(logid,proc_tally/total_procs)
 		
 		# make class-averages
-		cls_cmd = "e2classaverage.py --input=%s --classmx=%s#classmx_%02d --output%s#classes_%02d --iter=%d " %(options.input,options.path,it,options.path,it,options.classiter)
+		cls_cmd = "e2classaverage.py --input=%s --classmx=%s#classmx_%02d --output=%s#classes_%02d --iter=%d " %(options.input,options.path,it,options.path,it,options.classiter)
 		cls_cmd += get_classaverage_extras(options)
 		#run("e2classaverage.py %s %s#classmx_%02d %s#classes_%02d --iter=%d --align=%s:maxshift=%d --averager=%s -vf  --keep=%f --cmp=%s --aligncmp=%s"%(options.input,options.path,it,options.path,it,options.classiter,options.classalign,options.maxshift,options.classaverager,options.classkeep,options.classcmp,options.classaligncmp))
 		run(cls_cmd)

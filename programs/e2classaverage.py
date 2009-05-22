@@ -276,7 +276,6 @@ class EMGenClassAverages:
 				self.tids.append(tid)
 
 			
-			classes = range(self.class_min,self.class_max+1)
 			while 1:
 				if len(self.task_customers) == 0: break
 				print len(self.task_customers),"tasks left in main loop"
@@ -367,7 +366,8 @@ class EMGenClassAverages:
 		if average != None:
 			if hasattr(self.options,"ref") and self.options.ref != None:
 				average.set_attr("projection_image",self.options.ref)
-			average.write_image(self.options.output,rslts["class_idx"])
+#			average.write_image(self.options.output,rslts["class_idx"])
+			average.write_image(self.options.output,-1)
 			ptcl_indices,dcol_idx_cache =  self.__get_class_data(rslts["class_idx"], self.options)
 			
 			final_alis = rslts["final_alis"]

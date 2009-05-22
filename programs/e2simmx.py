@@ -45,24 +45,24 @@ def opt_rectangular_subdivision(x,y,n):
 	
 	candidates = []	
 	best = None
-	for a in xrange(1,int(ceil(sqrt(n)))):
+	for a in xrange(1,int((sqrt(n)+1))):
 		candidates.append([a,n/a])
-	
+	print candidates
 	#print candidates
 	min = None
 	for rn,cn in candidates:
 		
-		f = (x/rn + y/cn)*rn*cn
+		f = (float(x)/rn + float(y)/cn)*rn*cn
 		#print f,rn,cn,(x/rn + y/cn)
 		if min == None or f < min:
 			#print f,rn,cn
-			best = [rn,cn,x/rn,y/cn]
+			best = [rn,cn]
 			min = f
 			
-		f = (y/rn + x/cn)*rn*cn
+		f = (float(y)/rn + float(x)/cn)*rn*cn
 		if min == None or f < min:
 			#print f,rn,cn
-			best = [cn,rn,x/cn,y/rn]
+			best = [cn,rn]
 			min = f
 	return best	
 	
@@ -84,11 +84,51 @@ class EMParallelSimMX:
 		etc=EMTaskCustomer("dc:localhost:9990")
 		self.num_cpus = etc.cpu_est()
 		self.num_cpus = 32
+		
+		self.__task_options = None
+	
+	def __get_task_options(self,options):
+		'''
+		Get the options required by each task as a dict
+		@param options is always self.options - the initialization argument. Could be changed.
+		'''
+		if self.__task_options == None:
+			d = {}
+			d["align"] = parsemodopt(options.align)
+			d["aligncmp"] = parsemodopt(options.aligncmp)
+			d["cmp"] = parsemodopt(options.cmp)
+			
+			if hasattr(options,"ralign") and options.ralign != None: 
+				d["ralign"] = parsemodopt(options.ralign)
+				d["raligncmp"] = parsemodopt(options.raligncmp)  # raligncmp must be specified if using ralign
+			else: 
+				d["ralign"] = None
+				d["raligncmp"] = None
+			
+			if hasattr(options,"shrink") and options.shrink != None: d["shrink"] = options.shrink
+			else: d["shrink"] = None
+
+			
+			self.__task_options = d
+			
+		return self.__task_options
 	
 	
-	def __init_memory(self):
+	def __init_memory(self,options):
 		self.clen=EMUtil.get_image_count(self.args[0])
 		self.rlen=EMUtil.get_image_count(self.args[1])
+		
+		mxout=[EMData()]
+		mxout[0].set_size(self.clen,self.rlen)
+		mxout[0].to_zero()
+		if options.saveali : 
+			mxout.append(mxout[0].copy()) # dx
+			mxout.append(mxout[0].copy()) # dy
+			mxout.append(mxout[0].copy()) # alpha (angle)
+			mxout.append(mxout[0].copy()) # mirror
+		
+		self.mxout=mxout
+
 	
 	def __get_blocks(self):
 		'''
@@ -98,7 +138,7 @@ class EMParallelSimMX:
 		total_jobs = self.num_cpus
 		
 		
-		[col_div,row_div,foo,foo1] = opt_rectangular_subdivision(self.clen,self.rlen,total_jobs)
+		[col_div,row_div] = opt_rectangular_subdivision(self.clen,self.rlen,total_jobs)
 		
 	
 		block_c = self.clen/col_div
@@ -129,8 +169,8 @@ class EMParallelSimMX:
 				
 			current_c = last_c
 		
-		print col_div,row_div,col_div*row_div
-		print self.clen,self.rlen,residual_c,residual_r
+#		print col_div,row_div,col_div*row_div
+#		print self.clen,self.rlen,residual_c,residual_r
 		return blocks
 	
 	
@@ -138,9 +178,73 @@ class EMParallelSimMX:
 		'''
 		The main function to be called
 		'''
-		self.__init_memory()
+		self.__init_memory(self.options)
 		blocks = self.__get_blocks()
-		pass
+#		print blocks
+
+		if hasattr(self.options,"parallel") and self.options.parallel != None:
+			
+			self.task_customers = []
+			self.tids = []
+			for block in blocks:
+				
+				data = {}
+				data["references"] = ("cache",self.args[0],block[0],block[1])
+				data["particles"] = ("cache",self.args[1],block[2],block[3])
+				
+				
+				
+				task = EMSimTaskDC(data=data,options=self.__get_task_options(self.options))
+				
+				from EMAN2PAR import EMTaskCustomer
+				etc=EMTaskCustomer("dc:localhost:9990")
+				#print "Est %d CPUs"%etc.cpu_est()
+				tid=etc.send_task(task)
+				#print "Task submitted tid=",tid
+				
+				self.task_customers.append(etc)
+				self.tids.append(tid)
+
+#			
+			while 1:
+				if len(self.task_customers) == 0: break
+				print len(self.task_customers),"tasks left in main loop"
+				for i in xrange(len(self.task_customers)-1,-1,-1):
+					task_customer = self.task_customers[i]
+					tid = self.tids[i] 
+					st=task_customer.check_task((tid,))[0]
+					if st==100:
+						
+						self.task_customers.pop(i)
+						self.tids.pop(i)
+
+						rslts = task_customer.get_results(tid)
+						self.__store_output_data(rslts[1])
+						if self.logger != None:
+							E2progress(self.logger,1.0-len(self.task_customers)/len(blocks))
+				
+				time.sleep(5)
+				
+		self.__finalize_writing()
+				
+	def __store_output_data(self,rslts):
+		
+		for r,d in rslts["sim_data"].items():
+			for c,data in d.items():
+				cmp = data[0]
+				tran = data[1]
+				self.mxout[0].set(c,r,cmp)
+				if self.options.saveali:
+					params = tran.get_params("2d") 
+					self.mxout[1].set(c,r,params["tx"])
+					self.mxout[2].set(c,r,params["ty"])
+					self.mxout[3].set(c,r,params["alpha"])
+					self.mxout[4].set(c,r,params["mirror"])
+	
+	def __finalize_writing(self):
+		
+		for i,mxout in enumerate(self.mxout):
+			mxout.write_image(self.args[2],i)
 
 from EMAN2db import EMTask
 class EMSimTaskDC(EMTask):
@@ -154,7 +258,6 @@ class EMSimTaskDC(EMTask):
 		# alligncmp - the main align cmp - a list of two strings
 		# ralign - the refine aligner, a list of two string. May be None which turns it off
 		# raligncmp - the refinealigncmp - a list of two strings. Needs to specified if ralign is not None
-		# averager - the averager - a list of two strings
 		# cmp - the final cmp - a list of two strings
 		# shrink - a shrink value (int), may be None or unspecified - shrink the data by an integer amount prior to computing similarity scores
 
@@ -163,33 +266,36 @@ class EMSimTaskDC(EMTask):
 		# particles - a Task-style cached list of input images
 		# references - a Task-style cached list of reference images
 		
-	def __init_memory(self):
+		self.sim_data = {} # this will store the eventual results
+		
+	def __init_memory(self,options):
 		'''
 		This function assigns critical attributes
 		'''
-
+		from EMAN2PAR import image_range
 		shrink = None
 		if self.options.has_key("shrink") and self.options["shrink"] != None and self.options["shrink"] > 1:
 			shrink = self.options["shrink"]
 		
-		ref_data_name=self.data["references"][0]
-		self.ref_indices = self.data["references"][1]
+		ref_data_name=self.data["references"][1]
+		self.ref_indices = image_range(*self.data["references"][2:])
 		
+#		print self.data["references"][2:]
 		self.refs = {}
 		for idx in self.ref_indices:
 			image = EMData(ref_data_name,idx)
 			if shrink != None:
-				image.process_inplace("math.meanshrink",{"n":options.shrink})
+				image.process_inplace("math.meanshrink",{"n":options["shrink"]})
 			self.refs[idx] = image
 			
-		ptcl_data_name=self.data["particles"][0]
-		self.ptcl_indices = self.data["particles"][1]
+		ptcl_data_name=self.data["particles"][1]
+		self.ptcl_indices = image_range(*self.data["particles"][2:])
 			
 		self.ptcls = {}
 		for idx in self.ptcl_indices:
 			image = EMData(ptcl_data_name,idx)
 			if shrink != None:
-				image.process_inplace("math.meanshrink",{"n":options.shrink})
+				image.process_inplace("math.meanshrink",{"n":options["shrink"]})
 			self.ptcls[idx] = image
 			
 	
@@ -197,46 +303,39 @@ class EMSimTaskDC(EMTask):
 	def __cmp_one_to_many(self,idx):
 	
 		options = self.options
-		image = self.ptcl[idx]
+		ptcl = self.ptcls[idx]
 		
-		aligned=image.align(options["align"][0],to,options["align"][1],options["aligncmp"][0],options["aligncmp"][1])
+		data = {}
+		for ref_idx,ref in self.refs.items():
+			aligned=ref.align(options["align"][0],ptcl,options["align"][1],options["aligncmp"][0],options["aligncmp"][1])
 		
-		if options.has_key("ralign") and options["ralign"] != None: # potentially employ refine alignment
-			refine_parms=options["ralign"][1]
-			# this parameters I think west best with the refine aligner, but they're not well tested
-			# i.e. I need to do some rigorous testing before I can claim anything
-			#refineparms[1]["az"] = ta.get_attr_default("align.az",0)-1
-			#refineparms[1]["dx"] = ta.get_attr_default("align.dx",0)-1
-			#refineparms[1]["dy"] = ta.get_attr_default("align.dy",0)-1
-			#refineparms[1]["mode"] = 0
-			#refineparms[1]["stepx"] = 2
-			#refineparms[1]["stepy"] = 2
-			#refineparms[1]["stepaz"] = 5
+			if options.has_key("ralign") and options["ralign"] != None: # potentially employ refine alignment
+				refine_parms=options["ralign"][1]
+				refine_parms["xform.align2d"] = aligned.get_attr("xform.align2d")
+				aligned = ref.align(options["ralign"][0],ptcl,refine_parms,options["raligncmp"][0],options["raligncmp"][1])
+				
+			t =  aligned.get_attr("xform.align2d")
+			t.invert()
+			data[ref_idx] = (ptcl.cmp(options["cmp"][0],aligned,options["cmp"][1]),t)
 			
-			refine_parms["xform.align2d"] = aligned.get_attr("xform.align2d")
-			aligned = this.align(options["ralign"][0],to,refine_parms,options["raligncmp"][0],options["raligncmp"][1])
 			
-		return aligned
+		return data
 	
-		ret=[None for i in reflist]
-		for i,r in enumerate(reflist):
-			if options[0] :
-				ta=target.align(align[0],r,align[1],alicmp[0],alicmp[1])
-				#ta.debug_print_params()
-				
-				if ralign and ralign[0]:
-					ralign[1]["xform.align2d"] = ta.get_attr("xform.align2d")
-					ta = target.align(ralign[0],r,ralign[1],alircmp[0],alircmp[1])
-				
-				t = ta.get_attr("xform.align2d")
-				p = t.get_params("2d")
-				
-				ret[i]=(ta.cmp(cmp[0],r,cmp[1]),p["tx"],p["ty"],p["alpha"],p["mirror"])
-			else :
-				ret[i]=(target.cmp(cmp[0],r,cmp[1]),0,0,0,False)
+	def execute(self):
+		
+		self.__init_memory(self.options)
+		
+		self.sim_data = {} # It's going to be our favourite thing, a dictionary of dictionaries
+		
+		for ptcl_idx,ptcl in self.ptcls.items():
 			
-		return ret
-
+			self.sim_data[ptcl_idx] = self.__cmp_one_to_many(ptcl_idx)
+			
+	
+	def get_return_data(self):
+		d = {}
+		d["sim_data"] = self.sim_data
+		return d
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -417,17 +516,18 @@ def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ral
 	ret=[None for i in reflist]
 	for i,r in enumerate(reflist):
 		if align[0] :
-			ta=target.align(align[0],r,align[1],alicmp[0],alicmp[1])
+			ta=r.align(align[0],target,align[1],alicmp[0],alicmp[1])
 			#ta.debug_print_params()
 			
 			if ralign and ralign[0]:
 				ralign[1]["xform.align2d"] = ta.get_attr("xform.align2d")
-				ta = target.align(ralign[0],r,ralign[1],alircmp[0],alircmp[1])
+				ta = r.align(ralign[0],target,ralign[1],alircmp[0],alircmp[1])
 			
 			t = ta.get_attr("xform.align2d")
+			t.invert()
 			p = t.get_params("2d")
 			
-			ret[i]=(ta.cmp(cmp[0],r,cmp[1]),p["tx"],p["ty"],p["alpha"],p["mirror"])
+			ret[i]=(target.cmp(cmp[0],ta,cmp[1]),p["tx"],p["ty"],p["alpha"],p["mirror"])
 		else :
 			ret[i]=(target.cmp(cmp[0],r,cmp[1]),0,0,0,False)
 		
