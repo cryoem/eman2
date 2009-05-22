@@ -291,6 +291,7 @@ class EMGenClassAverages:
 						rslts = task_customer.get_results(tid)
 						
 						
+						print rslts
 						self.__write_class_data(rslts[1])
 #						for image in rslts[1]["averages"]:
 #							if image != None: image.write_image("dc_average.hdf",-1)
@@ -362,7 +363,6 @@ class EMGenClassAverages:
 		Store alignment and inclusion metadata in internal images
 		@param rslts a dictionary that was returned by an EMClassAveTask or an EMClassAveTaskDC 
 		'''
-		average = rslts["final_average"]
 		if average != None:
 			if hasattr(self.options,"ref") and self.options.ref != None:
 				average.set_attr("projection_image",self.options.ref)
@@ -576,6 +576,7 @@ class EMClassAveTask(EMTask):
 		
 		if len(self.all_inclusions) != 0: d["final_inclusions"] = self.all_inclusions[-1]
 		else: d["final_inclusions"] = None
+		
 		
 		return d
 
