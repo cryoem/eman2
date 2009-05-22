@@ -3109,7 +3109,7 @@ class E2Refine2DTask(EMClassificationTools):
 		for val in interested_in:
 			setattr(options,val,params[val])
 		
-		options.parallel = params["global.num_cpus"]
+		#options.parallel = params["global.num_cpus"]
 		if options.initial == "" or str(options.initial) == "None" or str(options.initial) == "none":
 			options.initial = None
 			
@@ -3121,7 +3121,7 @@ class E2Refine2DTask(EMClassificationTools):
 		if options.naliref < 1:	error_message.append("The number alignment references must be atleast 1.")
 	  	if options.nbasisfp < 1: error_message.append("The number of MSA basis vectors must be atleast 1.")
 	  	if options.ncls < 2: error_message.append("The number of classes must be atleast 2.")
-	  	if options.parallel < 1: error_message.append("The number CPUs availables must be atleast 1.")
+	  	#if options.parallel < 1: error_message.append("The number CPUs availables must be atleast 1.")
   		
   		if len(error_message) != 0:
  			return error_message
@@ -3157,7 +3157,7 @@ class E2Refine2DTask(EMClassificationTools):
   		return error_message
   	
   	def add_main_args(self,options,string_args,bool_args,additional_args,):
-  		string_args.extend( ["iter","naliref","nbasisfp","path","input","parallel","ncls"] )
+  		string_args.extend( ["iter","naliref","nbasisfp","path","input","ncls"] ) # May 2009, took "parallel" out
 		bool_args.append("normproj")
 		optionals = ["initial"]
 		for opt in optionals:
@@ -3166,7 +3166,6 @@ class E2Refine2DTask(EMClassificationTools):
 		
 
 	def get_cmd_line_options(self,params):
-		print "in get cmd line options"
 		mesbox = QtGui.QMessageBox()
 		mesbox.setWindowTitle("Almost but not quite")
 		
@@ -3194,7 +3193,7 @@ class E2Refine2DTask(EMClassificationTools):
 
 		
 		from e2refine2d import check_e2refin2d_args
-		options.parallel = params["global.num_cpus"]
+#		options.parallel = params["global.num_cpus"]
 		error_message.extend(check_e2refin2d_args(options))
 		
  		if len(error_message) != 0:

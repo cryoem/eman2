@@ -226,6 +226,7 @@ template <> Factory < Processor >::Factory()
 	force_add(&TestImageLineWave::NEW);
 	force_add(&TestImageEllipse::NEW);
 	force_add(&TestImageHollowEllipse::NEW);
+	force_add(&TestImageFourierNoiseGaussian::NEW);
 
 	force_add(&TomoTiltEdgeMaskProcessor::NEW);
 	force_add(&TomoTiltAngleWeightProcessor::NEW);
@@ -6006,12 +6007,46 @@ void TestImageProcessor::preprocess(EMData * image)
 void TestImageFourierNoiseGaussian::process_inplace(EMData* image)
 {
 	if (!image->is_complex()) {
-		image->do_fft_inplace();
-	}else {
-		image->ap2ri(); // just be sure of it
+		int new_nx = image->get_xsize()+2;
+		new_nx -= new_nx %2;
+		image->set_size(new_nx,image->get_ysize(),image->get_zsize());
+		image->set_complex(true);
+		image->to_zero(); // only for debug
+	}
+	image->ri2ap(); // just be sure of it
+
+	float sigma = params.set_default("sigma",.25f);
+
+	float * d = image->get_data();
+	int nx = image->get_xsize();
+	int nxy = image->get_ysize()*nx;
+	int nzon2 = image->get_zsize()/2;
+	int nyon2 = image->get_ysize()/2;
+	for (int z = 0; z< image->get_zsize(); ++z) {
+		for (int y = 0; y < image->get_ysize(); ++y) {
+			for (int x = 0; x < image->get_xsize()/2; ++x) {
+				float rx = (float)x;
+				float ry = (float)nyon2 - (float)y;
+				float rz = (float)nzon2 - (float)z;
+				float length = sqrt(rx*rx + ry*ry + rz*rz);
+				float amp = exp(-sigma*length);
+				float phase = Util::get_frand(0,1)*2*M_PI;
+
+				int twox = 2*x;
+				int idx1 = twox + y*nx+z*nxy;
+				int idx2 = idx1 + 1;
+				d[idx1] = amp;
+				d[idx2] = phase;
+
+			}
+		}
 	}
 
-	float sigma = params.set_default("sigma",1.0f);
+	image->ap2ri();
+	image->process_inplace("xform.fourierorigin.tocorner");
+	image->do_ift_inplace();
+	image->depad();
+
 }
 
 void TestImageLineWave::process_inplace(EMData * image)

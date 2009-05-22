@@ -5135,12 +5135,12 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 
 			virtual string get_desc() const
 			{
-				return "Replace a source image as a strict Gaussian ";
+				return "Replace a source image with pink Fourier noise, based on a Gaussian. Random phase.";
 			}
 
 			static Processor * NEW()
 			{
-				return new TestImagePureGaussian();
+				return new TestImageFourierNoiseGaussian();
 			}
 
 			virtual TypeDict get_param_types() const
