@@ -210,9 +210,9 @@ class EMIsosurfaceModule(EMImage3DGUIModule):
 				self.update_data_and_texture()
 				
 		if ( self.texture  ):
-			self.isodl = self.isorender.get_isosurface_dl(self.tex_name)
+			self.isodl = GLUtil.get_isosurface_dl(self.isorender, self.tex_name)
 		else:
-			self.isodl = self.isorender.get_isosurface_dl(0)
+			self.isodl = GLUtil.get_isosurface_dl(self.isorender, 0)
 		#time2 = clock()
 		#dt1 = time2 - time1
 		#print "It took %f to render the isosurface" %dt1

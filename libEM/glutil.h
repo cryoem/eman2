@@ -43,6 +43,7 @@ using std::vector;
 namespace EMAN
 {
 	class EMData;
+	class MarchingCubes;
 
 	class GLUtil {
 	public:
@@ -89,6 +90,13 @@ namespace EMAN
 		static std::string render_amp8(EMData * emdata, int x, int y, int xsize, int ysize,
 						 int bpl, float scale, int min_gray, int max_gray,
 						 float min_render, float max_render,float gamma,int flags);
+
+		/** Get an isosurface display list
+		* Traverses the tree, marches the cubes, and renders a display list using the associated vertices and normals
+		* Uses OpenGL arrays for maximum performance
+		* @return an OpenGL display list number
+		*/
+		static unsigned long get_isosurface_dl(MarchingCubes* mc, unsigned int tex_id = 0);
 	};
 }
 

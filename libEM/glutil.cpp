@@ -37,6 +37,7 @@
 
 #include "glutil.h"
 #include "emdata.h"
+#include "marchingcubes.h"
 
 #ifndef _WIN32
 	#ifndef GL_GLEXT_PROTOTYPES
@@ -562,12 +563,103 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 
     //	return PyString_FromStringAndSize((const char*) data,iysize*bpl);
 	if (flags&16) {
-#ifdef EMAN2_USING_OPENGL
 		glDrawPixels(ixsize,iysize,GL_LUMINANCE,GL_UNSIGNED_BYTE,(const GLvoid *)ret.data());
-#endif //EMAN2_USING_OPENGL
 	}
 
 	return ret;
 }
+
+
+unsigned long GLUtil::get_isosurface_dl(MarchingCubes* mc, unsigned int tex_id)
+{
+	if ( mc->_isodl != 0 ) glDeleteLists(mc->_isodl,1);
+
+
+	mc->calculate_surface();
+#if MARCHING_CUBES_DEBUG
+	cout << "There are " << ff.elem()/3 << " faces and " << pp.elem() << " points and " << nn.elem() << " normals to render in generate dl" << endl;
+#endif
+	int maxf;
+//#ifdef	_WIN32
+//	glGetIntegerv(GL_MAX_ELEMENTS_INDICES_WIN,&maxf);
+//#else
+	glGetIntegerv(GL_MAX_ELEMENTS_INDICES,&maxf);
+//#endif	//_WIN32
+#if MARCHING_CUBES_DEBUG
+	int maxv;
+	glGetIntegerv(GL_MAX_ELEMENTS_VERTICES,&maxv);
+	cout << "Max vertices is " << maxv << " max indices is " << maxf << endl;
+	cout << "Using OpenGL " << glGetString(GL_VERSION) << endl;
+#endif
+
+	for (unsigned int i = 0; i < mc->ff.elem(); ++i ) mc->ff[i] /= 3;
+
+	if ( maxf % 3 != 0 )
+	{
+		maxf = maxf - (maxf%3);
+	}
+
+	if ( tex_id != 0 ) {
+		// Normalize the coordinates to be on the interval 0,1
+		mc->pp.mult3(1.0f/(float) mc->_emdata->get_xsize(), 1.0f/(float)mc->_emdata->get_ysize(), 1.0f/(float)mc->_emdata->get_zsize());
+		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+		glDisableClientState(GL_NORMAL_ARRAY);
+		glTexCoordPointer(3,GL_FLOAT,0,mc->pp.get_data());
+	}
+	else {
+		glEnableClientState(GL_NORMAL_ARRAY);
+		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+		glNormalPointer(GL_FLOAT,0,mc->nn.get_data());
+	}
+
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glVertexPointer(3,GL_FLOAT,0,mc->pp.get_data());
+
+	mc->_isodl = glGenLists(1);
+
+#if MARCHING_CUBES_DEBUG
+	int time0 = clock();
+#endif
+	glNewList(mc->_isodl,GL_COMPILE);
+
+	if ( tex_id != 0 ) {
+		glEnable(GL_TEXTURE_3D);
+		glBindTexture(GL_TEXTURE_3D, tex_id);
+		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP);
+		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	}
+	// Drawing range elements based on the output of glGetIntegerv(GL_MAX_ELEMENTS_INDICES,&maxf);
+	// Saved about 60% of the time... drawRange should probably always be true
+	bool drawRange = true;
+	if ( drawRange == false ) {
+		glDrawElements(GL_TRIANGLES,mc->ff.elem(),GL_UNSIGNED_INT,mc->ff.get_data());
+	} else {
+		for(unsigned int i = 0; i < mc->ff.elem(); i+=maxf)
+		{
+			if ( (i+maxf) > mc->ff.elem())
+				glDrawElements(GL_TRIANGLES,mc->ff.elem()-i,GL_UNSIGNED_INT,&(mc->ff[i]));
+			else
+				glDrawElements(GL_TRIANGLES,maxf,GL_UNSIGNED_INT,&(mc->ff[i]));
+				// glDrawRangeElements is part of the extensions, we might want to experiment with its performance at some stage,
+				// so please leave this code here, commented out. This is an either or situation, so if glDrawRangeElements is used,
+				// glDrawElements above would have to be commented out.
+				// glDrawRangeElements(GL_TRIANGLES,0,0,maxf,GL_UNSIGNED_INT,&ff[i]);
+		}
+	}
+
+	if ( tex_id != 0 ) glDisable(GL_TEXTURE_3D);
+
+	glEndList();
+#if MARCHING_CUBES_DEBUG
+	int time1 = clock();
+	cout << "It took " << (time1-time0) << " " << (float)(time1-time0)/CLOCKS_PER_SEC << " to draw elements" << endl;
+#endif
+	return mc->_isodl;
+}
+
 
 #endif // EMAN2_USING_OPENGL

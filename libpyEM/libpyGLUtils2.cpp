@@ -36,9 +36,14 @@
 
 #include "glutil.h"
 #include "emdata.h"
+#include "marchingcubes.h"
 
 // Using =======================================================================
 using namespace boost::python;
+
+namespace {
+	BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_GLUtil_get_isosurface_dl_overloads_1_2, EMAN::GLUtil::get_isosurface_dl, 1, 2)
+}
 
 // Module ======================================================================
 BOOST_PYTHON_MODULE(libpyGLUtils2)
@@ -53,6 +58,7 @@ BOOST_PYTHON_MODULE(libpyGLUtils2)
 		.def("colored_rectangle", &EMAN::GLUtil::colored_rectangle )
 		.def("mx_bbox", &EMAN::GLUtil::mx_bbox )
 		.def("render_amp8", &EMAN::GLUtil::render_amp8)
+		.def("get_isosurface_dl", &EMAN::GLUtil::get_isosurface_dl, EMAN_GLUtil_get_isosurface_dl_overloads_1_2())
 		.staticmethod("gen_glu_mipmaps")
 		.staticmethod("gen_gl_texture")
 		.staticmethod("render_amp8_gl_texture")
@@ -60,6 +66,7 @@ BOOST_PYTHON_MODULE(libpyGLUtils2)
 		.staticmethod("colored_rectangle")
 		.staticmethod("mx_bbox")
 		.staticmethod("render_amp8")
+		.staticmethod("get_isosurface_dl")
 	);
 
 	delete EMAN_GLUtil_scope;

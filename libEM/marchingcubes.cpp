@@ -6,55 +6,37 @@
  * Author: Tao Ju, 5/16/2007 <taoju@cs.wustl.edu>, code ported by Grant Tang
  * code extensively modified and optimized by David Woolford
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
 
 #ifdef _WIN32
 	#include <windows.h>
 #endif	//_WIN32
-
-#ifdef EMAN2_USING_OPENGL
-
-// need GL_GLEXT_PROTOTYPES for glTexImage3D 
-#ifndef GL_GLEXT_PROTOTYPES
-#define GL_GLEXT_PROTOTYPES
-#endif
-
-#ifdef __APPLE__
-#include "OpenGL/gl.h"
-// #include "OpenGL/glu.h"
-#include "OpenGL/glext.h"
-#else // _WIN32, LINUX
-#include "GL/gl.h"
-// #include "GL/glu.h"
-#include "GL/glext.h"
-#endif
-#endif
 
 #include "marchingcubes.h"
 
@@ -132,7 +114,7 @@ static const int a2OddZOffset[8] =
 };
 
 //a2iEdgeConnection lists the index of the endpoint vertices for each of the 12 edges of the cube
-static const int a2iEdgeConnection[12][2] = 
+static const int a2iEdgeConnection[12][2] =
 {
 		{0,1}, {1,2}, {2,3}, {3,0},
 		{4,5}, {5,6}, {6,7}, {7,4},
@@ -160,7 +142,7 @@ MarchingCubes::MarchingCubes()
 {
 }
 
-MarchingCubes::MarchingCubes(EMData * em) 
+MarchingCubes::MarchingCubes(EMData * em)
 	: _isodl(0)
 {
 	set_data(em);
@@ -173,7 +155,7 @@ void MarchingCubes::clear_min_max_vals()
 		if ( (*it) != 0 ) delete *it;
 	}
 	minvals.clear();
-	
+
 	for (vector<EMData*>::iterator it = maxvals.begin(); it != maxvals.end(); ++it)
 	{
 		if ( (*it) != 0 ) delete *it;
@@ -183,11 +165,11 @@ void MarchingCubes::clear_min_max_vals()
 
 bool MarchingCubes::calculate_min_max_vals()
 {
-	
+
 	if (_emdata == NULL ) throw NullPointerException("Error, cannot generate search tree if the overriding EMData object is NULL");
-	
+
 	clear_min_max_vals();
-	
+
 	int nx = _emdata->get_xsize();
 	int ny = _emdata->get_ysize();
 	int nz = _emdata->get_zsize();
@@ -196,7 +178,7 @@ bool MarchingCubes::calculate_min_max_vals()
 	while ( nx > 1 || ny > 1 || nz > 1 )
 	{
 		int size = minvals.size();
-		
+
 		if ( size == 0 ){
 			Dict a;
 			// Setting search to 3 at the bottom level is most important.
@@ -216,7 +198,7 @@ bool MarchingCubes::calculate_min_max_vals()
 		cout << "dims are " << nx << " " << ny << " " << nz << endl;
 #endif
 	}
-	
+
 	drawing_level = -1;
 
 	return true;
@@ -226,10 +208,10 @@ MarchingCubes::~MarchingCubes() {
 	clear_min_max_vals();
 }
 
-Dict MarchingCubes::get_isosurface() 
+Dict MarchingCubes::get_isosurface()
 {
 	calculate_surface();
-	
+
 	Dict d;
 	d.put("points", (float*)pp.get_data());
 	for (unsigned int i = 0; i < ff.elem(); ++i ) ff[i] /= 3;
@@ -239,100 +221,6 @@ Dict MarchingCubes::get_isosurface()
 	return d;
 }
 
-#ifdef EMAN2_USING_OPENGL
-unsigned long MarchingCubes::get_isosurface_dl(unsigned int tex_id)
-{
-	if ( _isodl != 0 ) glDeleteLists(_isodl,1);
-	
-
-	calculate_surface();
-#if MARCHING_CUBES_DEBUG
-	cout << "There are " << ff.elem()/3 << " faces and " << pp.elem() << " points and " << nn.elem() << " normals to render in generate dl" << endl;
-#endif
-	int maxf;
-//#ifdef	_WIN32
-//	glGetIntegerv(GL_MAX_ELEMENTS_INDICES_WIN,&maxf);
-//#else
-	glGetIntegerv(GL_MAX_ELEMENTS_INDICES,&maxf);
-//#endif	//_WIN32
-#if MARCHING_CUBES_DEBUG
-	int maxv;
-	glGetIntegerv(GL_MAX_ELEMENTS_VERTICES,&maxv);
-	cout << "Max vertices is " << maxv << " max indices is " << maxf << endl;
-	cout << "Using OpenGL " << glGetString(GL_VERSION) << endl;
-#endif
-
-	for (unsigned int i = 0; i < ff.elem(); ++i ) ff[i] /= 3;
-	
-	if ( maxf % 3 != 0 )
-	{
-		maxf = maxf - (maxf%3);
-	}
-	
-	if ( tex_id != 0 ) {
-		// Normalize the coordinates to be on the interval 0,1
-		pp.mult3(1.0f/(float) _emdata->get_xsize(), 1.0f/(float)_emdata->get_ysize(), 1.0f/(float)_emdata->get_zsize());
-		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		glDisableClientState(GL_NORMAL_ARRAY);
-		glTexCoordPointer(3,GL_FLOAT,0,pp.get_data());
-	}
-	else {
-		glEnableClientState(GL_NORMAL_ARRAY);
-		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-		glNormalPointer(GL_FLOAT,0,nn.get_data());
-	}
-	
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glVertexPointer(3,GL_FLOAT,0,pp.get_data());
-	
-	_isodl = glGenLists(1);
-
-#if MARCHING_CUBES_DEBUG
-	int time0 = clock();
-#endif
-	glNewList(_isodl,GL_COMPILE);
-	
-	if ( tex_id != 0 ) {
-		glEnable(GL_TEXTURE_3D);
-		glBindTexture(GL_TEXTURE_3D, tex_id);
-		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP);
-		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-	}
-	// Drawing range elements based on the output of glGetIntegerv(GL_MAX_ELEMENTS_INDICES,&maxf);
-	// Saved about 60% of the time... drawRange should probably always be true
-	bool drawRange = true;
-	if ( drawRange == false ) {
-		glDrawElements(GL_TRIANGLES,ff.elem(),GL_UNSIGNED_INT,ff.get_data());
-	} else {
-		for(unsigned int i = 0; i < ff.elem(); i+=maxf)
-		{
-			if ( (i+maxf) > ff.elem())
-				glDrawElements(GL_TRIANGLES,ff.elem()-i,GL_UNSIGNED_INT,&ff[i]);
-			else
-				glDrawElements(GL_TRIANGLES,maxf,GL_UNSIGNED_INT,&ff[i]);
-				// glDrawRangeElements is part of the extensions, we might want to experiment with its performance at some stage, 
-				// so please leave this code here, commented out. This is an either or situation, so if glDrawRangeElements is used,
-				// glDrawElements above would have to be commented out.
-				// glDrawRangeElements(GL_TRIANGLES,0,0,maxf,GL_UNSIGNED_INT,&ff[i]);
-		}
-	}
-	
-	if ( tex_id != 0 ) glDisable(GL_TEXTURE_3D);
-
-	glEndList();
-#if MARCHING_CUBES_DEBUG
-	int time1 = clock();
-	cout << "It took " << (time1-time0) << " " << (float)(time1-time0)/CLOCKS_PER_SEC << " to draw elements" << endl;
-#endif
-	return _isodl;
-}
-
-#endif //EMAN2_USING_OPENGL
-
 void MarchingCubes::set_data(EMData* data)
 {
 	if ( data->get_zsize() == 1 ) throw ImageDimensionException("The z dimension of the image must be greater than 1");
@@ -341,7 +229,7 @@ void MarchingCubes::set_data(EMData* data)
 }
 
 void MarchingCubes::set_surface_value(const float value) {
-	
+
 	if(_surf_value == value) return;
 
 	_surf_value = value;
@@ -349,16 +237,16 @@ void MarchingCubes::set_surface_value(const float value) {
 }
 
 void MarchingCubes::calculate_surface() {
-	
+
 	if ( _emdata == 0 ) throw NullPointerException("Error, attempt to generate isosurface, but the emdata image object has not been set");
 	if ( minvals.size() == 0 || maxvals.size() == 0 ) throw NotExistingObjectException("Vector of EMData pointers", "Error, the min and max val search trees have not been created");
-	
+
 	point_map.clear();
 	pp.clear();
 	nn.clear();
 	ff.clear();
 
-#if MARCHING_CUBES_DEBUG	
+#if MARCHING_CUBES_DEBUG
 	int time0 = clock();
 #endif
 
@@ -374,14 +262,14 @@ void MarchingCubes::calculate_surface() {
 }
 
 void MarchingCubes::draw_cube(const int x, const int y, const int z, const int cur_level ) {
-	
+
 	if ( cur_level == drawing_level )
 	{
 		EMData* e;
 		if ( drawing_level == - 1 ) e = _emdata;
 		else e = minvals[drawing_level];
 		if ( x < (e->get_xsize()-1) && y < (e->get_ysize()-1) && z < (e->get_zsize()-1))
-			marching_cube(x,y,z, cur_level); 
+			marching_cube(x,y,z, cur_level);
 	}
 	else
 	{
@@ -398,7 +286,7 @@ void MarchingCubes::draw_cube(const int x, const int y, const int z, const int c
 				if ( yy >= ysize ) continue;
 				int zz = 2*z+a2fVertexOffset[i][2];
 				if ( zz >= zsize ) continue;
-				
+
 				float min = minvals[cur_level-1]->get_value_at(xx,yy,zz);
 				float max = maxvals[cur_level-1]->get_value_at(xx,yy,zz);
 				if ( min < _surf_value &&  max > _surf_value)
@@ -411,7 +299,7 @@ void MarchingCubes::draw_cube(const int x, const int y, const int z, const int c
 					draw_cube(2*x+a2fVertexOffset[i][0],2*y+a2fVertexOffset[i][1],2*z+a2fVertexOffset[i][2],cur_level-1);
 			}
 		}
-		
+
 		if ( x == (minvals[cur_level]->get_xsize()-1) ) {
 			if ( e->get_xsize() > 2*x ){
 				for(int i=0; i<4; ++i )	{
@@ -522,19 +410,19 @@ void MarchingCubes::marching_cube(int fX, int fY, int fZ, int cur_level)
 					fY + a2fVertexOffset[iVertex][1], fZ + a2fVertexOffset[iVertex][2]);
 		}
 	}
-	
+
 	//Find which vertices are inside of the surface and which are outside
 	iFlagIndex = 0;
 	for(iVertexTest = 0; iVertexTest < 8; iVertexTest++)
 	{
 		if (_surf_value >= 0 ){
-			if(afCubeValue[iVertexTest] <= _surf_value) 
+			if(afCubeValue[iVertexTest] <= _surf_value)
 				iFlagIndex |= 1<<iVertexTest;
 		}
 		else {
-			if(afCubeValue[iVertexTest] >= _surf_value) 
+			if(afCubeValue[iVertexTest] >= _surf_value)
 				iFlagIndex |= 1<<iVertexTest;
-		}	
+		}
 	}
 
 	//Find which edges are intersected by the surface
@@ -550,7 +438,7 @@ void MarchingCubes::marching_cube(int fX, int fY, int fZ, int cur_level)
 		//if there is an intersection on this edge
 		if(iEdgeFlags & (1<<iEdge))
 		{
-			fOffset = get_offset(afCubeValue[ a2iEdgeConnection[iEdge][0] ], 
+			fOffset = get_offset(afCubeValue[ a2iEdgeConnection[iEdge][0] ],
 								 afCubeValue[ a2iEdgeConnection[iEdge][1] ], _surf_value);
 
 			if ( cur_level == -1 ){
@@ -562,12 +450,12 @@ void MarchingCubes::marching_cube(int fX, int fY, int fZ, int cur_level)
 				asEdgeVertex[iEdge][1] = fyScale*(fY + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][1]  +  fOffset * a2fEdgeDirection[iEdge][1])) + 0.5f;
 				asEdgeVertex[iEdge][2] = fzScale*(fZ + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][2]  +  fOffset * a2fEdgeDirection[iEdge][2])) + 0.5f;
 			}
-			
+
 			pointIndex[iEdge] = get_edge_num(fX+edgeLookUp[iEdge][0], fY+edgeLookUp[iEdge][1], fZ+edgeLookUp[iEdge][2], edgeLookUp[iEdge][3]);
 		}
 	}
 
-	//Draw the triangles that were found.  There can be up to five per cube	
+	//Draw the triangles that were found.  There can be up to five per cube
 	for(iTriangle = 0; iTriangle < 5; iTriangle++)
 	{
 		if(a2iTriangleConnectionTable[iFlagIndex][3*iTriangle] < 0)
@@ -579,12 +467,12 @@ void MarchingCubes::marching_cube(int fX, int fY, int fZ, int cur_level)
 			iVertex = a2iTriangleConnectionTable[iFlagIndex][3*iTriangle+iCorner];
 			memcpy(&pts[iCorner][0],  &asEdgeVertex[iVertex][0], 3*sizeof(float));
 		}
-		
+
 		float v1[3] = {pts[1][0]-pts[0][0],pts[1][1]-pts[0][1],pts[1][2]-pts[0][2]};
 		float v2[3] = {pts[2][0]-pts[1][0],pts[2][1]-pts[1][1],pts[2][2]-pts[1][2]};
-		
+
 		float n[3] = { v1[1]*v2[2] - v1[2]*v2[1], v1[2]*v2[0] - v1[0]*v2[2], v1[0]*v2[1] - v1[1]*v2[0] };
-		
+
 		for(iCorner = 0; iCorner < 3; iCorner++)
 		{
 			// Without vertex normalization
@@ -623,33 +511,33 @@ void MarchingCubes::marching_cube(int fX, int fY, int fZ, int cur_level)
 
 int aiCubeEdgeFlags[256]=
 {
-        0x000, 0x109, 0x203, 0x30a, 0x406, 0x50f, 0x605, 0x70c, 0x80c, 0x905, 0xa0f, 0xb06, 0xc0a, 0xd03, 0xe09, 0xf00, 
-        0x190, 0x099, 0x393, 0x29a, 0x596, 0x49f, 0x795, 0x69c, 0x99c, 0x895, 0xb9f, 0xa96, 0xd9a, 0xc93, 0xf99, 0xe90, 
-        0x230, 0x339, 0x033, 0x13a, 0x636, 0x73f, 0x435, 0x53c, 0xa3c, 0xb35, 0x83f, 0x936, 0xe3a, 0xf33, 0xc39, 0xd30, 
-        0x3a0, 0x2a9, 0x1a3, 0x0aa, 0x7a6, 0x6af, 0x5a5, 0x4ac, 0xbac, 0xaa5, 0x9af, 0x8a6, 0xfaa, 0xea3, 0xda9, 0xca0, 
-        0x460, 0x569, 0x663, 0x76a, 0x066, 0x16f, 0x265, 0x36c, 0xc6c, 0xd65, 0xe6f, 0xf66, 0x86a, 0x963, 0xa69, 0xb60, 
-        0x5f0, 0x4f9, 0x7f3, 0x6fa, 0x1f6, 0x0ff, 0x3f5, 0x2fc, 0xdfc, 0xcf5, 0xfff, 0xef6, 0x9fa, 0x8f3, 0xbf9, 0xaf0, 
-        0x650, 0x759, 0x453, 0x55a, 0x256, 0x35f, 0x055, 0x15c, 0xe5c, 0xf55, 0xc5f, 0xd56, 0xa5a, 0xb53, 0x859, 0x950, 
-        0x7c0, 0x6c9, 0x5c3, 0x4ca, 0x3c6, 0x2cf, 0x1c5, 0x0cc, 0xfcc, 0xec5, 0xdcf, 0xcc6, 0xbca, 0xac3, 0x9c9, 0x8c0, 
-        0x8c0, 0x9c9, 0xac3, 0xbca, 0xcc6, 0xdcf, 0xec5, 0xfcc, 0x0cc, 0x1c5, 0x2cf, 0x3c6, 0x4ca, 0x5c3, 0x6c9, 0x7c0, 
-        0x950, 0x859, 0xb53, 0xa5a, 0xd56, 0xc5f, 0xf55, 0xe5c, 0x15c, 0x055, 0x35f, 0x256, 0x55a, 0x453, 0x759, 0x650, 
-        0xaf0, 0xbf9, 0x8f3, 0x9fa, 0xef6, 0xfff, 0xcf5, 0xdfc, 0x2fc, 0x3f5, 0x0ff, 0x1f6, 0x6fa, 0x7f3, 0x4f9, 0x5f0, 
-        0xb60, 0xa69, 0x963, 0x86a, 0xf66, 0xe6f, 0xd65, 0xc6c, 0x36c, 0x265, 0x16f, 0x066, 0x76a, 0x663, 0x569, 0x460, 
-        0xca0, 0xda9, 0xea3, 0xfaa, 0x8a6, 0x9af, 0xaa5, 0xbac, 0x4ac, 0x5a5, 0x6af, 0x7a6, 0x0aa, 0x1a3, 0x2a9, 0x3a0, 
-        0xd30, 0xc39, 0xf33, 0xe3a, 0x936, 0x83f, 0xb35, 0xa3c, 0x53c, 0x435, 0x73f, 0x636, 0x13a, 0x033, 0x339, 0x230, 
-        0xe90, 0xf99, 0xc93, 0xd9a, 0xa96, 0xb9f, 0x895, 0x99c, 0x69c, 0x795, 0x49f, 0x596, 0x29a, 0x393, 0x099, 0x190, 
+        0x000, 0x109, 0x203, 0x30a, 0x406, 0x50f, 0x605, 0x70c, 0x80c, 0x905, 0xa0f, 0xb06, 0xc0a, 0xd03, 0xe09, 0xf00,
+        0x190, 0x099, 0x393, 0x29a, 0x596, 0x49f, 0x795, 0x69c, 0x99c, 0x895, 0xb9f, 0xa96, 0xd9a, 0xc93, 0xf99, 0xe90,
+        0x230, 0x339, 0x033, 0x13a, 0x636, 0x73f, 0x435, 0x53c, 0xa3c, 0xb35, 0x83f, 0x936, 0xe3a, 0xf33, 0xc39, 0xd30,
+        0x3a0, 0x2a9, 0x1a3, 0x0aa, 0x7a6, 0x6af, 0x5a5, 0x4ac, 0xbac, 0xaa5, 0x9af, 0x8a6, 0xfaa, 0xea3, 0xda9, 0xca0,
+        0x460, 0x569, 0x663, 0x76a, 0x066, 0x16f, 0x265, 0x36c, 0xc6c, 0xd65, 0xe6f, 0xf66, 0x86a, 0x963, 0xa69, 0xb60,
+        0x5f0, 0x4f9, 0x7f3, 0x6fa, 0x1f6, 0x0ff, 0x3f5, 0x2fc, 0xdfc, 0xcf5, 0xfff, 0xef6, 0x9fa, 0x8f3, 0xbf9, 0xaf0,
+        0x650, 0x759, 0x453, 0x55a, 0x256, 0x35f, 0x055, 0x15c, 0xe5c, 0xf55, 0xc5f, 0xd56, 0xa5a, 0xb53, 0x859, 0x950,
+        0x7c0, 0x6c9, 0x5c3, 0x4ca, 0x3c6, 0x2cf, 0x1c5, 0x0cc, 0xfcc, 0xec5, 0xdcf, 0xcc6, 0xbca, 0xac3, 0x9c9, 0x8c0,
+        0x8c0, 0x9c9, 0xac3, 0xbca, 0xcc6, 0xdcf, 0xec5, 0xfcc, 0x0cc, 0x1c5, 0x2cf, 0x3c6, 0x4ca, 0x5c3, 0x6c9, 0x7c0,
+        0x950, 0x859, 0xb53, 0xa5a, 0xd56, 0xc5f, 0xf55, 0xe5c, 0x15c, 0x055, 0x35f, 0x256, 0x55a, 0x453, 0x759, 0x650,
+        0xaf0, 0xbf9, 0x8f3, 0x9fa, 0xef6, 0xfff, 0xcf5, 0xdfc, 0x2fc, 0x3f5, 0x0ff, 0x1f6, 0x6fa, 0x7f3, 0x4f9, 0x5f0,
+        0xb60, 0xa69, 0x963, 0x86a, 0xf66, 0xe6f, 0xd65, 0xc6c, 0x36c, 0x265, 0x16f, 0x066, 0x76a, 0x663, 0x569, 0x460,
+        0xca0, 0xda9, 0xea3, 0xfaa, 0x8a6, 0x9af, 0xaa5, 0xbac, 0x4ac, 0x5a5, 0x6af, 0x7a6, 0x0aa, 0x1a3, 0x2a9, 0x3a0,
+        0xd30, 0xc39, 0xf33, 0xe3a, 0x936, 0x83f, 0xb35, 0xa3c, 0x53c, 0x435, 0x73f, 0x636, 0x13a, 0x033, 0x339, 0x230,
+        0xe90, 0xf99, 0xc93, 0xd9a, 0xa96, 0xb9f, 0x895, 0x99c, 0x69c, 0x795, 0x49f, 0x596, 0x29a, 0x393, 0x099, 0x190,
         0xf00, 0xe09, 0xd03, 0xc0a, 0xb06, 0xa0f, 0x905, 0x80c, 0x70c, 0x605, 0x50f, 0x406, 0x30a, 0x203, 0x109, 0x000
 };
 
 //  For each of the possible vertex states listed in aiCubeEdgeFlags there is a specific triangulation
 //  of the edge intersection points.  a2iTriangleConnectionTable lists all of thminvals[cur_level]-> in the form of
 //  0-5 edge triples with the list terminated by the invalid value -1.
-//  For example: a2iTriangleConnectionTable[3] list the 2 triangles formed when corner[0] 
+//  For example: a2iTriangleConnectionTable[3] list the 2 triangles formed when corner[0]
 //  and corner[1] are inside of the surface, but the rest of the cube is not.
 //
 //  I found this table in an example program someone wrote long ago.  It was probably generated by hand
 
-int a2iTriangleConnectionTable[256][16] =  
+int a2iTriangleConnectionTable[256][16] =
 {
         {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
         {0, 8, 3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
@@ -923,7 +811,7 @@ int U3DWriter::write(const string& filename) {
 	ofstream of(filename.c_str(), ofstream::binary);
 	write(of);
 	of.close();
-	
+
 	return 1;
 }
 
@@ -942,31 +830,31 @@ ostream& U3DWriter::write_header(ostream& os)
 {
 	// checks
 	test_type_sizes();
-	
+
 	U32 block_type_file_header = 0x00443355; // This is the block type tag of a file header, as taken form the ECMA spec
 	write( os, block_type_file_header);
-// 	
+//
 	I16 major_version = -1; // Compliance has not been tested for this encoder, so we must specify a value less than 0
 	I16 minor_version =  0; // This is the version of this encoder, which we are calling '0'
 	write( os, major_version);
 	write( os, minor_version);
-	
+
 	U32 profile_identifier = 0x00000000; // Base profile - no optional features ares used
 	write( os, profile_identifier);
-	
+
 	U32 declaration_size = size_of_in_bytes(); // This will have to be addressed at a later point, this is the size if the declaration block in bytes
 	write( os, declaration_size);
-	
+
 	U64 file_size = size_of_in_bytes(); // This is the size of the file in bytes
 	write( os, file_size);
-	
+
 	U32 character_encoding = 106; // UTF-8 MIB from the IANA
 	write( os, character_encoding);
-	
+
 	F64 unit_scaling = 1.0; // This should eventually be the correct scaling of the objects
 	write( os, unit_scaling);
-	
-	
+
+
 	return os;
 }
 
@@ -1001,7 +889,7 @@ void U3DWriter::test_type_sizes()
 		cout << "Error, size of unsigned char is not  bytes, it's " << sizeof(U8)*4 << endl;
 		error = true;
 	}
-	
+
 	if (error) {
 		throw;
 	}
@@ -1014,15 +902,15 @@ ostream& U3DWriter::write_clod_mesh_generator_node(ostream& os)
 	*/
 	U32 block_type_clod_mesh_generator = 0xFFFFFF31; // This is the block type tag of the continuous level of detail mesh generator, as taken form the ECMA spec
 	write( os, block_type_clod_mesh_generator);
-	
+
 	string name("testmesh"); // The unique name, we get to make this up ourselves. It could be an empty string, we'd still have to call write_string(os,"")
 	write(os,name);
-	
+
 	U32 chain_index = 0x00000000; // the value of Chain Index shall be zero for this type - as in the SPEC
 	write( os, chain_index);
-	
+
 	/*
-	Max Mesh Description 
+	Max Mesh Description
 	*/
 	U32 mesh_attributes = 0x00000000; // Faces in the mesh have a normal index at each corner 0x00000001 is used to exlude normals POTENTIALLY USEFUL
 	write(os,mesh_attributes);
@@ -1040,7 +928,7 @@ ostream& U3DWriter::write_clod_mesh_generator_node(ostream& os)
 	write(os,texture_coord_count);
 	U32 shading_count = 1; // The number of shading descriptions used in the mesh. This must correspond with the shader list in the shading group (see directly below we are using only one shader
 	write(os,shading_count);
-	
+
 	/*
 	Shading  Description
 	*/
@@ -1052,7 +940,7 @@ ostream& U3DWriter::write_clod_mesh_generator_node(ostream& os)
 	write(os,texture_coord_dimensions);
 	U32 original_shading_id = 0; // Original shading index for this shader list. Informative parameter only. This is shader 0
 	write(os,original_shading_id);
-	
+
 	/*
 	CLOD Description - describes the range of resolutions available for the continuous level of detail mesh
 	If there were more than one level of detail than these two numbers would be different
@@ -1061,11 +949,11 @@ ostream& U3DWriter::write_clod_mesh_generator_node(ostream& os)
 	write(os,minimum_resolution);
 	U32 final_maximum_resolution = position_count; // the number of positions in the Max Mesh Description (by definition)
 	write(os,final_maximum_resolution);
-	
+
 	/*
 	Resource Description
 	*/
-	
+
 	/*
 	Quality Factors
 	for information only. Not used by the renderer. Helpful for conveying information to the user
@@ -1076,10 +964,10 @@ ostream& U3DWriter::write_clod_mesh_generator_node(ostream& os)
 	write(os,normal_quality_factor);
 	U32 texture_coord_quality_factor = 0x00000000; // texture coordinate quality factor. Descriptive information only
 	write(os,texture_coord_quality_factor);
-	
+
 	/*
 	Inverse Quantization
-	used to reconstruct floating point values that have been quantized. 
+	used to reconstruct floating point values that have been quantized.
 	*/
 	F32 postion_inverse_quant = 1.0; // inverse quantization factor used in the reconstruction of the position vectors
 	write(os,postion_inverse_quant);
@@ -1091,28 +979,28 @@ ostream& U3DWriter::write_clod_mesh_generator_node(ostream& os)
 	write(os,diffuse_color_inverse_quant);
 	F32 specular_color_inverse_quant = 1.0; // inverse quantization factor used in the reconstruction of the specular colors
 	write(os,specular_color_inverse_quant);
-	
+
 	/*
 	Resource Parameters
 	parameters that help to define the conversion from the Author Mesh format to the Render Mesh format
 	*/
-	
+
 	F32 normal_crease_parameter = 1.0; // A dot product value in the range -1 to 1, used to decide whether or not normals at the same position will be merged. 1.0 means never, -1.0 means always. 0 means the two normals must be separated by an angle no greater than 90 degrees to be merged. Think in angles.
 	write(os,normal_crease_parameter);
 	F32 normal_update_parameter = 0.0; // A strange a parameter that I couldn't make sense of - I think it means it will change the actual file itself if it encounters what it deems 'normal errors'
 	write(os,normal_update_parameter);
 	F32 normal_tolerance_parameter = 0.0; // Normals which are closer together than this value are considered equivalent in the Render Mesh. This is useful for compression
 	write(os,normal_tolerance_parameter);
-	
+
 	/*
 	Skeleton description
 	used in bones-based animation by the Animation Modifier
 	*/
 	U32 bone_count = 0x00000000; // The number of bones associated with this mesh. We will always have 0, but this could change (unlikely).
 	write(os,bone_count);
-	
+
 	// WARNING - if bone_count is ever greater than one, then more writing would have to occur here
-	
+
 	//// C.L.O.D. BASE MESH CONTINUATION BLOCK
 	/*
 	Base mesh is basically the minimum LOD mesh - it must exist
@@ -1120,12 +1008,12 @@ ostream& U3DWriter::write_clod_mesh_generator_node(ostream& os)
 	{
 	U32 block_type_clod_base_mesh_continuation = 0xFFFFFF3B; // This is the block type tag of the CLOD Base Mesh Continuation, as taken form the ECMA spec
 	write( os, block_type_clod_base_mesh_continuation);
-	
+
 	write(os,name); // We use the same name as above
-	
+
 	U32 chain_index = 0x00000000; // the value of Chain Index shall be zero for this type - as in the SPEC
 	write( os, chain_index);
-	
+
 	/*
 	Base Mesh Description
 	*/
@@ -1141,64 +1029,64 @@ ostream& U3DWriter::write_clod_mesh_generator_node(ostream& os)
 	write( os, base_specular_color_count);
 	U32 base_texture_coord_count = 0x00000000; // The number of texture coordinates used by the base mesh in texture coordinate array TO FILL IN LATER
 	write( os, base_texture_coord_count);
-	
+
 	/*
 	Base mesh data
 	*/
-	
+
 	// Write position data
 	F32* data = pp.get_data();
 	for(unsigned int i = 0; i < pp.elem(); ++i) {
 		write(os,data[i]);
 	}
-	
+
 	// Write normal data
 	data = nn.get_data();
 	for(unsigned int i = 0; i < nn.elem(); ++i) {
 		write(os,data[i]);
 	}
-	
+
 	// Write Diffuse color, this is in rgba format
 	F32 diffuse_rgba[4] = {1.0,0.0,0.0,1.0};
 	for (unsigned int i = 0; i < 4; ++i) {
 		write(os,diffuse_rgba[i]);
 	}
-	
+
 	// Write Specular color, this is in rgba format
 	F32 specular_rgba[4] = {1.0,0.0,0.0,1.0};
 	for (unsigned int i = 0; i < 4; ++i) {
 		write(os,specular_rgba[i]);
 	}
-	
+
 	// THERE ARE NO TEXTURE COORDINATES, BUT IF THERE WERE WE WOULD HAVE TO WRITE THEM HERE
 	// i.e. for i in range(0,base_texture_coord_count) write texture coords
-	
+
 	// Write normal data
 	U32* faces = ff.get_data();
 	for(unsigned int i = 0; i < pp.elem(); i = i+3) {
 		U32 shading_id = 0; // We only have one shader defined. This could could changed in future
 		write(os,shading_id);
-		
+
 		// write base corner info - there are always three corners
 		for (unsigned int j =0; j < 3; ++j){
 			U32 position_index = faces[i+j];
 			write(os,position_index); // Write the position index
-			
+
 			U32 normal_index = position_index;
 			write(os,normal_index); // Write the normal index, it is exactly the same as the normal index!
-			
+
 			U32 base_diffuse_color_index = 0; // only using one diffuse color
 			write(os,base_diffuse_color_index);
-			
-			U32 base_specular_color_index = 0; // only using one specular color 
+
+			U32 base_specular_color_index = 0; // only using one specular color
 			write(os,base_specular_color_index);
-			
+
 			// Would need to write texture data here if we were doing that
-			
+
 		}
-		
+
 	}
-	
+
 	}
 	return os;
 }
@@ -1209,15 +1097,15 @@ ostream& U3DWriter::write(ostream& os, const string& s )
 	// WARNING - I AM NOT SURE IF THIS APPROACH WILL PRESENT UTF8 PROBLEMS.
 	// See character_encoding in the file header writing module above
 	test_type_sizes();
-	
-	short unsigned int size = s.size(); // To write a string you must first place its 
+
+	short unsigned int size = s.size(); // To write a string you must first place its
 	write(os,size);
-	
+
 	// Write the characters
 	for(unsigned int i = 0; i<size; ++i) {
 		write(os,s[i]);
 	}
-		
+
 	return os;
 }
 /*

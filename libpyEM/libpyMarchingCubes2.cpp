@@ -73,11 +73,6 @@ struct EMAN_Isosurface_Wrapper: EMAN::Isosurface, wrapper<EMAN::Isosurface>
     EMAN::Dict get_isosurface() {
        return this->get_override("get_isosurface")();
     }
-#ifdef EMAN2_USING_OPENGL
-	unsigned long get_isosurface_dl(unsigned int) {
-		return this->get_override("get_isosurface_dl")();
-	}
-#endif
 
 	int get_sampling_range() {
 		return this->get_override("get_sampling_range")();
@@ -97,9 +92,6 @@ BOOST_PYTHON_MODULE(libpyMarchingCubes2)
 		.def("set_sampling", pure_virtual(&EMAN::Isosurface::set_sampling))
 		.def("get_sampling", pure_virtual(&EMAN::Isosurface::get_sampling))
 		.def("get_isosurface", pure_virtual(&EMAN::Isosurface::get_isosurface))
-#ifdef EMAN2_USING_OPENGL
-		.def("get_isosurface_dl", pure_virtual(&EMAN::Isosurface::get_isosurface_dl))
-#endif //EMAN2_USING_OPENGL
 		.def("get_sampling_range", pure_virtual(&EMAN::Isosurface::get_sampling_range))
 		;
 

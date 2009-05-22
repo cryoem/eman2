@@ -84,6 +84,10 @@ ADD_PYSTE_LIB(pyPolarData2)
 ADD_PYSTE_LIB(pyAnalyzer2)
 ADD_PYSTE_LIB(pyMarchingCubes2)
 
+IF(ENABLE_OPENGL)
+	TARGET_LINK_LIBRARIES(pyGLUtils2 GLEM2)
+ENDIF(ENABLE_OPENGL)
+
 INSTALL_FILES(/lib "^.+\\.py$")
 INSTALL_FILES(/include "^.+\\.h$")
 #INSTALL_FILES(/lib FILES gui/emimage.py gui/imagecontrol.py gui/emimagecanvas.py)
