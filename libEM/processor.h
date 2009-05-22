@@ -1498,11 +1498,11 @@ The basic design of EMAN Processors: <br>\
 			}
 		}
 	};
-	
+
 	/** A thresholding processor for Fourier images based on the amplitude component.
 	 * Useful in tomography when you want to count large complex pixels. Not the fastest approach,
 	 * if you were going for efficiency it would probably be better just to iterate through the pixels
-	 * and count. But if you do it this way you can just get the mean of the resulting image (and multiplying by 2). So it's 
+	 * and count. But if you do it this way you can just get the mean of the resulting image (and multiplying by 2). So it's
 	 * basically easier, but lazy.
 	 * Originally added for use by e2tomohunter.py
 	 * @author David Woolford
@@ -1519,15 +1519,15 @@ The basic design of EMAN Processors: <br>\
 			{
 				return new BinarizeFourierProcessor();
 			}
-			
-			/** 
+
+			/**
 			 * @exception ImageFormatException if the input image is not complex
 			 * @exception InvalidParameterException if the threshold is less than 0
 			 * Note result is always in real-imaginary format
 			 * Note input can be real-imaginary or amplitude-phase
 			 */
 			virtual void process_inplace(EMData* image);
-			
+
 			virtual TypeDict get_param_types() const
 			{
 				TypeDict d;
@@ -5119,6 +5119,37 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			return d;
 		}
 	};
+
+	/**Replace a source image as a strict Gaussian
+		 *@param sigma sigma value for this Gaussian blob
+		 */
+		class TestImageFourierNoiseGaussian : public TestImageProcessor
+		{
+		public:
+			virtual void process_inplace(EMData * image);
+
+			virtual string get_name() const
+			{
+				return "testimage.noise.fourier.gaussian";
+			}
+
+			virtual string get_desc() const
+			{
+				return "Replace a source image as a strict Gaussian ";
+			}
+
+			static Processor * NEW()
+			{
+				return new TestImagePureGaussian();
+			}
+
+			virtual TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("sigma", EMObject::FLOAT, "sigma value");
+				return d;
+			}
+		};
 
 
 

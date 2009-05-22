@@ -6003,6 +6003,17 @@ void TestImageProcessor::preprocess(EMData * image)
 }
 
 
+void TestImageFourierNoiseGaussian::process_inplace(EMData* image)
+{
+	if (!image->is_complex()) {
+		image->do_fft_inplace();
+	}else {
+		image->ap2ri(); // just be sure of it
+	}
+
+	float sigma = params.set_default("sigma",1.0f);
+}
+
 void TestImageLineWave::process_inplace(EMData * image)
 {
 	preprocess(image);
