@@ -530,9 +530,7 @@ def check(options,verbose=False):
   		elif len(options.parallel.split(":")) != 3:
   			print "dc parallel options must be formatted like 'dc:localhost:9990'"
   			error = True
-  		
-  	return error_message
-	
+ 
 	if (verbose):
 		if (error):
 			s = "FAILED"

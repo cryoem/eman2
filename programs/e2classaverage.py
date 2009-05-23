@@ -240,6 +240,7 @@ class EMGenClassAverages:
 			self.__init_memory(self.options)
 			for class_idx in xrange(self.class_min,self.class_max+1):
 				ptcl_indices,dcol_idx_cache =  self.__get_class_data(class_idx, self.options)
+				if len(ptcl_indices) == 0: continue
 				if self.options.idxcache:
 					self.class_db[str(class_idx)] = ptcl_indices
 
@@ -308,6 +309,7 @@ class EMGenClassAverages:
 			self.__init_memory(self.options)
 			for class_idx in xrange(self.class_min,self.class_max+1):
 				ptcl_indices,dcol_idx_cache =  self.__get_class_data(class_idx, self.options)
+				if len(ptcl_indices) == 0: continue
 				if self.options.idxcache:
 					self.class_db[str(class_idx)] = ptcl_indices
 
