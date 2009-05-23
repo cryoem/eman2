@@ -57,11 +57,9 @@ using namespace EMAN;
 static const int ATTR_NAME_LEN = 128;
 
 HdfIO2::HdfIO2(const string & hdf_filename, IOMode rw)
-:	filename(hdf_filename), rw_mode(rw)
+:	filename(hdf_filename), rw_mode(rw), 
+	initialized(false), file(-1), group(-1)
 {
-	initialized = false;
-	file=-1;
-	group=-1;
 	accprop=H5Pcreate(H5P_FILE_ACCESS);
 
 	//STDIO file driver has 2G size limit on 32 bit Linux system

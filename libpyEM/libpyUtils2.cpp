@@ -43,9 +43,6 @@
 #include <emdata.h>
 #include <emutil.h>
 #include <sparx/lapackblas.h>
-#ifdef EMAN2_USING_FTGL
-#include <emftgl.h>
-#endif
 #include <imageio.h>
 #include <testutil.h>
 #include <xydata.h>
@@ -870,33 +867,5 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .staticmethod("check_image")
     ;
     ;
-#ifdef EMAN2_USING_FTGL
-	scope* EMAN_FTGL_scope = new scope(
-	class_<EMAN::EMFTGL>("EMFTGL", init<  >())
-	.def("render_string", &EMAN::EMFTGL::render_string)
-	.def("bounding_box", &EMAN::EMFTGL::bounding_box)
-	.def("set_font_file_name",&EMAN::EMFTGL::set_font_file_name)
-	.def("get_font_file_name",&EMAN::EMFTGL::get_font_file_name)
-	.def("set_face_size",&EMAN::EMFTGL::set_face_size)
-	.def("get_face_size",&EMAN::EMFTGL::get_face_size)
-	.def("set_depth",&EMAN::EMFTGL::set_depth)
-	.def("get_depth",&EMAN::EMFTGL::get_depth)
-	.def("set_using_display_lists",&EMAN::EMFTGL::set_using_display_lists)
-	.def("get_using_display_lists",&EMAN::EMFTGL::get_using_display_lists)
-	.def("set_font_mode",&EMAN::EMFTGL::set_font_mode)
-	.def("get_font_mode",&EMAN::EMFTGL::get_font_mode)
-
-	);
-	delete EMAN_FTGL_scope;
-
-	enum_< EMAN::EMFTGL::FontMode >("FTGLFontMode")
-		.value("EXTRUDE", EMAN::EMFTGL::EXTRUDE)
-		.value("TEXTURE", EMAN::EMFTGL::TEXTURE)
-		.value("PIXMAP", EMAN::EMFTGL::PIXMAP)
-		.value("BITMAP", EMAN::EMFTGL::BITMAP)
-		.value("OUTLINE", EMAN::EMFTGL::OUTLINE)
-		.value("POLYGON", EMAN::EMFTGL::POLYGON)
-	;
-#endif
 }
 
