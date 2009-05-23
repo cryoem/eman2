@@ -6007,18 +6007,22 @@ void TestImageProcessor::preprocess(EMData * image)
 void TestImageFourierNoiseGaussian::process_inplace(EMData* image)
 {
 	if (!image->is_complex()) {
-		int new_nx = image->get_xsize()+2;
-		new_nx -= new_nx %2;
-		image->set_size(new_nx,image->get_ysize(),image->get_zsize());
+		int nx = image->get_xsize();
+		int offset = 2 - nx%2;
+
+		image->set_size(nx+offset,image->get_ysize(),image->get_zsize());
 		image->set_complex(true);
-		image->to_zero(); // only for debug
+		if (1 == offset) image->set_fftodd(true);
+		else image->set_fftodd(false);
+		image->set_fftpad(true);
 	}
-	image->ri2ap(); // just be sure of it
+	image->ri2ap();
 
 	float sigma = params.set_default("sigma",.25f);
 
 	float * d = image->get_data();
 	int nx = image->get_xsize();
+	int ny = image->get_ysize();
 	int nxy = image->get_ysize()*nx;
 	int nzon2 = image->get_zsize()/2;
 	int nyon2 = image->get_ysize()/2;
@@ -6043,6 +6047,48 @@ void TestImageFourierNoiseGaussian::process_inplace(EMData* image)
 	}
 
 	image->ap2ri();
+	if (image->get_ndim() == 2) {
+		bool yodd = image->get_ysize() % 2 == 1;
+
+		int yit = image->get_ysize()/2-1;
+		int offset = 1;
+		if (yodd) {
+			offset = 0;
+		}
+		for (int y = 0; y < yit; ++y) {
+			int bot_idx = (y+offset)*nx;
+			int top_idx = (ny-1-y)*nx;
+			float r1 = d[bot_idx];
+			float i1 = d[bot_idx+1];
+			float r2 = d[top_idx];
+			float i2 = d[top_idx+1];
+			float r = (r1 + r2)/2.0;
+			float i = (i1 + i2)/2.0;
+			d[bot_idx] = r;
+			d[top_idx] = r;
+			d[bot_idx+1] = i;
+			d[top_idx+1] = -i;
+
+			bot_idx = (y+offset)*nx+nx-2;
+			top_idx = (ny-1-y)*nx+nx-2;
+			r1 = d[bot_idx];
+			i1 = d[bot_idx+1];
+			r2 = d[top_idx];
+			i2 = d[top_idx+1];
+			r = (r1 + r2)/2.0;
+			i = (i1 + i2)/2.0;
+			d[bot_idx] = r;
+			d[top_idx] = r;
+			d[bot_idx+1] = i;
+			d[top_idx+1] = -i;
+		}
+
+		d[1] = 0; // 0 phase for this componenet
+		d[nx-1] = 0; // 0 phase for this component
+		d[ny/2*nx+nx-1] = 0;// 0 phase for this component
+		d[ny/2*nx+1] = 0;// 0 phase for this component
+	}
+
 	image->process_inplace("xform.fourierorigin.tocorner");
 	image->do_ift_inplace();
 	image->depad();
