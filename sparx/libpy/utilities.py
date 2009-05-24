@@ -1245,6 +1245,13 @@ def model_blank(nx, ny=1, nz=1, bckg = 0.0):
 	if( bckg != 0.0):  e+=bckg
 	return e
 
+def set_seed(sde):
+	from random import seed
+	seed(int(sde))
+	e = EMData()
+	e.set_size(1,1,1)
+	e.process_inplace("testimage.noise.gauss", {"sigma":1.0, "seed":int(sde)})
+	
 '''
 def model_electron_density(pdb_filename, pixel_size=1, d_min=2.8, buffer_size=3):
 	"""
