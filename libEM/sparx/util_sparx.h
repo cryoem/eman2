@@ -457,8 +457,8 @@ class FakeKaiserBessel : public KaiserBessel {
         static vector<double> cml_line_in3d(vector<float> Ori, vector<int> seq, int nprj, int nlines);
         static vector<double> cml_spin_psi(const vector<EMData*>& data, vector<int> com, vector<float> weights, int iprj, vector<int> iw, int n_psi, int d_psi, int n_prj); 
         static double cml_disc(const vector<EMData*>& data, vector<int> com, vector<int> seq, vector<float> weights, int n_lines);
-static void set_line(EMData* img, int posline, EMData* line);
-
+        static void set_line(EMData* img, int posline, EMData* line, int offset, int length);
+        static void cml_prepare_line(EMData* sino, EMData* line, int ilf, int ihf, int pos_line, int nblines);
 	/* Decimates the image with respect to the image center.
 	 * (i.e) the center of the original image is kept the same
 	 * and then the initial start pixel is calculated with respect to the

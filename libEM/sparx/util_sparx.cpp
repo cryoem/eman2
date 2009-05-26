@@ -3748,7 +3748,7 @@ void Util::sub_fav(EMData* avep, EMData* datp, float tot, int mirror, vector<int
 #define deg_rad  QUADPI/180.0
 #define rad_deg  180.0/QUADPI
 
-// FIXME - this function is crap
+// this function is crap
 vector<float> Util::cml_line_in3d_full(const vector<float>& Ori){
     int nprj = Ori.size() / 4;
     int nlines = (nprj-1)*nprj/2;
@@ -3795,6 +3795,7 @@ vector<float> Util::cml_line_in3d_full(const vector<float>& Ori){
     return cml;
 }
 
+// this function is not used
 vector<double> Util::cml_line_in3d_iagl(const vector<float>& Ori, float phi, float theta, int iprj){
     int nprj = Ori.size() / 4;
     int nlines = (nprj-1)*nprj/2;
@@ -3977,6 +3978,46 @@ vector<double> Util::cml_weights(const vector<float>& cml){
 /****************************************************
  * New code for common-lines
  ****************************************************/
+
+/*  This function drop a line (line) to an 2D image (img).
+ *  The position of the line to the image is defined by (postline).
+ *  The part of the line paste is defined by (offset), the begin position
+ *  and (length) the size.
+ */ 
+void Util::set_line(EMData* img, int posline, EMData* line, int offset, int length)
+{
+    	int i;
+	int nx=img->get_xsize();
+	float *img_ptr  = img->get_data();
+	float *line_ptr = line->get_data();	
+	for (i=0;i<length;i++) img_ptr[nx*posline + i] = line_ptr[offset + i];
+	img->update();
+}
+
+/* This function prepare the line from sinogram by cutting off some frequencies,
+ * and creating the mirror part (complexe conjugate of the first part). Then
+ * both lines (mirror and not) are drop to the sinogram.
+ * line is in Fourrier space, ilf low frequency, ihf high frequency, nblines 
+ * number of lines of the half sinogram (the non miror part), sino the sinogram,
+ * pos_line the position of the line in the sino.
+ */
+void Util::cml_prepare_line(EMData* sino, EMData* line, int ilf, int ihf, int pos_line, int nblines){
+    int j;
+    int nx = sino->get_xsize();
+    int i = nx * pos_line;
+    float r1, r2;
+    float *line_ptr = line->get_data();
+    float *sino_ptr = sino->get_data();
+    for (j=ilf;j<=ihf; j += 2) {
+	r1 = line_ptr[j];
+	r2 = line_ptr[j + 1];
+	sino_ptr[i + j - ilf] = r1;
+	sino_ptr[i + j - ilf + 1] = r2;
+	sino_ptr[i + nx * nblines + j - ilf] = r1;
+	sino_ptr[i + nx * nblines + j - ilf + 1] = -r2;
+    }
+    sino->update();
+}
 
 // 2009-03-25 15:35:05 JB. This function prepare rotation matrix for common-lines
 vector<double> Util::cml_init_rot(vector<float> Ori){
@@ -18832,22 +18873,6 @@ EMData* Util::get_slice(EMData *vol, int dim, int index) {
 	return slice;
 }
 
-/*  This function drop a line (line) to an 2D image (img).
- *  The position of the line to the image is defined by (postline).
- *  The part of the line paste is defined by (offset), the begin position
- *  and (length) the size.
- */ 
-void Util::set_line(EMData* img, int posline, EMData* line) //, int posline, EMData* line, int offset, int length)
-{
-    /*
-	int i;
-	int nx=img->get_xsize();
-	float *img_ptr  = img->get_data();
-	float *line_ptr = line->get_data();
-	for (i=0;i<length;i++) img_ptr[nx*posline + i] = line_ptr[offset + i];
-    */
-	img->update();
-}
 
 
 

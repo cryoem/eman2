@@ -556,7 +556,9 @@ def cml_open_proj(stack, ir, ou, lf, hf, dpsi = 1):
 			'''
 			# fft
 			fftip(line)
-			# filter (cut part of coef)
+			# filter (cut part of coef) and create mirror line
+			Util.cml_prepare_line(prj, line, ilf, ihf, li, nye)
+			'''
 			for j in xrange(ilf, ihf+1, 2):
 				r1 = line.get_value_at(j)
 				r2 = line.get_value_at(j+1)
@@ -564,7 +566,7 @@ def cml_open_proj(stack, ir, ou, lf, hf, dpsi = 1):
 				prj.set_value_at(j-ilf+1, li, r2)
 				prj.set_value_at(j-ilf, li+nye, r1)
 				prj.set_value_at(j-ilf+1, li+nye, -r2)
-
+			'''
 		
 		#prj.write_image('proj_sino.hdf', i)
 
@@ -611,8 +613,8 @@ def cml_sinogram(image2D, diameter, d_psi = 1):
 		nuynew = -sin(dangle * j)
 		line   = fft(volft.extractline(kb, nuxnew, nuynew))
 		Util.cyclicshift(line, {"dx":M, "dy":0, "dz":0})
-		for i in xrange(diameter):
-			e.set_value_at(i, j, line.get_value_at(i + offset))
+		Util.set_line(e, j, line, offset, diameter)
+
 	return e 
 
 # write the head of the logfile
@@ -711,15 +713,18 @@ def cml_find_structure(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_w
 						cml = Util.cml_line_in3d(Ori, g_seq, g_n_prj, g_n_lines)
 						weights = Util.cml_weights(cml)
 						# TODO optimize that
-						wm = max(weights)
-						for i in xrange(g_n_lines): weights[i]  = wm - weights[i]
+						mw  = max(weights)
+						#mw  = sum(weights)
+						#mw /= float(g_n_lines)
+						#mw *= 2.0
+						for i in xrange(g_n_lines): weights[i]  = mw - weights[i]
 						sw = sum(weights)
 						if sw == 0:
 							weights = [6.28 / float(g_n_lines)] * g_n_lines
 						else:
 							for i in xrange(g_n_lines):
 								weights[i] /= sw
-								#weights[i] *= weights[i]
+								weights[i] *= weights[i]
 					else:   weights = [1.0] * g_n_lines
 
 					# spin all psi
