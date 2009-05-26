@@ -12370,21 +12370,31 @@ def plot_projs_distrib(stack, outplot):
 # 2008-12-08 12:46:46 JB
 # Wrap for the HAC part of py_cluster in the statistics.py file
 def HAC_clustering(stack, dendoname, maskname, kind_link, kind_dist, flag_diss):
-	from statistics import ccc, py_cluster_HierarchicalClustering
-	from copy       import deepcopy
-	from utilities  import get_im
+	from statistics   import ccc, py_cluster_HierarchicalClustering
+	from copy         import deepcopy
+	from utilities    import get_im, get_params2D, get_params3D
+	from fundamentals import rot_shift2D, rot_shift3D
 
 	N    = EMUtil.get_image_count(stack)
 	if maskname != None: mask = get_im(maskname)
 	else:                mask = None
 
-	IM   = []
-	im   = EMData() 
+	IM = EMData.read_images(stack)
+	ny = IM[0].get_ysize()
+	nz = IM[0].get_zsize()
 	for n in xrange(N):
-	    im.read_image(stack, n)
-	    if mask != None: Util.mul_img(im, mask)
-	    im.set_attr('ID_hclus', n)
-	    IM.append(im.copy())
+		# 3D object
+		if nz > 1:
+			phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(IM[n])
+			IM[n]  = rot_shift3D(IM[n], phi, theta, psi, s3x, s3y, s3z, scale)
+			if mirror: IM[n].process_inplace('mirror', {'axis':'x'})
+		# 2D object
+		elif ny > 1:
+			alpha, sx, sy, mirror, scale = get_params2D(IM[n])
+			IM[n] = rot_shift2D(IM[n], alpha, sx, sy, mirror, scale)
+
+		if mask != None: Util.mul_img(IM[n], mask)
+		IM[n].set_attr('ID_hclus', n)
 
 	if kind_dist   == 'SqEuc':
 		if flag_diss: cl = py_cluster_HierarchicalClustering(IM, lambda x,y: -x.cmp("SqEuclidean", y), linkage = kind_link)
@@ -12424,7 +12434,9 @@ def HAC_clustering(stack, dendoname, maskname, kind_link, kind_dist, flag_diss):
 # 2008-12-08 15:20:24 JB
 # Compute the averages from the dendogram given by the function HAC_clustering
 def HAC_averages(stack, dendoname, avename, K):
-	from utilities import model_blank
+	from utilities    import get_im, get_params2D, get_params3D
+	from fundamentals import rot_shift2D, rot_shift3D
+	from utilities    import model_blank
 	import sys
 	
 	N    = EMUtil.get_image_count(stack)
@@ -12443,11 +12455,22 @@ def HAC_averages(stack, dendoname, avename, K):
 		print 'Dendogram not contain the draw for K=%d' % K
 		sys.exit()
 
+	IM = EMData.read_images(stack)
+	nx = IM[0].get_xsize()
+	ny = IM[0].get_ysize()
+	nz = IM[0].get_zsize()
+	for n in xrange(N):
+		# 3D object
+		if nz > 1:
+			phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(IM[n])
+			IM[n]  = rot_shift3D(IM[n], phi, theta, psi, s3x, s3y, s3z, scale)
+			if mirror: IM[n].process_inplace('mirror', {'axis':'x'})
+		# 2D object
+		elif ny > 1:
+			alpha, sx, sy, mirror, scale = get_params2D(IM[n])
+			IM[n] = rot_shift2D(IM[n], alpha, sx, sy, mirror, scale)
+
 	part = Dendo[K]
-	im   = EMData()
-	im.read_image(stack, 0, True)
-	nx   = im.get_xsize()
-	ny   = im.get_ysize()
 	imbk = model_blank(nx, ny)
 	AVE  = []
 	ct   = 0
@@ -12455,15 +12478,13 @@ def HAC_averages(stack, dendoname, avename, K):
 		AVE.append(imbk)
 		nobj = len(part[k])
 		if nobj > 1:
-			for ID in part[k]:
-				im.read_image(stack, ID)
-				Util.add_img(AVE[k], im)
+			for id in part[k]: Util.add_img(AVE[k], IM[id])
 			Util.mul_scalar(AVE[k], 1 / float(len(part[k])))
 			AVE[k].set_attr('nobjects', len(part[k]))
 			AVE[k].set_attr('members',  part[k])
 			AVE[k].write_image(avename, k)
 		else:
-			im.read_image(stack, part[k][0])
+			im = IM[part[k][0]].copy()
 			im.set_attr('nobjects', 1)
 			im.set_attr('members', part[k][0])
 			im.write_image(avename, k)
