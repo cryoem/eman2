@@ -102,6 +102,22 @@ def rundcclient(host,port,verbose):
 def killdcserver(server,port,verbose):
 	EMDCsendonecom(server,port,"QUIT",None)
 
+
+# We import Qt even if we don't need it
+try:
+	from PyQt4 import QtCore, QtGui
+	from PyQt4.QtCore import Qt
+except:
+	class dummy:
+		"A dummy class for use when Qt not installed"
+		def __init__(self):
+			print "ERROR: Qt4 could not be imported, check your PyQt installation"
+
+	QtGui=dummy()
+	QtGui.QWidget=dummy
+	QtCore=dummy()
+	QtCore.QAbstractTableModel=dummy
+	
 def runservmon():
 	import EMAN2db
 
@@ -111,29 +127,24 @@ def runservmon():
 	completedata=TaskData(queue.complete)
 
 	app = QtGui.QApplication([])
+
+	# Should probably make a class for this, but we'll just make do with this for now
 	window = QtGui.QMainWindow()
 	
-#	window.
+	vbl=QtGui.QVboxLayout()
+	actview=QtGui.TableView()
+	actview.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
+	vbl.addWidget(actview)
+	
+	doneview=QtGui.TableView()
+	
+	
 	
 	ui.tableView.setModel(data)
 
 	window.show()
 	app.exec_()
-
-# We import Qt even if we don't need it
-try:
-	from PyQt4 import QtCore, QtGui
-	from PyQt4.QtCore import Qt
-except:
-	class dummy:
-		pass
-	class QWidget:
-		"A dummy class for use when Qt not installed"
-		def __init__(self,parent):
-			print "Qt4 is required and cannot be loaded"
-
-	QtGui=dummy()
-	QtGui.QWidget=QWidget
+	
 
 class TaskData(QtCore.QAbstractTableModel):
 	def __init__(self,target):
