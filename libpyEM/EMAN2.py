@@ -924,8 +924,16 @@ def base_name( file_name,bdb_keep_dir=False ):
 		if bdb_keep_dir: dirs = vals[0].split("/")
 		if len(vals) == 1: return file_name # this is as simple as it gets
 		else:
-			v = vals[-1].rstrip("EMAN2DB/") # strip this out if it's there
-			v = v.rstrip("EMAN2DB") # strip this out if it's there
+			v = vals[-1]
+			
+			# strip out the EMAN2DB
+			# assumption that only one "EMAN2DB" exists in the string
+			for cand in ["EMAN2DB/","EMAN2DB"]:
+				l = len(cand)
+				n = v.find(cand)
+				if  n != -1:
+					v = v[:n]+v[n+l:]
+					break # if we find one the first then there is no need to look at the second
 			if bdb_keep_dir:
 				if len(dirs) > 1:
 					return "bdb:"+dirs[-1]+"#"+v
