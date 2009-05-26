@@ -467,7 +467,7 @@ class EM3DFileTable(EM2DFileTable):
 		see EMFileTable for comments on parameters
 		'''
 		EM2DFileTable.__init__(self,listed_names,name,desc_short,desc_long)
-		self.icon = QtGui.QIcon(get_image_directory() + "/single_image_3d.png")
+		self.icon = QtGui.QIcon(get_image_directory() + "/five_stars.png")
 	
 
 class EMTomographicFileTable(EMFileTable):
