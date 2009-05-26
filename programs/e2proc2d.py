@@ -40,6 +40,7 @@ import os.path
 import math
 import random
 import pyemtbx.options
+import time
 
 #constants
 HEADER_ONLY=True
@@ -128,7 +129,7 @@ def main():
 					help="output image format, mrc, imagic, hdf, etc")
 	parser.add_option("--radon",  action="store_true", help="Do Radon transform")
 	parser.add_option("--rfp",  action="store_true", help="this is an experimental option")
-	parser.add_option("--fp",  action="store_true", help="this is an experimental option")
+	parser.add_option("--fp",  type="int", help="This generates rotational/translational 'footprints' for each input particle, the number indicates which algorithm to use (0-6)")
 	parser.add_option("--scale", metavar="f", type="float", action="append",
 					help="Scale by specified scaling factor. Clip must also be specified to change the dimensions of the output map.")
 	parser.add_option("--selfcl", metavar="steps mode", type="int", nargs=2,
@@ -220,14 +221,16 @@ def main():
 	for append_option in append_options:
 		index_d[append_option] = 0
 	
+	lasttime=time.time()
 	outfilename_no_ext = outfile[:-4]
 	outfilename_ext = outfile[-3:]
 	for i in range(n0, n1+1):
 		if options.verbose >= 1:
-			if i%100==0 or options.verbose>2 :
+			
+			if time.time()-lasttime>3 or options.verbose>2 :
 				sys.stdout.write(" %7d\r" %i)
 				sys.stdout.flush()
-		
+				lasttime=time.time()
 		if imagelist and (not imagelist[i]):
 			continue
 
@@ -316,7 +319,7 @@ def main():
 				d = d.make_rotational_footprint()
 
 			elif option1 == "fp":
-				d = d.make_footprint(0)
+				d = d.make_footprint(options.fp)
 
 			elif option1 == "scale":
 				scale_f = options.scale[index_d[option1]]

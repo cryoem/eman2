@@ -148,7 +148,7 @@ def main():
 		# make footprint images (rotational/translational invariants)
 		fpfile=options.path+"#input_fp"
 		#run("e2proc2d.py %s %s --fp --verbose=%d --inplace %s"%(options.input,fpfile,subverbose,parstr)) # parallel doesn't work in e2proc2d.py as of November 28 2008 - d.woolford
-		run("e2proc2d.py %s %s --fp --verbose=%d --inplace"%(options.input,fpfile,subverbose))
+		run("e2proc2d.py %s %s --fp=0 --verbose=%d --inplace"%(options.input,fpfile,subverbose))
 		proc_tally += 1.0
 		if logid : E2progress(logid,proc_tally/total_procs)
 		

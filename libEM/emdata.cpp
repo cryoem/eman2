@@ -1839,14 +1839,7 @@ EMData *EMData::make_rotational_footprint_e1( bool unwrap)
 
 EMData *EMData::make_footprint(int type) 
 {
-	//EMData *ccf=calc_ccf(this);
-//	EMData *ccf=calc_mutual_correlation(this);
-//	ccf->process_inplace("xform.phaseorigin.tocenter");
-//	ccf->process_inplace("normalize.edgemean");
-//	EMData *un=ccf->unwrap();
-// This should probably be make_rotational_footprint_e1
-// 	EMData *un=make_rotational_footprint();
-
+//	printf("Make fp %d\n",type);
 	if (type==0) {
 		EMData *un=make_rotational_footprint_e1(); // Use EMAN1's footprint strategy
 		if (un->get_ysize() <= 6) {
@@ -1860,7 +1853,7 @@ EMData *EMData::make_footprint(int type)
 		delete cx;
 		return fp;
 	}
-	else if (type==1 || type==2) {
+	else if (type==1 || type==2 ||type==5 || type==6) {
 		int i,j,kx,ky,lx,ly;
 
 		EMData *fft=do_fft();
@@ -1906,19 +1899,29 @@ EMData *EMData::make_footprint(int type)
 		}
 
 		// Normalizes the pixels based on the accumulated counts then sets the imaginary components back to zero
-		for (i=0; i<rmax*2; i+=2) {
-			for (j=0; j<rmax; j++) {
-				float norm=fp->get_value_at(i+1,j);
-				fp->set_value_at(i,rmax*2-j-1,cbrt(fp->get_value_at(i,j)/(norm==0?1.0:norm)));
-				fp->set_value_at(i,j,cbrt(fp->get_value_at(i,j)/(norm==0?1.0:norm)));
-/*				fp->set_value_at(i,rmax*2-j-1,fp->get_value_at(i,j)/(norm==0?1.0:norm));
-				fp->set_value_at(i,j,fp->get_value_at(i,j)/(norm==0?1.0:norm));*/
-				fp->set_value_at(i+1,j,0.0);
+		if (type==5 || type==6) {
+			for (i=0; i<rmax*2; i+=2) {
+				for (j=0; j<rmax; j++) {
+					float norm=fp->get_value_at(i+1,j);
+					fp->set_value_at(i,rmax*2-j-1,cbrt(fp->get_value_at(i,j)/(norm==0?1.0:norm)));
+					fp->set_value_at(i,j,cbrt(fp->get_value_at(i,j)/(norm==0?1.0:norm)));
+					fp->set_value_at(i+1,j,0.0);
+				}
+			}
+		}
+		else {
+			for (i=0; i<rmax*2; i+=2) {
+				for (j=0; j<rmax; j++) {
+					float norm=fp->get_value_at(i+1,j);
+					fp->set_value_at(i,rmax*2-j-1,fp->get_value_at(i,j)/(norm==0?1.0:norm));
+					fp->set_value_at(i,j,fp->get_value_at(i,j)/(norm==0?1.0:norm));
+					fp->set_value_at(i+1,j,0.0);
+				}
 			}
 		}
 		
 		free(rmap);
-		if (type==2) {
+		if (type==2||type==6) {
 			EMData *f2=fp->do_ift();
 			if (f2->get_value_at(0,0)<0) f2->mult(-1.0f); 
 			f2->process_inplace("xform.phaseorigin.tocorner");

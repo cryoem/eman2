@@ -805,9 +805,24 @@ def remove_file( file_name, img_couples_too=True ):
 
 # returns the local date and time as a string
 def local_datetime(secs):
+	"""Returns a timestamp as yyyy/mm/dd hh:mm:ss"""
 	from time import localtime
 	t=localtime(secs)
 	return "%04d/%02d/%02d %02d:%02d:%02d"%t[:6]
+
+def difftime(secs):
+	"""Returns a string representation of a time difference in seconds as a Dd hh:mm:ss style string"""
+	
+	d=int(floor(secs/86400))
+	secs-=d*86400
+	h=int(floor(secs/3600))
+	secs-=d*3600
+	m=int(floor(secs/60))
+	secs=int(secs-m*60)
+	
+	if d>0 : return "%dd %2d:%02d:%02d"%(d,h,m,secs)
+	if h>0 : return "%2d:%02d:%02d"%(h,m,secs)
+	return "   %2d:%02d"%(m,secs)
 
 # returns gm time as a string. For example if it's 11:13 pm on the 18th of June 2008 this will return something like
 # '23:13:25.14 18/6/2008'

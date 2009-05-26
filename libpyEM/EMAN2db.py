@@ -422,7 +422,7 @@ class EMTaskQueue:
 	
 	def __len__(self) : return len(self.active)
 	
-	def get_task(self):
+	def get_task(self,exechost=None):
 		"""This will return the next task waiting for execution"""
 		for tid in sorted(self.active.keys()):
 			task=self.active[tid]
@@ -432,6 +432,7 @@ class EMTaskQueue:
 				continue
 			if task.starttime==None and (task.wait_for==None or len(task.wait_for)==0): 
 				task.starttime=time.time()
+				task.exechost=exechost
 				self.active[tid]=task
 				return task 
 			

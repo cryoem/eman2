@@ -55,7 +55,9 @@ def main():
 This program implements much of EMAN2's coarse-grained parallelism mechanism. There are several flavors available via
 different options in this program. The simplest, and easiest to use is probably the client/server Distriuted Computing system.
 
-<command> is one of: dcserver, dcclient, dckill
+<command> is one of: dcserver, dcclient, dckill, servmon
+
+run e2parallel.py servmon to run a GUI server monitor. This MUST run on the same machine in the same directory as the server.
 
 client-server DC system:
 run e2parallel.py dcserver on the machine containing your data and project files
@@ -83,6 +85,9 @@ run e2parallel.py dcclient on as many other machines as possible, pointing at th
 	elif args[0]=="dckill" :
 		killdcserver(options.server,options.port,options.verbose)
 	
+	elif args[0]=="servmon" :
+		runservmon()
+		
 def rundcserver(port,verbose):
 	"""Launches a DCServer. If port is <1 or None, will autodetermine. Does not return."""
 
@@ -96,6 +101,65 @@ def rundcclient(host,port,verbose):
 
 def killdcserver(server,port,verbose):
 	EMDCsendonecom(server,port,"QUIT",None)
+
+def runservmon():
+	import EMAN2db
+
+	queue=EMAN2db.EMTaskQueue(".")
+
+	activedata=TaskData(queue.active)
+	completedata=TaskData(queue.complete)
+
+	app = QtGui.QApplication([])
+	window = QtGui.QMainWindow()
+	
+#	window.
+	
+	ui.tableView.setModel(data)
+
+	window.show()
+	app.exec_()
+
+# We import Qt even if we don't need it
+try:
+	from PyQt4 import QtCore, QtGui
+	from PyQt4.QtCore import Qt
+except:
+	class dummy:
+		pass
+	class QWidget:
+		"A dummy class for use when Qt not installed"
+		def __init__(self,parent):
+			print "Qt4 is required and cannot be loaded"
+
+	QtGui=dummy()
+	QtGui.QWidget=QWidget
+
+class TaskData(QtCore.QAbstractTableModel):
+	def __init__(self,target):
+		QtCore.QAbstractTableModel.__init__(self)
+		self.target=target
+
+	def data(self,loc,role):
+		if not loc.isValid() or role != QtCore.Qt.DisplayRole : return QtCore.QVariant()
+		keys=self.target.keys()
+		task=self.target[keys[loc.row()]]
+		if loc.column()==0 : ret=task.taskid
+		elif loc.column()==1 : ret=task.command
+		elif loc.column()==2 : ret=local_datetime(task.queuetime)
+		elif loc.column()==3 : ret=local_datetime(task.starttime)
+		elif loc.column()==4 : ret=difftime(task.endtime-task.starttime)
+		elif loc.column()==5 : ret.task.exechost
+		return QtCore.QVariant(str(ret))
+
+	def rowCount(self,parent):
+		if parent.isValid() : return 0
+		return len(target.keys())
+
+	def columnCount(self,parent):
+		if parent.isValid() : return 0
+		return 6
+
 
 if __name__== "__main__":
 	main()

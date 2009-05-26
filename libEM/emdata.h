@@ -515,7 +515,12 @@ namespace EMAN
 		 * resulting image depends on the selected type.
 		 *
 		 * type 0- The original, default footprint derived from the rotational footprint
-		 * type 1- a bispectrum-based footprint
+		 * types 1-6 - bispectrum-based
+		 * types 1,3,5 - returns Fouier-like images
+		 * types 2,4,6 - returns real-space-like images
+		 * type 1,2 - simple r1,r2, 2-D footprints
+		 * type 3,4 - r1,r2,anle 3D footprints
+		 * type 5,6 - same as 1,2 but with the cube root of the final products used
 		 *
 		 * @param type Select one of several possible algorithms for producing the invariants
 		 * @exception ImageFormatException If image size is not even.
