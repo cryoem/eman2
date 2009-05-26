@@ -36,6 +36,7 @@ from EMAN2 import get_3d_font_renderer, Util,glut_inited
 import sys
 try: from EMAN2 import FTGLFontMode
 except: pass
+from libpyGLUtils2 import GLUtil
 
 
 

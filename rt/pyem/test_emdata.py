@@ -1231,6 +1231,7 @@ class TestEMData(unittest.TestCase):
     
     def test_render_amp8(self):
         """test render_amp8() function ......................"""
+        from libpyGLUtils2 import GLUtil
         e = EMData()
         e.set_size(32,32,1)
         e.process_inplace("testimage.noise.uniform.rand")

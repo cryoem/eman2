@@ -49,6 +49,7 @@ from emshape import EMShape
 from weakref import WeakKeyDictionary
 import weakref
 from pickle import dumps,loads
+from libpyGLUtils2 import GLUtil
 
 from emglobjects import EMOpenGLFlagsAndTools, EMGUIModule
 from emapplication import EMGUIModule,get_application

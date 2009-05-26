@@ -321,6 +321,7 @@ void Transform::set_rotation(const Dict& rotation)
 	float scale;
 	// Get these before anything changes so we can apply them again after the rotation is set
 	get_scale_and_mirror(scale,x_mirror);
+	if (scale == 0) throw UnexpectedBehaviorException("The determinant of the Transform is 0. This is unexpected.");
 
 	string type = Util::str_to_lower(euler_type);
 	if (type == "2d") {
@@ -521,6 +522,7 @@ Dict Transform::get_rotation(const string& euler_type) const
 	float scale;
 	bool x_mirror;
 	get_scale_and_mirror(scale,x_mirror);
+	if (scale == 0) throw UnexpectedBehaviorException("The determinant of the Transform is 0. This is unexpected.");
 	float cosalt=matrix[2][2]/scale;
 	float x_mirror_scale = (x_mirror ? -1.0f : 1.0f);
 	float inv_scale = 1.0f/scale;
@@ -788,6 +790,7 @@ void Transform::orthogonalize()
 	float scale;
 	bool x_mirror;
 	get_scale_and_mirror(scale,x_mirror);
+	if (scale == 0) throw UnexpectedBehaviorException("The determinant of the Transform is 0. This is unexpected.");
 	double inv_scale = 1.0/static_cast<double>(scale);
 	double mirror_scale = (x_mirror == true ? -1.0:1.0);
 

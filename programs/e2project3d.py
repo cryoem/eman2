@@ -145,15 +145,13 @@ class EMParallelProject3D:
 			while 1:
 				if len(self.task_customers) == 0: break
 				print len(self.task_customers),"projection tasks left in main loop"
+				st_vals = self.task_customers[0].check_task(self.tids)
 				for i in xrange(len(self.task_customers)-1,-1,-1):
-					task_customer = self.task_customers[i]
-					tid = self.tids[i] 
-					st=task_customer.check_task((tid,))[0]
+					st = st_vals[i]
 					if st==100:
+						task_customer = self.task_customers[i]
+						tid = self.tids[i] 
 						
-						self.task_customers.pop(i)
-						self.tids.pop(i)
-	
 						rslts = task_customer.get_results(tid)
 						self.__write_output_data(rslts[1])
 						if self.logger != None:
@@ -161,6 +159,9 @@ class EMParallelProject3D:
 							if self.options.verbose: 
 								print "%d/%d\r"%(num_tasks-len(self.task_customers),num_tasks)
 								sys.stdout.flush()
+								
+						self.task_customers.pop(i)
+						self.tids.pop(i)
 				
 				time.sleep(5)
 		else:

@@ -47,6 +47,7 @@ from time import time
 from PyQt4.QtCore import QTimer
 import weakref
 from time import *
+from libpyGLUtils2 import GLUtil
 
 from emglobjects import Camera2, EMImage3DGUIModule, EMViewportDepthTools, Camera2, Camera,get_default_gl_colors,get_RGB_tab
 from emimageutil import ImgHistogram,EMEventRerouter,EMTransformPanel

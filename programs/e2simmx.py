@@ -224,15 +224,13 @@ class EMParallelSimMX:
 			while 1:
 				if len(self.task_customers) == 0: break
 				print len(self.task_customers),"simmx tasks left in main loop"
+				st_vals = self.task_customers[0].check_task(self.tids)
 				for i in xrange(len(self.task_customers)-1,-1,-1):
-					task_customer = self.task_customers[i]
-					tid = self.tids[i] 
-					st=task_customer.check_task((tid,))[0]
+					st = st_vals[i]
 					if st==100:
+						task_customer = self.task_customers[i]
+						tid = self.tids[i] 
 						
-						self.task_customers.pop(i)
-						self.tids.pop(i)
-
 						rslts = task_customer.get_results(tid)
 						self.__store_output_data(rslts[1])
 						if self.logger != None:
@@ -240,6 +238,10 @@ class EMParallelSimMX:
 							if self.options.verbose: 
 								print "%d/%d\r"%(len(self.task_customers),len(blocks))
 								sys.stdout.flush()
+								
+						self.task_customers.pop(i)
+						self.tids.pop(i)
+
 				
 				time.sleep(5)
 					
@@ -257,7 +259,7 @@ class EMParallelSimMX:
 				tran = data[1]
 				self.mxout[0].set(c,r,cmp)
 				if self.options.saveali:
-					params = tran.get_params("2d") 
+					params = tran.get_params("2d")
 					self.mxout[1].set(c,r,params["tx"])
 					self.mxout[2].set(c,r,params["ty"])
 					self.mxout[3].set(c,r,params["alpha"])
@@ -329,13 +331,15 @@ class EMSimTaskDC(EMTask):
 		
 		data = {}
 		for ref_idx,ref in self.refs.items():
+			ref.del_attr("xform.align2d")
 			aligned=ref.align(options["align"][0],ptcl,options["align"][1],options["aligncmp"][0],options["aligncmp"][1])
-		
+
 			if options.has_key("ralign") and options["ralign"] != None: # potentially employ refine alignment
 				refine_parms=options["ralign"][1]
 				refine_parms["xform.align2d"] = aligned.get_attr("xform.align2d")
-				aligned = ref.align(options["ralign"][0],ptcl,refine_parms,options["raligncmp"][0],options["raligncmp"][1])
-				
+				ref.del_attr("xform.align2d")
+				aligned = ref.align(options["ralign"][0],ptcl,refine_parms,options["raligncmp"][0],options["raligncmp"][1])		
+		
 			t =  aligned.get_attr("xform.align2d")
 			t.invert()
 			data[ref_idx] = (ptcl.cmp(options["cmp"][0],aligned,options["cmp"][1]),t)
@@ -347,7 +351,7 @@ class EMSimTaskDC(EMTask):
 		
 		self.__init_memory(self.options)
 		
-		self.sim_data = {} # It's going to be our favourite thing, a dictionary of dictionaries
+		self.sim_data = {} # It's going to be our favorite thing, a dictionary of dictionaries
 		
 		for ptcl_idx,ptcl in self.ptcls.items():
 			
@@ -538,11 +542,13 @@ def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ral
 	ret=[None for i in reflist]
 	for i,r in enumerate(reflist):
 		if align[0] :
+			r.del_attr("xform.align2d")
 			ta=r.align(align[0],target,align[1],alicmp[0],alicmp[1])
 			#ta.debug_print_params()
 			
 			if ralign and ralign[0]:
 				ralign[1]["xform.align2d"] = ta.get_attr("xform.align2d")
+				r.del_attr("xform.align2d")
 				ta = r.align(ralign[0],target,ralign[1],alircmp[0],alircmp[1])
 			
 			t = ta.get_attr("xform.align2d")

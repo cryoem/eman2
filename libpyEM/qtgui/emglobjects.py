@@ -38,7 +38,7 @@ from OpenGL.GLU import *
 from valslider import ValSlider
 from math import *
 from EMAN2 import *
-
+from libpyGLUtils2 import GLUtil
 
 import weakref
 from emapplication import EMGUIModule,EMQtWidgetModule

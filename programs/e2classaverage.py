@@ -280,11 +280,12 @@ class EMGenClassAverages:
 			while 1:
 				if len(self.task_customers) == 0: break
 				print len(self.task_customers),"class averaging tasks left in main loop"
+				st_vals = self.task_customers[0].check_task(self.tids)
 				for i in xrange(len(self.task_customers)-1,-1,-1):
-					task_customer = self.task_customers[i]
-					tid = self.tids[i] 
-					st=task_customer.check_task((tid,))[0]
+					st = st_vals[i]
 					if st==100:
+						task_customer = self.task_customers[i]
+						tid = self.tids[i] 
 						
 						self.task_customers.pop(i)
 						self.tids.pop(i)
@@ -623,6 +624,7 @@ class EMClassAveTask(EMTask):
 		'''
 		# Align the particle to "to"
 		options = self.options
+		this.del_attr("xform.align2d")
 		aligned=this.align(options["align"][0],to,options["align"][1],options["aligncmp"][0],options["aligncmp"][1])
 #		print "__align",options["align"][0],to,options["align"][1],options["aligncmp"][0],options["aligncmp"][1]
 		
@@ -639,6 +641,7 @@ class EMClassAveTask(EMTask):
 			#refineparms[1]["stepaz"] = 5
 			
 			refine_parms["xform.align2d"] = aligned.get_attr("xform.align2d")
+			this.del_attr("xform.align2d")
 			aligned = this.align(options["ralign"][0],to,refine_parms,options["raligncmp"][0],options["raligncmp"][1])
 			
 		return aligned

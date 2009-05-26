@@ -178,6 +178,11 @@ def main():
 		cls_cmd = "e2classaverage.py --input=%s --classmx=%s#classmx_00 --output=%s#classes_init --iter=8 --bootstrap" %(options.input,options.path,options.path)
 		cls_cmd += get_classaverage_extras(options)
 		
+		#run("e2classaverage.py %s %s#classmx_00 %s#classes_init --iter=6 --align=%s:maxshift=%d --averager=%s -vf --bootstrap --keep=%f --cmp=%s --aligncmp=%s --normproc=%s"%(options.input,options.path,options.path,options.classalign,options.maxshift,options.classaverager,options.classkeep,options.classcmp,options.classaligncmp,options.classnormproc))
+		run (cls_cmd)
+		proc_tally += 1.0
+		if logid : E2progress(logid,proc_tally/total_procs)
+		
 		if options.dbls:
 			pdb = db_open_dict("bdb:project")
 			tmp_list = pdb.get("global.spr_ref_free_class_aves", dfl=[])	
@@ -185,11 +190,7 @@ def main():
 			tmp_list.append(most_recent_classes)
 			# global.spr_ref_free_class_aves
 			pdb[options.dbls] = tmp_list
-		
-		#run("e2classaverage.py %s %s#classmx_00 %s#classes_init --iter=6 --align=%s:maxshift=%d --averager=%s -vf --bootstrap --keep=%f --cmp=%s --aligncmp=%s --normproc=%s"%(options.input,options.path,options.path,options.classalign,options.maxshift,options.classaverager,options.classkeep,options.classcmp,options.classaligncmp,options.classnormproc))
-		run (cls_cmd)
-		proc_tally += 1.0
-		if logid : E2progress(logid,proc_tally/total_procs)
+			
 	if not options.initial : options.initial=options.path+"#classes_init"
 		
 	print "Using references from ",options.initial
@@ -244,7 +245,9 @@ def main():
 			pdb = db_open_dict("bdb:project")
 			tmp_list = pdb.get("global.spr_ref_free_class_aves", dfl=[])
 			if most_recent_classes != None:
-				tmp_list.remove(most_recent_classes)
+				try:
+					tmp_list.remove(most_recent_classes)
+				except: pass # the user removed it in the workflow!
 			most_recent_classes = "%s#classes_%02d" %(options.path,it)
 			tmp_list.append(most_recent_classes)
 			# global.spr_ref_free_class_aves

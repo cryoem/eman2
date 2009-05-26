@@ -45,6 +45,7 @@ from emapplication import get_application
 from emimagemx import EMImageMXModule
 import os
 import sys
+from libpyGLUtils2 import GLUtil
 
 def get_eulers_from(filename):
 	eulers = []

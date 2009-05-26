@@ -70,7 +70,7 @@ Transform* Aligner::get_set_align_attr(const string& key, EMData* const image, c
 		t = new Transform( *((Transform*)from_image->get_attr(key)) );
 	}
 	else {
-		t = new Transform;
+		t = new Transform();
 	}
 	image->set_attr(key,t);
 	image->set_attr_owned(key);
@@ -226,10 +226,9 @@ EMData * RotationalAligner::align_180_ambiguous(EMData * this_img, EMData * to, 
 	// Return the result
 	Transform tmp(Dict("type","2d","alpha",rot_angle));
 	cf=this_img->process("math.transform",Dict("transform",(Transform*)&tmp));
-// 	cf->transform( Transform(Dict("type","2d","alpha",rot_angle)));
 	Transform* t = get_set_align_attr("xform.align2d",cf,this_img);
-	t->set_rotation(Dict("type","2d","alpha",rot_angle));
-
+	Dict d("type","2d","alpha",rot_angle);
+	t->set_rotation(d);
 	return cf;
 }
 
@@ -265,7 +264,7 @@ EMData *RotationalAligner::align(EMData * this_img, EMData *to,
 		result = rot_align_180;
 		score = rot_180_cmp;
 		delete rot_aligned; rot_aligned = 0;
-		rotate_angle_solution = rotate_angle_solution-180;
+		rotate_angle_solution = rotate_angle_solution-180.0;
 	}
 
 	Transform* t = get_align_attr("xform.align2d",result);
