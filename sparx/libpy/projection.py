@@ -547,28 +547,10 @@ def cml_open_proj(stack, ir, ou, lf, hf, dpsi = 1):
 			# normalize this line
 			[mean_l, sigma_l, imin, imax] = Util.infomask(line, None, True)
 			line = (line - mean_l) / sigma_l
-			'''
-			for j in xrange(1, nxe):
-				pp.set_value_at(j, li, line.get_value_at(j))
-				pp.set_value_at(j, li+nye, line.get_value_at(nxe-j))
-			pp.set_value_at(0, li, line.get_value_at(0))
-			pp.set_value_at(0, li+nye, line.get_value_at(0))
-			'''
 			# fft
 			fftip(line)
 			# filter (cut part of coef) and create mirror line
 			Util.cml_prepare_line(prj, line, ilf, ihf, li, nye)
-			'''
-			for j in xrange(ilf, ihf+1, 2):
-				r1 = line.get_value_at(j)
-				r2 = line.get_value_at(j+1)
-				prj.set_value_at(j-ilf, li, r1)
-				prj.set_value_at(j-ilf+1, li, r2)
-				prj.set_value_at(j-ilf, li+nye, r1)
-				prj.set_value_at(j-ilf+1, li+nye, -r2)
-			'''
-		
-		#prj.write_image('proj_sino.hdf', i)
 
 		# store the projection
 		Prj.append(prj)
