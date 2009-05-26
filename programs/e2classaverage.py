@@ -53,7 +53,7 @@ class EMGenClassAverages:
 		'''
 		@param options the options produced by (options, args) = parser.parse_()
 		@param logger and EMAN2 logger, i.e. logger=E2init(sys.argv)
-		assumes you have already called the check function.
+		assumes you have already called the (file scope) check function.
 		'''
 		self.options = options
 		self.logger = logger
@@ -390,7 +390,7 @@ class EMClassAveTask(EMTask):
 		EMTask.__init__(self,command,data,options)
 		self.averages = [] # will eventually store a list of averages.
 		self.all_alis = [] # will eventually contain all of the alignment parameters of each iteration
-		self.all_inclusions = [] # will eventually contain dicts of flags for each image (True or False) indicating inclusion or nor
+		self.all_inclusions = [] # will eventually contain dicts of flags for each image (True or False) indicating inclusion or not
 		self.final_average = None
 		self.final_alis = None # will be a dictionary of 
 		self.class_idx = data["class_idx"] # so it's easy to tell the calling function which class this is
@@ -419,11 +419,11 @@ class EMClassAveTask(EMTask):
 		'''
 		Reads images into memory, normalize them if the options dictate it
 		Can't be private because of class inheritance issues
-		This function assigns severy critical attributes, they are:
+		This function assigns several critical attributes, they are:
 		self.ptcl_indices - a list of particle indices, these are the same as the keys in self.images
 		self.images - a dictionary, key is particle index, value is an EMData. This is the primary data.
 		self.usefilt_images - None or a dictionary. If this is a dictionary it corresponds to self.images, but contains usefilt images
-		self.norm - None or [string,dict], if not None this is data is used to perform normalization
+		self.norm - None or [string,dict], if not None this is data is used to perform normalization on raw and filtered images
 		self.culling - True of False, indicating whether bad quality particles should be culled
 		self.ref - None or an EMData - the reference image used for final alignment
 		self.verbose - False or some value that evaluates to True (depends what the calling program supplied) 
@@ -498,7 +498,7 @@ class EMClassAveTask(EMTask):
 	   	inclusions = None
 	   	
 	   	for i in xrange(0,self.options["iter"]):
-	   		if i != 0 :
+	   		if i != 0 : # on the first iteration we already have the initial alignments. 
 	   			alis = self.__align_all(self.averages[-1])
 	   			self.all_alis.append(alis)
 	   		

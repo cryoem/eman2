@@ -113,12 +113,12 @@ class EMErrorMessageDisplay:
 	A step towards a better design
 	'''
 	def __init__(self): pass
-	def run(error_message):
+	def run(error_message,title="Almost"):
 		'''
 		error_message is a list of error messages
 		'''
 		msg = QtGui.QMessageBox()
-		msg.setWindowTitle("Almost")
+		msg.setWindowTitle(title)
 		mes = ""
 		for error in error_message:
 			mes += error
@@ -3426,6 +3426,21 @@ class E2RefFreeClassAveTool():
 		project_db = db_open_dict("bdb:project")
 		list_name = "global.spr_ref_free_class_aves"
 		names = project_db.get(list_name,dfl=[])
+		
+		# this code segment detects if something went wrong, for instance the classes were manually removed from
+		# disk but they were still name in the calss averages list
+		cache = False
+		cache_error_msg = []
+		for i in xrange(len(names)-1,-1,-1):
+			if not file_exists(names[i]):
+				cache_error_msg.append("Missing data %s. Automatically removing from list." %names[i])
+				names.pop(i)
+				cache = True
+				
+		if cache == True:
+			EMErrorMessageDisplay.run(cache_error_msg,"Auto correcting")
+			project_db[list_name] = names
+		
 		self.project_files_at_init = names # so if the user hits cancel this can be reset
 
 		from emform import EM2DStackTable,EMFileTable
