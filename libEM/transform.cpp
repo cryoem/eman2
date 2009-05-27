@@ -299,7 +299,7 @@ void Transform::set_rotation(const Dict& rotation)
 	string euler_type;
 
 	if (!rotation.has_key_ci("type") ){
-			throw InvalidParameterException("argument dictionary does not contain the type entry");
+			throw InvalidParameterException("argument dictionary does not contain the type key");
 	}
 
 	euler_type = static_cast<string>(rotation.get_ci("type"));// Warning, will throw
@@ -454,7 +454,6 @@ Transform Transform::get_rotation_transform() const
 
 void Transform::set_rotation(const Vec3f & v)
 {
-
 	if ( v[0] == 0 && v[1] == 0 && v[2] == 0 )
 		throw UnexpectedBehaviorException("Can't set rotation for the null vector");
 
@@ -501,15 +500,12 @@ Transform Transform::get_vflip_transform() const {
 	rot["alt"] = 180.0f + static_cast<float>(rot["alt"]);
 	rot["phi"] = - static_cast<float>(rot["phi"]);
 
-	Transform ret(*this); // Is the identity
+	Transform ret(*this);
 	ret.set_rotation(rot);
 
 	Vec3f trans = get_trans();
 	trans[1] = -trans[1];
 	ret.set_trans(trans);
-
-// 	ret.set_mirror(self.get_mirror());
-
 
 	return ret;
 }

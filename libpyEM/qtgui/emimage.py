@@ -33,16 +33,16 @@
 
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
-from emimage2d import *
-from emimagemx import *
-from emplot2d import *
-from emplot3d import EMPlot3DModule
-#from emimagemxrotor import *
-from emimage3d import *
+#from emimage2d import *
+#from emimagemx import *
+#from emplot2d import *
+#from emplot3d import EMPlot3DModule
+#from emimage3d import *
 from emimageutil import EMParentWin
 from OpenGL import GL,GLU,GLUT
 from sys import argv
 from copy import deepcopy
+from EMAN2 import Util,EMUtil,file_exists,IMAGE_UNKNOWN,gimme_image_dimensions3D,EMData
 
 #from valslider import ValSlider
 #from math import *
@@ -56,6 +56,9 @@ from copy import deepcopy
 
 
 def image_update():
+	from emimage2d import EMImage2DModule
+	from emimagemx import EMImageMXModule
+	from emimage3d import EMImage3DModule
 	for i in EMImage2DModule.allim.keys():
 		try:
 			if i.is_visible() and i.data.get_changecount() !=i.get_last_render_image_display_count() :
@@ -116,6 +119,7 @@ class EMImageModule(object):
 			return None
 		
 		if force_plot or (isinstance(data,EMData) and data.get_zsize()==1 and data.get_ysize()==1):
+			from emplot2d import EMPlot2DModule
 			if old:
 				if isinstance(old,EMPlot2DModule) :
 					old.set_data(remove_directories_from_name(filename),data)
@@ -124,6 +128,7 @@ class EMImageModule(object):
 			module.set_data(remove_directories_from_name(filename),data)
 			return module	
 		if force_2d or (isinstance(data,EMData) and data.get_zsize()==1):
+			from emimage2d import EMImage2DModule
 			if old:
 				if isinstance(old,EMImage2DModule) :
 					old.set_data(data,filename)
@@ -132,6 +137,7 @@ class EMImageModule(object):
 			module.set_data(data,filename)
 			return module
 		elif isinstance(data,EMData):
+			from emimage3d import EMImage3DModule
 			if old:
 				if isinstance(old,EMImage3DModule) :
 					old.set_data(data,filename,replace)
@@ -140,6 +146,7 @@ class EMImageModule(object):
 			module.set_data(data,filename,replace)
 			return module
 		elif isinstance(data,list) and isinstance(data[0],EMData):
+			from emimagemx import EMImageMXModule
 			if old:
 				if isinstance(old,EMImageMXModule) :
 					old.set_data(data,filename)
@@ -148,6 +155,7 @@ class EMImageModule(object):
 			module.set_data(data,filename)
 			return module
 		elif isinstance(data,list):
+			from emplot3d import EMPlot3DModule
 			if len(data) > 2:
 				if old:
 					if isinstance(old,EMPlot3DModule) :
@@ -157,6 +165,7 @@ class EMImageModule(object):
 				module.set_data(remove_directories_from_name(filename),data,replace)
 				return module	
 			else:
+				from emplot2d import EMPlot2DModule
 				if old:
 					if isinstance(old,EMPlot2DModule) :
 						old.set_data(remove_directories_from_name(filename),data,replace)
@@ -180,6 +189,7 @@ class EMModuleFromFile(object):
 	
 	"""
 	def __new__(cls,filename,application,force_plot=False,force_2d=False,old=None):
+		
 		file_type = Util.get_filename_ext(filename)
 		em_file_type = EMUtil.get_image_ext_type(file_type)
 		
@@ -191,6 +201,7 @@ class EMModuleFromFile(object):
 			return None
 		
 		if force_plot:
+			from emplot2d import EMPlot2DModule
 			if isinstance(old,EMPlot2DModule): module = old
 			else: module = EMPlot2DModule(application=application)
 			module.set_data_from_file(filename)
@@ -213,12 +224,15 @@ class EMModuleFromFile(object):
 			if data != None and len(data) == 1: data = data[0]
 			
 			if force_2d or isinstance(data,EMData) and data.get_zsize()==1:
+				from emimage2d import EMImage2DModule
 				if isinstance(old,EMImage2DModule): module = old
 				else: module= EMImage2DModule(application=application)
 			elif isinstance(data,EMData):
+				from emimage3d import EMImage3DModule
 				if isinstance(old,EMImage3DModule): module = old
 				else: module = EMImage3DModule(application=application)
 			elif data == None or isinstance(data,list):
+				from emimagemx import EMImageMXModule
 				if isinstance(old,EMImageMXModule): module = old
 				else: module = EMImageMXModule(application=application)
 				data = filename
@@ -228,6 +242,7 @@ class EMModuleFromFile(object):
 			module.set_data(data,filename)
 			return module
 		else:
+			from emplot2d import EMPlot2DModule
 			if isinstance(old,EMPlot2DModule): module = old
 			else: module = EMPlot2DModule(application=application)
 			module.set_data_from_file(filename)

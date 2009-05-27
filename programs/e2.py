@@ -35,7 +35,7 @@ import sys
 import os
 from optparse import OptionParser
 import EMAN2
-from emimage import *
+from emimage import image_update
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 import threading
