@@ -346,7 +346,7 @@ def main():
 				rnd[1]=float(rnd[1])
 				rnd[2]=int(rnd[2])
 				t=Transform()
-				t.set_params({"type":"2d","alpha":random.uniform(-rnd[0],rnd[0]),"mirror":random.randint(0,rnd[2]),"dx":random.uniform(-rnd[1],rnd[1]),"dy":random.uniform(-rnd[1],rnd[1])})
+				t.set_params({"type":"2d","alpha":random.uniform(-rnd[0],rnd[0]),"mirror":random.randint(0,rnd[2]),"tx":random.uniform(-rnd[1],rnd[1]),"ty":random.uniform(-rnd[1],rnd[1])})
 				d.transform(t)
 
 			elif option1 == "medianshrink":
