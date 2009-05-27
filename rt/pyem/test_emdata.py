@@ -3389,6 +3389,20 @@ class TestEMData(unittest.TestCase):
         self.assertEqual(q.to_dict(), q2.to_dict())
         #testlib.safe_unlink('mydb2')
         
+    def test_transform_pickling(self):
+        """test Transform pickle as attribute ..............."""
+        import pickle
+        t = Transform()
+        img = test_image()
+        img.set_attr('xform', t)
+        mydb = open('mydb3', 'w')
+        pickle.dump(img, mydb)
+        mydb.close()
+        mydb2 = open('mydb3', 'r')
+        img2 = pickle.load(mydb2)
+        t2 = img2.get_attr('xform')
+        self.assertEqual(t.get_matrix(), t2.get_matrix())
+        
     def test_set_xyz_origin(self):
         """test set_xyz_origin function ....................."""
         img = test_image()
