@@ -194,7 +194,7 @@ EMObject::EMObject(XYData * xy) :
 	init();
 }
 EMObject::EMObject(Transform* t) :
-	transform(t), type(TRANSFORM)
+	farray(t->get_matrix()), type(TRANSFORM)
 {
 	init();
 }
@@ -255,9 +255,9 @@ EMObject::operator bool () const
 	else if (type == VOID_POINTER) {
 		return vp != 0;
 	}
-	else if (type == TRANSFORM) {
-		return transform != 0;
-	}
+//	else if (type == TRANSFORM) {
+//		return transform != 0;
+//	}
 	// It seemed unconventional to return a boolean for the stl objects
 	else {
 		if (type != UNKNOWN) {
@@ -475,6 +475,8 @@ EMObject::operator Transform* () const
 								get_object_type_name(type));
 		}
 	}
+	Transform * transform = new Transform();
+	transform->set_matrix(farray);
 	return transform;
 }
 
@@ -703,6 +705,7 @@ bool EMAN::operator==(const EMObject &e1, const EMObject & e2)
 	case  EMObject::DOUBLE:
 		return (e1.d == e2.d);
 	break;
+	case EMObject::CTF:
 	case  EMObject::STRING:
 		return (e1.str == e2.str);
 	break;
@@ -721,6 +724,7 @@ bool EMAN::operator==(const EMObject &e1, const EMObject & e2)
 	case  EMObject::XYDATA:
 		return (e1.xydata == e2.xydata);
 	break;
+	case  EMObject::TRANSFORM:
 	case  EMObject::FLOATARRAY:
 		if (e1.farray.size() == e2.farray.size()) {
 			for (size_t i = 0; i < e1.farray.size(); i++) {
@@ -756,12 +760,6 @@ bool EMAN::operator==(const EMObject &e1, const EMObject & e2)
 		else {
 			return false;
 		}
-	break;
-	case  EMObject::TRANSFORM:
-		return (e1.transform == e2.transform);
-	break;
-	case EMObject::CTF:
-		return e1.str == e2.str;
 	break;
 	case  EMObject::UNKNOWN:
 		// UNKNOWN really means "no type" and if two objects both have
@@ -820,6 +818,7 @@ EMObject& EMObject::operator=( const EMObject& that )
 		case DOUBLE:
 			d = that.d;
 		break;
+		case CTF:
 		case STRING:
 			str = that.str;
 		break;
@@ -843,6 +842,7 @@ EMObject& EMObject::operator=( const EMObject& that )
 			// Warning - Pointer address copy.
 			xydata = that.xydata;
 		break;
+		case TRANSFORM:
 		case FLOATARRAY:
 			farray = that.farray;
 		break;
@@ -851,12 +851,6 @@ EMObject& EMObject::operator=( const EMObject& that )
 		break;
 		case STRINGARRAY:
 			strarray = that.strarray;
-		break;
-		case TRANSFORM:
-			transform = that.transform;
-		break;
-		case CTF:
-			str = that.str;
 		break;
 		case UNKNOWN:
 			// This is possible, nothing should happen
