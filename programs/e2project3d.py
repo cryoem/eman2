@@ -169,6 +169,7 @@ class EMParallelProject3D:
 				
 	def __write_output_data(self,rslts):
 		for idx,image in rslts["projections"].items():
+			t = image.get_attr("xform.projection")
 			image.write_image(self.options.outfile,idx)
 			
 	

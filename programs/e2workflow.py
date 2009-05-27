@@ -376,14 +376,14 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		
 		spr_list = []
 		
-		rd = QtGui.QTreeWidgetItem(QtCore.QStringList("Raw files"))
+		rd = QtGui.QTreeWidgetItem(QtCore.QStringList("Raw Data"))
 		rd.setIcon(0,self.icons["single_image"])
-		self.launchers["Raw files"] = self.launch_mic_ccd_report#EMRawDataReportTask
+		self.launchers["Raw Data"] = self.launch_mic_ccd_report#EMRawDataReportTask
 		
 		rd_list = []
-		rd_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Import Micrograph/CCD")))
+		rd_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Filter Raw Data")))
 		rd_list[-1].setIcon(0,self.icons["single_image"])
-		self.launchers["Import Micrograph/CCD"] = self.launch_import_mic_ccd
+		self.launchers["Filter Raw Data"] = self.launch_filter_mic
 		rd.addChildren(rd_list)
  
 		spr_list.append(rd)
@@ -854,11 +854,11 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.launch_task(SPRInitTask(),"Single Particle Reconstruction")
 
 	def launch_tomography(self):
-		self.launch_task(EMTomoRawDataReportTask(),"Tomo Raw Files")
+		self.launch_task(EMTomoRawDataReportTask(),"Tomo Raw Data")
 	def launch_tomohunter(self):
 		self.launch_task(TomohunterTask(),"Tomohunter")
 	def launch_tomo_raw_files(self):
-		self.launch_task(EMTomoRawDataReportTask(),"Tomo Raw Files")
+		self.launch_task(EMTomoRawDataReportTask(),"Tomo Raw Data")
 			
 #	def launch_mic_ccd(self):
 #		self.launch_task(MicrographCCDTask(),"Micrograph/CCD report")
@@ -870,8 +870,8 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		from e2preferences import EMPreferencesTask
 		self.launch_task(EMPreferencesTask(),"Preferences")
 	
-	def launch_import_mic_ccd(self):
-		self.launch_task(MicrographCCDImportTask(),"Import micrographs")
+	def launch_filter_mic(self):
+		self.launch_task(EMFilterRawDataTask(),"Filter Micrographs")
 	
 	def launch_change_directory(self):
 		if len(self.tasks) > 0: 
@@ -888,6 +888,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		'''
 		You can only have one of the task forms showing at any time
 		'''
+		get_application().setOverrideCursor(Qt.BusyCursor)
 		if len(self.tasks) > 0: 
 			self.__clear_tasks()
 		
@@ -902,7 +903,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 			get_application().show_specific(self.tasks[task_unique_identifier])
 			
 		self.update_task_list()
-	
+		get_application().setOverrideCursor(Qt.ArrowCursor)
 	def update_task_list(self):
 		tasks = []
 		tasks_dict = {}

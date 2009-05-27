@@ -900,7 +900,6 @@ class GUIctf(QtGui.QWidget):
 		
 		self.update_data()
 		
-		self.update_data()
 		self.resize(460,380) # figured these values out by printing the width and height in resize event
 		
 #	def resizeEvent(self,event):
@@ -953,7 +952,12 @@ class GUIctf(QtGui.QWidget):
 	
 	def on_output(self):
 		from emsprworkflow import E2CTFOutputTaskGeneral
+		
+		n = self.setlist.count()
+		names = [str(self.setlist.item(i).text()) for i in xrange(0,n)]
+		
 		self.form = E2CTFOutputTaskGeneral()
+		self.form.set_names(names)
 		self.form.run_form()
 	
 	def show_guis(self):
@@ -963,6 +967,7 @@ class GUIctf(QtGui.QWidget):
 			self.app().show_specific(self.guiplot)
 		
 		self.app().show_specific(self.module())
+		
 	def closeEvent(self,event):
 #		QtGui.QWidget.closeEvent(self,event)
 #		self.app.app.closeAllWindows()

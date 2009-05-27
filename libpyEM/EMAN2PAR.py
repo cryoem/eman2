@@ -145,8 +145,20 @@ Communications are handled by subclasses."""
 			for i in image_range(*data[2:]):		# this allows us to iterate over the specified image numbers
 				print i,cache[i]
 				ret.append(cache[i]*-1)
-				
-			return {"inverted":ret}
+			d = {}
+			d["inverted"] = ret
+			from EMAN2 import Transform,Util
+			transforms = [ Transform({"type":"2d","alpha":Util.get_frand(0,360)}) for i in xrange(0,100)]
+			d["transforms"] = transforms
+			
+			emdatas = []
+			for t in transforms:
+				e = EMData(1,1,1)
+				e.set_attr("xform.projection",t)
+				emdatas.append(e)
+			d["data"] = emdatas
+			
+			return d
 		
 		elif task.command == "e2classaverage":
 			task.execute()

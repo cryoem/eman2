@@ -1248,29 +1248,6 @@ class TestEMData(unittest.TestCase):
             except RuntimeError, runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
 
-    #def test_xform__phaseorigin_fourierorigin(self):
-		#"""test xform.phaseorigin and xform.fourierorigin ........................."""
-		#n = 16
-		#for ii in range(0,2):
-			#for jj in range(0,2):
-				#for kk in range(0,2):
-					#e = EMData()
-					#e.set_size(n+ii,n+jj,n+kk)
-					#e.process_inplace("testimage.noise.uniform.rand")
-					#d = e.copy()
-					
-					#e.process_inplace("xform.phaseorigin")
-					#e.do_fft_inplace()
-					#e.process_inplace("xform.fourierorigin")
-					#e.process_inplace("xform.fourierorigin")
-					#e.do_ift_inplace()
-					#e.process_inplace("xform.phaseorigin")
-					
-					#for k in range(e.get_xsize()):
-						#for j in range(e.get_ysize()):
-							#for i in range(e.get_zsize()):
-								#self.assertEqual(e.get_3dview()[i][j][k], d.get_3dview()[i][j][k]) 
-
     def test_ri2ap_ap2ri(self):
         """test ri2ap()/ap2ri() function ...................."""
         e = EMData()

@@ -846,25 +846,71 @@ class AddFilesToProjectValidator():
 			
 		return 1
 
-class MicrographCCDImportTask(WorkFlowTask):	
-	documentation_string = "Use this tool for importing flat files into the raw_data directory in the project database. Files that you import in this way will be automatically added the list of files in the project."
-	
+class EMFilterRawDataTask(WorkFlowTask):	
+	documentation_string = "This tool supplies several common image filtering operations.\n"
+	documentation_string += "You can automatically associate the filtered images with the project."	
 	def __init__(self):
 		WorkFlowTask.__init__(self)
-		self.window_title = "Import micrographs"
+		self.window_title = "Filter Raw Data"
 		self.thumb_shrink = -1
+		self.output_names = [] # eventually populated with output names. Could be the names of the files themselves if processing is in place
+		self.form_db_name = "bdb:emform.filter_raw_data"
+		
+	def get_table(self,ptcl_list=[]):
+		from emform import EM2DFileTable,EMFileTable
+		table = EM2DFileTable(ptcl_list,desc_short="Raw Data",desc_long="")
+		context_menu_data = ParticleWorkFlowTask.DataContextMenu()
+		table.add_context_menu_data(context_menu_data)
+		table.add_button_data(ParticleWorkFlowTask.AddDataButton(table,context_menu_data))
+		table.add_column_data(EMFileTable.EMColumnData("Dimensions",EMRawDataReportTask.get_image_dimensions,"The dimensions of the file on disk"))
+		table.add_column_data(EMFileTable.EMColumnData("Mean",EMFilterRawDataTask.get_mean,"The mean pixel value"))
+		table.add_column_data(EMFileTable.EMColumnData("Sigma",EMFilterRawDataTask.get_sigma,"The standard deviation of the pixel values"))
+	
+		return table, len(ptcl_list)
+	
+	def get_mean(file_name,idx=0):
+		'''
+		A static function for getting the dimensions of a file as a string
+		'''
+		a = EMData()
+		a.read_image(file_name,idx,True)
+		val = a.get_attr("mean")
+		if val != None:	return str(val)
+		else: return ""
+	
+	def get_sigma(file_name,idx=0):
+		'''
+		A static function for getting the dimensions of a file as a string
+		'''
+		a = EMData()
+		a.read_image(file_name,idx,True)
+		val = a.get_attr("sigma")
+		if val != None:	return str(val)
+		else: return ""
+	
+	get_mean = staticmethod(get_mean)
+	get_sigma = staticmethod(get_sigma)
+
 	def get_params(self):
+#		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFGenericTask.documentation_string,choices=None))
+		
+		db = db_open_dict(self.form_db_name)
+		
+		p,n = self.get_table([])
 		params = []
 		project_db = db_open_dict("bdb:project")
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="Importing image data",desc_long="",property=None,defaultunits=MicrographCCDImportTask.documentation_string,choices=None))
-		params.append(ParamDef(name="import_micrograph_ccd_files",vartype="url",desc_short="File Names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=[],choices=[]))
-		pinvert = ParamDef(name="invert",vartype="boolean",desc_short="Invert",desc_long="Tick this if you want eman2 to invert your images while importing",property=None,defaultunits=False,choices=None)
-		pxray = ParamDef(name="xraypixel",vartype="boolean",desc_short="X-ray pixel",desc_long="Tick this if you want eman2 to automatically filter out X-ray pixels while importing",property=None,defaultunits=False,choices=None)
-		pnorm = ParamDef(name="norm.edgemean",vartype="boolean",desc_short="Edge norm",desc_long="Tick this if you want eman2 to automatically normalize your images using the edgmean approach",property=None,defaultunits=True,choices=None)
-		pthumbnail = ParamDef(name="thumbs",vartype="boolean",desc_short="Thumbnails",desc_long="Tick this if you want eman2 to automatically generate thumbnails for your images. This will save time at later stages in the project",property=None,defaultunits=True,choices=None)
-		
-		params.append([pinvert,pxray,pnorm,pthumbnail])
-		
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="Filtering Raw Data",desc_long="",property=None,defaultunits=EMFilterRawDataTask.documentation_string,choices=None))
+		pinvert = ParamDef(name="invert",vartype="boolean",desc_short="Invert",desc_long="Tick this if you want eman2 to invert your images while importing",property=None,defaultunits=db.get("invert",dfl=False),choices=None)
+		pxray = ParamDef(name="xraypixel",vartype="boolean",desc_short="Filter X-ray pixels",desc_long="Tick this if you want eman2 to automatically filter out X-ray pixels while importing",property=None,defaultunits=db.get("xraypixel",dfl=False),choices=None)
+		pnorm = ParamDef(name="norm.edgemean",vartype="boolean",desc_short="Edge norm",desc_long="Tick this if you want eman2 to automatically normalize your images using the edgmean approach",property=None,defaultunits=db.get("norm.edgemean",dfl=True),choices=None)
+		pthumbnail = ParamDef(name="thumbs",vartype="boolean",desc_short="Generate thumbnail",desc_long="Tick this if you want eman2 to automatically generate thumbnails for your images. This will save time at later stages in the project",property=None,defaultunits=db.get("thumbs",dfl=True),choices=None)
+		passociate = ParamDef(name="project_associate",vartype="boolean",desc_short="Associate with project",desc_long="If ticked the filtered raw data will be automatically added to the list of files in the project",property=None,defaultunits=db.get("project_associate",dfl=True),choices=None)
+		pinplace = ParamDef(name="inplace",vartype="boolean",desc_short="Inplace processing",desc_long="If ticked the filtered data will be processed in place. This can save on disk space ",property=None,defaultunits=db.get("inplace",dfl=True),choices=None)
+	
+		params.append(p)
+		params.append([pinvert,pxray,pnorm])
+		params.append([pthumbnail,passociate,pinplace])
+					
 		#db_close_dict("bdb:project")
 		return params
 	
@@ -875,24 +921,41 @@ class MicrographCCDImportTask(WorkFlowTask):
 			self.show_error_message(error_message)
 			return
  		
-		for k,v in params.items():
-			if k == "import_micrograph_ccd_files":
-				self.do_import(params)
-			else:
-				self.write_db_entry(k,v)
+		self.do_filtering(params,self.output_names)
 
 		self.form.closeEvent(None)
 		self.form = None
 	
 		self.emit(QtCore.SIGNAL("task_idle"))
-
+		
+		for k,v in params.items():
+			self.write_db_entry(k,v)
+		
 	def check_params(self,params):
 		error_message = []
-		filenames = params["import_micrograph_ccd_files"]
+		filenames = params["filenames"]
 		
 		if len(filenames) == 0:
 			error_message.append("Please specify files to import.")
 			return error_message
+		
+		import copy
+		self.output_names = copy.deepcopy(filenames)
+		if not params["inplace"]:
+			reps = []
+			for file in filenames:
+				if len(file) > 3 and file[:4] == "bdb:":
+					reps.append(file+"_filt")
+				else:
+					idx = file.rfind(".")
+					if idx == -1: error_message.append("Couldn't interpret %s" %file)
+					else:
+						reps.append(file[:idx]+"_filt"+file[idx:])
+			self.output_names = reps
+			
+			for name in self.output_names:
+				if file_exists(name):
+					error_message.append("The output file %s already exists. Please remove it" %name)
 		
 		for name in filenames:
 			if len(name) == 0: continue
@@ -908,41 +971,26 @@ class MicrographCCDImportTask(WorkFlowTask):
 				except:
 					error_message.append("File %s is not a valid EM image." %name)
 				
-				
-			
 		no_dir_names = [get_file_tag(name) for name in filenames]
 		
-		for name in filenames:
-			if name.find("bdb:rawdata#") != -1:
-				error_message.append("Can't import files that are already in the project raw data directory : %s is invalid" %name)
-		
-		for name in no_dir_names:
-			if no_dir_names.count(name) > 1:
-				error_message.append("Can't import files with the same name : %s " %name)
-
 		project_db = db_open_dict("bdb:project")
 		current_project_files = project_db.get("global.spr_raw_file_names",dfl=[])
 		cpft = [get_file_tag(file) for file in current_project_files]
 		
-		for name in filenames:
-			
-			tag = get_file_tag(name)
-			if tag in cpft:
-				error_message.append("Can't import images have identical tags to those already in the database, the problem is with %s" %name)
+		if params["project_associate"]:
+			for name in self.output_names:
 				
-			
-			db_name = "bdb:raw_data#"+tag
-			if db_check_dict(db_name):
-				error_message.append("There is already a raw_data database entry for %s" %db_name)
-
+				tag = get_file_tag(name)
+				if tag in cpft:
+					error_message.append("%s is already associated with the project" %name)
+					
 		return error_message
 
-	def do_import(self,params):
-		filenames = params["import_micrograph_ccd_files"]
+	def do_filtering(self,params,output_names):
 		
-		project_db = db_open_dict("bdb:project")
-#		
-		current_project_files = project_db.get("global.spr_raw_file_names",dfl=[])
+		filenames = params["filenames"]
+		
+		
 
 		# get the number of process operation - the progress dialog reflects image copying and image processing operations
 		num_processing_operations = 2 # there is atleast a copy and a disk write
@@ -953,16 +1001,15 @@ class MicrographCCDImportTask(WorkFlowTask):
 		
 		
 		# now add the files to db (if they don't already exist
-		progress = EMProgressDialogModule(get_application(),"Importing files into database...", "Abort import", 0, len(filenames)*num_processing_operations,None)
+		progress = EMProgressDialogModule(get_application(),"Filtering Raw Files", "Abort", 0, len(filenames)*num_processing_operations,None)
 		progress.qt_widget.show()
 		i = 0
 		cancelled = False # if the user cancels the import then we must act
-		cancelled_dbs = []
-		for name in filenames:
+		cancelled_writes = []
+		for j in xrange(0,len(filenames)):
+			name = filenames[j]
+			outname = output_names[j]
 			
-			tag = get_file_tag(name)
-			db_name = "bdb:raw_data#"+tag
-
 			e = EMData()
 			e.read_image(name,0)
 			i += 1
@@ -987,39 +1034,39 @@ class MicrographCCDImportTask(WorkFlowTask):
 				i += 1
 				progress.qt_widget.setValue(i)
 				get_application().processEvents()
-				
-			e.write_image(db_name,0)
+			
+			print name,outname
+			e.write_image(outname,0)
 			#db_close_dict(db_name)
-			cancelled_dbs.append(db_name)
+			cancelled_writes.append(outname)
 			i += 1
 			progress.qt_widget.setValue(i)
 			get_application().processEvents()
-			current_project_files.append(db_name)
 				
 			if params["thumbs"]:
 				shrink = self.get_thumb_shrink(e.get_xsize(),e.get_ysize())
 				thumb = e.process("math.meanshrink",{"n":shrink})
 				thumb.process_inplace("normalize.edgemean")
-				set_idd_image_entry(db_name,"image_thumb",thumb) # boxer uses the full name
+				set_idd_image_entry(outname,"image_thumb",thumb) # boxer uses the full name
 				i += 1
 				progress.qt_widget.setValue(i)
 				get_application().processEvents()
 				
 			if progress.qt_widget.wasCanceled():
 				cancelled = True
-				for data_db in cancelled_dbs: # policy here is to remove only the raw data dbs - the e2boxer thumbnails are tiny and I don't have time...
-					db_remove_dict(data_db)
+				for name in cancelled_writes: # policy here is to remove only the raw data dbs - the e2boxer thumbnails are tiny and I don't have time...
+					remove_file(name)
 				break
-			
-			
 			
 				
 		progress.qt_widget.setValue(len(filenames))
 		progress.qt_widget.close()
 		
-		if not cancelled:
+		if not cancelled and params["project_associate"]:
+			project_db = db_open_dict("bdb:project")
+			current_project_files = project_db.get("global.spr_raw_file_names",dfl=[])
+			current_project_files.extend(output_names)
 			project_db["global.spr_raw_file_names"] = current_project_files
-			#db_close_dict("bdb:project")
 		
 	def get_thumb_shrink(self,nx,ny):
 		if self.thumb_shrink == -1:
@@ -1052,7 +1099,6 @@ class ParticleWorkFlowTask(WorkFlowTask):
 		'''
 		from emform import EM2DStackTable,EMFileTable
 		table = EM2DStackTable(ptcl_list,desc_short="Particles",desc_long="")
-		print ptcl_list
 		if len(ptcl_list) != 0:
 			a = EMData()
 			a.read_image(ptcl_list[0],0,True)
@@ -2671,12 +2717,37 @@ class E2CTFOutputTaskGeneral(E2CTFOutputTask):
 	def __init__(self):
 		E2CTFOutputTask.__init__(self)
 		self.window_title = "e2ctf output"
+		self.names = None
+		
+	def set_names(self,names):
+		self.names = names
+
+	def get_custom_table(self,names):
+		
+		from emform import EM2DStackTable,EMFileTable
+		table = EM2DStackTable(names,desc_short="Particle Images",desc_long="")
+		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(names)
+		table.add_context_menu_data(context_menu_data)
+		table.add_button_data(EMRawDataReportTask.ProjectAddRawDataButton(table,context_menu_data))
+	#	table.insert_column_data(1,EMFileTable.EMColumnData("Particles On Disk",ParticleReportTask.get_num_ptcls,"Particles currently stored on disk that are associated with this image"))
+		table.insert_column_data(2,EMFileTable.EMColumnData("Particle Dims",ParticleReportTask.get_particle_dims,"The dimensions of the particles that are stored on disk"))
+		self.column_data = E2CTFWorkFlowTask.CTFColumns()
+		table.add_column_data(EMFileTable.EMColumnData("Defocus",self.column_data.get_defocus,"The estimated defocus"))
+		table.add_column_data(EMFileTable.EMColumnData("B Factor",self.column_data.get_bfactor,"The estimated B factor, note this is ~4x greater than in EMAN1"))
+		table.add_column_data(EMFileTable.EMColumnData("SNR",self.column_data.get_snr,"The averaged SNR"))
+		table.add_column_data(EMFileTable.EMColumnData("Sampling",self.column_data.get_sampling,"The amount of sampling used for generating CTF parameters"))
+		return table,len(names)
+	
 
 	def get_params(self):
 		params = []
-		names = self.get_names_with_ctf_params()
-		n = [l[0] for l in names]
-		p,num = self.get_ctf_param_table()
+		
+		if self.names != None: 
+			names = self.names
+			p,num = self.get_custom_table(names)
+		else:
+			p,num = self.get_ctf_param_table()
+		
 		
 		if num == 0:
 			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFOutputTask.documentation_string+E2CTFOutputTaskGeneral.warning_string,choices=None))
@@ -3942,15 +4013,11 @@ class E2Make3DTools:
 			except: error_message.append("The value you entered for padding is nonsensical")
 			pad = int(params["pad"])
 			if params["filenames"] > 0:
-#				try:
-					if self.end_tag != "generic":
-						nx,ny = gimme_image_dimensions2D("bdb:particles#"+params["filenames"][0])
-					else:
-						nx,ny = gimme_image_dimensions2D(params["filenames"][0])
-					if nx >= pad or ny >= pad:
-						error_message.append("You must specify a value for padding that is larger than the image dimensions - the image dimensions are %i x %i and your pad value is %i" %(nx,ny,pad))				
-					else:
-						options.pad = int(params["pad"])
+				nx,ny = gimme_image_dimensions2D(params["filenames"][0])
+				if nx >= pad or ny >= pad:
+					error_message.append("You must specify a value for padding that is larger than the image dimensions - the image dimensions are %i x %i and your pad value is %i" %(nx,ny,pad))				
+				else:
+					options.pad = int(params["pad"])
 #				except:
 #					error_message.append("Can't get the dimensions of the first image???")
 			else:

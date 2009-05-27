@@ -1348,6 +1348,7 @@ def test_image_3d(type=0,size=(128,128,128)):
 
 # get a font renderer
 def get_3d_font_renderer():
+	from libpyGLUtils2 import EMFTGL
 	font_renderer = EMFTGL()
 	font_renderer.set_face_size(32)
 	font_renderer.set_using_display_lists(True)

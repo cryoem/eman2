@@ -483,7 +483,7 @@ EMData *RotateFlipAligner::align(EMData * this_img, EMData *to,
 // be good to make things const as much as possible. For example in alignment, technically
 // the argument EMData objects (raw pointers) should not be altered... should they?
 //
-// And in retrospect, I also say that const can be very annoying sometimes...
+// But const can be very annoying sometimes...
 EMData *RTFExhaustiveAligner::align(EMData * this_img, EMData *to,
 			const string & cmp_name, const Dict& cmp_params) const
 {
@@ -1059,7 +1059,6 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 		if (status) {
 			break;
 		}
-
 		rval = gsl_multimin_test_size(gsl_multimin_fminimizer_size(s), precision);
 	}
 

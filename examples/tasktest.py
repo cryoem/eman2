@@ -66,4 +66,15 @@ while 1:
 	if st==100: break
 	time.sleep(15)
 
-print etc.get_results(tid)
+r = etc.get_results(tid)
+print r
+
+transforms = r[1]["transforms"]
+for t in transforms:
+	print t
+
+data = r[1]["data"]
+for d in data:
+	t = d.get_attr("xform.projection")
+	print t
+

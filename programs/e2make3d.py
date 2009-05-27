@@ -537,6 +537,7 @@ def fourier_reconstruction(options):
 					recon.insert_params(weight_params)
 				
 				t = image.get_attr("xform.projection")
+				print t
 				recon.determine_slice_agreement(image,t,num_img)
 				tot += 1
 				if options.verbose:
@@ -593,6 +594,7 @@ def fourier_reconstruction(options):
 				recon.insert_params(weight_params)
 
 			t = image.get_attr("xform.projection")
+			print t
 			r = t.get_params("eman")
 			failure = recon.insert_slice(image,t)
 				
