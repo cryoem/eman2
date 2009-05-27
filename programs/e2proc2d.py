@@ -128,6 +128,7 @@ def main():
 	parser.add_option("--outtype", metavar="image-type", type="string",
 					help="output image format, mrc, imagic, hdf, etc")
 	parser.add_option("--radon",  action="store_true", help="Do Radon transform")
+	parser.add_option("--randomize", type="string", action="append",help="Randomly rotate/translate the image. Specify: da,dxy,flip  da is a uniform distribution over +-da degrees, dxy is a uniform distribution on x/y, if flip is 1, random handedness changes will occur")
 	parser.add_option("--rfp",  action="store_true", help="this is an experimental option")
 	parser.add_option("--fp",  type="int", help="This generates rotational/translational 'footprints' for each input particle, the number indicates which algorithm to use (0-6)")
 	parser.add_option("--scale", metavar="f", type="float", action="append",
@@ -147,7 +148,7 @@ def main():
 	# Parallelism
 	parser.add_option("--parallel","-P",type="string",help="Run in parallel, specify type:n=<proc>:option:option",default=None)
 	
-	append_options = ["clip", "process", "meanshrink", "medianshrink", "scale"]
+	append_options = ["clip", "process", "meanshrink", "medianshrink", "scale", "randomize"]
 
 	optionlist = pyemtbx.options.get_optionlist(sys.argv[1:])
 	
@@ -338,6 +339,16 @@ def main():
 				d = e
 				#index_d[option1] += 1
 			
+			elif option1 == "randomize" :
+				ci = index_d[option1]
+				rnd = options.randomize[ci].split(",")
+				rnd[0]=float(rnd[0])
+				rnd[1]=float(rnd[1])
+				rnd[2]=int(rnd[2])
+				t=Transform()
+				t.set_params({"type":"2d","alpha":random.uniform(-rnd[0],rnd[0]),"mirror":random.randint(0,rnd[2]),"dx":random.uniform(-rnd[1],rnd[1]),"dy":random.uniform(-rnd[1],rnd[1])})
+				d.transform(t)
+
 			elif option1 == "medianshrink":
 				shrink_f = options.medianshrink[index_d[option1]]
 				if shrink_f > 1:
