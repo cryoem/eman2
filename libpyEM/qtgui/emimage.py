@@ -224,9 +224,16 @@ class EMModuleFromFile(object):
 			if data != None and len(data) == 1: data = data[0]
 			
 			if force_2d or isinstance(data,EMData) and data.get_zsize()==1:
-				from emimage2d import EMImage2DModule
-				if isinstance(old,EMImage2DModule): module = old
-				else: module= EMImage2DModule(application=application)
+				if data.get_ysize() != 1:
+					from emimage2d import EMImage2DModule
+					if isinstance(old,EMImage2DModule): module = old
+					else: module= EMImage2DModule(application=application)
+				else:
+					from emplot2d import EMPlot2DModule
+					if isinstance(old,EMPlot2DModule): module = old
+					else: module = EMPlot2DModule(application=application)
+					module.set_data_from_file(filename)
+					return module
 			elif isinstance(data,EMData):
 				from emimage3d import EMImage3DModule
 				if isinstance(old,EMImage3DModule): module = old
