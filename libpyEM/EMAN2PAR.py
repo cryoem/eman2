@@ -133,44 +133,42 @@ Communications are handled by subclasses."""
 		
 		# test command. takes a set of images, inverts them and returns the results
 		# data should contain one element "input"
-		if task.command=="test":
-			data=task.data["input"]
-			print task.data["transform"]
-#			print data[1]
-#			cname="bdb:cache_%d.%d"%(data[1][0],data[1][1])		# name of the file containing the cache for these images
-			cname=data[1]
-			cache=db_open_dict(cname)
-			
-			ret=[]
-			for i in image_range(*data[2:]):		# this allows us to iterate over the specified image numbers
-				print i,cache[i]
-				ret.append(cache[i]*-1)
-			d = {}
-			d["inverted"] = ret
-			from EMAN2 import Transform,Util
-			transforms = [ Transform({"type":"2d","alpha":Util.get_frand(0,360)}) for i in xrange(0,100)]
-			d["transforms"] = transforms
-			
-			emdatas = []
-			for t in transforms:
-				e = EMData(1,1,1)
-				e.set_attr("xform.projection",t)
-				emdatas.append(e)
-			d["data"] = emdatas
-			
-			return d
-		
-		elif task.command == "e2classaverage":
-			task.execute()
-			return task.get_return_data()
+#		if task.command=="test":
+#			data=task.data["input"]
+#			print task.data["transform"]
+##			print data[1]
+##			cname="bdb:cache_%d.%d"%(data[1][0],data[1][1])		# name of the file containing the cache for these images
+#			cname=data[1]
+#			cache=db_open_dict(cname)
+#			
+#			ret=[]
+#			for i in image_range(*data[2:]):		# this allows us to iterate over the specified image numbers
+#				print i,cache[i]
+#				ret.append(cache[i]*-1)
+#			d = {}
+#			d["inverted"] = ret
+#			from EMAN2 import Transform,Util
+#			transforms = [ Transform({"type":"2d","alpha":Util.get_frand(0,360)}) for i in xrange(0,100)]
+#			d["transforms"] = transforms
+#			
+#			emdatas = []
+#			for t in transforms:
+#				e = EMData(1,1,1)
+#				e.set_attr("xform.projection",t)
+#				emdatas.append(e)
+#			d["data"] = emdatas
+#			
+#			return d
+#		
+		return task.execute()
 	
-		elif task.command == "e2simmx":
-			task.execute()
-			return task.get_return_data()
-	
-		elif task.command == "e2project3d":
-			task.execute()
-			return task.get_return_data()
+#		elif task.command == "e2simmx":
+#			task.execute()
+#			return task.get_return_data()
+#	
+#		elif task.command == "e2project3d":
+#			task.execute()
+#			return task.get_return_data()
 
 def image_range(a,b=None):
 	"""This is an iterator which handles the (#), (min,max), (1,2,3,...) image number convention for passed data"""

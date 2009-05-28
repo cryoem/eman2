@@ -611,6 +611,8 @@ class EMTask:
 		self.options=options	# dictionary of options
 		self.wait_for=None		# in the active queue, this identifies an exited class which needs to be rerun when all wait_for jobs are complete
 		self.failcount=0		# Number of times this task failed to reach completion after starting
+		
+	def execute(self): return
 
 ##########
 ### This is the 'database' object, representing a BerkeleyDB environment

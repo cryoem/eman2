@@ -209,8 +209,9 @@ class EMParallelSimMX:
 				data["references"] = ("cache",self.args[0],block[0],block[1])
 				data["particles"] = ("cache",self.args[1],block[2],block[3])
 				
+				my_parent = EMTask("parent_task")
 				task = EMSimTaskDC(data=data,options=self.__get_task_options(self.options))
-				
+				task.parent = my_parent.id
 				from EMAN2PAR import EMTaskCustomer
 				etc=EMTaskCustomer(self.options.parallel)
 				#print "Est %d CPUs"%etc.cpu_est()
@@ -351,17 +352,19 @@ class EMSimTaskDC(EMTask):
 		
 		self.__init_memory(self.options)
 		
-		self.sim_data = {} # It's going to be our favorite thing, a dictionary of dictionaries
+		sim_data = {} # It's going to be our favorite thing, a dictionary of dictionaries
 		
 		for ptcl_idx,ptcl in self.ptcls.items():
 			
-			self.sim_data[ptcl_idx] = self.__cmp_one_to_many(ptcl_idx)
+			sim_data[ptcl_idx] = self.__cmp_one_to_many(ptcl_idx)
 			
+			
+		return sim_data 
 	
-	def get_return_data(self):
-		d = {}
-		d["sim_data"] = self.sim_data
-		return d
+#	def get_return_data(self):
+#		d = {}
+#		d["sim_data"] = self.sim_data
+#		return d
 
 def main():
 	progname = os.path.basename(sys.argv[0])

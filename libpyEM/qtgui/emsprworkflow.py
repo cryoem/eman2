@@ -4012,12 +4012,13 @@ class E2Make3DTools:
 			try: int(params["pad"])
 			except: error_message.append("The value you entered for padding is nonsensical")
 			pad = int(params["pad"])
-			if params["filenames"] > 0:
+			options.pad = int(params["pad"])
+			if params.has_key("filenames") and params["filenames"] > 0:
 				nx,ny = gimme_image_dimensions2D(params["filenames"][0])
 				if nx >= pad or ny >= pad:
 					error_message.append("You must specify a value for padding that is larger than the image dimensions - the image dimensions are %i x %i and your pad value is %i" %(nx,ny,pad))				
-				else:
-					options.pad = int(params["pad"])
+#				else:
+#					options.pad = int(params["pad"])
 #				except:
 #					error_message.append("Can't get the dimensions of the first image???")
 			else:
