@@ -1,5 +1,7 @@
 #!/usr/bin/env python
-# This is designed for OSX Leopard. The URL links are up to date as of 5/6/2008
+# This was designed to install most of the EMAN2 dependencies from source in a specified
+# target directory. If you don't have root permissions, you can specify your home directory,
+# but you will need to install python in your home directory before doing this. The URL links are up to date as of 5/6/2008
 # In theory if one of the URL's is out of date, you should only need to replace
 # the URL. The rest of the script should still function properly. Note that this
 # script installs dependencies, but not EMAN2 itself. Also, it is safe to rerun
@@ -18,16 +20,22 @@ ftg={ "setup":"http://peak.telecommunity.com/dist/ez_setup.py",
 #"png":"http://superb-east.dl.sourceforge.net/sourceforge/libpng/libpng-1.2.28.tar.bz2",
 "jpeg":"http://www.ijg.org/files/jpegsrc.v6b.tar.gz",
 "gpg":"ftp://ftp.gnupg.org/gcrypt/gnupg/gnupg-1.4.9.tar.bz2",
-"sip":"http://www.riverbankcomputing.co.uk/static/Downloads/sip4/sip-4.7.6.tar.gz",
-"pyqt":"http://www.riverbankcomputing.co.uk/static/Downloads/PyQt4/PyQt-mac-gpl-4.4.2.tar.gz",
-"fftw":"http://www.fftw.org/fftw-3.1.2.tar.gz",
-"gsl":"http://mirror.anl.gov/pub/gnu/gsl/gsl-1.11.tar.gz",
-"jam":"http://internap.dl.sourceforge.net/sourceforge/boost/boost-jam-3.1.16.tgz",
-"boost":"http://internap.dl.sourceforge.net/sourceforge/boost/boost_1_34_1.tar.bz2",
-"cmake":"http://www.cmake.org/files/v2.4/cmake-2.4.8.tar.gz",
-"hdf5":"ftp://ftp.hdfgroup.org/HDF5/current/src/hdf5-1.8.0.tar.gz",
+"sip":"http://www.riverbankcomputing.co.uk/static/Downloads/sip4/sip-4.7.9.tar.gz",
+"pyqt":"http://www.riverbankcomputing.co.uk/static/Downloads/PyQt4/PyQt-mac-gpl-4.4.4.tar.gz",
+"fftw":"http://www.fftw.org/fftw-3.2.1.tar.gz",
+"gsl":"http://mirror.anl.gov/pub/gnu/gsl/gsl-1.12.tar.gz",
+"jam":"http://internap.dl.sourceforge.net/sourceforge/boost/boost-jam-3.1.17.tgz",
+"boost":"http://internap.dl.sourceforge.net/sourceforge/boost/boost_1_39_0.tar.bz2",
+"cmake":"http://www.cmake.org/files/v2.6/cmake-2.6.4.tar.gz",
+"hdf5":"ftp://ftp.hdfgroup.org/HDF5/current/src/hdf5-1.8.3.tar.gz",
 "tiff":"ftp://ftp.remotesensing.org/pub/libtiff/tiff-3.8.2.tar.gz",
-"pyopengl":"http://superb-east.dl.sourceforge.net/sourceforge/pyopengl/PyOpenGL-3.0.0b2.tar.gz"}
+"pyopengl":"http://sourceforge.net/project/downloading.php?group_id=5988&filename=PyOpenGL-3.0.0.tar.gz&a=90207034"}
+
+from sys import argv
+if len(argv)<2 : 
+	print """Please specify an installation prefix location. On a mac, /usr/local is good (assuming
+you have administrative permissions. If you lack root access, use your home directory."""
+prefix=argv[1]
 
 fsp={}
 for i in ftg: fsp[i]=ftg[i].split("/")[-1]
@@ -52,42 +60,42 @@ if system("which ipython") :
 	system("easy_install ipython")
 	
 # fftw
-if not access("/usr/local/lib/libfftw3f.3.dylib",R_OK) :
+if not access("%s/lib/libfftw3f.3.dylib"%prefix,R_OK) :
 	system("tar xvzf "+fsp["fftw"])
-	system("cd %s; ./configure --enable-float --enable-shared --prefix=/usr/local; make; make install"%fsp["fftw"][:-7])
+	system("cd %s; ./configure --enable-float --enable-shared --prefix=%s; make; make install"%(fsp["fftw"][:-7],prefix))
 
 # GSL
-if not access("/usr/local/lib/libgsl.dylib",R_OK):
+if not access("%s/lib/libgsl.dylib"%prefix,R_OK):
 	system("tar xvzf "+fsp["gsl"])
-	system("cd %s; ./configure --prefix=/usr/local; make; make install"%fsp["gsl"][:-7])
+	system("cd %s; ./configure --prefix=%s; make; make install"%(fsp["gsl"][:-7],prefix))
 
 # jpg
-if not access("/usr/local/lib/libjpeg.a",R_OK):
+if not access("%s/lib/libjpeg.a"%prefix,R_OK):
 	system("tar xvzf "+fsp["jpeg"])
-	system("cd jpeg-6b; cp /usr/share/libtool/config.sub .; cp /usr/share/libtool/config.guess .; ./configure --enable-shared --enable-static --prefix=/usr/local; make; make install;ranlib /usr/local/lib/libjpeg.a")
+	system("cd jpeg-6b; cp /usr/share/libtool/config.sub .; cp /usr/share/libtool/config.guess .; ./configure --enable-shared --enable-static --prefix=%s; make; make install;ranlib %s/lib/libjpeg.a"%(prefix,prefix))
 
 # tiff
-if not access("/usr/local/lib/libtiff.dylib",R_OK):
+if not access("%s/lib/libtiff.dylib"%prefix,R_OK):
 	system("tar xvzf "+fsp["tiff"])
-	system("cd %s; ./configure --prefix=/usr/local; make; make install"%fsp["tiff"][:-7])
+	system("cd %s; ./configure --prefix=%s; make; make install"%(fsp["tiff"][:-7],prefix))
 
 # boost
 if system("which bjam") :
 	system("tar xvzf "+fsp["jam"])
-	system("cd %s; ./build.sh; cp bin.macosxx86/bjam /usr/local/bin/"%fsp["jam"][:-4])
+	system("cd %s; ./build.sh; cp bin.macosxx86/bjam %s/bin/"%(fsp["jam"][:-4],prefix))
 	
 	system("tar xvjf "+fsp["boost"])
 	system("cd %s; bjam --toolset=darwin install"%fsp["boost"][:-8])
 
 # HDF5
-if not access("/usr/local/lib/libhdf5.dylib",R_OK):
+if not access("%s/lib/libhdf5.dylib"%prefix,R_OK):
 	system("tar xvzf "+fsp["hdf5"])
-	system("cd %s; ./configure --prefix=/usr/local --with-default-api-version=v16; make; make install"%fsp["hdf5"][:-7])
+	system("cd %s; ./configure --prefix=%s --with-default-api-version=v16; make; make install"%(fsp["hdf5"][:-7],prefix))
 
 # cmake
-if not access("/usr/local/bin/cmake",R_OK):
+if not access("%s/bin/cmake"%prefix,R_OK):
 	system("tar xvzf "+fsp["cmake"])
-	system("cd %s; ./configure --prefix=/usr/local; make; make install"%fsp["cmake"][:-7])
+	system("cd %s; ./configure --prefix=%s; make; make install"%(fsp["cmake"][:-7],prefix))
 
 # SIP
 try: import sip
@@ -112,7 +120,7 @@ except:
 	system("easy_install matplotlib")
 
 # GPG
-if not access("/usr/local/bin/gpg",R_OK) :
+if not access("%s/bin/gpg"%prefix,R_OK) :
 	system("tar xvjf "+fsp["gpg"])
-	system("cd %s; ./configure --prefix=/usr/local; make; make install"%fsp["gpg"][:-8])
+	system("cd %s; ./configure --prefix=%s; make; make install"%(fsp["gpg"][:-8],prefix))
 
