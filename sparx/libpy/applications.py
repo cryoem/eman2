@@ -162,6 +162,68 @@ def ali2d_reduce(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, center=1, maxi
 """
 
 
+def ali2d_reduce(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0,\
+		CTF=False, snr=1.0, Fourvar=False, user_func_name="ref_ali2d", rand_alpha=False, decimation=4, MPI=False):
+		
+	if MPI:
+		ali2d_reduce_MPI(stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, center, maxit, \
+		CTF, snr, Fourvar, user_func_name, rand_alpha, decimation)
+		return
+
+def ali2d_reduce_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0,\
+		CTF=False, snr=1.0, Fourvar=False, user_func_name="ref_ali2d", rand_alpha=False, decimation=4):
+
+	from utilities    import file_type, print_msg, print_begin_msg, print_end_msg
+	from string       import string
+	import os
+	import sys
+	from mpi 	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
+	from mpi 	  import mpi_reduce, mpi_bcast, mpi_barrier
+	from mpi 	  import MPI_SUM, MPI_FLOAT, MPI_INT
+
+	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
+	myid = mpi_comm_rank(MPI_COMM_WORLD)
+	main_node = 0
+
+	ftp = filt_type(stack)
+	if ftp == "hdf":
+		small_stack = replace(stack, ".hdf", "_small.hdf")
+	elif ftp == "bdb":
+		small_stack = stack+"_small"
+	else:
+		print "Invalid file type!"
+		return
+
+	if myid == main_node:   
+		print_begin_msg("ali2d_reduce_MPI")
+		nima = EMUtil.get_image_count(stack)
+		img = get_im(stack, 0)
+		nx = img.get_xsize()
+		if nx/decimation < 32:	decimation = nx/32
+		for i in xrange(nima):
+			img.read_image(stack, i)
+			img_small = image_decimate(img, decimation)
+			active = img.get_attr("active")
+			alpha, sx, sy, mirror, scale = get_params2D(img)
+			img_small.set_attr_dict({"active": active})
+			set_params2D(img_small, [alpha, sx/float(decimation), sy/float(decimation), mirror, scale])
+			img_small.write_image(small_stack, i)
+
+	mpi_barrier(MPI_COMM_WORLD)
+		
+	ali2d_c(small_stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, center, maxit, CTF, snr, Fourvar, user_func_name, rand_alpha, MPI)
+
+	if myid == main_node:   
+		for i in xrange(nima):
+			img.read_image(stack, i)
+			img_small.read_image(stack, i)
+			alpha, sx, sy, mirror, scale = get_params2D(img_small)
+			set_params2D(img, [alpha, sx*decimation, sy*decimation, mirror, scale])
+			img.write_image(stack, i)
+	
+	if myid == main_node:   print_end_msg("ali2d_reduce_MPI")
+
+
 def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, CTF=False, user_func_name="ref_ali2d", random_method="", T0=1.0, F=0.996, MPI=False):
 	if MPI:
 		ali2d_a_MPI(stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, center, maxit, CTF, user_func_name, random_method, T0, F)
