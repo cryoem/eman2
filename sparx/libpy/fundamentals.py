@@ -210,7 +210,7 @@ def image_decimate(img, decimation=2, fit_to_fft = True, frequency_low=0, freque
 	if(decimation    == 1.0): 	return  img.copy()
 	if frequency_low <= 0  :	
 		frequency_low     = 0.5/decimation-0.02
-		if frequency_low <= 0 : ERRROR("Butterworth pass_band frequency is too low","image_decimation",1)			
+		if frequency_low <= 0 : ERROR("Butterworth passband frequency is too low","image_decimation",1)			
 		frequency_high    = min(0.5/decimation + 0.02, 0.499)
 	if fit_to_fft:
 		nx       = img.get_xsize()
