@@ -173,8 +173,10 @@ def ali2d_reduce(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", 
 def ali2d_reduce_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0,\
 		CTF=False, snr=1.0, Fourvar=False, user_func_name="ref_ali2d", rand_alpha=False, decimation=4):
 
-	from utilities    import file_type, print_msg, print_begin_msg, print_end_msg
-	from string       import string
+	from utilities    import get_im, file_type, get_params2D, set_params2D, get_image, model_circle
+	from fundamentals import image_decimate
+	from utilities    import print_msg, print_begin_msg, print_end_msg
+	from string       import replace
 	import os
 	import sys
 	from mpi 	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
@@ -188,7 +190,7 @@ def ali2d_reduce_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 
 	if myid == main_node:   
 		print_begin_msg("ali2d_reduce_MPI")
 
-	ftp = filt_type(stack)
+	ftp = file_type(stack)
 	if ftp == "hdf":
 		small_stack = replace(stack, ".hdf", "_small.hdf")
 	elif ftp == "bdb":
@@ -224,7 +226,7 @@ def ali2d_reduce_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 
 
 	mpi_barrier(MPI_COMM_WORLD)
 		
-	ali2d_c(small_stack, outdir, mask_small, ir, last_ring/decimation, rs, xr, yr, ts, center, maxit, CTF, snr, Fourvar, user_func_name, rand_alpha, MPI)
+	ali2d_c(small_stack, outdir, mask_small, ir, last_ring/decimation, rs, xr, yr, ts, center, maxit, CTF, snr, Fourvar, user_func_name, rand_alpha, True)
 
 	if myid == main_node:   
 		for i in xrange(nima):
