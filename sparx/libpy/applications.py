@@ -10281,7 +10281,7 @@ def params_2D_to_3D(stack):
 	print_end_msg("params_2D_to_3D")
 	
 def params_3D_to_2D(stack):
-	from utilities import params_3D_2D, print_begin_msg, print_end_msg, print_msg
+	from utilities import params_3D_2D, print_begin_msg, print_end_msg, print_msg, set_params2D
 	
 	print_begin_msg("params_3D_to_2D")
 	print_msg("Input stack                 : %s\n\n"%(stack))
@@ -10293,7 +10293,7 @@ def params_3D_to_2D(stack):
 		from utilities import set_params_proj, get_params_proj
 		phi,theta,psi,s2x,s2y = get_params_proj( ima )
 		alpha, sx, sy, mirror = params_3D_2D(phi, theta, psi, s2x, s2y)
-		ima.set_attr_dict({'alpha':alpha, 'sx':sx, 'sy':sy, 'mirror':mirror})
+		set_params2D(ima, [alpha, sx, sy, mirror, 1.0])
 		ima.write_image(stack, im, EMUtil.ImageType.IMAGE_HDF, True)
 	print_end_msg("params_3D_to_2D")
 
