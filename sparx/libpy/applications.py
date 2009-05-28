@@ -177,6 +177,7 @@ def ali2d_reduce_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 
 	from fundamentals import image_decimate
 	from utilities    import print_msg, print_begin_msg, print_end_msg
 	from string       import replace
+	from development  import ali_SSNR
 	import os
 	import sys
 	from mpi 	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
@@ -237,6 +238,8 @@ def ali2d_reduce_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 
 			img.write_image(stack, i)
 	
 	mpi_barrier(MPI_COMM_WORLD)
+	
+	ali_SSNR(stack, mask, last_ring, maxit=10, CTF=CTF, opti_method="LBFGSB", MPI=True)
 		
 	if myid == main_node:
 		os.system("rm -f "+small_stack)
