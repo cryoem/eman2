@@ -407,14 +407,14 @@ class EMTaskQueue:
 	tasks_done list, and the 'max' value is increased if necessary. There is
 	no guarantee in either list that all keys less than 'max' will exist."""
 	
-	def __init__(self,path=None):
+	def __init__(self,path=None,ro=False):
 		"""path should point to the directory where the disk-based task queue will reside without bdb:"""
 		if path==None or len(path)==0 : path="."
 		self.path=path
-		self.active=db_open_dict("bdb:%s#tasks_active"%path)		# active tasks keyed by id
-		self.complete=db_open_dict("bdb:%s#tasks_complete"%path)	# complete tasks
-		self.nametodid=db_open_dict("bdb:%s#tasks_name2did"%path)	# map local data filenames to did codes
-		self.didtoname=db_open_dict("bdb:%s#tasks_did2name"%path)	# map data id to local filename
+		self.active=db_open_dict("bdb:%s#tasks_active"%path,ro)		# active tasks keyed by id
+		self.complete=db_open_dict("bdb:%s#tasks_complete"%path,ro)	# complete tasks
+		self.nametodid=db_open_dict("bdb:%s#tasks_name2did"%path,ro)	# map local data filenames to did codes
+		self.didtoname=db_open_dict("bdb:%s#tasks_did2name"%path,ro)	# map data id to local filename
 
 		#if not self.active.has_key("max") : self.active["max"]=-1
 		#if not self.active.has_key("min") : self.active["min"]=0
@@ -438,8 +438,15 @@ class EMTaskQueue:
 			
 		return None
 	
+	def add_group(self):
+		"""returns a new (unique) group id to be used for related tasks"""
+		try: ret=self.active["grpctr"]+1
+		except: ret=1
+		self.active["grpctr"]=ret
+		
+		return ret
 	
-	def add_task(self,task,parentid=None,wait_for=None):
+	def add_task(self,task):
 		"""Adds a new task to the active queue, scheduling it for execution. If parentid is
 		specified, a doubly linked list is established. parentid MUST be the id of a task
 		currently in the active queue. parentid and wait_for may be set in the task instead"""
@@ -449,13 +456,6 @@ class EMTaskQueue:
 		try: tid=max(self.active["maxrec"],self.complete["maxrec"])+1
 		except: tid=1
 		task.taskid=tid
-		if task.parent!=None : parentid=task.parent
-		if parentid:
-			task.parent=parentid
-			t2=self.active[parentid]
-			if t2.children : t2.children.append(tid)
-			else : t2.children=[tid]
-			self.active[parentid]=t2
 		task.queuetime=time.time()
 		task.wait_for=wait_for
 
@@ -486,16 +486,6 @@ class EMTaskQueue:
 		self.active[tid]=task		# store the task in the queue
 		return tid
 		
-	def task_wait(self,taskid,wait_for=None):
-		"""Permits deferred execution. The task remains in the execution queue, but will
-		not be executed again until all of the 'wait_for' tasks have been completed or aborted.
-		all wait_for tasks should be children of taskid. If wait_for is not specified, will wait
-		for all children to complete"""
-		
-		task=self.active[taskid]
-		if not wait_for : task.wait_for=task.children
-		else : task.wait_for=wait_for
-		
 	def task_progress(self,taskid,percent):
 		"""Update task progress, unless task is already complete/aborted. Returns True if progress
 		update successful"""
@@ -510,7 +500,7 @@ class EMTaskQueue:
 	def task_check(self,tid):
 		"""This will check the status of a task. It will return -1 if a task is queued but not yet running,
 		0-99.999 while running (% complete) or exactly 100 when the task is done"""
-		print "task_check ",tid
+#		print "task_check ",tid
 		try : 
 			task=self.active[tid]
 			if task==None: raise Exception
@@ -535,15 +525,6 @@ class EMTaskQueue:
 		#if self.complete["max"]<tid : self.complete["max"]=tid
 		#self.active["min"]=min(self.active.keys())
 		
-		# if our parent is waiting for us
-		if task.parent :
-			try: 
-				t2=self.active[task.parent]
-				if taskid in t2.wait_for : 
-					t2.wait_for.remove(tid)
-					self.active[task.parent]=t2
-			except:
-				pass
 
 	def task_rerun(self,taskid):
 		"""If a task has been started somewhere, but execution fails due to a problem with the target node, call
@@ -572,15 +553,6 @@ class EMTaskQueue:
 		self.complete[tid]=task
 		self.active[tid]=None
 		
-		# if our parent is waiting for us
-		if task.parent :
-			try: 
-				t2=self.active[task.parent]
-				if taskid in t2.wait_for : 
-					t2.wait_for.remove(taskid)
-					self.active[task.parent]=t2
-			except:
-				pass
 
 		
 	
@@ -589,17 +561,19 @@ class EMTask:
 	an abstract superclass to define common member variables and methods. Note that the data dictionary,
 	which contains a mix of actual data elements, and ["cache",filename,#|min,max|(list)] image references, will
 	be transparently remapped on the client to similar specifiers which are valid locally. Over the network
-	such data requests are remapped into data identifiers (did)."""
-	def __init__(self,command=None,data=None,options=None):
+	such data requests are remapped into data identifiers (did), then translated back into valid filenames
+	in the remote cache.  When subclassing this class, avoid defining new member variables, as EMTask objects
+	get transmitted over the network. Make use of command, data and options instead. """
+	def __init__(self,user=None,data=None,options=None):
 		self.taskid=None		# unique task identifier (in this directory)
 		self.queuetime=None		# Time (as returned by time.time()) when task queued
 		self.starttime=None		# Time when execution began
 		self.progtime=None		# (time,% complete) from client
 		self.endtime=None		# Time when task completed
 		self.exechost=None		# hostname where task was executed
-		self.children=None		# list of child task ids
-		self.parent=None		# single parent id
-		self.command=command	# name of a function in module
+		self.user=None			# Username from customer
+		self.group=None			# group this task is in for task management purposes
+		self.command="Nothing"	# This is a one word description of the purpose of the task, should be set in __init__
 		self.data=data			# dictionary of named data specifiers value may be (before transmission):
 								# - actual data object (no caching)
 								# - ['cache',filename,#]
@@ -611,7 +585,8 @@ class EMTask:
 		self.options=options	# dictionary of options
 		self.wait_for=None		# in the active queue, this identifies an exited class which needs to be rerun when all wait_for jobs are complete
 		self.failcount=0		# Number of times this task failed to reach completion after starting
-		
+		self.errors=[]			# a list of errors (strings) that occured during task execution. Normally empty !
+
 	def execute(self): return
 
 ##########

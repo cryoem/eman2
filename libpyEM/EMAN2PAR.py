@@ -46,7 +46,7 @@ import socket
 import sys
 
 # used to make sure servers and clients are running the same version
-EMAN2PARVER=1
+EMAN2PARVER=2
 
 class EMTaskCustomer:
 	"""This will communicate with the specified task server on behalf of an application needing to
@@ -69,10 +69,20 @@ class EMTaskCustomer:
 		"""Returns an estimate of the number of available CPUs based on the number
 		of different nodes we have talked to. Doesn't handle multi-core machines as
 		separate entities yet"""
-		return EMDCsendonecom(self.addr,"NCPU",None)
+		if self.servtype=="dc" :
+			return EMDCsendonecom(self.addr,"NCPU",None)
+
+	def new_group(self):
+		"""request a new group id from the server for use in grouping subtasks"""
+		
+		if self.servtype=="dc" :
+			return EMDCsendonecom(self.addr,"NGRP",None)
 
 	def send_task(self,task):
 		"""Send a task to the server. Returns a taskid."""
+		
+		try: task.user=os.getlogin()
+		except: task.user="unknown"
 		
 		for k in task.data:
 			try :
@@ -117,7 +127,8 @@ class EMTaskCustomer:
 
 class EMTaskHandler:
 	"""This is the actual server object which talks to clients and customers. It coordinates task execution
- acts as a data clearinghouse"""
+ acts as a data clearinghouse. This parent class doesn't contain any real functionality. Subclasses are always
+ used for acutual servers."""
 	
 	def __init__(self,path=None):
 		self.queue=EMTaskQueue(path)
@@ -131,45 +142,8 @@ Communications are handled by subclasses."""
 	def process_task(self,task):
 		"""This method implements the actual image processing by calling appropriate module functions"""
 		
-		# test command. takes a set of images, inverts them and returns the results
-		# data should contain one element "input"
-#		if task.command=="test":
-#			data=task.data["input"]
-#			print task.data["transform"]
-##			print data[1]
-##			cname="bdb:cache_%d.%d"%(data[1][0],data[1][1])		# name of the file containing the cache for these images
-#			cname=data[1]
-#			cache=db_open_dict(cname)
-#			
-#			ret=[]
-#			for i in image_range(*data[2:]):		# this allows us to iterate over the specified image numbers
-#				print i,cache[i]
-#				ret.append(cache[i]*-1)
-#			d = {}
-#			d["inverted"] = ret
-#			from EMAN2 import Transform,Util
-#			transforms = [ Transform({"type":"2d","alpha":Util.get_frand(0,360)}) for i in xrange(0,100)]
-#			d["transforms"] = transforms
-#			
-#			emdatas = []
-#			for t in transforms:
-#				e = EMData(1,1,1)
-#				e.set_attr("xform.projection",t)
-#				emdatas.append(e)
-#			d["data"] = emdatas
-#			
-#			return d
-#		
 		return task.execute()
 	
-#		elif task.command == "e2simmx":
-#			task.execute()
-#			return task.get_return_data()
-#	
-#		elif task.command == "e2project3d":
-#			task.execute()
-#			return task.get_return_data()
-
 def image_range(a,b=None):
 	"""This is an iterator which handles the (#), (min,max), (1,2,3,...) image number convention for passed data"""
 	if b!=None:
@@ -177,6 +151,27 @@ def image_range(a,b=None):
 	elif isinstance(a,int) : yield a
 	else: 
 		for i in a : yield i
+
+def EMTestTask(EMTask):
+	"""This is a simple example of a EMTask subclass that actually does something"""
+	
+	def __init__(self):
+		EMTask.__init__(self)
+		self.command="test_task"
+	
+	def execute(self):
+		# test command. takes a set of images, inverts them and returns the results
+		# data should contain one element "input"
+		data=self.data["input"]
+		cname=data[1]
+		cache=db_open_dict(cname)
+		
+		ret=[]
+		for i in image_range(*data[2:]):		# this allows us to iterate over the specified image numbers
+			ret.append(cache[i]*-1)
+
+		return ret
+
 
 #######################
 #  Here are classes for implementing xmlrpc based parallelism
@@ -494,6 +489,10 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 			elif cmd=="NCPU" :
 				sendobj(self.sockf,len(EMDCTaskHandler.clients))
 				self.sockf.flush()
+				
+			elif cmd=="NGRP" :
+				sendobj(self.sockf,self.queue.add_group())
+				self.sockf.flush()
 			
 			# Cancel a pending task
 			# request contains the taskid to cancel
@@ -517,7 +516,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				try: ret=self.queue.complete[data]
 				except:
 					sendobj(self.sockf,None)
-					self.sendobj.flush()
+					self.sockf.flush()
 					continue
 				sendobj(self.sockf,ret)
 
@@ -530,6 +529,10 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				sendobj(self.sockf,None)
 				self.sockf.flush()
 				
+				db_remove_dict("bdb:%s#result_%d"%(self.queue.path,data))
+			else :
+				sendobj(self.sockf,"ERROR: Unknown command")
+				self.sockf.flush()
 		# self.request is the TCP socket connected to the client
 #		self.data = self.request.recv(1024).strip()
 #		print "%s wrote:" % self.client_address[0]
