@@ -182,7 +182,7 @@ EMData*   bispecRotTransInvN(int N, int NK);
    the output is a single 3d Volume whose x,y labels are lengths, corresponding to the two lengths of sides of
          a triangle 
          the z label is for the angle  */
-EMData*  bispecRotTransInvDirect();
+EMData*  bispecRotTransInvDirect(int type=0);
 
 
 /** Insert a clip into this image.
@@ -205,6 +205,7 @@ void insert_clip(const EMData * const block, const IntPoint & origin);
  * @param mult_factor Number used to multiply the block's densities.
  * @exception ImageDimensionException If 'this' image is not 2D/3D.
  */
+
 void insert_scaled_sum(EMData *block, const FloatPoint & center,
 					   float scale=1.0, float mult_factor=1.0);
 					   
