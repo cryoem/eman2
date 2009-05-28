@@ -430,7 +430,7 @@ class EMTaskQueue:
 			if task==None :
 				print "Missing task ",tid
 				continue
-			if task.starttime==None and (task.wait_for==None or len(task.wait_for)==0): 
+			if task.starttime==None: 
 				task.starttime=time.time()
 				task.exechost=exechost
 				self.active[tid]=task
@@ -457,7 +457,6 @@ class EMTaskQueue:
 		except: tid=1
 		task.taskid=tid
 		task.queuetime=time.time()
-		task.wait_for=wait_for
 
 		# map data file specifiers to ids
 		for j,k in task.data.items():
