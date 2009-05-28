@@ -185,6 +185,9 @@ def ali2d_reduce_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
 
+	if myid == main_node:   
+		print_begin_msg("ali2d_reduce_MPI")
+
 	ftp = filt_type(stack)
 	if ftp == "hdf":
 		small_stack = replace(stack, ".hdf", "_small.hdf")
@@ -194,12 +197,14 @@ def ali2d_reduce_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 
 		print "Invalid file type!"
 		return
 
+	last_ring = int(ou)
+	nima = EMUtil.get_image_count(stack)
+	img = get_im(stack, myid)
+	nx = img.get_xsize()
+	if nx/decimation < 32:	decimation = nx/32
+	if last_ring == -1:  last_ring = nx/2-2	
+
 	if myid == main_node:   
-		print_begin_msg("ali2d_reduce_MPI")
-		nima = EMUtil.get_image_count(stack)
-		img = get_im(stack, 0)
-		nx = img.get_xsize()
-		if nx/decimation < 32:	decimation = nx/32
 		for i in xrange(nima):
 			img.read_image(stack, i)
 			img_small = image_decimate(img, decimation)
@@ -208,10 +213,18 @@ def ali2d_reduce_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 
 			img_small.set_attr_dict({"active": active})
 			set_params2D(img_small, [alpha, sx/float(decimation), sy/float(decimation), mirror, scale])
 			img_small.write_image(small_stack, i)
+			
+	if maskfile:
+		import  types
+		if type(maskfile) is types.StringType:  mask = get_image(maskfile)
+		else:	mask = maskfile
+	else: mask = model_circle(last_ring, nx, nx)
+
+	mask_small = image_decimate(mask, decimation)
 
 	mpi_barrier(MPI_COMM_WORLD)
 		
-	ali2d_c(small_stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, center, maxit, CTF, snr, Fourvar, user_func_name, rand_alpha, MPI)
+	ali2d_c(small_stack, outdir, mask_small, ir, last_ring/decimation, rs, xr, yr, ts, center, maxit, CTF, snr, Fourvar, user_func_name, rand_alpha, MPI)
 
 	if myid == main_node:   
 		for i in xrange(nima):
@@ -2360,7 +2373,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	ftp = file_type(stack)
 
 	if myid == main_node:
-		print_begin_msg("*ali2d_c_MPI")
+		print_begin_msg("ali2d_c_MPI")
 		if os.path.exists(outdir):  os.system('rm -rf '+outdir)
 		os.mkdir(outdir)
 
