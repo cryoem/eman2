@@ -942,6 +942,7 @@ class EMSymViewerWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMat
 class EMSymInspector(QtGui.QWidget):
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
+		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "eulerxplor.png"))
 		self.target=weakref.ref(target)
 		self.rotation_sliders = EMTransformPanel(self.target(),self)
 		

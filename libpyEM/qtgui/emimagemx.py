@@ -498,6 +498,10 @@ class EMMatrixPanel:
 
 class EMImageMXModule(EMGUIModule):
 	
+	def enable_set(self,idx,name):
+		self.get_inspector()
+		self.inspector.add_set(idx,name)
+	
 	def load_font_renderer(self):
 		try:
 			self.font_render_mode = EMGUIModule.FTGL
@@ -755,7 +759,7 @@ class EMImageMXModule(EMGUIModule):
 	
 	def optimally_resize(self):
 		# I disabled this because it was giving me problems from e2.py
-		return
+		#return
 	
 		if isinstance(self.gl_context_parent,EMImageMXWidget):
 			self.qt_context_parent.resize(*self.get_parent_suggested_size())
@@ -1959,6 +1963,8 @@ class EMGLScrollBar:
 class EMImageInspectorMX(QtGui.QWidget):
 	def __init__(self,target,allow_col_variation=False,allow_window_variation=False,allow_opt_button=False):
 		QtGui.QWidget.__init__(self,None)
+		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"multiple_images.png"))
+		
 		self.target=weakref.ref(target)
 		self.busy = 1
 		self.vals = QtGui.QMenu()
@@ -2241,16 +2247,15 @@ class EMImageInspectorMX(QtGui.QWidget):
 	def set_list_row_changed(self,i):
 		if self.busy: return
 		a = self.setlist.item(i)
-		text = str(a.text())
-		idx = int(text[-1])
+		idx = a.index_key
 		self.target().data.set_current_set(idx)
 		
 	def set_list_item_changed(self,item):
 		checked = False
 		if item.checkState() == Qt.Checked: checked = True
 		
-		i = int(item.text()[-1])
-		
+		i = item.index_key
+				
 		if checked:
 			self.target().data.set_current_set(i)
 			self.target().data.make_set_visible(i)
@@ -2263,8 +2268,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 	def save_set(self,unused):
 		selections = self.setlist.selectedItems()
 		for i in selections:
-			text = str(i.text())
-			idx = int(text[-1])
+			idx = i.index_key
 			if self.target().data.sets.has_key(idx):
 				s = self.target().data.sets[idx]
 				db = db_open_dict("bdb:select")
@@ -2276,8 +2280,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 		selections = self.setlist.selectedItems()
 		
 		for i in selections:
-			text = str(i.text())
-			idx = int(text[-1])
+			idx = i.index_key
 			self.target().data.delete_set(idx)
 			db_name = "bdb:select#"+text
 			if db_check_dict(db_name): db_remove_dict(db_name)
@@ -2305,6 +2308,38 @@ class EMImageInspectorMX(QtGui.QWidget):
 		items = [QtGui.QListWidgetItem(self.setlist.item(i)) for i in range(self.setlist.count())]
 		return items
 
+	def add_set(self,set_idx,set_name):
+		
+		items = self.get_set_list_items_copy()
+		for item in items:
+			if str(item.text()) == set_name:
+				if item.checkState() == Qt.Checked:
+					self.target().data.set_current_set(set_idx)
+					self.target().data.make_set_visible(set_idx)
+				return
+			 
+		
+		flag1 = Qt.ItemFlags(Qt.ItemIsEditable)
+		flag2 = Qt.ItemFlags(Qt.ItemIsSelectable)
+		flag3 = Qt.ItemFlags(Qt.ItemIsEnabled)
+	  	flag4 = Qt.ItemFlags(Qt.ItemIsUserCheckable)
+		a = QtGui.QListWidgetItem(set_name)
+		a.setFlags(flag1|flag2|flag3|flag4)
+		#a.setTextColor(qt_color_map[colortypes[parms[j][0]]])
+		#if visible[j]:
+		a.setCheckState(Qt.Checked)
+		a.index_key = set_idx
+	
+	#a.setCheckState(Qt.Unchecked)
+		
+		self.setlist.addItem(a)
+	
+		a.setSelected(True)
+		
+		self.target().data.set_current_set(set_idx)
+		self.target().data.make_set_visible(set_idx)
+		
+		
 	def new_set(self,unused=None):
 		set = self.get_available_set_name()
 		flag1 = Qt.ItemFlags(Qt.ItemIsEditable)
@@ -2316,12 +2351,13 @@ class EMImageInspectorMX(QtGui.QWidget):
 		#a.setTextColor(qt_color_map[colortypes[parms[j][0]]])
 		#if visible[j]:
 		a.setCheckState(Qt.Checked)
+		i = int(a.text()[-1])
+		a.index_key = i
 		
 		#a.setCheckState(Qt.Unchecked)
 			
 		self.setlist.addItem(a) 
 		a.setSelected(True)
-		i = int(a.text()[-1])
 		self.target().data.set_current_set(i)
 		self.target().data.make_set_visible(i)
 	
@@ -2329,7 +2365,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 		
 		unavailable = []
 		for i in range(self.setlist.count()):
-			idx = int(self.setlist.item(i).text()[-1])
+			idx = self.setlist.item(i).index_key
 			unavailable.append(idx)
 		
 		i = 0
@@ -2360,7 +2396,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 				a = self.setlist.item(i)
 				if a.isSelected(): # something is selected, make sure its current in the data object
 					a.setCheckState(Qt.Checked)
-					i = int(a.text()[-1])
+					i = a.index_key
 					self.target().data.set_current_set(i)
 					self.target().data.make_set_visible(i)
 					break
@@ -2687,7 +2723,6 @@ class EMDataListCache:
 		if self.current_set == None: return 0 # there is no set, nothing happens
 		
 		im = self.images[idx]
-			
 		
 		if hasattr(im,"mxset") and self.current_set in im.mxset:
 			#print self.current_set,self.sets,im.mxset,idx 

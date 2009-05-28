@@ -358,6 +358,10 @@ class EMPlot2DModule(EMGUIModule):
 	# make the function static
 	is_file_readable = staticmethod(is_file_readable)
 	def render(self):
+		global glut_inited
+		if not glut_inited:
+			GLUT.glutInit("")
+			glut_inited = True
 		if not self.data : return
 		
 		render = False

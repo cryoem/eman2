@@ -5,37 +5,37 @@
 /*
  * Author: David Woolford, 04/15/2008 (woolford@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
 
 
 #include "boxingtools.h"
-#include "exception.h"	
+#include "exception.h"
 using namespace EMAN;
 
 
@@ -44,8 +44,8 @@ using namespace EMAN;
 #include <gsl/gsl_linalg.h>
 
 // For random
-#include <cstdlib> 
-#include <ctime> 
+#include <cstdlib>
+#include <ctime>
 
 #include <iostream>
 using std::cerr;
@@ -60,10 +60,10 @@ using std::string;
 
 vector<Vec3f> BoxingTools::colors = vector<Vec3f>(); // static init
 BoxingTools::CmpMode BoxingTools::mode = SWARM_RATIO;
-				 
+
 #define SVD_CLASSIFIER_DEBUG 0
 
-				 
+
 #if SVD_CLASSIFIER_DEBUG
  void printMatrix( const gsl_matrix * const A, const unsigned int rows, const unsigned int cols, const string& title = "" )
 {
@@ -136,7 +136,7 @@ map< unsigned int, unsigned int> BoxSVDClassifier::go()
 	//	This is done in the constructor
 	// 	setDims(mData);
 
-	
+
 	unsigned int local_columns = mColumns;
 	if ( mRows < mColumns )
 	{
@@ -174,7 +174,7 @@ map< unsigned int, unsigned int> BoxSVDClassifier::go()
 	printMatrix( U, mRows, local_columns, "U" );
 	printVector( S, local_columns, "S" );
 	printMatrix( V, local_columns, local_columns, "V");
-#endif	
+#endif
 
 	// normalize the columns of matrix A
 	for ( unsigned int j = 0; j < mColumns; ++j )
@@ -201,10 +201,10 @@ map< unsigned int, unsigned int> BoxSVDClassifier::go()
 		}
 		cout << "For column " << j << " the squared norm is " << norm << endl;
 	}
-#endif	
+#endif
 
 
-	gsl_matrix * svd_coords = gsl_matrix_calloc( mColumns, mColumns );	
+	gsl_matrix * svd_coords = gsl_matrix_calloc( mColumns, mColumns );
 	// Correlate the columns of A with the columns of U and store the information in a martrix called svd_coords
 	for ( unsigned int i = 0; i < mColumns; ++i )
 	{
@@ -224,12 +224,12 @@ map< unsigned int, unsigned int> BoxSVDClassifier::go()
 #endif
 
 	map< unsigned int, unsigned int> grouping = randomSeedCluster(svd_coords, mColumns);
-		
+
 	for ( unsigned int i = 0; i < 20; ++ i )
 	{
 		grouping = getIterativeCluster(svd_coords, grouping);
 	}
-	
+
 	gsl_matrix_free(A);
 	gsl_matrix_free(U);
 	gsl_matrix_free(V);
@@ -259,7 +259,7 @@ map< unsigned int, unsigned int> BoxSVDClassifier::getIterativeCluster(const gsl
 				}
 				++tally;
 			}
-			
+
 		}
 		// then normalize the the addition
 		if (tally != 0)
@@ -281,7 +281,7 @@ map< unsigned int, unsigned int> BoxSVDClassifier::getIterativeCluster(const gsl
 		}
 		cout << endl;
 	}
-#endif	
+#endif
 
 
 	// Finally decide which of the randomly chosen vectors is closest to each of the input vectors
@@ -291,8 +291,8 @@ map< unsigned int, unsigned int> BoxSVDClassifier::getIterativeCluster(const gsl
 #if SVD_CLASSIFIER_DEBUG
 	cout << "Printing classification map" << endl;
 	print_map(return_map);
-#endif	
-	
+#endif
+
 	gsl_matrix_free(ref_coords);
 
 	return return_map;
@@ -301,7 +301,7 @@ map< unsigned int, unsigned int> BoxSVDClassifier::getIterativeCluster(const gsl
 
 map< unsigned int, unsigned int> BoxSVDClassifier::randomSeedCluster(const gsl_matrix* const svd_coords, unsigned int matrix_dims)
 {
-	// Seed the random number generator 
+	// Seed the random number generator
 	srand(static_cast<unsigned int>(time(0)));
 
 	vector<unsigned int> random_seed_indices;
@@ -328,7 +328,7 @@ map< unsigned int, unsigned int> BoxSVDClassifier::randomSeedCluster(const gsl_m
 
 #if SVD_CLASSIFIER_DEBUG
 	printMatrix( ref_coords, mClasses, matrix_dims, "Reference matrix in first grouping");
-#endif	
+#endif
 
 	// accrue the distance data - this could be done more concisely, but there shouldn't be much cost
 	// because the data should be fairl small. By more concisely I mean, the distance data would not need
@@ -345,7 +345,7 @@ map< unsigned int, unsigned int> BoxSVDClassifier::randomSeedCluster(const gsl_m
 		}
 		cout << endl;
 	}
-#endif	
+#endif
 
 
 	// Finally decide which of the randomly chosen vectors is closest to each of the input vectors
@@ -355,8 +355,8 @@ map< unsigned int, unsigned int> BoxSVDClassifier::randomSeedCluster(const gsl_m
 #if SVD_CLASSIFIER_DEBUG
 	cout << "Printing classification map, randomly seeded" << endl;
 	print_map(return_map);
-#endif	
-	
+#endif
+
 	gsl_matrix_free(ref_coords);
 
 	return return_map;
@@ -425,7 +425,7 @@ map< unsigned int, unsigned int> BoxSVDClassifier::colorMappingByClassSize( cons
 			current_mappings.push_back( it->second );
 		}
 	}
-	
+
 	if ( current_mappings.size() < 2 )
 	{
 		cerr << "Error, cannot call colMappingByClassSize when less than 2 classes have been specified, I think you created " << current_mappings.size() << " classes " << endl;
@@ -454,7 +454,7 @@ map< unsigned int, unsigned int> BoxSVDClassifier::colorMappingByClassSize( cons
 #if SVD_CLASSIFIER_DEBUG
 		cout << "Printing mappings_tally" << endl;
 		print_map(mappings_tally);
-#endif	
+#endif
 
 		map< unsigned int, unsigned int>::iterator it = mappings_tally.begin();
 		map< unsigned int, unsigned int>::iterator track_it = mappings_tally.begin();
@@ -470,10 +470,10 @@ map< unsigned int, unsigned int> BoxSVDClassifier::colorMappingByClassSize( cons
 				track_it = it;
 			}
 		}
-		
+
 #if SVD_CLASSIFIER_DEBUG
 		cout << "The mapping is " << current_idx << " to " << current_mapping_idx << endl;
-#endif	
+#endif
 		for (map< unsigned int, unsigned int>::const_iterator group_it = grouping.begin(); group_it != grouping.end(); ++group_it )
 		{
 			if ( group_it->second == current_idx )
@@ -481,17 +481,17 @@ map< unsigned int, unsigned int> BoxSVDClassifier::colorMappingByClassSize( cons
 				return_map[group_it->first] = current_mapping_idx;
 			}
 		}
-	
+
 		mappings_tally.erase( current_idx );
-		
+
 		current_mapping_idx++;
 	}
 
-			
+
 #if SVD_CLASSIFIER_DEBUG
 	cout << "Printing adjusted classification map" << endl;
 	print_map(return_map);
-#endif	
+#endif
 
 
 	return return_map;
@@ -502,37 +502,37 @@ map< unsigned int, unsigned int> BoxSVDClassifier::colorMappingByClassSize( cons
 vector<float> BoxingTools::get_min_delta_profile(const EMData* const image, int x, int y, int radius)
 {
 	float peakval = image->get_value_at(x,y);
-	
+
 	vector<float> profile(radius,0); // this sets the vectors size to radius, and the values to 0
 	int radius_squared = radius*radius;
-	
+
 	static vector<float> squared_numbers;
 	if ( (unsigned int)(radius+1) > squared_numbers.size() ) {
 		for(int i = squared_numbers.size(); i <= radius; ++i) {
 			squared_numbers.push_back((float)(i*i));
 		}
 	}
-	
+
 	vector<unsigned int> tally;
 	if (mode == SWARM_AVERAGE_RATIO) tally.resize(profile.size(),0);
-	
+
 	for(int k = -radius; k <= radius; ++k) {
 		for(int j = -radius; j <= radius; ++j) {
 			// Translate coordinates
 			int xx = x+j;
 			int yy = y+k;
-			
+
 			// Protect against accessing pixels out of bounds
 			if ( xx >= image->get_xsize() || xx < 0 ) continue;
 			if ( yy >= image->get_ysize() || yy < 0 ) continue;
-			
+
 			// We don't need to pay attention to the origin
 			if ( xx == x && yy == y) continue;
-			
+
 			// Protect against vector accesses beyond the boundary
 			int square_length = k*k + j*j;
 			if (square_length > radius_squared ) continue;
-			
+
 			// The idx is the radius, rounded down. This creates a certain type of pattern that
 			// can only really be explained visually...
 			int idx = -1;
@@ -545,18 +545,18 @@ vector<float> BoxingTools::get_min_delta_profile(const EMData* const image, int 
 // 			int idx = (int) sqrtf(k*k + j*j);
 			// decrement the idx, because the origin information is redundant
 			idx -= 1;
-			
+
 			if ( mode == SWARM_DIFFERENCE ) {
 				// Finally, get the drop relative to the origin
 				float val = peakval - image->get_value_at(xx,yy);
-					
+
 				// Store it if the drop is smaller than the current value (or if there is no value)
 				if ( profile[idx] > val || profile[idx] == 0 ) profile[idx] = val;
 			}
 			else if (mode == SWARM_RATIO) {
 				// Finally, get the drop relative to the origin
 				float val =  (peakval - image->get_value_at(xx,yy) ) / peakval;
-					
+
 				// Store it if the drop is smaller than the current value (or if there is no value)
 				if ( profile[idx] > val || profile[idx] == 0 ) profile[idx] = val;
 			}
@@ -564,10 +564,10 @@ vector<float> BoxingTools::get_min_delta_profile(const EMData* const image, int 
 				profile[idx] += image->get_value_at(xx,yy);
 				tally[idx]++;
 			}
-			
+
 		}
 	}
-	
+
 	if (mode == SWARM_AVERAGE_RATIO) {
 		for(unsigned int i = 0; i < profile.size(); ++i) {
 			if (tally[i] != 0) {
@@ -576,7 +576,7 @@ vector<float> BoxingTools::get_min_delta_profile(const EMData* const image, int 
 			}
 		}
 	}
-	
+
 	return profile;
 }
 
@@ -589,24 +589,24 @@ bool BoxingTools::is_local_maximum(const EMData* const image, int x, int y, int 
 			// Translate coordinates
 			int xx = x+j;
 			int yy = y+k;
-			
+
 // 			// Protect against accessing pixel out of bounds
 			if ( xx >= image->get_xsize() || xx < 0 ) continue;
 			if ( yy >= image->get_ysize() || yy < 0 ) continue;
-			
+
 			// We don't need to pay attention to the origin
 			if ( xx == x && yy == y) continue;
-			
+
 			if ((k*k+j*j)>radius_squared) continue;
-			
+
 			if ( image->get_value_at(xx,yy) > peakval)  return false;
 		}
 	}
-	
+
 	set_radial_non_zero(exclusion_map,x,y,radius);
-	
+
 	return true;
-	
+
 }
 
 vector<IntPoint> BoxingTools::auto_correlation_pick(const EMData* const image, float threshold, int radius, const vector<float>& profile, EMData* const exclusion, const int cradius, int mode)
@@ -614,37 +614,37 @@ vector<IntPoint> BoxingTools::auto_correlation_pick(const EMData* const image, f
 	if (mode < 0 || mode > 2 ) {
 		throw InvalidValueException(mode,"Error, the mode can only be 0,1, or 2.");
 	}
-	
+
 	if ( radius < 0) {
 		throw InvalidValueException(radius,"Radius must be greater than 1");
 	}
-		
+
 	if ( cradius < 0) {
 		throw InvalidValueException(cradius,"CRadius must be greater than 1");
 	}
-			
-	
+
+
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
-	
+
 	vector<IntPoint> solution;
 
 	int r = radius+1;
-	
+
 	for(int j = r; j < ny-r;++j) {
 		for(int k = r; k < nx-r;++k) {
-			
+
 			if (exclusion->get_value_at(k,j) != 0 ) continue;
-			
+
 			if (image->get_value_at(k,j) < threshold) continue;
 			if ( mode == 0 ) {
 				solution.push_back(IntPoint(k,j));
 				set_radial_non_zero(exclusion,k,j,radius);
 				continue;
 			}
-			
+
 			vector<float> p(r,0);
-						
+
 			if (hi_brid(image,k,j,r,exclusion,p)) {
 				if ( mode == 1 ) {
 					if (p[cradius] >= profile[cradius]) {
@@ -665,9 +665,9 @@ vector<IntPoint> BoxingTools::auto_correlation_pick(const EMData* const image, f
 					solution.push_back(IntPoint(k,j));
 					set_radial_non_zero(exclusion,k,j,radius);
 				}
-					
-			
-			}	
+
+
+			}
 		}
 	}
 	return solution;
@@ -676,41 +676,41 @@ vector<IntPoint> BoxingTools::auto_correlation_pick(const EMData* const image, f
 
 bool BoxingTools::hi_brid(const EMData* const image, int x, int y, int radius,EMData* const exclusion_map, vector<float>& profile)
 {
-	
+
 	float peakval = image->get_value_at(x,y);
-	
+
 	int radius_squared = radius*radius;
-	
+
 	static vector<float> squared_numbers;
 	if ( (unsigned int)(radius+1) > squared_numbers.size() ) {
 		for(int i = squared_numbers.size(); i <= radius; ++i) {
 			squared_numbers.push_back((float)(i*i));
 		}
 	}
-	
+
 	vector<unsigned int> tally;
 	if (mode == SWARM_AVERAGE_RATIO) tally.resize(profile.size(),0);
-	
+
 	for(int k = -radius; k <= radius; ++k) {
 		for(int j = -radius; j <= radius; ++j) {
 			// Translate coordinates
 			int xx = x+j;
 			int yy = y+k;
-			
+
 			// Protect against accessing pixels out of bounds
 			if ( xx >= image->get_xsize() || xx < 0 ) continue;
 			if ( yy >= image->get_ysize() || yy < 0 ) continue;
-			
+
 			// We don't need to pay attention to the origin
 			if ( xx == x && yy == y) continue;
-			
+
 			// Protect against vector accesses beyond the boundary
 			int square_length = k*k + j*j;
 			if (square_length > radius_squared ) continue;
-			
+
 			// It's not a local maximum!
 			if ( image->get_value_at(xx,yy) > peakval)  return false;
-			
+
 			// The idx is the radius, rounded down. This creates a certain type of pattern that
 			// can only really be explained visually...
 			int idx = -1;
@@ -723,18 +723,18 @@ bool BoxingTools::hi_brid(const EMData* const image, int x, int y, int radius,EM
 // 			int idx = (int) sqrtf(k*k + j*j);
 			// decrement the idx, because the origin information is redundant
 			idx -= 1;
-			
+
 			if (mode == SWARM_DIFFERENCE) {
 				// Finally, get the drop relative to the origin
 				float val = peakval - image->get_value_at(xx,yy);
-				
+
 				// Store it if the drop is smaller than the current value (or if there is no value)
 				if ( profile[idx] > val || profile[idx] == 0 ) profile[idx] = val;
 			}
 			else if (mode == SWARM_RATIO) {
 				// Finally, get the drop relative to the origin
 				float val =  (peakval - image->get_value_at(xx,yy) ) / peakval;
-				
+
 				// Store it if the drop is smaller than the current value (or if there is no value)
 				if ( profile[idx] > val || profile[idx] == 0 ) profile[idx] = val;
 			}
@@ -742,10 +742,10 @@ bool BoxingTools::hi_brid(const EMData* const image, int x, int y, int radius,EM
 				profile[idx] += image->get_value_at(xx,yy);
 				tally[idx]++;
 			}
-			
+
 		}
 	}
-	
+
 	if (mode == SWARM_AVERAGE_RATIO) {
 		for(unsigned int i = 0; i < profile.size(); ++i) {
 			if (tally[i] != 0) {
@@ -754,9 +754,9 @@ bool BoxingTools::hi_brid(const EMData* const image, int x, int y, int radius,EM
 			}
 		}
 	}
-	
+
 	set_radial_non_zero(exclusion_map,x,y,radius);
-	
+
 	return true;
 }
 
@@ -769,12 +769,12 @@ void BoxingTools::set_radial_non_zero(EMData* const exclusion, int x, int y, int
 			// Translate coordinates
 			int xx = x+j;
 			int yy = y+k;
-			
+
 			if ((k*k+j*j)>radius_squared) continue;
 			// Protect against accessing pixel out of bounds
 			if ( xx >= exclusion->get_xsize() || xx < 0 ) continue;
 			if ( yy >= exclusion->get_ysize() || yy < 0 ) continue;
-			
+
 			exclusion->set_value_at(xx,yy,1);
 		}
 	}
@@ -783,26 +783,26 @@ void BoxingTools::set_radial_non_zero(EMData* const exclusion, int x, int y, int
 IntPoint BoxingTools::find_radial_max(const EMData* const map, int x, int y, int radius)
 {
 	float currentmax = map->get_value_at(x,y);
-	
+
 	IntPoint soln(x,y);
-	
+
 	int radius_squared = radius*radius;
 	for(int k = -radius; k <= radius; ++k) {
 		for(int j = -radius; j <= radius; ++j) {
 			// Translate coordinates
 			int xx = x+j;
 			int yy = y+k;
-			
+
 			// Protect against accessing pixels out of bounds
 			if ( xx >= map->get_xsize() || xx < 0 ) continue;
 			if ( yy >= map->get_ysize() || yy < 0 ) continue;
-			
+
 			// Protect against vector accesses beyond the boundary
 			int square_length = k*k + j*j;
 			if (square_length > radius_squared ) continue;
-			
+
 			float val = map->get_value_at(xx,yy);
-			
+
 			if (val > currentmax) {
 				currentmax = val;
 				soln[0] = xx;
@@ -810,19 +810,19 @@ IntPoint BoxingTools::find_radial_max(const EMData* const map, int x, int y, int
 			}
 		}
 	}
-	
+
 	return soln;
 }
 
 
 void BoxingTools::set_region( EMData* const image, const EMData* const mask, const int x, const int y, const float& val) {
-	
-	// Works only in 2D 
+
+	// Works only in 2D
 	int inx = image->get_xsize();
 	int iny = image->get_ysize();
 	int mnx = mask->get_xsize();
 	int mny = mask->get_ysize();
-	
+
 	int startx = x-mnx/2;
 	int endx =startx + mnx;
 	int xoffset = 0;
@@ -831,7 +831,7 @@ void BoxingTools::set_region( EMData* const image, const EMData* const mask, con
 		startx = 0;
 	}
 	if (endx > inx) endx = inx;
-	
+
 	int starty = y-mny/2;
 	int endy =starty + mny;
 	int yoffset = 0;
@@ -855,9 +855,9 @@ map<unsigned int, unsigned int> BoxingTools::classify(const vector<vector<float>
 {
 	BoxSVDClassifier classifier(data, classes);
 	map< unsigned int, unsigned int> mapping = classifier.go();
-	
+
 	mapping = BoxSVDClassifier::colorMappingByClassSize( mapping );
-	
+
 	return mapping;
 
 }
@@ -868,8 +868,8 @@ Vec3f BoxingTools::get_color( const unsigned int index )
 	if ( colors.size() == 0 ) {
 		colors.push_back(Vec3f(0,0,0));
 		colors.push_back(Vec3f(0,0,1));
-		colors.push_back(Vec3f(1,0,0));
 		colors.push_back(Vec3f(0,1,0));
+		colors.push_back(Vec3f(1,0,0));
 		colors.push_back(Vec3f(1,1,0));
 		colors.push_back(Vec3f(1,0,1));
 		colors.push_back(Vec3f(0,1,1));
@@ -888,7 +888,7 @@ Vec3f BoxingTools::get_color( const unsigned int index )
 				{
 					random_idx2 = rand() % colors.size();
 				}
-				
+
 				Vec3f result = (colors[random_idx] + colors[random_idx2])/2.0;
 				if ( find( colors.begin(), colors.end(), result ) == colors.end() )
 				{

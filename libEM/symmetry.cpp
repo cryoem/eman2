@@ -215,7 +215,8 @@ void OrientationGenerator::get_az_max(const Symmetry3D* const sym, const float& 
 float OrientationGenerator::get_optimal_delta(const Symmetry3D* const sym, const int& n) const
 {
 
-	float delta_soln = 360.0f/sym->get_max_csym();
+//	float delta_soln = 360.0f/sym->get_max_csym();
+	float delta_soln = 180.0;
 	float delta_upper_bound = delta_soln;
 	float delta_lower_bound = 0.0;
 

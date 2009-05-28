@@ -205,7 +205,7 @@ class EMShape:
 		
 		elif s[0]=="label":
 			if not glut_inited:
-				GLUT.glutInit(sys.argv)
+				GLUT.glutInit("")
 				glut_inited = True
 			GL.glPushMatrix()
 			if s[8]<0 :
@@ -270,7 +270,7 @@ class EMShape:
 						EMShape.font_renderer.render_string(s[6])
 					else:
 						if not glut_inited:
-							GLUT.glutInit(sys.argv)
+							GLUT.glutInit("")
 							glut_inited = True
 						GL.glColor(1.,1.,1.)
 						GL.glTranslate(s[4],s[5],0)

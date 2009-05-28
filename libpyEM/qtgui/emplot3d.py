@@ -341,6 +341,11 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		Will do a scatter plot using the available data
 		If any data is 2D it will simply ignore it
 		'''
+		global glut_inited
+		if not glut_inited:
+			GLUT.glutInit("")
+			glut_inited = True
+	
 		minx,miny,minz,maxx,maxy,maxz = None,None,None,None,None,None
 		mins = [None,None,None]
 		maxs = [None,None,None]

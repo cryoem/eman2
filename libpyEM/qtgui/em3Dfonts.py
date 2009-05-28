@@ -48,6 +48,7 @@ from time import time
 from PyQt4.QtCore import QTimer
 import weakref
 from time import *
+from libpyGLUtils2 import *
 
 from emglobjects import EMImage3DGUIModule, Camera2,EMViewportDepthTools, EMGLProjectionViewMatrices, get_default_gl_colors
 

@@ -45,7 +45,6 @@ from emimage2d import EMImage2DModule
 from emimagerotor import EMImageRotorModule
 from emimagemxrotor import EMImageMXRotorModule
 from emrotor import EMRotorModule
-from emimage import EMImage,get_app
 from valslider import *
 from math import *
 from time import *

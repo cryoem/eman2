@@ -341,6 +341,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 		self.da = None
 		self.dflip = None
 		self.classes = None
+		self.inclusions = None
 		
 		self.average = None
 		self.projection = None
@@ -378,7 +379,6 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 	def depth(self): return 2*self.radius
 	
 	def gen_refinement_data(self):
-		print "generating refinement data"
 		dirs,files = get_files_and_directories()
 		
 		dirs.sort()
@@ -500,11 +500,13 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 		if self.average != None: disp.append(self.average)
 
 		self.mx_viewer.set_data(disp)
-		if first: self.mx_viewer.optimally_resize()
+		
 		self.mx_viewer.updateGL()
 		
 		if self.mx_particle_viewer != None:
 			self.mx_image_selected(None,None)
+			
+		if first: self.mx_viewer.optimally_resize()
 			
 	def on_mx_view_closed(self):
 		self.mx_viewer = None
@@ -530,10 +532,24 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 				get_application().show_specific(self.mx_particle_viewer)
 			
 			
+			self.check_images_in_memory()
+			for i,idx in enumerate(indices):
+				index = -1
+				for j in range(self.classes.get_xsize()):
+					if int(self.classes.get(j,idx)) == self.class_idx:
+						index = j
+						break
+				if index == -1:
+					print "couldn't find"
+					return
+				kept = self.inclusions.get(index,idx)
+				mx[i]["included"] = kept
+				mx[i].mxset = [kept]
+			
 			if self.sel== 0 or self.alignment_file == None:
 				self.mx_particle_viewer.set_data(mx)
 			else:
-				self.check_images_in_memory()
+				
 				for i,idx in enumerate(indices):
 					index = -1
 					for j in range(self.classes.get_xsize()):
@@ -554,9 +570,15 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 					mx[i].transform(t)
 				self.mx_particle_viewer.set_data(mx)
 
-			if first: self.mx_particle_viewer.optimally_resize()
+			
+			if first:
+				self.mx_particle_viewer.updateGL()
+				self.mx_particle_viewer.optimally_resize()
+				
+			self.mx_particle_viewer.enable_set(0,"Excluded")
+			self.mx_particle_viewer.enable_set(1,"Included")
 			self.mx_particle_viewer.updateGL()
-		
+			
 	def check_images_in_memory(self):
 		if self.alignment_file != None:
 			if self.dx == None:
@@ -569,6 +591,8 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 				self.dflip  = EMData(self.alignment_file,5)
 			if self.classes == None:
 				self.classes  = EMData(self.alignment_file,0)
+			if self.inclusions == None:
+				self.inclusions  = EMData(self.alignment_file,1)
 			
 		
 	def set_events_mode(self,mode):
@@ -622,6 +646,7 @@ def get_alignment(dir_tag="00",iter="00",ptcl=0,post_align=False):
 		print  "Error, can't open database:", prj_file,".. please check your arguments"
 	
 	classes  = EMData(db_ali,0)
+	kept = EMData(db_ali,1)
 	dx = EMData(db_ali,2)
 	dy = EMData(db_ali,3)
 	da = EMData(db_ali,4)
@@ -635,6 +660,7 @@ def get_alignment(dir_tag="00",iter="00",ptcl=0,post_align=False):
 	y = dy.get(ptcl)
 	a = da.get(ptcl)
 	m = dflip.get(ptcl)
+	kept = kept.get(ptcl)
 	
 	#print "Class and ali parms are",class_idx,x,y,a,m
 	
@@ -646,7 +672,7 @@ def get_alignment(dir_tag="00",iter="00",ptcl=0,post_align=False):
 	ptcl_c = ptcl.copy()
 	ptcl_c.transform(t)
 	#print directory,db_ali,prj_file,ptcl_db
-	return [projection["xform.projection"], t,[projection,ptcl,ptcl_c]]
+	return [projection["xform.projection"], t,[projection,ptcl,ptcl_c],kept]
 
 class EMAsymmetricUnitInspector(EMSymInspector):
 	def get_desktop_hint(self):

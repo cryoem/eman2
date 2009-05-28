@@ -754,9 +754,9 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		get_application().setOverrideCursor(Qt.BusyCursor)
 		from emform import get_example_table_form_params,EMTableFormModule
 		module = EMTableFormModule(params=get_example_table_form_params(),application=em_app)
-		self.module().emit(QtCore.SIGNAL("launching_module"),"Flat Form",module)
+		self.module().emit(QtCore.SIGNAL("launching_module"),"Tabular Form",module)
 		get_application().show_specific(module)
-		self.add_module([str(module),"Flat Form",module])
+		self.add_module([str(module),"Tabular Form",module])
 		get_application().setOverrideCursor(Qt.ArrowCursor)
 	  	
 	def launch_3d_plot_tool(self):
@@ -779,16 +779,16 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		get_application().setOverrideCursor(Qt.ArrowCursor)
 	
 	def launch_refine2d_general(self):
-		self.launch_task(E2Refine2DWithGenericTask(False),"e2refine2d generic")
+		self.launch_task(E2Refine2DWithGenericTask(False),"e2refine2d Generic")
 	
 	def launch_ctf_general(self):
-		self.launch_task(E2CTFGenericTask(),"e2ctf generic")
+		self.launch_task(E2CTFGenericTask(),"e2ctf Generic")
 	
 	def launch_e2boxer_output(self):
-		self.launch_task(E2BoxerOutputTask(),"e2boxer output")
+		self.launch_task(E2BoxerOutputTask(),"e2boxer Output")
 	
 	def launch_boxer_general(self):
-		self.launch_task(E2BoxerGenericTask(),"e2boxer general")
+		self.launch_task(E2BoxerGenericTask(),"e2boxer General")
 #		module = EMBoxerModule(get_application(),None)
 #		self.module.emit(QtCore.SIGNAL("launching_module"),"Boxer",module)
 #		module.show_guis()
