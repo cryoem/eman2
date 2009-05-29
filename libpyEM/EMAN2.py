@@ -1275,10 +1275,12 @@ def test_image(type=0,size=(128,128)):
 def test_image_3d(type=0,size=(128,128,128)):
 	"""Returns a simple standard test image
 	type=0  axes
-	type=1	gaussian noise, 0 mean, sigma 1
-	type=2  gradient
+	type=1  spherical waves
+	type=2  test tomo image, size parameter ignored
 	type=3  square
 	type=4  sphere
+	type=5  ellipse with holes
+	type=6  random gaussian noise
 	size=(128,128,128) """
 	ret=EMData()
 	if len(size) != 3:

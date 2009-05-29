@@ -3733,12 +3733,9 @@ void FlipProcessor::process_inplace(EMData * image)
 
 
 	// Note in all cases the origin is nx/2, ny/2 and nz/2
-	// This means that for even flipping, some pixels are redundant.
-	// Here they are set to zero, however, should this change to something
-	// like the mean, then test_processor.py will fail, as the results of
-	// horizontal (x) flipping are validated against the TransformProcessor
-	// in the case where a Transform is used that has the mirror flag set to
-	// to true.
+	// This means when flipping even sized dimensions that some pixels are redundant.
+	// Here redundant pixels are set to zero, however, should this change to something
+	// like the mean.
 	if (axis == "x" || axis == "X") {		// vertical flip
 		int offset = (nx%2 == 0);
 		for(int z = 0; z < nz; ++z) {
@@ -3768,7 +3765,7 @@ void FlipProcessor::process_inplace(EMData * image)
 		}
 	}
 	else if (axis == "z" || axis == "Z") {		//z axis flip
-		int offset = (ny%2 == 0);
+		int offset = (nz%2 == 0);
 		if (offset != 0) {
 			std::fill(d,d+nxy,0);// So if we have change it to the mean it's easy to do so. (instead of using memset)
 		}

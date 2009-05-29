@@ -1443,49 +1443,179 @@ class TestProcessor(unittest.TestCase):
     			self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
 		
     def test_xform_flip(self):
-        """test xform.flip processor ........................"""
-        e = EMData()
-        e.set_size(2,2,2)
-        self.assertEqual(e.is_complex(), False)
-        e.set_value_at(0,0,0, 1)
-        e.set_value_at(0,0,1, 2)
-        e.set_value_at(0,1,0, 3)
-        e.set_value_at(0,1,1, 4)
-        e.set_value_at(1,0,0, 5)
-        e.set_value_at(1,0,1, 6)
-        e.set_value_at(1,1,0, 7)
-        e.set_value_at(1,1,1, 8)
-        
-#        e.process_inplace('xform.flip', {'axis':'x'})
-#        self.assertEqual(e.get_value_at(0, 0, 0), 5)
-#        self.assertEqual(e.get_value_at(0, 1, 0), 7)
-#        self.assertEqual(e.get_value_at(1, 0, 0), 1)
-#        self.assertEqual(e.get_value_at(1, 1, 0), 3)
-        
-#        e.process_inplace('xform.flip', {'axis':'y'})
-#        self.assertEqual(e.get_value_at(0, 0, 0), 7)
-#        self.assertEqual(e.get_value_at(0, 1, 0), 5)
-#        self.assertEqual(e.get_value_at(1, 0, 0), 3)
-#        self.assertEqual(e.get_value_at(1, 1, 0), 1)
-#        
-#        e.process_inplace('xform.flip', {'axis':'z'})
-#        self.assertEqual(e.get_value_at(0, 0, 0), 8)
-#        self.assertEqual(e.get_value_at(0, 1, 0), 6)
-#        self.assertEqual(e.get_value_at(1, 0, 0), 4)
-#        self.assertEqual(e.get_value_at(1, 1, 0), 2)
-        
-        
-        t = Transform()
-        t.set_mirror(1)
-        
-        # This test should be True, It is an important part of ensuring the aligners are functioning accurately
-        for n in [8,9]:
-        	a = test_image(1,size=(n,n))
-        	b = a.copy()
-	        a.process_inplace("xform.flip",{"axis":"x"})
-	        b.process_inplace("math.transform",{"transform":t})
-	        self.assertEqual(a==b, True)
-        
+		"""test xform.flip processor ........................"""
+		
+		# First test is just make sure flipped coordinates as are we expect.
+		# Strategy - make some pixels non zero, flip the image, make sure the non
+		# zero pixels end up where we expect them to be
+		# X FLIPPING
+		ims = [EMData(32,1,1),EMData(32,32,1),EMData(32,32,32),EMData(33,1,1),EMData(33,33,1),EMData(33,33,33)]
+		for a in ims:
+			
+			nx = a.get_xsize()
+			offset = nx%2==0
+			for i in xrange(0,5):
+				a.to_zero()
+				lst = [Util.get_irand(offset,nx/2-offset) for i in range(3)] # go from 1 because even dimension flip 0s the 0 pixel
+				for j in lst:
+					for y in range(a.get_ysize()):
+						for z in range(a.get_zsize()):
+							a.set(j,y,z,1)
+				a.process_inplace("xform.flip",{"axis":"x"})
+				for j in lst:
+					for y in range(a.get_ysize()):
+						for z in range(a.get_zsize()):
+							self.failIf(a.get(nx-1-j+offset,y,z) != 1)
+		# Y FLIPPING		
+		ims = [EMData(32,32,1),EMData(32,32,32),EMData(33,33,1),EMData(33,33,33)]
+		for a in ims:
+			ny = a.get_ysize()
+			offset = ny%2==0
+			for i in xrange(0,5):
+				a.to_zero()
+				lst = [Util.get_irand(offset,ny/2-offset) for i in range(3)] # go from 1 because even dimension flip 0s the 0 pixel
+				for j in lst:
+					for x in range(a.get_xsize()):
+						for z in range(a.get_zsize()):
+							a.set(x,j,z,1)
+				a.process_inplace("xform.flip",{"axis":"y"})
+				for j in lst:
+					for x in range(a.get_xsize()):
+						for z in range(a.get_zsize()):
+							self.failIf(a.get(x,ny-1-j+offset,z) != 1)
+		
+		# Z FLIPPING				
+		ims = [EMData(32,32,32),EMData(33,33,33)]
+		for a in ims:
+			nz = a.get_zsize()
+			offset = nz%2==0
+			for i in xrange(0,5):
+				a.to_zero()
+				lst = [Util.get_irand(offset,nz/2-offset) for i in range(3)] # go from 1 because even dimension flip 0s the 0 pixel
+				for j in lst:
+					for x in range(a.get_xsize()):
+						for y in range(a.get_ysize()):
+							a.set(x,y,j,1)
+				a.process_inplace("xform.flip",{"axis":"z"})
+				for j in lst:
+					for x in range(a.get_xsize()):
+						for y in range(a.get_ysize()):
+							self.failIf(a.get(x,y,nz-1-j+offset) != 1)				
+		
+		# MIRROR TRANSFORMS IS THE SAME AS HORIZONTAL FLIP
+		t = Transform()
+		t.set_mirror(1)
+		# This test should be True, It is an important part of ensuring the aligners are functioning accurately
+		for n in [8,9]:
+			a = test_image(1,size=(n,n))
+			b = a.copy()
+			a.process_inplace("xform.flip",{"axis":"x"})
+			b.process_inplace("math.transform",{"transform":t})
+			if n % 2 == 0:
+				r = Region(1,0,n,n)
+				aa = a.get_clip(r)
+				bb = b.get_clip(r)
+				self.assertEqual(aa==bb,True)
+			self.assertEqual(a==b, True)
+				
+		# The 3D test is not as important as the 2D case (above), but it being true means we're in good shape - future
+		# developers won't inadvertently make mistakes by interchanging the xform.flip and math.transform processors
+		for n in [8,9]:
+			a = test_image_3d(6,size=(n,n,n))
+			b = a.copy()
+			a.process_inplace("xform.flip",{"axis":"x"})
+			b.process_inplace("math.transform",{"transform":t})
+			if n % 2 == 0:
+				r = Region(1,0,0,n,n,n)
+				aa = a.get_clip(r)
+				bb = b.get_clip(r)
+				self.assertEqual(aa==bb,True)
+			self.assertEqual(a==b, True)
+	
+	
+		# ODD INVERTIBILITY
+		a = EMData(33,1,1)
+		a.process_inplace("testimage.noise.gauss")
+		b = a.copy()
+		b.process_inplace("xform.flip",{"axis":"x"})
+		b.process_inplace("xform.flip",{"axis":"x"})
+		self.assertEqual(a==b, True)
+		  
+		a = test_image(1,size=(33,33))
+		b = a.copy()
+		b.process_inplace("xform.flip",{"axis":"x"})
+		b.process_inplace("xform.flip",{"axis":"x"})
+		self.assertEqual(a==b, True)
+		b.process_inplace("xform.flip",{"axis":"y"})
+		b.process_inplace("xform.flip",{"axis":"y"})
+		self.assertEqual(a==b, True)
+		
+		a = test_image_3d(6,size=(33,33,33))
+		b = a.copy()
+		b.process_inplace("xform.flip",{"axis":"x"})
+		b.process_inplace("xform.flip",{"axis":"x"})
+		self.assertEqual(a==b, True)
+		b.process_inplace("xform.flip",{"axis":"y"})
+		b.process_inplace("xform.flip",{"axis":"y"})
+		self.assertEqual(a==b, True)
+		b.process_inplace("xform.flip",{"axis":"z"})
+		b.process_inplace("xform.flip",{"axis":"z"})
+		self.assertEqual(a==b, True)
+    
+    	# EVEN INVERTIBILITY
+    	# We have to do clipping in cases where the dimension is even, because 
+    	# the equivalence of the clipped region is all we can guarantee
+		a = EMData(32,1,1)
+		a.process_inplace("testimage.noise.gauss")
+		b = a.copy()
+		b.process_inplace("xform.flip",{"axis":"x"})
+		b.process_inplace("xform.flip",{"axis":"x"})
+		r = Region(1,31)
+		aa = a.get_clip(r)
+		bb = b.get_clip(r)
+		self.assertEqual(aa==bb, True)
+		
+		
+		a = test_image(1,size=(32,32))
+		b = a.copy()
+		b.process_inplace("xform.flip",{"axis":"x"})
+		b.process_inplace("xform.flip",{"axis":"x"})
+		r = Region(1,0,31,32)
+		aa = a.get_clip(r)
+		bb = b.get_clip(r)
+		self.assertEqual(aa==bb, True)
+		a = test_image(1,size=(32,32))
+		b = a.copy()
+		b.process_inplace("xform.flip",{"axis":"y"})
+		b.process_inplace("xform.flip",{"axis":"y"})
+		r = Region(0,1,32,31)
+		aa = a.get_clip(r)
+		bb = b.get_clip(r)
+		self.assertEqual(aa==bb, True)
+		a = test_image_3d(6,size=(32,32,32))
+		b = a.copy()
+		b.process_inplace("xform.flip",{"axis":"x"})
+		b.process_inplace("xform.flip",{"axis":"x"})
+		r = Region(1,0,0,31,32,32)
+		aa = a.get_clip(r)
+		bb = b.get_clip(r)
+		self.assertEqual(aa==bb, True)
+		a = test_image_3d(6,size=(32,32,32))
+		b = a.copy()
+		b.process_inplace("xform.flip",{"axis":"y"})
+		b.process_inplace("xform.flip",{"axis":"y"})
+		r = Region(0,1,0,32,31,32)
+		aa = a.get_clip(r)
+		bb = b.get_clip(r)
+		self.assertEqual(aa==bb, True)
+		a = test_image_3d(6,size=(32,32,32))
+		b = a.copy()
+		b.process_inplace("xform.flip",{"axis":"z"})
+		b.process_inplace("xform.flip",{"axis":"z"})
+		r = Region(0,0,1,32,32,31)
+		aa = a.get_clip(r)
+		bb = b.get_clip(r)
+		self.assertEqual(aa==bb, True)
     
     def test_math_addnoise(self):
         """test math.addnoise processor ....................."""
