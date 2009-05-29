@@ -54,7 +54,6 @@ template <> Factory < Aligner >::Factory()
 	force_add(&RotationalAligner::NEW);
 	force_add(&RotatePrecenterAligner::NEW);
 	force_add(&RotateTranslateAligner::NEW);
-// 	force_add(&RotateTranslateBestAligner::NEW);
 	force_add(&RotateFlipAligner::NEW);
 	force_add(&RotateTranslateFlipAligner::NEW);
 	force_add(&RTFExhaustiveAligner::NEW);
@@ -62,30 +61,29 @@ template <> Factory < Aligner >::Factory()
 	force_add(&RefineAligner::NEW);
 }
 
-Transform* Aligner::get_set_align_attr(const string& key, EMData* const image, const EMData* const from_image  )
-{
-	// WARNING - THIS APPROACH CURRENTLY CAUSES A MEMORY LEAK.
-	Transform* t;
-	if (from_image->has_attr(key) ) {
-		t = new Transform( *((Transform*)from_image->get_attr(key)) );
-	}
-	else {
-		t = new Transform();
-	}
-	image->set_attr(key,t);
-	image->set_attr_owned(key);
-	return t;
-}
-
-Transform* Aligner::get_align_attr(const string& key, EMData* const image  )
-{
-	if (image->has_attr(key) ) return (Transform*) image->get_attr(key);
-	else {
-		Transform* t = new Transform;
-		image->set_attr(key,t);
-		return t;
-	}
-}
+//Transform* Aligner::get_set_align_attr(const string& key, EMData* const image, const EMData* const from_image  )
+//{
+//	// WARNING - THIS APPROACH CURRENTLY CAUSES A MEMORY LEAK.
+//	Transform* t;
+//	if (from_image->has_attr(key) ) {
+//		t = new Transform( *((Transform*)from_image->get_attr(key)) );
+//	}
+//	else {
+//		t = new Transform();
+//	}
+//	image->set_attr(key,t);
+//	return t;
+//}
+//
+//Transform* Aligner::get_align_attr(const string& key, EMData* const image  )
+//{
+//	if (image->has_attr(key) ) return (Transform*) image->get_attr(key);
+//	else {
+//		Transform* t = new Transform;
+//		image->set_attr(key,t);
+//		return t;
+//	}
+//}
 
 
 // Note, the translational aligner assumes that the correlation image
@@ -173,14 +171,17 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 	}
 	Dict params("trans",static_cast< vector<int> >(cur_trans));
 	cf=this_img->process("math.translate.int",params);
-
+	Transform t;
+	t.set_trans(cur_trans);
 	if ( nz != 1 ) {
-		Transform* t = get_set_align_attr("xform.align3d",cf,this_img);
-		t->set_trans(cur_trans);
+//		Transform* t = get_set_align_attr("xform.align3d",cf,this_img);
+//		t->set_trans(cur_trans);
+		cf->set_attr("xform.align3d",&t);
 	} else if ( ny != 1 ) {
-		Transform* t = get_set_align_attr("xform.align2d",cf,this_img);
+		//Transform* t = get_set_align_attr("xform.align2d",cf,this_img);
 		cur_trans[2] = 0; // just make sure of it
-		t->set_trans(cur_trans);
+		t.set_trans(cur_trans);
+		cf->set_attr("xform.align2d",&t);
 	}
 
 	return cf;
@@ -226,9 +227,10 @@ EMData * RotationalAligner::align_180_ambiguous(EMData * this_img, EMData * to, 
 	// Return the result
 	Transform tmp(Dict("type","2d","alpha",rot_angle));
 	cf=this_img->process("math.transform",Dict("transform",(Transform*)&tmp));
-	Transform* t = get_set_align_attr("xform.align2d",cf,this_img);
-	Dict d("type","2d","alpha",rot_angle);
-	t->set_rotation(d);
+//	Transform* t = get_set_align_attr("xform.align2d",cf,this_img);
+//	Dict d("type","2d","alpha",rot_angle);
+//	t->set_rotation(d);
+	cf->set_attr("xform.align2d",&tmp);
 	return cf;
 }
 
@@ -243,16 +245,13 @@ EMData *RotationalAligner::align(EMData * this_img, EMData *to,
 	Transform * tmp = rot_aligned->get_attr("xform.align2d");
 	Dict rot = tmp->get_rotation("2d");
 	float rotate_angle_solution = rot["alpha"];
+	delete tmp;
 
-	// Get a copy of the rotationally aligned image that is rotated 180
-// 	cout << "rot aligned gpu? " << rot_aligned->gpu_operation_preferred() << endl;
 	EMData *rot_align_180 = rot_aligned->process("math.rotate.180");
-// 	cout << "rot aligned 180 gpu? " << rot_align_180->gpu_operation_preferred() << to->gpu_operation_preferred() << endl;;
+
 	// Generate the comparison metrics for both rotational candidates
 	float rot_cmp = rot_aligned->cmp(cmp_name, to, cmp_params);
-// 	cout << "And then " << to->gpu_operation_preferred() << endl;
 	float rot_180_cmp = rot_align_180->cmp(cmp_name, to, cmp_params);
-// 	cout << "sssrot aligned 180 gpu? " << rot_align_180->gpu_operation_preferred() <<	endl;
 	// Decide on the result
 	float score = 0.0;
 	EMData* result = NULL;
@@ -267,9 +266,10 @@ EMData *RotationalAligner::align(EMData * this_img, EMData *to,
 		rotate_angle_solution = rotate_angle_solution-180.0;
 	}
 
-	Transform* t = get_align_attr("xform.align2d",result);
-	t->set_rotation(Dict("type","2d","alpha",rotate_angle_solution));
-
+//	Transform* t = get_align_attr("xform.align2d",result);
+//	t->set_rotation(Dict("type","2d","alpha",rotate_angle_solution));
+	Transform tmp2(Dict("type","2d","alpha",rotate_angle_solution));
+	result->set_attr("xform.align2d",&tmp2);
 	return result;
 }
 
@@ -293,11 +293,20 @@ EMData *RotatePrecenterAligner::align(EMData * this_img, EMData *to,
 	int peak_index = 0;
 	Util::find_max(data, size, &peak, &peak_index);
 	float a = (float) ((1.0f - 1.0f * peak_index / size) * 180. * 2);
-	this_img->transform(Dict("type","2d","alpha",(float)(a*180./M_PI)));
 
-	Transform* t = get_set_align_attr("xform.align2d",cf,this_img);
-	t->set_rotation(Dict("type","2d","alpha",-a));
-	cf->update();
+	Transform rot;
+	rot.set_rotation(Dict("type","2d","alpha",(float)(a*180./M_PI)));
+	EMData* rslt = this_img->process("math.transform",Dict("transform",&rot));
+	rslt->set_attr("xform.align2d",&rot);
+//
+//	Transform* t = get_set_align_attr("xform.align2d",rslt,this_img);
+//	t->set_rotation(Dict("type","2d","alpha",-a));
+//
+//	EMData* result this_img->transform(Dict("type","2d","alpha",(float)(a*180./M_PI)));
+//
+//	cf->set_attr("xform.align2d",t);
+//	delete t;
+//	cf->update();
 
 	if( e1 )
 	{
@@ -311,7 +320,12 @@ EMData *RotatePrecenterAligner::align(EMData * this_img, EMData *to,
 		e2 = 0;
 	}
 
-	return cf;
+	if (cf) {
+		delete cf;
+		cf = 0;
+	}
+
+	return rslt;
 }
 
 EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,
@@ -323,6 +337,7 @@ EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,
 	Transform * tmp = rot_align->get_attr("xform.align2d");
 	Dict rot = tmp->get_rotation("2d");
 	float rotate_angle_solution = rot["alpha"];
+	delete tmp;
 
 	EMData *rot_align_180 = rot_align->copy();
 	rot_align_180->process_inplace("math.rotate.180");
@@ -369,6 +384,8 @@ EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,
 
 	Transform* t = result->get_attr("xform.align2d");
 	t->set_rotation(Dict("type","2d","alpha",rotate_angle_solution));
+	result->set_attr("xform.align2d",t);
+	delete t;
 
 	return result;
 }
@@ -392,8 +409,10 @@ EMData* RotateTranslateFlipAligner::align(EMData * this_img, EMData *to,
 	}
 
 	EMData * rot_trans_align_flip = this_img->align("rotate_translate", flipped, rt_params, cmp_name, cmp_params);
-	Transform* t = get_align_attr("xform.align2d",rot_trans_align_flip);
+	Transform* t = rot_trans_align_flip->get_attr("xform.align2d");
 	t->set_mirror(true);
+	rot_trans_align_flip->set_attr("xform.align2d",t);
+	delete t;
 
 	// Now finally decide on what is the best answer
 	float cmp1 = rot_trans_align->cmp(cmp_name, to, cmp_params);
@@ -437,9 +456,10 @@ EMData *RotateFlipAligner::align(EMData * this_img, EMData *to,
 
 	EMData* flipped =to->process("xform.flip", Dict("axis", "x"));
 	EMData *r2 = this_img->align("rotational", flipped,rot_params, cmp_name, cmp_params);
-	Transform* t = get_align_attr("xform.align2d",r2);
+	Transform* t = r2->get_attr("xform.align2d");
 	t->set_mirror(true);
-
+	r2->set_attr("xform.align2d",t);
+	delete t;
 
 	float cmp1 = r1->cmp(cmp_name, to, cmp_params);
 	float cmp2 = r2->cmp(cmp_name, flipped, cmp_params);
@@ -751,7 +771,6 @@ EMData *RTFSlowExhaustiveAligner::align(EMData * this_img, EMData *to,
 	EMData *flip = params.set_default("flip", (EMData *) 0);
 	int maxshift = params.set_default("maxshift", -1);
 
-	EMData *this_img_copy = this_img->copy();
 	EMData *flipped = 0;
 
 	bool delete_flipped = true;
@@ -889,17 +908,17 @@ EMData *RTFSlowExhaustiveAligner::align(EMData * this_img, EMData *to,
 	if (delete_flipped) { delete flipped; flipped = 0; }
 
 	bestang *= (float)EMConsts::rad2deg;
-	Transform * t = new Transform(Dict("type","2d","alpha",(float)bestang));
-	t->set_trans(bestdx,bestdy);
+	Transform t(Dict("type","2d","alpha",(float)bestang));
+	t.set_trans(bestdx,bestdy);
 
 	if (bestflip) {
-		t->set_mirror(true);
+		t.set_mirror(true);
 	}
 
-	this_img_copy->set_attr("xform.align2d",t);
-	this_img_copy->transform(*t);
+	EMData* rslt = this_img->process("math.transform",Dict("transform",&t));
+	rslt->set_attr("xform.align2d",&t);
 
-	return this_img_copy;
+	return rslt;
 }
 
 
@@ -916,9 +935,7 @@ static double refalifn(const gsl_vector * v, void *params)
 	EMData *with = (*dict)["with"];
 	bool mirror = (*dict)["mirror"];
 
-	EMData *tmp = this_img->copy();
-
-	float mean = (float)tmp->get_attr("mean");
+	float mean = (float)this_img->get_attr("mean");
 	if ( Util::goodf(&mean) ) {
 		//cout << "tmps mean is nan even before rotation" << endl;
 	}
@@ -929,7 +946,7 @@ static double refalifn(const gsl_vector * v, void *params)
 //	tmp->rotate_translate(t3d);
 	t.set_trans((float)x,(float)y);
 	t.set_mirror(mirror);
-	tmp->transform(t);
+	EMData *tmp = this_img->process("math.transform",Dict("transform",&t));
 
 	Cmp* c = (Cmp*) ((void*)(*dict)["cmp"]);
 	double result = c->cmp(tmp,with);
@@ -987,24 +1004,25 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 		return 0;
 	}
 
-	EMData *result = this_img->copy();
-
 	int mode = params.set_default("mode", 0);
 	float saz = 0.0;
 	float sdx = 0.0;
 	float sdy = 0.0;
 	bool mirror = false;
-
+	cout << "here" << endl;
 	Transform* t = params.set_default("xform.align2d", (Transform*) 0);
 	if ( t != 0 ) {
+		cout << "Here" << endl;
 		//Transform* t = this_img->get_attr("xform.align2d");
 		Dict params = t->get_params("2d");
 		saz = params["alpha"];
 		sdx = params["tx"];
 		sdy = params["ty"];
 		mirror = params["mirror"];
+		delete t;
+		t = 0;
 	}
-
+	cout << "here" << endl;
 	int np = 3;
 	Dict gsl_params;
 	gsl_params["this"] = this_img;
@@ -1030,7 +1048,7 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 	gsl_vector_set(x, 2, saz);
 
 	Cmp *c = 0;
-
+	cout << "here" << endl;
 	gsl_multimin_function minex_func;
 	if (mode == 2) {
 		minex_func.f = &refalifnfast;
@@ -1061,19 +1079,19 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 		}
 		rval = gsl_multimin_test_size(gsl_multimin_fminimizer_size(s), precision);
 	}
-
-	Transform * tsoln = new Transform(Dict("type","2d","alpha",(float)gsl_vector_get(s->x, 2)));
-	tsoln->set_mirror(mirror);
-	tsoln->set_trans((float)gsl_vector_get(s->x, 0),(float)gsl_vector_get(s->x, 1));
-	result->set_attr("xform.align2d",tsoln);
-	result->transform(*tsoln);
+	cout << "here" << endl;
+	Transform  tsoln(Dict("type","2d","alpha",(float)gsl_vector_get(s->x, 2)));
+	tsoln.set_mirror(mirror);
+	tsoln.set_trans((float)gsl_vector_get(s->x, 0),(float)gsl_vector_get(s->x, 1));
+	EMData *result = this_img->process("math.transform",Dict("transform",&tsoln));
+	result->set_attr("xform.align2d",&tsoln);
 
 	gsl_vector_free(x);
 	gsl_vector_free(ss);
 	gsl_multimin_fminimizer_free(s);
 
 	if ( c != 0 ) delete c;
-
+	cout << "here" << endl;
 	return result;
 }
 

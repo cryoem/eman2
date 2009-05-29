@@ -493,8 +493,6 @@ EMObject get_attr_default(const string & attr_name, const EMObject & em_obj = EM
 void set_attr(const string & key, EMObject val);
 
 
-void set_attr_owned(const string& key);
-
 /** Set a header attribute's value from Python
  *
  * @param key The header attribute name.

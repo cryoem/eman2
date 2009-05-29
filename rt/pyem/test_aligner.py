@@ -318,7 +318,8 @@ class TestAligner(unittest.TestCase):
 		e2.process_inplace('testimage.noise.uniform.rand')
 		
 		e.align('refine', e2)
-		e.align('refine', e2, {'mode':1, "xform.align2d":Transform()})
+		t = Transform()
+		e.align('refine', e2, {'mode':1, "xform.align2d":t})
 		
 		
 		#for y in [32]:

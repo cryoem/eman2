@@ -758,8 +758,8 @@ class EMImageMXModule(EMGUIModule):
 		return self.file_name
 	
 	def optimally_resize(self):
-		# I disabled this because it was giving me problems from e2.py
-		#return
+		# I disabled this because it was giving me problems
+		return
 	
 		if isinstance(self.gl_context_parent,EMImageMXWidget):
 			self.qt_context_parent.resize(*self.get_parent_suggested_size())

@@ -296,13 +296,6 @@ EMData::~EMData()
 #ifdef MEMDEBUG
 	printf("EMDATA-  %4d    %p\n",EMData::totalalloc,this);
 #endif
-//	for(vector<string>::const_iterator it = attr_owned.begin(); it != attr_owned.end(); ++it ) {
-//		EMObject tmp = attr_dict[*it];
-//		if (tmp.get_type() == EMObject::TRANSFORM) {
-//			Transform* t = attr_dict[*it];
-//			delete t;
-//		}
-//	}
 	EXITFUNC;
 }
 
@@ -1837,7 +1830,7 @@ EMData *EMData::make_rotational_footprint_e1( bool unwrap)
 	else return result;
 }
 
-EMData *EMData::make_footprint(int type) 
+EMData *EMData::make_footprint(int type)
 {
 //	printf("Make fp %d\n",type);
 	if (type==0) {
@@ -1867,11 +1860,11 @@ EMData *EMData::make_footprint(int type)
 //				printf("%d\t%d\t%f\n",i,j,rmap[i+j*rmax]);
 			}
 		}
-		
+
 		EMData *fp=new EMData(rmax*2+2,rmax*2,1);
 		fp->set_complex(1);
 		fp->to_zero();
-		
+
 		// Two vectors in to complex space (kx,ky) and (lx,ly)
 		// We are computing the bispectrum, f(k).f(l).f*(k+l)
 		// but integrating out two dimensions, leaving |k|,|l|
@@ -1887,7 +1880,7 @@ EMData *EMData::make_footprint(int type)
 //						if (r1>500 ||r2>500) printf("%d\t%d\t%d\t%d\t%d\t%d\n",kx,ky,lx,ly,r1,r2);
 //						float r3=rmap[ax+rmax*ay];
 						if (r1+r2>=rmax) continue;
-						
+
 						std::complex<float> p=fft->get_complex_at(kx,ky)*fft->get_complex_at(lx,ly)*conj(fft->get_complex_at(ax,ay));
 						fp->set_value_at(r1*2,r2,p.real()+fp->get_value_at(r1*2,r2));		// We keep only the real component in anticipation of zero phase sum
 //						fp->set_value_at(r1*2,rmax*2-r2-1,  fp->get_value_at(r1*2,r2));		// We keep only the real component in anticipation of zero phase sum
@@ -1919,11 +1912,11 @@ EMData *EMData::make_footprint(int type)
 				}
 			}
 		}
-		
+
 		free(rmap);
 		if (type==2||type==6) {
 			EMData *f2=fp->do_ift();
-			if (f2->get_value_at(0,0)<0) f2->mult(-1.0f); 
+			if (f2->get_value_at(0,0)<0) f2->mult(-1.0f);
 			f2->process_inplace("xform.phaseorigin.tocorner");
 			delete fp;
 			return f2;
@@ -1944,12 +1937,12 @@ EMData *EMData::make_footprint(int type)
 //				printf("%d\t%d\t%f\n",i,j,rmap[i+j*rmax]);
 			}
 		}
-		
+
 		EMData *fp=new EMData(rmax*2+2,rmax*2,16);
 
 		fp->set_complex(1);
 		fp->to_zero();
-		
+
 		// Two vectors in to complex space (kx,ky) and (lx,ly)
 		// We are computing the bispectrum, f(k).f(l).f*(k+l)
 		// but integrating out two dimensions, leaving |k|,|l|
@@ -1967,7 +1960,7 @@ EMData *EMData::make_footprint(int type)
 //						if (r1>500 ||r2>500) printf("%d\t%d\t%d\t%d\t%d\t%d\n",kx,ky,lx,ly,r1,r2);
 //						float r3=rmap[ax+rmax*ay];
 						if (r1+r2>=rmax || rr1==0 ||rr2==0) continue;
-						
+
 						std::complex<float> p=fft->get_complex_at(kx,ky)*fft->get_complex_at(lx,ly)*conj(fft->get_complex_at(ax,ay));
 						int dot=(int)floor((kx*lx+ky*ly)/(rr1*rr2)*7.5);					// projection of k on l 0-31
 						if (dot<0) dot=16+dot;
@@ -1996,11 +1989,11 @@ EMData *EMData::make_footprint(int type)
 				}
 			}
 		}
-		
+
 		free(rmap);
 		if (type==4) {
 			EMData *f2=fp->do_ift();
-			if (f2->get_value_at(0,0,0)<0) f2->mult(-1.0f); 
+			if (f2->get_value_at(0,0,0)<0) f2->mult(-1.0f);
 			f2->process_inplace("xform.phaseorigin.tocorner");
 			delete fp;
 			return f2;

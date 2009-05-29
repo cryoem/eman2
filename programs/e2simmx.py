@@ -209,9 +209,7 @@ class EMParallelSimMX:
 				data["references"] = ("cache",self.args[0],block[0],block[1])
 				data["particles"] = ("cache",self.args[1],block[2],block[3])
 				
-				my_parent = EMTask("parent_task")
 				task = EMSimTaskDC(data=data,options=self.__get_task_options(self.options))
-				task.parent = my_parent.id
 				from EMAN2PAR import EMTaskCustomer
 				etc=EMTaskCustomer(self.options.parallel)
 				#print "Est %d CPUs"%etc.cpu_est()
@@ -301,37 +299,37 @@ class EMSimTaskDC(EMTask):
 		'''
 		from EMAN2PAR import image_range
 		shrink = None
-		if self.options.has_key("shrink") and self.options["shrink"] != None and self.options["shrink"] > 1:
-			shrink = self.options["shrink"]
+		if options.has_key("shrink") and options["shrink"] != None and options["shrink"] > 1:
+			shrink = options["shrink"]
 		
 		ref_data_name=self.data["references"][1]
-		self.ref_indices = image_range(*self.data["references"][2:])
+		ref_indices = image_range(*self.data["references"][2:])
 		
 #		print self.data["references"][2:]
-		self.refs = {}
-		for idx in self.ref_indices:
+		refs = {}
+		for idx in ref_indices:
 			image = EMData(ref_data_name,idx)
 			if shrink != None:
 				image.process_inplace("math.meanshrink",{"n":options["shrink"]})
-			self.refs[idx] = image
+			refs[idx] = image
 			
 		ptcl_data_name=self.data["particles"][1]
-		self.ptcl_indices = image_range(*self.data["particles"][2:])
+		ptcl_indices = image_range(*self.data["particles"][2:])
 			
-		self.ptcls = {}
-		for idx in self.ptcl_indices:
+		ptcls = {}
+		for idx in ptcl_indices:
 			image = EMData(ptcl_data_name,idx)
 			if shrink != None:
 				image.process_inplace("math.meanshrink",{"n":options["shrink"]})
-			self.ptcls[idx] = image
+			ptcls[idx] = image
+		return refs,ptcls
 			
-	def __cmp_one_to_many(self,idx):
+	def __cmp_one_to_many(self,ptcl,refs):
 	
 		options = self.options
-		ptcl = self.ptcls[idx]
 		
 		data = {}
-		for ref_idx,ref in self.refs.items():
+		for ref_idx,ref in refs.items():
 			ref.del_attr("xform.align2d")
 			aligned=ref.align(options["align"][0],ptcl,options["align"][1],options["aligncmp"][0],options["aligncmp"][1])
 
@@ -350,16 +348,19 @@ class EMSimTaskDC(EMTask):
 	
 	def execute(self):
 		
-		self.__init_memory(self.options)
+		refs,ptcls = self.__init_memory(self.options)
+		
 		
 		sim_data = {} # It's going to be our favorite thing, a dictionary of dictionaries
 		
-		for ptcl_idx,ptcl in self.ptcls.items():
+		for ptcl_idx,ptcl in ptcls.items():
 			
-			sim_data[ptcl_idx] = self.__cmp_one_to_many(ptcl_idx)
+			sim_data[ptcl_idx] = self.__cmp_one_to_many(ptcls[ptcl_idx],refs)
 			
 			
-		return sim_data 
+		d = {}
+		d["sim_data"] = sim_data
+		return d 
 	
 #	def get_return_data(self):
 #		d = {}

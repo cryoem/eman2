@@ -224,7 +224,7 @@ class EMModuleFromFile(object):
 			if data != None and len(data) == 1: data = data[0]
 			
 			if force_2d or isinstance(data,EMData) and data.get_zsize()==1:
-				if data.get_ysize() != 1:
+				if isinstance(data,list) or data.get_ysize() != 1:
 					from emimage2d import EMImage2DModule
 					if isinstance(old,EMImage2DModule): module = old
 					else: module= EMImage2DModule(application=application)

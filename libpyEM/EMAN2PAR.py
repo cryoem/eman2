@@ -33,7 +33,7 @@
 # This file contains functions related to running jobs in parallel in EMAN2
 
 from EMAN2 import test_image,EMData,abs_path
-from EMAN2db import EMTask,EMTaskQueue,db_open_dict
+from EMAN2db import EMTask,EMTaskQueue,db_open_dict,db_remove_dict
 from e2classaverage import EMClassAveTaskDC
 from e2simmx import EMSimTaskDC
 from e2project3d import EMProject3DTaskDC
@@ -152,7 +152,7 @@ def image_range(a,b=None):
 	else: 
 		for i in a : yield i
 
-def EMTestTask(EMTask):
+class EMTestTask(EMTask):
 	"""This is a simple example of a EMTask subclass that actually does something"""
 	
 	def __init__(self):

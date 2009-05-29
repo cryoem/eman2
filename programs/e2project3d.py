@@ -196,18 +196,17 @@ class EMProject3DTaskDC(EMTask):
 		eulers = self.data["eulers"]
 		indices = self.data["indices"]
 		projector,projector_opts = options["projector"][0],options["projector"][1]
+		projections = {}
 		for i in xrange(len(eulers)):
 			euler = eulers[i]
 			projector_opts["transform"] = euler
 			projection = threed_image.project(projector,projector_opts)
 			projection.set_attr("xform.projection",euler)
 			projection.set_attr("ptcl_repr",0)
-			self.projections[indices[i]] = projection
+			projections[indices[i]] = projection
 		
-	
-	def get_return_data(self):
 		d = {}
-		d["projections"] = self.projections
+		d["projections"] = projections
 		return d
 	
 

@@ -331,7 +331,8 @@ def process_stack(stackfile,phaseflip=None,wiener=None,edgenorm=True,oversamp=1,
 		if edgenorm : im1.process_inplace("normalize.edgemean")
 		if oversamp>1 :
 			im1.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
-		
+			print -(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys
+		print i
 		fft1=im1.do_fft()
 			
 		if phaseflip :

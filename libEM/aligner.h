@@ -1,36 +1,36 @@
 /**
  * $Id$
  */
- 
+
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
 
 #ifndef eman__aligner_h__
@@ -46,7 +46,7 @@ namespace EMAN
 	class Cmp;
 
 	/** Aligner class defines image alignment method. It aligns 2
-	 * images based on a user-given comparison method. 
+	 * images based on a user-given comparison method.
 	 * Aligner class is the base class for all aligners. Each
      * specific Aligner class has a unique name. This name is used to
      * create a new Aligner instance or call an Aligner.
@@ -70,7 +70,7 @@ namespace EMAN
      *    EMData *image2 = ...;
      *    image1->align("ALIGNER_NAME", image2);
      @endcode
-	 
+
      *  - How to define a new Aligner class \n
      *    A new XYZAligner class should implement the following functions:
      *    (Please replace 'XYZ' with your own class name).
@@ -87,9 +87,9 @@ namespace EMAN
 		virtual ~ Aligner()
 		{
 		}
-		
+
 		virtual EMData *align(EMData * this_img, EMData * to_img) const = 0;
-		
+
 		/** To align 'this_img' with another image passed in through
 		 * its parameters. The alignment uses a user-given comparison
 		 * method to compare the two images. If none is given, a default
@@ -101,9 +101,9 @@ namespace EMAN
 		 * @param cmp_params The parameter dictionary for comparison method.
 		 * @return The aligned image.
 		 */
-		virtual EMData *align(EMData * this_img, EMData * to_img, 
+		virtual EMData *align(EMData * this_img, EMData * to_img,
 							  const string & cmp_name, const Dict& cmp_params) const = 0;
-		
+
 		/** Get the Aligner's name. Each Aligner is identified by a unique name.
 		 * @return The Aligner's name.
 		 */
@@ -130,18 +130,18 @@ namespace EMAN
 
 	  protected:
 		mutable Dict params;
-		
-		/** Get a Transform pointer that is currently stored in the image header corresponding to the given key.  
-		 * If non existant then initialize a new Transform pointer, set it as the image attribute, and return it.
-		 * The point being that if you have to access the xform.align2d or the xform.align3d
-		 * attributes from multiple aligners then you always want to get the same one.
-		 * @param key the alignment key such as "xform.align2d" or "xform.align3d"
-		 * @param image the image from which the Transform pointer will be extracted (and potentially assigned to if non existant)
-		 * @return the Transform pointer that is currently stored in the image header corresponding to the given key.
-		 */
-		static Transform* get_align_attr(const string& key, EMData* const image );
-		
-		static Transform* get_set_align_attr(const string& key, EMData* const to_image, const EMData* const from_image  );
+
+//		/** Get a Transform pointer that is currently stored in the image header corresponding to the given key.
+//		 * If non existant then initialize a new Transform pointer, set it as the image attribute, and return it.
+//		 * The point being that if you have to access the xform.align2d or the xform.align3d
+//		 * attributes from multiple aligners then you always want to get the same one.
+//		 * @param key the alignment key such as "xform.align2d" or "xform.align3d"
+//		 * @param image the image from which the Transform pointer will be extracted (and potentially assigned to if non existant)
+//		 * @return the Transform pointer that is currently stored in the image header corresponding to the given key.
+//		 */
+//		static Transform* get_align_attr(const string& key, EMData* const image );
+//
+//		static Transform* get_set_align_attr(const string& key, EMData* const to_image, const EMData* const from_image  );
 	};
 
 	/** Translational 2D Alignment using cross correlation.
@@ -152,19 +152,19 @@ namespace EMAN
 	class TranslationalAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, EMData * to_img, 
+		EMData * align(EMData * this_img, EMData * to_img,
 						const string & cmp_name="dot", const Dict& cmp_params = Dict()) const;
 
 		EMData * align(EMData * this_img, EMData * to_img) const
 		{
 			return align(this_img, to_img, "", Dict());
 		}
-		
+
 		string get_name() const
 		{
 			return "translational";
 		}
-		
+
 		string get_desc() const
 		{
 			return "Translational 2D and 3D alignment by cross-correlation";
@@ -190,19 +190,19 @@ namespace EMAN
 	class RotationalAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, EMData * to_img, 
+		EMData * align(EMData * this_img, EMData * to_img,
 						const string & cmp_name = "dot", const Dict& cmp_params = Dict()) const;
 
 		EMData * align(EMData * this_img, EMData * to_img) const
 		{
 			return align(this_img, to_img, "", Dict());
 		}
-		
+
 		string get_name() const
 		{
 			return "rotational";
 		}
-		
+
 		string get_desc() const
 		{
 			return "Performs rotational alignment,works accurately if the image is precentered, normally called internally in combination with translational and flip alignment";
@@ -212,7 +212,7 @@ namespace EMAN
 		{
 			return new RotationalAligner();
 		}
-		
+
 		static EMData * align_180_ambiguous(EMData * this_img, EMData * to_img, int rfp_mode = 0);
 
 		TypeDict get_param_types() const
@@ -228,19 +228,19 @@ namespace EMAN
 	class RotatePrecenterAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, EMData * to_img, 
+		EMData * align(EMData * this_img, EMData * to_img,
 						const string & cmp_name = "dot", const Dict& cmp_params = Dict()) const;
 
 		EMData * align(EMData * this_img, EMData * to_img) const
 		{
 			return align(this_img, to_img, "", Dict());
 		}
-		
+
 		string get_name() const
 		{
 			return "rotate_precenter";
 		}
-		
+
 		string get_desc() const
 		{
 			return "Performs rotational alignment and works accurately if the image is precentered";
@@ -263,19 +263,19 @@ namespace EMAN
 	class RotateTranslateAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, EMData * to_img, 
+		EMData * align(EMData * this_img, EMData * to_img,
 					   const string & cmp_name="dot", const Dict& cmp_params = Dict()) const;
 
 		EMData * align(EMData * this_img, EMData * to_img) const
 		{
 			return align(this_img, to_img, "sqeuclidean", Dict());
 		}
-		
+
 		string get_name() const
 		{
 			return "rotate_translate";
 		}
-		
+
 		string get_desc() const
 		{
 			return "Performs rotational alignment and follows this with translational alignment.";
@@ -302,7 +302,7 @@ namespace EMAN
 	class RotateTranslateBestAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, EMData * to_img, 
+		EMData * align(EMData * this_img, EMData * to_img,
 					   const string & cmp_name="dot", const Dict& cmp_params = Dict()) const;
 
 		EMData * align(EMData * this_img, EMData * to_img) const
@@ -314,7 +314,7 @@ namespace EMAN
 		{
 			return "rotate_translate_best";
 		}
-		
+
 		string get_desc() const
 		{
 			return "Full 2D alignment using 'Rotational' and 'Translational', also incorporates 2D 'Refine' alignments.";
@@ -327,13 +327,13 @@ namespace EMAN
 
 		TypeDict get_param_types() const
 		{
-			TypeDict d;			
+			TypeDict d;
 			d.put("maxshift", EMObject::INT);
 			d.put("snr", EMObject::FLOATARRAY);
 			return d;
 		}
-		
-		
+
+
 	};
 
 	/** rotational and flip alignment
@@ -341,7 +341,7 @@ namespace EMAN
 	class RotateFlipAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, EMData * to_img, 
+		EMData * align(EMData * this_img, EMData * to_img,
 					   const string & cmp_name="dot", const Dict& cmp_params = Dict()) const;
 		EMData * align(EMData * this_img, EMData * to_img) const
 		{
@@ -361,20 +361,20 @@ namespace EMAN
 		{
 			return new RotateFlipAligner();
 		}
-		
+
 		TypeDict get_param_types() const
 		{
 			return static_get_param_types();
 		}
-		
+
 		static TypeDict static_get_param_types() {
 			TypeDict d;
-			
+
 			d.put("imask", EMObject::INT);
 			d.put("rfp_mode", EMObject::INT,"Either 0,1 or 2. A temporary flag for testing the rotational foot print");
 			return d;
 		}
-		
+
 	};
 
 	/** rotational, translational and flip alignment
@@ -382,13 +382,13 @@ namespace EMAN
 	class RotateTranslateFlipAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, EMData * to_img, 
+		EMData * align(EMData * this_img, EMData * to_img,
 					   const string & cmp_name="dot", const Dict& cmp_params = Dict()) const;
 		EMData * align(EMData * this_img, EMData * to_img) const
 		{
 			return align(this_img, to_img, "sqeuclidean", Dict());
 		}
-		
+
 		string get_name() const
 		{
 			return "rotate_translate_flip";
@@ -408,10 +408,10 @@ namespace EMAN
 		{
 			return static_get_param_types();
 		}
-		
+
 		static TypeDict static_get_param_types() {
 			TypeDict d;
-			
+
 			d.put("flip", EMObject::EMDATA);
 			d.put("usedot", EMObject::INT);
 			d.put("maxshift", EMObject::INT);
@@ -425,13 +425,13 @@ namespace EMAN
 	class RTFExhaustiveAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, EMData * to_img, 
+		EMData * align(EMData * this_img, EMData * to_img,
 					   const string & cmp_name="dot", const Dict& cmp_params = Dict()) const;
 		EMData * align(EMData * this_img, EMData * to_img) const
 		{
 			return align(this_img, to_img, "sqeuclidean", Dict());
 		}
-		
+
 		string get_name() const
 		{
 			return "rtf_exhaustive";
@@ -441,7 +441,7 @@ namespace EMAN
 		{
 			return "Experimental full 2D alignment with handedness check using semi-exhaustive search (not necessarily better than RTFBest)";
 		}
-		
+
 		static Aligner *NEW()
 		{
 			return new RTFExhaustiveAligner();
@@ -456,14 +456,14 @@ namespace EMAN
 			return d;
 		}
 	};
-	
+
 	/** rotational, translational and flip alignment using exhaustive search. This is very slow
 	 * but can ensure localization of the global maximum
      */
 	class RTFSlowExhaustiveAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, EMData * to_img, 
+		EMData * align(EMData * this_img, EMData * to_img,
 						const string & cmp_name, const Dict& cmp_params) const;
 		EMData * align(EMData * this_img, EMData * to_img) const
 		{
@@ -478,7 +478,7 @@ namespace EMAN
 		{
 			return "Experimental full 2D alignment with handedness check using more exhaustive search (not necessarily better than RTFBest)";
 		}
-		
+
 		static Aligner *NEW()
 		{
 			return new RTFSlowExhaustiveAligner();
@@ -487,7 +487,7 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			
+
 			d.put("flip", EMObject::EMDATA,"Optional. This is the flipped version of the images that is being aligned. If specified it will be used for the handedness check, if not a flipped copy of the image will be made");
 			d.put("maxshift", EMObject::INT,"The maximum length of the detectable translational shift");
 			d.put("transtep", EMObject::FLOAT,"The translation step to take when honing the alignment, which occurs after coarse alignment");
@@ -495,20 +495,20 @@ namespace EMAN
 			return d;
 		}
 	};
-	
+
 	/** refine alignment
      */
 	class RefineAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, EMData * to_img, 
+		EMData * align(EMData * this_img, EMData * to_img,
 					   const string & cmp_name="dot", const Dict& cmp_params = Dict()) const;
 
 		EMData * align(EMData * this_img, EMData * to_img) const
 		{
 			return align(this_img, to_img, "sqeuclidean", Dict());
 		}
-		
+
 		string get_name() const
 		{
 			return "refine";
@@ -544,15 +544,15 @@ namespace EMAN
 	{
 	  public:
 	  	CUDA_Aligner();
-		
+
 		~CUDA_Aligner();
-		
+
 		void setup(int nima, int nx, int ny, int ring_length, int nring, float step, int kx, int ky);
-		
+
 		void insert_image(EMData *image, int num);
-		
+
 		vector<float> alignment_2d(EMData *ref_image);
-		
+
 	  private:
 	        float *image_stack;
 		float *ccf;

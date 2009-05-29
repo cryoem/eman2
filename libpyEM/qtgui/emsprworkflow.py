@@ -1453,6 +1453,19 @@ class ParticleReportTask(ParticleWorkFlowTask):
 		project_db = db_open_dict("bdb:project")
 		particle_list_name = "global.spr_ptcls"
 		particle_names = project_db.get(particle_list_name,dfl=[])
+		
+		rem = []
+		for i in xrange(len(particle_names)-1,-1,-1):
+			if not file_exists(particle_names[i]):
+				rem.append("File %s no longer exists. Automatically removing" %particle_names[i])
+				particle_names.pop(i)
+		
+		if len(rem) != 0:
+			EMErrorMessageDisplay.run(rem)
+			project_db[particle_list_name] = particle_names
+			 
+			
+		
 		self.project_files_at_init = particle_names # so if the user hits cancel this can be reset
 
 		from emform import EM2DStackTable,EMFileTable
@@ -2303,6 +2316,19 @@ class E2CTFWorkFlowTask(ParticleReportTask):
 		def __init__(self):
 			db = db_open_dict("bdb:project",ro=True)
 			self.db_map = db.get("global.spr_filt_ptcls_map",dfl={})
+			
+			update = False
+			for name,map in self.db_map.items():
+				for key,image_name in map.items():
+					if not file_exists(image_name):
+						map.pop(key)
+						update = True
+				if len(map) == 0:
+					self.db_map.pop(name)
+					
+			if update:
+				EMErrorMessageDisplay.run("Warning, filtered particle data was lost.")
+				db["global.spr_filt_ptcls_map"] = self.db_map					
 						
 #		def __del__(self):
 #			print "CTF columns dies"

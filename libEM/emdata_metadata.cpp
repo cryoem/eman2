@@ -1005,11 +1005,6 @@ void EMData::del_attr_dict(const vector<string> & del_keys)
 	}
 }
 
-void EMData::set_attr_owned(const string& key) {
-	// should throw if the key isn't in the attr_dict
-	attr_owned.push_back(key);
-}
-
 void EMData::set_attr(const string & key, EMObject val)
 {
 	/* Ignore 'read only' attribute. */

@@ -338,8 +338,7 @@ class EMGenClassAverages:
 				task = EMClassAveTask(data=data,options=self.__get_task_options(self.options))
 				
 				print "generating class",class_idx
-				task.execute()
-				rslt = task.get_return_data()
+				rslt = task.execute()
 				self.__write_class_data(rslt)
 				
 		self.__finalize_writing()
@@ -430,124 +429,134 @@ class EMClassAveTask(EMTask):
 		self.verbose - False or some value that evaluates to True (depends what the calling program supplied) 
 		'''
 		raw_data_name=self.data["input"][0]
-		self.ptcl_indices = self.data["input"][1]
+		ptcl_indices = self.data["input"][1]
 		
-		self.images = {}
+		images = {}
 		if self.data.has_key("usefilt") and self.data["usefilt"] != None:
-			self.usefilt_images = {}
+			usefilt_images = {}
 			usefilt_data_name=self.data["usefilt"][0]
 		else:
-			self.usefilt_images = None
+			usefilt_images = None
 		
 		norm = None
 		if self.options.has_key("normproc") and self.options["normproc"] != None and self.options["normproc"][0] != "None":
 			norm = self.options["normproc"] # a list of length two
-		self.norm = norm
 			
-		for ptcl_idx in self.ptcl_indices:
+		for ptcl_idx in ptcl_indices:
 			image = EMData(raw_data_name,ptcl_idx)
 			if norm != None:
 				image.process_inplace(norm[0],norm[1])
-			self.images[ptcl_idx] = image
+			images[ptcl_idx] = image
 			
-			if self.usefilt_images != None:
+			if image == None: raise RuntimeError
+			
+			if usefilt_images != None:
 				usefilt_image = EMData(usefilt_data_name,ptcl_idx)
 				if norm != None:
 					usefilt_image.process_inplace(norm[0],norm[1])
-				self.usefilt_images[ptcl_idx] = usefilt_image
+				usefilt_images[ptcl_idx] = usefilt_image
 		# set a flag that can be used to decide if quality scores need to be
 		# evaluated and used for culling the worst, or least similar, particles
 		# from the class
-		self.culling = False
+		culling = False
 		if (self.options["iter"] > 0):
-			self.culling = True
-			if (self.options.has_key("keepsig") and self.options["keepsig"] == False) and self.options["keep"] == 1.0 : self.culling=False
+			culling = True
+			if (self.options.has_key("keepsig") and self.options["keepsig"] == False) and self.options["keep"] == 1.0 : culling=False
 		
 		# the reference is used to perform a final alignment, if specified
-		self.ref = None
+		ref = None
 		if self.data.has_key('ref') and self.data['ref'] != None:
 			ref_data_name=self.data["ref"][0]
 			idx = self.data["ref"][1]
-			self.ref = EMData(ref_data_name,idx)
+			ref = EMData(ref_data_name,idx)
 		
-		self.verbose = False
+		verbose = False
 		if self.options.has_key("verbose") and self.options["verbose"] != None:
-			self.verbose = self.options["verbose"]
+			verbose = self.options["verbose"]
+		
+		return ptcl_indices,images,usefilt_images,norm,culling,ref,verbose
 		
 	def execute(self):
 		'''
 		Called to perform class averaging 
 		May boot strap the original average, iteratively refines averages, aligns final average to ref 
 		'''
-		self.init_memory()
+		ptcl_indices,images,usefilt_images,norm,culling,ref,verbose = self.init_memory()
 		
-		if self.verbose:
+		ali_images = images # these are the images that used for the alignment - they can also be the usefilt images
+	   	if usefilt_images != None: ali_images = usefilt_images
+		
+		if verbose:
 			print "################## Class",self.data["class_idx"] 
 		
 	   	if self.options.has_key("bootstrap") and self.options["bootstrap"] == True:
-	   		if self.verbose:
-	   			print "Bootstrapping the initial class average, #ptcls ", len(self.ptcl_indices)
-	   		average,alis = self.__get_bootstrapped_average()
+	   		if verbose:
+	   			print "Bootstrapping the initial class average, #ptcls ", len(ptcl_indices)
+	   		average,alis = self.__get_bootstrapped_average(ali_images,norm)
 	   	else:
-	   		if self.verbose:
-	   			print "Generating initial class average using input alignment parameters, #ptcls ", len(self.ptcl_indices)
-	   		average = self.__get_init_average_from_ali()
+	   		if verbose:
+	   			print "Generating initial class average using input alignment parameters, #ptcls ", len(ptcl_indices)
+	   		average = self.__get_init_average_from_ali(images,norm)
 	   		alis = self.data["init_alis"]
 
-	   	self.all_alis.append(alis)
-	   	self.averages.append(average)
+	   	all_alis = []
+	   	all_alis.append(alis)
+	   	averages = []
+	   	averages.append(average)
+	   	all_inclusions = []
 	   	inclusions = None
+	   	
+	   
 	   	
 	   	for i in xrange(0,self.options["iter"]):
 	   		if i != 0 : # on the first iteration we already have the initial alignments. 
-	   			alis = self.__align_all(self.averages[-1])
-	   			self.all_alis.append(alis)
+	   			
+	   			alis = self.__align_all(averages[-1],ali_images)
+	   			all_alis.append(alis)
 	   		
 	   		threshold = None
 	   		sims = None
-	   		if self.culling:
-	   			sims = self.__cmp_using_ali(self.averages[-1],self.all_alis[-1])
+	   		if culling:
+	   			sims = self.__cmp_using_ali(averages[-1],all_alis[-1],ali_images)
 	   			itfrac = float(i+1)/float(self.options["iter"])
 	   			threshold = self.__get_cull_threshold(sims,itfrac)
 	   		
 	   		#print sims,threshold
 	   		
-	   		average, inclusions = self.__get_average_with_culling(self.all_alis[-1],sims,threshold)
-	   		self.all_inclusions.append(inclusions)
+	   		average, inclusions = self.__get_average_with_culling(images,norm,all_alis[-1],sims,threshold)
+	   		all_inclusions.append(inclusions)
 	   		
-	   		if self.verbose:
+	   		if verbose:
 	   			vals = inclusions.values()
 	   			kept=0
 	   			for v in vals:
 	   				kept += v
 	   			print "Calculating iterative class average ",i+1, "#ptcls",kept
 	   		#print inclusions
-	   		self.averages.append(average)
+	   		averages.append(average)
 	   		
-	   	if self.ref != None:
-	   		if self.verbose:
+	   	if ref != None:
+	   		if verbose:
 	   			print "Aligning final average to reference image"
-	   		ref_to_average = self.__align(self.ref,average)
-			ref_ali = ref_to_average.get_attr("xform.align2d")
+	   		ref_to_average = self.__align(ref,average)
+	   		ref_ali = ref_to_average.get_attr("xform.align2d")
 			ref_ali.invert()
 			
 			ref_alis = {}
-			for ptcl_idx,ali in self.all_alis[-1].items():
+			for ptcl_idx,ali in all_alis[-1].items():
 				ref_alis[ptcl_idx] = ref_ali * ali # this is correct it is easily verified
-			self.all_alis.append(ref_alis)
-			average = self.__get_average(ref_alis,inclusions)
-			self.all_inclusions.append(inclusions) # just for completeness, yes redundant, but yes generically reasonable
-			average.set_attr("xform.projection", self.ref.get_attr("xform.projection"))
+			all_alis.append(ref_alis)
+			average = self.__get_average(images,norm,ref_alis,inclusions)
+			all_inclusions.append(inclusions) # just for completeness, yes redundant, but yes generically reasonable
+			average.set_attr("xform.projection", ref.get_attr("xform.projection"))
 #			average.set_attr("projection_image",options.ref) # Have to look into this
 			average.set_attr("projection_image_idx",self.class_idx)
-			self.averages.append(average)
+			averages.append(average)
 		
-		if self.verbose:
-			print "****************** Produced",len(self.averages),"averages for class",self.data["class_idx"]
+		if verbose:
+			print "****************** Produced",len(averages),"averages for class",self.data["class_idx"]
 	
-	def get_return_data(self):
 		'''
-		What you call after you call execute
 		Returns a dictionary with these keys/values:
 		--
 		final_average: the final average
@@ -564,20 +573,20 @@ class EMClassAveTask(EMTask):
 		
 		if self.options.has_key("debug") and self.options["debug"] == True:
 			# if you specify the debug options you get all of the averages back
-			d["averages"] = self.averages
+			d["averages"] = averages
 			# All of the alignment data
-			d["all_alis"] = self.all_alis
+			d["all_alis"] = all_alis
 			# All of the inclusion information
-			d["all_inclusions"] = self.all_inclusions
+			d["all_inclusions"] = all_inclusions
 			
 		d["class_idx"] = self.class_idx
-		if len(self.averages) != 0:	d["final_average"] = self.averages[-1]
+		if len(averages) != 0:	d["final_average"] = averages[-1]
 		else: d["final_average"] = None
 		
-		if len(self.all_alis) != 0:	d["final_alis"] = self.all_alis[-1]
+		if len(all_alis) != 0:	d["final_alis"] = all_alis[-1]
 		else: d["final_alis"] = None
 		
-		if len(self.all_inclusions) != 0: d["final_inclusions"] = self.all_inclusions[-1]
+		if len(all_inclusions) != 0: d["final_inclusions"] = all_inclusions[-1]
 		else: d["final_inclusions"] = None
 		
 		
@@ -646,9 +655,10 @@ class EMClassAveTask(EMTask):
 			
 		return aligned
 	
-	def __cmp_using_ali(self,average,alis):
+	def __cmp_using_ali(self,average,alis,images):
 		'''
 		compare every image to the given average, first transforming using the given alis
+		@param images a dict. Key is particle index, values are the images that will be aligned to the average. The calling function can hand in the usefilt images. 
 		@param average the averaged image, that which you want to compare the raw particles to
 		@param alis a dict, key is particle index, values are alignment transforms
 		@return a dict, keys are particle index, values are the result of the comparison operation
@@ -656,10 +666,7 @@ class EMClassAveTask(EMTask):
 		sims = {} # stores similarity score, a measure of quality
 			
 		for ptcl_idx,ali in alis.items():
-			if self.usefilt_images == None:
-				image = self.images[ptcl_idx]
-			else:
-				image = self.usefilt_images[ptcl_idx]
+			image = images[ptcl_idx]
 			
 			aligned = image.process("math.transform",{"transform":ali})
 			
@@ -667,19 +674,20 @@ class EMClassAveTask(EMTask):
 				
 		return sims
 	
-	def __align_all(self,average):
+	def __align_all(self,average,images):
 		'''
 		Align all images to the given image
 		@param average most probably averaged image, that which you want to align the raw particles to
+		@param images a dict. Key is particle index, values are the images that will be aligned to the average. The calling function can hand in the usefilt images. 
 		@return a dict, keys are particle index, values are the Transforms storing alignment parameters
 		'''
 		alis = {} # stores Transforms that have alignment parameters in them
 		
-		for ptcl_idx in self.ptcl_indices:
-			if self.usefilt_images == None:
-				image = self.images[ptcl_idx]
-			else:
-				images = self.usefilt_images[ptcl_idx]
+		for ptcl_idx,image in images.items():
+#			if self.usefilt_images == None:
+#				image = self.images[ptcl_idx]
+#			else:
+#				images = self.usefilt_images[ptcl_idx]
 				
 #			aligned = self.__align(image,average)
 			aligned = self.__align(image,average)
@@ -689,20 +697,22 @@ class EMClassAveTask(EMTask):
 				
 		return alis
 	
-	def __get_bootstrapped_average(self):
+	def __get_bootstrapped_average(self,images,norm):
 		'''
 		Get the bootstrapped average
+		@param images a dict. Key is particle index, values are the images that will be aligned to the average. The calling function can hand in the usefilt images. 
+		@param norm - a list [string,dict] or none, used for normalization processing
 		You have to call this after calling self.init_memory
 		@return the boot strapped average
 		'''
 		average = None
 		np = 0
 		alis = {} # holds the transformation matrices that define the alignment 
-		for ptcl_idx in self.ptcl_indices:
-			if self.usefilt_images == None:
-				image = self.images[ptcl_idx]
-			else:
-				images = self.usefilt_images[ptcl_idx]
+		for ptcl_idx,image in images.items():
+#			if self.usefilt_images == None:
+#				image = self.images[ptcl_idx]
+#			else:
+#				images = self.usefilt_images[ptcl_idx]
 					
 			if (average == None):
 				average = image.copy()
@@ -720,16 +730,18 @@ class EMClassAveTask(EMTask):
 				average.add(aligned) # now add the image
 	
 		if np != 0:
-			if self.norm != None: average.process_inplace(self.norm[0],self.norm[1])
+			if norm != None: average.process_inplace(norm[0],norm[1])
 			average.process_inplace("xform.centeracf")
 			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 			average.set_attr("ptcl_repr",np)
 		return average,alis
 
-	def __get_init_average_from_ali(self):
+	def __get_init_average_from_ali(self,images,norm):
 		'''
 		Get the initial average using initial alignment parameters
 		You have to call this after calling self.init_memory
+		@param images a dict. Key is particle index, values are the images that will be aligned to the average. The calling function can hand in the usefilt images. 
+		@param norm - a list [string,dict] or none, used for normalization processing
 		@return the initial average
 		'''
 		averager_parms =  self.options["averager"]
@@ -739,7 +751,7 @@ class EMClassAveTask(EMTask):
 		np = 0 # number of particles in the average
 		
 		for ptcl_idx,ali in self.data["init_alis"].items():
-			image = self.images[ptcl_idx]			
+			image = images[ptcl_idx]			
 			rslt = image.process("math.transform",{"transform":ali})
 					
 			np += 1
@@ -759,17 +771,19 @@ class EMClassAveTask(EMTask):
 		average = averager.finish()
 		average.mult(float(np)) # Undo the division of np by the averager - this was incorrect because the particles were weighted.
 		average.mult(1.0/weightsum) # Do the correct division
-		if self.norm != None: average.process_inplace(self.norm[0],self.norm[1])
+		if norm != None: average.process_inplace(norm[0],norm[1])
 		average.process_inplace("xform.centeracf")
 		average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 		average.set_attr("ptcl_repr",np)
 		
 		return average
 		
-	def __get_average_with_culling(self,alis,sims,cullthresh):
+	def __get_average_with_culling(self,images,norm,alis,sims,cullthresh):
 		'''
 		get an average using the given alignment parameters, similarity scores, and cull threshold
 		cull threshold can be None, in which case no attention is payed to the sims argument
+		@param images a dict. Key is particle index, values are the images that will be aligned to the average. The calling function can hand in the usefilt images. 
+		@param norm - a list [string,dict] or none, used for normalization processing
 		@param alis a dict, keys are particle indices, values are Transforms storing alignment parameters
 		@param sims a dict, keys are parictle indices, values are numbers. This argument is ignored if cullthresh is None
 		@param cullthresh, a threshold value used to keep particles out of the class average as based on sims
@@ -787,7 +801,7 @@ class EMClassAveTask(EMTask):
 					continue
 				
 			inclusion[ptcl_idx] = True
-			image = self.images[ptcl_idx]			
+			image = images[ptcl_idx]			
 			rslt = image.process("math.transform",{"transform":ali})
 		
 			np += 1
@@ -797,7 +811,7 @@ class EMClassAveTask(EMTask):
 			average = None
 		else:
 			average = averager.finish()
-			if self.norm != None: average.process_inplace(self.norm[0],self.norm[1])
+			if norm != None: average.process_inplace(norm[0],norm[1])
 			#should this be centeracf?
 			#average.process_inplace("xform.centerofmass", {"int_shift_only":1})
 			average.process_inplace("xform.centeracf")
@@ -805,10 +819,12 @@ class EMClassAveTask(EMTask):
 			average.set_attr("ptcl_repr",np)
 		return average,inclusion
 	
-	def __get_average(self,alis,inclusions):
+	def __get_average(self,images,norm,alis,inclusions):
 		'''
 		get an average using the given alignment parameters and inclusion flags
 		inclusions may be None, in which case every particle is included
+		@param images a dict. Key is particle index, values are the images that will be aligned to the average. The calling function can hand in the usefilt images. 
+		@param norm - a list [string,dict] or none, used for normalization processing
 		@param alis a dict, keys are particle indices, values are Transforms storing alignment parameters
 		@param inclusions a dict, keys are parictle indices, values are True or False to indicate inclusion.
 		@return the average
@@ -821,7 +837,7 @@ class EMClassAveTask(EMTask):
 		for ptcl_idx,ali in alis.items():
 			if inclusions != None and inclusions[ptcl_idx] == False: continue
 			
-			image = self.images[ptcl_idx]			
+			image = images[ptcl_idx]			
 			rslt = image.process("math.transform",{"transform":ali})
 		
 			np += 1
@@ -831,7 +847,7 @@ class EMClassAveTask(EMTask):
 			average = None
 		else:
 			average = averager.finish()
-			if self.norm != None: average.process_inplace(self.norm[0],self.norm[1])
+			if norm != None: average.process_inplace(norm[0],norm[1])
 			#should this be centeracf?
 			#average.process_inplace("xform.centerofmass")
 			average.process_inplace("xform.centeracf")
@@ -865,53 +881,54 @@ class EMClassAveTaskDC(EMClassAveTask):
 		'''
 		cache_name=self.data["input"][1]
 		image_cache=db_open_dict(cache_name)
-		self.ptcl_indices = self.data["input"][2]
+		ptcl_indices = self.data["input"][2]
 		
-		self.images = {}
+		images = {}
 		if self.data.has_key("usefilt") and self.data["usefilt"] != None:
-			self.usefilt_images = {}
+			usefilt_images = {}
 			usefilt_cache_name=self.data["usefilt"][1]
 			usefilt_image_cache=db_open_dict(usefilt_cache_name)
 		else:
-			self.usefilt_images = None
+			usefilt_images = None
 		
 		norm = None
 		if self.options.has_key("normproc") and self.options["normproc"] != None:
 			norm = self.options["normproc"] # a list of length two
-		self.norm = norm
 			
-		for ptcl_idx in self.ptcl_indices:
+		for ptcl_idx in ptcl_indices:
 			image = image_cache[ptcl_idx]
+			if image == None: raise RuntimeError
 			if norm != None:
 				image.process_inplace(norm[0],norm[1])
-			self.images[ptcl_idx] = image
+			images[ptcl_idx] = image
 			
-			if self.usefilt_images != None:
+			if usefilt_images != None:
 				usefilt_image = usefilt_image_cache[ptcl_idx]
 				if norm != None:
 					usefilt_image.process_inplace(norm[0],norm[1])
-				self.usefilt_images[ptcl_idx] = usefilt_image
+				usefilt_images[ptcl_idx] = usefilt_image
 		# set a flag that can be used to decide if quality scores need to be
 		# evaluated and used for culling the worst, or least similar, particles
 		# from the class
-		self.culling = False
+		culling = False
 		if (self.options["iter"] > 0):
-			self.culling = True
-			if (self.options.has_key("keepsig") and self.options["keepsig"] == False) and self.options["keep"] == 1.0 : self.culling=False
+			culling = True
+			if (self.options.has_key("keepsig") and self.options["keepsig"] == False) and self.options["keep"] == 1.0 : culling=False
 		
 		# the reference is used to perform a final alignment, if specified
-		self.ref = None
+		ref = None
 		if self.data.has_key('ref') and self.data['ref'] != None:
 			cache_name=self.data["ref"][1]
 			ref_cache=db_open_dict(cache_name)
-			self.ref = ref_cache[self.data["ref"][2]]
+			ref = ref_cache[self.data["ref"][2]]
 		
-		self.verbose = 0
+		verbose = 0
 		if self.options.has_key("verbose") and self.options["verbose"] != None:
-			self.verbose = self.options["verbose"]
+			verbose = self.options["verbose"]
 			
+			
+		return ptcl_indices,images,usefilt_images,norm,culling,ref,verbose
 	
-
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog <output> [options]
