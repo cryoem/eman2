@@ -3731,35 +3731,51 @@ void FlipProcessor::process_inplace(EMData * image)
 
 	int nxy = nx * ny;
 
-	if (axis == "x" || axis == "X") {		// horizontal flip
-		int offset = (nx %2 == 0);
+
+	// Note in all cases the origin is nx/2, ny/2 and nz/2
+	// This means that for even flipping, some pixels are redundant.
+	// Here they are set to zero, however, should this change to something
+	// like the mean, then test_processor.py will fail, as the results of
+	// horizontal (x) flipping are validated against the TransformProcessor
+	// in the case where a Transform is used that has the mirror flag set to
+	// to true.
+	if (axis == "x" || axis == "X") {		// vertical flip
+		int offset = (nx%2 == 0);
 		for(int z = 0; z < nz; ++z) {
 			for(int y = 0; y < ny; ++y) {
+				if (offset != 0 ) {
+					d[z*nxy + y*nx] = 0; // Here's where you'd make it the mean
+				}
 				for(int x = offset; x < nx / 2; ++x) {
 					std::swap(d[z*nxy + y*nx + x], d[z*nxy + y*nx + (nx-x-1+offset)]);
 				}
-				if (offset != 0 ) {
-					d[z*nxy + y*nx] = 0; 
-				}
+
 			}
-			
 		}
-		
 	}
+
 	else if (axis == "y" || axis == "Y") {		// vertical flip
+		int offset = (ny%2 == 0);
 		for(int z=0; z<nz; ++z) {
-			for(int y=0; y<ny/2; ++y) {
+			if (offset != 0) {
+				std::fill(d+z*nxy,d+z*nxy+nx,0); // So if we have change it to the mean it's easy to do so. (instead of using memset)
+			}
+			for(int y=offset; y<ny/2; ++y) {
 				for(int x=0; x<nx; ++x) {
-					std::swap(d[z*nxy + y*nx +x], d[z*nxy + (ny -y -1)*nx +x]);
+					std::swap(d[z*nxy + y*nx +x], d[z*nxy + (ny -y -1+offset)*nx +x]);
 				}
 			}
 		}
 	}
 	else if (axis == "z" || axis == "Z") {		//z axis flip
-		for(int z=0; z<nz/2; ++z) {
+		int offset = (ny%2 == 0);
+		if (offset != 0) {
+			std::fill(d,d+nxy,0);// So if we have change it to the mean it's easy to do so. (instead of using memset)
+		}
+		for(int z=offset; z<nz/2; ++z) {
 			for(int y=0; y<ny; ++y) {
 				for(int x=0; x<nx; ++x) {
-					std::swap(d[z*nxy + y*nx + x], d[(nz-z-1)*nxy + y*nx + x]);
+					std::swap(d[z*nxy + y*nx + x], d[(nz-z-1+offset)*nxy + y*nx + x]);
 				}
 			}
 		}
