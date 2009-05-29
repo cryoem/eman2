@@ -156,8 +156,6 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		gluQuadricOrientation(self.gq,GLU_OUTSIDE)
 		gluQuadricTexture(self.gq,GL_FALSE)
 		
-		
-		
 		self.set_sym(self.sym)
 		self.regen_dl()
 		
@@ -714,6 +712,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 					if ( self.sym_object.is_h_sym() ):
 						trans = t.get_trans()
 						glTranslatef(trans[0],trans[1],trans[2])
+					# negated because OpenGL uses the opposite handed coordinate system
 					glRotate(-d["phi"],0,0,1)
 					glRotate(-d["alt"],1,0,0)
 					glRotate(-d["az"],0,0,1)
@@ -730,6 +729,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 						t.invert()
 						d = t.get_rotation("eman")
 						glPushMatrix()
+						# negated because OpenGL uses the opposite handed coordinate system
 						glRotate(-d["phi"],0,0,1)
 						glRotate(-d["alt"],1,0,0)
 						glRotate(-d["az"],0,0,1)
@@ -764,6 +764,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 #						glRotate(d["alt"],1,0,0)
 #						glRotate(d["az"],0,0,1)
 					else:
+						# negated because OpenGL uses the opposite handed coordinate system
 						glRotate(-d["phi"],0,0,1)
 						glRotate(-d["alt"],1,0,0)
 						glRotate(-d["az"],0,0,1)

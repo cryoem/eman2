@@ -131,7 +131,49 @@ class EMErrorMessageDisplay:
 		msg.exec_()
 	
 	run = staticmethod(run)
+
+class EMProjectListCleanup:
+	'''
+	A class for catching cases where files have been removed.
+	Used mostly statically
+	'''
+	def clean_up_project_file_list(name_of_list):
+		project_db = db_open_dict("bdb:project")
+		names = project_db.get(name_of_list,dfl=[])
 		
+		rem = []
+		for i in xrange(len(names)-1,-1,-1):
+			if not file_exists(names[i]):
+				rem.append("File %s no longer exists. Automatically removing from project" %names[i])
+				names.pop(i)
+		
+		if len(rem) != 0:
+			EMErrorMessageDisplay.run(rem,"Warning")
+			project_db[name_of_list] = names
+		
+	clean_up_project_file_list = staticmethod(clean_up_project_file_list)
+
+	def clean_up_filt_particles():
+		project_db = db_open_dict("bdb:project")
+		db_map = project_db.get("global.spr_filt_ptcls_map",dfl={})
+		
+		error = []
+		update = False
+		for name,map in db_map.items():
+			for key,image_name in map.items():
+				if not file_exists(image_name):
+					map.pop(key)
+					error.append("%s data no longer exists for %s. Automatically removing from project" %(key,image_name))
+					update = True
+			if len(map) == 0:
+				db_map.pop(name)
+					
+		if update:
+			EMErrorMessageDisplay.run(error,"Warning")
+			project_db["global.spr_filt_ptcls_map"] = db_map			
+	
+	clean_up_filt_particles = staticmethod(clean_up_filt_particles)		
+
 class WorkFlowTask(QtCore.QObject):
 	def __init__(self):
 		QtCore.QObject.__init__(self)
@@ -1251,6 +1293,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 	
 	def get_initial_models_table_new(self):
 		list_name = "global.spr_init_models"
+		EMProjectListCleanup.clean_up_project_file_list(list_name)
 		project_db = db_open_dict("bdb:project")
 		init_model_names = project_db.get(list_name,dfl=[])
 		self.names_at_init = init_model_names # so if the user hits cancel this can be reset
@@ -1450,21 +1493,10 @@ class ParticleReportTask(ParticleWorkFlowTask):
 
 
 	def get_project_particle_table(self):
-		project_db = db_open_dict("bdb:project")
 		particle_list_name = "global.spr_ptcls"
+		EMProjectListCleanup.clean_up_project_file_list(particle_list_name) # in case things have gone missing
+		project_db = db_open_dict("bdb:project")
 		particle_names = project_db.get(particle_list_name,dfl=[])
-		
-		rem = []
-		for i in xrange(len(particle_names)-1,-1,-1):
-			if not file_exists(particle_names[i]):
-				rem.append("File %s no longer exists. Automatically removing" %particle_names[i])
-				particle_names.pop(i)
-		
-		if len(rem) != 0:
-			EMErrorMessageDisplay.run(rem)
-			project_db[particle_list_name] = particle_names
-			 
-			
 		
 		self.project_files_at_init = particle_names # so if the user hits cancel this can be reset
 
@@ -2314,21 +2346,21 @@ class E2CTFWorkFlowTask(ParticleReportTask):
 		re-reading stuff from disk multiple times
 		'''
 		def __init__(self):
+			EMProjectListCleanup.clean_up_filt_particles()
 			db = db_open_dict("bdb:project",ro=True)
 			self.db_map = db.get("global.spr_filt_ptcls_map",dfl={})
-			
-			update = False
-			for name,map in self.db_map.items():
-				for key,image_name in map.items():
-					if not file_exists(image_name):
-						map.pop(key)
-						update = True
-				if len(map) == 0:
-					self.db_map.pop(name)
-					
-			if update:
-				EMErrorMessageDisplay.run("Warning, filtered particle data was lost.")
-				db["global.spr_filt_ptcls_map"] = self.db_map					
+#			update = False
+#			for name,map in self.db_map.items():
+#				for key,image_name in map.items():
+#					if not file_exists(image_name):
+#						map.pop(key)
+#						update = True
+#				if len(map) == 0:
+#					self.db_map.pop(name)
+#					
+#			if update:
+#				EMErrorMessageDisplay.run("Warning, filtered particle data was lost.")
+#				db["global.spr_filt_ptcls_map"] = self.db_map					
 						
 #		def __del__(self):
 #			print "CTF columns dies"
@@ -3443,19 +3475,23 @@ class EMParticleOptions:
 #		self.form_db_name = form_db_name
 		
 	def get_particle_options(self):
+		particle_list_name = "global.spr_ptcls"
+		EMProjectListCleanup.clean_up_project_file_list(particle_list_name)
 		particles_map = {} # used to cache data in get_params
-		particles_name_map = {} # used to recall which selection was taken
-		
+		particles_name_map = {} # used to recall which selection was taken	
 		db = db_open_dict("bdb:project")
+		particle_names = db.get(particle_list_name,dfl=[])
 		n = 0
-		if db.has_key("global.spr_ptcls"):
-			ptcls = db["global.spr_ptcls"]
+				
+		if db.has_key(particle_list_name):
+			ptcls = db[particle_list_name]
 			for name in ptcls:
 				n += EMUtil.get_image_count(name)
 				
 			particles_map["Particles"] = ptcls
 				
 		# now build up the list of filtered things
+		EMProjectListCleanup.clean_up_filt_particles()
 		filter_opts = {} # key is the filter type, value is the number of images with this filter type
 		if db.has_key("global.spr_filt_ptcls_map"):
 			for name,d in db["global.spr_filt_ptcls_map"].items():
@@ -3519,25 +3555,12 @@ class E2Refine2DChooseDataTask(ParticleWorkFlowTask):
 class E2RefFreeClassAveTool():
 	
 	def get_reference_free_class_averages_table(self):
-	
+		
 		project_db = db_open_dict("bdb:project")
 		list_name = "global.spr_ref_free_class_aves"
+		EMProjectListCleanup.clean_up_project_file_list(list_name)
 		names = project_db.get(list_name,dfl=[])
-		
-		# this code segment detects if something went wrong, for instance the classes were manually removed from
-		# disk but they were still name in the calss averages list
-		cache = False
-		cache_error_msg = []
-		for i in xrange(len(names)-1,-1,-1):
-			if not file_exists(names[i]):
-				cache_error_msg.append("Missing data %s. Automatically removing from list." %names[i])
-				names.pop(i)
-				cache = True
-				
-		if cache == True:
-			EMErrorMessageDisplay.run(cache_error_msg,"Auto correcting")
-			project_db[list_name] = names
-		
+			
 		self.project_files_at_init = names # so if the user hits cancel this can be reset
 
 		from emform import EM2DStackTable,EMFileTable
@@ -3663,6 +3686,7 @@ class E2InitialModelsTool:
 	
 	def get_initial_models_table(self):
 		list_name = "global.spr_init_models"
+		EMProjectListCleanup.clean_up_project_file_list(list_name)
 		project_db = db_open_dict("bdb:project")
 		init_model_names = project_db.get(list_name,dfl=[])
 		self.project_files_at_init = init_model_names # so if the user hits cancel this can be reset
@@ -4669,6 +4693,7 @@ class E2RefineChooseDataTask(ParticleWorkFlowTask):
 					usefilt_ptcls = self.particles_map[filt_name]
 					db = db_open_dict("bdb:project")
 					if not db.has_key("global.spr_filt_ptcls_map"): raise NotImplementedException("Something is wrong, the global.spr_filt_ptcls_map is supposed to exist")
+					EMProjectListCleanup.clean_up_filt_particles()
 					db_map = db["global.spr_filt_ptcls_map"]
 					
 					intersection_ptcls = []
@@ -4693,6 +4718,7 @@ class E2RefineChooseDataTask(ParticleWorkFlowTask):
 				
 				db = db_open_dict("bdb:project")
 				if not db.has_key("global.spr_filt_ptcls_map"): raise NotImplementedException("Something is wrong, the global.spr_filt_ptcls_map is supposed to exist")
+				EMProjectListCleanup.clean_up_filt_particles()
 				if usefilt_choice != "None":
 					usefilt_name = self.particles_name_map[usefilt_choice]
 					db = db_open_dict("bdb:project")

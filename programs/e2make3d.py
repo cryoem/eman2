@@ -594,7 +594,6 @@ def fourier_reconstruction(options):
 				recon.insert_params(weight_params)
 
 			t = image.get_attr("xform.projection")
-			print t
 			r = t.get_params("eman")
 			failure = recon.insert_slice(image,t)
 				

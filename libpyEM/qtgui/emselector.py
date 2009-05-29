@@ -69,7 +69,7 @@ class EMSelectorModule(EMQtWidgetModule):
 
 class EMSelectorDialog(QtGui.QDialog):
 	'''
-	This class is somewhat of an aberration. It can be used both as a file system browser
+	This class is hybrid. It can be used both as a file system browser
 	and as a save-file dialog. To see an example of using it as a system browser, see the
 	EMBrowserModule. To see an example of using it as a save-file dialog, see emsave.py.
 	Also, emsprworkflow uses this class as a browser for selecting files.  
@@ -209,36 +209,82 @@ class EMSelectorDialog(QtGui.QDialog):
 		This function takes care of automatic updates - if the file system changes then so does
 		the information we display
 		'''
-		return
+		if self.lock: return
+		self.lock = True
 		for i,widget in enumerate(self.list_widgets):
-			if hasattr(widget,"directory"):
-				statinfo = os.stat(widget.directory)
-				if statinfo[-2] != widget.mod_time:
-					crow = widget.currentRow()
-					old_row_text = widget.item(crow)
-					if old_row_text != None: old_row_text = old_row_text.text()
-					widget.clear()
-					widget.directory_lister.load_directory_data(widget.directory_arg,widget)
-					if i == 0:
-							a = QtGui.QListWidgetItem(self.up_arrow_icon,"../",None)
-							a.type_of_me = "go up a directory"
-							widget.insertItem(0,a)
-					new_row_text = widget.item(crow) # this could potentially by None
-					if new_row_text != None: new_row_text = new_row_text.text()
-					# if the old_row_text is is None then nothing was selected and we don't have to worry about clearing the other widgets, which may have been displaying metadata
-					if old_row_text != None and new_row_text != old_row_text:
-						#print "row lost"
-						# if the current row was deleted then the next list widgets need to be cleared
-						for j in range(i+1,len(self.list_widgets)):
-							widget = self.list_widgets[j]
-							widget.clear()
-							self.list_widget_data[j] = None
-							# get rid of these attributes, they could have been set by the listing objects
-							del_attr = ["directory","directory_lister","directory_arg","mod_time"]
-							for attr in del_attr:
-								if hasattr(widget,attr): delattr(widget,attr)
+			if hasattr(widget,"directory") and hasattr(widget,"files") and widget.directory != None:
+				dirs, files = get_files_and_directories(widget.directory)
+				files = set(files)
+				dirs = set(dirs)
+				added = files - widget.files
+				removed = widget.files - files
 				
-					return # only do one at a time
+				if len(added) > 0:
+					# get the first item
+					for k in added:
+						name = k
+						break
+					if self.db_listing.responsible_for(widget.directory):
+						self.db_listing.list_file(name,widget.directory,widget)
+					else:
+						self.dir_listing.list_file(name,widget.directory,widget)
+					self.lock = False
+					add_set = set([name])
+					widget.files = widget.files | add_set
+					return
+				
+				if len(removed) > 0:
+					# get the first item
+					for k in removed:
+						name = k
+						break
+					
+					rm_set = set([name])
+					widget.files = widget.files -rm_set
+
+					for k in xrange(0,widget.count()):
+						item = widget.item(k)
+						if hasattr(item,"file_name") and item.file_name == name:
+							if item.isSelected():
+								for j in range(i+1,len(self.list_widgets)):
+									w = self.list_widgets[j]
+									w.clear()
+									req_attr = ["mod_time","directory","directory_lister","directory_arg","files"]
+						   	   		for attr in req_attr:
+						   	   			if hasattr(w,attr): delattr(w,attr)
+						   	   			
+							widget.takeItem(k)
+							self.lock = False
+							return
+						
+		self.lock = False
+				
+#				if statinfo[-2] != widget.mod_time:
+#					crow = widget.currentRow()
+#					old_row_text = widget.item(crow)
+#					if old_row_text != None: old_row_text = old_row_text.text()
+#					widget.clear()
+#					widget.directory_lister.load_directory_data(widget.directory_arg,widget)
+#					if i == 0:
+#							a = QtGui.QListWidgetItem(self.up_arrow_icon,"../",None)
+#							a.type_of_me = "go up a directory"
+#							widget.insertItem(0,a)
+#					new_row_text = widget.item(crow) # this could potentially by None
+#					if new_row_text != None: new_row_text = new_row_text.text()
+#					# if the old_row_text is is None then nothing was selected and we don't have to worry about clearing the other widgets, which may have been displaying metadata
+#					if old_row_text != None and new_row_text != old_row_text:
+#						#print "row lost"
+#						# if the current row was deleted then the next list widgets need to be cleared
+#						for j in range(i+1,len(self.list_widgets)):
+#							widget = self.list_widgets[j]
+#							widget.clear()
+#							self.list_widget_data[j] = None
+#							# get rid of these attributes, they could have been set by the listing objects
+#							del_attr = ["directory","directory_lister","directory_arg","mod_time"]
+#							for attr in del_attr:
+#								if hasattr(widget,attr): delattr(widget,attr)
+#				
+#					return # only do one at a time
 				
 	def get_desktop_hint(self):
 		return self.desktop_hint
@@ -694,6 +740,7 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.starting_directory = self.starting_directory + get_dtag() + str(self.list_widget_data[0].text())
 		dtag = get_dtag()
 		directory = self.starting_directory 
+		req_attr = ["mod_time","directory","directory_lister","directory_arg","files"]
 		for i in range(len(self.list_widgets)-1):
 			items = []
 			li = self.list_widgets[i]
@@ -708,7 +755,6 @@ class EMSelectorDialog(QtGui.QDialog):
 				li.insertItem(0,k)
 			
 			li.setCurrentRow(old_row)
-			req_attr = ["mod_time","directory","directory_lister","directory_arg"]
 			if  hasattr(self.list_widgets[i+1],req_attr[0]): # if it has the first it has them all
 				for attr in req_attr: setattr(li,attr,getattr(lip,attr))
 	   	   	else:
@@ -720,6 +766,11 @@ class EMSelectorDialog(QtGui.QDialog):
 			self.list_widget_data[i] = li.item(old_row)
 			directory += dtag + str(self.list_widget_data[i].text())
 		
+		# The last widget must have these attributes removed if they existed,
+		# or else the time_out function will produce incorrect results
+		last_widget = self.list_widgets[-1]
+		for attr in req_attr:
+			if hasattr(last_widget,attr): delattr(last_widget,attr)
 		
 		a = QtGui.QListWidgetItem(self.up_arrow_icon,"../",None)
 		a.type_of_me = "go up a directory"
@@ -1041,7 +1092,6 @@ class EMSelectorDialog(QtGui.QDialog):
 			elif item != None and self.db_listing.load_metadata(item,list_widget): return True
 			elif self.db_listing.load_directory_data(directory,list_widget): return True
 			elif self.db_listing.load_database_interrogation(directory,list_widget): return True
-			
 			else: return False
 		else: 
 			if item != None and self.dir_listing.load_metadata(item,list_widget): return True
@@ -1114,6 +1164,9 @@ class EMFSListing:
 		if len(files) == 0 and len(dirs) == 0:
 			# something is unusual about the directory, for instance, it is a file
 			return
+		
+		list_widget.files = set(files)
+		list_widget.dirs = set(dirs)
 		files = self.filter_strings(files)
 		filt = self.target().get_file_filter()
 		
@@ -1146,50 +1199,61 @@ class EMFSListing:
 				accrue_public_attributes(a,b)
 					
 		for file in files:
-			if file[0] == '.': continue
-			if file[-1] == '~': continue
-			#print EMUtil.get_image_ext_type(Util.get_filename_ext((file)),get_file_tag(file)
-			extension = Util.get_filename_ext(file)
-			full_name = directory+dtag+file
-			# note, if this if statement is allowed to proceed on Windows in the case of a png then the program
-			# crashes. In December of 2008 I thus changed this if statement to automatically exclude unecessary files
-			# such as pngs and jpges...etc.
-			if EMUtil.get_image_ext_type(extension) != IMAGE_UNKNOWN and extension not in ["png","jpeg","jpg","JPG"]:
-				try:
-					e.read_image(full_name,0, read_header_only)
-					if EMUtil.get_image_count(full_name) > 1:
-						if e.get_zsize() > 1:
-							a = QtGui.QListWidgetItem(self.target().emdata_matrix_3d_icon,file,list_widget)
-							b = EMFS3DImageStackItem(self.emdata_mx_3d,full_name)
-							accrue_public_attributes(a,b)
-						else:
-							a = QtGui.QListWidgetItem(self.target().emdata_matrix_icon,file,list_widget)
-							b = EMFS2DImageStackItem(self.emdata_mx,full_name)
-							accrue_public_attributes(a,b)
+			self.list_file(file,directory,list_widget)
+		return True
+	
+	def list_file(self,file,directory,list_widget):
+		dtag = get_dtag()
+		filt = self.target().get_file_filter()
+		if file[0] == '.': return False
+		if file[-1] == '~': return False
+		#print EMUtil.get_image_ext_type(Util.get_filename_ext((file)),get_file_tag(file)
+		extension = Util.get_filename_ext(file)
+		full_name = directory+dtag+file
+		# note, if this if statement is allowed to proceed on Windows in the case of a png then the program
+		# crashes. In December of 2008 I thus changed this if statement to automatically exclude unecessary files
+		# such as pngs and jpges...etc.
+		e = EMData()
+		a = None
+		if EMUtil.get_image_ext_type(extension) != IMAGE_UNKNOWN and extension not in ["png","jpeg","jpg","JPG"]:
+			try:
+				e.read_image(full_name,0, read_header_only)
+				if EMUtil.get_image_count(full_name) > 1:
+					if e.get_zsize() > 1:
+						a = QtGui.QListWidgetItem(self.target().emdata_matrix_3d_icon,file,list_widget)
+						b = EMFS3DImageStackItem(self.emdata_mx_3d,full_name)
+						accrue_public_attributes(a,b)
 					else:
-						if e.get_zsize() > 1:
-							a = QtGui.QListWidgetItem(self.target().emdata_3d_icon,file,list_widget)
-							b = EMFSSingleImageItem(self.emdata_3d,full_name)
-						else:
-							a = QtGui.QListWidgetItem(self.target().emdata_icon,file,list_widget)
-							b = EMFSSingleImageItem(self.emdata_3d,full_name)
-	   	   	   	   	   	accrue_public_attributes(a,b)
-				except:
-					a = QtGui.QListWidgetItem(self.target().file_icon,file,list_widget) # this happens when files are corrupted	
-					b = EMGenericItem("regular_file",file)
-					accrue_public_attributes(a,b)
-			
-			elif EMPlot2DModule.is_file_readable(full_name):
-				a = QtGui.QListWidgetItem(self.target().plot_icon,file,list_widget)
-				b = EMFSPlotItem(self.plot_data,full_name)
+						a = QtGui.QListWidgetItem(self.target().emdata_matrix_icon,file,list_widget)
+						b = EMFS2DImageStackItem(self.emdata_mx,full_name)
+						accrue_public_attributes(a,b)
+				else:
+					if e.get_zsize() > 1:
+						a = QtGui.QListWidgetItem(self.target().emdata_3d_icon,file,list_widget)
+						b = EMFSSingleImageItem(self.emdata_3d,full_name)
+					else:
+						a = QtGui.QListWidgetItem(self.target().emdata_icon,file,list_widget)
+						b = EMFSSingleImageItem(self.emdata_3d,full_name)
+   	   	   	   	   	accrue_public_attributes(a,b)
+			except:
+				a = QtGui.QListWidgetItem(self.target().file_icon,file,list_widget) # this happens when files are corrupted	
+				b = EMGenericItem("regular_file",file)
 				accrue_public_attributes(a,b)
-			else:
-				if filt != "EM types":
-					a = QtGui.QListWidgetItem(self.target().file_icon,file,list_widget)
-					b = EMGenericItem("regular_file",file)
-					accrue_public_attributes(a,b)
+		
+		elif EMPlot2DModule.is_file_readable(full_name):
+			a = QtGui.QListWidgetItem(self.target().plot_icon,file,list_widget)
+			b = EMFSPlotItem(self.plot_data,full_name)
+			accrue_public_attributes(a,b)
+		else:
+			if filt != "EM types":
+				a = QtGui.QListWidgetItem(self.target().file_icon,file,list_widget)
+				b = EMGenericItem("regular_file",file)
+				accrue_public_attributes(a,b)
+				
+		if a != None: a.file_name = file
 
 		return True
+		
 			
 	def do_preview(self,item):
 		return item.do_preview(self.target())
@@ -1504,6 +1568,10 @@ class EMDBListing:
 		dtag = get_dtag()
 		real_directory = self.convert_to_absolute_path(directory)
 		dirs,files = get_files_and_directories(real_directory)
+		
+		list_widget.files = set(files)
+		list_widget.dirs = set(dirs)
+		
 		files.sort()
 		dirs.sort()
 		
@@ -1512,7 +1580,6 @@ class EMDBListing:
 		list_widget.directory = real_directory
 		list_widget.directory_lister = self
 		list_widget.directory_arg = directory
-		
 		
 		for i in dirs:
 			if i[0] == '.': continue
@@ -1538,42 +1605,49 @@ class EMDBListing:
 				accrue_public_attributes(a,b)
 			
 		for file in files:
-			if file[len(file)-3:] == "bdb":
-				f = file.rpartition(".bdb")
-				db_directory = self.get_emdatabase_directory(real_directory)
-				
-				db_name = "bdb:"+db_directory+"#"+f[0]
-				db = db_open_dict(db_name,ro=True)
-				
-				if db and db.has_key("maxrec"):
-					#n = DB[f[0]]["maxrec"]
-					n = db["maxrec"]
-					if n >= 1:
-						a = QtGui.QListWidgetItem(self.target().emdata_matrix_icon,f[0],list_widget)
-						b = EMDB2DImageStackItem(self.db_mx,db_directory,f[0])
-						accrue_public_attributes(a,b)
-					elif n == 0:
-						#d = DB[f[0]].get_header(0)
-						d = db.get_header(0)
-						if d["nz"] <= 1:
-							a = QtGui.QListWidgetItem(self.target().emdata_icon,f[0],list_widget)
-							type = self.emdata_entry
-						else:
-							a = QtGui.QListWidgetItem(self.target().emdata_3d_icon,f[0],list_widget)
-							type = self.emdata_3d_entry
-						
-						b = EMDBSingleImageItem(type,db_directory,f[0],0)
-						accrue_public_attributes(a,b)				
+			self.list_file(file,real_directory,list_widget)
+		return True
+	
+	def list_file(self,file,real_directory,list_widget):
+		if file[len(file)-3:] == "bdb":
+			f = file.rpartition(".bdb")
+			db_directory = self.get_emdatabase_directory(real_directory)
+			
+			db_name = "bdb:"+db_directory+"#"+f[0]
+			db = db_open_dict(db_name,ro=True)
+			
+			if db and db.has_key("maxrec"):
+				#n = DB[f[0]]["maxrec"]
+				n = db["maxrec"]
+				if n >= 1:
+					a = QtGui.QListWidgetItem(self.target().emdata_matrix_icon,f[0],list_widget)
+					b = EMDB2DImageStackItem(self.db_mx,db_directory,f[0])
+					accrue_public_attributes(a,b)
+				elif n == 0:
+					#d = DB[f[0]].get_header(0)
+					d = db.get_header(0)
+					if d["nz"] <= 1:
+						a = QtGui.QListWidgetItem(self.target().emdata_icon,f[0],list_widget)
+						type = self.emdata_entry
 					else:
-						a = QtGui.QListWidgetItem(self.target().database_icon,f[0],list_widget)
-						b = EMGenericItem("regular",f[0])
-						accrue_public_attributes(a,b)
+						a = QtGui.QListWidgetItem(self.target().emdata_3d_icon,f[0],list_widget)
+						type = self.emdata_3d_entry
+					
+					b = EMDBSingleImageItem(type,db_directory,f[0],0)
+					accrue_public_attributes(a,b)				
 				else:
 					a = QtGui.QListWidgetItem(self.target().database_icon,f[0],list_widget)
 					b = EMGenericItem("regular",f[0])
 					accrue_public_attributes(a,b)
-					
-		return True
+			else:
+				a = QtGui.QListWidgetItem(self.target().database_icon,f[0],list_widget)
+				b = EMGenericItem("regular",f[0])
+				accrue_public_attributes(a,b)
+				
+			a.file_name = file
+			return True
+		
+		return False
 
 	def is_database_file(self,file_name):
 		file = self.convert_to_absolute_path(file_name)
@@ -1644,7 +1718,7 @@ class EMDBListing:
 				a = QtGui.QListWidgetItem(self.target().basic_python_icon,str(k)+":"+str(v),list_widget)
 				b = EMKeyValueItem("key_value",k,v)
 				accrue_public_attributes(a,b)
-			
+
 		return True
 				
 	
