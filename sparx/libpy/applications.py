@@ -5158,13 +5158,13 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 		for iref in xrange(numref):
 				#  3D stuff
 			from time import localtime, strftime
-			if(myid == main_node):
-				print myid, " begin reconstruction at ", strftime("%d_%b_%Y_%H_%M_%S", localtime())
+			#if(myid == main_node):
+			#	print myid, " begin reconstruction at ", strftime("%d_%b_%Y_%H_%M_%S", localtime())
 			if(CTF): volref, fscc[iref] = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index = iref, info=frec)
 			else:    volref, fscc[iref] = rec3D_MPI_noCTF(data, sym, fscmask, os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index = iref, info=frec)
 
 			if(myid == main_node):
-				print myid, " after reconstruction at ", strftime("%d_%b_%Y_%H_%M_%S", localtime())
+				#print myid, " after reconstruction at ", strftime("%d_%b_%Y_%H_%M_%S", localtime())
 				volref.write_image(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref)
 				if fourvar and runtype=="REFINEMENT":
 					sumvol += volref
