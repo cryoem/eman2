@@ -209,6 +209,7 @@ class EMSelectorDialog(QtGui.QDialog):
 		This function takes care of automatic updates - if the file system changes then so does
 		the information we display
 		'''
+		return
 		for i,widget in enumerate(self.list_widgets):
 			if hasattr(widget,"directory"):
 				statinfo = os.stat(widget.directory)

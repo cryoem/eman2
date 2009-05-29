@@ -1456,23 +1456,36 @@ class TestProcessor(unittest.TestCase):
         e.set_value_at(1,1,0, 7)
         e.set_value_at(1,1,1, 8)
         
-        e.process_inplace('xform.flip', {'axis':'x'})
-        self.assertEqual(e.get_value_at(0, 0, 0), 5)
-        self.assertEqual(e.get_value_at(0, 1, 0), 7)
-        self.assertEqual(e.get_value_at(1, 0, 0), 1)
-        self.assertEqual(e.get_value_at(1, 1, 0), 3)
+#        e.process_inplace('xform.flip', {'axis':'x'})
+#        self.assertEqual(e.get_value_at(0, 0, 0), 5)
+#        self.assertEqual(e.get_value_at(0, 1, 0), 7)
+#        self.assertEqual(e.get_value_at(1, 0, 0), 1)
+#        self.assertEqual(e.get_value_at(1, 1, 0), 3)
         
-        e.process_inplace('xform.flip', {'axis':'y'})
-        self.assertEqual(e.get_value_at(0, 0, 0), 7)
-        self.assertEqual(e.get_value_at(0, 1, 0), 5)
-        self.assertEqual(e.get_value_at(1, 0, 0), 3)
-        self.assertEqual(e.get_value_at(1, 1, 0), 1)
+#        e.process_inplace('xform.flip', {'axis':'y'})
+#        self.assertEqual(e.get_value_at(0, 0, 0), 7)
+#        self.assertEqual(e.get_value_at(0, 1, 0), 5)
+#        self.assertEqual(e.get_value_at(1, 0, 0), 3)
+#        self.assertEqual(e.get_value_at(1, 1, 0), 1)
+#        
+#        e.process_inplace('xform.flip', {'axis':'z'})
+#        self.assertEqual(e.get_value_at(0, 0, 0), 8)
+#        self.assertEqual(e.get_value_at(0, 1, 0), 6)
+#        self.assertEqual(e.get_value_at(1, 0, 0), 4)
+#        self.assertEqual(e.get_value_at(1, 1, 0), 2)
         
-        e.process_inplace('xform.flip', {'axis':'z'})
-        self.assertEqual(e.get_value_at(0, 0, 0), 8)
-        self.assertEqual(e.get_value_at(0, 1, 0), 6)
-        self.assertEqual(e.get_value_at(1, 0, 0), 4)
-        self.assertEqual(e.get_value_at(1, 1, 0), 2)
+        
+        t = Transform()
+        t.set_mirror(1)
+        
+        # This test should be True, It is an important part of ensuring the aligners are functioning accurately
+        for n in [8,9]:
+        	a = test_image(1,size=(n,n))
+        	b = a.copy()
+	        a.process_inplace("xform.flip",{"axis":"x"})
+	        b.process_inplace("math.transform",{"transform":t})
+	        self.assertEqual(a==b, True)
+        
     
     def test_math_addnoise(self):
         """test math.addnoise processor ....................."""

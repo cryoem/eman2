@@ -3732,13 +3732,19 @@ void FlipProcessor::process_inplace(EMData * image)
 	int nxy = nx * ny;
 
 	if (axis == "x" || axis == "X") {		// horizontal flip
+		int offset = (nx %2 == 0);
 		for(int z = 0; z < nz; ++z) {
 			for(int y = 0; y < ny; ++y) {
-				for(int x = 0; x < nx / 2; ++x) {
-					std::swap(d[z*nxy + y*nx + x], d[z*nxy + y*nx + (nx-x-1)]);
+				for(int x = offset; x < nx / 2; ++x) {
+					std::swap(d[z*nxy + y*nx + x], d[z*nxy + y*nx + (nx-x-1+offset)]);
+				}
+				if (offset != 0 ) {
+					d[z*nxy + y*nx] = 0; 
 				}
 			}
+			
 		}
+		
 	}
 	else if (axis == "y" || axis == "Y") {		// vertical flip
 		for(int z=0; z<nz; ++z) {
