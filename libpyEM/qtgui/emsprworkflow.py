@@ -779,6 +779,7 @@ class EMRawDataReportTask(WorkFlowTask):
 				from emselector import EMSelectorModule
 				em_qt_widget = EMSelectorModule()
 				
+				em_qt_widget.widget.set_selection_text("Selection(s)")
 				em_qt_widget.widget.set_validator(self.validator)
 				files = em_qt_widget.exec_()
 				if files != "":
@@ -1184,9 +1185,12 @@ class ParticleWorkFlowTask(WorkFlowTask):
 			return "%.3f" %ctf.defocus
 		
 		def __get_ctf(self,name):
-			a = EMData(name,0,True)
-			d = a.get_attr_dict()
-			return d["ctf"]
+			try:
+				a = EMData(name,0,True)
+				d = a.get_attr_dict()
+				return d["ctf"]
+			except:
+				return EMAN2Ctf()
 		
 		def get_bfactor(self,name):
 			if self.ctf_cache.has_key(name):
@@ -5101,7 +5105,7 @@ class E2EotestTask(EMClassificationTools,E2Make3DTools):
 		for checker in [self.check_main_page,self.check_classaverage_page,self.check_make3d_page]:
 			error_message = checker(params,options)
 			if len(error_message) > 0 :
-				self.display_errors(error_message)
+				EMErrorMessageDisplay.run(error_message)
 				return
 			
 

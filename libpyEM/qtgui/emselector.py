@@ -128,8 +128,8 @@ class EMSelectorDialog(QtGui.QDialog):
 			hbl2=QtGui.QHBoxLayout()
 			hbl2.setMargin(0)
 			hbl2.setSpacing(2)
-			label = QtGui.QLabel("Save as",self)
-			hbl2.addWidget(label)
+			self.selection_label = QtGui.QLabel("Save as",self)
+			hbl2.addWidget(self.selection_label)
 			self.save_as_line_edit = QtGui.QLineEdit("",self)
 			hbl2.addWidget(self.save_as_line_edit,0)
 			self.hbl.addLayout(hbl2)
@@ -187,7 +187,10 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.timer.start(self.timer_interval)
 		
 		self.selected_files = []
-		
+	
+	def set_selection_text(self,text):
+		self.selection_label.setText(text)
+	
 	def set_validator(self,validator):
 		'''
 		Sets the validator which is used only in save_as mode (when this is being used as a file selecting dialog)
@@ -1070,6 +1073,8 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.__load_directory_data(self.ldd_directory,self.ldd_list_widget,self.ldd_item)
 	
 	def __load_directory_data(self,directory,list_widget,item=None):
+		get_application().setOverrideCursor(Qt.BusyCursor)
+		
 		self.ldd_directory = directory
 		self.ldd_list_widget = list_widget
 		self.ldd_item = item
@@ -1085,17 +1090,23 @@ class EMSelectorDialog(QtGui.QDialog):
 			a = QtGui.QListWidgetItem(self.basic_python_icon,str(item.value),list_widget)
 			a.type_of_me = "value"
 			a.value = item.value
+			get_application().setOverrideCursor(Qt.ArrowCursor)
 			return
 		
+		ret = False
 		if self.db_listing.responsible_for(directory):
-			if  self.db_listing.load_database_data(directory,list_widget): return True
-			elif item != None and self.db_listing.load_metadata(item,list_widget): return True
-			elif self.db_listing.load_directory_data(directory,list_widget): return True
-			elif self.db_listing.load_database_interrogation(directory,list_widget): return True
-			else: return False
+			if  self.db_listing.load_database_data(directory,list_widget): ret = True
+			elif item != None and self.db_listing.load_metadata(item,list_widget): ret = True
+			elif self.db_listing.load_directory_data(directory,list_widget): ret = True
+			elif self.db_listing.load_database_interrogation(directory,list_widget): ret = True
+			else: ret = False
+			
 		else: 
-			if item != None and self.dir_listing.load_metadata(item,list_widget): return True
-			else: return self.dir_listing.load_directory_data(directory,list_widget)
+			if item != None and self.dir_listing.load_metadata(item,list_widget): ret = True
+			else: ret = self.dir_listing.load_directory_data(directory,list_widget)
+			
+		get_application().setOverrideCursor(Qt.ArrowCursor)
+		return ret
 		
 	def make_replacements(self,dirs,list_widget):
 		self.db_listing.make_replacements(dirs,list_widget)
