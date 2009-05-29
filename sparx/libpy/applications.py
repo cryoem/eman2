@@ -226,7 +226,7 @@ def ali2d_reduce_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 
 	mask_small = image_decimate(mask, decimation)
 
 	mpi_barrier(MPI_COMM_WORLD)
-		
+
 	ali2d_c(small_stack, outdir, mask_small, ir, last_ring/decimation, rs, xr, yr, ts, center, maxit, CTF, snr, Fourvar, user_func_name, rand_alpha, True)
 
 	if myid == main_node:   
@@ -236,13 +236,13 @@ def ali2d_reduce_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 
 			alpha, sx, sy, mirror, scale = get_params2D(img_small)
 			set_params2D(img, [alpha, sx*decimation, sy*decimation, mirror, scale])
 			img.write_image(stack, i)
+		os.system("rm -f "+small_stack)
 	
 	mpi_barrier(MPI_COMM_WORLD)
 	
 	ali_SSNR(stack, mask, last_ring, maxit=10, CTF=CTF, opti_method="LBFGSB", MPI=True)
 		
 	if myid == main_node:
-		os.system("rm -f "+small_stack)
 		print_end_msg("ali2d_reduce_MPI")
 
 

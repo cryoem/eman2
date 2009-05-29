@@ -6844,7 +6844,6 @@ def SSNR_func_MPI(args, data):
 		sum_SSNR = 0.0
 	
 	sum_SSNR = mpi_bcast(sum_SSNR, 1, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-	print sum_SSNR
 	return -sum_SSNR[0]
 
 
