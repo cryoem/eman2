@@ -1532,7 +1532,6 @@ class TestProcessor(unittest.TestCase):
 				self.assertEqual(aa==bb,True)
 			self.assertEqual(a==b, True)
 	
-	
 		# ODD INVERTIBILITY
 		a = EMData(33,1,1)
 		a.process_inplace("testimage.noise.gauss")
