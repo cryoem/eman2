@@ -67,7 +67,7 @@ def main():
 	parser.add_option("--snr",      type="float",  default= 1.0,                help="  Signal-to-Noise Ratio of the data")   
 	parser.add_option("--ref_a",    type="string", default= "S",                help="  method for generating the quasi-uniformly distributed projection directions (default S) ")
 	parser.add_option("--sym",      type="string", default= "c1",               help="  symmetry of the structure ")
-	parser.add_option("--function", type="string", default="ref_ali3d",         help="  name of the reference preparation function")
+	parser.add_option("--function", type="string", default="ref_ali3dm_new",    help="  name of the reference preparation function")
 	parser.add_option("--MPI",      action="store_true", default=False,         help="  whether using MPI version ")
 	parser.add_option("--debug",    action="store_true", default=False,         help="  debug ")
 	parser.add_option("--fourvar",    action="store_true", default=False,       help="  compute and use fourier variance")

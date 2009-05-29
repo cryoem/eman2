@@ -5113,9 +5113,9 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 						finfo.write( "ID,iref,peak: %6d %d %8.5f" % (list_of_particles[im],iref,peak) )
 				else:
 					if(an[N_step] == -1):	
-						peak = proj_ali_incore(data[im],refrings,numr,mask2D,xrng[N_step],yrng[N_step],step[N_step])
+						peak = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step])
 					else:	           
-						peak = proj_ali_incore_local(data[im],refrings,numr,mask2D,xrng[N_step],yrng[N_step],step[N_step],an[N_step])
+						peak = proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step])
 					if not(finfo is None):
 						phi,tht,psi,s2x,s2y = get_params_proj(data[im])
 						finfo.write( "ID,iref,peak,trans: %6d %d %f %f %f %f %f %f"%(list_of_particles[im],iref,peak,phi,tht,psi,s2x,s2y) )
