@@ -107,7 +107,7 @@ class EMTaskCustomer:
 	def get_results(self,taskid):
 		"""Get the results for a completed task. Returns a tuple with the task object and dictionary."""
 		if self.servtype=="dc":
-			sock,sockf=openEMDCsock(self.addr)
+			sock,sockf=openEMDCsock(self.addr,retry=10)
 			sockf.write("RSLT")
 			sendobj(sockf,taskid)
 			sockf.flush()
@@ -248,15 +248,24 @@ accessible to the server."""
 #######################
 #  Here we define the classes for publish and subscribe parallelism
 
-def openEMDCsock(addr):
-	sock=socket.socket()
-	sock.connect(addr)
-	sockf=sock.makefile()
-			
-	# Introduce ourselves and ask for a task to execute
-	if sockf.read(4)!="EMAN" : raise Exception,"Not an EMAN server"
-	sockf.write("EMAN")
-	sockf.write(pack("I4",EMAN2PARVER))
+def openEMDCsock(addr,retry=3):
+	addr=tuple(addr)
+	for i in range(retry):
+		try :
+			sock=socket.socket()
+			sock.connect(addr)
+			sockf=sock.makefile()
+
+			# Introduce ourselves and ask for a task to execute
+			if sockf.read(4)!="EMAN" : raise Exception,"Not an EMAN server"
+			sockf.write("EMAN")
+			sockf.write(pack("I4",EMAN2PARVER))
+			break
+		except:
+			time.sleep(5)
+			continue
+	else: raise Exception,"Exceeded max retries in opening socket to "+str(addr)
+	
 	return(sock,sockf)
 
 def sendobj(sock,obj):
@@ -283,13 +292,14 @@ def EMDCsendonecom(addr,cmd,data):
 	# 4-7  : int, EMAN2PARVER
 	# 8-11 : 4 char command
 	# 12-15: count of bytes in pickled data following header
-	addr=tuple(addr)
-	sock=socket.socket()
-	sock.connect(addr)
-	sockf=sock.makefile()
-	if sockf.read(4)!="EMAN" : raise Exception,"Not an EMAN server"
-	sockf.write("EMAN")
-	sockf.write(pack("I4s",EMAN2PARVER,cmd))
+	#addr=tuple(addr)
+	#sock=socket.socket()
+	#sock.connect(addr)
+	#sockf=sock.makefile()
+	#if sockf.read(4)!="EMAN" : raise Exception,"Not an EMAN server"
+	#sockf.write("EMAN")
+	#sockf.write(pack("I4s",EMAN2PARVER,cmd))
+	sock,sockf=openEMDCsock(addr,12)
 	sendobj(sockf,data)
 	sockf.flush()
 	
@@ -344,7 +354,6 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 	send command, data len, data (if len not 0)
 	close"""
 
-		print self.sockf
 		if self.verbose>1 : print "connection from %s"%(str(self.client_address))
 
 		# the beginning of a message is a struct containing
@@ -553,7 +562,7 @@ class EMDCTaskClient(EMTaskClient):
 		while (1):
 			# connect to the server
 			if self.verbose>1 : print "Connect to (%s,%d)"%self.addr
-			sock,sockf=openEMDCsock(self.addr)
+			sock,sockf=openEMDCsock(self.addr,retry=10)
 			sockf.write("RDYT")
 			sendobj(sockf,None)
 			sockf.flush()
@@ -596,7 +605,7 @@ class EMDCTaskClient(EMTaskClient):
 
 			# Return results
 			if self.verbose>1 : print "Task done"
-			sock,sockf=openEMDCsock(self.addr)
+			sock,sockf=openEMDCsock(self.addr,retry=10)
 			sockf.write("DONE")
 			sendobj(sockf,task.taskid)
 

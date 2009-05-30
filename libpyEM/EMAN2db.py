@@ -71,11 +71,11 @@ cachesize=80000000
 
 
 def DB_cleanup(a1=None,a2=None):
-	if a1==2 :
+	if a1 in (2,15) :
 		print "Program interrupted, closing databases, please wait (%d)"%os.getpid() 
 	for d in DBDict.alldicts.keys(): d.close()
 	for e in EMAN2DB.opendbs.values(): e.close()
-	if a1==2 :
+	if a1 in (2,15) :
 		print "Databases closed, exiting" 
 		sys.exit(1)
 
@@ -84,6 +84,7 @@ atexit.register(DB_cleanup)
 
 # if we are killed 'nicely', also clean up (assuming someone else doesn't grab this signal)
 signal.signal(2,DB_cleanup)
+signal.signal(15,DB_cleanup)
 
 def e2filemodtime(path):
 	"""This will determine the last modification time for a file or bdb: database in seconds"""
