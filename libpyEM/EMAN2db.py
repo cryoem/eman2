@@ -515,6 +515,9 @@ class EMTaskQueue:
 		"""Mark a Task as complete, by shifting a task to the tasks_complete queue"""
 		try:
 			task=self.active[tid]
+			if task==None:
+				print "*** Warning, task %d is None"%tid
+				return
 		except:
 			return
 		
