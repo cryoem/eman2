@@ -516,7 +516,7 @@ class EMTaskQueue:
 		try:
 			task=self.active[tid]
 			if task==None:
-				print "*** Warning, task %d is None"%tid
+				print "*** Warning, task %d was already complete"%tid
 				return
 		except:
 			return
