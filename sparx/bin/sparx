@@ -135,7 +135,7 @@ try:
 
 
 	if __name__ == "__main__":
-
+		import EMAN2
 		EMAN2.GUIMode=True
 
 		sh=IPShellQt4a()
