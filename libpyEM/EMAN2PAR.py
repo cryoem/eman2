@@ -255,16 +255,17 @@ def openEMDCsock(addr,retry=3):
 			sock=socket.socket()
 			sock.connect(addr)
 			sockf=sock.makefile()
-
-			# Introduce ourselves and ask for a task to execute
-			if sockf.read(4)!="EMAN" : raise Exception,"Not an EMAN server"
-			sockf.write("EMAN")
-			sockf.write(pack("I4",EMAN2PARVER))
 			break
 		except:
 			time.sleep(5)
 			continue
 	else: raise Exception,"Exceeded max retries in opening socket to "+str(addr)
+
+	# Introduce ourselves and ask for a task to execute
+	if sockf.read(4)!="EMAN" : raise Exception,"Not an EMAN server"
+	sockf.write("EMAN")
+	sockf.write(pack("I4",EMAN2PARVER))
+	sockf.flush()
 	
 	return(sock,sockf)
 
