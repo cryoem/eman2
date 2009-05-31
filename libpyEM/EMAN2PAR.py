@@ -301,6 +301,7 @@ def EMDCsendonecom(addr,cmd,data):
 	#sockf.write("EMAN")
 	#sockf.write(pack("I4s",EMAN2PARVER,cmd))
 	sock,sockf=openEMDCsock(addr,12)
+	sockf.write(cmd)
 	sendobj(sockf,data)
 	sockf.flush()
 	
