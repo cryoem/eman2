@@ -8408,9 +8408,10 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 
 	from utilities      import model_circle, drop_image, read_spider_doc
 	from utilities      import get_image, get_input_from_string
-	from utilities      import get_params2D, set_params2D
+	from utilities      import get_params_proj
 	#from filter	    import filt_params, filt_btwl, filt_from_fsc, filt_table, fit_tanh, filt_tanl
-	from alignment	    import proj_ali_incore, proj_ali_incore_local, helios
+	from alignment	    import proj_ali_incore, proj_ali_incore_local, helios, Numrinit, prepare_refrings
+	from projection     import prep_vol
 	from statistics     import ccc
 	from fundamentals   import cyclic_shift, rot_shift3D
 	#from statistics    import fsc_mask
@@ -8486,7 +8487,9 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 
 
 	#drop_image(vol, os.path.join(outdir,"ref_vol00.hdf"))
-	ref_a = "s"
+	sym = "c1"
+	symref = "s"
+	ref_a= "P"
 
 
 	active = EMUtil.get_all_attributes(stack, 'active')
@@ -8495,6 +8498,8 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 		if(active[im]):  list_of_particles.append(im)
 	del active
 	data = EMData.read_images(stack, list_of_particles)
+        for im in xrange(len(data)):
+                data[im].set_attr('ID', list_of_particles[im])
 	nima = len(data)
 
 	finfo = None#open("desperado", 'w')
@@ -8508,7 +8513,7 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 				previous_defocus = -1.0
 			else:
 				volft,kb = prep_vol( vol )
-				refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, sym, numr, MPI=False)
+				refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, symref, numr, MPI=False)
 
 			for im in xrange( nima ):
 				if CTF:
@@ -8517,7 +8522,7 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 						previous_defocus = ctf.defocus
 						ctfvol = filt_ctf(vol, ctf)
 						volft,kb = prep_vol( ctfvol )
-						refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, sym, numr, MPI=False)
+						refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, symref, numr, MPI=False)
 
 				if an[N_step] == -1:	
 					peak = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step])
@@ -8525,6 +8530,7 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 					peak = proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step])
 
 				paramali = get_params_proj(data[im])
+				# phi theta psi sx sy
 				#  conflict with the meaning of active  PAP 05/09
 				active = 1
 				# peak
@@ -8539,10 +8545,10 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 				data[im].set_attr_dict({'active':active})
 				#print the alignment parameters into the LOG file!
 				print_msg("image status                : %i\n"%(active))
-				print_msg("image psi                   : %i\n"%(paramali[0]))
-				print_msg("image s2x                   : %i\n"%(paramali[1]))
-				print_msg("image s2y                   : %i\n"%(paramali[2]))
-				print_msg("image peak                  : %i\n"%(paramali[3]))
+				print_msg("image psi                   : %i\n"%(paramali[2]))
+				print_msg("image s2x                   : %i\n"%(paramali[3]))
+				print_msg("image s2y                   : %i\n"%(paramali[4]))
+				print_msg("image peak                  : %12.4e\n"%(peak))
 
 			#  3D stuff
 			#  I removed symmetry, by default the volume is not symmetrized
@@ -8550,13 +8556,13 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 			if(CTF): vol = recons3d_4nn_ctf(data, range(nima), snr, npad = 4)
 			else:	 vol = recons3d_4nn(data, range(nima), npad = 4)
 			# store the reference volume
-			vof  = os.path.join(outdir, "unsymmetrized%04d.spi"%(N_step*max_iter+Iter+1))
+			vof  = os.path.join(outdir, "unsymmetrized%04d.hdf"%(N_step*max_iter+Iter+1))
 			drop_image(vol, vof, "s")
 			'''
 			vofs = os.path.join(outdir, "unsymmetrized%04d"%(N_step*max_iter+Iter+1))
 			vofo = os.path.join(outdir, "unsymmetrized%04d_byte_swapped"%(N_step*max_iter+Iter+1))
-			vofq = os.path.join(outdir, "symmetrized%04d.spi"%(N_step*max_iter+Iter+1))
-			drop_image(vol, os.path.join(outdir, "raw%04d.spi"%(N_step*max_iter+Iter+1)), "s")
+			vofq = os.path.join(outdir, "symmetrized%04d.hdf"%(N_step*max_iter+Iter+1))
+			drop_image(vol, os.path.join(outdir, "raw%04d.hdf"%(N_step*max_iter+Iter+1)), "s")
 			drop_image(rot_shift3D(vol,90.,-90.,270.), vof, "s")
 
 			# if center == 1:
@@ -8579,6 +8585,7 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 			os.system("himpose  "+vofo+".spi  "+datasym+"  "+vofq+" 2.380000   0.00000  55.00000 ")
 			vol = get_image(vofq)
 			'''
+			print_msg("HELIOS")
 			vol, dp, dphi = helios(vol, pixel_size, dp, dphi, fract, rmax)
 			print_msg("new delta z and delta phi      : %s,    %s\n\n"%(dp,dphi))
 			previous_vol=get_image(os.path.join(outdir, "aligned%04d.hdf"%(N_step*max_iter+Iter)))
@@ -8587,6 +8594,7 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 			#360 - literaly 360 degrees
 			peakmax=[-1000000.0]*3
 			for i in xrange(0, 360, pol_ang_step):
+				print  i
 				vtm = rot_shift3D(vol,float(i))
 				s_r = int(dp/pixel_size)
 				#s_r - search range, should be at least +/- 1 pixel, if s_r < 2 then we set it to 2
@@ -8607,18 +8615,21 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max
 	rmin, rmax, fract, pol_ang_step, step_a, step_r, sym, user_func_name, datasym,
 	Fourvar):
 	from utilities      import model_circle, drop_image, read_spider_doc
-	from utilities      import get_image, get_input_from_string
-	from utilities      import get_params2D, set_params2D
+	from utilities      import get_image, get_input_from_string, file_type
+	from utilities      import get_params_proj
 	#from filter	    import filt_params, filt_btwl, filt_from_fsc, filt_table, fit_tanh, filt_tanl
-	from alignment	    import proj_ali_incore, proj_ali_incore_local, helios
+	from alignment	    import proj_ali_incore, proj_ali_incore_local, helios, Numrinit, prepare_refrings
+	from projection     import prep_vol
 	from statistics     import ccc
 	from fundamentals   import cyclic_shift, rot_shift3D
 	#from statistics    import fsc_mask
 	import os
 	import types
 	from utilities      import print_begin_msg, print_end_msg, print_msg
+	from utilities      import bcast_number_to_all, bcast_list_to_all, bcast_EMData_to_all
 	from mpi 	    import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
 	from mpi 	    import mpi_barrier, mpi_bcast, MPI_FLOAT
+	from time           import time
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid           = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
@@ -8704,7 +8715,9 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max
 	fscmask = model_circle(last_ring,nx,nx,nx)
 	if CTF:	from reconstruction import rec3D_MPI
 	else:	from reconstruction import rec3D_MPI_noCTF
-	ref_a = "s"
+	sym = "c1"
+	symref = "s"
+	ref_a= "P"
 	
 	if myid == main_node:
        		if(file_type(stack) == "bdb"):
@@ -8749,7 +8762,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max
 				previous_defocus = -1.0
 			else:
 				volft,kb = prep_vol( vol )
-				refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, sym, numr)
+				refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, symref, numr, True)
 
 			for im in xrange( len(data) ):
 				if CTF:
@@ -8759,7 +8772,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max
 						ctfvol = filt_ctf(vol, ctf)
 						volft,kb = prep_vol( ctfvol )
 						start_prepare = time()
-						refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, sym, numr)
+						refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, symref, numr)
 						if myid== main_node:
 							print_msg( "Time for prepare ring: %d\n" % (time()-start_prepare) )
 
@@ -8769,6 +8782,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max
 					peak = proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step],finfo)
 
 				paramali = get_params_proj(data[im])
+				# phi theta psi sx sy
 				#  conflict with the meaning of active  PAP 05/09
 				active = 1
 				# peak
@@ -8782,8 +8796,8 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max
 				elif(abs(paramali[2]-90.0) >max_tilt and paramali[2] <180.0): active = 0
 				data[im].set_attr_dict({'active':active})
 	
-			if CTF: vol, fscc = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution%04d"%(N_step*max_iter+Iter+1)), myid, main_node)
-			else:    vol, fscc = rec3D_MPI_noCTF(data, sym, fscmask, os.path.join(outdir, "resolution%04d"%(N_step*max_iter+Iter+1)), myid, main_node)
+			if CTF: vol, fscc = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution%04d"%(N_step*max_iter+Iter+1)), myid, main_node, npad = 2)
+			else:    vol, fscc = rec3D_MPI_noCTF(data, sym, fscmask, os.path.join(outdir, "resolution%04d"%(N_step*max_iter+Iter+1)), myid, main_node, npad = 2)
 
 			"""
 			if fourvar:
@@ -8814,7 +8828,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max
 				drop_image(vol, os.path.join(outdir, "aligned%04d.hdf"%(N_step*max_iter+Iter+1)) )
 				#drop_image(vol, os.path.join(outdir, "volf%04d.hdf"%(N_step*max_iter+Iter+1)))
 
-			del varf
+			#del varf
 			bcast_EMData_to_all(vol, myid, main_node)
 			# write out headers, under MPI writing has to be done sequentially
 			mpi_barrier(MPI_COMM_WORLD)

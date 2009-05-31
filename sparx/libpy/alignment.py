@@ -888,10 +888,10 @@ def prep_vol_kb(vol, kb, npad=2):
 	return  volft
 
 def prepare_refrings( volft, kb, delta, ref_a, sym, numr, MPI=False):
-        from projection import prep_vol, prgs
-        from math       import sin, cos, pi
+        from projection   import prep_vol, prgs
+        from math         import sin, cos, pi
 	from applications import MPI_start_end
-	from utilities  import even_angles
+	from utilities    import even_angles
 	# generate list of Eulerian angles for reference projections
 	#  phi, theta, psi
 	mode = "F"
@@ -1038,7 +1038,7 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 	ant = abs(cos(an*qv))
 	phi, theta, psi, sxo, syo = get_params_proj(data)
 
-	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_local(data,refrings,xrng,yrng,step,ant,mode,numr,cnx-sxo,cny-syo)
+	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_local(data, refrings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
 	iref=int(iref)
 	#[ang,sxs,sys,mirror,peak,numref] = apmq_local(projdata[imn], ref_proj_rings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
 	#ang = (ang+360.0)%360.0

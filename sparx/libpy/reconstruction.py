@@ -740,7 +740,7 @@ def recons3d_wbp(stack_name, list_proj, method, const=1.0E4, symmetry="c1"):
 
 	return CUBE
 
-def prepare_recons(data, symmetry, myid, main_node_half, half_start, step, index, info=None):
+def prepare_recons(data, symmetry, myid, main_node_half, half_start, step, index, info=None, npad = 4):
 	from random import randint
 	from utilities import reduce_EMData_to_root
 	from mpi import mpi_barrier, MPI_COMM_WORLD
@@ -748,7 +748,7 @@ def prepare_recons(data, symmetry, myid, main_node_half, half_start, step, index
 
 	fftvol_half = EMData()
 	weight_half = EMData()
-	half_params = {"size":nx, "npad":4, "symmetry":symmetry, "fftvol":fftvol_half, "weight":weight_half}
+	half_params = {"size":nx, "npad":npad, "symmetry":symmetry, "fftvol":fftvol_half, "weight":weight_half}
 	half = Reconstructors.get( "nn4", half_params )
 	half.setup()
 
@@ -792,14 +792,14 @@ def prepare_recons(data, symmetry, myid, main_node_half, half_start, step, index
 	return None,None
 
 
-def prepare_recons_ctf_fftvol(data, snr, symmetry, myid, main_node_half, pidlist, info=None):
+def prepare_recons_ctf_fftvol(data, snr, symmetry, myid, main_node_half, pidlist, info=None, npad = 4):
 	from random import randint
 	from utilities import reduce_EMData_to_root
 	nx = data[0].get_xsize()
         
 	fftvol_half = EMData()
 	weight_half = EMData()
-	half_params = {"size":nx, "npad":4, "snr":snr, "sign":1, "symmetry":symmetry, "fftvol":fftvol_half, "weight":weight_half}
+	half_params = {"size":nx, "npad":npad, "snr":snr, "sign":1, "symmetry":symmetry, "fftvol":fftvol_half, "weight":weight_half}
 	half = Reconstructors.get( "nn4_ctf", half_params )
 	half.setup()
         
@@ -912,7 +912,7 @@ def get_image_size( imgdata, myid ):
 	return int(nx[0])
 
 
-def rec3D_MPI(data, snr, symmetry, mask3D, fsc_curve, myid, main_node = 0, rstep = 1.0, odd_start=0, eve_start=1, info=None, index=-1):
+def rec3D_MPI(data, snr, symmetry, mask3D, fsc_curve, myid, main_node = 0, rstep = 1.0, odd_start=0, eve_start=1, info=None, index=-1, npad = 4):
 	'''
 	  This function is to be called within an MPI program to do a reconstruction on a dataset kept 
           in the memory, Computes reconstruction and through odd-even, in order to get the resolution
@@ -965,8 +965,8 @@ def rec3D_MPI(data, snr, symmetry, mask3D, fsc_curve, myid, main_node = 0, rstep
 		print "Warning: no images were given for reconstruction, this usually means there is an empty group, returning empty volume"
 		return model_blank( 100, 100, 100 ), None
 
-	fftvol_odd_file,weight_odd_file = prepare_recons_ctf(nx, imgdata, snr, symmetry, myid, main_node_odd, odd_start, 2, info)
-	fftvol_eve_file,weight_eve_file = prepare_recons_ctf(nx, imgdata, snr, symmetry, myid, main_node_eve, eve_start, 2, info) 
+	fftvol_odd_file,weight_odd_file = prepare_recons_ctf(nx, imgdata, snr, symmetry, myid, main_node_odd, odd_start, 2, info, npad)
+	fftvol_eve_file,weight_eve_file = prepare_recons_ctf(nx, imgdata, snr, symmetry, myid, main_node_eve, eve_start, 2, info, npad)
 
 	if nproc == 1:
 		fftvol = get_image(fftvol_odd_file)
@@ -1133,7 +1133,7 @@ def rec3D_MPI(data, snr, symmetry, mask3D, fsc_curve, myid, main_node = 0, rstep
 
         return model_blank(nx,nx,nx),None
 
-def rec3D_MPI_noCTF(data, symmetry, mask3D, fsc_curve, myid, main_node = 0, rstep = 1.0, odd_start=0, eve_start=1, index = -1, info=None):
+def rec3D_MPI_noCTF(data, symmetry, mask3D, fsc_curve, myid, main_node = 0, rstep = 1.0, odd_start=0, eve_start=1, index = -1, info=None, npad = 4):
 	'''
 	  This function is to be called within an MPI program to do a reconstruction on a dataset kept in the memory 
 	  Computes reconstruction and through odd-even, in order to get the resolution
@@ -1175,8 +1175,8 @@ def rec3D_MPI_noCTF(data, symmetry, mask3D, fsc_curve, myid, main_node = 0, rste
  
         nx = data[0].get_xsize()
 
-        fftvol_odd_file,weight_odd_file = prepare_recons(data, symmetry, myid, main_node_odd, odd_start, 2, index, info)
-        fftvol_eve_file,weight_eve_file = prepare_recons(data, symmetry, myid, main_node_eve, eve_start, 2, index, info) 
+        fftvol_odd_file,weight_odd_file = prepare_recons(data, symmetry, myid, main_node_odd, odd_start, 2, index, info, npad)
+        fftvol_eve_file,weight_eve_file = prepare_recons(data, symmetry, myid, main_node_eve, eve_start, 2, index, info, npad) 
          
 	if nproc == 1:
 		fftvol = get_image( fftvol_odd_file )

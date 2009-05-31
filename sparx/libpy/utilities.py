@@ -708,7 +708,6 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.9, met
 	from math      import pi, sqrt, cos, acos, tan, sin
 	from utilities import even_angles_cd
 	from string    import lower,split
-
 	angles = []
 	symmetryLower = symmetry.lower()
 	symmetry_string = split(symmetry)[0]
