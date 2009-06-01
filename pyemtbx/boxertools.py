@@ -1131,6 +1131,7 @@ class FLCFImage:
 #		cfimage.clip_inplace(r2)
 #		self.flcfimage.clip_inplace(r2)
 		self.flcfimage.mult(inv_sigma_image)
+		self.flcfimage.process_inplace("normalize")
 		self.flcfimage.set_attr("template_time_stamp",template.get_template_ts())
 		self.flcfimage.set_attr("get_sigma_image_shrink_factor",shrink_factor)
 		self.flcfimage.set_attr("get_sigma_image_flatten_radius",flatten_radius)

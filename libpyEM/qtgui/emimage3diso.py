@@ -167,6 +167,7 @@ class EMIsosurfaceModule(EMImage3DGUIModule):
 		
 		glStencilFunc(GL_ALWAYS,1,1)
 		if self.cube:
+			glDisable(GL_LIGHTING)
 			glPushMatrix()
 			self.draw_volume_bounds()
 			glPopMatrix()

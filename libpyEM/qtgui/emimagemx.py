@@ -928,7 +928,8 @@ class EMImageMXModule(EMGUIModule):
 		view_height = self.gl_widget.height()
 		panel_height = self.matrix_panel.height
 		if panel_height < view_height :
-			if oldscale > newscale: self.scale =  self.matrix_panel.get_min_scale(self.view_width(),self.gl_widget.height(),self.scale,self.data) # this is to prevent locking
+			# This auto rescaling stuff was disabled at the requeset of Steve Ludtke. Uncomment to see how it works
+			#if oldscale > newscale: self.scale =  self.matrix_panel.get_min_scale(self.view_width(),self.gl_widget.height(),self.scale,self.data) # this is to prevent locking
 			self.draw_scroll = False
 			self.origin=(self.matrix_panel.min_sep,self.matrix_panel.min_sep)
 			self.matrix_panel.update_panel_params(self.view_width(),self.gl_widget.height(),self.scale,self.data,self.origin[1],self)
@@ -945,8 +946,9 @@ class EMImageMXModule(EMGUIModule):
 		self.matrix_panel.update_panel_params(self.view_width(),height,self.scale,self.data,self.origin[1],self)
 		view_height = self.gl_widget.height()
 		panel_height = self.matrix_panel.height
-		if panel_height < view_height :
-			self.scale =  self.matrix_panel.get_min_scale(self.view_width(),self.gl_widget.height(),self.scale,self.data) # this is to prevent locking
+		if panel_height < view_heights :
+			# This auto rescaling stuff was disabled at the requeset of Steve Ludtke. Uncomment to see how it works
+			#self.scale =  self.matrix_panel.get_min_scale(self.view_width(),self.gl_widget.height(),self.scale,self.data) # this is to prevent locking
 			self.draw_scroll = False
 			self.origin=(self.matrix_panel.min_sep,self.matrix_panel.min_sep)
 			self.matrix_panel.update_panel_params(self.view_width(),self.gl_widget.height(),self.scale,self.data,self.origin[1],self)

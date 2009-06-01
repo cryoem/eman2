@@ -1033,8 +1033,6 @@ class EMFilterRawDataTask(WorkFlowTask):
 		
 		filenames = params["filenames"]
 		
-		
-
 		# get the number of process operation - the progress dialog reflects image copying and image processing operations
 		num_processing_operations = 2 # there is atleast a copy and a disk write
 		if params["invert"]: num_processing_operations += 1
@@ -1049,6 +1047,7 @@ class EMFilterRawDataTask(WorkFlowTask):
 		i = 0
 		cancelled = False # if the user cancels the import then we must act
 		cancelled_writes = []
+		application.setOverrideCursor(Qt.BusyCursor)
 		for j in xrange(0,len(filenames)):
 			name = filenames[j]
 			outname = output_names[j]
@@ -1078,7 +1077,6 @@ class EMFilterRawDataTask(WorkFlowTask):
 				progress.qt_widget.setValue(i)
 				get_application().processEvents()
 			
-			print name,outname
 			e.write_image(outname,0)
 			#db_close_dict(db_name)
 			cancelled_writes.append(outname)
@@ -1101,9 +1099,9 @@ class EMFilterRawDataTask(WorkFlowTask):
 					remove_file(name)
 				break
 			
-				
 		progress.qt_widget.setValue(len(filenames))
 		progress.qt_widget.close()
+		application.setOverrideCursor(Qt.ArrowCursor)
 		
 		if not cancelled and params["project_associate"]:
 			project_db = db_open_dict("bdb:project")
@@ -2865,6 +2863,12 @@ class E2CTFOutputTaskGeneral(E2CTFOutputTask):
 		else:
 			self.form.closeEvent(None)
 			self.emit(QtCore.SIGNAL("task_idle"))
+			
+	def on_form_cancel(self):
+		
+		self.form.closeEvent(None)
+		self.form = None
+		self.emit(QtCore.SIGNAL("task_idle"))
 	
 class E2CTFGuiTask(E2CTFWorkFlowTask):	
 	documentation_string = "Select the particle data you wish to evaluate/tweak in the e2ctf interactive interface and hit OK. This will launch e2ctf and the selected images will automatically be loaded for viewing. Once inside the e2ctf interface you can save your tweaked parameters to the database using the Save button."
@@ -2995,7 +2999,7 @@ class E2Refine2DReportTask(ParticleWorkFlowTask):
 	
 	def __init__(self):
 		ParticleWorkFlowTask.__init__(self)
-		self.window_title = "Project 2D Class Averages "
+		self.window_title = "2D Class Averages "
 		
 		
 	def get_params(self):
@@ -3938,33 +3942,15 @@ class RefinementReportTask(ParticleWorkFlowTask):
 			params.append(p)
 		return params
 	
-	
-	def get_last_refinement_models_table(self):
+	def get_rmodels_list(self):
 		'''
-		Looks for bdb:r2d_??#classes_?? and the bdb:r2d_??#classes_init file, finds the most recent one, then fills in the number of particles in
-		in the class average file and also its dimensions.
+		Get the most recent refinement models in each refinement directory
+		Has a preference for listing the threed_filt_?? models as opposed
+		to the threed_?? models, seeing as they are generally better.
+		@return a list of strings
 		'''
 		dirs = get_numbered_directories("refine_")
-#		dirs, files = get_files_and_directories(e2getcwd())
-##		for root, dirs, files in os.walk(os.getcwd()):
-##			break
-#		
-#		dirs.sort()
-#		for i in range(len(dirs)-1,-1,-1):
-#			if len(dirs[i]) != 9:
-#				dirs.pop(i)
-#			elif dirs[i][:7] != "refine_":
-#				dirs.pop(i)
-#			else:
-#				try: int(dirs[i][7:])
-#				except: dirs.pop(i)
-		# allright everything left in dirs is "refine_??" where the ?? is castable to an int, so we should be safe now
 		threed_files = []
-		threed_dims = []
-		threed_mean = []
-		threed_sigma = []
-		threed_max = []
-		threed_min = []
 		for dir in dirs:
 			threed_db = None
 			# check for 00 to 09 but 00 is replaced with "init"
@@ -3972,68 +3958,31 @@ class RefinementReportTask(ParticleWorkFlowTask):
 			cont = True
 			for i in range(0,10):
 				for j in range(0,10):
-					db_name = db_first_part+str(i)+str(j)
-					if db_check_dict(db_name):
-						threed_db = db_name
+					db_name_filt = db_first_part+"filt_"+str(i)+str(j)
+					if db_check_dict(db_name_filt):
+						threed_files.append(db_name_filt)
 					else:
-						if i != 0 or j != 0:
-							cont = False
-							break
-						#else just check for 01 incase the user has specified the --initial arugment
-				if not cont:
-					break
-				
-			if threed_db != None:
-				threed_files.append(threed_db)
-				th_db = db_open_dict(threed_db,ro=True)
-				dims = ""
-				mean = ""
-				sigma = ""
-				max = ""
-				min = ""
-				try:
-					hdr = th_db.get_header(0)
-					dims = str(hdr["nx"])+'x'+str(hdr["ny"])+'x'+str(hdr["nz"])
-					mean = "%4.3f" %hdr["mean"]
-					sigma = "%4.3f" %hdr["sigma"]
-					min = "%4.3f" %hdr["minimum"]
-					max = "%4.3f" %hdr["maximum"]
-				except: pass
-				
-				
-				#db_close_dict(threed_db)
-				threed_dims.append(dims)
-				threed_mean.append(mean)
-				threed_sigma.append(sigma)
-				threed_max.append(max)
-				threed_min.append(min)
-		if len(threed_files) > 0:
-			
-			p = EMParamTable(name="filenames",desc_short="Most current 3D reconstructions",desc_long="")
-			pnames = ParamDef(name="Files names",vartype="intlist",desc_short="3D image file",desc_long="The location of 3D reconstructions",property=None,defaultunits=None,choices=threed_files)
-			pmean = ParamDef(name="Mean",vartype="stringlist",desc_short="Mean",desc_long="The mean voxel value",property=None,defaultunits=None,choices=threed_mean)
-			psigma = ParamDef(name="Standard deviation",vartype="stringlist",desc_short="Standard deviation",desc_long="The standard deviation of the voxel values",property=None,defaultunits=None,choices=threed_sigma)
-			pdims = ParamDef(name="Dimensions",vartype="stringlist",desc_short="Dimensions",desc_long="The dimensions of the 3D images",property=None,defaultunits=None,choices=threed_dims)
-			pmax = ParamDef(name="min",vartype="stringlist",desc_short="Minimum",desc_long="The maximum voxel value",property=None,defaultunits=None,choices=threed_max)
-			pmin = ParamDef(name="max",vartype="stringlist",desc_short="Maximum",desc_long="The minimum voxel value",property=None,defaultunits=None,choices=threed_min)
-			
-			p.append(pnames)
-			p.append(pdims)
-			p.append(pmean)
-			p.append(psigma)
-			p.append(pmax)
-			p.append(pmin)
-			
-			
-			setattr(p,"convert_text", ptable_convert_2)
-			context_menu_dict = {"Save as":image_db_save_as}
-			#context_menu_dict["Delete"] = image_db_delete
-			setattr(p,"context_menu", context_menu_dict)
-			setattr(p,"icon_type","3d_image")
-			
-			return p,len(threed_files)
-		else:
-			return None,0
+						db_name = db_first_part+str(i)+str(j)
+						if db_check_dict(db_name):
+							threed_files.append(db_name)
+						else:
+							return threed_files
+
+		return threed_files
+	
+	def get_last_refinement_models_table(self):
+
+		from emform import EM3DFileTable,EMFileTable
+		names = self.get_rmodels_list()
+		table = EM3DFileTable(names,name="model",desc_short="Most Recent Models",desc_long="")
+
+#		table.add_column_data(EMFileTable.EMColumnData("Mean",EMFilterRawDataTask.get_mean,"The mean pixel value"))
+#		table.add_column_data(EMFileTable.EMColumnData("Sigma",EMFilterRawDataTask.get_sigma,"The standard deviation of the pixel values"))
+		table.add_column_data(EMFileTable.EMColumnData("Dimensions",EMRawDataReportTask.get_image_dimensions,"The dimensions of the file on disk"))
+
+		return table,len(names)
+	
+	
 			
 class E2Make3DTools:
 	'''

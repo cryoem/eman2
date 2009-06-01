@@ -40,6 +40,47 @@ from math import *
 import os
 import sys
 
+def opt_rectangular_subdivision(x,y,n):
+		'''
+		@param x the x dimension of a matrix
+		@param y the y dimensons of a matrix
+		@param the number of subdivisions you wish to partition the matrix into
+		@return [number of x subdivisions, number of y subdivisions]
+		Note that this routine needs a little bit of work - it returns good results when
+		x >> y or y >> x, but when y ~= x it's not quite optimal. Good, but not optimal.
+		'''
+		candidates = []	
+		best = None
+		for a in xrange(1,int((sqrt(n)+1))):
+			x = a
+			y = n/a
+			if ( x*y/float(n) < 0.95 ): continue
+			candidates.append([a,n/a])
+			
+		print candidates
+		min = None
+		
+		expense = []
+		for rn,cn in candidates:
+			
+			f = (float(x)/rn + float(y)/cn)*rn*cn # yes this could be simplified, but leaving as is for clarity
+			expense.append(f)
+			#print f,rn,cn,(x/rn + y/cn)
+			if min == None or f <= min: # less than or equal favours subdivisions that are close to the sqrt
+				#print f,rn,cn
+				best = [rn,cn]
+				min = f
+				
+			f = (float(y)/rn + float(x)/cn)*rn*cn # yes this could be simplified, but leaving as is for clarity
+			if min == None or f <= min: # less than or equal favours subdivisions that are close to the sqrt
+				#print f,rn,cn
+				best = [cn,rn]
+				min = f
+			expense.append(f)
+			
+		print expense
+		return best	
+
 
 
 	
@@ -90,37 +131,7 @@ class EMParallelSimMX:
 			
 		return self.__task_options
 	
-	def __opt_rectangular_subdivision(self,x,y,n):
-		'''
-		@param x the x dimension of a matrix
-		@param y the y dimensons of a matrix
-		@param the number of subdivisions you wish to partition the matrix into
-		@return [number of x subdivisions, number of y subdivisions]
-		Note that this routine needs a little bit of work - it returns good results when
-		x >> y or y >> x, but when y ~= x it's not quite optimal. Good, but not optimal.
-		'''
-		candidates = []	
-		best = None
-		for a in xrange(1,int((sqrt(n)+1))):
-			candidates.append([a,n/a])
-			
-		#print candidates
-		min = None
-		for rn,cn in candidates:
-			
-			f = (float(x)/rn + float(y)/cn)*rn*cn # yes this could be simplified, but leaving as is for clarity
-			#print f,rn,cn,(x/rn + y/cn)
-			if min == None or f < min:
-				#print f,rn,cn
-				best = [rn,cn]
-				min = f
-				
-			f = (float(y)/rn + float(x)/cn)*rn*cn # yes this could be simplified, but leaving as is for clarity
-			if min == None or f < min:
-				#print f,rn,cn
-				best = [cn,rn]
-				min = f
-		return best	
+	
 	
 	
 	def __init_memory(self,options):
@@ -155,7 +166,7 @@ class EMParallelSimMX:
 		total_jobs = self.num_cpus
 		
 		
-		[col_div,row_div] = self.__opt_rectangular_subdivision(self.clen,self.rlen,total_jobs)
+		[col_div,row_div] = opt_rectangular_subdivision(self.clen,self.rlen,total_jobs)
 		
 	
 		block_c = self.clen/col_div

@@ -766,6 +766,23 @@ class EMPlot2DInspector(QtGui.QWidget):
 		hbl2.addWidget(self.ylogtog)
 		
 		vbl.addLayout(hbl2)
+		
+		xiangan_liu = False
+		if xiangan_liu:
+			hbl3 = QtGui.QHBoxLayout()
+			
+			self.good_button=QtGui.QPushButton(self)
+			self.good_button.setText("Good")
+			self.good_button.setCheckable(0)
+			hbl3.addWidget(self.good_button)
+	
+			self.bad_button=QtGui.QPushButton(self)
+			self.bad_button.setText("Bad")
+			self.bad_button.setCheckable(0)
+			hbl3.addWidget(self.bad_button)
+			vbl0.addLayout(hbl3)
+			QtCore.QObject.connect(self.good_button,QtCore.SIGNAL("clicked(bool)"),self.on_good_button)
+			QtCore.QObject.connect(self.bad_button,QtCore.SIGNAL("clicked(bool)"),self.on_bad_button)
 
 		vbl0.addLayout(hbl)
 		
@@ -804,11 +821,70 @@ class EMPlot2DInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.ylabel,QtCore.SIGNAL("textChanged(QString)"),self.updPlot)
 		self.datachange()
 		
+	def on_bad_button(self,unused=False):
+		names = [str(item.text()) for item in self.setlist.selectedItems()]
+		if len(names) == 0: return
 		
-		#QtCore.QObject.connect(self.gammas, QtCore.SIGNAL("valueChanged"), self.newGamma)
-		#QtCore.QObject.connect(self.invtog, QtCore.SIGNAL("toggled(bool)"), target.set_invert)
-		#QtCore.QObject.connect(self.mmode, QtCore.SIGNAL("buttonClicked(int)"), target.set_mouse_mode)
+		self.__remove_from_file("xian_good.txt",names)
+		self.__at_to_file("xian_bad.txt",names)
 
+	def __remove_from_file(self,fname,names):
+			
+		if os.path.exists(fname):
+			inf = open(fname,"r")
+			lines = inf.readlines()
+			inf.close()
+		else:
+			return
+		
+		f = open(fname,"w")
+
+		for i in xrange(0,len(lines)):
+			lines[i] = lines[i].strip()
+		
+		for i in xrange(len(lines)-1,-1,-1):
+			if lines[i] in names:
+				lines.pop(i)
+				
+		
+		for line in lines:
+			f.write(line+"\n")
+				
+		f.close()
+		
+	def __at_to_file(self,fname,names):
+			
+		if os.path.exists(fname):
+			inf = open(fname,"r")
+			lines = inf.readlines()
+			inf.close()
+		else:
+			lines = []
+		f = open(fname,"w")
+			
+		for i in xrange(0,len(lines)):
+			lines[i] = lines[i].strip()
+			
+		for name in names:
+			if name not in lines:
+				lines.append(name)
+				
+		
+		for line in lines:
+			f.write(line+"\n")
+				
+		f.close()
+		
+		
+	def on_good_button(self,unused=False):
+		names = [str(item.text()) for item in self.setlist.selectedItems()]
+		if len(names) == 0: return
+		
+		
+		self.__remove_from_file("xian_bad.txt",names)
+		self.__at_to_file("xian_good.txt",names)
+
+		
 	def updPlot(self,s=None):
 		if self.quiet : return
 		if self.xlogtog.isChecked() : xl="log"

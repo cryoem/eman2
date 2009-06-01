@@ -49,7 +49,7 @@ from emshape import EMShape
 from weakref import WeakKeyDictionary
 import weakref
 from pickle import dumps,loads
-from libpyGLUtils2 import GLUtil
+from libpyGLUtils2 import *
 
 from emglobjects import EMOpenGLFlagsAndTools, EMGUIModule
 from emapplication import EMGUIModule,get_application
@@ -672,11 +672,12 @@ class EMImage2DModule(EMGUIModule):
 		
 		fourier = False
 		
+		# it's a 3D image
 		if not isinstance(data,list) and data.get_zsize() != 1:
-				data = []
-				for z in range(incoming_data.get_zsize()):
-					image = incoming_data.get_clip(Region(0,0,z,incoming_data.get_xsize(),incoming_data.get_ysize(),1))
-					data.append(image)
+			data = []
+			for z in range(incoming_data.get_zsize()):
+				image = incoming_data.get_clip(Region(0,0,z,incoming_data.get_xsize(),incoming_data.get_ysize(),1))
+				data.append(image)
 		
 		
 		if isinstance(data,list):
@@ -699,17 +700,27 @@ class EMImage2DModule(EMGUIModule):
 		else:
 			self.list_data = None
 			self.list_fft_data = None
-			if data.is_complex():
+			if data.is_complex() or self.curfft in [1,2,3]:
+				self.display_fft = None
+				self.data = None
 				fourier = True
-				self.fft = data.copy()# have to make copies here because we alter it!
+				if data.is_complex():
+					self.fft = data.copy()# have to make copies here because we alter it!
+					if self.curfft == 0:
+						self.curfft = 2 # switch to displaying amplitude automatically
+						inspector = self.get_inspector()
+						inspector.set_fft_amp_pressed()
+				else:
+					self.fft = data.do_fft()
 				self.fft.set_value_at(0,0,0,0) # get rid of the DC component
 				self.fft.set_value_at(1,0,0,0) # this should already by 0... ?
-				self.curfft = 2
+				
 				self.__set_display_image(self.curfft)
-				inspector = self.get_inspector()
-				inspector.set_fft_amp_pressed()
 				fourier = True
-			else: self.data = data
+			else: 
+				self.data = data
+				self.display_fft = None
+				self.fft = None
 	
 		self.image_change_count = 0
 			
@@ -1659,11 +1670,11 @@ class EMImage2DModule(EMGUIModule):
 			self.rmousedrag=None
 		
 	def __draw_hud(self):
-		if self.list_data == None: return
-		
 		if self.font_renderer == None:
 			self.__init_font_renderer()
-			
+		if self.list_data == None or self.font_render_mode != EMGUIModule.FTGL: return
+		
+		
 		
 		width = self.gl_widget.width()
 		height = self.gl_widget.height()
