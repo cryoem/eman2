@@ -820,7 +820,7 @@ def prepare_recons_ctf_fftvol(data, snr, symmetry, myid, main_node_half, pidlist
         
 	return fftvol_half, weight_half
 
-def prepare_recons_ctf(nx, data, snr, symmetry, myid, main_node_half, half_start, step, info=None):
+def prepare_recons_ctf(nx, data, snr, symmetry, myid, main_node_half, half_start, step, info=None, npad = 4):
 	from random import randint
 	from utilities import reduce_EMData_to_root
 	from mpi import mpi_barrier, MPI_COMM_WORLD
@@ -828,7 +828,7 @@ def prepare_recons_ctf(nx, data, snr, symmetry, myid, main_node_half, half_start
         
 	fftvol_half = EMData()
 	weight_half = EMData()
-	half_params = {"size":nx, "npad":4, "snr":snr, "sign":1, "symmetry":symmetry, "fftvol":fftvol_half, "weight":weight_half}
+	half_params = {"size":nx, "npad":npad, "snr":snr, "sign":1, "symmetry":symmetry, "fftvol":fftvol_half, "weight":weight_half}
 	half = Reconstructors.get( "nn4_ctf", half_params )
 	half.setup()
         
@@ -1143,8 +1143,8 @@ def rec3D_MPI_noCTF(data, symmetry, mask3D, fsc_curve, myid, main_node = 0, rste
 	import os
 	from statistics import fsc_mask
 	from utilities  import model_blank, reduce_EMData_to_root, get_image,send_EMData, recv_EMData
-	from random import randint
-	from mpi import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
+	from random     import randint
+	from mpi        import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
 	nproc = mpi_comm_size(MPI_COMM_WORLD)
         
 	if nproc==1:
@@ -1162,8 +1162,8 @@ def rec3D_MPI_noCTF(data, symmetry, mask3D, fsc_curve, myid, main_node = 0, rste
 		tag_weight_eve = 1002
 	else:
 		main_node_odd = main_node
-		main_node_eve = (main_node+1)%nproc
-		main_node_all = (main_node+2)%nproc
+		main_node_eve = (int(main_node)+1)%int(nproc)
+		main_node_all = (int(main_node)+2)%int(nproc)
 
 		tag_voleve = 1000
 		tag_fftvol_eve = 1001
@@ -1200,13 +1200,11 @@ def rec3D_MPI_noCTF(data, symmetry, mask3D, fsc_curve, myid, main_node = 0, rste
 		weight_tmp = None
 
 		volall = recons_from_fftvol(nx, fftvol, weight, symmetry)
-
-		import os
 		os.system( "rm -f " + fftvol_odd_file + " " + weight_odd_file );
 		os.system( "rm -f " + fftvol_eve_file + " " + weight_eve_file );
 		return volall,fscdat
   
-	elif nproc == 2:
+	if nproc == 2:
 		if myid == main_node_odd:
 			fftvol = get_image( fftvol_odd_file )
 			weight = get_image( weight_odd_file )
@@ -1231,7 +1229,6 @@ def rec3D_MPI_noCTF(data, symmetry, mask3D, fsc_curve, myid, main_node = 0, rste
 			weight += weight_tmp
 			weight_tmp = None
 			volall = recons_from_fftvol(nx, fftvol, weight, symmetry)
-			import os
 			os.system( "rm -f " + fftvol_odd_file + " " + weight_odd_file );
 			return volall,fscdat
 		else:

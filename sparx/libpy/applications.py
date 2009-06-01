@@ -4607,7 +4607,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 						start_prepare = time()
 						refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, sym, numr)
 						if myid== main_node:
-							print_msg( "Time for prepare ring: %d\n" % (time()-start_prepare) )
+							print_msg( "Time to prepare ring: %d\n" % (time()-start_prepare) )
 
 				if an[N_step] == -1: 
 					proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],finfo)
@@ -8396,12 +8396,12 @@ def autowin_MPI(indir,outdir, noisedoc, noisemic, templatefile, deci, CC_method,
 		out.close()
 
 def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_shift, yr, 
-          max_y_shift, max_tilt, ts, delta, an, maxit, CTF, snr, dp, dphi, pixel_size, 
+          max_y_shift, max_tilt, ts, delta, an, maxit, CTF, snr, dp, dphi,
 	  rmin, rmax, fract, pol_ang_step, step_a, step_r, sym, user_func_name, datasym,
 	  fourvar, MPI):
 	if MPI:
 		ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_shift, yr, 
-			max_y_shift, max_tilt, ts, delta, an, maxit, CTF, snr, dp, dphi, pixel_size, 
+			max_y_shift, max_tilt, ts, delta, an, maxit, CTF, snr, dp, dphi,
 			rmin, rmax, fract, pol_ang_step, step_a, step_r, sym, user_func_name, datasym,
 			fourvar)
 		return
@@ -8462,7 +8462,6 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 	print_msg("Translational step                        : %s\n"%(step))
 	print_msg("Angular step                              : %s\n"%(delta))
 	print_msg("Angular search range                      : %s\n"%(an))
-	print_msg("pixel size in Angstoms                    : %f\n"%(pixel_size))
 	print_msg("max radius for helical search (in Ang)    : %f\n"%(rmax))
 	print_msg("search step for hsearch - angle           : %f\n"%(step_a))
 	print_msg("search step for hsearch - rise            : %f\n"%(step_r))
@@ -8474,6 +8473,7 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 	print_msg("Signal-to-Noise Ratio                     : %f\n"%(snr))
 	print_msg("Symmetry group                            : %s\n\n"%(sym))
 	print_msg("symmetry doc file                         : %s\n\n"%(datasym))
+	#  ADD PRINTOUT OF RELEVANT INPUT PARAMETERS
 
 	if (maskfile) :
 		if (type(maskfile) is types.StringType): mask3D = get_image(maskfile)
@@ -8482,7 +8482,10 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 	mask2D = model_circle(last_ring, nx, nx) - model_circle(first_ring, nx, nx)
 	numr   = Numrinit(first_ring, last_ring, rstep, "F")
 
-	if CTF:	from reconstruction import recons3d_4nn_ctf
+	if CTF:
+		from reconstruction import recons3d_4nn_ctf
+		from filter import filt_ctf
+
 	else: from reconstruction import recons3d_4nn
 
 
@@ -8501,6 +8504,13 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
         for im in xrange(len(data)):
                 data[im].set_attr('ID', list_of_particles[im])
 	nima = len(data)
+	if(data[0].get_attr_default('ctf_applied', 2) > 0):  ctf_applied = True
+	else:   ctf_applied = False
+	if CTF:
+		pixel_size = data[0].get_attr('ctf').apix
+	else:
+		pixel_size = data[0].get_attr('pixel_size')
+	print_msg("pixel size in Angstoms                    : %f\n"%(pixel_size))
 
 	finfo = None#open("desperado", 'w')
 	# do the projection matching
@@ -8510,13 +8520,19 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 			print_msg("ITERATION #%3d\n"%(N_step*max_iter + Iter+1))
 
 			if CTF:
-				previous_defocus = -1.0
+				if ctf_applied == False:
+					previous_defocus = -1.0
+				else:
+					volft,kb = prep_vol( vol )
+					refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, symref, numr, MPI=False)
+					del volft
 			else:
 				volft,kb = prep_vol( vol )
 				refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, symref, numr, MPI=False)
+				del volft
 
 			for im in xrange( nima ):
-				if CTF:
+				if CTF and ctf_applied == False:
 					ctf = data[im].get_attr( "ctf" )
 					if ctf.defocus != previous_defocus:
 						previous_defocus = ctf.defocus
@@ -8534,7 +8550,7 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 				#  conflict with the meaning of active  PAP 05/09
 				active = 1
 				# peak
-				if(peak < min_cc_peak): active = 0
+				#if(peak < min_cc_peak): active = 0
 				# s2x
 				elif(abs(paramali[3]) > max_x_shift): active = 0
 				# s2y
@@ -8544,50 +8560,19 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 				elif(abs(paramali[2]-90.0) >max_tilt and paramali[2] <180.0): active = 0
 				data[im].set_attr_dict({'active':active})
 				#print the alignment parameters into the LOG file!
-				print_msg("image status                : %i\n"%(active))
-				print_msg("image psi                   : %i\n"%(paramali[2]))
-				print_msg("image s2x                   : %i\n"%(paramali[3]))
-				print_msg("image s2y                   : %i\n"%(paramali[4]))
-				print_msg("image peak                  : %12.4e\n"%(peak))
+				print_msg("Image status    : %i,  psi %9.2f,    s2x  %9.2f, s2y  %9.2f,  peak  %10.3e \n"%(active, paramali[2], paramali[3], paramali[4], peak))
 
 			#  3D stuff
 			#  I removed symmetry, by default the volume is not symmetrized
 			#  calculate new and improved 3D
-			if(CTF): vol = recons3d_4nn_ctf(data, range(nima), snr, npad = 4)
-			else:	 vol = recons3d_4nn(data, range(nima), npad = 4)
+			if(CTF): vol = recons3d_4nn_ctf(data, range(nima), snr, npad = 2)
+			else:	 vol = recons3d_4nn(data, range(nima), npad = 2)
 			# store the reference volume
-			vof  = os.path.join(outdir, "unsymmetrized%04d.hdf"%(N_step*max_iter+Iter+1))
-			drop_image(vol, vof, "s")
-			'''
-			vofs = os.path.join(outdir, "unsymmetrized%04d"%(N_step*max_iter+Iter+1))
-			vofo = os.path.join(outdir, "unsymmetrized%04d_byte_swapped"%(N_step*max_iter+Iter+1))
-			vofq = os.path.join(outdir, "symmetrized%04d.hdf"%(N_step*max_iter+Iter+1))
-			drop_image(vol, os.path.join(outdir, "raw%04d.hdf"%(N_step*max_iter+Iter+1)), "s")
-			drop_image(rot_shift3D(vol,90.,-90.,270.), vof, "s")
-
-			# if center == 1:
-			# from utilities import rotate_3D_shift
-			# rotate_3D_shift(data, cs)
-			# drop_image(vol, os.path.join(outdir, "volf%04d.hdf"%(N_step*max_iter+Iter+1)))
-			#qtp = read_spider_doc(datasym)
-			outtemp = open("qtdwe", "w")
-			outtemp.write("cp to opend\n")
-			outtemp.write(vofs)
-			outtemp.write("\n")
-			outtemp.write(vofo)
-			outtemp.write("\n")
-			outtemp.write("en d\n")
-			outtemp.close()
-			os.system("ls -l    qtdwe")
-			os.system("cat    qtdwe")
-			os.system("/usr/local/bin/spider_linux_mpfftw_opt64   spi   <qtdwe")
-			os.system("hsearch_lorentz  "+vofo+".spi  "+datasym+"   2.380000   0.00000  55.00000   0.10000   0.10000")
-			os.system("himpose  "+vofo+".spi  "+datasym+"  "+vofq+" 2.380000   0.00000  55.00000 ")
-			vol = get_image(vofq)
-			'''
-			print_msg("HELIOS")
+			drop_image(vol, os.path.join(outdir, "unsymmetrized%04d.hdf"%(N_step*max_iter+Iter+1)))
 			vol, dp, dphi = helios(vol, pixel_size, dp, dphi, fract, rmax)
 			print_msg("new delta z and delta phi      : %s,    %s\n\n"%(dp,dphi))
+			"""
+			drop_image(vol, os.path.join(outdir, "helicised%04d.hdf"%(N_step*max_iter+Iter+1)))
 			previous_vol=get_image(os.path.join(outdir, "aligned%04d.hdf"%(N_step*max_iter+Iter)))
 			#Here we align the volume with the previous one to keep the polarity fixed.
 			#peakmax - any large negative value for the CC peak to start from
@@ -8598,12 +8583,13 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 				vtm = rot_shift3D(vol,float(i))
 				s_r = int(dp/pixel_size)
 				#s_r - search range, should be at least +/- 1 pixel, if s_r < 2 then we set it to 2
-				if(int(s_r) < 2): s_r = 2 
+				if(int(s_r) < 2): s_r = 2
 				for j in xrange(s_r):
 					zs = j-s_r//2
 					peaks = ccc(cyclic_shift(vtm, 0, 0, zs), previous_vol)
 					if(peaks>peakmax[0]):  peakmax=[peaks, i, zs]
 			vol = cyclic_shift(rot_shift3D(vol, peakmax[1]),  0, 0, peakmax[2])
+			"""
 			drop_image(vol, os.path.join(outdir, "aligned%04d.hdf"%(N_step*max_iter+Iter+1)) )
 			#  here we  write header info
 			from utilities import write_headers
@@ -8611,12 +8597,12 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 	print_end_msg("ihrsr")
 
 def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_shift, yr, 
-	max_y_shift, max_tilt, ts, delta, an, maxit, CTF, snr, dp, dphi, pixel_size, 
+	max_y_shift, max_tilt, ts, delta, an, maxit, CTF, snr, dp, dphi,
 	rmin, rmax, fract, pol_ang_step, step_a, step_r, sym, user_func_name, datasym,
 	Fourvar):
 	from utilities      import model_circle, drop_image, read_spider_doc
 	from utilities      import get_image, get_input_from_string, file_type
-	from utilities      import get_params_proj
+	from utilities      import get_params_proj, recv_attr_dict, send_attr_dict
 	#from filter	    import filt_params, filt_btwl, filt_from_fsc, filt_table, fit_tanh, filt_tanl
 	from alignment	    import proj_ali_incore, proj_ali_incore_local, helios, Numrinit, prepare_refrings
 	from projection     import prep_vol
@@ -8639,7 +8625,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max
 	mpi_barrier(MPI_COMM_WORLD)
 
 	
-	debug = False
+	debug = True
 	if debug:
 		from time import sleep
 		while not os.path.exists(outdir):
@@ -8692,7 +8678,6 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max
 		print_msg("Translational step			     : %s\n"%(step))
 		print_msg("Angular step 			     : %s\n"%(delta))
 		print_msg("Angular search range 		     : %s\n"%(an))
-		print_msg("pixel size in Angstoms		     : %f\n"%(pixel_size))
 		print_msg("max radius for helical search (in Ang)    : %f\n"%(rmax))
 		print_msg("search step for hsearch - angle	     : %f\n"%(step_a))
 		print_msg("search step for hsearch - rise	     : %f\n"%(step_r))
@@ -8713,7 +8698,9 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max
 	mask2D  = model_circle(last_ring,nx,nx) - model_circle(first_ring,nx,nx)
 
 	fscmask = model_circle(last_ring,nx,nx,nx)
-	if CTF:	from reconstruction import rec3D_MPI
+	if CTF:
+		from reconstruction import rec3D_MPI
+		from filter         import filt_ctf
 	else:	from reconstruction import rec3D_MPI_noCTF
 	sym = "c1"
 	symref = "s"
@@ -8747,7 +8734,15 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max
 	data = EMData.read_images(stack, list_of_particles)
 	for im in xrange(len(data)):
 		data[im].set_attr('ID', list_of_particles[im])
-	
+	if(data[0].get_attr_default('ctf_applied', 2) > 0):  ctf_applied = True
+	else:   ctf_applied = False
+	if CTF:
+		pixel_size = data[0].get_attr('ctf').apix
+	else:
+		pixel_size = data[0].get_attr('pixel_size')
+	if myid == 0:
+		print_msg("pixel size in Angstoms		     : %f\n"%(pixel_size))
+
 	if debug:
 		finfo.write( '%d loaded  \n' % len(data) )
 		finfo.flush()
@@ -8759,13 +8754,15 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max
 				start_time = time()
 				print_msg("\nITERATION #%3d\n"%(N_step*max_iter+Iter+1))
 			if CTF:
-				previous_defocus = -1.0
-			else:
-				volft,kb = prep_vol( vol )
-				refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, symref, numr, True)
+				if ctf_applied == False:
+					previous_defocus = -1.0
+				else:
+					volft,kb = prep_vol( vol )
+					refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, symref, numr, MPI=False)
+					del volft
 
 			for im in xrange( len(data) ):
-				if CTF:
+				if CTF and ctf_applied == False:
 					ctf = data[im].get_attr( "ctf" )
 					if( ctf.defocus != previous_defocus):
 						previous_defocus = ctf.defocus
@@ -8774,7 +8771,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max
 						start_prepare = time()
 						refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, symref, numr)
 						if myid== main_node:
-							print_msg( "Time for prepare ring: %d\n" % (time()-start_prepare) )
+							print_msg( "Time to prepare ring: %d\n" % (time()-start_prepare) )
 
 				if an[N_step] == -1: 
 					peak = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],finfo)
@@ -8786,7 +8783,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max
 				#  conflict with the meaning of active  PAP 05/09
 				active = 1
 				# peak
-				if(peak < min_cc_peak): active = 0
+				#if(peak < min_cc_peak): active = 0
 				# s2x
 				elif(abs(paramali[3]) > max_x_shift): active = 0
 				# s2y
@@ -8795,9 +8792,10 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max
 				elif(abs(paramali[2]-270.0) >max_tilt and paramali[2] >180.0): active = 0
 				elif(abs(paramali[2]-90.0) >max_tilt and paramali[2] <180.0): active = 0
 				data[im].set_attr_dict({'active':active})
+				#print_msg("image status    : %i,  psi %9.2f,  s2x  %9.2f,  s2y  %9.2f,  peak  %10.3e \n"%(active, paramali[2], paramali[3], paramali[4], peak))
 	
-			if CTF: vol, fscc = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution%04d"%(N_step*max_iter+Iter+1)), myid, main_node, npad = 2)
-			else:    vol, fscc = rec3D_MPI_noCTF(data, sym, fscmask, os.path.join(outdir, "resolution%04d"%(N_step*max_iter+Iter+1)), myid, main_node, npad = 2)
+			if CTF: vol, fscc = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution%04d"%(N_step*max_iter+Iter+1)), myid, main_node, npad = 4)
+			else:    vol, fscc = rec3D_MPI_noCTF(data, sym, fscmask, os.path.join(outdir, "resolution%04d"%(N_step*max_iter+Iter+1)), myid, main_node, npad = 4)
 
 			"""
 			if fourvar:
@@ -8810,6 +8808,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max
 				drop_image(vol, os.path.join(outdir, "unsymmetrized%04d.hdf"%(N_step*max_iter+Iter+1)))
 				vol, dp, dphi = helios(vol, pixel_size, dp, dphi, fract, rmax)
 				print_msg("new delta z and delta phi      : %s,    %s\n\n"%(dp,dphi))
+				"""
 				previous_vol=get_image(os.path.join(outdir, "aligned%04d.hdf"%(N_step*max_iter+Iter)))
 				#Here we align the volume with the previous one to keep the polarity fixed.
 				#peakmax - any large negative value for the CC peak to start from
@@ -8819,12 +8818,13 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max
 					vtm = rot_shift3D(vol,float(i))
 					s_r = int(dp/pixel_size)
 					#s_r - search range, should be at least +/- 1 pixel, if s_r < 2 then we set it to 2
-					if(int(s_r) < 2): s_r = 2 
+					if(int(s_r) < 2): s_r = 2
 					for j in xrange(s_r):
 						zs = j-s_r//2
 						peaks = ccc(cyclic_shift(vtm, 0, 0, zs), previous_vol)
 						if(peaks>peakmax[0]):  peakmax=[peaks, i, zs]
 				vol = cyclic_shift(rot_shift3D(vol, peakmax[1]),  0, 0, peakmax[2])
+				"""
 				drop_image(vol, os.path.join(outdir, "aligned%04d.hdf"%(N_step*max_iter+Iter+1)) )
 				#drop_image(vol, os.path.join(outdir, "volf%04d.hdf"%(N_step*max_iter+Iter+1)))
 

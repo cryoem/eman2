@@ -63,7 +63,6 @@ def main():
 	parser.add_option("--Fourvar",  action="store_true", default=False,         help="compute Fourier variance")
 	parser.add_option("--dp",       type="float",  default= 1.0,                help="  delta z - translation in Angstroms")   
 	parser.add_option("--dphi",     type="float",  default= 1.0,                help="  delta phi - rotation in degrees")   
-	parser.add_option("--pixel",    type="float",  default= 2.39,               help="  Pixel size in Angstroms")   
 	parser.add_option("--rmin",     type="float",  default= 0.0,                help="  minimal radius for hsearch")   
 	parser.add_option("--rmax",     type="float",  default= 80.0,               help="  maximal radius for hsearch")
 	parser.add_option("--fract",    type="float",  default= 0.7,                help="  fraction of the volume used for helical search")
@@ -93,7 +92,7 @@ def main():
 		global_def.BATCH = True
 		ihrsr(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.min_cc_peak, options.xr, 
 			options.max_x_shift, options.yr, options.max_y_shift, options.max_tilt, options.ts, options.delta, 
-			options.an, options.maxit, options.CTF, options.snr, options.dp, options.dphi, options.pixel, 
+			options.an, options.maxit, options.CTF, options.snr, options.dp, options.dphi,
 			options.rmin, options.rmax, options.fract, options.pol_ang_step, options.step_a, options.step_r, 
 			options.sym, options.function, options.datasym, options.Fourvar, options.MPI) 
 		global_def.BATCH = False
