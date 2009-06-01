@@ -8552,7 +8552,7 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 				# peak
 				#if(peak < min_cc_peak): active = 0
 				# s2x
-				elif(abs(paramali[3]) > max_x_shift): active = 0
+				if(abs(paramali[3]) > max_x_shift): active = 0
 				# s2y
 				elif(abs(paramali[4]) > max_y_shift): active = 0
 				# psi correct value should be 90 +/- max_tilt, or 270 +/- max_tilt!
@@ -8560,7 +8560,7 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 				elif(abs(paramali[2]-90.0) >max_tilt and paramali[2] <180.0): active = 0
 				data[im].set_attr_dict({'active':active})
 				#print the alignment parameters into the LOG file!
-				print_msg("Image status    : %i,  psi %9.2f,    s2x  %9.2f, s2y  %9.2f,  peak  %10.3e \n"%(active, paramali[2], paramali[3], paramali[4], peak))
+				print_msg("Image %i,  status    : %i,  psi %9.2f,    s2x  %9.2f, s2y  %9.2f,  peak  %10.3e \n"%(im, active, paramali[2], paramali[3], paramali[4], peak))
 
 			#  3D stuff
 			#  I removed symmetry, by default the volume is not symmetrized
@@ -8785,7 +8785,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max
 				# peak
 				#if(peak < min_cc_peak): active = 0
 				# s2x
-				elif(abs(paramali[3]) > max_x_shift): active = 0
+				if(abs(paramali[3]) > max_x_shift): active = 0
 				# s2y
 				elif(abs(paramali[4]) > max_y_shift): active = 0
 				# psi correct value should be 90 +/- max_tilt, or 270 +/- max_tilt!
