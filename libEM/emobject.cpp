@@ -482,12 +482,12 @@ EMObject::operator Transform* () const
 
 EMObject::operator Ctf* () const
 {
-	if(type != CTF) {
+/*	if(type != CTF) {
 		if(type != CTF) {
 			throw TypeException("Cannot convert to TRANSFORM* from this data type",
 								get_object_type_name(type));
 		}
-	}
+	}*/
 	Ctf * ctf = 0;
 	if(str[0] == 'O') {
 		ctf = new EMAN1Ctf();

@@ -94,7 +94,7 @@ ps = rot_avg_table(ssnr)
 print  len(ps),len(pwn)
 ps.extend([0.0])
 print  len(ps),len(pwi)
-for i in xrange(len(ps)):
+for i in xrange(len(ps)-1):
 	fr.append(n*pwi[i]/pwn[i])
 	#print  i,ps[i]
 	ps[i] = max(0.0, ps[i])
