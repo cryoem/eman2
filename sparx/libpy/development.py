@@ -6410,10 +6410,7 @@ def ave_ali_err(stack):
 		v1.append(sx)
 		v1.append(sy)
 		v1.append(mirror)
-		alpha_i = img.get_attr("alpha_i")
-		sx_i = img.get_attr("sx_i")
-		sy_i = img.get_attr("sy_i")
-		mirror_i = img.get_attr("mirror_i")
+		alpha_i, sx_i, sy_i, mirror_i, dummy = get_params2D(img, "xform.align2d_ideal")
 		if mirror==mirror_i:	mirror_same += 1
 		alpha_i2, sx_i2, sy_i2, scale2 = inverse_transform2(alpha_i, sx_i, sy_i)
 		v2.append(alpha_i2)
@@ -6476,10 +6473,7 @@ def ave_ali_err_MPI(stack):
 		v1.append(sx)
 		v1.append(sy)
 		v1.append(mirror)
-		alpha_i = img.get_attr("alpha_i")
-		sx_i = img.get_attr("sx_i")
-		sy_i = img.get_attr("sy_i")
-		mirror_i = img.get_attr("mirror_i")
+		alpha_i, sx_i, sy_i, mirror_i, dummy = get_params2D(img, "xform.align2d_ideal")
 		if mirror==mirror_i:	mirror_same += 1
 		alpha_i2, sx_i2, sy_i2, scale2 = inverse_transform2(alpha_i, sx_i, sy_i)
 		v2.append(alpha_i2)
