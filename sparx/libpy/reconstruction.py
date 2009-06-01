@@ -91,7 +91,7 @@ def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 10.0, sign=1, symmetry="c
 	# convert angles to transform (rotation) objects
 	active = proj.get_attr_default('active', 1)
 	size   = proj.get_xsize()
-
+	"""
 	padffted = proj.get_attr_default("padffed", 0)
 
 	if padffted == 1 :
@@ -99,7 +99,7 @@ def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 10.0, sign=1, symmetry="c
 
 	elif size != proj.get_ysize():
 		ERROR("input data has to be square","recons3d_4nn_ctf",1)
-
+	"""
 	# reconstructor
 	params = {"size":size, "npad":npad, "symmetry":symmetry, "snr":snr, "sign":sign}
 	r = Reconstructors.get("nn4_ctf", params)
