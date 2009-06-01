@@ -10,17 +10,17 @@ vol.read_image("../model001.tcp")
 #vol.read_image("model.spi")
 #info(e)
 nx = vol.get_xsize()
-delta_theta=7.0
+delta=15.0
 '''
-angles=even_angles(delta_theta,0.,90.,0,359.99,"S")
+angles=even_angles(delta,0.,90.,0,359.99,"S")
 i1 = len(angles)
-at = even_angles(delta_theta,0.,180.,0,359.99,"S")
+at = even_angles(delta,0.,180.,0,359.99,"S")
 i2 = len(at)
 
 for i in xrange(i2-i1):
 	angles.append(at[i+i1-1])
 '''
-angles=even_angles(delta_theta,0.,179.9,0.0,359.99,"S", phiEqpsi="Zero")
+angles=even_angles(delta,0.,179.9,0.0,359.99,"S", phiEqpsi="Zero")
 volft,kb=prep_vol(vol)
 
 stack_data="datan.hdf"
@@ -73,6 +73,7 @@ vol2   = recons3d_4nn(stack_data, range(1,nprojdata,2))
 #del mask3d
 
 vol2.write_image("v2.hdf", 0)
+exit()
 # THIS HAS TO BE INDEXED BY THE LOOP
 fsc(vol1,vol2,1.0,"tdt.txt")
 #exit()
