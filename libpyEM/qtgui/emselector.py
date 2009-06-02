@@ -844,7 +844,7 @@ class EMSelectorDialog(QtGui.QDialog):
 		if event.key() == Qt.Key_F1:
 			try:
 				import webbrowser
-				webbrowser.open("http://blake.bcm.edu/emanwiki/e2display")
+				webbrowser.open("http://blake.bcm.edu/emanwiki/EMAN2/Programs/emselector")
 			except:
 				pass
 	
@@ -1626,6 +1626,13 @@ class EMDBListing:
 			
 			db_name = "bdb:"+db_directory+"#"+f[0]
 			db = db_open_dict(db_name,ro=True)
+			
+			try:
+				db.has_key("maxrec")
+			except:
+				from emsprworkflow import EMErrorMessageDisplay
+				EMErrorMessageDisplay.run(["Warning: the %s database seems to be corrupted" %db_name], "Data loss" )
+				return False
 			
 			if db and db.has_key("maxrec"):
 				#n = DB[f[0]]["maxrec"]

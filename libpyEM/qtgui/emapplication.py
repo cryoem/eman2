@@ -210,12 +210,12 @@ class EMGUIModule(EventsEmitterAndReciever,QtCore.QObject):
 	def set_inspector_selected(self,bool):
 		if self.em_qt_inspector_widget != None: self.em_qt_inspector_widget.set_selected(bool)
 
-	def display_web_help(self):
+	def display_web_help(self,url="http://blake.bcm.edu/emanwiki/e2display"):
 	
 		try:
 			try:
 				import webbrowser
-				webbrowser.open("http://blake.bcm.edu/emanwiki/e2display")
+				webbrowser.open(url)
 			except:
 				try:
 					test = self.browser
@@ -224,7 +224,7 @@ class EMGUIModule(EventsEmitterAndReciever,QtCore.QObject):
 					self.browser.load(QtCore.QUrl())
 					self.browser.resize(800,800)
 				
-				if not self.browser.isVisible(): self.browser.show("http://blake.bcm.edu/emanwiki/e2display")
+				if not self.browser.isVisible(): self.browser.show(url)
 		except:
 			pass
 			#self.browser2 = QtGui.QTextBrowser()

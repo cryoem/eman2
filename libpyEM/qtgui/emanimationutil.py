@@ -119,6 +119,9 @@ class Animatable:
 	def set_animated(self,val=True):
 		self.animated = val
 		
+	def cancel_animation(self):
+		self.animation = False
+		
 	def is_animated(self): return self.animated
 	
 	def animate(self,t):
@@ -133,6 +136,7 @@ class Animatable:
 			self.time_begin = 0
 			self.time = 0
 			self.animated = False
+			self.target.animation_done_event(self)
 			return 0
 		else:
 			dt = self.__get_dt()
@@ -298,6 +302,12 @@ class LineAnimation(Animatable):
 	def get_end(self):
 		return self.end
 	
+	def set_end(self,end):
+		self.end = end
+		self.start = self.current
+		self.time = 0
+		self.time_begin = 0
+	
 	def get_current(self):
 		return self.current
 	
@@ -308,6 +318,7 @@ class LineAnimation(Animatable):
 		if dt > 1: raise
 		x = (1-dt)*self.start[0] + dt*self.end[0]
 		y = (1-dt)*self.start[1] + dt*self.end[1]
+		self.current = (x,y)
 		self.target.set_line_animation(x,y)
 		
 	def transform(self):pass

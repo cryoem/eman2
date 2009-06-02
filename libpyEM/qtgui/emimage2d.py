@@ -459,6 +459,7 @@ class EMImage2DModule(EMGUIModule):
 		self.isanimated = False
 		self.time = 1
 		self.timeinc = 0.125
+		self.key_mvt_animation = None
 		
 		self.init_size = True		# A flag used to set the initial origin offset
 		
@@ -1432,6 +1433,9 @@ class EMImage2DModule(EMGUIModule):
 		return True
 
 	def animation_done_event(self,animation):
+		if animation == self.key_mvt_animation:
+			self.key_mvt_animation = None
+		
 		if isinstance(animation,SingleValueIncrementAnimation):
 			self.set_animation_increment(animation.get_end())
 		elif isinstance(animation,LineAnimation):
@@ -1445,7 +1449,7 @@ class EMImage2DModule(EMGUIModule):
 		
 	def set_line_animation(self,x,y):
 		self.origin=(x,y)
-		self.display_states = [] #forces an display list update
+		self.display_states = [] #forces a display list update
 		
 	def update_blend(self):
 		ret = False
@@ -1609,32 +1613,50 @@ class EMImage2DModule(EMGUIModule):
 		else:
 			print "double click only performs a function on Mac"
 
+	def __key_mvt_animation(self,dx,dy):
+		if self.key_mvt_animation == None:
+			new_origin=(self.origin[0]+dx,self.origin[1]+dy)
+			self.key_mvt_animation = LineAnimation(self,self.origin,new_origin)
+			self.get_qt_context_parent().register_animatable(self.key_mvt_animation)
+		else:
+			new_origin = self.key_mvt_animation.get_end()
+			new_origin = (new_origin[0]+dx,new_origin[1]+dy)
+			self.key_mvt_animation.set_end(new_origin)
+	
 	def keyPressEvent(self,event):
 		if event.key() == Qt.Key_F1:
-			self.display_web_help()
+			self.display_web_help("http://blake.bcm.edu/emanwiki/EMAN2/Programs/emimage2d")
 				
 		elif event.key() == Qt.Key_Up:
-			self.increment_list_data(1)
-			if self.emit_events: self.emit(QtCore.SIGNAL("increment_list_data"),1)
-			self.updateGL()
-			#if self.list_data != None:
-				#if (self.list_idx < (len(self.list_data)-1)):
-					#self.list_idx += 1
-					#self.get_inspector().set_image_idx(self.list_idx+1)
-					#self.__set_display_image(self.curfft)
-					#self.force_display_update()
-					#
+			if self.list_data != None:
+				self.increment_list_data(1)
+				if self.emit_events: self.emit(QtCore.SIGNAL("increment_list_data"),1)
+				self.updateGL()
+			else:
+				self.__key_mvt_animation(0,self.gl_widget.height()*.1)
+	
 		elif event.key() == Qt.Key_Down:
-			self.increment_list_data(-1)
-			if self.emit_events: self.emit(QtCore.SIGNAL("increment_list_data"),-1)
-			self.updateGL()
-			#if self.list_data != None:
-				#if (self.list_idx > 0):
-					#self.list_idx -= 1
-					#self.get_inspector().set_image_idx(self.list_idx+1)
-					#self.__set_display_image(self.curfft)
-					#self.force_display_update()
-					#self.updateGL()
+			if self.list_data != None:
+				self.increment_list_data(-1)
+				if self.emit_events: self.emit(QtCore.SIGNAL("increment_list_data"),-1)
+				self.updateGL()
+			else:
+				self.__key_mvt_animation(0,-self.gl_widget.height()*.1)
+				
+		elif event.key() == Qt.Key_Right:
+			self.__key_mvt_animation(self.gl_widget.width()*.1,0)
+		elif event.key() == Qt.Key_Left:
+			self.__key_mvt_animation(-self.gl_widget.width()*.1,0)
+		elif event.key()==Qt.Key_W or event.key()==Qt.Key_PageUp or event.key()==Qt.Key_O :
+			self.__key_mvt_animation(0,self.gl_widget.height())
+		elif event.key()==Qt.Key_S or event.key()==Qt.Key_PageDown or event.key()==Qt.Key_L:
+			self.__key_mvt_animation(0,-self.gl_widget.height())
+		elif event.key()==Qt.Key_D  or event.key()==Qt.Key_Colon or event.key()==Qt.Key_Semicolon:
+			self.__key_mvt_animation(self.gl_widget.width(),0)
+		elif event.key()==Qt.Key_A or event.key()== Qt.Key_K:
+			self.__key_mvt_animation(-self.gl_widget.width(),0)
+		
+
 
 	def increment_list_data(self,delta):
 		'''

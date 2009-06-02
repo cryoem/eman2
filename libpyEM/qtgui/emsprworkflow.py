@@ -3957,7 +3957,10 @@ class RefinementReportTask(ParticleWorkFlowTask):
 			db_first_part = "bdb:"+dir+"#threed_"
 			cont = True
 			for i in range(0,10):
+				if not cont: break
 				for j in range(0,10):
+					if not cont: break
+					
 					db_name_filt = db_first_part+"filt_"+str(i)+str(j)
 					if db_check_dict(db_name_filt):
 						threed_files.append(db_name_filt)
@@ -3966,8 +3969,8 @@ class RefinementReportTask(ParticleWorkFlowTask):
 						if db_check_dict(db_name):
 							threed_files.append(db_name)
 						else:
-							return threed_files
-
+							cont = False
+				
 		return threed_files
 	
 	def get_last_refinement_models_table(self):

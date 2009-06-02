@@ -1623,7 +1623,7 @@ class EMImageMXModule(EMGUIModule):
 		if self.data == None: return
 	
 		if event.key() == Qt.Key_F1:
-			self.display_web_help()
+			self.display_web_help("http://blake.bcm.edu/emanwiki/EMAN2/Programs/emimagemx")
 		elif event.key()==Qt.Key_Up :
 			self.scroll_bar.up_button_pressed(False)
 		elif event.key()==Qt.Key_Down:
