@@ -67,11 +67,10 @@ def main():
 	parser.add_option("--rmax",     type="float",  default= 80.0,               help="  maximal radius for hsearch")
 	parser.add_option("--fract",    type="float",  default= 0.7,                help="  fraction of the volume used for helical search")
 	parser.add_option("--pol_ang_step",type="int", default= 1,                  help="  angular increment for alignment of volume(i) with volume(i-1) in order to keep polarity fixed, integer, in degrees")
-	parser.add_option("--step_a",   type="float",  default= 0.1,                help="  search step for hsearch - angle")
-	parser.add_option("--step_r",   type="float",  default= 0.1,                help="  search step for hsearch - rise")
 	parser.add_option("--sym",      type="string", default= "c1",               help="  symmetry of the structure")
 	parser.add_option("--function", type="string", default="ref_ali3d",  	    help="  name of the reference preparation function")
 	parser.add_option("--datasym",  type="string", default= " ",                help="  symdoc")
+	parser.add_option("--npad",     type="int",    default= 2,                  help="  padding size for 3D reconstruction")
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 3 or len(args) > 4:
     		print "usage: " + usage
@@ -93,7 +92,7 @@ def main():
 		ihrsr(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.min_cc_peak, options.xr, 
 			options.max_x_shift, options.yr, options.max_y_shift, options.max_tilt, options.ts, options.delta, 
 			options.an, options.maxit, options.CTF, options.snr, options.dp, options.dphi,
-			options.rmin, options.rmax, options.fract, options.pol_ang_step, options.step_a, options.step_r, 
+			options.rmin, options.rmax, options.fract, options.pol_ang_step, options.npad,
 			options.sym, options.function, options.datasym, options.Fourvar, options.MPI) 
 		global_def.BATCH = False
 

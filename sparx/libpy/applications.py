@@ -79,7 +79,7 @@ def ali2d_reduce(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, center=1, maxi
 	print_msg("Data with CTF               : %s\n"%(CTF))
 
 	if os.path.exists(outdir):
-		os.system('rm -rf '+outdir)
+		ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 	os.mkdir(outdir)
 
 	if maskfile:
@@ -262,7 +262,7 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	import os
 		
 	print_begin_msg("ali2d_a")
-	if os.path.exists(outdir): os.system('rm -rf '+outdir)
+	if os.path.exists(outdir): ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 	os.mkdir(outdir)
 
 	first_ring=int(ir); last_ring=int(ou); rstep=int(rs); max_iter=int(maxit);
@@ -481,7 +481,7 @@ def ali2d_a_MPI_(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", 
 	
 	if myid == main_node:
 		print_begin_msg("ali2d_a_MPI")
-		if os.path.exists(outdir):  os.system('rm -rf '+outdir)
+		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 		os.mkdir(outdir)
 
 	first_ring=int(ir); last_ring=int(ou); rstep=int(rs); max_iter=int(maxit);
@@ -919,7 +919,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	
 	if myid == main_node:
 		print_begin_msg("ali2d_a_MPI")
-		if os.path.exists(outdir):  os.system('rm -rf '+outdir)
+		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 		os.mkdir(outdir)
 
 	first_ring=int(ir); last_ring=int(ou); rstep=int(rs); max_iter=int(maxit);
@@ -1233,7 +1233,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	
 	if myid == main_node:
 		print_begin_msg("ali2d_a_MPI")
-		if os.path.exists(outdir):  os.system('rm -rf '+outdir)
+		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 		os.mkdir(outdir)
 
 	first_ring=int(ir); last_ring=int(ou); rstep=int(rs); max_iter=int(maxit);
@@ -1559,7 +1559,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	
 	if myid == main_node:
 		print_begin_msg("ali2d_a_MPI")
-		if os.path.exists(outdir):  os.system('rm -rf '+outdir)
+		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 		os.mkdir(outdir)
 
 	first_ring=int(ir); last_ring=int(ou); rstep=int(rs); max_iter=int(maxit);
@@ -1897,7 +1897,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	
 	if myid == main_node:
 		print_begin_msg("ali2d_a_MPI")
-		if os.path.exists(outdir):  os.system('rm -rf '+outdir)
+		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 		os.mkdir(outdir)
 
 	first_ring=int(ir); last_ring=int(ou); rstep=int(rs); max_iter=int(maxit);
@@ -2180,7 +2180,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 		
 	print_begin_msg("ali2d_c")
 
-	if os.path.exists(outdir):   os.system('rm -rf '+outdir)
+	if os.path.exists(outdir):   ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 	os.mkdir(outdir)
 
 	import user_functions
@@ -2383,7 +2383,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 
 	if myid == main_node:
 		print_begin_msg("ali2d_c_MPI")
-		if os.path.exists(outdir):  os.system('rm -rf '+outdir)
+		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 		os.mkdir(outdir)
 
 	xrng        = get_input_from_string(xr)
@@ -2679,7 +2679,7 @@ def ali2d_e(stack, outdir, maskfile = None, ou = -1, br = 1.75, center = 1, eps 
 	
 	# create the output directory, if it does not existm
 	if os.path.exists(outdir):  
-	    os.system('rm -rf '+outdir)
+	    ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 	os.mkdir(outdir)
 	low = 0.5
 
@@ -2822,7 +2822,7 @@ def ali2d_m(stack, refim, outdir, maskfile=None, ir=1, ou=-1, rs=1, xrng=0, yrng
 	print_msg("Random seed                 : %i\n\n"%(rand_seed))
 
 	# create the output directory, if it does not exist
-	if os.path.exists(outdir):  os.system('rm -rf '+outdir)
+	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 	os.mkdir(outdir)
 	output = sys.stdout
 
@@ -3045,7 +3045,7 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 	main_node = 0
 	# create the output directory, if it does not exist
 	if myid == main_node:
-		if os.path.exists(outdir):  os.system('rm -rf '+outdir)
+		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 		os.mkdir(outdir)
 
 	if myid == main_node:
@@ -3971,7 +3971,7 @@ def ali2d_cross_res(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1
 	else:           print_msg("Stop iteration with         : maxit\n")
 
 	if os.path.exists(outdir):
-		os.system('rm -rf '+outdir)
+		ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 	os.mkdir(outdir)
 
 	if maskfile:
@@ -4172,7 +4172,7 @@ def ali3d_a(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 		#                     0          1         2             3                 4                   5               6
 	else   : from reconstruction import recons3d_4nn
 
-	if os.path.exists(outdir):  os.system('rm -rf '+outdir)
+	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 	os.mkdir(outdir)
 
 	xrng        = get_input_from_string(xr)
@@ -4307,7 +4307,7 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	import user_functions
 	user_func = user_functions.factory[user_func_name]
 
-	if os.path.exists(outdir):  os.system('rm -rf '+outdir)
+	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 	os.mkdir(outdir)
 
 	xrng        = get_input_from_string(xr)
@@ -4464,7 +4464,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 	myid           = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
 	if myid == main_node:
-		if os.path.exists(outdir):  os.system('rm -rf '+outdir)
+		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 		os.mkdir(outdir)
 	mpi_barrier(MPI_COMM_WORLD)
 
@@ -4691,7 +4691,7 @@ def ali3d_m(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=1,
 	import user_functions
 	user_func = user_functions.factory[user_func_name]
 
-	if os.path.exists(outdir):  os.system('rm -rf '+outdir)
+	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 	os.mkdir(outdir)
 
 	xrng        = get_input_from_string(xr)
@@ -4919,7 +4919,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 	myid           = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
 	if(myid == main_node):
-		if os.path.exists(outdir):  os.system('rm -rf '+outdir)
+		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 		os.mkdir(outdir)
 	mpi_barrier(MPI_COMM_WORLD)
 
@@ -5233,7 +5233,7 @@ def ali3d_em_MPI_origin(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit
 	#  chose a random node as a main one...
 	main_node = 0
 	if(myid == main_node):
-		if os.path.exists(outdir):  os.system('rm -rf '+outdir)
+		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 		os.mkdir(outdir)
 	mpi_barrier(MPI_COMM_WORLD)
 
@@ -5480,7 +5480,7 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxi
 	myid           = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
 	if(myid == main_node):
-		if os.path.exists(outdir):  os.system('rm -rf '+outdir)
+		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 		os.mkdir(outdir)
 	mpi_barrier(MPI_COMM_WORLD)
 
@@ -5760,7 +5760,7 @@ def ali3d_en_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CT
 	#  chose a random node as a main one...
 	main_node = 0
 	if(myid == main_node):
-		if os.path.exists(outdir):  os.system('rm -rf '+outdir)
+		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 		os.mkdir(outdir)
 	mpi_barrier(MPI_COMM_WORLD)
 
@@ -6025,7 +6025,7 @@ def ali3d_e(stack, outdir, maskfile = None, ou = -1,  delta = 2, ts=0.25, center
 		from filter         import filt_ctf
 	else   : from reconstruction import recons3d_4nn
 
-	if os.path.exists(outdir): os.system('rm -rf '+outdir)
+	if os.path.exists(outdir): ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 	os.mkdir(outdir)
 
 	last_ring   = int(ou)
@@ -6238,7 +6238,7 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, center = 
 
 	main_node = 0
 	if myid == main_node:
-		if os.path.exists(outdir):  os.system('rm -rf '+outdir)
+		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 		os.mkdir(outdir)
 		import user_functions
 		user_func = user_functions.factory[user_func_name]
@@ -6529,7 +6529,7 @@ def ali3d_eB_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CT
 	parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
 	#                  0                 1            2            3            4                 5                 6
 	if(myid == main_node):
-		if os.path.exists(outdir):  os.system('rm -rf '+outdir)
+		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 		os.mkdir(outdir)
 		import user_functions
 		user_func = user_functions.factory[user_func_name]
@@ -6872,7 +6872,7 @@ def ali3d_eB_MPI_select(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit
 	parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
 	#                  0                 1            2            3            4                 5                 6
 	if(myid == main_node):
-		if os.path.exists(outdir):  os.system('rm -rf '+outdir)
+		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 		os.mkdir(outdir)
 		import user_functions
 		user_func = user_functions.factory[user_func_name]
@@ -7209,7 +7209,7 @@ def ali3d_eB_MPI_(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, C
 	#  chose a random node as a main one...
 	main_node = 0
 	if(myid == main_node):
-		if os.path.exists(outdir):  os.system('rm -rf '+outdir)
+		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 		os.mkdir(outdir)
 	mpi_barrier(MPI_COMM_WORLD)
 
@@ -7550,7 +7550,7 @@ def ali3d_eB_MPI__(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, 
 	#  chose a random node as a main one...
 	main_node = 0
 	if(myid == main_node):
-		if os.path.exists(outdir):  os.system('rm -rf '+outdir)
+		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 		os.mkdir(outdir)
 	mpi_barrier(MPI_COMM_WORLD)
 
@@ -7851,7 +7851,7 @@ def ali3d_f_MPI(stack, ref_vol, outdir, maskfile, ali_maskfile, radius=-1, snr=1
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
 	if(myid == main_node):
-		if os.path.exists(outdir):  os.system('rm -rf '+outdir)
+		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 		os.mkdir(outdir)
 	mpi_barrier(MPI_COMM_WORLD)
 
@@ -8158,7 +8158,7 @@ def autowin(indir,outdir, noisedoc, noisemic, templatefile, deci, CC_method, p_s
 	import os
 	if os.path.exists(indir)  is False: ERROR("micrograph directory does not exsit", "autowin.py",1)
 	else                              : flist=os.listdir(indir)
-	if os.path.exists(outdir)         : os.system("rm -rf "+outdir) 
+	if os.path.exists(outdir)         : ERROR('Output directory exists, please change the name and restart the program', " ", 1) 
 	os.mkdir(outdir)
 	t       = EMData()
 	e_n     = EMData()
@@ -8290,7 +8290,7 @@ def autowin_MPI(indir,outdir, noisedoc, noisemic, templatefile, deci, CC_method,
 			mic_name_list.append(micname)
 			nima += 1
 	if(myid == int(main_node)): # directory cleaning only performed by main node
-		if os.path.exists(outdir):  os.system("rm -rf "+outdir)
+		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 		os.mkdir(outdir)
 	mpi_barrier(MPI_COMM_WORLD)
 	
@@ -8397,12 +8397,12 @@ def autowin_MPI(indir,outdir, noisedoc, noisemic, templatefile, deci, CC_method,
 
 def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_shift, yr, 
           max_y_shift, max_tilt, ts, delta, an, maxit, CTF, snr, dp, dphi,
-	  rmin, rmax, fract, pol_ang_step, step_a, step_r, sym, user_func_name, datasym,
+	  rmin, rmax, fract, pol_ang_step, npad, sym, user_func_name, datasym,
 	  fourvar, MPI):
 	if MPI:
 		ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_shift, yr, 
 			max_y_shift, max_tilt, ts, delta, an, maxit, CTF, snr, dp, dphi,
-			rmin, rmax, fract, pol_ang_step, step_a, step_r, sym, user_func_name, datasym,
+			rmin, rmax, fract, pol_ang_step, npad, sym, user_func_name, datasym,
 			fourvar)
 		return
 
@@ -8423,7 +8423,7 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 	import user_functions
 	user_func = user_functions.factory[user_func_name]
 
-	if os.path.exists(outdir):  os.system('rm -rf '+outdir)
+	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 	os.mkdir(outdir)
 
 	xrng        = get_input_from_string(xr)
@@ -8463,17 +8463,17 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 	print_msg("Angular step                              : %s\n"%(delta))
 	print_msg("Angular search range                      : %s\n"%(an))
 	print_msg("max radius for helical search (in Ang)    : %f\n"%(rmax))
-	print_msg("search step for hsearch - angle           : %f\n"%(step_a))
-	print_msg("search step for hsearch - rise            : %f\n"%(step_r))
+	#print_msg("search step for hsearch - angle           : %f\n"%(step_a))
+	#print_msg("search step for hsearch - rise            : %f\n"%(step_r))
 	print_msg("fraction of volume used for helical search: %f\n"%(fract))
 	print_msg("initial symmetry - angle                  : %f\n"%(dphi))
 	print_msg("initial symmetry - axial rise             : %f\n"%(dp))
-	print_msg("Maximum iteration                         : %i\n"%(max_iter))
+	print_msg("Maximum number of iterations              : %i\n"%(max_iter))
 	print_msg("Data with CTF                             : %s\n"%(CTF))
 	print_msg("Signal-to-Noise Ratio                     : %f\n"%(snr))
-	print_msg("Symmetry group                            : %s\n\n"%(sym))
-	print_msg("symmetry doc file                         : %s\n\n"%(datasym))
-	#  ADD PRINTOUT OF RELEVANT INPUT PARAMETERS
+	print_msg("Symmetry group                            : %s\n"%(sym))
+	print_msg("symmetry doc file                         : %s\n"%(datasym))
+	print_msg("npad                                      : %i\n\n"%(npad))
 
 	if (maskfile) :
 		if (type(maskfile) is types.StringType): mask3D = get_image(maskfile)
@@ -8565,31 +8565,19 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 			#  3D stuff
 			#  I removed symmetry, by default the volume is not symmetrized
 			#  calculate new and improved 3D
-			if(CTF): vol = recons3d_4nn_ctf(data, range(nima), snr, npad = 2)
-			else:	 vol = recons3d_4nn(data, range(nima), npad = 2)
+			if(CTF): vol = recons3d_4nn_ctf(data, range(nima), snr, npad)
+			else:	 vol = recons3d_4nn(data, range(nima), npad)
 			# store the reference volume
 			drop_image(vol, os.path.join(outdir, "unsymmetrized%04d.hdf"%(N_step*max_iter+Iter+1)))
-			vol, dp, dphi = helios(vol, pixel_size, dp, dphi, fract, rmax)
+			if(N_step*max_iter+Iter+1 > 2):
+				vol, dp, dphi = helios(vol, pixel_size, dp, dphi, fract, rmax)
+			else:
+				#  in the first two steps the symmetry is imposed
+				vol = vol.helicise(pixel_size,dp, dphi, fract, rmax)
 			print_msg("new delta z and delta phi      : %s,    %s\n\n"%(dp,dphi))
-			"""
-			drop_image(vol, os.path.join(outdir, "helicised%04d.hdf"%(N_step*max_iter+Iter+1)))
-			previous_vol=get_image(os.path.join(outdir, "aligned%04d.hdf"%(N_step*max_iter+Iter)))
-			#Here we align the volume with the previous one to keep the polarity fixed.
-			#peakmax - any large negative value for the CC peak to start from
-			#360 - literaly 360 degrees
-			peakmax=[-1000000.0]*3
-			for i in xrange(0, 360, pol_ang_step):
-				print  i
-				vtm = rot_shift3D(vol,float(i))
-				s_r = int(dp/pixel_size)
-				#s_r - search range, should be at least +/- 1 pixel, if s_r < 2 then we set it to 2
-				if(int(s_r) < 2): s_r = 2
-				for j in xrange(s_r):
-					zs = j-s_r//2
-					peaks = ccc(cyclic_shift(vtm, 0, 0, zs), previous_vol)
-					if(peaks>peakmax[0]):  peakmax=[peaks, i, zs]
-			vol = cyclic_shift(rot_shift3D(vol, peakmax[1]),  0, 0, peakmax[2])
-			"""
+			fofo = open(os.path.join(outdir,datasym),'a')
+			fofo.write('  %12.4f   %12.4f\n'%(dp,dphi))
+			fofo.close()
 			drop_image(vol, os.path.join(outdir, "aligned%04d.hdf"%(N_step*max_iter+Iter+1)) )
 			#  here we  write header info
 			from utilities import write_headers
@@ -8598,7 +8586,7 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 
 def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_shift, yr, 
 	max_y_shift, max_tilt, ts, delta, an, maxit, CTF, snr, dp, dphi,
-	rmin, rmax, fract, pol_ang_step, step_a, step_r, sym, user_func_name, datasym,
+	rmin, rmax, fract, pol_ang_step, npad, sym, user_func_name, datasym,
 	Fourvar):
 	from utilities      import model_circle, drop_image, read_spider_doc
 	from utilities      import get_image, get_input_from_string, file_type
@@ -8620,10 +8608,9 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max
 	myid           = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
 	if myid == main_node:
-		if os.path.exists(outdir):  os.system('rm -rf '+outdir)
+		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 		os.mkdir(outdir)
 	mpi_barrier(MPI_COMM_WORLD)
-
 	
 	debug = True
 	if debug:
@@ -8679,16 +8666,15 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max
 		print_msg("Angular step 			     : %s\n"%(delta))
 		print_msg("Angular search range 		     : %s\n"%(an))
 		print_msg("max radius for helical search (in Ang)    : %f\n"%(rmax))
-		print_msg("search step for hsearch - angle	     : %f\n"%(step_a))
-		print_msg("search step for hsearch - rise	     : %f\n"%(step_r))
 		print_msg("fraction of volume used for helical search: %f\n"%(fract))
 		print_msg("initial symmetry - angle		     : %f\n"%(dphi))
 		print_msg("initial symmetry - axial rise	     : %f\n"%(dp))
 		print_msg("Maximum iteration			     : %i\n"%(max_iter))
 		print_msg("Data with CTF			     : %s\n"%(CTF))
 		print_msg("Signal-to-Noise Ratio		     : %f\n"%(snr))
-		print_msg("Symmetry group			     : %s\n\n"%(sym))
-		print_msg("symmetry doc file			     : %s\n\n"%(datasym))
+		print_msg("Symmetry group			     : %s\n"%(sym))
+		print_msg("symmetry doc file			     : %s\n"%(datasym))
+		print_msg("npad                                      : %i\n\n"%(npad))
 	if maskfile:
 		if type(maskfile) is types.StringType: mask3D = get_image(maskfile)
 		else:                                  mask3D = maskfile
@@ -8794,8 +8780,8 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max
 				data[im].set_attr_dict({'active':active})
 				#print_msg("image status    : %i,  psi %9.2f,  s2x  %9.2f,  s2y  %9.2f,  peak  %10.3e \n"%(active, paramali[2], paramali[3], paramali[4], peak))
 	
-			if CTF: vol, fscc = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution%04d"%(N_step*max_iter+Iter+1)), myid, main_node, npad = 4)
-			else:    vol, fscc = rec3D_MPI_noCTF(data, sym, fscmask, os.path.join(outdir, "resolution%04d"%(N_step*max_iter+Iter+1)), myid, main_node, npad = 4)
+			if CTF: vol, fscc = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution%04d"%(N_step*max_iter+Iter+1)), myid, main_node, npad)
+			else:    vol, fscc = rec3D_MPI_noCTF(data, sym, fscmask, os.path.join(outdir, "resolution%04d"%(N_step*max_iter+Iter+1)), myid, main_node, npad)
 
 			"""
 			if fourvar:
@@ -8806,25 +8792,15 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max
 			"""
 			if myid == main_node:
 				drop_image(vol, os.path.join(outdir, "unsymmetrized%04d.hdf"%(N_step*max_iter+Iter+1)))
-				vol, dp, dphi = helios(vol, pixel_size, dp, dphi, fract, rmax)
+				if(N_step*max_iter+Iter+1 > 2):
+					vol, dp, dphi = helios(vol, pixel_size, dp, dphi, fract, rmax)
+				else:
+					#  in the first two steps the symmetry is imposed
+					vol = vol.helicise(pixel_size,dp, dphi, fract, rmax)
 				print_msg("new delta z and delta phi      : %s,    %s\n\n"%(dp,dphi))
-				"""
-				previous_vol=get_image(os.path.join(outdir, "aligned%04d.hdf"%(N_step*max_iter+Iter)))
-				#Here we align the volume with the previous one to keep the polarity fixed.
-				#peakmax - any large negative value for the CC peak to start from
-				#360 - literaly 360 degrees
-				peakmax=[-1000000.0]*3
-				for i in xrange(0, 360, pol_ang_step):
-					vtm = rot_shift3D(vol,float(i))
-					s_r = int(dp/pixel_size)
-					#s_r - search range, should be at least +/- 1 pixel, if s_r < 2 then we set it to 2
-					if(int(s_r) < 2): s_r = 2
-					for j in xrange(s_r):
-						zs = j-s_r//2
-						peaks = ccc(cyclic_shift(vtm, 0, 0, zs), previous_vol)
-						if(peaks>peakmax[0]):  peakmax=[peaks, i, zs]
-				vol = cyclic_shift(rot_shift3D(vol, peakmax[1]),  0, 0, peakmax[2])
-				"""
+				fofo = open(os.path.join(outdir,datasym),'a')
+				fofo.write('  %12.4f   %12.4f\n'%(dp,dphi))
+				fofo.close()
 				drop_image(vol, os.path.join(outdir, "aligned%04d.hdf"%(N_step*max_iter+Iter+1)) )
 				#drop_image(vol, os.path.join(outdir, "volf%04d.hdf"%(N_step*max_iter+Iter+1)))
 
@@ -8865,7 +8841,7 @@ def copyfromtif(indir, outdir=None, input_extension="tif", film_or_CCD="f", outp
 	if os.path.exists(indir) is False: ERROR("Input directory doesn't exist","copyfromtif",1)
 	else                             : flist          = os.listdir(indir)
 	if(type(outdir)          is types.StringType):
-		if os.path.exists(outdir) is True:   os.system("rm -rf " +outdir)
+		if os.path.exists(outdir) :   ERROR("Output directory exists, please change the name and restart the program"," ",1)
 		os.mkdir(outdir)	
 	else: 	
 		outdir = ("micrographs")# default output directory
@@ -8934,7 +8910,7 @@ def copyfromtif_MPI(indir, outdir=None, input_extension="tif", film_or_CCD="f", 
 	else                             : flist = os.listdir(indir)
 	if(type(outdir)          is types.StringType):
 		if os.path.exists(outdir):   
-			os.system("rm -rf " +outdir)
+			ERROR("Output directory exists, please change the name and restart the program"," ",1)
 		os.mkdir(outdir)	
 	else: 	
 		os.system(" rm -rf micrograph ")
@@ -9264,7 +9240,7 @@ def pw2sp(indir, outdir = None, w =256, xo =50, yo = 50, xd = 0, yd = 0, r = 0, 
 	if os.path.exists(indir) is False: ERROR("Input directory doesn't exist","pw2sp",1)
 	else				 : flist    = os.listdir(indir)
 	if(type(outdir)          is types.StringType):
-		if os.path.exists(outdir) is True: os.system("rm -rf " +outdir)
+		if os.path.exists(outdir) is True: ERROR("Output directory exists, please change the name and restart the program"," ",1)
 		os.mkdir(outdir)	
 	else: 	os.system("mkdir power")
 	mask     = model_circle(int(r), int(w), int(w), nz=1)
@@ -9312,7 +9288,7 @@ def pw2sp_MPI(indir, outdir, w =256, xo =50, yo = 50, xd = 0, yd = 0, r = 0, pre
 	if(myid == 0): main_node = randint(0,number_of_proc-1)
 	main_node      = mpi_bcast(main_node, 1, MPI_INT, 0, MPI_COMM_WORLD)	
 	if (myid == int(main_node)):  # only main node do cleaning & creating jobs
-		if os.path.exists(outdir): os.system("rm -rf " +outdir)
+		if os.path.exists(outdir): ERROR("Output directory exists, please change the name and restart the program"," ",1)
 		os.mkdir(outdir)
 	mpi_barrier(MPI_COMM_WORLD)
 	# get the total micrograph number 
@@ -9711,7 +9687,7 @@ def recons3d_n_MPI(prj_stack, pid_list, vol_stack, ctf, snr, sign, npad, sym, ve
 		#set_arb_params(prj, prm[pid_list[i]], par_str)
 
 		prjlist.append( prj )
-		if not (info is None): info.write("Image %4d read.\n"%i)
+		if not(info is None): info.write( "%4d read\n" % i )
 	#del prj
 	#del prm
 
@@ -10250,7 +10226,7 @@ def bootstrap_run(prj_stack, media, outdir, nvol, CTF, snr, sym, verbose, MPI=Fa
 
 	if myid==0:
 		if os.path.exists(outdir):
-			os.system( "rm -rf " + outdir )
+			ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 		os.system( "mkdir " + outdir )
 	if MPI:
 		mpi_barrier( MPI_COMM_WORLD )	
@@ -10325,7 +10301,7 @@ def cml_find_structure_main(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_se
 	print_msg('\n')
 
 	out_dir = out_dir.rstrip('/')
-	if os.path.exists(out_dir): os.system('rm -rf ' + out_dir)
+	if os.path.exists(out_dir): ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 	os.mkdir(out_dir)
 
 	if rand_seed > 0: seed(rand_seed)
@@ -10397,7 +10373,7 @@ def cml_find_structure_MPI(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_see
 	if myid == main_node:
 		t_start = start_time()
 		print_begin_msg('find_struct')
-		if os.path.exists(out_dir): os.system('rm -rf ' + out_dir)
+		if os.path.exists(out_dir): ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 		os.mkdir(out_dir)
 	
 	# Open and transform projections
@@ -10488,7 +10464,7 @@ def cml_find_sub_main(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_seed, ma
 	print_msg('\n')
 
 	out_dir = out_dir.rstrip('/')
-	if os.path.exists(out_dir): os.system('rm -rf ' + out_dir)
+	if os.path.exists(out_dir): ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 	os.mkdir(out_dir)
 
 	# Open and transform projections
@@ -10920,7 +10896,7 @@ def normal_prj( prj_stack, outdir, refvol, r, niter, snr, sym, MPI=False ):
 	img_node_start, img_node_end = MPI_start_end(img_number, nproc, myid )
 
 	if myid==0:
-    		os.system( "rm -rf " + outdir )
+    		ERROR('Output directory exists, please change the name and restart the program', " ", 1)
     		os.system( "mkdir " + outdir )
 
 	if MPI: 
@@ -11173,7 +11149,7 @@ def defvar(files, outdir, fl, fh, radccc, writelp, writestack):
 	from filter import filt_tanl
 
 	if os.path.exists(outdir):
-		os.system( "rm -rf " + outdir )
+		ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 	os.system( "mkdir " + outdir )
 
 
@@ -11236,7 +11212,7 @@ def var_mpi(files, outdir, fl, fh, radccc, writelp, writestack, method="inc", pc
         ncpu = mpi_comm_size( MPI_COMM_WORLD )
         if myid==0:
 		if os.path.exists(outdir):
-			os.system( "rm -rf " + outdir )
+			ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 		os.system( "mkdir " + outdir )
 		finf = open( outdir + "/var_progress.txt", "w" )
 
@@ -11366,7 +11342,7 @@ def incvar_mpi(files, outdir, fl, fh, radccc, writelp, writestack):
         ncpu = mpi_comm_size( MPI_COMM_WORLD )
         if myid==0:
 		if os.path.exists(outdir):
-			os.system( "rm -rf " + outdir )
+			ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 		os.system( "mkdir " + outdir )
 		finf = open( outdir + "/defvar_progress.txt", "w" )
 
@@ -11844,7 +11820,7 @@ def k_means_stab(stack, outdir, maskname, opt_method, K, npart = 5, CTF = False,
 	maxit    = 1e9
 	critname = ''
 
-	if os.path.exists(outdir):  os.system('rm -rf ' + outdir)
+	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 	os.mkdir(outdir)
 
 	# create main log
@@ -11985,7 +11961,7 @@ def k_means_stab_CUDA(stack, outdir, maskname, K, npart = 5, F = 0, FK = 0, maxr
 	# if is the first round
 	if restart == 1:
 		# create a directory
-		if os.path.exists(outdir):  os.system('rm -rf ' + outdir)
+		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 		os.mkdir(outdir)
 
 		# create main log
@@ -12171,7 +12147,7 @@ def k_means_stab_CUDA_one_run(stack, outdir, maskname, K, npart = 5, F = 0, th_s
 	# if is the first round
 	if restart == 1:
 		# create a directory
-		if os.path.exists(outdir):  os.system('rm -rf ' + outdir)
+		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 		os.mkdir(outdir)
 
 		# create main log
@@ -12294,7 +12270,7 @@ def k_means_stab_MPI(stack, outdir, maskname, opt_method, K, npart = 5, CTF = Fa
 	critname = ''
 
 	if myid == main_node and restart == 1:
-		if os.path.exists(outdir): os.system('rm -rf ' + outdir)
+		if os.path.exists(outdir): ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 		os.mkdir(outdir)
 
 	mpi_barrier(MPI_COMM_WORLD)
