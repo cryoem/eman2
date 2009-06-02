@@ -91,7 +91,9 @@ run e2parallel.py dcclient on as many other machines as possible, pointing at th
 def rundcserver(port,verbose):
 	"""Launches a DCServer. If port is <1 or None, will autodetermine. Does not return."""
 	import EMAN2db
-	EMAN2db.MPIMODE=1	# this diables caching on the server so the customer knows it can freely write to local database files
+	# The following was causing issues with the multithreaded parallelism server. Seems like we need to insure the server and the customer
+	# are running on the same physical computer !!!
+#	EMAN2db.MPIMODE=1	# this diables caching on the server so the customer knows it can freely write to local database files
 	server=runEMDCServer(port,verbose)			# never returns
 
 
