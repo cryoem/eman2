@@ -627,6 +627,13 @@ namespace EMAN
 			return (float) sqrt(x * x + y * y + z * z);
 		}
 
+		/** Euclidean distance in 2D for integers computed fast using a cached lookup table
+		 * @param[in] x The first number
+		 * @param[in] y The second number
+		 * @return sqrt(x*x+y*y)
+		*/
+		static float hypot_fast(int x, int y); 
+
 		/** A fast way to calculate a floor, which is largest integral
 		 * value not greater than argument.
 		 *

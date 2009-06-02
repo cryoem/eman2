@@ -2537,15 +2537,13 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, bool inten)
 				float r,v;
 				if (step==2) {		//complex
 					if (x==0 && y>ny/2) continue;
+					r=(float)(Util::hypot_fast(x/2,y<ny/2?y:ny-y));		// origin at 0,0; periodic
+					if (!inten) {
 #ifdef	_WIN32
-					r=static_cast<float>(_hypot(x/2.0,y<ny/2?y:ny-y));		// origin at 0,0; periodic
-					if (!inten) {
 						if (is_ri()) v=static_cast<float>(_hypot(data[i],data[i+1]));	// real/imag, compute amplitude
-#else
-					r=static_cast<float>(hypot(x/2.0,y<ny/2?y:ny-y));		// origin at 0,0; periodic
-					if (!inten) {
+#else						
 						if (is_ri()) v=static_cast<float>(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
-#endif	//_WIN32
+#endif
 						else v=data[i];							// amp/phase, just get amp
 					} else {
 						if (isinten) v=data[i];
@@ -2554,11 +2552,7 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, bool inten)
 					}
 				}
 				else {
-#ifdef	_WIN32
-					r=static_cast<float>(_hypot(x-nx/2,y-ny/2));
-#else
-					r=static_cast<float>(hypot(x-nx/2,y-ny/2));
-#endif	//_WIN32
+					r=(float)(Util::hypot_fast(x-nx/2,y-ny/2));
 					if (inten) v=data[i]*data[i];
 					else v=data[i];
 				}
