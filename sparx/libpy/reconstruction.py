@@ -242,6 +242,7 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None):
 	params = {"size":imgsize, "npad":4, "symmetry":symmetry, "fftvol":fftvol, "weight":weight}
 	r = Reconstructors.get( "nn4", params )
 	r.setup()
+
 	if( not (info is None) ): nimg = 0
 	for prj in prjlist :
 		if prj.get_xsize() != imgsize or prj.get_ysize() != imgsize:
@@ -260,17 +261,9 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None):
 		info.write( "Begin reducing ...\n" )
 		info.flush()
 		
-	if not (info is None):
-		[aaa, bbb, ccc, ddd] = Util.infomask(fftvol, None, True)
-		info.write("Before reducing: %10.6f %10.6f %10.6f %10.6f\n"%(aaa, bbb, ccc, ddd))		
-	
 	reduce_EMData_to_root(fftvol, myid)
-
-	if not (info is None):
-		[aaa, bbb, ccc, ddd] = Util.infomask(fftvol, None, True)
-		info.write("After reducing: %10.6f %10.6f %10.6f %10.6f\n"%(aaa, bbb, ccc, ddd))		
-
 	reduce_EMData_to_root(weight, myid)
+
 	if not (info is None): 
 		info.write( "Reducing done.\n" )
 		info.flush()
