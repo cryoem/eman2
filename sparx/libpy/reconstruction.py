@@ -234,7 +234,7 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None):
 
 	imgsize = prjlist[0].get_xsize()
 	if prjlist[0].get_ysize() != imgsize:
-		ERROR("input data has to be square","recons3d_4nn_ctf_MPI",1)
+		ERROR("input data has to be square","recons3d_4nn_MPI",1)
 
 	fftvol = EMData()
 	weight = EMData()
@@ -245,7 +245,7 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None):
 	if( not (info is None) ): nimg = 0
 	for prj in prjlist :
 		if prj.get_xsize() != imgsize or prj.get_ysize() != imgsize:
-			ERROR("inconsistent image size","recons3d_4nn_ctf_MPI",1)
+			ERROR("inconsistent image size","recons3d_4nn_MPI",1)
 
 		active = prj.get_attr_default('active', 1)
 		if(active == 1):
@@ -253,16 +253,26 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None):
 			r.insert_slice(prj, xform_proj )
 			if( not (info is None) ):
 				nimg += 1
-				info.write(" %4d inserted\n" %(nimg) )
+				info.write("Image %4d inserted.\n" %(nimg) )
 				info.flush()
 	#  Wei, what if none are active?
-	if( not (info is None) ): 
-		info.write( "begin reduce\n" )
+	if not (info is None): 
+		info.write( "Begin reducing ...\n" )
 		info.flush()
+		
+	if not (info is None):
+		[aaa, bbb, ccc, ddd] = Util.infomask(fftvol, None, True)
+		info.write("Before reducing: %10.6f %10.6f %10.6f %10.6f\n"%(aaa, bbb, ccc, ddd))		
+	
 	reduce_EMData_to_root(fftvol, myid)
+
+	if not (info is None):
+		[aaa, bbb, ccc, ddd] = Util.infomask(fftvol, None, True)
+		info.write("After reducing: %10.6f %10.6f %10.6f %10.6f\n"%(aaa, bbb, ccc, ddd))		
+
 	reduce_EMData_to_root(weight, myid)
-	if( not (info is None) ): 
-		info.write( "after reduce\n" )
+	if not (info is None): 
+		info.write( "Reducing done.\n" )
 		info.flush()
 
 	if myid == 0 :  vol = r.finish()

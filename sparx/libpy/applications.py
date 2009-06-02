@@ -9712,7 +9712,7 @@ def recons3d_n_MPI(prj_stack, pid_list, vol_stack, ctf, snr, sign, npad, sym, ve
 		#set_arb_params(prj, prm[pid_list[i]], par_str)
 
 		prjlist.append( prj )
-		if not(info is None): info.write( "%4d read\n" % i )
+		if not (info is None): info.write("Image %4d read.\n"%i)
 	#del prj
 	#del prm
 
