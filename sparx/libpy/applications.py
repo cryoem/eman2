@@ -9688,8 +9688,7 @@ def recons3d_n_MPI(prj_stack, pid_list, vol_stack, ctf, snr, sign, npad, sym, ve
 	if verbose==0:
 		info = None
 	else:
-		infofile = "progress%4d.txt" % (myid+1)
-		infofile = replace(infofile, ' ', '0')
+		infofile = "progress%04d.txt"%(myid+1)
 		info = open( infofile, 'w' )
 
 	nimage = len(pid_list)
