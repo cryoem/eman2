@@ -697,7 +697,7 @@ def dump_row(input, fname, ix=0, iz=0):
 		fout.write("%d\t%12.5g\n" % (iy, image.get_value_at(ix,iy,iz)))
 	fout.close()
 
-def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.9, method = 'S', phiEqpsi = "Minus", symmetry='c1'):
+def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, method = 'S', phiEqpsi = "Minus", symmetry='c1'):
 	"""Create a list of Euler angles suitable for projections.
 	   method is either 'S' - for Saff algorithm
 	                  or   'P' - for Penczek '94 algorithm
@@ -762,12 +762,10 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.9, met
 		piOver = pi/180.0
 		Count=0   # used to count the number of angles
 		
-		m=0
 		if (symmetryLower[0:3] =="tet"):  m=3.0; fudge=0.9 # fudge is a factor used to adjust phi steps
-		if (symmetryLower[0:3] =="oct"):  m=4.0; fudge=0.8
-		if (symmetryLower[0:3] =="ico"):  m=5.0; fudge=0.95
-		
-		if m==0: ERROR("allowable symmetries are cn, dn, tet, oct, icos","sample3D",1)
+		elif (symmetryLower[0:3] =="oct"):  m=4.0; fudge=0.8
+		elif (symmetryLower[0:3] =="ico"):  m=5.0; fudge=0.95
+		else: ERROR("allowable symmetries are cn, dn, tet, oct, icos","sample3D",1)
 
 		n=3.0
 		OmegaR = 2.0*pi/m; cosOmega= cos(OmegaR)
