@@ -634,6 +634,13 @@ namespace EMAN
 		*/
 		static float hypot_fast(int x, int y); 
 
+		/** Euclidean distance in 2D for integers computed fast using a cached lookup table
+		 * @param[in] x The first number
+		 * @param[in] y The second number
+		 * @return (int)round(sqrt(x*x+y*y))
+		*/
+		static short hypot_fast_int(int x, int y); 
+
 		/** A fast way to calculate a floor, which is largest integral
 		 * value not greater than argument.
 		 *

@@ -914,12 +914,37 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 // 		throw ImageDimensionException("2D only");
 // 	}
 
-	//int nx = image->get_xsize(); // <- not currently used
+//	int nx = image->get_xsize();
 	int ny = image->get_ysize();
+	int ny2=ny/2+1;
 
 	vector < float >fsc;
 
 	fsc = image->calc_fourier_shell_correlation(with,1);
+	
+/*	if (image->get_zsize()>1) fsc = image->calc_fourier_shell_correlation(with,1);
+	else {
+		fsc.resize(ny2*3);
+		for (int i=0; i<ny2*3; i++) fsc[i]=0;
+
+		EMData *f1=do_fft();
+		EMData *f2=image->do_fft();
+		float *df1=f1->get_data();
+		float *df2=f2->get_data();
+		int nx2=df1->get_xsize();
+
+		for (int y=-ny/2; y<ny/2; y++) {
+			for (int x=0; x<nx2/2; x++) {
+				if (x==0 && y<0) continue;	// skip Friedel pair
+				short r=hypot_fast_int(x,y);
+				if (r>ny2-1) continue;
+				int l=x*2+(y<0?ny+y:y)*nx2;
+				fsc[r+ny2]+=df1[l]*df2[l]+df1[l+1]*df2[l+1];
+				fsc[r+ny2*2]+=1;
+			}
+		}
+	}
+*/
 
 	vector<float> snr;
 	if (snrweight) {
@@ -936,10 +961,10 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 
 	for (int i=0; i<ny/2; i++) {
 		double weight=1.0;
-		if (sweight) weight*=fsc[(ny/2+1)*2+i];
+		if (sweight) weight*=fsc[(ny2)*2+i];
 		if (ampweight) weight*=amp[i];
 		if (snrweight) weight*=snr[i];
-		sum+=weight*fsc[ny/2+1+i];
+		sum+=weight*fsc[ny2+i];
 		norm+=weight;
 //		printf("%d\t%f\t%f\n",i,weight,fsc[ny/2+1+i]);
 	}

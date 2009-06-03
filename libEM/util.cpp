@@ -735,6 +735,31 @@ if (x>=dim || y>=dim) {
 return mem[x+y*dim];
 }
 
+short Util::hypot_fast_int(int x, int y)
+{
+static short *mem = (short *)malloc(2*128*128);
+static int dim = 0;
+x=abs(x);
+y=abs(y);
+
+if (x>=dim || y>=dim) {
+	if (x>4095 || y>4095) return hypot((float)x,(float)y);		// We won't cache anything bigger than 4096^2
+	dim=dim==0?128:dim*2;
+	mem=(short*)realloc(mem,2*dim*dim);
+	for (int y=0; y<dim; y++) {
+		for (int x=0; x<dim; x++) {
+#ifdef	_WIN32
+			mem[x+y*dim]=(short)Util::round(_hypot((float)x,(float)y));
+#else
+			mem[x+y*dim]=(short)Util::round(hypot((float)x,(float)y));
+#endif
+		}
+	}
+}
+
+return mem[x+y*dim];
+}
+
 
 float Util::get_gauss_rand(float mean, float sigma)
 {
