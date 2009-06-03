@@ -423,7 +423,7 @@ class EMTaskQueue:
 	
 	def __len__(self) : return len(self.active)
 	
-	def get_task(self,exechost=None):
+	def get_task(self,clientid=0):
 		"""This will return the next task waiting for execution"""
 		for tid in sorted(self.active.keys()):
 			task=self.active[tid]
@@ -433,7 +433,7 @@ class EMTaskQueue:
 				continue
 			if task.starttime==None: 
 				task.starttime=time.time()
-				task.exechost=exechost
+				task.clientid=clientid
 				self.active[tid]=task
 				return task 
 			
@@ -573,6 +573,7 @@ class EMTask:
 		self.starttime=None		# Time when execution began
 		self.progtime=None		# (time,% complete) from client
 		self.endtime=None		# Time when task completed
+		self.clientid=None		# id number of client where the job was executed
 		self.exechost=None		# hostname where task was executed
 		self.user=None			# Username from customer
 		self.group=None			# group this task is in for task management purposes

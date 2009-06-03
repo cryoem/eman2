@@ -44,9 +44,10 @@ import os.path
 import time
 import socket
 import sys
+import random
 
 # used to make sure servers and clients are running the same version
-EMAN2PARVER=2
+EMAN2PARVER=3
 
 class EMTaskCustomer:
 	"""This will communicate with the specified task server on behalf of an application needing to
@@ -137,7 +138,7 @@ class EMTaskClient:
 	"""This class executes tasks on behalf of the server. This parent class implements the actual task functionality.
 Communications are handled by subclasses."""
 	def __init__(self):
-		pass
+		self.myid=random.randint(1,2000000000)
 	
 	def process_task(self,task):
 		"""This method implements the actual image processing by calling appropriate module functions"""
@@ -187,13 +188,13 @@ def runXMLRPCServer(port,verbose):
 
 	if port!=None and port>0 : 
 		server = SimpleXMLRPCServer(("", port),SimpleXMLRPCRequestHandler,False,allow_none=True)
-		print "Server started on port %d"%port
+		print "Server started on %s port %d"%(socket.gethostname(),port)
 	# EMAN2 will use ports in the range 9900-9999
 	else :
 		for port in range(9990,10000):
 			try: 
 				server = SimpleXMLRPCServer(("", port),SimpleXMLRPCRequestHandler,False,allow_none=True)
-				if verbose: print "Server started on port %d"%port
+				print "Server started on %s port %d"%(socket.gethostname(),port)
 			except:
 				if verbose>1 : print "Port %d unavailable"%port
 				continue
@@ -248,7 +249,7 @@ accessible to the server."""
 #######################
 #  Here we define the classes for publish and subscribe parallelism
 
-def openEMDCsock(addr,retry=3):
+def openEMDCsock(addr,clientid=0, retry=3):
 	addr=tuple(addr)
 	for i in range(retry):
 		try :
@@ -265,6 +266,7 @@ def openEMDCsock(addr,retry=3):
 	# Introduce ourselves and ask for a task to execute
 	sockf.write("EMAN")
 	sockf.write(pack("I4",EMAN2PARVER))
+	sockf.write(pack("I4",clientid))
 	sockf.flush()
 	
 	return(sock,sockf)
@@ -288,11 +290,6 @@ def EMDCsendonecom(addr,cmd,data):
 	"""Connects to an EMAN EMDCServer sends one command then disconnects.
 	addr is the standard (host,port) tuple. cmd is a 4 character string, and data is the payload.
 	Returns the response from the server."""
-	# the beginning of a message is a struct containing
-	# 0-3  : EMAN
-	# 4-7  : int, EMAN2PARVER
-	# 8-11 : 4 char command
-	# 12-15: count of bytes in pickled data following header
 	#addr=tuple(addr)
 	#sock=socket.socket()
 	#sock.connect(addr)
@@ -300,7 +297,7 @@ def EMDCsendonecom(addr,cmd,data):
 	#if sockf.read(4)!="EMAN" : raise Exception,"Not an EMAN server"
 	#sockf.write("EMAN")
 	#sockf.write(pack("I4s",EMAN2PARVER,cmd))
-	sock,sockf=openEMDCsock(addr,12)
+	sock,sockf=openEMDCsock(addr,retry=12)
 	sockf.write(cmd)
 	sendobj(sockf,data)
 	sockf.flush()
@@ -315,7 +312,7 @@ def runEMDCServer(port,verbose):
 	"""This will create a ThreadingTCPServer instance and execute it"""
 	try: EMDCTaskHandler.verbose=int(verbose)
 	except: EMDCTaskHandler.verbose=0
-	EMDCTaskHandler.clients=set()
+	EMDCTaskHandler.clients={}
 
 	if port!=None and port>0 : 
 		server = SocketServer.ThreadingTCPServer(("", port), EMDCTaskHandler)	# "" is the hostname and will bind to any IPV4 interface/address
@@ -325,7 +322,7 @@ def runEMDCServer(port,verbose):
 		for port in range(9990,10000):
 			try: 
 				server = SocketServer.ThreadingTCPServer(("", port), EMDCTaskHandler)
-				print "Server started on port %d"%port
+				print "Server started on %s port %d"%(socket.gethostname(),port)
 			except:
 				if verbose: print "Port %d unavailable"%port
 				continue
@@ -346,7 +343,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 		if self.verbose>1 : print len(self.queue)
 		self.sockf=request.makefile()		# this turns our socket into a buffered file-like object
 		SocketServer.BaseRequestHandler.__init__(self,request,client_address,server)
-		EMDCTaskHandler.clients.add(client_address[0])
+		self.client_address=client_address
 
 	def handle(self):
 		"""Process requests from a client. The exchange is:
@@ -361,8 +358,9 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 		# the beginning of a message is a struct containing
 		# 0-3  : EMAN
 		# 4-7  : int, EMAN2PARVER
-		# 8-11 : 4 char command
-		# 12-15: count of bytes in pickled data following header
+		# 8-11 : int, client id
+		# 12-15 : 4 char command
+		# 16-19: count of bytes in pickled data following header
 
 		# initial exchange to make sure we're talking to a client
 		self.sockf.write("EMAN")
@@ -372,6 +370,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 
 		ver=unpack("I",self.sockf.read(4))[0]
 		if ver!=EMAN2PARVER : raise Exception,"Version mismatch in parallelism (%d!=%d)"%(ver,EMAN2PARVER)
+		client_id=unpack("I",self.sockf.read(4))[0]
 
 		while (1):
 			cmd = self.sockf.read(4)
@@ -394,7 +393,8 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 			# Ready for a task
 			if cmd=="RDYT" :
 				# Get the first task and send it (pickled)
-				task=self.queue.get_task()
+				EMDCTaskHandler.clients[client_id]=(self.client_address[0],time.time())
+				task=self.queue.get_task(client_id)
 				if task==None :
 					sendobj(self.sockf,None)			# no tasks available
 				else:
@@ -459,6 +459,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 			# returns "OK  " if processing should continue
 			# retunrs "ABOR" if processing should be aborted
 			elif cmd=="PROG" :
+				EMDCTaskHandler.clients[client_id]=(self.client_address[0],time.time())
 				ret=self.queue.task_progress(data[0],data[1])
 				if self.verbose>2 : print "Task progress report : ",data
 				if ret : self.sockf.send("OK  ")
@@ -564,7 +565,7 @@ class EMDCTaskClient(EMTaskClient):
 		while (1):
 			# connect to the server
 			if self.verbose>1 : print "Connect to (%s,%d)"%self.addr
-			sock,sockf=openEMDCsock(self.addr,retry=10)
+			sock,sockf=openEMDCsock(self.addr,clientid=self.myid,retry=10)
 			sockf.write("RDYT")
 			sendobj(sockf,None)
 			sockf.flush()
@@ -607,7 +608,7 @@ class EMDCTaskClient(EMTaskClient):
 
 			# Return results
 			if self.verbose>1 : print "Task done"
-			sock,sockf=openEMDCsock(self.addr,retry=10)
+			sock,sockf=openEMDCsock(self.addr,clientid=self.myid,retry=10)
 			sockf.write("DONE")
 			sendobj(sockf,task.taskid)
 
