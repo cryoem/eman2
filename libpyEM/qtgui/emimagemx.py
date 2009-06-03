@@ -498,9 +498,10 @@ class EMMatrixPanel:
 
 class EMImageMXModule(EMGUIModule):
 	
-	def enable_set(self,idx,name):
+	def enable_set(self,idx,name,display=True,lst=[]):
 		self.get_inspector()
-		self.inspector.add_set(idx,name)
+		self.inspector.add_set(idx,name,display)
+		self.data.associate_set(idx,lst)
 	
 	def load_font_renderer(self):
 		try:
@@ -758,15 +759,15 @@ class EMImageMXModule(EMGUIModule):
 		return self.file_name
 	
 	def optimally_resize(self):
-		# I disabled this because it was giving me problems
-		return
+		
 	
 		if isinstance(self.gl_context_parent,EMImageMXWidget):
 			self.qt_context_parent.resize(*self.get_parent_suggested_size())
 		else:
 			self.gl_widget.resize(*self.get_parent_suggested_size())
-		
-		self.scale =  self.matrix_panel.get_min_scale(self.view_width(),self.gl_widget.height(),self.scale,self.data) # this is to prevent locking
+			
+		# I disabled this because it was giving me problems
+#		self.scale =  self.matrix_panel.get_min_scale(self.view_width(),self.gl_widget.height(),self.scale,self.data) # this is to prevent locking
 #		print self.scale
 		
 	def get_parent_suggested_size(self):
@@ -1117,7 +1118,7 @@ class EMImageMXModule(EMGUIModule):
 			h=int(min(self.data.get_ysize()*self.scale,self.gl_widget.height()))
 				
 			invscale=1.0/self.scale
-			self.set_label_ratio = 0.2
+			self.set_label_ratio = 0.1
 			self.coords = {}
 			nsets = len(self.data.visible_sets)
 			current_sets = copy.copy(self.data.visible_sets)
@@ -1131,6 +1132,7 @@ class EMImageMXModule(EMGUIModule):
 					if i >= n : break
 					tx = int((w+self.matrix_panel.min_sep)*(col) + x)
 					ty = int((h+self.matrix_panel.min_sep)*(row) + y)
+					real_y = ty # need this for set display
 					tw = w
 					th = h
 					rx = 0	#render x
@@ -1205,15 +1207,17 @@ class EMImageMXModule(EMGUIModule):
 						for rot,set in enumerate(current_sets):
 							#s
 							if set in d.mxset:
-								pos_ratio = 1-self.set_label_ratio
-								pos_ratio -= float(iss)/nsets*self.set_label_ratio
-								pos_ratio *= 2
+								x_pos_ratio = 1-self.set_label_ratio
+								y_pos_ratio = x_pos_ratio
+								y_pos_ratio -= 2*float(iss)/nsets*self.set_label_ratio
+								y_pos_ratio *= 2
+								x_pos_ratio *= 2
 								self.load_set_color(set)
-								width = tw/2.0
-								height = th/2.0
+								width = w/2.0
+								height = h/2.0
 								
 								glPushMatrix()
-								glTranslatef((tx+pos_ratio*width),(ty+pos_ratio*height),0)
+								glTranslatef(tx+x_pos_ratio*width,real_y+y_pos_ratio*height,0)
 								#glScale((1-0.2*rot/nsets)*width,(1-0.2*rot/nsets)height,1.0)
 								#self.__render_excluded_hollow_square()
 								glScale(self.set_label_ratio*width,self.set_label_ratio*height,1.0)
@@ -2310,14 +2314,15 @@ class EMImageInspectorMX(QtGui.QWidget):
 		items = [QtGui.QListWidgetItem(self.setlist.item(i)) for i in range(self.setlist.count())]
 		return items
 
-	def add_set(self,set_idx,set_name):
-		
+	def add_set(self,set_idx,set_name,display=True):
 		items = self.get_set_list_items_copy()
 		for item in items:
 			if str(item.text()) == set_name:
 				if item.checkState() == Qt.Checked:
-					self.target().data.set_current_set(set_idx)
-					self.target().data.make_set_visible(set_idx)
+					
+					if display:
+						self.target().data.set_current_set(set_idx)
+						self.target().data.make_set_visible(set_idx)
 				return
 			 
 		
@@ -2329,7 +2334,8 @@ class EMImageInspectorMX(QtGui.QWidget):
 		a.setFlags(flag1|flag2|flag3|flag4)
 		#a.setTextColor(qt_color_map[colortypes[parms[j][0]]])
 		#if visible[j]:
-		a.setCheckState(Qt.Checked)
+		if display:	a.setCheckState(Qt.Checked)
+		else: a.setCheckState(Qt.Unchecked)
 		a.index_key = set_idx
 	
 	#a.setCheckState(Qt.Unchecked)
@@ -2338,8 +2344,9 @@ class EMImageInspectorMX(QtGui.QWidget):
 	
 		a.setSelected(True)
 		
-		self.target().data.set_current_set(set_idx)
-		self.target().data.make_set_visible(set_idx)
+		if display:
+			self.target().data.set_current_set(set_idx)
+			self.target().data.make_set_visible(set_idx)
 		
 		
 	def new_set(self,unused=None):
@@ -2717,6 +2724,9 @@ class EMDataListCache:
 				self.exclusions.append(idx)
 			return 2
 		return 0
+	
+	def associate_set(self,idx,lst):
+		self.sets[idx] = lst
 	
 	def image_set_associate(self,idx):
 		'''

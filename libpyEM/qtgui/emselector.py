@@ -187,6 +187,7 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.timer.start(self.timer_interval)
 		
 		self.selected_files = []
+		self.animation = None # for updating display stuff. There can only ever be one
 	
 	def set_selection_text(self,text):
 		self.selection_label.setText(text)
@@ -206,7 +207,11 @@ class EMSelectorDialog(QtGui.QDialog):
 		QtGui.QDialog.exec_(self)
 		return self.dialog_result
 		
-	
+	def stop_animation(self):
+		self.animation = None
+		
+	def set_animation(self,animation):
+		self.animation = animation
 	def time_out(self):
 		'''
 		This function takes care of automatic updates - if the file system changes then so does
@@ -259,35 +264,11 @@ class EMSelectorDialog(QtGui.QDialog):
 							widget.takeItem(k)
 							self.lock = False
 							return
+		
+		if self.animation != None:
+			self.animation.animate()
 						
 		self.lock = False
-				
-#				if statinfo[-2] != widget.mod_time:
-#					crow = widget.currentRow()
-#					old_row_text = widget.item(crow)
-#					if old_row_text != None: old_row_text = old_row_text.text()
-#					widget.clear()
-#					widget.directory_lister.load_directory_data(widget.directory_arg,widget)
-#					if i == 0:
-#							a = QtGui.QListWidgetItem(self.up_arrow_icon,"../",None)
-#							a.type_of_me = "go up a directory"
-#							widget.insertItem(0,a)
-#					new_row_text = widget.item(crow) # this could potentially by None
-#					if new_row_text != None: new_row_text = new_row_text.text()
-#					# if the old_row_text is is None then nothing was selected and we don't have to worry about clearing the other widgets, which may have been displaying metadata
-#					if old_row_text != None and new_row_text != old_row_text:
-#						#print "row lost"
-#						# if the current row was deleted then the next list widgets need to be cleared
-#						for j in range(i+1,len(self.list_widgets)):
-#							widget = self.list_widgets[j]
-#							widget.clear()
-#							self.list_widget_data[j] = None
-#							# get rid of these attributes, they could have been set by the listing objects
-#							del_attr = ["directory","directory_lister","directory_arg","mod_time"]
-#							for attr in del_attr:
-#								if hasattr(widget,attr): delattr(widget,attr)
-#				
-#					return # only do one at a time
 				
 	def get_desktop_hint(self):
 		return self.desktop_hint
@@ -462,10 +443,21 @@ class EMSelectorDialog(QtGui.QDialog):
 	def __convert_name_to_write_image_format(self,name,directory):
 		if len(name) > 3 and name[0:4] == "bdb:":
 			if len(directory) > 0:
-				last_bit = name[4:]
-				dir = directory.rstrip("EMAN2DB/")
-				dir = dir.rstrip("EMAN2DB")
-				ret = "bdb:"+dir+"#"+last_bit
+				last_bit = name[4:]	
+				v = directory
+				# strip out the EMAN2DB
+				# assumption that only one "EMAN2DB" exists in the string
+				for cand in ["EMAN2DB/","EMAN2DB"]:
+					l = len(cand)
+					n = v.find(cand)
+					if  n != -1:
+						v = v[:n]+v[n+l:]
+						break # if we find one the first then there is no need t
+				
+				if len(v) > 0 and v[-1] == "/":
+					v = v[:-1]
+				
+				ret = "bdb:"+v+"#"+last_bit
 		elif directory.find("EMAN2DB/") != -1 or directory.find("EMAN2DB") != -1: # this test should be sufficient for establishing that bdb is the desired format
 			ret = db_convert_path(directory+name)
 		else: ret = directory + name
@@ -855,6 +847,7 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.list_widget_clickerooni(item,True)
 	
 	def list_widget_clickerooni(self,item,allow_preview=True):
+		self.stop_animation()
 		if self.lock : return
 		if self.current_list_widget == None: return
 		if item.type_of_me == "value": return #it's just a value in the db
@@ -1112,7 +1105,39 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.db_listing.make_replacements(dirs,list_widget)
 
 
-
+class EMFSBigListAnimator:
+	'''
+	Sometimes the user used to wait to long while we updated the entries in the list widget,
+	for example, if they clicked on a particle stack with 40000 particles in it. This class
+	solves that problem by acted as an updating animation that keeps track of what still needs
+	to be added to the list widget. The EMSelectorDialog's time_out function will kill this
+	object's animate function...
+	
+	This object updates particle stacks that are displayed by the EMFSListing object
+	'''
+	def __init__(self,target,full_path,list_widget,icon):
+		self.emdata_mx_member = "directory_emdata_mx_member" # for individual images in mxs
+		self.target = weakref.ref(target)
+		self.list_widget = weakref.ref(list_widget)
+		self.current = 0
+		self.last = EMUtil.get_image_count(full_path)
+		self.full_path = full_path
+		self.delta = 1000
+		self.icon = icon
+		
+	def animate(self):
+		max = self.current+self.delta
+		if max > self.last: max = self.last
+		for i in xrange(self.current,max):
+			a = QtGui.QListWidgetItem(self.icon,str(i),self.list_widget())
+			b = EMFSImageStackMemberItem(self.emdata_mx_member,self.full_path,i)
+			accrue_public_attributes(a,b)
+			
+		if max == self.last:
+			self.target().stop_animation()
+		else:
+			self.current = max
+			
 class EMFSListing:
 	'''
 	FS stands for File System
@@ -1282,18 +1307,22 @@ class EMFSListing:
 
 			return True
 		elif item.type_of_me == self.emdata_mx:
-			for i in range(EMUtil.get_image_count(item.full_path)):
-				a = QtGui.QListWidgetItem(self.target().emdata_icon,str(i),list_widget)
-				b = EMFSImageStackMemberItem(self.emdata_mx_member,item.full_path,i)
-				accrue_public_attributes(a,b)
+			animation = EMFSBigListAnimator(self.target(),item.full_path,list_widget,self.target().emdata_icon)
+			self.target().set_animation(animation)
+#			for i in xrange(0,EMUtil.get_image_count(item.full_path)):
+#				a = QtGui.QListWidgetItem(,str(i),list_widget)
+#				b = EMFSImageStackMemberItem(self.emdata_mx_member,item.full_path,i)
+#				accrue_public_attributes(a,b)
 				
 			return True
 		
 		elif item.type_of_me == self.emdata_mx_3d:
-			for i in range(EMUtil.get_image_count(item.full_path)):
-				a = QtGui.QListWidgetItem(self.target().emdata_3d_icon,str(i),list_widget)
-				b = EMFSImageStackMemberItem(self.emdata_mx_member,item.full_path,i)
-				accrue_public_attributes(a,b)
+			animation = EMFSBigListAnimator(self.target(),item.full_path,list_widget,self.target().emdata_3d_icon)
+			self.target().set_animation(animation)
+#			for i in xrange(0,EMUtil.get_image_count(item.full_path)):
+#				a = QtGui.QListWidgetItem(self.target().emdata_3d_icon,str(i),list_widget)
+#				b = EMFSImageStackMemberItem(self.emdata_mx_member,item.full_path,i)
+#				accrue_public_attributes(a,b)
 				
 			return True
 				
@@ -1463,6 +1492,92 @@ class EMFSPlotItem(EMFSListingItem):
 		return True
 		
 	def is_previewable(self): return True
+	
+class EMDBBigListAnimator:
+	'''
+	Sometimes the user used to wait to long while we updated the entries in the list widget,
+	for example, if they clicked on a particle stack with 40000 particles in it. This class
+	solves that problem by acted as an updating animation that keeps track of what still needs
+	to be added to the list widget. The EMSelectorDialog's time_out function will kill this
+	object's animate function...
+	
+	This object updates database listings as required by the EMDBListing object
+	'''
+	def __init__(self,target,keys,list_widget,key,db_directory,db):#full_path,list_widget,icon):
+		self.target = weakref.ref(target)
+		self.keys = keys
+		self.list_widget = weakref.ref(list_widget)
+		self.current = 0
+		self.last = len(keys)
+		self.delta = 1000
+		self.key = key
+		self.db_directory = db_directory
+		self.db = db
+	
+		self.db_mx = "database_emdata_mx"
+
+		self.emdata_3d_entry = "database_emdata_3d_entry"
+		self.emdata_entry = "database_emdata_entry"
+		self.db_dict_emdata_entry = "database_dictionary_emdata"
+		self.db_list_plot = "list_plot"
+	
+	def animate(self):
+		list_widget = self.list_widget()
+		key= self.key
+		db_directory = self.db_directory
+		db = self.db
+		
+		max = self.current+self.delta
+		if max > self.last: max = self.last
+		for i in xrange(self.current,max):
+			k = self.keys[i]
+			if k == '': continue
+			_type =db.item_type(k)
+			if _type == dict:
+				a = QtGui.QListWidgetItem(self.target().database_icon,str(k),list_widget)
+				b = EMGenericItem("database_dict",str(k))  # really haven't accommodated for this...
+				accrue_public_attributes(a,b)
+				#a.type_of_me = "database_dict"
+			elif _type == EMData:
+				data = db.get_header(k)
+				if data["nz"] > 1:
+					a = QtGui.QListWidgetItem(self.target().emdata_3d_icon,str(k),list_widget)
+					b = EMDBSingleImageItem(self.emdata_3d_entry,db_directory,key,k)
+					accrue_public_attributes(a,b)
+				else:
+					a = QtGui.QListWidgetItem(self.target().emdata_icon,str(k),list_widget)
+					b = EMDBSingleImageItem(self.emdata_entry,db_directory,key,k)
+					accrue_public_attributes(a,b)
+			elif _type == list and len(db[k]) == 2:
+				if 1:
+					if (isinstance(db[k][0][0],float) or isinstance(db[k][0][0],int)) and (isinstance(db[k][1][0],float) or isinstance(db[k][0][0],int)):
+						v = db[k]
+				
+						a = QtGui.QListWidgetItem(self.target().plot_icon,str(k)+":"+str(v),list_widget)
+						b = EMDBPlotItem(self.db_list_plot,db_directory,key,k)
+						accrue_public_attributes(a,b)
+					else: raise
+				else:
+					# yes redundant but no time
+					v = db[k]
+					a = QtGui.QListWidgetItem(self.target().basic_python_icon,str(k)+":"+str(v),list_widget)
+					b = EMKeyValueItem("key_value",k,v)
+					accrue_public_attributes(a,b)
+					
+			else:
+				#if type(i) in [str,float,int,tuple,list,bool]:
+				v = db[k]
+				a = QtGui.QListWidgetItem(self.target().basic_python_icon,str(k)+":"+str(v),list_widget)
+				b = EMKeyValueItem("key_value",k,v)
+				accrue_public_attributes(a,b)
+				
+		if max == self.last:
+			self.target().stop_animation()
+		else:
+			self.current = max
+			
+		return True
+
 	
 class EMDBListing:
 	def __init__(self,target):
@@ -1681,6 +1796,8 @@ class EMDBListing:
 		if not self.is_database_file(directory): 
 			return False
 		
+		
+		
 		file = self.convert_to_absolute_path(directory)
  
 		db_directory = self.get_emdatabase_directory(file)
@@ -1696,49 +1813,52 @@ class EMDBListing:
 		items = db
 		keys = items.keys()
 		keys.sort() # puts them alphabetical order
-		for k in keys:
-			if k == '': continue
-			_type =db.item_type(k)
-			if _type == dict:
-				a = QtGui.QListWidgetItem(self.target().database_icon,str(k),list_widget)
-				b = EMGenericItem("database_dict",str(k))  # really haven't accommodated for this...
-				accrue_public_attributes(a,b)
-				#a.type_of_me = "database_dict"
-			elif _type == EMData:
-				data = db.get_header(k)
-				if data["nz"] > 1:
-					a = QtGui.QListWidgetItem(self.target().emdata_3d_icon,str(k),list_widget)
-					b = EMDBSingleImageItem(self.emdata_3d_entry,db_directory,key,k)
-					accrue_public_attributes(a,b)
-				else:
-					a = QtGui.QListWidgetItem(self.target().emdata_icon,str(k),list_widget)
-					b = EMDBSingleImageItem(self.emdata_entry,db_directory,key,k)
-					accrue_public_attributes(a,b)
-			elif _type == list and len(db[k]) == 2:
-				if 1:
-					if (isinstance(db[k][0][0],float) or isinstance(db[k][0][0],int)) and (isinstance(db[k][1][0],float) or isinstance(db[k][0][0],int)):
-						v = db[k]
-				
-						a = QtGui.QListWidgetItem(self.target().plot_icon,str(k)+":"+str(v),list_widget)
-						b = EMDBPlotItem(self.db_list_plot,db_directory,key,k)
-						accrue_public_attributes(a,b)
-					else: raise
-				else:
-					# yes redundant but no time
-					v = db[k]
-					a = QtGui.QListWidgetItem(self.target().basic_python_icon,str(k)+":"+str(v),list_widget)
-					b = EMKeyValueItem("key_value",k,v)
-					accrue_public_attributes(a,b)
-					
-			else:
-				#if type(i) in [str,float,int,tuple,list,bool]:
-				v = db[k]
-				a = QtGui.QListWidgetItem(self.target().basic_python_icon,str(k)+":"+str(v),list_widget)
-				b = EMKeyValueItem("key_value",k,v)
-				accrue_public_attributes(a,b)
-
+		animation = EMDBBigListAnimator(self.target(),keys,list_widget,key,db_directory,db)
+		self.target().set_animation(animation)
 		return True
-				
+#		for k in keys:
+#			if k == '': continue
+#			_type =db.item_type(k)
+#			if _type == dict:
+#				a = QtGui.QListWidgetItem(self.target().database_icon,str(k),list_widget)
+#				b = EMGenericItem("database_dict",str(k))  # really haven't accommodated for this...
+#				accrue_public_attributes(a,b)
+#				#a.type_of_me = "database_dict"
+#			elif _type == EMData:
+#				data = db.get_header(k)
+#				if data["nz"] > 1:
+#					a = QtGui.QListWidgetItem(self.target().emdata_3d_icon,str(k),list_widget)
+#					b = EMDBSingleImageItem(self.emdata_3d_entry,db_directory,key,k)
+#					accrue_public_attributes(a,b)
+#				else:
+#					a = QtGui.QListWidgetItem(self.target().emdata_icon,str(k),list_widget)
+#					b = EMDBSingleImageItem(self.emdata_entry,db_directory,key,k)
+#					accrue_public_attributes(a,b)
+#			elif _type == list and len(db[k]) == 2:
+#				if 1:
+#					if (isinstance(db[k][0][0],float) or isinstance(db[k][0][0],int)) and (isinstance(db[k][1][0],float) or isinstance(db[k][0][0],int)):
+#						v = db[k]
+#				
+#						a = QtGui.QListWidgetItem(self.target().plot_icon,str(k)+":"+str(v),list_widget)
+#						b = EMDBPlotItem(self.db_list_plot,db_directory,key,k)
+#						accrue_public_attributes(a,b)
+#					else: raise
+#				else:
+#					# yes redundant but no time
+#					v = db[k]
+#					a = QtGui.QListWidgetItem(self.target().basic_python_icon,str(k)+":"+str(v),list_widget)
+#					b = EMKeyValueItem("key_value",k,v)
+#					accrue_public_attributes(a,b)
+#					
+#			else:
+#				#if type(i) in [str,float,int,tuple,list,bool]:
+#				v = db[k]
+#				a = QtGui.QListWidgetItem(self.target().basic_python_icon,str(k)+":"+str(v),list_widget)
+#				b = EMKeyValueItem("key_value",k,v)
+#				accrue_public_attributes(a,b)
+#
+#		return True
+#				
 	
 	def get_last_directory(self,file):
 		dtag = get_dtag()

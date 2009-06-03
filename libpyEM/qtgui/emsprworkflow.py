@@ -1503,7 +1503,7 @@ class ParticleReportTask(ParticleWorkFlowTask):
 		self.project_files_at_init = particle_names # so if the user hits cancel this can be reset
 
 		from emform import EM2DStackTable,EMFileTable
-		table = EM2DStackTable(particle_names,desc_short="Raw Data Files",desc_long="")
+		table = EM2DStackTable(particle_names,desc_short="Project Particle Stacks",desc_long="")
 		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(particle_list_name)
 		table.add_context_menu_data(context_menu_data)
 		table.add_button_data(EMRawDataReportTask.ProjectAddRawDataButton(table,context_menu_data))
@@ -4818,8 +4818,8 @@ class ResolutionReportTask(ParticleWorkFlowTask):
 
 		if len(available_dirs) > 0:
 			p = EMParamTable(name="filenames",desc_short="Resolution Evaluation",desc_long="")
-			pnames = ParamDef(name="Dirs",vartype="stringlist",desc_short="Refinement directory", desc_long="EMAN2 refinement directory", property=None,defaultunits=None,choices=available_dirs)
-			piter = ParamDef(name="Iterations",vartype="intlist",desc_short="Total iterations",desc_long="The number of 3D refinement iterations that have occured in this directory",property=None,defaultunits=None,choices=total_iterations)
+			pnames = ParamDef(name="Dirs",vartype="stringlist",desc_short="Refinement Directory", desc_long="EMAN2 refinement directory", property=None,defaultunits=None,choices=available_dirs)
+			piter = ParamDef(name="Iterations",vartype="intlist",desc_short="Total Iterations",desc_long="The number of 3D refinement iterations that have occured in this directory",property=None,defaultunits=None,choices=total_iterations)
 			peo = ParamDef(name="eo",vartype="stringlist",desc_short="e2eotest",desc_long="0.5 e2eotest resolution estimate",property=None,defaultunits=None,choices=eotest_res)
 			pres = ParamDef(name="res",vartype="stringlist",desc_short="e2resolution",desc_long="0.5 e2resolution resolution estimate",property=None,defaultunits=None,choices=e2resolution_res)
 			

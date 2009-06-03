@@ -325,7 +325,7 @@ class EMGenClassAverages:
 				data = {}
 				data["input"] = (self.options.input,ptcl_indices)
 				if self.options.usefilt:
-					data["usefilt"] = (options.usefilt,ptcl_indices)
+					data["usefilt"] = (self.options.usefilt,ptcl_indices)
 				if init_alis != None:
 					data["init_alis"] = init_alis
 				if init_weights != None:

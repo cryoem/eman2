@@ -256,7 +256,7 @@ class EMFileTable(QtGui.QTableWidget):
 			
 	def build_table(self):
 		'''
-		Builds the table contents. Should only need to be called once, just prior to this objects
+		Builds the table contents. Should only need to be called once, just prior to this object's
 		insertion into a widget or layout
 		'''
 		sorting = self.isSortingEnabled()
@@ -277,6 +277,7 @@ class EMFileTable(QtGui.QTableWidget):
 
 			if name not in self.exclusions:
 				item.setFlags(flag2|flag3)
+				item.setToolTip(name)
 			else:
 				# exluded items are displayed but they are not selectable
 				# this was originally added for e2boxer -the write output form needs to show which images are are excluded

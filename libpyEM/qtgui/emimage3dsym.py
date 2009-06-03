@@ -86,6 +86,13 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		if not self.inspector : self.inspector=EMSymInspector(self)
 		return self.inspector
 	
+	def keyPressEvent(self,event):
+		
+		if event.key() == Qt.Key_F1:
+			self.display_web_help("http://blake.bcm.edu/emanwiki/EMAN2/Programs/e2eulerxplor")
+		else:
+			EMImage3DGUIModule.keyPressEvent(self,event)
+	
 	def get_type(self):
 		return "Symmetry Viewer"
 	

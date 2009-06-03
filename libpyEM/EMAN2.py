@@ -921,7 +921,10 @@ def base_name( file_name,bdb_keep_dir=False ):
 	
 	if db_check_dict(file_name):
 		vals = file_name.split("#")
-		if bdb_keep_dir: dirs = vals[0].split("/")
+		if bdb_keep_dir: 
+			dirs = vals[0].split("/")
+			if dirs[-1] == "": # if so the last entry was "/", and we need to get rid of the last entry in dirs to ensure the bdb_keep_dir functonality works as expected
+				dirs = dirs[:-1]
 		if len(vals) == 1: return file_name # this is as simple as it gets
 		else:
 			v = vals[-1]

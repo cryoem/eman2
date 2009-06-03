@@ -35,6 +35,7 @@ from emapplication import EMStandAloneApplication
 from emimage3dsym import EM3DSymViewerModule,EMSymInspector
 from emglobjects import EMImage3DGUIModule
 from PyQt4 import QtGui,QtCore
+from PyQt4.QtCore import Qt
 from OpenGL import GL,GLU,GLUT
 from OpenGL.GL import *
 from OpenGL.GLU import *
@@ -322,6 +323,12 @@ class ClassOrientationEvents(NavigationEvents,QtCore.QObject):
 
 class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 	def get_desktop_hint(self): return "image"
+	def keyPressEvent(self,event):
+		
+		if event.key() == Qt.Key_F1:
+			self.display_web_help("http://blake.bcm.edu/emanwiki/EMAN2/Programs/e2eulerxplor")
+		else:
+			EMImage3DGUIModule.keyPressEvent(self,event)
 	def __init__(self,application,auto=True):
 		if auto:
 			self.gen_refinement_data()
@@ -427,6 +434,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 
 	
 	def au_selected(self,au,cls):
+		get_application().setOverrideCursor(Qt.BusyCursor)
 		data = []
 		for d in self.au_data[au]:
 			if d[0] == cls:
@@ -436,6 +444,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 		if len(data) == 0:
 			self.events_handlers["inspect"].reset()
 #			print "error, no data for",au,cls,"returning"
+			get_application().setOverrideCursor(Qt.ArrowCursor)
 			return
 
 		self.particle_file = "bdb:"+au+"#all"
@@ -462,6 +471,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 		else:self.events_handlers["inspect"].reset()
 		self.previous_len = len(eulers)
 		self.updateGL()
+		get_application().setOverrideCursor(Qt.ArrowCursor)
 	
 	def __init_events_handlers(self):
 		self.events_mode = "navigate"
@@ -515,6 +525,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 		self.mx_particle_viewer = None
 		
 	def mx_image_selected(self,event,lc):
+		get_application().setOverrideCursor(Qt.BusyCursor)
 		if lc != None: self.sel = lc[0]
 		if self.clsdb != None and self.particle_file != None and self.class_idx > -1:
 			class_db = db_open_dict(self.clsdb)
@@ -533,6 +544,8 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 			
 			
 			self.check_images_in_memory()
+			incs = []
+			excs = []
 			for i,idx in enumerate(indices):
 				index = -1
 				for j in range(self.classes.get_xsize()):
@@ -541,8 +554,12 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 						break
 				if index == -1:
 					print "couldn't find"
+					get_application().setOverrideCursor(Qt.ArrowCursor)
 					return
 				kept = self.inclusions.get(index,idx)
+				if kept:
+					incs.append(i)
+				else: excs.append(i)
 				mx[i]["included"] = kept
 				mx[i].mxset = [kept]
 			
@@ -558,6 +575,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 							break
 					if index == -1:
 						print "couldn't find"
+						get_application().setOverrideCursor(Qt.ArrowCursor)
 						return
 				
 					x = self.dx.get(index,idx)
@@ -575,9 +593,11 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 				self.mx_particle_viewer.updateGL()
 				self.mx_particle_viewer.optimally_resize()
 				
-			self.mx_particle_viewer.enable_set(0,"Excluded")
-			self.mx_particle_viewer.enable_set(1,"Included")
+			self.mx_particle_viewer.enable_set(0,"Excluded",True,excs)
+			self.mx_particle_viewer.enable_set(1,"Included",False,incs)
 			self.mx_particle_viewer.updateGL()
+			
+			get_application().setOverrideCursor(Qt.ArrowCursor)
 			
 	def check_images_in_memory(self):
 		if self.alignment_file != None:
