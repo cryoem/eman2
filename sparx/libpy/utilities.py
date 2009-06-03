@@ -2034,6 +2034,7 @@ def reduce_EMData_to_root(data, myid, main_node = 0, comm = -1):
 	
 	if comm == -1:  comm = MPI_COMM_WORLD
 	array = get_image_data(data)
+	
 	n = shape(array)
 	ntot = 1
 	for i in xrange(len(n)): ntot *= n[i]
@@ -2045,7 +2046,7 @@ def reduce_EMData_to_root(data, myid, main_node = 0, comm = -1):
 		block_end   = i*count + count
 		if block_end > ntot: block_end = ntot
 		block_size  = block_end - block_begin
-		tmpsum = mpi_reduce(array1d[block_begin], block_size, MPI_FLOAT, MPI_SUM, main_node, comm)
+		tmpsum = mpi_reduce(array1d[block_begin:block_begin+block_size], block_size, MPI_FLOAT, MPI_SUM, main_node, comm)
 		mpi_barrier(comm)
 		if myid == main_node:
 			array1d[block_begin:block_end] = tmpsum[0:block_size]
