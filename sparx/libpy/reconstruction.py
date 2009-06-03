@@ -264,10 +264,6 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None):
 	reduce_EMData_to_root(fftvol, myid)
 	reduce_EMData_to_root(weight, myid)
 
-	if not (info is None): 
-		info.write( "Reducing done.\n" )
-		info.flush()
-
 	if myid == 0 :  vol = r.finish()
 	else:           vol = None
 	return vol
