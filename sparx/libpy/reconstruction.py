@@ -121,7 +121,49 @@ def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 10.0, sign=1, symmetry="c
 				r.insert_slice(stack_name[list_proj[i]], xform_proj )
 	return r.finish()
 
-def recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign=1, symmetry="c1", info=None):
+def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None, npad = 4):
+	from utilities import reduce_EMData_to_root
+	if( len(prjlist) == 0 ):
+		ERROR("empty input list","recons3d_4nn_ctf_MPI",1)
+
+	imgsize = prjlist[0].get_xsize()
+	if prjlist[0].get_ysize() != imgsize:
+		ERROR("input data has to be square","recons3d_4nn_MPI",1)
+
+	fftvol = EMData()
+	weight = EMData()
+
+	params = {"size":imgsize, "npad":npad, "symmetry":symmetry, "fftvol":fftvol, "weight":weight}
+	r = Reconstructors.get( "nn4", params )
+	r.setup()
+
+	if( not (info is None) ): nimg = 0
+	for prj in prjlist :
+		if prj.get_xsize() != imgsize or prj.get_ysize() != imgsize:
+			ERROR("inconsistent image size","recons3d_4nn_MPI",1)
+
+		active = prj.get_attr_default('active', 1)
+		if(active == 1):
+			xform_proj = prj.get_attr( "xform.projection" )
+			r.insert_slice(prj, xform_proj )
+			if( not (info is None) ):
+				nimg += 1
+				info.write("Image %4d inserted.\n" %(nimg) )
+				info.flush()
+	#  Wei, what if none are active?
+	if not (info is None): 
+		info.write( "Begin reducing ...\n" )
+		info.flush()
+		
+	reduce_EMData_to_root(fftvol, myid)
+	reduce_EMData_to_root(weight, myid)
+
+	if myid == 0 :  vol = r.finish()
+	else:           vol = None
+	return vol
+
+
+def recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign=1, symmetry="c1", info=None, npad = 4):
 	from utilities import reduce_EMData_to_root
 	if( len(prjlist) == 0 ):
 	    ERROR("empty input list","recons3d_4nn_ctf_MPI",1)
@@ -134,7 +176,7 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign=1, symmetry="c1", info=None):
 	fftvol = EMData()
 	weight = EMData()
 
-	params = {"size":imgsize, "npad":4, "snr":snr, "sign":sign, "symmetry":symmetry, "fftvol":fftvol, "weight":weight}
+	params = {"size":imgsize, "npad":npad, "snr":snr, "sign":sign, "symmetry":symmetry, "fftvol":fftvol, "weight":weight}
 	r = Reconstructors.get( "nn4_ctf", params )
 	r.setup()
 
@@ -226,47 +268,6 @@ def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4, snr=None, weig
 				xform_proj = stack_name[i].get_attr( "xform.projection" )
 				r.insert_slice(stack_name[i], xform_proj )
 	return r.finish()
-
-def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None):
-	from utilities import reduce_EMData_to_root
-	if( len(prjlist) == 0 ):
-		ERROR("empty input list","recons3d_4nn_ctf_MPI",1)
-
-	imgsize = prjlist[0].get_xsize()
-	if prjlist[0].get_ysize() != imgsize:
-		ERROR("input data has to be square","recons3d_4nn_MPI",1)
-
-	fftvol = EMData()
-	weight = EMData()
-
-	params = {"size":imgsize, "npad":4, "symmetry":symmetry, "fftvol":fftvol, "weight":weight}
-	r = Reconstructors.get( "nn4", params )
-	r.setup()
-
-	if( not (info is None) ): nimg = 0
-	for prj in prjlist :
-		if prj.get_xsize() != imgsize or prj.get_ysize() != imgsize:
-			ERROR("inconsistent image size","recons3d_4nn_MPI",1)
-
-		active = prj.get_attr_default('active', 1)
-		if(active == 1):
-			xform_proj = prj.get_attr( "xform.projection" )
-			r.insert_slice(prj, xform_proj )
-			if( not (info is None) ):
-				nimg += 1
-				info.write("Image %4d inserted.\n" %(nimg) )
-				info.flush()
-	#  Wei, what if none are active?
-	if not (info is None): 
-		info.write( "Begin reducing ...\n" )
-		info.flush()
-		
-	reduce_EMData_to_root(fftvol, myid)
-	reduce_EMData_to_root(weight, myid)
-
-	if myid == 0 :  vol = r.finish()
-	else:           vol = None
-	return vol
 
 def recons3d_nn_SSNR(stack_name,  mask2D = None, ring_width=1, npad =1, sign=1, symmetry="c1", CTF = False, random_angles = 0):
 	

@@ -42,7 +42,7 @@ for i in xrange(nangles):
 	#apply CTF
 	#defocus = randint(3,4)*100.0
 	proj = projo.copy()
-	#proj = filt_ctf(projo, defocus, 2.0, 300, 2.5, 0.1)
+	proj = filt_ctf(projo, generate_ctf([defocus, 2.0, 300.0, 2.5, 0.0, 0.1]))
 	#if(i == 0): st = Util.infomask(proj,None,True)
 	#proj += model_gauss_noise(st[1]*3.,nx,nx)
 	# Set all parameters for the new 2D image

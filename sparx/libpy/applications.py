@@ -8530,7 +8530,8 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 				volft,kb = prep_vol( vol )
 				refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, symref, numr, MPI=False)
 				del volft
-
+			sx = 0.0
+			sy = 0.0
 			for im in xrange( nima ):
 				if CTF and ctf_applied == False:
 					ctf = data[im].get_attr( "ctf" )
@@ -8547,6 +8548,8 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 
 				paramali = get_params_proj(data[im])
 				# phi theta psi sx sy
+				sx += paramali[3]
+				sy += paramali[4]
 				#  conflict with the meaning of active  PAP 05/09
 				active = 1
 				# peak
@@ -8562,6 +8565,13 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 				#print the alignment parameters into the LOG file!
 				print_msg("Image %i,  status    : %i,  psi %9.2f,    s2x  %9.2f, s2y  %9.2f,  peak  %10.3e \n"%(im, active, paramali[2], paramali[3], paramali[4], peak))
 
+			#center projections
+			sx /= nima
+			sy /= nima
+			for im in xrange( nima ):
+				paramali = get_params_proj(data[im])
+				set_params_proj(data[im], [paramali[0], paramali[1], paramali[2], paramali[3] - sx, paramali[4] - sy])
+
 			#  3D stuff
 			#  I removed symmetry, by default the volume is not symmetrized
 			#  calculate new and improved 3D
@@ -8574,7 +8584,7 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 			else:
 				#  in the first two steps the symmetry is imposed
 				vol = vol.helicise(pixel_size,dp, dphi, fract, rmax)
-			print_msg("new delta z and delta phi      : %s,    %s\n\n"%(dp,dphi))
+			print_msg("New delta z and delta phi      : %s,    %s\n\n"%(dp,dphi))
 			fofo = open(os.path.join(outdir,datasym),'a')
 			fofo.write('  %12.4f   %12.4f\n'%(dp,dphi))
 			fofo.close()
@@ -8602,7 +8612,8 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max
 	from utilities      import print_begin_msg, print_end_msg, print_msg
 	from utilities      import bcast_number_to_all, bcast_list_to_all, bcast_EMData_to_all
 	from mpi 	    import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
-	from mpi 	    import mpi_barrier, mpi_bcast, MPI_FLOAT
+	from mpi 	    import mpi_barrier, mpi_bcast, MPI_FLOAT, MPI_SUM
+	from mpi 	    import mpi_reduce, mpi_bcast, mpi_barrier, mpi_send, mpi_recv
 	from time           import time
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid           = mpi_comm_rank(MPI_COMM_WORLD)
@@ -8705,7 +8716,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max
 	else:
 		nima =0
 	nima = bcast_number_to_all(nima, source_node = main_node)
-	
+
 	if myid != main_node:
 		list_of_particles = [-1]*nima
 	list_of_particles = bcast_list_to_all(list_of_particles, source_node = main_node)
@@ -8747,6 +8758,8 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max
 					refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, symref, numr, MPI=False)
 					del volft
 
+			sx = 0.0
+			sy = 0.0
 			for im in xrange( len(data) ):
 				if CTF and ctf_applied == False:
 					ctf = data[im].get_attr( "ctf" )
@@ -8766,7 +8779,8 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max
 
 				paramali = get_params_proj(data[im])
 				# phi theta psi sx sy
-				#  conflict with the meaning of active  PAP 05/09
+				sx += paramali[3]
+				sy += paramali[4]
 				active = 1
 				# peak
 				#if(peak < min_cc_peak): active = 0
@@ -8780,8 +8794,23 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max
 				data[im].set_attr_dict({'active':active})
 				#print_msg("image status    : %i,  psi %9.2f,  s2x  %9.2f,  s2y  %9.2f,  peak  %10.3e \n"%(active, paramali[2], paramali[3], paramali[4], peak))
 	
-			if CTF: vol, fscc = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution%04d"%(N_step*max_iter+Iter+1)), myid, main_node, npad)
-			else:    vol, fscc = rec3D_MPI_noCTF(data, sym, fscmask, os.path.join(outdir, "resolution%04d"%(N_step*max_iter+Iter+1)), myid, main_node, npad)
+			sx = mpi_reduce(sx, 1, MPI_FLOAT, MPI_SUM, node, MPI_COMM_WORLD)
+			sy = mpi_reduce(sy, 1, MPI_FLOAT, MPI_SUM, node, MPI_COMM_WORLD)
+			if myid == main_node:
+				sx = float(sx)/nima
+				sy = float(sy)/nima
+			mpi_bcast(sx, 1, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+			mpi_bcast(sy, 1, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+			sx = float(sx)
+			sy = float(sy)
+			#  Center projections
+			for im in xrange( len(data) ):
+				paramali = get_params_proj(data[im])
+				set_params_proj(data[im], [paramali[0], paramali[1], paramali[2], paramali[3] - sx, paramali[4] - sy])
+
+
+			if CTF: vol = recons3d_4nn_ctf_MPI(myid, data, snr, 1, sym, None, npad)
+			else:    vol = recons3d_4nn_MPI(myid, data, sym, None, npad)
 
 			"""
 			if fourvar:
@@ -9641,7 +9670,7 @@ def recons3d_n(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, npad=
 	print_msg("CTF sign                    : %i\n"%(sign))
 	print_msg("Symmetry group              : %s\n\n"%(sym))
 
-	if CTF: vol = recons3d_4nn_ctf(prj_stack, pid_list, snr, 1, sym, verbose)
+	if CTF: vol = recons3d_4nn_ctf(prj_stack, pid_list, snr, 1, sym, verbose, npad)
 	else:   vol = recons3d_4nn(prj_stack,  pid_list, sym, npad)
 	if(vol_stack[-3:] == "spi"):
 		drop_image(vol, vol_stack, "s")
@@ -9691,8 +9720,8 @@ def recons3d_n_MPI(prj_stack, pid_list, vol_stack, ctf, snr, sign, npad, sym, ve
 	#del prj
 	#del prm
 
-	if ctf: vol = recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym, info)
-	else:	vol = recons3d_4nn_MPI(myid, prjlist, sym, info)
+	if ctf: vol = recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym, info, npad)
+	else:	vol = recons3d_4nn_MPI(myid, prjlist, sym, info, npad)
 	if myid == 0 :
 		if(vol_stack[-3:] == "spi"):
 			drop_image(vol, vol_stack, "s")
