@@ -189,7 +189,7 @@ class EMFileTable(QtGui.QTableWidget):
 			for i in xrange(0,len(self.listed_names)):
 				
 				item = self.item(i,value)
-				item.setText(cd.function(self.convert_name(str(self.item(i,0).text()))))
+				item.setText(cd.function(self.convert_text(str(self.item(i,0).text()))))
 
 		self.busy = 0
 	

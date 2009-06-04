@@ -3120,8 +3120,16 @@ class E2ParticleExamineTask(E2CTFWorkFlowTask):
 			self.name_map = name_map
 	
 		def num_bad_particles(self,filename):
+			if not db_check_dict("bdb:stack_selections"): return "0"
+			if not self.name_map.has_key(filename):
+				print filename
+				print self.name_map
+				EMErrorMessageDisplay.run(["The name map doesn't have the %s key" %filename])
+				return "0"
+		
 			db_name = get_file_tag(self.name_map[filename])
 			db = db_open_dict("bdb:stack_selections",ro=True)
+			if not db.has_key(db_name): return "0"
 			set_list = db[db_name]
 			if set_list == None: return "0"
 			else: return str(len(set_list))
