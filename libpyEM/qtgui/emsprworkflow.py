@@ -3641,7 +3641,7 @@ class E2Refine2DChooseDataTask(ParticleWorkFlowTask):
 	
 	def get_params(self):
 		ptcl_opts = EMParticleOptions()
-		self.particles_map, self.particles_name_map,choices = ptcl_opts.get_particle_options()
+		self.particles_map, self.particles_name_map,choices,unused = ptcl_opts.get_particle_options()
 		choices.append("Specify")
 			
 		params = []		
@@ -4700,7 +4700,7 @@ class E2RefineChooseDataTask(ParticleWorkFlowTask):
 		
 	def get_params(self):
 		ptcl_opts = EMParticleOptions()
-		self.particles_map, self.particles_name_map,choices = ptcl_opts.get_particle_options()
+		self.particles_map, self.particles_name_map,choices,unused = ptcl_opts.get_particle_options()
 		choices.append("Specify")
 		
 		db = db_open_dict(self.form_db_name)
