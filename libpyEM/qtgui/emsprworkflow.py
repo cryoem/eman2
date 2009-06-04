@@ -119,14 +119,21 @@ class EMErrorMessageDisplay:
 		'''
 		msg = QtGui.QMessageBox()
 		msg.setWindowTitle(title)
+		msg.setWindowIcon(QtGui.QIcon(get_image_directory() + "/eman.png"))
 		mes = ""
-		for error in error_message:
-			mes += error
-			
-			if len(error) > 0 and error[-1] != '.':
+		if isinstance(error_message,list):
+			for error in error_message:
+				mes += error
+				
+				if len(error) > 0 and error[-1] != '.':
+					# correct my own inconsistencies....AWESOME
+					mes += '.'
+				if error != error_message[-1]: mes += "\n"
+		else:
+			mes = error_message
+			if len(error_message) > 0 and error_message[-1] != '.':
 				# correct my own inconsistencies....AWESOME
 				mes += '.'
-			if error != error_message[-1]: mes += "\n"
 		msg.setText(mes)
 		msg.exec_()
 	
@@ -140,7 +147,6 @@ class EMProjectListCleanup:
 	def clean_up_project_file_list(name_of_list):
 		project_db = db_open_dict("bdb:project")
 		names = project_db.get(name_of_list,dfl=[])
-		
 		rem = []
 		for i in xrange(len(names)-1,-1,-1):
 			if not file_exists(names[i]):
@@ -153,9 +159,9 @@ class EMProjectListCleanup:
 		
 	clean_up_project_file_list = staticmethod(clean_up_project_file_list)
 
-	def clean_up_filt_particles():
+	def clean_up_filt_particles(dict_db_name="global.spr_filt_ptcls_map"):
 		project_db = db_open_dict("bdb:project")
-		db_map = project_db.get("global.spr_filt_ptcls_map",dfl={})
+		db_map = project_db.get(dict_db_name,dfl={})
 		
 		error = []
 		update = False
@@ -170,7 +176,7 @@ class EMProjectListCleanup:
 					
 		if update:
 			EMErrorMessageDisplay.run(error,"Warning")
-			project_db["global.spr_filt_ptcls_map"] = db_map			
+			project_db[dict_db_name] = db_map			
 	
 	clean_up_filt_particles = staticmethod(clean_up_filt_particles)		
 
@@ -3055,7 +3061,7 @@ class E2ParticleExamineChooseDataTask(ParticleWorkFlowTask):
 		self.window_title = "Choose Data For Particle Examination"
 		self.preferred_size = (480,300)
 		self.form_db_name ="bdb:emform.workflow_particle_examine"
-	
+
 	def get_params(self):
 		ptcl_opts = EMParticleOptions()
 		self.particles_map, self.particles_name_map,choices,self.name_map = ptcl_opts.get_particle_options()
@@ -3085,12 +3091,14 @@ class E2ParticleExamineChooseDataTask(ParticleWorkFlowTask):
 				else:
 					name_map[name] = get_file_tag(name)
 					
-			self.emit(QtCore.SIGNAL("replace_task"),E2ParticleExamineTask(particles,name_map),"e2refine2d arguments")
+			self.emit(QtCore.SIGNAL("replace_task"),E2ParticleExamineTask(particles,name_map),"Particle Stack Examination")
 		
 		self.form.closeEvent(None)
 		self.form = None
 		
 		self.write_db_entries(params)
+		
+
 		
 class E2ParticleExamineTask(E2CTFWorkFlowTask):
 	'''This task is for defining bad particles. Double click on the particle stack you want to examine and then (once the stack viewer has loaded) click on particles to define them as bad. You can come back and review your bad particle selections at any time. You can write stacks that exclude particles you've defined as bad using 'Make Particle Set' tool.'''
@@ -3120,7 +3128,7 @@ class E2ParticleExamineTask(E2CTFWorkFlowTask):
 			self.name_map = name_map
 	
 		def num_bad_particles(self,filename):
-			if not db_check_dict("bdb:stack_selections"): return "0"
+			if not db_check_dict("bdb:select"): return "0"
 			if not self.name_map.has_key(filename):
 				print filename
 				print self.name_map
@@ -3128,7 +3136,7 @@ class E2ParticleExamineTask(E2CTFWorkFlowTask):
 				return "0"
 		
 			db_name = get_file_tag(self.name_map[filename])
-			db = db_open_dict("bdb:stack_selections",ro=True)
+			db = db_open_dict("bdb:select",ro=True)
 			if not db.has_key(db_name): return "0"
 			set_list = db[db_name]
 			if set_list == None: return "0"
@@ -3150,6 +3158,315 @@ class E2ParticleExamineTask(E2CTFWorkFlowTask):
 		self.form = None
 		self.emit(QtCore.SIGNAL("task_idle"))
 
+
+ 		 	
+class E2MakeStackChooseDataTask(E2ParticleExamineChooseDataTask):
+	"Choose the particle data you wish to examine. This will pop a second form listing the particles stacks along with other relevant information"
+	documentation_string = "Choose the data for particle examination" 
+	def __init__(self):
+		E2ParticleExamineChooseDataTask.__init__(self)
+		self.window_title = "Choose Data For Making Particle Sets"
+		self.preferred_size = (480,300)
+		self.form_db_name ="bdb:emform.make_ptcl_set"
+
+	def on_form_ok(self,params):
+		if params.has_key("particle_set_choice"):
+
+			choice = params["particle_set_choice"]
+			
+			name_map = {}
+			for filt_name, particles in self.particles_map.items():
+				for name in particles:
+					if self.name_map.has_key(name):
+						name_map[name] = get_file_tag(self.name_map[name])
+					else:
+						name_map[name] = get_file_tag(name)
+					
+			self.emit(QtCore.SIGNAL("replace_task"),E2MakeStackTask(particles,name_map,self.name_map),"Make Particle Sets")
+		
+		self.form.closeEvent(None)
+		self.form = None
+		
+		self.write_db_entries(params)
+		
+class E2MakeStackTask(E2ParticleExamineTask):
+	'''This task is for making agglomerated particle sets which function as input for the 2D and 3D refinement tasks. Stacks for any linked particle sets (such as phase flipped or Wiener filtered data) are automatically generated. You can choose to exclude any bad particles that you have defined.'''
+	def __init__(self,particle_stacks=[],name_map={},data_name_map={}):
+		E2ParticleExamineTask.__init__(self,particle_stacks,name_map)
+		self.window_title = "Make Particle Sets"
+		self.form_db_name = "bdb:emform.make_ptcl_set"
+		self.data_name_map = data_name_map
+		
+	def get_params(self):
+		params = E2ParticleExamineTask.get_params(self)
+		
+		db = db_open_dict(self.form_db_name) # see eman wiki for a list of what args are kept in this db
+	   	pstack_name = ParamDef(name="stack_name",vartype="string",desc_short="Stack Name",desc_long="What you want to call this stack. Leave out file types (such as hdf,bdb etc). Names for any linked particle sets will be generated automatically.",property=None,defaultunits=db.get("stack_name",dfl="stack_00"),choices=None)
+		pexclude_bad = ParamDef(name="exclude_bad",vartype="boolean",desc_short="Exclude Bad Particles",desc_long="Exclude bad particles from generated stack(s)",property=None,defaultunits=db.get("exclude_bad",dfl=True),choices=None)
+ 	
+ 		params.append(pstack_name)
+ 		params.append(pexclude_bad)
+		return params
+	
+	def check_params(self,params):
+		error_message = []
+		if len(params["filenames"]) == 0:
+			error_message.append("Please select files for processing")
+		
+		if len(params["stack_name"]) == 0:
+			error_message.append("Please supply a stack name")
+		else:
+			pass
+		
+		if len(error_message) == 0:
+			return True
+		else:
+			EMErrorMessageDisplay.run(error_message)
+			return False
+		
+	def execute(self,params):
+		db = db_open_dict("bdb:project")
+		if not db.has_key("global.spr_filt_ptcls_map"):
+			EMErrorMessageDisplay.run("Something is wrong, the global.spr_filt_ptcls_map is supposed to exist")
+			return False
+		
+		base_stack_root = params["stack_name"]
+		test_stack_name = "bdb:stacks#"+base_stack_root
+		if file_exists(test_stack_name):
+			EMErrorMessageDisplay.run("The %s stack already exists. Remove it, or try a different name" %test_stack_name)
+			return False
+		
+		EMProjectListCleanup.clean_up_filt_particles()
+		db_map = db["global.spr_filt_ptcls_map"]
+			
+		output_data_map = {}	
+		if params["filenames"][0] in db_map.keys():
+			 for name in params["filenames"]:
+			 	output_data_map[name] = db_map[name]
+		else:
+			for name in params["filenames"]:
+				real_name = self.data_name_map[name]
+				output_data_map[real_name] = db_map[real_name]
+				
+		output_stacks = {}
+		output_stacks[""] = []
+		stack_type_map = {}
+		for key,value in output_data_map.items():
+			output_stacks[""].append(key)
+			for filt,name in value.items():
+				f = "_"+filt.split()[0].lower()
+				if not stack_type_map.has_key(f):
+					stack_type_map[f] = filt
+				test_stack_name = "bdb:stacks#"+f+base_stack_root
+				if file_exists(test_stack_name):
+					EMErrorMessageDisplay.run("The %s stack already exists. Remove it, or try a different name" %test_stack_name)
+					return False
+					
+				if output_stacks.has_key(f):
+					output_stacks[f].append(name)
+				else:
+					
+					output_stacks[f] = [name]
+					
+		
+		stacks_map = {}
+		for key,filenames in output_stacks.items():
+			if len(filenames) == 0:
+				print "Warning, there were no files in the list"
+				continue
+			if len(filenames[0]) > 3 and filenames[0][:4] == "bdb:":
+
+				success,cmd = self.make_v_stack(filenames,base_stack_root+key,"stacks",params["exclude_bad"])
+				
+			else:
+				success,cmd = self.make_stack(filenames,base_stack_root+key,"stacks/")
+				
+			if not success:
+				EMErrorMessageDisplay.run("The command %s failed. Please try again" %cmd)
+				return False
+			else:
+				if key != "": stacks_map[stack_type_map[key]] ="bdb:stacks#"+ base_stack_root+key
+			
+			
+		project_db = db_open_dict("bdb:project")
+		init_stacks = []
+		if project_db.has_key("global.spr_stacks"):
+			init_stacks = project_db["global.spr_stacks"]
+		
+		stack_root = params["stack_name"]	
+		init_stacks.append("bdb:stacks#"+base_stack_root)
+		print "the init stacks are now",init_stacks
+		project_db["global.spr_stacks"] = init_stacks
+		
+		init_stacks_map = {}
+		if project_db.has_key("global.spr_stacks_map"):
+			init_stacks_map = project_db["global.spr_stacks_map"]
+			
+		init_stacks_map["bdb:stacks#"+base_stack_root] = stacks_map
+		project_db["global.spr_stacks_map"] = init_stacks_map
+		
+		return True
+		
+	def make_v_stack(self,filenames,out_name,path,exclude_bad):
+	 	
+	 	progress = QtGui.QProgressDialog("Importing files into database...", "Abort import", 0, len(filenames),None)
+		progress.show()
+		if db_check_dict("bdb:select"):
+			select_db = db_open_dict("bdb:select")
+		else:
+			select_db = None
+		cmd = ""
+		
+		for i,name in enumerate(filenames):
+			cmd = "e2bdb.py"
+			no_exc = True
+			if exclude_bad and select_db != None:
+				exc_db = self.name_map[name]
+				if select_db.has_key(exc_db):
+					cmd += " "+name+"?exclude."+exc_db
+					no_exc=False
+			if no_exc:
+				cmd += " "+name
+				
+ 			cmd += " --appendvstack=bdb:"+path+"#"+out_name
+ 			print cmd
+ 			success = (os.system(cmd) in (0,11,12))
+ 			if not success:
+ 				progress.close()
+ 				return False,cmd
+ 			else:
+ 				progress.setValue(i+1)
+ 				get_application().processEvents()
+		
+		progress.close()
+		
+		return True,cmd
+
+	def make_stack(self,filenames,out_name,path):
+		'''
+		This one's a bit more specialized to handle flat files and avoid massive copying
+		'''
+
+			
+		progress = QtGui.QProgressDialog("Importing files into database...", "Abort import", 0, len(filenames),None)
+		progress.show()
+
+		for i,name in enumerate(filenames):
+			cmd = "e2proc2d.py"
+ 			cmd += " "+name
+ 			cmd += " "+path+out_name
+ 			success = (os.system(cmd) in (0,12))
+ 			if not success:
+ 				progress.close()
+ 				return False,cmd
+ 			else:
+ 				progress.setValue(i+1)
+ 				get_application().processEvents()
+		
+		progress.close()
+		
+		return True,cmd
+
+			
+	def on_form_ok(self,params):
+		proceed = self.check_params(params)
+		if not proceed: return
+		
+		
+		proceed = self.execute(params)
+		if not proceed: return
+		
+		self.form.closeEvent(None)
+		self.form = None
+		self.emit(QtCore.SIGNAL("task_idle"))
+	
+		self.write_db_entries(params)
+
+
+class EMStackReportTask(ParticleWorkFlowTask):
+	'''This form displays a list of the stacks you currently have associated with the project
+	'''
+	def __init__(self):
+		ParticleWorkFlowTask.__init__(self)
+		self.window_title = "Project Stacks"
+		self.stack_files_at_init = []
+
+	def get_project_particle_table(self):
+		stack_list_name = "global.spr_stacks"
+		EMProjectListCleanup.clean_up_project_file_list(stack_list_name) # in case things have gone missing
+		project_db = db_open_dict("bdb:project")
+		stack_names = project_db.get(stack_list_name,dfl=[])
+		
+		self.stack_files_at_init = stack_names # so if the user hits cancel this can be reset
+		
+		init_stacks_map = {}
+		
+		from emform import EM2DStackTable,EMFileTable
+		table = EM2DStackTable(stack_names,desc_short="Project Particle Stacks",desc_long="")
+		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(stack_list_name)
+		table.add_context_menu_data(context_menu_data)
+		table.add_button_data(EMRawDataReportTask.ProjectAddRawDataButton(table,context_menu_data))
+		table.insert_column_data(1,EMFileTable.EMColumnData("Particles On Disk",ParticleReportTask.get_num_ptcls,"Particles in this image"))
+		table.insert_column_data(2,EMFileTable.EMColumnData("Particle Dims",ParticleReportTask.get_particle_dims,"The dimensions of the particles that are stored on disk"))
+		
+		EMProjectListCleanup.clean_up_filt_particles("global.spr_stacks_map")
+		project_db = db_open_dict("bdb:project",ro=True)
+		if project_db.has_key("global.spr_stacks_map"):
+			stacks_map = project_db["global.spr_stacks_map"]
+			
+			filt_options = []
+			for key,value in stacks_map.items():
+				for filt,name in value.items():
+					if filt not in filt_options:
+						filt_options.append(filt)
+			
+			for filt in filt_options:
+				fsi = EMStackReportTask.FilteredStackInfo(filt)
+				table.add_column_data(EMFileTable.EMColumnData(filt,fsi.num_particles_in_filt_stack,"The number of particles in the associated stack (if it exists)"))
+
+		return table
+	
+	class FilteredStackInfo:
+		def __init__(self,filt):
+			self.filt = filt
+			project_db = db_open_dict("bdb:project",ro=True)
+			if project_db.has_key("global.spr_stacks_map"):
+				self.stacks_map = project_db["global.spr_stacks_map"]
+			else:
+				raise NotImplementedError("The global.spr_stacks_map has to exist if you create a FilteredStackInfo")
+			
+		def num_particles_in_filt_stack(self,filename):
+			d = self.stacks_map[filename]
+			if d.has_key(self.filt):
+				return str(EMUtil.get_image_count(d[self.filt]))
+			else: return "-"
+			
+	
+	def on_form_cancel(self):
+		self.recover_original_raw_data_list()
+		
+		self.form.closeEvent(None)
+		self.form = None
+		self.emit(QtCore.SIGNAL("task_idle"))
+	
+	def recover_original_raw_data_list(self):
+		'''
+		Called if the user hits cancel - if they removed some files or added files the changes
+		are not saved unless the user hits ok
+		'''
+		project_db = db_open_dict("bdb:project")
+		project_db["global.spr_stacks"] = self.stack_files_at_init
+
+	def get_params(self):
+		params = []
+		
+	
+		table = self.get_project_particle_table()
+		
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=ParticleReportTask.documentation_string,choices=None))
+		params.append(table)  
+		
+		return params
 
 class E2Refine2DReportTask(ParticleWorkFlowTask):
 	documentation_string = "This form displays the current sets of reference free class averages that have been generated by 2D refinement processess."
@@ -4514,7 +4831,8 @@ class E2RefineParticlesTask(EMClassificationTools, E2Make3DTools):
 				
 				return True,cmd
 			else:
-				return self.make_input_v_stack(filenames,out_names,options,attr)
+				# This actually never happens the code needs changing
+				raise NotImplementedException
 
 	
 	def make_v_stack(self,filenames,out_name,options,attr):

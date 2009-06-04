@@ -1557,7 +1557,8 @@ class EMDBBigListAnimator:
 						a = QtGui.QListWidgetItem(self.target().plot_icon,str(k)+":"+str(v),list_widget)
 						b = EMDBPlotItem(self.db_list_plot,db_directory,key,k)
 						accrue_public_attributes(a,b)
-					else: raise
+					else: 
+						pass
 				else:
 					# yes redundant but no time
 					v = db[k]

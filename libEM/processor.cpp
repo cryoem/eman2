@@ -7724,6 +7724,7 @@ void ClampingProcessor::process_inplace( EMData* image )
 		if ( *data < min ) *data = new_min_vals;
 		else if ( *data > max ) *data = new_max_vals;
 	}
+	image->update();
 }
 
 void TestTomoImage::insert_rectangle( EMData* image, const Region& region, const float& value, const Transform& t3d )

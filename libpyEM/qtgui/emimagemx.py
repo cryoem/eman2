@@ -515,7 +515,7 @@ class EMImageMXModule(EMGUIModule):
 		'''
 		Called from emform
 		'''
-		db = db_open_dict("bdb:stack_selections")
+		db = db_open_dict("bdb:select")
 		set_list = db[db_name]
 		if set_list == None: set_list = []
 		
@@ -2304,7 +2304,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 			idx = i.index_key
 			if self.target().data.sets.has_key(idx):
 				s = self.target().data.sets[idx]
-				db = db_open_dict("bdb:stack_selections")
+				db = db_open_dict("bdb:select")
 				db[str(i.text())] = s
 			else:
 				print "there should be a warning message saying the set is empty"

@@ -55,6 +55,8 @@ Various utilities related to BDB databases."""
 	parser.add_option("--long","-l",action="store_true",help="Long listing",default=False)
 	parser.add_option("--short","-s",action="store_true",help="Dense listing of names only",default=False)
 	parser.add_option("--filt",type="string",help="Only include dictionary names containing the specified string",default=None)
+	parser.add_option("--exclude",type="string",help="The name of a database containing a list of exclusion keys",default=None)
+
 	parser.add_option("--match",type="string",help="Only include dictionaries matching the provided Python regular expression",default=None)
 	parser.add_option("--makevstack",type="string",help="Creates a 'virtual' BDB stack with its own metadata, but the binary data taken from the (filtered) list of stacks",default=None)
 	parser.add_option("--appendvstack",type="string",help="Appends to/creates a 'virtual' BDB stack with its own metadata, but the binary data taken from the (filtered) list of stacks",default=None)
@@ -98,9 +100,12 @@ Various utilities related to BDB databases."""
 		
 		if options.makevstack!=None or options.appendvstack!=None :
 			for db in dbs:
-				dct=db_open_dict(path+db)
+				print path + db
+				dct,keys=db_open_dict(path+db,with_keys=True)
 				if dct==vstack : continue
-				for n in range(len(dct)):
+				vals = keys
+				if keys == None: vals = range(len(dct))
+				for n in vals:
 					try: d=dct.get(n,nodata=1).get_attr_dict()
 					except:
 						print "error reading ",db,n 
