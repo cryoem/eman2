@@ -499,10 +499,35 @@ class EMMatrixPanel:
 class EMImageMXModule(EMGUIModule):
 	
 	def enable_set(self,idx,name,display=True,lst=[]):
+		'''
+		Called from e2eulerxplor
+		'''
 		self.get_inspector()
 		self.inspector.add_set(idx,name,display)
 		self.data.associate_set(idx,lst)
 	
+	def clear_sets(self):
+		self.inspector.clear_sets()
+		self.data.clear_sets()
+		self.updateGL()
+	
+	def set_single_active_set(self,db_name,idx=0,exclusive=0):
+		'''
+		Called from emform
+		'''
+		db = db_open_dict("bdb:stack_selections")
+		set_list = db[db_name]
+		if set_list == None: set_list = []
+		
+		
+		self.get_inspector()
+		self.inspector.clear_sets()
+		self.inspector.add_set(idx,db_name,True)
+		self.data.clear_sets()
+		self.data.associate_set(idx,set_list,True)
+		self.inspector.set_set_mode()
+		self.updateGL()
+		
 	def load_font_renderer(self):
 		try:
 			self.font_render_mode = EMGUIModule.FTGL
@@ -695,6 +720,8 @@ class EMImageMXModule(EMGUIModule):
 		if val > 0 and update_gl:
 			self.force_display_update()
 			self.updateGL()
+		self.get_inspector()
+		self.inspector.save_set()
 		
 #	def pop_box_image(self,idx,event=None,update_gl=False):
 #		if self.reroute_delete_target  == None:
@@ -2048,7 +2075,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 		self.mdrag.setCheckable(1)
 		self.hbl2.addWidget(self.mdrag)
 		
-		self.mset = QtGui.QPushButton("Set")
+		self.mset = QtGui.QPushButton("Sets")
 		self.mset.setCheckable(1)
 		self.hbl2.addWidget(self.mset)
 
@@ -2271,14 +2298,14 @@ class EMImageInspectorMX(QtGui.QWidget):
 		self.target().force_display_update()
 		self.target().updateGL()
 	
-	def save_set(self,unused):
+	def save_set(self,unused=None):
 		selections = self.setlist.selectedItems()
 		for i in selections:
 			idx = i.index_key
 			if self.target().data.sets.has_key(idx):
 				s = self.target().data.sets[idx]
-				db = db_open_dict("bdb:select")
-				db[text] = s
+				db = db_open_dict("bdb:stack_selections")
+				db[str(i.text())] = s
 			else:
 				print "there should be a warning message saying the set is empty"
 	def delete_set(self,unused):
@@ -2313,6 +2340,9 @@ class EMImageInspectorMX(QtGui.QWidget):
 	def get_set_list_items_copy(self):
 		items = [QtGui.QListWidgetItem(self.setlist.item(i)) for i in range(self.setlist.count())]
 		return items
+
+	def clear_sets(self):
+		self.setlist.clear()
 
 	def add_set(self,set_idx,set_name,display=True):
 		items = self.get_set_list_items_copy()
@@ -2396,7 +2426,11 @@ class EMImageInspectorMX(QtGui.QWidget):
 	def set_drag_mode(self,i):
 		self.target().set_mouse_mode("drag")
 		
-	def set_set_mode(self,unused):
+	def set_set_mode(self,unused=None):
+		if self.busy: return
+		self.busy = 1
+		if not self.mset.isChecked():
+			self.mset.setChecked(True)
 		n = self.setlist.count()
 		if n == 0:
 			self.new_set() # enables the new set too
@@ -2418,7 +2452,8 @@ class EMImageInspectorMX(QtGui.QWidget):
 					
 			
 		self.target().set_mouse_mode("set")
-	
+		self.tabwidget.setCurrentIndex(1) # This is the Sets page, but if someone could change the tab set up and break this behaviou
+		self.busy = 0
 	def set_scale(self,val):
 		if self.busy : return
 		self.busy=1
@@ -2725,8 +2760,19 @@ class EMDataListCache:
 			return 2
 		return 0
 	
-	def associate_set(self,idx,lst):
+	def clear_sets(self):
+		self.sets = {}
+	
+	def associate_set(self,idx,lst,mxset=False):
 		self.sets[idx] = lst
+		if mxset:
+			for key,im in self.images.items():
+				if key in lst:
+					if hasattr(im,"mxset"):
+						im.mxset.append(idx)
+					else:
+						im.mxset = [idx]
+			
 	
 	def image_set_associate(self,idx):
 		'''

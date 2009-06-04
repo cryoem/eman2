@@ -101,9 +101,6 @@ class EMSelectorDialog(QtGui.QDialog):
 		
 		self.__init_filter_combo()
 		
-		self.first_list_widget = QtGui.QListWidget(None)
-		self.starting_directory = e2getcwd()
-		self.historical_starting_directory = e2getcwd() # just incase anyone ever needs it (True). This should never be changed
 		
 		self.current_force = None # use to keep track of what is currently being forced, either 2D plotting, 2D image showing, or neither
 		self.selections = []
@@ -114,6 +111,10 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.module_events = [] # used to coordinate signals from the modules, especially close events, to free memory
 		self.list_widget_data= [] # entries should be tuples containing (current folder item)
 		self.splitter = QtGui.QSplitter()
+		self.first_list_widget = QtGui.QListWidget(self)
+		self.starting_directory = e2getcwd()
+		self.historical_starting_directory = e2getcwd() # just incase anyone ever needs it (True). This should never be changed
+		
 		self.__add_list_widget(self.first_list_widget)
 		self.__add_list_widget()
 		if not save_as_mode: self.__add_list_widget() # this is just to distinguish the saving mode from the browsing mode
@@ -672,7 +673,7 @@ class EMSelectorDialog(QtGui.QDialog):
 			return True
 		
 	def __add_list_widget(self, list_widget = None):
-		if list_widget == None:	list_widget = QtGui.QListWidget(None)
+		if list_widget == None:	list_widget = QtGui.QListWidget()
 		
 		list_widget.contextMenuEvent = self.list_widget_context_menu_event
 		
@@ -847,7 +848,7 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.list_widget_clickerooni(item,True)
 	
 	def list_widget_clickerooni(self,item,allow_preview=True):
-		self.stop_animation()
+		self.stop_animation() # this needs a bit more attention - we can stop the animation even if we click on the list_widget that's being animated...hmmm
 		if self.lock : return
 		if self.current_list_widget == None: return
 		if item.type_of_me == "value": return #it's just a value in the db
@@ -1745,9 +1746,19 @@ class EMDBListing:
 			try:
 				db.has_key("maxrec")
 			except:
-				from emsprworkflow import EMErrorMessageDisplay
-				EMErrorMessageDisplay.run(["Warning: the %s database seems to be corrupted" %db_name], "Data loss" )
-				return False
+				# sometimes when the browser is updating in real time a database file is 
+				# created, however only one of the two files exists (one is ptcl.bdb,
+				# the other something like ptcl_200x200x1.bdb (etc), even though the other
+				# is just about to be written... so I wait for 2 seconds and try a second time
+				import time
+				time.sleep(1)
+				db = db_open_dict(db_name,ro=True)
+				try:
+					db.has_key("maxrec")
+				except:
+					from emsprworkflow import EMErrorMessageDisplay
+					EMErrorMessageDisplay.run(["Warning: the %s database might be corrupted." %db_name], "Data loss" )
+					return False
 			
 			if db and db.has_key("maxrec"):
 				#n = DB[f[0]]["maxrec"]

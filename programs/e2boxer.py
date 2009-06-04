@@ -1026,15 +1026,16 @@ class RawDatabaseAutoBoxer:
 
 
 
-def gen_thumbs(image_names,application,n):
+def gen_thumbs(image_names,n):
 
+	application = get_application()
 	nim = len(image_names)
 	thumbs = [None for i in range(nim)]
 	progress = EMProgressDialogModule(application,"Generating thumbnails", "Abort", 0, nim,None)
 	progress.qt_widget.show()
 	prog = 0
 	for i in range(nim):
-		
+		print i,image_names[i]
 #				thumb = self.get_image_thumb(i)
 		thumb = get_idd_image_entry(image_names[i],"image_thumb")
 		if thumb == None:
@@ -1063,7 +1064,6 @@ def gen_thumbs(image_names,application,n):
 		if progress.qt_widget.wasCanceled():
 			progress.qt_widget.setValue(nim)
 			progress.qt_widget.close()
-			self.done()
 			return -1 # woh don't know if this will work
 	progress.qt_widget.setValue(nim)
 	progress.qt_widget.close()
@@ -1886,7 +1886,10 @@ class EMBoxerModule(QtCore.QObject):
 			
 
 	def gen_thumbs(self):
-		self.imagethumbs = gen_thumbs(self.image_names,get_application(),self.get_image_thumb_shrink())
+		self.imagethumbs = gen_thumbs(self.image_names,self.get_image_thumb_shrink())
+		if self.imagethumbs == -1:
+			print "thumbnail process was aborted"
+			sys.exit(1)
 
 	def __gen_image_thumbnails_widget(self):
 		'''
@@ -1909,6 +1912,7 @@ class EMBoxerModule(QtCore.QObject):
 		app.setOverrideCursor(QtCore.Qt.BusyCursor)
 		
 		self.gen_thumbs()
+		
 
 		self.guimxit=EMImageMXModule(application=get_application())
 		self.guimxit.desktop_hint = "rotor"

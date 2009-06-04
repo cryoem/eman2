@@ -1134,12 +1134,13 @@ class ParticleWorkFlowTask(WorkFlowTask):
 	def __init__(self):
 		WorkFlowTask.__init__(self)
 
-	def get_particle_selection_table(self,ptcl_list):
+	def get_particle_selection_table(self,ptcl_list,table=None):
 		'''
 		
 		'''
 		from emform import EM2DStackTable,EMFileTable
-		table = EM2DStackTable(ptcl_list,desc_short="Particles",desc_long="")
+		if table==None: # you can hand in your own table (it's done in E2ParticleExamineTask)
+			table = EM2DStackTable(ptcl_list,desc_short="Particles",desc_long="")
 		if len(ptcl_list) != 0:
 			a = EMData()
 			a.read_image(ptcl_list[0],0,True)
@@ -2993,6 +2994,155 @@ class E2CTFGuiTaskGeneral(E2CTFGuiTask):
 		return options
 
 
+class EMParticleOptions:
+	''' 
+	e2refine2d and e2refine, from with the worklfow setting, both want to know the same 
+	thing, basically, what are the available particles (including filtered options)
+	'''
+		
+	def get_particle_options(self):
+		'''
+		
+		'''
+		particle_list_name = "global.spr_ptcls"
+		EMProjectListCleanup.clean_up_project_file_list(particle_list_name)
+		particles_map = {} # used to cache data in get_params
+		particles_name_map = {} # used to recall which selection was taken	
+		db = db_open_dict("bdb:project")
+		particle_names = db.get(particle_list_name,dfl=[])
+		n = 0
+				
+		if db.has_key(particle_list_name):
+			ptcls = db[particle_list_name]
+			for name in ptcls:
+				n += EMUtil.get_image_count(name)
+				
+			particles_map["Particles"] = ptcls
+				
+		# now build up the list of filtered things
+		EMProjectListCleanup.clean_up_filt_particles()
+		filter_opts = {} # key is the filter type, value is the number of images with this filter type
+		name_map = {} # a way to map a filtered image to its originating image
+		if db.has_key("global.spr_filt_ptcls_map"):
+			for name,d in db["global.spr_filt_ptcls_map"].items():
+				for filt,ptcl_name in d.items():
+					name_map[ptcl_name] = name
+					if filter_opts.has_key(filt):
+						filter_opts[filt] += EMUtil.get_image_count(ptcl_name)
+						particles_map[filt].append(ptcl_name)
+					else:
+						filter_opts[filt] = EMUtil.get_image_count(ptcl_name)
+						particles_map[filt] = [ptcl_name]
+		
+		choices = []
+		if n != 0:
+			ptcl_name = "Particles ("+str(n)+")"
+			choices.append(ptcl_name)
+			particles_name_map[ptcl_name] = "Particles"
+		for filt,num in filter_opts.items():
+			name = filt+" ("+str(num)+")"
+			choices.append( name )
+			particles_name_map[name] = filt
+			
+		return particles_map, particles_name_map,choices,name_map
+		
+ 		 	
+class E2ParticleExamineChooseDataTask(ParticleWorkFlowTask):
+	"Choose the particle data you wish to examine. This will pop a second form listing the particles stacks along with other relevant information"
+	documentation_string = "Choose the data for particle examination" 
+	def __init__(self):
+		ParticleWorkFlowTask.__init__(self)
+		self.window_title = "Choose Data For Particle Examination"
+		self.preferred_size = (480,300)
+		self.form_db_name ="bdb:emform.workflow_particle_examine"
+	
+	def get_params(self):
+		ptcl_opts = EMParticleOptions()
+		self.particles_map, self.particles_name_map,choices,self.name_map = ptcl_opts.get_particle_options()
+			
+		params = []		
+			
+		
+		#if as_string:
+		#params.append(ParamDef(name="particle_set_choice",vartype="string",desc_long="Choose the particle data set you wish to use to generate a starting data for e2refine2d",desc_short=title,property=None,defaultunits=db.get("particle_set_choice",dfl=""),choices=choices))
+		db = db_open_dict(self.form_db_name)
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=str(self.__doc__),choices=None))
+		
+		if len(self.particles_map) > 0:
+			params.append(ParamDef(name="particle_set_choice",vartype="choice",desc_long="Choose the particle data set you wish to use to generate a starting data for e2refine2d",desc_short="Choose data",property=None,defaultunits=db.get("particle_set_choice",dfl=""),choices=choices))
+		return params
+
+	def on_form_ok(self,params):
+		if params.has_key("particle_set_choice"):
+
+			choice = params["particle_set_choice"]
+			
+			name_map = {}
+			particles = self.particles_map[self.particles_name_map[choice]]
+			for name in particles:
+				if self.name_map.has_key(name):
+					name_map[name] = get_file_tag(self.name_map[name])
+				else:
+					name_map[name] = get_file_tag(name)
+					
+			self.emit(QtCore.SIGNAL("replace_task"),E2ParticleExamineTask(particles,name_map),"e2refine2d arguments")
+		
+		self.form.closeEvent(None)
+		self.form = None
+		
+		self.write_db_entries(params)
+		
+class E2ParticleExamineTask(E2CTFWorkFlowTask):
+	'''This task is for defining bad particles. Double click on the particle stack you want to examine and then (once the stack viewer has loaded) click on particles to define them as bad. You can come back and review your bad particle selections at any time. You can write stacks that exclude particles you've defined as bad using 'Make Particle Set' tool.'''
+	def __init__(self,particle_stacks=[],name_map={}):
+		E2CTFWorkFlowTask.__init__(self)
+		self.window_title = "Particle Stack Examination"
+		self.particle_stacks = particle_stacks
+		self.name_map = name_map
+
+	def get_params(self):
+		params = []
+		from emform import EM2DStackExamineTable,EMFileTable
+		table = EM2DStackExamineTable(self.particle_stacks,desc_short="Particles",desc_long="",name_map=self.name_map)
+		bpc = E2ParticleExamineTask.BadParticlesColumn(self.name_map)
+		# think bpc will be devoured by the garbage collector? Think again! the table has a reference to one of bpc's functions, and this is enough to prevent death
+		table.insert_column_data(1,EMFileTable.EMColumnData("Bad Particles",bpc.num_bad_particles,"The number of particles you have identified as bad"))
+		table.register_animated_column("Bad Particles")
+		
+		p,n = self.get_particle_selection_table(self.particle_stacks,table) # I wish this came from a "has a" not an "is a" relationship. But too late to chaneg
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
+		params.append(p)
+
+		return params
+	
+	class BadParticlesColumn:
+		def __init__(self,name_map):
+			self.name_map = name_map
+	
+		def num_bad_particles(self,filename):
+			db_name = get_file_tag(self.name_map[filename])
+			db = db_open_dict("bdb:stack_selections",ro=True)
+			set_list = db[db_name]
+			if set_list == None: return "0"
+			else: return str(len(set_list))
+	
+	
+	def on_form_ok(self,params):
+		self.form.closeEvent(None)
+		self.form = None
+		self.emit(QtCore.SIGNAL("task_idle"))
+		
+	def on_form_close(self):
+		# this is to avoid a task_idle signal, which would be incorrect if e2boxer is running
+		self.emit(QtCore.SIGNAL("task_idle"))
+		
+	def on_form_cancel(self):
+		
+		self.form.closeEvent(None)
+		self.form = None
+		self.emit(QtCore.SIGNAL("task_idle"))
+
+
 class E2Refine2DReportTask(ParticleWorkFlowTask):
 	documentation_string = "This form displays the current sets of reference free class averages that have been generated by 2D refinement processess."
 	warning_string = "\n\n\nNote: There are no reference free class averages currently associated with the project. Try running e2refine2d in the options below."
@@ -3472,58 +3622,7 @@ class E2Refine2DTask(EMClassificationTools):
 	 	
 	 	return []
 
-class EMParticleOptions:
-	''' 
-	e2refine2d and e2refine, from with the worklfow setting, both want to know the same 
-	thing, basically, what are the available particles (including filtered options)
-	'''
-#	def __init__(self, form_db_name ="bdb:emform.e2refine2d"):
-#		self.particles_map = {} # used to cache data in get_params
-#		self.particles_name_map = {} # used to recall which selection was taken
-#		self.form_db_name = form_db_name
-		
-	def get_particle_options(self):
-		particle_list_name = "global.spr_ptcls"
-		EMProjectListCleanup.clean_up_project_file_list(particle_list_name)
-		particles_map = {} # used to cache data in get_params
-		particles_name_map = {} # used to recall which selection was taken	
-		db = db_open_dict("bdb:project")
-		particle_names = db.get(particle_list_name,dfl=[])
-		n = 0
-				
-		if db.has_key(particle_list_name):
-			ptcls = db[particle_list_name]
-			for name in ptcls:
-				n += EMUtil.get_image_count(name)
-				
-			particles_map["Particles"] = ptcls
-				
-		# now build up the list of filtered things
-		EMProjectListCleanup.clean_up_filt_particles()
-		filter_opts = {} # key is the filter type, value is the number of images with this filter type
-		if db.has_key("global.spr_filt_ptcls_map"):
-			for name,d in db["global.spr_filt_ptcls_map"].items():
-				for filt,ptcl_name in d.items():
-					if filter_opts.has_key(filt):
-						filter_opts[filt] += EMUtil.get_image_count(ptcl_name)
-						particles_map[filt].append(ptcl_name)
-					else:
-						filter_opts[filt] = EMUtil.get_image_count(ptcl_name)
-						particles_map[filt] = [ptcl_name]
-		
-		choices = []
-		if n != 0:
-			ptcl_name = "Particles ("+str(n)+")"
-			choices.append(ptcl_name)
-			particles_name_map[ptcl_name] = "Particles"
-		for filt,num in filter_opts.items():
-			name = filt+" ("+str(num)+")"
-			choices.append( name )
-			particles_name_map[name] = filt
-			
-		return particles_map, particles_name_map,choices
-		
- 		 	
+		 	
 class E2Refine2DChooseDataTask(ParticleWorkFlowTask):
 	documentation_string = "Choose the data you wish to use for use for running e2refine2d from the list of options below and hit OK. This will pop up a second form asking you to fill in more details.\n\nNote that usually you should have 4 options to choose from below. If you are not seeing all 4 options it means you should go back in the work flow, import particles, and generate phase flipped and Wiener filtered output." 
 	def __init__(self):

@@ -153,6 +153,46 @@ class EMFileTable(QtGui.QTableWidget):
 		self.context_menu_data["Save As"] = EMFileTable.save_as
 		self.context_menu_refs = [] # to keep a reference to context menus related objects - somebody has to
 		
+		
+		self.timer = None
+		self.timer_interval = 2000
+		self.animated_columns = {}
+		self.busy = 0
+	
+	def register_animated_column(self,column_title):
+		if self.timer == None:
+			self.timer = QtCore.QTimer()
+			QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.time_out)
+			self.timer.start(self.timer_interval)
+			
+		self.animated_columns[column_title] = -1 # -1 is a flag
+		
+	def time_out(self):
+		if self.busy: return
+		self.busy = 1
+		for key,value in self.animated_columns.items():
+			if value == -1:
+				for i in xrange(0,self.columnCount()):
+					if (str(self.horizontalHeaderItem(i).text())) == key:
+						self.animated_columns[key] = i
+						break
+				else:
+					from emsprworkflow import EMErrorMessageDisplay
+					EMErrorMessageDisplay.run(["Can't animate %s" %key] )
+					self.animated_columns.pop(key)
+					self.busy = 0
+					return
+				
+		
+		for key,value in self.animated_columns.items():
+			cd = self.column_data[value-1]
+			for i in xrange(0,len(self.listed_names)):
+				
+				item = self.item(i,value)
+				item.setText(cd.function(self.convert_name(str(self.item(i,0).text()))))
+
+		self.busy = 0
+	
 	def convert_text(self,name):
 		'''
 		Sometimes the first column displays a shortened version of the name of a file on
@@ -542,7 +582,59 @@ class EM2DStackTable(EMFileTable):
 	def module_closed(self,module_instance):
 		self.display_module = None
 		
+
+class EM2DStackExamineTable(EM2DStackTable):
+	'''
+	A specialized 2D stack table used by the Workflow 'Particle Examination and Stack Generation' stages, for
+	the purpose of defining bad particles. The catch is, the chosen bad particles affect more than one particle stack,
+	because we have filtered versions of image stacks. I.E. The user can define particles in any of the image stacks
+	but should be able to observe the bad particles if they open the unfiltered particle stack, for example
 	
+	
+	Also, inheriting for EM2DStackTable gives us save_as for free
+	'''
+	def __init__(self,listed_names=[],name="filenames",desc_short="File Names",desc_long="A list of file names",name_map={}):
+		'''
+		see EMFileTable for comments on parameters
+		'''
+		EM2DStackTable.__init__(self,listed_names,name,desc_short,desc_long)
+		self.icon = QtGui.QIcon(get_image_directory() + "/multiple_images.png")
+		self.display_module = None
+		self.module_events_manager = None
+		self.context_menu_data["Save As"] = EM2DStackTable.save_as
+		self.name_map = name_map
+		
+	def set_name_map(self,name_map):
+		self.name_map = name_map
+
+	def table_item_double_clicked(self,item):
+		'''
+		See EMFileTable.table_item_double_clicked for comments
+		'''
+		if item.column() != 0: return # only can display files from the first column
+		get_application().setOverrideCursor(Qt.BusyCursor)
+		filename = self.convert_text(str(item.text()))
+
+		if self.display_module == None:
+			from emimagemx import EMImageMXModule
+			self.display_module = EMImageMXModule(None,get_application())
+			from emapplication import ModuleEventsManager
+			self.module_events_manager = ModuleEventsManager(self,self.display_module)
+		
+		self.display_module.set_data(filename,filename) #  I know this looks stupid, but c'est la vie
+		self.display_module.updateGL()
+		if self.name_map.has_key(filename):
+			self.display_module.set_single_active_set(self.name_map[filename])
+		else:
+			self.display_module.clear_sets()
+		
+		#self.module().emit(QtCore.SIGNAL("launching_module"),"Browser",module)
+		get_application().show_specific(self.display_module)
+		#self.add_module([str(module),"Display",module])
+		get_application().setOverrideCursor(Qt.ArrowCursor)
+
+	def module_closed(self,module_instance):
+		self.display_module = None
 
 class EMBrowseEventHandler:
 	'''

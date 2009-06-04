@@ -396,6 +396,10 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		ctf.setIcon(0,self.icons["ctf"])
 		self.launchers["CTF"] = self.launch_ctf_report
 		spr_list.append(ctf)
+		mis = QtGui.QTreeWidgetItem(QtCore.QStringList("Merge Into Sets"))
+		mis.setIcon(0,self.icons["multiple_images"])
+		spr_list.append(mis)
+		self.launchers["Merge Into Sets"] = self.launch_mis_report
 		refine2d = QtGui.QTreeWidgetItem(QtCore.QStringList("Reference Free Class Averages"))
 		self.launchers["Reference Free Class Averages"] = self.launch_refine2d_report
 		refine2d.setIcon(0,self.icons["multiple_images"])
@@ -449,6 +453,14 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		ap.addChildren(ap_list)
 		
 		
+		mis_list = []
+		mis_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Examine Particle Stacks")))
+		self.launchers["Examine Particle Stacks"] = self.launch_examine_particle_stacks
+		mis_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Make Particle Set")))
+		self.launchers["Make Particle Set"] = self.launch_make_ptcl_set
+		mis_list[0].setIcon(0,self.icons["multiple_images"])
+		mis_list[1].setIcon(0,self.icons["multiple_images"])
+		mis.addChildren(mis_list)
 		
 		refine2d_list = []
 		refine2d_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Generate Classes - e2refine2d")))
@@ -482,6 +494,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		tree_widget.expandItem(spr)
 		tree_widget.expandItem(rd)
 		tree_widget.expandItem(ap)
+		tree_widget.expandItem(mis)
 		tree_widget.expandItem(ctf)	
 		tree_widget.expandItem(refine2d)
 		tree_widget.expandItem(init_model)
@@ -835,6 +848,9 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	def launch_e2ctf_tune(self): self.launch_task(E2CTFGuiTask(),"e2ctf Intreface")
 	def launch_e2ctf_auto_ft(self): self.launch_task(E2CTFAutoFitTask(),"e2ctf Auto Fitting")
 	def launch_ctf_report(self):self.launch_task(CTFReportTask(),"CTF Report")
+	def launch_mis_report(self): pass
+	def launch_make_ptcl_set(self): pass 
+	def launch_examine_particle_stacks(self): self.launch_task(E2ParticleExamineChooseDataTask(),"Examine Particles")
 	def launch_particle_report(self): self.launch_task(ParticleReportTask(),"Particle Report")
 	def launch_tomo_particle_report(self): self.launch_task(TomoParticleReportTask(),"Tomogram Particle Report")
 #	def launch_particle_import(self):self.launch_task(ParticleImportTask(),"Import particles")
