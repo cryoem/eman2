@@ -423,9 +423,9 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 				}
 			}
 		} else {
-			for (long i = 0; i < totsize; i++) {
-				result += x_data[i]*double(y_data[i]);
-			}
+			// this little bit of manual loop unrolling makes the dot product as fast as sqeuclidean with -O2
+			for (long i=0; i<totsize; i++) result+=x_data[i]*y_data[i];
+			
 			if (normalize) {
 				square_sum1 = image->get_attr("square_sum");
 				square_sum2 = with->get_attr("square_sum");
@@ -742,23 +742,10 @@ float PhaseCmp::cmp(EMData * image, EMData *with) const
 		for (float y = 0; y < image_fft->get_ysize(); y++) {
 			for (int x = 0; x < image_fft->get_xsize(); x += 2) {
 				int r;
-#ifdef	_WIN32
 //				if ( nz == 1 ) {
-					if (y<ny/2) r = Util::round(_hypot(x / 2, y) * Ctf::CTFOS);
-					else r = Util::round(_hypot(x / 2, y-ny) * Ctf::CTFOS);
-//				}
-#else
-//				if ( nz == 1 ) {
-					if (y<ny/2) r = Util::round(hypot(x / 2, y) * Ctf::CTFOS);
-					else r = Util::round(hypot(x / 2, y-ny) * Ctf::CTFOS);
-//				} else {
-//					int yy = y;
-//					int zz = z;
-//					if (y >= ny/2) yy = y - ny;
-//					if (z >= nz/2) zz = z - nz;
-//					r = Util::round(hypot3(x / 2, yy,zz) * Ctf::CTFOS);
-//				}
-#endif
+					if (y<ny/2) r = Util::round(Util::hypot_fast(x / 2, y) * Ctf::CTFOS);
+					else r = Util::round(Util::hypot_fast(x / 2, y-ny) * Ctf::CTFOS);
+
 				float a = dfsnr[r] * with_fft_data[i];
 // 				cout << a << " " << Util::angle_sub_2pi(image_fft_data[i + 1], with_fft_data[i + 1]) << " " <<image_fft_data[i + 1] << " " << with_fft_data[i + 1] << endl;
 				sum += Util::angle_sub_2pi(image_fft_data[i + 1], with_fft_data[i + 1]) * a;
@@ -921,30 +908,39 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 	vector < float >fsc;
 
 	fsc = image->calc_fourier_shell_correlation(with,1);
-	
-/*	if (image->get_zsize()>1) fsc = image->calc_fourier_shell_correlation(with,1);
-	else {
-		fsc.resize(ny2*3);
-		for (int i=0; i<ny2*3; i++) fsc[i]=0;
 
-		EMData *f1=do_fft();
-		EMData *f2=image->do_fft();
-		float *df1=f1->get_data();
-		float *df2=f2->get_data();
-		int nx2=df1->get_xsize();
-
-		for (int y=-ny/2; y<ny/2; y++) {
-			for (int x=0; x<nx2/2; x++) {
-				if (x==0 && y<0) continue;	// skip Friedel pair
-				short r=hypot_fast_int(x,y);
-				if (r>ny2-1) continue;
-				int l=x*2+(y<0?ny+y:y)*nx2;
-				fsc[r+ny2]+=df1[l]*df2[l]+df1[l+1]*df2[l+1];
-				fsc[r+ny2*2]+=1;
-			}
-		}
-	}
-*/
+	// The fast hypot here was supposed to speed things up. Little effect
+// 	if (image->get_zsize()>1) fsc = image->calc_fourier_shell_correlation(with,1);
+// 	else {
+// 		double *sxy = (double *)malloc(ny2*sizeof(double)*4);
+// 		double *sxx = sxy+ny2;
+// 		double *syy = sxy+2*ny2;
+// 		double *norm= sxy+3*ny2;
+// 		
+// 		float *df1=image->get_data();
+// 		float *df2=with->get_data();
+// 		int nx2=image->get_xsize();
+// 
+// 		for (int y=-ny/2; y<ny/2; y++) {
+// 			for (int x=0; x<nx2/2; x++) {
+// 				if (x==0 && y<0) continue;	// skip Friedel pair
+// 				short r=Util::hypot_fast_int(x,y);
+// 				if (r>ny2-1) continue;
+// 				int l=x*2+(y<0?ny+y:y)*nx2;
+// 				sxy[r]+=df1[l]*df2[l]+df1[l+1]*df2[l+1];
+// 				sxx[r]+=df1[l]*df1[l];
+// 				syy[r]+=df2[l]*df2[l];
+// 				norm[r]+=1.0;
+// 			}
+// 		}
+// 		fsc.resize(ny2*3);
+// 		for (int r=0; r<ny2; r++) {
+// 			fsc[r]=r*0.5/ny2;
+// 			fsc[ny2+r]=sxy[r]/(sqrt(sxx[r])*sqrt(syy[r]));
+// 			fsc[ny2*2+r]=norm[r];
+// 		}
+// 		free(sxy);
+// 	}
 
 	vector<float> snr;
 	if (snrweight) {
