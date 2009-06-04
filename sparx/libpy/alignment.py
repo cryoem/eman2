@@ -1065,9 +1065,10 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 	else:
 		return -1.0e23
 
+
 def proj_ali_incore_local_psi(data, refrings, numr, xrng, yrng, step, an, finfo=None):
 	from utilities    import even_angles, model_circle, compose_transform2, bcast_EMData_to_all
-	from utilities import set_params_proj, get_params_proj
+	from utilities    import set_params_proj, get_params_proj
 	from math         import cos, sin, pi
 
 	mode = "F"
@@ -1110,6 +1111,7 @@ def proj_ali_incore_local_psi(data, refrings, numr, xrng, yrng, step, an, finfo=
 		return peak
 	else:
 		return -1.0e23
+
 
 def proj_ali_incore_peaks(volref, mask3D, projdata, first_ring, last_ring, rstep, xrng, yrng, step, delta, ref_a, symmetry, CTF = False, finfo=None, MPI=False):
 	from utilities    import even_angles, model_circle, compose_transform2, print_msg
