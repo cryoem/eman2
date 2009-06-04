@@ -57,6 +57,7 @@ Various utilities related to BDB databases."""
 	parser.add_option("--filt",type="string",help="Only include dictionary names containing the specified string",default=None)
 	parser.add_option("--match",type="string",help="Only include dictionaries matching the provided Python regular expression",default=None)
 	parser.add_option("--makevstack",type="string",help="Creates a 'virtual' BDB stack with its own metadata, but the binary data taken from the (filtered) list of stacks",default=None)
+	parser.add_option("--appendvstack",type="string",help="Appends to/creates a 'virtual' BDB stack with its own metadata, but the binary data taken from the (filtered) list of stacks",default=None)
 
 	(options, args) = parser.parse_args()
 
@@ -67,8 +68,13 @@ Various utilities related to BDB databases."""
 	if options.makevstack : 
 		logid=E2init(sys.argv)
 		vstack=db_open_dict(options.makevstack)
+		vstackn=0
+	elif options.appendvstack :
+		logid=E2init(sys.argv)
+		vstack=db_open_dict(options.appendvstack)
+		vstackn=len(vstack)
 	else : vstack=None
-	vstackn=0
+		
 	
 	for path in args:
 		if path.lower()[:4]!="bdb:" : path="bdb:"+path
@@ -90,7 +96,7 @@ Various utilities related to BDB databases."""
 		if options.match!=None:
 			dbs=[db for db in dbs if re.match(options.match,db)]
 		
-		if options.makevstack!=None :
+		if options.makevstack!=None or options.appendvstack!=None :
 			for db in dbs:
 				dct=db_open_dict(path+db)
 				if dct==vstack : continue
@@ -149,7 +155,7 @@ Various utilities related to BDB databases."""
 				print path+db,
 			print " "
 
-		elif not options.makevstack :
+		elif not options.makevstack and not options.appendvstack :
 			# Nicely formatted 'ls' style display
 			cols=int(floor(80.0/(maxname+3)))
 			width=80/cols
