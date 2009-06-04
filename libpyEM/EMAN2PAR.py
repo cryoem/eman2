@@ -586,19 +586,19 @@ class EMDCTaskClient(EMTaskClient):
 			# Translate and retrieve (if necessary) data for task
 			for k,i in task.data.items():
 				if self.verbose>1 : print "Data translate ",k,i
-				try:
-					if i[0]=="cache" :
-						cname="bdb:cache_%d.%d"%(i[1][0],i[1][1])
-						cache=db_open_dict(cname)
-						if self.verbose>2 : print "Open cache : ",cname
-						
-						for j in image_range(*i[2:]):
-							if not cache.has_key(j):
-								cache[j]=self.get_data(sockf,i[1],j)
-								print j,cache[j]
-								
-						i[1]=cname
-				except: pass
+#				try:
+				if isinstance(i,list) and i[0]=="cache" :
+					cname="bdb:cache_%d.%d"%(i[1][0],i[1][1])
+					cache=db_open_dict(cname)
+					if self.verbose>2 : print "Open cache : ",cname
+					
+					for j in image_range(*i[2:]):
+						if not cache.has_key(j):
+							cache[j]=self.get_data(sockf,i[1],j)
+							print j,cache[j]
+							
+					i[1]=cname
+#				except: pass
 			sockf.close()
 			sock.close()
 			
