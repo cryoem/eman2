@@ -256,14 +256,13 @@ def db_list_dicts(url):
 #### replace a few EMData methods with python versions to intercept 'bdb:' filenames
 ##########
 def db_emd_init(self,*parms):
-	try :
-		if len(parms)<4 and parms[0][:4].lower()=="bdb:":
-			self.__initc()
-			self.read_image(*parms)
-			return
-		raise Exception
-	except:
-		return self.__initc(*parms)	
+	if len(parms)<4 and len(parms)>0 and isinstance(parms[0],str) and parms[0][:4].lower()=="bdb:":
+		self.__initc()
+		self.read_image(*parms)
+		return
+	else : 
+		self.__initc(*parms)	
+		return
 
 EMData.__initc=EMData.__init__
 EMData.__init__=db_emd_init
