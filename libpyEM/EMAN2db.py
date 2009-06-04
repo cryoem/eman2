@@ -759,9 +759,9 @@ class DBDict:
 				self.isro=True
 			except: raise Exception,"No such database : %s"%self.path+"/"+file
 		else : 
-		#	try: 
-			self.bdb.open(self.path+"/"+file,self.name,db.DB_BTREE,db.DB_CREATE|db.DB_THREAD)
-		#	except: raise Exception,"Cannot create database : %s"%self.path+"/"+file
+			try: 
+				self.bdb.open(self.path+"/"+file,self.name,db.DB_BTREE,db.DB_CREATE|db.DB_THREAD)
+			except: raise Exception,"Cannot create database : %s"%self.path+"/"+file
 			self.isro=False
 			
 		DBDict.nopen+=1
