@@ -2006,7 +2006,7 @@ def running_time_txt(start_time):
 	return 'Running time is: %s h %s min %s s' % (str(time_h).rjust(2, '0'), str(time_m).rjust(2, '0'), str(time_s).rjust(2, '0'))
 
 def reduce_array_to_root(data, myid, main_node = 0, comm = -1):
-	from Numeric import array, shape, reshape
+	from numpy import array, shape, reshape
 	from mpi import MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD, mpi_reduce, mpi_barrier
 	
 	if comm == -1:  comm = MPI_COMM_WORLD
@@ -2027,7 +2027,7 @@ def reduce_array_to_root(data, myid, main_node = 0, comm = -1):
         		array1d[block_begin:block_end] = tmpsum[0:block_size]
 
 def reduce_EMData_to_root(data, myid, main_node = 0, comm = -1):
-	from Numeric import array, shape, reshape
+	from numpy import array, shape, reshape
 	from mpi import mpi_reduce, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD, mpi_barrier
 	
 	if comm == -1:  comm = MPI_COMM_WORLD
@@ -2050,7 +2050,7 @@ def reduce_EMData_to_root(data, myid, main_node = 0, comm = -1):
 			array1d[block_begin:block_end] = tmpsum[0:block_size]
 
 def bcast_array_to_all(data, myid, main_node = 0, comm = -1):
-	from Numeric import array, shape, reshape
+	from numpy import array, shape, reshape
 	from mpi import mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
 
 	if comm == -1: comm = MPI_COMM_WORLD
@@ -2063,7 +2063,7 @@ def bcast_array_to_all(data, myid, main_node = 0, comm = -1):
 		data1d[0:ntot] = tmp[0:ntot]
 
 def bcast_EMData_to_all(tavg, myid, main_node = 0, comm = -1):
-	from Numeric import array, shape, reshape
+	from numpy import array, shape, reshape
 	from mpi import mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
 	
 	if comm == -1: comm = MPI_COMM_WORLD
@@ -2422,8 +2422,6 @@ def read_fsc( filename ):
 def memory_usage():
 	import os
 	from string import split
-	return 0
-	"""
 	file = "/proc/%d/status" % os.getpid()
 	f = open(file, 'r')
 	line = f.readline()
@@ -2432,7 +2430,6 @@ def memory_usage():
 		if items[0]=='VmSize:':
 			return items[1]+items[2]
 		line = f.readline()
-	"""
 
 def circumference( img, inner = -1, outer = -1):
 	nx = img.get_xsize()
