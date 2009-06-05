@@ -2541,7 +2541,7 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, bool inten)
 					if (!inten) {
 #ifdef	_WIN32
 						if (is_ri()) v=static_cast<float>(_hypot(data[i],data[i+1]));	// real/imag, compute amplitude
-#else						
+#else
 						if (is_ri()) v=static_cast<float>(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
 #endif
 						else v=data[i];							// amp/phase, just get amp
@@ -2710,13 +2710,13 @@ void EMData::cconj() {
 void EMData::update_stat() const
 {
 	ENTERFUNC;
-	float* data = get_data();
 	if (!(flags & EMDATA_NEEDUPD))
 	{
 		EXITFUNC;
 		return;
 	}
 
+	float* data = get_data();
 	float max = -FLT_MAX;
 	float min = -max;
 

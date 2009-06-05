@@ -871,8 +871,9 @@ EMObject EMData::get_attr(const string & key) const
 
 	float mean = attr_dict["mean"];
 	float sigma = attr_dict["sigma"];
-	float *data = get_data();
+
 	if (key == "kurtosis") {
+		float *data = get_data();
 		double kurtosis_sum = 0;
 
 		for (size_t k = 0; k < size; k++) {
@@ -886,6 +887,7 @@ EMObject EMData::get_attr(const string & key) const
 		return attr_dict["kurtosis"];
 	}
 	else if (key == "skewness") {
+		float *data = get_data();
 		double skewness_sum = 0;
 		for (size_t k = 0; k < size; k++) {
 			float t = (data[k] - mean) / sigma;
