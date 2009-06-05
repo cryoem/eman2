@@ -658,7 +658,7 @@ class EMDCTaskClient(EMTaskClient):
 			sockf.flush()
 			sockf.close()
 			sock.close()
-			if verbose>2 : print "Results :",ret
+			if self.verbose>2 : print "Results :",ret
 			
 			time.sleep(3)
 			
