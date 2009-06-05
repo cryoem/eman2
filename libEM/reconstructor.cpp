@@ -602,9 +602,9 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 					cc = -1.0;
 				}
 
-				if ( z_scale_factor != 0 ) zz *= z_scale_factor;
-				if ( y_scale_factor != 0 ) yy *= y_scale_factor;
-				if ( x_scale_factor != 0 ) xx *= x_scale_factor;
+//				if ( z_scale_factor != 0 ) zz *= z_scale_factor;
+//				if ( y_scale_factor != 0 ) yy *= y_scale_factor;
+//				if ( x_scale_factor != 0 ) xx *= x_scale_factor;
 
 				yy += ny / 2;
 				zz += nz / 2;

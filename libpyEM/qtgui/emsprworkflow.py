@@ -538,81 +538,7 @@ class ChangeDirectoryTask(WorkFlowTask):
 		pass
 		#self.form.closeEvent(None)
 
-class TomohunterTask(WorkFlowTask):
-	'''
-	A class that manages the initialization component of a Tomography workflow
-	'''
-	
-	documentation_string = "This is useful information about this task."
 
-	def __init__(self):
-		WorkFlowTask.__init__(self)
-		self.window_title = "Tomohunter Input Form"
-		self.preferred_size = (640,480)
-	def get_params(self):
-		params = []
-		project_db = db_open_dict("bdb:tomography")
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="SPR",desc_long="Information regarding this task",property=None,defaultunits=TomohunterTask.documentation_string,choices=None))
-		targetimage = ParamDef(name="targetimage",vartype="url",desc_short="target image file name",desc_long="target image file name",property=None,defaultunits=project_db.get("targetimage",dfl=[]),choices=[])
-		probeimage = ParamDef(name="probeimage",vartype="url",desc_short="probe image file name",desc_long="probe image file name",property=None,defaultunits=project_db.get("probeimage",dfl=[]),choices=[])
-		norm = ParamDef(name="normalization",vartype="int",desc_short="normalization",desc_long="if the normalization needed",property=None,defaultunits=0,choices=[0,1])
-		nsoln = ParamDef(name="nsoln",vartype="int",desc_short="#solution",desc_long="number of solution",property=None,defaultunits=1,choices=None)
-		thresh = ParamDef(name="thresh",vartype="float",desc_short="threshold",desc_long="threshold",property=None,defaultunits=1.0,choices=None)
-		searchx = ParamDef(name="searchx",vartype="int",desc_short="searchx",desc_long="searchx",property=None,defaultunits=0,choices=None)
-		searchy = ParamDef(name="searchy",vartype="int",desc_short="searchy",desc_long="searchy",property=None,defaultunits=0,choices=None)
-		searchz = ParamDef(name="searchz",vartype="int",desc_short="searchz",desc_long="searchz",property=None,defaultunits=0,choices=None)
-		ralt = ParamDef(name="ralt",vartype="float",desc_short="ralt",desc_long="Altitude range",property=None,defaultunits=180.0,choices=None)
-		dalt = ParamDef(name="dalt",vartype="float",desc_short="dalt",desc_long="Altitude delta",property=None,defaultunits=10.0,choices=None)
-		daz = ParamDef(name="daz",vartype="float",desc_short="daz",desc_long="Azimuth delta",property=None,defaultunits=10.0,choices=None)
-		rphi = ParamDef(name="rphi",vartype="float",desc_short="rphi",desc_long="Phi range",property=None,defaultunits=180.0,choices=None)
-		dphi = ParamDef(name="dphi",vartype="float",desc_short="dphi",desc_long="Phi delta",property=None,defaultunits=10.0,choices=None)
-		params.append([targetimage,probeimage])
-		params.append([norm,thresh,nsoln])
-		params.append([searchx,searchy,searchz])
-		params.append([ralt,dalt,daz,rphi,dphi])
-		#db_close_dict("bdb:project")
-		return params
-
-	def write_db_entry(self,key,value):
-		WorkFlowTask.write_db_entry(self,key,value)
-	
-	def check_params(self,params):
-		error_msg = []
-		if len(params["targetimage"]) != 1: error_msg.append("Please choose a single target file to proceed")
-		if len(params["probeimage"]) != 1: error_msg.append("Please choose a single probe file to proceed")
-		return error_msg
-	
-	def on_form_ok(self,params):
-		print params
-		
-		error_message = self.check_params(params)
-		if len(error_message):
-			self.show_error_message(error_message)
-			return
-		
-		self.write_db_entries(params) # will only write filenames
-		options = EmptyObject()
-		string_args = ["dalt","ralt","dphi","rphi","raz","daz","thresh","nsoln","searchx","searchy","searchz"]
-		options.filenames = [params['targetimage'][0], params['probeimage'][0]]
-		options.dalt = params['dalt']
-		options.ralt = params['ralt']
-		options.dphi = params['dphi']
-		options.rphi = params['rphi']
-		options.raz = params['ralt']
-		options.daz = params['dalt']
-		options.thresh = params['thresh']
-		options.nsoln = params['nsoln']
-		options.searchx = params['searchx']
-		options.searchy = params['searchy']
-		options.searchz = params['searchz']
-		bool_args = []
-		additional_args = []
-		temp_file_name = "e2tomohunter_stdout.txt"
-		self.spawn_single_task('e2tomohunter.py',options,string_args,bool_args,additional_args,temp_file_name)
-		self.emit(QtCore.SIGNAL("task_idle"))
-		self.form.closeEvent(None)
-		self.form = None
-	
 	
 class SPRInitTask(WorkFlowTask):
 	'''
@@ -654,6 +580,7 @@ class SPRInitTask(WorkFlowTask):
 
 
 class EMRawDataReportTask(WorkFlowTask):	
+	'''This form displays raw data that are associated with the project. You browse to add raw data, or right click and choose Add.''' 
 	documentation_string = "This forms displays the micrograph and/or ccds images that  you currently have associated with this project"
 	warning_string = "\n\n\nNOTE: There are no images currenty associated with the project. Please associate or import images"
 	def __init__(self):
@@ -690,7 +617,7 @@ class EMRawDataReportTask(WorkFlowTask):
 	
 	def get_raw_data_table_custom(self):
 		'''
-		Calls get_raew_data_table and then adds the Dimensions column
+		Calls get_raw_data_table and then adds the Dimensions column
 		'''
 		table,n = self.get_raw_data_table()
 		from emform import EMFileTable
@@ -820,12 +747,9 @@ class EMRawDataReportTask(WorkFlowTask):
 		params = []
 		
 		p,n = self.get_raw_data_table_custom()
-		
-		if n == 0 and False:
-			params.append(ParamDef(name="blurb",vartype="text",desc_short="Files",desc_long="",property=None,defaultunits=EMRawDataReportTask.documentation_string+EMRawDataReportTask.warning_string,choices=None))
-		else:
-			params.append(ParamDef(name="blurb",vartype="text",desc_short="Files",desc_long="",property=None,defaultunits=EMRawDataReportTask.documentation_string,choices=None))
-			params.append(p)
+
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="Files",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
+		params.append(p)
 			
 		return params
 	
@@ -849,27 +773,7 @@ class EMRawDataReportTask(WorkFlowTask):
 		self.form.closeEvent(None)
 		self.form = None
 		
-class EMTomoRawDataReportTask(EMRawDataReportTask):
-	def __init__(self):
-		EMRawDataReportTask.__init__(self)
-		self.project_list = "global.tomo_raw_file_names"
-		
-	def get_raw_data_table(self):
-		'''
-		Gets an EMTomographicFileTable - this is type of class that the emform knows how to handle 
-		'''
-		project_db = db_open_dict("bdb:project")
-		project_names = project_db.get(self.project_list,dfl=[])
-		self.project_files_at_init = project_names # so if the user hits cancel this can be reset
 
-		from emform import EMTomographicFileTable,EMFileTable
-		table = EMTomographicFileTable(project_names,desc_short="Raw Data Files",desc_long="")
-		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(self.project_list)
-		table.add_context_menu_data(context_menu_data)
-		table.add_button_data(EMRawDataReportTask.ProjectAddRawDataButton(table,context_menu_data))
-	
-		#p.append(pdims) # don't think this is really necessary
-		return table,len(project_names)
 		
 class AddFilesToProjectValidator():
 	def __init__(self,project_list="global.spr_raw_file_names"):
@@ -1461,37 +1365,6 @@ def ptable_convert_3(text):
 def ptable_convert_4(text):
 	return "bdb:initial_models#"+text
 
-class TomoParticleReportTask(WorkFlowTask):
-	documentation_string = "This form display the boxed tomographic particles that you currently have associated with the project"
-	def __init__(self):
-		WorkFlowTask.__init__(self)
-
-	def get_project_particle_table(self):
-		project_db = db_open_dict("bdb:project")
-		particle_list_name = "global.tpr_ptcls"
-		particle_names = project_db.get(particle_list_name,dfl=[])
-		self.project_files_at_init = particle_names # so if the user hits cancel this can be reset
-
-		from emform import EM3DFileTable,EMFileTable
-		table = EM3DFileTable(particle_names,desc_short="Boxed Tomographic Particles",desc_long="")
-		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(particle_list_name)
-		table.add_context_menu_data(context_menu_data)
-		table.add_button_data(EMRawDataReportTask.ProjectAddRawDataButton(table,context_menu_data))
-	#	table.insert_column_data(1,EMFileTable.EMColumnData("Particles On Disk",ParticleReportTask.get_num_ptcls,"Particles currently stored on disk that are associated with this image"))
-		table.insert_column_data(2,EMFileTable.EMColumnData("Particle Dims",ParticleReportTask.get_particle_dims,"The dimensions of the particles that are stored on disk"))
-		
-		return table
-	
-	def get_params(self):
-		params = []
-		
-	
-		table = self.get_project_particle_table()
-		
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=TomoParticleReportTask.documentation_string,choices=None))
-		params.append(table)  
-		
-		return params
 
 class ParticleReportTask(ParticleWorkFlowTask):
 	'''
@@ -1858,87 +1731,7 @@ class E2BoxerAutoTaskGeneral(E2BoxerAutoTask):
 		
 		return params
 	
-class E2TomoBoxerGuiTask(WorkFlowTask):
-	documentation_string = "Select the file you want to process and hit okay, this will launch e2tomoboxer"
-	
-	def __init__(self):
-		WorkFlowTask.__init__(self)
-		self.tomo_boxer_module = None
-	
-	def get_tomo_boxer_basic_table(self):
-		'''
-		
-		Returns a table like this:
-		
-		|| Project image name || Boxes in e2boxer db ||
-		
-		Returns the table, and the the number of entries (p,n)
-		if n is zero there are no entries in the table and the calling function can act appropriately
-		'''
-		
-		self.report_task = EMTomoRawDataReportTask()
-		table,n = self.report_task.get_raw_data_table()# now p is a EMParamTable with rows for as many files as there in the project
-		from emform import EMFileTable
-		table.insert_column_data(0,EMFileTable.EMColumnData("Stored Boxes",E2TomoBoxerGuiTask.get_tomo_boxes_in_database,"Boxes currently stored in the EMAN2 database"))
-		
-		return table, n
 
-	def get_tomo_boxes_in_database(name):
-		return ""
-	
-	get_tomo_boxes_in_database = staticmethod(get_tomo_boxes_in_database)
-	
-	def get_params(self):
-		params = []
-		
-		p,n = self.get_tomo_boxer_basic_table() # note n is unused, it's a refactoring residual		
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="Interactive use of e2boxer",desc_long="",property=None,defaultunits=E2TomoBoxerGuiTask.documentation_string,choices=None))
-		params.append(p)
-#		db = db_open_dict(self.form_db_name)
-#		params.append(ParamDef(name="interface_boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=db.get("interface_boxsize",dfl=128),choices=[]))
-#		#db_close_dict(self.form_db_name)
-		return params
-	
-	def on_form_ok(self,params):
-		
-		if not params.has_key("filenames"):
-			EMErrorMessageDisplay.run(["Please select files for processing"])
-			return
-		
-		if  params.has_key("filenames") and len(params["filenames"]) == 0:
-			EMErrorMessageDisplay.run(["Please select files for processing"])
-			return
-
-#		if  params.has_key("interface_boxsize") and params["interface_boxsize"] < 1:
-#			self.show_error_message(["Must specify a positive, non zero boxsize."])
-#			return
-#		else:
-		self.write_db_entries(params)
-#		options = EmptyObject()
-#		for key in params.keys():
-#			setattr(options,key,params[key])
-#		options.boxsize = params["interface_boxsize"]
-#		options.running_mode = "gui"
-#		options.method = "Swarm"
-		
-		from e2tomoboxer import EMTomoBoxerModule
-		
-		print params["filenames"][0], "is thei file name"
-		self.tomo_boxer_module = EMTomoBoxerModule(params["filenames"][0])
-		self.emit(QtCore.SIGNAL("gui_running"),"Boxer",self.tomo_boxer_module) # The controlled program should intercept this signal and keep the E2BoxerTask instance in memory, else signals emitted internally in boxer won't work
-		
-		QtCore.QObject.connect(self.tomo_boxer_module, QtCore.SIGNAL("module_idle"), self.on_boxer_idle)
-		QtCore.QObject.connect(self.tomo_boxer_module, QtCore.SIGNAL("module_closed"), self.on_boxer_closed)
-		self.form.closeEvent(None)
-		print 'saying show guies'
-		self.tomo_boxer_module.show_guis()
-		self.form = None
-			
-	def write_db_entires(self,params):
-		pass
-
-	def on_boxer_idle(self):pass
-	def on_boxer_closed(self):pass
 
 class E2BoxerGuiTask(E2BoxerTask):	
 	documentation_string = "Select the images you want to box, enter your boxsize, and hit OK. This will lauch e2boxer and automatically load the selected images for boxing."

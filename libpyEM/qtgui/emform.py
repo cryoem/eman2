@@ -587,6 +587,50 @@ class EM2DStackTable(EMFileTable):
 	def module_closed(self,module_instance):
 		self.display_module = None
 		
+class EMPlotTable(EMFileTable):
+	def __init__(self,listed_names=[],name="filenames",desc_short="File Names",desc_long="A list of file names",single_selection=False):
+		'''
+		see EMFileTable for comments on parameters
+		'''
+		EMFileTable.__init__(self,listed_names,name,desc_short,desc_long,single_selection)
+		self.icon = QtGui.QIcon(get_image_directory() + "/plot.png")
+		self.display_module = None
+		self.module_events_manager = None
+	
+#	def __del__(self):
+#		print "2D table dies"
+#	
+	def table_item_double_clicked(self,item):
+		'''
+		See EMFileTable.table_item_double_clicked for comments
+		'''
+		if item.column() != 0: return # only can display files from the first column
+		get_application().setOverrideCursor(Qt.BusyCursor)
+		filename = self.convert_text(str(item.text()))
+		if self.display_module == None:
+			from emimage import EMModuleFromFile
+			self.display_module = EMModuleFromFile(filename,get_application())
+			from emapplication import ModuleEventsManager
+			self.module_events_manager = ModuleEventsManager(self,self.display_module)
+		else:
+			self.display_module.set_data(filename)
+					
+		#self.module().emit(QtCore.SIGNAL("launching_module"),"Browser",module)
+		get_application().show_specific(self.display_module)
+		#self.add_module([str(module),"Display",module])
+		get_application().setOverrideCursor(Qt.ArrowCursor)
+
+	def module_closed(self,module_instance):
+		self.display_module = None
+		
+	def num_plot_entries(filename):
+		try:
+			f = file(filename,"r")
+			lines = f.readlines()
+			return str(len(lines))
+		except:
+			return "Error"
+	num_plot_entries = staticmethod(num_plot_entries)
 
 class EM2DStackExamineTable(EM2DStackTable):
 	'''
@@ -989,8 +1033,9 @@ class EMFormWidget(QtGui.QWidget):
 				label.setToolTip(param.desc_long)
 				hbl.addWidget(label)
 				pos_int_validator = QtGui.QIntValidator(target)
-				line_edit = QtGui.QLineEdit(str(param.defaultunits),target)
+				line_edit = QtGui.QLineEdit("",target)
 				line_edit.setValidator(pos_int_validator)
+				line_edit.setText(str(param.defaultunits))
 				hbl.addWidget(line_edit,0)
 				hbl.name = param.name
 				layout.addLayout(hbl)

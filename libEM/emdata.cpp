@@ -862,109 +862,15 @@ void EMData::translate(const Vec3f &translation)
 {
 	ENTERFUNC;
 
-	//if traslation is 0, do nothing
 	if( translation[0] == 0.0f && translation[1] == 0.0f && translation[2] == 0.0f ) {
 		EXITFUNC;
 		return;
 	}
 
-	float *this_data = get_data();
-	EMData *tmp_emdata = copy();
+	Transform* t = new Transform();
+	t->set_trans(translation);
+	process_inplace("math.transform",Dict("transform",t));
 
-	int x0, x1, x2;
-	if( translation[0] < 0 ) {
-		x0 = 0;
-		x1 = nx;
-		x2 = 1;
-	}
-	else {
-		x0 = nx-1;
-		x1 = -1;
-		x2 = -1;
-	}
-
-	int y0, y1, y2;
-	if( translation[1] < 0 ) {
-		y0 = 0;
-		y1 = ny;
-		y2 = 1;
-	}
-	else {
-		y0 = ny-1;
-		y1 = -1;
-		y2 = -1;
-	}
-
-	int z0, z1, z2;
-	if( translation[2] < 0 ) {
-		z0 = 0;
-		z1 = nz;
-		z2 = 1;
-	}
-	else {
-		z0 = nz-1;
-		z1 = -1;
-		z2 = -1;
-	}
-
-	if( nz == 1 ) 	//2D translation
-	{
-		int tx = Util::round((Vec3f::type)translation[0]);
-		int ty = Util::round((Vec3f::type)translation[1]);
-		float ftx = translation[0];
-		float fty = translation[1];
-		int xp, yp;
-		for (int y = y0; y != y1; y += y2) {
-			for (int x = x0; x != x1; x += x2) {
-				xp = x - tx;
-				yp = y - ty;
-
-				if (xp < 0 || yp < 0 || xp >= nx || yp >= ny) {
-					this_data[x + y * nx] = 0;
-				}
-				else {
-					float fxp = static_cast<float>(x) - ftx;
-					float fyp = static_cast<float>(y) - fty;
-					this_data[x + y * nx] = tmp_emdata->sget_value_at_interp(fxp, fyp);
-				}
-			}
-		}
-	}
-	else 	//3D translation
-	{
-		int tx = Util::round((Vec3f::type)translation[0]);
-		int ty = Util::round((Vec3f::type)translation[1]);
-		int tz = Util::round((Vec3f::type)translation[2]);
-		float ftx = translation[0];
-		float fty = translation[1];
-		float ftz = translation[2];
-		int xp, yp, zp;
-		for (int z = z0; z != z1; z += z2) {
-			for (int y = y0; y != y1; y += y2) {
-				for (int x = x0; x != x1; x += x2) {
-					xp = x - tx;
-					yp = y - ty;
-					zp = z - tz;
-					if (xp < 0 || yp < 0 || zp<0 || xp >= nx || yp >= ny || zp >= nz) {
-						this_data[x + y * nx] = 0;
-					}
-					else {
-						float fxp = static_cast<float>(x) - ftx;
-						float fyp = static_cast<float>(y) - fty;
-						float fzp = static_cast<float>(z) - ftz;
-						this_data[x + y * nx + z * nx * ny] = tmp_emdata->sget_value_at_interp(fxp, fyp, fzp);
-					}
-				}
-			}
-		}
-
-	}
-
-	if( tmp_emdata ) {
-		delete tmp_emdata;
-		tmp_emdata = 0;
-	}
-	update();
 	all_translation += translation;
 	EXITFUNC;
 }

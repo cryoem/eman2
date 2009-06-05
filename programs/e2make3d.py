@@ -42,6 +42,8 @@ import os
 import sys
 import math
 import random
+HEADER_ONLY=True
+HEADER_AND_DATA=False
 
 
 CONTRIBUTING_PARTICLE_LIMIT = 1000000
@@ -90,8 +92,10 @@ def print_usage():
 
 def main():
 	parser=OptionParser(usage=get_usage())
-	parser.add_option("--out", dest="outfile", default="threed.mrc", help="Output reconstructed volume file name.")
-	parser.add_option("--sym", dest="sym", default="UNKNOWN", help="Set the symmetry; if no value is given then the model is assumed to have no symmetry.\nChoices are: i, c, d, tet, icos, or oct.")
+	parser.add_option("--output", default="threed.mrc", help="Output reconstructed volume file name.")
+	parser.add_option("--input", default=None, help="The input projections. Project should usually have the xform.projection header attribute, which is used for slice insertion")
+
+	parser.add_option("--sym", dest="sym", default="c1", help="Set the symmetry; if no value is given then the model is assumed to have no symmetry.\nChoices are: i, c, d, tet, icos, or oct.")
 	parser.add_option("--recon", dest="recon_type", default="fourier", help="Reconstructor to use see e2help.py reconstructors -v. Default is fourier using mode 2.")
 	parser.add_option("--verbose", "-v",dest="verbose",default=False, action="store_true",help="Toggle verbose mode - prints extra infromation to the command line while executing.")
 	parser.add_option("--keep", type=float, dest="keep", help="The percentage of slices to keep, based on quality scores.")
@@ -103,7 +107,8 @@ def main():
 	parser.add_option("--nofilecheck",action="store_true",help="Turns file checking off in the check functionality - used by e2refine.py.",default=False)
 	parser.add_option("--check","-c",action="store_true",help="Performs a command line argument check only.",default=False)
 	parser.add_option("--lowmem",action="store_true",help="Causes images to be loaded as the are inserted into the 3D volume, as opposed to having them all read and stored in memory for the duration of the program.",default=False)
-
+	parser.add_option("--tlt", help="An imod tlt containing alignment angles. If specified slices will be inserted using these angles", type="string", default=None)
+	
 	parser.add_option("--preprocess", metavar="processor_name(param1=value1:param2=value2)", type="string", action="append", help="preprocessor to be applied to the projections prior to 3D insertion. There can be more than one preprocessor and they are applied in the order in which they are specifed. Applied before padding occurs. See e2help.py processors for a complete list of available processors.")
 	parser.add_option("--postprocess", metavar="processor_name(param1=value1:param2=value2)", type="string", action="append", help="postprocessor to be applied to the 3D volume once the reconstruction is completed. There can be more than one postprocessor, and they are applied in the order in which they are specified. See e2help.py processors for a complete list of available processors.")
 	
@@ -117,10 +122,9 @@ def main():
 	if options.nofilecheck: options.check = True
 	
 	# make sure that the user has atleast specified an input file
-	if len(args) <1:
-		parser.error("No input file specified")
-	options.datafile = args[0]
-	options.input_file = args[0]
+#	if len(args) <1:
+#		parser.error("No input file specified")
+#	options.input = args[0]
 	
 	if (not options.keep and not options.keepsig):
 		print "Warning, neither the keep nor the keepsig argument was specified. Setting keep=1 (keeping 100% of inserted slices)"
@@ -131,6 +135,19 @@ def main():
 	# Check for potential errors be examining the contents of the options
 	error = check(options,True)
 	
+	if options.tlt:# the check function makes everyone I assume about the tlt aspect true
+		options.nx,options.ny,options.nz = gimme_image_dimensions3D(options.input)
+		options.no_wt = True
+		angles = None
+		f=file(options.tlt,'r')
+		lines=f.readlines()
+		angles=[]
+		for line in lines:
+			angles.append(float(line))
+			
+		options.angles = angles
+		 
+	
 	# If there were errors then exit
 	if (options.verbose):
 		if (error):
@@ -140,19 +157,20 @@ def main():
 	if error : exit(1)
 	# e2refine is sensitive to the return code, so it's important that 0 is returned here
 	if options.check: exit(0)
+	
 
 	logger=E2init(sys.argv)
 	
 	# just remove the output file - if the user didn't specify force then the error should have been found in the check function
-	if file_exists(options.outfile):
+	if file_exists(options.output):
 		if options.force:
-			remove_file(options.outfile)
+			remove_file(options.output)
 		else: 
 			print "foo, this error should have already been found in check"
 			exit(1)
 	
 	# store image dimensions early on - it saves lots of time at other stages in the code
-	(xsize, ysize ) = gimme_image_dimensions2D( options.input_file );
+	(xsize, ysize ) = gimme_image_dimensions2D( options.input );
 	options.xsize = xsize
 	options.ysize = ysize
 	options.zsize = xsize
@@ -165,7 +183,8 @@ def main():
 	# if we don't have to be careful about memory, store all the images in memory now
 	if (options.lowmem == False):
 		images = []
-		total_images=EMUtil.get_image_count(options.input_file)
+		if options.tlt: total_images = options.nz
+		else: total_images=EMUtil.get_image_count(options.input)
 		force_read = True
 		for i in range(0,total_images):
 			images.append(get_processed_image(options,i,force_read))
@@ -259,9 +278,9 @@ def main():
 		output.set_attr("apix_y",apix)
 		output.set_attr("apix_z",apix)
 	
-	output.write_image(options.outfile,0)
+	output.write_image(options.output,0)
 	if options.verbose:
-			print "Output File: "+options.outfile
+			print "Output File: "+options.output
 
 	E2end(logger)
 	
@@ -272,7 +291,12 @@ def main():
 def get_processed_image(options,i, force_read_from_disk=False):
 	if (options.lowmem or force_read_from_disk):
 		d = EMData()
-		d.read_image(options.input_file, i)
+		if options.tlt:
+			roi=Region(0,0,i,options.nx,options.ny,1)
+			d.read_image(options.input,0, HEADER_AND_DATA, roi)
+			d.set_attr("xform.projection",Transform({"type":"eman","az":90,"alt":options.angles[i],"phi":90}))
+		else:
+			d.read_image(options.input, i)
 		
 		if options.preprocess != None:
 			for p in options.preprocess:
@@ -345,7 +369,8 @@ def bw_reconstruction(options):
 	recon.insert_params(params)
 	recon.setup()
 	
-	total_images=EMUtil.get_image_count(options.input_file)
+	if options.tlt: total_images = options.nz
+	else: total_images=EMUtil.get_image_count(options.input)
 	
 	
 	if (options.verbose):
@@ -353,7 +378,7 @@ def bw_reconstruction(options):
 
 	for i in xrange(0,total_images):
 		d = EMData()
-		d.read_image(options.input_file, i, True)
+		d.read_image(options.input, i, True)
 		t = d.get_attr("xform.projection")
 		recon.insert_slice_weights(t)
 	
@@ -394,7 +419,8 @@ def back_projection_reconstruction(options):
 	recon.insert_params(params)
 	recon.setup()
 
-	total_images=EMUtil.get_image_count(options.input_file)
+	if options.tlt: total_images = options.nz
+	else: total_images=EMUtil.get_image_count(options.input)
 	
 	for i in xrange(total_images):
 		d = get_processed_image(options,i)
@@ -440,10 +466,11 @@ def fourier2D_reconstruction(options):
 	recon.insert_params(params)
 	recon.setup()
 	
-	total_images=EMUtil.get_image_count(options.input_file)
+	if options.tlt: raise NotImplementedException("The 2D reconstruction does not work the the tlt option")
+	
+	total_images=EMUtil.get_image_count(options.input)
 	
 	for i in xrange(0,total_images):
-		print i
 		image = get_processed_image(options,i)
 	
 		transform = Transform({"type":"2d","alpha":image.get_attr("euler_alt")})
@@ -508,8 +535,10 @@ def fourier_reconstruction(options):
 	recon.insert_params(params)
 	recon.setup()
 	
-	try: total_images=EMUtil.get_image_count(options.input_file)
-	except: total_images=len(options.images)
+	if options.tlt: total_images = options.nz
+	else: 
+		try: total_images=EMUtil.get_image_count(options.input)
+		except: total_images=len(options.images)
 
 	if (options.verbose):
 		print "Inserting Slices"
@@ -524,12 +553,16 @@ def fourier_reconstruction(options):
 			for i in range(total_images):
 				image = get_processed_image(options,i)
 				
-				num_img=image.get_attr("ptcl_repr")
-				ptcl_repr.append(num_img) 
-				if (num_img<=0 and options.no_wt == False):
-					continue
+				if image.has_attr("ptcl_repr"):
+					num_img=image.get_attr("ptcl_repr")
 				else:
-					num_img = 1
+					num_img = 0
+				ptcl_repr.append(num_img) 
+				if image.has_attr("ptcl_repr"):
+					if (num_img<=0 and options.no_wt == False):
+						continue
+					else:
+						num_img = 1
 				
 				if ( options.no_wt == False ):
 					weight = float (num_img)
@@ -537,7 +570,6 @@ def fourier_reconstruction(options):
 					recon.insert_params(weight_params)
 				
 				t = image.get_attr("xform.projection")
-				print t
 				recon.determine_slice_agreement(image,t,num_img)
 				tot += 1
 				if options.verbose:
@@ -585,9 +617,10 @@ def fourier_reconstruction(options):
 			#print i
 			image = get_processed_image(options,i)
 			
-			if (image.get_attr("ptcl_repr")<=0 and options.no_wt == False):
-				continue
-			
+			if image.has_attr("ptcl_repr"):
+				if (image.get_attr("ptcl_repr")<=0 and options.no_wt == False):
+					continue
+				
 			if ( options.no_wt == False ):
 				weight = float (image.get_attr("ptcl_repr"))
 				weight_params = {"weight":weight}
@@ -596,10 +629,13 @@ def fourier_reconstruction(options):
 			t = image.get_attr("xform.projection")
 			r = t.get_params("eman")
 			failure = recon.insert_slice(image,t)
-				
+			
+			ptcl_repr = 0
+			if image.has_attr("ptcl_repr"):
+				ptcl_repr = image.get_attr("ptcl_repr")
 			if (options.verbose):
 				sys.stdout.write( "%2d/%d  %3d\t%5.1f  %5.1f  %5.1f\t\t%6.2f %6.2f" %
-								(i,total_images, image.get_attr("ptcl_repr"),
+								(i,total_images, ptcl_repr,
 								r["az"],r["alt"],r["phi"],
 								image.get_attr("maximum"),image.get_attr("minimum")))
 				if ( j > 0):
@@ -627,10 +663,10 @@ def check(options,verbose=False):
 	
 	error = False
 	
-	#if ( not options.sym ):
-		#if verbose:
-			#print  "Error: you must specify the sym argument"
-		#error = True
+	if ( not options.sym ):
+		if verbose:
+			print  "Error: you must specify the sym argument"
+		error = True
 	
 	if ( options.iter < 0 ):
 		if verbose:
@@ -656,9 +692,9 @@ def check(options,verbose=False):
 		error = True
 	
 	if ( options.nofilecheck == False ):
-		if not file_exists(options.datafile):
+		if not file_exists(options.input):
 			if verbose:
-				print  "Error: the 2D image data file (%s) does not exist, cannot run e2make3d.py" %(options.datafile)
+				print  "Error: the 2D image data file (%s) does not exist, cannot run e2make3d.py" %(options.input)
 			error = True
 		else:
 			pad_dims = parse_pad(options.pad)
@@ -668,7 +704,7 @@ def check(options,verbose=False):
 						print  "Error, could not interpret the --pad argument, got",pad_dims
 					error = True
 				else:
-					(xsize, ysize ) = gimme_image_dimensions2D(options.datafile);
+					(xsize, ysize ) = gimme_image_dimensions2D(options.input);
 					if ( len(pad_dims) == 1 ) :
 						pad = pad_dims[0]
 						if pad < xsize or pad < ysize :
@@ -687,27 +723,52 @@ def check(options,verbose=False):
 								print  "Error, you specified a y padding size (%d) that was smaller than the y dimension of the image (%d)"%(ypad,ysize)
 							error = True
 		
-		if ( file_exists(options.outfile )):
+		if ( file_exists(options.output )):
 			if ( not options.force ):
 				if verbose:
 					print  "Error: The output file exists and will not be written over. Use -f to overwrite"
 				error = True
+		
+		
+		if options.tlt != None:
+			angles = None
+			try:
+				f=file(options.tlt,'r')
+				lines=f.readlines()
+				angles=[]
+				for line in lines:
+					angles.append(float(line))
+					
+			except:
+				print "Error: the tlt file (%s) is un-interpretable." %options.tlt
+				error = True
+				
+			if angles != None:
+				# we assume that when the user is supplying a tlt file that the input is a 3D
+				# image (such as an ali file). This could be different but I am rushed
+				nx,ny,nz = gimme_image_dimensions3D(options.input)
+				if nz != len(angles):
+					print "Error: the tlt file (%s) has %d angles, but the image has %d slices. These two numbers need to be the same" %(options.tlt,len(angles),nz)
+					error = True
 			
 	
 	# if weighting is being used, this code checks to make sure atleast one image has an attribute "ptcl_repr" that is
 	# greater than zero. If this is not the case, the insertion code will think there is nothing to insert...
 	if ( options.no_wt == False and not options.nofilecheck):
-		total_images=EMUtil.get_image_count(options.input_file)
+		total_images=EMUtil.get_image_count(options.input)
 		ptcl_repr = False;
 		# A sanity test
-		for i in xrange(0,total_images):
-			image = EMData()
-			read_header_only = True
-			image.read_image(options.input_file, i, read_header_only)
-			num_img=image.get_attr("ptcl_repr") 
-			if (num_img > 0):
-				ptcl_repr = True;
-				break
+		if not options.tlt:
+			for i in xrange(0,total_images):
+				image = EMData()
+				read_header_only = True
+				image.read_image(options.input, i, read_header_only)
+				num_img=image.get_attr("ptcl_repr") 
+				if (num_img > 0):
+					ptcl_repr = True;
+					break
+		else:
+			ptcl_repr = True
 		
 		if (ptcl_repr == False):
 			print "Error - no image ptcl_repr attribute encountered that was greater than 0 - nothing done"

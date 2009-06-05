@@ -36,6 +36,7 @@ from PyQt4.QtCore import Qt
 import os
 from emapplication import EMQtWidgetModule,ModuleEventsManager
 from emsprworkflow import *
+from emtprworkflow import *
 from emselector import EMBrowserModule
 from e2boxer import EMBoxerModule
 from EMAN2 import process_running,kill_process
@@ -612,7 +613,8 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		
 		tomo_list = []
 		
-		tomo_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Raw Tomogram Files")))
+		rd = QtGui.QTreeWidgetItem(QtCore.QStringList("Raw Tomogram Files"))
+		tomo_list.append(rd)
 		tomo_list[-1].setIcon(0,self.icons["single_image_3d"])
 		
 		self.launchers["Raw Tomogram Files"] = self.launch_tomo_raw_files
@@ -625,6 +627,13 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		tomo_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Tomohunter")))
 		self.launchers["Tomohunter"] = self.launch_tomohunter
 		
+		rd_list = []
+		rd_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Reconstruct ALI File")))
+		self.launchers["Reconstruct ALI File"] = self.launch_reconstruct_ali
+		rd_list[0].setIcon(0,self.icons["single_image_3d"])
+		rd.addChildren(rd_list)
+		
+		
 		ap_list = []
 		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Interactive Boxing - e2tomoboxer")))
 		self.launchers["Interactive Boxing - e2tomoboxer"] = self.launch_e2tomoboxer_gui
@@ -633,9 +642,12 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		
 		tomo.addChildren(tomo_list)
 		
+		tree_widget.expandItem(rd)
 		tree_widget.expandItem(ap)
-		
 		return tomo
+	
+	def launch_reconstruct_ali(self):
+		 self.launch_task(EMReconstructAliFile(),"Reconstruct ALI File")
 		
 	def task_killed(self,module_string,module):
 		module.closeEvent(None)
@@ -862,7 +874,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	def launch_make_ptcl_set(self):	self.launch_task(E2MakeStackChooseDataTask(),"Build Particle Set")
 	def launch_examine_particle_stacks(self): self.launch_task(E2ParticleExamineChooseDataTask(),"Examine Particles")
 	def launch_particle_report(self): self.launch_task(ParticleReportTask(),"Particle Report")
-	def launch_tomo_particle_report(self): self.launch_task(TomoParticleReportTask(),"Tomogram Particle Report")
+	def launch_tomo_particle_report(self): self.launch_task(EMTomoParticleReportTask(),"Tomogram Particle Report")
 #	def launch_particle_import(self):self.launch_task(ParticleImportTask(),"Import particles")
 		
 	def launch_mic_ccd_report(self): self.launch_task(EMRawDataReportTask(),"Raw Data")
@@ -882,7 +894,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	def launch_tomography(self):
 		self.launch_task(EMTomoRawDataReportTask(),"Tomo Raw Data")
 	def launch_tomohunter(self):
-		self.launch_task(TomohunterTask(),"Tomohunter")
+		self.launch_task(EMTomohunterTask(),"Tomohunter")
 	def launch_tomo_raw_files(self):
 		self.launch_task(EMTomoRawDataReportTask(),"Tomo Raw Data")
 			

@@ -7606,7 +7606,7 @@ void IntTranslateProcessor::process_inplace(EMData* image) {
 
 	Region clip_region = get_clip_region(translation,image);
 
-	image->clip_inplace(clip_region);
+	image->clip_inplace(clip_region,0);
 	// clip_inplace does the update!
 }
 
