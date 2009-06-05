@@ -45,6 +45,7 @@ import time
 import socket
 import sys
 import random
+import traceback
 
 # used to make sure servers and clients are running the same version
 EMAN2PARVER=3
@@ -66,18 +67,37 @@ class EMTaskCustomer:
 		else : self.addr[1]=int(self.addr[1])
 		self.addr=tuple(self.addr)
 
+	def wait_for_server(self,delay=10):
+		print "%s: Server communication failure, sleeping %d secs"%(time.ctime(),delay)
+		time.sleep(delay)
+		try:
+			x=EMDCsendonecom(self.addr,"TEST",None)
+			if (x=="TEST") : 
+				print "%s: Server is ok now"%time.ctime()
+				return
+		except: pass
+		
+		self.wait_for_server(delay*2)
+		return
+
 	def cpu_est(self):
 		"""Returns an estimate of the number of available CPUs based on the number
 		of different nodes we have talked to. Doesn't handle multi-core machines as
 		separate entities yet"""
 		if self.servtype=="dc" :
-			return EMDCsendonecom(self.addr,"NCPU",None)
+			try :return EMDCsendonecom(self.addr,"NCPU",None)
+			except:
+				self.wait_for_server()
+				return EMDCsendonecom(self.addr,"NCPU",None)
 
 	def new_group(self):
 		"""request a new group id from the server for use in grouping subtasks"""
 		
 		if self.servtype=="dc" :
-			return EMDCsendonecom(self.addr,"NGRP",None)
+			try: return EMDCsendonecom(self.addr,"NGRP",None)
+			except:
+				self.wait_for_server()
+				return EMDCsendonecom(self,addr,"NCPU",None)
 
 	def send_task(self,task):
 		"""Send a task to the server. Returns a taskid."""
@@ -93,7 +113,12 @@ class EMTaskCustomer:
 			except: pass
 		
 		if self.servtype=="dc" :
-			return EMDCsendonecom(self.addr,"TASK",task)
+			try: return EMDCsendonecom(self.addr,"TASK",task)
+			except:
+				traceback.print_exc()
+				print "***************************  ERROR SENDING TASK"
+				self.wait_for_server()
+				return EMDCsendonecom(self.addr,"TASK",task)
 
 		raise Exception,"Unknown server type"
 
@@ -101,30 +126,38 @@ class EMTaskCustomer:
 		"""Check on the status of a list of tasks. Returns a list of ints, -1 to 100. -1 for a task
 		that hasn't been started. 0-99 for tasks that have begun, but not completed. 100 for completed tasks."""
 		if self.servtype=="dc":
-			return EMDCsendonecom(self.addr,"STAT",taskid_list)
-			
+			try: return EMDCsendonecom(self.addr,"STAT",taskid_list)
+			except:
+				self.wait_for_server()
+				return EMDCsendonecom(self.addr,"STAT",taskid_list)
+				
 		raise Exception,"Unknown server type"
 	
 	def get_results(self,taskid):
 		"""Get the results for a completed task. Returns a tuple with the task object and dictionary."""
 		if self.servtype=="dc":
-			sock,sockf=openEMDCsock(self.addr,retry=10)
-			sockf.write("RSLT")
-			sendobj(sockf,taskid)
-			sockf.flush()
-			
-			task=recvobj(sockf)
-			
-			k=0
-			rd={}
-			while 1:
-				k=recvobj(sockf)
-				if k==None: break
-				v=recvobj(sockf)
-				rd[k]=v
-			
-			return (task,rd)
-		
+			try:
+				sock,sockf=openEMDCsock(self.addr,retry=10)
+				sockf.write("RSLT")
+				sendobj(sockf,taskid)
+				sockf.flush()
+				
+				task=recvobj(sockf)
+				
+				k=0
+				rd={}
+				while 1:
+					k=recvobj(sockf)
+					if k==None: break
+					v=recvobj(sockf)
+					rd[k]=v
+				
+				return (task,rd)
+			except:
+				traceback.print_exc()
+				print "***************************  ERROR RETRIEVING RESULTS"
+				self.wait_for_server()
+				return self.get_results(taskid)
 
 class EMTaskHandler:
 	"""This is the actual server object which talks to clients and customers. It coordinates task execution

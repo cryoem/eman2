@@ -40,6 +40,7 @@ import signal
 import sys
 import fnmatch
 import random
+import traceback
 try:
 	from bsddb3 import db
 except:
@@ -878,10 +879,12 @@ class DBDict:
 
 			try: self.bdb.put(dumps(key,-1),dumps(ad,-1),txn=self.txn)
 			except:
-				print "Warning: problem writing ",key," to ",self.name,". Retrying"
+				traceback.print_exc()
+				print "********** Warning: problem writing ",key," to ",self.name,". Retrying"
 				try: self.bdb.put(dumps(key,-1),dumps(ad,-1),txn=self.txn)
 				except: 
-					print "Error: failed a second time. Something is wrong."
+					traceback.print_exc()
+					print "********* Error: failed a second time. Something is wrong."
 					return
 					
 			if not self.has_key("maxrec") or key>self["maxrec"] : self["maxrec"]=key
@@ -893,12 +896,14 @@ class DBDict:
 		else :
 			try: self.bdb.put(dumps(key,-1),dumps(val,-1),txn=self.txn)
 			except:
-				print "Warning: problem writing ",key," to ",self.name,". Retrying"
+				traceback.print_exc()
+				print "********** Warning: problem writing ",key," to ",self.name,". Retrying"
 				try: self.bdb.put(dumps(key,-1),dumps(val,-1),txn=self.txn)
 				except: 
-					print "Error: failed a second time. Something is wrong."
+					traceback.print_exc()
+					print "********** Error: failed a second time. Something is wrong."
 					return
-			if isinstance(key,int) and (not self.has_key("maxrec") or key>self["maxrec"]) : self["maxrec"]=key
+#			if isinstance(key,int) and (not self.has_key("maxrec") or key>self["maxrec"]) : self["maxrec"]=key
 				
 	def __getitem__(self,key):
 		self.open(self.rohint)
@@ -1046,10 +1051,12 @@ class DBDict:
 
 			try: self.bdb.put(dumps(key,-1),dumps(ad,-1),txn=txn)
 			except:
-				print "Warning: problem writing ",key," to ",self.name,". Retrying"
+				traceback.print_exc()
+				print "*********** Warning: problem writing ",key," to ",self.name,". Retrying"
 				try: self.bdb.put(dumps(key,-1),dumps(ad,-1),txn=self.txn)
 				except: 
-					print "Error: failed a second time. Something is wrong."
+					traceback.print_exc()
+					print "*********** Error: failed a second time. Something is wrong."
 					return
 
 			if not self.has_key("maxrec") or key>self["maxrec"] : self["maxrec"]=key
@@ -1059,8 +1066,16 @@ class DBDict:
 			val.write_data(pkey+fkey,n*4*ad["nx"]*ad["ny"]*ad["nz"])
 			
 		else :
-			self.bdb.put(dumps(key,-1),dumps(val,-1),txn=txn)
-			if isinstance(key,int) and (not self.has_key("maxrec") or key>self["maxrec"]) : self["maxrec"]=key
+			try: self.bdb.put(dumps(key,-1),dumps(val,-1),txn=txn)
+			except:
+				traceback.print_exc()
+				print "**********# Warning: problem writing ",key," to ",self.name,". Retrying"
+				try: self.bdb.put(dumps(key,-1),dumps(val,-1),txn=self.txn)
+				except: 
+					traceback.print_exc()
+					print "*********# Error: failed a second time. Something is wrong."
+					return
+#			if isinstance(key,int) and (not self.has_key("maxrec") or key>self["maxrec"]) : self["maxrec"]=key
 
 	def set_header(self,key,val,txn=None):
 		"Alternative to x[key]=val with transaction set"
