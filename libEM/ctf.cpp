@@ -928,8 +928,8 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 				else {
 					bg=background[j]*(1.0f-f)+background[j+1]*f;
 					snrf=snr[j]*(1.0f-f)+snr[j+1]*f;
-//					d[x*2+ynx]=sqrt(snrf/bg)/(snrf+1.0);	// Note that this is a Wiener filter with a 1/CTF term to compensate for the filtration already applied, but needs to be multiplied by the structure factor
-					d[x*2+ynx]=snrf/(snrf+1);	// This is just the simple Wiener filter
+					d[x*2+ynx]=sqrt(snrf/bg)/(snrf+1.0);	// Note that this is a Wiener filter with a 1/CTF term to compensate for the filtration already applied, but needs to be multiplied by the structure factor
+//					d[x*2+ynx]=snrf/(snrf+1);	// This is just the simple Wiener filter
 				}
 				d[x * 2 + ynx + 1] = 0;
 			}

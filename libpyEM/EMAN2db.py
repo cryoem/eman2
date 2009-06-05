@@ -54,6 +54,7 @@ except:
 
 # Flags used to open the database environment
 envopenflags=db.DB_CREATE|db.DB_INIT_MPOOL|db.DB_INIT_LOCK|db.DB_INIT_LOG|db.DB_THREAD
+#envopenflags=db.DB_CREATE|db.DB_INIT_MPOOL|db.DB_INIT_LOCK|db.DB_INIT_LOG|db.DB_THREAD|db.DB_REGISTER|db.DB_RECOVER
 
 # If set, databases will be opened without any caching, locking, etc.
 # DANGER, unless DB is single-threaded and local, don't do any writing
@@ -881,8 +882,9 @@ class DBDict:
 			except:
 				traceback.print_exc()
 				print "********** Warning: problem writing ",key," to ",self.name,". Retrying"
+				time.sleep(2)
 				try: self.bdb.put(dumps(key,-1),dumps(ad,-1),txn=self.txn)
-				except: 
+				except:
 					traceback.print_exc()
 					print "********* Error: failed a second time. Something is wrong."
 					return
@@ -898,6 +900,7 @@ class DBDict:
 			except:
 				traceback.print_exc()
 				print "********** Warning: problem writing ",key," to ",self.name,". Retrying"
+				time.sleep(2)
 				try: self.bdb.put(dumps(key,-1),dumps(val,-1),txn=self.txn)
 				except: 
 					traceback.print_exc()
@@ -1053,6 +1056,7 @@ class DBDict:
 			except:
 				traceback.print_exc()
 				print "*********** Warning: problem writing ",key," to ",self.name,". Retrying"
+				time.sleep(2)
 				try: self.bdb.put(dumps(key,-1),dumps(ad,-1),txn=self.txn)
 				except: 
 					traceback.print_exc()
@@ -1070,6 +1074,7 @@ class DBDict:
 			except:
 				traceback.print_exc()
 				print "**********# Warning: problem writing ",key," to ",self.name,". Retrying"
+				time.sleep(2)
 				try: self.bdb.put(dumps(key,-1),dumps(val,-1),txn=self.txn)
 				except: 
 					traceback.print_exc()

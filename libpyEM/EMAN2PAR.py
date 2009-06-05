@@ -357,8 +357,8 @@ def runEMDCServer(port,verbose):
 	else :
 		for port in range(9990,10000):
 			try: 
-#				server = SocketServer.TCPServer(("", port), EMDCTaskHandler)
-				server = SocketServer.ThreadingTCPServer(("", port), EMDCTaskHandler)
+				server = SocketServer.TCPServer(("", port), EMDCTaskHandler)
+#				server = SocketServer.ThreadingTCPServer(("", port), EMDCTaskHandler)
 				print "Server started on %s port %d"%(socket.gethostname(),port)
 			except:
 				if verbose: print "Port %d unavailable"%port
@@ -605,14 +605,20 @@ class EMDCTaskClient(EMTaskClient):
 		while (1):
 			# connect to the server
 			if self.verbose>1 : print "Connect to (%s,%d)"%self.addr
-			sock,sockf=openEMDCsock(self.addr,clientid=self.myid,retry=10)
-			sockf.write("RDYT")
-			sendobj(sockf,None)
-			sockf.flush()
+			try :
+				sock,sockf=openEMDCsock(self.addr,clientid=self.myid,retry=10)
+				sockf.write("RDYT")
+				sendobj(sockf,None)
+				sockf.flush()
 			
-			# Get a task from the server
-			task=recvobj(sockf)
-			sockf.write("ACK ")
+				# Get a task from the server
+				task=recvobj(sockf)
+				sockf.write("ACK ")
+			except :
+				print "No response from server, sleeping 60 sec"
+				time.sleep(60)
+				continue
+
 			if task==None:
 				if self.verbose : print "No tasks to run :^("
 				sockf.close()
@@ -649,8 +655,15 @@ class EMDCTaskClient(EMTaskClient):
 			# Return results
 			if self.verbose>1 : print "Task done "
 			if self.verbose>3 : print self.__dict__
-			sock,sockf=openEMDCsock(self.addr,clientid=self.myid,retry=10)
-			sockf.write("DONE")
+			try:
+				sock,sockf=openEMDCsock(self.addr,clientid=self.myid,retry=10)
+				sockf.write("DONE")
+			except:
+				print "Server communication failure, trying again in 2 minutes"
+				time.sleep(120)
+				sock,sockf=openEMDCsock(self.addr,clientid=self.myid,retry=10)
+				sockf.write("DONE")
+
 			sendobj(sockf,task.taskid)
 
 			for k,v in ret.items():
