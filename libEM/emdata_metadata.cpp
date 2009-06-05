@@ -201,7 +201,7 @@ float* EMData::get_data() const
 		{
 			stringstream ss;
 			string gigs;
-			ss << (float) get_size()/1000000000.0;
+			ss << num_bytes/1000000000.0;
 			ss >> gigs;
 			string message = "Cannot allocate " + gigs + " GB - not enough memory.";
 			throw BadAllocException(message);
