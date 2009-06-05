@@ -72,7 +72,7 @@ class EMTaskCustomer:
 		time.sleep(delay)
 		try:
 			x=EMDCsendonecom(self.addr,"TEST",None)
-			if (x=="TEST") : 
+			if (x[0]=="TEST") : 
 				print "%s: Server is ok now"%time.ctime()
 				return
 		except: pass
