@@ -152,6 +152,8 @@ class EMTaskCustomer:
 					v=recvobj(sockf)
 					rd[k]=v
 				
+				print "TASK ",task.__dict__
+				print "RESULT ",rd
 				return (task,rd)
 			except:
 				traceback.print_exc()
@@ -642,7 +644,8 @@ class EMDCTaskClient(EMTaskClient):
 #				ret={"error (%d)"%task.taskid:err}
 
 			# Return results
-			if self.verbose>1 : print "Task done"
+			if self.verbose>1 : print "Task done "
+			if self.verbose>2 : print self.__dict__
 			sock,sockf=openEMDCsock(self.addr,clientid=self.myid,retry=10)
 			sockf.write("DONE")
 			sendobj(sockf,task.taskid)
@@ -655,8 +658,9 @@ class EMDCTaskClient(EMTaskClient):
 			sockf.flush()
 			sockf.close()
 			sock.close()
+			if verbose>2 : print "Results :",ret
 			
-			time.sleep(5)
+			time.sleep(3)
 			
 	def get_data(self,sockf,did,imnum):
 		"""request data from the server on an open connection"""
