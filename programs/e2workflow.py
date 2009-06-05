@@ -367,6 +367,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.icons["plot"] = QtGui.QIcon(get_image_directory() + "plot.png")
 		self.icons["display_icon"] = QtGui.QIcon(get_image_directory() + "display_icon.png")		
 		self.icons["feather"] = QtGui.QIcon(get_image_directory() + "feather.png")
+		self.icons["classes"] = QtGui.QIcon(get_image_directory() + "classes.png")
 		
 	def __get_spr_tree(self,tree_widget):
 		
@@ -402,7 +403,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.launchers["Particle Sets"] = self.launch_mis_report
 		refine2d = QtGui.QTreeWidgetItem(QtCore.QStringList("Reference Free Class Averages"))
 		self.launchers["Reference Free Class Averages"] = self.launch_refine2d_report
-		refine2d.setIcon(0,self.icons["multiple_images"])
+		refine2d.setIcon(0,self.icons["classes"])
 		spr_list.append(refine2d)
 		init_model = QtGui.QTreeWidgetItem(QtCore.QStringList("Initial Model"))
 		init_model.setIcon(0,self.icons["single_image_3d"])
@@ -463,9 +464,12 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		mis.addChildren(mis_list)
 		
 		refine2d_list = []
-		refine2d_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Generate Classes - e2refine2d")))
-		self.launchers["Generate Classes - e2refine2d"] = self.launch_refine2d_create_dataset
-		refine2d_list[-1].setIcon(0,self.icons["multiple_images"])
+		refine2d_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Generate Classes (Sets) - e2refine2d")))
+		refine2d_list[-1].setIcon(0,self.icons["classes"])
+		self.launchers["Generate Classes (Sets) - e2refine2d"] = self.launch_refine2d_choose_stacks
+		refine2d_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Generate Classes (Particles) - e2refine2d")))
+		self.launchers["Generate Classes (Particles) - e2refine2d"] = self.launch_refine2d_choose_ptcls
+		refine2d_list[-1].setIcon(0,self.icons["classes"])
 		refine2d.addChildren(refine2d_list)
 		
 		init_model_list = []
@@ -477,9 +481,13 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		init_model.addChildren(init_model_list)
 		
 		refine_list = []
-		refine_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Run e2refine")))
-		refine_list[0].setIcon(0,self.icons["refine"])
-		self.launchers["Run e2refine"] = self.launch_e2refine
+		refine_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Run (Sets) e2refine")))
+		refine_list[-1].setIcon(0,self.icons["refine"])
+		self.launchers["Run (Sets) e2refine"] = self.launch_e2refine_sets
+		refine_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Run (Particles) e2refine")))
+		refine_list[-1].setIcon(0,self.icons["refine"])
+		self.launchers["Run (Particles) e2refine"] = self.launch_e2refine
+		
 		refinement.addChildren(refine_list)
 		
 		resolution_list = []
@@ -836,14 +844,16 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	def launch_e2resolution(self): self.launch_task(E2ResolutionTask(),"Run e2resolution")
 	def launch_e2eotest(self): self.launch_task(E2EotestTask(),"Run e2eotest")
 	def launch_resolution_report(self): self.launch_task(ResolutionReportTask(),"Resolution Report")
-	def launch_e2refine(self): self.launch_task(E2RefineChooseDataTask(),"e2refine Choose Data")
+	def launch_e2refine_sets(self): self.launch_task(E2RefineChooseStacksTask(),"Choose Stack For e2refine")
+	def launch_e2refine(self): self.launch_task(E2RefineChooseParticlesTask(),"Choose Particles For e2refine")
 	def launch_refinement_report(self): self.launch_task(RefinementReportTask(),"Refinement Report")
 #	def launch_import_initial_model(self): self.launch_task(ImportInitialModels(),"import initial models")
 	def launch_e2makeinitial(self): self.launch_task(E2InitialModel(),"e2makeinitialmodel")
 	def launch_initmodel_report(self): self.launch_task(InitialModelReportTask(),"Initial Model Report")
 	def launch_refine2d_report(self): self.launch_task(E2Refine2DReportTask(),"e2refine2d Report")
 	def launch_refine2d_exec(self): self.launch_task(E2Refine2DRunTask(),"e2refine2d Parameters")
-	def launch_refine2d_create_dataset(self): self.launch_task(E2Refine2DChooseDataTask(),"refine2d Choose Data")	
+	def	launch_refine2d_choose_stacks(self): self.launch_task(E2Refine2DChooseStacksTask(),"Choose Stacks For e2refine2d")
+	def launch_refine2d_choose_ptcls(self): self.launch_task(E2Refine2DChooseParticlesTask(),"Choose Particles For e2refine2d")	
 	def launch_e2ctf_write_ouptut(self): self.launch_task(E2CTFOutputTask(),"e2ctf Write Output")
 	def launch_e2ctf_tune(self): self.launch_task(E2CTFGuiTask(),"e2ctf Intreface")
 	def launch_e2ctf_auto_ft(self): self.launch_task(E2CTFAutoFitTask(),"e2ctf Auto Fitting")

@@ -128,7 +128,7 @@ class EMParamTable(list):
 			item.setSelected(True)
 
 class EMFileTable(QtGui.QTableWidget):
-	def __init__(self,listed_names=[],name="filenames",desc_short="File Names",desc_long="A list of file names"):
+	def __init__(self,listed_names=[],name="filenames",desc_short="File Names",desc_long="A list of file names",single_selection=False):
 		'''
 		@param listed_names The names that will be listed in the first column of the table
 		@param column_data A list of EMFileTable.EMContextMenuData objects
@@ -152,7 +152,12 @@ class EMFileTable(QtGui.QTableWidget):
 		
 		self.context_menu_data["Save As"] = EMFileTable.save_as
 		self.context_menu_refs = [] # to keep a reference to context menus related objects - somebody has to
-		
+
+		self.single_selection = single_selection
+		if self.single_selection:
+			self.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
+		else:
+			self.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
 		
 		self.timer = None
 		self.timer_interval = 2000
@@ -460,11 +465,11 @@ class EMFileTable(QtGui.QTableWidget):
 			self.function = function # that which is called when the button is clicked (takes a single argument)
 	
 class EM2DFileTable(EMFileTable):
-	def __init__(self,listed_names=[],name="filenames",desc_short="File Names",desc_long="A list of file names"):
+	def __init__(self,listed_names=[],name="filenames",desc_short="File Names",desc_long="A list of file names",single_selection=False):
 		'''
 		see EMFileTable for comments on parameters
 		'''
-		EMFileTable.__init__(self,listed_names,name,desc_short,desc_long)
+		EMFileTable.__init__(self,listed_names,name,desc_short,desc_long,single_selection)
 		self.icon = QtGui.QIcon(get_image_directory() + "/single_image.png")
 		self.display_module = None
 		self.module_events_manager = None
@@ -503,11 +508,11 @@ class EM3DFileTable(EM2DFileTable):
 	'''
 	Basically makes sure the correct icon is displayed.
 	'''
-	def __init__(self,listed_names=[],name="filenames",desc_short="File Names",desc_long="A list of file names"):
+	def __init__(self,listed_names=[],name="filenames",desc_short="File Names",desc_long="A list of file names",single_selection=False):
 		'''
 		see EMFileTable for comments on parameters
 		'''
-		EM2DFileTable.__init__(self,listed_names,name,desc_short,desc_long)
+		EM2DFileTable.__init__(self,listed_names,name,desc_short,desc_long,single_selection)
 		self.icon = QtGui.QIcon(get_image_directory() + "/five_stars.png")
 	
 
@@ -516,11 +521,11 @@ class EMTomographicFileTable(EMFileTable):
 	Basically makes sure the correct icon is displayed.
 	Passes on image display - because tomographic images are huge
 	'''
-	def __init__(self,listed_names=[],name="filenames",desc_short="File Names",desc_long="A list of file names"):
+	def __init__(self,listed_names=[],name="filenames",desc_short="File Names",desc_long="A list of file names",single_selection=False):
 		'''
 		see EMFileTable for comments on parameters
 		'''
-		EMFileTable.__init__(self,listed_names,name,desc_short,desc_long)
+		EMFileTable.__init__(self,listed_names,name,desc_short,desc_long,single_selection)
 		self.icon = QtGui.QIcon(get_image_directory() + "/single_image_3d.png")
 	
 	def table_item_double_clicked(self,item):
@@ -528,11 +533,11 @@ class EMTomographicFileTable(EMFileTable):
 		pass
 
 class EM2DStackTable(EMFileTable):
-	def __init__(self,listed_names=[],name="filenames",desc_short="File Names",desc_long="A list of file names"):
+	def __init__(self,listed_names=[],name="filenames",desc_short="File Names",desc_long="A list of file names",single_selection=False):
 		'''
 		see EMFileTable for comments on parameters
 		'''
-		EMFileTable.__init__(self,listed_names,name,desc_short,desc_long)
+		EMFileTable.__init__(self,listed_names,name,desc_short,desc_long,single_selection)
 		self.icon = QtGui.QIcon(get_image_directory() + "/multiple_images.png")
 		self.display_module = None
 		self.module_events_manager = None
@@ -593,11 +598,11 @@ class EM2DStackExamineTable(EM2DStackTable):
 	
 	Also, inheriting for EM2DStackTable gives us save_as for free
 	'''
-	def __init__(self,listed_names=[],name="filenames",desc_short="File Names",desc_long="A list of file names",name_map={}):
+	def __init__(self,listed_names=[],name="filenames",desc_short="File Names",desc_long="A list of file names",single_selection=False,name_map={}):
 		'''
 		see EMFileTable for comments on parameters
 		'''
-		EM2DStackTable.__init__(self,listed_names,name,desc_short,desc_long)
+		EM2DStackTable.__init__(self,listed_names,name,desc_short,desc_long,single_selection)
 		self.icon = QtGui.QIcon(get_image_directory() + "/multiple_images.png")
 		self.display_module = None
 		self.module_events_manager = None
@@ -790,7 +795,7 @@ class EMFormWidget(QtGui.QWidget):
 			
 		return None
 	
-	class IncorpFileTable():
+	class IncorpFileTable:
 		def __init__(self): pass
 		def __call__(self,paramtable,layout,target=None):
 			num_choices = None
@@ -813,7 +818,7 @@ class EMFormWidget(QtGui.QWidget):
 			layout.addWidget(groupbox,10)
 			if target != None: target.output_writers.append(EMFileTableWriter(paramtable.name,paramtable,str))
 	
-	class IncorpParamTable():
+	class IncorpParamTable:
 		def __init__(self): pass
 		def __call__(self,paramtable,layout,target):
 		
@@ -873,17 +878,17 @@ class EMFormWidget(QtGui.QWidget):
 			
 			target.name_widget_map[paramtable.name] = groupbox
 			
-	class IncorpStringList():
+	class IncorpStringList:
 		def __init__(self): pass
 		def __call__(self,param,layout,target):
 			target.incorporate_list(param,layout,target,str)
 	
-	class IncorpFloatList():
+	class IncorpFloatList:
 		def __init__(self): pass
 		def __call__(self,param,layout,target):
 			target.incorporate_list(param,layout,target,float)
 	
-	class IncorpIntList():
+	class IncorpIntList:
 		def __init__(self): pass
 		def __call__(self,param,layout,target):
 			target.incorporate_list(param,layout,target,int)
@@ -914,7 +919,7 @@ class EMFormWidget(QtGui.QWidget):
 		target.name_widget_map[param.name] = groupbox
 		#layout.addLayout(hbl)
 	
-	class IncorpBool():
+	class IncorpBool:
 		def __init__(self): pass
 		def __call__(self,param,layout,target):
 			hbl=QtGui.QHBoxLayout()
@@ -931,7 +936,7 @@ class EMFormWidget(QtGui.QWidget):
 			if hasattr(param,"dependents"):
 				target.event_handlers.append(BoolDependentsEventHandler(target,check_box,param.dependents))    
 	
-	class IncorpString():
+	class IncorpString:
 		def __init__(self): pass
 		def __call__(self,param,layout,target):
 			if param.choices != None and len(param.choices) > 1:
@@ -950,7 +955,7 @@ class EMFormWidget(QtGui.QWidget):
 				target.output_writers.append(StringParamWriter(param.name,line_edit))
 				target.name_widget_map[param.name] =  [line_edit,label]
 		
-	class IncorpFloat():
+	class IncorpFloat:
 		def __init__(self): pass
 		def __call__(self,param,layout,target):
 			if param.choices != None and len(param.choices) > 1:
@@ -971,7 +976,7 @@ class EMFormWidget(QtGui.QWidget):
 				target.output_writers.append(FloatParamWriter(param.name,line_edit))
 				target.name_widget_map[param.name] = [line_edit,label]
 		
-	class IncorpInt():
+	class IncorpInt:
 		def __init__(self): pass
 		def __call__(self,param,layout,target):
 			if param.choices != None and len(param.choices) > 1:
@@ -992,7 +997,7 @@ class EMFormWidget(QtGui.QWidget):
 				target.output_writers.append(IntParamWriter(param.name,line_edit))
 				target.name_widget_map[param.name] = [line_edit,label]
 		
-	class IncorpText():
+	class IncorpText:
 		def __init__(self): pass
 		def __call__(self,param,layout,target):
 			hbl=QtGui.QHBoxLayout()
@@ -1014,7 +1019,7 @@ class EMFormWidget(QtGui.QWidget):
 			target.output_writers.append(TextParamWriter(param.name,text_edit))	
 			target.name_widget_map[param.name] = groupbox
 		
-	class IncorpUrl():
+	class IncorpUrl:
 		def __init__(self): pass
 		def __call__(self,param,layout,target):
 			vbl=QtGui.QVBoxLayout()
@@ -1054,7 +1059,7 @@ class EMFormWidget(QtGui.QWidget):
 			target.output_writers.append(UrlParamWriter(param.name,text_edit))
 			target.name_widget_map[param.name] = groupbox
 
-	class IncorpDict():
+	class IncorpDict:
 		def __init__(self): pass
 		def __call__(self,param,layout,target):
 			'''
@@ -1102,7 +1107,7 @@ class EMFormWidget(QtGui.QWidget):
 			
 			target.name_widget_map[param.name] = groupbox
 
-	class IncorpChoice():
+	class IncorpChoice:
 		def __init__(self): pass
 		def __call__(self,param,layout,target):
 		
