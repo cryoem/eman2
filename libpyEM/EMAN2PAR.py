@@ -152,8 +152,8 @@ class EMTaskCustomer:
 					v=recvobj(sockf)
 					rd[k]=v
 				
-				print "TASK ",task.__dict__
-				print "RESULT ",rd
+#				print "TASK ",task.__dict__
+#				print "RESULT ",rd
 				return (task,rd)
 			except:
 				traceback.print_exc()
@@ -633,7 +633,7 @@ class EMDCTaskClient(EMTaskClient):
 					for j in image_range(*i[2:]):
 						if not cache.has_key(j):
 							cache[j]=self.get_data(sockf,i[1],j)
-							print j,cache[j]
+#							print j,cache[j]
 							
 					i[1]=cname
 #				except: pass
@@ -648,7 +648,7 @@ class EMDCTaskClient(EMTaskClient):
 
 			# Return results
 			if self.verbose>1 : print "Task done "
-			if self.verbose>2 : print self.__dict__
+			if self.verbose>3 : print self.__dict__
 			sock,sockf=openEMDCsock(self.addr,clientid=self.myid,retry=10)
 			sockf.write("DONE")
 			sendobj(sockf,task.taskid)
