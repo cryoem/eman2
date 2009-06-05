@@ -903,7 +903,7 @@ class DBDict:
 					traceback.print_exc()
 					print "********** Error: failed a second time. Something is wrong."
 					return
-#			if isinstance(key,int) and (not self.has_key("maxrec") or key>self["maxrec"]) : self["maxrec"]=key
+			if isinstance(key,int) and (not self.has_key("maxrec") or key>self["maxrec"]) : self["maxrec"]=key
 				
 	def __getitem__(self,key):
 		self.open(self.rohint)
@@ -1075,7 +1075,7 @@ class DBDict:
 					traceback.print_exc()
 					print "*********# Error: failed a second time. Something is wrong."
 					return
-#			if isinstance(key,int) and (not self.has_key("maxrec") or key>self["maxrec"]) : self["maxrec"]=key
+			if isinstance(key,int) and (not self.has_key("maxrec") or key>self["maxrec"]) : self["maxrec"]=key
 
 	def set_header(self,key,val,txn=None):
 		"Alternative to x[key]=val with transaction set"

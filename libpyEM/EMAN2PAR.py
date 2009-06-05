@@ -464,6 +464,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 					val=recvobj(self.sockf)
 					result[key]=val				# store each key in the database
 					cnt+=1
+					if self.verbose>3: print key,val
 
 				result.close()
 				if self.verbose>2 : print "Task %d: %d data elements"%(tid,cnt)
@@ -569,11 +570,13 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 					continue
 				sendobj(self.sockf,ret)
 
+				if self.verbose>2 : print "RSLT: ",data
 				result=db_open_dict("bdb:%s#result_%d"%(self.queue.path,data))
 				for k in result.keys():
 					if k=="maxrec": continue
 					sendobj(self.sockf,k)
 					sendobj(self.sockf,result[k])
+					if self.verbose>3 : print k,result[k]
 					
 				sendobj(self.sockf,None)
 				self.sockf.flush()
