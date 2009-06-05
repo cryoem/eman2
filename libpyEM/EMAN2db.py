@@ -270,6 +270,7 @@ def db_emd_init(self,*parms):
 		self.read_image(*parms)
 		return
 	else : 
+#		print "toC:", parms
 		self.__initc(*parms)	
 		return
 
