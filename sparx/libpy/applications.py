@@ -8473,7 +8473,7 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 	print_msg("Signal-to-Noise Ratio                     : %f\n"%(snr))
 	print_msg("Symmetry group                            : %s\n"%(sym))
 	print_msg("symmetry doc file                         : %s\n"%(datasym))
-	print_msg("npad                                      : %i\n\n"%(npad))
+	print_msg("npad                                      : %i\n"%(npad))
 
 	if (maskfile) :
 		if (type(maskfile) is types.StringType): mask3D = get_image(maskfile)
@@ -8510,7 +8510,7 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 		pixel_size = data[0].get_attr('ctf').apix
 	else:
 		pixel_size = data[0].get_attr('pixel_size')
-	print_msg("pixel size in Angstoms                    : %f\n"%(pixel_size))
+	print_msg("Pixel size in Angstroms                   : %f\n\n"%(pixel_size))
 
 	finfo = None#open("desperado", 'w')
 	# do the projection matching
@@ -8601,12 +8601,9 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max
 	from utilities      import model_circle, drop_image, read_spider_doc
 	from utilities      import get_image, get_input_from_string, file_type
 	from utilities      import get_params_proj, set_params_proj, recv_attr_dict, send_attr_dict
-	#from filter	    import filt_params, filt_btwl, filt_from_fsc, filt_table, fit_tanh, filt_tanl
 	from alignment	    import proj_ali_incore, proj_ali_incore_local, helios, Numrinit, prepare_refrings
 	from projection     import prep_vol
 	from statistics     import ccc
-	from fundamentals   import cyclic_shift, rot_shift3D
-	#from statistics    import fsc_mask
 	import os
 	import types
 	from utilities      import print_begin_msg, print_end_msg, print_msg
@@ -8615,6 +8612,8 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max
 	from mpi 	    import mpi_barrier, mpi_bcast, MPI_FLOAT, MPI_SUM
 	from mpi 	    import mpi_reduce, mpi_bcast, mpi_barrier, mpi_send, mpi_recv
 	from time           import time
+
+
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid           = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
@@ -8661,31 +8660,30 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max
 		user_func = user_functions.factory[user_func_name]
 
 		print_begin_msg("ihrsr_MPI")
-		print_msg("Input stack  	       : %s\n"%(stack))
-		print_msg("Reference volume	       : %s\n"%(ref_vol))	
-		print_msg("Output directory	       : %s\n"%(outdir))
-		print_msg("Maskfile		       : %s\n"%(maskfile))
-		print_msg("Inner radius 	       : %i\n"%(first_ring))
-		print_msg("Outer radius 			     : %i\n"%(last_ring))
-		print_msg("Ring step				     : %i\n"%(rstep))
-		print_msg("threshold for the CC peak		     : %f\n"%(min_cc_peak))
-		print_msg("X search range			     : %s\n"%(xrng))
-		print_msg("threshold for translation in X direction  : %f\n"%(max_x_shift))
-		print_msg("Y search range			     : %s\n"%(yrng))
-		print_msg("threshold for translation in Y direction  : %f\n"%(max_y_shift))
-		print_msg("Translational step			     : %s\n"%(step))
-		print_msg("Angular step 			     : %s\n"%(delta))
-		print_msg("Angular search range 		     : %s\n"%(an))
+		print_msg("Input stack                               : %s\n"%(stack))
+		print_msg("Reference volume                          : %s\n"%(ref_vol))	
+		print_msg("Output directory                          : %s\n"%(outdir))
+		print_msg("Maskfile                                  : %s\n"%(maskfile))
+		print_msg("Inner radius                              : %i\n"%(first_ring))
+		print_msg("Outer radius                              : %i\n"%(last_ring))
+		print_msg("Ring step                                 : %i\n"%(rstep))
+		print_msg("Threshold for the CC peak                 : %f\n"%(min_cc_peak))
+		print_msg("X search range                            : %s\n"%(xrng))
+		print_msg("Threshold for translation in X direction  : %f\n"%(max_x_shift))
+		print_msg("Y search range                            : %s\n"%(yrng))
+		print_msg("Threshold for translation in Y direction  : %f\n"%(max_y_shift))
+		print_msg("Translational step                        : %s\n"%(step))
+		print_msg("Angular step                              : %s\n"%(delta))
+		print_msg("Angular search range                      : %s\n"%(an))
 		print_msg("max radius for helical search (in Ang)    : %f\n"%(rmax))
-		print_msg("fraction of volume used for helical search: %f\n"%(fract))
-		print_msg("initial symmetry - angle		     : %f\n"%(dphi))
-		print_msg("initial symmetry - axial rise	     : %f\n"%(dp))
-		print_msg("Maximum iteration			     : %i\n"%(max_iter))
-		print_msg("Data with CTF			     : %s\n"%(CTF))
-		print_msg("Signal-to-Noise Ratio		     : %f\n"%(snr))
-		print_msg("Symmetry group			     : %s\n"%(sym))
-		print_msg("symmetry doc file			     : %s\n"%(datasym))
-		print_msg("npad                                      : %i\n\n"%(npad))
+		print_msg("Fraction of volume used for helical search: %f\n"%(fract))
+		print_msg("initial symmetry - angle                  : %f\n"%(dphi))
+		print_msg("initial symmetry - axial rise             : %f\n"%(dp))
+		print_msg("Maximum iteration                         : %i\n"%(max_iter))
+		print_msg("Data with CTF                             : %s\n"%(CTF))
+		print_msg("Signal-to-Noise Ratio                     : %f\n"%(snr))
+		print_msg("symmetry doc file                         : %s\n"%(datasym))
+		print_msg("npad                                      : %i\n"%(npad))
 	if maskfile:
 		if type(maskfile) is types.StringType: mask3D = get_image(maskfile)
 		else:                                  mask3D = maskfile
@@ -8696,9 +8694,9 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max
 
 	fscmask = model_circle(last_ring,nx,nx,nx)
 	if CTF:
-		from reconstruction import rec3D_MPI
+		from reconstruction import recons3d_4nn_ctf_MPI
 		from filter         import filt_ctf
-	else:	from reconstruction import rec3D_MPI_noCTF
+	else:	from reconstruction import recons3d_4nn_MPI
 	sym = "c1"
 	symref = "s"
 	ref_a= "P"
@@ -8738,10 +8736,10 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max
 	else:
 		pixel_size = data[0].get_attr('pixel_size')
 	if myid == 0:
-		print_msg("pixel size in Angstoms		     : %f\n"%(pixel_size))
+		print_msg("Pixel size in Angstroms                   : %f\n\n"%(pixel_size))
 
 	if debug:
-		finfo.write( '%d loaded  \n' % len(data) )
+		finfo.write( '%d Loaded  \n' % len(data) )
 		finfo.flush()
 	
 	if myid == main_node:  drop_image(vol, os.path.join(outdir, "aligned0000.hdf"))
@@ -8757,6 +8755,10 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max
 					volft,kb = prep_vol( vol )
 					refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, symref, numr, MPI=False)
 					del volft
+			else:
+				volft,kb = prep_vol( vol )
+				refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, symref, numr, MPI = True)
+				del volft
 
 			sx = 0.0
 			sy = 0.0
@@ -8792,25 +8794,23 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max
 				elif(abs(paramali[2]-270.0) >max_tilt and paramali[2] >180.0): active = 0
 				elif(abs(paramali[2]-90.0) >max_tilt and paramali[2] <180.0): active = 0
 				data[im].set_attr_dict({'active':active})
-				#print_msg("image status    : %i,  psi %9.2f,  s2x  %9.2f,  s2y  %9.2f,  peak  %10.3e \n"%(active, paramali[2], paramali[3], paramali[4], peak))
 	
-			sx = mpi_reduce(sx, 1, MPI_FLOAT, MPI_SUM, node, MPI_COMM_WORLD)
-			sy = mpi_reduce(sy, 1, MPI_FLOAT, MPI_SUM, node, MPI_COMM_WORLD)
+			sx = mpi_reduce(sx, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
+			sy = mpi_reduce(sy, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 			if myid == main_node:
 				sx = float(sx)/nima
 				sy = float(sy)/nima
-			mpi_bcast(sx, 1, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-			mpi_bcast(sy, 1, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-			sx = float(sx)
-			sy = float(sy)
+			sx = mpi_bcast(sx, 1, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+			sy = mpi_bcast(sy, 1, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+			sx = float(sx[0])
+			sy = float(sy[0])
 			#  Center projections
 			for im in xrange( len(data) ):
 				paramali = get_params_proj(data[im])
 				set_params_proj(data[im], [paramali[0], paramali[1], paramali[2], paramali[3] - sx, paramali[4] - sy])
 
-
-			if CTF: vol = recons3d_4nn_ctf_MPI(myid, data, snr, 1, sym, None, npad)
-			else:    vol = recons3d_4nn_MPI(myid, data, sym, None, npad)
+			if CTF:  vol = recons3d_4nn_ctf_MPI(myid, data, snr, 1, "c1", None, npad)
+			else:    vol = recons3d_4nn_MPI(myid, data, "c1", None, npad)
 
 			"""
 			if fourvar:

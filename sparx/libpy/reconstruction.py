@@ -159,7 +159,9 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None, npad = 4):
 	reduce_EMData_to_root(weight, myid)
 
 	if myid == 0 :  vol = r.finish()
-	else:           vol = None
+	else:
+		from utilities import model_blank
+		vol = model_blank(imgsize,imgsize,imgsize)
 	return vol
 
 
@@ -205,8 +207,11 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign=1, symmetry="c1", info=None, n
 		info.write( "after reduce\n" )
 		info.flush()
 
-	if myid == 0 : vol = r.finish()
-	else:           vol = None
+	if myid == 0 :
+		vol = r.finish()
+	else:
+		from utilities import model_blank
+		vol = model_blank(imgsize,imgsize,imgsize)
 
 	return vol
 
