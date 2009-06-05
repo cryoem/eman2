@@ -100,7 +100,6 @@ Various utilities related to BDB databases."""
 		
 		if options.makevstack!=None or options.appendvstack!=None :
 			for db in dbs:
-				print path + db
 				dct,keys=db_open_dict(path+db,with_keys=True)
 				if dct==vstack : continue
 				vals = keys
