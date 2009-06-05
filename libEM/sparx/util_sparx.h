@@ -439,17 +439,8 @@ class FakeKaiserBessel : public KaiserBessel {
         static Dict min_dist_real(EMData* image, const vector<EMData*>& data);
         static Dict min_dist_four(EMData* image, const vector<EMData*>& data);
 
-        // temp comment before removing 2009-03-31 09:35:20 JB
-        //static float SqEuc_dist(EMData* image, EMData* width);
-
-        static vector<float> cml_line_in3d_full(const vector<float>& Ori);
-        static vector<double> cml_line_in3d_iagl(const vector<float>& Ori, float phi, float theta, int iprj);
-        static vector<double> cml_weights(const vector<float>& cml);
-        static vector<float> cml_spin(int n_psi, int i_prj, int n_prj, vector<float> weights, vector<int> com, const vector<EMData*>& data, int flag);
-        static vector<int> cml_line_pos(float phi1, float theta1, float psi1, float phi2, float theta2, float psi2, int nangle);
-        static vector<int> cml_list_line_pos(vector<float> Ori, float newphi, float newtheta, int i_prj, int n_prj, int nangle, int nlines);
-
         // new code common-lines
+        static vector<double> cml_weights(const vector<float>& cml);
         static vector<int> cml_line_insino(vector<float> Rot, int i_prj, int n_prj);
         static vector<int> cml_line_insino_all(vector<float> Rot, vector<int> seq, int n_prj, int n_lines);
         static vector<double> cml_init_rot(vector<float> Ori);

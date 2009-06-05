@@ -290,15 +290,8 @@ def plot_angles(agls):
 
 	return im
 
-# to utilities: get_line
-def get_line(im, li):
-	from utilities import model_blank
-	nx = im.get_xsize()
-	e  = model_blank(nx)
-	for n in xrange(nx): e.set_value_at(n, 0, im.get_value_at(n, li))
-	return e
-
 # interface between the simplex function to refine the angles and the function to compute the discrepancy
+# not use yet
 def cml_refine_agls_wrap(vec_in, data):
 	# vec_in: [phi_i, theta_i, psi_i]
 	# data:   [Prj, Ori, iprj]
@@ -317,7 +310,8 @@ def cml_refine_agls_wrap(vec_in, data):
 
 	return -disc
 
-# cml refines angles
+# cml refines angles with simplex
+# not use yet
 def cml_refine_agls(Prj, Ori, delta):
 	from copy      import deepcopy
 	from utilities import amoeba
@@ -328,18 +322,14 @@ def cml_refine_agls(Prj, Ori, delta):
 	for iprj in xrange(g_n_prj):
 		# init vec_in
 		vec_in   = [Ori[4*iprj], Ori[4*iprj+1], Ori[4*iprj+2]]
-
 		# prepare vec_data
 		vec_data = [Prj, deepcopy(Ori), iprj]
-
 		# simplex
 		optvec, disc, niter = amoeba(vec_in, scales, cml_refine_agls_wrap_dev, data = vec_data)
-
 		# assign new angles refine
 		Ori[4*iprj]   = (optvec[0]+360)%360
 		Ori[4*iprj+1] = optvec[1]
 		Ori[4*iprj+2] = optvec[2]
-
 		print 'refine:', iprj, 'angles:', Ori[4*iprj:4*iprj+4], 'disc:', -disc
 
 	return Ori
@@ -392,22 +382,9 @@ def cml_init_rnd(trials, rand_seed):
 	return rnd
 
 # calculate the discrepancy allong all common-lines 
-def cml_disc(Prj, Ori, Rot, flag_weights):
-	from math        import pi, fmod
-
-	# gbl vars
+def cml_disc(Prj, Ori, Rot):
 	global g_n_prj, g_n_psi, g_n_lines, g_seq
-
-	if flag_weights:
-		cml = Util.cml_line_in3d(Ori, g_seq, g_n_prj, g_n_lines)
-		weights = Util.cml_weights(cml)       # c-code
-		wm = max(weights)
-		for i in xrange(g_n_lines): weights[i]  = wm - weights[i]
-		sw = sum(weights)
-		for i in xrange(g_n_lines): weights[i] /= sw
-				
-	else:   weights = [1.0] * g_n_lines
-
+	weights = [1.0] * g_n_lines
 	com  = Util.cml_line_insino_all(Rot, g_seq, g_n_prj, g_n_lines)
 	disc = Util.cml_disc(Prj, com, g_seq, weights, g_n_lines)
 	
@@ -444,11 +421,16 @@ def cml_export_txtagls(outdir, outname, Ori, disc, title):
 	angfile.write('\nDiscrepancy: %10.3f\n\n' % disc)
 	angfile.close()
 
-# init global variables used toa quick acces with many function of common-lines
+# init global variables used to a quick acces with many function of common-lines
 def cml_init_global_var(dpsi, delta, nprj, debug):
 	from utilities import even_angles
 
 	global g_anglst, g_d_psi, g_n_psi, g_i_prj, g_n_lines, g_n_prj, g_n_anglst, g_debug, g_seq
+	# TO FIX
+	v = 180.0 / float(dpsi)
+	if v != int(v):
+		v    = int(v + 0.5)
+		dpsi = 180 // v
 	
 	g_anglst   = even_angles(delta, 0.0, 179.9, 0.0, 359.9, 'P')
 	g_n_anglst = len(g_anglst)
@@ -521,29 +503,24 @@ def cml_open_proj(stack, ir, ou, lf, hf, dpsi = 1):
 
 		# sinogram
 		sino = cml_sinogram(image, diameter, dpsi) 
-		#sino.write_image('sino_%i.hdf' % i, 0)
-		# prepare the cut positions in order to filter (lf: low freq; hf: high freq)
 
+		# prepare the cut positions in order to filter (lf: low freq; hf: high freq)
 		ihf = min(int(2 * hf * diameter), diameter + (diameter + 1) % 2)
 		ihf = ihf + (ihf + 1) % 2    # index ihf must be odd to take the img part
 		ilf = max(int(2 * lf * diameter), 0)
 		ilf = ilf + ilf % 2          # index ilf must be even to fall in the real part
 		bdf = ihf - ilf + 1
 
-		from utilities import print_image
 		# process lines
 		nxe = sino.get_xsize()
 		nye = sino.get_ysize()
 		prj = model_blank(bdf, 2*nye)
 		pp = model_blank(nxe, 2*nye)
 		for li in xrange(nye):
-			
 			# get the line li
 			line = Util.window(sino, nxe, 1, 1, 0, li-nye//2, 0)
-
 			# u2 (not improve the results)
 			#line = filt_tanh(line, ou / float(nx), ou / float(nx))
-
 			# normalize this line
 			[mean_l, sigma_l, imin, imax] = Util.infomask(line, None, True)
 			line = (line - mean_l) / sigma_l
@@ -574,7 +551,6 @@ def cml_sinogram(image2D, diameter, d_psi = 1):
 	alpha = 1.75
 	r     = M / 2
 	v     = K / 2.0 / N
-
 	kb     = Util.KaiserBessel(alpha, K, r, K / (2. * N), N)
 	volft  = image2D.average_circ_sub()  	# ASTA - in spider
 	volft.divkbsinh(kb)		  	# DIVKB2 - in spider
@@ -584,7 +560,6 @@ def cml_sinogram(image2D, diameter, d_psi = 1):
 	volft.fft_shuffle()
 
 	# get line projection
-	# fix d_psi such that 180 is divisible by d_psi
 	nangle = int(180.0 / d_psi)     
 	dangle = M_PI / float(nangle)
 	e = EMData()
@@ -600,7 +575,7 @@ def cml_sinogram(image2D, diameter, d_psi = 1):
 	return e 
 
 # write the head of the logfile
-def cml_head_log(stack, outdir, delta, ir, ou, lf, hf, rand_seed, maxit, given, flag_weights, trials):
+def cml_head_log(stack, outdir, delta, ir, ou, lf, hf, rand_seed, maxit, given, flag_weights, trials, ncpu):
 	from utilities import print_msg
 
 	# call global var
@@ -620,16 +595,15 @@ def cml_head_log(stack, outdir, delta, ir, ou, lf, hf, rand_seed, maxit, given, 
 	print_msg('Start from given orientations: %s\n'     % given)
 	print_msg('Number of angles             : %i\n'     % g_n_anglst)
 	print_msg('Number of trials             : %i\n'     % trials)
+	print_msg('Number of cpus               : %i\n'     % ncpu)
 	print_msg('Use Voronoi weights          : %s\n\n'   % flag_weights)
 
 # write the end of the logfile
-def cml_end_log(Ori, disc, ite):
+def cml_end_log(Ori):
 	from utilities import print_msg
 	global g_n_prj
 	print_msg('\n\n')
 	for i in xrange(g_n_prj): print_msg('Projection #%03i: phi %10.5f    theta %10.5f    psi %10.5f\n' % (i, Ori[4*i], Ori[4*i+1], Ori[4*i+2]))
-	print_msg('\nNumber of iterations: %d\n' % ite)
-	print_msg('Discrepancy: %10.3f\n' % abs(disc))
 
 # find structure
 def cml_find_structure(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_weights):
@@ -668,7 +642,7 @@ def cml_find_structure(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_w
 			cur_agl      = Ori[ind+3]
 			if cur_agl  != -1: ocp[cur_agl] = -1
 
-			# TODO optimize that
+			# prepare active index of cml for weighting in order to earn time later
 			iw = [0] * (g_n_prj - 1)
 			c  = 0
 			ct = 0
@@ -694,11 +668,7 @@ def cml_find_structure(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_w
 					if flag_weights:
 						cml = Util.cml_line_in3d(Ori, g_seq, g_n_prj, g_n_lines)
 						weights = Util.cml_weights(cml)
-						# TODO optimize that
 						mw  = max(weights)
-						#mw  = sum(weights)
-						#mw /= float(g_n_lines)
-						#mw *= 2.0
 						for i in xrange(g_n_lines): weights[i]  = mw - weights[i]
 						sw = sum(weights)
 						if sw == 0:
@@ -743,7 +713,7 @@ def cml_find_structure(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_w
 			if g_debug: cml_export_progress(outdir, ite, iprj, best_iagl, best_psi * g_d_psi, best_disc, 'choose')
 
 		# if one change, compute new full disc
-		disc = cml_disc(Prj, Ori, Rot, 0) #flag_weights)
+		disc = cml_disc(Prj, Ori, Rot)
 		
 		# display in the progress file
 		cml_export_txtagls(outdir, outname, Ori, disc, 'Ite: %03i' % (ite + 1))
@@ -764,203 +734,7 @@ def cml_find_structure(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_w
 		else:
 			period_ct = 0
 
-	'''
-	cml = Util.cml_line_in3d(Ori, g_seq, g_n_prj, g_n_lines)
-	w1 = Util.cml_weights(cml)
-	wm = max(w1)
-	w2 = [0.0] * g_n_lines
-	for i in xrange(g_n_lines): w2[i]  = wm - w1[i]
-	sw = sum(w2)
-	if sw == 0:
-		w2 = [1.0] * g_n_lines
-	else:
-		for i in xrange(g_n_lines):
-			w2[i] /= sw
-			w2[i] *= w2[i]
-
-	f = open('weights.txt', 'w')
-	for i in xrange(g_n_lines):
-		f.write('%f\t%f\n' % (w1[i], w2[i]))
-	f.close()
-
-	la = []
-	for i in xrange(g_n_lines // 2):
-		ind = i*2
-		la.append([cml[ind], cml[ind+1], 0.0])
-	im = plot_angles(la)
-	im.write_image('plot_cml.hdf', 0)
-	'''
-
 	return Ori, disc, ite
-
-# find structure
-def cml_find_sub(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_weights):
-	from projection import cml_export_progress, cml_disc, cml_export_txtagls
-	import time, sys
-	
-	# global vars
-	global g_i_prj, g_n_prj, g_n_anglst, g_anglst, g_d_psi, g_debug, g_n_lines, g_seq
-
-	# list of free orientation
-	ocp = [-1] * g_n_anglst
-	# place current angles in the list ocp
-	for n in xrange(g_n_prj):
-		ind = 4*n
-		 
-
-
-	if first_zero:
-		listprj = range(1, g_n_prj)
-		ocp[0]  = 0 
-	else:   listprj = range(g_n_prj)
-	
-	# to stop when the solution oscillate
-	period_disc = [0, 0, 0]
-	period_ct   = 0
-	period_th   = 2
-
-	# iteration loop
-	for ite in xrange(maxit):
-		t_start = time.time()
-
-		# loop over i prj
-		change = False
-		for iprj in listprj:
-
-			# Store current the current orientation
-			ind          = 4*iprj
-			store_phi    = Ori[ind]
-			store_theta  = Ori[ind+1]
-			store_psi    = Ori[ind+2]
-			cur_agl      = Ori[ind+3]
-			if cur_agl  != -1: ocp[cur_agl] = -1
-
-			# TODO optimize that
-			iw = [0] * (g_n_prj - 1)
-			c  = 0
-			ct = 0
-			for i in xrange(g_n_prj):
-				for j in xrange(i+1, g_n_prj):
-					if i == iprj or j == iprj:
-						iw[ct] = c
-						ct += 1
-					c += 1
-			
-			# loop over all angles
-			best_disc = 1e20
-			best_psi  = -1
-			best_iagl = -1
-			for iagl in xrange(g_n_anglst):
-				# if orientation is free
-				if ocp[iagl] == -1:
-					# assign new orientation
-					Ori[ind]   = g_anglst[iagl][0]
-					Ori[ind+1] = g_anglst[iagl][1]
-					Rot        = Util.cml_update_rot(Rot, iprj, Ori[ind], Ori[ind+1], 0.0)
-					# weights
-					if flag_weights:
-						cml = Util.cml_line_in3d(Ori, g_seq, g_n_prj, g_n_lines)
-						weights = Util.cml_weights(cml)
-						# TODO optimize that
-						wm = max(weights)
-						for i in xrange(g_n_lines): weights[i]  = wm - weights[i]
-						sw = sum(weights)
-						if sw == 0:
-							weights = [6.28 / float(g_n_lines)] * g_n_lines
-						else:
-							for i in xrange(g_n_lines):
-								weights[i] /= sw
-								#weights[i] *= weights[i]
-					else:   weights = [1.0] * g_n_lines
-
-					# spin all psi
-					com = Util.cml_line_insino(Rot, iprj, g_n_prj)
-					res = Util.cml_spin_psi(Prj, com, weights, iprj, iw, g_n_psi, g_d_psi, g_n_prj)
-
-					# select the best
-					if res[0] < best_disc:
-						best_disc = res[0]
-						best_psi  = res[1]
-						best_iagl = iagl
-				
-					if g_debug: cml_export_progress(outdir, ite, iprj, iagl, res[1], res[0], 'progress')
-				else:
-					if g_debug: cml_export_progress(outdir, ite, iprj, iagl, -1, -1, 'progress')
-
-			# if change, assign
-			if best_iagl != cur_agl:
-				ocp[best_iagl] = iprj
-				Ori[ind]       = g_anglst[best_iagl][0] # phi
-				Ori[ind+1]     = g_anglst[best_iagl][1] # theta
-				Ori[ind+2]     = best_psi * g_d_psi     # psi
-				Ori[ind+3]     = best_iagl              # index
-				change = True
-			else:
-				if cur_agl != -1: ocp[cur_agl] = iprj
-				Ori[ind]    = store_phi
-				Ori[ind+1]  = store_theta
-				Ori[ind+2]  = store_psi
-				Ori[ind+3]  = cur_agl
-
-			Rot = Util.cml_update_rot(Rot, iprj, Ori[ind], Ori[ind+1], Ori[ind+2])
-	
-			if g_debug: cml_export_progress(outdir, ite, iprj, best_iagl, best_psi * g_d_psi, best_disc, 'choose')
-
-		# if one change, compute new full disc
-		disc = cml_disc(Prj, Ori, Rot, 0) #flag_weights)
-		
-		# display in the progress file
-		cml_export_txtagls(outdir, outname, Ori, disc, 'Ite: %03i' % (ite + 1))
-
-		if not change: break
-
-		# to stop when the solution oscillate
-		period_disc.pop(0)
-		period_disc.append(disc)
-		if period_disc[0] == period_disc[2]:
-			period_ct += 1
-			if period_ct >= period_th and min(period_disc) == disc:
-				angfile = open(outdir + '/' + outname, 'a')
-				angfile.write('\nSTOP SOLUTION UNSTABLE\n')
-				angfile.write('Discrepancy periode: %s\n' % period_disc)
-				angfile.close()
-				break
-		else:
-			period_ct = 0
-
-	'''
-	cml = Util.cml_line_in3d(Ori, g_seq, g_n_prj, g_n_lines)
-	w1 = Util.cml_weights(cml)
-	wm = max(w1)
-	w2 = [0.0] * g_n_lines
-	for i in xrange(g_n_lines): w2[i]  = wm - w1[i]
-	sw = sum(w2)
-	if sw == 0:
-		w2 = [1.0] * g_n_lines
-	else:
-		for i in xrange(g_n_lines):
-			w2[i] /= sw
-			w2[i] *= w2[i]
-
-	f = open('weights.txt', 'w')
-	for i in xrange(g_n_lines):
-		f.write('%f\t%f\n' % (w1[i], w2[i]))
-	f.close()
-
-	la = []
-	for i in xrange(g_n_lines // 2):
-		ind = i*2
-		la.append([cml[ind], cml[ind+1], 0.0])
-	im = plot_angles(la)
-	im.write_image('plot_cml.hdf', 0)
-	'''
-
-	return Ori, disc, ite
-
-
-
-
-
 
 ## END COMMON LINES NEW VERSION ###############################################################
 ###############################################################################################

@@ -4423,7 +4423,7 @@ def k_means_cuda_export(PART, INFO, FLATAVE, out_seedname, mask):
 ## K-MEANS STABILITY ######################################################################
 # 2008-12-18 11:35:11 
 
-# K-means SA define the first temperature T0
+# K-means SA define the first temperature T0 with a couple of testing values
 def k_means_SA_T0(im_M, mask, K, rand_seed, CTF, F):
 	from utilities 		import model_blank, print_msg
 	from alignment          import select_k
@@ -4601,7 +4601,7 @@ def k_means_SA_T0(im_M, mask, K, rand_seed, CTF, F):
 	# return Cls, assign
 	return T0, ct_pert
 
-# K-means SA define the first temperature T0 (MPI version)
+# K-means SA define the first temperature T0 (MPI version) with a couple of testing values
 def k_means_SA_T0_MPI(im_M, mask, K, rand_seed, CTF, F, myid, main_node, N_start, N_stop):
 	from utilities 		import model_blank, print_msg, bcast_EMData_to_all, reduce_EMData_to_root
 	from random    		import seed, randint
@@ -5486,24 +5486,26 @@ def k_means_stab_update_tag(stack, ALL_PART, STB_PART, num_run, lrej):
 # Gather all stable class averages in the same stack
 def k_means_stab_gather(nb_run, maskname, outdir):
 	from utilities import get_image
+	from os        import path
 
 	ct   = 0
 	im   = EMData()
 	for nr in xrange(1, nb_run + 1):
 		name = outdir + '/average_stb_run%02d.hdf' % nr
-		N = EMUtil.get_image_count(name)
-		if nr == 1:
-			if maskname != None: mask = get_image(maskname)
-			else: mask   = None
-		for n in xrange(N):
-			im.read_image(name, n)
-			try:
-				nobjs = im.get_attr('nobjects') # check if ave not empty
-				ret = Util.infomask(im, mask, True) # 
-				im  = (im - ret[0]) / ret[1]        # normalize
-				im.write_image(outdir + '/averages.hdf', ct)
-				ct += 1
-			except: pass
+		if path.exists(name):
+			N = EMUtil.get_image_count(name)
+			if nr == 1:
+				if maskname != None: mask = get_image(maskname)
+				else: mask   = None
+			for n in xrange(N):
+				im.read_image(name, n)
+				try:
+					nobjs = im.get_attr('nobjects') # check if ave not empty
+					ret = Util.infomask(im, mask, False) # 
+					im  = (im - ret[0]) / ret[1]        # normalize
+					im.write_image(outdir + '/averages.hdf', ct)
+					ct += 1
+				except: pass
 
 	return ct
 

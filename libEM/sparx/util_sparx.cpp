@@ -3748,126 +3748,6 @@ void Util::sub_fav(EMData* avep, EMData* datp, float tot, int mirror, vector<int
 #define deg_rad  QUADPI/180.0
 #define rad_deg  180.0/QUADPI
 
-// this function is crap
-vector<float> Util::cml_line_in3d_full(const vector<float>& Ori){
-    int nprj = Ori.size() / 4;
-    int nlines = (nprj-1)*nprj/2;
-    vector<float> cml(2*nlines); // [phi, theta] / line
-    float ph1 = 0.0;
-    float th1 = 0.0;
-    float ph2 = 0.0;
-    float th2 = 0.0;
-    float nx = 0.0;
-    float ny = 0.0;
-    float nz = 0.0;
-    float norm = 0.0;
-
-    int ct = 0;
-    for(int i=0; i<(nprj-1); i++){
-	ph1 = Ori[4*i]*deg_rad;
-	th1 = Ori[4*i+1]*deg_rad;
-	for(int j=i+1; j<nprj; j++){
-	    ph2 = Ori[4*j]*deg_rad;
-	    th2 = Ori[4*j+1]*deg_rad;
-	    // cross product
-	    nx = sin(th1)*sin(ph1)*cos(th2) - cos(th1)*sin(th2)*sin(ph2);
-	    ny = cos(th1)*sin(th2)*cos(ph2) - cos(th2)*sin(th1)*cos(ph1);
-	    nz = sin(th1)*cos(ph1)*sin(th2)*sin(ph2) - sin(th1)*sin(ph1)*sin(th2)*cos(ph2);
-	    // normalize
-	    norm = sqrt(nx*nx+ny*ny+nz*nz);
-	    nx = nx / norm;
-	    ny = ny / norm;
-	    nz = nz / norm;
-	    // apply mirror if need
-	    if(nz<0){nx=-nx; ny=-ny; nz=-nz;}
-	    // compute theta and phi
-	    cml[ct+1]=acos(nz);
-	    if(cml[ct+1]==0){cml[ct]=0;}
-	    else{
-		cml[ct]=asin(ny/sin(cml[ct+1]));
-		cml[ct+1]=cml[ct+1]*rad_deg;
-		cml[ct]=((int(cml[ct]*rad_deg*100)+36000)%36000)/100.0;
-	    }
-	    ct++;
-	    ct++;
-	}
-    }
-    return cml;
-}
-
-// this function is not used
-vector<double> Util::cml_line_in3d_iagl(const vector<float>& Ori, float phi, float theta, int iprj){
-    int nprj = Ori.size() / 4;
-    int nlines = (nprj-1)*nprj/2;
-    vector<double> cml(2*nlines); // [phi, theta] / line
-    float ph1 = 0.0;
-    float th1 = 0.0;
-    float ph2 = 0.0;
-    float th2 = 0.0;
-    double nx = 0.0;
-    double ny = 0.0;
-    double nz = 0.0;
-    double norm = 0.0;
-
-    int ct = 0;
-    for(int i=0; i<(nprj-1); i++){
-	if(i==iprj){
-	    ph1 = phi*deg_rad;
-	    th1 = theta*deg_rad;
-	}
-	else
-	{
-	    ph1 = Ori[4*i]*deg_rad;
-	    th1 = Ori[4*i+1]*deg_rad;
-	}
-	for(int j=i+1; j<nprj; j++){
-	    if(j==iprj){
-		ph2 = phi*deg_rad;
-		th2 = theta*deg_rad;
-	    }
-	    else
-	    {
-		ph2 = Ori[4*j]*deg_rad;
-		th2 = Ori[4*j+1]*deg_rad;
-	    }
-	    // cross product
-	    nx = sin(th1)*sin(ph1)*cos(th2) - cos(th1)*sin(th2)*sin(ph2);
-	    ny = cos(th1)*sin(th2)*cos(ph2) - cos(th2)*sin(th1)*cos(ph1);
-	    nz = sin(th1)*cos(ph1)*sin(th2)*sin(ph2) - sin(th1)*sin(ph1)*sin(th2)*cos(ph2);
-	    // normalize
-	    norm = sqrt(nx*nx+ny*ny+nz*nz);
-	    nx = nx / norm;
-	    ny = ny / norm;
-	    nz = nz / norm;
-	    // apply mirror if need
-	    if(nz<0){nx=-nx; ny=-ny; nz=-nz;}
-	    // compute theta and phi
-	    cml[ct+1]=acos(nz);
-	    if(cml[ct+1]==0){cml[ct]=0;}
-	    else{
-		// theta [0; 90[
-		cml[ct+1]=cml[ct+1]*rad_deg;
-		if(cml[ct+1] > 89.99) {cml[ct+1] = 89.99;}  // this line fix some pb with voronoi
-		// phi [0; 360]
-		cml[ct]=acos(abs(nx) / sqrt(nx*nx+ny*ny))*rad_deg;
-		//if(nx >=0 && ny >= 0)
-		if(nx < 0 && ny >= 0) {cml[ct] += 90.0;}
-		if(nx < 0 && ny < 0) {cml[ct] += 180.0;}
-		if(nx >= 0 && ny < 0) {cml[ct] += 270.0;}
-
-		//cml[ct]=asin(ny/sin(cml[ct+1]));
-		//cml[ct]=cml[ct]*rad_deg;
-
-		//printf("phi %f theta %f\n", cml[ct], cml[ct+1]);
-		//cml[ct]=((int(cml[ct]*rad_deg*100000)+36000000)%36000000)/100000.0;
-	    }
-	    ct++;
-	    ct++;
-	}
-    }
-    return cml;
-}
-
 struct ori_t
 {
     int iphi;
@@ -4241,10 +4121,6 @@ vector<double> Util::cml_line_in3d(vector<float> Ori, vector<int> seq, int nprj,
 	    if (cml[c+1] > 89.99) {cml[c+1] = 89.99;} // this fix some pb in Voronoi
 	    cml[c] = rad_deg * atan2(nx, ny);
 	    cml[c] = fmod(360 + cml[c], 360);
-	    //cml[c] = rad_deg * acos(abs(nx) / sqrt(nx*nx+ny*ny));
-	    //if (nx < 0 && ny >= 0) {cml[c] += 90.0;}
-	    //if (nx < 0 && ny < 0) {cml[c] += 180.0;}
-	    //if (nx >=0 && ny < 0) {cml[c] += 270.0;}
 	    
 	}
     }
@@ -4326,185 +4202,14 @@ vector<double> Util::cml_spin_psi(const vector<EMData*>& data, vector<int> com, 
     return res;
 }
 
-/****************************************************
- * END OF NEW CODE FOR COMMON-LINES
- ****************************************************/
-
-
-//helper function for Cml
-vector<int> Util::cml_list_line_pos(vector<float> Ori, float newphi, float newtheta, int i_prj, int n_prj, int nangle, int nlines){
-    Dict d1;
-    Dict d2;
-    d1["type"] = "SPIDER";
-    d2["type"] = "SPIDER";
-    vector<int> com(2*nlines);
-    int count=0;
-    for(int i=0; i<=n_prj-2; i++){
-	for(int j=i+1; j<=n_prj-1; j++){
-	    if(i==i_prj){
-		    d1["phi"] = newphi;
-		    d1["theta"] = newtheta;
-		    d1["psi"] = 0.0;
-		    d2["phi"] = Ori[4*j];
-		    d2["theta"] = Ori[4*j+1];
-		    d2["psi"] = Ori[4*j+2];
-
-		    Transform R1(d1);
-		    Transform R2(d2);
-		    Transform R2T = R2.inverse();
-		    Transform R2to1 = R1*R2T;
-		    Dict eulerR2to1 = R2to1.get_rotation("SPIDER");
-		    float phiR2to1 = eulerR2to1["phi"];
-		    float psiR2to1 = eulerR2to1["psi"];
-
-		    int a1 = int(psiR2to1+270) % 360;
-		    int a2 = int(phiR2to1*(-1)+270) % 360;
-		    com[count] = int(nangle * float((a1+360)%360) / 360.0);
-		    com[count+1] = int(nangle * float((a2+360)%360) / 360.0);
-	    }
-	    if(j==i_prj){
-		    d1["phi"] = Ori[4*i];
-		    d1["theta"] = Ori[4*i+1];
-		    d1["psi"] = Ori[4*i+2];
-		    d2["phi"] = newphi;
-		    d2["theta"] = newtheta;
-		    d2["psi"] = 0.0;
-
-		    Transform R1(d1);
-		    Transform R2(d2);
-		    Transform R2T = R2.inverse();
-		    Transform R2to1 = R1*R2T;
-
-		    Dict eulerR2to1 = R2to1.get_rotation("SPIDER");
-		    float phiR2to1 = eulerR2to1["phi"];
-		    float psiR2to1 = eulerR2to1["psi"];
-
-		    int a1 = int(psiR2to1+270) % 360;
-		    int a2 = int(phiR2to1*(-1)+270) % 360;
-		    com[count] = int(nangle * float((a1+360)%360) / 360.0);
-		    com[count+1] = int(nangle * float((a2+360)%360) / 360.0);
-	    }
-	    count+=2;
-	}
-
-    }
-
-    return com;
-
-}
-
 #undef	QUADPI
 #undef	PI2
 #undef  deg_rad
 #undef  rad_deg
 
-//helper function for Cml
-vector<float> Util::cml_spin(int n_psi, int i_prj, int n_prj, vector<float> weights, vector<int> com, const vector<EMData*>& data, int flag){
-
-    vector<float> res(2);    // [best_disc, best_ipsi]
-    double best_disc=1.0e20;
-    int best_psi=-1;
-    // loop psi
-    for(int ipsi=0; ipsi<=n_psi-1; ipsi++){
-	// after psi != 0 update the common lines
-	
-	if(ipsi!=0){
-	    int count=0;
-	    for(int i=0; i<=n_prj-2; i++){
-		for(int j=i+1; j<=n_prj-1; j++){
-		    if(i==i_prj){com[count] = (com[count]+1)%n_psi;}
-		    if(j==i_prj){com[count+1] = (com[count+1]+1)%n_psi;}
-		    count+=2;
-		}
-	    }
-	}
-	
-	// do the distance with weighting
-	int n=0;
-	double L_tot=0.0;
-	double e=0.0;
-	//double tmp=0.0;
-	for(int i=0; i<=n_prj-2; i++){
-	    for(int j=i+1; j<=n_prj-1; j++){
-		if(i==i_prj||j==i_prj){
-		    e = data[i]->cm_euc(data[j], com[n], com[n+1]) * weights[int(n/2)];
-		    L_tot += e;
-		}
-		n+=2;
-	    }
-
-	}
-
-	// select the best discrepancy and index ipsi
-	if(L_tot<=best_disc){
-	    best_disc = L_tot;
-	    best_psi = ipsi;
-	}
-    }
-
-    res[0] = float(best_disc);
-    res[1] = float(best_psi);
-    return res;
-}
-
-//helper function for Cml
-vector<int> Util::cml_line_pos(float phi1, float theta1, float psi1, float phi2, float theta2, float psi2, int nangle){
-
-    vector<int> Res(2);
-    Dict d1;
-    Dict d2;
-    d1["type"] = "SPIDER";
-    d1["phi"] = phi1;
-    d1["theta"] = theta1;
-    d1["psi"] = psi1;
-    d2["type"] = "SPIDER";
-    d2["phi"] = phi2;
-    d2["theta"] = theta2;
-    d2["psi"] = psi2;
-
-    Transform R1(d1);
-    Transform R2(d2);
-
-    Transform R2T = R2.inverse();
-    Transform R2to1 = R1*R2T;
-
-    Dict eulerR2to1 = R2to1.get_rotation("SPIDER");
-    float phiR2to1 = eulerR2to1["phi"];
-    float psiR2to1 = eulerR2to1["psi"];
-
-    int a1 = int(psiR2to1+270) % 360;
-    int a2 = int(phiR2to1*(-1)+270) % 360;
-    Res[0] = int(nangle * float((a1+360)%360) / 360.0);
-    Res[1] = int(nangle * float((a2+360)%360) / 360.0);
-
-    return Res;
-}
-
-/*
-// temporaly comment, before removing
-// 2009-03-31 09:34:40 JB
-float Util::SqEuc_dist(EMData* image, EMData* with){
-        ENTERFUNC;
-
-	float *y_data = with->get_data();
-	float *x_data = image->get_data();
-	double result = 0.;
-
-	int nx = image->get_xsize();
-	int ny = image->get_ysize();
-	long totsize = nx * ny;
-	for (long i = 0; i < totsize; i++) {
-	    double temp = x_data[i] - y_data[i];
-	    result += temp*temp;
-	}
-
-	result /= totsize;
-
-	EXITFUNC;
-	return static_cast<float>(result);
-
-}
-*/
+/****************************************************
+ * END OF NEW CODE FOR COMMON-LINES
+ ****************************************************/
 
 // helper function for k-means
 Dict Util::min_dist_real(EMData* image, const vector<EMData*>& data) {
@@ -18872,8 +18577,6 @@ EMData* Util::get_slice(EMData *vol, int dim, int index) {
 
 	return slice;
 }
-
-
 
 
 

@@ -10321,6 +10321,7 @@ def cml_find_structure_main(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_se
 	from projection import cml_open_proj, cml_init_global_var, cml_head_log, cml_disc, cml_export_txtagls
 	from projection import cml_find_structure, cml_export_struc, cml_end_log
 	from utilities  import print_begin_msg, print_msg, print_end_msg, start_time, running_time
+	from copy       import deepcopy
 	from random     import seed, random
 	import time, sys, os
 
@@ -10341,10 +10342,11 @@ def cml_find_structure_main(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_se
 	# Init the global vars
 	cml_init_global_var(dpsi, delta, len(Prj), debug)
 	# Update logfile
-	cml_head_log(stack, out_dir, delta, ir, ou, lf, hf, rand_seed, maxit, given, flag_weights, trials)
+	cml_head_log(stack, out_dir, delta, ir, ou, lf, hf, rand_seed, maxit, given, flag_weights, trials, 1)
 
 	ibest    = -1
 	bestdisc = 1e20
+	MEM      = []
 	for itrial in xrange(trials):
 		# if not angles given select randomly orientation for each projection
 		if not given:
@@ -10363,7 +10365,7 @@ def cml_find_structure_main(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_se
 		# prepare rotation matrix
 		Rot = Util.cml_init_rot(Ori)
 		# Compute the first disc
-		disc_init = cml_disc(Prj, Ori, Rot, 0) #flag_weights)
+		disc_init = cml_disc(Prj, Ori, Rot)
 		# Update progress file
 		cml_export_txtagls(out_dir, 'angles_%03i' % itrial, Ori, disc_init, 'Init')
 		# Find structure
@@ -10372,16 +10374,14 @@ def cml_find_structure_main(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_se
 		if disc < bestdisc:
 			bestdisc = disc
 			ibest    = itrial
+			MEM      = deepcopy(Ori)
 
 		# Export structure
 		cml_export_struc(stack, out_dir, itrial, Ori)
 
-	# Update logfile
-	#cml_end_log(Ori, disc, ite)
-
 	print_msg('\n Selected trial #%03i with disc %10.7f\n' % (ibest, bestdisc))
 	os.system('cp %s/structure_%03i.hdf %s/structure.hdf' % (out_dir, ibest, out_dir))
-
+	cml_end_log(MEM)
 	running_time(t_start)
 	print_end_msg('find_struct')
 
@@ -10412,7 +10412,7 @@ def cml_find_structure_MPI(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_see
 	cml_init_global_var(dpsi, delta, len(Prj), debug)
 
 	# Update logfile
-	if myid == main_node: cml_head_log(stack, out_dir, delta, ir, ou, lf, hf, rand_seed, maxit, given, flag_weights, trials)
+	if myid == main_node: cml_head_log(stack, out_dir, delta, ir, ou, lf, hf, rand_seed, maxit, given, flag_weights, trials, nbcpu)
 
 	disc_init = [0.0] * trials
 	disc_end  = [0.0] * trials
@@ -10438,7 +10438,7 @@ def cml_find_structure_MPI(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_see
 		# prepare rotation matrix
 		Rot = Util.cml_init_rot(Ori)
 		# Compute the first disc
-		disc_init[itrial] = cml_disc(Prj, Ori, Rot, 0) #flag_weights)
+		disc_init[itrial] = cml_disc(Prj, Ori, Rot)
 		# Update progress file
 		cml_export_txtagls(out_dir, 'angles_%03i' % itrial, Ori, disc_init[itrial], 'Init')
 		# Find structure
@@ -10448,8 +10448,6 @@ def cml_find_structure_MPI(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_see
 
 		from development import cml2_ori_collinearity
 		coll[itrial] = cml2_ori_collinearity(Ori)
-
-
 
 	mpi_barrier(MPI_COMM_WORLD)
 	disc_init = mpi_reduce(disc_init, trials, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
@@ -10475,47 +10473,6 @@ def cml_find_structure_MPI(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_see
 
 		running_time(t_start)
 		print_end_msg('find_struct')
-	
-	# Update logfile
-	#cml_end_log(Ori, disc, ite)
-
-# application find subset to structure
-def cml_find_sub_main(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit, given = False, first_zero = False, flag_weights = False, debug = False, trials = 1):
-	from projection import cml_open_proj, cml_init_global_var, cml_head_log, cml_disc, cml_export_txtagls
-	from projection import cml_find_sub, cml_export_struc, cml_end_log
-	from utilities  import print_begin_msg, print_msg, print_end_msg, start_time, running_time
-	from random     import seed, random
-	import time, sys, os
-
-	# logfile
-	t_start = start_time()
-	print_begin_msg('find_sub')
-	print_msg('\n')
-
-	out_dir = out_dir.rstrip('/')
-	if os.path.exists(out_dir): ERROR('Output directory exists, please change the name and restart the program', " ", 1)
-	os.mkdir(out_dir)
-
-	# Open and transform projections
-	Prj, Ori = cml_open_proj(stack, ir, ou, lf, hf, dpsi)
-	# Init the global vars
-	cml_init_global_var(dpsi, delta, len(Prj), debug)
-	# Update logfile
-	cml_head_log(stack, out_dir, delta, ir, ou, lf, hf, rand_seed, maxit, given, flag_weights, trials)
-	# prepare rotation matrix
-	Rot = Util.cml_init_rot(Ori)
-	# Compute the first disc
-	disc_init = cml_disc(Prj, Ori, Rot, 0) #flag_weights)
-	# Update progress file
-	cml_export_txtagls(out_dir, 'angles_%03i' % itrial, Ori, disc_init, 'Init')
-	# Find structure
-	Ori, disc, ite = cml_find_sub(Prj, Ori, Rot, out_dir, 'angles_%03i' % itrial, maxit, first_zero, flag_weights)
-	# Export structure
-	#cml_export_struc(stack, out_dir, itrial, Ori)
-
-	running_time(t_start)
-	print_end_msg('find_sub')
-
 
 def extract_value( s ):
 	from string import atoi, atof
@@ -11830,12 +11787,12 @@ def k_means_groups(stack, out_file, maskname, opt_method, K1, K2, rand_seed, max
 # 2008-12-18 11:43:11
 
 # K-means main stability
-def k_means_stab(stack, outdir, maskname, opt_method, K, npart = 5, CTF = False, F = 0, FK = 0, maxrun = 50, th_nobj = 0, th_stab_max = 6.0, th_stab_min = 3.0, th_dec = 5, restart = 1, MPI = False, CUDA = False, bck = False):
+def k_means_stab(stack, outdir, maskname, opt_method, K, npart = 5, CTF = False, F = 0, FK = 0, maxrun = 50, th_nobj = 0, th_stab_max = 6.0, th_stab_min = 3.0, th_dec = 5, MPI = False, CUDA = False):
 	if MPI:
-		k_means_stab_MPI(stack, outdir, maskname, opt_method, K, npart, CTF, F, FK, maxrun, th_nobj, th_stab_max, th_stab_min, th_dec, restart, bck)
+		k_means_stab_MPI(stack, outdir, maskname, opt_method, K, npart, CTF, F, FK, maxrun, th_nobj, th_stab_max, th_stab_min, th_dec)
 		return
 	elif CUDA:
-		k_means_stab_CUDA(stack, outdir, maskname, K, npart, F, FK, maxrun, th_nobj, th_stab_max, th_stab_min, th_dec, restart, bck)
+		k_means_stab_CUDA(stack, outdir, maskname, K, npart, F, FK, maxrun, th_nobj, th_stab_max, th_stab_min, th_dec)
 		return
 	
 	from utilities 	 import print_begin_msg, print_end_msg, print_msg, file_type
@@ -11853,9 +11810,8 @@ def k_means_stab(stack, outdir, maskname, opt_method, K, npart = 5, CTF = False,
 	os.mkdir(outdir)
 
 	# create main log
-	if restart == 1:
-		f = open(outdir + '/main_log.txt', 'w')
-		f.close()
+	f = open(outdir + '/main_log.txt', 'w')
+	f.close()
 	logging.basicConfig(filename = outdir + '/main_log.txt', format = '%(asctime)s     %(message)s', level = logging.INFO)
 	logging.info('::: Start k-means stability :::')
 
@@ -11864,15 +11820,10 @@ def k_means_stab(stack, outdir, maskname, opt_method, K, npart = 5, CTF = False,
 	for n in xrange(1, npart + 1): rnd.append(n * (10**n))
 	logging.info('Init list random seed: %s' % rnd)
 
-	# init tag to the header for the stack file
-	#if restart == 1:
-	#	logging.info('Init header to the stack file')
-	#	k_means_stab_init_tag(stack)
-
 	# loop over run
 	stb          = 6.0
 	flag_run     = True
-	num_run      = restart - 1
+	num_run      = 0
 	while flag_run:
 		flag_cluster = False
 		num_run += 1
@@ -11914,18 +11865,16 @@ def k_means_stab(stack, outdir, maskname, opt_method, K, npart = 5, CTF = False,
 			
 			ALL_ASG.append(assign)
 
-			if bck:
-				import pickle
-				f = open('run%02d_part%02d.pck' % (num_run, n), 'w')
-				pickle.dump(assign, f)
-				f.close()
 		print_end_msg('k-means')
 
 		if flag_cluster:
 			num_run -= 1
-			dec = int(K * (stb / 100.0))
-			if dec < th_dec: K -= th_dec
-			else: 	         K -= dec
+			if   FK == 0: K -= th_dec
+			else:
+				newK = int(float(K) * FK)
+				if (K - newK) < th_dec: K -= th_dec
+				else: K = newK
+
 			if K > 1:
 				logging.info('[WARNING] Restart the run with K = %d' % K)
 				continue
@@ -11943,10 +11892,11 @@ def k_means_stab(stack, outdir, maskname, opt_method, K, npart = 5, CTF = False,
 
 		# manage the stability
 		if stb < th_stab_max:
-			newK = int(float(K) * FK)   # cooling factor on K
-			if (K - newK) < th_dec:
-				K -= th_dec
-			else:   K  = newK
+			if   FK == 0: K -= th_dec
+			elif FK != 1:
+				newK = int(float(K) * FK)
+				if (K - newK) < th_dec: K -= th_dec
+				else: K = newK
 
 		if K < 2:
 			logging.info('[STOP] Not enough number of clusters')
@@ -11976,7 +11926,7 @@ def k_means_stab(stack, outdir, maskname, opt_method, K, npart = 5, CTF = False,
 	logging.info('::: END k-means stability :::')
 
 # K-means main stability
-def k_means_stab_CUDA(stack, outdir, maskname, K, npart = 5, F = 0, FK = 0, maxrun = 50, th_nobj = 0, th_stab_max = 6.0, th_stab_min = 3.0, th_dec = 5, restart = 1, bck = False):
+def k_means_stab_CUDA(stack, outdir, maskname, K, npart = 5, F = 0, FK = 0, maxrun = 50, th_nobj = 0, th_stab_max = 6.0, th_stab_min = 3.0, th_dec = 5):
 	
 	from utilities 	 import print_begin_msg, print_end_msg, print_msg
 	from utilities   import model_blank, get_image, get_im
@@ -11987,15 +11937,13 @@ def k_means_stab_CUDA(stack, outdir, maskname, K, npart = 5, F = 0, FK = 0, maxr
 	from statistics  import k_means_stab_asg2part, k_means_stab_H, k_means_stab_export
 	import sys, logging, os, pickle
 
-	# if is the first round
-	if restart == 1:
-		# create a directory
-		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
-		os.mkdir(outdir)
+	# create a directory
+	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
+	os.mkdir(outdir)
 
-		# create main log
-		f = open(outdir + '/main_log.txt', 'w')
-		f.close()
+	# create main log
+	f = open(outdir + '/main_log.txt', 'w')
+	f.close()
 		
 	logging.basicConfig(filename = outdir + '/main_log.txt', format = '%(asctime)s     %(message)s', level = logging.INFO)
 	logging.info('::: Start k-means stability :::')
@@ -12005,14 +11953,9 @@ def k_means_stab_CUDA(stack, outdir, maskname, K, npart = 5, F = 0, FK = 0, maxr
 	for n in xrange(1, npart + 1): rnd.append(n * (10**n))
 	logging.info('Init list random seed: %s' % rnd)
 
-	# init tag to the header for the stack file
-	#if restart == 1:
-	#	logging.info('Init header to the stack file')
-	#	k_means_stab_init_tag(stack)
-
 	# loop over run
 	flag_run     = True
-	num_run      = restart - 1
+	num_run      = 0
 	maxit        = int(1e9)
 	T0           = float(-1) # auto
 	while flag_run:
@@ -12075,7 +12018,12 @@ def k_means_stab_CUDA(stack, outdir, maskname, K, npart = 5, F = 0, FK = 0, maxr
 		# flow control if empty cluster
 		if flag_cluster:
 			num_run -= 1
-			K       -= th_dec
+			if   FK == 0: K -= th_dec
+			else:
+				newK = int(float(K) * FK)
+				if (K - newK) < th_dec: K -= th_dec
+				else: K = newK
+
 			if K > 1:
 				logging.info('[WARNING] Restart the run with K = %d' % K)
 				continue
@@ -12086,11 +12034,6 @@ def k_means_stab_CUDA(stack, outdir, maskname, K, npart = 5, F = 0, FK = 0, maxr
 		# convert local assignment to absolute partition
 		logging.info('... Convert local assign to abs partition')
 		ALL_PART = k_means_stab_asg2part(ALL_ASG, LUT)
-
-		if bck:
-			f = open('run%02d_partition.pck' % num_run, 'w')
-			pickle.dump(PART, f)
-			f.close()
 
 		# glooton control
 		try:
@@ -12130,10 +12073,11 @@ def k_means_stab_CUDA(stack, outdir, maskname, K, npart = 5, F = 0, FK = 0, maxr
 
 		# manage the stability
 		if stb < th_stab_max:
-			newK = int(float(K) * FK)   # cooling factor on K
-			if (K - newK) < th_dec:
-				K -= th_dec
-			else:   K  = newK
+			if   FK == 0: K -= th_dec
+			elif FK != 1:
+				newK = int(float(K) * FK)
+				if (K - newK) < th_dec: K -= th_dec
+				else: K = newK
 
 		if K < 2:
 			logging.info('[STOP] Not enough number of clusters')
@@ -12162,123 +12106,8 @@ def k_means_stab_CUDA(stack, outdir, maskname, K, npart = 5, F = 0, FK = 0, maxr
 	
 	logging.info('::: END k-means stability :::')
 
-# K-means main stability only one run, this function is used to do the stability in streamlines with the alignment
-def k_means_stab_CUDA_one_run(stack, outdir, maskname, K, npart = 5, F = 0, th_stab_min = 3.0, restart = 1):
-	from utilities 	 import print_begin_msg, print_end_msg, print_msg
-	from utilities   import model_blank, get_image, get_im
-	from statistics  import k_means_cuda_init_open_im, k_means_cuda_open_im, k_means_stab_init_tag
-	from statistics  import k_means_cuda_headlog, k_means_cuda_error, k_means_cuda_info
-
-	from statistics  import k_means_stab_update_tag, k_means_stab_gather, k_means_stab_init_tag
-	from statistics  import k_means_stab_asg2part, k_means_stab_H, k_means_stab_export
-	import sys, logging, os, pickle
-
-	# if is the first round
-	if restart == 1:
-		# create a directory
-		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
-		os.mkdir(outdir)
-
-		# create main log
-		f = open(outdir + '/main_log.txt', 'w')
-		f.close()
-		
-	logging.basicConfig(filename = outdir + '/main_log.txt', format = '%(asctime)s     %(message)s', level = logging.INFO)
-	
-	if restart == 1: logging.info('::: Start k-means stability :::')
-
-	# manage random seed
-	rnd = []
-	for n in xrange(1, npart + 1): rnd.append(n * (10**n))
-	logging.info('Init list random seed: %s' % rnd)
-
-	# init tag to the header for the stack file
-	if restart == 1:
-		logging.info('Init header to the stack file')
-		k_means_stab_init_tag(stack)
-
-	# loop over run
-	num_run      = restart
-	maxit        = int(1e9)
-	T0           = float(-1) # auto
-
-	logging.info('RUN %02d K = %03d %s' % (num_run, K, 40 * '-'))
-
-	# create k-means obj
-	KmeansCUDA = CUDA_kmeans()
-
-	# open unstable images
-	logging.info('... Open images')
-	LUT, mask, N, m = k_means_cuda_init_open_im(stack, maskname)
-	logging.info('... %d unstable images found' % N)
-	if N < 2:
-		logging.info('[STOP] Not enough images')
-		return 'STOP', 0
-	
-	KmeansCUDA.setup(m, N, K, F, T0, maxit, 0)
-	k_means_cuda_open_im(KmeansCUDA, stack, LUT, mask)
-
-	# loop over partition
-	ALL_ASG = []
-	print_begin_msg('k-means')
-	for n in xrange(npart):
-		# info
-		logging.info('...... Start partition: %d' % (n + 1))
-		partdir = 'partition %d' % (n + 1)
-		ncpu    = 1
-		method  = 'cla'
-		k_means_cuda_headlog(stack, partdir, method, N, K, maskname, maxit, T0, F, rnd[n], ncpu, m)
-
-		# classification
-		KmeansCUDA.set_rnd(rnd[n])
-		status = KmeansCUDA.kmeans()
-		if   status == 0:
-			pass
-		elif status == 4:
-			logging.info('[WARNING] Empty cluster')
-			k_means_cuda_error(status)
-			logging.info('[STOP] Not enough images')
-			return 'EMPTY', 0
-		else:
-			k_means_cuda_error(status)
-			sys.exit()
-
-		# get back the partition and its infos
-		PART = KmeansCUDA.get_partition()
-		ALL_ASG.append(PART)
-		INFO = KmeansCUDA.get_info()
-		k_means_cuda_info(INFO)
-
-	# end of classification
-	print_end_msg('k-means')
-
-	# destroy k-means
-	del KmeansCUDA
-
-	# convert local assignment to absolute partition
-	logging.info('... Convert local assign to abs partition')
-	ALL_PART = k_means_stab_asg2part(ALL_ASG, LUT)
-
-	# calculate the stability
-	stb, nb_stb, STB_PART = k_means_stab_H(ALL_PART)
-	logging.info('... Stability: %5.2f %% (%d objects)' % (stb, nb_stb))
-
-	if stb < th_stab_min:
-		logging.info('[WARNING] Stability too low, restart the run with K = %d' % K)
-		return 'LOW', stb
-
-	# export the stable class averages
-	logging.info('... Export stable class averages: average_stb_run%02d.hdf' % num_run)
-	k_means_stab_export(STB_PART, stack, num_run, outdir)
-
-	# tag informations to the header
-	logging.info('... Update info to the header')
-	k_means_stab_update_tag(stack, ALL_PART, STB_PART, num_run)
-
-	return 'OK', stb
-
 # K-means main stability
-def k_means_stab_MPI(stack, outdir, maskname, opt_method, K, npart = 5, CTF = False, F = 0, FK = 0, maxrun = 50, th_nobj = 0, th_stab_max = 6.0, th_stab_min = 3.0, th_dec = 5, restart = 1, bck = False):
+def k_means_stab_MPI(stack, outdir, maskname, opt_method, K, npart = 5, CTF = False, F = 0, FK = 0, maxrun = 50, th_nobj = 0, th_stab_max = 6.0, th_stab_min = 3.0, th_dec = 5):
 	from utilities 	 import print_begin_msg, print_end_msg, print_msg, file_type
 	from statistics  import k_means_stab_update_tag, k_means_headlog, k_means_open_unstable_MPI, k_means_stab_gather
 	from statistics  import k_means_cla_MPI, k_means_SSE_MPI, k_means_SA_T0_MPI, k_means_stab_init_tag
@@ -12298,7 +12127,7 @@ def k_means_stab_MPI(stack, outdir, maskname, opt_method, K, npart = 5, CTF = Fa
 	maxit    = 1e9
 	critname = ''
 
-	if myid == main_node and restart == 1:
+	if myid == main_node:
 		if os.path.exists(outdir): ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 		os.mkdir(outdir)
 
@@ -12312,15 +12141,10 @@ def k_means_stab_MPI(stack, outdir, maskname, opt_method, K, npart = 5, CTF = Fa
 	for n in xrange(1, npart + 1): rnd.append(n * (10**n))
 	if myid == main_node: logging.info('Init list random seed: %s' % rnd)
 
-	# init tag to the header for the stack file
-	#if restart == 1 and myid == main_node:
-	#	logging.info('Init header to the stack file')
-	#	k_means_stab_init_tag(stack)
-
 	# loop over run
 	stb          = 6.0
 	flag_run     = True
-	num_run      = restart - 1
+	num_run      = 0
 	while flag_run:
 		flag_cluster = False
 		num_run += 1
@@ -12368,20 +12192,17 @@ def k_means_stab_MPI(stack, outdir, maskname, opt_method, K, npart = 5, CTF = Fa
 					break
 			
 			ALL_ASG.append(assign)
-
-			if myid == main_node and bck:
-				import pickle
-				f = open('run%02d_part%02d.pck' % (num_run, part), 'w')
-				pickle.dump(assign, f)
-				f.close()
 				
 		if myid == main_node: print_end_msg('k-means')
 
 		if flag_cluster:
 			num_run -= 1
-			dec = int(K * (stb / 100.0))
-			if dec < th_dec: K -= th_dec
-			else: 	         K -= dec
+			if   FK == 0: K -= th_dec
+			else:
+				newK = int(float(K) * FK)
+				if (K - newK) < th_dec: K -= th_dec
+				else: K = newK
+				
 			if K > 1:
 				if myid == main_node: logging.info('[WARNING] Restart the run with K = %d' % K)
 				mpi_barrier(MPI_COMM_WORLD)
@@ -12406,10 +12227,11 @@ def k_means_stab_MPI(stack, outdir, maskname, opt_method, K, npart = 5, CTF = Fa
 
 		# manage the stability
 		if stb < th_stab_max:
-			newK = int(float(K) * FK)   # cooling factor on K
-			if (K - newK) < th_dec:
-				K -= th_dec
-			else:   K  = newK
+			if   FK == 0: K -= th_dec
+			elif FK != 1:
+				newK = int(float(K) * FK)
+				if (K - newK) < th_dec: K -= th_dec
+				else: K = newK
 
 		if K < 2:
 			if myid == main_node: logging.info('[STOP] Not enough number of clusters')
