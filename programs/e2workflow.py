@@ -455,21 +455,21 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		
 		
 		mis_list = []
-		mis_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Examine Particles")))
-		self.launchers["Examine Particles"] = self.launch_examine_particle_stacks
-		mis_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Make Particle Set")))
-		self.launchers["Make Particle Set"] = self.launch_make_ptcl_set
+#		mis_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Examine Particles")))
+#		self.launchers["Examine Particles"] = self.launch_examine_particle_stacks
+		mis_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Build Particle Sets")))
+		self.launchers["Build Particle Sets"] = self.launch_make_ptcl_set
 		mis_list[0].setIcon(0,self.icons["multiple_images"])
-		mis_list[1].setIcon(0,self.icons["multiple_images"])
+#		mis_list[1].setIcon(0,self.icons["multiple_images"])
 		mis.addChildren(mis_list)
 		
 		refine2d_list = []
 		refine2d_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Generate Classes (Sets) - e2refine2d")))
 		refine2d_list[-1].setIcon(0,self.icons["classes"])
 		self.launchers["Generate Classes (Sets) - e2refine2d"] = self.launch_refine2d_choose_stacks
-		refine2d_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Generate Classes (Particles) - e2refine2d")))
-		self.launchers["Generate Classes (Particles) - e2refine2d"] = self.launch_refine2d_choose_ptcls
-		refine2d_list[-1].setIcon(0,self.icons["classes"])
+#		refine2d_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Generate Classes (Particles) - e2refine2d")))
+#		self.launchers["Generate Classes (Particles) - e2refine2d"] = self.launch_refine2d_choose_ptcls
+#		refine2d_list[-1].setIcon(0,self.icons["classes"])
 		refine2d.addChildren(refine2d_list)
 		
 		init_model_list = []
@@ -484,9 +484,9 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		refine_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Run (Sets) e2refine")))
 		refine_list[-1].setIcon(0,self.icons["refine"])
 		self.launchers["Run (Sets) e2refine"] = self.launch_e2refine_sets
-		refine_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Run (Particles) e2refine")))
-		refine_list[-1].setIcon(0,self.icons["refine"])
-		self.launchers["Run (Particles) e2refine"] = self.launch_e2refine
+#		refine_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Run (Particles) e2refine")))
+#		refine_list[-1].setIcon(0,self.icons["refine"])
+#		self.launchers["Run (Particles) e2refine"] = self.launch_e2refine
 		
 		refinement.addChildren(refine_list)
 		
@@ -859,7 +859,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	def launch_e2ctf_auto_ft(self): self.launch_task(E2CTFAutoFitTask(),"e2ctf Auto Fitting")
 	def launch_ctf_report(self):self.launch_task(CTFReportTask(),"CTF Report")
 	def launch_mis_report(self): self.launch_task(EMStackReportTask(),"Project Stacks")
-	def launch_make_ptcl_set(self):	self.launch_task(E2MakeStackChooseDataTask(),"Make Particle Set")
+	def launch_make_ptcl_set(self):	self.launch_task(E2MakeStackChooseDataTask(),"Build Particle Set")
 	def launch_examine_particle_stacks(self): self.launch_task(E2ParticleExamineChooseDataTask(),"Examine Particles")
 	def launch_particle_report(self): self.launch_task(ParticleReportTask(),"Particle Report")
 	def launch_tomo_particle_report(self): self.launch_task(TomoParticleReportTask(),"Tomogram Particle Report")

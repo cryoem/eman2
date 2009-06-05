@@ -114,8 +114,8 @@ class EMParallelProject3D:
 			resid_eulers = len(self.eulers) - eulers_per_task*num_tasks # we can distribute the residual evenly
 			
 			first = 0
-			self.task_customers = []
-			self.tids = []
+			task_customers = []
+			tids = []
 			for i in xrange(0,num_tasks):
 				last = first+eulers_per_task
 				if resid_eulers > 0:
@@ -138,41 +138,51 @@ class EMParallelProject3D:
 				tid=etc.send_task(task)
 					#print "Task submitted tid=",tid
 					
-				self.task_customers.append(etc)
-				self.tids.append(tid)
+				task_customers.append(etc)
+				tids.append(tid)
 				
 				first = last
 				
+			print "Task ids are", tids
+				
 			while 1:
-				if len(self.task_customers) == 0: break
-				print len(self.task_customers),"projection tasks left in main loop"
-				st_vals = self.task_customers[0].check_task(self.tids)
-				for i in xrange(len(self.task_customers)-1,-1,-1):
+				
+				print len(task_customers),"projection tasks left in main loop"
+				st_vals = task_customers[0].check_task(tids)
+				for i in xrange(len(task_customers)-1,-1,-1):
 					st = st_vals[i]
 					if st==100:
-						task_customer = self.task_customers[i]
-						tid = self.tids[i] 
+						task_customer = task_customers[i]
+						tid = tids[i] 
 						
 						rslts = task_customer.get_results(tid)
-						self.__write_output_data(rslts[1])
+						if not self.__write_output_data(rslts[1]):
+							print "There was a problem with the task of id",tid
+							
 						if self.logger != None:
-							E2progress(self.logger,1.0-len(self.task_customers)/float(num_tasks))
+							E2progress(self.logger,1.0-len(task_customers)/float(num_tasks))
 							if self.options.verbose: 
-								print "%d/%d\r"%(num_tasks-len(self.task_customers),num_tasks)
+								print "%d/%d\r"%(num_tasks-len(task_customers),num_tasks)
 								sys.stdout.flush()
 								
-						self.task_customers.pop(i)
-						self.tids.pop(i)
-				
+						task_customers.pop(i)
+						print "Task",tids.pop(i),"complented"
+						print "These tasks are remaining:",tids
+						
+				if len(task_customers) == 0: break
 				time.sleep(5)
 		else:
 			raise NotImplementedError("The parallelism option you specified (%s) is not suppored" %self.options.parallel )
 				
 	def __write_output_data(self,rslts):
+		if not rslts.has_key("projections"):
+			print "Something went wrong, there is no projections key in the results?"
+			return False
 		for idx,image in rslts["projections"].items():
 			t = image.get_attr("xform.projection")
-			print t
 			image.write_image(self.options.outfile,idx)
+		
+		return True
 			
 	
 from EMAN2db import EMTask

@@ -1236,7 +1236,6 @@ class EMFSListing:
 				accrue_public_attributes(a,b)
 					
 		for file in files:
-			print file
 			self.list_file(file,directory,list_widget)
 		return True
 	

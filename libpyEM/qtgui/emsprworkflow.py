@@ -373,7 +373,8 @@ class WorkFlowTask(QtCore.QObject):
 				
 		for arg in additional_args:
 			args.append(arg)
-		print "command is ",program
+		
+		# this prints the full command
 		for i in args: print i,
 #		print ""
 #		
@@ -4687,7 +4688,6 @@ class E2RefineParticlesTask(EMClassificationTools, E2Make3DTools):
 		# Steve is rethinking how we remember programs arguments
 		#self.write_db_parms(options,string_args,bool_args)
 		
-		print "spawning"
 		self.spawn_single_task("e2refine.py",options,string_args,bool_args,additional_args,temp_file_name)
 		self.emit(QtCore.SIGNAL("task_idle"))
 		self.form.closeEvent(None)
