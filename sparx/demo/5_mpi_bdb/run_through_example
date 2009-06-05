@@ -2,17 +2,17 @@
 
 set echo on
 
-#e2pdb2em.py ../tteftu_with_tRNA.pdb tmp.hdf --apix=5.2 --box=64
+e2pdb2em.py ../tteftu_with_tRNA.pdb tmp.hdf --apix=5.2 --box=64
 
-#e2proc3d.py tmp.hdf ../fmodel_structure.hdf --filter=sxTANH_LOW_PASS:cutoff_frequency=0.15:fall_off=0.2 || exit
+e2proc3d.py tmp.hdf ../fmodel_structure.hdf --filter=sxTANH_LOW_PASS:cutoff_frequency=0.15:fall_off=0.2 || exit
 
-#e2proc3d.py tmp.hdf ../model_structure.hdf --filter=sxTANH_LOW_PASS:cutoff_frequency=0.45:fall_off=0.1 || exit
+e2proc3d.py tmp.hdf ../model_structure.hdf --filter=sxTANH_LOW_PASS:cutoff_frequency=0.45:fall_off=0.1 || exit
 
-#rm tmp.hdf
+rm tmp.hdf
 
 ../generate_projections.py --format="bdb"  || exit
 
-#e2boxer.py --method=Gauss -A cmd -B 64 --write_box_images --var --pix_in=5.2 --pix_out=5.2 --ccf_lo=2.17 --ccf_hi=18.11 --outformat=bdb --out_file=bdb:data2 mic*.hdf --force
+e2boxer.py --method=Gauss -A cmd -B 64 --write_box_images --var --pix_in=5.2 --pix_out=5.2 --ccf_lo=2.17 --ccf_hi=18.11 --outformat=bdb --out_file=bdb:data2 mic*.hdf --force
 
 # Reference-free alignment of the entire 2D dataset
 mpirun -np 2 sxali2d_c.py bdb:data ali2d_c --ou=30 --xr=3 --yr=3 --ts=1 --maxit=5 --MPI || exit
