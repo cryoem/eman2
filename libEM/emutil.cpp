@@ -60,6 +60,7 @@ EMUtil::ImageType EMUtil::get_image_ext_type(const string & file_ext)
 	static map < string, ImageType > imagetypes;
 
 	if (!initialized) {
+		imagetypes["rec"] = IMAGE_MRC;
 		imagetypes["mrc"] = IMAGE_MRC;
 		imagetypes["MRC"] = IMAGE_MRC;
 

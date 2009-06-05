@@ -471,7 +471,7 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.filter_combo.addItem("EM types")
 		self.filter_combo.addItem("Databases") # this doesn't really do anything
 		self.filter_combo.addItem("*.spi,*.hdf,*.img, bdb:")
-		self.filter_combo.addItem("*.hdf,*.img,*.hed,*.spi,bdb:,*.tif,*.mrc,*.dm3, *.pif")
+		self.filter_combo.addItem("*.hdf,*.img,*.hed,*.spi,bdb:,*.tif,*.mrc,*.dm3, *.pif, *.rec")
 		self.filter_combo.addItem("*.*")
 		self.filter_combo.addItem("*")
 		self.filter_combo.setEditable(True)
@@ -1236,6 +1236,7 @@ class EMFSListing:
 				accrue_public_attributes(a,b)
 					
 		for file in files:
+			print file
 			self.list_file(file,directory,list_widget)
 		return True
 	
