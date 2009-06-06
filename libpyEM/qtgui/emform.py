@@ -385,6 +385,9 @@ class EMFileTable(QtGui.QTableWidget):
 				flag3 = Qt.ItemFlags(Qt.ItemIsEnabled)
 				item.setFlags(flag3)
 				self.setItem(r+i,j+1, item)
+			
+			if self.single_selection and i == (len(list_of_names)-1):
+				item.setSelected(True)
 		self.setSortingEnabled(sorting)
 		
 		if r == 0:

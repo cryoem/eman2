@@ -92,7 +92,7 @@ def print_usage():
 
 def main():
 	parser=OptionParser(usage=get_usage())
-	parser.add_option("--output", default="threed.mrc", help="Output reconstructed volume file name.")
+	parser.add_option("--output", default="threed.hdf", help="Output reconstructed volume file name.")
 	parser.add_option("--input", default=None, help="The input projections. Project should usually have the xform.projection header attribute, which is used for slice insertion")
 
 	parser.add_option("--sym", dest="sym", default="c1", help="Set the symmetry; if no value is given then the model is assumed to have no symmetry.\nChoices are: i, c, d, tet, icos, or oct.")
@@ -116,6 +116,8 @@ def main():
 	
 	parser.add_option("--start", default=None,type="string", help="This is a starting model for FFT reconstruction")
 	parser.add_option("--smw", default=1.0,type="float", help="This is the starting model weight")
+	# Database Metadata storage
+	parser.add_option("--dbls",type="string",default=None,help="data base list storage, used by the workflow. You can ignore this argument.",default=None)
 	
 	(options, args) = parser.parse_args()
 
@@ -200,7 +202,7 @@ def main():
 	# Now do the reconstruction
 	(recon_type, parms) = (parsemodopt(options.recon_type))
 	if recon_type=="fourier":
-		output=fourier_reconstruction(options)
+		output=fourier_reconstruction(options,logger)
 		# If the user is specifying reconstructor sampling, then suppress
 		# depadding after reconstruction in the particular direction
 		if "xsample" in parms: options.suppress_x_clip = True
@@ -212,7 +214,7 @@ def main():
 	elif recon_type=="back_projection":
 		output=back_projection_reconstruction(options)
 	elif recon_type=="fourier2D":
-		output=fourier2D_reconstruction(options)
+		output=fourier2D_reconstruction(options,logger)
 	else:
 		# this point should never be reached
 		sys.stderr.write("%s reconstuctor is not supported" %options.recon_type)
@@ -281,6 +283,12 @@ def main():
 	output.write_image(options.output,0)
 	if options.verbose:
 			print "Output File: "+options.output
+
+	if options.dbls:
+		pdb = db_open_dict("bdb:project")
+		tmp_list = pdb.get(options.dbls, dfl=[])	
+		tmp_list.append(options.output)
+		pdb[options.dbls] = tmp_list
 
 	E2end(logger)
 	
@@ -494,7 +502,7 @@ def fourier2D_reconstruction(options):
 
 	return output
 	
-def fourier_reconstruction(options):
+def fourier_reconstruction(options,logid):
 	if (options.verbose):
 		print "Initializing the reconstructor ..."
 	
@@ -543,6 +551,8 @@ def fourier_reconstruction(options):
 	if (options.verbose):
 		print "Inserting Slices"
 	
+	total_progress = (options.iter+1)*total_images + (options.iter)*total_images+10 
+	progress = 0
 	for j in xrange(0,options.iter+1):
 		removed = 0;
 		
@@ -571,6 +581,8 @@ def fourier_reconstruction(options):
 				
 				t = image.get_attr("xform.projection")
 				recon.determine_slice_agreement(image,t,num_img)
+				progress += 1
+				E2progress(logid,float(progress)/total_progress)
 				tot += 1
 				if options.verbose:
 					sys.stdout.write(".")
@@ -629,7 +641,8 @@ def fourier_reconstruction(options):
 			t = image.get_attr("xform.projection")
 			r = t.get_params("eman")
 			failure = recon.insert_slice(image,t)
-			
+			progress += 1
+			E2progress(logid,float(progress)/total_progress)
 			ptcl_repr = 0
 			if image.has_attr("ptcl_repr"):
 				ptcl_repr = image.get_attr("ptcl_repr")
@@ -654,6 +667,8 @@ def fourier_reconstruction(options):
 	if (options.verbose):
 		print "Inverting 3D Fourier volume to generate the real space reconstruction"
 	output = recon.finish()
+	progress += 10
+	E2progress(logid,float(progress)/total_progress)
 	if (options.verbose):
 		print "Finished Reconstruction"
 

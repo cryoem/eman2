@@ -185,7 +185,7 @@ def main():
 		
 		if options.dbls:
 			pdb = db_open_dict("bdb:project")
-			tmp_list = pdb.get("global.spr_ref_free_class_aves", dfl=[])	
+			tmp_list = pdb.get(options.dbls, dfl=[])	
 			most_recent_classes = "%s#classes_init" %options.path
 			tmp_list.append(most_recent_classes)
 			# global.spr_ref_free_class_aves
@@ -243,7 +243,7 @@ def main():
 		
 		if options.dbls:
 			pdb = db_open_dict("bdb:project")
-			tmp_list = pdb.get("global.spr_ref_free_class_aves", dfl=[])
+			tmp_list = pdb.get(options.dbls, dfl=[])
 			if most_recent_classes != None:
 				try:
 					tmp_list.remove(most_recent_classes)

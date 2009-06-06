@@ -40,6 +40,33 @@ import os
 
 # For example usage see http://blake.bcm.edu/emanwiki/EMAN2ImageFormats#SavingEMDatafromPython
 
+class EMFileTypeValidator:
+	'''
+	A basic validator class - checks to make sure the file name is valid using the file type
+	'''
+	def __init__(self,type="img"):
+		'''
+		@param type a file type string such as "tlt","hdf" etc
+		'''
+		self.type = type
+	
+	def validate_file_name(self,file_name):
+		'''
+		Validate the file name 
+		Checks to make sure the file name is valid
+		@return 0 if something went wrong, for example, the file is not valid
+		'''
+		
+		msg = QtGui.QMessageBox()
+		vals = file_name.split(".")
+		if len(vals) < 2 or vals[-1] != self.type:
+			# error is therefore a string
+			msg.setText("%s is not of type %s" %(file_name,self.type))
+			msg.exec_()
+			return 0
+			
+		return 1
+
 def save_data(item_object):
 	'''
 	Intended to be the only function you need ever call if you want to save EM image data, be it one or many.

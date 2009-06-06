@@ -34,10 +34,8 @@ from OpenGL import GL,GLUT
 from math import *
 from EMAN2 import get_3d_font_renderer, Util,glut_inited
 import sys
-try: from EMAN2 import FTGLFontMode
-except: pass
-from libpyGLUtils2 import GLUtil
 
+from libpyGLUtils2 import *
 
 
 def initGL():
@@ -82,6 +80,7 @@ class EMShape:
 		self.blendinc = 0.2
 		self.isanimated = False
 		if EMShape.font_renderer == None:
+			
 			try:
 				EMShape.font_renderer = get_3d_font_renderer()
 				EMShape.font_renderer.set_face_size(16)

@@ -359,8 +359,9 @@ class WorkFlowTask(QtCore.QObject):
 								
 		#args = [program]
 		args = [e2getinstalldir()+"/bin/"+program]
-		for name in options.filenames:
-			args.append(name)
+		if hasattr(options,"filenames"):
+			for name in options.filenames:
+				args.append(name)
 
 		for string in string_args:
 			args.append("--"+string+"="+str(getattr(options,string)))
@@ -1150,11 +1151,12 @@ class ParticleWorkFlowTask(WorkFlowTask):
 			
 
 	class DataContextMenu:
-		def __init__(self):
-#			self.validator = AddFilesToProjectValidator(self.project_list)
+		def __init__(self,validator=None):
+			
+			self.validator = validator
 			self.context_menu = {}
 			self.context_menu["Remove"] = ParticleWorkFlowTask.RemoveDataFromTable()
-			self.context_menu["Add"] = ParticleWorkFlowTask.AddDataToTable()
+			self.context_menu["Add"] = ParticleWorkFlowTask.AddDataToTable(validator)
 		
 		def items(self):
 			return self.context_menu.items()
@@ -1177,17 +1179,16 @@ class ParticleWorkFlowTask(WorkFlowTask):
 				table_widget.removeRow(idx)
 				
 	class AddDataToTable:
-		def __init__(self):
-			pass
-#			self.validator = AddFilesToProjectValidator(self.project_list)
+		def __init__(self,validator=None):
+			self.validator = validator
 			
 		def __call__(self,list_of_names,table_widget):
 		
-	#def add_files_from_context_menu(self,list_of_names,table_widget):
 			from emselector import EMSelectorModule
 			em_qt_widget = EMSelectorModule()
 			
-			#em_qt_widget.widget.set_validator(self.validator)
+			if self.validator != None: 
+				em_qt_widget.widget.set_validator(self.validator)
 			files = em_qt_widget.exec_()
 			
 			if files != "":
@@ -1239,70 +1240,6 @@ class ParticleWorkFlowTask(WorkFlowTask):
 		else: return "-"
 	
 	get_quality_score = staticmethod(get_quality_score)
-
-#	def get_initial_models_table(self,key="filenames",title="Current initial models"):
-#		'''
-#		Get the initial models table, used in the initial models table report widget, and also in the e2refine form
-#		'''		
-#		self.imt = E2InitialModelsTool())
-#		return self.imt.get_initial_models_table_new()
-#		db = "bdb:initial_models#"
-#		names = []
-#		quality = []
-#		dims = []
-#		mean = [] # just for fun
-#		sigma = [] # just for fun
-#		max = []
-#		min = []
-#		for d in db_list_dicts("bdb:initial_models#"):
-#			if len(d) != 0 and db_check_dict(db+d):
-#				model_db = db_open_dict(db+d,ro=True)
-#				if model_db.has_key("maxrec"):
-#					hdr = model_db.get_header(0)
-#					if hdr["nx"] == hdr["ny"] and hdr["nx"] == hdr["nz"]:
-#						names.append(d)
-#						
-#						dims.append(str(hdr["nx"])+'x'+str(hdr["ny"])+'x'+str(hdr["nz"]))
-#						try: mean.append("%4.3f" %hdr["mean"])
-#						except: mean.append("")
-#						try: sigma.append("%4.3f" %hdr["sigma"])
-#						except: sigma.append("")
-#						try: max.append("%4.3f" %hdr["maximum"])
-#						except: max.append("")
-#						try: min.append("%4.3f" %hdr["minimum"])
-#						except: min.append("")
-#						try: quality.append("%4.3f" %hdr["quality"])
-#						except: quality.append("")
-#						
-#		default_selections = self.get_default_filenames_from_form_db(key)
-#		
-#		p = EMParamTable(name=key,desc_short=title,desc_long="")
-#		pnames = ParamDef(name="Files names",vartype="stringlist",desc_short="Initial model name",desc_long="The name of the initial model in the EMAN2 database",property=None,defaultunits=default_selections,choices=names)
-#		pdims = ParamDef(name="dims",vartype="stringlist",desc_short="Dimensions",desc_long="The dimensions of the 3D image",property=None,defaultunits=None,choices=dims)
-#		pmax = ParamDef(name="max",vartype="stringlist",desc_short="Maximum",desc_long="The maximum voxel value in this 3D image",property=None,defaultunits=None,choices=max)
-#		pmin = ParamDef(name="min",vartype="stringlist",desc_short="Minimum",desc_long="The minimum voxel value in this 3D image",property=None,defaultunits=None,choices=min)
-#	
-#		pmean = ParamDef(name="mean",vartype="stringlist",desc_short="Mean",desc_long="The mean voxel value of this 3D image",property=None,defaultunits=None,choices=mean)
-#		psigma = ParamDef(name="sigma",vartype="stringlist",desc_short="Sigma",desc_long="The standard deviation of the voxel values in this 3D image",property=None,defaultunits=None,choices=sigma)
-#		
-#		pquality = ParamDef(name="quality",vartype="stringlist",desc_short="Quality",desc_long="A quality metric which is stored in the image header",property=None,defaultunits=None,choices=sigma)
-#		
-#		
-#		p.append(pnames)
-#		p.append(pdims)
-#		p.append(pquality)
-#		p.append(pmax)
-#		p.append(pmin)
-#		p.append(pmean)
-#		p.append(psigma)
-#		
-#		setattr(p,"convert_text", ptable_convert_4)
-#		context_menu_dict = {"Save as":image_db_save_as}
-#		#context_menu_dict["Delete"] = image_db_delete
-#		setattr(p,"context_menu", context_menu_dict)
-#		setattr(p,"icon_type","3d_image")
-#		
-#		return p,len(names)
 
 # these ptable functions are used by the EMParamTable class for converting entries into absolute file paths, for the purpose of displaying things (like 2D images and plots etc)
 def ptable_convert(text):
@@ -1413,8 +1350,11 @@ class ParticleReportTask(ParticleWorkFlowTask):
 		project_db["global.spr_ptcls"] = self.project_files_at_init
 	
 	def get_particle_dims(file_name):
-		nx,ny,nz = gimme_image_dimensions3D(file_name)
-		return "%ix%ix%i" %(nx,ny,nz)
+		try:
+			nx,ny,nz = gimme_image_dimensions3D(file_name)
+			return "%ix%ix%i" %(nx,ny,nz)
+		except:
+			return "Error"
 	
 	def get_num_ptcls(file_name):
 		return str(EMUtil.get_image_count(file_name))
@@ -2860,53 +2800,6 @@ class EMParticleOptions(EMPartStackOptions):
 	def __init__(self):
 		EMPartStackOptions.__init__(self,"global.spr_ptcls","global.spr_filt_ptcls_map")
 	
-#	def get_particle_options(self):
-#		'''
-#		
-#		'''
-#		particle_list_name = "global.spr_ptcls"
-#		EMProjectListCleanup.clean_up_project_file_list(particle_list_name)
-#		particles_map = {} # used to cache data in get_params
-#		particles_name_map = {} # used to recall which selection was taken	
-#		db = db_open_dict("bdb:project")
-#		particle_names = db.get(particle_list_name,dfl=[])
-#		n = 0
-#				
-#		ptcls = None
-#		if db.has_key(particle_list_name):
-#			ptcls = db[particle_list_name]
-#			for name in ptcls:
-#				n += EMUtil.get_image_count(name)
-#				
-#			particles_map["Particles"] = ptcls
-#				
-#		# now build up the list of filtered things
-#		EMProjectListCleanup.clean_up_filt_particles()
-#		filter_opts = {} # key is the filter type, value is the number of images with this filter type
-#		name_map = {} # a way to map a filtered image to its originating image
-#		if db.has_key("global.spr_filt_ptcls_map"):
-#			for name,d in db["global.spr_filt_ptcls_map"].items():
-#				for filt,ptcl_name in d.items():
-#					name_map[ptcl_name] = name
-#					if filter_opts.has_key(filt):
-#						filter_opts[filt] += EMUtil.get_image_count(ptcl_name)
-#						particles_map[filt].append(ptcl_name)
-#					else:
-#						filter_opts[filt] = EMUtil.get_image_count(ptcl_name)
-#						particles_map[filt] = [ptcl_name]
-#		
-#		choices = []
-#		if n != 0:
-#			ptcl_name = "Particles ("+str(n)+")"
-#			choices.append(ptcl_name)
-#			particles_name_map[ptcl_name] = "Particles"
-#		for filt,num in filter_opts.items():
-#			name = filt+" ("+str(num)+")"
-#			choices.append( name )
-#			particles_name_map[name] = filt
-#			
-#		return particles_map, particles_name_map,choices,name_map
-		
  		 	
 class E2ParticleExamineChooseDataTask(ParticleWorkFlowTask):
 	"Choose the particle data you wish to examine. This will pop a second form listing the particles stacks along with other relevant information"
@@ -3750,54 +3643,6 @@ class EMStacksOptions(EMPartStackOptions):
 	
 	def __init__(self):
 		EMPartStackOptions.__init__(self,"global.spr_stacks","global.spr_stacks_map")
-#	def get_particle_options(self):
-#		'''
-#		
-#		'''
-#		stack_list_name = "global.spr_stacks"
-#		EMProjectListCleanup.clean_up_project_file_list(stack_list_name)
-#		stacks_map = {} # used to cache data in get_params
-#		stacks_name_map = {} # used to recall which selection was taken	
-#		db = db_open_dict("bdb:project")
-#		particle_names = db.get(stack_list_name,dfl=[])
-#		n = 0
-#		
-#		ptcls = None
-#		if db.has_key(stack_list_name):
-#			ptcls = db[stack_list_name]
-#			for name in ptcls:
-#				n += EMUtil.get_image_count(name)
-#				
-#			stacks_map["Particles"] = ptcls
-#				
-#		# now build up the list of filtered things
-#		EMProjectListCleanup.clean_up_filt_particles("global.spr_stacks_map")
-#		filter_opts = {} # key is the filter type, value is the number of images with this filter type
-#		name_map = {} # a way to map a filtered image to its originating image
-#		if db.has_key("global.spr_stacks_map"):
-#			for name,d in db["global.spr_stacks_map"].items():
-#				if ptcls != None and name not in ptcls:
-#					continue 
-#				for filt,ptcl_name in d.items():
-#					name_map[ptcl_name] = name
-#					if filter_opts.has_key(filt):
-#						filter_opts[filt] += EMUtil.get_image_count(ptcl_name)
-#						stacks_map[filt].append(ptcl_name)
-#					else:
-#						filter_opts[filt] = EMUtil.get_image_count(ptcl_name)
-#						stacks_map[filt] = [ptcl_name]
-#		
-#		choices = []
-#		if n != 0:
-#			ptcl_name = "Particles ("+str(n)+")"
-#			choices.append(ptcl_name)
-#			stacks_name_map[ptcl_name] = "Particles"
-#		for filt,num in filter_opts.items():
-#			name = filt+" ("+str(num)+")"
-#			choices.append( name )
-#			stacks_name_map[name] = filt
-#			
-#		return stacks_map, stacks_name_map,choices,name_map
 
 class E2Refine2DChooseParticlesTask(ParticleWorkFlowTask):
 	documentation_string = "Choose the data you wish to use for use for running e2refine2d from the list of options below and hit OK. This will pop up a second form asking you to fill in more details.\n\nNote that usually you should have 4 options to choose from below. If you are not seeing all 4 options it means you should go back in the work flow, import particles, and generate phase flipped and Wiener filtered output." 
@@ -4158,84 +4003,6 @@ class E2InitialModel(ParticleWorkFlowTask):
 		self.form.closeEvent(None)
 		self.form = None
 		self.emit(QtCore.SIGNAL("task_idle"))
-#class ImportInitialModels(ParticleWorkFlowTask):
-#	documentation_string = "Import initial models into the EMAN2 database. Browse for the images you wish to import or type them directly into the entry form. If you tick force overwrite initial models in the EMAN2 database with the same name will automatically be over written."
-#	
-#	def __init__(self):
-#		ParticleWorkFlowTask.__init__(self)
-#		self.window_title = "Import initial models"
-#		self.form_db_name = "bdb:emform.e2initialmodel"
-#		
-#	def get_params(self):
-#		params = []
-#		
-#		db = db_open_dict(self.form_db_name)
-#		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=ImportInitialModels.documentation_string,choices=None))
-#		params.append(ParamDef(name="filenames",vartype="url",desc_short="Import models",desc_long="A list of 3D images that you wish to import into the EMAN2 database scheme.",property=None,defaultunits=[],choices=[]))
-#		pfo = ParamDef(name="force",vartype="boolean",desc_short="Force overwrite",desc_long="Whether or not to force overwrite files that already exist",property=None,defaultunits=db.get("force",dfl=False),choices=None)
-#		params.append(pfo)
-#		
-#		#db_close_dict(self.form_db_name)
-#		
-#		return params
-#	
-#	def on_form_ok(self,params):
-#		error_message = []
-#		
-#		
-#		mesbox = QtGui.QMessageBox()
-#		mesbox.setWindowTitle("Almost but not quite")
-#		if params.has_key("filenames") and len(params["filenames"])==0:
-#			mesbox.setText("Please provide at least one filename to proceed")
-#	 		mesbox.exec_()
-#	 		return
-#	 	
-#	 	
-#	 	for name in params["filenames"]:
-#	 		if not file_exists(name):
-#	 			error_message.append("The file "+name+" does not exist")
-#	 		else:
-#	 			e = EMData()
-#	 			e.read_image(name,0,True)
-#	 			if e.get_xsize() != e.get_ysize() or e.get_xsize() != e.get_zsize():
-#	 				error_message.append("The file "+name+" is not cubic")
-#	 				
-#	 	if params["force"] == False:	
-#		 	for file in params["filenames"]:
-#		 		output_name = "bdb:initial_models#"+get_file_tag(file)
-#				if file_exists(output_name):
-#					error_message.append("An entry exists in the initial_models database with the same name as this file "+file+", please rename your file or choose force over write")
-#		 	
-#	 			
-#	 	if len(error_message) > 0:
-#	 		self.show_error_message(error_message)
-#	 		return
-#	 	
-#	 	# if we make it here we're all good, 
-#	 	self.write_db_entries(params) # so store the parameters for recollection later
-#	 	num_processing_operations = 2 # one read and one write
-#	 	progress = EMProgressDialogModule(get_application(),"Importing files into database...", "Abort import", 0, len(params["filenames"])*num_processing_operations,None)
-#		progress.qt_widget.show()
-#		
-#		i = 0
-#		for file in params["filenames"]:
-#			e = EMData()
-#			e.read_image(file,0)
-#			i +=1
-#			progress.qt_widget.setValue(i)
-#			output_name = "bdb:initial_models#"+get_file_tag(file)
-#			e.write_image(output_name,0)
-#			#db_close_dict(output_name)
-#			i +=1
-#			progress.qt_widget.setValue(i)
-#		
-#		progress.qt_widget.close()
-#		
-#	 	self.emit(QtCore.SIGNAL("task_idle"))
-#		self.form.closeEvent(None)
-#		self.form = None
-#	 			
-
 
 class RefinementReportTask(ParticleWorkFlowTask):
 	documentation_string = "This form displays the models produced at the end of each refinement."
@@ -5064,134 +4831,7 @@ class E2RefineChooseParticlesTask(E2ChooseTask):
 		self.window_title = "Choose Data For e2refine"
 		self.preferred_size = (480,300)
 		self.form_db_name = "bdb:emform.e2refine"
-#	def get_params(self):
-#		ptcl_opts = EMParticleOptions()
-#		self.particles_map, self.particles_name_map,choices,unused = ptcl_opts.get_particle_options()
-#		choices.append("Specify")
-#		
-#		db = db_open_dict(self.form_db_name)
-#		ppart = ParamDef(name="ptcl_choice",vartype="choice",desc_long="Choose the particle data set you wish to use to generate a starting data for e2refine",desc_short="Particle data",property=None,defaultunits=db.get("ptcl_choice",dfl=""),choices=choices)
-#		import copy
-#		usefilt_choices = copy.deepcopy(choices)
-#		usefilt_choices.append("None")
-#		usefilt_choices.remove("Specify")
-#		pusefilt = ParamDef(name="usefilt_ptcl_choice",vartype="choice",desc_long="Choose the particle data set you wish to use to generate a starting data for e2refine",desc_short="Usefilt data",property=None,defaultunits=db.get("usefilt_ptcl_choice",dfl="None"),choices=usefilt_choices)
-#		params = []		
-#		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2RefineChooseParticlesTask.documentation_string,choices=None))
-#		params.append(ppart)
-#		params.append(pusefilt)
-#		return params
-#	
-#	def on_form_ok(self,params):
-#		self.write_db_entries(params)
-#		if not params.has_key("ptcl_choice"):
-#			self.form.closeEvent(None)
-#			self.form = None
-#			self.emit(QtCore.SIGNAL("task_idle"))
-#			return
-#			
-#		choice = params["ptcl_choice"]
-#		usefilt_choice = params["usefilt_ptcl_choice"]
-#		
-#		if choice == usefilt_choice:
-#			EMErrorMessageDisplay.run(["The Particle data and usefilt data must be different.\nIf you don't want to include usefilt data choose None"])
-#			return
-#		
-#		if choice == "Specify" or usefilt_choice =="Specify":
-#			EMErrorMessageDisplay.run(["Specify not currently supported"])
-#			return
-##			if usefilt not in ["Specify","None"]:
-##				EMErrorMessageDisplay.run("Usefilt data must be Specify or None")
-##				return
-##			else:
-##				if usefilt == "Specify":
-##					EMErrorMessageDisplay.run("Usefilt data must be Specify or None")
-##					return
-##					self.emit(QtCore.SIGNAL("replace_task"),E2Refine2DWithGenericTask(),"e2refine2d arguments")
-##				else:
-#		else:
-#			if self.particles_name_map[choice] == "Particles":
-#				# this is the easiest case
-#				ptcls = self.particles_map["Particles"]
-#				if usefilt_choice == "Specify":
-#					# this will function as a developer warning
-#					EMErrorMessageDisplay.run(["Specify not currently supported"])
-#					return
-#				elif usefilt_choice != "None":
-#					filt_name = self.particles_name_map[usefilt_choice]
-#					usefilt_ptcls = self.particles_map[filt_name]
-#					db = db_open_dict("bdb:project")
-#					if not db.has_key("global.spr_filt_ptcls_map"): raise NotImplementedException("Something is wrong, the global.spr_filt_ptcls_map is supposed to exist")
-#					EMProjectListCleanup.clean_up_filt_particles()
-#					db_map = db["global.spr_filt_ptcls_map"]
-#					
-#					intersection_ptcls = []
-#					intersection_usefilt_ptcls = []
-#					for name,filt_map in db_map.items():
-#						if name in ptcls and filt_map.has_key(filt_name): # this is the correct test
-#							usefilt_name = filt_map[filt_name]
-#							if EMUtil.get_image_count(name) != EMUtil.get_image_count(usefilt_name):
-#								error("The number of images in the usefilt file %s is not consistent with the particles file %s" %(usefilt_name,name))
-#								return
-#							intersection_ptcls.append(name)
-#							intersection_usefilt_ptcls.append(usefilt_name)
-#				else:
-#					intersection_ptcls = ptcls
-#					intersection_usefilt_ptcls = None
-#				
-#				
-#			else:
-#				# then it's a filtered type, such as phase flipped
-#				filt_name = self.particles_name_map[choice]
-#				ptcls = self.particles_map[filt_name]
-#				
-#				
-#				db = db_open_dict("bdb:project")
-#				if not db.has_key("global.spr_filt_ptcls_map"): raise NotImplementedException("Something is wrong, the global.spr_filt_ptcls_map is supposed to exist")
-#				EMProjectListCleanup.clean_up_filt_particles()
-#				if usefilt_choice != "None":
-#					usefilt_name = self.particles_name_map[usefilt_choice]
-#					db = db_open_dict("bdb:project")
-#					db_map = db["global.spr_filt_ptcls_map"]
-#					if usefilt_name == "Particles":
-#						prj_ptcls = db["global.spr_ptcls"]
-#						intersection_ptcls = []
-#						intersection_usefilt_ptcls = []
-#						for name,filt_map in db_map.items():
-#							if filt_map.has_key(filt_name) and name in prj_ptcls: # this is the correct test
-#								name1 = filt_map[filt_name]
-#								if EMUtil.get_image_count(name) != EMUtil.get_image_count(name1):
-#									error("The number of images in the usefilt file %s is not consistent with the particles file %s" %(name1,name))
-#									return
-#								intersection_ptcls.append(name1)
-#								intersection_usefilt_ptcls.append(name)
-#						
-#					else:
-#						intersection_ptcls = []
-#						intersection_usefilt_ptcls = []
-#						
-#						for filt_map in db_map.values():
-#							if filt_map.has_key(filt_name) and filt_map.has_key(usefilt_name):
-#								name1 = filt_map[filt_name]
-#								name2 = filt_map[usefilt_name]
-#								if EMUtil.get_image_count(name1) != EMUtil.get_image_count(name2):
-#									error("The number of images in the usefilt file %s is not consistent with the particles file %s" %(name1,name2))
-#									return
-#								intersection_ptcls.append(name1)
-#								intersection_usefilt_ptcls.append(name2)
-#				else:
-#					intersection_ptcls = ptcls
-#					intersection_usefilt_ptcls = None
-#				
-#				
-#			self.emit(QtCore.SIGNAL("replace_task"),E2RefineParticlesTask(intersection_ptcls,intersection_usefilt_ptcls),"e2refine2d arguments")
-#			self.form.closeEvent(None)
-#			self.form = None
-#		
-#		self.write_db_entries(params)
-#
-#	def write_db_entry(self,key,value):
-#		pass
+
 
 class E2RefineChooseStacksTask(E2ChooseTask):
 	'''This form is for choosing e2refine input and usefilt data. After you hit ok a second form will appear asking for more parameters.'''
@@ -5202,143 +4842,6 @@ class E2RefineChooseStacksTask(E2ChooseTask):
 		self.preferred_size = (480,300)
 		self.form_db_name = "bdb:emform.e2refine"
 		self.single_selection = True
-#	def get_params(self):
-#		ptcl_opts = EMStacksOptions()
-#		self.particles_map, self.particles_name_map,choices,unused = ptcl_opts.get_particle_options()
-#		choices.append("Specify")
-#		
-#		db = db_open_dict(self.form_db_name)
-#		ppart = ParamDef(name="ptcl_choice",vartype="choice",desc_long="Choose the particle data set you wish to use to generate a starting data for e2refine",desc_short="Particle data",property=None,defaultunits=db.get("ptcl_choice",dfl=""),choices=choices)
-#		import copy
-#		usefilt_choices = copy.deepcopy(choices)
-#		usefilt_choices.append("None")
-#		usefilt_choices.remove("Specify")
-#		pusefilt = ParamDef(name="usefilt_ptcl_choice",vartype="choice",desc_long="Choose the particle data set you wish to use to generate a starting data for e2refine",desc_short="Usefilt data",property=None,defaultunits=db.get("usefilt_ptcl_choice",dfl="None"),choices=usefilt_choices)
-#		params = []		
-#		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2RefineChooseParticlesTask.documentation_string,choices=None))
-#		params.append(ppart)
-#		params.append(pusefilt)
-#		return params
-#	
-#	def on_form_ok(self,params):
-#		self.write_db_entries(params)
-#		if not params.has_key("ptcl_choice"):
-#			self.form.closeEvent(None)
-#			self.form = None
-#			self.emit(QtCore.SIGNAL("task_idle"))
-#			return
-#			
-#		choice = params["ptcl_choice"]
-#		usefilt_choice = params["usefilt_ptcl_choice"]
-#		
-#		if choice == usefilt_choice:
-#			EMErrorMessageDisplay.run(["The Particle data and usefilt data must be different.\nIf you don't want to include usefilt data choose None"])
-#			return
-#		
-#		if choice == "Specify" or usefilt_choice =="Specify":
-#			EMErrorMessageDisplay.run(["Specify not currently supported"])
-#			return
-##			if usefilt not in ["Specify","None"]:
-##				EMErrorMessageDisplay.run("Usefilt data must be Specify or None")
-##				return
-##			else:
-##				if usefilt == "Specify":
-##					EMErrorMessageDisplay.run("Usefilt data must be Specify or None")
-##					return
-##					self.emit(QtCore.SIGNAL("replace_task"),E2Refine2DWithGenericTask(),"e2refine2d arguments")
-##				else:
-#		else:
-#			filt_name = self.particles_name_map[choice]
-#			ptcls = self.particles_map[filt_name]
-#			db = db_open_dict("bdb:project")
-#			if not db.has_key("global.spr_stacks"): 
-#				error("Something is wrong, the global.spr_stacks is supposed to exist")
-#				return
-#			EMProjectListCleanup.clean_up_project_file_list("global.spr_stacks")
-#			prj_ptcls = db["global.spr_stacks"]
-#			
-#			if not db.has_key("global.spr_stacks_map"):
-#				error("Something is wrong, the global.spr_stacks_map is supposed to exist")
-#				return
-#			EMProjectListCleanup.clean_up_filt_particles("global.spr_stacks_map")
-#			db_map = db["global.spr_stacks_map"]
-#			
-#			for key in db_map.keys():
-#				if key not in prj_ptcls:
-#					db_map.pop(key)
-#					
-#			if self.particles_name_map[choice] == "Particles":
-#				# this is the easiest case
-#				ptcls = self.particles_map["Particles"]
-#				if usefilt_choice == "Specify":
-#					# this will function as a developer warning
-#					EMErrorMessageDisplay.run(["Specify not currently supported"])
-#					return
-#				elif usefilt_choice != "None":
-#					filt_name = self.particles_name_map[usefilt_choice]
-#					usefilt_ptcls = self.particles_map[filt_name]
-#					intersection_ptcls = []
-#					intersection_usefilt_ptcls = []
-#					for name,filt_map in db_map.items():
-#						if name in ptcls and filt_map.has_key(filt_name): # this is the correct test
-#							usefilt_name = filt_map[filt_name]
-#							if EMUtil.get_image_count(name) != EMUtil.get_image_count(usefilt_name):
-#								error("The number of images in the usefilt file %s is not consistent with the particles file %s" %(usefilt_name,name))
-#								return
-#							intersection_ptcls.append(name)
-#							intersection_usefilt_ptcls.append(usefilt_name)
-#				else:
-#					intersection_ptcls = ptcls
-#					intersection_usefilt_ptcls = None
-#				
-#				
-#			else:
-#				# then it's a filtered type, such as phase flipped
-#				if not db.has_key("global.spr_stacks_map"): raise NotImplementedException("Something is wrong, the global.spr_stacks_map is supposed to exist")
-#				EMProjectListCleanup.clean_up_filt_particles()
-#				if usefilt_choice != "None":
-#					usefilt_name = self.particles_name_map[usefilt_choice]		
-#					if usefilt_name == "Particles":
-#						intersection_ptcls = []
-#						intersection_usefilt_ptcls = []
-#						for name,filt_map in db_map.items():
-#							if filt_map.has_key(filt_name) and name in prj_ptcls: # this is the correct test
-#								name1 = filt_map[filt_name]
-#								if EMUtil.get_image_count(name) != EMUtil.get_image_count(name1):
-#									error("The number of images in the usefilt file %s is not consistent with the particles file %s" %(name,name1))
-#									return
-#								intersection_ptcls.append(name1)
-#								intersection_usefilt_ptcls.append(name)
-#						
-#					else:
-#						intersection_ptcls = []
-#						intersection_usefilt_ptcls = []
-#						
-#						for filt_map in db_map.values():
-#							if filt_map.has_key(filt_name) and filt_map.has_key(usefilt_name):
-#								name1 = filt_map[filt_name]
-#								name2 = filt_map[usefilt_name]
-#								if EMUtil.get_image_count(name1) != EMUtil.get_image_count(name2):
-#									error("The number of images in the usefilt file %s is not consistent with the particles file %s" %(name1,name2))
-#									return
-#								intersection_ptcls.append(name1)
-#								intersection_usefilt_ptcls.append(name2)
-#				else:
-#					intersection_ptcls = ptcls
-#					intersection_usefilt_ptcls = None
-#				
-#			
-#			task = E2RefineParticlesTask(intersection_ptcls,intersection_usefilt_ptcls)
-#			task.single_selection = True
-#			self.emit(QtCore.SIGNAL("replace_task"),task,"e2refine2d arguments")
-#			self.form.closeEvent(None)
-#			self.form = None
-#		
-#		self.write_db_entries(params)
-#
-#	def write_db_entry(self,key,value):
-#		pass
-
 
 class ResolutionReportTask(ParticleWorkFlowTask):
 	documentation_string = "This form displays information related to the estimated resolution of refinement results.\nIf you double click on any of the entries in the table you will see the convergence plot and any associated resolution curves."
