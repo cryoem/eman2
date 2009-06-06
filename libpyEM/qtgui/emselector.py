@@ -1310,6 +1310,7 @@ class EMFSListing:
 		elif item.type_of_me == self.emdata_mx:
 			animation = EMFSBigListAnimator(self.target(),item.full_path,list_widget,self.target().emdata_icon)
 			self.target().set_animation(animation)
+			animation.animate()# so the users sees something happen straight away
 #			for i in xrange(0,EMUtil.get_image_count(item.full_path)):
 #				a = QtGui.QListWidgetItem(,str(i),list_widget)
 #				b = EMFSImageStackMemberItem(self.emdata_mx_member,item.full_path,i)
@@ -1320,6 +1321,8 @@ class EMFSListing:
 		elif item.type_of_me == self.emdata_mx_3d:
 			animation = EMFSBigListAnimator(self.target(),item.full_path,list_widget,self.target().emdata_3d_icon)
 			self.target().set_animation(animation)
+			animation.animate()# so the users sees something happen straight away
+
 #			for i in xrange(0,EMUtil.get_image_count(item.full_path)):
 #				a = QtGui.QListWidgetItem(self.target().emdata_3d_icon,str(i),list_widget)
 #				b = EMFSImageStackMemberItem(self.emdata_mx_member,item.full_path,i)
@@ -1827,6 +1830,7 @@ class EMDBListing:
 		keys.sort() # puts them alphabetical order
 		animation = EMDBBigListAnimator(self.target(),keys,list_widget,key,db_directory,db)
 		self.target().set_animation(animation)
+		animation.animate()# so the users sees something happen straight away
 		return True
 #		for k in keys:
 #			if k == '': continue
