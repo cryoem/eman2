@@ -1,38 +1,38 @@
 /**
  * $Id$
  */
- 
+
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
- 
+
 #include "ctf.h"
 #include "emdata.h"
 #include "xydata.h"
@@ -125,7 +125,7 @@ void EMAN1Ctf::from_vector(const vector<float>& vctf)
 vector<float> EMAN1Ctf::to_vector() const
 {
 	vector<float> vctf;
-	
+
 	vctf.push_back(defocus);
 	vctf.push_back(bfactor);
 	vctf.push_back(amplitude);
@@ -137,10 +137,10 @@ vector<float> EMAN1Ctf::to_vector() const
 	vctf.push_back(voltage);
 	vctf.push_back(cs);
 	vctf.push_back(apix);
-	
+
 	return vctf;
 }
-		
+
 
 string EMAN1Ctf::to_string() const
 {
@@ -174,7 +174,7 @@ void EMAN1Ctf::copy_from(const Ctf * new_ctf)
 vector < float >EMAN1Ctf::compute_1d(int size, float ds, CtfType type, XYData * sf)
 {
 	Assert(size > 0);
-	
+
 	float tmp_f1 = CTFOS * sqrt((float) 2) * size / 2;
 	int np = (int) ceil(tmp_f1) + 2;
 	vector < float >r;
@@ -318,7 +318,7 @@ void EMAN1Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 				float s = (float) _hypot(x, y - ny / 2.0f) * ds;
 #else
 				float s = (float) hypot(x, y - ny / 2.0f) * ds;
-#endif			
+#endif
 				d[x * 2 + ynx] = calc_noise(s);
 				d[x * 2 + ynx + 1] = 0;			// The phase is somewhat arbitrary
 			}
@@ -333,7 +333,7 @@ void EMAN1Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 				float s = (float)_hypot((float) x, (float) y - ny / 2) * ds;
 #else
 				float s = (float)hypot((float) x, (float) y - ny / 2) * ds;
-#endif	//_WIN32	
+#endif	//_WIN32
 				float gamma = calc_gamma(g1, g2, s);
 				float v = fabs(calc_amplitude(gamma));
 				d[x * 2 + ynx] = v;
@@ -349,7 +349,7 @@ void EMAN1Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 				float s = (float)_hypot(x, y - ny / 2.0f) * ds;
 #else
 				float s = (float)hypot(x, y - ny / 2.0f) * ds;
-#endif	
+#endif
 				float gamma = calc_gamma(g1, g2, s);
 				float v = calc_amplitude(gamma);
 				d[x * 2 + ynx] = v > 0 ? 1.0f : -1.0f;
@@ -370,7 +370,7 @@ void EMAN1Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 				float s = (float)_hypot(x, y - ny / 2.0f) * ds;
 #else
 				float s = (float)hypot(x, y - ny / 2.0f) * ds;
-#endif	
+#endif
 				float gamma = calc_gamma(g1, g2, s);
 				float f = calc_ctf1(amp1, gamma, s);
 				float noise = calc_noise(s);
@@ -396,7 +396,7 @@ void EMAN1Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 				float s = (float)_hypot(x, y - ny / 2.0f) * ds;
 #else
 				float s = (float)hypot(x, y - ny / 2.0f) * ds;
-#endif	
+#endif
 				float gamma = calc_gamma(g1, g2, s);
 				float f = calc_ctf1(amp1, gamma, s);
 				float noise = calc_noise(s);
@@ -423,7 +423,7 @@ void EMAN1Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 				float s = (float)_hypot(x, y - ny / 2.0f) * ds;
 #else
 				float s = (float)hypot(x, y - ny / 2.0f) * ds;
-#endif	
+#endif
 				float gamma = calc_gamma(g1, g2, s);
 				float f = calc_ctf1(amp1, gamma, s);
 				float noise = calc_noise(s);
@@ -496,11 +496,11 @@ int EMAN2Ctf::from_string(const string & ctf)
 	int bglen=0,snrlen=0;
 	float v;
 	const char *s=ctf.c_str();
-	
+
 	sscanf(s, "%c%f %f %f %f %f %f %f %f %f %d%n",
 				   &type,&defocus, &dfdiff,&dfang,&bfactor,&ampcont,&voltage, &cs, &apix,&dsbg,&bglen,&pos);
 	if (type!='E') throw InvalidValueException(type,"Trying to initialize Ctf object with bad string");
-	
+
 
 	background.resize(bglen);
 	for (i=0; i<bglen; i++) {
@@ -508,7 +508,7 @@ int EMAN2Ctf::from_string(const string & ctf)
 		background[i]=v;
 		pos+=j;
 	}
-	
+
 	sscanf(s+pos," %d%n",&snrlen,&j);
 	pos+=j;
 	snr.resize(snrlen);
@@ -519,7 +519,7 @@ int EMAN2Ctf::from_string(const string & ctf)
 	}
 
 	return 0;
-	
+
 }
 
 string EMAN2Ctf::to_string() const
@@ -599,7 +599,7 @@ void EMAN2Ctf::from_vector(const vector<float>& vctf)
 vector<float> EMAN2Ctf::to_vector() const
 {
 	vector<float> vctf;
-	
+
 	vctf.push_back(defocus);
 	vctf.push_back(dfdiff);
 	vctf.push_back(dfang);
@@ -616,7 +616,7 @@ vector<float> EMAN2Ctf::to_vector() const
 
 	return vctf;
 }
-		
+
 
 
 void EMAN2Ctf::copy_from(const Ctf * new_ctf)
@@ -643,7 +643,7 @@ inline int min_int(int a,int b) { return a<b?a:b; }
 vector < float >EMAN2Ctf::compute_1d(int size,float ds, CtfType type, XYData * sf)
 {
 	Assert(size > 0);
-	
+
 //	float tmp_f1 =  sqrt((float) 2) * size / 2;
 //	int np = (int) ceil(tmp_f1) + 2;
 	int np=size/2;
@@ -701,8 +701,8 @@ vector < float >EMAN2Ctf::compute_1d(int size,float ds, CtfType type, XYData * s
 			float gamma = calc_gamma(g1, g2, s);	// we base the width of our smoothing on gamma
 			float f = s/dsbg;
 			int j = (int)floor(f);
-			
-			double sum=0,norm=0; 
+
+			double sum=0,norm=0;
 			for (int k=max_int(j-5,1); k<min_int(j+6,np); k++) {
 				float s2=f-k;
 				float e=exp(-14.0f*s2*s2/(gamma));
@@ -728,8 +728,8 @@ vector < float >EMAN2Ctf::compute_1d(int size,float ds, CtfType type, XYData * s
 			int j = (int)floor(f);
 			float bg;
 			f-=j;
-			if (j>(int)snr.size()-2) { 
-/*				r[i]=snr.back(); 
+			if (j>(int)snr.size()-2) {
+/*				r[i]=snr.back();
 				bg=background.back();*/
 				r[i]=0;
 			}
@@ -817,7 +817,7 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 				float s = (float) _hypot(x, y ) * ds;
 #else
 //				float s = (float) hypot(x, y ) * ds;
-#endif			
+#endif
 //				d[x * 2 + ynx] = calc_noise(s);
 				d[x * 2 + ynx + 1] = 0;			// The phase is somewhat arbitrary
 			}
@@ -833,7 +833,7 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 				float s = (float)_hypot((float) x, (float) y ) * ds;
 #else
 				float s = (float)hypot((float) x, (float) y ) * ds;
-#endif	//_WIN32	
+#endif	//_WIN32
 				float gamma = calc_gamma(g1, g2, s);
 				float v = calc_amplitude(gamma);
 				d[x * 2 + ynx] = v;
@@ -850,7 +850,7 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 				float s = (float)_hypot((float)x, (float)y ) * ds;
 #else
 				float s = (float)hypot((float)x, (float)y ) * ds;
-#endif	
+#endif
 				float gamma = calc_gamma(g1, g2, s);
 				float v = calc_amplitude(gamma);
 				d[x * 2 + ynx] = v >= 0 ? 1.0f : -1.0f;
@@ -870,7 +870,7 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 				float s = (float)_hypot(x, y ) * ds;
 #else
 				float s = (float)hypot(x, y ) * ds;
-#endif	
+#endif
 				float f = s/dsbg;
 				int j = (int)floor(f);
 				f-=j;
@@ -892,7 +892,7 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 				float s = (float)_hypot(x, y ) * ds;
 #else
 				float s = (float)hypot(x, y ) * ds;
-#endif	
+#endif
 				float f = s/dsbg;
 				int j = (int)floor(f);
 				f-=j;
@@ -915,7 +915,7 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 				float s = (float)_hypot((float) x, (float) y ) * ds;
 #else
 				float s = (float)hypot((float) x, (float) y ) * ds;
-#endif	//_WIN32	
+#endif	//_WIN32
 				float f = s/dsbg;
 				int j = (int)floor(f);
 				float bg,snrf;
@@ -928,6 +928,7 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 				else {
 					bg=background[j]*(1.0f-f)+background[j+1]*f;
 					snrf=snr[j]*(1.0f-f)+snr[j+1]*f;
+					if (snrf<0) snrf=0.0;
 //					d[x*2+ynx]=sqrt(snrf/bg)/(snrf+1.0);	// Note that this is a Wiener filter with a 1/CTF term to compensate for the filtration already applied, but needs to be multiplied by the structure factor
 					d[x*2+ynx]=snrf/(snrf+1);	// This is just the simple Wiener filter
 				}
@@ -949,7 +950,7 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 				float s = (float)_hypot(x, y ) * ds;
 #else
 				float s = (float)hypot(x, y ) * ds;
-#endif	
+#endif
 				float gamma = calc_gamma(g1, g2, s);
 				float f = calc_ctf1(amp1, gamma, s);
 				float noise = 0;
@@ -980,9 +981,9 @@ bool EMAN2Ctf::equal(const Ctf * ctf1) const
 			dfdiff != c->dfdiff ||
 			dfang != c->dfang ||
 			bfactor != c->bfactor ||
-			ampcont != c->ampcont || 
-			voltage != c->voltage || 
-			cs != c->cs || 
+			ampcont != c->ampcont ||
+			voltage != c->voltage ||
+			cs != c->cs ||
 			apix != c->apix ||
 			dsbg != c->dsbg ||
 			background.size() != c->background.size() ||

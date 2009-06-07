@@ -125,7 +125,7 @@ images far from focus."""
 			simp=Simplex(env_cmp,scales,incr)
 			scales=simp.minimize(maxiters=1000)[0]
 	#		print scales
-			print " "
+	#		print " "
 		
 		# apply the final rescaling
 		envelope=[]
@@ -331,8 +331,8 @@ def process_stack(stackfile,phaseflip=None,wiener=None,edgenorm=True,oversamp=1,
 		if edgenorm : im1.process_inplace("normalize.edgemean")
 		if oversamp>1 :
 			im1.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
-			print -(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys
-		print i
+#			print -(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys
+#		print i
 		fft1=im1.do_fft()
 			
 		if phaseflip :
@@ -1048,7 +1048,7 @@ class GUIctf(QtGui.QWidget):
 			self.guiplot.set_data("single",(s,inten[:len(s)]),True)
 			all=[0 for i in inten]
 			for st in self.data:
-				print st
+#				print st
 				inten=[fabs(i) for i in st[1].compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP)]
 				for i in range(len(all)): all[i]+=inten[i]
 			self.guiplot.set_data("total",(s,all[:len(s)]))
