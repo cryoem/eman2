@@ -254,7 +254,7 @@ class EMTomohunterTask(WorkFlowTask):
 		self.form = None
 		
 class EMTomoParticleReportTask(WorkFlowTask):
-	documentation_string = "This form display the boxed tomographic particles that you currently have associated with the project"
+	"""This form display the boxed tomographic particles that you currently have associated with the project"""
 	def __init__(self):
 		WorkFlowTask.__init__(self)
 
@@ -280,7 +280,7 @@ class EMTomoParticleReportTask(WorkFlowTask):
 	
 		table = self.get_project_particle_table()
 		
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=TomoParticleReportTask.documentation_string,choices=None))
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
 		params.append(table)  
 		
 		return params
@@ -304,7 +304,15 @@ class E2TomoBoxerGuiTask(WorkFlowTask):
 		return table, n
 
 	def get_tomo_boxes_in_database(name):
-		return "Not implemented"
+		from e2tomoboxer import tomo_db_name
+		if db_check_dict(tomo_db_name):
+			tomo_db = db_open_dict(tomo_db_name)
+			image_dict = tomo_db.get(get_file_tag(name),dfl={})
+			print "name is ",name
+			if image_dict.has_key("coords"):
+				return str(len(image_dict["coords"]))
+		
+		return "0"
 	
 	get_tomo_boxes_in_database = staticmethod(get_tomo_boxes_in_database)
 	

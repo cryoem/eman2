@@ -3046,7 +3046,6 @@ class E2MakeStackTask(E2ParticleExamineTask):
 		
 		stack_root = params["stack_name"]	
 		init_stacks.append("bdb:stacks#"+base_stack_root)
-		print "the init stacks are now",init_stacks
 		project_db["global.spr_stacks"] = init_stacks
 		
 		init_stacks_map = {}

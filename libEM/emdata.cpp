@@ -870,6 +870,7 @@ void EMData::translate(const Vec3f &translation)
 	Transform* t = new Transform();
 	t->set_trans(translation);
 	process_inplace("math.transform",Dict("transform",t));
+	delete t;
 
 	all_translation += translation;
 	EXITFUNC;

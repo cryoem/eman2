@@ -34,6 +34,7 @@ from optparse import OptionParser
 import sys
 import os
 from EMAN2 import file_exists, gimme_image_dimensions3D,EMANVERSION,EMData,Region,Transform,get_image_directory,db_check_dict,db_open_dict,db_close_dict
+from EMAN2 import get_file_tag
 from pyemtbx.boxertools import Cache,get_idd_image_entry,set_idd_image_entry, Box
 from emapplication import get_application, EMStandAloneApplication,EMQtWidgetModule
 from emimage2d import EMImage2DModule
@@ -57,14 +58,27 @@ for tomographic analysis."""
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
 	parser.add_option("--boxsize","-B",type="int",help="Box size in pixels",default=64)
+	parser.add_option("--writeoutput",action="store_true",default=False,help="Uses coordinates stored in the tomoboxer database to write output")
+	parser.add_option("--stack",action="store_true",default=False,help="Causes the output images to be written to a stack")
+	parser.add_option("--force",action="store_true",default=False,help="Force overwrite output")
 
 	(options, args) = parser.parse_args()
 	
 	
-	if not file_exists(args[0]): parser.error("%s does not exist" %args[0])
-	if options.boxsize < 2: parser.error("The boxsize you specified is too small")
-	# The program will not run very rapidly at such large box sizes anyhow
-	if options.boxsize > 2048: parser.error("The boxsize you specified is too large.\nCurrently there is a hard coded max which is 2048.\nPlease contact developers if this is a problem.")
+	error = check(args,options)
+	
+	if error:
+		sys.exit(1)
+#	if len(args) < 0: parser.error("You must sepcify the input argument")
+#	if not file_exists(args[0]): parser.error("%s does not exist" %args[0])
+#	if options.boxsize < 2: parser.error("The boxsize you specified is too small")
+#	# The program will not run very rapidly at such large box sizes anyhow
+#	if options.boxsize > 2048: parser.error("The boxsize you specified is too large.\nCurrently there is a hard coded max which is 2048.\nPlease contact developers if this is a problem.")
+	
+	if options.writeoutput:
+		write_output(args,options)
+			
+		sys.exit(0)
 	
 	application = EMStandAloneApplication()
 	tomo_mediator= EMTomoBoxerModule(args[0])
@@ -72,6 +86,159 @@ for tomographic analysis."""
 	
 	tomo_mediator.show_guis()
 	application.execute()
+
+def check(args,options):
+	error = False
+	
+	if len(args) == 0:
+		print "You have to supply an input image"
+		error = True
+	if len(args) > 1:
+		if not option.writeoutput:
+			print "Error, multiple file inputs are only supported you supply the writeoutput argument"
+	
+	for arg in args:
+		if not file_exists(arg): 
+			print "%s does not exist" %arg
+			error = True
+			
+	if options.boxsize < 2:
+		print "The boxsize you specified is too small"
+		error = True
+	# The program will not run very rapidly at such large box sizes anyhow
+	if options.boxsize > 2048: 
+		print "The boxsize you specified is too large.\nCurrently there is a hard coded max which is 2048.\nPlease contact developers if this is a problem."
+		error = True
+	
+	if not error and options.writeoutput:
+		for arg in args:
+			some_boxes = False
+			if db_check_dict(tomo_db_name):
+				tomo_db = db_open_dict(tomo_db_name)
+				image_dict = tomo_db.get(get_file_tag(arg),dfl={})
+				if image_dict.has_key("coords"):
+					coords = image_dict["coords"]
+					n = len(coords)
+					if n > 0:
+						some_boxes = True
+			
+			if some_boxes:
+
+				output = "bdb:tomo_particles#"+get_file_tag(arg)
+				error_messages,out_names = out_file_names(output,options.stack,n,options.force)
+				if len(error_messages) > 0:
+					for r in error_messages:
+						print r
+					error = True
+			else:
+				print "There are no boxes stored in the local database. Can not generate any output"
+				error = True
+			
+	return error
+
+def write_output(args,options):
+	for arg in args:
+		tomo_db = db_open_dict(tomo_db_name)
+		image_dict = tomo_db.get(get_file_tag(arg),dfl={})
+		coords = image_dict["coords"]
+		output = "bdb:tomo_particles#"+get_file_tag(arg)
+		
+		error_messages,out_names = out_file_names(output,options.stack,len(coords),options.force)
+		image = TomoProjectionCache.get_image_directly(arg)
+		direction = image.get_attr("sum_direction")
+		scale = image.get_attr("shrink")
+		box = options.boxsize
+		for i,coord in enumerate(coords):
+			a = EMData()
+			if direction == "z":
+				region = Region(scale*coord[0]-box/2,scale*coord[1]-box/2,scale*coord[2]-box/2,box,box,box)
+				a.read_image(arg,0,False,region)
+			elif direction == "y":
+				region = Region(scale*coord[0]-box/2,scale*coord[2]-box/2,scale*coord[1]-box/2,box,box,box)
+				a.read_image(arg,0,False,region)
+			elif direction == "x":
+				region = Region(scale*coord[2]-box/2,scale*coord[0]-box/2,scale*coord[1]-box/2,box,box,box)
+				a.read_image(arg,0,False,region)
+			
+			
+			a.set_attr("x_loc",scale*coord[0])
+			a.set_attr("y_loc",scale*coord[1])
+			a.set_attr("z_loc",scale*coord[2])
+			
+			if options.stack:
+				a.write_image(out_names,i)
+			else:
+				a.write_image(out_names[i],0)
+			
+
+
+def out_file_names(out_file,write_stack,n,force=False):
+	error_messages = []
+	fine = True
+	
+	if len(out_file) > 4 and out_file[:4] == "bdb:":
+		if db_check_dict(out_file):
+			error_messages.append("The bdb file name you specified exists")
+			fine = False
+	else:
+		d = out_file.split('.')
+		if len(d) < 2: 
+			error_messages.append("The file name has no type")
+			fine = False
+		else:
+			from EMAN2 import get_supported_3d_stack_formats,get_supported_3d_formats
+			if write_stack:
+				fmts = get_supported_3d_stack_formats()
+			else:
+				fmts = get_supported_3d_formats()
+		
+			if d[-1] not in fmts:
+				e = "The format you specifed is not supported. We support ["
+				for f in fmts:
+					if f != fmts[0]:
+						e += ", "
+					e+= f
+				e+=", bdb:]"
+				error_messages.append(e)
+				fine = False
+				
+	if not write_stack:
+		out_file_names = []
+		bdb_type = False
+		if len(out_file) > 4 and out_file[:4] == "bdb:": 
+			bdb_type = True
+			name = out_file
+			ext = ''
+		else:
+			# this is guaranteed to be safe
+			d = out_file.split('.')
+			ext = "."+d[-1]
+			from EMAN2 import get_file_tag
+			name = get_file_tag(out_file)
+		
+		digits = len(str(n))
+		for i in range(n):
+			si = str(i)
+			if len(si) == 1:
+				si = "0" + si
+			this_digits = len(si)
+			s = '_'
+			for j in range(digits-this_digits): s+= '0'
+			s += si
+			this_name =  name+s+ext
+			if file_exists(this_name) and not force:
+				error_messages.append("Error: %s exists. Specify force to overwrite" %this_name)
+			else:
+				out_file_names.append(this_name)
+	else:
+		out_file_names = out_file
+		if file_exists(out_file) and not force:
+			error_messages.append("Error: %s exists. Specify force to overwrite" %out_file)
+			
+		
+				
+	return error_messages,out_file_names
+
 	
 
 class ShrunkenTomogram:
@@ -99,6 +266,7 @@ class ShrunkenTomogram:
 		if nx <=1 or ny <= 1 or nz <= 1: raise RuntimeError("The file must be 3D (nx,ny,nz>1)")
 		
 		self.file_name = file_name
+		self.shrink = 1
 		# self.image could still be None
 		self.image = get_idd_image_entry(self.file_name,ShrunkenTomogram.db_name,tomo_db_name)
 		
@@ -130,7 +298,9 @@ class ShrunkenTomogram:
 		return [None,None]
 	# Static assignment
 	get_shrunken_resident_name = staticmethod(get_shrunken_resident_name)
-		
+	
+	def get_shrink(self): return self.shrink
+	
 	def get_construction_argument(self):
 		'''
 		Used by the cache for retrieving the correct object
@@ -234,7 +404,7 @@ class ShrunkenTomogram:
 				
 			if cancelled: self.image = None # because it was cancelled
 		
-		print "in total, the shrink took ", time.time()-t1, "seconds"
+		print "in total, the shrink operation took ", time.time()-t1, "seconds"
 		
 		get_application().setOverrideCursor(Qt.ArrowCursor)
 	
@@ -272,8 +442,6 @@ class ShrunkenTomogram:
 		
 		self.total_steps = 2*self.read_operations # two times, one for read, one for shrink
 
-
-		
 class TomogramProjection:
 	'''
 	Sums a tomograph (3D image) along the narrowest dimension, this is not necessarily the z dimension
@@ -318,6 +486,7 @@ class TomogramProjection:
 			
 			st = ShrunkenTomogram(self.file_name)
 			tmp = st.get_image()
+			shrink = st.get_shrink()
 			if tmp == None: # this means the shrink operation was cancelled
 				return None # the calling function should be sophisticated to handle this!
 		
@@ -338,7 +507,7 @@ class TomogramProjection:
 				self.image.set_size(nx,ny,1)
 				self.image.set_attr("sum_pixels",tmp.get_zsize())
 				self.image.set_attr("sum_direction","z")
-				
+			self.image.set_attr("shrink",shrink) # need this to know how much shrinking occurred.
 			set_idd_image_entry(self.file_name,TomogramProjection.dict_ref_name,self.image,tomo_db_name)	
 		return self.image
 	
@@ -411,7 +580,7 @@ class EMTBBoxManipulations():
 		coord_data[1] = int(coord_data[1])
 		
 		if event.modifiers()&Qt.ShiftModifier:
-			box_num = self.__box_collision_detect(coord_data)
+			box_num = self.box_collision_detect(coord_data)
 			if ( box_num != -1):
 				self.target().remove_box(box_num)
 				#self.target().mouse_click_update_ppc()
@@ -571,7 +740,19 @@ class EMCoordList:
 			box_coords.append(-1)
 			
 		self.coords.append(box_coords)
-	
+		
+	def save_to_database(self,file_name):
+		tomo_db = db_open_dict(tomo_db_name)
+		image_dict = tomo_db.get(get_file_tag(file_name),dfl={})
+		image_dict["coords"] = self.coords
+		tomo_db[get_file_tag(file_name)] = image_dict
+
+	def load_coords(self,file_name):
+		tomo_db = db_open_dict(tomo_db_name)
+		image_dict = tomo_db.get(get_file_tag(file_name),dfl={})
+		if image_dict.has_key("coords"):
+			self.coords = image_dict["coords"]
+
 	def detect_collision(self,coords,box_size):
 		'''
 		@param coords a coordinate list, the first two values are the coordinates
@@ -690,6 +871,8 @@ class EMTomoBoxerModule(QtCore.QObject):
 		if not file_exists(file_name): raise RuntimeError("The file (%s) does not exist" %file_name)
 		self.file_name = file_name
 		self.box_size = 64
+		self.real_box_size = self.box_size # illusion box size
+		self.shrink = 1
 		self.coord_list = EMCoordList()
 		self.active_box = -1 # an index storing which box the user had clicked on
 		self.zy_side_view_window = None # will eventually be used to position boxed images in the z direction
@@ -701,6 +884,9 @@ class EMTomoBoxerModule(QtCore.QObject):
 		self.__init_main_2d_window()
 		# initialize the inspector
 		self.__init_inspector()
+		
+		self.coord_list.load_coords(self.file_name)
+		self.__refresh_box_display()
 		
 	def __init_signal_handlers(self):
 		'''
@@ -722,6 +908,8 @@ class EMTomoBoxerModule(QtCore.QObject):
 		
 		self.main_2d_window = EMImage2DModule()
 		image = TomoProjectionCache.get_image_directly(self.file_name)
+		self.shrink = image.get_attr("shrink")
+		self.real_box_size = self.box_size/float(self.shrink)
 		if image == None: # the user cancelled the shrink operation
 			sys.exit(1)
 		self.main_2d_window.set_data(image,self.file_name)
@@ -774,23 +962,27 @@ class EMTomoBoxerModule(QtCore.QObject):
 			raise RuntimeError("The box size can not be larger than any of the image's dimensions")
 	
 		self.box_size = box_size
+		self.real_box_size = self.box_size/float(self.shrink)
 		self.__refresh_box_display()
 	
 	def get_box_size(self):
 		''' @return the current box size'''
 		return self.box_size
-	
-	def get_anticipated_output_box_size(self):
-		''' Look at the images, see if there's a large unshrunken one, use the scaling factors to guess what a good output is'''
-		[file_name,idx] = ShrunkenTomogram.get_shrunken_resident_name(self.file_name)
-		if file_name ==  None: 
-			scale = 1
-		else:
-			db = db_open_dict(file_name)
-			hdr = db.get_header(idx)
-			scale = hdr["shrunken_by"]
-		
-		return scale*self.box_size
+#	
+#	def get_anticipated_output_box_size(self):
+#		''' Look at the images, see if there's a large unshrunken one, use the scaling factors to guess what a good output is'''
+#		
+#		return self.box_size
+#		
+#		[file_name,idx] = ShrunkenTomogram.get_shrunken_resident_name(self.file_name)
+#		if file_name ==  None: 
+#			scale = 1
+#		else:
+#			db = db_open_dict(file_name)
+#			hdr = db.get_header(idx)
+#			scale = hdr["shrunken_by"]
+#		
+#		return scale*self.box_size
 	
 	def get_current_image_name(self):
 		''' @return the name of the current file '''
@@ -803,15 +995,15 @@ class EMTomoBoxerModule(QtCore.QObject):
 		'''
 		See EMCoordList.detect_collision help
 		'''
-		return self.coord_list.detect_collision(coords,self.box_size)
+		return self.coord_list.detect_collision(coords,self.real_box_size)
 	
 	def detect_side_view_zy_box_collision(self,coords):
 		if self.active_box == None: return
 		
 		active_box =  self.coord_list[self.active_box]
 		
-		by = active_box[2]-self.box_size/2
-		ty = by+self.box_size
+		by = active_box[2]-self.real_box_size/2
+		ty = by+self.real_box_size
 		if coords[1]<by or coords[1]>ty: return -1
 		else: return self.active_box
 	
@@ -820,8 +1012,8 @@ class EMTomoBoxerModule(QtCore.QObject):
 		
 		active_box =  self.coord_list[self.active_box]
 		
-		bx = active_box[2]-self.box_size/2
-		tx = bx+self.box_size
+		bx = active_box[2]-self.real_box_size/2
+		tx = bx+self.real_box_size
 		if coords[0]<bx or coords[0]>tx: return -1
 		else: return self.active_box
 	
@@ -831,6 +1023,7 @@ class EMTomoBoxerModule(QtCore.QObject):
 		See EMCoordList.append help
 		'''
 		self.coord_list.append(coord)
+		self.coord_list.save_to_database(self.file_name)
 		self.active_box = len(self.coord_list)-1
 		self.__refresh_box_display()
 	
@@ -839,6 +1032,8 @@ class EMTomoBoxerModule(QtCore.QObject):
 		See EMCoordList.pop help
 		'''
 		self.coord_list.pop(box_idx)
+		self.coord_list.save_to_database(self.file_name)
+		self.active_box = -1
 		self.__refresh_box_display()
 		
 	def move_box(self,box_idx,dx,dy,dz=0):
@@ -846,6 +1041,7 @@ class EMTomoBoxerModule(QtCore.QObject):
 		See EMCoordList.move_box for help
 		'''
 		self.coord_list.move_box(box_idx,dx,dy,dz)
+		self.coord_list.save_to_database(self.file_name)
 		self.__refresh_box_display()
 		
 	def get_box(self,box_idx):
@@ -866,7 +1062,7 @@ class EMTomoBoxerModule(QtCore.QObject):
 		Refreshes the display of boxes. Typically called when a box has been added or moved.
 		Tells concerned interfaces to update their displays
 		'''
-		shapes = EMBoxDisplayShapes.gen_shapes(self.coord_list,self.box_size,self.get_shape_string())
+		shapes = EMBoxDisplayShapes.gen_shapes(self.coord_list,self.real_box_size,self.get_shape_string())
 		self.main_2d_window.set_shapes(shapes,1.0)
 		self.main_2d_window.set_active(self.active_box,.9,.9,.1)
 		self.main_2d_window.updateGL()
@@ -885,7 +1081,7 @@ class EMTomoBoxerModule(QtCore.QObject):
 			image = TomoProjectionCache.get_image_directly(self.file_name)
 			a = EMData()
 			direction = image.get_attr("sum_direction")
-			half_box = self.box_size/2
+			half_box = self.real_box_size/2
 			[file_name,idx] = ShrunkenTomogram.get_shrunken_resident_name(self.file_name)
 			c = None
 			two_displays = True
@@ -894,8 +1090,8 @@ class EMTomoBoxerModule(QtCore.QObject):
 				idx = 0
 			if direction == "z":
 				nz = image.get_attr("sum_pixels")
-				nx = self.box_size
-				ny = self.box_size
+				nx = self.real_box_size
+				ny = self.real_box_size
 				region = Region(coord[0]-half_box,coord[1]-half_box,0,nx,ny,nz)
 				a.read_image(file_name,idx,False,region)
 				b = a.process("misc.directional_sum",{"direction":"y"})
@@ -905,8 +1101,8 @@ class EMTomoBoxerModule(QtCore.QObject):
 					c.set_size(int(ny),int(nz),1)
 			elif direction == "y":
 				ny = image.get_attr("sum_pixels")
-				nx = self.box_size
-				nz = self.box_size
+				nx = self.real_box_size
+				nz = self.real_box_size
 				region = Region(coord[0]-half_box,0,coord[1]-half_box,nx,ny,nz)
 				a.read_image(file_name,idx,False,region)
 				b = a.process("misc.directional_sum",{"direction":"z"})
@@ -918,8 +1114,8 @@ class EMTomoBoxerModule(QtCore.QObject):
 			elif direction == "x":
 				print "x direction not tested"
 				nx = image.get_attr("sum_pixels")
-				ny = self.box_size
-				nz = self.box_size
+				ny = self.real_box_size
+				nz = self.real_box_size
 				region = Region(0,coord[0]-half_box,coord[1]-half_box,nx,ny,nz)
 				a.read_image(file_name,idx,False,region)
 				b = a.process("misc.directional_sum",{"direction":"z"})
@@ -946,18 +1142,29 @@ class EMTomoBoxerModule(QtCore.QObject):
 			
 			
 			if coord[2] == -1:
-				com = b.calc_center_of_mass()
-				coord[2] = b.get_ysize() - com[1]
+				coord[2] = b.get_ysize()/2
+				self.coord_list.save_to_database(self.file_name)
 				
-			l = int(coord[2])  - self.box_size/2+(self.box_size+1)%2
-			r = l + self.box_size
-			shape = EMShape(["rectpoint",0,0.9,0.4,0,l,self.box_size,r,2.0])
+			l = int(coord[2])  - self.real_box_size/2+(self.real_box_size+1)%2
+			r = l + self.real_box_size
+			shape = EMShape(["rectpoint",0,0.9,0.4,0,l,self.real_box_size,r,2.0])
 			shapes = {0:shape}
 			self.zy_side_view_window.set_shapes(shapes,1)
 			self.zy_side_view_window.updateGL()
 			
 			self.zx_side_view_window.set_shapes(shapes,1)
 			self.zx_side_view_window.updateGL()
+		else:
+			if self.zy_side_view_window != None:
+				self.zy_side_view_window.set_data(None)
+				self.zy_side_view_window.set_shapes({},1)
+				self.zy_side_view_window.updateGL()
+				
+			if self.zx_side_view_window != None:
+				self.zx_side_view_window.set_data(None)
+				self.zx_side_view_window.set_shapes({},1)
+				self.zx_side_view_window.updateGL()
+
 	
 	def write_stack(self,out_file_name, input_file_name,xout,yout,zout):
 		'''
@@ -1071,7 +1278,7 @@ class TomoBoxerOutputForm(EMFormTask):
 		self.output_file_names = None
 	def get_params(self):
 		params = []
-		box_size = self.target().get_anticipated_output_box_size()
+		box_size = self.target().get_box_size()
 		xout = ParamDef(name="xout",vartype="int",desc_short="Output nx",desc_long="The number of pixels of the output sub regions will have in the x direction",property=None,defaultunits=box_size,choices=None)
 		yout = ParamDef(name="yout",vartype="int",desc_short="Output ny",desc_long="The number of pixels of the output sub regions will have in the y direction",property=None,defaultunits=box_size,choices=None)
 		zout = ParamDef(name="zout",vartype="int",desc_short="Output nz",desc_long="The number of pixels of the output sub regions will have in the z direction",property=None,defaultunits=box_size,choices=None)

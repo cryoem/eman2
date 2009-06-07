@@ -665,11 +665,14 @@ class EMImage2DModule(EMGUIModule):
 		"""You may pass a single 2D image or a list of images"""
 		if self.data != None and self.file_name != "":
 			self.__write_display_settings_to_db()
-			
+		
 		self.set_file_name(file_name,load_cache_settings=False)
 		if self.file_name != "": self.setWindowTitle(self.file_name)
 		
 		data = incoming_data
+		if data == None:
+			self.data = None
+			return
 		
 		fourier = False
 		
