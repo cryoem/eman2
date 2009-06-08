@@ -974,11 +974,12 @@ def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None):
 	from utilities    import even_angles, model_circle, compose_transform2, print_msg
 	from utilities    import get_params_proj, set_params_proj
 
-	id = data.get_attr("ID")
+	ID = data.get_attr("ID")
 
 	if finfo:
-		phi,tht,psi,s2x,s2y = get_params_proj(data)
-		finfo.write( "im,oldparams: %6d %9.4f %9.4f %9.4f %9.4f %9.4f\n" %(id,phi,tht,psi,s2x,s2y))
+		phi, theta, psi, s2x, s2y = get_params_proj(data)
+		finfo.write("Image id: %6d\n"%(ID))
+		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, s2x, s2y))
 		finfo.flush()
 	
 	mode = "F"
@@ -992,9 +993,9 @@ def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None):
 	# prepare 2-D mask for normalization
 
 
-	phi, theta, psi, sxo, syo = get_params_proj( data )
+	phi, theta, psi, sxo, syo = get_params_proj(data)
 	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d(data, refrings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo)
-	iref=int(iref)
+	iref = int(iref)
 	#[ang,sxs,sys,mirror,peak,numref] = apmq(projdata[imn], ref_proj_rings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo)
 	#ang = (ang+360.0)%360.0
 	# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
@@ -1015,7 +1016,7 @@ def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None):
 	set_params_proj(data, [phi, theta, psi, s2x, s2y])
 	
 	if finfo:
-		finfo.write( "im,newparams: %6d %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f\n" %(id,phi,theta,psi,s2x,s2y,peak))
+		finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f\n\n" %(phi, theta, psi, s2x, s2y, peak))
 		finfo.flush()
 
 	return peak
