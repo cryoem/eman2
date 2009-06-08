@@ -36,6 +36,8 @@
 #ifndef eman_processor_sparx_h__
 #define eman_processor_sparx_h__ 1
 
+#include "emdata.h"
+
 namespace EMAN
 {
 
@@ -88,10 +90,35 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
+			d.put("cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] cut-off frequency.");
+			d.put("sigma", EMObject::FLOAT, "Gaussian sigma (0-.5)");
 			d.put("cutoff_abs", EMObject::FLOAT, "Processor radius in terms of Nyquist (0-.5)");
 			d.put("cutoff_pixels", EMObject::FLOAT, "0 - get_xsize()/2");
 			d.put("cutoff_freq", EMObject::FLOAT, "0 - 1.0/(get_xsize()*apix_x) same for y and z");
 			return d;
+		}
+
+	  protected:
+		virtual void preprocess(const EMData * const image) {
+			const Dict dict = image->get_attr_dict();
+			if( params.has_key("cutoff_frequency") ) {
+				params["cutoff_abs"] = params["cutoff_frequency"];
+			}
+			if( params.has_key("sigma") ) {
+				params["cutoff_abs"] = params["sigma"];
+			}
+			else if( params.has_key("cutoff_abs") ) {
+				params["cutoff_frequency"] = params["cutoff_abs"];
+				params["sigma"] = params["cutoff_abs"];
+			}
+			else if( params.has_key("cutoff_freq") ) {
+				params["cutoff_frequency"] = (float)params["cutoff_freq"] * (float)dict["apix_x"] * (float)dict["nx"] / 2.0f;
+				params["sigma"] = (float)params["cutoff_freq"] * (float)dict["apix_x"] * (float)dict["nx"] / 2.0f;
+			}
+			else if( params.has_key("cutoff_pixels") ) {
+				params["cutoff_frequency"] = (float)params["cutoff_pixels"] / (float)dict["nx"];
+				params["sigma"] = (float)params["cutoff_pixels"] / (float)dict["nx"];
+			}
 		}
 	};
 
@@ -111,21 +138,22 @@ namespace EMAN
 		}
 		void process_inplace(EMData* image) {
 			params["filter_type"] = TOP_HAT_LOW_PASS;
+			preprocess(image);
 			EMFourierFilterInPlace(image, params);
 		}
-		TypeDict get_param_types() const
-		{
-			TypeDict d = NewFourierProcessor::get_param_types();
-			d.put("cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] cut-off frequency.");
-			return d;
-		}
-		void set_params(const Dict & new_params)
-		{
-			params = new_params;
-			if( params.has_key("cutoff_abs") ) {
-				params["cutoff_frequency"] = params["cutoff_abs"];
-			}
-		}
+//		TypeDict get_param_types() const
+//		{
+//			TypeDict d = NewFourierProcessor::get_param_types();
+//			d.put("cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] cut-off frequency.");
+//			return d;
+//		}
+//		void set_params(const Dict & new_params)
+//		{
+//			params = new_params;
+//			if( params.has_key("cutoff_abs") ) {
+//				params["cutoff_frequency"] = params["cutoff_abs"];
+//			}
+//		}
 	};
 
 	/** Highpass top-hat filter applied in Fourier space.
@@ -144,21 +172,22 @@ namespace EMAN
 		}
 		void process_inplace(EMData* image) {
 			params["filter_type"] = TOP_HAT_HIGH_PASS;
+			preprocess(image);
 			EMFourierFilterInPlace(image, params);
 		}
-		TypeDict get_param_types() const
-		{
-			TypeDict d = NewFourierProcessor::get_param_types();
-			d.put("cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] cut-off frequency.");
-			return d;
-		}
-		void set_params(const Dict & new_params)
-		{
-			params = new_params;
-			if( params.has_key("cutoff_abs") ) {
-				params["cutoff_frequency"] = params["cutoff_abs"];
-			}
-		}
+//		TypeDict get_param_types() const
+//		{
+//			TypeDict d = NewFourierProcessor::get_param_types();
+//			d.put("cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] cut-off frequency.");
+//			return d;
+//		}
+//		void set_params(const Dict & new_params)
+//		{
+//			params = new_params;
+//			if( params.has_key("cutoff_abs") ) {
+//				params["cutoff_frequency"] = params["cutoff_abs"];
+//			}
+//		}
 	};
 
 	/**Bandpass top-hat filter processor applied in Fourier space.
@@ -235,21 +264,22 @@ namespace EMAN
 		}
 		void process_inplace(EMData* image) {
 			params["filter_type"] = GAUSS_LOW_PASS;
+			preprocess(image);
 			EMFourierFilterInPlace(image, params);
 		}
-		TypeDict get_param_types() const
-		{
-			TypeDict d = NewFourierProcessor::get_param_types();
-			d.put("sigma", EMObject::FLOAT, "Gaussian sigma.");
-			return d;
-		}
-		void set_params(const Dict & new_params)
-		{
-			params = new_params;
-			if( params.has_key("cutoff_abs") ) {
-				params["sigma"] = params["cutoff_abs"];
-			}
-		}
+//		TypeDict get_param_types() const
+//		{
+//			TypeDict d = NewFourierProcessor::get_param_types();
+//			d.put("sigma", EMObject::FLOAT, "Gaussian sigma.");
+//			return d;
+//		}
+//		void set_params(const Dict & new_params)
+//		{
+//			params = new_params;
+//			if( params.has_key("cutoff_abs") ) {
+//				params["sigma"] = params["cutoff_abs"];
+//			}
+//		}
 	};
 
 	/**Highpass Gauss filter processor applied in Fourier space.
@@ -268,21 +298,22 @@ namespace EMAN
 		}
 		void process_inplace(EMData* image) {
 			params["filter_type"] = GAUSS_HIGH_PASS;
+			preprocess(image);
 			EMFourierFilterInPlace(image, params);
 		}
-		TypeDict get_param_types() const
-		{
-			TypeDict d = NewFourierProcessor::get_param_types();
-			d.put("sigma", EMObject::FLOAT, "Gaussian sigma.");
-			return d;
-		}
-		void set_params(const Dict & new_params)
-		{
-			params = new_params;
-			if( params.has_key("cutoff_abs") ) {
-				params["sigma"] = params["cutoff_abs"];
-			}
-		}
+//		TypeDict get_param_types() const
+//		{
+//			TypeDict d = NewFourierProcessor::get_param_types();
+//			d.put("sigma", EMObject::FLOAT, "Gaussian sigma.");
+//			return d;
+//		}
+//		void set_params(const Dict & new_params)
+//		{
+//			params = new_params;
+//			if( params.has_key("cutoff_abs") ) {
+//				params["sigma"] = params["cutoff_abs"];
+//			}
+//		}
 	};
 
 	/**Bandpass Gauss filter processor applied in Fourier space.
@@ -302,22 +333,23 @@ namespace EMAN
 		}
 		void process_inplace(EMData* image) {
 			params["filter_type"] = GAUSS_BAND_PASS;
+			preprocess(image);
 			EMFourierFilterInPlace(image, params);
 		}
 		TypeDict get_param_types() const
 		{
 			TypeDict d = NewFourierProcessor::get_param_types();
-			d.put("sigma", EMObject::FLOAT, "Gaussian sigma.");
+//			d.put("sigma", EMObject::FLOAT, "Gaussian sigma.");
 			d.put("center", EMObject::FLOAT, "Gaussian center.");
 			return d;
 		}
-		void set_params(const Dict & new_params)
-		{
-			params = new_params;
-			if( params.has_key("cutoff_abs") ) {
-				params["sigma"] = params["cutoff_abs"];
-			}
-		}
+//		void set_params(const Dict & new_params)
+//		{
+//			params = new_params;
+//			if( params.has_key("cutoff_abs") ) {
+//				params["sigma"] = params["cutoff_abs"];
+//			}
+//		}
 	};
 
 	/**Homomorphic Gauss filter processor applied in Fourier space.
@@ -337,22 +369,23 @@ namespace EMAN
 		}
 		void process_inplace(EMData* image) {
 			params["filter_type"] = GAUSS_HOMOMORPHIC;
+			preprocess(image);
 			EMFourierFilterInPlace(image, params);
 		}
 		TypeDict get_param_types() const
 		{
 			TypeDict d = NewFourierProcessor::get_param_types();
-			d.put("sigma", EMObject::FLOAT, "Gaussian sigma.");
+//			d.put("sigma", EMObject::FLOAT, "Gaussian sigma.");
 			d.put("value_at_zero_frequency", EMObject::FLOAT, "Value at zero frequency.");
 			return d;
 		}
-		void set_params(const Dict & new_params)
-		{
-			params = new_params;
-			if( params.has_key("cutoff_abs") ) {
-				params["sigma"] = params["cutoff_abs"];
-			}
-		}
+//		void set_params(const Dict & new_params)
+//		{
+//			params = new_params;
+//			if( params.has_key("cutoff_abs") ) {
+//				params["sigma"] = params["cutoff_abs"];
+//			}
+//		}
 	};
 
 	/**Divide by a Gaussian in Fourier space.
@@ -371,21 +404,22 @@ namespace EMAN
 		}
 		void process_inplace(EMData* image) {
 			params["filter_type"] = GAUSS_INVERSE;
+			preprocess(image);
 			EMFourierFilterInPlace(image, params);
 		}
-		TypeDict get_param_types() const
-		{
-			TypeDict d = NewFourierProcessor::get_param_types();
-			d.put("sigma", EMObject::FLOAT, "Gaussian sigma.");
-			return d;
-		}
-		void set_params(const Dict & new_params)
-		{
-			params = new_params;
-			if( params.has_key("cutoff_abs") ) {
-				params["sigma"] = params["cutoff_abs"];
-			}
-		}
+//		TypeDict get_param_types() const
+//		{
+//			TypeDict d = NewFourierProcessor::get_param_types();
+//			d.put("sigma", EMObject::FLOAT, "Gaussian sigma.");
+//			return d;
+//		}
+//		void set_params(const Dict & new_params)
+//		{
+//			params = new_params;
+//			if( params.has_key("cutoff_abs") ) {
+//				params["sigma"] = params["cutoff_abs"];
+//			}
+//		}
 	};
 
 	/**Shift by phase multiplication in Fourier space.
@@ -592,22 +626,23 @@ namespace EMAN
 		}
 		void process_inplace(EMData* image) {
 			params["filter_type"] = TANH_LOW_PASS;
+			preprocess(image);
 			EMFourierFilterInPlace(image, params);
 		}
 		TypeDict get_param_types() const
 		{
 			TypeDict d = NewFourierProcessor::get_param_types();
-			d.put("cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] cut-off frequency.");
+//			d.put("cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] cut-off frequency.");
 			d.put("fall_off", EMObject::FLOAT, "Tanh decay rate.");
 			return d;
 		}
-		void set_params(const Dict & new_params)
-		{
-			params = new_params;
-			if( params.has_key("cutoff_abs") ) {
-				params["cutoff_frequency"] = params["cutoff_abs"];
-			}
-		}
+//		void set_params(const Dict & new_params)
+//		{
+//			params = new_params;
+//			if( params.has_key("cutoff_abs") ) {
+//				params["cutoff_frequency"] = params["cutoff_abs"];
+//			}
+//		}
 	};
 
 	/**Highpass tanh filter processor applied in Fourier space.
@@ -627,22 +662,23 @@ namespace EMAN
 		}
 		void process_inplace(EMData* image) {
 			params["filter_type"] = TANH_HIGH_PASS;
+			preprocess(image);
 			EMFourierFilterInPlace(image, params);
 		}
 		TypeDict get_param_types() const
 		{
 			TypeDict d = NewFourierProcessor::get_param_types();
-			d.put("cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] cut-off frequency.");
+//			d.put("cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] cut-off frequency.");
 			d.put("fall_off", EMObject::FLOAT, "Tanh decay rate.");
 			return d;
 		}
-		void set_params(const Dict & new_params)
-		{
-			params = new_params;
-			if( params.has_key("cutoff_abs") ) {
-				params["cutoff_frequency"] = params["cutoff_abs"];
-			}
-		}
+//		void set_params(const Dict & new_params)
+//		{
+//			params = new_params;
+//			if( params.has_key("cutoff_abs") ) {
+//				params["cutoff_frequency"] = params["cutoff_abs"];
+//			}
+//		}
 	};
 
 	/**Homomorphic Tanh processor applied in Fourier space
@@ -663,23 +699,24 @@ namespace EMAN
 		}
 		void process_inplace(EMData* image) {
 			params["filter_type"] = TANH_HOMOMORPHIC;
+			preprocess(image);
 			EMFourierFilterInPlace(image, params);
 		}
 		TypeDict get_param_types() const
 		{
 			TypeDict d = NewFourierProcessor::get_param_types();
-			d.put("cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] cut-off frequency.");
+//			d.put("cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] cut-off frequency.");
 			d.put("fall_off", EMObject::FLOAT, "Tanh decay rate.");
 			d.put("value_at_zero_frequency", EMObject::FLOAT, "Value at zero frequency.");
 			return d;
 		}
-		void set_params(const Dict & new_params)
-		{
-			params = new_params;
-			if( params.has_key("cutoff_abs") ) {
-				params["cutoff_frequency"] = params["cutoff_abs"];
-			}
-		}
+//		void set_params(const Dict & new_params)
+//		{
+//			params = new_params;
+//			if( params.has_key("cutoff_abs") ) {
+//				params["cutoff_frequency"] = params["cutoff_abs"];
+//			}
+//		}
 	};
 
 	/**Bandpass tanh processor applied in Fourier space.
