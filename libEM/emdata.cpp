@@ -3583,7 +3583,7 @@ void EMData::cut_slice(const EMData *const map, const Transform& transform, bool
 					ddata[l] = 0;
 					continue;
 				}
-				int k = (int) (floor(xx) + floor(yy) * map_nx + floor(zz) * map_nxy);
+				int k = (int) (Util::fast_floor(xx) + Util::fast_floor(yy) * map_nx + Util::fast_floor(zz) * map_nxy);
 
 				ddata[l] = Util::trilinear_interpolate(sdata[k],
 						sdata[k + 1], sdata[k + map_nx],sdata[k + map_nx + 1],
