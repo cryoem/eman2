@@ -86,6 +86,11 @@ class EMReconstructAliFile(WorkFlowTask):
 		ali_table.add_column_data(EMFileTable.EMColumnData("Image Dims",ParticleReportTask.get_particle_dims,"The dimensions of the image on disk"))
 		plot_table.add_column_data(EMFileTable.EMColumnData("Rows",EMPlotTable.num_plot_entries,"The number of lines in the file"))
 		
+		
+		clip = ParamDef(name="clip",vartype="int",desc_short="Clip input images ",desc_long="clipping which is applied after scale ",property=None,defaultunits=db.get("clip",dfl=None),choices=None)
+		scale = ParamDef(name="scale",vartype="float",desc_short="Scale input images by",desc_long="Scales the input images by the given amount",property=None,defaultunits=db.get("scale",dfl=1.0),choices=None)
+		pad = ParamDef(name="pad",vartype="int",desc_short="Zero Padding",desc_long="Padding applied after the images have been scaled and clipped",property=None,defaultunits=db.get("scale",dfl=1.0),choices=None)
+		
 		xsample = ParamDef(name="xsample",vartype="int",desc_short="X Sampling",desc_long="The size of the x dimension of the reconstructed volume",property=None,defaultunits=db.get("xsample",dfl=0),choices=None)
 		ysample = ParamDef(name="ysample",vartype="int",desc_short="Y Sampling",desc_long="The size of the y dimension of the reconstructed volume",property=None,defaultunits=db.get("ysample",dfl=0),choices=None)
 		zsample = ParamDef(name="zsample",vartype="int",desc_short="Z Sampling",desc_long="The size of the z dimension of the reconstructed volume",property=None,defaultunits=db.get("zsample",dfl=0),choices=None)
@@ -93,6 +98,9 @@ class EMReconstructAliFile(WorkFlowTask):
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="Reconstructing and ALI file",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
 		params.append([ali_table,plot_table])
 		params.append([xsample,ysample,zsample])
+		params.append(scale)
+		params.append(clip)
+		params.append(pad)
 		return params
 
 	

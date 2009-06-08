@@ -4398,14 +4398,21 @@ class E2RefineParticlesTask(EMClassificationTools, E2Make3DTools):
 
 		params.append([psym,psymnum])
 		
-		pautomask = ParamDef(name="automask3d",vartype="boolean",desc_short="Auto mask 3D",desc_long="Causes automasking of the 3D volume to occur at the end of each iteration",property=None,defaultunits=db.get("automask3d",dfl=False),choices=None)
+		pautomask = ParamDef(name="automask3d",vartype="boolean",desc_short="Auto mask 3D",desc_long="Causes automasking of the 3D volume to occur at the end of each iteration",property=None,defaultunits=db.get("automask3d",dfl=True),choices=None)
 		
 		params.append(pautomask)
 		
-		pamthreshold =  ParamDef(name="amthreshold",vartype="float",desc_short="Threshold",desc_long="An isosurface threshold that well defines your structure.",property=None,defaultunits=db.get("amthreshold",dfl=0.8),choices=None)
-		pamradius =  ParamDef(name="amradius",vartype="int",desc_short="Radius",desc_long="The radius of a sphere at the the origin which contains seeding points for the flood file operation using the given threshold",property=None,defaultunits=db.get("amradius",dfl=30),choices=None)
-		pamnshells =  ParamDef(name="amnshells",vartype="int",desc_short="Mask dilations",desc_long="The number of dilations to apply to the mask after the flood fill operation has finished. Suggest 5% of the boxsize",property=None,defaultunits=db.get("amnshells",dfl=5),choices=None)
-		pamngaussshells =  ParamDef(name="amnshellsgauss",vartype="int",desc_short="Post Gaussian dilations",desc_long="The number of dilations to apply to the dilated mask, using a gaussian fall off. Suggest 5% of the boxsize",property=None,defaultunits=db.get("amnshellsgauss",dfl=5),choices=None)
+		def_rad = 30
+		def_mask_dltn = 5
+		if len(self.ptcls) > 0:
+			nx,ny,nz = gimme_image_dimensions3D(self.ptcls[0])
+			def_rad = int(nx/8.0)
+			def_mask_dltn = int(nx/20.0)
+		
+		pamthreshold =  ParamDef(name="amthreshold",vartype="float",desc_short="Threshold",desc_long="An isosurface threshold that well defines your structure.",property=None,defaultunits=db.get("amthreshold",dfl=0.7),choices=None)
+		pamradius =  ParamDef(name="amradius",vartype="int",desc_short="Radius",desc_long="The radius of a sphere at the the origin which contains seeding points for the flood file operation using the given threshold",property=None,defaultunits=db.get("amradius",dfl=def_rad),choices=None)
+		pamnshells =  ParamDef(name="amnshells",vartype="int",desc_short="Mask dilations",desc_long="The number of dilations to apply to the mask after the flood fill operation has finished. Suggest 5% of the boxsize",property=None,defaultunits=db.get("amnshells",dfl=def_mask_dltn),choices=None)
+		pamngaussshells =  ParamDef(name="amnshellsgauss",vartype="int",desc_short="Post Gaussian dilations",desc_long="The number of dilations to apply to the dilated mask, using a gaussian fall off. Suggest 5% of the boxsize",property=None,defaultunits=db.get("amnshellsgauss",dfl=def_mask_dltn),choices=None)
 		
 		pautomask.dependents = ["amthreshold","amradius","amnshells","amnshellsgauss"] # these are things that become disabled when the pautomask checkbox is checked etc
 		
@@ -4760,12 +4767,12 @@ class E2ChooseTask(ParticleWorkFlowTask):
 	
 	def on_form_ok(self,params):
 		self.write_db_entries(params)
-		if not params.has_key(self.ptcl_choice):
-			self.form.closeEvent(None)
-			self.form = None
-			self.emit(QtCore.SIGNAL("task_idle"))
+		if not params.has_key(self.ptcl_choice) or params[self.ptcl_choice] == None:
+			error("Please choose particle data")
 			return
-			
+		if not params.has_key(self.usefilt_ptcl_choice) or params[self.usefilt_ptcl_choice] == None:
+			error("Please choose usefilt data")
+			return
 		choice = params[self.ptcl_choice]
 		usefilt_choice = params[self.usefilt_ptcl_choice]
 		

@@ -6722,7 +6722,13 @@ void TestImageHollowEllipse::process_inplace(EMData * image)
 	float c1 = params.set_default("zwidth",c2-width);
 
 	float fill = params.set_default("fill",1.0);
-	Transform* t = params.set_default("transform",(Transform*)0);
+	Transform* t;
+	if (params.has_key("transform")) {
+		t = params["transform"];
+	} else {
+		t = new Transform;
+	}
+
 
 	int mz = 2*(int)c2+1;
 	if ( nz < mz ) mz = nz;
@@ -6776,6 +6782,8 @@ void TestImageHollowEllipse::process_inplace(EMData * image)
 		}
 	}
 
+	delete t;
+
 	image->update();
 }
 
@@ -6789,7 +6797,12 @@ void TestImageEllipse::process_inplace(EMData * image)
 	float c = params.set_default("c",nz/2.0f-1.0f);
 	float fill = params.set_default("fill",1.0);
 	//bool hollow = params.set_default("hollow",false);
-	Transform* t = params.set_default("transform",(Transform*)0);
+	Transform* t;
+	if (params.has_key("transform")) {
+		t = params["transform"];
+	} else {
+		t = new Transform;
+	}
 
 
 	int mz = 2*(int)c+1;
@@ -6839,6 +6852,8 @@ void TestImageEllipse::process_inplace(EMData * image)
 			}
 		}
 	}
+
+	delete t;
 
 	image->update();
 }
@@ -7462,8 +7477,7 @@ void TransformProcessor::assert_valid_aspect(const EMData* const image) const {
 	int ndim = image->get_ndim();
 	if (ndim != 2 && ndim != 3) throw ImageDimensionException("Transforming an EMData only works if it's 2D or 3D");
 
-	Transform* t = params.set_default("transform",(Transform*)0);
-	if (t == 0) throw InvalidParameterException("You must specify a Transform in order to perform this operation");
+	if (! params.has_key("transform") ) throw InvalidParameterException("You must specify a Transform in order to perform this operation");
 }
 
 void TransformProcessor::update_emdata_attributes(EMData* const p, const Dict& attr_dict, const float& scale) const {

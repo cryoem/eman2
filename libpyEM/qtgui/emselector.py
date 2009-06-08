@@ -1759,8 +1759,9 @@ class EMDBListing:
 				try:
 					db.has_key("maxrec")
 				except:
-					from emsprworkflow import EMErrorMessageDisplay
-					EMErrorMessageDisplay.run(["Warning: the %s database might be corrupted." %db_name], "Data loss" )
+#					from emsprworkflow import EMErrorMessageDisplay
+#					EMErrorMessageDisplay.run(["Warning: the %s database might be corrupted." %db_name], "Data loss" )
+						
 					return False
 			
 			if db and db.has_key("maxrec"):

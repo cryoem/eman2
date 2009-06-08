@@ -733,7 +733,7 @@ EMData *RTFExhaustiveAligner::align(EMData * this_img, EMData *to,
 
 	EMData* ret = this_img->process("math.transform",Dict("transform",&t));
 	ret->set_attr("xform.align2d",&t);
-	
+
 	return ret;
 }
 
@@ -910,9 +910,9 @@ static double refalifn(const gsl_vector * v, void *params)
 	bool mirror = (*dict)["mirror"];
 
 	float mean = (float)this_img->get_attr("mean");
-	if ( Util::goodf(&mean) ) {
-		//cout << "tmps mean is nan even before rotation" << endl;
-	}
+//	if ( Util::goodf(&mean) ) {
+//		//cout << "tmps mean is nan even before rotation" << endl;
+//	}
 
 	Transform t(Dict("type","2d","alpha",static_cast<float>(a)));
 // 	Transform3D t3d(Transform3D::EMAN, (float)a, 0.0f, 0.0f);
@@ -993,7 +993,7 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 		delete t;
 		t = 0;
 	}
-	
+
 	int np = 3;
 	Dict gsl_params;
 	gsl_params["this"] = this_img;
