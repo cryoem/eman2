@@ -963,7 +963,7 @@ class EMFilterRawDataTask(WorkFlowTask):
 		i = 0
 		cancelled = False # if the user cancels the import then we must act
 		cancelled_writes = []
-		application.setOverrideCursor(Qt.BusyCursor)
+		get_application().setOverrideCursor(Qt.BusyCursor)
 		for j in xrange(0,len(filenames)):
 			name = filenames[j]
 			outname = output_names[j]
@@ -1011,13 +1011,11 @@ class EMFilterRawDataTask(WorkFlowTask):
 				
 			if progress.qt_widget.wasCanceled():
 				cancelled = True
-				for name in cancelled_writes: # policy here is to remove only the raw data dbs - the e2boxer thumbnails are tiny and I don't have time...
-					remove_file(name)
 				break
 			
 		progress.qt_widget.setValue(len(filenames))
 		progress.qt_widget.close()
-		application.setOverrideCursor(Qt.ArrowCursor)
+		get_application().setOverrideCursor(Qt.ArrowCursor)
 		
 		if not cancelled and params["project_associate"]:
 			project_db = db_open_dict("bdb:project")
@@ -1496,6 +1494,9 @@ class E2BoxerTask(ParticleWorkFlowTask):
 		self.report_task = EMRawDataReportTask()
 		table,n = self.report_task.get_raw_data_table()# now p is a EMParamTable with rows for as many files as there in the project
 		from emform import EMFileTable
+		particle_list_name = "global.spr_ptcls"
+		EMProjectListCleanup.clean_up_project_file_list(particle_list_name) # this is necessary for the columns_object to operate without throwing (in unusual circumstances the user deletes the particles, and this accomodates for it)
+	
 		table.insert_column_data(0,EMFileTable.EMColumnData("Stored Boxes",E2BoxerTask.get_boxes_in_database,"Boxes currently stored in the EMAN2 database"))
 		self.columns_object = E2BoxerTask.ParticleColumns()
 		table.insert_column_data(1,EMFileTable.EMColumnData("Particles On Disk",self.columns_object.get_num_particles_project,"Particles currently stored on disk that are associated with this image"))
@@ -1974,11 +1975,7 @@ class E2CTFWorkFlowTask(ParticleReportTask):
 	def get_ctf_param_table(self):
 		'''
 		
-		'''
-		project_db = db_open_dict("bdb:project",ro=True)
-		particle_list_name = "global.spr_ptcls"
-		particle_names = project_db.get(particle_list_name,dfl=[])
-		
+		'''		
 		table = self.get_project_particle_table()
 		
 		from emform import EMFileTable
@@ -1987,7 +1984,7 @@ class E2CTFWorkFlowTask(ParticleReportTask):
 		table.add_column_data(EMFileTable.EMColumnData("B Factor",self.column_data.get_bfactor,"The estimated B factor, note this is ~4x greater than in EMAN1"))
 		table.add_column_data(EMFileTable.EMColumnData("SNR",self.column_data.get_snr,"The averaged SNR"))
 		table.add_column_data(EMFileTable.EMColumnData("Sampling",self.column_data.get_sampling,"The amount of sampling used for generating CTF parameters"))
-		return table,len(particle_names)
+		return table,0
 	
 	class CTFColumns:
 		'''
@@ -2176,11 +2173,9 @@ class CTFReportTask(E2CTFWorkFlowTask):
 	def get_params(self):
 		params = []
 		p,n = self.get_full_ctf_table()
-		if n == 0:
-			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=CTFReportTask.documentation_string+CTFReportTask.warning_string,choices=None))
-		else:
-			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=CTFReportTask.documentation_string,choices=None))
-			params.append(p)
+
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=CTFReportTask.documentation_string,choices=None))
+		params.append(p)
 		return params
 
 	def write_db_entry(self,key,value):
@@ -2631,11 +2626,8 @@ class E2CTFGuiTask(E2CTFWorkFlowTask):
 #		else:
 #			n = 0
 		params = []		
-		if n == 0:
-			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFGuiTask.documentation_string+E2CTFGuiTask.warning_string,choices=None))
-		else:
-			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFGuiTask.documentation_string,choices=None))
-		  	params.append(p)
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFGuiTask.documentation_string,choices=None))
+		params.append(p)
 		return params
 	
 	def get_default_ctf_options(self,params):
@@ -2929,7 +2921,8 @@ class E2MakeStackChooseDataTask(E2ParticleExamineChooseDataTask):
 						name_map[name] = get_file_tag(self.name_map[name])
 					else:
 						name_map[name] = get_file_tag(name)
-					
+			particles = self.particles_map[self.particles_name_map[choice]]
+			
 			self.emit(QtCore.SIGNAL("replace_task"),E2MakeStackTask(particles,name_map,self.name_map),"Make Particle Sets")
 		
 		self.form.closeEvent(None)
@@ -2949,7 +2942,7 @@ class E2MakeStackTask(E2ParticleExamineTask):
 		params = E2ParticleExamineTask.get_params(self)
 		
 		db = db_open_dict(self.form_db_name) # see eman wiki for a list of what args are kept in this db
-	   	pstack_name = ParamDef(name="stack_name",vartype="string",desc_short="Stack Name",desc_long="What you want to call this stack. Leave out file types (such as hdf,bdb etc). Names for any linked particle sets will be generated automatically.",property=None,defaultunits=db.get("stack_name",dfl="stack_00"),choices=None)
+	   	pstack_name = ParamDef(name="stack_name",vartype="string",desc_short="Stack Name",desc_long="What you want to call this stack. Leave out file types (such as hdf,bdb etc). Names for any linked particle sets will be generated automatically.",property=None,defaultunits=db.get("stack_name",dfl="set"),choices=None)
 		pexclude_bad = ParamDef(name="exclude_bad",vartype="boolean",desc_short="Exclude Bad Particles",desc_long="Exclude bad particles from generated stack(s)",property=None,defaultunits=db.get("exclude_bad",dfl=True),choices=None)
  	
  		params.append(pstack_name)
@@ -3059,7 +3052,7 @@ class E2MakeStackTask(E2ParticleExamineTask):
 		
 	def make_v_stack(self,filenames,out_name,path,exclude_bad):
 	 	
-	 	progress = QtGui.QProgressDialog("Importing files into database...", "Abort import", 0, len(filenames),None)
+	 	progress = QtGui.QProgressDialog("Making virtual stacks...", "Abort import", 0, len(filenames),None)
 		progress.show()
 		if db_check_dict("bdb:select"):
 			select_db = db_open_dict("bdb:select")
@@ -3067,6 +3060,7 @@ class E2MakeStackTask(E2ParticleExamineTask):
 			select_db = None
 		cmd = ""
 		
+		get_application().setOverrideCursor(Qt.BusyCursor)
 		for i,name in enumerate(filenames):
 			cmd = "e2bdb.py"
 			no_exc = True
@@ -3083,13 +3077,19 @@ class E2MakeStackTask(E2ParticleExamineTask):
  			success = (os.system(cmd) in (0,11,12))
  			if not success:
  				progress.close()
+ 				get_application().setOverrideCursor(Qt.ArrowCursor)
  				return False,cmd
  			else:
+ 				get_application().setOverrideCursor(Qt.ArrowCursor)
  				progress.setValue(i+1)
  				get_application().processEvents()
+ 				
+ 			if progress.wasCanceled():
+ 				get_application().setOverrideCursor(Qt.ArrowCursor)
+	 			return False,"did not finish. The operation was cancelled"
 		
 		progress.close()
-		
+		get_application().setOverrideCursor(Qt.ArrowCursor)
 		return True,cmd
 
 	def make_stack(self,filenames,out_name,path):
