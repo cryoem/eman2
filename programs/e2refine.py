@@ -116,6 +116,7 @@ def main():
 	
 	logid=E2init(sys.argv)
 	
+	
 	if error:
 		print "Error encountered while checking command line, bailing"
 		exit_refine(1,logid)
@@ -126,6 +127,10 @@ def main():
 	if options.path == None:
 		options.path = numbered_path("refine",True)
 
+	# store the inputs arguments forever in the refinement directory
+	db = db_open_dict("bdb:"+options.path+"#register")
+	db["cmd"] = options.__dict__
+		
 	# this is the main refinement loop
 	
 	progress = 0.0

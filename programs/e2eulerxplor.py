@@ -47,6 +47,8 @@ from emimagemx import EMImageMXModule
 import os
 import sys
 from libpyGLUtils2 import GLUtil
+from emsprworkflow import error
+
 
 def get_eulers_from(filename):
 	eulers = []
@@ -414,6 +416,13 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 				last_bit = str(i)+str(j)
 				fail = False
 				r = []
+				
+				register_db_name = "bdb:"+dir+"#register"
+				
+				if not db_check_dict(register_db_name):
+					continue
+
+				
 				for name in names:
 					db_name = "bdb:"+dir+"#"+name+"_"+last_bit
 					if not db_check_dict(db_name):
@@ -442,12 +451,37 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 				break
 			
 		if len(data) == 0:
-			self.events_handlers["inspect"].reset()
+			
+			error("error, no data for %s %s, returning" %(au,cls))
 #			print "error, no data for",au,cls,"returning"
+			self.events_handlers["inspect"].reset()
 			get_application().setOverrideCursor(Qt.ArrowCursor)
 			return
-
-		self.particle_file = "bdb:"+au+"#all"
+		
+		register_db_name = "bdb:"+au+"#register"
+		if not db_check_dict(register_db_name):
+			error("The %s database does not exist" %register_db_name )
+			self.events_handlers["inspect"].reset()
+			get_application().setOverrideCursor(Qt.ArrowCursor)
+			return
+		
+		db = db_open_dict(register_db_name)
+		if not db.has_key("cmd"):
+			error("The %s database must have the cmd entry" %register_db_name )
+			self.events_handlers["inspect"].reset()
+			get_application().setOverrideCursor(Qt.ArrowCursor)
+			return
+		
+		cmd = db["cmd"]
+		
+		if not cmd.has_key("input"):
+			error("The %s database must have the cmd entry" %register_db_name )
+			self.events_handlers["inspect"].reset()
+			get_application().setOverrideCursor(Qt.ArrowCursor)
+			return
+		
+		self.particle_file  = cmd["input"]
+		
 		self.average_file = cls
 		self.projection_file = data[4]
 		self.alignment_file = data[2]
