@@ -55,7 +55,7 @@ for i in xrange(nangles):
 	proj.write_image(stack_data, i)
 del volft
 write_text_file(ppp, "params.txt")
-#exit()
+exit()
 del ppp
 nprojdata = EMUtil.get_image_count(stack_data)
 snr = 1.0e20

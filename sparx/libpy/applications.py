@@ -4616,7 +4616,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 
 
 			if myid == main_node:
-				print_msg("Time Used = %d"%(time()-start_time))
+				print_msg("Time Used = %d\n"%(time()-start_time))
 				start_time = time()
 
 			if(center == -1):
@@ -4632,7 +4632,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 			else:    vol, fscc = rec3D_MPI_noCTF(data, sym, fscmask, os.path.join(outdir, "resolution%04d"%(N_step*max_iter+Iter+1)), myid, main_node)
 			
 			if myid == main_node:
-				print_msg("Time Used = %d"%(time()-start_time))
+				print_msg("Time Used = %d\n"%(time()-start_time))
 				
 			if fourvar:
 			#  Compute Fourier variance
@@ -8712,7 +8712,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max
 		del active
 		nima = len(list_of_particles)
 	else:
-		nima =0
+		nima = 0
 	nima = bcast_number_to_all(nima, source_node = main_node)
 
 	if myid != main_node:
