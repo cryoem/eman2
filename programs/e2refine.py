@@ -129,7 +129,7 @@ def main():
 
 	# store the inputs arguments forever in the refinement directory
 	db = db_open_dict("bdb:"+options.path+"#register")
-	db["cmd"] = options.__dict__
+	db["cmd_dict"] = options.__dict__
 		
 	# this is the main refinement loop
 	

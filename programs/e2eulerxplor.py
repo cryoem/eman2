@@ -419,9 +419,18 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 				
 				register_db_name = "bdb:"+dir+"#register"
 				
+				# needs to exist
 				if not db_check_dict(register_db_name):
 					continue
-
+				# cmd dictionary needs to be stored
+				db = db_open_dict(register_db_name,ro=True)
+				if not db.has_key("cmd_dict"):
+					continue
+		
+				cmd = db["cmd_dict"]
+				# need to be able to get the input data
+				if not cmd.has_key("input"):
+					continue
 				
 				for name in names:
 					db_name = "bdb:"+dir+"#"+name+"_"+last_bit
@@ -466,13 +475,13 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 			return
 		
 		db = db_open_dict(register_db_name)
-		if not db.has_key("cmd"):
+		if not db.has_key("cmd_dict"):
 			error("The %s database must have the cmd entry" %register_db_name )
 			self.events_handlers["inspect"].reset()
 			get_application().setOverrideCursor(Qt.ArrowCursor)
 			return
 		
-		cmd = db["cmd"]
+		cmd = db["cmd_dict"]
 		
 		if not cmd.has_key("input"):
 			error("The %s database must have the cmd entry" %register_db_name )
