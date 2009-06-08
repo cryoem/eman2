@@ -1105,7 +1105,6 @@ def check_eman2_type(modoptstring, object, objectname, verbose=True):
 
 	return True
 
-
 def qplot(img):
 	"""This will plot a 1D image using qplot
 	Note that display(img) will automatically plot 1D images.

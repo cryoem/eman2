@@ -1290,7 +1290,6 @@ class EMFSListing:
 		if a != None: a.file_name = file
 
 		return True
-		
 			
 	def do_preview(self,item):
 		return item.do_preview(self.target())

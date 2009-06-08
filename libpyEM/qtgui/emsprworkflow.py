@@ -3667,7 +3667,10 @@ class E2Refine2DChooseParticlesTask(ParticleWorkFlowTask):
 		return params
 
 	def on_form_ok(self,params):
-
+		if not params.has_key("particle_set_choice") or params["particle_set_choice"] == None:
+			error("Please choose some data")
+			return
+		
 		choice = params["particle_set_choice"]
 		
 		if choice == "Specify":
@@ -3704,6 +3707,9 @@ class E2Refine2DChooseStacksTask(ParticleWorkFlowTask):
 		return params
 
 	def on_form_ok(self,params):
+		if not params.has_key("particle_set_choice_stack") or params["particle_set_choice_stack"] == None:
+			error("Please choose some data")
+			return
 		choice = params["particle_set_choice_stack"]
 		
 		if choice == "Specify":
@@ -4036,6 +4042,7 @@ class RefinementReportTask(ParticleWorkFlowTask):
 			# check for 00 to 09 but 00 is replaced with "init"
 			db_first_part = "bdb:"+dir+"#threed_"
 			cont = True
+			threed_file = None
 			for i in range(0,10):
 				if not cont: break
 				for j in range(0,10):
@@ -4043,13 +4050,16 @@ class RefinementReportTask(ParticleWorkFlowTask):
 					
 					db_name_filt = db_first_part+"filt_"+str(i)+str(j)
 					if db_check_dict(db_name_filt):
-						threed_files.append(db_name_filt)
+						threed_file = db_name_filt
 					else:
 						db_name = db_first_part+str(i)+str(j)
 						if db_check_dict(db_name):
-							threed_files.append(db_name)
+							threed_file = db_name
 						else:
 							cont = False
+							
+			if threed_file != None:
+				threed_files.append(threed_file)
 				
 		return threed_files
 	
@@ -4071,6 +4081,9 @@ class E2Make3DTools:
 	'''
 	e2eotest and e2refine tasks both need the functionality embodied here
 	'''
+	
+	preprocessor_cache = None
+	
 	def __init__(self):pass
 	
 	def add_make3d_args(self,options,string_args,bool_args,additional_args):
@@ -4078,6 +4091,7 @@ class E2Make3DTools:
 		string_args.extend(["m3diter","m3dkeep","recon"])
 		bool_args.append("m3dkeepsig")
 		if hasattr(options,"m3dpreprocess"): string_args.append("m3dpreprocess")
+		if hasattr(options,"m3dpostprocess"): string_args.append("m3dpostprocess")
 		if hasattr(options,"pad"): string_args.append("pad")
 
 	def check_make3d_page(self,params,options):
@@ -4118,8 +4132,30 @@ class E2Make3DTools:
 		
 		if params["m3dpreprocess"] != "None":
 			options.m3dpreprocess = params["m3dpreprocess"]
-
 			
+		if params["m3dpostprocess"] != "None":
+			if len(params["m3dpostprocessargs"]) == 0:
+				error_message.append("If you supply a post processor for make3d, you have to supply one of the cutoff_abs, cutoff_freq, or cutoff_pixels parameters")
+			else:
+				s = params["m3dpostprocess"] + ":"
+				s += params["m3dpostprocessargs"]
+				p = parsemodopt(s)
+				if p[0] == None:
+					error_message.append("Error can't interpret the make3d post processor string (%s)" %(s))
+				else:
+					try:
+						Processors.get(p[0], p[1])
+						options.m3dpostprocess = s
+					except:
+						error_message.append("Error, can't interpret parameters for the make3d post processor (%s)" %(s))
+						vals = dump_processors_list()
+						values = vals[p[0]]
+						s = "The parameters for the %s processor are:"  %p[0]
+						
+						for i in xrange(1,len(values),3):
+							s += " " + values[i] +","
+						s = s[:-1] # get rid of the last column
+						error_message.append(s)
 		return error_message
 
 	def get_make3d_page(self):
@@ -4132,7 +4168,10 @@ class E2Make3DTools:
 	
 		pnormproc =  ParamDef("m3dpreprocess",vartype="string",desc_short="Normalization processor",desc_long="The normalization method applied to the class averages",property=None,defaultunits=db.get("m3dpreprocess",dfl="normalize.edgemean"),choices=["normalize","normalize.edgemean","None"])
 		
-		precon = ParamDef("recon",vartype="string",desc_short="Reconstruction technique",desc_long="The method used to perform 3D reconstruction",property=None,defaultunits=db.get("recon",dfl="fourier"),choices=["fourier","back_projection"])
+		ppostproc =  ParamDef("m3dpostprocess",vartype="string",desc_short="Post processor",desc_long="A post processor applied to the reconstructed model",property=None,defaultunits=db.get("m3dpostprocess",dfl="None"),choices=self.get_postprocess_filt_options())
+		ppostprocargs =  ParamDef(name="m3dpostprocessargs",vartype="string",desc_short="params",desc_long="Parameters for the post processor see \"e2help.py processors\"",property=None,defaultunits=db.get("m3dpostprocessargs",dfl=""),choices=[])	
+	
+		precon = ParamDef("recon",vartype="string",desc_short="Reconstructor",desc_long="The method used to perform 3D reconstruction",property=None,defaultunits=db.get("recon",dfl="fourier"),choices=["fourier","back_projection"])
 		ppad = ParamDef("pad",vartype="string",desc_short="Pad to",desc_long="The amount to which you want to pad the 3D volume when Fourier inversion is being used. At least 25% is recommended", defaultunits=db.get("pad",dfl=""),choices=[])
 		params = []
 		
@@ -4144,11 +4183,26 @@ class E2Make3DTools:
 		params.append([precon,piter])
 		params.append([pnormproc,ppad])
 		params.append([pkeep,pkeepsig])
-		
+		params.append([ppostproc,ppostprocargs])
 		return ["Make3d", params]
 		
-		
 	
+	def get_postprocess_filt_options(self):
+		if E2Make3DTools.preprocessor_cache == None:
+			a = dump_processors_list()
+			l = ["None"]
+			for key in a.keys():
+				if len(key) > 4 and key[:5] == "eman1":
+					vals = key.split(".")
+					if len(vals) > 2:
+						if vals[1] in ["filter"]:
+							if vals[2] in ["lowpass","highpass"]:
+								l.append(key)
+							
+			E2Make3DTools.preprocessor_cache = l
+			 
+		return E2Make3DTools.preprocessor_cache
+			
 class E2RefineParticlesTask(EMClassificationTools, E2Make3DTools):
 	'''
 	This task will harness the parameters for, and launch, e2refine.py
@@ -4248,6 +4302,7 @@ class E2RefineParticlesTask(EMClassificationTools, E2Make3DTools):
 		#self.write_db_parms(options,string_args,bool_args)
 		
 		self.spawn_single_task("e2refine.py",options,string_args,bool_args,additional_args,temp_file_name)
+		
 		self.emit(QtCore.SIGNAL("task_idle"))
 		self.form.closeEvent(None)
 		self.form = None
@@ -4347,7 +4402,7 @@ class E2RefineParticlesTask(EMClassificationTools, E2Make3DTools):
 		
 		params.append(pautomask)
 		
-		pamthreshold =  ParamDef(name="amthreshold",vartype="float",desc_short="Threshold",desc_long="An isosurface threshold that well defines your structure.",property=None,defaultunits=db.get("amthreshold",dfl=1.1),choices=None)
+		pamthreshold =  ParamDef(name="amthreshold",vartype="float",desc_short="Threshold",desc_long="An isosurface threshold that well defines your structure.",property=None,defaultunits=db.get("amthreshold",dfl=0.8),choices=None)
 		pamradius =  ParamDef(name="amradius",vartype="int",desc_short="Radius",desc_long="The radius of a sphere at the the origin which contains seeding points for the flood file operation using the given threshold",property=None,defaultunits=db.get("amradius",dfl=30),choices=None)
 		pamnshells =  ParamDef(name="amnshells",vartype="int",desc_short="Mask dilations",desc_long="The number of dilations to apply to the mask after the flood fill operation has finished. Suggest 5% of the boxsize",property=None,defaultunits=db.get("amnshells",dfl=5),choices=None)
 		pamngaussshells =  ParamDef(name="amnshellsgauss",vartype="int",desc_short="Post Gaussian dilations",desc_long="The number of dilations to apply to the dilated mask, using a gaussian fall off. Suggest 5% of the boxsize",property=None,defaultunits=db.get("amnshellsgauss",dfl=5),choices=None)

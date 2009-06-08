@@ -32,20 +32,20 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  *
  */
- 
+
 #ifndef eman_processor_sparx_h__
 #define eman_processor_sparx_h__ 1
 
 namespace EMAN
 {
 
-        
+
 	/** mirror an image
 	 * @param axis  ''x', 'y', or 'z' axis, means mirror by changing the sign of the respective axis;
 	 */
 	class MirrorProcessor:public Processor
-	{ 
-		
+	{
+
 	  public:
 		void process_inplace(EMData * image);
 
@@ -70,7 +70,7 @@ namespace EMAN
 		{
 			return "mirror an image.";
 		}
-		
+
 	};
 
 
@@ -79,12 +79,12 @@ namespace EMAN
 	{
 	  public:
 		//virtual void process_inplace(EMData * image);
-		
+
 		static string get_group_desc()
 		{
 			return "Fourier Filter Processors are frequency domain processors. The input image can be either real or Fourier, and the output processed image format corresponds to that of the input file. FourierFilter class is the base class of fourier space processors. The processors can be either low-pass, high-pass, band-pass, or homomorphic. The processor parameters are in absolute frequency units, valid range is ]0,0.5], where 0.5 is Nyquist freqeuncy. ";
 		}
-		
+
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
@@ -94,7 +94,7 @@ namespace EMAN
 			return d;
 		}
 	};
-	
+
 	/**Lowpass top-hat filter processor applied in Fourier space.
 	 * @param cutoff_frequency Absolute [0,0.5] cut-off frequency.
 	 */
@@ -111,7 +111,7 @@ namespace EMAN
 		}
 		void process_inplace(EMData* image) {
 			params["filter_type"] = TOP_HAT_LOW_PASS;
-			EMFourierFilterInPlace(image, params); 
+			EMFourierFilterInPlace(image, params);
 		}
 		TypeDict get_param_types() const
 		{
@@ -127,7 +127,7 @@ namespace EMAN
 			}
 		}
 	};
-	
+
 	/** Highpass top-hat filter applied in Fourier space.
 	 * @param cutoff_frequency Absolute [0,0.5] cut-off frequency.
 	 */
@@ -144,7 +144,7 @@ namespace EMAN
 		}
 		void process_inplace(EMData* image) {
 			params["filter_type"] = TOP_HAT_HIGH_PASS;
-			EMFourierFilterInPlace(image, params); 
+			EMFourierFilterInPlace(image, params);
 		}
 		TypeDict get_param_types() const
 		{
@@ -160,7 +160,7 @@ namespace EMAN
 			}
 		}
 	};
-	
+
 	/**Bandpass top-hat filter processor applied in Fourier space.
 	 *@param low_cutoff_frequency Absolute [0,0.5] low cut-off frequency.
 	 *@param high_cutoff_frequency Absolute [0,0.5] high cut-off frequency.
@@ -178,7 +178,7 @@ namespace EMAN
 		}
 		void process_inplace(EMData* image) {
 			params["filter_type"] = TOP_HAT_BAND_PASS;
-			EMFourierFilterInPlace(image, params); 
+			EMFourierFilterInPlace(image, params);
 		}
 		TypeDict get_param_types() const
 		{
@@ -188,7 +188,7 @@ namespace EMAN
 			return d;
 		}
 	};
-	
+
 	/**Homomorphic top-hat filter processor applied in Fourier space.
 	 *@param low_cutoff_frequency Absolute [0,0.5] low cut-off frequency.
 	 *@param high_cutoff_frequency Absolute [0,0.5] high cut-off frequency.
@@ -207,7 +207,7 @@ namespace EMAN
 		}
 		void process_inplace(EMData* image) {
 			params["filter_type"] = TOP_HOMOMORPHIC;
-			EMFourierFilterInPlace(image, params); 
+			EMFourierFilterInPlace(image, params);
 		}
 		TypeDict get_param_types() const
 		{
@@ -218,7 +218,7 @@ namespace EMAN
 			return d;
 		}
 	};
-	
+
 	/**Lowpass Gauss filter processor applied in Fourier space.
 	 * @param sigma Gaussian sigma.
 	 */
@@ -235,7 +235,7 @@ namespace EMAN
 		}
 		void process_inplace(EMData* image) {
 			params["filter_type"] = GAUSS_LOW_PASS;
-			EMFourierFilterInPlace(image, params); 
+			EMFourierFilterInPlace(image, params);
 		}
 		TypeDict get_param_types() const
 		{
@@ -251,9 +251,9 @@ namespace EMAN
 			}
 		}
 	};
-	
+
 	/**Highpass Gauss filter processor applied in Fourier space.
-	 * @param sigma Gaussian sigma.	
+	 * @param sigma Gaussian sigma.
 	 */
 	class NewHighpassGaussProcessor:public NewFourierProcessor
 	{
@@ -268,7 +268,7 @@ namespace EMAN
 		}
 		void process_inplace(EMData* image) {
 			params["filter_type"] = GAUSS_HIGH_PASS;
-			EMFourierFilterInPlace(image, params); 
+			EMFourierFilterInPlace(image, params);
 		}
 		TypeDict get_param_types() const
 		{
@@ -284,7 +284,7 @@ namespace EMAN
 			}
 		}
 	};
-	
+
 	/**Bandpass Gauss filter processor applied in Fourier space.
 	 * @param sigma Gaussian sigma.
 	 * @param center Gaussian center.
@@ -302,7 +302,7 @@ namespace EMAN
 		}
 		void process_inplace(EMData* image) {
 			params["filter_type"] = GAUSS_BAND_PASS;
-			EMFourierFilterInPlace(image, params); 
+			EMFourierFilterInPlace(image, params);
 		}
 		TypeDict get_param_types() const
 		{
@@ -319,7 +319,7 @@ namespace EMAN
 			}
 		}
 	};
-	
+
 	/**Homomorphic Gauss filter processor applied in Fourier space.
 	 * @param sigma Gaussian sigma.
 	 * @param value_at_zero_frequency Value at zero frequency.
@@ -337,7 +337,7 @@ namespace EMAN
 		}
 		void process_inplace(EMData* image) {
 			params["filter_type"] = GAUSS_HOMOMORPHIC;
-			EMFourierFilterInPlace(image, params); 
+			EMFourierFilterInPlace(image, params);
 		}
 		TypeDict get_param_types() const
 		{
@@ -354,7 +354,7 @@ namespace EMAN
 			}
 		}
 	};
-	
+
 	/**Divide by a Gaussian in Fourier space.
 	 * @param sigma Gaussian sigma.
 	 */
@@ -371,7 +371,7 @@ namespace EMAN
 		}
 		void process_inplace(EMData* image) {
 			params["filter_type"] = GAUSS_INVERSE;
-			EMFourierFilterInPlace(image, params); 
+			EMFourierFilterInPlace(image, params);
 		}
 		TypeDict get_param_types() const
 		{
@@ -387,7 +387,7 @@ namespace EMAN
 			}
 		}
 	};
-	
+
 	/**Shift by phase multiplication in Fourier space.
 	 */
 	class SHIFTProcessor:public NewFourierProcessor
@@ -403,7 +403,7 @@ namespace EMAN
 		}
 		void process_inplace(EMData* image) {
 			params["filter_type"] = SHIFT;
-			EMFourierFilterInPlace(image, params); 
+			EMFourierFilterInPlace(image, params);
 		}
 		TypeDict get_param_types() const
 		{
@@ -414,7 +414,7 @@ namespace EMAN
 			return d;
 		}
 	};
-	
+
 	/**Divide by a Kaiser-Bessel I0 func in Fourier space.
 	 */
 	class InverseKaiserI0Processor:public NewFourierProcessor
@@ -430,7 +430,7 @@ namespace EMAN
 		}
 		void process_inplace(EMData* image) {
 			params["filter_type"] = KAISER_I0_INVERSE;
-			EMFourierFilterInPlace(image, params); 
+			EMFourierFilterInPlace(image, params);
 		}
 		TypeDict get_param_types() const
 		{
@@ -438,7 +438,7 @@ namespace EMAN
 			return d;
 		}
 	};
-	
+
 	/**Divide by a Kaiser-Bessel Sinh func in Fourier space.
 	 */
 	class InverseKaiserSinhProcessor:public NewFourierProcessor
@@ -454,7 +454,7 @@ namespace EMAN
 		}
 		void process_inplace(EMData* image) {
 			params["filter_type"] = KAISER_SINH_INVERSE;
-			EMFourierFilterInPlace(image, params); 
+			EMFourierFilterInPlace(image, params);
 		}
 		TypeDict get_param_types() const
 		{
@@ -462,7 +462,7 @@ namespace EMAN
 			return d;
 		}
 	};
-	
+
 	/**Filter with tabulated data in Fourier space.
 	 *@param table Tabulated filter data.
 	 */
@@ -479,7 +479,7 @@ namespace EMAN
 		}
 		void process_inplace(EMData* image) {
 			params["filter_type"] = RADIAL_TABLE;
-			EMFourierFilterInPlace(image, params); 
+			EMFourierFilterInPlace(image, params);
 		}
 		TypeDict get_param_types() const
 		{
@@ -488,7 +488,7 @@ namespace EMAN
 			return d;
 		}
 	};
-	
+
 	/**Lowpass Butterworth filter processor applied in Fourier space.
 	 *@param low_cutoff_frequency Absolute [0,0.5] low cut-off frequency.
 	 *@param high_cutoff_frequency Absolute [0,0.5] high cut-off frequency.
@@ -506,7 +506,7 @@ namespace EMAN
 		}
 		void process_inplace(EMData* image) {
 			params["filter_type"] = BUTTERWORTH_LOW_PASS;
-			EMFourierFilterInPlace(image, params); 
+			EMFourierFilterInPlace(image, params);
 		}
 		TypeDict get_param_types() const
 		{
@@ -516,7 +516,7 @@ namespace EMAN
 			return d;
 		}
 	};
-	
+
 	/**Highpass Butterworth filter processor applied in Fourier space.
 	 *@param low_cutoff_frequency Absolute [0,0.5] low cut-off frequency.
 	 *@param high_cutoff_frequency Absolute [0,0.5] high cut-off frequency.
@@ -534,7 +534,7 @@ namespace EMAN
 		}
 		void process_inplace(EMData* image) {
 			params["filter_type"] = BUTTERWORTH_HIGH_PASS;
-			EMFourierFilterInPlace(image, params); 
+			EMFourierFilterInPlace(image, params);
 		}
 		TypeDict get_param_types() const
 		{
@@ -544,7 +544,7 @@ namespace EMAN
 			return d;
 		}
 	};
-	
+
 	/**Homomorphic Butterworth filter processor applied in Fourier space.
 	 *@param low_cutoff_frequency Absolute [0,0.5] low cut-off frequency.
 	 *@param high_cutoff_frequency Absolute [0,0.5] high cut-off frequency.
@@ -563,7 +563,7 @@ namespace EMAN
 		}
 		void process_inplace(EMData* image) {
 			params["filter_type"] = BUTTERWORTH_HOMOMORPHIC;
-			EMFourierFilterInPlace(image, params); 
+			EMFourierFilterInPlace(image, params);
 		}
 		TypeDict get_param_types() const
 		{
@@ -574,7 +574,7 @@ namespace EMAN
 			return d;
 		}
 	};
-	
+
 	/**Lowpass tanh filter processor applied in Fourier space.
 	 *@param cutoff_frequency Absolute [0,0.5] cut-off frequency.
 	 *@param fall_off Tanh decay rate.
@@ -592,7 +592,7 @@ namespace EMAN
 		}
 		void process_inplace(EMData* image) {
 			params["filter_type"] = TANH_LOW_PASS;
-			EMFourierFilterInPlace(image, params); 
+			EMFourierFilterInPlace(image, params);
 		}
 		TypeDict get_param_types() const
 		{
@@ -609,7 +609,7 @@ namespace EMAN
 			}
 		}
 	};
-	
+
 	/**Highpass tanh filter processor applied in Fourier space.
 	 *@param cutoff_frequency Absolute [0,0.5] cut-off frequency.
 	 *@param fall_off Tanh decay rate.
@@ -627,7 +627,7 @@ namespace EMAN
 		}
 		void process_inplace(EMData* image) {
 			params["filter_type"] = TANH_HIGH_PASS;
-			EMFourierFilterInPlace(image, params); 
+			EMFourierFilterInPlace(image, params);
 		}
 		TypeDict get_param_types() const
 		{
@@ -644,7 +644,7 @@ namespace EMAN
 			}
 		}
 	};
-	
+
 	/**Homomorphic Tanh processor applied in Fourier space
 	 *@param cutoff_frequency Absolute [0,0.5] cut-off frequency.
 	 *@param fall_off Tanh decay rate.
@@ -663,7 +663,7 @@ namespace EMAN
 		}
 		void process_inplace(EMData* image) {
 			params["filter_type"] = TANH_HOMOMORPHIC;
-			EMFourierFilterInPlace(image, params); 
+			EMFourierFilterInPlace(image, params);
 		}
 		TypeDict get_param_types() const
 		{
@@ -681,10 +681,10 @@ namespace EMAN
 			}
 		}
 	};
-	
+
 	/**Bandpass tanh processor applied in Fourier space.
 	 *@param low_cutoff_frequency Absolute [0,0.5] low cut-off frequency.
-	 *@param Low_fall_off Tanh low decay rate.	 
+	 *@param Low_fall_off Tanh low decay rate.
 	 *@param high_cutoff_frequency Absolute [0,0.5] high cut-off frequency.
 	 *@param high_fall_off Tanh high decay rate.
 	 *@param fall_off Tanh decay rate.
@@ -702,7 +702,7 @@ namespace EMAN
 		}
 		void process_inplace(EMData* image) {
 			params["filter_type"] = TANH_BAND_PASS;
-			EMFourierFilterInPlace(image, params); 
+			EMFourierFilterInPlace(image, params);
 		}
 		TypeDict get_param_types() const
 		{
@@ -729,7 +729,7 @@ namespace EMAN
 		}
 		void process_inplace(EMData* image) {
 			params["filter_type"] = CTF_;
-			EMFourierFilterInPlace(image, params); 
+			EMFourierFilterInPlace(image, params);
 		}
 		TypeDict get_param_types() const
 		{

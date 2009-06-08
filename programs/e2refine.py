@@ -93,6 +93,7 @@ def main():
 	parser.add_option("--m3dkeepsig", default=False, action="store_true", help="The standard deviation alternative to the --m3dkeep argument")
 	parser.add_option("--m3diter", type=int, default=4, help="The number of times the 3D reconstruction should be iterated")
 	parser.add_option("--m3dpreprocess", type="string", default="normalize.edgemean", help="Normalization processor applied before 3D reconstruction")
+	parser.add_option("--m3dpostprocess", type="string", default=None, help="Post processor to be applied to the 3D volume once the reconstruction is completed")
 
 	#lowmem!
 	parser.add_option("--lowmem", default=False, action="store_true",help="Make limited use of memory when possible - useful on lower end machines")
@@ -261,6 +262,9 @@ def get_make3d_cmd(options,check=False,nofilecheck=False):
 
 	if str(options.m3dpreprocess) != "None":
 		e2make3dcmd += " --preprocess=%s" %options.m3dpreprocess
+		
+	if str(options.m3dpostprocess) != "None":
+		e2make3dcmd += " --postprocess=%s" %options.m3dpostprocess
 
 	
 	if (options.m3dkeep):
