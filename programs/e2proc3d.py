@@ -43,13 +43,14 @@ from optparse import OptionParser
 import sys
 import os.path
 import pyemtbx.options
+from pyemtbx.options import intvararg_callback
+from pyemtbx.options import floatvararg_callback
 
 def print_iminfo(data, label):
 	print "%s image : %dx%dx%d Mean=%1.3g Sigma=%1.3g Min=%1.3g Max=%1.3g" % \
 	(label, data.get_xsize(), data.get_ysize(), data.get_zsize(),
 	 data.get_attr("mean"), data.get_attr("sigma"),
 	 data.get_attr("minimum"), data.get_attr("maximum"))
-
 
 def main():
     progname = os.path.basename(sys.argv[0])
@@ -70,10 +71,10 @@ def main():
 
     parser.add_option("--sym", dest = "sym", action="append", help = "Symmetry to impose - choices are: c<n>, d<n>, h<n>, tet, oct, icos")
 
-    parser.add_option("--clip", metavar="x y z xc yc zc", type="float", nargs=6, action="append",
-                                help="Make the output have this size, no scaling. ")
+    parser.add_option("--clip", metavar="x,y,z[,xc,yc,zc]", type='string', action="callback", callback=intvararg_callback, 
+					           help="Make the output have this size, no scaling. ")
     
-    parser.add_option("--fftclip", metavar="x y z", type="float", nargs=3, action="append",
+    parser.add_option("--fftclip", metavar="x, y, z", type="string", action="callback", callback=floatvararg_callback,
                                 help="Make the output have this size, rescaling by padding FFT.")
 
     parser.add_option("--process", metavar="processor_name:param1=value1:param2=value2", type="string",
@@ -84,7 +85,7 @@ def main():
 
     parser.add_option("--apix", type="float", help="A/pixel for S scaling")
     
-    parser.add_option("--origin", metavar="x y z", type="float", nargs=3,
+    parser.add_option("--origin", metavar="x, y, z", type="string", action="callback", callback=floatvararg_callback,
                                 help="Set the coordinates for the pixel (0,0,0).")
 
     parser.add_option("--mult", metavar="f", type="float", 
@@ -189,7 +190,12 @@ def main():
     for data in datlst:
         for option1 in optionlist:				
             if option1 == "origin":
-                (originx, originy, originz) = options.origin
+            	if(len(options.origin)==3):
+                    (originx, originy, originz) = options.origin
+                else:
+                	print ''
+                	return
+                	
                 data.set_xyz_origin(originx, originy, originz)
 
             elif option1 == "calcsf":
@@ -250,8 +256,16 @@ def main():
             	daz,dalt,dphi=options.rot.split(",")
             	data.rotate(float(daz),float(dalt),float(dphi))
             elif option1 == "clip":
-                ci = index_d[option1]
-                (nx, ny, nz, xc, yc, zc) = options.clip[ci]
+                if(len(options.clip) == 6):
+                	(nx, ny, nz, xc, yc, zc) = options.clip
+                elif(len(options.clip) == 3):
+                	(nx, ny, nz) = options.clip
+                	xc = x/2
+                	yc = y/2
+                	zc = z/2
+                else:
+                	print 'clip option takes either 3 or 6 arguments. --clip=x,y,z[,xc,yc,zc]'
+                	return
 
                 if not (xc>=0 and yc>=0 and zc>=0 and xc<x and yc<y and zc<z):
                     xc = x/2
@@ -299,10 +313,14 @@ def main():
                 index_d[option1] += 1
 
             elif option1 == "fftclip":
-                fi = index_d[option1]
-                (fnx, fny, fnz) = options.fftclip[fi]
+            	if(len(options.fftclip)==3):
+                    (fnx, fny, fnz) = options.fftclip
+                else:
+                	print 'fftclip option takes either 3 arguments. --fftclip=x,y,z'
+                	return
+                
                 fft = data.do_fft()
-                padfft = fft.clip(Region(0, 0, 0, fnx+2, fny, fnz))
+                padfft = fft.get_clip(Region(0, 0, 0, fnx+2, fny, fnz))
                 data = padfft.do_ift()
                 index_d[option1] += 1
 

@@ -51,3 +51,25 @@ def get_optionlist(argv):
             argname = arg1.split("=")
             optionlist.append(argname[0].lstrip("-"))
     return optionlist
+
+def intvararg_callback(option, opt_str, value, parser):
+#    print 'vararg_callback:'
+#    print '\toption:', repr(option)
+#    print '\topt_str:', opt_str
+#    print '\tvalue:', value
+#    print '\tparser:', parser
+    
+    v = [int(i) for i in value.split(',')]
+    setattr(parser.values, option.dest, v)
+    return
+
+def floatvararg_callback(option, opt_str, value, parser):
+#    print 'vararg_callback:'
+#    print '\toption:', repr(option)
+#    print '\topt_str:', opt_str
+#    print '\tvalue:', value
+#    print '\tparser:', parser
+    
+    v = [float(i) for i in value.split(',')]
+    setattr(parser.values, option.dest, v)
+    return
