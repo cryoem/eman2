@@ -971,11 +971,10 @@ def refprojs( volft, kb, ref_angles, last_ring, mask2D, cnx, cny, numr, mode, wr
 	return ref_proj_rings
 
 def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None):
-	from utilities    import even_angles, model_circle, compose_transform2, print_msg
+	from utilities    import compose_transform2
 	from utilities    import get_params_proj, set_params_proj
 
 	ID = data.get_attr("ID")
-
 	if finfo:
 		phi, theta, psi, s2x, s2y = get_params_proj(data)
 		finfo.write("Image id: %6d\n"%(ID))
@@ -988,10 +987,6 @@ def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None):
 	ny   = data.get_ysize()
 	cnx  = nx//2 + 1
 	cny  = ny//2 + 1
-	#precalculate rings
-
-	# prepare 2-D mask for normalization
-
 
 	phi, theta, psi, sxo, syo = get_params_proj(data)
 	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d(data, refrings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo)
@@ -1022,18 +1017,23 @@ def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None):
 	return peak
 
 def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None):
-	from utilities    import even_angles, model_circle, compose_transform2, bcast_EMData_to_all
+	from utilities    import compose_transform2
 	from utilities    import set_params_proj, get_params_proj
 	from math         import cos, sin, pi
-
+	
+	ID = data.get_attr("ID")
+	if finfo:
+		phi, theta, psi, s2x, s2y = get_params_proj(data)
+		finfo.write("Image id: %6d\n"%(ID))
+		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, s2x, s2y))
+		finfo.flush()
+	
 	mode = "F"
-	#  begin from applying the mask, i.e., subtract the average outside the mask and multiply by the mask
 	nx   = data.get_xsize()
 	ny   = data.get_ysize()
 	#  center is in SPIDER convention
 	cnx  = nx//2 + 1
 	cny  = ny//2 + 1
-
 
 	qv = pi/180.
 	ant = abs(cos(an*qv))
@@ -1046,7 +1046,7 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 	if iref > -1:
 		# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
 		# What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
-		angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1,  -ang, 0.,0.,1)
+		angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
 		if  mirror:
 			phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
 			theta = 180.0-refrings[iref].get_attr("theta")
@@ -1060,40 +1060,47 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 			s2x   = sxb+sxo
 			s2y   = syb+syo
 
-		from utilities import set_params_proj, get_params_proj
-		set_params_proj( data, [phi, theta, psi, s2x, s2y] )
+		set_params_proj(data, [phi, theta, psi, s2x, s2y])
+		if finfo:
+			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f\n\n" %(phi, theta, psi, s2x, s2y, peak))
+			finfo.flush()
 		return peak
 	else:
 		return -1.0e23
 
 
 def proj_ali_incore_local_psi(data, refrings, numr, xrng, yrng, step, an, finfo=None):
-	from utilities    import even_angles, model_circle, compose_transform2, bcast_EMData_to_all
+	from utilities    import compose_transform2
 	from utilities    import set_params_proj, get_params_proj
 	from math         import cos, sin, pi
-
+	
+	ID = data.get_attr("ID")
+	if finfo:
+		phi, theta, psi, s2x, s2y = get_params_proj(data)
+		finfo.write("Image id: %6d\n"%(ID))
+		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, s2x, s2y))
+		finfo.flush()
+	
 	mode = "F"
-	#  begin from applying the mask, i.e., subtract the average outside the mask and multiply by the mask
 	nx   = data.get_xsize()
 	ny   = data.get_ysize()
 	#  center is in SPIDER convention
 	cnx  = nx//2 + 1
 	cny  = ny//2 + 1
 
-
 	qv = pi/180.
 	ant = abs(cos(an*qv))
 	phi, theta, psi, sxo, syo = get_params_proj(data)
 
-	#[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_local(data, refrings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
-	#iref=int(iref)
+	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_local_psi(data, refrings, xrng, yrng, step, ant, 180.0, mode, numr, cnx-sxo, cny-syo)
+	iref = int(iref)
 	#Util.multiref_peaks_ali(data[imn].process("normalize.mask", {"mask":mask2D, "no_sigma":1}), ref_proj_rings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo, ccfs, ccfm, nphi, ntheta)
 	#[ang,sxs,sys,mirror,peak,numref] = apmq_local(projdata[imn], ref_proj_rings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
 	#ang = (ang+360.0)%360.0
 	if iref > -1:
 		# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
 		# What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
-		angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1,  -ang, 0.,0.,1)
+		angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
 		if  mirror:
 			phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
 			theta = 180.0-refrings[iref].get_attr("theta")
@@ -1107,9 +1114,11 @@ def proj_ali_incore_local_psi(data, refrings, numr, xrng, yrng, step, an, finfo=
 			s2x   = sxb+sxo
 			s2y   = syb+syo
 
-		from utilities import set_params_proj, get_params_proj
-		set_params_proj( data, [phi, theta, psi, s2x, s2y] )
-		return peak
+		set_params_proj(data, [phi, theta, psi, s2x, s2y])
+		if finfo:
+			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f\n\n" %(phi, theta, psi, s2x, s2y, peak))
+			finfo.flush()
+ 		return peak
 	else:
 		return -1.0e23
 
