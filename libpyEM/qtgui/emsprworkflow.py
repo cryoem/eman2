@@ -594,8 +594,12 @@ class EMRawDataReportTask(WorkFlowTask):
 		'''
 		A static function for getting the dimensions of a file as a string
 		'''
-		nx,ny,nz = gimme_image_dimensions3D(file_name)
-		return "%ix%ix%i" %(nx,ny,nz)
+		try:
+			
+			nx,ny,nz = gimme_image_dimensions3D(file_name)
+			return "%ix%ix%i" %(nx,ny,nz)
+		except:
+			return "Error"
 	
 	get_image_dimensions = staticmethod(get_image_dimensions)
 
@@ -5235,7 +5239,7 @@ class E2EotestTask(EMClassificationTools,E2Make3DTools):
 			cmd = db["cmd_dict"]
 			# need to be able to get the input data
 			if not cmd.has_key("usefilt") or str(cmd["usefilt"]) == "None":
-				error_message.append("You have checked usefilt but there is not usefilt file in the chosen refinement directory")
+				error_message.append("You have checked usefilt but no usefilt data was used for the refinement in the given directory")
 			else:
 				options.usefilt = file = cmd["usefilt"]
 

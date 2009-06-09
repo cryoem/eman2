@@ -86,30 +86,25 @@ class EMReconstructAliFile(WorkFlowTask):
 		ali_table.add_column_data(EMFileTable.EMColumnData("Image Dims",ParticleReportTask.get_particle_dims,"The dimensions of the image on disk"))
 		plot_table.add_column_data(EMFileTable.EMColumnData("Rows",EMPlotTable.num_plot_entries,"The number of lines in the file"))
 		
+#		clip = ParamDef(name="clip",vartype="int",desc_short="Clip ALI images to",desc_long="clipping which is applied after scale ",property=None,defaultunits=db.get("clip",dfl=""),choices=None)
+		scale = ParamDef(name="scale",vartype="float",desc_short="Scale ALI pixel width",desc_long="Scales the input image pixel spacing by the given amount",property=None,defaultunits=db.get("scale",dfl=1.0),choices=None)
+		pad = ParamDef(name="pad",vartype="int",desc_short="Zero Padding",desc_long="Padding applied after the images have been scaled and clipped",property=None,defaultunits=db.get("pad",dfl=""),choices=None)
 		
-		clip = ParamDef(name="clip",vartype="int",desc_short="Clip input images ",desc_long="clipping which is applied after scale ",property=None,defaultunits=db.get("clip",dfl=None),choices=None)
-		scale = ParamDef(name="scale",vartype="float",desc_short="Scale input images by",desc_long="Scales the input images by the given amount",property=None,defaultunits=db.get("scale",dfl=1.0),choices=None)
-		pad = ParamDef(name="pad",vartype="int",desc_short="Zero Padding",desc_long="Padding applied after the images have been scaled and clipped",property=None,defaultunits=db.get("scale",dfl=1.0),choices=None)
-		
-		xsample = ParamDef(name="xsample",vartype="int",desc_short="X Sampling",desc_long="The size of the x dimension of the reconstructed volume",property=None,defaultunits=db.get("xsample",dfl=0),choices=None)
-		ysample = ParamDef(name="ysample",vartype="int",desc_short="Y Sampling",desc_long="The size of the y dimension of the reconstructed volume",property=None,defaultunits=db.get("ysample",dfl=0),choices=None)
-		zsample = ParamDef(name="zsample",vartype="int",desc_short="Z Sampling",desc_long="The size of the z dimension of the reconstructed volume",property=None,defaultunits=db.get("zsample",dfl=0),choices=None)
+		zsample = ParamDef(name="zsample",vartype="int",desc_short="Z sampling of reconstructed volume",desc_long="The size of the z dimension of the reconstructed volume",property=None,defaultunits=db.get("zsample",dfl=0),choices=None)
 		
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="Reconstructing and ALI file",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
 		params.append([ali_table,plot_table])
-		params.append([xsample,ysample,zsample])
 		params.append(scale)
-		params.append(clip)
 		params.append(pad)
+		params.append(zsample)
 		return params
 
-	
 	def check_params(self,params):
 		error_msg = []
-		for sample in ["xsample","ysample","zsample"]:
-			if params[sample] <= 0:
+		for sample in ["zsample"]:
+			if not params.has_key(sample) or params[sample] <= 0:
 				error_msg.append("%s must be greater than zero" %sample)
-				
+		
 		tltok = True
 		if not params.has_key("tltfile") or len(params["tltfile"]) != 1:
 			error_msg.append("You have to supply a single TLT file")
@@ -137,6 +132,27 @@ class EMReconstructAliFile(WorkFlowTask):
 		if aliok and tltok:
 			if nz != n_lines:
 				error_msg.append("The z dimension of the ALI file (%d) has to match the number of lines in the TLT file (%d)" %(nz,n_lines))
+				
+		if aliok:
+			scale_ok = True
+			if params.has_key("scale"):
+				if params["scale"] <= 0:
+					error_msg.append("scale must be greater than zero")
+					scale_ok = False
+			else:
+				params["scale"] = 1.0
+				scale_ok = False
+				
+			params["clip"] = params["scale"]*nx
+				
+				
+			if params.has_key("pad"):
+				if params["pad"] <= 0:
+					error_msg.append("pad must be greater than zero")
+				else:
+					if params["pad"] <= params["clip"]:
+						 error_msg.append("pad (%d) must be great than the size of the scaled images (%d)" %(params["pad"],params["clip"]))		 
+	
 	
 		return error_msg
 	
@@ -153,8 +169,10 @@ class EMReconstructAliFile(WorkFlowTask):
 				sidx = "0" + sidx
 				
 			name = tag + sidx
-			print name
-			if not db_check_dict(name): break
+			if not db_check_dict(name): 
+				print name,"does not exists as a db"
+				break
+			idx +=1
 			
 		return name
 	
@@ -170,15 +188,25 @@ class EMReconstructAliFile(WorkFlowTask):
 		options.tlt = params["tltfile"][0]
 		options.dbls = "global.tpr_tomograms"
 		options.output = self.get_output_name()
-		options.recon = "fourier:xsample=%s:ysample=%s:zsample=%s" %(params["xsample"],params["ysample"],params["zsample"])
-		options.preprocess = "normalize.edgemean"
+		options.recon = "fourier:zsample=%s" %(params["zsample"])
 		options.iter = "0"
 		options.sym = "c1"
 		
+		
+		
 		string_args = ["input","tlt","recon","preprocess","iter","sym","output","dbls"]
 		bool_args = []
-		additional_args = ["--lowmem"]
+		additional_args = ["--lowmem","--preprocess=normalize.edgemean"]
 		temp_file_name = "e2make3d_stdout.txt"
+		
+		if params.has_key("pad"):
+			options.pad = params["pad"]
+			string_args.append("pad")
+			
+		nx,ny,nz = gimme_image_dimensions3D(params["alifile"][0])
+		if params["scale"] != 1.0 or params["clip"] != nx:
+			options.preprocess = "math.transform.scale:scale=%s:clip=%s" %(params["scale"],params["clip"])
+		
 		self.spawn_single_task('e2make3d.py',options,string_args,bool_args,additional_args,temp_file_name)
 		
 		

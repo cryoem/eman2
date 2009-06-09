@@ -1316,16 +1316,16 @@ The basic design of EMAN Processors: <br>\
 		 * @author David Woolford
 		 * @date June 2009
 		 */
-		class ScaleProcessor:public Processor
+		class ScaleTransformProcessor:public Processor
 		{
 			public:
 				virtual string get_name() const
 				{
-					return "math.scale";
+					return "math.transform.scale";
 				}
 				static Processor *NEW()
 				{
-					return new ScaleProcessor();
+					return new ScaleTransformProcessor();
 				}
 
 				/**

@@ -80,6 +80,7 @@ template <> Factory < Processor >::Factory()
 	force_add(&ValueSqrtProcessor::NEW);
 	force_add(&Rotate180Processor::NEW);
 	force_add(&TransformProcessor::NEW);
+	force_add(&ScaleTransformProcessor::NEW);
 	force_add(&IntTranslateProcessor::NEW);
 	force_add(&InvertCarefullyProcessor::NEW);
 
@@ -7638,7 +7639,7 @@ EMData* IntTranslateProcessor::process(const EMData* const image) {
 }
 
 
-void ScaleProcessor::process_inplace(EMData* image) {
+void ScaleTransformProcessor::process_inplace(EMData* image) {
 	int clip = params.set_default("clip",0);
 	if (clip < 0) throw InvalidParameterException("The clip parameter must be greater than 0"); // If it's zero it's not used
 
@@ -7657,7 +7658,6 @@ void ScaleProcessor::process_inplace(EMData* image) {
 		Transform t;
 		t.set_scale(scale);
 		image->process_inplace("math.transform",Dict("transform",&t));
-		Region r( (image->get_xsize()-clip)/2, (image->get_xsize()-clip)/2, clip, clip);
 		if ( clip != 0) {
 			Region r( (image->get_xsize()-clip)/2, (image->get_xsize()-clip)/2, clip, clip);
 			image->clip_inplace(r);
@@ -7670,7 +7670,43 @@ void ScaleProcessor::process_inplace(EMData* image) {
 	}
 }
 
-EMData* ScaleProcessor::process(const EMData* const image) {
+EMData* ScaleTransformProcessor::process(const EMData* const image) {
+	int clip = params.set_default("clip",0);
+	if (clip < 0) throw InvalidParameterException("The clip parameter must be greater than 0"); // If it's zero it's not used
+
+	float scale = params.set_default("scale",0.0f);
+	if (scale <= 0.0f) throw InvalidParameterException("The scale parameter must be greater than 0");
+
+	EMData* ret = 0;
+	if (scale > 1) {
+		if ( clip != 0) {
+			Region r( (image->get_xsize()-clip)/2, (image->get_xsize()-clip)/2, clip, clip);
+			ret = image->get_clip(r);
+		}
+		Transform t;
+		t.set_scale(scale);
+		if (ret != 0) {
+			ret->process_inplace("math.transform",Dict("transform",&t));
+		} else {
+			ret = image->process("math.transform",Dict("transform",&t));
+		}
+	} else if (scale < 1) {
+		Transform t;
+		t.set_scale(scale);
+		ret = image->process("math.transform",Dict("transform",&t));
+		if ( clip != 0) {
+			Region r( (image->get_xsize()-clip)/2, (image->get_xsize()-clip)/2, clip, clip);
+			ret->clip_inplace(r);
+		}
+	} else {
+		if ( clip != 0) {
+			Region r( (image->get_xsize()-clip)/2, (image->get_xsize()-clip)/2, clip, clip);
+			ret = image->get_clip(r);
+		} else {
+			ret = image->copy();
+		}
+	}
+	return ret;
 
 }
 

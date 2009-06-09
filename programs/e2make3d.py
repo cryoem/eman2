@@ -131,11 +131,8 @@ def main():
 	if (not options.keep and not options.keepsig):
 		print "Warning, neither the keep nor the keepsig argument was specified. Setting keep=1 (keeping 100% of inserted slices)"
 		options.keep=1
-	
+		
 	if (options.check): options.verbose = True # turn verbose on if the user is only checking...
-	
-	# Check for potential errors be examining the contents of the options
-	error = check(options,True)
 	
 	if options.tlt:# the check function makes everyone I assume about the tlt aspect true
 		options.nx,options.ny,options.nz = gimme_image_dimensions3D(options.input)
@@ -148,6 +145,9 @@ def main():
 			angles.append(float(line))
 			
 		options.angles = angles
+		
+	# Check for potential errors be examining the contents of the options
+	error = check(options,True)
 		 
 	
 	# If there were errors then exit
@@ -172,7 +172,8 @@ def main():
 			exit(1)
 	
 	# store image dimensions early on - it saves lots of time at other stages in the code
-	(xsize, ysize ) = gimme_image_dimensions2D( options.input );
+	image_0 = get_processed_image(options,0,True)
+	(xsize, ysize )= image_0.get_xsize(),image_0.get_ysize()
 	options.xsize = xsize
 	options.ysize = ysize
 	options.zsize = xsize
@@ -192,6 +193,8 @@ def main():
 			images.append(get_processed_image(options,i,force_read))
 		
 		options.images = images
+		
+	
 
 	# Some reconstructors (only one atm) have special sampling properties, this complicates
 	# post depadding of the reconstruction (if padding was used). 
@@ -303,6 +306,7 @@ def get_processed_image(options,i, force_read_from_disk=False):
 			roi=Region(0,0,i,options.nx,options.ny,1)
 			d.read_image(options.input,0, HEADER_AND_DATA, roi)
 			d.set_attr("xform.projection",Transform({"type":"eman","az":90,"alt":options.angles[i],"phi":90}))
+			
 		else:
 			d.read_image(options.input, i)
 		
@@ -311,7 +315,7 @@ def get_processed_image(options,i, force_read_from_disk=False):
 				(processorname, param_dict) = parsemodopt(p)
 				if not param_dict : param_dict={}
 				d.process_inplace(str(processorname), param_dict)
-				
+			
 		pad_dims = parse_pad(options.pad)
 		if pad_dims != None:
 			if len(pad_dims) == 1:
@@ -321,10 +325,11 @@ def get_processed_image(options,i, force_read_from_disk=False):
 				xpad = pad_dims[0]
 				ypad = pad_dims[1]
 			
-			if options.ndim == 2:
-				d.clip_inplace(Region((options.xsize-xpad)/2,(options.ysize-ypad)/2, xpad, ypad))
-			elif options.ndim == 1:
-				d.clip_inplace(Region((options.xsize-xpad)/2, xpad))
+			ndim = d.get_ndim()
+			if ndim == 2:
+				d.clip_inplace(Region((d.get_xsize()-xpad)/2,(d.get_ysize()-ypad)/2, xpad, ypad))
+			elif ndim == 1:
+				d.clip_inplace(Region((d.get_xsize()-xpad)/2, xpad))
 			#else should never happen
 		return d
 	else:
@@ -719,7 +724,8 @@ def check(options,verbose=False):
 						print  "Error, could not interpret the --pad argument, got",pad_dims
 					error = True
 				else:
-					(xsize, ysize ) = gimme_image_dimensions2D(options.input);
+					image_0 = get_processed_image(options,0,True)
+					(xsize, ysize )= image_0.get_xsize(),image_0.get_ysize()
 					if ( len(pad_dims) == 1 ) :
 						pad = pad_dims[0]
 						if pad < xsize or pad < ysize :
