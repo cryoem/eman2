@@ -112,12 +112,16 @@ namespace EMAN
 				params["sigma"] = params["cutoff_abs"];
 			}
 			else if( params.has_key("cutoff_freq") ) {
-				params["cutoff_frequency"] = (float)params["cutoff_freq"] * (float)dict["apix_x"] * (float)dict["nx"] / 2.0f;
-				params["sigma"] = (float)params["cutoff_freq"] * (float)dict["apix_x"] * (float)dict["nx"] / 2.0f;
+				// The formula for frequency in terms of cutoff_abs is
+				// cutoff_freq = 2*apix*cutoff_abs
+				float val =  (float)params["cutoff_freq"] * 2.0f * (float)dict["apix_x"];
+				params["cutoff_frequency"] = val;
+				params["sigma"] = val;
 			}
 			else if( params.has_key("cutoff_pixels") ) {
-				params["cutoff_frequency"] = (float)params["cutoff_pixels"] / (float)dict["nx"];
-				params["sigma"] = (float)params["cutoff_pixels"] / (float)dict["nx"];
+				float val = 2.0f * (float)params["cutoff_pixels"] / (float)dict["nx"];
+				params["cutoff_frequency"] = val;
+				params["sigma"] = val;
 			}
 		}
 	};

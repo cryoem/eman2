@@ -1312,6 +1312,47 @@ The basic design of EMAN Processors: <br>\
 			Region get_clip_region(vector<int>& translation, const EMData* const image) const;
 	};
 
+		/** Scale the image with control over the output dimensions
+		 * @author David Woolford
+		 * @date June 2009
+		 */
+		class ScaleProcessor:public Processor
+		{
+			public:
+				virtual string get_name() const
+				{
+					return "math.scale";
+				}
+				static Processor *NEW()
+				{
+					return new ScaleProcessor();
+				}
+
+				/**
+				 * @exception ImageDimensionException if the image is not 2D or 3D
+				 * @exception InvalidParameterException if the Transform parameter is not specified
+				 */
+				virtual void process_inplace(EMData* image);
+
+				/**
+				 * @exception ImageDimensionException if the image is not 2D or 3D
+				 * @exception InvalidParameterException if the Transform parameter is not specified
+				 */
+				virtual EMData* process(const EMData* const image);
+
+				virtual TypeDict get_param_types() const
+				{
+					TypeDict d;
+					d.put("scale", EMObject::FLOAT, "The amount by which to scale" );
+					d.put("clip", EMObject::INT, "The length of each output dimension. Non sophisticated, output dimensions can't be different" );
+					return d;
+				}
+
+				virtual string get_desc() const
+				{
+					return "The image is scaled with the clip variable in mind, being sure to preserve as much pixel information as possible.";
+				}
+		};
 
 	/**f(x) = maxval if f(x) > maxval;
 	  * f(x) = minval if f(x) < minval
