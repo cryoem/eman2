@@ -1907,7 +1907,7 @@ EMData *EMData::make_footprint(int type)
 		}
 		return fp;
 	}
-
+	throw UnexpectedBehaviorException("There is not implementation for the parameters you specified");
 }
 
 

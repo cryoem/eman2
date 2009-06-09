@@ -4192,12 +4192,11 @@ class E2Make3DTools:
 			a = dump_processors_list()
 			l = ["None"]
 			for key in a.keys():
-				if len(key) > 4 and key[:5] == "eman1":
+				if len(key) > 5 and key[:6] == "filter":
 					vals = key.split(".")
-					if len(vals) > 2:
-						if vals[1] in ["filter"]:
-							if vals[2] in ["lowpass","highpass"]:
-								l.append(key)
+					if len(vals) > 1:
+						if vals[1] in ["lowpass","highpass"]:
+							l.append(key)
 							
 			E2Make3DTools.preprocessor_cache = l
 			 

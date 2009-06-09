@@ -108,20 +108,18 @@ namespace EMAN
 				params["cutoff_abs"] = params["sigma"];
 			}
 			else if( params.has_key("cutoff_abs") ) {
-				params["cutoff_frequency"] = params["cutoff_abs"];
-				params["sigma"] = params["cutoff_abs"];
+				params["cutoff_frequency"] = .5f*(float)params["cutoff_abs"];
+				params["sigma"] =.5f*(float) params["cutoff_abs"];
 			}
 			else if( params.has_key("cutoff_freq") ) {
-				// The formula for frequency in terms of cutoff_abs is
-				// cutoff_freq = 2*apix*cutoff_abs
-				float val =  (float)params["cutoff_freq"] * 2.0f * (float)dict["apix_x"];
-				params["cutoff_frequency"] = val;
-				params["sigma"] = val;
+				float val =  (float)params["cutoff_freq"] * (float)dict["apix_x"];
+				params["cutoff_frequency"] = .5f*(float)val;
+				params["sigma"] = 0.5f*(float)val;
 			}
 			else if( params.has_key("cutoff_pixels") ) {
-				float val = 2.0f * (float)params["cutoff_pixels"] / (float)dict["nx"];
-				params["cutoff_frequency"] = val;
-				params["sigma"] = val;
+				float val = (float)params["cutoff_pixels"] / (float)dict["nx"];
+				params["cutoff_frequency"] = .5f*(float)val;
+				params["sigma"] = .5f*(float)val;
 			}
 		}
 	};
@@ -631,6 +629,7 @@ namespace EMAN
 		void process_inplace(EMData* image) {
 			params["filter_type"] = TANH_LOW_PASS;
 			preprocess(image);
+			params.set_default("fall_off",.5f); // Only sets it if is not already set
 			EMFourierFilterInPlace(image, params);
 		}
 		TypeDict get_param_types() const
@@ -666,6 +665,7 @@ namespace EMAN
 		}
 		void process_inplace(EMData* image) {
 			params["filter_type"] = TANH_HIGH_PASS;
+			params.set_default("fall_off",.5f); // Only sets it if is not already set
 			preprocess(image);
 			EMFourierFilterInPlace(image, params);
 		}
@@ -703,6 +703,7 @@ namespace EMAN
 		}
 		void process_inplace(EMData* image) {
 			params["filter_type"] = TANH_HOMOMORPHIC;
+			params.set_default("fall_off",.5f); // Only sets it if is not already set
 			preprocess(image);
 			EMFourierFilterInPlace(image, params);
 		}

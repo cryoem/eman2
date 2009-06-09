@@ -7639,32 +7639,35 @@ EMData* IntTranslateProcessor::process(const EMData* const image) {
 
 
 void ScaleProcessor::process_inplace(EMData* image) {
-//	int clip = params.set_default("clip",0);
-//	if (clip < 0) throw InvalidParameterException("The clip parameter must be greater than 0"); // If it's zero it's not used
-//
-//	int scale = params.set_default("scale",0.0f);
-//	if (scale <= 0.0f) throw InvalidParameterException("The scale parameter must be greater than 0");
-//
-//	if (scale > 1) {
-//		if ( clip != 0) {
-//			Region r( (image->get_xsize()-clip)/2, (image->get_xsize()-clip)/2, clip, clip);
-//			image->clip_inplace(r);
-//		}
-//		Transform t;
-//		t.set_scale(scale);
-//		image->process_inplace("math.transform",Dict("transform",t));
-//	} else if (scale < 1) {
-//		Transform t;
-//		t.set_scale(scale);
-//		image->process_inplace("math.transform",Dict("transform",t));
-//		Region r( (image->get_xsize()-clip)/2, (image->get_xsize()-clip)/2, clip, clip);
-//		if ( clip != 0) {
-//			Region r( (image->get_xsize()-clip)/2, (image->get_xsize()-clip)/2, clip, clip);
-//			image->clip_inplace(r);
-//		}
-//	} else {
-//
-//	}
+	int clip = params.set_default("clip",0);
+	if (clip < 0) throw InvalidParameterException("The clip parameter must be greater than 0"); // If it's zero it's not used
+
+	float scale = params.set_default("scale",0.0f);
+	if (scale <= 0.0f) throw InvalidParameterException("The scale parameter must be greater than 0");
+
+	if (scale > 1) {
+		if ( clip != 0) {
+			Region r( (image->get_xsize()-clip)/2, (image->get_xsize()-clip)/2, clip, clip);
+			image->clip_inplace(r);
+		}
+		Transform t;
+		t.set_scale(scale);
+		image->process_inplace("math.transform",Dict("transform",&t));
+	} else if (scale < 1) {
+		Transform t;
+		t.set_scale(scale);
+		image->process_inplace("math.transform",Dict("transform",&t));
+		Region r( (image->get_xsize()-clip)/2, (image->get_xsize()-clip)/2, clip, clip);
+		if ( clip != 0) {
+			Region r( (image->get_xsize()-clip)/2, (image->get_xsize()-clip)/2, clip, clip);
+			image->clip_inplace(r);
+		}
+	} else {
+		if ( clip != 0) {
+			Region r( (image->get_xsize()-clip)/2, (image->get_xsize()-clip)/2, clip, clip);
+			image->clip_inplace(r);
+		}
+	}
 }
 
 EMData* ScaleProcessor::process(const EMData* const image) {

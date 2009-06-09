@@ -909,7 +909,7 @@ static double refalifn(const gsl_vector * v, void *params)
 	EMData *with = (*dict)["with"];
 	bool mirror = (*dict)["mirror"];
 
-	float mean = (float)this_img->get_attr("mean");
+//	float mean = (float)this_img->get_attr("mean");
 //	if ( Util::goodf(&mean) ) {
 //		//cout << "tmps mean is nan even before rotation" << endl;
 //	}
