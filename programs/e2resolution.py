@@ -51,7 +51,7 @@ def main():
 	3rd parameter (in automask2) should be about 10% of the box size. This will not
 	work with particles that have been tightly masked already. If doing an EMAN1
 	reconstruction with the amask= option, you must also use the refmaskali option
-	(in the refine command). Note that the resultant curve is guarenteed to go
+	(in the refine command). Note that the resultant curve is guaranteed to go
 	to zero at near Nyquist because it assumes that the SNR is zero near Nyquist.
 	If your data is undersampled, the resulting curve may also be inaccurate.
 	Models should also not be heavily low-pass filtered
@@ -76,10 +76,16 @@ def main():
 	data=EMData(args[0],0)
 	mask=EMData(args[1],0)
 
+#	mask.to_one()
+#	mask.process_inplace("mask.gaussian",{"outer_radius":mask.get_xsize()/6,"inner_radius":mask.get_xsize()/6})
+	mask.write_image("msk.mrc",0)
+
 	# inverted mask
 	maski=mask.copy()
 	maski*=-1.0
 	maski+=1.0
+	maski.process_inplace("mask.gaussian",{"outer_radius":mask.get_xsize()/6,"inner_radius":mask.get_xsize()/3})
+	maski.write_image("msk2.mrc",0)
 
 	noise=data.copy()
 	noise*=maski
@@ -114,6 +120,10 @@ def main():
 	else: s/=sn
 
 	noisepow=[i*s for i in noisepow]
+#
+#	# normalize based on volume
+#	datapow=[v/mask["mean"] for v in datapow]
+#	noisepow=[v/maski["mean"] for v in noisepow]
 
 	# compute signal to noise ratio
 	snr=[]
