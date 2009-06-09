@@ -559,9 +559,6 @@ def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ral
 	for i,r in enumerate(reflist):
 		if align[0] :
 			r.del_attr("xform.align2d")
-			print r.get_xsize(),target.get_ysize()
-			r.write_image("r.hdf")
-			target.write_image("target.hdf")
 			ta=r.align(align[0],target,align[1],alicmp[0],alicmp[1])
 			#ta.debug_print_params()
 			

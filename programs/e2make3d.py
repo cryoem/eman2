@@ -134,8 +134,8 @@ def main():
 		
 	if (options.check): options.verbose = True # turn verbose on if the user is only checking...
 	
+	options.nx,options.ny,options.nz = gimme_image_dimensions3D(options.input)
 	if options.tlt:# the check function makes everyone I assume about the tlt aspect true
-		options.nx,options.ny,options.nz = gimme_image_dimensions3D(options.input)
 		options.no_wt = True
 		angles = None
 		f=file(options.tlt,'r')
@@ -238,27 +238,26 @@ def main():
 				startx = 0
 				lengthx = output.get_xsize()
 			else:
-				startx = (xpad-options.xsize)/2
-				lengthx = options.xsize
+				startx = (xpad-options.nx)/2
+				lengthx = options.nx
 				
 			if options.suppress_y_clip: 
 				starty = 0
 				lengthy = output.get_ysize()
 			else:
-				starty = (ypad-options.ysize)/2
-				lengthy = options.ysize
+				starty = (ypad-options.ny)/2
+				lengthy = options.ny
 				
 			if options.suppress_z_clip: 
 				startz = 0
 				lengthz = output.get_zsize()
 			else:
-				startz = (xpad-options.zsize)/2
-				lengthz = options.zsize
-			
+				startz = (xpad-options.nx)/2
+				lengthz = options.nx
 			output.clip_inplace(Region(startx,starty,startz,lengthx,lengthy,lengthz))
 		elif options.ndim == 1:
 			pad = pad_dims[0]
-			output.clip_inplace(Region((pad-options.xsize)/2,(pad-options.xsize)/2,options.xsize,options.xsize))
+			output.clip_inplace(Region((pad-options.nx)/2,(pad-options.nx)/2,options.nx,options.nx))
 
 	# apply any post processing operations
 		
@@ -306,7 +305,6 @@ def get_processed_image(options,i, force_read_from_disk=False):
 			roi=Region(0,0,i,options.nx,options.ny,1)
 			d.read_image(options.input,0, HEADER_AND_DATA, roi)
 			d.set_attr("xform.projection",Transform({"type":"eman","az":90,"alt":options.angles[i],"phi":90}))
-			
 		else:
 			d.read_image(options.input, i)
 		
@@ -315,7 +313,7 @@ def get_processed_image(options,i, force_read_from_disk=False):
 				(processorname, param_dict) = parsemodopt(p)
 				if not param_dict : param_dict={}
 				d.process_inplace(str(processorname), param_dict)
-			
+				
 		pad_dims = parse_pad(options.pad)
 		if pad_dims != None:
 			if len(pad_dims) == 1:
