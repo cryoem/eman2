@@ -252,10 +252,29 @@ def get_last_class_average_number(options):
 		Looks for bdb:refine_??#classes_?? files - should also be a corresponding  classify_?? file, and "all" should exist which should have as many particles as there are
 		entries in the classification file. Returns a string such as "00" or "01" if successful. If failure returns None
 		'''
+		dir = options.path
 		
+		register_db_name = "bdb:"+dir+"#register"
+
+		# needs to exist
+		if not db_check_dict(register_db_name):
+				print "Error, the %s dictionary needs to exist" %register_db_name
+				return None
+		# cmd dictionary needs to be stored
+		db = db_open_dict(register_db_name,ro=True)
+		if not db.has_key("cmd_dict"):
+			print "Error, the cmd_dict entry must be in the %s dictionary" %register_db_name
+			return None
+
+		cmd = db["cmd_dict"]
+		# need to be able to get the input data
+		if not cmd.has_key("input"):
+			print "Error, the input keys must be in the cmd_dict dictionary, which is the %s dictionary" %register_db_name
+			return None
+		
+		input = cmd["input"]
 		nec_files = [ "classes_", "classify_","projections_"]
 		
-		dir = options.path
 		most_recent = options.iteration
 		if most_recent == None:
 			fail = False
@@ -276,13 +295,13 @@ def get_last_class_average_number(options):
 		
 		if most_recent != None:
 			nx,ny = gimme_image_dimensions2D("bdb:"+dir+"#classify_"+most_recent)
-			np = EMUtil.get_image_count("bdb:"+dir+"#all")
+			np = EMUtil.get_image_count(input)
 			if ny != np:
 				print "Error, the number of particles in the 'all' image does not match the number of rows in the classification image"
 				return None
 			else:
 				options.iteration = most_recent
-				options.input = "bdb:"+dir+"#all"
+				options.input = input
 				options.classifyfile = "bdb:"+dir+"#classify_"+most_recent
 				options.projfile = "bdb:"+dir+"#projections_"+most_recent
 				options.cafile = "bdb:"+dir+"#classes_"+most_recent+"_even"

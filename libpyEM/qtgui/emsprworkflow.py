@@ -4453,7 +4453,8 @@ class E2RefineParticlesTask(EMClassificationTools, E2Make3DTools):
 						return cmd + " failed"
 			else:
 				options.usefilt = options.usefilt_names[0]
-				
+			
+			string_args.append("usefilt")
 			
 		
 		error = self.check_model(options)
@@ -5148,6 +5149,22 @@ class E2EotestTask(EMClassificationTools,E2Make3DTools):
 		for dir in dirs:
 			fail = False
 			available_iters = []
+			
+			register_db_name = "bdb:"+dir+"#register"
+				
+			# needs to exist
+			if not db_check_dict(register_db_name):
+				continue
+			# cmd dictionary needs to be stored
+			db = db_open_dict(register_db_name,ro=True)
+			if not db.has_key("cmd_dict"):
+				continue
+	
+			cmd = db["cmd_dict"]
+			# need to be able to get the input data
+			if not cmd.has_key("input"):
+				continue
+			
 			for i in range(0,10):
 				for j in range(0,10):
 					end = str(i) + str(j)
@@ -5212,11 +5229,16 @@ class E2EotestTask(EMClassificationTools,E2Make3DTools):
 		options.lowmem = params["lowmem"]
 		
 		if params["usefilt"] == True:
-			file = "bdb:"+params["path"]+"#usefilt" # note that the naming convention is assumed
-			if not file_exists(file):
+			
+			register_db_name = "bdb:"+options.path+"#register"
+			db = db_open_dict(register_db_name)
+			cmd = db["cmd_dict"]
+			# need to be able to get the input data
+			if not cmd.has_key("usefilt") or str(cmd["usefilt"]) == "None":
 				error_message.append("You have checked usefilt but there is not usefilt file in the chosen refinement directory")
 			else:
-				options.usefilt = file
+				options.usefilt = file = cmd["usefilt"]
+
 		
 		error_message.extend(self.check_sym(params,options))
 		
