@@ -328,7 +328,8 @@ class WorkFlowTask(QtCore.QObject):
 			for arg in additional_args:
 				args.append(arg)
 #			print "command is ",program
-#			for i in args: print i
+			for i in args: print i,
+			print
 			
 			#print args
 			file = open(temp_file_name,"w+")
@@ -1410,9 +1411,10 @@ class E2BoxerTask(ParticleWorkFlowTask):
 #	get_particle_dims_project = staticmethod(get_particle_dims_project)
 	
 	class ParticleColumns:
-		def __init__(self):
+		def __init__(self,project_list="global.spr_particles"):
 			self.header_cache = {}
 			self.translation_cache = {}
+			self.project_list = project_list
 						
 #		def __del__(self):
 #			print "Boxer columns dies"
@@ -1434,7 +1436,7 @@ class E2BoxerTask(ParticleWorkFlowTask):
 						return str(EMUtil.get_image_count(name))
 			
 			project_db = db_open_dict("bdb:project")	
-			particle_names = project_db.get("global.spr_ptcls",dfl=[])
+			particle_names = project_db.get(self.project_list,dfl=[])
 			for name in particle_names:
 				a = EMData()
 				a.read_image(name,0,True) # header only
@@ -1459,7 +1461,7 @@ class E2BoxerTask(ParticleWorkFlowTask):
 						return "%ix%ix%i" %(nx,ny,nz)
 			
 			project_db = db_open_dict("bdb:project")	
-			particle_names = project_db.get("global.spr_ptcls",dfl=[])
+			particle_names = project_db.get(self.project_list,dfl=[])
 			
 			for name in particle_names:
 				a = EMData()
@@ -1778,12 +1780,10 @@ class E2BoxerOutputTask(E2BoxerTask):
 		params = []
 		
 		p,n = self.get_project_files_that_have_db_boxes_in_table()
-		if n == 0 and False:
-			params.append(ParamDef(name="blurb",vartype="text",desc_short="Using e2boxer",desc_long="",property=None,defaultunits=E2BoxerOutputTask.documentation_string+E2BoxerOutputTask.warning_string,choices=None))
-		else:
-			params.append(ParamDef(name="blurb",vartype="text",desc_short="Using e2boxer",desc_long="",property=None,defaultunits=E2BoxerOutputTask.documentation_string,choices=None))
-			params.append(p)
-			self.add_general_params(params)
+
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="Using e2boxer",desc_long="",property=None,defaultunits=E2BoxerOutputTask.documentation_string,choices=None))
+		params.append(p)
+		self.add_general_params(params)
 
 		return params
 	

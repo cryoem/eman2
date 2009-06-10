@@ -53,9 +53,12 @@ def check_options(options,filenames):
 	Should probably be made into a class
 	@return a list of error messages
 	'''
+	
+	if not options.probe or not file_exists(options.probe):
+		error_message.append("You have to specify a valid probe")
 	error_messages = []
-	if len(filenames) < 2:
-		error_messages.append("You must specify input and output files")
+	if len(filenames) < 1:
+		error_messages.append("You must specify input files")
 	else:
 		all_images = True
 		for f in filenames:
@@ -86,9 +89,47 @@ def check_options(options,filenames):
 	
 	return error_messages
 
+def gen_average(options,args,logid=None):
+	
+	project_list = "global.tpr_ptcls_ali_dict"
+		#EMProjectListCleanup.clean_up_filt_particles(self.project_list)
+	db = db_open_dict("bdb:project",ro=True)
+	db_map = db.get(project_list,dfl={})
+	
+	probes = []
+	probes_data = {}
+	
+	average = None
+	
+	prog = 0
+	total_prog = len(args)
+	if logid: E2progress(logid,0.0)
+	
+	for i,arg in enumerate(args):
+		image = EMData(arg,0)
+		t = db_map[arg][options.probe][0]
+		image.process_inplace("math.transform",{"transform":t})
+		if average == None: average = image
+		else: average = average + image
+		if logid: E2progress(logid,(i+1)/float(total_prog))
+		
+	average.mult(1.0/len(args))
+		
+	average.write_image(options.avgout,0)
+	
+	if options.dbls:
+		pdb = db_open_dict("bdb:project")
+		db = pdb.get(options.dbls,dfl=[])
+		if db == None: db = []
+		if db.count(options.avgout) == 0:
+			db.append(options.avgout)
+			print "done"
+			pdb[options.dbls] = db
+		print db
+
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog <target image> <image to be aligned> [options]"""
+	usage = """%prog <probe> <image to be aligned> [options]"""
 	
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
@@ -103,59 +144,28 @@ def main():
 	parser.add_option("--searchx",type="int",help="The maximum search distance, x direction", default=5)
 	parser.add_option("--searchy",type="int",help="The maximum search distance, y direction", default=5)
 	parser.add_option("--searchz",type="int",help="The maximum search distance, z direction", default=5)
+	parser.add_option("--n",type="int",help="0 or 1, multiplication by the reciprocal of the boxsize", default=1)
+	parser.add_option("--dbls",type="string",help="data base list storage, used by the workflow. You can ignore this argument.",default=None)
+	parser.add_option("--probe",type="string",help="The probe. This is the model that the input images will be aligned to", default=None)
+	parser.add_option("--avgout",type="string",help="If specified will produce an averaged output, only works if you've previously run alignments", default=None)
+
    
 	(options, args) = parser.parse_args()
-
+	
 	error_messages = check_options(options,args)
 	if len(error_messages) != 0:
 		msg = "\n"
 		for error in error_messages:
 			msg += error +"\n"
 		parser.error(msg)
+		exit(1)
+		
+	logid=E2init(sys.argv)
+	
+	if options.avgout:
+		gen_average(options,args,logid)
 		exit(0)
 	
-	targetMRC =EMData(argv[1])
-	print "Target Information"
-	print "   mean:	   %f"%(targetMRC.get_attr("mean"))
-	print "   sigma:	  %f"%(targetMRC.get_attr("sigma"))
-	
-	target_xsize=targetMRC.get_xsize()
-	target_ysize=targetMRC.get_ysize()
-	target_zsize=targetMRC.get_zsize()
-	if (target_xsize!=target_ysize!=target_zsize) or (target_xsize%2==1):
-		print "The density map must be even and cubic. Terminating."
-		sys.exit()
-	
-	box=target_xsize
-	
-	probeMRC=EMData(argv[2])
-	print "Probe Information"
-	print "   mean:	   %f"%(probeMRC.get_attr("mean"))
-	print "   sigma:	  %f"%(probeMRC.get_attr("sigma"))
-	
-	
-	bestCCF= EMData(options.nsoln,1,1)
-	bestCCF.to_zero()
-
-	bestAZ=EMData(options.nsoln,1,1)
-	bestAZ.to_zero()
-
-	bestALT= EMData(options.nsoln,1,1)
-	bestALT.to_zero()
-
-	bestPHI=EMData(options.nsoln,1,1)
-	bestPHI.to_zero()
-	
-	bestX=EMData(options.nsoln,1,1)
-	bestX.to_zero()
-	
-	bestY=EMData(options.nsoln,1,1)
-	bestY.to_zero()
-	
-	bestZ=EMData(options.nsoln,1,1)
-	bestZ.to_zero()
-
-
 	ral,dal = options.ralt,options.dalt
 	rap,dap = options.rphi, options.dphi
 	daz = options.daz
@@ -175,34 +185,55 @@ def main():
 	rarad=rap
 	darad=dap
 	maxfrac=0.
-	norm = 1.0/(box*box*box)
-	for altrot in altarray:
-		print "Trying rotation %f"%(altrot)
-		if (altrot==0.):
-			azrot=0.
-			phirot=-azrot-rarad
-			minnum=10000000
-			maxnum=0
-			while phirot <= -azrot+rarad:
-				t = Transform({"type":"eman","az":azrot,"phi":phirot,"alt":altrot})
-				dMRC= probeMRC.process("math.transform",{"transform":t}) # more efficient than copying than transforming
-				currentCCF=tomoccf(targetMRC,dMRC)
-				scalar=ccfFFT(currentCCF,options.thresh,box)
-				if scalar>maxnum:
-					maxnum=int(scalar)
-				if scalar<minnum:
-					minnum=int(scalar)
-				scalar=scalar/(box*box*box/2.)
-				bestCCF=updateCCF(bestCCF,bestALT,bestAZ,bestPHI,bestX,bestY,bestZ,altrot,azrot,phirot,currentCCF,scalar,options.nsoln,options.searchx,options.searchy,options.searchz)
-				phirot=phirot+darad
+	if options.n:
+		norm = 1.0/(box*box*box)
+	else:
+		norm = 1.0
+		
+	prog = 0
+	total_prog = (len(altarray)-1)*len(azarray)*len(args)
+	E2progress(logid,0.0)
 	
-		else:
-			for azrot in azarray:
+	for arg in args:
+		
+		nx,ny,nz = gimme_image_dimensions3D(arg)
+		targetMRC =EMData(arg,0)
+		print_info(targetMRC,"Target Information")
+		box=nx
+		probeMRC=EMData(options.probe,0)
+		print_info(targetMRC,"Probe Information")
+		
+		bestCCF= EMData(options.nsoln,1,1)
+		bestCCF.to_zero()
+	
+		bestAZ=EMData(options.nsoln,1,1)
+		bestAZ.to_zero()
+	
+		bestALT= EMData(options.nsoln,1,1)
+		bestALT.to_zero()
+	
+		bestPHI=EMData(options.nsoln,1,1)
+		bestPHI.to_zero()
+		
+		bestX=EMData(options.nsoln,1,1)
+		bestX.to_zero()
+		
+		bestY=EMData(options.nsoln,1,1)
+		bestY.to_zero()
+		
+		bestZ=EMData(options.nsoln,1,1)
+		bestZ.to_zero()
+	
+		for altrot in altarray:
+			print "Trying rotation %f"%(altrot)
+			if (altrot==0.):
+				azrot=0.
 				phirot=-azrot-rarad
-				#print "Trying rotation %f %f"%(altrot, azrot)
+				minnum=10000000
+				maxnum=0
 				while phirot <= -azrot+rarad:
 					t = Transform({"type":"eman","az":azrot,"phi":phirot,"alt":altrot})
-					dMRC= probeMRC.process("math.transform",{"transform":t}) # more efficient than copying than
+					dMRC= probeMRC.process("math.transform",{"transform":t}) # more efficient than copying than transforming
 					currentCCF=tomoccf(targetMRC,dMRC)
 					scalar=ccfFFT(currentCCF,options.thresh,box)
 					if scalar>maxnum:
@@ -212,24 +243,78 @@ def main():
 					scalar=scalar/(box*box*box/2.)
 					bestCCF=updateCCF(bestCCF,bestALT,bestAZ,bestPHI,bestX,bestY,bestZ,altrot,azrot,phirot,currentCCF,scalar,options.nsoln,options.searchx,options.searchy,options.searchz)
 					phirot=phirot+darad
-	
-	
-	print minnum,maxnum, float(maxnum)/float(minnum)
-
-
-	out=open("log-s3-%s%s.txt"%(argv[1],argv[2]),"w")
-	peak=0
-	while peak < 10:
-		ALT=str(bestALT.get(peak))
-		AZ=str(bestAZ.get(peak))
-		PHI=str(bestPHI.get(peak))
-		COEFF=str(bestCCF.get(peak))
-		LOC=str( ( (bestX.get(peak)),(bestY.get(peak)),(bestZ.get(peak) ) ) )
-		line="Peak %d rot=( %s, %s, %s ) trans= %s coeff= %s\n"%(peak,ALT,AZ,PHI,LOC,COEFF)
-		out.write(line)
-		peak=peak+1
+				
+				prog += 1.0
+				E2progress(logid,prog/total_prog)
 		
-	out.close()
+			else:
+				for azrot in azarray:
+					phirot=-azrot-rarad
+					#print "Trying rotation %f %f"%(altrot, azrot)
+					while phirot <= -azrot+rarad:
+						t = Transform({"type":"eman","az":azrot,"phi":phirot,"alt":altrot})
+						dMRC= probeMRC.process("math.transform",{"transform":t}) # more efficient than copying than
+						currentCCF=tomoccf(targetMRC,dMRC)
+						scalar=ccfFFT(currentCCF,options.thresh,box)
+						if scalar>maxnum:
+							maxnum=int(scalar)
+						if scalar<minnum:
+							minnum=int(scalar)
+						scalar=scalar/(box*box*box/2.)
+						bestCCF=updateCCF(bestCCF,bestALT,bestAZ,bestPHI,bestX,bestY,bestZ,altrot,azrot,phirot,currentCCF,scalar,options.nsoln,options.searchx,options.searchy,options.searchz)
+						phirot=phirot+darad
+					
+					prog += 1.0
+					E2progress(logid,prog/total_prog)
+		
+		
+		print minnum,maxnum, float(maxnum)/float(minnum)
+	
+		out=file("log-s3-%s_%s.txt"%(get_file_tag(arg),get_file_tag(options.probe)),"w")
+		peak=0
+		
+		db = None
+		pdb = None
+		if options.dbls:
+			pdb = db_open_dict("bdb:project")
+			db = pdb.get(options.dbls,dfl={})
+			if db == None: db = {}
+			results = []
+	
+	
+		while peak < 10:
+			ALT=bestALT.get(peak)
+			AZ=bestAZ.get(peak)
+			PHI=bestPHI.get(peak)
+			COEFF=str(bestCCF.get(peak))
+			LOC=str( ( (bestX.get(peak)),(bestY.get(peak)),(bestZ.get(peak) ) ) )
+			line="Peak %d rot=( %f, %f, %f ) trans= %s coeff= %s\n"%(peak,ALT,AZ,PHI,LOC,COEFF)
+			out.write(line)
+			peak=peak+1
+			
+			if options.dbls:
+				t = Transform({"type":"eman","alt":ALT,"phi":PHI,"az":AZ})
+				t.set_trans(bestX.get(peak),bestY.get(peak),bestZ.get(peak))
+				results.append(t)
+				
+		if options.dbls:
+			d = {}
+			d[options.probe] = results
+			db[arg] = d
+			pdb[options.dbls] = db
+			
+		out.close()
+	E2progress(logid,1.0) # just make sure of it
+		
+	
+	E2end(logid)
+	
+def print_info(image,first_line="Information"):
+	
+	print first_line
+	print "   mean:	   %f"%(image.get_attr("mean"))
+	print "   sigma:	  %f"%(image.get_attr("sigma"))
+	
 	
 def tomoccf(targetMRC,probeMRC):
 	ccf=targetMRC.calc_ccf(probeMRC)

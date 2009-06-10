@@ -46,6 +46,7 @@ class EMTomoRawDataReportTask(EMRawDataReportTask):
 		Gets an EMTomographicFileTable - this is type of class that the emform knows how to handle 
 		'''
 		project_db = db_open_dict("bdb:project")
+		EMProjectListCleanup.clean_up_project_file_list(self.project_list) # in case things have gone missing
 		project_names = project_db.get(self.project_list,dfl=[])
 		self.project_files_at_init = project_names # so if the user hits cancel this can be reset
 
@@ -66,7 +67,7 @@ class EMReconstructAliFile(WorkFlowTask):
 		self.window_title = "Reconstruct ALI File"
 		self.preferred_size = (640,480)
 		self.form_db_name = "bdb:emform.reconstruct_ali"
-		
+	
 	def get_params(self):
 		params = []
 		db = db_open_dict(self.form_db_name)
@@ -225,24 +226,29 @@ class EMTomohunterTask(WorkFlowTask):
 		WorkFlowTask.__init__(self)
 		self.window_title = "Tomohunter Input Form"
 		self.preferred_size = (640,480)
+		self.form_db_name = "bdb:emform.tomohunter"
 	def get_params(self):
 		params = []
-		project_db = db_open_dict("bdb:tomography")
+		db = db_open_dict(self.form_db_name)
+		
+		self.ptcl_table_tool = EMTomoPtclReportTool("global.tpr_ptcls","Particles","targetimage")
+		self.probe_tool = EMTomoPtclReportTool("global.tpr_probes","Probe","probeimage")
+		
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="SPR",desc_long="Information regarding this task",property=None,defaultunits=self.__doc__,choices=None))
-		targetimage = ParamDef(name="targetimage",vartype="url",desc_short="target image file name",desc_long="target image file name",property=None,defaultunits=project_db.get("targetimage",dfl=[]),choices=[])
-		probeimage = ParamDef(name="probeimage",vartype="url",desc_short="probe image file name",desc_long="probe image file name",property=None,defaultunits=project_db.get("probeimage",dfl=[]),choices=[])
-		norm = ParamDef(name="normalization",vartype="int",desc_short="normalization",desc_long="if the normalization needed",property=None,defaultunits=0,choices=[0,1])
-		nsoln = ParamDef(name="nsoln",vartype="int",desc_short="#solution",desc_long="number of solution",property=None,defaultunits=1,choices=None)
-		thresh = ParamDef(name="thresh",vartype="float",desc_short="threshold",desc_long="threshold",property=None,defaultunits=1.0,choices=None)
-		searchx = ParamDef(name="searchx",vartype="int",desc_short="searchx",desc_long="searchx",property=None,defaultunits=0,choices=None)
-		searchy = ParamDef(name="searchy",vartype="int",desc_short="searchy",desc_long="searchy",property=None,defaultunits=0,choices=None)
-		searchz = ParamDef(name="searchz",vartype="int",desc_short="searchz",desc_long="searchz",property=None,defaultunits=0,choices=None)
-		ralt = ParamDef(name="ralt",vartype="float",desc_short="ralt",desc_long="Altitude range",property=None,defaultunits=180.0,choices=None)
-		dalt = ParamDef(name="dalt",vartype="float",desc_short="dalt",desc_long="Altitude delta",property=None,defaultunits=10.0,choices=None)
-		daz = ParamDef(name="daz",vartype="float",desc_short="daz",desc_long="Azimuth delta",property=None,defaultunits=10.0,choices=None)
-		rphi = ParamDef(name="rphi",vartype="float",desc_short="rphi",desc_long="Phi range",property=None,defaultunits=180.0,choices=None)
-		dphi = ParamDef(name="dphi",vartype="float",desc_short="dphi",desc_long="Phi delta",property=None,defaultunits=10.0,choices=None)
-		params.append([targetimage,probeimage])
+#		targetimage = ParamDef(name="targetimage",vartype="url",desc_short="target image file name",desc_long="target image file name",property=None,defaultunits=project_db.get("targetimage",dfl=[]),choices=[])
+#		probeimage = ParamDef(name="probeimage",vartype="url",desc_short="probe image file name",desc_long="probe image file name",property=None,defaultunits=project_db.get("probeimage",dfl=[]),choices=[])
+		norm = ParamDef(name="n",vartype="int",desc_short="normalization",desc_long="if the normalization needed",property=None,defaultunits=db.get("n",dfl=0),choices=[0,1])
+		nsoln = ParamDef(name="nsoln",vartype="int",desc_short="#solution",desc_long="number of solution",property=None,defaultunits=db.get("nsoln",10),choices=None)
+		thresh = ParamDef(name="thresh",vartype="float",desc_short="threshold",desc_long="threshold",property=None,defaultunits=db.get("thresh",1.0),choices=None)
+		searchx = ParamDef(name="searchx",vartype="int",desc_short="searchx",desc_long="searchx",property=None,defaultunits=db.get("searchx",0),choices=None)
+		searchy = ParamDef(name="searchy",vartype="int",desc_short="searchy",desc_long="searchy",property=None,defaultunits=db.get("searchy",0),choices=None)
+		searchz = ParamDef(name="searchz",vartype="int",desc_short="searchz",desc_long="searchz",property=None,defaultunits=db.get("searchz",0),choices=None)
+		ralt = ParamDef(name="ralt",vartype="float",desc_short="ralt",desc_long="Altitude range",property=None,defaultunits=db.get("ralt",180.0),choices=None)
+		dalt = ParamDef(name="dalt",vartype="float",desc_short="dalt",desc_long="Altitude delta",property=None,defaultunits=db.get("dalt",10.0),choices=None)
+		daz = ParamDef(name="daz",vartype="float",desc_short="daz",desc_long="Azimuth delta",property=None,defaultunits=db.get("daz",10.0),choices=None)
+		rphi = ParamDef(name="rphi",vartype="float",desc_short="rphi",desc_long="Phi range",property=None,defaultunits=db.get("rphi",180.0),choices=None)
+		dphi = ParamDef(name="dphi",vartype="float",desc_short="dphi",desc_long="Phi delta",property=None,defaultunits=db.get("dphi",10.0),choices=None)
+		params.append([self.probe_tool.get_particle_table(),self.ptcl_table_tool.get_particle_table()])
 		params.append([norm,thresh,nsoln])
 		params.append([searchx,searchy,searchz])
 		params.append([ralt,dalt,daz,rphi,dphi])
@@ -254,7 +260,7 @@ class EMTomohunterTask(WorkFlowTask):
 	
 	def check_params(self,params):
 		error_msg = []
-		if len(params["targetimage"]) != 1: error_msg.append("Please choose a single target file to proceed")
+		if len(params["targetimage"]) == 0: error_msg.append("Please choose at leaset one particle file")
 		if len(params["probeimage"]) != 1: error_msg.append("Please choose a single probe file to proceed")
 		return error_msg
 	
@@ -265,69 +271,156 @@ class EMTomohunterTask(WorkFlowTask):
 		if len(error_message):
 			self.show_error_message(error_message)
 			return
-		
 		self.write_db_entries(params) # will only write filenames
 		options = EmptyObject()
-		string_args = ["dalt","ralt","dphi","rphi","raz","daz","thresh","nsoln","searchx","searchy","searchz"]
-		options.filenames = [params['targetimage'][0], params['probeimage'][0]]
+		string_args = ["dalt","ralt","dphi","rphi","raz","daz","thresh","nsoln","searchx","searchy","searchz","n","probe"]
+		options.filenames = params['targetimage']
 		options.dalt = params['dalt']
 		options.ralt = params['ralt']
 		options.dphi = params['dphi']
 		options.rphi = params['rphi']
 		options.raz = params['ralt']
 		options.daz = params['dalt']
+		options.probe = params['probeimage'][0]
+		options.n = params['n']
 		options.thresh = params['thresh']
 		options.nsoln = params['nsoln']
 		options.searchx = params['searchx']
 		options.searchy = params['searchy']
 		options.searchz = params['searchz']
 		bool_args = []
-		additional_args = []
+		additional_args = ["--dbls=global.tpr_ptcls_ali_dict"]
 		temp_file_name = "e2tomohunter_stdout.txt"
 		self.spawn_single_task('e2tomohunter.py',options,string_args,bool_args,additional_args,temp_file_name)
 		self.emit(QtCore.SIGNAL("task_idle"))
 		self.form.closeEvent(None)
 		self.form = None
-		
-class EMTomoParticleReportTask(WorkFlowTask):
-	"""This form display the boxed tomographic particles that you currently have associated with the project"""
-	def __init__(self):
-		WorkFlowTask.__init__(self)
 
-	def get_project_particle_table(self):
+class EMTomoPtclReportTool:
+	''' has a, not is a'''
+	def __init__(self,project_list="global.tpr_ptcls",title="Set Me Please",name="filenames"):
+		self.project_list = project_list
+		self.project_files_at_init = []
+		self.title = title
+		self.name= name
+	def get_particle_table(self):
+		EMProjectListCleanup.clean_up_project_file_list(self.project_list) # in case things have gone missing
 		project_db = db_open_dict("bdb:project")
-		particle_list_name = "global.tpr_ptcls"
-		particle_names = project_db.get(particle_list_name,dfl=[])
+		particle_names = project_db.get(self.project_list,dfl=[])
 		self.project_files_at_init = particle_names # so if the user hits cancel this can be reset
 
 		from emform import EM3DFileTable,EMFileTable
-		table = EM3DFileTable(particle_names,desc_short="Boxed Tomographic Particles",desc_long="")
-		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(particle_list_name)
+		table = EM3DFileTable(particle_names,name=self.name,desc_short=self.title,desc_long="")
+		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(self.project_list)
 		table.add_context_menu_data(context_menu_data)
 		table.add_button_data(EMRawDataReportTask.ProjectAddRawDataButton(table,context_menu_data))
 	#	table.insert_column_data(1,EMFileTable.EMColumnData("Particles On Disk",ParticleReportTask.get_num_ptcls,"Particles currently stored on disk that are associated with this image"))
-		table.insert_column_data(2,EMFileTable.EMColumnData("Particle Dims",ParticleReportTask.get_particle_dims,"The dimensions of the particles that are stored on disk"))
+		table.insert_column_data(1,EMFileTable.EMColumnData("Particle Dims",ParticleReportTask.get_particle_dims,"The dimensions of the particles that are stored on disk"))
 		
 		return table
 	
+class EMTomoParticleReportTask(WorkFlowTask):
+	"""This form shows the boxed tomographic particles that are associated with the project"""
+	def __init__(self,project_list="global.tpr_ptcls"):
+		WorkFlowTask.__init__(self)
+		self.window_title = "Project Tomo Particles"
+		self.project_list = project_list
+		self.table_tool = None
+
 	def get_params(self):
 		params = []
 		
-	
-		table = self.get_project_particle_table()
+		self.table_tool = EMTomoPtclReportTool(self.project_list,self.window_title)
+		table = self.table_tool.get_particle_table()
 		
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
 		params.append(table)  
 		
 		return params
 
+class EMTomoProbeReportTask(EMTomoParticleReportTask):
+	"""This form shows the boxed tomographic probes that are associated with the project. Currently the only way to add probes is to browse and add them manually."""
+	def __init__(self):
+		EMTomoParticleReportTask.__init__(self,"global.tpr_probes")
+		self.window_title = "Project Tomo Probes"
+		
+class EMTomoAveragesReportTask(EMTomoParticleReportTask):
+	"""This form shows the results of any tomographic particle averaging you have performed."""
+	def __init__(self):
+		EMTomoParticleReportTask.__init__(self,"global.tpr_ptcl_averages")
+		self.window_title = "Project Tomogram Averages"
+		
+class EMTomoPtclAlignmentReportTask(WorkFlowTask):
+	"""This form shows the results of any alignments you have performed. It also lists the most likely alignment for each probe."""
+	def __init__(self):
+		WorkFlowTask.__init__(self)
+		self.window_title = "Alignment Report"
+		self.project_list = "global.tpr_ptcls"
+	def get_params(self):
+		params = []
+		
+		self.table_tool = EMTomoPtclReportTool(self.project_list,"Tomogram Particles")
+		table = self.table_tool.get_particle_table()
+		
+		columns = self.get_column_names()
+		for c in columns:
+			d = EMTomoPtclAlignmentReportTask.AlignmentColumn(c)
+			table.insert_column_data(0,EMFileTable.EMColumnData(get_file_tag(c),d.get_ali_params,"Alignment parameters"))
+		
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
+		params.append(table)  
+		
+		return params
+	
+	def get_column_names(self):
+		
+		project_list = "global.tpr_ptcls_ali_dict"
+		#EMProjectListCleanup.clean_up_filt_particles(self.project_list)
+		db = db_open_dict("bdb:project",ro=True)
+		db_map = db.get(project_list,dfl={})
+		
+		columns = []
+		for key,dct in db_map.items():
+			for probe,alis in dct.items():
+				if probe not in columns:
+					columns.append(probe)
+					
+		return columns
+	
+	
+	
+	class AlignmentColumn:
+		'''
+		Basically some functions with a cache - the cache is to avoid
+		re-reading stuff from disk multiple times
+		'''
+		def __init__(self,title):
+			self.project_list = "global.tpr_ptcls_ali_dict"
+			#EMProjectListCleanup.clean_up_filt_particles(self.project_list)
+			db = db_open_dict("bdb:project",ro=True)
+			self.db_map = db.get(self.project_list,dfl={})
+			self.title = title
+
+		def get_ali_params(self,name):
+			if self.db_map.has_key(name):
+				dct = self.db_map[name]
+				if dct.has_key(self.title):
+					alis = dct[self.title]
+					t = alis[0]
+					params = t.get_params("eman")
+					s = "Az:%.1f Alt:%.1f Phi:%.1f X:%.1f Y:%.1f Z:%.1f" %(params["az"],params["alt"],params["phi"],params["tx"],params["ty"],params["tz"])
+					return s
+				
+			return "-"
+				
 class E2TomoBoxerGuiTask(WorkFlowTask):
 	"""Select the file you want to process and hit okay, this will launch e2tomoboxer"""
 	
 	def __init__(self):
 		WorkFlowTask.__init__(self)
 		self.tomo_boxer_module = None
-	
+		self.window_title = "Launch e2tomoboxer"
+		
 	def get_tomo_boxer_basic_table(self):
 		'''
 		'''
@@ -374,20 +467,275 @@ class E2TomoBoxerGuiTask(WorkFlowTask):
 			return
 
 		self.write_db_entries(params)
-
+		
 		from e2tomoboxer import EMTomoBoxerModule
+		get_application().setOverrideCursor(Qt.BusyCursor)
 		self.tomo_boxer_module = EMTomoBoxerModule(params["filenames"][0])
+		get_application().setOverrideCursor(Qt.ArrowCursor)
 		self.emit(QtCore.SIGNAL("gui_running"),"e2TomoBoxer",self.tomo_boxer_module) # The controlled program should intercept this signal and keep the E2BoxerTask instance in memory, else signals emitted internally in boxer won't work
 		
 		QtCore.QObject.connect(self.tomo_boxer_module, QtCore.SIGNAL("module_idle"), self.on_boxer_idle)
 		QtCore.QObject.connect(self.tomo_boxer_module, QtCore.SIGNAL("module_closed"), self.on_boxer_closed)
-		self.form.closeEvent(None)
 		self.tomo_boxer_module.show_guis()
+		
+		
+		self.form.closeEvent(None)
 		self.form = None
-			
-	def write_db_entires(self,params):
-		pass
-
-	def on_boxer_idle(self):pass
-	def on_boxer_closed(self):pass
+		
 	
+	def on_form_close(self):
+		# this is to avoid a task_idle signal, which would be incorrect if e2boxer is running
+		if self.tomo_boxer_module == None:
+			self.emit(QtCore.SIGNAL("task_idle"))
+		else: pass
+	
+	def on_boxer_closed(self): 
+		if self.tomo_boxer_module != None:
+			self.tomo_boxer_module = None
+			self.emit(QtCore.SIGNAL("gui_exit"))
+	
+	def on_boxer_idle(self):
+		'''
+		Presently this means boxer did stuff but never opened any guis, so it's safe just to emit the signal
+		'''
+		self.tomo_boxer_module = None
+		self.emit(QtCore.SIGNAL("gui_exit"))
+
+class EMTomoStoredCoordsTool:
+	'''This class represents a step towards 'has a' as opposed to 'is a' relationships'''
+	def __init__(self):
+		self.project_list = "global.tpr_tomograms"
+		self.project_files_at_init  = None
+	
+	def get_raw_data_table(self):
+		project_db = db_open_dict("bdb:project")
+		project_names = project_db.get(self.project_list,dfl=[])
+		self.project_files_at_init = project_names # so if the user hits cancel this can be reset
+
+		from emform import EM2DFileTable,EMFileTable
+		table = EM2DFileTable(project_names,desc_short="Tomograms",desc_long="")
+		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(self.project_list)
+		table.add_context_menu_data(context_menu_data)
+		table.add_button_data(EMRawDataReportTask.ProjectAddRawDataButton(table,context_menu_data))
+		return table
+	def get_files_with_db_boxes_table(self):
+		table= self.get_raw_data_table()# now p is a EMParamTable with rows for as many files as there in the project
+		from emform import EMFileTable
+		EMProjectListCleanup.clean_up_project_file_list(self.project_list) # this is necessary for the columns_object to operate without throwing (in unusual circumstances the user deletes the particles, and this accomodates for it)
+	
+		table.insert_column_data(0,EMFileTable.EMColumnData("Stored Boxes",E2TomoBoxerGuiTask.get_tomo_boxes_in_database,"Boxes currently stored in the EMAN2 database"))
+		self.columns_object = E2BoxerTask.ParticleColumns("global.tpr_ptcls")
+		table.insert_column_data(1,EMFileTable.EMColumnData("Particle Dims",self.columns_object.get_particle_dims_project,"The dimensions of the particles that are stored on disk"))
+		#self.tmp = E2BoxerTask.Tmp()
+		return table
+
+class E2TomoBoxerOutputTask(WorkFlowTask):	
+	"""Select the images you wish to generate output for, enter the box size and normalization etc, and then hit OK.\nThis will cause the workflow to spawn output writing processes using the available CPUs. Note that the bdb option is the preferred output format, in this mode output particles are written directly to the EMAN project database."""
+	def __init__(self):
+		WorkFlowTask.__init__(self)
+		self.window_title = "Generate e2tomoboxer Output"
+		self.output_formats = ["bdb","hdf"] # disable img from the workflow because in EMAN2 we want to store more metadata in the header
+		self.form_db_name = "bdb:emform.e2tomoboxer.output"
+#	def __del__(self):
+#		print "output task dies"
+	
+	def get_params(self):
+		params = []
+		
+		self.tools = EMTomoStoredCoordsTool()
+		
+		
+		p = self.tools.get_files_with_db_boxes_table()
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="Using e2boxer",desc_long="",property=None,defaultunits=E2BoxerOutputTask.documentation_string,choices=None))
+		params.append(p)
+		self.add_general_params(params)
+
+		return params
+	
+	def add_general_params(self,params):
+		'''
+		Functionality used in several places
+		'''
+		db = db_open_dict(self.form_db_name)
+		pbox = ParamDef(name="output_boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=db.get("output_boxsize",dfl=128),choices=[])	
+		pfo = ParamDef(name="force",vartype="boolean",desc_short="Force overwrite",desc_long="Whether or not to force overwrite files that already exist",property=None,defaultunits=db.get("force",dfl=False),choices=None)
+		pinv = ParamDef(name="invertoutput",vartype="boolean",desc_short="Invert",desc_long="Do you want the pixel intensities in the output inverted?",property=None,defaultunits=db.get("invertoutput",dfl=False),choices=None)
+		pn =  ParamDef(name="normproc",vartype="string",desc_short="Normalize images",desc_long="How the output box images should be normalized",property=None,defaultunits=db.get("normproc",dfl="normalize.edgemean"),choices=["normalize","normalize.edgemean","None"])
+		pop = ParamDef(name="outformat",vartype="string",desc_short="Output image format",desc_long="The format of the output box images",property=None,defaultunits=db.get("outformat",dfl="bdb"),choices=self.output_formats)
+				
+		params.append([pbox,pfo,pinv])
+		params.append(pn)
+		params.append(pop)
+		
+	
+	def check_params(self,params):
+		
+		error_message = []
+		if params["output_boxsize"] < 1: error_message.append("Boxsize must be greater than 0.")
+		
+		return error_message
+	
+	def on_form_ok(self,params):	
+		if  params.has_key("filenames") and len(params["filenames"]) == 0:
+			self.run_select_files_msg()
+			return
+		
+		error_message = self.check_params(params)
+		if len(error_message) >0: 
+			self.show_error_message(error_message)
+			return
+		
+		else:
+			self.write_db_entries(params)
+			options = EmptyObject()
+			for k,v in params.items():
+				setattr(options,k,v)	
+			options.boxsize = params["output_boxsize"]
+			
+			options.writeoutput=True # this is implicit, it has to happen
+			
+			string_args = ["normproc","outformat","boxsize"]
+			bool_args = ["force","writeoutput","invertoutput"]
+			additional_args = ["--dbls=global.tpr_ptcls"]
+			temp_file_name = "e2tomoboxer_output_stdout.txt"
+			self.spawn_task("e2tomoboxer.py",options,string_args,bool_args,additional_args,temp_file_name)
+			self.emit(QtCore.SIGNAL("task_idle"))
+			self.form.closeEvent(None)
+			self.form = None
+
+class E2TomoAverageChooseAliTask(WorkFlowTask):
+	"""Choose data for generating an average based on the probe which you aligned them too"""
+	def __init__(self):
+		WorkFlowTask.__init__(self)
+		self.window_title = "Choose Alignment Set"
+		self.form_db_name = "bdb:emform.tomo.choose_ali_set"
+		self.preferred_size = (480,240)
+		self.selection_map = {}
+		self.ali_probe_map = {}
+	def get_params(self):
+		params = []
+		
+		project_list = "global.tpr_ptcls_ali_dict"
+		#EMProjectListCleanup.clean_up_filt_particles(self.project_list)
+		db = db_open_dict("bdb:project",ro=True)
+		db_map = db.get(project_list,dfl={})
+		
+		probes = []
+		probes_data = {}
+		self.ali_probe_map = {}
+		for key,dct in db_map.items():
+			for probe,alis in dct.items():
+				if probe not in probes:
+					probes.append(probe)
+					probes_data[probe] = 1
+					self.ali_probe_map[probe] = [key]
+				else:
+					probes_data[probe] += 1
+					self.ali_probe_map[probe].append(key)
+		
+		db = db_open_dict(self.form_db_name)
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=str(self.__doc__),choices=None))
+		
+		self.selection_map = {}
+		choices = []
+		for key,value in probes_data.items():
+			s = get_file_tag(key) +" ("+str(value)+")"
+			self.selection_map[s] = key
+			choices.append(s)
+		
+		if len(probes) > 0:
+			params.append(ParamDef(name="probe_choice",vartype="choice",desc_long="Choose probe corresponding to the alignment",desc_short="Choose alignemt set based on probe",property=None,defaultunits=db.get("probe_choice",dfl=""),choices=choices))
+		return params
+	
+	
+	def on_form_ok(self,params):	
+		if  params.has_key("probe_choice") and len(params["probe_choice"]) == 0:
+			self.run_select_files_msg()
+			return
+		
+		
+		self.write_db_entries(params)
+		
+		task = E2TomoGenerateAverageTask(self.ali_probe_map[self.selection_map[params["probe_choice"]]],self.selection_map[params["probe_choice"]])
+		self.emit(QtCore.SIGNAL("replace_task"),task,"Generate Tomo Average")
+		self.emit(QtCore.SIGNAL("task_idle"))
+		self.form.closeEvent(None)
+		self.form = None
+
+	
+	
+
+class E2TomoGenerateAverageTask(WorkFlowTask):	
+	"""This task is for generating averages of your tomographic particles. Choose the particles you want to combine into an average, choose a name for the average, and hit OK. Have a look in the 'Particle Averages' table once the task is completed to see the resulting average."""
+	def __init__(self,ptcls_list=[],probe=""):
+		WorkFlowTask.__init__(self)
+		self.window_title = "Generate Tomo Average"
+		self.form_db_name = "bdb:emform.tomo.generate_average"
+		self.ptcls_list = ptcls_list
+		self.probe = probe
+#	def __del__(self):
+#		print "output task dies"
+	
+	def get_params(self):
+		params = []
+
+		from emform import EM3DFileTable,EMFileTable
+		table = EM3DFileTable(self.ptcls_list,desc_short="Tomogram Particles",desc_long="")
+#		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(self.project_list)
+#		table.add_context_menu_data(context_menu_data)
+#		table.add_button_data(EMRawDataReportTask.ProjectAddRawDataButton(table,context_menu_data))
+	#	table.insert_column_data(1,EMFileTable.EMColumnData("Particles On Disk",ParticleReportTask.get_num_ptcls,"Particles currently stored on disk that are associated with this image"))
+		table.insert_column_data(1,EMFileTable.EMColumnData("Particle Dims",ParticleReportTask.get_particle_dims,"The dimensions of the particles that are stored on disk"))
+		
+		d = EMTomoPtclAlignmentReportTask.AlignmentColumn(self.probe)
+		table.insert_column_data(0,EMFileTable.EMColumnData(get_file_tag(self.probe),d.get_ali_params,"Alignment parameters"))
+		
+		db = db_open_dict(self.form_db_name)
+	 	pname = ParamDef(name="ave_name",vartype="string",desc_short="Name Of Average",desc_long="What you want to call this average. Leave out file types (such as hdf,bdb etc).",property=None,defaultunits=db.get("ave_name",dfl="average"),choices=None)
+		
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
+		params.append(table)  
+		params.append(pname)
+		return params
+	
+
+	def check_params(self,params):
+		e = []
+		if not params.has_key("ave_name"):
+			e.append("you must specify the name of the average")
+		else:
+			name = params["ave_name"]
+			real_name = "bdb:tomogram_averages#"+name
+			if db_check_dict(real_name):
+				e.append("The file %s already exists. Please choose another name" %real_name)
+			else:
+				params["ave_name"] = real_name
+		
+		return e
+	
+	def on_form_ok(self,params):	
+		if  params.has_key("filenames") and len(params["filenames"]) == 0:
+			self.run_select_files_msg()
+			return
+		
+		error_msg = self.check_params(params)
+		if len(error_msg) > 0:
+			error(error_msg)
+			return
+		
+		
+		options = EmptyObject()
+		options.avgout = params["ave_name"]
+		options.filenames = params["filenames"]
+		options.dbls = "global.tpr_ptcl_averages"
+		options.probe = self.probe
+		
+		string_args = ["avgout","dbls","probe"]
+		bool_args = []
+		additional_args = []
+		temp_file_name = "e2tomohunter_average_stdout.txt"
+		self.spawn_single_task("e2tomohunter.py",options,string_args,bool_args,additional_args,temp_file_name)
+		self.emit(QtCore.SIGNAL("task_idle"))
+		self.form.closeEvent(None)
+		self.form = None
+

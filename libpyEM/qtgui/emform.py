@@ -447,7 +447,7 @@ class EMFileTable(QtGui.QTableWidget):
 		'''
 		for button_data in self.button_data:
 			button = QtGui.QPushButton(button_data.name,None)
-			layout.addWidget(button)
+			layout.addWidget(button,0)
 			QtCore.QObject.connect(button,QtCore.SIGNAL("clicked(bool)"),button_data.function)
 	
 	class EMColumnData():
@@ -516,7 +516,7 @@ class EM3DFileTable(EM2DFileTable):
 		see EMFileTable for comments on parameters
 		'''
 		EM2DFileTable.__init__(self,listed_names,name,desc_short,desc_long,single_selection)
-		self.icon = QtGui.QIcon(get_image_directory() + "/five_stars.png")
+		self.icon = QtGui.QIcon(get_image_directory() + "/single_image_3d.png")
 	
 
 class EMTomographicFileTable(EMFileTable):
@@ -811,16 +811,25 @@ class EMFormWidget(QtGui.QWidget):
 		
 	def incorporate_params(self,params,layout):
 		for param in self.params:
-			try:
-				if len(param) != 1 and not isinstance(param,EMParamTable):
+			act = True
+			if isinstance(param,list):
+				ftable = True
+				for p in param:
+					if not isinstance(p,EMFileTable):
+						ftable = False
+						break
+				if ftable:
+					self.incorporate_ftable_list(param,layout)
+					act = False
+				elif not isinstance(param,EMParamTable):
 					hbl=QtGui.QHBoxLayout()
 					for iparam in param:
 						self.auto_incorporate[iparam.vartype](iparam,hbl,self)
 					layout.addLayout(hbl)
-					continue
+					act = False
 					
-			except: pass
-			self.auto_incorporate[param.vartype](param,layout,self)
+			if act:
+				self.auto_incorporate[param.vartype](param,layout,self)
 		
 		self.enable_boolean_dependents()
 		
@@ -842,6 +851,37 @@ class EMFormWidget(QtGui.QWidget):
 			
 		return None
 	
+	def incorporate_ftable_list(self,file_table_list,layout):
+		
+		table = QtGui.QTabWidget()
+		
+		for paramtable in file_table_list:
+			
+		
+			vbl=QtGui.QVBoxLayout()
+			hbl=QtGui.QHBoxLayout()
+			hbl.setMargin(0)
+			hbl.setSpacing(2)
+			
+			paramtable.build_table()
+			hbl.addWidget(paramtable)
+			vbl.addLayout(hbl)
+			
+			paramtable.custom_addition(vbl)
+			
+#			groupbox = QtGui.QGroupBox(paramtable.desc_short)
+#			groupbox.setToolTip(paramtable.desc_long)
+			page = QtGui.QWidget()
+			page.setLayout(vbl)
+			if hasattr(paramtable,"icon"):
+				table.addTab(page,paramtable.icon,paramtable.desc_short)
+			else:
+				table.addTab(page,paramtable.desc_short)
+			
+			self.output_writers.append(EMFileTableWriter(paramtable.name,paramtable,str))
+			
+		layout.addWidget(table,10)
+	
 	class IncorpFileTable:
 		def __init__(self): pass
 		def __call__(self,paramtable,layout,target=None):
@@ -854,13 +894,17 @@ class EMFormWidget(QtGui.QWidget):
 			hbl.setSpacing(2)
 			
 			paramtable.build_table()
-			hbl.addWidget(paramtable,1)
+			hbl.addWidget(paramtable)
 			vbl.addLayout(hbl)
 			
 			paramtable.custom_addition(vbl)
 			
 			groupbox = QtGui.QGroupBox(paramtable.desc_short)
 			groupbox.setToolTip(paramtable.desc_long)
+			
+			#if hasattr(paramtable,"icon"):groupbox.setWindowIcon(paramtable.icon) #it would be nice if this worked
+			
+			
 			groupbox.setLayout(vbl)
 			layout.addWidget(groupbox,10)
 			if target != None: target.output_writers.append(EMFileTableWriter(paramtable.name,paramtable,str))
@@ -1048,24 +1092,26 @@ class EMFormWidget(QtGui.QWidget):
 	class IncorpText:
 		def __init__(self): pass
 		def __call__(self,param,layout,target):
-			hbl=QtGui.QHBoxLayout()
-			hbl.setMargin(0)
-			hbl.setSpacing(2)
+#			hbl=QtGui.QHBoxLayout()
+#			hbl.setMargin(0)
+#			hbl.setSpacing(2)
 					
 			text_edit = QtGui.QTextEdit("",target)
 			text_edit.setReadOnly(True)
 			text_edit.setWordWrapMode(QtGui.QTextOption.WordWrap)
 			text_edit.setText(param.defaultunits)
-			hbl.addWidget(text_edit,0)
+			#text_edit.setSizePolicy(QtGui.QSizePolicy.Minimum,QtGui.QSizePolicy.Minimum)
+#			hbl.addWidget(text_edit,0)
 			
-			groupbox = QtGui.QGroupBox(param.desc_short)
-			groupbox.setToolTip(param.desc_long)
-			groupbox.setLayout(hbl)
+#			groupbox = QtGui.QGroupBox(param.desc_short)
+#			groupbox.setToolTip(param.desc_long)
+#			groupbox.setLayout(hbl)
 			
-			layout.addWidget(groupbox,1)
+#			layout.addWidget(groupbox,0)
+			layout.addWidget(text_edit,1)
 	
 			target.output_writers.append(TextParamWriter(param.name,text_edit))	
-			target.name_widget_map[param.name] = groupbox
+			#target.name_widget_map[param.name] = groupbox
 		
 	class IncorpUrl:
 		def __init__(self): pass

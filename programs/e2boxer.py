@@ -1014,7 +1014,6 @@ class RawDatabaseAutoBoxer:
 					db = db_open_dict("bdb:project")	
 					particle_names = db.get(options.dbls,dfl=[])
 					out_names = [boxable.get_image_file_name(imageformat=options.outformat)]
-					print out_names
 					strip_out_name = get_file_tag(out_names[0])
 					for name in particle_names:
 						if get_file_tag(name) != strip_out_name:

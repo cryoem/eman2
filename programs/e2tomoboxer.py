@@ -34,7 +34,7 @@ from optparse import OptionParser
 import sys
 import os
 from EMAN2 import file_exists, gimme_image_dimensions3D,EMANVERSION,EMData,Region,Transform,get_image_directory,db_check_dict,db_open_dict,db_close_dict
-from EMAN2 import get_file_tag
+from EMAN2 import get_file_tag,check_eman2_type,Processors,parsemodopt,E2init,E2end,E2progress
 from pyemtbx.boxertools import Cache,get_idd_image_entry,set_idd_image_entry, Box
 from emapplication import get_application, EMStandAloneApplication,EMQtWidgetModule
 from emimage2d import EMImage2DModule
@@ -61,9 +61,12 @@ for tomographic analysis."""
 	parser.add_option("--writeoutput",action="store_true",default=False,help="Uses coordinates stored in the tomoboxer database to write output")
 	parser.add_option("--stack",action="store_true",default=False,help="Causes the output images to be written to a stack")
 	parser.add_option("--force",action="store_true",default=False,help="Force overwrite output")
-
-	(options, args) = parser.parse_args()
+	parser.add_option("--normproc", help="Normalization processor to apply to particle images. Should be normalize, normalize.edgemean or None", default="normalize.edgemean")
+	parser.add_option("--invertoutput",action="store_true",help="If writing output only, this will invert the pixel intensities of the boxed files",default=False)
+	parser.add_option("--dbls",type="string",help="data base list storage, used by the workflow. You can ignore this argument.",default=None)
+	parser.add_option("--outformat", help="Format of the output particles images, should be bdb,img, or hdf", default="bdb")
 	
+	(options, args) = parser.parse_args()
 	
 	error = check(args,options)
 	
@@ -75,9 +78,10 @@ for tomographic analysis."""
 #	# The program will not run very rapidly at such large box sizes anyhow
 #	if options.boxsize > 2048: parser.error("The boxsize you specified is too large.\nCurrently there is a hard coded max which is 2048.\nPlease contact developers if this is a problem.")
 	
+	logid=E2init(sys.argv)
 	if options.writeoutput:
-		write_output(args,options)
-			
+		write_output(args,options,logid)
+		E2end(logid)
 		sys.exit(0)
 	
 	application = EMStandAloneApplication()
@@ -86,6 +90,7 @@ for tomographic analysis."""
 	
 	tomo_mediator.show_guis()
 	application.execute()
+	E2end(logid)
 
 def check(args,options):
 	error = False
@@ -124,7 +129,7 @@ def check(args,options):
 			
 			if some_boxes:
 
-				output = "bdb:tomo_particles#"+get_file_tag(arg)
+				output = get_output_name(arg,options.outformat)
 				error_messages,out_names = out_file_names(output,options.stack,n,options.force)
 				if len(error_messages) > 0:
 					for r in error_messages:
@@ -133,21 +138,37 @@ def check(args,options):
 			else:
 				print "There are no boxes stored in the local database. Can not generate any output"
 				error = True
+				
+		if options.outformat not in ["bdb","hdf","spi"]:
+			print "The out format must be bdb,hdf or spi"
+			error = True
+			
+		if str(options.normproc) != "None":
+			if ( check_eman2_type(options.normproc,Processors,"Processor") == False ):
+				error = True
 			
 	return error
 
-def write_output(args,options):
+def get_output_name(arg,fmt):
+	if fmt == "bdb":
+		return "bdb:tomo_particles#"+get_file_tag(arg)
+	else:
+		return get_file_tag(arg) + "." + fmt
+		
+
+def write_output(args,options,logid=None):
 	for arg in args:
 		tomo_db = db_open_dict(tomo_db_name)
 		image_dict = tomo_db.get(get_file_tag(arg),dfl={})
 		coords = image_dict["coords"]
-		output = "bdb:tomo_particles#"+get_file_tag(arg)
+		output = output = get_output_name(arg,options.outformat)
 		
 		error_messages,out_names = out_file_names(output,options.stack,len(coords),options.force)
 		image = TomoProjectionCache.get_image_directly(arg)
 		direction = image.get_attr("sum_direction")
 		scale = image.get_attr("shrink")
 		box = options.boxsize
+		if logid: E2progress(logid,0.0)
 		for i,coord in enumerate(coords):
 			a = EMData()
 			if direction == "z":
@@ -161,15 +182,34 @@ def write_output(args,options):
 				a.read_image(arg,0,False,region)
 			
 			
-			a.set_attr("x_loc",scale*coord[0])
-			a.set_attr("y_loc",scale*coord[1])
-			a.set_attr("z_loc",scale*coord[2])
+			if options.invertoutput:
+				a.mult(-1)
+			if options.normproc and str(options.normproc) != "None":
+				p = parsemodopt(options.normproc)
+				a.process_inplace(p[0],p[1])
 			
+			
+			a.set_attr("ptcl_source_coord",[scale*coord[0],scale*coord[1],scale*coord[2]])
+			a.set_attr("ptcl_source_image",arg)
+
 			if options.stack:
 				a.write_image(out_names,i)
+				if options.dbls and i == len(coords)-1:
+					db = db_open_dict("bdb:project")	
+					particle_names = db.get(options.dbls,dfl=[])
+					if particle_names.count(out_names) == 0:
+						particle_names.append(out_names)
+						db[options.dbls] = particle_names
 			else:
 				a.write_image(out_names[i],0)
-			
+				if options.dbls:
+					db = db_open_dict("bdb:project")	
+					particle_names = db.get(options.dbls,dfl=[])
+					if particle_names.count(out_names[i]) == 0:
+						particle_names.append(out_names[i])
+						db[options.dbls] = particle_names
+						
+			if logid: E2progress(logid,float(i+1)/len(coords))
 
 
 def out_file_names(out_file,write_stack,n,force=False):
@@ -877,7 +917,8 @@ class EMTomoBoxerModule(QtCore.QObject):
 		self.active_box = -1 # an index storing which box the user had clicked on
 		self.zy_side_view_window = None # will eventually be used to position boxed images in the z direction
 		self.zx_side_view_window = None
-		
+		self.inspector = None
+		self.main_2d_window = None
 		# initialize mouse  handlers first
 		self.__init_signal_handlers()
 		# initialize windows
@@ -888,6 +929,21 @@ class EMTomoBoxerModule(QtCore.QObject):
 		self.coord_list.load_coords(self.file_name)
 		self.__refresh_box_display()
 		
+	def closeEvent(self,event=None):
+		self.done()
+	
+	def done(self,unused=None):
+		#print "here we
+		for widget in [self.main_2d_window,self.zx_side_view_window,self.zy_side_view_window,self.inspector]:
+			if widget != None: 
+				widget.closeEvent(None)
+				widget = None
+#		if self.zx_side_view_window != None: self.zx_side_view_window.closeEvent(None)
+#		if self.zy_side_view_window != None: self.zy_side_view_window.closeEvent(None)
+#		if self.inspector != None: self.inspector.closeEvent(None)
+#			
+		self.emit(QtCore.SIGNAL("module_closed"))
+	
 	def __init_signal_handlers(self):
 		'''
 		Initialize mouse event handlers - "events" are actually pseudo-events because
@@ -1444,14 +1500,20 @@ class EMTomoBoxerInspector(QtGui.QWidget):
 		
 		self.gen_output_but=QtGui.QPushButton("Write output")
 		self.vbl.addWidget(self.gen_output_but)
+		self.done_but=QtGui.QPushButton("Done")
+		self.vbl.addWidget(self.done_but)
 		
 		
 		self.connect(self.box_size,QtCore.SIGNAL("editingFinished()"),self.new_box_size)
 		self.connect(self.gen_output_but,QtCore.SIGNAL("clicked(bool)"),self.target().run_output_dialog)
+		self.connect(self.done_but,QtCore.SIGNAL("clicked(bool)"),self.target().done)
 
 	def new_box_size(self):
 		box_size=int(self.box_size.text())
 		self.target().set_box_size(box_size)
+		
+	def closeEvent(self,event):
+		self.target().done()
 
 
 if __name__ == "__main__":
