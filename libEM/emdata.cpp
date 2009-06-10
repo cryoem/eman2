@@ -773,23 +773,23 @@ float *EMData::setup4slice(bool redo)
 	float * data = get_data();
 
 	for (int z = 0; z < nz; z++) {
-		int cur_z1 = z * nxy;
-		int cur_z2 = z * supp_xy;
+		size_t cur_z1 = z * nxy;
+		size_t cur_z2 = z * supp_xy;
 
 		for (int y = 0; y < ny; y++) {
-			int cur_y1 = y * nx;
-			int cur_y2 = y * supp_size;
+			size_t cur_y1 = y * nx;
+			size_t cur_y2 = y * supp_size;
 
 			for (int x = 0; x < SUPP_ROW_SIZE; x++) {
-				int k = (x + SUPP_ROW_OFFSET) + cur_y2 + cur_z2;
+				size_t k = (x + SUPP_ROW_OFFSET) + cur_y2 + cur_z2;
 				supp[k] = data[x + cur_y1 + cur_z1];
 			}
 		}
 	}
 
 	for (int z = 1, zz = nz - 1; z < nz; z++, zz--) {
-		int cur_z1 = zz * nxy;
-		int cur_z2 = z * supp_xy;
+		size_t cur_z1 = zz * nxy;
+		size_t cur_z2 = z * supp_xy;
 
 		for (int y = 1, yy = ny - 1; y < ny; y++, yy--) {
 			supp[y * 12 + cur_z2] = data[4 + yy * nx + cur_z1];
@@ -1009,7 +1009,7 @@ void EMData::rotate_translate(const Transform3D & RA)
 
 		float z   = -nz / 2 + dcenter[2]; //
 
-
+		size_t ii, k0, k1, k2, k3, k4, k5, k6, k7;
 		for (int k = 0; k < nz; k++, z += 1.0f) {
 			float y   = -ny / 2 + dcenter[1]; //
 			for (int j = 0; j < ny; j++,   y += 1.0f) {
@@ -1031,16 +1031,16 @@ void EMData::rotate_translate(const Transform3D & RA)
 						float tuvx = x2-ix;
 						float tuvy = y2-iy;
 						float tuvz = z2-iz;
-						int ii = ix + iy * nx + iz * nxy;
+						ii = ix + iy * nx + iz * nxy;
 
-						int k0 = ii;
-						int k1 = k0 + 1;
-						int k2 = k0 + nx;
-						int k3 = k0 + nx+1;
-						int k4 = k0 + nxy;
-						int k5 = k1 + nxy;
-						int k6 = k2 + nxy;
-						int k7 = k3 + nxy;
+						k0 = ii;
+						k1 = k0 + 1;
+						k2 = k0 + nx;
+						k3 = k0 + nx+1;
+						k4 = k0 + nxy;
+						k5 = k1 + nxy;
+						k6 = k2 + nxy;
+						k7 = k3 + nxy;
 
 						if (ix == nx - 1) {
 							k1--;
@@ -1958,10 +1958,10 @@ EMData *EMData::calc_mutual_correlation(EMData * with, bool tocenter, EMData * f
 
 	float *rdata1 = this_fft->get_data();
 	float *rdata2 = cf->get_data();
-	int this_fft_size = this_fft->get_xsize() * this_fft->get_ysize() * this_fft->get_zsize();
+	size_t this_fft_size = this_fft->get_xsize() * this_fft->get_ysize() * this_fft->get_zsize();
 
 	if (with == this) {
-		for (int i = 0; i < this_fft_size; i += 2) {
+		for (size_t i = 0; i < this_fft_size; i += 2) {
 			rdata2[i] = std::sqrt(rdata1[i] * rdata2[i] + rdata1[i + 1] * rdata2[i + 1]);
 			rdata2[i + 1] = 0;
 		}
@@ -1970,7 +1970,7 @@ EMData *EMData::calc_mutual_correlation(EMData * with, bool tocenter, EMData * f
 		cf->update();
 	}
 	else {
-		for (int i = 0; i < this_fft_size; i += 2) {
+		for (size_t i = 0; i < this_fft_size; i += 2) {
 			rdata2[i] = (rdata1[i] * rdata2[i] + rdata1[i + 1] * rdata2[i + 1]);
 			rdata2[i + 1] = (rdata1[i + 1] * rdata2[i] - rdata1[i] * rdata2[i + 1]);
 		}
@@ -1979,7 +1979,7 @@ EMData *EMData::calc_mutual_correlation(EMData * with, bool tocenter, EMData * f
 		cf->update();
 		rdata1 = cf->get_data();
 
-		for (int i = 0; i < this_fft_size; i += 2) {
+		for (size_t i = 0; i < this_fft_size; i += 2) {
 			float t = Util::square(rdata1[i]) + Util::square(rdata1[i + 1]);
 			if (t != 0) {
 				t = pow(t, (float) 0.25);
@@ -2478,8 +2478,9 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, bool inten)
 		}
 	}
 	else {
-		for (z=i=0; z<nz; z++) {
-			for (y=0; y<ny; y++) {
+		size_t i;	//3D file may have >2G size
+		for (z=i=0; z<nz; ++z) {
+			for (y=0; y<ny; ++y) {
 				for (x=0; x<nx; x+=step,i+=step) {
 					float r,v;
 					if (step==2) {	//complex
@@ -2640,7 +2641,8 @@ void EMData::update_stat() const
 	//cout << "point 1" << endl;
 	//cout << "size is " << nx << " " << ny << " " << nz << endl;
 
-	for (int i = 0; i < nx*ny*nz; i += step) {
+	size_t size = nx*ny*nz;
+	for (size_t i = 0; i < size; i += step) {
 		float v = data[i];
 	#ifdef _WIN32
 		max = _cpp_max(max,v);
@@ -2654,7 +2656,7 @@ void EMData::update_stat() const
 		if (v != 0) n_nonzero++;
 	}
 	//cout << "Point 2" << endl;
-	int n = nx * ny * nz / step;
+	size_t n = size / step;
 	double mean = sum / n;
 
 #ifdef _WIN32
@@ -2694,7 +2696,7 @@ bool EMData::operator==(const EMData& that) const {
 	const float*  d1 = that.get_const_data();
 	float* d2 = get_data();
 
-	for(int i =0; i < get_size(); ++i,++d1,++d2) {
+	for(size_t i =0; i < get_size(); ++i,++d1,++d2) {
 		if ((*d1) != (*d2)) return false;
 	}
 	return true;
@@ -2900,8 +2902,8 @@ void EMData::add_incoherent(EMData * obj)
 
 	float *dest = get_data();
 	float *src = obj->get_data();
-	int size = nx * ny * nz;
-	for (int j = 0; j < size; j += 2) {
+	size_t size = nx * ny * nz;
+	for (size_t j = 0; j < size; j += 2) {
 #ifdef	_WIN32
 		dest[j] = (float) _hypot(src[j], dest[j]);
 #else
@@ -2962,10 +2964,10 @@ EMData * EMData::calc_fast_sigma_image( EMData* mask)
 	if ( mnx > nx || mny > ny || mnz > nz)
 		throw ImageDimensionException("Can not calculate variance map using an image that is larger than this image");
 
-	int P = 0;
-	for(int i = 0; i < mask->get_xsize()*mask->get_ysize()*mask->get_zsize(); ++i){
+	size_t P = 0;
+	for(size_t i = 0; i < mask->get_size(); ++i){
 		if (mask->get_value_at(i) != 0){
-			P++;
+			++P;
 		}
 	}
 	float normfac = 1.0f/(float)P;
@@ -3101,10 +3103,10 @@ EMData *EMData::convolute(EMData * with)
 
 	float *rdata1 = f1->get_data();
 	float *rdata2 = cf->get_data();
-	int cf_size = cf->get_xsize() * cf->get_ysize() * cf->get_zsize();
+	size_t cf_size = cf->get_xsize() * cf->get_ysize() * cf->get_zsize();
 
 	float re,im;
-	for (int i = 0; i < cf_size; i += 2) {
+	for (size_t i = 0; i < cf_size; i += 2) {
 		re = rdata1[i] * rdata2[i] - rdata1[i + 1] * rdata2[i + 1];
 		im = rdata1[i + 1] * rdata2[i] + rdata1[i] * rdata2[i + 1];
 		rdata2[i]=re;

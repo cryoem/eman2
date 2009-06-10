@@ -534,7 +534,7 @@ void TestUtil::make_image_file_by_mode(const string & filename,
     e->set_attr("datatype", (int)datatype);
     float * data = e->get_data();
 
-	int l = 0;
+	size_t l = 0;
     for (int i = 0; i < nz; i++) {
         for (int j = 0; j < ny; j++) {
             for (int k = 0; k < nx; k++) {
@@ -617,7 +617,7 @@ int TestUtil::verify_image_file_by_mode(const string & filename,
 
 	if (!is_complex) {
 		float * data = e->get_data();
-		int l = 0;
+		size_t l = 0;
 		for (int i = 0; i < nz; i++) {
 			for (int j = 0; j < ny; j++) {
 				for (int k = 0; k < nx; k++) {

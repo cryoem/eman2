@@ -282,12 +282,12 @@ int XplorIO::read_data(float *data, int image_index, const Region *area, bool)
 	check_read_access(image_index);
 	FloatSize max_size = FloatSize(nx, ny, nz);
 	check_region(area, max_size, is_new_file);
-	
+
 	// Had to put this here because this is the only function that calls
 	// EMUtil::process_ascii_region_io - this function does not allow regions that
 	// are outside the image dimensions. This is opposed to those functions which
 	// call EMUtil::process_region_io, which can handle it. David Woolford, April 23 2009
-	
+
 	if (area != 0 && !area->is_region_in_box(max_size)) {
 		char desc[1024];
 		sprintf(desc, "Region box %s is outside image area (%d,%d,%d)",
@@ -374,7 +374,7 @@ int XplorIO::write_data(float *data, int image_index, const Region* area,
 	int step = NFLOAT_PER_LINE;
 
 	if (!area) {
-		for (int k = 0; k < nz; k++) {
+		for (int k = 0; k < nz; ++k) {
 			fprintf(xplor_file, "%8d\n", (k+1));
 
 			for (int i = 0; i < nsecs - step; i += step) {

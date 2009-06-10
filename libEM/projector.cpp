@@ -263,27 +263,33 @@ bool GaussFFTProjector::interp_ft_3d(int mode, EMData * image, float x, float y,
 
 			if (x0 == 0) {
 				x0 += 4;
+				size_t idx;
+				float r, g;
 				for (int k = z0 - 1; k <= z0 + 1; k++) {
 					for (int j = y0 - 1; j <= y0 + 1; j++) {
 						for (int i = x0 - 2; i <= x0 + 2; i += 2) {
-							float r = Util::hypot3(i / 2.0f - x - 2.0f, j - y, k - z);
-							float g = exp(-r / gw);
+							r = Util::hypot3(i / 2.0f - x - 2.0f, j - y, k - z);
+							g = exp(-r / gw);
 							n += g;
-							data[0] += supp[i + j * 12 + k * 12 * ny] * g;
-							data[1] += supp[i + j * 12 + k * 12 * ny + 1] * g;
+							idx = i + j * 12 + k * 12 * ny;
+							data[0] += supp[idx] * g;
+							data[1] += supp[idx + 1] * g;
 						}
 					}
 				}
 			}
 			else {
+				size_t idx;
+				float r, g;
 				for (int k = z0 - 1; k <= z0 + 1; k++) {
 					for (int j = y0 - 1; j <= y0 + 1; j++) {
 						for (int i = x0 - 2; i <= x0 + 2; i += 2) {
-							float r = Util::hypot3(i / 2.0f - x, j - y, k - z);
-							float g = exp(-r / gw);
+							r = Util::hypot3(i / 2.0f - x, j - y, k - z);
+							g = exp(-r / gw);
 							n += g;
-							data[0] += rdata[i + j * nx + k * nx * ny] * g;
-							data[1] += rdata[i + j * nx + k * nx * ny + 1] * g;
+							idx = i + j * nx + k * nx * ny;
+							data[0] += rdata[idx] * g;
+							data[1] += rdata[idx + 1] * g;
 						}
 					}
 				}
@@ -307,27 +313,33 @@ bool GaussFFTProjector::interp_ft_3d(int mode, EMData * image, float x, float y,
 
 			if (x0 == 0) {
 				x0 += 4;
+				size_t idx;
+				float r, g;
 				for (int k = z0 - 1; k <= z0 + 2; k++) {
 					for (int j = y0 - 1; j <= y0 + 2; j++) {
 						for (int i = x0 - 2; i <= x0 + 4; i += 2) {
-							float r = Util::hypot3(i / 2.0f - x - 2.0f, j - y, k - z);
-							float g = exp(-r / gw);
+							r = Util::hypot3(i / 2.0f - x - 2.0f, j - y, k - z);
+							g = exp(-r / gw);
 							n += g;
-							data[0] += supp[i + j * 12 + k * 12 * ny] * g;
-							data[1] += supp[i + j * 12 + k * 12 * ny + 1] * g;
+							idx = i + j * 12 + k * 12 * ny;
+							data[0] += supp[idx] * g;
+							data[1] += supp[idx + 1] * g;
 						}
 					}
 				}
 			}
 			else {
+				float r, g;
+				size_t idx;
 				for (int k = z0 - 1; k <= z0 + 2; k++) {
 					for (int j = y0 - 1; j <= y0 + 2; j++) {
 						for (int i = x0 - 2; i <= x0 + 4; i += 2) {
-							float r = Util::hypot3(i / 2.0f - x, j - y, k - z);
-							float g = exp(-r / gw);
+							r = Util::hypot3(i / 2.0f - x, j - y, k - z);
+							g = exp(-r / gw);
 							n += g;
-							data[0] += rdata[i + j * nx + k * nx * ny] * g;
-							data[1] += rdata[i + j * nx + k * nx * ny + 1] * g;
+							idx = i + j * nx + k * nx * ny;
+							data[0] += rdata[idx] * g;
+							data[1] += rdata[idx + 1] * g;
 						}
 					}
 				}
@@ -359,23 +371,28 @@ bool GaussFFTProjector::interp_ft_3d(int mode, EMData * image, float x, float y,
 			if (x0 < 4) {
 				x0 += 4;
 
+				size_t idx;
+				float g;
 				for (int k = z0 - 2; k <= z0 + 2; k++, mmz += 39) {
 					for (int j = y0 - 2; j <= y0 + 2; j++, mmy += 39) {
 						for (int i = x0 - 4; i <= x0 + 4; i += 2, mmx += 39) {
-							float g = gimx[abs(mmx) + abs(mmy) * 100 + abs(mmz) * 10000];
+							g = gimx[abs(mmx) + abs(mmy) * 100 + abs(mmz) * 10000];
 							n += g;
-							data[0] += supp[i + j * 12 + k * 12 * ny] * g;
-							data[1] += supp[i + j * 12 + k * 12 * ny + 1] * g;
+							idx = i + j * 12 + k * 12 * ny;
+							data[0] += supp[idx] * g;
+							data[1] += supp[idx + 1] * g;
 						}
 					}
 				}
 			}
 			else {
+				size_t ii;
+				float g;
 				for (int k = z0 - 2; k <= z0 + 2; k++, mmz += 39) {
 					for (int j = y0 - 2; j <= y0 + 2; j++, mmy += 39) {
 						for (int i = x0 - 4; i <= x0 + 4; i += 2, mmx += 39) {
-							int ii = i + j * nx + k * nx * ny;
-							float g = gimx[abs(mmx) + abs(mmy) * 100 + abs(mmz) * 10000];
+							ii = i + j * nx + k * nx * ny;
+							g = gimx[abs(mmx) + abs(mmy) * 100 + abs(mmz) * 10000];
 							n += g;
 							data[0] += rdata[ii] * g;
 							data[1] += rdata[ii + 1] * g;
@@ -403,27 +420,33 @@ bool GaussFFTProjector::interp_ft_3d(int mode, EMData * image, float x, float y,
 
 			if (x0 < 4) {
 				x0 += 4;
+				float r, g;
+				size_t idx;
 				for (int k = z0 - 2; k <= z0 + 2; k++) {
 					for (int j = y0 - 2; j <= y0 + 2; j++) {
 						for (int i = x0 - 4; i <= x0 + 4; i += 2) {
-							float r = Util::hypot3(i / 2.0f - x - 2.0f, j - y, k - z);
-							float g = exp(-r / gw);
+							r = Util::hypot3(i / 2.0f - x - 2.0f, j - y, k - z);
+							g = exp(-r / gw);
 							n += g;
-							data[0] += supp[i + j * 12 + k * 12 * ny] * g;
-							data[1] += supp[i + j * 12 + k * 12 * ny + 1] * g;
+							idx = i + j * 12 + k * 12 * ny;
+							data[0] += supp[idx] * g;
+							data[1] += supp[idx + 1] * g;
 						}
 					}
 				}
 			}
 			else {
+				float r, g;
+				size_t idx;
 				for (int k = z0 - 2; k <= z0 + 2; k++) {
 					for (int j = y0 - 2; j <= y0 + 2; j++) {
 						for (int i = x0 - 4; i <= x0 + 4; i += 2) {
-							float r = Util::hypot3(i / 2.0f - x, j - y, k - z);
-							float g = exp(-r / gw);
+							r = Util::hypot3(i / 2.0f - x, j - y, k - z);
+							g = exp(-r / gw);
 							n += g;
-							data[0] += rdata[i + j * nx + k * nx * ny] * g;
-							data[1] += rdata[i + j * nx + k * nx * ny + 1] * g;
+							idx = i + j * nx + k * nx * ny;
+							data[0] += rdata[idx] * g;
+							data[1] += rdata[idx + 1] * g;
 						}
 
 					}
@@ -448,27 +471,33 @@ bool GaussFFTProjector::interp_ft_3d(int mode, EMData * image, float x, float y,
 			float n = 0;
 			if (x0 < 4) {
 				x0 += 4;
+				float r, g;
+				size_t idx;
 				for (int k = z0 - 2; k <= z0 + 2; k++) {
 					for (int j = y0 - 2; j <= y0 + 2; j++) {
 						for (int i = x0 - 4; i <= x0 + 4; i += 2) {
-							float r = sqrt(Util::hypot3(i / 2.0f - x - 2.0f, j - y, k - z));
-							float g = Interp::hyperg(r);
+							r = sqrt(Util::hypot3(i / 2.0f - x - 2.0f, j - y, k - z));
+							g = Interp::hyperg(r);
 							n += g;
-							data[0] += supp[i + j * 12 + k * 12 * ny] * g;
-							data[1] += supp[i + j * 12 + k * 12 * ny + 1] * g;
+							idx = i + j * 12 + k * 12 * ny;
+							data[0] += supp[idx] * g;
+							data[1] += supp[idx + 1] * g;
 						}
 					}
 				}
 			}
 			else {
+				float r, g;
+				size_t idx;
 				for (int k = z0 - 2; k <= z0 + 2; k++) {
 					for (int j = y0 - 2; j <= y0 + 2; j++) {
 						for (int i = x0 - 4; i <= x0 + 4; i += 2) {
-							float r = sqrt(Util::hypot3(i / 2.0f - x, j - y, k - z));
-							float g = Interp::hyperg(r);
+							r = sqrt(Util::hypot3(i / 2.0f - x, j - y, k - z));
+							g = Interp::hyperg(r);
 							n += g;
-							data[0] += rdata[i + j * nx + k * nx * ny] * g;
-							data[1] += rdata[i + j * nx + k * nx * ny + 1] * g;
+							idx = i + j * nx + k * nx * ny;
+							data[0] += rdata[idx] * g;
+							data[1] += rdata[idx + 1] * g;
 						}
 
 					}
@@ -878,7 +907,7 @@ EMData *StandardProjector::project3d(EMData * image) const
 					float u = y2 - y;
 					float v = z2 - z;
 
-					int ii = (int) (x + y * nx + z * xy);
+					size_t ii = (size_t) (x + y * nx + z * xy);
 
 					if (x2 < 0 || y2 < 0 || z2 < 0 ) continue;
 					if 	(x2 > (nx-1) || y2  > (ny-1) || z2 > (nz-1) ) continue;

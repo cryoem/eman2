@@ -569,9 +569,9 @@ inline int get_zsize() const
 /** Get the number of allocated floats in the image (nx*ny*nz)
  * @return nx*ny*nz
  */
-inline int get_size() const
+inline size_t get_size() const
 {
-	return nx*ny*nz;
+	return (size_t)nx*(size_t)ny*(size_t)nz;
 }
 
 /** Get the pixel data as a vector

@@ -90,7 +90,7 @@ float CccCmp::cmp(EMData * image, EMData *with) const
 
 	double avg1 = 0.0, var1 = 0.0, avg2 = 0.0, var2 = 0.0, ccc = 0.0;
 	long n = 0;
-	long totsize = image->get_xsize()*image->get_ysize()*image->get_zsize();
+	size_t totsize = image->get_xsize()*image->get_ysize()*image->get_zsize();
 
 	bool has_mask = false;
 	EMData* mask = 0;
@@ -101,7 +101,7 @@ float CccCmp::cmp(EMData * image, EMData *with) const
 
 	if (has_mask) {
 		float* dm = mask->get_data();
-		for (long i = 0; i < totsize; i++) {
+		for (size_t i = 0; i < totsize; ++i) {
 			if (dm[i] > 0.5) {
 				avg1 += double(d1[i]);
 				var1 += d1[i]*double(d1[i]);
@@ -112,7 +112,7 @@ float CccCmp::cmp(EMData * image, EMData *with) const
 			}
 		}
 	} else {
-		for (long i = 0; i < totsize; i++) {
+		for (size_t i = 0; i < totsize; ++i) {
 			avg1 += double(d1[i]);
 			var1 += d1[i]*double(d1[i]);
 			avg2 += double(d2[i]);
@@ -143,7 +143,7 @@ float SqEuclideanCmp::cmp(EMData * image, EMData *with) const
 	float *y_data = with->get_data();
 	float *x_data = image->get_data();
 	double result = 0.;
-	float n = 0;
+	float n = 0.0f;
 	if(image->is_complex() && with->is_complex()) {
 	// Implemented by PAP  01/09/06 - please do not change.  If in doubts, write/call me.
 		int nx  = with->get_xsize();
@@ -161,18 +161,18 @@ float SqEuclideanCmp::cmp(EMData * image, EMData *with) const
 			double part = 0.;
 			for ( int iy = 0; iy <= ny-1; iy++) {
 				for ( int ix = 2; ix <= lsd2 - 1 - ixb; ix++) {
-						int ii = ix + (iy  + iz * ny)* lsd2;
+						size_t ii = ix + (iy  + iz * ny)* lsd2;
 						part += (x_data[ii] - y_data[ii])*double(x_data[ii] - y_data[ii]);
 				}
 			}
 			for ( int iy = 1; iy <= ny/2-1 + iyb; iy++) {
-				int ii = (iy  + iz * ny)* lsd2;
+				size_t ii = (iy  + iz * ny)* lsd2;
 				part += (x_data[ii] - y_data[ii])*double(x_data[ii] - y_data[ii]);
 				part += (x_data[ii+1] - y_data[ii+1])*double(x_data[ii+1] - y_data[ii+1]);
 			}
 			if(nx%2 == 0) {
 				for ( int iy = 1; iy <= ny/2-1 + iyb; iy++) {
-					int ii = lsd2 - 2 + (iy  + iz * ny)* lsd2;
+					size_t ii = lsd2 - 2 + (iy  + iz * ny)* lsd2;
 					part += (x_data[ii] - y_data[ii])*double(x_data[ii] - y_data[ii]);
 					part += (x_data[ii+1] - y_data[ii+1])*double(x_data[ii+1] - y_data[ii+1]);
 				}
@@ -206,7 +206,7 @@ float SqEuclideanCmp::cmp(EMData * image, EMData *with) const
 				for ( int ix = 0; ix <= lsd2-1; ix++) {
 				// Skip Friedel related values
 				if(ix>0 || (kz>=0 && (ky>=0 || kz!=0))) {
-						int ii = ix + (iy  + iz * ny)* lsd2;
+						size_t ii = ix + (iy  + iz * ny)* lsd2;
 						result += (x_data[ii] - y_data[ii])*double(x_data[ii] - y_data[ii]);
 					}
 				}
@@ -215,12 +215,12 @@ float SqEuclideanCmp::cmp(EMData * image, EMData *with) const
 		n = ((float)nx*(float)ny*(float)nz*(float)nx*(float)ny*(float)nz)/2.0f;
 		}
 	} else {
-		long totsize = image->get_xsize()*image->get_ysize()*image->get_zsize();
+		size_t totsize = image->get_xsize()*image->get_ysize()*image->get_zsize();
 		if (params.has_key("mask")) {
 		  EMData* mask;
 		  mask = params["mask"];
   		  float* dm = mask->get_data();
-		  for (long i = 0; i < totsize; i++) {
+		  for (size_t i = 0; i < totsize; i++) {
 			   if (dm[i] > 0.5) {
 				double temp = x_data[i]- y_data[i];
 				result += temp*temp;
@@ -228,7 +228,7 @@ float SqEuclideanCmp::cmp(EMData * image, EMData *with) const
 			   }
 		  }
 		} else {
-		  for (long i = 0; i < totsize; i++) {
+		  for (size_t i = 0; i < totsize; i++) {
 				double temp = x_data[i]- y_data[i];
 				result += temp*temp;
 		   }
@@ -271,22 +271,22 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 		//
 		if(nz == 1) {
 		//  it looks like it could work in 3D, but does not
-		for ( int iz = 0; iz <= nz-1; iz++) {
+		for ( int iz = 0; iz <= nz-1; ++iz) {
 			double part = 0.;
-			for ( int iy = 0; iy <= ny-1; iy++) {
-				for ( int ix = 2; ix <= lsd2 - 1 - ixb; ix++) {
-					int ii = ix + (iy  + iz * ny)* lsd2;
+			for ( int iy = 0; iy <= ny-1; ++iy) {
+				for ( int ix = 2; ix <= lsd2 - 1 - ixb; ++ix) {
+					size_t ii = ix + (iy  + iz * ny)* lsd2;
 					part += x_data[ii] * double(y_data[ii]);
 				}
 			}
-			for ( int iy = 1; iy <= ny/2-1 + iyb; iy++) {
-				int ii = (iy  + iz * ny)* lsd2;
+			for ( int iy = 1; iy <= ny/2-1 + iyb; ++iy) {
+				size_t ii = (iy  + iz * ny)* lsd2;
 				part += x_data[ii] * double(y_data[ii]);
 				part += x_data[ii+1] * double(y_data[ii+1]);
 			}
 			if(nx%2 == 0) {
-				for ( int iy = 1; iy <= ny/2-1 + iyb; iy++) {
-					int ii = lsd2 - 2 + (iy  + iz * ny)* lsd2;
+				for ( int iy = 1; iy <= ny/2-1 + iyb; ++iy) {
+					size_t ii = lsd2 - 2 + (iy  + iz * ny)* lsd2;
 					part += x_data[ii] * double(y_data[ii]);
 					part += x_data[ii+1] * double(y_data[ii+1]);
 				}
@@ -295,11 +295,11 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 			part *= 2;
 			part += x_data[0] * double(y_data[0]);
 			if(ny%2 == 0) {
-				int ii = (ny/2  + iz * ny)* lsd2;
+				size_t ii = (ny/2  + iz * ny)* lsd2;
 				part += x_data[ii] * double(y_data[ii]);
 			}
 			if(nx%2 == 0) {
-				int ii = lsd2 - 2 + (0  + iz * ny)* lsd2;
+				size_t ii = lsd2 - 2 + (0  + iz * ny)* lsd2;
 				part += x_data[ii] * double(y_data[ii]);
 				if(ny%2 == 0) {
 					int ii = lsd2 - 2 +(ny/2  + iz * ny)* lsd2;
@@ -311,24 +311,24 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 		if( normalize ) {
 		//  it looks like it could work in 3D, but does not
 		double square_sum1 = 0., square_sum2 = 0.;
-		for ( int iz = 0; iz <= nz-1; iz++) {
-			for ( int iy = 0; iy <= ny-1; iy++) {
-				for ( int ix = 2; ix <= lsd2 - 1 - ixb; ix++) {
-					int ii = ix + (iy  + iz * ny)* lsd2;
+		for ( int iz = 0; iz <= nz-1; ++iz) {
+			for ( int iy = 0; iy <= ny-1; ++iy) {
+				for ( int ix = 2; ix <= lsd2 - 1 - ixb; ++ix) {
+					size_t ii = ix + (iy  + iz * ny)* lsd2;
 					square_sum1 += x_data[ii] * double(x_data[ii]);
 					square_sum2 += y_data[ii] * double(y_data[ii]);
 				}
 			}
-			for ( int iy = 1; iy <= ny/2-1 + iyb; iy++) {
-				int ii = (iy  + iz * ny)* lsd2;
+			for ( int iy = 1; iy <= ny/2-1 + iyb; ++iy) {
+				size_t ii = (iy  + iz * ny)* lsd2;
 				square_sum1 += x_data[ii] * double(x_data[ii]);
 				square_sum1 += x_data[ii+1] * double(x_data[ii+1]);
 				square_sum2 += y_data[ii] * double(y_data[ii]);
 				square_sum2 += y_data[ii+1] * double(y_data[ii+1]);
 			}
 			if(nx%2 == 0) {
-				for ( int iy = 1; iy <= ny/2-1 + iyb; iy++) {
-					int ii = lsd2 - 2 + (iy  + iz * ny)* lsd2;
+				for ( int iy = 1; iy <= ny/2-1 + iyb; ++iy) {
+					size_t ii = lsd2 - 2 + (iy  + iz * ny)* lsd2;
 					square_sum1 += x_data[ii] * double(x_data[ii]);
 					square_sum1 += x_data[ii+1] * double(x_data[ii+1]);
 					square_sum2 += y_data[ii] * double(y_data[ii]);
@@ -362,14 +362,14 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 		} else { //This 3D code is incorrect, but it is the best I can do now 01/09/06 PAP
 		int ky, kz;
 		int ny2 = ny/2; int nz2 = nz/2;
-		for ( int iz = 0; iz <= nz-1; iz++) {
+		for ( int iz = 0; iz <= nz-1; ++iz) {
 			if(iz>nz2) kz=iz-nz; else kz=iz;
-			for ( int iy = 0; iy <= ny-1; iy++) {
+			for ( int iy = 0; iy <= ny-1; ++iy) {
 				if(iy>ny2) ky=iy-ny; else ky=iy;
-				for ( int ix = 0; ix <= lsd2-1; ix++) {
+				for ( int ix = 0; ix <= lsd2-1; ++ix) {
 					// Skip Friedel related values
 					if(ix>0 || (kz>=0 && (ky>=0 || kz!=0))) {
-						int ii = ix + (iy  + iz * ny)* lsd2;
+						size_t ii = ix + (iy  + iz * ny)* lsd2;
 						result += x_data[ii] * double(y_data[ii]);
 					}
 				}
@@ -380,14 +380,14 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 		double square_sum1 = 0., square_sum2 = 0.;
 		int ky, kz;
 		int ny2 = ny/2; int nz2 = nz/2;
-		for ( int iz = 0; iz <= nz-1; iz++) {
+		for ( int iz = 0; iz <= nz-1; ++iz) {
 			if(iz>nz2) kz=iz-nz; else kz=iz;
-			for ( int iy = 0; iy <= ny-1; iy++) {
+			for ( int iy = 0; iy <= ny-1; ++iy) {
 				if(iy>ny2) ky=iy-ny; else ky=iy;
-				for ( int ix = 0; ix <= lsd2-1; ix++) {
+				for ( int ix = 0; ix <= lsd2-1; ++ix) {
 					// Skip Friedel related values
 					if(ix>0 || (kz>=0 && (ky>=0 || kz!=0))) {
-						int ii = ix + (iy  + iz * ny)* lsd2;
+						size_t ii = ix + (iy  + iz * ny)* lsd2;
 						square_sum1 += x_data[ii] * double(x_data[ii]);
 						square_sum2 += y_data[ii] * double(y_data[ii]);
 					}
@@ -398,7 +398,7 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 		} else result /= ((float)nx*(float)ny*(float)nz*(float)nx*(float)ny*(float)nz/2);
 		}
 	} else {
-		long totsize = (long int)image->get_xsize() * (long int)image->get_ysize() * (long int)image->get_zsize();
+		size_t totsize = image->get_xsize() * image->get_ysize() * image->get_zsize();
 
 		double square_sum1 = 0., square_sum2 = 0.;
 
@@ -407,7 +407,7 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 			mask = params["mask"];
 			float* dm = mask->get_data();
 			if (normalize) {
-				for (long i = 0; i < totsize; i++) {
+				for (size_t i = 0; i < totsize; i++) {
 					if (dm[i] > 0.5) {
 						square_sum1 += x_data[i]*double(x_data[i]);
 						square_sum2 += y_data[i]*double(y_data[i]);
@@ -415,7 +415,7 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 					}
 				}
 			} else {
-				for (long i = 0; i < totsize; i++) {
+				for (size_t i = 0; i < totsize; i++) {
 					if (dm[i] > 0.5) {
 						result += x_data[i]*double(y_data[i]);
 						n++;
@@ -424,8 +424,8 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 			}
 		} else {
 			// this little bit of manual loop unrolling makes the dot product as fast as sqeuclidean with -O2
-			for (long i=0; i<totsize; i++) result+=x_data[i]*y_data[i];
-			
+			for (size_t i=0; i<totsize; i++) result+=x_data[i]*y_data[i];
+
 			if (normalize) {
 				square_sum1 = image->get_attr("square_sum");
 				square_sum2 = with->get_attr("square_sum");
@@ -517,13 +517,13 @@ float OptVarianceCmp::cmp(EMData * image, EMData *with) const
 			rfa[i]=(rfb[i]==0?0.0f:(rfa[i]/rfb[i]));
 			avg+=rfa[i];
 		}
-		
+
 		avg/=a->get_ysize()/2.0f;
 		for (size_t i=0; i<a->get_ysize()/2.0f; i++) {
 			if (rfa[i]>avg*10.0) rfa[i]=10.0;			// If some particular location has a small but non-zero value, we don't want to overcorrect it
 		}
 		rfa[0]=0.0;
-		
+
 		if (dbug) b->write_image("a.hdf",-1);
 
 		b->apply_radial_func(0.0f,1.0f/a->get_ysize(),rfa);
@@ -541,12 +541,12 @@ float OptVarianceCmp::cmp(EMData * image, EMData *with) const
 			for (int i=0; i<a->get_ysize()/2.0; i++) fprintf(out,"%d\t%f\n",i,rfb[i]);
 			fclose(out);
 		}*/
-			
+
 
 		delete a;
 		delete b;
 
-		if (dbug) { 
+		if (dbug) {
 			with2->write_image("a.hdf",-1);
 			image->write_image("a.hdf",-1);
 		}
@@ -736,7 +736,7 @@ float PhaseCmp::cmp(EMData * image, EMData *with) const
 	float *with_fft_data = with_fft->get_data();
 	double sum = 0;
 	double norm = FLT_MIN;
-	int i = 0;
+	size_t i = 0;
 
 	for (float z = 0; z < image_fft->get_zsize(); ++z){
 		for (float y = 0; y < image_fft->get_ysize(); y++) {
@@ -916,11 +916,11 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 // 		double *sxx = sxy+ny2;
 // 		double *syy = sxy+2*ny2;
 // 		double *norm= sxy+3*ny2;
-// 		
+//
 // 		float *df1=image->get_data();
 // 		float *df2=with->get_data();
 // 		int nx2=image->get_xsize();
-// 
+//
 // 		for (int y=-ny/2; y<ny/2; y++) {
 // 			for (int x=0; x<nx2/2; x++) {
 // 				if (x==0 && y<0) continue;	// skip Friedel pair

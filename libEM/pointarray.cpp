@@ -5,32 +5,32 @@
 /*
  * Author: Wen Jiang, 08/11/2004 (jiang12@purdue.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
 
 #include "pointarray.h"
@@ -137,12 +137,12 @@ PointArray & PointArray::operator=(PointArray & pa)
 	return *this;
 }
 
- int PointArray::get_number_points()
+ size_t PointArray::get_number_points() const
 {
 	return n;
 }
 
-void PointArray::set_number_points(unsigned int nn)
+void PointArray::set_number_points(size_t nn)
 {
 	if (n != nn) {
 		n = nn;
@@ -421,7 +421,7 @@ bool PointArray::read_from_pdb(const char *file)
 		throw;
 	}
 	char s[200];
-	 int count = 0;
+	size_t count = 0;
 	while ((fgets(s, 200, fp) != NULL)) {
 		if (strncmp(s, "ENDMDL", 6) == 0)
 			break;
@@ -504,8 +504,8 @@ bool PointArray::read_from_pdb(const char *file)
 void PointArray::save_to_pdb(const char *file)
 {
 	FILE *fp = fopen(file, "w");
-	for ( int i = 0; i < get_number_points(); i++) {
-		fprintf(fp, "ATOM  %5d  CA  ALA A%4d    %8.3f%8.3f%8.3f%6.2f%6.2f%8s\n", i, i,
+	for ( size_t i = 0; i < get_number_points(); i++) {
+		fprintf(fp, "ATOM  %5lu  CA  ALA A%4lu    %8.3f%8.3f%8.3f%6.2f%6.2f%8s\n", i, i,
 				points[4 * i], points[4 * i + 1], points[4 * i + 2], points[4 * i + 3], 0.0, " ");
 	}
 	fclose(fp);
@@ -517,7 +517,7 @@ FloatPoint PointArray::get_center()
 	double xc, yc, zc;
 	xc = yc = zc = 0.0;
 	double norm = 0.0;
-	for ( int i = 0; i < 4 * get_number_points(); i += 4) {
+	for ( size_t i = 0; i < 4 * get_number_points(); i += 4) {
 		xc += points[i] * points[i + 3];
 		yc += points[i + 1] * points[i + 3];
 		zc += points[i + 2] * points[i + 3];
@@ -534,7 +534,7 @@ FloatPoint PointArray::get_center()
 void PointArray::center_to_zero()
 {
 	FloatPoint center = get_center();
-	for ( int i = 0; i < 4 * get_number_points(); i += 4) {
+	for ( size_t i = 0; i < 4 * get_number_points(); i += 4) {
 		points[i] -= center[0];
 		points[i + 1] -= center[1];
 		points[i + 2] -= center[2];
@@ -548,7 +548,7 @@ Region PointArray::get_bounding_box()
 	xmin = xmax = points[0];
 	ymin = ymax = points[1];
 	zmin = zmax = points[2];
-	for ( int i = 0; i < 4 * get_number_points(); i += 4) {
+	for ( size_t i = 0; i < 4 * get_number_points(); i += 4) {
 		if (points[i] > xmax)
 			xmax = points[i];
 		if (points[i] < xmin)
@@ -572,7 +572,7 @@ void PointArray::mask(double rmax, double rmin)
 	PointArray *tmp = this->copy();
 	double *tmp_points = tmp->get_points_array();
 	 int count = 0;
-	for ( int i = 0; i < 4 * tmp->get_number_points(); i += 4) {
+	for ( size_t i = 0; i < 4 * tmp->get_number_points(); i += 4) {
 		double x = tmp_points[i], y = tmp_points[i + 1], z = tmp_points[i + 2], v =
 			tmp_points[i + 3];
 		double r2 = x * x + y * y + z * z;
@@ -581,7 +581,7 @@ void PointArray::mask(double rmax, double rmin)
 			points[count * 4 + 1] = y;
 			points[count * 4 + 2] = z;
 			points[count * 4 + 3] = v;
-			count++;
+			++count;
 		}
 	}
 	set_number_points(count);
@@ -626,7 +626,7 @@ void PointArray::mask_asymmetric_unit(const string & sym)
 	PointArray *tmp = this->copy();
 	double *tmp_points = tmp->get_points_array();
 	 int count = 0;
-	for ( int i = 0; i < 4 * tmp->get_number_points(); i += 4) {
+	for ( size_t i = 0; i < 4 * tmp->get_number_points(); i += 4) {
 		double x = tmp_points[i], y = tmp_points[i + 1], z = tmp_points[i + 2], v = tmp_points[i + 3];
 		double az = atan2(y, x);
 		double az_abs = fabs(az - az0);
@@ -686,8 +686,8 @@ void PointArray::set_from(double *src,  int num, const string & sym, Transform3D
 {
 	 int nsym = xform->get_nsym(sym);
 
-	if (get_number_points() != nsym * num)
-		set_number_points(nsym * num);
+	if (get_number_points() != (size_t)nsym * num)
+		set_number_points((size_t)nsym * num);
 
 	double *target = get_points_array();
 
@@ -717,11 +717,12 @@ void PointArray::set_from_density_map(EMData * map, int num, float thresh, float
 		// find out how many voxels are useful voxels
 		int num_voxels = 0;
 		int nx = map->get_xsize(), ny = map->get_ysize(), nz = map->get_zsize();
+		size_t size = nx * ny * nz;
 		EMData *tmp_map = map->copy();
 		float *pd = tmp_map->get_data();
-		for (int i = 0; i < nx * ny * nz; i++) {
+		for (size_t i = 0; i < size; ++i) {
 			if (pd[i] > thresh)
-				num_voxels++;
+				++num_voxels;
 		}
 
 		double pointvol = double (num_voxels) / double (num);
@@ -751,7 +752,7 @@ void PointArray::set_from_density_map(EMData * map, int num, float thresh, float
 		for (int count = 0; count < num; count++) {
 			float cmax = pd[0];
 			int cmaxpos = 0;
-			for (int i = 0; i < nx * ny * nz; i++) {
+			for (size_t i = 0; i < size; ++i) {
 				if (pd[i] > cmax) {
 					cmax = pd[i];
 					cmaxpos = i;
@@ -759,7 +760,7 @@ void PointArray::set_from_density_map(EMData * map, int num, float thresh, float
 			}
 			int iz = cmaxpos / (nx * ny), iy = (cmaxpos - iz * nx * ny) / nx, ix =
 				cmaxpos - iz * nx * ny - iy * nx;
-				
+
 			// update coordinates in pixels
 			points[4*count  ] = ix;
 			points[4*count+1] = iy;
@@ -768,7 +769,7 @@ void PointArray::set_from_density_map(EMData * map, int num, float thresh, float
 #ifdef DEBUG
 			printf("Point %d: val = %g\tat  %d, %d, %d\n", count, cmax, ix, iy, iz);
 #endif
-			
+
 			int imin = ix - gbox, imax = ix + gbox;
 			int jmin = iy - gbox, jmax = iy + gbox;
 			int kmin = iz - gbox, kmax = iz + gbox;
@@ -785,22 +786,22 @@ void PointArray::set_from_density_map(EMData * map, int num, float thresh, float
 			if (kmax > nz)
 				kmax = nz;
 
-			for (int k = kmin; k < kmax; k++) {
+			for (int k = kmin; k < kmax; ++k) {
 				int table_index_z = int (fabs(double (k - iz)) * inv_table_step_size);
 				double zval = table[table_index_z];
-				int pd_index_z = k * nx * ny;
+				size_t pd_index_z = k * nx * ny;
 				//printf("k = %8d\tx = %8g\tval = %8g\n", k, float(k-iz), zval);
-				for (int j = jmin; j < jmax; j++) {
+				for (int j = jmin; j < jmax; ++j) {
 					int table_index_y = int (fabs(double (j - iy)) * inv_table_step_size);
 					double yval = table[table_index_y];
-					int pd_index = pd_index_z + j * nx + imin;
-					for (int i = imin; i < imax; i++, pd_index++) {
+					size_t pd_index = pd_index_z + j * nx + imin;
+					for (int i = imin; i < imax; ++i, ++pd_index) {
 						int table_index_x = int (fabs(double (i - ix)) * inv_table_step_size);
 						double xval = table[table_index_x];
 						if (mode == PEAKS_SUB)
 							pd[pd_index] -= (float)(cmax * zval * yval * xval);
 						else
-							pd[pd_index] *= (float)(1.0 - zval * yval * xval);	// mode == PEAKS_DIV 
+							pd[pd_index] *= (float)(1.0 - zval * yval * xval);	// mode == PEAKS_DIV
 					}
 				}
 			}
@@ -828,7 +829,7 @@ void PointArray::set_from_density_map(EMData * map, int num, float thresh, float
 #ifdef DEBUG
 		printf("Start initial random seeding\n");
 #endif
-		for ( int i = 0; i < get_number_points(); i++) {
+		for ( size_t i = 0; i < get_number_points(); i++) {
 			 int x, y, z;
 			double v;
 			do {
@@ -864,10 +865,11 @@ void PointArray::set_from_density_map(EMData * map, int num, float thresh, float
 			for ( int k = 0; k < nz; k++) {
 				for ( int j = 0; j < ny; j++) {
 					for ( int i = 0; i < nx; i++) {
-						if (pd[k * nx * ny + j * nx + i] > thresh) {
+						size_t idx = k * nx * ny + j * nx + i;
+						if (pd[idx] > thresh) {
 							double min_dist = 1e60;	// just a large distance
 							 int min_s = 0;
-							for ( int s = 0; s < get_number_points(); s++) {
+							for ( size_t s = 0; s < get_number_points(); ++s) {
 								double x = points[4 * s];
 								double y = points[4 * s + 1];
 								double z = points[4 * s + 2];
@@ -891,7 +893,7 @@ void PointArray::set_from_density_map(EMData * map, int num, float thresh, float
 #endif
 			// update each segment's center
 			dcen = 0.0;
-			for ( int s = 0; s < get_number_points(); s++) {
+			for ( size_t s = 0; s < get_number_points(); ++s) {
 				if (tmp_points[4 * s + 3]) {
 					tmp_points[4 * s] /= tmp_points[4 * s + 3];
 					tmp_points[4 * s + 1] /= tmp_points[4 * s + 3];
@@ -972,7 +974,7 @@ void PointArray::set_from_density_map(EMData * map, int num, float thresh, float
 #endif
 
 	float *pd = map->get_data();
-	for ( int i = 0; i < get_number_points(); i++) {
+	for ( size_t i = 0; i < get_number_points(); ++i) {
 #ifdef DEBUG
 		printf("Point %4d: x,y,z,v = %8g,%8g,%8g,%8g",i, points[4 * i],points[4 * i + 1],points[4 * i + 2],points[4 * i + 3]);
 #endif
@@ -1035,7 +1037,7 @@ EMData *PointArray::pdb2mrc_by_summation(int map_size, float apix, float res)
 	map->set_size(map_size, map_size, map_size);
 	map->to_zero();
 	float *pd = map->get_data();
-	for ( int s = 0; s < get_number_points(); s++) {
+	for ( size_t s = 0; s < get_number_points(); ++s) {
 		double xc = points[4 * s] / apix + map_size / 2;
 		double yc = points[4 * s + 1] / apix + map_size / 2;
 		double zc = points[4 * s + 2] / apix + map_size / 2;
@@ -1059,11 +1061,11 @@ EMData *PointArray::pdb2mrc_by_summation(int map_size, float apix, float res)
 		for (int k = kmin; k < kmax; k++) {
 			int table_index_z = int (fabs(k - zc) * inv_table_step_size);
 			double zval = table[table_index_z];
-			int pd_index_z = k * map_size * map_size;
+			size_t pd_index_z = k * map_size * map_size;
 			for (int j = jmin; j < jmax; j++) {
 				int table_index_y = int (fabs(j - yc) * inv_table_step_size);
 				double yval = table[table_index_y];
-				int pd_index = pd_index_z + j * map_size + imin;
+				size_t pd_index = pd_index_z + j * map_size + imin;
 				for (int i = imin; i < imax; i++, pd_index++) {
 					int table_index_x = int (fabs(i - xc) * inv_table_step_size);
 					double xval = table[table_index_x];
@@ -1093,7 +1095,7 @@ EMData *PointArray::projection_by_summation(int image_size, float apix, float re
 	double min_table_val = 1e-7;
 	double max_table_x = sqrt(-log(min_table_val));	// for exp(-x*x)
 
-	//double table_step_size = 0.001;    // number of steps for x=[0,1] in exp(-x*x) 
+	//double table_step_size = 0.001;    // number of steps for x=[0,1] in exp(-x*x)
 	//int table_size = int(max_table_x / table_step_size *1.25);
 	//double* table = (double*)malloc(sizeof(double) * table_size);
 	//for(int i=0; i<table_size; i++) table[i]=exp(-i*i*table_step_size*table_step_size);
@@ -1114,7 +1116,7 @@ EMData *PointArray::projection_by_summation(int image_size, float apix, float re
 	proj->set_size(image_size, image_size, 1);
 	proj->to_zero();
 	float *pd = proj->get_data();
-	for ( int s = 0; s < get_number_points(); s++) {
+	for ( size_t s = 0; s < get_number_points(); ++s) {
 		double xc = points[4 * s] / apix + image_size / 2;
 		double yc = points[4 * s + 1] / apix + image_size / 2;
 		double fval = points[4 * s + 3];
@@ -1184,7 +1186,7 @@ void PointArray::replace_by_summation(EMData *proj, int ind, Vec3f vec, float am
 	double fval = points[4 * s + 3];
 	int imin = int (xc) - gbox, imax = int (xc) + gbox;
 	int jmin = int (yc) - gbox, jmax = int (yc) + gbox;
-	
+
 	if (imin < 0) imin = 0;
 	if (jmin < 0) jmin = 0;
 	if (imax > image_size) imax = image_size;
@@ -1200,7 +1202,7 @@ void PointArray::replace_by_summation(EMData *proj, int ind, Vec3f vec, float am
 			pd[pd_index] -= (float)(fval * yval * xval);
 		}
 	}
-	
+
 	// add the new point
 	gbox = int (max_table_x * gauss_real_width / apix);	// local box half size in pixels to consider for each point
 	if (gbox <= 0)
@@ -1212,7 +1214,7 @@ void PointArray::replace_by_summation(EMData *proj, int ind, Vec3f vec, float am
 	fval = amp;
 	imin = int (xc) - gbox, imax = int (xc) + gbox;
 	jmin = int (yc) - gbox, jmax = int (yc) + gbox;
-	
+
 	if (imin < 0) imin = 0;
 	if (jmin < 0) jmin = 0;
 	if (imax > image_size) imax = image_size;
@@ -1228,7 +1230,7 @@ void PointArray::replace_by_summation(EMData *proj, int ind, Vec3f vec, float am
 			pd[pd_index] -= (float)(fval * yval * xval);
 		}
 	}
-	
+
 	proj->update();
 	return;
 }
@@ -1407,7 +1409,7 @@ EMData *PointArray::pdb2mrc_by_nfft(int , float , float )
 EMData *PointArray::projection_by_nfft(int , float , float )
 {
 #if defined NFFT
-	nfft_2D_plan my_plan;		// plan for the nfft 
+	nfft_2D_plan my_plan;		// plan for the nfft
 	int N[2], n[2];
 	N[0] = image_size;
 	n[0] = next_power_of_2(2 * image_size);
@@ -1475,7 +1477,7 @@ EMData *PointArray::projection_by_nfft(int , float , float )
 
 	return fft;
 #elif defined NFFT2
-	nfft_plan my_plan;			// plan for the nfft 
+	nfft_plan my_plan;			// plan for the nfft
 	int N[2], n[2];
 	N[0] = image_size;
 	n[0] = next_power_of_2(2 * image_size);
@@ -1576,7 +1578,7 @@ void calc_opt_proj(int n, const ColumnVector& x, double& fx, int& result)
 	Transform3D xform;
 	int size=optdata[0]->get_xsize();
 	fx=0;
-	
+
 	for (i=0; i<optdata.size(); i++) {
 		xform=(optdata[i]->get_transform());
 		pa.set_from((double *)x.nric()+1,n/4,std::string("c1"),&xform);
@@ -1584,7 +1586,7 @@ void calc_opt_proj(int n, const ColumnVector& x, double& fx, int& result)
 		p->process_inplace("normalize.unitlen");
 		fx-=sqrt(p->cmp("dot",EMObject(optdata[i]),Dict()));
 	}
-			
+
 	result=NLPFunction;
 
 	printf("%g\t%1.1f %1.1f %1.1f %g\t%1.1f %1.1f %1.1f %g\t%1.1f %1.1f %1.1f %g\n",fx,x(1),x(2),x(3),x(4),x(5),x(6),x(7),x(8),x(9),x(10),x(11),x(12));
@@ -1609,17 +1611,17 @@ void PointArray::opt_from_proj(const vector<EMData*> & proj,float pixres) {
 	optdata=proj;
 	optobj=this;
 	optpixres=pixres;
-	
+
 	FDNLF1 nlf(get_number_points()*4,calc_opt_proj,init_opt_proj);
 //	NLF1 nlf(get_number_points()*4,init_opt_proj,calc_opt_projd);
 	nlf.initFcn();
-	
+
 	OptCG opt(&nlf);
 //	OptQNewton opt(&nlf);
 	opt.setMaxFeval(2000);
 	opt.optimize();
 	opt.printStatus("Done");
-#else 
+#else
 	(void)proj;		//suppress warning message
 	(void)pixres;	//suppress warning message
 	LOGWARN("OPT++ support not enabled.\n");

@@ -109,19 +109,23 @@ EMData* EMData::get_fft_amplitude()
 	float *data = get_data();
 	int ndim = get_ndim();
 
+	size_t idx1, idx2, idx3;
 	if (ndim == 3) {
-		for (int k = 1; k < nz; k++) {
-			for (int j = 1; j < ny; j++) {
-				for (int i = 0; i < nx2/2; i++) {
-					d[k*nx2*ny+j*nx2+nx2/2+i] = data[k*nx*ny+j*nx+2*i];
-					d[(nz-k)*nx2*ny+(ny-j)*nx2+nx2/2-i] = data[k*nx*ny+j*nx+2*i];
+		for (int k = 1; k < nz; ++k) {
+			for (int j = 1; j < ny; ++j) {
+				for (int i = 0; i < nx2/2; ++i) {
+					idx1 = k*nx2*ny+j*nx2+nx2/2+i;
+					idx2 = k*nx*ny+j*nx+2*i;
+					idx3 = (nz-k)*nx2*ny+(ny-j)*nx2+nx2/2-i;
+					d[idx1] = data[idx2];
+					d[idx3] = data[idx2];
 				}
 			}
 		}
 	}
 	else if (ndim == 2) {
-		for (int j = 1; j < ny; j++) {
-			for (int i = 0; i < nx2/2; i++) {
+		for (int j = 1; j < ny; ++j) {
+			for (int i = 0; i < nx2/2; ++i) {
 				d[j*nx2+nx2/2+i] = data[j*nx+2*i];
 				d[(ny-j)*nx2+nx2/2-i] = data[j*nx+2*i];
 			}
@@ -160,19 +164,23 @@ EMData* EMData::get_fft_phase()
 	float * data = get_data();
 
 	int ndim = get_ndim();
+	size_t idx1, idx2, idx3;
 	if (ndim == 3) {
-		for (int k = 1; k < nz; k++) {
-			for (int j = 1; j < ny; j++) {
-				for (int i = 0; i < nx2/2; i++) {
-					d[k*nx2*ny+j*nx2+nx2/2+i] = data[k*nx*ny+j*nx+2*i+1];
-					d[(nz-k)*nx2*ny+(ny-j)*nx2+nx2/2-i] = -data[k*nx*ny+j*nx+2*i+1];
+		for (int k = 1; k < nz; ++k) {
+			for (int j = 1; j < ny; ++j) {
+				for (int i = 0; i < nx2/2; ++i) {
+					idx1 = k*nx2*ny+j*nx2+nx2/2+i;
+					idx2 = k*nx*ny+j*nx+2*i+1;
+					idx3 = (nz-k)*nx2*ny+(ny-j)*nx2+nx2/2-i;
+					d[idx1] = data[idx2];
+					d[idx3] = -data[idx2];
 				}
 			}
 		}
 	}
 	else if (ndim == 2) {
-		for (int j = 1; j < ny; j++) {
-			for (int i = 0; i < nx2/2; i++) {
+		for (int j = 1; j < ny; ++j) {
+			for (int i = 0; i < nx2/2; ++i) {
 				d[j*nx2+nx2/2+i] = data[j*nx+2*i+1];
 				d[(ny-j)*nx2+nx2/2-i] = -data[j*nx+2*i+1];
 			}
@@ -341,11 +349,11 @@ IntPoint EMData::calc_min_location() const
 	int nxy = nx * ny;
 	float * data = get_data();
 
-	for (int j = 0; j < nz; j++) {
-		int cur_z = j * nxy;
+	for (int j = 0; j < nz; ++j) {
+		size_t cur_z = j * nxy;
 
-		for (int k = 0; k < ny; k++) {
-			int cur_y = k * nx + cur_z;
+		for (int k = 0; k < ny; ++k) {
+			size_t cur_y = k * nx + cur_z;
 
 			for (int l = 0; l < nx; l += di) {
 				float t = data[l + cur_y];
@@ -379,11 +387,11 @@ IntPoint EMData::calc_max_location() const
 	int nxy = nx * ny;
 	float * data = get_data();
 
-	for (int j = 0; j < nz; j++) {
-		int cur_z = j * nxy;
+	for (int j = 0; j < nz; ++j) {
+		size_t cur_z = j * nxy;
 
-		for (int k = 0; k < ny; k++) {
-			int cur_y = k * nx + cur_z;
+		for (int k = 0; k < ny; ++k) {
+			size_t cur_y = k * nx + cur_z;
 
 			for (int l = 0; l < nx; l += di) {
 				float t = data[l + cur_y];
@@ -440,11 +448,11 @@ FloatPoint EMData::calc_center_of_mass()
 	float m = 0;
 
 	FloatPoint com(0,0,0);
-	for (int i = 0; i < nx; i++) {
-		for (int j = 0; j < ny; j++) {
+	for (int i = 0; i < nx; ++i) {
+		for (int j = 0; j < ny; ++j) {
 			int j2 = nx * j;
-			for (int k = 0; k < nz; k++) {
-				int l = i + j2 + k * nxy;
+			for (int k = 0; k < nz; ++k) {
+				size_t l = i + j2 + k * nxy;
 				if (data[l] >= sigma * .75 + mean) {
 					com[0] += i * data[l];
 					com[1] += j * data[l];
@@ -493,11 +501,11 @@ vector<Pixel> EMData::calc_highest_locations(float threshold)
 	int nxy = nx * ny;
 	float * data = get_data();
 
-	for (int j = 0; j < nz; j++) {
-		int cur_z = j * nxy;
+	for (int j = 0; j < nz; ++j) {
+		size_t cur_z = j * nxy;
 
-		for (int k = 0; k < ny; k++) {
-			int cur_y = k * nx + cur_z;
+		for (int k = 0; k < ny; ++k) {
+			size_t cur_y = k * nx + cur_z;
 
 			for (int l = 0; l < nx; l += di) {
 				float v =data[l + cur_y];
@@ -522,41 +530,41 @@ float EMData::get_edge_mean() const
 	int di = 0;
 	double edge_sum = 0;
 	float edge_mean = 0;
-	int nxy = nx * ny;
+	size_t nxy = nx * ny;
 	float * data = get_data();
 	if (nz == 1) {
-		for (int i = 0, j = (ny - 1) * nx; i < nx; i++, j++) {
+		for (int i = 0, j = (ny - 1) * nx; i < nx; ++i, ++j) {
 			edge_sum += data[i] + data[j];
 		}
-		for (int i = 0, j = nx - 1; i < nxy; i += nx, j += nx) {
+		for (size_t i = 0, j = nx - 1; i < nxy; i += nx, j += nx) {
 			edge_sum += data[i] + data[j];
 		}
 		edge_mean = (float)edge_sum / (nx * 2 + ny * 2);
 	}
 	else {
 		if (nx == ny && nx == nz * 2 - 1) {
-			for (int j = (nxy * (nz - 1)); j < nxy * nz; j++, di++) {
+			for (size_t j = (nxy * (nz - 1)); j < nxy * nz; ++j, ++di) {
 				edge_sum += data[j];
 			}
 		}
 		else {
-			for (int i = 0, j = (nxy * (nz - 1)); i < nxy; i++, j++, di++) {
+			for (size_t i = 0, j = (nxy * (nz - 1)); i < nxy; ++i, ++j, ++di) {
 				edge_sum += data[i] + data[j];
 			}
 		}
 
 		int nxy2 = nx * (ny - 1);
-		for (int k = 1; k < nz - 1; k++) {
-			int k2 = k * nxy;
-			int k3 = k2 + nxy2;
-			for (int i = 0; i < nx; i++, di++) {
+		for (int k = 1; k < nz - 1; ++k) {
+			size_t k2 = k * nxy;
+			size_t k3 = k2 + nxy2;
+			for (int i = 0; i < nx; ++i, ++di) {
 				edge_sum += data[i + k2] + data[i + k3];
 			}
 		}
-		for (int k = 1; k < nz - 1; k++) {
-			int k2 = k * nxy;
-			int k3 = nx - 1 + k2;
-			for (int i = 1; i < ny - 1; i++, di++) {
+		for (int k = 1; k < nz - 1; ++k) {
+			size_t k2 = k * nxy;
+			size_t k3 = nx - 1 + k2;
+			for (int i = 1; i < ny - 1; ++i, ++di) {
 				edge_sum += data[i * nx + k2] + data[i * nx + k3];
 			}
 		}
@@ -594,8 +602,8 @@ float EMData::get_circle_mean()
 	double n = 0,s=0;
 	float *d = mask->get_data();
 	float * data = get_data();
-
-	for (int i = 0; i < nx*ny*nz; i++) {
+	size_t size = nx*ny*nz;
+	for (size_t i = 0; i < size; i++) {
 		if (d[i]) { n+=1.0; s+=data[i]; }
 	}
 
@@ -900,11 +908,11 @@ EMObject EMData::get_attr(const string & key) const
 	else if (key == "median")
 	{
 		if ( is_complex() ) throw ImageFormatException("Error - can not calculate the median of a complex image");
-		int n = size;
+		size_t n = size;
 		float* tmp = new float[n];
 		float* d = get_data();
 		if (tmp == 0 ) throw BadAllocException("Error - could not create deep copy of image data");
-		for(int i=0; i < n; ++i) tmp[i] = d[i]; // should just be a memcpy
+		for(size_t i=0; i < n; ++i) tmp[i] = d[i]; // should just be a memcpy
 		qsort(tmp, n, sizeof(float), &greaterthan);
 		float median;
 		if (n%2==1) median = tmp[n/2];
@@ -917,9 +925,9 @@ EMObject EMData::get_attr(const string & key) const
 	{
 		if ( is_complex() ) throw ImageFormatException("Error - can not calculate the median of a complex image");
 		vector<float> tmp;
-		int n = size;
+		size_t n = size;
 		float* d = get_data();
-		for( int i = 0; i < n; ++i ) {
+		for( size_t i = 0; i < n; ++i ) {
 			if ( d[i] != 0 ) tmp.push_back(d[i]);
 		}
 		sort(tmp.begin(), tmp.end());

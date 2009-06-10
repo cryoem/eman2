@@ -5,32 +5,32 @@
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
 
 #include <cstring>
@@ -62,11 +62,11 @@ FitsIO::~FitsIO()
 void FitsIO::init()
 {
 	ENTERFUNC;
-	
+
 	if (initialized) {
 		return;
 	}
-	
+
 	initialized = true;
 	fitsfile = sfopen(filename, rw_mode, &is_new_file);
 
@@ -83,7 +83,7 @@ bool FitsIO::is_image_big_endian()
 bool FitsIO::is_valid(const void *first_block, off_t)
 {
 	ENTERFUNC;
-	
+
 	if (!first_block) {
 		return false;
 	}
@@ -156,8 +156,9 @@ int FitsIO::write_header(const Dict & , int image_index, const Region*,
 int FitsIO::read_data(float *rdata, int image_index, const Region *, bool )
 {
 	ENTERFUNC;
-	int i;
-	
+	size_t i;
+	size_t size = nx*ny*nz;
+
 	//single image format, index can only be zero
 	image_index = 0;
 	check_read_access(image_index, rdata);
@@ -171,27 +172,27 @@ int FitsIO::read_data(float *rdata, int image_index, const Region *, bool )
 	switch (dtype) {
 	case 8:
 		fread(cdata,nx,ny*nz,fitsfile);
-		for (i=nx*ny*nz-1; i>=0; i--) rdata[i]=cdata[i];
+		for (i=size-1; i>=0; i--) rdata[i]=cdata[i];
 		break;
 	case 16:
 		fread(cdata,nx,ny*nz*2,fitsfile);
-		if (!ByteOrder::is_host_big_endian()) ByteOrder::swap_bytes((short*) sdata, nx*ny*nz);
-		for (i=nx*ny*nz-1; i>=0; i--) rdata[i]=sdata[i];
+		if (!ByteOrder::is_host_big_endian()) ByteOrder::swap_bytes((short*) sdata, size);
+		for (i=size-1; i>=0; i--) rdata[i]=sdata[i];
 		break;
 	case 32:
 		fread(cdata,nx,ny*nz*4,fitsfile);
-		if (!ByteOrder::is_host_big_endian()) ByteOrder::swap_bytes((int*) rdata, nx*ny*nz);
-		for (i=0; i<nx*ny*nz; i++) rdata[i]=static_cast<float>(idata[i]);
+		if (!ByteOrder::is_host_big_endian()) ByteOrder::swap_bytes((int*) rdata, size);
+		for (i=0; i<size; i++) rdata[i]=static_cast<float>(idata[i]);
 		break;
 	case -32:
 		fread(cdata,nx*4,ny*nz,fitsfile);
-		if (!ByteOrder::is_host_big_endian()) ByteOrder::swap_bytes((float*) rdata, nx*ny*nz);
+		if (!ByteOrder::is_host_big_endian()) ByteOrder::swap_bytes((float*) rdata, size);
 		break;
 	case -64:
-		ddata=(double *)malloc(nx*ny*nz*8);
+		ddata=(double *)malloc(size*8);
 		fread(ddata,nx,ny*nz*8,fitsfile);
-		if (!ByteOrder::is_host_big_endian()) ByteOrder::swap_bytes((double*) ddata, nx*ny*nz);
-		for (i=0; i<nx*ny*nz; i++) rdata[i]=static_cast<float>(ddata[i]);
+		if (!ByteOrder::is_host_big_endian()) ByteOrder::swap_bytes((double*) ddata, size);
+		for (i=0; i<size; i++) rdata[i]=static_cast<float>(ddata[i]);
 		free(ddata);
 		break;
 	}
@@ -207,7 +208,7 @@ int FitsIO::write_data(float *data, int image_index, const Region*,
 
 	check_write_access(rw_mode, image_index, 1, data);
 //	check_region(area, FloatSize(mrch.nx, mrch.ny, mrch.nz), is_new_file);
-	
+
 
 	EXITFUNC;
 	return 0;
@@ -237,6 +238,6 @@ void FitsIO::write_ctf(const Ctf &, int)
 {
 	ENTERFUNC;
 	init();
-	
+
 	EXITFUNC;
 }

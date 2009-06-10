@@ -851,7 +851,8 @@ EMData *FourierReconstructor::finish()
 	float *rdata = image->get_data();
 
 	if (params["dlog"]) {
-		for (int i = 0; i < nx * ny * nz; i += 2) {
+		size_t size = nx*ny*nz;
+		for (size_t i = 0; i < size; i += 2) {
 			float d = norm[i];
 			if (d == 0) {
 				rdata[i] = 0;
@@ -943,12 +944,13 @@ EMData* BaldwinWoolfordReconstructor::finish()
 		float* d = image->get_data();
 		float N = (float) image->get_xsize()/2.0f;
 		N *= N;
-		int rnx = image->get_xsize();
-		int rny = image->get_ysize();
-		int rnxy = rnx*rny;
+		size_t rnx = image->get_xsize();
+		size_t rny = image->get_ysize();
+		size_t rnxy = rnx*rny;
 		int cx = image->get_xsize()/2;
 		int cy = image->get_ysize()/2;
 		int cz = image->get_zsize()/2;
+		size_t idx;
 		for (int k = 0; k < image->get_zsize(); ++k ){
 			for (int j = 0; j < image->get_ysize(); ++j ) {
 				for (int i =0; i < image->get_xsize(); ++i ) {
@@ -956,7 +958,8 @@ EMData* BaldwinWoolfordReconstructor::finish()
 					float yd = (float)(j-cy); yd *= yd;
 					float zd = (float)(k-cz); zd *= zd;
 					float weight = exp((xd+yd+zd)/N);
-					d[k*rnxy + j*rnx + i] *=  weight;
+					idx = k*rnxy + j*rnx + i;
+					d[idx] *=  weight;
 				}
 			}
 		}
@@ -1055,7 +1058,7 @@ void BaldwinWoolfordReconstructor::insert_density_at(const float& x, const float
 	int tnx = tmp_data->get_xsize();
 	int tny = tmp_data->get_ysize();
 	int tnz = tmp_data->get_zsize();
-	int tnxy = tnx*tny;
+	size_t tnxy = tnx*tny;
 
 	int mode = params.set_default("mode",1);
 
@@ -1297,7 +1300,7 @@ void BaldwinWoolfordReconstructor::insert_pixel(const float& x, const float& y, 
 				float weight = f/we[kc*tnxy+jc*tnx+ic];
 				// debug - this error should never occur
 				if ( (kc*rnxy+jc*rnx+2*ic+1) >= rnxy*tnz ) throw OutofRangeException(0,rnxy*tnz,kc*rnxy+jc*rnx+2*ic+1, "in pixel insertion" );
-				int k = kc*rnxy+jc*rnx+2*ic;
+				size_t k = kc*rnxy+jc*rnx+2*ic;
 
 				float factor, dist,residual;
 				int sizeW,sizeWmid,idx;
@@ -1502,7 +1505,8 @@ EMData *WienerFourierReconstructor::finish()
 	float *norm = tmp_data->get_data();
 	float *rdata = image->get_data();
 
-	for (int i = 0; i < nx * ny * nz; i += 2) {
+	size_t size = nx * ny * nz;
+	for (size_t i = 0; i < size; i += 2) {
 		float d = norm[i];
 		if (d == 0) {
 			rdata[i] = 0;
@@ -1614,6 +1618,7 @@ int WienerFourierReconstructor::insert_slice(const EMData* const slice, const Tr
 			int my0 = 0;
 			int mz0 = 0;
 
+			size_t idx;
 			switch (mode) {
 			case 1:
 				x0 = 2 * (int) floor(xx + 0.5f);
@@ -1675,15 +1680,17 @@ int WienerFourierReconstructor::insert_slice(const EMData* const slice, const Tr
 				if (x0 == 0) {
 					l = x0;
 				}
+
 				for (int k = z0 - 1; k <= z0 + 1; k++) {
 					for (int j = y0 - 1; j <= y0 + 1; j++) {
 						for (int i = l; i <= x0 + 2; i += 2) {
 							float r = Util::hypot3((float) i / 2 - xx, j - yy, k - zz);
 							float gg = exp(-r / EMConsts::I3G);
 
-							rdata[i + j * nx + k * nxy] += weight * gg * dt[0];
-							rdata[i + j * nx + k * nxy + 1] += weight * gg * dt[1];
-							norm[i + j * nx + k * nxy] += weight * gg;
+							idx = i + j * nx + k * nxy;
+							rdata[idx] += weight * gg * dt[0];
+							rdata[idx + 1] += weight * gg * dt[1];
+							norm[idx] += weight * gg;
 						}
 					}
 				}
@@ -1704,15 +1711,17 @@ int WienerFourierReconstructor::insert_slice(const EMData* const slice, const Tr
 				if (x0 == 0) {
 					l = x0;
 				}
-				for (int k = z0 - 1; k <= z0 + 2; k++) {
-					for (int j = y0 - 1; j <= y0 + 2; j++) {
+
+				for (int k = z0 - 1; k <= z0 + 2; ++k) {
+					for (int j = y0 - 1; j <= y0 + 2; ++j) {
 						for (int i = l; i <= x0 + 4; i += 2) {
 							float r = Util::hypot3((float) i / 2 - xx, j - yy, k - zz);
 							float gg = exp(-r / EMConsts::I4G);
 
-							rdata[i + j * nx + k * nxy] += weight * gg * dt[0];
-							rdata[i + j * nx + k * nxy + 1] += weight * gg * dt[1];
-							norm[i + j * nx + k * nxy] += weight * gg;
+							idx = i + j * nx + k * nxy;
+							rdata[idx] += weight * gg * dt[0];
+							rdata[idx + 1] += weight * gg * dt[1];
+							norm[idx] += weight * gg;
 						}
 					}
 				}
@@ -1746,7 +1755,7 @@ int WienerFourierReconstructor::insert_slice(const EMData* const slice, const Tr
 				for (int k = z0 - 2, mmz = mz0; k <= z0 + 2; k++, mmz += 39) {
 					for (int j = y0 - 2, mmy = my0; j <= y0 + 2; j++, mmy += 39) {
 						for (int i = l, mmx = mx0; i <= x0 + 4; i += 2, mmx += 39) {
-							int ii = i + j * nx + k * nxy;
+							size_t ii = i + j * nx + k * nxy;
 							float gg = weight * gimx[abs(mmx) + abs(mmy) * 100 + abs(mmz) * 10000];
 
 							rdata[ii] += gg * dt[0];
@@ -1772,7 +1781,7 @@ int WienerFourierReconstructor::insert_slice(const EMData* const slice, const Tr
 					for (int k = z0 - 2, mmz = mz0; k <= z0 + 2; k++, mmz += 39) {
 						for (int j = y0 - 2, mmy = my0; j <= y0 + 2; j++, mmy += 39) {
 							for (int i = 0, mmx = mx0; i <= x0 + 4; i += 2, mmx += 39) {
-								int ii = i + j * nx + k * nxy;
+								size_t ii = i + j * nx + k * nxy;
 								float gg =
 									weight * gimx[abs(mmx) + abs(mmy) * 100 + abs(mmz) * 10000];
 
@@ -1799,10 +1808,10 @@ int WienerFourierReconstructor::insert_slice(const EMData* const slice, const Tr
 					l = 0;
 				else
 					l = x0 - 4;
-				for (int k = z0 - 2; k <= z0 + 2; k++) {
-					for (int j = y0 - 2; j <= y0 + 2; j++) {
+				for (int k = z0 - 2; k <= z0 + 2; ++k) {
+					for (int j = y0 - 2; j <= y0 + 2; ++j) {
 						for (int i = l; i <= x0 + 4; i += 2) {
-							int ii = i + j * nx + k * nxy;
+							size_t ii = i + j * nx + k * nxy;
 							float r = Util::hypot3((float) i / 2 - xx, (float) j - yy,
 												   (float) k - zz);
 							float gg = weight * exp(-r / EMConsts::I5G);
@@ -1825,10 +1834,10 @@ int WienerFourierReconstructor::insert_slice(const EMData* const slice, const Tr
 					if (y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2)
 						break;
 
-					for (int k = z0 - 2; k <= z0 + 2; k++) {
-						for (int j = y0 - 2; j <= y0 + 2; j++) {
+					for (int k = z0 - 2; k <= z0 + 2; ++k) {
+						for (int j = y0 - 2; j <= y0 + 2; ++j) {
 							for (int i = 0; i <= x0 + 4; i += 2) {
-								int ii = i + j * nx + k * nxy;
+								size_t ii = i + j * nx + k * nxy;
 								float r = Util::hypot3((float) i / 2 - xx, (float) j - yy,
 													   (float) k - zz);
 								float gg = weight * exp(-r / EMConsts::I5G);
@@ -1857,7 +1866,7 @@ int WienerFourierReconstructor::insert_slice(const EMData* const slice, const Tr
 				for (int k = z0 - 2; k <= z0 + 2; k++) {
 					for (int j = y0 - 2; j <= y0 + 2; j++) {
 						for (int i = l; i <= x0 + 4; i += 2) {
-							int ii = i + j * nx + k * nxy;
+							size_t ii = i + j * nx + k * nxy;
 							float r = (float)sqrt(Util::hypot3((float) i / 2 - xx,
 															   (float) j - yy,
 															   (float) k - zz));
@@ -1881,10 +1890,10 @@ int WienerFourierReconstructor::insert_slice(const EMData* const slice, const Tr
 					if (y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2)
 						break;
 
-					for (int k = z0 - 2; k <= z0 + 2; k++) {
-						for (int j = y0 - 2; j <= y0 + 2; j++) {
+					for (int k = z0 - 2; k <= z0 + 2; ++k) {
+						for (int j = y0 - 2; j <= y0 + 2; ++j) {
 							for (int i = 0; i <= x0 + 4; i += 2) {
-								int ii = i + j * nx + k * nxy;
+								size_t ii = i + j * nx + k * nxy;
 								float r = sqrt(Util::hypot3((float) i / 2 - xx, (float) j - yy,
 															(float) k - zz));
 								float gg = weight * Interp::hyperg(r);
@@ -1969,9 +1978,9 @@ int BackProjectionReconstructor::insert_slice(const EMData* const input, const T
 	float *slice_data = slice->get_data();
 	float *tmp_data = tmp->get_data();
 
-	int nxy = nx * ny;
+	size_t nxy = nx * ny;
 	size_t nxy_size = nxy * sizeof(float);;
-	for (int i = 0; i < nz; i++) {
+	for (int i = 0; i < nz; ++i) {
 		memcpy(&tmp_data[nxy * i], slice_data, nxy_size);
 	}
 
@@ -2324,15 +2333,15 @@ void circumference( EMData* win )
 	int KP = iz/2+1;
 
 	float  TNR = 0.0f;
-	int m = 0;
-	for (int k = 1; k <= iz; k++) {
-		for (int j = 1; j <= iy; j++) {
-			for (int i = 1; i <= ix; i++) {
-				int LR = (k-KP)*(k-KP)+(j-JP)*(j-JP)+(i-IP)*(i-IP);
-				if (LR<=L2) {
-					if(LR >= L2P && LR <= L2) {
+	size_t m = 0;
+	for (int k = 1; k <= iz; ++k) {
+		for (int j = 1; j <= iy; ++j) {
+			for (int i = 1; i <= ix; ++i) {
+				size_t LR = (k-KP)*(k-KP)+(j-JP)*(j-JP)+(i-IP)*(i-IP);
+				if (LR<=(size_t)L2) {
+					if(LR >= (size_t)L2P && LR <= (size_t)L2) {
 						TNR += tw(i,j,k);
-						m++;
+						++m;
 					}
 				}
 			}
@@ -2340,11 +2349,11 @@ void circumference( EMData* win )
 	}
 
 	TNR /=float(m);
-	for (int k = 1; k <= iz; k++) {
-		for (int j = 1; j <= iy; j++) {
-			for (int i = 1; i <= ix; i++) {
-				int LR = (k-KP)*(k-KP)+(j-JP)*(j-JP)+(i-IP)*(i-IP);
-				if (LR<=L2) tw(i,j,k) -= TNR; else tw(i,j,k) = 0.0f;
+	for (int k = 1; k <= iz; ++k) {
+		for (int j = 1; j <= iy; ++j) {
+			for (int i = 1; i <= ix; ++i) {
+				size_t LR = (k-KP)*(k-KP)+(j-JP)*(j-JP)+(i-IP)*(i-IP);
+				if (LR<=(size_t)L2) tw(i,j,k) -= TNR; else tw(i,j,k) = 0.0f;
 			}
 		}
 	}

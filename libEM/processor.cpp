@@ -726,13 +726,13 @@ void CoordinateProcessor::process_inplace(EMData * image)
 	}
 
 	float *data = image->get_data();
-	int i = 0;
+	size_t i = 0;
 
 	for (int z = 0; z < nz; z++) {
 		for (int y = 0; y < ny; y++) {
 			for (int x = 0; x < nx; x++) {
 				process_pixel(&data[i], x, y, z);
-				i++;
+				++i;
 			}
 		}
 	}
@@ -745,9 +745,10 @@ void PaintProcessor::process_inplace(EMData *image) {
 	int nz=image->get_zsize();
 
 	if (nz==1) {
+		float r;
 		for (int j=(y<r2?0:y-r2); j<(y+r2>ny?ny:y+r2); j++) {
 			for (int i=(x<r2?0:x-r2); i<(x+r2>nx?nx:x+r2); i++) {
-				float r=sqrt(float(Util::square(i-x)+Util::square(j-y)));
+				r=sqrt(float(Util::square(i-x)+Util::square(j-y)));
 				if (r>r2 && r>r1) continue;
 				if (r>r1) image->set_value_at(i,j,0,v2*(r-r1)/(r2-r1)+v1*(r2-r)/(r2-r1));
 				else image->set_value_at(i,j,0,v1);
@@ -755,10 +756,11 @@ void PaintProcessor::process_inplace(EMData *image) {
 		}
 	}
 	else {
+		float r;
 		for (int k=(z<r2?0:z-r2); k<(z+r2>nz?nz:z+r2); k++) {
 			for (int j=(y<r2?0:y-r2); j<(y+r2>ny?ny:y+r2); j++) {
 				for (int i=(x<r2?0:x-r2); i<(x+r2>nx?nx:x+r2); i++) {
-				float r=sqrt(float(Util::square(i-x)+Util::square(j-y)+Util::square(k-z)));
+				r=sqrt(float(Util::square(i-x)+Util::square(j-y)+Util::square(k-z)));
 				if (r>r2 && r>r1) continue;
 				if (r>r1) image->set_value_at(i,j,k,v2*(r-r1)/(r2-r1)+v1*(r2-r)/(r2-r1));
 				else image->set_value_at(i,j,k,v1);
@@ -944,17 +946,17 @@ void MaskEdgeMeanProcessor::calc_locals(EMData * image)
 	int nitems = 0;
 	float sum = 0;
 	float *data = image->get_data();
-	int i = 0;
+	size_t i = 0;
 
-	for (int z = 0; z < nz; z++) {
-		for (int y = 0; y < ny; y++) {
-			for (int x = 0; x < nx; x++) {
+	for (int z = 0; z < nz; ++z) {
+		for (int y = 0; y < ny; ++y) {
+			for (int x = 0; x < nx; ++x) {
 				float x1 = sqrt((x - xc) * (x - xc) + (y - yc) * (y - yc) + (z - zc) * (z - zc));
 				if (x1 <= outer_radius + ring_width && x1 >= outer_radius - ring_width) {
 					sum += data[i];
-					nitems++;
+					++nitems;
 				}
-				i++;
+				++i;
 			}
 		}
 	}
@@ -1041,12 +1043,12 @@ void AreaProcessor::process_inplace(EMData * image)
 	float *data2 = new float[total_size];
 	memcpy(data2, data, total_size * sizeof(float));
 
-
+	size_t k;
 	for (int z = zstart; z < zend; z++) {
 		for (int y = n; y < yend; y++) {
 			for (int x = n; x < xend; x++) {
 
-				size_t k = z * nsec + y * nx + x;
+				k = z * nsec + y * nx + x;
 
 				for (int bz = zbox_start; bz < zbox_end; bz++) {
 					for (int by = 0; by < areasize; by++) {
@@ -1136,19 +1138,19 @@ void BoxStatProcessor::process_inplace(EMData * image)
 	int nxy = nx * ny;
 
 	for (int k = z_begin; k < z_end; k++) {
-		int knxy = k * nxy;
+		size_t knxy = k * nxy;
 
 		for (int j = n; j < ny - n; j++) {
 			int jnx = j * nx;
 
 			for (int i = n; i < nx - n; i++) {
-				int s = 0;
+				size_t s = 0;
 
 				for (int i2 = i - n; i2 <= i + n; i2++) {
 					for (int j2 = j - n; j2 <= j + n; j2++) {
 						for (int k2 = k - nzz; k2 <= k + nzz; k2++) {
 							array[s] = data2[i2 + j2 * nx + k2 * nxy];
-							s++;
+							++s;
 						}
 					}
 				}
@@ -1421,7 +1423,7 @@ void MedianShrinkProcessor::accrue_median(EMData* to, const EMData* const from,c
 
 						for (int i2 = i_min; i2 < i_max; i2++) {
 							mbuf[k] = data_copy[i2 + cur_j2];
-							k++;
+							++k;
 						}
 					}
 				}
@@ -1649,12 +1651,12 @@ void MeanShrinkProcessor::accrue_mean(EMData* to, const EMData* const from,const
 	for (int k = 0; k < shrunken_nz; k++) {
 		int k_min = k * shrink_factor;
 		int k_max = k * shrink_factor + z_shrink_factor;
-		int cur_k = k * shrunken_nxy;
+		size_t cur_k = k * shrunken_nxy;
 
 		for (int j = 0; j < shrunken_ny; j++) {
 			int j_min = j * shrink_factor;
 			int j_max = j * shrink_factor + shrink_factor;
-			int cur_j = j * shrunken_nx + cur_k;
+			size_t cur_j = j * shrunken_nx + cur_k;
 
 			for (int i = 0; i < shrunken_nx; i++) {
 				int i_min = i * shrink_factor;
@@ -1662,10 +1664,10 @@ void MeanShrinkProcessor::accrue_mean(EMData* to, const EMData* const from,const
 
 				float sum = 0;
 				for (int kk = k_min; kk < k_max; kk++) {
-					int cur_kk = kk * nxy;
+					size_t cur_kk = kk * nxy;
 
 					for (int jj = j_min; jj < j_max; jj++) {
-						int cur_jj = jj * nx + cur_kk;
+						size_t cur_jj = jj * nx + cur_kk;
 						for (int ii = i_min; ii < i_max; ii++) {
 							sum += data[ii + cur_jj];
 						}
@@ -2663,16 +2665,19 @@ void AverageXProcessor::process_inplace(EMData * image)
 	int nz = image->get_zsize();
 	size_t nxy = (size_t)nx * ny;
 
+	size_t idx;
 	for (int z = 0; z < nz; z++) {
 		for (int x = 0; x < nx; x++) {
 			double sum = 0;
 			for (int y = 0; y < ny; y++) {
-				sum += data[x + y * nx + z * nxy];
+				idx = x + y * nx + z * nxy;
+				sum += data[idx];
 			}
 			float mean = (float) sum / ny;
 
 			for (int y = 0; y < ny; y++) {
-				data[x + y * nx + z * nxy] = mean;
+				idx = x + y * nx + z * nxy;
+				data[idx] = mean;
 			}
 		}
 	}
@@ -2970,11 +2975,11 @@ void NormalizeByMassProcessor::process_inplace(EMData * image)
 	float step = ((float)image->get_attr("sigma"))/2.0f;
 
 	int count=0;
-	int n = image->get_size();
+	size_t n = image->get_size();
 	float* d = image->get_data();
 
-	for (int i=0; i<n; i++) {
-		if (d[i]>=thr) count++;
+	for (size_t i=0; i<n; ++i) {
+		if (d[i]>=thr) ++count;
 	}
 
 	float max = image->get_attr("maximum");
@@ -2983,8 +2988,8 @@ void NormalizeByMassProcessor::process_inplace(EMData * image)
 		while (thr<max && count*apix*apix*apix*.81/1000.0>mass) {
 			thr+=step;
 			count=0;
-			for (int i=0; i<n; i++) {
-				if (d[i]>=thr) count++;
+			for (size_t i=0; i<n; ++i) {
+				if (d[i]>=thr) ++count;
 			}
 		}
 
@@ -2993,8 +2998,8 @@ void NormalizeByMassProcessor::process_inplace(EMData * image)
 		while (thr>min && count*apix*apix*apix*.81/1000.0<mass) {
 			thr-=step;
 			count=0;
-			for (int i=0; i<n; i++) {
-				if (d[i]>=thr) count++;
+			for (size_t i=0; i<n; ++i) {
+				if (d[i]>=thr) ++count;
 			}
 		}
 
@@ -3060,8 +3065,8 @@ float NormalizeLREdgeMeanProcessor::calc_mean(EMData * image) const
 	int nyz = ny * nz;
 
 	for (int i = 0; i < nyz; i++) {
-		int l = i * nx;
-		int r = l + nx - 2;
+		size_t l = i * nx;
+		size_t r = l + nx - 2;
 		sum += d[l] + d[l + 1] + d[r] + d[r + 1];
 	}
 	float mean = (float) sum / (4 * nyz);
@@ -3131,7 +3136,7 @@ void NormalizeToStdProcessor::process_inplace(EMData * image)
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
 
-	int size = nx * ny * nz;
+	size_t size = nx * ny * nz;
 
 	if (!EMUtil::is_same_size(image, noisy)) {
 		LOGERR("normalize to on different sized images");
@@ -3170,7 +3175,7 @@ void NormalizeToStdProcessor::process_inplace(EMData * image)
 
 	if (keepzero) {
 		float *rdata = image->get_data();
-		for (int i = 0; i < size; i++) {
+		for (size_t i = 0; i < size; i++) {
 			if (rdata[i]) {
 				rdata[i] += b;
 			}
@@ -3224,13 +3229,13 @@ void NormalizeToLeastSquareProcessor::process_inplace(EMData * image)
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
-	int size = nx * ny * nz;
+	size_t size = nx * ny * nz;
 
 	float sum_x = 0;
 	float sum_y = 0;
 	int count = 0;
 
-	for (int i = 0; i < size; i++) {
+	for (size_t i = 0; i < size; i++) {
 		if (refp[i] >= low_threshold && refp[i] <= high_threshold && refp[i] != 0) {
 			count++;
 			sum_x += refp[i];
@@ -3242,9 +3247,10 @@ void NormalizeToLeastSquareProcessor::process_inplace(EMData * image)
 	float sum_tt = 0;
 	float b = 0;
 
-	for (int i = 0; i < size; i++) {
+	float t;
+	for (size_t i = 0; i < size; i++) {
 		if (refp[i] >= low_threshold && refp[i] <= high_threshold && refp[i] != 0) {
-			float t = refp[i] - sum_x_mean;
+			t = refp[i] - sum_x_mean;
 			sum_tt += t * t;
 			b += t * rawp[i];
 		}
@@ -3256,7 +3262,7 @@ void NormalizeToLeastSquareProcessor::process_inplace(EMData * image)
 	float scale = 1 / b;
 	float shift = -a / b;
 
-	for (int i = 0; i < size; i++) {
+	for (size_t i = 0; i < size; i++) {
 		rawp[i] = (rawp[i] - a) / b;
 	}
 
@@ -3277,7 +3283,7 @@ void BinarizeFourierProcessor::process_inplace(EMData* image) {
 	image->ri2ap(); //
 
 	float* d = image->get_data();
-	for( int i = 0; i < image->get_size()/2; ++i, d+=2) {
+	for( size_t i = 0; i < image->get_size()/2; ++i, d+=2) {
 		float v = *d;
 		if ( v >= threshold ) {
 			*d = 1;
@@ -3499,6 +3505,7 @@ void BilateralProcessor::process_inplace(EMData * image)
 				}
 			}
 
+			size_t idx;
 			for (int k = 0; k < slicenum; k++) {
 				int cur_k = (k + half_width) * new_slice_size;
 
@@ -3529,7 +3536,8 @@ void BilateralProcessor::process_inplace(EMData * image)
 									f2 += f3 * old_img[l1];
 								}
 
-								new_img[k * height * width + i * width + j] = f2 / f1;
+								idx = k * height * width + i * width + j;
+								new_img[idx] = f2 / f1;
 							}
 						}
 					}
@@ -3569,7 +3577,7 @@ void RadialAverageProcessor::process_inplace(EMData * image)
 	float midx = (float)((int)nx/2);
 	float midy = (float)((int)ny/2);
 
-	int c = 0;
+	size_t c = 0;
 	if (image->get_ndim() == 2) {
 		for (int y = 0; y < ny; y++) {
 			for (int x = 0; x < nx; x++, c++) {
@@ -3597,13 +3605,15 @@ void RadialAverageProcessor::process_inplace(EMData * image)
 	else if (image->get_ndim() == 3) {
 		int nz = image->get_zsize();
 		float midz = (float)((int)nz/2);
-		for (int z = 0; z < nz; z++) {
-			for (int y = 0; y < ny; y++) {
-				for (int x = 0; x < nx; x++, c++) {
+		float r;
+		int i;
+		for (int z = 0; z < nz; ++z) {
+			for (int y = 0; y < ny; ++y) {
+				for (int x = 0; x < nx; ++x, ++c) {
 
-					float r = (float) Util::hypot3(x - midx, y - midy, z - midz);
+					r = (float) Util::hypot3(x - midx, y - midy, z - midz);
 
-					int i = (int) floor(r);
+					i = Util::fast_floor(r);
 					r -= i;
 					if (i >= 0 && i < nx / 2 - 1) {
 						rdata[c] = dist[i] * (1.0f - r) + dist[i + 1] * r;
@@ -3730,7 +3740,7 @@ void FlipProcessor::process_inplace(EMData * image)
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
 
-	int nxy = nx * ny;
+	size_t nxy = nx * ny;
 
 
 	// Note in all cases the origin is nx/2, ny/2 and nz/2
@@ -3739,13 +3749,17 @@ void FlipProcessor::process_inplace(EMData * image)
 	// like the mean.
 	if (axis == "x" || axis == "X") {		// vertical flip
 		int offset = (nx%2 == 0);
+		size_t idx1, idx2;
 		for(int z = 0; z < nz; ++z) {
 			for(int y = 0; y < ny; ++y) {
 				if (offset != 0 ) {
-					d[z*nxy + y*nx] = 0; // Here's where you'd make it the mean
+					idx1 = z*nxy + y*nx;
+					d[idx1] = 0; // Here's where you'd make it the mean
 				}
 				for(int x = offset; x < nx / 2; ++x) {
-					std::swap(d[z*nxy + y*nx + x], d[z*nxy + y*nx + (nx-x-1+offset)]);
+					idx1 = z*nxy + y*nx + x;
+					idx2 = z*nxy + y*nx + (nx-x-1+offset);
+					std::swap(d[idx1], d[idx2]);
 				}
 
 			}
@@ -3770,10 +3784,13 @@ void FlipProcessor::process_inplace(EMData * image)
 		if (offset != 0) {
 			std::fill(d,d+nxy,0);// So if we have change it to the mean it's easy to do so. (instead of using memset)
 		}
+		size_t idx1, idx2;
 		for(int z=offset; z<nz/2; ++z) {
 			for(int y=0; y<ny; ++y) {
 				for(int x=0; x<nx; ++x) {
-					std::swap(d[z*nxy + y*nx + x], d[(nz-z-1+offset)*nxy + y*nx + x]);
+					idx1 = z*nxy + y*nx + x;
+					idx2 = (nz-z-1+offset)*nxy + y*nx + x;
+					std::swap(d[idx1], d[idx2]);
 				}
 			}
 		}
@@ -3845,12 +3862,15 @@ void FourierToCornerProcessor::process_inplace(EMData * image)
 		// at the middle slice, not if nz = 1 we are not talking about slices, we are
 		// talking about rows
 		float prev[2];
+		size_t idx;
 		for( int s = 0; s < nz; s++ ) {
 			for( int c =0; c < nx; c += 2 ) {
-				prev[0] = rdata[s*nxy+ny/2*nx+c];
-				prev[1] = rdata[s*nxy+ny/2*nx+c+1];
+				idx = s*nxy+ny/2*nx+c;
+				prev[0] = rdata[idx];
+				prev[1] = rdata[idx+1];
 				for( int r = 0; r <= ny/2; ++r ) {
-					float* p1 = &rdata[s*nxy+r*nx+c];
+					idx = s*nxy+r*nx+c;
+					float* p1 = &rdata[idx];
 					tmp[0] = p1[0];
 					tmp[1] = p1[1];
 
@@ -3865,11 +3885,14 @@ void FourierToCornerProcessor::process_inplace(EMData * image)
 	}
 
 	// Shift slices (3D) or rows (2D) correctly in the y direction
+	size_t idx1, idx2;
 	for( int s = 0; s < nz; ++s ) {
 		for( int r = 0 + yodd; r < ny/2+yodd; ++r ) {
 			for( int c =0; c < nx; c += 2 ) {
-				p1 = &rdata[s*nxy+r*nx+c];
-				p2 = &rdata[s*nxy+(r+ny/2)*nx+c];
+				idx1 = s*nxy+r*nx+c;
+				idx2 = s*nxy+(r+ny/2)*nx+c;
+				p1 = &rdata[idx1];
+				p2 = &rdata[idx2];
 
 				tmp[0] = p1[0];
 				tmp[1] = p1[1];
@@ -3891,12 +3914,15 @@ void FourierToCornerProcessor::process_inplace(EMData * image)
 			// shifting all behind the front slice towards the middle a distance of 1 voxel,
 			// stopping at the middle slice.
 			float prev[2];
+			size_t idx;
 			for( int r = 0; r < ny; ++r ) {
 				for( int c =0; c < nx; c += 2 ) {
-					prev[0] = rdata[nz/2*nxy+r*nx+c];
-					prev[1] = rdata[nz/2*nxy+r*nx+c+1];
+					idx = nz/2*nxy+r*nx+c;
+					prev[0] = rdata[idx];
+					prev[1] = rdata[idx+1];
 					for( int s = 0; s <= nz/2; ++s ) {
-						float* p1 = &rdata[s*nxy+r*nx+c];
+						idx = s*nxy+r*nx+c;
+						float* p1 = &rdata[idx];
 						tmp[0] = p1[0];
 						tmp[1] = p1[1];
 
@@ -3911,11 +3937,14 @@ void FourierToCornerProcessor::process_inplace(EMData * image)
 		}
 
 		// Shift slices correctly in the z direction
+		size_t idx1, idx2;
 		for( int s = 0+zodd; s < nz/2 + zodd; ++s ) {
 			for( int r = 0; r < ny; ++r ) {
 				for( int c =0; c < nx; c += 2 ) {
-					p1 = &rdata[s*nxy+r*nx+c];
-					p2 = &rdata[(s+nz/2)*nxy+r*nx+c];
+					idx1 = s*nxy+r*nx+c;
+					idx2 = (s+nz/2)*nxy+r*nx+c;
+					p1 = &rdata[idx1];
+					p2 = &rdata[idx2];
 
 					tmp[0] = p1[0];
 					tmp[1] = p1[1];
@@ -3960,12 +3989,15 @@ void FourierToCenterProcessor::process_inplace(EMData * image)
 		// In 3D this is swapping the bottom slice (with respect to the y direction) and the middle slice,
 		// shifting all slices below the middle slice down one. In 2D it is equivalent, but in terms of rows.
 		float prev[2];
+		size_t idx;
 		for( int s = 0; s < nz; s++ ) {
 			for( int c =0; c < nx; c += 2 ) {
-				prev[0] = rdata[s*nxy+c];
-				prev[1] = rdata[s*nxy+c+1];
+				idx = s*nxy+c;
+				prev[0] = rdata[idx];
+				prev[1] = rdata[idx+1];
 				for( int r = ny/2; r >= 0; --r ) {
-					float* p1 = &rdata[s*nxy+r*nx+c];
+					idx = s*nxy+r*nx+c;
+					float* p1 = &rdata[idx];
 					tmp[0] = p1[0];
 					tmp[1] = p1[1];
 
@@ -3980,11 +4012,14 @@ void FourierToCenterProcessor::process_inplace(EMData * image)
 	}
 
 	// 3D - Shift slices correctly in the y direction, 2D - shift rows
+	size_t idx1, idx2;
 	for( int s = 0; s < nz; ++s ) {
 		for( int r = 0; r < ny/2; ++r ) {
 			for( int c =0; c < nx; c += 2 ) {
-				p1 = &rdata[s*nxy+r*nx+c];
-				p2 = &rdata[s*nxy+(r+ny/2+yodd)*nx+c];
+				idx1 = s*nxy+r*nx+c;
+				idx2 = s*nxy+(r+ny/2+yodd)*nx+c;
+				p1 = &rdata[idx1];
+				p2 = &rdata[idx2];
 
 				tmp[0] = p1[0];
 				tmp[1] = p1[1];
@@ -4003,12 +4038,14 @@ void FourierToCenterProcessor::process_inplace(EMData * image)
 			// Swap the front slice (with respect to the z direction) and the middle slice
 			// shifting all slices behind the middles slice towards the front slice 1 voxel.
 			float prev[2];
+			size_t idx;
 			for( int r = 0; r < ny; ++r ) {
 				for( int c =0; c < nx; c += 2 ) {
 					prev[0] = rdata[r*nx+c];
 					prev[1] = rdata[r*nx+c+1];
 					for( int s = nz/2; s >= 0; --s ) {
-						float* p1 = &rdata[s*nxy+r*nx+c];
+						idx = s*nxy+r*nx+c;
+						float* p1 = &rdata[idx];
 						tmp[0] = p1[0];
 						tmp[1] = p1[1];
 
@@ -4023,11 +4060,14 @@ void FourierToCenterProcessor::process_inplace(EMData * image)
 		}
 
 		// Shift slices correctly in the y direction
+		size_t idx1, idx2;
 		for( int s = 0; s < nz/2; ++s ) {
 			for( int r = 0; r < ny; ++r ) {
 				for( int c =0; c < nx; c += 2 ) {
-					p1 = &rdata[s*nxy+r*nx+c];
-					p2 = &rdata[(s+nz/2+zodd)*nxy+r*nx+c];
+					idx1 = s*nxy+r*nx+c;
+					idx2 = (s+nz/2+zodd)*nxy+r*nx+c;
+					p1 = &rdata[idx1];
+					p2 = &rdata[idx2];
 
 					tmp[0] = p1[0];
 					tmp[1] = p1[1];
@@ -4062,11 +4102,11 @@ void Phase180Processor::fourier_phaseshift180(EMData * image)
 	if (((ny/2)%2)+((nz/2)%2)==1) of=1;
 
 	for (int k = 0; k < nz; k++) {
-		int k2 = k * nxy;
+		size_t k2 = k * nxy;
 
 		for (int j = 0; j < ny; j++) {
 			int i = ((k+j)%2==of?2:0);
-			int j2 = j * nx + k2;
+			size_t j2 = j * nx + k2;
 
 			for (; i < nx; i += 4) {
 				rdata[i + j2] *= -1.0f;
@@ -4121,11 +4161,13 @@ void Phase180Processor::swap_corners_180(EMData * image)
 	{
 		float tmp;
 		// Swap the bottom left front and back right top quadrants
+		size_t idx1, idx2;
+
 		for ( int s = 0; s < nz/2; ++s ) {
 			for ( int r = 0; r < ny/2; ++r ) {
 				for ( int c = 0; c < nx/2; ++ c) {
-					int idx1 = s*nxy+r*nx+c;
-					int idx2 = (s+nz/2+zodd)*nxy+(r+ny/2+yodd)*nx+c+nx/2+xodd;
+					idx1 = s*nxy+r*nx+c;
+					idx2 = (s+nz/2+zodd)*nxy+(r+ny/2+yodd)*nx+c+nx/2+xodd;
 					tmp = rdata[idx1];
 					rdata[idx1] = rdata[idx2];
 					rdata[idx2] = tmp;
@@ -4136,8 +4178,8 @@ void Phase180Processor::swap_corners_180(EMData * image)
 		for ( int s = 0; s < nz/2; ++s ) {
 			for ( int r = 0; r < ny/2; ++r ) {
 				for ( int c = nx-1; c >= (nx/2+xodd); --c) {
-					int idx1 = s*nxy+r*nx+c;
-					int idx2 = (s+nz/2+zodd)*nxy+(r+ny/2+yodd)*nx+c-nx/2-xodd;
+					idx1 = s*nxy+r*nx+c;
+					idx2 = (s+nz/2+zodd)*nxy+(r+ny/2+yodd)*nx+c-nx/2-xodd;
 					tmp = rdata[idx1];
 					rdata[idx1] = rdata[idx2];
 					rdata[idx2] = tmp;
@@ -4148,8 +4190,8 @@ void Phase180Processor::swap_corners_180(EMData * image)
 		for ( int s = 0; s < nz/2; ++s ) {
 			for ( int r = ny-1; r >= (ny/2+yodd); --r ) {
 				for ( int c = nx-1; c >= (nx/2+xodd); --c) {
-					int idx1 = s*nxy+r*nx+c;
-					int idx2 = (s+nz/2+zodd)*nxy+(r-ny/2-yodd)*nx+c-nx/2-xodd;
+					idx1 = s*nxy+r*nx+c;
+					idx2 = (s+nz/2+zodd)*nxy+(r-ny/2-yodd)*nx+c-nx/2-xodd;
 					tmp = rdata[idx1];
 					rdata[idx1] = rdata[idx2];
 					rdata[idx2] = tmp;
@@ -4159,9 +4201,9 @@ void Phase180Processor::swap_corners_180(EMData * image)
 		// Swap the top left front and back right bottom quadrants
 		for ( int s = 0; s < nz/2; ++s ) {
 			for ( int r = ny-1; r >= (ny/2+yodd); --r ) {
-				for ( int c = 0; c < nx/2; ++ c) {
-					int idx1 = s*nxy+r*nx+c;
-					int idx2 = (s+nz/2+zodd)*nxy+(r-ny/2-yodd)*nx+c+nx/2+xodd;
+				for ( int c = 0; c < nx/2; ++c) {
+					idx1 = s*nxy+r*nx+c;
+					idx2 = (s+nz/2+zodd)*nxy+(r-ny/2-yodd)*nx+c+nx/2+xodd;
 					tmp = rdata[idx1];
 					rdata[idx1] = rdata[idx2];
 					rdata[idx2] = tmp;
@@ -4220,10 +4262,11 @@ void Phase180Processor::swap_central_slices_180(EMData * image)
 		if ( xodd ) {
 			// Iterate along the x = nx/2 slice, swapping values where appropriate
 			int c = nx/2;
+			size_t idx1, idx2;
 			for( int s = 0; s < nz/2; ++s ) {
 				for ( int r = 0; r < ny/2; ++r ) {
-					int idx1 = s*nxy+r*nx+c;
-					int idx2 = (s+nz/2+zodd)*nxy+(r+ny/2+yodd)*nx+c;
+					idx1 = s*nxy+r*nx+c;
+					idx2 = (s+nz/2+zodd)*nxy+(r+ny/2+yodd)*nx+c;
 					tmp = rdata[idx1];
 					rdata[idx1] = rdata[idx2];
 					rdata[idx2] = tmp;
@@ -4232,8 +4275,8 @@ void Phase180Processor::swap_central_slices_180(EMData * image)
 
 			for( int s = nz-1; s >= (nz/2+zodd); --s ) {
 				for ( int r = 0; r < ny/2; ++r ) {
-					int idx1 = s*nxy+r*nx+c;
-					int idx2 = (s-nz/2-zodd)*nxy+(r+ny/2+yodd)*nx+c;
+					idx1 = s*nxy+r*nx+c;
+					idx2 = (s-nz/2-zodd)*nxy+(r+ny/2+yodd)*nx+c;
 					tmp = rdata[idx1];
 					rdata[idx1] = rdata[idx2];
 					rdata[idx2] = tmp;
@@ -4243,10 +4286,11 @@ void Phase180Processor::swap_central_slices_180(EMData * image)
 		if ( yodd ) {
 			// Iterate along the y = ny/2 slice, swapping values where appropriate
 			int r = ny/2;
+			size_t idx1, idx2;
 			for( int s = 0; s < nz/2; ++s ) {
 				for ( int c = 0; c < nx/2; ++c ) {
-					int idx1 = s*nxy+r*nx+c;
-					int idx2 =(s+nz/2+zodd)*nxy+r*nx+c+nx/2+xodd;
+					idx1 = s*nxy+r*nx+c;
+					idx2 =(s+nz/2+zodd)*nxy+r*nx+c+nx/2+xodd;
 					tmp = rdata[idx1];
 					rdata[idx1] = rdata[idx2];
 					rdata[idx2] = tmp;
@@ -4255,8 +4299,8 @@ void Phase180Processor::swap_central_slices_180(EMData * image)
 
 			for( int s = nz-1; s >= (nz/2+zodd); --s ) {
 				for ( int c = 0; c < nx/2; ++c ) {
-					int idx1 = s*nxy+r*nx+c;
-					int idx2 = (s-nz/2-zodd)*nxy+r*nx+c+nx/2+xodd;
+					idx1 = s*nxy+r*nx+c;
+					idx2 = (s-nz/2-zodd)*nxy+r*nx+c+nx/2+xodd;
 					tmp = rdata[idx1];
 					rdata[idx1] = rdata[idx2];
 					rdata[idx2] = tmp;
@@ -4266,10 +4310,11 @@ void Phase180Processor::swap_central_slices_180(EMData * image)
 		if ( zodd ) {
 			// Iterate along the z = nz/2 slice, swapping values where appropriate
 			int s = nz/2;
+			size_t idx1, idx2;
 			for( int r = 0; r < ny/2; ++r ) {
 				for ( int c = 0; c < nx/2; ++c ) {
-					int idx1 = s*nxy+r*nx+c;
-					int idx2 = s*nxy+(r+ny/2+yodd)*nx+c+nx/2+xodd;
+					idx1 = s*nxy+r*nx+c;
+					idx2 = s*nxy+(r+ny/2+yodd)*nx+c+nx/2+xodd;
 					tmp = rdata[idx1];
 					rdata[idx1] = rdata[idx2];
 					rdata[idx2] = tmp;
@@ -4278,8 +4323,8 @@ void Phase180Processor::swap_central_slices_180(EMData * image)
 
 			for( int r = ny-1; r >= (ny/2+yodd); --r ) {
 				for ( int c = 0; c < nx/2; ++c ) {
-					int idx1 = s*nxy+r*nx+c;
-					int idx2 = s*nxy+(r-ny/2-yodd)*nx+c+nx/2+xodd;
+					idx1 = s*nxy+r*nx+c;
+					idx2 = s*nxy+(r-ny/2-yodd)*nx+c+nx/2+xodd;
 					tmp = rdata[idx1];
 					rdata[idx1] = rdata[idx2];
 					rdata[idx2] = tmp;
@@ -4376,11 +4421,12 @@ void PhaseToCornerProcessor::process_inplace(EMData * image)
 		if (zodd) {
 			// Tranfer the back slice into the middle slice,
 			// shifting all pixels beyond and including the middle slice back one.
+			size_t idx = 0;
 			for (int r = 0; r < ny; ++r){
 				for (int c = 0; c < nx; ++c) {
 					float last_val = rdata[(nz-1)*nxy+r*nx+c];
 					for (int s = nz/2; s < nz; ++s) {
-						int idx = s*nxy+r*nx+c;
+						idx = s*nxy+r*nx+c;
 						tmp = rdata[idx];
 						rdata[idx] = last_val;
 						last_val = tmp;
@@ -4391,11 +4437,12 @@ void PhaseToCornerProcessor::process_inplace(EMData * image)
 		if (yodd) {
 			// Tranfer the top slice into the middle slice,
 			// shifting all pixels above and including the middle slice up one.
+			size_t idx = 0;
 			for (int s = 0; s < nz; ++s) {
 				for (int c = 0; c < nx; ++c) {
 				float last_val = rdata[s*nxy+(ny-1)*nx+c];
 					for (int r = ny/2; r < ny; ++r){
-						int idx = s*nxy+r*nx+c;
+						idx = s*nxy+r*nx+c;
 						tmp = rdata[idx];
 						rdata[idx] = last_val;
 						last_val = tmp;
@@ -4406,11 +4453,12 @@ void PhaseToCornerProcessor::process_inplace(EMData * image)
 		if (xodd) {
 			// Transfer the right most slice into the central slice
 			// Shift all pixels to right of and including center slice to the right one pixel
+			size_t idx = 0;
 			for (int s = 0; s < nz; ++s) {
 				for (int r = 0; r < ny; ++r) {
 					float last_val = rdata[s*nxy+r*nx+nx-1];
 					for (int c = nx/2; c < nx; ++c){
-						int idx = s*nxy+r*nx+c;
+						idx = s*nxy+r*nx+c;
 						tmp = rdata[idx];
 						rdata[idx] = last_val;
 						last_val = tmp;
@@ -4537,11 +4585,12 @@ void PhaseToCenterProcessor::process_inplace(EMData * image)
 			// Transfer the central slice in the x direction to the far right
 			// moving all slices on the far right toward the center one pixel, until
 			// the center x slice is ecountered
+			size_t idx = 0;
 			for (int s = 0; s < nz; ++s) {
 				for (int r = 0; r < ny; ++r) {
 					float last_val = rdata[s*nxy+r*nx+nx/2];
 					for (int c = nx-1; c >= nx/2; --c){
-						int idx = s*nxy+r*nx+c;
+						idx = s*nxy+r*nx+c;
 						tmp = rdata[idx];
 						rdata[idx] = last_val;
 						last_val = tmp;
@@ -4552,11 +4601,12 @@ void PhaseToCenterProcessor::process_inplace(EMData * image)
 		if (yodd) {
 			// Tranfer the central slice in the y direction to the top
 			// shifting all pixels below it down on, until the center y slice is encountered.
+			size_t idx = 0;
 			for (int s = 0; s < nz; ++s) {
 				for (int c = 0; c < nx; ++c) {
 					float last_val = rdata[s*nxy+ny/2*nx+c];
 					for (int r = ny-1; r >= ny/2; --r){
-						int idx = s*nxy+r*nx+c;
+						idx = s*nxy+r*nx+c;
 						tmp = rdata[idx];
 						rdata[idx] = last_val;
 						last_val = tmp;
@@ -4567,11 +4617,12 @@ void PhaseToCenterProcessor::process_inplace(EMData * image)
 		if (zodd) {
 			// Tranfer the central slice in the z direction to the back
 			// shifting all pixels beyond and including the middle slice back one.
+			size_t idx = 0;
 			for (int r = 0; r < ny; ++r){
 				for (int c = 0; c < nx; ++c) {
 					float last_val = rdata[nz/2*nxy+r*nx+c];
 					for (int s = nz-1; s >= nz/2; --s) {
-						int idx = s*nxy+r*nx+c;
+						idx = s*nxy+r*nx+c;
 						tmp = rdata[idx];
 						rdata[idx] = last_val;
 						last_val = tmp;
@@ -4865,7 +4916,7 @@ void AddRandomNoiseProcessor::process_inplace(EMData * image)
 	image->ap2ri();
 	float *rdata = image->get_data();
 
-	int k = 0;
+	size_t k = 0;
 	float half_nz = 0;
 	if (nz > 1) {
 		half_nz = nz / 2.0f;
@@ -4873,17 +4924,18 @@ void AddRandomNoiseProcessor::process_inplace(EMData * image)
 
 	const float sqrt_2 = sqrt((float) 2);
 
+	float r;
 	for (int h = 0; h < nz; h++) {
 		for (int j = 0; j < ny; j++) {
 			for (int i = 0; i < nx; i += 2, k += 2) {
-				float r = sqrt(Util::hypot3(i / 2.0f, j - ny / 2.0f, h - half_nz));
+				r = sqrt(Util::hypot3(i / 2.0f, j - ny / 2.0f, h - half_nz));
 				r = (r - x0) / dx;
 				int l = 0;
 				if (interpolation) {
-					l = (int) floor(r);
+					l = Util::fast_floor(r);
 				}
 				else {
-					l = (int) floor(r + 0.5f);
+					l = Util::fast_floor(r + 0.5f);
 				}
 				r -= l;
 				float f = 0;
@@ -4955,13 +5007,13 @@ void AddMaskShellProcessor::process_inplace(EMData * image)
 	else {
 		for (int i = 0; i < num_shells; i++) {
 			for (int z = 1; z < nz - 1; z++) {
-				int cur_z = z * nx * ny;
+				size_t cur_z = z * nx * ny;
 
 				for (int y = 1; y < ny - 1; y++) {
-					int cur_y = y * nx + cur_z;
+					size_t cur_y = y * nx + cur_z;
 
 					for (int x = 1; x < nx - 1; x++) {
-						int j = x + cur_y;
+						size_t j = x + cur_y;
 
 						if (!d[j] && (d[j - 1] > k || d[j + 1] > k || d[j + nx] > k ||
 									  d[j - nx] > k || d[j - nxy] > k || d[j + nxy] > k)) {
@@ -5293,7 +5345,7 @@ void SymSearchProcessor::process_inplace(EMData * image)
 	for (int k = 0; k < nz; k++) {
 		for (int j = 0; j < ny; j++) {
 			for(int i = 0; i < nx; i++) {
-				long index = k * nx * ny + j * nx + i;
+				size_t index = k * nx * ny + j * nx + i;
 				float val = sdata[ index ];
 				float bestmean = val, bestsymlevel = FLT_MAX;
 				int bestsym = 0;
@@ -5446,16 +5498,19 @@ void CoordinateMaskFileProcessor::process_inplace(EMData * image)
 				}
 				else {
 					int jm = (int) ((yc - yom) / apixm);
-
+					size_t idx = 0;
+					float xc;
+					int im;
 					for (int i = 0; i < nx; i++) {
-						float xc = xo + i * apix;
+						xc = xo + i * apix;
+						idx = k * nxy + j * nx + i;
 						if (xc <= xom || xc >= xom + xm * apixm) {
-							dp[k * nxy + j * nx + i] = 0;
+							dp[idx] = 0;
 						}
 						else {
-							int im = (int) ((xc - xom) / apixm);
+							im = (int) ((xc - xom) / apixm);
 							if (dpm[km * xm * ym + jm * xm + im] <= 0) {
-								dp[k * nxy + j * nx + i] = 0;
+								dp[idx] = 0;
 							}
 						}
 					}
@@ -5565,10 +5620,11 @@ void SmartMaskProcessor::process_inplace(EMData * image)
 	float *dat = image->get_data();
 	double sma = 0;
 	int smn = 0;
-	for (int k = 0; k < nz; k++) {
-		for (int j = 0; j < ny; j++) {
-			for (int i = 0; i < nx; i++, dat++) {
-				float r =
+	float r = 0.0f;
+	for (int k = 0; k < nz; ++k) {
+		for (int j = 0; j < ny; ++j) {
+			for (int i = 0; i < nx; ++i, ++dat) {
+				r =
 					sqrt((float) Util::square(i - nx / 2) + Util::square(j - ny / 2) +
 						 Util::square(k - nz / 2));
 				if (r > mask - 1.5f && r < mask - 0.5f) {
@@ -5583,10 +5639,10 @@ void SmartMaskProcessor::process_inplace(EMData * image)
 	image->update();
 
 	dat = image->get_data();
-	for (int k = 0; k < nz; k++) {
-		for (int j = 0; j < ny; j++) {
-			for (int i = 0; i < nx; i++, dat++) {
-				float r =
+	for (int k = 0; k < nz; ++k) {
+		for (int j = 0; j < ny; ++j) {
+			for (int i = 0; i < nx; ++i, ++dat) {
+				r =
 					sqrt((float) Util::square(i - nx / 2) + Util::square(j - ny / 2) +
 						 Util::square(k - nz / 2));
 				if (r > mask - .5) {
@@ -5615,9 +5671,9 @@ void AutoMask3DProcessor::search_nearby(float *dat, float *dat2, int nx, int ny,
 	while (!done) {
 		done = true;
 		for (int k = 1; k < nz - 1; k++) {
-			int k2 = k * nxy;
+			size_t k2 = k * nxy;
 			for (int j = 1; j < ny - 1; j++) {
-				int l = j * nx + k2 + 1;
+				size_t l = j * nx + k2 + 1;
 
 				for (int i = 1; i < nx - 1; i++) {
 					if (dat[l] >= threshold || dat2[l]) {
@@ -5627,7 +5683,7 @@ void AutoMask3DProcessor::search_nearby(float *dat, float *dat2, int nx, int ny,
 							done = false;
 						}
 					}
-					l++;
+					++l;
 				}
 			}
 		}
@@ -5642,13 +5698,14 @@ void AutoMask3DProcessor::fill_nearby(float *dat2, int nx, int ny, int nz)
 	Assert(nz >= 0);
 
 	int nxy = nx * ny;
-
+	size_t idx;
 	for (int i = 0; i < nx; i++) {
 		for (int j = 0; j < ny; j++) {
 			int j2 = j * nx + i;
 			int k0 = 0;
 			for (int k = 0; k < nz; k++) {
-				if (dat2[j2 + k * nxy]) {
+				idx = j2 + k * nxy;
+				if (dat2[idx]) {
 					k0 = k;
 					break;
 				}
@@ -5657,14 +5714,16 @@ void AutoMask3DProcessor::fill_nearby(float *dat2, int nx, int ny, int nz)
 			if (k0 != nz) {
 				int k1 = nz - 1;
 				for (int k = nz - 1; k >= 0; k--) {
-					if (dat2[j2 + k * nxy]) {
+					idx = j2 + k * nxy;
+					if (dat2[idx]) {
 						k1 = k;
 						break;
 					}
 				}
 
 				for (int k = k0 + 1; k < k1; k++) {
-					dat2[j2 + k * nxy] = 1.0f;
+					idx = j2 + k * nxy;
+					dat2[idx] = 1.0f;
 				}
 			}
 		}
@@ -5672,10 +5731,11 @@ void AutoMask3DProcessor::fill_nearby(float *dat2, int nx, int ny, int nz)
 
 	for (int i = 0; i < nx; i++) {
 		for (int j = 0; j < nz; j++) {
-			int j2 = j * nxy + i;
+			size_t j2 = j * nxy + i;
 			int k0 = 0;
 			for (int k = 0; k < ny; k++) {
-				if (dat2[k * nx + j2]) {
+				idx = k * nx + j2;
+				if (dat2[idx]) {
 					k0 = k;
 					break;
 				}
@@ -5684,14 +5744,16 @@ void AutoMask3DProcessor::fill_nearby(float *dat2, int nx, int ny, int nz)
 			if (k0 != ny) {
 				int k1 = ny - 1;
 				for (int k = ny - 1; k >= 0; k--) {
-					if (dat2[k * nx + j2]) {
+					idx = k * nx + j2;
+					if (dat2[idx]) {
 						k1 = k;
 						break;
 					}
 				}
 
 				for (int k = k0 + 1; k < k1; k++) {
-					dat2[k * nx + j2] = 1.0f;
+					idx = k * nx + j2;
+					dat2[idx] = 1.0f;
 				}
 			}
 		}
@@ -5699,7 +5761,7 @@ void AutoMask3DProcessor::fill_nearby(float *dat2, int nx, int ny, int nz)
 
 	for (int i = 0; i < ny; i++) {
 		for (int j = 0; j < nz; j++) {
-			int j2 = i * nx + j * nxy;
+			size_t j2 = i * nx + j * nxy;
 			int k0 = 0;
 			for (int k = 0; k < nx; k++) {
 				if (dat2[k + j2]) {
@@ -5758,14 +5820,14 @@ void AutoMask3DProcessor::process_inplace(EMData * image)
 		t = mean + sig * 2.5f;
 	}
 
-	int l = 0;
-	for (int k = 0; k < nz; k++) {
-		for (int j = 0; j < ny; j++) {
-			for (int i = 0; i < nx; i++) {
+	size_t l = 0;
+	for (int k = 0; k < nz; ++k) {
+		for (int j = 0; j < ny; ++j) {
+			for (int i = 0; i < nx; ++i) {
 				if (dat[l] > t) {
 					dat2[l] = 1.0f;
 				}
-				l++;
+				++l;
 			}
 		}
 	}
@@ -5782,10 +5844,10 @@ void AutoMask3DProcessor::process_inplace(EMData * image)
 
 	int nxy = nx * ny;
 
-	for (int k = 1; k < nz - 1; k++) {
-		for (int j = 1; j < ny - 1; j++) {
-			int l = j * nx + k * nxy + 1;
-			for (int i = 1; i < nx - 1; i++, l++) {
+	for (int k = 1; k < nz - 1; ++k) {
+		for (int j = 1; j < ny - 1; ++j) {
+			size_t l = j * nx + k * nxy + 1;
+			for (int i = 1; i < nx - 1; ++i, ++l) {
 				if (dat2[l - 1] == 1.0f || dat2[l + 1] == 1.0f ||
 					dat2[l - nx] == 1.0f || dat2[l + nx] == 1.0f ||
 					dat2[l - nxy] == 1.0f || dat2[l + nxy] == 1.0f) {
@@ -5855,10 +5917,11 @@ void AutoMask3D2Processor::process_inplace(EMData * image)
 	float *dat2 = amask->get_data();
 
 	// start with an initial sphere
-	int i,j,k,l = 0;
-	for (k = -nz / 2; k < nz / 2; k++) {
-		for (j = -ny / 2; j < ny / 2; j++) {
-			for (i = -nx / 2; i < nx / 2; i++,l++) {
+	int i,j,k;
+	size_t l = 0;
+	for (k = -nz / 2; k < nz / 2; ++k) {
+		for (j = -ny / 2; j < ny / 2; ++j) {
+			for (i = -nx / 2; i < nx / 2; ++i,++l) {
 				if (abs(k) > radius || abs(j) > radius || abs(i) > radius) continue;
 				if ( (k * k + j * j + i * i) > (radius*radius) || dat[l] < threshold) continue;
 				dat2[l] = 1.0f;
@@ -5870,9 +5933,9 @@ void AutoMask3D2Processor::process_inplace(EMData * image)
 	int done=0;
 	while (!done) {
 		done=1;
-		for (k=1; k<nz-1; k++) {
-			for (j=1; j<ny-1; j++) {
-				for (i=1; i<nx-1; i++) {
+		for (k=1; k<nz-1; ++k) {
+			for (j=1; j<ny-1; ++j) {
+				for (i=1; i<nx-1; ++i) {
 					l=i+j*nx+k*nx*ny;
 					if (dat2[l]) continue;
 					if (dat[l]>threshold && (dat2[l-1]||dat2[l+1]||dat2[l+nx]||dat2[l-nx]||dat2[l-nxy]||dat2[l+nxy])) {
@@ -5933,12 +5996,12 @@ void IterBinMaskProcessor::process_inplace(EMData * image)
 
 	// TODO: THIS IS EXTREMELY INEFFICIENT
 	if (nz != 1) {
-		for (int l = 1; l <= (int) val1+val2; l++) {
-			for (int i=0; i<nx*ny*nz; i++) d2[i]=d[i];
-			for (int k = 1; k < nz - 1; k++) {
-				for (int j = 1; j < ny - 1; j++) {
-					for (int i = 1; i < nx - 1; i++) {
-						int t = i + j*nx+k*nx*ny;
+		for (int l = 1; l <= (int) val1+val2; ++l) {
+			for (size_t i=0; i<size; i++) d2[i]=d[i];
+			for (int k = 1; k < nz - 1; ++k) {
+				for (int j = 1; j < ny - 1; ++j) {
+					for (int i = 1; i < nx - 1; ++i) {
+						size_t t = i + j*nx+k*nx*ny;
 						if (d[t]) continue;
 						if (d2[t - 1] || d2[t + 1] || d2[t + nx] || d2[t - nx] || d2[t + nxy] || d2[t - nxy]) d[t] = (float) l + 1;
 					}
@@ -5947,11 +6010,11 @@ void IterBinMaskProcessor::process_inplace(EMData * image)
 		}
 	}
 	else {
-		for (int l = 1; l <= (int) val1+val2; l++) {
-			for (int i=0; i<nx*ny*nz; i++) d2[i]=d[i];
-			for (int j = 1; j < ny - 1; j++) {
-				for (int i = 1; i < nx - 1; i++) {
-					int t = i + j * nx;
+		for (int l = 1; l <= (int) val1+val2; ++l) {
+			for (size_t i=0; i<size; i++) d2[i]=d[i];
+			for (int j = 1; j < ny - 1; ++j) {
+				for (int i = 1; i < nx - 1; ++i) {
+					size_t t = i + j * nx;
 					if (d[t]) continue;
 					if (d2[t - 1] || d2[t + 1] || d2[t + nx] || d2[t - nx]) d[t] = (float) l + 1;
 				}
@@ -6046,19 +6109,21 @@ void TestImageFourierNoiseGaussian::process_inplace(EMData* image)
 	int nxy = image->get_ysize()*nx;
 	int nzon2 = image->get_zsize()/2;
 	int nyon2 = image->get_ysize()/2;
+	float rx, ry, rz, length, amp, phase;
+	int twox;
 	for (int z = 0; z< image->get_zsize(); ++z) {
 		for (int y = 0; y < image->get_ysize(); ++y) {
 			for (int x = 0; x < image->get_xsize()/2; ++x) {
-				float rx = (float)x;
-				float ry = (float)nyon2 - (float)y;
-				float rz = (float)nzon2 - (float)z;
-				float length = sqrt(rx*rx + ry*ry + rz*rz);
-				float amp = exp(-sigma*length);
-				float phase = Util::get_frand(0,1)*2*M_PI;
+				rx = (float)x;
+				ry = (float)nyon2 - (float)y;
+				rz = (float)nzon2 - (float)z;
+				length = sqrt(rx*rx + ry*ry + rz*rz);
+				amp = exp(-sigma*length);
+				phase = Util::get_frand(0,1)*2*M_PI;
 
-				int twox = 2*x;
-				int idx1 = twox + y*nx+z*nxy;
-				int idx2 = idx1 + 1;
+				twox = 2*x;
+				size_t idx1 = twox + y*nx+z*nxy;
+				size_t idx2 = idx1 + 1;
 				d[idx1] = amp;
 				d[idx2] = phase;
 
@@ -6141,9 +6206,9 @@ void TestImageGaussian::process_inplace(EMData * image)
 	float *dat = image->get_data();
 	float r; //this is the distance of pixel from the image center(nx/2, ny/2, nz/2)
 	float x2, y2, z2; //this is the coordinates of this pixel from image center
-	for (int k = 0; k < nz; k++) {
-		for (int j = 0; j < ny; j++) {
-			for (int i = 0; i < nx; i++, dat++) {
+	for (int k = 0; k < nz; ++k) {
+		for (int j = 0; j < ny; ++j) {
+			for (int i = 0; i < nx; ++i, ++dat) {
 				x2 = (float)( i - nx/2 );
 				y2 = (float)( j - ny/2 );
 				z2 = (float)( k - nz/2 );
@@ -6367,14 +6432,15 @@ void TestImagePureGaussian::process_inplace(EMData * image)
 		if (nz > 1) norm  *= 1.0f/ ( z_sigma*sr2pi );
 	}
 
-	for (int iz=0; iz < nz; iz++) {
-		float z = static_cast<float>(iz) - z_center;
-		for (int iy=0; iy < ny; iy++) {
-			float y = static_cast<float>(iy) - y_center;
-			for (int ix=0; ix < nx; ix++) {
-				float x = static_cast<float>(ix) - x_center;
-				float sum = x*x/x_twosig2 + y*y/y_twosig2 + z*z/z_twosig2;
-				float val = norm*exp(-sum);
+	float z, y, x, sum, val;
+	for (int iz=0; iz < nz; ++iz) {
+		z = static_cast<float>(iz) - z_center;
+		for (int iy=0; iy < ny; ++iy) {
+			y = static_cast<float>(iy) - y_center;
+			for (int ix=0; ix < nx; ++ix) {
+				x = static_cast<float>(ix) - x_center;
+				sum = x*x/x_twosig2 + y*y/y_twosig2 + z*z/z_twosig2;
+				val = norm*exp(-sum);
 				(*image)(ix,iy,iz) = val;
 			}
 		}
@@ -6530,9 +6596,9 @@ void TestImageSinewaveCircular::process_inplace(EMData * image)
 	float *dat = image->get_data();
 	float r; //this is the distance of pixel from the image center(nx/2, ny/2, nz/2)
 	float x2, y2, z2; //this is the coordinates of this pixel from image center
-	for (int k = 0; k < nz; k++) {
-		for (int j = 0; j < ny; j++) {
-			for (int i = 0; i < nx; i++, dat++) {
+	for (int k = 0; k < nz; ++k) {
+		for (int j = 0; j < ny; ++j) {
+			for (int i = 0; i < nx; ++i, ++dat) {
 				x2 = (float)( i - nx/2 );
 				y2 = (float)( j - ny/2 );
 				z2 = (float)( k - nz/2 );
@@ -6609,9 +6675,9 @@ void TestImageSquarecube::process_inplace(EMData * image)
 	else{
 		throw InvalidValueException(0, "please specify a valid axis for asymmetric features");
 	}
-	for (int k = 0; k < nz; k++) {
-		for (int j = 0; j < ny; j++) {
-			for (int i = 0; i < nx; i++, dat++) {
+	for (int k = 0; k < nz; ++k) {
+		for (int j = 0; j < ny; ++j) {
+			for (int i = 0; i < nx; ++i, ++dat) {
 				x2 = (float)fabs((float)i - nx/2);
 				y2 = (float)fabs((float)j - ny/2);
 				z2 = (float)fabs((float)k - nz/2);
@@ -6667,9 +6733,9 @@ void TestImageCirclesphere::process_inplace(EMData * image)
 		throw InvalidValueException(0, "please specify a valid axis for asymmetric features");
 	}
 
-	for (int k = 0; k < nz; k++) {
-		for (int j = 0; j < ny; j++) {
-			for (int i = 0; i < nx; i++, dat++) {
+	for (int k = 0; k < nz; ++k) {
+		for (int j = 0; j < ny; ++j) {
+			for (int i = 0; i < nx; ++i, ++dat) {
 				x2 = fabs((float)i - nx/2);
 				y2 = fabs((float)j - ny/2);
 				z2 = fabs((float)k - nz/2);
@@ -6748,14 +6814,16 @@ void TestImageHollowEllipse::process_inplace(EMData * image)
 
 	Vec3f origin(nx/2,ny/2,nz/2);
 
-	for (int k = 0; k < mz; k++) {
-		for (int j = 0; j < my; j++) {
-			for (int i = 0; i < mx; i++) {
-				float x2 = (float)(i - mx/2);
-				float y2 = (float)(j - my/2);
-				float z2 = (float)(k - mz/2);
-				float r1 = (x2*x2)*ai1 + (y2*y2)*bi1 + (z2*z2)*ci1;
-				float r2 = (x2*x2)*ai2 + (y2*y2)*bi2 + (z2*z2)*ci2;
+	float x2, y2, z2, r1,r2;
+	int xl, yl, zl;
+	for (int k = 0; k < mz; ++k) {
+		for (int j = 0; j < my; ++j) {
+			for (int i = 0; i < mx; ++i) {
+				x2 = (float)(i - mx/2);
+				y2 = (float)(j - my/2);
+				z2 = (float)(k - mz/2);
+				r1 = (x2*x2)*ai1 + (y2*y2)*bi1 + (z2*z2)*ci1;
+				r2 = (x2*x2)*ai2 + (y2*y2)*bi2 + (z2*z2)*ci2;
 				if (r2 <= 1 && r1 >= 1) {
 
 					if (t != 0) {
@@ -6769,9 +6837,9 @@ void TestImageHollowEllipse::process_inplace(EMData * image)
 						for( int kk = -1; kk <= 1; ++kk)
 							for( int jj = -1; jj <= 1; ++jj)
 								for( int ii = -1; ii <= 1; ++ii) {
-									int xl = (int)v[0]+ii;
-									int yl = (int)v[1]+jj;
-									int zl = (int)v[2]+kk;
+									xl = (int)v[0]+ii;
+									yl = (int)v[1]+jj;
+									zl = (int)v[2]+kk;
 									if (xl >= 0 && xl < nx && yl >= 0 && yl < ny && zl >= 0 && zl < nz)
 										image->set_value_at(xl,yl,zl,1.0);
 								}
@@ -6820,13 +6888,15 @@ void TestImageEllipse::process_inplace(EMData * image)
 
 	Vec3f origin(nx/2,ny/2,nz/2);
 
-	for (int k = 0; k < mz; k++) {
-		for (int j = 0; j < my; j++) {
-			for (int i = 0; i < mx; i++) {
-				float x2 = (float)(i - mx/2);
-				float y2 = (float)(j - my/2);
-				float z2 = (float)(k - mz/2);
-				float r = (x2*x2)*ai + (y2*y2)*bi + (z2*z2)*ci;
+	float x2, y2, z2, r;
+	int xl, yl, zl;
+	for (int k = 0; k < mz; ++k) {
+		for (int j = 0; j < my; ++j) {
+			for (int i = 0; i < mx; ++i) {
+				x2 = (float)(i - mx/2);
+				y2 = (float)(j - my/2);
+				z2 = (float)(k - mz/2);
+				r = (x2*x2)*ai + (y2*y2)*bi + (z2*z2)*ci;
 				if (r <= 1) {
 
 					if (t != 0) {
@@ -6840,9 +6910,9 @@ void TestImageEllipse::process_inplace(EMData * image)
 						for( int kk = -1; kk <= 1; ++kk)
 							for( int jj = -1; jj <= 1; ++jj)
 								for( int ii = -1; ii <= 1; ++ii) {
-									int xl = (int)v[0]+ii;
-									int yl = (int)v[1]+jj;
-									int zl = (int)v[2]+kk;
+									xl = (int)v[0]+ii;
+									yl = (int)v[1]+jj;
+									zl = (int)v[2]+kk;
 									if (xl >= 0 && xl < nx && yl >= 0 && yl < ny && zl >= 0 && zl < nz)
 										image->set_value_at(xl,yl,zl,fill);
 								}
@@ -6869,7 +6939,8 @@ void TestImageNoiseUniformRand::process_inplace(EMData * image)
 	}
 
 	float *dat = image->get_data();
-	for (int i=0; i<nx*ny*nz; i++) {
+	size_t size = nx*ny*nz;
+	for (size_t i=0; i<size; ++i) {
 		dat[i] = r->get_frand();
 	}
 
@@ -6890,7 +6961,8 @@ void TestImageNoiseGauss::process_inplace(EMData * image)
 	}
 
 	float *dat = image->get_data();
-	for (int i=0; i<nx*ny*nz; i++) {
+	size_t size = nx*ny*nz;
+	for (size_t i=0; i<size; ++i) {
 		dat[i] = r->get_gauss_rand(mean, sigma);
 	}
 
@@ -6932,9 +7004,9 @@ void TestImageCylinder::process_inplace(EMData * image)
 	float *dat = image->get_data();
 	float x2, y2; //this is coordinates of this pixel from center axle
 	float r = 0.0f;
-	for (int k = 0; k < nz; k++) {
-		for (int j = 0; j < ny; j++) {
-			for (int i = 0; i < nx; i++, dat++) {
+	for (int k = 0; k < nz; ++k) {
+		for (int j = 0; j < ny; ++j) {
+			for (int i = 0; i < nx; ++i, ++dat) {
 				x2 = fabs((float)i - nx/2);
 				y2 = fabs((float)j - ny/2);
 				r = (x2*x2)/(radius*radius) + (y2*y2)/(radius*radius);
@@ -7282,7 +7354,7 @@ void MirrorProcessor::process_inplace(EMData *image)
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
-	int nxy = nx*ny;
+	size_t nxy = nx*ny;
 
 	int x_start = 1-nx%2;
 	int y_start = 1-ny%2;
@@ -7299,7 +7371,7 @@ void MirrorProcessor::process_inplace(EMData *image)
          if (axis == "y" || axis == "Y") {
                 float *tmp = new float[nx];
 	         int nhalf   = ny/2;
- 		 int beg     = 0;
+ 		 size_t beg     = 0;
                  for (int iz = 0; iz < nz; iz++) {
 		      beg = iz*nxy;
 		      for (int iy = y_start; iy < nhalf; iy++) {
@@ -7325,7 +7397,7 @@ void MirrorProcessor::process_inplace(EMData *image)
 		else{
 			float *tmp = new float[nx];
 			int nhalf   = nz/2;
-			int beg     = 0;
+			size_t beg     = 0;
 			for (int iy = 0; iy < ny; iy++) {
 				beg = iy*nx;
 				for (int iz = z_start; iz < nhalf; iz++) {
@@ -7408,39 +7480,41 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 		}
 	}
 	else {
-		int l = 0;
+		size_t l=0, ii, k0, k1, k2, k3, k4, k5, k6, k7;
 		Vec3f offset(nx/2,ny/2,nz/2);
-		for (int k = 0; k < nz; k++) {
-			for (int j = 0; j < ny; j++) {
-				for (int i = 0; i < nx; i++,l++) {
+		float x2, y2, z2, tuvx, tuvy, tuvz;
+		int ix, iy, iz;
+		for (int k = 0; k < nz; ++k) {
+			for (int j = 0; j < ny; ++j) {
+				for (int i = 0; i < nx; ++i,++l) {
 					Vec3f coord(i-nx/2,j-ny/2,k-nz/2);
 					Vec3f soln = inv*coord;
 					soln += offset;
 
-					float x2 = soln[0];
-					float y2 = soln[1];
-					float z2 = soln[2];
+					x2 = soln[0];
+					y2 = soln[1];
+					z2 = soln[2];
 
 					if (x2 < 0 || y2 < 0 || z2 < 0 || x2 >= nx  || y2 >= ny  || z2>= nz ) {
 						des_data[l] = 0;
 					}
 					else {
-						int ix = Util::fast_floor(x2);
-						int iy = Util::fast_floor(y2);
-						int iz = Util::fast_floor(z2);
-						float tuvx = x2-ix;
-						float tuvy = y2-iy;
-						float tuvz = z2-iz;
-						int ii = ix + iy * nx + iz * nxy;
+						ix = Util::fast_floor(x2);
+						iy = Util::fast_floor(y2);
+						iz = Util::fast_floor(z2);
+						tuvx = x2-ix;
+						tuvy = y2-iy;
+						tuvz = z2-iz;
+						ii = ix + iy * nx + iz * nxy;
 
-						int k0 = ii;
-						int k1 = k0 + 1;
-						int k2 = k0 + nx;
-						int k3 = k0 + nx+1;
-						int k4 = k0 + nxy;
-						int k5 = k1 + nxy;
-						int k6 = k2 + nxy;
-						int k7 = k3 + nxy;
+						k0 = ii;
+						k1 = k0 + 1;
+						k2 = k0 + nx;
+						k3 = k0 + nx+1;
+						k4 = k0 + nxy;
+						k5 = k1 + nxy;
+						k6 = k2 + nxy;
+						k7 = k3 + nxy;
 
 						if (ix == nx - 1) {
 							k1--;
@@ -7805,8 +7879,8 @@ void ClampingProcessor::process_inplace( EMData* image )
 	// saying what went wrong.
 	if ( max < min ) throw InvalidParameterException("Error: minval was greater than maxval, aborting");
 
-	int size = image->get_xsize()*image->get_ysize()*image->get_zsize();
-	for(int i = 0; i < size; ++i )
+	size_t size = image->get_size();
+	for(size_t i = 0; i < size; ++i )
 	{
 		float * data = &image->get_data()[i];
 		if ( *data < min ) *data = new_min_vals;
@@ -7826,12 +7900,13 @@ void TestTomoImage::insert_rectangle( EMData* image, const Region& region, const
 	int endz  = (int)region.origin[2] + (int)region.size[2]/2;
 
 	if ( ! t3d.is_identity() ) {
+		float xt, yt, zt;
 		for ( float z = (float)startz; z < (float)endz; z += 0.25f ) {
 			for ( float y = (float)starty; y < (float)endy; y += 0.25f ) {
 				for ( float x = (float)startx; x < (float)endx; x += 0.25f ) {
-					float xt = (float) x - region.origin[0];
-					float yt = (float) y - region.origin[1];
-					float zt = (float) z - region.origin[2];
+					xt = (float) x - region.origin[0];
+					yt = (float) y - region.origin[1];
+					zt = (float) z - region.origin[2];
 					Vec3f v((float)xt,(float)yt,(float)zt);
 					v = t3d*v;
 					image->set_value_at((int)(v[0]+region.origin[0]),(int)(v[1]+region.origin[1]),(int)(v[2]+region.origin[2]), value);
@@ -8228,10 +8303,10 @@ void HistogramBin::process_inplace(EMData *image)
 	float bin_width = (max-min)/nbins;
 	float bin_val_offset = bin_width/2.0f;
 
-	int size = image->get_xsize()*image->get_ysize()*image->get_zsize();
+	size_t size = image->get_size();
 	float* dat = image->get_data();
 
-	for(int i = 0; i < size; ++i ) {
+	for(size_t i = 0; i < size; ++i ) {
 		float val = dat[i];
 		val -= min;
 		int bin = (int) (val/bin_width);

@@ -196,10 +196,10 @@ void ImageIO::getRenderMinMax(float * data, const int nx, const int ny, float& r
 #endif
 		float m=0.0f,s=0.0f;
 
-		int size = nx*ny*nz;
+		size_t size = nx*ny*nz;
 		float min=data[0],max=data[0];
 
-		for (int i=0; i<size; ++i) { m+=data[i]; s+=data[i]*data[i]; min=data[i]<min?data[i]:min; max=data[i]>max?data[i]:max; }
+		for (size_t i=0; i<size; ++i) { m+=data[i]; s+=data[i]*data[i]; min=data[i]<min?data[i]:min; max=data[i]>max?data[i]:max; }
 		m/=(float)(size);
 		s=sqrt(s/(float)(size)-m*m);
 #ifdef _WIN32

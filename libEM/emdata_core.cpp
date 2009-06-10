@@ -202,10 +202,10 @@ void EMData::add(const EMData & image)
 	else {
 
 		const float *src_data = image.get_data();
-		int size = nxy * nz;
+		size_t size = nxy * nz;
 		float* data = get_data();
 
-		for (int i = 0; i < size; i++) {
+		for (size_t i = 0; i < size; i++) {
 			data[i] += src_data[i];
 		}
 		update();
@@ -227,10 +227,10 @@ void EMData::addsquare(const EMData & image)
 	else {
 
 		const float *src_data = image.get_data();
-		int size = nxy * nz;
+		size_t size = nxy * nz;
 		float* data = get_data();
 
-		for (int i = 0; i < size; i++) {
+		for (size_t i = 0; i < size; i++) {
 			data[i] += src_data[i]*src_data[i];
 		}
 		update();
@@ -252,10 +252,10 @@ void EMData::subsquare(const EMData & image)
 	else {
 
 		const float *src_data = image.get_data();
-		int size = nxy * nz;
+		size_t size = nxy * nz;
 		float* data = get_data();
 
-		for (int i = 0; i < size; i++) {
+		for (size_t i = 0; i < size; i++) {
 			data[i] -= src_data[i]*src_data[i];
 		}
 		update();
@@ -929,16 +929,19 @@ EMData * EMData::real() const //real part has half of x dimension for a complex 
 		e->set_size(nx/2, ny, nz);
 		float * edata = e->get_data();
 		float * data = get_data();
-		for( int i=0; i<nx; i++ )
+		size_t idx1, idx2;
+		for( int i=0; i<nx; ++i )
 		{
-			for( int j=0; j<ny; j++ )
+			for( int j=0; j<ny; ++j )
 			{
-				for( int k=0; k<nz; k++ )
+				for( int k=0; k<nz; ++k )
 				{
 					if( i%2 == 0 )
 					{
 						//complex data in format [real, complex, real, complex...]
-						edata[i/2+j*(nx/2)+k*(nx/2)*ny] = data[i+j*nx+k*nx*ny];
+						idx1 = i/2+j*(nx/2)+k*(nx/2)*ny;
+						idx2 = i+j*nx+k*nx*ny;
+						edata[idx1] = data[idx2];
 					}
 				}
 			}
@@ -1011,11 +1014,12 @@ EMData * EMData::absi() const//abs has half of x dimension for a complex image
 		int nz = get_zsize();
 		float *edata = e->get_data();
 		float * data = get_data();
-
-		for( int i=0; i<nx; i++ ) {
-			for( int j=0; j<ny; j++ ) {
-				for( int k=0; k<nz; k++ ) {
-					edata[i+j*nx+k*nx*ny] = std::abs(data[i+j*nx+k*nx*ny]);
+		size_t idx;
+		for( int i=0; i<nx; ++i ) {
+			for( int j=0; j<ny; ++j ) {
+				for( int k=0; k<nz; ++k ) {
+					idx = i+j*nx+k*nx*ny;
+					edata[idx] = std::abs(data[idx]);
 				}
 			}
 		}
@@ -1032,17 +1036,20 @@ EMData * EMData::absi() const//abs has half of x dimension for a complex image
 		e->set_size(nx/2, ny, nz);
 		float * edata = e->get_data();
 		float * data = get_data();
-		for( int i=0; i<nx; i++ )
+		size_t idx1, idx2;
+		for( int i=0; i<nx; ++i )
 		{
-			for( int j=0; j<ny; j++ )
+			for( int j=0; j<ny; ++j )
 			{
-				for( int k=0; k<nz; k++ )
+				for( int k=0; k<nz; ++k )
 				{
 					if( i%2 == 0 )
 					{
+						idx1 = i/2+j*(nx/2)+k*(nx/2)*ny;
+						idx2 = i+j*nx+k*nx*ny;
 						//complex data in format [real, complex, real, complex...]
-						edata[i/2+j*(nx/2)+k*(nx/2)*ny] =
-						std::sqrt(data[i+j*nx+k*nx*ny]*data[i+j*nx+k*nx*ny]+data[i+1+j*nx+k*nx*ny]*data[i+1+j*nx+k*nx*ny]);
+						edata[idx1] =
+						std::sqrt(data[idx2]*data[idx2]+data[idx2+1]*data[idx2+1]);
 					}
 				}
 			}
@@ -1080,16 +1087,19 @@ EMData * EMData::amplitude() const
 		e->set_size(nx/2, ny, nz);
 		float * edata = e->get_data();
 		float * data = get_data();
-		for( int i=0; i<nx; i++ )
+		size_t idx1, idx2;
+		for( int i=0; i<nx; ++i )
 		{
-			for( int j=0; j<ny; j++ )
+			for( int j=0; j<ny; ++j )
 			{
-				for( int k=0; k<nz; k++ )
+				for( int k=0; k<nz; ++k )
 				{
 					if( i%2 == 0 )
 					{
+						idx1 = i/2+j*(nx/2)+k*(nx/2)*ny;
+						idx2 = i+j*nx+k*nx*ny;
 						//complex data in format [amp, phase, amp, phase...]
-						edata[i/2+j*(nx/2)+k*(nx/2)*ny] = data[i+j*nx+k*nx*ny];
+						edata[idx1] = data[idx2];
 					}
 				}
 			}
@@ -1128,12 +1138,15 @@ EMData * EMData::phase() const
 		e->set_size(nx/2, ny, nz);
 		float * edata = e->get_data();
 		float * data = get_data();
-		for( int i=0; i<nx; i++ ) {
-			for( int j=0; j<ny; j++ ) {
-				for( int k=0; k<nz; k++ ) {
+		size_t idx1, idx2;
+		for( int i=0; i<nx; ++i ) {
+			for( int j=0; j<ny; ++j ) {
+				for( int k=0; k<nz; ++k ) {
 					if( i%2 == 1 ) {
+						idx1 = i/2+j*(nx/2)+k*(nx/2)*ny;
+						idx2 = i+j*nx+k*nx*ny;
 						//complex data in format [real, complex, real, complex...]
-						edata[i/2+j*(nx/2)+k*(nx/2)*ny] = data[i+j*nx+k*nx*ny];
+						edata[idx1] = data[idx2];
 					}
 				}
 			}
@@ -1164,9 +1177,9 @@ EMData * EMData::real2complex(const float img) const
 	int nz = get_zsize();
 	e->set_size(nx*2, ny, nz);
 
-	for( int k=0; k<nz; k++ ) {
-		for( int j=0; j<ny; j++ ) {
-			for( int i=0; i<nx; i++ ) {
+	for( int k=0; k<nz; ++k ) {
+		for( int j=0; j<ny; ++j ) {
+			for( int i=0; i<nx; ++i ) {
 				(*e)(i*2,j,k) = (*this)(i,j,k);
 				(*e)(i*2+1,j,k) = img;
 			}

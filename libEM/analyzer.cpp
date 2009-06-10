@@ -101,7 +101,7 @@ if (slowseed) {
 for (int i=0; i<ncls; i++) {
 	// Fixed by d.woolford, Util.get_irand is inclusive (added a -1)
 	centers[i]=images[Util::get_irand(0,nptcl-1)]->copy();
-	
+
 }
 
 if (calcsigmamean) {
@@ -159,7 +159,7 @@ for (int i=0; i<ncls; i++) {
 			centers[i+ncls]->subsquare(*centers[i]);					// subtract the mean value squared
 			centers[i+ncls]->process("math.sqrt");					// square root
 			centers[i+ncls]->mult((float)1.0/(float)sqrt((float)repr[i]));		// divide by sqrt(N) to get std. dev. of mean
-		}			
+		}
 
 	}
 	if (verbose>1) printf("%d(%d)\t",i,(int)repr[i]);
@@ -731,10 +731,10 @@ int SVDAnalyzer::insert_image(EMData * image)
 		throw NullPointerException("Null mask image pointer, set_params() first");
 
 	// count pixels under mask
-	int totpix=mask->get_xsize()*mask->get_ysize()*mask->get_zsize();
+	size_t totpix=mask->get_xsize()*mask->get_ysize()*mask->get_zsize();
 	float  *d=image->get_data();
 	float *md=mask ->get_data();
-	for (int i=0,j=0; i<totpix; i++) {
+	for (size_t i=0,j=0; i<totpix; ++i) {
 		if (md[i]) {
 			gsl_matrix_set(A,j,nsofar,d[i]);
 			j++;
@@ -763,13 +763,13 @@ gsl_linalg_SV_decomp_mod (A,X, V, S, work);
 vector<EMData*> ret;
 //unpack the results and write the output file
 float *md=mask->get_data();
-int totpix=mask->get_xsize()*mask->get_ysize()*mask->get_zsize();
+size_t totpix=mask->get_xsize()*mask->get_ysize()*mask->get_zsize();
 for (int k=0; k<nvec; k++) {
 	EMData *img = new EMData;
 	img->set_size(mask->get_xsize(),mask->get_ysize(),mask->get_zsize());
 
 	float  *d=img->get_data();
-	for (int i=0,j=0; i<totpix; i++) {
+	for (size_t i=0,j=0; i<totpix; ++i) {
 		if (md[i]) {
 			d[i]=(float)gsl_matrix_get(A,j,k);
 			j++;
@@ -800,9 +800,9 @@ void SVDAnalyzer::set_params(const Dict & new_params)
 
 	// count pixels under mask
 	pixels=0;
-	int totpix=mask->get_xsize()*mask->get_ysize()*mask->get_zsize();
+	size_t totpix=mask->get_xsize()*mask->get_ysize()*mask->get_zsize();
 	float *d=mask->get_data();
-	for (int i=0; i<totpix; i++) if (d[i]) pixels++;
+	for (size_t i=0; i<totpix; ++i) if (d[i]) ++pixels;
 
 	printf("%d,%d\n",pixels,nimg);
 	A=gsl_matrix_alloc(pixels,nimg);

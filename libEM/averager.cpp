@@ -1,38 +1,38 @@
 /**
  * $Id$
  */
- 
+
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
- 
+
 #include "averager.h"
 #include "emdata.h"
 #include "xydata.h"
@@ -73,7 +73,7 @@ void Averager::add_image_list(const vector<EMData*> & image_list)
 ImageAverager::ImageAverager()
 	: sigma_image(0), nimg_n0(0), ignore0(0), nimg(0)
 {
-	
+
 }
 
 void ImageAverager::add_image(EMData * image)
@@ -87,14 +87,14 @@ void ImageAverager::add_image(EMData * image)
 			   get_name().c_str());
 		return;
 	}
-	
+
 	nimg++;
 
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
 	size_t image_size = nx * ny * nz;
-	
+
 	if (nimg == 1) {
 		result = new EMData();
 		result->set_size(nx, ny, nz);
@@ -115,10 +115,10 @@ void ImageAverager::add_image(EMData * image)
 	}
 
 	float * image_data = image->get_data();
-	
+
 	if (!ignore0) {
-		for (size_t j = 0; j < image_size; j++) {		
-			float f = image_data[j];			
+		for (size_t j = 0; j < image_size; j++) {
+			float f = image_data[j];
 			result_data[j] += f;
 			if (sigma_image_data) {
 				sigma_image_data[j] += f * f;
@@ -126,7 +126,7 @@ void ImageAverager::add_image(EMData * image)
 		}
 	}
 	else {
-		for (size_t j = 0; j < image_size; j++) {		
+		for (size_t j = 0; j < image_size; j++) {
 			float f = image_data[j];
 			if (f) {
 				result_data[j] += f;
@@ -144,7 +144,7 @@ EMData * ImageAverager::finish()
 	if (result && nimg > 1) {
 		size_t image_size = result->get_xsize() * result->get_ysize() * result->get_zsize();
 		float * result_data = result->get_data();
-		
+
 		if (!ignore0) {
 			for (size_t j = 0; j < image_size; j++) {
 				result_data[j] /= nimg;
@@ -178,22 +178,22 @@ EMData * ImageAverager::finish()
 				sigma_image->update();
 			}
 		}
-		
+
 		result->update();
 	}
 
 	if( nimg_n0 )
-	{ 
+	{
 		delete [] nimg_n0;
 		nimg_n0 = 0;
 	}
-	
+
 	return result;
 }
 
 #if 0
 EMData *ImageAverager::average(const vector < EMData * >&image_list) const
-{	
+{
 	if (image_list.size() == 0) {
 		return 0;
 	}
@@ -313,13 +313,13 @@ void MinMaxAverager::add_image(EMData * image)
 			   get_name().c_str());
 		return;
 	}
-	
+
 	nimg++;
 
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
-	
+
 	if (nimg == 1) {
 		result = image->copy();
 		max = params["max"];
@@ -329,13 +329,13 @@ void MinMaxAverager::add_image(EMData * image)
 	for (int z=0; z<nz; z++) {
 		for (int y=0; y<ny; y++) {
 			for (int x=0; x<nx; x++) {
-				if (result->get_value_at(x,y,z)>image->get_value_at(x,y,z)) 
+				if (result->get_value_at(x,y,z)>image->get_value_at(x,y,z))
 					{ if (!max) result->set_value_at(x,y,z,image->get_value_at(x,y,z)); }
 				else { if (max) result->set_value_at(x,y,z,image->get_value_at(x,y,z)); }
 			}
 		}
 	}
-	
+
 }
 
 EMData *MinMaxAverager::finish()
@@ -365,7 +365,7 @@ void IterationAverager::add_image( EMData * image)
 	}
 
 	nimg++;
-	
+
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
@@ -381,14 +381,14 @@ void IterationAverager::add_image( EMData * image)
 	float *image_data = image->get_data();
 	float *result_data = result->get_data();
 	float *sigma_image_data = sigma_image->get_data();
-	
+
 	for (size_t j = 0; j < image_size; j++) {
 		float f = image_data[j];
 		result_data[j] += f;
 		sigma_image_data[j] += f * f;
 	}
-	
-	
+
+
 }
 
 EMData * IterationAverager::finish()
@@ -396,22 +396,22 @@ EMData * IterationAverager::finish()
 	if (nimg < 1) {
 		return result;
 	}
-	
+
 	int nx = result->get_xsize();
 	int ny = result->get_ysize();
 	int nz = result->get_zsize();
 	size_t image_size = nx * ny * nz;
-	
+
 	float *result_data = result->get_data();
 	float *sigma_image_data = sigma_image->get_data();
-		
+
 	for (size_t j = 0; j < image_size; j++) {
 		result_data[j] /= nimg;
 		float f1 = sigma_image_data[j] / nimg;
 		float f2 = result_data[j];
 		sigma_image_data[j] = sqrt(f1 - f2 * f2) / sqrt((float)nimg);
 	}
-		
+
 	result->update();
 	sigma_image->update();
 
@@ -456,7 +456,7 @@ EMData * IterationAverager::finish()
 	result->update();
 	result->append_image("iter.hed");
 
-	
+
 	return result;
 }
 
@@ -472,7 +472,7 @@ EMData *IterationAverager::average(const vector < EMData * >&image_list) const
 	int nx = image0->get_xsize();
 	int ny = image0->get_ysize();
 	int nz = image0->get_zsize();
-	int image_size = nx * ny * nz;
+	size_t image_size = nx * ny * nz;
 
 	EMData *result = new EMData();
 	result->set_size(nx, ny, nz);
@@ -487,7 +487,7 @@ EMData *IterationAverager::average(const vector < EMData * >&image_list) const
 	memcpy(result_data, image0_data, image_size * sizeof(float));
 	memcpy(sigma_image_data, image0_data, image_size * sizeof(float));
 
-	for (int j = 0; j < image_size; j++) {
+	for (size_t j = 0; j < image_size; j++) {
 		sigma_image_data[j] *= sigma_image_data[j];
 	}
 
@@ -500,7 +500,7 @@ EMData *IterationAverager::average(const vector < EMData * >&image_list) const
 		if (EMUtil::is_same_size(image, result)) {
 			float *image_data = image->get_data();
 
-			for (int j = 0; j < image_size; j++) {
+			for (size_t j = 0; j < image_size; j++) {
 				result_data[j] += image_data[j];
 				sigma_image_data[j] += image_data[j] * image_data[j];
 			}
@@ -511,14 +511,14 @@ EMData *IterationAverager::average(const vector < EMData * >&image_list) const
 	}
 
 	float c = static_cast < float >(nc);
-	for (int j = 0; j < image_size; j++) {
+	for (size_t j = 0; j < image_size; j++) {
 		float f1 = sigma_image_data[j] / c;
 		float f2 = result_data[j] / c;
 		sigma_image_data[j] = sqrt(f1 - f2 * f2) / sqrt(c);
 	}
 
 
-	for (int j = 0; j < image_size; j++) {
+	for (size_t j = 0; j < image_size; j++) {
 		result_data[j] /= c;
 	}
 
@@ -612,21 +612,21 @@ void CtfAverager::add_image(EMData * image)
 								 get_name().c_str());
 		}
 	}
-	
+
 	nimg++;
 
-		
+
 	if (nimg == 1) {
 		image0_fft = image->do_fft();
-		
+
 		nx = image0_fft->get_xsize();
 		ny = image0_fft->get_ysize();
 		nz = image0_fft->get_zsize();
-		
+
 		result = new EMData();
 		result->set_size(nx - 2, ny, nz);
 
-	
+
 		if (alg_name == "Weighting" && curves) {
 			if (!sf) {
 				LOGWARN("CTF curve in file will contain relative, not absolute SNR!");
@@ -645,16 +645,16 @@ void CtfAverager::add_image(EMData * image)
 			float ds = 1.0f / (apix_y * ny * Ctf::CTFOS);
 			filter = 1.0f / (filter * ds);
 		}
-		
+
 		if (alg_name == "CtfCWauto") {
 			int nxy2 = nx * ny/2;
-			
+
 			snri = new float[ny / 2];
 			snrn = new float[ny / 2];
 			tdr = new float[nxy2];
 			tdi = new float[nxy2];
 			tn = new float[nxy2];
-			
+
 			for (int i = 0; i < ny / 2; i++) {
 				snri[i] = 0;
 				snrn[i] = 0;
@@ -671,19 +671,19 @@ void CtfAverager::add_image(EMData * image)
 		image0_copy->ap2ri();
 		image0_copy->to_zero();
 	}
-	
+
 	Ctf::CtfType curve_type = Ctf::CTF_AMP;
 	if (alg_name == "CtfCWauto") {
 		curve_type = Ctf::CTF_AMP;
 	}
-	
+
 	float *src = image->get_data();
 	image->ap2ri();
 	Ctf *image_ctf = image->get_ctf();
 	int ny2 = image->get_ysize();
 
 	vector<float> ctf1 = image_ctf->compute_1d(ny2,1.0f/(image_ctf->apix*image->get_ysize()), curve_type);
-		
+
 	if (ctf1.size() == 0) {
 		LOGERR("Unexpected CTF correction problem");
 	}
@@ -743,7 +743,7 @@ void CtfAverager::add_image(EMData * image)
 			tmp_data[j + 1] += src[j + 1] * f;
 		}
 	}
-	
+
 	EMData *image_fft = image->do_fft();
 	image_fft->update();
 
@@ -756,7 +756,7 @@ EMData * CtfAverager::finish()
 		for (int x = 0; x < nx / 2; x++, j += 2) {
 #ifdef	_WIN32
 			float r = (float) _hypot(x, y - ny / 2.0f);
-#else			
+#else
 			float r = (float) hypot(x, y - ny / 2.0f);
 #endif
 			int l = static_cast < int >(Util::fast_floor(r));
@@ -767,7 +767,7 @@ EMData * CtfAverager::finish()
 			}
 		}
 	}
-	
+
 	for (int i = 0; i < ny / 2; i++) {
 		snri[i] *= nimg / snrn[i];
 	}
@@ -775,13 +775,13 @@ EMData * CtfAverager::finish()
 	if(strcmp(outfile, "") != 0) {
 		Util::save_data(0, 1, snri, ny / 2, outfile);
 	}
-	
+
 
 	float *cd = 0;
 	if (curves) {
 		cd = curves->get_data();
 	}
-	
+
 	for (int i = 0; i < Ctf::CTFOS * ny / 2; i++) {
 		float ctf0 = 0;
 		for (int j = 0; j < nimg; j++) {
@@ -796,7 +796,7 @@ EMData * CtfAverager::finish()
 				cd[i + 2 * Ctf::CTFOS * ny / 2] += ctfn[j][i];
 			}
 		}
-		
+
 		string alg_name = get_name();
 
 		if (alg_name == "CtfCW" && need_snr) {
@@ -843,7 +843,7 @@ EMData * CtfAverager::finish()
 	}
 
 	image0_copy->update();
-	
+
 	float *result_data = result->get_data();
 	EMData *tmp_ift = image0_copy->do_ift();
 	float *tmp_ift_data = tmp_ift->get_data();
@@ -851,7 +851,7 @@ EMData * CtfAverager::finish()
 
 	tmp_ift->update();
 	result->update();
-	
+
 	if( image0_copy )
 	{
 		delete image0_copy;
@@ -893,7 +893,7 @@ EMData * CtfAverager::finish()
 		delete [] tn;
 		tn = 0;
 	}
-	
+
 	return result;
 }
 

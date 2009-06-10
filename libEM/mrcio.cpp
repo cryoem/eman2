@@ -594,7 +594,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 	unsigned short *usdata = 0;
 	if (mrch.mode == MRC_UCHAR) {
 		cdata = new unsigned char[size];
-		for (unsigned int i = 0; i < size; ++i) {
+		for (size_t i = 0; i < size; ++i) {
 			if(data[i] <= rendermin) {
 				cdata[i] = 0;
 			}
@@ -609,7 +609,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 	}
 	else if (mrch.mode == MRC_SHORT || mrch.mode == MRC_SHORT_COMPLEX) {
 		sdata = new short[size];
-		for (unsigned int i = 0; i < size; ++i) {
+		for (size_t i = 0; i < size; ++i) {
 			if(data[i] <= rendermin) {
 				sdata[i] = SHRT_MIN;
 			}
@@ -624,7 +624,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 	}
 	else if (mrch.mode == MRC_USHORT) {
 		usdata = new unsigned short[size];
-		for (unsigned int i = 0; i < size; ++i) {
+		for (size_t i = 0; i < size; ++i) {
 			if(data[i] <= rendermin) {
 				usdata[i] = 0;
 			}

@@ -5,32 +5,32 @@
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
 
 #include "pifio.h"
@@ -166,7 +166,7 @@ bool PifIO::is_valid(const void *first_block)
 {
 	ENTERFUNC;
 	bool result = false;
-	
+
 	if (first_block) {
 		const int *data = static_cast < const int *>(first_block);
 		int m1 = data[0];
@@ -175,7 +175,7 @@ bool PifIO::is_valid(const void *first_block)
 		bool data_big_endian = false;
 		if (endian) {
 			data_big_endian = true;
-		}			
+		}
 
 		if (data_big_endian != ByteOrder::is_host_big_endian()) {
 			ByteOrder::swap_bytes(&m1);
@@ -186,7 +186,7 @@ bool PifIO::is_valid(const void *first_block)
 			 result = true;
 		}
 	}
-	
+
 	EXITFUNC;
 	return result;
 }
@@ -195,7 +195,7 @@ void PifIO::fseek_to(int image_index)
 {
 	int pih_sz = sizeof(PifImageHeader);
 	int image_size = 0;
-	
+
 #if 0
 	// this works for some images that PURDUE people gave to me.
 	// But those images don't follow the PIF specification. So
@@ -208,7 +208,7 @@ void PifIO::fseek_to(int image_index)
 	}
 #endif
 	image_size = pfh.nx * pfh.ny * pfh.nz;
-	
+
 	size_t file_offset = sizeof(PifFileHeader) +
 		(pih_sz + image_size * mode_size) * image_index;
 
@@ -219,10 +219,10 @@ void PifIO::fseek_to(int image_index)
 int PifIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
-	
+
 	check_read_access(image_index);
 	fseek_to(image_index);
-	
+
 	int pih_sz = sizeof(PifImageHeader);
 	PifImageHeader pih;
 
@@ -355,7 +355,7 @@ int PifIO::read_data(float *data, int image_index, const Region *area, bool)
 
 	int pih_sz = sizeof(PifImageHeader);
 	PifImageHeader pih;
-	
+
 	if (fread(&pih, pih_sz, 1, pif_file) != 1) {
 		throw ImageReadException(filename, "PIF Image header");
 	}
@@ -363,7 +363,7 @@ int PifIO::read_data(float *data, int image_index, const Region *area, bool)
 	if (area) {
 		check_region(area, FloatSize(pih.nx, pih.ny, pih.nz), is_new_file);
 	}
-	
+
 	PifDataMode data_mode = static_cast < PifDataMode > (pih.mode);
 	int num_layers = pih.nz;
 #if 0
@@ -372,12 +372,12 @@ int PifIO::read_data(float *data, int image_index, const Region *area, bool)
 	}
 #endif
 	// new way to read PIF data. The new way includes region reading.
-	// If it is tested to be OK, remove the code in #if 0 ... #endif 
+	// If it is tested to be OK, remove the code in #if 0 ... #endif
 	unsigned char * cdata = (unsigned char*)data;
 	short *sdata = (short*) data;
 
 	EMUtil::process_region_io(cdata, pif_file, READ_ONLY,
-							  0, mode_size, pih.nx, pih.ny, 
+							  0, mode_size, pih.nx, pih.ny,
 							  num_layers, area);
 
 	int xlen = 0, ylen = 0, zlen = 0;
@@ -395,7 +395,7 @@ int PifIO::read_data(float *data, int image_index, const Region *area, bool)
 		else if (mode_size == sizeof(int)) {
 			become_host_endian((int *) data, size);
 		}
-		
+
 		if (mode_size == sizeof(char)) {
 			for (size_t i = 0; i < size; i++) {
 				size_t j = size - 1 - i;
@@ -415,9 +415,9 @@ int PifIO::read_data(float *data, int image_index, const Region *area, bool)
 			}
 		}
 	}
-	
+
 	// end of new way for region reading
-	
+
 #if 0
 	int buf_size = pih.nx * mode_size;
 	unsigned char *buf = new unsigned char[buf_size];
@@ -477,7 +477,7 @@ int PifIO::write_data(float *data, int image_index, const Region* area,
 
 	check_write_access(rw_mode, image_index, 0, data);
 	fseek_to(image_index);
-	
+
 	int nx = pfh.nx;
 	int ny = pfh.ny;
 	int nz = pfh.nz;
@@ -488,13 +488,15 @@ int PifIO::write_data(float *data, int image_index, const Region* area,
 	// in #if 0 ... #endif
 	EMUtil::process_region_io(data, pif_file, WRITE_ONLY, 0,
 							  mode_size, nx, ny, nz, area);
-	
+
 #if 0
+	size_t idx;
 	int *buf = new int[nx];
 	for (int i = 0; i < nz; i++) {
 		for (int j = 0; j < ny; j++) {
 			for (int k = 0; k < pfh.nx; k++) {
-				buf[k] = (int) data[i * nx * ny + j * nx + k];
+				idx = i * nx * ny + j * nx + k;
+				buf[k] = (int) data[idx];
 			}
 			fwrite(buf, sizeof(int) * nx, 1, pif_file);
 		}
@@ -505,7 +507,7 @@ int PifIO::write_data(float *data, int image_index, const Region* area,
 		buf = 0;
 	}
 #endif
-	
+
 	EXITFUNC;
 	return 0;
 }

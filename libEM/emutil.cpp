@@ -986,7 +986,7 @@ EMData *EMUtil::make_image_median(const vector < EMData * >&image_list)
 	int image0_nx = image0->get_xsize();
 	int image0_ny = image0->get_ysize();
 	int image0_nz = image0->get_zsize();
-	int size = image0_nx * image0_ny * image0_nz;
+	size_t size = image0_nx * image0_ny * image0_nz;
 
 	EMData *result = new EMData();
 
@@ -1001,7 +1001,7 @@ EMData *EMUtil::make_image_median(const vector < EMData * >&image_list)
 		src[i] = image_list[i]->get_data();
 	}
 
-	for (int i = 0; i < size; i++) {
+	for (size_t i = 0; i < size; i++) {
 		for (int j = 0; j < nitems; j++) {
 			srt[j] = src[j][i];
 		}

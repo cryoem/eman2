@@ -872,8 +872,8 @@ void EMData::ri2inten()
 	if (!is_ri()) ap2ri();
 
 	float * data = get_data();
-	int size = nx * ny * nz;
-	for (int i = 0; i < size; i += 2) {
+	size_t size = nx * ny * nz;
+	for (size_t i = 0; i < size; i += 2) {
 		data[i]=data[i]*data[i]+data[i+1]*data[i+1];
 		data[i+1]=0;
 	}
@@ -893,8 +893,8 @@ void EMData::ri2ap()
 	}
 	float * data = get_data();
 
-	int size = nx * ny * nz;
-	for (int i = 0; i < size; i += 2) {
+	size_t size = nx * ny * nz;
+	for (size_t i = 0; i < size; i += 2) {
 #ifdef	_WIN32
 		float f = (float)_hypot(data[i], data[i + 1]);
 #else
@@ -1330,24 +1330,24 @@ EMData*   EMData::bispecRotTransInvDirect(int type)
 		int LthetaRange  = 59;
 		float ftR        = (2.0*M_PI/LthetaRange );
 		float *thetaRange = new float[LthetaRange]; //= 0:.75:(Mid-1);
-	
+
 		for (int ith=0; ith < LthetaRange; ith++){
 				thetaRange[ith] =  ftR*ith; }
-	
-	
-	
-	
-		
+
+
+
+
+
 		int TotalVol = LradRange*LradRange*LthetaRange;
-	
+
 		float *RotTransInv   = new  float[TotalVol];
 		float *WeightInv     = new  float[TotalVol];
-	
+
 		for (int jW=0; jW<TotalVol; jW++) {
 			RotTransInv[jW] = 0;
 			WeightInv[jW]   = 0;
 		}
-	
+
 
 		for (int jW=0; jW<TotalVol; jW++) {
 			RotTransInv[jW] = 0;
@@ -1355,120 +1355,120 @@ EMData*   EMData::bispecRotTransInvDirect(int type)
 		}
 	//	float  *RotTransInv       = new float[LradRange*LradRange ] ;
 	//	float  *RotTransInvN      = new float[LradRange*LradRange*(NMax+1) ] ;
-	
+
 		for (int Countkxy =0; Countkxy<CountxyMax; Countkxy++){  // Main Section for type 0
 			int kx = kVecX[Countkxy] ;
-			int ky = kVecY[Countkxy] ;  
+			int ky = kVecY[Countkxy] ;
 			float k2 = ::sqrt(kx*kx+ky*ky);
-			float phiK =0; 	
-			if (k2>0)    phiK = jxjyatan2[ (ky+Mid-1)*End + kx+Mid-1]; //  phiK=atan2(ky,kx);  
-			float fkR     = fkVecR[(ky+Mid-1) + (kx+Mid-1) *End] ; 
+			float phiK =0;
+			if (k2>0)    phiK = jxjyatan2[ (ky+Mid-1)*End + kx+Mid-1]; //  phiK=atan2(ky,kx);
+			float fkR     = fkVecR[(ky+Mid-1) + (kx+Mid-1) *End] ;
 			float fkI     = fkVecI[(ky+Mid-1) + (kx+Mid-1) *End]  ;
 	//		printf("Countkxy=%d,\t kx=%d, ky=%d, fkR=%3.2f,fkI=%3.2f \n", Countkxy, kx, ky, fkR, fkI);
-		
+
 			if ((k2==0)|| (k2>Mid) ) { continue;}
-	
+
 			for (int Countqxy =0; Countqxy<CountxyMax; Countqxy++){   // This is the innermost loop
-				int qx   = kVecX[Countqxy] ; 
-				int qy   = kVecY[Countqxy] ; 
+				int qx   = kVecX[Countqxy] ;
+				int qy   = kVecY[Countqxy] ;
 				float q2   = ::sqrt(qx*qx+qy*qy);
-				if ((q2==0)|| (q2>Mid) ) {continue;} 
-				float phiQ =0; 	
-				if (q2>0)   phiQ = jxjyatan2[ (qy+Mid-1)*End + qx+Mid-1]; // phiQ=atan2(qy,qx); 
-				float fqR     = fkVecR[(qy+Mid-1) + (qx+Mid-1) *End] ; 
+				if ((q2==0)|| (q2>Mid) ) {continue;}
+				float phiQ =0;
+				if (q2>0)   phiQ = jxjyatan2[ (qy+Mid-1)*End + qx+Mid-1]; // phiQ=atan2(qy,qx);
+				float fqR     = fkVecR[(qy+Mid-1) + (qx+Mid-1) *End] ;
 				float fqI     = fkVecI[(qy+Mid-1) + (qx+Mid-1) *End]  ;
-				int kCx  = (-kx-qx);  
+				int kCx  = (-kx-qx);
 				int kCy  = (-ky-qy);
 				int kCIx = ((kCx+Mid+2*End)%End);// labels of the image in C
 				int kCIy = ((kCy+Mid+2*End)%End);
 				kCx  = ((kCIx+End-1)%End)+1-Mid; // correct
 				kCy  = ((kCIy+End-1)%End)+1-Mid ; // correct
-	
+
 				float C2   = ::sqrt(kCx*kCx+ kCy*kCy);
 				int CountCxy  = (kCx+Mid-1)*End+(kCy+Mid-1);
 				float fCR     = fkVecR[CountCxy];
 				float fCI     = fkVecI[CountCxy];
-	/*			if (Countkxy==1) {	
+	/*			if (Countkxy==1) {
 					printf(" Countqxy=%d, absD1fkVec(Countqxy)=%f,qx=%d, qy=%d \n", Countqxy, absD1fkVec[Countqxy],qx, qy);
 					printf(" CountCxy=%d, absD1fkVec[CountCxy]=%f,kCx=%d,kCy=%d \n",CountCxy, absD1fkVec[CountCxy], kCx, kCy );
 				}*/
-				float   phiC = jxjyatan2[ (kCy+Mid-1)*End + kCx+Mid-1]; 
+				float   phiC = jxjyatan2[ (kCy+Mid-1)*End + kCx+Mid-1];
 				float   phiQK = (4*M_PI+phiQ-phiK);
 				while (phiQK> (2*M_PI)) phiQK -= (2*M_PI);
-	
-	
-	
+
+
+
 				float bispectemp  = (fkR*(fqR*fCR -fqI*fCI) -fkI*(fqI*fCR  +fqR*fCI));
-	
+
 				if  ((q2<k2) )  continue;
 //				if  ((q2<k2) || (C2<k2) || (C2<q2))  continue;
-	
+
 	//				printf(" CountCxy=%d, absD1fkVec[CountCxy]=%f,kCx=%d,kCy=%d \n",CountCxy, absD1fkVec[CountCxy], kCx, kCy );
-	
-	//                      up to here, matched perfectly with Matlab			
-	
+
+	//                      up to here, matched perfectly with Matlab
+
 				int k2IndLo  = 0; while ((k2>=radRange[k2IndLo+1]) && (k2IndLo+1 < LradRange ) ) k2IndLo +=1;
 				int k2IndHi = k2IndLo;
 				float k2Lo= radRange[k2IndLo];
 				if (k2IndLo+1< LradRange) {
 					k2IndHi   = k2IndLo+1;
 				}
-				float k2Hi= radRange[k2IndHi]; 
-	
+				float k2Hi= radRange[k2IndHi];
+
 				float kCof =k2-k2Lo;
-	
+
 				int q2IndLo  = 0; while ((q2>=radRange[q2IndLo+1]) && (q2IndLo+1 < LradRange ) ) q2IndLo +=1;
 				int q2IndHi=q2IndLo;
 				float q2Lo= radRange[q2IndLo];
-				if (q2IndLo+1 < LradRange)  { 
+				if (q2IndLo+1 < LradRange)  {
 					q2IndHi   = q2IndLo+1 ;
 				}
 				float qCof = q2-q2Lo;
-	
+
 				if ((qCof<0) || (qCof >1) ) {
 					cout<< "Weird! qCof="<< qCof <<  " q2="<< q2 << " q2IndLo="<< q2IndLo << endl ;
 					int x    ;
 					cin >> x ;
 				}
-	
-				int thetaIndLo = 0; while ((phiQK>=thetaRange[thetaIndLo+1])&& (thetaIndLo+1<LthetaRange)) thetaIndLo +=1; 
+
+				int thetaIndLo = 0; while ((phiQK>=thetaRange[thetaIndLo+1])&& (thetaIndLo+1<LthetaRange)) thetaIndLo +=1;
 				int thetaIndHi = thetaIndLo;
-				
+
 				float thetaLo  = thetaRange[thetaIndLo];
 				float thetaHi = thetaLo;
 				float thetaCof = 0;
-	
-				if (thetaIndLo+1< LthetaRange) { 
-					thetaIndHi = thetaIndLo +1; 
+
+				if (thetaIndLo+1< LthetaRange) {
+					thetaIndHi = thetaIndLo +1;
 				}else{
 					thetaIndHi=0;
 				}
-	
+
 				thetaHi    = thetaRange[thetaIndHi];
-	
+
 				if (thetaHi==thetaLo) {
 					thetaCof =0 ;
 				} else {
 					thetaCof   = (phiQK-thetaLo)/(thetaHi-thetaLo);
 				}
-	
+
 				if ((thetaCof>2*M_PI)  ) {
 					cout<< "Weird! thetaCof="<< thetaCof <<endl ;
 					thetaCof=0;
 				}
-	
-				
-	// 			if ((thetaIndLo>=58) || (k2IndLo >= LradRange-1) || (q2IndLo >= LradRange-1) ) { 
-	
-	
+
+
+	// 			if ((thetaIndLo>=58) || (k2IndLo >= LradRange-1) || (q2IndLo >= LradRange-1) ) {
+
+
 				for (int jk =1; jk<=2; jk++){
 				for (int jq =1; jq<=2; jq++){
 				for (int jtheta =1; jtheta<=2; jtheta++){
-	
+
 					float Weight = (kCof+(1-2*kCof)*(jk==1))*(qCof+(1-2*qCof)*(jq==1))
 							* (thetaCof+(1-2*thetaCof)*(jtheta==1));
-	
-					
+
+
 					int k2Ind      =  k2IndLo*(jk==1)      +   k2IndHi*(jk==2);
 					int q2Ind      =  q2IndLo*(jq==1)      +   q2IndHi*(jq==2);
 					int thetaInd   =  thetaIndLo*(jtheta==1)  + thetaIndHi*(jtheta ==2);
@@ -1478,28 +1478,28 @@ EMData*   EMData::bispecRotTransInvDirect(int type)
 						cout << "k2Ind= "<< k2Ind  << " q2Ind="<< q2Ind  << " thetaInd="<< thetaInd  << " q2IndLo="<< q2IndLo  << " q2IndHi="<< q2IndHi  <<  endl;
 						cout << "k2=" << k2 << "q2=" << q2 << " phiQK=" << phiQK*180.0/M_PI<< endl;
 					}*/
-	
+
 					RotTransInv[TotalInd] += Weight*bispectemp;
 					WeightInv[TotalInd]   +=  Weight;
 	//				cout << "k2Ind= "<< k2Ind  << " q2Ind="<< q2Ind  << "Weight=" << Weight << endl;
 				}}}
 			} // Countqxy
 		} // Countkxy
-	
+
 		cout << "Finished Main Section " << endl;
-	
+
 	/*		RotTransInvN[jr1 + LradRange*jr2+LradRange*LradRange*N] = RotTransInvTemp  ;*/
-	
+
 		cout << " LradRange " <<LradRange <<" LthetaRange " << LthetaRange << endl;
 		EMData *RotTransInvF  = new  EMData(LradRange,LradRange,LthetaRange);
 		EMData *WeightImage   = new  EMData(LradRange,LradRange,LthetaRange);
-	
+
 	// 	cout << "FFFFFFF" << endl;
-	// 
+	//
 	// 	RotTransInvF -> set_size(LradRange,LradRange,LthetaRange);
-	// 
+	//
 	// 	cout << "GGGG" << endl;
-	
+
 		for (int jtheta =0; jtheta < LthetaRange; jtheta++){	// write out to RotTransInvF
 		for (int jq =0; jq<LradRange; jq++){ // LradRange
 		for (int jk =0; jk<LradRange ; jk++){// LradRange
@@ -1513,90 +1513,90 @@ EMData*   EMData::bispecRotTransInvDirect(int type)
 			int newjtheta = (LthetaRange- jtheta)%LthetaRange;
 			RotTransInvF -> set_value_at(jq,jk,newjtheta,RotTransInv[TotalInd]/Weight );//  include /Weight
 				}
-			} 
+			}
 		}
-	
+
 		cout << " Almost Done " << endl;
 		system("rm -f WeightImage.???");
 		WeightImage  -> write_image("WeightImage.img");
-	
+
 		return  RotTransInvF ;
 	} // Finish type 0
 
 	if (type==1) {
 		int TotalVol = LradRange*LradRange;
-	
+
 		float *RotTransInv   = new  float[TotalVol];
 		float *WeightInv     = new  float[TotalVol];
-	
+
 		for (int jW=0; jW<TotalVol; jW++) {
 			RotTransInv[jW] = 0;
 			WeightInv[jW]   = 0;
 		}
-	
-	
+
+
 		for (int Countkxy =0; Countkxy<CountxyMax; Countkxy++){
 			int kx = kVecX[Countkxy] ;
-			int ky = kVecY[Countkxy] ;  
+			int ky = kVecY[Countkxy] ;
 			float k2 = ::sqrt(kx*kx+ky*ky);
-			float fkR     = fkVecR[(ky+Mid-1) + (kx+Mid-1) *End] ; 
+			float fkR     = fkVecR[(ky+Mid-1) + (kx+Mid-1) *End] ;
 			float fkI     = fkVecI[(ky+Mid-1) + (kx+Mid-1) *End]  ;
 	//		printf("Countkxy=%d,\t kx=%d, ky=%d, fkR=%3.2f,fkI=%3.2f \n", Countkxy, kx, ky, fkR, fkI);
-		
+
 			if ((k2==0)|| (k2>Mid) ) { continue;}
-	
+
 			for (int Countqxy =0; Countqxy<CountxyMax; Countqxy++){   // This is the innermost loop
 
 //                      up to here, matched perfectly with Matlab
-				int qx   = kVecX[Countqxy] ; 
-				int qy   = kVecY[Countqxy] ; 
+				int qx   = kVecX[Countqxy] ;
+				int qy   = kVecY[Countqxy] ;
 				float q2   = ::sqrt(qx*qx+qy*qy);
-				if ((q2==0)|| (q2>Mid) ) {continue;} 
+				if ((q2==0)|| (q2>Mid) ) {continue;}
 				if  ((q2<k2) )   continue;
 
-				float fqR     = fkVecR[(qy+Mid-1) + (qx+Mid-1) *End] ; 
+				float fqR     = fkVecR[(qy+Mid-1) + (qx+Mid-1) *End] ;
 				float fqI     = fkVecI[(qy+Mid-1) + (qx+Mid-1) *End]  ;
 
-				int kCx  = (-kx-qx);  
+				int kCx  = (-kx-qx);
 				int kCy  = (-ky-qy);
 				int kCIx = ((kCx+Mid+2*End)%End);// labels of the image in C
 				int kCIy = ((kCy+Mid+2*End)%End);
 				kCx  = ((kCIx+End-1)%End)+1-Mid; // correct
 				kCy  = ((kCIy+End-1)%End)+1-Mid ; // correct
-	
+
 				float C2   = ::sqrt(kCx*kCx+ kCy*kCy);
 				int CountCxy  = (kCx+Mid-1)*End+(kCy+Mid-1);
 				float fCR     = fkVecR[CountCxy];
 				float fCI     = fkVecI[CountCxy];
-	
-	
+
+
 				float bispectemp  = (fkR*(fqR*fCR -fqI*fCI) -fkI*(fqI*fCR  +fqR*fCI));
-	
-	
+
+
 				int k2IndLo  = 0; while ((k2>=radRange[k2IndLo+1]) && (k2IndLo+1 < LradRange ) ) k2IndLo +=1;
 				int k2IndHi = k2IndLo;
 				float k2Lo= radRange[k2IndLo];
 				if (k2IndLo+1< LradRange) {
 					k2IndHi   = k2IndLo+1;
 				}
-				float k2Hi= radRange[k2IndHi]; 
-	
+				float k2Hi= radRange[k2IndHi];
+
 				float kCof =k2-k2Lo;
 
 				int q2IndLo  = 0; while ((q2>=radRange[q2IndLo+1]) && (q2IndLo+1 < LradRange ) ) q2IndLo +=1;
 				int q2IndHi=q2IndLo;
 				float q2Lo= radRange[q2IndLo];
-				if (q2IndLo+1 < LradRange)  { 
+				if (q2IndLo+1 < LradRange)  {
 					q2IndHi   = q2IndLo+1 ;
 				}
 				float qCof = q2-q2Lo;
-	
-	
+
+
 				for (int jk =1; jk<=2; jk++){
 				for (int jq =1; jq<=2; jq++){
-	
+
 					float Weight = (kCof+(1-2*kCof)*(jk==1))*(qCof+(1-2*qCof)*(jq==1));
-					
+
 					int k2Ind      =  k2IndLo*(jk==1)      +   k2IndHi*(jk==2);
 					int q2Ind      =  q2IndLo*(jq==1)      +   q2IndHi*(jq==2);
 					int TotalInd   = q2Ind*LradRange+k2Ind;
@@ -1606,14 +1606,14 @@ EMData*   EMData::bispecRotTransInvDirect(int type)
 				}}
 			} // Countqxy
 		} // Countkxy
-	
+
 //		cout << "Finished Main Section " << endl;
 //		cout << " LradRange " <<LradRange <<  endl;
 
 
 		EMData *RotTransInvF  = new  EMData(LradRange,LradRange);
 		EMData *WeightImage   = new  EMData(LradRange,LradRange);
-	
+
 		for (int jk =0; jk<LradRange ; jk++){// LradRange
 		for (int jq =jk; jq<LradRange; jq++){ // LradRange
 			int TotalInd      = jq*LradRange+jk;
@@ -1626,10 +1626,10 @@ EMData*   EMData::bispecRotTransInvDirect(int type)
 			RotTransInvF -> set_value_at(jk,jq,ValNow);//  include /Weight
  			RotTransInvF -> set_value_at(jq,jk,ValNow );//  include /Weight
 		}}
-	
+
 		system("rm -f WeightImage.???");
 		WeightImage  -> write_image("WeightImage.img");
-	
+
 		return  RotTransInvF ;
 	}
 }
@@ -1784,10 +1784,12 @@ void EMData::insert_scaled_sum(EMData *block, const FloatPoint &center,
 		float by=block->get_ysize()/2.0f;
 		float bz=block->get_zsize()/2.0f;
 
+		size_t idx;
 		for (int x=x0; x<=x1; x++) {
 			for (int y=y0; y<=y1; y++) {
 				for (int z=z0; z<=z1; z++) {
-					data[x + y * nx + z * nx * ny] +=
+					idx = x + y * nx + z * nx * ny;
+					data[idx] +=
 						block->sget_value_at_interp((x-center[0])/scale+bx,(y-center[1])/scale+by,(z-center[2])/scale+bz);
 				}
 			}
