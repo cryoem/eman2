@@ -59,7 +59,7 @@ else : gamma=0
 # Pass 1, sequential alignment to average
 avg=EMData()
 avg.read_image(sys.argv[1],0)
-ref0=avg.process("filter.lowpass.gauss",{"sigma":.15})
+ref0=avg.process("filter.lowpass.gauss",{"cutoff_abs":.15})
 nx=avg.get_xsize()
 if darkref :
 	darkref.process_inplace("normalize.toimage",{"noisy":avg})
@@ -75,7 +75,7 @@ for i in range(1,n):
 		aa-=darkref
 	aa-=aa.get_edge_mean()
 	
-	a=aa.process("filter.lowpass.gauss",{"sigma":.1})
+	a=aa.process("filter.lowpass.gauss",{"cutoff_abs":.1})
 	
 	b=a.align("rotate_translate",ref0,{"nozero":1,"maxshift":nx/2},"dot",{"negative":1})
 #	b=a.align("translational",ref0,{"nozero":1,"maxshift":nx/2},"dot",{"negative":1})

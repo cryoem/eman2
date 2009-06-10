@@ -85,7 +85,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 		return NULL; // FIXME: replace w/ exception throw
 	}
 
-	// If the input image is already a Fourier image, then we want to 
+	// If the input image is already a Fourier image, then we want to
 	// have this routine return a Fourier image
 	complex_input = fimage->is_complex();
 	if ( complex_input && 1 == dopad ) {
@@ -93,14 +93,14 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 		LOGERR("Cannot pad Fourier input image");
 		return NULL; // FIXME: replace w/ exception throw
 	}
-				
+
 	Util::KaiserBessel* kbptr = 0;
 
 
 	nx  = fimage->get_xsize();
 	ny  = fimage->get_ysize();
 	nz  = fimage->get_zsize();
-		// We manifestly assume no zero-padding here, just the 
+		// We manifestly assume no zero-padding here, just the
 		// necessary extension along x for the fft
 	if (complex_input) nx = (nx - 2 + fimage->is_fftodd());
 
@@ -111,12 +111,12 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 	int lsd2 = (nxp + 2 - nxp%2) / 2; // Extended x-dimension of the complex image
 	int lsd3 = lsd2 - 1;
 
-	//  Perform padding (if necessary) and fft, if the image is not already an fft image 
+	//  Perform padding (if necessary) and fft, if the image is not already an fft image
 	EMData* fp = NULL; // workspace image
 	if (complex_input) {
 		if (doInPlace) {
 			// it's okay to change the original image
-			fp = fimage; 
+			fp = fimage;
 		} else {
 			// fimage must remain pristine
 			fp = fimage->copy();
@@ -124,7 +124,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 	} else {
 		if (doInPlace) {
 			if (npad>1) {
-				LOGERR("Cannot pad with inplace filter"); 
+				LOGERR("Cannot pad with inplace filter");
 				return NULL;	// FIXME, exception
 			}
 			fp=fimage;
@@ -143,7 +143,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 	dx = 1.0f/float(nxp);
 #ifdef _WIN32
 	dy = 1.0f/_MAX(float(nyp),1.0f);
-	dz = 1.0f/_MAX(float(nzp),1.0f);	
+	dz = 1.0f/_MAX(float(nzp),1.0f);
 #else
 	dy = 1.0f/std::max(float(nyp),1.0f);
 	dz = 1.0f/std::max(float(nzp),1.0f);
@@ -159,43 +159,43 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 	// For the given type of filter set up any necessary parameters for the
 	// filter calculation.  FIXME: Need parameter bounds checking!
 	switch (filter_type) {
-		case TOP_HAT_LOW_PASS: 
+		case TOP_HAT_LOW_PASS:
 		case TOP_HAT_HIGH_PASS:
-			omega = params["cutoff_frequency"];
+			omega = params["cutoff_abs"];
 			omega = 1.0f/omega/omega;
 			break;
-		case TOP_HAT_BAND_PASS: 
-			omegaL = params["low_cutoff_frequency"]; 
+		case TOP_HAT_BAND_PASS:
+			omegaL = params["low_cutoff_frequency"];
 			omegaH = params["high_cutoff_frequency"];
-			omegaL = 1.0f/omegaL/omegaL; 
+			omegaL = 1.0f/omegaL/omegaL;
 			omegaH = 1.0f/omegaH/omegaH;
 			break;
 		case TOP_HOMOMORPHIC:
-			omegaL = params["low_cutoff_frequency"]; 
+			omegaL = params["low_cutoff_frequency"];
 			omegaH = params["high_cutoff_frequency"];
 			gamma = params["value_at_zero_frequency"];
-			omegaL = 1.0f/omegaL/omegaL; 
+			omegaL = 1.0f/omegaL/omegaL;
 			omegaH = 1.0f/omegaH/omegaH;
 			break;
-		case GAUSS_LOW_PASS: 
-		case GAUSS_HIGH_PASS: 
+		case GAUSS_LOW_PASS:
+		case GAUSS_HIGH_PASS:
 		case GAUSS_INVERSE:
-			omega = params["sigma"]; 
+			omega = params["cutoff_abs"];
 			omega = 0.5f/omega/omega;
 			break;
-		case GAUSS_BAND_PASS: 
-			omega = params["sigma"]; 
+		case GAUSS_BAND_PASS:
+			omega = params["cutoff_abs"];
 			center = params["center"];
 			omega = 0.5f/omega/omega;
 			break;
-		case GAUSS_HOMOMORPHIC: 
-			omega = params["sigma"]; 
+		case GAUSS_HOMOMORPHIC:
+			omega = params["cutoff_abs"];
 			gamma = params["value_at_zero_frequency"];
 			omega = 0.5f/omega/omega;
 			gamma = 1.0f-gamma;
 			break;
-		case BUTTERWORTH_LOW_PASS: 
-		case BUTTERWORTH_HIGH_PASS: 
+		case BUTTERWORTH_LOW_PASS:
+		case BUTTERWORTH_HIGH_PASS:
 			omegaL = params["low_cutoff_frequency"];
 			omegaH = params["high_cutoff_frequency"];
 			eps = 0.882f;
@@ -203,7 +203,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 			ord = 2.0f*log10(eps/sqrt(aa*aa-1.0f))/log10(omegaL/omegaH);
 			omegaL = omegaL/pow(eps,2.0f/ord);
 			break;
-		case BUTTERWORTH_HOMOMORPHIC: 
+		case BUTTERWORTH_HOMOMORPHIC:
 			omegaL = params["low_cutoff_frequency"];
 			omegaH = params["high_cutoff_frequency"];
 			gamma  = params["value_at_zero_frequency"];
@@ -219,20 +219,20 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 			zshift = params["z_shift"];
 			//origin_type = params["origin_type"];
 			break;
-		case TANH_LOW_PASS: 
-		case TANH_HIGH_PASS: 
-			omega = params["cutoff_frequency"];
+		case TANH_LOW_PASS:
+		case TANH_HIGH_PASS:
+			omega = params["cutoff_abs"];
 			aa = params["fall_off"];
 			cnst = float(pihalf/aa/omega);
 			break;
-		case TANH_HOMOMORPHIC: 
-			omega = params["cutoff_frequency"];
+		case TANH_HOMOMORPHIC:
+			omega = params["cutoff_abs"];
 			aa = params["fall_off"];
 			gamma = params["value_at_zero_frequency"];
 			cnst = float(pihalf/aa/omega);
 			gamma=1.0f-gamma;
 			break;
-		case TANH_BAND_PASS:  
+		case TANH_BAND_PASS:
 			omegaL = params["low_cutoff_frequency"];
 			aL = params["Low_fall_off"];
 			omegaH = params["high_cutoff_frequency"];
@@ -243,7 +243,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 		case CTF_:
 			dz       = params["defocus"];
 			cs       = params["Cs"];
-			voltage  = params["voltage"];		  
+			voltage  = params["voltage"];
 			ps       = params["Pixel_size"];
 			b_factor = params["B_factor"];
 			wgh      = params["amp_contrast"];
@@ -254,7 +254,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 		case KAISER_SINH:
 		case KAISER_I0_INVERSE:
 		case KAISER_SINH_INVERSE:
-			{	 
+			{
 				float alpha = params["alpha"];
 				int       K = params["K"];
 				float     r = params["r"];
@@ -275,18 +275,18 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 			if (nzp > 1) {maxsize = vector<float>::size_type(1.9*szmax);} else {maxsize = vector<float>::size_type(1.6*szmax);}
 			for (vector<float>::size_type i = tsize+1; i < maxsize; i++) table.push_back(0.f);
 			break;
-		default: 
-			LOGERR("Unknown Fourier Filter type"); 
+		default:
+			LOGERR("Unknown Fourier Filter type");
 			return NULL; // FIXME: replace w/ exception throw
 	}
 	// Perform actual calculation
 	//  Gaussian bandpass is the only one with center for frequencies
 	if(filter_type == GAUSS_BAND_PASS) {
 		for ( iz = 1; iz <= nzp; iz++) {
-			jz=iz-1; if(jz>nzp2) jz=jz-nzp; 
+			jz=iz-1; if(jz>nzp2) jz=jz-nzp;
 			argz = (float(jz)-center)*(float(jz)-center)*dz2;
 			for ( iy = 1; iy <= nyp; iy++) {
-				jy=iy-1; if(jy>nyp2) jy=jy-nyp; 
+				jy=iy-1; if(jy>nyp2) jy=jy-nyp;
 				argy = argz + (float(jy)-center)*(float(jy)-center)*dy2;
 				for ( ix = 1; ix <= lsd2; ix++) {
 					jx=ix-1; argx = argy + (float(jx)-center)*(float(jx)-center)/float((nxp-1)*(nxp-1));
@@ -339,7 +339,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 						jy=iy-1; if (jy>nyp2) jy=jy-nyp; argy = argz + float(jy*jy)*dy2;
 						for ( ix = 1; ix <= lsd2; ix++) {
 							jx=ix-1; argx = argy + float(jx*jx)*dx2;
-							if (argx*omegaH>1.0f)      fp->cmplx(ix,iy,iz)  = 0.0f; 
+							if (argx*omegaH>1.0f)      fp->cmplx(ix,iy,iz)  = 0.0f;
 							else if (argx*omegaL<=1.0f) fp->cmplx(ix,iy,iz) *= gamma;
 						}
 					}
@@ -395,15 +395,15 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 				break;
 			case KAISER_I0:   // K-B filter
 				for ( iz = 1; iz <= nzp; iz++) {
-					jz=iz-1; if (jz>nzp2) jz=jz-nzp; 
+					jz=iz-1; if (jz>nzp2) jz=jz-nzp;
 					float nuz = jz*dz;
 					for ( iy = 1; iy <= nyp; iy++) {
-						jy=iy-1; if (jy>nyp2) jy=jy-nyp; 
+						jy=iy-1; if (jy>nyp2) jy=jy-nyp;
 						float nuy = jy*dy;
 						for ( ix = 1; ix <= lsd2; ix++) {
-							jx=ix-1; 
+							jx=ix-1;
 							float nux = jx*dx;
-							//if (!kbptr) 
+							//if (!kbptr)
 							//	throw
 							//		NullPointerException("kbptr null!");
 							switch (ndim) {
@@ -423,13 +423,13 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 				break;
 			case KAISER_SINH:   //  Sinh filter
 				for ( iz = 1; iz <= nzp; iz++) {
-					jz=iz-1; if (jz>nzp2) jz=jz-nzp; 
+					jz=iz-1; if (jz>nzp2) jz=jz-nzp;
 					for ( iy = 1; iy <= nyp; iy++) {
-						jy=iy-1; if(jy>nyp2) jy=jy-nyp; 
+						jy=iy-1; if(jy>nyp2) jy=jy-nyp;
 						for ( ix = 1; ix <= lsd2; ix++) {
-							jx=ix-1; 
-							//if (!kbptr) 
-							//	throw 
+							jx=ix-1;
+							//if (!kbptr)
+							//	throw
 							//		NullPointerException("kbptr null!");
 							switch (ndim) {
 								case 3:
@@ -450,16 +450,16 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 				break;
 			case KAISER_I0_INVERSE:   // 1./(K-B filter)
 				for ( iz = 1; iz <= nzp; iz++) {
-					jz=iz-1; if (jz>nzp2) jz=jz-nzp; 
+					jz=iz-1; if (jz>nzp2) jz=jz-nzp;
 					float nuz = jz*dz;
 					for ( iy = 1; iy <= nyp; iy++) {
-						jy=iy-1; if(jy>nyp2) jy=jy-nyp; 
+						jy=iy-1; if(jy>nyp2) jy=jy-nyp;
 						float nuy = jy*dy;
 						for ( ix = 1; ix <= lsd2; ix++) {
-							jx=ix-1; 
+							jx=ix-1;
 							float nux = jx*dx;
-						//if (!kbptr) 
-						//	throw 
+						//if (!kbptr)
+						//	throw
 						//		NullPointerException("kbptr null!");
 							switch (ndim) {
 								case 3:
@@ -478,13 +478,13 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 				break;
 			case KAISER_SINH_INVERSE:  // 1./sinh
 				for ( iz = 1; iz <= nzp; iz++) {
-					jz=iz-1; if (jz>nzp2) jz=jz-nzp; 
+					jz=iz-1; if (jz>nzp2) jz=jz-nzp;
 					for ( iy = 1; iy <= nyp; iy++) {
-						jy=iy-1; if (jy>nyp2) jy=jy-nyp; 
+						jy=iy-1; if (jy>nyp2) jy=jy-nyp;
 						for ( ix = 1; ix <= lsd2; ix++) {
-							jx=ix-1; 
-							//if (!kbptr) 
-							//	throw 
+							jx=ix-1;
+							//if (!kbptr)
+							//	throw
 							//		NullPointerException("kbptr null!");
 							switch (ndim) {
 								case 3:
@@ -542,11 +542,11 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 			case SHIFT:
 				//if (origin_type) {
 					for ( iz = 1; iz <= nzp; iz++) {
-						jz=iz-1; if (jz>nzp2) jz=jz-nzp; 
+						jz=iz-1; if (jz>nzp2) jz=jz-nzp;
 						for ( iy = 1; iy <= nyp; iy++) {
-							jy=iy-1; if (jy>nyp2) jy=jy-nyp; 
+							jy=iy-1; if (jy>nyp2) jy=jy-nyp;
 							for ( ix = 1; ix <= lsd2; ix++) {
-								jx=ix-1; 
+								jx=ix-1;
 								fp->cmplx(ix,iy,iz) *= 	exp(-float(twopi)*iimag*(xshift*jx/nx + yshift*jy/ny+ zshift*jz/nz));
 							}
 						}
@@ -556,10 +556,10 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 						jz=iz-1; if (jz>nzp2) jz=jz-nzp;
 						if  (iz>nzp2) { kz=iz-nzp2; } else { kz=iz+nzp2; }
 						for ( iy = 1; iy <= nyp; iy++) {
-							jy=iy-1; if (jy>nyp2) jy=jy-nyp; 
+							jy=iy-1; if (jy>nyp2) jy=jy-nyp;
 							if  (iy>nyp2) { ky=iy-nyp2; } else { ky=iy+nyp2; }
 							for ( ix = 1; ix <= lsd2; ix++) {
-								jx=ix-1; 
+								jx=ix-1;
 								fp->cmplx(ix,ky,kz) *= 	exp(-float(twopi)*iimag*(xshift*jx/nx + yshift*jy/ny+ zshift*jz/nz));
 							}
 						}
@@ -612,7 +612,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 						jy=iy-1; if (jy>nyp2) jy=jy-nyp; argy = argz + float(jy*jy)*dy2;
 						for ( ix = 1; ix <= lsd2; ix++) {
 							jx=ix-1; argx = argy + float(jx*jx)*dx2;
-							argx = sqrt(argx); 
+							argx = sqrt(argx);
 							fp->cmplx(ix,iy,iz) *= 0.5f*(tanh(cnstH*(argx+omegaH))-tanh(cnstH*(argx-omegaH))-tanh(cnstL*(argx+omegaL))+tanh(cnstL*(argx-omegaL)));
 						}
 					}
@@ -636,14 +636,14 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 				break;
 			case CTF_:
 				for ( iz = 1; iz <= nzp; iz++) {
-					jz=iz-1; if (jz>nzp2) jz=jz-nzp; 
+					jz=iz-1; if (jz>nzp2) jz=jz-nzp;
 					for ( iy = 1; iy <= nyp; iy++) {
-						jy=iy-1; if (jy>nyp2) jy=jy-nyp; 
+						jy=iy-1; if (jy>nyp2) jy=jy-nyp;
 						for ( ix = 1; ix <= lsd2; ix++) {
-							jx=ix-1; 
+							jx=ix-1;
 							if(ny>1 && nz<=1 ) ak=sqrt(static_cast<float>(jx)/lsd3*static_cast<float>(jx)/lsd3 +
 			        						     static_cast<float>(jy)/nyp2*static_cast<float>(jy)/nyp2)/ps/2.0f;
-							else if(ny<=1) ak=sqrt(static_cast<float>(jx)/lsd3*static_cast<float>(jx)/lsd3)/ps/2.0f;						  	    
+							else if(ny<=1) ak=sqrt(static_cast<float>(jx)/lsd3*static_cast<float>(jx)/lsd3)/ps/2.0f;
 							else if(nz>1)  ak=sqrt(static_cast<float>(jx)/lsd3*static_cast<float>(jx)/lsd3 +
 						               		static_cast<float>(jy)/nyp2*static_cast<float>(jy)/nyp2 +
 				      					    static_cast<float>(jz)/nzp2*static_cast<float>(jz)/nzp2)/ps/2.0f;
@@ -670,7 +670,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 		// Return a complex (Fourier) filtered image
 		// Note: fp and fimage are the _same_ object if doInPlace
 		// is true, so in that case fimage has been filtered.
-		// We always return an image (pointer), but if the function 
+		// We always return an image (pointer), but if the function
 		// was called with doInPlace == true then the calling function
 		// will probably ignore the return value.
 
