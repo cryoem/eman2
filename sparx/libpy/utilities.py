@@ -2211,6 +2211,7 @@ def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, 
 	for n in xrange(number_of_proc):
 		if n != main_node:
 			dis = mpi_recv(2, MPI_INT, n, MPI_TAG_UB, comm)
+			dis = dis.tolist()
 			value = mpi_recv(len_list*(dis[1]-dis[0]), MPI_FLOAT, n, MPI_TAG_UB, comm)
 			ldis.append([dis[0], dis[1]])
 			headers.append(value)
@@ -2605,7 +2606,7 @@ def generate_ctf(p):
 	
 	if defocus > 100:  # which means it is very likely in Angstrom, therefore it is using old convention
 		defocus *= 1e-4
-	
+
 	if amp_contrast < 1.0:
 		from math import sqrt
 		amp_contrast = amp_contrast*100/sqrt(2*amp_contrast**2-2*amp_contrast+1)
