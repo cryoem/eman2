@@ -306,17 +306,20 @@ class EMTomoPtclReportTool:
 	def get_particle_table(self):
 		EMProjectListCleanup.clean_up_project_file_list(self.project_list) # in case things have gone missing
 		project_db = db_open_dict("bdb:project")
-		particle_names = project_db.get(self.project_list,dfl=[])
-		self.project_files_at_init = particle_names # so if the user hits cancel this can be reset
+		ptcls_list = project_db.get(self.project_list,dfl=[])
+		self.project_files_at_init = ptcls_list # so if the user hits cancel this can be reset
 
-		from emform import EM3DFileTable,EMFileTable
-		table = EM3DFileTable(particle_names,name=self.name,desc_short=self.title,desc_long="")
+		table =  self.get_particle_table_with_ptcls(ptcls_list)
 		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(self.project_list)
 		table.add_context_menu_data(context_menu_data)
 		table.add_button_data(EMRawDataReportTask.ProjectAddRawDataButton(table,context_menu_data))
-	#	table.insert_column_data(1,EMFileTable.EMColumnData("Particles On Disk",ParticleReportTask.get_num_ptcls,"Particles currently stored on disk that are associated with this image"))
-		table.insert_column_data(1,EMFileTable.EMColumnData("Particle Dims",ParticleReportTask.get_particle_dims,"The dimensions of the particles that are stored on disk"))
+		return table
+	
+	def get_particle_table_with_ptcls(self,ptcls_list):
 		
+		from emform import EM3DFileTable,EMFileTable
+		table = EM3DFileTable(ptcls_list,name=self.name,desc_short=self.title,desc_long="")
+		table.insert_column_data(1,EMFileTable.EMColumnData("Particle Dims",ParticleReportTask.get_particle_dims,"The dimensions of the particles that are stored on disk"))
 		return table
 	
 class EMTomoParticleReportTask(WorkFlowTask):
@@ -350,6 +353,24 @@ class EMTomoAveragesReportTask(EMTomoParticleReportTask):
 		EMTomoParticleReportTask.__init__(self,"global.tpr_ptcl_averages")
 		self.window_title = "Project Tomogram Averages"
 		
+class EMTomoGenericReportTask(WorkFlowTask):
+	"""This form shows the images that you selected"""
+	def __init__(self,ptcls_list=[]):
+		WorkFlowTask.__init__(self)
+		self.window_title = "Tomo Particles"
+		self.table_tool = None
+		self.ptcls_list = ptcls_list
+	def get_params(self):
+		params = []
+		
+		self.table_tool = EMTomoPtclReportTool()
+		table = self.table_tool.get_particle_table_with_ptcls(self.ptcls_list)
+		
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
+		params.append(table)  
+		
+		return params
+	
 class EMTomoPtclAlignmentReportTask(WorkFlowTask):
 	"""This form shows the results of any alignments you have performed. It also lists the most likely alignment for each probe."""
 	def __init__(self):
@@ -602,31 +623,84 @@ class E2TomoBoxerOutputTask(WorkFlowTask):
 			self.emit(QtCore.SIGNAL("task_idle"))
 			self.form.closeEvent(None)
 			self.form = None
-			
+
+class EMBaseTomChooseFilteredPtclsTask(WorkFlowTask):
+	"""Choose the data""" 
+	def __init__(self):
+		WorkFlowTask.__init__(self)
+		self.window_title = "Choose Filtered Images To Display"
+		self.preferred_size = (480,300)
+		
+	def get_params(self):
+		ptcl_opts = EMPartStackOptions("global.tpr_ptcls","global.tpr_filt_ptcls_map")
+		self.particles_map, self.particles_name_map, choices, self.name_map = ptcl_opts.get_particle_options()
+		
+		#if as_string:
+		#params.append(ParamDef(name="particle_set_choice",vartype="string",desc_long="Choose the particle data set you wish to use to generate a starting data for e2refine2d",desc_short=title,property=None,defaultunits=db.get("particle_set_choice",dfl=""),choices=choices))
+		db = db_open_dict(self.form_db_name)
+		params = []
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
+		if len(choices) > 0:
+			params.append(ParamDef(name="tomo_filt_choice",vartype="choice",desc_long="Choose from the filtered tomogram particles",desc_short="Choose data",property=None,defaultunits=db.get("tomo_filt_choice",dfl=""),choices=choices))
+		else:
+			params.append(ParamDef(name="blurb2",vartype="text",desc_short="",desc_long="",property=None,defaultunits="There are no particles in the project. Go back to earlier stages and box/import particles",choices=None))
+		return params
+
+	def on_form_ok(self,params):
+		raise NotImplementedException("Inheriting classes must implement this function")
+		
+
+		
+
+class EMTomoChooseFilteredPtclsTask(EMBaseTomChooseFilteredPtclsTask):
+	"""Choose the data""" 
+	def __init__(self):
+		EMBaseTomChooseFilteredPtclsTask.__init__(self)
+		self.form_db_name ="bdb:tomo.choose.filtered"
+
+	def on_form_ok(self,params):
+		if not params.has_key("tomo_filt_choice") or params["tomo_filt_choice"] == None:
+			error("Please choose some data")
+			return
+		choice = params["tomo_filt_choice"]
+		
+		task = EMTomoGenericReportTask(self.particles_map[self.particles_name_map[choice]])
+		self.emit(QtCore.SIGNAL("replace_task"),task,"Filter Tomo Particles")
+		self.form.closeEvent(None)
+		self.form = None
+		
+		self.write_db_entries(params)
+
+
+
 class E2TomoFilterParticlesTask(WorkFlowTask):	
-	"""Select the images you wish to filter"""
+	"""This task is for Fourier filtering and/or rotating your data. If you choose to perform both of these operations, the Fourier filtering is performed before the rotation."""
 	
 	preprocessor_cache = None
-	def __init__(self):
+	def __init__(self,ptcls_list=[],name_map={}):
 		WorkFlowTask.__init__(self)
 		self.window_title = "Filter Tomogram Particles"
 		self.output_formats = ["bdb","hdf"] # disable img from the workflow because in EMAN2 we want to store more metadata in the header
 		self.form_db_name = "bdb:emform.tomo.filter_particles"
 		self.project_list = "global.tpr_ptcls"
+		self.ptcls_list = ptcls_list
+		self.name_map = name_map
+		
 	def get_params(self):
 		params = []
 		
 		params = []
 		
 		self.table_tool = EMTomoPtclReportTool(self.project_list,self.window_title)
-		table = self.table_tool.get_particle_table()
+		table = self.table_tool.get_particle_table_with_ptcls(self.ptcls_list)
 		
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
 		params.append(table)
 		self.add_filt_params(params)
-		
+		db = db_open_dict(self.form_db_name)
+		pname =  ParamDef("name",vartype="string",desc_short="Filtered set name",desc_long="The processed sets will be referred to by this name",property=None,defaultunits=db.get("name",dfl="filt"),choices=[])
+		params.append(pname)
 		return params
-	
 	
 	def add_filt_params(self,params):
 		'''
@@ -637,11 +711,11 @@ class E2TomoFilterParticlesTask(WorkFlowTask):
 		phi = ParamDef(name="phi",vartype="float",desc_short="Phi rotation",desc_long="Rotate your model about the z' axis",property=None,defaultunits=db.get("phi",0.0),choices=None)
 		ppostproc =  ParamDef("filter",vartype="string",desc_short="Filter",desc_long="A post processor applied to the reconstructed model",property=None,defaultunits=db.get("filter",dfl="None"),choices=self.get_postprocess_filt_options())
 		ppostprocargs =  ParamDef(name="filterargs",vartype="string",desc_short="params",desc_long="Parameters for the post processor see \"e2help.py processors\"",property=None,defaultunits=db.get("filterargs",dfl=""),choices=[])	
-		pname =  ParamDef("name",vartype="string",desc_short="Filtered set name",desc_long="The processed sets will be referred to by this name",property=None,defaultunits=db.get("name",dfl="Filtered"),choices=[])
 		
 		params.append([ppostproc,ppostprocargs])
 		params.append([az,alt,phi])
-		params.append(pname)
+		
+		
 		
 	def get_postprocess_filt_options(self):
 		if E2TomoFilterParticlesTask.preprocessor_cache == None:
@@ -685,12 +759,17 @@ class E2TomoFilterParticlesTask(WorkFlowTask):
 						s = s[:-1] # get rid of the last column
 						error_message.append(s)
 						
+		error_message.extend(self.check_name_param(params))		
+		return error_message
+	
+	def check_name_param(self,params):
+		error_message = []
+		
 		if not params.has_key("name"):
 			error_message.append("You must supply a name for your filtered set")
 		else:
 			if params["name"] in self.get_previous_filtered_set_names():
 				error_message.append("There is a previously filtered set with the name %s. Please choose another name" %params["name"])
-
 		
 		return error_message
 	
@@ -699,7 +778,6 @@ class E2TomoFilterParticlesTask(WorkFlowTask):
 			self.run_select_files_msg()
 			return
 		
-		options = EmptyObject()
 		error_message = self.check_params(params)
 		if len(error_message) >0: 
 			self.show_error_message(error_message)
@@ -721,12 +799,14 @@ class E2TomoFilterParticlesTask(WorkFlowTask):
 		self.form.closeEvent(None)
 		self.form = None
 	
+		self.write_db_entries(params)	
 	
 	def get_previous_filtered_set_names(self):
 		project_db = db_open_dict("bdb:project")
 		name = "global.tpr_filt_ptcls_map"
 		EMProjectListCleanup.clean_up_filt_particles(name)
-		if not project_db.has_key(name): return []
+		if not project_db.has_key(name):
+			return []
 		
 		db_map = project_db.get(name)
 		previous_sets = []
@@ -735,14 +815,18 @@ class E2TomoFilterParticlesTask(WorkFlowTask):
 			for filt,name in dict.items():
 				if 	previous_sets.count(filt) == 0:
 					previous_sets.append(filt)
-
+					
 		return previous_sets
+	
+	def convert_to_root(self,name):
+		if self.name_map.has_key(name): return self.name_map[name]
+		else:return name
 	
 	def output_names(self,params):
 		'''
 		Only works if you the params dictionary has the filenames and name keys 
 		'''
-		return ["bdb:tomogram_particles#"+get_file_tag(f)+params["name"] for f in params["filenames"]]
+		return ["bdb:tomo_particles#"+get_file_tag(self.convert_to_root(f))+"_"+params["name"] for f in params["filenames"]]
 		
 	def process_all(self,params):
 		
@@ -770,24 +854,386 @@ class E2TomoFilterParticlesTask(WorkFlowTask):
 		
 		progress.close()
 		
+		self.save_to_filt_ptcls_map(params, outnames)
+		return True,"Success"
+	
+	def save_to_filt_ptcls_map(self,params,outnames):
 		
 		project_db = db_open_dict("bdb:project")
-		name = "global.tpr_filt_ptcls_map"
-		EMProjectListCleanup.clean_up_filt_particles(name)
-		db_map = project_db.get(name,dfl={})
+		project_list = "global.tpr_filt_ptcls_map"
+		EMProjectListCleanup.clean_up_filt_particles(project_list)
+		db_map = project_db.get(project_list,dfl={})
 		
 		for i,name in enumerate(params["filenames"]):
-			if db_map.has_key(name):
-				d = db_map[name]
+			real_name = self.convert_to_root(name)
+			if db_map.has_key(real_name):
+				d = db_map[real_name]
 				d[params["name"]] = outnames[i]
-				db_map[name] = d
+				db_map[real_name] = d
 			else:
 				d = {}
 				d[params["name"]] = outnames[i]
-				db_map[name] = d
-				
-		return True,"Success"
+				db_map[real_name] = d
+		project_db[project_list] = db_map
+
+class E2TomoScaleClipTask(E2TomoFilterParticlesTask):
+	'''Scale and clipping'''
+	def __init__(self,ptcls_list=[],name_map={}):
+		E2TomoFilterParticlesTask.__init__(self,ptcls_list,name_map)
+		self.form_db_name = "bdb:emform.tomo.filter_scale_clip"
+	
+	def add_filt_params(self,params):
+		'''
+		'''
+		db = db_open_dict(self.form_db_name)
+		scale = ParamDef(name="scale",vartype="float",desc_short="Scale pixel width",desc_long="Scales the input image pixel spacing by the given amount",property=None,defaultunits=db.get("scale",dfl=1.0),choices=None)
+		clip = ParamDef(name="clip",vartype="int",desc_short="Clip to",desc_long="Clipping to be applied to scaled images",property=None,defaultunits=db.get("clip",dfl=0),choices=None)
+
+		params.append([scale,clip])
 		
+	def check_params(self,params):
+		error_message = []
+		
+		if not params.has_key("scale"):
+			error_message.append("Please supply the scale the argument")
+		elif params["scale"] <= 0:
+			error_message.append("Scale has to be greater than zero")
+			
+		if not params.has_key("clip"):
+			error_message.append("Please supply the clip the argument")
+		elif params["clip"] <= 0:
+			error_message.append("Clip has to be greater than zero")
+						
+		error_message.extend(self.check_name_param(params))		
+		return error_message
+	
+	def on_form_ok(self,params):	
+		if  params.has_key("filenames") and len(params["filenames"]) == 0:
+			self.run_select_files_msg()
+			return
+		
+		error_message = self.check_params(params)
+		if len(error_message) >0: 
+			self.show_error_message(error_message)
+			return
+	
+		success,cmd = self.process_all(params)
+		if not success:
+			error("Command failed:"+cmd)
+			return
+		
+		self.emit(QtCore.SIGNAL("task_idle"))
+		self.form.closeEvent(None)
+		self.form = None
+	
+		self.write_db_entries(params)	
+	
+	def process_all(self,params):
+		
+		outnames = self.output_names(params)
+		
+		progress = QtGui.QProgressDialog("Processing files...", "Abort", 0, len(params["filenames"]),None)
+		progress.show()
+	
+		i = 0
+		for i,name in enumerate(params["filenames"]):
+			cmd = "e2proc3d.py"
+ 			cmd += " "+name
+ 			cmd += " "+outnames[i]
+ 			cmd += " --process=math.transform.scale:scale=%s:clip=%s" %(params["scale"],params["clip"])
+ 			success = (os.system(cmd) in (0,12))
+ 			if not success:
+ 				progress.close()
+ 				return False,cmd
+ 			else:
+ 				progress.setValue(i+1)
+ 				get_application().processEvents()
+		
+		progress.close()
+		
+		
+		self.save_to_filt_ptcls_map(params, outnames)
+
+		return True,"Success"
+
+
+class E2TomoMaskTask(E2TomoFilterParticlesTask):
+	'''Use this tool for masking your data. All voxels beyond the given radius will be set to 0.'''
+	def __init__(self,ptcls_list=[],name_map={}):
+		E2TomoFilterParticlesTask.__init__(self,ptcls_list,name_map)
+		self.form_db_name = "bdb:emform.tomo.filter_mask"
+	
+	def add_filt_params(self,params):
+		'''
+		'''
+		db = db_open_dict(self.form_db_name)
+		mask = ParamDef(name="mask",vartype="int",desc_short="Mask radius",desc_long="The radius of the masking operation",property=None,defaultunits=db.get("mask",dfl=0),choices=None)
+
+		params.append(mask)
+		
+	def check_params(self,params):
+		error_message = []
+		
+		if not params.has_key("mask"):
+			error_message.append("Please supply the mask argument")
+		elif params["mask"] <= 0:
+			error_message.append("mask has to be greater than zero")
+						
+		error_message.extend(self.check_name_param(params))		
+		return error_message
+	
+	def on_form_ok(self,params):	
+		if  params.has_key("filenames") and len(params["filenames"]) == 0:
+			self.run_select_files_msg()
+			return
+		
+		error_message = self.check_params(params)
+		if len(error_message) >0: 
+			self.show_error_message(error_message)
+			return
+	
+		success,cmd = self.process_all(params)
+		if not success:
+			error("Command failed:"+cmd)
+			return
+		
+		self.emit(QtCore.SIGNAL("task_idle"))
+		self.form.closeEvent(None)
+		self.form = None
+	
+		self.write_db_entries(params)	
+	
+	def process_all(self,params):
+		
+		outnames = self.output_names(params)
+		
+		progress = QtGui.QProgressDialog("Processing files...", "Abort", 0, len(params["filenames"]),None)
+		progress.show()
+	
+		i = 0
+		for i,name in enumerate(params["filenames"]):
+			cmd = "e2proc3d.py"
+ 			cmd += " "+name
+ 			cmd += " "+outnames[i]
+ 			cmd += " --process=mask.sharp:outer_radius=%s" %(params["mask"])
+ 			success = (os.system(cmd) in (0,12))
+ 			if not success:
+ 				progress.close()
+ 				return False,cmd
+ 			else:
+ 				progress.setValue(i+1)
+ 				get_application().processEvents()
+		
+		progress.close()
+		
+		self.save_to_filt_ptcls_map(params,outnames)
+		return True,"Success"
+	
+	
+
+		
+class E2TomoNormalizeInvertTask(E2TomoFilterParticlesTask):
+	'''Use this tool inverting and/or normalizing your data. If both operations are chosen then inversion is performed first.'''
+	
+	def __init__(self,ptcls_list=[],name_map={}):
+		E2TomoFilterParticlesTask.__init__(self,ptcls_list,name_map)
+		self.form_db_name = "bdb:emform.tomo.invert_norm"
+	
+	def add_filt_params(self,params):
+		'''
+		'''
+		db = db_open_dict(self.form_db_name)
+		pinv = ParamDef(name="invert",vartype="boolean",desc_short="Invert",desc_long="Invert pixel intensities",property=None,defaultunits=db.get("invertoutput",dfl=False),choices=None)
+		pn =  ParamDef(name="normproc",vartype="string",desc_short="Normalize",desc_long="Normalization method",property=None,defaultunits=db.get("normproc",dfl="normalize.edgemean"),choices=self.get_norm_proc_list())
+		
+		params.append([pinv,pn])
+	
+	def get_norm_proc_list(self):
+		return ["None","normalize","normalize.circlemean","normalize.edgemean","normalize.unitlen","normalize.unitsum"]
+	
+	def check_params(self,params):
+		error_message = []
+		
+		if params["invert"] == False and params["normproc"] == "None":
+			error_message.append("Atleast one of the invert or normalization options must be chosen")
+						
+		error_message.extend(self.check_name_param(params))		
+		return error_message
+	
+	def on_form_ok(self,params):	
+		if  params.has_key("filenames") and len(params["filenames"]) == 0:
+			self.run_select_files_msg()
+			return
+		
+		error_message = self.check_params(params)
+		if len(error_message) >0: 
+			self.show_error_message(error_message)
+			return
+	
+		success,cmd = self.process_all(params)
+		if not success:
+			error("Command failed:"+cmd)
+			return
+		
+		self.emit(QtCore.SIGNAL("task_idle"))
+		self.form.closeEvent(None)
+		self.form = None
+	
+		self.write_db_entries(params)	
+	
+	def process_all(self,params):
+		
+		outnames = self.output_names(params)
+		
+		progress = QtGui.QProgressDialog("Processing files...", "Abort", 0, len(params["filenames"]),None)
+		progress.show()
+	
+		i = 0
+		for i,name in enumerate(params["filenames"]):
+			cmd = "e2proc3d.py"
+ 			cmd += " "+name
+ 			cmd += " "+outnames[i]
+ 			if params["invert"]:
+ 				cmd += " --mult=-1"
+ 			if params["normproc"] != "None":
+ 				cmd += " --process=%s" %(params["normproc"])
+ 			success = (os.system(cmd) in (0,12))
+ 			if not success:
+ 				progress.close()
+ 				return False,cmd
+ 			else:
+ 				progress.setValue(i+1)
+ 				get_application().processEvents()
+		
+		progress.close()
+		
+		self.save_to_filt_ptcls_map(params,outnames)
+		return True,"Success"
+
+
+class EMTomoChooseFilteredPtclsForFiltTask(EMBaseTomChooseFilteredPtclsTask):
+	"""Choose the data you wish to filter""" 
+	def __init__(self,task_type=E2TomoFilterParticlesTask):
+		EMBaseTomChooseFilteredPtclsTask.__init__(self)
+		self.form_db_name ="bdb:tomo.choose.filtered.forfilt"
+		self.task_type = task_type
+
+	def on_form_ok(self,params):
+		if not params.has_key("tomo_filt_choice") or params["tomo_filt_choice"] == None:
+			error("Please choose some data")
+			return
+		choice = params["tomo_filt_choice"]
+		
+		task = self.task_type(self.particles_map[self.particles_name_map[choice]],self.name_map)
+		self.emit(QtCore.SIGNAL("replace_task"),task,"Filter Tomo Particles")
+		self.form.closeEvent(None)
+		self.form = None
+		
+		self.write_db_entries(params)
+
+
+class EMTomohunterTask(WorkFlowTask):
+	'''Use this task for running e2tomohunter.py from the workflow'''
+	
+	# written by Grant Tang
+	documentation_string = "This is useful information about this task."
+
+	def __init__(self,ptcls_list=[],name_map={}):
+		WorkFlowTask.__init__(self)
+		self.window_title = "Tomohunter Input Form"
+		self.preferred_size = (640,480)
+		self.form_db_name = "bdb:emform.tomohunter"
+		self.ptcls_list = ptcls_list
+		self.name_map = name_map
+		
+	def get_params(self):
+		params = []
+		db = db_open_dict(self.form_db_name)
+		
+		self.ptcl_table_tool = EMTomoPtclReportTool(title="Particles",name="targetimage")
+		self.probe_tool = EMTomoPtclReportTool("global.tpr_probes","Probe","probeimage")
+		
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="SPR",desc_long="Information regarding this task",property=None,defaultunits=self.__doc__,choices=None))
+#		targetimage = ParamDef(name="targetimage",vartype="url",desc_short="target image file name",desc_long="target image file name",property=None,defaultunits=project_db.get("targetimage",dfl=[]),choices=[])
+#		probeimage = ParamDef(name="probeimage",vartype="url",desc_short="probe image file name",desc_long="probe image file name",property=None,defaultunits=project_db.get("probeimage",dfl=[]),choices=[])
+		norm = ParamDef(name="n",vartype="int",desc_short="normalization",desc_long="if the normalization needed",property=None,defaultunits=db.get("n",dfl=0),choices=[0,1])
+		nsoln = ParamDef(name="nsoln",vartype="int",desc_short="#solution",desc_long="number of solution",property=None,defaultunits=db.get("nsoln",10),choices=None)
+		thresh = ParamDef(name="thresh",vartype="float",desc_short="threshold",desc_long="threshold",property=None,defaultunits=db.get("thresh",1.0),choices=None)
+		searchx = ParamDef(name="searchx",vartype="int",desc_short="searchx",desc_long="searchx",property=None,defaultunits=db.get("searchx",0),choices=None)
+		searchy = ParamDef(name="searchy",vartype="int",desc_short="searchy",desc_long="searchy",property=None,defaultunits=db.get("searchy",0),choices=None)
+		searchz = ParamDef(name="searchz",vartype="int",desc_short="searchz",desc_long="searchz",property=None,defaultunits=db.get("searchz",0),choices=None)
+		ralt = ParamDef(name="ralt",vartype="float",desc_short="ralt",desc_long="Altitude range",property=None,defaultunits=db.get("ralt",180.0),choices=None)
+		dalt = ParamDef(name="dalt",vartype="float",desc_short="dalt",desc_long="Altitude delta",property=None,defaultunits=db.get("dalt",10.0),choices=None)
+		daz = ParamDef(name="daz",vartype="float",desc_short="daz",desc_long="Azimuth delta",property=None,defaultunits=db.get("daz",10.0),choices=None)
+		rphi = ParamDef(name="rphi",vartype="float",desc_short="rphi",desc_long="Phi range",property=None,defaultunits=db.get("rphi",180.0),choices=None)
+		dphi = ParamDef(name="dphi",vartype="float",desc_short="dphi",desc_long="Phi delta",property=None,defaultunits=db.get("dphi",10.0),choices=None)
+		params.append([self.probe_tool.get_particle_table(),self.ptcl_table_tool.get_particle_table_with_ptcls(self.ptcls_list)])
+		params.append([norm,thresh,nsoln])
+		params.append([searchx,searchy,searchz])
+		params.append([ralt,dalt,daz,rphi,dphi])
+		#db_close_dict("bdb:project")
+		return params
+
+	def write_db_entry(self,key,value):
+		WorkFlowTask.write_db_entry(self,key,value)
+	
+	def check_params(self,params):
+		error_msg = []
+		if len(params["targetimage"]) == 0: error_msg.append("Please choose at leaset one particle file")
+		if len(params["probeimage"]) != 1: error_msg.append("Please choose a single probe file to proceed")
+		return error_msg
+	
+	def on_form_ok(self,params):
+		print params
+		
+		error_message = self.check_params(params)
+		if len(error_message):
+			self.show_error_message(error_message)
+			return
+		self.write_db_entries(params) # will only write filenames
+		options = EmptyObject()
+		string_args = ["dalt","ralt","dphi","rphi","raz","daz","thresh","nsoln","searchx","searchy","searchz","n","probe"]
+		options.filenames = params['targetimage']
+		options.dalt = params['dalt']
+		options.ralt = params['ralt']
+		options.dphi = params['dphi']
+		options.rphi = params['rphi']
+		options.raz = params['ralt']
+		options.daz = params['dalt']
+		options.probe = params['probeimage'][0]
+		options.n = params['n']
+		options.thresh = params['thresh']
+		options.nsoln = params['nsoln']
+		options.searchx = params['searchx']
+		options.searchy = params['searchy']
+		options.searchz = params['searchz']
+		bool_args = []
+		additional_args = ["--dbls=global.tpr_ptcls_ali_dict"]
+		temp_file_name = "e2tomohunter_stdout.txt"
+		self.spawn_single_task('e2tomohunter.py',options,string_args,bool_args,additional_args,temp_file_name)
+		self.emit(QtCore.SIGNAL("task_idle"))
+		self.form.closeEvent(None)
+		self.form = None
+
+
+class EMTomoChooseTomoHunterPtclsTask(EMBaseTomChooseFilteredPtclsTask):
+	"""Choose the data you wish to filter""" 
+	def __init__(self):
+		EMBaseTomChooseFilteredPtclsTask.__init__(self)
+		self.form_db_name ="bdb:tomo.choose.fortomohunter"
+
+	def on_form_ok(self,params):
+		if not params.has_key("tomo_filt_choice") or params["tomo_filt_choice"] == None:
+			error("Please choose some data")
+			return
+		choice = params["tomo_filt_choice"]
+		
+		task = EMTomohunterTask(self.particles_map[self.particles_name_map[choice]],self.name_map)
+		self.emit(QtCore.SIGNAL("replace_task"),task,"Filter Tomo Particles")
+		self.form.closeEvent(None)
+		self.form = None
+		
+		self.write_db_entries(params)
 
 class E2TomoAverageChooseAliTask(WorkFlowTask):
 	"""Choose data for generating an average based on the probe which you aligned them too"""
@@ -834,7 +1280,8 @@ class E2TomoAverageChooseAliTask(WorkFlowTask):
 		return params
 	
 	
-	def on_form_ok(self,params):	
+	def on_form_ok(self,params):
+		if not params.has_key("probe_choice"): return	
 		if  params.has_key("probe_choice") and len(params["probe_choice"]) == 0:
 			self.run_select_files_msg()
 			return
@@ -846,9 +1293,6 @@ class E2TomoAverageChooseAliTask(WorkFlowTask):
 		self.emit(QtCore.SIGNAL("task_idle"))
 		self.form.closeEvent(None)
 		self.form = None
-
-	
-	
 
 class E2TomoGenerateAverageTask(WorkFlowTask):	
 	"""This task is for generating averages of your tomographic particles. Choose the particles you want to combine into an average, choose a name for the average, and hit OK. Have a look in the 'Particle Averages' table once the task is completed to see the resulting average."""

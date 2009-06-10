@@ -660,9 +660,18 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		
 		
 		filt_list = []
-		filt_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Filter Tomo Particles")))
+		filt_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Filter/Rotate Tomo Particles")))
 		filt_list[0].setIcon(0,self.icons["green_boxes"])
-		self.launchers["Filter Tomo Particles"] = self.launch_tomo_filter_ptcls
+		self.launchers["Filter/Rotate Tomo Particles"] = self.launch_tomo_filter_ptcls
+		filt_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Scale/Clip Tomo Particles")))
+		filt_list[1].setIcon(0,self.icons["green_boxes"])
+		self.launchers["Scale/Clip Tomo Particles"] = self.launch_tomo_scale_clip_ptcls
+		filt_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Mask Particles")))
+		filt_list[2].setIcon(0,self.icons["green_boxes"])
+		self.launchers["Mask Particles"] = self.launch_tomo_mask_ptcls
+		filt_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Norm/Invert Particles")))
+		filt_list[3].setIcon(0,self.icons["green_boxes"])
+		self.launchers["Norm/Invert Particles"] = self.launch_tomo_norm_inv_ptcls
 		filt.addChildren(filt_list)
 		
 		rd_list = []
@@ -938,8 +947,19 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	def launch_tomo_ave_report(self): self.launch_task(EMTomoAveragesReportTask(),"Tomo Averages Report")
 	def launch_tomo_boostrap_probe(self): error("This form is yet to be implemented")
 	def launch_gen_ave_tomo(self): self.launch_task(E2TomoAverageChooseAliTask(),"Choose Alignment Set")
-	def launch_tomo_filt_ptcl_report(self): self.launch_task(EMTomoParticleReportTask(),"Filtered Tomo Particles")
-	def launch_tomo_filter_ptcls(self): self.launch_task(E2TomoFilterParticlesTask(),"Filter Tomo Particles")
+	def launch_tomo_filt_ptcl_report(self): self.launch_task(EMTomoChooseFilteredPtclsTask(),"Filtered Tomo Particles")
+	def launch_tomo_filter_ptcls(self): self.launch_task(EMTomoChooseFilteredPtclsForFiltTask(),"Filter/Rotate Tomo Particles")
+	def launch_tomo_scale_clip_ptcls(self):
+		task = 	EMTomoChooseFilteredPtclsForFiltTask(E2TomoScaleClipTask)
+		self.launch_task(task,"Scale/Clip Tomo Particles")
+	def launch_tomo_mask_ptcls(self):
+		task = EMTomoChooseFilteredPtclsForFiltTask( E2TomoMaskTask)
+		self.launch_task(task,"Mask Tomo Particles")
+	def launch_tomo_norm_inv_ptcls(self):
+		task = EMTomoChooseFilteredPtclsForFiltTask( E2TomoNormalizeInvertTask)
+		self.launch_task(task,"Norm/Invert Tomo Particles")
+		
+		
 #	def launch_particle_import(self):self.launch_task(ParticleImportTask(),"Import particles")
 		
 	def launch_mic_ccd_report(self): self.launch_task(EMRawDataReportTask(),"Raw Data")
@@ -962,7 +982,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	def launch_tomography(self):
 		self.launch_task(EMTomoRawDataReportTask(),"Tomo Raw Data")
 	def launch_tomohunter(self):
-		self.launch_task(EMTomohunterTask(),"Tomohunter")
+		self.launch_task(EMTomoChooseTomoHunterPtclsTask(),"Tomohunter")
 	def launch_tomo_raw_files(self):
 		self.launch_task(EMTomoRawDataReportTask(),"Tomo Raw Data")
 			

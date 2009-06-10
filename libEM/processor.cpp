@@ -7719,10 +7719,18 @@ void ScaleTransformProcessor::process_inplace(EMData* image) {
 
 	float scale = params.set_default("scale",0.0f);
 	if (scale <= 0.0f) throw InvalidParameterException("The scale parameter must be greater than 0");
+	int ndim = image->get_ndim();
+	if (ndim != 2 && ndim != 3) throw UnexpectedBehaviorException("The Scale Transform processors only works for 2D and 3D images");
+
+	Region r;
+	if (ndim == 3) {
+		 r = Region( (image->get_xsize()-clip)/2, (image->get_xsize()-clip)/2, (image->get_xsize()-clip)/2,clip, clip,clip);
+	} else { // ndim == 2 guaranteed by check at beginning of function
+		 r = Region( (image->get_xsize()-clip)/2, (image->get_xsize()-clip)/2, clip, clip);
+	}
 
 	if (scale > 1) {
 		if ( clip != 0) {
-			Region r( (image->get_xsize()-clip)/2, (image->get_xsize()-clip)/2, clip, clip);
 			image->clip_inplace(r);
 		}
 		Transform t;
@@ -7733,12 +7741,10 @@ void ScaleTransformProcessor::process_inplace(EMData* image) {
 		t.set_scale(scale);
 		image->process_inplace("math.transform",Dict("transform",&t));
 		if ( clip != 0) {
-			Region r( (image->get_xsize()-clip)/2, (image->get_xsize()-clip)/2, clip, clip);
 			image->clip_inplace(r);
 		}
 	} else {
 		if ( clip != 0) {
-			Region r( (image->get_xsize()-clip)/2, (image->get_xsize()-clip)/2, clip, clip);
 			image->clip_inplace(r);
 		}
 	}
@@ -7750,11 +7756,19 @@ EMData* ScaleTransformProcessor::process(const EMData* const image) {
 
 	float scale = params.set_default("scale",0.0f);
 	if (scale <= 0.0f) throw InvalidParameterException("The scale parameter must be greater than 0");
+	int ndim = image->get_ndim();
+	if (ndim != 2 && ndim != 3) throw UnexpectedBehaviorException("The Scale Transform processors only works for 2D and 3D images");
+
+	Region r;
+	if (ndim == 3) {
+		 r = Region( (image->get_xsize()-clip)/2, (image->get_xsize()-clip)/2, (image->get_xsize()-clip)/2,clip, clip,clip);
+	} else { // ndim == 2 guaranteed by check at beginning of function
+		 r = Region( (image->get_xsize()-clip)/2, (image->get_xsize()-clip)/2, clip, clip);
+	}
 
 	EMData* ret = 0;
 	if (scale > 1) {
 		if ( clip != 0) {
-			Region r( (image->get_xsize()-clip)/2, (image->get_xsize()-clip)/2, clip, clip);
 			ret = image->get_clip(r);
 		}
 		Transform t;
@@ -7769,12 +7783,10 @@ EMData* ScaleTransformProcessor::process(const EMData* const image) {
 		t.set_scale(scale);
 		ret = image->process("math.transform",Dict("transform",&t));
 		if ( clip != 0) {
-			Region r( (image->get_xsize()-clip)/2, (image->get_xsize()-clip)/2, clip, clip);
 			ret->clip_inplace(r);
 		}
 	} else {
 		if ( clip != 0) {
-			Region r( (image->get_xsize()-clip)/2, (image->get_xsize()-clip)/2, clip, clip);
 			ret = image->get_clip(r);
 		} else {
 			ret = image->copy();
