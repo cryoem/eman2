@@ -602,6 +602,192 @@ class E2TomoBoxerOutputTask(WorkFlowTask):
 			self.emit(QtCore.SIGNAL("task_idle"))
 			self.form.closeEvent(None)
 			self.form = None
+			
+class E2TomoFilterParticlesTask(WorkFlowTask):	
+	"""Select the images you wish to filter"""
+	
+	preprocessor_cache = None
+	def __init__(self):
+		WorkFlowTask.__init__(self)
+		self.window_title = "Filter Tomogram Particles"
+		self.output_formats = ["bdb","hdf"] # disable img from the workflow because in EMAN2 we want to store more metadata in the header
+		self.form_db_name = "bdb:emform.tomo.filter_particles"
+		self.project_list = "global.tpr_ptcls"
+	def get_params(self):
+		params = []
+		
+		params = []
+		
+		self.table_tool = EMTomoPtclReportTool(self.project_list,self.window_title)
+		table = self.table_tool.get_particle_table()
+		
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
+		params.append(table)
+		self.add_filt_params(params)
+		
+		return params
+	
+	
+	def add_filt_params(self,params):
+		'''
+		'''
+		db = db_open_dict(self.form_db_name)
+		az = ParamDef(name="az",vartype="float",desc_short="Az rotation",desc_long="Rotate your model about the z axis",property=None,defaultunits=db.get("az",0.0),choices=None)
+		alt = ParamDef(name="alt",vartype="float",desc_short="Alt rotation",desc_long="Rotate your model about the x axis",property=None,defaultunits=db.get("alt",0.0),choices=None)
+		phi = ParamDef(name="phi",vartype="float",desc_short="Phi rotation",desc_long="Rotate your model about the z' axis",property=None,defaultunits=db.get("phi",0.0),choices=None)
+		ppostproc =  ParamDef("filter",vartype="string",desc_short="Filter",desc_long="A post processor applied to the reconstructed model",property=None,defaultunits=db.get("filter",dfl="None"),choices=self.get_postprocess_filt_options())
+		ppostprocargs =  ParamDef(name="filterargs",vartype="string",desc_short="params",desc_long="Parameters for the post processor see \"e2help.py processors\"",property=None,defaultunits=db.get("filterargs",dfl=""),choices=[])	
+		pname =  ParamDef("name",vartype="string",desc_short="Filtered set name",desc_long="The processed sets will be referred to by this name",property=None,defaultunits=db.get("name",dfl="Filtered"),choices=[])
+		
+		params.append([ppostproc,ppostprocargs])
+		params.append([az,alt,phi])
+		params.append(pname)
+		
+	def get_postprocess_filt_options(self):
+		if E2TomoFilterParticlesTask.preprocessor_cache == None:
+			a = dump_processors_list()
+			l = ["None"]
+			for key in a.keys():
+				if len(key) > 5 and key[:6] == "filter":
+					vals = key.split(".")
+					if len(vals) > 1:
+						if vals[1] in ["lowpass","highpass"]:
+							l.append(key)
+							
+			E2TomoFilterParticlesTask.preprocessor_cache = l
+			 
+		return E2TomoFilterParticlesTask.preprocessor_cache
+	
+	def check_params(self,params):
+		error_message = []
+		
+		if params["filter"] != "None":
+			if len(params["filterargs"]) == 0:
+				error_message.append("If you supply a post processor for make3d, you have to supply one of the cutoff_abs, cutoff_freq, or cutoff_pixels parameters")
+			else:
+				s = params["filter"] + ":"
+				s += params["filterargs"]
+				p = parsemodopt(s)
+				if p[0] == None:
+					error_message.append("Error can't interpret the make3d post processor string (%s)" %(s))
+				else:
+					try:
+						Processors.get(p[0], p[1])
+						params["filter_processor"] = s
+					except:
+						error_message.append("Error, can't interpret parameters for the make3d post processor (%s)" %(s))
+						vals = dump_processors_list()
+						values = vals[p[0]]
+						s = "The parameters for the %s processor are:"  %p[0]
+						
+						for i in xrange(1,len(values),3):
+							s += " " + values[i] +","
+						s = s[:-1] # get rid of the last column
+						error_message.append(s)
+						
+		if not params.has_key("name"):
+			error_message.append("You must supply a name for your filtered set")
+		else:
+			if params["name"] in self.get_previous_filtered_set_names():
+				error_message.append("There is a previously filtered set with the name %s. Please choose another name" %params["name"])
+
+		
+		return error_message
+	
+	def on_form_ok(self,params):	
+		if  params.has_key("filenames") and len(params["filenames"]) == 0:
+			self.run_select_files_msg()
+			return
+		
+		options = EmptyObject()
+		error_message = self.check_params(params)
+		if len(error_message) >0: 
+			self.show_error_message(error_message)
+			return
+		
+		if params["alt"] != 0 or params["az"] != 0 or params["phi"] != 0:
+			params["rotate"] = "%.2f,%.2f,%.2f" %(params["az"],params["alt"],params["phi"])
+
+		if params.has_key("rotate") or params.has_key("filter_processor"):
+			success,cmd = self.process_all(params)
+			if not success:
+				error("Command failed:"+cmd)
+				return
+		else:
+			error("You have to supply a filter or a non zero rotation for any filtering to occur")
+			return
+		
+		self.emit(QtCore.SIGNAL("task_idle"))
+		self.form.closeEvent(None)
+		self.form = None
+	
+	
+	def get_previous_filtered_set_names(self):
+		project_db = db_open_dict("bdb:project")
+		name = "global.tpr_filt_ptcls_map"
+		EMProjectListCleanup.clean_up_filt_particles(name)
+		if not project_db.has_key(name): return []
+		
+		db_map = project_db.get(name)
+		previous_sets = []
+		
+		for root_name,dict in db_map.items():
+			for filt,name in dict.items():
+				if 	previous_sets.count(filt) == 0:
+					previous_sets.append(filt)
+
+		return previous_sets
+	
+	def output_names(self,params):
+		'''
+		Only works if you the params dictionary has the filenames and name keys 
+		'''
+		return ["bdb:tomogram_particles#"+get_file_tag(f)+params["name"] for f in params["filenames"]]
+		
+	def process_all(self,params):
+		
+		outnames = self.output_names(params)
+		
+		progress = QtGui.QProgressDialog("Processing files...", "Abort", 0, len(params["filenames"]),None)
+		progress.show()
+	
+		i = 0
+		for i,name in enumerate(params["filenames"]):
+			cmd = "e2proc3d.py"
+ 			cmd += " "+name
+ 			cmd += " "+outnames[i]
+ 			if params.has_key("filter_processor"):
+ 				cmd += " --process="+params["filter_processor"]
+ 			if params.has_key("rotate"):
+ 				cmd += " --rot="+params["rotate"]
+ 			success = (os.system(cmd) in (0,12))
+ 			if not success:
+ 				progress.close()
+ 				return False,cmd
+ 			else:
+ 				progress.setValue(i+1)
+ 				get_application().processEvents()
+		
+		progress.close()
+		
+		
+		project_db = db_open_dict("bdb:project")
+		name = "global.tpr_filt_ptcls_map"
+		EMProjectListCleanup.clean_up_filt_particles(name)
+		db_map = project_db.get(name,dfl={})
+		
+		for i,name in enumerate(params["filenames"]):
+			if db_map.has_key(name):
+				d = db_map[name]
+				d[params["name"]] = outnames[i]
+				db_map[name] = d
+			else:
+				d = {}
+				d[params["name"]] = outnames[i]
+				db_map[name] = d
+				
+		return True,"Success"
+		
 
 class E2TomoAverageChooseAliTask(WorkFlowTask):
 	"""Choose data for generating an average based on the probe which you aligned them too"""
@@ -652,7 +838,6 @@ class E2TomoAverageChooseAliTask(WorkFlowTask):
 		if  params.has_key("probe_choice") and len(params["probe_choice"]) == 0:
 			self.run_select_files_msg()
 			return
-		
 		
 		self.write_db_entries(params)
 		
@@ -722,7 +907,6 @@ class E2TomoGenerateAverageTask(WorkFlowTask):
 		if len(error_msg) > 0:
 			error(error_msg)
 			return
-		
 		
 		options = EmptyObject()
 		options.avgout = params["ave_name"]

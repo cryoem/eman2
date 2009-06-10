@@ -108,18 +108,18 @@ namespace EMAN
 				params["cutoff_abs"] = params["sigma"];
 			}
 			else if( params.has_key("cutoff_abs") ) {
-				params["cutoff_frequency"] = .5f*(float)params["cutoff_abs"];
-				params["sigma"] =.5f*(float) params["cutoff_abs"];
+				params["cutoff_frequency"] = (float)params["cutoff_abs"];
+				params["sigma"] =(float) params["cutoff_abs"];
 			}
 			else if( params.has_key("cutoff_freq") ) {
 				float val =  (float)params["cutoff_freq"] * (float)dict["apix_x"];
-				params["cutoff_frequency"] = .5f*(float)val;
-				params["sigma"] = 0.5f*(float)val;
+				params["cutoff_frequency"] = (float)val;
+				params["sigma"] = (float)val;
 			}
 			else if( params.has_key("cutoff_pixels") ) {
-				float val = (float)params["cutoff_pixels"] / (float)dict["nx"];
-				params["cutoff_frequency"] = .5f*(float)val;
-				params["sigma"] = .5f*(float)val;
+				float val = 0.5f*(float)params["cutoff_pixels"] / (float)dict["nx"];
+				params["cutoff_frequency"] = (float)val;
+				params["sigma"] = (float)val;
 			}
 		}
 	};

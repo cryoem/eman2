@@ -149,7 +149,6 @@ bool EMData::gpu_operation_preferred() const {
 }
 
 EMData* EMData::calc_ccf_cuda( EMData*  image, bool use_texturing,bool center ) const {
-
 	EMData* tmp;
 	if (is_complex()) {
 // 		cout << "Tmp is a copy of this" << endl;

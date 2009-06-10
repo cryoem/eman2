@@ -53,10 +53,10 @@ def check_options(options,filenames):
 	Should probably be made into a class
 	@return a list of error messages
 	'''
-	
-	if not options.probe or not file_exists(options.probe):
-		error_message.append("You have to specify a valid probe")
 	error_messages = []
+	if not options.probe or not file_exists(options.probe):
+		error_messages.append("You have to specify a valid probe")
+	
 	if len(filenames) < 1:
 		error_messages.append("You must specify input files")
 	else:
@@ -92,7 +92,6 @@ def check_options(options,filenames):
 def gen_average(options,args,logid=None):
 	
 	project_list = "global.tpr_ptcls_ali_dict"
-		#EMProjectListCleanup.clean_up_filt_particles(self.project_list)
 	db = db_open_dict("bdb:project",ro=True)
 	db_map = db.get(project_list,dfl={})
 	
@@ -123,9 +122,7 @@ def gen_average(options,args,logid=None):
 		if db == None: db = []
 		if db.count(options.avgout) == 0:
 			db.append(options.avgout)
-			print "done"
 			pdb[options.dbls] = db
-		print db
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -148,7 +145,8 @@ def main():
 	parser.add_option("--dbls",type="string",help="data base list storage, used by the workflow. You can ignore this argument.",default=None)
 	parser.add_option("--probe",type="string",help="The probe. This is the model that the input images will be aligned to", default=None)
 	parser.add_option("--avgout",type="string",help="If specified will produce an averaged output, only works if you've previously run alignments", default=None)
-
+	if EMUtil.cuda_available():
+		parser.add_option("--cuda",action="store_true",help="GPU acceleration using CUDA. Tentalizing glimpse into the future", default=False)
    
 	(options, args) = parser.parse_args()
 	
@@ -184,22 +182,25 @@ def main():
 
 	rarad=rap
 	darad=dap
-	maxfrac=0.
+	maxfrac=0
+	
+	nx,ny,nz = gimme_image_dimensions3D(args[0])
+	box=nx
 	if options.n:
 		norm = 1.0/(box*box*box)
 	else:
 		norm = 1.0
 		
 	prog = 0
-	total_prog = (len(altarray)-1)*len(azarray)*len(args)
+	total_prog = (len(altarray)-1)*len(azarray)*len(args)+1
 	E2progress(logid,0.0)
 	
 	for arg in args:
 		
-		nx,ny,nz = gimme_image_dimensions3D(arg)
+		
 		targetMRC =EMData(arg,0)
 		print_info(targetMRC,"Target Information")
-		box=nx
+		
 		probeMRC=EMData(options.probe,0)
 		print_info(targetMRC,"Probe Information")
 		
@@ -253,7 +254,10 @@ def main():
 					#print "Trying rotation %f %f"%(altrot, azrot)
 					while phirot <= -azrot+rarad:
 						t = Transform({"type":"eman","az":azrot,"phi":phirot,"alt":altrot})
+						probeMRC.set_gpu_rw_current()
+						targetMRC.set_gpu_rw_current()
 						dMRC= probeMRC.process("math.transform",{"transform":t}) # more efficient than copying than
+						dMRC.set_gpu_rw_current()
 						currentCCF=tomoccf(targetMRC,dMRC)
 						scalar=ccfFFT(currentCCF,options.thresh,box)
 						if scalar>maxnum:
@@ -317,7 +321,7 @@ def print_info(image,first_line="Information"):
 	
 	
 def tomoccf(targetMRC,probeMRC):
-	ccf=targetMRC.calc_ccf(probeMRC)
+	ccf=targetMRC.calc_ccf_cuda(probeMRC,False,False)
 	# removed a toCorner...this puts the phaseorigin at the left corner, but we can work around this by
 	# by using EMData.calc_max_location_wrap (below)
 	return (ccf)
