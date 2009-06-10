@@ -114,25 +114,26 @@ images far from focus."""
 		### This computes the intensity of the background subtracted power spectrum at each CTF maximum for all sets
 		global envelopes # needs to be a global for the Simplex minimizer
 		# envelopes is essentially a cache of information that could be useful at later stages of refinement
-		# as according to Steven Ludtke
-		for i in img_sets:
-			envelopes.append(ctf_env_points(i[2],i[3],i[1]))
-		
-		# we use a simplex minimizer to try to rescale the individual sets to match as best they can
-		scales=[1.0]*len(img_sets)
-		if (len(img_sets)>3) :
-			incr=[0.2]*len(img_sets)
-			simp=Simplex(env_cmp,scales,incr)
-			scales=simp.minimize(maxiters=1000)[0]
-	#		print scales
-	#		print " "
-		
-		# apply the final rescaling
+
 		envelope=[]
-		for i in range(len(scales)):
-			cur=envelopes[i]
-			for j in range(len(cur)):
-				envelope.append((cur[j][0],cur[j][1]*scales[i]))
+		for i in img_sets:
+#			envelopes.append(ctf_env_points(i[2],i[3],i[1]))
+			envelope.extend(ctf_env_points(i[2],i[3],i[1]))
+
+		# This block was supplanted by smarter code
+#		# we use a simplex minimizer to try to rescale the individual sets to match as best they can
+#		scales=[1.0]*len(img_sets)
+#		if (len(img_sets)>3) :
+#			incr=[0.2]*len(img_sets)
+#			simp=Simplex(env_cmp,scales,incr)
+#			scales=simp.minimize(maxiters=1000)[0]
+#		
+#		# apply the final rescaling
+#		envelope=[]
+#		for i in range(len(scales)):
+#			cur=envelopes[i]
+#			for j in range(len(cur)):
+#				envelope.append((cur[j][0],cur[j][1]*scales[i]))
 				
 		envelope.sort()
 		envelope=[i for i in envelope if i[1]>0]	# filter out all negative peak values
@@ -738,19 +739,33 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 	return ctf
 
 def ctf_env_points(im_1d,bg_1d,ctf) :
-	"""This will return a list of x,y points corresponding to the maxima of the ctf in the background
-	subtracted power spectrum"""
+	"""This will return a list of x,y points corresponding to the CTF corrected power spectrum near the maxima"""
 	ys=len(bg_1d)
 	ds=ctf.dsbg
 	cc=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_AMP)
 	ret=[]
 	
 	for i in range(1,len(cc)-1):
-		if cc[i-1]<cc[i] and cc[i]>cc[i+1] and im_1d[i]-bg_1d[i]>0 :
-			ret.append((i*ds,(im_1d[i]-bg_1d[i])))
+		if fabs(cc[i])>0.3 and im_1d[i]-bg_1d[i]>0 :
+			ret.append((i*ds,(im_1d[i]-bg_1d[i])/cc[i]**2))
 #			ret.append((i*ds,(im_1d[i]-bg_1d[i])/sfact(i*ds)))		# this version removes the structure factor (in theory)
 		
 	return ret
+
+#def ctf_env_points(im_1d,bg_1d,ctf) :
+#	"""This will return a list of x,y points corresponding to the maxima of the ctf in the background
+#	subtracted power spectrum"""
+#	ys=len(bg_1d)
+#	ds=ctf.dsbg
+#	cc=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_AMP)
+#	ret=[]
+#	
+#	for i in range(1,len(cc)-1):
+#		if cc[i-1]<cc[i] and cc[i]>cc[i+1] and im_1d[i]-bg_1d[i]>0 :
+#			ret.append((i*ds,(im_1d[i]-bg_1d[i])))
+##			ret.append((i*ds,(im_1d[i]-bg_1d[i])/sfact(i*ds)))		# this version removes the structure factor (in theory)
+#		
+#	return ret
 
 try:
 	from PyQt4 import QtCore, QtGui, QtOpenGL
