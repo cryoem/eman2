@@ -441,6 +441,7 @@ class EMStandAloneApplication(EMApplication):
 		widget = child.get_qt_widget()
 		if widget.isVisible() == False:
 			widget.show()
+			widget.setFocus()
 		
 
 		

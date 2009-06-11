@@ -477,9 +477,6 @@ class EM2DFileTable(EMFileTable):
 		self.display_module = None
 		self.module_events_manager = None
 	
-#	def __del__(self):
-#		print "2D table dies"
-#	
 	def table_item_double_clicked(self,item):
 		'''
 		See EMFileTable.table_item_double_clicked for comments
@@ -496,7 +493,7 @@ class EM2DFileTable(EMFileTable):
 			from EMAN2 import EMData
 			a = EMData()
 			a.read_image(filename,0)
-			self.display_module.set_data(a)
+			self.display_module.set_data(a,filename)
 			self.display_module.updateGL()
 					
 		#self.module().emit(QtCore.SIGNAL("launching_module"),"Browser",module)
@@ -506,6 +503,7 @@ class EM2DFileTable(EMFileTable):
 
 	def module_closed(self,module_instance):
 		self.display_module = None
+			
 
 class EM3DFileTable(EM2DFileTable):
 	'''

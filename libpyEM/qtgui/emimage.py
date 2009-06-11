@@ -51,10 +51,6 @@ from EMAN2 import Util,EMUtil,file_exists,IMAGE_UNKNOWN,gimme_image_dimensions3D
 #import numpy
 
 
-
-#GLUT.glutInit(sys.argv ) # is this really necessary ?
-
-
 def image_update():
 	from emimage2d import EMImage2DModule
 	from emimagemx import EMImageMXModule

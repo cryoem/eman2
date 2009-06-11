@@ -63,7 +63,6 @@ MAG_INC = 1.1
 
 from emglobjects import EMOpenGLFlagsAndTools
 
-#GLUT.glutInit(sys.argv)
 
 class EMImage2DWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 	def __init__(self, em_image_2d_module):

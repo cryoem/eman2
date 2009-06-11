@@ -66,7 +66,6 @@ def main():
 	
 
 	logid=E2init(sys.argv)
-#        GLUT.glutInit(sys.argv)
 
 	app = EMStandAloneApplication()
 	gapp = app

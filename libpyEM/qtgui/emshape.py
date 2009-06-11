@@ -32,7 +32,7 @@
 
 from OpenGL import GL,GLUT
 from math import *
-from EMAN2 import get_3d_font_renderer, Util,glut_inited
+from EMAN2 import get_3d_font_renderer, Util,init_glut
 import sys
 
 from libpyGLUtils2 import *
@@ -52,6 +52,7 @@ def initGL():
 def shidentity(x,y) : return x,y
 
 class EMShape:
+	
 	"""This class represents a geometric shape which can be used to annotate
 	the various data display widgets in EMAN2. The 'scr' shapes are in screen
 	coordinates, and the others are in data coordinates. Shapes are initialized
@@ -72,8 +73,13 @@ class EMShape:
 		"point"  R  G  B  x0 y0 r
 """
 	font_renderer = None
+	glutinit = True
 	def __init__(self,init=None) :
 		"""init is a list/tuple containing the above parameters describing the shape"""
+		from EMAN2 import init_glut
+		if EMShape.glutinit:
+			init_glut()
+			EMShape.glutint = False
 		if init : self.shape=list(init)
 		else : self.shape=["None",0,0,0,0,0,0,0,0]
 		self.blend = 1.0
@@ -203,9 +209,7 @@ class EMShape:
 			GL.glEnd()
 		
 		elif s[0]=="label":
-			if not glut_inited:
-				GLUT.glutInit("")
-				glut_inited = True
+			
 			GL.glPushMatrix()
 			if s[8]<0 :
 				GL.glColor(1.,1.,1.)
@@ -268,9 +272,6 @@ class EMShape:
 						GLUtil.mx_bbox(bbox,(0,0,0,0),(1,1,1,1))
 						EMShape.font_renderer.render_string(s[6])
 					else:
-						if not glut_inited:
-							GLUT.glutInit("")
-							glut_inited = True
 						GL.glColor(1.,1.,1.)
 						GL.glTranslate(s[4],s[5],0)
 						#GL.glScalef(s[7]/1500.0/sc,s[7]/1500.0/sc,s[7]/1500.0/sc)
@@ -288,9 +289,6 @@ class EMShape:
 						for i in s[6]:
 							GLUT.glutStrokeCharacter(GLUT.GLUT_STROKE_MONO_ROMAN,ord(i))
 				else:
-					if not glut_inited:
-						GLUT.glutInit(sys.argv)
-						glut_inited = True
 					GL.glColor(*col)
 					GL.glTranslate(s[4],s[5],-1)
 	#				GL.glScalef(s[7]/100.0,s[7]/100.0,s[7]/100.0)

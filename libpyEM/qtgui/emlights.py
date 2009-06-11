@@ -142,10 +142,8 @@ class EMLightsDrawer:
 	
 	
 	def draw_lights(self):
-		global glut_inited
-		if not glut_inited:  #and not get_platform() == "Darwin":
-			GLUT.glutInit("")
-			glut_inited = True
+		init_glut()
+
 		
 		if ( self.cylinderdl == 0 ):
 			self.cylinderdl=glGenLists(1)
@@ -458,10 +456,7 @@ class EMLights(EMLightsDrawer,EMImage3DGUIModule):
 		return "lights"
 
 	def render(self):
-		global glut_inited
-		if not glut_inited:  #and not get_platform() == "Darwin":
-			GLUT.glutInit("")
-			glut_inited = True
+		init_glut()
 		#if (not isinstance(self.data,EMData)): return
 		lighting = glIsEnabled(GL_LIGHTING)
 		cull = glIsEnabled(GL_CULL_FACE)
@@ -519,11 +514,13 @@ class EMLights(EMLightsDrawer,EMImage3DGUIModule):
 					glPushMatrix()
 					glTranslate(0,0,r)
 					glTranslate(*s)
-					v = Util.get_irand(0,4)
+					v = Util.get_irand(0,7)
 					if v == 0:
 						glCallList(self.highresspheredl)
 					elif v == 1:
-						pass
+						try:
+							glutSolidSierpinskiSponge(3,0,1.0)
+						except: pass # maybe some versions don't have it?
 						#glutSolidRhombicDodecahedron()
 					elif v == 2:
 						glScale(0.5,0.5,0.5)
@@ -534,6 +531,18 @@ class EMLights(EMLightsDrawer,EMImage3DGUIModule):
 					elif v == 4:
 						#glScale(0.5,0.5,0.5)
 						glutSolidTetrahedron()
+						
+					elif v == 5:
+						#glScale(0.5,0.5,0.5)
+						glutSolidCube(1)
+					
+					elif v == 6:
+						#glScale(0.5,0.5,0.5)
+						glutSolidTorus(.25,.5,8,32)
+						
+					elif v == 7:
+						#glScale(0.5,0.5,0.5)
+						glutSolidTeapot(0.5)
 					
 					glPopMatrix()
 			glEndList(self.draw_dl)

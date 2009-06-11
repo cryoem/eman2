@@ -441,7 +441,10 @@ class EMImage3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		
 		return ret
 		
-	def set_file_name(self,name): self.file_name = name
+	def set_file_name(self,name):
+		self.file_name = name
+		if self.qt_context_parent != None:
+			self.qt_context_parent.setWindowTitle(remove_directories_from_name(self.file_name))
 	
 	def width(self):
 		try: return self.gl_widget.width()
@@ -508,8 +511,9 @@ class EMImage3DModule(EMLightsDrawer,EMImage3DGUIModule):
 
 	def set_data(self,data,file_name="",replace=True):
 		self.file_name = file_name # fixme fix this later
-		if self.gl_widget != None:
-			self.gl_widget.setWindowTitle(remove_directories_from_name(self.file_name))
+		if self.qt_context_parent != None:
+			self.qt_context_parent.setWindowTitle(remove_directories_from_name(self.file_name))
+
 		if data == None: return
 		self.data = data
 		self.radius = data.get_zsize()/2.0

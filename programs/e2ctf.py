@@ -790,8 +790,6 @@ class GUIctfModule(EMQtWidgetModule):
 		EMQtWidgetModule.__init__(self,self.guictf)
 		self.application = weakref.ref(application)
 		self.setWindowTitle("CTF")
-		
-		#GLUT.glutInit([]) # this should be taken care of now
 
 		
 	def get_desktop_hint(self):

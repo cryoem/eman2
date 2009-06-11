@@ -69,6 +69,13 @@ GUIbeingdragged=None
 glut_inited = False
 
 
+def init_glut():
+	from OpenGL import GLUT
+	global glut_inited
+	if not glut_inited:
+		GLUT.glutInit("")
+		glut_inited = True
+
 # Aliases
 EMData.get=EMData.get_value_at
 EMData.set=EMData.set_value_at

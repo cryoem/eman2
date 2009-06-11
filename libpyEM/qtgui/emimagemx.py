@@ -1120,10 +1120,7 @@ class EMImageMXModule(EMGUIModule):
 			glLineWidth(2)
 
 			if self.font_render_mode == EMGUIModule.GLUT:
-				global glut_inited
-				if not glut_inited:
-					GLUT.glutInit(sys.argv)
-					glut_inited = True
+				init_glut()
 				try:
 					# we render the 16x16 corner of the image and decide if it's light or dark to decide the best way to 
 					# contrast the text labels...
