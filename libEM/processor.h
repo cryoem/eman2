@@ -5639,7 +5639,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	 *@param b equatorial radii along y axes
 	 *@param c polar radius
 	 *@param transform Optionally transform the ellipse
-	 *@param fill Fill value
+	 *@param fill value you want to fill in ellipse, default to 1.0
 	 */
 	class TestImageEllipse : public TestImageProcessor
 	{
@@ -5668,7 +5668,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			d.put("b", EMObject::FLOAT, "equatorial radii along y axes");
 			d.put("c", EMObject::FLOAT, "polar radius");
 			d.put("transform", EMObject::TRANSFORM, "Optionally transform the ellipse");
-			d.put("fill", EMObject::FLOAT, "Fill value");
+			d.put("fill", EMObject::FLOAT, "value you want to fill in ellipse, default to 1.0");
 			return d;
 		}
 	};
@@ -5682,7 +5682,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	 *@param c outter polar radius
 	 *@param width specify the width or specify each width explicitly - xwidth, ywidth, zwidth
 	 *@param transform Optionally transform the ellipse
-	 *@param fill Fill value
+	 *@param fill value you want to fill in hollow ellipse, default to 1.0
 	 */
 	class TestImageHollowEllipse : public TestImageProcessor
 		{
@@ -5715,7 +5715,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 				d.put("c", EMObject::FLOAT, "outter polar radius");
 				d.put("width",EMObject::FLOAT, "width - specify the width or specify each width explicitly - xwidth, ywidth, zwidth");
 				d.put("transform", EMObject::TRANSFORM, "Optionally transform the ellipse");
-				d.put("fill", EMObject::FLOAT, "Fill value");
+				d.put("fill", EMObject::FLOAT, "value you want to fill in hollow ellipse, default to 1.0");
 				return d;
 			}
 		};
