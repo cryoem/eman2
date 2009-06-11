@@ -493,7 +493,7 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool )
 	short *sdata = (short *) rdata;
 	unsigned short *usdata = (unsigned short *) rdata;
 
-	portable_fseek(mrcfile, sizeof(MrcHeader), SEEK_SET);
+	portable_fseek(mrcfile, sizeof(MrcHeader)+mrch.nsymbt, SEEK_SET);
 
 	EMUtil::process_region_io(cdata, mrcfile, READ_ONLY,
 							  image_index, mode_size,
