@@ -228,7 +228,7 @@ def main():
 		norm = 1.0
 		
 	prog = 0
-	total_prog = (len(altarray)-1)*len(azarray)*len(args)+1
+	total_prog = (len(altarray)-1)*len(azarray)*len(args)+len(args)
 	E2progress(logid,0.0)
 	
 	for arg in args:
