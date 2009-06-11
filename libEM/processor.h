@@ -2766,8 +2766,8 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("cal_half_width", EMObject::FLOAT);
-			d.put("fill_half_width", EMObject::FLOAT);
+			d.put("cal_half_width", EMObject::FLOAT, "cal_half_width is dx/dy for calculating an average");
+			d.put("fill_half_width", EMObject::FLOAT, "fill_half_width is dx/dy for fill/step");
 			return d;
 		}
 	};
@@ -2793,8 +2793,8 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("value1", EMObject::FLOAT);
-			d.put("value2", EMObject::FLOAT);
+			d.put("value1", EMObject::FLOAT, "val1 is dx/dy");
+			d.put("value2", EMObject::FLOAT, "val2 is lowpass freq cutoff in pixels");
 			return d;
 		}
 
@@ -3341,9 +3341,9 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("value1", EMObject::FLOAT);
-			d.put("value2", EMObject::FLOAT);
-			d.put("value3", EMObject::FLOAT);
+			d.put("value1", EMObject::FLOAT, "sig multiplier");
+			d.put("value2", EMObject::FLOAT, "x of center");
+			d.put("value3", EMObject::FLOAT, "y of center");
 			return d;
 		}
 	};
@@ -3854,11 +3854,12 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	};
 
 	/**multiply 'this' by a constant so it is scaled to the signal in 'to'.keepzero will exclude zero values, and keep them at zero in the result.
-	 *@param noisy
-	 *@param keepzero
-	 *@param invert
-	 *@param mult
-	 *@param add
+	 *@param noisy Image to normalize to
+	 *@param keepzero set to 1 to ignore zeroes
+	 *@param invert set to one to invert image
+	 *@param sigmax Values greater or less than sigma from zero will be excluded from the normalization
+	 *@param mult multiply by this factor
+	 *@param add add by this factor
 	 */
 	class NormalizeToStdProcessor:public Processor
 	{
@@ -3884,21 +3885,21 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			TypeDict d;
 			d.put("noisy", EMObject::EMDATA,"Image to normalize to");
-			d.put("keepzero", EMObject::INT,"Ignore zeroes");
-			d.put("invert", EMObject::INT,"Noisy is the less noisy image");
+			d.put("keepzero", EMObject::INT,"set to 1 to ignore zeroes");
+			d.put("invert", EMObject::INT,"set to one to invert image");
 			d.put("sigmax",EMObject::FLOAT,"Values greater or less than sigma from zero will be excluded from the normalization");
-			d.put("mult", EMObject::FLOAT);
-			d.put("add", EMObject::FLOAT);
+			d.put("mult", EMObject::FLOAT, "multiply by this factor");
+			d.put("add", EMObject::FLOAT, "add by this factor");
 			return d;
 		}
 	};
 
 	/**Multiply this image by a constant so it is scaled to the signal in 'noisyfile'
-	 *@param noisyfile
-	 *@param keepzero  exclude zero values
-	 *@param invert
-	 *@param mult
-	 *@param add dfgd
+	 *@param noisyfile Image to normalize to
+	 *@param keepzero  set to 1 to exclude zero values
+	 *@param invert set to 1 to invert image
+	 *@param mult multiply by this factor
+	 *@param add add by this factor
 	 */
 	class NormalizeToFileProcessor:public NormalizeToStdProcessor
 	{
@@ -3916,11 +3917,11 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("noisyfile", EMObject::STRING);
-			d.put("keepzero", EMObject::INT, "exclude zero values");
-			d.put("invert", EMObject::INT);
-			d.put("mult", EMObject::FLOAT);
-			d.put("add", EMObject::FLOAT);
+			d.put("noisyfile", EMObject::STRING, "Image file name to normalize to");
+			d.put("keepzero", EMObject::INT, "set to 1 to ignore zeroes");
+			d.put("invert", EMObject::INT, "set to 1 to invert image");
+			d.put("mult", EMObject::FLOAT, "multiply by this factor");
+			d.put("add", EMObject::FLOAT, "add by this factor");
 			return d;
 		}
 
@@ -3932,9 +3933,9 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	};
 
 	/**use least square method to normalize
-	 * @param to
-	 * @param low_threshold
-	 * @param high_threshold
+	 * @param to reference image normalize to
+	 * @param low_threshold only take into account the reference image's pixel value between high and low threshold (zero is ignored)
+	 * @param high_threshold only take into account the reference image's pixel value between high and low threshold (zero is ignored)
 	 */
 	class NormalizeToLeastSquareProcessor:public Processor
 	{
@@ -3954,9 +3955,9 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("to", EMObject::EMDATA);
-			d.put("low_threshold", EMObject::FLOAT);
-			d.put("high_threshold", EMObject::FLOAT);
+			d.put("to", EMObject::EMDATA, "reference image normalize to");
+			d.put("low_threshold", EMObject::FLOAT, "only take into account the reference image's pixel value between high and low threshold (zero is ignored)");
+			d.put("high_threshold", EMObject::FLOAT, "only take into account the reference image's pixel value between high and low threshold (zero is ignored)");
 			return d;
 		}
 
@@ -4122,7 +4123,8 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	};*/
 
 	/** add noise to an image
-	 * @param noise
+	 * @param noise noise factor used to generate Gaussian distribution random noise
+	 * @param seed seed for random number generator
 	 */
 	class AddNoiseProcessor:public Processor
 	{
@@ -4142,14 +4144,14 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("noise", EMObject::FLOAT);
+			d.put("noise", EMObject::FLOAT, "noise factor used to generate Gaussian distribution random noise");
 			d.put("seed", EMObject::INT, "seed for random number generator");
 			return d;
 		}
 
 		virtual string get_desc() const
 		{
-			return "add noise to an image";
+			return "add noise to an image, image multiply by noise then add a random value";
 		}
 
 	  protected:
@@ -4159,7 +4161,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		}
 	};
 
-	/** add sigma noise
+	/** add sigma noise, multiply image's sigma value to noise
 	 */
 	class AddSigmaNoiseProcessor:public AddNoiseProcessor
 	{
@@ -4183,7 +4185,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		float get_sigma(EMData * image);
 	};
 
-	/**add random noise
+	/**add spectral noise to a complex image
 	 *@param n
 	 *@param x0
 	 *@param dx
@@ -4219,7 +4221,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 
 		virtual string get_desc() const
 		{
-			return "add random noise.";
+			return "add spectral noise to a complex image.";
 		}
 
 	};
@@ -4511,11 +4513,11 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	};
 
 	/** Tries to mask out only interesting density
-	 * @param radius
-	 * @param threshold
-	 * @param nshells
-	 * @param nshellsgauss
-	 * @return_mask
+	 * @param radius Pixel radius of a ball which is used to seed the flood filling operation
+	 * @param threshold An isosurface threshold that suitably encases the mass
+	 * @param nshells The number of dilation operations
+	 * @param nshellsgauss number of Gaussian pixels to expand, following the dilation operations
+	 * @return_mask If true the result of the operation will produce the mask, not the masked volume
 	 */
 	class AutoMask3D2Processor:public Processor
 	{
@@ -4543,7 +4545,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			d.put("radius", EMObject::INT,"Pixel radius of a ball which is used to seed the flood filling operation.");
 			d.put("threshold", EMObject::FLOAT, "An isosurface threshold that suitably encases the mass.");
 			d.put("nshells", EMObject::INT, "The number of dilation operations");
-			d.put("nshellsgauss", EMObject::INT);
+			d.put("nshellsgauss", EMObject::INT, "number of Gaussian pixels to expand, following the dilation operations");
 			d.put("return_mask", EMObject::BOOL, "If true the result of the operation will produce the mask, not the masked volume.");
 			return d;
 
@@ -4582,7 +4584,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	};
 
 	/**ToMassCenterProcessor centers image at center of mass, ignores old dx, dy.
-	 * @param int_shift_only
+	 * @param int_shift_only set to 1 only shift by integer, no interpolation
 	 * @ingroup tested3c
 	 */
 	class PhaseToMassCenterProcessor:public Processor
@@ -4608,13 +4610,13 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			virtual TypeDict get_param_types() const
 			{
 				TypeDict d;
-				d.put("int_shift_only", EMObject::INT);
+				d.put("int_shift_only", EMObject::INT, "set to 1 only shift by integer, no interpolation");
 				return d;
 			}
 	};
 
 	/**ToMassCenterProcessor centers image at center of mass, ignores old dx, dy.
-	 * @param int_shift_only
+	 * @param int_shift_only set to 1 only shift by integer, no interpolation
 	 * @ingroup tested3c
 	 */
 	class ToMassCenterProcessor:public Processor
@@ -4640,7 +4642,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("int_shift_only", EMObject::INT);
+			d.put("int_shift_only", EMObject::INT, "set to 1 only shift by integer, no interpolation");
 			return d;
 		}
 	};
@@ -4676,8 +4678,8 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	};
 
 	/** Processor the images by the estimated SNR in each image.if parameter 'wiener' is 1, then wiener processor the images using the estimated SNR with CTF amplitude correction.
-	 * @param wiener
-	 * @param snrfile
+	 * @param wiener if set to 1,  then use wiener processor to process the images using the estimated SNR with CTF amplitude correction
+	 * @param snrfile structure factor file name
 	 */
 	class SNRProcessor:public Processor
 	{
@@ -4702,14 +4704,14 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("wiener", EMObject::INT);
-			d.put("snrfile", EMObject::STRING);
+			d.put("wiener", EMObject::INT, "if set to 1,  then use wiener processor to process the images using the estimated SNR with CTF amplitude correction");
+			d.put("snrfile", EMObject::STRING, "structure factor file name");
 			return d;
 		}
 	};
 
 	/** A fourier processor specified in a 2 column text file.
-	 * @param filename
+	 * @param filename file name for a 2 column text file which specified a radial function data array
 	*/
 	class FileFourierProcessor:public Processor
 	{
@@ -4734,7 +4736,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("filename", EMObject::STRING);
+			d.put("filename", EMObject::STRING, "file name for a 2 column text file which specified a radial function data array.");
 			return d;
 		}
 	};
@@ -4781,9 +4783,9 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	};
 
 	/**This processor attempts to perform a 'local normalization' so low density and high density features will be on a more even playing field in an isosurface display. threshold is an isosurface threshold at which all desired features are visible, radius is a normalization size similar to an lp= value.
-	 *@param threshold
-	 *@param radius
-	 *@param apix
+	 *@param threshold an isosurface threshold at which all desired features are visible
+	 *@param radius a normalization size similar to an lp= value
+	 *@param apix Angstrom per pixel ratio
 	 */
 	class LocalNormProcessor:public Processor
 	{
@@ -4808,16 +4810,16 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("threshold", EMObject::FLOAT);
-			d.put("radius", EMObject::FLOAT);
-			d.put("apix", EMObject::FLOAT);
+			d.put("threshold", EMObject::FLOAT, "an isosurface threshold at which all desired features are visible");
+			d.put("radius", EMObject::FLOAT, "a normalization size similar to an lp= value");
+			d.put("apix", EMObject::FLOAT, "Angstrom per pixel ratio");
 			return d;
 		}
 	};
 
 	/**Multiplies the image by the specified file using pixel indices. The images must be same size. If 'ismaskset=' is 1, it will take a file containing a set of masks and apply the first mask to the image.
-	 *@param filename
-	 *@param ismaskset
+	 *@param filename mask image file name
+	 *@param ismaskset If set to 1, it will take a file containing a set of masks and apply the first mask to the image
 	 */
 	class IndexMaskFileProcessor:public Processor
 	{
@@ -4837,8 +4839,8 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("filename", EMObject::STRING);
-			d.put("ismaskset", EMObject::INT);
+			d.put("filename", EMObject::STRING, "mask image file name");
+			d.put("ismaskset", EMObject::INT, "If set to 1, it will take a file containing a set of masks and apply the first mask to the image");
 			return d;
 		}
 
@@ -4850,7 +4852,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	};
 
 	/**Multiplies the image by the specified file using pixel coordinates instead of pixel indices. The images can be different size.
-	 *@param filename
+	 *@param filename mask image file name
 	 */
 	class CoordinateMaskFileProcessor:public Processor
 	{
@@ -4875,13 +4877,20 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("filename", EMObject::STRING);
+			d.put("filename", EMObject::STRING, "mask image file name");
 			return d;
 		}
 	};
 
 	/**'paints' a circle into the image at x,y,z with values inside r1 set to v1, values between r1 and r2 will be set to a
-		value between v1 and v2, and values outside r2 will be unchanged
+	 * value between v1 and v2, and values outside r2 will be unchanged
+	 * @param x x coordinate for Center of circle
+	 * @param y y coordinate for Center of circle
+	 * @param z z coordinate for Center of circle
+	 * @param r1 Inner radius
+	 * @param v1 Inner value
+	 * @param r2 Outter radius
+	 * @param v2 Outer Value
 	 */
 	class PaintProcessor:public Processor
 	{
@@ -4908,12 +4917,12 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("x", EMObject::INT,"Center of circle");
-			d.put("y", EMObject::INT);
-			d.put("z", EMObject::INT);
-			d.put("r1", EMObject::INT,"First radius");
+			d.put("x", EMObject::INT, "x coordinate for Center of circle");
+			d.put("y", EMObject::INT, "y coordinate for Center of circle");
+			d.put("z", EMObject::INT, "z coordinate for Center of circle");
+			d.put("r1", EMObject::INT,"Inner radius");
 			d.put("v1", EMObject::FLOAT,"Inner value");
-			d.put("r2", EMObject::INT,"Second radius");
+			d.put("r2", EMObject::INT,"Outter radius");
 			d.put("v2", EMObject::FLOAT,"Outer Value");
 			return d;
 		}
@@ -4944,6 +4953,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 
 	/**Does a projection in one the axial directions
 	 * Doesn't support process_inplace (because the output has potentially been compressed in one dimension)
+	 * @param direction The direction of the sum, either x,y or z
 	 */
 	class DirectionalSumProcessor : public Processor
 	{
@@ -4986,6 +4996,10 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 
 	/**'paints' a circle into the image at x,y,z with values inside r1 set to v1, values between r1 and r2 will be set to a
 	 *	value between v1 and v2, and values outside r2 will be unchanged
+	 *	@param xpoints x coordinates
+	 *	@param ypoints y coordinates
+	 *	@param zpoints z coordinates
+	 *	@param minval min value
 	 */
 	class WatershedProcessor:public Processor
 	{
@@ -5023,7 +5037,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	};
 
 	/**Sets the structure factor based on a 1D x/y text file.
-	 *@param filename
+	 *@param filename file name for structure factor
 	 */
 	class SetSFProcessor:public Processor
 	{
@@ -5048,13 +5062,13 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("filename", EMObject::STRING);
+			d.put("filename", EMObject::STRING, "file name for structure factor");
 			return d;
 		}
 	};
 
 	/**Smart mask processor
-	 *@param mask
+	 *@param mask mask value
 	 */
 	class SmartMaskProcessor:public Processor
 	{
@@ -5079,12 +5093,14 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("mask", EMObject::FLOAT);
+			d.put("mask", EMObject::FLOAT, "mask value");
 			return d;
 		}
 	};
 
 	/**Iterative expansion of a binary mask, val1 is number of pixels to expand, if val2!=0 will make a soft Gaussian edge starting after val2 pixels.
+	 * @param val1 number of pixels to expand
+	 * @param val2 number of Gaussian pixels to expand, following the first expansion
 	 */
 	class IterBinMaskProcessor:public Processor
 	{
@@ -5115,14 +5131,14 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		}
 	};
 
-	/**This is a group of 'processor' used to create test image.
+	/**Base class for a group of 'processor' used to create test image.
 	 */
 	class TestImageProcessor : public Processor
 	{
 	public:
 		static string get_group_desc()
 		{
-			return "This is a group of 'processors' used to create test image.";
+			return "Base class for a group of 'processors' used to create test image.";
 		}
 
 	protected:
@@ -5449,10 +5465,12 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 
 
 	/**Replace a source image as a sine wave in specified wave length
-	 *@param wavelength this value is the d in function |sin(x/d)|
-	 *@param axis specify a major axis for asymmetric features
-	 *@param c distance between focus and the center of an ellipse
-	 *@param phase (optional)phase for sine wave, default is 0
+	 *@param wavelength wavelength in equation sin(x*2*PI/wavelength - phase*180/PI)
+	 *@param axis (optional) specify a major axis for asymmetric features, default x axis
+	 *@param phase (optional) the phase in equation sin(x*2*PI/wavelength - phase*180/PI)
+	 *@param az (optional) angle in degree. for 2D image, this is the rotated angle of the image, in 3D image, it's az for euler angle. default is zero
+	 *@param alt (optional) angle in degree. only in 3D case, alt for euler angle, default is zero
+	 *@param phi (optional) angle in degree. only in 3D case, phi for euler angle, default is zero
 	 */
 	class TestImageSinewave : public TestImageProcessor
 	{
@@ -5562,6 +5580,13 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		}
 	};
 
+	/**Generate an ellipse or ellipsoid image
+	 *@param a equatorial radii along x axes
+	 *@param b equatorial radii along y axes
+	 *@param c polar radius
+	 *@param transform Optionally transform the ellipse
+	 *@param fill Fill value
+	 */
 	class TestImageEllipse : public TestImageProcessor
 	{
 	public:
@@ -5594,6 +5619,17 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		}
 	};
 
+	/**Generate an ellipse/ellipsoid image with an inner hollow ellipse/ellipsoid
+	 *@param xwidth inner equatorial radii along x axes
+	 *@param ywidth inner equatorial radii along y axes
+	 *@param zwidth inner polar radius
+	 *@param a outter equatorial radii along x axes
+	 *@param b outter equatorial radii along y axes
+	 *@param c outter polar radius
+	 *@param width specify the width or specify each width explicitly - xwidth, ywidth, zwidth
+	 *@param transform Optionally transform the ellipse
+	 *@param fill Fill value
+	 */
 	class TestImageHollowEllipse : public TestImageProcessor
 		{
 		public:
@@ -5669,6 +5705,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 
 	/**Replace a source image as a uniform random noise, random number generated from gsl_rng_mt19937,
 	 * the pixel value is from 0 to 1, [0, 1)
+	 * @param seed seed for random number generator
 	 */
 	class TestImageNoiseUniformRand : public TestImageProcessor
 	{
@@ -5704,6 +5741,9 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	 * The testimage classes using random numbers should take an int 'seed'
 	 * parameter. If this parameter is provided, it will be cast into an unsigned int.
 	 * This will permit initialization to a known state if desired.
+	 * @param sigma sigma value of gausian distributed noise, default is 0.5
+	 * @param mean mean value of gausian distributed noise, default is zero
+	 * @param seed mean value of gausian distributed noise, default is zero
 	 */
 	class TestImageNoiseGauss : public TestImageProcessor
 	{
@@ -5730,7 +5770,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			TypeDict d;
 			d.put("sigma", EMObject::FLOAT, "sigma value of gausian distributed noise, default is 0.5");
 			d.put("mean", EMObject::FLOAT, "mean value of gausian distributed noise, default is zero.");
-			d.put("seed", EMObject::INT, "the seed for random number generator, default is not to reseed. Uses random().");
+			d.put("seed", EMObject::INT, "the seed for random number generator, default is not to reseed.");
 
 			return d;
 		}
@@ -6009,6 +6049,12 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		}
 	};
 
+	/**Bins pixel values, similar to calculating a histogram. The histogram is comprised
+	 * of 'nbins' bins, and the value assigned to each pixel in the bin is the midpoint
+	 * of the bin's upper and lower limits. Defaults to 256 bins
+	 * @param nbins The number of bins the pixel values will be compressed into
+	 * @param debug Outputs debugging information (number of pixels per bin)
+	 */
 	class HistogramBin : public Processor
 	{
 		public:
@@ -6047,6 +6093,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	/** Cuda based constant multiplication processor
 	 * @author David Woolford
 	 * @date Feb 24 2009
+	 * @param scale The amount to multiply each pixel by
 	*/
 	class CudaMultProcessor: public Processor
 	{
@@ -6081,6 +6128,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	/** Cuda based auto correlation processor
 	 * @author David Woolford
 	 * @date Feb 24 2009
+	 * @param with That which to perform the cross correlation with.
 	 */
 	class CudaCorrelationProcessor: public Processor
 	{

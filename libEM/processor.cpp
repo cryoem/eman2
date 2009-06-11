@@ -3829,9 +3829,8 @@ void AddNoiseProcessor::process_inplace(EMData * image)
 	float addnoise = params["noise"];
 	addnoise *= get_sigma(image);
 	float *dat = image->get_data();
-	size_t size = image->get_xsize() * image->get_ysize() * image->get_zsize();
 
-	for (size_t j = 0; j < size; j++) {
+	for (size_t j = 0; j < image->get_size(); ++j) {
 		dat[j] += randnum->get_gauss_rand(addnoise, addnoise / 2);
 	}
 
