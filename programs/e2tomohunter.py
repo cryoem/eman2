@@ -290,10 +290,7 @@ def main():
 					#print "Trying rotation %f %f"%(altrot, azrot)
 					while phirot <= -azrot+rarad:
 						t = Transform({"type":"eman","az":azrot,"phi":phirot,"alt":altrot})
-						probeMRC.set_gpu_rw_current()
-						targetMRC.set_gpu_rw_current()
 						dMRC= probeMRC.process("math.transform",{"transform":t}) # more efficient than copying than
-						dMRC.set_gpu_rw_current()
 						currentCCF=tomoccf(targetMRC,dMRC)
 						scalar=ccfFFT(currentCCF,options.thresh,box)
 						if scalar>maxnum:
@@ -358,7 +355,7 @@ def print_info(image,first_line="Information"):
 	
 	
 def tomoccf(targetMRC,probeMRC):
-	ccf=targetMRC.calc_ccf_cuda(probeMRC,False,False)
+	ccf=targetMRC.calc_ccf(probeMRC)
 	# removed a toCorner...this puts the phaseorigin at the left corner, but we can work around this by
 	# by using EMData.calc_max_location_wrap (below)
 	return (ccf)
