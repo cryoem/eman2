@@ -40,7 +40,7 @@ import sys
 def main():
 	
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack outdir <maskfile> --K=2 --nb_part=5 --opt_method='SSE' --CTF --F=0.9 --max_run=10 --th_nobj=10 --th_stab_max=6.0 --th_stab_min=3.0 --min_dec_K=5 --FK=0 --MPI --CUDA"
+	usage = progname + " stack outdir <maskfile> --K=2 --nb_part=5 --opt_method='SSE' --CTF --F=0.9 --max_run=10 --th_nobj=10 --th_stab_max=6.0 --th_stab_min=3.0 --min_dec_K=5 --FK=0 --rand_seed=0 --MPI --CUDA"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--K",              type="int",          default=2,         help="Number of classes for k-means (default 2)")
 	parser.add_option("--nb_part",        type="int",          default=5,         help="Number of partitions used to calculate the stability (default 5)")
@@ -53,6 +53,7 @@ def main():
 	parser.add_option("--th_stab_max",    type="float",        default=6.0,       help="Stability threshold where K stop to decrease (default 6.0)")
 	parser.add_option("--th_stab_min",    type="float",        default=0.0,       help="Stability threshold required to start the next run in percent (default 3.0)")
 	parser.add_option("--min_dec_K",      type="int",          default=5,         help="Minimum decrement value to K when the stability is to low (default 5)")
+	parser.add_option("--rand_seed",      type="int",          default=0,         help="Random seed")
 	parser.add_option("--MPI",            action="store_true", default=False,     help="MPI version")
 	parser.add_option("--CUDA",           action="store_true", default=False,     help="CUDA version")
 	
@@ -77,7 +78,7 @@ def main():
 
 		from  applications  import  k_means_stab
 		global_def.BATCH = True
-		k_means_stab(args[0], args[1], mask, options.opt_method, options.K, options.nb_part, options.CTF, options.F, options.FK, options.max_run, options.th_nobj, options.th_stab_max, options.th_stab_min, options.min_dec_K, options.MPI, options.CUDA)
+		k_means_stab(args[0], args[1], mask, options.opt_method, options.K, options.nb_part, options.CTF, options.F, options.FK, options.max_run, options.th_nobj, options.th_stab_max, options.th_stab_min, options.min_dec_K, options.rand_seed, options.MPI, options.CUDA)
 		global_def.BATCH = False
 
 if __name__ == "__main__":
