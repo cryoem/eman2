@@ -164,6 +164,8 @@ namespace EMAN
 
 	/** ImageAverager averages a list of images. It optionally makes
      * a sigma image.
+     *@param sigma sigma value
+     *@param ignore0 if set, ignore zero value pixels
      */
 	class ImageAverager:public Averager
 	{
@@ -191,8 +193,8 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("sigma", EMObject::EMDATA);
-			d.put("ignore0", EMObject::INT);
+			d.put("sigma", EMObject::EMDATA, "sigma value");
+			d.put("ignore0", EMObject::INT, "if set, ignore zero value pixels");
 			return d;
 		}
 
@@ -207,6 +209,7 @@ namespace EMAN
 
 	/** ImageAverager averages a list of images. It optionally makes
      * a sigma image.
+     *@param max If set, will find the max value, otherwise finds min
      */
 	class MinMaxAverager:public Averager
 	{
@@ -314,6 +317,8 @@ namespace EMAN
 	};
 
 	/** WeightingAverager averages the images with SNR weighting, but no CTF correction.
+	 *@param curves
+	 *@param sf
      */
 	class WeightingAverager:public CtfAverager
 	{
