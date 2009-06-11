@@ -2751,17 +2751,19 @@ class EMPartStackOptions:
 		n = 0
 		
 		ptcls = None
+		name_map = {} # a way to map a filtered image to its originating image
 		if db.has_key(self.list_name):
 			ptcls = db[self.list_name]
 			for name in ptcls:
 				n += EMUtil.get_image_count(name)
+				name_map[name] = name # this makes things simple at other points in the code. please leave
 				
 			stacks_map["Particles"] = ptcls
 				
 		# now build up the list of filtered things
 		EMProjectListCleanup.clean_up_filt_particles(self.filt_name)
 		filter_opts = {} # key is the filter type, value is the number of images with this filter type
-		name_map = {} # a way to map a filtered image to its originating image
+		
 		if db.has_key(self.filt_name):
 			for name,d in db[self.filt_name].items():
 				if ptcls != None and name not in ptcls:

@@ -106,7 +106,13 @@ def gen_average(options,args,logid=None):
 	
 	for i,arg in enumerate(args):
 		image = EMData(arg,0)
-		t = db_map[arg][options.probe][0]
+		if not options.aliset:
+			t = db_map[arg][options.probe][0]
+		else:
+			t = get_ali_data(arg,options.probe,options.aliset)
+			if t == None:
+				raise RuntimeError("An error occured trying to retrieve the alignment data using the given ali set")
+			
 		image.process_inplace("math.transform",{"transform":t})
 		if average == None: average = image
 		else: average = average + image
@@ -124,6 +130,35 @@ def gen_average(options,args,logid=None):
 			db.append(options.avgout)
 			pdb[options.dbls] = db
 
+def get_ali_data(filename,probe,aliset):
+	from emtprworkflow import EMProbeAliTools
+	from emsprworkflow import EMPartStackOptions
+	
+	#EMProjectListCleanup.clean_up_filt_particles(self.project_list)
+	db = db_open_dict("bdb:project",ro=True)
+	db_map = db.get("global.tpr_ptcls_ali_dict")
+	if db_map == None:
+		return None # calling function will barf
+	
+	ptcl_opts = EMPartStackOptions("global.tpr_ptcls","global.tpr_filt_ptcls_map")
+	particles_map, particles_name_map, choices, name_map = ptcl_opts.get_particle_options()
+	tls = EMProbeAliTools()
+	probe_set_map,probe_and_ali,probe_name_map = tls.accrue_data()
+	
+	base_set = probe_set_map[get_file_tag(probe)][aliset]
+	ptcl_base_set = [name_map[name] for name in base_set]
+	
+	base_name = name_map[filename]
+	
+	for i in xrange(0,len(base_set)):
+		if base_name == ptcl_base_set[i]:
+			dct = db_map[base_set[i]]
+			if dct.has_key(probe):
+				alis = dct[probe]
+				return alis[0]
+			
+	return None
+	
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog <probe> <image to be aligned> [options]"""
@@ -144,9 +179,10 @@ def main():
 	parser.add_option("--n",type="int",help="0 or 1, multiplication by the reciprocal of the boxsize", default=1)
 	parser.add_option("--dbls",type="string",help="data base list storage, used by the workflow. You can ignore this argument.",default=None)
 	parser.add_option("--probe",type="string",help="The probe. This is the model that the input images will be aligned to", default=None)
+	parser.add_option("--aliset",type="string",help="Supplied with avgout. Used to choose different alignment parameter from the local database. Used from the workflow", default=None)
 	parser.add_option("--avgout",type="string",help="If specified will produce an averaged output, only works if you've previously run alignments", default=None)
 	if EMUtil.cuda_available():
-		parser.add_option("--cuda",action="store_true",help="GPU acceleration using CUDA. Tentalizing glimpse into the future", default=False)
+		parser.add_option("--cuda",action="store_true",help="GPU acceleration using CUDA. Tantalizing glimpse into the future", default=False)
    
 	(options, args) = parser.parse_args()
 	

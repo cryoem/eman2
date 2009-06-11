@@ -415,18 +415,44 @@ class EMTomoPtclAlignmentReportTask(WorkFlowTask):
 		Basically some functions with a cache - the cache is to avoid
 		re-reading stuff from disk multiple times
 		'''
-		def __init__(self,title):
+		def __init__(self,probe,ali_set=None):
 			self.project_list = "global.tpr_ptcls_ali_dict"
 			#EMProjectListCleanup.clean_up_filt_particles(self.project_list)
 			db = db_open_dict("bdb:project",ro=True)
-			self.db_map = db.get(self.project_list,dfl={})
-			self.title = title
-
+			self.db_map = db[self.project_list]
+			self.probe = probe
+			self.ali_set = ali_set
+			if self.ali_set != None:
+				ptcl_opts = EMPartStackOptions("global.tpr_ptcls","global.tpr_filt_ptcls_map")
+				self.particles_map, self.particles_name_map, choices, self.name_map = ptcl_opts.get_particle_options()
+				tls = EMProbeAliTools()
+				self.probe_set_map,self.probe_and_ali,self.probe_name_map = tls.accrue_data()
+				self.base_set = self.probe_set_map[get_file_tag(self.probe)][self.ali_set]
+				self.ptcl_base_set = [self.name_map[name] for name in self.base_set]
+				
 		def get_ali_params(self,name):
+			if self.db_map == None: return "-"
+			
+			if self.ali_set != None:
+				base_name = self.name_map[name]
+			
+				
+				for i in xrange(0,len(self.base_set)):
+					if base_name == self.ptcl_base_set[i]:
+						dct = self.db_map[self.base_set[i]]
+						if dct.has_key(self.probe):
+							alis = dct[self.probe]
+							t = alis[0]
+							params = t.get_params("eman")
+							s = "Az,Alt,Phi:[%.1f,%.1f,%.1f], X,Y,Z:[%.1f,%.1f,%.1f]" %(params["az"],params["alt"],params["phi"],params["tx"],params["ty"],params["tz"])
+							return s
+						
+				return "-"
+				
 			if self.db_map.has_key(name):
 				dct = self.db_map[name]
-				if dct.has_key(self.title):
-					alis = dct[self.title]
+				if dct.has_key(self.probe):
+					alis = dct[self.probe]
 					t = alis[0]
 					params = t.get_params("eman")
 					s = "Az:%.1f Alt:%.1f Phi:%.1f X:%.1f Y:%.1f Z:%.1f" %(params["az"],params["alt"],params["phi"],params["tx"],params["ty"],params["tz"])
@@ -1293,15 +1319,71 @@ class E2TomoAverageChooseAliTask(WorkFlowTask):
 		self.emit(QtCore.SIGNAL("task_idle"))
 		self.form.closeEvent(None)
 		self.form = None
+		
+class EMTomoGenerateAverageChooseDataTask(WorkFlowTask):
+	'''Set me please'''
+	def __init__(self):
+		WorkFlowTask.__init__(self)
+		self.window_title = "Choose Alignment Data"
+		self.form_db_name = "bdb:emform.tomo.genave.choose"
+		self.preferred_size = (480,240)
+		
+	def get_params(self):
+		db = db_open_dict(self.form_db_name)
+		tls = EMProbeAliTools()
+		self.probe_set_map,self.probe_and_ali,self.probe_name_map = tls.accrue_data()
+		
+		params = []
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
+		if len(self.probe_and_ali) != 0:
+			params.append(ParamDef(name="probe_ali_data", vartype="dict",desc_short="Probe and alignment parameters",desc_long="Select the probe and corresponding alignment set for the purpose of generating an average. This equates to choosing which alignment you want to use as the basis for generating an average", property=None, defaultunits="",choices=self.probe_and_ali  ))
+		
+		ptcl_opts = EMPartStackOptions("global.tpr_ptcls","global.tpr_filt_ptcls_map")
+		self.particles_map, self.particles_name_map, choices, self.name_map = ptcl_opts.get_particle_options()
+		
+		if len(choices) > 0:
+			params.append(ParamDef(name="ptcl_choice",vartype="choice",desc_long="Choose from the filtered tomogram particles",desc_short="Choose data to form average",property=None,defaultunits=db.get("ptcl_choice",dfl=""),choices=choices))
+		
+		return params
+
+	def on_form_ok(self,params):
+		if not params.has_key("ptcl_choice") or not params["ptcl_choice"]:
+			error("Please choose a particle set")
+			return
+		
+		if not params.has_key("probe_ali_data") or not params["probe_ali_data"]:
+			error("Please choose probe/ali data")
+			return
+		
+		probe_tag = params["probe_ali_data"]
+		probe = self.probe_name_map[probe_tag]
+		ali_set = params["probe_ali_data_selection"]
+		ptcls_set = self.particles_map[self.particles_name_map[params["ptcl_choice"]]]
+		
+		base_set = self.probe_set_map[probe_tag][ali_set]
+		ptcl_base_set = [self.name_map[name] for name in base_set]
+		
+		final_set = []
+		for name in ptcls_set:
+			print self.name_map[name]
+			if self.name_map[name] in ptcl_base_set:
+				final_set.append(name)
+				
+		task = E2TomoGenerateAverageTask(final_set,probe,ali_set)
+		self.emit(QtCore.SIGNAL("replace_task"),task,"Filter Tomo Particles")
+		self.form.closeEvent(None)
+		self.form = None
+		self.write_db_entries(params)
 
 class E2TomoGenerateAverageTask(WorkFlowTask):	
 	"""This task is for generating averages of your tomographic particles. Choose the particles you want to combine into an average, choose a name for the average, and hit OK. Have a look in the 'Particle Averages' table once the task is completed to see the resulting average."""
-	def __init__(self,ptcls_list=[],probe=""):
+	def __init__(self,ptcls_list=[],probe="",ali_set=""):
 		WorkFlowTask.__init__(self)
 		self.window_title = "Generate Tomo Average"
 		self.form_db_name = "bdb:emform.tomo.generate_average"
 		self.ptcls_list = ptcls_list
 		self.probe = probe
+		self.ali_set = ali_set
 #	def __del__(self):
 #		print "output task dies"
 	
@@ -1316,7 +1398,7 @@ class E2TomoGenerateAverageTask(WorkFlowTask):
 	#	table.insert_column_data(1,EMFileTable.EMColumnData("Particles On Disk",ParticleReportTask.get_num_ptcls,"Particles currently stored on disk that are associated with this image"))
 		table.insert_column_data(1,EMFileTable.EMColumnData("Particle Dims",ParticleReportTask.get_particle_dims,"The dimensions of the particles that are stored on disk"))
 		
-		d = EMTomoPtclAlignmentReportTask.AlignmentColumn(self.probe)
+		d = EMTomoPtclAlignmentReportTask.AlignmentColumn(self.probe,self.ali_set)
 		table.insert_column_data(0,EMFileTable.EMColumnData(get_file_tag(self.probe),d.get_ali_params,"Alignment parameters"))
 		
 		db = db_open_dict(self.form_db_name)
@@ -1356,9 +1438,10 @@ class E2TomoGenerateAverageTask(WorkFlowTask):
 		options.avgout = params["ave_name"]
 		options.filenames = params["filenames"]
 		options.dbls = "global.tpr_ptcl_averages"
+		options.aliset = self.ali_set
 		options.probe = self.probe
 		
-		string_args = ["avgout","dbls","probe"]
+		string_args = ["avgout","dbls","probe","aliset"]
 		bool_args = []
 		additional_args = []
 		temp_file_name = "e2tomohunter_average_stdout.txt"
@@ -1366,4 +1449,59 @@ class E2TomoGenerateAverageTask(WorkFlowTask):
 		self.emit(QtCore.SIGNAL("task_idle"))
 		self.form.closeEvent(None)
 		self.form = None
-
+		
+		
+class EMProbeAliTools:
+	'''Used to figure out which probe was aligned to which set, etc. Their are 3 dimensions to the decision make processes involved here, making it somewhat complicated'''
+	def __init__(self):
+		pass
+	
+	def accrue_data(self):
+		project_db = db_open_dict("bdb:project")
+#				
+#		ptcl_opts = EMPartStackOptions("global.tpr_ptcls","global.tpr_filt_ptcls_map")
+#		self.particles_map, self.particles_name_map, self.choices, self.name_map = ptcl_opts.get_particle_options()
+		
+		set_map = {}
+		sets = project_db.get("global.tpr_filt_ptcls_map",dfl={})
+		for ptcl,map in sets.items():
+			for filt,filt_ptcl in map.items():
+				set_map[filt_ptcl] = filt
+				
+			set_map[ptcl] = "Particles"
+		
+		
+		
+		probes = project_db.get("global.tpr_probes",dfl=[])
+		ali_dict = project_db.get("global.tpr_ptcls_ali_dict",dfl={})
+		
+		probe_set_map = {}
+		
+		for probe in probes:
+			tag = get_file_tag(probe)
+			probe_set_map[tag] = {}
+		
+		probe_and_ali = {}
+		probe_name_map = {}
+		
+		
+		for filt_ptcl,map in ali_dict.items():
+			for probe,t in map.items():
+				tag = get_file_tag(probe)
+				filt = set_map[filt_ptcl]
+				if not probe_set_map[tag].has_key(filt):
+					probe_set_map[tag][filt] = [filt_ptcl]
+				else:
+					probe_set_map[tag][filt].append(filt_ptcl)
+				
+				if not probe_and_ali.has_key(tag):
+					probe_and_ali[tag] = [filt]
+					probe_name_map[tag] = probe
+				elif probe_and_ali[tag].count(filt) == 0:
+					probe_and_ali[tag].append(filt)
+		
+		return probe_set_map,probe_and_ali,probe_name_map
+					
+			
+			
+		
