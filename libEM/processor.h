@@ -356,6 +356,10 @@ The basic design of EMAN Processors: <br>\
 		  virtual void create_radial_func(vector < float >&radial_mask) const = 0;
 	};
 
+	/**Multiplies each Fourier pixel by its amplitude
+	 *@param sum Adds the weights to sum for normalization
+	 *@param sqrt Weights using sqrt of the amplitude if set
+	 */
 	class AmpweightFourierProcessor:public Processor
 	{
 	  public:
@@ -400,6 +404,7 @@ The basic design of EMAN Processors: <br>\
 	 * This processor performs fast convolution in Fourier space
 	 *@author David Woolford
 	 *@date 2007/12/04
+	 *@param with The image that will convolute the other image
 	 */
 	class ConvolutionProcessor : public Processor
 	{
@@ -877,6 +882,8 @@ The basic design of EMAN Processors: <br>\
 	};
 
 	/**processor radial function: f(x) = slope * x + intercept
+	 *@param intercept intercept in 'f(x) = slope * x + intercept
+	 *@param slope slope in 'f(x) = slope * x + intercept
 	 */
 	class LinearRampProcessor:public FourierProcessor
 	{
@@ -1017,6 +1024,9 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**Invert image as if f(x) != 0: f(x) = 1/f(x) else: f(x) = zero_to
+	 *@param zero_to  Inverted zero values are set to this value, default is 0
+	 */
 	class InvertCarefullyProcessor:public RealPixelProcessor
 	{
 		public:
@@ -1057,6 +1067,9 @@ The basic design of EMAN Processors: <br>\
 			float zero_to;
 	};
 
+	/**Do a math power operation on image, f(x) = x ^ pow;
+	 *@param pow Each pixel is raised to this power
+	 */
 	class ValuePowProcessor:public RealPixelProcessor
 	{
 	  public:
@@ -1097,7 +1110,8 @@ The basic design of EMAN Processors: <br>\
 		float pwr;
 	};
 
-
+	/**Do a square operation on image, f(x) = x * x;
+	 */
 	class ValueSquaredProcessor:public RealPixelProcessor
 	{
 	  public:
@@ -1213,9 +1227,10 @@ The basic design of EMAN Processors: <br>\
 	};
 
 	/** Transform the image using a Transform object
-	 * @author David Woolford
-	 * @date September 2008
-	 * @ingroup CUDA_ENABLED
+	 *@author David Woolford
+	 *@date September 2008
+	 *@param transform The Transform object that will be applied to the image
+	 *@ingroup CUDA_ENABLED
 	 */
 	class TransformProcessor:public Processor
 	{
@@ -1263,9 +1278,10 @@ The basic design of EMAN Processors: <br>\
 
 	/** Translate the image an integer amount
 	 * Uses EMData::clip_inplace (inplace) and EMData::get_clip (out of place) to do the translation
-	 * @ingroup CUDA_ENABLED
-	 * @author David Woolford
-	 * @date March 2009
+	 *@ingroup CUDA_ENABLED
+	 *@author David Woolford
+	 *@date March 2009
+	 *@param trans The displacement array, can be length 1-3
 	 */
 	class IntTranslateProcessor:public Processor
 	{
@@ -1318,8 +1334,10 @@ The basic design of EMAN Processors: <br>\
 	};
 
 		/** Scale the image with control over the output dimensions
-		 * @author David Woolford
-		 * @date June 2009
+		 *@author David Woolford
+		 *@date June 2009
+		 *@param scale The amount by which to scale
+		 *@param cip The length of each output dimension. Non sophisticated, output dimensions can't be different
 		 */
 		class ScaleTransformProcessor:public Processor
 		{
@@ -1361,8 +1379,9 @@ The basic design of EMAN Processors: <br>\
 
 	/**f(x) = maxval if f(x) > maxval;
 	  * f(x) = minval if f(x) < minval
-	  * @param minval the minimum value to clamp to
-	  * @param maxval the maximum value to clamp to
+	  *@param minval the minimum value to clamp to
+	  *@param maxval the maximum value to clamp to
+	  *@tomean Replace outlying pixels values with the mean pixel value instead
 	 */
 	class ClampingProcessor :public Processor
 	{
@@ -1398,6 +1417,11 @@ The basic design of EMAN Processors: <br>\
 		float default_max, default_min;
 	};
 
+	/**This function clamps the min and max vals in the image at minval and maxval at mean-n*sigma
+	 * and mean+n*sigma, respectively. The parameter specified by the user is n, the default value of n is 2.
+	 *@param nsigma The number (n) of sigmas to clamp min and max vals at, so that the clamped boundaries are mean-n*sigma and mean+n*sigma
+	 *@param tomean Replace outlying pixels values with the mean pixel value instead
+	 */
 	class NSigmaClampingProcessor : public ClampingProcessor
 	{
 		public:
@@ -1433,7 +1457,7 @@ The basic design of EMAN Processors: <br>\
 	};
 
 	/**f(x) = x if x >= minval; f(x) = minval if x < minval
-	 *@param minval
+	 *@param minval Everything below this value is set to this value
 	 */
 	class ToMinvalProcessor:public RealPixelProcessor
 	{
@@ -1470,7 +1494,7 @@ The basic design of EMAN Processors: <br>\
 
 
 	/**f(x) = x-minval if x >= minval; f(x) = 0 if x < minval
-	 *@param minval
+	 *@param minval the value that will be set to zero - all values below will also be set to zero. Values above get minval subtracted from them
 	 */
 	class CutToZeroProcessor:public RealPixelProcessor
 	{
@@ -1506,7 +1530,7 @@ The basic design of EMAN Processors: <br>\
 	};
 
 	/**f(x) = 0 if x < value; f(x) = 1 if x >= value.
-	 *@param value
+	 *@param value The thresholding value. If a pixel value is equal to or above the threshold it is set to 1. If it is below it is set to 0
 	 */
 	class BinarizeProcessor:public RealPixelProcessor
 	{
@@ -1551,8 +1575,9 @@ The basic design of EMAN Processors: <br>\
 	 * and count. But if you do it this way you can just get the mean of the resulting image (and multiplying by 2). So it's
 	 * basically easier, but lazy.
 	 * Originally added for use by e2tomohunter.py
-	 * @author David Woolford
-	 * @date April 29th 2009
+	 *@author David Woolford
+	 *@date April 29th 2009
+	 *@param value The Fourier amplitude threshold cutoff
 	 */
 	class BinarizeFourierProcessor:public Processor
 		{
@@ -1588,8 +1613,8 @@ The basic design of EMAN Processors: <br>\
 		};
 
 	/**f(x): if v-r<x<v+r -> v; if x>v+r -> x-r; if x<v-r -> x+r
-	 *@param range
-	 *@param value
+	 *@param range The range about 'value' which will be collapsed to 'value'
+	 *@param value The pixel value where the focus of the collapse operation is
 	 */
 	class CollapseProcessor:public RealPixelProcessor
 	{
@@ -1634,8 +1659,8 @@ The basic design of EMAN Processors: <br>\
 	};
 
 	/**linear transform processor: f(x) = x * scale + shift
-	 *@param shift
-	 *@param scale
+	 *@param shift The amount to shift pixel values by before scaling
+	 *@param scale The scaling factor to be applied to pixel values
 	 */
 	class LinearXformProcessor:public RealPixelProcessor
 	{
@@ -1685,8 +1710,8 @@ The basic design of EMAN Processors: <br>\
 	};
 
 	/**f(x) = exp( x / low - high)
-	 *@param low
-	 *@param high
+	 *@param low Pixels are divided by (low - high) prior to the exponential operation
+	 *@param high Pixels are divided by (low - high) prior to the exponential operation
 	 */
 	class ExpProcessor:public RealPixelProcessor
 	{
@@ -1744,8 +1769,8 @@ The basic design of EMAN Processors: <br>\
 	};
 
 	/**f(x) = 1 if (low <= x <= high); else f(x) = 0
-	 *@param low
-	 *@param high
+	 *@param low The lower limit of the range that will be set to 1
+	 *@param high The upper limit of the range that will be set to 1
 	 */
 	class RangeThresholdProcessor:public RealPixelProcessor
 	{
@@ -1800,8 +1825,8 @@ The basic design of EMAN Processors: <br>\
 	};
 
 	/**f(x) = mean if x<(mean-v2*sigma) or x>(mean+v1*sigma); else f(x) = x;
-	 *@param value1
-	 *@param value2
+	 *@param value1 A number reflecting total standard deviations in the right direction
+	 *@param value2 A number reflecting total standard deviations in the left direction
 	 */
 	class SigmaProcessor:public RealPixelProcessor
 	{
@@ -2170,6 +2195,10 @@ outer radius specifies width of Gaussian starting at inner_radius rather than to
 	};
 
 	/**a gaussian falloff to zero, with nonisotropic widths along x,y,z
+	 *@param radius_x x-axis radius
+	 *@param radius_y y-axis radius
+	 *@param radius_z z-axis radius
+	 *@param gauss_width Gaussian falloff width, relative to each radius, default 0.05
 	 */
 	class MaskGaussNonuniformProcessor:public CoordinateProcessor
 	{
@@ -2233,7 +2262,8 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	};
 
 	/**f(x) = f(x) / exp(-radius*radius * gauss_width / (ny*ny))
-	 *@param gauss_width
+	 *@param gauss_width Used to calculate the constant factor - gauss_width / (ny*ny)
+	 *@param ring_width The width of the mask ring
 	 */
 	class MaskGaussInvProcessor:public CircularMaskProcessor
 	{
@@ -2399,7 +2429,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	};
 
 	/**AreaProcessor use pixel values and coordinates of a real-space square area. This is the base class. Specific AreaProcessor needs to implement function create_kernel().
-	 *@param areasize
+	 *@param areasize The width of the area to process (not radius)
 	 */
 	class AreaProcessor:public Processor
 	{
@@ -2508,7 +2538,13 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		}
 	};
 
-	/**BoxStatProcessor files are a kind of neighborhood processors. These processors compute every output pixel using information from a reduced region on the neighborhood of the input pixel. The classical form are the 3x3 processors. BoxStatProcessors could perform diverse tasks ranging from noise reduction, to differential , to mathematical morphology. BoxStatProcessor class is the base class. Specific BoxStatProcessor needs to define process_pixel(float *pixel, const float *array, int n).
+	/**BoxStatProcessor files are a kind of neighborhood processors. These processors
+	 * compute every output pixel using information from a reduced region on the neighborhood
+	 * of the input pixel. The classical form are the 3x3 processors. BoxStatProcessors could
+	 * perform diverse tasks ranging from noise reduction, to differential , to mathematical
+	 * morphology. BoxStatProcessor class is the base class. Specific BoxStatProcessor needs
+	 * to define process_pixel(float *pixel, const float *array, int n).
+	 *@param radius The radius of the search box, default is 1 which results in a 3x3 box (3 = 2xradius + 1)
 	 */
 	class BoxStatProcessor:public Processor
 	{
@@ -2687,7 +2723,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	};
 
 	/**peak processor -> if npeaks or more surrounding values >= value, value->0
-	 *@param npeaks
+	 *@param npeaks the number of surrounding peaks allow to >= pixel values
 	 */
 	class PeakOnlyProcessor:public BoxStatProcessor
 	{
@@ -2742,7 +2778,9 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		int npeaks;
 	};
 
-	/**
+	/**averages over cal_half_width, then sets the value in a local block
+	 *@param cal_half_width cal_half_width is dx/dy for calculating an average
+	 *@param fill_half_width fill_half_width is dx/dy for fill/step
 	 */
 	class DiffBlockProcessor:public Processor
 	{
@@ -2773,8 +2811,8 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	};
 
 	/**Block processor, val1 is dx/dy, val2 is lp freq cutoff in pixels. Mystery processor.
-	 *@param value1
-	 *@param value2
+	 *@param value1 val1 is dx/dy
+	 *@param value2 val2 is lowpass freq cutoff in pixels
 	 */
 	class CutoffBlockProcessor:public Processor
 	{
@@ -2837,8 +2875,10 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	/** MaxShrinkProcessors shrinks an image by in an integer amount,
 	 * keeping the maximum pixel value - useful when constructing binary search
 	 * trees in the marching cubes algorithm
-	 * @author David Woolford
-	 * @date September 2007
+	 *@author David Woolford
+	 *@date September 2007
+	 *@param n The shrink factor
+	 *@param search The search area (cubic volume width, usually the same as shrink)
 	 */
 	class MaxShrinkProcessor:public BooleanShrinkProcessor, public Processor
 	{
@@ -2893,8 +2933,10 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	/** MinShrinkProcessor shrinks an image by in an integer amount,
 	 * keeping the minimum pixel value - useful when constructing binary search
 	 * trees in the marching cubes algorithm
-	 * @author David Woolford
-	 * @date September 2007
+	 *@author David Woolford
+	 *@date September 2007
+	 *@param n The shrink factor
+	 *@param search The search area (cubic volume width, usually the same as shrink)
 	 */
 	class MinShrinkProcessor:public BooleanShrinkProcessor, public Processor
 	{
@@ -2944,10 +2986,12 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			inline float get_start_val() { return 9999999999.0f; }
 		};
 	};
+
 	/** MeanShrinkProcessor shrinks an image by in an integer amount (and optionally by 1.5)
 	 * taking the mean of the pixel neighbourhood
-	 * @author David Woolford (But is basically a copy of the old EMData::mean_shrink, probably written by Steven Ludtke )
-	 * @date May 2008
+	 *@author David Woolford (But is basically a copy of the old EMData::mean_shrink, probably written by Steven Ludtke )
+	 *@date May 2008
+	 *@param n The shrink factor
 	 */
 	class MeanShrinkProcessor : public Processor
 	{
@@ -3014,8 +3058,9 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 
 	/** MeanShrinkProcessor shrinks an image by in an integer amount
 	* taking the median of the pixel neighbourhood
-	* @author David Woolford (But is basically a copy of the old EMData::median_shrink, probably written by Steven Ludtke )
-	* @date May 2008
+	*@author David Woolford (But is basically a copy of the old EMData::median_shrink, probably written by Steven Ludtke )
+	*@date May 2008
+	*@param n The shrink factor
 	*/
 	class MedianShrinkProcessor : public Processor
 	{
@@ -3076,8 +3121,9 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	 * This is the same as multipyling the FT by a box window, in real space this is a convolution that will induce rippling.
 	 * Hence it is not recommended to be used for scientific processing - rather, it can be used to rapidly generate shrunken
 	 * images for display purposes
-	 * @author David Woolford
-	 * @date June 2008
+	 *@author David Woolford
+	 *@date June 2008
+	 *@param n The shrink factor
 	 */
 	class FFTShrinkProcessor : public Processor
 	{
@@ -3398,7 +3444,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	};
 
 	/**Decay edges of image to zero
-	 *@param width
+	 *@param width Width of the decay region around the edge of the image in pixels
 	 */
 	class DecayEdgeProcessor:public Processor
 	{
@@ -3428,10 +3474,10 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	};
 
 	/**zero edges of image on top and bottom, and on left and right.
-	 *@param x0
-	 *@param x1
-	 *@param y0
-	 *@param y1
+	 *@param x0 The number of columns to zero from left
+	 *@param x1 The number of columns to zero from right
+	 *@param y0 The number of rows to zero from the bottom
+	 *@param y1 The number of rows to zero from the top
 	 */
 	class ZeroEdgeRowProcessor:public Processor
 	{
@@ -3464,12 +3510,12 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	};
 
 	/**zero edges of volume on all sides
-	 *@param x0
-	 *@param x1
-	 *@param y0
-	 *@param y1
-	 *@param z0
-	 *@param z1
+	 *@param x0 The number of columns to zero from left
+	 *@param x1 The number of columns to zero from right
+	 *@param y0 The number of rows to zero from the bottom
+	 *@param y1 The number of rows to zero from the top
+	 *@param z0 The number of slices to zero from the bottom
+	 *@param z1 The number of slices to zero from the top
 	 */
 	class ZeroEdgePlaneProcessor:public Processor
 	{
@@ -3637,8 +3683,8 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	};
 
 	/**Uses a 1/0 mask defining a region to use for the zero-normalization.if no_sigma is 1, standard deviation not modified.
-	 *@param mask
-	 *@param no_sigma
+	 *@param mask the 1/0 mask defining a region to use for the zero-normalization
+	 *@param no_sigma if this flag is zero, only average under the mask will be substracted. set this flag to 1, standard deviation not modified
 	 */
 	class NormalizeMaskProcessor:public NormalizeProcessor
 	{
@@ -3699,8 +3745,11 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 
 	/** Normalize the mass of the image assuming a density of 1.35 g/ml (0.81 Da/A^3).
 	 * Only works for 3D images. Essentially a replica of Volume.C in EMAN1.
-	 * @author David Woolford (a direct port of Steve Ludtke's code)
-	 * @date 01/17/09
+	 *@author David Woolford (a direct port of Steve Ludtke's code)
+	 *@date 01/17/09
+	 *@param apix Angstrom per pixel of the image. If not set will use the apix_x attribute of the image
+	 *@param mass The approximate mass of protein/structure in kilodaltons
+	 *@param thr The isosurface threshold which encapsulates the structure
 	 */
 	class NormalizeByMassProcessor: public Processor
 	{
@@ -4743,12 +4792,12 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 
 	/** Identifiy the best symmetry in the given symmetry list for each pixel and then apply the best symmetry to each pixel
 	 *
-	 * @author Wen Jiang <wjiang@bcm.tmc.edu>
-	 * @date 2005-1-9
-	 * @param sym[in] the list of symmetries to search
-	 * @param thresh[in] the minimal level of symmetry to be accepted (0-1)
-	 * @param output_symlabel[in] if output the symmetry label map in which the pixel value is the index of symmetry in the symmetry list
-	 * @param symlabel_map[out] the optional return map when output_symlabel=1
+	 *@author Wen Jiang <wjiang@bcm.tmc.edu>
+	 *@date 2005-1-9
+	 *@param sym[in] the list of symmetries to search
+	 *@param thresh[in] the minimal level of symmetry to be accepted (0-1)
+	 *@param output_symlabel[in] if output the symmetry label map in which the pixel value is the index of symmetry in the symmetry list
+	 *@param symlabel_map[out] the optional return map when output_symlabel=1
 	 */
 
 	class SymSearchProcessor:public Processor
@@ -4884,13 +4933,13 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 
 	/**'paints' a circle into the image at x,y,z with values inside r1 set to v1, values between r1 and r2 will be set to a
 	 * value between v1 and v2, and values outside r2 will be unchanged
-	 * @param x x coordinate for Center of circle
-	 * @param y y coordinate for Center of circle
-	 * @param z z coordinate for Center of circle
-	 * @param r1 Inner radius
-	 * @param v1 Inner value
-	 * @param r2 Outter radius
-	 * @param v2 Outer Value
+	 *@param x x coordinate for Center of circle
+	 *@param y y coordinate for Center of circle
+	 *@param z z coordinate for Center of circle
+	 *@param r1 Inner radius
+	 *@param v1 Inner value
+	 *@param r2 Outter radius
+	 *@param v2 Outer Value
 	 */
 	class PaintProcessor:public Processor
 	{
@@ -4920,10 +4969,10 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			d.put("x", EMObject::INT, "x coordinate for Center of circle");
 			d.put("y", EMObject::INT, "y coordinate for Center of circle");
 			d.put("z", EMObject::INT, "z coordinate for Center of circle");
-			d.put("r1", EMObject::INT,"Inner radius");
-			d.put("v1", EMObject::FLOAT,"Inner value");
-			d.put("r2", EMObject::INT,"Outter radius");
-			d.put("v2", EMObject::FLOAT,"Outer Value");
+			d.put("r1", EMObject::INT, "Inner radius");
+			d.put("v1", EMObject::FLOAT, "Inner value");
+			d.put("r2", EMObject::INT, "Outter radius");
+			d.put("v2", EMObject::FLOAT, "Outer Value");
 			return d;
 		}
 
@@ -5147,7 +5196,12 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	};
 
 	/**Replace a source image as a strict Gaussian
-	 *@param sigma sigma value for this Gaussian blob
+	 *@param x_sigma sigma value for this Gaussian blob on x direction
+	 *@param y_sigma sigma value for this Gaussian blob on y direction
+	 *@param z_sigma sigma value for this Gaussian blob on z direction
+	 *@param x_center center for this Gaussian blob on x direction
+	 *@param y_center center for this Gaussian blob on y direction
+	 *@param z_center center for this Gaussian blob on z direction
 	 */
 	class TestImagePureGaussian : public TestImageProcessor
 	{
@@ -5183,35 +5237,35 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	};
 
 	/**Replace a source image as a strict Gaussian
-		 *@param sigma sigma value for this Gaussian blob
-		 */
-		class TestImageFourierNoiseGaussian : public TestImageProcessor
+	 *@param sigma sigma value for this Gaussian blob
+	 */
+	class TestImageFourierNoiseGaussian : public TestImageProcessor
+	{
+	public:
+		virtual void process_inplace(EMData * image);
+
+		virtual string get_name() const
 		{
-		public:
-			virtual void process_inplace(EMData * image);
+			return "testimage.noise.fourier.gaussian";
+		}
 
-			virtual string get_name() const
-			{
-				return "testimage.noise.fourier.gaussian";
-			}
+		virtual string get_desc() const
+		{
+			return "Replace a source image with pink Fourier noise, based on a Gaussian. Random phase.";
+		}
 
-			virtual string get_desc() const
-			{
-				return "Replace a source image with pink Fourier noise, based on a Gaussian. Random phase.";
-			}
+		static Processor * NEW()
+		{
+			return new TestImageFourierNoiseGaussian();
+		}
 
-			static Processor * NEW()
-			{
-				return new TestImageFourierNoiseGaussian();
-			}
-
-			virtual TypeDict get_param_types() const
-			{
-				TypeDict d;
-				d.put("sigma", EMObject::FLOAT, "sigma value");
-				return d;
-			}
-		};
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("sigma", EMObject::FLOAT, "sigma value");
+			return d;
+		}
+	};
 
 
 
@@ -5284,11 +5338,11 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	};
 
 	/** Put a gradient in the image of the form y = mx+b : "x" is a string indicating any of the image axes, i.e., x,y or z.
-	 * @author David Woolford <woolford@bcm.edu>
-	 * @date 01/10/2008
-	 * @param axis The axis the will be used to determine pixel values. Must be x,y or z. Default is x
-	 * @param m m in the equation m*axis+b. Default is 1.0
-	 * @param b b in the equation m*axis+b. Default is 0.0
+	 *@author David Woolford <woolford@bcm.edu>
+	 *@date 01/10/2008
+	 *@param axis The axis the will be used to determine pixel values. Must be x,y or z. Default is x
+	 *@param m m in the equation m*axis+b. Default is 1.0
+	 *@param b b in the equation m*axis+b. Default is 0.0
 	*/
 	class TestImageGradient : public TestImageProcessor
 	{
@@ -5322,8 +5376,8 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 
 	/**Make an image consisting of a single cross, with lines
 	 * going in the axial directions, intersecting at the origin.
-	 * @author David Woolford <woolford@bcm.edu>
-	 * @date October 2007
+	 *@author David Woolford <woolford@bcm.edu>
+	 *@date October 2007
 	 *@param radius the radial length of the lines from the origin
 	 *@param fill the value to assign to pixels made non zero
 	 */
@@ -5705,7 +5759,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 
 	/**Replace a source image as a uniform random noise, random number generated from gsl_rng_mt19937,
 	 * the pixel value is from 0 to 1, [0, 1)
-	 * @param seed seed for random number generator
+	 *@param seed seed for random number generator
 	 */
 	class TestImageNoiseUniformRand : public TestImageProcessor
 	{
@@ -5741,9 +5795,9 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	 * The testimage classes using random numbers should take an int 'seed'
 	 * parameter. If this parameter is provided, it will be cast into an unsigned int.
 	 * This will permit initialization to a known state if desired.
-	 * @param sigma sigma value of gausian distributed noise, default is 0.5
-	 * @param mean mean value of gausian distributed noise, default is zero
-	 * @param seed mean value of gausian distributed noise, default is zero
+	 *@param sigma sigma value of gausian distributed noise, default is 0.5
+	 *@param mean mean value of gausian distributed noise, default is zero
+	 *@param seed mean value of gausian distributed noise, default is zero
 	 */
 	class TestImageNoiseGauss : public TestImageProcessor
 	{
@@ -5776,7 +5830,10 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		}
 	};
 
-	/** Replace a source image with a cylinder */
+	/** Replace a source image with a cylinder
+	 *@param radius radius for the cylinder
+	 *@param height height for the cylinder, by default it's the nz
+	 * */
 	class TestImageCylinder : public TestImageProcessor
 	{
 	public:
@@ -5884,14 +5941,14 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	 * or it may be specified explicitly (specifying the angle is the default behavior). The masked out regions at both sides of the image are set to 0 by default,
 	 * but can  also be set to the mean of the nearest non-masked data edge (in the y direction), or similarly the mean of both non-masked data
 	 * edges on either side of the image. A gaussian fall-off is optional (but off by default).
-	 * @author David Woolford <woolford@bcm.edu>
-	 * @date 01/10/2008
-	 * @param biedgemean Mutually  exclusive of edgemean. Experimental. Causes the pixels in the masked out areas to take the average value of both the left and right edge pixel strips
-	 * @param edgemean Mutually  exclusive of biedgemean. Masked pixels values assume the mean edge pixel value, independently, for both sides of the image
-	 * @param angle The angle that the image is, with respect to the zero tilt image
-	 * @param angle_fim Read fim as 'from image metadata' - this causes the altitude angle stored in by the image object (i.e. as extracted from the header, as currently stored in memory) to be used as the angle. This overrides the angle argument
-	 * @param gauss_falloff Causes the edge masking to have a smooth Gaussian fall-off - this parameter specifies how many pixels the fall-off will proceed over. Default is 0
-	 * @param gauss_sigma The sigma of the Gaussian function used to smooth the edge fall-off (functional form is exp(-(pixel distance)^2/sigma^2)
+	 *@author David Woolford <woolford@bcm.edu>
+	 *@date 01/10/2008
+	 *@param biedgemean Mutually  exclusive of edgemean. Experimental. Causes the pixels in the masked out areas to take the average value of both the left and right edge pixel strips
+	 *@param edgemean Mutually  exclusive of biedgemean. Masked pixels values assume the mean edge pixel value, independently, for both sides of the image
+	 *@param angle The angle that the image is, with respect to the zero tilt image
+	 *@param angle_fim Read fim as 'from image metadata' - this causes the altitude angle stored in by the image object (i.e. as extracted from the header, as currently stored in memory) to be used as the angle. This overrides the angle argument
+	 *@param gauss_falloff Causes the edge masking to have a smooth Gaussian fall-off - this parameter specifies how many pixels the fall-off will proceed over. Default is 0
+	 *@param gauss_sigma The sigma of the Gaussian function used to smooth the edge fall-off (functional form is exp(-(pixel distance)^2/sigma^2)
 	 */
 	class TomoTiltEdgeMaskProcessor : public Processor
 	{
@@ -5951,10 +6008,10 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	 * to be the altitude angle as derived from the EMData metadata. The processor could obviously
 	 * be made more robust if the angle derived from the EMData header could be specified...
 	 *
-	 * @author David Woolford <woolford@bcm.edu>
-	 * @date 02/11/2008
-	 * @param angle The angle that the image is, with respect to the zero tilt image
-	 * @param angle_fim Read fim as 'from image metadata' - this causes the altitude angle stored in by the image object (i.e. as extracted from the header, as currently stored in memory) to be used as the angle. This overrides the angle argument
+	 *@author David Woolford <woolford@bcm.edu>
+	 *@date 02/11/2008
+	 *@param angle The angle that the image is, with respect to the zero tilt image
+	 *@param angle_fim Read fim as 'from image metadata' - this causes the altitude angle stored in by the image object (i.e. as extracted from the header, as currently stored in memory) to be used as the angle. This overrides the angle argument
 	 */
 	class TomoTiltAngleWeightProcessor : public Processor
 	{
@@ -5987,7 +6044,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	};
 
 	/** Perform a FFT transform by calling EMData::do_fft() and EMData::do_ift()
-	 * @param dir 1 for forward transform, -1 for inverse transform, forward transform by default
+	 *@param dir 1 for forward transform, -1 for inverse transform, forward transform by default
 	 */
 	class FFTProcessor : public Processor
 	{
@@ -6018,8 +6075,8 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	};
 
 	/** Perform a multiplication of real image with a radial table
-	 * @param table a radial table for multiplication
-	 * @exception ImageFormatException this filter only apply to real image
+	 *@param table a radial table for multiplication
+	 *@exception ImageFormatException this filter only apply to real image
 	 * */
 	class RadialProcessor : public Processor
 	{
@@ -6052,8 +6109,8 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	/**Bins pixel values, similar to calculating a histogram. The histogram is comprised
 	 * of 'nbins' bins, and the value assigned to each pixel in the bin is the midpoint
 	 * of the bin's upper and lower limits. Defaults to 256 bins
-	 * @param nbins The number of bins the pixel values will be compressed into
-	 * @param debug Outputs debugging information (number of pixels per bin)
+	 *@param nbins The number of bins the pixel values will be compressed into
+	 *@param debug Outputs debugging information (number of pixels per bin)
 	 */
 	class HistogramBin : public Processor
 	{
