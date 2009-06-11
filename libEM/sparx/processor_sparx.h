@@ -91,25 +91,38 @@ namespace EMAN
 		{
 			TypeDict d;
 //			d.put("cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] cut-off frequency.");	//use cutoff_abs
-//			d.put("sigma", EMObject::FLOAT, "Gaussian sigma (0-.5)");							//use cutoff_abs
+			d.put("sigma", EMObject::FLOAT, "Gaussian sigma (0-.5)");							//use cutoff_abs
 			d.put("cutoff_abs", EMObject::FLOAT, "Processor radius in terms of Nyquist (0-.5)");
-			d.put("cutoff_pixels", EMObject::FLOAT, "0 - get_xsize()/2");
-			d.put("cutoff_freq", EMObject::FLOAT, "0 - 1.0/(get_xsize()*apix_x) same for y and z");
+			d.put("cutoff_pixels", EMObject::FLOAT, "Width in Fourier pixels (0 - size()/2");
+			d.put("cutoff_freq", EMObject::FLOAT, "Resolution in 1/A (0 - 1 / size*apix)");
+			d.put("apix", EMObject::FLOAT, " Override A/pix in the image header (changes x,y and z)");
 			return d;
 		}
 
 	  protected:
-		virtual void preprocess(const EMData * const image) {
+		virtual void preprocess(EMData * image) {
+			if(params.has_key("apix")) {
+				image->set_attr("apix_x", (float)params["apix"]);
+				image->set_attr("apix_y", (float)params["apix"]);
+				image->set_attr("apix_z", (float)params["apix"]);
+			}
+
 			const Dict dict = image->get_attr_dict();
-			if( params.has_key("cutoff_abs") ) {
+			if( params.has_key("sigma")) {
+				params["cutoff_abs"] = params["sigma"];
+			}
+			else if( params.has_key("cutoff_abs") ) {
+				params["sigma"] = params["cutoff_abs"];
 			}
 			else if( params.has_key("cutoff_freq") ) {
 				float val =  (float)params["cutoff_freq"] * (float)dict["apix_x"];
 				params["cutoff_abs"] = val;
+				params["sigma"] = val;
 			}
 			else if( params.has_key("cutoff_pixels") ) {
 				float val = 0.5f*(float)params["cutoff_pixels"] / (float)dict["nx"];
 				params["cutoff_abs"] = val;
+				params["sigma"] = val;
 			}
 		}
 	};
