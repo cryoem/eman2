@@ -126,6 +126,13 @@ namespace EMAN
 	 * returned result is a set of classification vectors
 	 * @author Steve Ludtke
 	 * @date 03/02/2008
+	 * @param verbose Display progress if set, more detail with larger numbers (9 max)
+	 * @param ncls number of desired classes
+	 * @param maxiter maximum number of iterations
+	 * @param minchange Terminate if fewer than minchange members move in an iteration
+	 * @param mininclass Minumum number of particles to keep a class as good (not enforced at termination
+	 * @param slowseed Instead of seeding all classes at once, it will gradually increase the number of classes by adding new seeds in groups with large standard deviations
+	 * @param calcsigmamean Computes standard deviation of the mean image for each class-average (center), and returns them at the end of the list of centers
 	 *
 	 */
 	class KMeansAnalyzer:public Analyzer
@@ -187,7 +194,11 @@ namespace EMAN
 
 	};
 
-
+	/**Singular Value Decomposition from GSL. Comparable to pca
+	 *@param mask mask image
+	 *@param nvec number of desired basis vectors
+	 *@param nimg total number of input images, required even with insert_image()
+	 */
 	class SVDAnalyzer : public Analyzer
 	{
 	  public:
