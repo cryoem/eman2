@@ -325,7 +325,11 @@ The basic design of EMAN Processors: <br>\
 		virtual EMData * create_processor_image() const = 0;
 	};
 
-	/**
+	/** base class for Fourier filters
+	 * @param cutoff_abs Processor radius in terms of Nyquist (0-.5).
+	 * @param cutoff_pixels Width in Fourier pixels (0 - size()/2).
+	 * @param cutoff_freq Resolution in 1/A (0 - 1 / size*apix).
+	 * @param apix Override A/pix in the image header (changes x,y and z).
 	 */
 	class FourierProcessor:public Processor
 	{
@@ -341,13 +345,14 @@ The basic design of EMAN Processors: <br>\
 		{
 			TypeDict d;
 			d.put("cutoff_abs", EMObject::FLOAT, "Processor radius in terms of Nyquist (0-.5)");
-			d.put("cutoff_pixels", EMObject::FLOAT, "0 - get_xsize()/2");
-			d.put("cutoff_freq", EMObject::FLOAT, "0 - 1.0/(get_xsize()*apix_x) same for y and z");
+			d.put("cutoff_pixels", EMObject::FLOAT, " Width in Fourier pixels (0 - size()/2)");
+			d.put("cutoff_freq", EMObject::FLOAT, "Resolution in 1/A (0 - 1 / size*apix)");
+			d.put("apix", EMObject::FLOAT, " Override A/pix in the image header (changes x,y and z)");
 			return d;
 		}
 
 	  protected:
-		  virtual void preprocess(const EMData * const image) {}
+		  virtual void preprocess(EMData * image) {}
 		  virtual void create_radial_func(vector < float >&radial_mask) const = 0;
 	};
 
@@ -647,7 +652,7 @@ The basic design of EMAN Processors: <br>\
 		}
 
 	  protected:
-		  virtual void preprocess(const EMData * const image);
+		  virtual void preprocess(EMData * image);
 		  float lowpass;
 	};
 
@@ -701,7 +706,7 @@ The basic design of EMAN Processors: <br>\
 		}
 
 	  protected:
-		  virtual void preprocess(const EMData * const image);
+		  virtual void preprocess(EMData * image);
 		  float highpass;
 	};
 
@@ -904,8 +909,8 @@ The basic design of EMAN Processors: <br>\
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("intercept", EMObject::FLOAT);
-			d.put("slope", EMObject::FLOAT);
+			d.put("intercept", EMObject::FLOAT, "intercept in 'f(x) = slope * x + intercept'");
+			d.put("slope", EMObject::FLOAT, "slope in 'f(x) = slope * x + intercept'");
 			return d;
 		}
 
@@ -1239,7 +1244,7 @@ The basic design of EMAN Processors: <br>\
 			virtual TypeDict get_param_types() const
 			{
 				TypeDict d;
-				d.put("transform", EMObject::TRANSFORM, "The transform that will be applied to the image" );
+				d.put("transform", EMObject::TRANSFORM, "The Transform object that will be applied to the image" );
 				return d;
 			}
 
@@ -1572,7 +1577,7 @@ The basic design of EMAN Processors: <br>\
 			virtual TypeDict get_param_types() const
 			{
 				TypeDict d;
-				d.put("value", EMObject::FLOAT, "The fourier amplitude threshold cutoff" );
+				d.put("value", EMObject::FLOAT, "The Fourier amplitude threshold cutoff" );
 				return d;
 			}
 
@@ -2707,7 +2712,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("npeaks", EMObject::INT);
+			d.put("npeaks", EMObject::INT, "the number of surrounding peaks allow to >= pixel values");
 			return d;
 		}
 
@@ -5580,9 +5585,9 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("a", EMObject::FLOAT, "a");
-			d.put("b", EMObject::FLOAT, "b");
-			d.put("c", EMObject::FLOAT, "c");
+			d.put("a", EMObject::FLOAT, "equatorial radii along x axes");
+			d.put("b", EMObject::FLOAT, "equatorial radii along y axes");
+			d.put("c", EMObject::FLOAT, "polar radius");
 			d.put("transform", EMObject::TRANSFORM, "Optionally transform the ellipse");
 			d.put("fill", EMObject::FLOAT, "Fill value");
 			return d;
@@ -5612,12 +5617,12 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			virtual TypeDict get_param_types() const
 			{
 				TypeDict d;
-				d.put("xwidth", EMObject::FLOAT, "a1");
-				d.put("ywidth", EMObject::FLOAT, "b1");
-				d.put("zwidth", EMObject::FLOAT, "c1");
-				d.put("a", EMObject::FLOAT, "a");
-				d.put("b", EMObject::FLOAT, "b");
-				d.put("c", EMObject::FLOAT, "c");
+				d.put("xwidth", EMObject::FLOAT, "inner equatorial radii along x axes");
+				d.put("ywidth", EMObject::FLOAT, "inner equatorial radii along y axes");
+				d.put("zwidth", EMObject::FLOAT, "inner polar radius");
+				d.put("a", EMObject::FLOAT, "outter equatorial radii along x axes");
+				d.put("b", EMObject::FLOAT, "outter equatorial radii along y axes");
+				d.put("c", EMObject::FLOAT, "outter polar radius");
 				d.put("width",EMObject::FLOAT, "width - specify the width or specify each width explicitly - xwidth, ywidth, zwidth");
 				d.put("transform", EMObject::TRANSFORM, "Optionally transform the ellipse");
 				d.put("fill", EMObject::FLOAT, "Fill value");
