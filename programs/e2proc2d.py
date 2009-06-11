@@ -143,7 +143,8 @@ def main():
 	parser.add_option("--plane", metavar=threedplanes, type="string", default='xy',
                       help="Change the plane of image processing, useful for processing 3D mrcs as 2D images.")
 	parser.add_option("--writejunk", action="store_true", help="Writes the image even if its sigma is 0.", default=False)
-	parser.add_option("--swap", action="store_true", help="Swap the byte order", default=False)	
+	parser.add_option("--swap", action="store_true", help="Swap the byte order", default=False)
+	parser.add_option("--treat3das2d", action="store_true", help="Process 3D image as a statck of 2D slice", default=False)	
 
 	# Parallelism
 	parser.add_option("--parallel","-P",type="string",help="Run in parallel, specify type:n=<proc>:option:option",default=None)
@@ -188,16 +189,28 @@ def main():
 		Log.logger().set_level(options.verbose-2)
 	
 	d = EMData()
-	nimg = EMUtil.get_image_count(infile)
-	# reads header only
-	isthreed = False
-	plane = options.plane
-	[tomo_nx, tomo_ny, tomo_nz] = gimme_image_dimensions3D(infile)
-	if tomo_nz != 1:
-		isthreed = True
-		if not plane in threedplanes:
-			parser.error("the plane (%s) you specified is invalid" %plane)
-	
+	if options.treat3das2d:
+		d.read_image(infile, 0, True)
+		if(d.get_zsize() == 1):
+			print 'Error: need 3D image to use --treat3das2d option'
+			return
+		else:
+			print "Process 3D as a stack of %d 2D images" % d.get_zsize()
+			nimg = d.get_zsize()
+			isthreed = False
+			outimg_3d = EMData(d.get_xsize(), d.get_ysize(), d.get_zsize())
+			outimglst = []
+	else:
+		nimg = EMUtil.get_image_count(infile)
+		# reads header only
+		isthreed = False
+		plane = options.plane
+		[tomo_nx, tomo_ny, tomo_nz] = gimme_image_dimensions3D(infile)
+		if tomo_nz != 1:
+			isthreed = True
+			if not plane in threedplanes:
+				parser.error("the plane (%s) you specified is invalid" %plane)
+		
 	if not isthreed:
 		if nimg <= n1 or n1 < 0:
 			n1 = nimg - 1
@@ -239,7 +252,11 @@ def main():
 			outfile = outfilename_no_ext + ".%02d." % (i % options.split) + outfilename_ext
 
 		if not isthreed:
-			d.read_image(infile, i)
+			if(options.treat3das2d):
+				img = EMData(infile)
+				d = img.get_clip(Region(0,0,i,img.get_xsize(),img.get_ysize(),1))
+			else:
+				d.read_image(infile, i)
 		else:
 			if plane in xyplanes:
 				roi=Region(0,0,i,tomo_nx,tomo_ny,1)
@@ -260,10 +277,13 @@ def main():
 		
 		sigma = d.get_attr("sigma").__float__()
 		if sigma == 0:
-			print "Warning: sigma = 0 for image ",i
-			if options.writejunk == False:
-				print "Use the writejunk option to force writing this image to disk"
-				continue
+			if(options.treat3das2d):
+				pass
+			else:
+				print "Warning: sigma = 0 for image ",i
+				if options.writejunk == False:
+					print "Use the writejunk option to force writing this image to disk"
+					continue
 
 		if not "outtype" in optionlist:
 			optionlist.append("outtype")
@@ -452,18 +472,30 @@ def main():
 				#elif options.mraprep:
 						#outfile = outfile + "%04d" % i + ".lst"
 						#options.outtype = "lst"
-				
-				if 'mrc8bit' in optionlist:
-					d.write_image(outfile.split('.')[0]+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
-				elif 'mrc16bit' in optionlist:
-					d.write_image(outfile.split('.')[0]+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
+				if(options.treat3das2d):
+					outimglst.append(d.copy())
 				else:
-					if options.inplace:
-						d.write_image(outfile, i, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
-					else: 
-						d.write_image(outfile, -1, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
+					if 'mrc8bit' in optionlist:
+						d.write_image(outfile.split('.')[0]+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
+					elif 'mrc16bit' in optionlist:
+						d.write_image(outfile.split('.')[0]+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
+					else:
+						if options.inplace:
+							d.write_image(outfile, i, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
+						else: 
+							d.write_image(outfile, -1, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
 				
 	#end of image loop
+	
+	if(options.treat3das2d):
+		nx = outimglst[0].get_xsize()
+		ny = outimglst[0].get_ysize()
+		nz = len(outimglst)
+		outimg_3d = EMData(nx, ny, nz)
+		for i in range(len(outimglst)):
+			d = outimglst[i]
+			outimg_3d.insert_clip(d, (0,0,i))
+		outimg_3d.write_image(outfile)
 
 	if average:
 		average["ptcl_repr"]=(n1-n0+1)
