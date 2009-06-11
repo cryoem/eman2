@@ -5,32 +5,32 @@
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
 
 #ifndef eman__projector_h__
@@ -102,7 +102,7 @@ namespace EMAN
 		virtual string get_name() const = 0;
 
 		virtual string get_desc() const = 0;
-		
+
 		/** Get the projector parameters in a key/value dictionary.
 		 * return A key/value pair dictionary containing the
 		 *         parameters.
@@ -121,7 +121,7 @@ namespace EMAN
 		 * contains its name, data-type, and description.
 		 *
 		 * @return A dictionary containing the parameter info.
-		 */	 
+		 */
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
@@ -137,7 +137,7 @@ namespace EMAN
      * to interpolate a point in a 3d complex image.
      * valid mode range: [1,7].
      * the gauss widths are as follows with mode from 1 to 7:
-     * 
+     *
      * mode 1:  0;
      * mode 2:  4.0 / (M_PI * M_PI);
      * mode 3:  6.4 / (M_PI * M_PI);
@@ -197,8 +197,8 @@ namespace EMAN
 	};
 
 	/** Fourier gridding projection routine.
-	 *  
-	 *  @see P. A. Penczek, R. Renka, and H. Schomberg, 
+	 *
+	 *  @see P. A. Penczek, R. Renka, and H. Schomberg,
 	 *       J. Opt. Soc. Am. A _21_, 499-509 (2004)
      */
 	class FourierGriddingProjector:public Projector
@@ -287,7 +287,7 @@ namespace EMAN
 		};
 		// Process the number of valid x-lines (rows)
 		// within the radius
-		void prepcubes(int nx, int ny, int nz, int ri, Vec3i origin, 
+		void prepcubes(int nx, int ny, int nz, int ri, Vec3i origin,
 				       int& nn, IPCube* ipcube=NULL) const;
 	};
 
@@ -328,6 +328,7 @@ namespace EMAN
 #endif // EMAN2_USING_CUDA
 
 	/** Fast real-space 3D projection.
+	 * @param Transform object used for projection
      */
 	class StandardProjector:public Projector
 	{
@@ -335,7 +336,7 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("transform", EMObject::TRANSFORM);
+			d.put("transform", EMObject::TRANSFORM, "Transform object used for projection");
 			return d;
 		}
 
@@ -396,15 +397,15 @@ namespace EMAN
 
 	  private:
                 int getnnz(Vec3i volsize, int ri, Vec3i origin, int *nray, int *nnz) const;
-                int cb2sph(float *cube, Vec3i volsize, int ri, Vec3i origin, int nnz0, int *ptrs, 
+                int cb2sph(float *cube, Vec3i volsize, int ri, Vec3i origin, int nnz0, int *ptrs,
                            int *cord  , float *sphere) const;
                 int sph2cb(float *sphere, Vec3i volsize, int nray, int ri, int nnz0,
                            int   *ptrs  , int *cord, float *cube) const;
-                int fwdpj3(Vec3i volsize, int nray, int nnz  , float *dm, 
-                           Vec3i origin, int ri  , int *ptrs, 
+                int fwdpj3(Vec3i volsize, int nray, int nnz  , float *dm,
+                           Vec3i origin, int ri  , int *ptrs,
                            int *cord, float *x, float *y) const;
-                int bckpj3(Vec3i volsize, int nray, int nnz, float *dm, 
-                           Vec3i origin, int ri, int *ptrs, int *cord, 
+                int bckpj3(Vec3i volsize, int nray, int nnz, float *dm,
+                           Vec3i origin, int ri, int *ptrs, int *cord,
                            float *x, float *y) const;
                 int ifix(float a) const;
                 void setdm(vector<float> anglelist, string const angletype, float *dm) const;
