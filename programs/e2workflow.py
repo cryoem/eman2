@@ -638,8 +638,8 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		tomo_list[-1].setIcon(0,self.icons["black_box"])
 		self.launchers["Tomogram Probes"] = self.launch_tomo_probe_report
 		
-		ali = QtGui.QTreeWidgetItem(QtCore.QStringList("Particle Alignment"))
-		self.launchers["Particle Alignment"] = self.launch_tomo_ptcl_ali_report
+		ali = QtGui.QTreeWidgetItem(QtCore.QStringList("Particle Alignment Report"))
+		self.launchers["Particle Alignment Report"] = self.launch_tomo_ptcl_ali_report
 		ali.setIcon(0,self.icons["tomo_hunter"])
 		tomo_list.append(ali)
 		
@@ -943,7 +943,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	def launch_particle_report(self): self.launch_task(ParticleReportTask(),"Particle Report")
 	def launch_tomo_particle_report(self): self.launch_task(EMTomoParticleReportTask(),"Tomogram Particles")
 	def launch_tomo_probe_report(self): self.launch_task(EMTomoProbeReportTask(),"Tomogram Probes")
-	def launch_tomo_ptcl_ali_report(self): self.launch_task(EMTomoPtclAlignmentReportTask(),"Tomo Particle Alignment Report")
+	def launch_tomo_ptcl_ali_report(self): self.launch_task(EMTomoChooseAlignedSetTask(),"Tomo Particle Alignment Report Report")
 	def launch_tomo_ave_report(self): self.launch_task(EMTomoAveragesReportTask(),"Tomo Averages Report")
 	def launch_tomo_boostrap_probe(self): error("This form is yet to be implemented")
 	def launch_gen_ave_tomo(self): self.launch_task(EMTomoGenerateAverageChooseDataTask(),"Choose Alignment Set")

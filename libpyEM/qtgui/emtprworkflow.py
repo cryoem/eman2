@@ -195,7 +195,7 @@ class EMReconstructAliFile(WorkFlowTask):
 		
 		
 		
-		string_args = ["input","tlt","recon","preprocess","iter","sym","output","dbls"]
+		string_args = ["input","tlt","recon","iter","sym","output","dbls"]
 		bool_args = []
 		additional_args = ["--lowmem","--preprocess=normalize.edgemean"]
 		temp_file_name = "e2make3d_stdout.txt"
@@ -207,7 +207,7 @@ class EMReconstructAliFile(WorkFlowTask):
 		nx,ny,nz = gimme_image_dimensions3D(params["alifile"][0])
 		if params["scale"] != 1.0 or params["clip"] != nx:
 			options.preprocess = "math.transform.scale:scale=%s:clip=%s" %(params["scale"],params["clip"])
-		
+			string_args.append("preprocess")
 		self.spawn_single_task('e2make3d.py',options,string_args,bool_args,additional_args,temp_file_name)
 		
 		
@@ -323,7 +323,7 @@ class EMTomoPtclReportTool:
 		return table
 	
 class EMTomoParticleReportTask(WorkFlowTask):
-	"""This form shows the boxed tomographic particles that are associated with the project"""
+	"""This form shows the boxed tomographic particles that are associated with the project. You can optionally add your own particles."""
 	def __init__(self,project_list="global.tpr_ptcls"):
 		WorkFlowTask.__init__(self)
 		self.window_title = "Project Tomo Particles"
@@ -371,17 +371,60 @@ class EMTomoGenericReportTask(WorkFlowTask):
 		
 		return params
 	
-class EMTomoPtclAlignmentReportTask(WorkFlowTask):
-	"""This form shows the results of any alignments you have performed. It also lists the most likely alignment for each probe."""
+class EMBaseTomChooseFilteredPtclsTask(WorkFlowTask):
+	"""Choose the data""" 
 	def __init__(self):
 		WorkFlowTask.__init__(self)
+		self.window_title = "Choose Filtered Images To Display"
+		self.preferred_size = (480,300)
+		
+	def get_params(self):
+		ptcl_opts = EMPartStackOptions("global.tpr_ptcls","global.tpr_filt_ptcls_map")
+		self.particles_map, self.particles_name_map, choices, self.name_map = ptcl_opts.get_particle_options()
+		
+		#if as_string:
+		#params.append(ParamDef(name="particle_set_choice",vartype="string",desc_long="Choose the particle data set you wish to use to generate a starting data for e2refine2d",desc_short=title,property=None,defaultunits=db.get("particle_set_choice",dfl=""),choices=choices))
+		db = db_open_dict(self.form_db_name)
+		params = []
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
+		if len(choices) > 0:
+			params.append(ParamDef(name="tomo_filt_choice",vartype="choice",desc_long="Choose from the filtered tomogram particles",desc_short="Choose data",property=None,defaultunits=db.get("tomo_filt_choice",dfl=""),choices=choices))
+		else:
+			params.append(ParamDef(name="blurb2",vartype="text",desc_short="",desc_long="",property=None,defaultunits="There are no particles in the project. Go back to earlier stages and box/import particles",choices=None))
+		return params
+
+	def on_form_ok(self,params):
+		raise NotImplementedException("Inheriting classes must implement this function")
+
+class EMTomoChooseAlignedSetTask(EMBaseTomChooseFilteredPtclsTask):
+	"""Choose the particle set for which you wish to investigate the alignment results. The available sets inlcude the raw particles, and any filtered sets you have previously generated.""" 
+	def __init__(self):
+		EMBaseTomChooseFilteredPtclsTask.__init__(self)
+		self.form_db_name ="bdb:tomo.choose.filtered.ali"
+
+	def on_form_ok(self,params):
+		if not params.has_key("tomo_filt_choice") or params["tomo_filt_choice"] == None:
+			error("Please choose some data")
+			return
+		choice = params["tomo_filt_choice"]
+#				
+		task = EMTomoPtclAlignmentReportTask(self.particles_map[self.particles_name_map[choice]])
+		self.emit(QtCore.SIGNAL("replace_task"),task,"Alignment Parameters")
+		self.form.closeEvent(None)
+		self.form = None
+		self.write_db_entries(params)
+
+class EMTomoPtclAlignmentReportTask(WorkFlowTask):
+	"""This form shows the results of any alignments you have performed. It also lists the most likely alignment for each probe."""
+	def __init__(self,ptcls_list=[]):
+		WorkFlowTask.__init__(self)
 		self.window_title = "Alignment Report"
-		self.project_list = "global.tpr_ptcls"
+		self.ptcls_list = ptcls_list
 	def get_params(self):
 		params = []
 		
-		self.table_tool = EMTomoPtclReportTool(self.project_list,"Tomogram Particles")
-		table = self.table_tool.get_particle_table()
+		self.table_tool = EMTomoPtclReportTool(title="Tomogram Particles")
+		table = self.table_tool.get_particle_table_with_ptcls(self.ptcls_list)
 		
 		columns = self.get_column_names()
 		for c in columns:
@@ -455,13 +498,13 @@ class EMTomoPtclAlignmentReportTask(WorkFlowTask):
 					alis = dct[self.probe]
 					t = alis[0]
 					params = t.get_params("eman")
-					s = "Az:%.1f Alt:%.1f Phi:%.1f X:%.1f Y:%.1f Z:%.1f" %(params["az"],params["alt"],params["phi"],params["tx"],params["ty"],params["tz"])
+					s = "Az,Alt,Phi:[%.1f,%.1f,%.1f], X,Y,Z:[%.1f,%.1f,%.1f]" %(params["az"],params["alt"],params["phi"],params["tx"],params["ty"],params["tz"])
 					return s
 				
 			return "-"
 				
 class E2TomoBoxerGuiTask(WorkFlowTask):
-	"""Select the file you want to process and hit okay, this will launch e2tomoboxer"""
+	"""Select the file you want to process and hit okay, this will launch e2tomoboxer. If it's the first time you're launching e2tomoboxer with the given data you will have to wait a few minutes for automatic shrinking and projection to occur."""
 	
 	def __init__(self):
 		WorkFlowTask.__init__(self)
@@ -577,7 +620,7 @@ class EMTomoStoredCoordsTool:
 		return table
 
 class E2TomoBoxerOutputTask(WorkFlowTask):	
-	"""Select the images you wish to generate output for, enter the box size and normalization etc, and then hit OK.\nThis will cause the workflow to spawn output writing processes using the available CPUs. Note that the bdb option is the preferred output format, in this mode output particles are written directly to the EMAN project database."""
+	"""Select the images you wish to generate output for, enter the box size and normalization etc, and then hit OK.\nThis will cause the workflow to spawn output writing processes using the available CPUs. Note that the bdb option is the preferred output format, in this mode output particles are written directly to the EMAN project database. Once the output writing tasks are done check 'Tomogram Particles' form, which will be automatically updated."""
 	def __init__(self):
 		WorkFlowTask.__init__(self)
 		self.window_title = "Generate e2tomoboxer Output"
@@ -650,36 +693,10 @@ class E2TomoBoxerOutputTask(WorkFlowTask):
 			self.form.closeEvent(None)
 			self.form = None
 
-class EMBaseTomChooseFilteredPtclsTask(WorkFlowTask):
-	"""Choose the data""" 
-	def __init__(self):
-		WorkFlowTask.__init__(self)
-		self.window_title = "Choose Filtered Images To Display"
-		self.preferred_size = (480,300)
-		
-	def get_params(self):
-		ptcl_opts = EMPartStackOptions("global.tpr_ptcls","global.tpr_filt_ptcls_map")
-		self.particles_map, self.particles_name_map, choices, self.name_map = ptcl_opts.get_particle_options()
-		
-		#if as_string:
-		#params.append(ParamDef(name="particle_set_choice",vartype="string",desc_long="Choose the particle data set you wish to use to generate a starting data for e2refine2d",desc_short=title,property=None,defaultunits=db.get("particle_set_choice",dfl=""),choices=choices))
-		db = db_open_dict(self.form_db_name)
-		params = []
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
-		if len(choices) > 0:
-			params.append(ParamDef(name="tomo_filt_choice",vartype="choice",desc_long="Choose from the filtered tomogram particles",desc_short="Choose data",property=None,defaultunits=db.get("tomo_filt_choice",dfl=""),choices=choices))
-		else:
-			params.append(ParamDef(name="blurb2",vartype="text",desc_short="",desc_long="",property=None,defaultunits="There are no particles in the project. Go back to earlier stages and box/import particles",choices=None))
-		return params
 
-	def on_form_ok(self,params):
-		raise NotImplementedException("Inheriting classes must implement this function")
-		
-
-		
 
 class EMTomoChooseFilteredPtclsTask(EMBaseTomChooseFilteredPtclsTask):
-	"""Choose the data""" 
+	"""Choose the particle set you wish to filter. The available sets inlcude the raw particles, and any filtered sets you have previously generated.""" 
 	def __init__(self):
 		EMBaseTomChooseFilteredPtclsTask.__init__(self)
 		self.form_db_name ="bdb:tomo.choose.filtered"
@@ -1243,7 +1260,8 @@ class EMTomohunterTask(WorkFlowTask):
 
 
 class EMTomoChooseTomoHunterPtclsTask(EMBaseTomChooseFilteredPtclsTask):
-	"""Choose the data you wish to filter""" 
+	"""Choose the particle set you wish to use for performing alignments. The sets available will include the raw particles and any filtered sets you have generated.""" 
+
 	def __init__(self):
 		EMBaseTomChooseFilteredPtclsTask.__init__(self)
 		self.form_db_name ="bdb:tomo.choose.fortomohunter"
@@ -1321,7 +1339,7 @@ class E2TomoAverageChooseAliTask(WorkFlowTask):
 		self.form = None
 		
 class EMTomoGenerateAverageChooseDataTask(WorkFlowTask):
-	'''Set me please'''
+	'''In this form you are choosing two things. The first thing required is for you to choose the alignment parameters, which are associated with a particular probe and a particular particle set. After this you must choose which particle set you want to combine into an average.'''
 	def __init__(self):
 		WorkFlowTask.__init__(self)
 		self.window_title = "Choose Alignment Data"
@@ -1342,7 +1360,7 @@ class EMTomoGenerateAverageChooseDataTask(WorkFlowTask):
 		self.particles_map, self.particles_name_map, choices, self.name_map = ptcl_opts.get_particle_options()
 		
 		if len(choices) > 0:
-			params.append(ParamDef(name="ptcl_choice",vartype="choice",desc_long="Choose from the filtered tomogram particles",desc_short="Choose data to form average",property=None,defaultunits=db.get("ptcl_choice",dfl=""),choices=choices))
+			params.append(ParamDef(name="ptcl_choice",vartype="choice",desc_long="Choose from the filtered tomogram particles",desc_short="Choose data that will form the average",property=None,defaultunits=db.get("ptcl_choice",dfl=""),choices=choices))
 		
 		return params
 
@@ -1376,7 +1394,7 @@ class EMTomoGenerateAverageChooseDataTask(WorkFlowTask):
 		self.write_db_entries(params)
 
 class E2TomoGenerateAverageTask(WorkFlowTask):	
-	"""This task is for generating averages of your tomographic particles. Choose the particles you want to combine into an average, choose a name for the average, and hit OK. Have a look in the 'Particle Averages' table once the task is completed to see the resulting average."""
+	"""This task is for generating averages of your tomographic particles. Choose the particles you want to combine into an average, choose a name for the average, and hit OK. Have a look in the 'Particle Averages' table once the task is completed to see the results."""
 	def __init__(self,ptcls_list=[],probe="",ali_set=""):
 		WorkFlowTask.__init__(self)
 		self.window_title = "Generate Tomo Average"
@@ -1416,7 +1434,7 @@ class E2TomoGenerateAverageTask(WorkFlowTask):
 			e.append("you must specify the name of the average")
 		else:
 			name = params["ave_name"]
-			real_name = "bdb:tomogram_averages#"+name
+			real_name = "bdb:tomo_averages#"+name
 			if db_check_dict(real_name):
 				e.append("The file %s already exists. Please choose another name" %real_name)
 			else:
@@ -1462,8 +1480,13 @@ class EMProbeAliTools:
 #		ptcl_opts = EMPartStackOptions("global.tpr_ptcls","global.tpr_filt_ptcls_map")
 #		self.particles_map, self.particles_name_map, self.choices, self.name_map = ptcl_opts.get_particle_options()
 		
+		EMProjectListCleanup.clean_up_project_file_list("global.tpr_probes")
+		EMProjectListCleanup.clean_up_filt_particles("global.tpr_filt_ptcls_map")
+		EMProjectListCleanup.clean_up_ali_params("global.tpr_ptcls_ali_dict")
+		
 		set_map = {}
 		sets = project_db.get("global.tpr_filt_ptcls_map",dfl={})
+		
 		for ptcl,map in sets.items():
 			for filt,filt_ptcl in map.items():
 				set_map[filt_ptcl] = filt

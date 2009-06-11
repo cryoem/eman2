@@ -165,11 +165,12 @@ def main():
 	
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
+	parser.add_option("--probe",type="string",help="The probe. This is the model that the input images will be aligned to", default=None)
 	parser.add_option("--dalt",type="float",help="Altitude delta", default=10.0)
 	parser.add_option("--ralt",type="float",help="Altitude range", default=180.0)
 	parser.add_option("--dphi",type="float",help="Phi delta", default=10.0)
 	parser.add_option("--rphi",type="float",help="Phi range", default=180.0)
-	parser.add_option("--raz",type="float",help="Phi range", default=360.0)
+	parser.add_option("--raz",type="float",help="Azimuth range", default=360.0)
 	parser.add_option("--daz",type="float",help="Azimuth delta", default=10.0)
 	parser.add_option("--thresh",type="float",help="Threshold", default=1.0)
 	parser.add_option("--nsoln",type="int",help="The number of solutions to report", default=10)
@@ -178,8 +179,7 @@ def main():
 	parser.add_option("--searchz",type="int",help="The maximum search distance, z direction", default=5)
 	parser.add_option("--n",type="int",help="0 or 1, multiplication by the reciprocal of the boxsize", default=1)
 	parser.add_option("--dbls",type="string",help="data base list storage, used by the workflow. You can ignore this argument.",default=None)
-	parser.add_option("--probe",type="string",help="The probe. This is the model that the input images will be aligned to", default=None)
-	parser.add_option("--aliset",type="string",help="Supplied with avgout. Used to choose different alignment parameter from the local database. Used from the workflow", default=None)
+	parser.add_option("--aliset",type="string",help="Supplied with avgout. Used to choose different alignment parameters from the local database. Used by workflow.", default=None)
 	parser.add_option("--avgout",type="string",help="If specified will produce an averaged output, only works if you've previously run alignments", default=None)
 	if EMUtil.cuda_available():
 		parser.add_option("--cuda",action="store_true",help="GPU acceleration using CUDA. Tantalizing glimpse into the future", default=False)
@@ -338,7 +338,8 @@ def main():
 				results.append(t)
 				
 		if options.dbls:
-			d = {}
+			if db.has_key(arg):d = db[arg]
+			else:d = {}
 			d[options.probe] = results
 			db[arg] = d
 			pdb[options.dbls] = db

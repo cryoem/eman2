@@ -182,7 +182,34 @@ class EMProjectListCleanup:
 			EMErrorMessageDisplay.run(error,"Warning")
 			project_db[dict_db_name] = db_map			
 	
-	clean_up_filt_particles = staticmethod(clean_up_filt_particles)		
+	clean_up_filt_particles = staticmethod(clean_up_filt_particles)
+	
+	def clean_up_ali_params(self,dict_db_name="global.tpr_ptcls_ali_dict"):
+		project_db = db_open_dict("bdb:project")
+		db_map = project_db.get(dict_db_name,dfl={})
+		
+		error = []
+		update = False
+		for name,map in db_map.items():
+			if not file_exists(name):
+				db_map.pop(name)
+				error.append("%s data no longer exists. Automatically removing from project alignment parameters" %(name))
+				update = True
+				continue
+			for image_name,ali in map.items():
+				if not file_exists(image_name):
+					map.pop(image_name)
+					error.append("%s data no longer exists for %s. Automatically removing from project alignment parameters" %(image_name,name))
+					update = True
+			if len(map) == 0:
+				db_map.pop(name)
+					
+		if update:
+			EMErrorMessageDisplay.run(error,"Warning")
+			project_db[dict_db_name] = db_map			
+	
+	clean_up_ali_params = staticmethod(clean_up_ali_params)
+		
 
 class WorkFlowTask(QtCore.QObject):
 	def __init__(self):
