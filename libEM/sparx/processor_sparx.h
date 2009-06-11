@@ -128,7 +128,7 @@ namespace EMAN
 	};
 
 	/**Lowpass top-hat filter processor applied in Fourier space.
-	 * @param cutoff_abs Absolute [0,0.5] cut-off frequency.
+	 * @param sigma Absolute [0,0.5] cut-off frequency.
 	 */
 	class NewLowpassTopHatProcessor:public NewFourierProcessor
 	{
@@ -149,7 +149,7 @@ namespace EMAN
 	};
 
 	/** Highpass top-hat filter applied in Fourier space.
-	 * @param cutoff_abs Absolute [0,0.5] cut-off frequency.
+	 * @param sigma Absolute [0,0.5] cut-off frequency.
 	 */
 	class NewHighpassTopHatProcessor:public NewFourierProcessor
 	{

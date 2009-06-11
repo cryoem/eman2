@@ -361,9 +361,16 @@ void FourierProcessor::process_inplace(EMData * image)
 	image->update();
 }
 
-void LowpassFourierProcessor::preprocess(const EMData * const image)
+void LowpassFourierProcessor::preprocess(EMData * image)
 {
-	Dict dict = image->get_attr_dict();
+	if(params.has_key("apix")) {
+		image->set_attr("apix_x", (float)params["apix"]);
+		image->set_attr("apix_y", (float)params["apix"]);
+		image->set_attr("apix_z", (float)params["apix"]);
+	}
+
+	const Dict dict = image->get_attr_dict();
+
 	if( params.has_key("cutoff_abs") ) {
 		lowpass = params["cutoff_abs"];
 	}
@@ -375,9 +382,16 @@ void LowpassFourierProcessor::preprocess(const EMData * const image)
 	}
 }
 
-void HighpassFourierProcessor::preprocess(const EMData * const image)
+void HighpassFourierProcessor::preprocess(EMData * image)
 {
-	Dict dict = image->get_attr_dict();
+	if(params.has_key("apix")) {
+		image->set_attr("apix_x", (float)params["apix"]);
+		image->set_attr("apix_y", (float)params["apix"]);
+		image->set_attr("apix_z", (float)params["apix"]);
+	}
+
+	const Dict dict = image->get_attr_dict();
+
 	if( params.has_key("cutoff_abs") ) {
 		highpass = params["cutoff_abs"];
 	}
