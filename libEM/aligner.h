@@ -148,6 +148,9 @@ namespace EMAN
      * It calculates the shift for a translational alignment, then
      * do the translation.
 	 * @ingroup CUDA_ENABLED
+	 * @param intonly Integer pixel translations only
+	 * @param maxshift Maximum translation in pixels
+	 * @param nozero Zero translation not permitted (useful for CCD images)
      */
 	class TranslationalAligner:public Aligner
 	{
@@ -186,6 +189,7 @@ namespace EMAN
 	};
 
 	/** rotational alignment using angular correlation
+	 * @param rfp_mode Either 0,1 or 2. A temporary flag for testing the rotational foot print. O is the original eman1 way. 1 is just using calc_ccf without padding. 2 is using calc_mutual_correlation without padding
      */
 	class RotationalAligner:public Aligner
 	{
@@ -259,6 +263,9 @@ namespace EMAN
 	};
 
 	/** rotational, translational alignment
+	 * @param maxshift Maximum translation in pixels
+	 * @param nozero Zero translation not permitted (useful for CCD images)
+	 * @param rfp_mode Either 0,1 or 2. A temporary flag for testing the rotational foot print
      */
 	class RotateTranslateAligner:public Aligner
 	{
@@ -290,7 +297,7 @@ namespace EMAN
 		{
 			TypeDict d;
 			//d.put("usedot", EMObject::INT);
-			d.put("maxshift", EMObject::INT);
+			d.put("maxshift", EMObject::INT, "Maximum translation in pixels");
 			d.put("nozero", EMObject::INT,"Zero translation not permitted (useful for CCD images)");
 			d.put("rfp_mode", EMObject::INT,"Either 0,1 or 2. A temporary flag for testing the rotational foot print");
 			return d;
@@ -298,6 +305,8 @@ namespace EMAN
 	};
 
 	/** rotational, translational alignment
+	 * @param maxshift Maximum translation in pixels
+	 * @param snr signal to noise ratio array
      */
 	class RotateTranslateBestAligner:public Aligner
 	{
@@ -328,8 +337,8 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("maxshift", EMObject::INT);
-			d.put("snr", EMObject::FLOATARRAY);
+			d.put("maxshift", EMObject::INT, "Maximum translation in pixels");
+			d.put("snr", EMObject::FLOATARRAY, "signal to noise ratio array");
 			return d;
 		}
 
@@ -337,6 +346,8 @@ namespace EMAN
 	};
 
 	/** rotational and flip alignment
+	 * @param imask
+	 * @param rfp_mode Either 0,1 or 2. A temporary flag for testing the rotational foot print
      */
 	class RotateFlipAligner:public Aligner
 	{
@@ -378,6 +389,10 @@ namespace EMAN
 	};
 
 	/** rotational, translational and flip alignment
+	 * @param flip
+	 * @param usedot
+	 * @param maxshift Maximum translation in pixels
+	 * @param rfp_mode Either 0,1 or 2. A temporary flag for testing the rotational foot print
      */
 	class RotateTranslateFlipAligner:public Aligner
 	{
@@ -414,14 +429,16 @@ namespace EMAN
 
 			d.put("flip", EMObject::EMDATA);
 			d.put("usedot", EMObject::INT);
-			d.put("maxshift", EMObject::INT);
+			d.put("maxshift", EMObject::INT, "Maximum translation in pixels");
 			d.put("rfp_mode", EMObject::INT,"Either 0,1 or 2. A temporary flag for testing the rotational foot print");
 			return d;
 		}
 	};
 
 	/** rotational, translational and flip alignment using real-space methods. slow
-    */
+	 * @param flip
+	 * @param maxshift Maximum translation in pixels
+	 * */
 	class RTFExhaustiveAligner:public Aligner
 	{
 	  public:
@@ -452,13 +469,17 @@ namespace EMAN
 			TypeDict d;
 
 			d.put("flip", EMObject::EMDATA);
-			d.put("maxshift", EMObject::INT);
+			d.put("maxshift", EMObject::INT, "Maximum translation in pixels");
 			return d;
 		}
 	};
 
 	/** rotational, translational and flip alignment using exhaustive search. This is very slow
 	 * but can ensure localization of the global maximum
+	 * @param flip Optional. This is the flipped version of the images that is being aligned. If specified it will be used for the handedness check, if not a flipped copy of the image will be made
+	 * @param maxshift The maximum length of the detectable translational shift
+	 * @param transtep The translation step to take when honing the alignment, which occurs after coarse alignment
+	 * @param angstep The angular step (in degrees) to take in the exhaustive search for the solution angle. Typically very small i.e. 3 or smaller
      */
 	class RTFSlowExhaustiveAligner:public Aligner
 	{
@@ -496,7 +517,7 @@ namespace EMAN
 		}
 	};
 
-	/** refine alignment
+	/** refine alignment. Refines a preliminary 2D alignment using a simplex algorithm. Subpixel precision.
      */
 	class RefineAligner:public Aligner
 	{
