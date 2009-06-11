@@ -145,7 +145,7 @@ class TestProcessor(unittest.TestCase):
         e.do_fft_inplace()
         self.assertEqual(e.is_complex(), True)
         
-        e.process_inplace('filter.highpass.tophat', {'cutoff_frequency':0.3})
+        e.process_inplace('filter.highpass.tophat', {'cutoff_abs':0.3})
         
     def test_filter_highpass_tophat(self):
         """test filter.lowpass.tophat processor ............."""
@@ -155,7 +155,7 @@ class TestProcessor(unittest.TestCase):
         e.do_fft_inplace()
         self.assertEqual(e.is_complex(), True)
         
-        e.process_inplace('filter.lowpass.tophat', {'cutoff_frequency':0.3})
+        e.process_inplace('filter.lowpass.tophat', {'cutoff_abs':0.3})
         
     def test_filter_bandpass_tophat(self):
         """test filter.bandpass.tophat processor ............"""
@@ -187,7 +187,7 @@ class TestProcessor(unittest.TestCase):
         e.do_fft_inplace()
         self.assertEqual(e.is_complex(), True)
         
-        e.process_inplace('filter.lowpass.gauss', {'sigma':0.5})
+        e.process_inplace('filter.lowpass.gauss', {'cutoff_abs':0.5})
         
     def test_filter_highpass_gauss(self):
         """test filter.highpass.gauss processor ............."""
@@ -197,7 +197,7 @@ class TestProcessor(unittest.TestCase):
         e.do_fft_inplace()
         self.assertEqual(e.is_complex(), True)
         
-        e.process_inplace('filter.highpass.gauss', {'sigma':0.5})
+        e.process_inplace('filter.highpass.gauss', {'cutoff_abs':0.5})
         
     def test_filter_bandpass_gauss(self):
         """test filter.bandpass.gauss processor ............."""
@@ -207,7 +207,7 @@ class TestProcessor(unittest.TestCase):
         e.do_fft_inplace()
         self.assertEqual(e.is_complex(), True)
         
-        e.process_inplace('filter.bandpass.gauss', {'sigma':0.5, 'center':0.1})
+        e.process_inplace('filter.bandpass.gauss', {'cutoff_abs':0.5, 'center':0.1})
         
     def test_filter_homomorphic_gauss(self):
         """test filter.homomorphic.gauss processor .........."""
@@ -217,7 +217,7 @@ class TestProcessor(unittest.TestCase):
         e.do_fft_inplace()
         self.assertEqual(e.is_complex(), True)
         
-        e.process_inplace('filter.homomorphic.gauss', {'sigma':0.5, 'value_at_zero_frequency':1.0})
+        e.process_inplace('filter.homomorphic.gauss', {'cutoff_abs':0.5, 'value_at_zero_frequency':1.0})
         
     def test_filter_gaussinverse(self):
         """test filter.gaussinverse processor ..............."""
@@ -227,7 +227,7 @@ class TestProcessor(unittest.TestCase):
         e.do_fft_inplace()
         self.assertEqual(e.is_complex(), True)
         
-        e.process_inplace('filter.gaussinverse', {'sigma':0.5})
+        e.process_inplace('filter.gaussinverse', {'cutoff_abs':0.5})
         
     #gsl: bessel_I0.c:216: ERROR: overflow
     #Default GSL error handler invoked. Aborted
@@ -301,7 +301,7 @@ class TestProcessor(unittest.TestCase):
         e.do_fft_inplace()
         self.assertEqual(e.is_complex(), True)
         
-        e.process_inplace('filter.lowpass.tanh', {'cutoff_frequency':0.25, 'fall_off':0.1})
+        e.process_inplace('filter.lowpass.tanh', {'cutoff_abs':0.25, 'fall_off':0.1})
         
     def test_filter_highpass_tanh(self):
         """test filter.highpass.tanh processor .............."""
@@ -311,7 +311,7 @@ class TestProcessor(unittest.TestCase):
         e.do_fft_inplace()
         self.assertEqual(e.is_complex(), True)
         
-        e.process_inplace('filter.highpass.tanh', {'cutoff_frequency':0.25, 'fall_off':0.1})
+        e.process_inplace('filter.highpass.tanh', {'cutoff_abs':0.25, 'fall_off':0.1})
         
     def test_filter_homomorphic_tanh(self):
         """test filter.homomorphic.tanh processor ..........."""
@@ -322,7 +322,7 @@ class TestProcessor(unittest.TestCase):
         self.assertEqual(e.is_complex(), True)
         
         e.process_inplace('filter.homomorphic.tanh', \
-            {'cutoff_frequency':0.25, 'fall_off':0.1, 'value_at_zero_frequency':1.0})
+            {'cutoff_abs':0.25, 'fall_off':0.1, 'value_at_zero_frequency':1.0})
             
     def test_filter_bandpass_tanh(self):
         """test filter.bandpass.tanh processor .............."""

@@ -459,7 +459,7 @@ class TestAligner(unittest.TestCase):
 							#e3 = EMData()
 							#e3.set_size(n,n,1)
 							#e3.process_inplace('testimage.squarecube', {'axis':'x', 'edge_length':10, 'fill':1})
-							#e3.process_inplace('filter.lowpass.gauss', {'cutoff_pixels':n/8, 'sigma':0.5})
+							#e3.process_inplace('filter.lowpass.gauss', {'cutoff_pixels':n/8, 'cutoff_abs':0.5})
 							
 							##etmp = EMData()
 							##etmp.set_size(n,n,1)
