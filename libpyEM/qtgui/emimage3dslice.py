@@ -219,7 +219,6 @@ class EM3DSliceViewerModule(EMImage3DGUIModule):
 			self.gen_2D_texture()
 	
 	def get_3D_texture(self):
-
 		glNewList(self.tex_dl,GL_COMPILE)
 		
 		if ( self.tex_name != 0 ): glDeleteTextures(self.tex_name)

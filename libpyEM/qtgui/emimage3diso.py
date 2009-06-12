@@ -241,6 +241,8 @@ class EMIsosurfaceModule(EMImage3DGUIModule):
 		self.maxden=data.get_attr("maximum")
 		mean=data.get_attr("mean")
 		sigma=data.get_attr("sigma")
+		
+		
 		#d = data.get_attr_dict()
 		#x,y,z,act = 0,0,0,False
 		#if d.has_key("origin_row"):
@@ -269,6 +271,9 @@ class EMIsosurfaceModule(EMImage3DGUIModule):
 		
 		self.isorender=MarchingCubes(data)
 		self.inspector.set_sampling_range(self.isorender.get_sampling_range())
+#		nx,ny,nz = data.get_xsize(),data.get_ysize(),data.get_zsize()
+#		if nx > 256 or ny > 256 or nz > 256:
+#			self.isorender.set_sampling(2)
 		
 		self.load_colors()
 		self.inspector.set_materials(self.colors,self.isocolor)

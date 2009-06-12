@@ -335,7 +335,7 @@ class EMVolumeModule(EMImage3DGUIModule):
 			self.gen_texture()
 			
 	def gen_texture(self):
-		if ( self.glflags.threed_texturing_supported() ):
+		if self.glflags.threed_texturing_supported():
 			self.get_3D_texture()
 		else:
 			self.gen_2D_texture()
@@ -349,11 +349,22 @@ class EMVolumeModule(EMImage3DGUIModule):
 			print "Error, failed to generate display list"
 			return
 		
+		n = self.get_dimension_size()
+		v = self.axes[self.axes_idx]
+		[t,alt,phi] = self.get_eman_transform(v)
+		v1 = t*Vec3f(-0.5,-0.5,0)
+		v2 = t*Vec3f(-0.5, 0.5,0)
+		v3 = t*Vec3f( 0.5, 0.5,0)
+		v4 = t*Vec3f( 0.5,-0.5,0)
+		vecs = [v1,v2,v3,v4]
+		total = self.texsample*n
+		self.data.add(self.brightness)
+		self.data.mult(self.contrast*1.0/total)
 		if ( self.force_texture_update ):
 			if self.tex_name != 0:
 				glDeleteTextures(self.tex_name)
 			
-			self.tex_name = self.glflags.gen_textureName(self.data_copy)
+			self.tex_name = self.glflags.gen_textureName(self.data)
 			
 			self.force_texture_update = False
 			
@@ -372,7 +383,7 @@ class EMVolumeModule(EMImage3DGUIModule):
 		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP)
 		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP)
 		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-		if ( not data_dims_power_of(self.data_copy,2) and self.glflags.npt_textures_unsupported()):
+		if ( not data_dims_power_of(self.data,2) and self.glflags.npt_textures_unsupported()):
 			glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR)
 		else:
 			glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
@@ -381,14 +392,7 @@ class EMVolumeModule(EMImage3DGUIModule):
 		glTranslate(0.5,0.5,0.5)
 		glBegin(GL_QUADS)
 		
-		n = self.get_dimension_size()
-		v = self.axes[self.axes_idx]
-		[t,alt,phi] = self.get_eman_transform(v)
-		v1 = t*Vec3f(-0.5,-0.5,0)
-		v2 = t*Vec3f(-0.5, 0.5,0)
-		v3 = t*Vec3f( 0.5, 0.5,0)
-		v4 = t*Vec3f( 0.5,-0.5,0)
-		vecs = [v1,v2,v3,v4]
+		
 		for i in range(0,int(self.texsample*n)):
 			nn = float(i)/float(n)/self.texsample
 
@@ -406,6 +410,10 @@ class EMVolumeModule(EMImage3DGUIModule):
 		glDisable(GL_TEXTURE_3D)
 		glEndList()
 		
+		self.data.mult(total*1.0/self.contrast)
+		self.data.add(-self.brightness)
+		
+		
 	def get_eman_transform(self,p):
 		
 		if ( p[2] == 0 ):
@@ -416,7 +424,9 @@ class EMVolumeModule(EMImage3DGUIModule):
 		phi = atan2(p[0],p[1])
 		phi *= 180.0/pi
 		
-		return [Transform3D(0,alt,phi),alt,phi]
+		t = Transform({"type":"eman","alt":alt,"phi":phi})
+		
+		return [t,alt,phi]
 			
 	def get_dimension_size(self):
 		if ( self.axes_idx == 0 ):
@@ -467,15 +477,15 @@ class EMVolumeModule(EMImage3DGUIModule):
 			nn = float(i)/float(n)/self.texsample
 			
 			trans = (nn-0.5)*v
-			t.set_posttrans(2.0*int(n/2)*trans)
+			t.set_trans(2.0*int(n/2)*trans)
 			
 			if False and EMUtil.cuda_available(): # disable for the time being - big textures won't work on CPU
-				tmp = self.data_copy.cut_slice_cuda(t)
+				tmp = self.data.cut_slice_cuda(t)
 			else:
 				tmp = self.get_correct_dims_2d_emdata() 
-				tmp.cut_slice(self.data_copy,t,True)
-				tmp.process_inplace("normalize.edgmean")
-				tmp.mult(1.0/total)
+				tmp.cut_slice(self.data,t,True)
+			tmp.add(self.brightness)
+			tmp.mult(self.contrast*1.0/total)
 			#tmp.write_image("tmp.img",-1)
 			
 			# get the texture name, store it, and bind it in OpenGL
@@ -518,7 +528,7 @@ class EMVolumeModule(EMImage3DGUIModule):
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
 		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
-		if ( not data_dims_power_of(self.data_copy,2) and self.glflags.npt_textures_unsupported()):
+		if ( not data_dims_power_of(self.data,2) and self.glflags.npt_textures_unsupported()):
 			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR)
 		else:
 			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR) 
@@ -527,10 +537,7 @@ class EMVolumeModule(EMImage3DGUIModule):
 	
 		if ( not isinstance(self.data,EMData) ): return
 		
-		self.data_copy = self.data.copy()
-		self.data_copy.add(self.brightness)
-		self.data_copy.mult(self.contrast*1.0/self.data.get_zsize())
-		hist = self.data_copy.calc_hist(256,0,1.0)
+		hist = self.data.calc_hist(256,0,1.0)
 		self.inspector.set_hist(hist,0,1.0)
 
 		self.force_texture_update = True
