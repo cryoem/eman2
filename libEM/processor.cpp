@@ -113,7 +113,7 @@ template <> Factory < Processor >::Factory()
 	force_add(&MinShrinkProcessor::NEW);
 	force_add(&MeanShrinkProcessor::NEW);
 	force_add(&MedianShrinkProcessor::NEW);
-	force_add(&FFTShrinkProcessor::NEW);
+	force_add(&FFTResampleProcessor::NEW);
 
 	force_add(&MakeRadiusSquaredProcessor::NEW);
 	force_add(&MakeRadiusProcessor::NEW);
@@ -1466,66 +1466,86 @@ void MedianShrinkProcessor::accrue_median(EMData* to, const EMData* const from,c
 	to->scale_pixel((float)shrink_factor);
 }
 
-EMData* FFTShrinkProcessor::process(const EMData *const image)
+EMData* FFTResampleProcessor::process(const EMData *const image)
 {
 	if (image->is_complex()) throw ImageFormatException("Error, the fft shrink processor does not work on complex images");
 
 
-	float shrink_factor = params.set_default("n",0.0f);
-	if (shrink_factor <= 1.0F  )  {
-		throw InvalidValueException(shrink_factor,	"mean shrink: shrink factor must be >1 ");
+	float sample_rate = params.set_default("n",0.0f);
+	if (sample_rate <= 0.0F  )  {
+		throw InvalidValueException(sample_rate,	"sample rate must be >0 ");
 	}
 
 	EMData* result = image->copy();
-	fft_shrink(result,image,shrink_factor);
+	fft_resample(result,image,sample_rate);
 	// The image may have been padded - we should shift it so that the phase origin is where FFTW expects it
 	result->update();
 
 	return result;
 }
 
-void FFTShrinkProcessor::process_inplace(EMData * image)
+void FFTResampleProcessor::process_inplace(EMData * image)
 {
-	if (image->is_complex()) throw ImageFormatException("Error, the fft shrink processor does not work on complex images");
+	if (image->is_complex()) throw ImageFormatException("Error, the fft resampling processor does not work on complex images");
 
 
-	float shrink_factor = params.set_default("n",0.0f);
-	if (shrink_factor <= 1.0F  )  {
-		throw InvalidValueException(shrink_factor,	"mean shrink: shrink factor must be >1 ");
+	float sample_rate = params.set_default("n",0.0f);
+	if (sample_rate <= 0.0F  )  {
+		throw InvalidValueException(sample_rate,	"sample rate (n) must be >0 ");
 	}
 
-	fft_shrink(image,image,shrink_factor);
-	// The image may have been padded - we should shift it so that the phase origin is where FFTW expects it
+	fft_resample(image,image,sample_rate);
+
 	image->update();
 
 }
 
-void FFTShrinkProcessor::fft_shrink(EMData* to, const EMData *const from, const float& shrink_factor) {
+void FFTResampleProcessor::fft_resample(EMData* to, const EMData *const from, const float& sample_rate) {
 	int nx = from->get_xsize();
 	int ny = from->get_ysize();
 	int nz = from->get_zsize();
 
-	int shrunken_nx = static_cast<int>( static_cast<float> (nx) / shrink_factor);
-	int shrunken_ny = static_cast<int>( static_cast<float> (ny) / shrink_factor);
-	int shrunken_nz = static_cast<int>( static_cast<float> (nz) / shrink_factor);
+	int new_nx = static_cast<int>( static_cast<float> (nx) / sample_rate);
+	int new_ny = static_cast<int>( static_cast<float> (ny) / sample_rate);
+	int new_nz = static_cast<int>( static_cast<float> (nz) / sample_rate);
 
-	if (shrunken_nx == 0) throw UnexpectedBehaviorException("The shrink factor cause the pixel dimensions in the x direction to go to zero");
-	if (shrunken_ny == 0) shrunken_ny = 1;
-	if (shrunken_nz == 0) shrunken_nz = 1;
+	if (new_nx == 0) throw UnexpectedBehaviorException("The resample rate causes the pixel dimensions in the x direction to go to zero");
+	if (new_ny == 0) new_ny = 1;
+	if (new_nz == 0) new_nz = 1;
 
-	to->process_inplace("xform.phaseorigin.tocorner");
+	int ndim = from->get_ndim();
+	if ( ndim < 3 ) {
+		new_nz = 1;
+	}
+	if ( ndim < 2 ) {
+		new_ny = 1;
+	}
+
+	int fft_x_correction = 1;
+	if (new_nx % 2 == 0) fft_x_correction = 2;
+
+	int fft_y_correction = 0;
+	if (ny != 1 && new_ny % 2 == 0 && ny % 2 == 1) fft_y_correction = 1;
+	else if (ny != 1 && new_ny % 2 == 1 && ny % 2 == 0) fft_y_correction = -1;
+
+	int fft_z_correction = 0;
+	if (nz != 1 && new_nz % 2 == 0 && nz % 2 == 1) fft_z_correction = 1;
+	else if (nz != 1 && new_nz % 2 == 1 && nz % 2 == 0) fft_z_correction = -1;
 
 	to->do_fft_inplace();
 
-	to->process_inplace("xform.fourierorigin.tocenter");
+	if (ndim != 1) to->process_inplace("xform.fourierorigin.tocenter");
 
-	Region clip((nx-shrunken_nx)/2,(ny-shrunken_ny)/2,(nz-shrunken_nz)/2,shrunken_nx,shrunken_ny,shrunken_nz);
+	Region clip(0,(ny-new_ny)/2-fft_y_correction,(nz-new_nz)/2-fft_z_correction,new_nx+fft_x_correction,new_ny,new_nz);
 	to->clip_inplace(clip);
 
-	to->process_inplace("xform.fourierorigin.tocorner");
+	if (fft_x_correction == 1) to->set_fftodd(true);
+	else to->set_fftodd(false);
+
+	if (ndim != 1) to->process_inplace("xform.fourierorigin.tocorner");
+
 	to->do_ift_inplace();
 	to->depad_corner();
-	to->process_inplace("xform.phaseorigin.tocenter");
 
 }
 
@@ -6187,7 +6207,7 @@ void TestImageFourierNoiseGaussian::process_inplace(EMData* image)
 		d[ny/2*nx+1] = 0;// 0 phase for this component
 	}
 
-	image->process_inplace("xform.fourierorigin.tocorner");
+	if (image->get_ndim() != 1) image->process_inplace("xform.fourierorigin.tocorner");
 	image->do_ift_inplace();
 	image->depad();
 

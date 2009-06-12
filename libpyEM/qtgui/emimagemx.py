@@ -364,6 +364,7 @@ class EMMXDragMouseEvents(EMMXCoreMouseEvents):
 					self.class_window.optimally_resize()
 				else:
 					self.class_window.updateGL()
+					
 	def on_class_window_closed(self):
 		self.class_window = None
 	

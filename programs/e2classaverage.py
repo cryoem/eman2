@@ -369,6 +369,7 @@ class EMGenClassAverages:
 			if hasattr(self.options,"ref") and self.options.ref != None:
 				average.set_attr("projection_image",self.options.ref)
 #			average.write_image(self.options.output,rslts["class_idx"])
+			average.set_attr("class_ptcl_src",self.options.input)
 			average.write_image(self.options.output,-1)
 			ptcl_indices,dcol_idx_cache =  self.__get_class_data(rslts["class_idx"], self.options)
 			
@@ -734,6 +735,7 @@ class EMClassAveTask(EMTask):
 			average.process_inplace("xform.centeracf")
 			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 			average.set_attr("ptcl_repr",np)
+			average.set_attr("class_ptcl_idxs",images.keys())
 		return average,alis
 
 	def __get_init_average_from_ali(self,images,norm):
@@ -749,7 +751,6 @@ class EMClassAveTask(EMTask):
 		
 		weightsum = 0 # used to normalize the average
 		np = 0 # number of particles in the average
-		
 		for ptcl_idx,ali in self.data["init_alis"].items():
 			image = images[ptcl_idx]			
 			rslt = image.process("math.transform",{"transform":ali})
@@ -775,7 +776,8 @@ class EMClassAveTask(EMTask):
 		average.process_inplace("xform.centeracf")
 		average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 		average.set_attr("ptcl_repr",np)
-		
+		average.set_attr("class_ptcl_idxs",images.keys())
+	
 		return average
 		
 	def __get_average_with_culling(self,images,norm,alis,sims,cullthresh):
@@ -793,6 +795,7 @@ class EMClassAveTask(EMTask):
 		averager=Averagers.get(averager_parms[0], averager_parms[1])
 		
 		inclusion = {} # stores a flag, True or False, indicating whether the particle was included in the class average
+		record = [] # stores the ptcl indices, which is then stored as the "class_ptcl_idxs" header attribute
 		np = 0 # number of particles
 		for ptcl_idx,ali in alis.items():
 			if ( cullthresh != None ):
@@ -801,6 +804,7 @@ class EMClassAveTask(EMTask):
 					continue
 				
 			inclusion[ptcl_idx] = True
+			record.append(ptcl_idx)
 			image = images[ptcl_idx]			
 			rslt = image.process("math.transform",{"transform":ali})
 		
@@ -817,6 +821,7 @@ class EMClassAveTask(EMTask):
 			average.process_inplace("xform.centeracf")
 			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 			average.set_attr("ptcl_repr",np)
+			average.set_attr("class_ptcl_idxs",record)
 		return average,inclusion
 	
 	def __get_average(self,images,norm,alis,inclusions):
@@ -832,11 +837,11 @@ class EMClassAveTask(EMTask):
 		
 		averager_parms =  self.options["averager"]
 		averager=Averagers.get(averager_parms[0], averager_parms[1])
-		
+		record = [] # stores the ptcl indices, which is then stored as the "class_ptcl_idxs" header attribute
 		np = 0 # number of particles
 		for ptcl_idx,ali in alis.items():
 			if inclusions != None and inclusions[ptcl_idx] == False: continue
-			
+			record.append(ptcl_idx)
 			image = images[ptcl_idx]			
 			rslt = image.process("math.transform",{"transform":ali})
 		
@@ -853,6 +858,7 @@ class EMClassAveTask(EMTask):
 			average.process_inplace("xform.centeracf")
 			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 			average.set_attr("ptcl_repr",np)
+			average.set_attr("class_ptcl_idxs",record)
 		return average
 		
 		return average,inclusion

@@ -1610,10 +1610,11 @@ class EMImage2DModule(EMGUIModule):
 			
 	
 	def mouseDoubleClickEvent(self,event):
-		if platform.system() == "Darwin":
-			self.wheel_navigate = not self.wheel_navigate
-		else:
-			print "double click only performs a function on Mac"
+		return
+#		if platform.system() == "Darwin":
+#			self.wheel_navigate = not self.wheel_navigate
+#		else:
+#			print "double click only performs a function on Mac"
 
 	def __key_mvt_animation(self,dx,dy):
 		if self.key_mvt_animation == None:

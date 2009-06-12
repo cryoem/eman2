@@ -3117,15 +3117,15 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	};
 
 
-	/** FFTShrinkProcessor shrinks an image by a floating point amount by clipping the Fourier Transform
+	/** FFTResampleProcessor resamples an image by clipping the Fourier Transform
 	 * This is the same as multipyling the FT by a box window, in real space this is a convolution that will induce rippling.
-	 * Hence it is not recommended to be used for scientific processing - rather, it can be used to rapidly generate shrunken
-	 * images for display purposes
+	 * Hence it should probably be combined with a damping function near the edge
+	 * Works for even/odd, 1D, 2D and 3D images (completely robust, tested)
 	 *@author David Woolford
-	 *@date June 2008
-	 *@param n The shrink factor
+	 *@date June 2009
+	 *@param n sampe_rate
 	 */
-	class FFTShrinkProcessor : public Processor
+	class FFTResampleProcessor : public Processor
 	{
 		public:
 			virtual EMData* process(const EMData *const image);
@@ -3134,22 +3134,22 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 
 			string get_desc() const
 			{
-				return "Shrink an image by a floating point amount by clipping the Fourier transform.";
+				return "Robust resampling of an image by clipping its Fourier transform.";
 			}
 
 			string get_name() const
 			{
-				return "math.fftshrink";
+				return "math.fft.resample";
 			}
 			static Processor *NEW()
 			{
-				return new FFTShrinkProcessor();
+				return new FFTResampleProcessor();
 			}
 
 			TypeDict get_param_types() const
 			{
 				TypeDict d;
-				d.put("n", EMObject::FLOAT, "The shrink factor");
+				d.put("n", EMObject::FLOAT, "The sample rate. Less than one enlarges the image, greater than one shrinks it.");
 				return d;
 			}
 		private:
@@ -3159,10 +3159,9 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			* @param from the larger image that will be used to calculate the shrunken values
 			* @param shrinkfactor the shrink amount
 			 */
-			void fft_shrink(EMData* to, const EMData *const from, const float& shrinkfactor);
+			void fft_resample(EMData* to, const EMData *const from, const float& sample_rate);
 
 	};
-
 
 	/**Gradient remover, does a rough plane fit to find linear gradients.
 	 */
