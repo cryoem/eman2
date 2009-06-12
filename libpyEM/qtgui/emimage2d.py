@@ -1718,8 +1718,9 @@ class EMImage2DModule(EMGUIModule):
 		enable_depth = glIsEnabled(GL_DEPTH_TEST)
 		glDisable(GL_DEPTH_TEST)
 		glColor(1.0,1.0,1.0)
-		
-		
+#		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE)
+		glNormal(0,0,1)
+		glEnable(GL_TEXTURE_2D)
 		if self.font_render_mode == EMGUIModule.FTGL:
 			n = len(self.list_data)
 			string = str(self.list_idx+1) + ' / ' + str(n)
@@ -1739,14 +1740,14 @@ class EMImage2DModule(EMGUIModule):
 		glMatrixMode(GL_PROJECTION)
 		glPopMatrix()
 		glMatrixMode(GL_MODELVIEW)
-	
+		glDisable(GL_TEXTURE_2D)
 	
 	def __init_font_renderer(self):
 		try:
 			self.font_renderer = get_3d_font_renderer()
 			self.font_renderer.set_face_size(20)
 			self.font_renderer.set_depth(4)
-			self.font_renderer.set_font_mode(FTGLFontMode.EXTRUDE)
+			self.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
 			
 #			self.font_renderer.set_font_file_name("/usr/share/fonts/dejavu/DejaVuSerif.ttf")
 			self.font_render_mode = EMGUIModule.FTGL

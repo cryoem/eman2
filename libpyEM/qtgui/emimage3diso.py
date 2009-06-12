@@ -358,6 +358,7 @@ class EMIsosurfaceModule(EMImage3DGUIModule):
 class EMIsoInspector(QtGui.QWidget):
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
+		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"desktop.png"))
 		self.target=weakref.ref(target)
 		self.rotation_sliders = EMTransformPanel(target,self)
 		

@@ -465,6 +465,7 @@ class EM3DSliceViewerModule(EMImage3DGUIModule):
 class EM3DSliceInspector(QtGui.QWidget):
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
+		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"desktop.png"))
 		self.transform_panel = EMTransformPanel(target,self)
 		self.target=weakref.ref(target)
 		

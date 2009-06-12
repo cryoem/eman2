@@ -563,6 +563,7 @@ def EMSelectorTemplate(Type):
 						if not gtgt or mdt["nx"] != nx or mdt["ny"] != ny or mdt["nz"] != nz:
 							multi_images_all_same_dims = False
 							break
+			
 	
 			options = first_item.context_menu_options
 			if len(options) == 0: return
@@ -584,6 +585,7 @@ def EMSelectorTemplate(Type):
 	#			action = QtGui.QAction(k,menu)
 	#			action.items = selected_items
 				menu.addAction(k)
+				
 			
 			if multi_images_all_same_dims:
 				# These are customized actions that somewhat break the modularity, but I don't think it's too bad
@@ -591,6 +593,14 @@ def EMSelectorTemplate(Type):
 				menu.addAction("Save As Stack")
 				if nz == 1: 
 					menu.addAction("Preview Subset")
+			elif md != None and nz > 1 and len(selected_items) == 1:
+				menu.addSeparator()
+				menu2 = QtGui.QMenu("Open With")
+				menu2.addAction(self.emdata_3d_icon,"Volume Viewer")
+				menu2.addAction(self.emdata_3d_icon,"Slice Viewer")
+				menu2.addAction(self.emdata_icon,"Single 2D")
+				menu2.addAction(self.emdata_matrix_icon,"Multi 2D")
+				menu.addMenu(menu2)
 			
 	#		if nz == 1 and ny > 1:	menu.addAction("Open in e2boxer")
 				
@@ -616,6 +626,36 @@ def EMSelectorTemplate(Type):
 				for item in self.menu_selected_items:
 					data.append(item.get_emdata())
 				self.preview_data(data,"")
+			elif action.text() == "Multi 2D":
+				from emimagemx import EMImageMXModule
+				item = self.menu_selected_items[0]
+				get_application().setOverrideCursor(Qt.BusyCursor)
+				data = item.get_path()
+				self.preview_item_explicit(data,EMImageMXModule)
+				get_application().setOverrideCursor(Qt.ArrowCursor)
+			elif action.text() == "Single 2D":
+				from emimage2d import EMImage2DModule
+				item = self.menu_selected_items[0]
+				get_application().setOverrideCursor(Qt.BusyCursor)
+				data = item.get_emdata()
+				self.preview_item_explicit(data,EMImage2DModule)
+				get_application().setOverrideCursor(Qt.ArrowCursor)
+			elif action.text() == "Volume Viewer":
+				from emimage3dvol import EMVolumeModule
+				item = self.menu_selected_items[0]
+				get_application().setOverrideCursor(Qt.BusyCursor)
+				data = item.get_emdata()
+				data.process_inplace("normalize")
+				self.preview_item_explicit(data,EMVolumeModule)
+				get_application().setOverrideCursor(Qt.ArrowCursor)
+			elif action.text() == "Slice Viewer":
+				from emimage3dslice import EM3DSliceViewerModule
+				item = self.menu_selected_items[0]
+				get_application().setOverrideCursor(Qt.BusyCursor)
+				data = item.get_emdata()
+				data.process_inplace("normalize")
+				self.preview_item_explicit(data,EM3DSliceViewerModule)
+				get_application().setOverrideCursor(Qt.ArrowCursor)
 			elif action.text() == "Open in e2boxer":
 				names = []
 				for item in self.menu_selected_items:
@@ -1005,8 +1045,28 @@ def EMSelectorTemplate(Type):
 					
 			preview.updateGL()
 				
-			get_application().setOverrideCursor(Qt.ArrowCursor)	
+			get_application().setOverrideCursor(Qt.ArrowCursor)
+			
+		def preview_item_explicit(self,data,module_type):
+			get_application().setOverrideCursor(Qt.BusyCursor)
+			if self.single_preview_only() and len(self.previews) != 0:
+				old_preview = self.previews[-1]
+				if isinstance(old_preview,module_type):
+					old_preview.set_data(data)
+					old_preview.updateGL()
+					return
+				else:
+					self.module_closed(old_preview)
+					old_preview.closeEvent(None)
 		
+			preview = module_type()
+			preview.set_data(data)
+			preview.updateGL()
+			self.previews.append(preview)
+			self.module_events.append(ModuleEventsManager(self,preview))
+			get_application().show_specific(preview)
+			get_application().setOverrideCursor(Qt.ArrowCursor)
+				
 		def module_closed(self,module):
 			import sys
 			for i,mod in enumerate(self.previews):

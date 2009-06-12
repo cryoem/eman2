@@ -672,6 +672,7 @@ class EMVolumeInspector(QtGui.QWidget):
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
 		self.target=weakref.ref(target)
+		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"desktop.png"))
 		self.rotation_sliders = EMTransformPanel(target,self)
 		
 		self.vbl = QtGui.QVBoxLayout(self)

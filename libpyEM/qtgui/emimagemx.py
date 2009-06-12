@@ -873,19 +873,35 @@ class EMImageMXModule(EMGUIModule):
 			if self.gl_widget != None:
 				self.gl_widget.setWindowTitle(remove_directories_from_name(filename))
 	
+	def xyz_changed(self,xyz):
+		if self.data.set_xyz(str(xyz)):
+			self.display_states = []
+			self.updateGL()
 	def set_data(self,data_or_filename,filename='',update_gl=True):
 		'''
 		This function will work if you give it a list of EMData objects, or if you give it the file name (as the first argument)
 		If this solution is undesirable one could easily split this function into two equivalents.
 		'''
 		cache_size = -1
+		
 		if isinstance(data_or_filename,str):
 			nx,ny,nz = gimme_image_dimensions3D(data_or_filename)
 			bytes_per_image = nx*ny*4.0
 			cache_size = int(75000000/bytes_per_image) # 75 MB
 			
-		
-		self.data = EMDataListCache(data_or_filename,cache_size)
+			if nz == 1:
+				self.data = EMDataListCache(data_or_filename,cache_size)
+				self.get_inspector()
+				self.inspector.disable_xyz()
+			else:
+				self.data = EM3DDataListCache(data_or_filename)
+				self.get_inspector()
+				self.inspector.enable_xyz()
+				self.data.set_xyz(str(self.inspector.xyz.currentText()))
+		else:
+			self.data = EMDataListCache(data_or_filename,cache_size)
+			self.get_inspector()
+			self.inspector.disable_xyz()
 
 		self.file_name = filename
 		self.update_window_title(self.file_name)
@@ -900,7 +916,7 @@ class EMImageMXModule(EMGUIModule):
 		HOMEDB.open_dict("display_preferences")
 		db = HOMEDB.display_preferences
 		auto_contrast = db.get("display_stack_auto_contrast",dfl=True)
-		start_guess = db.get("display_stack_np_for_auto",dfl=5)
+		start_guess = db.get("display_stack_np_for_auto",dfl=20)
 		
 		d = self.data[0]
 
@@ -2149,6 +2165,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 		
 		self.hbl.addWidget(self.valsbut)
 		
+		self.xyz = None
 		if self.target().using_ftgl():
 			self.font_label = QtGui.QLabel("font size:")
 			self.font_label.setAlignment(Qt.AlignRight|Qt.AlignVCenter)
@@ -2205,7 +2222,10 @@ class EMImageInspectorMX(QtGui.QWidget):
 		self.update_brightness_contrast()
 		minden = self.target().get_density_min()
 		maxden = self.target().get_density_max()
-		self.hist.set_data(self.target().get_hist(),minden,maxden)
+#		try:
+#			self.hist.set_data(self.target().get_hist(),minden,maxden)
+#		except:
+#			pass
 		self.busy=0
 		
 		QtCore.QObject.connect(self.vals, QtCore.SIGNAL("triggered(QAction*)"), self.newValDisp)
@@ -2225,7 +2245,29 @@ class EMImageInspectorMX(QtGui.QWidget):
 			QtCore.QObject.connect(self.opt_fit, QtCore.SIGNAL("clicked(bool)"), self.target().optimize_fit)
 		QtCore.QObject.connect(self.bsnapshot, QtCore.SIGNAL("clicked(bool)"), self.snapShot)
 		QtCore.QObject.connect(self.banim, QtCore.SIGNAL("clicked(bool)"), self.animation_clicked)
+	
+	def enable_xyz(self):
+			
+		if self.xyz == None:
+			self.xyz = QtGui.QComboBox()
+			self.xyz.addItems(["x","y","z"])
+			self.hbl.addWidget(self.xyz)
+			self.xyz.setCurrentIndex(2)
+			QtCore.QObject.connect(self.xyz, QtCore.SIGNAL("currentIndexChanged(const QString&)"), self.target().xyz_changed)
+			
 		
+#		self.xyz = None
+#		if self.target().using_ftgl():
+#			self.font_label = QtGui.QLabel("font size:")
+#			self.font_label.setAlignment(Qt.AlignRight|Qt.AlignVCenter)
+#			self.hbl.addWidget(self.font_label)
+	
+	def disable_xyz(self):
+		if self.xyz != None:
+			self.hbl.removeWidget(self.xyz)
+			self.xyz.deleteLater()
+			self.xyz = None
+	
 	def animation_clicked(self,bool):
 		self.target().animation_enabled = bool
 	
@@ -2605,7 +2647,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 		self.conts.setRange(0,1.0)
 		self.update_brightness_contrast()
 
-
+	
 class EMDataListCache:
 	'''
 	This class designed primarily for memory management in the context of large lists of EMData objects. It is only efficient
@@ -2983,7 +3025,247 @@ class EMDataListCache:
 		else:
 			self.current_iter += 1
 			return self[self.current_iter-1]
+		
+class EM3DDataListCache:
+	'''
+	A class that looks like a list to the outside word
+	automated way of handling 3d images for the EMImageMXModule
+	'''
+	def __init__(self,filename):
+		self.filename = filename
+		self.nx,self.ny,self.nz = gimme_image_dimensions3D(filename)
+		if self.nz == 1: raise RuntimeError("EM3DDataForMx class is only meant to be used with 3D images")
+		self.keys = None
+		self.header = None
+		self.exclusions = []
+		self.nz
+		self.images = {}
+		self.major_axis = "z"
+		self.max_idx = self.nz
+		
+		# set stuff
+		self.visible_sets = [] 
+		self.sets = {}
+	
+	def set_xyz(self,xyz):
+		if xyz != self.major_axis:
+			self.major_axis = xyz
+			self.images = {}
+			return True
+		return False
+	def get_xsize(self):
+		return self.nx
 
+	def get_ysize(self):
+		return self.ny
+	
+	def get_image_header(self,idx):
+		if self.header ==None:
+			image = self[self.nz/2]
+			self.header = image.get_attr_dict()
+			
+		return self.header
+
+	
+	def get_image_keys(self):
+		if self.keys == None:
+			self.keys = self[0].get_attr_dict().keys()
+				
+		return self.keys
+	
+	def delete_box(self,idx):
+		if self[idx].has_attr("excluded"):
+			self[idx].del_attr("excluded")
+			self.exclusions.remove(idx)
+		else:
+			self[idx]["excluded"] = True
+			self.exclusions.append(idx)
+			return 2
+		return 0
+	
+	def get_max_idx(self):
+		''' Get the maximum image index  '''
+		return self.max_idx
+	
+	def get_num_images(self):
+		''' Get the number of images currently cached '''
+		return self.max_idx
+	
+	def set_cache_size(self,cache_size,refresh=False):
+		''' Set the cache size. May cause the cache to be refreshed, which could take a few moments '''
+		pass
+#		if self.mode != EMDataListCache.LIST_MODE:
+#			if cache_size > self.max_idx: self.cache_size = self.max_idx
+#			else: self.cache_size = cache_size
+#			self.start_idx = self.start_idx - self.cache_size/2
+#			if refresh: self.__refresh_cache()
+#		else:
+#			if self.cache_size != self.max_idx:
+#				print "error, in list mode the cache size is always equal to the max idx"
+#				return
+	def set_start_idx(self,start_idx,refresh=True):
+		''' Set the starting index of the cache, '''
+		pass
+#		self.start_idx = start_idx
+#		if refresh: self.__refresh_cache()
+	
+	def __refresh_cache(self):
+		pass
+	
+	def __getitem__(self,idx):
+		
+		if not self.images.has_key(idx):
+			a = EMData()
+			if self.major_axis == "z":
+				r = Region(0,0,idx,self.nx,self.ny,1)
+				a.read_image(self.filename,0,False,r)
+			elif self.major_axis == "y":
+				r = Region(0,idx,0,self.nx,1,self.nz)
+				a.read_image(self.filename,0,False,r)
+				a.set_size(self.nx,self.nz)
+			elif self.major_axis == "x":
+				r = Region(idx,0,0,1,self.ny,self.nz)
+				a.read_image(self.filename,0,False,r)
+				a.set_size(self.ny,self.nz)
+			
+			self.images[idx] = a
+			
+		return self.images[idx]
+			
+	def __len__(self):
+		return self.max_idx
+	
+	def __iter__(self):
+		''' Iteration support '''
+		self.current_iter = 0
+		return self
+	
+	def next(self):
+		''' Iteration support '''
+		if self.current_iter > self.max_idx:
+			raise StopIteration
+		else:
+			self.current_iter += 1
+			return self[self.current_iter-1]
+
+	
+	def __init_sets(self):
+		pass
+#		if db_check_dict("bdb:select"):
+#			db = db_open_dict("bdb:select")
+#			keys = db.keys()
+#			for k in keys:
+#				try:
+#					idx = int(k[-1])
+#					self.sets[idx] = db[k]
+#					self.set_init_flag[idx] = True
+#				except: pass
+#	
+	def make_set_visible(self,i):
+		pass
+#		if i not in self.visible_sets:
+#			self.visible_sets.append(i)
+#		
+	def set_current_set(self,i):
+		pass
+#		if i == self.current_set: return # already this set
+#		self.current_set = i
+#		
+#		if not self.sets.has_key(i):
+#			self.sets[i] = []
+#			self.set_init_flag[i] = False
+#		elif self.set_init_flag[i]:
+#			for k in self.images.keys():
+#				if self.sets[i].count(k) != 0:
+#					im = self.images[k]
+#					if hasattr(im,"mxset"):
+#						im.mxset.append(i)
+#					else:
+#						im.mxset = [i]
+#			self.set_init_flag[i] = False
+			
+	def make_set_not_visible(self,i):
+		pass
+#		if i in self.visible_sets: self.visible_sets.remove(i)
+#		if i == self.current_set:
+#			self.current_set = None
+	
+	def delete_set(self,idx):
+		pass
+#		if self.sets.has_key(idx):
+#			self.sets.pop(idx)
+#		self.make_set_not_visible(idx)
+#		
+#		for im in self.images:
+#			if hasattr(im,"mxset") and idx in im.mxset: 
+#				print im.mxset
+#				im.mxset.remove(idx)
+#				if len(im.mxset) == 0: delattr(im,"mxset")
+	
+	def clear_sets(self):
+		pass
+#		self.sets = {}
+	
+	def associate_set(self,idx,lst,mxset=False):
+		pass
+#		self.sets[idx] = lst
+#		if mxset:
+#			for key,im in self.images.items():
+#				if key in lst:
+#					if hasattr(im,"mxset"):
+#						im.mxset.append(idx)
+#					else:
+#						im.mxset = [idx]
+#			
+	
+	def image_set_associate(self,idx):
+		'''
+		Associate the image with the set (or disassociate)
+		'''
+		pass
+#		if self.current_set == None: return 0 # there is no set, nothing happens
+#		
+#		im = self.images[idx]
+#		
+#		if hasattr(im,"mxset") and self.current_set in im.mxset:
+#			#print self.current_set,self.sets,im.mxset,idx 
+#			im.mxset.remove(self.current_set)
+#			if len(im.mxset) == 0: delattr(im,"mxset")
+#			self.sets[self.current_set].remove(idx)
+#		else:
+#			if hasattr(im,"mxset"):
+#				im.mxset.append(self.current_set)
+#			else:
+#				im.mxset = [self.current_set]
+##				im.mxset = self.current_set
+#			self.sets[self.current_set].append(idx)
+#			
+#		return 1
+				
+	def save_lst(self,fsp):
+		# Get the output filespec
+		return # doesn't work yet
+	
+	def save_data(self):
+		pass
+#		fsp=QtGui.QFileDialog.getSaveFileName(None, "Specify name of file to save","","","")
+#		fsp=str(fsp)
+#		try:
+#			if fsp == self.file_name:
+#				print "writing over the same file is currently not supported"
+#				return
+#		except: pass
+#		
+#		if fsp != '':
+#			for idx in range(self.max_idx):
+#				d = self.__getitem__(idx)
+#				try:
+#					d.get_attr("excluded")
+#					continue
+#				except: pass
+#				d.write_image(fsp,-1)
+
+	
 
 if __name__ == '__main__':
 	em_app = EMStandAloneApplication()
