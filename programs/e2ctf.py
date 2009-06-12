@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/home/traininguser/EMAN2/python/Python-2.5.4-ucs4/bin/python
 
 #
 # Author: Steven Ludtke, 10/29/2008 (sludtke@bcm.edu)
@@ -69,6 +69,7 @@ images far from focus."""
 	parser.add_option("--gui",action="store_true",help="Start the GUI for interactive fitting",default=False)
 	parser.add_option("--auto_fit",action="store_true",help="Runs automated CTF fitting on the input images",default=False)
 	parser.add_option("--bgmask",type="int",help="Compute the background power spectrum from the edge of the image, specify a mask radius in pixels which would largely mask out the particles. Default is boxsize/2.",default=0)
+	parser.add_option("--fixnegbg",action="store_true",help="Will perform a final background correction to avoid slight negative values near zeroes")
 	parser.add_option("--apix",type="float",help="Angstroms per pixel for all images",default=0)
 	parser.add_option("--voltage",type="float",help="Microscope voltage in KV",default=0)
 	parser.add_option("--cs",type="float",help="Microscope Cs (spherical aberation)",default=0)
@@ -239,6 +240,21 @@ def write_e2ctf_output(options):
 					
 			if logid : E2progress(logid,float(i+1)/len(options.filenames))
 			
+def fixnegbg(bg_1d,im_1d,ds):
+	"""This will make sure that we don't have a lot of negative values in the background
+	subtracted curve near the CTF zeros. This would likely be due to the exluded volume
+	of the particle from the solvent"""
+	
+	start=int(1.0/(40.0*ds))	# We don't worry about slight negatives below 1/40 A/pix
+
+	# Find the worst negative peak
+	ratio=1.0
+	for i in range(start,len(bg_1d)):
+		if im_1d[i]/bg_1d[i]<ratio : ratio=im_1d[i]/bg_1d[i]
+		
+	# return the corrected background
+	print "BG correction ratio %1.4f"%ratio
+	return [i*ratio for i in bg_1d]
 			
 	
 def pspec_and_ctf_fit(options,debug=False):
@@ -258,6 +274,7 @@ def pspec_and_ctf_fit(options,debug=False):
 		im_1d,bg_1d,im_2d,bg_2d=powspec_with_bg(filename,radius=options.bgmask,edgenorm=not options.nonorm,oversamp=options.oversamp)
 		ds=1.0/(apix*im_2d.get_ysize())
 		if not options.nosmooth : bg_1d=smooth_bg(bg_1d,ds)
+		if options.fixnegbg : bg_1d=fixnegbg(bg_1d,im_1d,ds)
 
 		Util.save_data(0,ds,bg_1d,"ctf.bgb4.txt")
 		
