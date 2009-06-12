@@ -194,6 +194,12 @@ class EMMXCoreMouseEvents:
 		Inheriting classes to potentially define this function
 		'''
 		pass
+	
+	def mouse_double_click(self,event):
+		'''
+		Inheriting classes to potentially define this function
+		'''
+		pass
 
 class EMMXCoreMouseEventsMediator:
 	def __init__(self,target):
@@ -281,7 +287,8 @@ class EMMXSetMouseEvents(EMMXCoreMouseEvents):
 class EMMXDragMouseEvents(EMMXCoreMouseEvents):
 	def __init__(self,mediator):
 		EMMXCoreMouseEvents.__init__(self,mediator)
-	
+		self.class_window = None # used if people are looking at class averages and they double click - which case a second window is opend showing the particles in the class
+		
 	def mouse_down(self,event):
 		return
 	   	# this is currently disabled because it causes seg faults on MAC. FIXME investigate and establish the functionality that we want for mouse dragging and dropping
@@ -312,7 +319,54 @@ class EMMXDragMouseEvents(EMMXCoreMouseEvents):
 			#drag.setHotSpot(QtCore.QPoint(12,12))
 					
 			dropAction = drag.start()
+	
+	def mouse_double_click(self,event):
+		'''
+		Inheriting classes to potentially define this function
+		'''
+		lc=self.mediator.scr_to_img((event.x(),event.y()))
+		if lc != None:
+			a = self.mediator.get_box_image(lc[0])
+			d = a.get_attr_dict()
+			if d.has_key("class_ptcl_src") and d.has_key("class_ptcl_idxs"):
+				data = []
+				idxs = d["class_ptcl_idxs"]
+				name = d["class_ptcl_src"]
+				progress = QtGui.QProgressDialog("Reading images from %s" %get_file_tag(name), "Cancel", 0, len(idxs),None)
+				progress.show()
+				get_application().setOverrideCursor(Qt.BusyCursor)
+				
+				i = 0
+				for idx in idxs:
+					data.append(EMData(name,idx))
+					i+=1
+					progress.setValue(i)
+ 					get_application().processEvents()
+ 				
+		 			if progress.wasCanceled():
+		 				progress.close()
+		 				get_application().setOverrideCursor(Qt.ArrowCursor)
+			 			return
 		
+				progress.close()
+				get_application().setOverrideCursor(Qt.ArrowCursor)
+	
+				resize_necessary = False
+				if self.class_window == None:
+					self.class_window = EMImageMXModule()
+					QtCore.QObject.connect(self.class_window,QtCore.SIGNAL("module_closed"),self.on_class_window_closed)
+					resize_necessary = True
+				
+				self.class_window.set_data(data,"Class Particles")
+				
+				if resize_necessary:
+					get_application().show_specific(self.class_window)
+					self.class_window.optimally_resize()
+				else:
+					self.class_window.updateGL()
+	def on_class_window_closed(self):
+		self.class_window = None
+	
 class EMMAppMouseEvents(EMMXCoreMouseEvents):
 	def __init__(self,mediator):
 		EMMXCoreMouseEvents.__init__(self,mediator)
@@ -1681,7 +1735,10 @@ class EMImageMXModule(EMGUIModule):
 	
 	def origin_update(self,new_origin):
 		self.origin = new_origin
-			
+	
+	def mouseDoubleClickEvent(self,event):
+		self.mouse_event_handler.mouse_double_click(event)
+
 	def mousePressEvent(self, event):
 		if (self.gl_widget.width()-event.x() <= self.scroll_bar.width):
 			self.scroll_bar_has_mouse = True
@@ -1747,9 +1804,6 @@ class EMImageMXModule(EMGUIModule):
 		#self.resize_event(self.gl_widget.width(),self.gl_widget.height())
 		# The self.scale variable is updated now, so just update with that
 		if self.inspector: self.inspector.set_scale(self.scale)
-	
-	def mouseDoubleClickEvent(self,event):
-		pass
 	
 	def leaveEvent(self,event):
 		get_application().setOverrideCursor(Qt.ArrowCursor)
