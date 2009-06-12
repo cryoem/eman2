@@ -46,7 +46,7 @@ import numpy
 from weakref import WeakKeyDictionary
 from time import time
 from PyQt4.QtCore import QTimer
-
+import weakref
 from time import *
 
 from emglobjects import Camera2, EMImage3DGUIModule, EMViewportDepthTools, Camera2, Camera,EMOpenGLFlagsAndTools
@@ -65,9 +65,9 @@ class EMVolumeModule(EMImage3DGUIModule):
 #				self.parent.set_camera_defaults(self.data)
 #		return EMGUIModule.darwin_check(self)
 	
-	def __init__(self,image=None,application=None,ensure_gl_context=True):
+	def __init__(self,image=None,application=None,ensure_gl_context=True,application_control=True):
 		self.data = None
-		EMImage3DGUIModule.__init__(self,application,ensure_gl_context)
+		EMImage3DGUIModule.__init__(self,application,ensure_gl_context,application_control)
 		self.parent = None
 		
 		self.init()
@@ -104,6 +104,8 @@ class EMVolumeModule(EMImage3DGUIModule):
 			
 		if image :
 			self.set_data(image)
+#	def __del__(self):
+#		print "vol died"
 
 	def add_render_axis(self,a,b,c):
 		v = Vec3f(a,b,c);
@@ -152,8 +154,7 @@ class EMVolumeModule(EMImage3DGUIModule):
 		"""Pass in a 3D EMData object"""
 		
 		
-		self.data=data.copy()
-		data.process_inplace("normalize")
+		self.data=data
 		if data==None:
 			print "Error, the data is empty"
 			return
@@ -461,6 +462,7 @@ class EMVolumeModule(EMImage3DGUIModule):
 		n = self.get_dimension_size()
 		v = self.axes[self.axes_idx]
 		[t,alt,phi] = self.get_eman_transform(v)
+		total = self.texsample*n
 		for i in range(0,int(self.texsample*n)):
 			nn = float(i)/float(n)/self.texsample
 			
@@ -472,6 +474,8 @@ class EMVolumeModule(EMImage3DGUIModule):
 			else:
 				tmp = self.get_correct_dims_2d_emdata() 
 				tmp.cut_slice(self.data_copy,t,True)
+				tmp.process_inplace("normalize.edgmean")
+				tmp.mult(1.0/total)
 			#tmp.write_image("tmp.img",-1)
 			
 			# get the texture name, store it, and bind it in OpenGL
@@ -579,14 +583,14 @@ class EMVolumeWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		self.endz = 5000
 		self.cam = Camera()
 		
-		self.target = em_volume_module
+		self.target = weakref.ref(em_volume_module)
 	
 	def set_camera_defaults(self,data):
 		self.cam.default_z = -1.25*data.get_zsize()
 		self.cam.cam_z = -1.25*data.get_zsize()
 	
 	def set_data(self,data):
-		self.target.set_data(data)
+		self.target().set_data(data)
 		self.set_camera_defaults()
 		
 	def initializeGL(self):
@@ -615,7 +619,7 @@ class EMVolumeWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		self.cam.position()
 		
 		glPushMatrix()
-		self.target.render()
+		self.target().render()
 		glPopMatrix()
 	
 		
@@ -638,7 +642,7 @@ class EMVolumeWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 		
-		self.target.resizeEvent()
+		self.target().resizeEvent()
 		
 	def get_start_z(self):
 		return self.startz
@@ -660,7 +664,7 @@ class EMVolumeWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 class EMVolumeInspector(QtGui.QWidget):
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
-		self.target=target
+		self.target=weakref.ref(target)
 		self.rotation_sliders = EMTransformPanel(target,self)
 		
 		self.vbl = QtGui.QVBoxLayout(self)
@@ -797,7 +801,7 @@ class EMVolumeInspector(QtGui.QWidget):
 		self.rotation_sliders.set_defaults()
 	
 	def slider_rotate(self):
-		self.target.load_rotation(self.get_current_rotation())
+		self.target().load_rotation(self.get_current_rotation())
 	
 	def set_hist(self,hist,minden,maxden):
 		self.hist.set_data(hist,minden,maxden)

@@ -421,8 +421,9 @@ class EMImage3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		
 		self.perspective = False
 		
-	def __del__(self):
-		pass
+#	def __del__(self):
+#		print "arggg I'm dying"
+#		pass
 		#for v in self.viewables:
 			##self.application.deregister_qt_emitter(v)
 	
@@ -516,6 +517,7 @@ class EMImage3DModule(EMLightsDrawer,EMImage3DGUIModule):
 
 		if data == None: return
 		self.data = data
+		self.data.process_inplace("normalize.edgemean")
 		self.radius = data.get_zsize()/2.0
 		#for i in self.viewables:
 			#i.set_data(data)
@@ -558,23 +560,23 @@ class EMImage3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		return self.viewables[self.currentselection].get_inspector()
 	
 	def add_sym(self):
-		module = EM3DSymViewerModule(None,True,False)
+		module = EM3DSymViewerModule(None,True,False,False)
 		module.set_radius(self.data.get_zsize()/2.0)
 		self.num_sym += 1
 		self.__add_module(module,self.num_sym)
 	
 	def add_isosurface(self):
-		module = EMIsosurfaceModule(self.data,None,False)
+		module = EMIsosurfaceModule(self.data,None,False,False)
 		self.num_iso += 1
 		self.__add_module(module,self.num_iso)
 		
 	def add_volume(self):
-		module = EMVolumeModule(self.data,None,False)
+		module = EMVolumeModule(self.data,None,False,False)
 		self.num_vol += 1
 		self.__add_module(module,self.num_vol)
 	
 	def add_slice_viewer(self):
-		module = EM3DSliceViewerModule(self.data,None,False)
+		module = EM3DSliceViewerModule(self.data,None,False,False)
 		self.num_sli += 1
 		self.__add_module(module,self.num_sli)
 	
@@ -633,6 +635,7 @@ class EMImage3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		if ( len(self.viewables) == 0 ): return
 		
 		v = self.viewables.pop(val)
+		
 		#self.application.deregister_qt_emitter(v)
 		if (len(self.viewables) == 0 ) : 
 			self.currentselection = -1

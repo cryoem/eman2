@@ -70,8 +70,8 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		return self.qt_context_parent
 
 
-	def __init__(self,application=None,inspector_go=True,ensure_gl_context=True):
-		EMImage3DGUIModule.__init__(self,application,ensure_gl_context)
+	def __init__(self,application=None,inspector_go=True,ensure_gl_context=True,application_control=True):
+		EMImage3DGUIModule.__init__(self,application,ensure_gl_context,application_control)
 		
 		
 		self.eulers = [] # will eventually store Transform objects
@@ -81,6 +81,9 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		self.initialized = True
 		
 		if inspector_go: self.get_inspector()
+		
+#	def __del__(self):
+#		print "sym died" 
 		
 	def get_inspector(self):
 		if not self.inspector : self.inspector=EMSymInspector(self)

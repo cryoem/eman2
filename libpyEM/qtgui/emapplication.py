@@ -93,7 +93,7 @@ class ModuleEventsManager:
 class EMGUIModule(EventsEmitterAndReciever,QtCore.QObject):
 	FTGL = "ftgl"
 	GLUT = "glut"
-	def __init__(self,ensure_gl_context=False):
+	def __init__(self,ensure_gl_context=False,application_control=True):
 		QtCore.QObject.__init__(self)
 		self.under_qt_control = False
 		self.em_qt_inspector_widget = None # shoudl be = EMQtWidgetModule(application) somewher 
@@ -113,7 +113,8 @@ class EMGUIModule(EventsEmitterAndReciever,QtCore.QObject):
 		
 		self.file_name = ""
 		app = get_application()
-		if app != None: app.attach_child(self)
+		if app != None and application_control:
+			app.attach_child(self)
 
 		if ensure_gl_context and app != None:
 			app.ensure_gl_context(self)
@@ -348,13 +349,13 @@ class EMStandAloneApplication(EMApplication):
 #	def __del__(self):
 #		print "stand alone application death"
 		
-	#def detach_child(self,child):
-		#for i,child_ in enumerate(self.children):
-			#if child_ == child:
-				#self.children.pop(i)
-				#return
+	def detach_child(self,child):
+		for i,child_ in enumerate(self.children):
+			if child_ == child:
+				self.children.pop(i)
+				return
 	
-		#print "error, can't detach a child that doesn't belong to this",child,child.get_child()
+		print "error, can't detach a child that doesn't belong to this",child,child.get_child()
 	
 	def attach_child(self,child):
 		for i in self.children:

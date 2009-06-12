@@ -1781,7 +1781,7 @@ def draw_volume_bounds(width,height,depth,color=True):
 
 class EMImage3DGUIModule(EMGUIModule):
 	
-	def __init__(self,application=None,ensure_gl_context=True):
+	def __init__(self,application=None,ensure_gl_context=True,application_control=True):
 		self.blendflags = EMOpenGLFlagsAndTools()
 		self.bcscreen = EMBrightContrastScreen()
 		
@@ -1794,7 +1794,7 @@ class EMImage3DGUIModule(EMGUIModule):
 		self.data = None # should eventually be an EMData object
 		self.file_name = None # stores the file name of the associated EMData, if applicable (use setter/getter)
 		self.help_window = None # eventually will become a Qt help widget of some kind
-		EMGUIModule.__init__(self,ensure_gl_context)
+		EMGUIModule.__init__(self,ensure_gl_context,application_control)
 	
 	
 		self.rank = 0 # rank is to do with shading and using the stencil buffer. Each object should have a unique rank... if it is using the OpenGL contrast enhancement stuff

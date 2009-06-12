@@ -46,7 +46,7 @@ import numpy
 from weakref import WeakKeyDictionary
 from time import time
 from PyQt4.QtCore import QTimer
-
+import weakref
 from time import *
 
 from emglobjects import EMImage3DGUIModule, Camera, EMOpenGLFlagsAndTools, Camera2, EMViewportDepthTools
@@ -58,9 +58,9 @@ MAG_INCREMENT_FACTOR = 1.1
 
 class EM3DSliceViewerModule(EMImage3DGUIModule):
 	
-	def __init__(self,image=None, application=None,ensure_gl_context=True):
+	def __init__(self,image=None, application=None,ensure_gl_context=True,application_control=True):
 		self.data = None
-		EMImage3DGUIModule.__init__(self,application,ensure_gl_context)
+		EMImage3DGUIModule.__init__(self,application,ensure_gl_context,application_control)
 		self.init()
 		self.initialized = True
 		
@@ -78,6 +78,9 @@ class EM3DSliceViewerModule(EMImage3DGUIModule):
 		
 		if image :
 			self.set_data(image)
+	
+#	def __del__(self):
+#		print "slice died"
 	
 	def get_type(self):
 		return "Slice Viewer"
@@ -138,7 +141,7 @@ class EM3DSliceViewerModule(EMImage3DGUIModule):
 			print "Error, the data is not 3D"
 			return
 		
-		self.data = data.copy()
+		self.data = data
 		
 		min = self.data.get_attr("minimum")
 		max = self.data.get_attr("maximum")
@@ -464,7 +467,7 @@ class EM3DSliceInspector(QtGui.QWidget):
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
 		self.transform_panel = EMTransformPanel(target,self)
-		self.target=target
+		self.target=weakref.ref(target)
 		
 		self.vbl = QtGui.QVBoxLayout(self)
 		self.vbl.setMargin(0)
@@ -570,7 +573,7 @@ class EM3DSliceInspector(QtGui.QWidget):
 		return maintab
 	
 	def slider_rotate(self):
-		self.target.load_rotation(self.get_current_rotation())
+		self.target().load_rotation(self.get_current_rotation())
 
 	def set_hist(self,hist,minden,maxden):
 		self.hist.set_data(hist,minden,maxden)

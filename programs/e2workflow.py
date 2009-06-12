@@ -873,8 +873,6 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	def launch_browser(self):
 		import subprocess
 		subprocess.Popen("e2display.py")
-		print "done"
-		#os.system("e2display.py")
 #		get_application().setOverrideCursor(Qt.BusyCursor)
 #		module = EMBrowserModule()
 #		self.module().emit(QtCore.SIGNAL("launching_module"),"Browser",module)

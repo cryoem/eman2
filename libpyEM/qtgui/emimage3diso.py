@@ -60,9 +60,9 @@ class EMIsosurfaceModule(EMImage3DGUIModule):
 	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
 		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
 
-	def __init__(self,image=None,application=None,ensure_gl_context=True):
+	def __init__(self,image=None,application=None,ensure_gl_context=True,application_control=True):
 		self.data = None
-		EMImage3DGUIModule.__init__(self,application,ensure_gl_context)
+		EMImage3DGUIModule.__init__(self,application,ensure_gl_context,application_control=application_control)
 		self.init()
 		self.initialized = True
 		
@@ -81,10 +81,11 @@ class EMIsosurfaceModule(EMImage3DGUIModule):
 		
 		if image :
 			self.set_data(image)
-	
-	def __del__(self):
-		pass
-	
+		
+#	def __del__(self):
+#		print "iso died"
+#		pass
+#	
 	def get_type(self):
 		return "Isosurface"
 	
@@ -671,7 +672,6 @@ class EMIsoInspector(QtGui.QWidget):
 if __name__ == '__main__':
 	em_app = EMStandAloneApplication()
 	window = EMIsosurfaceModule(application=em_app)
-	
 	if len(sys.argv)==1 : 
 		data = []
 		#for i in range(0,200):
