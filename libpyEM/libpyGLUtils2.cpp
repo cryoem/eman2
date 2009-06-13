@@ -46,7 +46,7 @@
 using namespace boost::python;
 
 namespace {
-	BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_GLUtil_get_isosurface_dl_overloads_1_2, EMAN::GLUtil::get_isosurface_dl, 1, 2)
+	BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_GLUtil_get_isosurface_dl_overloads_1_3, EMAN::GLUtil::get_isosurface_dl, 1, 3)
 }
 
 // Module ======================================================================
@@ -62,7 +62,7 @@ BOOST_PYTHON_MODULE(libpyGLUtils2)
 		.def("colored_rectangle", &EMAN::GLUtil::colored_rectangle )
 		.def("mx_bbox", &EMAN::GLUtil::mx_bbox )
 		.def("render_amp8", &EMAN::GLUtil::render_amp8)
-		.def("get_isosurface_dl", &EMAN::GLUtil::get_isosurface_dl, EMAN_GLUtil_get_isosurface_dl_overloads_1_2())
+		.def("get_isosurface_dl", &EMAN::GLUtil::get_isosurface_dl, EMAN_GLUtil_get_isosurface_dl_overloads_1_3())
 		.staticmethod("gen_glu_mipmaps")
 		.staticmethod("gen_gl_texture")
 		.staticmethod("render_amp8_gl_texture")

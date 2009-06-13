@@ -570,12 +570,13 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 }
 
 
-unsigned long GLUtil::get_isosurface_dl(MarchingCubes* mc, unsigned int tex_id)
+unsigned long GLUtil::get_isosurface_dl(MarchingCubes* mc, unsigned int tex_id,bool surface_face_z)
 {
 	if ( mc->_isodl != 0 ) glDeleteLists(mc->_isodl,1);
 
 
 	mc->calculate_surface();
+	if ( surface_face_z ) mc->surface_face_z();
 #if MARCHING_CUBES_DEBUG
 	cout << "There are " << ff.elem()/3 << " faces and " << pp.elem() << " points and " << nn.elem() << " normals to render in generate dl" << endl;
 #endif

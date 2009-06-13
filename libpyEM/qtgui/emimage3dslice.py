@@ -71,8 +71,6 @@ class EM3DSliceViewerModule(EMImage3DGUIModule):
 		self.axes.append( Vec3f(0,1,0) )
 		self.axes.append( Vec3f(0,0,1) )
 		self.axes_idx = 2
-	
-		self.forceuse2dtextures = True	# This placed here by David Woolford - we get better performance
 		
 		self.track = False
 		self.bright = 0
@@ -172,10 +170,13 @@ class EM3DSliceViewerModule(EMImage3DGUIModule):
 		self.inspector.set_hist(hist,0,1.0) 
 		
 		self.slice = data.get_zsize()/2
-		self.zslice = data.get_zsize()/2
-		self.yslice = data.get_ysize()/2
-		self.xslice = data.get_xsize()/2
-		self.trackslice = data.get_xsize()/2
+		self.zslice = data.get_zsize()/2-1
+		if self.zslice < 0: self.zslice = 0
+		self.yslice = data.get_ysize()/2-1
+		if self.yslice < 0: self.yslice = 0
+		self.xslice = data.get_xsize()/2-1
+		if self.xslice < 0: self.xslice = 0
+		self.trackslice = self.xslice
 		self.axis = 'z'
 		self.inspector.set_sliceRange(0,data.get_zsize()-1)
 		self.inspector.set_slice(self.zslice)
@@ -240,9 +241,9 @@ class EM3DSliceViewerModule(EMImage3DGUIModule):
 		
 		[t,alt,phi] = self.get_eman_transform(v)
 			
-		nn = float(self.slice)/float(n-1)
-		trans = 2*(nn-0.5)*v
-		t.set_trans((n-1)/2*trans)
+		nn = float(self.slice)/float(n)
+		trans = (nn-0.5)*v
+		t.set_trans(n*trans)
 	
 		if False and EMUtil.cuda_available(): # disable for the time being - big textures won't work on CPU
 			tmp = self.data.cut_slice_cuda(t)

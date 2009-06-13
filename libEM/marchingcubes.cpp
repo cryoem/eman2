@@ -43,6 +43,9 @@
 #include <time.h>
 
 using namespace EMAN;
+#include "transform.h"
+#include "emobject.h"
+#include "vec3.h"
 
 #define min(a,b)(((a) < (b)) ? (a) : (b))
 #define max(a,b)(((a) > (b)) ? (a) : (b))
@@ -211,7 +214,6 @@ MarchingCubes::~MarchingCubes() {
 Dict MarchingCubes::get_isosurface()
 {
 	calculate_surface();
-
 	Dict d;
 	d.put("points", (float*)pp.get_data());
 	for (unsigned int i = 0; i < ff.elem(); ++i ) ff[i] /= 3;
@@ -219,6 +221,37 @@ Dict MarchingCubes::get_isosurface()
 	d.put("normals", (float*)nn.get_data());
 	d.put("size", ff.elem());
 	return d;
+}
+
+void MarchingCubes::surface_face_z()
+{
+	float* f = pp.get_data();
+	float* n = nn.get_data();
+	for (unsigned int i = 0; i < pp.elem(); i += 3 ) {
+		if (f[i+2] == 0.5) continue;
+		Vec3f z(0,0,1.0);
+		Vec3f axis(-n[i+1],n[i],0);
+		axis.normalize();
+	
+		Dict d;
+		d["type"] = "spin";
+		d["Omega"] =  90.f;
+		d["n1"] = axis[0];
+		d["n2"] = axis[1];
+		d["n3"] = 0;
+		Transform t(d);
+		Vec3f delta = t*z;
+		
+		f[i] += delta[0]*.25;
+		f[i+1] += delta[1]*.25;
+		f[i+2] = 0.5;
+	}
+	
+	for (unsigned int i = 0; i < nn.elem(); i += 3 ) {
+		n[i] = 0;
+		n[i+1] = 0;
+		n[i+2] = 1;
+	}
 }
 
 void MarchingCubes::set_data(EMData* data)
@@ -468,11 +501,13 @@ void MarchingCubes::marching_cube(int fX, int fY, int fZ, int cur_level)
 			memcpy(&pts[iCorner][0],  &asEdgeVertex[iVertex][0], 3*sizeof(float));
 		}
 
+		
+		
 		float v1[3] = {pts[1][0]-pts[0][0],pts[1][1]-pts[0][1],pts[1][2]-pts[0][2]};
 		float v2[3] = {pts[2][0]-pts[1][0],pts[2][1]-pts[1][1],pts[2][2]-pts[1][2]};
-
+		
 		float n[3] = { v1[1]*v2[2] - v1[2]*v2[1], v1[2]*v2[0] - v1[0]*v2[2], v1[0]*v2[1] - v1[1]*v2[0] };
-
+		
 		for(iCorner = 0; iCorner < 3; iCorner++)
 		{
 			// Without vertex normalization

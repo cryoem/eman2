@@ -96,7 +96,7 @@ namespace EMAN
 		* Uses OpenGL arrays for maximum performance
 		* @return an OpenGL display list number
 		*/
-		static unsigned long get_isosurface_dl(MarchingCubes* mc, unsigned int tex_id = 0);
+		static unsigned long get_isosurface_dl(MarchingCubes* mc, unsigned int tex_id = 0, bool surface_face_z = false);
 	};
 }
 

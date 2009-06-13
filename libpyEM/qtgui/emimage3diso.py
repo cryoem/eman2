@@ -123,9 +123,9 @@ class EMIsosurfaceModule(EMImage3DGUIModule):
 		normalize = glIsEnabled(GL_NORMALIZE)
 		
 		
-#		glEnable(GL_CULL_FACE)
-#		glCullFace(GL_BACK)
-		glDisable(GL_CULL_FACE)
+		glEnable(GL_CULL_FACE)
+		glCullFace(GL_BACK)
+		#glDisable(GL_CULL_FACE)
 		glEnable(GL_DEPTH_TEST)
 		glEnable(GL_NORMALIZE)
 		#glDisable(GL_NORMALIZE)
@@ -212,11 +212,15 @@ class EMIsosurfaceModule(EMImage3DGUIModule):
 		if ( self.texture ):
 			if ( self.tex_name == 0 ):
 				self.update_data_and_texture()
-				
+		
+		face_z = False
+		if self.data.get_zsize() <= 2:
+			face_z = True
+		
 		if ( self.texture  ):
-			self.isodl = GLUtil.get_isosurface_dl(self.isorender, self.tex_name)
+			self.isodl = GLUtil.get_isosurface_dl(self.isorender, self.tex_name,face_z)
 		else:
-			self.isodl = GLUtil.get_isosurface_dl(self.isorender, 0)
+			self.isodl = GLUtil.get_isosurface_dl(self.isorender, 0,face_z)
 		#time2 = clock()
 		#dt1 = time2 - time1
 		#print "It took %f to render the isosurface" %dt1

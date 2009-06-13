@@ -584,7 +584,6 @@ def EMSelectorTemplate(Type):
 	#			action = QtGui.QAction(k,menu)
 	#			action.items = selected_items
 				menu.addAction(k)
-			
 			if multi_images_all_same_dims:
 				# These are customized actions that somewhat break the modularity, but I don't think it's too bad
 				menu.addSeparator()

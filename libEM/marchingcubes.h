@@ -233,7 +233,7 @@ namespace EMAN
 		*/
 		Dict get_isosurface();
 
-
+		void surface_face_z();
 	private:
 		map<int, int> point_map;
 		unsigned long _isodl;
@@ -244,7 +244,8 @@ namespace EMAN
 		* programmers
 		*/
 		bool calculate_min_max_vals();
-
+		
+	
 		/** Clear the minimum and maximum value search trees
 		* Frees memory in the minvals and maxvals
 		*/
