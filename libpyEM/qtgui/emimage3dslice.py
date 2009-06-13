@@ -75,10 +75,21 @@ class EM3DSliceViewerModule(EMImage3DGUIModule):
 		self.forceuse2dtextures = True	# This placed here by David Woolford - we get better performance
 		
 		self.track = False
-		
+		self.bright = 0
+		self.contrast = 1.0
+		self.busy = True
 		if image :
 			self.set_data(image)
-	
+			
+	def set_contrast(self,val):
+		self.contrast = val
+		self.generate_current_display_list()
+		self.updateGL()
+	def set_brightness(self,val):
+		self.bright = val
+		self.generate_current_display_list()
+		self.updateGL()
+		
 #	def __del__(self):
 #		print "slice died"
 	
@@ -105,7 +116,7 @@ class EM3DSliceViewerModule(EMImage3DGUIModule):
 		self.rank = 1
 		
 		self.glflags = EMOpenGLFlagsAndTools()		# OpenGL flags - this is a singleton convenience class for testing texture support
-	
+		
 	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
 		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
 	
@@ -118,13 +129,13 @@ class EM3DSliceViewerModule(EMImage3DGUIModule):
 			print "Error, the data is not 3D"
 			return
 		
-		self.data = data.copy()
-		
-		min = self.data.get_attr("minimum")
-		max = self.data.get_attr("maximum")
-		
-		self.data.add(-min)
-		self.data.mult(1/(max-min))
+#		self.data = data.copy()
+#		
+#		min = self.data.get_attr("minimum")
+#		max = self.data.get_attr("maximum")
+#		
+#		self.data.add(-min)
+#		self.data.mult(1/(max-min))
 
 		self.generate_current_display_list()
 		self.updateGL()
@@ -133,28 +144,33 @@ class EM3DSliceViewerModule(EMImage3DGUIModule):
 	def set_data(self,data,fact=1.0):
 		"""Pass in a 3D EMData object"""
 		
+		self.busy = True
 		if data==None:
 			print "Error, the data is empty"
 			return
 		
 		if (isinstance(data,EMData) and data.get_zsize()<=1) :
 			print "Error, the data is not 3D"
+			self.busy = False
 			return
 		
 		self.data = data
 		
 		min = self.data.get_attr("minimum")
 		max = self.data.get_attr("maximum")
-		
-		self.data.add(-min)
-		self.data.mult(1/(max-min))
+#		
+#		self.data.add(-min)
+#		self.data.mult(1/(max-min))
+		self.bright = -min
+		if max != min:	self.contrast = 1.0/(max-min)
 		
 		if not self.inspector or self.inspector ==None:
 			self.inspector=EM3DSliceInspector(self)
-
-		hist = self.data.calc_hist(256,0,1.0)
+		
+		self.inspector.set_contrast_bright(self.contrast,self.bright)
+		hist = self.data.calc_hist(256,0,1.0,self.bright,self.contrast)
 		self.inspector.set_hist(hist,0,1.0) 
-
+		
 		self.slice = data.get_zsize()/2
 		self.zslice = data.get_zsize()/2
 		self.yslice = data.get_ysize()/2
@@ -168,7 +184,7 @@ class EM3DSliceViewerModule(EMImage3DGUIModule):
 		from emimage3d import EMImage3DGeneralWidget
 		if isinstance(self.gl_context_parent,EMImage3DGeneralWidget):
 			self.gl_context_parent.set_camera_defaults(self.data)
-		
+		self.busy = False
 	def get_eman_transform(self,p):
 		
 		if ( p[2] == 0 ):
@@ -206,68 +222,15 @@ class EM3DSliceViewerModule(EMImage3DGUIModule):
 			return EMData(self.data.get_xsize(),self.data.get_zsize())
 
 	def generate_current_display_list(self):
-		
+		if self.busy: return
 		if ( self.tex_dl != 0 ): glDeleteLists( self.tex_dl, 1)
 		
 		self.tex_dl = glGenLists(1)
 
 		if (self.tex_dl == 0): return #OpenGL is initialized yet
-		
-		if ( self.glflags.threed_texturing_supported() and not self.forceuse2dtextures ):
-			self.get_3D_texture()
-		else:
-			self.gen_2D_texture()
-	
-	def get_3D_texture(self):
-		glNewList(self.tex_dl,GL_COMPILE)
-		
-		if ( self.tex_name != 0 ): glDeleteTextures(self.tex_name)
-		
-		self.tex_name = self.glflags.gen_textureName(self.data)
-		
-		glEnable(GL_TEXTURE_3D)
-		glBindTexture(GL_TEXTURE_3D, self.tex_name)
-		#glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
-		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP)
-		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP)
-		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP)
-		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-		if ( not data_dims_power_of(self.data,2) and self.glflags.npt_textures_unsupported()):
-			glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR)
-		else:
-			glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
-			
-		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
-		
-		glPushMatrix()
-		glTranslate(0.5,0.5,0.5)
-		
-		glBegin(GL_QUADS)
-		
-		n = self.get_dimension_size()
-		v = self.axes[self.axes_idx]
-		[t,alt,phi] = self.get_eman_transform(v)
-		v1 = t*Vec3f(-0.5,-0.5,0)
-		v2 = t*Vec3f(-0.5, 0.5,0)
-		v3 = t*Vec3f( 0.5, 0.5,0)
-		v4 = t*Vec3f( 0.5,-0.5,0)
-		vecs = [v1,v2,v3,v4]
-		nn = float(self.slice)/float(n)
 
-		trans = (nn-0.5)*v
-		
-		for r in vecs:
-		
-			w = [r[0] + trans[0], r[1] + trans[1], r[2] + trans[2]]
-			t = [w[0]+0.5,w[1]+0.5,w[2]+0.5]
-			glTexCoord3fv(t)
-			glVertex3fv(w)
-			
-		glEnd()
-		glPopMatrix()
-		glDisable(GL_TEXTURE_3D)
-		
-		glEndList()
+		self.gen_2D_texture()
+	
 		
 	def gen_2D_texture(self):
 		glNewList(self.tex_dl,GL_COMPILE)
@@ -287,6 +250,12 @@ class EM3DSliceViewerModule(EMImage3DGUIModule):
 			tmp = self.get_correct_dims_2d_emdata()
 			tmp.cut_slice(self.data,t,True)
 			
+		tmp.add(self.bright)
+		tmp.mult(self.contrast)
+		
+		hist = tmp.calc_hist(256,0,1.0,self.bright,self.contrast)
+		self.inspector.set_hist(hist,0,1.0) 
+		
 		if ( self.tex_name != 0 ): glDeleteTextures(self.tex_name)
 		self.tex_name = 0
 		
@@ -330,6 +299,7 @@ class EM3DSliceViewerModule(EMImage3DGUIModule):
 		glEndList()
 		
 	def render(self):
+		if self.busy: return
 		lighting = glIsEnabled(GL_LIGHTING)
 		cull = glIsEnabled(GL_CULL_FACE)
 		polygonmode = glGetIntegerv(GL_POLYGON_MODE)
@@ -510,6 +480,13 @@ class EM3DSliceInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.axisCombo, QtCore.SIGNAL("currentIndexChanged(QString)"), target.setAxis)
 		QtCore.QObject.connect(self.cubetog, QtCore.SIGNAL("toggled(bool)"), target.toggle_cube)
 		QtCore.QObject.connect(self.defaults, QtCore.SIGNAL("clicked(bool)"), self.set_defaults)
+		QtCore.QObject.connect(self.contrast, QtCore.SIGNAL("valueChanged"), target.set_contrast)
+		QtCore.QObject.connect(self.bright, QtCore.SIGNAL("valueChanged"), target.set_brightness)
+	
+	def set_contrast_bright(self,c,b):
+		self.contrast.setValue(c)
+		self.bright.setValue(b)
+	
 	
 	def update_rotations(self,t3d):
 		self.transform_panel.update_rotations(t3d)
@@ -557,6 +534,18 @@ class EM3DSliceInspector(QtGui.QWidget):
 		self.axisCombo.addItem(' x ')
 		self.axisCombo.addItem(' track ')
 		self.hbl_slice.addWidget(self.axisCombo)
+		
+		
+		self.contrast = ValSlider(maintab,(0.0,20.0),"Cont:")
+		self.contrast.setObjectName("contrast")
+		self.contrast.setValue(1.0)
+		maintab.vbl.addWidget(self.contrast)
+
+		self.bright = ValSlider(maintab,(-5.0,5.0),"Brt:")
+		self.bright.setObjectName("bright")
+		self.bright.setValue(0.1)
+		self.bright.setValue(0.0)
+		maintab.vbl.addWidget(self.bright)
 		
 		self.glcontrast = ValSlider(maintab,(1.0,5.0),"GLShd:")
 		self.glcontrast.setObjectName("GLShade")

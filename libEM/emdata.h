@@ -626,7 +626,7 @@ namespace EMAN
 		 * @param hist_max Maximum histogram value.
 		 * @return histogram array of this image.
 		 */
-		vector <float> calc_hist(int hist_size = 128, float hist_min = 0, float hist_max = 0);
+		vector <float> calc_hist(int hist_size = 128, float hist_min = 0, float hist_max = 0, const float& brt = 0.0f, const float& cont = 1.0f);
 
 
 		/** Caculates the azimuthal distributions.

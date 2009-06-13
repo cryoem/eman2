@@ -300,6 +300,7 @@ class EMVolumeModule(EMImage3DGUIModule):
 		
 		t3d = self.vdtools.getEmanMatrix()
 		
+		
 		point = Vec3f(0,0,1)
 		
 		point = point*t3d
@@ -317,11 +318,13 @@ class EMVolumeModule(EMImage3DGUIModule):
 		
 		closest = 2*pi
 		lp = point.length()
+		point.normalize()
 		idx = 0
 		for i in self.axes:
 			try:
 				angle = abs(acos(point.dot(i)))
-			except: 
+			except:
+				t3d.printme()
 				print 'warning, there is a bug in the volume render which may cause incorrect rendering'
 				return
 			if (angle < closest):
@@ -359,7 +362,8 @@ class EMVolumeModule(EMImage3DGUIModule):
 		vecs = [v1,v2,v3,v4]
 		total = self.texsample*n
 		self.data.add(self.brightness)
-		self.data.mult(self.contrast*1.0/total)
+		if self.contrast != 0:
+			self.data.mult(self.contrast*1.0/total)
 		if ( self.force_texture_update ):
 			if self.tex_name != 0:
 				glDeleteTextures(self.tex_name)
@@ -410,7 +414,7 @@ class EMVolumeModule(EMImage3DGUIModule):
 		glDisable(GL_TEXTURE_3D)
 		glEndList()
 		
-		self.data.mult(total*1.0/self.contrast)
+		if self.contrast != 0:	self.data.mult(total*1.0/self.contrast)
 		self.data.add(-self.brightness)
 		
 		

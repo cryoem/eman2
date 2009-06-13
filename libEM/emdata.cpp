@@ -2016,7 +2016,7 @@ EMData *EMData::calc_mutual_correlation(EMData * with, bool tocenter, EMData * f
 }
 
 
-vector < float > EMData::calc_hist(int hist_size, float histmin, float histmax)
+vector < float > EMData::calc_hist(int hist_size, float histmin, float histmax,const float& brt, const float& cont)
 {
 	ENTERFUNC;
 
@@ -2071,7 +2071,10 @@ vector < float > EMData::calc_hist(int hist_size, float histmin, float histmax)
 		float w = (float)n / (histmax - histmin);
 
 		for(size_t i=0; i<=size-di; i += di) {
-			int j = Util::round((data[i] - histmin) * w);
+			float val;
+			if (cont != 1.0f || brt != 0)val = cont*(data[i]+brt);
+			else val = data[i];
+			int j = Util::round((val - histmin) * w);
 			if (j >= 0 && j < (int) n) {
 				hist[j] += 1;
 			}

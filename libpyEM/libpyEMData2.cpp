@@ -153,6 +153,7 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_calc_mutual_correlation_overl
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_unwrap_overloads_0_7, unwrap, 0, 7)
 
+
 #ifdef EMAN2_USING_CUDA
 //BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_unwrap_cuda_overloads_0_6, unwrap_cuda, 0, 6)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_get_clip_cuda_overloads_1_2, get_clip_cuda, 1, 2)
@@ -161,7 +162,7 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_do_ift_cuda_overloads_0_1, do
 #endif //EMAN2_USING_CUDA
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_apply_radial_func_overloads_3_4, apply_radial_func, 3, 4)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_calc_hist_overloads_0_3, calc_hist, 0, 3)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_calc_hist_overloads_0_5, calc_hist, 0, 5)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_calc_dist_overloads_1_2, calc_dist, 1, 2)
 
@@ -479,7 +480,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("calc_radial_dist", (std::vector<float,std::allocator<float> > (EMAN::EMData::*)(int, float, float, int, bool) )&EMAN::EMData::calc_radial_dist)
 	.def("cconj", &EMAN::EMData::cconj)
 	.def("add_incoherent", &EMAN::EMData::add_incoherent)
-	.def("calc_hist", &EMAN::EMData::calc_hist, EMAN_EMData_calc_hist_overloads_0_3())
+	.def("calc_hist", &EMAN::EMData::calc_hist, EMAN_EMData_calc_hist_overloads_0_5())
 	.def("calc_az_dist", &EMAN::EMData::calc_az_dist)
 	.def("calc_dist", &EMAN::EMData::calc_dist, EMAN_EMData_calc_dist_overloads_1_2())
 	.def("calc_flcf", &EMAN::EMData::calc_flcf, return_value_policy< manage_new_object >())

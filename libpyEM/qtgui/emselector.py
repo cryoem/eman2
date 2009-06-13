@@ -107,7 +107,6 @@ def EMSelectorTemplate(Type):
 			
 			self.__init_filter_combo()
 			
-			
 			self.current_force = None # use to keep track of what is currently being forced, either 2D plotting, 2D image showing, or neither
 			self.selections = []
 			self.current_list_widget = None
@@ -159,10 +158,10 @@ def EMSelectorTemplate(Type):
 				self.bottom_hbl2.addWidget(self.preview_options,0)
 				self.hbl.addLayout(self.bottom_hbl2)
 				
-				self.__init__force_2d_tb()
-				self.__init__force_plot_tb()
-				self.bottom_hbl2.addWidget(self.force_2d,0)
-				self.bottom_hbl2.addWidget(self.force_plot,0)
+#				self.__init__force_2d_tb()
+#				self.__init__force_plot_tb()
+#				self.bottom_hbl2.addWidget(self.force_2d,0)
+#				self.bottom_hbl2.addWidget(self.force_plot,0)
 				
 				self.bottom_hbl3 = QtGui.QHBoxLayout()
 				self.__init_plot_options()
@@ -333,12 +332,12 @@ def EMSelectorTemplate(Type):
 			else:
 				self.groupbox.setEnabled(False)
 				
-			if str(qstring) == "No preview":
-				self.force_2d.setEnabled(False)
-				self.force_plot.setEnabled(False)
-			else:
-				self.force_2d.setEnabled(True)
-				self.force_plot.setEnabled(True)
+#			if str(qstring) == "No preview":
+#				self.force_2d.setEnabled(False)
+#				self.force_plot.setEnabled(False)
+#			else:
+#				self.force_2d.setEnabled(True)
+#				self.force_plot.setEnabled(True)
 		
 		def previews_allowed(self):
 			if self.dialog_mode: return False
@@ -358,35 +357,35 @@ def EMSelectorTemplate(Type):
 			QtCore.QObject.connect(self.ok_button, QtCore.SIGNAL("clicked(bool)"),self.ok_button_clicked)
 			QtCore.QObject.connect(self.cancel_button, QtCore.SIGNAL("clicked(bool)"),self.cancel_button_clicked)
 		
-		def __init__force_2d_tb(self):
-			self.force_2d = QtGui.QCheckBox("Force 2D")
-			self.force_2d.setChecked(False)
-			self.force_2d.setEnabled(False)
-			
-			QtCore.QObject.connect(self.force_2d, QtCore.SIGNAL("clicked(bool)"),self.force_2d_clicked)
-			
-		def __init__force_plot_tb(self):
-			self.force_plot = QtGui.QCheckBox("Force plot")
-			self.force_plot.setChecked(False)
-			self.force_plot.setEnabled(False)
-			
-			QtCore.QObject.connect(self.force_plot, QtCore.SIGNAL("clicked(bool)"),self.force_plot_clicked)
+#		def __init__force_2d_tb(self):
+#			self.force_2d = QtGui.QCheckBox("Force 2D")
+#			self.force_2d.setChecked(False)
+#			self.force_2d.setEnabled(False)
+#			
+#			QtCore.QObject.connect(self.force_2d, QtCore.SIGNAL("clicked(bool)"),self.force_2d_clicked)
+#			
+#		def __init__force_plot_tb(self):
+#			self.force_plot = QtGui.QCheckBox("Force plot")
+#			self.force_plot.setChecked(False)
+#			self.force_plot.setEnabled(False)
+#			
+#			QtCore.QObject.connect(self.force_plot, QtCore.SIGNAL("clicked(bool)"),self.force_plot_clicked)
 		
-		def force_2d_clicked(self):
-			self.force_clicked(self.force_2d)
-			
-		def force_plot_clicked(self):
-			self.force_clicked(self.force_plot)
+#		def force_2d_clicked(self):
+#			self.force_clicked(self.force_2d)
+#			
+#		def force_plot_clicked(self):
+#			self.force_clicked(self.force_plot)
 		
-		def force_clicked(self,f):
-			if self.current_force == None:
-				self.current_force = f
-			elif f == self.current_force:
-				self.current_force = None
-				return
-			else:
-				self.current_force.setChecked(False)
-				self.current_force = f
+#		def force_clicked(self,f):
+#			if self.current_force == None:
+#				self.current_force = f
+#			elif f == self.current_force:
+#				self.current_force = None
+#				return
+#			else:
+#				self.current_force.setChecked(False)
+#				self.current_force = f
 	
 		def single_preview_clicked(self,bool):
 			pass
@@ -590,24 +589,37 @@ def EMSelectorTemplate(Type):
 				# These are customized actions that somewhat break the modularity, but I don't think it's too bad
 				menu.addSeparator()
 				menu.addAction("Save As Stack")
-				if nz == 1: 
+				if nz == 1 and not self.dialog_mode: 
 					menu.addAction("Preview Subset")
 					if len(selected_items) < 256:
 						menu.addAction("View Subset In 3D")
-			elif md != None and len(selected_items) == 1:
-				if nz > 1:
+			elif not self.dialog_mode: # dialog mode stops all previews
+				if md != None and len(selected_items) == 1:
+					if nz > 1:
+						menu.addSeparator()
+						menu2 = QtGui.QMenu("Open With")
+						menu2.addAction(self.emdata_3d_icon,"Volume Viewer")
+						menu2.addAction(self.emdata_3d_icon,"Slice Viewer")
+						menu2.addAction(self.emdata_icon,"Single 2D")
+						menu2.addAction(self.emdata_matrix_icon,"Multi 2D")
+						menu2.addAction(self.plot_icon,"Plot 2D")
+						menu.addMenu(menu2)
+					elif nz == 1:
+						menu.addSeparator()
+						menu2 = QtGui.QMenu("Open With")
+						menu2.addAction(self.plot_icon,"2D Plot")
+						if ny < 1025 and nx < 1025:
+							menu2.addAction(self.emdata_3d_icon,"3D Viewer")
+							menu.addMenu(menu2)
+				elif len(selected_items) == 1 and selected_items[0].is_2d_stack():
 					menu.addSeparator()
 					menu2 = QtGui.QMenu("Open With")
-					menu2.addAction(self.emdata_3d_icon,"Volume Viewer")
-					menu2.addAction(self.emdata_3d_icon,"Slice Viewer")
 					menu2.addAction(self.emdata_icon,"Single 2D")
-					menu2.addAction(self.emdata_matrix_icon,"Multi 2D")
+					if EMUtil.get_image_count(selected_items[0].get_path()) < 1001:
+						menu2.addAction(self.plot_icon,"2D Plot")
+						menu2.addAction(self.emdata_3d_icon,"3D Viewer")
 					menu.addMenu(menu2)
-				elif nz == 1 and ny < 1025 and nx < 1025:
-					menu.addSeparator()
-					menu2 = QtGui.QMenu("Open With")
-					menu2.addAction(self.emdata_3d_icon,"3D Viewer")
-					menu.addMenu(menu2)
+				
 	#		if nz == 1 and ny > 1:	menu.addAction("Open in e2boxer")
 				
 			QtCore.QObject.connect(menu,QtCore.SIGNAL("triggered(QAction*)"),self.menu_action_triggered)
@@ -632,7 +644,10 @@ def EMSelectorTemplate(Type):
 				for item in self.menu_selected_items:
 					data.append(item.get_emdata())
 				self.preview_data(data,"")
-				
+			elif action.text() == "2D Plot" or action.text() == "Plot 2D":
+				get_application().setOverrideCursor(Qt.BusyCursor)
+				self.preview_plot( self.menu_selected_items[0].get_path())
+				get_application().setOverrideCursor(Qt.ArrowCursor)
 			elif action.text() == "View Subset In 3D":
 				data1 = self.menu_selected_items[0].get_emdata()
 				new_data = EMData(data1.get_xsize(),data1.get_ysize(),len(self.menu_selected_items))
@@ -675,14 +690,23 @@ def EMSelectorTemplate(Type):
 				get_application().setOverrideCursor(Qt.ArrowCursor)
 			elif action.text() == "3D Viewer":
 				from emimage3d import EMImage3DModule
+				from emimagemx import EMDataListCache
 				item = self.menu_selected_items[0]
 				get_application().setOverrideCursor(Qt.BusyCursor)
 				data = item.get_emdata()
-				if data.get_zsize() == 1:
+				if isinstance(data,EMDataListCache):
+					data0 = data[0]
+					new_data = EMData(data0.get_xsize(),data0.get_ysize(), len(data))
+					new_data.insert_clip(data0,[0,0,0])
+					for i in xrange(1,len(data)):
+						new_data.insert_clip(data[i],[0,0,i])
+					data = new_data
+				elif data.get_zsize() == 1:
 					new_data = EMData(data.get_xsize(),data.get_ysize(),2)
 					new_data.insert_clip(data,[0,0,0])
 					new_data.insert_clip(data,[0,0,1])
 					data = new_data
+				 
 					
 				self.preview_item_explicit(data,EMImage3DModule)
 				get_application().setOverrideCursor(Qt.ArrowCursor)
@@ -1045,15 +1069,15 @@ def EMSelectorTemplate(Type):
 			using_file_names_only = False
 			if a == None: using_file_names_only = True # For the image matrix, you can load large image stacks if you specify only the file name
 			
-			f_2d = self.force_2d.isChecked()
-			f_plot = self.force_plot.isChecked()
+#			f_2d = self.force_2d.isChecked()
+#			f_plot = self.force_plot.isChecked()
 			
 			if self.single_preview_only() and len(self.previews) != 0:
 				old_preview = self.previews[-1] # this means we always choose the last preview if the user suddenly goes from multipreview to single preview
 				if not using_file_names_only:
-					preview = EMImageModule(data=a,app=get_application(),force_2d=f_2d,force_plot=f_plot,old=old_preview,filename=filename,replace=self.replace.isChecked())
+					preview = EMImageModule(data=a,app=get_application(),old=old_preview,filename=filename,replace=self.replace.isChecked())
 				else:
-					preview = EMModuleFromFile(filename,application=get_application(), force_2d=f_2d,force_plot=f_plot,old=old_preview)
+					preview = EMModuleFromFile(filename,application=get_application(),old=old_preview)
 				if preview != old_preview:
 					self.module_closed(old_preview)
 					old_preview.closeEvent(None)
@@ -1063,9 +1087,9 @@ def EMSelectorTemplate(Type):
 					except: pass
 			else:
 				if not using_file_names_only:
-					preview = EMImageModule(data=a,app=get_application(),force_2d=f_2d,force_plot=f_plot,filename=filename)
+					preview = EMImageModule(data=a,app=get_application(),filename=filename)
 				else:
-					preview = EMModuleFromFile(filename,application=get_application(), force_2d=f_2d,force_plot=f_plot)
+					preview = EMModuleFromFile(filename,application=get_application())
 				self.previews.append(preview)
 				self.module_events.append(ModuleEventsManager(self,preview))
 				try: preview.optimally_resize()
@@ -1096,7 +1120,7 @@ def EMSelectorTemplate(Type):
 			self.module_events.append(ModuleEventsManager(self,preview))
 			get_application().show_specific(preview)
 			get_application().setOverrideCursor(Qt.ArrowCursor)
-				
+		
 		def module_closed(self,module):
 			import sys
 			for i,mod in enumerate(self.previews):
@@ -1498,6 +1522,12 @@ class EMListingItem:
 		supposed to return an EMData object, if possible
 		'''
 		return None
+	
+	def is_2d_stack(self):
+		'''
+		A convenient to ask if a particular item is a 2D stack
+		'''
+		return False
 
 class EMFSListingItem(EMListingItem):
 	def __init__(self,type,full_name):
@@ -1539,6 +1569,8 @@ class EMFS2DImageStackItem(EMFSListingItem):
 		'''This one returns a list'''
 		from emimagemx import EMDataListCache
 		return EMDataListCache(self.full_path)
+	
+	def is_2d_stack(self): return True
 	
 class EMFS3DImageStackItem(EMFSListingItem):
 	def __init__(self,type,full_name):
@@ -1874,9 +1906,16 @@ class EMDBListing:
 				#n = DB[f[0]]["maxrec"]
 				n = db["maxrec"]
 				if n >= 1:
-					a = QtGui.QListWidgetItem(self.target().emdata_matrix_icon,f[0],list_widget)
-					b = EMDB2DImageStackItem(self.db_mx,db_directory,f[0])
-					accrue_public_attributes(a,b)
+					d = db.get_header(0)
+					if d["nz"] == 1:
+						a = QtGui.QListWidgetItem(self.target().emdata_matrix_icon,f[0],list_widget)
+						b = EMDB2DImageStackItem(self.db_mx,db_directory,f[0])
+						accrue_public_attributes(a,b)
+					elif d["nz"] > 1:
+						a = QtGui.QListWidgetItem(self.target().emdata_matrix_3d_icon,f[0],list_widget)
+						b = EMDB3DImageStackItem(self.db_mx,db_directory,f[0])
+						accrue_public_attributes(a,b)
+						
 				elif n == 0:
 					#d = DB[f[0]].get_header(0)
 					d = db.get_header(0)
@@ -2188,6 +2227,35 @@ class EMDB2DImageStackItem(EMListingItem):
 	def get_emdata(self):
 		from emimagemx import EMDataListCache
 		return EMDataListCache(self.get_path())
+	
+	def get_path(self):
+		return "bdb:"+self.database_directory+"#"+self.database
+	
+	def is_2d_stack(self): return True
+	
+class EMDB3DImageStackItem(EMListingItem):
+	'''
+	This class is untested... :/
+	'''
+	def __init__(self,type,db_directory,db):
+		EMListingItem.__init__(self)
+		self.type_of_me = type
+		self.database_directory = db_directory
+		self.database = db
+		
+		self.context_menu_options["Delete"] = self.delete
+	
+	def delete(self,target):
+		db_name = self.get_path()
+		try:
+			remove_file(db_name)
+			return True
+		except: return False
+		
+	def save_as(self,target):
+		save_data(self.get_emdata())
+#		db_name = self.get_path()
+#		return save_as(db_name,target.application())
 	
 	def get_path(self):
 		return "bdb:"+self.database_directory+"#"+self.database

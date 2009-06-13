@@ -2757,6 +2757,10 @@ class EMDataListCache:
 					except: pass
 		return self.ysize
 	
+	def get_zsize(self): return 1
+	
+	def is_complex(self): return False
+	
 	def get_image_header(self,idx):
 		if self.mode == EMDataListCache.FILE_MODE:
 			if len(self.file_name) > 3 and self.file_name[:4] == "bdb:":
@@ -2768,7 +2772,6 @@ class EMDataListCache:
 				return e.get_attr_dict()
 		elif self.mode == EMDataListCache.LIST_MODE:
 			return self.images[idx].get_attr_dict()
-
 	
 	def get_image_keys(self):
 		if self.keys == None:
@@ -3059,6 +3062,9 @@ class EM3DDataListCache:
 
 	def get_ysize(self):
 		return self.ny
+	
+	def get_zsize(self):
+		return self.nz
 	
 	def get_image_header(self,idx):
 		if self.header ==None:
