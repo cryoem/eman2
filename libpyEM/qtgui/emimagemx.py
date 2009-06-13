@@ -898,6 +898,7 @@ class EMImageMXModule(EMGUIModule):
 				self.get_inspector()
 				self.inspector.enable_xyz()
 				self.data.set_xyz(str(self.inspector.xyz.currentText()))
+				filename = data_or_filename
 		else:
 			self.data = EMDataListCache(data_or_filename,cache_size)
 			self.get_inspector()

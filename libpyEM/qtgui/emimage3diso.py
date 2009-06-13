@@ -123,8 +123,9 @@ class EMIsosurfaceModule(EMImage3DGUIModule):
 		normalize = glIsEnabled(GL_NORMALIZE)
 		
 		
-		glEnable(GL_CULL_FACE)
-		glCullFace(GL_BACK)
+#		glEnable(GL_CULL_FACE)
+#		glCullFace(GL_BACK)
+		glDisable(GL_CULL_FACE)
 		glEnable(GL_DEPTH_TEST)
 		glEnable(GL_NORMALIZE)
 		#glDisable(GL_NORMALIZE)
@@ -232,7 +233,7 @@ class EMIsosurfaceModule(EMImage3DGUIModule):
 	def set_data(self,data):
 		"""Pass in a 3D EMData object"""
 		
-		if data==None or (isinstance(data,EMData) and data.get_zsize()<=1) :
+		if data==None:
 			print "Error, tried to set data that is invalid for EMIsosurface"
 			return
 		self.data=data

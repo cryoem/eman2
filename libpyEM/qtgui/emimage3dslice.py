@@ -277,9 +277,9 @@ class EM3DSliceViewerModule(EMImage3DGUIModule):
 		
 		[t,alt,phi] = self.get_eman_transform(v)
 			
-		nn = float(self.slice)/float(n)
-		trans = (nn-0.5)*v
-		t.set_trans(2.0*int(n/2)*trans)
+		nn = float(self.slice)/float(n-1)
+		trans = 2*(nn-0.5)*v
+		t.set_trans((n-1)/2*trans)
 	
 		if False and EMUtil.cuda_available(): # disable for the time being - big textures won't work on CPU
 			tmp = self.data.cut_slice_cuda(t)
@@ -298,11 +298,12 @@ class EM3DSliceViewerModule(EMImage3DGUIModule):
 		#glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-		if ( not data_dims_power_of(self.data,2) and self.glflags.npt_textures_unsupported()):
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR)
-		else:
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+#		if ( not data_dims_power_of(self.data,2) and self.glflags.npt_textures_unsupported()):
+#			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+#		else:
+#			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
 		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
 		
 			

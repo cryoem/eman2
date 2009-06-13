@@ -585,7 +585,6 @@ def EMSelectorTemplate(Type):
 	#			action = QtGui.QAction(k,menu)
 	#			action.items = selected_items
 				menu.addAction(k)
-				
 			
 			if multi_images_all_same_dims:
 				# These are customized actions that somewhat break the modularity, but I don't think it's too bad
@@ -593,15 +592,22 @@ def EMSelectorTemplate(Type):
 				menu.addAction("Save As Stack")
 				if nz == 1: 
 					menu.addAction("Preview Subset")
-			elif md != None and nz > 1 and len(selected_items) == 1:
-				menu.addSeparator()
-				menu2 = QtGui.QMenu("Open With")
-				menu2.addAction(self.emdata_3d_icon,"Volume Viewer")
-				menu2.addAction(self.emdata_3d_icon,"Slice Viewer")
-				menu2.addAction(self.emdata_icon,"Single 2D")
-				menu2.addAction(self.emdata_matrix_icon,"Multi 2D")
-				menu.addMenu(menu2)
-			
+					if len(selected_items) < 256:
+						menu.addAction("View Subset In 3D")
+			elif md != None and len(selected_items) == 1:
+				if nz > 1:
+					menu.addSeparator()
+					menu2 = QtGui.QMenu("Open With")
+					menu2.addAction(self.emdata_3d_icon,"Volume Viewer")
+					menu2.addAction(self.emdata_3d_icon,"Slice Viewer")
+					menu2.addAction(self.emdata_icon,"Single 2D")
+					menu2.addAction(self.emdata_matrix_icon,"Multi 2D")
+					menu.addMenu(menu2)
+				elif nz == 1 and ny < 1025 and nx < 1025:
+					menu.addSeparator()
+					menu2 = QtGui.QMenu("Open With")
+					menu2.addAction(self.emdata_3d_icon,"3D Viewer")
+					menu.addMenu(menu2)
 	#		if nz == 1 and ny > 1:	menu.addAction("Open in e2boxer")
 				
 			QtCore.QObject.connect(menu,QtCore.SIGNAL("triggered(QAction*)"),self.menu_action_triggered)
@@ -626,6 +632,17 @@ def EMSelectorTemplate(Type):
 				for item in self.menu_selected_items:
 					data.append(item.get_emdata())
 				self.preview_data(data,"")
+				
+			elif action.text() == "View Subset In 3D":
+				data1 = self.menu_selected_items[0].get_emdata()
+				new_data = EMData(data1.get_xsize(),data1.get_ysize(),len(self.menu_selected_items))
+				new_data.insert_clip(data1,[0,0,0])
+				for i in xrange(1,len(self.menu_selected_items)):
+					new_data.insert_clip(self.menu_selected_items[i].get_emdata(),[0,0,i])
+					
+				from emimage3d import EMImage3DModule
+				self.preview_item_explicit(new_data,EMImage3DModule)
+				get_application().setOverrideCursor(Qt.ArrowCursor)
 			elif action.text() == "Multi 2D":
 				from emimagemx import EMImageMXModule
 				item = self.menu_selected_items[0]
@@ -655,6 +672,19 @@ def EMSelectorTemplate(Type):
 				data = item.get_emdata()
 				data.process_inplace("normalize")
 				self.preview_item_explicit(data,EM3DSliceViewerModule)
+				get_application().setOverrideCursor(Qt.ArrowCursor)
+			elif action.text() == "3D Viewer":
+				from emimage3d import EMImage3DModule
+				item = self.menu_selected_items[0]
+				get_application().setOverrideCursor(Qt.BusyCursor)
+				data = item.get_emdata()
+				if data.get_zsize() == 1:
+					new_data = EMData(data.get_xsize(),data.get_ysize(),2)
+					new_data.insert_clip(data,[0,0,0])
+					new_data.insert_clip(data,[0,0,1])
+					data = new_data
+					
+				self.preview_item_explicit(data,EMImage3DModule)
 				get_application().setOverrideCursor(Qt.ArrowCursor)
 			elif action.text() == "Open in e2boxer":
 				names = []

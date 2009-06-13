@@ -521,7 +521,7 @@ class EMImage2DModule(EMGUIModule):
 		
 	def __del__(self):
 		self.clear_gl_memory()
-	
+
 	def clear_gl_memory(self):
 		if (self.shapelist != 0):
 			glDeleteLists(self.shapelist,1)

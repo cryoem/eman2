@@ -3581,16 +3581,52 @@ void EMData::cut_slice(const EMData *const map, const Transform& transform, bool
 				continue;
 			}
 			if (interpolate) {
-				if ( xx > map_nx - 2 || yy > map_ny - 2 || zz > map_nz - 2) {
+				if ( xx > map_nx - 1 || yy > map_ny - 1 || zz > map_nz - 1) {
 					ddata[l] = 0;
 					continue;
 				}
 				int k = (int) (Util::fast_floor(xx) + Util::fast_floor(yy) * map_nx + Util::fast_floor(zz) * map_nxy);
 
-				ddata[l] = Util::trilinear_interpolate(sdata[k],
-						sdata[k + 1], sdata[k + map_nx],sdata[k + map_nx + 1],
-						sdata[k + map_nxy], sdata[k + map_nxy + 1], sdata[k + map_nx + map_nxy],
-						sdata[k + map_nx + map_nxy + 1],t, u, v);
+
+				if (xx < (map_nx - 1) && yy < (map_ny - 1) && zz < (map_nz - 1)) {
+					ddata[l] = Util::trilinear_interpolate(sdata[k],
+								sdata[k + 1], sdata[k + map_nx],sdata[k + map_nx + 1],
+								sdata[k + map_nxy], sdata[k + map_nxy + 1], sdata[k + map_nx + map_nxy],
+								sdata[k + map_nx + map_nxy + 1],t, u, v);
+				}
+				else if ( xx == (map_nx - 1) && yy == (map_ny - 1) && zz == (map_nz - 1) ) {
+					ddata[l] += sdata[k];
+				}
+				else if ( xx == (map_nx - 1) && yy == (map_ny - 1) ) {
+					ddata[l] +=	Util::linear_interpolate(sdata[k], sdata[k + map_nxy],v);
+				}
+				else if ( xx == (map_nx - 1) && zz == (map_nz - 1) ) {
+					ddata[l] += Util::linear_interpolate(sdata[k], sdata[k + map_nx],u);
+				}
+				else if ( yy == (map_ny - 1) && zz == (map_nz - 1) ) {
+					ddata[l] += Util::linear_interpolate(sdata[k], sdata[k + 1],t);
+				}
+				else if ( xx == (map_nx - 1) ) {
+					ddata[l] += Util::bilinear_interpolate(sdata[k], sdata[k + map_nx], sdata[k + map_nxy], sdata[k + map_nxy + map_nx],u,v);
+				}
+				else if ( yy == (map_ny - 1) ) {
+					ddata[l] += Util::bilinear_interpolate(sdata[k], sdata[k + 1], sdata[k + map_nxy], sdata[k + map_nxy + 1],t,v);
+				}
+				else if ( zz == (map_nz - 1) ) {
+					ddata[l] += Util::bilinear_interpolate(sdata[k], sdata[k + 1], sdata[k + map_nx], sdata[k + map_nx + 1],t,u);
+				}
+
+//				if (k >= map->get_size()) {
+//					cout << xx << " " << yy << " " <<  zz << " " << endl;
+//					cout << k << " " << get_size() << endl;
+//					cout << get_xsize() << " " << get_ysize() << " " << get_zsize() << endl;
+//					throw;
+//					}
+//
+//				ddata[l] = Util::trilinear_interpolate(sdata[k],
+//						sdata[k + 1], sdata[k + map_nx],sdata[k + map_nx + 1],
+//						sdata[k + map_nxy], sdata[k + map_nxy + 1], sdata[k + map_nx + map_nxy],
+//						sdata[k + map_nx + map_nxy + 1],t, u, v);
 			}
 			else {
 				if ( xx > map_nx - 1 || yy > map_ny - 1 || zz > map_nz - 1) {

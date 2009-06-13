@@ -81,8 +81,8 @@ class EMImage3DGeneralWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionVi
 		
 	def set_camera_defaults(self,data):
 		if isinstance(data,EMData):
-			self.cam.default_z = -1.25*data.get_zsize()
-			self.cam.cam_z = -1.25*data.get_zsize()
+			self.cam.default_z = -1.25*data.get_xsize()
+			self.cam.cam_z = -1.25*data.get_xsize()
 		elif isinstance(data,float):
 			self.cam.default_z = -1.25*data
 			self.cam.cam_z = -1.25*data
@@ -203,8 +203,12 @@ class EMImage3DWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMatri
 		self.xwidth = image.get_xsize()
 		self.cam.default_z = -self.d
 		self.cam.cam_z = -self.d
-		self.startz = self.d - 2.0*self.zwidth
-		self.endz = self.d + 2.0*self.zwidth
+		
+		max = self.zwidth
+		if self.yheight > max: max = self.yheight
+		if self.xwidth > max: mas = self.xwidth
+		self.startz = self.d - 2.0*max
+		self.endz = self.d + 2.0*max
 	def set_data(self,data):
 		self.target().set_data(data)
 		if ( data != None and isinstance(data,EMData)):
@@ -309,7 +313,6 @@ class EMImage3DWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMatri
 		self.aspect = float(self.width())/float(self.height())
 		self.xwidth = self.aspect*self.yheight
 		if self.xwidth == 0 or self.yheight == 0: return # probably startup
-		
 		glOrtho(-self.xwidth/2.0,self.xwidth/2.0,-self.yheight/2.0,self.yheight/2.0,self.startz,self.endz)
 		glMatrixMode(GL_MODELVIEW)
 		
@@ -339,8 +342,8 @@ class EMImage3DWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMatri
 			return [self.xwidth,self.yheight]
 		
 	def set_camera_defaults(self,data):
-		self.cam.default_z = -1.25*data.get_zsize()
-		self.cam.cam_z = -1.25*data.get_zsize()
+		self.cam.default_z = -1.25*data.get_xsize()
+		self.cam.cam_z = -1.25*data.get_xsize()
 	
 	def set_data(self,data):
 		self.target().set_data(data)
@@ -518,7 +521,13 @@ class EMImage3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		if data == None: return
 		self.data = data
 		self.data.process_inplace("normalize.edgemean")
-		self.radius = data.get_zsize()/2.0
+		
+		nx,ny,nz = self.data.get_xsize(),self.data.get_ysize(),self.data.get_zsize()
+		
+		self.radius = nz
+		if ny > nz: self.radius = ny
+		if nx > ny: self.radius = nx
+		self.radius /= 2
 		#for i in self.viewables:
 			#i.set_data(data)
 		
@@ -561,7 +570,7 @@ class EMImage3DModule(EMLightsDrawer,EMImage3DGUIModule):
 	
 	def add_sym(self):
 		module = EM3DSymViewerModule(None,True,False,False)
-		module.set_radius(self.data.get_zsize()/2.0)
+		module.set_radius(self.radius)
 		self.num_sym += 1
 		self.__add_module(module,self.num_sym)
 	
