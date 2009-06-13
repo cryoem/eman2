@@ -843,6 +843,7 @@ class GUIctf(QtGui.QWidget):
 		self.plotmode=0
 		
 		self.guiim=EMImage2DModule(application=self.app())
+		self.guiiminit = True # a flag that's used to auto resize the first time the gui's set_data function is called
 		self.guiplot=EMPlot2DModule(application=self.app())
 		
 		# FIXME these "emitters" might be unnecessary.
@@ -1101,7 +1102,12 @@ class GUIctf(QtGui.QWidget):
 		self.svoltage.setValue(self.data[val][1].voltage,True)
 		self.scs.setValue(self.data[val][1].cs,True)
 		
-		if self.guiim != None: self.guiim.set_data(self.data[val][4])
+		if self.guiim != None: 
+			self.guiim.set_data(self.data[val][4])
+			if self.guiiminit:
+				self.guiim.optimally_resize()
+				self.guiiminit = False
+			self.guiim.updateGL()
 		self.update_plot()
 
 	def newPlotMode(self,mode):

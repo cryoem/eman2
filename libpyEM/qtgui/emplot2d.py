@@ -82,10 +82,12 @@ class EMPlot2DWidget(QtOpenGL.QGLWidget,EMEventRerouter,):
 		EMEventRerouter.__init__(self,em_plot_module) # sets self.target to em_plot_module
 
 		self.resize(480,480)
+
 	def initializeGL(self):
 		GL.glClearColor(0,0,0,0)
 		GL.glEnable(GL_DEPTH_TEST)
 	def paintGL(self):
+
 		if not self.parentWidget() : return
 		GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
 		
@@ -551,12 +553,12 @@ class EMPlot2DModule(EMGUIModule):
 		"""
 		self.shapes[k]=s
 		self.shapechange=1
-		self.updateGL()
+		#self.updateGL()
 	
 	def add_shapes(self,d):
 		self.shapes.update(d)
 		self.shapechange=1
-		self.updateGL()
+		#self.updateGL()
 	
 	def del_shapes(self,k=None):
 		if k:
@@ -569,7 +571,7 @@ class EMPlot2DModule(EMGUIModule):
 		else:
 			self.shapes={}
 		self.shapechange=1
-		self.updateGL()
+		#self.updateGL()
 	
 	def keyPressEvent(self,event):
 		# this event is being sent by the deskto
@@ -582,11 +584,13 @@ class EMPlot2DModule(EMGUIModule):
 			self.show_inspector(1)
 		elif event.button()==Qt.RightButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
 			self.del_shapes()
+			self.updateGL()
 			self.rmousedrag=(event.x(),event.y())
 		elif event.button()==Qt.LeftButton:
 			self.add_shape("xcross",EMShape(("scrline",0,0,0,self.scrlim[0],self.height()-event.y(),self.scrlim[2]+self.scrlim[0],self.height()-event.y(),1)))
 			self.add_shape("ycross",EMShape(("scrline",0,0,0,event.x(),self.scrlim[1],event.x(),self.scrlim[3]+self.scrlim[1],1)))
 			self.add_shape("lcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-100,self.scrlim[3]-10,"%1.4g, %1.4g"%(lc[0],lc[1]),120.0,-1)))
+			self.updateGL()
 			#if self.mmode==0:
 				#self.emit(QtCore.SIGNAL("mousedown"), event)
 				#return
@@ -601,10 +605,12 @@ class EMPlot2DModule(EMGUIModule):
 		
 		if  self.rmousedrag:
 			self.add_shape("zoom",EMShape(("scrrect",0,0,0,self.rmousedrag[0],self.height()-self.rmousedrag[1],event.x(),self.height()-event.y(),1)))
+			self.updateGL()
 		elif event.buttons()&Qt.LeftButton:
 			self.add_shape("xcross",EMShape(("scrline",0,0,0,self.scrlim[0],self.height()-event.y(),self.scrlim[2]+self.scrlim[0],self.height()-event.y(),1)))
 			self.add_shape("ycross",EMShape(("scrline",0,0,0,event.x(),self.scrlim[1],event.x(),self.scrlim[3]+self.scrlim[1],1)))
 			self.add_shape("lcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-100,self.scrlim[3]-10,"%1.4g, %1.4g"%(lc[0],lc[1]),120.0,-1)))
+			self.updateGL()
 #			self.add_shape("mcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-80,self.scrlim[3]-20,"%1.3g, %1.3g"%(self.plot2scr(*lc)[0],self.plot2scr(*lc)[1]),1.5,1)))
 	
 	def mouseReleaseEvent(self, event):
@@ -616,6 +622,7 @@ class EMPlot2DModule(EMGUIModule):
 			self.rmousedrag=None
 			self.needupd=1
 			self.del_shapes()  # also triggers an update
+			self.updateGL()
 		#elif event.button()==Qt.LeftButton:
 			#if self.mmode==0:
 				#self.emit(QtCore.SIGNAL("mouseup"), event)
