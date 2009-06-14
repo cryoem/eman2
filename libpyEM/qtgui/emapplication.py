@@ -174,6 +174,7 @@ class EMGUIModule(EventsEmitterAndReciever,QtCore.QObject):
 
 		if not app.child_is_attached(self.em_qt_inspector_widget):
 			app.attach_child(self.em_qt_inspector_widget)
+			
 		app.show_specific(self.em_qt_inspector_widget)
 	
 	def update_inspector_texture(self):
@@ -379,7 +380,7 @@ class EMStandAloneApplication(EMApplication):
 			widget = child.get_qt_widget()
 			if widget.isVisible() == False:
 				widget.show()
-	
+				
 	def close_specific(self,child,inspector_too=True):
 		for i,child_ in enumerate(self.children):
 			if child == child_:
@@ -434,6 +435,7 @@ class EMStandAloneApplication(EMApplication):
 				if widget.isVisible() == False:
 					widget.show()
 					widget.setFocus()
+				widget.raise_()
 				return
 	
 		# if we make it here than we automatically attach the child
