@@ -5,32 +5,32 @@
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
 
 #ifndef eman__vec3_h__
@@ -47,7 +47,7 @@ using std::endl;
 
 namespace EMAN
 {
-	
+
 	/** The Vec3 object is a templated object, intended to instantiated
 	 * with basic types such as int, float, double etc. You may try
 	 * to use other more generic types such as classes but you may get
@@ -69,16 +69,16 @@ namespace EMAN
 		/** One can always cast to the type of a Vec3 by accessing Vec3<Type>::type
 		*/
 		typedef Type type;
-		
+
 		/** contruct a Vec3 object with all elements equal to 0.
 		 */
 		Vec3() /*: vec[0](0),vec[1](0),vec[2](0)*/ {
-			
+
 			vec[0] = static_cast<Type>(0);
 			vec[1] = static_cast<Type>(0);
 			vec[2] = static_cast<Type>(0);
 		}
-		
+
 		/** contruct a Vec3 object given (x,y) or (x,y,z) values.
 		 * @param x  Value of the first item.
 		 * @param y  Value of the second item.
@@ -86,7 +86,7 @@ namespace EMAN
 		 * default to 0.
 		 */
 		template<typename Type2, typename Type3, typename Type4>
-		Vec3(const Type2& x, const Type3& y, const Type4& z = 0) 
+		Vec3(const Type2& x, const Type3& y, const Type4& z = 0)
 		{
 			vec[0] = static_cast<Type>(x);
 			vec[1] = static_cast<Type>(y);
@@ -98,28 +98,28 @@ namespace EMAN
 		 * @param v The std::vector object. It should have at least 3 items.
 		 */
 		template<typename Type2>
-		Vec3(const vector < Type2 > &v) 
+		Vec3(const vector < Type2 > &v)
 		{
 			vec[0] = static_cast<Type>(v[0]);
 			vec[1] = static_cast<Type>(v[1]);
 			vec[2] = static_cast<Type>(v[2]);
 		}
-		
+
 		/** Copy constructor copies vector elements
 		*/
 		template<typename Type2>
-		Vec3(const Vec3<Type2> &v) 
+		Vec3(const Vec3<Type2> &v)
 		{
 			vec[0] = v[0];
 			vec[1] = v[1];
 			vec[2] = v[2];
 		}
-		
+
 		/** Destructor
 		*/
-		virtual ~Vec3() {}
-		
-		
+		~Vec3() {}
+
+
 		/** Normalize the vector and return its length before the
 		 * normalization.
 		 * @return The length of the Vec before normalization.
@@ -138,8 +138,8 @@ namespace EMAN
 			}
 			return len;
 		}
-		
-		
+
+
 		/** Calculate its length.
 		 * @return The vector's length
 		 * Warning - float precision
@@ -149,16 +149,16 @@ namespace EMAN
 			float t = (float)(vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2]);
 			return (float)sqrt(t);
 		}
-		
+
 		/** Calculate its squared length.
-		 * no sqrt called 
+		 * no sqrt called
 		 * @return The vector's length squared.
 		 */
 		Type squared_length() const
 		{
 			return  vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2] ;
 		}
-		
+
 		/** Calculate the dot product of 'this' vector with a second
 		 * vector.
 		 * @param v  The second vector to do the dot product.
@@ -169,7 +169,7 @@ namespace EMAN
 		{
 			return static_cast<Type>((vec[0] * v[0] + vec[1] * v[1] + vec[2] * v[2]));
 		}
-		
+
 		/** Calculate the cross product of 'this' vector with a second
 		 * vector.
 		 * @param v  The second vector to do the cross product.
@@ -182,7 +182,7 @@ namespace EMAN
 						  (vec[2] * v[0] - vec[0] * v[2]),
 						   (vec[0] * v[1] - vec[1] * v[0]));
 		}
-		
+
 		/** Return the values of this vector as a std::vector.
 		 * @return The std::vector version of this vector.
 		 */
@@ -194,7 +194,7 @@ namespace EMAN
 			v[2] = vec[2];
 			return v;
 		}
-		
+
 		/** Set new values using a std::vector object.
 		 * @param v A std::vector object used to set 'this' vector's value.
 		 *  It should have at least 3 items.
@@ -265,7 +265,7 @@ namespace EMAN
 			return vec[i];
 		}
 
-		
+
 		/** 'this' += v; Add the 2 vectors by adding item by item.
 		 * @param v The vector used to be added to 'this' vector.
 		 * @return The new 'this' as a result of add.
@@ -289,7 +289,7 @@ namespace EMAN
 			vec[2] = static_cast<Type>(vec[2]+d);
 			return *this;
 		}
-		
+
 		/** 'this' -= v; Minus the 2 vectors item by item.
 		 * @param v The vector used to be substracted from 'this' vector.
 		 * @return The new 'this' as a result of substraction.
@@ -301,7 +301,7 @@ namespace EMAN
 			vec[2] = static_cast<Type>(vec[2]-v[2]);
 			return *this;
 		}
-		
+
 		/** 'this' -= d; Minus a number from each item of 'this' vector.
 		 * @param d The number used to be substracted from 'this' vector.
 		 * @return The new 'this' as a result of substraction.
@@ -325,7 +325,7 @@ namespace EMAN
 			vec[2] = static_cast<Type>(vec[2]*d);
 			return *this;
 		}
-		
+
 		/** 'this' /= d; Divide a number on each item of 'this' vector.
 		 * @param d The number to divide.
 		 * @return The new 'this' as a result of division.
@@ -337,25 +337,25 @@ namespace EMAN
 			vec[2] = static_cast<Type>(vec[2]/d);
 			return *this;
 		}
-		
+
 		template<typename Type2>
 		operator vector<Type2>() const {
 			vector<Type2> v(vec,vec+3);
 			return v;
 		}
-	
-		
+
+
 		private:
 			Type vec[3];
 	};
-	
+
 	template<typename Type,typename Type2>
 	inline Vec3<Type> operator +(const Vec3<Type> &v1, const Vec3<Type2> &v2)
 	{
-		
+
 		return Vec3<Type>(static_cast<Type>(v1[0] + v2[0]), static_cast<Type>(v1[1] + v2[1]),static_cast<Type>(v1[2] + v2[2]));;
 	}
-	
+
 	template<typename Type,typename Type2>
 	inline Vec3<Type> operator +(const Vec3<Type> &v, const Type2& n)
 	{
@@ -363,7 +363,7 @@ namespace EMAN
 		v1 += n;
 		return v1;
 	}
-	
+
 // 	template<typename Type,typename Type2>
 // 	inline Vec3<Type> operator +(const Type2& n, const Vec3<Type> &v)
 // 	{
@@ -378,7 +378,7 @@ namespace EMAN
 		return Vec3<Type>(static_cast<Type>(v1[0] - v2[0]),
 						  static_cast<Type>(v1[1] - v2[1]),
 						  static_cast<Type>(v1[2] - v2[2]));
-	}	
+	}
 
 	template<typename Type,typename Type2>
 	inline Vec3<Type> operator -(const Vec3<Type> &v, const Type2& n)
@@ -392,7 +392,7 @@ namespace EMAN
 	{
 		return Vec3<Type>(-v[0],-v[1],-v[2]);
 	}
-	
+
 // 	template<typename Type,typename Type2>
 // 	inline Vec3<Type> operator -(const Type2& n, const Vec3<Type> &v)
 // 	{
@@ -406,7 +406,7 @@ namespace EMAN
 	{
 		return v1.dot(v2);
 	}
-	
+
 	template<typename Type,typename Type2>
 	inline Vec3<Type2> operator *(const Type& d, const Vec3<Type2> & v)
 	{
@@ -415,7 +415,7 @@ namespace EMAN
 		v1 *= d;
 		return v1;
 	}
-	
+
 	template<typename Type,typename Type2>
 	inline Vec3<Type> operator *(const Vec3<Type> & v,const Type2& d) {
 		// Preserve the vector type
@@ -423,7 +423,7 @@ namespace EMAN
 		v1 *= d;
 		return v1;
 	}
-	
+
 	template<typename Type,typename Type2>
 	inline Vec3<Type2> operator /(const Type& d, const Vec3<Type2> & v)
 	{
@@ -440,7 +440,7 @@ namespace EMAN
 		v1 /= d;
 		return v1;
 	}
-	
+
 	template<typename Type,typename Type2>
 	inline bool operator ==(const Vec3<Type> &v1, const Vec3<Type2> &v2) {
 		if (v1[0] == v2[0] && v1[1] == v2[1] && v1[2] == v2[2]) {
@@ -456,12 +456,12 @@ namespace EMAN
 		}
 		return false;
 	}
-	
+
 	typedef Vec3<float> Vec3f;
 	typedef Vec3<int> Vec3i;
 	typedef Vec3<double> Vec3d;
-	
-	
+
+
 	/** The Vec2 is precisely the same as Vec3 except it works exclusively in 2D
 	 * Note there are convenient typedef so one needn't bother about using template
 	 * terminology
@@ -479,21 +479,21 @@ namespace EMAN
 		/** One can always cast to the type of a Vec2 by accessing Vec2<Type>::type
 		 */
 		typedef Type type;
-		
+
 		/** contruct a Vec2 object with all elements equal to 0.
 		 */
 		Vec2() /*: vec[0](0),vec[1](0),vec[2](0)*/ {
 			vec[0] = static_cast<Type>(0);
 			vec[1] = static_cast<Type>(0);
 		}
-		
+
 		/** contruct a Vec2 object given (x,y) or (x,y,z) values.
 		* @param x  Value of the first item.
 		* @param y  Value of the second item.
 		* default to 0.
 		 */
 		template<typename Type2, typename Type3>
-		Vec2(const Type2& x, const Type3& y) 
+		Vec2(const Type2& x, const Type3& y)
 		{
 			vec[0] = static_cast<Type>(x);
 			vec[1] = static_cast<Type>(y);
@@ -504,26 +504,26 @@ namespace EMAN
 		* @param v The std::vector object. It should have at least 3 items.
 		 */
 		template<typename Type2>
-		Vec2(const vector < Type2 > &v) 
+		Vec2(const vector < Type2 > &v)
 		{
 			vec[0] = static_cast<Type>(v[0]);
 			vec[1] = static_cast<Type>(v[1]);
 		}
-		
+
 		/** Copy constructor copies vector elements
 		 */
 		template<typename Type2>
-		Vec2(const Vec2<Type2> &v) 
+		Vec2(const Vec2<Type2> &v)
 		{
 			vec[0] = static_cast<Type>(v[0]);
 			vec[1] = static_cast<Type>(v[1]);
 		}
-		
+
 		/** Destructor
 		 */
-		virtual ~Vec2() {}
-		
-		
+		~Vec2() {}
+
+
 		/** Normalize the vector and return its length before the
 		 * normalization.
 		 * @return The length of the Vec before normalization.
@@ -541,8 +541,8 @@ namespace EMAN
 			}
 			return len;
 		}
-		
-		
+
+
 		/** Calculate its length.
 		* @return The vector's length
 		* Warning - float precision
@@ -552,16 +552,16 @@ namespace EMAN
 			float t = (float)(vec[0] * vec[0] + vec[1] * vec[1]);
 			return (float)sqrt(t);
 		}
-		
+
 		/** Calculate its squared length.
-		 * no sqrt called 
+		 * no sqrt called
 		 * @return The vector's length squared.
 		 */
 		Type squared_length() const
 		{
 			return  vec[0] * vec[0] + vec[1] * vec[1] ;
 		}
-		
+
 		/** Calculate the dot product of 'this' vector with a second
 		* vector.
 		* @param v  The second vector to do the dot product.
@@ -572,7 +572,7 @@ namespace EMAN
 		{
 			return static_cast<Type>((vec[0] * v[0] + vec[1] * v[1]));
 		}
-		
+
 		/** Return the values of this vector as a std::vector.
 		 * @return The std::vector version of this vector.
 		 */
@@ -642,7 +642,7 @@ namespace EMAN
 		 */
 		inline Type at(int i) { return vec[i]; }
 
-		
+
 		/** 'this' += v; Add the 2 vectors by adding item by item.
 		 * @param v The vector used to be added to 'this' vector.
 		 * @return The new 'this' as a result of add.
@@ -664,7 +664,7 @@ namespace EMAN
 			vec[1] = static_cast<Type>(vec[1]+d);
 			return *this;
 		}
-		
+
 		/** 'this' -= v; Minus the 2 vectors item by item.
 		 * @param v The vector used to be substracted from 'this' vector.
 		 * @return The new 'this' as a result of substraction.
@@ -675,7 +675,7 @@ namespace EMAN
 			vec[1] = static_cast<Type>(vec[1]-v[1]);
 			return *this;
 		}
-		
+
 		/** 'this' -= d; Minus a number from each item of 'this' vector.
 		 * @param d The number used to be substracted from 'this' vector.
 		 * @return The new 'this' as a result of substraction.
@@ -697,7 +697,7 @@ namespace EMAN
 			vec[1] = static_cast<Type>(vec[1]*d);
 			return *this;
 		}
-		
+
 		/** 'this' /= d; Divide a number on each item of 'this' vector.
 		 * @param d The number to divide.
 		 * @return The new 'this' as a result of division.
@@ -708,12 +708,12 @@ namespace EMAN
 			vec[1] = static_cast<Type>(vec[1]/d);
 			return *this;
 		}
-	
-		
+
+
 		private:
 			Type vec[2];
 	};
-	
+
 	template<typename Type,typename Type2>
 	inline Vec2<Type> operator +(const Vec2<Type> &v1, const Vec2<Type2> &v2)
 	{
@@ -732,7 +732,7 @@ namespace EMAN
 	inline Vec2<Type> operator -(const Vec2<Type> &v1, const Vec2<Type2> &v2)
 	{
 		return Vec2<Type>(static_cast<Type>(v1[0] - v2[0]),	static_cast<Type>(v1[1] - v2[1]));
-	}	
+	}
 
 	template<typename Type,typename Type2>
 	inline Vec2<Type> operator -(const Vec2<Type> &v, const Type2& n)
@@ -741,7 +741,7 @@ namespace EMAN
 		v1 -= n;
 		return v1;
 	}
-	
+
 	template<typename Type>
 	inline Vec2<Type> operator -(const Vec2<Type> &v)
 	{
@@ -804,7 +804,7 @@ namespace EMAN
 		}
 		return false;
 	}
-	
+
 	typedef Vec2<float> Vec2f;
 	typedef Vec2<int> Vec2i;
 	typedef Vec2<double> Vec2d;

@@ -5,32 +5,32 @@
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
 
 #include "salio.h"
@@ -42,6 +42,8 @@
 #else
 #define  MAXPATHLEN (MAX_PATH * 4)
 #endif
+
+#include <cstdio>
 #include <climits>
 #include <cstring>
 
@@ -73,7 +75,7 @@ SalIO::~SalIO()
 void SalIO::init()
 {
 	ENTERFUNC;
-	
+
 	if (initialized) {
 		return;
 	}
@@ -144,7 +146,7 @@ bool SalIO::is_valid(const void *first_block)
 {
 	ENTERFUNC;
 	bool result = false;
-	
+
 	if (!first_block) {
 		result = false;
 	}
@@ -156,12 +158,12 @@ bool SalIO::is_valid(const void *first_block)
 int SalIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
-	
+
 	//single image format, index can only be zero
 	image_index = 0;
 	check_read_access(image_index);
 	check_region(area, IntSize(nx, ny));
-	
+
 	int xlen = 0, ylen = 0;
 	EMUtil::get_region_dims(area, nx, &xlen, ny, &ylen);
 
@@ -170,7 +172,7 @@ int SalIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	dict["nz"] = 1;
 	dict["datatype"] = EMUtil::EM_SHORT;
 	dict["pixel"] = pixel;
-	
+
 	EXITFUNC;
 	return 0;
 }
@@ -196,7 +198,7 @@ int SalIO::read_data(float *data, int image_index, const Region * area, bool)
 		LOGERR("only NON_RASTER_SCAN scan mode is supported in a SAL image");
 		return 1;
 	}
-	
+
 	rewind(sal_file);
 
 	int mode_size = (int)sizeof(short);
@@ -206,8 +208,8 @@ int SalIO::read_data(float *data, int image_index, const Region * area, bool)
 	size_t block_size = (((row_size - 1) / record_length) + 1) * record_length;
 	size_t post_row = block_size - row_size;
 
-	EMUtil::process_region_io(cdata, sal_file, READ_ONLY, image_index, 
-							  mode_size, nx, ny, 1, area, false, 
+	EMUtil::process_region_io(cdata, sal_file, READ_ONLY, image_index,
+							  mode_size, nx, ny, 1, area, false,
 							  EMUtil::IMAGE_SAL, 0, post_row);
 
 #if 0

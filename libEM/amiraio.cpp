@@ -43,6 +43,8 @@
 	#define MAXPATHLEN (MAX_PATH*4)
 #endif	//WIN32
 
+#include <cstdio>
+
 using namespace EMAN;
 
 const char *AmiraIO::MAGIC = "# AmiraMesh";

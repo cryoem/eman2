@@ -1549,7 +1549,7 @@ int WienerFourierReconstructor::insert_slice(const EMData* const slice, const Tr
 	}
 
 	int nxy = nx * ny;
-	int off[8];
+	int off[8] = {0,0,0,0,0,0,0,0};
 	if (mode == 2) {
 		off[0] = 0;
 		off[1] = 2;
