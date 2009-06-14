@@ -431,19 +431,22 @@ class EMMatrixPanel:
 		rendered_image_height = view_data.get_ysize()*view_scale
 		
 		[self.ystart,self.visiblerows,self.visiblecols] = self.visible_row_col(view_width,view_height,view_scale,view_data,y)
-		if self.ystart == None: 
-			scale = self.get_min_scale(view_width,view_height,view_scale,view_data)
-			target.scale = scale
-			view_scale = scale
-			[self.ystart,self.visiblerows,self.visiblecols] = self.visible_row_col(view_width,view_height,view_scale,view_data,y)
-			if self.ystart == None: 
-				print "kill me now....please"
+		if self.ystart == None:
+			return False 
+		  	# if you uncomment this code it will automatically set the scale in the main window so that the mxs stay visible
+		  	# it's not what we wanted but it's left here in case anyone wants to experiment
+#			scale = self.get_min_scale(view_width,view_height,view_scale,view_data)
+#			target.scale = scale
+#			view_scale = taget.scale
+#			[self.ystart,self.visiblerows,self.visiblecols] = self.visible_row_col(view_width,view_height,view_scale,view_data,y)
+#			if self.ystart == None: 
+#				print "kill me now....please"
 		xsep = view_width - self.visiblecols*(rendered_image_width+self.min_sep)
 		self.xoffset = xsep/2		
 		
 		self.height = ceil(len(view_data)/float(self.visiblecols))*(rendered_image_height+self.min_sep) + self.min_sep
 		self.max_y = self.height - view_height # adjusted height is the maximum value for current y!
-	
+		return True
 	def visible_row_col(self,view_width,view_height,view_scale,view_data,y):
 		rendered_image_width = (view_data.get_xsize())*view_scale
 		rendered_image_height = view_data.get_ysize()*view_scale
@@ -1014,6 +1017,7 @@ class EMImageMXModule(EMGUIModule):
 		pass
 		
 	def set_scale(self,newscale,update_gl=True):
+		print "set scale",newscale
 		"""Adjusts the scale of the display. Tries to maintain the center of the image at the center"""
 			
 		if self.data and len(self.data)>0 and (self.data.get_ysize()*newscale>self.gl_widget.height() or self.data.get_xsize()*newscale>self.view_width()):
@@ -1151,6 +1155,7 @@ class EMImageMXModule(EMGUIModule):
 		if not self.data : return
 		if self.font_render_mode == EMGUIModule.FTGL: self.set_font_render_resolution()
 #		self.image_change_count = self.data.get_changecount() # this is important when the user has more than one display instance of the same image, for instance in e2.py if 
+
 		render = False
 		
 		update = False
@@ -1220,109 +1225,110 @@ class EMImageMXModule(EMGUIModule):
 			current_sets = copy.copy(self.data.visible_sets)
 			current_sets.sort()
 			
-			for row in range(self.matrix_panel.ystart,self.matrix_panel.visiblerows):
-				for col in range(0,self.matrix_panel.visiblecols):
-					i = int((row)*self.matrix_panel.visiblecols+col)
-					
-					#print i,n
-					if i >= n : break
-					tx = int((w+self.matrix_panel.min_sep)*(col) + x)
-					ty = int((h+self.matrix_panel.min_sep)*(row) + y)
-					real_y = ty # need this for set display
-					tw = w
-					th = h
-					rx = 0	#render x
-					ry = 0	#render y
-					#print "Prior",i,':',row,col,tx,ty,tw,th,y,x
-					drawlabel = True
-					if (tx+tw) > self.view_width():
-						tw = int(self.view_width()-tx)
-					elif tx<0:
-						drawlabel=False
-						rx = int(ceil(-tx*invscale))
-						tw=int(w+tx)
-						tx = 0
+			if self.matrix_panel.visiblerows:
+				for row in range(self.matrix_panel.ystart,self.matrix_panel.visiblerows):
+					for col in range(0,self.matrix_panel.visiblecols):
+						i = int((row)*self.matrix_panel.visiblecols+col)
 						
-	
-					#print h,row,y
-					#print "Prior",i,':',row,col,tx,ty,tw,th,'offsets',yoffset,xoffset
-					if (ty+th) > self.gl_widget.height():
-						#print "ty + th was greater than",self.gl_widget.height()
-						th = int(self.gl_widget.height()-ty)
-					elif ty<0:
-						drawlabel = False
-						ry = int(ceil(-ty*invscale))
-						th=int(h+ty)
-						ty = 0
-						
-					#print i,':',row,col,tx,ty,tw,th,'offsets',yoffset,xoffset
-					if th < 0 or tw < 0:
-						#weird += 1
-						#print "weirdness"
-						#print col,row,
-						continue
-					
-					self.coords[i]=(tx,ty,tw,th)
-					
-					draw_tex = True
-					d = self.data[i]
-					if not d.has_attr("excluded"):
-						#print rx,ry,tw,th,self.gl_widget.width(),self.gl_widget.height(),self.origin
-						if not self.glflags.npt_textures_unsupported():
-							a=GLUtil.render_amp8(self.data[i],rx,ry,tw,th,(tw-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
-							self.texture(a,tx,ty,tw,th)
-						else:
-							a=GLUtil.render_amp8(self.data[i],rx,ry,tw,th,(tw-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,6)
-							glRasterPos(tx,ty)
-							glDrawPixels(tw,th,GL_LUMINANCE,GL_UNSIGNED_BYTE,a)
+						#print i,n
+						if i >= n : break
+						tx = int((w+self.matrix_panel.min_sep)*(col) + x)
+						ty = int((h+self.matrix_panel.min_sep)*(row) + y)
+						real_y = ty # need this for set display
+						tw = w
+						th = h
+						rx = 0	#render x
+						ry = 0	#render y
+						#print "Prior",i,':',row,col,tx,ty,tw,th,y,x
+						drawlabel = True
+						if (tx+tw) > self.view_width():
+							tw = int(self.view_width()-tx)
+						elif tx<0:
+							drawlabel=False
+							rx = int(ceil(-tx*invscale))
+							tw=int(w+tx)
+							tx = 0
 							
-						hist2=numpy.fromstring(a[-1024:],'i')
-						self.hist+=hist2	
-					else:
-						# d is excluded/deleted
-						self.load_set_color(0)
-						glPushMatrix()
-						glTranslatef(tx+tw/2.0,ty+th/2.0,0)
-						glScale(tw/2.0,th/2.0,1.0)
-						self.__render_excluded_square()
-						glPopMatrix()
+		
+						#print h,row,y
+						#print "Prior",i,':',row,col,tx,ty,tw,th,'offsets',yoffset,xoffset
+						if (ty+th) > self.gl_widget.height():
+							#print "ty + th was greater than",self.gl_widget.height()
+							th = int(self.gl_widget.height()-ty)
+						elif ty<0:
+							drawlabel = False
+							ry = int(ceil(-ty*invscale))
+							th=int(h+ty)
+							ty = 0
+							
+						#print i,':',row,col,tx,ty,tw,th,'offsets',yoffset,xoffset
+						if th < 0 or tw < 0:
+							#weird += 1
+							#print "weirdness"
+							#print col,row,
+							continue
 						
+						self.coords[i]=(tx,ty,tw,th)
+						
+						draw_tex = True
+						d = self.data[i]
+						if not d.has_attr("excluded"):
+							#print rx,ry,tw,th,self.gl_widget.width(),self.gl_widget.height(),self.origin
+							if not self.glflags.npt_textures_unsupported():
+								a=GLUtil.render_amp8(self.data[i],rx,ry,tw,th,(tw-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
+								self.texture(a,tx,ty,tw,th)
+							else:
+								a=GLUtil.render_amp8(self.data[i],rx,ry,tw,th,(tw-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,6)
+								glRasterPos(tx,ty)
+								glDrawPixels(tw,th,GL_LUMINANCE,GL_UNSIGNED_BYTE,a)
 								
+							hist2=numpy.fromstring(a[-1024:],'i')
+							self.hist+=hist2	
+						else:
+							# d is excluded/deleted
+							self.load_set_color(0)
+							glPushMatrix()
+							glTranslatef(tx+tw/2.0,ty+th/2.0,0)
+							glScale(tw/2.0,th/2.0,1.0)
+							self.__render_excluded_square()
+							glPopMatrix()
+							
+									
+							
+							
+						if drawlabel:
+							self.__draw_mx_text(tx,ty,txtcol,i)
+							
+						if draw_tex : self.nshown+=1
 						
-						
-					if drawlabel:
-						self.__draw_mx_text(tx,ty,txtcol,i)
-						
-					if draw_tex : self.nshown+=1
-					
-					if nsets>0 and hasattr(d,"mxset") and len(d.mxset) > 0:
-						light = glIsEnabled(GL_LIGHTING)
-						glEnable(GL_LIGHTING)
-						
-						iss = 0
-						for rot,set in enumerate(current_sets):
-							#s
-							if set in d.mxset:
-								x_pos_ratio = 1-self.set_label_ratio
-								y_pos_ratio = x_pos_ratio
-								y_pos_ratio -= 2*float(iss)/nsets*self.set_label_ratio
-								y_pos_ratio *= 2
-								x_pos_ratio *= 2
-								self.load_set_color(set)
-								width = w/2.0
-								height = h/2.0
-								
-								glPushMatrix()
-								glTranslatef(tx+x_pos_ratio*width,real_y+y_pos_ratio*height,0)
-								#glScale((1-0.2*rot/nsets)*width,(1-0.2*rot/nsets)height,1.0)
-								#self.__render_excluded_hollow_square()
-								glScale(self.set_label_ratio*width,self.set_label_ratio*height,1.0)
-								self.__render_excluded_square()
-								
-								glPopMatrix()
-								iss  += 1
-								
-						if not light: glEnable(GL_LIGHTING)
+						if nsets>0 and hasattr(d,"mxset") and len(d.mxset) > 0:
+							light = glIsEnabled(GL_LIGHTING)
+							glEnable(GL_LIGHTING)
+							
+							iss = 0
+							for rot,set in enumerate(current_sets):
+								#s
+								if set in d.mxset:
+									x_pos_ratio = 1-self.set_label_ratio
+									y_pos_ratio = x_pos_ratio
+									y_pos_ratio -= 2*float(iss)/nsets*self.set_label_ratio
+									y_pos_ratio *= 2
+									x_pos_ratio *= 2
+									self.load_set_color(set)
+									width = w/2.0
+									height = h/2.0
+									
+									glPushMatrix()
+									glTranslatef(tx+x_pos_ratio*width,real_y+y_pos_ratio*height,0)
+									#glScale((1-0.2*rot/nsets)*width,(1-0.2*rot/nsets)height,1.0)
+									#self.__render_excluded_hollow_square()
+									glScale(self.set_label_ratio*width,self.set_label_ratio*height,1.0)
+									self.__render_excluded_square()
+									
+									glPopMatrix()
+									iss  += 1
+									
+							if not light: glEnable(GL_LIGHTING)
 			for i in self.selected:
 				try:
 					data = self.coords[i]	
