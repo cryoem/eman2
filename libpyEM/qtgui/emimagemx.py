@@ -1017,7 +1017,6 @@ class EMImageMXModule(EMGUIModule):
 		pass
 		
 	def set_scale(self,newscale,update_gl=True):
-		print "set scale",newscale
 		"""Adjusts the scale of the display. Tries to maintain the center of the image at the center"""
 			
 		if self.data and len(self.data)>0 and (self.data.get_ysize()*newscale>self.gl_widget.height() or self.data.get_xsize()*newscale>self.view_width()):
@@ -2842,7 +2841,6 @@ class EMDataListCache:
 		
 		for im in self.images:
 			if hasattr(im,"mxset") and idx in im.mxset: 
-				print im.mxset
 				im.mxset.remove(idx)
 				if len(im.mxset) == 0: delattr(im,"mxset")
 

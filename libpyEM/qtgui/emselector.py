@@ -1689,7 +1689,7 @@ class EMDBBigListAnimator:
 					b = EMDBSingleImageItem(self.emdata_entry,db_directory,key,k)
 					accrue_public_attributes(a,b)
 			elif _type == list and len(db[k]) == 2:
-				if 1:
+				try:
 					if (isinstance(db[k][0][0],float) or isinstance(db[k][0][0],int)) and (isinstance(db[k][1][0],float) or isinstance(db[k][0][0],int)):
 						v = db[k]
 				
@@ -1698,7 +1698,7 @@ class EMDBBigListAnimator:
 						accrue_public_attributes(a,b)
 					else: 
 						pass
-				else:
+				except:
 					# yes redundant but no time
 					v = db[k]
 					a = QtGui.QListWidgetItem(self.target().basic_python_icon,str(k)+":"+str(v),list_widget)
