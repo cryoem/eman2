@@ -1093,7 +1093,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 			d = a.get_attr_dict()
 			if d.has_key("ctf"):
 				self.column_data = ParticleWorkFlowTask.CTFColumns()
-				table.add_column_data(EMFileTable.EMColumnData("SNR",self.column_data.get_snr,"The averaged SNR"))
+				table.add_column_data(EMFileTable.EMColumnData("SNR",self.column_data.get_snr_integral,"The averaged SNR"))
 				table.add_column_data(EMFileTable.EMColumnData("Defocus",self.column_data.get_defocus,"The estimated defocus"))
 				table.add_column_data(EMFileTable.EMColumnData("B Factor",self.column_data.get_bfactor,"The estimated B factor, note this is ~4x greater than in EMAN1"))
 				table.add_column_data(EMFileTable.EMColumnData("Sampling",self.column_data.get_sampling,"The amount of sampling used for generating CTF parameters"))
@@ -1123,52 +1123,62 @@ class ParticleWorkFlowTask(WorkFlowTask):
 			
 		def get_defocus(self,name):
 			if self.ctf_cache.has_key(name):
-				return "%.3f" %self.ctf_cache[name].defocus
-			
-			ctf = self.__get_ctf(name)
-			self.ctf_cache[name] = ctf
+				ctf = self.ctf_cache[name]
+			else:
+				ctf = self.__get_ctf(name)
+				self.ctf_cache[name] = ctf
 			return "%.3f" %ctf.defocus
 		
 		def __get_ctf(self,name):
-			try:
-				a = EMData(name,0,True)
-				d = a.get_attr_dict()
-				return d["ctf"]
-			except:
-				return EMAN2Ctf()
+			ctf = None
+			if self.ctf_cache.has_key(name):
+				ctf = self.ctf_cache[name]
+			else:
+				try:
+					a = EMData(name,0,True)
+					d = a.get_attr_dict()
+					ctf = d["ctf"]
+					self.ctf_cache[name] = ctf
+				except:
+					self.ctf_cache[name] = None
+			
+			return ctf
 		
 		def get_bfactor(self,name):
-			if self.ctf_cache.has_key(name):
-				return "%.3f" %self.ctf_cache[name].bfactor
-			
 			ctf = self.__get_ctf(name)
-			self.ctf_cache[name] = ctf
-			return "%.3f" %ctf.bfactor
-			
+			if ctf != None:
+				return "%.3f" %ctf.bfactor
+			else: return ""
 				
 		def get_sampling(self,name):
-			if self.ctf_cache.has_key(name):
-				ctf = self.ctf_cache[name]
-				return str(len(ctf.background))
-			
 			ctf = self.__get_ctf(name)
-			self.ctf_cache[name] = ctf
-			return str(len(ctf.background))
+			if ctf != None:
+				return str(len(ctf.background))
+			else: return ""
 				
 		def get_snr(self,name):
-			if self.ctf_cache.has_key(name):
+			ctf = self.__get_ctf(name)
+			if ctf != None:
 				snr = 0
-				ctf = self.ctf_cache[name]
 				try: snr = sum(ctf.snr)/len(ctf.snr)
 				except: pass
 				return "%.3f" %snr
-			
+			else: return ""
+		
+		
+		def get_snr_integral(self,name):
 			ctf = self.__get_ctf(name)
-			self.ctf_cache[name] = ctf
-			snr = 0
-			try: snr = sum(ctf.snr)/len(ctf.snr)
-			except: pass
-			return "%.3f" %snr
+			if ctf != None:
+				igl = 0
+				apix = ctf.apix
+				nyq = 1/(2.0*apix)
+				n = float(len(ctf.snr))
+				for i,snr in enumerate(ctf.snr):
+					igl += i/n*snr
+				igl /= n
+				return "%.3f" %igl
+			else: return ""
+
 	
 	class AddDataButton():
 		def __init__(self,table_widget,context_menu_data):
@@ -2013,7 +2023,7 @@ class E2CTFWorkFlowTask(ParticleReportTask):
 		self.column_data = E2CTFWorkFlowTask.CTFColumns()
 		table.add_column_data(EMFileTable.EMColumnData("Defocus",self.column_data.get_defocus,"The estimated defocus"))
 		table.add_column_data(EMFileTable.EMColumnData("B Factor",self.column_data.get_bfactor,"The estimated B factor, note this is ~4x greater than in EMAN1"))
-		table.add_column_data(EMFileTable.EMColumnData("SNR",self.column_data.get_snr,"The averaged SNR"))
+		table.add_column_data(EMFileTable.EMColumnData("SNR",self.column_data.get_snr_integral,"The averaged SNR"))
 		table.add_column_data(EMFileTable.EMColumnData("Sampling",self.column_data.get_sampling,"The amount of sampling used for generating CTF parameters"))
 		return table,0
 	
@@ -2029,74 +2039,61 @@ class E2CTFWorkFlowTask(ParticleReportTask):
 #			print "CTF columns dies"
 			
 		def get_defocus(self,name):
-			if self.ctf_cache.has_key(name):
+			ctf = self.__get_ctf(name)
+			if ctf != None:
 				return "%.3f" %self.ctf_cache[name].defocus
+			else: return ""
 			
-			if db_check_dict("bdb:e2ctf.parms"):
-				ctf_db = db_open_dict("bdb:e2ctf.parms",ro=False)
-				try:
-					vals = ctf_db[get_file_tag(name)][0]
-					ctf = EMAN2Ctf()
-					ctf.from_string(vals)
-					self.ctf_cache[name] = ctf
-					return "%.3f" %ctf.defocus
-				except: pass
-				
-			return ""
-		
 		def get_bfactor(self,name):
-			if self.ctf_cache.has_key(name):
+			ctf = self.__get_ctf(name)
+			if ctf != None:
 				return "%.3f" %self.ctf_cache[name].bfactor
-			if db_check_dict("bdb:e2ctf.parms"):
-				ctf_db = db_open_dict("bdb:e2ctf.parms",ro=False)
-				try:
-					vals = ctf_db[get_file_tag(name)][0]
-					ctf = EMAN2Ctf()
-					ctf.from_string(vals)
-					self.ctf_cache[name] = ctf
-					return "%.3f" %ctf.bfactor
-				except: pass
-				
-			return ""
+			else:
+				return ""
 				
 		def get_sampling(self,name):
-			if self.ctf_cache.has_key(name):
-				ctf = self.ctf_cache[name]
+			ctf = self.__get_ctf(name)
+			if ctf != None:
 				return str(len(ctf.background))
-			
-			if db_check_dict("bdb:e2ctf.parms"):
-				ctf_db = db_open_dict("bdb:e2ctf.parms",ro=False)
-				try:
-					vals = ctf_db[get_file_tag(name)][0]
-					ctf = EMAN2Ctf()
-					ctf.from_string(vals)
-					self.ctf_cache[name] = ctf
-					return str(len(ctf.background))
-				except: pass
-			
-			return ""
-				
-		def get_snr(self,name):
+			else: return ""
+
+		def __get_ctf(self,name):
+			ctf = None
 			if self.ctf_cache.has_key(name):
-				snr = 0
 				ctf = self.ctf_cache[name]
+			else:
+				if db_check_dict("bdb:e2ctf.parms"):
+					ctf_db = db_open_dict("bdb:e2ctf.parms",ro=False)
+					try:
+						vals = ctf_db[get_file_tag(name)][0]
+						ctf = EMAN2Ctf()
+						ctf.from_string(vals)
+						self.ctf_cache[name] = ctf
+					except:
+						pass
+			return ctf
+		def get_snr(self,name):
+			ctf = self.__get_ctf(name)
+			snr = 0
+			if ctf != None:
 				try: snr = sum(ctf.snr)/len(ctf.snr)
 				except: pass
-				return "%.3f" %snr
 			
-			if db_check_dict("bdb:e2ctf.parms"):
-				ctf_db = db_open_dict("bdb:e2ctf.parms",ro=False)
-				try:
-					vals = ctf_db[get_file_tag(name)][0]
-					ctf = EMAN2Ctf()
-					ctf.from_string(vals)
-					snr = 0
-					self.ctf_cache[name] = ctf
-					try: snr = sum(ctf.snr)/len(ctf.snr)
-					except: pass
-					return "%.3f" %snr
-				except: pass
-			return ""
+			return "%.3f" %snr
+		
+		def get_snr_integral(self,name):
+			ctf = self.__get_ctf(name)
+			if ctf != None:
+				igl = 0
+				apix = ctf.apix
+				nyq = 1/(2.0*apix)
+				n = float(len(ctf.snr))
+				for i,snr in enumerate(ctf.snr):
+					igl += i/n*snr
+				
+				igl /= n
+				return "%.3f" %igl
+			else: return ""
 
 	def get_full_ctf_table(self,project_names=None,no_particles=False):
 		'''

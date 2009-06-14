@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 #
 # Author: Steven Ludtke, 10/29/2008 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
