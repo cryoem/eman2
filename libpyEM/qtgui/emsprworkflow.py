@@ -1080,7 +1080,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 	def __init__(self):
 		WorkFlowTask.__init__(self)
 
-	def get_particle_selection_table(self,ptcl_list,table=None,single_selection=False):
+	def get_particle_selection_table(self,ptcl_list,table=None,single_selection=False,enable_ctf=True):
 		'''
 		
 		'''
@@ -1091,7 +1091,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 			a = EMData()
 			a.read_image(ptcl_list[0],0,True)
 			d = a.get_attr_dict()
-			if d.has_key("ctf"):
+			if enable_ctf and d.has_key("ctf"):
 				self.column_data = ParticleWorkFlowTask.CTFColumns()
 				table.add_column_data(EMFileTable.EMColumnData("SNR",self.column_data.get_snr_integral,"The averaged SNR"))
 				table.add_column_data(EMFileTable.EMColumnData("Defocus",self.column_data.get_defocus,"The estimated defocus"))
@@ -3822,7 +3822,7 @@ class E2Refine2DRunTask(E2Refine2DTask):
 #			p = ParamDef(name="filenames",vartype="url",desc_short="Input file name(s)",desc_long="The names of the particle files you want to use as in the input data for e2refine2d.py",property=None,defaultunits=[],choices=[])
 #			n = 1 # just to fool the next bit, that's all
 #
-	   	p,n = self.get_particle_selection_table(self.particles,None,self.single_selection)
+	   	p,n = self.get_particle_selection_table(self.particles,None,self.single_selection,enable_ctf=False)
 #		if n == 0:
 #			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2Refine2DRunTask.documentation_string+E2Refine2DRunTask.warning_string,choices=None))
 #		else:
@@ -4367,9 +4367,9 @@ class E2RefineParticlesTask(EMClassificationTools, E2Make3DTools):
 
 		
 		if self.ptcls == None:
-			p,n = self.get_particle_selection_table([],None,self.single_selection)
+			p,n = self.get_particle_selection_table([],None,self.single_selection,enable_ctf=False)
 		else:
-			p,n = self.get_particle_selection_table(self.ptcls,None,self.single_selection)
+			p,n = self.get_particle_selection_table(self.ptcls,None,self.single_selection,enable_ctf=False)
 			if self.usefilt_ptcls != None and len(self.usefilt_ptcls) > 0:
 				from emform import EMFileTable
 				self.column_data = E2RefineParticlesTask.UsefiltColumn(self.ptcls,self.usefilt_ptcls)
