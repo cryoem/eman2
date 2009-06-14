@@ -806,6 +806,7 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 	float *d = image->get_data();
 	float g1 = calc_g1();
 	float g2 = calc_g2();
+	float amp1 = calc_amp1();
 
 	if (type == CTF_BACKGROUND) {
 		for (int y = -ny/2; y < ny/2; y++) {
@@ -813,12 +814,8 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 			int ynx = y2 * nx;
 
 			for (int x = 0; x < nx / 2; x++) {
-#ifdef	_WIN32
-				float s = (float) _hypot(x, y ) * ds;
-#else
-//				float s = (float) hypot(x, y ) * ds;
-#endif
-//				d[x * 2 + ynx] = calc_noise(s);
+				float s = (float) Util::hypot_fast(x, y ) * ds;
+				d[x * 2 + ynx] = calc_noise(s);
 				d[x * 2 + ynx + 1] = 0;			// The phase is somewhat arbitrary
 			}
 		}
@@ -829,13 +826,10 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 			int ynx = y2 * nx;
 
 			for (int x = 0; x < nx / 2; x++) {
-#ifdef	_WIN32
-				float s = (float)_hypot((float) x, (float) y ) * ds;
-#else
-				float s = (float)hypot((float) x, (float) y ) * ds;
-#endif	//_WIN32
+				float s = (float)Util::hypot_fast(x,y ) * ds;
 				float gamma = calc_gamma(g1, g2, s);
-				float v = calc_amplitude(gamma);
+				float v = calc_ctf1(amp1, gamma, s);
+//				float v = calc_amplitude(gamma);
 				d[x * 2 + ynx] = v;
 				d[x * 2 + ynx + 1] = 0;
 			}
@@ -846,11 +840,7 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 			int y2=(y+ny)%ny;
 			int ynx = y2 * nx;
 			for (int x = 0; x < nx / 2; x++) {
-#ifdef	_WIN32
-				float s = (float)_hypot((float)x, (float)y ) * ds;
-#else
-				float s = (float)hypot((float)x, (float)y ) * ds;
-#endif
+				float s = (float)Util::hypot_fast(x,y ) * ds;
 				float gamma = calc_gamma(g1, g2, s);
 				float v = calc_amplitude(gamma);
 				d[x * 2 + ynx] = v >= 0 ? 1.0f : -1.0f;
@@ -866,11 +856,7 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 
 			for (int x = 0; x < nx / 2; x++) {
 
-#ifdef	_WIN32
-				float s = (float)_hypot(x, y ) * ds;
-#else
-				float s = (float)hypot(x, y ) * ds;
-#endif
+				float s = (float)Util::hypot_fast(x,y ) * ds;
 				float f = s/dsbg;
 				int j = (int)floor(f);
 				f-=j;
@@ -888,11 +874,7 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 
 			for (int x = 0; x < nx / 2; x++) {
 
-#ifdef	_WIN32
-				float s = (float)_hypot(x, y ) * ds;
-#else
-				float s = (float)hypot(x, y ) * ds;
-#endif
+				float s = (float)Util::hypot_fast(x,y ) * ds;
 				float f = s/dsbg;
 				int j = (int)floor(f);
 				f-=j;
@@ -911,11 +893,7 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 
 			for (int x = 0; x < nx / 2; x++) {
 
-#ifdef	_WIN32
-				float s = (float)_hypot((float) x, (float) y ) * ds;
-#else
-				float s = (float)hypot((float) x, (float) y ) * ds;
-#endif	//_WIN32
+				float s = (float)Util::hypot_fast(x,y ) * ds;
 				float f = s/dsbg;
 				int j = (int)floor(f);
 				float bg,snrf;
@@ -946,11 +924,7 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 
 			for (int x = 0; x < nx / 2; x++) {
 
-#ifdef	_WIN32
-				float s = (float)_hypot(x, y ) * ds;
-#else
-				float s = (float)hypot(x, y ) * ds;
-#endif
+				float s = (float)Util::hypot_fast(x,y ) * ds;
 				float gamma = calc_gamma(g1, g2, s);
 				float f = calc_ctf1(amp1, gamma, s);
 				float noise = 0;

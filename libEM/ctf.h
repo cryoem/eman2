@@ -306,6 +306,13 @@ namespace EMAN
 			return v;
 		}
 
+		inline float calc_noise(float s)
+		{
+			int si=(int)(s/dsbg);
+			if (si>(int)background.size()||si<0) return background.back();
+			return background[si];
+		}
+
 	};
 
 }

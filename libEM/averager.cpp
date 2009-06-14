@@ -50,7 +50,7 @@ template <> Factory < Averager >::Factory()
 	// These commented out until we're happy they're working. (d.woolford, Feb 3rd 2009)
 //	force_add(&CtfCAverager::NEW);
 //	force_add(&CtfCWAverager::NEW);
-//	force_add(&CtfCWautoAverager::NEW);
+	force_add(&CtfCWautoAverager::NEW);
 }
 
 void Averager::mult(const float& s)
@@ -459,6 +459,86 @@ EMData * IterationAverager::finish()
 
 	return result;
 }
+
+CtfCWautoAverager::CtfCWautoAverager()
+	: nimg(0)
+{
+
+}
+
+
+void CtfCWautoAverager::add_image(EMData * image)
+{
+	if (!image) {
+		return;
+	}
+
+
+
+	EMData *fft=image->do_fft();
+
+	if (nimg >= 1 && !EMUtil::is_same_size(fft, result)) {
+		LOGERR("%s Averager can only process images of the same size", get_name().c_str());
+		return;
+	}
+
+	nimg++;
+	if (nimg == 1) {
+		result = fft->copy_head();
+		result->to_zero();
+	}
+
+	Ctf *ctf = (Ctf *)image->get_attr("ctf");
+
+	EMData *snr = result -> copy();
+	ctf->compute_2d_complex(snr,Ctf::CTF_SNR);
+	EMData *ctfi = result-> copy();
+	ctf->compute_2d_complex(ctfi,Ctf::CTF_AMP);
+
+	float *outd = result->get_data();
+	float *ind = fft->get_data();
+	float *snrd = snr->get_data();
+	float *ctfd = ctfi->get_data();
+
+	size_t sz=snr->get_xsize()*snr->get_ysize();
+	for (size_t i = 0; i < sz; i+=2) {
+		if (snrd[i]<0) snrd[i]=0;
+		if (ctfd[i]<.01) {
+			if (snrd[i]<=0) ctfd[i]=.01;
+			else ctfd[i]=snrd[i];
+		}
+		outd[i]+=ind[i]*snrd[i]/fabs(ctfd[i]);
+		outd[i+1]+=ind[i+1]*snrd[i]/fabs(ctfd[i]);
+	}
+
+	if (nimg==1) {
+		snrsum=snr->copy_head();
+		snrsum->to_one();			// we're storing total snr+1 instead of just total snr
+	}
+	snrsum->add(*snr);
+
+	delete fft;
+	delete snr;
+	delete ctfi;
+}
+
+EMData * CtfCWautoAverager::finish()
+{
+	size_t sz=result->get_xsize()*result->get_ysize();
+	float *snrsd=snrsum->get_data();
+	float *outd=result->get_data();
+
+	for (size_t i=0; i<sz; i++) outd[i]/=snrsd[i];		// snrsd contains total SNR+1
+	result->update();
+	result->set_attr("ptcl_repr",nimg);
+
+	delete snrsum;
+	EMData *ret=result->do_ift();
+	delete result;
+	result=NULL;
+	return ret;
+}
+
 
 #if 0
 EMData *IterationAverager::average(const vector < EMData * >&image_list) const
