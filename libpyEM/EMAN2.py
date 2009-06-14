@@ -93,6 +93,12 @@ def emdata_from_string(s):
 EMData.from_string=emdata_from_string
 EMData.to_string=emdata_to_string
 
+def list_to_emdata(l):
+	"""Converts a 1-D list into a 1-D EMData object (slow)"""
+	r=EMData(len(l),1,1)
+	for i,j in enumerate(l): r[i]=j
+	return r
+
 def timer(fn,n=1):
 	a=time.time()
 	for i in range(n): fn()

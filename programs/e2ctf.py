@@ -1,5 +1,4 @@
-#!/home/traininguser/EMAN2/python/Python-2.5.4-ucs4/bin/python
-
+#!/usr/bin/env python
 #
 # Author: Steven Ludtke, 10/29/2008 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -245,12 +244,14 @@ def fixnegbg(bg_1d,im_1d,ds):
 	subtracted curve near the CTF zeros. This would likely be due to the exluded volume
 	of the particle from the solvent"""
 	
-	start=int(1.0/(40.0*ds))	# We don't worry about slight negatives below 1/40 A/pix
+	start=int(1.0/(25.0*ds))	# We don't worry about slight negatives below 1/40 A/pix
+	start=max(1,start)
 
 	# Find the worst negative peak
 	ratio=1.0
-	for i in range(start,len(bg_1d)):
-		if im_1d[i]/bg_1d[i]<ratio : ratio=im_1d[i]/bg_1d[i]
+	for i in range(start,len(bg_1d)/2):
+		if (im_1d[i]+im_1d[i+1]+im_1d[i-1])/(bg_1d[i]+bg_1d[i+1]+bg_1d[i-1])<ratio : 
+			ratio=(im_1d[i]+im_1d[i+1]+im_1d[i-1])/(bg_1d[i]+bg_1d[i+1]+bg_1d[i-1])
 		
 	# return the corrected background
 	print "BG correction ratio %1.4f"%ratio
@@ -274,7 +275,8 @@ def pspec_and_ctf_fit(options,debug=False):
 		im_1d,bg_1d,im_2d,bg_2d=powspec_with_bg(filename,radius=options.bgmask,edgenorm=not options.nonorm,oversamp=options.oversamp)
 		ds=1.0/(apix*im_2d.get_ysize())
 		if not options.nosmooth : bg_1d=smooth_bg(bg_1d,ds)
-		if options.fixnegbg : bg_1d=fixnegbg(bg_1d,im_1d,ds)
+		if options.fixnegbg : 
+			bg_1d=fixnegbg(bg_1d,im_1d,ds)		# This insures that we don't have unreasonable negative values
 
 		Util.save_data(0,ds,bg_1d,"ctf.bgb4.txt")
 		
@@ -592,8 +594,21 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 	ctf.from_dict({"defocus":1.0,"voltage":voltage,"bfactor":0.0,"cs":cs,"ampcont":ac,"apix":apix,"dsbg":ds,"background":bg_1d})
 	
 	sf = [sfact(i*ds) for i in range(ys)]
+
+	st=int(.04/ds)
+	while im_1d[st]-bg_1d[st]>im_1d[st+1]-bg_1d[st+1] : st+=1	# look for a minimum in the data curve
+	print "Minimum at 1/%1.1f 1/A"%(1.0/(st*ds))
 	
-	if debug: dfout=file("ctf.df.txt","w")
+	if debug:
+		# These lines write the 1-D FFT of the curve
+#		out=file("ctf.dat.txt","w")
+#		bs=[im_1d[s]-bg_1d[s] for s in range(st,ys/2-4)]
+#		bsi=list_to_emdata(bs)
+#		bsf=bsi.do_fft()
+#		for s in range(0,bsf.get_xsize()/2):
+#			out.write("%d\t%1.3g\n"%(s,abs(bsf[s])))
+		dfout=file("ctf.df.txt","w")
+
 	dfbest1=(0,-1.0e20)
 	for dfi in range(5,128):			# loop over defocus
 		ac=10
@@ -601,20 +616,43 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 		ctf.defocus=df
 		ctf.ampcont=ac
 		cc=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_AMP)
-		st=.04/ds
 		norm=0
 		for fz in range(len(cc)): 
 			if cc[fz]<0 : break
+
+
+#		if debug and dfi in (13,45,25,62):
+#			out=file("abc.%d"%dfi,"w")
+#			bs=[cc[s]**2 for s in range(st,ys/2-4)]
+#			bsi=list_to_emdata(bs)
+#			bsf=bsi.do_fft()
+#			for s in range(0,bsf.get_xsize()/2):
+#				out.write("%d\t%1.3g\n"%(s,abs(bsf[s])))
+
+#		if debug and dfi in (13,45,25,62):
+#			bs=[(im_1d[s]-bg_1d[s])/(cc[s]**2+.01) for s in range(st,ys/2-4)]
+#			Util.save_data(0,ds,bs,"abc.%d"%dfi)
 	
-		tot,totr=0,0
-		for s in range(int(st),ys/2): 
-			tot+=(cc[s]**2)*(im_1d[s]-bg_1d[s])
-			totr+=cc[s]**4
-		#for s in range(int(ys/2)): tot+=(cc[s*ctf.CTFOS]**2)*ps1d[-1][s]/norm
-		#for s in range(int(fz/ctf.CTFOS),ys/2): tot+=(cc[s*ctf.CTFOS]**2)*ps1d[-1][s]
-		#for s in range(int(fz/ctf.CTFOS),ys/2): tot+=(cc[s*ctf.CTFOS]**2)*snr[s]
-		tot/=sqrt(totr)
-		#tot/=totr
+		tot,tota,totb=0,0,0
+		zroa,zrob=0,0
+		for s in range(int(st),ys/2-4):
+			# This is basicaly a dot product of the reference curve vs the simulation
+			a=(cc[s]**2)				# ctf curve ^2
+			b=(im_1d[s]-bg_1d[s])		# bg subtracted intensity
+			tot+=a*b
+			tota+=a*a
+			totb+=b*b
+			
+			# This computes the mean value near zeroes
+			if a<.1 and s<ys/3: 
+				zroa+=(im_1d[s]-bg_1d[s])*s
+				zrob+=1.0
+
+#		tot/=sqrt(tota*totb)	# correct if we want a normalized dot product
+		tot/=tota
+		if zrob==0 : continue
+		tot*=-(zroa/zrob)
+		
 		if tot>dfbest1[1] : dfbest1=(df,tot)
 		try :dfout.write("%1.2f\t%g\n"%(df,tot))
 		except : pass
@@ -631,18 +669,24 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 		df=dfi/100.0+dfbest1[0]
 		ctf.defocus=df
 		cc=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_AMP)
-		st=.04/ds
 		norm=0
 		for fz in range(len(cc)): 
 			#norm+=cc[fz]**2
 			if cc[fz]<0 : break
 	
-		tot,totr=0,0
-		for s in range(int(st),ys/2): 
-			tot+=(cc[s]**2)*(im_1d[s]-bg_1d[s])
-			totr+=cc[s]**4
-		
-		tot/=sqrt(totr)
+		tot,tota,totb=0,0,0
+		for s in range(int(st),ys/2-4):
+			a=cc[s]**2				# ctf curve ^2
+			b=im_1d[s]-bg_1d[s]		# bg subtracted intensity
+			tot+=a*b*s
+			tota+=a*a
+			totb+=b*b
+		#for s in range(int(ys/2)): tot+=(cc[s*ctf.CTFOS]**2)*ps1d[-1][s]/norm
+		#for s in range(int(fz/ctf.CTFOS),ys/2): tot+=(cc[s*ctf.CTFOS]**2)*ps1d[-1][s]
+		#for s in range(int(fz/ctf.CTFOS),ys/2): tot+=(cc[s*ctf.CTFOS]**2)*snr[s]
+		#tot/=sqrt(totr)
+		tot/=sqrt(tota*totb)
+
 		if tot>dfbest[1] : 
 			dfbest=(df,tot)
 		if debug : dfout.write("%1.2f\t%g\n"%(df,tot))
@@ -717,7 +761,8 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 		er=0
 		# compute the error
 		for s in range(s0,len(bg_1d)-1):
-			er+=(cc[s]-im_1d[s]+bg_1d[s])**2
+			e=(cc[s]-(im_1d[s]-bg_1d[s]))
+			er+=e**2 *s
 
 		if best[0]==0 or er<best[0] : best=(er,b)
 
@@ -741,7 +786,8 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 		er=0
 		# compute the error
 		for s in range(s0,len(bg_1d)-1):
-			er+=(cc[s]-im_1d[s]+bg_1d[s])**2
+			e=(cc[s]-(im_1d[s]-bg_1d[s]))
+			er+=e**2*s
 
 		if best[0]==0 or er<best[0] : best=(er,ctf.bfactor)
 		
