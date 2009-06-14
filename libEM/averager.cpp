@@ -503,12 +503,13 @@ void CtfCWautoAverager::add_image(EMData * image)
 	size_t sz=snr->get_xsize()*snr->get_ysize();
 	for (size_t i = 0; i < sz; i+=2) {
 		if (snrd[i]<0) snrd[i]=0;
+		ctfd[i]=fabs(ctfd[i]);
 		if (ctfd[i]<.01) {
 			if (snrd[i]<=0) ctfd[i]=.01;
 			else ctfd[i]=snrd[i];
 		}
-		outd[i]+=ind[i]*snrd[i]/fabs(ctfd[i]);
-		outd[i+1]+=ind[i+1]*snrd[i]/fabs(ctfd[i]);
+		outd[i]+=ind[i]*snrd[i]/ctfd[i];
+		outd[i+1]+=ind[i+1]*snrd[i]/ctfd[i];
 	}
 
 	if (nimg==1) {
