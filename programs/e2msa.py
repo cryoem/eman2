@@ -64,6 +64,7 @@ handled this way."""
 	parser.add_option("--maskfile","-M",type="string",help="File containing a mask defining the pixels to include in the Eigenimages")
 	parser.add_option("--varimax",action="store_true",help="Perform a 'rotation' of the basis set to produce a varimax basis",default=False)
 #	parser.add_option("--lowmem","-L",action="store_true",help="Try to use less memory, with a possible speed penalty",default=False)
+	parser.add_option("--simmx",type="string",help="Will use transformations from simmx on each particle prior to analysis")
 	parser.add_option("--gsl",action="store_true",help="Use gsl SVD algorithm",default=False)
 	parser.add_option("--verbose","-v",action="store_true",help="Verbose output",default=False)
 
@@ -90,13 +91,83 @@ handled this way."""
 	#elif options.lowmem : mode="pca_large"
 	#else : mode="pca"
 	
-	out=msa(args[0],mask,options.nbasis,options.varimax,mode)
+	if options.simmx : out=msa(args[0],options.simmx,mask,options.nbasis,options.varimax,mode)
+	else : out=msa(args[0],mask,options.nbasis,options.varimax,mode)
 	
 	if options.verbose : print "MSA complete"
 	for j,i in enumerate(out):
 		if options.verbose : print "Eigenvalue: ",i.get_attr("eigval")
 		i.write_image(args[1],j)
 		
+
+def msa_simmx(images,simmx,mask,nbasis,varimax,mode):
+	"""Perform principle component analysis (in this context similar to Multivariate Statistical Analysis (MSA) or
+Singular Value Decomposition (SVD). 'images' is a filename containing a stack of images to analyze which is coordinated
+with simmx. 'simmx' contains the result of an all-vs-all alignment which will be used to transform the orientation
+of each image before MSA. 'mask' is an EMImage with a binary mask defining the region to analyze (must be the same size as the input
+images. input images will be masked and normalized in-place. The mean value is subtracted from each image prior to
+calling the PCA routine. The first returned image is the mean value, and not an Eigenvector. It will have an
+'eigval' of 0.  If 'varimax' is set, the final basis set will be 'rotated' to produce a varimax basis. Mode must be one of
+pca,pca_large or svd_gsl"""
+
+	simmx=[EMData(simmxpath,i) for i in range(5)]
+
+
+	n=EMUtil.get_image_count(images)
+	if mode=="svd_gsl" : pca=Analyzers.get(mode,{"mask":mask,"nvec":nbasis,"nimg":n})
+	else : pca=Analyzers.get(mode,{"mask":mask,"nvec":nbasis})
+
+	mean=EMData(images,0)
+	for i in range(1,n):
+		im=EMData(images,i)
+		xf=get_xform(i,simmx)
+		im.transform(xf)
+		im*=mask
+		im.process_inplace("normalize.unitlen")
+		mean+=im
+	mean.mult(1.0/float(n))
+	mean.mult(mask)
+	
+	for i in range(n):
+		im=EMData(images,i)
+		xf=get_xform(i,simmx)
+		im.transform(xf)		
+		im*=mask
+		im.process_inplace("normalize.unitlen")
+		im-=mean
+		pca.insert_image(im)
+			
+	results=pca.analyze()
+	for im in results: im.mult(mask)
+	
+	if varimax:
+		pca=Analyzers.get("varimax",{"mask":mask})
+		
+		for im in results:
+			pca.insert_image(im)
+		
+		results=pca.analyze()
+		for im in results: im.mult(mask)
+
+	for im in results:
+		if im["mean"]<0 : im.mult(-1.0)
+
+	mean["eigval"]=0
+	results.insert(0,mean)
+	return results 
+
+def get_xform(n,simmx):
+	"""Will produce a Transform representing the best alignment from a similarity matrix for particle n
+	simmx is a list with the 5 images from the simmx file"""
+	
+	# find the best orienteation from the similarity matrix, and apply the transformation
+	best=(1.0e23,0,0,0,0)
+	
+	for j in range(simmx.get_xsize()): 
+		if simmx.get(j,n)<best[0] : best=(simmx[0].get(j,n),simmx[1].get(j,n),simmx[2].get(j,n),simmx[3].get(j,n),simmx[4].get(j,n))
+	
+
+	return Transform({"type":"2d","phi":best[3],"tx":best[1],"ty":best[2],"flip":best[4]})
 
 def msa(images,mask,nbasis,varimax,mode):
 	"""Perform principle component analysis (in this context similar to Multivariate Statistical Analysis (MSA) or
