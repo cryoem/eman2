@@ -111,6 +111,7 @@ class EMShape:
 		v=d2s(s[4],s[5])
 		v2=d2s(s[4]+1,s[5]+1)
 		sc=v2[0]-v[0]
+
 		
 		if  self.isanimated:
 			#print self.blend, "was the blend value"
@@ -201,6 +202,7 @@ class EMShape:
 			GL.glEnd()
 			
 		elif s[0]=="line":
+#			print "A line ",s[4],s[5],s[6],s[7]
 			GL.glColor(*col)
 			GL.glLineWidth(s[8])
 			GL.glBegin(GL.GL_LINES)

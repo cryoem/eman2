@@ -514,7 +514,9 @@ void CtfCWautoAverager::add_image(EMData * image)
 
 	if (nimg==1) {
 		snrsum=snr->copy_head();
-		snrsum->to_one();			// we're storing total snr+1 instead of just total snr
+		float *ssnrd=snrsum->get_data();
+		// we're only using the real component, and we need to start with 1.0
+		for (size_t i = 0; i < sz; i+=2) { ssnrd[i]=1.0; ssnrd[i+1]=0.0; }
 	}
 	snrsum->add(*snr);
 
@@ -525,11 +527,22 @@ void CtfCWautoAverager::add_image(EMData * image)
 
 EMData * CtfCWautoAverager::finish()
 {
+/*	EMData *tmp=result->do_ift();
+	tmp->write_image("ctfcw.hdf",0);
+	delete tmp;
+
+	tmp=snrsum->do_ift();
+	tmp->write_image("ctfcw.hdf",1);
+	delete tmp;*/
+
 	size_t sz=result->get_xsize()*result->get_ysize();
 	float *snrsd=snrsum->get_data();
 	float *outd=result->get_data();
 
-	for (size_t i=0; i<sz; i++) outd[i]/=snrsd[i];		// snrsd contains total SNR+1
+	for (size_t i=0; i<sz; i+=2) {
+		outd[i]/=snrsd[i];		// snrsd contains total SNR+1
+		outd[i+1]/=snrsd[i];
+	}
 	result->update();
 	result->set_attr("ptcl_repr",nimg);
 
