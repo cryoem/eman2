@@ -188,6 +188,8 @@ template <> Factory < Processor >::Factory()
 	force_add(&AutoMask3D2Processor::NEW);
 	force_add(&AddMaskShellProcessor::NEW);
 	force_add(&AutoMaskAsymUnit::NEW);
+	
+	force_add(&CTFSNRWeightProcessor::NEW);
 
 	force_add(&ToMassCenterProcessor::NEW);
 	force_add(&PhaseToMassCenterProcessor::NEW);
@@ -228,6 +230,7 @@ template <> Factory < Processor >::Factory()
 	force_add(&TestImageEllipse::NEW);
 	force_add(&TestImageHollowEllipse::NEW);
 	force_add(&TestImageFourierNoiseGaussian::NEW);
+	force_add(&TestImageFourierNoiseProfile::NEW);
 
 	force_add(&TomoTiltEdgeMaskProcessor::NEW);
 	force_add(&TomoTiltAngleWeightProcessor::NEW);
@@ -6210,7 +6213,183 @@ void TestImageFourierNoiseGaussian::process_inplace(EMData* image)
 	if (image->get_ndim() != 1) image->process_inplace("xform.fourierorigin.tocorner");
 	image->do_ift_inplace();
 	image->depad();
+}
 
+#include <iostream>
+using std::ostream_iterator;
+
+void CTFSNRWeightProcessor::process_inplace(EMData* image) {
+	if (params.has_key("noise")==false) throw InvalidParameterException("You must supply the noise argument");
+	if (params.has_key("snr")==false) throw InvalidParameterException("You must supply the snr argument");
+	
+	if (!image->is_complex()) {
+		image->do_fft_inplace();
+	}
+	image->ri2ap();
+	
+	vector<float> noise = params["noise"];
+	vector<float> snr = params["snr"];
+	
+	copy(snr.begin(), snr.end(), ostream_iterator<float>(cout, "\n"));
+	copy(noise.begin(), noise.end(), ostream_iterator<float>(cout, "\n"));
+	
+	for(vector<float>::iterator it = noise.begin(); it != noise.end(); ++it){
+		if ((*it) == 0) *it = 1;
+	}
+	for(vector<float>::iterator it = snr.begin(); it != snr.end(); ++it){
+		if ((*it) < 0) *it = 0;
+	}
+	// Subtract the mean from the data and store it in data_mm
+	transform(snr.begin(),snr.end(),noise.begin(),snr.begin(),std::multiplies<float>());
+	transform(snr.begin(),snr.end(),snr.begin(),sqrtf);
+	copy(snr.begin(), snr.end(), ostream_iterator<float>(cout, "\n"));
+	copy(noise.begin(), noise.end(), ostream_iterator<float>(cout, "\n"));
+
+	int i = static_cast<int>(snr.size());
+	
+	float * d = image->get_data();
+	int nx = image->get_xsize();
+// 	int ny = image->get_ysize();
+	int nxy = image->get_ysize()*nx;
+	int nzon2 = image->get_zsize()/2;
+	int nyon2 = image->get_ysize()/2;
+	float rx, ry, rz, amp;
+	int length;
+	int twox;
+	image->process_inplace("xform.fourierorigin.tocenter");
+	for (int z = 0; z< image->get_zsize(); ++z) {
+		for (int y = 0; y < image->get_ysize(); ++y) {
+			for (int x = 0; x < image->get_xsize()/2; ++x) {
+				rx = (float)x;
+				ry = (float)nyon2 - (float)y;
+				rz = (float)nzon2 - (float)z;
+				length = static_cast<int>(sqrt(rx*rx + ry*ry + rz*rz));
+				if (length > i) {
+					amp = 0;
+				} else {
+					amp = snr[length];
+// 					if (amp > 0) amp =sqrtf(amp);
+// 					else amp = 0;
+				}
+				
+				
+				twox = 2*x;
+				size_t idx1 = twox + y*nx+z*nxy;
+// 				size_t idx2 = idx1 + 1;
+				if (d[idx1] < 0) {
+					d[idx1] = amp;
+				}else {
+					d[idx1] = -amp;
+				}
+// 				d[idx2] = phase;
+
+			}
+		}
+	}
+	image->ap2ri();
+	if (image->get_ndim() != 1) image->process_inplace("xform.fourierorigin.tocorner");
+	image->do_ift_inplace();
+	image->depad();
+}
+
+void TestImageFourierNoiseProfile::process_inplace(EMData * image) {
+	
+	if (params.has_key("profile")==false) throw InvalidParameterException("You must supply the profile argument");
+	
+	if (!image->is_complex()) {
+		int nx = image->get_xsize();
+		int offset = 2 - nx%2;
+
+		image->set_size(nx+offset,image->get_ysize(),image->get_zsize());
+		image->set_complex(true);
+		if (1 == offset) image->set_fftodd(true);
+		else image->set_fftodd(false);
+		image->set_fftpad(true);
+	}
+	image->to_zero();
+	image->ri2ap();
+	
+	vector<float> profile = params["profile"];
+	transform(profile.begin(),profile.end(),profile.begin(),sqrtf);
+	
+	int i = static_cast<int>(profile.size());
+	
+	float * d = image->get_data();
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nxy = image->get_ysize()*nx;
+	int nzon2 = image->get_zsize()/2;
+	int nyon2 = image->get_ysize()/2;
+	float rx, ry, rz, amp, phase;
+	int length;
+	int twox;
+	for (int z = 0; z< image->get_zsize(); ++z) {
+		for (int y = 0; y < image->get_ysize(); ++y) {
+			for (int x = 0; x < image->get_xsize()/2; ++x) {
+				rx = (float)x;
+				ry = (float)nyon2 - (float)y;
+				rz = (float)nzon2 - (float)z;
+				length = static_cast<int>(sqrt(rx*rx + ry*ry + rz*rz));
+				if (length > i) continue;
+				amp = profile[length];
+				phase = Util::get_frand(0,1)*2*M_PI;
+
+				twox = 2*x;
+				size_t idx1 = twox + y*nx+z*nxy;
+				size_t idx2 = idx1 + 1;
+				d[idx1] = amp;
+				d[idx2] = phase;
+
+			}
+		}
+	}
+
+	image->ap2ri();
+	if (image->get_ndim() == 2) {
+		bool yodd = image->get_ysize() % 2 == 1;
+
+		int yit = image->get_ysize()/2-1;
+		int offset = 1;
+		if (yodd) {
+			offset = 0;
+		}
+		for (int y = 0; y < yit; ++y) {
+			int bot_idx = (y+offset)*nx;
+			int top_idx = (ny-1-y)*nx;
+			float r1 = d[bot_idx];
+			float i1 = d[bot_idx+1];
+			float r2 = d[top_idx];
+			float i2 = d[top_idx+1];
+			float r = (r1 + r2)/2.0;
+			float i = (i1 + i2)/2.0;
+			d[bot_idx] = r;
+			d[top_idx] = r;
+			d[bot_idx+1] = i;
+			d[top_idx+1] = -i;
+
+			bot_idx = (y+offset)*nx+nx-2;
+			top_idx = (ny-1-y)*nx+nx-2;
+			r1 = d[bot_idx];
+			i1 = d[bot_idx+1];
+			r2 = d[top_idx];
+			i2 = d[top_idx+1];
+			r = (r1 + r2)/2.0;
+			i = (i1 + i2)/2.0;
+			d[bot_idx] = r;
+			d[top_idx] = r;
+			d[bot_idx+1] = i;
+			d[top_idx+1] = -i;
+		}
+
+		d[1] = 0; // 0 phase for this componenet
+		d[nx-1] = 0; // 0 phase for this component
+		d[ny/2*nx+nx-1] = 0;// 0 phase for this component
+		d[ny/2*nx+1] = 0;// 0 phase for this component
+	}
+
+	if (image->get_ndim() != 1) image->process_inplace("xform.fourierorigin.tocorner");
+	image->do_ift_inplace();
+	image->depad();
 }
 
 void TestImageLineWave::process_inplace(EMData * image)

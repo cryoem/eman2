@@ -123,6 +123,12 @@ class EMTaskMonitorWidget(QtGui.QWidget,Animator):
 		QtCore.QObject.connect(self.kill, QtCore.SIGNAL("clicked()"), self.on_kill)
 		
 	def animate(self,time):
+		global HOMEDB
+		HOMEDB=EMAN2db.EMAN2DB.open_db()
+		HOMEDB.open_dict("history")
+		
+		if not HOMEDB.history: return
+		
 		for i,pid in enumerate(self.history_check):
 			try: total = HOMEDB.history["count"]+1
 			except: return True
