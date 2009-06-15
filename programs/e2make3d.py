@@ -134,7 +134,7 @@ def main():
 		
 	if (options.check): options.verbose = True # turn verbose on if the user is only checking...
 	
-	options.nx,options.ny,options.nz = gimme_image_dimensions3D(options.input)
+	if not options.nofilecheck: options.nx,options.ny,options.nz = gimme_image_dimensions3D(options.input)
 	if options.tlt:# the check function makes everyone I assume about the tlt aspect true
 		options.no_wt = True
 		angles = None
