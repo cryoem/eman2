@@ -795,7 +795,8 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 
-	if (nx != ny + 2) {
+	if ((ny%2==1 && nx!=ny+1) || (ny%2==0 && nx != ny + 2)) {
+		printf("nx=%d  ny=%d\n",nx,ny);
 		LOGERR("compute_2d_complex only works on (nx, nx-2) images");
 		return;
 	}

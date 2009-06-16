@@ -489,11 +489,15 @@ void CtfCWautoAverager::add_image(EMData * image)
 	}
 
 	Ctf *ctf = (Ctf *)image->get_attr("ctf");
+	float b=ctf->bfactor;
+	ctf->bfactor=40.0;			// FIXME - this is a temporary fixed B-factor which does a (very) little sharpening
 
 	EMData *snr = result -> copy();
 	ctf->compute_2d_complex(snr,Ctf::CTF_SNR);
 	EMData *ctfi = result-> copy();
 	ctf->compute_2d_complex(ctfi,Ctf::CTF_AMP);
+
+	ctf->bfactor=b;	// return to its original value
 
 	float *outd = result->get_data();
 	float *ind = fft->get_data();
@@ -504,9 +508,9 @@ void CtfCWautoAverager::add_image(EMData * image)
 	for (size_t i = 0; i < sz; i+=2) {
 		if (snrd[i]<0) snrd[i]=0;
 		ctfd[i]=fabs(ctfd[i]);
-		if (ctfd[i]<.01) {
-			if (snrd[i]<=0) ctfd[i]=.01;
-			else ctfd[i]=snrd[i];
+		if (ctfd[i]<.05) {
+			if (snrd[i]<=0) ctfd[i]=.05;
+			else ctfd[i]=snrd[i]*10.0;
 		}
 		outd[i]+=ind[i]*snrd[i]/ctfd[i];
 		outd[i+1]+=ind[i+1]*snrd[i]/ctfd[i];
