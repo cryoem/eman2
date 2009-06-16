@@ -163,15 +163,15 @@ def ali2d_reduce(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, center=1, maxi
 
 
 def ali2d_reduce(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0,\
-		CTF=False, snr=1.0, Fourvar=False, user_func_name="ref_ali2d", rand_alpha=False, decimation=4, MPI=False):
+		CTF=False, snr=1.0, Fourvar=False, user_func_name="ref_ali2d", rand_alpha=False, decimation=4, gradient=True, opti_method="LBFGSB", MPI=False):
 		
 	if MPI:
 		ali2d_reduce_MPI(stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, center, maxit, \
-		CTF, snr, Fourvar, user_func_name, rand_alpha, decimation)
+		CTF, snr, Fourvar, user_func_name, rand_alpha, decimation, gradient, opti_method)
 		return
 
 def ali2d_reduce_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0,\
-		CTF=False, snr=1.0, Fourvar=False, user_func_name="ref_ali2d", rand_alpha=False, decimation=4):
+		CTF=False, snr=1.0, Fourvar=False, user_func_name="ref_ali2d", rand_alpha=False, decimation=4, gradient=True, opti_method="LBFGSB"):
 
 	from utilities    import get_im, file_type, get_params2D, set_params2D, get_image, model_circle
 	from fundamentals import image_decimate
@@ -239,8 +239,9 @@ def ali2d_reduce_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 
 		os.system("rm -f "+small_stack)
 	
 	mpi_barrier(MPI_COMM_WORLD)
-	
-	ali_SSNR(stack, mask, last_ring, maxit=10, CTF=CTF, opti_method="LBFGSB", MPI=True)
+
+	if gradient:	
+		ali_SSNR(stack, mask, last_ring, maxit=10, CTF=CTF, opti_method=opti_method, MPI=True)
 		
 	if myid == main_node:
 		print_end_msg("ali2d_reduce_MPI")

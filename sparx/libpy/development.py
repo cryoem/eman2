@@ -6710,7 +6710,6 @@ def SSNR_grad(args, data):
 			Util.sub_img(C, img_new_copy)
 			Util.mul_img(dSSNR_copy, C)
 			
-
 		Util.mul_img(dSSNR_copy, d_img[im])
 		if CTF:
 			Util.mul_img(dSSNR_copy, ctfimg_list[index_list[im]])
@@ -6968,10 +6967,22 @@ def SSNR_grad_MPI(args, data):
 		"""
 	
 	h = zeros(args.shape, float32)
+	accurate = True
+	
 	for im in xrange(image_start, image_end):
 		img_new = img_data_new[im-image_start].copy()
-
 		dSSNR_copy = dSSNR.copy()
+
+		if accurate: 
+			img_new_copy = img_new.copy()
+			Util.sub_img(img_new_copy, avgimg)
+			Util.mul_img(img_new_copy, dSSNR)
+			img_new_copy = img_new_copy.conjg()
+			Util.mul_scalar(img_new_copy, nima/float(nima-1))
+			C = maskI.copy()
+			Util.sub_img(C, img_new_copy)
+			Util.mul_img(dSSNR_copy, C)
+
 		Util.mul_img(dSSNR_copy, d_img[im-image_start])
 		if CTF:
 			Util.mul_img(dSSNR_copy, ctfimg_list[index_list[im]])
@@ -6980,6 +6991,8 @@ def SSNR_grad_MPI(args, data):
 		h[im*3] = -a0[0]
 		
 		dSSNR_copy = dSSNR.copy()
+		if accurate:
+			Util.mul_img(dSSNR_copy, C)
 		Util.mul_img(dSSNR_copy, img_new)
 		if CTF:
 			Util.mul_img(dSSNR_copy, ctfimg_list[index_list[im]])
@@ -7049,9 +7062,10 @@ def ali_SSNR(stack, maskfile=None, ou=-1, maxit=10, CTF=False, opti_method="CG",
 		else:
 			print_msg("Maskfile                    : user provided in-core mask\n\n")
 			mask = maskfile
-	else : 
+	else :
+		from utilities import model_circle 
 		print_msg("Maskfile                    : default, a circle with radius %i\n\n"%(last_ring))
-		mask = model_circle(last_ring,nx,nx)
+		mask = model_circle(last_ring, nx, nx)
 	
 	
 	# prepare kb for gridding interpolation
@@ -7174,6 +7188,26 @@ def ali_SSNR(stack, maskfile=None, ou=-1, maxit=10, CTF=False, opti_method="CG",
 			if i%2==0: SSNR_r.append(SSNR[i/2]*nima)
 			else:	SSNR_r.append((SSNR[i/2]+SSNR[i/2+1])*0.5*nima)
 		data.append(SSNR_r)
+	
+	'''
+	aaa = SSNR_func(x0, data)
+	bbb = SSNR_grad(x0, data)
+	ccc = [0.0]*(len(x0))
+	for i in xrange(len(x0)):
+		x0[i] += 0.1
+		ccc[i] = SSNR_func(x0, data)
+		x0[i] -= 0.1
+	t = 0
+	for i in xrange(len(x0)):
+		x1 = ccc[i]-aaa
+		x2 = bbb[i]*0.1
+		if x1!=0.0: pct = abs(x1-x2)/abs(x1)
+		else: pct = 0.0
+		t += pct	
+		print i, x1, x2, pct
+	print "Average error = ", t/len(x0)
+	exit()
+	'''
 	
 	if opti_method == "CG":
 		ps = fmin_cg(SSNR_func, x0, fprime=SSNR_grad, args=([data]), gtol=1e-3, norm=Inf, epsilon=1e-5,
@@ -7373,6 +7407,29 @@ def ali_SSNR_MPI(stack, maskfile=None, ou=-1, maxit=10, CTF=False, opti_method="
 			else:	SSNR_r.append((SSNR[i/2]+SSNR[i/2+1])*0.5*nima)
 		data.append(SSNR_r)
 	
+	'''
+	aaa = SSNR_func_MPI(x0, data)
+	bbb = SSNR_grad_MPI(x0, data)
+	ccc = [0.0]*(len(x0))
+	for i in xrange(len(x0)):
+		x0[i] += 0.1
+		ccc[i] = SSNR_func_MPI(x0, data)
+		x0[i] -= 0.1
+		mpi_barrier(MPI_COMM_WORLD)
+	
+	if myid == 0:
+		t = 0
+		for i in xrange(len(x0)):
+			x1 = ccc[i]-aaa
+			x2 = bbb[i]*0.1
+			if x1!=0.0: pct = abs(x1-x2)/abs(x1)
+			else: pct = 0.0
+			t += pct	
+			print i, x1, x2, pct
+		print "Average error = ", t/len(x0)
+	exit()
+	'''
+
 	if opti_method == "CG":
 		ps = fmin_cg(SSNR_func_MPI, x0, fprime=SSNR_grad_MPI, args=([data]), gtol=1e-3, norm=Inf, epsilon=1e-5,
         	      maxiter=max_iter, full_output=0, disp=0, retall=0, callback=None)
