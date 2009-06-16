@@ -4239,6 +4239,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	 *@param dx
 	 *@param y
 	 *@param interpolation
+	 *@param seed seed for random number generator
 	 */
 	class AddRandomNoiseProcessor:public Processor
 	{
