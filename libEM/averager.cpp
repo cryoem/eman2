@@ -490,7 +490,7 @@ void CtfCWautoAverager::add_image(EMData * image)
 
 	Ctf *ctf = (Ctf *)image->get_attr("ctf");
 	float b=ctf->bfactor;
-	ctf->bfactor=40.0;			// FIXME - this is a temporary fixed B-factor which does a (very) little sharpening
+	ctf->bfactor=100.0;			// FIXME - this is a temporary fixed B-factor which does a (very) little sharpening
 
 	EMData *snr = result -> copy();
 	ctf->compute_2d_complex(snr,Ctf::CTF_SNR);
