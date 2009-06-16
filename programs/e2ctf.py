@@ -363,6 +363,9 @@ def process_stack(stackfile,phaseflip=None,wiener=None,edgenorm=True,oversamp=1,
 			fft1.mult(flipim)
 			out=fft1.do_ift()
 			out["ctf"]=ctf
+			out["apix_x"] = ctf.apix
+			out["apix_y"] = ctf.apix
+			out["apix_z"] = ctf.apix
 			out.clip_inplace(Region(int(ys2*(oversamp-1)/2.0),int(ys2*(oversamp-1)/2.0),ys2,ys2))
 			if invert: out.mult(-1.0)
 			out.process("normalize.edgemean")
@@ -381,6 +384,9 @@ def process_stack(stackfile,phaseflip=None,wiener=None,edgenorm=True,oversamp=1,
 			fft1.mult(wienerim)
 			out=fft1.do_ift()
 			out["ctf"]=ctf
+			out["apix_x"] = ctf.apix
+			out["apix_y"] = ctf.apix
+			out["apix_z"] = ctf.apix
 			out.clip_inplace(Region(int(ys2*(oversamp-1)/2.0),int(ys2*(oversamp-1)/2.0),ys2,ys2))
 			if invert : out.mult(-1.0)
 			out.process("normalize.edgemean")

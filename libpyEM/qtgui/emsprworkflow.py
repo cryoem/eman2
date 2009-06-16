@@ -1092,7 +1092,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 			a.read_image(ptcl_list[0],0,True)
 			d = a.get_attr_dict()
 			if enable_ctf and d.has_key("ctf"):
-				self.column_data = ParticleWorkFlowTask.CTFColumns()
+				self.column_data = CTFColumns()
 				table.add_column_data(EMFileTable.EMColumnData("SNR",self.column_data.get_snr_integral,"The averaged SNR"))
 				table.add_column_data(EMFileTable.EMColumnData("Defocus",self.column_data.get_defocus,"The estimated defocus"))
 				table.add_column_data(EMFileTable.EMColumnData("B Factor",self.column_data.get_bfactor,"The estimated B factor, note this is ~4x greater than in EMAN1"))
@@ -1110,74 +1110,74 @@ class ParticleWorkFlowTask(WorkFlowTask):
 
 		return table, len(ptcl_list)
 
-	class CTFColumns:
-		'''
-		Basically some functions with a cache - the cache is to avoid
-		re-reading stuff from disk multiple times
-		'''
-		def __init__(self):
-			self.ctf_cache = {}
-						
-#		def __del__(self):
-#			print "CTF columns dies"
-			
-		def get_defocus(self,name):
-			if self.ctf_cache.has_key(name):
-				ctf = self.ctf_cache[name]
-			else:
-				ctf = self.__get_ctf(name)
-				self.ctf_cache[name] = ctf
-			return "%.3f" %ctf.defocus
-		
-		def __get_ctf(self,name):
-			ctf = None
-			if self.ctf_cache.has_key(name):
-				ctf = self.ctf_cache[name]
-			else:
-				try:
-					a = EMData(name,0,True)
-					d = a.get_attr_dict()
-					ctf = d["ctf"]
-					self.ctf_cache[name] = ctf
-				except:
-					self.ctf_cache[name] = None
-			
-			return ctf
-		
-		def get_bfactor(self,name):
-			ctf = self.__get_ctf(name)
-			if ctf != None:
-				return "%.3f" %ctf.bfactor
-			else: return ""
-				
-		def get_sampling(self,name):
-			ctf = self.__get_ctf(name)
-			if ctf != None:
-				return str(len(ctf.background))
-			else: return ""
-				
-		def get_snr(self,name):
-			ctf = self.__get_ctf(name)
-			if ctf != None:
-				snr = 0
-				try: snr = sum(ctf.snr)/len(ctf.snr)
-				except: pass
-				return "%.3f" %snr
-			else: return ""
-		
-		
-		def get_snr_integral(self,name):
-			ctf = self.__get_ctf(name)
-			if ctf != None:
-				igl = 0
-				apix = ctf.apix
-				nyq = 1/(2.0*apix)
-				n = float(len(ctf.snr))
-				for i,snr in enumerate(ctf.snr):
-					igl += i/n*snr
-				igl /= n
-				return "%.3f" %igl
-			else: return ""
+#	class CTFColumns:
+#		'''
+#		Basically some functions with a cache - the cache is to avoid
+#		re-reading stuff from disk multiple times
+#		'''
+#		def __init__(self):
+#			self.ctf_cache = {}
+#						
+##		def __del__(self):
+##			print "CTF columns dies"
+#			
+#		def get_defocus(self,name):
+#			if self.ctf_cache.has_key(name):
+#				ctf = self.ctf_cache[name]
+#			else:
+#				ctf = self.__get_ctf(name)
+#				self.ctf_cache[name] = ctf
+#			return "%.3f" %ctf.defocus
+#		
+#		def __get_ctf(self,name):
+#			ctf = None
+#			if self.ctf_cache.has_key(name):
+#				ctf = self.ctf_cache[name]
+#			else:
+#				try:
+#					a = EMData(name,0,True)
+#					d = a.get_attr_dict()
+#					ctf = d["ctf"]
+#					self.ctf_cache[name] = ctf
+#				except:
+#					self.ctf_cache[name] = None
+#			
+#			return ctf
+#		
+#		def get_bfactor(self,name):
+#			ctf = self.__get_ctf(name)
+#			if ctf != None:
+#				return "%.3f" %ctf.bfactor
+#			else: return ""
+#				
+#		def get_sampling(self,name):
+#			ctf = self.__get_ctf(name)
+#			if ctf != None:
+#				return str(len(ctf.background))
+#			else: return ""
+#				
+#		def get_snr(self,name):
+#			ctf = self.__get_ctf(name)
+#			if ctf != None:
+#				snr = 0
+#				try: snr = sum(ctf.snr)/len(ctf.snr)
+#				except: pass
+#				return "%.3f" %snr
+#			else: return ""
+#		
+#		
+#		def get_snr_integral(self,name):
+#			ctf = self.__get_ctf(name)
+#			if ctf != None:
+#				igl = 0
+#				apix = ctf.apix
+#				nyq = 1/(2.0*apix)
+#				n = float(len(ctf.snr))
+#				for i,snr in enumerate(ctf.snr):
+#					igl += i/n*snr
+#				igl /= n
+#				return "%.3f" %igl
+#			else: return ""
 
 	
 	class AddDataButton():
@@ -1280,6 +1280,95 @@ class ParticleWorkFlowTask(WorkFlowTask):
 		else: return "-"
 	
 	get_quality_score = staticmethod(get_quality_score)
+
+class CTFColumns:
+	'''
+	Basically some functions with a cache - the cache is to avoid
+	re-reading stuff from disk multiple times
+	'''
+	def __init__(self):
+		self.ctf_cache = {}
+					
+#		def __del__(self):
+#			print "CTF columns dies"
+		
+	
+	def get_ctf(self,name):
+		ctf = None
+		if self.ctf_cache.has_key(name):
+			ctf = self.ctf_cache[name]
+		else:
+			try:
+				a = EMData(name,0,True)
+				d = a.get_attr_dict()
+				ctf = d["ctf"]
+				self.ctf_cache[name] = ctf
+			except:
+				self.ctf_cache[name] = None
+		
+		return ctf
+	
+	def get_defocus(self,name):
+		ctf = self.get_ctf(name)
+		if ctf != None:
+			return "%.3f" %ctf.defocus
+		else: return ""
+	
+	def get_bfactor(self,name):
+		ctf = self.get_ctf(name)
+		if ctf != None:
+			return "%.3f" %ctf.bfactor
+		else: return ""
+			
+	def get_sampling(self,name):
+		ctf = self.get_ctf(name)
+		if ctf != None:
+			return str(len(ctf.background))
+		else: return ""
+			
+	def get_snr(self,name):
+		ctf = self.get_ctf(name)
+		if ctf != None:
+			snr = 0
+			try: snr = sum(ctf.snr)/len(ctf.snr)
+			except: pass
+			return "%.3f" %snr
+		else: return ""
+	
+	
+	def get_snr_integral(self,name):
+		ctf = self.get_ctf(name)
+		if ctf != None:
+			igl = 0
+			apix = ctf.apix
+			nyq = 1/(2.0*apix)
+			n = float(len(ctf.snr))
+			for i,snr in enumerate(ctf.snr):
+				igl += i/n*snr
+			igl /= n
+			return "%.3f" %igl
+		else: return ""
+
+class CTFDBColumns(CTFColumns):
+	def __init__(self):
+		CTFColumns.__init__(self)
+
+	def get_ctf(self,name):
+				ctf = None
+				if self.ctf_cache.has_key(name):
+					ctf = self.ctf_cache[name]
+				else:
+					if db_check_dict("bdb:e2ctf.parms"):
+						ctf_db = db_open_dict("bdb:e2ctf.parms",ro=False)
+						try:
+							vals = ctf_db[get_file_tag(name)][0]
+							ctf = EMAN2Ctf()
+							ctf.from_string(vals)
+							self.ctf_cache[name] = ctf
+						except:
+							pass
+				return ctf
+
 
 # these ptable functions are used by the EMParamTable class for converting entries into absolute file paths, for the purpose of displaying things (like 2D images and plots etc)
 def ptable_convert(text):
@@ -2020,80 +2109,80 @@ class E2CTFWorkFlowTask(ParticleReportTask):
 		table = self.get_project_particle_table()
 		
 		from emform import EMFileTable
-		self.column_data = E2CTFWorkFlowTask.CTFColumns()
+		self.column_data = CTFDBColumns()
 		table.add_column_data(EMFileTable.EMColumnData("Defocus",self.column_data.get_defocus,"The estimated defocus"))
 		table.add_column_data(EMFileTable.EMColumnData("B Factor",self.column_data.get_bfactor,"The estimated B factor, note this is ~4x greater than in EMAN1"))
 		table.add_column_data(EMFileTable.EMColumnData("SNR",self.column_data.get_snr_integral,"The averaged SNR"))
 		table.add_column_data(EMFileTable.EMColumnData("Sampling",self.column_data.get_sampling,"The amount of sampling used for generating CTF parameters"))
 		return table,0
 	
-	class CTFColumns:
-		'''
-		Basically some functions with a cache - the cache is to avoid
-		re-reading stuff from disk multiple times
-		'''
-		def __init__(self):
-			self.ctf_cache = {}
-						
-#		def __del__(self):
-#			print "CTF columns dies"
-			
-		def get_defocus(self,name):
-			ctf = self.__get_ctf(name)
-			if ctf != None:
-				return "%.3f" %self.ctf_cache[name].defocus
-			else: return ""
-			
-		def get_bfactor(self,name):
-			ctf = self.__get_ctf(name)
-			if ctf != None:
-				return "%.3f" %self.ctf_cache[name].bfactor
-			else:
-				return ""
-				
-		def get_sampling(self,name):
-			ctf = self.__get_ctf(name)
-			if ctf != None:
-				return str(len(ctf.background))
-			else: return ""
-
-		def __get_ctf(self,name):
-			ctf = None
-			if self.ctf_cache.has_key(name):
-				ctf = self.ctf_cache[name]
-			else:
-				if db_check_dict("bdb:e2ctf.parms"):
-					ctf_db = db_open_dict("bdb:e2ctf.parms",ro=False)
-					try:
-						vals = ctf_db[get_file_tag(name)][0]
-						ctf = EMAN2Ctf()
-						ctf.from_string(vals)
-						self.ctf_cache[name] = ctf
-					except:
-						pass
-			return ctf
-		def get_snr(self,name):
-			ctf = self.__get_ctf(name)
-			snr = 0
-			if ctf != None:
-				try: snr = sum(ctf.snr)/len(ctf.snr)
-				except: pass
-			
-			return "%.3f" %snr
-		
-		def get_snr_integral(self,name):
-			ctf = self.__get_ctf(name)
-			if ctf != None:
-				igl = 0
-				apix = ctf.apix
-				nyq = 1/(2.0*apix)
-				n = float(len(ctf.snr))
-				for i,snr in enumerate(ctf.snr):
-					igl += i/n*snr
-				
-				igl /= n
-				return "%.3f" %igl
-			else: return ""
+#	class CTFColumns:
+#		'''
+#		Basically some functions with a cache - the cache is to avoid
+#		re-reading stuff from disk multiple times
+#		'''
+#		def __init__(self):
+#			self.ctf_cache = {}
+#						
+##		def __del__(self):
+##			print "CTF columns dies"
+#			
+#		def get_defocus(self,name):
+#			ctf = self.__get_ctf(name)
+#			if ctf != None:
+#				return "%.3f" %self.ctf_cache[name].defocus
+#			else: return ""
+#			
+#		def get_bfactor(self,name):
+#			ctf = self.__get_ctf(name)
+#			if ctf != None:
+#				return "%.3f" %self.ctf_cache[name].bfactor
+#			else:
+#				return ""
+#				
+#		def get_sampling(self,name):
+#			ctf = self.__get_ctf(name)
+#			if ctf != None:
+#				return str(len(ctf.background))
+#			else: return ""
+#
+#		def __get_ctf(self,name):
+#			ctf = None
+#			if self.ctf_cache.has_key(name):
+#				ctf = self.ctf_cache[name]
+#			else:
+#				if db_check_dict("bdb:e2ctf.parms"):
+#					ctf_db = db_open_dict("bdb:e2ctf.parms",ro=False)
+#					try:
+#						vals = ctf_db[get_file_tag(name)][0]
+#						ctf = EMAN2Ctf()
+#						ctf.from_string(vals)
+#						self.ctf_cache[name] = ctf
+#					except:
+#						pass
+#			return ctf
+#		def get_snr(self,name):
+#			ctf = self.__get_ctf(name)
+#			snr = 0
+#			if ctf != None:
+#				try: snr = sum(ctf.snr)/len(ctf.snr)
+#				except: pass
+#			
+#			return "%.3f" %snr
+#		
+#		def get_snr_integral(self,name):
+#			ctf = self.__get_ctf(name)
+#			if ctf != None:
+#				igl = 0
+#				apix = ctf.apix
+#				nyq = 1/(2.0*apix)
+#				n = float(len(ctf.snr))
+#				for i,snr in enumerate(ctf.snr):
+#					igl += i/n*snr
+#				
+#				igl /= n
+#				return "%.3f" %igl
+#			else: return ""
 
 	def get_full_ctf_table(self,project_names=None,no_particles=False):
 		'''
@@ -2559,7 +2648,7 @@ class E2CTFOutputTaskGeneral(E2CTFOutputTask):
 		table.add_button_data(EMRawDataReportTask.ProjectAddRawDataButton(table,context_menu_data))
 	#	table.insert_column_data(1,EMFileTable.EMColumnData("Particles On Disk",ParticleReportTask.get_num_ptcls,"Particles currently stored on disk that are associated with this image"))
 		table.insert_column_data(2,EMFileTable.EMColumnData("Particle Dims",ParticleReportTask.get_particle_dims,"The dimensions of the particles that are stored on disk"))
-		self.column_data = E2CTFWorkFlowTask.CTFColumns()
+		self.column_data = CTFDBColumns()
 		table.add_column_data(EMFileTable.EMColumnData("Defocus",self.column_data.get_defocus,"The estimated defocus"))
 		table.add_column_data(EMFileTable.EMColumnData("B Factor",self.column_data.get_bfactor,"The estimated B factor, note this is ~4x greater than in EMAN1"))
 		table.add_column_data(EMFileTable.EMColumnData("SNR",self.column_data.get_snr,"The averaged SNR"))
@@ -3450,6 +3539,9 @@ class EMClassificationTools(ParticleWorkFlowTask):
 	
 	def check_simmx_page(self,params,options):
 		error_message = []
+		
+		if not params.has_key("shrink"): params["shrink"] = 1
+		
 		if params["shrink"] <= 0:
 			error_message.append("The shrink argument in the simmx page must be atleast 1")
 			
@@ -3733,7 +3825,7 @@ class E2Refine2DChooseStacksTask(ParticleWorkFlowTask):
 		#params.append(ParamDef(name="particle_set_choice",vartype="string",desc_long="Choose the particle data set you wish to use to generate a starting data for e2refine2d",desc_short=title,property=None,defaultunits=db.get("particle_set_choice",dfl=""),choices=choices))
 		db = db_open_dict(self.form_db_name)
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2Refine2DChooseParticlesTask.documentation_string,choices=None))
-		params.append(ParamDef(name="particle_set_choice_stack",vartype="choice",desc_long="Choose the particle data set you wish to use to generate a starting data for e2refine2d",desc_short="Choose data",property=None,defaultunits=db.get("particle_set_choice",dfl=""),choices=choices))
+		params.append(ParamDef(name="particle_set_choice_stack",vartype="choice",desc_long="Choose the particle data set you wish to use to generate a starting data for e2refine2d",desc_short="Choose data",property=None,defaultunits=db.get("particle_set_choice_stack",dfl=""),choices=choices))
 		return params
 
 	def on_form_ok(self,params):
@@ -3971,7 +4063,7 @@ class E2InitialModel(ParticleWorkFlowTask):
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2InitialModel.documentation_string,choices=None))
 		
 		db = db_open_dict(self.form_db_name)
-		piter = ParamDef(name="iter",vartype="int",desc_short="Iterations",desc_long="The number of times each 3D is iteratively refined",property=None,defaultunits=db.get("iter",dfl=4),choices=[])
+		piter = ParamDef(name="iter",vartype="int",desc_short="Iterations",desc_long="The number of times each 3D is iteratively refined",property=None,defaultunits=db.get("iter",dfl=8),choices=[])
 		ptries = ParamDef(name="tries",vartype="int",desc_short="Tries",desc_long="The number of 3D models to generate",property=None,defaultunits=db.get("tries",dfl=10),choices=[])
 		syms = ["icos","oct","tet","c","d","h"]
 		psym =  ParamDef(name="symname",vartype="string",desc_short="Symmetry",desc_long="Symmetry to be imposed during refinement",property=None,defaultunits=db.get("symname",dfl="c"),choices=syms)

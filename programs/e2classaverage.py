@@ -556,7 +556,20 @@ class EMClassAveTask(EMTask):
 		
 		if verbose:
 			print "****************** Produced",len(averages),"averages for class",self.data["class_idx"]
-	
+		
+		apix_x,apix_y,apix_z = 1.0,1.0,1.0
+		for key in images.keys():
+			image = images[key]
+			d = image.get_attr_dict()
+			if d.has_key("apix_x"): apix_x = d["apix_x"]
+			if d.has_key("apix_y"): apix_y = d["apix_y"]
+			if d.has_key("apix_z"): apix_z = d["apix_z"]
+			break
+		
+		for ave in averages:
+			ave["apix_x"] = apix_x
+			ave["apix_y"] = apix_y
+			ave["apix_z"] = apix_z
 		'''
 		Returns a dictionary with these keys/values:
 		--

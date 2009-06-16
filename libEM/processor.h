@@ -2842,7 +2842,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		}
 
 	};
-
+	
 	/** BooleanShrinkProcessor encapsulates code common to
 	* MaxShrinkProcessor and MinShrinkProcessor - the processors use more or less
 	* identical code, the main difference being the logical operator.

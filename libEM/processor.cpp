@@ -1483,7 +1483,7 @@ EMData* FFTResampleProcessor::process(const EMData *const image)
 	fft_resample(result,image,sample_rate);
 	// The image may have been padded - we should shift it so that the phase origin is where FFTW expects it
 	result->update();
-
+	result->scale_pixel(sample_rate);
 	return result;
 }
 
@@ -1499,7 +1499,9 @@ void FFTResampleProcessor::process_inplace(EMData * image)
 
 	fft_resample(image,image,sample_rate);
 
+	image->scale_pixel(sample_rate);
 	image->update();
+	
 
 }
 
@@ -2006,7 +2008,6 @@ void BooleanShrinkProcessor::process_inplace(EMData * image, Dict& params)
 		}
 		image->set_size(tx,ty,tz);
 	}
-
 	image->update();
 }
 
