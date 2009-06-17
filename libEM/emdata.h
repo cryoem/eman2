@@ -136,10 +136,11 @@ namespace EMAN
 		/** Construction from a data pointer, dimensions must be supplied.
 		 * Takes possession of the pointer.
 		 * data pointer must be allocated using malloc!
-		 * @param data a pointer to the pixel data which is stored in memory. Takes possession
-		 * @param nx the number of pixels in the x direction
-		 * @param ny the number of pixels in the y direction
-		 * @param nz the number of pixels in the z direction
+		 *@param data a pointer to the pixel data which is stored in memory. Takes possession
+		 *@param nx the number of pixels in the x direction
+		 *@param ny the number of pixels in the y direction
+		 *@param nz the number of pixels in the z direction
+		 *@param attr_dict attribute dictionary for this image
 		 */
 		EMData(float* data, const int nx, const int ny, const int nz, const Dict& attr_dict = Dict());
 

@@ -101,10 +101,14 @@ void write_data(string fsp,size_t loc);
 
 /** Read the image pixel data in native byte order from a disk file.
  * The image should already have the correct dimensions.
- * @param fsp The filename to write the image data to
- * @param loc Location to seek to in the file before writing (size_t)
- * @author Steve Ludtke
- * @date Mon Jun 23, 2008
+ *@param fsp The filename to read the image data from
+ *@param loc Location to seek to in the file before writing (size_t)
+ *@param area The image region you want to read, default 0 means read the whole image
+ *@param file_nx Image x size.
+ *@param file_ny Image y size.
+ *@param file_nz Image z size.
+ *@author Steve Ludtke
+ *@date Mon Jun 23, 2008
 */
 void read_data(string fsp,size_t loc,const Region* area=0,const int file_nx=0, const int file_ny=0, const int file_nz=0);
 
