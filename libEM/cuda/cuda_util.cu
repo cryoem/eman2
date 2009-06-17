@@ -254,7 +254,7 @@ __global__ void column_sum(float* sum, int ny, int num_threads, int offset ) {
 }
 
 void emdata_column_sum(const EMDataForCuda* sum_target,const int ny) {
-	int max_threads = 512;
+	int max_threads = 192;
 	if (max_threads > sum_target->nx) max_threads = sum_target->nx;
 	
 	int num_calcs = sum_target->nx;

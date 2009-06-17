@@ -25,7 +25,7 @@ __global__ void phase_cmp_weights(float* out, int num_threads, int nx, int ny, i
 
 void calc_phase_weights_cuda(EMDataForCuda* t,float np) {
 	
-	int max_threads = 512;
+	int max_threads = 192;
 	int num_calcs = t->ny*t->nx*t->nz;
 	
 	int grid_y = num_calcs/(max_threads);
@@ -62,7 +62,7 @@ void histogram_sum(EMDataForCuda* hist, const int num_hist){
 	for(int i = 0; i < num_hist-1; ++i) {
 		EMDataForCuda* l = hist+i;
 		EMDataForCuda* r = hist+(i+1);
-		int max_threads = 512;
+		int max_threads = 192;
 		int num_calcs = (l->nx*l->ny*l->nz)/2;
 		num_calcs += num_calcs%2;
 		int grid_y = num_calcs/(max_threads);
@@ -126,7 +126,7 @@ __global__ void single_normal_kernel(float *ldata,float *rdata)
 }
 	
 void mean_phase_error_cuda(EMDataForCuda* left, EMDataForCuda* right, EMDataForCuda* wt,EMDataForCuda* hist, EMDataForCuda* norm, const int num_hist) {
-	int max_threads = 512; // I halve the threads because each kernel access memory in two locations
+	int max_threads = 192; // I halve the threads because each kernel access memory in two locations
 
 	int num_calcs = left->nx*left->ny*left->nz;
 	

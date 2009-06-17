@@ -35,8 +35,9 @@ from time import time
 import PyQt4
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
-
-
+from math import sin,acos
+from EMAN2 import Vec3f, Transform
+import EMAN2db
 
 class Animator:
 	'''
@@ -72,6 +73,8 @@ class Animator:
 	def get_time(self):
 		return self.time
 	
+	def update(self): pass
+	
 	def register_animatable(self,animatable):
 		if not self.timer_enabled:
 			self.__enable_timer()
@@ -86,6 +89,8 @@ class Animator:
 			self.timer.start(self.timer_interval)
 			self.timer_enabled = True
 		else: print "timer already enabled in Animator"
+		
+	def animation_done_event(self,animated): raise NotImplementedError("Inheriting classes should define this function")
 
 class Animatable:
 	cache_dts = None
@@ -139,13 +144,13 @@ class Animatable:
 			self.target.animation_done_event(self)
 			return 0
 		else:
-			dt = self.__get_dt()
+			dt = self.get_dt()
 			self.calculate_animation(dt)
 			return 1
 	
 	def calculate_animation(self,dt): raise
 	
-	def __get_dt(self):
+	def get_dt(self):
 		idx = int( self.n*self.time*self.inverse_time_inverval)
 		#print Animatable.cache_dts
 		return Animatable.cache_dts[idx]
@@ -320,6 +325,114 @@ class LineAnimation(Animatable):
 		y = (1-dt)*self.start[1] + dt*self.end[1]
 		self.current = (x,y)
 		self.target.set_line_animation(x,y)
+		
+	def transform(self):pass
+	
+	
+class OrientationListAnimation(Animatable):
+	'''
+	Animates through a list of orientations using great circles on the unit sphere
+	'''
+	def __init__(self,target,transforms,radius=1):
+		if len(transforms) < 2: raise RuntimeError("Can run orientation list animation on a list less than length 2")
+		Animatable.__init__(self)
+		self.target = target
+		self.transitions = len(transforms)-1
+		self.transforms = transforms
+		self.stage = 0
+		self.radius = radius
+		self.z_point = Vec3f(0,0,1)
+		self.arc_points = []
+		self.omega = 1
+		self.rot_vec = None
+		self.__establish_sphere_points(self.stage)
+		self.arc_points[0].append(self.radius*self.start_point)
+		
+		
+		
+		
+	
+	def __establish_sphere_points(self,stage):
+		self.start_point = self.transforms[stage].transpose()*self.z_point
+		self.end_point = self.transforms[stage+1].transpose()*self.z_point
+		if self.start_point != self.end_point:
+			self.angle = acos(self.start_point.dot(self.end_point))
+			self.omega = 1
+		else:
+			self.angle = 0
+			normal = Vec3f(-self.start_point[2],0,-self.start_point[0])
+			normal.normalize()
+			
+			T = Transform()
+			d = {"type":"spin"}
+			d["Omega"] = self.omega
+			d["n1"] = normal[0]
+			d["n2"] = normal[1]
+			d["n3"] = normal[2]
+			T.set_rotation(d)
+			self.rot_vec = self.start_point
+			p = self.start_point
+			self.start_point = T*self.rot_vec
+			self.end_point = T*self.rot_vec
+			self.omega += 1
+			
+		self.sinangle = sin(self.angle)
+		self.arc_points.append([])
+	def __del__(self):
+		self.target.animation_done_event(self)
+	
+	def animate(self,t):
+		if not self.animated: return False
+		
+		if self.time_begin == 0:
+			self.time_begin = t
+			
+		self.time = t -self.time_begin
+
+		if self.time > self.time_interval:
+			if self.arc_points[self.stage][-1] != self.end_point:
+				self.arc_points[self.stage].append(self.radius*self.end_point)
+				self.target.arc_animation_update(self.arc_points)
+			self.time_begin = 0
+			self.time = 0
+			self.stage += 1
+			if self.stage < self.transitions:
+				self.__establish_sphere_points(self.stage)
+				return 1
+			else:
+				
+				self.animated = False
+				self.target.animation_done_event(self)
+				return 0
+		else:
+			dt = self.get_dt()
+			self.calculate_animation(dt)
+			return 1
+	
+	def calculate_animation(self,dt):
+		'''
+		based on the assumption that dt goes from 0 to 1
+		'''
+		if dt > 1: raise
+		if self.angle != 0:
+			t1 = dt*self.angle
+			t2 = self.angle - t1
+			next = (sin(t2)*self.start_point + sin(t1)*self.end_point)/self.sinangle
+		else:
+			T = Transform()
+			d = {"type":"spin"}
+			d["Omega"] = dt*360
+			d["n1"] = self.rot_vec[0]
+			d["n2"] = self.rot_vec[1]
+			d["n3"] = self.rot_vec[2]
+			T.set_rotation(d)
+			
+			next = T*self.start_point
+			
+			#next = Vec3f(self.start_point[0],self.start_point[1],self.start_point[2])
+		
+		self.arc_points[self.stage].append(self.radius*next)
+		self.target.arc_animation_update(self.arc_points)
 		
 	def transform(self):pass
 		

@@ -287,8 +287,6 @@ def transform_to_str(self):
 	return s
 
 Transform.__str__ = transform_to_str
-	
-
 
 def db_read_image(self,fsp,*parms):
 	"""read_image(filespec,image #,[header only],[region],[is_3d])

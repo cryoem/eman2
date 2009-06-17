@@ -71,6 +71,8 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 
 
 	def __init__(self,application=None,inspector_go=True,ensure_gl_context=True,application_control=True):
+		self.arc_anim_dl = None
+		self.arc_anim_points = None
 		EMImage3DGUIModule.__init__(self,application,ensure_gl_context,application_control)
 		
 		
@@ -79,6 +81,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		self.point_colors = [] # will eventually store colors for the different points
 		self.init()
 		self.initialized = True
+		
 		
 		if inspector_go: self.get_inspector()
 		
@@ -137,6 +140,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		self.display_arc = True
 		self.sym_object = None
 		self.update_sym_dl = True
+		
 		
 		self.radius = 50
 		
@@ -355,12 +359,13 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 				prev = Vec3f(next[0],next[1],next[2])
 				
 	
-	def cylinder_to_from(self,next,prev):
+	def cylinder_to_from(self,next,prev,scale=0.5):
 		dx = next[0] - prev[0]
 		dy = next[1] - prev[1]
 		dz = next[2] - prev[2]
-		
-		length = sqrt(dx**2 + dy**2 + dz**2)
+		try:
+			length = sqrt(dx**2 + dy**2 + dz**2)
+		except: return
 		
 		if length == 0: return
 		
@@ -373,7 +378,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		glRotatef(90+phi,0,0,1)
 		glRotatef(alt,1,0,0)
 		
-		glScalef(0.5,0.5,length)
+		glScalef(scale,scale,length)
 		glCallList(self.cylinderdl)
 		glPopMatrix()
 
@@ -625,7 +630,6 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		self.trace_dl = glGenLists(1)
 		
 		glNewList( self.trace_dl,GL_COMPILE)
-		print "going through range",self.lr,self.hr
 		for i in range(self.lr,self.hr):
 			for j in range(0,len(self.tracedata[i])-1):
 				alt = self.tracedata[i][j][0]
@@ -664,6 +668,20 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 	
 		self.updateGL()
 		
+	def arc_animation_update(self,points):
+		self.arc_anim_points = points
+		
+#		if self.arc_anim_dl:
+#			glDeleteLists(self.arc_anim_dl,1)
+#			
+#		self.arc_anim_dl = glGenLists(1)
+#		glNewList(self.arc_anim_dl,GL_COMPILE)
+#		
+#		for i in xrange(0,len(points)-2):
+#			self.cylinder_to_from(points[i],points[i+1])
+#		glEndList()
+		self.updateGL()
+			
 	def render(self):
 		if self.vdtools == None:
 			self.vdtools = EMViewportDepthTools2(self.get_gl_context_parent())
@@ -780,7 +798,16 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 						glRotate(-d["az"],0,0,1)
 					glCallList(self.sym_dl)
 					glPopMatrix()
-			
+		
+		if (self.arc_anim_points):
+			self.gold()
+			for points in self.arc_anim_points:
+				for i in range(0,len(points)-1):
+					self.cylinder_to_from(points[i],points[i+1],scale=0.25)
+
+			if len(self.arc_anim_points[-1]) > 0:
+				self.cylinder_to_from(Vec3f(0,0,0),self.arc_anim_points[-1][-1],scale=0.25)
+
 			
 		if self.trace_dl != 0:
 			glColor(.9,.2,.8)
@@ -795,17 +822,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 			glPopMatrix()
 		glStencilFunc(GL_EQUAL,self.rank,self.rank)
 		glStencilOp(GL_KEEP,GL_KEEP,GL_KEEP)
-		
-		#glPushMatrix()
-		## FIXME the approach here is very inefficient
-		#glLoadIdentity()
-		#[width,height] = self.parent.get_near_plane_dims()
-		#z = self.parent.get_start_z()
-		#glTranslate(-width/2.0,-height/2.0,-z-0.01)
-		#glScalef(width,height,1.0)
-		#self.draw_bc_screen()
-		#glPopMatrix()
-		
+
 		glStencilFunc(GL_ALWAYS,1,1)
 		if self.cube:
 			glPushMatrix()

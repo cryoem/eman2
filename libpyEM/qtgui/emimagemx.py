@@ -1641,7 +1641,7 @@ class EMImageMXModule(EMGUIModule):
 			if index != 0: index %= self.max_idx
 			data = item[1]
 			if absloc[0]>data[0] and absloc[1]>data[1] and absloc[0]<data[0]+data[2] and absloc[1]<data[1]+data[3] :
-				return (index,(absloc[0]-data[0])/self.scale,(absloc[1]-data[1])/self.scale)
+				return (index,(absloc[0]-data[0])/self.scale,(absloc[1]-data[1])/self.scale, self.data[index].get_attr_dict())
 		return None
 		
 	def dragEnterEvent(self,event):

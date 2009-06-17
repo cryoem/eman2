@@ -24,7 +24,7 @@ __global__ void mult_kernel(float *data,const float scale,const int num_threads)
 
 void emdata_processor_mult( EMDataForCuda* cuda_data, const float& mult) {
 	
-	int max_threads = 512;
+	int max_threads = 192;
 
 	int num_calcs = cuda_data->nx*cuda_data->ny*cuda_data->nz;
 	
@@ -57,7 +57,7 @@ __global__ void add_kernel(float *data,const float add,const int num_threads)
 
 void emdata_processor_add( EMDataForCuda* cuda_data, const float& add) {
 	
-	int max_threads = 512;
+	int max_threads = 192;
 
 	int num_calcs = cuda_data->nx*cuda_data->ny*cuda_data->nz;
 	
@@ -90,7 +90,7 @@ __global__ void assignment_kernel(float *data,const float value,const int num_th
 
 void emdata_processor_to_value( EMDataForCuda* cuda_data, const float& value) {
 	
-	int max_threads = 512;
+	int max_threads = 192;
 
 	int num_calcs = cuda_data->nx*cuda_data->ny*cuda_data->nz;
 	
@@ -140,7 +140,7 @@ void emdata_phaseorigin_to_center_fourier(const EMDataForCuda* cuda_data) {
 	float* data = cuda_data->data;
 	
 	if ( nx%2==0 && (ny%2==0 || ny==1 ) && (nz%2==0 || nz==1 ) ) {
-		int max_threads = 512;
+		int max_threads = 192;
 		
 		int num_calcs = nz*ny*(nx/4);
 			
@@ -247,7 +247,7 @@ __global__ void correlation_kernel_texture_3D(float *ldata,const int num_threads
 }
 
 void emdata_processor_correlation_texture( const EMDataForCuda* cuda_data, const int center ) {
-	int max_threads = 512; // I halve the threads because each kernel access memory in two locations
+	int max_threads = 192; // I halve the threads because each kernel access memory in two locations
 
 	int num_calcs = cuda_data->nx*cuda_data->ny*cuda_data->nz;
 	
@@ -286,7 +286,7 @@ void emdata_processor_correlation_texture( const EMDataForCuda* cuda_data, const
 
 
 void emdata_processor_correlation( const EMDataForCuda* left, const EMDataForCuda* right, const int center) {
-	int max_threads = 512;
+	int max_threads = 192;
 
 	int num_calcs = left->nx*left->ny*left->nz;
 	
@@ -354,7 +354,7 @@ void emdata_unwrap(EMDataForCuda* data, int r1, int r2, int xs, int num_pi, int 
 // 		throw;
 // 	}
 	
-	int max_threads = 512;
+	int max_threads = 192;
 	int num_calcs = n;
 	
 	int grid_y = num_calcs/(max_threads);
@@ -461,7 +461,7 @@ void swap_central_slices_180(EMDataForCuda* cuda_data)
 		if ( yodd ) {
 			// Iterate along middle row, swapping values where appropriate
 			
-			int max_threads = 512;
+			int max_threads = 192;
 			int num_calcs = nx/2;
 				
 			int grid_y = num_calcs/(max_threads);
@@ -482,7 +482,7 @@ void swap_central_slices_180(EMDataForCuda* cuda_data)
 
 		if ( xodd )	{
 			// Iterate along the central column, swapping values where appropriate
-			int max_threads = 512;
+			int max_threads = 192;
 			int num_calcs = ny/2;
 				
 			int grid_y = num_calcs/(max_threads);
@@ -526,7 +526,7 @@ void swap_corners_180(EMDataForCuda* cuda_data)
 		throw;
 	}
 	else if ( nz == 1 ) {
-		int max_threads = 512;
+		int max_threads = 192;
 		int num_calcs = ny/2*nx/2;
 			
 		int grid_y = num_calcs/(max_threads);
@@ -693,7 +693,7 @@ EMDataForCuda* emdata_transform_cuda(const float* const matrix,const int nx,cons
 	trans.y =matrix[7];
 	trans.z =matrix[11];
 	
-	int max_threads = 512;
+	int max_threads = 192;
 	int num_calcs = ny*nx*nz;
 	
 	int grid_y = num_calcs/(max_threads);

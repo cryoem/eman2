@@ -41,13 +41,14 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 import weakref
 from optparse import OptionParser
-from EMAN2 import Util, E2init, E2end,EMANVERSION,is_2d_image_mx, EMUtil, db_open_dict, EMData, Transform, db_check_dict, db_close_dict, get_files_and_directories
+from EMAN2 import Util, E2init, E2end,EMANVERSION,is_2d_image_mx, EMUtil, db_open_dict, EMData, Transform, db_check_dict, db_close_dict, get_files_and_directories,get_file_tag,gimme_image_dimensions3D,Region
 from emapplication import get_application
 from emimagemx import EMImageMXModule
 import os
 import sys
 from libpyGLUtils2 import GLUtil
 from emsprworkflow import error
+from emanimationutil import OrientationListAnimation,Animator
 
 
 def get_eulers_from(filename):
@@ -295,7 +296,7 @@ class ClassOrientationEvents(NavigationEvents,QtCore.QObject):
 			if self.old_intersection >= 0:
 				new_colors[self.old_intersection] = self.old_color
 				self.old_intersection = -1
-			else: 
+			else:
 				NavigationEvents.mouseReleaseEvent(self,event)
 				return
 		
@@ -319,11 +320,7 @@ class ClassOrientationEvents(NavigationEvents,QtCore.QObject):
 		self.old_intersection = None
 		self.old_color = None
 	
-			
-		
-
-
-class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
+class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 	def get_desktop_hint(self): return "image"
 	def keyPressEvent(self,event):
 		
@@ -336,7 +333,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 			self.gen_refinement_data()
 		EM3DSymViewerModule.__init__(self,application,inspector_go=False)
 		InputEventsManager.__init__(self)
-		
+		Animator.__init__(self)
 		self.__init_events_handlers()
 		self.projection_file = None
 		self.average_file = None
@@ -345,6 +342,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 		self.clsdb = None
 		self.particle_file = None
 		self.alignment_file = None
+		self.refine_dir = None
 		self.dx = None
 		self.dy = None
 		self.da = None
@@ -378,7 +376,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 				self.au_selected(au,cls)
 				
 		self.regen_dl()
-			
+		
 	
 	def get_data_dims(self):
 		return (2*self.radius,2*self.radius,2*self.radius)
@@ -451,23 +449,24 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 		return self.inspector
 
 	
-	def au_selected(self,au,cls):
+	def au_selected(self,refine_dir,cls):
+		self.refine_dir = refine_dir
 		get_application().setOverrideCursor(Qt.BusyCursor)
 		data = []
-		for d in self.au_data[au]:
+		for d in self.au_data[refine_dir]:
 			if d[0] == cls:
 				data = d;
 				break
 			
 		if len(data) == 0:
 			
-			error("error, no data for %s %s, returning" %(au,cls))
+			error("error, no data for %s %s, returning" %(refine_dir,cls))
 #			print "error, no data for",au,cls,"returning"
 			self.events_handlers["inspect"].reset()
 			get_application().setOverrideCursor(Qt.ArrowCursor)
 			return
 		
-		register_db_name = "bdb:"+au+"#register"
+		register_db_name = "bdb:"+refine_dir+"#register"
 		if not db_check_dict(register_db_name):
 			error("The %s database does not exist" %register_db_name )
 			self.events_handlers["inspect"].reset()
@@ -525,6 +524,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 		self.current_events_handler = self.events_handlers["inspect"]
 	
 	def au_point_selected(self,i):
+		self.arc_anim_points = None
 		self.projection = None
 		try:
 			self.average = EMData(self.average_file,i)
@@ -560,14 +560,57 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 			self.mx_image_selected(None,None)
 			
 		if first: self.mx_viewer.optimally_resize()
+		
+		self.updateGL()
 			
 	def on_mx_view_closed(self):
 		self.mx_viewer = None
 		
 	def on_particle_mx_view_closed(self):
 		self.mx_particle_viewer = None
+	
+	def animation_done_event(self,animation):
+		pass
+	
+	
+	def alignment_time_animation(self,transforms):
+		if len(transforms) == 0: return
+		animation = OrientationListAnimation(self,transforms,self.radius)
+		self.register_animatable(animation)
+			
+	def particle_selected(self,event,lc):
+		if lc != None:
+			d = lc[3]
+			ptcl_idx = d["ptcl_idx"]
+			data = self.au_data[self.refine_dir]
+			prj = []
+			cls_result = []
+			for l in data:
+				for s in l:
+					stag = get_file_tag(s)
+					
+					if len(stag) > 11 and stag[:11] == "projections":
+						prj.append(s)
+					elif len(stag) > 10 and stag[:10] == "cls_result":
+						cls_result.append(s)
+						
+			transforms = []
+			if len(prj) != len(cls_result): RunTimeError("The number of cls_result files does not match the number of projection files?")
+			
+			e = EMData()
+			for i,cr in enumerate(cls_result):
+				nx,ny,nz = gimme_image_dimensions3D(cr)
+				r = Region(0,ptcl_idx,1,1)
+				e.read_image(cr,0,False,r)
+				p = int(e.get(0))
+				e.read_image(prj[i],p,True)
+				transforms.append(e["xform.projection"])
+				
+			self.alignment_time_animation(transforms)
+						
 		
 	def mx_image_selected(self,event,lc):
+		self.arc_anim_points = None
 		get_application().setOverrideCursor(Qt.BusyCursor)
 		if lc != None: self.sel = lc[0]
 		if self.clsdb != None and self.particle_file != None and self.class_idx > -1:
@@ -576,13 +619,17 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 			mx = []
 			if indices == None: return
 			for val in indices:
-				mx.append(EMData(self.particle_file,val))
+				e = EMData(self.particle_file,val)
+				e.set_attr("ptcl_idx",val)
+				mx.append(e)
 			
 			first = False
 			if self.mx_particle_viewer == None:
 				first = True
 				self.mx_particle_viewer = EMImageMXModule(data=None,application=get_application())
+				self.mx_particle_viewer.set_mouse_mode("app" )
 				self.connect(self.mx_particle_viewer,QtCore.SIGNAL("module_closed"),self.on_particle_mx_view_closed)
+				self.connect(self.mx_particle_viewer,QtCore.SIGNAL("mx_image_selected"), self.particle_selected)
 				get_application().show_specific(self.mx_particle_viewer)
 			
 			
@@ -641,6 +688,8 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 			self.mx_particle_viewer.updateGL()
 			
 			get_application().setOverrideCursor(Qt.ArrowCursor)
+			
+			self.updateGL()
 			
 	def check_images_in_memory(self):
 		if self.alignment_file != None:
@@ -759,7 +808,7 @@ class EMAsymmetricUnitInspector(EMSymInspector):
 		self.connect(self.combo,QtCore.SIGNAL("currentIndexChanged(const QString&)"),self.on_combo_change)
 			
 		self.vbl2.addWidget(self.combo)
-		self.au_selection = combo_entries[0]
+		self.refine_dir = combo_entries[0]
 		
 		self.list_widget = QtGui.QListWidget(None)
 		
@@ -771,7 +820,8 @@ class EMAsymmetricUnitInspector(EMSymInspector):
 		self.vbl2.addWidget(self.list_widget)
 	
 	def on_combo_change(self,s):
-		self.au_selection = str(s)
+		self.refine_dir = str(s)
+		print self.refine_dir
 		self.update_classes_list()
 	
 	def update_classes_list(self,first_time=False):
@@ -783,7 +833,7 @@ class EMAsymmetricUnitInspector(EMSymInspector):
 			if len(s_text) > 4: s_text = s_text[-4:] 
 			
 		self.list_widget.clear()
-		for i,vals in enumerate(self.au_data[self.au_selection]):
+		for i,vals in enumerate(self.au_data[self.refine_dir]):
 			choice = vals[0]
 			
 			a = QtGui.QListWidgetItem(str(choice),self.list_widget)
@@ -794,10 +844,10 @@ class EMAsymmetricUnitInspector(EMSymInspector):
 				
 		selected_items = self.list_widget.selectedItems() # need to preserve the selection
 		if len(selected_items) == 1:
-			self.emit(QtCore.SIGNAL("au_selected"),self.au_selection,str(selected_items[0].text()))
+			self.emit(QtCore.SIGNAL("au_selected"),self.refine_dir,str(selected_items[0].text()))
 	
 	def list_widget_item_clicked(self,item):
-		self.emit(QtCore.SIGNAL("au_selected"),self.au_selection,str(item.text()))
+		self.emit(QtCore.SIGNAL("au_selected"),self.refine_dir,str(item.text()))
 	
 	def on_mouse_mode_clicked(self,bool):
 		for button in self.mouse_mode_buttons:
