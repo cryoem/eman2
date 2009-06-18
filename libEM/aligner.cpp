@@ -59,6 +59,7 @@ template <> Factory < Aligner >::Factory()
 	force_add(&RTFExhaustiveAligner::NEW);
 	force_add(&RTFSlowExhaustiveAligner::NEW);
 	force_add(&RefineAligner::NEW);
+	force_add(&Refine3DAligner::NEW);
 }
 
 // Note, the translational aligner assumes that the correlation image
@@ -1056,6 +1057,144 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 	tsoln.set_trans((float)gsl_vector_get(s->x, 0),(float)gsl_vector_get(s->x, 1));
 	EMData *result = this_img->process("math.transform",Dict("transform",&tsoln));
 	result->set_attr("xform.align2d",&tsoln);
+
+	gsl_vector_free(x);
+	gsl_vector_free(ss);
+	gsl_multimin_fminimizer_free(s);
+
+	if ( c != 0 ) delete c;
+	return result;
+}
+
+
+static double refalifn3d(const gsl_vector * v, void *params)
+{
+	Dict *dict = (Dict *) params;
+
+	double x = gsl_vector_get(v, 0);
+	double y = gsl_vector_get(v, 1);
+	double z = gsl_vector_get(v, 2);
+	double az = gsl_vector_get(v, 3);
+	double alt = gsl_vector_get(v, 4);
+	double phi = gsl_vector_get(v, 5);
+	EMData *this_img = (*dict)["this"];
+	EMData *with = (*dict)["with"];
+	bool mirror = (*dict)["mirror"];
+
+	Dict d("type","eman","az",static_cast<float>(az));
+	d["alt"] = static_cast<float>(alt);
+	d["phi"] = static_cast<float>(phi);
+	Transform t(d);
+	t.set_trans((float)x,(float)y,(float)z);
+	t.set_mirror(mirror);
+	EMData *tmp = this_img->process("math.transform",Dict("transform",&t));
+
+	Cmp* c = (Cmp*) ((void*)(*dict)["cmp"]);
+	double result = c->cmp(tmp,with);
+	if ( tmp != 0 ) delete tmp;
+
+	return result;
+}
+
+EMData* Refine3DAligner::align(EMData * this_img, EMData *to,
+	const string & cmp_name, const Dict& cmp_params) const
+{
+
+	if (!to) {
+		return 0;
+	}
+	
+	if (to->get_ndim() != 3 || this_img->get_ndim() != 3) throw ImageDimensionException("The Refine3D aligner only works for 3D images");
+
+	float saz = 0.0;
+	float sphi = 0.0;
+	float salt = 0.0;
+	float sdx = 0.0;
+	float sdy = 0.0;
+	float sdz = 0.0;
+	bool mirror = false;
+	if (params.has_key("xform.align2d") ) {
+		Transform* t = params["xform.align2d"];
+		Dict params = t->get_params("eman");
+		saz = params["az"];
+		sphi = params["phi"];
+		salt = params["alt"];
+		sdx = params["tx"];
+		sdy = params["ty"];
+		sdz = params["tz"];
+		mirror = params["mirror"];
+		delete t;
+		t = 0;
+	}
+
+	int np = 6;
+	Dict gsl_params;
+	gsl_params["this"] = this_img;
+	gsl_params["with"] = to;
+	gsl_params["snr"]  = params["snr"];
+	gsl_params["mirror"] = mirror;
+
+	const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex;
+	gsl_vector *ss = gsl_vector_alloc(np);
+
+	float stepx = params.set_default("stepx",1.0f);
+	float stepy = params.set_default("stepy",1.0f);
+	float stepz = params.set_default("stepz",1.0f);
+	// Default step is 5 degree - note in EMAN1 it was 0.1 radians
+	float stepaz = params.set_default("stepaz",5.0f);
+	float stepphi = params.set_default("stepalt",5.0f);
+	float stepalt = params.set_default("stepphi",5.0f);
+
+	gsl_vector_set(ss, 0, stepx);
+	gsl_vector_set(ss, 1, stepy);
+	gsl_vector_set(ss, 2, stepz);
+	gsl_vector_set(ss, 3, stepaz);
+	gsl_vector_set(ss, 4, stepalt);
+	gsl_vector_set(ss, 5, stepphi);
+
+	gsl_vector *x = gsl_vector_alloc(np);
+	gsl_vector_set(x, 0, sdx);
+	gsl_vector_set(x, 1, sdy);
+	gsl_vector_set(x, 2, sdz);
+	gsl_vector_set(x, 3, saz);
+	gsl_vector_set(x, 4, salt);
+	gsl_vector_set(x, 5, sphi);
+
+	gsl_multimin_function minex_func;
+	Cmp *c = Factory < Cmp >::get(cmp_name, cmp_params);
+	gsl_params["cmp"] = (void *) c;
+	minex_func.f = &refalifn3d;
+	
+	minex_func.n = np;
+	minex_func.params = (void *) &gsl_params;
+
+	gsl_multimin_fminimizer *s = gsl_multimin_fminimizer_alloc(T, np);
+	gsl_multimin_fminimizer_set(s, &minex_func, x, ss);
+
+	int rval = GSL_CONTINUE;
+	int status = GSL_SUCCESS;
+	int iter = 1;
+
+	float precision = params.set_default("precision",0.04f);
+	int maxiter = params.set_default("maxiter",28);
+	while (rval == GSL_CONTINUE && iter < maxiter) {
+		iter++;
+		status = gsl_multimin_fminimizer_iterate(s);
+		if (status) {
+			break;
+		}
+		rval = gsl_multimin_test_size(gsl_multimin_fminimizer_size(s), precision);
+	}
+	
+	Dict d("type","eman","az",(float)gsl_vector_get(s->x, 3));
+	d["alt"] = (float)gsl_vector_get(s->x, 4);
+	d["phi"] = (float)gsl_vector_get(s->x, 5);
+	Transform tsoln(d);
+	tsoln.set_trans((float)gsl_vector_get(s->x, 0),(float)gsl_vector_get(s->x, 1),(float)gsl_vector_get(s->x, 2) );
+	tsoln.set_mirror(mirror);
+
+	EMData *result = this_img->process("math.transform",Dict("transform",&tsoln));
+	result->set_attr("xform.align3d",&tsoln);
 
 	gsl_vector_free(x);
 	gsl_vector_free(ss);

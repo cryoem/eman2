@@ -561,6 +561,51 @@ namespace EMAN
 	};
 
 
+	/** refine alignment. Refines a preliminary 3D alignment using a simplex algorithm. Subpixel precision.
+	 */
+	class Refine3DAligner:public Aligner
+	{
+		public:
+			EMData * align(EMData * this_img, EMData * to_img,
+						   const string & cmp_name="dot", const Dict& cmp_params = Dict()) const;
+
+			EMData * align(EMData * this_img, EMData * to_img) const
+			{
+				return align(this_img, to_img, "sqeuclidean", Dict());
+			}
+
+			string get_name() const
+			{
+				return "refine3d";
+			}
+
+			string get_desc() const
+			{
+				return "Refines a preliminary 3D alignment using a simplex algorithm. Subpixel precision.";
+			}
+
+			static Aligner *NEW()
+			{
+				return new Refine3DAligner();
+			}
+
+			TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("xform.align3d", EMObject::TRANSFORM);
+				d.put("stepx", EMObject::FLOAT);
+				d.put("stepy", EMObject::FLOAT);
+				d.put("stepz", EMObject::FLOAT);
+				d.put("stepphi", EMObject::FLOAT);
+				d.put("stepalt", EMObject::FLOAT);
+				d.put("stepaz", EMObject::FLOAT);
+				d.put("precision", EMObject::FLOAT);
+				d.put("maxiter", EMObject::INT);
+				return d;
+			}
+	};
+
+	
 	class CUDA_Aligner
 	{
 	  public:
