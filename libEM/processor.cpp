@@ -6223,16 +6223,24 @@ void CTFSNRWeightProcessor::process_inplace(EMData* image) {
 	if (params.has_key("noise")==false) throw InvalidParameterException("You must supply the noise argument");
 	if (params.has_key("snr")==false) throw InvalidParameterException("You must supply the snr argument");
 	
+	float boost = params.set_default("boost",1.0);
+	
 	if (!image->is_complex()) {
 		image->do_fft_inplace();
 	}
+	EMData* cpy = image->copy();
+	cpy->ri2inten();
+	vector<float> sf = cpy->calc_radial_dist(cpy->get_ysize()/2,0.0,1.0,1);
+	transform(sf.begin(),sf.end(),sf.begin(),sqrtf);
+	delete cpy;
+	
 	image->ri2ap();
 	
 	vector<float> noise = params["noise"];
 	vector<float> snr = params["snr"];
 	
-	copy(snr.begin(), snr.end(), ostream_iterator<float>(cout, "\n"));
-	copy(noise.begin(), noise.end(), ostream_iterator<float>(cout, "\n"));
+// 	copy(snr.begin(), snr.end(), ostream_iterator<float>(cout, "\n"));
+// 	copy(noise.begin(), noise.end(), ostream_iterator<float>(cout, "\n"));
 	
 	for(vector<float>::iterator it = noise.begin(); it != noise.end(); ++it){
 		if ((*it) == 0) *it = 1;
@@ -6243,8 +6251,8 @@ void CTFSNRWeightProcessor::process_inplace(EMData* image) {
 	// Subtract the mean from the data and store it in data_mm
 	transform(snr.begin(),snr.end(),noise.begin(),snr.begin(),std::multiplies<float>());
 	transform(snr.begin(),snr.end(),snr.begin(),sqrtf);
-	copy(snr.begin(), snr.end(), ostream_iterator<float>(cout, "\n"));
-	copy(noise.begin(), noise.end(), ostream_iterator<float>(cout, "\n"));
+// 	copy(snr.begin(), snr.end(), ostream_iterator<float>(cout, "\n"));
+// 	copy(noise.begin(), noise.end(), ostream_iterator<float>(cout, "\n"));
 
 	int i = static_cast<int>(snr.size());
 	
@@ -6265,28 +6273,37 @@ void CTFSNRWeightProcessor::process_inplace(EMData* image) {
 				ry = (float)nyon2 - (float)y;
 				rz = (float)nzon2 - (float)z;
 				length = static_cast<int>(sqrt(rx*rx + ry*ry + rz*rz));
-				if (length > i) {
-					amp = 0;
+				
+				twox = 2*x;
+				size_t idx1 = twox + y*nx+z*nxy;
+				if (length >= i || length >= (int)sf.size()) {
+					d[idx1] = 0;
+					continue; 
 				} else {
-					amp = snr[length];
+					amp = boost*snr[length];
 // 					if (amp > 0) amp =sqrtf(amp);
 // 					else amp = 0;
 				}
 				
+				if (sf[length] == 0) {
+					d[idx1] = 0;
+					continue; 
+				}
 				
-				twox = 2*x;
-				size_t idx1 = twox + y*nx+z*nxy;
 // 				size_t idx2 = idx1 + 1;
+// 				cout << d[idx1] << " " << sf[length] << endl;
+				d[idx1] /= sf[length];
 				if (d[idx1] < 0) {
-					d[idx1] = amp;
+					d[idx1] *= amp;
 				}else {
-					d[idx1] = -amp;
+					d[idx1] *= -amp;
 				}
 // 				d[idx2] = phase;
 
 			}
 		}
 	}
+
 	image->ap2ri();
 	if (image->get_ndim() != 1) image->process_inplace("xform.fourierorigin.tocorner");
 	image->do_ift_inplace();
@@ -6331,13 +6348,21 @@ void TestImageFourierNoiseProfile::process_inplace(EMData * image) {
 				ry = (float)nyon2 - (float)y;
 				rz = (float)nzon2 - (float)z;
 				length = static_cast<int>(sqrt(rx*rx + ry*ry + rz*rz));
-				if (length > i) continue;
-				amp = profile[length];
-				phase = Util::get_frand(0,1)*2*M_PI;
-
+				
 				twox = 2*x;
 				size_t idx1 = twox + y*nx+z*nxy;
 				size_t idx2 = idx1 + 1;
+				
+				
+				if (length >= i) {
+					d[idx1] = 0;
+					d[idx2] = 0;
+					continue;
+				}
+				amp = profile[length];
+				phase = Util::get_frand(0,1)*2*M_PI;
+
+				
 				d[idx1] = amp;
 				d[idx2] = phase;
 

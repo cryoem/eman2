@@ -5267,6 +5267,10 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		}
 	};
 	
+	/**
+	 * @author David Woolford
+	 * @date June 15th 2009
+	 */
 	class TestImageFourierNoiseProfile : public TestImageProcessor
 	{
 	public:
@@ -5296,6 +5300,10 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	};
 	
 	
+	/**
+	* @author David Woolford
+	* @date June 15th 2009
+	*/
 	class CTFSNRWeightProcessor : public TestImageProcessor
 	{
 		public:
@@ -5321,6 +5329,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 				TypeDict d;
 				d.put("noise", EMObject::FLOATARRAY, "The noise profile, squared amplitude. As in, what is the EMAN2CTF.background attribute");
 				d.put("snr", EMObject::FLOATARRAY, "Squared amplitude divided by squared noise amplitude. As in, what is the EMAN2CTF.snr attribute");
+				d.put("boost", EMObject::FLOAT, "Multiplicative signal boost");
 				return d;
 			}
 	};
