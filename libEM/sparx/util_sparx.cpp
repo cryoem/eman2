@@ -16706,14 +16706,14 @@ EMData* Util::divn_filter(EMData* img, EMData* img1)
 	int size = nx*ny*nz;
 	EMData * img2 = img->copy_head();
 	float *img_ptr  =img->get_data();
-	float *img2_ptr = img2->get_data();
 	float *img1_ptr = img1->get_data();
+	float *img2_ptr = img2->get_data();
 	if(img->is_complex()) {
 		for (int i=0; i<size; i+=2) {
 			if(img1_ptr[i] > 1.e-10f) {
 			img2_ptr[i]   = img_ptr[i]  /img1_ptr[i];
 			img2_ptr[i+1] = img_ptr[i+1]/img1_ptr[i];
-			} else img_ptr[i] = img_ptr[i+1] = 0.0f;
+			} else img2_ptr[i] = img2_ptr[i+1] = 0.0f;
 		}
 	} else  throw ImageFormatException("Only Fourier image allowed");
 
