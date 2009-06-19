@@ -57,7 +57,7 @@ from matplotlib.figure import Figure
 
 from emapplication import EMStandAloneApplication, EMGUIModule
 from emimageutil import EMEventRerouter, EMParentWin
-from emglobjects import EMOpenGLFlagsAndTools
+from emglobjects import EMOpenGLFlagsAndTools,init_glut
 
 linetypes=["-","--",":","-."]
 symtypes=["o","s","+","2","1"]

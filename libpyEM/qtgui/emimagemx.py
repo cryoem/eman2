@@ -50,7 +50,7 @@ from PyQt4.QtGui import QImage
 from PyQt4.QtCore import QTimer
 from libpyGLUtils2 import *
 
-from emglobjects import EMOpenGLFlagsAndTools,EMGLProjectionViewMatrices,EMBasicOpenGLObjects
+from emglobjects import EMOpenGLFlagsAndTools,EMGLProjectionViewMatrices,EMBasicOpenGLObjects,init_glut
 from emapplication import EMStandAloneApplication, EMGUIModule,get_application
 from emanimationutil import LineAnimation
 import weakref

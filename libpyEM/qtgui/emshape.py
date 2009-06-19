@@ -32,7 +32,7 @@
 
 from OpenGL import GL,GLUT
 from math import *
-from EMAN2 import get_3d_font_renderer, Util,init_glut
+from EMAN2 import get_3d_font_renderer, Util
 import sys
 
 from libpyGLUtils2 import *
@@ -76,7 +76,7 @@ class EMShape:
 	glutinit = True
 	def __init__(self,init=None) :
 		"""init is a list/tuple containing the above parameters describing the shape"""
-		from EMAN2 import init_glut
+		from emglobjects import init_glut
 		if EMShape.glutinit:
 			init_glut()
 			EMShape.glutint = False

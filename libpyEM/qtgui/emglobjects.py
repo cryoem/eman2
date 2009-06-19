@@ -48,6 +48,17 @@ import numpy
 import sys
 import array
 
+
+
+glut_inited = False
+
+def init_glut():
+	from OpenGL import GLUT
+	global glut_inited
+	if not glut_inited:
+		GLUT.glutInit("")
+		glut_inited = True
+
 class EMBasicOpenGLObjects:
 	"""
 	This class is supposed to encapsulate basic and common objects

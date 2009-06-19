@@ -51,7 +51,7 @@ from PyQt4.QtCore import QTimer
 
 from time import *
 
-from emglobjects import EMImage3DGUIModule, Camera2,get_default_gl_colors,EMViewportDepthTools2,get_RGB_tab,get_gl_lights_vector
+from emglobjects import EMImage3DGUIModule, Camera2,get_default_gl_colors,EMViewportDepthTools2,get_RGB_tab,get_gl_lights_vector,init_glut
 from emimageutil import EMTransformPanel
 
 MAG_INCREMENT_FACTOR = 1.1

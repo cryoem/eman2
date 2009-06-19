@@ -51,7 +51,7 @@ from PyQt4.QtCore import QTimer
 from time import *
 import copy
 
-from emglobjects import EMImage3DGUIModule, Camera2,get_default_gl_colors,EMViewportDepthTools2,get_RGB_tab,get_gl_lights_vector,draw_volume_bounds
+from emglobjects import EMImage3DGUIModule, Camera2,get_default_gl_colors,EMViewportDepthTools2,get_RGB_tab,get_gl_lights_vector,draw_volume_bounds,init_glut
 from emlights import *
 from emimageutil import EMTransformPanel
 
