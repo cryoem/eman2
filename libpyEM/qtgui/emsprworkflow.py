@@ -2848,15 +2848,16 @@ class E2CTFGuiTaskGeneral(E2CTFGuiTask):
 
 
 class EMPartStackOptions:
-	def __init__(self,list_name,filt_name):
+	def __init__(self,list_name,filt_name,bdb_only=False):
 		self.list_name=list_name
 		self.filt_name  = filt_name
+		self.bdb_only = bdb_only
 		
 	def get_particle_options(self):
 		'''
 		
 		'''
-		EMProjectListCleanup.clean_up_project_file_list(self.list_name)
+		#EMProjectListCleanup.clean_up_project_file_list(self.list_name)
 		stacks_map = {} # used to cache data in get_params
 		stacks_name_map = {} # used to recall which selection was taken	
 		db = db_open_dict("bdb:project")
@@ -2868,13 +2869,17 @@ class EMPartStackOptions:
 		if db.has_key(self.list_name):
 			ptcls = db[self.list_name]
 			for name in ptcls:
+				if not file_exists(name): break
+				
+				if self.bdb_only != False and ( len(name) > 3 and name[:4] != "bdb:"):
+					break
 				n += EMUtil.get_image_count(name)
 				name_map[name] = name # this makes things simple at other points in the code. please leave
 				
 			stacks_map["Particles"] = ptcls
 				
 		# now build up the list of filtered things
-		EMProjectListCleanup.clean_up_filt_particles(self.filt_name)
+		#EMProjectListCleanup.clean_up_filt_particles(self.filt_name)
 		filter_opts = {} # key is the filter type, value is the number of images with this filter type
 		
 		if db.has_key(self.filt_name):
@@ -2908,12 +2913,12 @@ class EMParticleOptions(EMPartStackOptions):
 	thing, basically, what are the available particles (including filtered options)
 	'''
 	
-	def __init__(self):
-		EMPartStackOptions.__init__(self,"global.spr_ptcls","global.spr_filt_ptcls_map")
+	def __init__(self,bdb_only=False):
+		EMPartStackOptions.__init__(self,"global.spr_ptcls","global.spr_filt_ptcls_map",bdb_only)
 	
  		 	
 class E2ParticleExamineChooseDataTask(ParticleWorkFlowTask):
-	"Choose the particle data you wish to examine. This will pop a second form listing the particles stacks along with other relevant information"
+	"""Choose the particle data you wish to examine. This will pop a second form listing the particles stacks along with other relevant information"""
 	documentation_string = "Choose the data for particle examination" 
 	def __init__(self):
 		ParticleWorkFlowTask.__init__(self)
@@ -2922,7 +2927,7 @@ class E2ParticleExamineChooseDataTask(ParticleWorkFlowTask):
 		self.form_db_name ="bdb:emform.workflow_particle_examine"
 
 	def get_params(self):
-		ptcl_opts = EMParticleOptions()
+		ptcl_opts = EMParticleOptions(bdb_only=True)
 		self.particles_map, self.particles_name_map,choices,self.name_map = ptcl_opts.get_particle_options()
 			
 		params = []		
@@ -3139,8 +3144,8 @@ class E2MakeStackTask(E2ParticleExamineTask):
 				success,cmd = self.make_v_stack(filenames,base_stack_root+key,"stacks",params["exclude_bad"])
 				
 			else:
-				EMErrorMessageDisplay.run("The generation of stacks for flat (non database) files is currently disabled")
-				return False
+				EMErrorMessageDisplay.run("The generation of stacks for flat (non database) files is currently disabled. A particle set is being ignored")
+				continue
 				# This will work eventually - the only problem is that the exclusioons are not factored in, that's all
 				#success,cmd = self.make_stack(filenames,base_stack_root+key,"stacks/")
 				
@@ -3262,7 +3267,7 @@ class EMStackReportTask(ParticleWorkFlowTask):
 
 	def get_project_particle_table(self):
 		stack_list_name = "global.spr_stacks"
-		EMProjectListCleanup.clean_up_project_file_list(stack_list_name) # in case things have gone missing
+		#EMProjectListCleanup.clean_up_project_file_list(stack_list_name) # in case things have gone missing
 		project_db = db_open_dict("bdb:project")
 		stack_names = project_db.get(stack_list_name,dfl=[])
 		
@@ -3278,7 +3283,7 @@ class EMStackReportTask(ParticleWorkFlowTask):
 		table.insert_column_data(1,EMFileTable.EMColumnData("Particles On Disk",ParticleReportTask.get_num_ptcls,"Particles in this image"))
 		table.insert_column_data(2,EMFileTable.EMColumnData("Particle Dims",ParticleReportTask.get_particle_dims,"The dimensions of the particles that are stored on disk"))
 		
-		EMProjectListCleanup.clean_up_filt_particles("global.spr_stacks_map")
+		#EMProjectListCleanup.clean_up_filt_particles("global.spr_stacks_map")
 		project_db = db_open_dict("bdb:project",ro=True)
 		if project_db.has_key("global.spr_stacks_map"):
 			stacks_map = project_db["global.spr_stacks_map"]
@@ -3762,8 +3767,8 @@ class EMStacksOptions(EMPartStackOptions):
 	thing, basically, what are the available stacks (including filtered options)
 	'''
 	
-	def __init__(self):
-		EMPartStackOptions.__init__(self,"global.spr_stacks","global.spr_stacks_map")
+	def __init__(self,bdb_only=False):
+		EMPartStackOptions.__init__(self,"global.spr_stacks","global.spr_stacks_map",bdb_only)
 
 class E2Refine2DChooseParticlesTask(ParticleWorkFlowTask):
 	documentation_string = "Choose the data you wish to use for use for running e2refine2d from the list of options below and hit OK. This will pop up a second form asking you to fill in more details.\n\nNote that usually you should have 4 options to choose from below. If you are not seeing all 4 options it means you should go back in the work flow, import particles, and generate phase flipped and Wiener filtered output." 
@@ -3815,7 +3820,7 @@ class E2Refine2DChooseStacksTask(ParticleWorkFlowTask):
 		self.form_db_name ="bdb:emform.e2refine"
 	
 	def get_params(self):
-		ptcl_opts = EMStacksOptions()
+		ptcl_opts = EMStacksOptions(bdb_only=True)
 		self.particles_map, self.particles_name_map,choices,unused = ptcl_opts.get_particle_options()
 		choices.append("Specify")
 			
@@ -3851,7 +3856,7 @@ class E2RefFreeClassAveTool():
 		
 		project_db = db_open_dict("bdb:project")
 		list_name = "global.spr_ref_free_class_aves"
-		EMProjectListCleanup.clean_up_project_file_list(list_name)
+		#EMProjectListCleanup.clean_up_project_file_list(list_name)
 		names = project_db.get(list_name,dfl=[])
 			
 		self.project_files_at_init = names # so if the user hits cancel this can be reset
@@ -4349,7 +4354,7 @@ class E2RefineParticlesTask(EMClassificationTools, E2Make3DTools):
 	 	self.window_title = "Run e2refine"
 	 	self.form_db_name = "bdb:emform.e2refine"
 	 	self.single_selection = False
-		 	
+		print "init ptcls task"
 	class UsefiltColumn:
 		def __init__(self,ptcls,usefilt_ptcls):
 			if len(ptcls) != len(usefilt_ptcls):
@@ -4921,13 +4926,13 @@ class E2ChooseTask(ParticleWorkFlowTask):
 			if not db.has_key(self.list_name): 
 				error("Something is wrong, the %s database is supposed to exist" %self.list_name)
 				return
-			EMProjectListCleanup.clean_up_project_file_list(self.list_name)
+			#EMProjectListCleanup.clean_up_project_file_list(self.list_name)
 			prj_ptcls = db[self.list_name]
 			
 			if not db.has_key(self.filt_name):
 				error("Something is wrong, the %s database is supposed to exist" %self.filt_name)
 				return
-			EMProjectListCleanup.clean_up_filt_particles(self.filt_name)
+			#EMProjectListCleanup.clean_up_filt_particles(self.filt_name)
 			db_map = db[self.filt_name]
 			
 			for key in db_map.keys():
@@ -4962,7 +4967,7 @@ class E2ChooseTask(ParticleWorkFlowTask):
 			else:
 				# then it's a filtered type, such as phase flipped
 				if not db.has_key(self.filt_name): raise NotImplementedException("Something is wrong, the global.spr_stacks_map is supposed to exist")
-				EMProjectListCleanup.clean_up_filt_particles()
+				#EMProjectListCleanup.clean_up_filt_particles()
 				if usefilt_choice != "None":
 					usefilt_name = self.particles_name_map[usefilt_choice]		
 					if usefilt_name == "Particles":
