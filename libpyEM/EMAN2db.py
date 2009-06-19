@@ -635,7 +635,14 @@ class EMAN2DB:
 		EMAN2DB.opendbs[self.path]=self
 		
 		# Make the database directory
-		if not os.access("%s/EMAN2DB"%self.path,os.F_OK) : os.makedirs("%s/EMAN2DB"%self.path)
+		if not os.access("%s/EMAN2DB"%self.path,os.F_OK) : 
+			try:
+				os.makedirs("%s/EMAN2DB"%self.path)
+			except:
+				# perhaps there is another process running that just made it?
+				if not os.access("%s/EMAN2DB"%self.path,os.F_OK):
+					raise RuntimeError("Error - there was a problem creating the EMAN2DB directory")
+				
 		# make the shared cache directory in /tmp
 		if(sys.platform != 'win32'):
 			if (not MPIMODE) and not os.access("/tmp/eman2db-%s"%os.getenv("USER","anyone"),os.F_OK) : os.makedirs("/tmp/eman2db-%s"%os.getenv("USER","anyone"))

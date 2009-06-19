@@ -2938,7 +2938,7 @@ class E2ParticleExamineChooseDataTask(ParticleWorkFlowTask):
 		db = db_open_dict(self.form_db_name)
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=str(self.__doc__),choices=None))
 		
-		if len(self.particles_map) > 0:
+		if len(self.particles_map) > 0 and len(choices) > 0:
 			params.append(ParamDef(name="particle_set_choice",vartype="choice",desc_long="Choose the particle data set you wish to use to generate a starting data for e2refine2d",desc_short="Choose data",property=None,defaultunits=db.get("particle_set_choice",dfl=""),choices=choices))
 		return params
 
@@ -3025,7 +3025,7 @@ class E2ParticleExamineTask(E2CTFWorkFlowTask):
 
  		 	
 class E2MakeStackChooseDataTask(E2ParticleExamineChooseDataTask):
-	"Choose the particle data you wish to examine. This will pop a second form listing the particles stacks along with other relevant information"
+	"""Choose the particle data you wish to examine. This will pop a second form listing the particles stacks along with other relevant information"""
 	documentation_string = "Choose the data for particle examination" 
 	def __init__(self):
 		E2ParticleExamineChooseDataTask.__init__(self)
