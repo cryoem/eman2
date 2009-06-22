@@ -133,7 +133,7 @@ pca,pca_large or svd_gsl"""
 		im.transform(xf)
 		im*=mask
 		im.process_inplace("normalize.unitlen")
-		im.write_image("ali.hdf",i-1)
+#		im.write_image("ali.hdf",i-1)
 		mean+=im
 	mean.mult(1.0/float(n))
 	mean.mult(mask)

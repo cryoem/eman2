@@ -204,7 +204,7 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 #				im.rotate_translate(best[3],0,0,best[1],best[2],0)
 				im.transform(Transform({"type":"2d","alpha":best[3],"tx":best[1],"ty":best[2],"mirror":int(best[4])}))
 #				print best[3],best[1],best[2],best[4]
-				im.write_image("alib.hdf",i)
+#				im.write_image("alib.hdf",i)
 
 				if maskfile!=None : im*=maskfile
 				try: im.process_inplace(options.normalize)
@@ -260,7 +260,7 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 
 				if maskfile!=None : im*=maskfile
 				try: im.process_inplace(options.normalize)
-				except: print "Warning: Normalization failed"
+				except: print "Warning: Normazation failed"
 				if mean!=None : im-=mean
 				
 				proj=EMData(len(basis),1,1)
