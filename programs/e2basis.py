@@ -202,7 +202,9 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 					if simmx.get(j,i)<best[0] : best=(simmx.get(j,i),simdx.get(j,i),simdy.get(j,i),simda.get(j,i),simflip.get(j,i))
 				
 #				im.rotate_translate(best[3],0,0,best[1],best[2],0)
-				im.transform(Transform({"type":"2d","phi":best[3],"tx":best[1],"ty":best[2],"flip":best[4]}))
+				im.transform(Transform({"type":"2d","alpha":best[3],"tx":best[1],"ty":best[2],"mirror":int(best[4])}))
+#				print best[3],best[1],best[2],best[4]
+				im.write_image("alib.hdf",i)
 
 				if maskfile!=None : im*=maskfile
 				try: im.process_inplace(options.normalize)
@@ -251,10 +253,10 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 				best=(1.0e23,0,0,0,0)
 				
 				for j in range(simmx.get_xsize()): 
-					if simmx.get(i,j)<best[0] : best=(simmx.get(j,i),simda.get(j,i),simdx.get(j,i),simdy.get(j,i),simflip.get(j,i))
+					if simmx.get(j,i)<best[0] : best=(simmx.get(j,i),simdx.get(j,i),simdy.get(j,i),simda.get(j,i),simflip.get(j,i))
 				
 #				im.rotate_translate(best[1],0,0,best[2],best[3],0)
-				im.transform(Transform({"type":"2d","phi":best[3],"tx":best[1],"ty":best[2],"flip":best[4]}))
+				im.transform(Transform({"type":"2d","alpha":best[3],"tx":best[1],"ty":best[2],"mirror":int(best[4])}))
 
 				if maskfile!=None : im*=maskfile
 				try: im.process_inplace(options.normalize)

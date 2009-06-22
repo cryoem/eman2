@@ -62,6 +62,7 @@ handled this way."""
 
 	parser.add_option("--nbasis","-n",type="int",help="Number of basis images to generate.",default=20)
 	parser.add_option("--maskfile","-M",type="string",help="File containing a mask defining the pixels to include in the Eigenimages")
+	parser.add_option("--mask",type="int",help="Mask radius",default=-2)
 	parser.add_option("--varimax",action="store_true",help="Perform a 'rotation' of the basis set to produce a varimax basis",default=False)
 #	parser.add_option("--lowmem","-L",action="store_true",help="Try to use less memory, with a possible speed penalty",default=False)
 	parser.add_option("--simmx",type="string",help="Will use transformations from simmx on each particle prior to analysis")
@@ -77,21 +78,28 @@ handled this way."""
 
 	logid=E2init(sys.argv)
 	
-	try:
-		# try to read in the mask file
-		mask=EMData(options.maskfile,0)
-	except:
-		# default mask is to use all pixels
-		mask=EMData(args[0],0)
-		mask.to_one()
-	
 	if options.verbose : print "Beginning MSA"
 	if options.gsl : mode="svd_gsl"
 	else : mode="pca_large"
 	#elif options.lowmem : mode="pca_large"
 	#else : mode="pca"
+
+	if options.mask>-2 :
+		mask=EMData(sys.argv[1],0)
+		ny=mask.get_ysize()
+		mask.to_one()
+		if options.mask<=1 : mask.process_inplace("mask.sharp",{"outer_radius":ny/2-1})
+		else : mask.process_inplace("mask.sharp",{"outer_radius":options.mask})
+	else :
+		try:
+			# try to read in the mask file
+			mask=EMData(options.maskfile,0)
+		except:
+			# default mask is to use all pixels
+			mask=EMData(args[0],0)
+			mask.to_one()
 	
-	if options.simmx : out=msa(args[0],options.simmx,mask,options.nbasis,options.varimax,mode)
+	if options.simmx : out=msa_simmx(args[0],options.simmx,mask,options.nbasis,options.varimax,mode)
 	else : out=msa(args[0],mask,options.nbasis,options.varimax,mode)
 	
 	if options.verbose : print "MSA complete"
@@ -99,8 +107,9 @@ handled this way."""
 		if options.verbose : print "Eigenvalue: ",i.get_attr("eigval")
 		i.write_image(args[1],j)
 		
+	E2end(logid)
 
-def msa_simmx(images,simmx,mask,nbasis,varimax,mode):
+def msa_simmx(images,simmxpath,mask,nbasis,varimax,mode):
 	"""Perform principle component analysis (in this context similar to Multivariate Statistical Analysis (MSA) or
 Singular Value Decomposition (SVD). 'images' is a filename containing a stack of images to analyze which is coordinated
 with simmx. 'simmx' contains the result of an all-vs-all alignment which will be used to transform the orientation
@@ -124,6 +133,7 @@ pca,pca_large or svd_gsl"""
 		im.transform(xf)
 		im*=mask
 		im.process_inplace("normalize.unitlen")
+		im.write_image("ali.hdf",i-1)
 		mean+=im
 	mean.mult(1.0/float(n))
 	mean.mult(mask)
@@ -163,11 +173,12 @@ def get_xform(n,simmx):
 	# find the best orienteation from the similarity matrix, and apply the transformation
 	best=(1.0e23,0,0,0,0)
 	
-	for j in range(simmx.get_xsize()): 
-		if simmx.get(j,n)<best[0] : best=(simmx[0].get(j,n),simmx[1].get(j,n),simmx[2].get(j,n),simmx[3].get(j,n),simmx[4].get(j,n))
+	for j in range(simmx[0].get_xsize()): 
+		if simmx[0].get(j,n)<best[0] : best=(simmx[0].get(j,n),simmx[1].get(j,n),simmx[2].get(j,n),simmx[3].get(j,n),simmx[4].get(j,n))
 	
-
-	return Transform({"type":"2d","phi":best[3],"tx":best[1],"ty":best[2],"flip":best[4]})
+	ret=Transform({"type":"2d","alpha":best[3],"tx":best[1],"ty":best[2],"mirror":int(best[4])})
+	
+	return ret.inverse()
 
 def msa(images,mask,nbasis,varimax,mode):
 	"""Perform principle component analysis (in this context similar to Multivariate Statistical Analysis (MSA) or

@@ -61,7 +61,7 @@ envopenflags=db.DB_CREATE|db.DB_INIT_MPOOL|db.DB_INIT_LOCK|db.DB_INIT_LOG|db.DB_
 MPIMODE=0
 
 # This hardcoded value is the maximum number of DBDict objects which will be simultaneously open
-# when more than this are open, we beging closing the oldest ones. They will be reopened on-demand,
+# when more than this are open, we begin closing the oldest ones. They will be reopened on-demand,
 # but this will prevent resource exhaustion
 MAXOPEN=20
 
@@ -859,6 +859,22 @@ class DBDict:
 #		return self.bdb.stat(db.DB_FAST_STAT)["nkeys"]
 #		return len(self.bdb)
 
+	def put(self,key,val,txn=None):
+		"""This performs the bdb.put function with some error detection and retry capabilites.
+Retrying should not be necessary, but we have been completely unable to figure out the cause
+of these occasional errors"""
+		n=0
+		while n<10:
+			try: 
+				self.bdb.put(key,val,txn=txn)
+				break
+			except: 
+				if n==9 : traceback.print_exc()
+				print "********** Warning: problem writing ",key," to ",self.name,". Retrying (%d/10)"%n
+				time.sleep(5)
+				n+=1
+
+
 	def __setitem__(self,key,val):
 		self.open()
 		if (val==None) :
@@ -877,23 +893,14 @@ class DBDict:
 				if not self.has_key(fkey) : self[fkey]=0
 				else: self[fkey]+=1 
 				n=self[fkey]
-			self.bdb.put(fkey+dumps(key,-1),dumps(n,-1))		# a special key for the binary location
+			self.put(fkey+dumps(key,-1),dumps(n,-1))		# a special key for the binary location
 			
 			# write the metadata
 			try: del ad["data_path"]
 			except:pass
 
-			try: self.bdb.put(dumps(key,-1),dumps(ad,-1),txn=self.txn)
-			except:
-				traceback.print_exc()
-				print "********** Warning: problem writing ",key," to ",self.name,". Retrying"
-				time.sleep(2)
-				try: self.bdb.put(dumps(key,-1),dumps(ad,-1),txn=self.txn)
-				except:
-					traceback.print_exc()
-					print "********* Error: failed a second time. Something is wrong."
-					return
-					
+			self.put(dumps(key,-1),dumps(ad,-1),txn=self.txn)
+
 			if not self.has_key("maxrec") or key>self["maxrec"] : self["maxrec"]=key
 			if isinstance(key,int) and (not self.has_key("maxrec") or key>self["maxrec"]) : self["maxrec"]=key
 			
@@ -901,16 +908,7 @@ class DBDict:
 			val.write_data(pkey+fkey,n*4*ad["nx"]*ad["ny"]*ad["nz"])
 			
 		else :
-			try: self.bdb.put(dumps(key,-1),dumps(val,-1),txn=self.txn)
-			except:
-				traceback.print_exc()
-				print "********** Warning: problem writing ",key," to ",self.name,". Retrying"
-				time.sleep(2)
-				try: self.bdb.put(dumps(key,-1),dumps(val,-1),txn=self.txn)
-				except: 
-					traceback.print_exc()
-					print "********** Error: failed a second time. Something is wrong."
-					return
+			self.put(dumps(key,-1),dumps(val,-1),txn=self.txn)
 			if isinstance(key,int) and (not self.has_key("maxrec") or key>self["maxrec"]) : self["maxrec"]=key
 				
 	def __getitem__(self,key):
@@ -1051,22 +1049,13 @@ class DBDict:
 				if not self.has_key(fkey) : self[fkey]=0
 				else: self[fkey]+=1 
 				n=self[fkey]
-			self.bdb.put(fkey+dumps(key,-1),dumps(n,-1))		# a special key for the binary location
+			self.put(fkey+dumps(key,-1),dumps(n,-1))		# a special key for the binary location
 			
 			# write the metadata
 			try: del ad["data_path"]
 			except:pass
 
-			try: self.bdb.put(dumps(key,-1),dumps(ad,-1),txn=txn)
-			except:
-				traceback.print_exc()
-				print "*********** Warning: problem writing ",key," to ",self.name,". Retrying"
-				time.sleep(2)
-				try: self.bdb.put(dumps(key,-1),dumps(ad,-1),txn=self.txn)
-				except: 
-					traceback.print_exc()
-					print "*********** Error: failed a second time. Something is wrong."
-					return
+			self.put(dumps(key,-1),dumps(ad,-1),txn=txn)
 
 			if not self.has_key("maxrec") or key>self["maxrec"] : self["maxrec"]=key
 			if isinstance(key,int) and (not self.has_key("maxrec") or key>self["maxrec"]) : self["maxrec"]=key
@@ -1075,16 +1064,7 @@ class DBDict:
 			val.write_data(pkey+fkey,n*4*ad["nx"]*ad["ny"]*ad["nz"])
 			
 		else :
-			try: self.bdb.put(dumps(key,-1),dumps(val,-1),txn=txn)
-			except:
-				traceback.print_exc()
-				print "**********# Warning: problem writing ",key," to ",self.name,". Retrying"
-				time.sleep(2)
-				try: self.bdb.put(dumps(key,-1),dumps(val,-1),txn=self.txn)
-				except: 
-					traceback.print_exc()
-					print "*********# Error: failed a second time. Something is wrong."
-					return
+			self.put(dumps(key,-1),dumps(val,-1),txn=txn)
 			if isinstance(key,int) and (not self.has_key("maxrec") or key>self["maxrec"]) : self["maxrec"]=key
 
 	def set_header(self,key,val,txn=None):

@@ -93,7 +93,7 @@ def main():
 	parser.add_option("--parallel","-P",type="string",help="Run in parallel, specify type:<option>=<value>:<option>:<value>",default=None)
 	
 	# Database Metadata storage
-	parser.add_option("--dbls",type="string",default=None,help="data base list storage, used by the workflow. You can ignore this argument.",default=None)
+	parser.add_option("--dbls",type="string",help="data base list storage, used by the workflow. You can ignore this argument.",default=None)
 	
 		
 	global options
