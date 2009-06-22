@@ -417,8 +417,17 @@ namespace EMAN
 			static vector<string> permissable_3d_not_rot;
 			static map<string,vector<string> >  permissable_rot_keys;
 			
+			/** Called internally to initialize permissable_2d_not_rot, permissable_3d_not_rot, and permissable_rot_keys static members
+			*/
 			void init_permissable_keys();
 			
+			/** Test to ensure the parametes in the given dictionary are valid
+			* Throws if there's an error
+			* Generic works in every circumstance (set_params, set_rotation, set_params_inv)
+			* Uses permissable_2d_not_rot, permissable_3d_not_rot, and permissable_rot_keys static members as basis of decision
+			* @param d the dictionary that was the function argument of the set_params, set_rotation or the  set_params_inv function
+			* @exception InvalidParameterException if the dictionary is invalid in anyway
+			*/
 			void detect_problem_keys(const Dict& d);
 
 	};

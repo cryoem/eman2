@@ -66,97 +66,7 @@ map<string,vector<string> >  Transform::permissable_rot_keys;
 
 Transform::Transform()
 {
-	if (permissable_rot_keys.size() == 0 ) {
-		init_permissable_keys();
-	}
 	to_identity();
-}
-
-void Transform::init_permissable_keys() 
-{
-	
-	permissable_2d_not_rot.push_back("tx");
-	permissable_2d_not_rot.push_back("ty");
-	permissable_2d_not_rot.push_back("scale");
-	permissable_2d_not_rot.push_back("mirror");
-	permissable_2d_not_rot.push_back("type");
-	
-	permissable_3d_not_rot.push_back("tx");
-	permissable_3d_not_rot.push_back("ty");
-	permissable_3d_not_rot.push_back("tz");
-	permissable_3d_not_rot.push_back("scale");
-	permissable_3d_not_rot.push_back("mirror");
-	permissable_3d_not_rot.push_back("type");
-	
-	vector<string> tmp;
-	tmp.push_back("alpha");
-	permissable_rot_keys["2d"] = tmp;
-	
-	tmp.clear();
-	tmp.push_back("alt");
-	tmp.push_back("az");
-	tmp.push_back("phi");
-	permissable_rot_keys["eman"] = tmp;
-	
-	tmp.clear();
-	tmp.push_back("psi");
-	tmp.push_back("theta");
-	tmp.push_back("phi");
-	permissable_rot_keys["spider"] = tmp;
-	
-	tmp.clear();
-	tmp.push_back("alpha");
-	tmp.push_back("beta");
-	tmp.push_back("gamma");
-	permissable_rot_keys["imagic"] = tmp;
-	
-	
-	tmp.clear();
-	tmp.push_back("ztilt");
-	tmp.push_back("xtilt");
-	tmp.push_back("ytilt");
-	permissable_rot_keys["xyz"] = tmp;
-	
-	tmp.clear();
-	tmp.push_back("phi");
-	tmp.push_back("theta");
-	tmp.push_back("omega");
-	permissable_rot_keys["mrc"] = tmp;
-	
-	tmp.clear();
-	tmp.push_back("e0");
-	tmp.push_back("e1");
-	tmp.push_back("e2");
-	tmp.push_back("e3");
-	permissable_rot_keys["quaternion"] = tmp;
-	
-	tmp.clear();
-	tmp.push_back("n1");
-	tmp.push_back("n2");
-	tmp.push_back("n3");
-	tmp.push_back("Omega");
-	permissable_rot_keys["spin"] = tmp;
-	
-	tmp.clear();
-	tmp.push_back("n1");
-	tmp.push_back("n2");
-	tmp.push_back("n3");
-	tmp.push_back("q");
-	permissable_rot_keys["sgirot"] = tmp;
-	
-	tmp.clear();
-	tmp.push_back("m11");
-	tmp.push_back("m12");
-	tmp.push_back("m13");
-	tmp.push_back("m21");
-	tmp.push_back("m22");
-	tmp.push_back("m23");
-	tmp.push_back("m31");
-	tmp.push_back("m32");
-	tmp.push_back("m33");
-	permissable_rot_keys["matrix"] = tmp;
-	
-	
 }
 
 Transform::Transform( const Transform& that )
@@ -174,28 +84,18 @@ Transform& Transform::operator=(const Transform& that ) {
 }
 
 Transform::Transform(const Dict& d)  {
-	if (permissable_rot_keys.size() == 0 ) {
-		init_permissable_keys();
-	}
 	to_identity();
 	set_params(d);
 }
 
 
 Transform::Transform(const float array[12]) {
-	if (permissable_rot_keys.size() == 0 ) {
-		init_permissable_keys();
-	}
 	memcpy(matrix,array,12*sizeof(float));
 }
 
 Transform::Transform(const vector<float> array)
 {
-	if (permissable_rot_keys.size() == 0 ) {
-		init_permissable_keys();
-	}
 	set_matrix(array);
-
 }
 
 void Transform::set_matrix(const vector<float>& v)
@@ -294,7 +194,96 @@ void Transform::set_params(const Dict& d) {
 }
 
 
+void Transform::init_permissable_keys() 
+{
+	
+	permissable_2d_not_rot.push_back("tx");
+	permissable_2d_not_rot.push_back("ty");
+	permissable_2d_not_rot.push_back("scale");
+	permissable_2d_not_rot.push_back("mirror");
+	permissable_2d_not_rot.push_back("type");
+	
+	permissable_3d_not_rot.push_back("tx");
+	permissable_3d_not_rot.push_back("ty");
+	permissable_3d_not_rot.push_back("tz");
+	permissable_3d_not_rot.push_back("scale");
+	permissable_3d_not_rot.push_back("mirror");
+	permissable_3d_not_rot.push_back("type");
+	
+	vector<string> tmp;
+	tmp.push_back("alpha");
+	permissable_rot_keys["2d"] = tmp;
+	
+	tmp.clear();
+	tmp.push_back("alt");
+	tmp.push_back("az");
+	tmp.push_back("phi");
+	permissable_rot_keys["eman"] = tmp;
+	
+	tmp.clear();
+	tmp.push_back("psi");
+	tmp.push_back("theta");
+	tmp.push_back("phi");
+	permissable_rot_keys["spider"] = tmp;
+	
+	tmp.clear();
+	tmp.push_back("alpha");
+	tmp.push_back("beta");
+	tmp.push_back("gamma");
+	permissable_rot_keys["imagic"] = tmp;
+	
+	tmp.clear();
+	tmp.push_back("ztilt");
+	tmp.push_back("xtilt");
+	tmp.push_back("ytilt");
+	permissable_rot_keys["xyz"] = tmp;
+	
+	tmp.clear();
+	tmp.push_back("phi");
+	tmp.push_back("theta");
+	tmp.push_back("omega");
+	permissable_rot_keys["mrc"] = tmp;
+	
+	tmp.clear();
+	tmp.push_back("e0");
+	tmp.push_back("e1");
+	tmp.push_back("e2");
+	tmp.push_back("e3");
+	permissable_rot_keys["quaternion"] = tmp;
+	
+	tmp.clear();
+	tmp.push_back("n1");
+	tmp.push_back("n2");
+	tmp.push_back("n3");
+	tmp.push_back("Omega");
+	permissable_rot_keys["spin"] = tmp;
+	
+	tmp.clear();
+	tmp.push_back("n1");
+	tmp.push_back("n2");
+	tmp.push_back("n3");
+	tmp.push_back("q");
+	permissable_rot_keys["sgirot"] = tmp;
+	
+	tmp.clear();
+	tmp.push_back("m11");
+	tmp.push_back("m12");
+	tmp.push_back("m13");
+	tmp.push_back("m21");
+	tmp.push_back("m22");
+	tmp.push_back("m23");
+	tmp.push_back("m31");
+	tmp.push_back("m32");
+	tmp.push_back("m33");
+	permissable_rot_keys["matrix"] = tmp;	
+}
+
+
 void Transform::detect_problem_keys(const Dict& d) {
+	if (permissable_rot_keys.size() == 0 ) {
+		init_permissable_keys();
+	}
+	
 	vector<string> verification;
 	vector<string> problem_keys;
 	bool is_2d = false;
