@@ -260,11 +260,14 @@ def fixnegbg(bg_1d,im_1d,ds):
 			
 	
 def pspec_and_ctf_fit(options,debug=False):
-	"Power spectrum and CTF fitting"
+	"""Power spectrum and CTF fitting. Returns an 'image sets' list. Each item in this list contains
+	filename,EMAN2CTF,im_1d,bg_1d,im_2d,bg_2d,qual"""
 	global logid
 	img_sets=[]
 
 	db_parms=db_open_dict("bdb:e2ctf.parms")
+	db_im2d=db_open_dict("bdb:e2ctf.im2d")
+	db_bg2d=db_open_dict("bdb:e2ctf.bg2d")
 
 	for i,filename in enumerate(options.filenames):
 		name=get_file_tag(filename)
@@ -284,14 +287,16 @@ def pspec_and_ctf_fit(options,debug=False):
 		# Fit the CTF parameters
 		if debug : print "Fit CTF"
 		ctf=ctf_fit(im_1d,bg_1d,im_2d,bg_2d,options.voltage,options.cs,options.ac,apix,bgadj=not options.nosmooth,autohp=options.autohp)
-		db_parms[name]=[ctf.to_string(),im_1d,bg_1d,im_2d,bg_2d]
-
+		db_parms[name]=(ctf.to_string(),5)		# the 5 is a default quality value
+		db_im2d[name]=im_2d
+		db_bg2d[name]=bg_2d
+		
 		if debug:
 			Util.save_data(0,ds,im_1d,"ctf.fg.txt")
 			Util.save_data(0,ds,bg_1d,"ctf.bg.txt")
 			Util.save_data(0,ds,ctf.snr,"ctf.snr.txt")
 			
-		img_sets.append((filename,ctf,im_1d,bg_1d,im_2d,bg_2d))
+		img_sets.append((filename,ctf,im_1d,bg_1d,im_2d,bg_2d,5))
 		if logid : E2progress(logid,float(i+1)/len(options.filenames))
 		
 	project_db = db_open_dict("bdb:project")
@@ -951,6 +956,12 @@ class GUIctf(QtGui.QWidget):
 		self.sbfactor=ValSlider(self,(0,1600),"B factor:",0,90)
 		self.vbl.addWidget(self.sbfactor)
 		
+		self.sdfdiff=ValSlider(self,(0,1),"DF Diff:",0,90)
+		self.vbl.addWidget(self.sdfdiff)
+		
+		self.sdfang=ValSlider(self,(0,180),"Df Angle:",0,90)
+		self.vbl.addWidget(self.sdfang)
+		
 		self.sampcont=ValSlider(self,(0,100),"% AC",0,90)
 		self.vbl.addWidget(self.sampcont)
 		
@@ -962,9 +973,16 @@ class GUIctf(QtGui.QWidget):
 		
 		self.scs=ValSlider(self,(0,5),"Cs (mm):",0,90)
 		self.vbl.addWidget(self.scs)
+		
+		self.squality=ValSlider(self,(0,10),"Quality (0-10):",0,90)
+		self.squality.setIntonly(True)
+		self.vbl.addWidget(self.squality)
+		
+		
 		self.hbl_buttons = QtGui.QHBoxLayout()
 		self.saveparms = QtGui.QPushButton("Save parms")
 		self.recallparms = QtGui.QPushButton("Recall")
+		self.refit = QtGui.QPushButton("Refit")
 		self.output = QtGui.QPushButton("Output")
 		self.hbl_buttons.addWidget(self.saveparms)
 		self.hbl_buttons.addWidget(self.recallparms)
@@ -975,15 +993,19 @@ class GUIctf(QtGui.QWidget):
 		
 		QtCore.QObject.connect(self.sdefocus, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.sbfactor, QtCore.SIGNAL("valueChanged"), self.newCTF)
+		QtCore.QObject.connect(self.sdfdiff, QtCore.SIGNAL("valueChanged"), self.newCTF)
+		QtCore.QObject.connect(self.sdfang, QtCore.SIGNAL("valueChanged"), self.newCTF)
 #		QtCore.QObject.connect(self.sapix, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.sampcont, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.svoltage, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.scs, QtCore.SIGNAL("valueChanged"), self.newCTF)
+		QtCore.QObject.connect(self.squality, QtCore.SIGNAL("valueChanged"), self.newQual)
 		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("currentRowChanged(int)"),self.newSet)
 		QtCore.QObject.connect(self.splotmode,QtCore.SIGNAL("currentIndexChanged(int)"),self.newPlotMode)
 
 	   	QtCore.QObject.connect(self.saveparms,QtCore.SIGNAL("clicked(bool)"),self.on_save_params)
 		QtCore.QObject.connect(self.recallparms,QtCore.SIGNAL("clicked(bool)"),self.on_recall_params)
+		QtCore.QObject.connect(self.refit,QtCore.SIGNAL("clicked(bool)"),self.on_refit)
 		QtCore.QObject.connect(self.output,QtCore.SIGNAL("clicked(bool)"),self.on_output)
 		
 		self.update_data()
@@ -1005,38 +1027,34 @@ class GUIctf(QtGui.QWidget):
 #			
 		db_parms=db_open_dict("bdb:e2ctf.parms")
 		ctf = self.data[val][1].to_string()
-		output = []
-		for i,val in enumerate(self.data[val]):
-			# ignore i == 0 it's just the filename
-			if i > 1:
-				output.append(val)
-			elif i == 1:
-				output.append(ctf)
 
-		db_parms[name] = output
+		db_parms[name] = (ctf,data[val][6])
 
 	def on_recall_params(self):
 		if len(self.setlist.selectedItems()) == 0: return
 			
 		val = self.curset
 		name = str(self.setlist.item(val).text())
-		data = [name]
 		name = get_file_tag(name)
 		
 		db_parms=db_open_dict("bdb:e2ctf.parms")
 		if not db_parms.has_key(name):
 			print "error, ctf parameters do not exist for:",name
-#			
 		
-		data.extend(db_parms[name])
 		ctf=EMAN2Ctf()
-		ctf.from_string(data[1])
-		data[1] = ctf
+		ctf.from_string(db_parms[name][0])
 		
-		self.data[val] = data
+		tmp=list(self.data[val])
+		tmp[1]=ctf
+		tmp[6]=db_parms[name][1]
+		self.data[val] = tuple(tmp)
 		self.newSet(self.curset)
 	
 #	def get_output_params(self):
+
+	def on_refit(self):
+		print "Refit not implemented yet"
+		
 	
 	def on_output(self):
 		from emsprworkflow import E2CTFOutputTaskGeneral
@@ -1173,11 +1191,19 @@ class GUIctf(QtGui.QWidget):
 	def newCTF(self) :
 		self.data[self.curset][1].defocus=self.sdefocus.value
 		self.data[self.curset][1].bfactor=self.sbfactor.value
+		self.data[self.curset][1].dfdiff=self.sdfdiff.value
+		self.data[self.curset][1].dfang=self.sdfang.value
 #		self.data[self.curset][1].apix=self.sapix.value
 		self.data[self.curset][1].ampcont=self.sampcont.value
 		self.data[self.curset][1].voltage=self.svoltage.value
 		self.data[self.curset][1].cs=self.scs.value
 		self.update_plot()
+		
+	def newQual(self):
+		self.data[self.curset][6]=int(self.squality.value)
+
+		db_parms=db_open_dict("bdb:e2ctf.parms")
+		db_parms[name] = (db_parms[name][0],data[val][6])
 
 	def imgmousedown(self,event) :
 		m=self.guiim.scr_to_img((event.x(),event.y()))

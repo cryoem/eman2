@@ -112,7 +112,7 @@ def main():
 			bss=0.0
 			bslst=[]
 			for i in range(len(ptcls)):
-				sim=cmponetomany(projs,ptcls[i],align=("rotate_translate_flip",{}),alicmp=("optvariance",{}))
+				sim=cmponetomany(projs,ptcls[i],align=("rotate_translate_flip",{}),alicmp=("dot",{}),cmp=("frc",{}))
 				bs=min(sim)
 				#print bs[0]
 				bss+=bs[0]

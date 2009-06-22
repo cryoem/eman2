@@ -197,7 +197,7 @@ def main():
 	# this is the main refinement loop
 	for it in range(fit,options.iter+1) :		
 		# first we sort and align the class-averages from the last step
-		run("e2stacksort.py %s %s#allrefs_%02d --simcmp=optvariance:matchfilt=1 --simalign=rotate_translate_flip:maxshift=%d --center --useali --iterative"%
+		run("e2stacksort.py %s %s#allrefs_%02d --simcmp=frc --simalign=rotate_translate_flip:maxshift=%d --center --useali --iterative"%
 		    (options.initial,options.path,it,options.maxshift))
 		proc_tally += 1.0
 		if logid : E2progress(logid,proc_tally/total_procs)

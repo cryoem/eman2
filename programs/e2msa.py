@@ -31,8 +31,8 @@
 #
 #Beginning MSA
 # e2msa.py  01/20/2008  Steven Ludtke
-# Rewritten version which just does MSA, no classification
-# uses Chao Yang's new MSA implementation in Analyzer 
+# Rewritten version which just does PCA, no classification
+# uses Chao Yang's new PCA implementation in Analyzer 
 
 from EMAN2 import *
 from optparse import OptionParser
@@ -44,7 +44,11 @@ import sys
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] <input stack> <output basis>
-	
+At present, this program performs only Principle Components Analysis (PCA),
+but it may be expanded to include other Multivariate Statistical Analysis (MSA)
+algorithms.
+
+---
 Performs multivariate statistical analysis on a stack of images. Writes
 a set of Eigenimages which can be uses as a basis set for reducing
 the dimensionality of a data set (noise reduction). Typically this
@@ -55,7 +59,7 @@ are stored in the 'eigval' parameter in each image.
 
 Note: The mean value is subtracted from each image prior to Eigenimage
 calculation. The mean image is stored as the first image in the output
-file, though it is not directly part of the orthonormal basis when
+file, though it is not part of the orthonormal basis when
 handled this way."""
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
