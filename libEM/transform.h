@@ -411,6 +411,15 @@ namespace EMAN
 			float matrix[3][4];
 
 			void assert_valid_2d() const;
+			
+			/// This map is used to validate keys in the argument maps - e.g. if the type is 2d and the angle is not "alpha" then it should throw
+			static vector<string> permissable_2d_not_rot;
+			static vector<string> permissable_3d_not_rot;
+			static map<string,vector<string> >  permissable_rot_keys;
+			
+			void init_permissable_keys();
+			
+			void detect_problem_keys(const Dict& d);
 
 	};
 	/// Matrix times Matrix, a pure mathematical operation

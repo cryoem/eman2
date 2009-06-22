@@ -53,14 +53,110 @@ using namespace EMAN;
 #include <gsl_blas.h>
 #include <gsl_linalg.h>
 
+#include <ostream>
+using std::ostream_iterator;
 
 const float Transform3D::ERR_LIMIT = 0.000001f;
 
 const float Transform::ERR_LIMIT = 0.000001f;
 
- Transform::Transform()
+vector<string>  Transform::permissable_2d_not_rot;
+vector<string>  Transform::permissable_3d_not_rot;
+map<string,vector<string> >  Transform::permissable_rot_keys;
+
+Transform::Transform()
 {
+	if (permissable_rot_keys.size() == 0 ) {
+		init_permissable_keys();
+	}
 	to_identity();
+}
+
+void Transform::init_permissable_keys() 
+{
+	
+	permissable_2d_not_rot.push_back("tx");
+	permissable_2d_not_rot.push_back("ty");
+	permissable_2d_not_rot.push_back("scale");
+	permissable_2d_not_rot.push_back("mirror");
+	permissable_2d_not_rot.push_back("type");
+	
+	permissable_3d_not_rot.push_back("tx");
+	permissable_3d_not_rot.push_back("ty");
+	permissable_3d_not_rot.push_back("tz");
+	permissable_3d_not_rot.push_back("scale");
+	permissable_3d_not_rot.push_back("mirror");
+	permissable_3d_not_rot.push_back("type");
+	
+	vector<string> tmp;
+	tmp.push_back("alpha");
+	permissable_rot_keys["2d"] = tmp;
+	
+	tmp.clear();
+	tmp.push_back("alt");
+	tmp.push_back("az");
+	tmp.push_back("phi");
+	permissable_rot_keys["eman"] = tmp;
+	
+	tmp.clear();
+	tmp.push_back("psi");
+	tmp.push_back("theta");
+	tmp.push_back("phi");
+	permissable_rot_keys["spider"] = tmp;
+	
+	tmp.clear();
+	tmp.push_back("alpha");
+	tmp.push_back("beta");
+	tmp.push_back("gamma");
+	permissable_rot_keys["imagic"] = tmp;
+	
+	
+	tmp.clear();
+	tmp.push_back("ztilt");
+	tmp.push_back("xtilt");
+	tmp.push_back("ytilt");
+	permissable_rot_keys["xyz"] = tmp;
+	
+	tmp.clear();
+	tmp.push_back("phi");
+	tmp.push_back("theta");
+	tmp.push_back("omega");
+	permissable_rot_keys["mrc"] = tmp;
+	
+	tmp.clear();
+	tmp.push_back("e0");
+	tmp.push_back("e1");
+	tmp.push_back("e2");
+	tmp.push_back("e3");
+	permissable_rot_keys["quaternion"] = tmp;
+	
+	tmp.clear();
+	tmp.push_back("n1");
+	tmp.push_back("n2");
+	tmp.push_back("n3");
+	tmp.push_back("Omega");
+	permissable_rot_keys["spin"] = tmp;
+	
+	tmp.clear();
+	tmp.push_back("n1");
+	tmp.push_back("n2");
+	tmp.push_back("n3");
+	tmp.push_back("q");
+	permissable_rot_keys["sgirot"] = tmp;
+	
+	tmp.clear();
+	tmp.push_back("m11");
+	tmp.push_back("m12");
+	tmp.push_back("m13");
+	tmp.push_back("m21");
+	tmp.push_back("m22");
+	tmp.push_back("m23");
+	tmp.push_back("m31");
+	tmp.push_back("m32");
+	tmp.push_back("m33");
+	permissable_rot_keys["matrix"] = tmp;
+	
+	
 }
 
 Transform::Transform( const Transform& that )
@@ -78,17 +174,26 @@ Transform& Transform::operator=(const Transform& that ) {
 }
 
 Transform::Transform(const Dict& d)  {
+	if (permissable_rot_keys.size() == 0 ) {
+		init_permissable_keys();
+	}
 	to_identity();
 	set_params(d);
 }
 
 
 Transform::Transform(const float array[12]) {
+	if (permissable_rot_keys.size() == 0 ) {
+		init_permissable_keys();
+	}
 	memcpy(matrix,array,12*sizeof(float));
 }
 
 Transform::Transform(const vector<float> array)
 {
+	if (permissable_rot_keys.size() == 0 ) {
+		init_permissable_keys();
+	}
 	set_matrix(array);
 
 }
@@ -159,6 +264,8 @@ bool Transform::is_identity() const {
 
 
 void Transform::set_params(const Dict& d) {
+	detect_problem_keys(d);
+	
 	if (d.has_key_ci("type") ) set_rotation(d);
 
 	if (d.has_key_ci("scale")) {
@@ -187,7 +294,61 @@ void Transform::set_params(const Dict& d) {
 }
 
 
+void Transform::detect_problem_keys(const Dict& d) {
+	vector<string> verification;
+	vector<string> problem_keys;
+	bool is_2d = false;
+	if (d.has_key_ci("type") ) {
+		string type = (string)d["type"];
+		bool problem = false;
+		if (permissable_rot_keys.find(type) == permissable_rot_keys.end() ) {
+			problem_keys.push_back(type);
+			problem = true;
+		}
+		if ( !problem ) {
+			vector<string> perm = permissable_rot_keys[type];
+			std::copy(perm.begin(),perm.end(),back_inserter(verification));
+			
+			if ( type == "2d" ) {
+				is_2d = true;
+				std::copy(permissable_2d_not_rot.begin(),permissable_2d_not_rot.end(),back_inserter(verification));
+			}
+		}
+	}
+	if ( !is_2d ) {
+		std::copy(permissable_3d_not_rot.begin(),permissable_3d_not_rot.end(),back_inserter(verification));
+	}
+	
+	for (Dict::const_iterator it = d.begin(); it != d.end();  ++it) {
+		if ( std::find(verification.begin(),verification.end(), it->first) == verification.end() ) {
+			problem_keys.push_back(it->first);
+		}
+	}
+	
+	if (problem_keys.size() != 0 ) {
+		string error;
+		if (problem_keys.size() == 1) {
+			error = "Transform Error: The \"" +problem_keys[0]+ "\" key is unsupported";
+		} else {
+			error = "Transform Error: The ";
+			for(vector<string>::const_iterator cit = problem_keys.begin(); cit != problem_keys.end(); ++cit ) {
+				if ( cit != problem_keys.begin() ) {
+					if (cit == (problem_keys.end() -1) ) error += " and ";
+					else error += ", ";
+				}
+				error += "\"";
+				error += *cit;
+				error += "\"";
+			}
+			error += " keys are unsupported";
+		}
+		throw InvalidParameterException(error);
+	}
+}
+
 void Transform::set_params_inverse(const Dict& d) {
+	detect_problem_keys(d);
+
 	if (d.has_key_ci("type") ) set_rotation(d);
 
 	float dx=0,dy=0,dz=0;
@@ -296,6 +457,7 @@ Dict Transform::get_params_inverse(const string& euler_type) {
 
 void Transform::set_rotation(const Dict& rotation)
 {
+	detect_problem_keys(rotation);
 	string euler_type;
 
 	if (!rotation.has_key_ci("type") ){
