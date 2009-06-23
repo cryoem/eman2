@@ -701,10 +701,13 @@ class EMAN2DB:
 		except: pass
 
 	def remove_dict(self,name):
-		if name in self.dicts.keys():
-			self.__dict__[name].close()
-		try: os.unlink(self.path+"/EMAN2DB/"+name+".bdb")
-		except: pass
+		self.open_dict(name)
+		self.__dict__[name].bdb.truncate()
+		#if not (name in self.dicts.keys()) : 
+		#if name in self.dicts.keys():
+			#self.__dict__[name].close()
+		#try: os.unlink(self.path+"/EMAN2DB/"+name+".bdb")
+		#except: pass
 		for f in os.listdir(self.path+"/EMAN2DB"):
 			if fnmatch.fnmatch(f, name+'_*'):
 				try: os.unlink(self.path+"/EMAN2DB/"+f)
