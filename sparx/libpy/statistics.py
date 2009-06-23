@@ -5193,8 +5193,42 @@ See the module documentation for usage.
                 if self.marked[i][j] == 2:
                     self.marked[i][j] = 0
 
+# Hungarian algorithm between two stacks
+def Hungarian(stack1, stack2):
+	from statistics import Munkres
+	import sys
 
-# Match two partitions assignment with hungarian algorithm
+	# read partitions
+	K  = EMUtil.get_image_count(stack1)
+	im = EMData()
+	part1, part2 = [], []
+	for k in xrange(K):
+		im.read_image(stack1, k, True)
+		part1.append(im.get_attr('members'))
+		im.read_image(stack2, k, True)
+		part2.append(im.get_attr('members'))
+
+	# prepare matrix
+	MAT = [[0] * K for i in xrange(K)]
+	for k1 in xrange(K):
+		for k2 in xrange(K):
+			for index in part1[k1]:
+				if index in part2[k2]:
+					MAT[k1][k2] += 1
+	cost_MAT = []
+	for row in MAT:
+		cost_row = []
+		for col in row:
+			cost_row += [sys.maxint - col]
+		cost_MAT += [cost_row]
+
+	m = Munkres()
+	indexes = m.compute(cost_MAT)
+
+	return indexes
+	
+
+# Match two partitions with hungarian algorithm
 def k_means_match_clusters_asg(asg1, asg2):
 	from statistics import Munkres
 	import sys
@@ -5222,6 +5256,7 @@ def k_means_match_clusters_asg(asg1, asg2):
 	list_objs   = []
 	nb_tot_objs = 0
 	for r, c in indexes:
+		#print r, c
 		list_in  = []
 		list_out = []
 		for index1 in asg1[r]:
