@@ -964,7 +964,7 @@ EMData*   EMData::bispecRotTransInvN(int N, int NK)
 //		jCount = jy*End + jx;
 		int jx             = jCount%End ;
 		int jy             = (jCount-jx)/End ;
-		jxjyatan2[jCount]  = atan2(jy+1-Mid , jx +1 -Mid);
+		jxjyatan2[jCount]  = atan2((float)(jy+1-Mid) , (float)(jx +1-Mid));
 	}
 
 
@@ -1123,7 +1123,7 @@ EMData*   EMData::bispecRotTransInvN(int N, int NK)
 				float k2 = kx*kx+ky*ky;
 				if (k2==0) { continue;}
 				float phiK =0;
-				if (k2>0) phiK= jxjyatan2[ (ky+Mid-1)*End + kx+Mid-1];  phiK= atan2(ky,kx);
+				if (k2>0) phiK= jxjyatan2[ (ky+Mid-1)*End + kx+Mid-1];  phiK= atan2((float)ky,(float)kx);
 
 				float fkR     = fkVecR[Countkxy] ;
 				float fkI     = fkVecI[Countkxy]  ;
@@ -1136,7 +1136,7 @@ EMData*   EMData::bispecRotTransInvN(int N, int NK)
 					int q2   = qx*qx+qy*qy;
 					if (q2==0) {continue;}
 					float phiQ =0;
-					if (q2>0) phiQ = jxjyatan2[ (qy+Mid-1)*End + qx+Mid-1];   phiQ=atan2(qy,qx);
+					if (q2>0) phiQ = jxjyatan2[ (qy+Mid-1)*End + qx+Mid-1];   phiQ=atan2((float)qy,(float)qx);
 					float fqR     = fkVecR[Countqxy]  ;
 					float fqI     = fkVecI[Countqxy]  ;
 					int kCx  = (-kx-qx);
@@ -1241,7 +1241,7 @@ EMData*   EMData::bispecRotTransInvDirect(int type)
 		for (int jy=0; jy <End ; jy++) {
 			float ValNow = this -> get_value_at(jx,jy);
 			ThisCopy -> set_value_at(jx,jy,ValNow);
-			jxjyatan2[jy*End + jx]  = atan2(jy+1-Mid , jx +1 -Mid);
+			jxjyatan2[jy*End + jx]  = atan2((float)(jy+1-Mid) , (float)(jx +1 -Mid));
 //		cout<< " jxM= " << jx+1<<" jyM= " << jy+1<< "ValNow" << ValNow << endl; //    Works
 	}}
 
