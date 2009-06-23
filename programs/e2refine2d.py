@@ -185,11 +185,16 @@ def main():
 		
 		if options.dbls:
 			pdb = db_open_dict("bdb:project")
-			tmp_list = pdb.get(options.dbls, dfl=[])	
+			tmp_data = pdb.get(options.dbls, dfl={})
+			if isinstance(tmp_data,list):
+				d = {}
+				for name in tmp_data:
+					d[name] = {}
+				tmp_data = d	
 			most_recent_classes = "%s#classes_init" %options.path
-			tmp_list.append(most_recent_classes)
+			tmp_data[most_recent_classes]= {}
 			# global.spr_ref_free_class_aves
-			pdb[options.dbls] = tmp_list
+			pdb[options.dbls] = tmp_data
 			
 	if not options.initial : options.initial=options.path+"#classes_init"
 		
@@ -243,15 +248,15 @@ def main():
 		
 		if options.dbls:
 			pdb = db_open_dict("bdb:project")
-			tmp_list = pdb.get(options.dbls, dfl=[])
+			tmp_data = pdb.get(options.dbls, dfl={})
 			if most_recent_classes != None:
 				try:
-					tmp_list.remove(most_recent_classes)
+					tmp_data.pop(most_recent_classes)
 				except: pass # the user removed it in the workflow!
 			most_recent_classes = "%s#classes_%02d" %(options.path,it)
-			tmp_list.append(most_recent_classes)
+			tmp_data[most_recent_classes] = {}
 			# global.spr_ref_free_class_aves
-			pdb[options.dbls] = tmp_list
+			pdb[options.dbls] = tmp_data
 		
 		proc_tally += 1.0
 		if logid : E2progress(logid,proc_tally/total_procs)

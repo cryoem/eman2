@@ -48,6 +48,12 @@ import time
 from emsave import save_data
 from emimagemx import EMDataListCache
 
+spr_raw_data_dict = "global.spr_raw_data_dict"
+spr_filt_ptcls_map = "global.spr_filt_ptcls_map"
+spr_rfca_dict = "global.spr_rfca_dict"
+spr_stacks_map = "global.spr_stacks_map"
+spr_init_models_dict = "global.spr_init_models_dict"
+
 class EmptyObject:
 	'''
 	This just because I need an object I can assign attributes to, and object() doesn't seem to work
@@ -143,6 +149,39 @@ class EMErrorMessageDisplay:
 	
 	run = staticmethod(run)
 
+
+class EMProjectBackCompat:
+	
+	def recover_list_to_dict(project_list_name):
+		project_db = db_open_dict("bdb:project")
+		project_data  = project_db.get(project_list_name,dfl={})
+		if isinstance(project_data,list):
+			EMErrorMessageDisplay.run("Recovering %s database (for back compatibility)" %project_list_name, "Warning")
+			d = {}
+			for name in project_data:
+				d[name] = {}
+			
+			project_db[project_list_name] = d
+			
+	recover_list_to_dict = staticmethod(recover_list_to_dict)
+				
+	def recover_list_to_dict_from_old_name(project_list_name,old_name):
+		project_db = db_open_dict("bdb:project")
+		if not project_db.has_key(old_name): return
+		
+		project_data  = project_db.get(project_list_name,dfl={})
+		old_project_data  = project_db.get(old_name,dfl=[])
+		if len(old_project_data) > 0:
+			EMErrorMessageDisplay.run("Recovering %s database (for back compatibility)" %old_name, "Warning")
+			for name in old_project_data:
+				if not project_data.has_key(name):
+					project_data[name] = {}
+			project_db[project_list_name] = project_data
+			
+		project_db[old_name] = None
+
+	recover_list_to_dict_from_old_name = staticmethod(recover_list_to_dict_from_old_name)
+
 class EMProjectListCleanup:
 	'''
 	A class for catching cases where files have been removed.
@@ -160,8 +199,35 @@ class EMProjectListCleanup:
 		if len(rem) != 0:
 			EMErrorMessageDisplay.run(rem,"Warning")
 			project_db[name_of_list] = names
+			
+	def clean_up_project_file_dict(name_of_list):
+		project_db = db_open_dict("bdb:project")
+		name_data = project_db.get(name_of_list,dfl={})
+		if isinstance(name_data,list):
+			EMErrorMessageDisplay.run("Had to recover %s" %name_of_list,"Warning")
+			d = {}
+			for name in name_data:
+				d[name] = {}
+				
+			name_data = d
+			project_db[name_of_list] = name_data
+		rem = []
+		for name, map in name_data.items():
+			if not file_exists(name):
+				rem.append("File %s no longer exists. Automatically removing from project" %name)
+				name_data.pop(name)
+			else:
+				for key,image_name in map.items():
+					if not file_exists(image_name):
+						map.pop(key)
+						rem.append("%s data no longer exists for %s. Automatically removing from project" %(key,image_name))
 		
+		if len(rem) != 0:
+			EMErrorMessageDisplay.run(rem,"Warning")
+			project_db[name_of_list] = name_data
+				
 	clean_up_project_file_list = staticmethod(clean_up_project_file_list)
+	clean_up_project_file_dict = staticmethod(clean_up_project_file_dict)
 
 	def clean_up_filt_particles(dict_db_name="global.spr_filt_ptcls_map"):
 		project_db = db_open_dict("bdb:project")
@@ -570,22 +636,14 @@ class ChangeDirectoryTask(WorkFlowTask):
 
 	
 class SPRInitTask(WorkFlowTask):
-	'''
-	A class that manages the initialization component of a Single Particle
-	Reconstruction workflow
-	'''
-	
-	# stolen from wikipedia
-	Ddocumentation_string = "In physics, in the area of microscopy, single particle reconstruction is a technique in which large numbers of images (10,000 - 1,000,000) of ostensibly identical individual molecules or macromolecular assemblies are combined to produce a 3 dimensional reconstruction. This is a complementary technique to crystallography of biological molecules. As molecules/assembies become larger, it becomes more difficult to prepare high resolution crystals. For single particle reconstruction, the opposite is true. Larger objects actually improve the resolution of the final structure. In single particle reconstruction, the molecules/assemblies in solution are prepared in a thin layer of vitreous (glassy) ice, then imaged on an electron cryomicroscope (see Transmission electron microscopy). Images of individual molecules/assemblies are then selected from the micrograph and then a complex series of algorithms is applied to produce a full volumetric reconstruction of the molecule/assembly. In the 1990s this technique was limited to roughly 2 nm resolution, providing only gross features of the objects being studied. However, recent improvements in both microscope technology as well as available computational capabilities now make 0.5 nm resolution possible."
-	documentation_string = "Welcome to the EMAN2 workflow. Use this tool to step through and manage the process of generating single particle reconstructions. Get started by entering what you can of the parameters in this form and then proceed to the next step task in the workflow."
+	'''Welcome to the EMAN2 workflow. Use this tool to step through and manage the process of generating single particle reconstructions. Get started by entering what you can of the parameters in this form and then proceed to the next step task in the workflow'''
 	def __init__(self):
 		WorkFlowTask.__init__(self)
 		self.window_title = "Project Settings"
 	def get_params(self):
 		params = []
 		project_db = db_open_dict("bdb:project")
-		#params.append(ParamDef(name="global.spr_raw_file_names",vartype="url",desc_short="File Names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=db_entry("global.spr_raw_file_names","bdb:project",[]),choices=[]))
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="SPR",desc_long="Information regarding this task",property=None,defaultunits=SPRInitTask.documentation_string,choices=None))
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="SPR",desc_long="Information regarding this task",property=None,defaultunits=self.__doc__,choices=None))
 		
 		papix = ParamDef(name="global.apix",vartype="float",desc_short="A/pix for project",desc_long="The physical distance represented by the pixel spacing",property=None,defaultunits=project_db.get("global.apix",dfl=1.1),choices=None)
 		pmass = ParamDef(name="global.particle_mass",vartype="float",desc_short="Particle mass (kda)",desc_long="The mass of the particle in kilodaltons",property=None,defaultunits=project_db.get("global.particle_mass",dfl=800),choices=None)
@@ -615,8 +673,8 @@ class EMRawDataReportTask(WorkFlowTask):
 	def __init__(self):
 		WorkFlowTask.__init__(self)
 		self.window_title = "Micrographs In Project"
-		self.project_files_at_init = None # stores the known project files when the form is created and shown - that way if cancel is hit we can restore the original parameters
-		self.project_list = "global.spr_raw_file_names"
+		self.project_data_at_init = None # stores the known project files when the form is created and shown - that way if cancel is hit we can restore the original parameters
+		self.project_list = spr_raw_data_dict
 		
 	def get_image_dimensions(file_name):
 		'''
@@ -635,9 +693,12 @@ class EMRawDataReportTask(WorkFlowTask):
 		'''
 		Gets an EM2DFileTable - this is type of class that the emform knows how to handle 
 		'''
+		EMProjectBackCompat.recover_list_to_dict_from_old_name(self.project_list,"global.spr_raw_file_names")
+		EMProjectListCleanup.clean_up_project_file_dict(self.project_list) # in case things have gone missing
 		project_db = db_open_dict("bdb:project")
-		project_names = project_db.get(self.project_list,dfl=[])
-		self.project_files_at_init = project_names # so if the user hits cancel this can be reset
+		project_data = project_db.get(self.project_list,dfl={})
+		project_names = project_data.keys()
+		self.project_data_at_init = project_data # so if the user hits cancel this can be reset
 
 		from emform import EM2DFileTable,EMFileTable
 		table = EM2DFileTable(project_names,desc_short="Raw Data Files",desc_long="")
@@ -668,7 +729,7 @@ class EMRawDataReportTask(WorkFlowTask):
 			
 
 	class ProjectListContextMenu:
-		def __init__(self,project_list="global.spr_raw_file_names"):
+		def __init__(self,project_list=spr_raw_data_dict):
 			self.project_list = project_list
 			self.validator = AddFilesToProjectValidator(self.project_list)
 			self.context_menu = {}
@@ -680,7 +741,7 @@ class EMRawDataReportTask(WorkFlowTask):
 		
 		
 		class RemoveFilesFromProject:
-			def __init__(self,project_list="global.spr_raw_file_names"):
+			def __init__(self,project_list):
 				self.project_list = project_list
 			def __call__(self,names,table_widget):
 #		def remove_files_from_project(self,names,table_widget):
@@ -691,7 +752,8 @@ class EMRawDataReportTask(WorkFlowTask):
 				text_entries = [table_widget.convert_text(str(i.text())) for i in entries]
 				
 				project_db = db_open_dict("bdb:project")
-				project_names = project_db.get(self.project_list,dfl=[])
+				project_data  = project_db.get(self.project_list,dfl={})
+				project_names = project_data.keys()
 				
 				full_names = [table_widget.convert_text(name) for name in names]
 		
@@ -705,20 +767,20 @@ class EMRawDataReportTask(WorkFlowTask):
 				indices.reverse()
 				for idx in indices:
 					table_widget.removeRow(idx)
-					project_names.remove(text_entries[idx])
+					project_data.pop(text_entries[idx])
 					
 				
-				project_db[self.project_list] = project_names
+				project_db[self.project_list] = project_data
 				
 		class AddFilesToProject:
-			def __init__(self,project_list="global.spr_raw_file_names"):
+			def __init__(self,project_list):
 				self.project_list = project_list
 				
 			def __call__(self,list_of_names,table_widget):
 		
-		#def add_files_to_project(self,list_of_names,table_widget):	
 				project_db = db_open_dict("bdb:project")
-				project_names = project_db.get(self.project_list,dfl=[])
+				project_data = project_db.get(self.project_list,dfl={})
+				project_names = project_data.keys()
 				project_name_tags = [get_file_tag(name) for name in project_names]
 				
 				for name in list_of_names:
@@ -736,11 +798,13 @@ class EMRawDataReportTask(WorkFlowTask):
 				table_widget.add_entries(list_of_names)
 				
 				# then add names to the database
-				project_names.extend(list_of_names)
-				project_db[self.project_list] = project_names
+				for name in list_of_names:
+					project_data[name] = {}
+				
+				project_db[self.project_list] = project_data
 		
 		class AddFilesToProjectViaContext:
-			def __init__(self,project_list="global.spr_raw_file_names"):
+			def __init__(self,project_list):
 				self.project_list = project_list
 				self.validator = AddFilesToProjectValidator(self.project_list)
 				
@@ -799,8 +863,8 @@ class EMRawDataReportTask(WorkFlowTask):
 		are not saved unless the user hits ok
 		'''
 		project_db = db_open_dict("bdb:project")
-		project_db["global.spr_raw_file_names"] = self.project_files_at_init
-		
+		project_db[self.project_list] = self.project_data_at_init
+	
 	
 	def on_form_ok(self,params):
 		self.form.closeEvent(None)
@@ -809,7 +873,7 @@ class EMRawDataReportTask(WorkFlowTask):
 
 		
 class AddFilesToProjectValidator():
-	def __init__(self,project_list="global.spr_raw_file_names"):
+	def __init__(self,project_list=spr_raw_data_dict):
 		self.project_list = project_list
 	def validate_file_name(self,list_of_names):
 		'''
@@ -822,7 +886,8 @@ class AddFilesToProjectValidator():
 			else: raise RuntimeError("Files needs to be a list")
 		
 		project_db = db_open_dict("bdb:project")
-		project_names = project_db.get(self.project_list,dfl=[])
+		project_data = project_db.get(self.project_list,dfl={})
+		project_names = project_data.keys()
 		project_name_tags = [get_file_tag(name) for name in project_names]
 		
 		for name in list_of_names:
@@ -965,7 +1030,8 @@ class EMFilterRawDataTask(WorkFlowTask):
 		no_dir_names = [get_file_tag(name) for name in filenames]
 		
 		project_db = db_open_dict("bdb:project")
-		current_project_files = project_db.get("global.spr_raw_file_names",dfl=[])
+		current_project_data = project_db.get(spr_raw_data_dict,dfl={})
+		current_project_files = current_project_data.keys()
 		cpft = [get_file_tag(file) for file in current_project_files]
 		
 		if params["project_associate"]:
@@ -1051,9 +1117,10 @@ class EMFilterRawDataTask(WorkFlowTask):
 		
 		if not cancelled and params["project_associate"]:
 			project_db = db_open_dict("bdb:project")
-			current_project_files = project_db.get("global.spr_raw_file_names",dfl=[])
-			current_project_files.extend(output_names)
-			project_db["global.spr_raw_file_names"] = current_project_files
+			current_project_data = project_db.get(spr_raw_data_dict,dfl={})
+			for name in output_names:
+				current_project_data[name] = {}
+			project_db[spr_raw_data_dict] = current_project_data
 		
 	def get_thumb_shrink(self,nx,ny):
 		if self.thumb_shrink == -1:
@@ -1093,7 +1160,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 			d = a.get_attr_dict()
 			if enable_ctf and d.has_key("ctf"):
 				self.column_data = CTFColumns()
-				table.add_column_data(EMFileTable.EMColumnData("SNR",self.column_data.get_snr_integral,"The averaged SNR"))
+				table.add_column_data(EMFileTable.EMColumnData("SNR",self.column_data.get_snr,"The averaged SNR"))
 				table.add_column_data(EMFileTable.EMColumnData("Defocus",self.column_data.get_defocus,"The estimated defocus"))
 				table.add_column_data(EMFileTable.EMColumnData("B Factor",self.column_data.get_bfactor,"The estimated B factor, note this is ~4x greater than in EMAN1"))
 				table.add_column_data(EMFileTable.EMColumnData("Sampling",self.column_data.get_sampling,"The amount of sampling used for generating CTF parameters"))
@@ -1101,83 +1168,14 @@ class ParticleWorkFlowTask(WorkFlowTask):
 			context_menu_data = ParticleWorkFlowTask.DataContextMenu()
 			table.add_context_menu_data(context_menu_data)
 			table.add_button_data(ParticleWorkFlowTask.AddDataButton(table,context_menu_data))
-		#table.insert_column_data(1,EMFileTable.EMColumnData("Particles On Disk",ParticleReportTask.get_num_ptcls,"Particles currently stored on disk that are associated with this image"))
-		#table.insert_column_data(2,EMFileTable.EMColumnData("Particle Dims",ParticleReportTask.get_particle_dims,"The dimensions of the particles that are stored on disk"))
+		#table.insert_column_data(1,EMFileTable.EMColumnData("Particles On Disk",EMParticleReportTask.get_num_ptcls,"Particles currently stored on disk that are associated with this image"))
+		#table.insert_column_data(2,EMFileTable.EMColumnData("Particle Dims",EMParticleReportTask.get_particle_dims,"The dimensions of the particles that are stored on disk"))
 	
 				
-		table.add_column_data(EMFileTable.EMColumnData("Particles On Disk",ParticleReportTask.get_num_ptcls,"Particles currently stored on disk that are associated with this image"))
-		table.add_column_data(EMFileTable.EMColumnData("Particle Dims",ParticleReportTask.get_particle_dims,"The dimensions of the particles that are stored on disk"))
+		table.add_column_data(EMFileTable.EMColumnData("Particles On Disk",EMParticleReportTask.get_num_ptcls,"Particles currently stored on disk that are associated with this image"))
+		table.add_column_data(EMFileTable.EMColumnData("Particle Dims",EMParticleReportTask.get_particle_dims,"The dimensions of the particles that are stored on disk"))
 
 		return table, len(ptcl_list)
-
-#	class CTFColumns:
-#		'''
-#		Basically some functions with a cache - the cache is to avoid
-#		re-reading stuff from disk multiple times
-#		'''
-#		def __init__(self):
-#			self.ctf_cache = {}
-#						
-##		def __del__(self):
-##			print "CTF columns dies"
-#			
-#		def get_defocus(self,name):
-#			if self.ctf_cache.has_key(name):
-#				ctf = self.ctf_cache[name]
-#			else:
-#				ctf = self.__get_ctf(name)
-#				self.ctf_cache[name] = ctf
-#			return "%.3f" %ctf.defocus
-#		
-#		def __get_ctf(self,name):
-#			ctf = None
-#			if self.ctf_cache.has_key(name):
-#				ctf = self.ctf_cache[name]
-#			else:
-#				try:
-#					a = EMData(name,0,True)
-#					d = a.get_attr_dict()
-#					ctf = d["ctf"]
-#					self.ctf_cache[name] = ctf
-#				except:
-#					self.ctf_cache[name] = None
-#			
-#			return ctf
-#		
-#		def get_bfactor(self,name):
-#			ctf = self.__get_ctf(name)
-#			if ctf != None:
-#				return "%.3f" %ctf.bfactor
-#			else: return ""
-#				
-#		def get_sampling(self,name):
-#			ctf = self.__get_ctf(name)
-#			if ctf != None:
-#				return str(len(ctf.background))
-#			else: return ""
-#				
-#		def get_snr(self,name):
-#			ctf = self.__get_ctf(name)
-#			if ctf != None:
-#				snr = 0
-#				try: snr = sum(ctf.snr)/len(ctf.snr)
-#				except: pass
-#				return "%.3f" %snr
-#			else: return ""
-#		
-#		
-#		def get_snr_integral(self,name):
-#			ctf = self.__get_ctf(name)
-#			if ctf != None:
-#				igl = 0
-#				apix = ctf.apix
-#				nyq = 1/(2.0*apix)
-#				n = float(len(ctf.snr))
-#				for i,snr in enumerate(ctf.snr):
-#					igl += i/n*snr
-#				igl /= n
-#				return "%.3f" %igl
-#			else: return ""
 
 	
 	class AddDataButton():
@@ -1249,26 +1247,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 					return
 				
 				table_widget.add_entries(files)
-	
-	def get_initial_models_table_new(self):
-		list_name = "global.spr_init_models"
-		EMProjectListCleanup.clean_up_project_file_list(list_name)
-		project_db = db_open_dict("bdb:project")
-		init_model_names = project_db.get(list_name,dfl=[])
-		self.names_at_init = init_model_names # so if the user hits cancel this can be reset
-
-		from emform import EM3DFileTable,EMFileTable
-		table = EM3DFileTable(init_model_names,name="model",desc_short="Initial Models",desc_long="")
-		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(list_name)
-		table.add_context_menu_data(context_menu_data)
-		table.add_button_data(EMRawDataReportTask.ProjectAddRawDataButton(table,context_menu_data))
-		table.add_column_data(EMFileTable.EMColumnData("Quality",ParticleWorkFlowTask.get_quality_score,"This the quality score as determined by e2initialmodel.py"))
-
-		table.add_column_data(EMFileTable.EMColumnData("Dimensions",EMRawDataReportTask.get_image_dimensions,"The dimensions of the file on disk"))
-
-		#p.append(pdims) # don't think this is really necessary
-		return table,len(init_model_names)
-	
+		
 	def get_quality_score(image_name):
 		'''
 		Used by the initial models table to get a quality score
@@ -1432,34 +1411,31 @@ def ptable_convert_4(text):
 	return "bdb:initial_models#"+text
 
 
-class ParticleReportTask(ParticleWorkFlowTask):
-	'''
-	
-	Reports the current status of the particles in the projec
-	'''
-	
-	documentation_string = "This tool is for displaying the particles that are currently associated with this project. This list is generating by inspecting the contents of the project particles directory."
-	warning_string = "\n\n\nNOTE: There are no particles currently associated with the project. You can add particles to the project using e2boxer or by importing them directly - see from the list of options associated with this task." 
+class EMParticleReportTask(ParticleWorkFlowTask):
+	'''This tool is for displaying the particles that are currently associated with this project. This list is generating by inspecting the contents of the project particles directory.'''
 	def __init__(self):
 		ParticleWorkFlowTask.__init__(self)
 		self.window_title = "Project Particles"
-
+		self.project_list = spr_filt_ptcls_map
+		self.project_data_at_init = None
 
 	def get_project_particle_table(self):
-		particle_list_name = "global.spr_ptcls"
-		EMProjectListCleanup.clean_up_project_file_list(particle_list_name) # in case things have gone missing
-		project_db = db_open_dict("bdb:project")
-		particle_names = project_db.get(particle_list_name,dfl=[])
+		EMProjectBackCompat.recover_list_to_dict_from_old_name(self.project_list,"global.spr_ptcls")
+		EMProjectListCleanup.clean_up_project_file_dict(self.project_list) # in case things have gone missing
 		
-		self.project_files_at_init = particle_names # so if the user hits cancel this can be reset
+		project_db = db_open_dict("bdb:project")
+		particle_data = project_db.get(self.project_list,dfl={})
+		particle_names = particle_data.keys()
+		
+		self.project_data_at_init = particle_data # so if the user hits cancel this can be reset
 
 		from emform import EM2DStackTable,EMFileTable
 		table = EM2DStackTable(particle_names,desc_short="Project Particle Stacks",desc_long="")
-		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(particle_list_name)
+		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(self.project_list)
 		table.add_context_menu_data(context_menu_data)
 		table.add_button_data(EMRawDataReportTask.ProjectAddRawDataButton(table,context_menu_data))
-		table.insert_column_data(1,EMFileTable.EMColumnData("Particles On Disk",ParticleReportTask.get_num_ptcls,"Particles currently stored on disk that are associated with this image"))
-		table.insert_column_data(2,EMFileTable.EMColumnData("Particle Dims",ParticleReportTask.get_particle_dims,"The dimensions of the particles that are stored on disk"))
+		table.insert_column_data(1,EMFileTable.EMColumnData("Particles On Disk",EMParticleReportTask.get_num_ptcls,"Particles currently stored on disk that are associated with this image"))
+		table.insert_column_data(2,EMFileTable.EMColumnData("Particle Dims",EMParticleReportTask.get_particle_dims,"The dimensions of the particles that are stored on disk"))
 		
 		return table
 	
@@ -1476,7 +1452,7 @@ class ParticleReportTask(ParticleWorkFlowTask):
 		are not saved unless the user hits ok
 		'''
 		project_db = db_open_dict("bdb:project")
-		project_db["global.spr_ptcls"] = self.project_files_at_init
+		project_db[self.project_list] = self.project_data_at_init
 	
 	def get_particle_dims(file_name):
 		try:
@@ -1497,11 +1473,227 @@ class ParticleReportTask(ParticleWorkFlowTask):
 	
 		table = self.get_project_particle_table()
 		
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=ParticleReportTask.documentation_string,choices=None))
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
 		params.append(table)  
 		
 		return params
+	
+	
+class EMParticleImportTask(ParticleWorkFlowTask):
+	'''This task is for importing particle into the project. The data will be copied into the particles directory. This is essential if you wish to use the data to generating sets'''
+	def __init__(self):
+		ParticleWorkFlowTask.__init__(self)
+		self.window_title = "Import Particles"
 
+	def get_project_particle_table(self):
+		EMProjectBackCompat.recover_list_to_dict_from_old_name(spr_filt_ptcls_map,"global.spr_ptcls")
+		EMProjectListCleanup.clean_up_project_file_dict(spr_filt_ptcls_map) # in case things have gone missing
+		project_db = db_open_dict("bdb:project")
+		
+		from emform import EM2DStackTable,EMFileTable
+		table = EM2DStackTable([],desc_short="Particles",desc_long="")
+		context_menu_data = EMParticleImportTask.ContextMenu(spr_filt_ptcls_map)
+		table.add_context_menu_data(context_menu_data)
+		table.add_button_data(EMParticleImportTask.ProjectAddRawDataButton(table,context_menu_data))
+		table.insert_column_data(1,EMFileTable.EMColumnData("Particles On Disk",EMParticleReportTask.get_num_ptcls,"Particles currently stored on disk that are associated with this image"))
+		table.insert_column_data(2,EMFileTable.EMColumnData("Particle Dims",EMParticleReportTask.get_particle_dims,"The dimensions of the particles that are stored on disk"))
+		
+		return table
+
+	def get_params(self):
+		params = []
+		
+	
+		table = self.get_project_particle_table()
+		
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
+		params.append(table)  
+		
+		return params
+	
+	def update_params(self,params):
+		warning = []
+		name_map = {}
+		for name in params["filenames"]:
+			if len(name) > 3 and name[:4] == "bdb:":
+				warning.append(name)
+				name_map[name] = name
+			else:
+				new_name = "bdb:particles#"+get_file_tag(name)
+				if file_exists(new_name):
+					i = 0
+					while 1:
+						c_name = new_name + "_" + str(i)
+						if not file_exists(c_name):
+							new_name = c_name
+							break
+						
+				name_map[name] = new_name
+		params["name_map"] = name_map
+		
+		if len(warning) > 0:
+			s = "The files: "
+			for w in warning:
+				s += w
+				if w != warning[-1]: s+= ", "
+			s += " are already in database format: they will merely be associated with the project"
+			EMErrorMessageDisplay(s,"Warning")
+					
+	def on_form_ok(self,params):
+		
+		if  params.has_key("filenames") and len(params["filenames"]) == 0:
+			self.run_select_files_msg()
+			return
+		
+		self.update_params(params)
+		success, cmd = self.import_data(params)
+		if not success:
+			s = "The command: " + cmd, "failed to complete"
+			return
+		else:
+			project_db = db_open_dict("bdb:project")
+			data = project_db.get(spr_filt_ptcls_map,dfl={})
+			for name in params["name_map"].values():
+				data[name] = {}
+			project_db[spr_filt_ptcls_map] = data
+			
+		
+		self.emit(QtCore.SIGNAL("task_idle"))
+		self.form.closeEvent(None)
+		self.form = None
+		
+	def import_data(self,params):
+
+		get_application().setOverrideCursor(Qt.BusyCursor)
+		progress = QtGui.QProgressDialog("Importing files into database...", "Abort import", 0, len(params["name_map"]),None)
+		progress.show()
+		i = 0
+		progress.setValue(i)
+		get_application().processEvents()
+
+		
+		for input,output in params["name_map"].items():
+			if len(input) > 3 and input[:4] == "bdb:": 
+				i += 1
+				progress.setValue(i)
+ 				get_application().processEvents()
+				continue
+			
+			cmd = "e2proc2d.py"
+ 			cmd += " "+input
+ 			cmd += " "+output
+ 			success = (os.system(cmd) in (0,12))
+ 			if not success or progress.wasCanceled():
+ 				progress.close()
+ 				return False,cmd
+ 			else:
+ 				i += 1
+ 				progress.setValue(i)
+ 				get_application().processEvents()
+		
+		progress.close()
+		
+		get_application().setOverrideCursor(Qt.ArrowCursor)
+		return True,cmd
+	
+	
+	class ProjectAddRawDataButton():
+		def __init__(self,table_widget,context_menu_data):
+			self.table_widget = weakref.ref(table_widget)
+			self.context_menu_data = context_menu_data
+			self.name = "Browse To Add"
+			
+		def function(self,bool):
+			self.context_menu_data.context_menu["Add"]([],self.table_widget())
+			
+
+	class ContextMenu:
+		def __init__(self,project_list):
+			self.project_list = project_list
+			self.validator = AddFilesToProjectValidator(self.project_list)
+			self.context_menu = {}
+			self.context_menu["Remove"] = EMParticleImportTask.ContextMenu.RemoveFiles()
+			self.context_menu["Add"] = EMParticleImportTask.ContextMenu.AddFilesViaContext(self.project_list)
+		
+		def items(self):
+			return self.context_menu.items()
+		
+		
+		class RemoveFiles:
+			def __init__(self): pass
+			def __call__(self,names,table_widget):
+				if len(names) == 0: return # nothing happened
+			
+				from emform import get_table_items_in_column
+				entries = get_table_items_in_column(table_widget,0)
+				text_entries = [table_widget.convert_text(str(i.text())) for i in entries]
+				
+				indices = [ text_entries.index(name) for name in full_names]
+				indices.sort()
+				indices.reverse()
+				for idx in indices:
+					table_widget.removeRow(idx)
+					
+		class AddFiles:
+			def __init__(self,project_list):
+				self.project_list = project_list
+				
+			def __call__(self,list_of_names,table_widget):
+		
+				project_db = db_open_dict("bdb:project")
+				project_names = project_db.get(self.project_list,dfl=[])
+				project_name_tags = [get_file_tag(name) for name in project_names]
+				
+				for name in list_of_names:
+					if not file_exists(name):
+						EMErrorMessageDisplay.run(["%s does not exists" %name])
+						return
+				
+				for name in list_of_names:
+					if get_file_tag(name) in project_name_tags:
+						EMErrorMessageDisplay.run(["%s is already in the project" %name])
+						return
+						
+				# if we make it here we're good
+				# first add entries to the table
+				table_widget.add_entries(list_of_names)
+				
+		
+		class AddFilesViaContext:
+			def __init__(self,project_list):
+				self.project_list = project_list
+				self.validator = AddFilesToProjectValidator(self.project_list)
+				
+			def __call__(self,list_of_names,table_widget):
+			
+		#def add_files_from_context_menu(self,list_of_names,table_widget):
+				from emselector import EMSelectorModule
+				em_qt_widget = EMSelectorModule()
+				
+				em_qt_widget.widget.set_selection_text("Selection(s)")
+				em_qt_widget.widget.set_validator(self.validator)
+				files = em_qt_widget.exec_()
+				if files != "":
+					if isinstance(files,str): files = [files]
+					
+					from emform import get_table_items_in_column
+					entries = get_table_items_in_column(table_widget,0)
+					entrie_tags = [get_file_tag(str(i.text())) for i in entries]
+					file_tags = [get_file_tag(i) for i in files]
+					error_messages = []
+					for idx,tag in enumerate(file_tags):
+						if tag in entrie_tags:
+							error_messages.append("%s is already listed" %files[idx])
+					
+				
+					if len(error_messages) > 0:
+						EMErrorMessageDisplay.run(error_messages)
+						return
+				a = EMParticleImportTask.ContextMenu.AddFiles(self.project_list)
+				a(files,table_widget)
+
+
+		
 class E2BoxerTask(ParticleWorkFlowTask):
 	'''
 	Provides some common functions for the e2boxer tasks
@@ -1510,6 +1702,7 @@ class E2BoxerTask(ParticleWorkFlowTask):
 		ParticleWorkFlowTask.__init__(self)
 		self.form_db_name = "bdb:emform.e2boxer"
 		self.report_task = None  #will eventually store a EMRawDataReportTask
+		EMProjectBackCompat.recover_list_to_dict_from_old_name(spr_filt_ptcls_map,"global.spr_ptcls")
 	
 	def get_boxes_in_database(file_name):
 		
@@ -1537,21 +1730,18 @@ class E2BoxerTask(ParticleWorkFlowTask):
 #	get_particle_dims_project = staticmethod(get_particle_dims_project)
 	
 	class ParticleColumns:
-		def __init__(self,project_list="global.spr_particles"):
+		def __init__(self,project_dict=spr_filt_ptcls_map):
 			self.header_cache = {}
 			self.translation_cache = {}
-			self.project_list = project_list
-						
-#		def __del__(self):
-#			print "Boxer columns dies"
-		
+			self.project_dict = project_dict
+
 		def get_num_particles_project(self,file_name):
 			'''
 			Get the particles in the project that are associated with a specific file name
 			This is useful for the e2boxer forms, which are used to take raw data files and
 			produce boxed output - i.e. if the user wants to know if they've already
 			written boxed output for a given raw file
-			@param file_name a file name, should be a file that's in global.spr_raw_file_names - this is not checked though
+			@param file_name a file name, should be a file that's in global.spr_raw_data_dict - this is not checked though
 			Note that the only thing that defines the relationship is whether or not the particle's 
 			'''
 			if self.translation_cache.has_key(file_name):
@@ -1562,8 +1752,11 @@ class E2BoxerTask(ParticleWorkFlowTask):
 						return str(EMUtil.get_image_count(name))
 			
 			project_db = db_open_dict("bdb:project")	
-			particle_names = project_db.get(self.project_list,dfl=[])
-			for name in particle_names:
+			if not project_db.has_key(self.project_dict): return "0"
+			
+			project_data = project_db.get(self.project_dict,dfl={})
+
+			for name in project_data.keys():
 				a = EMData()
 				a.read_image(name,0,True) # header only
 				d = a.get_attr_dict()
@@ -1586,10 +1779,12 @@ class E2BoxerTask(ParticleWorkFlowTask):
 						nx,ny,nz = gimme_image_dimensions3D(name)
 						return "%ix%ix%i" %(nx,ny,nz)
 			
-			project_db = db_open_dict("bdb:project")	
-			particle_names = project_db.get(self.project_list,dfl=[])
+			project_db = db_open_dict("bdb:project")
+			if not project_db.has_key(self.project_dict): return "0"
+
+			project_data = project_db.get(self.project_dict,dfl={})
 			
-			for name in particle_names:
+			for name in project_data.keys():
 				a = EMData()
 				a.read_image(name,0,True) # header only
 				d = a.get_attr_dict()
@@ -1625,10 +1820,10 @@ class E2BoxerTask(ParticleWorkFlowTask):
 		
 		self.report_task = EMRawDataReportTask()
 		table,n = self.report_task.get_raw_data_table()# now p is a EMParamTable with rows for as many files as there in the project
-		from emform import EMFileTable
-		particle_list_name = "global.spr_ptcls"
-		EMProjectListCleanup.clean_up_project_file_list(particle_list_name) # this is necessary for the columns_object to operate without throwing (in unusual circumstances the user deletes the particles, and this accomodates for it)
+		
+		EMProjectListCleanup.clean_up_project_file_dict(spr_filt_ptcls_map) # this is necessary for the columns_object to operate without throwing (in unusual circumstances the user deletes the particles, and this accomodates for it)
 	
+		from emform import EMFileTable
 		table.insert_column_data(0,EMFileTable.EMColumnData("Stored Boxes",E2BoxerTask.get_boxes_in_database,"Boxes currently stored in the EMAN2 database"))
 		self.columns_object = E2BoxerTask.ParticleColumns()
 		table.insert_column_data(1,EMFileTable.EMColumnData("Particles On Disk",self.columns_object.get_num_particles_project,"Particles currently stored on disk that are associated with this image"))
@@ -1964,7 +2159,7 @@ class E2BoxerOutputTask(E2BoxerTask):
 			
 			string_args = ["normproc","outformat","boxsize"]
 			bool_args = ["force","write_coord_files","write_box_images","just_output","invert_output"]
-			additional_args = ["--method=Swarm", "--auto=db","--dbls=global.spr_ptcls"]
+			additional_args = ["--method=Swarm", "--auto=db","--dbls=%s" %spr_filt_ptcls_map]
 			temp_file_name = "e2boxer_autobox_stdout.txt"
 			self.spawn_task("e2boxer.py",options,string_args,bool_args,additional_args,temp_file_name)
 			self.emit(QtCore.SIGNAL("task_idle"))
@@ -1998,8 +2193,9 @@ class E2BoxerOutputTaskGeneral(E2BoxerOutputTask):
 		dimensions = []
 		
 		if project_check:
-			project_db = db_open_dict("bdb:project")	
-			project_names = project_db.get("global.spr_raw_file_names",dfl=[])
+			project_db = db_open_dict("bdb:project")
+			project_data = project_db.get(spr_raw_data_dict,dfl={})
+			project_names = project_data.keys()
 		
 		if db_check_dict(db_name):
 			e2boxer_db = db_open_dict(db_name,ro=True)
@@ -2094,12 +2290,12 @@ class E2BoxerProgramOutputTask(E2BoxerOutputTask):
 			self.form.closeEvent(None)
 			self.form = None
 
-class E2CTFWorkFlowTask(ParticleReportTask):
+class E2CTFWorkFlowTask(EMParticleReportTask):
 	'''
 	Common functionality for E2CTF Work flow taskss
 	'''
 	def __init__(self):
-		ParticleReportTask.__init__(self)
+		EMParticleReportTask.__init__(self)
 		self.form_db_name = "bdb:emform.e2ctf"
 	
 	def get_ctf_param_table(self):
@@ -2112,78 +2308,10 @@ class E2CTFWorkFlowTask(ParticleReportTask):
 		self.column_data = CTFDBColumns()
 		table.add_column_data(EMFileTable.EMColumnData("Defocus",self.column_data.get_defocus,"The estimated defocus"))
 		table.add_column_data(EMFileTable.EMColumnData("B Factor",self.column_data.get_bfactor,"The estimated B factor, note this is ~4x greater than in EMAN1"))
-		table.add_column_data(EMFileTable.EMColumnData("SNR",self.column_data.get_snr_integral,"The averaged SNR"))
+		table.add_column_data(EMFileTable.EMColumnData("SNR",self.column_data.get_snr,"The averaged SNR"))
 		table.add_column_data(EMFileTable.EMColumnData("Sampling",self.column_data.get_sampling,"The amount of sampling used for generating CTF parameters"))
 		return table,0
 	
-#	class CTFColumns:
-#		'''
-#		Basically some functions with a cache - the cache is to avoid
-#		re-reading stuff from disk multiple times
-#		'''
-#		def __init__(self):
-#			self.ctf_cache = {}
-#						
-##		def __del__(self):
-##			print "CTF columns dies"
-#			
-#		def get_defocus(self,name):
-#			ctf = self.__get_ctf(name)
-#			if ctf != None:
-#				return "%.3f" %self.ctf_cache[name].defocus
-#			else: return ""
-#			
-#		def get_bfactor(self,name):
-#			ctf = self.__get_ctf(name)
-#			if ctf != None:
-#				return "%.3f" %self.ctf_cache[name].bfactor
-#			else:
-#				return ""
-#				
-#		def get_sampling(self,name):
-#			ctf = self.__get_ctf(name)
-#			if ctf != None:
-#				return str(len(ctf.background))
-#			else: return ""
-#
-#		def __get_ctf(self,name):
-#			ctf = None
-#			if self.ctf_cache.has_key(name):
-#				ctf = self.ctf_cache[name]
-#			else:
-#				if db_check_dict("bdb:e2ctf.parms"):
-#					ctf_db = db_open_dict("bdb:e2ctf.parms",ro=False)
-#					try:
-#						vals = ctf_db[get_file_tag(name)][0]
-#						ctf = EMAN2Ctf()
-#						ctf.from_string(vals)
-#						self.ctf_cache[name] = ctf
-#					except:
-#						pass
-#			return ctf
-#		def get_snr(self,name):
-#			ctf = self.__get_ctf(name)
-#			snr = 0
-#			if ctf != None:
-#				try: snr = sum(ctf.snr)/len(ctf.snr)
-#				except: pass
-#			
-#			return "%.3f" %snr
-#		
-#		def get_snr_integral(self,name):
-#			ctf = self.__get_ctf(name)
-#			if ctf != None:
-#				igl = 0
-#				apix = ctf.apix
-#				nyq = 1/(2.0*apix)
-#				n = float(len(ctf.snr))
-#				for i,snr in enumerate(ctf.snr):
-#					igl += i/n*snr
-#				
-#				igl /= n
-#				return "%.3f" %igl
-#			else: return ""
-
 	def get_full_ctf_table(self,project_names=None,no_particles=False):
 		'''
 		Gets the ctf param table but also adds information about the wiener and phase flipped
@@ -2646,8 +2774,8 @@ class E2CTFOutputTaskGeneral(E2CTFOutputTask):
 		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(names)
 		table.add_context_menu_data(context_menu_data)
 		table.add_button_data(EMRawDataReportTask.ProjectAddRawDataButton(table,context_menu_data))
-	#	table.insert_column_data(1,EMFileTable.EMColumnData("Particles On Disk",ParticleReportTask.get_num_ptcls,"Particles currently stored on disk that are associated with this image"))
-		table.insert_column_data(2,EMFileTable.EMColumnData("Particle Dims",ParticleReportTask.get_particle_dims,"The dimensions of the particles that are stored on disk"))
+	#	table.insert_column_data(1,EMFileTable.EMColumnData("Particles On Disk",EMParticleReportTask.get_num_ptcls,"Particles currently stored on disk that are associated with this image"))
+		table.insert_column_data(2,EMFileTable.EMColumnData("Particle Dims",EMParticleReportTask.get_particle_dims,"The dimensions of the particles that are stored on disk"))
 		self.column_data = CTFDBColumns()
 		table.add_column_data(EMFileTable.EMColumnData("Defocus",self.column_data.get_defocus,"The estimated defocus"))
 		table.add_column_data(EMFileTable.EMColumnData("B Factor",self.column_data.get_bfactor,"The estimated B factor, note this is ~4x greater than in EMAN1"))
@@ -2852,47 +2980,67 @@ class EMPartStackOptions:
 		self.list_name=list_name
 		self.filt_name  = filt_name
 		self.bdb_only = bdb_only
+		self.image_count = True # if False merely counts the number of stacks - this is useful for the set choosing form
 		
 	def get_particle_options(self):
 		'''
 		
 		'''
-		#EMProjectListCleanup.clean_up_project_file_list(self.list_name)
+		EMProjectBackCompat.recover_list_to_dict_from_old_name(self.filt_name,self.list_name)
+		EMProjectListCleanup.clean_up_project_file_dict(self.filt_name)
 		stacks_map = {} # used to cache data in get_params
 		stacks_name_map = {} # used to recall which selection was taken	
 		db = db_open_dict("bdb:project")
-		particle_names = db.get(self.list_name,dfl=[])
-		n = 0
+#		particle_names = db.get(self.list_name,dfl=[])
 		
-		ptcls = None
+		
+#		ptcls = None
 		name_map = {} # a way to map a filtered image to its originating image
-		if db.has_key(self.list_name):
-			ptcls = db[self.list_name]
-			for name in ptcls:
-				if not file_exists(name): break
-				
-				if self.bdb_only != False and ( len(name) > 3 and name[:4] != "bdb:"):
-					break
-				n += EMUtil.get_image_count(name)
-				name_map[name] = name # this makes things simple at other points in the code. please leave
-				
-			stacks_map["Particles"] = ptcls
+#		if db.has_key(self.list_name):
+#			ptcls = db[self.list_name]
+#			for name in ptcls:
+#				if not file_exists(name): break
+#				
+#				if self.bdb_only != False and ( len(name) > 3 and name[:4] != "bdb:"):
+#					break
+#				n += EMUtil.get_image_count(name)
+#				name_map[name] = name # this makes things simple at other points in the code. please leave
+#				
+#			stacks_map["Particles"] = ptcls
 				
 		# now build up the list of filtered things
 		#EMProjectListCleanup.clean_up_filt_particles(self.filt_name)
 		filter_opts = {} # key is the filter type, value is the number of images with this filter type
-		
+		n = 0
 		if db.has_key(self.filt_name):
-			for name,d in db[self.filt_name].items():
+			main_map = db[self.filt_name]
+			n = 0
+			ptcls = main_map.keys()
+			for name in ptcls:
+				if self.bdb_only != False and ( len(name) > 3 and name[:4] != "bdb:"):
+					continue
+				if self.image_count: n += EMUtil.get_image_count(name)
+				else: n += 1
+				name_map[name] = name # this makes things simple at other points in the code. please leave
+			
+			if len(ptcls) > 0 :
+				stacks_map["Particles"] = ptcls
+			
+			
+			for name,d in main_map.items():
 				if ptcls != None and name not in ptcls:
 					continue 
 				for filt,ptcl_name in d.items():
+					if self.bdb_only != False and ( len(ptcl_name) > 3 and ptcl_name[:4] != "bdb:"): 
+						continue
 					name_map[ptcl_name] = name
 					if filter_opts.has_key(filt):
-						filter_opts[filt] += EMUtil.get_image_count(ptcl_name)
+						if self.image_count: filter_opts[filt] += EMUtil.get_image_count(ptcl_name)
+						else: filter_opts[filt] += 1
 						stacks_map[filt].append(ptcl_name)
 					else:
-						filter_opts[filt] = EMUtil.get_image_count(ptcl_name)
+						if self.image_count: filter_opts[filt] = EMUtil.get_image_count(ptcl_name)
+						else: filter_opts[filt] = 1
 						stacks_map[filt] = [ptcl_name]
 		
 		choices = []
@@ -3022,7 +3170,6 @@ class E2ParticleExamineTask(E2CTFWorkFlowTask):
 		self.form = None
 		self.emit(QtCore.SIGNAL("task_idle"))
 
-
  		 	
 class E2MakeStackChooseDataTask(E2ParticleExamineChooseDataTask):
 	"""Choose the particle data you wish to examine. This will pop a second form listing the particles stacks along with other relevant information"""
@@ -3109,9 +3256,10 @@ class E2MakeStackTask(E2ParticleExamineTask):
 			 for name in params["filenames"]:
 			 	output_data_map[name] = db_map[name]
 		else:
-			for name in params["filenames"]:
-				real_name = self.data_name_map[name]
-				output_data_map[real_name] = db_map[real_name]
+			if len(db_map) > 0:
+				for name in params["filenames"]:
+					real_name = self.data_name_map[name]
+					output_data_map[real_name] = db_map[real_name]
 				
 		output_stacks = {}
 		output_stacks[""] = []
@@ -3256,37 +3404,37 @@ class E2MakeStackTask(E2ParticleExamineTask):
 	
 		self.write_db_entries(params)
 
-
 class EMStackReportTask(ParticleWorkFlowTask):
 	'''This form displays a list of the stacks you currently have associated with the project
 	'''
 	def __init__(self):
 		ParticleWorkFlowTask.__init__(self)
-		self.window_title = "Project Stacks"
-		self.stack_files_at_init = []
+		self.window_title = "Project Sets"
+		self.stack_data_at_init = []
 
 	def get_project_particle_table(self):
-		stack_list_name = "global.spr_stacks"
-		#EMProjectListCleanup.clean_up_project_file_list(stack_list_name) # in case things have gone missing
+		EMProjectBackCompat.recover_list_to_dict_from_old_name(spr_stacks_map,"global.spr_stacks")
+		EMProjectListCleanup.clean_up_project_file_dict(spr_stacks_map) # in case things have gone missing
 		project_db = db_open_dict("bdb:project")
-		stack_names = project_db.get(stack_list_name,dfl=[])
 		
-		self.stack_files_at_init = stack_names # so if the user hits cancel this can be reset
+		stack_data = project_db.get(spr_stacks_map,dfl={})
+		stack_names = stack_data.keys()
+		
+		self.stack_data_at_init = stack_data # so if the user hits cancel this can be reset
 		
 		init_stacks_map = {}
 		
 		from emform import EM2DStackTable,EMFileTable
 		table = EM2DStackTable(stack_names,desc_short="Project Particle Stacks",desc_long="")
-		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(stack_list_name)
+		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(spr_stacks_map)
 		table.add_context_menu_data(context_menu_data)
 		table.add_button_data(EMRawDataReportTask.ProjectAddRawDataButton(table,context_menu_data))
-		table.insert_column_data(1,EMFileTable.EMColumnData("Particles On Disk",ParticleReportTask.get_num_ptcls,"Particles in this image"))
-		table.insert_column_data(2,EMFileTable.EMColumnData("Particle Dims",ParticleReportTask.get_particle_dims,"The dimensions of the particles that are stored on disk"))
+		table.insert_column_data(1,EMFileTable.EMColumnData("Particles On Disk",EMParticleReportTask.get_num_ptcls,"Particles in this image"))
+		table.insert_column_data(2,EMFileTable.EMColumnData("Particle Dims",EMParticleReportTask.get_particle_dims,"The dimensions of the particles that are stored on disk"))
 		
-		#EMProjectListCleanup.clean_up_filt_particles("global.spr_stacks_map")
 		project_db = db_open_dict("bdb:project",ro=True)
-		if project_db.has_key("global.spr_stacks_map"):
-			stacks_map = project_db["global.spr_stacks_map"]
+		if project_db.has_key(spr_stacks_map):
+			stacks_map = project_db[spr_stacks_map]
 			
 			filt_options = []
 			for key,value in stacks_map.items():
@@ -3304,10 +3452,10 @@ class EMStackReportTask(ParticleWorkFlowTask):
 		def __init__(self,filt):
 			self.filt = filt
 			project_db = db_open_dict("bdb:project",ro=True)
-			if project_db.has_key("global.spr_stacks_map"):
-				self.stacks_map = project_db["global.spr_stacks_map"]
+			if project_db.has_key(spr_stacks_map):
+				self.stacks_map = project_db[spr_stacks_map]
 			else:
-				raise NotImplementedError("The global.spr_stacks_map has to exist if you create a FilteredStackInfo")
+				raise NotImplementedError("The %s has to exist if you create a FilteredStackInfo" %spr_stacks_map)
 			
 		def num_particles_in_filt_stack(self,filename):
 			d = self.stacks_map[filename]
@@ -3329,7 +3477,7 @@ class EMStackReportTask(ParticleWorkFlowTask):
 		are not saved unless the user hits ok
 		'''
 		project_db = db_open_dict("bdb:project")
-		project_db["global.spr_stacks"] = self.stack_files_at_init
+		project_db[spr_stacks_map] = self.stack_data_at_init
 
 	def get_params(self):
 		params = []
@@ -3337,7 +3485,7 @@ class EMStackReportTask(ParticleWorkFlowTask):
 	
 		table = self.get_project_particle_table()
 		
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=ParticleReportTask.documentation_string,choices=None))
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
 		params.append(table)  
 		
 		return params
@@ -3769,6 +3917,7 @@ class EMStacksOptions(EMPartStackOptions):
 	
 	def __init__(self,bdb_only=False):
 		EMPartStackOptions.__init__(self,"global.spr_stacks","global.spr_stacks_map",bdb_only)
+		self.image_count = False
 
 class E2Refine2DChooseParticlesTask(ParticleWorkFlowTask):
 	documentation_string = "Choose the data you wish to use for use for running e2refine2d from the list of options below and hit OK. This will pop up a second form asking you to fill in more details.\n\nNote that usually you should have 4 options to choose from below. If you are not seeing all 4 options it means you should go back in the work flow, import particles, and generate phase flipped and Wiener filtered output." 
@@ -3811,7 +3960,7 @@ class E2Refine2DChooseParticlesTask(ParticleWorkFlowTask):
 
 
 		 	
-class E2Refine2DChooseStacksTask(ParticleWorkFlowTask):
+class E2Refine2DChooseSetsTask(ParticleWorkFlowTask):
 	documentation_string = "Choose the data you wish to use for use for running e2refine2d from the list of options below and hit OK. This will pop up a second form asking you to fill in more details.\n\nNote that usually you should have 4 options to choose from below. If you are not seeing all 4 options it means you should go back in the work flow, import particles, and generate phase flipped and Wiener filtered output." 
 	def __init__(self):
 		ParticleWorkFlowTask.__init__(self)
@@ -3853,21 +4002,20 @@ class E2Refine2DChooseStacksTask(ParticleWorkFlowTask):
 class E2RefFreeClassAveTool():
 	
 	def get_reference_free_class_averages_table(self):
-		
+		EMProjectBackCompat.recover_list_to_dict_from_old_name(spr_rfca_dict,"global.spr_ref_free_class_aves")
+		EMProjectListCleanup.clean_up_project_file_dict(spr_rfca_dict)
 		project_db = db_open_dict("bdb:project")
-		list_name = "global.spr_ref_free_class_aves"
-		#EMProjectListCleanup.clean_up_project_file_list(list_name)
-		names = project_db.get(list_name,dfl=[])
+		data = project_db.get(spr_rfca_dict,dfl={})
 			
-		self.project_files_at_init = names # so if the user hits cancel this can be reset
-
+		self.project_files_at_init = data # so if the user hits cancel this can be reset
+		names = data.keys()
 		from emform import EM2DStackTable,EMFileTable
 		table = EM2DStackTable(names,desc_short="Class Averages",desc_long="")
-		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(list_name)
+		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(spr_rfca_dict)
 		table.add_context_menu_data(context_menu_data)
 		table.add_button_data(EMRawDataReportTask.ProjectAddRawDataButton(table,context_menu_data))
-		table.insert_column_data(1,EMFileTable.EMColumnData("Particles On Disk",ParticleReportTask.get_num_ptcls,"Particles currently stored on disk that are associated with this image"))
-		table.insert_column_data(2,EMFileTable.EMColumnData("Particle Dims",ParticleReportTask.get_particle_dims,"The dimensions of the particles that are stored on disk"))
+		table.insert_column_data(1,EMFileTable.EMColumnData("Particles On Disk",EMParticleReportTask.get_num_ptcls,"Particles currently stored on disk that are associated with this image"))
+		table.insert_column_data(2,EMFileTable.EMColumnData("Particle Dims",EMParticleReportTask.get_particle_dims,"The dimensions of the particles that are stored on disk"))
 		
 		return table, len(names)
 	
@@ -3877,7 +4025,7 @@ class E2RefFreeClassAveTool():
 		are not saved unless the user hits ok
 		'''
 		project_db = db_open_dict("bdb:project")
-		project_db["global.spr_ref_free_class_aves"] = self.project_files_at_init
+		project_db[spr_rfca_dict] = self.project_files_at_init
 		
 
 class E2Refine2DRunTask(E2Refine2DTask):
@@ -3965,7 +4113,7 @@ class E2Refine2DRunTask(E2Refine2DTask):
 				return
 		print "launching"
 		if self.workflow_setting: 
-			additional_args = ["--dbls=global.spr_ref_free_class_aves"]
+			additional_args = ["--dbls=%s" %spr_rfca_dict]
 		else: 
 			additional_args = []
 		temp_file_name = "e2refine2d_stdout.txt"
@@ -3982,17 +4130,21 @@ class E2Refine2DWithGenericTask(E2Refine2DRunTask):
 			
 							
 class E2InitialModelsTool:
+	def __init__(self):
+		self.project_data_at_init = None
 	
 	def get_initial_models_table(self):
-		list_name = "global.spr_init_models"
-		EMProjectListCleanup.clean_up_project_file_list(list_name)
+		
+		EMProjectBackCompat.recover_list_to_dict_from_old_name(spr_init_models_dict,"global.spr_init_models")
+		EMProjectListCleanup.clean_up_project_file_dict(spr_init_models_dict)
 		project_db = db_open_dict("bdb:project")
-		init_model_names = project_db.get(list_name,dfl=[])
-		self.project_files_at_init = init_model_names # so if the user hits cancel this can be reset
+		init_model_data = project_db.get(spr_init_models_dict,dfl={})
+		self.project_data_at_init = init_model_data # so if the user hits cancel this can be reset
+		init_model_names = init_model_data.keys()
 
 		from emform import EM3DFileTable,EMFileTable
 		table = EM3DFileTable(init_model_names,name="model",desc_short="Initial Models",desc_long="")
-		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(list_name)
+		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(spr_init_models_dict)
 		table.add_context_menu_data(context_menu_data)
 		table.add_button_data(EMRawDataReportTask.ProjectAddRawDataButton(table,context_menu_data))
 		table.add_column_data(EMFileTable.EMColumnData("Quality",E2InitialModelsTool.get_quality_score,"This the quality score as determined by e2initialmodel.py"))
@@ -4020,10 +4172,10 @@ class E2InitialModelsTool:
 		are not saved unless the user hits ok
 		'''
 		project_db = db_open_dict("bdb:project")
-		project_db["global.spr_init_models"] = self.project_files_at_init
+		project_db[spr_init_models_dict] = self.project_data_at_init
 	
-class InitialModelReportTask(ParticleWorkFlowTask):
-	documentation_string = "This form displays the initial models currently associated with the project. You can associate initial models with the project using e2makeinitialmodel or by importing them directly, see the options below."
+class EMInitialModelReportTask(ParticleWorkFlowTask):
+	"""This form displays the initial models currently associated with the project. You can associate initial models with the project using e2makeinitialmodel or by importing them directly, see the options below."""
 	warning_string = "\n\n\nNOTE: There are no initial models currently associated with the project."
 	def __init__(self):
 		ParticleWorkFlowTask.__init__(self)
@@ -4036,10 +4188,7 @@ class InitialModelReportTask(ParticleWorkFlowTask):
 		self.imt = E2InitialModelsTool()
 		p,n = self.imt.get_initial_models_table()
 		
-#		if n == 0:
-#			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=InitialModelReportTask.documentation_string+InitialModelReportTask.warning_string,choices=None))
-#		else:
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=InitialModelReportTask.documentation_string,choices=None))
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
 		params.append(p)
 		return params
 
@@ -4052,8 +4201,7 @@ class InitialModelReportTask(ParticleWorkFlowTask):
 		
 
 class E2InitialModel(ParticleWorkFlowTask):
-	documentation_string = "Make an initial model with e2initialmodel."
-	warning_string = "\n\n\nNOTE: there are no reference free classes in the project. Go back a step and try running e2refine2d" 
+	"""Use this form for creating initial model with e2initialmodel."""
 	def __init__(self):
 		ParticleWorkFlowTask.__init__(self)
 		self.window_title = "Run e2initialmodel"
@@ -4065,7 +4213,7 @@ class E2InitialModel(ParticleWorkFlowTask):
 		self.rfcat = E2RefFreeClassAveTool()
 		p,n = self.rfcat.get_reference_free_class_averages_table()
 
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2InitialModel.documentation_string,choices=None))
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
 		
 		db = db_open_dict(self.form_db_name)
 		piter = ParamDef(name="iter",vartype="int",desc_short="Iterations",desc_long="The number of times each 3D is iteratively refined",property=None,defaultunits=db.get("iter",dfl=8),choices=[])
@@ -4123,7 +4271,7 @@ class E2InitialModel(ParticleWorkFlowTask):
 			#options.sym - taken care of by check_sum
 			string_args = ["iter","input","tries","sym","orientgen"]
 			bool_args = []
-			additional_args = ["--dbls=global.spr_init_models"]
+			additional_args = ["--dbls=%s" %spr_init_models_dict]
 			temp_file_name = "e2initialmodel_stdout.txt"
 			self.spawn_single_task("e2initialmodel.py",options,string_args,bool_args,additional_args,temp_file_name)
 			self.emit(QtCore.SIGNAL("task_idle"))
@@ -4354,7 +4502,7 @@ class E2RefineParticlesTask(EMClassificationTools, E2Make3DTools):
 	 	self.window_title = "Run e2refine"
 	 	self.form_db_name = "bdb:emform.e2refine"
 	 	self.single_selection = False
-		print "init ptcls task"
+
 	class UsefiltColumn:
 		def __init__(self,ptcls,usefilt_ptcls):
 			if len(ptcls) != len(usefilt_ptcls):
@@ -4859,7 +5007,7 @@ class E2RefineParticlesTask(EMClassificationTools, E2Make3DTools):
 		
 		return error_message
 
-class E2ChooseTask(ParticleWorkFlowTask):
+class EMChooseTask(ParticleWorkFlowTask):
 	'''Fill me in'''
 	documentation_string = "This form is for choosing e2refine input and usefilt data. After you hit ok a second form will appear asking for more parameters." 
 	def __init__(self,list_name,filt_name,ptcl_opts,choice_subscript=""):
@@ -4874,6 +5022,7 @@ class E2ChooseTask(ParticleWorkFlowTask):
 		self.ptcl_choice = "ptcl_choice"+choice_subscript
 		self.usefilt_ptcl_choice = "usefilt_ptcl_choice"+choice_subscript
 		self.single_selection = False
+		EMProjectListCleanup.clean_up_project_file_dict(self.filt_name)
 		
 	def get_params(self):
 		self.particles_map, self.particles_name_map,choices,unused = self.ptcl_opts.get_particle_options()
@@ -4923,22 +5072,17 @@ class E2ChooseTask(ParticleWorkFlowTask):
 			filt_name = self.particles_name_map[choice]
 			ptcls = self.particles_map[filt_name]
 			db = db_open_dict("bdb:project")
-			if not db.has_key(self.list_name): 
-				error("Something is wrong, the %s database is supposed to exist" %self.list_name)
-				return
-			#EMProjectListCleanup.clean_up_project_file_list(self.list_name)
-			prj_ptcls = db[self.list_name]
-			
+
 			if not db.has_key(self.filt_name):
 				error("Something is wrong, the %s database is supposed to exist" %self.filt_name)
 				return
-			#EMProjectListCleanup.clean_up_filt_particles(self.filt_name)
+
 			db_map = db[self.filt_name]
+			prj_ptcls = db_map.keys()
 			
-			for key in db_map.keys():
-				if key not in prj_ptcls:
-					db_map.pop(key)
-					
+			err = []
+			bad = []
+			
 			if self.particles_name_map[choice] == "Particles":
 				# this is the easiest case
 				ptcls = self.particles_map["Particles"]
@@ -4947,6 +5091,7 @@ class E2ChooseTask(ParticleWorkFlowTask):
 					EMErrorMessageDisplay.run(["Specify not currently supported"])
 					return
 				elif usefilt_choice != "None":
+					
 					filt_name = self.particles_name_map[usefilt_choice]
 					usefilt_ptcls = self.particles_map[filt_name]
 					intersection_ptcls = []
@@ -4955,8 +5100,9 @@ class E2ChooseTask(ParticleWorkFlowTask):
 						if name in ptcls and filt_map.has_key(filt_name): # this is the correct test
 							usefilt_name = filt_map[filt_name]
 							if EMUtil.get_image_count(name) != EMUtil.get_image_count(usefilt_name):
-								error("The number of images in the usefilt file %s is not consistent with the particles file %s" %(usefilt_name,name))
-								return
+								err.append("The number of images in the usefilt file %s is not consistent with the particles file %s" %(usefilt_name,name))
+								bad.append(name)
+								continue
 							intersection_ptcls.append(name)
 							intersection_usefilt_ptcls.append(usefilt_name)
 				else:
@@ -4966,8 +5112,8 @@ class E2ChooseTask(ParticleWorkFlowTask):
 				
 			else:
 				# then it's a filtered type, such as phase flipped
-				if not db.has_key(self.filt_name): raise NotImplementedException("Something is wrong, the global.spr_stacks_map is supposed to exist")
-				#EMProjectListCleanup.clean_up_filt_particles()
+				if not db.has_key(self.filt_name): raise NotImplementedError("Something is wrong, the global.spr_stacks_map is supposed to exist")
+
 				if usefilt_choice != "None":
 					usefilt_name = self.particles_name_map[usefilt_choice]		
 					if usefilt_name == "Particles":
@@ -4977,8 +5123,10 @@ class E2ChooseTask(ParticleWorkFlowTask):
 							if filt_map.has_key(filt_name) and name in prj_ptcls: # this is the correct test
 								name1 = filt_map[filt_name]
 								if EMUtil.get_image_count(name) != EMUtil.get_image_count(name1):
-									error("The number of images in the usefilt file %s is not consistent with the particles file %s" %(name,name1))
-									return
+#									error("The number of images in the usefilt file %s is not consistent with the particles file %s" %(name,name1))
+									err.append("The number of images in the usefilt file %s is not consistent with the particles file %s" %(name,name1))
+									bad.append(name)
+									continue
 								intersection_ptcls.append(name1)
 								intersection_usefilt_ptcls.append(name)
 						
@@ -4986,19 +5134,28 @@ class E2ChooseTask(ParticleWorkFlowTask):
 						intersection_ptcls = []
 						intersection_usefilt_ptcls = []
 						
-						for filt_map in db_map.values():
+						for name,filt_map in db_map.items():
 							if filt_map.has_key(filt_name) and filt_map.has_key(usefilt_name):
 								name1 = filt_map[filt_name]
 								name2 = filt_map[usefilt_name]
 								if EMUtil.get_image_count(name1) != EMUtil.get_image_count(name2):
-									error("The number of images in the usefilt file %s is not consistent with the particles file %s" %(name1,name2))
-									return
+#									error("The number of images in the usefilt file %s is not consistent with the particles file %s" %(name1,name2))
+									err.append("The number of images in the usefilt file %s is not consistent with the particles file %s" %(name1,name2))
+									bad.append(name)
+									continue
 								intersection_ptcls.append(name1)
 								intersection_usefilt_ptcls.append(name2)
 				else:
 					intersection_ptcls = ptcls
 					intersection_usefilt_ptcls = None
 				
+			if len(err) > 0:
+				e = "\n\n All of these sets will now be automatically removed from the list of sets in the project."
+				err.append(e)
+				error(err)
+				
+				for b in bad: db_map.pop(b)
+				db[self.filt_name] = db_map 
 			
 			task = E2RefineParticlesTask(intersection_ptcls,intersection_usefilt_ptcls)
 			task.single_selection = self.single_selection
@@ -5010,22 +5167,21 @@ class E2ChooseTask(ParticleWorkFlowTask):
 
 	def replace_task(self): raise NotImplementedException("Inheriting class need to implement this")
 
-
-class E2RefineChooseParticlesTask(E2ChooseTask):
+class E2RefineChooseParticlesTask(EMChooseTask):
 	'''This form is for choosing e2refine input and usefilt data. After you hit ok a second form will appear asking for more parameters.'''
 	documentation_string = "This form is for choosing e2refine input and usefilt data. After you hit ok a second form will appear asking for more parameters." 
 	def __init__(self):
-		E2ChooseTask.__init__(self,"global.spr_ptcls","global.spr_filt_ptcls_map",EMParticleOptions(),"")
+		EMChooseTask.__init__(self,"global.spr_ptcls",spr_filt_ptcls_map,EMParticleOptions(),"")
 		self.window_title = "Choose Data For e2refine"
 		self.preferred_size = (480,300)
 		self.form_db_name = "bdb:emform.e2refine"
 
 
-class E2RefineChooseStacksTask(E2ChooseTask):
+class E2RefineChooseStacksTask(EMChooseTask):
 	'''This form is for choosing e2refine input and usefilt data. After you hit ok a second form will appear asking for more parameters.'''
 	documentation_string = "This form is for choosing e2refine input and usefilt data. After you hit ok a second form will appear asking for more parameters." 
 	def __init__(self):
-		E2ChooseTask.__init__(self,"global.spr_stacks","global.spr_stacks_map",EMStacksOptions(),"_stack")
+		EMChooseTask.__init__(self,"global.spr_stacks",spr_stacks_map,EMStacksOptions(),"_stack")
 		self.window_title = "Choose Data For e2refine"
 		self.preferred_size = (480,300)
 		self.form_db_name = "bdb:emform.e2refine"

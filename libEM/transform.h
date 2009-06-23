@@ -412,7 +412,7 @@ namespace EMAN
 
 			void assert_valid_2d() const;
 			
-			/// This map is used to validate keys in the argument maps - e.g. if the type is 2d and the angle is not "alpha" then it should throw
+			/// This map is used to validate keys in the argument maps - e.g. if the type is 2d and the angle is not "alpha" then we should throw
 			static vector<string> permissable_2d_not_rot;
 			static vector<string> permissable_3d_not_rot;
 			static map<string,vector<string> >  permissable_rot_keys;
@@ -422,9 +422,9 @@ namespace EMAN
 			void init_permissable_keys();
 			
 			/** Test to ensure the parametes in the given dictionary are valid
-			* Throws if there's an error
-			* Generic works in every circumstance (set_params, set_rotation, set_params_inv)
-			* Uses permissable_2d_not_rot, permissable_3d_not_rot, and permissable_rot_keys static members as basis of decision
+			* Throws if an error is detected
+			* Generic - works in every circumstance (set_params, set_rotation, set_params_inv)
+			* Uses static members permissable_2d_not_rot, permissable_3d_not_rot, and permissable_rot_keys as basis of decision
 			* @param d the dictionary that was the function argument of the set_params, set_rotation or the  set_params_inv function
 			* @exception InvalidParameterException if the dictionary is invalid in anyway
 			*/

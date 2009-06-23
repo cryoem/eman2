@@ -456,13 +456,13 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.launchers["Auto Boxing - e2boxer"] = self.launch_e2boxer_auto
 		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Generate Output - e2boxer")))
 		self.launchers["Generate Output - e2boxer"] = self.launch_e2boxer_output
-#		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Particle import")))
+		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Particle import")))
+		self.launchers["Particle import"] = self.launch_particle_import
 		ap_list[0].setIcon(0,self.icons["green_boxes"])
 		ap_list[1].setIcon(0,self.icons["green_boxes"])
 		ap_list[2].setIcon(0,self.icons["green_boxes"])
-		#self.launchers["Particle import"] = self.launch_particle_import
+		ap_list[3].setIcon(0,self.icons["green_boxes"])
 		ap.addChildren(ap_list)
-		
 		
 		mis_list = []
 #		mis_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Examine Particles")))
@@ -936,10 +936,10 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	def launch_refinement_report(self): self.launch_task(RefinementReportTask(),"Refinement Report")
 #	def launch_import_initial_model(self): self.launch_task(ImportInitialModels(),"import initial models")
 	def launch_e2makeinitial(self): self.launch_task(E2InitialModel(),"e2makeinitialmodel")
-	def launch_initmodel_report(self): self.launch_task(InitialModelReportTask(),"Initial Model Report")
+	def launch_initmodel_report(self): self.launch_task(EMInitialModelReportTask(),"Initial Model Report")
 	def launch_refine2d_report(self): self.launch_task(E2Refine2DReportTask(),"e2refine2d Report")
 	def launch_refine2d_exec(self): self.launch_task(E2Refine2DRunTask(),"e2refine2d Parameters")
-	def	launch_refine2d_choose_stacks(self): self.launch_task(E2Refine2DChooseStacksTask(),"Choose Stacks For e2refine2d")
+	def	launch_refine2d_choose_stacks(self): self.launch_task(E2Refine2DChooseSetsTask(),"Choose Stacks For e2refine2d")
 	def launch_refine2d_choose_ptcls(self): self.launch_task(E2Refine2DChooseParticlesTask(),"Choose Particles For e2refine2d")	
 	def launch_e2ctf_write_ouptut(self): self.launch_task(E2CTFOutputTask(),"e2ctf Write Output")
 	def launch_e2ctf_tune(self): self.launch_task(E2CTFGuiTask(),"e2ctf Intreface")
@@ -948,7 +948,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	def launch_mis_report(self): self.launch_task(EMStackReportTask(),"Project Stacks")
 	def launch_make_ptcl_set(self):	self.launch_task(E2MakeStackChooseDataTask(),"Build Particle Set")
 	def launch_examine_particle_stacks(self): self.launch_task(E2ParticleExamineChooseDataTask(),"Examine Particles")
-	def launch_particle_report(self): self.launch_task(ParticleReportTask(),"Particle Report")
+	def launch_particle_report(self): self.launch_task(EMParticleReportTask(),"Particle Report")
 	def launch_tomo_particle_report(self): self.launch_task(EMTomoParticleReportTask(),"Tomogram Particles")
 	def launch_tomo_probe_report(self): self.launch_task(EMTomoProbeReportTask(),"Tomogram Probes")
 	def launch_tomo_ptcl_ali_report(self): self.launch_task(EMTomoChooseAlignedSetTask(),"Tomo Particle Alignment Report Report")
@@ -968,7 +968,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.launch_task(task,"Norm/Invert Tomo Particles")
 		
 		
-#	def launch_particle_import(self):self.launch_task(ParticleImportTask(),"Import particles")
+	def launch_particle_import(self):self.launch_task(EMParticleImportTask(),"Import particles")
 		
 	def launch_mic_ccd_report(self): self.launch_task(EMRawDataReportTask(),"Raw Data")
 		

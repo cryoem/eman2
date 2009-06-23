@@ -182,10 +182,14 @@ def main():
 			j[1].write_image(out_name,0)
 			if options.dbls: # database list storage
 				pdb = db_open_dict("bdb:project")
-				old_names = pdb.get(options.dbls,dfl=[])
-				if old_names.count(out_name) == 0:
-					old_names.append(out_name)
-					pdb[options.dbls] = old_names
+				old_data = pdb.get(options.dbls,dfl={})
+				if isinstance(old_data,list): # in June 2009 we decided we'd transition the lists to dicts - so this little loop is for back compatibility
+					d = {}
+					for name in old_data: d[name] = {}
+					old_data = d
+				
+				old_data[out_name] = {}
+				pdb[options.dbls] = old_data
 			for k,l in enumerate(j[3]): l.write_image(results_name+"_%02d_proj"%(i+1),k)	# set of projection images
 			for k,l in enumerate(j[2]): 
 				l.write_image(results_name+"_%02d_aptcl"%(i+1),k*2)						# set of aligned particles

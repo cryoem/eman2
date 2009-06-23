@@ -37,7 +37,7 @@ from PyQt4.QtCore import Qt
 import os
 from emselector import EMSelectorModule
 from emapplication import EMQtWidgetModule,get_application
-from EMAN2 import Util, get_image_directory
+from EMAN2 import Util, get_image_directory,file_exists
 import EMAN2
 import weakref
 
@@ -320,7 +320,10 @@ class EMFileTable(QtGui.QTableWidget):
 			if self.icon != None: item = QtGui.QTableWidgetItem(self.icon,self.display_name(name))
 			else: item = QtGui.QTableWidgetItem(self.display_name(name))
 
-			if name not in self.exclusions:
+
+			if not file_exists(name):item.setTextColor(QtGui.QColor(0,128,0))
+				
+			if name not in self.exclusions :
 				item.setFlags(flag2|flag3)
 				item.setToolTip(name)
 			else:
@@ -482,8 +485,9 @@ class EM2DFileTable(EMFileTable):
 		See EMFileTable.table_item_double_clicked for comments
 		'''
 		if item.column() != 0: return # only can display files from the first column
-		get_application().setOverrideCursor(Qt.BusyCursor)
 		filename = self.convert_text(str(item.text()))
+		if not file_exists(filename): return # this happens sometimes when there is filtered data but no raw data
+		get_application().setOverrideCursor(Qt.BusyCursor)
 		if self.display_module == None:
 			from emimage import EMModuleFromFile
 			self.display_module = EMModuleFromFile(filename,get_application())
@@ -569,8 +573,9 @@ class EM2DStackTable(EMFileTable):
 		See EMFileTable.table_item_double_clicked for comments
 		'''
 		if item.column() != 0: return # only can display files from the first column
-		get_application().setOverrideCursor(Qt.BusyCursor)
 		filename = self.convert_text(str(item.text()))
+		if not file_exists(filename): return # this happens sometimes when there is filtered data but no raw data
+		get_application().setOverrideCursor(Qt.BusyCursor)
 		if self.display_module == None:
 			from emimage import EMModuleFromFile
 			self.display_module = EMModuleFromFile(filename,get_application())
@@ -606,8 +611,9 @@ class EMPlotTable(EMFileTable):
 		See EMFileTable.table_item_double_clicked for comments
 		'''
 		if item.column() != 0: return # only can display files from the first column
-		get_application().setOverrideCursor(Qt.BusyCursor)
 		filename = self.convert_text(str(item.text()))
+		if not file_exists(filename): return # this happens sometimes when there is filtered data but no raw data
+		get_application().setOverrideCursor(Qt.BusyCursor)
 		if self.display_module == None:
 			from emimage import EMModuleFromFile
 			self.display_module = EMModuleFromFile(filename,get_application())
@@ -662,9 +668,9 @@ class EM2DStackExamineTable(EM2DStackTable):
 		See EMFileTable.table_item_double_clicked for comments
 		'''
 		if item.column() != 0: return # only can display files from the first column
-		get_application().setOverrideCursor(Qt.BusyCursor)
 		filename = self.convert_text(str(item.text()))
-
+		if not file_exists(filename): return # this happens sometimes when there is filtered data but no raw data
+		get_application().setOverrideCursor(Qt.BusyCursor)
 		if self.display_module == None:
 			from emimagemx import EMImageMXModule
 			self.display_module = EMImageMXModule(None,get_application())

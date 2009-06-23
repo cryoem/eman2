@@ -124,11 +124,13 @@ def gen_average(options,args,logid=None):
 	
 	if options.dbls:
 		pdb = db_open_dict("bdb:project")
-		db = pdb.get(options.dbls,dfl=[])
-		if db == None: db = []
-		if db.count(options.avgout) == 0:
-			db.append(options.avgout)
-			pdb[options.dbls] = db
+		db = pdb.get(options.dbls,dfl={})
+		if isinstance(db,list): # this is for back compatibility - it used to be a list, now it's a dict
+			d = {}
+			for name in db: d[name] = {}
+			db = d
+		db[options.avgout] = {}
+		pdb[options.dbls] = db
 
 def get_ali_data(filename,probe,aliset):
 	from emtprworkflow import EMProbeAliTools

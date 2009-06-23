@@ -196,18 +196,25 @@ def write_output(args,options,logid=None):
 				a.write_image(out_names,i)
 				if options.dbls and i == len(coords)-1:
 					db = db_open_dict("bdb:project")	
-					particle_names = db.get(options.dbls,dfl=[])
-					if particle_names.count(out_names) == 0:
-						particle_names.append(out_names)
-						db[options.dbls] = particle_names
+					particle_data = db.get(options.dbls,dfl={})
+					if isinstance(particle_data,list):
+						d = {}
+						for name in particle_data: d[name] = {}
+						particle_data = {}
+					
+					particle_data[out_names] = {}
+					db[options.dbls] = particle_data
 			else:
 				a.write_image(out_names[i],0)
 				if options.dbls:
 					db = db_open_dict("bdb:project")	
-					particle_names = db.get(options.dbls,dfl=[])
-					if particle_names.count(out_names[i]) == 0:
-						particle_names.append(out_names[i])
-						db[options.dbls] = particle_names
+					particle_data = db.get(options.dbls,dfl={})
+					if isinstance(particle_data,list):
+						d = {}
+						for name in particle_data: d[name] = {}
+						particle_data = {}
+					particle_data[out_names[i]] = {}
+					db[options.dbls] = particle_data
 						
 			if logid: E2progress(logid,float(i+1)/len(coords))
 

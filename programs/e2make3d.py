@@ -288,9 +288,15 @@ def main():
 
 	if options.dbls:
 		pdb = db_open_dict("bdb:project")
-		tmp_list = pdb.get(options.dbls, dfl=[])	
-		tmp_list.append(options.output)
-		pdb[options.dbls] = tmp_list
+		tmp_d = pdb.get(options.dbls, dfl={})
+		if isinstance(tmp_d,list): # this was added June 2009 - it's a back compatibility measure. We used to store these things as lists, but now it's dicts
+			d = {}
+			for name in tmp_d:
+				d[name] = {}
+			
+			tmp_d = d
+		tmp_d[options.output] = {}
+		pdb[options.dbls] = tmp_d
 
 	E2end(logger)
 	

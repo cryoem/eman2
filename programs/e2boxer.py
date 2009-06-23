@@ -1010,15 +1010,19 @@ class RawDatabaseAutoBoxer:
 				else: normalize=True
 				boxable.write_box_images(options.boxsize,options.force,imageformat=options.outformat,normalize=normalize,norm_method=options.normproc,invert=options.invert_output)
 				if options.dbls != None and len(boxable.boxes)>0:
+					
 					from EMAN2 import get_file_tag
 					db = db_open_dict("bdb:project")	
-					particle_names = db.get(options.dbls,dfl=[])
-					out_names = [boxable.get_image_file_name(imageformat=options.outformat)]
-					strip_out_name = get_file_tag(out_names[0])
-					for name in particle_names:
-						if get_file_tag(name) != strip_out_name:
-							out_names.append(name)
-					db[options.dbls] = out_names
+					particle_data =  db.get(options.dbls,dfl={})
+					if isinstance(particle_data,list): # this is for back compatibility - in June 2009 we transitioned from lists to dicts
+						d = {}
+						for name in particle_data:
+							d[name] = {}
+						particle_data = d
+
+					out_name = boxable.get_image_file_name(imageformat=options.outformat)
+					particle_data[out_name] = {}
+					db[options.dbls] = particle_data
 		
 			if self.logid:  E2progress(self.logid,float(i+1)/len(image_names))
 		project_db.close()
