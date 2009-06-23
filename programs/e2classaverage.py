@@ -546,7 +546,7 @@ class EMClassAveTask(EMTask):
 			for ptcl_idx,ali in all_alis[-1].items():
 				ref_alis[ptcl_idx] = ref_ali * ali
 			all_alis.append(ref_alis)
-			average = self.__get_average(images,norm,ref_alis,inclusions)
+			average = self.__get_average(images,norm,ref_alis,inclusions,center=False)
 			all_inclusions.append(inclusions) # just for completeness, yes redundant, but yes generically reasonable
 			average.set_attr("xform.projection", ref.get_attr("xform.projection"))
 #			average.set_attr("projection_image",options.ref) # Have to look into this
@@ -836,7 +836,7 @@ class EMClassAveTask(EMTask):
 			average.set_attr("class_ptcl_idxs",record)
 		return average,inclusion
 	
-	def __get_average(self,images,norm,alis,inclusions):
+	def __get_average(self,images,norm,alis,inclusions,center=True):
 		'''
 		get an average using the given alignment parameters and inclusion flags
 		inclusions may be None, in which case every particle is included
@@ -867,7 +867,8 @@ class EMClassAveTask(EMTask):
 			if norm != None: average.process_inplace(norm[0],norm[1])
 			#should this be centeracf?
 			#average.process_inplace("xform.centerofmass")
-			average.process_inplace("xform.centeracf")
+			if center:
+				average.process_inplace("xform.centeracf")
 			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 			average.set_attr("ptcl_repr",np)
 			average.set_attr("class_ptcl_idxs",record)
