@@ -507,7 +507,6 @@ class EMClassAveTask(EMTask):
 	   	all_inclusions = []
 	   	inclusions = None
 	   	
-	   
 	   	
 	   	for i in xrange(0,self.options["iter"]):
 	   		if i != 0 : # on the first iteration we already have the initial alignments. 
@@ -545,7 +544,7 @@ class EMClassAveTask(EMTask):
 			
 			ref_alis = {}
 			for ptcl_idx,ali in all_alis[-1].items():
-				ref_alis[ptcl_idx] = ref_ali * ali # this is correct it is easily verified
+				ref_alis[ptcl_idx] = ref_ali * ali
 			all_alis.append(ref_alis)
 			average = self.__get_average(images,norm,ref_alis,inclusions)
 			all_inclusions.append(inclusions) # just for completeness, yes redundant, but yes generically reasonable

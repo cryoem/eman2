@@ -288,7 +288,7 @@ void Transform::detect_problem_keys(const Dict& d) {
 	vector<string> problem_keys;
 	bool is_2d = false;
 	if (d.has_key_ci("type") ) {
-		string type = (string)d["type"];
+		string type = Util::str_to_lower((string)d["type"]);
 		bool problem = false;
 		if (permissable_rot_keys.find(type) == permissable_rot_keys.end() ) {
 			problem_keys.push_back(type);
