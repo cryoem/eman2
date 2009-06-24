@@ -402,7 +402,13 @@ class WorkFlowTask(QtCore.QObject):
 		files = []
 		for n in range(ncpu):
 			files.append([])
-			
+		
+		if len(temp_file_name) > 3 and temp_file_name[-4] == ".":
+			temp_fname_root = temp_file_name[:-4]
+			temp_fname_end = temp_file_name[-4:]
+		else:
+			temp_fname_root = temp_file_name
+			temp_fname_end = ""
 		# distribute the names into bins
 		for i,f in enumerate(options.filenames):
 			idx = i % ncpu
@@ -434,13 +440,15 @@ class WorkFlowTask(QtCore.QObject):
 			print
 			
 			#print args
-			file = open(temp_file_name,"w+")
+			fname = temp_fname_root +"_"+str(n)+temp_fname_end
+			file = open(fname,"w+")
 			if(sys.platform != 'win32'):
 				args_adjusted = []
 			else:
 				args_adjusted = ["pythonw"]
 			args_adjusted.extend(args)
 			#print args_adjusted
+			
 			process = subprocess.Popen(args_adjusted,stdout=file,stderr=subprocess.STDOUT)
 			print "started process",process.pid
 			self.emit(QtCore.SIGNAL("process_started"),process.pid)
@@ -791,9 +799,8 @@ class EMProjectDataDict:
 			if self.recovery_dict_name != None:
 				# also uncomment this line in about a year - i.e. around June 2010
 				self.__recover_dict_to_dict_from_old_name()
-			
-			if self.recovery_list_name != None:
-				# uncomment this line in about a year - i.e. around June 2010
+			elif self.recovery_list_name != None:
+#				# uncomment this line in about a year - i.e. around June 2010
 				self.__recover_list_to_dict_from_old_name()
 				
 			# also uncomment this line in about a year - i.e. around June 2010
