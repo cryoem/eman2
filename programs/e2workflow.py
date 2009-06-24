@@ -456,8 +456,8 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.launchers["Auto Boxing - e2boxer"] = self.launch_e2boxer_auto
 		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Generate Output - e2boxer")))
 		self.launchers["Generate Output - e2boxer"] = self.launch_e2boxer_output
-		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Particle import")))
-		self.launchers["Particle import"] = self.launch_particle_import
+		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Particle Import")))
+		self.launchers["Particle Import"] = self.launch_particle_import
 		ap_list[0].setIcon(0,self.icons["green_boxes"])
 		ap_list[1].setIcon(0,self.icons["green_boxes"])
 		ap_list[2].setIcon(0,self.icons["green_boxes"])
@@ -1075,6 +1075,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	
 	def pop_task_event_pair(self,task):
 		old_task = self.tasks.pop(task)
+		print "popped",old_task
 		self.event_managers.pop(task)
 		self.update_task_list()
 		
@@ -1152,12 +1153,12 @@ class TaskEventsManager:
 		self.task = task
 		self.selector = weakref.ref(selector)
 		self.key = key
-		QtCore.QObject.connect(self.task, QtCore.SIGNAL("task_idle"), self.on_task_idle) # this typically gets emitted when the user hits ok or cancel on the 
-		QtCore.QObject.connect(self.task, QtCore.SIGNAL("gui_running"),self.on_gui_running) # this one 
-		QtCore.QObject.connect(self.task, QtCore.SIGNAL("replace_task"),self.on_replace_task)
-		QtCore.QObject.connect(self.task, QtCore.SIGNAL("gui_exit"),self.on_gui_exit)
-		QtCore.QObject.connect(self.task, QtCore.SIGNAL("process_started"), self.on_process_started)
-		QtCore.QObject.connect(self.task, QtCore.SIGNAL("display_file"), self.selector().display_file)
+		QtCore.QObject.connect(self.task.emitter(), QtCore.SIGNAL("task_idle"), self.on_task_idle) # this typically gets emitted when the user hits ok or cancel on the 
+		QtCore.QObject.connect(self.task.emitter(), QtCore.SIGNAL("gui_running"),self.on_gui_running) # this one 
+		QtCore.QObject.connect(self.task.emitter(), QtCore.SIGNAL("replace_task"),self.on_replace_task)
+		QtCore.QObject.connect(self.task.emitter(), QtCore.SIGNAL("gui_exit"),self.on_gui_exit)
+		QtCore.QObject.connect(self.task.emitter(), QtCore.SIGNAL("process_started"), self.on_process_started)
+		QtCore.QObject.connect(self.task.emitter(), QtCore.SIGNAL("display_file"), self.selector().display_file)
 #		
 	def on_gui_running(self,module_string_name,module):
 		''' 
@@ -1185,8 +1186,8 @@ class EMWorkFlowManager:
 		self.task_monitor = EMTaskMonitorModule(get_application())
 		self.selector = EMWorkFlowSelector(application,self.task_monitor.qt_widget)
 		self.selector.qt_widget.resize(300,540)
-		QtCore.QObject.connect(self.selector, QtCore.SIGNAL("tasks_updated"),self.task_monitor.qt_widget.set_entries)
-		QtCore.QObject.connect(self.task_monitor, QtCore.SIGNAL("task_killed"),self.selector.qt_widget.task_killed)
+		QtCore.QObject.connect(self.selector.emitter(), QtCore.SIGNAL("tasks_updated"),self.task_monitor.qt_widget.set_entries)
+		QtCore.QObject.connect(self.task_monitor.emitter(), QtCore.SIGNAL("task_killed"),self.selector.qt_widget.task_killed)
 		
 	
 	

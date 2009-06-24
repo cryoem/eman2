@@ -649,6 +649,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 	
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
+		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"plot.png"))
 		self.target=weakref.ref(target)
 		vbl0=QtGui.QVBoxLayout(self)
 		

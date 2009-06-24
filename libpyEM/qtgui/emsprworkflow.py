@@ -159,141 +159,24 @@ class EMErrorMessageDisplay:
 	run = staticmethod(run)
 
 
-class EMProjectBackCompat:
-	
-	def recover_list_to_dict(project_list_name):
-		project_db = db_open_dict("bdb:project")
-		project_data  = project_db.get(project_list_name,dfl={})
-		if isinstance(project_data,list):
-			EMErrorMessageDisplay.run("Recovering %s database (for back compatibility)" %project_list_name, "Warning")
-			d = {}
-			for name in project_data:
-				d[name] = {}
-			
-			project_db[project_list_name] = d
-			
-	recover_list_to_dict = staticmethod(recover_list_to_dict)
-				
-	def recover_list_to_dict_from_old_name(project_list_name,old_name):
-		project_db = db_open_dict("bdb:project")
-		if not project_db.has_key(old_name): return
-		
-		project_data  = project_db.get(project_list_name,dfl={})
-		old_project_data  = project_db.get(old_name,dfl=[])
-		if len(old_project_data) > 0:
-			EMErrorMessageDisplay.run("Recovering %s database (for back compatibility)" %old_name, "Warning")
-			for name in old_project_data:
-				if not project_data.has_key(name):
-					project_data[name] = {}
-			project_db[project_list_name] = project_data
-			
-		project_db[old_name] = None
 
-	recover_list_to_dict_from_old_name = staticmethod(recover_list_to_dict_from_old_name)
-
-class EMProjectListCleanup:
-	'''
-	A class for catching cases where files have been removed.
-	Used mostly statically
-	'''
-	def clean_up_project_file_list(name_of_list):
-		project_db = db_open_dict("bdb:project")
-		names = project_db.get(name_of_list,dfl=[])
-		rem = []
-		for i in xrange(len(names)-1,-1,-1):
-			if not file_exists(names[i]):
-				rem.append("File %s no longer exists. Automatically removing from project" %names[i])
-				names.pop(i)
-		
-		if len(rem) != 0:
-			EMErrorMessageDisplay.run(rem,"Warning")
-			project_db[name_of_list] = names
-			
-	def clean_up_project_file_dict(name_of_list):
-		project_db = db_open_dict("bdb:project")
-		name_data = project_db.get(name_of_list,dfl={})
-		if isinstance(name_data,list):
-			EMErrorMessageDisplay.run("Had to recover %s" %name_of_list,"Warning")
-			d = {}
-			for name in name_data:
-				d[name] = {}
-				
-			name_data = d
-			project_db[name_of_list] = name_data
-		rem = []
-		for name, map in name_data.items():
-			if not file_exists(name):
-				rem.append("File %s no longer exists. Automatically removing from project" %name)
-				name_data.pop(name)
-			else:
-				for key,image_name in map.items():
-					if not file_exists(image_name):
-						map.pop(key)
-						rem.append("%s data no longer exists for %s. Automatically removing from project" %(key,image_name))
-		
-		if len(rem) != 0:
-			EMErrorMessageDisplay.run(rem,"Warning")
-			project_db[name_of_list] = name_data
-				
-	clean_up_project_file_list = staticmethod(clean_up_project_file_list)
-	clean_up_project_file_dict = staticmethod(clean_up_project_file_dict)
-
-	def clean_up_filt_particles(dict_db_name=spr_ptcls_dict):
-		project_db = db_open_dict("bdb:project")
-		db_map = project_db.get(dict_db_name,dfl={})
-		
-		error = []
-		update = False
-		for name,map in db_map.items():
-			for key,image_name in map.items():
-				if not file_exists(image_name):
-					map.pop(key)
-					error.append("%s data no longer exists for %s. Automatically removing from project" %(key,image_name))
-					update = True
-			if len(map) == 0:
-				db_map.pop(name)
-					
-		if update:
-			EMErrorMessageDisplay.run(error,"Warning")
-			project_db[dict_db_name] = db_map			
-	
-	clean_up_filt_particles = staticmethod(clean_up_filt_particles)
-	
-	def clean_up_ali_params(self,dict_db_name="global.tpr_ptcls_ali_dict"):
-		project_db = db_open_dict("bdb:project")
-		db_map = project_db.get(dict_db_name,dfl={})
-		
-		error = []
-		update = False
-		for name,map in db_map.items():
-			if not file_exists(name):
-				db_map.pop(name)
-				error.append("%s data no longer exists. Automatically removing from project alignment parameters" %(name))
-				update = True
-				continue
-			for image_name,ali in map.items():
-				if not file_exists(image_name):
-					map.pop(image_name)
-					error.append("%s data no longer exists for %s. Automatically removing from project alignment parameters" %(image_name,name))
-					update = True
-			if len(map) == 0:
-				db_map.pop(name)
-					
-		if update:
-			EMErrorMessageDisplay.run(error,"Warning")
-			project_db[dict_db_name] = db_map			
-	
-	clean_up_ali_params = staticmethod(clean_up_ali_params)
 		
 
-class WorkFlowTask(QtCore.QObject):
+class WorkFlowTask:
 	def __init__(self):
-		QtCore.QObject.__init__(self)
 		self.window_title = "Set me please" # inheriting classes should set this
 		self.preferred_size = (480,640) # inheriting classes can change this if they choose
 		self.form_db_name = None # specify this to make use of automated parameter storage (see write_db_entries(self,...) ) - don't forget the "bdb:"
 		self.project_db_entries = ["global.num_cpus","global.apix","global.microscope_voltage","global.microscope_cs","global.memory_available","global.particle_mass"] # used to write entries to a specific db
+		self.core_object = QtCore.QObject()
 	
+	def emitter(self):
+		return self.core_object
+	
+	
+	def __del__(self):
+		self.core_object.deleteLater()
+		
 	def run_form(self):
 		self.form = EMFormModule(self.get_params(),get_application())
 		self.form.qt_widget.resize(*self.preferred_size)
@@ -321,9 +204,12 @@ class WorkFlowTask(QtCore.QObject):
 	def on_form_cancel(self):
 		self.form.closeEvent(None)
 		self.form = None
-
+		
 		self.emit(QtCore.SIGNAL("task_idle"))
-	
+		
+	def emit(self,*args,**kargs):
+		self.core_object.emit(*args,**kargs)
+		
 	def on_form_close(self):
 		self.emit(QtCore.SIGNAL("task_idle"))
 
@@ -1661,9 +1547,6 @@ class EMParticleReportTask(ParticleWorkFlowTask):
 		self.project_data_at_init = None
 
 	def get_project_particle_table(self):
-		EMProjectBackCompat.recover_list_to_dict_from_old_name(self.project_list,"global.spr_ptcls")
-		EMProjectListCleanup.clean_up_project_file_dict(self.project_list) # in case things have gone missing
-		
 		data_dict = EMProjectDataDict(spr_ptcls_dict)
 		particle_data = data_dict.get_data_dict()
 		particle_names = particle_data.keys()
@@ -2326,8 +2209,7 @@ class E2BoxerGuiTaskGeneral(E2BoxerGuiTask):
 	
 	
 class E2BoxerOutputTask(E2BoxerTask):	
-	documentation_string = "Select the images you wish to generate output for, enter the box size and normalization etc, and then hit OK.\nThis will cause the workflow to spawn output writing processes using the available CPUs. Note that the bdb option is the preferred output format, in this mode output particles are written directly to the EMAN project database."
-	warning_string = "\n\n\nNOTE: There are no boxes currently stored in the database. To rectify this situation use e2boxer to interactively box your images, or alternatively used autoboxing information stored in the database to autobox your images."
+	"""Select the images you wish to generate output for, enter the box size and normalization etc, and then hit OK.\nThis will cause the workflow to spawn output writing processes using the available CPUs. Note that the bdb option is the preferred output format, in this mode output particles are written directly to the EMAN project database."""
 	def __init__(self):
 		E2BoxerTask.__init__(self)
 		self.window_title = "Generate e2boxer Output"
@@ -2341,7 +2223,7 @@ class E2BoxerOutputTask(E2BoxerTask):
 		
 		p,n = self.get_project_files_that_have_db_boxes_in_table()
 
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="Using e2boxer",desc_long="",property=None,defaultunits=E2BoxerOutputTask.documentation_string,choices=None))
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="Using e2boxer",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
 		params.append(p)
 		self.add_general_params(params)
 
@@ -2572,7 +2454,6 @@ class E2CTFWorkFlowTask(EMParticleReportTask):
 		re-reading stuff from disk multiple times
 		'''
 		def __init__(self):
-			EMProjectListCleanup.clean_up_filt_particles()
 			
 			data_dict = EMProjectDataDict(spr_ptcls_dict)
 			self.db_map = data_dict.get_data_dict()
@@ -3454,17 +3335,6 @@ class E2MakeSetTask(E2ParticleExamineTask):
 
 		data_dict = EMProjectDataDict(spr_ptcls_dict)
 		project_data = data_dict.get_data_dict()
-		project_names = data_dict.keys()
-		
-#		output_data_map = {}	
-#		if params["filenames"][0] in db_map.keys():
-#			 for name in params["filenames"]:
-#			 	output_data_map[name] = db_map[name]
-#		else:
-#			if len(db_map) > 0:
-#				for name in params["filenames"]:
-#					real_name = self.data_name_map[name]
-#					output_data_map[real_name] = db_map[real_name]
 		
 		output_stacks = {}
 		output_stacks[""] = []
@@ -3475,36 +3345,19 @@ class E2MakeSetTask(E2ParticleExamineTask):
 			dict = project_data[root_name]
 			for filt,name in dict.items():
 				f = "_"+filt.split()[0].lower()
-			
+
 				if not stack_type_map.has_key(f):
 					stack_type_map[f] = filt
 				
-				test_stack_name = "bdb:stacks#"+f+base_stack_root
-				if file_exists(test_stack_name):
-					EMErrorMessageDisplay.run("The %s stack already exists. Remove it, or try a different name" %test_stack_name)
-					return False
-				
 				if output_stacks.has_key(f): output_stacks[f].append(name)
 				else: output_stacks[f] = [name]
-				
 		
-#		print output_data_map
-#		return
-#		for key,value in output_data_map.items():
-#			output_stacks[""].append(key)
-#			for filt,name in value.items():
-#				f = "_"+filt.split()[0].lower()
-#				if not stack_type_map.has_key(f):
-#					stack_type_map[f] = filt
-#				test_stack_name = "bdb:stacks#"+f+base_stack_root
-#				if file_exists(test_stack_name):
-#					EMErrorMessageDisplay.run("The %s stack already exists. Remove it, or try a different name" %test_stack_name)
-#					return False
-#					
-#				if output_stacks.has_key(f): output_stacks[f].append(name)
-#				else: output_stacks[f] = [name]
-					
-		
+		for f in output_stacks.keys():
+			test_stack_name = "bdb:stacks#"+base_stack_root+f
+			if file_exists(test_stack_name):
+				EMErrorMessageDisplay.run("The %s stack already exists. Remove it, or try a different name" %test_stack_name)
+				return False
+			
 		stacks_map = {}
 		for key,filenames in output_stacks.items():
 			if len(filenames) == 0:
@@ -3515,42 +3368,32 @@ class E2MakeSetTask(E2ParticleExamineTask):
 				success,cmd = self.make_v_stack(filenames,base_stack_root+key,"stacks",params["exclude_bad"])
 				
 			else:
-				EMErrorMessageDisplay.run("The generation of stacks for flat (non database) files is currently disabled. A particle set is being ignored")
+				EMErrorMessageDisplay.run("The generation of stacks for flat (non database) files is currently disabled. A particle set (%s) is being ignored" %stack_type_map[key], "Warning")
 				continue
 				# This will work eventually - the only problem is that the exclusioons are not factored in, that's all
 				#success,cmd = self.make_stack(filenames,base_stack_root+key,"stacks/")
 				
 			if not success:
-				EMErrorMessageDisplay.run("The command %s failed. Please try again" %cmd)
+				EMErrorMessageDisplay.run("The command %s failed. Please try again" %cmd, "Failure")
 				return False
 			else:
 				if key != "": stacks_map[stack_type_map[key]] ="bdb:stacks#"+ base_stack_root+key
 			
-			
-#		project_db = db_open_dict("bdb:project")
-#		init_stacks = []
-#		if project_db.has_key("global.spr_stacks"):
-#			init_stacks = project_db["global.spr_stacks"]
 #		
 		stack_root = params["stack_name"]	
-#		init_stacks.append("bdb:stacks#"+base_stack_root)
-#		project_db["global.spr_stacks"] = init_stacks
-		
+	
 		stacks_data_dict = EMProjectDataDict(spr_sets_dict)
 		update_map = {}
 		update_map["bdb:stacks#"+base_stack_root] = stacks_map
 		stacks_data_dict.update(update_map)
-#		if project_db.has_key("global.spr_stacks_map"):
-#			init_stacks_map = project_db["global.spr_stacks_map"]
-#			
-#		
-#		project_db["global.spr_stacks_map"] = init_stacks_map
+
 		
 		return True
 		
 	def make_v_stack(self,filenames,out_name,path,exclude_bad):
 	 	
 	 	progress = QtGui.QProgressDialog("Making virtual stacks...", "Abort import", 0, len(filenames),None)
+	 	progress.setWindowIcon(QtGui.QIcon(get_image_directory() + "/eman.png"))
 		progress.show()
 		if db_check_dict("bdb:select"):
 			select_db = db_open_dict("bdb:select")
@@ -3597,6 +3440,7 @@ class E2MakeSetTask(E2ParticleExamineTask):
 
 			
 		progress = QtGui.QProgressDialog("Importing files into database...", "Abort import", 0, len(filenames),None)
+		progress.setWindowIcon(QtGui.QIcon(get_image_directory() + "/eman.png"))
 		progress.show()
 
 		for i,name in enumerate(filenames):

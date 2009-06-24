@@ -70,11 +70,11 @@ class ModuleEventsManager:
 	def __init__(self,target,module):
 		self.target = weakref.ref(target)
 		self.module = weakref.ref(module)
-		QtCore.QObject.connect(self.module(), QtCore.SIGNAL("module_closed"), self.module_closed)
-		QtCore.QObject.connect(self.module(), QtCore.SIGNAL("module_idle"), self.module_idle)
+		QtCore.QObject.connect(self.module().emitter(), QtCore.SIGNAL("module_closed"), self.module_closed)
+		QtCore.QObject.connect(self.module().emitter(), QtCore.SIGNAL("module_idle"), self.module_idle)
 		
-		QtCore.QObject.connect(self.module(), QtCore.SIGNAL("ok"), self.module_ok) # yes, redundant, but time is short
-		QtCore.QObject.connect(self.module(), QtCore.SIGNAL("cancel"), self.module_cancel)# yes, redundant, but time is short
+		QtCore.QObject.connect(self.module().emitter(), QtCore.SIGNAL("ok"), self.module_ok) # yes, redundant, but time is short
+		QtCore.QObject.connect(self.module().emitter(), QtCore.SIGNAL("cancel"), self.module_cancel)# yes, redundant, but time is short
 		
 	
 	def module_closed(self):
@@ -90,11 +90,11 @@ class ModuleEventsManager:
 		self.module().closeEvent(None)
 	
 	
-class EMGUIModule(EventsEmitterAndReciever,QtCore.QObject):
+class EMGUIModule(EventsEmitterAndReciever):
 	FTGL = "ftgl"
 	GLUT = "glut"
 	def __init__(self,ensure_gl_context=False,application_control=True):
-		QtCore.QObject.__init__(self)
+		self.core_object =  QtCore.QObject()
 		self.under_qt_control = False
 		self.em_qt_inspector_widget = None # shoudl be = EMQtWidgetModule(application) somewher 
 		self.suppress_inspector = False # turn on to suppress showing the inspector
@@ -120,6 +120,12 @@ class EMGUIModule(EventsEmitterAndReciever,QtCore.QObject):
 			app.ensure_gl_context(self)
 		
 		EventsEmitterAndReciever.__init__(self)
+		
+	def emitter(self):
+		return self.core_object
+	
+	def emit(self,*args,**kargs):
+		self.core_object.emit(*args,**kargs)
 		
 	def __del__(self):
 		pass

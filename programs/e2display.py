@@ -79,8 +79,8 @@ def main():
 		
 	if len(args)<1 :
 		dialog = EMBrowserModule()
-		QtCore.QObject.connect(dialog,QtCore.SIGNAL("ok"),on_browser_done)
-		QtCore.QObject.connect(dialog,QtCore.SIGNAL("cancel"),on_browser_cancel)
+		QtCore.QObject.connect(dialog.emitter(),QtCore.SIGNAL("ok"),on_browser_done)
+		QtCore.QObject.connect(dialog.emitter(),QtCore.SIGNAL("cancel"),on_browser_cancel)
 		app.show()
 	elif options.plot:
 		plot(args,app)

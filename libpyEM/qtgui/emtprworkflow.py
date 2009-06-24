@@ -36,6 +36,36 @@ from emform import *
 from emsave import EMFileTypeValidator
 
 
+class EMProjectListCleanup:
+	'''
+	'''
+	
+	def clean_up_ali_params(dict_db_name="global.tpr_ptcls_ali_dict"):
+		project_db = db_open_dict("bdb:project")
+		db_map = project_db.get(dict_db_name,dfl={})
+		
+		error = []
+		update = False
+		for name,map in db_map.items():
+			if not file_exists(name):
+				db_map.pop(name)
+				error.append("%s data no longer exists. Automatically removing from project alignment parameters" %(name))
+				update = True
+				continue
+			for image_name,ali in map.items():
+				if not file_exists(image_name):
+					map.pop(image_name)
+					error.append("%s data no longer exists for %s. Automatically removing from project alignment parameters" %(image_name,name))
+					update = True
+			if len(map) == 0:
+				db_map.pop(name)
+					
+		if update:
+			EMErrorMessageDisplay.run(error,"Warning")
+			project_db[dict_db_name] = db_map			
+	
+	clean_up_ali_params = staticmethod(clean_up_ali_params)
+
 
 class EMTomoRawDataReportTask(EMRawDataReportTask):
 	'''This form displays tomograms that are associated with the project. You browse to add raw data, or right click and choose Add.''' 
@@ -441,7 +471,6 @@ class EMTomoPtclAlignmentReportTask(WorkFlowTask):
 	def get_column_names(self):
 		
 		project_list = tpr_ptcls_ali_dict
-		#EMProjectListCleanup.clean_up_filt_particles(self.project_list)
 		db = db_open_dict("bdb:project",ro=True)
 		db_map = db.get(project_list,dfl={})
 		
@@ -460,7 +489,6 @@ class EMTomoPtclAlignmentReportTask(WorkFlowTask):
 		'''
 		def __init__(self,probe,ali_set=None):
 			self.project_list = tpr_ptcls_ali_dict
-			#EMProjectListCleanup.clean_up_filt_particles(self.project_list)
 			db = db_open_dict("bdb:project",ro=True)
 			self.db_map = db[self.project_list]
 			self.probe = probe
@@ -619,7 +647,9 @@ class EMTomoStoredCoordsTool:
 		table.add_button_data(EMRawDataReportTask.ProjectAddRawDataButton(table,context_menu_data))
 		return table
 	def get_files_with_db_boxes_table(self):
-		EMProjectListCleanup.clean_up_project_file_dict(self.project_list) # this is necessary for the columns_object to operate without throwing (in unusual circumstances the user deletes the particles, and this accomodates for it)
+		data_dict = EMProjectDataDict(self.project_list)
+		project_data = data_dict.get_data_dict() # this is for automated clean up only...
+		
 		table= self.get_raw_data_table()# now p is a EMParamTable with rows for as many files as there in the project
 		from emform import EMFileTable
 	
@@ -875,7 +905,6 @@ class E2TomoFilterParticlesTask(WorkFlowTask):
 		
 #		project_db = db_open_dict("bdb:project")
 #		name = tpr_ptcls_dict
-#		EMProjectListCleanup.clean_up_filt_particles(name)
 #		if not project_db.has_key(name):
 #			return []
 #		
@@ -934,7 +963,6 @@ class E2TomoFilterParticlesTask(WorkFlowTask):
 		
 #		project_db = db_open_dict("")
 #		project_list = tpr_ptcls_dict
-#		EMProjectListCleanup.clean_up_filt_particles(project_list)
 #		db_map = project_db.get(project_list,dfl={})
 		
 		for i,name in enumerate(params["filenames"]):
@@ -1320,8 +1348,9 @@ class E2TomoAverageChooseAliTask(WorkFlowTask):
 	def get_params(self):
 		params = []
 		
+		EMProjectListCleanup.clean_up_ali_params()
+		
 		project_list = tpr_ptcls_ali_dict
-		#EMProjectListCleanup.clean_up_filt_particles(self.project_list)
 		db = db_open_dict("bdb:project",ro=True)
 		db_map = db.get(project_list,dfl={})
 		
@@ -1505,6 +1534,8 @@ class EMProbeAliTools:
 		pass
 	
 	def accrue_data(self):
+		EMProjectListCleanup.clean_up_ali_params()
+		
 		set_map = {}
 		
 		ptcls_db = EMProjectDataDict(tpr_ptcls_dict)
