@@ -2260,7 +2260,7 @@ class EMDB3DImageStackItem(EMListingItem):
 		return "bdb:"+self.database_directory+"#"+self.database
 
 class EMDBDictSingleImageItem(EMListingItem):
-	def __init__(self,type,db_directory,key,dictionary_keys):
+	def __init__(self,type,db_directory,key,database_dictionary_keys):
 		EMListingItem.__init__(self)
 		self.type_of_me = type
 		self.database_directory = db_directory
