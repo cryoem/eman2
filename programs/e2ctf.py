@@ -80,6 +80,8 @@ images far from focus."""
 	parser.add_option("--nosmooth",action="store_true",help="Disable smoothing of the background (running-average of the log with adjustment at the zeroes of the CTF)",default=False)
 	parser.add_option("--phaseflip",action="store_true",help="Perform phase flipping after CTF determination and writes to specified file.",default=False)
 	parser.add_option("--wiener",action="store_true",help="Wiener filter (optionally phaseflipped) particles.",default=False)
+	parser.add_option("--virtualout",type="string",help="Make a virtual stack copy of the input images with CTF parameters stored in the header. BDB only.",default=None)
+	parser.add_option("--storeparm",action="store_true",help="Write the CTF parameters back to the header of the input images. BDB and HDF only.",default=False)
 	parser.add_option("--oversamp",type="int",help="Oversampling factor",default=1)
 	parser.add_option("--sf",type="string",help="The name of a file containing a structure factor curve. Can improve B-factor determination.",default=None)
 	parser.add_option("--debug",action="store_true",default=False)
@@ -164,7 +166,7 @@ images far from focus."""
 	### Process input files
 	if debug : print "Phase flipping / Wiener filtration"
 	# write wiener filtered and/or phase flipped particle data to the local database
-	if options.phaseflip or options.wiener: # only put this if statement here to make the program flow obvious
+	if options.phaseflip or options.wiener or options.virtualout or options.storeparm: # only put this if statement here to make the program flow obvious
 		write_e2ctf_output(options) # converted to a function so to work with the workflow
 
 	E2end(logid)
@@ -222,7 +224,7 @@ def write_e2ctf_output(options):
 			print ""
 			ctf=EMAN2Ctf()
 			ctf.from_string(db_parms[name][0])
-			process_stack(filename,phaseout,wienerout,not options.nonorm,options.oversamp,ctf,invert=options.invert)
+			process_stack(filename,phaseout,wienerout,not options.nonorm,options.oversamp,ctf,invert=options.invert,virtualout=options.virtualout,storeparm=options.storeparm)
 			if options.dbds != None:
 				pdb = db_open_dict("bdb:project")
 				dbds = pdb.get(options.dbds,dfl={})
@@ -332,28 +334,33 @@ def env_cmp(sca):
 
 	return ret
 	
-def process_stack(stackfile,phaseflip=None,wiener=None,edgenorm=True,oversamp=1,default_ctf=None,invert=False):
+def process_stack(stackfile,phaseflip=None,wiener=None,edgenorm=True,oversamp=1,default_ctf=None,invert=False,virtualout=None,storeparm=False):
 	"""Will phase-flip and/or Wiener filter particles in a file based on their stored CTF parameters.
 	phaseflip should be the path for writing the phase-flipped particles
 	wiener should be the path for writing the Wiener filtered (and possibly phase-flipped) particles
 	oversamp will oversample as part of the processing, ostensibly permitting phase-flipping on a wider range of defocus values
 	"""
 	
-	im=EMData()
-	im.read_image(stackfile,0) # can't use the constructor if bdb terminology is being used
+	im=EMData(stackfile,0)
 	ys=im.get_ysize()*oversamp
 	ys2=im.get_ysize()
 	n=EMUtil.get_image_count(stackfile)
 	lctf=None
-	
+	if virtualout: 
+		vin=db_open_dict(stackfile)
+		vout=db_open_dict(virtualout)
 	
 	for i in range(n):
-		im1 = EMData()
-		im1.read_image(stackfile,i)
+		im1 = EMData(stackfile,i)
 		try: ctf=im1["ctf"]
 		except : ctf=default_ctf
+		if storeparm : 
+			ctf=default_ctf		# otherwise we're stuck with the values in the file forever
+			im1["ctf"]=ctf
+			im1.write_image(stackfile,i,EMUtil.ImageType.IMAGE_UNKNOWN,True)
 		if type(ctf)==EMAN1Ctf : ctf=default_ctf	# EMAN1 ctf needs a structure factor for this to work
-		
+
+
 		if edgenorm : im1.process_inplace("normalize.edgemean")
 		if oversamp>1 :
 			im1.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
@@ -402,6 +409,11 @@ def process_stack(stackfile,phaseflip=None,wiener=None,edgenorm=True,oversamp=1,
 				except: 
 					print "!!! ",wiener,i
 					out.write_image("error.hed",-1)
+
+		if virtualout:
+			im1["data_path"]=vin.get_data_path(i)
+			vout[vout["maxrec"]+1]=im1
+
 		lctf=ctf
 
 	#if wiener and wiener[:4]=="bdb:" : db_close_dict(wiener)
