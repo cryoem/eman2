@@ -71,7 +71,7 @@ def main():
 
 		from  applications  import  k_means_stab_CUDA_stream
 		global_def.BATCH = True
-		k_means_stab(args[0], args[1], mask, options.K, options.nb_part, options.F, options.th_nobj, options.rand_seed)
+		k_means_stab_CUDA_stream(args[0], args[1], mask, options.K, options.nb_part, options.F, options.th_nobj, options.rand_seed)
 		global_def.BATCH = False
 
 if __name__ == "__main__":

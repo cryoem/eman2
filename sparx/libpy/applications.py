@@ -12197,12 +12197,12 @@ def k_means_stab_CUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_no
 	logging.info('... Stability: %5.2f %% (%d objects)' % (stb, nb_stb))
 	
 	# export the stable class averages
-	count_k, id_rejected = k_means_stab_export(STB_PART, stack, num_run, outdir, th_nobj)
-	logging.info('... Export %i stable class averages: average_stb_run%02d.hdf (rejected %i images)' % (count_k, num_run, len(id_rejected)))
+	count_k, id_rejected = k_means_stab_export(STB_PART, stack, 0, outdir, th_nobj)
+	logging.info('... Export %i stable class averages: average_stb_run%02d.hdf (rejected %i images)' % (count_k, 0, len(id_rejected)))
 
 	# tag informations to the header
 	logging.info('... Update info to the header')
-	k_means_stab_update_tag(stack, ALL_PART, STB_PART, num_run, id_rejected)
+	k_means_stab_update_tag(stack, ALL_PART, STB_PART, 0, id_rejected)
 	
 	logging.info('::: END k-means stability :::')
 
