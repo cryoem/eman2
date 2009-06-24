@@ -787,15 +787,15 @@ class EMProjectDataDict:
 		@return the database dictionary itself
 		'''
 		if self.data_dict == None:
-			if self.recovery_list_name != None:
-				# uncomment this line in about a year - i.e. around June 2010
-				self.__recover_list_to_dict_from_old_name()
-				
-				
+			
 			if self.recovery_dict_name != None:
 				# also uncomment this line in about a year - i.e. around June 2010
 				self.__recover_dict_to_dict_from_old_name()
 			
+			if self.recovery_list_name != None:
+				# uncomment this line in about a year - i.e. around June 2010
+				self.__recover_list_to_dict_from_old_name()
+				
 			# also uncomment this line in about a year - i.e. around June 2010
 			self.__recover_missing_key_dict()
 			
