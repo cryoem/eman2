@@ -577,12 +577,13 @@ class EMImageMXModule(EMGUIModule):
 		set_list = db[db_name]
 		if set_list == None: set_list = []
 		
-		
 		self.get_inspector()
 		self.inspector.clear_sets()
 		self.inspector.add_set(idx,db_name,True)
+		
 		self.data.clear_sets()
 		self.data.associate_set(idx,set_list,True)
+		
 		self.inspector.set_set_mode()
 		self.updateGL()
 		
@@ -2443,7 +2444,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 
 	def clear_sets(self):
 		self.setlist.clear()
-
+	
 	def add_set(self,set_idx,set_name,display=True):
 		items = self.get_set_list_items_copy()
 		for item in items:
@@ -2712,7 +2713,7 @@ class EMDataListCache:
 			print "the object used to construct the EMDataListCache is not a string (filename) or a list (of EMData objects). Can't proceed"
 			return
 		
-		self.__init_sets()
+#		self.__init_sets()
 		
 		self.current_iter = 0 # For iteration support
 		self.soft_delete = False # toggle to prevent permanent deletion of particles
@@ -2797,16 +2798,16 @@ class EMDataListCache:
 				
 		return self.keys
 	
-	def __init_sets(self):
-		if db_check_dict("bdb:select"):
-			db = db_open_dict("bdb:select")
-			keys = db.keys()
-			for k in keys:
-				try:
-					idx = int(k[-1])
-					self.sets[idx] = db[k]
-					self.set_init_flag[idx] = True
-				except: pass
+#	def __init_sets(self):
+#		if db_check_dict("bdb:select"):
+#			db = db_open_dict("bdb:select")
+#			keys = db.keys()
+#			for k in keys:
+#				try:
+#					idx = int(k[-1])
+#					self.sets[idx] = db[k]
+#					self.set_init_flag[idx] = True
+#				except: pass
 	
 	def make_set_visible(self,i):
 		if i not in self.visible_sets:
@@ -2863,6 +2864,8 @@ class EMDataListCache:
 		return 0
 	
 	def clear_sets(self):
+		for key in self.sets.keys():
+			self.delete_set(key)
 		self.sets = {}
 	
 	def associate_set(self,idx,lst,mxset=False):

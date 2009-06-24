@@ -49,10 +49,19 @@ from emsave import save_data
 from emimagemx import EMDataListCache
 
 spr_raw_data_dict = "global.spr_raw_data_dict"
-spr_filt_ptcls_map = "global.spr_filt_ptcls_map"
+spr_filt_ptcls_map = "global.spr_filt_ptcls_map"# this is for recovery and back compatibility
+spr_ptcls_dict = "global.spr_ptcls_dict"
 spr_rfca_dict = "global.spr_rfca_dict"
 spr_stacks_map = "global.spr_stacks_map"
+spr_sets_dict = "global.spr_sets_dict"
 spr_init_models_dict = "global.spr_init_models_dict"
+
+tpr_raw_data_dict = "global.tpr_raw_data_dict"
+tpr_filt_ptcls_map = "global.tpr_filt_ptcls_map"
+tpr_ptcls_dict = "global.tpr_ptcls_dict"
+tpr_probes_dict = "global.tpr_probes_dict"
+tpr_ptcl_ave_dict = "global.tpr_ptcl_ave_dict"
+tpr_ptcls_ali_dict = "global.tpr_ptcls_ali_dict"
 
 class EmptyObject:
 	'''
@@ -229,7 +238,7 @@ class EMProjectListCleanup:
 	clean_up_project_file_list = staticmethod(clean_up_project_file_list)
 	clean_up_project_file_dict = staticmethod(clean_up_project_file_dict)
 
-	def clean_up_filt_particles(dict_db_name="global.spr_filt_ptcls_map"):
+	def clean_up_filt_particles(dict_db_name=spr_ptcls_dict):
 		project_db = db_open_dict("bdb:project")
 		db_map = project_db.get(dict_db_name,dfl={})
 		
@@ -633,6 +642,254 @@ class ChangeDirectoryTask(WorkFlowTask):
 		pass
 		#self.form.closeEvent(None)
 
+class EMProjectDataDict:
+	''' This class encapsulate the common routines used to get, add to and remove data dictionaries from the database.
+	These data dictionaries are used for storing almost all types of data in the workflow, and are persistently located
+	on disk using Berkeley DBs. The keys of these dictionaries are unique identifiers, such as the full name of a
+	file on disk. The values are dictionaries that enumerate any filtered data that are associated with this particular key.
+	It became necessary for us to make it so that one "these filtered data entries" is actually a named version of the
+	original data - it's key will be "Original Data". Here's what this dict looks like:
+	
+	{"bdb:particles#1002_ptcls":{"Original Data":"bdb:particles#1002_ptcls", "Phase flipped":"bdb:particles#1002_ptcls_phase"}}
+	'''
+	original_data = "Original Data"
+	recovery_list_to_dict = None
+	recovery_dict_to_dict = None
+	def __init__(self,data_dict_name="global.spr_raw_ptcls_map",db_name="bdb:project"):
+		'''
+		@param data_dict_name the key to a database entry which holds a dictionary, the keys of which are strings the values of which are dictionaries. See http://blake.bcm.edu/emanwiki/Eman2AppMetadata
+		@param db_name the name of the database opened by the called to db_open_dict. Should probably be bdb:project
+		@param recovery_list_name in June 2009 we converted list style storage to the more versatile dictionary style storage. This is the old list name. For back compatibility
+		@param recovery_dict_name possibly a recovery mechanism if we ever change the name of the data_dict_name. Not currently used
+		
+		Terminology : I will call big dictionary the 'data dictionary' and the value of this which is a dictionary the 'filter dictionary' 
+		'''
+		self.db_name = db_name # the name of the database
+		self.data_dict_name = data_dict_name # the key of the database dictionary
+		self.data_dict = None # created the first time it's need
+		
+		if EMProjectDataDict.recovery_list_to_dict == None:
+			self.__init_recovery_list_to_dict()
+		try:
+			self.recovery_list_name =  EMProjectDataDict.recovery_list_to_dict[self.data_dict_name]
+		except:
+			self.recovery_list_name = None
+			
+		if EMProjectDataDict.recovery_dict_to_dict == None:
+			self.__init_recovery_dict_to_dict()
+		try:
+			self.recovery_dict_name =  EMProjectDataDict.recovery_dict_to_dict[self.data_dict_name]
+		except:
+			self.recovery_dict_name = None
+		
+		
+	def __init_recovery_list_to_dict(self):
+		'''
+		Initializes EMProjectDataDict.recovery_list_to_dict
+		'''
+		d = {}
+		d[spr_ptcls_dict] = "global.spr_ptcls"
+		d[spr_raw_data_dict] = "global.spr_raw_file_names"
+		d[spr_rfca_dict] = "global.spr_ref_free_class_aves"
+		d[spr_init_models_dict] = "global.spr_init_models"
+		d[spr_sets_dict] = "global.spr_stacks"
+		d[tpr_raw_data_dict] = "global.tpr_tomograms"
+		d[tpr_ptcls_dict] = "global.tpr_ptcls"
+		d[tpr_probes_dict] = "global.tpr_probes"
+		d[tpr_ptcl_ave_dict] = "global.tpr_ptcl_averages"
+		EMProjectDataDict.recovery_list_to_dict = d
+		
+	def __init_recovery_dict_to_dict(self):
+		'''
+		Initializes EMProjectDataDict.recovery_dict_to_dict
+		'''
+		d = {}
+		d[spr_ptcls_dict] = "global.spr_filt_ptcls_map"
+		d[spr_sets_dict] = "global.spr_stacks_map"
+		d[tpr_ptcls_dict] = "global.tpr_filt_ptcls_map"
+		EMProjectDataDict.recovery_dict_to_dict = d
+		
+	def keys(self):
+		'''
+		@return the keys of the data dictionary
+		'''
+		dict = self.get_data_dict()
+		return dict.keys()
+		
+	def get_names(self,filt=original_data):
+		'''
+		@param filt the key to retrieve from the filter dictionary
+		@return a list of names that have entries corresponding to this filter entry
+		'''
+		dict = self.get_data_dict()
+		ret = []
+		for tag,dict2 in dict.items():
+			for key,name in dict2.items():
+				if name == filt:
+					ret.append(name)
+		return ret
+	
+	
+	def add_names(self,list_of_names,filt=original_data):
+		'''
+		@param list_of_names a list of names - should be full path file names
+		@param filt the key to use when inserted the names in the filter dictionary
+		The names in the list of names are used as keys in the data dictionary, and an 
+		entry is added to the filter dictionary using the filt parameters (will be the key)
+		and the name (will be the value)
+		'''
+		dict = self.get_data_dict()
+		for name in list_of_names:
+			tmp = {}
+			tmp[filt] = name
+			dict[name] = tmp
+			
+		self.__write_db(dict)
+		
+	def update(self,more_data_dict):
+		'''
+		@param more_data_dict a dictionary that will be added to the data dictionary using dict.update
+		'''
+		dict = self.get_data_dict()
+		dict.update(more_data_dict)
+		self.__write_db(dict)
+		
+		
+	def add_name(self,name):
+		'''Convenience function see add_names'''
+		self.add_names([name])
+			
+	def remove_names(self,list_of_names):
+		'''
+		@param list_of_names a list of names to be removed from this data dictionary
+		The names should be keys in the data dictionary. If not you get an error message
+		'''
+		dict = self.get_data_dict()
+		err = []
+		for name in list_of_names:
+			try:
+				dict.pop(name)
+			except:
+				err.append("%s is not a key in the %s dictionary" %(name,self.data_dict_name))
+		
+		if len(err) > 0:
+			error(err)
+		
+		self.__write_db(dict)
+	
+	def remove_name(self,name): 
+		'''Convenience function see remove_names'''
+		self.remove_names([name])
+		
+	def get_data_dict(self):
+		'''
+		Called internally to get the self.data_dict attribute - creates it the first time the function
+		@return the database dictionary itself
+		'''
+		if self.data_dict == None:
+			if self.recovery_list_name != None:
+				# uncomment this line in about a year - i.e. around June 2010
+				self.__recover_list_to_dict_from_old_name()
+				
+				
+			if self.recovery_dict_name != None:
+				# also uncomment this line in about a year - i.e. around June 2010
+				self.__recover_dict_to_dict_from_old_name()
+			
+			# also uncomment this line in about a year - i.e. around June 2010
+			self.__recover_missing_key_dict()
+			
+			# remove the dictionary if any data was lost
+			self.__remove_dict_if_files_lost()
+			
+			project_db = db_open_dict(self.db_name)
+			self.data_dict = project_db.get(self.data_dict_name,dfl={})
+		
+		return self.data_dict
+	
+	def __write_db(self,dict):
+		'''
+		@param dict what can be considered the data dictionary corresponding to the state of this class object
+		Write the data to disk
+		'''
+		project_db = db_open_dict(self.db_name)
+		project_db[self.data_dict_name] = dict
+	
+	def __remove_dict_if_files_lost(self):
+		'''
+		Looks at all of the data in the filter dictionary, if any of that data does not exist the
+		entry is automatically removed from the data dictionary
+		This function can probably be removed a year from now, somewhere around June 2010
+		'''
+		project_db = db_open_dict(self.db_name)
+		dict = project_db.get(self.data_dict_name,dfl={})
+		rem = []
+		for name, map in dict.items():
+			for key,image_name in map.items():
+				if not file_exists(image_name):
+					map.pop(key)
+					rem.append("%s data no longer exists for %s. Automatically removing from project" %(key,image_name))
+		
+		if len(rem) != 0:
+			EMErrorMessageDisplay.run(rem,"Warning")
+			project_db[self.data_dict_name] = dict
+				
+
+	def __recover_dict_to_dict_from_old_name(self):
+		'''
+		Recovers dicts name in old style format - I had to do this to correct a naming inconsistency
+		This function can probably be removed a year from now, somewhere around June 2010
+		'''
+		project_db = db_open_dict(self.db_name)
+		acted = False
+		if not project_db.has_key(self.data_dict_name) or len(project_db[self.data_dict_name]) == 0:
+			if project_db.has_key(self.recovery_dict_name):
+				dict = project_db[self.recovery_dict_name]
+				project_db[self.data_dict_name] = dict
+	#			project_db[self.recovery_dict_name] = None # the only problem is if someone started using this name for something else # not necessary
+				acted = True
+			
+		if acted:
+			EMErrorMessageDisplay.run("Automatically renamed old database %s to %s " %(self.recovery_dict_name,self.data_dict_name),"Warning")
+			
+	def __recover_missing_key_dict(self):
+		'''
+		Detects if the EMProjectDataDict.original_data is present, if not inserts it, but only inserts it
+		if the file exists. This will preserve any sets, for example, that were created from flat files.
+		A highly specialized function that works a tight rope.
+		It's for back compatibility. It should be fine.
+		'''
+		project_db = db_open_dict(self.db_name)
+		dict = project_db.get(self.data_dict_name,dfl={})
+		update = False
+		for tag,dict2 in dict.items():
+			if not dict2.has_key(EMProjectDataDict.original_data):
+				if file_exists(tag):
+					dict2[EMProjectDataDict.original_data] = tag
+					update = True
+		if update:
+			EMErrorMessageDisplay.run("Automatically converted an old dict for the %s database" %self.data_dict_name,"Warning")
+			project_db[self.data_dict_name] = dict
+		
+			
+	def __recover_list_to_dict_from_old_name(self):
+		'''
+		Recovers an old-style list if it existed.
+		This function can probably be removed a year from now, somewhere around June 2010
+		'''
+		project_db = db_open_dict("bdb:project")
+		if self.recovery_list_name == None or not project_db.has_key(self.recovery_list_name): return
+		
+		project_data  = project_db.get(self.data_dict_name,dfl={})
+		old_project_data  = project_db.get(self.recovery_list_name,dfl=[])
+		if len(old_project_data) > 0:
+			EMErrorMessageDisplay.run("Recovering %s database (for back compatibility)" %self.recovery_list_name, "Warning")
+			for name in old_project_data:
+				if not project_data.has_key(name):
+					project_data[name] = {}
+			project_db[self.data_dict_name] = project_data
+			
+		project_db[ self.recovery_list_name] = None
 
 	
 class SPRInitTask(WorkFlowTask):
@@ -693,13 +950,11 @@ class EMRawDataReportTask(WorkFlowTask):
 		'''
 		Gets an EM2DFileTable - this is type of class that the emform knows how to handle 
 		'''
-		EMProjectBackCompat.recover_list_to_dict_from_old_name(self.project_list,"global.spr_raw_file_names")
-		EMProjectListCleanup.clean_up_project_file_dict(self.project_list) # in case things have gone missing
-		project_db = db_open_dict("bdb:project")
-		project_data = project_db.get(self.project_list,dfl={})
-		project_names = project_data.keys()
-		self.project_data_at_init = project_data # so if the user hits cancel this can be reset
-
+		
+		data_dict = EMProjectDataDict(self.project_list)
+		self.project_data_at_init = data_dict.get_data_dict() # so if the user hits cancel this can be reset
+		project_names = data_dict.keys()
+		
 		from emform import EM2DFileTable,EMFileTable
 		table = EM2DFileTable(project_names,desc_short="Raw Data Files",desc_long="")
 		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(self.project_list)
@@ -744,21 +999,20 @@ class EMRawDataReportTask(WorkFlowTask):
 			def __init__(self,project_list):
 				self.project_list = project_list
 			def __call__(self,names,table_widget):
-#		def remove_files_from_project(self,names,table_widget):
 				if len(names) == 0: return # nothing happened
 			
 				from emform import get_table_items_in_column
 				entries = get_table_items_in_column(table_widget,0)
 				text_entries = [table_widget.convert_text(str(i.text())) for i in entries]
 				
-				project_db = db_open_dict("bdb:project")
-				project_data  = project_db.get(self.project_list,dfl={})
-				project_names = project_data.keys()
+				data_dict = EMProjectDataDict(self.project_list)
+				project_names = data_dict.keys()
 				
 				full_names = [table_widget.convert_text(name) for name in names]
 		
 				for name in full_names:
 					if name not in project_names:
+						# this shouldn't happen 
 						EMErrorMessageDisplay.run(["%s is not in the project list" %name])
 						return
 				
@@ -767,10 +1021,8 @@ class EMRawDataReportTask(WorkFlowTask):
 				indices.reverse()
 				for idx in indices:
 					table_widget.removeRow(idx)
-					project_data.pop(text_entries[idx])
 					
-				
-				project_db[self.project_list] = project_data
+				data_dict.remove_names(full_names)
 				
 		class AddFilesToProject:
 			def __init__(self,project_list):
@@ -778,10 +1030,8 @@ class EMRawDataReportTask(WorkFlowTask):
 				
 			def __call__(self,list_of_names,table_widget):
 		
-				project_db = db_open_dict("bdb:project")
-				project_data = project_db.get(self.project_list,dfl={})
-				project_names = project_data.keys()
-				project_name_tags = [get_file_tag(name) for name in project_names]
+				data_dict = EMProjectDataDict(self.project_list)
+				project_names = data_dict.keys()
 				
 				for name in list_of_names:
 					if not file_exists(name):
@@ -789,19 +1039,14 @@ class EMRawDataReportTask(WorkFlowTask):
 						return
 				
 				for name in list_of_names:
-					if get_file_tag(name) in project_name_tags:
+					if name in project_names:
 						EMErrorMessageDisplay.run(["%s is already in the project" %name])
 						return
 						
 				# if we make it here we're good
 				# first add entries to the table
 				table_widget.add_entries(list_of_names)
-				
-				# then add names to the database
-				for name in list_of_names:
-					project_data[name] = {}
-				
-				project_db[self.project_list] = project_data
+				data_dict.add_names(list_of_names)
 		
 		class AddFilesToProjectViaContext:
 			def __init__(self,project_list):
@@ -885,10 +1130,8 @@ class AddFilesToProjectValidator():
 			if isinstance(list_of_names,str): list_of_names = [list_of_names]
 			else: raise RuntimeError("Files needs to be a list")
 		
-		project_db = db_open_dict("bdb:project")
-		project_data = project_db.get(self.project_list,dfl={})
-		project_names = project_data.keys()
-		project_name_tags = [get_file_tag(name) for name in project_names]
+		data_dict = EMProjectDataDict(self.project_list)
+		project_names = data_dict.keys()
 		
 		for name in list_of_names:
 			if not file_exists(name):
@@ -896,7 +1139,7 @@ class AddFilesToProjectValidator():
 				return 0
 		
 		for name in list_of_names:
-			if get_file_tag(name) in project_name_tags:
+			if name in project_names:
 				EMErrorMessageDisplay.run(["%s is already in the project" %name])
 				return 0
 			
@@ -1027,18 +1270,12 @@ class EMFilterRawDataTask(WorkFlowTask):
 				except:
 					error_message.append("File %s is not a valid EM image." %name)
 				
-		no_dir_names = [get_file_tag(name) for name in filenames]
-		
-		project_db = db_open_dict("bdb:project")
-		current_project_data = project_db.get(spr_raw_data_dict,dfl={})
-		current_project_files = current_project_data.keys()
-		cpft = [get_file_tag(file) for file in current_project_files]
-		
+		data_dict = EMProjectDataDict(spr_raw_data_dict)
+		project_names = data_dict.keys()
 		if params["project_associate"]:
 			for name in self.output_names:
-				
-				tag = get_file_tag(name)
-				if tag in cpft:
+				# this will change one day - the imported name will be altered
+				if name in project_names:
 					error_message.append("%s is already associated with the project" %name)
 					
 		return error_message
@@ -1116,11 +1353,8 @@ class EMFilterRawDataTask(WorkFlowTask):
 		get_application().setOverrideCursor(Qt.ArrowCursor)
 		
 		if not cancelled and params["project_associate"]:
-			project_db = db_open_dict("bdb:project")
-			current_project_data = project_db.get(spr_raw_data_dict,dfl={})
-			for name in output_names:
-				current_project_data[name] = {}
-			project_db[spr_raw_data_dict] = current_project_data
+			data_dict = EMProjectDataDict(spr_raw_data_dict)
+			data_dict.add_names(output_names)
 		
 	def get_thumb_shrink(self,nx,ny):
 		if self.thumb_shrink == -1:
@@ -1416,21 +1650,21 @@ class EMParticleReportTask(ParticleWorkFlowTask):
 	def __init__(self):
 		ParticleWorkFlowTask.__init__(self)
 		self.window_title = "Project Particles"
-		self.project_list = spr_filt_ptcls_map
+		self.project_list = spr_ptcls_dict
 		self.project_data_at_init = None
 
 	def get_project_particle_table(self):
 		EMProjectBackCompat.recover_list_to_dict_from_old_name(self.project_list,"global.spr_ptcls")
 		EMProjectListCleanup.clean_up_project_file_dict(self.project_list) # in case things have gone missing
 		
-		project_db = db_open_dict("bdb:project")
-		particle_data = project_db.get(self.project_list,dfl={})
+		data_dict = EMProjectDataDict(spr_ptcls_dict)
+		particle_data = data_dict.get_data_dict()
 		particle_names = particle_data.keys()
 		
 		self.project_data_at_init = particle_data # so if the user hits cancel this can be reset
 
 		from emform import EM2DStackTable,EMFileTable
-		table = EM2DStackTable(particle_names,desc_short="Project Particle Stacks",desc_long="")
+		table = EM2DStackTable(particle_names,desc_short="Project Particle Sets",desc_long="")
 		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(self.project_list)
 		table.add_context_menu_data(context_menu_data)
 		table.add_button_data(EMRawDataReportTask.ProjectAddRawDataButton(table,context_menu_data))
@@ -1486,13 +1720,12 @@ class EMParticleImportTask(ParticleWorkFlowTask):
 		self.window_title = "Import Particles"
 
 	def get_project_particle_table(self):
-		EMProjectBackCompat.recover_list_to_dict_from_old_name(spr_filt_ptcls_map,"global.spr_ptcls")
-		EMProjectListCleanup.clean_up_project_file_dict(spr_filt_ptcls_map) # in case things have gone missing
-		project_db = db_open_dict("bdb:project")
+		data_dict = EMProjectDataDict(spr_ptcls_dict)
+		particle_data = data_dict.get_data_dict() # this is for back compatibility only - it cleans up old databases
 		
 		from emform import EM2DStackTable,EMFileTable
 		table = EM2DStackTable([],desc_short="Particles",desc_long="")
-		context_menu_data = EMParticleImportTask.ContextMenu(spr_filt_ptcls_map)
+		context_menu_data = EMParticleImportTask.ContextMenu(spr_ptcls_dict)
 		table.add_context_menu_data(context_menu_data)
 		table.add_button_data(EMParticleImportTask.ProjectAddRawDataButton(table,context_menu_data))
 		table.insert_column_data(1,EMFileTable.EMColumnData("Particles On Disk",EMParticleReportTask.get_num_ptcls,"Particles currently stored on disk that are associated with this image"))
@@ -1551,12 +1784,8 @@ class EMParticleImportTask(ParticleWorkFlowTask):
 			s = "The command: " + cmd, "failed to complete"
 			return
 		else:
-			project_db = db_open_dict("bdb:project")
-			data = project_db.get(spr_filt_ptcls_map,dfl={})
-			for name in params["name_map"].values():
-				data[name] = {}
-			project_db[spr_filt_ptcls_map] = data
-			
+			data_dict = EMProjectDataDict(spr_ptcls_dict)
+			add_names(name in params["name_map"].values())
 		
 		self.emit(QtCore.SIGNAL("task_idle"))
 		self.form.closeEvent(None)
@@ -1702,7 +1931,9 @@ class E2BoxerTask(ParticleWorkFlowTask):
 		ParticleWorkFlowTask.__init__(self)
 		self.form_db_name = "bdb:emform.e2boxer"
 		self.report_task = None  #will eventually store a EMRawDataReportTask
-		EMProjectBackCompat.recover_list_to_dict_from_old_name(spr_filt_ptcls_map,"global.spr_ptcls")
+		
+		data_dict = EMProjectDataDict(spr_ptcls_dict)
+		dict = data_dict.get_data_dict() # this is to protect against back compatibility problems
 	
 	def get_boxes_in_database(file_name):
 		
@@ -1730,7 +1961,7 @@ class E2BoxerTask(ParticleWorkFlowTask):
 #	get_particle_dims_project = staticmethod(get_particle_dims_project)
 	
 	class ParticleColumns:
-		def __init__(self,project_dict=spr_filt_ptcls_map):
+		def __init__(self,project_dict=spr_ptcls_dict):
 			self.header_cache = {}
 			self.translation_cache = {}
 			self.project_dict = project_dict
@@ -1821,7 +2052,8 @@ class E2BoxerTask(ParticleWorkFlowTask):
 		self.report_task = EMRawDataReportTask()
 		table,n = self.report_task.get_raw_data_table()# now p is a EMParamTable with rows for as many files as there in the project
 		
-		EMProjectListCleanup.clean_up_project_file_dict(spr_filt_ptcls_map) # this is necessary for the columns_object to operate without throwing (in unusual circumstances the user deletes the particles, and this accomodates for it)
+		data_dict = EMProjectDataDict(spr_ptcls_dict)
+		dict = data_dict.get_data_dict() # this is to protect against back compatibility problems. This is necessary for the columns_object to operate without throwing (in unusual circumstances the user deletes the particles, and this accomodates for it)
 	
 		from emform import EMFileTable
 		table.insert_column_data(0,EMFileTable.EMColumnData("Stored Boxes",E2BoxerTask.get_boxes_in_database,"Boxes currently stored in the EMAN2 database"))
@@ -2159,7 +2391,7 @@ class E2BoxerOutputTask(E2BoxerTask):
 			
 			string_args = ["normproc","outformat","boxsize"]
 			bool_args = ["force","write_coord_files","write_box_images","just_output","invert_output"]
-			additional_args = ["--method=Swarm", "--auto=db","--dbls=%s" %spr_filt_ptcls_map]
+			additional_args = ["--method=Swarm", "--auto=db","--dbls=%s" %spr_ptcls_dict]
 			temp_file_name = "e2boxer_autobox_stdout.txt"
 			self.spawn_task("e2boxer.py",options,string_args,bool_args,additional_args,temp_file_name)
 			self.emit(QtCore.SIGNAL("task_idle"))
@@ -2326,8 +2558,6 @@ class E2CTFWorkFlowTask(EMParticleReportTask):
 		table.add_column_data(EMFileTable.EMColumnData("Wiener filt",self.other_column_data.get_num_wein_filt,"The number of Wiener filtered particles on disk"))
 		table.add_column_data(EMFileTable.EMColumnData("Wiener filt dims",self.other_column_data.wien_filt_dim,"The dimensions of the Wiener filtered particles"))
 		return table, n
-		
-
 	
 	class MoreCTFColumns:
 		'''
@@ -2336,8 +2566,11 @@ class E2CTFWorkFlowTask(EMParticleReportTask):
 		'''
 		def __init__(self):
 			EMProjectListCleanup.clean_up_filt_particles()
-			db = db_open_dict("bdb:project",ro=True)
-			self.db_map = db.get("global.spr_filt_ptcls_map",dfl={})
+			
+			data_dict = EMProjectDataDict(spr_ptcls_dict)
+			self.db_map = data_dict.get_data_dict()
+#			db = db_open_dict("bdb:project",ro=True)
+#			self.db_map = db.get(,dfl={})
 #			update = False
 #			for name,map in self.db_map.items():
 #				for key,image_name in map.items():
@@ -2737,7 +2970,7 @@ class E2CTFOutputTask(E2CTFWorkFlowTask):
 			self.write_db_entries(params)
 			string_args = []
 			bool_args = ["wiener","phaseflip"]
-			additional_args = ["--dbds="+"global.spr_filt_ptcls_map"]
+			additional_args = ["--dbds=%s"  %spr_ptcls_dict]
 			temp_file_name = "e2ctf_output_stdout.txt"
 			self.spawn_task("e2ctf.py",options,string_args,bool_args,additional_args,temp_file_name)
 			
@@ -2975,94 +3208,61 @@ class E2CTFGuiTaskGeneral(E2CTFGuiTask):
 		return options
 
 
-class EMPartStackOptions:
-	def __init__(self,list_name,filt_name,bdb_only=False):
-		self.list_name=list_name
-		self.filt_name  = filt_name
-		self.bdb_only = bdb_only
+class EMPartSetOptions:
+	def __init__(self,data_dict_name,bdb_only=False):
+		self.data_dict_name  = data_dict_name
+		self.bdb_only = bdb_only # restricts returned options the image sets that exist only in the database
 		self.image_count = True # if False merely counts the number of stacks - this is useful for the set choosing form
 		
 	def get_particle_options(self):
 		'''
-		
+		@return stacks map - key is the name of the filtered set, value is a list of names in the that filtered set
+		@return stacks_name_map - basic map - maps the selection string (e.g. "Original Data (2)" ) to the real name of the filtered set (e.g. "Original Data")
+		@return choices a list of choices such as [ "Original Data (2)","Wiener Filtered (2)" ]
+		@return name_map a way to map whichever name to the main key in the data base dictionary.e.g. key="bdb:particles#1100_ptcls_wienered", value="bdb:particles#1100_ptcls"
 		'''
-		EMProjectBackCompat.recover_list_to_dict_from_old_name(self.filt_name,self.list_name)
-		EMProjectListCleanup.clean_up_project_file_dict(self.filt_name)
+		data_dict = EMProjectDataDict(self.data_dict_name)
+
 		stacks_map = {} # used to cache data in get_params
 		stacks_name_map = {} # used to recall which selection was taken	
 		db = db_open_dict("bdb:project")
-#		particle_names = db.get(self.list_name,dfl=[])
-		
-		
-#		ptcls = None
+
 		name_map = {} # a way to map a filtered image to its originating image
-#		if db.has_key(self.list_name):
-#			ptcls = db[self.list_name]
-#			for name in ptcls:
-#				if not file_exists(name): break
-#				
-#				if self.bdb_only != False and ( len(name) > 3 and name[:4] != "bdb:"):
-#					break
-#				n += EMUtil.get_image_count(name)
-#				name_map[name] = name # this makes things simple at other points in the code. please leave
-#				
-#			stacks_map["Particles"] = ptcls
-				
-		# now build up the list of filtered things
-		#EMProjectListCleanup.clean_up_filt_particles(self.filt_name)
 		filter_opts = {} # key is the filter type, value is the number of images with this filter type
-		n = 0
-		if db.has_key(self.filt_name):
-			main_map = db[self.filt_name]
-			n = 0
-			ptcls = main_map.keys()
-			for name in ptcls:
-				if self.bdb_only != False and ( len(name) > 3 and name[:4] != "bdb:"):
+		main_dict = data_dict.get_data_dict()
+
+		for name,d in main_dict.items():
+			for filt,ptcl_name in d.items():
+				if self.bdb_only != False and ( len(ptcl_name) > 3 and ptcl_name[:4] != "bdb:"): 
 					continue
-				if self.image_count: n += EMUtil.get_image_count(name)
-				else: n += 1
-				name_map[name] = name # this makes things simple at other points in the code. please leave
-			
-			if len(ptcls) > 0 :
-				stacks_map["Particles"] = ptcls
-			
-			
-			for name,d in main_map.items():
-				if ptcls != None and name not in ptcls:
-					continue 
-				for filt,ptcl_name in d.items():
-					if self.bdb_only != False and ( len(ptcl_name) > 3 and ptcl_name[:4] != "bdb:"): 
-						continue
-					name_map[ptcl_name] = name
-					if filter_opts.has_key(filt):
-						if self.image_count: filter_opts[filt] += EMUtil.get_image_count(ptcl_name)
-						else: filter_opts[filt] += 1
-						stacks_map[filt].append(ptcl_name)
-					else:
-						if self.image_count: filter_opts[filt] = EMUtil.get_image_count(ptcl_name)
-						else: filter_opts[filt] = 1
-						stacks_map[filt] = [ptcl_name]
+				name_map[ptcl_name] = name
+				if filter_opts.has_key(filt):
+					if self.image_count: filter_opts[filt] += EMUtil.get_image_count(ptcl_name)
+					else: filter_opts[filt] += 1
+					stacks_map[filt].append(ptcl_name)
+				else:
+					if self.image_count: filter_opts[filt] = EMUtil.get_image_count(ptcl_name)
+					else: filter_opts[filt] = 1
+					stacks_map[filt] = [ptcl_name]
 		
 		choices = []
-		if n != 0:
-			ptcl_name = "Particles ("+str(n)+")"
-			choices.append(ptcl_name)
-			stacks_name_map[ptcl_name] = "Particles"
 		for filt,num in filter_opts.items():
 			name = filt+" ("+str(num)+")"
 			choices.append( name )
 			stacks_name_map[name] = filt
-			
+		
 		return stacks_map, stacks_name_map,choices,name_map
+	
 
-class EMParticleOptions(EMPartStackOptions):
+
+class EMParticleOptions(EMPartSetOptions):
 	''' 
 	e2refine2d and e2refine, from with the worklfow setting, both want to know the same 
 	thing, basically, what are the available particles (including filtered options)
 	'''
 	
 	def __init__(self,bdb_only=False):
-		EMPartStackOptions.__init__(self,"global.spr_ptcls","global.spr_filt_ptcls_map",bdb_only)
+		EMPartSetOptions.__init__(self,spr_ptcls_dict,bdb_only)
 	
  		 	
 class E2ParticleExamineChooseDataTask(ParticleWorkFlowTask):
@@ -3079,7 +3279,6 @@ class E2ParticleExamineChooseDataTask(ParticleWorkFlowTask):
 		self.particles_map, self.particles_name_map,choices,self.name_map = ptcl_opts.get_particle_options()
 			
 		params = []		
-			
 		
 		#if as_string:
 		#params.append(ParamDef(name="particle_set_choice",vartype="string",desc_long="Choose the particle data set you wish to use to generate a starting data for e2refine2d",desc_short=title,property=None,defaultunits=db.get("particle_set_choice",dfl=""),choices=choices))
@@ -3095,15 +3294,15 @@ class E2ParticleExamineChooseDataTask(ParticleWorkFlowTask):
 
 			choice = params["particle_set_choice"]
 			
-			name_map = {}
-			particles = self.particles_map[self.particles_name_map[choice]]
-			for name in particles:
-				if self.name_map.has_key(name):
-					name_map[name] = get_file_tag(self.name_map[name])
-				else:
-					name_map[name] = get_file_tag(name)
+#			name_map = {}
+#			particles = self.particles_map[self.particles_name_map[choice]]
+#			for name in particles:
+#				if self.name_map.has_key(name):
+#					name_map[name] = get_file_tag(self.name_map[name])
+#				else:
+#					name_map[name] = get_file_tag(name)
 					
-			self.emit(QtCore.SIGNAL("replace_task"),E2ParticleExamineTask(particles,name_map),"Particle Stack Examination")
+			self.emit(QtCore.SIGNAL("replace_task"),E2ParticleExamineTask(particles,self.name_map),"Particle Set Examination")
 		
 		self.form.closeEvent(None)
 		self.form = None
@@ -3116,7 +3315,7 @@ class E2ParticleExamineTask(E2CTFWorkFlowTask):
 	'''This task is for defining bad particles. Double click on the particle stack you want to examine and then (once the stack viewer has loaded) click on particles to define them as bad. You can come back and review your bad particle selections at any time. You can write stacks that exclude particles you've defined as bad using 'Make Particle Set' tool.'''
 	def __init__(self,particle_stacks=[],name_map={}):
 		E2CTFWorkFlowTask.__init__(self)
-		self.window_title = "Particle Stack Examination"
+		self.window_title = "Particle Set Examination"
 		self.particle_stacks = particle_stacks
 		self.name_map = name_map
 
@@ -3142,12 +3341,10 @@ class E2ParticleExamineTask(E2CTFWorkFlowTask):
 		def num_bad_particles(self,filename):
 			if not db_check_dict("bdb:select"): return "0"
 			if not self.name_map.has_key(filename):
-				print filename
-				print self.name_map
 				EMErrorMessageDisplay.run(["The name map doesn't have the %s key" %filename])
 				return "0"
 		
-			db_name = get_file_tag(self.name_map[filename])
+			db_name = self.name_map[filename]
 			db = db_open_dict("bdb:select",ro=True)
 			if not db.has_key(db_name): return "0"
 			set_list = db[db_name]
@@ -3171,7 +3368,7 @@ class E2ParticleExamineTask(E2CTFWorkFlowTask):
 		self.emit(QtCore.SIGNAL("task_idle"))
 
  		 	
-class E2MakeStackChooseDataTask(E2ParticleExamineChooseDataTask):
+class E2MakeSetChooseDataTask(E2ParticleExamineChooseDataTask):
 	"""Choose the particle data you wish to examine. This will pop a second form listing the particles stacks along with other relevant information"""
 	documentation_string = "Choose the data for particle examination" 
 	def __init__(self):
@@ -3194,17 +3391,17 @@ class E2MakeStackChooseDataTask(E2ParticleExamineChooseDataTask):
 						name_map[name] = get_file_tag(name)
 			particles = self.particles_map[self.particles_name_map[choice]]
 			
-			self.emit(QtCore.SIGNAL("replace_task"),E2MakeStackTask(particles,name_map,self.name_map),"Make Particle Sets")
+			self.emit(QtCore.SIGNAL("replace_task"),E2MakeSetTask(particles,name_map,self.name_map),"Make Particle Sets")
 		
 		self.form.closeEvent(None)
 		self.form = None
 		
 		self.write_db_entries(params)
 		
-class E2MakeStackTask(E2ParticleExamineTask):
-	'''This task is for making agglomerated particle sets which function as input for the 2D and 3D refinement tasks. Stacks for any linked particle sets (such as phase flipped or Wiener filtered data) are automatically generated. You can choose to exclude any bad particles that you have defined.'''
+class E2MakeSetTask(E2ParticleExamineTask):
+	'''This task is for making agglomerated particle sets which function as input for the 2D and 3D refinement tasks. Sets for any linked particle sets (such as phase flipped or Wiener filtered data) are automatically generated. You can choose to exclude any bad particles that you have defined.'''
 	def __init__(self,particle_stacks=[],name_map={},data_name_map={}):
-		E2ParticleExamineTask.__init__(self,particle_stacks,name_map)
+		E2ParticleExamineTask.__init__(self,particle_stacks,data_name_map)
 		self.window_title = "Make Particle Sets"
 		self.form_db_name = "bdb:emform.make_ptcl_set"
 		self.data_name_map = data_name_map
@@ -3213,7 +3410,7 @@ class E2MakeStackTask(E2ParticleExamineTask):
 		params = E2ParticleExamineTask.get_params(self)
 		
 		db = db_open_dict(self.form_db_name) # see eman wiki for a list of what args are kept in this db
-	   	pstack_name = ParamDef(name="stack_name",vartype="string",desc_short="Stack Name",desc_long="What you want to call this stack. Leave out file types (such as hdf,bdb etc). Names for any linked particle sets will be generated automatically.",property=None,defaultunits=db.get("stack_name",dfl="set"),choices=None)
+	   	pstack_name = ParamDef(name="stack_name",vartype="string",desc_short="Set Name",desc_long="What you want to call this stack. Leave out file types (such as hdf,bdb etc). Names for any linked particle sets will be generated automatically.",property=None,defaultunits=db.get("stack_name",dfl="set"),choices=None)
 		pexclude_bad = ParamDef(name="exclude_bad",vartype="boolean",desc_short="Exclude Bad Particles",desc_long="Exclude bad particles from generated stack(s)",property=None,defaultunits=db.get("exclude_bad",dfl=True),choices=None)
  	
  		params.append(pstack_name)
@@ -3238,8 +3435,8 @@ class E2MakeStackTask(E2ParticleExamineTask):
 		
 	def execute(self,params):
 		db = db_open_dict("bdb:project")
-		if not db.has_key("global.spr_filt_ptcls_map"):
-			EMErrorMessageDisplay.run("Something is wrong, the global.spr_filt_ptcls_map is supposed to exist")
+		if not db.has_key(spr_ptcls_dict):
+			EMErrorMessageDisplay.run("Something is wrong, the global.spr_ptcls_dict is supposed to exist")
 			return False
 		
 		base_stack_root = params["stack_name"]
@@ -3247,39 +3444,58 @@ class E2MakeStackTask(E2ParticleExamineTask):
 		if file_exists(test_stack_name):
 			EMErrorMessageDisplay.run("The %s stack already exists. Remove it, or try a different name" %test_stack_name)
 			return False
+
+		data_dict = EMProjectDataDict(spr_ptcls_dict)
+		project_data = data_dict.get_data_dict()
+		project_names = data_dict.keys()
 		
-		EMProjectListCleanup.clean_up_filt_particles()
-		db_map = db["global.spr_filt_ptcls_map"]
-			
-		output_data_map = {}	
-		if params["filenames"][0] in db_map.keys():
-			 for name in params["filenames"]:
-			 	output_data_map[name] = db_map[name]
-		else:
-			if len(db_map) > 0:
-				for name in params["filenames"]:
-					real_name = self.data_name_map[name]
-					output_data_map[real_name] = db_map[real_name]
-				
+#		output_data_map = {}	
+#		if params["filenames"][0] in db_map.keys():
+#			 for name in params["filenames"]:
+#			 	output_data_map[name] = db_map[name]
+#		else:
+#			if len(db_map) > 0:
+#				for name in params["filenames"]:
+#					real_name = self.data_name_map[name]
+#					output_data_map[real_name] = db_map[real_name]
+		
 		output_stacks = {}
 		output_stacks[""] = []
 		stack_type_map = {}
-		for key,value in output_data_map.items():
-			output_stacks[""].append(key)
-			for filt,name in value.items():
+		
+		for name in params["filenames"]:
+			root_name = self.data_name_map[name]
+			dict = project_data[root_name]
+			for filt,name in dict.items():
 				f = "_"+filt.split()[0].lower()
+			
 				if not stack_type_map.has_key(f):
 					stack_type_map[f] = filt
+				
 				test_stack_name = "bdb:stacks#"+f+base_stack_root
 				if file_exists(test_stack_name):
 					EMErrorMessageDisplay.run("The %s stack already exists. Remove it, or try a different name" %test_stack_name)
 					return False
-					
-				if output_stacks.has_key(f):
-					output_stacks[f].append(name)
-				else:
-					
-					output_stacks[f] = [name]
+				
+				if output_stacks.has_key(f): output_stacks[f].append(name)
+				else: output_stacks[f] = [name]
+				
+		
+#		print output_data_map
+#		return
+#		for key,value in output_data_map.items():
+#			output_stacks[""].append(key)
+#			for filt,name in value.items():
+#				f = "_"+filt.split()[0].lower()
+#				if not stack_type_map.has_key(f):
+#					stack_type_map[f] = filt
+#				test_stack_name = "bdb:stacks#"+f+base_stack_root
+#				if file_exists(test_stack_name):
+#					EMErrorMessageDisplay.run("The %s stack already exists. Remove it, or try a different name" %test_stack_name)
+#					return False
+#					
+#				if output_stacks.has_key(f): output_stacks[f].append(name)
+#				else: output_stacks[f] = [name]
 					
 		
 		stacks_map = {}
@@ -3304,21 +3520,24 @@ class E2MakeStackTask(E2ParticleExamineTask):
 				if key != "": stacks_map[stack_type_map[key]] ="bdb:stacks#"+ base_stack_root+key
 			
 			
-		project_db = db_open_dict("bdb:project")
-		init_stacks = []
-		if project_db.has_key("global.spr_stacks"):
-			init_stacks = project_db["global.spr_stacks"]
-		
+#		project_db = db_open_dict("bdb:project")
+#		init_stacks = []
+#		if project_db.has_key("global.spr_stacks"):
+#			init_stacks = project_db["global.spr_stacks"]
+#		
 		stack_root = params["stack_name"]	
-		init_stacks.append("bdb:stacks#"+base_stack_root)
-		project_db["global.spr_stacks"] = init_stacks
+#		init_stacks.append("bdb:stacks#"+base_stack_root)
+#		project_db["global.spr_stacks"] = init_stacks
 		
-		init_stacks_map = {}
-		if project_db.has_key("global.spr_stacks_map"):
-			init_stacks_map = project_db["global.spr_stacks_map"]
-			
-		init_stacks_map["bdb:stacks#"+base_stack_root] = stacks_map
-		project_db["global.spr_stacks_map"] = init_stacks_map
+		stacks_data_dict = EMProjectDataDict(spr_sets_dict)
+		update_map = {}
+		update_map["bdb:stacks#"+base_stack_root] = stacks_map
+		stacks_data_dict.update(update_map)
+#		if project_db.has_key("global.spr_stacks_map"):
+#			init_stacks_map = project_db["global.spr_stacks_map"]
+#			
+#		
+#		project_db["global.spr_stacks_map"] = init_stacks_map
 		
 		return True
 		
@@ -3404,7 +3623,7 @@ class E2MakeStackTask(E2ParticleExamineTask):
 	
 		self.write_db_entries(params)
 
-class EMStackReportTask(ParticleWorkFlowTask):
+class EMSetReportTask(ParticleWorkFlowTask):
 	'''This form displays a list of the stacks you currently have associated with the project
 	'''
 	def __init__(self):
@@ -3413,11 +3632,8 @@ class EMStackReportTask(ParticleWorkFlowTask):
 		self.stack_data_at_init = []
 
 	def get_project_particle_table(self):
-		EMProjectBackCompat.recover_list_to_dict_from_old_name(spr_stacks_map,"global.spr_stacks")
-		EMProjectListCleanup.clean_up_project_file_dict(spr_stacks_map) # in case things have gone missing
-		project_db = db_open_dict("bdb:project")
-		
-		stack_data = project_db.get(spr_stacks_map,dfl={})
+		data_dict = EMProjectDataDict(spr_sets_dict)
+		stack_data = data_dict.get_data_dict()
 		stack_names = stack_data.keys()
 		
 		self.stack_data_at_init = stack_data # so if the user hits cancel this can be reset
@@ -3425,37 +3641,33 @@ class EMStackReportTask(ParticleWorkFlowTask):
 		init_stacks_map = {}
 		
 		from emform import EM2DStackTable,EMFileTable
-		table = EM2DStackTable(stack_names,desc_short="Project Particle Stacks",desc_long="")
-		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(spr_stacks_map)
+		table = EM2DStackTable(stack_names,desc_short="Project Particle Sets",desc_long="")
+		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(spr_sets_dict)
 		table.add_context_menu_data(context_menu_data)
 		table.add_button_data(EMRawDataReportTask.ProjectAddRawDataButton(table,context_menu_data))
-		table.insert_column_data(1,EMFileTable.EMColumnData("Particles On Disk",EMParticleReportTask.get_num_ptcls,"Particles in this image"))
-		table.insert_column_data(2,EMFileTable.EMColumnData("Particle Dims",EMParticleReportTask.get_particle_dims,"The dimensions of the particles that are stored on disk"))
+#		table.insert_column_data(1,EMFileTable.EMColumnData("Particles On Disk",EMParticleReportTask.get_num_ptcls,"Particles in this image"))
+#		table.insert_column_data(2,EMFileTable.EMColumnData("Particle Dims",EMParticleReportTask.get_particle_dims,"The dimensions of the particles that are stored on disk"))
 		
 		project_db = db_open_dict("bdb:project",ro=True)
-		if project_db.has_key(spr_stacks_map):
-			stacks_map = project_db[spr_stacks_map]
+		if project_db.has_key(spr_sets_dict):
 			
 			filt_options = []
-			for key,value in stacks_map.items():
+			for key,value in stack_data.items():
 				for filt,name in value.items():
 					if filt not in filt_options:
 						filt_options.append(filt)
 			
 			for filt in filt_options:
-				fsi = EMStackReportTask.FilteredStackInfo(filt)
+				fsi = EMSetReportTask.FilteredSetInfo(filt)
 				table.add_column_data(EMFileTable.EMColumnData(filt,fsi.num_particles_in_filt_stack,"The number of particles in the associated stack (if it exists)"))
 
 		return table
 	
-	class FilteredStackInfo:
+	class FilteredSetInfo:
 		def __init__(self,filt):
 			self.filt = filt
-			project_db = db_open_dict("bdb:project",ro=True)
-			if project_db.has_key(spr_stacks_map):
-				self.stacks_map = project_db[spr_stacks_map]
-			else:
-				raise NotImplementedError("The %s has to exist if you create a FilteredStackInfo" %spr_stacks_map)
+			data_dict = EMProjectDataDict(spr_sets_dict)
+			self.stacks_map = data_dict.get_data_dict()
 			
 		def num_particles_in_filt_stack(self,filename):
 			d = self.stacks_map[filename]
@@ -3477,7 +3689,7 @@ class EMStackReportTask(ParticleWorkFlowTask):
 		are not saved unless the user hits ok
 		'''
 		project_db = db_open_dict("bdb:project")
-		project_db[spr_stacks_map] = self.stack_data_at_init
+		project_db[spr_sets_dict] = self.stack_data_at_init
 
 	def get_params(self):
 		params = []
@@ -3909,14 +4121,14 @@ class E2Refine2DTask(EMClassificationTools):
 	 	
 	 	return []
 
-class EMStacksOptions(EMPartStackOptions):
+class EMSetsOptions(EMPartSetOptions):
 	''' 
 	e2refine2d and e2refine, from with the worklfow setting, both want to know the same 
 	thing, basically, what are the available stacks (including filtered options)
 	'''
 	
 	def __init__(self,bdb_only=False):
-		EMPartStackOptions.__init__(self,"global.spr_stacks","global.spr_stacks_map",bdb_only)
+		EMPartSetOptions.__init__(self,spr_sets_dict,bdb_only)
 		self.image_count = False
 
 class E2Refine2DChooseParticlesTask(ParticleWorkFlowTask):
@@ -3933,8 +4145,6 @@ class E2Refine2DChooseParticlesTask(ParticleWorkFlowTask):
 		choices.append("Specify")
 			
 		params = []		
-			
-		
 		#if as_string:
 		#params.append(ParamDef(name="particle_set_choice",vartype="string",desc_long="Choose the particle data set you wish to use to generate a starting data for e2refine2d",desc_short=title,property=None,defaultunits=db.get("particle_set_choice",dfl=""),choices=choices))
 		db = db_open_dict(self.form_db_name)
@@ -3964,12 +4174,12 @@ class E2Refine2DChooseSetsTask(ParticleWorkFlowTask):
 	documentation_string = "Choose the data you wish to use for use for running e2refine2d from the list of options below and hit OK. This will pop up a second form asking you to fill in more details.\n\nNote that usually you should have 4 options to choose from below. If you are not seeing all 4 options it means you should go back in the work flow, import particles, and generate phase flipped and Wiener filtered output." 
 	def __init__(self):
 		ParticleWorkFlowTask.__init__(self)
-		self.window_title = "Choose Stacks For e2refine2d"
+		self.window_title = "Choose Sets For e2refine2d"
 		self.preferred_size = (480,300)
 		self.form_db_name ="bdb:emform.e2refine"
 	
 	def get_params(self):
-		ptcl_opts = EMStacksOptions(bdb_only=True)
+		ptcl_opts = EMSetsOptions(bdb_only=True)
 		self.particles_map, self.particles_name_map,choices,unused = ptcl_opts.get_particle_options()
 		choices.append("Specify")
 			
@@ -4000,14 +4210,13 @@ class E2Refine2DChooseSetsTask(ParticleWorkFlowTask):
 		self.write_db_entries(params)
 		
 class E2RefFreeClassAveTool():
+	def __init__(self):
+		self.project_data_at_init = None
 	
 	def get_reference_free_class_averages_table(self):
-		EMProjectBackCompat.recover_list_to_dict_from_old_name(spr_rfca_dict,"global.spr_ref_free_class_aves")
-		EMProjectListCleanup.clean_up_project_file_dict(spr_rfca_dict)
-		project_db = db_open_dict("bdb:project")
-		data = project_db.get(spr_rfca_dict,dfl={})
-			
-		self.project_files_at_init = data # so if the user hits cancel this can be reset
+		data_dict = EMProjectDataDict(spr_rfca_dict)
+		data = data_dict.get_data_dict()
+		self.project_data_at_init = data # so if the user hits cancel this can be reset
 		names = data.keys()
 		from emform import EM2DStackTable,EMFileTable
 		table = EM2DStackTable(names,desc_short="Class Averages",desc_long="")
@@ -4025,7 +4234,7 @@ class E2RefFreeClassAveTool():
 		are not saved unless the user hits ok
 		'''
 		project_db = db_open_dict("bdb:project")
-		project_db[spr_rfca_dict] = self.project_files_at_init
+		project_db[spr_rfca_dict] = self.project_data_at_init
 		
 
 class E2Refine2DRunTask(E2Refine2DTask):
@@ -4111,7 +4320,6 @@ class E2Refine2DRunTask(E2Refine2DTask):
 				#self.display_errors([error])
 				self.show_error_message([error])
 				return
-		print "launching"
 		if self.workflow_setting: 
 			additional_args = ["--dbls=%s" %spr_rfca_dict]
 		else: 
@@ -4134,11 +4342,8 @@ class E2InitialModelsTool:
 		self.project_data_at_init = None
 	
 	def get_initial_models_table(self):
-		
-		EMProjectBackCompat.recover_list_to_dict_from_old_name(spr_init_models_dict,"global.spr_init_models")
-		EMProjectListCleanup.clean_up_project_file_dict(spr_init_models_dict)
-		project_db = db_open_dict("bdb:project")
-		init_model_data = project_db.get(spr_init_models_dict,dfl={})
+		data_dict = EMProjectDataDict(spr_init_models_dict)
+		init_model_data = data_dict.get_data_dict()
 		self.project_data_at_init = init_model_data # so if the user hits cancel this can be reset
 		init_model_names = init_model_data.keys()
 
@@ -5010,22 +5215,24 @@ class E2RefineParticlesTask(EMClassificationTools, E2Make3DTools):
 class EMChooseTask(ParticleWorkFlowTask):
 	'''Fill me in'''
 	documentation_string = "This form is for choosing e2refine input and usefilt data. After you hit ok a second form will appear asking for more parameters." 
-	def __init__(self,list_name,filt_name,ptcl_opts,choice_subscript=""):
+	def __init__(self,filt_name,ptcl_opts,choice_subscript=""):
 		ParticleWorkFlowTask.__init__(self)
 		self.window_title = "Choose Data For e2refine"
 		self.preferred_size = (480,300)
 		self.form_db_name = "bdb:emform.e2refine"
-		self.list_name = list_name
 		self.filt_name = filt_name
 		self.ptcl_opts = ptcl_opts
 		self.choice_subscript = choice_subscript # for data base uniqueness
 		self.ptcl_choice = "ptcl_choice"+choice_subscript
 		self.usefilt_ptcl_choice = "usefilt_ptcl_choice"+choice_subscript
 		self.single_selection = False
-		EMProjectListCleanup.clean_up_project_file_dict(self.filt_name)
+		
+		self.name_map = None
+		self.particles_map = None
+		self.particles_name_map = None
 		
 	def get_params(self):
-		self.particles_map, self.particles_name_map,choices,unused = self.ptcl_opts.get_particle_options()
+		self.particles_map, self.particles_name_map,choices,self.name_map = self.ptcl_opts.get_particle_options()
 		choices.append("Specify")
 		
 		db = db_open_dict(self.form_db_name)
@@ -5059,95 +5266,38 @@ class EMChooseTask(ParticleWorkFlowTask):
 		if choice == "Specify" or usefilt_choice =="Specify":
 			EMErrorMessageDisplay.run(["Specify not currently supported"])
 			return
-#			if usefilt not in ["Specify","None"]:
-#				EMErrorMessageDisplay.run("Usefilt data must be Specify or None")
-#				return
-#			else:
-#				if usefilt == "Specify":
-#					EMErrorMessageDisplay.run("Usefilt data must be Specify or None")
-#					return
-#					self.emit(QtCore.SIGNAL("replace_task"),E2Refine2DWithGenericTask(),"e2refine2d arguments")
-#				else:
 		else:
+			err = []
+			bad = []
 			filt_name = self.particles_name_map[choice]
 			ptcls = self.particles_map[filt_name]
 			db = db_open_dict("bdb:project")
-
-			if not db.has_key(self.filt_name):
-				error("Something is wrong, the %s database is supposed to exist" %self.filt_name)
-				return
-
-			db_map = db[self.filt_name]
-			prj_ptcls = db_map.keys()
 			
-			err = []
-			bad = []
-			
-			if self.particles_name_map[choice] == "Particles":
-				# this is the easiest case
-				ptcls = self.particles_map["Particles"]
-				if usefilt_choice == "Specify":
-					# this will function as a developer warning
-					EMErrorMessageDisplay.run(["Specify not currently supported"])
-					return
-				elif usefilt_choice != "None":
-					
-					filt_name = self.particles_name_map[usefilt_choice]
-					usefilt_ptcls = self.particles_map[filt_name]
-					intersection_ptcls = []
-					intersection_usefilt_ptcls = []
-					for name,filt_map in db_map.items():
-						if name in ptcls and filt_map.has_key(filt_name): # this is the correct test
-							usefilt_name = filt_map[filt_name]
-							if EMUtil.get_image_count(name) != EMUtil.get_image_count(usefilt_name):
-								err.append("The number of images in the usefilt file %s is not consistent with the particles file %s" %(usefilt_name,name))
-								bad.append(name)
-								continue
-							intersection_ptcls.append(name)
-							intersection_usefilt_ptcls.append(usefilt_name)
-				else:
-					intersection_ptcls = ptcls
-					intersection_usefilt_ptcls = None
+			data_dict = EMProjectDataDict(self.filt_name)
+			db_map = data_dict.get_data_dict()
+			ptcl_keys = db_map.keys()
+
+			if usefilt_choice != "None":
+				usefilt_name = self.particles_name_map[usefilt_choice]
 				
+				intersection_ptcls = []
+				intersection_usefilt_ptcls = []
+				
+				for name in ptcls:
+					d = self.name_map[name]
+					filt_map = db_map[d]
+					if filt_map.has_key(usefilt_name):
+						name2 = filt_map[usefilt_name]
+						if EMUtil.get_image_count(name) != EMUtil.get_image_count(name2):
+							err.append("The number of images in the usefilt file %s is not consistent with the particles file %s" %(name,name2))
+							bad.append(name)
+							continue
+						intersection_ptcls.append(name)
+						intersection_usefilt_ptcls.append(name2)
 				
 			else:
-				# then it's a filtered type, such as phase flipped
-				if not db.has_key(self.filt_name): raise NotImplementedError("Something is wrong, the global.spr_stacks_map is supposed to exist")
-
-				if usefilt_choice != "None":
-					usefilt_name = self.particles_name_map[usefilt_choice]		
-					if usefilt_name == "Particles":
-						intersection_ptcls = []
-						intersection_usefilt_ptcls = []
-						for name,filt_map in db_map.items():
-							if filt_map.has_key(filt_name) and name in prj_ptcls: # this is the correct test
-								name1 = filt_map[filt_name]
-								if EMUtil.get_image_count(name) != EMUtil.get_image_count(name1):
-#									error("The number of images in the usefilt file %s is not consistent with the particles file %s" %(name,name1))
-									err.append("The number of images in the usefilt file %s is not consistent with the particles file %s" %(name,name1))
-									bad.append(name)
-									continue
-								intersection_ptcls.append(name1)
-								intersection_usefilt_ptcls.append(name)
-						
-					else:
-						intersection_ptcls = []
-						intersection_usefilt_ptcls = []
-						
-						for name,filt_map in db_map.items():
-							if filt_map.has_key(filt_name) and filt_map.has_key(usefilt_name):
-								name1 = filt_map[filt_name]
-								name2 = filt_map[usefilt_name]
-								if EMUtil.get_image_count(name1) != EMUtil.get_image_count(name2):
-#									error("The number of images in the usefilt file %s is not consistent with the particles file %s" %(name1,name2))
-									err.append("The number of images in the usefilt file %s is not consistent with the particles file %s" %(name1,name2))
-									bad.append(name)
-									continue
-								intersection_ptcls.append(name1)
-								intersection_usefilt_ptcls.append(name2)
-				else:
-					intersection_ptcls = ptcls
-					intersection_usefilt_ptcls = None
+				intersection_ptcls = ptcls
+				intersection_usefilt_ptcls = None
 				
 			if len(err) > 0:
 				e = "\n\n All of these sets will now be automatically removed from the list of sets in the project."
@@ -5165,23 +5315,23 @@ class EMChooseTask(ParticleWorkFlowTask):
 		
 		self.write_db_entries(params)
 
-	def replace_task(self): raise NotImplementedException("Inheriting class need to implement this")
+	def replace_task(self): raise NotImplementedException("Inheriting class needs to implement this")
 
 class E2RefineChooseParticlesTask(EMChooseTask):
 	'''This form is for choosing e2refine input and usefilt data. After you hit ok a second form will appear asking for more parameters.'''
 	documentation_string = "This form is for choosing e2refine input and usefilt data. After you hit ok a second form will appear asking for more parameters." 
 	def __init__(self):
-		EMChooseTask.__init__(self,"global.spr_ptcls",spr_filt_ptcls_map,EMParticleOptions(),"")
+		EMChooseTask.__init__(self,spr_ptcls_dict,EMParticleOptions(),"")
 		self.window_title = "Choose Data For e2refine"
 		self.preferred_size = (480,300)
 		self.form_db_name = "bdb:emform.e2refine"
 
 
-class E2RefineChooseStacksTask(EMChooseTask):
+class E2RefineChooseSetsTask(EMChooseTask):
 	'''This form is for choosing e2refine input and usefilt data. After you hit ok a second form will appear asking for more parameters.'''
 	documentation_string = "This form is for choosing e2refine input and usefilt data. After you hit ok a second form will appear asking for more parameters." 
 	def __init__(self):
-		EMChooseTask.__init__(self,"global.spr_stacks",spr_stacks_map,EMStacksOptions(),"_stack")
+		EMChooseTask.__init__(self,spr_sets_dict,EMSetsOptions(),"_stack")
 		self.window_title = "Choose Data For e2refine"
 		self.preferred_size = (480,300)
 		self.form_db_name = "bdb:emform.e2refine"

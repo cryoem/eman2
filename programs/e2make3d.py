@@ -292,10 +292,14 @@ def main():
 		if isinstance(tmp_d,list): # this was added June 2009 - it's a back compatibility measure. We used to store these things as lists, but now it's dicts
 			d = {}
 			for name in tmp_d:
-				d[name] = {}
+				s = {}
+				s["Original Data"] = name
+				d[name] = s
 			
 			tmp_d = d
-		tmp_d[options.output] = {}
+		s = {}
+		s["Original Data"] = options.output
+		tmp_d[options.output] = s
 		pdb[options.dbls] = tmp_d
 
 	E2end(logger)

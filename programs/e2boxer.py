@@ -1017,11 +1017,15 @@ class RawDatabaseAutoBoxer:
 					if isinstance(particle_data,list): # this is for back compatibility - in June 2009 we transitioned from lists to dicts
 						d = {}
 						for name in particle_data:
-							d[name] = {}
+							s={}
+							s["Original Data"] = name
+							d[name] = s
 						particle_data = d
 
 					out_name = boxable.get_image_file_name(imageformat=options.outformat)
-					particle_data[out_name] = {}
+					s={}
+					s["Original Data"] = out_name
+					particle_data[out_name] = s
 					db[options.dbls] = particle_data
 		
 			if self.logid:  E2progress(self.logid,float(i+1)/len(image_names))

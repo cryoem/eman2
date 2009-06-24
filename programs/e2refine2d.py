@@ -189,10 +189,14 @@ def main():
 			if isinstance(tmp_data,list):
 				d = {}
 				for name in tmp_data:
-					d[name] = {}
+					s = {}
+					s["Original Data"] = name
+					d[name] = s
 				tmp_data = d	
 			most_recent_classes = "%s#classes_init" %options.path
-			tmp_data[most_recent_classes]= {}
+			s = {}
+			s["Original Data"] = most_recent_classes
+			tmp_data[most_recent_classes]= s
 			# global.spr_ref_free_class_aves
 			pdb[options.dbls] = tmp_data
 			
@@ -254,7 +258,9 @@ def main():
 					tmp_data.pop(most_recent_classes)
 				except: pass # the user removed it in the workflow!
 			most_recent_classes = "%s#classes_%02d" %(options.path,it)
-			tmp_data[most_recent_classes] = {}
+			s = {}
+			s["Original Data"] = most_recent_classes
+			tmp_data[most_recent_classes] = s
 			# global.spr_ref_free_class_aves
 			pdb[options.dbls] = tmp_data
 		

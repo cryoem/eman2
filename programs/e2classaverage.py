@@ -293,13 +293,7 @@ class EMGenClassAverages:
 						rslts = task_customer.get_results(tid)
 						
 						self.__write_class_data(rslts[1])
-#						for image in rslts[1]["averages"]:
-#							if image != None: image.write_image("dc_average.hdf",-1)
-#							
-#						if hasattr(self.options,"ref") and self.options.ref != None:
-#							classes.remove(rslts[1]["class_idx"])
-#							a = EMData(self.options.ref,rslts[1]["class_idx"])
-#							a.write_image("dc_average.hdf",-1)		
+
 						if self.logger != None:
 							E2progress(self.logger,1.0-len(self.task_customers)/(self.class_max+1-self.class_min))
 				

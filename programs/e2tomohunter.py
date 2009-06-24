@@ -127,14 +127,19 @@ def gen_average(options,args,logid=None):
 		db = pdb.get(options.dbls,dfl={})
 		if isinstance(db,list): # this is for back compatibility - it used to be a list, now it's a dict
 			d = {}
-			for name in db: d[name] = {}
+			for name in db:
+				s = {}
+				s["Original Data"] = name
+				d[name] = s
 			db = d
-		db[options.avgout] = {}
+		s = {}
+		s["Original Data"] = options.avgout
+		db[options.avgout] = s
 		pdb[options.dbls] = db
 
 def get_ali_data(filename,probe,aliset):
 	from emtprworkflow import EMProbeAliTools
-	from emsprworkflow import EMPartStackOptions
+	from emsprworkflow import EMPartSetOptions
 	
 	#EMProjectListCleanup.clean_up_filt_particles(self.project_list)
 	db = db_open_dict("bdb:project",ro=True)
@@ -142,7 +147,7 @@ def get_ali_data(filename,probe,aliset):
 	if db_map == None:
 		return None # calling function will barf
 	
-	ptcl_opts = EMPartStackOptions("global.tpr_ptcls","global.tpr_filt_ptcls_map")
+	ptcl_opts = EMPartSetOptions("global.tpr_ptcls_dict")
 	particles_map, particles_name_map, choices, name_map = ptcl_opts.get_particle_options()
 	tls = EMProbeAliTools()
 	probe_set_map,probe_and_ali,probe_name_map = tls.accrue_data()

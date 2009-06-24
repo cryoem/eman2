@@ -35,11 +35,7 @@ from emsprworkflow import *
 from emform import *
 from emsave import EMFileTypeValidator
 
-tpr_raw_data_dict = "global.tpr_raw_data_dict"
-tpr_filt_ptcls_map = "global.tpr_filt_ptcls_map"
-tpr_probes_dict = "global.tpr_probes_dict"
-tpr_ptcl_ave_dict = "global.tpr_ptcl_ave_dict"
-tpr_ptcls_ali_dict = "global.tpr_ptcls_ali_dict"
+
 
 class EMTomoRawDataReportTask(EMRawDataReportTask):
 	'''This form displays tomograms that are associated with the project. You browse to add raw data, or right click and choose Add.''' 
@@ -51,10 +47,8 @@ class EMTomoRawDataReportTask(EMRawDataReportTask):
 		'''
 		Gets an EMTomographicFileTable - this is type of class that the emform knows how to handle 
 		'''
-		EMProjectBackCompat.recover_list_to_dict_from_old_name(self.project_list,"global.tpr_tomograms")
-		project_db = db_open_dict("bdb:project")
-		EMProjectListCleanup.clean_up_project_file_dict(self.project_list) # in case things have gone missing
-		project_data = project_db.get(self.project_list,dfl={})
+		data_dict = EMProjectDataDict(self.project_list)
+		project_data = data_dict.get_data_dict()
 		project_names = project_data.keys()
 		self.project_data_at_init = project_data # so if the user hits cancel this can be reset
 
@@ -239,8 +233,8 @@ class EMTomohunterTask(WorkFlowTask):
 		params = []
 		db = db_open_dict(self.form_db_name)
 		
-		self.ptcl_table_tool = EMTomoPtclReportTool(tpr_ptcls_ali_dict,"Particles","targetimage",old_list="global.tpr_ptcls")
-		self.probe_tool = EMTomoPtclReportTool(tpr_probes_dict,"Probe","probeimage",old_list="global.tpr_probes")
+		self.ptcl_table_tool = EMTomoPtclReportTool(tpr_ptcls_ali_dict,"Particles","targetimage")
+		self.probe_tool = EMTomoPtclReportTool(tpr_probes_dict,"Probe","probeimage")
 		
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="SPR",desc_long="Information regarding this task",property=None,defaultunits=self.__doc__,choices=None))
 #		targetimage = ParamDef(name="targetimage",vartype="url",desc_short="target image file name",desc_long="target image file name",property=None,defaultunits=project_db.get("targetimage",dfl=[]),choices=[])
@@ -305,19 +299,15 @@ class EMTomohunterTask(WorkFlowTask):
 
 class EMTomoPtclReportTool:
 	''' has a, not is a'''
-	def __init__(self,project_dict=tpr_filt_ptcls_map,title="Set Me Please",name="filenames",old_list=None):
+	def __init__(self,project_dict=tpr_ptcls_dict,title="Set Me Please",name="filenames"):
 		self.project_dict = project_dict
 		self.project_data_at_init = None
 		self.title = title
 		self.name= name
-		self.old_list = old_list
+		
 	def get_particle_table(self):
-		if self.old_list != None:
-			EMProjectBackCompat.recover_list_to_dict_from_old_name(self.project_dict,self.old_list)
-			
-		EMProjectListCleanup.clean_up_project_file_dict(self.project_dict) # in case things have gone missing
-		project_db = db_open_dict("bdb:project")
-		ptcls_data = project_db.get(self.project_dict,dfl={})
+		data_dict = EMProjectDataDict(self.project_dict)
+		ptcls_data = data_dict.get_data_dict()
 		ptcls_list = ptcls_data.keys()
 		self.project_data_at_init = ptcls_data # so if the user hits cancel this can be reset
 
@@ -336,17 +326,16 @@ class EMTomoPtclReportTool:
 	
 class EMTomoParticleReportTask(WorkFlowTask):
 	"""This form shows the boxed tomographic particles that are associated with the project. You can optionally add your own particles."""
-	def __init__(self,project_dict=tpr_filt_ptcls_map,old_list="global.tpr_ptcls"):
+	def __init__(self,project_dict=tpr_ptcls_dict):
 		WorkFlowTask.__init__(self)
 		self.window_title = "Project Tomo Particles"
 		self.project_dict = project_dict
 		self.table_tool = None
-		self.old_list = old_list
 
 	def get_params(self):
 		params = []
 		
-		self.table_tool = EMTomoPtclReportTool(self.project_dict,self.window_title,old_list=self.old_list)
+		self.table_tool = EMTomoPtclReportTool(self.project_dict,self.window_title)
 		table = self.table_tool.get_particle_table()
 		
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
@@ -357,13 +346,13 @@ class EMTomoParticleReportTask(WorkFlowTask):
 class EMTomoProbeReportTask(EMTomoParticleReportTask):
 	"""This form shows the boxed tomographic probes that are associated with the project. Currently the only way to add probes is to browse and add them manually."""
 	def __init__(self):
-		EMTomoParticleReportTask.__init__(self,tpr_probes_dict,old_list="global.tpr_probes")
+		EMTomoParticleReportTask.__init__(self,tpr_probes_dict)
 		self.window_title = "Project Tomo Probes"
 		
 class EMTomoAveragesReportTask(EMTomoParticleReportTask):
 	"""This form shows the results of any tomographic particle averaging you have performed."""
 	def __init__(self):
-		EMTomoParticleReportTask.__init__(self,tpr_ptcl_ave_dict,old_list="global.tpr_ptcl_averages")
+		EMTomoParticleReportTask.__init__(self,tpr_ptcl_ave_dict)
 		self.window_title = "Project Tomogram Averages"
 		
 class EMTomoGenericReportTask(WorkFlowTask):
@@ -384,7 +373,7 @@ class EMTomoGenericReportTask(WorkFlowTask):
 		
 		return params
 	
-class EMBaseTomChooseFilteredPtclsTask(WorkFlowTask):
+class EMBaseTomoChooseFilteredPtclsTask(WorkFlowTask):
 	"""Choose the data""" 
 	def __init__(self):
 		WorkFlowTask.__init__(self)
@@ -392,7 +381,7 @@ class EMBaseTomChooseFilteredPtclsTask(WorkFlowTask):
 		self.preferred_size = (480,300)
 		
 	def get_params(self):
-		ptcl_opts = EMPartStackOptions("global.tpr_ptcls",tpr_filt_ptcls_map)
+		ptcl_opts = EMPartSetOptions(tpr_ptcls_dict)
 		self.particles_map, self.particles_name_map, choices, self.name_map = ptcl_opts.get_particle_options()
 		
 		#if as_string:
@@ -409,10 +398,10 @@ class EMBaseTomChooseFilteredPtclsTask(WorkFlowTask):
 	def on_form_ok(self,params):
 		raise NotImplementedException("Inheriting classes must implement this function")
 
-class EMTomoChooseAlignedSetTask(EMBaseTomChooseFilteredPtclsTask):
+class EMTomoChooseAlignedSetTask(EMBaseTomoChooseFilteredPtclsTask):
 	"""Choose the particle set for which you wish to investigate the alignment results. The available sets inlcude the raw particles, and any filtered sets you have previously generated.""" 
 	def __init__(self):
-		EMBaseTomChooseFilteredPtclsTask.__init__(self)
+		EMBaseTomoChooseFilteredPtclsTask.__init__(self)
 		self.form_db_name ="bdb:tomo.choose.filtered.ali"
 
 	def on_form_ok(self,params):
@@ -477,7 +466,7 @@ class EMTomoPtclAlignmentReportTask(WorkFlowTask):
 			self.probe = probe
 			self.ali_set = ali_set
 			if self.ali_set != None:
-				ptcl_opts = EMPartStackOptions("global.tpr_ptcls",tpr_filt_ptcls_map)
+				ptcl_opts = EMPartSetOptions(tpr_ptcls_dict)
 				self.particles_map, self.particles_name_map, choices, self.name_map = ptcl_opts.get_particle_options()
 				tls = EMProbeAliTools()
 				self.probe_set_map,self.probe_and_ali,self.probe_name_map = tls.accrue_data()
@@ -618,9 +607,8 @@ class EMTomoStoredCoordsTool:
 		self.project_data_at_init  = None
 	
 	def get_raw_data_table(self):
-		EMProjectListCleanup.clean_up_project_file_dict(self.project_list) # this is necessary for the columns_object to operate without throwing (in unusual circumstances the user deletes the particles, and this accomodates for it)
-		project_db = db_open_dict("bdb:project")
-		project_data = project_db.get(self.project_list,dfl={})
+		data_dict = EMProjectDataDict(self.project_list)
+		project_data = data_dict.get_data_dict()
 		project_names = project_data.keys()
 		self.project_data_at_init = project_data # so if the user hits cancel this can be reset
 
@@ -636,7 +624,7 @@ class EMTomoStoredCoordsTool:
 		from emform import EMFileTable
 	
 		table.insert_column_data(0,EMFileTable.EMColumnData("Stored Boxes",E2TomoBoxerGuiTask.get_tomo_boxes_in_database,"Boxes currently stored in the EMAN2 database"))
-		self.columns_object = E2BoxerTask.ParticleColumns(tpr_filt_ptcls_map)
+		self.columns_object = E2BoxerTask.ParticleColumns(tpr_ptcls_dict)
 		table.insert_column_data(1,EMFileTable.EMColumnData("Particle Dims",self.columns_object.get_particle_dims_project,"The dimensions of the particles that are stored on disk"))
 		#self.tmp = E2BoxerTask.Tmp()
 		return table
@@ -717,7 +705,7 @@ class E2TomoBoxerOutputTask(WorkFlowTask):
 			
 			string_args = ["normproc","outformat","boxsize"]
 			bool_args = ["force","writeoutput","invertoutput"]
-			additional_args = ["--dbls=%s" %tpr_filt_ptcls_map]
+			additional_args = ["--dbls=%s" %tpr_ptcls_dict]
 			temp_file_name = "e2tomoboxer_output_stdout.txt"
 			self.spawn_task("e2tomoboxer.py",options,string_args,bool_args,additional_args,temp_file_name)
 			self.emit(QtCore.SIGNAL("task_idle"))
@@ -732,10 +720,10 @@ class E2TomoBoxerOutputTask(WorkFlowTask):
 		self.form = None
 		self.emit(QtCore.SIGNAL("task_idle"))
 
-class EMTomoChooseFilteredPtclsTask(EMBaseTomChooseFilteredPtclsTask):
+class EMTomoChooseFilteredPtclsTask(EMBaseTomoChooseFilteredPtclsTask):
 	"""Choose the particle set you wish to filter. The available sets inlcude the raw particles, and any filtered sets you have previously generated.""" 
 	def __init__(self):
-		EMBaseTomChooseFilteredPtclsTask.__init__(self)
+		EMBaseTomoChooseFilteredPtclsTask.__init__(self)
 		self.form_db_name ="bdb:tomo.choose.filtered"
 
 	def on_form_ok(self,params):
@@ -762,7 +750,7 @@ class E2TomoFilterParticlesTask(WorkFlowTask):
 		self.window_title = "Filter Tomogram Particles"
 		self.output_formats = ["bdb","hdf"] # disable img from the workflow because in EMAN2 we want to store more metadata in the header
 		self.form_db_name = "bdb:emform.tomo.filter_particles"
-		self.project_dict = tpr_filt_ptcls_map
+		self.project_dict = tpr_ptcls_dict
 		self.ptcls_list = ptcls_list
 		self.name_map = name_map
 		
@@ -771,7 +759,7 @@ class E2TomoFilterParticlesTask(WorkFlowTask):
 		
 		params = []
 		
-		self.table_tool = EMTomoPtclReportTool(self.project_dict,self.window_title,old_list="global.tpr_ptcls")
+		self.table_tool = EMTomoPtclReportTool(self.project_dict,self.window_title)
 		table = self.table_tool.get_particle_table_with_ptcls(self.ptcls_list)
 		
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
@@ -882,13 +870,16 @@ class E2TomoFilterParticlesTask(WorkFlowTask):
 		self.write_db_entries(params)	
 	
 	def get_previous_filtered_set_names(self):
-		project_db = db_open_dict("bdb:project")
-		name = tpr_filt_ptcls_map
-		EMProjectListCleanup.clean_up_filt_particles(name)
-		if not project_db.has_key(name):
-			return []
+		data_dict = EMProjectDataDict(tpr_ptcls_dict)
+		db_map = data_dict.get_data_dict()
 		
-		db_map = project_db.get(name)
+#		project_db = db_open_dict("bdb:project")
+#		name = tpr_ptcls_dict
+#		EMProjectListCleanup.clean_up_filt_particles(name)
+#		if not project_db.has_key(name):
+#			return []
+#		
+#		db_map = project_db.get(name)
 		previous_sets = []
 		
 		for root_name,dict in db_map.items():
@@ -938,11 +929,13 @@ class E2TomoFilterParticlesTask(WorkFlowTask):
 		return True,"Success"
 	
 	def save_to_filt_ptcls_map(self,params,outnames):
+		data_dict = EMProjectDataDict(tpr_ptcls_dict)
+		db_map = data_dict.get_data_dict()
 		
-		project_db = db_open_dict("bdb:project")
-		project_list = tpr_filt_ptcls_map
-		EMProjectListCleanup.clean_up_filt_particles(project_list)
-		db_map = project_db.get(project_list,dfl={})
+#		project_db = db_open_dict("")
+#		project_list = tpr_ptcls_dict
+#		EMProjectListCleanup.clean_up_filt_particles(project_list)
+#		db_map = project_db.get(project_list,dfl={})
 		
 		for i,name in enumerate(params["filenames"]):
 			real_name = self.convert_to_root(name)
@@ -1191,10 +1184,10 @@ class E2TomoNormalizeInvertTask(E2TomoFilterParticlesTask):
 		return True,"Success"
 
 
-class EMTomoChooseFilteredPtclsForFiltTask(EMBaseTomChooseFilteredPtclsTask):
+class EMTomoChooseFilteredPtclsForFiltTask(EMBaseTomoChooseFilteredPtclsTask):
 	"""Choose the data you wish to filter""" 
 	def __init__(self,task_type=E2TomoFilterParticlesTask):
-		EMBaseTomChooseFilteredPtclsTask.__init__(self)
+		EMBaseTomoChooseFilteredPtclsTask.__init__(self)
 		self.form_db_name ="bdb:tomo.choose.filtered.forfilt"
 		self.task_type = task_type
 
@@ -1231,7 +1224,7 @@ class EMTomohunterTask(WorkFlowTask):
 		db = db_open_dict(self.form_db_name)
 		
 		self.ptcl_table_tool = EMTomoPtclReportTool(title="Particles",name="targetimage")
-		self.probe_tool = EMTomoPtclReportTool(tpr_probes_dict,"Probe","probeimage",old_list="global.tpr_probes")
+		self.probe_tool = EMTomoPtclReportTool(tpr_probes_dict,"Probe","probeimage")
 		
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="SPR",desc_long="Information regarding this task",property=None,defaultunits=self.__doc__,choices=None))
 #		targetimage = ParamDef(name="targetimage",vartype="url",desc_short="target image file name",desc_long="target image file name",property=None,defaultunits=project_db.get("targetimage",dfl=[]),choices=[])
@@ -1295,11 +1288,11 @@ class EMTomohunterTask(WorkFlowTask):
 		self.form = None
 
 
-class EMTomoChooseTomoHunterPtclsTask(EMBaseTomChooseFilteredPtclsTask):
+class EMTomoChooseTomoHunterPtclsTask(EMBaseTomoChooseFilteredPtclsTask):
 	"""Choose the particle set you wish to use for performing alignments. The sets available will include the raw particles and any filtered sets you have generated.""" 
 
 	def __init__(self):
-		EMBaseTomChooseFilteredPtclsTask.__init__(self)
+		EMBaseTomoChooseFilteredPtclsTask.__init__(self)
 		self.form_db_name ="bdb:tomo.choose.fortomohunter"
 
 	def on_form_ok(self,params):
@@ -1392,7 +1385,7 @@ class EMTomoGenerateAverageChooseDataTask(WorkFlowTask):
 		if len(self.probe_and_ali) != 0:
 			params.append(ParamDef(name="probe_ali_data", vartype="dict",desc_short="Probe and alignment parameters",desc_long="Select the probe and corresponding alignment set for the purpose of generating an average. This equates to choosing which alignment you want to use as the basis for generating an average", property=None, defaultunits="",choices=self.probe_and_ali  ))
 		
-		ptcl_opts = EMPartStackOptions("global.tpr_ptcls",tpr_filt_ptcls_map)
+		ptcl_opts = EMPartSetOptions(tpr_ptcls_dict)
 		self.particles_map, self.particles_name_map, choices, self.name_map = ptcl_opts.get_particle_options()
 		
 		if len(choices) > 0:
@@ -1512,19 +1505,10 @@ class EMProbeAliTools:
 		pass
 	
 	def accrue_data(self):
-		project_db = db_open_dict("bdb:project")
-#				
-#		ptcl_opts = EMPartStackOptions("global.tpr_ptcls",tpr_filt_ptcls_map)
-#		self.particles_map, self.particles_name_map, self.choices, self.name_map = ptcl_opts.get_particle_options()
-		
-		EMProjectBackCompat.recover_list_to_dict_from_old_name(tpr_probes_dict,"global.tpr_probes")
-		EMProjectBackCompat.recover_list_to_dict_from_old_name(tpr_filt_ptcls_map,"global.tpr_ptcls")
-		EMProjectListCleanup.clean_up_project_file_dict(tpr_probes_dict)
-		EMProjectListCleanup.clean_up_project_file_dict(tpr_filt_ptcls_map)
-		EMProjectListCleanup.clean_up_ali_params(tpr_ptcls_ali_dict)
-		
 		set_map = {}
-		sets = project_db.get(tpr_filt_ptcls_map,dfl={})
+		
+		ptcls_db = EMProjectDataDict(tpr_ptcls_dict)
+		sets = ptcls_db.get_data_dict()
 		
 		for ptcl,map in sets.items():
 			for filt,filt_ptcl in map.items():
@@ -1532,8 +1516,10 @@ class EMProbeAliTools:
 				
 			set_map[ptcl] = "Particles"
 		
-		probes = project_db.get(tpr_probes_dict,dfl={})
-		probes = probes.keys()
+		
+		probe_db = EMProjectDataDict(tpr_probes_dict)
+		probes = probe_db.keys()
+		project_db = db_open_dict("bdb:project")
 		ali_dict = project_db.get(tpr_ptcls_ali_dict,dfl={})
 		
 		probe_set_map = {}

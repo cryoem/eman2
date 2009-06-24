@@ -185,10 +185,15 @@ def main():
 				old_data = pdb.get(options.dbls,dfl={})
 				if isinstance(old_data,list): # in June 2009 we decided we'd transition the lists to dicts - so this little loop is for back compatibility
 					d = {}
-					for name in old_data: d[name] = {}
+					for name in old_data:
+						s = {}
+						s["Original Data"] = name
+						d[name] = s
 					old_data = d
 				
-				old_data[out_name] = {}
+				s = {}
+				s["Original Data"] = out_name
+				old_data[out_name] = s
 				pdb[options.dbls] = old_data
 			for k,l in enumerate(j[3]): l.write_image(results_name+"_%02d_proj"%(i+1),k)	# set of projection images
 			for k,l in enumerate(j[2]): 

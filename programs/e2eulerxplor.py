@@ -574,7 +574,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 	
 	
 	def alignment_time_animation(self,transforms):
-		if len(transforms) == 0: return
+		if len(transforms) < 2: return
 		animation = OrientationListAnimation(self,transforms,self.radius)
 		self.register_animatable(animation)
 			

@@ -199,10 +199,15 @@ def write_output(args,options,logid=None):
 					particle_data = db.get(options.dbls,dfl={})
 					if isinstance(particle_data,list):
 						d = {}
-						for name in particle_data: d[name] = {}
-						particle_data = {}
+						for name in particle_data: 
+							s = {}
+							s["Original Data"] = name
+							d[name] = s
+						particle_data = d
 					
-					particle_data[out_names] = {}
+					s = {}
+					s["Original Data"] = out_names
+					particle_data[out_names] = s
 					db[options.dbls] = particle_data
 			else:
 				a.write_image(out_names[i],0)
@@ -211,9 +216,15 @@ def write_output(args,options,logid=None):
 					particle_data = db.get(options.dbls,dfl={})
 					if isinstance(particle_data,list):
 						d = {}
-						for name in particle_data: d[name] = {}
-						particle_data = {}
-					particle_data[out_names[i]] = {}
+						for name in particle_data:
+							s = {}
+							s["Original Data"] = name
+							d[name] = s
+						particle_data = d
+						
+					s = {}
+					s["Original Data"] = out_names[i]
+					particle_data[out_names[i]] = s
 					db[options.dbls] = particle_data
 						
 			if logid: E2progress(logid,float(i+1)/len(coords))

@@ -42,7 +42,7 @@ from e2boxer import EMBoxerModule
 from EMAN2 import process_running,kill_process
 from emanimationutil import Animator
 from emimage import EMModuleFromFile
-from e2eulerxplor import EMAsymmetricUnitViewer
+
 import time
 import weakref
 
@@ -578,10 +578,10 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		image2d.setIcon(0,self.icons["single_image"])
 		util_list.append(image2d)
 		self.launchers["2D Image Viewer"] = self.launch_2d_image_viewer
-		stack2d = QtGui.QTreeWidgetItem(QtCore.QStringList("2D Stack Viewer"))
+		stack2d = QtGui.QTreeWidgetItem(QtCore.QStringList("2D Set Viewer"))
 		stack2d.setIcon(0,self.icons["multiple_images"])
 		util_list.append(stack2d)
-		self.launchers["2D Stack Viewer"] = self.launch_2d_stack_viewer
+		self.launchers["2D Set Viewer"] = self.launch_2d_stack_viewer
 		
 		flatform = QtGui.QTreeWidgetItem(QtCore.QStringList("Flat Form"))
 		flatform.setIcon(0,self.icons["eman"])
@@ -761,6 +761,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		get_application().setOverrideCursor(Qt.ArrowCursor)
 		
 	def launch_asym_unit(self):
+		from e2eulerxplor import EMAsymmetricUnitViewer
 		get_application().setOverrideCursor(Qt.BusyCursor)
 		module = EMAsymmetricUnitViewer(get_application(),False)
 		self.module().emit(QtCore.SIGNAL("launching_module"),"Eulers Tool",module)
@@ -769,6 +770,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		get_application().setOverrideCursor(Qt.ArrowCursor)
 		
 	def launch_eulers(self):
+		from e2eulerxplor import EMAsymmetricUnitViewer
 		get_application().setOverrideCursor(Qt.BusyCursor)
 		module = EMAsymmetricUnitViewer(get_application())
 		self.module().emit(QtCore.SIGNAL("launching_module"),"Eulers",module)
@@ -841,9 +843,9 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		module = EMImageMXModule(application=em_app)
 		data = [test_image(Util.get_irand(0,9)) for i in range(64)]
 		module.set_data(data)
-		self.module().emit(QtCore.SIGNAL("launching_module"),"2D Stack Viewer",module)
+		self.module().emit(QtCore.SIGNAL("launching_module"),"2D Set Viewer",module)
 		get_application().show_specific(module)
-		self.add_module([str(module),"2D Stack Viewer",module])
+		self.add_module([str(module),"2D Set Viewer",module])
 		get_application().setOverrideCursor(Qt.ArrowCursor)
 		module.optimally_resize()
 		
@@ -931,7 +933,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	def launch_e2resolution(self): self.launch_task(E2ResolutionTask(),"Run e2resolution")
 	def launch_e2eotest(self): self.launch_task(E2EotestTask(),"Run e2eotest")
 	def launch_resolution_report(self): self.launch_task(ResolutionReportTask(),"Resolution Report")
-	def launch_e2refine_sets(self): self.launch_task(E2RefineChooseStacksTask(),"Choose Stack For e2refine")
+	def launch_e2refine_sets(self): self.launch_task(E2RefineChooseSetsTask(),"Choose Set For e2refine")
 	def launch_e2refine(self): self.launch_task(E2RefineChooseParticlesTask(),"Choose Particles For e2refine")
 	def launch_refinement_report(self): self.launch_task(RefinementReportTask(),"Refinement Report")
 #	def launch_import_initial_model(self): self.launch_task(ImportInitialModels(),"import initial models")
@@ -939,14 +941,14 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	def launch_initmodel_report(self): self.launch_task(EMInitialModelReportTask(),"Initial Model Report")
 	def launch_refine2d_report(self): self.launch_task(E2Refine2DReportTask(),"e2refine2d Report")
 	def launch_refine2d_exec(self): self.launch_task(E2Refine2DRunTask(),"e2refine2d Parameters")
-	def	launch_refine2d_choose_stacks(self): self.launch_task(E2Refine2DChooseSetsTask(),"Choose Stacks For e2refine2d")
+	def	launch_refine2d_choose_stacks(self): self.launch_task(E2Refine2DChooseSetsTask(),"Choose Sets For e2refine2d")
 	def launch_refine2d_choose_ptcls(self): self.launch_task(E2Refine2DChooseParticlesTask(),"Choose Particles For e2refine2d")	
 	def launch_e2ctf_write_ouptut(self): self.launch_task(E2CTFOutputTask(),"e2ctf Write Output")
 	def launch_e2ctf_tune(self): self.launch_task(E2CTFGuiTask(),"e2ctf Intreface")
 	def launch_e2ctf_auto_ft(self): self.launch_task(E2CTFAutoFitTask(),"e2ctf Auto Fitting")
 	def launch_ctf_report(self):self.launch_task(CTFReportTask(),"CTF Report")
-	def launch_mis_report(self): self.launch_task(EMStackReportTask(),"Project Stacks")
-	def launch_make_ptcl_set(self):	self.launch_task(E2MakeStackChooseDataTask(),"Build Particle Set")
+	def launch_mis_report(self): self.launch_task(EMSetReportTask(),"Project Sets")
+	def launch_make_ptcl_set(self):	self.launch_task(E2MakeSetChooseDataTask(),"Build Particle Set")
 	def launch_examine_particle_stacks(self): self.launch_task(E2ParticleExamineChooseDataTask(),"Examine Particles")
 	def launch_particle_report(self): self.launch_task(EMParticleReportTask(),"Particle Report")
 	def launch_tomo_particle_report(self): self.launch_task(EMTomoParticleReportTask(),"Tomogram Particles")
