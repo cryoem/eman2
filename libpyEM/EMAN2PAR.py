@@ -668,7 +668,11 @@ class EMDCTaskClient(EMTaskClient):
 
 			for k,v in ret.items():
 				sendobj(sockf,k)
-				sendobj(sockf,v)
+				try : sendobj(sockf,v)
+				except :
+					print "ERROR on : ",k, " in ",ret.items()
+					if isinstance(v,EMData) : v.write_image("error.hdf",-1)
+					sendobj(sockf,None)
 
 			sendobj(sockf,None)
 			sockf.flush()
