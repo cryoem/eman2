@@ -359,7 +359,8 @@ def db_write_image(self,fsp,*parms):
 			db[keys[0]]=self
 			return
 		if parms[0]<0 : parms=(len(db),)+parms[1:]
-		db[parms[0]]=self
+		db.set(self,*parms) # this makes region writing work
+#		db[parms[0]] = self # this means region writing does not work
 		return
 	return self.write_image_c(fsp,*parms)
 
@@ -902,7 +903,7 @@ of these occasional errors"""
 			# write the metadata
 			try: del ad["data_path"]
 			except:pass
-
+			
 			self.put(dumps(key,-1),dumps(ad,-1),txn=self.txn)
 
 			if not self.has_key("maxrec") or key>self["maxrec"] : self["maxrec"]=key
@@ -1034,7 +1035,11 @@ of these occasional errors"""
 		try: return loads(self.bdb.get(dumps(key,-1),txn=txn))
 		except: return None
 
-	def set(self,key,val,txn=None):
+	def set(self,val,key,image_type=EMUtil.ImageType.IMAGE_UNKNOWN,read_header=False,region=None):
+		'''
+		I have to support the image_type and read_header parameters even though they are not used -
+		this is so this function can be used interchangeably with EMData.write_image 
+		'''
 		"Alternative to x[key]=val with transaction set"
 		self.open()
 		if (val==None) :
@@ -1043,12 +1048,17 @@ of these occasional errors"""
 			except: return
 		elif isinstance(val,EMData) : 
 			# decide where to put the binary data
-			ad=val.get_attr_dict()
+			if region:
+				ad = self.get_header(key)
+				#except: raise RuntimeError("If you're using a region the file must already exist")
+			else:
+				ad=val.get_attr_dict()
+				
 			pkey="%s/%s_"%(self.path,self.name)
 			fkey="%dx%dx%d"%(ad["nx"],ad["ny"],ad["nz"])
 #			print "w",fkey
 			try :
-				n=loads(self.bdb.get(fkey+dumps(key,-1),txn=txn))
+				n=loads(self.bdb.get(fkey+dumps(key,-1),txn=self.txn))
 			except:
 				if not self.has_key(fkey) : self[fkey]=0
 				else: self[fkey]+=1 
@@ -1058,14 +1068,17 @@ of these occasional errors"""
 			# write the metadata
 			try: del ad["data_path"]
 			except:pass
-
-			self.put(dumps(key,-1),dumps(ad,-1),txn=txn)
+			
+			self.put(dumps(key,-1),dumps(ad,-1),txn=self.txn)
 
 			if not self.has_key("maxrec") or key>self["maxrec"] : self["maxrec"]=key
 			if isinstance(key,int) and (not self.has_key("maxrec") or key>self["maxrec"]) : self["maxrec"]=key
 			
 			# write the binary data
-			val.write_data(pkey+fkey,n*4*ad["nx"]*ad["ny"]*ad["nz"])
+			if region:
+				val.write_data(pkey+fkey,n*4*ad["nx"]*ad["ny"]*ad["nz"],region,ad["nx"],ad["ny"],ad["nz"])
+			else:
+				val.write_data(pkey+fkey,n*4*ad["nx"]*ad["ny"]*ad["nz"])
 			
 		else :
 			self.put(dumps(key,-1),dumps(val,-1),txn=txn)

@@ -872,7 +872,7 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 				}
 			}
 			else {
-				if (fwrite(&cdata[k2 + jj * memory_row_size],
+				if (fwrite(&cdata[k2 + jj * memory_row_size+dx0*mode_size],
 						   area_row_size, 1, file) != 1) {
 					throw ImageWriteException("", "incomplete data write");
 				}

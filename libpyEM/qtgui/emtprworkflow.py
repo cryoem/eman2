@@ -685,7 +685,7 @@ class E2TomoBoxerOutputTask(WorkFlowTask):
 		
 		
 		p = self.tools.get_files_with_db_boxes_table()
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="Using e2boxer",desc_long="",property=None,defaultunits=E2BoxerOutputTask.documentation_string,choices=None))
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="Using e2boxer",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
 		params.append(p)
 		self.add_general_params(params)
 

@@ -86,10 +86,20 @@ void EMData::read_image(const string & filename, int img_index, bool nodata,
 //			}
 
 			if (!nodata) {
-				set_size(nx, ny, nz);
+				
 				if (region) {
+					nx = (int)region->get_width();
+					if (nx <= 0) nx = 1;
+					ny = (int)region->get_height();
+					if (ny <= 0) ny = 1;
+					nz = (int)region->get_depth();
+					if (nz <= 0) nz = 1;
+					set_size(nx,ny,nz);
 					to_zero(); // This could be avoided in favor of setting only the regions that were not read to to zero... but tedious
 				} // else the dimensions of the file being read match those of this
+				else {
+					set_size(nx, ny, nz);
+				}
 
 				// If GPU features are enabled there is  danger that rdata will
 				// not be allocated, but set_size takes care of this, so this
@@ -115,6 +125,7 @@ void EMData::read_image(const string & filename, int img_index, bool nodata,
 	EXITFUNC;
 }
 
+#include <sys/stat.h> 
 
 void EMData::write_image(const string & filename, int img_index,
 						 EMUtil::ImageType imgtype,
@@ -124,6 +135,9 @@ void EMData::write_image(const string & filename, int img_index,
 {
 	ENTERFUNC;
 
+	struct stat fileinfo;
+	if ( region && stat(filename.c_str(),&fileinfo) != 0 ) throw UnexpectedBehaviorException("To write an image using a region the file must already exist and be the correct dimensions");
+	
 	if (is_complex() && is_shuffled())
 		fft_shuffle();
 

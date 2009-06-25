@@ -589,13 +589,12 @@ class EMTBBoxManipulations():
 		'''
 		connects the signals of the main 2D window to the slots of this object
 		'''
-		qt_target = get_application().get_qt_emitter(self.main_2d_window)
 		
-		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mousedown"),self.mouse_down)
-		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mousedrag"),self.mouse_drag)
-		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mouseup")  ,self.mouse_up  )
-		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("keypress"),self.key_press)
-		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mousewheel"),self.mouse_wheel)
+		QtCore.QObject.connect(self.main_2d_window.emitter(),QtCore.SIGNAL("mousedown"),self.mouse_down)
+		QtCore.QObject.connect(self.main_2d_window.emitter(),QtCore.SIGNAL("mousedrag"),self.mouse_drag)
+		QtCore.QObject.connect(self.main_2d_window.emitter(),QtCore.SIGNAL("mouseup")  ,self.mouse_up  )
+		QtCore.QObject.connect(self.main_2d_window.emitter(),QtCore.SIGNAL("keypress"),self.key_press)
+		QtCore.QObject.connect(self.main_2d_window.emitter(),QtCore.SIGNAL("mousewheel"),self.mouse_wheel)
 
 	def box_collision_detect(self,coord_data):
 		'''

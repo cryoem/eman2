@@ -40,6 +40,8 @@ from math import *
 import os
 import sys
 
+a = EMUtil.ImageType.IMAGE_UNKNOWN
+
 def opt_rectangular_subdivision(x,y,n):
 		'''
 		@param x the x dimension of a matrix
@@ -82,8 +84,6 @@ def opt_rectangular_subdivision(x,y,n):
 		return best	
 
 
-
-	
 
 class EMParallelSimMX:
 	def __init__(self,options,args,logger=None):
@@ -173,8 +173,7 @@ class EMParallelSimMX:
 		block_c = self.clen/col_div
 		block_r = self.rlen/row_div
 		
-		residual_c = self.clen-block_c*total_jobs # residual left over by integer division
-		residual_r = self.rlen-block_r*total_jobs # residual left over by integer division
+		residual_c = self.clen-block_c*col_div # residual left over by integer division
 
 		blocks = []
 		
@@ -186,6 +185,7 @@ class EMParallelSimMX:
 				residual_c -= 1
 					
 			current_r = 0
+			residual_r = self.rlen-block_r*row_div # residual left over by integer division
 			for r in xrange(0,row_div) :
 				last_r = current_r + block_r
 				if residual_r > 0:
@@ -203,6 +203,30 @@ class EMParallelSimMX:
 		return blocks
 	
 	
+	def check_blocks(self,blocks):
+		e = EMData()
+		e.set_size(self.clen,self.rlen)
+		e.to_zero()
+		
+		for block in blocks:
+			tmp = EMData()
+			tmp.set_size(self.clen,self.rlen)
+			tmp.to_zero()
+			g = EMData()
+			g.set_size(block[1]-block[0],block[3]-block[2],1)
+			g.to_one()
+			tmp.insert_clip(g,[block[0],block[2],0])
+			e.add(tmp)
+			
+		f = EMData()
+		f.set_size(self.clen,self.rlen)
+		f.to_one()
+		
+		if not e == f:
+			e.write_image("e.mrc")
+			f.write_image("f.mrc")
+			(e-f).write_image("error_block.mrc")
+			print "block error",e["mean"]
 	def execute(self):
 		'''
 		The main function to be called
@@ -212,7 +236,8 @@ class EMParallelSimMX:
 			blocks = self.__get_blocks()
 	#		print blocks
 	
-				
+			self.check_blocks(blocks) # testing function
+			
 			self.task_customers = []
 			self.tids = []
 			for block in blocks:
@@ -256,7 +281,7 @@ class EMParallelSimMX:
 				
 				time.sleep(5)
 					
-			self.__finalize_writing()
+#			self.__finalize_writing()
 		else: raise NotImplementedError("The parallelism option you specified (%s) is not supported" %self.options.parallel )
 				
 	def __store_output_data(self,rslts):
@@ -264,18 +289,56 @@ class EMParallelSimMX:
 		Store output data to internal images (matrices)
 		@param a dictionary return by the EMSimTaskDC
 		'''
-		for r,d in rslts["sim_data"].items():
-			for c,data in d.items():
-				cmp = data[0]
-				tran = data[1]
-				self.mxout[0].set(c,r,cmp)
-				if self.options.saveali:
-					params = tran.get_params("2d")
-					self.mxout[1].set(c,r,params["tx"])
-					self.mxout[2].set(c,r,params["ty"])
-					self.mxout[3].set(c,r,params["alpha"])
-					self.mxout[4].set(c,r,params["mirror"])
-	
+#		min_r = None
+#		min_c = None
+#		for r,d in rslts["sim_data"].items():
+#			if min_r == None or r < min_r:
+#				min_r = r
+#			for c,data in d.items():
+#				if min_c == None or c < min_c:
+#					min_c = c
+#				cmp = data[0]
+#				tran = data[1]
+#				self.mxout[0].set(c,r,cmp)
+#				if self.options.saveali:
+#					params = tran.get_params("2d")
+#					self.mxout[1].set(c,r,params["tx"])
+#					self.mxout[2].set(c,r,params["ty"])
+#					self.mxout[3].set(c,r,params["alpha"])
+#					self.mxout[4].set(c,r,params["mirror"])
+		
+		result_data = rslts["rslt_data"]
+		output = self.args[2]
+		
+		if file_exists(output):
+			nx,ny,nz = gimme_image_dimensions3D(output)
+			remove = False
+			if nx != self.clen or ny != self.rlen:
+				remove = True		
+			if remove:
+				remove_file(output)
+		
+		if not file_exists(output):
+			e = EMData(self.clen,self.rlen)
+			e.to_zero()
+			for i in range(len(result_data)):
+				e.write_image(output,i)
+		
+		insertion_c = rslts["min_ref_idx"]
+		insertion_r = rslts["min_ptcl_idx"]
+		result_mx = result_data[0]
+		r = Region(insertion_c,insertion_r,result_mx.get_xsize(),result_mx.get_ysize())
+		#print "inserting at",insertion_r,insertion_c,result_mx.get_xsize(),result_mx.get_ysize()
+		#print min_r,min_c
+#		if insertion_c != min_c:
+#			print insertion_c,min_c
+#			raise
+#		if insertion_r != min_r:
+#			print insertion_r,min_r
+#			raise
+		for i,mxout in enumerate(result_data):
+			mxout.write_image(output,i,EMUtil.ImageType.IMAGE_UNKNOWN,False,r)
+		
 	def __finalize_writing(self):
 		'''
 		Called after all task have completed - writes the output data to disk
@@ -342,19 +405,20 @@ class EMSimTaskDC(EMTask):
 		
 		data = {}
 		for ref_idx,ref in refs.items():
-			ref.del_attr("xform.align2d")
-			aligned=ref.align(options["align"][0],ptcl,options["align"][1],options["aligncmp"][0],options["aligncmp"][1])
-
-			if options.has_key("ralign") and options["ralign"] != None: # potentially employ refine alignment
-				refine_parms=options["ralign"][1]
-				refine_parms["xform.align2d"] = aligned.get_attr("xform.align2d")
-				ref.del_attr("xform.align2d")
-				aligned = ref.align(options["ralign"][0],ptcl,refine_parms,options["raligncmp"][0],options["raligncmp"][1])		
-		
-			t =  aligned.get_attr("xform.align2d")
-			t.invert()
-			data[ref_idx] = (ptcl.cmp(options["cmp"][0],aligned,options["cmp"][1]),t)
+			if options.has_key("align") and options["align"] != None:
+				aligned=ref.align(options["align"][0],ptcl,options["align"][1],options["aligncmp"][0],options["aligncmp"][1])
+	
+				if options.has_key("ralign") and options["ralign"] != None: # potentially employ refine alignment
+					refine_parms=options["ralign"][1]
+					refine_parms["xform.align2d"] = aligned.get_attr("xform.align2d")
+					ref.del_attr("xform.align2d")
+					aligned = ref.align(options["ralign"][0],ptcl,refine_parms,options["raligncmp"][0],options["raligncmp"][1])		
 			
+				t =  aligned.get_attr("xform.align2d")
+				t.invert()
+				data[ref_idx] = (ptcl.cmp(options["cmp"][0],aligned,options["cmp"][1]),t)
+			else:
+				data[ref_idx] = (ptcl.cmp(options["cmp"][0],ref,options["cmp"][1]),None)
 			
 		return data
 	
@@ -365,13 +429,50 @@ class EMSimTaskDC(EMTask):
 		
 		sim_data = {} # It's going to be our favorite thing, a dictionary of dictionaries
 		
+		min_ptcl_idx = None
 		for ptcl_idx,ptcl in ptcls.items():
-			
+			if min_ptcl_idx == None or ptcl_idx < min_ptcl_idx:
+				min_ptcl_idx = ptcl_idx 
 			sim_data[ptcl_idx] = self.__cmp_one_to_many(ptcls[ptcl_idx],refs)
 			
 			
 		d = {}
-		d["sim_data"] = sim_data
+#		d["sim_data"] = sim_data
+		result_data = []
+		if self.options.has_key("align") and self.options["align"] != None:
+			for i in range(0,5):
+				e = EMData(len(refs),len(ptcls))
+				e.to_zero()
+				result_data.append(e)
+		else:
+			e = EMData(len(refs),len(ptcls))
+			e.to_zero()
+			result_data.append(e)
+		
+		min_ref_idx = None
+		for ref_idx in refs.keys():
+			if min_ref_idx == None or ref_idx < min_ref_idx:
+				min_ref_idx = ref_idx
+		
+		for r,dd in sim_data.items():
+			for c,data in dd.items():
+				cmp = data[0]
+				rc = c-min_ref_idx # this was a solution to a bug
+				rr = r-min_ptcl_idx # this was a solution to a bug
+				result_data[0].set(rc,rr,cmp)
+				if self.options.has_key("align") and self.options["align"] != None:
+					tran = data[1]
+					params = tran.get_params("2d")
+					result_data[1].set(rc,rr,params["tx"])
+					result_data[2].set(rc,rr,params["ty"])
+					result_data[3].set(rc,rr,params["alpha"])
+					result_data[4].set(rc,rr,params["mirror"])
+		
+		
+				
+		d["rslt_data"] = result_data
+		d["min_ref_idx"] = min_ref_idx
+		d["min_ptcl_idx"] = min_ptcl_idx
 		return d 
 	
 #	def get_return_data(self):

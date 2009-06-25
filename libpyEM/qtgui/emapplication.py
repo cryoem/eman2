@@ -316,10 +316,11 @@ class EMApplication:
 		if self.app != None:
 			self.app.setOverrideCursor(cursor_type)
 			
-	
-	def __getattr__( self, name ):
-		try: return getattr(self,name)
-		except:	return getattr( self.app, name )
+	def exec_(self):
+		self.app.exec_()
+#	def __getattr__( self, name ):
+#		try: return getattr(self,name)
+#		except:	return getattr( self.app, name )
 
 	def get_qt_emitter(self,child):
 		raise
@@ -374,6 +375,9 @@ class EMStandAloneApplication(EMApplication):
 		
 	def ensure_gl_context(self,child):
 		child.get_qt_widget().initGL()
+		
+	def processEvents(self):
+		self.app.processEvents()
 	
 	def isVisible(self,child):
 		if child.gl_widget != None:

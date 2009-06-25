@@ -97,7 +97,7 @@ inline void set_data(float* data, const int x, const int y, const int z) {
  * @author Steve Ludtke
  * @date Mon Jun 23, 2008
 */
-void write_data(string fsp,size_t loc);
+void write_data(string fsp,size_t loc,const Region* const area=0,const int file_nx=0, const int file_ny=0, const int file_nz=0);
 
 /** Read the image pixel data in native byte order from a disk file.
  * The image should already have the correct dimensions.

@@ -1112,8 +1112,8 @@ class DatabaseAutoBoxer(QtCore.QObject,RawDatabaseAutoBoxer):
 		self.form.setWindowTitle("Auto boxing parameters")
 		get_application().show_specific(self.form)
 		#print emitter
-		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
-		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
+		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_ok"),self.on_form_ok)
+		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
 
 	def on_form_ok(self,params):
 		options = EmptyObject()
@@ -1257,10 +1257,9 @@ class EMBoxerModule(QtCore.QObject):
 		from emform import EMFormModule
 		self.form = EMFormModule(self.get_params(options),get_application())
 		self.form.setWindowTitle("Boxer input variables")
-		emitter = get_application().get_qt_emitter(self.form)
-		QtCore.QObject.connect(emitter,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
-		QtCore.QObject.connect(emitter,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
-		QtCore.QObject.connect(emitter,QtCore.SIGNAL("emform_close"),self.on_form_cancel)
+		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_ok"),self.on_form_ok)
+		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
+		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_close"),self.on_form_cancel)
 		
 	def on_form_ok(self,params):
 		options = EmptyObject()
@@ -1283,10 +1282,9 @@ class EMBoxerModule(QtCore.QObject):
 			self.__auto_box_from_db(options)
 			
 	def __disconnect_form_signals(self):
-		emitter = get_application().get_qt_emitter(self.form)
-		QtCore.QObject.disconnect(emitter,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
-		QtCore.QObject.disconnect(emitter,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
-		QtCore.QObject.disconnect(emitter,QtCore.SIGNAL("emform_close"),self.on_form_cancel)	
+		QtCore.QObject.disconnect(self.form.emitter(),QtCore.SIGNAL("emform_ok"),self.on_form_ok)
+		QtCore.QObject.disconnect(self.form.emitter(),QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
+		QtCore.QObject.disconnect(self.form.emitter(),QtCore.SIGNAL("emform_close"),self.on_form_cancel)	
 		
 	def on_form_cancel(self):
 		# this means e2boxer isn't doing anything. The application should probably be told to close the EMBoxerModule
@@ -1416,9 +1414,9 @@ class EMBoxerModule(QtCore.QObject):
 		if self.guimxit != None:
 			if isinstance(self.guimxit,EMImageRotorModule):
 				self.guimxit.optimally_resize()
-				QtCore.QObject.connect(get_application().get_qt_emitter(self.guimxit),QtCore.SIGNAL("image_selected"),self.image_selected)
+				QtCore.QObject.connect(self.guimxit.emitter(),QtCore.SIGNAL("image_selected"),self.image_selected)
 			else:
-				QtCore.QObject.connect(get_application().get_qt_emitter(self.guimxit),QtCore.SIGNAL("mx_image_selected"),self.image_selected)
+				QtCore.QObject.connect(self.guimxit.emitter(),QtCore.SIGNAL("mx_image_selected"),self.image_selected)
 		
 			if isinstance(self.guimxit,EMImageRotorModule):
 				self.guimxit.set_frozen(self.boxable.is_frozen(),self.current_image_idx)
@@ -1446,14 +1444,14 @@ class EMBoxerModule(QtCore.QObject):
 		qt_target = get_application().get_qt_emitter(self.guimx)
 
 		if self.fancy_mode == EMBoxerModule.FANCY_MODE:
-			 QtCore.QObject.connect(self.guiim,QtCore.SIGNAL("inspector_shown"),self.guiim_inspector_requested)
+			 QtCore.QObject.connect(self.guimx.emitter(),QtCore.SIGNAL("inspector_shown"),self.guiim_inspector_requested)
 		#self.guimx.connect(self.guimx,QtCore.SIGNAL("removeshape"),self.removeshape)
-		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mx_image_selected"),self.box_selected)
-		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mx_mousedrag"),self.box_moved)
-		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mx_mouseup"),self.box_released)
-		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mx_boxdeleted"),self.box_image_deleted)
+		QtCore.QObject.connect(self.guimx.emitter(),QtCore.SIGNAL("mx_image_selected"),self.box_selected)
+		QtCore.QObject.connect(self.guimx.emitter(),QtCore.SIGNAL("mx_mousedrag"),self.box_moved)
+		QtCore.QObject.connect(self.guimx.emitter(),QtCore.SIGNAL("mx_mouseup"),self.box_released)
+		QtCore.QObject.connect(self.guimx.emitter(),QtCore.SIGNAL("mx_boxdeleted"),self.box_image_deleted)
 		if self.fancy_mode == EMBoxerModule.FANCY_MODE:
-			QtCore.QObject.connect(qt_target,QtCore.SIGNAL("inspector_shown"),self.guimx_inspector_requested)
+			QtCore.QObject.connect(self.guimx.emitter(),QtCore.SIGNAL("inspector_shown"),self.guimx_inspector_requested)
 		
 	def __init_guiim(self, image=None, imagename=None):
 		if image == None:
@@ -1469,20 +1467,18 @@ class EMBoxerModule(QtCore.QObject):
 		self.__update_guiim_states()
 		self.guiim.set_mouse_mode(0)
 		
-		qt_target = get_application().get_qt_emitter(self.guiim)
-			
 		self.guiim.setWindowTitle(imagename)
 		
-		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mousedown"),self.mouse_down)
-		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mousedrag"),self.mouse_drag)
-		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mouseup")  ,self.mouse_up  )
-		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("keypress"),self.keypress)
-		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mousewheel"),self.mouse_wheel)
-		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mousemove"),self.mouse_move)
+		QtCore.QObject.connect(self.guiim.emitter(),QtCore.SIGNAL("mousedown"),self.mouse_down)
+		QtCore.QObject.connect(self.guiim.emitter(),QtCore.SIGNAL("mousedrag"),self.mouse_drag)
+		QtCore.QObject.connect(self.guiim.emitter(),QtCore.SIGNAL("mouseup")  ,self.mouse_up  )
+		QtCore.QObject.connect(self.guiim.emitter(),QtCore.SIGNAL("keypress"),self.keypress)
+		QtCore.QObject.connect(self.guiim.emitter(),QtCore.SIGNAL("mousewheel"),self.mouse_wheel)
+		QtCore.QObject.connect(self.guiim.emitter(),QtCore.SIGNAL("mousemove"),self.mouse_move)
 		
-		try: qt_target.enable_timer()
-		except: pass
-		
+#		try: qt_target.enable_timer()
+#		except: pass
+#		
 	def __update_guiim_states(self):
 		self.guiim.set_other_data(self.boxable.get_exclusion_image(False),self.autoboxer.get_subsample_rate(),True)
 		self.guiim.set_frozen(self.boxable.is_frozen())
@@ -2383,7 +2379,7 @@ class EMBoxerModule(QtCore.QObject):
 				exclusions.append(name)
 		if self.output_task != None: return
 		self.output_task = E2BoxerProgramOutputTask(get_application(),self.image_names,self,exclusions)
-		QtCore.QObject.connect(self.output_task,QtCore.SIGNAL("task_idle"),self.on_output_task_idle)
+		QtCore.QObject.connect(self.output_task.emitter(),QtCore.SIGNAL("task_idle"),self.on_output_task_idle)
 		self.output_task.run_form()
 		
 	def on_output_task_idle(self):

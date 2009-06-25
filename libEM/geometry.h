@@ -607,11 +607,11 @@ namespace EMAN
 
 
 		/** get the width */
-		float get_width() { return size[0]; }
+		float get_width() const { return size[0]; }
 		/** get the height */
-		float get_height() { return size[1]; }
+		float get_height() const { return size[1]; }
 		/** get the depth */
-		float get_depth() { return size[2]; }
+		float get_depth() const { return size[2]; }
 		
 		/** set the width */
 		void set_width(const float& v) { size[0] = v; }
@@ -621,11 +621,11 @@ namespace EMAN
 		void set_depth(const float& v) { size[2] = v; }
 		
 		/** get the x element of the origin */
-		float x_origin() { return origin[0]; }
+		float x_origin() const { return origin[0]; }
 		/** get the y element of the origin */
-		float y_origin() { return origin[1]; }
+		float y_origin() const { return origin[1]; }
 		/** get the z element of the origin */
-		float z_origin() { return origin[2]; }
+		float z_origin() const { return origin[2]; }
 		
 		/** get the size of each dimension as a vector */
 		vector<float> get_size() const { return size; }

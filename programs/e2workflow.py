@@ -1075,7 +1075,6 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	
 	def pop_task_event_pair(self,task):
 		old_task = self.tasks.pop(task)
-		print "popped",old_task
 		self.event_managers.pop(task)
 		self.update_task_list()
 		

@@ -156,7 +156,7 @@ namespace EMAN
 			TypeDict d;
 			return d;
 		}
-
+		
 	  protected:
 		mutable Dict params;
 		EMData *result;
