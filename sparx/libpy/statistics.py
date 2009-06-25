@@ -4365,26 +4365,12 @@ def k_means_cuda_info(INFO):
 	print_msg('Criteria Davies-Bouldin is  : %11.6e\n' % INFO['DB'])
 
 # K-means write results output directory
-def k_means_cuda_export(PART, INFO, FLATAVE, out_seedname, mask):
+def k_means_cuda_export(PART, FLATAVE, out_seedname, mask, part = -1):
 	from utilities import print_msg
 	import os
 	
-	# clean directory if need
-	if os.path.exists(out_seedname):  os.system('rm -rf ' + out_seedname)
+	if os.path.exists(out_seedname):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 	os.mkdir(out_seedname)
-
-	# write the report on the logfile
-	time_run = int(INFO['time'])
-	time_h   = time_run / 3600
-	time_m   = (time_run % 3600) / 60
-	time_s   = (time_run % 3600) % 60
-	
-	print_msg('Running time is             : %s h %s min %s s\n' % (str(time_h).rjust(2, '0'), str(time_m).rjust(2, '0'), str(time_s).rjust(2, '0')))
-	print_msg('Number of iterations        : %i\n' % INFO['noi'])
-	print_msg('Partition criterion is      : %11.6e (total sum of squares error)\n' % INFO['Je'])
-	print_msg('Criteria Coleman is         : %11.6e\n' % INFO['C'])
-	print_msg('Criteria Harabasz is        : %11.6e\n' % INFO['H'])
-	print_msg('Criteria Davies-Bouldin is  : %11.6e\n' % INFO['DB'])
 
 	# prepare list of images id for each group
 	K   = max(PART) + 1
@@ -4417,7 +4403,8 @@ def k_means_cuda_export(PART, INFO, FLATAVE, out_seedname, mask):
 			AVE.set_attr('nobjects', len(GRP[k]))
 			AVE.set_attr('members', GRP[k])
 
-		AVE.write_image(out_seedname + "/averages.hdf", k)
+		if part == -1: AVE.write_image(out_seedname + '/averages.hdf', k)
+		else:          AVE.write_image(out_seedname + '/averages_%02i.hdf' % part, k)
 	print_msg('\n')
 
 ## K-MEANS STABILITY ######################################################################
@@ -5193,12 +5180,13 @@ See the module documentation for usage.
                 if self.marked[i][j] == 2:
                     self.marked[i][j] = 0
 
-# Hungarian algorithm between two stacks
-def Hungarian(stack1, stack2):
+# Hungarian algorithm between two partitions
+def Hungarian(part1, part2):
 	from statistics import Munkres
 	import sys
 
 	# read partitions
+	'''
 	K  = EMUtil.get_image_count(stack1)
 	im = EMData()
 	part1, part2 = [], []
@@ -5207,7 +5195,8 @@ def Hungarian(stack1, stack2):
 		part1.append(im.get_attr('members'))
 		im.read_image(stack2, k, True)
 		part2.append(im.get_attr('members'))
-
+	'''
+	K = len(part1)
 	# prepare matrix
 	MAT = [[0] * K for i in xrange(K)]
 	for k1 in xrange(K):
@@ -5225,7 +5214,7 @@ def Hungarian(stack1, stack2):
 	m = Munkres()
 	indexes = m.compute(cost_MAT)
 
-	return indexes
+	return indexes, MAT
 	
 
 # Match two partitions with hungarian algorithm

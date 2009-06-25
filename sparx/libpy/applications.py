@@ -11686,7 +11686,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 
 	elif CUDA: # added 2009-02-20 16:27:26
 		from statistics import k_means_cuda_open_im, k_means_cuda_headlog, k_means_cuda_error
-		from statistics import k_means_cuda_export, k_means_cuda_init_open_im
+		from statistics import k_means_cuda_export, k_means_cuda_init_open_im, k_means_cuda_info
 		from utilities  import model_blank, get_im, get_image
 		
 		# instance of CUDA kmeans obj
@@ -11724,7 +11724,8 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		GASG = k_means_locasg2glbasg(ASG, LUT, N)
 
 		# export data
-		k_means_cuda_export(GASG, INFO, AVE, out_dir, mask)
+		k_means_cuda_info(INFO)
+		k_means_cuda_export(GASG, AVE, out_dir, mask)
 
 		# destroy obj
 		del KmeansCUDA
@@ -12181,7 +12182,9 @@ def k_means_stab_CUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_no
 		ALL_ASG.append(PART)
 		INFO = KmeansCUDA.get_info()
 		k_means_cuda_info(INFO)
-
+		AVE  = KmeansCUDA.get_averages()
+		k_means_cuda_export(LUT, AVE, outdir, mask)
+		
 	# end of classification
 	print_end_msg('k-means')
 
