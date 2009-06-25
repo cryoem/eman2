@@ -125,6 +125,12 @@ namespace EMAN
 		void mask(double rmax, double rmin = 0.0);
 		void mask_asymmetric_unit(const string & sym);
 		void transform(Transform3D transform);
+		
+		/** Does Transform*v as opposed to v*Transform (as in the transform function)
+		 * @param transform an EMAN2 Transform object 
+		*/
+		void right_transform(const Transform& transform);
+		
 		void set_from(vector<float>);
 		void set_from(PointArray * source, const string & sym = "", Transform3D *transform=0);
 		void set_from(double *source, int num, const string & sym = "", Transform3D *transform=0);

@@ -676,6 +676,16 @@ for ( unsigned int i = 0; i < 4 * n; i += 4) {
 
 }
 
+void PointArray::right_transform(const Transform& transform) {
+	for ( unsigned int i = 0; i < 4 * n; i += 4) {
+		Vec3f v((float)points[i],(float)points[i+1],(float)points[i+2]);
+		v=transform*v;
+		points[i]  =v[0];
+		points[i+1]=v[1];
+		points[i+2]=v[2];
+	}
+
+}
 void PointArray::set_from(PointArray * source, const string & sym, Transform3D *transform)
 {
 	set_from(source->get_points_array(), source->get_number_points(), sym, transform);

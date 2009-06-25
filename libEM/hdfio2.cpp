@@ -637,7 +637,6 @@ int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
 		H5Sclose(spc);
 	}
 	
-	H5Sclose(spc);
 	H5Dclose(ds);
 	EXITFUNC;
 	return 0;

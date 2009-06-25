@@ -445,7 +445,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 	def get_inspector(self):
 		if not self.inspector : 
 			self.inspector=EMAsymmetricUnitInspector(self)
-			self.connect(self.inspector,QtCore.SIGNAL("au_selected"),self.au_selected)
+			QtCore.QObject.connect(self.inspector,QtCore.SIGNAL("au_selected"),self.au_selected)
 		return self.inspector
 
 	
@@ -520,7 +520,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 		self.events_handlers = {}
 		self.events_handlers["navigate"] = NavigationEvents(self)
 		self.events_handlers["inspect"] = ClassOrientationEvents(self)
-		self.connect(self.events_handlers["inspect"],QtCore.SIGNAL("point_selected"), self.au_point_selected)
+		QtCore.QObject.connect(self.events_handlers["inspect"],QtCore.SIGNAL("point_selected"), self.au_point_selected)
 		self.current_events_handler = self.events_handlers["inspect"]
 	
 	def au_point_selected(self,i):
@@ -542,9 +542,9 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 		if self.mx_viewer == None:
 			first = True
 			self.mx_viewer = EMImageMXModule(data=None,application=get_application())
-			self.connect(self.mx_viewer,QtCore.SIGNAL("module_closed"),self.on_mx_view_closed)
+			QtCore.QObject.connect(self.mx_viewer.emitter(),QtCore.SIGNAL("module_closed"),self.on_mx_view_closed)
 			self.mx_viewer.set_mouse_mode("app" )
-			self.connect(self.mx_viewer,QtCore.SIGNAL("mx_image_selected"), self.mx_image_selected)
+			QtCore.QObject.connect(self.mx_viewer.emitter(),QtCore.SIGNAL("mx_image_selected"), self.mx_image_selected)
 			get_application().show_specific(self.mx_viewer)
 			
 		
@@ -628,8 +628,8 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 				first = True
 				self.mx_particle_viewer = EMImageMXModule(data=None,application=get_application())
 				self.mx_particle_viewer.set_mouse_mode("app" )
-				self.connect(self.mx_particle_viewer,QtCore.SIGNAL("module_closed"),self.on_particle_mx_view_closed)
-				self.connect(self.mx_particle_viewer,QtCore.SIGNAL("mx_image_selected"), self.particle_selected)
+				QtCore.QObject.connect(self.mx_particle_viewer.emitter(),QtCore.SIGNAL("module_closed"),self.on_particle_mx_view_closed)
+				QtCore.QObject.connect(self.mx_particle_viewer.emitter(),QtCore.SIGNAL("mx_image_selected"), self.particle_selected)
 				get_application().show_specific(self.mx_particle_viewer)
 			
 			
