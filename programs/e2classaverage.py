@@ -372,8 +372,17 @@ class EMGenClassAverages:
 			final_incs = rslts["final_inclusions"]
 			if final_incs != None:
 				self.__store_weight_data(final_incs,dcol_idx_cache)
-	
-	
+				
+			if rslts.has_key("final_sigma_image") and rslts["final_sigma_image"] != None:
+				sigma = rslts["final_sigma_image"]
+				options = self.options
+				if len(options.output) > 4 and options.output[-4] == ".":
+					new_name = options.output[:-4]+"_var"+options.output[-4:]
+				else:
+					new_name = options.output+"_var"
+				sigma.set_attr("cls_src_image",options.output)
+				sigma.write_image(new_name,-1)
+					
 class EMClassAveTask(EMTask):
 	'''
 	This is the class average task used to generate class average sequentially in a single program
@@ -468,15 +477,23 @@ class EMClassAveTask(EMTask):
 		verbose = False
 		if self.options.has_key("verbose") and self.options["verbose"] != None:
 			verbose = self.options["verbose"]
+			
+		sigma_image = None
+		averager_parms =  self.options["averager"]
+		averager=Averagers.get(averager_parms[0], averager_parms[1])
+		d = averager.get_param_types()
+		if "sigma" in d.keys():
+			sigma_image = image.copy()
+			sigma_image.to_zero()
 		
-		return ptcl_indices,images,usefilt_images,norm,culling,ref,verbose
+		return ptcl_indices,images,usefilt_images,norm,culling,ref,verbose,sigma_image
 		
 	def execute(self):
 		'''
 		Called to perform class averaging 
 		May boot strap the original average, iteratively refines averages, aligns final average to ref 
 		'''
-		ptcl_indices,images,usefilt_images,norm,culling,ref,verbose = self.init_memory()
+		ptcl_indices,images,usefilt_images,norm,culling,ref,verbose,sigma_image = self.init_memory()
 		
 		ali_images = images # these are the images that used for the alignment - they can also be the usefilt images
 	   	if usefilt_images != None: ali_images = usefilt_images
@@ -484,20 +501,24 @@ class EMClassAveTask(EMTask):
 		if verbose:
 			print "################## Class",self.data["class_idx"] 
 		
+		sigma = None
+	   	if sigma_image: sigma = sigma_image.copy()
 	   	if self.options.has_key("bootstrap") and self.options["bootstrap"] == True:
 	   		if verbose:
 	   			print "Bootstrapping the initial class average, #ptcls ", len(ptcl_indices)
-	   		average,alis = self.__get_bootstrapped_average(ali_images,norm)
+	   		average,alis = self.__get_bootstrapped_average(ali_images,norm,sigma)
 	   	else:
 	   		if verbose:
 	   			print "Generating initial class average using input alignment parameters, #ptcls ", len(ptcl_indices)
-	   		average = self.__get_init_average_from_ali(images,norm)
+	   		average = self.__get_init_average_from_ali(images,norm,sigma)
 	   		alis = self.data["init_alis"]
 
 	   	all_alis = []
 	   	all_alis.append(alis)
+	   	all_sigmas = []
 	   	averages = []
 	   	averages.append(average)
+	   	if sigma != None: all_sigmas.append(sigma)
 	   	all_inclusions = []
 	   	inclusions = None
 	   	
@@ -517,8 +538,11 @@ class EMClassAveTask(EMTask):
 	   		
 	   		#print sims,threshold
 	   		
-	   		average, inclusions = self.__get_average_with_culling(images,norm,all_alis[-1],sims,threshold)
+	   		if sigma_image: sigma = sigma_image.copy()
+	   		average, inclusions = self.__get_average_with_culling(images,norm,all_alis[-1],sims,threshold,sigma)
 	   		all_inclusions.append(inclusions)
+	   		averages.append(average)
+	   		if sigma != None: all_sigmas.append(sigma)
 	   		
 	   		if verbose:
 	   			vals = inclusions.values()
@@ -527,7 +551,7 @@ class EMClassAveTask(EMTask):
 	   				kept += v
 	   			print "Calculating iterative class average ",i+1, "#ptcls",kept
 	   		#print inclusions
-	   		averages.append(average)
+	   		
 	   		
 	   	if ref != None:
 	   		if verbose:
@@ -540,12 +564,17 @@ class EMClassAveTask(EMTask):
 			for ptcl_idx,ali in all_alis[-1].items():
 				ref_alis[ptcl_idx] = ref_ali * ali
 			all_alis.append(ref_alis)
-			average = self.__get_average(images,norm,ref_alis,inclusions,center=False)
+			if sigma_image: sigma = sigma_image.copy()
+			average = self.__get_average(images,norm,ref_alis,inclusions,center=False,sigma=sigma)
 			all_inclusions.append(inclusions) # just for completeness, yes redundant, but yes generically reasonable
 			average.set_attr("xform.projection", ref.get_attr("xform.projection"))
 #			average.set_attr("projection_image",options.ref) # Have to look into this
 			average.set_attr("projection_image_idx",self.class_idx)
 			averages.append(average)
+			if sigma != None:
+				sigma.set_attr("xform.projection", ref.get_attr("xform.projection"))
+				sigma.set_attr("projection_image_idx",self.class_idx)
+				all_sigmas.append(sigma)
 		
 		if verbose:
 			print "****************** Produced",len(averages),"averages for class",self.data["class_idx"]
@@ -585,7 +614,9 @@ class EMClassAveTask(EMTask):
 			d["all_alis"] = all_alis
 			# All of the inclusion information
 			d["all_inclusions"] = all_inclusions
-			
+			if sigma_image != None:
+				d["all_sigmas"] = all_sigmas
+					
 		d["class_idx"] = self.class_idx
 		if len(averages) != 0:	d["final_average"] = averages[-1]
 		else: d["final_average"] = None
@@ -595,6 +626,9 @@ class EMClassAveTask(EMTask):
 		
 		if len(all_inclusions) != 0: d["final_inclusions"] = all_inclusions[-1]
 		else: d["final_inclusions"] = None
+		
+		if len(all_sigmas) != 0: d["final_sigma_image"] = all_sigmas[-1]
+		else: d["final_sigma_image"] = None
 		
 		
 		return d
@@ -704,7 +738,7 @@ class EMClassAveTask(EMTask):
 				
 		return alis
 	
-	def __get_bootstrapped_average(self,images,norm):
+	def __get_bootstrapped_average(self,images,norm,sigma=None):
 		'''
 		Get the bootstrapped average
 		@param images a dict. Key is particle index, values are the images that will be aligned to the average. The calling function can hand in the usefilt images. 
@@ -712,7 +746,11 @@ class EMClassAveTask(EMTask):
 		You have to call this after calling self.init_memory
 		@return the boot strapped average
 		'''
-		average = None
+		averager_parms =  self.options["averager"]
+		if sigma: averager_parms[1]["sigma"] = sigma # we use an averager only incase the sigma image is being requested
+		averager=Averagers.get(averager_parms[0], averager_parms[1])
+		
+		running_average = None # we have a running average for the boot strapping procedure
 		np = 0
 		alis = {} # holds the transformation matrices that define the alignment 
 		for ptcl_idx,image in images.items():
@@ -722,7 +760,8 @@ class EMClassAveTask(EMTask):
 #				images = self.usefilt_images[ptcl_idx]
 					
 			if (average == None):
-				average = image.copy()
+				averager.add(image)
+				running_average = image.copy()
 				alis[ptcl_idx] = Transform() # the identity
 				np = 1
 			else:
@@ -734,9 +773,11 @@ class EMClassAveTask(EMTask):
 				aligned = image.process("math.transform",{"transform":(ali_parms)})
 								
 				np += 1
-				average.add(aligned) # now add the image
+				running_average.add(aligned) # now add the image
+				averager.add(image)
 	
 		if np != 0:
+			average = averager.finish()
 			if norm != None: average.process_inplace(norm[0],norm[1])
 			average.process_inplace("xform.centeracf")
 			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
@@ -744,7 +785,7 @@ class EMClassAveTask(EMTask):
 			average.set_attr("class_ptcl_idxs",images.keys())
 		return average,alis
 
-	def __get_init_average_from_ali(self,images,norm,simga=None):
+	def __get_init_average_from_ali(self,images,norm,sigma=None):
 		'''
 		Get the initial average using initial alignment parameters
 		You have to call this after calling self.init_memory
@@ -753,11 +794,9 @@ class EMClassAveTask(EMTask):
 		@return the initial average
 		'''
 		averager_parms =  self.options["averager"]
+		if sigma: averager_parms[1]["sigma"] = sigma
+		
 		averager=Averagers.get(averager_parms[0], averager_parms[1])
-		d=averager.get_param_types()
-		if d.has_key("sigma"):
-			k = images.keys()
-			sigma = 
 		
 		weightsum = 0 # used to normalize the average
 		np = 0 # number of particles in the average
@@ -790,7 +829,7 @@ class EMClassAveTask(EMTask):
 	
 		return average
 		
-	def __get_average_with_culling(self,images,norm,alis,sims,cullthresh):
+	def __get_average_with_culling(self,images,norm,alis,sims,cullthresh,sigma=None):
 		'''
 		get an average using the given alignment parameters, similarity scores, and cull threshold
 		cull threshold can be None, in which case no attention is payed to the sims argument
@@ -802,6 +841,7 @@ class EMClassAveTask(EMTask):
 		@return the average
 		'''
 		averager_parms =  self.options["averager"]
+		if sigma: averager_parms[1]["sigma"] = sigma
 		averager=Averagers.get(averager_parms[0], averager_parms[1])
 		
 		inclusion = {} # stores a flag, True or False, indicating whether the particle was included in the class average
@@ -834,7 +874,7 @@ class EMClassAveTask(EMTask):
 			average.set_attr("class_ptcl_idxs",record)
 		return average,inclusion
 	
-	def __get_average(self,images,norm,alis,inclusions,center=True):
+	def __get_average(self,images,norm,alis,inclusions,center=True,sigma=None):
 		'''
 		get an average using the given alignment parameters and inclusion flags
 		inclusions may be None, in which case every particle is included
@@ -846,6 +886,7 @@ class EMClassAveTask(EMTask):
 		'''
 		
 		averager_parms =  self.options["averager"]
+		if sigma: averager_parms[1]["sigma"] = sigma
 		averager=Averagers.get(averager_parms[0], averager_parms[1])
 		record = [] # stores the ptcl indices, which is then stored as the "class_ptcl_idxs" header attribute
 		np = 0 # number of particles
