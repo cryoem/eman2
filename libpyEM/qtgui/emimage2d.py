@@ -519,7 +519,13 @@ class EMImage2DModule(EMGUIModule):
 		else:self.__load_display_settings_from_db()
 		
 		self.__init_mouse_handlers()
-	
+		
+	def __del__(self):
+		if self.under_qt_control:
+			self.qt_context_parent.deleteLater()
+		self.clear_gl_memory()
+		self.core_object.deleteLater()
+		
 	def get_emit_signals_and_connections(self):
 		return {"set_scale":self.set_scale,"origin_update":self.origin_update, "increment_list_data":self.increment_list_data}
 		#return {}
@@ -536,9 +542,6 @@ class EMImage2DModule(EMGUIModule):
 		self.mouse_event_handlers["draw"] = EMImage2DDrawMouseMode(self.mouse_events_mediator)
 		self.mouse_event_handler = self.mouse_event_handlers["emit"]
 		
-	def __del__(self):
-		self.clear_gl_memory()
-
 	def clear_gl_memory(self):
 		if (self.shapelist != 0):
 			glDeleteLists(self.shapelist,1)

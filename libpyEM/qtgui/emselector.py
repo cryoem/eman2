@@ -1125,7 +1125,8 @@ def EMSelectorTemplate(Type):
 			for i,mod in enumerate(self.previews):
 				if mod == module:
 					p = self.previews.pop(i)
-					self.module_events.pop(i)
+					mod = self.module_events.pop(i)
+					mod.disconnect_object()
 					# right here is where the memory should be cleaned up for the module, so you could put some print statements like this if you were memory debugging:
 					# print sys.getrefcount(p)
 					# To date I have made sure the modules are being deleted

@@ -446,7 +446,7 @@ class EMTransformPanel:
 		self.y_trans.setValue(y)
 		self.z_trans.setValue(z)
 	
-
+import weakref
 
 class EMParentWin(QtGui.QWidget,Animator):
 	"""Used to give the opengl widgets a parent, necessary for OSX Leopard"""
@@ -455,7 +455,9 @@ class EMParentWin(QtGui.QWidget,Animator):
 		Animator.__init__(self)
 #		EMEventRerouter.__init__(self,child)
 
-		self.child = child
+		self.child = weakref.ref(child)
+		child.setParent(self)
+		
 		
 		self.resize(child.width(),child.height())
 		self.setMaximumSize(8000,8000)
@@ -463,7 +465,7 @@ class EMParentWin(QtGui.QWidget,Animator):
 		self.hbl = QtGui.QVBoxLayout()
 		
 		self.hbl.setSpacing(0)
-		self.hbl.addWidget(self.child,100)
+		self.hbl.addWidget(self.child(),100)
 		if get_platform() == "Darwin": # because OpenGL widgets in Qt don't leave room in the bottom right hand corner for the resize tool
 			self.status = QtGui.QStatusBar()
 			self.status.setSizeGripEnabled(True)
@@ -473,6 +475,10 @@ class EMParentWin(QtGui.QWidget,Animator):
 			self.margin = 5
 		self.hbl.setMargin(self.margin)
 		self.setLayout(self.hbl)
+		
+	def __del__(self):
+		pass
+		#print "delete parent win"
 	
 	def get_margin(self):
 		return 50
@@ -480,25 +486,25 @@ class EMParentWin(QtGui.QWidget,Animator):
 
 	def closeEvent(self, e):
 		try:
-			self.child.closeEvent(e)
+			self.child().closeEvent(e)
 			#self.child.inspector.close()
 		except: pass
 		QtGui.QWidget.closeEvent(self,e)
 		
 	def resizeEvent(self,event):
-		self.child.resizeEvent(event)
+		self.child().resizeEvent(event)
 	
 	def get_qt_widget(self):
-		return self.child
+		return self.child()
 	
 	def update(self):
-		self.child.updateGL()
+		self.child().updateGL()
 		
 	def updateGL(self):
-		self.child.updateGL()
+		self.child().updateGL()
 	
 	def keyPressEvent(self,event):
-		self.child.keyPressEvent(event)
+		self.child().keyPressEvent(event)
 	
 	#def width(self):
 		##print "asked for width!"
@@ -508,7 +514,7 @@ class EMParentWin(QtGui.QWidget,Animator):
 		##print "asked for height!"
 		#return self.child.height()
 	def initGL(self):
-		self.child.glInit()
+		self.child().glInit()
 	
 class ImgHistogram(QtGui.QWidget):
 	""" A small fixed-size histogram widget"""

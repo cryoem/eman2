@@ -78,18 +78,29 @@ class ModuleEventsManager:
 		
 	
 	def module_closed(self):
+		self.disconnect_object()
 		self.target().module_closed(self.module())
 		
 	def module_idle(self):
+		self.disconnect_object()
 		self.target().module_idle(self.module())
 		
 	def module_ok(self,*args,**kargs):
+		self.disconnect_object()
 		self.module().closeEvent(None)
 		
 	def module_cancel(self):
+		self.disconnect_object()
 		self.module().closeEvent(None)
 	
 	
+	def disconnect_object(self):
+		QtCore.QObject.disconnect(self.module().emitter(), QtCore.SIGNAL("module_closed"), self.module_closed)
+		QtCore.QObject.disconnect(self.module().emitter(), QtCore.SIGNAL("module_idle"), self.module_idle)
+		
+		QtCore.QObject.disconnect(self.module().emitter(), QtCore.SIGNAL("ok"), self.module_ok) # yes, redundant, but time is short
+		QtCore.QObject.disconnect(self.module().emitter(), QtCore.SIGNAL("cancel"), self.module_cancel)# yes, redundant, but time is short
+		
 class EMGUIModule(EventsEmitterAndReciever):
 	FTGL = "ftgl"
 	GLUT = "glut"
@@ -128,8 +139,8 @@ class EMGUIModule(EventsEmitterAndReciever):
 		self.core_object.emit(*args,**kargs)
 		
 	def __del__(self):
-		pass
-	
+		self.core_object.deleteLater()
+		
 	def updateGL(self):
 		if self.gl_widget != None and self.under_qt_control:
 			self.gl_widget.updateGL()

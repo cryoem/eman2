@@ -1853,6 +1853,13 @@ class EMImage3DGUIModule(EMGUIModule):
 			
 		return self.gl_widget
 	
+	
+	def __del__(self):
+		if self.under_qt_control:
+			self.qt_context_parent.deleteLater()
+		self.core_object.deleteLater()
+	
+	
 	#def get_gl_widget(self,qt_parent=None):
 		#from emfloatingwidgets import EM3DGLView,EM3DGLWindow
 		#if self.gl_widget == None:

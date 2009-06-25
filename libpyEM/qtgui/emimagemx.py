@@ -694,11 +694,10 @@ class EMImageMXModule(EMGUIModule):
 		self.reroute_delete_target = None
 	
 	def __del__(self):
-		#handler = QtCore.QObjectCleanupHandler()
-		#handler.add(self)
-		#handler.remove(self)
-		#self.setObjectName("me")
+		if self.under_qt_control:
+			self.qt_context_parent.deleteLater()
 		self.clear_gl_memory()
+		self.core_object.deleteLater()
 	
 	def get_emit_signals_and_connections(self):
 		return {"set_origin":self.set_origin,"set_scale":self.set_scale,"origin_update":self.origin_update}
