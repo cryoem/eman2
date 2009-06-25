@@ -744,7 +744,7 @@ class EMClassAveTask(EMTask):
 			average.set_attr("class_ptcl_idxs",images.keys())
 		return average,alis
 
-	def __get_init_average_from_ali(self,images,norm):
+	def __get_init_average_from_ali(self,images,norm,simga=None):
 		'''
 		Get the initial average using initial alignment parameters
 		You have to call this after calling self.init_memory
@@ -754,6 +754,10 @@ class EMClassAveTask(EMTask):
 		'''
 		averager_parms =  self.options["averager"]
 		averager=Averagers.get(averager_parms[0], averager_parms[1])
+		d=averager.get_param_types()
+		if d.has_key("sigma"):
+			k = images.keys()
+			sigma = 
 		
 		weightsum = 0 # used to normalize the average
 		np = 0 # number of particles in the average

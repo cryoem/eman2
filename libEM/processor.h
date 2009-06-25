@@ -1810,11 +1810,7 @@ The basic design of EMAN Processors: <br>\
 			/**
 			* 
 			*/
-			void process_pixel(float *x) const
-			{
-				if ( Util::goodf(x) ) *x = to;
-			}
-
+			void process_pixel(float *x) const; 
 		private:
 			float to;
 	};

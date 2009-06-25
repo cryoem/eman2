@@ -456,9 +456,9 @@ void EMData::div(float f)
 {
 	ENTERFUNC;
 
-	if ( f == 0 ) {
-		throw InvalidValueException(f,"Can not divide by zero");
-	}
+// 	if ( f == 0 ) {
+// 		throw InvalidValueException(f,"Can not divide by zero");
+// 	}
 
 	mult(1.0f/f);
 	EXITFUNC;

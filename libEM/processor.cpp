@@ -270,6 +270,13 @@ template <> Factory < Processor >::Factory()
 	force_add(&CudaCorrelationProcessor::NEW);
 #endif // EMAN2_USING_CUDA
 }
+void FiniteProcessor::process_pixel(float *x) const
+{
+	if ( !Util::goodf(x) ) {
+		*x = to;
+	}
+}
+
 
 EMData* Processor::process(const EMData * const image)
 {

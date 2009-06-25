@@ -99,7 +99,7 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		self.init_color_themes()
 		
 	def set_sphere_scale(self,value):
-		if value != 0:
+		if value != 0 and value != self.sphere_scale:
 			self.sphere_scale = value
 			self.full_refresh()
 			self.updateGL()
@@ -253,6 +253,10 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		self.color_themes["Pluto"] = ["red","pearl","blue","cyan","white","black","pearl","white"]
 		self.color_themes["Indigo"] = ["black","purple","blue","green","turquoise","bluewhite","cyan","white"]
 		self.color_themes["Sun rise"] = ["blue","gold","orange","bluewhite","silver","red","pearl","white"]
+		self.color_themes["Grey Scale"] = ["black","black","black","black","white","white","white","white"]
+		self.color_themes["Red Scale"] = ["red","red","red","red","white","white","white","white"]
+		self.color_themes["Blue Scale"] = ["blue","blue","blue","blue","white","white","white","white"]
+		self.color_themes["Green Scale"] = ["emerald","emerald","emerald","emerald","white","white","white","white"]
 		
 		self.basic_color_themes = ["red","blue","green","purple","cyan","yellow","black","orange","white"]
 		
