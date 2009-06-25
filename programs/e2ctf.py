@@ -157,7 +157,7 @@ images far from focus."""
 			exit(1)
 		from emapplication import EMStandAloneApplication
 		app=EMStandAloneApplication()
-		gui=GUIctfModule(app,img_sets)
+		gui=GUIctfModule(app,img_sets,options)
 		gui.show_guis()
 		app.exec_()
 
@@ -607,7 +607,7 @@ def sfact(s):
 	# this curve should be pretty valid on the range 0.004 - 0.2934, we limit it a bit more to prevent distractions from the sharp peak
 	return pow(10.0,3.6717 - 364.58 * s + 15597 * s**2 - 4.0678e+05 * s**3 + 6.7098e+06 * s**4 - 7.0735e+07 * s**5 + 4.7839e+08 * s**6 - 2.0574e+09 * s**7 +5.4288e+09 * s**8 - 8.0065e+09 * s**9 + 5.0518e+09 * s**10)
 
-def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
+def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhint=None):
 	"""Determines CTF parameters given power spectra produced by powspec_with_bg()
 	The bgadj option will result in adjusting the bg_1d curve to better match the zeroes
 	of the CTF (in which case bg_1d is modified in place)."""
@@ -637,7 +637,11 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 		dfout=file("ctf.df.txt","w")
 
 	dfbest1=(0,-1.0e20)
-	for dfi in range(5,128):			# loop over defocus
+	if dfhint :
+		dfhint=int(dfhint*20.0)
+		rng=range(dfhint-1,dfhint+2)
+	else :rng=range(5,128)
+	for dfi in rng:			# loop over defocus
 		ac=10
 		df=dfi/20.0
 		ctf.defocus=df
@@ -875,8 +879,8 @@ except:
 from emapplication import EMQtWidgetModule
 
 class GUIctfModule(EMQtWidgetModule):
-	def __init__(self,application,data):
-		self.guictf = GUIctf(application,data,self)
+	def __init__(self,application,data,options):
+		self.guictf = GUIctf(application,data,self,options)
 		EMQtWidgetModule.__init__(self,self.guictf)
 		self.application = weakref.ref(application)
 		self.setWindowTitle("CTF")
@@ -889,7 +893,7 @@ class GUIctfModule(EMQtWidgetModule):
 		self.guictf.show_guis()
 		
 class GUIctf(QtGui.QWidget):
-	def __init__(self,application,data,module=None):
+	def __init__(self,application,data,module=None,options=None):
 		"""Implements the CTF fitting dialog using various EMImage and EMPlot2D widgets
 		'data' is a list of (filename,ctf,im_1d,bg_1d,im_2d,bg_2d)
 		"""
@@ -907,6 +911,7 @@ class GUIctf(QtGui.QWidget):
 		
 		self.app = weakref.ref(application)
 		self.module = weakref.ref(module)
+		self.options=options
 		
 		QtGui.QWidget.__init__(self,None)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "ctf.png"))
@@ -996,6 +1001,7 @@ class GUIctf(QtGui.QWidget):
 		self.recallparms = QtGui.QPushButton("Recall")
 		self.refit = QtGui.QPushButton("Refit")
 		self.output = QtGui.QPushButton("Output")
+		self.hbl_buttons.addWidget(self.refit)
 		self.hbl_buttons.addWidget(self.saveparms)
 		self.hbl_buttons.addWidget(self.recallparms)
 		self.hbl_buttons2 = QtGui.QHBoxLayout()
@@ -1065,8 +1071,12 @@ class GUIctf(QtGui.QWidget):
 #	def get_output_params(self):
 
 	def on_refit(self):
-		print "Refit not implemented yet"
-		
+		# self.data[n] contains filename,EMAN2CTF,im_1d,bg_1d,im_2d,bg_2d,qual
+		tmp=list(self.data[self.curset])
+		ctf=ctf_fit(tmp[2],tmp[3],tmp[4],tmp[5],tmp[1].voltage,tmp[1].cs,tmp[1].ampcont,tmp[1].apix,bgadj=not self.options.nosmooth,autohp=self.options.autohp,dfhint=self.sdefocus.value)
+		tmp[1]=ctf
+		self.data[self.curset]=tuple(tmp)
+		self.newSet(self.curset)
 	
 	def on_output(self):
 		from emsprworkflow import E2CTFOutputTaskGeneral
