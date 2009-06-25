@@ -99,9 +99,9 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 	int nozero = params["nozero"];
 
 	if (maxshiftx <= 0) {
-		maxshiftx = nx / 8;
-		maxshifty = ny / 8;
-		maxshiftz = nz / 8;
+		maxshiftx = nx / 4;
+		maxshifty = ny / 4;
+		maxshiftz = nz / 4;
 	}
 
 	if (maxshiftx > nx / 2 - 1) maxshiftx = nx / 2 - 1;
@@ -984,15 +984,17 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 	float sdx = 0.0;
 	float sdy = 0.0;
 	bool mirror = false;
+	Transform* t;
 	if (params.has_key("xform.align2d") ) {
-		Transform* t = params["xform.align2d"];
+		t = params["xform.align2d"];
 		Dict params = t->get_params("2d");
 		saz = params["alpha"];
 		sdx = params["tx"];
 		sdy = params["ty"];
 		mirror = params["mirror"];
-		delete t;
-		t = 0;
+		
+	} else {
+		t = new Transform(); // is the identity	
 	}
 
 	int np = 3;
@@ -1052,11 +1054,27 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 		rval = gsl_multimin_test_size(gsl_multimin_fminimizer_size(s), precision);
 	}
 
-	Transform  tsoln(Dict("type","2d","alpha",(float)gsl_vector_get(s->x, 2)));
-	tsoln.set_mirror(mirror);
-	tsoln.set_trans((float)gsl_vector_get(s->x, 0),(float)gsl_vector_get(s->x, 1));
-	EMData *result = this_img->process("math.transform",Dict("transform",&tsoln));
-	result->set_attr("xform.align2d",&tsoln);
+	int maxshift = params.set_default("maxshift",-1);
+
+	if (maxshift <= 0) {
+		maxshift = this_img->get_xsize() / 4;
+	}
+	float fmaxshift = static_cast<float>(maxshift);
+	EMData *result;
+	if ( fmaxshift >= (float)gsl_vector_get(s->x, 0) && fmaxshift >= (float)gsl_vector_get(s->x, 1)  )
+	{
+		Transform  tsoln(Dict("type","2d","alpha",(float)gsl_vector_get(s->x, 2)));
+		tsoln.set_mirror(mirror);
+		tsoln.set_trans((float)gsl_vector_get(s->x, 0),(float)gsl_vector_get(s->x, 1));
+		result = this_img->process("math.transform",Dict("transform",&tsoln));
+		result->set_attr("xform.align2d",&tsoln);
+	} else { // The refine aligner failed - this shift went beyond the max shift
+		result = this_img->process("math.transform",Dict("transform",t));
+		result->set_attr("xform.align2d",t);
+	}
+	
+	delete t;
+	t = 0;
 
 	gsl_vector_free(x);
 	gsl_vector_free(ss);
@@ -1113,8 +1131,9 @@ EMData* Refine3DAligner::align(EMData * this_img, EMData *to,
 	float sdy = 0.0;
 	float sdz = 0.0;
 	bool mirror = false;
-	if (params.has_key("xform.align2d") ) {
-		Transform* t = params["xform.align2d"];
+	Transform* t;
+	if (params.has_key("xform.align3d") ) {
+		t = params["xform.align3d"];
 		Dict params = t->get_params("eman");
 		saz = params["az"];
 		sphi = params["phi"];
@@ -1123,8 +1142,8 @@ EMData* Refine3DAligner::align(EMData * this_img, EMData *to,
 		sdy = params["ty"];
 		sdz = params["tz"];
 		mirror = params["mirror"];
-		delete t;
-		t = 0;
+	}else {
+		t = new Transform(); // is the identity	
 	}
 
 	int np = 6;
@@ -1186,15 +1205,30 @@ EMData* Refine3DAligner::align(EMData * this_img, EMData *to,
 		rval = gsl_multimin_test_size(gsl_multimin_fminimizer_size(s), precision);
 	}
 	
-	Dict d("type","eman","az",(float)gsl_vector_get(s->x, 3));
-	d["alt"] = (float)gsl_vector_get(s->x, 4);
-	d["phi"] = (float)gsl_vector_get(s->x, 5);
-	Transform tsoln(d);
-	tsoln.set_trans((float)gsl_vector_get(s->x, 0),(float)gsl_vector_get(s->x, 1),(float)gsl_vector_get(s->x, 2) );
-	tsoln.set_mirror(mirror);
+	int maxshift = params.set_default("maxshift",-1);
 
-	EMData *result = this_img->process("math.transform",Dict("transform",&tsoln));
-	result->set_attr("xform.align3d",&tsoln);
+	if (maxshift <= 0) {
+		maxshift = this_img->get_xsize() / 4;
+	}
+	float fmaxshift = static_cast<float>(maxshift);
+	EMData *result;
+	if ( fmaxshift >= (float)gsl_vector_get(s->x, 0) && fmaxshift >= (float)gsl_vector_get(s->x, 1)  && fmaxshift >= (float)gsl_vector_get(s->x, 2) )
+	{
+		Dict d("type","eman","az",(float)gsl_vector_get(s->x, 3));
+		d["alt"] = (float)gsl_vector_get(s->x, 4);
+		d["phi"] = (float)gsl_vector_get(s->x, 5);
+		Transform tsoln(d);
+		tsoln.set_trans((float)gsl_vector_get(s->x, 0),(float)gsl_vector_get(s->x, 1),(float)gsl_vector_get(s->x, 2) );
+		tsoln.set_mirror(mirror);
+		result = this_img->process("math.transform",Dict("transform",&tsoln));
+		result->set_attr("xform.align3d",&tsoln);
+	} else { // The refine aligner failed - this shift went beyond the max shift
+		result = this_img->process("math.transform",Dict("transform",t));
+		result->set_attr("xform.align3d",t);
+	}
+	
+	delete t;
+	t = 0;
 
 	gsl_vector_free(x);
 	gsl_vector_free(ss);

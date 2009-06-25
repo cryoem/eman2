@@ -555,7 +555,8 @@ namespace EMAN
 			d.put("stepy", EMObject::FLOAT);
 			d.put("stepaz", EMObject::FLOAT);
 			d.put("precision", EMObject::FLOAT);
-			d.put("maxiter", EMObject::INT);
+			d.put("maxiter", EMObject::INT,"The maximum number of iterations that can be performed by the Simplex minimizer");
+			d.put("maxshift", EMObject::INT,"Maximum translation in pixels in any direction");
 			return d;
 		}
 	};
@@ -600,7 +601,8 @@ namespace EMAN
 				d.put("stepalt", EMObject::FLOAT);
 				d.put("stepaz", EMObject::FLOAT);
 				d.put("precision", EMObject::FLOAT);
-				d.put("maxiter", EMObject::INT);
+				d.put("maxiter", EMObject::INT, "The maximum number of iterations that can be performed by the Simplex minimizer");
+				d.put("maxshift", EMObject::INT,"Maximum translation in pixels in any direction");
 				return d;
 			}
 	};

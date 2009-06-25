@@ -467,10 +467,10 @@ class EMSimTaskDC(EMTask):
 				if self.options.has_key("align") and self.options["align"] != None:
 					tran = data[1]
 					params = tran.get_params("2d")
-					correction = 1.0
+					scale_correction = 1.0
 					if shrink != None: corretion = float(shrink)
-					result_data[1].set(rc,rr,correction*params["tx"])
-					result_data[2].set(rc,rr,correction*params["ty"])
+					result_data[1].set(rc,rr,scale_correction*params["tx"])
+					result_data[2].set(rc,rr,scale_correction*params["ty"])
 					result_data[3].set(rc,rr,params["alpha"])
 					result_data[4].set(rc,rr,params["mirror"])
 		
@@ -636,7 +636,8 @@ def main():
 #			rimg = rimages[r]
 		
 		E2progress(E2n,float(r-rrange[0])/(rrange[1]-rrange[0]))
-		row=cmponetomany(cimgs,rimg,options.align,options.aligncmp,options.cmp, options.ralign, options.raligncmp)
+		shrink = options.shrink
+		row=cmponetomany(cimgs,rimg,options.align,options.aligncmp,options.cmp, options.ralign, options.raligncmp,options.shrink)
 		for c,v in enumerate(row):
 			mxout[0].set_value_at(c,r,0,v[0])
 		
@@ -678,8 +679,9 @@ def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ral
 			t.invert()
 			p = t.get_params("2d")
 			
-			correction = 1.0
-			ret[i]=(target.cmp(cmp[0],ta,cmp[1]),p["tx"],p["ty"],p["alpha"],p["mirror"])
+			scale_correction = 1.0
+			if shrink != None: scale_correction = float(shrink)
+			ret[i]=(target.cmp(cmp[0],ta,cmp[1]),scale_correction*p["tx"],scale_correction*p["ty"],p["alpha"],p["mirror"])
 		else :
 			ret[i]=(target.cmp(cmp[0],r,cmp[1]),0,0,0,False)
 		
