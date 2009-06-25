@@ -227,6 +227,10 @@ class EMParallelSimMX:
 			f.write_image("f.mrc")
 			(e-f).write_image("error_block.mrc")
 			print "block error",e["mean"]
+			print "wrote error_block.mrc to disk"
+			print blocks	
+			raise RuntimeError("There was a catastrophic error: please send that which was printed out to David")
+		
 	def execute(self):
 		'''
 		The main function to be called
@@ -397,7 +401,7 @@ class EMSimTaskDC(EMTask):
 			if shrink != None:
 				image.process_inplace("math.meanshrink",{"n":options["shrink"]})
 			ptcls[idx] = image
-		return refs,ptcls
+		return refs,ptcls,shrink
 			
 	def __cmp_one_to_many(self,ptcl,refs):
 	
@@ -424,7 +428,7 @@ class EMSimTaskDC(EMTask):
 	
 	def execute(self):
 		
-		refs,ptcls = self.__init_memory(self.options)
+		refs,ptcls,shrink = self.__init_memory(self.options)
 		
 		
 		sim_data = {} # It's going to be our favorite thing, a dictionary of dictionaries
@@ -463,8 +467,10 @@ class EMSimTaskDC(EMTask):
 				if self.options.has_key("align") and self.options["align"] != None:
 					tran = data[1]
 					params = tran.get_params("2d")
-					result_data[1].set(rc,rr,params["tx"])
-					result_data[2].set(rc,rr,params["ty"])
+					correction = 1.0
+					if shrink != None: corretion = float(shrink)
+					result_data[1].set(rc,rr,correction*params["tx"])
+					result_data[2].set(rc,rr,correction*params["ty"])
 					result_data[3].set(rc,rr,params["alpha"])
 					result_data[4].set(rc,rr,params["mirror"])
 		
@@ -653,7 +659,7 @@ def main():
 	
 	E2end(E2n)
 	
-def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ralign=None, alircmp=("dot",{})):
+def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ralign=None, alircmp=("dot",{}),shrink=None):
 	"""Compares one image (target) to a list of many images (reflist). Returns """
 	
 	ret=[None for i in reflist]
@@ -672,6 +678,7 @@ def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ral
 			t.invert()
 			p = t.get_params("2d")
 			
+			correction = 1.0
 			ret[i]=(target.cmp(cmp[0],ta,cmp[1]),p["tx"],p["ty"],p["alpha"],p["mirror"])
 		else :
 			ret[i]=(target.cmp(cmp[0],r,cmp[1]),0,0,0,False)

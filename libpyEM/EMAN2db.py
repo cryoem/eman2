@@ -1035,7 +1035,7 @@ of these occasional errors"""
 		try: return loads(self.bdb.get(dumps(key,-1),txn=txn))
 		except: return None
 
-	def set(self,val,key,image_type=EMUtil.ImageType.IMAGE_UNKNOWN,read_header=False,region=None):
+	def set(self,val,key,image_type=EMUtil.ImageType.IMAGE_UNKNOWN,read_header=False,region=None,datatype=EMUtil.EMDataType.EM_FLOAT,use_host_endian=True):
 		'''
 		I have to support the image_type and read_header parameters even though they are not used -
 		this is so this function can be used interchangeably with EMData.write_image 

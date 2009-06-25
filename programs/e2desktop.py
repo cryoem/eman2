@@ -931,7 +931,7 @@ class EMPlainDisplayFrame(EMGLViewContainer):
 		
 		child.set_window_selected_emit_signal( self.window_selected_emit_signal )
 		try:
-			QtCore.QObject.connect(child.parent(), QtCore.SIGNAL(self.window_selected_emit_signal), self.window_selected)
+			QtCore.QObject.connect(child.parent().emitter(), QtCore.SIGNAL(self.window_selected_emit_signal), self.window_selected)
 		except: print "couldn't connect that "
 		
 		self.transformers.append([])
@@ -1235,7 +1235,7 @@ class EMWorkFlowFrame(EMFrame):
 
 		if hint == "workflow":
 			self.top_bar.attach_child(child.get_gl_widget(EMDesktop.main_widget,EMDesktop.main_widget))
-			QtCore.QObject.connect(child,QtCore.SIGNAL("in_focus"),self.child_in_focus)
+			QtCore.QObject.connect(child.emitter(),QtCore.SIGNAL("in_focus"),self.child_in_focus)
 			self.child_mappings[child] = self.top_bar
 		else:
 			print "only workflow hint is understood form the EMWorkFlowFrame"
@@ -1721,10 +1721,10 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouterToList,Animator,EMGLProjection
 		self.application.show_specific(self.task_widget)
 		self.application.show_specific(self.task_monitor)
 		
-		self.connect(self.task_monitor,QtCore.SIGNAL("task_selected"),self.task_selected)
-		self.connect(self.task_widget,QtCore.SIGNAL("task_selected"),self.task_selected)
-		self.connect(self.task_widget,QtCore.SIGNAL("launching_module"),self.launching_module)
-		self.connect(self.task_widget,QtCore.SIGNAL("module_closed"),self.module_closed)
+		self.connect(self.task_monitor.emitter(),QtCore.SIGNAL("task_selected"),self.task_selected)
+		self.connect(self.task_widget.emitter(),QtCore.SIGNAL("task_selected"),self.task_selected)
+		self.connect(self.task_widget.emitter(),QtCore.SIGNAL("launching_module"),self.launching_module)
+		self.connect(self.task_widget.emitter(),QtCore.SIGNAL("module_closed"),self.module_closed)
 		self.launching_module("Workflow","Workflow")
 		
 	def task_selected(self,module_string,module):
