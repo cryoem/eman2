@@ -99,6 +99,7 @@ template <> Factory < Processor >::Factory()
 	force_add(&RangeThresholdProcessor::NEW);
 	force_add(&SigmaProcessor::NEW);
 	force_add(&LogProcessor::NEW);
+	force_add(&FiniteProcessor::NEW);
 
 	force_add(&PaintProcessor::NEW);
 	force_add(&WatershedProcessor::NEW);

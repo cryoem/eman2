@@ -3328,7 +3328,7 @@ class E2MakeSetTask(E2ParticleExamineTask):
 			return False
 		
 		base_stack_root = params["stack_name"]
-		test_stack_name = "bdb:stacks#"+base_stack_root
+		test_stack_name = "bdb:sets#"+base_stack_root
 		if file_exists(test_stack_name):
 			EMErrorMessageDisplay.run("The %s stack already exists. Remove it, or try a different name" %test_stack_name)
 			return False
@@ -3353,7 +3353,7 @@ class E2MakeSetTask(E2ParticleExamineTask):
 				else: output_stacks[f] = [name]
 		
 		for f in output_stacks.keys():
-			test_stack_name = "bdb:stacks#"+base_stack_root+f
+			test_stack_name = "bdb:sets#"+base_stack_root+f
 			if file_exists(test_stack_name):
 				EMErrorMessageDisplay.run("The %s stack already exists. Remove it, or try a different name" %test_stack_name)
 				return False
@@ -3377,14 +3377,14 @@ class E2MakeSetTask(E2ParticleExamineTask):
 				EMErrorMessageDisplay.run("The command %s failed. Please try again" %cmd, "Failure")
 				return False
 			else:
-				if key != "": stacks_map[stack_type_map[key]] ="bdb:stacks#"+ base_stack_root+key
+				if key != "": stacks_map[stack_type_map[key]] ="bdb:sets#"+ base_stack_root+key
 			
 #		
 		stack_root = params["stack_name"]	
 	
 		stacks_data_dict = EMProjectDataDict(spr_sets_dict)
 		update_map = {}
-		update_map["bdb:stacks#"+base_stack_root] = stacks_map
+		update_map["bdb:sets#"+base_stack_root] = stacks_map
 		stacks_data_dict.update(update_map)
 
 		

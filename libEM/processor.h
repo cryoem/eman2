@@ -1767,6 +1767,57 @@ The basic design of EMAN Processors: <br>\
 		float low;
 		float high;
 	};
+	
+	/**f(x) = f(x) if f(x) is finite | to if f(x) is not finite
+	 *@param to Pixels which are not finite will be set to this value
+	 */
+	class FiniteProcessor:public RealPixelProcessor
+	{
+		public:
+			FiniteProcessor():to(0)
+			{
+			}
+
+			string get_name() const
+			{
+				return "math.finite";
+			}
+
+			static Processor *NEW()
+			{
+				return new FiniteProcessor();
+			}
+
+			void set_params(const Dict & new_params)
+			{
+				if (new_params.has_key("to") )
+					to = params["to"];
+			}
+
+			TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("to", EMObject::FLOAT, "Pixels which are not finite will be set to this value");
+				return d;
+			}
+
+			string get_desc() const
+			{
+				return "f(x) = f(x) if f(x) is finite | to if f(x) is not finite";
+			}
+
+		protected:
+			/**
+			* 
+			*/
+			void process_pixel(float *x) const
+			{
+				if ( Util::goodf(x) ) *x = to;
+			}
+
+		private:
+			float to;
+	};
 
 	/**f(x) = 1 if (low <= x <= high); else f(x) = 0
 	 *@param low The lower limit of the range that will be set to 1
