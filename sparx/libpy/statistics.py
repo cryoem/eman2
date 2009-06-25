@@ -4369,8 +4369,7 @@ def k_means_cuda_export(PART, FLATAVE, out_seedname, mask, part = -1):
 	from utilities import print_msg
 	import os
 	
-	if os.path.exists(out_seedname):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
-	os.mkdir(out_seedname)
+	if not os.path.exists(out_seedname): os.mkdir(out_seedname)
 
 	# prepare list of images id for each group
 	K   = max(PART) + 1

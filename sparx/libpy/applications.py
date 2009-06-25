@@ -10606,8 +10606,8 @@ def header(stack, params, zero, one, randomize, rand_alpha, fimport, fexport, fp
 				elif randomize:
 					if p[:13] == "xform.align2d":
 						alpha = random()*360.0
-						sx = random()*4.0-2.0
-						sy = random()*4.0-2.0
+						sx = random()*2.0-1.0
+						sy = random()*2.0-1.0
 						mirror = randint(0, 1)
 						scale = 1.0
 						set_params2D(img, [alpha, sx, sy, mirror, scale], p)
@@ -12011,6 +12011,11 @@ def k_means_stab_CUDA(stack, outdir, maskname, K, npart = 5, F = 0, FK = 0, maxr
 			INFO = KmeansCUDA.get_info()
 			k_means_cuda_info(INFO)
 
+			import cPickle
+			f = open('part%i.pck' % n, 'w')
+			cPickle.dump(PART, f)
+			f.close()
+
 		# end of classification
 		print_end_msg('k-means')
 
@@ -12116,7 +12121,7 @@ def k_means_stab_CUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_no
 	from statistics  import k_means_cuda_headlog, k_means_cuda_error, k_means_cuda_info
 
 	from statistics  import k_means_stab_update_tag, k_means_stab_gather, k_means_stab_init_tag
-	from statistics  import k_means_stab_asg2part, k_means_stab_H, k_means_stab_export
+	from statistics  import k_means_stab_asg2part, k_means_stab_H, k_means_stab_export, k_means_cuda_export
 	import sys, logging, os, pickle
 
 	# create a directory
@@ -12183,7 +12188,7 @@ def k_means_stab_CUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_no
 		INFO = KmeansCUDA.get_info()
 		k_means_cuda_info(INFO)
 		AVE  = KmeansCUDA.get_averages()
-		k_means_cuda_export(LUT, AVE, outdir, mask)
+		k_means_cuda_export(PART, AVE, outdir, mask, n)
 		
 	# end of classification
 	print_end_msg('k-means')
