@@ -474,6 +474,8 @@ class EMSimTaskDC(EMTask):
 					result_data[3].set(rc,rr,params["alpha"])
 					result_data[4].set(rc,rr,params["mirror"])
 		
+		# This is to catch any NaNs - yes this is a problem but this is a temporary work around
+		result_data[0].process_inplace("math.finite",{"to":1e24})
 		
 				
 		d["rslt_data"] = result_data
@@ -641,6 +643,8 @@ def main():
 		for c,v in enumerate(row):
 			mxout[0].set_value_at(c,r,0,v[0])
 		
+		# This is to catch any NaNs - yes this is a problem but this is a temporary work around
+		mxout[0].process_inplace("math.finite",{"to":1e24})
 		if options.saveali :
 			for c,v in enumerate(row):
 #				print row
