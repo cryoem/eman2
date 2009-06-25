@@ -609,6 +609,7 @@ def EMSelectorTemplate(Type):
 						menu2.addAction(self.plot_icon,"2D Plot")
 						if ny < 1025 and nx < 1025:
 							menu2.addAction(self.emdata_3d_icon,"3D Viewer")
+							menu2.addAction(self.plot_icon,"3D Plot")
 							menu.addMenu(menu2)
 				elif len(selected_items) == 1 and selected_items[0].is_2d_stack():
 					menu.addSeparator()
@@ -646,6 +647,15 @@ def EMSelectorTemplate(Type):
 			elif action.text() == "2D Plot" or action.text() == "Plot 2D":
 				get_application().setOverrideCursor(Qt.BusyCursor)
 				self.preview_plot( self.menu_selected_items[0].get_path())
+				get_application().setOverrideCursor(Qt.ArrowCursor)
+			elif action.text() == "3D Plot":
+				from emplot3d import EMPlot3DModule
+				get_application().setOverrideCursor(Qt.BusyCursor)
+				data = self.menu_selected_items[0].get_emdata()
+				v = data.get_data_as_vector()
+				x = [i for i in range(data.get_xsize()) for j in range(data.get_ysize())]
+				y = [j for i in range(data.get_xsize()) for j in range(data.get_ysize())]
+				self.preview_item_explicit([x,y,v],EMPlot3DModule)
 				get_application().setOverrideCursor(Qt.ArrowCursor)
 			elif action.text() == "View Subset In 3D":
 				data1 = self.menu_selected_items[0].get_emdata()

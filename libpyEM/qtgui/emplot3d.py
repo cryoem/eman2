@@ -62,7 +62,7 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
 		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
 	
-	def __init__(self, application,parent=None):
+	def __init__(self, application=None,parent=None):
 		EMImage3DGUIModule.__init__(self,application)
 		EMLightsDrawer.__init__(self)
 		self.parent = parent
@@ -200,7 +200,7 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		return True
 
 	
-	def set_data(self,key,data,clear_current=False,shape="Sphere"):
+	def set_data(self,data,key="data",clear_current=False,shape="Sphere"):
 		'''
 		
 		'''
@@ -885,8 +885,8 @@ if __name__ == '__main__':
 	from emapplication import EMStandAloneApplication
 	em_app = EMStandAloneApplication()
 	window = EMPlot3DModule(application=em_app)
-	window.set_data("test data",get_test_data())
-	window.set_data("other data",get_other_test_data(),shape="Cube")
+	window.set_data(get_test_data(),"test data")
+	window.set_data(get_other_test_data(),"other data",shape="Cube")
 	em_app.show()
 	em_app.execute()
 	
