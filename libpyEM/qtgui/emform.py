@@ -620,7 +620,7 @@ class EMPlotTable(EMFileTable):
 			from emapplication import ModuleEventsManager
 			self.module_events_manager = ModuleEventsManager(self,self.display_module)
 		else:
-			self.display_module.set_data(filename)
+			self.display_module.set_data_from_file(filename,True)
 					
 		#self.module().emit(QtCore.SIGNAL("launching_module"),"Browser",module)
 		get_application().show_specific(self.display_module)
@@ -804,7 +804,6 @@ class EMFormWidget(QtGui.QWidget):
 		self.incorporate_params(self.params,vbl)
 		if not disable_ok_cancel: self.__add_ok_cancel_buttons(vbl)
 		self.setLayout(vbl)
-		print "form init"
 #		
 	def __del__(self):
 		# this stops the QOBject : do not delete message

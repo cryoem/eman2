@@ -1821,6 +1821,38 @@ class EMParticleImportTask(ParticleWorkFlowTask):
 				a(files,table_widget)
 
 
+class EMParticleCoordImportTask(WorkFlowTask):
+	"""Use this task for importing coordinate files directly into the project database. Generally you do this after you have associated raw data with the project. Coordinate files are matched with input (raw data) files according to name. For example, if your micrograph is called "321a.mrc" then your coordinate file should be called "321a.box" or "321a.data" (both will work). After you import the coordinates you can run the "Generate Output - e2boxer" task to write particle image data."""
+	def __init__(self):
+		WorkFlowTask.__init__(self)
+		self.window_title = "Import Particle Coordinates"
+		
+	def get_params(self):
+		params = []
+		from emform import EMPlotTable
+		from emsave import EMCoordFileValidator
+		coord_table = EMPlotTable(name="coordfiles",desc_short="Coord File",desc_long="Use this tool to browse for your coordinate files")
+		context_menu_data = ParticleWorkFlowTask.DataContextMenu(EMCoordFileValidator())
+		coord_table.add_context_menu_data(context_menu_data)
+		coord_table.add_button_data(ParticleWorkFlowTask.AddDataButton(coord_table,context_menu_data))
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
+		params.append(coord_table)  
+		
+		return params
+	
+	def on_form_ok(self,params):
+		if not params.has_key("coordfiles") or len(params["coordfiles"]) == 0:
+			error("Please choose files to import")
+			return
+		
+		from e2boxer import merge_boxes_as_manual_to_db
+		merge_boxes_as_manual_to_db(params["coordfiles"])
+								
+		self.disconnect_form()
+		self.form.closeEvent(None)
+		self.form = None
+		self.emit(QtCore.SIGNAL("task_idle"))
+		
 		
 class E2BoxerTask(ParticleWorkFlowTask):
 	'''
@@ -1847,7 +1879,7 @@ class E2BoxerTask(ParticleWorkFlowTask):
 				if not d.has_key("e2boxer_image_name"): # this is the test, if something else has this key then we're screwed.
 					continue
 				name = d["e2boxer_image_name"]
-				if name != file_name: continue
+				if get_file_tag(name) != get_file_tag(file_name): continue
 				
 				for key in ["auto_boxes","manual_boxes","reference_boxes"]:
 					if d.has_key(key):

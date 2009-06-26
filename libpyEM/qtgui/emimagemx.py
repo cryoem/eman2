@@ -880,7 +880,7 @@ class EMImageMXModule(EMGUIModule):
 		if self.data.set_xyz(str(xyz)):
 			self.display_states = []
 			self.updateGL()
-	def set_data(self,data_or_filename,filename='',update_gl=True):
+	def set_data(self,data_or_filename,filename='',update_gl=True,soft_delete=False):
 		'''
 		This function will work if you give it a list of EMData objects, or if you give it the file name (as the first argument)
 		If this solution is undesirable one could easily split this function into two equivalents.
@@ -893,7 +893,7 @@ class EMImageMXModule(EMGUIModule):
 			cache_size = int(75000000/bytes_per_image) # 75 MB
 			
 			if nz == 1:
-				self.data = EMDataListCache(data_or_filename,cache_size)
+				self.data = EMDataListCache(data_or_filename,cache_size,soft_delete=soft_delete)
 				self.get_inspector()
 				self.inspector.disable_xyz()
 			else:
@@ -903,7 +903,7 @@ class EMImageMXModule(EMGUIModule):
 				self.data.set_xyz(str(self.inspector.xyz.currentText()))
 				filename = data_or_filename
 		else:
-			self.data = EMDataListCache(data_or_filename,cache_size)
+			self.data = EMDataListCache(data_or_filename,cache_size,soft_delete=soft_delete)
 			self.get_inspector()
 			self.inspector.disable_xyz()
 
@@ -2673,7 +2673,7 @@ class EMDataListCache:
 	'''
 	LIST_MODE = 'list_mode'
 	FILE_MODE = 'file_mode'
-	def __init__(self,object,cache_size=256,start_idx=0):
+	def __init__(self,object,cache_size=256,start_idx=0,soft_delete=False):
 		#DB = EMAN2db.EMAN2DB.open_db(".")
 		self.xsize = -1
 		self.ysize = -1
@@ -2715,7 +2715,7 @@ class EMDataListCache:
 #		self.__init_sets()
 		
 		self.current_iter = 0 # For iteration support
-		self.soft_delete = False # toggle to prevent permanent deletion of particles
+		self.soft_delete = soft_delete # toggle to prevent permanent deletion of particles
 		self.image_width = -1
 		self.image_height = -1
 	

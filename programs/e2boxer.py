@@ -1520,8 +1520,8 @@ class EMBoxerModule(QtCore.QObject):
 			image=BigImageCache.get_image_directly(self.image_names[im])
 			
 			if self.guiim == None:
-					current_name = self.image_names[self.current_image_idx]
-					self.__init_guiim(image,current_name)
+				current_name = self.image_names[self.current_image_idx]
+				self.__init_guiim(image,current_name)
 
 			
 			try: 

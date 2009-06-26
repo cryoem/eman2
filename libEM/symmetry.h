@@ -1128,6 +1128,7 @@ class RandomOrientationGenerator : public OrientationGenerator
 			TypeDict d;
 			d.put("n", EMObject::INT, "The number of orientations to generate.");
 			d.put("inc_mirror", EMObject::BOOL, "Indicates whether or not to include the mirror portion of the asymmetric unit. Default is false.");
+			d.put("phitoo", EMObject::BOOL, "Makes phi random as well");
 			return d;
 		}
 		

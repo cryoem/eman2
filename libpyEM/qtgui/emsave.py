@@ -66,6 +66,53 @@ class EMFileTypeValidator:
 			return 0
 			
 		return 1
+	
+
+class EMCoordFileValidator:
+	'''
+	checks to make sure the file name supplied is readable as a box database, in the traditional EMAN1 sense 
+	'''
+	def __init__(self): pass
+	
+	def validate_file_name(self,file_name):
+		'''
+		Validate the file name 
+		Checks to make sure the first two non commented lines of the file defines at least 4 values that can be converted to an int
+		@return 0 if something went wrong, for example, the file is not valid
+		'''
+		
+		if not isinstance(file_name,list):
+			lst = [file_name]
+		else:
+			lst = file_name
+		for f in lst:
+			try:
+				fin=file(f)
+				fin.seek(0)
+				rdata = []
+				while (len(rdata) < 2):
+					line = fin.readline()
+					if line == '': # this is equivalent to EOF
+						break
+					elif line[0] == '#': continue
+					else: rdata.append(line)
+					
+				#print rdata
+				if len(rdata) < 2: raise RuntimeError()
+	
+				rdata=[[float(j) for j in i.split()] for i in rdata]
+				
+				if len(rdata[0]) == 0 or len(rdata[1]) == 0: raise RuntimeError()
+				if  len(rdata[0]) != len(rdata[1]) : raise RuntimeError()
+	
+				return 1
+				
+			except:
+				msg = QtGui.QMessageBox()
+				msg.setText("%s is not a valid coordinate file" %file_name)
+				msg.exec_()
+				return 0
+
 
 def save_data(item_object):
 	'''

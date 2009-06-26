@@ -458,10 +458,13 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.launchers["Generate Output - e2boxer"] = self.launch_e2boxer_output
 		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Particle Import")))
 		self.launchers["Particle Import"] = self.launch_particle_import
+		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Coordinate Import")))
+		self.launchers["Coordinate Import"] = self.launch_ptcl_coord_import
 		ap_list[0].setIcon(0,self.icons["green_boxes"])
 		ap_list[1].setIcon(0,self.icons["green_boxes"])
 		ap_list[2].setIcon(0,self.icons["green_boxes"])
 		ap_list[3].setIcon(0,self.icons["green_boxes"])
+		ap_list[4].setIcon(0,self.icons["green_boxes"])
 		ap.addChildren(ap_list)
 		
 		mis_list = []
@@ -970,7 +973,9 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.launch_task(task,"Norm/Invert Tomo Particles")
 		
 		
-	def launch_particle_import(self):self.launch_task(EMParticleImportTask(),"Import particles")
+	def launch_particle_import(self):self.launch_task(EMParticleImportTask(),"Import Particles")
+	
+	def launch_ptcl_coord_import(self):self.launch_task(EMParticleCoordImportTask(),"Import Coordinate Data")
 		
 	def launch_mic_ccd_report(self): self.launch_task(EMRawDataReportTask(),"Raw Data")
 		

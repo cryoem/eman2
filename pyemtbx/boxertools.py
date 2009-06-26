@@ -1219,8 +1219,11 @@ class Boxable:
 		if debug: tt1 = time()
 		if debug: print tt1
 		#print "reading exclusion image",excimage_name
-		small_image = self.get_small_image()
-		self.exclusionimage = ExclusionImageCache.get_image(self.image_name,small_image.get_xsize(),small_image.get_ysize())
+		if self.autoboxer != None: 
+			small_image = self.get_small_image()
+			self.exclusionimage = ExclusionImageCache.get_image(self.image_name,small_image.get_xsize(),small_image.get_ysize())
+		else:
+			self.exclusionimage = None
 		if debug: print "It took this long to get the image from the cache", time()-tt1
 		if debug: print time()
 		
@@ -1235,7 +1238,7 @@ class Boxable:
 		self.get_frozen_from_db()	
 		self.get_quality_from_db()
 		self.check_store_image_name_db()	
-		if autoboxer == None: self.get_auto_boxer_from_db()
+		#if autoboxer == None: self.get_auto_boxer_from_db()
 		
 	def reload_boxes(self):
 		'''
