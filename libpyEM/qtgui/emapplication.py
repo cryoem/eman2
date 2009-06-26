@@ -511,7 +511,9 @@ class EMQtWidgetModule(EMGUIModule):
 #		print "qt widget module death"
 #		import sys
 #		print sys.getrefcount(self.qt_widget),"for self.widget"
-	
+#		
+#		self.qt_widget.deleteLater()
+		
 	#def __del__(self):
 		#print "in qt delete"
 		#if self.qt_widget != None:

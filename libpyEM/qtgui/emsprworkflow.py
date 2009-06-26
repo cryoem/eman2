@@ -195,22 +195,31 @@ class WorkFlowTask:
 	def on_form_ok(self,params):
 		for k,v in params.items():
 			self.write_db_entry(k,v)
-			
+		
+		self.disconnect_form()
 		self.form.closeEvent(None)
 		self.form = None
 	
 		self.emit(QtCore.SIGNAL("task_idle"))
 		
 	def on_form_cancel(self):
+		self.disconnect_form()
 		self.form.closeEvent(None)
 		self.form = None
-		
 		self.emit(QtCore.SIGNAL("task_idle"))
-		
+	
+	def disconnect_form(self):
+		QtCore.QObject.disconnect(self.form.emitter(),QtCore.SIGNAL("emform_ok"),self.on_form_ok)
+		QtCore.QObject.disconnect(self.form.emitter(),QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
+		QtCore.QObject.disconnect(self.form.emitter(),QtCore.SIGNAL("emform_close"),self.on_form_close)
+		QtCore.QObject.disconnect(self.form.emitter(),QtCore.SIGNAL("display_file"),self.on_display_file)
+	
+	
 	def emit(self,*args,**kargs):
 		self.core_object.emit(*args,**kargs)
 		
 	def on_form_close(self):
+		self.disconnect_form()
 		self.emit(QtCore.SIGNAL("task_idle"))
 
 	def closeEvent(self,event):

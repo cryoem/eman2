@@ -755,6 +755,7 @@ class EMFormModule(EMQtWidgetModule):
 		#self.test_ref = weakref.ref(self.qt_widget)
 		
 #	def __del__(self):
+#		self.qt_widget.deleteLater()
 #		print "form module death"
 #		import sys
 #		self.test_ref().destroy()
@@ -804,8 +805,9 @@ class EMFormWidget(QtGui.QWidget):
 		if not disable_ok_cancel: self.__add_ok_cancel_buttons(vbl)
 		self.setLayout(vbl)
 #		
-#	def __del__(self): 
-#		print "form widget death"
+	def __del__(self):
+		# this stops the QOBject : do not delete message
+		self.deleteLater()
 #		
 	def __init_icons(self):
 		self.emdata_icon = QtGui.QIcon(get_image_directory() + "/single_image.png")
