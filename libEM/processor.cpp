@@ -825,7 +825,7 @@ void WatershedProcessor::process_inplace(EMData * image) {
 	// Set the original mask values
 	for(unsigned int i = 0; i < xpoints.size(); ++i) {
 		try {
-			mask->set_value_at(x[i],y[i],z[i],i+1);
+			mask->set_value_at(x[i],y[i],z[i], (float)(i+1));
 		} catch (...) {
 			continue;
 		}
@@ -937,7 +937,7 @@ vector<Vec3i > WatershedProcessor::watershed(EMData* mask, EMData* image, const 
 	//	cout << image->get_value_at(c[0],c[1],c[2] ) << " " << threshold << endl;
 		if( image->get_value_at(c[0],c[1],c[2]) != 0 && (mask->get_value_at(c[0],c[1],c[2]) == 0 )) {
 			//cout << "Added something " << mask_value << endl;
-			mask->set_value_at(c[0],c[1],c[2], mask_value);
+			mask->set_value_at(c[0],c[1],c[2], (float)mask_value);
 			ret.push_back(c);
 		}
 	}
@@ -3009,7 +3009,7 @@ void NormalizeByMassProcessor::process_inplace(EMData * image)
 
 	float thr = params.set_default("thr",(float)image->get_attr("mean")+(float)image->get_attr("sigma"));
 
-	float apix = params.set_default("apix",-1.123456789);
+	float apix = params.set_default("apix",-1.123456789f);
 	if (apix == -1.123456789 ) {
 		if (image->has_attr("apix_x")) {
 			apix = image->get_attr("apix_x");
@@ -4706,7 +4706,7 @@ void AutoMaskAsymUnit::process_inplace(EMData* image) {
 // 				v.normalize();
 				int a = sym->point_in_which_asym_unit(v);
 				if (au == -1) {
-					*d = a;
+					*d = (float)a;
 				} else {
 					if ( a == au ) *d = 1;
 					else *d = 0;
@@ -6192,8 +6192,8 @@ void TestImageFourierNoiseGaussian::process_inplace(EMData* image)
 			float i1 = d[bot_idx+1];
 			float r2 = d[top_idx];
 			float i2 = d[top_idx+1];
-			float r = (r1 + r2)/2.0;
-			float i = (i1 + i2)/2.0;
+			float r = (r1 + r2)/2.0f;
+			float i = (i1 + i2)/2.0f;
 			d[bot_idx] = r;
 			d[top_idx] = r;
 			d[bot_idx+1] = i;
@@ -6205,8 +6205,8 @@ void TestImageFourierNoiseGaussian::process_inplace(EMData* image)
 			i1 = d[bot_idx+1];
 			r2 = d[top_idx];
 			i2 = d[top_idx+1];
-			r = (r1 + r2)/2.0;
-			i = (i1 + i2)/2.0;
+			r = (r1 + r2)/2.0f;
+			i = (i1 + i2)/2.0f;
 			d[bot_idx] = r;
 			d[top_idx] = r;
 			d[bot_idx+1] = i;
@@ -6231,7 +6231,7 @@ void CTFSNRWeightProcessor::process_inplace(EMData* image) {
 	if (params.has_key("noise")==false) throw InvalidParameterException("You must supply the noise argument");
 	if (params.has_key("snr")==false) throw InvalidParameterException("You must supply the snr argument");
 	
-	float boost = params.set_default("boost",1.0);
+	float boost = params.set_default("boost",1.0f);
 	
 	if (!image->is_complex()) {
 		image->do_fft_inplace();
@@ -6394,8 +6394,8 @@ void TestImageFourierNoiseProfile::process_inplace(EMData * image) {
 			float i1 = d[bot_idx+1];
 			float r2 = d[top_idx];
 			float i2 = d[top_idx+1];
-			float r = (r1 + r2)/2.0;
-			float i = (i1 + i2)/2.0;
+			float r = (r1 + r2)/2.0f;
+			float i = (i1 + i2)/2.0f;
 			d[bot_idx] = r;
 			d[top_idx] = r;
 			d[bot_idx+1] = i;
@@ -6407,8 +6407,8 @@ void TestImageFourierNoiseProfile::process_inplace(EMData * image) {
 			i1 = d[bot_idx+1];
 			r2 = d[top_idx];
 			i2 = d[top_idx+1];
-			r = (r1 + r2)/2.0;
-			i = (i1 + i2)/2.0;
+			r = (r1 + r2)/2.0f;
+			i = (i1 + i2)/2.0f;
 			d[bot_idx] = r;
 			d[top_idx] = r;
 			d[bot_idx+1] = i;
@@ -6709,11 +6709,11 @@ void TestImageSphericalWave::process_inplace(EMData * image)
 		phase = params["phase"];
 	}
 
-	float x = nx/2;
+	float x = (float)(nx/2);
 	if (params.has_key("x")) x=params["x"];
-	float y = ny/2;
+	float y = (float)(ny/2);
 	if (params.has_key("y")) y=params["y"];
-	float z =nz/2;
+	float z = (float)(nz/2);
 	if (params.has_key("z")) z=params["z"];
 
 	int ndim = image->get_ndim();
@@ -6721,7 +6721,11 @@ void TestImageSphericalWave::process_inplace(EMData * image)
 	if(ndim==2) {	//2D
 		for(int j=0; j<ny; ++j) {
 			for(int i=0; i<nx; ++i) {
+#ifdef _WIN32
+				float r=_hypotf(x-(float)i,y-(float)j);
+#else
 				float r=hypot(x-(float)i,y-(float)j);
+#endif	//_WIN32
 				if (r<.5) continue;
 				image->set_value_at(i,j,cos(2*pi*r/wavelength+phase)/r);
 			}
@@ -7024,7 +7028,7 @@ void TestImageHollowEllipse::process_inplace(EMData * image)
 {
 	preprocess(image);
 
-	float width = params.set_default("width",2.0);
+	float width = params.set_default("width",2.0f);
 
 	float a2 = params.set_default("a",nx/2.0f-1.0f);
 	float b2 = params.set_default("b",ny/2.0f-1.0f);
@@ -7034,7 +7038,7 @@ void TestImageHollowEllipse::process_inplace(EMData * image)
 	float b1 = params.set_default("ywidth",b2-width);
 	float c1 = params.set_default("zwidth",c2-width);
 
-	float fill = params.set_default("fill",1.0);
+	float fill = params.set_default("fill",1.0f);
 	Transform* t;
 	if (params.has_key("transform")) {
 		t = params["transform"];
@@ -7110,7 +7114,7 @@ void TestImageEllipse::process_inplace(EMData * image)
 	float a = params.set_default("a",nx/2.0f-1.0f);
 	float b = params.set_default("b",ny/2.0f-1.0f);
 	float c = params.set_default("c",nz/2.0f-1.0f);
-	float fill = params.set_default("fill",1.0);
+	float fill = params.set_default("fill",1.0f);
 	//bool hollow = params.set_default("hollow",false);
 	Transform* t;
 	if (params.has_key("transform")) {
@@ -8296,7 +8300,7 @@ void TestTomoImage::process_inplace( EMData* image )
 		d["a"] = (float) 1*xinc*nx;
 		d["b"] = (float)0.5*yinc*ny;
 		d["c"] = (float) 1.*zinc*nz;
-		d["fill"] = 0.3;
+		d["fill"] = 0.3f;
 		image->process_inplace("testimage.ellipsoid",d);
 	}
 
