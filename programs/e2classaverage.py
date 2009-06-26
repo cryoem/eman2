@@ -232,7 +232,7 @@ class EMGenClassAverages:
 		Write results to disk
 		The main function
 		'''
-		
+		options = self.options
 		if self.options.parallel and len(self.options.parallel) > 2 and self.options.parallel[:2] == "dc":
 			
 			self.task_customers = []
@@ -487,7 +487,7 @@ class EMClassAveTask(EMTask):
 			sigma_image.to_zero()
 		
 		return ptcl_indices,images,usefilt_images,norm,culling,ref,verbose,sigma_image
-		
+	
 	def execute(self):
 		'''
 		Called to perform class averaging 
@@ -983,9 +983,18 @@ class EMClassAveTaskDC(EMClassAveTask):
 		verbose = 0
 		if self.options.has_key("verbose") and self.options["verbose"] != None:
 			verbose = self.options["verbose"]
+		
+		
+		sigma_image = None
+		averager_parms =  self.options["averager"]
+		averager=Averagers.get(averager_parms[0], averager_parms[1])
+		d = averager.get_param_types()
+		if "sigma" in d.keys():
+			sigma_image = image.copy()
+			sigma_image.to_zero()
+		
 			
-			
-		return ptcl_indices,images,usefilt_images,norm,culling,ref,verbose
+		return ptcl_indices,images,usefilt_images,norm,culling,ref,verbose,sigma_image
 	
 def main():
 	progname = os.path.basename(sys.argv[0])

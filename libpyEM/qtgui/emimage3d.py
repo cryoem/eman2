@@ -539,7 +539,6 @@ class EMImage3DModule(EMLightsDrawer,EMImage3DGUIModule):
 			self.inspector=EMImageInspector3D(self)
 		
 		if replace:
-			print "replace"
 			self.inspector.delete_all()
 		self.inspector.add_isosurface()
 	
