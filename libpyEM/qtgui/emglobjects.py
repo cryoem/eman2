@@ -1806,13 +1806,20 @@ class EMImage3DGUIModule(EMGUIModule):
 		self.file_name = None # stores the file name of the associated EMData, if applicable (use setter/getter)
 		self.help_window = None # eventually will become a Qt help widget of some kind
 		EMGUIModule.__init__(self,ensure_gl_context,application_control)
+		self.dont_delete_parent = False
 	
 	
 		self.rank = 0 # rank is to do with shading and using the stencil buffer. Each object should have a unique rank... if it is using the OpenGL contrast enhancement stuff
-	def render(self): pass # should do the main drawing
-			
-	def get_type(self): pass #should return a unique string
 	
+	def __del__(self):
+		if self.under_qt_control and not self.dont_delete_parent:
+			self.qt_context_parent.deleteLater()
+		self.core_object.deleteLater()
+	
+	def render(self): raise NotImplementedException("Inheriting classes should implemented this") # should do the main drawing
+	def get_type(self):  NotImplementedException("Inheriting classes should implemented this") #should return a unique string
+	
+	def set_dont_delete_parent(self,val=True): self.dont_delete_parent = val
 	def set_rank(self,rank): self.rank = rank
 	def set_name(self, name): self.name = name
 	def get_name(self): return self.name
@@ -1854,10 +1861,7 @@ class EMImage3DGUIModule(EMGUIModule):
 		return self.gl_widget
 	
 	
-	def __del__(self):
-		if self.under_qt_control:
-			self.qt_context_parent.deleteLater()
-		self.core_object.deleteLater()
+	
 	
 	
 	#def get_gl_widget(self,qt_parent=None):

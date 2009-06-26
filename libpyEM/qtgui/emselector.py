@@ -2400,10 +2400,6 @@ class EMBrowserModule(EMQtWidgetModule):
 		self.widget = EMBrowserDialog(self)
 		EMQtWidgetModule.__init__(self,self.widget)
 
-	def __del__(self):
-#		import sys
-#		print "browser module death", sys.getrefcount(self.widget)
-		self.widget.destroy()
 
 app = None
 def on_done(string_list):
@@ -2420,8 +2416,8 @@ if __name__ == '__main__':
 	em_app = EMStandAloneApplication()
 	#dialog = EMSelectorDialog(None,em_app)
 	em_qt_widget = EMSelectorModule()
-	QtCore.QObject.connect(em_qt_widget,QtCore.SIGNAL("ok"),on_done)
-	QtCore.QObject.connect(em_qt_widget,QtCore.SIGNAL("cancel"),on_cancel)
+	QtCore.QObject.connect(em_qt_widget.emitter(),QtCore.SIGNAL("ok"),on_done)
+	QtCore.QObject.connect(em_qt_widget.emitter(),QtCore.SIGNAL("cancel"),on_cancel)
 	em_app.show()
 	em_app.execute()
 

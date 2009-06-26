@@ -424,11 +424,11 @@ class EMImage3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		
 		self.perspective = False
 		
-#	def __del__(self):
-#		print "arggg I'm dying"
-#		pass
-		#for v in self.viewables:
-			##self.application.deregister_qt_emitter(v)
+	def __del__(self):
+		if self.under_qt_control and not self.dont_delete_parent:
+			self.qt_context_parent.deleteLater()
+		self.core_object.deleteLater()
+	
 	
 	def enable_emit_events(self,val=True):
 		for v in self.viewables: v.enable_emit_events(val)
@@ -537,8 +537,9 @@ class EMImage3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		
 		if self.inspector == None:
 			self.inspector=EMImageInspector3D(self)
-			
+		
 		if replace:
+			print "replace"
 			self.inspector.delete_all()
 		self.inspector.add_isosurface()
 	
@@ -594,6 +595,7 @@ class EMImage3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		module.set_qt_context_parent(self.qt_context_parent)
 		module.set_gl_context_parent(self.gl_context_parent)
 		module.set_gl_widget(self.gl_context_parent)
+		module.set_dont_delete_parent() # stops a RunTimeError
 		module.under_qt_control = self.under_qt_control
 		
 		self.viewables.append(module)
@@ -645,6 +647,7 @@ class EMImage3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		
 		v = self.viewables.pop(val)
 		
+		
 		#self.application.deregister_qt_emitter(v)
 		if (len(self.viewables) == 0 ) : 
 			self.currentselection = -1
@@ -659,8 +662,7 @@ class EMImage3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		# Need to set the rank appropriately
 		for i in range(0,len(self.viewables)):
 			self.viewables[i].set_rank(i+1)
-		
-		self.updateGL()
+			
 	
 	def resizeEvent(self,width=0,height=0):
 		self.vdtools.set_update_P_inv()
@@ -844,6 +846,8 @@ class EMImageInspector3D(QtGui.QWidget):
 		
 		self.tabwidget.removeTab(idx)
 		self.target().delete_current(self.targetidxmap[idx])
+		
+		self.target().updateGL()
 	
 	def delete_all(self):
 		n = self.tabwidget.count()
