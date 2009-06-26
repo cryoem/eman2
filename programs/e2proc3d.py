@@ -200,16 +200,16 @@ def main():
 
             elif option1 == "calcsf":
                 dataf = data.do_fft()
-                curve = dataf.calc_radial_func(y, 0, 0.5)
-                Util.save_data(0, 1.0/(apix*2.0*y), curve, options.calcsf);
+                curve = dataf.calc_radial_dist(ny, 0, 0.5,True)
+                Util.save_data(0, 1.0/(apix*2.0*ny), curve, options.calcsf);
 
             elif option1 == "setsf":
             	sf=XYData()
             	sf.read_file("groel.sm")            	
                 dataf = data.do_fft()
-                curve = dataf.calc_radial_func(y, 0, 0.5)
-                filt=[sf.get_yatx(i/(apix*2*y))/curve[i] for i in range(len(curve))]
-                dataf.apply_radial_func(y,0,0.5)
+                curve = dataf.calc_radial_dist(ny, 0, 0.5,True)
+                filt=[sf.get_yatx(i/(apix*2*ny))/curve[i] for i in range(len(curve))]
+                dataf.apply_radial_func(ny,0,0.5)
                 print "untested"
 
             elif option1 == "process":

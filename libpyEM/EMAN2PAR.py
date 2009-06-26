@@ -80,15 +80,22 @@ class EMTaskCustomer:
 		self.wait_for_server(delay*2)
 		return
 
-	def cpu_est(self):
+	def cpu_est(self,wait=True):
 		"""Returns an estimate of the number of available CPUs based on the number
 		of different nodes we have talked to. Doesn't handle multi-core machines as
-		separate entities yet"""
+		separate entities yet. If wait is set, it will not return until ncpu > 1"""
 		if self.servtype=="dc" :
-			try :return EMDCsendonecom(self.addr,"NCPU",None)
-			except:
-				self.wait_for_server()
-				return EMDCsendonecom(self.addr,"NCPU",None)
+			n=0
+			while (n==0) :
+				try: n = EMDCsendonecom(self.addr,"NCPU",None)
+				except:
+					self.wait_for_server()
+					n=EMDCsendonecom(self.addr,"NCPU",None)
+				if not wait : return n
+				if n==0 : 
+					print "Server reports no CPUs available. I will try again in 60 sec"
+					time.sleep(60)
+			return n
 
 	def new_group(self):
 		"""request a new group id from the server for use in grouping subtasks"""
@@ -350,15 +357,15 @@ def runEMDCServer(port,verbose):
 	EMDCTaskHandler.clients={}
 
 	if port!=None and port>0 : 
-#		server = SocketServer.ThreadingTCPServer(("", port), EMDCTaskHandler)	# "" is the hostname and will bind to any IPV4 interface/address
-		server = SocketServer.TCPServer(("", port), EMDCTaskHandler)	# "" is the hostname and will bind to any IPV4 interface/address
+		server = SocketServer.ThreadingTCPServer(("", port), EMDCTaskHandler)	# "" is the hostname and will bind to any IPV4 interface/address
+#		server = SocketServer.TCPServer(("", port), EMDCTaskHandler)	# "" is the hostname and will bind to any IPV4 interface/address
 		if verbose: print server
 	# EMAN2 will use ports in the range 9900-9999
 	else :
 		for port in range(9990,10000):
 			try: 
-				server = SocketServer.TCPServer(("", port), EMDCTaskHandler)
-#				server = SocketServer.ThreadingTCPServer(("", port), EMDCTaskHandler)
+#				server = SocketServer.TCPServer(("", port), EMDCTaskHandler)
+				server = SocketServer.ThreadingTCPServer(("", port), EMDCTaskHandler)
 				print "Server started on %s port %d"%(socket.gethostname(),port)
 			except:
 				if verbose: print "Port %d unavailable"%port
@@ -371,6 +378,8 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 	"""Distributed Computing Taskserver. In this system, clients run on hosts with free cycles and request jobs
 	from the server, which runs on a host with access to the data to be processed."""
 	verbose=0
+	rtcount=0
+	rotate=('/','-','\\','|')
 	
 	def __init__(self, request, client_address, server):
 		# if a port is specified, just try to open it directly. No error detection
@@ -422,8 +431,13 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 			data = recvobj(self.sockf)
 				
 			if self.verbose : 
-				try: print "Command %s: %s (%d)"%(str(self.client_address),cmd,len(data))
-				except: print "Command %s: %s (-)"%(str(self.client_address),cmd)
+				if cmd=="RDYT" :
+					EMDCTaskHandler.rtcount+=1
+					print " %s \r"%EMDCTaskHandler.rotate[EMDCTaskHandler.rtcount%4],
+					sys.stdout.flush()
+				else :
+					try: print "Command %s: %s (%d)"%(str(self.client_address),cmd,len(data))
+					except: print "Command %s: %s (-)"%(str(self.client_address),cmd)
 			
 
 			######################  These are issued by clients
