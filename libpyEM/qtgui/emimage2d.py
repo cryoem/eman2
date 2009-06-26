@@ -51,7 +51,7 @@ import weakref
 from pickle import dumps,loads
 from libpyGLUtils2 import *
 
-from emglobjects import EMOpenGLFlagsAndTools, EMGUIModule
+from emglobjects import EMOpenGLFlagsAndTools
 from emapplication import EMGUIModule,get_application
 from emimageutil import EMMetaDataTable
 
@@ -1866,10 +1866,12 @@ class EMImageInspector2D(QtGui.QWidget):
 		
 		try:
 			md = self.target().data.get_attr_dict()
-			self.metadatatab = EMMetaDataTable(self,md)
+			self.metadatatab = EMMetaDataTable(None,md)
 			self.mmtab.addTab(self.metadatatab,"Meta Data")
+			
 		except:
 			# the target doesn't have data yet?
+			self.metadatatab = None
 			pass
 		
 		self.vbl.addWidget(self.mmtab)
@@ -1978,8 +1980,11 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.resize(400,440) # d.woolford thinks this is a good starting size as of Nov 2008 (especially on MAC)
 #		QtCore.QObject.connect(self.mmode, QtCore.SIGNAL("buttonClicked(int)"), target.set_mouse_mode)
 
-
-#	def resizeEvent(self,event):
+#	def __del__(self):
+#		print "del"
+#		if self.metadatatab:
+#			self.metadatatab.deleteLater()
+##	def resizeEvent(self,event):
 #		print self.width(),self.height()
 
 	def disable_image_range(self):

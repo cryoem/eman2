@@ -804,11 +804,13 @@ class EMFormWidget(QtGui.QWidget):
 		self.incorporate_params(self.params,vbl)
 		if not disable_ok_cancel: self.__add_ok_cancel_buttons(vbl)
 		self.setLayout(vbl)
+		print "form init"
 #		
 	def __del__(self):
 		# this stops the QOBject : do not delete message
+
 		self.deleteLater()
-#		
+		
 	def __init_icons(self):
 		self.emdata_icon = QtGui.QIcon(get_image_directory() + "/single_image.png")
 		self.emdata_3d_icon = QtGui.QIcon(get_image_directory() + "/single_image_3d.png")
