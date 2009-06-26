@@ -2101,7 +2101,7 @@ The basic design of EMAN Processors: <br>\
 		void set_params(const Dict & new_params)
 		{
 			CircularMaskProcessor::set_params(new_params);
-			value = params.set_default("value",0);
+			value = params.set_default("value",0.0f);
 		}
 
 		TypeDict get_param_types() const
