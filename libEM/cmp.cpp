@@ -738,8 +738,8 @@ float PhaseCmp::cmp(EMData * image, EMData *with) const
 	double norm = FLT_MIN;
 	size_t i = 0;
 
-	for (float z = 0; z < image_fft->get_zsize(); ++z){
-		for (float y = 0; y < image_fft->get_ysize(); y++) {
+	for (int z = 0; z < image_fft->get_zsize(); ++z){
+		for (int y = 0; y < image_fft->get_ysize(); ++y) {
 			for (int x = 0; x < image_fft->get_xsize(); x += 2) {
 				int r;
 //				if ( nz == 1 ) {

@@ -509,8 +509,8 @@ void CtfCWautoAverager::add_image(EMData * image)
 		if (snrd[i]<0) snrd[i]=0;
 		ctfd[i]=fabs(ctfd[i]);
 		if (ctfd[i]<.05) {
-			if (snrd[i]<=0) ctfd[i]=.05;
-			else ctfd[i]=snrd[i]*10.0;
+			if (snrd[i]<=0) ctfd[i]=.05f;
+			else ctfd[i]=snrd[i]*10.0f;
 		}
 		outd[i]+=ind[i]*snrd[i]/ctfd[i];
 		outd[i+1]+=ind[i+1]*snrd[i]/ctfd[i];
