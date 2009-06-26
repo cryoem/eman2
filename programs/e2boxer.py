@@ -192,8 +192,8 @@ for single particle analysis."""
 	logid=E2init(sys.argv)
 	boxes=[]
 	if len(options.auto)>0:
-		print "Autobox mode ",options.auto[0]
 		if "cmd" in options.auto:
+			print "Autobox mode ",options.auto[0]
 			print "commandline version"
 			
 			do_gauss_cmd_line_boxing(options)
@@ -543,7 +543,7 @@ def do_gauss_cmd_line_boxing(options):
 	project_db.close()
 	#done
 
-def merge_boxes_as_manual_to_db(filenames):
+def merge_boxes_as_manual_to_db(filenames, use_progress=False):
 	'''
 	Merges a set of .box files into the local database - stores them as manual boxes
 	'''
@@ -564,7 +564,8 @@ def merge_boxes_as_manual_to_db(filenames):
 	
 		if manualboxes == None: manualboxes = []
 		manualboxes.extend(boxes)
-		set_idd_key_entry(filename,"manual_boxes",manualboxes)	
+		set_idd_key_entry(filename,"manual_boxes",manualboxes)
+		set_idd_key_entry(filename,"e2boxer_image_name",get_file_tag(filename))	
 		
 	#def process_start(self):
 		#print "process started"
@@ -967,31 +968,36 @@ class RawDatabaseAutoBoxer:
 	def autobox_images(self,options):
 		image_names = options.filenames
 		project_db = EMProjectDB()
+		
+		
 		for i,image_name in enumerate(image_names):
-			print "autoboxing",image_name
 			
-			try:
-				data = project_db[get_idd_key(image_name)]
-				
-				trim_autoboxer = project_db[data["autoboxer_unique_id"]]["autoboxer"]
-				autoboxer = SwarmAutoBoxer(None)
-				autoboxer.become(trim_autoboxer)
-				print 'using cached autoboxer db'
-			except:
+			if not options.just_output:
 				try:
-					print "using most recent autoboxer"
-					if project_db["current_autoboxer_type"]=="Gauss":
-						trim_autoboxer = project_db["current_autoboxer"]
-						autoboxer = PawelAutoBoxer(None)
-						autoboxer.become(trim_autoboxer)
-					else:
-						trim_autoboxer = project_db["current_autoboxer"]
-						autoboxer = SwarmAutoBoxer(None)
-						autoboxer.become(trim_autoboxer)
+					data = project_db[get_idd_key(image_name)]
+					
+					trim_autoboxer = project_db[data["autoboxer_unique_id"]]["autoboxer"]
+					autoboxer = SwarmAutoBoxer(None)
+					autoboxer.become(trim_autoboxer)
+					print 'using cached autoboxer db'
 				except:
-					print "Error - there seems to be no autoboxing information in the database - autobox interactively first - bailing"
-					if self.logid:  E2progress(self.logid,1.0)
-					return
+					try:
+						print "using most recent autoboxer"
+						if project_db["current_autoboxer_type"]=="Gauss":
+							trim_autoboxer = project_db["current_autoboxer"]
+							autoboxer = PawelAutoBoxer(None)
+							autoboxer.become(trim_autoboxer)
+						else:
+							trim_autoboxer = project_db["current_autoboxer"]
+							autoboxer = SwarmAutoBoxer(None)
+							autoboxer.become(trim_autoboxer)
+					except:
+						print "Error - there seems to be no autoboxing information in the database - autobox interactively first - bailing"
+						if self.logid:  E2progress(self.logid,1.0)
+						return
+				autoboxer.set_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
+			else:
+				autoboxer = None
 			
 			boxable = Boxable(image_name,None,autoboxer)
 			
@@ -999,7 +1005,7 @@ class RawDatabaseAutoBoxer:
 				print "Image",image_name,"is excluded and being ignored"
 				continue
 			
-			autoboxer.set_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
+			
 			# Tell the boxer to delete non refs - FIXME - the uniform appraoch needs to occur - see SwarmAutoBoxer.auto_box
 			if not options.just_output: # This is useful if you want to just change the boxsize, or the normalization method
 				autoboxer.auto_box(boxable,False)
@@ -1210,7 +1216,7 @@ class EMBoxerModule(QtCore.QObject):
 	def __init__(self,application,options=None):
 		QtCore.QObject.__init__(self)
 		"""Implements the 'boxer' GUI."""
-		self.application = weakref.ref(application)
+		
 		self.required_options = ["filenames","running_mode"]
 		
 		self.boxable = None
@@ -1416,11 +1422,15 @@ class EMBoxerModule(QtCore.QObject):
 				self.guimxit.optimally_resize()
 				QtCore.QObject.connect(self.guimxit.emitter(),QtCore.SIGNAL("image_selected"),self.image_selected)
 			else:
-				QtCore.QObject.connect(self.guimxit.emitter(),QtCore.SIGNAL("mx_image_selected"),self.image_selected)
+				QtCore.QObject.connect(self.guimxit.emitter(),QtCore.SIGNAL("mx_mouseup"),self.image_selected)
+				QtCore.QObject.connect(self.guimxit.emitter(),QtCore.SIGNAL("module_closed"),self.guimxit_closed)
 		
 			if isinstance(self.guimxit,EMImageRotorModule):
 				self.guimxit.set_frozen(self.boxable.is_frozen(),self.current_image_idx)
 	
+	def guimxit_closed(self):
+		self.guimxit = None
+		self.guictl_module.widget.set_guimxit_visible(False)
 			
 	def __init_guimx(self):
 		glflags = EMOpenGLFlagsAndTools()
@@ -1450,9 +1460,14 @@ class EMBoxerModule(QtCore.QObject):
 		QtCore.QObject.connect(self.guimx.emitter(),QtCore.SIGNAL("mx_mousedrag"),self.box_moved)
 		QtCore.QObject.connect(self.guimx.emitter(),QtCore.SIGNAL("mx_mouseup"),self.box_released)
 		QtCore.QObject.connect(self.guimx.emitter(),QtCore.SIGNAL("mx_boxdeleted"),self.box_image_deleted)
+		QtCore.QObject.connect(self.guimx.emitter(),QtCore.SIGNAL("module_closed"),self.guimx_closed)
 		if self.fancy_mode == EMBoxerModule.FANCY_MODE:
 			QtCore.QObject.connect(self.guimx.emitter(),QtCore.SIGNAL("inspector_shown"),self.guimx_inspector_requested)
-		
+	
+	def guimx_closed(self):
+		self.guimx = None
+		self.guictl_module.widget.set_guimx_visible(False)
+	
 	def __init_guiim(self, image=None, imagename=None):
 		if image == None:
 			imagename = self.image_names[self.current_image_idx]
@@ -1475,15 +1490,101 @@ class EMBoxerModule(QtCore.QObject):
 		QtCore.QObject.connect(self.guiim.emitter(),QtCore.SIGNAL("keypress"),self.keypress)
 		QtCore.QObject.connect(self.guiim.emitter(),QtCore.SIGNAL("mousewheel"),self.mouse_wheel)
 		QtCore.QObject.connect(self.guiim.emitter(),QtCore.SIGNAL("mousemove"),self.mouse_move)
-		
-#		try: qt_target.enable_timer()
-#		except: pass
-#		
+		QtCore.QObject.connect(self.guiim.emitter(),QtCore.SIGNAL("module_closed"),self.guiim_closed)
+	
+	def guiim_closed(self):
+		self.guiim = None
+		self.guictl_module.widget.set_guiim_visible(False)
+
 	def __update_guiim_states(self):
+		if self.guiim == None:
+			current_name = self.image_names[self.current_image_idx]
+			global BigImageCache
+			self.__init_guiim(BigImageCache.get_image_directly(current_name),current_name)
+			
 		self.guiim.set_other_data(self.boxable.get_exclusion_image(False),self.autoboxer.get_subsample_rate(),True)
+		
 		self.guiim.set_frozen(self.boxable.is_frozen())
 		self.guiim.set_excluded(self.boxable.is_excluded())
 		self.guiim.set_file_name(self.image_names[self.current_image_idx])
+		
+	def image_selected(self,event,lc):
+		get_application().setOverrideCursor(Qt.BusyCursor)
+		#try:
+		im=lc[0]
+		#try:
+		debug = False
+		if im != self.current_image_idx:
+			
+			global BigImageCache
+			image=BigImageCache.get_image_directly(self.image_names[im])
+			
+			if self.guiim == None:
+					current_name = self.image_names[self.current_image_idx]
+					self.__init_guiim(image,current_name)
+
+			
+			try: 
+				self.guiim.setWindowTitle(self.image_names[im])
+			except:
+				print "set window title failed"
+				
+			self.guiim.set_data(image)
+			self.boxable.cache_exc_to_db()
+			self.boxable = Boxable(self.image_names[im],self,self.autoboxer)
+			self.ptcl = []
+			self.guiim.del_shapes()
+			self.guiim.force_display_update()
+			self.in_display_limbo = True
+			project_db = EMProjectDB()
+			data = project_db[get_idd_key(self.image_names[im])]
+			ab_failure = self.autoboxer
+			
+			if data != None:
+				try:
+					autoboxer_id = data["autoboxer_unique_id"]
+					trim_autoboxer = project_db[autoboxer_id]["autoboxer"]
+					self.autoboxer_name = autoboxer_id
+					self.autoboxer = SwarmAutoBoxer(self)
+					self.autoboxer.become(trim_autoboxer)
+					self.dynapix = self.autoboxer.dynapix_on()
+					self.guictl.set_dynapix(self.dynapix)
+				except:
+					try:
+						trim_autoboxer = project_db["current_autoboxer"]
+						self.autoboxer = SwarmAutoBoxer(self)
+						self.autoboxer.become(trim_autoboxer)
+						self.autoboxer_name = self.autoboxer.get_unique_stamp()
+						self.dynapix = self.autoboxer.dynapix_on()
+						self.guictl.set_dynapix(self.dynapix)
+					except:
+						self.autoboxer = ab_failure
+			
+			if self.dynapix:
+				self.autoboxer.auto_box(self.boxable,False)
+				
+			self.boxable.set_autoboxer(self.autoboxer)
+			
+			self.autoboxer_db_changed()
+			
+			if self.box_size != self.autoboxer.get_box_size():
+				self.update_box_size(self.autoboxer.get_box_size())
+
+			self.in_display_limbo = False
+			
+			for box in self.boxable.boxes: box.changed = True
+			
+			self.current_image_idx = im
+			
+			self.__update_guiim_states()
+			if isinstance(self.guimxit,EMImageRotorModule):
+				self.guimxit.set_frozen(self.boxable.is_frozen(),self.current_image_idx)
+			self.guictl.set_image_quality(self.boxable.get_quality())
+			
+			self.box_display_update()
+		#except: pass
+			
+		get_application().setOverrideCursor(Qt.ArrowCursor)
 	
 	def set_autoboxer(self,imagename, default_method="Swarm"):
 		'''
@@ -1555,6 +1656,7 @@ class EMBoxerModule(QtCore.QObject):
 		self.ctl_rotor.get_core_object().add_qt_widget(self.guiim.get_core_object().get_inspector())
 	
 	def guimx_inspector_requested(self,event):
+		if self.guimx == None: self.__init_guiimx()
 		self.ctl_rotor.get_core_object().add_qt_widget(self.guimx.get_inspector())
 	
 	def initialize_mouse_event_handlers(self):
@@ -1571,12 +1673,18 @@ class EMBoxerModule(QtCore.QObject):
 		return self.guimxit != None
 	
 	def view_boxes_clicked(self,bool):
+		if self.guimx == None: self.__init_guiimx()
 		if bool:
 			get_application().show_specific(self.guimx)
 		else:
 			get_application().hide_specific(self.guimx)
 			
 	def view_image_clicked(self,bool):
+		if self.guiim == None:
+			current_name = self.image_names[self.current_image_idx]
+			global BigImageCache
+			self.__init_guiim(BigImageCache.get_image_directly(current_name),current_name)
+
 		if bool:
 			get_application().show_specific(self.guiim)
 		else:
@@ -1655,12 +1763,18 @@ class EMBoxerModule(QtCore.QObject):
 				print "error, unknown mode in update_box_size"
 		
 	def get_2d_gui_image(self):
+		if self.guiim == None:
+			current_name = self.image_names[self.current_image_idx]
+			global BigImageCache
+			self.__init_guiim(BigImageCache.get_image_directly(current_name),current_name)
 		return self.guiim
 	
 	def get_gui_ctl(self):
+		if self.guictl == None: self.__init_guictl()
 		return self.guictl
 	
 	def get_mx_gui_image(self):
+		if self.guimx == None: self.__init_guimx()
 		return self.guimx
 	
 	def get_boxable(self):
@@ -1790,8 +1904,7 @@ class EMBoxerModule(QtCore.QObject):
 		Call this to set the Ptcl Mx data 
 		'''
 		if data != None:
-			if self.guimx == None:
-				self.__init_guimx()
+			if self.guimx == None: self.__init_guimx()
 			if len(data) != 0:
 				#get_application().show_specific(self.guimx) #NEED TO CHANGE THIS IN THE MIDDLE OF REFURBISHMENT
 				self.guimx.set_data(data)
@@ -1802,90 +1915,18 @@ class EMBoxerModule(QtCore.QObject):
 	
 	def clear_displays(self):
 		self.ptcl = []
-		self.guiim.del_shapes()
-		self.guimx.set_data([])
+		if self.guiim != None: self.guiim.del_shapes()
+		if self.guimx != None: self.guimx.set_data([])
 		self.box_display_update() # - the user may still have some manual boxes...
 	
 	def big_image_change(self):
 		global BigImageCache
 		image=BigImageCache.get_object(self.get_current_image_name()).get_image(use_alternate=True)
-		self.guiim.set_data(image)
-		self.guiim.del_shapes()
-		self.guiim.force_display_update()
-		self.box_display_update()
-		
-	def image_selected(self,event,lc):
-		app = QtGui.QApplication.instance()
-		app.setOverrideCursor(Qt.BusyCursor)
-		#try:
-		im=lc[0]
-		#try:
-		debug = False
-		if im != self.current_image_idx:
-			global BigImageCache
-			image=BigImageCache.get_image_directly(self.image_names[im])
-			
-			try: 
-				self.guiim.setWindowTitle(self.image_names[im])
-			except:
-				print "set window title failed"
-				
+		if self.guiim != None:
 			self.guiim.set_data(image)
-			self.boxable.cache_exc_to_db()
-			self.boxable = Boxable(self.image_names[im],self,self.autoboxer)
-			self.ptcl = []
 			self.guiim.del_shapes()
 			self.guiim.force_display_update()
-			self.in_display_limbo = True
-			project_db = EMProjectDB()
-			data = project_db[get_idd_key(self.image_names[im])]
-			ab_failure = self.autoboxer
-			
-			if data != None:
-				try:
-					autoboxer_id = data["autoboxer_unique_id"]
-					trim_autoboxer = project_db[autoboxer_id]["autoboxer"]
-					self.autoboxer_name = autoboxer_id
-					self.autoboxer = SwarmAutoBoxer(self)
-					self.autoboxer.become(trim_autoboxer)
-					self.dynapix = self.autoboxer.dynapix_on()
-					self.guictl.set_dynapix(self.dynapix)
-				except:
-					try:
-						trim_autoboxer = project_db["current_autoboxer"]
-						self.autoboxer = SwarmAutoBoxer(self)
-						self.autoboxer.become(trim_autoboxer)
-						self.autoboxer_name = self.autoboxer.get_unique_stamp()
-						self.dynapix = self.autoboxer.dynapix_on()
-						self.guictl.set_dynapix(self.dynapix)
-					except:
-						self.autoboxer = ab_failure
-			
-			if self.dynapix:
-				self.autoboxer.auto_box(self.boxable,False)
-				
-			self.boxable.set_autoboxer(self.autoboxer)
-			
-			self.autoboxer_db_changed()
-			
-			if self.box_size != self.autoboxer.get_box_size():
-				self.update_box_size(self.autoboxer.get_box_size())
-
-			self.in_display_limbo = False
-			
-			for box in self.boxable.boxes: box.changed = True
-			
-			self.current_image_idx = im
-			
-			self.__update_guiim_states()
-			if isinstance(self.guimxit,EMImageRotorModule):
-				self.guimxit.set_frozen(self.boxable.is_frozen(),self.current_image_idx)
-			self.guictl.set_image_quality(self.boxable.get_quality())
-			
-			self.box_display_update()
-		#except: pass
-			
-		app.setOverrideCursor(Qt.ArrowCursor)
+		self.box_display_update()
 			
 
 	def gen_thumbs(self):
@@ -1911,8 +1952,8 @@ class EMBoxerModule(QtCore.QObject):
 	
 		if (nim == 1): return 0
 		
-		app = QtGui.QApplication.instance()
-		app.setOverrideCursor(QtCore.Qt.BusyCursor)
+
+		get_application().setOverrideCursor(QtCore.Qt.BusyCursor)
 		
 		self.gen_thumbs()
 		
@@ -1925,7 +1966,7 @@ class EMBoxerModule(QtCore.QObject):
 		except:
 			pass
 		#get_application().show_specific(self.guimxit)
-		self.guimxit.set_data(self.imagethumbs)
+		self.guimxit.set_data(self.imagethumbs,soft_delete=True)
 		
 		try:
 			for i in range(0,nim):
@@ -1936,14 +1977,13 @@ class EMBoxerModule(QtCore.QObject):
 			pass # this will happen if fancy widgets are being used
 		
 		self.guimxit.set_mouse_mode("app")
-		app = QtGui.QApplication.instance()
 			#app.setOverrideCursor(QtCore.Qt.BusyCursor)
 #		except: 
 #			app.setOverrideCursor(QtCore.Qt.ArrowCursor)
 #			return 0
 #			pass
 		
-		app.setOverrideCursor(QtCore.Qt.ArrowCursor)
+		get_application().setOverrideCursor(QtCore.Qt.ArrowCursor)
 		return 1
 		
 	def get_image_thumb(self,i):
@@ -2106,13 +2146,13 @@ class EMBoxerModule(QtCore.QObject):
 		#print context
 		
 	def update_image_display(self):
-		self.guiim.updateGL()
+		if self.guiim != None: self.guiim.updateGL()
 		
 		#if self.guimxit != None: self.guimxit.get_parent()
 		
 	def update_mx_display(self):
 		#get_application().get_qt_gl_updategl_target(self.guimx).updateGL()
-		self.guimx.updateGL()
+		if self.guimx != None: self.guimx.updateGL()
 
 	def delete_display_boxes(self,numbers):
 		'''
@@ -2171,14 +2211,16 @@ class EMBoxerModule(QtCore.QObject):
 				if j>box_num :
 					sh[j-1]=sh[j]
 					del sh[j]
-		self.guiim.del_shapes()
-		self.guiim.add_shapes(sh)
-		self.guiim.set_active(None,.9,.9,.4)
+					
+		if self.guiim != None:
+			self.guiim.del_shapes()
+			self.guiim.add_shapes(sh)
+			self.guiim.set_active(None,.9,.9,.4)
 		
 		if force_image_mx_remove: 
 			#self.ptcl.pop(box_num)
 			#self.guimx.set_data(self.ptcl)
-			self.guimx.pop_box_image(box_num)
+			if self.guimx != None:self.guimx.pop_box_image(box_num)
 
 		box = self.boxable.boxes[box_num]
 		
@@ -2392,8 +2434,7 @@ class EMBoxerModule(QtCore.QObject):
 		self.boxable.cache_exc_to_db()
 		progress = EMProgressDialogModule(get_application(),"Writing boxed images", "Abort", 0, len(image_names),None)
 		progress.qt_widget.show()
-		app = QtGui.QApplication.instance()
-		app.setOverrideCursor(Qt.BusyCursor)
+		get_application().setOverrideCursor(Qt.BusyCursor)
 		for i,image_name in enumerate(image_names):
 			try:
 				project_db = EMProjectDB()
@@ -2430,7 +2471,7 @@ class EMBoxerModule(QtCore.QObject):
 				
 			progress.qt_widget.setValue(i+1)
 			get_application().processEvents()
-		app.setOverrideCursor(Qt.ArrowCursor)
+		get_application().setOverrideCursor(Qt.ArrowCursor)
 		progress.qt_widget.close()
  
 	def write_all_coord_files(self,box_size,forceoverwrite=False):
@@ -2440,8 +2481,7 @@ class EMBoxerModule(QtCore.QObject):
 		self.boxable.cache_exc_to_db()
 		progress = EMProgressDialogModule(get_application(),"Writing Coordinate  Files", "Abort", 0, len(image_names),None)
 		progress.qt_widget.show()
-		app = QtGui.QApplication.instance()
-		app.setOverrideCursor(Qt.BusyCursor)
+		get_application().setOverrideCursor(Qt.BusyCursor)
 		for i,image_name in enumerate(image_names):
 			
 			try:
@@ -2476,7 +2516,7 @@ class EMBoxerModule(QtCore.QObject):
 				
 			progress.qt_widget.setValue(i+1)
 			get_application().processEvents()
-		app.setOverrideCursor(Qt.ArrowCursor)
+		get_application().setOverrideCursor(Qt.ArrowCursor)
 		progress.qt_widget.close()
  
 	
@@ -3328,6 +3368,21 @@ class EMBoxerModulePanel(QtGui.QWidget):
 			
 		QtCore.QObject.connect(self.boxformats, QtCore.SIGNAL("currentIndexChanged(QString)"), self.box_format_changed)
 	
+	def set_guimxit_visible(self,val=True):
+		self.lock = True
+		self.viewthumbs.setChecked(val)
+		self.lock = False
+	
+	def set_guimx_visible(self,val=True):
+		self.lock = True
+		self.viewboxes.setChecked(val)
+		self.lock = False
+	
+	def set_guiim_visible(self,val=True):
+		self.lock = True
+		self.viewimage.setChecked(val)
+		self.lock = False
+	
 	def box_format_changed(self,new_format):
 		format = str(new_format)
 		if format == "square with central dot": format = "rectpoint"
@@ -3812,12 +3867,9 @@ class EMBoxerModulePanel(QtGui.QWidget):
 			self.bs.setText(str(self.target().box_size))
 			return
 		
-		
-#		self.usingbox_size.setText(self.bs.text())
-		app = QtGui.QApplication.instance()
-		app.setOverrideCursor(Qt.BusyCursor)
+		get_application().setOverrideCursor(Qt.BusyCursor)
 		self.target().update_box_size(v,1)
-		app.setOverrideCursor(Qt.ArrowCursor)
+		get_application().setOverrideCursor(Qt.ArrowCursor)
 	
 	def set_box_size(self,box_size):
 		self.bs.setText(str(box_size))
