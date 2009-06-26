@@ -919,7 +919,7 @@ float calc_bessel(const int n, const float& x) {
 	gsl_sf_result result;
 //	int success =
 	gsl_sf_bessel_Jn_e(n,(double)x, &result);
-	return result.val;
+	return (float)result.val;
 }
 
 EMData*   EMData::bispecRotTransInvN(int N, int NK)
@@ -995,7 +995,7 @@ EMData*   EMData::bispecRotTransInvN(int N, int NK)
 //			cout<< "i= " << i << " kIx= " << kIx << " kIy=" << kIy << " fkVecR[i] =" << fkVecR[i]<< " fkVecI[i]="  << fkVecI[i] <<"  angle[i]= "  << AngMatlab << endl;
 			}
 
-			AngMatlab = fkAng - 2.*M_PI*(kx +ky)*(Mid)/End;
+			AngMatlab = fkAng - 2.0f*M_PI*(kx +ky)*(Mid)/End;
 			NewRealVal  =   absVal*cos(AngMatlab);
 			NewImagVal  =   absVal*sin(AngMatlab);
 
@@ -1120,7 +1120,7 @@ EMData*   EMData::bispecRotTransInvN(int N, int NK)
 				int Countkxy =SortfkInds[jCountkxy] ;   // 1: CountxyMax
 				int kx = kVecX[Countkxy] ;
 				int ky = kVecY[Countkxy] ;
-				float k2 = kx*kx+ky*ky;
+				float k2 = (float)(kx*kx+ky*ky);
 				if (k2==0) { continue;}
 				float phiK =0;
 				if (k2>0) phiK= jxjyatan2[ (ky+Mid-1)*End + kx+Mid-1];  phiK= atan2((float)ky,(float)kx);
@@ -1155,8 +1155,8 @@ EMData*   EMData::bispecRotTransInvN(int N, int NK)
 					for (int p=0; p<NK; p++){
 //						printf("p=%d, SortfkInds[p]=%d, CountCxy =%d \n", p,SortfkInds[p], CountCxy);
 						if (SortfkInds[p]==CountCxy){
-							float Arg1 = 2.*M_PI*r1*::sqrt((float) q2)/End;
-							float Arg2 = 2.*M_PI*r2*::sqrt((float) k2)/End;
+							float Arg1 = 2.0f*M_PI*r1*::sqrt((float) q2)/End;
+							float Arg2 = 2.0f*M_PI*r2*::sqrt((float) k2)/End;
 //							printf("Arg1=%4.2f, Arg2=%4.2f,  \n",Arg1, Arg2 );
 //							if (Arg1+ Arg2<15) {
 								float bispectemp  = (fkR*(fqR*fCR -fqI*fCI) -fkI*(fqI*fCR  +fqR*fCI))
@@ -1277,7 +1277,7 @@ EMData*   EMData::bispecRotTransInvDirect(int type)
 //			cout<< "i= " << i << " kIx= " << kIx << " kIy=" << kIy << " fkVecR[i] =" << fkVecR[i]<< " fkVecI[i]="  << fkVecI[i] <<"  angle[i]= "  << AngMatlab << endl;
 			}
 
-			AngMatlab = fkAng - 2.*M_PI*(kx +ky)*(Mid)/End;
+			AngMatlab = fkAng - 2.0f*M_PI*(kx +ky)*(Mid)/End;
 			NewRealVal  =   absVal*cos(AngMatlab);
 			NewImagVal  =   absVal*sin(AngMatlab);
 
@@ -1328,7 +1328,7 @@ EMData*   EMData::bispecRotTransInvDirect(int type)
 
 	if (type==0) {
 		int LthetaRange  = 59;
-		float ftR        = (2.0*M_PI/LthetaRange );
+		float ftR        = (2.0f*M_PI/LthetaRange );
 		float *thetaRange = new float[LthetaRange]; //= 0:.75:(Mid-1);
 
 		for (int ith=0; ith < LthetaRange; ith++){
@@ -1359,7 +1359,7 @@ EMData*   EMData::bispecRotTransInvDirect(int type)
 		for (int Countkxy =0; Countkxy<CountxyMax; Countkxy++){  // Main Section for type 0
 			int kx = kVecX[Countkxy] ;
 			int ky = kVecY[Countkxy] ;
-			float k2 = ::sqrt(kx*kx+ky*ky);
+			float k2 = ::sqrt((float)(kx*kx+ky*ky));
 			float phiK =0;
 			if (k2>0)    phiK = jxjyatan2[ (ky+Mid-1)*End + kx+Mid-1]; //  phiK=atan2(ky,kx);
 			float fkR     = fkVecR[(ky+Mid-1) + (kx+Mid-1) *End] ;
@@ -1371,7 +1371,7 @@ EMData*   EMData::bispecRotTransInvDirect(int type)
 			for (int Countqxy =0; Countqxy<CountxyMax; Countqxy++){   // This is the innermost loop
 				int qx   = kVecX[Countqxy] ;
 				int qy   = kVecY[Countqxy] ;
-				float q2   = ::sqrt(qx*qx+qy*qy);
+				float q2   = ::sqrt((float)(qx*qx+qy*qy));
 				if ((q2==0)|| (q2>Mid) ) {continue;}
 				float phiQ =0;
 				if (q2>0)   phiQ = jxjyatan2[ (qy+Mid-1)*End + qx+Mid-1]; // phiQ=atan2(qy,qx);
@@ -1384,7 +1384,7 @@ EMData*   EMData::bispecRotTransInvDirect(int type)
 				kCx  = ((kCIx+End-1)%End)+1-Mid; // correct
 				kCy  = ((kCIy+End-1)%End)+1-Mid ; // correct
 
-				float C2   = ::sqrt(kCx*kCx+ kCy*kCy);
+				float C2   = ::sqrt((float)(kCx*kCx+ kCy*kCy));
 				int CountCxy  = (kCx+Mid-1)*End+(kCy+Mid-1);
 				float fCR     = fkVecR[CountCxy];
 				float fCI     = fkVecI[CountCxy];
@@ -1538,7 +1538,7 @@ EMData*   EMData::bispecRotTransInvDirect(int type)
 		for (int Countkxy =0; Countkxy<CountxyMax; Countkxy++){
 			int kx = kVecX[Countkxy] ;
 			int ky = kVecY[Countkxy] ;
-			float k2 = ::sqrt(kx*kx+ky*ky);
+			float k2 = ::sqrt((float)(kx*kx+ky*ky));
 			float fkR     = fkVecR[(ky+Mid-1) + (kx+Mid-1) *End] ;
 			float fkI     = fkVecI[(ky+Mid-1) + (kx+Mid-1) *End]  ;
 	//		printf("Countkxy=%d,\t kx=%d, ky=%d, fkR=%3.2f,fkI=%3.2f \n", Countkxy, kx, ky, fkR, fkI);
@@ -1550,7 +1550,7 @@ EMData*   EMData::bispecRotTransInvDirect(int type)
 //                      up to here, matched perfectly with Matlab
 				int qx   = kVecX[Countqxy] ;
 				int qy   = kVecY[Countqxy] ;
-				float q2   = ::sqrt(qx*qx+qy*qy);
+				float q2   = ::sqrt((float)(qx*qx+qy*qy));
 				if ((q2==0)|| (q2>Mid) ) {continue;}
 				if  ((q2<k2) )   continue;
 
@@ -1564,7 +1564,7 @@ EMData*   EMData::bispecRotTransInvDirect(int type)
 				kCx  = ((kCIx+End-1)%End)+1-Mid; // correct
 				kCy  = ((kCIy+End-1)%End)+1-Mid ; // correct
 
-				float C2   = ::sqrt(kCx*kCx+ kCy*kCy);
+				float C2   = ::sqrt((float)(kCx*kCx+ kCy*kCy));
 				int CountCxy  = (kCx+Mid-1)*End+(kCy+Mid-1);
 				float fCR     = fkVecR[CountCxy];
 				float fCI     = fkVecI[CountCxy];
@@ -1622,7 +1622,11 @@ EMData*   EMData::bispecRotTransInvDirect(int type)
 			if (Weight <=0) continue;
 			WeightImage    -> set_value_at(jk,jq,Weight);
 			WeightImage    -> set_value_at(jq,jk,Weight);
+#ifdef _WIN32
+			float ValNow  = pow( (RotTransInv[TotalInd] + RotTransInv[TotalIndBar]) / Weight, 1.0f/3.0f )  ;
+#else
 			float ValNow  = cbrt( (RotTransInv[TotalInd] + RotTransInv[TotalIndBar]) / Weight )  ;
+#endif	//_WIN32			
 			RotTransInvF -> set_value_at(jk,jq,ValNow);//  include /Weight
  			RotTransInvF -> set_value_at(jq,jk,ValNow );//  include /Weight
 		}}

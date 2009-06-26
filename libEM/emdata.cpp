@@ -1763,7 +1763,11 @@ EMData *EMData::make_footprint(int type)
 		float *rmap=(float *)malloc(rmax*rmax*sizeof(float));
 		for (i=0; i<rmax; i++) {
 			for (j=0; j<rmax; j++) {
+#ifdef _WIN32
+				rmap[i+j*rmax]=_hypotf((float)i,(float)j);
+#else
 				rmap[i+j*rmax]=hypot((float)i,(float)j);
+#endif	//_WIN32
 //				printf("%d\t%d\t%f\n",i,j,rmap[i+j*rmax]);
 			}
 		}
@@ -1803,8 +1807,13 @@ EMData *EMData::make_footprint(int type)
 			for (i=0; i<rmax*2; i+=2) {
 				for (j=0; j<rmax; j++) {
 					float norm=fp->get_value_at(i+1,j);
+#ifdef _WIN32
+					fp->set_value_at(i,rmax*2-j-1,pow(fp->get_value_at(i,j)/(norm==0.0f?1.0f:norm), 1.0f/3.0f));
+					fp->set_value_at(i,j,pow(fp->get_value_at(i,j)/(norm==0.0f?1.0f:norm), 1.0f/3.0f));
+#else
 					fp->set_value_at(i,rmax*2-j-1,cbrt(fp->get_value_at(i,j)/(norm==0?1.0:norm)));
 					fp->set_value_at(i,j,cbrt(fp->get_value_at(i,j)/(norm==0?1.0:norm)));
+#endif	//_WIN32
 					fp->set_value_at(i+1,j,0.0);
 				}
 			}
@@ -1813,8 +1822,8 @@ EMData *EMData::make_footprint(int type)
 			for (i=0; i<rmax*2; i+=2) {
 				for (j=0; j<rmax; j++) {
 					float norm=fp->get_value_at(i+1,j);
-					fp->set_value_at(i,rmax*2-j-1,fp->get_value_at(i,j)/(norm==0?1.0:norm));
-					fp->set_value_at(i,j,fp->get_value_at(i,j)/(norm==0?1.0:norm));
+					fp->set_value_at(i,rmax*2-j-1,fp->get_value_at(i,j)/(norm==0.0f?1.0f:norm));
+					fp->set_value_at(i,j,fp->get_value_at(i,j)/(norm==0.0f?1.0f:norm));
 					fp->set_value_at(i+1,j,0.0);
 				}
 			}
@@ -1840,7 +1849,11 @@ EMData *EMData::make_footprint(int type)
 		float *rmap=(float *)malloc(rmax*rmax*sizeof(float));
 		for (i=0; i<rmax; i++) {
 			for (j=0; j<rmax; j++) {
+#ifdef _WIN32
+				rmap[i+j*rmax]=_hypotf((float)i,(float)j);
+#else
 				rmap[i+j*rmax]=hypot((float)i,(float)j);
+#endif	//_WIN32
 //				printf("%d\t%d\t%f\n",i,j,rmap[i+j*rmax]);
 			}
 		}
@@ -1888,8 +1901,8 @@ EMData *EMData::make_footprint(int type)
 					float norm=fp->get_value_at(i+1,j,h);
 //					fp->set_value_at(i,rmax*2-j-1,h,cbrt(fp->get_value_at(i,j,h)/(norm==0?1.0:norm)));
 //					fp->set_value_at(i,j,h,cbrt(fp->get_value_at(i,j,h)/(norm==0?1.0:norm)));
-					fp->set_value_at(i,rmax*2-j-1,h,(fp->get_value_at(i,j,h)/(norm==0?1.0:norm)));
-					fp->set_value_at(i,j,h,(fp->get_value_at(i,j,h)/(norm==0?1.0:norm)));
+					fp->set_value_at(i,rmax*2-j-1,h,(fp->get_value_at(i,j,h)/(norm==0.0f?1.0f:norm)));
+					fp->set_value_at(i,j,h,(fp->get_value_at(i,j,h)/(norm==0.0f?1.0f:norm)));
 	//				fp->set_value_at(i,rmax*2-j-1,fp->get_value_at(i,j)/(norm==0?1.0:norm));
 	//				fp->set_value_at(i,j,fp->get_value_at(i,j)/(norm==0?1.0:norm));
 					fp->set_value_at(i+1,j,h,0.0);
@@ -3703,9 +3716,9 @@ void EMData::uncut_slice(EMData * const map, const Transform& transform) const
 	int map_ny = map->get_ysize();
 	int map_nz = map->get_zsize();
 	int map_nxy = map_nx * map_ny;
-	float map_nz_round_limit = (float) map_nz-0.5;
-	float map_ny_round_limit = (float) map_ny-0.5;
-	float map_nx_round_limit = (float) map_nx-0.5;
+	float map_nz_round_limit = (float) map_nz-0.5f;
+	float map_ny_round_limit = (float) map_ny-0.5f;
+	float map_nx_round_limit = (float) map_nx-0.5f;
 /*
 	Vec3f posttrans = ort->get_posttrans();
 	Vec3f pretrans = ort->get_pretrans();*/

@@ -239,7 +239,7 @@ EMData *RotationalAligner::align(EMData * this_img, EMData *to,
 		result = rot_align_180;
 		score = rot_180_cmp;
 		delete rot_aligned; rot_aligned = 0;
-		rotate_angle_solution = rotate_angle_solution-180.0;
+		rotate_angle_solution = rotate_angle_solution-180.0f;
 	}
 
 //	Transform* t = get_align_attr("xform.align2d",result);
@@ -656,7 +656,7 @@ EMData *RTFExhaustiveAligner::align(EMData * this_img, EMData *to,
 #else
 			if (hypot(dx, dy) <= maxshift) {
 #endif
-				EMData *uw = this_img->unwrap(4, this_img->get_ysize() / 2 - 2 - maxshift, xst, dx, dy, true);
+				EMData *uw = this_img->unwrap(4, this_img->get_ysize() / 2 - 2 - maxshift, xst, (int)dx, (int)dy, true);
 				EMData *uwc = uw->copy();
 				EMData *a = uw->calc_ccfx(to_unwrapped);
 
@@ -686,7 +686,7 @@ EMData *RTFExhaustiveAligner::align(EMData * this_img, EMData *to,
 					delete uwc;
 					uwc = 0;
 				}
-				uw = this_img->unwrap(4, this_img->get_ysize() / 2 - 2 - maxshift, xst, dx, dy, true);
+				uw = this_img->unwrap(4, this_img->get_ysize() / 2 - 2 - maxshift, xst, (int)dx, (int)dy, true);
 				uwc = uw->copy();
 				a = uw->calc_ccfx(to_flip_unwrapped);
 
@@ -789,13 +789,13 @@ EMData *RTFSlowExhaustiveAligner::align(EMData * this_img, EMData *to,
 	int half_maxshift = maxshift / 2;
 
 
-	for (int dy = -half_maxshift; dy <= half_maxshift; dy += 1) {
-		for (float dx = -half_maxshift; dx <= half_maxshift; dx += 1) {
+	for (int dy = -half_maxshift; dy <= half_maxshift; ++dy) {
+		for (int dx = -half_maxshift; dx <= half_maxshift; ++dx) {
 			if (hypot(dx, dy) <= maxshift) {
 				for (float ang = -angle_step * 2.0f; ang <= (float)2 * M_PI; ang += angle_step * 4.0f) {
 					EMData v(*this_img_shrink);
 					Transform t(Dict("type","2d","alpha",static_cast<float>(ang*EMConsts::rad2deg)));
-					t.set_trans(dx,dy);
+					t.set_trans((float)dx,(float)dy);
 					v.transform(t);
 // 					v.rotate_translate(ang*EMConsts::rad2deg, 0.0f, 0.0f, (float)dx, (float)dy, 0.0f);
 
@@ -804,8 +804,8 @@ EMData *RTFSlowExhaustiveAligner::align(EMData * this_img, EMData *to,
 					if (lc < bestval) {
 						bestval = lc;
 						bestang = ang;
-						bestdx = dx;
-						bestdy = dy;
+						bestdx = (float)dx;
+						bestdy = (float)dy;
 						bestflip = 0;
 					}
 
@@ -813,8 +813,8 @@ EMData *RTFSlowExhaustiveAligner::align(EMData * this_img, EMData *to,
 					if (lc < bestval) {
 						bestval = lc;
 						bestang = ang;
-						bestdx = dx;
-						bestdy = dy;
+						bestdx = (float)dx;
+						bestdy = (float)dy;
 						bestflip = 1;
 					}
 				}

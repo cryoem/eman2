@@ -242,8 +242,8 @@ void MarchingCubes::surface_face_z()
 		Transform t(d);
 		Vec3f delta = t*z;
 		
-		f[i] += delta[0]*.25;
-		f[i+1] += delta[1]*.25;
+		f[i] += delta[0]*.25f;
+		f[i+1] += delta[1]*.25f;
 		f[i+2] = 0.5;
 	}
 	
