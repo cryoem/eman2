@@ -3409,7 +3409,7 @@ vector<float> EMData::max_search() {
 	vector<float> result;
 	
 	if (dim == 1) {
-		float max = -1e20;
+		float max = -1e20f;
 		int index = -1;
 		float temp;
 		for (int i=0; i<nx; i++) {
@@ -3418,10 +3418,10 @@ vector<float> EMData::max_search() {
 				index = i;
 			}
 		}
-		result.push_back(index);
+		result.push_back((float)index);
 		result.push_back(max);
 	} else if (dim == 2) {
-		float max = -1e20;
+		float max = -1e20f;
 		int index1 = -1;
 		int index2 = -1;
 		for (int i=0; i<nx; i++) {
@@ -3433,11 +3433,11 @@ vector<float> EMData::max_search() {
 				}
 			}
 		}
-		result.push_back(index1);
-		result.push_back(index2);
+		result.push_back((float)index1);
+		result.push_back((float)index2);
 		result.push_back(max);
 	} else {
-		float max = -1e20;
+		float max = -1e20f;
 		int index1 = -1;
 		int index2 = -1;
 		int index3 = -1;
@@ -3453,9 +3453,9 @@ vector<float> EMData::max_search() {
 				}
 			}
 		}
-		result.push_back(index1);
-		result.push_back(index2);
-		result.push_back(index3);
+		result.push_back((float)index1);
+		result.push_back((float)index2);
+		result.push_back((float)index3);
 		result.push_back(max);
 	}
 	return result;
