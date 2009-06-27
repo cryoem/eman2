@@ -2040,10 +2040,11 @@ class EMBoxerModule(QtCore.QObject):
 
 		im=lc[0]
 		self.moving_box_data = [event.x(),event.y(),im]
-		self.guiim.set_active(im,.9,.9,.4)
-		#self.guimx.get_core_object.set_selected(im)
-		boxes = self.get_boxes()
-		self.guiim.register_scroll_motion(boxes[im].xcorner+boxes[im].xsize/2,boxes[im].ycorner+boxes[im].ysize/2)
+		if self.guiim != None:
+			self.guiim.set_active(im,.9,.9,.4)
+			#self.guimx.get_core_object.set_selected(im)
+			boxes = self.get_boxes()
+			self.guiim.register_scroll_motion(boxes[im].xcorner+boxes[im].xsize/2,boxes[im].ycorner+boxes[im].ysize/2)
 		
 		self.moving_box_data = None
 		

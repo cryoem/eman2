@@ -415,58 +415,64 @@ class Box:
 		have attempted to lay basic framework if in future we use a different autoboxer which
 		requires its own parameters
 		'''
+		if not isinstance(autoboxer,SwarmAutoBoxer): raise NotImplementedException("You autoboxer is not supported")
+		
 		if self.isdummy:
 			return 0
 		
 		correlation = self.get_flcf_image(autoboxer)
+		
+		shrink = autoboxer.get_subsample_rate()
+		invshrink = 1/shrink
+#		b = FLCFBoxImage()
+#		x = (self.xcorner+self.xsize/2.0)*invshrink
+#		y = (self.ycorner+self.ysize/2.0)*invshrink
+#		correlation = b.get_small_image(self.image_name,[x,y] ,autoboxer.get_params_mediator() )
+#		correlation.write_image("small_correlation_image.hdf",-1)
+		
 		if correlation == None:
 			print 'error, can not update the parameters of a Box because the Boxable has no correlation image'
 			return 0
 		
-		if isinstance(autoboxer,SwarmAutoBoxer):
-			shrink = autoboxer.get_subsample_rate()
-			invshrink = 1/shrink
+		
+
+		# the central coordinates of the box in terms of the shrunken correlation image
+		x = (self.xcorner+self.xsize/2.0)*invshrink
+		y = (self.ycorner+self.ysize/2.0)*invshrink
+		
+		#the search radius is used in correlation space - it limits the radial distance
+		# up to which 'profile' data can be accrued
+		# it is currently half the box_size in terms of the correlation image's dimensions
+		searchradius = autoboxer.get_search_radius()
 	
-			# the central coordinates of the box in terms of the shrunken correlation image
-			x = (self.xcorner+self.xsize/2.0)*invshrink
-			y = (self.ycorner+self.ysize/2.0)*invshrink
-			
-			#the search radius is used in correlation space - it limits the radial distance
-			# up to which 'profile' data can be accrued
-			# it is currently half the box_size in terms of the correlation image's dimensions
-			searchradius = autoboxer.get_search_radius()
+		peak_location = BoxingTools.find_radial_max(correlation,int(x),int(y),searchradius )
+		peak_location2 = BoxingTools.find_radial_max(correlation,peak_location[0],peak_location[1],searchradius )
+		if (peak_location != peak_location2):
+			# this represents a troubling condition
+			# setting box.get_correlation_score() is the flag that other functions can act on in order to exclude
+			# this box from consideration
+			self.correlation_score = None
+			if not force :
+				#print "Error, peak location unrefined"
+				return 0
+	
+		# store the peak location
+		self.corx = peak_location[0]
+		self.cory = peak_location[1]
+	
+		# store the correlation value at the correlation max
+		self.correlation_score = correlation.get(self.corx,self.cory)
+	
+		# store the profile
+		self.opt_profile = BoxingTools.get_min_delta_profile(correlation,self.corx,self.cory, searchradius )
+		# center on the correlation peak
+		if (center):
+			self.xcorner = self.corx*shrink-self.xsize/2.0
+			self.ycorner = self.cory*shrink-self.ysize/2.0
+			self.changed = True
 		
-			peak_location = BoxingTools.find_radial_max(correlation,int(x),int(y),searchradius )
-			peak_location2 = BoxingTools.find_radial_max(correlation,peak_location[0],peak_location[1],searchradius )
-			if (peak_location != peak_location2):
-				# this represents a troubling condition
-				# setting box.get_correlation_score() is the flag that other functions can act on in order to exclude
-				# this box from consideration
-				self.correlation_score = None
-				if not force :
-					#print "Error, peak location unrefined"
-					return 0
-		
-			# store the peak location
-			self.corx = peak_location[0]
-			self.cory = peak_location[1]
-		
-			# store the correlation value at the correlation max
-			self.correlation_score = correlation.get(self.corx,self.cory)
-		
-			# store the profile
-			self.opt_profile = BoxingTools.get_min_delta_profile(correlation,self.corx,self.cory, searchradius )
-			# center on the correlation peak
-			if (center):
-				self.xcorner = self.corx*shrink-self.xsize/2.0
-				self.ycorner = self.cory*shrink-self.ysize/2.0
-				self.changed = True
-			
-			return 1
-			
-		else:
-			print 'error, the autoboxer you are using is not currently known by the Box class'
-			return 0
+		return 1
+
 
 class TrimBox:
 	'''
@@ -891,9 +897,11 @@ class CoarsenedFlattenedImage:
 		if shrink <= 1.0:
 			self.smallimage = tmp.copy()
 		else:
-			self.smallimage = tmp.process("math.meanshrink",{"n":shrink})
-			self.smallimage.process_inplace("filter.ramp")
+			#self.smallimage = tmp.process("math.meanshrink",{"n":shrink})
+			self.smallimage = tmp.process("math.fft.resample",{"n":shrink}) # avoids aliasing but risks Fourier artifacts. I haven't noticed any artifacts and avoid no aliaising makes the objects appear nicely in the low resolution images
+			#self.smallimage.process_inplace("filter.ramp")
 			self.smallimage.process_inplace("filter.flattenbackground",{"radius":flattenradius})
+			#self.smallimage.process_inplace("filter.lowpass.tanh",{"cutoff_abs":0.1})
 			self.smallimage.process_inplace("normalize") # this is really bad for some reason
 			
 			
@@ -1166,6 +1174,71 @@ class FLCFImage:
 		return self.get_image()
 		
 FLCFImageCache = Cache(FLCFImage)
+
+class FLCFBoxImage:
+	''' an idea'''
+	def __init__(self): pass
+	
+	def get_shrunk_raw_image_clip_idx(self,image_name):
+		db_title = "bdb:e2boxercache#"
+		key = "coarse_flat_image"
+		
+		db_name =  db_title+key
+		if not db_check_dict(db_name): 
+	#		print "db failed",db_name
+			return None # t
+		
+		db = db_open_dict(db_name)
+		
+		if db.has_key("maxrec"):
+			for idx in range(0,db["maxrec"]+1):
+				header = db.get_header(idx)
+				try:
+					if header["e2boxer_image_name"] == image_name:
+						db_close_dict(db_name)
+						return idx
+				except:
+					pass
+				
+		db_close_dict(db_name)
+		return None
+	
+	def get_small_image(self,image_name,coords=[0,0],params_mediator=None):
+		template = params_mediator.get_template_object()
+		t = template.get_template()
+		coords[0]-t.get_xsize(),coords[1]-t.get_ysize(),2*t.get_xsize(),2*t.get_ysize()
+		r = Region(coords[0]-t.get_xsize(),coords[1]-t.get_ysize(),2*t.get_xsize(),2*t.get_ysize())
+		
+		flcf_object = FLCFImage(image_name)
+		if flcf_object.query_params_match(params_mediator):
+			image = flcf_object.get_image()
+			print "got the clip"
+			return image.get_clip(r)
+		
+		
+		idx = self.get_shrunk_raw_image_clip_idx(image_name)
+		
+		if idx == None: raise RuntimeError("That's not supposed to happen")
+			
+		print "going it without doing the whole image"
+		image = EMData()
+		image.read_image("bdb:e2boxercache#coarse_flat_image",idx,False,r)
+		image.write_image("raw_data.hdf",-1)
+		
+		flattenradius = params_mediator.get_template_radius()
+		shrinkfactor = params_mediator.get_subsample_rate()
+		tmp = BinaryCircleImageCache.get_image_directly(flattenradius)
+		inv_sigma_image = image.calc_fast_sigma_image(tmp)
+		inv_sigma_image.write_image("inv_sigma_image.hdf",-1)
+		
+		inv_sigma_image.process_inplace("math.invert.carefully",{"zero_to":1.0})
+		
+		cfimage = image.calc_ccf(t)
+		cfimage.write_image("cfimage.hdf",-1)
+		cfimage.process_inplace("xform.phaseorigin.tocenter")
+		cfimage.mult(inv_sigma_image)
+		
+		return cfimage
 
 debug = False
 
@@ -1934,7 +2007,6 @@ class Boxable:
 			return 1
 		
 	def get_correlation_image(self,autoboxer):
-		
 		correlation = FLCFImageCache.get_image(self.image_name,autoboxer.get_params_mediator())
 		
 		

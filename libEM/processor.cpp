@@ -1479,15 +1479,14 @@ void MedianShrinkProcessor::accrue_median(EMData* to, const EMData* const from,c
 
 EMData* FFTResampleProcessor::process(const EMData *const image)
 {
-	if (image->is_complex()) throw ImageFormatException("Error, the fft shrink processor does not work on complex images");
-
-
 	float sample_rate = params.set_default("n",0.0f);
 	if (sample_rate <= 0.0F  )  {
 		throw InvalidValueException(sample_rate,	"sample rate must be >0 ");
 	}
 
-	EMData* result = image->copy();
+	EMData* result;
+	if (image->is_complex()) result = image->copy();
+	else result = image->do_fft();
 	fft_resample(result,image,sample_rate);
 	// The image may have been padded - we should shift it so that the phase origin is where FFTW expects it
 	result->update();
@@ -1545,7 +1544,7 @@ void FFTResampleProcessor::fft_resample(EMData* to, const EMData *const from, co
 	if (nz != 1 && new_nz % 2 == 0 && nz % 2 == 1) fft_z_correction = 1;
 	else if (nz != 1 && new_nz % 2 == 1 && nz % 2 == 0) fft_z_correction = -1;
 
-	to->do_fft_inplace();
+	if ( ! to->is_complex()) to->do_fft_inplace();
 
 	if (ndim != 1) to->process_inplace("xform.fourierorigin.tocenter");
 
