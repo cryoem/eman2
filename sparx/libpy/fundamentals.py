@@ -294,7 +294,7 @@ def resample(img, sub_rate=0.5, fit_to_fft=False, frequency_low=0.0, frequency_h
 
 def prepi(image):
 	M = image.get_xsize()
-# padd two times
+# pad two times
 	npad = 2
 	N = M*npad
 # support of the window

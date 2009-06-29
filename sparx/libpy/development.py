@@ -44,10 +44,10 @@ def ali2d_g(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	from alignment    import Numrinit, ringwe
 	from development  import ali2d_single_iter_g
 	from filter       import filt_ctf, filt_table, filt_tophatb
-	from fundamentals import fshift
 	from utilities    import print_begin_msg, print_end_msg, print_msg
-	from fundamentals import fft, rot_avg_table
+	from fundamentals import fft, rot_avg_table, fshift, prepi
 	from utilities    import write_text_file, file_type
+	from applications import MPI_start_end
 	import os
 		
 	print_begin_msg("ali2d_g")
@@ -226,7 +226,7 @@ def ali2d_g(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 			if a1 < a0:
 				if auto_stop == True: break
 			else:	a0 = a1
-			sx_sum, sy_sum = ali2d_single_iter_g(data_prep, kb, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF)
+			sx_sum, sy_sum = ali2d_single_iter_g(data, data_prep, kb, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF)
 			
 	drop_image(tavg, os.path.join(outdir, "aqfinal.hdf"))
 	# write out headers
@@ -245,9 +245,10 @@ def ali2d_g_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	from development  import ali2d_single_iter_g
 	from filter       import filt_table, filt_ctf, filt_tophatb
 	from numpy        import reshape, shape
-	from fundamentals import fshift, fft, rot_avg_table
+	from fundamentals import fshift, fft, rot_avg_table, prepi
 	from utilities    import write_text_file
 	from utilities    import print_msg, print_begin_msg, print_end_msg
+	from applications import MPI_start_end
 	import os
 	import sys
 	from mpi 	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
@@ -487,7 +488,7 @@ def ali2d_g_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				again = mpi_bcast(again, 1, MPI_INT, main_node, MPI_COMM_WORLD)
 				if not again: break
 			if total_iter != max_iter*len(xrng):
-				sx_sum, sy_sum = ali2d_single_iter_g(data_prep, kb, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF)
+				sx_sum, sy_sum = ali2d_single_iter_g(data, data_prep, kb, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF)
 				sx_sum = mpi_reduce(sx_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 				sy_sum = mpi_reduce(sy_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 
@@ -843,7 +844,7 @@ def ali2d_mg(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xr=0, yr=
 			break
 			
 
-def ali2d_single_iter_g(data, kb, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, CTF=False, ali_params="xform.align2d"):
+def ali2d_single_iter_g(data, data_prep, kb, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, CTF=False, ali_params="xform.align2d"):
 	"""
 		single iteration of 2D alignment using ormq
 		if CTF = True, apply CTF to data (not to reference!)
@@ -858,7 +859,7 @@ def ali2d_single_iter_g(data, kb, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step
 
 	# 2D alignment using rotational ccf in polar coords and NUFFT interpolation
 	tavgi, kb = prepi(tavg)
-	cimage = Util.Polar2Dm(tavgi, cnx, cny, numr, mode, kb)
+	cimage = Util.Polar2Dmi(tavgi, cnx, cny, numr, mode, kb)
 	Util.Frngs(cimage, numr)
 	Applyws(cimage, numr, wr)
 
@@ -869,9 +870,9 @@ def ali2d_single_iter_g(data, kb, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step
 		if CTF:
 			#Apply CTF to image
 			ctf_params = data[im].get_attr("ctf")
-			ima = filt_ctf(data[im], ctf_params, True)
+			ima = filt_ctf(data_prep[im], ctf_params, True)
 		else:
-			ima = data[im]
+			ima = data_prep[im]
 		alpha, sx, sy, mirror, dummy = get_params2D(data[im], ali_params)
 		alpha, sx, sy, mirror        = combine_params2(alpha, sx, sy, mirror, 0.0, -cs[0], -cs[1], 0)
 		alphai, sxi, syi, scalei     = inverse_transform2(alpha, sx, sy, 1.0)
@@ -4399,6 +4400,7 @@ def ormy3g(imali, kb, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 	from math import pi, cos, sin
 	from fundamentals import fft, mirror
 	from utilities import amoeba, model_circle, amoeba_multi_level
+	from alignment import ang_n
 	
 	maxrin = numr[-1]
 	# do not pad
@@ -4428,9 +4430,9 @@ def ormy3g(imali, kb, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 			
 			# straight, find the current maximum and its location
 			line_s = Util.Crosrng_msg_s(crefim, cimage, numr)
-			ps = line_s.peak_search(1, 1)	
+			ps = line_s.max_search()	
 			qn = ps[1]
-			jtot = ps[2]/2
+			jtot = ps[0]/2
 			q = Processor.EMFourierFilter(line_s, parline)
 			data.insert(0, q)
 			ps = amoeba([jtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 500, data)
@@ -4440,9 +4442,9 @@ def ormy3g(imali, kb, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 
 			# mirror, find the current maximum and its location
 			line_m = Util.Crosrng_msg_m(crefim, cimage, numr)
-			ps = line_m.peak_search(1,1)				
+			ps = line_m.max_search()				
 			qm = ps[1]
-			mtot = ps[2]/2
+			mtot = ps[0]/2
 			q = Processor.EMFourierFilter(line_m, parline)
 			data.insert(0, q)
 			ps = amoeba([mtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 500, data)
@@ -4450,7 +4452,7 @@ def ormy3g(imali, kb, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 			mtot = ps[0][0]*2
 			qm = ps[1]
 
-			if qn >=peak or qm >=peak:
+			if qn >= peak or qm >= peak:
 				if qn >= qm:
 					ang = ang_n(jtot+1, mode, maxrin)
 					sx = -ix
@@ -4490,7 +4492,7 @@ def ormy3g(imali, kb, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 	if is_mirror:
 		ang = -ang
 		sxs = -sxs	
-	return  ang, sxs, sys, is_mirror, peak	
+	return ang, sxs, sys, is_mirror, peak	
 
 
 def func_loop(args, data):
@@ -4504,16 +4506,16 @@ def func_loop(args, data):
 	crefim = data[5]
 	ix = args[0]
 	iy = args[1]
-	cimage=Util.Polar2Dm(image, cnx+ix, cny+iy, numr, mode)
+	cimage = Util.Polar2Dm(image, cnx+ix, cny+iy, numr, mode)
 	Util.Frngs(cimage, numr)
 	retvals = Util.Crosrng_ms(crefim, cimage, numr)
 	qn = retvals["qn"]
 	qm = retvals["qm"]
-	if qn>=qm :
-		ang = ang_n(retvals["tot"], mode, numr[len(numr)-1])
+	if qn >= qm:
+		ang = ang_n(retvals["tot"], mode, numr[-1])
 		return qn, ang
 	else :
-		ang = ang_n(retvals["tmt"], mode, numr[len(numr)-1])
+		ang = ang_n(retvals["tmt"], mode, numr[-1])
 		return qm, ang
 
 		
@@ -4533,39 +4535,39 @@ def func_loop2(args, data):
 	kbline = data[9]
 	is_mirror = data[10]
 	data1 = []
-	data1.insert(1,kbline)
+	data1.insert(1, kbline)
 	
 	ix = args[0]
 	iy = args[1]
 	
-	cimage=Util.Polar2Dmi(imali,cnx+ix,cny+iy,numr,mode,kb)
+	cimage = Util.Polar2Dmi(imali, cnx+ix, cny+iy, numr, mode, kb)
 	Util.Frngs(cimage, numr)
 	
-	if is_mirror==0:
-		line = Util.Crosrng_msg_s(crefim,cimage,numr)
+	if is_mirror == 0:
+		line = Util.Crosrng_msg_s(crefim, cimage, numr)
 		#  Straight, find the current maximum and its location
-		ps=line.peak_search(1,1)				
-		jtot=ps[2]/2
-		q=Processor.EMFourierFilter(line,parline)
-		data1.insert(0,q)
-		ps = amoeba([jtot], [2.0], oned_search_func, 1.e-4,1.e-4,500,data1)
+		ps = line.max_search()				
+		jtot = ps[0]/2
+		q = Processor.EMFourierFilter(line, parline)
+		data1.insert(0, q)
+		ps = amoeba([jtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 500, data1)
 		del data1[0]
 		jtot = ps[0][0]*2
 		qn = ps[1]
-		ang = ang_n(jtot+1, mode, numr[len(numr)-1])				
+		ang = ang_n(jtot+1, mode, maxrin)				
 		return qn, ang
 	else:
-		line = Util.Crosrng_msg_m(crefim,cimage,numr)
+		line = Util.Crosrng_msg_m(crefim, cimage, numr)
 		#  Mirror, find the current maximum and its location
-		ps=line.peak_search(1,1)				
-		mtot=ps[2]/2
-		q=Processor.EMFourierFilter(line,parline)
-		data1.insert(0,q)
-		ps = amoeba([mtot], [2.0], oned_search_func,1.e-4,1.e-4,500,data1)	
+		ps = line.max_search()
+		mtot = ps[0]/2
+		q = Processor.EMFourierFilter(line, parline)
+		data1.insert(0, q)
+		ps = amoeba([mtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 500, data1)	
 		del data1[0]
-		mtot=ps[0][0]*2
-		qm=ps[1]
-		ang = ang_n(mtot+1, mode, numr[len(numr)-1])				
+		mtot = ps[0][0]*2
+		qm = ps[1]
+		ang = ang_n(mtot+1, mode, maxrin)	
 		return qm, ang
 
 '''
