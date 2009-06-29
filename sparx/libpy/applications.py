@@ -2535,7 +2535,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 
 			if myid == main_node:
 
-				if  Fourvar:
+				if Fourvar:
 					drop_image(fft(tavg), os.path.join(outdir, "aqc_%03d.hdf"%(total_iter)))
 					tavg    = fft(Util.divn_img(tavg, vav))
 

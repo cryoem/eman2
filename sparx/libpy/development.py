@@ -33,6 +33,480 @@ from global_def import *
 
 #  This file contains code under development or not currently used.
 
+def ali2d_g(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, \
+		CTF=False, snr=1.0, Fourvar = False, user_func_name="ref_ali2d", rand_alpha = False, MPI=False):
+	if MPI:
+		ali2d_g_MPI(stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, center, maxit, CTF, snr, Fourvar, user_func_name, rand_alpha)
+		return
+
+	from utilities    import model_circle, drop_image, get_image, get_input_from_string
+	from statistics   import fsc_mask, sum_oe
+	from alignment    import Numrinit, ringwe
+	from development  import ali2d_single_iter_g
+	from filter       import filt_ctf, filt_table, filt_tophatb
+	from fundamentals import fshift
+	from utilities    import print_begin_msg, print_end_msg, print_msg
+	from fundamentals import fft, rot_avg_table
+	from utilities    import write_text_file, file_type
+	import os
+		
+	print_begin_msg("ali2d_g")
+
+	if os.path.exists(outdir):   ERROR('Output directory exists, please change the name and restart the program', " ", 1)
+	os.mkdir(outdir)
+
+	import user_functions
+	user_func = user_functions.factory[user_func_name]
+
+	xrng        = get_input_from_string(xr)
+	if  yr == "-1":  yrng = xrng
+	else          :  yrng = get_input_from_string(yr)
+	step        = get_input_from_string(ts)
+
+	first_ring=int(ir); last_ring=int(ou); rstep=int(rs); max_iter=int(maxit);
+
+	if max_iter == 0:
+		max_iter  = 10
+		auto_stop = True
+	else:
+		auto_stop = False
+
+	print_msg("Input stack                 : %s\n"%(stack))
+	print_msg("Output directory            : %s\n"%(outdir))
+	print_msg("Inner radius                : %i\n"%(first_ring))
+
+	if(file_type(stack) == "bdb"):
+		from EMAN2db import db_open_dict
+		dummy = db_open_dict(stack, True)
+	active = EMUtil.get_all_attributes(stack, 'active')
+	list_of_particles = []
+	for im in xrange(len(active)):
+		if active[im]:  list_of_particles.append(im)
+	del active
+	nima = len(list_of_particles)
+	ima  = EMData()
+	ima.read_image(stack, list_of_particles[0], True)
+	nx = ima.get_xsize()
+
+	# default value for the last ring
+	if last_ring == -1:  last_ring = nx/2-2
+
+	print_msg("Outer radius                : %i\n"%(last_ring))
+	print_msg("Ring step                   : %i\n"%(rstep))
+	print_msg("X search range              : %s\n"%(xrng))
+	print_msg("Y search range              : %s\n"%(yrng))
+	print_msg("Translational step          : %s\n"%(step))
+	print_msg("Center type                 : %i\n"%(center))
+	print_msg("Maximum iteration           : %i\n"%(max_iter))
+	print_msg("Use Fourier variance        : %s\n"%(Fourvar))
+	print_msg("Data with CTF               : %s\n"%(CTF))
+	print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
+	if auto_stop:  print_msg("Stop iteration with         : criterion\n")
+	else:           print_msg("Stop iteration with         : maxit\n")
+	print_msg("User function               : %s\n"%(user_func_name))
+
+	if maskfile:
+		import	types
+		if type(maskfile) is types.StringType:
+			print_msg("Maskfile                    : %s\n\n"%(maskfile))
+			mask=get_image(maskfile)
+		else:
+			print_msg("Maskfile                    : user provided in-core mask\n\n")
+			mask = maskfile
+	else :
+		print_msg("Maskfile                    : default, a circle with radius %i\n\n"%(last_ring))
+		mask = model_circle(last_ring, nx, nx)
+
+	cnx = nx/2+1
+ 	cny = cnx
+ 	mode = "F"
+	data = []
+	if CTF:
+		ctf_params = ima.get_attr("ctf")
+		if ima.get_attr_default('ctf_applied', 2) > 0:	ERROR("data cannot be ctf-applied", "ali2d_c_MPI", 1)
+		from morphology   import ctf_img
+		ctf_2_sum = EMData(nx, nx, 1, False)
+	else:
+		ctf_2_sum = None
+	if  Fourvar:
+		from statistics   import add_ave_varf
+
+	del ima
+	data = EMData.read_images(stack, list_of_particles)
+	for im in xrange(nima):
+		data[im].set_attr('ID', list_of_particles[im])
+		st = Util.infomask(data[im], mask, False)
+		data[im] -= st[0]
+		if CTF:
+			ctf_params = data[im].get_attr("ctf")
+	 		Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
+	if CTF:  ctf_2_sum += 1.0/snr  # note this is complex addition (1.0/snr,0.0)
+	# startup
+	numr = Numrinit(first_ring, last_ring, rstep, mode) 	#precalculate rings
+ 	wr = ringwe(numr, mode)
+	
+	data_prep = []
+	for im in xrange(nima):
+		img_prep, kb = prepi(data[im])
+		data_prep.append(img_prep)
+
+	# initialize data for the reference preparation function
+	#  mask can be modified in user_function
+	ref_data = []
+	ref_data.append( mask )
+	ref_data.append( center )
+	ref_data.append( None )
+	ref_data.append( None )
+	cs = [0.0]*2
+	# iterate
+	total_iter = 0
+	a0 = -1e22
+	sx_sum = 0.0
+	sy_sum = 0.0
+	for N_step in xrange(len(xrng)):
+		msg = "\nX range = %5.2f   Y range = %5.2f   Step = %5.2f\n"%(xrng[N_step], yrng[N_step], step[N_step])
+		print_msg(msg)
+		for Iter in xrange(max_iter):
+			total_iter += 1 
+			if  Fourvar:  
+				tavg, ave1, ave2, vav, sumsq = add_ave_varf(data, mask, "a", CTF, ctf_2_sum)
+				# write the current average
+				drop_image(fft(tavg), os.path.join(outdir, "aqc_%03d.hdf"%(total_iter)))
+				tavg    = fft(Util.divn_img(tavg, vav))
+
+				vav_r	= Util.pack_complex_to_real(vav)
+				drop_image(vav_r, os.path.join(outdir, "varf_%03d.hdf"%(total_iter)))
+				sumsq_r = Util.pack_complex_to_real(sumsq)
+				rvar    = rot_avg_table(vav_r)
+				rsumsq  = rot_avg_table(sumsq_r)
+				frsc = []
+				freq = []
+				for i in xrange(len(rvar)):
+					qt = max(0.0, rsumsq[i]/rvar[i] - 1.0)
+					frsc.append(qt/(qt+1.0))
+					freq.append(float(i)/(len(rvar)-1)*0.5)
+				frsc = [freq, frsc]
+				del freq
+				write_text_file(frsc, os.path.join(outdir, "resolution%03d"%(total_iter)) )
+			else:
+				ave1, ave2 = sum_oe(data, "a", CTF, ctf_2_sum)
+				if CTF:  tavg = fft(Util.divn_img(fft(Util.addn_img(ave1, ave2)), ctf_2_sum))
+				else:	 tavg = (ave1+ave2)/nima
+				frsc = fsc_mask(ave1, ave2, mask, 1.0, os.path.join(outdir, "resolution%03d"%(total_iter)))
+
+			ref_data[2] = tavg
+			ref_data[3] = frsc
+			#  call user-supplied function to prepare reference image, i.e., center and filter it
+			if center == -1:
+				# When center = -1, which is by default, we use the average center method
+				ref_data[1] = 0
+				tavg, cs = user_func(ref_data)
+				cs[0] = sx_sum/float(nima)
+				cs[1] = sy_sum/float(nima)
+				tavg = fshift(tavg, -cs[0], -cs[1])
+				msg = "Average center x =      %10.3f        Center y       = %10.3f\n"%(cs[0], cs[1])
+				print_msg(msg)
+			else:
+				tavg, cs = user_func(ref_data)
+
+			# write the current filtered average
+			drop_image(tavg, os.path.join(outdir, "aqf_%03d.hdf"%(total_iter)))
+
+			# a0 should increase; stop algorithm when it decreases.
+			if Fourvar:  
+				Util.div_filter(sumsq, vav)
+				sumsq = filt_tophatb(sumsq, 0.01, 0.49)
+				a1 = Util.infomask(sumsq, None, True)
+				a1 = a1[0]
+			else:
+				a1 = tavg.cmp("dot", tavg, dict(negative = 0, mask = ref_data[0]))
+			msg = "Iteration   #%5d	     criterion = %20.7e\n"%(total_iter,a1)
+			print_msg(msg)
+			if total_iter == len(xrng)*max_iter: break
+			if a1 < a0:
+				if auto_stop == True: break
+			else:	a0 = a1
+			sx_sum, sy_sum = ali2d_single_iter_g(data_prep, kb, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF)
+			
+	drop_image(tavg, os.path.join(outdir, "aqfinal.hdf"))
+	# write out headers
+	from utilities import write_headers
+	write_headers(stack, data, list_of_particles)
+	print_end_msg("ali2d_g")
+
+
+def ali2d_g_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, CTF=False, snr=1.0, \
+			Fourvar = False, user_func_name="ref_ali2d", rand_alpha=False):
+
+	from utilities    import model_circle, model_blank, drop_image, get_image, get_input_from_string
+	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type, bcast_number_to_all, bcast_list_to_all
+	from statistics   import fsc_mask, sum_oe, add_ave_varf_MPI
+	from alignment    import Numrinit, ringwe
+	from development  import ali2d_single_iter_g
+	from filter       import filt_table, filt_ctf, filt_tophatb
+	from numpy        import reshape, shape
+	from fundamentals import fshift, fft, rot_avg_table
+	from utilities    import write_text_file
+	from utilities    import print_msg, print_begin_msg, print_end_msg
+	import os
+	import sys
+	from mpi 	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
+	from mpi 	  import mpi_reduce, mpi_bcast, mpi_barrier
+	from mpi 	  import MPI_SUM, MPI_FLOAT, MPI_INT
+
+	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
+	myid = mpi_comm_rank(MPI_COMM_WORLD)
+	main_node = 0
+	
+	ftp = file_type(stack)
+
+	if myid == main_node:
+		print_begin_msg("ali2d_g_MPI")
+		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
+		os.mkdir(outdir)
+
+	xrng        = get_input_from_string(xr)
+	if  yr == "-1":  yrng = xrng
+	else          :  yrng = get_input_from_string(yr)
+	step        = get_input_from_string(ts)
+	
+	first_ring=int(ir); last_ring=int(ou); rstep=int(rs); max_iter=int(maxit);
+	
+	if max_iter == 0:
+		max_iter = 10
+		auto_stop = True
+	else:
+		auto_stop = False
+
+	if myid == main_node:
+		import user_functions
+		user_func = user_functions.factory[user_func_name]
+		print_msg("Input stack                 : %s\n"%(stack))
+		print_msg("Output directory            : %s\n"%(outdir))
+		print_msg("Inner radius                : %i\n"%(first_ring))
+	
+	if myid == main_node:
+       		if(file_type(stack) == "bdb"):
+			from EMAN2db import db_open_dict
+			dummy = db_open_dict(stack, True)
+		active = EMUtil.get_all_attributes(stack, 'active')
+		list_of_particles = []
+		for im in xrange(len(active)):
+			if active[im]:  list_of_particles.append(im)
+		del active
+		nima = len(list_of_particles)
+	else:
+		nima =0
+	nima = bcast_number_to_all(nima, source_node = main_node)
+	
+	if myid != main_node:
+		list_of_particles = [-1]*nima
+	list_of_particles = bcast_list_to_all(list_of_particles, source_node = main_node)
+	
+	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
+	list_of_particles = list_of_particles[image_start: image_end]
+
+	ima = EMData()
+	for i in xrange(number_of_proc):
+		if myid == i:
+			ima.read_image(stack, list_of_particles[0], True)
+		if ftp == "bdb": mpi_barrier(MPI_COMM_WORLD)
+	nx = ima.get_xsize()
+	# default value for the last ring
+	if last_ring == -1: last_ring = nx/2-2
+
+	if myid == main_node:
+		print_msg("Outer radius                : %i\n"%(last_ring))
+		print_msg("Ring step                   : %i\n"%(rstep))
+		print_msg("X search range              : %s\n"%(xrng))
+		print_msg("Y search range              : %s\n"%(yrng))
+		print_msg("Translational step          : %s\n"%(step))
+		print_msg("Center type                 : %i\n"%(center))
+		print_msg("Maximum iteration           : %i\n"%(max_iter))
+		print_msg("Use Fourier variance        : %s\n"%(Fourvar))
+		print_msg("Data with CTF               : %s\n"%(CTF))
+		print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
+		if auto_stop:
+			print_msg("Stop iteration with         : criterion\n")
+		else:
+			print_msg("Stop iteration with         : maxit\n")
+		print_msg("User function               : %s\n"%(user_func_name))
+		print_msg("Number of processors used   : %d\n"%(number_of_proc))
+
+		
+	if maskfile:
+		import  types
+		if type(maskfile) is types.StringType:  
+			if myid == main_node:		print_msg("Maskfile                    : %s\n\n"%(maskfile))
+			mask = get_image(maskfile)
+		else:
+			if myid == main_node: 		print_msg("Maskfile                    : user provided in-core mask\n\n")
+			mask = maskfile
+	else : 
+		if myid == main_node: 	print_msg("Maskfile                    : default, a circle with radius %i\n\n"%(last_ring))
+		mask = model_circle(last_ring, nx, nx)
+
+	cnx  = nx/2+1
+ 	cny  = cnx
+ 	mode = "F"
+	data = []
+	if CTF:
+		ctf_params = ima.get_attr("ctf")
+		if ima.get_attr_default('ctf_applied', 2) > 0:	ERROR("data cannot be ctf-applied", "ali2d_c_MPI", 1)
+		from filter import filt_ctf
+		from morphology   import ctf_img
+		ctf_2_sum = EMData(nx, nx, 1, False)
+	else:
+		ctf_2_sum = None
+	if  Fourvar:
+		from statistics   import add_ave_varf
+
+	del ima
+
+	for i in xrange(number_of_proc):
+		if myid == i: 
+			data = EMData.read_images(stack, list_of_particles)
+		if ftp == "bdb": mpi_barrier(MPI_COMM_WORLD)
+	
+	for im in xrange(len(data)):
+		data[im].set_attr('ID', list_of_particles[im])
+		st = Util.infomask(data[im], mask, False)
+		data[im] -= st[0]
+		if CTF:
+			ctf_params = data[im].get_attr("ctf")
+			Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
+	if CTF:
+		reduce_EMData_to_root(ctf_2_sum, myid, main_node)
+
+		ctf_2_sum += 1.0/snr # this is complex addition (1.0/snr,0)
+	else:  ctf_2_sum = None
+	# startup
+	numr = Numrinit(first_ring, last_ring, rstep, mode) 	#precalculate rings
+ 	wr = ringwe(numr, mode)
+	
+	data_prep = []
+	for im in xrange(image_start, image_end):
+		img_prep, kb = prepi(data[im-image_start])
+		data_prep.append(img_prep)
+
+	if myid == main_node:
+		# initialize data for the reference preparation function
+		ref_data = []
+		ref_data.append( mask )
+		ref_data.append( center )
+		ref_data.append( None )
+		ref_data.append( None )
+		sx_sum = 0.0
+		sy_sum = 0.0
+		a0 = -1.0e22
+
+	again = True
+	total_iter = 0
+	cs = [0.0]*2
+
+	for N_step in xrange(len(xrng)):
+		msg = "\nX range = %5.2f   Y range = %5.2f   Step = %5.2f\n"%(xrng[N_step], yrng[N_step], step[N_step])
+		if myid == main_node: print_msg(msg)
+		for Iter in xrange(max_iter):
+			total_iter += 1
+			if  Fourvar:  
+				tavg, ave1, ave2, vav, sumsq = add_ave_varf_MPI(myid, data, mask, "a", CTF, ctf_2_sum)
+			else:
+				ave1, ave2 = sum_oe(data, "a", CTF, EMData())  # pass empty object to prevent calculation of ctf^2
+				reduce_EMData_to_root(ave1, myid, main_node)
+				reduce_EMData_to_root(ave2, myid, main_node)
+
+			if myid == main_node:
+
+				if Fourvar:
+					drop_image(fft(tavg), os.path.join(outdir, "aqc_%03d.hdf"%(total_iter)))
+					tavg    = fft(Util.divn_img(tavg, vav))
+
+					vav_r	= Util.pack_complex_to_real(vav)
+					drop_image(vav_r, os.path.join(outdir, "varf_%03d.hdf"%(total_iter)))
+					rvar	= rot_avg_table(vav_r)
+					rsumsq  = rot_avg_table(Util.pack_complex_to_real(sumsq))
+					frsc = []
+					freq = []
+					for i in xrange(len(rvar)):
+						qt = max(0.0, rsumsq[i]/rvar[i] - 1.0)
+						frsc.append(qt/(qt+1.0))
+						freq.append(float(i)/(len(rvar)-1)*0.5)
+					frsc = [freq, frsc]
+					del freq
+					write_text_file(frsc, os.path.join(outdir, "resolution%03d"%(total_iter)) )
+				else:
+					if CTF:  tavg = fft(Util.divn_img(fft(Util.addn_img(ave1, ave2)), ctf_2_sum))
+					else:	 tavg = (ave1+ave2)/nima
+					drop_image(tavg, os.path.join(outdir, "aqc_%03d.hdf"%(total_iter)))
+					frsc = fsc_mask(ave1, ave2, mask, 1.0, os.path.join(outdir, "resolution%03d"%(total_iter)))
+
+				ref_data[2] = tavg
+				ref_data[3] = frsc
+				
+				#  call user-supplied function to prepare reference image, i.e., center and filter it
+				if center == -1:
+					# When center = -1, which is by default, we use the average center method
+					ref_data[1] = 0
+					tavg, cs = user_func(ref_data)
+					cs[0] = float(sx_sum)/nima
+					cs[1] = float(sy_sum)/nima
+					tavg = fshift(tavg, -cs[0], -cs[1])
+					msg = "Average center x =      %10.3f        Center y       = %10.3f\n"%(cs[0], cs[1])
+					print_msg(msg)
+				else:
+					tavg, cs = user_func(ref_data)
+
+				# write the current filtered average
+				drop_image(tavg, os.path.join(outdir, "aqf_%03d.hdf"%(total_iter)))
+
+				# a0 should increase; stop algorithm when it decreases.    
+				if Fourvar:  
+					Util.div_filter(sumsq, vav)
+					sumsq = filt_tophatb(sumsq, 0.01, 0.49)
+					a1 = Util.infomask(sumsq, None, True)
+					a1 = a1[0]
+				else:
+					a1 = tavg.cmp("dot", tavg, dict(negative = 0, mask = ref_data[0]))
+				msg = "Iteration   #%5d	     criterion = %20.7e\n"%(total_iter, a1)
+				print_msg(msg)
+				
+				if a1 < a0:
+					if auto_stop: 
+						again = False
+						break
+				else:	a0 = a1
+			else:
+				tavg = EMData(nx, nx, 1, True)
+				cs = [0.0]*2
+
+			bcast_EMData_to_all(tavg, myid, main_node)
+			cs = mpi_bcast(cs, 2, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+			cs = [float(cs[0]), float(cs[1])]
+			if auto_stop:
+				again = mpi_bcast(again, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+				if not again: break
+			if total_iter != max_iter*len(xrng):
+				sx_sum, sy_sum = ali2d_single_iter_g(data_prep, kb, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF)
+				sx_sum = mpi_reduce(sx_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
+				sy_sum = mpi_reduce(sy_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
+
+	if myid == main_node:  drop_image(tavg, os.path.join(outdir, "aqfinal.hdf"))
+	# write out headers  and STOP, under MPI writing has to be done sequentially
+	mpi_barrier(MPI_COMM_WORLD)
+	par_str = ["xform.align2d", "ID"]
+	if myid == main_node:
+		from utilities import file_type
+		if(file_type(stack) == "bdb"):
+			from utilities import recv_attr_dict_bdb
+			recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+		else:
+			from utilities import recv_attr_dict
+			recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+	else:           send_attr_dict(main_node, data, par_str, image_start, image_end)
+	if myid == main_node: print_end_msg("ali2d_g_MPI")
+
+'''
 def ali2d_g(stack, outdir, maskfile= None, ir=1, ou=-1, rs=1, xr=0, yr=0, ts=1, center=1, maxit=10, CTF = False, snr = 1.):
 
 	from utilities    import model_circle, combine_params2, drop_image, get_image, get_arb_params, center_2D
@@ -166,6 +640,7 @@ def ali2d_g(stack, outdir, maskfile= None, ir=1, ou=-1, rs=1, xr=0, yr=0, ts=1, 
 		ima.read_image(stack, i, True)
 		ima.set_attr_dict({"alpha":alpha, "sx":sx, "sy":sy, "mirror":mirror})
 		ima.write_image(stack, im, EMUtil.ImageType.IMAGE_HDF, True)
+'''
 
 def ali2d_mg(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xr=0, yr=0, ts=1, center=1, maxit=10, CTF = False, snr = 1.):
 # 2D multi-reference alignment using rotational ccf in polar coords and NUFT interpolation
@@ -367,32 +842,51 @@ def ali2d_mg(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xr=0, yr=
 			os.system('cp '+newrefim+' multi_ref.hdf')
 			break
 			
-def ali2d_single_iterg(data, kb, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, list_p=[]):
+
+def ali2d_single_iter_g(data, kb, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, CTF=False, ali_params="xform.align2d"):
 	"""
-		single iteration alignment using ormy3g
+		single iteration of 2D alignment using ormq
+		if CTF = True, apply CTF to data (not to reference!)
 	"""
-	from utilities import compose_transform2, combine_params2
+	from utilities import combine_params2, inverse_transform2, get_params2D, set_params2D
+	from alignment import Applyws
+	from development import ormy3g
 	from fundamentals import prepi
-	
-	# 2D alignment using rotational ccf in polar coords and NUFT interpolation
+
+	if CTF:
+		from filter  import filt_ctf
+
+	# 2D alignment using rotational ccf in polar coords and NUFFT interpolation
 	tavgi, kb = prepi(tavg)
-	cimage = Util.Polar2Dmi(tavgi, cnx, cny, numr, mode, kb)
+	cimage = Util.Polar2Dm(tavgi, cnx, cny, numr, mode, kb)
 	Util.Frngs(cimage, numr)
 	Applyws(cimage, numr, wr)
 
-	# align all images
-	if(len(list_p) == 0):
-		list_p = range(len(data))
-	for imt in list_p:
-		alpha  = data[imt].get_attr('alpha')
-		sx     = data[imt].get_attr('sx')
-		sy     = data[imt].get_attr('sy')
-		mirror = data[imt].get_attr('mirror')
-		if mirror: alpha, sx, sy, scale = compose_transform2(alpha, sx, sy, 1.0, 0, cs[0], -cs[1], 1.0)
-		else:	   alpha, sx, sy, scale = compose_transform2(alpha, sx, sy, 1.0, 0, -cs[0], -cs[1], 1.0)
-		[angt, sxst, syst, mirrort, peakt] = ormy3g(data[imt], kb, cimage, xrng, yrng, step, mode, numr, cnx-sx, cny-sy)
-		[alphan, sxn, syn, mn] = combine_params2(0.0, sx, sy, 0, angt, sxst, syst, mirrort)
-		data[imt].set_attr_dict({'alpha':alphan, 'sx':sxn, 'sy':syn, 'mirror':mn})
+	maxrin = numr[-1]
+	sx_sum = 0.0
+	sy_sum = 0.0
+	for im in xrange(len(data)):
+		if CTF:
+			#Apply CTF to image
+			ctf_params = data[im].get_attr("ctf")
+			ima = filt_ctf(data[im], ctf_params, True)
+		else:
+			ima = data[im]
+		alpha, sx, sy, mirror, dummy = get_params2D(data[im], ali_params)
+		alpha, sx, sy, mirror        = combine_params2(alpha, sx, sy, mirror, 0.0, -cs[0], -cs[1], 0)
+		alphai, sxi, syi, scalei     = inverse_transform2(alpha, sx, sy, 1.0)
+
+		# align current image to the reference
+		[angt, sxst, syst, mirrort, peakt] = ormy3g(ima, kb, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
+		# combine parameters and set them to the header, ignore previous angle and mirror
+		[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
+		set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], ali_params)
+
+		if mn == 0: sx_sum += sxn
+		else:       sx_sum -= sxn
+		sy_sum += syn
+
+	return sx_sum, sy_sum
 
 
 def ali_param_3d_to_2d(stack):
@@ -3036,20 +3530,20 @@ def ormql(image,crefim,xrng,yrng,step,mode,numr,cnx,cny):
 	sys = sx*so + sy*co
 	return  ang,sxs,sys,mirror,peak    	
 
-def ormy(image,crefim,xrng,yrng,step,mode,numr,cnx,cny,interpolation_method=None):
+def ormy(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, interpolation_method=None):
 	"""
 	Determine shift and rotation between image and reference image (refim)
-	It should be noted that crefim should be preprocessed before using this
-	function
+	One can specify the interpolation method for the routine
+	It should be noted that crefim should be preprocessed before using this	function
 	"""
 	from math import pi, cos, sin
 	from fundamentals import fft
 	from utilities import amoeba
 	from sys import exit
 	
-	if interpolation_method==None:
+	if interpolation_method == None:
 		interpolation_method = interpolation_method_2D #use global setting
-	if interpolation_method=="gridding":
+	if interpolation_method == "gridding":
 		M=image.get_xsize()
 		npad=2
 		N=M*npad
@@ -3171,13 +3665,13 @@ def ormy(image,crefim,xrng,yrng,step,mode,numr,cnx,cny,interpolation_method=None
 	sys = sx*so + sy*co
 	return  ang,sxs,sys,mirror,peak
 
-def ormy2(image,refim,crefim,xrng,yrng,step,mode,numr,cnx,cny,interpolation_method=None):
+
+def ormy2(image, refim, crefim, xrng, yrng, step, mode, numr, cnx, cny, interpolation_method=None):
 	"""
 	Determine shift and rotation between image and reference image (refim)
-	It should be noted that crefim should be preprocessed before using this
-	function.
-	This function is mostly same as the ormy, the only difference is that 
-	it has an ameoba at the end
+	It should be noted that crefim should be preprocessed before using this	function.
+	This function is mostly same as the ormy, the only difference is that it 
+	does fine refinement in the end
 	"""
 	from math import pi, cos, sin
 	from fundamentals import fft, mirror
@@ -3189,38 +3683,38 @@ def ormy2(image,refim,crefim,xrng,yrng,step,mode,numr,cnx,cny,interpolation_meth
 	if interpolation_method==None:
 		interpolation_method = interpolation_method_2D #use global setting
 		
+	maxrin = numr[-1]
 	if interpolation_method=="gridding":
-		M=image.get_xsize()
-		npad=2
-		N=M*npad
+		nx = image.get_xsize()
+		npad = 2
+		N = nx*npad
 		#support of the window
-		K=6
-		alpha=1.75
-		r=M/2
-		v=K/2.0/N
-		kb = Util.KaiserBessel(alpha, K, r, K/(2.*N), N)
-
-		imali=image.FourInterpol(2*M,2*M,1,0)
-		params = {"filter_type" : Processor.fourier_filter_types.KAISER_SINH_INVERSE,"alpha" : alpha, "K":K,"r":r,"v":v,"N":N}
-		q=Processor.EMFourierFilter(imali,params)
-		imali=fft(q)
+		K = 6
+		alpha = 1.75
+		r = nx/2
+		v = K/2.0/N
+		kb = Util.KaiserBessel(alpha, K, r, v, N)
+		imali = image.FourInterpol(2*nx, 2*nx, 1, 0)
+		params = {"filter_type":Processor.fourier_filter_types.KAISER_SINH_INVERSE, "alpha":alpha, "K":K, "r":r, "v":v, "N":N}
+		del K, alpha, r, v
+		q = Processor.EMFourierFilter(imali, params)
+		imali = fft(q)
 	
-		maxrin=numr[len(numr)-1]
 		line = EMData()
-		line.set_size(maxrin,1,1)
-		M=maxrin
+		line.set_size(maxrin, 1, 1)
 		# do not pad
-		npad=1
-		N=M*npad
+		npad = 1
+		N = maxrin*npad
 		# support of the window
-		K=6
-		alpha=1.75
-		r=M/2
-		v=K/2.0/N
-		kbline = Util.KaiserBessel(alpha, K, r, K/(2.*N), N)
-		parline = {"filter_type" : Processor.fourier_filter_types.KAISER_SINH_INVERSE,"alpha" : alpha, "K":K,"r":r,"v":v,"N":N}
-		data=[]
-		data.insert(1,kbline)
+		K = 6
+		alpha = 1.75
+		r = maxrin/2
+		v = K/2.0/N
+		kbline = Util.KaiserBessel(alpha, K, r, v, N)
+		parline = {"filter_type":Processor.fourier_filter_types.KAISER_SINH_INVERSE, "alpha":alpha, "K":K, "r":r, "v":v, "N":N}
+		del K, alpha, r, v
+		data = []
+		data.insert(1, kbline)
 	elif interpolation_method=="quadratic":
 		pass
 	elif interpolation_method=="linear":
@@ -3230,46 +3724,46 @@ def ormy2(image,refim,crefim,xrng,yrng,step,mode,numr,cnx,cny,interpolation_meth
 		exit()
 
 	peak = -1.0E23
-	ky = int(2*yrng/step+0.5)//2
-	kx = int(2*xrng/step+0.5)//2
+	ky = int(2*yrng/step+0.5)/2
+	kx = int(2*xrng/step+0.5)/2
 	
 	if interpolation_method=="gridding":
-		for i in xrange(-ky,ky+1):
-			iy=i*step
-			for  j in xrange(-kx,kx+1):
-				ix=j*step
-				cimage=Util.Polar2Dmi(imali,cnx+ix,cny+iy,numr,mode,kb)
+		for i in xrange(-ky, ky+1):
+			iy = i*step
+			for j in xrange(-kx, kx+1):
+				ix = j*step
+				cimage = Util.Polar2Dmi(imali, cnx+ix, cny+iy, numr, mode, kb)
 				Util.Frngs(cimage, numr)
-				qt = Util.Crosrng_msg(crefim,cimage,numr)
+				qt = Util.Crosrng_msg(crefim, cimage, numr)
 				
 				# straight
-				for i in xrange(0,maxrin): line[i]=qt[i,0]					
+				for i in xrange(0, maxrin): line[i] = qt[i, 0]					
 				#  find the current maximum and its location
-				ps=line.peak_search(1,1)				
-				qn=ps[1]
-				jtot=ps[2]/2
-				q=Processor.EMFourierFilter(line,parline)
-				data.insert(0,q)
-				ps = amoeba([jtot], [2.0], oned_search_func, 1.e-4,1.e-4,500,data)
+				ps = line.peak_search(1, 1)
+				qn  = ps[1]
+				jtot = ps[2]/2
+				q = Processor.EMFourierFilter(line, parline)
+				data.insert(0, q)
+				ps = amoeba([jtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 500, data)
 				del data[0]
-				jtot=ps[0][0]*2
-				qn=ps[1]
+				jtot = ps[0][0]*2
+				qn = ps[1]
 
 				# mirror
-				for i in xrange(0,maxrin): line[i]=qt[i,1]
+				for i in xrange(0, maxrin): line[i] = qt[i,1]
 				#  find the current maximum and its location
-				ps=line.peak_search(1,1)				
-				qm=ps[1]
-				mtot=ps[2]/2
-				q=Processor.EMFourierFilter(line,parline)
-				data.insert(0,q)
-				ps = amoeba([mtot], [2.0], oned_search_func,1.e-4,1.e-4,500,data)
+				ps = line.peak_search(1, 1)				
+				qm = ps[1]
+				mtot = ps[2]/2
+				q = Processor.EMFourierFilter(line, parline)
+				data.insert(0, q)
+				ps = amoeba([mtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 500, data)
 				del data[0]
-				mtot=ps[0][0]*2
-				qm=ps[1]
+				mtot = ps[0][0]*2
+				qm = ps[1]
 
-				if(qn >=peak or qm >=peak):
-					if (qn >= qm):
+				if qn >=peak or qm >=peak:
+					if qn >= qm:
 						"""
 						NOTICE: This is important!!!!
 						
@@ -3282,82 +3776,78 @@ def ormy2(image,refim,crefim,xrng,yrng,step,mode,numr,cnx,cny,interpolation_meth
 						since it involves "*2" and "/2". Therefore, when using ang_n, we should have another
 						"+1" to offset back.
 						"""
-						ang = ang_n(jtot+1, mode, numr[len(numr)-1])
+						ang = ang_n(jtot+1, mode, maxrin)
 						sx = -ix
 						sy = -iy
-						peak=qn
-						is_mirror=0
+						peak = qn
+						is_mirror = 0
 					else:
-						ang = ang_n(mtot+1, mode, numr[len(numr)-1])
+						ang = ang_n(mtot+1, mode, maxrin)
 						sx = -ix
 						sy = -iy
-						peak=qm
-						is_mirror=1
+						peak = qm
+						is_mirror = 1
 	elif interpolation_method=="quadratic":
 		for i in xrange(-ky, ky+1):
 			iy = i*step
-			for  j in xrange(-kx, kx+1):
+			for j in xrange(-kx, kx+1):
 				ix = j*step
-				cimage=Util.Polar2Dm(image, cnx+ix, cny+iy, numr, mode)
+				cimage = Util.Polar2Dm(image, cnx+ix, cny+iy, numr, mode)
 				Util.Frngs(cimage, numr)
 				retvals = Util.Crosrng_ms(crefim, cimage, numr)
 				qn = retvals["qn"]
 				qm = retvals["qm"]
-				if(qn >=peak or qm >=peak):
+				if qn >=peak or qm >=peak:
 					sx = -ix
 					sy = -iy
-					if (qn >= qm):
-						ang = ang_n(retvals["tot"], mode, numr[len(numr)-1])
-						peak=qn
-						is_mirror=0
+					if qn >= qm:
+						ang = ang_n(retvals["tot"], mode, maxrin)
+						peak = qn
+						is_mirror = 0
 					else:
-						ang = ang_n(retvals["tmt"], mode, numr[len(numr)-1])
-						peak=qm
-						is_mirror=1		
+						ang = ang_n(retvals["tmt"], mode, maxrin)
+						peak = qm
+						is_mirror = 1		
 	
 	co =  cos(ang*pi/180.0)
 	so = -sin(ang*pi/180.0)
 	sxs = sx*co - sy*so
 	sys = sx*so + sy*co
 	
-	last_ring = numr[len(numr)-3]
-	nx = image.get_xsize()
-	ny = image.get_ysize()
-	mask = model_circle(last_ring,nx,ny)
+	last_ring = numr[-3]
+	mask = model_circle(last_ring, nx, nx)
 
 	if interpolation_method=="gridding":
 		if is_mirror:	
-			M=image.get_xsize()
 			image2 = mirror(image)
-			imali=image2.FourInterpol(2*M,2*M,1,0)
-			params = {"filter_type" : Processor.fourier_filter_types.KAISER_SINH_INVERSE,"alpha" : alpha, "K":K,"r":r,"v":v,"N":N}
-			q=Processor.EMFourierFilter(imali,params)
-			imali=fft(q)
-		data.insert(0,imali)
-		data.insert(1,refim)
-		data.insert(2,kb)
-		data.insert(3,mask)
+			imali = image2.FourInterpol(2*nx, 2*nx, 1, 0)
+			q = Processor.EMFourierFilter(imali, params)
+			imali = fft(q)
+		data.insert(0, imali)
+		data.insert(1, refim)
+		data.insert(2, kb)
+		data.insert(3, mask)
 		if is_mirror:
-			ps = amoeba([-ang,-sxs,sys], [360.0/(2.0*pi*last_ring),step,step],dfunc,1.e-4,1.e-4,500,data)
+			ps = amoeba([-ang, -sxs, sys], [360.0/(2.0*pi*last_ring), step, step], dfunc, 1.e-4, 1.e-4, 500, data)
 		else:
-			ps = amoeba([ang,sxs,sys], [360.0/(2.0*pi*last_ring),step,step],dfunc,1.e-4,1.e-4,500,data)
+			ps = amoeba([ang, sxs, sys], [360.0/(2.0*pi*last_ring), step, step], dfunc, 1.e-4, 1.e-4, 500, data)
 	elif interpolation_method=="quadratic":
 		data = []
 		if is_mirror:
-			data.insert(0,mirror(image))
+			data.insert(0, mirror(image))
 		else:
-			data.insert(0,image)		
-		data.insert(1,refim)
-		data.insert(2,mask)
+			data.insert(0, image)		
+		data.insert(1, refim)
+		data.insert(2, mask)
 		if is_mirror:
-			ps = amoeba([-ang,-sxs,sys], [360.0/(2.0*pi*last_ring),step,step],dfunc2,1.e-4,1.e-4,500,data)
+			ps = amoeba([-ang, -sxs, sys], [360.0/(2.0*pi*last_ring), step, step], dfunc2, 1.e-4, 1.e-4, 500, data)
 		else:
-			ps = amoeba([ang,sxs,sys], [360.0/(2.0*pi*last_ring),step,step],dfunc2,1.e-4,1.e-4,500,data)
+			ps = amoeba([ang, sxs, sys], [360.0/(2.0*pi*last_ring), step, step], dfunc2, 1.e-4, 1.e-4, 500, data)
 	else: pass
 	
 	if ps[0][0] < 180: ps[0][0] = ps[0][0]+360
 	if ps[0][0] > 180: ps[0][0] = ps[0][0]-360
-	return  ps[0][0],ps[0][1],ps[0][2],is_mirror,-ps[1]
+	return  ps[0][0], ps[0][1], ps[0][2], is_mirror, -ps[1]
 
 
 def ormy2lbfgsb(image,refim,crefim,xrng,yrng,step,mode,numr,cnx,cny,interpolation_method=None):
@@ -3892,7 +4382,7 @@ def ormy3(image,crefim,xrng,yrng,step,mode,numr,cnx,cny,interpolation_method=Non
 		sxs = -sxs	
 	return  ang,sxs,sys,is_mirror,peak	
 
-def ormy3g(imali,kb,crefim,xrng,yrng,step,mode,numr,cnx,cny):
+def ormy3g(imali, kb, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 	"""
 	Determine shift and rotation between image and reference image (refim)
 	
@@ -3909,87 +4399,86 @@ def ormy3g(imali,kb,crefim,xrng,yrng,step,mode,numr,cnx,cny):
 	from math import pi, cos, sin
 	from fundamentals import fft, mirror
 	from utilities import amoeba, model_circle, amoeba_multi_level
-	from sys import exit
 	
-	maxrin=numr[len(numr)-1]
-	M=maxrin
+	maxrin = numr[-1]
 	# do not pad
-	npad=1
-	N=M*npad
+	npad = 1
+	N = maxrin*npad
 	# support of the window
-	K=6
-	alpha=1.75
-	r=M/2
-	v=K/2.0/N
-	kbline = Util.KaiserBessel(alpha, K, r, K/(2.*N), N)
-	parline = {"filter_type" : Processor.fourier_filter_types.KAISER_SINH_INVERSE,"alpha" : alpha, "K":K,"r":r,"v":v,"N":N}
-	data=[]
-	data.insert(1,kbline)
+	K = 6
+	alpha = 1.75
+	r = maxrin/2
+	v = K/2.0/N
+	kbline = Util.KaiserBessel(alpha, K, r, v, N)
+	parline = {"filter_type":Processor.fourier_filter_types.KAISER_SINH_INVERSE, "alpha":alpha, "K":K, "r":r, "v":v, "N":N}
+	del K, r, v, N
+	data = []
+	data.insert(1, kbline)
 
 	peak = -1.0E23
 	ky = int(2*yrng/step+0.5)//2
 	kx = int(2*xrng/step+0.5)//2
 
-	for i in xrange(-ky,ky+1):
-		iy=i*step
-		for  j in xrange(-kx,kx+1):
-			ix=j*step
-			cimage=Util.Polar2Dmi(imali,cnx+ix,cny+iy,numr,mode,kb)
+	for i in xrange(-ky, ky+1):
+		iy = i*step
+		for j in xrange(-kx, kx+1):
+			ix = j*step
+			cimage = Util.Polar2Dmi(imali, cnx+ix, cny+iy, numr, mode, kb)
 			Util.Frngs(cimage, numr)
 			
 			# straight, find the current maximum and its location
-			line_s = Util.Crosrng_msg_s(crefim,cimage,numr)
-			ps=line_s.peak_search(1,1)				
-			qn=ps[1]
-			jtot=ps[2]/2
-			q=Processor.EMFourierFilter(line_s,parline)
-			data.insert(0,q)
-			ps = amoeba([jtot], [2.0], oned_search_func, 1.e-4,1.e-4,500,data)
+			line_s = Util.Crosrng_msg_s(crefim, cimage, numr)
+			ps = line_s.peak_search(1, 1)	
+			qn = ps[1]
+			jtot = ps[2]/2
+			q = Processor.EMFourierFilter(line_s, parline)
+			data.insert(0, q)
+			ps = amoeba([jtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 500, data)
 			del data[0]
-			jtot=ps[0][0]*2
-			qn=ps[1]
+			jtot = ps[0][0]*2
+			qn = ps[1]
 
 			# mirror, find the current maximum and its location
-			line_m = Util.Crosrng_msg_m(crefim,cimage,numr)
-			ps=line_m.peak_search(1,1)				
-			qm=ps[1]
-			mtot=ps[2]/2
-			q=Processor.EMFourierFilter(line_m,parline)
-			data.insert(0,q)
-			ps = amoeba([mtot], [2.0], oned_search_func,1.e-4,1.e-4,500,data)
+			line_m = Util.Crosrng_msg_m(crefim, cimage, numr)
+			ps = line_m.peak_search(1,1)				
+			qm = ps[1]
+			mtot = ps[2]/2
+			q = Processor.EMFourierFilter(line_m, parline)
+			data.insert(0, q)
+			ps = amoeba([mtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 500, data)
 			del data[0]
-			mtot=ps[0][0]*2
-			qm=ps[1]
+			mtot = ps[0][0]*2
+			qm = ps[1]
 
-			if(qn >=peak or qm >=peak):
-				if (qn >= qm):
-					ang = ang_n(jtot+1, mode, numr[len(numr)-1])
+			if qn >=peak or qm >=peak:
+				if qn >= qm:
+					ang = ang_n(jtot+1, mode, maxrin)
 					sx = -ix
 					sy = -iy
 					peak = qn
-					is_mirror=0
+					is_mirror = 0
 				else:
-					ang = ang_n(mtot+1, mode, numr[len(numr)-1])
+					ang = ang_n(mtot+1, mode, maxrin)
 					sx = -ix
 					sy = -iy
 					peak = qm
-					is_mirror=1
+					is_mirror = 1
 
 	data0 = []
-	data0.insert(0,imali)
-	data0.insert(1,cnx)
-	data0.insert(2,cny)
-	data0.insert(3,numr)
-	data0.insert(4,mode)
-	data0.insert(5,kb)
-	data0.insert(6,crefim)
-	data0.insert(7,parline)
-	data0.insert(8,maxrin)
-	data0.insert(9,kbline)
-	data0.insert(10,is_mirror)
+	data0.insert(0, imali)
+	data0.insert(1, cnx)
+	data0.insert(2, cny)
+	data0.insert(3, numr)
+	data0.insert(4, mode)
+	data0.insert(5, kb)
+	data0.insert(6, crefim)
+	data0.insert(7, parline)
+	data0.insert(8, maxrin)
+	data0.insert(9, kbline)
+	data0.insert(10, is_mirror)
 	
-	ps2 = amoeba_multi_level([-sx,-sy],[1,1],func_loop2,1.e-4,1.e-4,500,data0)
-	if ps2[1]>peak:
+	ps2 = amoeba_multi_level([-sx, -sy], [1.0, 1.0], func_loop2, 1.e-4, 1.e-4, 500, data0)
+	if ps2[1] > peak:
 		sx = -ps2[0][0]
 		sy = -ps2[0][1]
 		ang = ps2[3]
@@ -4001,7 +4490,7 @@ def ormy3g(imali,kb,crefim,xrng,yrng,step,mode,numr,cnx,cny):
 	if is_mirror:
 		ang = -ang
 		sxs = -sxs	
-	return  ang,sxs,sys,is_mirror,peak	
+	return  ang, sxs, sys, is_mirror, peak	
 
 
 def func_loop(args, data):
@@ -6572,8 +7061,21 @@ def SSNR_func(args, data):
 		if CTF:
 			ctfimg = ctfimg_list[index_list[im]]
 			Util.mul_img(imgft, ctfimg)
-		Util.add_img(avgimg, imgft)	
+		Util.add_img(avgimg, imgft)
 
+		#print "%2d %20.12e %20.12e"%(im, imgft.get_value_at(2, 0), imgft.get_value_at(3, 0))
+
+	'''
+	yyy1 = avgimg.get_value_at(2, 0)
+	yyy2 = avgimg.get_value_at(3, 0)
+	yyy3 = var.get_value_at(2, 0)
+	print yyy1, yyy2, yyy3
+	yyy1 /= nima
+	yyy2 /= nima
+	yyy = yyy1**2+yyy2**2
+	print yyy*nima, (yyy3-nima*yyy)/(nima-1), yyy*nima/((yyy3-nima*yyy)/(nima-1))
+	'''
+	
 	if CTF:
 		Util.div_filter(avgimg, ctfimg2)
 	else:
@@ -6589,6 +7091,9 @@ def SSNR_func(args, data):
 	
 	SSNR = avgimg_2.copy()
 	Util.div_filter(SSNR, var)
+	
+	#print avgimg_2.get_value_at(2, 0), var.get_value_at(2, 0), SSNR.get_value_at(2, 0)
+	#print " "
 	
 	a0 = Util.infomask(SSNR, maskI, True)
 	sum_SSNR = a0[0]
@@ -6672,6 +7177,7 @@ def SSNR_grad(args, data):
 		Util.mul_img(avgimg_2, ctfimg2)
 	else:
 		Util.mul_scalar(avgimg_2, float(nima))
+	sumimg2 = var.copy()
 	Util.sub_img(var, avgimg_2)
 	Util.mul_scalar(var, 1.0/float(nima-1))
 	
@@ -6701,6 +7207,7 @@ def SSNR_grad(args, data):
 		dSSNR_copy = dSSNR.copy()
 
 		if accurate: 
+			
 			img_new_copy = img_new.copy()
 			Util.sub_img(img_new_copy, avgimg)
 			Util.mul_img(img_new_copy, dSSNR)
@@ -6709,6 +7216,16 @@ def SSNR_grad(args, data):
 			C = maskI.copy()
 			Util.sub_img(C, img_new_copy)
 			Util.mul_img(dSSNR_copy, C)
+			'''
+			C = sumimg2.copy()
+			img_new_congj = img_new.conjg()
+			Util.mul_img(img_new_congj, avgimg)
+			Util.mul_scalar(img_new_congj, float(nima))
+			Util.sub_img(C, img_new_congj)
+			Util.div_filter(C, var)
+			Util.mul_scalar(C, 1.0/float(nima-1))
+			Util.mul_img(dSSNR_copy, C)
+			'''
 			
 		Util.mul_img(dSSNR_copy, d_img[im])
 		if CTF:
@@ -6726,6 +7243,9 @@ def SSNR_grad(args, data):
 		dSSNR_fft = dSSNR_copy.copy()		
 		Util.mul_img(dSSNR_fft, _jX)
 		Util.add_img(dSSNR_fft, dSSNR_fft.conjg())
+		
+		#if im == 0: 	print dSSNR_fft.get_value_at(2, 0)
+		
 		a0 = Util.infomask(dSSNR_fft, maskI, True)
 		g[im*3+1] = -a0[0]
 		
@@ -7189,30 +7709,36 @@ def ali_SSNR(stack, maskfile=None, ou=-1, maxit=10, CTF=False, opti_method="CG",
 			else:	SSNR_r.append((SSNR[i/2]+SSNR[i/2+1])*0.5*nima)
 		data.append(SSNR_r)
 	
-	'''
-	aaa = SSNR_func(x0, data)
-	bbb = SSNR_grad(x0, data)
-	ccc = [0.0]*(len(x0))
-	for i in xrange(len(x0)):
-		x0[i] += 0.1
-		ccc[i] = SSNR_func(x0, data)
-		x0[i] -= 0.1
-	t = 0
-	for i in xrange(len(x0)):
-		x1 = ccc[i]-aaa
-		x2 = bbb[i]*0.1
-		if x1!=0.0: pct = abs(x1-x2)/abs(x1)
+	from numpy import array
+	x1 = array(x0)
+	aaa = SSNR_func(x1, data)
+	bbb = SSNR_grad(x1, data)
+
+	ccc = [0.0]*(nima*3)
+	for i in xrange(nima*3):
+		x1[i] += 0.1
+		ccc[i] = SSNR_func(x1, data)
+		x1[i] -= 0.1
+	t1 = []
+	t2 = []
+	t3 = []
+	for i in xrange(nima*3):
+		f1 = ccc[i]-aaa
+		f2 = bbb[i]*0.1
+		if f1!=0.0: pct = abs(f1-f2)/abs(f1)
 		else: pct = 0.0
-		t += pct	
-		print i, x1, x2, pct
-	print "Average error = ", t/len(x0)
+		if i%3==0: t1.append(pct)
+		elif i%3==1: t2.append(pct)
+		else: t3.append(pct)
+		print i, f1, f2, pct
+	t1.sort(), t2.sort(), t3.sort()
+	print "Median error = ", t1[nima/2], t2[nima/2], t3[nima/2]
 	exit()
-	'''
 	
 	if opti_method == "CG":
 		ps = fmin_cg(SSNR_func, x0, fprime=SSNR_grad, args=([data]), gtol=1e-3, norm=Inf, epsilon=1e-5,
         	      maxiter=max_iter, full_output=0, disp=0, retall=0, callback=None)		
-	else:		
+	else:
 		ps, val, d = fmin_l_bfgs_b(SSNR_func, x0, args=[data], fprime=SSNR_grad, bounds=bounds, m=10, 
 			factr=1e3, pgtol=1e-4, epsilon=1e-2, iprint=-1, maxfun=max_iter)
 	
@@ -7408,6 +7934,8 @@ def ali_SSNR_MPI(stack, maskfile=None, ou=-1, maxit=10, CTF=False, opti_method="
 		data.append(SSNR_r)
 	
 	'''
+	from numpy import array
+	x0 = array(x0)
 	aaa = SSNR_func_MPI(x0, data)
 	bbb = SSNR_grad_MPI(x0, data)
 	ccc = [0.0]*(len(x0))
