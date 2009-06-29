@@ -7279,8 +7279,7 @@ class def_variancer:
 		var = avg.copy()
 		var.to_zero()
 		for img in self.imgs:
-			s = img - avg
-			Util.add_img2( var, s )
+			Util.add_img2( var, Util.subn_img(img, avg) )
 	
 		reduce_EMData_to_root( var, myid, rootid )
 		if myid==rootid:
@@ -7312,7 +7311,7 @@ class def_variancer:
 
 		tmp = avg1.copy()
 		Util.mul_img( tmp, avg1 )
-		avg2 -= tmp
+		Util.sub_img(avg2 , tmp)
 
 		avg2 *= (float(self.nimg)/float(self.nimg-1))
 		 
@@ -7416,7 +7415,7 @@ class inc_variancer:
 
 		tmp = avg1.copy()
 		Util.mul_img( tmp, avg1 )
-		avg2 -= tmp
+		Util.sub_img(avg2 , tmp)
 
 		avg2 *= (float(self.nimg)/float(self.nimg-1))
 		 

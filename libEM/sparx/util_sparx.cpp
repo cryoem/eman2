@@ -4999,8 +4999,13 @@ void Util::BPCQ(EMData *B,EMData *CUBE, vector<float> DM)
 	int NSAM,NROW,NX3D,NY3D,NZC,KZ,IQX,IQY,LDPX,LDPY,LDPZ,LDPNMX,LDPNMY,NZ1;
 	float DIPX,DIPY,XB,YB,XBB,YBB;
 
-	float x_shift = B->get_attr( "s2x" );
-	float y_shift = B->get_attr( "s2y" );
+	Transform * t = B->get_attr("xform.projection");
+	Dict d = t->get_params("spider");
+	//  Unsure about sign of shifts, check later PAP 06/28/09
+	float x_shift = d[ "tx" ];
+	float y_shift = d[ "ty" ];
+	x_shift = -x_shift;
+	y_shift = -y_shift;
 
 	NSAM = B->get_xsize();
 	NROW = B->get_ysize();
@@ -5162,7 +5167,7 @@ void Util::WTM(EMData *PROJ,vector<float>SS, int DIAMETER,int NUMP)
 	RI(2,3)=SS(4,NUMP)*SS(6,NUMP);
 	RI(3,3)=SS(3,NUMP);
 
-	float THICK=static_cast<float>( NSAM/DIAMETER/2.0 );
+	float THICK=static_cast<float>( NSAM)/DIAMETER/2.0f ;
 
 	EMData* W = new EMData();
 	int Wnx = NNNN/2;
@@ -5203,7 +5208,7 @@ void Util::WTM(EMData *PROJ,vector<float>SS, int DIAMETER,int NUMP)
 
 				//     PREVENT TMP TO BE TOO SMALL, SIGN IS IRRELEVANT
 				TMP = AMAX1(1.0E-4f,fabs(TMP));
-				float tmpinv = 1/TMP;
+				float tmpinv = 1.0f/TMP;
 				for(int J=1;J<=NROW;J++) {
 					JY = (J-1);
 					if (JY>NR2)  JY=JY-NROW;

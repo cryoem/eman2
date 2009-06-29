@@ -117,4 +117,3 @@ vector<EMData*> cuda_project(const vector<Transform> transforms);
 #endif // EMAN2_USING_CUDA
 
 #endif	//emdata__modular_h__
-

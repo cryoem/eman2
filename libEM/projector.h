@@ -387,28 +387,28 @@ namespace EMAN
 		{
 			TypeDict d;
 			d.put("transform", EMObject::TRANSFORM);
-			d.put("origin_x", EMObject::INT);
-			d.put("origin_y", EMObject::INT);
-			d.put("origin_z", EMObject::INT);
+			d.put("origin_x",  EMObject::INT);
+			d.put("origin_y",  EMObject::INT);
+			d.put("origin_z",  EMObject::INT);
 			d.put("anglelist", EMObject::FLOATARRAY);
-			d.put("radius", EMObject::FLOAT);
+			d.put("radius",    EMObject::FLOAT);
 			return d;
 		}
 
 	  private:
-                int getnnz(Vec3i volsize, int ri, Vec3i origin, int *nray, int *nnz) const;
-                int cb2sph(float *cube, Vec3i volsize, int ri, Vec3i origin, int nnz0, int *ptrs,
-                           int *cord  , float *sphere) const;
-                int sph2cb(float *sphere, Vec3i volsize, int nray, int ri, int nnz0,
-                           int   *ptrs  , int *cord, float *cube) const;
-                int fwdpj3(Vec3i volsize, int nray, int nnz  , float *dm,
-                           Vec3i origin, int ri  , int *ptrs,
-                           int *cord, float *x, float *y) const;
-                int bckpj3(Vec3i volsize, int nray, int nnz, float *dm,
-                           Vec3i origin, int ri, int *ptrs, int *cord,
-                           float *x, float *y) const;
-                int ifix(float a) const;
-                void setdm(vector<float> anglelist, string const angletype, float *dm) const;
+        	int getnnz(Vec3i volsize, int ri, Vec3i origin, int *nray, int *nnz) const;
+        	int cb2sph(float *cube, Vec3i volsize, int ri, Vec3i origin, int nnz0, int *ptrs,
+        			int *cord  , float *sphere) const;
+        	int sph2cb(float *sphere, Vec3i volsize, int nray, int ri, int nnz0,
+        			int   *ptrs  , int *cord, float *cube) const;
+        	int fwdpj3(Vec3i volsize, int nray, int nnz  , float *dm,
+        	           Vec3i origin, int ri  , int *ptrs,
+        	           int *cord, float *x, float *y) const;
+        	int bckpj3(Vec3i volsize, int nray, int nnz, float *dm,
+        	           Vec3i origin, int ri, int *ptrs, int *cord,
+        	           float *x, float *y) const;
+        	int ifix(float a) const;
+        	void setdm(vector<float> anglelist, string const angletype, float *dm) const;
 	};
 
 	template <> Factory < Projector >::Factory();

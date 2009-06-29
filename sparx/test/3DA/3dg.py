@@ -4,13 +4,16 @@ from EMAN2  import *
 from sparx  import *
 
 from sys import exit
-
-vol = EMData()
-vol.read_image("../model001.tcp")
+from time import time
+#vol = EMData()
+#vol.read_image("../model001.tcp")
+nx = 64
+vol = model_circle(30,nx,nx,nx)
 #vol.read_image("model.spi")
 #info(e)
 nx = vol.get_xsize()
-delta=15.0
+r = nx//2-2
+delta=5.0
 '''
 angles=even_angles(delta,0.,90.,0,359.99,"S")
 i1 = len(angles)
@@ -34,25 +37,35 @@ s2x=0
 s2y=0
 defocus = -1
 from random import random,randint
+start =  time()
 for i in xrange(nangles):
 	#s2x = 4.0*randint(-1,1)
 	#s2y = 4.0*randint(-1,1)
-	ppp.append([angles[i][0], angles[i][1], angles[i][2], s2x, s2y])
-	projo = prgs(volft, kb, [angles[i][0], angles[i][1], angles[i][2], -s2x, -s2y])
+	#ppp.append([angles[i][0], angles[i][1], angles[i][2], s2x, s2y])
+	if i%100 == 0:   print i
+	#proj = prgs(volft, kb, [angles[i][0], angles[i][1], angles[i][2], -s2x, -s2y])
+	proj = project(vol, [angles[i][0], angles[i][1], angles[i][2], -s2x, -s2y], r)
 	#apply CTF
 	#defocus = randint(3,4)*100.0
-	proj = projo.copy()
-	proj = filt_ctf(projo, generate_ctf([defocus, 2.0, 300.0, 2.5, 0.0, 0.1]))
+	#proj = projo.copy()
+	#proj = filt_ctf(projo, generate_ctf([defocus, 2.0, 300.0, 2.5, 0.0, 0.1]))
 	#if(i == 0): st = Util.infomask(proj,None,True)
 	#proj += model_gauss_noise(st[1]*3.,nx,nx)
 	# Set all parameters for the new 2D image
 	# three angles and two shifts to zero
 	set_params_proj(proj, [angles[i][0], angles[i][1], angles[i][2], s2x, s2y])
 	# CTF parameters, if defocus zero, they are undetermined
-	set_ctf(proj, [defocus, 2.0, 300.0, 2.5, 0.0, 0.1])
+	#set_ctf(proj, [defocus, 2.0, 300.0, 2.5, 0.0, 0.1])
 	# flags describing the status of the image (1 = true, 0 = false)
 	proj.set_attr_dict({'active':1, 'ctf_applied':0})
 	proj.write_image(stack_data, i)
+print time()-start
+start=time()
+nprojdata = EMUtil.get_image_count(stack_data)
+vol1   = recons3d_4nn(stack_data, range(nprojdata))
+print time()-start
+vol1.write_image("v0.hdf", 0)
+exit()
 del volft
 write_text_file(ppp, "params.txt")
 exit()

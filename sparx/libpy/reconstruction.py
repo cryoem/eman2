@@ -564,11 +564,14 @@ def bootstrap_nn(proj_stack, volume_stack, list_proj, niter, media="memory", npa
         		output.flush()
 
 def recons3d_sirt(stack_name, list_proj, radius, lam=1.0e-4, maxit=100, symmetry="c1", tol=0.001):
+	"""
+	SIRT
+		
+		tol   -- convergence tolerance
+		lam   -- damping parameter
+		maxit -- maximum number of iterations
 	#
-	# tol	-- convergence tolerance
-	# lam	-- damping parameter
-	# maxit -- maximum number of iterations
-	#
+	"""
 	from math import sqrt
 	from utilities import model_circle
 	#  analyze the symmetries Phil's code has all symmetries ready...
@@ -610,10 +613,10 @@ def recons3d_sirt(stack_name, list_proj, radius, lam=1.0e-4, maxit=100, symmetry
 			bvol.set_size(nx,nx,nx)
 			bvol.to_zero()
 			for i in xrange(nangles):
-				# read projections and do initial backprojection
+				# read projections and do initial  backprojection
 				data.read_image(stack_name,list_proj[i])
-				stat=Util.infomask(data,mask2d,False)
-				data=data-stat[0]   # subtract the background average in the corners
+				stat = Util.infomask(data, mask2d, False)
+				data = data-stat[0]   # subtract the background average in the corners
 				
 				RA = data.get_attr( "xform.projection" )
 
@@ -629,14 +632,14 @@ def recons3d_sirt(stack_name, list_proj, radius, lam=1.0e-4, maxit=100, symmetry
 					# multiply myangles by symmetry using Phil's Transform class
 					Tf=RA.get_sym(symmetry,ns) #
 					angdict = Tf.get_rotation("spider")
-					#				    Chao - please check the order of phi, theta, psi
+					#   Chao - please check the order of phi, theta, psi
 					symangles[0] = angdict["phi"]
 					symangles[1] = angdict["theta"]
 					symangles[2] = angdict["psi"]
 					myparams = {"angletype":"SPIDER",
 					     	    "anglelist":symangles,
 					     	    "radius":radius}
-					bvol += data.backproject("chao",myparams)
+					bvol += data.backproject("chao", myparams)
 			bnorm = sqrt(bvol.cmp("dot",bvol,{"mask":mask3d,"negative":0}))
 			grad  = bvol
 		else:
@@ -670,7 +673,15 @@ def recons3d_sirt(stack_name, list_proj, radius, lam=1.0e-4, maxit=100, symmetry
 	return  xvol
       
 
-def recons3d_wbp(stack_name, list_proj, method, const=1.0E4, symmetry="c1"):  
+def recons3d_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetry="c1"): 
+	"""
+		Weigthed back-projection algorithm.
+		stack_name - disk stack with projections or in-core list of images
+		list_proj  - list of projections to be used in the reconstruction
+		method - "general" Reademacher's Gaussian, "exact" MvHs triangle
+		const  - for "general" 1.0e4 work well, for "exact" it should be the diameter of the object
+		symmtry - point group symmetry of the object
+	""" 
 	import types
 	if type(stack_name) == types.StringType:
 		B = EMData()

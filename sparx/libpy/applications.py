@@ -11139,10 +11139,7 @@ def defvar(files, outdir, fl, fh, radccc, writelp, writestack):
 		ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 	os.system( "mkdir " + outdir )
 
-
-
 	total_img = 0
-
 
 	avgfile = outdir + "/avg.hdf" 
 	varfile = outdir + "/var.hdf"
@@ -11152,33 +11149,45 @@ def defvar(files, outdir, fl, fh, radccc, writelp, writestack):
 
 	radcir = n/2 - 1
 
-	sum = None
+	avg = None
 	for f in files:
 		nimg = EMUtil.get_image_count( f )
 		for i in xrange(nimg):
 			img = get_im( f, i )
 			img = circumference( img, radcir, radcir+1 )
-			img = filt_tanl( img, fl, fh )
-			img.write_image( filtered, total_img )
+			if(fl > 0.0):
+				img = filt_tanl( img, fl, fh )
+				img.write_image( filtered, total_img )
 			
-			if sum is None:
-				sum = img.copy()
+			if avg is None:
+				avg = img.copy()
 			else:
-				sum += img
-
+				Util.add_img(avg, img)
 			total_img += 1
 
-	avg = sum /total_img
+	avg /= total_img
 	
 	var = None
-	for i in xrange(total_img):
-		img = get_im( filtered, i )
-		img -= avg
-		img *= img
-		if var is None:
-			var = img.copy()
-		else:
-			var += img
+	if(fl > 0.0):
+		for i in xrange(total_img):
+			img = get_im( filtered, i )
+			Util.sub_img(img, avg)
+			Util.mul_img(img, img)
+			if var is None:
+				var = img.copy()
+			else:
+				Util.add_img(var , img)
+	else:
+		for f in files:
+			nimg = EMUtil.get_image_count( f )
+			for i in xrange(nimg):
+				img = get_im( f, i )
+				Util.sub_img(img, avg)
+				Util.mul_img(img, img)
+				if var is None:
+					var = img.copy()
+				else:
+					Util.add_img(var , img)
 
 	var /=(total_img-1)
 

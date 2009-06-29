@@ -1230,43 +1230,43 @@ int ChaoProjector::getnnz(Vec3i volsize, int ri, Vec3i origin, int *nrays, int *
      nrays  number of rays in z-direction.
 */
 {
-    int  ix, iy, iz, rs, r2, xs, ys, zs, xx, yy, zz;
-    int  ftm=0, status = 0;
+	int  ix, iy, iz, rs, r2, xs, ys, zs, xx, yy, zz;
+	int  ftm=0, status = 0;
 
-    r2    = ri*ri;
-    *nnz  = 0;
-    *nrays = 0;
-    int nx = (int)volsize[0];
-    int ny = (int)volsize[1];
-    int nz = (int)volsize[2];
+	r2    = ri*ri;
+	*nnz  = 0;
+	*nrays = 0;
+	int nx = (int)volsize[0];
+	int ny = (int)volsize[1];
+	int nz = (int)volsize[2];
 
-    int xcent = (int)origin[0];
-    int ycent = (int)origin[1];
-    int zcent = (int)origin[2];
+	int xcent = (int)origin[0];
+	int ycent = (int)origin[1];
+	int zcent = (int)origin[2];
 
-    // need to add some error checking
-    for (ix = 1; ix <=nx; ix++) {
-	xs  = ix-xcent;
-	xx  = xs*xs;
-        for (iy = 1; iy <= ny; iy++) {
-            ys = iy-ycent;
-            yy = ys*ys;
-            ftm = 1;
-            for (iz = 1; iz <= nz; iz++) {
-		zs = iz-zcent;
-		zz = zs*zs;
-		rs = xx + yy + zz;
-		if (rs <= r2) {
-		    (*nnz)++;
-		    if (ftm) {
-                       (*nrays)++;
-                       ftm = 0;
-                    }
-                }
-            }
-	} // end for iy
-    } // end for ix
-    return status;
+	// need to add some error checking
+	for (ix = 1; ix <=nx; ix++) {
+	    xs  = ix-xcent;
+	    xx  = xs*xs;
+	    for (iy = 1; iy <= ny; iy++) {
+		ys = iy-ycent;
+		yy = ys*ys;
+		ftm = 1;
+		for (iz = 1; iz <= nz; iz++) {
+	    	    zs = iz-zcent;
+	    	    zz = zs*zs;
+	    	    rs = xx + yy + zz;
+	    	    if (rs <= r2) {
+	    		(*nnz)++;
+	    		if (ftm) {
+			   (*nrays)++;
+			   ftm = 0;
+			}
+		    }
+		}
+	    } // end for iy
+	} // end for ix
+	return status;
 }
 
 #define cube(i,j,k) cube[ ((k-1)*ny + j-1)*nx + i-1 ]
@@ -1537,37 +1537,37 @@ int ChaoProjector::ifix(float a) const
 // SPIDER stype transformation
 void ChaoProjector::setdm(vector<float> anglelist, string const , float *dm) const
 { // convert Euler angles to transformations, dm is an 9 by nangles array
+	
+	float  psi, theta, phi;
+	double cthe, sthe, cpsi, spsi, cphi, sphi;
+	int    j;
 
-    float  psi, theta, phi;
-    double cthe, sthe, cpsi, spsi, cphi, sphi;
-    int    j;
+	int nangles = anglelist.size() / 3;
 
-    int nangles = anglelist.size() / 3;
+	// now convert all angles
+	for (j = 1; j <= nangles; j++) {
+		phi   = static_cast<float>(anglelist(1,j)*dgr_to_rad);
+		theta = static_cast<float>(anglelist(2,j)*dgr_to_rad);
+		psi   = static_cast<float>(anglelist(3,j)*dgr_to_rad);
 
-    // now convert all angles
-    for (j = 1; j <= nangles; j++) {
-        phi   = static_cast<float>(anglelist(1,j)*dgr_to_rad);
-        theta = static_cast<float>(anglelist(2,j)*dgr_to_rad);
-        psi   = static_cast<float>(anglelist(3,j)*dgr_to_rad);
+		//		cout << phi << " " << theta << " " << psi << endl;
+		cthe  = cos(theta);
+		sthe  = sin(theta);
+		cpsi  = cos(psi);
+		spsi  = sin(psi);
+		cphi  = cos(phi);
+		sphi  = sin(phi);
 
-// 		cout << phi << " " << theta << " " << psi << endl;
-        cthe  = cos(theta);
-        sthe  = sin(theta);
-        cpsi  = cos(psi);
-        spsi  = sin(psi);
-        cphi  = cos(phi);
-        sphi  = sin(phi);
-
-        dm(1,j)=static_cast<float>(cphi*cthe*cpsi-sphi*spsi);
-        dm(2,j)=static_cast<float>(sphi*cthe*cpsi+cphi*spsi);
-        dm(3,j)=static_cast<float>(-sthe*cpsi);
-        dm(4,j)=static_cast<float>(-cphi*cthe*spsi-sphi*cpsi);
-        dm(5,j)=static_cast<float>(-sphi*cthe*spsi+cphi*cpsi);
-        dm(6,j)=static_cast<float>(sthe*spsi);
-        dm(7,j)=static_cast<float>(sthe*cphi);
-        dm(8,j)=static_cast<float>(sthe*sphi);
-        dm(9,j)=static_cast<float>(cthe);
-    }
+		dm(1,j)=static_cast<float>(cphi*cthe*cpsi-sphi*spsi);
+		dm(2,j)=static_cast<float>(sphi*cthe*cpsi+cphi*spsi);
+		dm(3,j)=static_cast<float>(-sthe*cpsi);
+		dm(4,j)=static_cast<float>(-cphi*cthe*spsi-sphi*cpsi);
+		dm(5,j)=static_cast<float>(-sphi*cthe*spsi+cphi*cpsi);
+		dm(6,j)=static_cast<float>(sthe*spsi);
+		dm(7,j)=static_cast<float>(sthe*cphi);
+		dm(8,j)=static_cast<float>(sthe*sphi);
+		dm(9,j)=static_cast<float>(cthe);
+	}
 }
 #undef anglelist
 
@@ -1644,9 +1644,9 @@ EMData *ChaoProjector::project3d(EMData * vol) const
 		// as specified here.
 		Dict p = t3d->get_rotation("spider");
 
-		float phi = p["phi"];
+		float phi   = p["phi"];
 		float theta = p["theta"];
-		float psi = p["psi"];
+		float psi   = p["psi"];
 		anglelist.push_back(phi);
 		anglelist.push_back(theta);
 		anglelist.push_back(psi);
@@ -1731,8 +1731,8 @@ EMData *ChaoProjector::backproject3d(EMData * imagestack) const
 	ptrs   = new int[nrays+1];
 	cord   = new int[3*nrays];
 	if (sphere == NULL || ptrs == NULL || cord == NULL) {
-	fprintf(stderr,"ChaoProjector::backproject3d, failed to allocate!\n");
-	exit(1);
+		fprintf(stderr,"ChaoProjector::backproject3d, failed to allocate!\n");
+		exit(1);
 	}
 	for (int i = 0; i<nnz; i++) sphere[i] = 0.0;
 	for (int i = 0; i<nrays+1; i++) ptrs[i] = 0;
@@ -1752,6 +1752,7 @@ EMData *ChaoProjector::backproject3d(EMData * imagestack) const
 		// Before this the code worked only for SPIDER and EMAN angles,
 		// but the framework of the Transform3D allows for a generic implementation
 		// as specified here.
+		//  This was broken by david.  we need here a loop over all projections and put all angles on stack  PAP 06/28/09
 		Dict p = t3d->get_rotation("spider");
 
 		float phi = p["phi"];
@@ -1786,8 +1787,8 @@ EMData *ChaoProjector::backproject3d(EMData * imagestack) const
 	// check status
 
 	for (j = 1; j <= nangles; j++) {
-	status = bckpj3(volsize, nrays, nnz, &dm(1,j), origin, ri,
-					ptrs   , cord , &images(1,1,j), sphere);
+		status = bckpj3(volsize, nrays, nnz, &dm(1,j), origin, ri,
+			 ptrs   , cord , &images(1,1,j), sphere);
 	// check status?
 	}
 
