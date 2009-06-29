@@ -107,7 +107,7 @@ images far from focus."""
 
 	db_project=db_open_dict("bdb:project")
 	db_parms=db_open_dict("bdb:e2ctf.parms")
-	db_misc=db_open_dict("bdb:e2ctf.misc")
+#	db_misc=db_open_dict("bdb:e2ctf.misc")
 
 	options.filenames = args
 	### Power spectrum and CTF fitting
@@ -120,34 +120,56 @@ images far from focus."""
 
 		envelope=[]
 		for i in img_sets:
-#			envelopes.append(ctf_env_points(i[2],i[3],i[1]))
-			envelope.extend(ctf_env_points(i[2],i[3],i[1]))
+			envelopes.append(ctf_env_points(i[2],i[3],i[1]))
+#			envelope.extend(ctf_env_points(i[2],i[3],i[1]))
 
-		# This block was supplanted by smarter code
-#		# we use a simplex minimizer to try to rescale the individual sets to match as best they can
-#		scales=[1.0]*len(img_sets)
-#		if (len(img_sets)>3) :
-#			incr=[0.2]*len(img_sets)
-#			simp=Simplex(env_cmp,scales,incr)
-#			scales=simp.minimize(maxiters=1000)[0]
-#		
-#		# apply the final rescaling
-#		envelope=[]
-#		for i in range(len(scales)):
-#			cur=envelopes[i]
-#			for j in range(len(cur)):
-#				envelope.append((cur[j][0],cur[j][1]*scales[i]))
+		# we use a simplex minimizer to try to rescale the individual sets to match as best they can
+		scales=[1.0]*(len(img_sets)-1)
+		if (len(img_sets)>3) :
+			incr=[0.2]*len(img_sets)
+			simp=Simplex(env_cmp,scales,incr)
+			scales=simp.minimize(maxiters=1000)[0]
+		scales.insert(0,1.0)	# we keep this scale factor fixed
+		
+#		print envelopes
+#		print scales
+		
+		# apply the final rescaling
+		envelope=[]
+		for i in range(len(scales)):
+			cur=envelopes[i]
+			for j in range(len(cur)):
+				envelope.append([cur[j][0],cur[j][1]*scales[i]])
 				
 		envelope.sort()
-		envelope=[i for i in envelope if i[1]>0]	# filter out all negative peak values
+
+		# this averages together all of the points at the same spatial frequency
+		# not perfect, since different spatial frequencies may have contributions from
+		# different curves
+		sf=[]
+		last=envelope[0]
+		n=1
+		for i in range(1,len(envelope)):
+			if envelope[i][0]==last[0] : 
+				last[1]+=envelope[i][1]
+				n+=1
+			else :
+				sf.append((last[0],last[1]/n))
+				last=envelope[i]
+				n=1
+		envelope=sf
+
+#		envelope=[i for i in envelope if i[1]>0]	# filter out all negative peak values
 		
 		db_misc=db_open_dict("bdb:e2ctf.misc")
 		db_misc["envelope"]=envelope
+#		print envelope
+
 		#db_close_dict("bdb:e2ctf.misc")
 		
-		#out=file("envelope.txt","w")
-		#for i in envelope: out.write("%f\t%f\n"%(i[0],i[1]))
-		#out.close()
+		out=file("envelope.txt","w")
+		for i in envelope: out.write("%f\t%f\n"%(i[0],i[1]))
+		out.close()
 
 	### GUI - user can update CTF parameters interactively
 	if options.gui :
@@ -157,7 +179,7 @@ images far from focus."""
 			exit(1)
 		from emapplication import EMStandAloneApplication
 		app=EMStandAloneApplication()
-		gui=GUIctfModule(app,img_sets,options)
+		gui=GUIctfModule(app,img_sets,options.autohp,options.nosmooth)
 		gui.show_guis()
 		app.exec_()
 
@@ -179,19 +201,22 @@ def get_gui_arg_img_sets(filenames):
 	img_sets = []
 	if db_check_dict("bdb:e2ctf.parms"):
 		db_parms=db_open_dict("bdb:e2ctf.parms",ro=True)
+		db_im2d=db_open_dict("bdb:e2ctf.im2d")
+		db_bg2d=db_open_dict("bdb:e2ctf.bg2d")
 	else: return img_sets
-	for file in filenames:
-		name = get_file_tag(file)
+	for fsp in filenames:
+		name = get_file_tag(fsp)
 		if not db_parms.has_key(name):
 			print "error, you must first run auto fit before running the gui - there are no parameters for",name
 			return []
 		img_set = db_parms[name]
 		ctf=EMAN2Ctf()
 		ctf.from_string(img_set[0]) # convert to ctf object seeing as it's a string
-		img_set[0] = ctf
-		actual = [file]
-		actual.extend(img_set)
-		img_sets.append(actual)
+		img_set = list(img_set)
+		img_set[0]=ctf
+		img_set.insert(-1,db_im2d[name])
+		img_set.insert(-1,db_bg2d[name])
+		img_sets.append([fsp]+img_set)
 		
 	return img_sets
 
@@ -289,7 +314,7 @@ def pspec_and_ctf_fit(options,debug=False):
 		# Fit the CTF parameters
 		if debug : print "Fit CTF"
 		ctf=ctf_fit(im_1d,bg_1d,im_2d,bg_2d,options.voltage,options.cs,options.ac,apix,bgadj=not options.nosmooth,autohp=options.autohp)
-		db_parms[name]=(ctf.to_string(),5)		# the 5 is a default quality value
+		db_parms[name]=[ctf.to_string(),im_1d,bg_1d,5]		# the 5 is a default quality value
 		db_im2d[name]=im_2d
 		db_bg2d[name]=bg_2d
 		
@@ -298,7 +323,7 @@ def pspec_and_ctf_fit(options,debug=False):
 			Util.save_data(0,ds,bg_1d,"ctf.bg.txt")
 			Util.save_data(0,ds,ctf.snr,"ctf.snr.txt")
 			
-		img_sets.append((filename,ctf,im_1d,bg_1d,im_2d,bg_2d,5))
+		img_sets.append([filename,ctf,im_1d,bg_1d,im_2d,bg_2d,5])
 		if logid : E2progress(logid,float(i+1)/len(options.filenames))
 		
 	project_db = db_open_dict("bdb:project")
@@ -315,7 +340,7 @@ def env_cmp(sca):
 	global envelopes
 	env=envelopes
 	total=[]
-	for i,ii in enumerate(env):
+	for i,ii in enumerate(env[1:]):
 		for j in ii:
 			total.append((j[0],j[1]*sca[i]))
 	
@@ -324,8 +349,11 @@ def env_cmp(sca):
 	ret=0
 	for i in range(2,len(total)-2):
 		if total[i][1] :
-			ret+=((total[i-2][1]-total[i][1])**2+(total[i-1][1]-total[i][1])**2+(total[i+1][1]-total[i][1])**2+(total[i+2][1]-total[i][1])**2)*i
+			ret+=((total[i-2][1]/total[i][1])**2+(total[i-1][1]/total[i][1])**2+(total[i+1][1]/total[i][1])**2+(total[i+2][1]/total[i][1])**2)
 #			ret+=fabs(total[i-2][1]-total[i][1])+fabs(total[i-1][1]-total[i][1])+fabs(total[i+1][1]-total[i][1])+fabs(total[i+2][1]-total[i][1])
+
+	for i in sca:
+		if i<0 : ret*=1.5
 
 	#ret=0
 	#for i in range(1,len(total)):
@@ -879,8 +907,8 @@ except:
 from emapplication import EMQtWidgetModule
 
 class GUIctfModule(EMQtWidgetModule):
-	def __init__(self,application,data,options):
-		self.guictf = GUIctf(application,data,self,options)
+	def __init__(self,application,data,autohp=True,nosmooth=False):
+		self.guictf = GUIctf(application,data,self,autohp,nosmooth)
 		EMQtWidgetModule.__init__(self,self.guictf)
 		self.application = weakref.ref(application)
 		self.setWindowTitle("CTF")
@@ -893,7 +921,7 @@ class GUIctfModule(EMQtWidgetModule):
 		self.guictf.show_guis()
 		
 class GUIctf(QtGui.QWidget):
-	def __init__(self,application,data,module=None,options=None):
+	def __init__(self,application,data,module=None,autohp=True,nosmooth=False):
 		"""Implements the CTF fitting dialog using various EMImage and EMPlot2D widgets
 		'data' is a list of (filename,ctf,im_1d,bg_1d,im_2d,bg_2d)
 		"""
@@ -911,7 +939,8 @@ class GUIctf(QtGui.QWidget):
 		
 		self.app = weakref.ref(application)
 		self.module = weakref.ref(module)
-		self.options=options
+		self.autohp=autohp
+		self.nosmooth=nosmooth
 		
 		QtGui.QWidget.__init__(self,None)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "ctf.png"))
@@ -1073,7 +1102,7 @@ class GUIctf(QtGui.QWidget):
 	def on_refit(self):
 		# self.data[n] contains filename,EMAN2CTF,im_1d,bg_1d,im_2d,bg_2d,qual
 		tmp=list(self.data[self.curset])
-		ctf=ctf_fit(tmp[2],tmp[3],tmp[4],tmp[5],tmp[1].voltage,tmp[1].cs,tmp[1].ampcont,tmp[1].apix,bgadj=not self.options.nosmooth,autohp=self.options.autohp,dfhint=self.sdefocus.value)
+		ctf=ctf_fit(tmp[2],tmp[3],tmp[4],tmp[5],tmp[1].voltage,tmp[1].cs,tmp[1].ampcont,tmp[1].apix,bgadj=not self.nosmooth,autohp=self.autohp,dfhint=self.sdefocus.value)
 		tmp[1]=ctf
 		self.data[self.curset]=tuple(tmp)
 		self.newSet(self.curset)
@@ -1199,6 +1228,7 @@ class GUIctf(QtGui.QWidget):
 		self.scs.setValue(self.data[val][1].cs,True)
 		
 		if self.guiim != None: 
+#			print self.data
 			self.guiim.set_data(self.data[val][4])
 			if self.guiiminit:
 				self.guiim.optimally_resize()
