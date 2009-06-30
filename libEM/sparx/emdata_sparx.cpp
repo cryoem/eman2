@@ -3098,22 +3098,22 @@ EMData* EMData::fouriergridrot2d(float ang, float scale, Util::KaiserBessel& kb)
 
 EMData* EMData::fouriergridrot_shift2d(float ang, float sx, float sy, Util::KaiserBessel& kb) {
 	if (2 != get_ndim())
-		throw ImageDimensionException("fouriergridrot2d needs a 2-D image.");
+		throw ImageDimensionException("fouriergridrot_shift2d needs a 2-D image.");
 	if (!is_complex()) 
-		throw ImageFormatException("fouriergridrot2d requires a fourier image");
+		throw ImageFormatException("fouriergridrot_shift2d requires a fourier image");
 	int nxreal = nx - 2 + int(is_fftodd());
 	if (nxreal != ny)
-		throw ImageDimensionException("fouriergridrot2d requires ny == nx(real)");
+		throw ImageDimensionException("fouriergridrot_shift2d requires ny == nx(real)");
 	if (0 != nxreal%2)
-		throw ImageDimensionException("fouriergridrot2d needs an even image.");
+		throw ImageDimensionException("fouriergridrot_shift2d needs an even image.");
 	int nxhalf = nxreal/2;
 	int nyhalf = ny/2;
 	
 	if (!is_shuffled()) fft_shuffle();
 
 	EMData* result = copy_head();
-	set_array_offsets(0,-nyhalf);
-	result->set_array_offsets(0,-nyhalf);
+	set_array_offsets(0, -nyhalf);
+	result->set_array_offsets(0, -nyhalf);
 
 	ang = ang*(float)DGR_TO_RAD;
 	float cang = cos(ang);
