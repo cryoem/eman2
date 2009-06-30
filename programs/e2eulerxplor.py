@@ -41,7 +41,7 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 import weakref
 from optparse import OptionParser
-from EMAN2 import Util, E2init, E2end,EMANVERSION,is_2d_image_mx, EMUtil, db_open_dict, EMData, Transform, db_check_dict, db_close_dict, get_files_and_directories,get_file_tag,gimme_image_dimensions3D,Region
+from EMAN2 import Util, E2init, E2end,EMANVERSION,is_2d_image_mx, EMUtil, db_open_dict, EMData, Transform, db_check_dict, db_close_dict, get_files_and_directories,get_file_tag,gimme_image_dimensions3D,Region, Vec3f, parsesym
 from emapplication import get_application
 from emimagemx import EMImageMXModule
 import os
@@ -49,7 +49,7 @@ import sys
 from libpyGLUtils2 import GLUtil
 from emsprworkflow import error
 from emanimationutil import OrientationListAnimation,Animator
-
+from valslider import ValSlider
 
 def get_eulers_from(filename):
 	eulers = []
@@ -142,6 +142,37 @@ def get_normalize_colors(ptcls):
 			colors.append((1.0,1.0,1.0,1.0))
 			
 	return colors
+
+
+def get_normalize_colors_grey(ptcls):
+	mn = min(ptcls)
+	mx = max(ptcls)
+	df = float(mx-mn)
+	colors = []
+	for val in ptcls:
+		if df != 0: val = (val-mn)/(df)
+		else:
+			val = 0.5
+		
+		val = 0.2 + 0.8*val
+		colors.append((val,val,val,1.0))
+		
+			
+	return colors
+
+
+def get_normalized_vector(ptcls):
+	mn = min(ptcls)
+	mx = max(ptcls)
+	df = float(mx-mn)
+	ret = []
+	for val in ptcls:
+		if df != 0: val = (val-mn)/(df)
+		else:
+			val = 0.5
+		ret.append(val)
+			
+	return ret
 	
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -328,10 +359,14 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 			self.display_web_help("http://blake.bcm.edu/emanwiki/EMAN2/Programs/e2eulerxplor")
 		else:
 			EMImage3DGUIModule.keyPressEvent(self,event)
-	def __init__(self,application,auto=True):
+	def __init__(self,application,inspector_go=False,ensure_gl_context=True,application_control=True,auto=True):
+		self.init_lock = True
 		if auto:
 			self.gen_refinement_data()
-		EM3DSymViewerModule.__init__(self,application,inspector_go=False)
+		self.euler_xplore_mode = False
+		self.width_scale = 1.0
+		self.height_scale = 1.0
+		EM3DSymViewerModule.__init__(self,application,inspector_go=inspector_go,ensure_gl_context=ensure_gl_context,application_control=application_control)
 		InputEventsManager.__init__(self)
 		Animator.__init__(self)
 		self.__init_events_handlers()
@@ -349,6 +384,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 		self.dflip = None
 		self.classes = None
 		self.inclusions = None
+		self.ptcls = None
 		
 		self.average = None
 		self.projection = None
@@ -360,10 +396,11 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 		if db_check_dict("bdb:emform.e2refine"):
 			db = db_open_dict("bdb:emform.e2refine",ro=True)
 			if db.has_key("symname") and db.has_key("symnumber"):
-				sym = db["symname"] + db["symnumber"]
+				self.sym = db["symname"] + db["symnumber"]
 			#db_close_dict("bdb:emform.e2refine")
 		
 		self.set_sym(sym)
+		
 		
 		if hasattr(self,"au_data"):
 			combo_entries = self.au_data.keys()
@@ -374,10 +411,47 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 				au = combo_entries[0]
 				cls = self.au_data[au][0][0]
 				self.au_selected(au,cls)
-				
+				self.euler_xplore_mode = True
+						
+		self.init_lock = False
 		self.regen_dl()
 		
+	def set_width_scale(self,val):
+		self.width_scale = val
+		self.regen_dl()
+		
+	def set_height_scale(self,val):
+		self.height_scale = val
+		self.regen_dl()
 	
+	def initializeGL(self):
+		glEnable(GL_NORMALIZE)
+	
+	def generate_current_display_list(self,force=False):
+		
+		if self.init_lock: return 0
+		if not self.euler_xplore_mode:
+			EM3DSymViewerModule.generate_current_display_list(self,force)
+		
+		self.init_basic_shapes()
+		if self.nomirror == True : val = 0
+		else: val = 1
+		self.trace_great_arcs(self.sym_object.get_asym_unit_points(val))
+		self.trace_great_triangles(val)
+		
+		self.eulers = self.specified_eulers
+		if self.eulers == None:
+			return 0
+		if not self.colors_specified: self.point_colors = []
+		else: self.point_colors = self.specified_colors
+		self.points = []
+		for i in self.eulers:
+			p = i.transpose()*Vec3f(0,0,self.radius)
+			self.points.append(p)
+			if not self.colors_specified: self.point_colors.append((0.34615, 0.3143, 0.0903,1))
+		
+		self.make_sym_dl_list(self.points,self.point_colors,self.eulers,self.ptcls,self.width_scale,self.height_scale)
+		return 1
 	def get_data_dims(self):
 		return (2*self.radius,2*self.radius,2*self.radius)
 	
@@ -444,7 +518,10 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 	def set_projection_file(self,projection_file): self.projection_file = projection_file
 	def get_inspector(self):
 		if not self.inspector : 
-			self.inspector=EMAsymmetricUnitInspector(self)
+			if not self.euler_xplore_mode: 
+				self.inspector=EMAsymmetricUnitInspector(self,True,True)
+			else: 
+				self.inspector=EMAsymmetricUnitInspector(self)
 			QtCore.QObject.connect(self.inspector,QtCore.SIGNAL("au_selected"),self.au_selected)
 		return self.inspector
 
@@ -503,8 +580,9 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 		
 		eulers = get_eulers_from(self.average_file)
 		ptcls = get_ptcl_from(self.average_file)
+		self.ptcls = get_normalized_vector(ptcls)
 		self.specify_eulers(eulers)
-		self.specify_colors(get_normalize_colors(ptcls))
+		self.specify_colors(get_normalize_colors_grey(ptcls))
 		self.force_update = True
 		#self.generate_current_display_list(force=True)
 		
@@ -789,11 +867,28 @@ def get_alignment(dir_tag="00",iter="00",ptcl=0,post_align=False):
 class EMAsymmetricUnitInspector(EMSymInspector):
 	def get_desktop_hint(self):
 		return "inspector"
-	def __init__(self,target) :
-		EMSymInspector.__init__(self,target)
+	def __init__(self,target,enable_trace=False,enable_og=False) :
+		EMSymInspector.__init__(self,target,enable_trace=enable_trace,enable_og=enable_og)
 		
 		if hasattr(self.target(),"au_data") and len(self.target().au_data) > 0:
 			self.init_au_table()
+			self.init_scale_options()
+
+	def init_scale_options(self):
+		
+		hbl = QtGui.QHBoxLayout()
+		self.width_scale = ValSlider(self,(0.05,10.0),"Width scale:")
+		self.width_scale.setValue(self.target().width_scale)
+		self.height_scale = ValSlider(self,(0.05,10.0),"Height scale:")
+		self.height_scale.setValue(self.target().height_scale)
+		hbl.addWidget(self.width_scale)
+		hbl.addWidget(self.height_scale)
+		self.vbl2.addLayout(hbl)
+		
+		QtCore.QObject.connect(self.width_scale, QtCore.SIGNAL("valueChanged"), self.target().set_width_scale)
+		QtCore.QObject.connect(self.height_scale, QtCore.SIGNAL("valueChanged"), self.target().set_height_scale)
+		
+		
 
 	def init_au_table(self):
 		self.au_data = self.target().au_data

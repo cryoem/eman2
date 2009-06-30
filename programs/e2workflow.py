@@ -423,13 +423,14 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		refinement.setIcon(0,self.icons["refine"])
 		self.launchers["3D Refinement"] = self.launch_refinement_report
 		spr_list.append(refinement)
+		spr_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Eulers")))
+		spr_list[-1].setIcon(0,self.icons["eulerxplor"])
+		self.launchers["Eulers"] = self.launch_eulers
 		resolution = QtGui.QTreeWidgetItem(QtCore.QStringList("Resolution"))
 		resolution.setIcon(0,self.icons["plot"])
 		self.launchers["Resolution"] = self.launch_resolution_report
 		spr_list.append(resolution)
-		spr_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Eulers")))
-		spr_list[-1].setIcon(0,self.icons["eulerxplor"])
-		self.launchers["Eulers"] = self.launch_eulers
+		
 		#spr_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Initial model")))
 		#spr_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Refinement")))
 		spr.addChildren(spr_list)
@@ -494,9 +495,9 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		init_model.addChildren(init_model_list)
 		
 		refine_list = []
-		refine_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Run (Sets) e2refine")))
+		refine_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Run (Sets) - e2refine")))
 		refine_list[-1].setIcon(0,self.icons["refine"])
-		self.launchers["Run (Sets) e2refine"] = self.launch_e2refine_sets
+		self.launchers["Run (Sets) - e2refine"] = self.launch_e2refine_sets
 #		refine_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Run (Particles) e2refine")))
 #		refine_list[-1].setIcon(0,self.icons["refine"])
 #		self.launchers["Run (Particles) e2refine"] = self.launch_e2refine

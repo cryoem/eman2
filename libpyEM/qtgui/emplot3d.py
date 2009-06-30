@@ -198,7 +198,23 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 				return False
 				
 		return True
-
+	
+	def parse_txt_file(filename):
+		try:
+			fin=file(filename)
+			fin.seek(0)
+			rdata=fin.readlines()
+			rdata=[i for i in rdata if i[0]!='#']
+			if ',' in rdata[0]: rdata=[[float(j) for j in i.split(',')] for i in rdata]
+			else : rdata=[[float(j) for j in i.split()] for i in rdata]
+			nx=len(rdata[0])
+			ny=len(rdata)
+			data=[[rdata[j][i] for j in range(ny)] for i in range(nx)]
+			return data
+		except:
+			return None
+		
+	parse_txt_file = staticmethod(parse_txt_file)
 	
 	def set_data(self,data,key="data",clear_current=False,shape="Sphere"):
 		'''

@@ -51,6 +51,7 @@ from emimage3diso import EMIsosurfaceModule
 from emimage3dvol import EMVolumeModule
 from emimage3dslice import EM3DSliceViewerModule
 from emimage3dsym import EM3DSymViewerModule
+from e2eulerxplor import EMAsymmetricUnitViewer
 from emlights import EMLightsInspectorBase,EMLightsDrawer
 
 from emglobjects import Camera2, EMViewportDepthTools, Camera, EMImage3DGUIModule,EMGLProjectionViewMatrices,EMOpenGLFlagsAndTools
@@ -103,7 +104,7 @@ class EMImage3DGeneralWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionVi
 		glLightfv(GL_LIGHT0, GL_POSITION, [0.1,.1,1.,0.])
 		GL.glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
 		glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_TRUE)
-		GL.glClearColor(0.,0.,0.,1)
+		GL.glClearColor(1.,1.,1.,1)
 		#GL.glClearAccum(0,0,0,0)
 	
 		glShadeModel(GL_SMOOTH)
@@ -242,7 +243,7 @@ class EMImage3DWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMatri
 		
 		glClearStencil(0)
 		glEnable(GL_STENCIL_TEST)
-		GL.glClearColor(0.0,.0,.0,1)
+		GL.glClearColor(1.0,1.0,1.0,1)
 		try:
 			self.target().initializeGL()
 		except:
@@ -569,7 +570,8 @@ class EMImage3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		return self.viewables[self.currentselection].get_inspector()
 	
 	def add_sym(self):
-		module = EM3DSymViewerModule(None,True,False,False)
+		module = EMAsymmetricUnitViewer(None,True,False,False)
+		#module = EM3DSymViewerModule(None,True,False,False)
 		module.set_radius(self.radius)
 		self.num_sym += 1
 		self.__add_module(module,self.num_sym)

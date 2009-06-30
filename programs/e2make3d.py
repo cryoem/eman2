@@ -446,7 +446,10 @@ def back_projection_reconstruction(options):
 	for i in xrange(total_images):
 		d = get_processed_image(options,i)
 		
-		num_img=d.get_attr("ptcl_repr") 
+		try:
+			num_img=d.get_attr("ptcl_repr")
+		except:
+			num_img = 1 
 		if ( num_img<=0 and options.no_wt == False):
 			continue
 		else:
@@ -466,7 +469,7 @@ def back_projection_reconstruction(options):
 
 		if options.verbose:
 			print "%2d/%d  %3d\t%5.1f  %5.1f  %5.1f\t\t%6.2g %6.2g" %(
-					(i+1,total_images,d.get_attr("ptcl_repr"),
+					(i+1,total_images,num_img,
 					r["alt"], r["az"],r["phi"],
 					d.get_attr("maximum"),d.get_attr("minimum")))
 	

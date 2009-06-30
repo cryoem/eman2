@@ -620,6 +620,13 @@ def EMSelectorTemplate(Type):
 						menu2.addAction(self.emdata_3d_icon,"3D Viewer")
 					menu.addMenu(menu2)
 				
+				elif selected_items[0].is_2d_plot():
+					menu.addSeparator()
+					menu2 = QtGui.QMenu("Open With")
+					menu2.addAction(self.plot_icon,"3D Plot")
+					menu.addMenu(menu2)
+					
+				
 	#		if nz == 1 and ny > 1:	menu.addAction("Open in e2boxer")
 				
 			QtCore.QObject.connect(menu,QtCore.SIGNAL("triggered(QAction*)"),self.menu_action_triggered)
@@ -651,11 +658,17 @@ def EMSelectorTemplate(Type):
 			elif action.text() == "3D Plot":
 				from emplot3d import EMPlot3DModule
 				get_application().setOverrideCursor(Qt.BusyCursor)
-				data = self.menu_selected_items[0].get_emdata()
-				v = data.get_data_as_vector()
-				x = [i for i in range(data.get_xsize()) for j in range(data.get_ysize())]
-				y = [j for i in range(data.get_xsize()) for j in range(data.get_ysize())]
-				self.preview_item_explicit([x,y,v],EMPlot3DModule)
+				if self.menu_selected_items[0].is_2d_plot():
+					data =	EMPlot3DModule.parse_txt_file(self.menu_selected_items[0].get_path())
+					print len(data)
+					d = [ i*.01 for i in xrange(0,len(data[0])) ]
+					self.preview_item_explicit([d,data[1],data[1]],EMPlot3DModule)
+				else:
+					data = self.menu_selected_items[0].get_emdata()
+					v = data.get_data_as_vector()
+					x = [i for i in range(data.get_xsize()) for j in range(data.get_ysize())]
+					y = [j for i in range(data.get_xsize()) for j in range(data.get_ysize())]
+					self.preview_item_explicit([x,y,v],EMPlot3DModule)
 				get_application().setOverrideCursor(Qt.ArrowCursor)
 			elif action.text() == "View Subset In 3D":
 				data1 = self.menu_selected_items[0].get_emdata()
@@ -1538,6 +1551,8 @@ class EMListingItem:
 		A convenient to ask if a particular item is a 2D stack
 		'''
 		return False
+	
+	def is_2d_plot(self): return False
 
 class EMFSListingItem(EMListingItem):
 	def __init__(self,type,full_name):
@@ -1641,6 +1656,8 @@ class EMFSPlotItem(EMFSListingItem):
 	def do_preview(self,target):
 		target.preview_plot(self.full_path)
 		return True
+	
+	def is_2d_plot(self): return True
 		
 	def is_previewable(self): return True
 	

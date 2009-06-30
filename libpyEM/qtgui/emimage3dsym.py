@@ -56,7 +56,28 @@ import weakref
 
 MAG_INCREMENT_FACTOR = 1.1
 
-class EM3DSymViewerModule(EMImage3DGUIModule):
+class Orientations:
+	def __init__(self):
+		self.prop = 5.0
+		self.sym = "c1"
+		self.sym_object=parsesym(self.sym)
+		self.nomirror = True
+		self.angle_label = "delta"
+		self.strategy = "eman"
+	
+	def get_prop(self): return self.prop
+	def mirror_enabled(self): return not self.nomirror
+	def get_sym(self): return self.sym
+	def set_prop(self,val): self.prop = float(val)
+	def set_mirror(self,val): self.nomirror = not val
+	def set_angle_label(self,val): self.angle_label = str(val)
+	def set_strategy(self,val): self.strategy = str(val)
+	def set_symmetry(self,val):
+		self.sym = str(val)
+		self.sym_object= Symmetries.get(self.sym)
+		
+		
+class EM3DSymViewerModule(EMImage3DGUIModule,Orientations):
 
 	def get_qt_widget(self):
 		if self.qt_context_parent == None:	
@@ -74,7 +95,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		self.arc_anim_dl = None
 		self.arc_anim_points = None
 		EMImage3DGUIModule.__init__(self,application,ensure_gl_context,application_control)
-		
+		Orientations.__init__(self)
 		
 		self.eulers = [] # will eventually store Transform objects
 		self.points = [] # will eventually store the points on the asymmetric unit
@@ -84,10 +105,10 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		
 		
 		if inspector_go: self.get_inspector()
-		
+#		
 #	def __del__(self):
 #		print "sym died" 
-		
+#		
 	def get_inspector(self):
 		if not self.inspector : self.inspector=EMSymInspector(self)
 		return self.inspector
@@ -119,6 +140,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		self.spheredl = 0
 		self.highresspheredl = 0
 		self.diskdl = 0
+		self.cappedcylinderdl = 0
 
 		self.glcontrast = 1.0
 		self.glbrightness = 0.0
@@ -127,18 +149,11 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		
 		self.force_update = False
 		self.force_force_update = False
-		
-		self.sym = "icos"
-		self.prop = 5
-		self.perturb = False
-		self.nomirror = True
-		self.angle_label = 'delta'
-		self.strategy = 'eman'
-		
+#		
 		self.display_euler = True
 		self.display_tri = False
 		self.display_arc = True
-		self.sym_object = None
+#		self.sym_object = None
 		self.update_sym_dl = True
 		
 		
@@ -173,10 +188,6 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		self.set_sym(self.sym)
 		self.regen_dl()
 		
-		
-		#self.glbasicobjects = EMBasicOpenGLObjects()
-		#print self.glbasicobjects.getSphereDL()
-	
 	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
 		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
 
@@ -269,7 +280,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 	def gl_color(self,color):
 		glColor(*color)
 		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,color)
-		glMaterial(GL_FRONT,GL_SPECULAR,color)
+		glMaterial(GL_FRONT,GL_SPECULAR,[0,0,0,1])
 		glMaterial(GL_FRONT,GL_EMISSION,(0,0,0,1.0))
 		glMaterial(GL_FRONT,GL_SHININESS,64.0)
 	
@@ -304,15 +315,10 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		glMaterial(GL_FRONT,GL_SHININESS,32.0)
 		
 	def trace_great_arcs(self, points):
-		if ( self.cylinderdl == 0 ):
-			self.cylinderdl=glGenLists(1)
-				
-			glNewList(self.cylinderdl,GL_COMPILE)
-			glPushMatrix()
-			gluCylinder(self.gq,1.0,1.0,1.0,12,2)
-			glPopMatrix()
-				
-			glEndList()
+		
+		self.init_basic_shapes()
+		
+
 		
 		if ( self.arc_dl != 0 ): glDeleteLists(self.arc_dl, 1)
 		n = len(points)
@@ -390,29 +396,23 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		self.eulers_specified = True
 		self.specified_eulers = eulers
 	
-	def generate_current_display_list(self,force=False):
-		if self.inspector != None:
-			sym = self.inspector.get_sym()
-			prop = self.inspector.get_prop()
-			mirror = not self.inspector.get_mirror()
-			perturb = self.inspector.get_perturb()
-			angle_label = self.inspector.get_angle_label()
-			strategy = str(self.inspector.get_orient_label())
+	def init_basic_shapes(self):
 		
-#		if not force and self.sym == sym and self.prop == prop and self.nomirror == mirror and self.perturb == perturb and self.angle_label == angle_label and self.strategy == strategy and self.force_force_update == False: return
-#		else:
-			self.sym = sym
-			self.prop = prop
-			self.nomirror = mirror
-			self.perturb = perturb
-			self.angle_label = angle_label
-			self.strategy = strategy
+		if ( self.cylinderdl == 0 ):
+			self.cylinderdl=glGenLists(1)
+				
+			glNewList(self.cylinderdl,GL_COMPILE)
+			glPushMatrix()
+			gluCylinder(self.gq,1.0,1.0,1.0,12,2)
+			glPopMatrix()
+				
+			glEndList()
 		
 		if self.diskdl == 0:
 			self.diskdl=glGenLists(1)
 				
 			glNewList(self.diskdl,GL_COMPILE)
-			gluDisk(self.gq,.1,.8,8,2)
+			gluDisk(self.gq,0,1,12,2)
 			glEndList()
 		
 		if self.spheredl == 0:
@@ -429,17 +429,19 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 			glNewList(self.highresspheredl,GL_COMPILE)
 			gluSphere(self.gq,.5,16,16)
 			glEndList()
+			
+		if ( self.cappedcylinderdl == 0 ):
+			self.cappedcylinderdl=glGenLists(1)
+			glNewList(self.cappedcylinderdl,GL_COMPILE)
+			glCallList(self.cylinderdl)
+			glTranslate(0,0,1)
+			glCallList(self.diskdl)
+				
+			glEndList()
 
-		if ( self.sym_dl != 0 ): glDeleteLists( self.sym_dl, 1)
-		
-		self.sym_dl = glGenLists(1)
 	
-		if (self.sym_dl == 0):
-			self.sym = None
-			self.prop = None
-			return #OpenGL is not initialized yet
-		self.sym_object = parsesym(str(self.sym))
-		
+	def generate_current_display_list(self,force=False):
+		self.init_basic_shapes()
 		
 		l = dump_orientgens_list()
 		parms = []
@@ -458,12 +460,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		self.trace_great_triangles(val)
 		if ('inc_mirror' in parms):
 			og += ":inc_mirror=" + str(val)
-			
-		if ('perturb' in parms):
-			if ( self.perturb == True ) : val = 1
-			else: val = 0
-			og += ":perturb="+ str(val)
-		
+					
 		[og_name,og_args] = parsemodopt(str(og))
 		
 		filedebug = False
@@ -491,17 +488,16 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 			self.points.append(p)
 			if not self.colors_specified: self.point_colors.append((0.34615, 0.3143, 0.0903,1))
 		self.make_sym_dl_list(self.points,self.point_colors,eulers)
+		
 	
 	def set_sym(self,sym):
 		'''
 		Warning, this probably doesn't work in general don't use it
 		'''
-		self.sym = sym
-		self.sym_object = parsesym(str(sym))
-		self.get_inspector().set_sym(sym)
+		if self.inspector != None: self.get_inspector().set_sym(sym)
 		self.force_update = True
 	
-	def make_sym_dl_list(self,points,point_colors,eulers):
+	def make_sym_dl_list(self,points,point_colors,eulers,ptcls=None,width_scale=1.0,height_scale=1.0):
 		
 		if self.sym_dl > 0:
 			glDeleteLists(self.sym_dl,1)
@@ -514,9 +510,11 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 			glRotate(d["az"],0,0,1)
 			glRotate(d["alt"],1,0,0)
 			glRotate(d["phi"],0,0,1)
-#			glTranslate(p[0],p[1],p[2])
 	   	   	glTranslate(0,0,self.radius)
-			glCallList(self.diskdl)
+	   	   	if ptcls == None: glCallList(self.diskdl)
+	   	   	else:
+	   	   		glScalef(width_scale*1.0,width_scale*1.0,height_scale*8*ptcls[i])
+				glCallList(self.cappedcylinderdl)
 			glPopMatrix()
 			
 		glEndList()
@@ -835,7 +833,8 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		
 		if ( polygonmode[0] == GL_LINE ): glPolygonMode(GL_FRONT, GL_LINE)
 		if ( polygonmode[1] == GL_LINE ): glPolygonMode(GL_BACK, GL_LINE)
-
+		
+		
 	def update_inspector(self,t3d):
 		if not self.inspector or self.inspector ==None:
 			self.inspector=EMSymInspector(self)
@@ -900,13 +899,13 @@ class EMSymViewerWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMat
 		glEnable(GL_LIGHT0)
 		glEnable(GL_DEPTH_TEST)
 		#print "Initializing"
-		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.9, 0.9, 0.9, 1.0])
+		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.0, 0.0, 0.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_POSITION, [0.5,0.7,11.,0.])
 		GL.glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
 		glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_TRUE)
-		GL.glClearColor(0,0,0,0)
+		GL.glClearColor(1,1,1,1)
 		#GL.glClearAccum(0,0,0,0)
 	
 		glShadeModel(GL_SMOOTH)
@@ -968,12 +967,13 @@ class EMSymViewerWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMat
 	
 	
 class EMSymInspector(QtGui.QWidget):
-	def __init__(self,target) :
+	def __init__(self,target,enable_trace=True,enable_og=True) :
 		QtGui.QWidget.__init__(self,None)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "eulerxplor.png"))
 		self.target=weakref.ref(target)
 		self.rotation_sliders = EMTransformPanel(self.target(),self)
-		
+		self.enable_trace = enable_trace
+		self.enable_og = enable_og
 		self.vbl = QtGui.QVBoxLayout(self)
 		self.vbl.setMargin(0)
 		self.vbl.setSpacing(6)
@@ -1024,7 +1024,7 @@ class EMSymInspector(QtGui.QWidget):
 		
 		
 		self.vbl.addWidget(self.get_main_tab())
-		
+		self.set_sym(self.target().get_sym())
 		self.n3_showing = False
 		
 		self.file = None
@@ -1034,23 +1034,15 @@ class EMSymInspector(QtGui.QWidget):
 #		QtCore.QObject.connect(self.glcontrast, QtCore.SIGNAL("valueChanged"), target.set_GL_contrast)
 #		QtCore.QObject.connect(self.glbrightness, QtCore.SIGNAL("valueChanged"), target.set_GL_brightness)
 		QtCore.QObject.connect(self.sym_combo, QtCore.SIGNAL("currentIndexChanged(QString)"), self.sym_changed)
-		QtCore.QObject.connect(self.sym_text, QtCore.SIGNAL("editingFinished()"), target.regen_dl)
-		QtCore.QObject.connect(self.prop_text, QtCore.SIGNAL("editingFinished()"), target.regen_dl)
-		QtCore.QObject.connect(self.mirror_checkbox, QtCore.SIGNAL("stateChanged(int)"), target.regen_dl)
-		QtCore.QObject.connect(self.perturbtog, QtCore.SIGNAL("toggled(bool)"), self.perturbtoggled)
+		QtCore.QObject.connect(self.sym_text, QtCore.SIGNAL("editingFinished()"), self.sym_number_changed)
 		#QtCore.QObject.connect(self.cubetog, QtCore.SIGNAL("toggled(bool)"), target.toggle_cube)
 		QtCore.QObject.connect(self.symtog, QtCore.SIGNAL("toggled(bool)"), target.updateGL)
 		QtCore.QObject.connect(self.symtogdisplay, QtCore.SIGNAL("clicked(bool)"), target.toggle_sym_display)
 		QtCore.QObject.connect(self.triangletog, QtCore.SIGNAL("clicked(bool)"), target.triangletog)
 		QtCore.QObject.connect(self.arctog, QtCore.SIGNAL("clicked(bool)"), target.arctog)
-		QtCore.QObject.connect(self.tracetog, QtCore.SIGNAL("clicked(bool)"), self.toggle_trace)
-		QtCore.QObject.connect(self.reducetog, QtCore.SIGNAL("clicked(bool)"), self.target().reducetog)
-		QtCore.QObject.connect(self.lowrange, QtCore.SIGNAL("editingFinished()"), self.trace_update)
-		QtCore.QObject.connect(self.highrange, QtCore.SIGNAL("editingFinished()"), self.trace_update)
-		QtCore.QObject.connect(self.tracefile, QtCore.SIGNAL("editingFinished()"), self.trace_update)
+		
 		#QtCore.QObject.connect(self.cbb, QtCore.SIGNAL("currentIndexChanged(QString)"), target.setColor)
-		QtCore.QObject.connect(self.angle_label, QtCore.SIGNAL("currentIndexChanged(QString)"), self.angle_label_changed)
-		QtCore.QObject.connect(self.orient_label, QtCore.SIGNAL("currentIndexChanged(QString)"), self.orient_label_changed)
+		
 	
 	def update_rotations(self,t3d):
 		self.rotation_sliders.update_rotations(t3d)
@@ -1070,30 +1062,30 @@ class EMSymInspector(QtGui.QWidget):
 	
 	def sym_toggled(self):
 		return self.symtog.isChecked()
-	
-	def perturbtoggled(self,val):
-		self.target().regen_dl()
-		
-	def angle_label_changed(self,string):
-		self.target().regen_dl()
-		
-	def orient_label_changed(self,string):
-		label = string
-		self.angle_label.clear()
-		if label == 'random':
-			self.angle_label.addItem('n')
-		else:
-			self.angle_label.addItem('delta')
-			self.angle_label.addItem('n')
 			
+	def angle_label_changed(self,string):
+		self.target().set_angle_label(string)
+		self.target().regen_dl()
+		
+	def strategy_changed(self,string):
+		self.target().set_strategy(string)
 		self.target().regen_dl()
 
+	def set_mirror(self,val):
+		self.target().set_mirror(val)
+		self.target().regen_dl()
+
+	def sym_number_changed(self):
+		self.target().set_symmetry(self.get_sym())
+		self.target().regen_dl()
+		
 	def sym_changed(self, sym):
 		if sym == ' D ' or sym == ' C ' or sym == ' H ':
 			self.sym_text.setEnabled(True)
 		else:
 			self.sym_text.setEnabled(False)
 		
+		self.target().set_symmetry(self.get_sym())
 		self.target().regen_dl()
 
 	def set_sym(self,sym):
@@ -1110,7 +1102,7 @@ class EMSymInspector(QtGui.QWidget):
 			except:
 				print "can't interpret",sym
 				return
-			
+			self.sym_text.setEnabled(True)
 			if s[0] == "d":
 				self.sym_combo.setCurrentIndex(3)
 			elif s[0] == "c":
@@ -1132,21 +1124,13 @@ class EMSymInspector(QtGui.QWidget):
 			sym = sym+self.sym_text.displayText()
 		return sym
 	
-	def get_angle_label(self):
-		return self.angle_label.currentText()
-	
-	def get_orient_label(self):
-		return self.orient_label.currentText()
-	
-	def get_prop(self):
-		return float(self.prop_text.displayText())
-	
+	def prop_changed(self):
+		self.target().set_prop(float(self.prop_text.text()))
+		self.target().regen_dl()
+		
 	def get_mirror(self):
 		return self.mirror_checkbox.checkState() == Qt.Checked
 	
-	def get_perturb(self):
-		return self.perturbtog.isChecked()
-
 	def trace_update(self):
 		lr = int(self.lowrange.displayText())
 		hr = int(self.highrange.displayText())
@@ -1196,13 +1180,13 @@ class EMSymInspector(QtGui.QWidget):
 		self.sym_map[" H "] = "h"
 		idx_default = 0
 		
-		default_sym = self.target().sym
-		
+#		default_sym = self.target().sym
+#		
 		for idx,i in enumerate(self.symmetries): 
 			
 			self.sym_combo.addItem(i)
-			if self.sym_map[i][0] == default_sym[0]:
-				idx_default = idx
+#			if self.sym_map[i][0] == default_sym[0]:
+#				idx_default = idx
 				
 		self.sym_combo.setCurrentIndex(idx_default)
 		self.hbl_sym.addWidget(self.sym_combo)
@@ -1213,103 +1197,106 @@ class EMSymInspector(QtGui.QWidget):
 		
 		self.pos_int_validator = QtGui.QIntValidator(self)
 		self.pos_int_validator.setBottom(1)
-		self.sym_text = QtGui.QLineEdit(self)
+		self.sym_text = QtGui.QLineEdit()
 		self.sym_text.setValidator(self.pos_int_validator)
-		self.sym_text.setText(str(self.target().prop))
+		self.sym_text.setText(str(self.target().get_prop()))
 		self.sym_text.setFixedWidth(50)
 		self.hbl_sym.addWidget(self.sym_text)
 		self.sym_text.setEnabled(False)
 		
-		self.angle_label = QtGui.QComboBox(self)
-		self.angle_label.addItem('delta')
-		self.angle_label.addItem('n')
-		self.hbl_sym.addWidget(self.angle_label)
+		if self.enable_og:
 		
-		self.pos_double_validator = QtGui.QDoubleValidator(self)
-		self.pos_double_validator.setBottom(0.05)
-		self.prop_text = QtGui.QLineEdit(self)
-		self.prop_text.setValidator(self.pos_double_validator)
-		self.prop_text.setText("5.0")
-		self.prop_text.setFixedWidth(50)
-		self.hbl_sym.addWidget(self.prop_text)
+			self.angle_label = QtGui.QComboBox()
+			self.angle_label.addItem('delta')
+			self.angle_label.addItem('n')
+			self.hbl_sym.addWidget(self.angle_label)
+			
+			self.pos_double_validator = QtGui.QDoubleValidator(self)
+			self.pos_double_validator.setBottom(0.05)
+			self.prop_text = QtGui.QLineEdit()
+			self.prop_text.setValidator(self.pos_double_validator)
+			self.prop_text.setText(str(self.target().get_prop()))
+			self.prop_text.setFixedWidth(50)
+			self.hbl_sym.addWidget(self.prop_text)
+			
+			self.hbl_sym2 = QtGui.QHBoxLayout()
+			self.hbl_sym2.setMargin(0)
+			self.hbl_sym2.setSpacing(6)
+			self.hbl_sym2.setObjectName("Sym2")
+			maintab.vbl.addLayout(self.hbl_sym2)
+			
+			self.og_label = QtGui.QLabel()
+			self.og_label.setText('Strategy')
+			self.hbl_sym2.addWidget(self.og_label)
+			
+			
+			self.strategy_label = QtGui.QComboBox()
+			l = dump_orientgens_list()
+			
+			n = len(l)
+			for i in l:
+				self.strategy_label.addItem(str(i))
+			
+			self.strategy_label.setCurrentIndex(n-1)
+			self.hbl_sym2.addWidget(self.strategy_label)
+			
+		self.mirror_checkbox = QtGui.QCheckBox("Mirror")
+		if self.enable_og:self.hbl_sym2.addWidget(self.mirror_checkbox)
+		else: self.hbl_sym.addWidget(self.mirror_checkbox)
+		self.mirror_checkbox.setChecked(self.target().mirror_enabled())
 		
-		self.hbl_sym2 = QtGui.QHBoxLayout()
-		self.hbl_sym2.setMargin(0)
-		self.hbl_sym2.setSpacing(6)
-		self.hbl_sym2.setObjectName("Sym2")
-		maintab.vbl.addLayout(self.hbl_sym2)
-		
-		self.og_label = QtGui.QLabel()
-		self.og_label.setText('Strategy')
-		self.hbl_sym2.addWidget(self.og_label)
-		
-		
-		self.orient_label = QtGui.QComboBox(self)
-		l = dump_orientgens_list()
-		
-		n = len(l)
-		for i in l:
-			self.orient_label.addItem(str(i))
-		
-		self.orient_label.setCurrentIndex(n-1)
-		self.hbl_sym2.addWidget(self.orient_label)
 
-		#here		
-		self.hbl_pt = QtGui.QHBoxLayout()
-		self.hbl_pt.setMargin(0)
-		self.hbl_pt.setSpacing(6)
-		self.hbl_pt.setObjectName("Ptl Trace")
-		
-		
-		self.tracetog = QtGui.QPushButton("Trace")
-		self.tracetog.setCheckable(1)
-		self.tracetog.setChecked(0)
-		self.hbl_pt.addWidget(self.tracetog)
-		
-		self.tracefile = QtGui.QLineEdit(self)
-		self.tracefile.setText("filename.txt")
-		self.tracefile.setFixedWidth(100)
-		self.hbl_pt.addWidget(self.tracefile)
-		self.tracefile.setEnabled(False)
-		
-		self.pt_label = QtGui.QLabel()
-		self.pt_label.setText('Range')
-		self.hbl_pt.addWidget(self.pt_label)
-		
-		self.pos_int_validator2 = QtGui.QIntValidator(self)
-		self.pos_int_validator2.setBottom(0)
-		self.lowrange = QtGui.QLineEdit(self)
-		self.lowrange.setValidator(self.pos_int_validator2)
-		self.lowrange.setText("1")
-		self.lowrange.setFixedWidth(50)
-		self.hbl_pt.addWidget(self.lowrange)
-		self.lowrange.setEnabled(False)
-		
-		self.pt_label_to = QtGui.QLabel()
-		self.pt_label_to.setText('to')
-		self.hbl_pt.addWidget(self.pt_label_to)
-		
-		self.highrange = QtGui.QLineEdit(self)
-		self.highrange.setValidator(self.pos_int_validator2)
-		self.highrange.setText("1")
-		self.highrange.setFixedWidth(50)
-		self.hbl_pt.addWidget(self.highrange)
-		self.highrange.setEnabled(False)
-		
-		self.reducetog = QtGui.QPushButton("Reduce")
-		self.reducetog.setCheckable(1)
-		self.reducetog.setChecked(0)
-		self.hbl_pt.addWidget(self.reducetog)
-		
-		maintab.vbl.addLayout(self.hbl_pt)
+		if self.enable_trace:		
+			self.hbl_pt = QtGui.QHBoxLayout()
+			self.hbl_pt.setMargin(0)
+			self.hbl_pt.setSpacing(6)
+			self.hbl_pt.setObjectName("Ptl Trace")
+			
+			
+			self.tracetog = QtGui.QPushButton("Trace")
+			self.tracetog.setCheckable(1)
+			self.tracetog.setChecked(0)
+			self.hbl_pt.addWidget(self.tracetog)
+			
+			self.tracefile = QtGui.QLineEdit()
+			self.tracefile.setText("filename.txt")
+			self.tracefile.setFixedWidth(100)
+			self.hbl_pt.addWidget(self.tracefile)
+			self.tracefile.setEnabled(False)
+			
+			self.pt_label = QtGui.QLabel()
+			self.pt_label.setText('Range')
+			self.hbl_pt.addWidget(self.pt_label)
+			
+			self.pos_int_validator2 = QtGui.QIntValidator(self)
+			self.pos_int_validator2.setBottom(0)
+			self.lowrange = QtGui.QLineEdit()
+			self.lowrange.setValidator(self.pos_int_validator2)
+			self.lowrange.setText("1")
+			self.lowrange.setFixedWidth(50)
+			self.hbl_pt.addWidget(self.lowrange)
+			self.lowrange.setEnabled(False)
+			
+			self.pt_label_to = QtGui.QLabel()
+			self.pt_label_to.setText('to')
+			self.hbl_pt.addWidget(self.pt_label_to)
+			
+			self.highrange = QtGui.QLineEdit()
+			self.highrange.setValidator(self.pos_int_validator2)
+			self.highrange.setText("1")
+			self.highrange.setFixedWidth(50)
+			self.hbl_pt.addWidget(self.highrange)
+			self.highrange.setEnabled(False)
+			
+			self.reducetog = QtGui.QPushButton("Reduce")
+			self.reducetog.setCheckable(1)
+			self.reducetog.setChecked(0)
+			self.hbl_pt.addWidget(self.reducetog)
+			
+			maintab.vbl.addLayout(self.hbl_pt)
 #		#end here
 #		
-		self.mirror_checkbox = QtGui.QCheckBox("Mirror")
-		self.hbl_sym2.addWidget(self.mirror_checkbox)
 		
-		self.perturbtog = QtGui.QPushButton("Perturb")
-		self.perturbtog.setCheckable(1)
-		self.hbl_sym2.addWidget(self.perturbtog)
 		
 #		self.glcontrast = ValSlider(maintab,(1.0,5.0),"GLShd:")
 #		self.glcontrast.setObjectName("GLShade")
@@ -1325,6 +1312,20 @@ class EMSymInspector(QtGui.QWidget):
 		#self.cbb = QtGui.QComboBox(maintab)
 		#self.vbl.addWidget(self.cbb)
 		#self.cbb.deleteLater()
+		QtCore.QObject.connect(self.mirror_checkbox, QtCore.SIGNAL("stateChanged(int)"), self.set_mirror)
+		if self.enable_og:
+			QtCore.QObject.connect(self.prop_text, QtCore.SIGNAL("editingFinished()"), self.prop_changed)
+			
+			QtCore.QObject.connect(self.angle_label, QtCore.SIGNAL("currentIndexChanged(QString)"), self.angle_label_changed)
+			QtCore.QObject.connect(self.strategy_label, QtCore.SIGNAL("currentIndexChanged(QString)"), self.strategy_changed)
+
+		if self.enable_trace:
+			QtCore.QObject.connect(self.tracetog, QtCore.SIGNAL("clicked(bool)"), self.toggle_trace)
+			QtCore.QObject.connect(self.reducetog, QtCore.SIGNAL("clicked(bool)"), self.target().reducetog)
+			QtCore.QObject.connect(self.lowrange, QtCore.SIGNAL("editingFinished()"), self.trace_update)
+			QtCore.QObject.connect(self.highrange, QtCore.SIGNAL("editingFinished()"), self.trace_update)
+			QtCore.QObject.connect(self.tracefile, QtCore.SIGNAL("editingFinished()"), self.trace_update)
+			
 
 		self.rotation_sliders.addWidgets(maintab.vbl)
 		
