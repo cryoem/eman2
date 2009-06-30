@@ -750,6 +750,8 @@ class EMClassAveTask(EMTask):
 		if sigma: averager_parms[1]["sigma"] = sigma # we use an averager only incase the sigma image is being requested
 		averager=Averagers.get(averager_parms[0], averager_parms[1])
 		
+		print averager
+		
 		running_average = None # we have a running average for the boot strapping procedure
 		np = 0
 		alis = {} # holds the transformation matrices that define the alignment 
@@ -759,14 +761,14 @@ class EMClassAveTask(EMTask):
 #			else:
 #				images = self.usefilt_images[ptcl_idx]
 					
-			if (average == None):
-				averager.add(image)
+			if (running_average == None):
+				averager.add_image(image)
 				running_average = image.copy()
 				alis[ptcl_idx] = Transform() # the identity
 				np = 1
 			else:
 
-				aligned = self.__align(average,image)
+				aligned = self.__align(running_average,image)
 				ali_parms = aligned.get_attr("xform.align2d")
 				ali_parms.invert()
 				alis[ptcl_idx] = ali_parms
@@ -774,7 +776,7 @@ class EMClassAveTask(EMTask):
 								
 				np += 1
 				running_average.add(aligned) # now add the image
-				averager.add(image)
+				averager.add_image(image)
 	
 		if np != 0:
 			average = averager.finish()
