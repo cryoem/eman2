@@ -101,6 +101,10 @@ template <> Factory < Processor >::Factory()
 	force_add(&LogProcessor::NEW);
 	force_add(&FiniteProcessor::NEW);
 
+// 	force_add(&OperateMaxProcessor::NEW);
+	force_add(&BinaryOperateProcessor<MaxPixelOperator>::NEW);
+	force_add(&BinaryOperateProcessor<MinPixelOperator>::NEW);
+	
 	force_add(&PaintProcessor::NEW);
 	force_add(&WatershedProcessor::NEW);
 	force_add(&MaskSharpProcessor::NEW);

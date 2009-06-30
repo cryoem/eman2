@@ -40,6 +40,7 @@
 #include "util.h"
 #include "geometry.h"
 #include "transform.h"
+#include "emdata.h"
 
 #include <cfloat>
 #include <climits>
@@ -5129,6 +5130,98 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	  private:
 		  vector<Vec3i > watershed(EMData* mask, EMData* image, const float& threshold, const Vec3i& cordinate, const int mask_value);
 		  vector<Vec3i > find_region(EMData* mask,const vector<Vec3i >& coords, const int mask_value, vector<Vec3i >& region);
+
+	};
+	
+	/** Operates on two images, returning an image containing the maximum/minimum/multiplied pixel (etc, you choose) at each location
+	 * The actual operation depends on what template argument you use. Currently the MaxPixelOperator and MinPixelOperator
+	 * are the only ones utilized - see processor.cpp where the Processor Factory constructor is defined to get an idea of how to add another one
+	 * Initially added at the request of Dr Matthew Baker
+	 * NOTE: binary is meant in the sense of the standard algorithms, NOT in the sense of a black and white image
+	 * @param with the other image that will be used generate the image with the maximum (or minimum, etc) pixel values
+	 * @author David Woolford
+	 * @date June 2009
+	 */
+	template<class Type>
+	class BinaryOperateProcessor : public Processor{
+		public:
+			/** 
+			* @exception InvalidParameterException if with is not specified
+			* @exception ImageDimensionException if image dimensions do not match
+			*/
+			virtual void process_inplace(EMData * image) {
+				if ( ! params.has_key("with") ) throw InvalidParameterException("You must supply the \"with\" parameter");
+				EMData* with = params["with"];
+
+				if ( with->get_xsize() != image->get_xsize() || with->get_ysize() != image->get_ysize() || with->get_zsize() != image->get_zsize() )
+					throw ImageDimensionException("The images you are operating on do not have the same dimensions");
+
+				float* image_data = image->get_data();
+				float* with_data = with->get_data();
+
+				std::transform(image_data,image_data+image->get_size(),with_data,image_data,Type::binary_operate);	
+			}
+
+			virtual string get_name() const
+			{
+				return op.get_name();
+			}
+			
+			virtual string get_desc() const
+			{
+				return op.get_desc();
+			}
+
+			static Processor *NEW()
+			{
+				return new BinaryOperateProcessor<Type>();
+			}
+			
+			virtual TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("with", EMObject::EMDATA,"The second image");
+				return d;
+			}
+		private:
+			Type op;
+	};
+	
+	class MaxPixelOperator {
+		public:
+		string get_name() const
+		{
+			return "operate.max";
+		}
+
+		string get_desc() const
+		{
+			return "Compares pixels in two images, returning an image with the maximum pixel value in each pixel location";
+		}
+		
+		static float binary_operate(const float& left, const float& right) {
+			if (left > right) return left;
+			return right;
+		}
+
+	};
+	
+	class MinPixelOperator {
+		public:
+			string get_name() const
+			{
+				return "operate.min";
+			}
+
+			string get_desc() const
+			{
+				return "Compares pixels in two images, returning an image with the minimum pixel value in each pixel location";
+			}
+		
+			static float binary_operate(const float& left, const float& right) {
+				if (left < right) return left;
+				return right;
+			}
 
 	};
 

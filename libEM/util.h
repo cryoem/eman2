@@ -51,6 +51,7 @@ using std::string;
 
 #include <boost/multi_array.hpp>
 #include <boost/tuple/tuple.hpp>
+//#include <boost/math/special_functions/fpclassify.hpp>
 #include "vec3.h"
 
 #ifdef WIN32
