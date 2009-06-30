@@ -883,14 +883,14 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		get_application().setOverrideCursor(Qt.ArrowCursor)
 	
 	def launch_browser(self):
-		import subprocess
-		subprocess.Popen("e2display.py")
-#		get_application().setOverrideCursor(Qt.BusyCursor)
-#		module = EMBrowserModule()
-#		self.module().emit(QtCore.SIGNAL("launching_module"),"Browser",module)
-#		get_application().show_specific(module)
-#		self.add_module([str(module),"Browse",module])
-#		get_application().setOverrideCursor(Qt.ArrowCursor)
+#		import subprocess
+#		subprocess.Popen("e2display.py")
+		get_application().setOverrideCursor(Qt.BusyCursor)
+		module = EMBrowserModule()
+		self.module().emit(QtCore.SIGNAL("launching_module"),"Browser",module)
+		get_application().show_specific(module)
+		self.add_module([str(module),"Browse",module])
+		get_application().setOverrideCursor(Qt.ArrowCursor)
 	
 	def launch_refine2d_general(self):
 		self.launch_task(E2Refine2DWithGenericTask(False),"e2refine2d Generic")

@@ -274,11 +274,12 @@ template <> Factory < Processor >::Factory()
 #include <cmath>
 
 using std::isfinite;
-
+using std::fpclassify;
+using namespace std;
 void FiniteProcessor::process_pixel(float *x) const
 {
-	cout << *x << " inf " << isinff(*x)  << " nan " << isnanf(*x) << " " << isfinite(*x) <<endl;
 	if ( !Util::goodf(x) ) {
+		cout << "bad egg" << " " << isnan(*x) << " " << isinf(*x) << endl;
 		*x = to;
 	}
 }
