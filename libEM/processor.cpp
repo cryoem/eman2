@@ -271,15 +271,9 @@ template <> Factory < Processor >::Factory()
 #endif // EMAN2_USING_CUDA
 }
 
-#include <cmath>
-
-using std::isfinite;
-using std::fpclassify;
-using namespace std;
 void FiniteProcessor::process_pixel(float *x) const
 {
 	if ( !Util::goodf(x) ) {
-		cout << "bad egg" << " " << isnan(*x) << " " << isinf(*x) << endl;
 		*x = to;
 	}
 }
