@@ -750,8 +750,6 @@ class EMClassAveTask(EMTask):
 		if sigma: averager_parms[1]["sigma"] = sigma # we use an averager only incase the sigma image is being requested
 		averager=Averagers.get(averager_parms[0], averager_parms[1])
 		
-		print averager
-		
 		running_average = None # we have a running average for the boot strapping procedure
 		np = 0
 		alis = {} # holds the transformation matrices that define the alignment 

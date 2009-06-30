@@ -270,8 +270,14 @@ template <> Factory < Processor >::Factory()
 	force_add(&CudaCorrelationProcessor::NEW);
 #endif // EMAN2_USING_CUDA
 }
+
+#include <cmath>
+
+using std::isfinite;
+
 void FiniteProcessor::process_pixel(float *x) const
 {
+	cout << *x << " inf " << isinff(*x)  << " nan " << isnanf(*x) << " " << isfinite(*x) <<endl;
 	if ( !Util::goodf(x) ) {
 		*x = to;
 	}

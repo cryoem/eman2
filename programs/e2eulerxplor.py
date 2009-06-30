@@ -677,7 +677,6 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 			
 			e = EMData()
 			for i,cr in enumerate(cls_result):
-				nx,ny,nz = gimme_image_dimensions3D(cr)
 				r = Region(0,ptcl_idx,1,1)
 				e.read_image(cr,0,False,r)
 				p = int(e.get(0))
