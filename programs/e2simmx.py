@@ -473,6 +473,8 @@ class EMSimTaskDC(EMTask):
 					result_data[2].set(rc,rr,scale_correction*params["ty"])
 					result_data[3].set(rc,rr,params["alpha"])
 					result_data[4].set(rc,rr,params["mirror"])
+					
+		for r in result_data: r.update()
 		
 		# This is to catch any NaNs - yes this is a problem but this is a temporary work around
 		result_data[0].process_inplace("math.finite",{"to":1e24})
