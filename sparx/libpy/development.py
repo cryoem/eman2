@@ -410,7 +410,7 @@ def ali2d_g_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		if myid == main_node: print_msg(msg)
 		for Iter in xrange(max_iter):
 			total_iter += 1
-			if  Fourvar:  
+			if Fourvar:  
 				tavg, ave1, ave2, vav, sumsq = add_ave_varf_MPI(myid, data, mask, "a", CTF, ctf_2_sum)
 			else:
 				ave1, ave2 = sum_oe(data, "a", CTF, EMData())  # pass empty object to prevent calculation of ctf^2
@@ -872,7 +872,7 @@ def ali2d_single_iter_g(data, data_prep, kb, numr, wr, cs, tavg, cnx, cny, xrng,
 			ctf_params = data[im].get_attr("ctf")
 			ima = filt_ctf(data_prep[im], ctf_params, True)
 		else:
-			ima = data_prep[im]
+			ima = data_prep[im].copy()
 		alpha, sx, sy, mirror, dummy = get_params2D(data[im], ali_params)
 		alpha, sx, sy, mirror        = combine_params2(alpha, sx, sy, mirror, 0.0, -cs[0], -cs[1], 0)
 		alphai, sxi, syi, scalei     = inverse_transform2(alpha, sx, sy, 1.0)
@@ -4480,7 +4480,7 @@ def ormy3g(imali, kb, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 	data0.insert(10, is_mirror)
 	
 	ps2 = amoeba_multi_level([-sx, -sy], [1.0, 1.0], func_loop2, 1.e-4, 1.e-4, 500, data0)
-	if ps2[1] > peak:
+	if ps2[1] > peak and abs(ps2[0][0])<xrng and abs(ps2[0][1])<yrng:
 		sx = -ps2[0][0]
 		sy = -ps2[0][1]
 		ang = ps2[3]
@@ -4489,9 +4489,6 @@ def ormy3g(imali, kb, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 	so = -sin(ang*pi/180.0)
 	sxs = sx*co - sy*so
 	sys = sx*so + sy*co
-	if is_mirror:
-		ang = -ang
-		sxs = -sxs	
 	return ang, sxs, sys, is_mirror, peak	
 
 
