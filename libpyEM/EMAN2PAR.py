@@ -302,6 +302,7 @@ def openEMDCsock(addr,clientid=0, retry=3):
 			break
 		except:
 			time.sleep(5)
+			if i>2 : print "Retrying connect to server (%d)"%i
 			continue
 	else: raise Exception,"Exceeded max retries in opening socket to "+str(addr)
 
@@ -348,7 +349,39 @@ def EMDCsendonecom(addr,cmd,data):
 	sockf.close()
 	return ret
 
-class ThreadingTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer): pass
+
+import threading
+class DCThreadingMixIn:
+	"""EMAN2 Mix-in class uses threads, but sets an upper limit on simultaneous threads"""
+
+	# Decides how threads will act upon termination of the
+	# main process
+
+	def process_request_thread(self, request, client_address):
+		"""Same as in BaseServer but as a thread.
+
+		In addition, exception handling is done here.
+
+		"""
+		try:
+			self.finish_request(request, client_address)
+			self.close_request(request)
+		except:
+			self.handle_error(request, client_address)
+			self.close_request(request)
+
+	def process_request(self, request, client_address):
+		"""Start a new thread to process the request."""
+		
+		while threading.active_count()>6 : 
+			time.sleep(2)
+		
+		t = threading.Thread(target = self.process_request_thread,
+								args = (request, client_address))
+		t.start()
+
+#class ThreadingTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer): pass
+class ThreadingTCPServer(DCThreadingMixIn, SocketServer.TCPServer): pass
 
 def runEMDCServer(port,verbose):
 	"""This will create a ThreadingTCPServer instance and execute it"""
@@ -357,15 +390,15 @@ def runEMDCServer(port,verbose):
 	EMDCTaskHandler.clients={}
 
 	if port!=None and port>0 : 
-		server = SocketServer.ThreadingTCPServer(("", port), EMDCTaskHandler)	# "" is the hostname and will bind to any IPV4 interface/address
-#		server = SocketServer.TCPServer(("", port), EMDCTaskHandler)	# "" is the hostname and will bind to any IPV4 interface/address
+#		server = SocketServer.ThreadingTCPServer(("", port), EMDCTaskHandler)	# "" is the hostname and will bind to any IPV4 interface/address
+		server = SocketServer.TCPServer(("", port), EMDCTaskHandler)	# "" is the hostname and will bind to any IPV4 interface/address
 		if verbose: print server
 	# EMAN2 will use ports in the range 9900-9999
 	else :
 		for port in range(9990,10000):
 			try: 
-#				server = SocketServer.TCPServer(("", port), EMDCTaskHandler)
-				server = SocketServer.ThreadingTCPServer(("", port), EMDCTaskHandler)
+				server = SocketServer.TCPServer(("", port), EMDCTaskHandler)
+#				server = SocketServer.ThreadingTCPServer(("", port), EMDCTaskHandler)
 				print "Server started on %s port %d"%(socket.gethostname(),port)
 			except:
 				if verbose: print "Port %d unavailable"%port

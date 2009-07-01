@@ -38,6 +38,7 @@ from zlib import compress,decompress
 import os
 import signal
 import sys
+import time
 import fnmatch
 import random
 import traceback
@@ -63,7 +64,7 @@ MPIMODE=0
 # This hardcoded value is the maximum number of DBDict objects which will be simultaneously open
 # when more than this are open, we begin closing the oldest ones. They will be reopened on-demand,
 # but this will prevent resource exhaustion
-MAXOPEN=20
+MAXOPEN=64
 
 # maximum number of times a task will be restarted before we assume there is something fundamentally
 # flawed about the task itself
@@ -72,12 +73,13 @@ MAXTASKFAIL=10
 cachesize=80000000
 
 
-def DB_cleanup(a1=None,a2=None):
-	if a1 in (2,15) :
-		print "Program interrupted, closing databases, please wait (%d)"%os.getpid() 
+def DB_cleanup(signum=None,stack=None):
+	if signum in (2,15) :
+		print "Program interrupted (%d), closing databases, please wait (%d)"%(signum,os.getpid())
+		if stack!=None : traceback.print_stack(stack)
 	for d in DBDict.alldicts.keys(): d.close()
 	for e in EMAN2DB.opendbs.values(): e.close()
-	if a1 in (2,15) :
+	if signum in (2,15) :
 		print "Databases closed, exiting" 
 		sys.exit(1)
 
@@ -776,12 +778,24 @@ class DBDict:
 		if ro : 
 			try:
 				self.bdb.open(self.path+"/"+file,self.name,db.DB_BTREE,db.DB_RDONLY|db.DB_THREAD)
-				self.isro=True
-			except: raise Exception,"No such database : %s"%self.path+"/"+file
+			except: 
+				# try one more time... this shouldn't be necessary...
+				time.sleep(1)
+				try:
+					self.bdb.open(self.path+"/"+file,self.name,db.DB_BTREE,db.DB_RDONLY|db.DB_THREAD)
+				except:
+					raise Exception,"Cannot open database : %s"%self.path+"/"+file
+			self.isro=True
 		else : 
 			try: 
 				self.bdb.open(self.path+"/"+file,self.name,db.DB_BTREE,db.DB_CREATE|db.DB_THREAD)
-			except: raise Exception,"Cannot create database : %s"%self.path+"/"+file
+			except: 
+				# try one more time... this shouldn't be necessary...
+				time.sleep(1)
+				try:
+					self.bdb.open(self.path+"/"+file,self.name,db.DB_BTREE,db.DB_CREATE|db.DB_THREAD)
+				except: 
+					raise Exception,"Cannot create database : %s"%self.path+"/"+file
 			self.isro=False
 			
 		DBDict.nopen+=1
@@ -797,8 +811,9 @@ class DBDict:
 		l=[(i.opencount,i.lasttime,i) for i in self.alldicts if i.bdb!=None]		# list of all open databases and usage,time info
 		l.sort()
 
+#		if len(l)>MAXOPEN : print "%d dbs open, autoclose disabled"%len(l)
 		if len(l)>MAXOPEN :
-#			print "closing ",len(l)-MAXOPEN
+#			print "DB autoclosing %d/%d "%(len(l)-MAXOPEN,len(l))
 			for i in range(len(l)-MAXOPEN): l[i][2].close()
 
 	def close(self):
