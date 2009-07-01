@@ -5260,6 +5260,144 @@ def k_means_match_clusters_asg(asg1, asg2):
 
 	return list_stable, nb_tot_objs
 
+# Pairwise recurence agreement matching between paritions given by k-means
+def k_means_match_pwa(PART, lim = 50):
+	def update_ct(i, ct, lk):
+	    if ct[i] == lk[i] - 1:
+		ct[i] = 0
+		ct[i - 1] += 1
+		update_ct(i - 1, ct, lk)
+
+	    return ct
+
+	def get_mat(part1, part2):
+	    K = len(part1)
+	    MAT = [[0] * K for i in xrange(K)]
+	    for k1 in xrange(K):
+		for k2 in xrange(K):
+		    for index in part1[k1]:
+			if index in part2[k2]:
+			    MAT[k1][k2] += 1
+
+	    return MAT
+
+	def max_g(mat):
+	    val = []
+	    K   = len(mat[0])
+	    for k1 in xrange(K):
+		vmax = max(mat[k1])
+		ind  = mat[k1].index(vmax)
+		c    = []
+		for i in xrange(K): c.append(mat[i][ind])
+		if max(c) == vmax:  val.append([vmax, (k1, ind)])
+	    val.sort(reverse = True)
+
+	    return val
+
+	def agree(level, MAX, lmax, np, track):
+	    k1 = lmax[0][1][1]
+	    ct   = 1
+	    nmax = []
+	    for k in xrange(level + 1, np):
+		k2 = lmax[ct][1][1]
+		flag_agree = False
+		for vmax in MAX[level][k]:
+		    if vmax[1] == (k1, k2):
+			nmax.append(vmax)
+			if ct == 1: track.append(k2)
+			flag_agree = True
+
+		if not flag_agree: return None
+		ct += 1
+
+	    if ct == 1: return track
+	    else:       track = agree(level + 1, MAX, nmax, np, track)
+	    return track
+
+	#====== main ==================
+	# prepare table
+	np  = len(PART)
+	MAT = []
+	MAX = [[None] * np for i in xrange(np)]
+	for i in xrange(np - 1):
+	    for j in xrange(i + 1, np):
+		mat = get_mat(PART[i], PART[j])
+		MAT.append(mat)
+		MAX[i][j] = max_g(mat)
+	# matching
+	nl   = np - 1
+	Nmax = []
+	for i in xrange(1, np):
+	    s = min(len(MAX[0][i]), lim)
+	    Nmax.append(s)
+	ITE = 1
+	for i in xrange(nl): ITE *= (Nmax[i] - 1)
+	ct  = [0] * nl
+	RES = []
+	for ite in xrange(ITE):
+	    update_ct(nl - 1, ct, Nmax)
+	    lmax = []
+	    for k in xrange(1, np): lmax.append(MAX[0][k][ct[k - 1]])
+	    track = []
+	    track.append(lmax[0][1][0])
+	    track.append(lmax[0][1][1])
+	    res = agree(1, MAX, lmax, np, track)
+	    if res is not None: RES.append(res)
+	    ct[nl - 1] += 1
+	
+	return RES
+
+# Stability with pairwise agreement matching
+def k_means_stab_pwa(PART, lim = 50):
+	from statistics import k_means_match_pwa
+	from copy       import deepcopy
+
+	MATCH    = k_means_match_pwa(PART, lim)
+	np       = len(PART)
+	K        = len(PART[0])
+	STB_PART = [[] for i in xrange(K)]
+	nm       = len(MATCH)
+	CT_t     = [0] * K
+	CT_s     = [0] * K
+	ST       = [0] * K
+	ct_t     = 0
+	ct_s     = 0
+	st       = 0
+
+	for k in xrange(nm):
+		kk   = MATCH[k][0]
+		vmax = [0] * np
+		vmin = [0] * np
+		for i in xrange(np):
+		    vmax[i] = max(PART[i][MATCH[k][i]])
+		    vmin[i] = min(PART[i][MATCH[k][i]])
+
+		vmax = int(max(vmax))
+		vmin = int(min(vmin))
+		vd   = vmax - vmin + 1
+
+		asg  = [0] * vd
+		for i in xrange(np):
+		    for item in PART[i][MATCH[k][i]]: asg[int(item) - vmin] += 1
+
+		stb  = []
+		for i in xrange(vd):
+		    if asg[i] != 0:
+			CT_t[kk] += 1
+			if asg[i] == np:
+			    CT_s[kk] += 1
+			    stb.append(i + vmin)
+
+		STB_PART[kk] = deepcopy(stb)
+
+	for k in xrange(K):
+		if CT_t[k] == 0: continue
+		ST[k] = 100.0 * CT_s[k] / float(CT_t[k])
+
+	st = 100.0 * sum(CT_s) / float(sum(CT_t))
+
+	return MATCH, STB_PART, CT_s, CT_t, ST, st
+
 # Hierarchical stability between partitions given by k-means
 def k_means_stab_H(ALL_PART):
 	from copy       import deepcopy
@@ -5324,6 +5462,7 @@ def k_means_stab_export(PART, stack, num_run, outdir, th_nobj):
 			AVE[ck].set_attr('Class_average', 1.0)
 			AVE[ck].set_attr('nobjects', nobjs)
 			AVE[ck].set_attr('members', PART[k])
+			AVE[ck].set_attr('k_ref', k)
 			AVE[ck].write_image(outdir + '/average_stb_run%02d.hdf' % num_run, ck)
 			ck += 1
 		else:

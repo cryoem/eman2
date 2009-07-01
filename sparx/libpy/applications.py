@@ -12210,8 +12210,8 @@ def k_means_stab_CUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_no
 	ALL_PART = k_means_stab_asg2part(ALL_ASG, LUT)
 
 	# calculate the stability
-	stb, nb_stb, STB_PART = k_means_stab_H(ALL_PART)
-	logging.info('... Stability: %5.2f %% (%d objects)' % (stb, nb_stb))
+	MATCH, STB_PART, CT_s, CT_t, ST, st = k_means_stab_pwa(ALL_PART, 50)
+	logging.info('... Stability: %5.2f %% (%d objects)' % (st, sum(CT_s)))
 	
 	# export the stable class averages
 	count_k, id_rejected = k_means_stab_export(STB_PART, stack, 0, outdir, th_nobj)
