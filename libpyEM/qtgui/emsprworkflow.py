@@ -1142,6 +1142,7 @@ class EMFilterRawDataTask(WorkFlowTask):
 		
 		import copy
 		self.output_names = copy.deepcopy(filenames)
+		
 		if not params["inplace"]:
 			reps = []
 			for file in filenames:
@@ -1151,13 +1152,25 @@ class EMFilterRawDataTask(WorkFlowTask):
 					idx = file.rfind(".")
 					if idx == -1: error_message.append("Couldn't interpret %s" %file)
 					else:
-						reps.append(file[:idx]+"_filt"+file[idx:])
+						type_ = file[idx:]
+						if type_ not in get_supported_2d_write_formats(): type_ = ".mrc"
+						reps.append(file[:idx]+"_filt"+type_)
 			self.output_names = reps
 			
 			for name in self.output_names:
 				if file_exists(name):
 					error_message.append("The output file %s already exists. Please remove it" %name)
-		
+		else:
+			for file in self.output_names:
+				if len(file) > 3 and file[:4] == "bdb:": continue
+				else:
+					idx = file.rfind(".")
+					if idx == -1: error_message.append("Couldn't interpret %s" %file)
+					else:
+						type_ = file[idx:]
+						if type_ not in get_supported_2d_write_formats():
+							error_message.append("Can't inplace filter %s files (%s)" %(type_,file))		
+						
 		for name in filenames:
 			if len(name) == 0: continue
 			if not file_exists(name):
@@ -1635,7 +1648,6 @@ class EMParticleImportTask(ParticleWorkFlowTask):
 	def get_params(self):
 		params = []
 		
-	
 		table = self.get_project_particle_table()
 		
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
@@ -1684,7 +1696,7 @@ class EMParticleImportTask(ParticleWorkFlowTask):
 			return
 		else:
 			data_dict = EMProjectDataDict(spr_ptcls_dict)
-			add_names(name in params["name_map"].values())
+			data_dict.add_names(params["name_map"].values())
 		
 		self.emit(QtCore.SIGNAL("task_idle"))
 		self.form.closeEvent(None)

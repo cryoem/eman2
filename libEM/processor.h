@@ -5159,7 +5159,8 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 				float* image_data = image->get_data();
 				float* with_data = with->get_data();
 
-				std::transform(image_data,image_data+image->get_size(),with_data,image_data,Type::binary_operate);	
+				std::transform(image_data,image_data+image->get_size(),with_data,image_data,Type::binary_operate);
+				image->update();
 			}
 
 			virtual string get_name() const

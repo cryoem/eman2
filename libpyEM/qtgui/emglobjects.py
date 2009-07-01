@@ -1806,7 +1806,7 @@ class EMImage3DGUIModule(EMGUIModule):
 		self.file_name = None # stores the file name of the associated EMData, if applicable (use setter/getter)
 		self.help_window = None # eventually will become a Qt help widget of some kind
 		EMGUIModule.__init__(self,ensure_gl_context,application_control)
-		self.dont_delete_parent = False
+		self.dont_delete_parent = True
 	
 	
 		self.rank = 0 # rank is to do with shading and using the stencil buffer. Each object should have a unique rank... if it is using the OpenGL contrast enhancement stuff
@@ -1859,11 +1859,7 @@ class EMImage3DGUIModule(EMGUIModule):
 			
 			
 		return self.gl_widget
-	
-	
-	
-	
-	
+		
 	#def get_gl_widget(self,qt_parent=None):
 		#from emfloatingwidgets import EM3DGLView,EM3DGLWindow
 		#if self.gl_widget == None:

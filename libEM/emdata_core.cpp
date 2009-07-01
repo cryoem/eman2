@@ -95,7 +95,7 @@ EMData *EMData::copy_head() const
 	ENTERFUNC;
 	EMData *ret = new EMData();
 	ret->attr_dict = attr_dict;
-// // This call doesn't make sense. I found an
+
 	ret->set_size(nx, ny, nz);
 	ret->flags = flags;
 

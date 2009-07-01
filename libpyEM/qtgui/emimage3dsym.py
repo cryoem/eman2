@@ -127,9 +127,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations):
 		pass
 
 	def init(self):
-		self.data=None
 
-		self.mmode=0
 		self.cam = Camera2(self)
 		self.vdtools = None # EMViewportDepthTools2(self.get_gl_context_parent())
 		
@@ -141,6 +139,14 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations):
 		self.highresspheredl = 0
 		self.diskdl = 0
 		self.cappedcylinderdl = 0
+		self.arc_dl = 0
+		self.tri_dl = 0
+		self.cylinderdl = 0
+
+		gluQuadricDrawStyle(self.gq,GLU_FILL)
+		gluQuadricNormals(self.gq,GLU_SMOOTH)
+		gluQuadricOrientation(self.gq,GLU_OUTSIDE)
+		gluQuadricTexture(self.gq,GL_FALSE)
 
 		self.glcontrast = 1.0
 		self.glbrightness = 0.0
@@ -148,7 +154,6 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations):
 		self.rank = 1
 		
 		self.force_update = False
-		self.force_force_update = False
 #		
 		self.display_euler = True
 		self.display_tri = False
@@ -160,13 +165,6 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations):
 		self.radius = 50
 		
 		self.arc_t = 16
-		self.arc_dl = 0
-		
-		self.tri_dl = 0
-		
-		self.cylinderdl = 0
-		
-		
 		self.reduce = False
 		
 		self.eulers_specified = False # from e2au.py = if you want to specify a specific set of eulers this is required
@@ -180,10 +178,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations):
 		self.tracedata = []
 		self.trace_dl = 0
 		self.gq=gluNewQuadric()
-		gluQuadricDrawStyle(self.gq,GLU_FILL)
-		gluQuadricNormals(self.gq,GLU_SMOOTH)
-		gluQuadricOrientation(self.gq,GLU_OUTSIDE)
-		gluQuadricTexture(self.gq,GL_FALSE)
+		
 		
 		self.set_sym(self.sym)
 		self.regen_dl()
@@ -194,7 +189,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations):
 	def set_radius(self,radius):
 		if ( radius > 0 ):
 			self.radius = radius
-			self.force_force_update = True
+			self.force_update = True
 			self.updateGL()
 		else:
 			print "Error, tried to set a zero or negative radius (",radius,")"
@@ -317,9 +312,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations):
 	def trace_great_arcs(self, points):
 		
 		self.init_basic_shapes()
-		
-
-		
+	
 		if ( self.arc_dl != 0 ): glDeleteLists(self.arc_dl, 1)
 		n = len(points)
 		if ( n <= 1 ):

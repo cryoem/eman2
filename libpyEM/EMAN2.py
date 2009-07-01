@@ -764,6 +764,17 @@ def get_supported_2d_stack_formats():
 	'''
 	return ["hdf","spi","pif","emim","img"]
 
+
+def get_supported_2d_write_formats():
+	'''
+	@return a list of the IMAGE formats in EMAN2 that can write to disk as a 2D image
+	Note using http://blake.bcm.tmc.edu/emanwiki/EMAN2ImageFormats as of July 1 2009
+	Note that "bdb:" is not returned though, represented an aberration. Currently the 
+	calling function must be aware of this
+	@Note - it would be nice if this was automatic, not hard coded.
+	'''
+	return ["mrc","spi","img","hdf"]
+
 def get_supported_3d_formats():
 	'''
 	@return a list of the IMAGE formats in EMAN2 that 3D images

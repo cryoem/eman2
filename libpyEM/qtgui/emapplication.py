@@ -121,7 +121,7 @@ class EMGUIModule(EventsEmitterAndReciever):
 		self.qt_context_parent = None # should the the thing that will emit signals
 		
 		self.image_change_count =  0# this is important when the user has more than one display instance of the same image, for instance in e2.py if 
-		
+		self.application_control = application_control
 		self.file_name = ""
 		app = get_application()
 		if app != None and application_control:
