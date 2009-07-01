@@ -867,11 +867,11 @@ EMObject& EMObject::operator=( const EMObject& that )
 		break;
 		}
 	}
-	else
-	{
+//	else
+//	{
 //		cerr << "Warning - attempt to assign EMObject onto itself. No action taken" << endl;
 //		cerr << "My type is " << get_object_type_name(type) << endl;
-	}
+//	}
 
 	return *this;
 }
