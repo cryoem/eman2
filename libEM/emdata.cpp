@@ -2634,6 +2634,7 @@ void EMData::cconj() {
 void EMData::update_stat() const
 {
 	ENTERFUNC;
+//	printf("update stat %f %d\n",(float)attr_dict["mean"],flags);
 	if (!(flags & EMDATA_NEEDUPD))
 	{
 		EXITFUNC;
@@ -2704,6 +2705,7 @@ void EMData::update_stat() const
 	}
 
 	EXITFUNC;
+//	printf("done stat %f %f %f\n",(float)mean,(float)max,(float)sigma);
 }
 
 bool EMData::operator==(const EMData& that) const {

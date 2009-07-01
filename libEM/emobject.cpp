@@ -792,7 +792,10 @@ EMObject::EMObject(const EMObject& that)
 EMObject& EMObject::operator=( const EMObject& that )
 {
 
-	if ( *this != that )
+// This test breaks assignment when either the current or assigned values are (float)nan
+// it's also somewhat inherently stupid, since testing for equivalence may cost as much
+// as assignment.
+//	if ( *this != that )
 	{
 		// First store the type of the input, At first I forgot to do this and it was a very
 		// difficult bug to track down
