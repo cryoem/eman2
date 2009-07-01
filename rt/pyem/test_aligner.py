@@ -355,6 +355,7 @@ class TestAligner(unittest.TestCase):
 					dif = f-g
 					dif.process_inplace("math.absvalue")
 					self.failIf(dif["mean"] > 0.01)
+		testlib.safe_unlink('e.hdf')
 
 	def test_RTF_slow_exhaustive_aligner(self):
 		"""test RTFSlowExhaustiveAligner Aligner ............"""

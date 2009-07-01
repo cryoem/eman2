@@ -3402,6 +3402,7 @@ class TestEMData(unittest.TestCase):
         img2 = pickle.load(mydb2)
         t2 = img2.get_attr('xform')
         self.assertEqual(t.get_matrix(), t2.get_matrix())
+        testlib.safe_unlink('mydb3')
         
     def test_set_xyz_origin(self):
         """test set_xyz_origin function ....................."""
