@@ -999,9 +999,17 @@ of these occasional errors"""
 	def get(self,key,dfl=None,txn=None,target=None,nodata=0,region=None):
 		"""Alternate method for retrieving records. Permits specification of an EMData 'target'
 		object in which to place the read object"""
+		
 		self.open(self.rohint)
 		try: r=loads(self.bdb.get(dumps(key,-1),txn=txn))
-		except: return dfl
+		except: 
+#			print self.bdb.get(dumps(key,-1))
+#			for i in self.bdb.keys(): 
+#				try :print loads(i)
+#				except: print i
+			
+			return dfl
+		
 		if isinstance(r,dict) and r.has_key("is_complex_x") :
 			pkey="%s/%s_"%(self.path,self.name)
 			rnx,rny,rnz = r["nx"],r["ny"],r["nz"]

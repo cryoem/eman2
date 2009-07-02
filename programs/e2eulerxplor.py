@@ -41,7 +41,7 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 import weakref
 from optparse import OptionParser
-from EMAN2 import Util, E2init, E2end,EMANVERSION,is_2d_image_mx, EMUtil, db_open_dict, EMData, Transform, db_check_dict, db_close_dict, get_files_and_directories,get_file_tag,gimme_image_dimensions3D,Region, Vec3f, parsesym
+from EMAN2 import Util, E2init, E2end,EMANVERSION,is_2d_image_mx, EMUtil, db_open_dict, EMData, Transform, db_check_dict, db_close_dict, get_files_and_directories,get_file_tag,gimme_image_dimensions3D,Region, Vec3f, parsesym, test_image,Symmetries
 from emapplication import get_application
 from emimagemx import EMImageMXModule
 import os
@@ -115,7 +115,6 @@ def normalize_ptcl(ptcl):
 	
 def get_header(filename,i):
 	if filename[0:4] == "bdb:":
-		print "get header from db"
 		db = db_open_dict(filename)
 		return db.get_header(i)
 	else:
@@ -603,10 +602,17 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 		self.classes = None
 		
 		eulers = get_eulers_from(self.average_file)
+		#s = Symmetries.get("d7")
+		#eulers = s.gen_orientations("rand",{"n":EMUtil.get_image_count(self.average_file)})
 
 		self.specify_eulers(eulers)
 		from emimagemx import EMDataListCache
 		a = EMData.read_images(self.average_file)
+		#a = [test_image() for i in range(EMUtil.get_image_count(self.average_file))]
+		#print len(a),len(eulers)
+		#b = [a[i].set_attr("xform.projection",eulers[i]) for i in range(len(eulers))]
+		#b = [a[i].set_attr("ptcl_repr",1) for i in range(len(eulers))]
+		
 #		self.set_emdata_list_as_data(EMDataListCache(self.average_file),"ptcl_repr")
 		self.set_emdata_list_as_data(a,"ptcl_repr")
 		self.force_update = True

@@ -1071,9 +1071,6 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 
 			
 		if self.trace_dl != 0:
-			glColor(.9,.2,.8)
-			# this is a nice light blue color (when lighting is on)
-			# and is the default color of the frame
 			self.load_gl_color("black")
 			glStencilFunc(GL_EQUAL,self.rank,0)
 			glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE)
