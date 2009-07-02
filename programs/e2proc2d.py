@@ -126,7 +126,7 @@ def main():
 	parser.add_option("--mrc8bit",  action="store_true", help="output as 8 bit MRC file")
 	parser.add_option("--norefs", action="store_true", help="Skip any input images which are marked as references (usually used with classes.*)")
 	parser.add_option("--outtype", metavar="image-type", type="string",
-					help="output image format, mrc, imagic, hdf, etc")
+					help="output image format, 'mrc', 'imagic', 'hdf', etc. if specify spidersingle will output single 2D image rather than 2D stack.")
 	parser.add_option("--radon",  action="store_true", help="Do Radon transform")
 	parser.add_option("--randomize", type="string", action="append",help="Randomly rotate/translate the image. Specify: da,dxy,flip  da is a uniform distribution over +-da degrees, dxy is a uniform distribution on x/y, if flip is 1, random handedness changes will occur")
 	parser.add_option("--rfp",  action="store_true", help="this is an experimental option")
@@ -464,7 +464,9 @@ def main():
 						outfile = "%03d." % (i + 100) + outfile
 				elif options.outtype == "spidersingle":
 					if n1 != 0:
-						spiderformat = "%s%%0%dd.spi" % (outfile, int(log10(i))+1)
+						if i==0:
+							nameprefix = outfile[:-4]
+						spiderformat = "%s%%0%dd.spi" % (nameprefix, int(math.log10(n1+1-n0))+1)						
 						outfile = spiderformat % i
 
 				#if options.inplace:
@@ -472,7 +474,7 @@ def main():
 				#elif options.mraprep:
 						#outfile = outfile + "%04d" % i + ".lst"
 						#options.outtype = "lst"
-				if(options.treat3das2d):
+				if options.treat3das2d:
 					d.write_image(temp_img_file, -1)
 				else:
 					if 'mrc8bit' in optionlist:
@@ -487,7 +489,7 @@ def main():
 				
 	#end of image loop
 	
-	if(options.treat3das2d):
+	if options.treat3das2d:
 		img = EMData(temp_img_file, 0)
 		nx = img.get_xsize()
 		ny = img.get_ysize()
