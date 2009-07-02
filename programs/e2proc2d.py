@@ -465,7 +465,10 @@ def main():
 				elif options.outtype == "spidersingle":
 					if n1 != 0:
 						if i==0:
-							nameprefix = outfile[:-4]
+							if outfile.find('.spi')>0:
+								nameprefix = outfile[:-4]
+							else:
+								nameprefix = outfile
 						spiderformat = "%s%%0%dd.spi" % (nameprefix, int(math.log10(n1+1-n0))+1)						
 						outfile = spiderformat % i
 
