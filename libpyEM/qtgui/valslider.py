@@ -151,8 +151,8 @@ class ValSlider(QtGui.QWidget):
 		else:
 			try:
 				if (self.intonly) :
-					if self.value==int(x+.5) : return
-					self.value=int(x+.5)
+					if self.value==int(float(x)+.5) : return
+					self.value=int(float(x)+.5)
 				else : 
 					self.value=float(x)
 				self.updates()

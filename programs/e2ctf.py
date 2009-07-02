@@ -70,6 +70,7 @@ images far from focus."""
 	parser.add_option("--auto_fit",action="store_true",help="Runs automated CTF fitting on the input images",default=False)
 	parser.add_option("--bgmask",type="int",help="Compute the background power spectrum from the edge of the image, specify a mask radius in pixels which would largely mask out the particles. Default is boxsize/2.",default=0)
 	parser.add_option("--fixnegbg",action="store_true",help="Will perform a final background correction to avoid slight negative values near zeroes")
+	parser.add_option("--buildenvelope",action="store_true",help="Will determine the structure factor*envelope for the aggregate set of images")
 	parser.add_option("--apix",type="float",help="Angstroms per pixel for all images",default=0)
 	parser.add_option("--voltage",type="float",help="Microscope voltage in KV",default=0)
 	parser.add_option("--cs",type="float",help="Microscope Cs (spherical aberation)",default=0)
@@ -95,6 +96,7 @@ images far from focus."""
 	if options.apix==0 : print "Using A/pix from header"
 		
 	debug=options.debug
+	img_sets=None
 
 	global sfcurve
 	if options.sf :
@@ -114,62 +116,6 @@ images far from focus."""
 	if options.auto_fit:
 		img_sets=pspec_and_ctf_fit(options,debug) # converted to a function so to work with the workflow
 		
-		### This computes the intensity of the background subtracted power spectrum at each CTF maximum for all sets
-		global envelopes # needs to be a global for the Simplex minimizer
-		# envelopes is essentially a cache of information that could be useful at later stages of refinement
-
-		envelope=[]
-		for i in img_sets:
-			envelopes.append(ctf_env_points(i[2],i[3],i[1]))
-#			envelope.extend(ctf_env_points(i[2],i[3],i[1]))
-
-		# we use a simplex minimizer to try to rescale the individual sets to match as best they can
-		scales=[1.0]*(len(img_sets)-1)
-		if (len(img_sets)>3) :
-			incr=[0.2]*len(img_sets)
-			simp=Simplex(env_cmp,scales,incr)
-			scales=simp.minimize(maxiters=1000)[0]
-		scales.insert(0,1.0)	# we keep this scale factor fixed
-		
-#		print envelopes
-#		print scales
-		
-		# apply the final rescaling
-		envelope=[]
-		for i in range(len(scales)):
-			cur=envelopes[i]
-			for j in range(len(cur)):
-				envelope.append([cur[j][0],cur[j][1]*scales[i]])
-				
-		envelope.sort()
-
-		# this averages together all of the points at the same spatial frequency
-		# not perfect, since different spatial frequencies may have contributions from
-		# different curves
-		sf=[]
-		last=envelope[0]
-		n=1
-		for i in range(1,len(envelope)):
-			if envelope[i][0]==last[0] : 
-				last[1]+=envelope[i][1]
-				n+=1
-			else :
-				sf.append((last[0],last[1]/n))
-				last=envelope[i]
-				n=1
-		envelope=sf
-
-#		envelope=[i for i in envelope if i[1]>0]	# filter out all negative peak values
-		
-		db_misc=db_open_dict("bdb:e2ctf.misc")
-		db_misc["envelope"]=envelope
-#		print envelope
-
-		#db_close_dict("bdb:e2ctf.misc")
-		
-		out=file("envelope.txt","w")
-		for i in envelope: out.write("%f\t%f\n"%(i[0],i[1]))
-		out.close()
 
 	### GUI - user can update CTF parameters interactively
 	if options.gui :
@@ -183,13 +129,29 @@ images far from focus."""
 		gui.show_guis()
 		app.exec_()
 
-		print "done execution"
+#		print "done execution"
 
 	### Process input files
 	if debug : print "Phase flipping / Wiener filtration"
 	# write wiener filtered and/or phase flipped particle data to the local database
 	if options.phaseflip or options.wiener or options.virtualout or options.storeparm: # only put this if statement here to make the program flow obvious
 		write_e2ctf_output(options) # converted to a function so to work with the workflow
+
+	if options.envelope :
+		img_sets = get_gui_arg_img_sets(options.filenames)
+		print "Recomputing envelope"
+		envelope=compute_envelope(img_sets)
+		
+		db_misc=db_open_dict("bdb:e2ctf.misc")
+		db_misc["envelope"]=envelope
+#		print envelope
+
+		#db_close_dict("bdb:e2ctf.misc")
+		
+		out=file("envelope.txt","w")
+		for i in envelope: out.write("%f\t%f\n"%(i[0],i[1]))
+		out.close()
+
 
 	E2end(logid)
 
@@ -266,7 +228,61 @@ def write_e2ctf_output(options):
 				pdb[options.dbds] = dbds
 					
 			if logid : E2progress(logid,float(i+1)/len(options.filenames))
-			
+
+def compute_envelope(img_sets):
+		"""This computes the intensity of the background subtracted power spectrum around each CTF maximum for
+		all data sets, then attempts to merge/normalize the results into a single aggregate curve. This curve
+		should be proportional to the structure factor * average envelope function."""
+		
+		global envelopes # needs to be a global for the Simplex minimizer
+		# envelopes is essentially a cache of information that could be useful at later stages of refinement
+
+		envelope=[]
+		for i in img_sets:
+			envelopes.append(ctf_env_points(i[2],i[3],i[1]))
+#			envelope.extend(ctf_env_points(i[2],i[3],i[1]))
+
+		# we use a simplex minimizer to try to rescale the individual sets to match as best they can
+		scales=[1.0]*(len(img_sets)-1)
+		if (len(img_sets)>3) :
+			incr=[0.2]*len(img_sets)
+			simp=Simplex(env_cmp,scales,incr)
+			scales=simp.minimize(maxiters=1000)[0]
+		scales.insert(0,1.0)	# we keep this scale factor fixed
+		
+#		print envelopes
+#		print scales
+		
+		# apply the final rescaling
+		envelope=[]
+		for i in range(len(scales)):
+			cur=envelopes[i]
+			for j in range(len(cur)):
+				envelope.append([cur[j][0],cur[j][1]*scales[i]])
+				
+		envelope.sort()
+
+		# this averages together all of the points at the same spatial frequency
+		# not perfect, since different spatial frequencies may have contributions from
+		# different curves
+		sf=[]
+		last=envelope[0]
+		n=1
+		for i in range(1,len(envelope)):
+			if envelope[i][0]==last[0] : 
+				last[1]+=envelope[i][1]
+				n+=1
+			else :
+				sf.append((last[0],last[1]/n))
+				last=envelope[i]
+				n=1
+		envelope=sf
+
+#		envelope=[i for i in envelope if i[1]>0]	# filter out all negative peak values
+		return envelope
+
+
+
 def fixnegbg(bg_1d,im_1d,ds):
 	"""This will make sure that we don't have a lot of negative values in the background
 	subtracted curve near the CTF zeros. This would likely be due to the exluded volume
@@ -1075,7 +1091,10 @@ class GUIctf(QtGui.QWidget):
 		db_parms=db_open_dict("bdb:e2ctf.parms")
 		ctf = self.data[val][1].to_string()
 
-		db_parms[name] = (ctf,data[val][6])
+		tmp=db_parms[name]
+		tmp[0]=ctf
+		tmp[4]=self.data[val][6]
+		db_parms[name] = tmp
 
 	def on_recall_params(self):
 		if len(self.setlist.selectedItems()) == 0: return
@@ -1091,10 +1110,8 @@ class GUIctf(QtGui.QWidget):
 		ctf=EMAN2Ctf()
 		ctf.from_string(db_parms[name][0])
 		
-		tmp=list(self.data[val])
-		tmp[1]=ctf
-		tmp[6]=db_parms[name][1]
-		self.data[val] = tuple(tmp)
+		self.data[val][1]=ctf
+		self.data[val][6]=db_parms[name][3]
 		self.newSet(self.curset)
 	
 #	def get_output_params(self):
@@ -1103,8 +1120,7 @@ class GUIctf(QtGui.QWidget):
 		# self.data[n] contains filename,EMAN2CTF,im_1d,bg_1d,im_2d,bg_2d,qual
 		tmp=list(self.data[self.curset])
 		ctf=ctf_fit(tmp[2],tmp[3],tmp[4],tmp[5],tmp[1].voltage,tmp[1].cs,tmp[1].ampcont,tmp[1].apix,bgadj=not self.nosmooth,autohp=self.autohp,dfhint=self.sdefocus.value)
-		tmp[1]=ctf
-		self.data[self.curset]=tuple(tmp)
+		self.data[self.curset][1]=ctf
 		self.newSet(self.curset)
 	
 	def on_output(self):
@@ -1226,6 +1242,9 @@ class GUIctf(QtGui.QWidget):
 		self.sampcont.setValue(self.data[val][1].ampcont,True)
 		self.svoltage.setValue(self.data[val][1].voltage,True)
 		self.scs.setValue(self.data[val][1].cs,True)
+		self.sdfdiff.setValue(self.data[val][1].dfdiff,True)
+		self.sdfang.setValue(self.data[val][1].dfang,True)
+		self.squality.setValue(self.data[val][6],True)
 		
 		if self.guiim != None: 
 #			print self.data
@@ -1254,8 +1273,14 @@ class GUIctf(QtGui.QWidget):
 	def newQual(self):
 		self.data[self.curset][6]=int(self.squality.value)
 
+		val = self.curset
+		name = str(self.setlist.item(val).text())
+		name = get_file_tag(name)
+
 		db_parms=db_open_dict("bdb:e2ctf.parms")
-		db_parms[name] = (db_parms[name][0],data[val][6])
+		tmp=db_parms[name]
+		tmp[4]=self.data[val][6]
+		db_parms[name] = tmp
 
 	def imgmousedown(self,event) :
 		m=self.guiim.scr_to_img((event.x(),event.y()))

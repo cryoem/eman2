@@ -53,6 +53,10 @@ except:
 	from sets import Set
 	frozenset=Set
 
+# If set, fairly verbose debugging information will be written to the console
+# larger numbers will increase the amount of output
+DBDEBUG=0
+
 # Flags used to open the database environment
 envopenflags=db.DB_CREATE|db.DB_INIT_MPOOL|db.DB_INIT_LOCK|db.DB_INIT_LOG|db.DB_THREAD
 #envopenflags=db.DB_CREATE|db.DB_INIT_MPOOL|db.DB_INIT_LOCK|db.DB_INIT_LOG|db.DB_THREAD|db.DB_REGISTER|db.DB_RECOVER
@@ -75,12 +79,13 @@ cachesize=80000000
 
 def DB_cleanup(signum=None,stack=None):
 	if signum in (2,15) :
-		print "Program interrupted (%d), closing databases, please wait (%d)"%(signum,os.getpid())
+		if len(DBDict.alldicts)>0 : 
+			print "Program interrupted (%d), closing %d databases, please wait (%d)"%(signum,len(DBDict.alldicts),os.getpid())
 		if stack!=None : traceback.print_stack(stack)
 	for d in DBDict.alldicts.keys(): d.close()
 	for e in EMAN2DB.opendbs.values(): e.close()
 	if signum in (2,15) :
-		print "Databases closed, exiting" 
+		print "Shutdown complete, exiting" 
 		sys.exit(1)
 
 # if the program exits nicely, close all of the databases
@@ -770,32 +775,41 @@ class DBDict:
 		global MAXOPEN
 		if DBDict.nopen>MAXOPEN : self.close_one() 
 
+		global DBDEBUG
+		if DBDEBUG:
+			# look at the locking subsystem stats
+			ls=self.dbenv.lock_stat()
+			print "lock_stat:\t",
+			for i in ("nlocks","maxlocks","nlockers","maxlockers","nobjects","maxobjects","maxnlocks"): print ls[i],"\t",
+			print
+		
+
 		self.bdb=db.DB(self.dbenv)		# we don't check MPIMODE here, since self.dbenv will already be None if its set
 		if self.file==None : file=self.name+".bdb"
 		else : file=self.file
 #		print "open ",self.path+"/"+file,self.name,ro
 		self.opencount+=1	# how many times we have had to reopen this database
 		if ro : 
-			try:
-				self.bdb.open(self.path+"/"+file,self.name,db.DB_BTREE,db.DB_RDONLY|db.DB_THREAD)
-			except: 
-				# try one more time... this shouldn't be necessary...
-				time.sleep(1)
-				try:
-					self.bdb.open(self.path+"/"+file,self.name,db.DB_BTREE,db.DB_RDONLY|db.DB_THREAD)
-				except:
-					raise Exception,"Cannot open database : %s"%self.path+"/"+file
+#			try:
+			self.bdb.open(self.path+"/"+file,self.name,db.DB_BTREE,db.DB_RDONLY|db.DB_THREAD)
+			#except: 
+				## try one more time... this shouldn't be necessary...
+				#time.sleep(1)
+##				try:
+				#self.bdb.open(self.path+"/"+file,self.name,db.DB_BTREE,db.DB_RDONLY|db.DB_THREAD)
+##				except:
+##					raise Exception,"Cannot open database : %s"%self.path+"/"+file
 			self.isro=True
 		else : 
-			try: 
-				self.bdb.open(self.path+"/"+file,self.name,db.DB_BTREE,db.DB_CREATE|db.DB_THREAD)
-			except: 
-				# try one more time... this shouldn't be necessary...
-				time.sleep(1)
-				try:
-					self.bdb.open(self.path+"/"+file,self.name,db.DB_BTREE,db.DB_CREATE|db.DB_THREAD)
-				except: 
-					raise Exception,"Cannot create database : %s"%self.path+"/"+file
+#			try: 
+			self.bdb.open(self.path+"/"+file,self.name,db.DB_BTREE,db.DB_CREATE|db.DB_THREAD)
+			#except: 
+				## try one more time... this shouldn't be necessary...
+				#time.sleep(1)
+				#try:
+					#self.bdb.open(self.path+"/"+file,self.name,db.DB_BTREE,db.DB_CREATE|db.DB_THREAD)
+				#except: 
+					#raise Exception,"Cannot create database : %s"%self.path+"/"+file
 			self.isro=False
 			
 		DBDict.nopen+=1
@@ -808,13 +822,20 @@ class DBDict:
 		"""Will select and close any excess open databases. Closure is based on the number of times it has been repoened and the
 		time it was last used."""
 		global MAXOPEN
-		l=[(i.opencount,i.lasttime,i) for i in self.alldicts if i.bdb!=None]		# list of all open databases and usage,time info
+#		l=[(i.opencount,i.lasttime,i) for i in self.alldicts if i.bdb!=None]		# list of all open databases and usage,time info
+		l=[(i.lasttime,i.opencount,i) for i in self.alldicts if i.bdb!=None]		# sort by time 
 		l.sort()
 
-#		if len(l)>MAXOPEN : print "%d dbs open, autoclose disabled"%len(l)
+		global DBDEBUG
+
+#		if len(l)>MAXOPEN : 
+#			print "%d dbs open, autoclose disabled"%len(l)
+#			for j,i in enumerate(l): print j,i[2].name,i[0]-time.time(),i[1]
 		if len(l)>MAXOPEN :
-#			print "DB autoclosing %d/%d "%(len(l)-MAXOPEN,len(l))
-			for i in range(len(l)-MAXOPEN): l[i][2].close()
+			if DBDEBUG: print "DB autoclosing %d/%d "%(len(l)-MAXOPEN,len(l))
+			for i in range(len(l)-MAXOPEN): 
+				if DBDEBUG: print "CLOSE:",l[i][2].name
+				l[i][2].close()
 
 	def close(self):
 		if self.bdb == None: return
@@ -999,17 +1020,9 @@ of these occasional errors"""
 	def get(self,key,dfl=None,txn=None,target=None,nodata=0,region=None):
 		"""Alternate method for retrieving records. Permits specification of an EMData 'target'
 		object in which to place the read object"""
-		
 		self.open(self.rohint)
 		try: r=loads(self.bdb.get(dumps(key,-1),txn=txn))
-		except: 
-#			print self.bdb.get(dumps(key,-1))
-#			for i in self.bdb.keys(): 
-#				try :print loads(i)
-#				except: print i
-			
-			return dfl
-		
+		except: return dfl
 		if isinstance(r,dict) and r.has_key("is_complex_x") :
 			pkey="%s/%s_"%(self.path,self.name)
 			rnx,rny,rnz = r["nx"],r["ny"],r["nz"]
@@ -1039,6 +1052,8 @@ of these occasional errors"""
 				
 			# binary data
 			if not nodata:
+				
+
 				if region != None: ret.to_zero() # this has to occur in situations where the clip region goes outside the image
 				if r.has_key("data_path"):
 					p,l=r["data_path"].split("*")
