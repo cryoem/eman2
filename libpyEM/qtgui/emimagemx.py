@@ -354,7 +354,7 @@ class EMMXDragMouseEvents(EMMXCoreMouseEvents):
 				resize_necessary = False
 				if self.class_window == None:
 					self.class_window = EMImageMXModule()
-					QtCore.QObject.connect(self.class_window,QtCore.SIGNAL("module_closed"),self.on_class_window_closed)
+					QtCore.QObject.connect(self.class_window.emitter(),QtCore.SIGNAL("module_closed"),self.on_class_window_closed)
 					resize_necessary = True
 				
 				self.class_window.set_data(data,"Class Particles")

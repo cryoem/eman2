@@ -277,6 +277,8 @@ class NavigationEvents(InputEventsHandler):
 		
 	def wheelEvent(self,event):
 		EMImage3DGUIModule.wheelEvent(self.parent(),event)
+		
+
 
 class ClassOrientationEvents(NavigationEvents,QtCore.QObject): 
 	def __init__(self,parent):
@@ -290,57 +292,86 @@ class ClassOrientationEvents(NavigationEvents,QtCore.QObject):
 	def mouseReleaseEvent(self,event):
 		m,p,v = self.parent().model_matrix.tolist(),self.parent().vdtools.wproj.tolist(),self.parent().vdtools.wview.tolist()
 		
-		model_matrix = []
-		proj_matrix = []
-		view_matrix = []
 		
+		sb = [0 for i in xrange(0,512)]
+		glSelectBuffer(512)
+		glRenderMode(GL_SELECT)
+		glInitNames()
+		glMatrixMode(GL_PROJECTION)
+		glPushMatrix()
+		glLoadIdentity()
+		gluPickMatrix(event.x(),v[-1]-event.y(),5,5,v)
+		self.parent().gl_context_parent.load_perspective()
+		glMatrixMode(GL_MODELVIEW)
+		glInitNames()
+		self.parent().render()
+		glMatrixMode(GL_PROJECTION)
+		glPopMatrix()
+		glMatrixMode(GL_MODELVIEW)
+		glFlush()
 		
-		for val in m:
-			if isinstance(val,list): model_matrix.extend(val)
-			else: modul_matrix.append(val)
-			
-		for val in p:
-			if isinstance(val,list): proj_matrix.extend(val)
-			else: proj_matrix.append(val)
-			
-		for val in v:
-			if isinstance(val,list): view_matrix.extend(val)
-			else: view_matrix.append(val)
-			
-		points = self.parent().points
-		mouse_x = event.x()
-		mouse_y = view_matrix[-1]-event.y()
-		intersection = GLUtil.nearest_projected_points(model_matrix,proj_matrix,view_matrix,points,float(mouse_x),float(mouse_y),6.0)
+		intersection = None
+		hits = list(glRenderMode(GL_RENDER))
+		for hit in hits:
+			a,b,c=hit
+			if len(c) > 0:
+				intersection = c[0]-1
+				break
 		
-		new_colors = {}
+		self.emit(QtCore.SIGNAL("point_selected"),intersection,event)
+		return
 		
-		if intersection >= 0:
-			new_colors[intersection] = (1.0,1.0,0,1)
-			
-			if self.old_intersection >= 0:
-				new_colors[self.old_intersection] = self.old_color
-			
-			self.old_intersection = intersection
-			self.old_color = self.parent().point_colors[intersection]			
-		
-		else:
-			if self.old_intersection >= 0:
-				new_colors[self.old_intersection] = self.old_color
-				self.old_intersection = -1
-			else:
-				NavigationEvents.mouseReleaseEvent(self,event)
-				return
-		
-		if len(new_colors) > 0:
-			self.nc = new_colors
-			self.intsct = intersection
-			self.parent().set_point_colors(new_colors)
-			self.parent().updateGL()
-			if intersection >= 0:self.emit(QtCore.SIGNAL("point_selected"),intersection)
-	
-		else:
-			self.nc = None
-			self.intsct = None
+#		model_matrix = []
+#		proj_matrix = []
+#		view_matrix = []
+#		
+#		
+#		for val in m:
+#			if isinstance(val,list): model_matrix.extend(val)
+#			else: modul_matrix.append(val)
+#			
+#		for val in p:
+#			if isinstance(val,list): proj_matrix.extend(val)
+#			else: proj_matrix.append(val)
+#			
+#		for val in v:
+#			if isinstance(val,list): view_matrix.extend(val)
+#			else: view_matrix.append(val)
+#			
+#		points = self.parent().points
+#		mouse_x = event.x()
+#		mouse_y = view_matrix[-1]-event.y()
+#		intersection = GLUtil.nearest_projected_points(model_matrix,proj_matrix,view_matrix,points,float(mouse_x),float(mouse_y),6.0)
+#		
+#		new_colors = {}
+#		
+#		if intersection >= 0:
+#			new_colors[intersection] = (1.0,1.0,0,1)
+#			
+#			if self.old_intersection >= 0:
+#				new_colors[self.old_intersection] = self.old_color
+#			
+#			self.old_intersection = intersection
+#			self.old_color = self.parent().point_colors[intersection]			
+#		
+#		else:
+#			if self.old_intersection >= 0:
+#				new_colors[self.old_intersection] = self.old_color
+#				self.old_intersection = -1
+#			else:
+#				NavigationEvents.mouseReleaseEvent(self,event)
+#				return
+#		
+#		if len(new_colors) > 0:
+#			self.nc = new_colors
+#			self.intsct = intersection
+#			self.parent().set_point_colors(new_colors)
+#			self.parent().updateGL()
+#			if intersection >= 0:self.emit(QtCore.SIGNAL("point_selected"),intersection)
+#	
+#		else:
+#			self.nc = None
+#			self.intsct = None
 	def repeat_event(self):
 		self.reset()
 		if self.nc != None and self.intsct != None:
@@ -364,8 +395,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 		if auto:
 			self.gen_refinement_data()
 		self.euler_xplore_mode = False
-		self.width_scale = 1.0
-		self.height_scale = 1.0
+		
 		EM3DSymViewerModule.__init__(self,application,inspector_go=inspector_go,ensure_gl_context=ensure_gl_context,application_control=application_control)
 		InputEventsManager.__init__(self)
 		Animator.__init__(self)
@@ -396,7 +426,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 		if db_check_dict("bdb:emform.e2refine"):
 			db = db_open_dict("bdb:emform.e2refine",ro=True)
 			if db.has_key("symname") and db.has_key("symnumber"):
-				self.sym = db["symname"] + db["symnumber"]
+				sym = db["symname"] + db["symnumber"]
 			#db_close_dict("bdb:emform.e2refine")
 		
 		self.set_sym(sym)
@@ -415,15 +445,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 						
 		self.init_lock = False
 		self.regen_dl()
-		
-	def set_width_scale(self,val):
-		self.width_scale = val
-		self.regen_dl()
-		
-	def set_height_scale(self,val):
-		self.height_scale = val
-		self.regen_dl()
-	
+
 	def initializeGL(self):
 		glEnable(GL_NORMALIZE)
 	
@@ -450,7 +472,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 			self.points.append(p)
 			if not self.colors_specified: self.point_colors.append((0.34615, 0.3143, 0.0903,1))
 		
-		self.make_sym_dl_list(self.points,self.point_colors,self.eulers,self.ptcls,self.width_scale,self.height_scale)
+		self.make_sym_dl_list(self.eulers)
 		return 1
 	def get_data_dims(self):
 		return (2*self.radius,2*self.radius,2*self.radius)
@@ -579,19 +601,27 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 		self.classes = None
 		
 		eulers = get_eulers_from(self.average_file)
-		ptcls = get_ptcl_from(self.average_file)
-		self.ptcls = get_normalized_vector(ptcls)
+
 		self.specify_eulers(eulers)
-		self.specify_colors(get_normalize_colors_grey(ptcls))
+		from emimagemx import EMDataListCache
+		self.set_emdata_list_as_data(EMDataListCache(self.average_file),"ptcl_repr")
 		self.force_update = True
-		#self.generate_current_display_list(force=True)
-		
+		self.au_point_selected(self.class_idx,None)
 		# if we have the same number of Eulers we can update everything
 		if self.previous_len == len(eulers) : self.events_handlers["inspect"].repeat_event()
 		else:self.events_handlers["inspect"].reset()
 		self.previous_len = len(eulers)
 		self.updateGL()
 		get_application().setOverrideCursor(Qt.ArrowCursor)
+		
+	def __get_file_headers(self,filename):
+		headers = []
+		n = EMUtil.get_image_count(filename)
+		for i in range(n):
+			e = EMData()
+			e.read_image(filename,i,True)
+			headers.append(e)
+		return headers
 	
 	def __init_events_handlers(self):
 		self.events_mode = "navigate"
@@ -601,11 +631,19 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 		QtCore.QObject.connect(self.events_handlers["inspect"],QtCore.SIGNAL("point_selected"), self.au_point_selected)
 		self.current_events_handler = self.events_handlers["inspect"]
 	
-	def au_point_selected(self,i):
+	def au_point_selected(self,i,event=None):
+		if i == None: 
+			if event != None and event.modifiers()&Qt.ShiftModifier:
+				if self.special_euler != None:
+					self.special_euler = None
+					self.regen_dl()
+			return
+		
+		
 		self.arc_anim_points = None
 		self.projection = None
 		try:
-			self.average = EMData(self.average_file,i)
+			self.average = self.euler_data[i]
 			self.projection = EMData(self.projection_file,self.average.get_attr("projection_image_idx"))
 			self.average.process_inplace("normalize.toimage.lsq",{"to":self.projection})
 			try:
@@ -638,6 +676,10 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 			self.mx_image_selected(None,None)
 			
 		if first: self.mx_viewer.optimally_resize()
+		
+		if i != self.special_euler:
+			self.special_euler = i
+			self.regen_dl()
 		
 		self.updateGL()
 			
@@ -690,7 +732,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 		self.arc_anim_points = None
 		get_application().setOverrideCursor(Qt.BusyCursor)
 		if lc != None: self.sel = lc[0]
-		if self.clsdb != None and self.particle_file != None and self.class_idx > -1:
+		if self.clsdb != None and self.particle_file != None and self.particle_file > -1:
 			class_db = db_open_dict(self.clsdb)
 			indices = class_db[str(self.class_idx)]
 			mx = []
@@ -870,26 +912,13 @@ class EMAsymmetricUnitInspector(EMSymInspector):
 		EMSymInspector.__init__(self,target,enable_trace=enable_trace,enable_og=enable_og)
 		
 		if hasattr(self.target(),"au_data") and len(self.target().au_data) > 0:
-			self.init_au_table()
-			self.init_scale_options()
-
-	def init_scale_options(self):
+			self.add_au_table()
 		
-		hbl = QtGui.QHBoxLayout()
-		self.width_scale = ValSlider(self,(0.05,10.0),"Width scale:")
-		self.width_scale.setValue(self.target().width_scale)
-		self.height_scale = ValSlider(self,(0.05,10.0),"Height scale:")
-		self.height_scale.setValue(self.target().height_scale)
-		hbl.addWidget(self.width_scale)
-		hbl.addWidget(self.height_scale)
-		self.vbl2.addLayout(hbl)
+	def add_au_table(self):
 		
-		QtCore.QObject.connect(self.width_scale, QtCore.SIGNAL("valueChanged"), self.target().set_width_scale)
-		QtCore.QObject.connect(self.height_scale, QtCore.SIGNAL("valueChanged"), self.target().set_height_scale)
+		self.au_tab= QtGui.QWidget()
+		self.au_tab.vbl = QtGui.QVBoxLayout(self.au_tab)
 		
-		
-
-	def init_au_table(self):
 		self.au_data = self.target().au_data
 		combo_entries = self.au_data.keys()
 		combo_entries.sort()
@@ -901,7 +930,7 @@ class EMAsymmetricUnitInspector(EMSymInspector):
 		self.connect(self.combo,QtCore.SIGNAL("currentIndexChanged(QString&)"),self.on_combo_change)
 		self.connect(self.combo,QtCore.SIGNAL("currentIndexChanged(const QString&)"),self.on_combo_change)
 			
-		self.vbl2.addWidget(self.combo)
+		self.au_tab.vbl.addWidget(self.combo)
 		self.refine_dir = combo_entries[0]
 		
 		self.list_widget = QtGui.QListWidget(None)
@@ -911,11 +940,12 @@ class EMAsymmetricUnitInspector(EMSymInspector):
 		QtCore.QObject.connect(self.list_widget,QtCore.SIGNAL("itemClicked(QListWidgetItem *)"),self.list_widget_item_clicked)
 	
 		self.update_classes_list(first_time=True)
-		self.vbl2.addWidget(self.list_widget)
+		self.au_tab.vbl.addWidget(self.list_widget)
+		self.tabwidget.insertTab(0,self.au_tab,"Refinement")
+		self.tabwidget.setCurrentIndex(0)
 	
 	def on_combo_change(self,s):
 		self.refine_dir = str(s)
-		print self.refine_dir
 		self.update_classes_list()
 	
 	def update_classes_list(self,first_time=False):

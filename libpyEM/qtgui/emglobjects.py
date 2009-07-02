@@ -2207,7 +2207,6 @@ def get_default_gl_colors():
 	green["shininess"] =  16
 	green["emission"] = [0,0,0]
 	
-	
 	blue = {}
 	blue["ambient"] = [0.0,0.0,1,1]
 	blue["diffuse"] = [0.0,0.0,1,1]
@@ -2228,6 +2227,13 @@ def get_default_gl_colors():
 	white["specular"] = [1.0,1.0,1.0,1]
 	white["shininess"] =  16
 	white["emission"] = [0,0,0]
+	
+	dark_grey = {}
+	dark_grey["ambient"] = [0.2,0.2,0.2,1]
+	dark_grey["diffuse"] = [0.2,0.2,0.2,1]
+	dark_grey["specular"] = [0.2,0.2,0.2,1]
+	dark_grey["shininess"] =  16
+	dark_grey["emission"] = [0,0,0]
 	
 	bluewhite = {}
 	bluewhite["ambient"] = [0.66, 0.95,0.62,1]
@@ -2260,6 +2266,7 @@ def get_default_gl_colors():
 	colors["blue"] = blue
 	colors["black"] = black
 	colors["white"] = white
+	colors["dark grey"] = dark_grey
 	colors["orange"] = orange
 	colors["bluewhite"] = bluewhite
 	colors["custom"] = custom

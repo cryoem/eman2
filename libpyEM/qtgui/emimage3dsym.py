@@ -49,12 +49,14 @@ from PyQt4.QtCore import QTimer
 
 from time import *
 
-from emglobjects import EMImage3DGUIModule, Camera, Camera2, EMViewportDepthTools2,EMGLProjectionViewMatrices
+from emglobjects import EMImage3DGUIModule, Camera, Camera2, EMViewportDepthTools2,EMGLProjectionViewMatrices,get_default_gl_colors
 from emimageutil import ImgHistogram, EMEventRerouter, EMTransformPanel
-from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
+from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule, get_application
 import weakref
 
 MAG_INCREMENT_FACTOR = 1.1
+
+
 
 class Orientations:
 	def __init__(self):
@@ -75,9 +77,184 @@ class Orientations:
 	def set_symmetry(self,val):
 		self.sym = str(val)
 		self.sym_object= Symmetries.get(self.sym)
+
+class ColumnGraphics:
+	def __init__(self):
+		self.small_column_color = "dark grey"
+		self.tall_column_color = "white"
+		self.max_score = 0.0
+		self.min_score = 0.0
+		self.interval = 0.0
+		if not hasattr(self,"colors"): self.colors = get_default_gl_colors()
 		
+		self.set_mixed_color()
+		self.column_scores = None
 		
-class EM3DSymViewerModule(EMImage3DGUIModule,Orientations):
+	def set_column_scores(self,scores):
+		
+		self.column_scores = scores
+		if scores != None:
+			self.max_score = max(scores)
+			self.min_score = min(scores)
+			self.interval = self.max_score - self.min_score
+		else:
+			self.max_score = 0.0
+			self.min_score = 0.0
+			self.interval = 0.0
+		
+	def set_mixed_color(self):
+		self.mixed_color = MixedColor(self.colors[self.small_column_color], self.colors[self.tall_column_color])
+		
+	def set_max_score(self,score):
+		self.max_score = score
+		self.interval = self.max_score - self.min_score
+	def set_min_score(self,score):
+		self.min_score = score
+		self.interval = self.max_score - self.min_score
+		
+	def set_small_column_color(self,color):
+		self.small_column_color = color
+		self.set_mixed_color()
+	
+	def set_tall_column_color(self,color):
+		self.tall_column_color = color
+		self.set_mixed_color()
+	
+	def load_mixed_gl_color(self,value):
+		if self.interval == 0:
+			frac = 1.0
+		else:
+			frac = (value-self.min_score)/self.interval
+		
+		self.mixed_color.load_gl_color(frac)
+		
+	def load_basic_gl_color(self):
+		self.mixed_color.load_color_2()
+	
+class MixedColor:
+	def __init__(self,color1,color2):
+		self.color1 = color1 # the color of the smallest column, for example
+		self.color2 = color2 # the color of the largeset column, for example
+		
+		self.a1 = self.color1["ambient"]
+		self.a2 = self.color2["ambient"]
+		
+		self.d1 = self.color1["diffuse"]
+		self.d2 = self.color2["diffuse"]
+		
+		self.s1 = self.color1["specular"]
+		self.s2 = self.color2["specular"]
+		
+		self.e1 = self.color1["emission"]
+		self.e2 = self.color2["emission"]
+		
+		self.h1 = self.color1["shininess"]
+		self.h2 = self.color2["shininess"]
+		
+	def load_gl_color(self,frac):
+		'''
+		frac should be in [0,1]
+		'''
+		ifrac = 1-frac
+		r = range(4)
+		r2 = range(3)
+		ambient = [ ifrac*self.a1[i]+frac*self.a2[i] for i in r]
+		diffuse = [ ifrac*self.d1[i]+frac*self.d2[i] for i in r]
+		specular = [ ifrac*self.s1[i]+frac*self.s2[i] for i in r]
+		emission = [ ifrac*self.e1[i]+frac*self.e2[i] for i in r2]
+		shininess = ifrac*self.h1+frac*self.h2
+		
+		glColor(ambient)
+		glMaterial(GL_FRONT,GL_AMBIENT,ambient)
+		glMaterial(GL_FRONT,GL_DIFFUSE,diffuse)
+		glMaterial(GL_FRONT,GL_SPECULAR,specular)
+		glMaterial(GL_FRONT,GL_EMISSION,emission)
+		glMaterial(GL_FRONT,GL_SHININESS,shininess)
+	
+	def load_color_2(self):
+		glColor(self.a2)
+		glMaterial(GL_FRONT,GL_AMBIENT,self.a2)
+		glMaterial(GL_FRONT,GL_DIFFUSE,self.d2)
+		glMaterial(GL_FRONT,GL_SPECULAR,self.s2)
+		glMaterial(GL_FRONT,GL_EMISSION,self.e2)
+		glMaterial(GL_FRONT,GL_SHININESS,self.h2)
+	
+
+class EulerData:
+	'''
+	A mixin for the EM3DSymViewerModule - takes care of everything that needs to occur
+	if you have supplied a list of EMData objects - the EMData's must have the
+	'xform.projection' header attribute
+	'''
+	def __init__(self):
+		self.data = None
+		self.score_options = []
+		self.eulers = []
+		
+	def __getitem__(self,idx):
+		return self.data[idx]
+	
+	def set_data(self,data):
+		self.data = data
+		self.eulers = []
+		for d in self.data:
+			try:
+				self.eulers.append(d["xform.projection"])
+			except:
+				raise RuntimeError("The data must all have the xform.projection header attribute")
+		
+		# get the first header and get any items that can be cast to a float
+		header = self.data[0].get_attr_dict()
+		
+		options = []
+		for key,value in header.items():
+			try:
+				float(value)
+				options.append(key)
+			except: pass
+	
+		if len(data) == 1:
+			self.score_options = options
+		else:
+			self.score_options = []
+			for key in options:
+				success = True
+				for i in range(1,len(self.data)):
+					header = self.data[i].get_attr_dict()
+					try:
+						value = header[key]
+						float(value)
+					except:
+						success = False
+						break
+					
+				if success:
+					self.score_options.append(key)
+		
+		self.score_options.append("None")
+		self.score_options.sort()
+			
+	def get_eulers(self): return self.eulers
+	
+	def get_score_options(self): return self.score_options
+	
+	def get_score_list(self,key,normalize=True):
+		l = []
+		for d in self.data: 
+			l.append(float(d.get_attr(key)))
+		if normalize: return self.normalize_float_list(l)
+		else: return l
+	
+	def normalize_float_list(self,l):
+		mn = min(l)
+		mx = max(l)
+		diff = float(mx-mn)
+		if diff != 0: n = [ (val-mn)/(diff) for val in l ]
+		else: n = [1 for val in l]
+		return n
+	
+	
+class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 
 	def get_qt_widget(self):
 		if self.qt_context_parent == None:	
@@ -96,19 +273,122 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations):
 		self.arc_anim_points = None
 		EMImage3DGUIModule.__init__(self,application,ensure_gl_context,application_control)
 		Orientations.__init__(self)
+		ColumnGraphics.__init__(self)
 		
 		self.eulers = [] # will eventually store Transform objects
 		self.points = [] # will eventually store the points on the asymmetric unit
 		self.point_colors = [] # will eventually store colors for the different points
-		self.init()
+	
+		
+		self.cam = Camera2(self) # Stores the camera position
+		self.vdtools = None # VDTools are very import in the context of the e2desktop
+		
+		self.cube = False
+		self.inspector=None
+		self.mouse_mode = None # In future we might facilitate changing mouse modes
+		
+		self.sphere_points_dl = 0 # this will be a display list of points or cylinders on the unit sphere
+		self.spheredl = 0 # This is a display list of the low resolution sphere
+		self.highresspheredl = 0 # This is a display list of a high resolution sphere
+		self.diskdl = 0 # This is a display list for a disk
+		self.cappedcylinderdl = 0 # This is a display list for a capped cylinder (the cap is only at the outer end)
+		self.great_arc_dl = 0 # This will be a display list for great arcs 
+		self.asym_u_triangles_dl = 0  # This will be a display list for triangles in the asymmetric units
+		self.cylinderdl = 0 # This will be a display list for a cylinder
+
+		self.gq=gluNewQuadric() # a quadric for general use
+		gluQuadricDrawStyle(self.gq,GLU_FILL)
+		gluQuadricNormals(self.gq,GLU_SMOOTH)
+		gluQuadricOrientation(self.gq,GLU_OUTSIDE)
+		gluQuadricTexture(self.gq,GL_FALSE)
+
+		self.width_scale = 1.0 # a with scale factor for points on the unit sphere
+		self.height_scale = 1.0 # a height scale factor for points on the unit sphere
+		self.arc_width_scale = 0.5 # The width of the great arcs 
+		self.force_update = False  # Force update everything - causes a couple of dispay lists to be regenerated
+#		
+		self.display_euler = True # Display sphere points flag
+		self.display_tri = False # Display asymm unit triangles flag
+		self.display_arc = True # Display great arcs flag
+#		self.sym_object = None
+		self.update_sphere_points_dl = True # A way to force the update of the display list for the points on the unit sphere
+		
+		self.radius = 50 # the radius of the sphere - important display parameter
+		self.arc_segments = 16 # number of discrete segments in every great arc 
+
+		self.eulers_specified = False # from e2au.py = if you want to specify a specific set of eulers this is required
+		self.specified_eulers = None # from e2au.py = if you want to specify a specific set of eulers this is required
+		self.colors_specified = False # as above
+		self.specified_colors = None # as above
+		
+		self.file = None # For tracing - hasn't been tested in a while
+		self.lr = -1 # For tracing - hasn't been tested in a while
+		self.hr = -1 # For tracing - hasn't been tested in a while
+		self.tracedata = [] # For tracing - hasn't been tested in a while
+		self.trace_dl = 0 # For tracing - hasn't been tested in a while
+		self.reduce = False  # For tracing - hasn't been tested in a while
+		
+		self.colors = get_default_gl_colors() # A map for OpenGL (light) colors
+		self.arc_color = "emerald" # The color of the arcs, can be changed using the inspector
+		
+		self.euler_data = None # will be turned into an EulerData if necessary
+		self.image_display_window = None # used if people are looking at image data, for example, if they opened a list of EMData's in e2.py using euler_display
+		self.special_euler = None # If set, the special Euler will get the special color - should be an index (int)
+		self.special_color = "gold"
+		
+		
+		self.set_sym(self.sym)
+		self.regen_dl()
+
 		self.initialized = True
 		
-		
 		if inspector_go: self.get_inspector()
-#		
-#	def __del__(self):
-#		print "sym died" 
-#		
+		
+	def __del__(self):
+		if self.image_display_window != None:
+			w = self.image_display_window 
+			self.image_display_window = None
+			w.closeEvent(None)
+			
+		
+	def set_emdata_list_as_data(self,emdata_list,default="None"):
+		self.euler_data = EulerData()
+		self.euler_data.set_data(emdata_list)
+		self.specify_eulers(self.euler_data.get_eulers())
+		if default != "None": 
+			l = self.euler_data.get_score_list(default)
+			self.set_column_scores(l)
+		else: self.set_column_scores(None)
+		self.get_inspector().set_score_options(self.euler_data.get_score_options(),default)
+		self.regen_dl()
+		
+	def set_column_score_key(self,key):
+		if key == "None":
+			self.set_column_scores(None)
+		else:
+			l = self.euler_data.get_score_list(key)
+			self.set_column_scores(l)
+			
+		self.regen_dl()
+			
+	def set_width_scale(self,val):
+		self.width_scale = val
+		self.regen_dl()
+		
+	def set_height_scale(self,val):
+		self.height_scale = val
+		self.regen_dl()
+		
+	def set_arc_width_scale(self,val):
+		self.arc_width_scale = val
+		self.regen_dl()
+		
+	def set_arc_segments(self,val):
+		self.arc_segments = val
+		self.regen_dl()
+		
+	def set_arc_color(self,s): self.arc_color = s
+
 	def get_inspector(self):
 		if not self.inspector : self.inspector=EMSymInspector(self)
 		return self.inspector
@@ -119,6 +399,66 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations):
 			self.display_web_help("http://blake.bcm.edu/emanwiki/EMAN2/Programs/e2eulerxplor")
 		else:
 			EMImage3DGUIModule.keyPressEvent(self,event)
+			
+	def object_picked(self,object_number):
+		resize_necessary = False
+		if self.image_display_window == None:
+			from emimage2d import EMImage2DModule
+			self.image_display_window = EMImage2DModule()
+			QtCore.QObject.connect(self.image_display_window.emitter(),QtCore.SIGNAL("module_closed"),self.on_image_display_window_closed)
+			resize_necessary = True
+				
+		self.image_display_window.set_data(self.euler_data[object_number],"Data")
+		
+		if resize_necessary:
+			get_application().show_specific(self.image_display_window)
+			self.image_display_window.optimally_resize()
+		else:
+			self.image_display_window.updateGL()
+			
+		if object_number != self.special_euler:
+			self.special_euler = object_number
+			self.regen_dl()
+	
+	def on_image_display_window_closed(self):
+		self.image_display_window = None
+	
+	def mouseReleaseEvent(self,event):
+		
+		if self.euler_data != None and (event.modifiers()&Qt.ShiftModifier or self.mouse_mode == "pick"):
+			
+			m,p,v = self.model_matrix.tolist(),self.vdtools.wproj.tolist(),self.vdtools.wview.tolist()
+				
+			glSelectBuffer(512)
+			glRenderMode(GL_SELECT)
+			glInitNames()
+			glMatrixMode(GL_PROJECTION)
+			glPushMatrix()
+			glLoadIdentity()
+			gluPickMatrix(event.x(),v[-1]-event.y(),2,2,v)
+			self.gl_context_parent.load_perspective()
+			glMatrixMode(GL_MODELVIEW)
+			glInitNames()
+			self.render()
+			glMatrixMode(GL_PROJECTION)
+			glPopMatrix()
+			glMatrixMode(GL_MODELVIEW)
+			glFlush()
+		
+			hits = list(glRenderMode(GL_RENDER))
+			for hit in hits:
+				a,b,c=hit
+				if len(c) > 0:
+					self.object_picked(c[0]-1)
+					break
+			else:
+				if self.special_euler != None:
+					self.special_euler = None
+					self.regen_dl()
+			return
+		
+		
+		EMImage3DGUIModule.mousePressEvent(self,event)
 	
 	def get_type(self):
 		return "Symmetry Viewer"
@@ -126,63 +466,6 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations):
 	def update_data(self,data):
 		pass
 
-	def init(self):
-
-		self.cam = Camera2(self)
-		self.vdtools = None # EMViewportDepthTools2(self.get_gl_context_parent())
-		
-		self.cube = False
-		self.inspector=None
-		
-		self.sym_dl = 0
-		self.spheredl = 0
-		self.highresspheredl = 0
-		self.diskdl = 0
-		self.cappedcylinderdl = 0
-		self.arc_dl = 0
-		self.tri_dl = 0
-		self.cylinderdl = 0
-
-		gluQuadricDrawStyle(self.gq,GLU_FILL)
-		gluQuadricNormals(self.gq,GLU_SMOOTH)
-		gluQuadricOrientation(self.gq,GLU_OUTSIDE)
-		gluQuadricTexture(self.gq,GL_FALSE)
-
-		self.glcontrast = 1.0
-		self.glbrightness = 0.0
-		
-		self.rank = 1
-		
-		self.force_update = False
-#		
-		self.display_euler = True
-		self.display_tri = False
-		self.display_arc = True
-#		self.sym_object = None
-		self.update_sym_dl = True
-		
-		
-		self.radius = 50
-		
-		self.arc_t = 16
-		self.reduce = False
-		
-		self.eulers_specified = False # from e2au.py = if you want to specify a specific set of eulers this is required
-		self.specified_eulers = None # from e2au.py = if you want to specify a specific set of eulers this is required
-		self.colors_specified = False # as above
-		self.specified_colors = None # as above
-		
-		self.file = None
-		self.lr = -1
-		self.hr = -1
-		self.tracedata = []
-		self.trace_dl = 0
-		self.gq=gluNewQuadric()
-		
-		
-		self.set_sym(self.sym)
-		self.regen_dl()
-		
 	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
 		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
 
@@ -197,9 +480,9 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations):
 	
 	def trace_great_triangles(self,inc_mirror):
 		triangles = self.sym_object.get_asym_unit_triangles(inc_mirror)
-		if ( self.tri_dl != 0 ): glDeleteLists(self.tri_dl, 1)
+		if ( self.asym_u_triangles_dl != 0 ): glDeleteLists(self.asym_u_triangles_dl, 1)
 		
-		self.tri_dl=glGenLists(1)
+		self.asym_u_triangles_dl=glGenLists(1)
 		
 		if self.sym_object.get_name() == "d" and self.sym_object.get_nsym()% 4 != 0:
 			if inc_mirror:
@@ -222,7 +505,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations):
 				t.append([triangles[0][0],p, triangles[0][2]])
 				triangles = t
 	
-		glNewList(self.tri_dl,GL_COMPILE)
+		glNewList(self.asym_u_triangles_dl,GL_COMPILE)
 		
 		glPushMatrix()
 		glScalef(self.radius,self.radius,self.radius)
@@ -248,80 +531,61 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations):
 	def loadcolor(self,i,j,l):
 		if ( l == 1):
 			if (j == 0):
-				self.gold()
+				self.load_gl_color("gold")
 			elif (j == 1):
-				self.red()
+				self.load_gl_color("ruby")
 			elif ( j == 2):
-				self.green()
+				self.load_gl_color("emerald")
 		elif ( l == 2):
 			if i == 0:
 				if (j == 0):
-					self.gold()
+					self.load_gl_color("gold")
 				elif (j == 1):
-					self.red()
+					self.load_gl_color("ruby")
 				elif ( j == 2):
-					self.green()
+					self.load_gl_color("emerald")
 			elif i == 1:
 				if (j == 0):
-					self.gold()
+					self.load_gl_color("gold")
 				elif (j == 1):
-					self.green()
+					self.load_gl_color("emerald")
 				elif ( j == 2):
-					self.red()
+					self.load_gl_color("ruby")
 		else:
-			self.gold()
+			self.load_gl_color("gold")
 				
 	
+	def load_gl_color(self,name):
+		color = self.colors[name]
+		glColor(color["ambient"])
+		glMaterial(GL_FRONT,GL_AMBIENT,color["ambient"])
+		glMaterial(GL_FRONT,GL_DIFFUSE,color["diffuse"])
+		glMaterial(GL_FRONT,GL_SPECULAR,color["specular"])
+		glMaterial(GL_FRONT,GL_EMISSION,color["emission"])
+		glMaterial(GL_FRONT,GL_SHININESS,color["shininess"])
+	
+		
 	def gl_color(self,color):
 		glColor(*color)
 		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,color)
 		glMaterial(GL_FRONT,GL_SPECULAR,[0,0,0,1])
 		glMaterial(GL_FRONT,GL_EMISSION,(0,0,0,1.0))
 		glMaterial(GL_FRONT,GL_SHININESS,64.0)
-	
-	def gold(self):
-		glMaterial(GL_FRONT,GL_AMBIENT,(0.24725, 0.2245, 0.0645,1.0))
-		glMaterial(GL_FRONT,GL_DIFFUSE,(0.34615, 0.3143, 0.0903,1.0))
-		glMaterial(GL_FRONT,GL_SPECULAR,(1.000, 0.9079885, 0.26086934,1.0))
-		glMaterial(GL_FRONT,GL_EMISSION,(0,0,0,1.0))
-		glMaterial(GL_FRONT,GL_SHININESS,4.0)
-		
-	def black(self):
-		glMaterial(GL_FRONT,GL_AMBIENT,(0.05375,  0.05,     0.06625 ,1.0))
-		glMaterial(GL_FRONT,GL_DIFFUSE,(0.18275,  0.17,     0.22525,1.0))
-		glMaterial(GL_FRONT,GL_SPECULAR,(0.66, 0.65, 0.69,1.0))
-		glMaterial(GL_FRONT,GL_EMISSION,(0,0,0,1.0))
-		glMaterial(GL_FRONT,GL_SHININESS, 128.0)
-		
-	def green(self):
-		glColor(.2,.9,.2)
-		# this is a nice light blue color (when lighting is on)
-		# and is the default color of the frame
-		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.1,.3,.1,1.0))
-		glMaterial(GL_FRONT,GL_SPECULAR,(.8,.8,.8,1.0))
-		glMaterial(GL_FRONT,GL_EMISSION,(0,0,0,1.0))
-		glMaterial(GL_FRONT,GL_SHININESS,32.0)
-		
-	def red(self):
-		glMaterial(GL_FRONT,GL_AMBIENT,(0.1745, 0.01175, 0.01175,1.0))
-		glMaterial(GL_FRONT,GL_DIFFUSE,(0.61424, 0.04136, 0.04136,1.0))
-		glMaterial(GL_FRONT,GL_SPECULAR,(0.927811, 0.826959, 0.826959,1.0))
-		glMaterial(GL_FRONT,GL_EMISSION,(0,0,0,1.0))
-		glMaterial(GL_FRONT,GL_SHININESS,32.0)
+
 		
 	def trace_great_arcs(self, points):
 		
 		self.init_basic_shapes()
 	
-		if ( self.arc_dl != 0 ): glDeleteLists(self.arc_dl, 1)
+		if ( self.great_arc_dl != 0 ): glDeleteLists(self.great_arc_dl, 1)
 		n = len(points)
 		if ( n <= 1 ):
-			self.arc_dl = 0
+			self.great_arc_dl = 0
 			return
 		
-		self.arc_dl=glGenLists(1)
+		self.great_arc_dl=glGenLists(1)
 		
-		glNewList(self.arc_dl,GL_COMPILE)
+		glNewList(self.great_arc_dl,GL_COMPILE)
 		
 		if ( self.sym_object.is_h_sym() ):
 			glPushMatrix()
@@ -348,13 +612,13 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations):
 			angle = acos(p2.dot(p1))
 			sinangle = sin(angle)
 			prev = self.radius*Vec3f(p1[0],p1[1],p1[2])
-			for t in range(1, self.arc_t+1):
-				timeangle = float(t)/float(self.arc_t)*angle
+			for t in range(1, self.arc_segments+1):
+				timeangle = float(t)/float(self.arc_segments)*angle
 				p1Copy = self.radius*Vec3f(p1[0],p1[1],p1[2])
 				p2Copy = self.radius*Vec3f(p2[0],p2[1],p2[2])
 				next = (sin(angle-timeangle)*p1Copy + sin(timeangle)*p2Copy)/sinangle
 				
-				self.cylinder_to_from(next,prev)
+				self.cylinder_to_from(next,prev,self.arc_width_scale)
 				prev = Vec3f(next[0],next[1],next[2])
 				
 	
@@ -473,53 +737,59 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations):
 				eulers.append(Transform({"type":"eman","az":az}))
 		
 		self.eulers = eulers
-		if not self.colors_specified: self.point_colors = []
-		else: self.point_colors = self.specified_colors
-		self.points = []
-		for i in eulers:
-			p = i.transpose()*Vec3f(0,0,self.radius)
-			self.points.append(p)
-			if not self.colors_specified: self.point_colors.append((0.34615, 0.3143, 0.0903,1))
-		self.make_sym_dl_list(self.points,self.point_colors,eulers)
+		self.make_sym_dl_list(eulers)
 		
-	
 	def set_sym(self,sym):
 		'''
-		Warning, this probably doesn't work in general don't use it
+		Should probably get rid of this one
 		'''
+		self.set_symmetry(sym)
 		if self.inspector != None: self.get_inspector().set_sym(sym)
 		self.force_update = True
 	
-	def make_sym_dl_list(self,points,point_colors,eulers,ptcls=None,width_scale=1.0,height_scale=1.0):
+	def make_sym_dl_list(self,eulers):
+		'''
+		@param eulers - a list of Transform objects storing orientations on the unit sphere
+		'''
 		
-		if self.sym_dl > 0:
-			glDeleteLists(self.sym_dl,1)
-		self.sym_dl = glGenLists(1)
-		glNewList(self.sym_dl,GL_COMPILE)
+		if self.sphere_points_dl > 0:
+			glDeleteLists(self.sphere_points_dl,1)
+		self.sphere_points_dl = glGenLists(1)
+		glNewList(self.sphere_points_dl,GL_COMPILE)
 		for i,p in enumerate(eulers):
-			self.gl_color(point_colors[i])
+			if i == self.special_euler:
+				self.load_gl_color(self.special_color)
+			else:
+				if self.column_scores != None:
+					self.load_mixed_gl_color(self.column_scores[i])
+				else:
+					self.load_basic_gl_color()
 			glPushMatrix()
 			d = p.get_rotation("eman")
 			glRotate(d["az"],0,0,1)
 			glRotate(d["alt"],1,0,0)
 			glRotate(d["phi"],0,0,1)
 	   	   	glTranslate(0,0,self.radius)
-	   	   	if ptcls == None: glCallList(self.diskdl)
-	   	   	else:
-	   	   		glScalef(width_scale*1.0,width_scale*1.0,height_scale*8*ptcls[i])
-				glCallList(self.cappedcylinderdl)
+	   	   	if self.column_scores != None:
+	   	   		glScalef(self.width_scale,self.width_scale,self.height_scale*self.column_scores[i])
+	   	   	else: 
+	   	   		glScalef(self.width_scale,self.width_scale,self.height_scale)
+
+	   	   	glPushName(i+1)
+			glCallList(self.cappedcylinderdl)
+			glPopName()
 			glPopMatrix()
 			
 		glEndList()
-		
-	def set_point_colors(self,new_color_map):
-		for k,v in new_color_map.items():
-			try:
-				self.point_colors[k] = v
-			except: pass
-		self.update_sym_dl = True
-		#self.make_sym_dl_list(self.points,self.point_colors)	
-	
+#		
+#	def set_point_colors(self,new_color_map):
+#		for k,v in new_color_map.items():
+#			try:
+#				self.point_colors[k] = v
+#			except: pass
+#		self.update_sphere_points_dl = True
+#		#self.make_sym_dl_list(self.points,self.point_colors)	
+#	
 	def angular_deviation(self,t1,t2):
 
 		v1 = Vec3f([0,0,1]*t1)
@@ -677,9 +947,9 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations):
 		if self.vdtools == None:
 			self.vdtools = EMViewportDepthTools2(self.get_gl_context_parent())
 		
-		if self.update_sym_dl:
-			self.make_sym_dl_list(self.points,self.point_colors,self.eulers)
-			self.update_sym_dl = False
+		if self.update_sphere_points_dl:
+			self.make_sym_dl_list(self.eulers)
+			self.update_sphere_points_dl = False
 		
 		lighting = glIsEnabled(GL_LIGHTING)
 		cull = glIsEnabled(GL_CULL_FACE)
@@ -699,22 +969,22 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations):
 		self.model_matrix = glGetDoublev(GL_MODELVIEW_MATRIX) # this is for e2au.py ... there is a better solution but no time
 		
 		
-		if ( self.sym_dl == 0 or self.force_update):
+		if ( self.sphere_points_dl == 0 or self.force_update):
 			self.generate_current_display_list()
 			self.force_update = False
-			if ( self.sym_dl == 0 ) : 
+			if ( self.sphere_points_dl == 0 ) : 
 				print "error, you can't draw an empty list"
 				return
 		
-		if ( self.arc_dl != 0 and self.display_arc ):
+		if ( self.great_arc_dl != 0 and self.display_arc ):
 			glColor(.2,.9,.2)
 			# this is a nice light blue color (when lighting is on)
 			# and is the default color of the frame
 			#glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.1,.3,.1,1.0))
 			#glMaterial(GL_FRONT,GL_SPECULAR,(.8,.8,.8,1.0))
 			#glMaterial(GL_FRONT,GL_SHININESS,40.0)
-			self.green()
-			glCallList(self.arc_dl)
+			self.load_gl_color(self.arc_color)
+			glCallList(self.great_arc_dl)
 			
 			if ( self.sym_object.is_h_sym() ):
 				a = {}
@@ -735,12 +1005,12 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations):
 					glRotate(-d["phi"],0,0,1)
 					glRotate(-d["alt"],1,0,0)
 					glRotate(-d["az"],0,0,1)
-					glCallList(self.arc_dl)
+					glCallList(self.great_arc_dl)
 					glPopMatrix()
 		
-		if ( self.tri_dl != 0 and self.display_tri ):
+		if ( self.asym_u_triangles_dl != 0 and self.display_tri ):
 			if ( self.sym_object.is_h_sym() != True ):
-				glCallList(self.tri_dl)
+				glCallList(self.asym_u_triangles_dl)
 			
 				if self.inspector != None and self.inspector.sym_toggled():
 					for i in range(1,self.sym_object.get_nsym()):
@@ -752,16 +1022,16 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations):
 						glRotate(-d["phi"],0,0,1)
 						glRotate(-d["alt"],1,0,0)
 						glRotate(-d["az"],0,0,1)
-						glCallList(self.tri_dl)
+						glCallList(self.asym_u_triangles_dl)
 						glPopMatrix()
 	
 		if self.display_euler and self.sym_object != None:
 			glColor(.9,.2,.8)
-			self.gold()
+			self.load_gl_color("gold")
 			glStencilFunc(GL_EQUAL,self.rank,0)
 			glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE)
 			glPushMatrix()
-			glCallList(self.sym_dl)
+			glCallList(self.sphere_points_dl)
 			glPopMatrix()
 			if ( self.sym_object.is_h_sym() ):
 				a = {}
@@ -787,11 +1057,11 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations):
 						glRotate(-d["phi"],0,0,1)
 						glRotate(-d["alt"],1,0,0)
 						glRotate(-d["az"],0,0,1)
-					glCallList(self.sym_dl)
+					glCallList(self.sphere_points_dl)
 					glPopMatrix()
 		
 		if (self.arc_anim_points):
-			self.gold()
+			self.load_gl_color("gold")
 			for points in self.arc_anim_points:
 				for i in range(0,len(points)-1):
 					self.cylinder_to_from(points[i],points[i+1],scale=0.25)
@@ -804,7 +1074,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations):
 			glColor(.9,.2,.8)
 			# this is a nice light blue color (when lighting is on)
 			# and is the default color of the frame
-			self.black()
+			self.load_gl_color("black")
 			glStencilFunc(GL_EQUAL,self.rank,0)
 			glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE)
 			#print "rendering trace"
@@ -813,6 +1083,8 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations):
 			glPopMatrix()
 		glStencilFunc(GL_EQUAL,self.rank,self.rank)
 		glStencilOp(GL_KEEP,GL_KEEP,GL_KEEP)
+
+		self.draw_bc_screen()
 
 		glStencilFunc(GL_ALWAYS,1,1)
 		if self.cube:
@@ -877,7 +1149,7 @@ class EMSymViewerWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMat
 		QtOpenGL.QGLWidget.__init__(self,fmt)
 		EMEventRerouter.__init__(self,em_slice_viwer)
 		EMGLProjectionViewMatrices.__init__(self)
-		
+		self.em_slice_viewer = weakref.ref(em_slice_viwer)
 		
 		self.fov = 50 # field of view angle used by gluPerspective
 		self.startz = 1
@@ -892,6 +1164,10 @@ class EMSymViewerWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMat
 		glEnable(GL_LIGHT0)
 		glEnable(GL_DEPTH_TEST)
 		#print "Initializing"
+#		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.0, 0.0, 0.0, 1.0])
+#		glLightfv(GL_LIGHT0, GL_DIFFUSE, [.8,.8,.8, 1.0])
+#		glLightfv(GL_LIGHT0, GL_SPECULAR, [.2, .2, .2, 1.0])
+#		glLightfv(GL_LIGHT0, GL_POSITION, [0.1,.1,1.,0.])
 		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.0, 0.0, 0.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
@@ -905,7 +1181,6 @@ class EMSymViewerWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMat
 		
 		#glClearStencil(0)
 		#glEnable(GL_STENCIL_TEST)
-		
 	def paintGL(self):
 		#glClear(GL_ACCUM_BUFFER_BIT)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT )
@@ -938,6 +1213,9 @@ class EMSymViewerWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMat
 		glLoadIdentity()
 		self.set_projection_view_update()
 		self.target().resizeEvent()
+		
+	def load_perspective(self):
+		gluPerspective(self.fov,self.aspect,self.startz,self.endz)
 
 	def get_start_z(self):
 		return self.startz
@@ -964,6 +1242,8 @@ class EMSymInspector(QtGui.QWidget):
 		QtGui.QWidget.__init__(self,None)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "eulerxplor.png"))
 		self.target=weakref.ref(target)
+		self.busy = False
+		self.score_options_hbl  = None # will eventually be a combo 
 		self.rotation_sliders = EMTransformPanel(self.target(),self)
 		self.enable_trace = enable_trace
 		self.enable_og = enable_og
@@ -1020,12 +1300,16 @@ class EMSymInspector(QtGui.QWidget):
 		self.set_sym(self.target().get_sym())
 		self.n3_showing = False
 		
+		self.tabwidget = QtGui.QTabWidget()
+		self.tabwidget.addTab(self.get_display_tab(), "Display")
+		self.tabwidget.addTab(self.get_transform_tab(), "Transform")
+		self.vbl.addWidget(self.tabwidget)
+		
 		self.file = None
 		self.lr = -1
 		self.hr = -1
 		
-#		QtCore.QObject.connect(self.glcontrast, QtCore.SIGNAL("valueChanged"), target.set_GL_contrast)
-#		QtCore.QObject.connect(self.glbrightness, QtCore.SIGNAL("valueChanged"), target.set_GL_brightness)
+		
 		QtCore.QObject.connect(self.sym_combo, QtCore.SIGNAL("currentIndexChanged(QString)"), self.sym_changed)
 		QtCore.QObject.connect(self.sym_text, QtCore.SIGNAL("editingFinished()"), self.sym_number_changed)
 		#QtCore.QObject.connect(self.cubetog, QtCore.SIGNAL("toggled(bool)"), target.toggle_cube)
@@ -1035,7 +1319,6 @@ class EMSymInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.arctog, QtCore.SIGNAL("clicked(bool)"), target.arctog)
 		
 		#QtCore.QObject.connect(self.cbb, QtCore.SIGNAL("currentIndexChanged(QString)"), target.setColor)
-		
 	
 	def update_rotations(self,t3d):
 		self.rotation_sliders.update_rotations(t3d)
@@ -1052,7 +1335,39 @@ class EMSymInspector(QtGui.QWidget):
 	def get_transform_layout(self):
 		return self.maintab.vbl
 	
-	
+	def set_score_options(self,options,default=None):
+		self.busy = True
+		if options == None or len(options) == 0:
+			if self.score_options_hbl != None:
+				self.display_tab.vbl.removeItem(self.score_options_hbl)
+				self.score_options_hbl.deleteLater()
+				QtCore.QObject.disconnect(self.score_options,QtCore.SIGNAL("currentIndexChanged(int)"),self.score_option_changed)
+			return
+
+		if self.score_options_hbl == None:
+			self.score_options_hbl = QtGui.QHBoxLayout()
+			self.score_options = self.__get_combo(options,default)
+			self.score_options_hbl.addWidget(QtGui.QLabel("Column Score:",self))
+			self.score_options_hbl.addWidget(self.score_options)
+			self.display_tab.vbl.addLayout(self.score_options_hbl)
+			
+			QtCore.QObject.connect(self.score_options,QtCore.SIGNAL("currentIndexChanged(int)"),self.score_option_changed)
+		else:
+			self.score_options.clear()
+
+			idx = 0
+			for i,k in enumerate(options): 
+				self.score_options.addItem(k)
+				if k == default: idx = i
+			self.score_options.setCurrentIndex(idx)
+		self.busy = False
+		
+	def score_option_changed(self):
+		if self.busy: return
+		s = str(self.score_options.currentText())
+		self.target().set_column_score_key(s)
+		self.target().regen_dl()
+			
 	def sym_toggled(self):
 		return self.symtog.isChecked()
 			
@@ -1140,7 +1455,110 @@ class EMSymInspector(QtGui.QWidget):
 		self.tracefile.setEnabled(bool)
 		self.lowrange.setEnabled(bool)
 		self.highrange.setEnabled(bool)
-
+		
+		
+	def get_transform_tab(self):
+		self.transform_tab = QtGui.QWidget()
+		self.transform_tab.vbl = QtGui.QVBoxLayout(self.transform_tab)
+		self.rotation_sliders.addWidgets(self.transform_tab.vbl)
+		
+		return self.transform_tab
+	
+	def arc_color_changed(self):
+		s = str(self.arc_color.currentText())
+		self.target().set_arc_color(s)
+		self.target().regen_dl()
+		
+	def small_column_color_changed(self):
+		s = str(self.small_column_color.currentText())
+		self.target().set_small_column_color(s)
+		self.target().regen_dl()
+		
+	def tall_column_color_changed(self):
+		s = str(self.tall_column_color.currentText())
+		self.target().set_tall_column_color(s)
+		self.target().regen_dl()
+	
+	def get_display_tab(self):
+		
+		self.display_tab = QtGui.QWidget()
+		self.display_tab.vbl = QtGui.QVBoxLayout(self.display_tab)
+				
+		self.glcontrast = ValSlider(self.display_tab,(1.0,5.0),"GLShd:")
+		self.glcontrast.setObjectName("GLShade")
+		self.glcontrast.setValue(1.0)
+		self.display_tab.vbl.addWidget(self.glcontrast)
+		
+		self.glbrightness = ValSlider(self.display_tab,(-1.0,0.0),"GLBst:")
+		self.glbrightness.setObjectName("GLBoost")
+		self.glbrightness.setValue(0.1)
+		self.glbrightness.setValue(0.0)
+		self.display_tab.vbl.addWidget(self.glbrightness)
+		
+		keys = self.target().colors.keys()
+		keys.sort()
+		self.arc_color = self.__get_combo(keys,self.target().arc_color)
+		hbl1 = QtGui.QHBoxLayout()
+		hbl1.addWidget(QtGui.QLabel("Arc Color:",self))
+		hbl1.addWidget(self.arc_color)
+		self.display_tab.vbl.addLayout(hbl1)
+		
+		self.tall_column_color = self.__get_combo(keys,self.target().tall_column_color)
+		hbl2 = QtGui.QHBoxLayout()
+		hbl2.addWidget(QtGui.QLabel("Higher Column Color:",self))
+		hbl2.addWidget(self.tall_column_color)
+		self.display_tab.vbl.addLayout(hbl2)
+		
+		
+		self.small_column_color = self.__get_combo(keys,self.target().small_column_color)
+		hbl3 = QtGui.QHBoxLayout()
+		hbl3.addWidget(QtGui.QLabel("Lower Column Color:",self))
+		hbl3.addWidget(self.small_column_color)
+		self.display_tab.vbl.addLayout(hbl3)
+		
+		self.width_scale = ValSlider(self,(0.05,10.0),"Point Width:")
+		self.width_scale.setValue(self.target().width_scale)
+		self.display_tab.vbl.addWidget(self.width_scale)
+		
+		self.height_scale = ValSlider(self,(0.05,10.0),"Point Height:")
+		self.height_scale.setValue(self.target().height_scale)
+		self.display_tab.vbl.addWidget(self.height_scale)
+		
+		self.arc_width_scale = ValSlider(self,(0.05,10.0),"Arc Width:")
+		self.arc_width_scale.setValue(self.target().arc_width_scale)
+		self.display_tab.vbl.addWidget(self.arc_width_scale)
+		
+		hbl_l = QtGui.QHBoxLayout()
+		arc_div_label = QtGui.QLabel("Arc Segments:")
+		arc_div_label.setAlignment(Qt.AlignLeft|Qt.AlignVCenter)
+		hbl_l.addWidget(arc_div_label)
+		self.arc_divisions = QtGui.QSpinBox(self)
+		self.arc_divisions.setRange(1,1000)
+		self.arc_divisions.setValue(int(self.target().arc_segments))
+		hbl_l.addWidget(self.arc_divisions)
+		self.display_tab.vbl.addLayout(hbl_l)
+		
+		QtCore.QObject.connect(self.width_scale, QtCore.SIGNAL("valueChanged"), self.target().set_width_scale)
+		QtCore.QObject.connect(self.height_scale, QtCore.SIGNAL("valueChanged"), self.target().set_height_scale)
+		QtCore.QObject.connect(self.arc_width_scale, QtCore.SIGNAL("valueChanged"), self.target().set_arc_width_scale)
+		QtCore.QObject.connect(self.glcontrast, QtCore.SIGNAL("valueChanged"), self.target().set_GL_contrast)
+		QtCore.QObject.connect(self.glbrightness, QtCore.SIGNAL("valueChanged"), self.target().set_GL_brightness)
+		QtCore.QObject.connect(self.arc_color,QtCore.SIGNAL("currentIndexChanged(int)"),self.arc_color_changed)
+		QtCore.QObject.connect(self.small_column_color,QtCore.SIGNAL("currentIndexChanged(int)"),self.small_column_color_changed)
+		QtCore.QObject.connect(self.tall_column_color,QtCore.SIGNAL("currentIndexChanged(int)"),self.tall_column_color_changed)
+		QtCore.QObject.connect(self.arc_divisions, QtCore.SIGNAL("valueChanged(int)"), self.target().set_arc_segments)
+		
+		return self.display_tab
+	
+	def __get_combo(self,keys,default):
+		combo = QtGui.QComboBox()
+		idx = 0
+		for i,k in enumerate(keys): 
+			combo.addItem(k)
+			if k == default: idx = i
+		combo.setCurrentIndex(idx)
+		return combo
+	
 	def get_main_tab(self):
 	
 		self.maintab = QtGui.QWidget()
@@ -1290,18 +1708,6 @@ class EMSymInspector(QtGui.QWidget):
 #		#end here
 #		
 		
-		
-#		self.glcontrast = ValSlider(maintab,(1.0,5.0),"GLShd:")
-#		self.glcontrast.setObjectName("GLShade")
-#		self.glcontrast.setValue(1.0)
-#		maintab.vbl.addWidget(self.glcontrast)
-#		
-#		self.glbrightness = ValSlider(maintab,(-1.0,0.0),"GLBst:")
-#		self.glbrightness.setObjectName("GLBoost")
-#		self.glbrightness.setValue(0.1)
-#		self.glbrightness.setValue(0.0)
-#		maintab.vbl.addWidget(self.glbrightness)
-		
 		#self.cbb = QtGui.QComboBox(maintab)
 		#self.vbl.addWidget(self.cbb)
 		#self.cbb.deleteLater()
@@ -1320,7 +1726,7 @@ class EMSymInspector(QtGui.QWidget):
 			QtCore.QObject.connect(self.tracefile, QtCore.SIGNAL("editingFinished()"), self.trace_update)
 			
 
-		self.rotation_sliders.addWidgets(maintab.vbl)
+		#self.rotation_sliders.addWidgets(maintab.vbl)
 		
 		return maintab
 

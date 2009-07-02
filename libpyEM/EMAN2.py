@@ -503,7 +503,20 @@ def display(img):
 		d.close()
 	#	os.system("v2 /tmp/img.hed")
 		os.system("e2display.py "+fsp)
-		
+
+def euler_display(emdata_list):
+	if len(emdata_list) == 0: return
+	if GUIMode:
+		from emimage3dsym import EM3DSymViewerModule
+		module = EM3DSymViewerModule()
+		if isinstance(emdata_list[0],EMData): module.set_emdata_list_as_data(emdata_list)
+		elif isinstance(emdata_list[0],Transform):
+			module.specify_eulers(emdata_list)
+			module.regen_dl()
+		app.show_specific(module)
+	else:
+		print "gui mode is disabled"
+
 def browse():
 	if GUIMode:
 		from emselector import EMBrowserModule
