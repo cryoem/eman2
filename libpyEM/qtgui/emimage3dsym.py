@@ -1347,7 +1347,7 @@ class EMSymInspector(QtGui.QWidget):
 		if self.score_options_hbl == None:
 			self.score_options_hbl = QtGui.QHBoxLayout()
 			self.score_options = self.__get_combo(options,default)
-			self.score_options_hbl.addWidget(QtGui.QLabel("Column Score:",self))
+			self.score_options_hbl.addWidget(QtGui.QLabel("Cylinder Score:",self))
 			self.score_options_hbl.addWidget(self.score_options)
 			self.display_tab.vbl.addLayout(self.score_options_hbl)
 			
@@ -1505,22 +1505,22 @@ class EMSymInspector(QtGui.QWidget):
 		
 		self.tall_column_color = self.__get_combo(keys,self.target().tall_column_color)
 		hbl2 = QtGui.QHBoxLayout()
-		hbl2.addWidget(QtGui.QLabel("Higher Column Color:",self))
+		hbl2.addWidget(QtGui.QLabel("Higher Cylinder Color:",self))
 		hbl2.addWidget(self.tall_column_color)
 		self.display_tab.vbl.addLayout(hbl2)
 		
 		
 		self.small_column_color = self.__get_combo(keys,self.target().small_column_color)
 		hbl3 = QtGui.QHBoxLayout()
-		hbl3.addWidget(QtGui.QLabel("Lower Column Color:",self))
+		hbl3.addWidget(QtGui.QLabel("Lower Cylinder Color:",self))
 		hbl3.addWidget(self.small_column_color)
 		self.display_tab.vbl.addLayout(hbl3)
 		
-		self.width_scale = ValSlider(self,(0.05,10.0),"Point Width:")
+		self.width_scale = ValSlider(self,(0.05,10.0),"Cylinder Width:")
 		self.width_scale.setValue(self.target().width_scale)
 		self.display_tab.vbl.addWidget(self.width_scale)
 		
-		self.height_scale = ValSlider(self,(0.05,10.0),"Point Height:")
+		self.height_scale = ValSlider(self,(0.05,10.0),"Cylinder Height:")
 		self.height_scale.setValue(self.target().height_scale)
 		self.display_tab.vbl.addWidget(self.height_scale)
 		

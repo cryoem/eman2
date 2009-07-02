@@ -5095,8 +5095,7 @@ void ToMassCenterProcessor::process_inplace(EMData * image)
 		return;
 	}
 
-	int int_shift_only = params["int_shift_only"];
-//	image->process_inplace("normalize");
+	int int_shift_only = params.set_default("int_shift_only",1);
 
 	FloatPoint com = image->calc_center_of_mass();
 
@@ -5112,7 +5111,15 @@ void ToMassCenterProcessor::process_inplace(EMData * image)
 			dz = -(int)(floor(com[1] + 0.5f) - nz / 2);
 		}
 		image->translate(dx, dy, dz);
-
+		
+		Transform t;
+		t.set_trans(dx,dy,dz);
+		
+		if (nz > 1) {
+			image->set_attr("xform.align3d",&t);
+		} else {
+			image->set_attr("xform.align2d",&t);
+		}
 	}
 	else {
 		float dx = -(com[0] - nx / 2);
@@ -5122,6 +5129,15 @@ void ToMassCenterProcessor::process_inplace(EMData * image)
 			dz = -(com[2] - nz / 2);
 		}
 		image->translate(dx, dy, dz);
+		
+		Transform t;
+		t.set_trans(dx,dy,dz);
+		
+		if (nz > 1) {
+			image->set_attr("xform.align3d",&t);
+		} else {
+			image->set_attr("xform.align2d",&t);
+		}
 	}
 }
 
@@ -5132,7 +5148,7 @@ void PhaseToMassCenterProcessor::process_inplace(EMData * image)
 		return;
 	}
 
-	int int_shift_only = params["int_shift_only"];
+	int int_shift_only = params.set_default("int_shift_only",1);
 
 	vector<float> pcog = image->phase_cog();
 
@@ -5142,12 +5158,23 @@ void PhaseToMassCenterProcessor::process_inplace(EMData * image)
 		int dx=-int(pcog[0]+0.5f),dy=0,dz=0;
 		if ( dims >= 2 ) dy = -int(pcog[1]+0.5);
 		if ( dims == 3 ) dz = -int(pcog[2]+0.5);
+		
+		Transform t;
+		t.set_trans(dx,dy,dz);
+		if (dims == 3) image->set_attr("xform.align3d",&t);
+		else if (dims == 2) image->set_attr("xform.align2d",&t);
+		
 		image->translate(dx,dy,dz);
 	} else  {
 		float dx=-pcog[0],dy=0.0,dz=0.0;
 		if ( dims >= 2 ) dy = -pcog[1];
 		if ( dims == 3 ) dz = -pcog[2];
 		image->translate(dx,dy,dz);
+		
+		Transform t;
+		t.set_trans(dx,dy,dz);
+		if (dims == 3) image->set_attr("xform.align3d",&t);
+		else if (dims == 2) image->set_attr("xform.align2d",&t);
 	}
 }
 
@@ -5165,11 +5192,15 @@ void ACFCenterProcessor::process_inplace(EMData * image)
 	if ( image->get_ndim() == 3 ) {
 		Transform* t = aligned->get_attr("xform.align3d");
 		image->translate(t->get_trans());
+		image->set_attr("xform.align3d",t);
+		delete t;
 	}
 	else {
 		// assumption is the image is 2D which may be  false
 		Transform* t = aligned->get_attr("xform.align2d");
 		image->translate(t->get_trans());
+		image->set_attr("xform.align2d",t);
+		delete t;
 	}
 
 	delete aligned;

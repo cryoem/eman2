@@ -1031,8 +1031,6 @@ of these occasional errors"""
 				
 			# binary data
 			if not nodata:
-				
-
 				if region != None: ret.to_zero() # this has to occur in situations where the clip region goes outside the image
 				if r.has_key("data_path"):
 					p,l=r["data_path"].split("*")

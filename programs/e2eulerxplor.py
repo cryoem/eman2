@@ -115,6 +115,7 @@ def normalize_ptcl(ptcl):
 	
 def get_header(filename,i):
 	if filename[0:4] == "bdb:":
+		print "get header from db"
 		db = db_open_dict(filename)
 		return db.get_header(i)
 	else:
@@ -372,16 +373,16 @@ class ClassOrientationEvents(NavigationEvents,QtCore.QObject):
 #		else:
 #			self.nc = None
 #			self.intsct = None
-	def repeat_event(self):
-		self.reset()
-		if self.nc != None and self.intsct != None:
-			self.parent().set_point_colors(self.nc)
-			if self.intsct >= 0:self.emit(QtCore.SIGNAL("point_selected"),self.intsct)
-			
-	def reset(self):
-		self.old_intersection = None
-		self.old_color = None
-	
+#	def repeat_event(self):
+#		self.reset()
+#		if self.nc != None and self.intsct != None:
+#			self.parent().set_point_colors(self.nc)
+#			if self.intsct >= 0:self.emit(QtCore.SIGNAL("point_selected"),self.intsct)
+#			
+#	def reset(self):
+#		self.old_intersection = None
+#		self.old_color = None
+#	
 class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 	def get_desktop_hint(self): return "image"
 	def keyPressEvent(self,event):
@@ -605,12 +606,14 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 
 		self.specify_eulers(eulers)
 		from emimagemx import EMDataListCache
-		self.set_emdata_list_as_data(EMDataListCache(self.average_file),"ptcl_repr")
+		a = EMData.read_images(self.average_file)
+#		self.set_emdata_list_as_data(EMDataListCache(self.average_file),"ptcl_repr")
+		self.set_emdata_list_as_data(a,"ptcl_repr")
 		self.force_update = True
 		self.au_point_selected(self.class_idx,None)
 		# if we have the same number of Eulers we can update everything
-		if self.previous_len == len(eulers) : self.events_handlers["inspect"].repeat_event()
-		else:self.events_handlers["inspect"].reset()
+#		if self.previous_len == len(eulers) : self.events_handlers["inspect"].repeat_event()
+#		else:self.events_handlers["inspect"].reset()
 		self.previous_len = len(eulers)
 		self.updateGL()
 		get_application().setOverrideCursor(Qt.ArrowCursor)
@@ -643,15 +646,19 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 		
 		self.arc_anim_points = None
 		self.projection = None
-		try:
-			self.average = self.euler_data[i]
+		if 1:
+			print self.average_file,i
+			self.average = EMData(self.average_file,i)
+			self.average["nx"]
+			self.average.write_image("test.hdf")
+			self.average = self.euler_data[i]#
 			self.projection = EMData(self.projection_file,self.average.get_attr("projection_image_idx"))
 			self.average.process_inplace("normalize.toimage.lsq",{"to":self.projection})
 			try:
 				self.class_idx = self.average.get_attr("projection_image_idx")
 			except:
 				self.class_idx = -1
-		except: self.average = None
+		else: self.average = None
 		
 		if self.projection  == None and self.average == None: return
 		
