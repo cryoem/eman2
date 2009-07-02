@@ -390,15 +390,15 @@ def runEMDCServer(port,verbose):
 	EMDCTaskHandler.clients={}
 
 	if port!=None and port>0 : 
-#		server = SocketServer.ThreadingTCPServer(("", port), EMDCTaskHandler)	# "" is the hostname and will bind to any IPV4 interface/address
-		server = SocketServer.TCPServer(("", port), EMDCTaskHandler)	# "" is the hostname and will bind to any IPV4 interface/address
+		server = SocketServer.ThreadingTCPServer(("", port), EMDCTaskHandler)	# "" is the hostname and will bind to any IPV4 interface/address
+#		server = SocketServer.TCPServer(("", port), EMDCTaskHandler)	# "" is the hostname and will bind to any IPV4 interface/address
 		if verbose: print server
 	# EMAN2 will use ports in the range 9900-9999
 	else :
 		for port in range(9990,10000):
 			try: 
-				server = SocketServer.TCPServer(("", port), EMDCTaskHandler)
-#				server = SocketServer.ThreadingTCPServer(("", port), EMDCTaskHandler)
+#				server = SocketServer.TCPServer(("", port), EMDCTaskHandler)
+				server = SocketServer.ThreadingTCPServer(("", port), EMDCTaskHandler)
 				print "Server started on %s port %d"%(socket.gethostname(),port)
 			except:
 				if verbose: print "Port %d unavailable"%port
