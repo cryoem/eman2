@@ -3418,7 +3418,7 @@ class E2MakeSetTask(E2ParticleExamineTask):
 				continue
 			if len(filenames[0]) > 3 and filenames[0][:4] == "bdb:":
 
-				success,cmd = self.make_v_stack(filenames,base_stack_root+key,"stacks",params["exclude_bad"])
+				success,cmd = self.make_v_stack(filenames,base_stack_root+key,"sets",params["exclude_bad"])
 				
 			else:
 				EMErrorMessageDisplay.run("The generation of stacks for flat (non database) files is currently disabled. A particle set (%s) is being ignored" %stack_type_map[key], "Warning")
