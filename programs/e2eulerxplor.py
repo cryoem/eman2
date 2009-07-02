@@ -399,6 +399,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 		EM3DSymViewerModule.__init__(self,application,inspector_go=inspector_go,ensure_gl_context=ensure_gl_context,application_control=application_control)
 		InputEventsManager.__init__(self)
 		Animator.__init__(self)
+		self.height_scale = 8.0
 		self.__init_events_handlers()
 		self.projection_file = None
 		self.average_file = None
