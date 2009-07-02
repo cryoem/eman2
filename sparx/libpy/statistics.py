@@ -5334,16 +5334,20 @@ def k_means_match_pwa(PART, lim = 50):
 	for i in xrange(nl): ITE *= (Nmax[i] - 1)
 	ct  = [0] * nl
 	RES = []
-	for ite in xrange(ITE):
-	    update_ct(nl - 1, ct, Nmax)
-	    lmax = []
-	    for k in xrange(1, np): lmax.append(MAX[0][k][ct[k - 1]])
-	    track = []
-	    track.append(lmax[0][1][0])
-	    track.append(lmax[0][1][1])
-	    res = agree(1, MAX, lmax, np, track)
-	    if res is not None: RES.append(res)
-	    ct[nl - 1] += 1
+	if np > 2:
+		for ite in xrange(ITE):
+		    update_ct(nl - 1, ct, Nmax)
+		    lmax = []
+		    for k in xrange(1, np): lmax.append(MAX[0][k][ct[k - 1]])
+		    track = []
+		    track.append(lmax[0][1][0])
+		    track.append(lmax[0][1][1])
+		    res = agree(1, MAX, lmax, np, track)
+		    if res is not None: RES.append(res)
+		    ct[nl - 1] += 1
+	else:
+		RES = []
+		for imax in MAX[0][1]: RES.append([imax[1][0], imax[1][1]])
 	
 	return RES
 
