@@ -5324,11 +5324,12 @@ def k_means_match_pwa(PART, lim = 50):
 		mat = get_mat(PART[i], PART[j])
 		MAT.append(mat)
 		MAX[i][j] = max_g(mat)
+	
 	# matching
 	nl   = np - 1
 	Nmax = []
 	for i in xrange(1, np):
-	    s = min(len(MAX[0][i]), lim)
+	    s = min(len(MAX[0][i])+1, lim)
 	    Nmax.append(s)
 	ITE = 1
 	for i in xrange(nl): ITE *= (Nmax[i] - 1)
