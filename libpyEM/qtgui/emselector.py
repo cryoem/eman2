@@ -175,6 +175,8 @@ def EMSelectorTemplate(Type):
 				self.groupbox.setEnabled(False)
 				
 				self.bottom_hbl2.addWidget(self.groupbox)
+			else:
+				self.ok_button.setDefault(True)
 			
 			if Type != QtGui.QDialog:
 				self.resize(480,480)
