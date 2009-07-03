@@ -1093,7 +1093,7 @@ class GUIctf(QtGui.QWidget):
 
 		tmp=db_parms[name]
 		tmp[0]=ctf
-		tmp[4]=self.data[val][6]
+		tmp[3]=self.data[val][6]
 		db_parms[name] = tmp
 
 	def on_recall_params(self):
@@ -1120,6 +1120,14 @@ class GUIctf(QtGui.QWidget):
 		# self.data[n] contains filename,EMAN2CTF,im_1d,bg_1d,im_2d,bg_2d,qual
 		tmp=list(self.data[self.curset])
 		ctf=ctf_fit(tmp[2],tmp[3],tmp[4],tmp[5],tmp[1].voltage,tmp[1].cs,tmp[1].ampcont,tmp[1].apix,bgadj=not self.nosmooth,autohp=self.autohp,dfhint=self.sdefocus.value)
+
+		# refit will also write parameters back to the db
+		db_parms=db_open_dict("bdb:e2ctf.parms")
+		name=get_file_tag(tmp[0])
+		tmp=db_parms[name]
+		tmp[0]=ctf.to_string()		# the 5 is a default quality value
+		db_parms[name]=tmp
+
 		self.data[self.curset][1]=ctf
 		self.newSet(self.curset)
 	
@@ -1279,7 +1287,7 @@ class GUIctf(QtGui.QWidget):
 
 		db_parms=db_open_dict("bdb:e2ctf.parms")
 		tmp=db_parms[name]
-		tmp[4]=self.data[val][6]
+		tmp[3]=self.data[val][6]
 		db_parms[name] = tmp
 
 	def imgmousedown(self,event) :
