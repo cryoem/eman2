@@ -131,7 +131,9 @@ class EMGUIModule(EventsEmitterAndReciever):
 			app.ensure_gl_context(self)
 		
 		EventsEmitterAndReciever.__init__(self)
-		
+		self.disable_inspector = False
+	
+	def enable_inspector(self,val=True): self.disable_inspector = not val
 	def emitter(self):
 		return self.core_object
 	
@@ -171,6 +173,7 @@ class EMGUIModule(EventsEmitterAndReciever):
 		return self.em_qt_inspector_widget
 	
 	def show_inspector(self,force=0):
+		if self.disable_inspector: return
 		self.emit(QtCore.SIGNAL("inspector_shown")) # debug only
 		app = get_application()
 		if app == None:

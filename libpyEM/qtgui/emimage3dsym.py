@@ -310,6 +310,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 		self.display_euler = True # Display sphere points flag
 		self.display_tri = False # Display asymm unit triangles flag
 		self.display_arc = True # Display great arcs flag
+		self.display_all_syms = False
 #		self.sym_object = None
 		self.update_sphere_points_dl = True # A way to force the update of the display list for the points on the unit sphere
 		
@@ -942,6 +943,10 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 #			self.cylinder_to_from(points[i],points[i+1])
 #		glEndList()
 		self.updateGL()
+		
+	def set_display_all_syms(self,val):
+		self.display_all_syms = val
+		self.updateGL()
 			
 	def render(self):
 		if self.vdtools == None:
@@ -992,7 +997,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 				dz = 5
 				a["tz"] = dz
 				self.sym_object.insert_params(a)
-			if self.inspector != None and self.inspector.sym_toggled():
+			if self.display_all_syms:
 				for i in range(1,self.sym_object.get_nsym()):
 					t = self.sym_object.get_sym(i)
 					t.invert()
@@ -1012,7 +1017,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 			if ( self.sym_object.is_h_sym() != True ):
 				glCallList(self.asym_u_triangles_dl)
 			
-				if self.inspector != None and self.inspector.sym_toggled():
+				if self.display_all_syms:
 					for i in range(1,self.sym_object.get_nsym()):
 						t = self.sym_object.get_sym(i)
 						t.invert()
@@ -1040,7 +1045,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 				a["tz"] = dz
 				self.sym_object.insert_params(a)
 		
-			if self.inspector != None and self.inspector.sym_toggled():
+			if self.display_all_syms:
 				#for i in range(1,self.sym_object.get_nsym()):
 					#t = self.sym_object.get_sym(i)
 				for t in self.sym_object.get_syms():
@@ -1171,7 +1176,7 @@ class EMSymViewerWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMat
 		glLightfv(GL_LIGHT0, GL_POSITION, [0.5,0.7,11.,0.])
 		GL.glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
 		glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_TRUE)
-		GL.glClearColor(1,1,1,1)
+		GL.glClearColor(0.875,0.875,0.875,1)
 		#GL.glClearAccum(0,0,0,0)
 	
 		glShadeModel(GL_SMOOTH)
@@ -1232,7 +1237,356 @@ class EMSymViewerWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMat
 		width = self.aspect*height
 		
 		return [width,height]
+
+
+class SparseSymChoicesWidgets:
+	'''
+	An encapsulation of the most basic of symmetry inspector widgits
+	Used by both EMSymChoiceDialog and EMSymInspector
+	'''
+	def __init__(self,widget,target):
+		'''
+		@param widget some kind of QtWidget, used as the first argument when initializing Validators (really)
+		@param target an EM3DSymViewerModule instance
+		
+		The target is very important, the signals emitted by this object are connect to functions in the 
+		EM3DSymVeiwerModule
+		'''
+		self.widget = weakref.ref(widget)
+		self.target = weakref.ref(target)
 	
+	def add_top_buttons(self,vbl):
+		'''
+		Adds 4 buttons in a grid
+		| Display Eulers | Display Triangles |
+		| Display Arcs   | All Syms          |
+		@param vbl a QtGui.QVBoxLayout - all widgets and layouts are added to it
+		'''
+		self.button_hbl1 = QtGui.QHBoxLayout()
+		self.symtogdisplay = QtGui.QPushButton("Display Eulers")
+		self.symtogdisplay.setCheckable(1)
+		self.symtogdisplay.setChecked(1)
+		self.button_hbl1.addWidget(self.symtogdisplay)
+		
+		self.triangletog = QtGui.QPushButton("Display Triangles")
+		self.triangletog.setCheckable(1)
+		self.triangletog.setChecked(0)
+		self.button_hbl1.addWidget(self.triangletog)
+		
+		vbl.addLayout(self.button_hbl1)
+		
+		self.button_hbl2 = QtGui.QHBoxLayout()
+		
+		self.arctog = QtGui.QPushButton("Display Arcs")
+		self.arctog.setCheckable(1)
+		self.arctog.setChecked(1)
+		self.button_hbl2.addWidget(self.arctog)
+		
+		self.symtog = QtGui.QPushButton("All syms")
+		self.symtog.setCheckable(1)
+		self.button_hbl2.addWidget(self.symtog)
+		vbl.addLayout(self.button_hbl2)
+		
+		
+		QtCore.QObject.connect(self.symtog, QtCore.SIGNAL("toggled(bool)"), self.target().set_display_all_syms)
+		QtCore.QObject.connect(self.symtogdisplay, QtCore.SIGNAL("clicked(bool)"), self.target().toggle_sym_display)
+		QtCore.QObject.connect(self.triangletog, QtCore.SIGNAL("clicked(bool)"), self.target().triangletog)
+		QtCore.QObject.connect(self.arctog, QtCore.SIGNAL("clicked(bool)"), self.target().arctog)
+		
+	def add_symmetry_options(self,vbl,enable_orient_gen=True):
+		'''
+		Add common symmetry options to a QtGui.QVBoxLayout
+		@param vbl a QtGui.QVBoxLayout - all widgets and layouts are added to it
+		@param enable_orient_gen a boolean indicating whether or not the user should be permitted to change the distribution of eulers - this is False when using E2eulerxplor to examine refinement results
+		
+		Makes QtCore.QObject connections to functions of self.target() (see bottom of this function)
+		'''
+		
+		self.maintab = QtGui.QWidget()
+		maintab = self.maintab
+		maintab.vbl = QtGui.QVBoxLayout(self.maintab)
+		maintab.vbl.setMargin(0)
+		maintab.vbl.setSpacing(6)
+		maintab.vbl.setObjectName("Main")
+		
+		self.hbl_sym = QtGui.QHBoxLayout()
+		self.hbl_sym.setMargin(0)
+		self.hbl_sym.setSpacing(6)
+		self.hbl_sym.setObjectName("Sym")
+		maintab.vbl.addLayout(self.hbl_sym)
+		
+		self.sym_combo = QtGui.QComboBox(maintab)
+		self.symmetries = []
+		self.symmetries.append(' Icosahedral ')
+		self.symmetries.append(' Octahedral ')
+		self.symmetries.append(' Tetrahedral ')
+		self.symmetries.append(' D ')
+		self.symmetries.append(' C ')
+		self.symmetries.append(' H ')
+		self.sym_map = {}
+		self.sym_map[" Icosahedral "] = "icos"
+		self.sym_map[" Octahedral "] = "oct"
+		self.sym_map[" Tetrahedral "] = "tet"
+		self.sym_map[" D "] = "d"
+		self.sym_map[" C "] = "c"
+		self.sym_map[" H "] = "h"
+		
+		idx_default = 0
+		for idx,i in enumerate(self.symmetries): 
+			self.sym_combo.addItem(i)
+				
+		self.sym_combo.setCurrentIndex(idx_default)
+		self.hbl_sym.addWidget(self.sym_combo)
+		
+		self.sym_label = QtGui.QLabel()
+		self.sym_label.setText('C/D/H sym')
+		self.hbl_sym.addWidget(self.sym_label)
+		
+		self.pos_int_validator = QtGui.QIntValidator(self.widget())
+		self.pos_int_validator.setBottom(1)
+		self.sym_text = QtGui.QLineEdit()
+		self.sym_text.setValidator(self.pos_int_validator)
+		self.sym_text.setText(str(self.target().get_prop()))
+		self.sym_text.setFixedWidth(50)
+		self.hbl_sym.addWidget(self.sym_text)
+		self.sym_text.setEnabled(False)
+		
+		if enable_orient_gen:
+			self.angle_label = QtGui.QComboBox()
+			self.angle_label.addItem('delta')
+			self.angle_label.addItem('n')
+			self.hbl_sym.addWidget(self.angle_label)
+			
+			self.pos_double_validator = QtGui.QDoubleValidator(self.widget())
+			self.pos_double_validator.setBottom(0.05)
+			self.prop_text = QtGui.QLineEdit()
+			self.prop_text.setValidator(self.pos_double_validator)
+			self.prop_text.setText(str(self.target().get_prop()))
+			self.prop_text.setFixedWidth(50)
+			self.hbl_sym.addWidget(self.prop_text)
+			
+			self.hbl_sym2 = QtGui.QHBoxLayout()
+			self.hbl_sym2.setMargin(0)
+			self.hbl_sym2.setSpacing(6)
+			self.hbl_sym2.setObjectName("Sym2")
+			maintab.vbl.addLayout(self.hbl_sym2)
+			
+			self.og_label = QtGui.QLabel()
+			self.og_label.setText('Strategy')
+			self.hbl_sym2.addWidget(self.og_label)
+			
+			self.strategy_label = QtGui.QComboBox()
+			l = dump_orientgens_list()
+				
+			n = len(l)
+			for i in l:
+				self.strategy_label.addItem(str(i))
+				
+			self.strategy_label.setCurrentIndex(n-1)
+			self.hbl_sym2.addWidget(self.strategy_label)
+			
+			self.mirror_checkbox = QtGui.QCheckBox("Mirror")
+			self.hbl_sym2.addWidget(self.mirror_checkbox)
+			self.mirror_checkbox.setChecked(self.target().mirror_enabled())
+		else:
+			self.mirror_checkbox = QtGui.QCheckBox("Mirror")
+			self.hbl_sym.addWidget(self.mirror_checkbox)
+			self.mirror_checkbox.setChecked(self.target().mirror_enabled())
+			
+		
+		QtCore.QObject.connect(self.sym_combo, QtCore.SIGNAL("currentIndexChanged(QString)"), self.sym_changed)
+		QtCore.QObject.connect(self.sym_text, QtCore.SIGNAL("editingFinished()"), self.sym_number_changed)
+
+		if enable_orient_gen:
+			QtCore.QObject.connect(self.prop_text, QtCore.SIGNAL("editingFinished()"), self.prop_changed)
+			QtCore.QObject.connect(self.angle_label, QtCore.SIGNAL("currentIndexChanged(QString)"), self.angle_label_changed)
+			QtCore.QObject.connect(self.strategy_label, QtCore.SIGNAL("currentIndexChanged(QString)"), self.strategy_changed)
+		QtCore.QObject.connect(self.mirror_checkbox, QtCore.SIGNAL("stateChanged(int)"), self.set_mirror)
+	
+		vbl.addWidget(maintab)
+		
+	def set_mirror(self,val):
+		'''
+		This function is a slot for the signal that is emitted when the self.mirror_checkbox is checked
+	 	@param val the value that was delivered by Qt, indicated whether or not the checkbox is checked 
+		'''
+		self.target().set_mirror(val)
+		self.target().regen_dl()
+	
+	def prop_changed(self):
+		'''
+		This function is a slot for the signal that is emitted when the self.prop_text text box is altered 
+		'''
+		self.target().set_prop(float(self.prop_text.text()))
+		self.target().regen_dl()
+		
+	def angle_label_changed(self,string):
+		'''
+		This function is a slot for the signal that is emitted when the self.angle_label combo box has its current index altered
+		@param the current text of self.angle_label
+		'''
+		self.target().set_angle_label(str(string))
+		self.target().regen_dl()
+		
+	def strategy_changed(self,string):
+		'''
+		This function is a slot for the signal that is emitted when the self.strategy_label combo box has its current index altered
+		@param the current text of self.strategy_label
+		'''
+		self.target().set_strategy(str(string))
+		self.target().regen_dl()
+		
+	def sym_number_changed(self):
+		'''
+		This function is a slot for the signal that is emitted when the self.sym_tex text box is altered 
+		'''
+		self.target().set_symmetry(self.get_sym())
+		self.target().regen_dl()
+		
+	def sym_changed(self, sym):
+		'''
+		This function is a slot for the signal that is emitted when the self.sym_label combo box has its current index altered
+		@param the current text of self.sym_label
+		'''
+		if sym == ' D ' or sym == ' C ' or sym == ' H ':
+			self.sym_text.setEnabled(True)
+		else:
+			self.sym_text.setEnabled(False)
+		
+		self.target().set_symmetry(self.get_sym())
+		self.target().regen_dl()
+
+	def set_sym(self,sym):
+		'''
+		A way of setting the widgets created by this object
+		@param sym a symmetry string such as "c3", "icos" etc
+		'''
+		s = sym.lower()
+		if s == "icos":
+			self.sym_combo.setCurrentIndex(0)
+		elif s == "oct":
+			self.sym_combo.setCurrentIndex(1)
+		elif s == "tet":
+			self.sym_combo.setCurrentIndex(2)
+		else:
+			try:
+				nsym = s[1:]
+			except:
+				print "can't interpret",sym
+				return
+			self.sym_text.setEnabled(True)
+			if s[0] == "d":
+				self.sym_combo.setCurrentIndex(3)
+			elif s[0] == "c":
+				self.sym_combo.setCurrentIndex(4)
+			elif s[0] == "h":
+				self.sym_combo.setCurrentIndex(5)
+			else:
+				print "can't interpret",sym
+				return
+			
+			self.sym_text.setText(s[1:])
+			self.target().regen_dl()
+			
+	def get_sym(self):
+		'''
+		A convenient way to get the symmetry currently defined by the state of the widgets
+		@return a symmetry string such as "c3", "icos", "h3" etc
+		'''
+		sym = self.sym_map[str(self.sym_combo.currentText())]
+		if sym in ['c','d','h']:
+			sym = sym+self.sym_text.displayText()
+		return str(sym)
+	
+	
+	def get_params_dict(self):
+		'''
+		This function is called when the user hits ok in the EMSymChoiceDialog
+		@return a dictionary that embodies the main parameters associated with this object
+		'''
+		d = {}
+		
+		d["sym"] = self.get_sym()
+		d["orientgen"] = str(self.strategy_label.currentText())
+		d["approach"] = str(self.angle_label.currentText())
+		d["value"] = float(self.prop_text.text())
+		d["inc_mirror"] =  self.mirror_checkbox.isChecked()
+		
+		return d
+
+class EMSymChoiceDialog(QtGui.QDialog):
+	'''
+	This is a dialog one can use to get the parameters you can use for 
+	generating orientations evenly covering the asymmetric unit (etc)
+	Just call exec_ and get the return value - if it's a dictionary
+	then the user hit ok, if it's None then they hit cancel
+	'''
+	def __init__(self,sym="d7"):
+		'''
+		@param sym some kind of symmetry, such as "d7", "icos" etc
+		'''
+		QtGui.QDialog.__init__(self)
+		self.target = EM3DSymViewerModule(inspector_go=False)
+		self.target.enable_inspector(False)
+		
+		self.setWindowTitle("Choose Distribution Parameters")
+		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "eulerxplor.png"))
+
+		
+
+		self.vbl = QtGui.QVBoxLayout(self)
+		self.vbl.setMargin(0)
+		self.vbl.setSpacing(6)
+		self.vbl.setObjectName("vbl")
+		
+		self.sparse_syms_widgets = SparseSymChoicesWidgets(self,self.target)
+		self.sparse_syms_widgets.add_top_buttons(self.vbl)
+		self.sparse_syms_widgets.add_symmetry_options(self.vbl)
+		
+		
+		self.vbl.addWidget(self.target.get_qt_widget(),10)
+		
+		
+		self.button_hbl = QtGui.QHBoxLayout()
+		self.ok = QtGui.QPushButton("Ok")
+		self.ok.setDefault(True)
+		self.cancel = QtGui.QPushButton("Cancel")
+		self.button_hbl.addWidget(self.cancel )
+		self.button_hbl.addWidget(self.ok )
+		self.vbl.addLayout(self.button_hbl)
+		
+		self.resize(300,400)
+	
+		self.dialog_result = None
+	
+		QtCore.QObject.connect(self.ok, QtCore.SIGNAL("clicked(bool)"), self.on_ok)
+		QtCore.QObject.connect(self.cancel, QtCore.SIGNAL("clicked(bool)"), self.on_cancel)
+		
+		self.sparse_syms_widgets.set_sym(sym)
+		self.target.set_symmetry(sym)
+		self.target.regen_dl()
+		
+	def on_ok(self,unused=None):
+		'''
+		Slot which is connected to the self.ok button
+		'''
+		self.dialog_result = self.sparse_syms_widgets.get_params_dict()
+		self.accept()
+		
+	def on_cancel(self,unused=None):
+		'''
+		Slot which is connected to the self.cancel button
+		'''
+		self.accept()
+	
+	def exec_(self):
+		'''
+		Customized exec_ function
+		@return None if the user hit cancel or a dictionary containing important parameters if the user hit ok
+		'''
+		QtGui.QDialog.exec_(self)
+		return self.dialog_result
+		
 	
 class EMSymInspector(QtGui.QWidget):
 	def __init__(self,target,enable_trace=True,enable_og=True) :
@@ -1249,51 +1603,10 @@ class EMSymInspector(QtGui.QWidget):
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
 		
-		self.hbl = QtGui.QHBoxLayout()
-		self.hbl.setMargin(0)
-		self.hbl.setSpacing(6)
-		self.hbl.setObjectName("hbl")
-		self.vbl.addLayout(self.hbl)
+		self.sparse_syms_widgets = SparseSymChoicesWidgets(self,self.target())
+		self.sparse_syms_widgets.add_top_buttons(self.vbl)
 		
-		
-		self.vbl2 = QtGui.QVBoxLayout()
-		self.vbl2.setMargin(0)
-		self.vbl2.setSpacing(6)
-		self.vbl2.setObjectName("vbl2")
-		self.hbl.addLayout(self.vbl2)
-	
-		#self.cubetog = QtGui.QPushButton("Cube")
-		#self.cubetog.setCheckable(1)
-		#self.vbl2.addWidget(self.cubetog)
-		
-		self.button_hbl1 = QtGui.QHBoxLayout()
-		
-		self.symtogdisplay = QtGui.QPushButton("Display Eulers")
-		self.symtogdisplay.setCheckable(1)
-		self.symtogdisplay.setChecked(1)
-		self.button_hbl1.addWidget(self.symtogdisplay)
-		
-		self.triangletog = QtGui.QPushButton("Display Triangles")
-		self.triangletog.setCheckable(1)
-		self.triangletog.setChecked(0)
-		self.button_hbl1.addWidget(self.triangletog)
-		
-		self.vbl2.addLayout(self.button_hbl1)
-		
-		self.button_hbl2 = QtGui.QHBoxLayout()
-		
-		self.arctog = QtGui.QPushButton("Display Arcs")
-		self.arctog.setCheckable(1)
-		self.arctog.setChecked(1)
-		self.button_hbl2.addWidget(self.arctog)
-		
-		self.symtog = QtGui.QPushButton("All syms")
-		self.symtog.setCheckable(1)
-		self.button_hbl2.addWidget(self.symtog)
-		self.vbl2.addLayout(self.button_hbl2)
-		
-		
-		self.vbl.addWidget(self.get_main_tab())
+		self.add_symmetry_options()
 		self.set_sym(self.target().get_sym())
 		self.n3_showing = False
 		
@@ -1305,17 +1618,6 @@ class EMSymInspector(QtGui.QWidget):
 		self.file = None
 		self.lr = -1
 		self.hr = -1
-		
-		
-		QtCore.QObject.connect(self.sym_combo, QtCore.SIGNAL("currentIndexChanged(QString)"), self.sym_changed)
-		QtCore.QObject.connect(self.sym_text, QtCore.SIGNAL("editingFinished()"), self.sym_number_changed)
-		#QtCore.QObject.connect(self.cubetog, QtCore.SIGNAL("toggled(bool)"), target.toggle_cube)
-		QtCore.QObject.connect(self.symtog, QtCore.SIGNAL("toggled(bool)"), target.updateGL)
-		QtCore.QObject.connect(self.symtogdisplay, QtCore.SIGNAL("clicked(bool)"), target.toggle_sym_display)
-		QtCore.QObject.connect(self.triangletog, QtCore.SIGNAL("clicked(bool)"), target.triangletog)
-		QtCore.QObject.connect(self.arctog, QtCore.SIGNAL("clicked(bool)"), target.arctog)
-		
-		#QtCore.QObject.connect(self.cbb, QtCore.SIGNAL("currentIndexChanged(QString)"), target.setColor)
 	
 	def update_rotations(self,t3d):
 		self.rotation_sliders.update_rotations(t3d)
@@ -1365,77 +1667,12 @@ class EMSymInspector(QtGui.QWidget):
 		self.target().set_column_score_key(s)
 		self.target().regen_dl()
 			
-	def sym_toggled(self):
-		return self.symtog.isChecked()
-			
-	def angle_label_changed(self,string):
-		self.target().set_angle_label(string)
-		self.target().regen_dl()
-		
-	def strategy_changed(self,string):
-		self.target().set_strategy(string)
-		self.target().regen_dl()
-
-	def set_mirror(self,val):
-		self.target().set_mirror(val)
-		self.target().regen_dl()
-
-	def sym_number_changed(self):
-		self.target().set_symmetry(self.get_sym())
-		self.target().regen_dl()
-		
-	def sym_changed(self, sym):
-		if sym == ' D ' or sym == ' C ' or sym == ' H ':
-			self.sym_text.setEnabled(True)
-		else:
-			self.sym_text.setEnabled(False)
-		
-		self.target().set_symmetry(self.get_sym())
-		self.target().regen_dl()
-
 	def set_sym(self,sym):
-		s = sym.lower()
-		if s == "icos":
-			self.sym_combo.setCurrentIndex(0)
-		elif s == "oct":
-			self.sym_combo.setCurrentIndex(1)
-		elif s == "tet":
-			self.sym_combo.setCurrentIndex(2)
-		else:
-			try:
-				nsym = s[1:]
-			except:
-				print "can't interpret",sym
-				return
-			self.sym_text.setEnabled(True)
-			if s[0] == "d":
-				self.sym_combo.setCurrentIndex(3)
-			elif s[0] == "c":
-				self.sym_combo.setCurrentIndex(4)
-			elif s[0] == "h":
-				self.sym_combo.setCurrentIndex(5)
-			else:
-				print "can't interpret",sym
-				return
-			
-			self.sym_text.setText(s[1:])
-			self.target().regen_dl()
-		return
-		
+		self.sparse_syms_widgets.set_sym(sym)
 
 	def get_sym(self):
-		sym = self.sym_map[str(self.sym_combo.currentText())]
-		if sym in ['c','d','h']:
-			sym = sym+self.sym_text.displayText()
-		return sym
-	
-	def prop_changed(self):
-		self.target().set_prop(float(self.prop_text.text()))
-		self.target().regen_dl()
-		
-	def get_mirror(self):
-		return self.mirror_checkbox.checkState() == Qt.Checked
-	
+		return self.sparse_syms_widgets.get_sym()
+
 	def trace_update(self):
 		lr = int(self.lowrange.displayText())
 		hr = int(self.highrange.displayText())
@@ -1556,103 +1793,9 @@ class EMSymInspector(QtGui.QWidget):
 		combo.setCurrentIndex(idx)
 		return combo
 	
-	def get_main_tab(self):
-	
-		self.maintab = QtGui.QWidget()
-		maintab = self.maintab
-		maintab.vbl = QtGui.QVBoxLayout(self.maintab)
-		maintab.vbl.setMargin(0)
-		maintab.vbl.setSpacing(6)
-		maintab.vbl.setObjectName("Main")
+	def add_symmetry_options(self):
 		
-		self.hbl_sym = QtGui.QHBoxLayout()
-		self.hbl_sym.setMargin(0)
-		self.hbl_sym.setSpacing(6)
-		self.hbl_sym.setObjectName("Sym")
-		maintab.vbl.addLayout(self.hbl_sym)
-		
-		self.sym_combo = QtGui.QComboBox(maintab)
-		self.symmetries = []
-		self.symmetries.append(' Icosahedral ')
-		self.symmetries.append(' Octahedral ')
-		self.symmetries.append(' Tetrahedral ')
-		self.symmetries.append(' D ')
-		self.symmetries.append(' C ')
-		self.symmetries.append(' H ')
-		self.sym_map = {}
-		self.sym_map[" Icosahedral "] = "icos"
-		self.sym_map[" Octahedral "] = "oct"
-		self.sym_map[" Tetrahedral "] = "tet"
-		self.sym_map[" D "] = "d"
-		self.sym_map[" C "] = "c"
-		self.sym_map[" H "] = "h"
-		idx_default = 0
-		
-#		default_sym = self.target().sym
-#		
-		for idx,i in enumerate(self.symmetries): 
-			
-			self.sym_combo.addItem(i)
-#			if self.sym_map[i][0] == default_sym[0]:
-#				idx_default = idx
-				
-		self.sym_combo.setCurrentIndex(idx_default)
-		self.hbl_sym.addWidget(self.sym_combo)
-		
-		self.sym_label = QtGui.QLabel()
-		self.sym_label.setText('C/D/H sym')
-		self.hbl_sym.addWidget(self.sym_label)
-		
-		self.pos_int_validator = QtGui.QIntValidator(self)
-		self.pos_int_validator.setBottom(1)
-		self.sym_text = QtGui.QLineEdit()
-		self.sym_text.setValidator(self.pos_int_validator)
-		self.sym_text.setText(str(self.target().get_prop()))
-		self.sym_text.setFixedWidth(50)
-		self.hbl_sym.addWidget(self.sym_text)
-		self.sym_text.setEnabled(False)
-		
-		if self.enable_og:
-		
-			self.angle_label = QtGui.QComboBox()
-			self.angle_label.addItem('delta')
-			self.angle_label.addItem('n')
-			self.hbl_sym.addWidget(self.angle_label)
-			
-			self.pos_double_validator = QtGui.QDoubleValidator(self)
-			self.pos_double_validator.setBottom(0.05)
-			self.prop_text = QtGui.QLineEdit()
-			self.prop_text.setValidator(self.pos_double_validator)
-			self.prop_text.setText(str(self.target().get_prop()))
-			self.prop_text.setFixedWidth(50)
-			self.hbl_sym.addWidget(self.prop_text)
-			
-			self.hbl_sym2 = QtGui.QHBoxLayout()
-			self.hbl_sym2.setMargin(0)
-			self.hbl_sym2.setSpacing(6)
-			self.hbl_sym2.setObjectName("Sym2")
-			maintab.vbl.addLayout(self.hbl_sym2)
-			
-			self.og_label = QtGui.QLabel()
-			self.og_label.setText('Strategy')
-			self.hbl_sym2.addWidget(self.og_label)
-			
-			
-			self.strategy_label = QtGui.QComboBox()
-			l = dump_orientgens_list()
-			
-			n = len(l)
-			for i in l:
-				self.strategy_label.addItem(str(i))
-			
-			self.strategy_label.setCurrentIndex(n-1)
-			self.hbl_sym2.addWidget(self.strategy_label)
-			
-		self.mirror_checkbox = QtGui.QCheckBox("Mirror")
-		if self.enable_og:self.hbl_sym2.addWidget(self.mirror_checkbox)
-		else: self.hbl_sym.addWidget(self.mirror_checkbox)
-		self.mirror_checkbox.setChecked(self.target().mirror_enabled())
-		
+		self.sparse_syms_widgets.add_symmetry_options(self.vbl,self.enable_og)
 
 		if self.enable_trace:		
 			self.hbl_pt = QtGui.QHBoxLayout()
@@ -1701,19 +1844,7 @@ class EMSymInspector(QtGui.QWidget):
 			self.reducetog.setChecked(0)
 			self.hbl_pt.addWidget(self.reducetog)
 			
-			maintab.vbl.addLayout(self.hbl_pt)
-#		#end here
-#		
-		
-		#self.cbb = QtGui.QComboBox(maintab)
-		#self.vbl.addWidget(self.cbb)
-		#self.cbb.deleteLater()
-		QtCore.QObject.connect(self.mirror_checkbox, QtCore.SIGNAL("stateChanged(int)"), self.set_mirror)
-		if self.enable_og:
-			QtCore.QObject.connect(self.prop_text, QtCore.SIGNAL("editingFinished()"), self.prop_changed)
-			
-			QtCore.QObject.connect(self.angle_label, QtCore.SIGNAL("currentIndexChanged(QString)"), self.angle_label_changed)
-			QtCore.QObject.connect(self.strategy_label, QtCore.SIGNAL("currentIndexChanged(QString)"), self.strategy_changed)
+			self.vbl.addLayout(self.hbl_pt)
 
 		if self.enable_trace:
 			QtCore.QObject.connect(self.tracetog, QtCore.SIGNAL("clicked(bool)"), self.toggle_trace)
@@ -1721,20 +1852,18 @@ class EMSymInspector(QtGui.QWidget):
 			QtCore.QObject.connect(self.lowrange, QtCore.SIGNAL("editingFinished()"), self.trace_update)
 			QtCore.QObject.connect(self.highrange, QtCore.SIGNAL("editingFinished()"), self.trace_update)
 			QtCore.QObject.connect(self.tracefile, QtCore.SIGNAL("editingFinished()"), self.trace_update)
-			
 
-		#self.rotation_sliders.addWidgets(maintab.vbl)
 		
-		return maintab
-
 	def slider_rotate(self):
 		self.target().load_rotation(self.get_current_rotation())
-	
-	def set_hist(self,hist,minden,maxden):
-		self.hist.set_data(hist,minden,maxden)
+
 	
 if __name__ == '__main__':
 	em_app = EMStandAloneApplication()
+	
+	dialog = EMSymChoiceDialog()
+	print dialog.exec_()
+	
 	window = EM3DSymViewerModule(application=em_app)
 	em_app.show()
 	em_app.execute()

@@ -160,7 +160,6 @@ def get_normalize_colors_grey(ptcls):
 			
 	return colors
 
-
 def get_normalized_vector(ptcls):
 	mn = min(ptcls)
 	mx = max(ptcls)
@@ -537,7 +536,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 				if not fail:
 					data[dir].append(r)
 		return data
-		
+	
 	def set_projection_file(self,projection_file): self.projection_file = projection_file
 	def get_inspector(self):
 		if not self.inspector : 
@@ -613,8 +612,8 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 		#b = [a[i].set_attr("xform.projection",eulers[i]) for i in range(len(eulers))]
 		#b = [a[i].set_attr("ptcl_repr",1) for i in range(len(eulers))]
 		
-#		self.set_emdata_list_as_data(EMDataListCache(self.average_file),"ptcl_repr")
-		self.set_emdata_list_as_data(a,"ptcl_repr")
+		self.set_emdata_list_as_data(EMDataListCache(self.average_file),"ptcl_repr")
+#		self.set_emdata_list_as_data(a,"ptcl_repr")
 		self.force_update = True
 		self.au_point_selected(self.class_idx,None)
 		# if we have the same number of Eulers we can update everything
@@ -642,6 +641,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 		self.current_events_handler = self.events_handlers["inspect"]
 	
 	def au_point_selected(self,i,event=None):
+		
 		if i == None: 
 			if event != None and event.modifiers()&Qt.ShiftModifier:
 				if self.special_euler != None:
@@ -649,14 +649,15 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 					self.regen_dl()
 			return
 		
-		
 		self.arc_anim_points = None
 		self.projection = None
 		if 1:
-			print self.average_file,i
-			self.average = EMData(self.average_file,i)
-			self.average["nx"]
-			self.average.write_image("test.hdf")
+#			db = db_open_dict(self.average_file)
+#			a = db.get(i)
+#			print a["nx"]
+#			print self.average_file,i
+#			self.average = EMData(self.average_file,i)
+#			self.average["nx"]
 			self.average = self.euler_data[i]#
 			self.projection = EMData(self.projection_file,self.average.get_attr("projection_image_idx"))
 			self.average.process_inplace("normalize.toimage.lsq",{"to":self.projection})
@@ -677,7 +678,6 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 			QtCore.QObject.connect(self.mx_viewer.emitter(),QtCore.SIGNAL("mx_image_selected"), self.mx_image_selected)
 			get_application().show_specific(self.mx_viewer)
 			
-		
 		disp = []
 		if self.projection != None: disp.append(self.projection)
 		if self.average != None: disp.append(self.average)
@@ -705,7 +705,6 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 	
 	def animation_done_event(self,animation):
 		pass
-	
 	
 	def alignment_time_animation(self,transforms):
 		if len(transforms) < 2: return

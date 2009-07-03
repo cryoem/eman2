@@ -1999,6 +1999,7 @@ class EMImage3DGUIModule(EMGUIModule):
 	   	
 		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
 			self.show_inspector(1)
+			if self.inspector == None: return
 			self.inspector.update_rotations(self.cam.t3d_stack[len(self.cam.t3d_stack)-1])
 			self.inspector.set_xyz_trans(self.cam.cam_x,self.cam.cam_y,self.cam.cam_z)
 			self.inspector.set_scale(self.cam.scale)

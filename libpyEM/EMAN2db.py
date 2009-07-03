@@ -366,7 +366,15 @@ def db_write_image(self,fsp,*parms):
 			db[keys[0]]=self
 			return
 		if parms[0]<0 : parms=(len(db),)+parms[1:]
-		db.set(self,*parms) # this makes region writing work
+		
+		key = 0
+		region=None
+		if len(parms) > 0: key = parms[0]
+		#if len(parms) > 1: read_header = parms[1]
+		# parsm[2] is unused : image_type=EMUtil.ImageType.IMAGE_UNKNOWN
+		if len(parms) > 3: region = parms[3]
+				
+		db.set(self,key=key,region=region,txn=None) # this makes region writing work
 #		db[parms[0]] = self # this means region writing does not work
 		return
 	return self.write_image_c(fsp,*parms)
@@ -1071,7 +1079,7 @@ of these occasional errors"""
 		try: return loads(self.bdb.get(dumps(key,-1),txn=txn))
 		except: return None
 
-	def set(self,val,key,image_type=EMUtil.ImageType.IMAGE_UNKNOWN,read_header=False,region=None,datatype=EMUtil.EMDataType.EM_FLOAT,use_host_endian=True):
+	def set(self,val,key,region=None,txn=None):
 		'''
 		I have to support the image_type and read_header parameters even though they are not used -
 		this is so this function can be used interchangeably with EMData.write_image 
@@ -1094,7 +1102,7 @@ of these occasional errors"""
 			fkey="%dx%dx%d"%(ad["nx"],ad["ny"],ad["nz"])
 #			print "w",fkey
 			try :
-				n=loads(self.bdb.get(fkey+dumps(key,-1),txn=self.txn))
+				n=loads(self.bdb.get(fkey+dumps(key,-1),txn=txn))
 			except:
 				if not self.has_key(fkey) : self[fkey]=0
 				else: self[fkey]+=1 
@@ -1105,7 +1113,7 @@ of these occasional errors"""
 			try: del ad["data_path"]
 			except:pass
 			
-			self.put(dumps(key,-1),dumps(ad,-1),txn=self.txn)
+			self.put(dumps(key,-1),dumps(ad,-1),txn=txn)
 
 			if not self.has_key("maxrec") or key>self["maxrec"] : self["maxrec"]=key
 			if isinstance(key,int) and (not self.has_key("maxrec") or key>self["maxrec"]) : self["maxrec"]=key
