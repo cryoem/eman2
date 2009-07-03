@@ -817,10 +817,10 @@ class EMImage2DModule(EMGUIModule):
 			m1=self.display_fft.get_attr("maximum")
 		
 			self.fminden=0
-			self.fmaxden=min(m1,mean+10.0*sigma)
+			self.fmaxden=min(m1,mean+20.0*sigma)
 			self.fcurmin = 0
 			if auto_contrast:
-				self.fcurmax = min(m1,mean+3.0*sigma)
+				self.fcurmax = min(m1,mean+12.0*sigma)
 			else:
 				self.fcurmax = m1
 			

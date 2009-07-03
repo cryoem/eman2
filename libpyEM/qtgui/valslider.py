@@ -126,6 +126,7 @@ class ValSlider(QtGui.QWidget):
 			if self.value==val : return
 			self.value=val
 
+#		if self.intonly : print self.value,val
 		self.updateboth()
 		if not quiet : self.emit(QtCore.SIGNAL("valueChanged"),self.value)
 	
@@ -155,6 +156,7 @@ class ValSlider(QtGui.QWidget):
 					self.value=int(float(x)+.5)
 				else : 
 					self.value=float(x)
+#				print "new text ",self.value
 				self.updates()
 				self.emit(QtCore.SIGNAL("valueChanged"),self.value)
 				self.emit(QtCore.SIGNAL("textChanged"),self.value)
@@ -185,7 +187,8 @@ class ValSlider(QtGui.QWidget):
 		
 	def updates(self):
 		self.ignore=1
-		self.slider.setValue(clamp(0,(self.value-self.range[0])/(self.range[1]-self.range[0])*4095.0,4095.0))
+#		print "updates: ",self.value,self.range
+		self.slider.setValue(clamp(0,(self.value-self.range[0])/float(self.range[1]-self.range[0])*4095.0,4095.0))
 		self.ignore=0
 
 	def updatet(self):

@@ -222,9 +222,10 @@ def db_open_dict(url,ro=False,with_keys=False):
 def db_close_dict(url):
 	"""Closes a named dictionary to free resources. Otherwise open dictionaries are cached.
 	After closing, a dict CAN be reopened, but references to existing dict objects should not be used
-	after closing."""
+	after closing. Ignores non bdb: urls"""
 
-	path,dictname,keys=db_parse_path(url)
+	try: path,dictname,keys=db_parse_path(url)
+	except: return
 	
 	ddb=EMAN2DB.open_db(path)
 	ddb.close_dict(dictname)
@@ -673,6 +674,8 @@ class EMAN2DB:
 #			self.dbenv.set_cachesize(1,0,8)		# gbytes, bytes, ncache (splits into groups)
 			self.dbenv.set_data_dir("%s/EMAN2DB"%self.path)
 			self.dbenv.set_lk_detect(db.DB_LOCK_DEFAULT)	# internal deadlock detection
+			self.dbenv.set_lk_max_locks(10000)		# if we don't do this, we can easily run out when dealing with large numbers of files
+			self.dbenv.set_lk_max_objects(10000)
 
 			if(sys.platform != 'win32'):
 				self.dbenv.open("/tmp/eman2db-%s"%os.getenv("USER","anyone"),envopenflags)
@@ -764,7 +767,7 @@ class DBDict:
 		self.isro=False
 		
 
-	def __str__(self): return "<EMAN2db DBHash instance: %s>" % self.name
+	def __str__(self): return "<EMAN2db DBDict instance: %s>" % self.name
 
 	def __del__(self):
 		self.close()

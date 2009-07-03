@@ -137,7 +137,7 @@ images far from focus."""
 	if options.phaseflip or options.wiener or options.virtualout or options.storeparm: # only put this if statement here to make the program flow obvious
 		write_e2ctf_output(options) # converted to a function so to work with the workflow
 
-	if options.envelope :
+	if options.buildenvelope :
 		img_sets = get_gui_arg_img_sets(options.filenames)
 		print "Recomputing envelope"
 		envelope=compute_envelope(img_sets)
@@ -463,6 +463,8 @@ def process_stack(stackfile,phaseflip=None,wiener=None,edgenorm=True,oversamp=1,
 	#if wiener and wiener[:4]=="bdb:" : db_close_dict(wiener)
 	#if phaseflip and phaseflip[:4]=="bdb:" : db_close_dict(phaseflip)
 	
+	db_close_dict(stackfile)	# this is safe even for non bdb: files
+	
 	return
 
 def powspec(stackfile,mask=None,edgenorm=True,):
@@ -487,6 +489,8 @@ def powspec(stackfile,mask=None,edgenorm=True,):
 	
 	av.set_complex(1)
 	av.set_attr("is_intensity", 1)
+	
+	db_close_dict(stackfile)		# safe for non bdb urls
 	return av
 
 masks={}		# mask cache for background/foreground masking
@@ -551,16 +555,20 @@ def powspec_with_bg(stackfile,radius=0,edgenorm=True,oversamp=1):
 	av1/=(float(n)*av1.get_ysize()*av1.get_ysize()*ratio1)
 	av1.set_value_at(0,0,0.0)
 	av1.set_complex(1)
-	av1.set_attr("is_intensity", 1)
+	av1["is_intensity"]=1
+	av1["ptcl_repr"]=n
 
 	av2/=(float(n)*av2.get_ysize()*av2.get_ysize()*ratio2)
 	av2.set_value_at(0,0,0.0)
 	av2.set_complex(1)
-	av2.set_attr("is_intensity", 1)
+	av2["is_intensity"]=1
+	av2["ptcl_repr"]=n
 
 	av1_1d=av1.calc_radial_dist(av1.get_ysize()/2,0.0,1.0,1)
 	av2_1d=av2.calc_radial_dist(av2.get_ysize()/2,0.0,1.0,1)
 
+	db_close_dict(stackfile)	# safe for non-bdb files
+	
 	return (av1_1d,av2_1d,av1,av2)
 
 
@@ -600,6 +608,8 @@ def bgedge2d(stackfile,width):
 
 	av.set_complex(1)
 	av.set_attr("is_intensity", 1)
+	
+	db_close_dict(stackfile)
 	return av
 
 def smooth_bg(curve,ds):
@@ -884,7 +894,7 @@ def ctf_env_points(im_1d,bg_1d,ctf) :
 	ret=[]
 	
 	for i in range(1,len(cc)-1):
-		if fabs(cc[i])>0.3 and im_1d[i]-bg_1d[i]>0 :
+		if fabs(cc[i])>0.2 and im_1d[i]-bg_1d[i]>0 :
 			ret.append((i*ds,(im_1d[i]-bg_1d[i])/cc[i]**2))
 #			ret.append((i*ds,(im_1d[i]-bg_1d[i])/sfact(i*ds)))		# this version removes the structure factor (in theory)
 		
@@ -1012,6 +1022,9 @@ class GUIctf(QtGui.QWidget):
 		#self.samp = ValSlider(self,(0,5.0),"Amp:",0)
 		#self.vbl.addWidget(self.samp)
 		
+		self.imginfo=QtGui.QLabel("Info",self)
+		self.vbl.addWidget(self.imginfo)
+		
 		self.sdefocus=ValSlider(self,(0,5),"Defocus:",0,90)
 		self.vbl.addWidget(self.sdefocus)
 		
@@ -1073,7 +1086,7 @@ class GUIctf(QtGui.QWidget):
 		
 		self.update_data()
 		
-		self.resize(460,380) # figured these values out by printing the width and height in resize event
+		self.resize(720,380) # figured these values out by printing the width and height in resize event
 		
 #	def resizeEvent(self,event):
 #		print self.width(),self.height()
@@ -1253,6 +1266,15 @@ class GUIctf(QtGui.QWidget):
 		self.sdfdiff.setValue(self.data[val][1].dfdiff,True)
 		self.sdfang.setValue(self.data[val][1].dfang,True)
 		self.squality.setValue(self.data[val][6],True)
+
+		try : ptcl=str(self.data[val][4]["ptcl_repr"])
+		except: ptcl="?"
+		try: 
+			ctf=self.data[val][1]
+			ssnr="%1.4f"%(sum(ctf.snr)/float(len(ctf.snr)))
+		except:
+			ssnr="?"
+		self.imginfo.setText("%s particles     SNR = %s"%(ptcl,ssnr))
 		
 		if self.guiim != None: 
 #			print self.data
