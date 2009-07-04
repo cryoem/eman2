@@ -268,7 +268,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 		return self.qt_context_parent
 
 
-	def __init__(self,application=None,inspector_go=True,ensure_gl_context=True,application_control=True):
+	def __init__(self,application=None,ensure_gl_context=True,application_control=True):
 		self.arc_anim_dl = None
 		self.arc_anim_points = None
 		EMImage3DGUIModule.__init__(self,application,ensure_gl_context,application_control)
@@ -278,8 +278,6 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 		self.eulers = [] # will eventually store Transform objects
 		self.points = [] # will eventually store the points on the asymmetric unit
 		self.point_colors = [] # will eventually store colors for the different points
-	
-		
 		self.cam = Camera2(self) # Stores the camera position
 		self.vdtools = None # VDTools are very import in the context of the e2desktop
 		
@@ -296,16 +294,12 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 		self.asym_u_triangles_dl = 0  # This will be a display list for triangles in the asymmetric units
 		self.cylinderdl = 0 # This will be a display list for a cylinder
 
-		self.gq=gluNewQuadric() # a quadric for general use
-		gluQuadricDrawStyle(self.gq,GLU_FILL)
-		gluQuadricNormals(self.gq,GLU_SMOOTH)
-		gluQuadricOrientation(self.gq,GLU_OUTSIDE)
-		gluQuadricTexture(self.gq,GL_FALSE)
-
+		self.gq= None #  a glu quadric
+		
 		self.width_scale = 1.0 # a with scale factor for points on the unit sphere
 		self.height_scale = 1.0 # a height scale factor for points on the unit sphere
 		self.arc_width_scale = 0.5 # The width of the great arcs 
-		self.force_update = False  # Force update everything - causes a couple of dispay lists to be regenerated
+		self.force_update = True  # Force update everything - causes a couple of dispay lists to be regenerated
 #		
 		self.display_euler = True # Display sphere points flag
 		self.display_tri = False # Display asymm unit triangles flag
@@ -336,15 +330,10 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 		self.image_display_window = None # used if people are looking at image data, for example, if they opened a list of EMData's in e2.py using euler_display
 		self.special_euler = None # If set, the special Euler will get the special color - should be an index (int)
 		self.special_color = "gold"
-		
-		
-		self.set_sym(self.sym)
-		self.regen_dl()
+
+		#self.regen_dl()
 
 		self.initialized = True
-		
-		if inspector_go: self.get_inspector()
-		
 	def __del__(self):
 		if self.image_display_window != None:
 			w = self.image_display_window 
@@ -361,8 +350,8 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 			self.set_column_scores(l)
 		else: self.set_column_scores(None)
 		self.get_inspector().set_score_options(self.euler_data.get_score_options(),default)
-		self.regen_dl()
-		
+		self.force_update = True
+
 	def set_column_score_key(self,key):
 		if key == "None":
 			self.set_column_scores(None)
@@ -474,7 +463,6 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 		if ( radius > 0 ):
 			self.radius = radius
 			self.force_update = True
-			self.updateGL()
 		else:
 			print "Error, tried to set a zero or negative radius (",radius,")"
 			exit(1)
@@ -656,6 +644,14 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 	
 	def init_basic_shapes(self):
 		
+		if self.gq == None:
+			
+			self.gq=gluNewQuadric() # a quadric for general use
+			gluQuadricDrawStyle(self.gq,GLU_FILL)
+			gluQuadricNormals(self.gq,GLU_SMOOTH)
+			gluQuadricOrientation(self.gq,GLU_OUTSIDE)
+			gluQuadricTexture(self.gq,GL_FALSE)
+		
 		if ( self.cylinderdl == 0 ):
 			self.cylinderdl=glGenLists(1)
 				
@@ -739,14 +735,6 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 		
 		self.eulers = eulers
 		self.make_sym_dl_list(eulers)
-		
-	def set_sym(self,sym):
-		'''
-		Should probably get rid of this one
-		'''
-		self.set_symmetry(sym)
-		if self.inspector != None: self.get_inspector().set_sym(sym)
-		self.force_update = True
 	
 	def make_sym_dl_list(self,eulers):
 		'''
@@ -946,9 +934,17 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 		
 	def set_display_all_syms(self,val):
 		self.display_all_syms = val
-		self.updateGL()
-			
+
+	def set_gl_context_parent(self,parent):
+		'''
+		Needed to specialized this function (from EMGUIModule) because self.vdtools is absolutely required to be current and accurate
+		(this object uses GLU picking and needs access to the viewport matrix) 
+		'''
+		self.vdtools = EMViewportDepthTools2(parent)
+		self.gl_context_parent = parent
+
 	def render(self):
+		self.init_basic_shapes()
 		if self.vdtools == None:
 			self.vdtools = EMViewportDepthTools2(self.get_gl_context_parent())
 		
@@ -1122,15 +1118,12 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 		
 	def toggle_sym_display(self,bool):
 		self.display_euler = bool
-		self.updateGL()
 		
 	def triangletog(self,bool):
 		self.display_tri = bool
-		self.updateGL()
 		
 	def arctog(self,bool):
 		self.display_arc = bool
-		self.updateGL()
 
 	def reducetog(self,bool):
 		self.reduce = bool
@@ -1160,6 +1153,9 @@ class EMSymViewerWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMat
 		self.cam.setCamTrans("default_z",-100)
 		
 		self.resize(640,640)
+		
+#	def __del__(self):
+#		print "sym viewer widget died"
 
 	def initializeGL(self):
 		glEnable(GL_NORMALIZE)
@@ -1254,7 +1250,7 @@ class SparseSymChoicesWidgets:
 		'''
 		self.widget = weakref.ref(widget)
 		self.target = weakref.ref(target)
-	
+		self.busy = False
 	def add_top_buttons(self,vbl):
 		'''
 		Adds 4 buttons in a grid
@@ -1262,6 +1258,7 @@ class SparseSymChoicesWidgets:
 		| Display Arcs   | All Syms          |
 		@param vbl a QtGui.QVBoxLayout - all widgets and layouts are added to it
 		'''
+		self.busy = True
 		self.button_hbl1 = QtGui.QHBoxLayout()
 		self.symtogdisplay = QtGui.QPushButton("Display Eulers")
 		self.symtogdisplay.setCheckable(1)
@@ -1288,11 +1285,44 @@ class SparseSymChoicesWidgets:
 		vbl.addLayout(self.button_hbl2)
 		
 		
-		QtCore.QObject.connect(self.symtog, QtCore.SIGNAL("toggled(bool)"), self.target().set_display_all_syms)
-		QtCore.QObject.connect(self.symtogdisplay, QtCore.SIGNAL("clicked(bool)"), self.target().toggle_sym_display)
-		QtCore.QObject.connect(self.triangletog, QtCore.SIGNAL("clicked(bool)"), self.target().triangletog)
-		QtCore.QObject.connect(self.arctog, QtCore.SIGNAL("clicked(bool)"), self.target().arctog)
+		QtCore.QObject.connect(self.symtog, QtCore.SIGNAL("toggled(bool)"), self.set_display_all_syms)
+		QtCore.QObject.connect(self.symtogdisplay, QtCore.SIGNAL("clicked(bool)"), self.toggle_sym_display)
+		QtCore.QObject.connect(self.triangletog, QtCore.SIGNAL("clicked(bool)"), self.triangle_tog)
+		QtCore.QObject.connect(self.arctog, QtCore.SIGNAL("clicked(bool)"), self.arc_tog)
+		self.busy = False
+
+	def set_display_all_syms(self,val):
+		'''
+		This function is a slot for the signal that is emitted when the self.symtog button is checked
+		'''
+		if self.busy: return
+		self.target().set_display_all_syms(val)
+		self.target().updateGL()
 		
+	def toggle_sym_display(self,val):
+		'''
+		This function is a slot for the signal that is emitted when the self.symtogdisplay button is checked
+		'''
+		if self.busy: return
+		self.target().toggle_sym_display(val)
+		self.target().updateGL()
+		
+	def triangle_tog(self,val):
+		'''
+		This function is a slot for the signal that is emitted when the self.triangletog button is checked
+		'''
+		if self.busy: return
+		self.target().triangletog(val)
+		self.target().updateGL()
+		
+	def arc_tog(self,val):
+		'''
+		This function is a slot for the signal that is emitted when the self.arctog button is checked
+		'''
+		if self.busy: return
+		self.target().arctog(val)
+		self.target().updateGL()
+	
 	def add_symmetry_options(self,vbl,enable_orient_gen=True):
 		'''
 		Add common symmetry options to a QtGui.QVBoxLayout
@@ -1301,7 +1331,7 @@ class SparseSymChoicesWidgets:
 		
 		Makes QtCore.QObject connections to functions of self.target() (see bottom of this function)
 		'''
-		
+		self.busy = True
 		self.maintab = QtGui.QWidget()
 		maintab = self.maintab
 		maintab.vbl = QtGui.QVBoxLayout(self.maintab)
@@ -1330,7 +1360,7 @@ class SparseSymChoicesWidgets:
 		self.sym_map[" D "] = "d"
 		self.sym_map[" C "] = "c"
 		self.sym_map[" H "] = "h"
-		
+
 		idx_default = 0
 		for idx,i in enumerate(self.symmetries): 
 			self.sym_combo.addItem(i)
@@ -1346,15 +1376,17 @@ class SparseSymChoicesWidgets:
 		self.pos_int_validator.setBottom(1)
 		self.sym_text = QtGui.QLineEdit()
 		self.sym_text.setValidator(self.pos_int_validator)
-		self.sym_text.setText(str(self.target().get_prop()))
+		self.sym_text.setText("")
 		self.sym_text.setFixedWidth(50)
 		self.hbl_sym.addWidget(self.sym_text)
 		self.sym_text.setEnabled(False)
 		
+		self.set_sym(self.target().get_sym())
+		
 		if enable_orient_gen:
 			self.angle_label = QtGui.QComboBox()
-			self.angle_label.addItem('delta')
-			self.angle_label.addItem('n')
+			self.angle_label.addItem('Angle Based')
+			self.angle_label.addItem('Number Based')
 			self.hbl_sym.addWidget(self.angle_label)
 			
 			self.pos_double_validator = QtGui.QDoubleValidator(self.widget())
@@ -1393,7 +1425,6 @@ class SparseSymChoicesWidgets:
 			self.hbl_sym.addWidget(self.mirror_checkbox)
 			self.mirror_checkbox.setChecked(self.target().mirror_enabled())
 			
-		
 		QtCore.QObject.connect(self.sym_combo, QtCore.SIGNAL("currentIndexChanged(QString)"), self.sym_changed)
 		QtCore.QObject.connect(self.sym_text, QtCore.SIGNAL("editingFinished()"), self.sym_number_changed)
 
@@ -1404,12 +1435,14 @@ class SparseSymChoicesWidgets:
 		QtCore.QObject.connect(self.mirror_checkbox, QtCore.SIGNAL("stateChanged(int)"), self.set_mirror)
 	
 		vbl.addWidget(maintab)
+		self.busy = False
 		
 	def set_mirror(self,val):
 		'''
 		This function is a slot for the signal that is emitted when the self.mirror_checkbox is checked
 	 	@param val the value that was delivered by Qt, indicated whether or not the checkbox is checked 
 		'''
+		if self.busy: return
 		self.target().set_mirror(val)
 		self.target().regen_dl()
 	
@@ -1417,6 +1450,7 @@ class SparseSymChoicesWidgets:
 		'''
 		This function is a slot for the signal that is emitted when the self.prop_text text box is altered 
 		'''
+		if self.busy: return
 		self.target().set_prop(float(self.prop_text.text()))
 		self.target().regen_dl()
 		
@@ -1425,7 +1459,12 @@ class SparseSymChoicesWidgets:
 		This function is a slot for the signal that is emitted when the self.angle_label combo box has its current index altered
 		@param the current text of self.angle_label
 		'''
-		self.target().set_angle_label(str(string))
+		if self.busy: return
+		if string == "Angle Based": s = "delta"
+		elif string == "Number Based": s = "n"
+		else: raise RuntimeError
+		
+		self.target().set_angle_label(s)
 		self.target().regen_dl()
 		
 	def strategy_changed(self,string):
@@ -1433,6 +1472,7 @@ class SparseSymChoicesWidgets:
 		This function is a slot for the signal that is emitted when the self.strategy_label combo box has its current index altered
 		@param the current text of self.strategy_label
 		'''
+		if self.busy: return
 		self.target().set_strategy(str(string))
 		self.target().regen_dl()
 		
@@ -1440,6 +1480,7 @@ class SparseSymChoicesWidgets:
 		'''
 		This function is a slot for the signal that is emitted when the self.sym_tex text box is altered 
 		'''
+		if self.busy: return
 		self.target().set_symmetry(self.get_sym())
 		self.target().regen_dl()
 		
@@ -1448,6 +1489,7 @@ class SparseSymChoicesWidgets:
 		This function is a slot for the signal that is emitted when the self.sym_label combo box has its current index altered
 		@param the current text of self.sym_label
 		'''
+		if self.busy: return
 		if sym == ' D ' or sym == ' C ' or sym == ' H ':
 			self.sym_text.setEnabled(True)
 		else:
@@ -1486,7 +1528,6 @@ class SparseSymChoicesWidgets:
 				return
 			
 			self.sym_text.setText(s[1:])
-			self.target().regen_dl()
 			
 	def get_sym(self):
 		'''
@@ -1505,7 +1546,8 @@ class SparseSymChoicesWidgets:
 		@return a dictionary that embodies the main parameters associated with this object
 		'''
 		d = {}
-		
+		# warning - do not change the name of these keys unless you know what you're doing. The workflow refine forms assumes these keys exist, as they are
+		# see EMOrientationDistDialog in emform.py
 		d["sym"] = self.get_sym()
 		d["orientgen"] = str(self.strategy_label.currentText())
 		d["approach"] = str(self.angle_label.currentText())
@@ -1526,7 +1568,7 @@ class EMSymChoiceDialog(QtGui.QDialog):
 		@param sym some kind of symmetry, such as "d7", "icos" etc
 		'''
 		QtGui.QDialog.__init__(self)
-		self.target = EM3DSymViewerModule(inspector_go=False)
+		self.target = EM3DSymViewerModule()
 		self.target.enable_inspector(False)
 		
 		self.setWindowTitle("Choose Distribution Parameters")
@@ -1590,10 +1632,11 @@ class EMSymChoiceDialog(QtGui.QDialog):
 	
 class EMSymInspector(QtGui.QWidget):
 	def __init__(self,target,enable_trace=True,enable_og=True) :
+		self.busy = True
 		QtGui.QWidget.__init__(self,None)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "eulerxplor.png"))
 		self.target=weakref.ref(target)
-		self.busy = False
+		
 		self.score_options_hbl  = None # will eventually be a combo 
 		self.rotation_sliders = EMTransformPanel(self.target(),self)
 		self.enable_trace = enable_trace
@@ -1607,7 +1650,6 @@ class EMSymInspector(QtGui.QWidget):
 		self.sparse_syms_widgets.add_top_buttons(self.vbl)
 		
 		self.add_symmetry_options()
-		self.set_sym(self.target().get_sym())
 		self.n3_showing = False
 		
 		self.tabwidget = QtGui.QTabWidget()
@@ -1618,7 +1660,8 @@ class EMSymInspector(QtGui.QWidget):
 		self.file = None
 		self.lr = -1
 		self.hr = -1
-	
+		self.busy = False
+
 	def update_rotations(self,t3d):
 		self.rotation_sliders.update_rotations(t3d)
 	
@@ -1699,16 +1742,19 @@ class EMSymInspector(QtGui.QWidget):
 		return self.transform_tab
 	
 	def arc_color_changed(self):
+		if self.busy: return
 		s = str(self.arc_color.currentText())
 		self.target().set_arc_color(s)
 		self.target().regen_dl()
 		
 	def small_column_color_changed(self):
+		if self.busy: return
 		s = str(self.small_column_color.currentText())
 		self.target().set_small_column_color(s)
 		self.target().regen_dl()
 		
 	def tall_column_color_changed(self):
+		if self.busy: return
 		s = str(self.tall_column_color.currentText())
 		self.target().set_tall_column_color(s)
 		self.target().regen_dl()
@@ -1855,6 +1901,7 @@ class EMSymInspector(QtGui.QWidget):
 
 		
 	def slider_rotate(self):
+		if self.busy: return
 		self.target().load_rotation(self.get_current_rotation())
 
 	

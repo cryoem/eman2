@@ -570,8 +570,11 @@ class EMImage3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		return self.viewables[self.currentselection].get_inspector()
 	
 	def add_sym(self):
-		module = EMAsymmetricUnitViewer(None,True,False,False)
-		#module = EM3DSymViewerModule(None,True,False,False)
+		# the difference between the EMAsymmetricUnitViewer and the EM3DSymViewerModule
+		# is only that the EMAsymmetricUnitViewer will look in the current directory for refinement directories and
+		# display related information. Simply change from one to the other if you don't like it
+		module = EMAsymmetricUnitViewer(None,True,False)
+		#module = EM3DSymViewerModule(None,True,False)
 		module.set_radius(self.radius)
 		self.num_sym += 1
 		self.__add_module(module,self.num_sym)
@@ -595,12 +598,13 @@ class EMImage3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		
 		module.set_qt_context_parent(self.qt_context_parent)
 		module.set_gl_context_parent(self.gl_context_parent)
+		
 		module.set_gl_widget(self.gl_context_parent)
 		module.set_dont_delete_parent() # stops a RunTimeError
 		module.under_qt_control = self.under_qt_control
 		
 		self.viewables.append(module)
-		
+		module.set_gl_context_parent(self.gl_context_parent)
 		name = module.get_type()+" " + str(num)
 		self.viewables[len(self.viewables)-1].set_name(name)
 		self.viewables[len(self.viewables)-1].set_rank(len(self.viewables))

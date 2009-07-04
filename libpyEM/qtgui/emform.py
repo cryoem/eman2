@@ -41,8 +41,121 @@ from EMAN2 import Util, get_image_directory,file_exists
 import EMAN2
 import weakref
 
+class EMButtonDialog:
+	'''
+	A base class for adding a dialog to the form
+	Call add_to_layout to add the button to some layout.
+	'''
+	def __init__(self,desc_short="Dialog Button",desc_long="",icon=None):
+		'''
+		@param desc_short that which will appear as the main text on the button
+		@param desc_long the tool tip for the button
+		@param icon if specificed this is a QtGui.QIcon, and will become the icon of the button
+		'''
+		self.target = None
+		self.vartype = "EMButtonDialog"
+		self.desc_short = desc_short
+		self.desc_long = desc_long
+		self.icon = icon
+	def set_target(self,target): 
+		'''
+		@param target - an instance of an EMFormWidget
+		Makes a weak reference to the target, seeing as the target has a reference to this
+		'''
+		self.target = weakref.ref(target)
+		
+	def add_to_layout(self,layout):
+		'''
+		Add the button to the given layout
+		@param layout a QtGui.QLayout object
+		'''
+		if self.icon != None: self.button = QtGui.QPushButton(self.icon,self.desc_short)
+		else: self.button = QtGui.QPushButton(self.desc_short)
+		self.button.setToolTip(self.desc_long)
+		layout.addWidget(self.button)
+		QtCore.QObject.connect(self.button, QtCore.SIGNAL("clicked(bool)"), self.on_button)
+	
+	def on_button(self,unused=None): 
+		'''
+		Inheriting classes must supply this function
+		The slot that is connected to the signal emitted when the button is clicked
+		'''
+		raise NotImplementedError("Inheriting classes are menat to supply this function")
+		
+class EMOrientationDistDialog(EMButtonDialog):
+	'''
+	This class is used by the refine form in the workflow - it runs a dialog enabling the user to select the 
+	parameters that will define the distribution of projections on the unit sphere
+	It is highly specialized - it assumes that the EMSymChoiceDialog returns a dictionary with certain keys in it,
+	and assumes the that self.target (which is a weak ref to and EMFormWidget) has an attribute called name_widget_map
+	which is a dictionary - that dictionary is assumed to have certain keys, and the values are assumed to lists which have
+	widgets in an assumed order, or single objects
+	In short, liable to break if someone makes changes to the code.
+	'''
+	def __init__(self):
+		EMButtonDialog.__init__(self,desc_short="Interactive Parameters",desc_long="Interact with the unit sphere to determine your orientation distribution parameters",icon=QtGui.QIcon(get_image_directory() + "eulerxplor.png"))
+		
+	def on_button(self,unused=None):
+		'''
+		The crux of this class - dictionary keys and various attributes are assumed to exist
+		'''
+		name_map = self.target().name_widget_map
+		symname = str(name_map["symname"][0].currentText()) # assume the first entry in the list is the combo
+		symnumber = name_map["symnumber"][0] # assume the first entry in the list is a text entry
+		if symnumber.isEnabled(): symname += str(symnumber.text())
+		
+		from emimage3dsym import EMSymChoiceDialog
+		dialog = EMSymChoiceDialog(symname)
+		result = dialog.exec_()
+		if result != None:
+			combo = name_map["orientgen"][0] # assume the first entry in the list is the combo
+			s = [combo.itemText(i) for i in range(combo.count())]
+			for i,text in enumerate(s):
+				if text == result["orientgen"]:
+					combo.setCurrentIndex(i)
+					break
+			else:
+				raise RuntimeError("The return value from the dialog was not present in the orientgen combo. This means dependent code has evolved. Contact developers")
+			
+			checkbox = name_map["incmirror"]
+			checkbox.setChecked(result["inc_mirror"])
+			
+			approach = result["approach"]
+			button_group = name_map["orientopt"][1] # assume the second entry in the list is a list of buttons
+			for button in button_group:
+				if button.text() == approach:
+					button.setChecked(True)
+					break
+			else:
+				raise RuntimeError("The approach key was unknown or has changed. Contact developers")
+			
+			value = result["value"]
+			float_widget = name_map["orientopt_entry"][0] # assume the first entry in the list is a text entry
+			float_widget.setText(str(value))
+			
+			sym = result["sym"]
+			if sym != symname:
+				sym_n = None
+				if sym not in ["icos","oct","tet"]:
+					if len(sym) > 1:
+						sym_n = int(sym[1:])
+					sym = sym[:1]
+					
+				sym_combo = name_map["symname"][0] # assume the first entry in the list is the combo
+				s = [sym_combo.itemText(i) for i in range(sym_combo.count())]
+				for i,text in enumerate(s):
+					if text == sym:
+						sym_combo.setCurrentIndex(i)
+						break
+				else:
+					raise RuntimeError("The symmetry value was uninterpretable. Contact developers.")
+				
+				if sym_n != None:
+					symnumber.setText(str(sym_n))
+	
 class EMParamTable(list):
 	'''
+	NOTE: THE EMPARAMTABLE BECAME DEPRECATED IN FAVOR OF THE EMFILETABLE around May 2009. However, this class is still used in remote cases that need to be cleaned up
 	This object is constructed as a table in the EMFormModule
 	This object list of ParamDef objects : each of these ParamDef objects are generally a list-type of some sort, such
 	as intlist, floatlist, stringlist etc. They should all be the same length, but this is not tested - to do so would 
@@ -799,6 +912,7 @@ class EMFormWidget(QtGui.QWidget):
 		self.auto_incorporate["dict"] = EMFormWidget.IncorpDict()
 		self.auto_incorporate["EMParamTable"] = EMFormWidget.IncorpParamTable()
 		self.auto_incorporate["file_table"] = EMFormWidget.IncorpFileTable()
+		self.auto_incorporate["EMButtonDialog"] = EMFormWidget.IncorpButtonDialog()
 		
 		vbl = QtGui.QVBoxLayout()
 		self.incorporate_params(self.params,vbl)
@@ -831,6 +945,7 @@ class EMFormWidget(QtGui.QWidget):
 				elif not isinstance(param,EMParamTable):
 					hbl=QtGui.QHBoxLayout()
 					for iparam in param:
+						if iparam.vartype == "EMButtonDialog": print "it was a button"
 						self.auto_incorporate[iparam.vartype](iparam,hbl,self)
 					layout.addLayout(hbl)
 					act = False
@@ -888,6 +1003,14 @@ class EMFormWidget(QtGui.QWidget):
 			self.output_writers.append(EMFileTableWriter(paramtable.name,paramtable,str))
 			
 		layout.addWidget(table,10)
+	
+	class IncorpButtonDialog:
+		def __init__(self): pass
+		def __call__(self,buttondialog,layout,target):
+			buttondialog.set_target(target)
+			buttondialog.add_to_layout(layout)
+			target.event_handlers.append(buttondialog)    
+	
 	
 	class IncorpFileTable:
 		def __init__(self): pass
@@ -1226,7 +1349,7 @@ class EMFormWidget(QtGui.QWidget):
 			layout.addWidget(groupbox,0)
 			target.output_writers.append(ChoiceParamWriter(param.name,buttons,type(param.choices[0])))
 			
-			target.name_widget_map[param.name] = groupbox
+			target.name_widget_map[param.name] = [groupbox,buttons]
 	
 	def incorporate_float_with_choices(self,param,layout,target):
 		hbl=QtGui.QHBoxLayout()
@@ -1678,19 +1801,25 @@ class EMTableFormWidget(EMFormWidget):
 			
 			widget = QtGui.QWidget(None)
 			vbl =  QtGui.QVBoxLayout(widget)
+			#print paramlist
+			#EMFormWidget.incorporate_params(self,paramlist,vbl)
 			for param in paramlist:
 				
-				try:
-					if len(param) != 1 and not isinstance(param,EMParamTable):
-						hbl=QtGui.QHBoxLayout()
-						for iparam in param:
+				if isinstance(param,list) and len(param) != 1:
+					hbl=QtGui.QHBoxLayout()
+					for iparam in param:
+						try:
 							self.auto_incorporate[iparam.vartype](iparam,hbl,self)
-						vbl.addLayout(hbl)
-						continue
-						
-				except: pass
-				self.auto_incorporate[param.vartype](param,vbl,self)
-			
+						except:
+							print iparam
+							if iparam.vartype == "EMButtonDialog": 
+								print "it was a button"
+								self.auto_incorporate[iparam.vartype](iparam,hbl,self)
+					vbl.addLayout(hbl)
+					continue
+				else:
+					self.auto_incorporate[param.vartype](param,vbl,self)
+#			
 			tabwidget.addTab(widget,title)
 		
 		layout.addWidget(tabwidget)
@@ -1811,13 +1940,13 @@ if __name__ == '__main__':
 	em_app = EMStandAloneApplication()
 	window = EMFormModule(params=get_example_form_params(),application=em_app)
 	window.setWindowTitle("A test form")
-	QtCore.QObject.connect(window,QtCore.SIGNAL("emform_ok"),on_ok)
-	QtCore.QObject.connect(window,QtCore.SIGNAL("emform_cancel"),on_cancel)
+	QtCore.QObject.connect(window.emitter(),QtCore.SIGNAL("emform_ok"),on_ok)
+	QtCore.QObject.connect(window.emitter(),QtCore.SIGNAL("emform_cancel"),on_cancel)
 	
 	window2= EMTableFormModule(params=get_example_table_form_params(),application=em_app)
 	window2.setWindowTitle("A test form")
-	QtCore.QObject.connect(window2,QtCore.SIGNAL("emform_ok"),on_ok)
-	QtCore.QObject.connect(window2,QtCore.SIGNAL("emform_cancel"),on_cancel)
+	QtCore.QObject.connect(window2.emitter(),QtCore.SIGNAL("emform_ok"),on_ok)
+	QtCore.QObject.connect(window2.emitter(),QtCore.SIGNAL("emform_cancel"),on_cancel)
 	
 #	
 #	import sys

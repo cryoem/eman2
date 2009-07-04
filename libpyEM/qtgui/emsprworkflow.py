@@ -4773,15 +4773,7 @@ class E2RefineParticlesTask(EMClassificationTools, E2Make3DTools):
 		p1,n1 = self.imt.get_initial_models_table()
 		p1.enable_multiple_selection = False
 		params.append(p1)
-		
 			
-		syms = ["icos","oct","tet","d","c","h"]
-		
-		psym =  ParamDef(name="symname",vartype="string",desc_short="Symmetry",desc_long="Symmetry to be imposed during refinement",property=None,defaultunits=db.get("symname",dfl="c"),choices=syms)
-		psymnum = ParamDef(name="symnumber",vartype="string",desc_short="Symmetry number",desc_long="In C,D and H symmetry, this is the symmetry number",property=None,defaultunits=db.get("symnumber",dfl="1"),choices=None)
-
-		params.append([psym,psymnum])
-		
 		pautomask = ParamDef(name="automask3d",vartype="boolean",desc_short="Auto mask 3D",desc_long="Causes automasking of the 3D volume to occur at the end of each iteration",property=None,defaultunits=db.get("automask3d",dfl=True),choices=None)
 		
 		params.append(pautomask)
@@ -5075,13 +5067,23 @@ class E2RefineParticlesTask(EMClassificationTools, E2Make3DTools):
 		pmirror = ParamDef(name="incmirror",vartype="boolean",desc_short="Include mirror",desc_long="Include the mirror portion of the asymmetric uni",property=None,defaultunits=db.get("incmirror",False),choices=[])
 		
 		
-		orient_options = ["angle based", "number based"]
+		orient_options = ["Angle Based", "Number Based"]
 		porientoptions = ParamDef(name="orientopt",vartype="choice",desc_short="Method of generating orientation distribution",desc_long="Choose whether you want the orientations generating based on an angle or based on a total number of orientations desired",property=None,defaultunits=db.get("orientopt",dfl=orient_options[0]),choices=orient_options)
 		porientoptionsentry  =  ParamDef(name="orientopt_entry",vartype="float",desc_short="value",desc_long="Specify the value corresponding to your choice",property=None,defaultunits=db.get("orientopt_entry",dfl=5),choices=[])
-		
+		from emform import EMOrientationDistDialog
+		buttondialog = EMOrientationDistDialog()
 		params.append([pprojector,porientgens])
+		
+		syms = ["icos","oct","tet","d","c","h"]
+		
+		psym =  ParamDef(name="symname",vartype="string",desc_short="Symmetry",desc_long="Symmetry to be imposed during refinement",property=None,defaultunits=db.get("symname",dfl="c"),choices=syms)
+		psymnum = ParamDef(name="symnumber",vartype="string",desc_short="Symmetry number",desc_long="In C,D and H symmetry, this is the symmetry number",property=None,defaultunits=db.get("symnumber",dfl="1"),choices=None)
+
+		params.append([psym,psymnum])
+	
+		
 		params.append([porientoptions,porientoptionsentry])
-		params.append(pmirror)
+		params.append([pmirror,buttondialog])
 		
 		#db_close_dict(self.form_db_name)
 		
@@ -5093,14 +5095,14 @@ class E2RefineParticlesTask(EMClassificationTools, E2Make3DTools):
 		if params["orientopt_entry"] < 0:
 			error_message.append("Please enter a positive non zero value for the angle/number of projections in the Project3D settings")
 		
-		if params["orientgen"] == "rand" and params["orientopt"] == "angle based":
-			error_message.append("The random orientation generator doesn't work with the \'angle based\' argument, please choose \'number based\' instead") 
+		if params["orientgen"] == "rand" and params["orientopt"] == "Angle Based":
+			error_message.append("The random orientation generator doesn't work with the \'Angle Based\' argument, please choose \'Number Based\' instead") 
 		
-		if int(params["orientopt_entry"]) !=  params["orientopt_entry"] and  params["orientopt"] == "number based":
-			error_message.append("In project3d - for the number based orientation method the number must be an integer")
+		if int(params["orientopt_entry"]) !=  params["orientopt_entry"] and  params["orientopt"] == "Number Based":
+			error_message.append("In project3d - for the Number Based orientation method the number must be an integer")
 		
 		options.orientgen = params["orientgen"]
-		if params["orientopt"] == "angle based":
+		if params["orientopt"] == "Angle Based":
 			options.orientgen += ":delta="
 		else:
 			options.orientgen += ":n="

@@ -389,13 +389,13 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 			self.display_web_help("http://blake.bcm.edu/emanwiki/EMAN2/Programs/e2eulerxplor")
 		else:
 			EMImage3DGUIModule.keyPressEvent(self,event)
-	def __init__(self,application,inspector_go=False,ensure_gl_context=True,application_control=True,auto=True):
+	def __init__(self,application,ensure_gl_context=True,application_control=True,auto=True):
 		self.init_lock = True
 		if auto:
 			self.gen_refinement_data()
 		self.euler_xplore_mode = False
 		
-		EM3DSymViewerModule.__init__(self,application,inspector_go=inspector_go,ensure_gl_context=ensure_gl_context,application_control=application_control)
+		EM3DSymViewerModule.__init__(self,application,ensure_gl_context=ensure_gl_context,application_control=application_control)
 		InputEventsManager.__init__(self)
 		Animator.__init__(self)
 		self.height_scale = 8.0
@@ -429,7 +429,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 				sym = db["symname"] + db["symnumber"]
 			#db_close_dict("bdb:emform.e2refine")
 		
-		self.set_sym(sym)
+		self.set_symmetry(sym)
 		
 		
 		if hasattr(self,"au_data"):
@@ -444,7 +444,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 				self.euler_xplore_mode = True
 						
 		self.init_lock = False
-		self.regen_dl()
+		self.force_update=True
 
 	def initializeGL(self):
 		glEnable(GL_NORMALIZE)
@@ -620,7 +620,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 #		if self.previous_len == len(eulers) : self.events_handlers["inspect"].repeat_event()
 #		else:self.events_handlers["inspect"].reset()
 		self.previous_len = len(eulers)
-		self.updateGL()
+		if not self.init_lock:self.updateGL()
 		get_application().setOverrideCursor(Qt.ArrowCursor)
 		
 	def __get_file_headers(self,filename):
@@ -641,12 +641,11 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 		self.current_events_handler = self.events_handlers["inspect"]
 	
 	def au_point_selected(self,i,event=None):
-		
 		if i == None: 
 			if event != None and event.modifiers()&Qt.ShiftModifier:
 				if self.special_euler != None:
 					self.special_euler = None
-					self.regen_dl()
+					if not self.init_lock:self.regen_dl()
 			return
 		
 		self.arc_anim_points = None
@@ -693,9 +692,9 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 		
 		if i != self.special_euler:
 			self.special_euler = i
-			self.regen_dl()
+			self.force_update = True
 		
-		self.updateGL()
+		if not self.init_lock: self.updateGL()
 			
 	def on_mx_view_closed(self):
 		self.mx_viewer = None
