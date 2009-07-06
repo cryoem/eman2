@@ -862,7 +862,7 @@ class DBDict:
 			if DBDEBUG: print "DB autoclosing %d/%d "%(len(l)-MAXOPEN,len(l))
 			for i in range(len(l)-MAXOPEN): 
 				if DBDEBUG: print "CLOSE:",l[i][2].name
-				l[i][2].close()
+				if (l[i][2]!=self) : l[i][2].close()
 
 	def close(self):
 		while self.lock : 
