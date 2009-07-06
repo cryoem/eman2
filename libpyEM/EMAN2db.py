@@ -796,10 +796,9 @@ class DBDict:
 #				print "already open",self.name
 				self.lock=False
 				return  		# return if the database is already open and in a compatible read-only mode
+			self.lock=False
 			self.close()	# we need to reopen read-write
-		
-		global MAXOPEN
-		if DBDict.nopen>MAXOPEN : self.close_one() 
+			self.lock=True
 
 		global DBDEBUG
 		if DBDEBUG:
@@ -840,6 +839,10 @@ class DBDict:
 			
 		DBDict.nopen+=1
 		self.lock=False
+
+		global MAXOPEN
+		if DBDict.nopen>MAXOPEN : self.close_one() 
+
 #		print "%d open"%DBDict.nopen
 #		print "opened ",self.name,ro
 #		self.bdb.open(file,name,db.DB_HASH,dbopenflags)
@@ -862,7 +865,10 @@ class DBDict:
 			if DBDEBUG: print "DB autoclosing %d/%d "%(len(l)-MAXOPEN,len(l))
 			for i in range(len(l)-MAXOPEN): 
 				if DBDEBUG: print "CLOSE:",l[i][2].name
-				if (l[i][2]!=self) : l[i][2].close()
+				if (l[i][2]!=self) : 
+					l[i][2].close()
+				else :
+					print "Warning: attempt to autoclose the DB we just opened, please report this"
 
 	def close(self):
 		while self.lock : 
