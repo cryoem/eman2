@@ -174,7 +174,7 @@ def main():
 
     #print_iminfo(datlst[0], "Original")
     
-    apix = -1
+    apix = datlst[0]["apix_x"]	# default to apix_x from file
     if options.apix:
         apix = options.apix
         for data in datlst:
@@ -201,16 +201,16 @@ def main():
             elif option1 == "calcsf":
                 dataf = data.do_fft()
                 curve = dataf.calc_radial_dist(ny, 0, 0.5,True)
+                curve=[i/(dataf["nx"]*dataf["ny"]*dataf["nz"]) for i in curve]
                 Util.save_data(0, 1.0/(apix*2.0*ny), curve, options.calcsf);
 
             elif option1 == "setsf":
-            	sf=XYData()
-            	sf.read_file("groel.sm")            	
+                sf=XYData()
+                sf.read_file(options.setsf)
                 dataf = data.do_fft()
                 curve = dataf.calc_radial_dist(ny, 0, 0.5,True)
-                filt=[sf.get_yatx(i/(apix*2*ny))/curve[i] for i in range(len(curve))]
-                dataf.apply_radial_func(ny,0,0.5)
-                print "untested"
+                filt=[dataf["nx"]*dataf["ny"]*dataf["nz"]*sf.get_yatx(i/(apix*2.0*ny))/curve[i] for i in range(len(curve))]
+                dataf.apply_radial_func(0,0.5,filt)
 
             elif option1 == "process":
                 fi = index_d[option1]

@@ -357,6 +357,39 @@ The basic design of EMAN Processors: <br>\
 		  virtual void create_radial_func(vector < float >&radial_mask) const = 0;
 	};
 
+	/** Same as FourierProcessor, except first computes the current image radial power spectrum and passes it to the processor
+	 * and radial oversampling is only 2x
+	 * @param cutoff_abs Processor radius in terms of Nyquist (0-.5).
+	 * @param cutoff_pixels Width in Fourier pixels (0 - size()/2).
+	 * @param cutoff_freq Resolution in 1/A (0 - 1 / size*apix).
+	 * @param apix Override A/pix in the image header (changes x,y and z).
+	 */
+	class FourierAnlProcessor:public Processor
+	{
+	  public:
+		void process_inplace(EMData * image);
+
+		static string get_group_desc()
+		{
+			return "Fourier Filter processors are a group of processor in the frequency domain. Before using such processors on an image, the image must be transformed from real space to the fourier space. FourierProcessor class is the base class of fourier space processors. Each specific processor is either a lowpass filter processor, or a highpass filter processor, or neighter. The unit of lowpass and highpass parameters are in terms of Nyquist, valid range is [0,0.5]. ";
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("cutoff_abs", EMObject::FLOAT, "Processor radius in terms of Nyquist (0-.5)");
+			d.put("cutoff_pixels", EMObject::FLOAT, " Width in Fourier pixels (0 - size()/2)");
+			d.put("cutoff_freq", EMObject::FLOAT, "Resolution in 1/A (0 - 1 / size*apix)");
+			d.put("apix", EMObject::FLOAT, " Override A/pix in the image header (changes x,y and z)");
+			return d;
+		}
+
+	  protected:
+		  virtual void preprocess(EMData * image) {}
+		  virtual void create_radial_func(vector < float >&radial_mask) const = 0;
+	};
+
+
 	/**Multiplies each Fourier pixel by its amplitude
 	 *@param sum Adds the weights to sum for normalization
 	 *@param sqrt Weights using sqrt of the amplitude if set
@@ -788,6 +821,32 @@ The basic design of EMAN Processors: <br>\
 	  protected:
 		void create_radial_func(vector < float >&radial_mask) const;
 	};
+
+	/** This processor attempts to remove the low resolution peak present in all cryoEM data
+	 */
+	class HighpassAutoPeakProcessor:public FourierAnlProcessor
+	{
+	  public:
+		string get_name() const
+		{
+			return "filter.highpass.autopeak";
+		}
+		static Processor *NEW()
+		{
+			return new HighpassAutoPeakProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "Attempts to automatically remove the low resolution peak present in virtually all cryoEM data.";
+		}
+
+	  protected:
+		void create_radial_func(vector < float >&radial_mask) const;
+		  virtual void preprocess(EMData * image);
+		  float highpass;
+	};
+
 
 	/**processor radial function: f(x) = 1.0-exp(-x*x/(highpass*highpass))
 	 */

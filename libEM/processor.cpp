@@ -63,6 +63,7 @@ template <> Factory < Processor >::Factory()
 	force_add(&HighpassSharpCutoffProcessor::NEW);
 	force_add(&LowpassGaussProcessor::NEW);
 	force_add(&HighpassGaussProcessor::NEW);
+	force_add(&HighpassAutoPeakProcessor::NEW);
 	force_add(&LinearRampFourierProcessor::NEW);
 
 	force_add(&LowpassTanhProcessor::NEW);
@@ -376,6 +377,46 @@ void FourierProcessor::process_inplace(EMData * image)
 	image->update();
 }
 
+void FourierAnlProcessor::process_inplace(EMData * image)
+{
+	if (!image) {
+		LOGWARN("NULL Image");
+		return;
+	}
+
+	preprocess(image);
+
+// 	int array_size = FFTRADIALOVERSAMPLE * image->get_ysize();
+// 	float step=0.5f/array_size;
+// 
+// 	vector < float >yarray(array_size);
+
+
+	if (image->is_complex()) {
+		// we use 2 samples per radial pixel here
+		vector <float>yarray = image->calc_radial_dist(image->get_ysize(),0,0.5,1);
+		create_radial_func(yarray);
+		image->apply_radial_func(0, 0.5f/yarray.size(), yarray);
+	}
+	else {
+		EMData *fft = image->do_fft();
+		vector <float>yarray = fft->calc_radial_dist(fft->get_ysize(),0,0.5,1);
+		create_radial_func(yarray);
+		fft->apply_radial_func(0,  0.5f/yarray.size(), yarray);
+		EMData *ift = fft->do_ift();
+
+		memcpy(image->get_data(),ift->get_data(),ift->get_xsize()*ift->get_ysize()*ift->get_zsize()*sizeof(float));
+
+		//ift->update(); Unecessary
+
+		delete fft;
+		delete ift;
+
+	}
+
+	image->update();
+}
+
 void LowpassFourierProcessor::preprocess(EMData * image)
 {
 	if(params.has_key("apix")) {
@@ -660,6 +701,44 @@ void HighpassGaussProcessor::create_radial_func(vector < float >&radial_mask) co
 		radial_mask[i] = 1.0f - exp(-x * x / (highpass * highpass));
 		x += step;
 	}
+}
+
+void HighpassAutoPeakProcessor::preprocess(EMData * image)
+{
+	if(params.has_key("apix")) {
+		image->set_attr("apix_x", (float)params["apix"]);
+		image->set_attr("apix_y", (float)params["apix"]);
+		image->set_attr("apix_z", (float)params["apix"]);
+	}
+
+	const Dict dict = image->get_attr_dict();
+
+	if( params.has_key("cutoff_abs") ) {
+		highpass = params["cutoff_abs"];
+	}
+	else if( params.has_key("cutoff_freq") ) {
+		highpass = (float)params["cutoff_freq"] * (float)dict["apix_x"] * (float)dict["nx"] / 2.0f;
+	}
+	else if( params.has_key("cutoff_pixels") ) {
+		highpass = (float)params["cutoff_pixels"] / (float)dict["nx"];
+	}
+}
+
+void HighpassAutoPeakProcessor::create_radial_func(vector < float >&radial_mask) const
+{
+	int c=2;
+
+	for (int i=0; i<radial_mask.size(); i++) printf("%d\t%f\n",i,radial_mask[i]);
+	for (c=2; c<radial_mask.size(); c++) if (radial_mask[c-1]<=radial_mask[c]) break;
+	if (c>highpass*2) c=highpass*2;		// the *2 is for the 2x oversampling
+
+	radial_mask[0]=0.0;
+//	for (int i=1; i<radial_mask.size(); i++) radial_mask[i]=(i<=c?radial_mask[c+1]/radial_mask[i]:1.0);
+	for (int i=1; i<radial_mask.size(); i++) radial_mask[i]=(i<=c?0.0:1.0);
+
+	printf("%f %d\n",highpass,c);
+	for (int i=0; i<radial_mask.size(); i++) printf("%d\t%f\n",i,radial_mask[i]);
+
 }
 
 
