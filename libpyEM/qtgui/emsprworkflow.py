@@ -2911,7 +2911,7 @@ class E2CTFOutputTask(E2CTFWorkFlowTask):
 			self.write_db_entries(params)
 			string_args = []
 			bool_args = ["wiener","phaseflip"]
-			additional_args = ["--dbds=%s"  %spr_ptcls_dict,"--buildenvelope"]
+			additional_args = ["--dbds=%s"  %spr_ptcls_dict,"--buildsf"]
 			temp_file_name = "e2ctf_output_stdout.txt"
 			#self.spawn_task("e2ctf.py",options,string_args,bool_args,additional_args,temp_file_name)
 			# Steve directed that the output writing task should use a single thead on July 3rd 2009
