@@ -732,7 +732,7 @@ class EMAN2DB:
 
 	def remove_dict(self,name):
 		self.open_dict(name)
-		self.__dict__[name].open()
+		self.__dict__[name].realopen()
 		self.__dict__[name].bdb.truncate()
 		#if not (name in self.dicts.keys()) : 
 		#if name in self.dicts.keys():
