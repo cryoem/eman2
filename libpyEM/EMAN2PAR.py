@@ -397,8 +397,8 @@ def runEMDCServer(port,verbose):
 	else :
 		for port in range(9990,10000):
 			try: 
-#				server = SocketServer.TCPServer(("", port), EMDCTaskHandler)
 				server = SocketServer.ThreadingTCPServer(("", port), EMDCTaskHandler)
+#				server = SocketServer.TCPServer(("", port), EMDCTaskHandler)
 				print "Server started on %s port %d"%(socket.gethostname(),port)
 			except:
 				if verbose: print "Port %d unavailable"%port
@@ -478,7 +478,9 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 			if cmd=="RDYT" :
 				# Get the first task and send it (pickled)
 				EMDCTaskHandler.clients[client_id]=(self.client_address[0],time.time())
-				task=self.queue.get_task(client_id)
+
+				task=self.queue.get_task(client_id)		# get the next task
+
 				if task==None :
 					sendobj(self.sockf,None)			# no tasks available
 				else:

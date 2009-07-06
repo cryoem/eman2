@@ -82,8 +82,11 @@ def DB_cleanup(signum=None,stack=None):
 		if len(DBDict.alldicts)>0 : 
 			print "Program interrupted (%d), closing %d databases, please wait (%d)"%(signum,len(DBDict.alldicts),os.getpid())
 		if stack!=None : traceback.print_stack(stack)
-	for d in DBDict.alldicts.keys(): d.close()
+	for d in DBDict.alldicts.keys(): 
+		d.close()
+		d.lock=True		# prevents reopening
 	for e in EMAN2DB.opendbs.values(): e.close()
+	for d in DBDict.alldicts.keys(): d.lock=False	# This will (intentionally) allow the threads to fail, since the environment is now closed
 	if signum in (2,15) :
 		print "Shutdown complete, exiting" 
 		sys.exit(1)
@@ -626,16 +629,24 @@ class EMAN2DB:
 	"""This class implements a local database of data and metadata for EMAN2"""
 	
 	opendbs={}
+	lock=False
 	
 	def open_db(path=None):
 		"""This is an alternate constructor which may return a cached (already open)
 		EMAN2DB instance"""
 		# check the cache of opened dbs first
 #		if not path : path=e2getcwd()
+		while EMAN2DB.lock : 
+			time.sleep(1)
+		EMAN2DB.lock=True
 		if not path : path=e2gethome()+"/.eman2"
 		if path=="." or path=="./" : path=e2getcwd()
-		if EMAN2DB.opendbs.has_key(path) : return EMAN2DB.opendbs[path]
-		return EMAN2DB(path)
+		if EMAN2DB.opendbs.has_key(path) : 
+			EMAN2DB.lock=False
+			return EMAN2DB.opendbs[path]
+		ret=EMAN2DB(path)
+		EMAN2DB.lock=False
+		return ret
 	
 	open_db=staticmethod(open_db)
 	
@@ -756,6 +767,7 @@ class DBDict:
 		self.name = name
 		self.parent=parent
 		self.dbenv=dbenv
+		self.lock=False				# used to reduce thread conflicts ... should probably be using threading.Lock
 		self.file=file
 		self.rohint=ro
 		self.lasttime=time.time()		# last time the database was accessed
@@ -772,14 +784,17 @@ class DBDict:
 	def __del__(self):
 		self.close()
 
-	def open(self,ro=False):
+	def realopen(self,ro=False):
 		"""This actually opens the database (unless already open), if ro is set and the database is not already
 		open read-write, it will be opened read-only"""
 
+		while self.lock : time.sleep(1)
+		self.lock=True
 		self.lasttime=time.time()
 		if self.bdb!=None :
 			if ro==True or self.isro==False : 
 #				print "already open",self.name
+				self.lock=False
 				return  		# return if the database is already open and in a compatible read-only mode
 			self.close()	# we need to reopen read-write
 		
@@ -824,6 +839,7 @@ class DBDict:
 			self.isro=False
 			
 		DBDict.nopen+=1
+		self.lock=False
 #		print "%d open"%DBDict.nopen
 #		print "opened ",self.name,ro
 #		self.bdb.open(file,name,db.DB_HASH,dbopenflags)
@@ -849,11 +865,16 @@ class DBDict:
 				l[i][2].close()
 
 	def close(self):
+		while self.lock : 
+			print "Sleep on close ",self.name
+			time.sleep(1)
+		self.lock=True
 		if self.bdb == None: return
 #		print "close x ",self.path+"/"+str(self.file),self.name,"XXX"
 		self.bdb.close()
 		self.bdb=None
 		DBDict.nopen-=1
+		self.lock=False
 	
 	def sync(self):
 		if self.bdb!=None : self.bdb.sync()
@@ -872,7 +893,7 @@ class DBDict:
 	def get_attr(self,n,attr):
 		"""Returns an attribute or set of attributes for an image or set of images. n may be a single key or a list/tuple/set of keys,
 		and attr may be a single attribute or a list/tuple/set. Returns the attribute, a dict of attributes or a image keyed dict of dicts keyed by attribute"""
-		self.open(self.rohint)	# make sure the database is open
+		self.realopen(self.rohint)	# make sure the database is open
 		try :
 			ret={}
 			for i in n:
@@ -897,7 +918,7 @@ class DBDict:
 	def set_attr(self,n,attr,val=None):
 		"""Sets an attribute to val in EMData object 'n'. Alternatively, attr may be a dictionary containing multiple key/value pairs
 		to be updated in the EMData object. Unlike with get_attr, n must always refer to a single EMData object in the database."""
-		self.open()
+		self.realopen()
 		a=loads(self.bdb.get(dumps(n,-1),txn=self.txn))
 		if isinstance(attr,dict) :
 			a.update(attr)
@@ -905,7 +926,7 @@ class DBDict:
 		self[n]=a
 
 	def __len__(self):
-		self.open(self.rohint)
+		self.realopen(self.rohint)
 		try: return self["maxrec"]+1
 		except: return 0
 #		return self.bdb.stat(db.DB_FAST_STAT)["nkeys"]
@@ -928,7 +949,7 @@ of these occasional errors"""
 
 
 	def __setitem__(self,key,val):
-		self.open()
+		self.realopen()
 		if (val==None) :
 			try:
 				self.__delitem__(key)
@@ -964,7 +985,7 @@ of these occasional errors"""
 			if isinstance(key,int) and (not self.has_key("maxrec") or key>self["maxrec"]) : self["maxrec"]=key
 				
 	def __getitem__(self,key):
-		self.open(self.rohint)
+		self.realopen(self.rohint)
 		try: r=loads(self.bdb.get(dumps(key,-1),txn=self.txn))
 		except: return None
 		if isinstance(r,dict) and r.has_key("is_complex_x") :
@@ -985,39 +1006,39 @@ of these occasional errors"""
 		return r
 
 	def __delitem__(self,key):
-		self.open()
+		self.realopen()
 		self.bdb.delete(dumps(key,-1),txn=self.txn)
 
 	def __contains__(self,key):
-		self.open(self.rohint)
+		self.realopen(self.rohint)
 		return self.bdb.has_key(dumps(key,-1))
 
 	def item_type(self,key):
-		self.open(self.rohint)
+		self.realopen(self.rohint)
 		try: r=loads(self.bdb.get(dumps(key,-1),txn=self.txn))
 		except: return None
 		if isinstance(r,dict) and r.has_key("is_complex_x") : return EMData
 		return type(r)
 
 	def keys(self):
-		self.open(self.rohint)
+		self.realopen(self.rohint)
 		return [loads(x) for x in self.bdb.keys() if x[0]=='\x80']
 
 	def values(self):
-		self.open(self.rohint)
+		self.realopen(self.rohint)
 		return [self[k] for k in self.keys()]
 
 	def items(self):
-		self.open(self.rohint)
+		self.realopen(self.rohint)
 		return [(k,self[k]) for k in self.keys()]
 
 	def has_key(self,key):
-		self.open(self.rohint)
+		self.realopen(self.rohint)
 		return self.bdb.has_key(dumps(key,-1))
 
 	def get_data_path(self,key):
 		"""returns the path to the binary data as "path*location". Only valid for EMData objects."""
-		self.open(self.rohint)
+		self.realopen(self.rohint)
 		try: r=loads(self.bdb.get(dumps(key,-1)))
 		except: return None
 		if isinstance(r,dict) and r.has_key("is_complex_x") :
@@ -1031,7 +1052,7 @@ of these occasional errors"""
 	def get(self,key,dfl=None,txn=None,target=None,nodata=0,region=None):
 		"""Alternate method for retrieving records. Permits specification of an EMData 'target'
 		object in which to place the read object"""
-		self.open(self.rohint)
+		self.realopen(self.rohint)
 		try: r=loads(self.bdb.get(dumps(key,-1),txn=txn))
 		except: return dfl
 		if isinstance(r,dict) and r.has_key("is_complex_x") :
@@ -1078,7 +1099,7 @@ of these occasional errors"""
 		
 	def get_header(self,key,txn=None,target=None):
 		"""Alternate method for retrieving metadata for EMData records."""
-		self.open(self.rohint)
+		self.realopen(self.rohint)
 		try: return loads(self.bdb.get(dumps(key,-1),txn=txn))
 		except: return None
 
@@ -1088,7 +1109,7 @@ of these occasional errors"""
 		this is so this function can be used interchangeably with EMData.write_image 
 		'''
 		"Alternative to x[key]=val with transaction set"
-		self.open()
+		self.realopen()
 		if (val==None) :
 			try:
 				self.__delitem__(key)
@@ -1133,7 +1154,7 @@ of these occasional errors"""
 
 	def set_header(self,key,val,txn=None):
 		"Alternative to x[key]=val with transaction set"
-		self.open()
+		self.realopen()
 		# make sure the object exists and is an EMData object
 		try: r=loads(self.bdb.get(dumps(key,-1),txn=txn))
 		except: raise Exception,"set_header can only be used to update existing EMData objects"
@@ -1151,7 +1172,7 @@ of these occasional errors"""
 			
 
 	def update(self,dict):
-		self.open()
+		self.realopen()
 		for i,j in dict.items(): self[i]=j
 
 

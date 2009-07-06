@@ -70,7 +70,7 @@ images far from focus."""
 	parser.add_option("--auto_fit",action="store_true",help="Runs automated CTF fitting on the input images",default=False)
 	parser.add_option("--bgmask",type="int",help="Compute the background power spectrum from the edge of the image, specify a mask radius in pixels which would largely mask out the particles. Default is boxsize/2.",default=0)
 	parser.add_option("--fixnegbg",action="store_true",help="Will perform a final background correction to avoid slight negative values near zeroes")
-	parser.add_option("--buildenvelope",action="store_true",help="Will determine the structure factor*envelope for the aggregate set of images")
+	parser.add_option("--computesf",action="store_true",help="Will determine the structure factor*envelope for the aggregate set of images")
 	parser.add_option("--apix",type="float",help="Angstroms per pixel for all images",default=0)
 	parser.add_option("--voltage",type="float",help="Microscope voltage in KV",default=0)
 	parser.add_option("--cs",type="float",help="Microscope Cs (spherical aberation)",default=0)
@@ -137,18 +137,18 @@ images far from focus."""
 	if options.phaseflip or options.wiener or options.virtualout or options.storeparm: # only put this if statement here to make the program flow obvious
 		write_e2ctf_output(options) # converted to a function so to work with the workflow
 
-	if options.buildenvelope :
+	if options.computesf :
 		img_sets = get_gui_arg_img_sets(options.filenames)
-		print "Recomputing envelope"
+		print "Recomputing structure factor"
 		envelope=compute_envelope(img_sets)
 		
 		db_misc=db_open_dict("bdb:e2ctf.misc")
-		db_misc["envelope"]=envelope
+		db_misc["strucfac"]=envelope
 #		print envelope
 
 		#db_close_dict("bdb:e2ctf.misc")
 		
-		out=file("envelope.txt","w")
+		out=file("strucfac.txt","w")
 		for i in envelope: out.write("%f\t%f\n"%(i[0],i[1]))
 		out.close()
 
