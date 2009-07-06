@@ -869,7 +869,9 @@ class DBDict:
 			print "Sleep on close ",self.name
 			time.sleep(1)
 		self.lock=True
-		if self.bdb == None: return
+		if self.bdb == None: 
+			self.lock=False
+			return
 #		print "close x ",self.path+"/"+str(self.file),self.name,"XXX"
 		self.bdb.close()
 		self.bdb=None
