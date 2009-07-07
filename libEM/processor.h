@@ -389,6 +389,50 @@ The basic design of EMAN Processors: <br>\
 		  virtual void create_radial_func(vector < float >&radial_mask) const = 0;
 	};
 
+	/** Evaluate individual particle images using a tenchique similar to that used for CTF evaluation
+	 * @param cutoff_abs Processor radius in terms of Nyquist (0-.5).
+	 */
+	class SNREvalProcessor:public Processor
+	{
+		public:
+		string get_name() const
+		{
+			return "eval.maskedsnr";
+		}
+
+		void process_inplace(EMData * image);
+
+		void set_params(const Dict & new_params)
+		{
+			params = new_params;
+//			sum = params["sum"];
+//			dosqrt = params["sqrt"];
+//			printf("%s %f\n",params.keys()[0].c_str(),lowpass);
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+//			d.put("sum", EMObject::EMDATA, "Adds the weights to sum for normalization");
+//			d.put("sqrt", EMObject::INT, "Weights using sqrt of the amplitude if set");
+			return d;
+		}
+
+		static Processor *NEW()
+		{
+			return new SNREvalProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "Evaluates the SNR of the particle using a masking method similar to that used in the CTF analysis process. The image is not changed. The resulting value is placed in the particle dictionary as eval_maskedsnr";
+		}
+
+		protected:
+		EMData *sum;
+		int dosqrt;
+	};
+
 
 	/**Multiplies each Fourier pixel by its amplitude
 	 *@param sum Adds the weights to sum for normalization
@@ -3734,7 +3778,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		float calc_mean(EMData * image) const;
 	};
 
-	inline float NormalizeUnitProcessor::calc_mean(EMData *) const { return 0; }
+ 	inline float NormalizeUnitProcessor::calc_mean(EMData *) const { return 0; }
 
 	/**Normalize an image so its elements sum to 1.0 (fails if mean=0)
 	 */

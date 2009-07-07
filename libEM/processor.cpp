@@ -459,6 +459,38 @@ void HighpassFourierProcessor::preprocess(EMData * image)
 	}
 }
 
+void SNREvalProcessor::process_inplace(EMData * image)
+{
+	int ys=image->get_ysize();
+	
+	EMData *mask1=new EMData(ys,ys,1);
+	mask1->process_inplace("mask.gaussian",Dict("outer_radius", ys/2.0));
+	EMData *mask2=mask1->copy();
+	mask2->mult(-1.0f);
+	mask2->add(1.0);
+	mask2->process_inplace("mask.decayedge2d",Dict("width",4));
+	
+/*	
+
+
+
+mask1=EMData(ys2,ys2,1)
+		mask1.to_one()
+		mask1.process_inplace("mask.gaussian",{"outer_radius":radius})
+		mask2=mask1.copy()*-1+1
+#		mask1.process_inplace("mask.decayedge2d",{"width":4})
+		mask2.process_inplace("mask.decayedge2d",{"width":4})
+		mask1.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
+		mask2.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
+		ratio1=mask1.get_attr("square_sum")/(ys*ys)	#/1.035
+		ratio2=mask2.get_attr("square_sum")/(ys*ys)
+		masks[(ys,radius)]=(mask1,ratio1,mask2,ratio2)
+
+
+
+*/
+}
+
 void AmpweightFourierProcessor::process_inplace(EMData * image)
 {
 	EMData *fft;
