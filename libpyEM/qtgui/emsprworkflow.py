@@ -2053,7 +2053,7 @@ class E2BoxerTask(ParticleWorkFlowTask):
 		'''
 		
 		self.report_task = EMRawDataReportTask()
-		table,n = self.report_task.get_raw_data_table()# now p is a EMParamTable with rows for as many files as there in the project
+		table,n = self.report_task.get_raw_data_table()
 		from emform import EMFileTable,int_lt
 		table.insert_column_data(0,EMFileTable.EMColumnData("Stored Boxes",E2BoxerTask.get_boxes_in_database,"Boxes currently stored in the EMAN2 database",int_lt))
 		
@@ -2062,7 +2062,7 @@ class E2BoxerTask(ParticleWorkFlowTask):
 	def get_project_files_that_have_db_boxes_in_table(self):
 		
 		self.report_task = EMRawDataReportTask()
-		table,n = self.report_task.get_raw_data_table()# now p is a EMParamTable with rows for as many files as there in the project
+		table,n = self.report_task.get_raw_data_table()
 		
 		data_dict = EMProjectDataDict(spr_ptcls_dict)
 		dict = data_dict.get_data_dict() # this is to protect against back compatibility problems. This is necessary for the columns_object to operate without throwing (in unusual circumstances the user deletes the particles, and this accomodates for it)

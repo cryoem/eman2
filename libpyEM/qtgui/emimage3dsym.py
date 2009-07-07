@@ -194,6 +194,8 @@ class EulerData:
 	def __getitem__(self,idx):
 		return self.data[idx]
 	
+	def __len__(self): return len(self.data)
+	
 	def set_data(self,data):
 		self.data = data
 		self.eulers = []
@@ -328,6 +330,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 		
 		self.euler_data = None # will be turned into an EulerData if necessary
 		self.image_display_window = None # used if people are looking at image data, for example, if they opened a list of EMData's in e2.py using euler_display
+		self.displayed_image_number = None # used to update the displayed image if new data is set 
 		self.special_euler = None # If set, the special Euler will get the special color - should be an index (int)
 		self.special_color = "gold"
 
@@ -335,6 +338,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 
 		self.initialized = True
 	def __del__(self):
+		print "delete emimage3dsym"
 		self.clear_gl_memory()
 		if self.image_display_window != None:
 			w = self.image_display_window 
@@ -342,7 +346,13 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 			w.closeEvent(None)
 		
 		EMImage3DGUIModule.__del__(self)
-		
+		self.close_image_display()
+	def close_image_display(self):
+		if self.image_display_window:
+			tmp = self.image_display_window
+			self.image_display_window = None
+			tmp.closeEvent(None)
+			
 	def clear_gl_memory(self):
 		try: self.gl_context_parent.makeCurrent() # this is important  when you have more than one OpenGL context operating at the same time
 		except: return # maybe the object is already dead in which case OpenGL probably cleaned the memory up anyway
@@ -356,13 +366,17 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 		self.euler_data = EulerData()
 		self.euler_data.set_data(emdata_list)
 		self.specify_eulers(self.euler_data.get_eulers())
-		if default != "None": 
+		if default != "None":
 			l = self.euler_data.get_score_list(default)
 			self.set_column_scores(l)
 		else: self.set_column_scores(None)
 		self.get_inspector().set_score_options(self.euler_data.get_score_options(),default)
 		self.force_update = True
-
+		  
+		if self.image_display_window and self.displayed_image_number and len(self.euler_data) > self.displayed_image_number:
+			self.image_display_window.set_data(self.euler_data[self.displayed_image_number],"Data")
+			self.image_display_window.updateGL()
+		else: self.displayed_image_number = None # blanket response
 	def set_column_score_key(self,key):
 		if key == "None":
 			self.set_column_scores(None)
@@ -410,7 +424,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 			resize_necessary = True
 				
 		self.image_display_window.set_data(self.euler_data[object_number],"Data")
-		
+		self.displayed_image_number = object_number
 		if resize_necessary:
 			get_application().show_specific(self.image_display_window)
 			self.image_display_window.optimally_resize()
@@ -564,7 +578,6 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 		glMaterial(GL_FRONT,GL_EMISSION,color["emission"])
 		glMaterial(GL_FRONT,GL_SHININESS,color["shininess"])
 	
-		
 	def gl_color(self,color):
 		glColor(*color)
 		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,color)
@@ -572,7 +585,6 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 		glMaterial(GL_FRONT,GL_EMISSION,(0,0,0,1.0))
 		glMaterial(GL_FRONT,GL_SHININESS,64.0)
 
-		
 	def trace_great_arcs(self, points):
 		
 		self.init_basic_shapes()
@@ -703,7 +715,12 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 			glCallList(self.diskdl)
 				
 			glEndList()
-
+		
+	def closeEvent(self,event):
+		self.close_image_display()
+		EMGUIModule.closeEvent(event)
+		import sys
+		print sys.getrefcount(self)
 
 	def generate_current_display_list(self,force=False):
 		self.init_basic_shapes()

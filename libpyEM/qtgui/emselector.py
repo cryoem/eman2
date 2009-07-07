@@ -307,7 +307,7 @@ def EMSelectorTemplate(Type):
 			self.emdata_matrix_3d_icon = QtGui.QIcon(directory + "/multiple_images_3d.png")
 			self.up_arrow_icon = QtGui.QIcon(directory + "/up_arrow.png")
 			self.plot_icon = QtGui.QIcon(directory + "/plot.png")
-	
+			self.euler_icon = QtGui.QIcon(get_image_directory() + "eulerxplor.png")
 		def __init_plot_options(self):
 			self.replace = QtGui.QRadioButton("Replace")
 			self.include = QtGui.QRadioButton("Include")
@@ -620,6 +620,11 @@ def EMSelectorTemplate(Type):
 					if EMUtil.get_image_count(selected_items[0].get_path()) < 1001:
 						menu2.addAction(self.plot_icon,"2D Plot")
 						menu2.addAction(self.emdata_3d_icon,"3D Viewer")
+					md = EMData(selected_items[0].get_path(),0,True)
+					md = md.get_attr_dict()
+					if md.has_key("xform.projection"):
+						# the assumption is that they all have the xform.projection header attribute, which could fail
+						menu2.addAction(self.euler_icon,"Euler Viewer")
 					menu.addMenu(menu2)
 				
 				elif selected_items[0].is_2d_plot():
@@ -653,6 +658,11 @@ def EMSelectorTemplate(Type):
 				for item in self.menu_selected_items:
 					data.append(item.get_emdata())
 				self.preview_data(data,"")
+			
+			elif action.text() == "Euler Viewer":
+				get_application().setOverrideCursor(Qt.BusyCursor)
+				self.preview_euler_view( self.menu_selected_items[0].get_path())
+				get_application().setOverrideCursor(Qt.ArrowCursor)
 			elif action.text() == "2D Plot" or action.text() == "Plot 2D":
 				get_application().setOverrideCursor(Qt.BusyCursor)
 				self.preview_plot( self.menu_selected_items[0].get_path())
@@ -1051,6 +1061,25 @@ def EMSelectorTemplate(Type):
 			
 			return False
 		
+		def preview_euler_view(self, full_path):
+			if self.dialog_mode: return
+			from emimagemx import EMDataListCache
+			from emimage3dsym import EM3DSymViewerModule
+			if self.single_preview_only():
+				if not isinstance(self.gl_image_preview,EM3DSymViewerModule):
+					if self.gl_image_preview != None: get_application().close_specific(self.gl_image_preview)
+					self.gl_image_preview = EM3DSymViewerModule()
+				
+				
+				self.gl_image_preview.set_emdata_list_as_data(EMDataListCache(full_path))
+				get_application().show_specific(self.gl_image_preview)
+				self.gl_image_preview.updateGL()
+				
+			else:
+				preview = EM3DSymViewerModule(get_application())
+				preview.set_emdata_list_as_data(EMDataListCache(full_path))
+				get_application().show_specific(preview)
+				
 		def preview_plot(self,filename):
 			if self.dialog_mode: return
 			
