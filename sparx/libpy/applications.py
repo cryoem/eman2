@@ -2295,11 +2295,11 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 			if  Fourvar:  
 				tavg, ave1, ave2, vav, sumsq = add_ave_varf(data, mask, "a", CTF, ctf_2_sum)
 				# write the current average
-				drop_image(fft(tavg), os.path.join(outdir, "aqc_%03d.hdf"%(total_iter)))
+				fft(tavg).write_image(os.path.join(outdir, "aqc.hdf"), total_iter-1)
 				tavg    = fft(Util.divn_img(tavg, vav))
 
 				vav_r	= Util.pack_complex_to_real(vav)
-				drop_image(vav_r, os.path.join(outdir, "varf_%03d.hdf"%(total_iter)))
+				vav_r.write_image(os.path.join(outdir, "varf.hdf"), total_iter-1)
 				sumsq_r = Util.pack_complex_to_real(sumsq)
 				rvar    = rot_avg_table(vav_r)
 				rsumsq  = rot_avg_table(sumsq_r)
@@ -2311,11 +2311,12 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 					freq.append(float(i)/(len(rvar)-1)*0.5)
 				frsc = [freq, frsc]
 				del freq
-				write_text_file(frsc, os.path.join(outdir, "resolution%03d"%(total_iter)) )
+				write_text_file(frsc, os.path.join(outdir, "resolution%03d"%(total_iter)))
 			else:
 				ave1, ave2 = sum_oe(data, "a", CTF, ctf_2_sum)
 				if CTF:  tavg = fft(Util.divn_img(fft(Util.addn_img(ave1, ave2)), ctf_2_sum))
 				else:	 tavg = (ave1+ave2)/nima
+				tavg.write_image(os.path.join(outdir, "aqc.hdf"), total_iter-1)
 				frsc = fsc_mask(ave1, ave2, mask, 1.0, os.path.join(outdir, "resolution%03d"%(total_iter)))
 
 			ref_data[2] = tavg
@@ -2334,7 +2335,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 				tavg, cs = user_func(ref_data)
 
 			# write the current filtered average
-			drop_image(tavg, os.path.join(outdir, "aqf_%03d.hdf"%(total_iter)))
+			tavg.write_image(os.path.join(outdir, "aqf.hdf"), total_iter-1)
 
 			# a0 should increase; stop algorithm when it decreases.
 			if Fourvar:  
@@ -2536,11 +2537,10 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			if myid == main_node:
 
 				if Fourvar:
-					drop_image(fft(tavg), os.path.join(outdir, "aqc_%03d.hdf"%(total_iter)))
+					fft(tavg).write_image(os.path.join(outdir, "aqc.hdf"), total_iter-1)
 					tavg    = fft(Util.divn_img(tavg, vav))
-
 					vav_r	= Util.pack_complex_to_real(vav)
-					drop_image(vav_r, os.path.join(outdir, "varf_%03d.hdf"%(total_iter)))
+					vav_r.write_image(os.path.join(outdir, "varf.hdf"), total_iter-1)
 					rvar	= rot_avg_table(vav_r)
 					rsumsq  = rot_avg_table(Util.pack_complex_to_real(sumsq))
 					frsc = []
@@ -2555,7 +2555,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				else:
 					if CTF:  tavg = fft(Util.divn_img(fft(Util.addn_img(ave1, ave2)), ctf_2_sum))
 					else:	 tavg = (ave1+ave2)/nima
-					drop_image(tavg, os.path.join(outdir, "aqc_%03d.hdf"%(total_iter)))
+					tavg.write_image(os.path.join(outdir, "aqc.hdf"), total_iter-1)
 					frsc = fsc_mask(ave1, ave2, mask, 1.0, os.path.join(outdir, "resolution%03d"%(total_iter)))
 
 				ref_data[2] = tavg
@@ -2575,7 +2575,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					tavg, cs = user_func(ref_data)
 
 				# write the current filtered average
-				drop_image(tavg, os.path.join(outdir, "aqf_%03d.hdf"%(total_iter)))
+				tavg.write_image(os.path.join(outdir, "aqf.hdf"), total_iter-1)
 
 				# a0 should increase; stop algorithm when it decreases.    
 				if Fourvar:  
