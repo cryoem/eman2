@@ -241,7 +241,7 @@ def ali2d_g_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	from utilities    import model_circle, model_blank, drop_image, get_image, get_input_from_string
 	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type, bcast_number_to_all, bcast_list_to_all
 	from statistics   import fsc_mask, sum_oe, add_ave_varf_MPI
-	from alignment    import Numrinit, ringwe
+	from alignment    import Numrinit, ringwe, ali2d_single_iter
 	from development  import ali2d_single_iter_g
 	from filter       import filt_table, filt_ctf, filt_tophatb
 	from numpy        import reshape, shape
@@ -420,11 +420,11 @@ def ali2d_g_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			if myid == main_node:
 
 				if Fourvar:
-					drop_image(fft(tavg), os.path.join(outdir, "aqc_%03d.hdf"%(total_iter)))
+					fft(tavg).write_image(os.path.join(outdir, "aqc.hdf"), total_iter-1)
 					tavg    = fft(Util.divn_img(tavg, vav))
 
 					vav_r	= Util.pack_complex_to_real(vav)
-					drop_image(vav_r, os.path.join(outdir, "varf_%03d.hdf"%(total_iter)))
+					vav_r.write_image(os.path.join(outdir, "varf.hdf"), total_iter-1)
 					rvar	= rot_avg_table(vav_r)
 					rsumsq  = rot_avg_table(Util.pack_complex_to_real(sumsq))
 					frsc = []
@@ -435,11 +435,11 @@ def ali2d_g_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 						freq.append(float(i)/(len(rvar)-1)*0.5)
 					frsc = [freq, frsc]
 					del freq
-					write_text_file(frsc, os.path.join(outdir, "resolution%03d"%(total_iter)) )
+					write_text_file(frsc, os.path.join(outdir, "resolution%03d"%(total_iter)))
 				else:
 					if CTF:  tavg = fft(Util.divn_img(fft(Util.addn_img(ave1, ave2)), ctf_2_sum))
 					else:	 tavg = (ave1+ave2)/nima
-					drop_image(tavg, os.path.join(outdir, "aqc_%03d.hdf"%(total_iter)))
+					tavg.write_image(os.path.join(outdir, "aqc.hdf"), total_iter-1)
 					frsc = fsc_mask(ave1, ave2, mask, 1.0, os.path.join(outdir, "resolution%03d"%(total_iter)))
 
 				ref_data[2] = tavg
@@ -459,7 +459,7 @@ def ali2d_g_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					tavg, cs = user_func(ref_data)
 
 				# write the current filtered average
-				drop_image(tavg, os.path.join(outdir, "aqf_%03d.hdf"%(total_iter)))
+				tavg.write_image(os.path.join(outdir, "aqf.hdf"), total_iter-1)
 
 				# a0 should increase; stop algorithm when it decreases.    
 				if Fourvar:  
@@ -488,7 +488,10 @@ def ali2d_g_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				again = mpi_bcast(again, 1, MPI_INT, main_node, MPI_COMM_WORLD)
 				if not again: break
 			if total_iter != max_iter*len(xrng):
-				sx_sum, sy_sum = ali2d_single_iter_g(data, data_prep, kb, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF)
+				if total_iter >= max_iter-5: 
+					sx_sum, sy_sum = ali2d_single_iter_g(data, data_prep, kb, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF)
+				else:
+					sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF)
 				sx_sum = mpi_reduce(sx_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 				sy_sum = mpi_reduce(sy_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 
@@ -3531,7 +3534,8 @@ def ormql(image,crefim,xrng,yrng,step,mode,numr,cnx,cny):
 	sys = sx*so + sy*co
 	return  ang,sxs,sys,mirror,peak    	
 
-def ormy(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, interpolation_method=None):
+
+def ormy(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, interpolation_method=None, refinement_method=None, opti_strategy=None):
 	"""
 	Determine shift and rotation between image and reference image (refim)
 	One can specify the interpolation method for the routine
@@ -3674,7 +3678,7 @@ def ormy2(image, refim, crefim, xrng, yrng, step, mode, numr, cnx, cny, interpol
 	This function is mostly same as the ormy, the only difference is that it 
 	does fine refinement in the end
 	"""
-	from math import pi, cos, sin
+	from math import pi, cos, sin, sqrt
 	from fundamentals import fft, mirror
 	from utilities import amoeba, model_circle
 	from sys import exit
@@ -3685,8 +3689,9 @@ def ormy2(image, refim, crefim, xrng, yrng, step, mode, numr, cnx, cny, interpol
 		interpolation_method = interpolation_method_2D #use global setting
 		
 	maxrin = numr[-1]
+	nx = image.get_xsize()
+
 	if interpolation_method=="gridding":
-		nx = image.get_xsize()
 		npad = 2
 		N = nx*npad
 		#support of the window
@@ -3740,9 +3745,9 @@ def ormy2(image, refim, crefim, xrng, yrng, step, mode, numr, cnx, cny, interpol
 				# straight
 				for i in xrange(0, maxrin): line[i] = qt[i, 0]					
 				#  find the current maximum and its location
-				ps = line.peak_search(1, 1)
+				ps = line.max_search()
 				qn  = ps[1]
-				jtot = ps[2]/2
+				jtot = ps[0]/2
 				q = Processor.EMFourierFilter(line, parline)
 				data.insert(0, q)
 				ps = amoeba([jtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 500, data)
@@ -3751,11 +3756,11 @@ def ormy2(image, refim, crefim, xrng, yrng, step, mode, numr, cnx, cny, interpol
 				qn = ps[1]
 
 				# mirror
-				for i in xrange(0, maxrin): line[i] = qt[i,1]
+				for i in xrange(0, maxrin): line[i] = qt[i, 1]
 				#  find the current maximum and its location
-				ps = line.peak_search(1, 1)				
+				ps = line.max_search()
 				qm = ps[1]
-				mtot = ps[2]/2
+				mtot = ps[0]/2
 				q = Processor.EMFourierFilter(line, parline)
 				data.insert(0, q)
 				ps = amoeba([mtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 500, data)
@@ -3763,7 +3768,7 @@ def ormy2(image, refim, crefim, xrng, yrng, step, mode, numr, cnx, cny, interpol
 				mtot = ps[0][0]*2
 				qm = ps[1]
 
-				if qn >=peak or qm >=peak:
+				if qn >= peak or qm >= peak:
 					if qn >= qm:
 						"""
 						NOTICE: This is important!!!!
@@ -3798,7 +3803,7 @@ def ormy2(image, refim, crefim, xrng, yrng, step, mode, numr, cnx, cny, interpol
 				retvals = Util.Crosrng_ms(crefim, cimage, numr)
 				qn = retvals["qn"]
 				qm = retvals["qm"]
-				if qn >=peak or qm >=peak:
+				if qn >= peak or qm >= peak:
 					sx = -ix
 					sy = -iy
 					if qn >= qm:
@@ -3837,7 +3842,7 @@ def ormy2(image, refim, crefim, xrng, yrng, step, mode, numr, cnx, cny, interpol
 		if is_mirror:
 			data.insert(0, mirror(image))
 		else:
-			data.insert(0, image)		
+			data.insert(0, image)
 		data.insert(1, refim)
 		data.insert(2, mask)
 		if is_mirror:
@@ -3848,6 +3853,10 @@ def ormy2(image, refim, crefim, xrng, yrng, step, mode, numr, cnx, cny, interpol
 	
 	if ps[0][0] < 180: ps[0][0] = ps[0][0]+360
 	if ps[0][0] > 180: ps[0][0] = ps[0][0]-360
+	if is_mirror:
+		ps[0][0] = -ps[0][0]
+		ps[0][1] = -ps[0][1]
+	
 	return  ps[0][0], ps[0][1], ps[0][2], is_mirror, -ps[1]
 
 
@@ -4044,6 +4053,9 @@ def ormy2lbfgsb(image,refim,crefim,xrng,yrng,step,mode,numr,cnx,cny,interpolatio
 
 	if ps[0] < 180: ps[0] = ps[0]+360
 	if ps[0] > 180: ps[0] = ps[0]-360
+	if is_mirror:
+		ps[0] = -ps[0]
+		ps[1] = -ps[1]
 	return  ps[0], ps[1], ps[2], is_mirror
 
 
@@ -4378,10 +4390,8 @@ def ormy3(image,crefim,xrng,yrng,step,mode,numr,cnx,cny,interpolation_method=Non
 	so = -sin(ang*pi/180.0)
 	sxs = sx*co - sy*so
 	sys = sx*so + sy*co
-	if is_mirror:
-		ang = -ang
-		sxs = -sxs	
 	return  ang,sxs,sys,is_mirror,peak	
+
 
 def ormy3g(imali, kb, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 	"""
