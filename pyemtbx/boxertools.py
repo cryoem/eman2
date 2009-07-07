@@ -1481,7 +1481,7 @@ class Boxable:
 	
 	def write_to_db(self):
 		'''
-		Writes fundamentally important information to the database
+		Writes important information to the database
 		'''
 		project_db = EMProjectDB()
 		
@@ -2079,7 +2079,8 @@ class Boxable:
 				box = self.boxes.pop(i)
 				self.deleted_auto_boxes.append(box)
 				if box.isref: refs.append(box)
-				
+		
+		
 		return [lostboxes,refs]
 				
 
@@ -2101,13 +2102,28 @@ class Boxable:
 			
 			if ( exclusionimage.get(x,y) != 0):
 				lostboxes.append(i)
-
-				box = self.boxes.pop(i)
 				self.deleted_auto_boxes.append(box)
+				box = self.boxes.pop(i)
 				if box.isref: refs.append(box)
 	
 		return [lostboxes,refs]
 	
+	def write_all_boxes_to_db(self):
+		'''
+		in the middle of adding this
+		'''
+		man = []
+		auto = []
+		ref = []
+		for box in self.boxes:
+			if box.isref: ref.append(TrimBox(box))
+			elif box.ismanual: man.append(TrimBox(box))
+			else: auto.append(TrimBox(box))
+			
+		self.store_key_entry_in_idd("auto_boxes",auto)
+		self.store_key_entry_in_idd("manual_boxes", man)
+		self.store_key_entry_in_idd("reference_boxes", ref)
+		
 	def add_exclusion_particle(self,box):
 		
 		xx = box.xcorner+box.xsize/2-1

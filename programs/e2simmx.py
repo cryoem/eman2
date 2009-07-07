@@ -142,22 +142,26 @@ class EMParallelSimMX:
 		----
 		self.clen - the number of images in the image defined by args[0], the number of columns in the similarity matrix
 		self.rlen - the number of images in the image defined by args[1], the number of rows in the similarity matrix
-		self.mxout - a list of output images of dimensions self.clen x self.rlen. 
+		----
+		Also, since we adopted region output writing as our preferred approach, this function makes sure the output
+		image(s) exists on disk and has the correct dimensions - seeing as this is the way region writing works (the image
+		has to exist on disk and have its full dimensions)
 		'''
 		self.clen=EMUtil.get_image_count(self.args[0])
 		self.rlen=EMUtil.get_image_count(self.args[1])
 		
-		mxout=[EMData()]
-		mxout[0].set_size(self.clen,self.rlen)
-		mxout[0].to_zero()
-		if options.saveali : 
-			mxout.append(mxout[0].copy()) # dx
-			mxout.append(mxout[0].copy()) # dy
-			mxout.append(mxout[0].copy()) # alpha (angle)
-			mxout.append(mxout[0].copy()) # mirror
+		output = self.args[2]
 		
-		self.mxout=mxout
-
+		if file_exists(output):
+			if options.force: remove_file(output)
+			else: raise RuntimeError("The output file exists. Please remove it or specify the force option")
+			
+		e = EMData(self.clen,self.rlen)
+		e.to_zero()
+		n = 1
+		if self.options.saveali: n = 5 # the total number of images written to disk
+		for i in range(n):
+			e.write_image(output,i)
 	
 	def __get_blocks(self):
 		'''
@@ -204,6 +208,14 @@ class EMParallelSimMX:
 	
 	
 	def check_blocks(self,blocks):
+		'''
+		@param blocks that which is returned from __get_blocks -
+		This function is for testing. 
+		Goes through all of the blocks and adds a '1' to the pixels in the corresponding
+		location in the image for each block. If any pixel is non zero there is a problem
+		This call to this function could be removed eventually - if the data sets are huge
+		then it could potentially occupy a lot of memory 
+		'''
 		e = EMData()
 		e.set_size(self.clen,self.rlen)
 		e.to_zero()
@@ -229,7 +241,7 @@ class EMParallelSimMX:
 			print "block error",e["mean"]
 			print "wrote error_block.mrc to disk"
 			print blocks	
-			raise RuntimeError("There was a catastrophic error: please send that which was printed out to David")
+			raise RuntimeError("There was a catastrophic error: please send that which was printed out to EMAN2 developers")
 		
 	def execute(self):
 		'''
@@ -240,7 +252,7 @@ class EMParallelSimMX:
 			blocks = self.__get_blocks()
 	#		print blocks
 	
-			self.check_blocks(blocks) # testing function
+			self.check_blocks(blocks) # testing function can be removed at some point
 			
 			self.task_customers = []
 			self.tids = []
@@ -285,7 +297,6 @@ class EMParallelSimMX:
 				
 				time.sleep(5)
 					
-#			self.__finalize_writing()
 		else: raise NotImplementedError("The parallelism option you specified (%s) is not supported" %self.options.parallel )
 				
 	def __store_output_data(self,rslts):
@@ -293,62 +304,18 @@ class EMParallelSimMX:
 		Store output data to internal images (matrices)
 		@param a dictionary return by the EMSimTaskDC
 		'''
-#		min_r = None
-#		min_c = None
-#		for r,d in rslts["sim_data"].items():
-#			if min_r == None or r < min_r:
-#				min_r = r
-#			for c,data in d.items():
-#				if min_c == None or c < min_c:
-#					min_c = c
-#				cmp = data[0]
-#				tran = data[1]
-#				self.mxout[0].set(c,r,cmp)
-#				if self.options.saveali:
-#					params = tran.get_params("2d")
-#					self.mxout[1].set(c,r,params["tx"])
-#					self.mxout[2].set(c,r,params["ty"])
-#					self.mxout[3].set(c,r,params["alpha"])
-#					self.mxout[4].set(c,r,params["mirror"])
-		
+	
 		result_data = rslts["rslt_data"]
 		output = self.args[2]
-		
-		if file_exists(output):
-			nx,ny,nz = gimme_image_dimensions3D(output)
-			remove = False
-			if nx != self.clen or ny != self.rlen:
-				remove = True		
-			if remove:
-				remove_file(output)
-		
-		if not file_exists(output):
-			e = EMData(self.clen,self.rlen)
-			e.to_zero()
-			for i in range(len(result_data)):
-				e.write_image(output,i)
 		
 		insertion_c = rslts["min_ref_idx"]
 		insertion_r = rslts["min_ptcl_idx"]
 		result_mx = result_data[0]
 		r = Region(insertion_c,insertion_r,result_mx.get_xsize(),result_mx.get_ysize())
-		#print "inserting at",insertion_r,insertion_c,result_mx.get_xsize(),result_mx.get_ysize()
-		#print min_r,min_c
-#		if insertion_c != min_c:
-#			print insertion_c,min_c
-#			raise
-#		if insertion_r != min_r:
-#			print insertion_r,min_r
-#			raise
+
+		# Note this is region io - the init_memory function made sure the images exist and are the right dimensions (on disk)
 		for i,mxout in enumerate(result_data):
 			mxout.write_image(output,i,EMUtil.ImageType.IMAGE_UNKNOWN,False,r)
-		
-	def __finalize_writing(self):
-		'''
-		Called after all task have completed - writes the output data to disk
-		'''
-		for i,mxout in enumerate(self.mxout):
-			mxout.write_image(self.args[2],i)
 
 from EMAN2db import EMTask
 class EMSimTaskDC(EMTask):
@@ -550,7 +517,7 @@ def main():
 		
 	
 	# just remove the file - if the user didn't specify force then the error should have been found in the check function
-	if os.path.exists(options.outfile):
+	if file_exists(options.outfile):
 		if (options.force):
 			remove_file(options.outfile)
 	
@@ -694,19 +661,19 @@ def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ral
 	return ret
 
 def check(options,verbose):
-	
+	print "in check"
 	error = False
 	if ( options.nofilecheck == False ):
-		if not os.path.exists(options.datafile) and not db_check_dict(options.datafile):
+		if not file_exists(options.datafile) and not db_check_dict(options.datafile):
 			if verbose:
 				print "Error: the file expected to contain the particle images (%s) does not exist." %(options.reffile)
 			error = True
-		if not os.path.exists(options.reffile) and not db_check_dict(options.reffile):
+		if not file_exists(options.reffile) and not db_check_dict(options.reffile):
 			if verbose:
 				print "Error: the file expected to contain the projection images (%s) does not exist." %(options.reffile)
 			error = True
 		
-		if ( os.path.exists(options.datafile) and os.path.exists(options.reffile) ):
+		if ( file_exists(options.datafile) and file_exists(options.reffile) ):
 			(xsize, ysize ) = gimme_image_dimensions2D(options.datafile);
 			(pxsize, pysize ) = gimme_image_dimensions2D(options.reffile);
 			if ( xsize != pxsize ):
@@ -717,8 +684,8 @@ def check(options,verbose):
 				if verbose:
 					print "Error - the (y) dimension of the reference images %d does not match that of the particle data %d" %(ysize,pysize)
 				error = True
-		
-		if os.path.exists(options.outfile):
+				
+		if  file_exists(options.outfile):
 			if ( not options.force):
 				if verbose:
 					print "Error: File %s exists, will not write over - specify the force option" %options.outfile

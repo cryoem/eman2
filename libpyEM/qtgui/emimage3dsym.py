@@ -335,12 +335,23 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 
 		self.initialized = True
 	def __del__(self):
+		self.clear_gl_memory()
 		if self.image_display_window != None:
 			w = self.image_display_window 
 			self.image_display_window = None
 			w.closeEvent(None)
-			
 		
+		EMImage3DGUIModule.__del__(self)
+		
+	def clear_gl_memory(self):
+		try: self.gl_context_parent.makeCurrent() # this is important  when you have more than one OpenGL context operating at the same time
+		except: return # maybe the object is already dead in which case OpenGL probably cleaned the memory up anyway
+		vals = ["sphere_points_dl","spheredl","highresspheredl","diskdl","cappedcylinderdl","great_arc_dl","asym_u_triangles_dl","cylinderdl","trace_dl" ]
+		for dl in vals :
+			if getattr(self,dl) != 0:
+				glDeleteLists(getattr(self,dl),1)
+				setattr(self,dl,0)
+						
 	def set_emdata_list_as_data(self,emdata_list,default="None"):
 		self.euler_data = EulerData()
 		self.euler_data.set_data(emdata_list)
@@ -417,7 +428,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 		
 		if self.euler_data != None and (event.modifiers()&Qt.ShiftModifier or self.mouse_mode == "pick"):
 			
-			m,p,v = self.model_matrix.tolist(),self.vdtools.wproj.tolist(),self.vdtools.wview.tolist()
+			v = self.vdtools.wview.tolist()
 				
 			glSelectBuffer(512)
 			glRenderMode(GL_SELECT)
@@ -643,7 +654,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 		self.specified_eulers = eulers
 	
 	def init_basic_shapes(self):
-		
+		self.gl_context_parent.makeCurrent()
 		if self.gq == None:
 			
 			self.gq=gluNewQuadric() # a quadric for general use
@@ -693,7 +704,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 				
 			glEndList()
 
-	
+
 	def generate_current_display_list(self,force=False):
 		self.init_basic_shapes()
 		

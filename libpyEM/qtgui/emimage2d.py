@@ -543,6 +543,7 @@ class EMImage2DModule(EMGUIModule):
 		self.mouse_event_handler = self.mouse_event_handlers["emit"]
 		
 	def clear_gl_memory(self):
+		self.gl_context_parent.makeCurrent() # this is important  when you have more than one OpenGL context operating at the same time
 		if (self.shapelist != 0):
 			glDeleteLists(self.shapelist,1)
 			self.shapelist = 0

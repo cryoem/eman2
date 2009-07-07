@@ -216,15 +216,16 @@ def write_e2ctf_output(options):
 				pdb = db_open_dict("bdb:project")
 				dbds = pdb.get(options.dbds,dfl={})
 				data_entry = {}
-				if dbds.has_key(filename):
-					data_entry = dbds[filename]
+				file_key = get_file_tag(filename)
+				if dbds.has_key(file_key):
+					data_entry = dbds[file_key]
 				
 				if phaseout:
 					data_entry["Phase flipped"] = phaseout
 				if wienerout:
 					data_entry["Wiener filtered"] = wienerout
 					
-				dbds[filename] = data_entry
+				dbds[file_key] = data_entry
 				pdb[options.dbds] = dbds
 					
 			if logid : E2progress(logid,float(i+1)/len(options.filenames))

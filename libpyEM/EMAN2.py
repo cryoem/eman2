@@ -1006,7 +1006,7 @@ def file_exists( file_name ):
 			return True
 	else:
 		try:
-			if db_check_dict(file_name):
+			if db_check_dict(file_name) and EMUtil.get_image_count(file_name) != 0: # a database can exist but have no images in it, in which case we consider it to not exist
 				return True
 			else: return False
 		except: return False

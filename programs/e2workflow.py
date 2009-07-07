@@ -443,9 +443,12 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.launchers["Interactive Tuning - e2ctf"] = self.launch_e2ctf_tune
 		ctf_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Generate Output - e2ctf")))
 		self.launchers["Generate Output - e2ctf"] =  self.launch_e2ctf_write_ouptut
+		ctf_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Generate Structure Factor - e2ctf")))
+		self.launchers["Generate Structure Factor - e2ctf"] =  self.launch_e2ctf_write_sf
 		ctf_list[0].setIcon(0,self.icons["ctf"])
 		ctf_list[1].setIcon(0,self.icons["ctf"])
 		ctf_list[2].setIcon(0,self.icons["ctf"])
+		ctf_list[3].setIcon(0,self.icons["ctf"])
 		ctf.addChildren(ctf_list)
 		#self.launchers["e2ctf"] = self.launch_e2ctf_management
 		
@@ -478,9 +481,9 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		mis.addChildren(mis_list)
 		
 		refine2d_list = []
-		refine2d_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Generate Classes (Sets) - e2refine2d")))
+		refine2d_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Generate Classes - e2refine2d")))
 		refine2d_list[-1].setIcon(0,self.icons["classes"])
-		self.launchers["Generate Classes (Sets) - e2refine2d"] = self.launch_refine2d_choose_stacks
+		self.launchers["Generate Classes - e2refine2d"] = self.launch_refine2d_choose_stacks
 #		refine2d_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Generate Classes (Particles) - e2refine2d")))
 #		self.launchers["Generate Classes (Particles) - e2refine2d"] = self.launch_refine2d_choose_ptcls
 #		refine2d_list[-1].setIcon(0,self.icons["classes"])
@@ -495,9 +498,9 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		init_model.addChildren(init_model_list)
 		
 		refine_list = []
-		refine_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Run (Sets) - e2refine")))
+		refine_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Run - e2refine")))
 		refine_list[-1].setIcon(0,self.icons["refine"])
-		self.launchers["Run (Sets) - e2refine"] = self.launch_e2refine_sets
+		self.launchers["Run - e2refine"] = self.launch_e2refine_sets
 #		refine_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Run (Particles) e2refine")))
 #		refine_list[-1].setIcon(0,self.icons["refine"])
 #		self.launchers["Run (Particles) e2refine"] = self.launch_e2refine
@@ -948,6 +951,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	def	launch_refine2d_choose_stacks(self): self.launch_task(E2Refine2DChooseSetsTask(),"Choose Sets For e2refine2d")
 	def launch_refine2d_choose_ptcls(self): self.launch_task(E2Refine2DChooseParticlesTask(),"Choose Particles For e2refine2d")	
 	def launch_e2ctf_write_ouptut(self): self.launch_task(E2CTFOutputTask(),"e2ctf Write Output")
+	def launch_e2ctf_write_sf(self): self.launch_task(E2CTFSFOutputTask(),"e2ctf Structure Factor")
 	def launch_e2ctf_tune(self): self.launch_task(E2CTFGuiTask(),"e2ctf Intreface")
 	def launch_e2ctf_auto_ft(self): self.launch_task(E2CTFAutoFitTask(),"e2ctf Auto Fitting")
 	def launch_ctf_report(self):self.launch_task(CTFReportTask(),"CTF Report")

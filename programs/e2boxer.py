@@ -1025,13 +1025,13 @@ class RawDatabaseAutoBoxer:
 						for name in particle_data:
 							s={}
 							s["Original Data"] = name
-							d[name] = s
+							d[get_file_tag(name)] = s
 						particle_data = d
 
 					out_name = boxable.get_image_file_name(imageformat=options.outformat)
 					s={}
 					s["Original Data"] = out_name
-					particle_data[out_name] = s
+					particle_data[get_file_tag(out_name)] = s
 					db[options.dbls] = particle_data
 		
 			if self.logid:  E2progress(self.logid,float(i+1)/len(image_names))

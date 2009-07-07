@@ -546,8 +546,8 @@ class E2TomoBoxerGuiTask(WorkFlowTask):
 		
 		self.report_task = EMTomoRawDataReportTask()
 		table,n = self.report_task.get_raw_data_table()# now p is a EMParamTable with rows for as many files as there in the project
-		from emform import EMFileTable
-		table.insert_column_data(0,EMFileTable.EMColumnData("Stored Boxes",E2TomoBoxerGuiTask.get_tomo_boxes_in_database,"Boxes currently stored in the EMAN2 database"))
+		from emform import EMFileTable,int_lt
+		table.insert_column_data(0,EMFileTable.EMColumnData("Stored Boxes",E2TomoBoxerGuiTask.get_tomo_boxes_in_database,"Boxes currently stored in the EMAN2 database",int_lt))
 		
 		return table, n
 
@@ -651,9 +651,9 @@ class EMTomoStoredCoordsTool:
 		project_data = data_dict.get_data_dict() # this is for automated clean up only...
 		
 		table= self.get_raw_data_table()# now p is a EMParamTable with rows for as many files as there in the project
-		from emform import EMFileTable
+		from emform import EMFileTable,int_lt
 	
-		table.insert_column_data(0,EMFileTable.EMColumnData("Stored Boxes",E2TomoBoxerGuiTask.get_tomo_boxes_in_database,"Boxes currently stored in the EMAN2 database"))
+		table.insert_column_data(0,EMFileTable.EMColumnData("Stored Boxes",E2TomoBoxerGuiTask.get_tomo_boxes_in_database,"Boxes currently stored in the EMAN2 database",int_lt))
 		self.columns_object = E2BoxerTask.ParticleColumns(tpr_ptcls_dict)
 		table.insert_column_data(1,EMFileTable.EMColumnData("Particle Dims",self.columns_object.get_particle_dims_project,"The dimensions of the particles that are stored on disk"))
 		#self.tmp = E2BoxerTask.Tmp()

@@ -241,7 +241,7 @@ class EMParamTable(list):
 			item.setSelected(True)
 
 class EMFileTable(QtGui.QTableWidget):
-	def __init__(self,listed_names=[],name="filenames",desc_short="File Names",desc_long="A list of file names",single_selection=False):
+	def __init__(self,listed_names=[],name="filenames",desc_short="File Names",desc_long="A list of file names",single_selection=False,enable_save=True):
 		'''
 		@param listed_names The names that will be listed in the first column of the table
 		@param column_data A list of EMFileTable.EMContextMenuData objects
@@ -263,7 +263,7 @@ class EMFileTable(QtGui.QTableWidget):
 		self.context_menu_data = {} # see self.get_context_menu_dict help
 		QtCore.QObject.connect(self, QtCore.SIGNAL("itemDoubleClicked(QTableWidgetItem*)"),self.table_item_double_clicked)
 		
-		self.context_menu_data["Save As"] = EMFileTable.save_as
+		if enable_save: self.context_menu_data["Save As"] = EMFileTable.save_as
 		self.context_menu_refs = [] # to keep a reference to context menus related objects - somebody has to
 
 		self.single_selection = single_selection
@@ -276,7 +276,7 @@ class EMFileTable(QtGui.QTableWidget):
 		self.timer_interval = 2000
 		self.animated_columns = {}
 		self.busy = 0
-	
+		
 	def register_animated_column(self,column_title):
 		if self.timer == None:
 			self.timer = QtCore.QTimer()
@@ -411,7 +411,7 @@ class EMFileTable(QtGui.QTableWidget):
 			return converted # for efficiency
 		
 		return self.name_conversions[name]
-			
+	
 	def build_table(self):
 		'''
 		Builds the table contents. Should only need to be called once, just prior to this object's
@@ -432,7 +432,6 @@ class EMFileTable(QtGui.QTableWidget):
 		for i,name in enumerate(self.listed_names):
 			if self.icon != None: item = QtGui.QTableWidgetItem(self.icon,self.display_name(name))
 			else: item = QtGui.QTableWidgetItem(self.display_name(name))
-
 
 			if not file_exists(name):item.setTextColor(QtGui.QColor(0,128,0))
 				
@@ -464,11 +463,15 @@ class EMFileTable(QtGui.QTableWidget):
 			item = QtGui.QTableWidgetItem(cd.name)
 			item.setTextAlignment(QtCore.Qt.AlignHCenter)
 			item.setToolTip(cd.tooltip)
+			
 			self.setHorizontalHeaderItem(col,item)
 			for i in xrange(0,len(self.listed_names)):
 				item = QtGui.QTableWidgetItem(cd.function(self.listed_names[i]))
 				item.setTextAlignment(QtCore.Qt.AlignHCenter)
 				item.setFlags(flag3)
+				if cd.lt_function: # This is how sort gets customized
+					import new 
+					item.__lt__ = new.instancemethod(cd.lt_function,item,QtGui.QTableWidgetItem)
 				self.setItem(i, col, item)
 			col += 1
 
@@ -498,8 +501,10 @@ class EMFileTable(QtGui.QTableWidget):
 			for j, cd in enumerate(self.column_data):
 				item = QtGui.QTableWidgetItem(cd.function(list_of_names[i]))
 				item.setTextAlignment(QtCore.Qt.AlignHCenter)
-				flag3 = Qt.ItemFlags(Qt.ItemIsEnabled)
 				item.setFlags(flag3)
+				if cd.lt_function: # This is how sort gets customized
+					import new 
+					item.__lt__ = new.instancemethod(cd.lt_function,item,QtGui.QTableWidgetItem)
 				self.setItem(r+i,j+1, item)
 			
 			if self.single_selection and i == (len(list_of_names)-1):
@@ -570,10 +575,11 @@ class EMFileTable(QtGui.QTableWidget):
 		'''
 		This class defines what's required to add column data to the EMFileTable
 		'''
-		def __init__(self,name,function,tooltip):
+		def __init__(self,name,function,tooltip,lt_function=None):
 			self.name = name # The name of the column of data
 			self.function = function # The function which is called to populate the column with meta data - takes a file name as an argument, returns a string
 			self.tooltip = tooltip # The helpful tooltip
+			self.lt_function = lt_function # less than function - if specified is used as the operator< and sophisticates the sorting behavior
 			
 	class EMButtonData():
 		'''
@@ -582,7 +588,41 @@ class EMFileTable(QtGui.QTableWidget):
 		def __init__(self,name,function):
 			self.name = name # The name of the button
 			self.function = function # that which is called when the button is clicked (takes a single argument)
+			
+def float_lt(self,item2):
+	'''
+	This function is used to customize the sorting behavior of columns in the EMFileTable (and any subclasses)
+	'''
+	try:
+		f = float(self.text())
+	except:
+		return 1
 	
+	try:
+		f2 = float(item2.text())
+	except:
+		return 0
+	
+	return f < f2 
+
+def int_lt(self,item2):
+	'''
+	This function is used to customize the sorting behavior of columns in the EMFileTable (and any subclasses)
+	'''
+	try:
+		f = int(self.text())
+	except:
+		return 1
+	
+	try:
+		f2 = int(item2.text())
+	except:
+		return 0
+	
+	return f < f2 
+
+	
+
 class EM2DFileTable(EMFileTable):
 	def __init__(self,listed_names=[],name="filenames",desc_short="File Names",desc_long="A list of file names",single_selection=False):
 		'''
@@ -651,15 +691,15 @@ class EMTomographicFileTable(EMFileTable):
 		pass
 
 class EM2DStackTable(EMFileTable):
-	def __init__(self,listed_names=[],name="filenames",desc_short="File Names",desc_long="A list of file names",single_selection=False):
+	def __init__(self,listed_names=[],name="filenames",desc_short="File Names",desc_long="A list of file names",single_selection=False,enable_save=True):
 		'''
 		see EMFileTable for comments on parameters
 		'''
-		EMFileTable.__init__(self,listed_names,name,desc_short,desc_long,single_selection)
+		EMFileTable.__init__(self,listed_names,name,desc_short,desc_long,single_selection,enable_save)
 		self.icon = QtGui.QIcon(get_image_directory() + "/multiple_images.png")
 		self.display_module = None
 		self.module_events_manager = None
-		self.context_menu_data["Save As"] = EM2DStackTable.save_as
+		if enable_save: self.context_menu_data["Save As"] = EM2DStackTable.save_as
 		
 #	def __del__(self):
 #		print "stack table dies"
@@ -673,6 +713,9 @@ class EM2DStackTable(EMFileTable):
 		@table_widget The table widget from which the entries were selected
 		'''
 		for name in list_of_names:
+			if not file_exists(name):
+				error("File %s doesn't exist" %s, "Error")
+				continue
 			from emimagemx import EMDataListCache
 			tmp = EMDataListCache(table_widget.convert_text(name))
 			from emsave import save_data

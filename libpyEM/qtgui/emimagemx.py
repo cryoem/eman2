@@ -802,6 +802,7 @@ class EMImageMXModule(EMGUIModule):
 		#qt_widget.emit(*args,**kargs)
 	
 	def clear_gl_memory(self):
+		self.gl_context_parent.makeCurrent() # this is important  when you have more than one OpenGL context operating at the same time
 		if self.main_display_list != 0:
 			glDeleteLists(self.main_display_list,1)
 			self.main_display_list = 0

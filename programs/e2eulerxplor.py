@@ -445,6 +445,9 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 						
 		self.init_lock = False
 		self.force_update=True
+		
+	def __del__(self):
+		EM3DSymViewerModule.__del__(self) # this is here for documentation purposes - beware that the del function is important
 
 	def initializeGL(self):
 		glEnable(GL_NORMALIZE)
@@ -650,7 +653,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 		
 		self.arc_anim_points = None
 		self.projection = None
-		if 1:
+		if self.euler_data:
 #			db = db_open_dict(self.average_file)
 #			a = db.get(i)
 #			print a["nx"]
@@ -664,9 +667,9 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 				self.class_idx = self.average.get_attr("projection_image_idx")
 			except:
 				self.class_idx = -1
-		else: self.average = None
+		else: return
 		
-		if self.projection  == None and self.average == None: return
+		#if self.projection  == None and self.average == None: return
 		
 		first = False
 		if self.mx_viewer == None:

@@ -556,7 +556,7 @@ class EMClassAveTask(EMTask):
 	   	if ref != None:
 	   		if verbose:
 	   			print "Aligning final average to reference image"
-	   		ref_to_average = self.__align(ref,average)
+	   		ref_to_average = self.__align(ref,averages[-1])
 	   		ref_ali = ref_to_average.get_attr("xform.align2d")
 			ref_ali.invert()
 			
