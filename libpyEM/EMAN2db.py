@@ -756,6 +756,7 @@ class DBDict:
 	
 	alldicts=weakref.WeakKeyDictionary()
 	nopen=0
+	closelock=0
 	fixedkeys=frozenset(("nx","ny","nz","minimum","maximum","mean","sigma","square_sum","mean_nonzero","sigma_nonzero"))
 	def __init__(self,name,file=None,dbenv=None,path=None,parent=None,ro=False):
 		"""This is a persistent dictionary implemented as a BerkeleyDB Hash
@@ -851,6 +852,8 @@ class DBDict:
 	def close_one(self):
 		"""Will select and close any excess open databases. Closure is based on the number of times it has been repoened and the
 		time it was last used."""
+		if DBDict.closelock : return		# someone else is already handling it
+		DBDict.closelock=True
 		global MAXOPEN
 #		l=[(i.opencount,i.lasttime,i) for i in self.alldicts if i.bdb!=None]		# list of all open databases and usage,time info
 		l=[(i.lasttime,i.opencount,i) for i in self.alldicts if i.bdb!=None]		# sort by time 
@@ -869,11 +872,16 @@ class DBDict:
 					l[i][2].close()
 				else :
 					print "Warning: attempt to autoclose the DB we just opened, please report this"
+		
+		DBDict.closelock=False
 
 	def close(self):
-		while self.lock : 
+		n=0
+		while self.lock and n<5: 
 			print "Sleep on close ",self.name
 			time.sleep(1)
+			n+=1
+		if n>=5 : return	# failed too many times, just return and let things fail where they may...
 		self.lock=True
 		if self.bdb == None: 
 			self.lock=False

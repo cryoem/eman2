@@ -519,7 +519,7 @@ def powspec_with_bg(stackfile,radius=0,edgenorm=True,oversamp=1):
 	except:
 		mask1=EMData(ys2,ys2,1)
 		mask1.to_one()
-		mask1.process_inplace("mask.gaussian",{"outer_radius":radius})
+		mask1.process_inplace("mask.gaussian",{"outer_radius":radius,"exponent":2.0})
 		mask2=mask1.copy()*-1+1
 #		mask1.process_inplace("mask.decayedge2d",{"width":4})
 		mask2.process_inplace("mask.decayedge2d",{"width":4})
@@ -528,6 +528,7 @@ def powspec_with_bg(stackfile,radius=0,edgenorm=True,oversamp=1):
 		ratio1=mask1.get_attr("square_sum")/(ys*ys)	#/1.035
 		ratio2=mask2.get_attr("square_sum")/(ys*ys)
 		masks[(ys,radius)]=(mask1,ratio1,mask2,ratio2)
+#		display((mask1,mask2))
 	
 	for i in range(n):
 		im1 = EMData()
@@ -787,8 +788,9 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 		last=0,1.0
 		for x in range(1,len(bg2)-1) : 
 			if cc[x]*cc[x+1]<0 :
-				# we search +-1 point from the zero for the minimum
-				cur=(x,min(im_1d[x]/bg_1d[x],im_1d[x-1]/bg_1d[x-1],im_1d[x+1]/bg_1d[x+1]))
+				# we search the two points 'at' the zero for the minimum
+				cur=(x,min(im_1d[x]/bg_1d[x],im_1d[x+1]/bg_1d[x+1]))
+#				cur=(x,min(im_1d[x]/bg_1d[x],im_1d[x-1]/bg_1d[x-1],im_1d[x+1]/bg_1d[x+1]))
 				# once we have a pair of zeros we adjust the background values between
 				for xx in range(last[0],cur[0]):
 					w=(xx-last[0])/float(cur[0]-last[0])
@@ -882,8 +884,10 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 
 	ctf.bfactor=best[1]
 
-	if 1 : print "Best DF = %1.3f   B-factor = %1.0f"%(dfbest[0],ctf.bfactor)
-	
+	if 1 : print "Best DF = %1.3f   B-factor = %1.0f   avSNR = %1.4f"%(dfbest[0],ctf.bfactor,(sum(ctf.snr)/float(len(ctf.snr))))
+
+	Util.save_data(0,ds,ctf.snr,"ctf.snr")
+	Util.save_data(0,ds,bg_1d,"ctf.bg1d")
 
 	return ctf
 

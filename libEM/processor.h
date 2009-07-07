@@ -2328,6 +2328,22 @@ The basic design of EMAN Processors: <br>\
 			return new MaskGaussProcessor();
 		}
 
+		void set_params(const Dict & new_params)
+		{
+			CircularMaskProcessor::set_params(new_params);
+			exponent = params["exponent"];
+			if (exponent <= 0.0) {
+				exponent = 2.0;
+			}
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d = CircularMaskProcessor::get_param_types();
+			d.put("exponent", EMObject::FLOAT, "The exponent, f in e^-Bs^f. default 2.0, producing a Gaussian");
+			return d;
+		}
+
 		string get_desc() const
 		{
 			return "a gaussian falloff to zero, radius is the 1/e of the width. If inner_radius>0, then \
@@ -2335,13 +2351,19 @@ outer radius specifies width of Gaussian starting at inner_radius rather than to
 		}
 
 	  protected:
+		float exponent;
 		void process_dist_pixel(float *pixel, float dist) const
 		{
 			if (inner_radius_square>0) {
-				if (dist>inner_radius_square)
-					(*pixel) *= exp(-pow(sqrt(dist)-inner_radius,2.0f) / outer_radius_square);
+				if (dist>inner_radius_square) {
+					if (exponent==2.0) (*pixel) *= exp(-pow(sqrt(dist)-inner_radius,2.0) / outer_radius_square);
+					else (*pixel) *= exp(-pow(sqrt(dist)-inner_radius,exponent) / pow(outer_radius_square,exponent/2.0));
+				}
 			}
-			else (*pixel) *= exp(-dist / outer_radius_square);
+			else {
+				if (exponent==2.0) (*pixel) *= exp(-dist / outer_radius_square);
+				else (*pixel) *= exp(-pow(dist,exponent/2.0) / pow(outer_radius_square,exponent/2.0));
+			}
 		}
 	};
 
