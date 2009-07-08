@@ -40,7 +40,7 @@ import copy
 import sys
 
 class Simplex:
-    def __init__(self, testfunc, guess, increments, kR = -1, kE = 2, kC = 0.5):
+    def __init__(self, testfunc, guess, increments, kR = -1, kE = 2, kC = 0.5, data=None):
         """Initializes the simplex.
         INPUTS
         ------
@@ -54,6 +54,7 @@ class Simplex:
         self.testfunc = testfunc
         self.guess = guess
         self.increments = increments
+        self.data=data
         self.kR = kR
         self.kE = kE
         self.kC = kC
@@ -168,14 +169,14 @@ class Simplex:
                 # store reflected point in elem. N + 2 (and self.guess)
                 
                 self.reflect_simplex()
-                self.currenterror = self.testfunc(self.guess)
+                self.currenterror = self.testfunc(self.guess,self.data)
 
                 if self.currenterror < self.errors[self.highest]:
                     self.accept_reflected_point()
 
                 if self.currenterror <= self.errors[self.lowest]:
                     self.expand_simplex()
-                    self.currenterror = self.testfunc(self.guess)
+                    self.currenterror = self.testfunc(self.guess,self.data)
 
                     # at this point we can assume that the highest
                     # value has already been replaced once
@@ -186,7 +187,7 @@ class Simplex:
                     # intermediate lower point
 
                     self.contract_simplex()
-                    self.currenterror = self.testfunc(self.guess)
+                    self.currenterror = self.testfunc(self.guess,self.data)
 
                     if self.currenterror < self.errors[self.highest]:
                         self.accept_contracted_point()
@@ -261,7 +262,7 @@ class Simplex:
                 continue
             for x in range(0, self.numvars):
                 self.guess[x] = self.simplex[vertex][x]
-            self.currenterror = self.testfunc(self.guess)
+            self.currenterror = self.testfunc(self.guess,self.data)
             self.errors[vertex] = self.currenterror
         return
 

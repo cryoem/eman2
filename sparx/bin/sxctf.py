@@ -268,7 +268,7 @@ def pspec_and_ctf_fit(options,debug=False):
 	
 	return img_sets
 
-def env_cmp(sca):
+def env_cmp(sca,data):
 	global envelopes
 	env=envelopes
 	total=[]

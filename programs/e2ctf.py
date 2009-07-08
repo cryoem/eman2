@@ -236,7 +236,7 @@ def compute_envelope(img_sets):
 		all data sets, then attempts to merge/normalize the results into a single aggregate curve. This curve
 		should be proportional to the structure factor * average envelope function."""
 		
-		global envelopes # needs to be a global for the Simplex minimizer
+#		global envelopes # needs to be a global for the Simplex minimizer
 		# envelopes is essentially a cache of information that could be useful at later stages of refinement
 
 		envelope=[]
@@ -248,7 +248,7 @@ def compute_envelope(img_sets):
 		scales=[1.0]*(len(img_sets)-1)
 		if (len(img_sets)>3) :
 			incr=[0.2]*len(img_sets)
-			simp=Simplex(env_cmp,scales,incr)
+			simp=Simplex(env_cmp,scales,incr,data=envelopes)
 			scales=simp.minimize(maxiters=1000)[0]
 		scales.insert(0,1.0)	# we keep this scale factor fixed
 		
@@ -354,8 +354,8 @@ def pspec_and_ctf_fit(options,debug=False):
 	
 	return img_sets
 
-def env_cmp(sca):
-	global envelopes
+def env_cmp(sca,envelopes):
+#	global envelopes
 	env=envelopes
 	total=[]
 	for i,ii in enumerate(env[1:]):
@@ -671,36 +671,41 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 	of the CTF (in which case bg_1d is modified in place)."""
 	# defocus estimation
 	global debug
+	from bisect import insort_left
 	
 	ys=im_2d.get_ysize()
 	ds=1.0/(apix*ys)
+	if ac<0 or ac>100 :
+		print "Invalid %%AC, defaulting to 10"
+		ac=10.0
 	
 	ctf=EMAN2Ctf()
-	ctf.from_dict({"defocus":1.0,"voltage":voltage,"bfactor":0.0,"cs":cs,"ampcont":ac,"apix":apix,"dsbg":ds,"background":bg_1d})
+	ctf.from_dict({"defocus":1.0,"voltage":voltage,"bfactor":500.0,"cs":cs,"ampcont":ac,"apix":apix,"dsbg":ds,"background":bg_1d})
 	
 	sf = [sfact(i*ds) for i in range(ys)]
 
-	st=int(.04/ds)
-	while im_1d[st]-bg_1d[st]>im_1d[st+1]-bg_1d[st+1] : st+=1	# look for a minimum in the data curve
-	print "Minimum at 1/%1.1f 1/A"%(1.0/(st*ds))
+	bgsub=[im_1d[s]-bg_1d[s] for s in range(len(im_1d))]	# background subtracted curve, good until we readjust the background
+
+	s0=int(.03/ds)
+	s1=min(int(.167/ds),ys*2/3-4)
+	while bgsub[s0]>bgsub[s0+1] : s0+=1	# look for a minimum in the data curve
+	print "Minimum at 1/%1.1f 1/A"%(1.0/(s0*ds))
 	
 	if debug:
-		# These lines write the 1-D FFT of the curve
-#		out=file("ctf.dat.txt","w")
-#		bs=[im_1d[s]-bg_1d[s] for s in range(st,ys/2-4)]
-#		bsi=list_to_emdata(bs)
-#		bsf=bsi.do_fft()
-#		for s in range(0,bsf.get_xsize()/2):
-#			out.write("%d\t%1.3g\n"%(s,abs(bsf[s])))
 		dfout=file("ctf.df.txt","w")
 
-	dfbest1=(0,-1.0e20)
+#	dfbest1=(0,-1.0e20)
+	dfbest1=[]
+	
+	# This implies that we already have a general range for the defocus, so we limit the search
 	if dfhint :
 		dfhint=int(dfhint*20.0)
-		rng=range(dfhint-1,dfhint+2)
-	else :rng=range(5,128)
+		rng=range(dfhint-2,dfhint+3)
+	else :rng=range(10,128)
+
+
+	# This loop tries to find the best few possible defocuses
 	for dfi in rng:			# loop over defocus
-		ac=10
 		df=dfi/20.0
 		ctf.defocus=df
 		ctf.ampcont=ac
@@ -708,26 +713,13 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 		norm=0
 		for fz in range(len(cc)): 
 			if cc[fz]<0 : break
-
-
-#		if debug and dfi in (13,45,25,62):
-#			out=file("abc.%d"%dfi,"w")
-#			bs=[cc[s]**2 for s in range(st,ys/2-4)]
-#			bsi=list_to_emdata(bs)
-#			bsf=bsi.do_fft()
-#			for s in range(0,bsf.get_xsize()/2):
-#				out.write("%d\t%1.3g\n"%(s,abs(bsf[s])))
-
-#		if debug and dfi in (13,45,25,62):
-#			bs=[(im_1d[s]-bg_1d[s])/(cc[s]**2+.01) for s in range(st,ys/2-4)]
-#			Util.save_data(0,ds,bs,"abc.%d"%dfi)
 	
 		tot,tota,totb=0,0,0
 		zroa,zrob=0,0
-		for s in range(int(st),ys/2-4):
+		for s in range(s0,s1):
 			# This is basicaly a dot product of the reference curve vs the simulation
 			a=(cc[s]**2)				# ctf curve ^2
-			b=(im_1d[s]-bg_1d[s])		# bg subtracted intensity
+			b=bgsub[s]					# bg subtracted intensity
 			tot+=a*b
 			tota+=a*a
 			totb+=b*b
@@ -738,49 +730,55 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 				zrob+=1.0
 
 #		tot/=sqrt(tota*totb)	# correct if we want a normalized dot product
-		tot/=tota
+		tot/=tota				# funnny 'normalization' which seems to help bring out the more likely peaks
 		if zrob==0 : continue
 		tot*=-(zroa/zrob)
 		
-		if tot>dfbest1[1] : dfbest1=(df,tot)
+		dfbest1.append((tot,df))		# we keep all of the results, then process them at the end
+#		if tot>dfbest1[1] : dfbest1=(df,tot)
 		try :dfout.write("%1.2f\t%g\n"%(df,tot))
 		except : pass
 	
+	# Now we find the best 5 defocus choices
+	dfbest1a=[]						# keep only peaks, and sort them
+	for i in range(1,len(dfbest1)-1):
+		if dfbest1[i]>dfbest1[i-1] and dfbest1[i]>dfbest1[i+1] : dfbest1a.append(dfbest1[i])		# keep only local peaks
 	
+	dfbest1a.sort()
+	dfbest1a=dfbest1a[-5:]		# keep only the best 5 peaks
 	
+	print "Initial defocus possibilities: ",
+	for i in dfbest1a: print i[1],
+	print
 	
-	#out=file("bg1d2.txt","w")
-	#for a,b in enumerate(bg2): out.write("%1.4f\t%1.5f\n"%(a*ds,b))
-	#out.close()
-
-	dfbest=dfbest1
-	for dfi in range(-10,10):			# loop over defocus
-		df=dfi/100.0+dfbest1[0]
-		ctf.defocus=df
+	# Next, we use a simplex minimizer to try for the best CTF parameters for each defocus
+	best=[]
+	for b1a in dfbest1a:
+		#determine a very rough initial amplitude
+		ctf.defocus=b1a[1]
+		ctf.bfactor=500.0	# just something bigger than 0 as a neutral starting point
 		cc=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_AMP)
-		norm=0
-		for fz in range(len(cc)): 
-			#norm+=cc[fz]**2
-			if cc[fz]<0 : break
-	
-		tot,tota,totb=0,0,0
-		for s in range(int(st),ys/2-4):
-			a=cc[s]**2				# ctf curve ^2
-			b=im_1d[s]-bg_1d[s]		# bg subtracted intensity
-			tot+=a*b*s
-			tota+=a*a
-			totb+=b*b
-		#for s in range(int(ys/2)): tot+=(cc[s*ctf.CTFOS]**2)*ps1d[-1][s]/norm
-		#for s in range(int(fz/ctf.CTFOS),ys/2): tot+=(cc[s*ctf.CTFOS]**2)*ps1d[-1][s]
-		#for s in range(int(fz/ctf.CTFOS),ys/2): tot+=(cc[s*ctf.CTFOS]**2)*snr[s]
-		#tot/=sqrt(totr)
-		tot/=sqrt(tota*totb)
+		a,b=0,0
+		for i in range(s0,s1):
+			a+=cc[i]**4
+			b+=cc[i]**2
 
-		if tot>dfbest[1] : 
-			dfbest=(df,tot)
-		if debug : dfout.write("%1.2f\t%g\n"%(df,tot))
+#		print sqrt(b/a)
+		# our parameter set is (defocus,bfactor,scale)
+		parm=[b1a[1],500.0,sqrt(b/a)]
 
-	ctf.defocus=dfbest[0]
+#		print "Initial guess : ",parm
+		sim=Simplex(ctf_cmp,parm,[.05,50.0,.1],data=(ctf,bgsub,s0,s1,ds))
+		oparm=sim.minimize(monitor=0)
+#		print "Optimized : ",oparm
+		best.append((oparm[1],oparm[0]))
+		
+# best now contains quality,(df,bfac,scale) for each optimized answer
+	best.sort()
+	print "Best value is df=%1.3f  B=%1.1f"%(best[0][1][0],best[0][1][1])
+
+	ctf.defocus=best[0][1][0]
+	ctf.bfactor=best[0][1][1]
 	cc=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_AMP)
 	Util.save_data(0,ds,cc,"ctf.ctf.txt")
 
@@ -803,7 +801,16 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 		for xx in range(last[0],len(bg2)):
 			bg_1d[xx]=bg2[xx]*last[1]
 
-	
+#	s0=int(.04/ds)+1
+#	s1=min(int(0.15/ds),len(bg_1d)-1)
+
+	# rerun the simplex with the new background
+	sim=Simplex(ctf_cmp,best[0][1],[.05,50.0,.1],data=(ctf,bgsub,s0,s1,ds))
+	oparm=sim.minimize(monitor=0)
+	best[0]=(oparm[1],oparm[0])
+	print "After BG correction, value is df=%1.3f  B=%1.1f"%(best[0][1][0],best[0][1][1])
+
+
 	snr=[snr_safe(im_1d[i],bg_1d[i]) for i in range(len(im_1d))]
 	
 	# This will dramatically reduce the intensity of the initial sharp peak found in almost all single particle data
@@ -821,7 +828,8 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 	
 	# store the final results
 	ctf.snr=snr
-	ctf.defocus=dfbest[0]
+	ctf.defocus=best[0][1][0]
+	ctf.bfactor=best[0][1][1]
 	
 	# This smooths the SNR curve
 	#snr=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_SNR_SMOOTH)
@@ -830,68 +838,85 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 
 	# Last, we try to get a decent B-factor
 	# This is a quick hack and not very efficiently coded
-	bfs=[0.0,50.0,100.0,200.0,400.0,600.0,800.0,1200.0,1800.0,2500.0,4000.0]
-	best=(0,0)
-	s0=int(.04/ds)+1
-	s1=min(int(0.15/ds),len(bg_1d)-1)
-	for b in range(1,len(bfs)-1):
-		ctf.bfactor=bfs[b]
-		cc=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_AMP)
-		cc=[sfact(ds*i)*cc[i]**2 for i in range(len(cc))]
+	#bfs=[0.0,50.0,100.0,200.0,400.0,600.0,800.0,1200.0,1800.0,2500.0,4000.0]
+	#best=(0,0)
+	#s0=int(.04/ds)+1
+	#s1=min(int(0.15/ds),len(bg_1d)-1)
+	#for b in range(1,len(bfs)-1):
+		#ctf.bfactor=bfs[b]
+		#cc=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_AMP)
+		#cc=[sfact(ds*i)*cc[i]**2 for i in range(len(cc))]
 
-		# adjust the amplitude to match well
-		a0,a1=0,0
-		for s in range(s0,s1): 
-			a0+=cc[s]
-			a1+=fabs(im_1d[s]-bg_1d[s])
-		if a1==0 : a1=1.0
-		a0/=a1
-		cc=[i/a0 for i in cc]
+		## adjust the amplitude to match well
+		#a0,a1=0,0
+		#for s in range(s0,s1): 
+			#a0+=cc[s]
+			#a1+=fabs(im_1d[s]-bg_1d[s])
+		#if a1==0 : a1=1.0
+		#a0/=a1
+		#cc=[i/a0 for i in cc]
 		
-		er=0
-		# compute the error
-		for s in range(s0,len(bg_1d)-1):
-			e=(cc[s]-(im_1d[s]-bg_1d[s]))
-			er+=e**2 *s
+		#er=0
+		## compute the error
+		#for s in range(s0,len(bg_1d)-1):
+			#e=(cc[s]-(im_1d[s]-bg_1d[s]))
+			#er+=e**2 *s
 
-		if best[0]==0 or er<best[0] : best=(er,b)
+		#if best[0]==0 or er<best[0] : best=(er,b)
 
-	# Stupid replication here, in a hurry
-	bb=best[1]
-	best=(best[0],bfs[best[1]])
-	for b in range(20):
-		ctf.bfactor=bfs[bb-1]*(1.0-b/20.0)+bfs[bb+1]*(b/20.0)
-		cc=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_AMP)
-		cc=[sfact(ds*i)*cc[i]**2 for i in range(len(cc))]
+	## Stupid replication here, in a hurry
+	#bb=best[1]
+	#best=(best[0],bfs[best[1]])
+	#for b in range(20):
+		#ctf.bfactor=bfs[bb-1]*(1.0-b/20.0)+bfs[bb+1]*(b/20.0)
+		#cc=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_AMP)
+		#cc=[sfact(ds*i)*cc[i]**2 for i in range(len(cc))]
 
-		# adjust the amplitude to match well
-		a0,a1=0,0
-		for s in range(s0,s1): 
-			a0+=cc[s]
-			a1+=fabs(im_1d[s]-bg_1d[s])
-		if a1==0 : a1=1.0
-		a0/=a1
-		cc=[i/a0 for i in cc]
+		## adjust the amplitude to match well
+		#a0,a1=0,0
+		#for s in range(s0,s1): 
+			#a0+=cc[s]
+			#a1+=fabs(im_1d[s]-bg_1d[s])
+		#if a1==0 : a1=1.0
+		#a0/=a1
+		#cc=[i/a0 for i in cc]
 		
-		er=0
-		# compute the error
-		for s in range(s0,len(bg_1d)-1):
-			e=(cc[s]-(im_1d[s]-bg_1d[s]))
-			er+=e**2*s
+		#er=0
+		## compute the error
+		#for s in range(s0,len(bg_1d)-1):
+			#e=(cc[s]-(im_1d[s]-bg_1d[s]))
+			#er+=e**2*s
 
-		if best[0]==0 or er<best[0] : best=(er,ctf.bfactor)
+		#if best[0]==0 or er<best[0] : best=(er,ctf.bfactor)
 		
-#		print bfs[b],best
+##		print bfs[b],best
 
 
-	ctf.bfactor=best[1]
-
-	if 1 : print "Best DF = %1.3f   B-factor = %1.0f   avSNR = %1.4f"%(dfbest[0],ctf.bfactor,(sum(ctf.snr)/float(len(ctf.snr))))
+	#ctf.bfactor=best[1]
+	#print "bfactor ",ctf.bfactor
+	
+#	if 1 : print "Best DF = %1.3f   B-factor = %1.0f   avSNR = %1.4f"%(dfbest[0],ctf.bfactor,(sum(ctf.snr)/float(len(ctf.snr))))
 
 	Util.save_data(0,ds,ctf.snr,"ctf.snr")
 	Util.save_data(0,ds,bg_1d,"ctf.bg1d")
 
 	return ctf
+
+def ctf_cmp(parms,data):
+	"""This function is a quality metric for a set of CTF parameters vs. data"""
+	ctf,bgsub,s0,s1,ds=data
+	ctf.defocus=parms[0]
+	ctf.bfactor=parms[1]	# just something bigger than 0 as a neutral starting point
+	cc=ctf.compute_1d(len(bgsub),ds,Ctf.CtfType.CTF_AMP)
+	
+#	Util.save_data(0,ds,cc,"a.txt")
+#	Util.save_data(0,ds,bgsub,"b.txt")
+	
+	er=0
+	for i in range(s0,s1):
+		er+=i*(sfact(i*ds)*cc[i]*cc[i]*fabs(parms[2])-bgsub[i])**2
+	
+	return er
 
 def ctf_env_points(im_1d,bg_1d,ctf) :
 	"""This will return a list of x,y points corresponding to the CTF corrected power spectrum near the maxima"""
