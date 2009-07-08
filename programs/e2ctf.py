@@ -68,7 +68,7 @@ images far from focus."""
 
 	parser.add_option("--gui",action="store_true",help="Start the GUI for interactive fitting",default=False)
 	parser.add_option("--auto_fit",action="store_true",help="Runs automated CTF fitting on the input images",default=False)
-	parser.add_option("--bgmask",type="int",help="Compute the background power spectrum from the edge of the image, specify a mask radius in pixels which would largely mask out the particles. Default is boxsize/2.",default=0)
+	parser.add_option("--bgmask",type="int",help="Background is computed using a soft mask of the center/edge of each particle with the specified radius. Default radius is boxsize/2.6.",default=0)
 	parser.add_option("--fixnegbg",action="store_true",help="Will perform a final background correction to avoid slight negative values near zeroes")
 	parser.add_option("--computesf",action="store_true",help="Will determine the structure factor*envelope for the aggregate set of images")
 	parser.add_option("--apix",type="float",help="Angstroms per pixel for all images",default=0)
@@ -106,6 +106,7 @@ images far from focus."""
 	logid=E2init(sys.argv)
 
 #	if options.oversamp>1 : options.apix/=float(options.oversamp)
+
 
 	db_project=db_open_dict("bdb:project")
 	db_parms=db_open_dict("bdb:e2ctf.parms")
@@ -511,6 +512,7 @@ def powspec_with_bg(stackfile,radius=0,edgenorm=True,oversamp=1):
 	im.read_image(stackfile,0)
 	ys=im.get_ysize()*oversamp
 	ys2=im.get_ysize()
+	if radius<=0 : radius=ys2/2.6
 	n=EMUtil.get_image_count(stackfile)
 	
 	# set up the inner and outer Gaussian masks
@@ -519,7 +521,7 @@ def powspec_with_bg(stackfile,radius=0,edgenorm=True,oversamp=1):
 	except:
 		mask1=EMData(ys2,ys2,1)
 		mask1.to_one()
-		mask1.process_inplace("mask.gaussian",{"outer_radius":radius,"exponent":2.0})
+		mask1.process_inplace("mask.gaussian",{"outer_radius":radius,"exponent":4.0})
 		mask2=mask1.copy()*-1+1
 #		mask1.process_inplace("mask.decayedge2d",{"width":4})
 		mask2.process_inplace("mask.decayedge2d",{"width":4})

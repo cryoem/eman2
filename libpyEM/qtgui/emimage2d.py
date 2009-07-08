@@ -1868,7 +1868,22 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.drawlay.addWidget(self.dtpenv2,1,3)
 		
 		self.mmtab.addTab(self.drawtab,"Draw")
+
+		# Python tab
+		self.pytab = QtGui.QWidget()
+		self.pytlay = QtGui.QGridLayout(self.pytab)
 		
+		self.pyinp = QtGui.QLineEdit()
+		self.pytlay.addWidget(self.pyinp,0,0)
+
+		self.pyout = QtGui.QTextEdit()
+		self.pyout.setText("The displayed image is 'img'.\nEnter an expression above, like img['sigma']")
+		self.pyout.setReadOnly(True)
+		self.pytlay.addWidget(self.pyout,1,0,4,1)
+
+		self.mmtab.addTab(self.pytab,"Python")
+
+
 		try:
 			md = self.target().data.get_attr_dict()
 			self.metadatatab = EMMetaDataTable(None,md)
@@ -1977,6 +1992,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		QtCore.QObject.connect(self.brts, QtCore.SIGNAL("valueChanged"), self.new_brt)
 		QtCore.QObject.connect(self.conts, QtCore.SIGNAL("valueChanged"), self.new_cont)
 		QtCore.QObject.connect(self.gammas, QtCore.SIGNAL("valueChanged"), self.new_gamma)
+		QtCore.QObject.connect(self.pyinp, QtCore.SIGNAL("returnPressed()"),self.do_python)
 		QtCore.QObject.connect(self.invtog, QtCore.SIGNAL("toggled(bool)"), target.set_invert)
 		QtCore.QObject.connect(self.fftg, QtCore.SIGNAL("buttonClicked(int)"), target.set_FFT)
 		QtCore.QObject.connect(self.mmtab, QtCore.SIGNAL("currentChanged(int)"), target.set_mouse_mode)
@@ -1991,6 +2007,19 @@ class EMImageInspector2D(QtGui.QWidget):
 #			self.metadatatab.deleteLater()
 ##	def resizeEvent(self,event):
 #		print self.width(),self.height()
+
+	def do_python(self):
+		img=self.target().data
+		try: 
+			r=str(eval(str(self.pyinp.text())))
+			self.pyinp.setText("")
+		except: 
+			import traceback
+			traceback.print_stack()
+			r="Error executing. Access the image as 'img', for example \nimg['mean'] will yield the mean image value"
+#		print r
+		
+		self.pyout.setText(QtCore.QString(r))
 
 	def disable_image_range(self):
 		if self.image_range != None:

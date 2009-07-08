@@ -2795,7 +2795,7 @@ class E2CTFAutoFitTask(E2CTFWorkFlowTask):
 			return None
 		
 		options = EmptyObject()
-		options.bgmask = boxsize/2
+#		options.bgmask = boxsize/2.6
 		options.filenames = db_file_names
 		error_message.extend(self.append_general_options(options,params))
 		
@@ -2837,7 +2837,7 @@ class E2CTFAutoFitTask(E2CTFWorkFlowTask):
 		if options != None:
 			self.write_db_entries(params)
 			
-			string_args = ["bgmask","oversamp","ac","apix","cs","voltage"]
+			string_args = ["oversamp","ac","apix","cs","voltage"]
 			bool_args = ["nosmooth","nonorm","autohp","invert"]
 			additional_args = ["--auto_fit"]
 			temp_file_name = "e2ctf_autofit_stdout.txt"
@@ -2907,7 +2907,7 @@ class E2CTFAutoFitTaskGeneral(E2CTFAutoFitTask):
 			return None
 		
 		options = EmptyObject()
-		options.bgmask = boxsize/2
+#		options.bgmask = boxsize/2.6
 		options.filenames = filenames
 		self.append_general_options(options,params)
 		return options
