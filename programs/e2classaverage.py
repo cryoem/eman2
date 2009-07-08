@@ -566,7 +566,7 @@ class EMClassAveTask(EMTask):
 			all_alis.append(ref_alis)
 			if sigma_image: sigma = sigma_image.copy()
 			average = self.__get_average(images,norm,ref_alis,inclusions,center=False,sigma=sigma)
-			all_inclusions.append(inclusions) # just for completeness, yes redundant, but yes generically reasonable
+			all_inclusions.append(inclusions) # just for completeness, yes redundant, but again for completeness
 			average.set_attr("xform.projection", ref.get_attr("xform.projection"))
 #			average.set_attr("projection_image",options.ref) # Have to look into this
 			average.set_attr("projection_image_idx",self.class_idx)
@@ -912,8 +912,6 @@ class EMClassAveTask(EMTask):
 			average.set_attr("ptcl_repr",np)
 			average.set_attr("class_ptcl_idxs",record)
 		return average
-		
-		return average,inclusion
 		
 class EMClassAveTaskDC(EMClassAveTask):
 	'''

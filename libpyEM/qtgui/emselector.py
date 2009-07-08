@@ -227,6 +227,7 @@ def EMSelectorTemplate(Type):
 			
 		def set_animation(self,animation):
 			self.animation = animation
+		
 		def time_out(self):
 			'''
 			This function takes care of automatic updates - if the file system changes then so does

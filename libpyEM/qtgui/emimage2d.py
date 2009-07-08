@@ -922,8 +922,12 @@ class EMImage2DModule(EMGUIModule):
 		"""center the point on the screen"""
 		self.set_origin(x*self.scale-self.gl_widget.width()/2,y*self.scale-self.gl_widget.height()/2)
 
-	def set_shapes(self,shapes,shrink):
+	def set_shapes(self,shapes):
 		self.shapes = shapes
+		self.shapechange=1
+		
+	def update_shapes(self,shapes):
+		self.shapes.update(shapes)
 		self.shapechange=1
 		
 	def register_scroll_motion(self,x,y):

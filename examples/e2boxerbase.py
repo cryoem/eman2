@@ -1,0 +1,1046 @@
+#!/usr/bin/env python
+#
+# Author: David Woolford (woolford@bcm.edu)
+# Copyright (c) 2000-2006 Baylor College of Medicine
+
+
+# This software is issued under a joint BSD/GNU license. You may use the
+# source code in this file under either license. However, note that the
+# complete EMAN2 and SPARX software packages have some GPL dependencies,
+# so you are responsible for compliance with the licenses of these packages
+# if you opt to use BSD licensing. The warranty disclaimer below holds
+# in either instance.
+#
+# This complete copyright notice must be included in any revised version of the
+# source code. Additional authorship citations may be added, but existing
+# author citations must be preserved.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
+#
+#
+
+
+'''
+This is a a really basic version of boxer that can be copied and used as the basis of developing something more advanced
+Design is meant to be granular and logical, i.e. easy to add to.
+
+To see how it works just run it from the commandline:
+./e2boxerbase.py test.mrc --boxsize=128 # single image handling
+-or-
+./e2boxerbase.py test.mrc test2.mrc test3.mrc --boxsize=128 # multiple image handling enabled
+
+The EMBoxerModule is basically the epicenter of everything: functions like "add_box" and "move_box" are probably good starting
+points in terms of figuring out how to adapt this code to application specific needs
+'''
+
+from emapplication import EMStandAloneApplication,get_application
+from pyemtbx.boxertools import BigImageCache,BinaryCircleImageCache,ScaledExclusionImageCache,ScaledExclusionImage,set_idd_image_entry,get_idd_image_entry
+from EMAN2 import file_exists,EMANVERSION,gimme_image_dimensions2D,EMData,get_file_tag,get_image_directory,Region,file_exists,gimme_image_dimensions3D
+
+import os,sys,weakref,math
+from optparse import OptionParser
+
+
+TEMPLATE_MIN = 20
+
+def main():
+	progname = os.path.basename(sys.argv[0])
+	usage = """%prog [options] <image> <image2>....
+
+This is a a really basic version of boxer that can be copied 
+and used as the basis of developing something more advanced.
+Design is meant to be granular and logical, i.e. easy to add to.
+
+To see how it works just run it from the commandline:
+./e2boxerbase.py test.mrc --boxsize=128 # single image handling
+-or-
+./e2boxerbase.py test.mrc test2.mrc --boxsize=128 # multiple images
+
+The EMBoxerModule class is the epicenter of everything: 
+functions like "add_box" and "move_box" are probably good starting
+points in terms of figuring out how to adapt this code to your
+specific needs/algorithms
+"""
+
+	parser = OptionParser(usage=usage,version=EMANVERSION)
+	parser.add_option("--boxsize","-B",type="int",help="Box size in pixels",default=128)
+	
+	(options, args) = parser.parse_args()
+	
+	error_message = check(options,args)
+	if len(error_message) > 0:
+		error = "\n"
+		for e in error_message:
+			error += "Error: "+e +"\n"
+		parser.error(error)
+			
+
+	application = EMStandAloneApplication()
+#	QtCore.QObject.connect(gui, QtCore.SIGNAL("module_idle"), on_idle)
+	
+	module = EMBoxerModule(args,options.boxsize)
+	module.show_interfaces()
+	application.execute()
+	
+def check(options,args):
+	error_message = []
+	if options.boxsize < 0:
+		error_message.append("Box size muse be greater than 0")
+		
+	if options.boxsize > 4096:
+		error_message.append("Box size must be less than 4096")
+		
+	if len(args) == 0:
+		error_message.append("Please specify files")
+	
+	else:
+		for file in args:
+			if not file_exists(file):
+				error_message.append("%s does not exist" %file)
+			else:
+				nx,ny,nz = gimme_image_dimensions3D(file)
+				if nz > 1 or ny == 1 or nx == 1:
+					error_message.append("%s is not 2D" %file)
+					
+	return error_message
+	
+	
+class BoxerThumbsWindowEventHandling:
+	'''
+	
+	'''
+	def __init__(self,target,thumbs_window):
+		self.target = weakref.ref(target)
+		self.thumbs_window = weakref.ref(thumbs_window)
+		
+		self.__connect_signals_to_slots()
+		
+	def __connect_signals_to_slots(self):
+		'''
+		connects the signals of the main 2D window to the slots of this object
+		'''
+		from PyQt4 import QtCore
+		QtCore.QObject.connect(self.thumbs_window().emitter(),QtCore.SIGNAL("mx_mouseup"),self.thumb_image_selected)
+		QtCore.QObject.connect(self.thumbs_window().emitter(),QtCore.SIGNAL("module_closed"),self.module_closed)
+		
+	def thumb_image_selected(self,event,lc):
+		im=lc[0]
+		self.target().set_current_file_by_idx(im)
+		self.target().get_2d_window().updateGL()
+	
+	def module_closed(self):
+		self.target().thumbs_window_closed()
+
+
+class BoxerMouseEraseEvents:
+	'''
+	A class that knows how to handle mouse erase events for a GUIBox
+	'''
+	
+	def __init__(self,target):
+		self.target = weakref.ref(target)
+		self.erase_value = 0.1			# erase mode can be either Boxable.ERASE or Boxable.UNERASE
+		
+	def set_mode(self,mode):
+		self.erase_value = mode
+	
+	def get_2d_window(self): return self.target().get_2d_window()
+	
+	def get_inspector(self): return self.target().get_inspector()
+	
+	def erase_radius(self): return self.target().get_erase_radius()
+	
+	def set_erase_value(self,val): self.erase_value = val
+	
+	def mouse_move(self,event):
+		from emshape import EMShape
+		m = self.get_2d_window().scr_to_img((event.x(),event.y()))
+		self.get_2d_window().add_eraser_shape("eraser",EMShape(["circle",.1,.1,.1,m[0],m[1],self.erase_radius(),3]))
+		self.get_2d_window().updateGL()
+		
+	def adjust_erase_rad(self,delta):
+		v = self.erase_radius()
+		if delta > 0:
+			v = 1.1*v
+		if delta < 0:
+			v = 0.9*v
+		self.target().set_erase_radius(v)
+		self.target().get_inspector().set_erase_radius(v)
+	
+	def mouse_wheel(self,event):
+		from PyQt4.QtCore import Qt
+		if event.modifiers()&Qt.ShiftModifier:
+			from emshape import EMShape
+			self.adjust_erase_rad(event.delta())
+			m= self.get_2d_window().scr_to_img((event.x(),event.y()))
+			self.get_2d_window().add_eraser_shape("eraser",EMShape(["circle",.1,.1,.1,m[0],m[1],self.erase_radius(),3]))
+			self.get_2d_window().updateGL()
+	
+	def mouse_down(self,event) :
+		from emshape import EMShape
+		m=self.get_2d_window().scr_to_img((event.x(),event.y()))
+		#self.boxable.add_exclusion_area("circle",m[0],m[1],self.erase_radius)
+		self.get_2d_window().add_eraser_shape("eraser",EMShape(["circle",.9,.9,.9,m[0],m[1],self.erase_radius(),3]))
+		self.target().exclusion_area_added("circle",m[0],m[1],self.erase_radius(),self.erase_value)	
+
+	def mouse_drag(self,event) :
+		from emshape import EMShape
+		m=self.get_2d_window().scr_to_img((event.x(),event.y()))
+		self.get_2d_window().add_eraser_shape("eraser",EMShape(["circle",.9,.9,.9,m[0],m[1],self.erase_radius(),3]))
+		self.target().exclusion_area_added("circle",m[0],m[1],self.erase_radius(),self.erase_value)
+		# exclusion_area_added does the OpenGL update calls, so there is no need to do so here
+		
+	def mouse_up(self,event) :
+		# we have finished erasing
+		
+		# make the eraser shape non visible
+		self.get_2d_window().add_eraser_shape("None",None)
+		self.target().erasing_done(self.erase_value)
+		
+class BoxerMouseBoxEvents:
+	'''
+	A class that knows how to add, move and remove reference and non reference boxes 
+	'''
+	def __init__(self,target):
+		self.target = weakref.ref(target)
+		self.moving = None
+		
+	def get_2d_window(self): return self.target().get_2d_window()
+		
+	def mouse_down(self,event) :
+		m = self.get_2d_window().scr_to_img((event.x(),event.y()))
+		box_num = self.target().detect_box_collision(m)
+		from PyQt4.QtCore import Qt
+		if box_num == -1:
+			if event.modifiers()&Qt.ShiftModifier : return # the user tried to delete nothing
+			self.target().add_box(m[0],m[1])
+		
+		elif event.modifiers()&Qt.ShiftModifier :
+			# remove the box
+			self.target().remove_box(box_num)
+		else:
+			# if we make it here than the we're moving a box
+			self.moving=[m,box_num]
+
+	def mouse_drag(self,event) :
+		
+		m=self.get_2d_window().scr_to_img((event.x(),event.y()))
+		from PyQt4.QtCore import Qt
+		if event.modifiers()&Qt.ShiftModifier:
+			box_num = self.target().detect_box_collision(m)
+			if ( box_num != -1):
+				self.target().remove_box(box_num)
+			
+		elif self.moving != None:
+			oldm = self.moving[0]
+			
+			self.target().move_box(self.moving[1],m[0]-oldm[0],m[1]-oldm[1])
+			self.moving[0] = m
+	
+	def mouse_up(self,event) :
+		self.moving=None
+		
+	def mouse_move(self,event): pass
+
+class Boxer2DWindowEventHandling:
+	'''
+	A class that responds to added, moved and removed box signals emitted
+	by the by the main 2d image in the EMBoxerModule - this is the image
+	display that shows the image that is currently being boxed along
+	with any boxed regions
+	'''
+	def __init__(self,target,main_2d_window):
+		self.target = weakref.ref(target) # prevent a strong cycle
+		self.main_2d_window = main_2d_window
+		
+		self.mouse_handlers = None # will eventually be a dict storing mouse handlers
+		self.mouse_handler = None  # the current mouse handler
+		
+		self.__connect_signals_to_slots()
+		self.__init_mouse_handlers()
+		
+	def set_mouse_mode(self,handler):
+		if handler in ["Erase", "Unerase"]:
+			self.mouse_handler = self.mouse_handlers["erasing"]
+			if handler == "Erase": self.mouse_handler.set_erase_value(0.1)
+			elif handler == "Unerase": self.mouse_handler.set_erase_value(0)
+			else: raise
+		elif handler in ["Manual Boxing","Ref Boxing"] : self.mouse_handler = self.mouse_handlers["boxing"]
+		else:
+			raise RuntimeError("%s unknown" %handler)
+		
+	def __init_mouse_handlers(self):
+		self.mouse_handlers = {}
+		self.mouse_handlers["erasing"] = BoxerMouseEraseEvents(self.target())
+		self.mouse_handlers["boxing"] = BoxerMouseBoxEvents(self.target())
+		self.mouse_handler = self.mouse_handlers["boxing"]
+		
+	def __connect_signals_to_slots(self):
+		'''
+		connects the signals of the main 2D window to the slots of this object
+		'''
+		from PyQt4 import QtCore
+		QtCore.QObject.connect(self.main_2d_window.emitter(),QtCore.SIGNAL("mousedown"),self.mouse_down)
+		QtCore.QObject.connect(self.main_2d_window.emitter(),QtCore.SIGNAL("mousedrag"),self.mouse_drag)
+		QtCore.QObject.connect(self.main_2d_window.emitter(),QtCore.SIGNAL("mouseup")  ,self.mouse_up  )
+		QtCore.QObject.connect(self.main_2d_window.emitter(),QtCore.SIGNAL("keypress"),self.key_press)
+		QtCore.QObject.connect(self.main_2d_window.emitter(),QtCore.SIGNAL("mousewheel"),self.mouse_wheel)
+		QtCore.QObject.connect(self.main_2d_window.emitter(),QtCore.SIGNAL("mousemove"),self.mouse_move)
+		QtCore.QObject.connect(self.main_2d_window.emitter(),QtCore.SIGNAL("module_closed"),self.module_closed)
+	
+	def mouse_down(self,event) :
+		'''
+		@param a QtGui.QMouseEvent sent from the EMImage2DModule
+		'''
+		self.mouse_handler.mouse_down(event)
+	
+	def mouse_drag(self,event) :
+		'''
+		@param a QtGui.QMouseEvent sent from the EMImage2DModule
+		'''
+		self.mouse_handler.mouse_drag(event)
+	
+	def mouse_up(self,event) :
+		'''
+		@param a QtGui.QMouseEvent sent from the EMImage2DModule
+		'''
+		self.mouse_handler.mouse_up(event)
+		
+	def key_press(self,event):
+		'''
+		@param a QtGui.QKeyEvent sent from the EMImage2DModule
+		'''
+		print "2d window key press"
+		
+	def mouse_wheel(self,event):
+		'''
+		@param a QtGui.QMouseEvent sent from the EMImage2DModule
+		'''
+		self.mouse_handler.mouse_wheel(event)
+		
+	def mouse_move(self,event):
+		'''
+		@param a QtGui.QMouseEvent sent from the EMImage2DModule
+		'''
+		self.mouse_handler.mouse_move(event)
+		
+	def module_closed(self):
+		'''
+		'''
+		self.target().main_2d_window_closed()
+	
+class BoxerParticlesWindowEventHandling:
+	def __init__(self,target,particle_window):
+		self.target = weakref.ref(target) # prevent a strong cycle
+		self.particle_window = particle_window
+		
+		self.__connect_signals_to_slots()
+		self.moving_box_data = None
+	def __connect_signals_to_slots(self):
+		'''
+		connects the signals of the main 2D window to the slots of this object
+		'''
+		from PyQt4 import QtCore
+		QtCore.QObject.connect(self.particle_window.emitter(),QtCore.SIGNAL("mx_image_selected"),self.box_selected)
+		QtCore.QObject.connect(self.particle_window.emitter(),QtCore.SIGNAL("mx_mousedrag"),self.box_moved)
+		QtCore.QObject.connect(self.particle_window.emitter(),QtCore.SIGNAL("mx_mouseup"),self.box_released)
+		QtCore.QObject.connect(self.particle_window.emitter(),QtCore.SIGNAL("mx_boxdeleted"),self.box_image_deleted)
+		QtCore.QObject.connect(self.particle_window.emitter(),QtCore.SIGNAL("module_closed"),self.module_closed)
+	
+	def box_selected(self,event,lc):
+		im=lc[0]
+		self.moving_box_data = [event.x(),event.y(),im]
+		self.target().get_2d_window().set_active(im,.9,.9,.4)
+		self.target().get_2d_window().updateGL()
+		
+	def box_moved(self,event,scale):
+		if self.moving_box_data:
+			dx = (self.moving_box_data[0] - event.x())/scale
+			dy = (event.y() - self.moving_box_data[1])/scale
+			self.target().move_box(self.moving_box_data[2],dx,dy)
+			
+			self.moving_box_data = [event.x(),event.y(),self.moving_box_data[2]]
+
+	def box_released(self,event,lc):
+		self.target().particle_selected(lc[0])
+		self.moving_box_data = None
+		
+	def box_image_deleted(self,event,lc,force_image_mx_remove=True):
+		box = self.target().remove_box(lc[0])
+	
+	def module_closed(self):
+		'''
+		'''
+		self.target().particles_window_closed()
+	
+
+
+class ThumbsTools:
+	
+	def gen_thumbs(image_names=[],shrink=None):
+		'''
+		@param image_names a list of image names
+		@param shrink the shrink factor, should be an int 
+		@return a list of very small images
+		'''
+		from emapplication import EMProgressDialogModule
+		
+		if shrink == None: shrink = ThumbsTools.get_image_thumb_shrink(image_names[0])
+		
+		application = get_application()
+		nim = len(image_names)
+		thumbs = [None for i in range(nim)]
+		progress = EMProgressDialogModule(application,"Generating Thumbnails", "Abort", 0, nim,None)
+		progress.qt_widget.show()
+		prog = 0
+		for i in range(nim):
+	#				thumb = self.get_image_thumb(i)
+			thumb = get_idd_image_entry(image_names[i],"image_thumb")
+			if thumb == None:
+
+				thumb=EMData(image_names[i],0)
+				thumb.process_inplace("math.meanshrink",{"n":shrink})
+				thumb.process_inplace("normalize.edgemean") # if there are lots than they =should all have the same contrast
+				thumb.set_attr("display_name",get_file_tag(image_names[i]))
+				set_idd_image_entry(image_names[i],"image_thumb",thumb)
+
+			prog += 1
+			progress.qt_widget.setValue(prog)
+			application.processEvents()
+			thumbs[i] = thumb
+				
+			if progress.qt_widget.wasCanceled():
+				progress.qt_widget.setValue(nim)
+				progress.qt_widget.close()
+				return None
+			
+		progress.qt_widget.setValue(nim)
+		progress.qt_widget.close()
+		
+		return thumbs
+	
+	gen_thumbs = staticmethod(gen_thumbs)
+	
+	def get_image_thumb_shrink(image_name):
+		shrink = 1
+		inx,iny =  gimme_image_dimensions2D(image_name)
+		inx /= 2
+		iny /= 2
+		while ( inx >= 128 and iny >= 128):
+			inx /= 2
+			iny /= 2
+			shrink *= 2
+	
+		return shrink
+	
+	get_image_thumb_shrink = staticmethod(get_image_thumb_shrink)
+
+
+class EMBox:
+	def __init__(self,x,y,type="manual",score=0.0):
+		self.x = x # central x coordinate
+		self.y = y # central y coordinate
+		self.type = type # type can be customized
+		self.score = score # can be some kind of score, such as correlation
+		self.image = None # an image
+		
+	def move(self,dx,dy):
+		self.x += dx
+		self.y += dy
+		self.image = None
+		
+	def get_image(self,image_name,box_size):
+		
+		if self.image == None or self.image.get_xsize() != box_size or self.image.get_ysize() != box_size:
+			global BigImageCache
+			data=BigImageCache.get_object(image_name).get_image(use_alternate=True)
+			r = Region(self.x-box_size/2,self.y-box_size/2,box_size,box_size)
+			self.image = data.get_clip(r)
+			
+		return self.image
+	
+	def reset_image(self): self.image = None
+		
+	def get_shape(self,shape_string,box_size):
+					
+		if self.type == "manual":
+			r,g,b = 1,1,1
+		elif self.type == "ref":
+			r,g,b = 0,0,0
+		elif self.type == "auto":
+			r,g,b = 0,1,0
+		else: raise RuntimeError("Unknown type")
+		from emshape import EMShape
+		shape = EMShape([shape_string,r,g,b,self.x-box_size/2,self.y-box_size/2,self.x+box_size/2,self.y+box_size/2,2.0])
+		return shape
+	
+	def collision(self,x,y,box_size):
+		
+		if x-box_size/2 < self.x and x+box_size/2 > self.x and y-box_size/2 < self.y and y+box_size/2 > self.y: return True
+		else: return False
+	
+
+class EMBoxList:
+	'''
+	A list of boxes
+	'''
+	def __init__(self,target):
+		self.target=weakref.ref(target)
+		self.current_iter = 0 # iterator support
+		self.max_idx = 0 # iterator support
+		self.boxes = []
+		self.shapes = []
+		self.shape_string = "rectpoint" # for making shapes
+	
+	def add_coords(self,x,y,type="manual",score=0.0):
+		self.boxes.append(EMBox(x,y,type,score))
+		self.shapes.append(None)
+	
+	def reset_images(self):
+		for box in self.boxes: box.reset_image()
+		
+	def reset_shapes(self):
+		self.shapes = [None for i in range(len(self.boxes))]
+	
+	def move_box(self,i,dx,dy):
+		self.boxes[i].move(dx,dy)
+		self.shapes[i] = None
+		
+	def get_shape(self,i,box_size):
+		if self.shapes[i] == None:
+			shape = self.boxes[i].get_shape(self.shape_string,box_size)
+			self.shapes[i] = shape
+			return shape
+		return self.shapes[i]
+		
+	
+	def detect_collision(self,x,y,box_size):
+		for i,box in enumerate(self.boxes):
+			if box.collision(x,y,box_size):
+				return i
+		
+		return -1
+			
+		
+	def get_box_shapes(self,box_size):
+		
+		d = {}
+		for i in range(len(self.boxes)):
+			if self.shapes[i] == None:
+				shape = self.boxes[i].get_shape(self.shape_string,box_size)
+				self.shapes[i] = shape
+			
+			d[i] = self.shapes[i]
+			
+		return d
+
+	def get_particle_images(self,image_name,box_size):
+		return [box.get_image(image_name,box_size) for box in self.boxes]
+	
+	def __getitem__(self,idx):
+		'''
+		Support for [] syntax
+		@idx the index of the object which is to be retrieved
+		'''
+		return self.boxes[idx]
+	
+	def __len__(self):
+		'''
+		support for standard len
+		'''
+		return len(self.boxes)
+	
+	def __iter__(self):
+		''' 
+		Iteration support - initialization 
+		'''
+		self.current_iter = 0
+		self.max_idx = len(self.boxes)
+		return self
+	
+	def next(self):
+		''' 
+		Iteration support
+		@return the next element in the iteration
+		@raise StopIteration exception when the end of the container is reached
+		'''
+		if self.current_iter >= self.max_idx:
+			raise StopIteration
+		else:
+			self.current_iter += 1
+			return self.boxes[self.current_iter-1]
+		
+	def pop(self,idx):
+		'''
+		@param idx the index of object that is to be popped
+		@return the popped object
+		'''
+		self.shapes.pop(idx)
+		return self.boxes.pop(idx)
+	
+
+class EMBoxerModule:
+	'''
+	This module is essentially a Mediator (see Design Patterns) - it coordinates the activities of several EMAN2 modules
+	that would otherwise not necessary interact.
+	'''
+	def __init__(self,file_names=[],box_size=128):
+		'''
+		@file_name the name of a file on disk
+		@exception RuntimeError raised if the file does not exist
+		'''
+		self.file_names = file_names # a list of file names
+		self.current_idx = None # an index into self.file_names
+		self.box_size = box_size # the current box size
+		
+		self.signal_slot_handlers = {} # this is a dictionary, keys are (somewhat random) names, values are event handlers such as Boxer2DWindowEventHandling. This dict has the only reference to the event handlers
+		self.inspector = None # this will be a Qt style inspector
+		self.inspector_module = None # the wrapping object of self.inspector
+		self.main_2d_window = None # this will be the main 2D image display, showing boxed particles etc 
+		self.particles_window = None # this will be the window displaying the picked particles
+		self.thumbs_window = None # this will be the window showing the thumbnails, enabling the user to change between 2D raw data
+		self.image_thumbs = None # image_thumbs is a list of thumbnail images	
+		self.erase_radius = 2*self.box_size # have to keep track of this, several objects need it
+		self.box_list = EMBoxList(self)
+		# initialized the 2D window
+		self.__init_main_2d_window()
+		if len(file_names) > 0:	self.set_current_file_by_idx(0)
+		
+		
+		if len(self.file_names) > 1: self.__init_thumbs_window()
+		
+		# initialize the inspector
+		self.__init_inspector()
+	
+	
+	def get_subsample_rate(self): 
+		'''
+		
+		'''
+		return math.ceil(float(self.box_size)/float(TEMPLATE_MIN))
+
+	
+	def detect_box_collision(self,data):
+		return self.box_list.detect_collision(data[0], data[1], self.box_size)
+	
+	def particle_selected(self,box_number):
+		box= self.box_list[box_number]
+		self.main_2d_window.register_scroll_motion(box.x,box.y)
+	
+	def add_box(self,x,y):
+		
+		if self.particles_window == None:
+			self.__init_particles_window()
+			get_application().show_specific(self.particles_window)
+			
+		self.box_list.add_coords(x,y,type="manual")
+		self.particles_window.set_data(self.box_list.get_particle_images(self.current_file(), self.box_size))
+		self.particles_window.updateGL()
+		self.main_2d_window.update_shapes(self.box_list.get_box_shapes(self.box_size))
+		self.main_2d_window.updateGL()
+		
+	def remove_box(self,box_number):
+		self.box_list.pop(box_number)
+		self.full_box_update()
+		
+	def full_box_update(self):
+		if self.particles_window != None:
+			self.particles_window.set_data(self.box_list.get_particle_images(self.current_file(), self.box_size))
+			self.particles_window.updateGL()
+		if self.main_2d_window != None:
+			self.main_2d_window.set_shapes(self.box_list.get_box_shapes(self.box_size))
+			self.main_2d_window.updateGL()
+	
+	
+	def move_box(self,box_number,dx,dy):
+		self.box_list.move_box(box_number,dx,dy)
+		
+		self.particles_window.set_data(self.box_list.get_particle_images(self.current_file(), self.box_size))
+		self.particles_window.updateGL()
+		
+		self.main_2d_window.add_shape(box_number,self.box_list.get_shape(box_number,self.box_size))
+		self.main_2d_window.updateGL()
+		
+	def get_exclusion_image(self):
+		
+		global ScaledExclusionImageCache
+		return ScaledExclusionImageCache.get_image(self.current_file(),self.get_subsample_rate())
+	
+	def exclusion_area_added(self,typeofexclusion,x,y,radius,val):
+		xx = int(x/self.get_subsample_rate())
+		yy = int(y/self.get_subsample_rate())
+		
+		rr = int(radius/self.get_subsample_rate())
+		global BinaryCircleImageCache
+		mask = BinaryCircleImageCache.get_image_directly(rr)
+
+		from EMAN2 import BoxingTools
+		BoxingTools.set_region(self.get_exclusion_image(),mask,xx,yy,val)
+		self.main_2d_window.set_other_data(self.get_exclusion_image(),self.get_subsample_rate(),True)
+		self.main_2d_window.updateGL()
+	
+	def erasing_done(self,erase_mode):
+		set_idd_image_entry(self.current_file(),ScaledExclusionImage.database_name,self.get_exclusion_image())
+	
+	def __init_main_2d_window(self):
+		from emimage2d import EMImage2DModule
+		
+		if self.main_2d_window == None:
+			
+			self.main_2d_window= EMImage2DModule()
+	
+			self.main_2d_window.set_mouse_mode(0)
+					
+			self.signal_slot_handlers["2d_window"] = Boxer2DWindowEventHandling(self,self.main_2d_window)
+			
+			get_application().show_specific(self.main_2d_window)
+			
+	def get_2d_window(self): return self.main_2d_window
+	
+	def main_2d_window_closed(self):
+		self.main_2d_window = None
+	
+	def set_current_file_by_idx(self,idx):
+		if len(self.file_names) <= idx: raise RuntimeError("The index is beyond the length of the file names list")
+		
+		if idx != self.current_idx:
+			self.current_idx = idx
+			self.set_current_file(self.file_names[idx])
+	
+	def set_current_file(self,file_name):
+		from PyQt4 import QtCore
+		get_application().setOverrideCursor(QtCore.Qt.BusyCursor)
+		
+		if not file_exists(file_name): raise RuntimeError("The file %s does not exist" %file_name)
+		if self.main_2d_window != None:
+			global BigImageCache
+			data=BigImageCache.get_object(file_name).get_image(use_alternate=True)
+			
+			if get_idd_image_entry(file_name,ScaledExclusionImage.database_name) != None:
+				self.main_2d_window.set_other_data(self.get_exclusion_image(),self.get_subsample_rate(),True)
+			else:
+				self.main_2d_window.set_other_data(None,self.get_subsample_rate(),True)
+
+			self.main_2d_window.set_data(data,file_name)
+			#self.guiim.setWindowTitle(file_name) # not sure if this is necessary
+			
+			self.main_2d_window.force_display_update()
+			
+			
+		get_application().setOverrideCursor(QtCore.Qt.ArrowCursor)
+	
+	def current_file(self):
+		return self.file_names[self.current_idx]
+			
+	def __init_thumbs_window(self):
+		if len(self.file_names) == 0: raise RuntimeError("Will not make a thumbs window if the number of images is zero")
+		
+		if self.image_thumbs == None:
+			from PyQt4 import QtCore
+			get_application().setOverrideCursor(QtCore.Qt.BusyCursor)
+			
+			
+			self.image_thumbs = ThumbsTools.gen_thumbs(self.file_names)
+			if self.image_thumbs == None:
+				sys.exit(1)
+			
+			from emimagemx import EMImageMXModule
+			self.thumbs_window=EMImageMXModule()
+			self.thumbs_window.desktop_hint = "rotor" # this is to make it work in the desktop
+				
+			self.thumbs_window.set_data(self.image_thumbs,soft_delete=True)
+			self.thumbs_window.set_mouse_mode("app")
+			self.thumbs_window.update_window_title("Thumbnails")
+			self.signal_slot_handlers["thumbs_window"] = BoxerThumbsWindowEventHandling(self,self.thumbs_window)
+			
+			get_application().setOverrideCursor(QtCore.Qt.ArrowCursor)
+	
+	def thumbs_window_closed(self):
+		self.thumbs_window = None
+	
+	def __init_inspector(self):
+		if self.inspector == None:
+			self.inspector_module = EMBoxerInspectorModule(self)
+			self.inspector = self.inspector_module.widget
+			self.inspector.set_box_size(self.box_size)
+			
+	def get_inspector(self): return self.inspector
+	
+	def __init_particles_window(self):
+		if self.particles_window == None:
+			from emimagemx import EMImageMXModule
+			self.particles_window=EMImageMXModule()
+			self.particles_window.desktop_hint = "rotor" # this is to make it work in the desktop
+				
+			self.particles_window.set_mouse_mode("app")
+			self.particles_window.update_window_title("Particles")
+			self.signal_slot_handlers["particles_window"] = BoxerParticlesWindowEventHandling(self,self.particles_window)
+			
+	def particles_window_closed(self):
+		self.particles_window = None
+		
+	def show_interfaces(self):
+		if self.main_2d_window != None:
+			get_application().show_specific(self.main_2d_window)
+			self.main_2d_window.optimally_resize()
+		if self.thumbs_window != None: 
+			get_application().show_specific(self.thumbs_window)
+			self.thumbs_window.optimally_resize()
+		if self.inspector_module != None: 
+			get_application().show_specific(self.inspector_module)
+			self.thumbs_window.optimally_resize()
+	
+	def get_erase_radius(self): return self.erase_radius
+	def set_erase_radius(self,val,pass_on=False): self.erase_radius = val
+		
+	def get_box_size(self): return self.box_size
+	def set_box_size(self,box_size):
+		self.box_size = box_size
+		self.box_list.reset_images()
+		self.box_list.reset_shapes()
+		self.full_box_update()
+		
+		
+	def set_main_2d_mouse_mode(self,mode):
+		if self.main_2d_window != None: 
+			self.main_2d_window.add_eraser_shape("None",None)
+			self.main_2d_window.updateGL()
+		self.signal_slot_handlers["2d_window"].set_mouse_mode(mode)
+		
+	def done(self):
+		for o in [self.main_2d_window, self.thumbs_window,self.particles_window ]:
+			if o != None:
+				o.closeEvent(None)
+		
+		self.main_2d_window = None
+		self.thumbs_window = None
+		self.particles_window = None
+
+from emapplication import EMQtWidgetModule
+class EMBoxerInspectorModule(EMQtWidgetModule):
+	'''
+	'''
+	def __init__(self,target):
+		self.widget = EMBoxerInspectorModule.EMBoxerInspector(target)
+		EMQtWidgetModule.__init__(self,self.widget)
+		
+	def get_desktop_hint(self):
+		return "inspector"
+	
+	from PyQt4 import QtGui
+	class EMBoxerInspector(QtGui.QWidget):
+		def __init__(self,target) :
+			from PyQt4 import QtCore, QtGui, Qt
+			self.busy = True
+			self.dynamic_box_button_vbl = None # this will be used to dynamic add widgets as the buttons are changed
+			self.dynamic_box_button_widget = None # this will be used to dynamic add widgets as the buttons are changed
+			self.box_button_map = {}
+			 
+			QtGui.QWidget.__init__(self,None)
+			self.setWindowIcon(QtGui.QIcon(get_image_directory() +"eman.png"))
+			self.target=weakref.ref(target)
+			
+			self.vbl = QtGui.QVBoxLayout(self)
+			self.vbl.setMargin(0)
+			self.vbl.setSpacing(6)
+			self.vbl.setObjectName("vbl")
+			
+			box_size_hbl=QtGui.QHBoxLayout()
+			box_size_hbl.setMargin(0)
+			box_size_hbl.setSpacing(2)
+			
+			self.box_size_label = QtGui.QLabel("Box Size:",self)
+			box_size_hbl.addWidget(self.box_size_label)
+			self.pos_int_validator = QtGui.QIntValidator(self)
+			self.pos_int_validator.setBottom(1)
+			self.box_size = QtGui.QLineEdit(str(self.target().get_box_size()),self)
+			self.box_size.setValidator(self.pos_int_validator)
+			box_size_hbl.addWidget(self.box_size)
+			
+			self.vbl.addLayout(box_size_hbl)
+			
+			self.add_boxing_button_group(self.vbl)
+			
+			self.done_but=QtGui.QPushButton("Done")
+			self.vbl.addWidget(self.done_but)
+						
+			self.connect(self.box_size,QtCore.SIGNAL("editingFinished()"),self.new_box_size)
+			self.connect(self.done_but,QtCore.SIGNAL("clicked(bool)"),self.on_done)
+			self.busy = False
+		
+		def add_boxing_button_group(self,layout):
+			from PyQt4 import QtCore, QtGui, Qt
+			
+			self.button_group_box = QtGui.QGroupBox("Tools")
+			self.button_group_box_vbl = QtGui.QVBoxLayout(self.button_group_box)
+			
+			self.button_group = QtGui.QButtonGroup()			
+			self.boxinghbl1=QtGui.QHBoxLayout()
+			self.boxinghbl1.setMargin(0)
+			self.boxinghbl1.setSpacing(2)
+			
+			self.manualbutton=QtGui.QPushButton(QtGui.QIcon(get_image_directory() + "white_box.png"),"")
+			self.manualbutton.setToolTip("Add manual box")
+			self.manualbutton.setCheckable(1)
+			self.manualbutton.setObjectName("Manual Boxing")
+			self.manualbutton.setChecked(True)
+			self.boxinghbl1.addWidget(self.manualbutton)
+		
+			self.refbutton=QtGui.QPushButton( QtGui.QIcon(get_image_directory() + "black_box.png"),"")
+			self.refbutton.setToolTip("Add reference box")
+			self.refbutton.setObjectName("Ref Boxing")
+			self.refbutton.setCheckable(1)
+			self.refbutton.setChecked(False)
+			self.boxinghbl1.addWidget(self.refbutton)
+
+	#		self.boxinghbl4=QtGui.QHBoxLayout()
+	#		self.togfreeze=QtGui.QPushButton(QtGui.QIcon(get_image_directory() + "freeze_swirl.png"),"Toggle Freeze")
+	#		self.boxinghbl4.addWidget(self.togfreeze)
+	#		self.clear=QtGui.QPushButton("Clear")
+	#		self.boxinghbl4.addWidget(self.clear)
+	#		
+	#		self.autobox=QtGui.QPushButton(QtGui.QIcon(get_image_directory() + "green_boxes.png"), "Autobox")
+	#		self.boxinghbl3.addWidget(self.autobox)
+	#		self.boxingvbl.addLayout(self.boxinghbl3)
+	#	
+	#		self.boxinghbl2=QtGui.QHBoxLayout()
+	#		self.boxinghbl2.setMargin(2)
+	#		self.boxinghbl2.setSpacing(6)
+			#self.vbl.addLayout(self.hbl1)
+		
+			self.erasepic = QtGui.QIcon(get_image_directory() + "boxer_erase.png");
+			self.erase=QtGui.QPushButton(self.erasepic,"")
+			self.erase.setToolTip("Erase")
+			self.erase.setObjectName("Erase")
+			self.erase.setCheckable(1)
+			self.boxinghbl1.addWidget(self.erase)
+			
+			self.unerasepic = QtGui.QIcon(get_image_directory() + "boxer_unerase.png");
+			self.unerase=QtGui.QPushButton(self.unerasepic,"")
+			self.unerase.setToolTip("Unerase")
+			self.unerase.setObjectName("Unerase")
+			self.unerase.setCheckable(1)
+			self.boxinghbl1.addWidget(self.unerase)
+		
+			self.button_group.addButton(self.refbutton,0)
+			self.button_group.addButton(self.manualbutton,1)
+			self.button_group.addButton(self.erase,2)
+			self.button_group.addButton(self.unerase,3)
+			self.button_group_box_vbl.addLayout(self.boxinghbl1)
+			
+			self.dynamic_box_button_vbl = QtGui.QVBoxLayout()
+			self.button_group_box_vbl.addLayout(self.dynamic_box_button_vbl)
+			layout.addWidget(self.button_group_box)
+			
+			erase_panel = EMBoxerInspectorModule.EMBoxerInspector.ErasePanel(self,2*self.target().get_box_size())
+			self.box_button_map["Erase"] = erase_panel
+			self.box_button_map["Unerase"] = erase_panel
+			
+			QtCore.QObject.connect(self.button_group,QtCore.SIGNAL("buttonClicked (QAbstractButton *)"),self.button_group_clicked)
+		
+		def button_group_clicked(self,i):
+			if self.busy: return
+			name = str(i.objectName())
+			old_name = None
+			
+			if self.dynamic_box_button_widget != None:
+				old_name = str(self.dynamic_box_button_widget.objectName())
+				
+			if name == old_name: return
+			
+			if self.dynamic_box_button_widget:
+				if not self.box_button_map.has_key(old_name): raise RuntimeError("Error, code has altered and now it does not work")
+				
+				self.dynamic_box_button_vbl.removeWidget(self.dynamic_box_button_widget)
+				self.box_button_map[old_name].hide()
+				self.dynamic_box_button_widget = None
+									
+			
+			if self.box_button_map.has_key(name):
+				self.dynamic_box_button_widget = self.box_button_map[name].get_widget()
+			
+				self.dynamic_box_button_widget.setObjectName(name)
+				self.dynamic_box_button_vbl.addWidget(self.dynamic_box_button_widget)
+				self.dynamic_box_button_widget.show()
+				self.vbl.update()
+				
+			self.target().set_main_2d_mouse_mode(name)
+		
+		def get_desktop_hint(self):
+			return "inspector"
+		
+		def set_box_size(self,value):
+			self.busy = True
+			self.box_size.setText(str(value))
+			self.busy = False
+	
+		def new_box_size(self):
+			if self.busy: return
+			box_size=int(self.box_size.text())
+			self.target().set_box_size(box_size)
+		
+		def on_done(self):
+			self.close()
+		
+		def closeEvent(self,event):
+			self.target().done()
+		
+		def set_erase_radius(self,val):
+			if self.box_button_map.has_key("Erase"):
+				v =  self.box_button_map["Erase"]
+				v.set_erase_radius(val)
+			
+		class ErasePanel:
+			def __init__(self,target,erase_radius=1):
+				self.erase_radius = erase_radius
+				self.target = weakref.ref(target)
+				self.erase_rad_edit = None
+				self.widget = None
+			def set_erase_radius(self,val):
+				self.erase_radius = val
+				if self.erase_rad_edit != None: self.erase_rad_edit.setText(str(val))
+			
+			def get_widget(self):
+				if self.widget == None:
+					from PyQt4 import QtCore, QtGui, Qt
+					self.widget = QtGui.QWidget()
+					vbl = QtGui.QVBoxLayout(self.widget)
+					vbl.setMargin(0)
+					vbl.setSpacing(6)
+					vbl.setObjectName("vbl")
+					
+					hbl = QtGui.QHBoxLayout()
+					hbl.addWidget(QtGui.QLabel("Erase Radius:"))
+					
+					self.erase_rad_edit = QtGui.QLineEdit(str(self.erase_radius))
+					hbl.addWidget(self.erase_rad_edit)
+					
+					vbl.addLayout(hbl)
+					QtCore.QObject.connect(self.erase_rad_edit,QtCore.SIGNAL("editingFinished()"),self.new_erase_radius)
+					
+				return self.widget
+			
+			def new_erase_radius(self):
+				self.target().target().set_erase_radius(float(self.erase_rad_edit.text()))
+			def hide(self):
+				if self.widget != None:
+					self.widget.hide()
+							
+			
+if __name__ == "__main__":
+	main()
+
+	
+	

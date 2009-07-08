@@ -1048,7 +1048,6 @@ def gen_thumbs(image_names,n):
 	progress.qt_widget.show()
 	prog = 0
 	for i in range(nim):
-		print i,image_names[i]
 #				thumb = self.get_image_thumb(i)
 		thumb = get_idd_image_entry(image_names[i],"image_thumb")
 		if thumb == None:
@@ -1453,8 +1452,6 @@ class EMBoxerModule(QtCore.QObject):
 		
 		qt_target = get_application().get_qt_emitter(self.guimx)
 
-		if self.fancy_mode == EMBoxerModule.FANCY_MODE:
-			 QtCore.QObject.connect(self.guimx.emitter(),QtCore.SIGNAL("inspector_shown"),self.guiim_inspector_requested)
 		#self.guimx.connect(self.guimx,QtCore.SIGNAL("removeshape"),self.removeshape)
 		QtCore.QObject.connect(self.guimx.emitter(),QtCore.SIGNAL("mx_image_selected"),self.box_selected)
 		QtCore.QObject.connect(self.guimx.emitter(),QtCore.SIGNAL("mx_mousedrag"),self.box_moved)
@@ -2055,7 +2052,7 @@ class EMBoxerModule(QtCore.QObject):
 		#object = self.guimx.get_core_object()
 		#if not object.is_visible(lc[0]) : object.scroll_to(lc[0],True)
 		#self.get_mx_gui_image().get_core_object().set_selected([lc[0]],True)
-		boxes = self.get_boxes()
+		#		boxes = self.get_boxes()
 		#self.guiim.register_scroll_motion(boxes[im].xcorner+boxes[im].xsize/2,boxes[im].ycorner+boxes[im].ysize/2)
 		#try:
 			##self.guiim.scroll_to(boxes[im].xcorner+boxes[im].xsize/2,boxes[im].ycorner+boxes[im].ysize/2)

@@ -909,7 +909,7 @@ class EMImageMXModule(EMGUIModule):
 			self.inspector.disable_xyz()
 
 		self.file_name = filename
-		self.update_window_title(self.file_name)
+		if self.file_name != None and len(self.file_name) > 0:self.update_window_title(self.file_name)
 		
 		self.force_display_update()
 		self.nimg=len(self.data)

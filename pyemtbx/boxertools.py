@@ -644,6 +644,78 @@ class Cache:
 	def get_cache(self):
 		return self.cache
 	
+class ScaledExclusionImage:
+	database_name = "boxer_exclusion_image" # named it this to avoid conflicting with ExclusionImage
+	def __init__(self,image_name):
+		self.image_name = image_name
+		self.image = None
+		
+		try:
+			self.image = get_idd_image_entry(self.image_name,ScaledExclusionImage.database_name)
+		except:
+			pass
+		
+	def get_image_name(self):
+		return self.image_name
+		
+	def get_shrink(self):
+		if self.image != None: return self.image.get_attr("shrink")
+		else: return 0
+		
+	def __update_image(self,shrink):
+		'''
+		Updates the image using the function arguments
+		If they match current parameters than nothing happens - the correct image is already cached
+		'''
+		nx,ny,nz = gimme_image_dimensions3D(self.image_name)
+		xsize = int(nx/shrink)
+		ysize = int(ny/shrink)
+		if self.image == None:
+			self.image = EMData(xsize,ysize)
+			self.image.to_zero()
+			self.image.set_attr("shrink",int(shrink))
+		else:
+			# if the image already exists then we must retain the information in it by scaling and resizing it
+			old_shrink = self.get_shrink()
+			oldxsize = int(nx/old_shrink)
+			oldysize = int(ny/old_shrink)
+			r = Region( (oldxsize-xsize)/2, (oldysize-ysize)/2,xsize,ysize )
+			#print "clipping to",(oldxsize-xsize)/2, (oldysize-ysize)/2,xsize,ysize
+			scale = float(xsize)/float(oldxsize)
+			
+			# the order in which you clip and scale is dependent on whether or not scale is > 1
+			if scale > 1:
+				# if it's greater than one than clip (enlargen the image) first
+				self.image.clip_inplace(r)
+				# then scale the pixels
+				self.image.scale(float(xsize)/float(oldxsize))
+			else:
+				# if it's less than one scale first so that we retain the maximum amount of the pixel information
+				self.image.scale(float(xsize)/float(oldxsize))
+				self.image.clip_inplace(r)
+			
+			self.image.set_attr("shrink",int(shrink))
+			#set_idd_key_entry(self.image_name,"exclusion_image",self.image) # not sure if this is necessary
+			
+		#else:
+			#print "doing nothing to currently stored small image in CoarsenedFlattenedImage"
+			
+	def get_image(self):
+		'''
+		Should only be called if you know the stored image is up to date
+		'''
+		return self.image
+	
+	
+	def get_image_carefully(self,shrink):
+		
+		if self.image == None or not (shrink == self.get_shrink()):
+			self.__update_image(shrink)
+		
+		return self.get_image()
+
+ScaledExclusionImageCache = Cache(ScaledExclusionImage)
+	
 class ExclusionImage:
 	def __init__(self,image_name):
 		self.image_name = image_name
@@ -718,7 +790,7 @@ class ExclusionImage:
 		
 		return self.get_image()
 	
-	def query_params_match(self,flattenradius,shrink):
+	def query_params_match(self,xsize,ysize):
 		try:
 			if xsize != self.get_xsize() or ysize != self.get_ysize():
 				return False
