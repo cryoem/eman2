@@ -756,7 +756,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 	for b1a in dfbest1a:
 		#determine a very rough initial amplitude
 		ctf.defocus=b1a[1]
-		ctf.bfactor=500.0	# just something bigger than 0 as a neutral starting point
+		ctf.bfactor=800.0	# just something bigger than 0 as a neutral starting point
 		cc=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_AMP)
 		a,b=0,0
 		for i in range(s0,s1):
@@ -765,7 +765,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 
 #		print sqrt(b/a)
 		# our parameter set is (defocus,bfactor,scale)
-		parm=[b1a[1],500.0,sqrt(b/a)]
+		parm=[b1a[1],800.0,sqrt(b/a)]
 
 #		print "Initial guess : ",parm
 		sim=Simplex(ctf_cmp,parm,[.05,50.0,.1],data=(ctf,bgsub,s0,s1,ds))
@@ -905,8 +905,10 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 def ctf_cmp(parms,data):
 	"""This function is a quality metric for a set of CTF parameters vs. data"""
 	ctf,bgsub,s0,s1,ds=data
-	ctf.defocus=parms[0]
-	ctf.bfactor=parms[1]	# just something bigger than 0 as a neutral starting point
+	if parms[0]>7.0 : ctf.defocus=7.0
+	else : ctf.defocus=parms[0]
+	if parms[1]>4000.0: ctf.bfactor=4000.0
+	else : ctf.bfactor=parms[1]
 	cc=ctf.compute_1d(len(bgsub),ds,Ctf.CtfType.CTF_AMP)
 	
 #	Util.save_data(0,ds,cc,"a.txt")
@@ -916,6 +918,7 @@ def ctf_cmp(parms,data):
 	for i in range(s0,s1):
 		er+=i*(sfact(i*ds)*cc[i]*cc[i]*fabs(parms[2])-bgsub[i])**2
 	
+	if ctf.bfactor==4000.0 or ctf.defocus==7.0 : er+=1.0
 	return er
 
 def ctf_env_points(im_1d,bg_1d,ctf) :
