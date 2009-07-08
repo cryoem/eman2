@@ -161,10 +161,12 @@ class EMTaskCustomer:
 				
 #				print "TASK ",task.__dict__
 #				print "RESULT ",rd
+				sockf.write("ACK ")
+				sockf.flush()
 				return (task,rd)
 			except:
 				traceback.print_exc()
-				print "***************************  ERROR RETRIEVING RESULTS"
+				print "***************************  ERROR RETRIEVING RESULTS - retrying"
 				self.wait_for_server()
 				return self.get_results(taskid)
 
@@ -630,7 +632,13 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				sendobj(self.sockf,None)
 				self.sockf.flush()
 				
-				db_remove_dict("bdb:%s#result_%d"%(self.queue.path,data))
+				try:
+					if self.sockf.read(4)!="ACK " : raise Exception
+					db_remove_dict("bdb:%s#result_%d"%(self.queue.path,data))
+				except:
+					if self.verbose: print "No ACK on RSLT. Keeping results for retry."
+					
+				
 			else :
 				sendobj(self.sockf,"ERROR: Unknown command")
 				self.sockf.flush()
