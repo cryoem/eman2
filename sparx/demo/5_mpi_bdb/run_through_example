@@ -4,9 +4,9 @@ set echo on
 
 e2pdb2em.py ../tteftu_with_tRNA.pdb tmp.hdf --apix=5.2 --box=64
 
-e2proc3d.py tmp.hdf ../fmodel_structure.hdf --filter=sxTANH_LOW_PASS:cutoff_frequency=0.15:fall_off=0.2 || exit
+e2proc3d.py tmp.hdf ../fmodel_structure.hdf --filter=sxTANH_LOW_PASS:cutoff_abs=0.15:fall_off=0.2 || exit
 
-e2proc3d.py tmp.hdf ../model_structure.hdf --filter=sxTANH_LOW_PASS:cutoff_frequency=0.45:fall_off=0.1 || exit
+e2proc3d.py tmp.hdf ../model_structure.hdf --filter=sxTANH_LOW_PASS:cutoff_abs=0.45:fall_off=0.1 || exit
 
 rm tmp.hdf
 
@@ -33,7 +33,7 @@ mpirun -np 2 sxfind_struct.py ali2d_m/multi_ref.hdf structure --ou=30 --delta=6 
 mpirun -np 2 sxrecons3d_n.py structure/structure.hdf ab_initio_vol.hdf --MPI || exit
 
 # Low-pass filtration of the initial structure
-e2proc3d.py ab_initio_vol.hdf ab_initio_volf.hdf --filter=sxTANH_LOW_PASS:cutoff_frequency=0.15:fall_off=0.2 || exit
+e2proc3d.py ab_initio_vol.hdf ab_initio_volf.hdf --filter=sxTANH_LOW_PASS:cutoff_abs=0.15:fall_off=0.2 || exit
 
 # 2D alignment parameters are transformed to 3D alignment parameters
 sxparams_2D_to_3D.py bdb:data || exit
