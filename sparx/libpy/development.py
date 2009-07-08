@@ -488,7 +488,7 @@ def ali2d_g_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				again = mpi_bcast(again, 1, MPI_INT, main_node, MPI_COMM_WORLD)
 				if not again: break
 			if total_iter != max_iter*len(xrng):
-				if total_iter >= max_iter-5: 
+				if total_iter >= max_iter*len(xrng)-5: 
 					sx_sum, sy_sum = ali2d_single_iter_g(data, data_prep, kb, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF)
 				else:
 					sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF)
@@ -849,7 +849,7 @@ def ali2d_mg(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xr=0, yr=
 
 def ali2d_single_iter_g(data, data_prep, kb, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, CTF=False, ali_params="xform.align2d"):
 	"""
-		single iteration of 2D alignment using ormq
+		single iteration of 2D alignment using ormy3g
 		if CTF = True, apply CTF to data (not to reference!)
 	"""
 	from utilities import combine_params2, inverse_transform2, get_params2D, set_params2D
@@ -4302,7 +4302,7 @@ def ormy3(image,crefim,xrng,yrng,step,mode,numr,cnx,cny,interpolation_method=Non
 				jtot=ps[2]/2
 				q=Processor.EMFourierFilter(line_s,parline)
 				data.insert(0,q)
-				ps = amoeba([jtot], [2.0], oned_search_func, 1.e-4,1.e-4,500,data)
+				ps = amoeba([jtot], [2.0], oned_search_func, 1.e-4,1.e-4,50,data)
 				del data[0]
 				jtot=ps[0][0]*2
 				qn=ps[1]
@@ -4314,7 +4314,7 @@ def ormy3(image,crefim,xrng,yrng,step,mode,numr,cnx,cny,interpolation_method=Non
 				mtot=ps[2]/2
 				q=Processor.EMFourierFilter(line_m,parline)
 				data.insert(0,q)
-				ps = amoeba([mtot], [2.0], oned_search_func,1.e-4,1.e-4,500,data)
+				ps = amoeba([mtot], [2.0], oned_search_func,1.e-4,1.e-4,50,data)
 				del data[0]
 				mtot=ps[0][0]*2
 				qm=ps[1]
@@ -4345,7 +4345,7 @@ def ormy3(image,crefim,xrng,yrng,step,mode,numr,cnx,cny,interpolation_method=Non
 		data0.insert(9,kbline)
 		data0.insert(10,is_mirror)
 		
-		ps2 = amoeba_multi_level([-sx,-sy],[1,1],func_loop2,1.e-4,1.e-4,500,data0)
+		ps2 = amoeba_multi_level([-sx,-sy],[1,1],func_loop2,1.e-4,1.e-4,50,data0)
 		
 		if ps2[1] > peak:
 			sx = -ps2[0][0]
@@ -4380,7 +4380,7 @@ def ormy3(image,crefim,xrng,yrng,step,mode,numr,cnx,cny,interpolation_method=Non
 		data.insert(3,numr)
 		data.insert(4,mode)
 		data.insert(5,crefim)
-		ps2 = amoeba_multi_level([-sx,-sy],[1,1],func_loop,1.e-4,1.e-4,500,data)
+		ps2 = amoeba_multi_level([-sx,-sy],[1,1],func_loop,1.e-4,1.e-4,50,data)
 		if ps2[1]>peak:
 			sx = -ps2[0][0]
 			sy = -ps2[0][1]
@@ -4405,7 +4405,9 @@ def ormy3g(imali, kb, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 	
 	In the future, we can delete ormy and ormy2 if this version is proved to be stable.
 	
-	This version is only used for gridding interpolation and assume imali is alread prepared.
+	This version is only used for gridding interpolation and assume imali is alread prepared, which
+	makes it suitable for alignment of a set of images.
+	Also, according to my experiment, ormy2 is not good for alignment of a set of images.	
 	"""
 	from math import pi, cos, sin
 	from fundamentals import fft, mirror
@@ -4445,7 +4447,7 @@ def ormy3g(imali, kb, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 			jtot = ps[0]/2
 			q = Processor.EMFourierFilter(line_s, parline)
 			data.insert(0, q)
-			ps = amoeba([jtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 500, data)
+			ps = amoeba([jtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 50, data)
 			del data[0]
 			jtot = ps[0][0]*2
 			qn = ps[1]
@@ -4457,7 +4459,7 @@ def ormy3g(imali, kb, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 			mtot = ps[0]/2
 			q = Processor.EMFourierFilter(line_m, parline)
 			data.insert(0, q)
-			ps = amoeba([mtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 500, data)
+			ps = amoeba([mtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 50, data)
 			del data[0]
 			mtot = ps[0][0]*2
 			qm = ps[1]
@@ -4489,7 +4491,7 @@ def ormy3g(imali, kb, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 	data0.insert(9, kbline)
 	data0.insert(10, is_mirror)
 	
-	ps2 = amoeba_multi_level([-sx, -sy], [1.0, 1.0], func_loop2, 1.e-4, 1.e-4, 500, data0)
+	ps2 = amoeba_multi_level([-sx, -sy], [1.0, 1.0], func_loop2, 1.e-4, 1.e-4, 50, data0)
 	if ps2[1] > peak and abs(ps2[0][0])<xrng and abs(ps2[0][1])<yrng:
 		sx = -ps2[0][0]
 		sy = -ps2[0][1]
@@ -4541,8 +4543,6 @@ def func_loop2(args, data):
 	maxrin = data[8]
 	kbline = data[9]
 	is_mirror = data[10]
-	data1 = []
-	data1.insert(1, kbline)
 	
 	ix = args[0]
 	iy = args[1]
@@ -4556,26 +4556,22 @@ def func_loop2(args, data):
 		ps = line.max_search()				
 		jtot = ps[0]/2
 		q = Processor.EMFourierFilter(line, parline)
-		data1.insert(0, q)
-		ps = amoeba([jtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 500, data1)
-		del data1[0]
+		data1 = [q, kbline]
+		ps = amoeba([jtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 50, data1)
 		jtot = ps[0][0]*2
-		qn = ps[1]
 		ang = ang_n(jtot+1, mode, maxrin)				
-		return qn, ang
+		return ps[1], ang
 	else:
 		line = Util.Crosrng_msg_m(crefim, cimage, numr)
 		#  Mirror, find the current maximum and its location
 		ps = line.max_search()
 		mtot = ps[0]/2
 		q = Processor.EMFourierFilter(line, parline)
-		data1.insert(0, q)
-		ps = amoeba([mtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 500, data1)	
-		del data1[0]
+		data1 = [q, kbline]
+		ps = amoeba([mtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 50, data1)	
 		mtot = ps[0][0]*2
-		qm = ps[1]
 		ang = ang_n(mtot+1, mode, maxrin)	
-		return qm, ang
+		return ps[1], ang
 
 '''
 def proj_ali(volref, mask, projdata, first_ring, last_ring, rstep, xrng, yrng, step, dtheta, ref_a, sym, CTF = False):
