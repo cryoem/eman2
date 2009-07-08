@@ -2356,13 +2356,13 @@ outer radius specifies width of Gaussian starting at inner_radius rather than to
 		{
 			if (inner_radius_square>0) {
 				if (dist>inner_radius_square) {
-					if (exponent==2.0) (*pixel) *= exp(-pow(sqrt(dist)-inner_radius,2.0) / outer_radius_square);
-					else (*pixel) *= exp(-pow(sqrt(dist)-inner_radius,exponent) / pow(outer_radius_square,exponent/2.0));
+					if (exponent==2.0f) (*pixel) *= exp(-pow(sqrt(dist)-inner_radius,2.0f) / outer_radius_square);
+					else (*pixel) *= exp(-pow(sqrt(dist)-inner_radius,exponent) / pow(outer_radius_square,exponent/2.0f));
 				}
 			}
 			else {
-				if (exponent==2.0) (*pixel) *= exp(-dist / outer_radius_square);
-				else (*pixel) *= exp(-pow(dist,exponent/2.0) / pow(outer_radius_square,exponent/2.0));
+				if (exponent==2.0f) (*pixel) *= exp(-dist / outer_radius_square);
+				else (*pixel) *= exp(-pow(dist,exponent/2.0f) / pow(outer_radius_square,exponent/2.0f));
 			}
 		}
 	};
