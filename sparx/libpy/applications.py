@@ -11769,7 +11769,8 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		crit = k_means_criterion(Cls, critname)
 		N = EMUtil.get_image_count(stack)
 		glb_assign = k_means_locasg2glbasg(assign, listID, N)
-		k_means_export(Cls, crit, assign, out_dir)
+		k_means_export(Cls, crit, glb_assign, out_dir)
+
 		print_end_msg('k-means')
 
 # -- K-means groups ---------------------------------------------------------------------------
