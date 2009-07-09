@@ -686,8 +686,8 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 
 	bgsub=[im_1d[s]-bg_1d[s] for s in range(len(im_1d))]	# background subtracted curve, good until we readjust the background
 
-	s0=int(.03/ds)
-	s1=min(int(.167/ds),ys*2/3-4)
+	s0=int(.04/ds)
+	s1=min(int(.167/ds),ys/3-4)
 	while bgsub[s0]>bgsub[s0+1] : s0+=1	# look for a minimum in the data curve
 	print "Minimum at 1/%1.1f 1/A"%(1.0/(s0*ds))
 	
@@ -700,8 +700,8 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 	# This implies that we already have a general range for the defocus, so we limit the search
 	if dfhint :
 		dfhint=int(dfhint*20.0)
-		rng=range(dfhint-2,dfhint+3)
-	else :rng=range(10,128)
+		rng=range(dfhint-3,dfhint+4)
+	else :rng=range(8,128)
 
 
 	# This loop tries to find the best few possible defocuses
@@ -744,8 +744,10 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 	for i in range(1,len(dfbest1)-1):
 		if dfbest1[i]>dfbest1[i-1] and dfbest1[i]>dfbest1[i+1] : dfbest1a.append(dfbest1[i])		# keep only local peaks
 	
+	if len(dfbest1a)==0 : dfbest1a=[max(dfbest1)]
+	
 	dfbest1a.sort()
-	dfbest1a=dfbest1a[-5:]		# keep only the best 5 peaks
+	dfbest1a=dfbest1a[-5:]		# keep at most the best 5 peaks
 	
 	print "Initial defocus possibilities: ",
 	for i in dfbest1a: print i[1],
@@ -754,9 +756,9 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 	# Next, we use a simplex minimizer to try for the best CTF parameters for each defocus
 	best=[]
 	for b1a in dfbest1a:
-		#determine a very rough initial amplitude
+		# determine a very rough initial amplitude
 		ctf.defocus=b1a[1]
-		ctf.bfactor=800.0	# just something bigger than 0 as a neutral starting point
+		ctf.bfactor=200.0	# just something bigger than 0 as a neutral starting point
 		cc=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_AMP)
 		a,b=0,0
 		for i in range(s0,s1):
@@ -764,16 +766,17 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 			b+=cc[i]**2
 
 #		print sqrt(b/a)
-		# our parameter set is (defocus,bfactor,scale)
-		parm=[b1a[1],800.0,sqrt(b/a)]
+		# our parameter set is (defocus,bfactor)
+		parm=[b1a[1],200.0]
 
 #		print "Initial guess : ",parm
-		sim=Simplex(ctf_cmp,parm,[.05,50.0,.1],data=(ctf,bgsub,s0,s1,ds))
-		oparm=sim.minimize(monitor=0)
+		sim=Simplex(ctf_cmp,parm,[.02,20.0],data=(ctf,bgsub,s0,s1,ds,parm[0]))
+		oparm=sim.minimize(epsilon=.0000001,monitor=0)
 #		print "Optimized : ",oparm
-		best.append((oparm[1],oparm[0]))
-		
-# best now contains quality,(df,bfac,scale) for each optimized answer
+		best.append((oparm[1],oparm[0]))			
+
+
+# best now contains quality,(df,bfac) for each optimized answer
 	best.sort()
 	print "Best value is df=%1.3f  B=%1.1f"%(best[0][1][0],best[0][1][1])
 
@@ -805,8 +808,9 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 #	s1=min(int(0.15/ds),len(bg_1d)-1)
 
 	# rerun the simplex with the new background
-	sim=Simplex(ctf_cmp,best[0][1],[.05,50.0,.1],data=(ctf,bgsub,s0,s1,ds))
-	oparm=sim.minimize(monitor=0)
+	best[0][1][1]=200.0		# restart the fit with B=200.0
+	sim=Simplex(ctf_cmp,best[0][1],[.02,20.0],data=(ctf,bgsub,s0,s1,ds,best[0][1][0]))
+	oparm=sim.minimize(epsilon=.0000001,monitor=0)
 	best[0]=(oparm[1],oparm[0])
 	print "After BG correction, value is df=%1.3f  B=%1.1f"%(best[0][1][0],best[0][1][1])
 
@@ -904,21 +908,39 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 
 def ctf_cmp(parms,data):
 	"""This function is a quality metric for a set of CTF parameters vs. data"""
-	ctf,bgsub,s0,s1,ds=data
-	if parms[0]>7.0 : ctf.defocus=7.0
-	else : ctf.defocus=parms[0]
-	if parms[1]>4000.0: ctf.bfactor=4000.0
-	else : ctf.bfactor=parms[1]
-	cc=ctf.compute_1d(len(bgsub),ds,Ctf.CtfType.CTF_AMP)
+	ctf,bgsub,s0,s1,ds,dforig=data
+	ctf.defocus=parms[0]
+	ctf.bfactor=0.0
+	c2=ctf.compute_1d(len(bgsub)*2,ds,Ctf.CtfType.CTF_AMP)	# we use this for amplitude scaling
+	ctf.bfactor=parms[1]
+	cc=ctf.compute_1d(len(bgsub)*2,ds,Ctf.CtfType.CTF_AMP)	# this is for the error calculation
+	
+	# compute an optimal amplitude for these parameters
+	a,b=0,0
+	for i in range(s0,s1):
+		if fabs(c2[i])>.8 and bgsub[i]>0 : 
+			a+=sfact(i*ds)*cc[i]*cc[i]
+			b+=bgsub[i]
+	if b>0 : norm=a/b
+	else :
+		norm=1.0
 	
 #	Util.save_data(0,ds,cc,"a.txt")
 #	Util.save_data(0,ds,bgsub,"b.txt")
 	
+	# now compute the error
 	er=0
 	for i in range(s0,s1):
-		er+=i*(sfact(i*ds)*cc[i]*cc[i]*fabs(parms[2])-bgsub[i])**2
+		v=sfact(i*ds)*cc[i]*cc[i]/norm
+		er+=(v-bgsub[i])**2
+#		if v>bgsub[i] : er+=(v-bgsub[i])**2
+#		else : er+=2.0*(v-bgsub[i])**2
 	
-	if ctf.bfactor==4000.0 or ctf.defocus==7.0 : er+=1.0
+#	print er,(parms[0]-dforig)**2,parms[1]
+	
+	er*=(1.0+100.0*(parms[0]-dforig)**4)		# This is a weight which biases the defocus towards the initial value
+#	er*=(1.0+fabs(parms[1]-200.0)/100000.0)		# This is a bias towards small B-factors
+	
 	return er
 
 def ctf_env_points(im_1d,bg_1d,ctf) :
