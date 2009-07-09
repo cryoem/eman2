@@ -939,7 +939,7 @@ class EMFormWidget(QtGui.QWidget):
 		self.output_writers = [] # used to register output write objects, for the purpose of returning the results
 		self.name_widget_map = {} # used to map parameter names to qt widgets - used by booleans to automatically disable and enable widgets
 		self.__init_icons()
-		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "/eman.png"))
+		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "/desktop.png"))
 
 		self.auto_incorporate = {}
 		self.auto_incorporate["float"] = EMFormWidget.IncorpFloat()

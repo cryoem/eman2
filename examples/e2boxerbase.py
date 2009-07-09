@@ -47,7 +47,7 @@ points in terms of figuring out how to adapt this code to application specific n
 
 from emapplication import EMStandAloneApplication,get_application
 from pyemtbx.boxertools import BigImageCache,BinaryCircleImageCache,Cache
-from EMAN2 import file_exists,EMANVERSION,gimme_image_dimensions2D,EMData,get_file_tag,get_image_directory,Region,file_exists,gimme_image_dimensions3D
+from EMAN2 import file_exists,EMANVERSION,gimme_image_dimensions2D,EMData,get_file_tag,get_image_directory,Region,file_exists,gimme_image_dimensions3D,abs_path
 from EMAN2db import db_open_dict,db_check_dict,db_close_dict
 
 import os,sys,weakref,math
@@ -86,7 +86,8 @@ specific needs/algorithms
 		for e in error_message:
 			error += "Error: "+e +"\n"
 		parser.error(error)
-			
+		
+	args = [abs_path(arg) for arg in args] # always try to use full file names 
 
 	application = EMStandAloneApplication()
 #	QtCore.QObject.connect(gui, QtCore.SIGNAL("module_idle"), on_idle)
@@ -592,8 +593,9 @@ class EMBoxList:
 	known_box_names_map["manual"] = "manual_boxes"
 	known_box_names_map["ref"] = "ref_boxes"
 	known_box_names_map["auto"] = "auto_boxes"
-	def __init__(self,target):
-		self.target=weakref.ref(target)
+	def __init__(self,target=None):
+		if target: self.target=weakref.ref(target)
+		else: self.target = None # someone is using this incognito
 		self.current_iter = 0 # iterator support
 		self.max_idx = 0 # iterator support
 		self.boxes = []
@@ -756,7 +758,7 @@ class EMBoxList:
 		set_database_entry(image_name,"undo_cache",self.undo_cache)
 		set_database_entry(image_name,"redo_cache",self.redo_cache)
 
-	def load_boxes_from_database(self,image_name,reset=True):
+	def load_boxes_from_database(self,image_name,reset=True,load_caches=True):
 		if reset:
 			self.boxes = []
 			self.shapes = []
@@ -767,9 +769,10 @@ class EMBoxList:
 			if coords != None:
 				for x,y in coords:
 					self.add_box(x,y,key)
-					
-		self.undo_cache = get_database_entry(image_name,"undo_cache",dfl=[])
-		self.redo_cache = get_database_entry(image_name,"redo_cache",dfl=[])
+		
+		if load_caches:
+			self.undo_cache = get_database_entry(image_name,"undo_cache",dfl=[])
+			self.redo_cache = get_database_entry(image_name,"redo_cache",dfl=[])
 
 	def exclude_from_scaled_image(self,exclusion_image,subsample_rate):
 		action = False
@@ -783,7 +786,28 @@ class EMBoxList:
 				action = True
 			
 		return action
+	
+	def write_particles(self,input_file_name,out_file_name,box_size,invert=False,normproc=None):
+		print invert,normproc
+		for i,box in enumerate(self.boxes):
+			image = box.get_image(input_file_name,box_size)
+			if invert: image.mult(-1)
+			if str(normproc) != "None": image.process_inplace(normproc)
+			image.write_image(out_file_name,i)
+			
+	
+	def write_coordinates(self,input_file_name,out_file_name,box_size):
+		f=file(out_file_name,'w')
+		for box in self.boxes:
+			xc = box.x-box_size/2
+			yc = box.y-box_size/2
+			f.write(str(int(xc))+'\t'+str(int(yc))+'\t'+str(box_size)+'\t'+str(box_size)+'\n')
+		f.close()
+			
+	
 def get_database_entry(image_name,key,database="bdb:e2boxercache",dfl=None):
+	if not db_check_dict(database+"#"+key) and dfl==None:  return None
+	
 	db = db_open_dict(database+"#"+key)
 	
 	if db.has_key(image_name):
@@ -876,6 +900,7 @@ class EMBoxerModule:
 		self.erase_radius = 2*self.box_size # have to keep track of this, several objects need it
 		self.box_list = EMBoxList(self)
 		self.moving_box = None
+		self.output_task = None # will be an EMAN2 style form for writing output
 		# initialized the 2D window
 		self.__init_main_2d_window()
 		if len(self.file_names) > 1: self.__init_thumbs_window()
@@ -1078,7 +1103,10 @@ class EMBoxerModule:
 #				frozen = False 
 #			self.main_2d_window.set_frozen(frozen)
 	   	   	self.load_2d_window_display(file_name)
-			if self.inspector != None: self.inspector.set_frozen(get_database_entry(file_name,"frozen",dfl=False))
+			if self.inspector != None: 
+				self.inspector.set_frozen(get_database_entry(file_name,"frozen",dfl=False))
+				self.inspector.set_image_quality(get_database_entry(file_name,"quality",dfl=2))
+			
 			#self.guiim.setWindowTitle(file_name) # not sure if this is necessary
 			
 			# the boxes should be loaded from the database, if possible
@@ -1113,7 +1141,10 @@ class EMBoxerModule:
 			set_database_entry(file_name,"frozen",False)
 			frozen = False 
 		self.main_2d_window.set_frozen(frozen)
-
+		
+	def set_image_quality(self,val):
+		set_database_entry(self.current_file(),"quality",val)
+		
 	def set_frozen(self,val):
 		set_database_entry(self.current_file(),"frozen",val)
 		self.main_2d_window.set_frozen(val)
@@ -1253,367 +1284,564 @@ class EMBoxerModule:
 		self.signal_slot_handlers["2d_window"].set_mouse_mode(mode)
 		
 	def done(self):
-		for o in [self.main_2d_window, self.thumbs_window,self.particles_window ]:
-			if o != None:
-				o.closeEvent(None)
+		for module in [self.main_2d_window, self.thumbs_window,self.particles_window ]:
+			if module != None: module.closeEvent(None)
+				
+	def run_output_dialog(self):
+		from emsprworkflow import E2BoxerProgramOutputTask
+		if self.output_task != None: return
+		from PyQt4 import QtCore
+		self.output_task = EMBoxerWriteOutputTask(self.file_names)
+		QtCore.QObject.connect(self.output_task.emitter(),QtCore.SIGNAL("task_idle"),self.on_output_task_idle)
+		self.output_task.run_form()
 		
-#		self.main_2d_window = None
-#		self.thumbs_window = None
-#		self.particles_window = None
+	def on_output_task_idle(self):
+		self.output_task = None
+
+from emsprworkflow import WorkFlowTask,error
+class EMBoxerWriteOutputTask(WorkFlowTask):	
+	"""Use this form for writing boxed particles and/or coordinate files to disk."""
+	def __init__(self,file_names=[],output_formats=["hdf","spi","img","bdb"]):
+		WorkFlowTask.__init__(self)
+		self.window_title = "Write Particle Output"
+		self.form_db_name = "bdb:e2boxerbase"
+		self.file_names = file_names
+		self.output_formats = output_formats
+		
+	def get_table(self):
+		from emform import EM2DFileTable,EMFileTable,int_lt
+		table = EM2DFileTable(self.file_names,desc_short="Raw Data",desc_long="")
+		table.add_column_data(EMFileTable.EMColumnData("Stored Boxes",EMBoxerWriteOutputTask.get_num_boxes,"The number of stored boxes",int_lt))
+		table.add_column_data(EMFileTable.EMColumnData("Quality",EMBoxerWriteOutputTask.get_quality,"Quality metadata score stored in local database",int_lt))
+	
+		return table
+	
+	def get_quality(file_name):
+		'''
+		A static function for getting the number of boxes associated with each file
+		'''
+		val = get_database_entry(file_name,"quality")
+		
+		if val == None: return "-"
+		else: return str(val)
+		
+	
+	
+	def get_num_boxes(file_name):
+		'''
+		A static function for getting the number of boxes associated with each file
+		'''
+		box_list = EMBoxList()
+		box_list.load_boxes_from_database(file_name,load_caches=False)
+		return str(len(box_list))
+	
+	get_quality = staticmethod(get_quality)
+	get_num_boxes = staticmethod(get_num_boxes)
+	
+	def get_params(self):
+#		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFGenericTask.documentation_string,choices=None))
+		from emdatastorage import ParamDef
+		db = db_open_dict(self.form_db_name)
+		
+		params = []
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
+		params.append(self.get_table())
+		
+		pbox = ParamDef(name="output_boxsize",vartype="int",desc_short="Box Size",desc_long="An integer value",property=None,defaultunits=db.get("output_boxsize",dfl=128),choices=[])	
+		pfo = ParamDef(name="force",vartype="boolean",desc_short="Force Overwrite",desc_long="Whether or not to force overwrite files that already exist",property=None,defaultunits=db.get("force",dfl=False),choices=None)
+		pwc = ParamDef(name="write_coords",vartype="boolean",desc_short="Write Coordinates",desc_long="Whether or not to write .box files",property=None,defaultunits=db.get("write_coords",dfl=False),choices=None)
+		psuffix = ParamDef(name="suffix",vartype="string",desc_short="Output Suffix", desc_long="This text will be appended to the names of the output files",property=None,defaultunits=db.get("suffix",dfl="_ptcls"),choices=None )
+		pwb = ParamDef(name="write_particles",vartype="boolean",desc_short="Write Particles",desc_long="Whether or not box images should be written",property=None,defaultunits=db.get("write_particles",dfl=True),choices=None)
+		pinv = ParamDef(name="invert_output",vartype="boolean",desc_short="Invert Pixels",desc_long="Do you want the pixel intensities in the output inverted?",property=None,defaultunits=db.get("invert_output",dfl=False),choices=None)
+		pn =  ParamDef(name="normproc",vartype="string",desc_short="Normalize Images",desc_long="How the output box images should be normalized",property=None,defaultunits=db.get("normproc",dfl="normalize.edgemean"),choices=["normalize","normalize.edgemean","normalize.ramp.normvar","None"])
+		pop = ParamDef(name="outformat",vartype="string",desc_short="Output Image Format",desc_long="The format of the output box images",property=None,defaultunits=db.get("outformat",dfl="bdb"),choices=self.output_formats)
+
+
+	   	pwb.dependents = ["invert_output","normproc","outformat","suffix"] # these are things that become disabled when the pwb checkbox is unchecked etc
+		
+		params.append([pbox,pfo])
+		params.append([pwc,pwb])
+		params.append([psuffix,pinv])
+		params.append(pn)
+		params.append(pop)
+
+		return params
+	
+	def check_params(self,params):
+		error_message = []
+		if params["output_boxsize"] < 1: error_message.append("Boxsize must be greater than 0.")
+		if not params["write_coords"] and not params["write_particles"]: error_message.append("You must choose at least one of the write_coords/write_box_images options")
+	
+		return error_message
+	
+	def on_form_ok(self,params):	
+		if  params.has_key("filenames") and len(params["filenames"]) == 0:
+			self.run_select_files_msg()
+			return
+		
+		error_message = self.check_params(params)
+		if len(error_message) >0: 
+			self.show_error_message(error_message)
+			return
+		
+		particle_output_names = []
+		if params["write_particles"]: particle_output_names = self.get_particle_outnames(params)
+
+		coord_output_names = []
+		if params["write_coords"]: coord_output_names = self.get_coord_outnames(params)
+		
+		if not params["force"]:
+			warning = []
+			for name in particle_output_names: 
+				if file_exists(name): warning.append("%s" %name)
+			for name in coord_output_names: 
+				if file_exists(name):  warning.append("%s" %name)
+			if len(warning) > 0:
+				warning.insert(0,"The following files exist and will not be written over")
+				warning.append("You can remove them or change the suffix")
+				error(warning,"Error")
+				return
+		
+		if len(particle_output_names) > 0:
+			self.write_output(params["filenames"],particle_output_names,EMBoxList.write_particles,params["output_boxsize"],"Writing Particles", [params["invert_output"], params["normproc"]])
+		if len(coord_output_names) > 0:
+			self.write_output(params["filenames"],coord_output_names,EMBoxList.write_coordinates,params["output_boxsize"],"Writing Coordinates")
+
+		from PyQt4 import QtCore
+		self.emit(QtCore.SIGNAL("task_idle"))
+		self.form.closeEvent(None)
+		self.form = None
+		self.write_db_entries(params)
+
+	def write_output(self,input_names,output_names,box_list_function,box_size,msg="Writing Output",extra_args=[]):
+		n = len(input_names)
+		from emapplication import EMProgressDialogModule
+		progress = EMProgressDialogModule(get_application(),msg, "Cancel", 0,n,None)
+		progress.qt_widget.show()
+		prog = 0	
+
+		files_written = []
+		for i,output in enumerate(output_names):
+			input = input_names[i]
+			box_list = EMBoxList()
+			box_list.load_boxes_from_database(input)
+			if len(extra_args) > 0:box_list_function(box_list,input,output,box_size,*extra_args)
+			else:box_list_function(box_list,input,output,box_size)
+			files_written.append(output)
+			prog += 1
+			progress.qt_widget.setValue(prog)
+			get_application().processEvents()
+			
+			if progress.qt_widget.wasCanceled():
+				from EMAN2 import remove_file
+				for file in files_written: remove_file(file)
+				progress.qt_widget.setValue(nim)
+				progress.qt_widget.close()
+				return
+	
+		progress.qt_widget.setValue(n)
+		progress.qt_widget.close()
+			
+	def get_particle_outnames(self,params):
+		input = params["filenames"]
+		outformat = params["outformat"]
+		output = []
+		for name in input:
+			if outformat == "bdb":
+				out = "bdb:particles#" + get_file_tag(name) + params["suffix"]
+			else:
+				out = get_file_tag(name)+ params["suffix"]+"."+outformat
+			output.append(out)
+		return output
+	
+	def get_coord_outnames(self,params):
+		input = params["filenames"]
+		output = []
+		for name in input:
+			output.append(get_file_tag(name)+".box")
+		return output
 
 from emapplication import EMQtWidgetModule
 class EMBoxerInspectorModule(EMQtWidgetModule):
 	'''
 	'''
 	def __init__(self,target):
-		self.widget = EMBoxerInspectorModule.EMBoxerInspector(target)
+		self.widget = EMBoxerInspector(target)
 		EMQtWidgetModule.__init__(self,self.widget)
 		
 	def get_desktop_hint(self):
 		return "inspector"
 	
-	from PyQt4 import QtGui
-	class EMBoxerInspector(QtGui.QWidget):
-		def __init__(self,target) :
-			from PyQt4 import QtCore, QtGui, Qt
-			self.busy = True
-			self.dynamic_box_button_vbl = None # this will be used to dynamic add widgets as the buttons are changed
-			self.dynamic_box_button_widget = None # this will be used to dynamic add widgets as the buttons are changed
-			self.box_button_map = {}
-			 
-			QtGui.QWidget.__init__(self,None)
-			self.setWindowIcon(QtGui.QIcon(get_image_directory() +"eman.png"))
-			self.target=weakref.ref(target)
-			
-			self.vbl = QtGui.QVBoxLayout(self)
-			self.vbl.setMargin(0)
-			self.vbl.setSpacing(6)
-			self.vbl.setObjectName("vbl")
-			
-			self.tab_widget = QtGui.QTabWidget()
-			self.tab_widget.addTab(self.get_main_tab(),"Main")
-			self.tab_widget.addTab(self.get_display_tab(),"Display")
-			self.vbl.addWidget(self.tab_widget)
-			self.done_but=QtGui.QPushButton("Done")
-			self.vbl.addWidget(self.done_but)
-						
-			
-			self.connect(self.done_but,QtCore.SIGNAL("clicked(bool)"),self.on_done)
-			self.busy = False
+from PyQt4 import QtGui
+class EMBoxerInspector(QtGui.QWidget):
+	def __init__(self,target) :
+		from PyQt4 import QtCore, QtGui
+		self.busy = True
+		self.dynamic_box_button_vbl = None # this will be used to dynamic add widgets as the buttons are changed
+		self.dynamic_box_button_widget = None # this will be used to dynamic add widgets as the buttons are changed
+		self.box_button_map = {}
+		 
+		QtGui.QWidget.__init__(self,None)
+		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"eman.png"))
+		self.target=weakref.ref(target)
 		
-		def get_display_tab(self):
-			from PyQt4 import QtCore, QtGui, Qt
-			widget = QtGui.QWidget()
-			vbl =  QtGui.QVBoxLayout(widget)
-			
-			#  Insert the plot widget
-			viewhbl = QtGui.QVBoxLayout()
-			
-			self.viewboxes = QtGui.QCheckBox("Particle Window")
-			self.viewboxes.setChecked(True)
-			self.viewimage = QtGui.QCheckBox("2D Image Window")
-			self.viewimage.setChecked(True)
-			
-			viewhbl.addWidget(self.viewboxes)
-			viewhbl.addWidget(self.viewimage)
+		self.vbl = QtGui.QVBoxLayout(self)
+		self.vbl.setMargin(0)
+		self.vbl.setSpacing(6)
+		self.vbl.setObjectName("vbl")
 		
-			if self.target().has_thumbs():
-				self.viewthumbs = QtGui.QCheckBox("Thumbnails Window")
-				self.viewthumbs.setChecked(True)
-				viewhbl.addWidget(self.viewthumbs)
+		self.tab_widget = QtGui.QTabWidget()
+		self.tab_widget.addTab(self.get_main_tab(),"Main")
+		self.tab_widget.addTab(self.get_display_tab(),"Display")
+		self.vbl.addWidget(self.tab_widget)
 		
-			viewmanagement = QtGui.QGroupBox("Displayed Windows")
-			viewmanagement.setLayout(viewhbl)
-			vbl.addWidget(viewmanagement)
+		self.gen_output_but=QtGui.QPushButton("Write output")
+		self.vbl.addWidget(self.gen_output_but)
 		
-			
-			viewhbl2 = QtGui.QHBoxLayout()
-			self.boxformats = QtGui.QComboBox(self)
-			self.boxformats.addItem("square with central dot")
-			self.boxformats.addItem("square")
-			self.boxformats.addItem("circle with central dot")
-			self.boxformats.addItem("circle")
-			self.boxformats.setEnabled(False)
-			viewhbl2.addWidget(self.boxformats)
-			
-			displayboxes = QtGui.QGroupBox("Displayed Boxes")
-			displayboxes.setLayout(viewhbl2)
-			vbl.addWidget(displayboxes)
+		self.done_but=QtGui.QPushButton("Done")
+		self.vbl.addWidget(self.done_but)
+					
 		
-		
-			self.connect(self.viewboxes,QtCore.SIGNAL("clicked(bool)"),self.view_particles_clicked)
-			self.connect(self.viewimage,QtCore.SIGNAL("clicked(bool)"),self.view_2d_window_clicked)
-			if self.target().has_thumbs():
-				self.connect(self.viewthumbs,QtCore.SIGNAL("clicked(bool)"),self.view_thumbs_clicked)
-			
-			QtCore.QObject.connect(self.boxformats, QtCore.SIGNAL("currentIndexChanged(QString)"), self.box_format_changed)
+		self.connect(self.done_but,QtCore.SIGNAL("clicked(bool)"),self.on_done)
+		self.connect(self.gen_output_but,QtCore.SIGNAL("clicked(bool)"),self.write_output_clicked)
+		self.busy = False
 	
-			return widget
-		def view_particles_clicked(self,val):
-			print "view particles"
-			if self.busy: return
-			self.target().show_particles_window(val)
-		
-		def view_2d_window_clicked(self,val):
-			if self.busy: return
-			self.target().show_2d_window(val)
-			
-		def view_thumbs_clicked(self,val):
-			if self.busy: return
-			self.target().show_thumbs_window(val)
-			
-		def set_thumbs_visible(self,val=True):
-			self.busy = True
-			self.viewthumbs.setChecked(val)
-			self.busy = False
+	def on_done(self):
+		self.close()
 	
-		def set_particles_visible(self,val=True):
-			self.busy = True
-			self.viewboxes.setChecked(val)
-			self.busy = False
+	def closeEvent(self,event):
+		self.target().done()
+		
+	def write_output_clicked(self,val):
+		self.target().run_output_dialog()
 	
-		def set_2d_window_visible(self,val=True):
-			self.busy = True
-			self.viewimage.setChecked(val)
-			self.busy = False
-			
-		def box_format_changed(self,val):
-			print "pass"
+	def get_display_tab(self):
+		from PyQt4 import QtCore, QtGui, Qt
+		widget = QtGui.QWidget()
+		vbl =  QtGui.QVBoxLayout(widget)
 		
-		def get_main_tab(self):
-			from PyQt4 import QtCore, QtGui, Qt
-			widget = QtGui.QWidget()
-			vbl = QtGui.QVBoxLayout(widget)
-			vbl.setMargin(0)
-			vbl.setSpacing(6)
-			
-			self.add_top_buttons(vbl)
-			
-			box_size_hbl=QtGui.QHBoxLayout()
-			box_size_hbl.setMargin(0)
-			box_size_hbl.setSpacing(2)
-			
-			self.box_size_label = QtGui.QLabel("Box Size:",self)
-			box_size_hbl.addWidget(self.box_size_label)
-			self.pos_int_validator = QtGui.QIntValidator(self)
-			self.pos_int_validator.setBottom(1)
-			self.box_size = QtGui.QLineEdit(str(self.target().get_box_size()),self)
-			self.box_size.setValidator(self.pos_int_validator)
-			box_size_hbl.addWidget(self.box_size)
-			
-			vbl.addLayout(box_size_hbl)
+		#  Insert the plot widget
+		viewhbl = QtGui.QVBoxLayout()
 		
-			self.add_boxing_button_group(vbl)
-			
-			self.add_bottom_buttons(vbl)
-			
-			self.connect(self.box_size,QtCore.SIGNAL("editingFinished()"),self.new_box_size)
-			return widget
+		self.viewboxes = QtGui.QCheckBox("Particle Window")
+		self.viewboxes.setChecked(True)
+		self.viewimage = QtGui.QCheckBox("2D Image Window")
+		self.viewimage.setChecked(True)
 		
-		def add_top_buttons(self,layout):
-			from PyQt4 import QtCore, QtGui, Qt
-			hbl_t=QtGui.QHBoxLayout()
-			self.togfreeze=QtGui.QPushButton(QtGui.QIcon(get_image_directory() + "freeze_swirl.png"),"Freeze")
-			self.togfreeze.setCheckable(1)
-			self.togfreeze.setChecked(False)
-			hbl_t.addWidget(self.togfreeze)
-			self.clear=QtGui.QPushButton("Clear")
-			hbl_t.addWidget(self.clear)			
-			layout.addLayout(hbl_t)
-			
-			QtCore.QObject.connect(self.togfreeze, QtCore.SIGNAL("clicked(bool)"), self.toggle_freeze_clicked)
-			QtCore.QObject.connect(self.clear, QtCore.SIGNAL("clicked(bool)"), self.clear_clicked)
+		viewhbl.addWidget(self.viewboxes)
+		viewhbl.addWidget(self.viewimage)
+	
+		if self.target().has_thumbs():
+			self.viewthumbs = QtGui.QCheckBox("Thumbnails Window")
+			self.viewthumbs.setChecked(True)
+			viewhbl.addWidget(self.viewthumbs)
+	
+		viewmanagement = QtGui.QGroupBox("Displayed Windows")
+		viewmanagement.setLayout(viewhbl)
+		vbl.addWidget(viewmanagement)
+	
 		
-		def set_frozen(self,val):
-			self.busy = True
-			self.togfreeze.setChecked(int(val))
-			self.busy = False
+		viewhbl2 = QtGui.QHBoxLayout()
+		self.boxformats = QtGui.QComboBox(self)
+		self.boxformats.addItem("square with central dot")
+		self.boxformats.addItem("square")
+		self.boxformats.addItem("circle with central dot")
+		self.boxformats.addItem("circle")
+		self.boxformats.setEnabled(False)
+		viewhbl2.addWidget(self.boxformats)
 		
-		def toggle_freeze_clicked(self,val):
-			if self.busy: return
-			self.target().set_frozen(val)
-			
-		def clear_clicked(self,val):
-			if self.busy: return
-			self.target().clear_boxes()
+		displayboxes = QtGui.QGroupBox("Displayed Boxes")
+		displayboxes.setLayout(viewhbl2)
+		vbl.addWidget(displayboxes)
+	
+	
+		self.connect(self.viewboxes,QtCore.SIGNAL("clicked(bool)"),self.view_particles_clicked)
+		self.connect(self.viewimage,QtCore.SIGNAL("clicked(bool)"),self.view_2d_window_clicked)
+		if self.target().has_thumbs():
+			self.connect(self.viewthumbs,QtCore.SIGNAL("clicked(bool)"),self.view_thumbs_clicked)
 		
-		def add_bottom_buttons(self,layout):
-			from PyQt4 import QtCore, QtGui, Qt
-			hbl_t=QtGui.QHBoxLayout()
-			self.undo_boxes=QtGui.QPushButton("Undo Boxes")
-			self.undo_boxes.setEnabled(False)
-			hbl_t.addWidget(self.undo_boxes)
-			self.redo_boxes=QtGui.QPushButton("Redo Boxes")
-			self.redo_boxes.setEnabled(False)
-			hbl_t.addWidget(self.redo_boxes)
-			
-			layout.addLayout(hbl_t)
-			QtCore.QObject.connect(self.redo_boxes, QtCore.SIGNAL("clicked(bool)"), self.redo_boxes_clicked)
-			QtCore.QObject.connect(self.undo_boxes, QtCore.SIGNAL("clicked(bool)"), self.undo_boxes_clicked)
-				
-		def redo_boxes_clicked(self):
-			self.target().redo_boxes()
-		
-		def undo_boxes_clicked(self,val):
-			self.target().undo_boxes()
-			
-		def enable_undo_redo(self, enable_undo, enable_redo):
-			self.undo_boxes.setEnabled(enable_undo)
-			self.redo_boxes.setEnabled(enable_redo)
-		
-		def add_boxing_button_group(self,layout):
-			from PyQt4 import QtCore, QtGui, Qt
-			
-			self.button_group_box = QtGui.QGroupBox("Tools")
-			self.button_group_box_vbl = QtGui.QVBoxLayout(self.button_group_box)
-			
-			self.button_group = QtGui.QButtonGroup()			
-			self.boxinghbl1=QtGui.QHBoxLayout()
-			self.boxinghbl1.setMargin(0)
-			self.boxinghbl1.setSpacing(2)
-			
-			self.manualbutton=QtGui.QPushButton(QtGui.QIcon(get_image_directory() + "white_box.png"),"")
-			self.manualbutton.setToolTip("Add manual box")
-			self.manualbutton.setCheckable(1)
-			self.manualbutton.setObjectName("Manual Boxing")
-			self.manualbutton.setChecked(True)
-			self.boxinghbl1.addWidget(self.manualbutton)
-		
-			self.refbutton=QtGui.QPushButton( QtGui.QIcon(get_image_directory() + "black_box.png"),"")
-			self.refbutton.setToolTip("Add reference box")
-			self.refbutton.setObjectName("Ref Boxing")
-			self.refbutton.setCheckable(1)
-			self.refbutton.setChecked(False)
-			self.boxinghbl1.addWidget(self.refbutton)
+		QtCore.QObject.connect(self.boxformats, QtCore.SIGNAL("currentIndexChanged(QString)"), self.box_format_changed)
 
-
-	#		
-	#		self.autobox=QtGui.QPushButton(QtGui.QIcon(get_image_directory() + "green_boxes.png"), "Autobox")
-	#		self.boxinghbl3.addWidget(self.autobox)
-	#		self.boxingvbl.addLayout(self.boxinghbl3)
-	#	
-	#		self.boxinghbl2=QtGui.QHBoxLayout()
-	#		self.boxinghbl2.setMargin(2)
-	#		self.boxinghbl2.setSpacing(6)
-			#self.vbl.addLayout(self.hbl1)
-		
-			self.erasepic = QtGui.QIcon(get_image_directory() + "boxer_erase.png");
-			self.erase=QtGui.QPushButton(self.erasepic,"")
-			self.erase.setToolTip("Erase")
-			self.erase.setObjectName("Erase")
-			self.erase.setCheckable(1)
-			self.boxinghbl1.addWidget(self.erase)
-			
-			self.unerasepic = QtGui.QIcon(get_image_directory() + "boxer_unerase.png");
-			self.unerase=QtGui.QPushButton(self.unerasepic,"")
-			self.unerase.setToolTip("Unerase")
-			self.unerase.setObjectName("Unerase")
-			self.unerase.setCheckable(1)
-			self.boxinghbl1.addWidget(self.unerase)
-		
-			self.button_group.addButton(self.refbutton,0)
-			self.button_group.addButton(self.manualbutton,1)
-			self.button_group.addButton(self.erase,2)
-			self.button_group.addButton(self.unerase,3)
-			self.button_group_box_vbl.addLayout(self.boxinghbl1)
-			
-			self.dynamic_box_button_vbl = QtGui.QVBoxLayout()
-			self.button_group_box_vbl.addLayout(self.dynamic_box_button_vbl)
-			layout.addWidget(self.button_group_box)
-			
-			erase_panel = EMBoxerInspectorModule.EMBoxerInspector.ErasePanel(self,2*self.target().get_box_size())
-			self.box_button_map["Erase"] = erase_panel
-			self.box_button_map["Unerase"] = erase_panel
-			
-			QtCore.QObject.connect(self.button_group,QtCore.SIGNAL("buttonClicked (QAbstractButton *)"),self.button_group_clicked)
-		
-		def button_group_clicked(self,i):
-			if self.busy: return
-			name = str(i.objectName())
-			old_name = None
-			
-			if self.dynamic_box_button_widget != None:
-				old_name = str(self.dynamic_box_button_widget.objectName())
-				
-			if name == old_name: return
-			
-			if self.dynamic_box_button_widget:
-				if not self.box_button_map.has_key(old_name): raise RuntimeError("Error, code has altered and now it does not work")
-				
-				self.dynamic_box_button_vbl.removeWidget(self.dynamic_box_button_widget)
-				self.box_button_map[old_name].hide()
-				self.dynamic_box_button_widget = None
-									
-			
-			if self.box_button_map.has_key(name):
-				self.dynamic_box_button_widget = self.box_button_map[name].get_widget()
-			
-				self.dynamic_box_button_widget.setObjectName(name)
-				self.dynamic_box_button_vbl.addWidget(self.dynamic_box_button_widget)
-				self.dynamic_box_button_widget.show()
-				self.vbl.update()
-				
-			self.target().set_main_2d_mouse_mode(name)
-		
-		def get_desktop_hint(self):
-			return "inspector"
-		
-		def set_box_size(self,value):
-			self.busy = True
-			self.box_size.setText(str(value))
-			self.busy = False
+		return widget
+	def view_particles_clicked(self,val):
+		if self.busy: return
+		self.target().show_particles_window(val)
 	
-		def new_box_size(self):
-			if self.busy: return
-			box_size=int(self.box_size.text())
-			self.target().set_box_size(box_size)
+	def view_2d_window_clicked(self,val):
+		if self.busy: return
+		self.target().show_2d_window(val)
 		
-		def on_done(self):
-			self.close()
+	def view_thumbs_clicked(self,val):
+		if self.busy: return
+		self.target().show_thumbs_window(val)
 		
-		def closeEvent(self,event):
-			self.target().done()
+	def set_thumbs_visible(self,val=True):
+		self.busy = True
+		self.viewthumbs.setChecked(val)
+		self.busy = False
+
+	def set_particles_visible(self,val=True):
+		self.busy = True
+		self.viewboxes.setChecked(val)
+		self.busy = False
+
+	def set_2d_window_visible(self,val=True):
+		self.busy = True
+		self.viewimage.setChecked(val)
+		self.busy = False
 		
+	def box_format_changed(self,val):
+		print "pass"
+	
+	def get_main_tab(self):
+		from PyQt4 import QtCore, QtGui, Qt
+		widget = QtGui.QWidget()
+		vbl = QtGui.QVBoxLayout(widget)
+		vbl.setMargin(0)
+		vbl.setSpacing(6)
+		
+		self.add_top_buttons(vbl)
+		
+		box_size_hbl=QtGui.QHBoxLayout()
+		box_size_hbl.setMargin(0)
+		box_size_hbl.setSpacing(2)
+		
+		self.box_size_label = QtGui.QLabel("Box Size:",self)
+		box_size_hbl.addWidget(self.box_size_label)
+		self.pos_int_validator = QtGui.QIntValidator(self)
+		self.pos_int_validator.setBottom(1)
+		self.box_size = QtGui.QLineEdit(str(self.target().get_box_size()),self)
+		self.box_size.setValidator(self.pos_int_validator)
+		box_size_hbl.addWidget(self.box_size)
+		
+		vbl.addLayout(box_size_hbl)
+	
+		self.add_boxing_button_group(vbl)
+		
+		self.add_bottom_buttons(vbl)
+		
+		self.connect(self.box_size,QtCore.SIGNAL("editingFinished()"),self.new_box_size)
+		return widget
+	
+	def add_top_buttons(self,layout):
+		from PyQt4 import QtCore, QtGui, Qt
+		hbl_t=QtGui.QHBoxLayout()
+		self.togfreeze=QtGui.QPushButton(QtGui.QIcon(get_image_directory() + "freeze_swirl.png"),"Freeze")
+		self.togfreeze.setCheckable(1)
+		self.togfreeze.setChecked(False)
+		hbl_t.addWidget(self.togfreeze)
+		self.clear=QtGui.QPushButton("Clear")
+		hbl_t.addWidget(self.clear)
+			
+		layout.addLayout(hbl_t)
+		
+		QtCore.QObject.connect(self.togfreeze, QtCore.SIGNAL("clicked(bool)"), self.toggle_freeze_clicked)
+		QtCore.QObject.connect(self.clear, QtCore.SIGNAL("clicked(bool)"), self.clear_clicked)
+	
+	def set_frozen(self,val):
+		self.busy = True
+		self.togfreeze.setChecked(int(val))
+		self.busy = False
+	
+	def toggle_freeze_clicked(self,val):
+		if self.busy: return
+		self.target().set_frozen(val)
+		
+	def clear_clicked(self,val):
+		if self.busy: return
+		self.target().clear_boxes()
+	
+	def add_bottom_buttons(self,layout):
+		from PyQt4 import QtCore, QtGui, Qt
+		hbl_t=QtGui.QHBoxLayout()
+		self.undo_boxes=QtGui.QPushButton("Undo Boxes")
+		self.undo_boxes.setToolTip("Recall the last state of the boxes")
+		self.undo_boxes.setEnabled(False)
+		hbl_t.addWidget(self.undo_boxes)
+		self.redo_boxes=QtGui.QPushButton("Redo Boxes")
+		self.redo_boxes.setToolTip("Redo the last undo")
+		self.redo_boxes.setEnabled(False)
+		hbl_t.addWidget(self.redo_boxes)
+		layout.addLayout(hbl_t)
+		
+		hbl_q=QtGui.QHBoxLayout()
+		self.quality=QtGui.QLabel("Image Quality:")
+		qual_tt = "Assign a quality number to the image. This acts as metadata for your convenience and is displayed in eman2 forms when possible."
+		self.quality.setToolTip(qual_tt)
+		hbl_q.addWidget(self.quality)
+		
+		self.image_qualities = QtGui.QComboBox()
+		for i in range(0,5):
+			self.image_qualities.addItem(str(i))
+		self.image_qualities.setCurrentIndex(2)
+		self.image_qualities.setToolTip(qual_tt)
+		hbl_q.addWidget(self.image_qualities)
+		layout.addLayout(hbl_q)
+		
+		QtCore.QObject.connect(self.redo_boxes, QtCore.SIGNAL("clicked(bool)"), self.redo_boxes_clicked)
+		QtCore.QObject.connect(self.undo_boxes, QtCore.SIGNAL("clicked(bool)"), self.undo_boxes_clicked)
+		QtCore.QObject.connect(self.image_qualities, QtCore.SIGNAL("currentIndexChanged(QString)"), self.image_quality_changed)
+	
+	def image_quality_changed(self,val):
+		if self.busy: return
+		self.target().set_image_quality(int(val))
+		
+	def set_image_quality(self,val):
+		self.busy = True
+		for i in range(self.image_qualities.count()):
+			if int(self.image_qualities.itemText(i)) == val:
+				self.image_qualities.setCurrentIndex(i)
+				break
+		else:
+			raise RuntimeError("Unknow quality: " + str(val))
+		self.busy = False
+		
+	def redo_boxes_clicked(self):
+		self.target().redo_boxes()
+	
+	def undo_boxes_clicked(self,val):
+		self.target().undo_boxes()
+		
+	def enable_undo_redo(self, enable_undo, enable_redo):
+		self.undo_boxes.setEnabled(enable_undo)
+		self.redo_boxes.setEnabled(enable_redo)
+	
+	def add_boxing_button_group(self,layout):
+		from PyQt4 import QtCore, QtGui, Qt
+		
+		self.button_group_box = QtGui.QGroupBox("Tools")
+		self.button_group_box_vbl = QtGui.QVBoxLayout(self.button_group_box)
+		
+		self.button_group = QtGui.QButtonGroup()			
+		self.boxinghbl1=QtGui.QHBoxLayout()
+		self.boxinghbl1.setMargin(0)
+		self.boxinghbl1.setSpacing(2)
+		
+		self.manualbutton=QtGui.QPushButton(QtGui.QIcon(get_image_directory() + "white_box.png"),"")
+		self.manualbutton.setToolTip("Add manual box")
+		self.manualbutton.setCheckable(1)
+		self.manualbutton.setObjectName("Manual Boxing")
+		self.manualbutton.setChecked(True)
+		self.boxinghbl1.addWidget(self.manualbutton)
+	
+		self.refbutton=QtGui.QPushButton( QtGui.QIcon(get_image_directory() + "black_box.png"),"")
+		self.refbutton.setToolTip("Add reference box")
+		self.refbutton.setObjectName("Ref Boxing")
+		self.refbutton.setCheckable(1)
+		self.refbutton.setChecked(False)
+		self.boxinghbl1.addWidget(self.refbutton)
+		
+		self.erasepic = QtGui.QIcon(get_image_directory() + "boxer_erase.png");
+		self.erase=QtGui.QPushButton(self.erasepic,"")
+		self.erase.setToolTip("Erase")
+		self.erase.setObjectName("Erase")
+		self.erase.setCheckable(1)
+		self.boxinghbl1.addWidget(self.erase)
+		
+		self.unerasepic = QtGui.QIcon(get_image_directory() + "boxer_unerase.png");
+		self.unerase=QtGui.QPushButton(self.unerasepic,"")
+		self.unerase.setToolTip("Unerase")
+		self.unerase.setObjectName("Unerase")
+		self.unerase.setCheckable(1)
+		self.boxinghbl1.addWidget(self.unerase)
+	
+		self.button_group.addButton(self.refbutton,0)
+		self.button_group.addButton(self.manualbutton,1)
+		self.button_group.addButton(self.erase,2)
+		self.button_group.addButton(self.unerase,3)
+		self.button_group_box_vbl.addLayout(self.boxinghbl1)
+		
+		self.dynamic_box_button_vbl = QtGui.QVBoxLayout()
+		self.button_group_box_vbl.addLayout(self.dynamic_box_button_vbl)
+		layout.addWidget(self.button_group_box)
+		
+		erase_panel = EMBoxerInspector.ErasePanel(self,2*self.target().get_box_size())
+		self.box_button_map["Erase"] = erase_panel
+		self.box_button_map["Unerase"] = erase_panel
+		
+		QtCore.QObject.connect(self.button_group,QtCore.SIGNAL("buttonClicked (QAbstractButton *)"),self.button_group_clicked)
+	
+	def button_group_clicked(self,i):
+		if self.busy: return
+		name = str(i.objectName())
+		old_name = None
+		
+		if self.dynamic_box_button_widget != None:
+			old_name = str(self.dynamic_box_button_widget.objectName())
+			
+		if name == old_name: return
+		
+		if self.dynamic_box_button_widget:
+			if not self.box_button_map.has_key(old_name): raise RuntimeError("Error, code has altered and now it does not work")
+			
+			self.dynamic_box_button_vbl.removeWidget(self.dynamic_box_button_widget)
+			self.box_button_map[old_name].hide()
+			self.dynamic_box_button_widget = None
+								
+		
+		if self.box_button_map.has_key(name):
+			self.dynamic_box_button_widget = self.box_button_map[name].get_widget()
+		
+			self.dynamic_box_button_widget.setObjectName(name)
+			self.dynamic_box_button_vbl.addWidget(self.dynamic_box_button_widget)
+			self.dynamic_box_button_widget.show()
+			self.vbl.update()
+			
+		self.target().set_main_2d_mouse_mode(name)
+	
+	def get_desktop_hint(self):
+		return "inspector"
+	
+	def set_box_size(self,value):
+		self.busy = True
+		self.box_size.setText(str(value))
+		self.busy = False
+
+	def new_box_size(self):
+		if self.busy: return
+		box_size=int(self.box_size.text())
+		self.target().set_box_size(box_size)
+	
+	def set_erase_radius(self,val):
+		if self.box_button_map.has_key("Erase"):
+			v =  self.box_button_map["Erase"]
+			v.set_erase_radius(val)
+		
+	class ErasePanel:
+		def __init__(self,target,erase_radius=1):
+			self.erase_radius = erase_radius
+			self.target = weakref.ref(target)
+			self.erase_rad_edit = None
+			self.widget = None
 		def set_erase_radius(self,val):
-			if self.box_button_map.has_key("Erase"):
-				v =  self.box_button_map["Erase"]
-				v.set_erase_radius(val)
-			
-		class ErasePanel:
-			def __init__(self,target,erase_radius=1):
-				self.erase_radius = erase_radius
-				self.target = weakref.ref(target)
-				self.erase_rad_edit = None
-				self.widget = None
-			def set_erase_radius(self,val):
-				self.erase_radius = val
-				if self.erase_rad_edit != None: self.erase_rad_edit.setText(str(val))
-			
-			def get_widget(self):
-				if self.widget == None:
-					from PyQt4 import QtCore, QtGui, Qt
-					self.widget = QtGui.QWidget()
-					vbl = QtGui.QVBoxLayout(self.widget)
-					vbl.setMargin(0)
-					vbl.setSpacing(6)
-					vbl.setObjectName("vbl")
-					
-					hbl = QtGui.QHBoxLayout()
-					hbl.addWidget(QtGui.QLabel("Erase Radius:"))
-					
-					self.erase_rad_edit = QtGui.QLineEdit(str(self.erase_radius))
-					hbl.addWidget(self.erase_rad_edit)
-					
-					vbl.addLayout(hbl)
-					QtCore.QObject.connect(self.erase_rad_edit,QtCore.SIGNAL("editingFinished()"),self.new_erase_radius)
-					
-				return self.widget
-			
-			def new_erase_radius(self):
-				self.target().target().set_erase_radius(float(self.erase_rad_edit.text()))
-			def hide(self):
-				if self.widget != None:
-					self.widget.hide()
+			self.erase_radius = val
+			if self.erase_rad_edit != None: self.erase_rad_edit.setText(str(val))
+		
+		def get_widget(self):
+			if self.widget == None:
+				from PyQt4 import QtCore, QtGui, Qt
+				self.widget = QtGui.QWidget()
+				vbl = QtGui.QVBoxLayout(self.widget)
+				vbl.setMargin(0)
+				vbl.setSpacing(6)
+				vbl.setObjectName("vbl")
+				
+				hbl = QtGui.QHBoxLayout()
+				hbl.addWidget(QtGui.QLabel("Erase Radius:"))
+				
+				self.erase_rad_edit = QtGui.QLineEdit(str(self.erase_radius))
+				hbl.addWidget(self.erase_rad_edit)
+				
+				vbl.addLayout(hbl)
+				QtCore.QObject.connect(self.erase_rad_edit,QtCore.SIGNAL("editingFinished()"),self.new_erase_radius)
+				
+			return self.widget
+		
+		def new_erase_radius(self):
+			self.target().target().set_erase_radius(float(self.erase_rad_edit.text()))
+		def hide(self):
+			if self.widget != None:
+				self.widget.hide()
 							
 			
 if __name__ == "__main__":
