@@ -88,6 +88,7 @@ namespace EMAN
 
 		void set_x(size_t i, float x)
 		{
+			if (i>=data.size()) data.resize(i+1,Pair(0,0));
 			data[i].x = x;
 		}
 
@@ -98,6 +99,7 @@ namespace EMAN
 
 		void set_y(size_t i, float y)
 		{
+			if (i>=data.size()) data.resize(i+1,Pair(0,0));
 			data[i].y = y;
 		}
 
