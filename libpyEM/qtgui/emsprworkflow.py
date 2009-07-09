@@ -3955,6 +3955,8 @@ class E2Refine2DTask(EMClassificationTools):
 		params.append([pnaliref,pnbasisfp])
 		params.append([pncp,pinitclasses])
 		
+		pparallel = ParamDef(name="parallel",vartype="string",desc_short="Parallel",desc_long="Parallel arguments (advanced). Leave blank if unsure",property=None,defaultunits=db.get("parallel",dfl=""),choices=None)
+		params.append(pparallel)
 		return params
 
 	def check_main_page(self,params,options):
@@ -3966,7 +3968,10 @@ class E2Refine2DTask(EMClassificationTools):
 		#options.parallel = params["global.num_cpus"]
 		if options.initial == "" or str(options.initial) == "None" or str(options.initial) == "none":
 			options.initial = None
-			
+		
+		if params.has_key("parallel") and len(params["parallel"]) > 0:
+			options.parallel = params["parallel"]
+		
 		if options.initial != None and len(options.initial) > 0:
 	 		if not file_exists(options.initial):
 	 			error_message.append("The initial class averages file you specified (%s) does not exist." %(options.initial))
@@ -4019,9 +4024,10 @@ class E2Refine2DTask(EMClassificationTools):
   	def add_main_args(self,options,string_args,bool_args,additional_args,):
   		string_args.extend( ["iter","naliref","nbasisfp","path","input","ncls"] ) # May 2009, took "parallel" out
 		bool_args.append("normproj")
-		optionals = ["initial"]
+		optionals = ["initial","parallel"]
 		for opt in optionals:
-			if getattr(options,opt) != None: string_args.append(opt)
+			if hasattr(options,opt):
+				if getattr(options,opt) != None: string_args.append(opt)
 	 		  
 	def make_v_stack(self,options):
 	 	
@@ -4287,10 +4293,10 @@ class E2Refine2DRunTask(E2Refine2DTask):
 #		else:
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2Refine2DRunTask.documentation_string,choices=None))
 		params.append(p)
-			
+	
 		other_params = self.get_general_params()
-		
 		params.extend(other_params)
+
 		return ["General",params]
 
 	def on_form_ok(self,params):
@@ -4852,6 +4858,10 @@ class E2RefineParticlesTask(EMClassificationTools, E2Make3DTools):
 		plowmem = ParamDef(name="lowmem",vartype="boolean",desc_short="Low mem",desc_long="Causes various programs to restrict memory usage but results in increased CPU time.",property=None,defaultunits=db.get("lowmem",dfl=False),choices=None)
 
 	   	params.append([piter,plowmem])
+	   	
+	   	pparallel = ParamDef(name="parallel",vartype="string",desc_short="Parallel",desc_long="Parallel arguments (advanced). Leave blank if unsure",property=None,defaultunits=db.get("parallel",dfl=""),choices=None)
+		
+		params.append(pparallel)
 	
 		return ["Particles",params]
 		 
@@ -4932,7 +4942,8 @@ class E2RefineParticlesTask(EMClassificationTools, E2Make3DTools):
 				options.usefilt = options.usefilt_names[0]
 			
 			string_args.append("usefilt")
-			
+		
+		if hasattr(options,"parallel"):string_args.append("parallel")
 		
 		error = self.check_model(options)
 		
@@ -5090,6 +5101,9 @@ class E2RefineParticlesTask(EMClassificationTools, E2Make3DTools):
 				error_message.append("The angstrom per pixel must be greater than  0")
 			else:
 				options.apix = params["global.apix"]
+				
+		if params.has_key("parallel") and len(params["parallel"]) > 0: 
+			options.parallel = params["parallel"]
 				
 		if params["automask3d"]:
 			# the user wants to do automasking
