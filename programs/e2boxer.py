@@ -1071,12 +1071,16 @@ def gen_thumbs(image_names,n):
 		progress.qt_widget.setValue(prog)
 		application.processEvents()
 		#print "got thumb",i
-		thumbs[i] = thumb
+		#thumbs[i] = thumb
 			
 		if progress.qt_widget.wasCanceled():
 			progress.qt_widget.setValue(nim)
 			progress.qt_widget.close()
-			return -1 # woh don't know if this will work
+			return -1 
+		
+	for i in range(nim):
+		thumbs[i] = get_idd_image_entry(image_names[i],"image_thumb")
+	
 	progress.qt_widget.setValue(nim)
 	progress.qt_widget.close()
 	

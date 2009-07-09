@@ -338,8 +338,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 
 		self.initialized = True
 	def __del__(self):
-		print "delete emimage3dsym"
-		self.clear_gl_memory()
+		#self.clear_gl_memory() # this is intentionally commented out, it makes sense to clear the memory but not here
 		if self.image_display_window != None:
 			w = self.image_display_window 
 			self.image_display_window = None
@@ -377,6 +376,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 			self.image_display_window.set_data(self.euler_data[self.displayed_image_number],"Data")
 			self.image_display_window.updateGL()
 		else: self.displayed_image_number = None # blanket response
+		
 	def set_column_score_key(self,key):
 		if key == "None":
 			self.set_column_scores(None)

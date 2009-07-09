@@ -372,6 +372,8 @@ class EMImage2DModule(EMGUIModule):
 			self.under_qt_control = True
 			self.gl_context_parent = EMImage2DWidget(self)
 			self.qt_context_parent = EMParentWin(self.gl_context_parent)
+			QtCore.QObject.connect(self.qt_context_parent,QtCore.SIGNAL("destroyed(QObject*)"),self.qt_parent_destroyed)
+
 			self.gl_widget = self.gl_context_parent
 			f = self.file_name.split('/')
 			f = f[len(f)-1]
@@ -519,11 +521,14 @@ class EMImage2DModule(EMGUIModule):
 		else:self.__load_display_settings_from_db()
 		
 		self.__init_mouse_handlers()
-		
+	
+	def qt_parent_destroyed(self,object):
+		self.under_qt_control = False
+	
 	def __del__(self):
+		#self.clear_gl_memory() # this is intentionally commented out, it makes sense to clear the memory but not here
 		if self.under_qt_control:
 			self.qt_context_parent.deleteLater()
-		self.clear_gl_memory()
 		self.core_object.deleteLater()
 		
 	def get_emit_signals_and_connections(self):

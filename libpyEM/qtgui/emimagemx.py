@@ -70,12 +70,8 @@ class EMImageMXWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMatri
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
 		EMEventRerouter.__init__(self,em_mx_module)
 		EMGLProjectionViewMatrices.__init__(self)
-		
 		self.imagefilename = None
 		
-		#self.resize(480,480)
-	
-	
 	def get_target(self):
 		return self.target()
 	
@@ -601,6 +597,7 @@ class EMImageMXModule(EMGUIModule):
 			self.under_qt_control = True
 			self.gl_context_parent = EMImageMXWidget(self)
 			self.qt_context_parent = EMParentWin(self.gl_context_parent)
+			QtCore.QObject.connect(self.qt_context_parent,QtCore.SIGNAL("destroyed(QObject*)"),self.qt_parent_destroyed)
 			self.gl_widget = self.gl_context_parent
 			self.qt_context_parent.setWindowIcon(QtGui.QIcon(get_image_directory() +"multiple_images.png"))
 			#self.optimally_resize()
@@ -693,12 +690,14 @@ class EMImageMXModule(EMGUIModule):
 		
 		self.reroute_delete_target = None
 	
+	def qt_parent_destroyed(self,object):
+		self.under_qt_control = False
+	
 	def __del__(self):
+		#self.clear_gl_memory() # this is intentionally commented out, it makes sense to clear the memory but not here
 		if self.under_qt_control:
 			self.qt_context_parent.deleteLater()
-		self.clear_gl_memory()
 		self.core_object.deleteLater()
-	
 	def get_emit_signals_and_connections(self):
 		return {"set_origin":self.set_origin,"set_scale":self.set_scale,"origin_update":self.origin_update}
 	

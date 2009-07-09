@@ -455,11 +455,9 @@ void EMData::mult_complex_efficient(const EMData & em, const int radius)
 void EMData::div(float f)
 {
 	ENTERFUNC;
-//	cout << "Warning : divide by zero is enabled" << endl;
-// 	if ( f == 0 ) {
-// 		throw InvalidValueException(f,"Can not divide by zero");
-// 	}
-
+ 	if ( f == 0 ) {
+ 		throw InvalidValueException(f,"Can not divide by zero");
+ 	}
 	mult(1.0f/f);
 	EXITFUNC;
 }
