@@ -734,7 +734,15 @@ class EMAN2DB:
 		self.open_dict(name)
 		self.__dict__[name].realopen()
 		self.__dict__[name].bdb.truncate()
-		#if not (name in self.dicts.keys()) : 
+		self.__dict__[name].close()
+		try: os.unlink(self.path+"/EMAN2DB/"+name+".bdb")		# this is unsafe as far at the DB is concerned, but the method below freezes :^(
+		except: pass
+
+		#if self.dicts.has_key(name) : self.dicts[name].close()
+		#print self.path+"/EMAN2DB/"+name+".bdb"
+		#self.dbenv.dbremove(self.path+"/EMAN2DB/"+name+".bdb")		# this is the 'correct' way, but using it seems to cause a process to lockup on FUTEX_WAIT  :^(
+
+#if not (name in self.dicts.keys()) : 
 		#if name in self.dicts.keys():
 			#self.__dict__[name].close()
 		#try: os.unlink(self.path+"/EMAN2DB/"+name+".bdb")
