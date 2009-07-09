@@ -157,6 +157,10 @@ BOOST_PYTHON_MODULE(libpyCmp2)
         .def("get_miny", &EMAN::XYData::get_miny)
         .def("get_maxy", &EMAN::XYData::get_maxy)
         .def("is_validx", &EMAN::XYData::is_validx)
+        .def("set_xy_list", &EMAN::XYData::set_xy_list)
+        .def("set_size", &EMAN::XYData::set_size)
+        .def("get_xlist", &EMAN::XYData::get_xlist)
+        .def("get_ylist", &EMAN::XYData::get_ylist)
     );
 
     class_< EMAN::XYData::Pair >("Pair", init< const EMAN::XYData::Pair& >())

@@ -45,6 +45,7 @@
 #include <cmath>
 #include <cstdio>
 #include "log.h"
+#include "exception.h"
 
 using namespace EMAN;
 
@@ -184,4 +185,42 @@ float XYData::get_yatx(float x) const
 	float f = (x - data[s].x) / (data[s + 1].x - data[s].x);
 	float y = data[s].y * (1 - f) + data[s + 1].y * f;
 	return y;
+}
+
+void XYData::set_xy_list(const vector<float>& xlist, const vector<float>& ylist)
+{
+	if(xlist.size() != ylist.size()) {
+		throw InvalidParameterException("xlist and ylist size does not match!");
+	}
+	
+	for(unsigned int i=0; i<xlist.size(); ++i) {
+		data.push_back(Pair(xlist[i], ylist[i]));
+	}
+}
+
+void XYData::set_size(size_t n) 
+{
+	data.resize(n, Pair(0.0f, 0.0f));
+}
+
+vector<float> XYData::get_xlist() const
+{
+	vector<float> xlist;
+	vector<Pair>::const_iterator cit;
+	for(cit=data.begin(); cit!=data.end(); ++cit) {
+		xlist.push_back( (*cit).x);
+	}
+	
+	return xlist;
+}
+
+vector<float> XYData::get_ylist() const
+{
+	vector<float> ylist;
+	vector<Pair>::const_iterator cit;
+	for(cit=data.begin(); cit!=data.end(); ++cit) {
+		ylist.push_back( (*cit).y);
+	}
+	
+	return ylist;
 }
