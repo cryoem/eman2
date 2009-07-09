@@ -658,8 +658,11 @@ class EMDCTaskClient(EMTaskClient):
 		self.addr=(server,port)
 		self.verbose=verbose
 
-	def imalive(self):
-		"""Executed code should call this periodically to inidicate that they are still running. This must be called at least once every 5 minutes"""
+	def imalive(self,progress):
+		"""Executed code should call this periodically to inidicate that they are still running. This must be called at least once every 5 minutes
+		with an integer in the range 0-100. 100 means about to exit, 0 means not started yet. A -1 indicates an error has occurred and the request
+		is being aborted."""
+		
 		return
 
 	def run(self):
