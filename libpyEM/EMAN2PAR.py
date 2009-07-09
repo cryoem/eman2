@@ -658,6 +658,10 @@ class EMDCTaskClient(EMTaskClient):
 		self.addr=(server,port)
 		self.verbose=verbose
 
+	def imalive(self):
+		"""Executed code should call this periodically to inidicate that they are still running. This must be called at least once every 5 minutes"""
+		return
+
 	def run(self):
 		while (1):
 			# connect to the server
@@ -705,7 +709,7 @@ class EMDCTaskClient(EMTaskClient):
 			
 			# Execute translated task
 #			try:
-			ret=self.process_task(task)
+			ret=self.process_task(task,self.imalive)
 #			except Exception,err:
 #				ret={"error (%d)"%task.taskid:err}
 
