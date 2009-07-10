@@ -986,7 +986,10 @@ class EMBoxerModule:
 		# initialize the inspector
 		self.__init_inspector()
 		
+		# this is an example of how to add your own custom tools:
 		self.add_2d_window_mouse_tool(ManualBoxingEventHandling,ManualBoxingPanel)
+		self.add_2d_window_mouse_tool(EraseEventHandling,ErasingPanel,erase_radius=2*box_size)
+
 	
 	def redo_boxes(self):
 		if not self.box_list.redo(): return
