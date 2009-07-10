@@ -94,6 +94,7 @@ specific needs/algorithms
 	
 	module = EMBoxerModule(args,options.boxsize)
 	module.show_interfaces()
+	module.add_2d_window_mouse_tool(BoxerMouseEraseEvents,ErasePanel,erase_radius=2*options.boxsize)
 	application.execute()
 	
 def check(options,args):
@@ -219,40 +220,98 @@ class ScaledExclusionImage:
 
 ScaledExclusionImageCache = Cache(ScaledExclusionImage)
 
+class ErasePanel:
+	def __init__(self,target,erase_radius=128):
+		self.busy = True
+		self.erase_radius = erase_radius
+		self.target = weakref.ref(target)
+		self.erase_rad_edit = None
+		self.widget = None
+		self.busy = False
+		
+	def icon(self):
+		from PyQt4 import QtGui
+		return QtGui.QIcon(get_image_directory() + "boxer_erase.png")
+		
+	def set_erase_radius(self,val):
+		self.busy=True
+		self.erase_radius = val
+		if self.erase_rad_edit != None: self.erase_rad_edit.setText(str(val))
+		self.busy=False
+		
+	def get_widget(self):
+		if self.widget == None:
+			from PyQt4 import QtCore, QtGui, Qt
+			self.widget = QtGui.QWidget()
+			vbl = QtGui.QVBoxLayout(self.widget)
+			vbl.setMargin(0)
+			vbl.setSpacing(6)
+			vbl.setObjectName("vbl")
+			
+			hbl = QtGui.QHBoxLayout()
+			hbl.addWidget(QtGui.QLabel("Erase Radius:"))
+			
+			self.erase_rad_edit = QtGui.QLineEdit(str(self.erase_radius))
+			hbl.addWidget(self.erase_rad_edit)
+			
+			self.unerase = QtGui.QCheckBox("Unerase")
+			self.unerase.setChecked(False)
+			
+			vbl.addLayout(hbl)
+			vbl.addWidget(self.unerase)
+			QtCore.QObject.connect(self.erase_rad_edit,QtCore.SIGNAL("editingFinished()"),self.new_erase_radius)
+			QtCore.QObject.connect(self.unerase,QtCore.SIGNAL("clicked(bool)"),self.unerase_checked)
+			
+		return self.widget
+	
+	def new_erase_radius(self):
+		if self.busy: return
+		self.target().set_erase_radius(float(self.erase_rad_edit.text()))
+		
+	def unerase_checked(self,val):
+		if self.busy: return
+		self.target().toggle_unerase(val)
+	def hide(self):
+		if self.widget != None:
+			self.widget.hide()
+
 class BoxerMouseEraseEvents:
 	'''
 	A class that knows how to handle mouse erase events for a GUIBox
 	'''
 	
-	def __init__(self,target):
+	def __init__(self,target,panel_object=None,erase_radius=128):
 		self.target = weakref.ref(target)
+		self.panel_object = panel_object
 		self.erase_value = 0.1			# erase mode can be either Boxable.ERASE or Boxable.UNERASE
+		self.erase_radius = erase_radius
+	
+	def unique_name(self): return "Eraser"
+	
+	def set_panel_object(self,panel): self.panel_object = panel
 		
-	def set_mode(self,mode):
-		self.erase_value = mode
+	def set_erase_radius(self,val): self.erase_radius = val
+	
+	def toggle_unerase(self,val):
+		if val: self.erase_value = 0.0
+		else: self.erase_value = 0.1
 	
 	def get_2d_window(self): return self.target().get_2d_window()
-	
-	def get_inspector(self): return self.target().get_inspector()
-	
-	def erase_radius(self): return self.target().get_erase_radius()
-	
-	def set_erase_value(self,val): self.erase_value = val
-	
+		
 	def mouse_move(self,event):
 		from emshape import EMShape
 		m = self.get_2d_window().scr_to_img((event.x(),event.y()))
-		self.get_2d_window().add_eraser_shape("eraser",EMShape(["circle",.1,.1,.1,m[0],m[1],self.erase_radius(),3]))
+		self.get_2d_window().add_eraser_shape("eraser",EMShape(["circle",.1,.1,.1,m[0],m[1],self.erase_radius,3]))
 		self.get_2d_window().updateGL()
 		
 	def adjust_erase_rad(self,delta):
-		v = self.erase_radius()
+		v = self.erase_radius
 		if delta > 0:
 			v = 1.1*v
 		if delta < 0:
 			v = 0.9*v
-		self.target().set_erase_radius(v)
-		self.target().get_inspector().set_erase_radius(v)
+		self.erase_radius = v
+		self.panel_object.set_erase_radius(v)
 	
 	def mouse_wheel(self,event):
 		from PyQt4.QtCore import Qt
@@ -260,21 +319,21 @@ class BoxerMouseEraseEvents:
 			from emshape import EMShape
 			self.adjust_erase_rad(event.delta())
 			m= self.get_2d_window().scr_to_img((event.x(),event.y()))
-			self.get_2d_window().add_eraser_shape("eraser",EMShape(["circle",.1,.1,.1,m[0],m[1],self.erase_radius(),3]))
+			self.get_2d_window().add_eraser_shape("eraser",EMShape(["circle",.1,.1,.1,m[0],m[1],self.erase_radius,3]))
 			self.get_2d_window().updateGL()
 	
 	def mouse_down(self,event) :
 		from emshape import EMShape
 		m=self.get_2d_window().scr_to_img((event.x(),event.y()))
 		#self.boxable.add_exclusion_area("circle",m[0],m[1],self.erase_radius)
-		self.get_2d_window().add_eraser_shape("eraser",EMShape(["circle",.9,.9,.9,m[0],m[1],self.erase_radius(),3]))
-		self.target().exclusion_area_added("circle",m[0],m[1],self.erase_radius(),self.erase_value)	
+		self.get_2d_window().add_eraser_shape("eraser",EMShape(["circle",.9,.9,.9,m[0],m[1],self.erase_radius,3]))
+		self.target().exclusion_area_added("circle",m[0],m[1],self.erase_radius,self.erase_value)	
 
 	def mouse_drag(self,event) :
 		from emshape import EMShape
 		m=self.get_2d_window().scr_to_img((event.x(),event.y()))
-		self.get_2d_window().add_eraser_shape("eraser",EMShape(["circle",.9,.9,.9,m[0],m[1],self.erase_radius(),3]))
-		self.target().exclusion_area_added("circle",m[0],m[1],self.erase_radius(),self.erase_value)
+		self.get_2d_window().add_eraser_shape("eraser",EMShape(["circle",.9,.9,.9,m[0],m[1],self.erase_radius,3]))
+		self.target().exclusion_area_added("circle",m[0],m[1],self.erase_radius,self.erase_value)
 		# exclusion_area_added does the OpenGL update calls, so there is no need to do so here
 		
 	def mouse_up(self,event) :
@@ -349,21 +408,19 @@ class Boxer2DWindowEventHandling:
 		self.__connect_signals_to_slots()
 		self.__init_mouse_handlers()
 		
-	def set_mouse_mode(self,handler):
-		if handler in ["Erase", "Unerase"]:
-			self.mouse_handler = self.mouse_handlers["erasing"]
-			if handler == "Erase": self.mouse_handler.set_erase_value(0.1)
-			elif handler == "Unerase": self.mouse_handler.set_erase_value(0)
-			else: raise
-		elif handler in ["Manual Boxing","Ref Boxing"] : self.mouse_handler = self.mouse_handlers["boxing"]
-		else:
-			raise RuntimeError("%s unknown" %handler)
-		
+	def set_mouse_mode(self,name):
+		try:
+			self.mouse_handler = self.mouse_handlers[name]
+		except:
+			print "unknown handler",name
 	def __init_mouse_handlers(self):
 		self.mouse_handlers = {}
-		self.mouse_handlers["erasing"] = BoxerMouseEraseEvents(self.target())
-		self.mouse_handlers["boxing"] = BoxerMouseBoxEvents(self.target())
-		self.mouse_handler = self.mouse_handlers["boxing"]
+		#self.mouse_handlers["erasing"] = BoxerMouseEraseEvents(self.target())
+		self.mouse_handlers["Manual Boxing"] = BoxerMouseBoxEvents(self.target())
+		self.mouse_handler = self.mouse_handlers["Manual Boxing"]
+	
+	def add_mouse_handler(self,handler,name):
+		self.mouse_handlers[name] = handler
 		
 	def __connect_signals_to_slots(self):
 		'''
@@ -897,7 +954,6 @@ class EMBoxerModule:
 		self.particles_window = None # this will be the window displaying the picked particles
 		self.thumbs_window = None # this will be the window showing the thumbnails, enabling the user to change between 2D raw data
 		self.image_thumbs = None # image_thumbs is a list of thumbnail images	
-		self.erase_radius = 2*self.box_size # have to keep track of this, several objects need it
 		self.box_list = EMBoxList(self)
 		self.moving_box = None
 		self.output_task = None # will be an EMAN2 style form for writing output
@@ -1073,6 +1129,14 @@ class EMBoxerModule:
 		self.main_2d_window = None
 		if self.inspector:
 			self.inspector.set_2d_window_visible(False)
+			
+	def add_2d_window_mouse_tool(self,events_manager,panel,**kargs):
+		em = events_manager(self,**kargs)
+		panel = panel(em,**kargs)
+		em.set_panel_object(panel)
+		self.signal_slot_handlers["2d_window"].add_mouse_handler(em,em.unique_name())
+		self.inspector.add_mouse_tool(panel,em.unique_name())
+		
 	
 	def set_current_file_by_idx(self,idx):
 		if len(self.file_names) <= idx: raise RuntimeError("The index is beyond the length of the file names list")
@@ -1264,10 +1328,6 @@ class EMBoxerModule:
 		if self.particles_window != None: 
 			get_application().show_specific(self.particles_window)
 			self.particles_window.optimally_resize()
-		
-	
-	def get_erase_radius(self): return self.erase_radius
-	def set_erase_radius(self,val,pass_on=False): self.erase_radius = val
 		
 	def get_box_size(self): return self.box_size
 	def set_box_size(self,box_size):
@@ -1479,7 +1539,7 @@ class EMBoxerInspector(QtGui.QWidget):
 		self.busy = True
 		self.dynamic_box_button_vbl = None # this will be used to dynamic add widgets as the buttons are changed
 		self.dynamic_box_button_widget = None # this will be used to dynamic add widgets as the buttons are changed
-		self.box_button_map = {}
+		self.mouse_tools = {}
 		 
 		QtGui.QWidget.__init__(self,None)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"eman.png"))
@@ -1724,43 +1784,53 @@ class EMBoxerInspector(QtGui.QWidget):
 		self.manualbutton.setChecked(True)
 		self.boxinghbl1.addWidget(self.manualbutton)
 	
-		self.refbutton=QtGui.QPushButton( QtGui.QIcon(get_image_directory() + "black_box.png"),"")
-		self.refbutton.setToolTip("Add reference box")
-		self.refbutton.setObjectName("Ref Boxing")
-		self.refbutton.setCheckable(1)
-		self.refbutton.setChecked(False)
-		self.boxinghbl1.addWidget(self.refbutton)
+#		self.refbutton=QtGui.QPushButton( QtGui.QIcon(get_image_directory() + "black_box.png"),"")
+#		self.refbutton.setToolTip("Add reference box")
+#		self.refbutton.setObjectName("Ref Boxing")
+#		self.refbutton.setCheckable(1)
+#		self.refbutton.setChecked(False)
+#		self.boxinghbl1.addWidget(self.refbutton)
+#		
+#		self.erasepic = QtGui.QIcon(get_image_directory() + "boxer_erase.png");
+#		self.erase=QtGui.QPushButton(self.erasepic,"")
+#		self.erase.setToolTip("Erase")
+#		self.erase.setObjectName("Erase")
+#		self.erase.setCheckable(1)
+#		self.boxinghbl1.addWidget(self.erase)
 		
-		self.erasepic = QtGui.QIcon(get_image_directory() + "boxer_erase.png");
-		self.erase=QtGui.QPushButton(self.erasepic,"")
-		self.erase.setToolTip("Erase")
-		self.erase.setObjectName("Erase")
-		self.erase.setCheckable(1)
-		self.boxinghbl1.addWidget(self.erase)
-		
-		self.unerasepic = QtGui.QIcon(get_image_directory() + "boxer_unerase.png");
-		self.unerase=QtGui.QPushButton(self.unerasepic,"")
-		self.unerase.setToolTip("Unerase")
-		self.unerase.setObjectName("Unerase")
-		self.unerase.setCheckable(1)
-		self.boxinghbl1.addWidget(self.unerase)
+#		self.unerasepic = QtGui.QIcon(get_image_directory() + "boxer_unerase.png");
+#		self.unerase=QtGui.QPushButton(self.unerasepic,"")
+#		self.unerase.setToolTip("Unerase")
+#		self.unerase.setObjectName("Unerase")
+#		self.unerase.setCheckable(1)
+#		self.boxinghbl1.addWidget(self.unerase)
 	
-		self.button_group.addButton(self.refbutton,0)
-		self.button_group.addButton(self.manualbutton,1)
-		self.button_group.addButton(self.erase,2)
-		self.button_group.addButton(self.unerase,3)
+#		self.button_group.addButton(self.refbutton,0)
+		self.button_group.addButton(self.manualbutton)
+#		self.button_group.addButton(self.erase,2)
+#		self.button_group.addButton(self.unerase,3)
 		self.button_group_box_vbl.addLayout(self.boxinghbl1)
 		
 		self.dynamic_box_button_vbl = QtGui.QVBoxLayout()
 		self.button_group_box_vbl.addLayout(self.dynamic_box_button_vbl)
 		layout.addWidget(self.button_group_box)
 		
-		erase_panel = EMBoxerInspector.ErasePanel(self,2*self.target().get_box_size())
-		self.box_button_map["Erase"] = erase_panel
-		self.box_button_map["Unerase"] = erase_panel
+#		erase_panel = ErasePanel(self,2*self.target().get_box_size())
+#		self.mouse_tools["Erase"] = erase_panel
+#		self.mouse_tools["Unerase"] = erase_panel
 		
 		QtCore.QObject.connect(self.button_group,QtCore.SIGNAL("buttonClicked (QAbstractButton *)"),self.button_group_clicked)
 	
+	def add_mouse_tool(self,mouse_tool,name):
+		button=QtGui.QPushButton(mouse_tool.icon(),"")
+		button.setToolTip(name)
+		button.setObjectName(name)
+		button.setCheckable(1)
+		self.boxinghbl1.addWidget(button)
+		self.button_group.addButton(button)
+		self.mouse_tools[name] = mouse_tool
+		self.update()
+
 	def button_group_clicked(self,i):
 		if self.busy: return
 		name = str(i.objectName())
@@ -1772,15 +1842,15 @@ class EMBoxerInspector(QtGui.QWidget):
 		if name == old_name: return
 		
 		if self.dynamic_box_button_widget:
-			if not self.box_button_map.has_key(old_name): raise RuntimeError("Error, code has altered and now it does not work")
+			if not self.mouse_tools.has_key(old_name): raise RuntimeError("Error, code has altered and now it does not work")
 			
 			self.dynamic_box_button_vbl.removeWidget(self.dynamic_box_button_widget)
-			self.box_button_map[old_name].hide()
+			self.mouse_tools[old_name].hide()
 			self.dynamic_box_button_widget = None
 								
 		
-		if self.box_button_map.has_key(name):
-			self.dynamic_box_button_widget = self.box_button_map[name].get_widget()
+		if self.mouse_tools.has_key(name):
+			self.dynamic_box_button_widget = self.mouse_tools[name].get_widget()
 		
 			self.dynamic_box_button_widget.setObjectName(name)
 			self.dynamic_box_button_vbl.addWidget(self.dynamic_box_button_widget)
@@ -1801,47 +1871,12 @@ class EMBoxerInspector(QtGui.QWidget):
 		if self.busy: return
 		box_size=int(self.box_size.text())
 		self.target().set_box_size(box_size)
-	
-	def set_erase_radius(self,val):
-		if self.box_button_map.has_key("Erase"):
-			v =  self.box_button_map["Erase"]
-			v.set_erase_radius(val)
+#	
+#	def set_erase_radius(self,val):
+#		if self.mouse_tools.has_key("Erase"):
+#			v =  self.mouse_tools["Erase"]
+#			v.set_erase_radius(val)
 		
-	class ErasePanel:
-		def __init__(self,target,erase_radius=1):
-			self.erase_radius = erase_radius
-			self.target = weakref.ref(target)
-			self.erase_rad_edit = None
-			self.widget = None
-		def set_erase_radius(self,val):
-			self.erase_radius = val
-			if self.erase_rad_edit != None: self.erase_rad_edit.setText(str(val))
-		
-		def get_widget(self):
-			if self.widget == None:
-				from PyQt4 import QtCore, QtGui, Qt
-				self.widget = QtGui.QWidget()
-				vbl = QtGui.QVBoxLayout(self.widget)
-				vbl.setMargin(0)
-				vbl.setSpacing(6)
-				vbl.setObjectName("vbl")
-				
-				hbl = QtGui.QHBoxLayout()
-				hbl.addWidget(QtGui.QLabel("Erase Radius:"))
-				
-				self.erase_rad_edit = QtGui.QLineEdit(str(self.erase_radius))
-				hbl.addWidget(self.erase_rad_edit)
-				
-				vbl.addLayout(hbl)
-				QtCore.QObject.connect(self.erase_rad_edit,QtCore.SIGNAL("editingFinished()"),self.new_erase_radius)
-				
-			return self.widget
-		
-		def new_erase_radius(self):
-			self.target().target().set_erase_radius(float(self.erase_rad_edit.text()))
-		def hide(self):
-			if self.widget != None:
-				self.widget.hide()
 							
 			
 if __name__ == "__main__":

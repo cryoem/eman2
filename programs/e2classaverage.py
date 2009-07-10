@@ -332,11 +332,14 @@ class EMGenClassAverages:
 				task = EMClassAveTask(data=data,options=self.__get_task_options(self.options))
 				
 				print "generating class",class_idx
-				rslt = task.execute()
+				rslt = task.execute(self.progress_callback)
 				self.__write_class_data(rslt)
 				
 		self.__finalize_writing()
-		
+	
+	def progress_callback(self,i):
+		print i
+	
 	def __finalize_writing(self):
 		'''
 		Write the results matrix to disk
@@ -488,18 +491,22 @@ class EMClassAveTask(EMTask):
 		
 		return ptcl_indices,images,usefilt_images,norm,culling,ref,verbose,sigma_image
 	
-	def execute(self):
+	def execute(self,progress_callback):
 		'''
 		Called to perform class averaging 
 		May boot strap the original average, iteratively refines averages, aligns final average to ref 
 		'''
+		progress_callback(0)
 		ptcl_indices,images,usefilt_images,norm,culling,ref,verbose,sigma_image = self.init_memory()
+		total_averages = 1+self.options["iter"]
 		
+		if ref: total_averages += 1
+		progress = 0
 		ali_images = images # these are the images that used for the alignment - they can also be the usefilt images
 	   	if usefilt_images != None: ali_images = usefilt_images
 		
 		if verbose:
-			print "################## Class",self.data["class_idx"] 
+			print "################## Class",self.data["class_idx"]
 		
 		sigma = None
 	   	if sigma_image: sigma = sigma_image.copy()
@@ -512,7 +519,9 @@ class EMClassAveTask(EMTask):
 	   			print "Generating initial class average using input alignment parameters, #ptcls ", len(ptcl_indices)
 	   		average = self.__get_init_average_from_ali(images,norm,sigma)
 	   		alis = self.data["init_alis"]
-
+	  	 
+	  	progress += 1
+	  	progress_callback(int(100*(progress/float(total_averages))))
 	   	all_alis = []
 	   	all_alis.append(alis)
 	   	all_sigmas = []
@@ -552,6 +561,9 @@ class EMClassAveTask(EMTask):
 	   			print "Calculating iterative class average ",i+1, "#ptcls",kept
 	   		#print inclusions
 	   		
+	   		progress += 1
+	  		progress_callback(int(100*(progress/float(total_averages))))
+	   		
 	   		
 	   	if ref != None:
 	   		if verbose:
@@ -575,6 +587,9 @@ class EMClassAveTask(EMTask):
 				sigma.set_attr("xform.projection", ref.get_attr("xform.projection"))
 				sigma.set_attr("projection_image_idx",self.class_idx)
 				all_sigmas.append(sigma)
+				
+			progress += 1
+	  		progress_callback(int(100*(progress/float(total_averages))))
 		
 		if verbose:
 			print "****************** Produced",len(averages),"averages for class",self.data["class_idx"]

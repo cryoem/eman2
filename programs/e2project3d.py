@@ -36,22 +36,6 @@
 # 1. Baldwin, P.R. and Penczek, P.A. 2007. The Transform Class in SPARX and EMAN2. J. Struct. Biol. 157, 250-261.
 # 2. http://blake.bcm.edu/emanwiki/EMAN2/Symmetry
 
-# 
-# 1. Asymmetric units are accurately demarcated and covered by the projection algorithm. This can
-# be tested using 3D plotting in Matlab.
-# 2. By default the entire asymmetric is projected over, but excluding the mirror portion is supported.
-# The accuracy of the demarcation of the asymmetric unit can be tested by using the --verifymirror
-# argument, which subtracts (mirrored) mirror projections in the local asymmetric unit from the 
-# the equivalent original projections - the result should be zero but this is not the case due
-# to interpolation differences, however the images should have a mean of about zero and a standard
-# deviation that is relatively small. Visual inspection of the results (in default output files) can also help.
-# 3. Random orientation generation is supported - all three euler angles are random
-# 4. Perturbation of projections generated in the asymmetric unit is supported in regular reconstructions runs.
-# 5. The user is able to generate projections that include in-plane or "phi" rotations
-# and this is achieved using the phitoo argument
-# 6. The user can smear in-plane projections when the "smear" argument is specified in addition to the "phitoo" argument
-# what else..????
-
 import sys, math, os, random
 from EMAN2 import *
 from optparse import OptionParser
@@ -200,7 +184,8 @@ class EMProject3DTaskDC(EMTask):
 		
 		self.projections = {} # key will be index, value will be projection
 		
-	def execute(self):
+	def execute(self,progress_callback):
+		progress_callback(0)
 		input_name=self.data["input"][1]
 		threed_image = EMData(input_name,self.data["input"][2]) # so the idx should always be 0, but it doesn't have to be
 		
@@ -209,14 +194,17 @@ class EMProject3DTaskDC(EMTask):
 		indices = self.data["indices"]
 		projector,projector_opts = options["projector"][0],options["projector"][1]
 		projections = {}
-		for i in xrange(len(eulers)):
+		n = len(eulers)
+		progress_callback(1)
+		for i in xrange(n):
 			euler = eulers[i]
 			projector_opts["transform"] = euler
 			projection = threed_image.project(projector,projector_opts)
 			projection.set_attr("xform.projection",euler)
 			projection.set_attr("ptcl_repr",0)
 			projections[indices[i]] = projection
-		
+			print "call back",int(100*(i+1)/float(n))
+			progress_callback(int(100*(i+1)/float(n)))
 		d = {}
 		d["projections"] = projections
 		return d

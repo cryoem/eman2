@@ -393,18 +393,23 @@ class EMSimTaskDC(EMTask):
 			
 		return data
 	
-	def execute(self):
-		
+	def execute(self,progress_callback):
+		progress_callback(0)
 		refs,ptcls,shrink = self.__init_memory(self.options)
 		
 		
 		sim_data = {} # It's going to be our favorite thing, a dictionary of dictionaries
 		
 		min_ptcl_idx = None
+		n = float(len(ptcls))
+		i = 0
 		for ptcl_idx,ptcl in ptcls.items():
 			if min_ptcl_idx == None or ptcl_idx < min_ptcl_idx:
 				min_ptcl_idx = ptcl_idx 
 			sim_data[ptcl_idx] = self.__cmp_one_to_many(ptcls[ptcl_idx],refs)
+			i+=1
+			progress_callback(int(100*i/n))
+		
 			
 			
 		d = {}

@@ -184,10 +184,10 @@ Communications are handled by subclasses."""
 	def __init__(self):
 		self.myid=random.randint(1,2000000000)
 	
-	def process_task(self,task):
+	def process_task(self,task,callback):
 		"""This method implements the actual image processing by calling appropriate module functions"""
 		
-		return task.execute()
+		return task.execute(callback)
 	
 def image_range(a,b=None):
 	"""This is an iterator which handles the (#), (min,max), (1,2,3,...) image number convention for passed data"""
