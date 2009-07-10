@@ -102,12 +102,20 @@ namespace EMAN
 			if (i>=data.size()) data.resize(i+1,Pair(0,0));
 			data[i].y = y;
 		}
-
+		
+		vector<float> get_xlist() const;
+		
+		vector<float> get_ylist() const;
+		
+		void set_xy_list(const vector<float>& xlist, const vector<float>& ylist);
+		
 		size_t get_size() const
 		{
 			return data.size();
 		}
-
+		
+		void set_size(size_t n);
+		
 		float get_miny() const
 		{
 			return ymin;
@@ -132,8 +140,6 @@ namespace EMAN
 		float ymin;
 		float ymax;
 		float mean_x_spacing;
-
-
 	};
 }
 
