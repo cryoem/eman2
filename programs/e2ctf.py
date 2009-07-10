@@ -158,6 +158,7 @@ images far from focus."""
 
 def init_sfcurve(opt):
 	global sfcurve 
+	if sfcurve!=None : return
 	
 	if opt :
 		sfcurve=XYData()
@@ -702,6 +703,7 @@ def sfact(s):
 	highly accurate, but be good enough for approximate B-factor estimation"""
 	
 	global sfcurve
+	if sfcurve==None : init_sfcurve(None)
 
 	return 10.0**sfcurve.get_yatx(s)
 	
