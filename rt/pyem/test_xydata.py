@@ -41,8 +41,11 @@ IS_TEST_EXCEPTION = False
 class TestXYData(unittest.TestCase):
     """this is the unit test for XYData class"""
     
-    def test_set_size(self):
-        print 'test OK'
+    def test_get_size(self):
+        """test get_size() function ........................."""
+        xy = XYData()
+        xy.set_size(100)
+        self.assertEqual(100, xy.get_size())
     
 def test_main():
     p = OptionParser()
