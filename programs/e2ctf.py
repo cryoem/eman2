@@ -169,14 +169,15 @@ def init_sfcurve(opt):
 				sfcurve.set_y(i,-10.0)
 			else : sfcurve.set_y(i,log10(v))
 	else :
-		db_misc=db_open_dict("bdb:e2ctf.misc",True)
-		m=db_misc["strucfac"]
-		print "Using previously generated structure factor from e2bdb:e2ctf.misc"
-		sfcurve=XYData()		# this is really slow and stupid
-		for i,j in enumerate(m):
-			sfcurve.set_x(i,j[0])
-			sfcurve.set_y(i,log10(j[1]))
 		try:
+			db_misc=db_open_dict("bdb:e2ctf.misc",True)
+			m=db_misc["strucfac"]
+			print "Using previously generated structure factor from e2bdb:e2ctf.misc"
+			sfcurve=XYData()		# this is really slow and stupid
+			for i,j in enumerate(m):
+				sfcurve.set_x(i,j[0])
+				sfcurve.set_y(i,log10(j[1]))
+			
 			sfcurve.update()
 		except:
 			print "No  structure factor found, using default internal structure factor. If fitting results are poor, consider rerunning --autofit once structure factor has been computed."
