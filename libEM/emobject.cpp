@@ -142,14 +142,27 @@ EMObject::EMObject(unsigned int num) :
 }
 
 EMObject::EMObject(float ff) :
-	f(ff), type(FLOAT)
+	type(FLOAT)
 {
+	if(Util::goodf(&ff)) {
+		f = ff;
+	}
+	else{
+		f = 0.0f;
+	}
 	init();
 }
 
 EMObject::EMObject(double dd) :
-	d(dd), type(DOUBLE)
+	type(DOUBLE)
 {
+	if(Util::goodf(&dd)) {
+		d = dd;
+	}
+	else{
+		d = 0.0;
+	}
+	init();
 }
 
 EMObject::EMObject(const char *s) :

@@ -853,6 +853,26 @@ namespace EMAN
 			
 			return 1;
 		}
+		
+		static inline int goodf(const double *p_f)
+		{
+			//This is the old way to judge a good float, which cause problem on
+			//Fedora Core 64 bit system. Now use isinff() and isnanf() on Linux.
+			//#if defined(_WIN32) || defined(__APPLE__)
+			#if defined(_WIN32)
+			// the first is abnormal zero the second is +-inf or NaN
+			if ((((int *) p_f)[0] & 0x7f800000) == 0 ||
+				(((int *) p_f)[0] & 0x7f800000) == 255) {
+				return 0;
+			}
+			#else
+			using std::fpclassify;
+			int i = fpclassify(*p_f);
+			if ( i == FP_NAN || i == FP_INFINITE) return 0;
+			#endif	//_WIN32 || __APPLE__
+			
+			return 1;
+		}
 
 		/** Get the current time in a string with format "mm/dd/yyyy hh:mm".
 		 * @return The current time string.
