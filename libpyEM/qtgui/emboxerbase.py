@@ -94,7 +94,8 @@ specific needs/algorithms
 	
 	module = EMBoxerModule(args,options.boxsize)
 	module.show_interfaces()
-	module.add_2d_window_mouse_tool(BoxerMouseEraseEvents,ErasePanel,erase_radius=2*options.boxsize)
+	# this is an example of how to add your own custom tools:
+	module.add_2d_window_mouse_tool(EraseEventHandling,ErasingPanel,erase_radius=2*options.boxsize)
 	application.execute()
 	
 def check(options,args):
@@ -118,8 +119,78 @@ def check(options,args):
 					error_message.append("%s is not 2D" %file)
 					
 	return error_message
+
+def get_database_entry(image_name,key,database="bdb:e2boxercache",dfl=None):
+	if not db_check_dict(database+"#"+key) and dfl==None:  return None
 	
+	db = db_open_dict(database+"#"+key)
 	
+	if db.has_key(image_name):
+		return db[image_name]
+	elif dfl != None:
+		db[image_name] = dfl
+		return dfl
+	else: return None
+	
+def set_database_entry(image_name,key,value,database="bdb:e2boxercache"):
+	'''
+	write a key/object pair to the Image Database Dictionary associat
+	'''
+	
+	db = db_open_dict(database+"#"+key)
+	db[image_name] = value
+	
+def set_idd_image_entry(image_name,key,image,db_title="bdb:e2boxercache#"):
+	'''
+	Using EMAN2 style image dbs has efficiency payoffs in various ways... 
+	'''
+	image.set_attr("src_image",image_name)
+	db_name =  db_title+key
+	# first have to make sure it's not already there
+	db = db_open_dict(db_name)
+	
+	if db.has_key("maxrec"):
+		for idx in range(0,db["maxrec"]+1):
+			header = db.get_header(idx)
+			try:
+				if header["src_image"] == image_name:
+					db[idx] = image
+					#image.write_image("bdb:e2boxercache#"+key,idx)
+					db_close_dict(db_name)
+					return
+			except:
+				pass
+
+	# if we make it here then go ahead and append
+	image.write_image(db_title+key,-1)
+	db_close_dict(db_name)
+
+def get_idd_image_entry(image_name,key,db_title="bdb:e2boxercache#"):
+	'''
+	Using EMAN2 style image dbs has efficiency payoffs in various ways... 
+	'''
+	db_name =  db_title+key
+	if not db_check_dict(db_name): 
+#		print "db failed",db_name
+		return None # t
+	
+	db = db_open_dict(db_name)
+	
+	if db.has_key("maxrec"):
+		for idx in range(0,db["maxrec"]+1):
+			header = db.get_header(idx)
+			try:
+				if header["src_image"] == image_name:
+					e = db[idx]
+					db_close_dict(db_name)
+					return e
+			except:
+				pass
+			
+	db_close_dict(db_name)
+	return None
+	
+
 class BoxerThumbsWindowEventHandling:
 	'''
 	
@@ -145,8 +216,6 @@ class BoxerThumbsWindowEventHandling:
 	
 	def module_closed(self):
 		self.target().thumbs_window_closed()
-
-
 
 class ScaledExclusionImage:
 	database_name = "boxer_exclusion_image" # named it this to avoid conflicting with ExclusionImage
@@ -220,7 +289,7 @@ class ScaledExclusionImage:
 
 ScaledExclusionImageCache = Cache(ScaledExclusionImage)
 
-class ErasePanel:
+class ErasingPanel:
 	def __init__(self,target,erase_radius=128):
 		self.busy = True
 		self.erase_radius = erase_radius
@@ -274,8 +343,22 @@ class ErasePanel:
 	def hide(self):
 		if self.widget != None:
 			self.widget.hide()
+			
+class ManualBoxingPanel:
+	def __init__(self,target):
+		self.target = weakref.ref(target)
+		
+	def icon(self):
+		from PyQt4 import QtGui
+		return QtGui.QIcon(get_image_directory() + "white_box.png")
 
-class BoxerMouseEraseEvents:
+	def get_widget(self):
+		return None
+	def hide(self):
+		pass
+
+
+class EraseEventHandling:
 	'''
 	A class that knows how to handle mouse erase events for a GUIBox
 	'''
@@ -343,13 +426,17 @@ class BoxerMouseEraseEvents:
 		self.get_2d_window().add_eraser_shape("None",None)
 		self.target().erasing_done(self.erase_value)
 		
-class BoxerMouseBoxEvents:
+class ManualBoxingEventHandling:
 	'''
 	A class that knows how to add, move and remove reference and non reference boxes 
 	'''
-	def __init__(self,target):
+	def __init__(self,target,panel_object=None):
 		self.target = weakref.ref(target)
+		self.panel_object = panel_object
 		self.moving = None
+		
+	def set_panel_object(self,panel): self.panel_object = panel
+	def unique_name(self): return "Manual Boxing"
 		
 	def get_2d_window(self): return self.target().get_2d_window()
 		
@@ -391,7 +478,7 @@ class BoxerMouseBoxEvents:
 		
 	def mouse_move(self,event): pass
 
-class Boxer2DWindowEventHandling:
+class Main2DWindowEventHandling:
 	'''
 	A class that responds to added, moved and removed box signals emitted
 	by the by the main 2d image in the EMBoxerModule - this is the image
@@ -415,12 +502,13 @@ class Boxer2DWindowEventHandling:
 			print "unknown handler",name
 	def __init_mouse_handlers(self):
 		self.mouse_handlers = {}
-		#self.mouse_handlers["erasing"] = BoxerMouseEraseEvents(self.target())
-		self.mouse_handlers["Manual Boxing"] = BoxerMouseBoxEvents(self.target())
-		self.mouse_handler = self.mouse_handlers["Manual Boxing"]
+		#self.mouse_handlers["erasing"] = EraseEventHandling(self.target())
+		#self.mouse_handlers["Manual Boxing"] = ManualBoxingEventHandling(self.target())
+		#self.mouse_handler = self.mouse_handlers["Manual Boxing"]
 	
 	def add_mouse_handler(self,handler,name):
 		self.mouse_handlers[name] = handler
+		if self.mouse_handler == None: self.mouse_handler = handler
 		
 	def __connect_signals_to_slots(self):
 		'''
@@ -439,36 +527,42 @@ class Boxer2DWindowEventHandling:
 		'''
 		@param a QtGui.QMouseEvent sent from the EMImage2DModule
 		'''
+		if self.mouse_handler == None: return
 		self.mouse_handler.mouse_down(event)
 	
 	def mouse_drag(self,event) :
 		'''
 		@param a QtGui.QMouseEvent sent from the EMImage2DModule
 		'''
+		if self.mouse_handler == None: return
 		self.mouse_handler.mouse_drag(event)
 	
 	def mouse_up(self,event) :
 		'''
 		@param a QtGui.QMouseEvent sent from the EMImage2DModule
 		'''
+		if self.mouse_handler == None: return
 		self.mouse_handler.mouse_up(event)
 		
 	def key_press(self,event):
 		'''
 		@param a QtGui.QKeyEvent sent from the EMImage2DModule
 		'''
+		if self.mouse_handler == None: return
 		print "2d window key press"
 		
 	def mouse_wheel(self,event):
 		'''
 		@param a QtGui.QMouseEvent sent from the EMImage2DModule
 		'''
+		if self.mouse_handler == None: return
 		self.mouse_handler.mouse_wheel(event)
 		
 	def mouse_move(self,event):
 		'''
 		@param a QtGui.QMouseEvent sent from the EMImage2DModule
 		'''
+		if self.mouse_handler == None: return
 		self.mouse_handler.mouse_move(event)
 		
 	def module_closed(self):
@@ -476,7 +570,7 @@ class Boxer2DWindowEventHandling:
 		'''
 		self.target().main_2d_window_closed()
 	
-class BoxerParticlesWindowEventHandling:
+class ParticlesWindowEventHandling:
 	def __init__(self,target,particle_window):
 		self.target = weakref.ref(target) # prevent a strong cycle
 		self.particle_window = particle_window
@@ -533,7 +627,7 @@ class BoxerParticlesWindowEventHandling:
 	
 
 
-class ThumbsTools:
+class EMThumbsTools:
 	
 	def gen_thumbs(image_names=[],shrink=None):
 		'''
@@ -543,7 +637,7 @@ class ThumbsTools:
 		'''
 		from emapplication import EMProgressDialogModule
 		
-		if shrink == None: shrink = ThumbsTools.get_image_thumb_shrink(image_names[0])
+		if shrink == None: shrink = EMThumbsTools.get_image_thumb_shrink(image_names[0])
 		
 		application = get_application()
 		nim = len(image_names)
@@ -860,78 +954,6 @@ class EMBoxList:
 			yc = box.y-box_size/2
 			f.write(str(int(xc))+'\t'+str(int(yc))+'\t'+str(box_size)+'\t'+str(box_size)+'\n')
 		f.close()
-			
-	
-def get_database_entry(image_name,key,database="bdb:e2boxercache",dfl=None):
-	if not db_check_dict(database+"#"+key) and dfl==None:  return None
-	
-	db = db_open_dict(database+"#"+key)
-	
-	if db.has_key(image_name):
-		return db[image_name]
-	elif dfl != None:
-		db[image_name] = dfl
-		return dfl
-	else: return None
-	
-def set_database_entry(image_name,key,value,database="bdb:e2boxercache"):
-	'''
-	write a key/object pair to the Image Database Dictionary associat
-	'''
-	
-	db = db_open_dict(database+"#"+key)
-	db[image_name] = value
-	
-def set_idd_image_entry(image_name,key,image,db_title="bdb:e2boxercache#"):
-	'''
-	Using EMAN2 style image dbs has efficiency payoffs in various ways... 
-	'''
-	image.set_attr("src_image",image_name)
-	db_name =  db_title+key
-	# first have to make sure it's not already there
-	db = db_open_dict(db_name)
-	
-	if db.has_key("maxrec"):
-		for idx in range(0,db["maxrec"]+1):
-			header = db.get_header(idx)
-			try:
-				if header["src_image"] == image_name:
-					db[idx] = image
-					#image.write_image("bdb:e2boxercache#"+key,idx)
-					db_close_dict(db_name)
-					return
-			except:
-				pass
-
-	# if we make it here then go ahead and append
-	image.write_image(db_title+key,-1)
-	db_close_dict(db_name)
-
-def get_idd_image_entry(image_name,key,db_title="bdb:e2boxercache#"):
-	'''
-	Using EMAN2 style image dbs has efficiency payoffs in various ways... 
-	'''
-	db_name =  db_title+key
-	if not db_check_dict(db_name): 
-#		print "db failed",db_name
-		return None # t
-	
-	db = db_open_dict(db_name)
-	
-	if db.has_key("maxrec"):
-		for idx in range(0,db["maxrec"]+1):
-			header = db.get_header(idx)
-			try:
-				if header["src_image"] == image_name:
-					e = db[idx]
-					db_close_dict(db_name)
-					return e
-			except:
-				pass
-			
-	db_close_dict(db_name)
-	return None
-	
 
 class EMBoxerModule:
 	'''
@@ -947,7 +969,7 @@ class EMBoxerModule:
 		self.current_idx = None # an index into self.file_names
 		self.box_size = box_size # the current box size
 		
-		self.signal_slot_handlers = {} # this is a dictionary, keys are (somewhat random) names, values are event handlers such as Boxer2DWindowEventHandling. This dict has the only reference to the event handlers
+		self.signal_slot_handlers = {} # this is a dictionary, keys are (somewhat random) names, values are event handlers such as Main2DWindowEventHandling. This dict has the only reference to the event handlers
 		self.inspector = None # this will be a Qt style inspector
 		self.inspector_module = None # the wrapping object of self.inspector
 		self.main_2d_window = None # this will be the main 2D image display, showing boxed particles etc 
@@ -963,6 +985,8 @@ class EMBoxerModule:
 		
 		# initialize the inspector
 		self.__init_inspector()
+		
+		self.add_2d_window_mouse_tool(ManualBoxingEventHandling,ManualBoxingPanel)
 	
 	def redo_boxes(self):
 		if not self.box_list.redo(): return
@@ -1119,7 +1143,7 @@ class EMBoxerModule:
 	
 			self.main_2d_window.set_mouse_mode(0)
 					
-			self.signal_slot_handlers["2d_window"] = Boxer2DWindowEventHandling(self,self.main_2d_window)
+			self.signal_slot_handlers["2d_window"] = Main2DWindowEventHandling(self,self.main_2d_window)
 			
 			get_application().show_specific(self.main_2d_window)
 			
@@ -1226,7 +1250,7 @@ class EMBoxerModule:
 			
 			
 			if self.image_thumbs == None or redo_thumbs:
-				self.image_thumbs = ThumbsTools.gen_thumbs(self.file_names)
+				self.image_thumbs = EMThumbsTools.gen_thumbs(self.file_names)
 			if self.image_thumbs == None:
 				sys.exit(1)
 			
@@ -1268,7 +1292,7 @@ class EMBoxerModule:
 				
 			self.particles_window.set_mouse_mode("app")
 			self.particles_window.update_window_title("Particles")
-			self.signal_slot_handlers["particles_window"] = BoxerParticlesWindowEventHandling(self,self.particles_window)
+			self.signal_slot_handlers["particles_window"] = ParticlesWindowEventHandling(self,self.particles_window)
 			
 	
 	def particles_window_closed(self):
@@ -1777,12 +1801,12 @@ class EMBoxerInspector(QtGui.QWidget):
 		self.boxinghbl1.setMargin(0)
 		self.boxinghbl1.setSpacing(2)
 		
-		self.manualbutton=QtGui.QPushButton(QtGui.QIcon(get_image_directory() + "white_box.png"),"")
-		self.manualbutton.setToolTip("Add manual box")
-		self.manualbutton.setCheckable(1)
-		self.manualbutton.setObjectName("Manual Boxing")
-		self.manualbutton.setChecked(True)
-		self.boxinghbl1.addWidget(self.manualbutton)
+#		self.manualbutton=QtGui.QPushButton(QtGui.QIcon(get_image_directory() + "white_box.png"),"")
+#		self.manualbutton.setToolTip("Add manual box")
+#		self.manualbutton.setCheckable(1)
+#		self.manualbutton.setObjectName("Manual Boxing")
+#		self.manualbutton.setChecked(True)
+#		self.boxinghbl1.addWidget(self.manualbutton)
 	
 #		self.refbutton=QtGui.QPushButton( QtGui.QIcon(get_image_directory() + "black_box.png"),"")
 #		self.refbutton.setToolTip("Add reference box")
@@ -1806,7 +1830,7 @@ class EMBoxerInspector(QtGui.QWidget):
 #		self.boxinghbl1.addWidget(self.unerase)
 	
 #		self.button_group.addButton(self.refbutton,0)
-		self.button_group.addButton(self.manualbutton)
+#		self.button_group.addButton(self.manualbutton)
 #		self.button_group.addButton(self.erase,2)
 #		self.button_group.addButton(self.unerase,3)
 		self.button_group_box_vbl.addLayout(self.boxinghbl1)
@@ -1815,7 +1839,7 @@ class EMBoxerInspector(QtGui.QWidget):
 		self.button_group_box_vbl.addLayout(self.dynamic_box_button_vbl)
 		layout.addWidget(self.button_group_box)
 		
-#		erase_panel = ErasePanel(self,2*self.target().get_box_size())
+#		erase_panel = ErasingPanel(self,2*self.target().get_box_size())
 #		self.mouse_tools["Erase"] = erase_panel
 #		self.mouse_tools["Unerase"] = erase_panel
 		
@@ -1829,6 +1853,7 @@ class EMBoxerInspector(QtGui.QWidget):
 		self.boxinghbl1.addWidget(button)
 		self.button_group.addButton(button)
 		self.mouse_tools[name] = mouse_tool
+		if len(self.mouse_tools) == 1: button.setChecked(True)
 		self.update()
 
 	def button_group_clicked(self,i):
@@ -1849,13 +1874,15 @@ class EMBoxerInspector(QtGui.QWidget):
 			self.dynamic_box_button_widget = None
 								
 		
-		if self.mouse_tools.has_key(name):
-			self.dynamic_box_button_widget = self.mouse_tools[name].get_widget()
+		
+		widget = self.mouse_tools[name].get_widget()
+		if widget != None:
+			self.dynamic_box_button_widget = widget
 		
 			self.dynamic_box_button_widget.setObjectName(name)
 			self.dynamic_box_button_vbl.addWidget(self.dynamic_box_button_widget)
 			self.dynamic_box_button_widget.show()
-			self.vbl.update()
+		self.vbl.update()
 			
 		self.target().set_main_2d_mouse_mode(name)
 	
