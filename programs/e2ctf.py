@@ -738,13 +738,9 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 
 	s1=min(int(.167/ds),ys/3-4)
 
-	# This idea, of using the structure factor to extend the fit to lower resolution caused a bad defocus shift in some cases
-	#if sfcurve.get_size()==99 :
-		#s0=int(.04/ds)
-		#while bgsub[s0]>bgsub[s0+1] : s0+=1	# look for a minimum in the data curve
-		#print "Minimum at 1/%1.1f 1/A"%(1.0/(s0*ds))
-	#else :
-	s0=int(.03/ds)		# if we have a valid structure factor curve we move a bit closer to the origin
+	s0=int(.04/ds)
+	while bgsub[s0]>bgsub[s0+1] : s0+=1	# look for a minimum in the data curve
+	print "Minimum at 1/%1.1f 1/A"%(1.0/(s0*ds))
 	
 	if debug:
 		dfout=file("ctf.df.txt","w")
