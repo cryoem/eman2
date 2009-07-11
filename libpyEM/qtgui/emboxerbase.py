@@ -54,7 +54,7 @@ import os,sys,weakref,math
 from optparse import OptionParser
 
 
-TEMPLATE_MIN = 20
+TEMPLATE_MIN = 30
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -94,8 +94,8 @@ specific needs/algorithms
 	
 	module = EMBoxerModule(args,options.boxsize)
 	module.show_interfaces()
-	# this is an example of how to add your own custom tools:
-	module.add_2d_window_mouse_tool(EraseEventHandling,ErasingPanel,erase_radius=2*options.boxsize)
+	#this is an example of how to add your own custom tools:
+	#module.add_2d_window_mouse_tool(EraseEventHandling,ErasingPanel,erase_radius=2*options.boxsize)
 	application.execute()
 	
 def check(options,args):
@@ -108,7 +108,6 @@ def check(options,args):
 		
 	if len(args) == 0:
 		error_message.append("Please specify files")
-	
 	else:
 		for file in args:
 			if not file_exists(file):
@@ -186,7 +185,7 @@ def get_idd_image_entry(image_name,key,db_title="bdb:e2boxercache#"):
 					return e
 			except:
 				pass
-			
+
 	db_close_dict(db_name)
 	return None
 	
@@ -347,16 +346,31 @@ class ErasingPanel:
 class ManualBoxingPanel:
 	def __init__(self,target):
 		self.target = weakref.ref(target)
+		self.widget = None
 		
 	def icon(self):
 		from PyQt4 import QtGui
 		return QtGui.QIcon(get_image_directory() + "white_box.png")
 
 	def get_widget(self):
-		return None
+		if self.widget == None:
+			from PyQt4 import QtCore, QtGui, Qt
+			self.widget = QtGui.QWidget()
+			vbl = QtGui.QVBoxLayout(self.widget)
+			vbl.setMargin(0)
+			vbl.setSpacing(6)
+			vbl.setObjectName("vbl")
+			self.clear=QtGui.QPushButton("Clear")
+			vbl.addWidget(self.clear)
+			
+			QtCore.QObject.connect(self.clear, QtCore.SIGNAL("clicked(bool)"), self.clear_clicked)
+		return self.widget
 	def hide(self):
-		pass
+		if self.widget != None:
+			self.widget.hide()
 
+	def clear_clicked(self,val):
+		self.target().clear_all()
 
 class EraseEventHandling:
 	'''
@@ -477,6 +491,9 @@ class ManualBoxingEventHandling:
 		self.moving=None
 		
 	def mouse_move(self,event): pass
+	
+	def clear_all(self):
+		self.target().clear_boxes(["manual"])
 
 class Main2DWindowEventHandling:
 	'''
@@ -489,23 +506,17 @@ class Main2DWindowEventHandling:
 		self.target = weakref.ref(target) # prevent a strong cycle
 		self.main_2d_window = main_2d_window
 		
-		self.mouse_handlers = None # will eventually be a dict storing mouse handlers
+		self.mouse_handlers = {}  #stores mouse handlers
 		self.mouse_handler = None  # the current mouse handler
 		
 		self.__connect_signals_to_slots()
-		self.__init_mouse_handlers()
 		
 	def set_mouse_mode(self,name):
 		try:
 			self.mouse_handler = self.mouse_handlers[name]
 		except:
 			print "unknown handler",name
-	def __init_mouse_handlers(self):
-		self.mouse_handlers = {}
-		#self.mouse_handlers["erasing"] = EraseEventHandling(self.target())
-		#self.mouse_handlers["Manual Boxing"] = ManualBoxingEventHandling(self.target())
-		#self.mouse_handler = self.mouse_handlers["Manual Boxing"]
-	
+			
 	def add_mouse_handler(self,handler,name):
 		self.mouse_handlers[name] = handler
 		if self.mouse_handler == None: self.mouse_handler = handler
@@ -718,7 +729,6 @@ class EMBox:
 	def reset_image(self): self.image = None
 		
 	def get_shape(self,shape_string,box_size):
-					
 		if self.type == "manual":
 			r,g,b = 1,1,1
 		elif self.type == "ref":
@@ -740,10 +750,6 @@ class EMBoxList:
 	'''
 	A list of boxes
 	'''
-	known_box_names_map = {}
-	known_box_names_map["manual"] = "manual_boxes"
-	known_box_names_map["ref"] = "ref_boxes"
-	known_box_names_map["auto"] = "auto_boxes"
 	def __init__(self,target=None):
 		if target: self.target=weakref.ref(target)
 		else: self.target = None # someone is using this incognito
@@ -756,7 +762,9 @@ class EMBoxList:
 		self.undo_cache = []
 		self.undo_cache_length = 10
 		self.redo_cache = []	
-		
+	
+	def get_boxes(self): return self.boxes
+	
 	def redo(self):
 		if len(self.redo_cache) == 0: 
 			print "can't redo, nothing stored"
@@ -789,17 +797,30 @@ class EMBoxList:
 		self.undo_cache.append([[box.x,box.y,box.type] for box in self.boxes])
 		self.redo_cache = []
 	
-	def clear_boxes(self):
+	def clear_boxes(self,types):
 		self.cache_old_boxes()
 		
-		self.boxes = []
-		self.shapes = []
-		
+		for i in xrange(len(self.boxes)-1,-1,-1):
+			if self.boxes[i].type in types:
+				self.boxes.pop(i)
+				self.shapes.pop(i)
+						
 	def add_box(self,x,y,type="manual",score=0.0):
 		self.cache_old_boxes()
 		
 		self.boxes.append(EMBox(x,y,type,score))
 		self.shapes.append(None)
+		
+	def add_boxes(self,boxes):
+		'''
+		boxes should be a list like [[x,y,type],[x,y,type],....[int,int,string]]
+		'''
+		
+		self.cache_old_boxes()
+		
+		for box in boxes:
+			self.boxes.append(EMBox(*box))
+			self.shapes.append(None)
 	
 	def reset_images(self):
 		for box in self.boxes: box.reset_image()
@@ -817,7 +838,12 @@ class EMBoxList:
 			self.shapes[i] = shape
 			return shape
 		return self.shapes[i]
-		
+	
+	def get_box_type(self,box_number):
+		'''
+		@param box_number the number of the box for which you want to get the type i.e. that which was returned from the detect_box_collision
+		'''
+		return self.boxes[box_number].type
 	
 	def detect_collision(self,x,y,box_size):
 		for i,box in enumerate(self.boxes):
@@ -888,23 +914,12 @@ class EMBoxList:
 		return self.boxes.pop(idx)
 		
 	
-	def get_box_dict(self):
-		d = {}
-		for box in self.boxes:
-			t = box.type
-			if d.has_key(t):
-				d[t].append([box.x,box.y])
-			else:
-				d[t] = [[box.x,box.y]]
-				
-		return d
+	def get_boxes_for_database(self):
+		return [[box.x,box.y,box.type] for box in self.boxes]
 			
 	def save_boxes_to_database(self,image_name):
-		d = self.get_box_dict()
-		for k,v in d.items():
-			if not EMBoxList.known_box_names_map.has_key(k): raise RuntimeError("Box type  %s is unknown - please add it to  EMBoxList.known_box_names_map" %k)
-			dict_name = EMBoxList.known_box_names_map[k]
-			set_database_entry(image_name,dict_name,v)
+
+		set_database_entry(image_name,"boxes",self.get_boxes_for_database())
 			
 		set_database_entry(image_name,"undo_cache",self.undo_cache)
 		set_database_entry(image_name,"redo_cache",self.redo_cache)
@@ -914,12 +929,11 @@ class EMBoxList:
 			self.boxes = []
 			self.shapes = []
 			self.undo_cache = []
-			
-		for key,value in EMBoxList.known_box_names_map.items():
-			coords = get_database_entry(image_name,value)
-			if coords != None:
-				for x,y in coords:
-					self.add_box(x,y,key)
+		
+		data = get_database_entry(image_name,"boxes")
+		if data != None:
+			for x,y,type in data:
+				self.add_box(x,y,type)
 		
 		if load_caches:
 			self.undo_cache = get_database_entry(image_name,"undo_cache",dfl=[])
@@ -1008,13 +1022,13 @@ class EMBoxerModule:
 		if self.moving_box != None: raise RuntimeError("establishing a moving box that was already established?")
 		self.moving_box = box_number
 	
-	def clear_boxes(self):
-		self.box_list.clear_boxes()
-		if self.particles_window != None:
-			self.particles_window.set_data([])
+	def clear_boxes(self,type):
+		self.box_list.clear_boxes(type)
+		if self.particles_window:
+			self.particles_window.set_data(self.box_list.get_particle_images(self.current_file(), self.box_size))
 			self.particles_window.updateGL()
-		if self.main_2d_window != None:
-			self.main_2d_window.set_shapes({})
+		if self.main_2d_window:
+			self.main_2d_window.set_shapes(self.box_list.get_box_shapes(self.box_size))
 			self.main_2d_window.updateGL()
 			
 		if self.inspector: 
@@ -1027,8 +1041,14 @@ class EMBoxerModule:
 		'''
 		
 		'''
-		return math.ceil(float(self.box_size)/float(TEMPLATE_MIN))
+		return int(math.ceil(float(self.box_size)/float(TEMPLATE_MIN)))
 
+	
+	def get_box_type(self,box_number):
+		'''
+		@param box_number the number of the box for which you want to get the type i.e. that which was returned from the detect_box_collision
+		'''
+		return self.box_list.get_box_type(box_number)
 	
 	def detect_box_collision(self,data):
 		return self.box_list.detect_collision(data[0], data[1], self.box_size)
@@ -1044,14 +1064,36 @@ class EMBoxerModule:
 		box= self.box_list[box_number]
 		self.box_placement_update_exclusion_image(box.x,box.y)
 	
-	def add_box(self,x,y):
+	def add_boxes(self,boxes):
+		'''
+		boxes should be a list like [[x,y,type],[x,y,type],....[int,int,string]]
+		'''
+		if get_database_entry(self.current_file(),"frozen",dfl=False): return
+		if self.particles_window == None:
+			self.__init_particles_window()
+			get_application().show_specific(self.particles_window)
+			
+		self.box_list.add_boxes(boxes)
+		self.box_list.save_boxes_to_database(self.current_file())
+		if self.particles_window:
+			self.particles_window.set_data(self.box_list.get_particle_images(self.current_file(), self.box_size))
+			self.particles_window.updateGL()
+		if self.main_2d_window:
+			self.main_2d_window.update_shapes(self.box_list.get_box_shapes(self.box_size))
+			self.main_2d_window.updateGL()
+		
+		if self.inspector: 
+			self.inspector.enable_undo_redo(self.box_list.is_undoable(),self.box_list.is_redoable())
+		
+	
+	def add_box(self,x,y,type="manual"):
 		if get_database_entry(self.current_file(),"frozen",dfl=False): return
 		if self.particles_window == None:
 			self.__init_particles_window()
 			get_application().show_specific(self.particles_window)
 
 		self.box_placement_update_exclusion_image(x,y)
-		self.box_list.add_box(x,y,type="manual")
+		self.box_list.add_box(x,y,type=type)
 		self.box_list.save_boxes_to_database(self.current_file())
 		if self.particles_window:
 			self.particles_window.set_data(self.box_list.get_particle_images(self.current_file(), self.box_size))
@@ -1111,9 +1153,27 @@ class EMBoxerModule:
 		if self.inspector: 
 			self.inspector.enable_undo_redo(self.box_list.is_undoable(),self.box_list.is_redoable())
 		
-	def get_exclusion_image(self):
-
-		return ScaledExclusionImageCache.get_image(self.current_file(),self.get_subsample_rate())
+	def get_exclusion_image(self,mark_boxes=False):
+		'''
+		@mark_boxes if true the exclusion image is copied and the locations of the current boxes are painted in as excluded regions
+		This is useful for autoboxers - they  obviously dont want to box any region that already has a box in it (such as a manual box,
+		or a previously autoboxed box)
+		'''
+		exc_image = ScaledExclusionImageCache.get_image(self.current_file(),self.get_subsample_rate())
+		if not mark_boxes: return exc_image
+		else:
+			image = exc_image.copy()
+			boxes = self.box_list.get_boxes()
+			if len(boxes) > 0:
+				sr = self.get_subsample_rate()
+				global BinaryCircleImageCache
+				mask = BinaryCircleImageCache.get_image_directly(int(self.box_size/(2*sr)))
+				for box in self.box_list.get_boxes():
+					x,y = int(box.x/sr),int(box.y/sr)
+					from EMAN2 import BoxingTools
+					BoxingTools.set_region(image,mask,x,y,0.1) # 0.1 is also the value set by the eraser - all that matters is that it's zon_zero
+			
+			return image
 	
 	def exclusion_area_added(self,typeofexclusion,x,y,radius,val):
 		xx = int(x/self.get_subsample_rate())
@@ -1178,28 +1238,12 @@ class EMBoxerModule:
 		
 		if not file_exists(file_name): raise RuntimeError("The file %s does not exist" %file_name)
 		if self.main_2d_window != None:
-#			global BigImageCache
-#			data=BigImageCache.get_object(file_name).get_image(use_alternate=True)
-#			
-#			if get_idd_image_entry(file_name,ScaledExclusionImage.database_name) != None:
-#				self.main_2d_window.set_other_data(self.get_exclusion_image(),self.get_subsample_rate(),True)
-#			else:
-#				self.main_2d_window.set_other_data(None,self.get_subsample_rate(),True)
-#
-#			self.main_2d_window.set_data(data,file_name)
-#			
-#			frozen = get_database_entry(file_name,"frozen",dfl=False)
-#			if frozen == None:
-#				set_database_entry(file_name,"frozen",False)
-#				frozen = False 
-#			self.main_2d_window.set_frozen(frozen)
+
 	   	   	self.load_2d_window_display(file_name)
 			if self.inspector != None: 
 				self.inspector.set_frozen(get_database_entry(file_name,"frozen",dfl=False))
 				self.inspector.set_image_quality(get_database_entry(file_name,"quality",dfl=2))
-			
-			#self.guiim.setWindowTitle(file_name) # not sure if this is necessary
-			
+						
 			# the boxes should be loaded from the database, if possible
 			self.box_list.load_boxes_from_database(file_name)
 			if self.inspector: 
@@ -1564,7 +1608,7 @@ class EMBoxerInspector(QtGui.QWidget):
 	def __init__(self,target) :
 		from PyQt4 import QtCore, QtGui
 		self.busy = True
-		self.dynamic_box_button_vbl = None # this will be used to dynamic add widgets as the buttons are changed
+		self.tool_dynamic_vbl = None # this will be used to dynamic add widgets as the buttons are changed
 		self.dynamic_box_button_widget = None # this will be used to dynamic add widgets as the buttons are changed
 		self.mouse_tools = {}
 		 
@@ -1717,13 +1761,10 @@ class EMBoxerInspector(QtGui.QWidget):
 		self.togfreeze.setCheckable(1)
 		self.togfreeze.setChecked(False)
 		hbl_t.addWidget(self.togfreeze)
-		self.clear=QtGui.QPushButton("Clear")
-		hbl_t.addWidget(self.clear)
 			
 		layout.addLayout(hbl_t)
 		
 		QtCore.QObject.connect(self.togfreeze, QtCore.SIGNAL("clicked(bool)"), self.toggle_freeze_clicked)
-		QtCore.QObject.connect(self.clear, QtCore.SIGNAL("clicked(bool)"), self.clear_clicked)
 	
 	def set_frozen(self,val):
 		self.busy = True
@@ -1796,70 +1837,43 @@ class EMBoxerInspector(QtGui.QWidget):
 	def add_boxing_button_group(self,layout):
 		from PyQt4 import QtCore, QtGui, Qt
 		
-		self.button_group_box = QtGui.QGroupBox("Tools")
-		self.button_group_box_vbl = QtGui.QVBoxLayout(self.button_group_box)
+		self.tool_button_group_box = QtGui.QGroupBox("Tools")
+		self.tool_button_group_box_vbl = QtGui.QVBoxLayout(self.tool_button_group_box)
 		
-		self.button_group = QtGui.QButtonGroup()			
-		self.boxinghbl1=QtGui.QHBoxLayout()
-		self.boxinghbl1.setMargin(0)
-		self.boxinghbl1.setSpacing(2)
+		self.tool_button_group = QtGui.QButtonGroup()			
+		self.tool_button_hbl=QtGui.QHBoxLayout()
+		self.tool_button_hbl.setMargin(0)
+		self.tool_button_hbl.setSpacing(2)
+
+		self.tool_button_group_box_vbl.addLayout(self.tool_button_hbl,0)
 		
-#		self.manualbutton=QtGui.QPushButton(QtGui.QIcon(get_image_directory() + "white_box.png"),"")
-#		self.manualbutton.setToolTip("Add manual box")
-#		self.manualbutton.setCheckable(1)
-#		self.manualbutton.setObjectName("Manual Boxing")
-#		self.manualbutton.setChecked(True)
-#		self.boxinghbl1.addWidget(self.manualbutton)
-	
-#		self.refbutton=QtGui.QPushButton( QtGui.QIcon(get_image_directory() + "black_box.png"),"")
-#		self.refbutton.setToolTip("Add reference box")
-#		self.refbutton.setObjectName("Ref Boxing")
-#		self.refbutton.setCheckable(1)
-#		self.refbutton.setChecked(False)
-#		self.boxinghbl1.addWidget(self.refbutton)
-#		
-#		self.erasepic = QtGui.QIcon(get_image_directory() + "boxer_erase.png");
-#		self.erase=QtGui.QPushButton(self.erasepic,"")
-#		self.erase.setToolTip("Erase")
-#		self.erase.setObjectName("Erase")
-#		self.erase.setCheckable(1)
-#		self.boxinghbl1.addWidget(self.erase)
+		self.tool_dynamic_vbl = QtGui.QVBoxLayout()
+		self.tool_button_group_box_vbl.addLayout(self.tool_dynamic_vbl,1)
+		layout.addWidget(self.tool_button_group_box,0,)
 		
-#		self.unerasepic = QtGui.QIcon(get_image_directory() + "boxer_unerase.png");
-#		self.unerase=QtGui.QPushButton(self.unerasepic,"")
-#		self.unerase.setToolTip("Unerase")
-#		self.unerase.setObjectName("Unerase")
-#		self.unerase.setCheckable(1)
-#		self.boxinghbl1.addWidget(self.unerase)
-	
-#		self.button_group.addButton(self.refbutton,0)
-#		self.button_group.addButton(self.manualbutton)
-#		self.button_group.addButton(self.erase,2)
-#		self.button_group.addButton(self.unerase,3)
-		self.button_group_box_vbl.addLayout(self.boxinghbl1)
-		
-		self.dynamic_box_button_vbl = QtGui.QVBoxLayout()
-		self.button_group_box_vbl.addLayout(self.dynamic_box_button_vbl)
-		layout.addWidget(self.button_group_box)
-		
-#		erase_panel = ErasingPanel(self,2*self.target().get_box_size())
-#		self.mouse_tools["Erase"] = erase_panel
-#		self.mouse_tools["Unerase"] = erase_panel
-		
-		QtCore.QObject.connect(self.button_group,QtCore.SIGNAL("buttonClicked (QAbstractButton *)"),self.button_group_clicked)
+		QtCore.QObject.connect(self.tool_button_group,QtCore.SIGNAL("buttonClicked (QAbstractButton *)"),self.tool_button_group_clicked)
 	
 	def add_mouse_tool(self,mouse_tool,name):
+		
 		button=QtGui.QPushButton(mouse_tool.icon(),"")
 		button.setToolTip(name)
 		button.setObjectName(name)
 		button.setCheckable(1)
-		self.boxinghbl1.addWidget(button)
-		self.button_group.addButton(button)
+		self.tool_button_hbl.addWidget(button)
+		self.tool_button_group.addButton(button)
 		self.mouse_tools[name] = mouse_tool
-		if len(self.mouse_tools) == 1: button.setChecked(True)
+		if len(self.mouse_tools) == 1:
+			button.setChecked(True)
+			widget = self.mouse_tools[name].get_widget()
+			if widget != None:
+				self.dynamic_box_button_widget = widget
+			
+				self.dynamic_box_button_widget.setObjectName(name)
+				self.tool_dynamic_vbl.addWidget(self.dynamic_box_button_widget)
+				self.dynamic_box_button_widget.show()
 		self.update()
 
-	def button_group_clicked(self,i):
+	def tool_button_group_clicked(self,i):
 		if self.busy: return
 		name = str(i.objectName())
 		old_name = None
@@ -1872,18 +1886,16 @@ class EMBoxerInspector(QtGui.QWidget):
 		if self.dynamic_box_button_widget:
 			if not self.mouse_tools.has_key(old_name): raise RuntimeError("Error, code has altered and now it does not work")
 			
-			self.dynamic_box_button_vbl.removeWidget(self.dynamic_box_button_widget)
+			self.tool_dynamic_vbl.removeWidget(self.dynamic_box_button_widget)
 			self.mouse_tools[old_name].hide()
 			self.dynamic_box_button_widget = None
-								
-		
-		
+
 		widget = self.mouse_tools[name].get_widget()
 		if widget != None:
 			self.dynamic_box_button_widget = widget
 		
 			self.dynamic_box_button_widget.setObjectName(name)
-			self.dynamic_box_button_vbl.addWidget(self.dynamic_box_button_widget)
+			self.tool_dynamic_vbl.addWidget(self.dynamic_box_button_widget)
 			self.dynamic_box_button_widget.show()
 		self.vbl.update()
 			
@@ -1901,13 +1913,28 @@ class EMBoxerInspector(QtGui.QWidget):
 		if self.busy: return
 		box_size=int(self.box_size.text())
 		self.target().set_box_size(box_size)
-#	
-#	def set_erase_radius(self,val):
-#		if self.mouse_tools.has_key("Erase"):
-#			v =  self.mouse_tools["Erase"]
-#			v.set_erase_radius(val)
-		
-							
+	
+	def keyPressEvent(self,event):
+		from PyQt4 import QtCore
+		if event.key() == QtCore.Qt.Key_F1:
+			try:
+				import webbrowser
+				webbrowser.open("http://blake.bcm.edu/emanwiki/e2boxer")
+				return
+			except: pass
+			
+			try: from PyQt4 import QtWebKit
+			except: return
+			try:
+				try:
+					test = self.browser
+				except: 
+					self.browser = QtWebKit.QWebView()
+					self.browser.load(QtCore.QUrl("http://blake.bcm.edu/emanwiki/e2boxer"))
+					self.browser.resize(800,800)
+				
+				if not self.browser.isVisible(): self.browser.show()
+			except: pass
 			
 if __name__ == "__main__":
 	main()

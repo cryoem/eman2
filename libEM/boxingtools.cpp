@@ -59,7 +59,7 @@ using std::string;
 // find, min_element
 
 vector<Vec3f> BoxingTools::colors = vector<Vec3f>(); // static init
-BoxingTools::CmpMode BoxingTools::mode = SWARM_RATIO;
+BoxingTools::CmpMode BoxingTools::mode = SWARM_AVERAGE_RATIO;
 
 #define SVD_CLASSIFIER_DEBUG 0
 

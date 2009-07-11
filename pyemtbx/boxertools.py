@@ -1157,10 +1157,10 @@ class FLCFImage:
 		Then it is returned
 		'''
 		template = params_mediator.get_template_object()
-		if not isinstance(template,SwarmTemplate) and not isinstance(template,TrimSwarmTemplate):
-			print "you can't call genFLCF on an object that is not a SwarmTemplate"
-			return None
-		
+#		if not isinstance(template,SwarmTemplate) and not isinstance(template,TrimSwarmTemplate):
+#			print "you can't call genFLCF on an object that is not a SwarmTemplate"
+#			return None
+#		
 		action = False
 		if self.flcfimage != None:
 			if not self.query_params_match(params_mediator):
@@ -3425,6 +3425,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		else:
 			print "the peak profile comparitor mode you specified:", cmp_mode,"was not recognized, no action was taken"
 			return 0
+		
 	def get_mode(self):
 		return self.mode
 	
@@ -3449,7 +3450,6 @@ class SwarmAutoBoxer(AutoBoxer):
 
 	def name(self):
 		return 'swarmautoboxer'
-
 
 	def add_dummy(self,box):
 		print "in add dummy"

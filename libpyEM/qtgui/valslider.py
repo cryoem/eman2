@@ -42,7 +42,7 @@ class ValSlider(QtGui.QWidget):
 	emit valueChanged(float)
 	"""
 	def __init__(self, parent, range=None, label=None, value=0,labelwidth=30):
-		if not parent: raise Exception,"ValSliders must have parents"
+		#if not parent: raise Exception,"ValSliders must have parents"
 		QtGui.QWidget.__init__(self,parent)
 		
 		if range : self.range=list(range)

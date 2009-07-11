@@ -1136,7 +1136,7 @@ class EMTomoBoxerModule(QtCore.QObject):
 		Tells concerned interfaces to update their displays
 		'''
 		shapes = EMBoxDisplayShapes.gen_shapes(self.coord_list,self.real_box_size,self.get_shape_string())
-		self.main_2d_window.set_shapes(shapes,1.0)
+		self.main_2d_window.set_shapes(shapes)
 		self.main_2d_window.set_active(self.active_box,.9,.9,.1)
 		self.main_2d_window.updateGL()
 		
@@ -1222,20 +1222,20 @@ class EMTomoBoxerModule(QtCore.QObject):
 			r = l + self.real_box_size
 			shape = EMShape(["rectpoint",0,0.9,0.4,0,l,self.real_box_size,r,2.0])
 			shapes = {0:shape}
-			self.zy_side_view_window.set_shapes(shapes,1)
+			self.zy_side_view_window.set_shapes(shapes)
 			self.zy_side_view_window.updateGL()
 			
-			self.zx_side_view_window.set_shapes(shapes,1)
+			self.zx_side_view_window.set_shapes(shapes)
 			self.zx_side_view_window.updateGL()
 		else:
 			if self.zy_side_view_window != None:
 				self.zy_side_view_window.set_data(None)
-				self.zy_side_view_window.set_shapes({},1)
+				self.zy_side_view_window.set_shapes({})
 				self.zy_side_view_window.updateGL()
 				
 			if self.zx_side_view_window != None:
 				self.zx_side_view_window.set_data(None)
-				self.zx_side_view_window.set_shapes({},1)
+				self.zx_side_view_window.set_shapes({})
 				self.zx_side_view_window.updateGL()
 
 	

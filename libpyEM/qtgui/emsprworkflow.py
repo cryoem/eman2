@@ -646,15 +646,15 @@ class EMProjectDataDict:
 		for name in list_of_names:
 			tmp = {}
 			tmp[filt] = name
-			if use_file_tag: dict[name] = tmp
-			else: dict[get_file_tag(name)] = tmp
+			if use_file_tag: dict[get_file_tag(name)] = tmp
+			else: dict[name] = tmp
 			
 			
 		self.__write_db(dict)
 		
 	def update(self,more_data_dict):
 		'''
-		@param more_data_dict a dictionary that will be added to the data dictionary using dict.update
+	x	@param more_data_dict a dictionary that will be added to the data dictionary using dict.update
 		'''
 		dict = self.get_data_dict()
 		dict.update(more_data_dict)
@@ -1157,9 +1157,7 @@ class EMFilterRawDataTask(WorkFlowTask):
 	
 		self.emit(QtCore.SIGNAL("task_idle"))
 		
-		for k,v in params.items():
-			self.write_db_entry(k,v)
-		
+		self.write_db_entries(params)
 	def check_params(self,params):
 		error_message = []
 		filenames = params["filenames"]
@@ -1197,7 +1195,7 @@ class EMFilterRawDataTask(WorkFlowTask):
 					else:
 						type_ = file[idx:]
 						if type_ not in get_supported_2d_write_formats():
-							error_message.append("Can't inplace filter %s files (%s)" %(type_,file))		
+							error_message.append("Can not inplace filter %s files (%s)" %(type_,file))		
 						
 		for name in filenames:
 			if len(name) == 0: continue
