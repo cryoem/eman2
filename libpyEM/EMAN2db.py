@@ -797,35 +797,43 @@ class DBDict:
 		"""This actually opens the database (unless already open), if ro is set and the database is not already
 		open read-write, it will be opened read-only"""
 
+		global DBDEBUG
+		if DBDEBUG and self.lock : print"DB %s locked. Waiting"%self.name
 		while self.lock : time.sleep(1)
 		self.lock=True
 		self.lasttime=time.time()
 		if self.bdb!=None :
 			if ro==True or self.isro==False : 
-#				print "already open",self.name
+				if DBDEBUG : print "already open",self.name
 				self.lock=False
 				return  		# return if the database is already open and in a compatible read-only mode
+			if DBDEBUG : print "reopening R/W ",self.name
 			self.lock=False
 			self.close()	# we need to reopen read-write
 			self.lock=True
 
-		global DBDEBUG
-		if DBDEBUG:
-			# look at the locking subsystem stats
-			ls=self.dbenv.lock_stat()
-			print "lock_stat:\t",
-			for i in ("nlocks","maxlocks","nlockers","maxlockers","nobjects","maxobjects","maxnlocks"): print ls[i],"\t",
-			print
+		#if DBDEBUG:
+			## look at the locking subsystem stats
+			#ls=self.dbenv.lock_stat()
+			#print "lock_stat:\t",
+			#for i in ("nlocks","maxlocks","nlockers","maxlockers","nobjects","maxobjects","maxnlocks"): print ls[i],"\t",
+			#print
 		
 
 		self.bdb=db.DB(self.dbenv)		# we don't check MPIMODE here, since self.dbenv will already be None if its set
 		if self.file==None : file=self.name+".bdb"
 		else : file=self.file
 #		print "open ",self.path+"/"+file,self.name,ro
-		self.opencount+=1	# how many times we have had to reopen this database
 		if ro : 
-#			try:
-			self.bdb.open(self.path+"/"+file,self.name,db.DB_BTREE,db.DB_RDONLY|db.DB_THREAD)
+			try:
+				self.bdb.open(self.path+"/"+file,self.name,db.DB_BTREE,db.DB_RDONLY|db.DB_THREAD)
+			except db.DBNoSuchFileError:
+				self.bdb=None
+				self.lock=False
+				if DBDEBUG : traceback.print_exc()
+				print "Cannot open or find ",self.name
+				raise Exception
+				
 			#except: 
 				## try one more time... this shouldn't be necessary...
 				#time.sleep(1)
@@ -835,8 +843,14 @@ class DBDict:
 ##					raise Exception,"Cannot open database : %s"%self.path+"/"+file
 			self.isro=True
 		else : 
-#			try: 
-			self.bdb.open(self.path+"/"+file,self.name,db.DB_BTREE,db.DB_CREATE|db.DB_THREAD)
+			try: 
+				self.bdb.open(self.path+"/"+file,self.name,db.DB_BTREE,db.DB_CREATE|db.DB_THREAD)
+			except :
+				self.bdb=None
+				self.lock=False
+				traceback.print_exc()
+				print "Unable to open read/write ",self.name
+				return
 			#except: 
 				## try one more time... this shouldn't be necessary...
 				#time.sleep(1)
@@ -846,11 +860,14 @@ class DBDict:
 					#raise Exception,"Cannot create database : %s"%self.path+"/"+file
 			self.isro=False
 			
+		self.opencount+=1	# how many times we have had to reopen this database
 		DBDict.nopen+=1
 		self.lock=False
 
 		global MAXOPEN
 		if DBDict.nopen>MAXOPEN : self.close_one() 
+
+		if DBDEBUG : print "Opened ",self.name, self.lock
 
 #		print "%d open"%DBDict.nopen
 #		print "opened ",self.name,ro
@@ -884,6 +901,7 @@ class DBDict:
 		DBDict.closelock=False
 
 	def close(self):
+		global DBDEBUG
 		n=0
 		while self.lock and n<5: 
 			print "Sleep on close ",self.name
@@ -899,7 +917,8 @@ class DBDict:
 		self.bdb=None
 		DBDict.nopen-=1
 		self.lock=False
-	
+		if DBDEBUG : print "Closed ",self.name
+
 	def sync(self):
 		if self.bdb!=None : self.bdb.sync()
 		
