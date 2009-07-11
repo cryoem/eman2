@@ -350,8 +350,7 @@ def fixnegbg(bg_1d,im_1d,ds):
 	# return the corrected background
 	print "BG correction ratio %1.4f"%ratio
 	return [i*ratio for i in bg_1d]
-			
-	
+
 def pspec_and_ctf_fit(options,debug=False):
 	"""Power spectrum and CTF fitting. Returns an 'image sets' list. Each item in this list contains
 	filename,EMAN2CTF,im_1d,bg_1d,im_2d,bg_2d,qual"""
@@ -738,12 +737,14 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 	bgsub=[im_1d[s]-bg_1d[s] for s in range(len(im_1d))]	# background subtracted curve, good until we readjust the background
 
 	s1=min(int(.167/ds),ys/3-4)
-	if sfcurve.get_size()==99 :
-		s0=int(.04/ds)
-		while bgsub[s0]>bgsub[s0+1] : s0+=1	# look for a minimum in the data curve
-		print "Minimum at 1/%1.1f 1/A"%(1.0/(s0*ds))
-	else :
-		s0=int(.03/ds)		# if we have a valid structure factor curve we move a bit closer to the origin
+
+	# This idea, of using the structure factor to extend the fit to lower resolution caused a bad defocus shift in some cases
+	#if sfcurve.get_size()==99 :
+		#s0=int(.04/ds)
+		#while bgsub[s0]>bgsub[s0+1] : s0+=1	# look for a minimum in the data curve
+		#print "Minimum at 1/%1.1f 1/A"%(1.0/(s0*ds))
+	#else :
+	s0=int(.03/ds)		# if we have a valid structure factor curve we move a bit closer to the origin
 	
 	if debug:
 		dfout=file("ctf.df.txt","w")
@@ -840,18 +841,19 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 	Util.save_data(0,ds,cc,"ctf.ctf.txt")
 
 	if bgadj:
+		bg2=bg_1d[:]
 		for i in range(6):
 			# now we try to construct a better background based on the CTF zeroes being zero
 			df=best[0][1][0]
 			ctf.defocus=best[0][1][0]
 			ctf.bfactor=best[0][1][1]
 			cc=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_AMP)
-			bg2=bg_1d[:]
+#			bg2=bg_1d[:]
 			last=0,1.0
 			for x in range(1,len(bg2)-1) : 
 				if cc[x]*cc[x+1]<0 :
 					# we search the two points 'at' the zero for the minimum
-					cur=(x,min(im_1d[x]/bg_1d[x],im_1d[x+1]/bg_1d[x+1]))
+					cur=(x,min(im_1d[x]/bg2[x],im_1d[x+1]/bg2[x+1]))
 	#				cur=(x,min(im_1d[x]/bg_1d[x],im_1d[x-1]/bg_1d[x-1],im_1d[x+1]/bg_1d[x+1]))
 					# once we have a pair of zeros we adjust the background values between
 					for xx in range(last[0],cur[0]):
@@ -867,6 +869,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 	#	s1=min(int(0.15/ds),len(bg_1d)-1)
 
 			# rerun the simplex with the new background
+			bgsub=[im_1d[s]-bg_1d[s] for s in range(len(im_1d))]	# background subtracted curve, good until we readjust the background
 			best[0][1][1]=200.0		# restart the fit with B=200.0
 			sim=Simplex(ctf_cmp,best[0][1],[.02,20.0],data=(ctf,bgsub,s0,s1,ds,best[0][1][0]))
 			oparm=sim.minimize(epsilon=.00000001,monitor=0)
