@@ -102,7 +102,6 @@ def gen_rot_ave_template(image_name,ref_boxes,shrink,box_size,iter=4):
 	ave.process_inplace("mask.sharp",{'outer_radius':ave.get_xsize()/2})
 	averages.append(ave)
 	averages[-1].set_attr("creation_time_stamp", gm_time_string())
-	# 4 is a magic number
 	for n in range(0,iter):
 		t = []
 		for idx,particle in enumerate(ptcls):
@@ -313,22 +312,47 @@ class SwarmPanel:
 			
 		return self.widget
 	
+	def update_states(self,swarm_boxer):
+		print "updating panel states", swarm_boxer.particle_diameter
+		self.busy = True
+		self.ptcl_diam_edit.setText(str(swarm_boxer.particle_diameter))
+		mode = swarm_boxer.pick_mode
+		if mode == SwarmBoxer.THRESHOLD: self.thrbut.setChecked(True)
+		elif mode == SwarmBoxer.SELECTIVE: self.selbut.setChecked(True)
+		elif mode == SwarmBoxer.MORESELECTIVE: self.morselbut.setChecked(True)
+		else: raise RuntimeError("This shouldn't happen")
+		self.update_template.setChecked(swarm_boxer.update_template)
+		self.auto_update.setChecked(swarm_boxer.auto_update)
+		t = swarm_boxer.peak_score
+		if swarm_boxer.interactive_threshold != None:
+			t = swarm_boxer.interactive_threshold
+			self.enable_interactive_threshold.setChecked(True)
+			self.thr.setEnabled(True)
+		else:
+			self.enable_interactive_threshold.setChecked(False)
+			self.thr.setEnabled(False)
+		self.set_picking_data(t,swarm_boxer.profile,swarm_boxer.profile_trough_point)
+		
+		#self.busy = True # BEWARE self.set_picking_data set it False!
+		
+		self.busy = False
+
+	
 	def new_threshold_release(self,val):
 		val = float(val)
-		print val,"new"
 		self.target().set_interactive_threshold(val)
 	
 	def interact_thresh_clicked(self,val):
 		self.thr.setEnabled(val)
-		print val, "t clicked"
 		if val == False:
 			self.target().disable_interactive_threshold()
 	
 	def set_picking_data(self,threshold,profile=[],trough_point=None):
 		self.busy = True
-		self.thr.setValue(threshold)
+		if threshold == None: self.thr.setValue(0)
+		else: self.thr.setValue(threshold)
 		help = ""
-		if len(profile) > 0:
+		if profile != None and len(profile) > 0:
 			help += "The Swarm profile is ["
 			for i,p in enumerate(profile):
 				if i != 0: help += " "
@@ -383,11 +407,16 @@ class SwarmPanel:
 	def step_forward_clicked(self,val):
 		self.target().step_forward()
 		
-	def enable_step_back(self,val):
+	def enable_step_back(self,val,total=None):
 		self.step_back.setEnabled(val)
+		if total != None: self.step_back.setToolTip("%d backward steps in the stack" %total)
+		else: self.step_back.setToolTip("")
 		
-	def enable_step_forward(self,val):
+	def enable_step_forward(self,val,total=None):
+		if self.widget == None: self.get_widget()
 		self.step_forward.setEnabled(val)
+		if total != None: self.step_forward.setToolTip("%d forward steps in the stack" %total)
+		else: self.step_forward.setToolTip("")
 	
 def compare_box_correlation(box1,box2):
 	c1 = box1[3]
@@ -401,13 +430,13 @@ class SwarmBoxer:
 	THRESHOLD = "Threshold"
 	SELECTIVE = "Selective"
 	MORESELECTIVE = "More Selective"
-	CACHE_MAX = 10
+	CACHE_MAX = 10 # Each image has its last CACHE_MAX SwarmBoxer instance stored (or retrievable) automatically 
+	PROFILE_MAX = 0.8 # this is a percentage - it stops the profile trough point from going to the end
 	def __init__(self,particle_diameter=128):
 		self.particle_diameter = particle_diameter
 		self.update_template = True # Tied to the SwarmPanel - Whether or not the act of adding a reference should force an update of the template
 		self.pick_mode = SwarmBoxer.SELECTIVE	# the autobox method - see EMData::BoxingTools for more details
 		self.interactive_threshold = None  # Tied to the SwarmPanel -  this is a float when the user is playing with the threshold, but is None elsewise
-		self.profile_max = 0.8 # this is a percentage - it stops the profile trough point from going to the end
 		self.reset() # the first time this is called this establishes attribute variables - seeing as the function is required more than once it makes sense to do this
 		self.auto_update = True # Tied to the SwarmPanel - this is the historical 'dynapix' button. It means that if any picking parameter is altered then autoboxing will be automatically triggered 
 		self.signal_template_update = False
@@ -416,77 +445,168 @@ class SwarmBoxer:
 	
 		self.template_viewer = None
 		
-		self.swarm_cache = [] # this will stored lists that store the parameters necessary to reconstruct a swarm boxer
-		self.redo_cache = [] # this will store the redo things
-		
+		self.step_back_cache = [] # this will stored lists that store the parameters necessary to reconstruct a swarm boxer
+		self.step_fwd_cache = [] # this will store the redo things
 	
-	def to_list(self):
-		l = [self.ref_boxes,self.templates,self.profile,self.peak_score,self.profile_trough_point,self.profile_max,self.particle_diameter,self.update_template]
-		l.extend([self.pick_mode, self.interactive_threshold,self.auto_update,self.signal_template_update])
-		import copy
-		return copy.deepcopy(l)
-	
-	def step_back(self):
-		l = self.swarm_cache.pop(-1)
-		self.redo_cache.append(l)
-
-		self.target().clear_boxes(["ref","auto"])
-		if len(self.swarm_cache) > 0:
-			self.load_from_list(self.swarm_cache[-1])
-			boxes = [ [box.x, box.y, "ref", box.peak_score] for box in self.ref_boxes ]
-			self.target().add_boxes(boxes)
-			self.target().get_2d_window().updateGL()
-			if len(self.ref_boxes) > 0:
-				self.auto_box(self.target().current_file(),cache=False)
-		else:
-			self.reset()
-			self.panel_object.enable_step_back(False)
-			self.target().get_2d_window().updateGL()
-		
-		
-		
-		
-	def step_forward(self):
-		pass
-	
-	def cache_to_database(self):
-		if len(self.swarm_cache) >= SwarmBoxer.CACHE_MAX: self.swarm_cache.pop(0)
-		self.swarm_cache.append(self.to_list())
-		set_database_entry(self.target().current_file(),"swarm",self.swarm_cache)
-		self.panel_object.enable_step_back(True)
-		
-	def handle_file_change(self,file_name,old_file_name):
-		return	
-		self.swarm_cache = get_database_entry(file_name,"swarm",dfl=[])
-		if len(self.swarm_cache) > 0:
-			self.load_from_list(self.swarm_cache[-1])
-			
-	def load_from_list(self,l):
-		self.ref_boxes = l[0]
-		self.templates = l[1]
-		self.profile = l[2]
-		self.peak_score = l[3]
-		self.profile_trough_point = l[4]
-		self.profile_max = l[5]
-		self.particle_diameter = l[6]
-		self.update_template = l[7]
-		self.pick_mode = l[8]
-		self.interactive_threshold = l[9]
-		self.auto_update = l[10]
-		self.signal_template_update = l[11]
-		
 	def __del__(self):
+		'''
+		Closes the template viewer if it exists
+		'''
 		if self.template_viewer != None:
 			self.template_viewer.closeEvent(None)
 			self.template_viewer = None
 	
 	def reset(self):
+		'''
+		Sets the self.ref_boxes, self.templates, self.profile, self.peak_score and self.profile_trough_point to safe defaults.
+		'''
 		self.ref_boxes = []
 		self.templates = None
 		self.profile = None
 		self.peak_score = None
 		self.profile_trough_point = None
-		self.profile_max = 0.8 # this is a percentage - it stops the profile trough point from going to the end
+	
+	def to_list(self):
+		'''
+		Stores the vital variable attributes of this object in a list - returns a deep copy. The list contains these entries:
+		-----------------------------
+		Index   Variable			Description
+		0		self.ref_boxes		List of SwarmBox object - this information could technically be used to regenerate the template and the picking parameters
+		1		self.templates		List of EMData objects which are iteratively honed templates - the last is the one that was used for the correlation image
+		2		self.profile		List of floats - The Swarm profile
+		3		self.peak_score		Float - The correlation threshold being used to select particles
+		4		self.profile_trough_point	Int - The trough point, used in the selective mode of Swarm picking
+		5		self.particle_diameter		Int- User supplied estimate of the particle diameter
+		6		self.update_template		Bool - Flag indicating whether adding a references should cause an update of the template
+		7		self.pick_mode				Int - either SwarmBoxer.THRESHOLD, SwarmBoxer.SELECTIVE, or SwarmBoxer.MORESELECTIVE 
+		8		self.interactive_threshol	Float or None - If not None, this is a theshold value that overrides self.peak_score
+		9		self.auto_update			Bool - Whether changing the state of the SwarmBoxer should cause an auto update, i.e. when interacting in the interface
+		10		unique id					String - that which is return by gm_time_string - this can be used to decide what is the best autoboxer (i.e. is not really related to interactive boxing)
+		-----------------
+		Note that it would be possible to append entries, but that if you disrupt the order which is specified above you will destroy back compatibility
+		'''
+		l = [self.ref_boxes,self.templates,self.profile,self.peak_score,self.profile_trough_point,self.particle_diameter,self.update_template]
+		l.extend([self.pick_mode, self.interactive_threshold,self.auto_update, gm_time_string()])
+		import copy
+		return copy.deepcopy(l)
+		
+	def load_from_list(self,l):
+		'''
+		Sets almost every variable attributes to a new value by assuming a specific ordering of the incoming list.
+		The incoming list should almost certainly have been generated, at some point in time, but the call to self.to_list -
+		See the comments in self.to_list for more details.
+		@param l a list that was almost certainly generated, at some point in time, but a call to self.to_list
+		'''
+		self.ref_boxes = l[0]
+		self.templates = l[1]
+		self.profile = l[2]
+		self.peak_score = l[3]
+		self.profile_trough_point = l[4]
+		self.particle_diameter = l[5]
+		self.update_template = l[6]
+		self.pick_mode = l[7]
+		self.interactive_threshold = l[8]
+		self.auto_update = l[9]
+		# entry 10 is not required, it is the creation stamp used to ascertain if common boxer instances are being used by different images, it has no relevance to interactive boxing
+		
+	def step_back(self):
+		if len(self.step_back_cache) == 0: raise RuntimeError("Step backward cache has no entries")
+		l = self.step_back_cache.pop(-1)
+		self.step_fwd_cache.append(l)
+		self.panel_object.enable_step_forward(True,len(self.step_fwd_cache))
+		
+		if len(self.step_back_cache) > 0:
+			self.panel_object.enable_step_back(True,len(self.step_back_cache))
+			self.handle_box_states_changed()
+		else:
+			self.target().clear_boxes(["ref","auto"])
+			self.reset()
+			self.panel_object.enable_step_back(False)
+			self.target().get_2d_window().updateGL()
+			 
+		self.panel_object.update_states(self)
+		if self.template_viewer != None:
+			self.template_viewer.set_data(self.templates,soft_delete=True)
+			self.template_viewer.updateGL()
+			
+	def handle_box_states_changed(self):
+		self.target().clear_boxes(["ref","auto"])
+		for b in self.ref_boxes:
+			print "a", b.in_template
+		self.load_from_list(self.step_back_cache[-1])
+		boxes = [ [box.x, box.y, "ref", box.peak_score] for box in self.ref_boxes if box.image_name == self.current_file ]
+		for b in self.ref_boxes:
+			print "b", b.in_template
+		print "---"
+		self.target().add_boxes(boxes)
+		self.target().get_2d_window().updateGL()
+		if len(self.ref_boxes) > 0:
+			self.auto_box(self.target().current_file(),cache=False)
+			
+	def step_forward(self):
+		if len(self.step_fwd_cache) == 0: raise RuntimeError("Step forward cache has no entries")
+		l = self.step_fwd_cache.pop(-1)
+		
+		if len(self.step_fwd_cache) == 0: self.panel_object.enable_step_forward(False)
+		else: self.panel_object.enable_step_forward(True,len(self.step_fwd_cache)) # solely for the tooltip
+		
+		self.panel_object.enable_step_back(True,len(self.step_back_cache))
+		self.step_back_cache.append(l)
+
+		self.target().clear_boxes(["ref","auto"])
+		self.load_from_list(self.step_back_cache[-1])
+		boxes = [ [box.x, box.y, "ref", box.peak_score] for box in self.ref_boxes ]
+		self.target().add_boxes(boxes)
+		self.target().get_2d_window().updateGL()
+		if len(self.ref_boxes) > 0:
+			self.auto_box(self.target().current_file(),cache=False)
+			
+		self.panel_object.update_states(self)
+		if self.template_viewer != None:
+			self.template_viewer.set_data(self.templates,soft_delete=True)
+			self.template_viewer.updateGL()
+		
+	def cache_new_state(self):
+		print "cache new states"
+		for b in self.ref_boxes:
+			print "cache", b.in_template
+		print "---"
+		self.step_back_cache.append(self.to_list())
+		self.step_fwd_cache = []
+		self.panel_object.enable_step_forward(False)
+		self.panel_object.enable_step_back(True,len(self.step_back_cache))
+		if len(self.step_back_cache) >= SwarmBoxer.CACHE_MAX: self.step_back_cache.pop(0)
+	
+	def cache_to_database(self):		
+		set_database_entry(self.target().current_file(),"swarm_boxers",self.step_back_cache)
+		set_database_entry(self.target().current_file(),"swarm_fwd_boxers",self.step_fwd_cache)
+		
+	def handle_file_change(self,file_name):
+		print "handle file change"
+		l = None
+		if self.auto_update and len(self.step_back_cache) > 0:
+			l = self.to_list()
+		
+		self.step_fwd_cache = get_database_entry(file_name,"swarm_fwd_boxers",dfl=[])
+		if len(self.step_fwd_cache) > 0: self.panel_object.enable_step_forward(True,len(self.step_fwd_cache))
+		else: self.panel_object.enable_step_forward(False)
+			
+		self.step_back_cache = get_database_entry(file_name,"swarm_boxers",dfl=[])
+		if len(self.step_back_cache) > 0: self.panel_object.enable_step_back(True,len(self.step_back_cache))
+		else: self.panel_object.enable_step_back(False)
+		
+		if l != None:
+			self.cache_new_state()
+			self.cache_to_database()
+			self.handle_box_states_changed()
+		else:
+			if len(self.step_back_cache): self.load_from_list(self.step_back_cache[-1])
+
+		self.panel_object.update_states(self)
+		if self.template_viewer != None:
+			self.template_viewer.set_data(self.templates,soft_delete=True)
+			self.template_viewer.updateGL()
+	
 	
 	def set_interactive_threshold(self,val):
 		if self.interactive_threshold == val: return
@@ -566,8 +686,8 @@ class SwarmBoxer:
 		if self.auto_update: 
 			self.auto_box(image_name)
 		else:
+			self.cache_new_state()
 			self.cache_to_database()
-		self.panel_object.enable_auto_box(True)
 		
 	def get_subsample_rate(self):
 		return int(math.ceil(float(self.particle_diameter)/float(SWARM_TEMPLATE_MIN)))
@@ -647,7 +767,9 @@ class SwarmBoxer:
 	   	boxes.sort(compare_box_correlation) # sorting like this will often put large ice contaminations in a group, thanks Pawel Penczek
 		self.target().add_boxes(boxes)
 		
-		if cache: self.cache_to_database()
+		if cache:
+			self.cache_new_state()
+			self.cache_to_database()
 	
 	def update_opt_picking_data(self):
 		self.profile = None
@@ -673,7 +795,7 @@ class SwarmBoxer:
 				for j in xrange(0,len(self.profile)):
 					if profile[j] < self.profile[j]: self.profile[j] = profile[j]
 				
-		max_radius =  int(len(self.profile)*self.profile_max)
+		max_radius =  int(len(self.profile)*SwarmBoxer.PROFILE_MAX)
 		tmp = self.profile[0]
 		self.profile_trough_point = 0
 		for i in range(1,max_radius):
@@ -722,14 +844,15 @@ class SwarmEventHandling(SwarmBoxer):
 		self.auto_box_name = "auto"
 	
 	def unique_name(self): return "Swarm"
-	
+		
 	def set_current_file(self,file_name):
 		'''
 		If the behavior of this Handler does not if the file changes, but the function needs to be supplied 
 		'''
 		if self.current_file != file_name:
-			self.handle_file_change(file_name,self.current_file)
 			self.current_file = file_name
+			self.handle_file_change(file_name)
+			
 	
 	def get_2d_window(self): return self.target().get_2d_window()
 	
