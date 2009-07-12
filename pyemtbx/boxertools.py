@@ -897,6 +897,7 @@ class CoarsenedFlattenedImage:
 		if shrink <= 1.0:
 			self.smallimage = tmp.copy()
 		else:
+			print "fft resample"
 			#self.smallimage = tmp.process("math.meanshrink",{"n":shrink})
 			self.smallimage = tmp.process("math.fft.resample",{"n":shrink}) # avoids aliasing but risks Fourier artifacts. I haven't noticed any artifacts and avoid no aliaising makes the objects appear nicely in the low resolution images
 			#self.smallimage.process_inplace("filter.ramp")
@@ -1724,7 +1725,18 @@ class Boxable:
 			
 			if verbose: print "writing",self.num_boxes(),"box coordinates to file",boxname
 			
+			
+		  	invshrink = 1.0/self.get_subsample_rate()
+			exclusionimage = self.get_exclusion_image()
+			
+			
 			for box in self.boxes:
+				x = int((box.xcorner+box.xsize/2.0)*invshrink)
+				y = int((box.ycorner+box.ysize/2.0)*invshrink)
+				
+				if ( exclusionimage.get(x,y) != 0):
+#					print "excluded"
+					continue 
 				if box_size != -1:
 					# FOO - this will not work if the box dimensions are not equal..
 					origbox_size = box.xsize
@@ -1801,7 +1813,18 @@ class Boxable:
 			
 			if verbose:	print "writing",self.num_boxes(),"boxed images to", image_name
 			
+
+		  	invshrink = 1.0/self.get_subsample_rate()
+			exclusionimage = self.get_exclusion_image()
+						
 			for box in self.boxes:
+				x = int((box.xcorner+box.xsize/2.0)*invshrink)
+				y = int((box.ycorner+box.ysize/2.0)*invshrink)
+				
+				if ( exclusionimage.get(x,y) != 0):
+#					print "excluded",x,y,invshrink
+					continue 
+				
 				if box_size != -1:
 					# FOO - this will not work if the box dimensions are not equal..
 					origbox_size = box.xsize

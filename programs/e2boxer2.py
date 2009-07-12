@@ -68,101 +68,6 @@ a refactoring of e2boxer
 	module.add_2d_window_mouse_tool(SwarmEventHandling,SwarmPanel,particle_diameter=options.boxsize)
 	application.execute()
 
-
-class SwarmPanel:
-	def __init__(self,target,particle_diameter=128):
-		self.busy = True
-		self.particle_diameter = particle_diameter
-		self.target = weakref.ref(target)
-		self.widget = None
-		self.busy = False
-		
-	def icon(self):
-		from PyQt4 import QtGui
-		return QtGui.QIcon(get_image_directory() + "swarm_icon.png")
-		
-	def get_widget(self):
-		if self.widget == None:
-			from PyQt4 import QtCore, QtGui, Qt
-			self.widget = QtGui.QWidget()
-			vbl = QtGui.QVBoxLayout(self.widget)
-			vbl.setMargin(0)
-			vbl.setSpacing(6)
-			vbl.setObjectName("vbl")
-			
-			hbl = QtGui.QHBoxLayout()
-			hbl.addWidget(QtGui.QLabel("Particle Diameter:"))
-			
-			self.ptcl_diam_edit = QtGui.QLineEdit(str(self.particle_diameter))
-			hbl.addWidget(self.ptcl_diam_edit)
-			vbl.addLayout(hbl)
-			
-			self.thrbut = QtGui.QRadioButton("Threshold")
-			self.selbut = QtGui.QRadioButton("Selective")
-			self.selbut.setChecked(True)
-			self.morselbut = QtGui.QRadioButton("More Selective")
-			
-			self.methodhbox = QtGui.QHBoxLayout()
-			self.methodhbox.addWidget(self.thrbut)
-			self.methodhbox.addWidget(self.selbut)
-			self.methodhbox.addWidget(self.morselbut)
-			
-			self.groupbox = QtGui.QGroupBox("Auto Box Method")
-			self.groupbox.setLayout(self.methodhbox)
-			vbl.addWidget(self.groupbox)
-			
-			self.advanced_hbl2 = QtGui.QHBoxLayout()
-			self.enable_interactive_params  = QtGui.QCheckBox("Interactive Threshold")
-			self.enable_interactive_params.setChecked(False) #FIXME should this be related to the state of the autoboxer?
-			self.thr = ValSlider(None,(0.0,3.0),"")
-			self.thr.setValue(1.0)
-			self.thr.setEnabled(False)
-			self.advanced_hbl2.addWidget(self.enable_interactive_params)
-			self.advanced_hbl2.addWidget(self.thr)
-			vbl.addLayout(self.advanced_hbl2)
-			
-			hbl_ww = QtGui.QHBoxLayout()
-			self.update_template = QtGui.QCheckBox("Update Template")
-			self.update_template.setChecked(True)
-			hbl_ww.addWidget(self.update_template)
-			
-			
-			self.view_template=QtGui.QPushButton("View Template")
-			hbl_ww.addWidget(self.view_template)
-			self.clear=QtGui.QPushButton("Clear")
-			hbl_ww.addWidget(self.clear)
-		
-			vbl.addLayout(hbl_ww)
-		
-			QtCore.QObject.connect(self.ptcl_diam_edit,QtCore.SIGNAL("editingFinished()"),self.new_ptcl_diam)
-			QtCore.QObject.connect(self.update_template,QtCore.SIGNAL("clicked(bool)"),self.update_template_checked)
-			QtCore.QObject.connect(self.clear, QtCore.SIGNAL("clicked(bool)"), self.clear_clicked)
-			
-		return self.widget
-	
-	def new_ptcl_diam(self):
-		if self.busy: return
-		print "yo"
-		
-	def update_template_checked(self,val):
-		if self.busy: return
-		print "yo"
-		
-	def hide(self):
-		if self.widget != None:
-			self.widget.hide()
-	
-	def clear_clicked(self,val):
-		self.target().clear_all()
-
-class SwarmShrunkenImageMediator:
-	def __init__(self,template_radius,subsample_rate):
-		self.template_radius = template_radius
-		self.subsample_rate = subsample_rate
-	
-	def get_template_radius(self): return self.template_radius
-	def get_subsample_rate(self): return self.subsample_rate
-
 def gen_rot_ave_template(image_name,ref_boxes,shrink,box_size,iter=4):
 	
 	ptcls = []
@@ -220,6 +125,15 @@ def gen_rot_ave_template(image_name,ref_boxes,shrink,box_size,iter=4):
 		
 	return averages
 
+
+class SwarmShrunkenImageMediator:
+	def __init__(self,template_radius,subsample_rate):
+		self.template_radius = template_radius
+		self.subsample_rate = subsample_rate
+	
+	def get_template_radius(self): return self.template_radius
+	def get_subsample_rate(self): return self.subsample_rate
+
 class SwarmFLCFImageMediator:
 	def __init__(self,template_radius,subsample_rate,template_image):
 		self.template_radius = template_radius
@@ -238,7 +152,8 @@ class SwarmFLCFImageMediator:
 		
 		def get_template(self): return self.template_image
 
-		def get_radius(self): return 
+		def get_radius(self): return
+		
 class SwarmBox:
 	def __init__(self,x,y,image_name,in_template=True,profile=None):
 		self.x = x
@@ -278,8 +193,202 @@ class SwarmBox:
 		if self.peak_score != None:
 			# store the profile
 			self.profile = BoxingTools.get_min_delta_profile(correlation,self.peak_x,self.peak_y, mediator.get_template_radius() )
+	
+	
+class SwarmPanel:
+	def __init__(self,target,particle_diameter=128):
+		self.busy = True
+		self.particle_diameter = particle_diameter
+		self.target = weakref.ref(target)
+		self.widget = None
+		self.busy = False
 		
+	def icon(self):
+		from PyQt4 import QtGui
+		return QtGui.QIcon(get_image_directory() + "swarm_icon.png")
+		
+	def get_widget(self):
+		if self.widget == None:
+			from PyQt4 import QtCore, QtGui, Qt
+			self.widget = QtGui.QWidget()
+			vbl = QtGui.QVBoxLayout(self.widget)
+			vbl.setMargin(0)
+			vbl.setSpacing(6)
+			vbl.setObjectName("vbl")
+			
+			hbl = QtGui.QHBoxLayout()
+			ptcl_diam_label = QtGui.QLabel("Particle Diameter:")
+			ptcl_diam_label.setToolTip("An estimate of the particle diameter - this used by Swarm for automatically shrinking, and for estimating parameters.")
+			hbl.addWidget(ptcl_diam_label)
+			
+			self.ptcl_diam_edit = QtGui.QLineEdit(str(self.particle_diameter))
+			hbl.addWidget(self.ptcl_diam_edit)
+			self.clear=QtGui.QPushButton("Clear Boxes")
+			self.clear.setToolTip("Clear boxes generated by the Swarm mode.")
+			hbl.addWidget(self.clear)
+			
+			vbl.addLayout(hbl)
+			
+			self.thrbut = QtGui.QRadioButton(SwarmBoxer.THRESHOLD)
+			self.selbut = QtGui.QRadioButton(SwarmBoxer.SELECTIVE)
+			self.selbut.setChecked(True)
+			self.morselbut = QtGui.QRadioButton(SwarmBoxer.MORESELECTIVE)
+			
+			self.method_group = QtGui.QButtonGroup()
+			self.method_group.addButton(self.thrbut)
+			self.method_group.addButton(self.selbut)
+			self.method_group.addButton(self.morselbut)
+			
+			self.methodhbox = QtGui.QHBoxLayout()
+			self.methodhbox.addWidget(self.thrbut)
+			self.methodhbox.addWidget(self.selbut)
+			self.methodhbox.addWidget(self.morselbut)
+			
+			self.groupbox = QtGui.QGroupBox("Auto Box Method")
+			self.groupbox.setToolTip("Tell Swarm what criteria to use for selecting particles.")
+			self.groupbox.setLayout(self.methodhbox)
+			vbl.addWidget(self.groupbox)
+			
+			hbl_ww = QtGui.QHBoxLayout()
+			self.view_template=QtGui.QPushButton( QtGui.QIcon(get_image_directory() + "pp_boxer_icon.png"),"View Template")
+			self.view_template.setEnabled(False)
+			self.view_template.setToolTip("View the template that is being used (if more than one template is shown, it is the last one).")
+			hbl_ww.addWidget(self.view_template)
+			
+			self.autobox=QtGui.QPushButton(QtGui.QIcon(get_image_directory() + "green_boxes.png"),"Autobox")
+			self.autobox.setEnabled(False)
+			self.autobox.setToolTip("Force Swarm to autobox the current image")
+			hbl_ww.addWidget(self.autobox)
+			
+			vbl.addLayout(hbl_ww)
+			
+			hbl_aa = QtGui.QHBoxLayout()
+			self.update_template = QtGui.QCheckBox("Refresh Template")
+			self.update_template.setToolTip("Whether or not the act of adding a reference should force an update of the template being used by Swarm.\nOnce you have an adequate template you can turn this off and interactive picking will be faster.")
+			self.update_template.setChecked(True)
+			hbl_aa.addWidget(self.update_template)
+			
+			
+			self.auto_update = QtGui.QCheckBox("Auto Box Update")
+			self.auto_update.setToolTip("Whether or not autoboxing should occur every time you change a parameter. This is the old dynapix button.")
+			self.auto_update.setChecked(True)
+			hbl_aa.addWidget(self.auto_update)
+			vbl.addLayout(hbl_aa)
+			
+			
+			self.advanced_hbl2 = QtGui.QHBoxLayout()
+			self.enable_interactive_threshold  = QtGui.QCheckBox("Interactive Threshold")
+			self.enable_interactive_threshold.setToolTip("Tweak the correlation threshold that is used to select particles.")
+			self.enable_interactive_threshold.setChecked(False)
+			self.thr = ValSlider(None,(0.0,3.0),"")
+			self.thr.setValue(1.0)
+			self.thr.setEnabled(False)
+			self.advanced_hbl2.addWidget(self.enable_interactive_threshold)
+			self.advanced_hbl2.addWidget(self.thr)
+			vbl.addLayout(self.advanced_hbl2)
+			
+			hbl_bb = QtGui.QHBoxLayout()
+			self.step_back=QtGui.QPushButton("Step Back")
+			self.step_back.setToolTip("Recall the previous Swarm states")
+			self.step_back.setEnabled(False)
+			hbl_bb.addWidget(self.step_back)
+			self.step_forward=QtGui.QPushButton("Step Forward")
+			self.step_forward.setToolTip("Undo a step back")
+			self.step_forward.setEnabled(False)
+			hbl_bb.addWidget(self.step_forward)
+			vbl.addLayout(hbl_bb)
+			
+		
+			QtCore.QObject.connect(self.ptcl_diam_edit,QtCore.SIGNAL("editingFinished()"),self.new_ptcl_diam)
+			QtCore.QObject.connect(self.update_template,QtCore.SIGNAL("clicked(bool)"),self.update_template_checked)
+			QtCore.QObject.connect(self.auto_update,QtCore.SIGNAL("clicked(bool)"),self.auto_update_checked)
+			QtCore.QObject.connect(self.clear, QtCore.SIGNAL("clicked(bool)"), self.clear_clicked)
+			QtCore.QObject.connect(self.view_template, QtCore.SIGNAL("clicked(bool)"), self.view_template_clicked)
+			QtCore.QObject.connect(self.autobox, QtCore.SIGNAL("clicked(bool)"), self.auto_box_clicked)
+			QtCore.QObject.connect(self.method_group,QtCore.SIGNAL("buttonClicked (QAbstractButton *)"),self.method_group_clicked)
+			QtCore.QObject.connect(self.enable_interactive_threshold, QtCore.SIGNAL("clicked(bool)"), self.interact_thresh_clicked)
+			QtCore.QObject.connect(self.thr,QtCore.SIGNAL("sliderReleased"),self.new_threshold_release)
+			QtCore.QObject.connect(self.step_back, QtCore.SIGNAL("clicked(bool)"), self.step_back_clicked)
+			QtCore.QObject.connect(self.step_forward, QtCore.SIGNAL("clicked(bool)"), self.step_forward_clicked)
+			
+		return self.widget
+	
+	def new_threshold_release(self,val):
+		val = float(val)
+		print val,"new"
+		self.target().set_interactive_threshold(val)
+	
+	def interact_thresh_clicked(self,val):
+		self.thr.setEnabled(val)
+		print val, "t clicked"
+		if val == False:
+			self.target().disable_interactive_threshold()
+	
+	def set_picking_data(self,threshold,profile=[],trough_point=None):
+		self.busy = True
+		self.thr.setValue(threshold)
+		help = ""
+		if len(profile) > 0:
+			help += "The Swarm profile is ["
+			for i,p in enumerate(profile):
+				if i != 0: help += " "
+				help += "%.3f" %p
+				
+			help += "]\n"
+				
+		if trough_point: 
+			help += "The trough point is " + str(trough_point) + "."
+		
+		self.thr.setToolTip(help)
+		self.busy = False
+	
+	def new_ptcl_diam(self):
+		if self.busy: return
+		self.target().set_particle_diameter(int(self.ptcl_diam_edit.text()))
+		
+	def update_template_checked(self,val):
+		if self.busy: return
+		self.target().set_update_template(val)
+		
+	def hide(self):
+		if self.widget != None:
+			self.widget.hide()
+	
+	def clear_clicked(self,val):
+		self.target().clear_all()
+		
+	def method_group_clicked(self,button):
+		if self.busy: return
+		self.target().set_pick_mode(str(button.text()))	
+		
+	def view_template_clicked(self,val):
+		self.target().view_template_clicked()
+		
+	def auto_box_clicked(self,val):
+		self.target().auto_box_clicked()
 
+	def enable_view_template(self,val):
+		self.view_template.setEnabled(val)
+		
+	def auto_update_checked(self,val):
+		if self.busy: return
+		self.target().set_auto_update(val)
+	
+	def enable_auto_box(self,val):
+		self.autobox.setEnabled(val)
+		
+	def	step_back_clicked(self,val):
+		self.target().step_back()
+	
+	def step_forward_clicked(self,val):
+		self.target().step_forward()
+		
+	def enable_step_back(self,val):
+		self.step_back.setEnabled(val)
+		
+	def enable_step_forward(self,val):
+		self.step_forward.setEnabled(val)
+	
 def compare_box_correlation(box1,box2):
 	c1 = box1[3]
 	c2 = box2[3]
@@ -292,45 +401,197 @@ class SwarmBoxer:
 	THRESHOLD = "Threshold"
 	SELECTIVE = "Selective"
 	MORESELECTIVE = "More Selective"
+	CACHE_MAX = 10
 	def __init__(self,particle_diameter=128):
 		self.particle_diameter = particle_diameter
-		self.update_template = True
+		self.update_template = True # Tied to the SwarmPanel - Whether or not the act of adding a reference should force an update of the template
 		self.pick_mode = SwarmBoxer.SELECTIVE	# the autobox method - see EMData::BoxingTools for more details
-		self.profile_mode = BoxingTools.CmpMode.SWARM_AVERAGE_RATIO # the way a profile is generated
-		BoxingTools.set_mode(self.profile_mode)
-		self.interactive_threshold_enabled = False
-		self.interactive_threshold = None
+		self.interactive_threshold = None  # Tied to the SwarmPanel -  this is a float when the user is playing with the threshold, but is None elsewise
 		self.profile_max = 0.8 # this is a percentage - it stops the profile trough point from going to the end
+		self.reset() # the first time this is called this establishes attribute variables - seeing as the function is required more than once it makes sense to do this
+		self.auto_update = True # Tied to the SwarmPanel - this is the historical 'dynapix' button. It means that if any picking parameter is altered then autoboxing will be automatically triggered 
+		self.signal_template_update = False
 		
-		self.reset()
+		BoxingTools.set_mode(BoxingTools.CmpMode.SWARM_AVERAGE_RATIO) # this probably never needs to change - this mode has the best statistics
+	
+		self.template_viewer = None
 		
+		self.swarm_cache = [] # this will stored lists that store the parameters necessary to reconstruct a swarm boxer
+		self.redo_cache = [] # this will store the redo things
+		
+	
+	def to_list(self):
+		l = [self.ref_boxes,self.templates,self.profile,self.peak_score,self.profile_trough_point,self.profile_max,self.particle_diameter,self.update_template]
+		l.extend([self.pick_mode, self.interactive_threshold,self.auto_update,self.signal_template_update])
+		import copy
+		return copy.deepcopy(l)
+	
+	def step_back(self):
+		l = self.swarm_cache.pop(-1)
+		self.redo_cache.append(l)
+
+		self.target().clear_boxes(["ref","auto"])
+		if len(self.swarm_cache) > 0:
+			self.load_from_list(self.swarm_cache[-1])
+			boxes = [ [box.x, box.y, "ref", box.peak_score] for box in self.ref_boxes ]
+			self.target().add_boxes(boxes)
+			self.target().get_2d_window().updateGL()
+			if len(self.ref_boxes) > 0:
+				self.auto_box(self.target().current_file(),cache=False)
+		else:
+			self.reset()
+			self.panel_object.enable_step_back(False)
+			self.target().get_2d_window().updateGL()
+		
+		
+		
+		
+	def step_forward(self):
+		pass
+	
+	def cache_to_database(self):
+		if len(self.swarm_cache) >= SwarmBoxer.CACHE_MAX: self.swarm_cache.pop(0)
+		self.swarm_cache.append(self.to_list())
+		set_database_entry(self.target().current_file(),"swarm",self.swarm_cache)
+		self.panel_object.enable_step_back(True)
+		
+	def handle_file_change(self,file_name,old_file_name):
+		return	
+		self.swarm_cache = get_database_entry(file_name,"swarm",dfl=[])
+		if len(self.swarm_cache) > 0:
+			self.load_from_list(self.swarm_cache[-1])
+			
+	def load_from_list(self,l):
+		self.ref_boxes = l[0]
+		self.templates = l[1]
+		self.profile = l[2]
+		self.peak_score = l[3]
+		self.profile_trough_point = l[4]
+		self.profile_max = l[5]
+		self.particle_diameter = l[6]
+		self.update_template = l[7]
+		self.pick_mode = l[8]
+		self.interactive_threshold = l[9]
+		self.auto_update = l[10]
+		self.signal_template_update = l[11]
+		
+	def __del__(self):
+		if self.template_viewer != None:
+			self.template_viewer.closeEvent(None)
+			self.template_viewer = None
 	
 	def reset(self):
 		self.ref_boxes = []
-		self.template_change = False
 		self.templates = None
 		self.profile = None
 		self.peak_score = None
 		self.profile_trough_point = None
 		self.profile_max = 0.8 # this is a percentage - it stops the profile trough point from going to the end
+	
+	def set_interactive_threshold(self,val):
+		if self.interactive_threshold == val: return
 		
+		self.interactive_threshold = val
+		if self.auto_update:
+			self.auto_box(self.target().current_file(), parameter_update=True, force_remove_auto_boxes=True)
+	
+	def disable_interactive_threshold(self):
+
+		self.interactive_threshold = None
+		if self.auto_update:
+			self.auto_box(self.target().current_file(), parameter_update=True, force_remove_auto_boxes=True)
+	
+	def view_template_clicked(self):
+		'''
+		Loads an EMImageMXModule for viewing (if it doesn't already exist)
+		Brings the template viewer to the foreground
+		'''
+		if self.template_viewer == None:
+			from emimagemx import EMImageMXModule
+			self.template_viewer = EMImageMXModule()
+			self.template_viewer.desktop_hint = "rotor" # this is to make it work in the desktop
+				
+			self.template_viewer.set_data(self.templates,soft_delete=True) # should work if self.templates is None
+			self.template_viewer.update_window_title("Templates")
+			from PyQt4 import QtCore
+			QtCore.QObject.connect(self.template_viewer.emitter(),QtCore.SIGNAL("module_closed"),self.template_viewer_closed)
+			
+		get_application().show_specific(self.template_viewer)
+		
+	def template_viewer_closed(self):
+		self.template_viewer = None
+		
+	def set_update_template(self,val):
+		'''
+		Whether or not the act of adding a reference should for an update of the template
+		@param val a boolena
+		'''
+		self.update_template = val
+	
+	def set_auto_update(self,val):
+		'''
+		Whether or not picked boxes should be updated when parameters are changed
+		@param val a boolean 
+		'''
+		self.auto_update = val
+	
+	def set_particle_diameter(self,diameter):
+		'''
+		set the particle diameter, which should be an int
+		@param diameter the approximate diameter of the particle
+		'''
+		if diameter != self.particle_diameter:
+			self.particle_diameter = diameter
+			self.signal_template_update = True
+			if self.auto_update: self.auto_box(self.target().current_file())
+		
+	def set_pick_mode(self,mode):
+		'''
+		Sets self.pick_mode
+		@param mode should be in SwarmBoxer.THRESHOLD, SwarmBoxer.SELECTIVE, SwarmBoxer.MORESELECTIVE 
+		'''
+		if mode not in [SwarmBoxer.THRESHOLD, SwarmBoxer.SELECTIVE, SwarmBoxer.MORESELECTIVE ]: raise RuntimeError("%s is an unknown SwarmBoxer mode" %mode)
+		if mode != self.pick_mode:
+			self.pick_mode = mode
+			if self.auto_update:
+				self.auto_box(self.target().current_file(), parameter_update=False, force_remove_auto_boxes=True)
+	
 	def add_ref(self,x,y,image_name):
 		self.ref_boxes.append(SwarmBox(x,y,image_name,self.update_template))
-		if not self.template_change: self.template_change = self.update_template # this is safe
-	
-	def get_subsample_rate(self): 
+		if self.update_template: self.signal_template_update = True
+
+		self.target().add_box(x,y,type="ref")
+		self.get_2d_window().updateGL()
+		
+		if self.auto_update: 
+			self.auto_box(image_name)
+		else:
+			self.cache_to_database()
+		self.panel_object.enable_auto_box(True)
+		
+	def get_subsample_rate(self):
 		return int(math.ceil(float(self.particle_diameter)/float(SWARM_TEMPLATE_MIN)))
 	
-	def auto_box(self,image_name,exclusion_image):
+	def auto_box_clicked(self):
+		self.auto_box(self.target().current_file(),force_remove_auto_boxes=True)
+	
+	def auto_box(self,image_name,parameter_update=True,force_remove_auto_boxes=False,cache=True):
 		
-		self.target().get_2d_window().updateGL()
-		shrink = self.get_subsample_rate()
-		if self.template_change:
+		if self.signal_template_update or force_remove_auto_boxes:
+			self.target().clear_boxes(["auto"])
+			self.get_2d_window().updateGL()
+		
+		if self.signal_template_update:
 			self.templates = gen_rot_ave_template(image_name,self.ref_boxes,self.get_subsample_rate(),self.particle_diameter)
-			self.template_change = False
-#			for template in self.templates:
-#				template.write_image("template.hdf",-1)
-	   	  
+			self.panel_object.enable_view_template(True)
+			self.signal_template_update = False
+			if self.template_viewer != None:
+				self.template_viewer.set_data(self.templates,soft_delete=True)
+				self.template_viewer.updateGL()
+				
+		shrink = self.get_subsample_rate()		
+
+		exclusion_image = self.target().get_exclusion_image(mark_boxes=True)
 		
 		mediator = SwarmFLCFImageMediator(self.particle_diameter/(shrink*2),shrink,self.templates[-1])
 		correlation_image = FLCFImageCache.get_image(image_name,mediator)
@@ -339,7 +600,7 @@ class SwarmBoxer:
 		
 		if shrink != exclusion_shrink:
 			# to do: test this
-			print "weird",shrink,exclusion_shrink,self.particle_diameter, SWARM_TEMPLATE_MIN,TEMPLATE_MIN
+			print "shrink changed does this work?",shrink,exclusion_shrink,self.particle_diameter, SWARM_TEMPLATE_MIN,TEMPLATE_MIN
 			rescale = float(exclusion_shrink)/shrink
 			oldx = exclusion_image.get_xsize()
 			oldy = exclusion_image.get_ysize()
@@ -357,20 +618,20 @@ class SwarmBoxer:
 				
 		for box in self.ref_boxes:
 			box.update_picking_data(mediator)
-				
-		self.update_opt_picking_data()
+		
+		if parameter_update:
+			self.update_opt_picking_data()
 		
 		if self.pick_mode == SwarmBoxer.THRESHOLD: mode = 0
 		elif self.pick_mode == SwarmBoxer.SELECTIVE: mode = 1
 		elif self.pick_mode == SwarmBoxer.MORESELECTIVE: mode = 2
-				
+		
 		searchradius = self.templates[-1].get_xsize()/2
 		correlation = FLCFImageCache.get_image(image_name,mediator)
-		soln = BoxingTools.auto_correlation_pick(correlation,self.peak_score,searchradius,self.profile,exclusion_image,self.profile_lower_point,mode)
+		soln = BoxingTools.auto_correlation_pick(correlation,self.peak_score,searchradius,self.profile,exclusion_image,self.profile_trough_point,mode)
 		
 		scaled_template = self.templates[-1].process("math.transform.scale",{"scale":shrink,"clip":self.particle_diameter})
 		scaled_template.process_inplace("xform.centeracf")
-
 		boxes = []
 		for b in soln:
 			x = b[0]
@@ -385,20 +646,26 @@ class SwarmBoxer:
 
 	   	boxes.sort(compare_box_correlation) # sorting like this will often put large ice contaminations in a group, thanks Pawel Penczek
 		self.target().add_boxes(boxes)
+		
+		if cache: self.cache_to_database()
 	
 	def update_opt_picking_data(self):
 		self.profile = None
 		self.peak_score = None
-		self.profile_lower_point = None
+		self.profile_trough_point = None
 		
 		for box in self.ref_boxes:
-			if box.peak_score == None: continue
 			
-			if self.peak_score == None or box.peak_score < self.peak_score:
-				self.peak_score = box.peak_score
+			if self.interactive_threshold != None: 
+				self.peak_score = self.interactive_threshold
+			else:
+				if box.peak_score == None: continue
+				
+				if self.peak_score == None or box.peak_score < self.peak_score:
+					self.peak_score = box.peak_score
 		
 			from copy import copy
-			if self.profile == None: self.profile = copy(box.profile)
+			if self.profile == None: self.profile = copy(box.profile)  # or else I'd alter it and muck everything up
 			else:
 				if len(self.profile) != len(box.profile): raise RuntimeError("This should never happen")
 				
@@ -408,11 +675,23 @@ class SwarmBoxer:
 				
 		max_radius =  int(len(self.profile)*self.profile_max)
 		tmp = self.profile[0]
-		self.profile_lower_point = 0
+		self.profile_trough_point = 0
 		for i in range(1,max_radius):
 			if self.profile[i] > tmp and tmp > 0:
 				tmp = self.profile[i]
-				self.profile_lower_point = i
+				self.profile_trough_point = i
+				
+		self.panel_object.set_picking_data(self.peak_score, self.profile, self.profile_trough_point)
+		
+	
+	def clear_all(self):
+		self.target().clear_boxes(["ref","auto"])
+		self.reset()
+		self.panel_object.enable_view_template(False)
+		self.panel_object.enable_auto_box(False)
+		if self.template_viewer != None: self.template_viewer.set_data(None)
+		self.cache_to_database()
+		
 		
 	def center_propagate(self,box,image_name,template,box_size):
 	  	global BigImageCache
@@ -436,13 +715,24 @@ class SwarmEventHandling(SwarmBoxer):
 	def __init__(self,target,panel_object=None,particle_diameter=128):
 		SwarmBoxer.__init__(self,particle_diameter)
 		self.target = weakref.ref(target)
+		self.panel_object = panel_object
+		self.current_file = None # the name of the file that is being studied in the main viewer
 		
 		self.ref_box_name = "ref"
 		self.auto_box_name = "auto"
-		
+	
 	def unique_name(self): return "Swarm"
 	
+	def set_current_file(self,file_name):
+		'''
+		If the behavior of this Handler does not if the file changes, but the function needs to be supplied 
+		'''
+		if self.current_file != file_name:
+			self.handle_file_change(file_name,self.current_file)
+			self.current_file = file_name
+	
 	def get_2d_window(self): return self.target().get_2d_window()
+	
 	def set_panel_object(self,panel): self.panel_object = panel
 		
 	def mouse_move(self,event):
@@ -456,11 +746,7 @@ class SwarmEventHandling(SwarmBoxer):
 		from PyQt4.QtCore import Qt
 		if box_num == -1:
 			if event.modifiers()&Qt.ShiftModifier : return # the user tried to delete nothing
-			self.target().add_box(m[0],m[1],type="ref")
-			self.target().clear_boxes(["auto"])
-			self.get_2d_window().updateGL()
 			self.add_ref(m[0],m[1],self.target().current_file())
-			self.auto_box(self.target().current_file(),self.target().get_exclusion_image(mark_boxes=True))
 		else:
 			pass
 #			box_type = self.target().get_box_type(box_num)
@@ -482,9 +768,6 @@ class SwarmEventHandling(SwarmBoxer):
 	def mouse_up(self,event) :
 		pass
 	
-	def clear_all(self):
-		self.target().clear_boxes(["ref","auto"])
-		self.reset()
 
 if __name__ == "__main__":
 	main()

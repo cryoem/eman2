@@ -135,7 +135,6 @@ def set_database_entry(image_name,key,value,database="bdb:e2boxercache"):
 	'''
 	write a key/object pair to the Image Database Dictionary associat
 	'''
-	
 	db = db_open_dict(database+"#"+key)
 	db[image_name] = value
 	
@@ -383,11 +382,17 @@ class EraseEventHandling:
 		self.erase_value = 0.1			# erase mode can be either Boxable.ERASE or Boxable.UNERASE
 		self.erase_radius = erase_radius
 	
-	def unique_name(self): return "Eraser"
+	def unique_name(self): return "Erase"
 	
 	def set_panel_object(self,panel): self.panel_object = panel
 		
 	def set_erase_radius(self,val): self.erase_radius = val
+	
+	def set_current_file(self,file_name):
+		'''
+		If the behavior of this Handler does not if the file changes, but the function needs to be supplied 
+		'''
+		pass
 	
 	def toggle_unerase(self,val):
 		if val: self.erase_value = 0.0
@@ -450,7 +455,13 @@ class ManualBoxingEventHandling:
 		self.moving = None
 		
 	def set_panel_object(self,panel): self.panel_object = panel
-	def unique_name(self): return "Manual Boxing"
+	def unique_name(self): return "Manual"
+	
+	def set_current_file(self,file_name):
+		'''
+		If the behavior of this Handler does not if the file changes, but the function needs to be supplied 
+		'''
+		pass
 		
 	def get_2d_window(self): return self.target().get_2d_window()
 		
@@ -516,6 +527,9 @@ class Main2DWindowEventHandling:
 			self.mouse_handler = self.mouse_handlers[name]
 		except:
 			print "unknown handler",name
+	
+	def set_current_file(self,file_name):
+		for value in self.mouse_handlers.values(): value.set_current_file(file_name)
 			
 	def add_mouse_handler(self,handler,name):
 		self.mouse_handlers[name] = handler
@@ -734,7 +748,7 @@ class EMBox:
 		elif self.type == "ref":
 			r,g,b = 0,0,0
 		elif self.type == "auto":
-			r,g,b = 0,1,0
+			r,g,b = 0.4,0.9,0.4 # historical green, the original color
 		else: raise RuntimeError("Unknown type")
 		from emshape import EMShape
 		shape = EMShape([shape_string,r,g,b,self.x-box_size/2,self.y-box_size/2,self.x+box_size/2,self.y+box_size/2,2.0])
@@ -750,6 +764,7 @@ class EMBoxList:
 	'''
 	A list of boxes
 	'''
+	CACHE_SIZE = 10
 	def __init__(self,target=None):
 		if target: self.target=weakref.ref(target)
 		else: self.target = None # someone is using this incognito
@@ -760,7 +775,6 @@ class EMBoxList:
 		self.shape_string = "rectpoint" # for making shapes
 		
 		self.undo_cache = []
-		self.undo_cache_length = 10
 		self.redo_cache = []	
 	
 	def get_boxes(self): return self.boxes
@@ -793,7 +807,7 @@ class EMBoxList:
 	def is_undoable(self): return len(self.undo_cache) > 0
 	
 	def cache_old_boxes(self):
-		if len(self.undo_cache) > self.undo_cache_length: self.undo_cache.pop(0)
+		if len(self.undo_cache) >= EMBoxList.CACHE_SIZE: self.undo_cache.pop(0)
 		self.undo_cache.append([[box.x,box.y,box.type] for box in self.boxes])
 		self.redo_cache = []
 	
@@ -1221,6 +1235,7 @@ class EMBoxerModule:
 		em = events_manager(self,**kargs)
 		panel = panel(em,**kargs)
 		em.set_panel_object(panel)
+		if self.current_idx != None: em.set_current_file(self.current_file())
 		self.signal_slot_handlers["2d_window"].add_mouse_handler(em,em.unique_name())
 		self.inspector.add_mouse_tool(panel,em.unique_name())
 		
@@ -1237,6 +1252,9 @@ class EMBoxerModule:
 		get_application().setOverrideCursor(QtCore.Qt.BusyCursor)
 		
 		if not file_exists(file_name): raise RuntimeError("The file %s does not exist" %file_name)
+		
+		self.signal_slot_handlers["2d_window"].set_current_file(file_name)
+		
 		if self.main_2d_window != None:
 
 	   	   	self.load_2d_window_display(file_name)
@@ -1409,7 +1427,7 @@ class EMBoxerModule:
 		
 		
 	def set_main_2d_mouse_mode(self,mode):
-		if self.main_2d_window != None: 
+		if self.main_2d_window != None:
 			self.main_2d_window.add_eraser_shape("None",None)
 			self.main_2d_window.updateGL()
 		self.signal_slot_handlers["2d_window"].set_mouse_mode(mode)
@@ -1610,7 +1628,6 @@ class EMBoxerInspector(QtGui.QWidget):
 		self.busy = True
 		self.tool_dynamic_vbl = None # this will be used to dynamic add widgets as the buttons are changed
 		self.dynamic_box_button_widget = None # this will be used to dynamic add widgets as the buttons are changed
-		self.mouse_tools = {}
 		 
 		QtGui.QWidget.__init__(self,None)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"eman.png"))
@@ -1839,68 +1856,23 @@ class EMBoxerInspector(QtGui.QWidget):
 		
 		self.tool_button_group_box = QtGui.QGroupBox("Tools")
 		self.tool_button_group_box_vbl = QtGui.QVBoxLayout(self.tool_button_group_box)
-		
-		self.tool_button_group = QtGui.QButtonGroup()			
-		self.tool_button_hbl=QtGui.QHBoxLayout()
-		self.tool_button_hbl.setMargin(0)
-		self.tool_button_hbl.setSpacing(2)
-
-		self.tool_button_group_box_vbl.addLayout(self.tool_button_hbl,0)
-		
+#		
 		self.tool_dynamic_vbl = QtGui.QVBoxLayout()
+		self.tool_tabs = QtGui.QTabWidget()
+		self.tool_dynamic_vbl.addWidget(self.tool_tabs)
 		self.tool_button_group_box_vbl.addLayout(self.tool_dynamic_vbl,1)
 		layout.addWidget(self.tool_button_group_box,0,)
-		
-		QtCore.QObject.connect(self.tool_button_group,QtCore.SIGNAL("buttonClicked (QAbstractButton *)"),self.tool_button_group_clicked)
+			
+		QtCore.QObject.connect(self.tool_tabs,QtCore.SIGNAL("currentChanged(int)"),self.tool_tab_changed)
 	
 	def add_mouse_tool(self,mouse_tool,name):
-		
-		button=QtGui.QPushButton(mouse_tool.icon(),"")
-		button.setToolTip(name)
-		button.setObjectName(name)
-		button.setCheckable(1)
-		self.tool_button_hbl.addWidget(button)
-		self.tool_button_group.addButton(button)
-		self.mouse_tools[name] = mouse_tool
-		if len(self.mouse_tools) == 1:
-			button.setChecked(True)
-			widget = self.mouse_tools[name].get_widget()
-			if widget != None:
-				self.dynamic_box_button_widget = widget
-			
-				self.dynamic_box_button_widget.setObjectName(name)
-				self.tool_dynamic_vbl.addWidget(self.dynamic_box_button_widget)
-				self.dynamic_box_button_widget.show()
+		widget = mouse_tool.get_widget()
+		self.tool_tabs.addTab(widget,mouse_tool.icon(),name)		
 		self.update()
+		
+	def tool_tab_changed(self,idx):
+		self.target().set_main_2d_mouse_mode(str(self.tool_tabs.tabText(idx)))
 
-	def tool_button_group_clicked(self,i):
-		if self.busy: return
-		name = str(i.objectName())
-		old_name = None
-		
-		if self.dynamic_box_button_widget != None:
-			old_name = str(self.dynamic_box_button_widget.objectName())
-			
-		if name == old_name: return
-		
-		if self.dynamic_box_button_widget:
-			if not self.mouse_tools.has_key(old_name): raise RuntimeError("Error, code has altered and now it does not work")
-			
-			self.tool_dynamic_vbl.removeWidget(self.dynamic_box_button_widget)
-			self.mouse_tools[old_name].hide()
-			self.dynamic_box_button_widget = None
-
-		widget = self.mouse_tools[name].get_widget()
-		if widget != None:
-			self.dynamic_box_button_widget = widget
-		
-			self.dynamic_box_button_widget.setObjectName(name)
-			self.tool_dynamic_vbl.addWidget(self.dynamic_box_button_widget)
-			self.dynamic_box_button_widget.show()
-		self.vbl.update()
-			
-		self.target().set_main_2d_mouse_mode(name)
-	
 	def get_desktop_hint(self):
 		return "inspector"
 	

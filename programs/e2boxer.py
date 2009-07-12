@@ -972,35 +972,32 @@ class RawDatabaseAutoBoxer:
 		
 		for i,image_name in enumerate(image_names):
 			
-			if not options.just_output:
+			try:
+				data = project_db[get_idd_key(image_name)]
+				
+				trim_autoboxer = project_db[data["autoboxer_unique_id"]]["autoboxer"]
+				autoboxer = SwarmAutoBoxer(None)
+				autoboxer.become(trim_autoboxer)
+				print 'using cached autoboxer db'
+			except:
 				try:
-					data = project_db[get_idd_key(image_name)]
-					
-					trim_autoboxer = project_db[data["autoboxer_unique_id"]]["autoboxer"]
-					autoboxer = SwarmAutoBoxer(None)
-					autoboxer.become(trim_autoboxer)
-					print 'using cached autoboxer db'
+					print "using most recent autoboxer"
+					if project_db["current_autoboxer_type"]=="Gauss":
+						trim_autoboxer = project_db["current_autoboxer"]
+						autoboxer = PawelAutoBoxer(None)
+						autoboxer.become(trim_autoboxer)
+					else:
+						trim_autoboxer = project_db["current_autoboxer"]
+						autoboxer = SwarmAutoBoxer(None)
+						autoboxer.become(trim_autoboxer)
 				except:
-					try:
-						print "using most recent autoboxer"
-						if project_db["current_autoboxer_type"]=="Gauss":
-							trim_autoboxer = project_db["current_autoboxer"]
-							autoboxer = PawelAutoBoxer(None)
-							autoboxer.become(trim_autoboxer)
-						else:
-							trim_autoboxer = project_db["current_autoboxer"]
-							autoboxer = SwarmAutoBoxer(None)
-							autoboxer.become(trim_autoboxer)
-					except:
-						print "Error - there seems to be no autoboxing information in the database - autobox interactively first - bailing"
-						if self.logid:  E2progress(self.logid,1.0)
-						return
-				autoboxer.set_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
-			else:
-				autoboxer = None
-			
+					print "Error - there seems to be no autoboxing information in the database - autobox interactively first - bailing"
+					if self.logid:  E2progress(self.logid,1.0)
+					return
+			autoboxer.set_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
+		
 			boxable = Boxable(image_name,None,autoboxer)
-			
+			boxable.set_autoboxer(autoboxer)
 			if boxable.is_excluded():
 				print "Image",image_name,"is excluded and being ignored"
 				continue
