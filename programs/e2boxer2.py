@@ -35,6 +35,7 @@ from emboxerbase import *
 from valslider import ValSlider
 from EMAN2 import BoxingTools,gm_time_string,Transform
 from pyemtbx.boxertools import CoarsenedFlattenedImageCache,FLCFImageCache
+from copy import deepcopy
 
 SWARM_TEMPLATE_MIN = TEMPLATE_MIN # this comes from emboxerbase
 
@@ -313,7 +314,6 @@ class SwarmPanel:
 		return self.widget
 	
 	def update_states(self,swarm_boxer):
-		print "updating panel states", swarm_boxer.particle_diameter
 		self.busy = True
 		self.ptcl_diam_edit.setText(str(swarm_boxer.particle_diameter))
 		mode = swarm_boxer.pick_mode
@@ -487,8 +487,7 @@ class SwarmBoxer:
 		'''
 		l = [self.ref_boxes,self.templates,self.profile,self.peak_score,self.profile_trough_point,self.particle_diameter,self.update_template]
 		l.extend([self.pick_mode, self.interactive_threshold,self.auto_update, gm_time_string()])
-		import copy
-		return copy.deepcopy(l)
+		return deepcopy(l)
 		
 	def load_from_list(self,l):
 		'''
@@ -497,6 +496,7 @@ class SwarmBoxer:
 		See the comments in self.to_list for more details.
 		@param l a list that was almost certainly generated, at some point in time, but a call to self.to_list
 		'''
+		
 		self.ref_boxes = l[0]
 		self.templates = l[1]
 		self.profile = l[2]
@@ -510,6 +510,7 @@ class SwarmBoxer:
 		# entry 10 is not required, it is the creation stamp used to ascertain if common boxer instances are being used by different images, it has no relevance to interactive boxing
 		
 	def step_back(self):
+		
 		if len(self.step_back_cache) == 0: raise RuntimeError("Step backward cache has no entries")
 		l = self.step_back_cache.pop(-1)
 		self.step_fwd_cache.append(l)
@@ -528,19 +529,23 @@ class SwarmBoxer:
 		if self.template_viewer != None:
 			self.template_viewer.set_data(self.templates,soft_delete=True)
 			self.template_viewer.updateGL()
-			
+		
+#		self.debug_back("back")
+		
+	def debug_back(self,s):
+		for i,c in enumerate(self.step_back_cache):
+			for j,b in enumerate(c[0]):
+				print s,i,j,b.in_template
+		print "---"
 	def handle_box_states_changed(self):
 		self.target().clear_boxes(["ref","auto"])
-		for b in self.ref_boxes:
-			print "a", b.in_template
-		self.load_from_list(self.step_back_cache[-1])
+#		self.debug_back("hb a")
+		self.load_from_list(deepcopy(self.step_back_cache[-1]))
 		boxes = [ [box.x, box.y, "ref", box.peak_score] for box in self.ref_boxes if box.image_name == self.current_file ]
-		for b in self.ref_boxes:
-			print "b", b.in_template
-		print "---"
+#		self.debug_back("hb b")
 		self.target().add_boxes(boxes)
 		self.target().get_2d_window().updateGL()
-		if len(self.ref_boxes) > 0:
+		if self.templates != None:
 			self.auto_box(self.target().current_file(),cache=False)
 			
 	def step_forward(self):
@@ -554,8 +559,8 @@ class SwarmBoxer:
 		self.step_back_cache.append(l)
 
 		self.target().clear_boxes(["ref","auto"])
-		self.load_from_list(self.step_back_cache[-1])
-		boxes = [ [box.x, box.y, "ref", box.peak_score] for box in self.ref_boxes ]
+		self.load_from_list(deepcopy(self.step_back_cache[-1]))
+		boxes = [ [box.x, box.y, "ref", box.peak_score] for box in self.ref_boxes if box.image_name == self.current_file]
 		self.target().add_boxes(boxes)
 		self.target().get_2d_window().updateGL()
 		if len(self.ref_boxes) > 0:
@@ -567,22 +572,19 @@ class SwarmBoxer:
 			self.template_viewer.updateGL()
 		
 	def cache_new_state(self):
-		print "cache new states"
-		for b in self.ref_boxes:
-			print "cache", b.in_template
-		print "---"
+#		self.debug_back("cache enter")
 		self.step_back_cache.append(self.to_list())
 		self.step_fwd_cache = []
 		self.panel_object.enable_step_forward(False)
 		self.panel_object.enable_step_back(True,len(self.step_back_cache))
 		if len(self.step_back_cache) >= SwarmBoxer.CACHE_MAX: self.step_back_cache.pop(0)
-	
+#		self.debug_back("cache exit")
+		
 	def cache_to_database(self):		
 		set_database_entry(self.target().current_file(),"swarm_boxers",self.step_back_cache)
 		set_database_entry(self.target().current_file(),"swarm_fwd_boxers",self.step_fwd_cache)
 		
 	def handle_file_change(self,file_name):
-		print "handle file change"
 		l = None
 		if self.auto_update and len(self.step_back_cache) > 0:
 			l = self.to_list()
@@ -600,7 +602,7 @@ class SwarmBoxer:
 			self.cache_to_database()
 			self.handle_box_states_changed()
 		else:
-			if len(self.step_back_cache): self.load_from_list(self.step_back_cache[-1])
+			if len(self.step_back_cache): self.load_from_list(deepcopy(self.step_back_cache[-1]))
 
 		self.panel_object.update_states(self)
 		if self.template_viewer != None:
@@ -612,13 +614,13 @@ class SwarmBoxer:
 		if self.interactive_threshold == val: return
 		
 		self.interactive_threshold = val
-		if self.auto_update:
+		if self.auto_update and self.templates != None:
 			self.auto_box(self.target().current_file(), parameter_update=True, force_remove_auto_boxes=True)
 	
 	def disable_interactive_threshold(self):
 
 		self.interactive_threshold = None
-		if self.auto_update:
+		if self.auto_update and self.templates != None:
 			self.auto_box(self.target().current_file(), parameter_update=True, force_remove_auto_boxes=True)
 	
 	def view_template_clicked(self):
@@ -663,7 +665,7 @@ class SwarmBoxer:
 		if diameter != self.particle_diameter:
 			self.particle_diameter = diameter
 			self.signal_template_update = True
-			if self.auto_update: self.auto_box(self.target().current_file())
+			if self.auto_update and self.templates != None: self.auto_box(self.target().current_file())
 		
 	def set_pick_mode(self,mode):
 		'''
@@ -673,7 +675,7 @@ class SwarmBoxer:
 		if mode not in [SwarmBoxer.THRESHOLD, SwarmBoxer.SELECTIVE, SwarmBoxer.MORESELECTIVE ]: raise RuntimeError("%s is an unknown SwarmBoxer mode" %mode)
 		if mode != self.pick_mode:
 			self.pick_mode = mode
-			if self.auto_update:
+			if self.auto_update and self.templates != None:
 				self.auto_box(self.target().current_file(), parameter_update=False, force_remove_auto_boxes=True)
 	
 	def add_ref(self,x,y,image_name):
@@ -720,7 +722,7 @@ class SwarmBoxer:
 		
 		if shrink != exclusion_shrink:
 			# to do: test this
-			print "shrink changed does this work?",shrink,exclusion_shrink,self.particle_diameter, SWARM_TEMPLATE_MIN,TEMPLATE_MIN
+			#print "shrink changed does this work?",shrink,exclusion_shrink,self.particle_diameter, SWARM_TEMPLATE_MIN,TEMPLATE_MIN
 			rescale = float(exclusion_shrink)/shrink
 			oldx = exclusion_image.get_xsize()
 			oldy = exclusion_image.get_ysize()
