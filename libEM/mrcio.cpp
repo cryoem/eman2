@@ -208,20 +208,20 @@ int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool )
 	dict["nz"] = zlen;
 
 	if (area) {
-		dict["origin_row"] = mrch.xorigin + mrch.xlen * area->origin[0];
-		dict["origin_col"] = mrch.yorigin + mrch.xlen * area->origin[1];
+		dict["origin_x"] = mrch.xorigin + mrch.xlen * area->origin[0];
+		dict["origin_y"] = mrch.yorigin + mrch.xlen * area->origin[1];
 
 		if (area->get_ndim() == 3 && mrch.nz > 1) {
-			dict["origin_sec"] = mrch.zorigin + mrch.xlen * area->origin[2];
+			dict["origin_z"] = mrch.zorigin + mrch.xlen * area->origin[2];
 		}
 		else {
-			dict["origin_sec"] = mrch.zorigin;
+			dict["origin_z"] = mrch.zorigin;
 		}
 	}
 	else {
-		dict["origin_row"] = mrch.xorigin;
-		dict["origin_col"] = mrch.yorigin;
-		dict["origin_sec"] = mrch.zorigin;
+		dict["origin_x"] = mrch.xorigin;
+		dict["origin_y"] = mrch.yorigin;
+		dict["origin_z"] = mrch.zorigin;
 	}
 
 	dict["MRC.nxstart"] = mrch.nxstart;
@@ -349,14 +349,14 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 		mrch.zorigin = d["tz"];
 	}
 	else {
-		mrch.xorigin = (float)dict["origin_row"];
-		mrch.yorigin = (float)dict["origin_col"];
+		mrch.xorigin = (float)dict["origin_x"];
+		mrch.yorigin = (float)dict["origin_y"];
 
 		if (is_new_file) {
-			mrch.zorigin = (float)dict["origin_sec"];
+			mrch.zorigin = (float)dict["origin_z"];
 		}
 		else {
-			mrch.zorigin = (float) dict["origin_sec"] - (float) dict["apix_z"] * image_index;
+			mrch.zorigin = (float) dict["origin_z"] - (float) dict["apix_z"] * image_index;
 		}
 	}
 

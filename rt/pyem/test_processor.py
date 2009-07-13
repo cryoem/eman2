@@ -1898,9 +1898,9 @@ class TestProcessor(unittest.TestCase):
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
-        e.set_attr('origin_row', 32)
-        e.set_attr('origin_col', 32)
-        e.set_attr('origin_sec', 32)
+        e.set_attr('origin_x', 32)
+        e.set_attr('origin_y', 32)
+        e.set_attr('origin_z', 32)
         
         e2 = EMData()
         e2.set_size(64,48,32)

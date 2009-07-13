@@ -104,7 +104,7 @@ template <> Factory < Processor >::Factory()
 
 	force_add(&BinaryOperateProcessor<MaxPixelOperator>::NEW);
 	force_add(&BinaryOperateProcessor<MinPixelOperator>::NEW);
-	
+
 	force_add(&PaintProcessor::NEW);
 	force_add(&WatershedProcessor::NEW);
 	force_add(&MaskSharpProcessor::NEW);
@@ -193,7 +193,7 @@ template <> Factory < Processor >::Factory()
 	force_add(&AutoMask3D2Processor::NEW);
 	force_add(&AddMaskShellProcessor::NEW);
 	force_add(&AutoMaskAsymUnit::NEW);
-	
+
 	force_add(&CTFSNRWeightProcessor::NEW);
 
 	force_add(&ToMassCenterProcessor::NEW);
@@ -388,7 +388,7 @@ void FourierAnlProcessor::process_inplace(EMData * image)
 
 // 	int array_size = FFTRADIALOVERSAMPLE * image->get_ysize();
 // 	float step=0.5f/array_size;
-// 
+//
 // 	vector < float >yarray(array_size);
 
 
@@ -462,15 +462,15 @@ void HighpassFourierProcessor::preprocess(EMData * image)
 void SNREvalProcessor::process_inplace(EMData * image)
 {
 	int ys=image->get_ysize();
-	
+
 	EMData *mask1=new EMData(ys,ys,1);
 	mask1->process_inplace("mask.gaussian",Dict("outer_radius", ys/2.0));
 	EMData *mask2=mask1->copy();
 	mask2->mult(-1.0f);
 	mask2->add(1.0);
 	mask2->process_inplace("mask.decayedge2d",Dict("width",4));
-	
-/*	
+
+/*
 
 
 
@@ -1623,7 +1623,7 @@ void FFTResampleProcessor::process_inplace(EMData * image)
 
 	image->scale_pixel(sample_rate);
 	image->update();
-	
+
 
 }
 
@@ -5222,10 +5222,10 @@ void ToMassCenterProcessor::process_inplace(EMData * image)
 			dz = -(int)(floor(com[1] + 0.5f) - nz / 2);
 		}
 		image->translate(dx, dy, dz);
-		
+
 		Transform t;
 		t.set_trans(dx,dy,dz);
-		
+
 		if (nz > 1) {
 			image->set_attr("xform.align3d",&t);
 		} else {
@@ -5240,10 +5240,10 @@ void ToMassCenterProcessor::process_inplace(EMData * image)
 			dz = -(com[2] - nz / 2);
 		}
 		image->translate(dx, dy, dz);
-		
+
 		Transform t;
 		t.set_trans(dx,dy,dz);
-		
+
 		if (nz > 1) {
 			image->set_attr("xform.align3d",&t);
 		} else {
@@ -5269,19 +5269,19 @@ void PhaseToMassCenterProcessor::process_inplace(EMData * image)
 		int dx=-int(pcog[0]+0.5f),dy=0,dz=0;
 		if ( dims >= 2 ) dy = -int(pcog[1]+0.5);
 		if ( dims == 3 ) dz = -int(pcog[2]+0.5);
-		
+
 		Transform t;
 		t.set_trans(dx,dy,dz);
 		if (dims == 3) image->set_attr("xform.align3d",&t);
 		else if (dims == 2) image->set_attr("xform.align2d",&t);
-		
+
 		image->translate(dx,dy,dz);
 	} else  {
 		float dx=-pcog[0],dy=0.0,dz=0.0;
 		if ( dims >= 2 ) dy = -pcog[1];
 		if ( dims == 3 ) dz = -pcog[2];
 		image->translate(dx,dy,dz);
-		
+
 		Transform t;
 		t.set_trans(dx,dy,dz);
 		if (dims == 3) image->set_attr("xform.align3d",&t);
@@ -5661,13 +5661,13 @@ void CoordinateMaskFileProcessor::process_inplace(EMData * image)
 	float apix = image->get_attr("apix_x");
 	float apixm = msk->get_attr("apix_x");
 
-	float xo = image->get_attr("origin_row");
-	float yo = image->get_attr("origin_col");
-	float zo = image->get_attr("origin_sec");
+	float xo = image->get_attr("origin_x");
+	float yo = image->get_attr("origin_y");
+	float zo = image->get_attr("origin_z");
 
-	float xom = msk->get_attr("origin_row");
-	float yom = msk->get_attr("origin_col");
-	float zom = msk->get_attr("origin_sec");
+	float xom = msk->get_attr("origin_x");
+	float yom = msk->get_attr("origin_y");
+	float zom = msk->get_attr("origin_z");
 
 	float *dp = image->get_data();
 	float *dpm = msk->get_data();
@@ -6375,9 +6375,9 @@ using std::ostream_iterator;
 void CTFSNRWeightProcessor::process_inplace(EMData* image) {
 	if (params.has_key("noise")==false) throw InvalidParameterException("You must supply the noise argument");
 	if (params.has_key("snr")==false) throw InvalidParameterException("You must supply the snr argument");
-	
+
 	float boost = params.set_default("boost",1.0f);
-	
+
 	if (!image->is_complex()) {
 		image->do_fft_inplace();
 	}
@@ -6386,15 +6386,15 @@ void CTFSNRWeightProcessor::process_inplace(EMData* image) {
 	vector<float> sf = cpy->calc_radial_dist(cpy->get_ysize()/2,0.0,1.0,1);
 	transform(sf.begin(),sf.end(),sf.begin(),sqrtf);
 	delete cpy;
-	
+
 	image->ri2ap();
-	
+
 	vector<float> noise = params["noise"];
 	vector<float> snr = params["snr"];
-	
+
 // 	copy(snr.begin(), snr.end(), ostream_iterator<float>(cout, "\n"));
 // 	copy(noise.begin(), noise.end(), ostream_iterator<float>(cout, "\n"));
-	
+
 	for(vector<float>::iterator it = noise.begin(); it != noise.end(); ++it){
 		if ((*it) == 0) *it = 1;
 	}
@@ -6408,7 +6408,7 @@ void CTFSNRWeightProcessor::process_inplace(EMData* image) {
 // 	copy(noise.begin(), noise.end(), ostream_iterator<float>(cout, "\n"));
 
 	int i = static_cast<int>(snr.size());
-	
+
 	float * d = image->get_data();
 	int nx = image->get_xsize();
 // 	int ny = image->get_ysize();
@@ -6426,23 +6426,23 @@ void CTFSNRWeightProcessor::process_inplace(EMData* image) {
 				ry = (float)nyon2 - (float)y;
 				rz = (float)nzon2 - (float)z;
 				length = static_cast<int>(sqrt(rx*rx + ry*ry + rz*rz));
-				
+
 				twox = 2*x;
 				size_t idx1 = twox + y*nx+z*nxy;
 				if (length >= i || length >= (int)sf.size()) {
 					d[idx1] = 0;
-					continue; 
+					continue;
 				} else {
 					amp = boost*snr[length];
 // 					if (amp > 0) amp =sqrtf(amp);
 // 					else amp = 0;
 				}
-				
+
 				if (sf[length] == 0) {
 					d[idx1] = 0;
-					continue; 
+					continue;
 				}
-				
+
 // 				size_t idx2 = idx1 + 1;
 // 				cout << d[idx1] << " " << sf[length] << endl;
 				d[idx1] /= sf[length];
@@ -6464,9 +6464,9 @@ void CTFSNRWeightProcessor::process_inplace(EMData* image) {
 }
 
 void TestImageFourierNoiseProfile::process_inplace(EMData * image) {
-	
+
 	if (params.has_key("profile")==false) throw InvalidParameterException("You must supply the profile argument");
-	
+
 	if (!image->is_complex()) {
 		int nx = image->get_xsize();
 		int offset = 2 - nx%2;
@@ -6479,12 +6479,12 @@ void TestImageFourierNoiseProfile::process_inplace(EMData * image) {
 	}
 	image->to_zero();
 	image->ri2ap();
-	
+
 	vector<float> profile = params["profile"];
 	transform(profile.begin(),profile.end(),profile.begin(),sqrtf);
-	
+
 	int i = static_cast<int>(profile.size());
-	
+
 	float * d = image->get_data();
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
@@ -6501,12 +6501,12 @@ void TestImageFourierNoiseProfile::process_inplace(EMData * image) {
 				ry = (float)nyon2 - (float)y;
 				rz = (float)nzon2 - (float)z;
 				length = static_cast<int>(sqrt(rx*rx + ry*ry + rz*rz));
-				
+
 				twox = 2*x;
 				size_t idx1 = twox + y*nx+z*nxy;
 				size_t idx2 = idx1 + 1;
-				
-				
+
+
 				if (length >= i) {
 					d[idx1] = 0;
 					d[idx2] = 0;
@@ -6515,7 +6515,7 @@ void TestImageFourierNoiseProfile::process_inplace(EMData * image) {
 				amp = profile[length];
 				phase = Util::get_frand(0,1)*2*M_PI;
 
-				
+
 				d[idx1] = amp;
 				d[idx2] = phase;
 
@@ -7954,9 +7954,9 @@ void TransformProcessor::update_emdata_attributes(EMData* const p, const Dict& a
 
 	float inv_scale = 1.0f/scale;
 	vector<string> inv_scale_attrs;
-	inv_scale_attrs.push_back("origin_row");
-	inv_scale_attrs.push_back("origin_col");
-	inv_scale_attrs.push_back("origin_sec");
+	inv_scale_attrs.push_back("origin_x");
+	inv_scale_attrs.push_back("origin_y");
+	inv_scale_attrs.push_back("origin_z");
 
 	for(vector<string>::const_iterator it = inv_scale_attrs.begin(); it != inv_scale_attrs.end(); ++it) {
 		if (attr_dict.has_key(*it)) {

@@ -249,8 +249,8 @@ int PifIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 		dict["mean"] = static_cast < float >(pih.mean);
 		dict["sigma"] = static_cast < float >(pih.sigma);
 
-		dict["origin_row"] = static_cast < float >(pih.xorigin);
-		dict["origin_col"] = static_cast < float >(pih.yorigin);
+		dict["origin_x"] = static_cast < float >(pih.xorigin);
+		dict["origin_y"] = static_cast < float >(pih.yorigin);
 	}
 
 	EXITFUNC;
@@ -335,8 +335,8 @@ int PifIO::write_header(const Dict & dict, int image_index, const Region* area,
 	pih.mean = dict["mean"];
 	pih.sigma = dict["sigma"];
 
-	pih.xorigin = dict["origin_row"];
-	pih.yorigin = dict["origin_col"];
+	pih.xorigin = dict["origin_x"];
+	pih.yorigin = dict["origin_y"];
 
 	sprintf(pih.time, "%d/%02d/%02d %d:%02d",
 			t->tm_mon, t->tm_mday, t->tm_year, t->tm_hour, t->tm_min);

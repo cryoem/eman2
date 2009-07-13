@@ -970,9 +970,9 @@ void PointArray::set_from_density_map(EMData * map, int num, float thresh, float
 	int nx = map->get_xsize(), ny = map->get_ysize(), nz = map->get_zsize();
 	float origx, origy, origz;
 	try {
-		origx = map->get_attr("origin_row");
-		origy = map->get_attr("origin_col");
-		origz = map->get_attr("origin_sec");
+		origx = map->get_attr("origin_x");
+		origy = map->get_attr("origin_y");
+		origz = map->get_attr("origin_z");
 	}
 	catch(...) {
 		origx = -nx / 2 * apix;
@@ -1090,9 +1090,9 @@ EMData *PointArray::pdb2mrc_by_summation(int map_size, float apix, float res)
 	map->set_attr("apix_x", apix);
 	map->set_attr("apix_y", apix);
 	map->set_attr("apix_z", apix);
-	map->set_attr("origin_row", -map_size/2*apix);
-	map->set_attr("origin_col", -map_size/2*apix);
-	map->set_attr("origin_sec", -map_size/2*apix);
+	map->set_attr("origin_x", -map_size/2*apix);
+	map->set_attr("origin_y", -map_size/2*apix);
+	map->set_attr("origin_z", -map_size/2*apix);
 
 	return map;
 }
@@ -1320,9 +1320,9 @@ EMData *PointArray::pdb2mrc_by_nfft(int , float , float )
 	map->set_attr("apix_x", apix);
 	map->set_attr("apix_y", apix);
 	map->set_attr("apix_z", apix);
-	map->set_attr("origin_row", -map_size/2*apix);
-	map->set_attr("origin_col", -map_size/2*apix);
-	map->set_attr("origin_sec", -map_size/2*apix);
+	map->set_attr("origin_x", -map_size/2*apix);
+	map->set_attr("origin_y", -map_size/2*apix);
+	map->set_attr("origin_z", -map_size/2*apix);
 	if( fft )
 	{
 		delete fft;
@@ -1402,9 +1402,9 @@ EMData *PointArray::pdb2mrc_by_nfft(int , float , float )
 	map->set_attr("apix_x", apix);
 	map->set_attr("apix_y", apix);
 	map->set_attr("apix_z", apix);
-	map->set_attr("origin_row", -map_size / 2 * apix);
-	map->set_attr("origin_col", -map_size / 2 * apix);
-	map->set_attr("origin_sec", -map_size / 2 * apix);
+	map->set_attr("origin_x", -map_size / 2 * apix);
+	map->set_attr("origin_y", -map_size / 2 * apix);
+	map->set_attr("origin_z", -map_size / 2 * apix);
 	if( fft )
 	{
 		delete fft;

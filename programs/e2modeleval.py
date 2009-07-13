@@ -53,9 +53,9 @@ Evaluates density at C-alpha positions from a model"""
 		if line[:4]=='ATOM':
 			if line[11:15].strip() =="CA":
 				lines.append(line)
-				x.append((float(line[30:38].strip())-inputmrc["origin_row"])/apix)
-				y.append((float(line[38:46].strip())-inputmrc["origin_col"])/apix)
-				z.append((float(line[46:54].strip())-inputmrc["origin_sec"])/apix)
+				x.append((float(line[30:38].strip())-inputmrc["origin_x"])/apix)
+				y.append((float(line[38:46].strip())-inputmrc["origin_y"])/apix)
+				z.append((float(line[46:54].strip())-inputmrc["origin_z"])/apix)
 				resID.append(line[17:20].strip())
 	#do watershed where seeds are x,y,z
 	print "doing watershed"

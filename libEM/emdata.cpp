@@ -518,12 +518,12 @@ void EMData::clip_inplace(const Region & area,const float& fill_value)
 // 	cout << "dst_begin is " << dst_it_begin << " src begin is " << src_it_begin << endl;
 
 	// Update appropriate attributes (Copied and pasted from get_clip)
-	if( attr_dict.has_key("origin_row") && attr_dict.has_key("origin_col") &&
-	attr_dict.has_key("origin_sec") )
+	if( attr_dict.has_key("origin_x") && attr_dict.has_key("origin_y") &&
+	attr_dict.has_key("origin_z") )
 	{
-		float xorigin = attr_dict["origin_row"];
-		float yorigin = attr_dict["origin_col"];
-		float zorigin = attr_dict["origin_sec"];
+		float xorigin = attr_dict["origin_x"];
+		float yorigin = attr_dict["origin_y"];
+		float zorigin = attr_dict["origin_z"];
 
 		float apix_x = attr_dict["apix_x"];
 		float apix_y = attr_dict["apix_y"];
@@ -611,12 +611,12 @@ EMData *EMData::get_clip(const Region & area, const float fill) const
 	if( attr_dict.has_key("apix_x") && attr_dict.has_key("apix_y") &&
 		attr_dict.has_key("apix_z") )
 	{
-		if( attr_dict.has_key("origin_row") && attr_dict.has_key("origin_col") &&
-		    attr_dict.has_key("origin_sec") )
+		if( attr_dict.has_key("origin_x") && attr_dict.has_key("origin_y") &&
+		    attr_dict.has_key("origin_z") )
 		{
-			float xorigin = attr_dict["origin_row"];
-			float yorigin = attr_dict["origin_col"];
-			float zorigin = attr_dict["origin_sec"];
+			float xorigin = attr_dict["origin_x"];
+			float yorigin = attr_dict["origin_y"];
+			float zorigin = attr_dict["origin_z"];
 
 			float apix_x = attr_dict["apix_x"];
 			float apix_y = attr_dict["apix_y"];
@@ -660,9 +660,9 @@ EMData *EMData::get_top_half() const
 	EMUtil::em_memcpy(half_data, &(get_data()[nz / 2 * nx * ny]), sizeof(float) * nx * ny * nz / 2);
 
 	float apix_z = attr_dict["apix_z"];
-	float origin_sec = attr_dict["origin_sec"];
-	origin_sec += apix_z * nz / 2;
-	half->attr_dict["origin_sec"] = origin_sec;
+	float origin_z = attr_dict["origin_z"];
+	origin_z += apix_z * nz / 2;
+	half->attr_dict["origin_z"] = origin_z;
 	half->update();
 
 	EXITFUNC;
@@ -1089,9 +1089,9 @@ void EMData::rotate_translate(const Transform3D & RA)
 
 	scale_pixel(inv_scale);
 
-	attr_dict["origin_row"] = (float) attr_dict["origin_row"] * inv_scale;
-	attr_dict["origin_col"] = (float) attr_dict["origin_col"] * inv_scale;
-	attr_dict["origin_sec"] = (float) attr_dict["origin_sec"] * inv_scale;
+	attr_dict["origin_x"] = (float) attr_dict["origin_x"] * inv_scale;
+	attr_dict["origin_y"] = (float) attr_dict["origin_y"] * inv_scale;
+	attr_dict["origin_z"] = (float) attr_dict["origin_z"] * inv_scale;
 
 	update();
 	all_translation += translation;
@@ -2822,9 +2822,9 @@ EMData * EMAN::operator/(const EMData & a, const EMData & b)
 
 void EMData::set_xyz_origin(float origin_x, float origin_y, float origin_z)
 {
-	attr_dict["origin_row"] = origin_x;
-	attr_dict["origin_col"] = origin_y;
-	attr_dict["origin_sec"] = origin_z;
+	attr_dict["origin_x"] = origin_x;
+	attr_dict["origin_y"] = origin_y;
+	attr_dict["origin_z"] = origin_z;
 }
 
 #if 0

@@ -250,15 +250,15 @@ class EMIsosurfaceModule(EMImage3DGUIModule):
 		
 		#d = data.get_attr_dict()
 		#x,y,z,act = 0,0,0,False
-		#if d.has_key("origin_row"):
+		#if d.has_key("origin_x"):
 			
-			#x =  d["origin_row"]/d["apix_x"] + data.get_xsize()/2
+			#x =  d["origin_x"]/d["apix_x"] + data.get_xsize()/2
 			#act = True
-		#if d.has_key("origin_col"):
-			#y =  d["origin_col"]/d["apix_y"] + data.get_ysize()/2
+		#if d.has_key("origin_y"):
+			#y =  d["origin_y"]/d["apix_y"] + data.get_ysize()/2
 			#act = True
-		#if d.has_key("origin_sec"):
-			#z =  d["origin_sec"]/d["apix_z"] + data.get_zsize()/2
+		#if d.has_key("origin_z"):
+			#z =  d["origin_z"]/d["apix_z"] + data.get_zsize()/2
 			#act = True
 
 		if not self.inspector or self.inspector == None:

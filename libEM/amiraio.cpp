@@ -143,8 +143,8 @@ int AmiraIO::read_header(Dict & dict, int, const Region *, bool)
 				dict["apix_x"] = pixel;
 				dict["apix_y"] = pixel;
 				dict["apix_z"] = pixel;
-				dict["origin_row"] = xorigin;
-				dict["origin_col"] = yorigin;
+				dict["origin_x"] = xorigin;
+				dict["origin_y"] = yorigin;
 //				printf("pixel=%g: xorigin=%g yorigin=%g \n", pixel, xorigin, yorigin);
 			}
 		}
@@ -158,9 +158,9 @@ int AmiraIO::read_header(Dict & dict, int, const Region *, bool)
 				dict["apix_x"] = pixel;
 				dict["apix_y"] = pixel;
 				dict["apix_z"] = pixel;
-				dict["origin_row"] = xorigin;
-				dict["origin_col"] = yorigin;
-				dict["origin_sec"] = zorigin;
+				dict["origin_x"] = xorigin;
+				dict["origin_y"] = yorigin;
+				dict["origin_z"] = zorigin;
 //				printf("pixel=%g: xorigin=%g yorigin=%g zorigin=%g\n", pixel, xorigin, yorigin, zorigin);
 			}
 		}
@@ -202,11 +202,11 @@ int AmiraIO::write_header(const Dict & dict, int image_index, const Region*, EMU
 	nz = dict["nz"];
 
 	float xorigin = 0.0f;
-	if(dict.has_key("origin_row")) xorigin = dict["origin_row"];
+	if(dict.has_key("origin_x")) xorigin = dict["origin_x"];
 	float yorigin = 0.0f;
-	if(dict.has_key("origin_col")) yorigin = dict["origin_col"];
+	if(dict.has_key("origin_y")) yorigin = dict["origin_y"];
 	float zorigin = 0.0f;
-	if(dict.has_key("origin_sec")) zorigin = dict["origin_sec"];
+	if(dict.has_key("origin_z")) zorigin = dict["origin_z"];
 	float pixel = 0.0f;
 	if(dict.has_key("apix_x")) pixel = dict["apix_x"];
 

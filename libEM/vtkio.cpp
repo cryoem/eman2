@@ -5,32 +5,32 @@
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
 
 #include <cstring>
@@ -49,7 +49,7 @@ VtkIO::VtkIO(const string & vtk_filename, IOMode rw)
 {
 	is_big_endian = ByteOrder::is_host_big_endian();
 	is_new_file = false;
-	
+
 	datatype = DATATYPE_UNKNOWN;
 	filetype = VTK_UNKNOWN;
 	nx = 0;
@@ -98,7 +98,7 @@ void VtkIO::init()
 		if (!is_valid(&buf)) {
 			throw ImageReadException(filename, "invalid VTK");
 		}
-		
+
 		if (fgets(buf, bufsz, vtk_file) == 0) {
 			throw ImageReadException(filename, "read VTK file failed");
 		}
@@ -126,7 +126,7 @@ void VtkIO::init()
 		else {
 			throw ImageReadException(filename, "read VTK file failed");
 		}
-		
+
 		while (fgets(buf, bufsz, vtk_file)) {
 			if (samestr(buf, "SCALARS")) {
 				char datatypestr[32];
@@ -178,7 +178,7 @@ int VtkIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 
 	//single image format, index can only be zero
 	image_index = 0;
-	check_read_access(image_index);	
+	check_read_access(image_index);
 	check_region(area, IntSize(nx, ny, nz));
 
 	int xlen = 0, ylen = 0, zlen = 0;
@@ -194,9 +194,9 @@ int VtkIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	dict["apix_y"] = spacingy;
 	dict["apix_z"] = spacingz;
 
-	dict["origin_row"] = originx;
-	dict["origin_col"] = originy;
-	dict["origin_sec"] = originz;
+	dict["origin_x"] = originx;
+	dict["origin_y"] = originy;
+	dict["origin_z"] = originz;
 
 	EXITFUNC;
 	return 0;
@@ -206,7 +206,7 @@ int VtkIO::write_header(const Dict & dict, int image_index, const Region*,
 						EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
-	
+
 	//single image format, index can only be zero
 	image_index = 0;
 	check_write_access(rw_mode, image_index);
@@ -215,9 +215,9 @@ int VtkIO::write_header(const Dict & dict, int image_index, const Region*,
 	ny = dict["ny"];
 	nz = dict["nz"];
 
-	originx = dict["origin_row"];
-	originy = dict["origin_col"];
-	originz = dict["origin_sec"];
+	originx = dict["origin_x"];
+	originy = dict["origin_y"];
+	originz = dict["origin_z"];
 
 	spacingx = dict["apix_x"];
 	spacingy = dict["apix_y"];
@@ -240,7 +240,7 @@ int VtkIO::write_header(const Dict & dict, int image_index, const Region*,
 int VtkIO::read_data(float *data, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
-	
+
 	//single image format, index can only be zero
 	image_index = 0;
 	check_read_access(image_index, data);
@@ -257,7 +257,7 @@ int VtkIO::read_data(float *data, int image_index, const Region * area, bool)
 	EMUtil::get_region_origins(area, &x0, &y0, &z0, nz, image_index);
 
 	if (filetype == VTK_ASCII) {
-	
+
 		int bufsz = nx * get_mode_size(datatype) * CHAR_BIT;
 		char *buf = new char[bufsz];
 		int i = 0;
@@ -286,14 +286,14 @@ int VtkIO::read_data(float *data, int image_index, const Region * area, bool)
 	else if (filetype == VTK_BINARY) {
 		int nxy = nx * ny;
 		int row_size = nx * get_mode_size(datatype);
-		
+
 		for (int i = 0; i < nz; i++) {
 			int i2 = i * nxy;
 			for (int j = 0; j < ny; j++) {
 				fread(&data[i2 + j * nx], row_size, 1, vtk_file);
 			}
 		}
-		
+
 		if (!ByteOrder::is_host_big_endian()) {
 			ByteOrder::swap_bytes(data, nx * ny * nz);
 		}
@@ -307,7 +307,7 @@ int VtkIO::write_data(float *data, int image_index, const Region* ,
 					  EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
-	
+
 	//single image format, index can only be zero
 	image_index = 0;
 	check_write_access(rw_mode, image_index, 1, data);
@@ -328,7 +328,7 @@ int VtkIO::write_data(float *data, int image_index, const Region* ,
 }
 
 void VtkIO::flush()
-{	
+{
 	fflush(vtk_file);
 }
 
@@ -390,16 +390,16 @@ VtkIO::DataType VtkIO::get_datatype_from_name(const string& datatype_name)
 
 	if (!initialized) {
 		datatypes["bit"] = BIT;
-		
+
 		datatypes["unsigned_char"] = UNSIGNED_CHAR;
 		datatypes["char"] = CHAR;
-		
+
 		datatypes["unsigned_short"] = UNSIGNED_SHORT;
 		datatypes["short"] = SHORT;
-		
+
 		datatypes["unsigned_int"] = UNSIGNED_INT;
 		datatypes["int"] = INT;
-		
+
 		datatypes["unsigned_long"] = UNSIGNED_LONG;
 		datatypes["long"] = LONG;
 
@@ -409,7 +409,7 @@ VtkIO::DataType VtkIO::get_datatype_from_name(const string& datatype_name)
 	}
 
 	DataType result = DATATYPE_UNKNOWN;
-	
+
 	if (datatypes.find(datatype_name) != datatypes.end()) {
 		result = datatypes[datatype_name];
 	}
@@ -421,7 +421,7 @@ VtkIO::DatasetType VtkIO::get_datasettype_from_name(const string& dataset_name)
 
 	static bool initialized = false;
 	static map < string, DatasetType > types;
-	
+
 	if (!initialized) {
 		types["STRUCTURED_POINTS"] = STRUCTURED_POINTS;
 		types["STRUCTURED_GRID"] = STRUCTURED_GRID;
@@ -441,7 +441,7 @@ void VtkIO::read_dataset(DatasetType dstype)
 {
 	char buf[1024];
 	int bufsz = sizeof(buf);
-	
+
 	if (dstype == STRUCTURED_POINTS) {
 		int nlines = 3;
 		int i = 0;
@@ -459,7 +459,7 @@ void VtkIO::read_dataset(DatasetType dstype)
 				else {
 					sscanf(buf, "ASPECT_RATIO %f %f %f", &spacingx, &spacingy, &spacingz);
 				}
-				
+
 				if (spacingx != spacingy || spacingx != spacingz || spacingy != spacingz) {
 					throw ImageReadException(filename,
 											 "not support non-uniform spacing VTK so far\n");
