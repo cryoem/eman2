@@ -897,7 +897,6 @@ class CoarsenedFlattenedImage:
 		if shrink <= 1.0:
 			self.smallimage = tmp.copy()
 		else:
-			print "fft resample"
 			#self.smallimage = tmp.process("math.meanshrink",{"n":shrink})
 			self.smallimage = tmp.process("math.fft.resample",{"n":shrink}) # avoids aliasing but risks Fourier artifacts. I haven't noticed any artifacts and avoid no aliaising makes the objects appear nicely in the low resolution images
 			#self.smallimage.process_inplace("filter.ramp")

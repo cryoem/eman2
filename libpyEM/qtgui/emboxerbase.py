@@ -208,6 +208,7 @@ class BoxerThumbsWindowEventHandling:
 		QtCore.QObject.connect(self.thumbs_window().emitter(),QtCore.SIGNAL("module_closed"),self.module_closed)
 		
 	def thumb_image_selected(self,event,lc):
+		if lc == None: return
 		im=lc[0]
 		self.target().set_current_file_by_idx(im)
 		self.target().get_2d_window().updateGL()

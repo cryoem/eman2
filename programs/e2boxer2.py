@@ -446,7 +446,7 @@ class SwarmBoxer:
 		self.template_viewer = None
 		
 		self.step_back_cache = [] # this will stored lists that store the parameters necessary to reconstruct a swarm boxer
-		self.step_fwd_cache = [] # this will store the redo things
+		self.step_fwd_cache = [] # this will store the redo lists
 	
 	def __del__(self):
 		'''
@@ -529,6 +529,9 @@ class SwarmBoxer:
 		if self.template_viewer != None:
 			self.template_viewer.set_data(self.templates,soft_delete=True)
 			self.template_viewer.updateGL()
+	
+		if self.templates != None:
+			self.panel_object.enable_view_template(True)
 		
 #		self.debug_back("back")
 		
@@ -538,6 +541,7 @@ class SwarmBoxer:
 				print s,i,j,b.in_template
 		print "---"
 	def handle_box_states_changed(self):
+		if len(self.step_back_cache) == 0: raise RuntimeError("can't proceed there are no entries in the step_back cache")
 		self.target().clear_boxes(["ref","auto"])
 #		self.debug_back("hb a")
 		self.load_from_list(deepcopy(self.step_back_cache[-1]))
@@ -546,7 +550,7 @@ class SwarmBoxer:
 		self.target().add_boxes(boxes)
 		self.target().get_2d_window().updateGL()
 		if self.templates != None:
-			self.auto_box(self.target().current_file(),cache=False)
+			self.auto_box(self.target().current_file(),parameter_update=False,cache=False)
 			
 	def step_forward(self):
 		if len(self.step_fwd_cache) == 0: raise RuntimeError("Step forward cache has no entries")
@@ -570,6 +574,9 @@ class SwarmBoxer:
 		if self.template_viewer != None:
 			self.template_viewer.set_data(self.templates,soft_delete=True)
 			self.template_viewer.updateGL()
+			
+		if self.templates != None:
+			self.panel_object.enable_view_template(True)
 		
 	def cache_new_state(self):
 #		self.debug_back("cache enter")
@@ -587,20 +594,37 @@ class SwarmBoxer:
 	def handle_file_change(self,file_name):
 		l = None
 		if self.auto_update and len(self.step_back_cache) > 0:
-			l = self.to_list()
+			l = deepcopy(self.step_back_cache[-1])
 		
 		self.step_fwd_cache = get_database_entry(file_name,"swarm_fwd_boxers",dfl=[])
 		if len(self.step_fwd_cache) > 0: self.panel_object.enable_step_forward(True,len(self.step_fwd_cache))
 		else: self.panel_object.enable_step_forward(False)
 			
 		self.step_back_cache = get_database_entry(file_name,"swarm_boxers",dfl=[])
+		
+		if len(self.step_back_cache) > 0 and l != None:
+			print self.step_back_cache[-1][10],l[10]
+			if self.step_back_cache[-1][10] == l[10]:
+				print "saved a redundant step"
+				l = None
+	
+		if l != None:
+			self.step_back_cache.append(l)
+			self.cache_to_database()
+
+
 		if len(self.step_back_cache) > 0: self.panel_object.enable_step_back(True,len(self.step_back_cache))
 		else: self.panel_object.enable_step_back(False)
 		
+	
+				
 		if l != None:
-			self.cache_new_state()
-			self.cache_to_database()
 			self.handle_box_states_changed()
+#			self.cache_new_state()
+#			self.cache_to_database()
+#			self.handle_box_states_changed()
+#			self.load_from_list(l)
+#			self.auto_box(self.target().current_file(),parameter_update=False,cache=False,)
 		else:
 			if len(self.step_back_cache): self.load_from_list(deepcopy(self.step_back_cache[-1]))
 
@@ -609,6 +633,8 @@ class SwarmBoxer:
 			self.template_viewer.set_data(self.templates,soft_delete=True)
 			self.template_viewer.updateGL()
 	
+		if self.templates != None:
+			self.panel_object.enable_view_template(True)
 	
 	def set_interactive_threshold(self,val):
 		if self.interactive_threshold == val: return
@@ -742,7 +768,9 @@ class SwarmBoxer:
 			box.update_picking_data(mediator)
 		
 		if parameter_update:
-			self.update_opt_picking_data()
+			if not self.update_opt_picking_data(): 
+				print "funny error"
+				return 
 		
 		if self.pick_mode == SwarmBoxer.THRESHOLD: mode = 0
 		elif self.pick_mode == SwarmBoxer.SELECTIVE: mode = 1
@@ -779,7 +807,6 @@ class SwarmBoxer:
 		self.profile_trough_point = None
 		
 		for box in self.ref_boxes:
-			
 			if self.interactive_threshold != None: 
 				self.peak_score = self.interactive_threshold
 			else:
@@ -788,15 +815,17 @@ class SwarmBoxer:
 				if self.peak_score == None or box.peak_score < self.peak_score:
 					self.peak_score = box.peak_score
 		
-			from copy import copy
-			if self.profile == None: self.profile = copy(box.profile)  # or else I'd alter it and muck everything up
+			if self.profile == None: self.profile = deepcopy(box.profile)  # or else I'd alter it and muck everything up
 			else:
 				if len(self.profile) != len(box.profile): raise RuntimeError("This should never happen")
 				
 				profile = box.profile
 				for j in xrange(0,len(self.profile)):
 					if profile[j] < self.profile[j]: self.profile[j] = profile[j]
-				
+		
+		if self.profile == None:
+			return False
+		
 		max_radius =  int(len(self.profile)*SwarmBoxer.PROFILE_MAX)
 		tmp = self.profile[0]
 		self.profile_trough_point = 0
@@ -807,6 +836,7 @@ class SwarmBoxer:
 				
 		self.panel_object.set_picking_data(self.peak_score, self.profile, self.profile_trough_point)
 		
+		return True
 	
 	def clear_all(self):
 		self.target().clear_boxes(["ref","auto"])
@@ -814,6 +844,7 @@ class SwarmBoxer:
 		self.panel_object.enable_view_template(False)
 		self.panel_object.enable_auto_box(False)
 		if self.template_viewer != None: self.template_viewer.set_data(None)
+		self.cache_new_state()
 		self.cache_to_database()
 		
 		
