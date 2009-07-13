@@ -173,7 +173,7 @@ def init_sfcurve(opt):
 		try:
 			db_misc=db_open_dict("bdb:e2ctf.misc",True)
 			m=db_misc["strucfac"]
-			print "Using previously generated structure factor from e2bdb:e2ctf.misc"
+			print "Using previously generated structure factor from bdb:e2ctf.misc"
 			sfcurve=XYData()		# this is really slow and stupid
 			for i,j in enumerate(m):
 				sfcurve.set_x(i,j[0])
@@ -741,7 +741,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 
 	s0=int(.04/ds)
 	while bgsub[s0]>bgsub[s0+1] : s0+=1	# look for a minimum in the data curve
-	print "Minimum at 1/%1.1f 1/A"%(1.0/(s0*ds))
+	print "Minimum at 1/%1.1f 1/A (%d)"%(1.0/(s0*ds),s0)
 	
 	if debug:
 		dfout=file("ctf.df.txt","w")
@@ -809,20 +809,20 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 	best=[]
 	for b1a in dfbest1a:
 		# determine a very rough initial amplitude
-		ctf.defocus=b1a[1]
-		ctf.bfactor=200.0	# just something bigger than 0 as a neutral starting point
-		cc=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_AMP)
-		a,b=0,0
-		for i in range(s0,s1):
-			a+=sfact(i*ds)*cc[i]**2
-			b+=fabs(bgsub[i])
+		#ctf.defocus=b1a[1]
+		#ctf.bfactor=200.0	# just something bigger than 0 as a neutral starting point
+		#cc=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_AMP)
+		#a,b=0,0
+		#for i in range(s0/2,s1):
+			#a+=sfact(i*ds)*cc[i]**2
+			#b+=fabs(bgsub[i])
 
 #		print sqrt(b/a)
 		# our parameter set is (defocus,bfactor)
-		parm=[b1a[1],200.0,b/a]
+		parm=[b1a[1],200.0]
 
 #		print "Initial guess : ",parm
-		sim=Simplex(ctf_cmp,parm,[.02,20.0,.1],data=(ctf,bgsub,s0,s1,ds,parm[0]))
+		sim=Simplex(ctf_cmp,parm,[.02,20.0],data=(ctf,bgsub,s0,s1,ds,parm[0]))
 		oparm=sim.minimize(epsilon=.0000001,monitor=0)
 #		print "Optimized : ",oparm
 		best.append((oparm[1],oparm[0]))			
@@ -849,8 +849,12 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 			last=0,1.0
 			for x in range(1,len(bg2)-1) : 
 				if cc[x]*cc[x+1]<0 :
-					# we search the two points 'at' the zero for the minimum
-					cur=(x,min(im_1d[x]/bg2[x],im_1d[x+1]/bg2[x+1]))
+					if x<len(bg2)/3 :
+						# Below 1/3 nyquist, we work harder to avoid negative values
+						cur=(x,min(im_1d[x]/bg2[x],im_1d[x+1]/bg2[x+1],im_1d[x-1]/bg2[x-1],im_1d[x+2]/bg2[x+2]))						
+					else:
+						# we search the two points 'at' the zero for the minimum
+						cur=(x,min(im_1d[x]/bg2[x],im_1d[x+1]/bg2[x+1]))
 	#				cur=(x,min(im_1d[x]/bg_1d[x],im_1d[x-1]/bg_1d[x-1],im_1d[x+1]/bg_1d[x+1]))
 					# once we have a pair of zeros we adjust the background values between
 					for xx in range(last[0],cur[0]):
@@ -878,7 +882,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 	else:
 		# rerun the simplex with the new background
 		best[0][1][1]=200.0		# restart the fit with B=200.0
-		sim=Simplex(ctf_cmp,best[0][1],[.02,20.0,.1],data=(ctf,bgsub,s0,s1,ds,best[0][1][0]))
+		sim=Simplex(ctf_cmp,best[0][1],[.02,20.0],data=(ctf,bgsub,s0,s1,ds,best[0][1][0]))
 		oparm=sim.minimize(epsilon=.0000001,monitor=0)
 		best[0]=(oparm[1],oparm[0])
 		print "After BG correction, value is df=%1.3f  B=%1.1f"%(best[0][1][0],best[0][1][1])
@@ -980,8 +984,41 @@ def ctf_cmp(parms,data):
 	"""This function is a quality metric for a set of CTF parameters vs. data"""
 	ctf,bgsub,s0,s1,ds,dforig=data
 	ctf.defocus=parms[0]
-	ctf.bfactor=0.0
-	c2=ctf.compute_1d(len(bgsub)*2,ds,Ctf.CtfType.CTF_AMP)	# we use this for amplitude scaling
+	ctf.bfactor=parms[1]
+	cc=ctf.compute_1d(len(bgsub)*2,ds,Ctf.CtfType.CTF_AMP)	# this is for the error calculation
+	
+	# now compute the error
+	global sfcurve
+	if sfcurve.get_size()!=99 : s0/=2
+	a,b,c=0,0,0
+	mx=0
+	for i in range(s0,s1):
+		v=sfact(i*ds)*cc[i]*cc[i]
+		if v>.0001:
+			a+=bgsub[i]/v
+			b+=(bgsub[i]/v)**2
+			c+=1
+			mx=i
+	
+	mean=a/c
+	sig=b/c-mean*mean
+
+	er=sig
+
+#	er*=(1.0+300.0*(parms[0]-dforig)**4)		# This is a weight which biases the defocus towards the initial value
+	er*=1.0+(parms[1]-200)/20000.0+exp(-(parms[1]-50.0)/30.0)		# This is a bias towards small B-factors and to prevent negative B-factors
+	
+	out=file("dbg","a")
+	out.write("%f\t%f\t%f\t%f\t%f\t%d\n"%(parms[0],sqrt(parms[1]),er,mean,sig,mx))
+
+	return er
+
+def ctf_cmp_old(parms,data):
+	"""This function is a quality metric for a set of CTF parameters vs. data"""
+	ctf,bgsub,s0,s1,ds,dforig=data
+	ctf.defocus=parms[0]
+	#ctf.bfactor=0.0
+	#c2=ctf.compute_1d(len(bgsub)*2,ds,Ctf.CtfType.CTF_AMP)	# we use this for amplitude scaling
 	ctf.bfactor=parms[1]
 	cc=ctf.compute_1d(len(bgsub)*2,ds,Ctf.CtfType.CTF_AMP)	# this is for the error calculation
 	
@@ -999,19 +1036,34 @@ def ctf_cmp(parms,data):
 #	Util.save_data(0,ds,bgsub,"b.txt")
 	
 	# now compute the error
-	er=0
+	global sfcurve
+	if sfcurve.get_size()!=99 : s0/=2
+	#er=0
+	#for i in range(s0,s1):
+		#v=sfact(i*ds)*cc[i]*cc[i]*parms[2]
+		#er+=(v-bgsub[i])**2
+
+#	out=file("xxx","w")
+	a,b,c=0,0,0
 	for i in range(s0,s1):
-		v=sfact(i*ds)*cc[i]*cc[i]*parms[2]
-		er+=(v-bgsub[i])**2
-#		if v>bgsub[i] : er+=(v-bgsub[i])**2
-#		else : er+=2.0*(v-bgsub[i])**2
-	
+		v=sfact(i*ds)*cc[i]*cc[i]
+		a+=v*bgsub[i]
+		b+=v*v
+		c+=bgsub[i]*bgsub[i]
+#		if v>.001 : out.write("%f\t%f\n"%(i*ds,bgsub[i]/v))
+#	print s0,s1,a,b,c
+	er=1.0-a/sqrt(b*c)
+
+
 #	print er,(parms[0]-dforig)**2,parms[1]
 	
 	er*=(1.0+300.0*(parms[0]-dforig)**4)		# This is a weight which biases the defocus towards the initial value
 	er*=1.0+(parms[1]-200)/20000.0+exp(-(parms[1]-50.0)/30.0)		# This is a bias towards small B-factors and to prevent negative B-factors
 #	er*=(1.0+fabs(parms[1]-200.0)/100000.0)		# This is a bias towards small B-factors
 	
+	out=file("dbg","a")
+	out.write("%f\t%f\t%f\n"%(parms[0],sqrt(parms[1]),er))
+
 	return er
 
 def ctf_env_points(im_1d,bg_1d,ctf) :
@@ -1137,6 +1189,7 @@ class GUIctf(QtGui.QWidget):
 		self.splotmode.addItem("Smoothed SNR")
 		self.splotmode.addItem("Integrated SNR")
 		self.splotmode.addItem("Total CTF")
+		self.splotmode.addItem("<debug>")
 		self.vbl2.addWidget(self.splotmode)
 		self.hbl.addLayout(self.vbl2)
 		
@@ -1344,7 +1397,9 @@ class GUIctf(QtGui.QWidget):
 			if nrto==0 : rto=1.0
 			else : rto/=nrto
 			fit=[fit[i]/rto for i in range(len(s))]
-
+			
+			print ctf_cmp((self.sdefocus.value,self.sbfactor.value,rto),(ctf,bgsub,int(.04/ds)+1,min(int(0.15/ds),len(s)-1),ds,self.sdefocus.value))
+			
 			self.guiplot.set_data("fit",(s,fit))
 			self.guiplot.setAxisParms("s (1/A)","Intensity (a.u)")
 		elif self.plotmode==2:
@@ -1373,6 +1428,24 @@ class GUIctf(QtGui.QWidget):
 				inten=[fabs(i) for i in st[1].compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP)]
 				for i in range(len(all)): all[i]+=inten[i]
 			self.guiplot.set_data("total",(s,all[:len(s)]))
+		elif self.plotmode==6: 
+			bgsub=[self.data[val][2][i]-self.data[val][3][i] for i in range(len(self.data[val][2]))]
+#			self.guiplot.set_data("fg-bg",(s,bgsub),True,True)
+			
+			fit=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP)		# The fit curve
+			fit=[sfact(s[i])*fit[i]**2 for i in range(len(s))]		# squared * a generic structure factor
+
+			#fit=[bgsub[i]/fit[i] for i in range(len(s))]
+			#for i in range(len(fit)) :
+				#if fabs(fit[i])>10000 : fit[i]=0
+
+			a=[i**2 for i in bgsub[33:]]
+			b=[i**2 for i in fit[33:]]
+			r=sqrt(sum(a)*sum(b))
+			fit=[bgsub[i]*fit[i]/r for i in range(len(s))]
+
+			self.guiplot.set_data("fit",(s,fit),True)
+			self.guiplot.setAxisParms("s (1/A)","Intensity (a.u)")
 						
 			#bgsub=[self.data[val][2][i]-self.data[val][3][i] for i in range(len(self.data[val][2]))]
 			#self.guiplot.set_data("fg-bg",(s,bgsub),True,True)
