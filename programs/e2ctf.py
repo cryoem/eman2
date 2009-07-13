@@ -997,7 +997,7 @@ def ctf_cmp(parms,data):
 	mx=0
 	for i in range(s0,s1):
 		v=sfact(i*ds)*cc[i]*cc[i]
-		if v>.0001:
+		if v>.01:
 			a+=bgsub[i]/v
 			b+=(bgsub[i]/v)**2
 			c+=1
@@ -1018,7 +1018,8 @@ def ctf_cmp(parms,data):
 	return er
 
 def ctf_cmp_2(parms,data):
-	"""This function is a quality metric for a set of CTF parameters vs. data"""
+	"""This function is a quality metric for a set of CTF parameters vs. data
+	This version is used for rough fitting of the defocus. ctf_cmp is used to fine-tune the values. """
 	ctf,bgsub,s0,s1,ds,dforig=data
 	ctf.defocus=parms[0]
 	ctf.bfactor=0.0
