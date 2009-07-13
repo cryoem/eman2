@@ -1403,7 +1403,7 @@ class GUIctf(QtGui.QWidget):
 			else : rto/=nrto
 			fit=[fit[i]/rto for i in range(len(s))]
 			
-			print ctf_cmp((self.sdefocus.value,self.sbfactor.value,rto),(ctf,bgsub,int(.04/ds)+1,min(int(0.15/ds),len(s)-1),ds,self.sdefocus.value))
+#			print ctf_cmp((self.sdefocus.value,self.sbfactor.value,rto),(ctf,bgsub,int(.04/ds)+1,min(int(0.15/ds),len(s)-1),ds,self.sdefocus.value))
 			
 			self.guiplot.set_data("fit",(s,fit))
 			self.guiplot.setAxisParms("s (1/A)","Intensity (a.u)")
