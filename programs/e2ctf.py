@@ -741,7 +741,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 
 	s0=int(.04/ds)
 	while bgsub[s0]>bgsub[s0+1] : s0+=1	# look for a minimum in the data curve
-	print "Minimum at 1/%1.1f 1/A (%d)"%(1.0/(s0*ds),s0)
+	print "Minimum at 1/%1.1f 1/A (%1.4f), highest s considered 1/%1.1f 1/A (%1.4f)"%(1.0/(s0*ds),s0*ds,1.0/(s1*ds),s1*ds)
 	
 	if debug:
 		dfout=file("ctf.df.txt","w")
@@ -791,7 +791,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 		try :dfout.write("%1.2f\t%g\n"%(df,tot))
 		except : pass
 	
-	# Now we find the best 5 defocus choices
+	# Now we find the best few defocus choices
 	dfbest1a=[]						# keep only peaks, and sort them
 	for i in range(1,len(dfbest1)-1):
 		if dfbest1[i]>dfbest1[i-1] and dfbest1[i]>dfbest1[i+1] : dfbest1a.append(dfbest1[i])		# keep only local peaks
@@ -822,7 +822,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 		parm=[b1a[1],200.0]
 
 #		print "Initial guess : ",parm
-		sim=Simplex(ctf_cmp,parm,[.02,20.0],data=(ctf,bgsub,s0,s1,ds,parm[0]))
+		sim=Simplex(ctf_cmp_2,parm,[.02,20.0],data=(ctf,bgsub,s0,s1,ds,parm[0]))
 		oparm=sim.minimize(epsilon=.0000001,monitor=0)
 #		print "Optimized : ",oparm
 		best.append((oparm[1],oparm[0]))			
@@ -988,6 +988,9 @@ def ctf_cmp(parms,data):
 	cc=ctf.compute_1d(len(bgsub)*2,ds,Ctf.CtfType.CTF_AMP)	# this is for the error calculation
 	
 	# now compute the error
+	# This is an interesting similarity metric. It divides one curve by the other. In theory, this should be flat, with the mean
+	# value equal to the 'amplitude' of the curve. However, of course, near zeroes there will be peaks, and other variances are
+	# also common. So, what we compute is the standard deviation of this value about the mean, trying to make it as flat as possible
 	global sfcurve
 	if sfcurve.get_size()!=99 : s0/=2
 	a,b,c=0,0,0
@@ -1003,23 +1006,24 @@ def ctf_cmp(parms,data):
 	mean=a/c
 	sig=b/c-mean*mean
 
-	er=sig
+	er=sig/fabs(mean)
+#	print er
 
 #	er*=(1.0+300.0*(parms[0]-dforig)**4)		# This is a weight which biases the defocus towards the initial value
 	er*=1.0+(parms[1]-200)/20000.0+exp(-(parms[1]-50.0)/30.0)		# This is a bias towards small B-factors and to prevent negative B-factors
 	
 	out=file("dbg","a")
-	out.write("%f\t%f\t%f\t%f\t%f\t%d\n"%(parms[0],sqrt(parms[1]),er,mean,sig,mx))
+	out.write("%f\t%f\t%f\t%f\t%f\t%d\n"%(parms[0],parms[1],er,mean,sig,mx))
 
 	return er
 
-def ctf_cmp_old(parms,data):
+def ctf_cmp_2(parms,data):
 	"""This function is a quality metric for a set of CTF parameters vs. data"""
 	ctf,bgsub,s0,s1,ds,dforig=data
 	ctf.defocus=parms[0]
-	#ctf.bfactor=0.0
+	ctf.bfactor=0.0
 	#c2=ctf.compute_1d(len(bgsub)*2,ds,Ctf.CtfType.CTF_AMP)	# we use this for amplitude scaling
-	ctf.bfactor=parms[1]
+	#ctf.bfactor=parms[1]
 	cc=ctf.compute_1d(len(bgsub)*2,ds,Ctf.CtfType.CTF_AMP)	# this is for the error calculation
 	
 	## compute an optimal amplitude for these parameters
@@ -1061,8 +1065,8 @@ def ctf_cmp_old(parms,data):
 	er*=1.0+(parms[1]-200)/20000.0+exp(-(parms[1]-50.0)/30.0)		# This is a bias towards small B-factors and to prevent negative B-factors
 #	er*=(1.0+fabs(parms[1]-200.0)/100000.0)		# This is a bias towards small B-factors
 	
-	out=file("dbg","a")
-	out.write("%f\t%f\t%f\n"%(parms[0],sqrt(parms[1]),er))
+	#out=file("dbg","a")
+	#out.write("%f\t%f\t%f\n"%(parms[0],sqrt(parms[1]),er))
 
 	return er
 
@@ -1435,14 +1439,14 @@ class GUIctf(QtGui.QWidget):
 			fit=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP)		# The fit curve
 			fit=[sfact(s[i])*fit[i]**2 for i in range(len(s))]		# squared * a generic structure factor
 
-			#fit=[bgsub[i]/fit[i] for i in range(len(s))]
-			#for i in range(len(fit)) :
-				#if fabs(fit[i])>10000 : fit[i]=0
+			fit=[bgsub[i]/fit[i] for i in range(len(s))]
+			for i in range(len(fit)) :
+				if fabs(fit[i])>10000 : fit[i]=0
 
-			a=[i**2 for i in bgsub[33:]]
-			b=[i**2 for i in fit[33:]]
-			r=sqrt(sum(a)*sum(b))
-			fit=[bgsub[i]*fit[i]/r for i in range(len(s))]
+			#a=[i**2 for i in bgsub[33:]]
+			#b=[i**2 for i in fit[33:]]
+			#r=sqrt(sum(a)*sum(b))
+			#fit=[bgsub[i]*fit[i]/r for i in range(len(s))]
 
 			self.guiplot.set_data("fit",(s,fit),True)
 			self.guiplot.setAxisParms("s (1/A)","Intensity (a.u)")
