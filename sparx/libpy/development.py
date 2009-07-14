@@ -2363,31 +2363,26 @@ def combine_params_new(spider_trans,ref_ali_params):
 			new_trans.append([spider_trans[i*4],spider_trans[i*4+1]-ref_ali_params[i*5+2],spider_trans[i*4+2]-ref_ali_params[i*5+3],spider_trans[i*4+3]])
 	return  angles,new_trans
 
-def dfunc(args,data):
+def dfunc(args, data):
 	from math import pi
-	#print  " AMOEBA ",args
-	# gridding rotation, arguments: angle, sx, sy, kb
 	res = data[0].rot_scale_conv7(args[0]*pi/180., args[1], args[2], data[2], 1.0)
 	#v = res.cmp("ccc", data[1], {"mask":data[3], "negative":0})
 	v = -res.cmp("SqEuclidean", data[1], {"mask":data[3]})
-	#print  " AMOEBA o",args,v
 	return v
 
-def dfunc2(args,data):
-	# rotation arguments: angle, sx, sy, scale
+def dfunc2(args, data):
 	res = data[0].rot_scale_trans2D(args[0], args[1], args[2], 1.0)
 	#v = res.cmp("ccc", data[1], {"mask":data[2], "negative":0})
 	v = -res.cmp("SqEuclidean", data[1], {"mask":data[2]})
-	#print  " AMOEBA o",args,v
 	return v
 
-def dfunc_i(args,data):
+def dfunc_i(args, data):
 	from math import pi
 	res = data[0].rot_scale_conv7(args[0]*pi/180., args[1], args[2], data[2], 1.0)
 	v = res.cmp("SqEuclidean", data[1], {"mask":data[3]})
 	return v
 
-def dfunc2_i(args,data):
+def dfunc2_i(args, data):
 	res = data[0].rot_scale_trans2D(args[0], args[1], args[2], 1.0)
 	v = res.cmp("SqEuclidean", data[1], {"mask":data[2]})
 	return v
@@ -2946,140 +2941,425 @@ def ormql(image,crefim,xrng,yrng,step,mode,numr,cnx,cny):
 	return  ang,sxs,sys,mirror,peak    	
 
 
-def ormy(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, interpolation_method=None, refinement_method=None, opti_strategy=None):
+def ormq_all(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, interpolation_method=None, opti_algorithm=None, opti_strategy=None, refim=None):
 	"""
 	Determine shift and rotation between image and reference image (refim)
-	One can specify the interpolation method for the routine
-	It should be noted that crefim should be preprocessed before using this	function
+	One can specify the interpolation method, optimization algorithm and optimization
+	strategy for the routine.
+	It should be noted that crefim should be preprocessed before using this	function.
+	Also, if using "concurrent" as optimization strategy, one should provide the original
+	reference image
 	"""
 	from math import pi, cos, sin
-	from fundamentals import fft
-	from utilities import amoeba
+	from fundamentals import fft, mirror
+	from utilities import amoeba, amoeba_multi_level, model_circle
+	from alignment import ang_n
 	from sys import exit
 	
 	if interpolation_method == None:
 		interpolation_method = interpolation_method_2D #use global setting
-	if interpolation_method == "gridding":
-		M=image.get_xsize()
-		npad=2
-		N=M*npad
-		#support of the window
-		K=6
-		alpha=1.75
-		r=M/2
-		v=K/2.0/N
-		kb = Util.KaiserBessel(alpha, K, r, K/(2.*N), N)
-
-		imali=image.FourInterpol(2*M,2*M,1,0)
-		params = {"filter_type" : Processor.fourier_filter_types.KAISER_SINH_INVERSE,"alpha" : alpha, "K":K,"r":r,"v":v,"N":N}
-		q=Processor.EMFourierFilter(imali,params)
-		imali=fft(q)
 	
-		maxrin=numr[len(numr)-1]
-	
-		#print  maxrin
-		line = EMData()
-		line.set_size(maxrin,1,1)
-		M=maxrin
-		# do not pad
-		npad=1
-		N=M*npad
-		# support of the window
-		K=6
-		alpha=1.75
-		r=M/2
-		v=K/2.0/N
-		kbline = Util.KaiserBessel(alpha, K, r, K/(2.*N), N)
-		parline = {"filter_type" : Processor.fourier_filter_types.KAISER_SINH_INVERSE,"alpha" : alpha, "K":K,"r":r,"v":v,"N":N}
-		data=[]
-		data.insert(1,kbline)
-	elif interpolation_method=="quadratic":
-		pass
-	elif interpolation_method=="linear":
-		pass
-	else: 
-		print "Error: Unknown interpolation method!"
-		exit()
+	nx = image.get_xsize()
+	maxrin = numr[-1]
 
 	peak = -1.0E23
-	ky = int(2*yrng/step+0.5)//2
-	kx = int(2*xrng/step+0.5)//2
+	ky = int(2*yrng/step+0.5)/2
+	kx = int(2*xrng/step+0.5)/2
+
+	if interpolation_method == "gridding":
+		npad = 2
+		N = nx*npad
+		#support of the window
+		K = 6
+		alpha = 1.75
+		r = nx/2
+		v = K/2.0/N
+		kb = Util.KaiserBessel(alpha, K, r, v, N)
+		imali = image.FourInterpol(2*nx, 2*nx, 1, 0)
+		params = {"filter_type":Processor.fourier_filter_types.KAISER_SINH_INVERSE, "alpha":alpha, "K":K, "r":r, "v":v, "N":N}
+		del alpha, K, r, v, N
+		q = Processor.EMFourierFilter(imali,params)
+		imali = fft(q)
 	
-	if interpolation_method=="gridding":
-		for i in xrange(-ky,ky+1):
-			iy=i*step
-			for  j in xrange(-kx,kx+1):
-				ix=j*step
-				cimage=Util.Polar2Dmi(imali,cnx+ix,cny+iy,numr,mode,kb)
+		# do not pad
+		npad = 1
+		N = maxrin*npad
+		# support of the window
+		K = 6
+		alpha = 1.75
+		r = maxrin/2
+		v = K/2.0/N
+		kbline = Util.KaiserBessel(alpha, K, r, v, N)
+		parline = {"filter_type":Processor.fourier_filter_types.KAISER_SINH_INVERSE, "alpha":alpha, "K":K, "r":r, "v":v, "N":N}
+		del alpha, K, r, v, N
+		data = [kbline]
+
+		for i in xrange(-ky, ky+1):
+			iy = i*step
+			for j in xrange(-kx, kx+1):
+				ix = j*step
+				cimage = Util.Polar2Dmi(imali, cnx+ix, cny+iy, numr, mode, kb)
 				Util.Frngs(cimage, numr)
-				qt = Util.Crosrng_msg(crefim,cimage,numr)
 				
 				# straight
-				for i in xrange(0,maxrin): line[i]=qt[i,0]
+				line_s = Util.Crosrng_msg_s(crefim, cimage, numr)
 				#  find the current maximum and its location
-				ps=line.peak_search(1,1)
-				qn=ps[1]
-				jtot=ps[2]/2
-				q=Processor.EMFourierFilter(line,parline)
-				data.insert(0,q)
-				ps = amoeba([jtot], [2.0], oned_search_func, 1.e-4,1.e-4,500,data)
+				ps = line_s.max_search()
+				jtot = ps[0]/2
+				q = Processor.EMFourierFilter(line_s, parline)
+				data.insert(0, q)
+				ps = amoeba([jtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 500, data)
 				del data[0]
-				jtot=ps[0][0]*2
-				qn=ps[1]
+				jtot = ps[0][0]*2
+				qn = ps[1]
 				
 				# mirror
-				for i in xrange(0,maxrin): line[i]=qt[i,1]
+				line_m = Util.Crosrng_msg_m(crefim, cimage, numr)
 				# find the current maximum and its location
-				ps=line.peak_search(1,1)
-				qm=ps[1]
-				mtot=ps[2]/2
-				q=Processor.EMFourierFilter(line,parline)
-				data.insert(0,q)
-				ps = amoeba([mtot], [2.0],oned_search_func,1.e-4,1.e-4,500,data)
+				ps = line_m.max_search()
+				mtot = ps[0]/2
+				q = Processor.EMFourierFilter(line_m, parline)
+				data.insert(0, q)
+				ps = amoeba([mtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 500, data)
 				del data[0]
-				mtot=ps[0][0]*2
-				qm=ps[1]
+				mtot = ps[0][0]*2
+				qm = ps[1]
 
-				if(qn >=peak or qm >=peak):
-					if (qn >= qm):
-						ang = ang_n(jtot+1, mode, numr[len(numr)-1])
+				if qn >= peak or qm >= peak:
+					if qn >= qm:
+						ang = ang_n(jtot+1, mode, maxrin)
+						"""
+						NOTICE: This is important!!!!
+						
+						The reason that there is a "+1" here while there is no "+1" in quadratic is that
+						in program such as Crosrng_ms (used in quadratic), the returned position begins
+						from 1 insteat of 0. Although this is kind of inconvenient, we decide to keep this 
+						convention. Therefore, in function ang_n, there is a "-1" for offsetting. However, 
+						for gridding, the program such as Crosrng_msg returns ccf. Also, we choose to have 
+						the found position begin from 0, otherwise, it will become very complicated
+						since it involves "*2" and "/2". Therefore, when using ang_n, we should have another
+						"+1" to offset back.
+						"""
 						sx = -ix
 						sy = -iy
-						peak=qn
-						mirror=0
+						peak = qn
+						is_mirror = 0
 					else:
-						ang = ang_n(mtot+1, mode, numr[len(numr)-1])
+						ang = ang_n(mtot+1, mode, maxrin)
 						sx = -ix
 						sy = -iy
-						peak=qm
-						mirror=1
-	elif interpolation_method=="quadratic":
+						peak = qm
+						is_mirror = 1
+		if opti_algorithm == None:
+			co =  cos(ang*pi/180.0)
+			so = -sin(ang*pi/180.0)
+			sxs = sx*co - sy*so
+			sys = sx*so + sy*co
+			return  ang, sxs, sys, is_mirror, peak
+		elif opti_strategy == "concurrent":
+			co =  cos(ang*pi/180.0)
+			so = -sin(ang*pi/180.0)
+			sxs = sx*co - sy*so
+			sys = sx*so + sy*co
+			last_ring = numr[-3]
+			mask = model_circle(last_ring, nx, nx)
+		
+			if refim == None:
+				print "For concurrent strategy, you need to provide referenece image as well as reference image in polar coordinates!"
+				exit()
+			if opti_algorithm == "amoeba":
+				if is_mirror:	
+					image2 = mirror(image)
+					imali = image2.FourInterpol(2*nx, 2*nx, 1, 0)
+					q = Processor.EMFourierFilter(imali, params)
+					imali = fft(q)
+					ang = -ang
+					sxs = -sxs
+				data = []
+				data.insert(0, imali)
+				data.insert(1, refim)
+				data.insert(2, kb)
+				data.insert(3, mask)
+				ps = amoeba([ang, sxs, sys], [360.0/(2.0*pi*last_ring), step, step], dfunc, 1.e-4, 1.e-4, 500, data)
+
+				ps[0][0] = ps[0][0]%360.0
+				if is_mirror:
+					ps[0][0] = -ps[0][0]
+					ps[0][1] = -ps[0][1]
+				return  ps[0][0], ps[0][1], ps[0][2], is_mirror, -ps[1]
+			elif opti_algorithm == "LBFGSB":
+				from scipy.optimize.lbfgsb import fmin_l_bfgs_b
+				if is_mirror:
+					image2 = mirror(image)
+					imali = image2.FourInterpol(2*nx, 2*nx, 1, 0)
+					q = Processor.EMFourierFilter(imali, params)
+					imali = fft(q)
+					x0 = [-ang, -sxs, sys]
+				else:
+					x0 = [ang, sxs, sys]
+				bounds = [(x0[0]-2.0, x0[0]+2.0), (x0[1]-1.5, x0[1]+1.5), (x0[2]-1.5, x0[2]+1.5)]
+				data = []
+				data.append(imali)
+				data.append(refim)
+				data.append(kb)
+				data.append(mask)
+				ps, val, d = fmin_l_bfgs_b(dfunc_i, x0, args=[data], approx_grad=1, bounds=bounds, m=10, factr=1e1, pgtol=1e-5, epsilon=1e-3, iprint=-1, maxfun=15000)
+				ps[0] = ps[0]%360.0
+				if is_mirror:
+					ps[0] = -ps[0]
+					ps[1] = -ps[1]
+	
+				return  ps[0], ps[1], ps[2], is_mirror, val
+			elif opti_algorithm == "SD":
+				if is_mirror:	
+					image2 = mirror(image)
+					imali = image2.FourInterpol(2*nx, 2*nx, 1, 0)
+					q = Processor.EMFourierFilter(imali, params)
+					imali = fft(q)
+					ang = -ang
+					sxs = -sxs
+				ps = Util.twoD_fine_ali_SD_G(imali, refim, mask, kb, ang, sxs, sys)
+				ps[0] = ps[0]%360.0
+				if is_mirror:
+					ps[0] = -ps[0]
+					ps[1] = -ps[1]
+				return ps[0], ps[1], ps[2], is_mirror, ps[3]
+			elif opti_algorithm == "DUD":
+				if is_mirror:
+					image2 = mirror(image)
+					imali = image2.FourInterpol(2*nx, 2*nx, 1, 0)
+					q = Processor.EMFourierFilter(imali, params)
+					imali = fft(q)
+					ang = -ang
+					sxs = -sxs
+				data = []
+				data.append(imali)
+				data.append(refim)
+				data.append(kb)
+				data.append(mask)
+				
+				P = 3
+				max_P = 20
+				converge = False
+				beta = []
+				delta = 0.1
+				beta.append([ang, sxs, sys])
+				beta.append([ang+delta, sxs, sys])
+				beta.append([ang, sxs+delta, sys])
+				beta.append([ang, sxs, sys+delta])
+				F = []
+				omega = []
+				from numpy import matrix, diag
+				
+				L = []
+				for x in xrange(nx):
+					for y in xrange(nx):
+						if mask.get_value_at(x, y) > 0.5:
+							L.append(refim.get_value_at(x, y))
+				Y = matrix(L)
+				
+				imali0 = imali.rot_scale_conv7(beta[0][0]*pi/180, beta[0][1], beta[0][2], kb, 1.0)
+				for p in xrange(1, P+1):
+					imalip = imali.rot_scale_conv7(beta[p][0]*pi/180, beta[p][1], beta[p][2], kb, 1.0)
+					L = []
+					diffim = Util.subn_img(imalip, imali0)
+					for x in xrange(nx):
+						for y in xrange(nx):
+							if mask.get_value_at(x, y) > 0.5:
+								L.append(diffim.get_value_at(x, y))
+					F.append(L)
+					omega.append(imalip.cmp("SqEuclidean", imali0, {"mask":mask}))
+					
+				imalip = imali.rot_scale_conv7(beta[P][0]*pi/180, beta[P][1], beta[P][2], kb, 1.0)
+				K = []
+				for x in xrange(nx):
+					for y in xrange(nx):
+						if mask.get_value_at(x, y) > 0.5:
+							K.append(imalip.get_value_at(x, y))
+				Fs = matrix(K)
+				
+				A = [[delta, 0, 0], [0, delta, 0], [0, 0, delta]]
+				while converge == False and P < max_P:
+					A_matrix = matrix(A)
+					omega_matrix_inv = matrix(diag(omega))**(-1)
+					F_matrix = matrix(F)
+					G = F_matrix.T*omega_matrix_inv*A_matrix*(A_matrix.T*omega_matrix_inv*A_matrix)**(-1)
+					
+					H = (G.T*G)**(-1)*G.T*(Y.T-Fs.T)
+
+					d1 = float(H[0][0])
+					d2 = float(H[1][0])
+					d3 = float(H[2][0])
+					if d1**2+d2**2+d3**2 < 0.0000001: converge = True
+					beta.append([float(beta[P][0])+d1, float(beta[P][1])+d2, float(beta[P][2])+d3])					
+					P += 1
+					if converge == False:
+						imali_new = imali.rot_scale_conv7(float(beta[P][0])*pi/180, float(beta[P][1]), float(beta[P][2]), kb, 1.0)
+						L = []
+						K = []
+						diffim = Util.subn_img(imali_new, imali0)
+						for x in xrange(nx):
+							for y in xrange(nx):
+								if mask.get_value_at(x, y) > 0.5:
+									L.append(diffim.get_value_at(x, y))
+									K.append(imali_new.get_value_at(x, y))
+						F.append(L)
+						Fs = matrix(K)
+						omega.append(imali_new.cmp("SqEuclidean", imali0, {"mask":mask}))
+						A.append([d1, d2, d3])
+				print converge
+				ang = float(beta[P][0])
+				sxs = float(beta[P][1])
+				sys = float(beta[P][2])
+				ang = ang%360.0
+				if is_mirror:
+					ang = -ang
+					sxs = -sxs
+				return ang, sxs, sys, is_mirror, 0
+			else:
+				print "Unknown optimization algorithm!"
+		elif opti_strategy == "cascaded":
+			data0 = []
+			data0.insert(0, imali)
+			data0.insert(1, cnx)
+			data0.insert(2, cny)
+			data0.insert(3, numr)
+			data0.insert(4, mode)
+			data0.insert(5, kb)
+			data0.insert(6, crefim)
+			data0.insert(7, parline)
+			data0.insert(8, maxrin)
+			data0.insert(9, kbline)
+			data0.insert(10, is_mirror)
+
+			ps2 = amoeba_multi_level([-sx, -sy], [1, 1], func_loop2, 1.e-4, 1.e-4, 50, data0)
+		
+			if ps2[1] > peak:
+				sx = -ps2[0][0]
+				sy = -ps2[0][1]
+				ang = ps2[3]
+				peak = ps2[1]
+			co =  cos(ang*pi/180.0)
+			so = -sin(ang*pi/180.0)
+			sxs = sx*co - sy*so
+			sys = sx*so + sy*co
+			return  ang, sxs, sys, is_mirror, peak	
+		else: print "Unknown optimization strategy!"
+		
+	elif interpolation_method == "quadratic":
 		for i in xrange(-ky, ky+1):
 			iy = i*step
 			for  j in xrange(-kx, kx+1):
 				ix = j*step
-				cimage=Util.Polar2Dm(image, cnx+ix, cny+iy, numr, mode)
+				cimage = Util.Polar2Dm(image, cnx+ix, cny+iy, numr, mode)
 				Util.Frngs(cimage, numr)
 				retvals = Util.Crosrng_ms(crefim, cimage, numr)
 				qn = retvals["qn"]
 				qm = retvals["qm"]
-				if(qn >=peak or qm >=peak):
+				if qn >= peak or qm >= peak:
 					sx = -ix
 					sy = -iy
-					if (qn >= qm):
-						ang = ang_n(retvals["tot"], mode, numr[len(numr)-1])
-						peak=qn
-						mirror=0
+					if qn >= qm:
+						ang = ang_n(retvals["tot"], mode, maxrin)
+						peak = qn
+						is_mirror = 0
 					else:
-						ang = ang_n(retvals["tmt"], mode, numr[len(numr)-1])
-						peak=qm
-						mirror=1		
+						ang = ang_n(retvals["tmt"], mode, maxrin)
+						peak = qm
+						is_mirror = 1		
+		if opti_algorithm == None:
+			co =  cos(ang*pi/180.0)
+			so = -sin(ang*pi/180.0)
+			sxs = sx*co - sy*so
+			sys = sx*so + sy*co
+			return  ang, sxs, sys, is_mirror, peak
+		elif opti_strategy == "concurrent":
+			co =  cos(ang*pi/180.0)
+			so = -sin(ang*pi/180.0)
+			sxs = sx*co - sy*so
+			sys = sx*so + sy*co
+			last_ring = numr[-3]
+			mask = model_circle(last_ring, nx, nx)
 
-	co =  cos(ang*pi/180.0)
-	so = -sin(ang*pi/180.0)
-	sxs = sx*co - sy*so
-	sys = sx*so + sy*co
-	return  ang,sxs,sys,mirror,peak
+			if refim == None:
+				print "For concurrent strategy, you need to provide referenece image as well as reference image in polar coordinates!"
+				exit()
+			if opti_algorithm == "amoeba":
+				data = []
+				if is_mirror:
+					data.insert(0, mirror(image))
+					ang = -ang
+					sxs = -sxs
+				else:
+					data.insert(0, image)
+				data.insert(1, refim)
+				data.insert(2, mask)
+				ps = amoeba([ang, sxs, sys], [360.0/(2.0*pi*last_ring), step, step], dfunc2, 1.e-4, 1.e-4, 500, data)
+			
+				ps[0][0] = ps[0][0]%360.0
+				if is_mirror:
+					ps[0][0] = -ps[0][0]
+					ps[0][1] = -ps[0][1]
+	
+				return  ps[0][0], ps[0][1], ps[0][2], is_mirror, -ps[1]
+			elif opti_algorithm == "LBFGSB":
+				from scipy.optimize.lbfgsb import fmin_l_bfgs_b
+				if is_mirror:
+					image = mirror(image)
+					x0 = [-ang, -sxs, sys] 
+				else:
+					x0 = [ang, sxs, sys] 
+				bounds = [(x0[0]-2.0, x0[0]+2.0), (x0[1]-1.5, x0[1]+1.5), (x0[2]-1.5, x0[2]+1.5)]
+				data = []
+				data.append(image)
+				data.append(refim)
+				data.append(mask)			
+				ps, val, d = fmin_l_bfgs_b(dfunc2_i, x0, args=[data], approx_grad=1, bounds=bounds, m=10, factr=1e1, pgtol=1e-5, epsilon=1e-3, iprint=-1, maxfun=15000)
+				ps[0] = ps[0]%360.0
+				if is_mirror:
+					ps[0] = -ps[0]
+					ps[1] = -ps[1]
+				return  ps[0], ps[1], ps[2], is_mirror, val
+			elif opti_algorithm == "SD":
+				if is_mirror:
+					image = mirror(image)
+					ang = -ang
+					sxs = -sxs
+				ps = Util.twoD_fine_ali_SD(image, refim, mask, ang, sxs, sys)
+				ps[0] = ps[0]%360.0
+				if is_mirror:
+					ps[0] = -ps[0]
+					ps[1] = -ps[1]
+				return ps[0], ps[1], ps[2], is_mirror, ps[3]
+			else:
+				print "Unknown optimization algorithm!"
+		elif opti_strategy == "cascaded":
+			data = []
+			data.insert(0, image)
+			data.insert(1, cnx)
+			data.insert(2, cny)
+			data.insert(3, numr)
+			data.insert(4, mode)
+			data.insert(5, crefim)
+			ps2 = amoeba_multi_level([-sx, -sy], [1, 1], func_loop, 1.e-4, 1.e-4, 50, data)
+			if ps2[1] > peak:
+				sx = -ps2[0][0]
+				sy = -ps2[0][1]
+				ang = ps2[3]
+				peak = ps2[1]
+	
+			co =  cos(ang*pi/180.0)
+			so = -sin(ang*pi/180.0)
+			sxs = sx*co - sy*so
+			sys = sx*so + sy*co
+			return  ang, sxs, sys, is_mirror, peak
+		else: print "Unknown optimization strategy!"
+		
+	elif interpolation_method == "linear":
+		print "This interpolation method is not supported!"
+
+	else: 
+		print "Error: Unknown interpolation method!"
 
 
 def ormy2(image, refim, crefim, xrng, yrng, step, mode, numr, cnx, cny, interpolation_method=None):
@@ -3181,18 +3461,6 @@ def ormy2(image, refim, crefim, xrng, yrng, step, mode, numr, cnx, cny, interpol
 
 				if qn >= peak or qm >= peak:
 					if qn >= qm:
-						"""
-						NOTICE: This is important!!!!
-						
-						The reason that there is a "+1" here while there is no "+1" in quadratic is that
-						in program such as Crosrng_ms (used in quadratic), the returned position begins
-						from 1 insteat of 0. Although this is kind of inconvenient, we decide to keep this 
-						convention. Therefore, in function ang_n, there is a "-1" for offsetting. However, 
-						for gridding, the program such as Crosrng_msg returns ccf. Also, we choose to have 
-						the found position begin from 0, otherwise, it will become very complicated
-						since it involves "*2" and "/2". Therefore, when using ang_n, we should have another
-						"+1" to offset back.
-						"""
 						ang = ang_n(jtot+1, mode, maxrin)
 						sx = -ix
 						sy = -iy
@@ -3240,30 +3508,27 @@ def ormy2(image, refim, crefim, xrng, yrng, step, mode, numr, cnx, cny, interpol
 			imali = image2.FourInterpol(2*nx, 2*nx, 1, 0)
 			q = Processor.EMFourierFilter(imali, params)
 			imali = fft(q)
+			ang = -ang
+			sxs = -sxs
 		data.insert(0, imali)
 		data.insert(1, refim)
 		data.insert(2, kb)
 		data.insert(3, mask)
-		if is_mirror:
-			ps = amoeba([-ang, -sxs, sys], [360.0/(2.0*pi*last_ring), step, step], dfunc, 1.e-4, 1.e-4, 500, data)
-		else:
-			ps = amoeba([ang, sxs, sys], [360.0/(2.0*pi*last_ring), step, step], dfunc, 1.e-4, 1.e-4, 500, data)
+		ps = amoeba([ang, sxs, sys], [360.0/(2.0*pi*last_ring), step, step], dfunc, 1.e-4, 1.e-4, 500, data)
 	elif interpolation_method=="quadratic":
 		data = []
 		if is_mirror:
 			data.insert(0, mirror(image))
+			ang = -ang
+			sxs = -sxs
 		else:
 			data.insert(0, image)
 		data.insert(1, refim)
 		data.insert(2, mask)
-		if is_mirror:
-			ps = amoeba([-ang, -sxs, sys], [360.0/(2.0*pi*last_ring), step, step], dfunc2, 1.e-4, 1.e-4, 500, data)
-		else:
-			ps = amoeba([ang, sxs, sys], [360.0/(2.0*pi*last_ring), step, step], dfunc2, 1.e-4, 1.e-4, 500, data)
+		ps = amoeba([ang, sxs, sys], [360.0/(2.0*pi*last_ring), step, step], dfunc2, 1.e-4, 1.e-4, 500, data)
 	else: pass
 	
-	if ps[0][0] < 180: ps[0][0] = ps[0][0]+360
-	if ps[0][0] > 180: ps[0][0] = ps[0][0]-360
+	ps[0][0] = ps[0][0]%360.0
 	if is_mirror:
 		ps[0][0] = -ps[0][0]
 		ps[0][1] = -ps[0][1]
@@ -3462,8 +3727,7 @@ def ormy2lbfgsb(image,refim,crefim,xrng,yrng,step,mode,numr,cnx,cny,interpolatio
 			ps, val, d = fmin_l_bfgs_b(dfunc2_i, x0, args=[data], approx_grad=1, bounds=bounds, m=10, factr=1e1, pgtol=1e-5, epsilon=1e-3, iprint=-1, maxfun=15000)
 	else: pass
 
-	if ps[0] < 180: ps[0] = ps[0]+360
-	if ps[0] > 180: ps[0] = ps[0]-360
+	ps[0] = ps[0]%360.0
 	if is_mirror:
 		ps[0] = -ps[0]
 		ps[1] = -ps[1]
@@ -3708,9 +3972,9 @@ def ormy3(image,crefim,xrng,yrng,step,mode,numr,cnx,cny,interpolation_method=Non
 				
 				# straight, find the current maximum and its location
 				line_s = Util.Crosrng_msg_s(crefim,cimage,numr)
-				ps=line_s.peak_search(1,1)				
+				ps=line_s.max_search()				
 				qn=ps[1]
-				jtot=ps[2]/2
+				jtot=ps[0]/2
 				q=Processor.EMFourierFilter(line_s,parline)
 				data.insert(0,q)
 				ps = amoeba([jtot], [2.0], oned_search_func, 1.e-4,1.e-4,50,data)
@@ -3720,9 +3984,9 @@ def ormy3(image,crefim,xrng,yrng,step,mode,numr,cnx,cny,interpolation_method=Non
 
 				# mirror, find the current maximum and its location
 				line_m = Util.Crosrng_msg_m(crefim,cimage,numr)
-				ps=line_m.peak_search(1,1)				
+				ps=line_m.max_search()				
 				qm=ps[1]
-				mtot=ps[2]/2
+				mtot=ps[0]/2
 				q=Processor.EMFourierFilter(line_m,parline)
 				data.insert(0,q)
 				ps = amoeba([mtot], [2.0], oned_search_func,1.e-4,1.e-4,50,data)
