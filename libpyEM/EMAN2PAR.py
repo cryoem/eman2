@@ -48,7 +48,7 @@ import random
 import traceback
 
 # used to make sure servers and clients are running the same version
-EMAN2PARVER=3
+EMAN2PARVER=4
 
 class EMTaskCustomer:
 	"""This will communicate with the specified task server on behalf of an application needing to
@@ -657,10 +657,10 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				try:
 					if self.sockf.read(4)!="ACK " : raise Exception
 					db_remove_dict("bdb:%s#result_%d"%(self.queue.path,data))
-					EMDCTaskHandler.dbugfile.write("%s Results for task %5d retrieved"%(local_datetime(),data))
+					EMDCTaskHandler.dbugfile.write("%s Results for task %5d retrieved\n"%(local_datetime(),data))
 				except:
 					if self.verbose: print "No ACK on RSLT. Keeping results for retry."
-					EMDCTaskHandler.dbugfile.write("%s Results for task %5d FAILED"%(local_datetime(),data))
+					EMDCTaskHandler.dbugfile.write("%s Results for task %5d FAILED\n"%(local_datetime(),data))
 					
 				
 			else :
@@ -703,7 +703,9 @@ class EMDCTaskClient(EMTaskClient):
 			
 				# Get a task from the server
 				task=recvobj(sockf)
+				if verbose : print "%s running task id %d"%(socket.gethostname(),task.taskid)
 				sockf.write("ACK ")
+				if task=="EXIT" : break
 			except :
 				print "No response from server, sleeping 60 sec"
 				time.sleep(60)
@@ -746,7 +748,7 @@ class EMDCTaskClient(EMTaskClient):
 #				ret={"error (%d)"%task.taskid:err}
 
 			# Return results
-			if self.verbose>1 : print "Task done "
+			if self.verbose : print "Task done %d"%task.taskid
 			if self.verbose>3 : print self.__dict__
 			try:
 				sock,sockf=openEMDCsock(self.addr,clientid=self.myid,retry=10)
@@ -771,6 +773,7 @@ class EMDCTaskClient(EMTaskClient):
 			sockf.flush()
 			sockf.close()
 			sock.close()
+			if self.verbose : print "Task returned %d"%task.taskid
 			if self.verbose>2 : print "Results :",ret
 			
 			time.sleep(3)
