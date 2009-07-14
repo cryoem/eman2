@@ -706,7 +706,7 @@ class EMDCTaskClient(EMTaskClient):
 				task=recvobj(sockf)
 				sockf.write("ACK ")
 				sockf.flush()
-				if verbose and task!=None: print "%s running task id %d"%(socket.gethostname(),task.taskid)
+				if self.verbose and task!=None: print "%s running task id %d"%(socket.gethostname(),task.taskid)
 				if task=="EXIT" : break
 			except :
 				print "No response from server, sleeping 60 sec"
