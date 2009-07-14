@@ -596,7 +596,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 			elif cmd=="NCPU" :
 				sendobj(self.sockf,len(EMDCTaskHandler.clients))
 				self.sockf.flush()
-				if verbose : print len(EMDCTaskHandler.clients)," clients reported"
+				if self.verbose : print len(EMDCTaskHandler.clients)," clients reported"
 				
 			elif cmd=="NGRP" :
 				sendobj(self.sockf,self.queue.add_group())
