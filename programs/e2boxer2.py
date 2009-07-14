@@ -66,7 +66,7 @@ a refactoring of e2boxer
 	module = EMBoxerModule(args,options.boxsize)
 	module.show_interfaces()
 	# this is an example of how to add your own custom tools:
-	module.add_2d_window_mouse_tool(SwarmEventHandling,SwarmPanel,particle_diameter=options.boxsize)
+	module.add_tool(SwarmTool,particle_diameter=options.boxsize)
 	application.execute()
 
 def gen_rot_ave_template(image_name,ref_boxes,shrink,box_size,iter=4):
@@ -164,7 +164,12 @@ class SwarmBox:
 		self.peak_x = None
 		self.peak_y = None
 		self.peak_score = None
-		
+		self.ever_moved = False # used to record if the user ever moved the ref after they first added it
+	
+	def type_name(self):
+		if self.in_template: return SwarmBoxer.REF_NAME
+		else: return SwarmBoxer.WEAK_REF_NAME
+	
 	def update_picking_data(self,mediator):
 		
 		shrink = mediator.get_subsample_rate()
@@ -202,10 +207,6 @@ class SwarmPanel:
 		self.target = weakref.ref(target)
 		self.widget = None
 		self.busy = False
-		
-	def icon(self):
-		from PyQt4 import QtGui
-		return QtGui.QIcon(get_image_directory() + "swarm_icon.png")
 		
 	def get_widget(self):
 		if self.widget == None:
@@ -374,10 +375,6 @@ class SwarmPanel:
 		if self.busy: return
 		self.target().set_update_template(val)
 		
-	def hide(self):
-		if self.widget != None:
-			self.widget.hide()
-	
 	def clear_clicked(self,val):
 		self.target().clear_all()
 		
@@ -432,6 +429,16 @@ class SwarmBoxer:
 	MORESELECTIVE = "More Selective"
 	CACHE_MAX = 10 # Each image has its last CACHE_MAX SwarmBoxer instance stored (or retrievable) automatically 
 	PROFILE_MAX = 0.8 # this is a percentage - it stops the profile trough point from going to the end
+	REF_NAME = "swarm_ref"
+	AUTO_NAME = "swarm_auto"
+	WEAK_REF_NAME = "swarm_weak_ref"
+	EMBox.set_box_color(REF_NAME,[0,0,0])
+	EMBox.set_box_color(WEAK_REF_NAME,[0.2,0.2,0.4])
+	EMBox.set_box_color(AUTO_NAME,[0.4,.9,.4]) # Classic green, always was this one ;)
+	MVT_THRESHOLD = 200 # a squared distance - used by the movement cache to automatically update using previously supplied user movement data
+	SWARM_BOXERS = "swarm_boxers"
+	SWARM_FWD_BOXERS = "swarm_fwd_boxers"
+	SWARM_USER_MVT = "swarm_user_mvt"
 	def __init__(self,particle_diameter=128):
 		self.particle_diameter = particle_diameter
 		self.update_template = True # Tied to the SwarmPanel - Whether or not the act of adding a reference should force an update of the template
@@ -447,11 +454,14 @@ class SwarmBoxer:
 		
 		self.step_back_cache = [] # this will stored lists that store the parameters necessary to reconstruct a swarm boxer
 		self.step_fwd_cache = [] # this will store the redo lists
-	
+		self.mvt_cache = [] # we have to remember if any of the auto selected boxes were moved, so if the user reboxes then the movements they previously supplied will be applied
+#		self.auto_center_list = [] # a list of box number which automatically gets center and then cleared in the update_parameters function
+		
 	def __del__(self):
 		'''
 		Closes the template viewer if it exists
 		'''
+		print "del sb"
 		if self.template_viewer != None:
 			self.template_viewer.closeEvent(None)
 			self.template_viewer = None
@@ -459,6 +469,7 @@ class SwarmBoxer:
 	def reset(self):
 		'''
 		Sets the self.ref_boxes, self.templates, self.profile, self.peak_score and self.profile_trough_point to safe defaults.
+		Called in a couple of locations internally (notable, in the __init__ function)
 		'''
 		self.ref_boxes = []
 		self.templates = None
@@ -510,6 +521,10 @@ class SwarmBoxer:
 		# entry 10 is not required, it is the creation stamp used to ascertain if common boxer instances are being used by different images, it has no relevance to interactive boxing
 		
 	def step_back(self):
+		'''
+		That which is called by the SwarmPanel when "Step Back" is clicked
+		Manages all the various scenarios
+		'''
 		
 		if len(self.step_back_cache) == 0: raise RuntimeError("Step backward cache has no entries")
 		l = self.step_back_cache.pop(-1)
@@ -518,9 +533,9 @@ class SwarmBoxer:
 		
 		if len(self.step_back_cache) > 0:
 			self.panel_object.enable_step_back(True,len(self.step_back_cache))
-			self.handle_box_states_changed()
+			self.load_from_last_state()
 		else:
-			self.target().clear_boxes(["ref","auto"])
+			self.target().clear_boxes([SwarmBoxer.REF_NAME,SwarmBoxer.AUTO_NAME,SwarmBoxer.WEAK_REF_NAME])
 			self.reset()
 			self.panel_object.enable_step_back(False)
 			self.target().get_2d_window().updateGL()
@@ -534,25 +549,41 @@ class SwarmBoxer:
 			self.panel_object.enable_view_template(True)
 		
 #		self.debug_back("back")
+#		
+#	def debug_back(self,s):
+#		for i,c in enumerate(self.step_back_cache):
+#			for j,b in enumerate(c[0]):
+#				print s,i,j,b.in_template
+#		print "---"
 		
-	def debug_back(self,s):
-		for i,c in enumerate(self.step_back_cache):
-			for j,b in enumerate(c[0]):
-				print s,i,j,b.in_template
-		print "---"
-	def handle_box_states_changed(self):
+	def load_from_last_state(self):
+		'''
+		A function called in more than one location. Gets the last entry in the self.step_back_cache and harnesses
+		the relevant parameters from it, then clears the EMBoxerModule of relevant boxes, and then an autobox is
+		forced. Making the autoboxing sensitive to the self.auto_update parameter would make it messy and tricky to handle.
+		'''
 		if len(self.step_back_cache) == 0: raise RuntimeError("can't proceed there are no entries in the step_back cache")
-		self.target().clear_boxes(["ref","auto"])
+		self.target().clear_boxes([SwarmBoxer.REF_NAME,SwarmBoxer.AUTO_NAME,SwarmBoxer.WEAK_REF_NAME])
 #		self.debug_back("hb a")
 		self.load_from_list(deepcopy(self.step_back_cache[-1]))
-		boxes = [ [box.x, box.y, "ref", box.peak_score] for box in self.ref_boxes if box.image_name == self.current_file ]
+		boxes = [ [box.x, box.y, box.type_name(), box.peak_score] for box in self.ref_boxes if box.image_name == self.current_file ]
 #		self.debug_back("hb b")
 		self.target().add_boxes(boxes)
 		self.target().get_2d_window().updateGL()
 		if self.templates != None:
 			self.auto_box(self.target().current_file(),parameter_update=False,cache=False)
+		else:
+			print "handle the case of no templates ?"
 			
 	def step_forward(self):
+		'''
+		Manages the case when the user has clicked "Step Forward" in the SwarmPanel
+		In this case the last entry in self.step_fwd_cache is used to set the states of 
+		the relevant variable attributes of this object. After this we have to clear the
+		EMBoxerModule and redo autoboxing. Note that I made this function force an autobox,
+		simply because the it would get messy otherwise.
+		Handles any necessary updates of the SwarmPanel
+		'''
 		if len(self.step_fwd_cache) == 0: raise RuntimeError("Step forward cache has no entries")
 		l = self.step_fwd_cache.pop(-1)
 		
@@ -562,9 +593,9 @@ class SwarmBoxer:
 		self.panel_object.enable_step_back(True,len(self.step_back_cache))
 		self.step_back_cache.append(l)
 
-		self.target().clear_boxes(["ref","auto"])
+		self.target().clear_boxes([SwarmBoxer.REF_NAME,SwarmBoxer.AUTO_NAME,SwarmBoxer.WEAK_REF_NAME])
 		self.load_from_list(deepcopy(self.step_back_cache[-1]))
-		boxes = [ [box.x, box.y, "ref", box.peak_score] for box in self.ref_boxes if box.image_name == self.current_file]
+		boxes = [ [box.x, box.y, box.type_name(), box.peak_score] for box in self.ref_boxes if box.image_name == self.current_file]
 		self.target().add_boxes(boxes)
 		self.target().get_2d_window().updateGL()
 		if len(self.ref_boxes) > 0:
@@ -578,29 +609,49 @@ class SwarmBoxer:
 		if self.templates != None:
 			self.panel_object.enable_view_template(True)
 		
-	def cache_new_state(self):
-#		self.debug_back("cache enter")
+	def cache_current_state(self):
+		'''
+		Adds the current state to self.step_back_cache
+		As a result resets self.step_fwd_cache (think in terms of undo and redo)
+		Also updates the SwarmPanel
+		'''
 		self.step_back_cache.append(self.to_list())
 		self.step_fwd_cache = []
 		self.panel_object.enable_step_forward(False)
 		self.panel_object.enable_step_back(True,len(self.step_back_cache))
 		if len(self.step_back_cache) >= SwarmBoxer.CACHE_MAX: self.step_back_cache.pop(0)
-#		self.debug_back("cache exit")
 		
-	def cache_to_database(self):		
-		set_database_entry(self.target().current_file(),"swarm_boxers",self.step_back_cache)
-		set_database_entry(self.target().current_file(),"swarm_fwd_boxers",self.step_fwd_cache)
+	def cache_to_database(self):
+		'''
+		Stores the SwarmBoxer.SWARM_BOXERS and SwarmBoxer.SWARM_FWD_BOXER entries on the local database 
+		'''
+		set_database_entry(self.target().current_file(),SwarmBoxer.SWARM_BOXERS,self.step_back_cache)
+		set_database_entry(self.target().current_file(),SwarmBoxer.SWARM_FWD_BOXERS,self.step_fwd_cache)
 		
 	def handle_file_change(self,file_name):
+		'''
+		Handles the situation when the user changes the current image being studied in the main interface
+		in the EMBoxerModule.
+		A groovy thing happens - if the user has "auto updates" selected in the SwarmPanel then
+		the last boxer from the previous image (i.e. self.step_back_cache[-1]) is pushed to the top
+		of the boxer stack for the new image and auto boxing occurs. This is easily undone if the results
+		are unwanted, i.e. by pressing "Step Back" in the SwarmPanel
+		
+		A variety of basic things happen too. And cached boxer data are restored from the local database,
+		allowing the user to step back and step forward (as in the buttons in the Swarm Panel), etc.
+		
+		'''
 		l = None
 		if self.auto_update and len(self.step_back_cache) > 0:
 			l = deepcopy(self.step_back_cache[-1])
 		
-		self.step_fwd_cache = get_database_entry(file_name,"swarm_fwd_boxers",dfl=[])
+		self.mvt_cache = get_database_entry(file_name,SwarmBoxer.SWARM_USER_MVT,dfl=[])
+		
+		self.step_fwd_cache = get_database_entry(file_name,SwarmBoxer.SWARM_FWD_BOXERS,dfl=[])
 		if len(self.step_fwd_cache) > 0: self.panel_object.enable_step_forward(True,len(self.step_fwd_cache))
 		else: self.panel_object.enable_step_forward(False)
 			
-		self.step_back_cache = get_database_entry(file_name,"swarm_boxers",dfl=[])
+		self.step_back_cache = get_database_entry(file_name,SwarmBoxer.SWARM_BOXERS,dfl=[])
 		
 		if len(self.step_back_cache) > 0 and l != None:
 			print self.step_back_cache[-1][10],l[10]
@@ -612,19 +663,11 @@ class SwarmBoxer:
 			self.step_back_cache.append(l)
 			self.cache_to_database()
 
-
 		if len(self.step_back_cache) > 0: self.panel_object.enable_step_back(True,len(self.step_back_cache))
 		else: self.panel_object.enable_step_back(False)
 		
-	
-				
 		if l != None:
-			self.handle_box_states_changed()
-#			self.cache_new_state()
-#			self.cache_to_database()
-#			self.handle_box_states_changed()
-#			self.load_from_list(l)
-#			self.auto_box(self.target().current_file(),parameter_update=False,cache=False,)
+			self.load_from_last_state()
 		else:
 			if len(self.step_back_cache): self.load_from_list(deepcopy(self.step_back_cache[-1]))
 
@@ -637,20 +680,31 @@ class SwarmBoxer:
 			self.panel_object.enable_view_template(True)
 	
 	def set_interactive_threshold(self,val):
+		'''
+		The SwarmPanel calls this function when the user changes the interactive threshold
+		@param val the new interactive threshold to set
+		'''
 		if self.interactive_threshold == val: return
 		
 		self.interactive_threshold = val
 		if self.auto_update and self.templates != None:
 			self.auto_box(self.target().current_file(), parameter_update=True, force_remove_auto_boxes=True)
+		elif not self.auto_update:
+				self.panel_object.enable_auto_box(True)
 	
 	def disable_interactive_threshold(self):
-
+		'''
+		The SwarmPanel calls this function when the user clicks to disable the interactive threshold
+		'''
 		self.interactive_threshold = None
 		if self.auto_update and self.templates != None:
 			self.auto_box(self.target().current_file(), parameter_update=True, force_remove_auto_boxes=True)
-	
+		elif not self.auto_update:
+			self.panel_object.enable_auto_box(True)
+			
 	def view_template_clicked(self):
 		'''
+		The SwarmPanel calls this function.
 		Loads an EMImageMXModule for viewing (if it doesn't already exist)
 		Brings the template viewer to the foreground
 		'''
@@ -667,6 +721,9 @@ class SwarmBoxer:
 		get_application().show_specific(self.template_viewer)
 		
 	def template_viewer_closed(self):
+		'''
+		A slot for the module_closed signal from self.template_viewer
+		'''
 		self.template_viewer = None
 		
 	def set_update_template(self,val):
@@ -692,6 +749,7 @@ class SwarmBoxer:
 			self.particle_diameter = diameter
 			self.signal_template_update = True
 			if self.auto_update and self.templates != None: self.auto_box(self.target().current_file())
+			elif not self.auto_update: self.panel_object.enable_auto_box(True)
 		
 	def set_pick_mode(self,mode):
 		'''
@@ -703,31 +761,174 @@ class SwarmBoxer:
 			self.pick_mode = mode
 			if self.auto_update and self.templates != None:
 				self.auto_box(self.target().current_file(), parameter_update=False, force_remove_auto_boxes=True)
+			elif not self.auto_update:
+				self.panel_object.enable_auto_box(True)
+	
+	def move_auto_box(self,box_number,image_name,dx,dy):
+		'''
+		This is the solution to a conundrum - what if the user moves an auto box (a green one) but then reboxes, subsequently
+		losing this "centering" metadata? The solution implemented here is to store the movement metadata and perform collision
+		detection whenever autoboxing happens again.
+		
+		Here we update the "movement cache" to reflect the new metadata
+		@param box_number the index corresponding to the stored box of the EMBoxList in the EMBoxerModule
+		@param image_name the name of the image we're currently operating on - this is important because its used to store data in the local database
+		@param dx the movement in the x direction (float)
+		@param dy the movement in the y direction
+		'''
+		box = self.target().get_box(box_number)
+		for i,[old,new] in enumerate(self.mvt_cache):
+			dist = (new[0]-box.x)**2 + (new[1]-box.y)**2
+			if dist < SwarmBoxer.MVT_THRESHOLD:
+				self.mvt_cache[i][1] = [box.x+dx,box.y+dy]
+				break
+		else:
+			self.mvt_cache.append([[box.x,box.y],[box.x+dx,box.y+dy]])
+		
+		set_database_entry(image_name,SwarmBoxer.SWARM_USER_MVT,self.mvt_cache)
+		self.target().move_box(box_number,dx,dy)
+		
+	
+	def update_auto_box_user_mvt(self,boxes):
+		'''
+		This is the solution to a conundrum - what if the user moves an auto box (a green one) but then reboxes, subsequently
+		losing this "centering" metadata? The solution implemented here is to store the movement metadata and perform collision
+		detection whenever autoboxing happens again.
+		@param boxes a list of lists box data e.g. [[x,y,type,score],[x,y,type,score],....[int,int,str,float])  
+		'''
+		for box in boxes:
+			for i,[old,new] in enumerate(self.mvt_cache):
+				dist = (old[0]-box[0])**2 + (old[1]-box[1])**2
+				if dist < SwarmBoxer.MVT_THRESHOLD:
+					box[0] = new[0]
+					box[1] = new[1]
+	
+	def move_ref(self,box_number,image_name,dx,dy,set_moved=True):
+		'''
+		Moves the reference stored internally and updates the EMBoxerModule so that it displays and stores the exact same thing.
+		Separating what this object stores from what the EMBoxerModule stores decouple them and disentangles the overall design,
+		but also makes some tasks 'fiddly'.
+		
+		This function takes care of telling the EMBoxerModule to correct what it's displaying - so the calling function should not.
+		
+		@param box_number the index corresponding to the stored box of the EMBoxList in the EMBoxerModule
+		@param image_name the name of the image we're currently operating on
+		@param dx the movement in the x direction (float)
+		@param dy the movement in the y direction 
+		@param set_moved a boolean indicating whether the SwarmBox.ever_moved attribute should be set to True. Search for ever_moved to see where it's used
+		'''
+		box = self.target().get_box(box_number)
+		for i,rbox in enumerate(self.ref_boxes):
+			if rbox.x == box.x and rbox.y == box.y and rbox.image_name == image_name:
+				rbox.x += dx
+				rbox.y += dy
+				if set_moved:rbox.ever_moved = True
+				new_box = EMBox(rbox.x,rbox.y,rbox.type_name(),rbox.peak_score)
+				self.target().set_box(new_box,box_number,update_display=True)
+				break
+		else:
+			raise RuntimeError("Attempt to move a reference failed")
+		
+	def remove_ref(self,box,image_name):
+		'''
+		Remove the reference, i.e. in response to a mouse delete event
+		
+		Does not tell the EMBoxModule to removed the displayed box - the calling function should do that.
+		
+		@param box an EMBox, as returned by the call to EMBoxerModule.get_box
+		@param image_name the name of the image we're operating on
+		'''
+		for i,rbox in enumerate(self.ref_boxes):
+			if rbox.x == box.x and rbox.y == box.y and rbox.image_name == image_name:
+				b = self.ref_boxes.pop(i)
+				if self.auto_update:
+					if len(self.ref_boxes) > 0:
+						if box.type == SwarmBoxer.REF_NAME:
+							self.signal_template_update=True 
+						self.auto_box(image_name,force_remove_auto_boxes=True)
+					else:
+						self.clear_all()
+				else:
+					self.panel_object.enable_auto_box(True)
+				break
+		else:
+			raise RuntimeError("Attempt to remove a reference failed")
+					
 	
 	def add_ref(self,x,y,image_name):
-		self.ref_boxes.append(SwarmBox(x,y,image_name,self.update_template))
-		if self.update_template: self.signal_template_update = True
-
-		self.target().add_box(x,y,type="ref")
+		'''
+		Add a reference at the given coordinate and from the given image
+		
+		Does not tell the EMBoxerModule to add the box - the calling function must do this
+		
+		@param x the x coordinate of the box
+		@param y the y coordinate of the box
+		@parm image_name the name of the image we're operating on
+		'''
+		new_box = SwarmBox(x,y,image_name,self.update_template)
+		self.ref_boxes.append(new_box)
+		if self.update_template: 
+			self.signal_template_update = True
+			box_num = self.target().add_box(x,y,type=SwarmBoxer.REF_NAME)
+		else:
+			box_num = self.target().add_box(x,y,type=SwarmBoxer.WEAK_REF_NAME)
+				
 		self.get_2d_window().updateGL()
 		
-		if self.auto_update: 
+		return box_num
+		
+		
+	def ref_released(self,image_name):
+		'''
+		This function called when a reference box is released, i.e. by the mouse
+		This can cause an autoboxing update if the self.auto_update parameter is true
+		@param image_name the name of the image that is being operated on 
+		'''
+		if self.auto_update:
 			self.auto_box(image_name)
 		else:
-			self.cache_new_state()
-			self.cache_to_database()
-		
+			self.panel_object.enable_auto_box(True)
+		#DONT THINK THIS IS ADVISABLE...WALKING A FINE LINE
+#		else:
+#			self.cache_current_state()
+#			self.cache_to_database()
+			
+#			
+#	def try_to_center_ref(self,box_num):
+#		if self.templates:
+#			shrink = self.get_subsample_rate()
+#			scaled_template = self.templates[-1].process("math.transform.scale",{"scale":shrink,"clip":self.particle_diameter})
+#			scaled_template.process_inplace("xform.centeracf")
+#			box = self.target().get_box(box_num)
+#			dx,dy = self.xform_center_propagate([box.x,box.y],self.target().current_file(),scaled_template,self.particle_diameter)
+#			print dx,dy,"try"
+#			self.move_ref(box_num,self.target().current_file(),dx,dy)
+#				
+			
 	def get_subsample_rate(self):
+		'''
+		Get the subsample rate advised by the SwarmBoxer, as based on self.particle_diameter and SWARM_TEMPLATE_MIN
+		'''
 		return int(math.ceil(float(self.particle_diameter)/float(SWARM_TEMPLATE_MIN)))
 	
 	def auto_box_clicked(self):
-		self.auto_box(self.target().current_file(),force_remove_auto_boxes=True)
+		'''
+		When the autobox button is clicked then we force an autobox.
+		'''
+		self.auto_box(self.target().current_file(),force_remove_auto_boxes=True)	
 	
 	def auto_box(self,image_name,parameter_update=True,force_remove_auto_boxes=False,cache=True):
-		
+		'''
+		The main autoboxing function, this has a lot in it but it's not that complicated
+		@param image_name the image that we're boxing
+		@param parameter_update, should generally be True,but may be False if the current parameters are known to be current (see self.load_from_last_state) 
+		@param force_remove_auto_boxes if True all of the autoboxed boxes in the EMBoxerModule are removed and the 'entire' image is autoboxed again. This might be False if you know the template has not changed
+		@param cache whether or not the newly establish state, i.e. at the end of this function, should be cached to the database and internally. Generally True but sometimes False (see self.load_from_last_state) .
+		'''
 		if self.signal_template_update or force_remove_auto_boxes:
-			self.target().clear_boxes(["auto"])
+			self.target().clear_boxes([SwarmBoxer.AUTO_NAME])
 			self.get_2d_window().updateGL()
+			
 		
 		if self.signal_template_update:
 			self.templates = gen_rot_ave_template(image_name,self.ref_boxes,self.get_subsample_rate(),self.particle_diameter)
@@ -737,8 +938,9 @@ class SwarmBoxer:
 				self.template_viewer.set_data(self.templates,soft_delete=True)
 				self.template_viewer.updateGL()
 				
-		shrink = self.get_subsample_rate()		
+		shrink = self.get_subsample_rate()
 
+		
 		exclusion_image = self.target().get_exclusion_image(mark_boxes=True)
 		
 		mediator = SwarmFLCFImageMediator(self.particle_diameter/(shrink*2),shrink,self.templates[-1])
@@ -746,7 +948,8 @@ class SwarmBoxer:
 		
 		exclusion_shrink = exclusion_image.get_attr("shrink")
 		
-		if shrink != exclusion_shrink:
+		if shrink != exclusion_shrink: 
+			# the amount by which the exclusion is shrunken does not match the amount by which the SwarmBoxer shrinks - so we have to scale
 			# to do: test this
 			#print "shrink changed does this work?",shrink,exclusion_shrink,self.particle_diameter, SWARM_TEMPLATE_MIN,TEMPLATE_MIN
 			rescale = float(exclusion_shrink)/shrink
@@ -766,7 +969,8 @@ class SwarmBoxer:
 				
 		for box in self.ref_boxes:
 			box.update_picking_data(mediator)
-		
+			
+
 		if parameter_update:
 			if not self.update_opt_picking_data(): 
 				print "funny error"
@@ -788,20 +992,41 @@ class SwarmBoxer:
 			y = b[1]
 			xx = int(x*shrink)
 			yy = int(y*shrink)
-			type = "auto"
+			type = SwarmBoxer.AUTO_NAME
 			peak_score = correlation.get(x,y)
 			box = [xx,yy,type,peak_score]
 			self.center_propagate(box,image_name,scaled_template,self.particle_diameter)
 			boxes.append(box)
-
+		
+		
+		self.update_auto_box_user_mvt(boxes)
+		
+		for box in self.ref_boxes:
+			if not box.ever_moved and box.image_name == self.target().current_file():
+				box_num = self.target().detect_box_collision([box.x,box.y])
+				if box_num == -1: raise RuntimeError("could not find reference")
+				else:
+					box = self.target().get_box(box_num)
+					if box.type not in [SwarmBoxer.REF_NAME,SwarmBoxer.WEAK_REF_NAME]:
+						raise RuntimeError("Did not get a reference when doing collision detection")
+					
+					dx,dy = self.xform_center_propagate([box.x,box.y],image_name,scaled_template,self.particle_diameter)
+					self.move_ref(box_num,image_name,dx,dy)
+		
 	   	boxes.sort(compare_box_correlation) # sorting like this will often put large ice contaminations in a group, thanks Pawel Penczek
 		self.target().add_boxes(boxes)
 		
 		if cache:
-			self.cache_new_state()
+			self.cache_current_state()
 			self.cache_to_database()
+			
+		self.panel_object.enable_auto_box(False)
 	
 	def update_opt_picking_data(self):
+		'''
+		This is the function that decides on the picking parameters of the SwarmBoxer, based on the reference
+		boxes stored in self.ref_boxes
+		'''
 		self.profile = None
 		self.peak_score = None
 		self.profile_trough_point = None
@@ -839,16 +1064,41 @@ class SwarmBoxer:
 		return True
 	
 	def clear_all(self):
-		self.target().clear_boxes(["ref","auto"])
+		'''
+		Clears all associated boxes from the EMBoxerModule and internally, establishing a clean, blank state
+		'''
+		self.target().clear_boxes([SwarmBoxer.REF_NAME,SwarmBoxer.AUTO_NAME,SwarmBoxer.WEAK_REF_NAME])
 		self.reset()
 		self.panel_object.enable_view_template(False)
 		self.panel_object.enable_auto_box(False)
 		if self.template_viewer != None: self.template_viewer.set_data(None)
-		self.cache_new_state()
+		self.cache_current_state()
 		self.cache_to_database()
 		
 		
 	def center_propagate(self,box,image_name,template,box_size):
+		'''
+		Centers the box argument in place
+		@param box a list like [x,y,type,float] - only x and y are used
+		@param image_name the name of the image we're operating on
+		@param template the template correctly scaled to the have the same angstrom per pixel as the image (named image_name) stored on disk
+		@param box_size the size of the box used to center - see xform_center_propagate
+		'''
+		dx,dy = self.xform_center_propagate(box,image_name,template,box_size)
+		box[0] += dx
+		box[1] += dy
+
+#		
+	def xform_center_propagate(self,box,image_name,template,box_size):
+		'''
+		Centers a box that was generated in a shrunken image by getting the 'real particle' out of the large
+		image on disk and doing a ccf with the template - then I just find the peak and use that to center
+		@param box a list like [x,y,type,float] - only x and y are used
+		@param image_name the name of the image we're operating on
+		@param template the template correctly scaled to the have the same angstrom per pixel as the image (named image_name) stored on disk
+		@param box_size the size of the box used to center
+		Returns the dx and dy parameters, i.e. does not actually alter the box
+		'''
 	  	global BigImageCache
 	  	image = BigImageCache.get_image_directly(image_name)
 			 
@@ -860,23 +1110,32 @@ class SwarmBoxer:
 		trans = ccf.calc_max_location_wrap(particle.get_xsize()/2,particle.get_ysize()/2,0)
 		dx = trans[0]
 		dy = trans[1]
-		box[0] += trans[0]
-		box[1] += trans[1]
+		return dx,dy
+		
 					
-class SwarmEventHandling(SwarmBoxer):
+class SwarmTool(SwarmBoxer):
 	'''
 	A class that knows how to handle mouse erase events for a GUIBox
 	'''	
-	def __init__(self,target,panel_object=None,particle_diameter=128):
+	
+	def __init__(self,target,particle_diameter=128):
 		SwarmBoxer.__init__(self,particle_diameter)
 		self.target = weakref.ref(target)
-		self.panel_object = panel_object
+		self.panel_object = SwarmPanel(self,self.particle_diameter)
 		self.current_file = None # the name of the file that is being studied in the main viewer
-		
-		self.ref_box_name = "ref"
-		self.auto_box_name = "auto"
-	
+		self.moving_box = None # keeps track of the moving box, will be a list in the format [[int,int],int,str] = [[x,y],box_number,box_type]
+			
 	def unique_name(self): return "Swarm"
+	
+	def get_widget(self):
+		if self.panel_object == None:
+			self.panel_object = SwarmPanel(self,self.particle_diameter)
+		return self.panel_object.get_widget()
+	
+	def icon(self):
+		from PyQt4 import QtGui
+		return QtGui.QIcon(get_image_directory() + "swarm_icon.png")
+	
 		
 	def set_current_file(self,file_name):
 		'''
@@ -889,8 +1148,6 @@ class SwarmEventHandling(SwarmBoxer):
 	
 	def get_2d_window(self): return self.target().get_2d_window()
 	
-	def set_panel_object(self,panel): self.panel_object = panel
-		
 	def mouse_move(self,event):
 		pass
 		
@@ -899,30 +1156,63 @@ class SwarmEventHandling(SwarmBoxer):
 	def mouse_down(self,event):
 		m = self.get_2d_window().scr_to_img((event.x(),event.y()))
 		box_num = self.target().detect_box_collision(m)
+		box = self.target().get_box(box_num)
 		from PyQt4.QtCore import Qt
 		if box_num == -1:
 			if event.modifiers()&Qt.ShiftModifier : return # the user tried to delete nothing
-			self.add_ref(m[0],m[1],self.target().current_file())
+			box_num = self.add_ref(m[0],m[1],self.target().current_file())
+			b = self.target().get_box(box_num)
+			self.moving=[m,box_num,b.type]
 		else:
-			pass
-#			box_type = self.target().get_box_type(box_num)
-#			if box_type in [self.auto_box_name,self.ref_box_name]:
-#				from PyQt4.QtCore import Qt
-#				if event.modifiers()&Qt.ShiftModifier :
-#					# remove the box
-#					self.target().remove_box(box_num)
-#				else:
-#					# if we make it here than the we're moving a box
-#					self.moving=[m,box_num]
-#					self.target().moving_box_established(box_num)
-#			else:
-#				print 'should change mouse handler now'
+			if box.type in [SwarmBoxer.REF_NAME,SwarmBoxer.AUTO_NAME,SwarmBoxer.WEAK_REF_NAME]:
+				from PyQt4.QtCore import Qt
+				if event.modifiers()&Qt.ShiftModifier :
+					self.handle_box_delete(box,box_num)
+				else:
+					# if we make it here than the we're moving a box
+					self.moving=[m,box_num,box.type]
+					self.target().moving_box_established(box_num)
+			else:
+				print 'should change mouse handler now'
 			
-			
+	
+	def handle_box_delete(self,box,box_num):
+		if box.type == SwarmBoxer.AUTO_NAME:
+			self.target().remove_box(box_num,exclude_region=True)
+		elif box.type == SwarmBoxer.REF_NAME or box.type == SwarmBoxer.WEAK_REF_NAME:
+			self.target().remove_box(box_num)
+			self.remove_ref(box,self.target().current_file())
+		else:
+			raise RuntimeError("%s is an unkown box type" %box.type)
+	
 	def mouse_drag(self,event) :
-		pass
+		m=self.get_2d_window().scr_to_img((event.x(),event.y()))
+		from PyQt4.QtCore import Qt
+		if event.modifiers()&Qt.ShiftModifier:
+			box_num = self.target().detect_box_collision(m)
+			box = self.target().get_box(box_num)
+			if ( box_num != -1):
+				if box.type in [SwarmBoxer.REF_NAME,SwarmBoxer.AUTO_NAME,SwarmBoxer.WEAK_REF_NAME]:
+					self.handle_box_delete(box,box_num)			
+		elif self.moving != None:
+			oldm = self.moving[0]
+			dx = m[0]-oldm[0]
+			dy = m[1]-oldm[1]
+
+			if self.moving[2] in [SwarmBoxer.REF_NAME,SwarmBoxer.WEAK_REF_NAME]:
+				self.move_ref(self.moving[1],self.target().current_file(),dx,dy)
+			else:
+				self.move_auto_box(self.moving[1],self.target().current_file(),dx,dy)
+				
+			self.moving[0] = m
 	def mouse_up(self,event) :
-		pass
+		if self.moving != None:
+			self.target().box_released(self.moving[1])
+		
+		if self.moving[2] in [SwarmBoxer.REF_NAME,SwarmBoxer.WEAK_REF_NAME]:
+			self.ref_released(self.target().current_file())
+			
+		self.moving= None
 	
 
 if __name__ == "__main__":

@@ -1068,12 +1068,13 @@ SubsamplerCache = CoarsenedFlattenedImageCache
 #SubsamplerCache = SincBlackmanSubsamplerCache
 
 class FLCFImage:
+	DB_NAME = "flcf_image"
 	def __init__(self,image_name):
 		self.flcfimage = None	# this is the flcf image
 		self.image_name=image_name # we must store this it's used externally to determine if the FLCFImage is cached
 		
 		try: # try to read the image from disk - it may already exist and save us lots of time
-			self.flcfimage = get_idd_image_entry(self.image_name,"flcf_image")
+			self.flcfimage = get_idd_image_entry(self.image_name,FLCFImage.DB_NAME)
 		except:
 			# the image doesn't exist, that's okay
 			pass
@@ -1144,7 +1145,7 @@ class FLCFImage:
 		self.flcfimage.set_attr("get_sigma_image_shrink_factor",shrink_factor)
 		self.flcfimage.set_attr("get_sigma_image_flatten_radius",flatten_radius)
 		
-		set_idd_image_entry(self.image_name,"flcf_image",self.flcfimage)
+		set_idd_image_entry(self.image_name,FLCFImage.DB_NAME,self.flcfimage)
 		
 	def get_image(self):
 		return self.flcfimage
