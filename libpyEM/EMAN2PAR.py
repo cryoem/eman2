@@ -32,7 +32,7 @@
 
 # This file contains functions related to running jobs in parallel in EMAN2
 
-from EMAN2 import test_image,EMData,abs_path
+from EMAN2 import test_image,EMData,abs_path,local_datetime
 from EMAN2db import EMTask,EMTaskQueue,db_open_dict,db_remove_dict
 from e2classaverage import EMClassAveTaskDC
 from e2simmx import EMSimTaskDC
@@ -696,7 +696,7 @@ class EMDCTaskClient(EMTaskClient):
 			# connect to the server
 			if self.verbose>1 : print "Connect to (%s,%d)"%self.addr
 			try :
-				sock,sockf=openEMDCsock(self.addr,clientid=self.myid,retry=10)
+				sock,sockf=openEMDCsock(self.addr,clientid=self.myid,retry=3)
 				sockf.write("RDYT")
 				sendobj(sockf,None)
 				sockf.flush()
