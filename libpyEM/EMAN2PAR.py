@@ -508,11 +508,11 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				# check for an ACK, if not, requeue
 				try:
 					if self.sockf.read(4)!="ACK " : raise Exception
-					EMDCTaskHandler.dbugfile.write("%s: Task %5d sent to %s\n"%(local_datetime(),task.taskid,str(client_id)))
+					if task!=None : EMDCTaskHandler.dbugfile.write("%s: Task %5d sent to %s\n"%(local_datetime(),task.taskid,str(client_id)))
 				except:
 					if self.verbose: print "Task sent, no ACK"
 					self.queue.task_rerun(task.taskid)
-					EMDCTaskHandler.dbugfile.write("%s: Task %5d sent to %s but no ACK\n"%(local_datetime(),task.taskid,str(client_id)))
+					if task!=None : EMDCTaskHandler.dbugfile.write("%s: Task %5d sent to %s but no ACK\n"%(local_datetime(),task.taskid,str(client_id)))
 				self.tasklock=False
 
 			
