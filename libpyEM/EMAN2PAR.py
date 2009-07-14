@@ -414,6 +414,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 	from the server, which runs on a host with access to the data to be processed."""
 	verbose=0
 	rtcount=0
+	datacount=0
 	rotate=('/','-','\\','|')
 	
 	def __init__(self, request, client_address, server):
@@ -470,6 +471,11 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 					EMDCTaskHandler.rtcount+=1
 					print " %s \r"%EMDCTaskHandler.rotate[EMDCTaskHandler.rtcount%4],
 					sys.stdout.flush()
+				elif cmd=="DATA" :
+					EMDCTaskHandler.datacount+=1
+					if EMDCTaskHandler.datacount%100==0 : 
+						print"*** %d data   \r"%EMDCTaskHandler.datacount
+						sys.stdout.flush()
 				else :
 					try: print "Command %s: %s (%d)"%(str(self.client_address),cmd,len(data))
 					except: print "Command %s: %s (-)"%(str(self.client_address),cmd)
@@ -590,6 +596,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 			elif cmd=="NCPU" :
 				sendobj(self.sockf,len(EMDCTaskHandler.clients))
 				self.sockf.flush()
+				if verbose : print len(EMDCTaskHandler.clients)," clients reported"
 				
 			elif cmd=="NGRP" :
 				sendobj(self.sockf,self.queue.add_group())
@@ -666,7 +673,9 @@ class EMDCTaskClient(EMTaskClient):
 		return
 
 	def run(self):
+		count=0
 		while (1):
+			count +=1
 			# connect to the server
 			if self.verbose>1 : print "Connect to (%s,%d)"%self.addr
 			try :
@@ -684,7 +693,10 @@ class EMDCTaskClient(EMTaskClient):
 				continue
 
 			if task==None:
-				if self.verbose : print "No tasks to run :^("
+				if self.verbose :
+					if count%1==0 : print "|\r"
+					else : print "-\r"
+					sys.stdout.flush()
 				sockf.close()
 				sock.close()
 				time.sleep(10)
@@ -752,7 +764,16 @@ class EMDCTaskClient(EMTaskClient):
 		sockf.write("DATA")
 		sendobj(sockf,["cache",did,imnum])
 		sockf.flush()
-		return recvobj(sockf)
+		try: ret=recvobj(sockf)
+		except : 
+			print "ERROR on %s: could not retrieve %s : %d, retry"%(socket.gethostname(),str(did),imnum)
+			time.sleep(3)
+			sockf.write("DATA")
+			sendobj(sockf,["cache",did,imnum])
+			sockf.flush()
+			ret=recvobj(sockf)
+			
+		return ret
 		
 	#		self.sockf=
 		

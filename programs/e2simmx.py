@@ -275,7 +275,8 @@ class EMParallelSimMX:
 #			
 			while 1:
 				if len(self.task_customers) == 0: break
-				print len(self.task_customers),"simmx tasks left in main loop"
+				print len(self.task_customers),"simmx tasks left in main loop\r"
+				sys.stdout.flush()
 				st_vals = self.task_customers[0].check_task(self.tids)
 				for i in xrange(len(self.task_customers)-1,-1,-1):
 					st = st_vals[i]
@@ -295,7 +296,7 @@ class EMParallelSimMX:
 						self.tids.pop(i)
 
 				
-				time.sleep(5)
+				time.sleep(10)
 					
 		else: raise NotImplementedError("The parallelism option you specified (%s) is not supported" %self.options.parallel )
 				
