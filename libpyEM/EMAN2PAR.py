@@ -506,13 +506,14 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				self.sockf.flush()
 				
 				# check for an ACK, if not, requeue
+				r="HUH"
 				try:
-					if self.sockf.read(4)!="ACK " : raise Exception
-					if task!=None : EMDCTaskHandler.dbugfile.write("%s: Task %5d sent to %s\n"%(local_datetime(),task.taskid,str(client_id)))
+					r=self.sockf.read(4)
+					if r!="ACK " : raise Exception
 				except:
 					if self.verbose: print "Task sent, no ACK"
-					self.queue.task_rerun(task.taskid)
-					if task!=None : EMDCTaskHandler.dbugfile.write("%s: Task %5d sent to %s but no ACK\n"%(local_datetime(),task.taskid,str(client_id)))
+					if Task!=None : self.queue.task_rerun(task.taskid)
+				if task!=None : EMDCTaskHandler.dbugfile.write("%s: Task %5d sent to %s  (%s)\n"%(local_datetime(),task.taskid,str(client_id),r))
 				self.tasklock=False
 
 			
@@ -703,8 +704,9 @@ class EMDCTaskClient(EMTaskClient):
 			
 				# Get a task from the server
 				task=recvobj(sockf)
-				if verbose : print "%s running task id %d"%(socket.gethostname(),task.taskid)
 				sockf.write("ACK ")
+				sockf.flush()
+				if verbose and task!=None: print "%s running task id %d"%(socket.gethostname(),task.taskid)
 				if task=="EXIT" : break
 			except :
 				print "No response from server, sleeping 60 sec"
