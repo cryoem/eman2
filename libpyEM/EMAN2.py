@@ -832,9 +832,10 @@ def remove_file( file_name, img_couples_too=True ):
 		return False
 
 # returns the local date and time as a string
-def local_datetime(secs):
+def local_datetime(secs=-1):
 	"""Returns a timestamp as yyyy/mm/dd hh:mm:ss"""
 	from time import localtime
+	if secs<0 : secs=time.time()
 	t=localtime(secs)
 	return "%04d/%02d/%02d %02d:%02d:%02d"%t[:6]
 

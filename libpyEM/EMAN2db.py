@@ -735,8 +735,8 @@ class EMAN2DB:
 		self.__dict__[name].realopen()
 		self.__dict__[name].bdb.truncate()
 		self.__dict__[name].close()
-		try: os.unlink(self.path+"/EMAN2DB/"+name+".bdb")		# this is unsafe as far at the DB is concerned, but the method below freezes :^(
-		except: pass
+#		try: os.unlink(self.path+"/EMAN2DB/"+name+".bdb")		# this is unsafe as far at the DB is concerned, but the method below freezes :^(
+#		except: pass
 
 		#if self.dicts.has_key(name) : self.dicts[name].close()
 		#print self.path+"/EMAN2DB/"+name+".bdb"
@@ -985,7 +985,7 @@ of these occasional errors"""
 				self.bdb.put(key,val,txn=txn)
 				break
 			except: 
-				if n==9 : traceback.print_exc()
+				if n in (0,9) : traceback.print_exc()
 				print "********** Warning: problem writing ",key," to ",self.name,". Retrying (%d/10)"%n
 				time.sleep(5)
 				n+=1

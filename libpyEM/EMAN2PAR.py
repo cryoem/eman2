@@ -415,6 +415,8 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 	verbose=0
 	rtcount=0
 	datacount=0
+	tasklock=False
+	dbugfile=file("debug.out","w")
 	rotate=('/','-','\\','|')
 	
 	def __init__(self, request, client_address, server):
@@ -459,7 +461,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 			if len(cmd)<4 :
 				if self.verbose>1 : print "connection closed %s"%(str(self.client_address))
 				return
-				
+			
 			if cmd=="ACK " :
 				print "Warning : Out of band ACK"
 				continue		# some sort of protocol error, just ignore
@@ -474,8 +476,12 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				elif cmd=="DATA" :
 					EMDCTaskHandler.datacount+=1
 					if EMDCTaskHandler.datacount%100==0 : 
-						print"*** %d data   \r"%EMDCTaskHandler.datacount
+						print"*** %d data   \r"%EMDCTaskHandler.datacount,
 						sys.stdout.flush()
+				elif cmd=="STAT" :
+					EMDCTaskHandler.datacount+=1
+					print"? \r",
+					sys.stdout.flush()
 				else :
 					try: print "Command %s: %s (%d)"%(str(self.client_address),cmd,len(data))
 					except: print "Command %s: %s (-)"%(str(self.client_address),cmd)
@@ -484,6 +490,9 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 			######################  These are issued by clients
 			# Ready for a task
 			if cmd=="RDYT" :
+				while self.tasklock : time.sleep(1)
+				self.tasklock=True
+				
 				# Get the first task and send it (pickled)
 				EMDCTaskHandler.clients[client_id]=(self.client_address[0],time.time())
 
@@ -499,10 +508,13 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				# check for an ACK, if not, requeue
 				try:
 					if self.sockf.read(4)!="ACK " : raise Exception
+					EMDCTaskHandler.dbugfile.write("%s: Task %5d sent to %s\n"%(local_datetime(),task.taskid,str(client_id))
 				except:
 					if self.verbose: print "Task sent, no ACK"
 					self.queue.task_rerun(task.taskid)
-			
+					EMDCTaskHandler.dbugfile.write("%s: Task %5d sent to %s but no ACK\n"%(local_datetime(),task.taskid,str(client_id))
+				self.tasklock=False
+
 			
 			# Job is completed, results returned
 			elif cmd=="DONE" :
@@ -527,6 +539,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				if self.verbose>2 : print "Task %d: %d data elements"%(tid,cnt)
 
 				self.queue.task_done(tid)		# don't mark the task as done until we've stored the results
+				EMDCTaskHandler.dbugfile.write("%s: Task %5d complete with %d data elements\n"%(local_datetime(),tid,cnt))
 
 			# Request data from the server
 			# the request should be of the form ["queue",did,image#]
@@ -589,6 +602,8 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				except: 
 					sendobj(self.sockf,None)
 					self.sockf.flush()
+				
+				EMDCTaskHandler.dbugfile.write("%s: Task %5d queued\n"%(local_datetime(),tid)
 					
 			# Get an estimate of the number of CPUs available to run jobs
 			# At the moment, this is the number of hosts that have communicated with us
@@ -642,8 +657,10 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				try:
 					if self.sockf.read(4)!="ACK " : raise Exception
 					db_remove_dict("bdb:%s#result_%d"%(self.queue.path,data))
+					EMDCTaskHandler.dbugfile.write("%s Results for task %5d retrieved"%(local_datetime(),data))
 				except:
 					if self.verbose: print "No ACK on RSLT. Keeping results for retry."
+					EMDCTaskHandler.dbugfile.write("%s Results for task %5d FAILED"%(local_datetime(),data))
 					
 				
 			else :
@@ -694,8 +711,8 @@ class EMDCTaskClient(EMTaskClient):
 
 			if task==None:
 				if self.verbose :
-					if count%1==0 : print "|\r"
-					else : print "-\r"
+					if count%1==0 : print " | \r",
+					else : print " - \r",
 					sys.stdout.flush()
 				sockf.close()
 				sock.close()

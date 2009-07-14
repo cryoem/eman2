@@ -809,7 +809,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 	print
 
 	if len(dfbest1a)==1 :
-		best=[(0.0,(dfbest1a[1],400.0))]
+		best=[[0.0,[dfbest1a[0][1],400.0]]]
 	else :
 		# Next, we use a simplex minimizer to try for the best CTF parameters for each defocus
 		best=[]
@@ -984,6 +984,9 @@ def ctf_cmp(parms,data):
 	ctf.defocus=parms[0]
 	ctf.bfactor=parms[1]
 	cc=ctf.compute_1d(len(bgsub)*2,ds,Ctf.CtfType.CTF_AMP)	# this is for the error calculation
+	ctf.defocus=parms[0]
+	ctf.bfactor=400.0
+	c2=ctf.compute_1d(len(bgsub)*2,ds,Ctf.CtfType.CTF_AMP)	# this is for the error calculation
 	
 	# now compute the error
 	# This is an interesting similarity metric. It divides one curve by the other. In theory, this should be flat, with the mean
@@ -994,8 +997,9 @@ def ctf_cmp(parms,data):
 	a,b,c=0,0,0
 	mx=0
 	for i in range(s0,s1):
-		v=sfact(i*ds)*cc[i]*cc[i]
-		if v>.01:
+		v=sfact(i*ds)*cc[i]**2
+		
+		if c2[i]**2>.01:
 			a+=bgsub[i]/v
 			b+=(bgsub[i]/v)**2
 			c+=1
