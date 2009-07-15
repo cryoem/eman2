@@ -68,6 +68,9 @@ EMUtil::ImageType EMUtil::get_image_ext_type(const string & file_ext)
 		imagetypes["tnf"] = IMAGE_MRC;
 		imagetypes["TNF"] = IMAGE_MRC;
 
+		imagetypes["ccp4"] = IMAGE_MRC;
+		imagetypes["map"] = IMAGE_MRC;
+
 		imagetypes["dm3"] = IMAGE_DM3;
 		imagetypes["DM3"] = IMAGE_DM3;
 
