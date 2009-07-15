@@ -47,6 +47,7 @@ using namespace boost::python;
 
 namespace {
 	BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_GLUtil_get_isosurface_dl_overloads_1_3, EMAN::GLUtil::get_isosurface_dl, 1, 3)
+	BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_GLUtil_colored_rectangle_overloads_2_3, EMAN::GLUtil::colored_rectangle, 2, 3)
 }
 
 // Module ======================================================================
@@ -59,7 +60,7 @@ BOOST_PYTHON_MODULE(libpyGLUtils2)
 		.def("gen_gl_texture", &EMAN::GLUtil::gen_gl_texture)
 		.def("render_amp8_gl_texture", &EMAN::GLUtil::render_amp8_gl_texture)
 		.def("nearest_projected_points", &EMAN::GLUtil::nearest_projected_points )
-		.def("colored_rectangle", &EMAN::GLUtil::colored_rectangle )
+		.def("colored_rectangle", &EMAN::GLUtil::colored_rectangle, EMAN_GLUtil_colored_rectangle_overloads_2_3() )
 		.def("mx_bbox", &EMAN::GLUtil::mx_bbox )
 		.def("render_amp8", &EMAN::GLUtil::render_amp8)
 		.def("get_isosurface_dl", &EMAN::GLUtil::get_isosurface_dl, EMAN_GLUtil_get_isosurface_dl_overloads_1_3())
@@ -74,7 +75,7 @@ BOOST_PYTHON_MODULE(libpyGLUtils2)
 	);
 
 	delete EMAN_GLUtil_scope;
-	
+
 #ifdef EMAN2_USING_FTGL
 	scope* EMAN_FTGL_scope = new scope(
 	class_<EMAN::EMFTGL>("EMFTGL", init<  >())

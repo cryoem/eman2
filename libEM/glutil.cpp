@@ -179,7 +179,7 @@ int GLUtil::nearest_projected_points(const vector<float>& model_matrix, const ve
 	return intersection;
 }
 
-void GLUtil::colored_rectangle(const vector<float>& data,const float& alpha){
+void GLUtil::colored_rectangle(const vector<float>& data,const float& alpha,const bool center_point){
 
 	glBegin(GL_LINE_LOOP);
 	glColor4f(data[0],data[1],data[2],alpha);
@@ -188,6 +188,12 @@ void GLUtil::colored_rectangle(const vector<float>& data,const float& alpha){
 	glVertex2f(data[5],data[6]);
 	glVertex2f(data[3],data[6]);
 	glEnd();
+
+	if (center_point) {
+		glBegin(GL_POINTS);
+		glVertex2f( (data[3]+data[5])/2, (data[4]+data[6])/2);
+		glEnd();
+	}
 }
 
 void GLUtil::mx_bbox(const vector<float>& data, const vector<float>& text_color, const vector<float>& bg_color) {

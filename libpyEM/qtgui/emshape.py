@@ -135,7 +135,7 @@ class EMShape:
 				#GL.glTranslate(dx,dy,0)
 				#GL.glScale(self.blend,self.blend,1)
 				#GL.glTranslate(-dx,-dy,0)
-				
+			
 			GL.glBegin(GL.GL_LINE_LOOP)
 			GL.glColor(*col)
 			GL.glVertex(*d2s(s[4],s[5]))

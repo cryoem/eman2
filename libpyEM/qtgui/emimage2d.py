@@ -514,7 +514,10 @@ class EMImage2DModule(EMGUIModule):
 		self.display_states = [] # if using display lists, this stores the states that are checked, and if different, will cause regeneration of the display list
 		self.hist = []
 		
+		self.display_shapes = True # A flag that can be used to turn of the display of shapes - useful to e2boxer
+		
 		self.wheel_navigate = False # useful on Mac laptops
+		self.circle_dl = None # used for a circle list, for displaying circled particles, for example
 	
 		
 		if image : self.set_data(image)
@@ -1252,7 +1255,7 @@ class EMImage2DModule(EMGUIModule):
 			if self.invert: self.inspector.set_hist(self.hist,self.maxden,self.minden) 
 			else: self.inspector.set_hist(self.hist,self.minden,self.maxden)
 	
-		if self.shapelist != 0:
+		if self.shapelist != 0 and self.display_shapes:
 			GL.glPushMatrix()
 			GL.glTranslate(-int(self.origin[0]),-int(self.origin[1]),0.1)
 			GL.glScalef(self.scale,self.scale,1.0)
@@ -1365,9 +1368,20 @@ class EMImage2DModule(EMGUIModule):
 	def get_shapes(self):
 		return self.shapes
 	
+	
+	def init_circle_list(self):
+		if self.circle_dl == None:
+			self.circle_dl = glGenLists(1)
+			glNewList(self.circle_dl,GL_COMPILE)
+			glBegin(GL_LINE_LOOP)
+			d2r=pi/180.0
+			for i in range(90): glVertex(sin(i*d2r*4.0),cos(i*d2r*4.0))
+			glEnd()
+			glEndList()
+			
 	def setup_shapes(self):
 		if self.shapelist != 0: GL.glDeleteLists(self.shapelist,1)
-		
+		self.init_circle_list()
 		self.shapelist = glGenLists(1)
 		
 		#context = OpenGL.contextdata.getContext(None)
@@ -1397,15 +1411,47 @@ class EMImage2DModule(EMGUIModule):
 			except:pass
 			GL.glBlendFunc(GL.GL_SRC_ALPHA,GL.GL_ONE_MINUS_SRC_ALPHA);
 		
-		
+		glPointSize(2)
 		for k,s in self.shapes.items():
+			
 			if k == self.active[0]:
 				vals = s.shape[1:8]
 				vals[0:3] = self.active[1:4]
-				GLUtil.colored_rectangle(vals,alpha)
+				if s.shape[0] == "rect":
+					GLUtil.colored_rectangle(vals,alpha,True)
+				elif s.shape[0] == "rectpoint":
+					GLUtil.colored_rectangle(vals,alpha,True)
 				continue
 			try:
-				GLUtil.colored_rectangle(s.shape[1:8],alpha)
+				if s.shape[0] == "rectpoint":
+					GLUtil.colored_rectangle(s.shape[1:8],alpha,True)
+				elif  s.shape[0] == "rcircle":
+					glPushMatrix()
+					glColor(*s.shape[1:4])
+					x1 = s.shape[4]
+					x2 = s.shape[6]
+					y1 = s.shape[5]
+					y2 = s.shape[7]
+					glTranslate((x1+x2)/2.0, (y1+y2)/2.0,0)
+					glScalef((x1-x2)/2.0, (y1-y2)/2.0,1.0)
+					glCallList(self.circle_dl)
+					glPopMatrix()
+				elif  s.shape[0] == "rcirclepoint":
+					glColor(*s.shape[1:4])
+					glPushMatrix()
+					x1 = s.shape[4]
+					x2 = s.shape[6]
+					y1 = s.shape[5]
+					y2 = s.shape[7]
+					glTranslate((x1+x2)/2.0, (y1+y2)/2.0,0)
+					glScalef((x1-x2)/2.0, (y1-y2)/2.0,1.0)
+					glCallList(self.circle_dl)
+					glPopMatrix()
+					glBegin(GL_POINTS)
+					glVertex( (x1+x2)/2.0, (y1+y2)/2.0,0);
+					glEnd()
+				else:
+					GLUtil.colored_rectangle(s.shape[1:8],alpha)
 			except: pass
 			
 		if isanimated:
@@ -1689,8 +1735,12 @@ class EMImage2DModule(EMGUIModule):
 			self.__key_mvt_animation(self.gl_widget.width(),0)
 		elif event.key()==Qt.Key_A or event.key()== Qt.Key_K:
 			self.__key_mvt_animation(-self.gl_widget.width(),0)
+		elif event.key()==Qt.Key_Space:
+			self.display_shapes = not self.display_shapes
+			self.updateGL()
+	
 		
-
+	
 
 	def increment_list_data(self,delta):
 		'''

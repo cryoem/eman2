@@ -66,7 +66,7 @@ namespace EMAN
 		 *
 		 */
 		static int nearest_projected_points(const vector<float>& model_matrix, const vector<float>& proj_matrix, const vector<int>& view_matrix, const vector<Vec3f>& points, const float mouse_x, const float mouse_y,const float& nearnes);
-		static void colored_rectangle(const vector<float>& data,const float& alpha);
+		static void colored_rectangle(const vector<float>& data,const float& alpha, const bool center_point=false);
 		static void mx_bbox(const vector<float>& data, const vector<float>& text_color, const vector<float>& bg_color);
 
 		/** Render the image into an 8-bit image. 2D images only.

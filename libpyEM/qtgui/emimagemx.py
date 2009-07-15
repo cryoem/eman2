@@ -688,7 +688,7 @@ class EMImageMXModule(EMGUIModule):
 	
 		self.__init_mouse_handlers()
 		
-		self.reroute_delete_target = None
+		self.reroute_delete = False
 	
 	def qt_parent_destroyed(self,object):
 		self.under_qt_control = False
@@ -758,18 +758,21 @@ class EMImageMXModule(EMGUIModule):
 		#print "do inspector update"
 		
 	
-	def set_reroute_delete_target(self,target):
-		self.reroute_delete_target = target
+	def set_reroute_delete(self,val=True):
+		self.reroute_delete = val
 	
 	def get_scale(self):
 		return self.scale
 	
 	def pop_box_image(self,idx,event=None,update_gl=False):
-		val = self.data.delete_box(idx)
-		if val > 0 and update_gl:
-			self.force_display_update()
-			self.updateGL()
-			if event != None: self.emit(QtCore.SIGNAL("mx_boxdeleted"),event,[idx],False) 
+		if self.reroute_delete == False:
+			val = self.data.delete_box(idx)
+			if val > 0 and update_gl:
+				self.force_display_update()
+				self.updateGL()
+				if event != None: self.emit(QtCore.SIGNAL("mx_boxdeleted"),event,[idx],False) 
+		else:
+			self.emit(QtCore.SIGNAL("mx_boxdeleted"),event,[idx],False)
 	
 	
 	def image_set_associate(self,idx,event=None,update_gl=False):
@@ -903,9 +906,13 @@ class EMImageMXModule(EMGUIModule):
 				self.data.set_xyz(str(self.inspector.xyz.currentText()))
 				filename = data_or_filename
 		else:
-			self.data = EMDataListCache(data_or_filename,cache_size,soft_delete=soft_delete)
-			self.get_inspector()
-			self.inspector.disable_xyz()
+			if data_or_filename != None:
+				self.data = EMDataListCache(data_or_filename,cache_size,soft_delete=soft_delete)
+				self.get_inspector()
+				self.inspector.disable_xyz()
+			else:
+				self.data= None
+				return
 
 		self.file_name = filename
 		if self.file_name != None and len(self.file_name) > 0:self.update_window_title(self.file_name)
@@ -1760,9 +1767,11 @@ class EMImageMXModule(EMGUIModule):
 		self.origin = new_origin
 	
 	def mouseDoubleClickEvent(self,event):
+		if not self.data: return
 		self.mouse_event_handler.mouse_double_click(event)
 
 	def mousePressEvent(self, event):
+		if not self.data: return
 		if (self.gl_widget.width()-event.x() <= self.scroll_bar.width):
 			self.scroll_bar_has_mouse = True
 			self.scroll_bar.mousePressEvent(event)
@@ -1788,6 +1797,7 @@ class EMImageMXModule(EMGUIModule):
 			self.mouse_event_handler.mouse_down(event)
 		
 	def mouseMoveEvent(self, event):
+		if not self.data: return
 		if self.scroll_bar_has_mouse:
 			self.scroll_bar.mouseMoveEvent(event)
 			return
@@ -1808,6 +1818,7 @@ class EMImageMXModule(EMGUIModule):
 			self.mouse_event_handler.mouse_move(event)
 		
 	def mouseReleaseEvent(self, event):
+		if not self.data: return
 		if self.scroll_bar_has_mouse:
 			self.scroll_bar.mouseReleaseEvent(event)
 			self.scroll_bar_has_mouse = False
@@ -1820,6 +1831,7 @@ class EMImageMXModule(EMGUIModule):
 		else: self.mouse_event_handler.mouse_up(event)
 			
 	def wheelEvent(self, event):
+		if not self.data: return
 		if event.delta() > 0:
 			self.set_scale( self.scale * self.mag )
 		elif event.delta() < 0:
