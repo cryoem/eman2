@@ -684,7 +684,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 			glPopMatrix()
 				
 			glEndList()
-		
+					
 		if self.diskdl == 0:
 			self.diskdl=glGenLists(1)
 				

@@ -568,21 +568,41 @@ class EMClassAveTask(EMTask):
 	   	if ref != None:
 	   		if verbose:
 	   			print "Aligning final average to reference image"
-	   		ref_to_average = self.__align(ref,averages[-1])
+	   		ref_to_average = self.__align(averages[-1],ref)
 	   		ref_ali = ref_to_average.get_attr("xform.align2d")
-			ref_ali.invert()
+			
+#			test = True
+#			if test:
+#				test_ali = averages[-1].process("math.transform",{"transform":ref_ali})
+#				ali = self.__align(averages[-1],test_ali).get_attr("xform.align2d")
+#				print "double chekc is", ali
+#				
+#				ali = self.__align(ref,test_ali).get_attr("xform.align2d")
+#				print "double chekc ref is", ali
+				
+				
 			
 			ref_alis = {}
 			for ptcl_idx,ali in all_alis[-1].items():
-				ref_alis[ptcl_idx] = ref_ali * ali
+				ref_alis[ptcl_idx] =  ref_ali*ali 
 			all_alis.append(ref_alis)
 			if sigma_image: sigma = sigma_image.copy()
-			average = self.__get_average(images,norm,ref_alis,inclusions,center=False,sigma=sigma)
+			average = self.__get_average(images,norm,all_alis[-1],inclusions,center=False,sigma=sigma)
 			all_inclusions.append(inclusions) # just for completeness, yes redundant, but again for completeness
 			average.set_attr("xform.projection", ref.get_attr("xform.projection"))
 #			average.set_attr("projection_image",options.ref) # Have to look into this
 			average.set_attr("projection_image_idx",self.class_idx)
 			averages.append(average)
+			
+			if verbose:
+				ref_to_average = self.__align(averages[-1],ref)
+		   		ref_ali = ref_to_average.get_attr("xform.align2d")
+				print ref_ali
+#				print "and"
+#				ref_to_average = self.__align(averages[-1],averages[-2])
+#		   		ref_ali = ref_to_average.get_attr("xform.align2d")
+#				print ref_ali
+			
 			if sigma != None:
 				sigma.set_attr("xform.projection", ref.get_attr("xform.projection"))
 				sigma.set_attr("projection_image_idx",self.class_idx)
@@ -795,7 +815,10 @@ class EMClassAveTask(EMTask):
 			average = averager.finish()
 			if norm != None: average.process_inplace(norm[0],norm[1])
 			average.process_inplace("xform.centeracf")
+			t = average.get_attr("xform.align2d")
+			for ptcl_idx,ali in alis.items(): alis[ptcl_idx] = t*ali # warning inplace modification
 			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
+			
 			average.set_attr("ptcl_repr",np)
 			average.set_attr("class_ptcl_idxs",images.keys())
 		return average,alis
@@ -838,6 +861,8 @@ class EMClassAveTask(EMTask):
 		average.mult(1.0/weightsum) # Do the correct division
 		if norm != None: average.process_inplace(norm[0],norm[1])
 		average.process_inplace("xform.centeracf")
+		t = average.get_attr("xform.align2d")
+		for ptcl_idx,ali in self.data["init_alis"].items(): self.data["init_alis"][ptcl_idx] = t*ali # warning inplace modification
 		average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 		average.set_attr("ptcl_repr",np)
 		average.set_attr("class_ptcl_idxs",images.keys())
@@ -884,6 +909,8 @@ class EMClassAveTask(EMTask):
 			#should this be centeracf?
 			#average.process_inplace("xform.centerofmass", {"int_shift_only":1})
 			average.process_inplace("xform.centeracf")
+			t = average.get_attr("xform.align2d")
+			for idx,ali in alis.items(): alis[idx] = t*ali # warning, inpace modification of the alis ! 
 			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 			average.set_attr("ptcl_repr",np)
 			average.set_attr("class_ptcl_idxs",record)
@@ -923,6 +950,8 @@ class EMClassAveTask(EMTask):
 			#average.process_inplace("xform.centerofmass")
 			if center:
 				average.process_inplace("xform.centeracf")
+				t = average.get_attr("xform.align2d")
+				for idx,ali in alis.items(): alis[idx] = t*ali # warning, inpace modification of the alis ! 
 			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 			average.set_attr("ptcl_repr",np)
 			average.set_attr("class_ptcl_idxs",record)
