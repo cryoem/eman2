@@ -477,7 +477,8 @@ class ShrunkenTomogram:
 		GB = 1000000000.0
 		from EMAN2 import memory_stats
 		gb_avail = memory_stats()[0] #giga bytes available
-		memory_for_use = gb_avail/4.0 #so on a 4gb machine I'm using 1gb
+		#memory_for_use = gb_avail/4.0 #so on a 4gb machine I'm using 1gb
+		memory_for_use = .5 #so on a 4gb machine I'm using 1gb
 		self.nx,self.ny,self.nz = gimme_image_dimensions3D(self.file_name)
 		memory_occ = self.nx*self.ny*self.nz*4/GB # working in gb
 		
