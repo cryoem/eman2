@@ -48,7 +48,7 @@ import random
 import traceback
 
 # used to make sure servers and clients are running the same version
-EMAN2PARVER=4
+EMAN2PARVER=5
 
 class EMTaskCustomer:
 	"""This will communicate with the specified task server on behalf of an application needing to

@@ -84,7 +84,7 @@ images far from focus."""
 	parser.add_option("--virtualout",type="string",help="Make a virtual stack copy of the input images with CTF parameters stored in the header. BDB only.",default=None)
 	parser.add_option("--storeparm",action="store_true",help="Write the CTF parameters back to the header of the input images. BDB and HDF only.",default=False)
 	parser.add_option("--oversamp",type="int",help="Oversampling factor",default=1)
-	parser.add_option("--sf",type="string",help="The name of a file containing a structure factor curve. 'auto' will use the structure factor determined previously by --computesf. Unnecessary in most cases.",default=None)
+	parser.add_option("--sf",type="string",help="The name of a file containing a structure factor curve. Specify 'none' to use the built in generic structure factor. Default=auto",default="auto")
 	parser.add_option("--debug",action="store_true",default=False)
 	parser.add_option("--dbds",type="string",default=None,help="Data base dictionary storage, used by the workflow for storing which files have been filtered. You can ignore this argument")
 	
@@ -160,9 +160,9 @@ def init_sfcurve(opt):
 	global sfcurve 
 	if sfcurve!=None : return
 	
-	if opt != None and opt.lower()!="auto" :
+	if opt != None and opt.lower()!="none" and opt.lower()!="auto" :
 		sfcurve=XYData()
-		sfcurve.read_file(options.sf)
+		sfcurve.read_file(opt)
 		for i in range(sfcurve.get_size()):
 			v=sfcurve.get_y(i)
 			if v<=0 :
@@ -832,6 +832,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 	ctf.bfactor=best[0][1][1]
 #	cc=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_AMP)
 #	Util.save_data(0,ds,cc,"ctf.ctf.txt")
+#	print best[0]
 
 	if bgadj:
 		bg2=bg_1d[:]
@@ -985,12 +986,14 @@ def ctf_cmp(parms,data):
 	ctf.bfactor=parms[1]
 	cc=ctf.compute_1d(len(bgsub)*2,ds,Ctf.CtfType.CTF_AMP)	# this is for the error calculation
 	ctf.defocus=parms[0]
-	ctf.bfactor=400.0
+#	ctf.bfactor=400.0
+	ctf.bfactor=parms[1]
 	c2=ctf.compute_1d(len(bgsub)*2,ds,Ctf.CtfType.CTF_AMP)	# this is for the error calculation
 	
 	# now compute the error
 	# This is an interesting similarity metric. It divides one curve by the other. In theory, this should be flat, with the mean
-	# value equal to the 'amplitude' of the curve. However, of course, near zeroes there will be peaks, and other variances are
+	# value equal to the 'amplitude' of the curve. However, of course, near zeroes there are singularities, so this tends to focus
+	# on making these singularities as symmetric as possible. Other variances are
 	# also common. So, what we compute is the standard deviation of this value about the mean, trying to make it as flat as possible
 	global sfcurve
 	if sfcurve.get_size()!=99 : s0/=2
@@ -1044,7 +1047,7 @@ def ctf_cmp_2(parms,data):
 	
 	# now compute the error
 	global sfcurve
-	if sfcurve.get_size()!=99 : s0/=2
+#	if sfcurve.get_size()!=99 : s0/=2
 	#er=0
 	#for i in range(s0,s1):
 		#v=sfact(i*ds)*cc[i]*cc[i]*parms[2]
