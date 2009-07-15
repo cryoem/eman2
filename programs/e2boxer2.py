@@ -685,9 +685,9 @@ class SwarmBoxer:
 		self.step_back_cache = get_database_entry(file_name,SwarmBoxer.SWARM_BOXERS,dfl=[])
 		
 		if len(self.step_back_cache) > 0 and l != None:
-			print self.step_back_cache[-1][10],l[10]
-			if self.step_back_cache[-1][10] == l[10]:
-				print "saved a redundant step"
+#			print self.step_back_cache[-1][9],l[9]
+			if self.step_back_cache[-1][9] == l[9]: # this is the time stamp - if they match we definitely shouldn't push on to the stacks
+#				print "saved a redundant step"
 				l = None
 	
 		if l != None:
@@ -738,8 +738,6 @@ class SwarmBoxer:
 			self.auto_box(self.target().current_file(), parameter_update=True, force_remove_auto_boxes=True)
 		elif not self.auto_update:
 			self.panel_object.enable_auto_box(True)
-			
-			
 			
 	def view_template_clicked(self):
 		'''
@@ -843,7 +841,7 @@ class SwarmBoxer:
 					box[0] = new[0]
 					box[1] = new[1]
 	
-	def move_ref(self,box_number,image_name,dx,dy,set_moved=True):
+	def move_ref(self,box_number,image_name,dx,dy,set_moved=True,allow_template_update=True):
 		'''
 		Moves the reference stored internally and updates the EMBoxerModule so that it displays and stores the exact same thing.
 		Separating what this object stores from what the EMBoxerModule stores decouple them and disentangles the overall design,
@@ -865,7 +863,7 @@ class SwarmBoxer:
 				if set_moved:rbox.ever_moved = True
 				new_box = EMBox(rbox.x,rbox.y,rbox.type_name(),rbox.peak_score)
 				self.target().set_box(new_box,box_number,update_display=True)
-				if box.type == SwarmBoxer.REF_NAME:
+				if box.type == SwarmBoxer.REF_NAME and allow_template_update:
 					self.signal_template_update = True
 				break
 		else:
@@ -1064,7 +1062,7 @@ class SwarmBoxer:
 						raise RuntimeError("Did not get a reference when doing collision detection")
 					
 					dx,dy = self.xform_center_propagate([box.x,box.y],image_name,scaled_template,self.particle_diameter)
-					self.move_ref(box_num,image_name,dx,dy)
+					self.move_ref(box_num,image_name,dx,dy,allow_template_update=False)
 		
 	   	boxes.sort(compare_box_correlation) # sorting like this will often put large ice contaminations in a group, thanks Pawel Penczek
 		self.target().add_boxes(boxes)

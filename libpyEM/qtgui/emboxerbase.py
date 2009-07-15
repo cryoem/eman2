@@ -324,13 +324,15 @@ class EMBox:
 		self.y += dy
 		self.image = None
 		
-	def get_image(self,image_name,box_size):
+	def get_image(self,image_name,box_size,norm=None):
 		
 		if self.image == None or self.image.get_xsize() != box_size or self.image.get_ysize() != box_size:
 			global BigImageCache
 			data=BigImageCache.get_object(image_name).get_image(use_alternate=True)
 			r = Region(self.x-box_size/2,self.y-box_size/2,box_size,box_size)
 			self.image = data.get_clip(r)
+			if norm != None:
+				self.image.process_inplace(norm)
 			
 		return self.image
 	
@@ -475,6 +477,9 @@ class EMBoxingTool:
 		return [] # a default is supplied because some tools may not be concerned with this feature, such as the EraseTool
 
 class EMUnknownBoxType:
+	'''
+	Error which is thrown when a mouse tool figures out that its operating on box that it doesn't 'own'
+	'''
 	def __init__(self,type):
 		self.type = type
 
@@ -1036,11 +1041,21 @@ class EMBoxList:
 		self.max_idx = 0 # iterator support
 		self.boxes = []
 		self.shapes = []
-		self.shape_string = "rcirclepoint" # for making shapes
+		
+		db = db_open_dict(EMBOXERBASE_DB)
+		self.shape_string = EMBoxerInspector.PTCL_SHAPE_MAP[db.get("ptcl_display_shape",dfl="square")]
 		
 		self.box_color_dict = {}
 #		self.undo_cache = []
 #		self.redo_cache = []	
+
+	def set_shape(self,shape):
+		if shape != self.shape_string:
+			self.shape_string = shape
+			self.reset_shapes()
+			return True
+		
+		return False
 	
 	def get_boxes(self): return self.boxes
 	
@@ -1163,7 +1178,7 @@ class EMBoxList:
 		return d
 
 	def get_particle_images(self,image_name,box_size):
-		return [box.get_image(image_name,box_size) for box in self.boxes]
+		return [box.get_image(image_name,box_size,"normalize.edgemean") for box in self.boxes]
 	
 	def __getitem__(self,idx):
 		'''
@@ -1318,7 +1333,13 @@ class EMBoxerModule:
 #		if self.inspector: 
 #			self.inspector.enable_undo_redo(self.box_list.is_undoable(),self.box_list.is_redoable())
 	
-	def set_status_message(self,mesg,timeout=5000,process_events=True):
+	def set_ptcl_display_shape(self,shape):
+		if self.box_list.set_shape(shape):
+			if self.main_2d_window:
+				self.main_2d_window.set_shapes(self.box_list.get_box_shapes(self.box_size))
+				self.main_2d_window.updateGL()
+
+	def set_status_message(self,mesg,timeout=5000,process_events=False):
 		if self.inspector != None:
 			self.inspector.set_status_message(mesg,timeout)
 			if process_events: get_application().processEvents()
@@ -1622,7 +1643,7 @@ class EMBoxerModule:
 		get_application().setOverrideCursor(QtCore.Qt.ArrowCursor)
 	
 	def load_2d_window_display(self,file_name):
-		self.set_status_message("Reading %s..." %file_name,0)
+		self.set_status_message("Reading %s..." %file_name,0,True)
 		global BigImageCache
 		data=BigImageCache.get_object(file_name).get_image(use_alternate=True)
 		
@@ -1632,7 +1653,7 @@ class EMBoxerModule:
 			self.main_2d_window.set_other_data(None,self.get_subsample_rate(),True)
 
 		self.main_2d_window.set_data(data,file_name)
-		self.set_status_message("Read Image Done",1000)
+		self.set_status_message("Read Image Done",1000,True)
 #		frozen = get_database_entry(file_name,"frozen",dfl=False)
 #		if frozen == None:
 #			set_database_entry(file_name,"frozen",False)
@@ -1971,12 +1992,19 @@ class EMBoxerInspectorModule(EMQtWidgetModule):
 	
 from PyQt4 import QtGui
 class EMBoxerInspector(QtGui.QWidget):
+	
+	PTCL_SHAPE_MAP = {}
+	PTCL_SHAPE_MAP["square"] = "rect"
+	PTCL_SHAPE_MAP["square with marker"] = "rectpoint"
+	PTCL_SHAPE_MAP["circle"] = "rcircle"
+	PTCL_SHAPE_MAP["circle with marker"] = "rcirclepoint"
+	
 	def __init__(self,target) :
 		from PyQt4 import QtCore, QtGui
 		self.busy = True
 		self.tool_dynamic_vbl = None # this will be used to dynamic add widgets as the buttons are changed
 		self.dynamic_box_button_widget = None # this will be used to dynamic add widgets as the buttons are changed
-		 
+		self.ptcl_display_dict = None # this will be a dict mapping the names in the 
 		QtGui.QWidget.__init__(self,None)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"green_boxes.png"))
 		self.setWindowTitle("e2boxer")
@@ -2052,12 +2080,21 @@ class EMBoxerInspector(QtGui.QWidget):
 		
 		viewhbl2 = QtGui.QHBoxLayout()
 		self.boxformats = QtGui.QComboBox(self)
-		self.boxformats.addItem("square with central dot")
-		self.boxformats.addItem("square")
-		self.boxformats.addItem("circle with central dot")
-		self.boxformats.addItem("circle")
-		self.boxformats.setEnabled(False)
+		for val in EMBoxerInspector.PTCL_SHAPE_MAP.keys():
+			self.boxformats.addItem(val)
+		
 		viewhbl2.addWidget(self.boxformats)
+		
+		# set the default
+		db = db_open_dict(EMBOXERBASE_DB)
+		val = db.get("ptcl_display_shape",dfl="square")
+		for n in range(self.boxformats.count()):
+			if str(self.boxformats.itemText(n)) == val:
+				self.boxformats.setCurrentIndex(n)
+				break
+		else:
+			raise RuntimeError("Unknown ptcl display shape %s" %val)
+		
 		
 		displayboxes = QtGui.QGroupBox("Displayed Boxes")
 		displayboxes.setLayout(viewhbl2)
@@ -2100,7 +2137,10 @@ class EMBoxerInspector(QtGui.QWidget):
 		self.busy = False
 		
 	def box_format_changed(self,val):
-		print "pass"
+		db = db_open_dict(EMBOXERBASE_DB)
+		val = db["ptcl_display_shape"] = str(val)
+		self.target().set_ptcl_display_shape(EMBoxerInspector.PTCL_SHAPE_MAP[val])
+		
 	
 	def get_main_tab(self):
 		from PyQt4 import QtCore, QtGui, Qt
@@ -2108,8 +2148,6 @@ class EMBoxerInspector(QtGui.QWidget):
 		vbl = QtGui.QVBoxLayout(widget)
 		vbl.setMargin(0)
 		vbl.setSpacing(6)
-		
-		#self.add_top_buttons(vbl) # this was the old freeeze
 		
 		box_size_hbl=QtGui.QHBoxLayout()
 		box_size_hbl.setMargin(0)
@@ -2132,27 +2170,6 @@ class EMBoxerInspector(QtGui.QWidget):
 		self.connect(self.box_size,QtCore.SIGNAL("editingFinished()"),self.new_box_size)
 		return widget
 
-#	def add_top_buttons(self,layout):
-#		from PyQt4 import QtCore, QtGui, Qt
-#		hbl_t=QtGui.QHBoxLayout()
-#		self.togfreeze=QtGui.QPushButton(QtGui.QIcon(get_image_directory() + "freeze_swirl.png"),"Freeze")
-#		self.togfreeze.setCheckable(1)
-#		self.togfreeze.setChecked(False)
-#		hbl_t.addWidget(self.togfreeze)
-#			
-#		layout.addLayout(hbl_t)
-#		
-#		QtCore.QObject.connect(self.togfreeze, QtCore.SIGNAL("clicked(bool)"), self.toggle_freeze_clicked)
-	
-#	def set_frozen(self,val):
-#		self.busy = True
-#		self.togfreeze.setChecked(int(val))
-#		self.busy = False
-	
-#	def toggle_freeze_clicked(self,val):
-#		if self.busy: return
-#		self.target().set_frozen(val)
-		
 	def clear_clicked(self,val):
 		if self.busy: return
 		self.target().clear_boxes()
@@ -2160,15 +2177,6 @@ class EMBoxerInspector(QtGui.QWidget):
 	def add_bottom_buttons(self,layout):
 		from PyQt4 import QtCore, QtGui, Qt
 		hbl_t=QtGui.QHBoxLayout()
-#		self.undo_boxes=QtGui.QPushButton("Undo Boxes")
-#		self.undo_boxes.setToolTip("Recall the last state of the boxes")
-#		self.undo_boxes.setEnabled(False)
-#		hbl_t.addWidget(self.undo_boxes)
-#		self.redo_boxes=QtGui.QPushButton("Redo Boxes")
-#		self.redo_boxes.setToolTip("Redo the last undo")
-#		self.redo_boxes.setEnabled(False)
-#		hbl_t.addWidget(self.redo_boxes)
-#		layout.addLayout(hbl_t)
 		
 		hbl_q=QtGui.QHBoxLayout()
 		self.quality=QtGui.QLabel("Image Quality:")
@@ -2184,8 +2192,6 @@ class EMBoxerInspector(QtGui.QWidget):
 		hbl_q.addWidget(self.image_qualities)
 		layout.addLayout(hbl_q)
 		
-#		QtCore.QObject.connect(self.redo_boxes, QtCore.SIGNAL("clicked(bool)"), self.redo_boxes_clicked)
-#		QtCore.QObject.connect(self.undo_boxes, QtCore.SIGNAL("clicked(bool)"), self.undo_boxes_clicked)
 		QtCore.QObject.connect(self.image_qualities, QtCore.SIGNAL("currentIndexChanged(QString)"), self.image_quality_changed)
 	
 	def image_quality_changed(self,val):
@@ -2202,10 +2208,6 @@ class EMBoxerInspector(QtGui.QWidget):
 			raise RuntimeError("Unknow quality: " + str(val))
 		self.busy = False
 
-#	def enable_undo_redo(self, enable_undo, enable_redo):
-#		self.undo_boxes.setEnabled(enable_undo)
-#		self.redo_boxes.setEnabled(enable_redo)
-	
 	def add_boxing_button_group(self,layout):
 		from PyQt4 import QtCore, QtGui, Qt
 		

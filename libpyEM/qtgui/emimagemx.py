@@ -906,7 +906,7 @@ class EMImageMXModule(EMGUIModule):
 				self.data.set_xyz(str(self.inspector.xyz.currentText()))
 				filename = data_or_filename
 		else:
-			if data_or_filename != None:
+			if data_or_filename != None and len(data_or_filename) > 0:
 				self.data = EMDataListCache(data_or_filename,cache_size,soft_delete=soft_delete)
 				self.get_inspector()
 				self.inspector.disable_xyz()
