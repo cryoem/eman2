@@ -7413,7 +7413,7 @@ class def_variancer:
 
 		reduce_EMData_to_root( avg, myid, rootid )
 		nimg = mpi_reduce( self.nimg, 1, MPI_INT, MPI_SUM, rootid, MPI_COMM_WORLD)
-		
+
 		if myid==rootid:
    		    nimg = int(nimg[0])
 		    avg /= nimg
@@ -7424,7 +7424,7 @@ class def_variancer:
 		var.to_zero()
 		for img in self.imgs:
 			Util.add_img2( var, Util.subn_img(img, avg) )
-	
+
 		reduce_EMData_to_root( var, myid, rootid )
 		if myid==rootid:
 			var /= (nimg-1)

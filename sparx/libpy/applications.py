@@ -11221,17 +11221,20 @@ def var_mpi(files, outdir, fl, fh, radccc, writelp, writestack, method="inc", pc
 		odd_varer = def_variancer(n,n,n)
 		eve_varer = def_variancer(n,n,n)
 	else:
-		print "incremental variance"
 		all_varer = inc_variancer(n,n,n)
 		odd_varer = inc_variancer(n,n,n)
 		eve_varer = inc_variancer(n,n,n)
-		 
+
 	if pca:
 		pcamask = get_im( pcamask)
 		pcaer = pcanalyzer(pcamask, outdir, pcanvec, True)
 
 	varfile = outdir + "/var.hdf"
 	avgfile = outdir + "/avg.hdf"
+	varfileE = outdir + "/varE.hdf"
+	avgfileE = outdir + "/avgE.hdf"
+	varfileO = outdir + "/varO.hdf"
+	avgfileO = outdir + "/avgO.hdf"
 	varstack = outdir + "/varstack.hdf" 
 	oddstack = outdir + "/oddvarstack.hdf"
 	evestack = outdir + "/evevarstack.hdf"
@@ -11261,11 +11264,11 @@ def var_mpi(files, outdir, fl, fh, radccc, writelp, writestack, method="inc", pc
 	nimage = niter * ncpu
 	for i in xrange(myid, nimage, ncpu):
 
-		filename, imgid = mystack.get( i ) 	
-	
+		filename, imgid = mystack.get( i )	
+
 		img = get_im( filename, imgid )
 		img = circumference( img, radcir, radcir+1 )
-		img = filt_tanl(img, fl, fh)
+		if(fl > 0.0): img = filt_tanl(img, fl, fh)
 
 		
 		if writelp:
@@ -11287,9 +11290,7 @@ def var_mpi(files, outdir, fl, fh, radccc, writelp, writestack, method="inc", pc
 			odd_var, odd_avg = odd_varer.mpi_getvar(myid, 0)
 			eve_var, eve_avg = eve_varer.mpi_getvar(myid, 0)
 			all_var, all_avg = all_varer.mpi_getvar(myid, 0)
-		
 
-	
 			if myid==0 :
 				odd_nimg = odd_var.get_attr( "nimg" )
 				eve_nimg = eve_var.get_attr( "nimg" )
@@ -11302,13 +11303,17 @@ def var_mpi(files, outdir, fl, fh, radccc, writelp, writestack, method="inc", pc
 					eve_var.write_image( evestack, istack )
 					all_var.write_image( varstack, istack )
 					istack += 1
-		
+
 
 				if iadded==niter:
 					all_avg.write_image( avgfile, 0 )
 					all_var.write_image( varfile, 0 )
+					eve_avg.write_image( avgfileE, 0 )
+					eve_var.write_image( varfileE, 0 )
+					odd_avg.write_image( avgfileO, 0 )
+					odd_var.write_image( varfileO, 0 )
 
-	
+
 			if pca and iadded==niter:
 				from utilities import bcast_EMData_to_all
 				assert not(all_avg is None)
@@ -11322,7 +11327,7 @@ def var_mpi(files, outdir, fl, fh, radccc, writelp, writestack, method="inc", pc
 					eigfile = outdir + "/eigvol.hdf"
 					for i in xrange( len(eigs) ):
 						eigs[i].write_image( eigfile, i )
-				
+
 
 def incvar_mpi(files, outdir, fl, fh, radccc, writelp, writestack):
 	from statistics import inc_variancer, ccc

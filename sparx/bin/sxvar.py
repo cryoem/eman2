@@ -17,7 +17,7 @@ def main():
 	parser.add_option("--pca", action="store_true", default=False, help="run pca" )
 	parser.add_option("--pcamask", type="string", help="mask for pca" )
 	parser.add_option("--pcanvec", type="int", help="number of eigvectors for pca")
-	parser.add_option("--method", type="string", default="inc", help="calculation method: def: calculate by definition, inc: use incremental. default is inc")
+	parser.add_option("--method", type="string", default="inc", help="calculation method: def: calculate from definition, inc: use incremental. default is inc")
 	(options, args) = parser.parse_args(sys.argv[1:])
 
 	if len(args)<2 :
