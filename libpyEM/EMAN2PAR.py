@@ -688,7 +688,7 @@ class EMDCTaskClient(EMTaskClient):
 		with an integer in the range 0-100. 100 means about to exit, 0 means not started yet. A -1 indicates an error has occurred and the request
 		is being aborted."""
 		
-		return
+		return True
 
 	def run(self):
 		count=0
