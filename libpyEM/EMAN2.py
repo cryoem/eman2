@@ -483,10 +483,13 @@ def parsemodopt_operation(optstr):
 	return (p_1[0], p_2[0], p_1[1])
 
 
-def display(img):
+def display(img,force_2d=False,force_plot=False):
+	"""Generic display function for images or sets of images. You can force images to be displayed in 2-D or as a plot with
+	the optional flags"""
 	if GUIMode:
 		import emimage
-		image = emimage.EMImageModule(img,None,app)
+		if isinstance(img,tuple) : img=list(img)
+		image = emimage.EMImageModule(img,None,app,force_2d,force_plot)
 		app.show_specific(image)
 		try: image.optimally_resize()
 		except: pass
@@ -1453,6 +1456,25 @@ def data_dims_power_of(data,val):
 			return False
 		
 	return True
+
+def vec2fprint(self) : return "Vec2f(%1.2f,%1.2f)"%(self[0],self[1])
+Vec2f.__repr__=vec2fprint
+Vec2f.__str__=vec2fprint
+
+def vec3fprint(self) : return "Vec3f(%1.2f,%1.2f,%1.2f)"%(self[0],self[1],self[2])
+Vec3f.__repr__=vec3fprint
+Vec3f.__str__=vec3fprint
+
+def xformprint(self) : 
+	try :
+		p=self.get_params("2d")
+		return "Transform({'tx':%1.2f,'ty':%1.2f,'alpha':%1.3f,'mirror':%1d,'scale':%1.4f,'type':'2d'})"%(p["tx"],p["ty"],p["alpha"],int(p["mirror"]),p["scale"])
+	except:
+		p=self.get_params("eman")
+		return "Transform({'az':%1.3f,'alt':%1.3f,'phi':%1.3f,'tx':%1.2f,'ty':%1.2f,'tz':%1.2f,'mirror':%1d,'scale':%1.4f,'type':'eman'})"%(p["az"],p["alt"],p["phi"],p["tx"],p["ty"],p["tz"],int(p["mirror"]),p["scale"])
+		
+Transform.__repr__=xformprint
+Transform.__str__=xformprint
 
 __doc__ = \
 "EMAN classes and routines for image/volume processing in \n\
