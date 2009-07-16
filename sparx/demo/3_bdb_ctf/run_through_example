@@ -42,13 +42,13 @@ sxali3d_d.py bdb:data ../fmodel_structure.hdf ali3d_d --ou=30 --xr='2.0 1.0 0.5'
 sxali3d_e.py bdb:data ali3d_e --ou=30 --delta=2 --maxit=1 --chunk=0.25 --function=reference4 --CTF --debug || exit
 
 # bootstrap calculation
-sxbootstrap_bigdisk.py bdb:data wgts.txt bootstrap bootstrap/tmpslice --calcwgts --delta=40 || exit
+sxbootstrap_calcwgts.py bdb:data wgts.txt --voronoi || exit
 
 # bootstrap calculation
-sxbootstrap_bigdisk.py bdb:data wgts.txt bootstrap bootstrap/tmpslice --niter=10 --nbufvol=5 --seedbase=10000 --snr=1.0 --genbuf --sharebuf  || exit
+sxbootstrap_bigdisk.py bdb:data wgts.txt bootstrap bootstrap/tmpslice --nvol=100 --nbufvol=5 --seedbase=10000 --snr=1.0 --genbuf  || exit
 
 # Compute real-space variance
-sxdefvar.py bootstrap/bsvol000*.hdf defvar --fl=0.16 --fh=0.20 --radccc=24 || exit
+sxvar.py bootstrap/bsvol000*.hdf defvar --fl=0.16 --fh=0.20 --radccc=24 || exit
 
 # generate reference volume using average volume and variance
 ../generate_refvols.py defvar/avg.hdf defvar/var.hdf 88.0
