@@ -366,7 +366,7 @@ class EMGenClassAverages:
 			if hasattr(self.options,"ref") and self.options.ref != None:
 				average.set_attr("projection_image",self.options.ref)
 #			average.write_image(self.options.output,rslts["class_idx"])
-			average.set_attr("class_ptcl_src",self.options.input)
+			average.set_attr("class_ptcl_src",abs_path(self.options.input))
 			average.write_image(self.options.output,-1)
 			ptcl_indices,dcol_idx_cache =  self.__get_class_data(rslts["class_idx"], self.options)
 			
@@ -383,7 +383,10 @@ class EMGenClassAverages:
 					new_name = options.output[:-4]+"_var"+options.output[-4:]
 				else:
 					new_name = options.output+"_var"
-				sigma.set_attr("cls_src_image",options.output)
+				sigma.set_attr("class_ptcl_src",abs_path(options.input))
+				sigma.set_attr("class_img",abs_path(options.output))
+				if average.has_attr("class_ptcl_idxs"):
+					sigma.set_attr("class_ptcl_idxs",average.get_attr("class_ptcl_idxs"))
 				sigma.write_image(new_name,-1)
 					
 class EMClassAveTask(EMTask):

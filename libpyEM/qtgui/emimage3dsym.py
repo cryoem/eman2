@@ -56,8 +56,6 @@ import weakref
 
 MAG_INCREMENT_FACTOR = 1.1
 
-
-
 class Orientations:
 	def __init__(self):
 		self.prop = 5.0
