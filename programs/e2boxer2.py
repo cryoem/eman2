@@ -352,6 +352,8 @@ class SwarmPanel:
 		else:
 			self.set_update_template(True,False)
 		
+		self.enable_view_template(swarm_boxer.templates != None)
+		
 		#self.busy = True # BEWARE self.set_picking_data set it False!
 		
 		self.busy = False
@@ -539,7 +541,6 @@ class SwarmBoxer:
 		See the comments in self.to_list for more details.
 		@param l a list that was almost certainly generated, at some point in time, but a call to self.to_list
 		'''
-		
 		self.ref_boxes = l[0]
 		self.templates = l[1]
 		self.profile = l[2]
@@ -604,7 +605,9 @@ class SwarmBoxer:
 		if self.templates != None:
 			self.auto_box(self.target().current_file(),parameter_update=False,cache=False)
 		else:
-			print "handle the case of no templates ?"
+			# it's an empty boxer... that's fine
+			pass
+			#print "handle the case of no templates ?"
 			
 	def step_forward(self):
 		'''
@@ -659,7 +662,7 @@ class SwarmBoxer:
 		set_database_entry(self.target().current_file(),SwarmBoxer.SWARM_BOXERS,self.step_back_cache)
 		set_database_entry(self.target().current_file(),SwarmBoxer.SWARM_FWD_BOXERS,self.step_fwd_cache)
 		
-	def handle_file_change(self,file_name):
+	def handle_file_change(self,file_name,active_tool=False):
 		'''
 		Handles the situation when the user changes the current image being studied in the main interface
 		in the EMBoxerModule.
@@ -673,9 +676,10 @@ class SwarmBoxer:
 		
 		'''
 		l = None
-		if self.auto_update and len(self.step_back_cache) > 0:
-			l = deepcopy(self.step_back_cache[-1])
-		
+		if active_tool:
+			if self.auto_update and len(self.step_back_cache) > 0:
+				l = deepcopy(self.step_back_cache[-1])
+		self.reset()
 		self.mvt_cache = get_database_entry(file_name,SwarmBoxer.SWARM_USER_MVT,dfl=[])
 		
 		self.step_fwd_cache = get_database_entry(file_name,SwarmBoxer.SWARM_FWD_BOXERS,dfl=[])
@@ -707,9 +711,7 @@ class SwarmBoxer:
 		if self.template_viewer != None:
 			self.template_viewer.set_data(self.templates,soft_delete=True)
 			self.template_viewer.updateGL()
-	
-		if self.templates != None:
-			self.panel_object.enable_view_template(True)
+		
 	
 	def set_interactive_threshold(self,val):
 		'''
@@ -1124,7 +1126,7 @@ class SwarmBoxer:
 		'''
 		Clears all associated boxes from the EMBoxerModule and internally, establishing a clean, blank state
 		'''
-		self.target().clear_boxes([SwarmBoxer.REF_NAME,SwarmBoxer.AUTO_NAME,SwarmBoxer.WEAK_REF_NAME])
+		self.target().clear_boxes([SwarmBoxer.REF_NAME,SwarmBoxer.AUTO_NAME,SwarmBoxer.WEAK_REF_NAME],cache=True)
 		self.reset()
 		self.panel_object.enable_view_template(False)
 		self.panel_object.enable_auto_box(False)
@@ -1133,8 +1135,6 @@ class SwarmBoxer:
 		self.cache_to_database()
 		self.update_template = True
 		self.panel_object.set_update_template(True,False)
-		
-		
 		
 	def center_propagate(self,box,image_name,template,box_size):
 		'''
@@ -1171,7 +1171,27 @@ class SwarmBoxer:
 		dx = trans[0]
 		dy = trans[1]
 		return dx,dy
-		
+	
+	def boxes_erased(self,list_of_boxes,image_name):
+		auto_box = False
+		remove_happened = False
+		for box in list_of_boxes:
+			if box.type in [SwarmBoxer.REF_NAME,SwarmBoxer.WEAK_REF_NAME]:
+				for i,rbox in enumerate(self.ref_boxes):
+					if rbox.x == box.x and rbox.y == box.y and rbox.image_name == image_name:
+						remove_happened = True
+						if self.auto_update: auto_box = True
+						if box.type == SwarmBoxer.REF_NAME: self.signal_template_update=True
+						b = self.ref_boxes.pop(i)
+						break
+		if auto_box:
+			if len(self.ref_boxes) > 0:
+				self.auto_box(image_name,force_remove_auto_boxes=True)
+			else: self.clear_all()
+		elif remove_happened:
+			if len(self.ref_boxes) > 0:
+				self.panel_object.enable_auto_box(True)
+			else: self.clear_all()
 					
 class SwarmTool(SwarmBoxer,EMBoxingTool):
 	'''
@@ -1198,13 +1218,13 @@ class SwarmTool(SwarmBoxer,EMBoxingTool):
 		return QtGui.QIcon(get_image_directory() + "swarm_icon.png")
 	
 		
-	def set_current_file(self,file_name):
+	def set_current_file(self,file_name,active_tool=False):
 		'''
 		If the behavior of this Handler does not if the file changes, but the function needs to be supplied 
 		'''
 		if self.current_file != file_name:
 			self.current_file = file_name
-			self.handle_file_change(file_name)
+			self.handle_file_change(file_name,active_tool)
 			
 	
 	def get_2d_window(self): return self.target().get_2d_window()
@@ -1285,7 +1305,7 @@ class SwarmTool(SwarmBoxer,EMBoxingTool):
 		
 		self.ptcl_moving_data = [x,y,box_num]
 	
-	def move_ptcl(self,box_num,x,y):
+	def move_ptcl(self,box_num,x,y,ptcls):
 		if self.ptcl_moving_data == None: return
 		
 		dx = self.ptcl_moving_data[0] - x
@@ -1317,6 +1337,10 @@ class SwarmTool(SwarmBoxer,EMBoxingTool):
 		
 	def get_unique_box_types(self):
 		return [SwarmBoxer.REF_NAME,SwarmBoxer.AUTO_NAME,SwarmBoxer.WEAK_REF_NAME]
+	
+	def boxes_erased(self,list_of_boxes):
+		SwarmBoxer.boxes_erased(self,list_of_boxes,self.target().current_file())
+				
 
 if __name__ == "__main__":
 	main()
