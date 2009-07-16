@@ -679,6 +679,10 @@ class SwarmBoxer:
 		if active_tool:
 			if self.auto_update and len(self.step_back_cache) > 0:
 				l = deepcopy(self.step_back_cache[-1])
+				if l[1] == None:
+					print "it was None"
+					# there is no template, it's an empty autoboxer
+					l = None
 		self.reset()
 		self.mvt_cache = get_database_entry(file_name,SwarmBoxer.SWARM_USER_MVT,dfl=[])
 		
@@ -1126,13 +1130,17 @@ class SwarmBoxer:
 		'''
 		Clears all associated boxes from the EMBoxerModule and internally, establishing a clean, blank state
 		'''
+		empty = (self.templates == None or len(self.templates) > 0)
 		self.target().clear_boxes([SwarmBoxer.REF_NAME,SwarmBoxer.AUTO_NAME,SwarmBoxer.WEAK_REF_NAME],cache=True)
 		self.reset()
 		self.panel_object.enable_view_template(False)
 		self.panel_object.enable_auto_box(False)
 		if self.template_viewer != None: self.template_viewer.set_data(None)
-		self.cache_current_state()
-		self.cache_to_database()
+		if not empty:
+			self.cache_current_state()
+			self.cache_to_database()
+#		else:
+#			print "avoided a redundant clear"
 		self.update_template = True
 		self.panel_object.set_update_template(True,False)
 		
