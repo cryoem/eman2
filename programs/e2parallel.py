@@ -100,7 +100,7 @@ def rundcserver(port,verbose):
 def rundcclient(host,port,verbose):
 	"""Starts a DC client running, runs forever"""
 	client=EMDCTaskClient(host,port,verbose)
-	client.run()
+	client.run(dieifnoserver=300)
 
 def killdcserver(server,port,verbose):
 	EMDCsendonecom(server,port,"QUIT",None)

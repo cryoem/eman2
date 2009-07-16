@@ -48,7 +48,7 @@ import random
 import traceback
 
 # used to make sure servers and clients are running the same version
-EMAN2PARVER=6
+EMAN2PARVER=8
 
 class EMTaskCustomer:
 	"""This will communicate with the specified task server on behalf of an application needing to
@@ -690,8 +690,12 @@ class EMDCTaskClient(EMTaskClient):
 		
 		return True
 
-	def run(self):
+	def run(self,dieifidle=86400,dieifnoserver=86400):
+		"""This is the actual client execution block. dieifidle is an integer number of seconds after
+		which to terminate the client if we aren't given something to do. dieifnoserver is the same if we can't find a server to
+		communicate with. Both default to 24 hours."""
 		count=0
+		lastjob=time.time()
 		while (1):
 			count +=1
 			# connect to the server
@@ -709,8 +713,11 @@ class EMDCTaskClient(EMTaskClient):
 				if self.verbose and task!=None: print "%s running task id %d"%(socket.gethostname(),task.taskid)
 				if task=="EXIT" : break
 			except :
-				print "No response from server, sleeping 60 sec"
-				time.sleep(60)
+				print "No response from server, sleeping 30 sec"
+				if time.time()-lastjob>dieifnoserver :
+					print "No server for too long. Terminating"
+					break
+				time.sleep(30)
 				continue
 
 			if task==None:
@@ -720,6 +727,9 @@ class EMDCTaskClient(EMTaskClient):
 					sys.stdout.flush()
 				sockf.close()
 				sock.close()
+				if time.time()-lastjob>dieifidle : 
+					print "Idle too long. Terminating"
+					break
 				time.sleep(10)
 				continue
 			sockf.flush()
@@ -778,8 +788,11 @@ class EMDCTaskClient(EMTaskClient):
 			if self.verbose : print "Task returned %d"%task.taskid
 			if self.verbose>2 : print "Results :",ret
 			
+			lastjob=time.time()
 			time.sleep(3)
-			
+		
+		print "Client on %s exiting. Bye !"%socket.gethostname()
+		
 	def get_data(self,sockf,did,imnum):
 		"""request data from the server on an open connection"""
 		if self.verbose>2 : print "Retrieve %s : %d"%(str(did),imnum)
