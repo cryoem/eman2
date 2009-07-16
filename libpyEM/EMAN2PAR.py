@@ -522,7 +522,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 					if self.verbose: print "Task sent, no ACK"
 					if Task!=None : self.queue.task_rerun(task.taskid)
 				if task!=None : 
-					EMDCTaskHandler.dbugfile.write("Task %5d sent to %s  (%s)  [%s]\n"%(task.taskid,client_address[0],r,local_datetime()))
+					EMDCTaskHandler.dbugfile.write("Task %5d sent to %s  (%s)  [%s]\n"%(task.taskid,self.client_address[0],r,local_datetime()))
 					EMDCTaskHandler.dbugfile.flush()
 				self.tasklock=False
 
