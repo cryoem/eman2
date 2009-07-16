@@ -48,7 +48,7 @@ import random
 import traceback
 
 # used to make sure servers and clients are running the same version
-EMAN2PARVER=8
+EMAN2PARVER=10
 
 class EMTaskCustomer:
 	"""This will communicate with the specified task server on behalf of an application needing to
@@ -313,6 +313,9 @@ def openEMDCsock(addr,clientid=0, retry=3):
 	sockf.write(pack("I4",EMAN2PARVER))
 	sockf.write(pack("I4",clientid))
 	sockf.flush()
+	if sockf.read(4)=="BADV" : 
+		print "ERROR: Server version mismatch ",socket.gethostname()
+		sys.exit(1)
 	
 	return(sock,sockf)
 
@@ -453,7 +456,12 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 		if msg!="EMAN" : raise Exception,"Non EMAN client"
 
 		ver=unpack("I",self.sockf.read(4))[0]
-		if ver!=EMAN2PARVER : raise Exception,"Version mismatch in parallelism (%d!=%d)"%(ver,EMAN2PARVER)
+		if ver!=EMAN2PARVER : 
+			self.sockf.write("BADV")
+			self.sockf.flush()
+			raise Exception,"Version mismatch in parallelism (%d!=%d)"%(ver,EMAN2PARVER)
+		self.sockf.write("ACK ")
+		self.sockf.flush()
 		client_id=unpack("I",self.sockf.read(4))[0]
 
 		while (1):
@@ -513,7 +521,9 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				except:
 					if self.verbose: print "Task sent, no ACK"
 					if Task!=None : self.queue.task_rerun(task.taskid)
-				if task!=None : EMDCTaskHandler.dbugfile.write("%s: Task %5d sent to %s  (%s)\n"%(local_datetime(),task.taskid,str(client_id),r))
+				if task!=None : 
+					EMDCTaskHandler.dbugfile.write("Task %5d sent to %s  (%s)  [%s]\n"%(task.taskid,client_address[0],r,local_datetime()))
+					EMDCTaskHandler.dbugfile.flush()
 				self.tasklock=False
 
 			
@@ -540,7 +550,8 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				if self.verbose>2 : print "Task %d: %d data elements"%(tid,cnt)
 
 				self.queue.task_done(tid)		# don't mark the task as done until we've stored the results
-				EMDCTaskHandler.dbugfile.write("%s: Task %5d complete with %d data elements\n"%(local_datetime(),tid,cnt))
+				EMDCTaskHandler.dbugfile.write("Task %5d complete with %d data elements  [%s]\n"%(tid,cnt,local_datetime()))
+				EMDCTaskHandler.dbugfile.flush()
 
 			# Request data from the server
 			# the request should be of the form ["queue",did,image#]
@@ -604,7 +615,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 					sendobj(self.sockf,None)
 					self.sockf.flush()
 				
-				EMDCTaskHandler.dbugfile.write("%s: Task %5d queued\n"%(local_datetime(),tid))
+				EMDCTaskHandler.dbugfile.write("Task %5d queued [%s]\n"%(tid,local_datetime()))
 					
 			# Get an estimate of the number of CPUs available to run jobs
 			# At the moment, this is the number of hosts that have communicated with us
@@ -658,10 +669,10 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				try:
 					if self.sockf.read(4)!="ACK " : raise Exception
 					db_remove_dict("bdb:%s#result_%d"%(self.queue.path,data))
-					EMDCTaskHandler.dbugfile.write("%s Results for task %5d retrieved\n"%(local_datetime(),data))
+					EMDCTaskHandler.dbugfile.write("Results for task %5d retrieved [%s]\n"%(data,local_datetime()))
 				except:
 					if self.verbose: print "No ACK on RSLT. Keeping results for retry."
-					EMDCTaskHandler.dbugfile.write("%s Results for task %5d FAILED\n"%(local_datetime(),data))
+					EMDCTaskHandler.dbugfile.write("Results for task %5d FAILED [%s]\n"%(data,local_datetime()))
 					
 				
 			else :

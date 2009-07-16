@@ -763,7 +763,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 	for dfi in rng:			# loop over defocus
 		df=dfi/20.0
 		ctf.defocus=df
-		ctf.ampcont=ac
+#		ctf.ampcont=ac
 		cc=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_AMP)
 		norm=0
 		for fz in range(len(cc)): 

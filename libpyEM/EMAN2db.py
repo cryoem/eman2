@@ -903,7 +903,7 @@ class DBDict:
 	def close(self):
 		global DBDEBUG
 		n=0
-		while self.lock and n<5: 
+		while self.lock and n<3: 
 			print "Sleep on close ",self.name
 			time.sleep(1)
 			n+=1
