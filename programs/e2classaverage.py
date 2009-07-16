@@ -587,7 +587,7 @@ class EMClassAveTask(EMTask):
 				ref_alis[ptcl_idx] =  ref_ali*ali 
 			all_alis.append(ref_alis)
 			if sigma_image: sigma = sigma_image.copy()
-			average = self.__get_average(images,norm,all_alis[-1],inclusions,center=False,sigma=sigma)
+			average = self.__get_average(images,norm,all_alis[-1],inclusions,sigma=sigma)
 			all_inclusions.append(inclusions) # just for completeness, yes redundant, but again for completeness
 			average.set_attr("xform.projection", ref.get_attr("xform.projection"))
 #			average.set_attr("projection_image",options.ref) # Have to look into this
@@ -610,6 +610,10 @@ class EMClassAveTask(EMTask):
 				
 			progress += 1
 	  		progress_callback(int(100*(progress/float(total_averages))))
+  		else:
+  			averages[-1].process_inplace("xform.centeracf")
+			t = averages[-1].get_attr("xform.align2d")
+			for ptcl_idx,ali in all_alis[-1].items(): all_alis[-1][ptcl_idx] = t*ali # have to update the alignment parameters so that they produce the average in its current position
 		
 		if verbose:
 			print "****************** Produced",len(averages),"averages for class",self.data["class_idx"]
@@ -814,9 +818,9 @@ class EMClassAveTask(EMTask):
 		if np != 0:
 			average = averager.finish()
 			if norm != None: average.process_inplace(norm[0],norm[1])
-			average.process_inplace("xform.centeracf")
-			t = average.get_attr("xform.align2d")
-			for ptcl_idx,ali in alis.items(): alis[ptcl_idx] = t*ali # warning inplace modification
+#			average.process_inplace("xform.centeracf")
+#			t = average.get_attr("xform.align2d")
+#			for ptcl_idx,ali in alis.items(): alis[ptcl_idx] = t*ali # warning inplace modification
 			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 			
 			average.set_attr("ptcl_repr",np)
@@ -860,9 +864,9 @@ class EMClassAveTask(EMTask):
 		average.mult(float(np)) # Undo the division of np by the averager - this was incorrect because the particles were weighted.
 		average.mult(1.0/weightsum) # Do the correct division
 		if norm != None: average.process_inplace(norm[0],norm[1])
-		average.process_inplace("xform.centeracf")
-		t = average.get_attr("xform.align2d")
-		for ptcl_idx,ali in self.data["init_alis"].items(): self.data["init_alis"][ptcl_idx] = t*ali # warning inplace modification
+#		average.process_inplace("xform.centeracf")
+#		t = average.get_attr("xform.align2d")
+#		for ptcl_idx,ali in self.data["init_alis"].items(): self.data["init_alis"][ptcl_idx] = t*ali # warning inplace modification
 		average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 		average.set_attr("ptcl_repr",np)
 		average.set_attr("class_ptcl_idxs",images.keys())
@@ -908,15 +912,15 @@ class EMClassAveTask(EMTask):
 			if norm != None: average.process_inplace(norm[0],norm[1])
 			#should this be centeracf?
 			#average.process_inplace("xform.centerofmass", {"int_shift_only":1})
-			average.process_inplace("xform.centeracf")
-			t = average.get_attr("xform.align2d")
-			for idx,ali in alis.items(): alis[idx] = t*ali # warning, inpace modification of the alis ! 
+#			average.process_inplace("xform.centeracf")
+#			t = average.get_attr("xform.align2d")
+#			for idx,ali in alis.items(): alis[idx] = t*ali # warning, inpace modification of the alis ! 
 			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 			average.set_attr("ptcl_repr",np)
 			average.set_attr("class_ptcl_idxs",record)
 		return average,inclusion
 	
-	def __get_average(self,images,norm,alis,inclusions,center=True,sigma=None):
+	def __get_average(self,images,norm,alis,inclusions,sigma=None):
 		'''
 		get an average using the given alignment parameters and inclusion flags
 		inclusions may be None, in which case every particle is included
@@ -948,10 +952,10 @@ class EMClassAveTask(EMTask):
 			if norm != None: average.process_inplace(norm[0],norm[1])
 			#should this be centeracf?
 			#average.process_inplace("xform.centerofmass")
-			if center:
-				average.process_inplace("xform.centeracf")
-				t = average.get_attr("xform.align2d")
-				for idx,ali in alis.items(): alis[idx] = t*ali # warning, inpace modification of the alis ! 
+#			if center:
+#				average.process_inplace("xform.centeracf")
+#				t = average.get_attr("xform.align2d")
+#				for idx,ali in alis.items(): alis[idx] = t*ali # warning, inpace modification of the alis ! 
 			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 			average.set_attr("ptcl_repr",np)
 			average.set_attr("class_ptcl_idxs",record)

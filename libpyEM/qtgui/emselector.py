@@ -621,7 +621,8 @@ def EMSelectorTemplate(Type):
 					if EMUtil.get_image_count(selected_items[0].get_path()) < 1001:
 						menu2.addAction(self.plot_icon,"2D Plot")
 						menu2.addAction(self.emdata_3d_icon,"3D Viewer")
-					md = EMData(selected_items[0].get_path(),0,True)
+					md = EMData()
+					md.read_image(selected_items[0].get_path(),0,True)
 					md = md.get_attr_dict()
 					if md.has_key("xform.projection"):
 						# the assumption is that they all have the xform.projection header attribute, which could fail

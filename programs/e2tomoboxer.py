@@ -1282,12 +1282,15 @@ class EMTomoBoxerModule(QtCore.QObject):
 			if direction == "z":
 				region = Region(scale*coord[0]-xout/2,scale*coord[1]-yout/2,scale*coord[2]-zout/2,xout,yout,zout)
 				a.read_image(fname,idx,False,region)
+				a.set_attr("src_coord",[scale*coord[0],scale*coord[1],scale*coord[2]])
 			elif direction == "y":
 				region = Region(scale*coord[0]-xout/2,scale*coord[2]-zout/2,scale*coord[1]-yout/2,xout,zout,yout)
 				a.read_image(fname,idx,False,region)
+				a.set_attr("src_coord",[scale*coord[0],scale*coord[2],scale*coord[1]])
 			elif direction == "x":
 				region = Region(scale*coord[2]-zout/2,scale*coord[0]-xout/2,scale*coord[1]-yout/2,zout,xout,yout)
 				a.read_image(fname,idx,False,region)
+				a.set_attr("src_coord",[scale*coord[2],scale*coord[0],scale*coord[1]])
 			else:
 				progress.close()
 				get_application().setOverrideCursor(Qt.ArrowCursor)
@@ -1296,6 +1299,8 @@ class EMTomoBoxerModule(QtCore.QObject):
 			if progress.wasCanceled():
 				# Should probably delete the file(s)
 				break
+			
+			a.set_attr("src_image",fname)
 			
 			tally += 1
 			progress.setValue(tally)

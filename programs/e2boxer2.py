@@ -680,7 +680,6 @@ class SwarmBoxer:
 			if self.auto_update and len(self.step_back_cache) > 0:
 				l = deepcopy(self.step_back_cache[-1])
 				if l[1] == None:
-					print "it was None"
 					# there is no template, it's an empty autoboxer
 					l = None
 		self.reset()
