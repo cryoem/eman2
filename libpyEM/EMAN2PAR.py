@@ -479,7 +479,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 			if self.verbose : 
 				if cmd=="RDYT" :
 					EMDCTaskHandler.rtcount+=1
-					print " %s \r"%EMDCTaskHandler.rotate[EMDCTaskHandler.rtcount%4],
+					print " %s  (%d)   \r"%(EMDCTaskHandler.rotate[EMDCTaskHandler.rtcount%4],len(EMDCTaskHandler.clients)),
 					sys.stdout.flush()
 				elif cmd=="DATA" :
 					EMDCTaskHandler.datacount+=1
