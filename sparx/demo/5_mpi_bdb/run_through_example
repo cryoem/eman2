@@ -45,13 +45,13 @@ mpirun -np 2 sxali3d_d.py bdb:data ab_initio_volf.hdf ali3d_d --ou=30 --xr='2.0 
 mpirun -np 2 sxali3d_e.py bdb:data ali3d_e --ou=30 --delta=2 --maxit=1 --chunk=0.25 --function=reference4 --MPI  --debug || exit
 
 # bootstrap calculation
-mpirun -np 2 sxbootstrap_bigdisk.py bdb:data wgts.txt bootstrap bootstrap/tmpslice --calcwgts --delta=40 --MPI || exit
+mpirun -np 2 sxbootstrap_calcwgts.py bdb:data wgts.txt --voronoi --MPI || exit
 
 # bootstrap calculation
-mpirun -np 2 sxbootstrap_bigdisk.py bdb:data wgts.txt bootstrap bootstrap/tmpslice --niter=10 --nbufvol=5 --seedbase=10000 --snr=1.0 --genbuf --sharebuf  --MPI || exit
+mpirun -np 2 sxbootstrap_bigdisk.py bdb:data wgts.txt bootstrap bootstrap/tmpslice --nvol=100 --nbufvol=5 --seedbase=10000 --snr=1.0 --genbuf --MPI || exit
 
 # Compute real-space variance
-mpirun -np 2 sxdefvar.py bootstrap/bsvol000*.hdf defvar --fl=0.16 --fh=0.20 --radccc=24 --MPI || exit
+mpirun -np 2 sxvar.py bootstrap/bsvol000*.hdf defvar --fl=0.16 --fh=0.20 --radccc=24 --MPI || exit
 
 # generate reference volume using average volume and variance
 ../generate_refvols.py defvar/avg.hdf defvar/var.hdf 88.0 || exit

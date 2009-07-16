@@ -45,10 +45,10 @@ mpirun -np 2 sxali3d_d.py data.hdf ab_initio_volf.hdf ali3d_d --ou=30 --xr='2.0 
 mpirun -np 2 sxali3d_e.py data.hdf ali3d_e --ou=30 --delta=8 --maxit=1 --chunk=0.25 --function=reference4 --MPI --CTF --debug || exit
 
 # bootstrap calculation
-mpirun -np 2 sxbootstrap_bigdisk.py data.hdf wgts.txt bootstrap bootstrap/tmpslice --calcwgts --delta=30 --MPI
+mpirun -np 2 sxbootstrap_calcwgts.py data.hdf wgts.txt --voronoi --MPI
 
 # bootstrap calculation
-mpirun -np 2 sxbootstrap_bigdisk.py data.hdf wgts.txt bootstrap bootstrap/tmpslice --niter=10 --nbufvol=5 --seedbase=10000 --snr=1.0 --genbuf --sharebuf --CTF --MPI
+mpirun -np 2 sxbootstrap_bigdisk.py data.hdf wgts.txt bootstrap bootstrap/tmpslice --nvol=100 --nbufvol=5 --seedbase=10000 --snr=1.0 --genbuf --CTF --MPI
 
 # Compute real-space variance
 mpirun -np 2 sxdefvar.py bootstrap/bsvol000*.hdf defvar --fl=0.16 --fh=0.20 --radccc=24 --MPI
