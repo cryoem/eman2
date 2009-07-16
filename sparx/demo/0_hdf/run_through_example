@@ -44,13 +44,13 @@ sxali3d_d.py data.hdf ab_initio_volf.hdf ali3d_d --ou=30 --xr='2.0 1.0 0.5' --ts
 sxali3d_e.py data.hdf ali3d_e --ou=30 --delta=2 --maxit=1 --chunk=0.25 --function=reference4 --debug || exit
 
 # bootstrap calculation
-sxbootstrap_bigdisk.py data.hdf wgts.txt bootstrap bootstrap/tmpslice --calcwgts --delta=40
+sxbootstrap_calcwgts.py data.hdf wgts.txt --voronoi
 
 # bootstrap calculation
-sxbootstrap_bigdisk.py data.hdf wgts.txt bootstrap bootstrap/tmpslice --niter=10 --nbufvol=5 --seedbase=10000 --snr=1.0 --genbuf --sharebuf
+sxbootstrap_bigdisk.py data.hdf wgts.txt bootstrap bootstrap/tmpslice --nvol=100 --nbufvol=5 --seedbase=10000 --snr=1.0 --genbuf 
 
 # Compute real-space variance
-sxdefvar.py bootstrap/bsvol000*.hdf defvar --fl=0.16 --fh=0.20 --radccc=24
+sxvar.py bootstrap/bsvol000*.hdf defvar --fl=0.16 --fh=0.20 --radccc=24
 
 # generate reference volume using average volume and variance
 ../generate_refvols.py defvar/avg.hdf defvar/var.hdf 88.0
