@@ -246,7 +246,7 @@ namespace {
 
 namespace EMAN {
 
-    EMData* rsconvolution(EMData* f, EMData* K) {
+    EMData* rsconvolution(EMData* f, EMData* K) {//Does not work properly in 3D, corners are not done, PAP 07/16/09
 		// Kernel should be the smaller image
 		int nxf=f->get_xsize(); int nyf=f->get_ysize(); int nzf=f->get_zsize();
 		int nxK=K->get_xsize(); int nyK=K->get_ysize(); int nzK=K->get_zsize();
