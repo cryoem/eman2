@@ -11556,13 +11556,11 @@ def factcoords_prj( prj_stacks, avgvol_stack, eigvol_stack, prefix, rad, neigvol
 	for i in xrange( img_bgn, img_end ) :
 		fname,imgid = files.get(i)
 		exp_prj = get_im( fname, imgid )
-		assert exp_prj.get_attr( "ctf_applied" ) == 0.0
 		
 		phi,tht,psi,s2x,s2y = get_params_proj(exp_prj)
 		ctf = exp_prj.get_attr("ctf")
 
 		from filter import filt_tanb
-		exp_prj = filt_tanb(exp_prj ,0.2,0.1, 0.25,0.1)
 		shift_params = {"filter_type" : Processor.fourier_filter_types.SHIFT,
 				"x_shift" : s2x, "y_shift" : s2y, "z_shift" : 0.0}
 		exp_prj =  Processor.EMFourierFilter(exp_prj, shift_params)
