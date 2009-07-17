@@ -276,6 +276,10 @@ class EMFileTable(QtGui.QTableWidget):
 		self.timer_interval = 2000
 		self.animated_columns = {}
 		self.busy = 0
+		self.items_selected_by_default = True
+		
+	def set_items_selected_by_default(self,val):
+		self.items_selected_by_default = val
 		
 	def register_animated_column(self,column_title):
 		if self.timer == None:
@@ -492,12 +496,17 @@ class EMFileTable(QtGui.QTableWidget):
 		flag2 = Qt.ItemFlags(Qt.ItemIsSelectable)
 		flag3 = Qt.ItemFlags(Qt.ItemIsEnabled)
 		flag4 = Qt.ItemFlags(Qt.ItemIsEditable)
+		new_items = []
 		for i in xrange(0,len(list_of_names)):
 			if self.icon != None: item = QtGui.QTableWidgetItem(self.icon,self.display_name(list_of_names[i]))
 			else: item = QtGui.QTableWidgetItem(self.display_name(list_of_names[i]))
 			item.setFlags(flag2|flag3)
 			item.setTextAlignment(QtCore.Qt.AlignHCenter)
 			self.setItem(r+i, 0, item)
+			new_items.append(item)
+			if self.single_selection and i == (len(list_of_names)-1):
+				item.setSelected(True)
+			
 			for j, cd in enumerate(self.column_data):
 				item = QtGui.QTableWidgetItem(cd.function(list_of_names[i]))
 				item.setTextAlignment(QtCore.Qt.AlignHCenter)
@@ -507,12 +516,14 @@ class EMFileTable(QtGui.QTableWidget):
 					item.__lt__ = new.instancemethod(cd.lt_function,item,QtGui.QTableWidgetItem)
 				self.setItem(r+i,j+1, item)
 			
-			if self.single_selection and i == (len(list_of_names)-1):
-				item.setSelected(True)
 		self.setSortingEnabled(sorting)
-		
 		if r == 0:
 			self.resizeColumnsToContents()
+	
+		
+		if self.items_selected_by_default:
+			for item in new_items: 
+				item.setSelected(True)
 
 	def contextMenuEvent(self,event):
 		'''
@@ -867,8 +878,8 @@ class EMBrowseEventHandler:
 			self.browser.widget.desktop_hint = "form" # this is to make things work as expected in the desktop
 			self.browser.setWindowTitle(self.browser_title)
 			get_application().show_specific(self.browser)
-			QtCore.QObject.connect(self.browser,QtCore.SIGNAL("ok"),self.on_browser_ok)
-			QtCore.QObject.connect(self.browser,QtCore.SIGNAL("cancel"),self.on_browser_cancel)
+			QtCore.QObject.connect(self.browser.emitter(),QtCore.SIGNAL("ok"),self.on_browser_ok)
+			QtCore.QObject.connect(self.browser.emitter(),QtCore.SIGNAL("cancel"),self.on_browser_cancel)
 		else:
 			get_application().show_specific(self.browser)
 

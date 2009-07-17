@@ -1273,7 +1273,8 @@ class EMBoxerModule(QtCore.QObject):
 			setattr(options,key,params[key])
 		
 		if len(options.filenames) == 0 or options.running_mode not in ["gui","auto_db"]:
-			#print "we have to keep the dialog open"
+			from emsprworkflow import error
+			error("Please select the files you want to process","")
 			return
 		elif options.running_mode == "gui":
 			self.__disconnect_form_signals()
@@ -1349,8 +1350,17 @@ class EMBoxerModule(QtCore.QObject):
 			mode = "Swarm"
 			
 		from emdatastorage import ParamDef
+		from emsprworkflow import ParticleWorkFlowTask,EMRawDataReportTask
+		from emform import EM2DFileTable,EMFileTable
+		table = EM2DFileTable([],desc_short="Input Files",desc_long="")
+		context_menu_data = ParticleWorkFlowTask.DataContextMenu()
+		table.add_context_menu_data(context_menu_data)
+		table.add_button_data(ParticleWorkFlowTask.AddDataButton(table,context_menu_data))
+		table.add_column_data(EMFileTable.EMColumnData("Dimensions",EMRawDataReportTask.get_image_dimensions,"The dimensions of the file on disk"))
+
 		params = []
-		params.append(ParamDef(name="filenames",vartype="url",desc_short="File names",desc_long="The files you wish to box",property=None,defaultunits=filenames,choices=[]))
+		#params.append(ParamDef(name="filenames",vartype="url",desc_short="File names",desc_long="The files you wish to box",property=None,defaultunits=filenames,choices=[]))
+		params.append(table)
 		params.append(ParamDef(name="boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=box_size,choices=[]))
 		params.append(ParamDef(name="method",vartype="choice",desc_short="Boxing mode",desc_long="Currently only one mode is supported, but this could change",property=None,defaultunits=mode,choices=["Swarm"]))
 		params.append(ParamDef(name="running_mode",vartype="choice",desc_short="Boxing mode",desc_long="Whether to load the GUI or run automatic boxing based on information stored in the database",property=None,defaultunits=running_mode,choices=["gui","auto_db"]))
