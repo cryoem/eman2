@@ -167,6 +167,13 @@ class EMImage3DGeneralWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionVi
 		
 		return [width,height]
 
+	def load_perspective(self):
+		
+		glMatrixMode(GL_PROJECTION)
+		glLoadIdentity()
+		gluPerspective(self.fov,self.aspect,self.startz,self.endz)
+		glMatrixMode(GL_MODELVIEW)
+
 class EMImage3DWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMatrices):
 	""" 
 	A QT widget for rendering 3D EMData objects

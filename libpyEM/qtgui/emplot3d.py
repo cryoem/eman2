@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/home/muthu/EMAN2/python/Python-2.5.4-ucs4/bin/python
 
 #
 # Author: David Woolford 10/26/2007 (woolford@bcm.edu)
@@ -40,6 +40,7 @@ from OpenGL.GLUT import *
 from valslider import ValSlider
 from math import *
 from EMAN2 import *
+from libpyGLUtils2 import *
 import sys
 import numpy
 from emimageutil import ImgHistogram,EMParentWin
@@ -79,7 +80,12 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		self.glbrightness = 0.0
 		self.rank = 1
 		self.inspector=None
-		
+		self.rotaList=None # Added by Muthu as part of Matt Baker's work
+		self.vals=None # Added by Muthu as part of Matt Baker's work
+		self.b = None #Added by Muthu for transforms
+		self.e2fhstat=0 #Added by Muthu as a switch for e2fhstat
+		self.colorCol = 3 #Added by Muthu
+
 		self.vdtools = EMViewportDepthTools2(self.gl_context_parent)
 		
 		self.gl_context_parent.cam.default_z = -25	 # this is me hacking
@@ -89,15 +95,52 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		self.draw_dl = 0
 		self.clear_data() # use this so there's only one function
 		self.init_plot_lights()
+		self.font_renderer = None # will eventually be a 3d (FTGL) font renderer
+		self.font_size = 7 # this is the height of the font
+		self.font_depth = 5 # this is the depth of the font
+		self.data_based_coloring = False		
 		glClearColor(1,1,1,1)
 		
 		self.draw_data_cube = True
 		
-		self.sphere_scale = 5
+		self.sphere_scale = .5
 		
 		self.allowable_shapes =  ["Sphere","Cube","Dodecahedron","Icosahedron","Tetrahedron","Cone","Octahedron","Teapot"]
 		self.init_color_themes()
+		self.init_font_renderer()
+
+	def init_font_renderer(self):
+		self.font_renderer = get_3d_font_renderer()
+		self.font_renderer.set_face_size(self.font_size)
+		#self.font_renderer.set_depth(self.font_depth)
+		self.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
 		
+	def set_data_based_coloring(self,value): 
+		self.data_based_coloring = value	
+		print "set dbc to",value
+
+	def set_Rotations(self,rotList):
+		self.rotaList = rotList
+		self.e2fhstat = self.e2fhstat+1
+		
+	def set_Vals (self, val):
+		self.vals = val
+		self.e2fhstat = self.e2fhstat+1
+
+	def set_Probe (self, b):
+		self.b = b
+		self.e2fhstat = self.e2fhstat+1
+	
+	def get_Rotations(self):
+		return self.rotaList
+
+	def get_Probe(self):
+		return self.b
+
+	def getFh(self):
+		if (self.e2fhstat==3): return 1
+		else: return 0
+
 	def set_sphere_scale(self,value):
 		if value != 0 and value != self.sphere_scale:
 			self.sphere_scale = value
@@ -112,7 +155,44 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		 
 	def get_type(self):
 		return "lights"
-	
+
+	def mouseReleaseEvent(self,event): ####
+
+		proceed = True
+		if proceed:
+			v = glGetIntegerv(GL_VIEWPORT).tolist()
+			glSelectBuffer(512)
+			glRenderMode(GL_SELECT)
+			glInitNames()
+			glMatrixMode(GL_PROJECTION)
+			glPushMatrix()
+			glLoadIdentity()
+			gluPickMatrix(event.x(),v[-1]-event.y(),2,2,v)
+			self.gl_context_parent.load_perspective()
+			glMatrixMode(GL_MODELVIEW)
+			glInitNames()
+			self.render()
+			glMatrixMode(GL_PROJECTION)
+			glPopMatrix()
+			glMatrixMode(GL_MODELVIEW)
+			glFlush()
+		
+			hits = list(glRenderMode(GL_RENDER))
+			for hit in hits:
+				a,b,c=hit
+				if len(c) > 0:
+					self.on_hit_update(c[0]-1)
+					break
+			return
+		
+		
+		EMImage3DGUIModule.mouseReleaseEvent(self,event)
+
+	def on_hit_update(self,indexer):
+		if (self.e2fhstat!=3): return
+		self.get_inspector().on_hit_update(indexer, self.vals)
+
+
 	def clear_data(self):
 		self.data = {} # this is the data sets
 		self.ndata = {} # this is the normalized data sets (values go from 0 to 1)
@@ -217,7 +297,7 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		
 	parse_txt_file = staticmethod(parse_txt_file)
 	
-	def set_data(self,data,key="data",clear_current=False,shape="Sphere"):
+	def set_data(self,data,key="data",clear_current=False,shape="Sphere"): 
 		'''
 		
 		'''
@@ -285,7 +365,7 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		self.global_theme = "Color cube"
 		self.using_global_theme = False
 
-	def render(self):
+	def render(self): #######
 
 		#if (not isinstance(self.data,EMData)): return
 		lighting = glIsEnabled(GL_LIGHTING)
@@ -356,7 +436,8 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 	def full_refresh(self):
 		glDeleteLists(self.draw_dl,1)
 		self.draw_dl = 0
-		
+	
+
 	def scatter_plot(self):
 		'''
 		Will do a scatter plot using the available data
@@ -400,6 +481,7 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		
 		f = 1/(2.0*sqrt(3.0))
 		g = 1/(sqrt(3.0))
+		gl_pick_name = 1   #
 		for key in vis_keys:
 			d = self.data[key]
 			a = self.axes[key]
@@ -407,15 +489,20 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 			mx = self.max[key]
 			x = d[a[0]]
 			y = d[a[1]]
+
 			if len(a) == 3: z = d[a[2]]
 			else: z = None
+			if (len(self.data[key]) >= 4): w = self.data[key][self.colorCol]
+			else: w= None
 
 			if z != None:
 				#
 				for i in range(len(x)):
 					
-					if not self.using_global_theme:
-						color = self.get_color_interp(self.axis_colors[key],(x[i]-mn[0])/float(mx[0]-mn[0]), (y[i]-mn[1])/float(mx[1]-mn[1]),(z[i]-mn[2])/float(mx[2]-mn[2]))
+					if (self.data_based_coloring and (w!=None)):
+						color = self.get_data_color(w[i], key)
+					elif not self.using_global_theme:
+						color = self.get_color_interp(self.axis_colors[key],(x[i]-mn[0])/float(mx[0]-mn[0]), (y[i]-mn[1])/float(mx[1]-mn[1]),(z[i]-mn[2])/float(mx[2]-mn[2]))				
 					else:
 						color = self.get_color_interp(self.global_theme,(x[i]-minx)/float(width), (y[i]-miny)/float(height),(z[i]-minz)/float(depth))
 			
@@ -432,7 +519,7 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 					glScale(self.sphere_scale,self.sphere_scale,self.sphere_scale)
 						
 					shape = self.shapes[key]
-						
+					glPushName(gl_pick_name)
 					if shape == "Sphere":
 						glCallList(self.highresspheredl)
 					elif shape == "Dodecahedron":
@@ -459,21 +546,142 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 						print "Unknown shape:", shape 
 					
 					glPopMatrix()
+					glPopName()
+					gl_pick_name += 1
 					
 			if self.draw_data_cube:
 				
 				light_on = glIsEnabled(GL_LIGHTING)
 				glDisable(GL_LIGHTING)
+
 				glPushMatrix()
 				glTranslate(minx,miny,minz)
 				glColor(0,0,0,1)
 				draw_volume_bounds(width,height,depth,False)
 				glPopMatrix()
+
+				# x axis
+				n = 4
+				glPushMatrix()
+				glTranslate(minx,miny,minz)
+
+				key = vis_keys[0] #only for the first data plotted
+				mn = self.min[key][0]
+				mx = self.max[key][0]
+				interval = mx-mn
+				self.sc=0.0;
+				for i in range(3):
+					if (self.max[key][i]>self.sc): self.sc = self.max[key][i]
+				self.sc=(self.sc/120.0)
+				for i in range(n):
+					glPushMatrix()
+					#s = str(mn+(i-1.0)/n*interval)
+					s = str(mn+(i*interval)/(n-1.0))
+					s = s[:4]
+					bbox = self.font_renderer.bounding_box(s)
+					glTranslate( (i)/(n-1.0)*width,0,0)
+					#-((bbox[3]-bbox[0])/2.0)
+					glScale(self.sc, self.sc, self.sc)
+				
+					#GLUtil.mx_bbox(bbox,[0,1,0,1],[0,0,0,1])
+					
+					self.font_renderer.render_string(s)
+					glTranslate((bbox[3]-bbox[0])/2.0,0,0)
+					
+					#glutSolidOctahedron()
+					glPopMatrix()
+				glPopMatrix()	
 				if light_on: glEnable(GL_LIGHTING)
-							
-							
-		glPopMatrix()
+				
+				
+				# y axis
+				n = 4
+				glPushMatrix()
+				glTranslate(minx,miny,minz)
+
+				key = vis_keys[0]
+				mn = self.min[key][1]
+				mx = self.max[key][1]
+				interval = mx-mn
+				for i in range(n):
+					glPushMatrix()
+					#s = str(mn+(i-1.0)/n*interval)
+					s = str(mn+(i*interval)/(n-1.0))
+					s = s[:4]
+					bbox = self.font_renderer.bounding_box(s)
+					glTranslate(0, (i)/(n-1.0)*height,0)
+					#-(bbox[4]-bbox[1])/2.0
+					glScale(self.sc, self.sc, self.sc)
+					# GLUtil.mx_bbox(bbox,[0,1,0,1],[0,0,0,1])
+					self.font_renderer.render_string(s)
+					#glTranslate(0,(bbox[4]-bbox[1])/2.0,0)
+
+					#glutSolidOctahedron()
+					glPopMatrix()
+				glPopMatrix()	
+				if light_on: glEnable(GL_LIGHTING)
+				
+				
+				# z axis
+				n = 4
+				glPushMatrix()
+				glTranslate(minx,miny,minz)
+
+				key = vis_keys[0]
+				mn = self.min[key][2]
+				mx = self.max[key][2]
+				interval = mx-mn
+				for i in range(n):
+					glPushMatrix()
+					#s = str(mn+(i-1.0)/n*interval)
+					s = str(mn+(i*interval)/(n-1.0))
+					s = s[:4]
+					bbox = self.font_renderer.bounding_box(s)
+					glTranslate(0, 0, (i)/(n-1.0)*depth)
+					#-(bbox[5]-bbox[2])/2.0
+					glScale(self.sc, self.sc, self.sc)
+					# GLUtil.mx_bbox(bbox,[0,1,0,1],[0,0,0,1])
+					self.font_renderer.render_string(s)
+					#glTranslate(0,0,(bbox[5]-bbox[2])/2.0)
+
+					#glutSolidOctahedron()
+					glPopMatrix()
+				glPopMatrix()	
+				if light_on: glEnable(GL_LIGHTING)
+
 		
+		glPopMatrix()
+	
+	def get_data_color(self, i, key):
+		result = {}
+
+		mn = self.min[key][self.colorCol]
+		mx = self.max[key][self.colorCol]
+
+		inter = (mx - mn)
+		hInter = inter/3.0
+		hRemain = inter - hInter
+		if (i!=0.0):
+			if (mn <0 ): i = i-mn
+			if (i>hInter):
+				iR = (i-hInter)/hRemain
+				i = 1.0
+			else:
+				i = i/hInter
+				iR = 0.0
+			colr = [i, iR, iR, 1]
+		else: 
+			colr = [0,0,0,1]
+				
+		result["ambient"] = colr
+		result["diffuse"] = colr
+		result["specular"] = colr
+		result["emission"] = [0,0,0,1]
+		result["shininess"] = 32
+
+		return result
+		
+
 	def get_color_interp(self,theme,x,y,z):
 		types = ["ambient","diffuse","specular","emission","shininess"]
 		p = [x,y,z]
@@ -506,7 +714,6 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 			
 				result[gl_color_type] = v
 
-		#print result
 		return result
 					
 	def get_color(self,xcolor,ycolor,zcolor,xcolor_begin,ycolor_begin,zcolor_begin,x,y,z):
@@ -569,7 +776,9 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 			self.inspector=EMPlot3DInspector(self)
 		return self.inspector
 
-class EMPlot3DInspector(QtGui.QWidget,EMLightsInspectorBase):
+
+
+class EMPlot3DInspector(QtGui.QWidget,EMLightsInspectorBase):       ###########
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
 		EMLightsInspectorBase.__init__(self)
@@ -611,6 +820,8 @@ class EMPlot3DInspector(QtGui.QWidget,EMLightsInspectorBase):
 		self.n3_showing = False
 		self.quiet = False
 		
+		self.diction = None # Added by Muthu 
+
 		self.data_change()
 
 		QtCore.QObject.connect(self.wiretog, QtCore.SIGNAL("toggled(bool)"), target.toggle_wire)
@@ -618,6 +829,26 @@ class EMPlot3DInspector(QtGui.QWidget,EMLightsInspectorBase):
 		QtCore.QObject.connect(self.glcontrast, QtCore.SIGNAL("valueChanged"), target.set_GL_contrast)
 		QtCore.QObject.connect(self.glbrightness, QtCore.SIGNAL("valueChanged"), target.set_GL_brightness)
 		
+	def on_hit_update(self,indexer, vals):
+		self.diction = vals
+		self.tNum.setText(str(self.diction["tNum"][indexer]))
+		self.transX.setText(str(self.diction["tx"][indexer]))
+		self.transY.setText(str(self.diction["ty"][indexer]))
+		self.transZ.setText(str(self.diction["tz"][indexer]))	
+		self.alt.setText(str(self.diction["alt"][indexer]))
+		self.az.setText(str(self.diction["az"][indexer]))
+		self.phi.setText(str(self.diction["phi"][indexer]))	
+		self.s1.setText(str(self.diction["score_1"][indexer]))
+		self.s2.setText(str(self.diction["score_2"][indexer]))
+		self.s3.setText(str(self.diction["score_3"][indexer]))
+		if (self.s1.text() == '0.0' and self.s2.text() == '0.0'):
+			self.tNum.setText(str(self.diction["tNum"][indexer]) + "   -   This transformation was thrown out as an outlier")
+		self.fileName.setText("_________ ")
+		#self.target().full_refresh()
+		#self.target().updateGL()
+	
+	#def fhstat (self, starter):
+		#self.f = starter #Added by Muthu to track when to run transformation stuff
 
 	def update_rotations(self,t3d):
 		self.rotation_sliders.update_rotations(t3d)
@@ -641,6 +872,85 @@ class EMPlot3DInspector(QtGui.QWidget,EMLightsInspectorBase):
 		
 		vbl = QtGui.QVBoxLayout(self.plot_tab)
 		vbl.addWidget(self.setlist)
+
+		#####
+		if (self.target().getFh()): 
+			v_big = QtGui.QVBoxLayout()	
+			v_big.setMargin(0)
+			v_big.setSpacing(6)
+			v_big.setObjectName("e2fhstat")
+
+			h1 = QtGui.QHBoxLayout()
+			h1.addWidget(QtGui.QLabel("	Transformation: ",self))		
+			self.tNum = QtGui.QLabel("________")
+			self.tNum.setAlignment(Qt.AlignLeft)
+			h1.addWidget(self.tNum)
+			v_big.addLayout(h1)
+
+			h2 = QtGui.QHBoxLayout()
+			h2.addWidget(QtGui.QLabel("Translation: ", self))
+			vTrans = QtGui.QVBoxLayout()
+			vTrans.addWidget(QtGui.QLabel("		tx: ",self))
+			vTrans.addWidget(QtGui.QLabel("		ty: ",self))
+			vTrans.addWidget(QtGui.QLabel("		tz: ",self))	
+			h2.addLayout(vTrans)
+			vTransVals = QtGui.QVBoxLayout()	
+			self.transX = QtGui.QLabel("________")
+			vTransVals.addWidget(self.transX)
+			self.transY = QtGui.QLabel("________")
+			vTransVals.addWidget(self.transY)
+			self.transZ = QtGui.QLabel("________")
+			vTransVals.addWidget(self.transZ)	
+			h2.addLayout(vTransVals)
+			v_big.addLayout(h2)
+
+			h3 = QtGui.QHBoxLayout()
+			h3.addWidget(QtGui.QLabel("Rotation: ", self))
+			vRot = QtGui.QVBoxLayout()
+			vRot.addWidget(QtGui.QLabel("		alt: ",self))
+			vRot.addWidget(QtGui.QLabel("		az: ",self))
+			vRot.addWidget(QtGui.QLabel("		phi: ",self))	
+			h3.addLayout(vRot)
+			vRotVals = QtGui.QVBoxLayout()	
+			self.alt = QtGui.QLabel("________")
+			vRotVals.addWidget(self.alt)
+			self.az = QtGui.QLabel("________")
+			vRotVals.addWidget(self.az)
+			self.phi = QtGui.QLabel("________")
+			vRotVals.addWidget(self.phi)
+			h3.addLayout(vRotVals)
+			v_big.addLayout(h3)
+
+			h4 = QtGui.QHBoxLayout()
+			h4.addWidget(QtGui.QLabel("Standard Deviation Scores: ", self))
+			vScore = QtGui.QVBoxLayout()
+			vScore.addWidget(QtGui.QLabel("	Real Space Correlation: ",self))
+			vScore.addWidget(QtGui.QLabel("	Atom Exclusion: ",self))
+			vScore.addWidget(QtGui.QLabel("	Volume Inclusion: ",self))	
+			h4.addLayout(vScore)
+			vScoreVals = QtGui.QVBoxLayout()	
+			self.s1 = QtGui.QLabel("________")
+			vScoreVals.addWidget(self.s1)
+			self.s2 = QtGui.QLabel("________")
+			vScoreVals.addWidget(self.s2)
+			self.s3 = QtGui.QLabel("________")
+			vScoreVals.addWidget(self.s3)	
+			h4.addLayout(vScoreVals)
+			v_big.addLayout(h4)
+
+			h5 = QtGui.QHBoxLayout()
+			self.transform = QtGui.QPushButton("Perform Transform")
+			h5.addWidget(self.transform)
+			h5.addWidget(QtGui.QLabel("	File Name: ",self))
+	
+			self.fileName = QtGui.QLabel("_________ ")
+			h5.addWidget(self.fileName)
+			v_big.addLayout(h5)		
+			vbl.addLayout(v_big)
+
+			QtCore.QObject.connect(self.transform, QtCore.SIGNAL("clicked(bool)"), self.pTransform)
+
+		######
 		
 		gl=QtGui.QGridLayout()
 		gl.addWidget(QtGui.QLabel("X Col:",self),0,0,Qt.AlignRight)
@@ -658,10 +968,20 @@ class EMPlot3DInspector(QtGui.QWidget,EMLightsInspectorBase):
 		self.slidez.setRange(-1,1)
 		gl.addWidget(self.slidez,0,5,Qt.AlignLeft)
 		vbl.addLayout(gl)
-		
-		
 	
-		
+			
+		hbl_dbc = QtGui.QHBoxLayout()
+		self.dbc = QtGui.QCheckBox("Data based coloring")	
+		self.dbc.setChecked(self.target().data_based_coloring)
+		hbl_dbc.addWidget(self.dbc)
+
+		self.data_color=QtGui.QSpinBox(self)
+		self.data_color.setRange(-1,1)
+		hbl_dbc.addWidget(self.data_color)
+		self.data_color.setEnabled(self.target().data_based_coloring)
+		vbl.addLayout(hbl_dbc)	
+
+
 		self.sphere_scale = ValSlider(self.plot_tab,(0.05,10.0),"Shape scale:")
 		self.sphere_scale.setValue(self.target().sphere_scale)
 		vbl.addWidget(self.sphere_scale)
@@ -705,9 +1025,26 @@ class EMPlot3DInspector(QtGui.QWidget,EMLightsInspectorBase):
 		QtCore.QObject.connect(self.theme,QtCore.SIGNAL("currentIndexChanged(int)"),self.theme_changed)
 		QtCore.QObject.connect(self.shape,QtCore.SIGNAL("currentIndexChanged(int)"),self.shape_changed)
 		QtCore.QObject.connect(self.global_theme, QtCore.SIGNAL("stateChanged(int)"), self.global_theme_checked)
+		QtCore.QObject.connect(self.dbc, QtCore.SIGNAL("stateChanged(int)"), self.dbc_checked)
+		QtCore.QObject.connect(self.data_color, QtCore.SIGNAL("valueChanged(int)"), self.change_data_col)
 		
 		return plot_tab
 	
+	def dbc_checked(self,value):
+		self.data_color.setEnabled(value)
+		self.theme.setEnabled(not value)
+		self.global_theme.setEnabled(not value) 
+		
+		self.target().set_data_based_coloring(value)
+
+		self.target().full_refresh()
+		self.target().updateGL()
+
+	def change_data_col (self, i):
+		self.target().colorCol = int(self.data_color.value())
+		self.target().full_refresh()
+		self.target().updateGL()
+
 	def plot_data_selected(self,row):
 		self.quiet=1
 		try:
@@ -720,9 +1057,11 @@ class EMPlot3DInspector(QtGui.QWidget,EMLightsInspectorBase):
 		self.slidex.setRange(0,n)
 		self.slidey.setRange(0,n)
 		self.slidez.setRange(0,n)
+		self.data_color.setRange(0,n)
 		self.slidex.setValue(axes[0])
 		self.slidey.setValue(axes[1])
 		self.slidez.setValue(axes[2])
+		self.data_color.setValue(3)
 		
 		self.__set_theme()
 			
@@ -782,7 +1121,18 @@ class EMPlot3DInspector(QtGui.QWidget,EMLightsInspectorBase):
 			self.target().shapes[str(self.setlist.currentItem().text())] = str(self.shape.itemText(i))
 			self.target().full_refresh()
 			self.target().updateGL()
-			
+	
+	def pTransform(self, i):	
+		self.b = self.target().get_Probe()
+		self.rotList = self.target().get_Rotations()
+
+		self.TransformNumber = int(self.tNum.text())
+		t2 = Transform(self.rotList[self.TransformNumber].get_params("eman"))
+		self.b.right_transform(t2)
+		self.b.save_to_pdb("%s.pdb"%str(self.TransformNumber))
+		self.fileName.setText("%s.pdb"%str(self.TransformNumber))
+		#self.target().full_refresh()
+		#self.target().updateGL()
 	
 	def data_change(self):
 		
