@@ -114,7 +114,7 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 			self.font_renderer = get_3d_font_renderer()
 			self.font_renderer.set_face_size(20)
 			self.font_renderer.set_depth(12)
-			self.font_renderer.set_font_mode(FTGLFontMode.EXTRUDE)
+			self.font_renderer.set_font_mode(FTGLFontMode.BITMAP)
 		
 	def set_data_based_coloring(self,value): 
 		self.data_based_coloring = value	
