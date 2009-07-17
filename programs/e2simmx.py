@@ -171,7 +171,6 @@ class EMParallelSimMX:
 		steve_factor = 3 # simmx should do more 
 		total_jobs = steve_factor*self.num_cpus
 		
-		print "f",steve_factor
 		[col_div,row_div] = opt_rectangular_subdivision(self.clen,self.rlen,total_jobs)
 		
 	

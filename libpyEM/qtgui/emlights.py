@@ -71,7 +71,7 @@ class EMLightsDrawer:
 		self.light_dl = 0
 		self.cylinderdl = 0
 		self.arc_t = 16
-		self.radius = 10
+		self.radius = 10 #  This is an important variable. Set this value to adapt the way the lights appear in your scene.
 		self.gq=gluNewQuadric()
 		gluQuadricDrawStyle(self.gq,GLU_FILL)
 		gluQuadricNormals(self.gq,GLU_SMOOTH)
@@ -160,7 +160,7 @@ class EMLightsDrawer:
 			glNewList(self.ball_dl,GL_COMPILE)
 			glPushMatrix()
 			glScale(self.radius/10.0,self.radius/10.0,self.radius/10.0)
-			self.draw_light_cacoon()
+			self.draw_light_cocoon()
 			self.draw_inside_light()
 			glPopMatrix()
 			
@@ -221,7 +221,6 @@ class EMLightsDrawer:
 		
 		
 		glPushMatrix()
-		#glLoadIdentity()
 		self.position_light()
 		
 		glPopMatrix()
@@ -275,7 +274,7 @@ class EMLightsDrawer:
 				glCallList(self.light_dl)
 		
 			glPopMatrix()
-	def draw_light_cacoon(self):
+	def draw_light_cocoon(self):
 		'''
 		draw a nice looking torch
 		'''

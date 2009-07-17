@@ -353,6 +353,7 @@ class EMFontInspector(QtGui.QWidget, EMLightsInspectorBase):
 			f_dir = "/Library/Fonts/"
 		else:
 			raise RuntimeError("Platform %s is not supported" %platform )
+		
 		for root, dirs, files in os.walk(f_dir):
 			for name in files:
 				if name.find("ttf")!=-1:

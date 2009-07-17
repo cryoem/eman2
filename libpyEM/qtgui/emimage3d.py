@@ -189,6 +189,7 @@ class EMImage3DWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMatri
 		self.perspective = True
 
 		self.cam = Camera()
+		self.cam.cam_z = -250
 
 		self.resize(480,480)
 		self.startz = 1
@@ -227,12 +228,22 @@ class EMImage3DWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMatri
 		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_POSITION, [0.1,.1,1.,0.])
 		
-#		glLightfv(GL_LIGHT1, GL_AMBIENT, [0.2, 0.2, 0.0, 1.0])
-#		glLightfv(GL_LIGHT1, GL_DIFFUSE, [0.8,0.8,0.8, 1.0])
-#		glLightfv(GL_LIGHT1, GL_SPECULAR, [0.0, 0.0, 0.0, 1.0])
-#		glLightfv(GL_LIGHT1, GL_POSITION, [0,0,1,1]) # set the is self.radius when it's known
-#		glLightfv(GL_LIGHT1, GL_SPOT_DIRECTION, [0,0,-1])
-#		glLightfv(GL_LIGHT1, GL_QUADRATIC_ATTENUATION,0.0037)
+		glLightfv(GL_LIGHT1, GL_AMBIENT, [0.0, 0.0, 0.0, 1.0])
+		glLightfv(GL_LIGHT1, GL_DIFFUSE, [0.5,0.5,0.5, 1.0])
+		glLightfv(GL_LIGHT1, GL_SPECULAR, [0.0, 0.0, 0.0, 1.0])
+		glLightfv(GL_LIGHT1, GL_POSITION, [0,0,1,1]) # set the is self.radius when it's known
+		glLightfv(GL_LIGHT1, GL_SPOT_DIRECTION, [0,0,-1])
+		glLightfv(GL_LIGHT1, GL_QUADRATIC_ATTENUATION,0.0037)
+		
+		glLightfv(GL_LIGHT2, GL_AMBIENT, [0.0, 0.0, 0.0, 1.0])
+		glLightfv(GL_LIGHT2, GL_DIFFUSE, [0.5,0.5,0.5, 1.0])
+		glLightfv(GL_LIGHT2, GL_SPECULAR, [0.0, 1.0, 0.0, 1.0])
+		glLightfv(GL_LIGHT2, GL_POSITION, [0.1,.1,1.,0.])
+		
+		glLightfv(GL_LIGHT3, GL_AMBIENT, [0.0, 0.0, 0.0, 1.0])
+		glLightfv(GL_LIGHT3, GL_DIFFUSE, [0.5,0.5,0.5, 1.0])
+		glLightfv(GL_LIGHT3, GL_SPECULAR, [0.0, 1.0, 0.0, 1.0])
+		glLightfv(GL_LIGHT3, GL_POSITION, [0.1,.1,1.,0.])
 		#GL_SPOT_DIRECTION,GL_SPOT_CUTOFF,GL_QUADRATIC_ATTENUATION
 		
 		
@@ -329,11 +340,15 @@ class EMImage3DWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMatri
 		if self.startz < 0: self.startz = 1
 		gluPerspective(self.fov,self.aspect,self.startz,self.endz)
 		glMatrixMode(GL_MODELVIEW)
+	
+	def viewing_volume(self):
+		'''
+		A useful function for getting the viewing volume as a list - so
+		the calling function can figure out what to draw
+		'''
 		
+		return [-self.xwidth/2.0,-self.yheight/2.0,self.startz, self.xwidth/2.0,self.yheight/2.0,self.endz]
 		
-	#def set_perspective(self,bool):
-		#self.perspective = bool
-		#self.resizeGL(self.width(),self.height())
 		
 	def get_start_z(self):
 		return self.startz
@@ -906,9 +921,10 @@ class EM3DAdvancedInspector(QtGui.QWidget,EMLightsInspectorBase):
 		self.hbl.setObjectName("hbl")
 		
 		self.persbut = QtGui.QRadioButton("Perspective")
+		self.persbut.setChecked(self.target().perspective==True)
 		
 		self.orthbut = QtGui.QRadioButton("Orthographic")
-		self.orthbut.setChecked(True)
+		self.orthbut.setChecked(self.target().perspective==False)
 		
 		self.groupbox = QtGui.QVBoxLayout()
 		self.groupbox.addWidget(self.persbut)
@@ -947,327 +963,21 @@ class EM3DAdvancedInspector(QtGui.QWidget,EMLightsInspectorBase):
 	def ortho_clicked(self):
 		self.target().set_perspective(False)
 		
-class EM3DModule(EMLightsDrawer,EMImage3DGUIModule):
-	
-	def get_qt_widget(self):
-		if self.qt_context_parent == None:	
-			from emimageutil import EMParentWin
-			self.under_qt_control = True
-			self.gl_context_parent = EMImage3DWidget(self)
-			self.qt_context_parent = EMParentWin(self.gl_context_parent)
-			self.gl_widget = self.gl_context_parent
-				
-			if isinstance(self.data,EMData):
-				self.gl_context_parent.set_cam_z(self.gl_context_parent.get_fov(),self.data)
-			
-			self.qt_context_parent.setWindowIcon(QtGui.QIcon(get_image_directory() +"single_image_3d.png"))
-		
-		return self.qt_context_parent
-	
-	def get_gl_widget(self,qt_context_parent,gl_context_parent):
-		self.under_qt_control = False
-		ret = EMImage3DGUIModule.get_gl_widget(self,qt_context_parent,gl_context_parent)
-		self.gl_widget.setWindowTitle(remove_directories_from_name(self.file_name))
-		self.__set_module_contexts()
-		return ret
-	
-	def get_desktop_hint(self):
-		return "image"
 
-	def __init__(self,application=None):
-		EMImage3DGUIModule.__init__(self,application,ensure_gl_context=True)
-		EMLightsDrawer.__init__(self)
-		self.cam = Camera2(self)
-		self.cam.cam_z = -250
-		self.vdtools = EMViewportDepthTools(self)
-		self.perspective = False
-		self.colors = get_default_gl_colors()
-		
-		# basic shapes will be stored in these lists
-		self.gq = None # will be a glu quadric
-		self.cylinderdl = 0 # will be a cylinder with no caps
-		self.diskdl = 0 # this will be a flat disk
-		self.spheredl = 0 # this will be a low resolution sphere
-		self.highresspheredl = 0 # high resolution sphere
-		self.cappedcylinderdl = 0 # a capped cylinder
-		self.first_render_flag = True # this is used to catch the first call to the render function - so you can do an GL context sensitive initialization when you know there is a valid context
-	
-		self.inspector = None # will be the inspector, i.e. an instance of an EM3DInspector
-		
-	def __del__(self):
-		if self.under_qt_control and not self.dont_delete_parent:
-			self.qt_context_parent.deleteLater()
-		self.core_object.deleteLater()
-
-	def width(self):
-		try: return self.gl_widget.width()
-		except: return 0
-		
-	def height(self):
-		try: return self.gl_widget.height()
-		except: return 0
-	
-	def initializeGL(self):
-		# put your own initialization things in here
-		glEnable(GL_LIGHTING)
-		glEnable(GL_NORMALIZE)
-	def load_gl_color(self,name):
-		color = self.colors[name]
-		glColor(color["ambient"])
-		glMaterial(GL_FRONT,GL_AMBIENT,color["ambient"])
-		glMaterial(GL_FRONT,GL_DIFFUSE,color["diffuse"])
-		glMaterial(GL_FRONT,GL_SPECULAR,color["specular"])
-		glMaterial(GL_FRONT,GL_EMISSION,color["emission"])
-		glMaterial(GL_FRONT,GL_SHININESS,color["shininess"])
-	
-	
-	def render(self):
-		if self.first_render_flag:
-			self.initializeGL()
-			self.init_basic_shapes() # only does something the first time you call it
-		glPushMatrix()
-		self.cam.position(True)
-		# the ones are dummy variables atm... they don't do anything
-		self.vdtools.update(1,1)
-		glPopMatrix()
-		
-		dz = None
-		
-		glMatrixMode(GL_PROJECTION)
-		glPushMatrix() 
-		glLoadIdentity()
-		if not self.perspective:self.gl_context_parent.load_orthographic()
-		else: self.gl_context_parent.load_perspective()
-		glMatrixMode(GL_MODELVIEW)
-		glLoadIdentity()
-			
-		glPushMatrix()
-		self.cam.position()
-		
-		glPushMatrix()
-		glScale(50,50,50)
-		self.load_gl_color("red")
-		glCallList(self.highresspheredl)
-		glPopMatrix()
-		
-		glPushMatrix()
-		glTranslate(100,0,0)
-		glScale(50,50,50)
-		self.load_gl_color("blue")
-		glCallList(self.spheredl)
-		glPopMatrix()
-		
-		glPushMatrix()
-		glTranslate(0,100,0)
-		glScale(50,10,10)
-		glTranslate(-0.5,0,0)
-		glRotate(90,0,1,0)
-		self.load_gl_color("emerald")
-		glCallList(self.cylinderdl)
-		glPopMatrix()
-		
-		glPushMatrix()
-		glTranslate(-100,25,0)
-		glScale(10,50,10)
-		glTranslate(-0.5,0,0)
-		glRotate(90,1,0,0)
-		self.load_gl_color("gold")
-		glCallList(self.cappedcylinderdl)
-		glPopMatrix()
-		
-		glPushMatrix()
-		glTranslate(0,-100,0)
-		glScale(15,15,15)
-		self.load_gl_color("copper")
-		glCallList(self.diskdl)
-		glPopMatrix()
-		
-		
-#		for i in self.viewables:
-#			glPushMatrix()
-#			i.render()
-#			glPopMatrix()
-#		glPopMatrix()
-#		
-		glPopMatrix()
-		
-		glPushMatrix()
-		self.cam.translate_only()
-		glScale(10,10,10)
-		EMLightsDrawer.draw(self)
-		glPopMatrix()
-		
-		
-		glMatrixMode(GL_PROJECTION)
-		glPopMatrix()
-		glMatrixMode(GL_MODELVIEW)
-			
-		
-		
-	def init_basic_shapes(self):
-		self.gl_context_parent.makeCurrent()
-		if self.gq == None:
-			
-			self.gq=gluNewQuadric() # a quadric for general use
-			gluQuadricDrawStyle(self.gq,GLU_FILL)
-			gluQuadricNormals(self.gq,GLU_SMOOTH)
-			gluQuadricOrientation(self.gq,GLU_OUTSIDE)
-			gluQuadricTexture(self.gq,GL_FALSE)
-		
-		if ( self.cylinderdl == 0 ):
-			self.cylinderdl=glGenLists(1)
-				
-			glNewList(self.cylinderdl,GL_COMPILE)
-			glPushMatrix()
-			gluCylinder(self.gq,1.0,1.0,1.0,12,2)
-			glPopMatrix()
-				
-			glEndList()
-		
-		if self.diskdl == 0:
-			self.diskdl=glGenLists(1)
-				
-			glNewList(self.diskdl,GL_COMPILE)
-			gluDisk(self.gq,0,1,12,2)
-			glEndList()
-		
-		if self.spheredl == 0:
-			self.spheredl=glGenLists(1)
-				
-			glNewList(self.spheredl,GL_COMPILE)
-			gluSphere(self.gq,.5,4,2)
-			glEndList()
-
-		
-		if self.highresspheredl == 0:
-			self.highresspheredl=glGenLists(1)
-				
-			glNewList(self.highresspheredl,GL_COMPILE)
-			gluSphere(self.gq,.5,16,16)
-			glEndList()
-			
-		if ( self.cappedcylinderdl == 0 ):
-			self.cappedcylinderdl=glGenLists(1)
-			glNewList(self.cappedcylinderdl,GL_COMPILE)
-			glCallList(self.cylinderdl)
-			glPushMatrix()
-			glTranslate(0,0,1)
-			glCallList(self.diskdl)
-			glPopMatrix()
-			glPushMatrix()
-			glRotate(180,0,1,0)
-			glCallList(self.diskdl)
-			glPopMatrix()
-			glEndList()
-			
-	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
-		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
-	
-	def resizeEvent(self, width, height):
-		for i in self.viewables:
-			i.resizeEvent()
-	
-	def get_inspector(self):
-		if self.inspector == None:
-			self.inspector = EM3DInspector(self)
-		return self.inspector
-
-	def set_cam_z(self,z):
-		self.cam.set_cam_z( z )
-		self.updateGL()
-		
-	def set_cam_y(self,y):
-		self.cam.set_cam_y( y )
-		self.updateGL()
-		
-	def set_cam_x(self,x):
-		self.cam.set_cam_x( x )
-		self.updateGL()
-	
-	def set_scale(self,val):
-		self.cam.scale = val
-		self.updateGL()	
-
-	def resizeEvent(self,width=0,height=0):
-		self.vdtools.set_update_P_inv()
-	
-	def load_rotation(self,t3d):
-		self.cam.load_rotation(t3d)
-		self.updateGL()
-
-	def get_start_z(self):
-		return self.gl_context_parent.get_start_z()
-	
-	def get_near_plane_dims(self):
-		return self.gl_context_parent.get_near_plane_dims()
-	
-	def set_perspective(self,bool):
-		self.perspective = bool
-		self.updateGL()
-
-
-class EM3DInspector(QtGui.QWidget):
-	def __init__(self,target):
-		QtGui.QWidget.__init__(self,None)
-		self.target = weakref.ref(target) # prevent a strong cycle - this target object should be an EM3DModule, but that could change depending on who builds on this object
-		
-		self.vbl = QtGui.QVBoxLayout(self) # this is the main vbl
-		
-		self.advanced_tab = None
-		
-		self.tabwidget = QtGui.QTabWidget()
-		
-		#self.vbl.addLayout(self.hbl_check)
-		self.vbl.addWidget(self.tabwidget)
-		
-		self.insert_advanced_tab()
-		
-	def insert_advanced_tab(self):
-		if self.advanced_tab == None:
-			self.advanced_tab = EM3DAdvancedInspector(self.target(), self)
-			
-		self.advanced_tab.update_rotations(self.target().get_current_transform())
-		self.advanced_tab.set_scale(self.target().cam.scale)
-		self.tabwidget.addTab(self.advanced_tab,"Advanced")
-		self.settingsrow = self.tabwidget.count()-1
-		self.tabwidget.setCurrentIndex(self.settingsrow)
-
-	
-	def update_rotations(self,t3d):
-		self.advanced_tab.update_rotations(t3d)
-	
-	def set_scale(self,val):
-		self.advanced_tab.set_scale(val)
-	
-	def set_xy_trans(self, x, y):
-		self.advanced_tab.set_xy_trans(x,y)
-	
-	def set_xyz_trans(self,x,y,z):
-		self.advanced_tab.set_xyz_trans(x,y,z)
-		
-	def set_directional_light_dir(self,d):
-		self.advanced_tab.set_directional_light_dir(d)
-	
-	def set_positional_light_pos(self,d):
-		self.advanced_tab.set_positional_light_pos(d)
-		
-	def set_positional_light_dir(self,d):
-		self.advanced_tab.set_positional_light_dir(d)
 
 	
 if __name__ == '__main__':
 	em_app = EMStandAloneApplication()
-	#window = EMImage3DModule(application=em_app)
-	window = EM3DModule()
-#	if len(sys.argv)==1 : 
-#		data = []
-#		#for i in range(0,200):
-#		e = test_image_3d(1,size=(64,64,64))
-#		window.set_data(e)
-#	else :
-#		a=EMData(sys.argv[1])
-#		window.set_file_name(sys.argv[1])
-#		window.set_data(a)
+	window = EMImage3DModule(application=em_app)
+	if len(sys.argv)==1 : 
+		data = []
+		#for i in range(0,200):
+		e = test_image_3d(1,size=(64,64,64))
+		window.set_data(e)
+	else :
+		a=EMData(sys.argv[1])
+		window.set_file_name(sys.argv[1])
+		window.set_data(a)
 		
 	em_app.show()
 	em_app.execute()

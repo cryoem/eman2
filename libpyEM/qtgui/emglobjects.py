@@ -2042,19 +2042,23 @@ class EMImage3DGUIModule(EMGUIModule):
 		elif event.key() == Qt.Key_Up:
 			if event.modifiers()&Qt.ShiftModifier: self.cam.explicit_translate(0,0,-1)
 			else: self.cam.explicit_translate(0,1,0)
+			if self.inspector: self.inspector.set_xyz_trans(self.cam.cam_x,self.cam.cam_y,self.cam.cam_z)
 			self.updateGL()
 			
 		elif event.key() == Qt.Key_Down:
 			if event.modifiers()&Qt.ShiftModifier: self.cam.explicit_translate(0,0,1)
 			else:self.cam.explicit_translate(0,-1,0)
+			if self.inspector: self.inspector.set_xyz_trans(self.cam.cam_x,self.cam.cam_y,self.cam.cam_z)
 			self.updateGL()
 			
 		elif event.key() == Qt.Key_Left:
 			self.cam.explicit_translate(-1,0,0)
+			if self.inspector: self.inspector.set_xyz_trans(self.cam.cam_x,self.cam.cam_y,self.cam.cam_z)
 			self.updateGL()
 			
 		elif event.key() == Qt.Key_Right:
 			self.cam.explicit_translate(1,0,0)
+			if self.inspector: self.inspector.set_xyz_trans(self.cam.cam_x,self.cam.cam_y,self.cam.cam_z)
 			self.updateGL()
 			
 		elif event.key() == Qt.Key_I:
