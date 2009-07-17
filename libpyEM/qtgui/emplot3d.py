@@ -52,7 +52,7 @@ from PyQt4.QtCore import QTimer
 from time import *
 import copy
 
-from emglobjects import EMImage3DGUIModule, Camera2,get_default_gl_colors,EMViewportDepthTools2,get_RGB_tab,get_gl_lights_vector,draw_volume_bounds,init_glut
+from emglobjects import EMImage3DGUIModule, Camera2,get_default_gl_colors,EMViewportDepthTools2,get_RGB_tab,get_gl_lights_vector,draw_volume_bounds,init_glut,get_default_gl_colors
 from emlights import *
 from emimageutil import EMTransformPanel
 
@@ -90,6 +90,7 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		
 		self.gl_context_parent.cam.default_z = -25	 # this is me hacking
 		self.gl_context_parent.cam.cam_z = -25 # this is me hacking
+		self.basic_colors = get_default_gl_colors()
 	
 		self.highresspheredl = 0 # display list i
 		self.draw_dl = 0
@@ -112,9 +113,9 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 	def init_font_renderer(self):
 		if self.font_renderer == None:
 			self.font_renderer = get_3d_font_renderer()
-			self.font_renderer.set_face_size(20)
-			self.font_renderer.set_depth(12)
-			self.font_renderer.set_font_mode(FTGLFontMode.BITMAP)
+			self.font_renderer.set_face_size(self.font_size)
+			self.font_renderer.set_depth(self.font_depth)
+			self.font_renderer.set_font_mode(FTGLFontMode.EXTRUDE)
 		
 	def set_data_based_coloring(self,value): 
 		self.data_based_coloring = value	
@@ -419,6 +420,8 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 			
 		glCallList(self.draw_dl)
 		
+		if self.draw_data_cube: self.draw_cube()
+		
 		glPopMatrix()
 		EMLightsDrawer.draw(self)
 		
@@ -553,109 +556,259 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 					glPopName()
 					gl_pick_name += 1
 					
-			if self.draw_data_cube:
+#			if self.draw_data_cube:
+#				
+#				light_on = glIsEnabled(GL_LIGHTING)
+#				glDisable(GL_LIGHTING)
+#				
+#				glEnable(GL_TEXTURE_2D)
+#
+#				glPushMatrix()
+#				glTranslate(minx,miny,minz)
+#				glColor(0,0,0,1)
+#				draw_volume_bounds(width,height,depth,False)
+#				glPopMatrix()
+#
+#				# x axis
+#				n = 4
+#				glPushMatrix()
+#				glTranslate(minx,miny,minz)
+#
+#				key = vis_keys[0] #only for the first data plotted
+#				mn = self.min[key][0]
+#				mx = self.max[key][0]
+#				interval = mx-mn
+#				self.sc=0.0;
+#				for i in range(3):
+#					if (self.max[key][i]>self.sc): self.sc = self.max[key][i]
+#				self.sc=(self.sc/120.0)
+#				for i in range(n):
+#					glPushMatrix()
+#					#s = str(mn+(i-1.0)/n*interval)
+#					s = str(mn+(i*interval)/(n-1.0))
+#					s = s[:4]
+#					bbox = self.font_renderer.bounding_box(s)
+#					glTranslate( (i)/(n-1.0)*width,0,0)
+#					#-((bbox[3]-bbox[0])/2.0)
+#					glScale(self.sc, self.sc, self.sc)
+#				
+#					#GLUtil.mx_bbox(bbox,[0,1,0,1],[0,0,0,1])
+#					
+#					self.font_renderer.render_string(s)
+#					glTranslate((bbox[3]-bbox[0])/2.0,0,0)
+#					
+#					#glutSolidOctahedron()
+#					glPopMatrix()
+#				glPopMatrix()	
+#				if light_on: glEnable(GL_LIGHTING)
+#				
+#				
+#				# y axis
+#				n = 4
+#				glPushMatrix()
+#				glTranslate(minx,miny,minz)
+#
+#				key = vis_keys[0]
+#				mn = self.min[key][1]
+#				mx = self.max[key][1]
+#				interval = mx-mn
+#				for i in range(n):
+#					glPushMatrix()
+#					#s = str(mn+(i-1.0)/n*interval)
+#					s = str(mn+(i*interval)/(n-1.0))
+#					s = s[:4]
+#					bbox = self.font_renderer.bounding_box(s)
+#					glTranslate(0, (i)/(n-1.0)*height,0)
+#					#-(bbox[4]-bbox[1])/2.0
+#					glScale(self.sc, self.sc, self.sc)
+#					# GLUtil.mx_bbox(bbox,[0,1,0,1],[0,0,0,1])
+#					self.font_renderer.render_string(s)
+#					#glTranslate(0,(bbox[4]-bbox[1])/2.0,0)
+#
+#					#glutSolidOctahedron()
+#					glPopMatrix()
+#				glPopMatrix()	
+#				if light_on: glEnable(GL_LIGHTING)
+#				
+#				
+#				# z axis
+#				n = 4
+#				glPushMatrix()
+#				glTranslate(minx,miny,minz)
+#
+#				key = vis_keys[0]
+#				mn = self.min[key][2]
+#				mx = self.max[key][2]
+#				interval = mx-mn
+#				for i in range(n):
+#					glPushMatrix()
+#					#s = str(mn+(i-1.0)/n*interval)
+#					s = str(mn+(i*interval)/(n-1.0))
+#					s = s[:4]
+#					bbox = self.font_renderer.bounding_box(s)
+#					glTranslate(0, 0, (i)/(n-1.0)*depth)
+#					#-(bbox[5]-bbox[2])/2.0
+#					glScale(self.sc, self.sc, self.sc)
+#					# GLUtil.mx_bbox(bbox,[0,1,0,1],[0,0,0,1])
+#					self.font_renderer.render_string(s)
+#					#glTranslate(0,0,(bbox[5]-bbox[2])/2.0)
+#
+#					#glutSolidOctahedron()
+#					glPopMatrix()
+#				glPopMatrix()	
+#				if light_on: glEnable(GL_LIGHTING)
+#			
+#			glDisable(GL_TEXTURE_2D)
+		
+		glPopMatrix()
+	
+	def load_gl_color(self,name):
+		color = self.basic_colors[name]
+		glColor(color["ambient"])
+		glMaterial(GL_FRONT,GL_AMBIENT,color["ambient"])
+		glMaterial(GL_FRONT,GL_DIFFUSE,color["diffuse"])
+		glMaterial(GL_FRONT,GL_SPECULAR,color["specular"])
+		glMaterial(GL_FRONT,GL_EMISSION,color["emission"])
+		glMaterial(GL_FRONT,GL_SHININESS,color["shininess"])
+	
+	
+	def draw_cube(self):
+	
+		minx,miny,minz,maxx,maxy,maxz = None,None,None,None,None,None
+		mins = [None,None,None]
+		maxs = [None,None,None]
+		self.load_gl_color("blue")
+		keys = self.data.keys()
+		vis_keys = []
+		for key in keys:
+			if self.visibility[key]:
+				min = self.min[key]
+				max = self.max[key]
+				axes = self.axes[key]
 				
-				light_on = glIsEnabled(GL_LIGHTING)
-				glDisable(GL_LIGHTING)
-				
-				glEnable(GL_TEXTURE_2D)
-
-				glPushMatrix()
-				glTranslate(minx,miny,minz)
-				glColor(0,0,0,1)
-				draw_volume_bounds(width,height,depth,False)
-				glPopMatrix()
-
-				# x axis
-				n = 4
-				glPushMatrix()
-				glTranslate(minx,miny,minz)
-
-				key = vis_keys[0] #only for the first data plotted
-				mn = self.min[key][0]
-				mx = self.max[key][0]
-				interval = mx-mn
-				self.sc=0.0;
-				for i in range(3):
-					if (self.max[key][i]>self.sc): self.sc = self.max[key][i]
-				self.sc=(self.sc/120.0)
-				for i in range(n):
-					glPushMatrix()
-					#s = str(mn+(i-1.0)/n*interval)
-					s = str(mn+(i*interval)/(n-1.0))
-					s = s[:4]
-					bbox = self.font_renderer.bounding_box(s)
-					glTranslate( (i)/(n-1.0)*width,0,0)
-					#-((bbox[3]-bbox[0])/2.0)
-					glScale(self.sc, self.sc, self.sc)
-				
-					#GLUtil.mx_bbox(bbox,[0,1,0,1],[0,0,0,1])
+				for i,m in enumerate(mins):
+					if m == None or min[axes[i]] < m: mins[i] = min[axes[i]]
 					
-					self.font_renderer.render_string(s)
-					glTranslate((bbox[3]-bbox[0])/2.0,0,0)
-					
-					#glutSolidOctahedron()
-					glPopMatrix()
-				glPopMatrix()	
-				if light_on: glEnable(GL_LIGHTING)
+				for i,m in enumerate(maxs):
+					if m == None or max[axes[i]] >  m: maxs[i] = max[axes[i]]
+				vis_keys.append(key)
 				
-				
-				# y axis
-				n = 4
-				glPushMatrix()
-				glTranslate(minx,miny,minz)
+	
+		
+		minx,miny,minz = mins[0],mins[1],mins[2]
+		maxx,maxy,maxz = maxs[0],maxs[1],maxs[2]
+		
+		width = maxx-minx
+		height = maxy-miny
+		depth = maxz-minz
+		
+		if width == 0: width = 1
+		if height == 0: height = 1
+		if depth == 0: depth = 1
+		
+		glPushMatrix()
+		glTranslate(-(maxx+minx)/2,-(maxy+miny)/2,-(maxz+minz)/2) # centers the plot
+		
+		light_on = glIsEnabled(GL_LIGHTING)
+		
+		glEnable(GL_TEXTURE_2D)
 
-				key = vis_keys[0]
-				mn = self.min[key][1]
-				mx = self.max[key][1]
-				interval = mx-mn
-				for i in range(n):
-					glPushMatrix()
-					#s = str(mn+(i-1.0)/n*interval)
-					s = str(mn+(i*interval)/(n-1.0))
-					s = s[:4]
-					bbox = self.font_renderer.bounding_box(s)
-					glTranslate(0, (i)/(n-1.0)*height,0)
-					#-(bbox[4]-bbox[1])/2.0
-					glScale(self.sc, self.sc, self.sc)
-					# GLUtil.mx_bbox(bbox,[0,1,0,1],[0,0,0,1])
-					self.font_renderer.render_string(s)
-					#glTranslate(0,(bbox[4]-bbox[1])/2.0,0)
+		glPushMatrix()
+		glTranslate(minx,miny,minz)
+		glColor(0,0,0,1)
+		draw_volume_bounds(width,height,depth,False)
+		glPopMatrix()
 
-					#glutSolidOctahedron()
-					glPopMatrix()
-				glPopMatrix()	
-				if light_on: glEnable(GL_LIGHTING)
-				
-				
-				# z axis
-				n = 4
-				glPushMatrix()
-				glTranslate(minx,miny,minz)
+		# x axis
+		n = 4
+		glPushMatrix()
+		glTranslate(minx,miny,minz)
 
-				key = vis_keys[0]
-				mn = self.min[key][2]
-				mx = self.max[key][2]
-				interval = mx-mn
-				for i in range(n):
-					glPushMatrix()
-					#s = str(mn+(i-1.0)/n*interval)
-					s = str(mn+(i*interval)/(n-1.0))
-					s = s[:4]
-					bbox = self.font_renderer.bounding_box(s)
-					glTranslate(0, 0, (i)/(n-1.0)*depth)
-					#-(bbox[5]-bbox[2])/2.0
-					glScale(self.sc, self.sc, self.sc)
-					# GLUtil.mx_bbox(bbox,[0,1,0,1],[0,0,0,1])
-					self.font_renderer.render_string(s)
-					#glTranslate(0,0,(bbox[5]-bbox[2])/2.0)
-
-					#glutSolidOctahedron()
-					glPopMatrix()
-				glPopMatrix()	
-				if light_on: glEnable(GL_LIGHTING)
+		key = vis_keys[0] #only for the first data plotted
+		mn = self.min[key][0]
+		mx = self.max[key][0]
+		interval = mx-mn
+		self.sc=0.0;
+		for i in range(3):
+			if (self.max[key][i]>self.sc): self.sc = self.max[key][i]
+		self.sc=(self.sc/120.0)
+		for i in range(n):
+			glPushMatrix()
+			#s = str(mn+(i-1.0)/n*interval)
+			s = str(mn+(i*interval)/(n-1.0))
+			s = s[:4]
+			bbox = self.font_renderer.bounding_box(s)
+			glTranslate( (i)/(n-1.0)*width,0,0)
+			#-((bbox[3]-bbox[0])/2.0)
+			glScale(self.sc, self.sc, self.sc)
+		
+			#GLUtil.mx_bbox(bbox,[0,1,0,1],[0,0,0,1])
 			
-			glDisable(GL_TEXTURE_2D)
+			self.font_renderer.render_string(s)
+			glTranslate((bbox[3]-bbox[0])/2.0,0,0)
+			
+			#glutSolidOctahedron()
+			glPopMatrix()
+		glPopMatrix()	
+		if light_on: glEnable(GL_LIGHTING)
+		
+		
+		# y axis
+		n = 4
+		glPushMatrix()
+		glTranslate(minx,miny,minz)
+
+		key = vis_keys[0]
+		mn = self.min[key][1]
+		mx = self.max[key][1]
+		interval = mx-mn
+		for i in range(n):
+			glPushMatrix()
+			#s = str(mn+(i-1.0)/n*interval)
+			s = str(mn+(i*interval)/(n-1.0))
+			s = s[:4]
+			bbox = self.font_renderer.bounding_box(s)
+			glTranslate(0, (i)/(n-1.0)*height,0)
+			#-(bbox[4]-bbox[1])/2.0
+			glScale(self.sc, self.sc, self.sc)
+			# GLUtil.mx_bbox(bbox,[0,1,0,1],[0,0,0,1])
+			self.font_renderer.render_string(s)
+			#glTranslate(0,(bbox[4]-bbox[1])/2.0,0)
+
+			#glutSolidOctahedron()
+			glPopMatrix()
+		glPopMatrix()	
+		if light_on: glEnable(GL_LIGHTING)
+		
+		
+		# z axis
+		n = 4
+		glPushMatrix()
+		glTranslate(minx,miny,minz)
+
+		key = vis_keys[0]
+		mn = self.min[key][2]
+		mx = self.max[key][2]
+		interval = mx-mn
+		for i in range(n):
+			glPushMatrix()
+			#s = str(mn+(i-1.0)/n*interval)
+			s = str(mn+(i*interval)/(n-1.0))
+			s = s[:4]
+			bbox = self.font_renderer.bounding_box(s)
+			glTranslate(0, 0, (i)/(n-1.0)*depth)
+			#-(bbox[5]-bbox[2])/2.0
+			glScale(self.sc, self.sc, self.sc)
+			# GLUtil.mx_bbox(bbox,[0,1,0,1],[0,0,0,1])
+			self.font_renderer.render_string(s)
+			#glTranslate(0,0,(bbox[5]-bbox[2])/2.0)
+
+			#glutSolidOctahedron()
+			glPopMatrix()
+		glPopMatrix()	
+		if light_on: glEnable(GL_LIGHTING)
+		
+		glDisable(GL_TEXTURE_2D)
 		
 		glPopMatrix()
 	
