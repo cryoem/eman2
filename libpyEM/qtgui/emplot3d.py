@@ -107,13 +107,14 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		
 		self.allowable_shapes =  ["Sphere","Cube","Dodecahedron","Icosahedron","Tetrahedron","Cone","Octahedron","Teapot"]
 		self.init_color_themes()
-		self.init_font_renderer()
+		
 
 	def init_font_renderer(self):
-		self.font_renderer = get_3d_font_renderer()
-		self.font_renderer.set_face_size(self.font_size)
-		#self.font_renderer.set_depth(self.font_depth)
-		self.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
+		if self.font_renderer == None:
+			self.font_renderer = get_3d_font_renderer()
+			self.font_renderer.set_face_size(20)
+			self.font_renderer.set_depth(12)
+			self.font_renderer.set_font_mode(FTGLFontMode.EXTRUDE)
 		
 	def set_data_based_coloring(self,value): 
 		self.data_based_coloring = value	
@@ -180,6 +181,7 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 			hits = list(glRenderMode(GL_RENDER))
 			for hit in hits:
 				a,b,c=hit
+				print c
 				if len(c) > 0:
 					self.on_hit_update(c[0]-1)
 					break
@@ -367,6 +369,8 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 
 	def render(self): #######
 
+		if self.font_renderer == None:
+			self.init_font_renderer()
 		#if (not isinstance(self.data,EMData)): return
 		lighting = glIsEnabled(GL_LIGHTING)
 		cull = glIsEnabled(GL_CULL_FACE)
@@ -553,6 +557,8 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 				
 				light_on = glIsEnabled(GL_LIGHTING)
 				glDisable(GL_LIGHTING)
+				
+				glEnable(GL_TEXTURE_2D)
 
 				glPushMatrix()
 				glTranslate(minx,miny,minz)
@@ -648,7 +654,8 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 					glPopMatrix()
 				glPopMatrix()	
 				if light_on: glEnable(GL_LIGHTING)
-
+			
+			glDisable(GL_TEXTURE_2D)
 		
 		glPopMatrix()
 	
