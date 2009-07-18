@@ -279,19 +279,53 @@ class NavigationEvents(InputEventsHandler):
 		
 
 
-class ClassOrientationEvents(NavigationEvents,QtCore.QObject): 
+class ClassOrientationEvents(InputEventsHandler,QtCore.QObject): 
 	def __init__(self,parent):
-		NavigationEvents.__init__(self,parent)
+		InputEventsHandler.__init__(self,parent)
 		QtCore.QObject.__init__(self)
-		self.old_intersection = -1
-		self.old_color = None
-		self.nc = None
-		self.intsct = None
+#		self.old_intersection = -1
+#		self.old_color = None
+#		self.nc = None
+#		self.intsct = None
+		self.current_hit = None
 		
+	def mousePressEvent(self,event):
+		self.current_hit = self.get_hit(event)
+		if self.current_hit == None: EMImage3DGUIModule.mousePressEvent(self.parent(),event)
+	
 	def mouseReleaseEvent(self,event):
-		m,p,v = self.parent().model_matrix.tolist(),self.parent().vdtools.wproj.tolist(),self.parent().vdtools.wview.tolist()
 		
+		if self.current_hit != None:
+			self.parent().updateGL() # there needs to be a clear or something  in order for the picking to work. This is  bit of hack but our rendering function doesn't take long anyhow
+			hit = self.get_hit(event)
+			if hit == self.current_hit:
+				self.emit(QtCore.SIGNAL("point_selected"),self.current_hit,event)
+		else:
+			EMImage3DGUIModule.mouseReleaseEvent(self.parent(),event)
+				
+		self.current_hit = None
 		
+	def mouseMoveEvent(self,event):
+		if not self.current_hit:
+			EMImage3DGUIModule.mouseMoveEvent(self.parent(),event)
+		
+	def get_hit(self,event):
+		v = self.parent().vdtools.wview.tolist()
+#		x = event.x()
+#		y = v[-1]-event.y()
+#		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT )
+#		vals = self.parent().render(color_picking=True)
+#		glFlush()
+#		vv = glReadPixels(x,y,1,1,GL_RGB,GL_FLOAT)
+#		reslt = Vec3f(float(vv[0][0][0]),float(vv[0][0][1]),float(vv[0][0][2]))
+#		for i,val in enumerate(vals):
+##			print val,reslt,(reslt-val).length(),vv[0][0]
+#			if (reslt-val).length() < 0.01:
+#				print i
+##				print (reslt-val).length()
+#				return i
+#		print vv
+#		
 		sb = [0 for i in xrange(0,512)]
 		glSelectBuffer(512)
 		glRenderMode(GL_SELECT)
@@ -316,71 +350,18 @@ class ClassOrientationEvents(NavigationEvents,QtCore.QObject):
 			if len(c) > 0:
 				intersection = c[0]-1
 				break
+			
+		return intersection
+	
+	def mouseDoubleClickEvent(self,event):
+		EMImage3DGUIModule.mouseDoubleClickEvent(self.parent(),event)
+	
+	def keyPressEvent(self,event):
+		EMImage3DGUIModule.keyPressEvent(self.parent(),event)
 		
-		self.emit(QtCore.SIGNAL("point_selected"),intersection,event)
-		return
-		
-#		model_matrix = []
-#		proj_matrix = []
-#		view_matrix = []
-#		
-#		
-#		for val in m:
-#			if isinstance(val,list): model_matrix.extend(val)
-#			else: modul_matrix.append(val)
-#			
-#		for val in p:
-#			if isinstance(val,list): proj_matrix.extend(val)
-#			else: proj_matrix.append(val)
-#			
-#		for val in v:
-#			if isinstance(val,list): view_matrix.extend(val)
-#			else: view_matrix.append(val)
-#			
-#		points = self.parent().points
-#		mouse_x = event.x()
-#		mouse_y = view_matrix[-1]-event.y()
-#		intersection = GLUtil.nearest_projected_points(model_matrix,proj_matrix,view_matrix,points,float(mouse_x),float(mouse_y),6.0)
-#		
-#		new_colors = {}
-#		
-#		if intersection >= 0:
-#			new_colors[intersection] = (1.0,1.0,0,1)
-#			
-#			if self.old_intersection >= 0:
-#				new_colors[self.old_intersection] = self.old_color
-#			
-#			self.old_intersection = intersection
-#			self.old_color = self.parent().point_colors[intersection]			
-#		
-#		else:
-#			if self.old_intersection >= 0:
-#				new_colors[self.old_intersection] = self.old_color
-#				self.old_intersection = -1
-#			else:
-#				NavigationEvents.mouseReleaseEvent(self,event)
-#				return
-#		
-#		if len(new_colors) > 0:
-#			self.nc = new_colors
-#			self.intsct = intersection
-#			self.parent().set_point_colors(new_colors)
-#			self.parent().updateGL()
-#			if intersection >= 0:self.emit(QtCore.SIGNAL("point_selected"),intersection)
-#	
-#		else:
-#			self.nc = None
-#			self.intsct = None
-#	def repeat_event(self):
-#		self.reset()
-#		if self.nc != None and self.intsct != None:
-#			self.parent().set_point_colors(self.nc)
-#			if self.intsct >= 0:self.emit(QtCore.SIGNAL("point_selected"),self.intsct)
-#			
-#	def reset(self):
-#		self.old_intersection = None
-#		self.old_color = None
-#	
+	def wheelEvent(self,event):
+		EMImage3DGUIModule.wheelEvent(self.parent(),event)
+	
 class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 	def get_desktop_hint(self): return "image"
 	def keyPressEvent(self,event):
@@ -431,7 +412,6 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 		
 		self.set_symmetry(sym)
 		
-		
 		if hasattr(self,"au_data"):
 			combo_entries = self.au_data.keys()
 			combo_entries.sort()
@@ -440,8 +420,9 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 			if len(combo_entries) > 0:
 				au = combo_entries[0]
 				cls = self.au_data[au][0][0]
-				self.au_selected(au,cls)
 				self.euler_xplore_mode = True
+				self.au_selected(au,cls)
+				
 						
 		self.init_lock = False
 		self.force_update=True
@@ -543,6 +524,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 	def set_projection_file(self,projection_file): self.projection_file = projection_file
 	def get_inspector(self):
 		if not self.inspector : 
+			#print self.euler_xplore_mode
 			if not self.euler_xplore_mode: 
 				self.inspector=EMAsymmetricUnitInspector(self,True,True)
 			else: 

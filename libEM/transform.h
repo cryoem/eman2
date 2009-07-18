@@ -407,20 +407,22 @@ namespace EMAN
 
 			void copy_matrix_into_array(float* const) const;
 
+			Transform spherical_opposite() const;
+
 		private:
 			float matrix[3][4];
 
 			void assert_valid_2d() const;
-			
+
 			/// This map is used to validate keys in the argument maps - e.g. if the type is 2d and the angle is not "alpha" then we should throw
 			static vector<string> permissable_2d_not_rot;
 			static vector<string> permissable_3d_not_rot;
 			static map<string,vector<string> >  permissable_rot_keys;
-			
+
 			/** Called internally to initialize permissable_2d_not_rot, permissable_3d_not_rot, and permissable_rot_keys static members
 			*/
 			void init_permissable_keys();
-			
+
 			/** Test to ensure the parametes in the given dictionary are valid
 			* Throws if an error is detected
 			* Generic - works in every circumstance (set_params, set_rotation, set_params_inv)

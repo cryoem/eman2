@@ -617,8 +617,8 @@ void Transform::set_rotation(const Vec3f & v)
 
 	Dict d;
 	d["theta"] = (float)EMConsts::rad2deg*theta;
-	d["phi"] = (float)EMConsts::rad2deg*psi;
-	d["psi"] = (float)0.0;
+	d["psi"] = (float)EMConsts::rad2deg*psi;
+	d["phi"] = (float)0.0;
 	d["type"] = "spider";
 
 	set_rotation(d);

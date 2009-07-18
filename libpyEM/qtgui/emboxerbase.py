@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-#
+#!/home/ahmad/EMAN2/python/Python-2.5.4-ucs4/bin/python
 # Author: David Woolford (woolford@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
 
@@ -49,6 +48,7 @@ from emapplication import EMStandAloneApplication,get_application
 from pyemtbx.boxertools import BigImageCache,BinaryCircleImageCache,Cache
 from EMAN2 import file_exists,EMANVERSION,gimme_image_dimensions2D,EMData,get_file_tag,get_image_directory,Region,file_exists,gimme_image_dimensions3D,abs_path
 from EMAN2db import db_open_dict,db_check_dict,db_close_dict
+from valslider import ValSlider
 
 import os,sys,weakref,math
 from optparse import OptionParser
@@ -519,10 +519,10 @@ class ErasingPanel:
 		self.busy = False
 		
 		
-	def set_erase_radius(self,val):
+	def set_erase_radius(self, erase_rad_edit):
 		self.busy=True
-		self.erase_radius = val
-		if self.erase_rad_edit != None: self.erase_rad_edit.setText(str(val))
+		self.erase_radius = erase_rad_edit
+		if self.erase_rad_edit != None: self.erase_rad_edit.setValue(erase_rad_edit)
 		self.busy=False
 		
 	def get_widget(self):
@@ -536,23 +536,26 @@ class ErasingPanel:
 			
 			hbl = QtGui.QHBoxLayout()
 			hbl.addWidget(QtGui.QLabel("Erase Radius:"))
-			
-			self.erase_rad_edit = QtGui.QLineEdit(str(self.erase_radius))
+
+			self.erase_rad_edit = ValSlider(None,(0.0,1000.0),"")
+			self.erase_rad_edit.setValue(int(self.erase_radius))
+			self.erase_rad_edit.setEnabled(True)
 			hbl.addWidget(self.erase_rad_edit)
+
 			
 			self.unerase = QtGui.QCheckBox("Unerase")
 			self.unerase.setChecked(False)
 			
 			vbl.addLayout(hbl)
 			vbl.addWidget(self.unerase)
-			QtCore.QObject.connect(self.erase_rad_edit,QtCore.SIGNAL("editingFinished()"),self.new_erase_radius)
+			QtCore.QObject.connect(self.erase_rad_edit,QtCore.SIGNAL("sliderReleased"),self.new_erase_radius) #"editingFinished()"
 			QtCore.QObject.connect(self.unerase,QtCore.SIGNAL("clicked(bool)"),self.unerase_checked)
 			
 		return self.widget
 	
-	def new_erase_radius(self):
+	def new_erase_radius(self, erase_rad_edit):
 		if self.busy: return
-		self.target().set_erase_radius(float(self.erase_rad_edit.text()))
+		self.target().set_erase_radius(erase_rad_edit)
 		
 	def unerase_checked(self,val):
 		if self.busy: return

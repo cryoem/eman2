@@ -238,10 +238,14 @@ class EulerData:
 	
 	def get_score_options(self): return self.score_options
 	
-	def get_score_list(self,key,normalize=True):
+	def get_score_list(self,key,normalize=True,log_scale=False):
 		l = []
 		for d in self.data: 
-			l.append(float(d.get_attr(key)))
+			if log_scale:
+				try: l.append(log(float(d.get_attr(key))))
+				except: l.append(0)
+			else:
+				l.append(float(d.get_attr(key)))
 		if normalize: return self.normalize_float_list(l)
 		else: return l
 	
@@ -298,7 +302,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 		
 		self.width_scale = 1.0 # a with scale factor for points on the unit sphere
 		self.height_scale = 1.0 # a height scale factor for points on the unit sphere
-		self.arc_width_scale = 0.5 # The width of the great arcs 
+		self.arc_width_scale = 0.2 # The width of the great arcs 
 		self.force_update = True  # Force update everything - causes a couple of dispay lists to be regenerated
 #		
 		self.display_euler = True # Display sphere points flag
@@ -331,6 +335,9 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 		self.displayed_image_number = None # used to update the displayed image if new data is set 
 		self.special_euler = None # If set, the special Euler will get the special color - should be an index (int)
 		self.special_color = "gold"
+		
+		self.log_scale = False # Stores whether or not the cylinder height (score) is shown in log scale
+		self.current_cylinder_score = None # stores which header attribute is being used to scale the heights of the cylinders
 
 		#self.regen_dl()
 
@@ -364,7 +371,8 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 		self.euler_data.set_data(emdata_list)
 		self.specify_eulers(self.euler_data.get_eulers())
 		if default != "None":
-			l = self.euler_data.get_score_list(default)
+			self.current_cylinder_score = default
+			l = self.euler_data.get_score_list(default,log_scale=self.log_scale)
 			self.set_column_scores(l)
 		else: self.set_column_scores(None)
 		self.get_inspector().set_score_options(self.euler_data.get_score_options(),default)
@@ -379,11 +387,18 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 		if key == "None":
 			self.set_column_scores(None)
 		else:
-			l = self.euler_data.get_score_list(key)
+			l = self.euler_data.get_score_list(key,log_scale=self.log_scale)
+			self.current_cylinder_score = key
 			self.set_column_scores(l)
 			
-		self.regen_dl()
-			
+#		self.regen_dl()
+	
+	def set_log_scale(self,val):
+		self.log_scale = val
+		if str(self.current_cylinder_score) != "None":
+			l = self.euler_data.get_score_list(self.current_cylinder_score,log_scale=self.log_scale)
+			self.set_column_scores(l)
+	
 	def set_width_scale(self,val):
 		self.width_scale = val
 		self.regen_dl()
@@ -796,14 +811,35 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 			glPopMatrix()
 			
 		glEndList()
-#		
-#	def set_point_colors(self,new_color_map):
-#		for k,v in new_color_map.items():
-#			try:
-#				self.point_colors[k] = v
-#			except: pass
-#		self.update_sphere_points_dl = True
-#		#self.make_sym_dl_list(self.points,self.point_colors)	
+		
+	def render_sphere_points_for_color_picking(self,eulers):
+		'''
+		experimental function for rendering points as colors, for picking
+		'''
+		v = Vec3f(1,0,1)
+		vals = []
+		for i,p in enumerate(eulers):
+			v2 = p*v
+			v2.normalize() # this is silly, be has to occur
+			vals.append(v2)
+			glColor(v2[0],v2[1],v2[2])
+			glPushMatrix()
+			d = p.get_rotation("eman")
+			glRotate(d["az"],0,0,1)
+			glRotate(d["alt"],1,0,0)
+			glRotate(d["phi"],0,0,1)
+	   	   	glTranslate(0,0,self.radius)
+	   	   	if self.column_scores != None:
+	   	   		glScalef(self.width_scale,self.width_scale,self.height_scale*self.column_scores[i])
+	   	   	else: 
+	   	   		glScalef(self.width_scale,self.width_scale,self.height_scale)
+
+	   	   	glPushName(i+1)
+			glCallList(self.cappedcylinderdl)
+			glPopName()
+			glPopMatrix()
+			
+		return vals	
 #	
 	def angular_deviation(self,t1,t2):
 
@@ -969,7 +1005,8 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 		self.vdtools = EMViewportDepthTools2(parent)
 		self.gl_context_parent = parent
 
-	def render(self):
+	def render(self,color_picking=False):
+		color_list = None # this is returned if color_picking is True
 		self.init_basic_shapes()
 		if self.vdtools == None:
 			self.vdtools = EMViewportDepthTools2(self.get_gl_context_parent())
@@ -981,7 +1018,10 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 		lighting = glIsEnabled(GL_LIGHTING)
 		cull = glIsEnabled(GL_CULL_FACE)
 		polygonmode = glGetIntegerv(GL_POLYGON_MODE)
-		glEnable(GL_LIGHTING)
+		
+		if not color_picking: glEnable(GL_LIGHTING)
+		else: glDisable(GL_LIGHTING)
+		
 		glDisable(GL_CULL_FACE)
 		
 		glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
@@ -1058,8 +1098,32 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 			glStencilFunc(GL_EQUAL,self.rank,0)
 			glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE)
 			glPushMatrix()
-			glCallList(self.sphere_points_dl)
+			if not color_picking: glCallList(self.sphere_points_dl)
+			else: color_list = self.render_sphere_points_for_color_picking(self.eulers)
 			glPopMatrix()
+			
+			#if not self.nomirror:
+				#t = Transform()
+				#if self.sym in ["oct","tet"]: s = t.get_vflip_transform()
+				#else: s = t.get_hflip_transform()
+						
+				#d = s.get_rotation("eman")
+				#glPushMatrix()
+				#if ( self.sym_object.is_h_sym() ):
+					#trans = t.get_trans()
+					#glTranslatef(trans[0],trans[1],-trans[2])
+					#glRotate(d["phi"],0,0,1)
+##						glRotate(d["alt"],1,0,0)
+##						glRotate(d["az"],0,0,1)
+				#else:
+					## negated because OpenGL uses the opposite handed coordinate system
+					#glRotate(-d["phi"],0,0,1)
+					#glRotate(-d["alt"],1,0,0)
+					#glRotate(-d["az"],0,0,1)
+				#glCallList(self.sphere_points_dl)
+				##self.render_sphere_points_for_color_picking(self.eulers)
+				#glPopMatrix()
+				
 			if ( self.sym_object.is_h_sym() ):
 				a = {}
 				a["daz"] = 60
@@ -1070,7 +1134,8 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 			if self.display_all_syms:
 				#for i in range(1,self.sym_object.get_nsym()):
 					#t = self.sym_object.get_sym(i)
-				for t in self.sym_object.get_syms():
+				for i,t in enumerate(self.sym_object.get_syms()):
+					if i == 0: continue
 					d = t.get_rotation("eman")
 					glPushMatrix()
 					if ( self.sym_object.is_h_sym() ):
@@ -1085,7 +1150,31 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 						glRotate(-d["alt"],1,0,0)
 						glRotate(-d["az"],0,0,1)
 					glCallList(self.sphere_points_dl)
+					#self.render_sphere_points_for_color_picking(self.eulers)
 					glPopMatrix()
+					
+				#if not self.nomirror:
+					#for i,t in enumerate(self.sym_object.get_syms()):
+						#if i == 0: continue
+						#if self.sym in ["oct","tet"]: s = t.get_vflip_transform()
+						#else: s = t.get_hflip_transform()
+						
+						#d = s.get_rotation("eman")
+						#glPushMatrix()
+						#if ( self.sym_object.is_h_sym() ):
+							#trans = t.get_trans()
+							#glTranslatef(trans[0],trans[1],-trans[2])
+							#glRotate(d["phi"],0,0,1)
+	##						glRotate(d["alt"],1,0,0)
+	##						glRotate(d["az"],0,0,1)
+						#else:
+							## negated because OpenGL uses the opposite handed coordinate system
+							#glRotate(-d["phi"],0,0,1)
+							#glRotate(-d["alt"],1,0,0)
+							#glRotate(-d["az"],0,0,1)
+						#glCallList(self.sphere_points_dl)
+						##self.render_sphere_points_for_color_picking(self.eulers)
+						#glPopMatrix()
 		
 		if (self.arc_anim_points):
 			self.load_gl_color("gold")
@@ -1108,7 +1197,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 		glStencilFunc(GL_EQUAL,self.rank,self.rank)
 		glStencilOp(GL_KEEP,GL_KEEP,GL_KEEP)
 
-		self.draw_bc_screen()
+		if not color_picking: self.draw_bc_screen()
 
 		glStencilFunc(GL_ALWAYS,1,1)
 		if self.cube:
@@ -1123,6 +1212,8 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 		if ( polygonmode[0] == GL_LINE ): glPolygonMode(GL_FRONT, GL_LINE)
 		if ( polygonmode[1] == GL_LINE ): glPolygonMode(GL_BACK, GL_LINE)
 		
+		
+		return color_list # this is not None if color_picking is True
 		
 	def update_inspector(self,t3d):
 		if not self.inspector or self.inspector ==None:
@@ -1402,7 +1493,7 @@ class SparseSymChoicesWidgets:
 		self.pos_int_validator.setBottom(1)
 		self.sym_text = QtGui.QLineEdit()
 		self.sym_text.setValidator(self.pos_int_validator)
-		self.sym_text.setText("")
+		self.sym_text.setText("7")
 		self.sym_text.setFixedWidth(50)
 		self.hbl_sym.addWidget(self.sym_text)
 		self.sym_text.setEnabled(False)
@@ -1717,9 +1808,13 @@ class EMSymInspector(QtGui.QWidget):
 			self.score_options = self.__get_combo(options,default)
 			self.score_options_hbl.addWidget(QtGui.QLabel("Cylinder Score:",self))
 			self.score_options_hbl.addWidget(self.score_options)
+			self.cylinder_log = QtGui.QCheckBox("log scale")
+			self.cylinder_log.setChecked(self.target().log_scale)
+			self.score_options_hbl.addWidget(self.cylinder_log)
 			self.display_tab.vbl.addLayout(self.score_options_hbl)
 			
 			QtCore.QObject.connect(self.score_options,QtCore.SIGNAL("currentIndexChanged(int)"),self.score_option_changed)
+			QtCore.QObject.connect(self.cylinder_log,QtCore.SIGNAL("stateChanged(int)"),self.cylinder_log_clicked)
 		else:
 			self.score_options.clear()
 
@@ -1730,6 +1825,9 @@ class EMSymInspector(QtGui.QWidget):
 			self.score_options.setCurrentIndex(idx)
 		self.busy = False
 		
+	def cylinder_log_clicked(self,val):
+		self.target().set_log_scale(val)
+		self.target().regen_dl()
 	def score_option_changed(self):
 		if self.busy: return
 		s = str(self.score_options.currentText())
