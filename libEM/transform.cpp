@@ -165,7 +165,7 @@ bool Transform::is_identity() const {
 
 void Transform::set_params(const Dict& d) {
 	detect_problem_keys(d);
-	
+
 	if (d.has_key_ci("type") ) set_rotation(d);
 
 	if (d.has_key_ci("scale")) {
@@ -194,77 +194,77 @@ void Transform::set_params(const Dict& d) {
 }
 
 
-void Transform::init_permissable_keys() 
+void Transform::init_permissable_keys()
 {
-	
+
 	permissable_2d_not_rot.push_back("tx");
 	permissable_2d_not_rot.push_back("ty");
 	permissable_2d_not_rot.push_back("scale");
 	permissable_2d_not_rot.push_back("mirror");
 	permissable_2d_not_rot.push_back("type");
-	
+
 	permissable_3d_not_rot.push_back("tx");
 	permissable_3d_not_rot.push_back("ty");
 	permissable_3d_not_rot.push_back("tz");
 	permissable_3d_not_rot.push_back("scale");
 	permissable_3d_not_rot.push_back("mirror");
 	permissable_3d_not_rot.push_back("type");
-	
+
 	vector<string> tmp;
 	tmp.push_back("alpha");
 	permissable_rot_keys["2d"] = tmp;
-	
+
 	tmp.clear();
 	tmp.push_back("alt");
 	tmp.push_back("az");
 	tmp.push_back("phi");
 	permissable_rot_keys["eman"] = tmp;
-	
+
 	tmp.clear();
 	tmp.push_back("psi");
 	tmp.push_back("theta");
 	tmp.push_back("phi");
 	permissable_rot_keys["spider"] = tmp;
-	
+
 	tmp.clear();
 	tmp.push_back("alpha");
 	tmp.push_back("beta");
 	tmp.push_back("gamma");
 	permissable_rot_keys["imagic"] = tmp;
-	
+
 	tmp.clear();
 	tmp.push_back("ztilt");
 	tmp.push_back("xtilt");
 	tmp.push_back("ytilt");
 	permissable_rot_keys["xyz"] = tmp;
-	
+
 	tmp.clear();
 	tmp.push_back("phi");
 	tmp.push_back("theta");
 	tmp.push_back("omega");
 	permissable_rot_keys["mrc"] = tmp;
-	
+
 	tmp.clear();
 	tmp.push_back("e0");
 	tmp.push_back("e1");
 	tmp.push_back("e2");
 	tmp.push_back("e3");
 	permissable_rot_keys["quaternion"] = tmp;
-	
+
 	tmp.clear();
 	tmp.push_back("n1");
 	tmp.push_back("n2");
 	tmp.push_back("n3");
 	tmp.push_back("Omega");
 	permissable_rot_keys["spin"] = tmp;
-	
+
 	tmp.clear();
 	tmp.push_back("n1");
 	tmp.push_back("n2");
 	tmp.push_back("n3");
 	tmp.push_back("q");
 	permissable_rot_keys["sgirot"] = tmp;
-	
+
 	tmp.clear();
 	tmp.push_back("m11");
 	tmp.push_back("m12");
@@ -275,7 +275,7 @@ void Transform::init_permissable_keys()
 	tmp.push_back("m31");
 	tmp.push_back("m32");
 	tmp.push_back("m33");
-	permissable_rot_keys["matrix"] = tmp;	
+	permissable_rot_keys["matrix"] = tmp;
 }
 
 
@@ -283,7 +283,7 @@ void Transform::detect_problem_keys(const Dict& d) {
 	if (permissable_rot_keys.size() == 0 ) {
 		init_permissable_keys();
 	}
-	
+
 	vector<string> verification;
 	vector<string> problem_keys;
 	bool is_2d = false;
@@ -297,7 +297,7 @@ void Transform::detect_problem_keys(const Dict& d) {
 		if ( !problem ) {
 			vector<string> perm = permissable_rot_keys[type];
 			std::copy(perm.begin(),perm.end(),back_inserter(verification));
-			
+
 			if ( type == "2d" ) {
 				is_2d = true;
 				std::copy(permissable_2d_not_rot.begin(),permissable_2d_not_rot.end(),back_inserter(verification));
@@ -307,13 +307,13 @@ void Transform::detect_problem_keys(const Dict& d) {
 	if ( !is_2d ) {
 		std::copy(permissable_3d_not_rot.begin(),permissable_3d_not_rot.end(),back_inserter(verification));
 	}
-	
+
 	for (Dict::const_iterator it = d.begin(); it != d.end();  ++it) {
 		if ( std::find(verification.begin(),verification.end(), it->first) == verification.end() ) {
 			problem_keys.push_back(it->first);
 		}
 	}
-	
+
 	if (problem_keys.size() != 0 ) {
 		string error;
 		if (problem_keys.size() == 1) {
@@ -617,12 +617,23 @@ void Transform::set_rotation(const Vec3f & v)
 
 	Dict d;
 	d["theta"] = (float)EMConsts::rad2deg*theta;
-	d["psi"] = (float)EMConsts::rad2deg*psi;
-	d["phi"] = (float)0.0;
+	d["phi"] = (float)EMConsts::rad2deg*psi;
+	d["psi"] = (float)0.0;
 	d["type"] = "spider";
 
 	set_rotation(d);
 
+
+}
+
+Transform Transform::spherical_opposite() const
+{
+	Vec3f v1(0,0,1);
+	Vec3f v2 = (this->transpose())*v1;
+	v2 *= -1;
+	Transform t;
+	t.set_rotation(v2);
+	return t;
 }
 
 Transform Transform::get_hflip_transform() const {
