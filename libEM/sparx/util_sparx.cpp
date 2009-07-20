@@ -17984,7 +17984,7 @@ vector<float> Util::twoD_to_3D_ali(EMData* volft, Util::KaiserBessel& kb, EMData
 		step++;
   	}
 
-	printf("Total step is %d\n", step);
+	//printf("Total step is %d\n", step);
 	vector<float> res;
 	res.push_back(static_cast<float>(x[0]));
 	res.push_back(static_cast<float>(x[1]));

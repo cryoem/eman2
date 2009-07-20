@@ -1206,7 +1206,7 @@ def eqprojL(args, data):
 	v = -proj.cmp("SqEuclidean", data[2], {"mask":data[3]})
 	return v
 
-def ali3d_e_G(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, max_it=10, symmetry="c1", CTF=False, crit="SqEuclidean"):
+def ali3d_e_G(stack, ref_vol, maskfile=None, radius=-1, dtheta=2, max_it=10, crit="SqEuclidean", opti_algorithm="amoeba"):
 	"""
 	An experimental version of ali3d_e, comparing SqEuclidean (or ccc) in the real space		
 	"""
@@ -1214,7 +1214,7 @@ def ali3d_e_G(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, ma
 	from projection import prep_vol
 	from utilities  import amoeba, model_circle, get_params_proj, set_params_proj
 	from math       import pi
-	import os 
+	from sys        import exit
 	from time import time
 
 	nima = EMUtil.get_image_count(stack)
@@ -1223,9 +1223,6 @@ def ali3d_e_G(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, ma
 	vol.read_image(ref_vol)
 	nx  = vol.get_xsize()
 	if radius <= 0:  radius = nx//2-1
-	if os.path.exists(outdir):  os.system('rm -rf '+outdir)
-	os.mkdir(outdir)
-	vol.write_image(os.path.join(outdir,"ref_volf00.hdf"))
 	
 	if maskfile:
 		import  types
@@ -1235,16 +1232,9 @@ def ali3d_e_G(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, ma
 		mask3D = model_circle(radius, nx, nx, nx)
 	mask2D = model_circle(radius, nx, nx)
 	dataim = []
-	parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
 	for im in xrange(nima):
 		ima = EMData()
 		ima.read_image(stack, im)
-		if CTF:
-			ctf_params = get_arb_params(ima, parnames)
-			if ctf_params[6] == 0:
-				from filter import filt_ctf
-				if im==0: print  " APPLYING CTF"
-				ima = filt_ctf(ima, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5])
 		dataim.append(ima)
 	
 	data = [None]*4
@@ -1264,27 +1254,29 @@ def ali3d_e_G(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, ma
 			data[2] = dataim[imn]
 			phi, theta, psi, s2x, s2y = get_params_proj(dataim[imn])
 			atparams = [phi, theta, psi, s2x, s2y]
-			#  change signs of shifts for projections
-			atparams[3] *= -1
-			atparams[4] *= -1
-			weight_phi = max(dtheta, dtheta*abs((atparams[1]-90.0)/180.0*pi))
 			
-			# For downhill simplex method			
-			if crit == "SqEuclidean":
-				optm_params =  amoeba(atparams, [weight_phi,dtheta,weight_phi,1.0,1.0], eqprojGSq, 1.e-5,1.e-5,500,data)
-			elif crit == "ccc":
-				optm_params =  amoeba(atparams, [weight_phi,dtheta,weight_phi,1.0,1.0], eqprojGccc, 1.e-5,1.e-5,500,data)
-			else: 
-				print "Unknown criterion!"
-			# For LBFGSB method
-			#optm_params = Util.twoD_to_3D_ali(volft,kb,dataim[imn],mask2D,atparams[0],atparams[1],atparams[2],atparams[3],atparams[4])
-			#set_params_proj(dataim[imn], [optm_params[0], optm_params[1], optm_params[2], optm_params[3], optm_params[4]])
-
-			optm_params[0][3] *= -1
-			optm_params[0][4] *= -1
-
-			set_params_proj(dataim[imn], optm_params[0])
-			
+			if opti_algorithm == "amoeba":
+				#  change signs of shifts for projections
+				atparams[3] *= -1
+				atparams[4] *= -1
+				weight_phi = max(dtheta, dtheta*abs((atparams[1]-90.0)/180.0*pi))
+				# For downhill simplex method			
+				if crit == "SqEuclidean":
+					optm_params =  amoeba(atparams, [weight_phi, dtheta, weight_phi, 1.0, 1.0], eqprojGSq, 1.e-5, 1.e-5, 500, data)
+				elif crit == "ccc":
+					optm_params =  amoeba(atparams, [weight_phi, dtheta, weight_phi, 1.0, 1.0], eqprojGccc, 1.e-5, 1.e-5, 500, data)
+				else: 
+					print "Unknown criterion!"
+				optm_params[0][3] *= -1
+				optm_params[0][4] *= -1
+				set_params_proj(dataim[imn], optm_params[0])
+			elif opti_algorithm == "LBFGSB":
+				# For LBFGSB method
+				optm_params = Util.twoD_to_3D_ali(volft, kb, dataim[imn], mask2D, atparams[0], atparams[1], atparams[2], atparams[3], atparams[4])
+				set_params_proj(dataim[imn], [optm_params[0], optm_params[1], optm_params[2], optm_params[3], optm_params[4]])
+			else:
+				print "Unknown optimization method!"
+				exit()
 			end_time = time()
 			total_time += (end_time-begin_time)
 			total_time2 += (end_time-begin_time)**2
@@ -1309,7 +1301,7 @@ def eqprojG2(args, data):
 	return v
 
 
-def ali3d_e_G2(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, max_it=10, symmetry="c1", CTF = False):
+def ali3d_e_G2(stack, ref_vol, maskfile=None, radius=-1, snr=1.0, dtheta=2, max_it=10, opti_algorithm="amoeba"):
 	"""
 	An experimental version of ali3d_e, comparing SqEuclidean in the Fourier space		
 	"""
@@ -1317,7 +1309,7 @@ def ali3d_e_G2(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, m
 	from projection import prep_vol
 	from utilities  import amoeba, model_circle, get_params_proj, set_params_proj
 	from math       import pi
-	import os 
+	from sys 	import exit
 	from time import time
 
 	nima = EMUtil.get_image_count(stack)
@@ -1326,9 +1318,6 @@ def ali3d_e_G2(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, m
 	vol.read_image(ref_vol)
 	nx = vol.get_xsize()
 	if radius <= 0:  radius = nx//2-1
-	if os.path.exists(outdir):  os.system('rm -rf '+outdir)
-	os.mkdir(outdir)
-	vol.write_image(os.path.join(outdir,"ref_volf00.hdf"))
 	
 	if maskfile:
 		import  types
@@ -1338,16 +1327,10 @@ def ali3d_e_G2(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, m
 		mask3D = model_circle(radius, nx, nx, nx)
 	mask2D = model_circle(radius, nx, nx)
 	dataim = []
-	parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
+
 	for im in xrange(nima):
 		ima = EMData()
 		ima.read_image(stack, im)
-		if CTF:
-			ctf_params = get_arb_params(ima, parnames)
-			if ctf_params[6] == 0:
-				from filter import filt_ctf
-				if im == 0: print  " APPLYING CTF"
-				ima = filt_ctf(ima, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5])
 		dataim.append(ima)
 
 	data = [None]*5
@@ -1370,20 +1353,24 @@ def ali3d_e_G2(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, m
 			
 			phi, theta, psi, sx, sy = get_params_proj(dataim[imn])
 			atparams = [phi, theta, psi, sx, sy]
-			#  change signs of shifts for projections
-			atparams[3] *= -1
-			atparams[4] *= -1
-			weight_phi = max(dtheta, dtheta*abs((atparams[1]-90.0)/180.0*pi))			
 			
-			# For downhill simplex method 
-			optm_params = amoeba(atparams, [weight_phi, dtheta, weight_phi, 1.0, 1.0], eqprojG2, 1.e-5, 1.e-5, 500, data)
-			optm_params[0][3] *= -1
-			optm_params[0][4] *= -1
-			set_params_proj(dataim[imn], optm_params[0])
-			
-			# For LBFGSB method
-			# optm_params = Util.twoD_to_3D_ali(volft,kb,dataim[imn],mask2D,atparams[0],atparams[1],atparams[2],atparams[3],atparams[4])
-			# set_params_proj(dataim[imn], [optm_params[0], optm_params[1], optm_params[2], optm_params[3], optm_params[4]], par_str)
+			if opti_algorithm == "amoeba":
+				#  change signs of shifts for projections
+				atparams[3] *= -1
+				atparams[4] *= -1
+				weight_phi = max(dtheta, dtheta*abs((atparams[1]-90.0)/180.0*pi))			
+				# For downhill simplex method 
+				optm_params = amoeba(atparams, [weight_phi, dtheta, weight_phi, 1.0, 1.0], eqprojG2, 1.e-5, 1.e-5, 500, data)
+				optm_params[0][3] *= -1
+				optm_params[0][4] *= -1
+				set_params_proj(dataim[imn], optm_params[0])
+			elif opti_algorithm == "LBFGSB":
+				# For LBFGSB method
+				optm_params = Util.twoD_to_3D_ali(volft,kb,dataim[imn],mask2D,atparams[0],atparams[1],atparams[2],atparams[3],atparams[4])
+				set_params_proj(dataim[imn], [optm_params[0], optm_params[1], optm_params[2], optm_params[3], optm_params[4]])
+			else:
+				print "Unknown optimization algorithm!"
+				exit()
 			end_time = time()
 			total_time += (end_time-begin_time)
 			total_time2 += (end_time-begin_time)**2
@@ -1442,7 +1429,7 @@ def prepij(image):
 	return  o, q, kb
 
 
-def ali3d_e_G3(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, max_it=10, symmetry="c1", CTF = False):
+def ali3d_e_G3(stack, ref_vol, maskfile=None, radius=-1, snr=1.0, dtheta=2, max_it=10):
 	"""
 	An experimental version of ali3d_e, using ccf in the Fourier space		
 	"""
@@ -1459,9 +1446,6 @@ def ali3d_e_G3(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, m
 	vol.read_image(ref_vol)
 	nx = vol.get_xsize()
 	if radius <= 0:  radius = nx//2-1
-	if os.path.exists(outdir):  os.system('rm -rf '+outdir)
-	os.mkdir(outdir)
-	vol.write_image(os.path.join(outdir,"ref_volf00.hdf"))
 	
 	if maskfile:
 		import  types
@@ -1471,16 +1455,10 @@ def ali3d_e_G3(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, m
 		mask3D = model_circle(radius, nx, nx, nx)
 	mask2D = model_circle(radius, nx, nx)
 	dataim = []
-	parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
+
 	for im in xrange(nima):
 		ima = EMData()
 		ima.read_image(stack, im)
-		if CTF:
-			ctf_params = get_arb_params(ima, parnames)
-			if ctf_params[6] == 0:
-				from filter import filt_ctf
-				if im == 0: print  " APPLYING CTF"
-				ima = filt_ctf(ima, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5])
 		dataim.append(ima)
 	
 	data = [None]*8
@@ -1520,6 +1498,7 @@ def ali3d_e_G3(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, m
 			dataim[im].write_image(stack, im, EMUtil.ImageType.IMAGE_HDF, True)
 	return total_time, total_time2
 
+
 def ali_G3(data, atparams, delta):
 	from utilities import amoeba_multi_level
 	from development import prepij
@@ -1540,7 +1519,7 @@ def ali_G3(data, atparams, delta):
 	return optm_params
 
 
-def ali3d_e_G4(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, max_it=10, symmetry="c1", CTF = False):
+def ali3d_e_G4(stack, ref_vol, maskfile=None, radius=-1, snr=1.0, dtheta=2, max_it=10):
 	"""
 	An experimental version of ali3d_e, using ccf in the real space		
 	"""
@@ -1559,9 +1538,6 @@ def ali3d_e_G4(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, m
 	vol.read_image(ref_vol)
 	nx = vol.get_xsize()
 	if radius <= 0:  radius = nx//2-1
-	if os.path.exists(outdir):  os.system('rm -rf '+outdir)
-	os.mkdir(outdir)
-	vol.write_image(os.path.join(outdir,"ref_volf00.hdf"))
 	
 	if maskfile:
 		import  types
@@ -1571,28 +1547,22 @@ def ali3d_e_G4(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, m
 		mask3D = model_circle(radius, nx, nx, nx)
 	mask2D = model_circle(radius, nx, nx)
 	dataim = []
-	parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
+
 	for im in xrange(nima):
 		ima = EMData()
 		ima.read_image(stack, im)
-		if CTF:
-			ctf_params = get_arb_params(ima, parnames)
-			if ctf_params[6] == 0:
-				from filter import filt_ctf
-				if im == 0: print  " APPLYING CTF"
-				ima = filt_ctf(ima, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5])
 		ima *= mask2D
 		ima.process_inplace("normalize.mask", {"mask":mask2D, "no_sigma":1})
 		dataim.append(ima)
 	
-	M = nx
 	npad = 2
-	N = M*npad
+	N = nx*npad
 	K = 6
 	alpha = 1.75
-	r = M/2
+	r = nx/2
 	v = K/2.0/N
 	params = {"filter_type": Processor.fourier_filter_types.KAISER_SINH_INVERSE, "alpha":alpha, "K":K, "r":r, "v":v, "N":N}
+	del alpha, r, v, K, N
 	
 	data = [None]*6
 	data[3] = mask2D
@@ -1610,7 +1580,7 @@ def ali3d_e_G4(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, m
 
 			data[2] = dataim[imn]
 			refi = dataim[imn].copy()
-			refi = refi.FourInterpol(nx*2,nx*2,0,True)
+			refi = refi.FourInterpol(nx*2, nx*2, 0, True)
 			data[4] = Processor.EMFourierFilter(refi, params)
 			
 			phi, theta, psi, sx, sy = get_params_proj(dataim[imn])
@@ -3132,11 +3102,6 @@ def ormq_all(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, interpolatio
 					imali = fft(q)
 					ang = -ang
 					sxs = -sxs
-				data = []
-				data.append(imali)
-				data.append(refim)
-				data.append(kb)
-				data.append(mask)
 				
 				P = 3
 				max_P = 20
@@ -3147,67 +3112,48 @@ def ormq_all(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, interpolatio
 				beta.append([ang+delta, sxs, sys])
 				beta.append([ang, sxs+delta, sys])
 				beta.append([ang, sxs, sys+delta])
-				F = []
+
+				from numpy import matrix, diag, concatenate
+				from utilities import get_image_data
+
+				Y = matrix(get_image_data(refim)).flatten(1)
 				omega = []
-				from numpy import matrix, diag
-				
-				L = []
-				for x in xrange(nx):
-					for y in xrange(nx):
-						if mask.get_value_at(x, y) > 0.5:
-							L.append(refim.get_value_at(x, y))
-				Y = matrix(L)
-				
 				imali0 = imali.rot_scale_conv7(beta[0][0]*pi/180, beta[0][1], beta[0][2], kb, 1.0)
 				for p in xrange(1, P+1):
 					imalip = imali.rot_scale_conv7(beta[p][0]*pi/180, beta[p][1], beta[p][2], kb, 1.0)
-					L = []
 					diffim = Util.subn_img(imalip, imali0)
-					for x in xrange(nx):
-						for y in xrange(nx):
-							if mask.get_value_at(x, y) > 0.5:
-								L.append(diffim.get_value_at(x, y))
-					F.append(L)
-					omega.append(imalip.cmp("SqEuclidean", imali0, {"mask":mask}))
+					P2 = matrix(get_image_data(diffim)).flatten(1)
+					if p == 1: F = P2
+					else: F = concatenate((F, P2))
+					omega.append(imalip.cmp("SqEuclidean", imali0))
 					
 				imalip = imali.rot_scale_conv7(beta[P][0]*pi/180, beta[P][1], beta[P][2], kb, 1.0)
-				K = []
-				for x in xrange(nx):
-					for y in xrange(nx):
-						if mask.get_value_at(x, y) > 0.5:
-							K.append(imalip.get_value_at(x, y))
-				Fs = matrix(K)
-				
+				Fs = matrix(get_image_data(imalip)).flatten(1)
+
 				A = [[delta, 0, 0], [0, delta, 0], [0, 0, delta]]
 				while converge == False and P < max_P:
 					A_matrix = matrix(A)
 					omega_matrix_inv = matrix(diag(omega))**(-1)
-					F_matrix = matrix(F)
-					G = F_matrix.T*omega_matrix_inv*A_matrix*(A_matrix.T*omega_matrix_inv*A_matrix)**(-1)
+					G = F.T*omega_matrix_inv*A_matrix*(A_matrix.T*omega_matrix_inv*A_matrix)**(-1)
 					
 					H = (G.T*G)**(-1)*G.T*(Y.T-Fs.T)
 
-					d1 = float(H[0][0])
-					d2 = float(H[1][0])
-					d3 = float(H[2][0])
-					if d1**2+d2**2+d3**2 < 0.0000001: converge = True
-					beta.append([float(beta[P][0])+d1, float(beta[P][1])+d2, float(beta[P][2])+d3])					
+					dalpha = float(H[0][0])
+					dsx = float(H[1][0])
+					dsy = float(H[2][0])
+					if dalpha**2+dsx**2+dsy**2 < 1e-6: converge = True
+					beta.append([float(beta[P][0])+dalpha, float(beta[P][1])+dsx, float(beta[P][2])+dsy])
 					P += 1
 					if converge == False:
 						imali_new = imali.rot_scale_conv7(float(beta[P][0])*pi/180, float(beta[P][1]), float(beta[P][2]), kb, 1.0)
-						L = []
-						K = []
 						diffim = Util.subn_img(imali_new, imali0)
-						for x in xrange(nx):
-							for y in xrange(nx):
-								if mask.get_value_at(x, y) > 0.5:
-									L.append(diffim.get_value_at(x, y))
-									K.append(imali_new.get_value_at(x, y))
-						F.append(L)
-						Fs = matrix(K)
-						omega.append(imali_new.cmp("SqEuclidean", imali0, {"mask":mask}))
-						A.append([d1, d2, d3])
-				print converge
+						P2 = matrix(get_image_data(diffim)).flatten(1)
+						F = concatenate((F, P2))
+						Fs = matrix(get_image_data(imali_new)).flatten(1)
+						omega.append(imali_new.cmp("SqEuclidean", imali0))
+						A.append([dalpha, dsx, dsy])
+				#print "P =", P, "converge =", converge
+
 				ang = float(beta[P][0])
 				sxs = float(beta[P][1])
 				sys = float(beta[P][2])
@@ -3331,6 +3277,70 @@ def ormq_all(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, interpolatio
 					ps[0] = -ps[0]
 					ps[1] = -ps[1]
 				return ps[0], ps[1], ps[2], is_mirror, ps[3]
+			elif opti_algorithm == "DUD":
+				if is_mirror:
+					image = mirror(image)
+					ang = -ang
+					sxs = -sxs
+				P = 3
+				max_P = 20
+				converge = False
+				beta = []
+				delta = 0.1
+				beta.append([ang, sxs, sys])
+				beta.append([ang+delta, sxs, sys])
+				beta.append([ang, sxs+delta, sys])
+				beta.append([ang, sxs, sys+delta])
+
+				from numpy import matrix, diag, concatenate
+				from utilities import get_image_data
+
+				Y = matrix(get_image_data(refim)).flatten(1)
+				omega = []
+				imali0 = image.rot_scale_trans2D(beta[0][0], beta[0][1], beta[0][2], 1.0)
+				for p in xrange(1, P+1):
+					imalip = image.rot_scale_trans2D(beta[p][0], beta[p][1], beta[p][2], 1.0)
+					diffim = Util.subn_img(imalip, imali0)
+					P2 = matrix(get_image_data(diffim)).flatten(1)
+					if p == 1: F = P2
+					else: F = concatenate((F, P2))
+					omega.append(imalip.cmp("SqEuclidean", imali0))
+					
+				imalip = image.rot_scale_trans2D(beta[P][0], beta[P][1], beta[P][2], 1.0)
+				Fs = matrix(get_image_data(imalip)).flatten(1)
+
+				A = [[delta, 0, 0], [0, delta, 0], [0, 0, delta]]
+				while converge == False and P < max_P:
+					A_matrix = matrix(A)
+					omega_matrix_inv = matrix(diag(omega))**(-1)
+					G = F.T*omega_matrix_inv*A_matrix*(A_matrix.T*omega_matrix_inv*A_matrix)**(-1)
+					
+					H = (G.T*G)**(-1)*G.T*(Y.T-Fs.T)
+
+					dalpha = float(H[0][0])
+					dsx = float(H[1][0])
+					dsy = float(H[2][0])
+					if dalpha**2+dsx**2+dsy**2 < 1e-6: converge = True
+					beta.append([float(beta[P][0])+dalpha, float(beta[P][1])+dsx, float(beta[P][2])+dsy])
+					P += 1
+					if converge == False:
+						imali_new = image.rot_scale_trans2D(float(beta[P][0]), float(beta[P][1]), float(beta[P][2]), 1.0)
+						diffim = Util.subn_img(imali_new, imali0)
+						P2 = matrix(get_image_data(diffim)).flatten(1)
+						F = concatenate((F, P2))
+						Fs = matrix(get_image_data(imali_new)).flatten(1)
+						omega.append(imali_new.cmp("SqEuclidean", imali0))
+						A.append([dalpha, dsx, dsy])
+
+				ang = float(beta[P][0])
+				sxs = float(beta[P][1])
+				sys = float(beta[P][2])
+				ang = ang%360.0
+				if is_mirror:
+					ang = -ang
+					sxs = -sxs
+				return ang, sxs, sys, is_mirror, 0
+			
 			else:
 				print "Unknown optimization algorithm!"
 		elif opti_strategy == "cascaded":
