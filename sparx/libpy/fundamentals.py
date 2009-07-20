@@ -188,21 +188,29 @@ def fftip(e):
 		e.do_fft_inplace()
 
 def fpol(image, nnx, nny=0, nnz=0, RetReal = True):
+	"""
+		Interpolate image up by padding its Fourier transform with zeroes
+	"""
 	return  image.FourInterpol(nnx, nny, nnz, RetReal)
-	
+
+def fdecimate(image, nnx, nny=0, nnz=0, RetReal = True):
+	"""
+		Decimate image by truncating its Fourier transform
+	"""
+	return  image.FourTruncate(nnx, nny, nnz, RetReal)	
     
 def fshift(e, delx=0, dely=0, delz=0):
 	params = {"filter_type" : Processor.fourier_filter_types.SHIFT,	"x_shift" : float(delx), "y_shift" : float(dely), "z_shift" : float(delz) }
 	return Processor.EMFourierFilter(e, params)
 
 def image_decimate(img, decimation=2, fit_to_fft = True, frequency_low=0, frequency_high=0):
+	"""
+		Window 2D image to FFT-friendly size, apply Butterworth low pass filter,
+		and decimate image by integer factor
+	"""
 	from filter       import filt_btwl
 	from fundamentals import smallprime, window2d
 	from utilities    import get_image
-	"""
-		Window image to FFT-friendly size, apply Butterworth low pass filter,
-		and decimate image by integer factor
-	"""
 	if type(img)     == str:	img=get_image(img)
 	nz       = img.get_zsize()
 	if( nz > 1):                    ERROR("This command works only for 2-D images", "image_decimate", 1)
@@ -225,16 +233,16 @@ def image_decimate(img, decimation=2, fit_to_fft = True, frequency_low=0, freque
 
 
 def resample(img, sub_rate=0.5, fit_to_fft=False, frequency_low=0.0, frequency_high=0.0, num_prime=3):
+	"""
+		Window image to FFT-friendly size, apply Butterworth low pass filter,
+		and subsample 2D image
+		sub_rate < 1.0, subsampling rate
+		fit_to_fft will channge the ouput image size
+	"""
 
 	from filter       import filt_btwl
 	from fundamentals import smallprime, window2d, rtshg
 	
-	"""
-		Window image to FFT-friendly size, apply Butterworth low pass filter,
-		and subsample image 
-		sub_rate < 1.0, subsampling rate
-		fit_to_fft will channge the ouput image size
-	"""
 	if type(img) == str:
 		from utilities    import get_image
 		img = get_image(img)
