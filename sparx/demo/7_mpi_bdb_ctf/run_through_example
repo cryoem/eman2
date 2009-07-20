@@ -18,7 +18,7 @@ e2boxer.py --method=Gauss -A cmd -B 64 --write_box_images --var --do_ctf --ctf_c
 mpirun -np 2 sxali2d_c.py bdb:data ali2d_c --ou=30 --xr=3 --yr=3 --ts=1 --maxit=5 --CTF --MPI || exit
 
 # K-means clustering of the 2D dataset (MPI version)
-mpirun -np 2 sxk_means_stability.py bdb:data kmeans --K=8 --max_run=3 --CTF --MPI || exit
+mpirun -np 2 sxk_means_stability.py bdb:data kmeans --K=12 --max_run=2 --nb_part=3 --CTF --MPI || exit
 # OR K-means clustering of the 2D dataset (CUDA version). This version do not use CTF.
 #mpirun -np 2 sxk_means_stability.py bdb:data kmeans --K=5 --max_run=4 --CUDA || exit
 sxheader.py bdb:data --params=active --one
