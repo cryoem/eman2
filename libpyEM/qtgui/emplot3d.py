@@ -182,7 +182,6 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 			hits = list(glRenderMode(GL_RENDER))
 			for hit in hits:
 				a,b,c=hit
-				print c
 				if len(c) > 0:
 					self.on_hit_update(c[0]-1)
 					break
@@ -554,7 +553,7 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 					
 					glPopMatrix()
 					glPopName()
-					gl_pick_name += 
+					gl_pick_name += 1
 		glPopMatrix()
 	
 	def load_gl_color(self,name):

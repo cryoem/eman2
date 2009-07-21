@@ -493,9 +493,9 @@ class EMViewportDepthTools2:
 	
 	def getEmanMatrix(self):
 	
-		t = Transform3D(self.wmodel[0][0], self.wmodel[1][0], self.wmodel[2][0],
-						self.wmodel[0][1], self.wmodel[1][1], self.wmodel[2][1],
-						self.wmodel[0][2], self.wmodel[1][2], self.wmodel[2][2] )
+		t = Transform([ self.wmodel[0][0], self.wmodel[1][0], self.wmodel[2][0], 0,
+						self.wmodel[0][1], self.wmodel[1][1], self.wmodel[2][1], 0,
+						self.wmodel[0][2], self.wmodel[1][2], self.wmodel[2][2], 0 ])
 		return t
 	
 	def getCurrentScale(self):
@@ -862,9 +862,9 @@ class EMViewportDepthTools:
 	
 	def getEmanMatrix(self):
 	
-		t = Transform3D(self.wmodel[0][0], self.wmodel[1][0], self.wmodel[2][0],
-						self.wmodel[0][1], self.wmodel[1][1], self.wmodel[2][1],
-						self.wmodel[0][2], self.wmodel[1][2], self.wmodel[2][2] )
+		t = Transform([self.wmodel[0][0], self.wmodel[1][0], self.wmodel[2][0], 0,
+						self.wmodel[0][1], self.wmodel[1][1], self.wmodel[2][1], 0,
+						self.wmodel[0][2], self.wmodel[1][2], self.wmodel[2][2], 0 ] )
 		return t
 	
 	def getCurrentScale(self):
@@ -1183,13 +1183,14 @@ class Camera2(EventsEmitterAndReciever):
 		self.basicmapping = False
 		self.plane = 'xy'
 		
-		self.motiondull = 4.0
+		self.motiondull = 8.0
 		
 		self.mpressx = -1
 		self.mpressy = -1
 
 		self.allow_rotations = True
 		self.allow_translations = True
+		self.allow_phi_rotations = True
 		
 	def get_emit_signals_and_connections(self):
 		return  {"apply_rotation":self.apply_rotation,"apply_translation":self.apply_translation,"scale_delta":self.scale_delta}
@@ -1222,7 +1223,7 @@ class Camera2(EventsEmitterAndReciever):
 		
 		self.allow_z_mouse_trans = True
 		
-		t3d = Transform3D()
+		t3d = Transform()
 		t3d.to_identity()
 		self.t3d_stack.append(t3d)
 	
@@ -1248,7 +1249,7 @@ class Camera2(EventsEmitterAndReciever):
 		glTranslate(self.cam_x, self.cam_y, self.cam_z)
 		
 		if ( self.allow_rotations and not norot):
-			rot = self.t3d_stack[len(self.t3d_stack)-1].get_rotation()
+			rot = self.t3d_stack[len(self.t3d_stack)-1].get_rotation("eman")
 			if (self.debug):
 				print "Camera rotation ",float(rot["phi"]),float(rot["alt"]),float(rot["az"])
 			glRotate(float(rot["phi"]),0,0,1)
@@ -1337,15 +1338,20 @@ class Camera2(EventsEmitterAndReciever):
 		# This magic number could be overcome using a strategy based on the results of get_render_dims_at_depth
 		angle = fac*length/self.motiondull*pi
 		
-		t3d = Transform3D()
+		t3d = Transform()
 		quaternion = {}
 		quaternion["Omega"] = angle
 		quaternion["n1"] = rotaxis_x
 		quaternion["n2"] = rotaxis_y
 		quaternion["n3"] = rotaxis_z
+		quaternion["type"] = "spin"
+		t3d.set_params(quaternion)
 		
-		t3d.set_rotation( EULER_SPIN, quaternion )
-		
+		if not self.allow_phi_rotations:
+			p = t3d.get_params("eman")
+			p["phi"] = 0
+			t3d.set_params(p)
+	
 		if self.emit_events: 
 			self.parent().emit(QtCore.SIGNAL("apply_rotation"),t3d)
 		
@@ -1386,7 +1392,7 @@ class Camera2(EventsEmitterAndReciever):
 			if self.mmode==0:
 				# this is just a way of duplicating the last copy
 				tmp =self.t3d_stack.pop()
-				t3d = Transform3D(tmp)
+				t3d = Transform(tmp)
 				self.t3d_stack.append(tmp)
 				self.t3d_stack.append(t3d)
 		
@@ -1538,8 +1544,8 @@ class Camera:
 		self.default_z = 0
 		
 		# The Transform3D object stores the rotation
-		t3d = Transform3D()
-		t3d.to_identity()
+		t3d = Transform()
+		#t3d.to_identity()
 	
 		# At the moment there is a stack of Transform3D objects, this is for the purposes
 		# of undoing actions. If the undo functionality was not required, the stack could be
@@ -1557,7 +1563,7 @@ class Camera:
 		# position the camera, regular OpenGL movement.
 		glTranslated(self.cam_x, self.cam_y, self.cam_z)
 		
-		rot = self.t3d_stack[len(self.t3d_stack)-1].get_rotation()
+		rot = self.t3d_stack[len(self.t3d_stack)-1].get_rotation("eman")
 		glRotate(float(rot["phi"]),0,0,1)
 		glRotate(float(rot["alt"]),1,0,0)
 		glRotate(float(rot["az"]),0,0,1)
@@ -1617,15 +1623,17 @@ class Camera:
 		# This magic number could be overcome using a strategy based on the results of get_render_dims_at_depth
 		angle = length/8.0*pi
 		
-		t3d = Transform3D()
+		#t3d = Transform3D()
+		t3d = Transform()
 		quaternion = {}
 		quaternion["Omega"] = angle
 		quaternion["n1"] = rotaxis_x
 		quaternion["n2"] = rotaxis_y
 		quaternion["n3"] = rotaxis_z
+		quaternion["type"] = "spin"
 		
-		t3d.set_rotation( EULER_SPIN, quaternion )
-		
+		#t3d.set_rotation( EULER_SPIN, quaternion )
+		t3d.set_params(quaternion)
 		size = len(self.t3d_stack)
 		self.t3d_stack[size-1] = t3d*self.t3d_stack[size-1]
 		

@@ -283,6 +283,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 		self.points = [] # will eventually store the points on the asymmetric unit
 		self.point_colors = [] # will eventually store colors for the different points
 		self.cam = Camera2(self) # Stores the camera position
+		#self.cam.allow_phi_rotations = False
 		self.vdtools = None # VDTools are very import in the context of the e2desktop
 		
 		self.cube = False
@@ -338,8 +339,8 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 		
 		self.log_scale = False # Stores whether or not the cylinder height (score) is shown in log scale
 		self.current_cylinder_score = None # stores which header attribute is being used to scale the heights of the cylinders
-
-		#self.regen_dl()
+	
+		self.mirror_eulers = False # If True the drawn Eulers are are also rendered on the opposite side of the sphere - see make_sym_dl_list. e2eulerxplor turns this to True. Also useful for verifying that we have accurately demarcated the non mirror redundant portion of thhe asymmetric unit
 
 		self.initialized = True
 	def __del__(self):
@@ -796,6 +797,8 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 					self.load_basic_gl_color()
 			glPushMatrix()
 			d = p.get_rotation("eman")
+			# this is the tranpose, which is then converted from a right hand coordinate system (EMAN2) into a left hand coordinate system (OpenGL)
+			# hence there are no negative signs
 			glRotate(d["az"],0,0,1)
 			glRotate(d["alt"],1,0,0)
 			glRotate(d["phi"],0,0,1)
@@ -809,38 +812,31 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 			glCallList(self.cappedcylinderdl)
 			glPopName()
 			glPopMatrix()
+			
+			if self.mirror_eulers and not self.nomirror:
+				s = p.negate()
+				glPushMatrix()
+				d = s.get_rotation("eman")
+				# this is the tranpose, which is then converted from a right hand coordinate system (EMAN2) into a left hand coordinate system (OpenGL)
+				# hence there are no negative signs
+				glRotate(d["az"],0,0,1)
+				glRotate(d["alt"],1,0,0)
+				glRotate(d["phi"],0,0,1)
+				glTranslate(0,0,self.radius)
+				if self.column_scores != None:
+					glScalef(self.width_scale,self.width_scale,self.height_scale*self.column_scores[i])
+				else: 
+					glScalef(self.width_scale,self.width_scale,self.height_scale)
+	
+				glPushName(i+1)
+				glCallList(self.cappedcylinderdl)
+				glPopName()
+				glPopMatrix()
+				
 			
 		glEndList()
 		
-	def render_sphere_points_for_color_picking(self,eulers):
-		'''
-		experimental function for rendering points as colors, for picking
-		'''
-		v = Vec3f(1,0,1)
-		vals = []
-		for i,p in enumerate(eulers):
-			v2 = p*v
-			v2.normalize() # this is silly, be has to occur
-			vals.append(v2)
-			glColor(v2[0],v2[1],v2[2])
-			glPushMatrix()
-			d = p.get_rotation("eman")
-			glRotate(d["az"],0,0,1)
-			glRotate(d["alt"],1,0,0)
-			glRotate(d["phi"],0,0,1)
-	   	   	glTranslate(0,0,self.radius)
-	   	   	if self.column_scores != None:
-	   	   		glScalef(self.width_scale,self.width_scale,self.height_scale*self.column_scores[i])
-	   	   	else: 
-	   	   		glScalef(self.width_scale,self.width_scale,self.height_scale)
 
-	   	   	glPushName(i+1)
-			glCallList(self.cappedcylinderdl)
-			glPopName()
-			glPopMatrix()
-			
-		return vals	
-#	
 	def angular_deviation(self,t1,t2):
 
 		v1 = Vec3f([0,0,1]*t1)
@@ -1005,8 +1001,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 		self.vdtools = EMViewportDepthTools2(parent)
 		self.gl_context_parent = parent
 
-	def render(self,color_picking=False):
-		color_list = None # this is returned if color_picking is True
+	def render(self):
 		self.init_basic_shapes()
 		if self.vdtools == None:
 			self.vdtools = EMViewportDepthTools2(self.get_gl_context_parent())
@@ -1019,9 +1014,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 		cull = glIsEnabled(GL_CULL_FACE)
 		polygonmode = glGetIntegerv(GL_POLYGON_MODE)
 		
-		if not color_picking: glEnable(GL_LIGHTING)
-		else: glDisable(GL_LIGHTING)
-		
+		glEnable(GL_LIGHTING)
 		glDisable(GL_CULL_FACE)
 		
 		glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
@@ -1035,6 +1028,12 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 		self.cam.position()
 		self.model_matrix = glGetDoublev(GL_MODELVIEW_MATRIX) # this is for e2au.py ... there is a better solution but no time
 		
+		if ( self.sym_object.is_h_sym() ):
+			a = {}
+			a["daz"] = 60
+			dz = 5
+			a["tz"] = dz
+			self.sym_object.insert_params(a)
 		
 		if ( self.sphere_points_dl == 0 or self.force_update):
 			self.generate_current_display_list()
@@ -1042,150 +1041,27 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 			if ( self.sphere_points_dl == 0 ) : 
 				print "error, you can't draw an empty list"
 				return
-		
-		if ( self.great_arc_dl != 0 and self.display_arc ):
-			glColor(.2,.9,.2)
-			# this is a nice light blue color (when lighting is on)
-			# and is the default color of the frame
-			#glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.1,.3,.1,1.0))
-			#glMaterial(GL_FRONT,GL_SPECULAR,(.8,.8,.8,1.0))
-			#glMaterial(GL_FRONT,GL_SHININESS,40.0)
-			self.load_gl_color(self.arc_color)
-			glCallList(self.great_arc_dl)
 			
-			if ( self.sym_object.is_h_sym() ):
-				a = {}
-				a["daz"] = 60
-				dz = 5
-				a["tz"] = dz
-				self.sym_object.insert_params(a)
-			if self.display_all_syms:
-				for i in range(1,self.sym_object.get_nsym()):
-					t = self.sym_object.get_sym(i)
-					t.invert()
-					d = t.get_rotation("eman")
-					glPushMatrix()
-					if ( self.sym_object.is_h_sym() ):
-						trans = t.get_trans()
-						glTranslatef(trans[0],trans[1],trans[2])
-					# negated because OpenGL uses the opposite handed coordinate system
-					glRotate(-d["phi"],0,0,1)
-					glRotate(-d["alt"],1,0,0)
-					glRotate(-d["az"],0,0,1)
-					glCallList(self.great_arc_dl)
-					glPopMatrix()
-		
-		if ( self.asym_u_triangles_dl != 0 and self.display_tri ):
-			if ( self.sym_object.is_h_sym() != True ):
+		for i,t in enumerate(self.sym_object.get_syms()):
+			if i > 0 and not self.display_all_syms: break
+			d = t.get_rotation("eman")
+			glPushMatrix()
+			# negated because OpenGL uses the opposite handed coordinate system
+			glRotate(-d["phi"],0,0,1)
+			glRotate(-d["alt"],1,0,0)
+			glRotate(-d["az"],0,0,1)
+			
+			if ( self.sym_object.is_h_sym() == False and self.asym_u_triangles_dl != 0 and self.display_tri ):
 				glCallList(self.asym_u_triangles_dl)
 			
-				if self.display_all_syms:
-					for i in range(1,self.sym_object.get_nsym()):
-						t = self.sym_object.get_sym(i)
-						t.invert()
-						d = t.get_rotation("eman")
-						glPushMatrix()
-						# negated because OpenGL uses the opposite handed coordinate system
-						glRotate(-d["phi"],0,0,1)
-						glRotate(-d["alt"],1,0,0)
-						glRotate(-d["az"],0,0,1)
-						glCallList(self.asym_u_triangles_dl)
-						glPopMatrix()
-	
-		if self.display_euler and self.sym_object != None:
-			glColor(.9,.2,.8)
-			self.load_gl_color("gold")
-			glStencilFunc(GL_EQUAL,self.rank,0)
-			glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE)
-			glPushMatrix()
-			if not color_picking: glCallList(self.sphere_points_dl)
-			else: color_list = self.render_sphere_points_for_color_picking(self.eulers)
-			glPopMatrix()
-			
-			#if not self.nomirror:
-				#t = Transform()
-				#if self.sym in ["oct","tet"]: s = t.get_vflip_transform()
-				#else: s = t.get_hflip_transform()
-						
-				#d = s.get_rotation("eman")
-				#glPushMatrix()
-				#if ( self.sym_object.is_h_sym() ):
-					#trans = t.get_trans()
-					#glTranslatef(trans[0],trans[1],-trans[2])
-					#glRotate(d["phi"],0,0,1)
-##						glRotate(d["alt"],1,0,0)
-##						glRotate(d["az"],0,0,1)
-				#else:
-					## negated because OpenGL uses the opposite handed coordinate system
-					#glRotate(-d["phi"],0,0,1)
-					#glRotate(-d["alt"],1,0,0)
-					#glRotate(-d["az"],0,0,1)
-				#glCallList(self.sphere_points_dl)
-				##self.render_sphere_points_for_color_picking(self.eulers)
-				#glPopMatrix()
+			if ( self.great_arc_dl != 0 and self.display_arc ):
+				self.load_gl_color(self.arc_color)
+				glCallList(self.great_arc_dl)
 				
-			if ( self.sym_object.is_h_sym() ):
-				a = {}
-				a["daz"] = 60
-				dz = 5
-				a["tz"] = dz
-				self.sym_object.insert_params(a)
-		
-			if self.display_all_syms:
-				#for i in range(1,self.sym_object.get_nsym()):
-					#t = self.sym_object.get_sym(i)
-				for i,t in enumerate(self.sym_object.get_syms()):
-					if i == 0: continue
-					d = t.get_rotation("eman")
-					glPushMatrix()
-					if ( self.sym_object.is_h_sym() ):
-						trans = t.get_trans()
-						glTranslatef(trans[0],trans[1],-trans[2])
-						glRotate(d["phi"],0,0,1)
-#						glRotate(d["alt"],1,0,0)
-#						glRotate(d["az"],0,0,1)
-					else:
-						# negated because OpenGL uses the opposite handed coordinate system
-						glRotate(-d["phi"],0,0,1)
-						glRotate(-d["alt"],1,0,0)
-						glRotate(-d["az"],0,0,1)
-					glCallList(self.sphere_points_dl)
-					#self.render_sphere_points_for_color_picking(self.eulers)
-					glPopMatrix()
-					
-				#if not self.nomirror:
-					#for i,t in enumerate(self.sym_object.get_syms()):
-						#if i == 0: continue
-						#if self.sym in ["oct","tet"]: s = t.get_vflip_transform()
-						#else: s = t.get_hflip_transform()
-						
-						#d = s.get_rotation("eman")
-						#glPushMatrix()
-						#if ( self.sym_object.is_h_sym() ):
-							#trans = t.get_trans()
-							#glTranslatef(trans[0],trans[1],-trans[2])
-							#glRotate(d["phi"],0,0,1)
-	##						glRotate(d["alt"],1,0,0)
-	##						glRotate(d["az"],0,0,1)
-						#else:
-							## negated because OpenGL uses the opposite handed coordinate system
-							#glRotate(-d["phi"],0,0,1)
-							#glRotate(-d["alt"],1,0,0)
-							#glRotate(-d["az"],0,0,1)
-						#glCallList(self.sphere_points_dl)
-						##self.render_sphere_points_for_color_picking(self.eulers)
-						#glPopMatrix()
-		
-		if (self.arc_anim_points):
-			self.load_gl_color("gold")
-			for points in self.arc_anim_points:
-				for i in range(0,len(points)-1):
-					self.cylinder_to_from(points[i],points[i+1],scale=0.25)
+			if self.display_euler and self.sym_object != None:
+				glCallList(self.sphere_points_dl)
+			glPopMatrix()
 
-			if len(self.arc_anim_points[-1]) > 0:
-				self.cylinder_to_from(Vec3f(0,0,0),self.arc_anim_points[-1][-1],scale=0.25)
-
-			
 		if self.trace_dl != 0:
 			self.load_gl_color("black")
 			glStencilFunc(GL_EQUAL,self.rank,0)
@@ -1197,7 +1073,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 		glStencilFunc(GL_EQUAL,self.rank,self.rank)
 		glStencilOp(GL_KEEP,GL_KEEP,GL_KEEP)
 
-		if not color_picking: self.draw_bc_screen()
+		self.draw_bc_screen()
 
 		glStencilFunc(GL_ALWAYS,1,1)
 		if self.cube:
@@ -1211,9 +1087,6 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 		
 		if ( polygonmode[0] == GL_LINE ): glPolygonMode(GL_FRONT, GL_LINE)
 		if ( polygonmode[1] == GL_LINE ): glPolygonMode(GL_BACK, GL_LINE)
-		
-		
-		return color_list # this is not None if color_picking is True
 		
 	def update_inspector(self,t3d):
 		if not self.inspector or self.inspector ==None:

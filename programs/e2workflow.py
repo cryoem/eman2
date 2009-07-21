@@ -878,8 +878,10 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		from emplot3d import EMPlot3DModule,get_test_data,get_other_test_data
 		get_application().setOverrideCursor(Qt.BusyCursor)
 		module = EMPlot3DModule(application=em_app)
-		module.set_data("test data",get_test_data())
-		module.set_data("other data",get_other_test_data(),shape="Cube")
+		module.set_data(get_test_data(),"test data")
+		module.set_data(get_other_test_data(),"other data",shape="Cube")
+		#module.set_data("test data",get_test_data())
+		#module.set_data("other data",get_other_test_data(),shape="Cube")
 		self.module().emit(QtCore.SIGNAL("launching_module"),"Plot3D",module)
 		get_application().show_specific(module)
 		self.add_module([str(module),"Plot3D",module])

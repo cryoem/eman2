@@ -400,7 +400,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 		self.average = None
 		self.projection = None
 		self.class_idx = None
-		
+			
 		self.previous_len = -1
 		
 		sym = "icos"
@@ -413,6 +413,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 		self.set_symmetry(sym)
 		
 		if hasattr(self,"au_data"):
+			print 
 			combo_entries = self.au_data.keys()
 			combo_entries.sort()
 			combo_entries.reverse()
@@ -422,6 +423,9 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 				cls = self.au_data[au][0][0]
 				self.euler_xplore_mode = True
 				self.au_selected(au,cls)
+			
+				self.mirror_eulers = True # If True the drawn Eulers are are also rendered on the opposite side of the sphere - see EM3DSymViewerModule.make_sym_dl_list.
+	
 				
 						
 		self.init_lock = False

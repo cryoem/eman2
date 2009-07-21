@@ -1504,10 +1504,11 @@ class EMFormWidget(QtGui.QWidget):
 	def update_texture(self):
 		self.parent().force_texture_update()
 #		
-	def closeEvent(self,event):
-		self.parent().closeEvent(event)
-		self.parent().emit(QtCore.SIGNAL("emform_close"))
-		event.accept()
+	#def closeEvent(self,event):
+		#if self.parent() != None:
+		#self.parent().closeEvent(event)
+		#self.parent().emit(QtCore.SIGNAL("emform_close"))
+		#event.accept()
 #		
 #	def resizeEvent(self,event):
 #		return

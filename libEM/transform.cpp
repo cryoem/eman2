@@ -657,13 +657,14 @@ void Transform::set_rotation(const Vec3f & v)
 
 }
 
-Transform Transform::spherical_opposite() const
+Transform Transform::negate() const
 {
-	Vec3f v1(0,0,1);
-	Vec3f v2 = (this->transpose())*v1;
-	v2 *= -1;
-	Transform t;
-	t.set_rotation(v2);
+	Transform t(*this);
+	for(unsigned int i = 0; i < 3; ++i) {
+		for(unsigned int j = 0; j < 4; ++j) {
+			t.set(i,j,t[i][j]*-1);
+		}
+	}
 	return t;
 }
 

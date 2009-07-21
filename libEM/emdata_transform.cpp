@@ -48,6 +48,9 @@
 #include <cmath>
 #include "util.h"
 
+#ifdef EMAN2_USING_CUDA
+#include "cuda/cuda_processor.h"
+#endif
 
 using namespace EMAN;
 using namespace std;
@@ -891,6 +894,17 @@ void EMData::ri2ap()
 	if (!is_complex() || !is_ri()) {
 		return;
 	}
+#ifdef EMAN2_USING_CUDA
+	if (gpu_operation_preferred()) {
+		EMDataForCuda tmp = get_data_struct_for_cuda();
+		emdata_ri2ap(&tmp);
+		set_ri(false);
+		gpu_update();
+		EXITFUNC;
+		return;
+	}
+#endif
+	
 	float * data = get_data();
 
 	size_t size = nx * ny * nz;

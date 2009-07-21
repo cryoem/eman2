@@ -42,12 +42,91 @@ from time import time
 def test_main():
 	
 	test_dims = [64*i for i in [1,2,3,4]]
-	test_dims_3d = [64*i for i in [1,2,3,4]]
+	test_dims_3d = [int(64*i) for i in [1,2,3,3.5]]
 	
 	test_range = range(30)
 	
 	gpu_times = []
 	cpu_times = []
+	
+	print "Testing Fourier correlation (2D) NO TEXTURE"
+	print "Dims","\t", "GPU speedup"
+	for dims in test_dims:
+		a = test_image(0,size=(dims,dims)).do_fft_cuda()
+		b = test_image(0,size=(dims,dims)).do_fft_cuda()
+		
+		t = time()
+		for i in test_range:
+			c = a.calc_ccf_cuda(b,False,False)
+			
+		gpu_times.append(time()-t)
+		a = test_image(0,size=(dims,dims)).do_fft()
+		b = test_image(0,size=(dims,dims)).do_fft()
+		t = time()
+		for i in test_range:
+			c = a.calc_ccf(b,fp_flag.CIRCULANT,0)
+		cpu_times.append(time()-t)
+		print dims,"\t", cpu_times[-1]/gpu_times[-1]
+		
+	print "Testing Fourier correlation (2D) TEXTURE"
+	print "Dims","\t", "GPU speedup"
+	for dims in test_dims:
+		a = test_image(0,size=(dims,dims)).do_fft_cuda()
+		b = test_image(0,size=(dims,dims)).do_fft_cuda()
+		
+		t = time()
+		for i in test_range:
+			c = a.calc_ccf_cuda(b,True,1)
+			
+		gpu_times.append(time()-t)
+		a = test_image(0,size=(dims,dims)).do_fft()
+		b = test_image(0,size=(dims,dims)).do_fft()
+		t = time()
+		for i in test_range:
+			c = a.calc_ccf(b,fp_flag.CIRCULANT,1)
+		cpu_times.append(time()-t)
+		print dims,"\t", cpu_times[-1]/gpu_times[-1]
+	
+	test_range = range(10)
+	print "Testing Fourier correlation (3D) NO TEXTURE"
+	print "Dims","\t", "GPU speedup"
+	for dims in test_dims_3d:
+		a = test_image_3d(0,size=(dims,dims,dims)).do_fft_cuda()
+		b = test_image_3d(0,size=(dims,dims,dims)).do_fft_cuda()
+		
+		t = time()
+		for i in test_range:
+			c = a.calc_ccf_cuda(b,False,1)
+			
+		gpu_times.append(time()-t)
+		a = test_image_3d(0,size=(dims,dims,dims)).do_fft()
+		b = test_image_3d(0,size=(dims,dims,dims)).do_fft()
+		t = time()
+		for i in test_range:
+			c = a.calc_ccf(b,fp_flag.CIRCULANT,1)
+		cpu_times.append(time()-t)
+		print dims,"\t", cpu_times[-1]/gpu_times[-1]
+		
+	print "Testing Fourier correlation (3D) TEXTURE"
+	print "Dims","\t", "GPU speedup"
+	for dims in test_dims_3d:
+		a = test_image_3d(0,size=(dims,dims,dims)).do_fft_cuda()
+		b = test_image_3d(0,size=(dims,dims,dims)).do_fft_cuda()
+		
+		t = time()
+		for i in test_range:
+			c = a.calc_ccf_cuda(b,False,1)
+			
+		gpu_times.append(time()-t)
+		a = test_image_3d(0,size=(dims,dims,dims)).do_fft()
+		b = test_image_3d(0,size=(dims,dims,dims)).do_fft()
+		t = time()
+		for i in test_range:
+			c = a.calc_ccf(b,fp_flag.CIRCULANT,1)
+		cpu_times.append(time()-t)
+		print dims,"\t", cpu_times[-1]/gpu_times[-1]
+	
+	sys.exit()
 	
 	
 	print "Testing 180 rotation"
@@ -114,6 +193,26 @@ def test_main():
 #				c = a[i].align(ali,b[i],{},"phase",{})
 #			cpu_times.append(time()-t)
 #			print dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1]
+	
+	print "ri2ap"
+	for dims in test_dims:
+		a = [test_image(0,size=(dims,dims)) for i in test_range]
+		a = [i.do_fft_cuda() for i in a]
+		
+		t = time()
+		for i in test_range:
+			a[i].ri2ap()
+			#c.print_this()
+
+		gpu_times.append(time()-t)
+		a = [test_image(0,size=(dims,dims)) for i in test_range]
+		a = [i.do_fft() for i in a]
+		
+		t = time()
+		for i in test_range:
+			a[i].ri2ap()
+		cpu_times.append(time()-t)
+		print dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1]	
 	
 	print "Testing transform (2D)"
 	for dims in test_dims:

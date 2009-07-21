@@ -273,7 +273,7 @@ class EMTransformPanel:
 		
 		self.n3_showing = False
 		
-		self.current_src = EULER_EMAN
+		self.current_src = "eman"
 		
 		QtCore.QObject.connect(self.az, QtCore.SIGNAL("valueChanged"), self.slider_rotate)
 		QtCore.QObject.connect(self.alt, QtCore.SIGNAL("valueChanged"), self.slider_rotate)
@@ -300,7 +300,7 @@ class EMTransformPanel:
 	def get_current_rotation(self):
 		convention = self.src.currentText()
 		rot = {}
-		if ( self.current_src == EULER_SPIN ):
+		if ( self.current_src == "spin" ):
 			rot[self.az.getLabel()] = self.az.getValue()
 			
 			n1 = self.alt.getValue()
@@ -322,7 +322,9 @@ class EMTransformPanel:
 			rot[self.alt.getLabel()] = self.alt.getValue()
 			rot[self.phi.getLabel()] = self.phi.getValue()
 		
-		return Transform3D(self.current_src, rot)
+		rot["type"] = self.current_src
+		
+		return Transform(rot)
 	
 	def addWidgets(self,target):
 		
@@ -364,27 +366,27 @@ class EMTransformPanel:
 			self.alt.setRange(-180,180)
 			self.phi.setRange(-360,660)
 		
-		if ( self.src_map[str(val)] == EULER_SPIDER ):
+		if ( self.src_map[str(val)] == "spider" ):
 			self.az.setLabel('phi')
 			self.alt.setLabel('theta')
 			self.phi.setLabel('psi')
-		elif ( self.src_map[str(val)] == EULER_EMAN ):
+		elif ( self.src_map[str(val)] == "eman" ):
 			self.az.setLabel('az')
 			self.alt.setLabel('alt')
 			self.phi.setLabel('phi')
-		elif ( self.src_map[str(val)] == EULER_IMAGIC ):
+		elif ( self.src_map[str(val)] == "imagic"):
 			self.az.setLabel('alpha')
 			self.alt.setLabel('beta')
 			self.phi.setLabel('gamma')
-		elif ( self.src_map[str(val)] == EULER_XYZ ):
+		elif ( self.src_map[str(val)] == "xyz"):
 			self.az.setLabel('xtilt')
 			self.alt.setLabel('ytilt')
 			self.phi.setLabel('ztilt')
-		elif ( self.src_map[str(val)] == EULER_MRC ):
+		elif ( self.src_map[str(val)] == "mrc" ):
 			self.az.setLabel('phi')
 			self.alt.setLabel('theta')
 			self.phi.setLabel('omega')
-		elif ( self.src_map[str(val)] == EULER_SPIN ):
+		elif ( self.src_map[str(val)] == "spin" ):
 			self.az.setLabel('Omega')
 			self.alt.setRange(-1,1)
 			self.phi.setRange(-1,1)
@@ -410,12 +412,12 @@ class EMTransformPanel:
 	def load_src(self):
 		# supported_rot_conventions
 		src_flags = []
-		src_flags.append(EULER_EMAN)
-		src_flags.append(EULER_SPIDER)
-		src_flags.append(EULER_IMAGIC)
-		src_flags.append(EULER_MRC)
-		src_flags.append(EULER_SPIN)
-		src_flags.append(EULER_XYZ)
+		src_flags.append("eman")
+		src_flags.append("spider")
+		src_flags.append("imagic")
+		src_flags.append("mrc")
+		src_flags.append("spin")
+		src_flags.append("xyz")
 		
 		self.src_strings = []
 		self.src_map = {}
@@ -427,7 +429,7 @@ class EMTransformPanel:
 		rot = t3d.get_rotation(self.src_map[str(self.src.itemText(self.src.currentIndex()))])
 		
 		convention = self.src.currentText()
-		if ( self.src_map[str(convention)] == EULER_SPIN ):
+		if ( self.src_map[str(convention)] == "spin" ):
 			self.n3.setValue(rot[self.n3.getLabel()],True)
 		
 		self.az.setValue(rot[self.az.getLabel()],True)
