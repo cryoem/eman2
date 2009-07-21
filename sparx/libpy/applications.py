@@ -11128,7 +11128,7 @@ class file_set :
 
 		return self.files[ifile], imgid - self.fends[ifile-1]
 
-def defvar(files, outdir, fl, fh, radccc, writelp, writestack):
+def defvar(files, outdir, fl, aa, radccc, writelp, writestack):
 
 	from math import sqrt
 	import os
@@ -11143,10 +11143,10 @@ def defvar(files, outdir, fl, fh, radccc, writelp, writestack):
 
 	avgfile = outdir + "/avg.hdf" 
 	varfile = outdir + "/var.hdf"
-	filtered = outdir + "/filtered.hdf" 	
+	if writestack: filtered = outdir + "/tanl_prj.hdf"
 
 	n = get_image( files[0] ).get_xsize()
-
+	
 	radcir = n/2 - 1
 
 	avg = None
@@ -11156,9 +11156,9 @@ def defvar(files, outdir, fl, fh, radccc, writelp, writestack):
 			img = get_im( f, i )
 			img = circumference( img, radcir, radcir+1 )
 			if(fl > 0.0):
-				img = filt_tanl( img, fl, fh )
-				img.write_image( filtered, total_img )
-			
+				img = filt_tanl( img, fl, aa )
+				if writestack: img.write_image( filtered, total_img )
+
 			if avg is None:
 				avg = img.copy()
 			else:
@@ -11168,26 +11168,26 @@ def defvar(files, outdir, fl, fh, radccc, writelp, writestack):
 	avg /= total_img
 	
 	var = None
-	if(fl > 0.0):
+	if(fl > 0.0 and writestack):
 		for i in xrange(total_img):
 			img = get_im( filtered, i )
+				
 			Util.sub_img(img, avg)
-			Util.mul_img(img, img)
 			if var is None:
-				var = img.copy()
+				var = Util.muln_img(img, img)
 			else:
-				Util.add_img(var , img)
+				Util.add_img2(var , img)
 	else:
 		for f in files:
 			nimg = EMUtil.get_image_count( f )
 			for i in xrange(nimg):
 				img = get_im( f, i )
+				if(fl > 0.0): img = filt_tanl( img, fl, aa )
 				Util.sub_img(img, avg)
-				Util.mul_img(img, img)
 				if var is None:
-					var = img.copy()
+					var = Util.muln_img(img, img)
 				else:
-					Util.add_img(var , img)
+					Util.add_img2(var , img)
 
 	var /=(total_img-1)
 
@@ -11270,7 +11270,6 @@ def var_mpi(files, outdir, fl, fh, radccc, writelp, writestack, method="inc", pc
 		img = circumference( img, radcir, radcir+1 )
 		if(fl > 0.0): img = filt_tanl(img, fl, fh)
 
-		
 		if writelp:
 			img.write_image(lpstack, iwrite)
 			iwrite += 1
