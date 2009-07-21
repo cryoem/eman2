@@ -348,7 +348,7 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 		mrch.yorigin = d["ty"];
 		mrch.zorigin = d["tz"];
 	}
-	else {
+	else if(dict.has_key("origin_x") && dict.has_key("origin_y") && dict.has_key("origin_z")){
 		mrch.xorigin = (float)dict["origin_x"];
 		mrch.yorigin = (float)dict["origin_y"];
 
@@ -448,7 +448,9 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 
 	sprintf(mrch.map, "MAP ");
 	mrch.machinestamp = generate_machine_stamp();
-	mrch.rms = (float)dict["MRC.rms"];
+	if(dict.has_key("MRC.rms")) {
+		mrch.rms = (float)dict["MRC.rms"];
+	}
 
 	MrcHeader mrch2 = mrch;
 
