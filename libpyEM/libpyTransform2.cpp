@@ -506,6 +506,8 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 		.staticmethod("get_nsym")
 		.def("icos_5_to_2", &EMAN::Transform::icos_5_to_2)
 		.staticmethod("icos_5_to_2")
+		.def("tet_3_to_2", &EMAN::Transform::tet_3_to_2)
+		.staticmethod("tet_3_to_2")
 	;
 
 }

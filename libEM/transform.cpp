@@ -71,20 +71,28 @@ Transform Transform::icos_5_to_2() {
 	d["phi"] = 0.0f;
 	d["az"] = 270.0f;
 	d["alt"] = 58.282523f; // 5 fold to a 3 fold to a 2 fold
+	/** Doctor Phil says:
+	 * alt = (acos(cos(pi/5)/sqrt(3)/sin(pi/5)) + acos(2*cos(pi/5)/ sqrt(3) ) )*180/pi
+	 * This is the angle between a 5 and a 3 plus the angle between a 3 and a 2
+	 */
+	
 	t.set_rotation(d);
 	return t;
 }
 
-//Transform Transform::icos_2_to_5() {
-//	Transform t;
-//	Dict d;
-//	d["type"] = "eman";
-//	d["phi"] = 270.0f;
-//	d["az"] = 180.0f;
-//	d["alt"] = 58.282523f; // 5 fold to a 3 fold to a 2 fold
-//	t.set_rotation(d);
-//	return tl
-//}
+Transform Transform::tet_3_to_2() {
+	Transform t;
+	Dict d;
+	d["type"] = "eman";
+	d["phi"] = 45.0f;
+	d["az"] = 0.0f;
+	d["alt"] = 54.73561f; // 3 fold to a 2 fold
+	/** Doctor Phil says:
+	 * AltAngle= acos(-1/3.0)*90/pi;
+	 */
+	t.set_rotation(d);
+	return t;
+}
 
 
 Transform::Transform()
