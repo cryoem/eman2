@@ -504,6 +504,8 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 		.def( self * other< EMAN::Vec3f >() )
 		.def( self * other< EMAN::Vec2f >() )
 		.staticmethod("get_nsym")
+		.def("icos_5_to_2", &EMAN::Transform::icos_5_to_2)
+		.staticmethod("icos_5_to_2")
 	;
 
 }

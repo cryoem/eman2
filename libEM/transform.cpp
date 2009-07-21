@@ -64,6 +64,29 @@ vector<string>  Transform::permissable_2d_not_rot;
 vector<string>  Transform::permissable_3d_not_rot;
 map<string,vector<string> >  Transform::permissable_rot_keys;
 
+Transform Transform::icos_5_to_2() {
+	Transform t;
+	Dict d;
+	d["type"] = "eman";
+	d["phi"] = 0.0f;
+	d["az"] = 270.0f;
+	d["alt"] = 58.282523f; // 5 fold to a 3 fold to a 2 fold
+	t.set_rotation(d);
+	return t;
+}
+
+//Transform Transform::icos_2_to_5() {
+//	Transform t;
+//	Dict d;
+//	d["type"] = "eman";
+//	d["phi"] = 270.0f;
+//	d["az"] = 180.0f;
+//	d["alt"] = 58.282523f; // 5 fold to a 3 fold to a 2 fold
+//	t.set_rotation(d);
+//	return tl
+//}
+
+
 Transform::Transform()
 {
 	to_identity();
