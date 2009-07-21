@@ -1565,7 +1565,7 @@ def ali3d_e_G4(stack, ref_vol, maskfile=None, radius=-1, dtheta=2):
 	alpha = 1.75
 	r = nx/2
 	v = K/2.0/N
-	params = {"filter_type": Processor.fourier_filter_types.KAISER_SINH_INVERSE, "alpha":alpha, "K":K, "r":r, "v":v, "N":N}
+	params = {"filter_type":Processor.fourier_filter_types.KAISER_SINH_INVERSE, "alpha":alpha, "K":K, "r":r, "v":v, "N":N}
 	del alpha, r, v, K, N
 	
 	data = [None]*6
@@ -1593,7 +1593,7 @@ def ali3d_e_G4(stack, ref_vol, maskfile=None, radius=-1, dtheta=2):
 		weight_phi = max(dtheta, dtheta*abs((atparams[1]-90.0)/180.0*pi))
 
 		# For downhill simplex method
-		optm_params = amoeba_multi_level(atparams, [weight_phi, dtheta, weight_phi], eqproj_cascaded_ccc_test, 1.e-5, 1.e-5, 500, data)
+		optm_params = amoeba_multi_level(atparams, [weight_phi, dtheta, weight_phi], eqprojG4, 1.e-5, 1.e-5, 500, data)
 		set_params_proj(dataim[imn], [optm_params[0][0], optm_params[0][1], optm_params[0][2], -optm_params[3][0], -optm_params[3][1]])
 
 		used_time = time()-begin_time
@@ -1605,7 +1605,7 @@ def ali3d_e_G4(stack, ref_vol, maskfile=None, radius=-1, dtheta=2):
 	return total_time, total_time2
 
 
-def eqproj_cascaded_ccc_test(args, data):
+def eqprojG4(args, data):
 	from utilities import peak_search, amoeba
 	from fundamentals import fft, ccf, fpol
 	from applications import twoD_fine_search
@@ -1621,10 +1621,6 @@ def eqproj_cascaded_ccc_test(args, data):
 	temp = volft.extract_plane(R, kb)
 	temp.fft_shuffle()
 	temp.center_origin_fft()
-	if shift[0] != 0.0 or shift[1] != 0.0:
-		filt_params = {"filter_type":Processor.fourier_filter_types.SHIFT, "x_shift":shift[0], "y_shift":shift[1], "z_shift":0.0}
-		temp = Processor.EMFourierFilter(temp, filt_params)
-	
 	temp.do_ift_inplace()
 	M = temp.get_ysize()/2
 	refprj = temp.window_center(M)
@@ -1637,18 +1633,143 @@ def eqproj_cascaded_ccc_test(args, data):
 	sy = (nx-shift[1]*2)/2
 	
 	proj2x = fpol(refprj, 2*M, 2*M, 0, False)
-	product = ccf(proj2x, data[4])
+	product = ccf(proj2x, refi)
 
 	data2 = [0]*2
 	data2[0] = product
 	data2[1] = kb
-	ps = amoeba([sx, sy], [1.0, 1.0], twoD_fine_search, 1.e-4, 1.e-4, 500, data2)
+	ps = amoeba([sx, sy], [0.05, 0.05], twoD_fine_search, 1.e-4, 1.e-4, 500, data2)
 
 	v = ps[1]
 	s2x = nx/2-ps[0][0]
 	s2y = nx/2-ps[0][1]
 
 	return v, [s2x, s2y]
+
+def ali3d_e_G_DUD(stack, ref_vol, maskfile=None, radius=-1, dtheta=2):
+	"""
+	An experimental version of ali3d_e, using DUD algorithm for optimization
+	"""
+	from projection   import prep_vol, prgs
+	from utilities    import get_params_proj, set_params_proj
+	from utilities    import model_circle, get_image
+	from math         import pi
+	from time         import time
+	from numpy        import matrix, diag, concatenate
+	from utilities    import get_image_data
+
+	nima = EMUtil.get_image_count(stack)
+
+	vol = EMData()
+	vol.read_image(ref_vol)
+	nx = vol.get_xsize()
+	if radius <= 0:  radius = nx/2-1
+	
+	if maskfile:
+		import  types
+		if type(maskfile) is types.StringType:  mask3D = get_image(maskfile)
+		else: mask3D = maskfile
+	else:
+		mask3D = model_circle(radius, nx, nx, nx)
+	mask2D = model_circle(radius, nx, nx)
+
+	dataim = []
+	for im in xrange(nima):
+		ima = EMData()
+		ima.read_image(stack, im)
+		#ima *= mask2D
+		#ima.process_inplace("normalize.mask", {"mask":mask2D, "no_sigma":1})
+		dataim.append(ima)
+	
+	#npad = 2
+	#N = nx*npad
+	#K = 6
+	#alpha = 1.75
+	#r = nx/2
+	#v = K/2.0/N
+	#params = {"filter_type":Processor.fourier_filter_types.KAISER_SINH_INVERSE, "alpha":alpha, "K":K, "r":r, "v":v, "N":N}
+	#del alpha, r, v, K, N
+	
+	#Util.mul_img(vol, mask3D)
+	volft, kb  = prep_vol(vol)
+
+	total_time = 0.0
+	total_time2 = 0.0
+
+	for im in xrange(nima):
+		begin_time = time()
+
+		refim = dataim[im]
+
+		phi, theta, psi, s2x, s2y = get_params_proj(refim)
+		
+		s2x = -s2x
+		s2y = -s2y
+
+		P = 5
+		max_P = 30
+		converge = False
+		beta = []
+		delta = 0.1
+		beta.append([phi, theta, psi, s2x, s2y])
+		beta.append([phi+delta, theta, psi, s2x, s2y])
+		beta.append([phi, theta+delta, psi, s2x, s2y])
+		beta.append([phi, theta, psi+delta, s2x, s2y])
+		beta.append([phi, theta, psi, s2x+delta, s2y])
+		beta.append([phi, theta, psi, s2x, s2y+delta])
+		
+
+		Y = matrix(get_image_data(refim)).flatten(1)
+		omega = []
+		proj0 = prgs(volft, kb, beta[0])
+		for p in xrange(1, P+1):
+			projp = prgs(volft, kb, beta[p])
+			diffim = Util.subn_img(projp, proj0)
+			P2 = matrix(get_image_data(diffim)).flatten(1)
+			if p == 1: F = P2
+			else: F = concatenate((F, P2))
+			omega.append(projp.cmp("SqEuclidean", proj0))
+					
+		projp = prgs(volft, kb, beta[P])
+		Fs = matrix(get_image_data(projp)).flatten(1)
+
+		A = [[delta, 0, 0, 0, 0], [0, delta, 0, 0, 0], [0, 0, delta, 0, 0], [0, 0, 0, delta, 0], [0, 0, 0, 0, delta]]
+		while converge == False and P < max_P:
+			A_matrix = matrix(A)
+			omega_matrix_inv = matrix(diag(omega))**(-1)
+			G = F.T*omega_matrix_inv*A_matrix*(A_matrix.T*omega_matrix_inv*A_matrix)**(-1)
+					
+			H = (G.T*G)**(-1)*G.T*(Y.T-Fs.T)
+
+			dphi = float(H[0][0])
+			dtheta = float(H[1][0])
+			dpsi = float(H[2][0])
+			ds2x = float(H[3][0])
+			ds2y = float(H[4][0])
+			print "P=", P, "dd=", dphi**2+dtheta**2+dpsi**2+ds2x**2+ds2y**2
+			if dphi**2+dtheta**2+dpsi**2+ds2x**2+ds2y**2 < 1e-6: converge = True
+			beta.append([beta[P][0]+dphi, beta[P][1]+dtheta, beta[P][2]+dpsi, beta[P][3]+ds2x, beta[P][4]+ds2y])
+			P += 1
+			if converge == False:
+				proj_new = prgs(volft, kb, beta[P])
+				diffim = Util.subn_img(proj_new, proj0)
+				P2 = matrix(get_image_data(diffim)).flatten(1)
+				F = concatenate((F, P2))
+				Fs = matrix(get_image_data(proj_new)).flatten(1)
+				omega.append(proj_new.cmp("SqEuclidean", proj0))
+				A.append([dphi, dtheta, dpsi, ds2x, ds2y])
+		print "P =", P, "   converge =", converge
+
+		set_params_proj(dataim[im], [beta[P][0], beta[P][1], beta[P][2], -beta[P][3], -beta[P][4]])
+
+		used_time = time()-begin_time
+		total_time += used_time
+		total_time2 += used_time**2
+		
+	for im in xrange(nima):
+		dataim[im].write_image(stack, im, EMUtil.ImageType.IMAGE_HDF, True)
+		
+	return total_time, total_time2
 
 
 			
