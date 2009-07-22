@@ -41,12 +41,61 @@ IS_TEST_EXCEPTION = False
 class TestXYData(unittest.TestCase):
     """this is the unit test for XYData class"""
     
+    def test_pair(self):
+        """test XYData.Pair class ..........................."""
+        p = XYData.Pair(1.1, 2.2)
+        self.assertAlmostEqual(1.1, p.x, 3)
+        self.assertAlmostEqual(2.2, p.y, 3)
+        
+        p2 = XYData.Pair(1.0, 2.0)
+        self.assertTrue(p2<p)
+    
     def test_get_size(self):
         """test get_size() function ........................."""
         xy = XYData()
         xy.set_size(100)
         self.assertEqual(100, xy.get_size())
-    
+        
+    def test_get_x(self):
+        """test get_x() function ............................"""
+        xy = XYData()
+        lx = range(10)
+        ly = (i+100 for i in range(10))
+        xy.set_xy_list(lx, ly)
+        
+        self.assertAlmostEqual(5.0, xy.get_x(5), 3)
+        self.assertAlmostEqual(105.0, xy.get_y(5), 3)
+        self.assertAlmostEqual(106.0, xy.get_yatx(6), 3)
+        
+    def test_get_xlist(self):
+        """test get_xlist() function ........................"""
+        xy = XYData()
+        lx = range(10)
+        ly = (i+100 for i in range(10))
+        xy.set_xy_list(lx, ly)
+        
+        xlist = xy.get_xlist()
+        ylist = xy.get_ylist()
+        for i in xrange(len(xlist)):
+            self.assertAlmostEqual(i, xlist[i], 3)
+            self.assertAlmostEqual(100+i, ylist[i], 3)
+        
+    def test_read_write_file(self):
+        """test read/write file ............................."""
+        xy = XYData()
+        lx = range(10)
+        ly = (i+100 for i in range(10))
+        xy.set_xy_list(lx, ly)
+        
+        file = 'xydata.dat'
+        xy.write_file(file)
+        xy2 = XYData()
+        xy2.read_file(file)
+        self.assertAlmostEqual(5.0, xy2.get_x(5), 3)
+        self.assertAlmostEqual(105.0, xy2.get_y(5), 3)
+        self.assertAlmostEqual(106.0, xy2.get_yatx(6), 3)
+        testlib.safe_unlink(file)
+        
 def test_main():
     p = OptionParser()
     p.add_option('--t', action='store_true', help='test exception', default=False )
