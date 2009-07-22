@@ -401,10 +401,10 @@ class EM3DInspector(QtGui.QWidget):
 
 
 class EMPDBViewer(EM3DModule):
-	def __init__(self,fName, application=None):
+	def __init__(self, application=None):
 		EM3DModule.__init__(self,application)
-		self.text = fName
-		self.fName = fName
+		self.fName = raw_input ("Enter the file name of a pdb file: ")
+		self.text = self.fName
 		self.dl = None
 	
 	def current_text(self): return self.text
@@ -937,7 +937,7 @@ class EMPDBInspector(EM3DInspector):
 if __name__ == '__main__':
 	from emapplication import EMStandAloneApplication
 	em_app = EMStandAloneApplication()
-	window = EMPDBViewer("/home/muthu/project/probe.pdb")
+	window = EMPDBViewer()
 	em_app.show()
 	em_app.execute()
 
