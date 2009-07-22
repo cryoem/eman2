@@ -14,6 +14,7 @@ SET(LIB_EM_SOURCE byteorder.cpp
     symmetry.cpp
     geometry.cpp
     pointarray.cpp
+    pdbreader.cpp
     mrcio.cpp
     dm3io.cpp
     tifio.cpp

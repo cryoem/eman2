@@ -485,7 +485,7 @@ bool PointArray::read_from_pdb(const char *file)
 		sscanf(&s[28], " %f %f %f", &x, &y, &z);
 
 		if (count + 1 > get_number_points())
-			set_number_points(2 * (count + 1));
+			set_number_points(2 * (count + 1));    //makes sure point array is big enough
 #ifdef DEBUG
 		printf("Atom %4d: x,y,z = %8g,%8g,%8g\te = %g\n", count, x, y, z, e);
 #endif

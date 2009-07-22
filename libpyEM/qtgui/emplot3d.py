@@ -113,9 +113,15 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 	def init_font_renderer(self):
 		if self.font_renderer == None:
 			self.font_renderer = get_3d_font_renderer()
+#<<<<<<< emplot3d.py
+			self.font_renderer.set_face_size(self.font_size)
+			self.font_renderer.set_depth(12)
+			self.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
+#=======
 			self.font_renderer.set_face_size(self.font_size)
 			self.font_renderer.set_depth(self.font_depth)
 			self.font_renderer.set_font_mode(FTGLFontMode.EXTRUDE)
+#>>>>>>> 1.18
 		
 	def set_data_based_coloring(self,value): 
 		self.data_based_coloring = value	
