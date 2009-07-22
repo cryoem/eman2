@@ -11129,18 +11129,17 @@ class file_set :
 
 def defvar(files, outdir, fl, aa, radccc, writelp, writestack, repair = False, pca=False, pcamask=None, pcanvec=None):
 
-	from utilities import get_im, get_image, circumference, model_blank
-	from filter    import filt_tanl
-	from math      import sqrt
+	from utilities  import get_im, get_image, circumference, model_blank
+	from filter     import filt_tanl
+	from statistics import ccc
+	from math       import sqrt
 	import os
-
+	print " START "
 	if os.path.exists(outdir):
-		ERROR('Output directory exists, please change the name and restart the program', " ", 1)
+		ERROR('Output directory exists, please change the name and restart the program', " sxvar", 1)
 	os.system( "mkdir " + outdir )
 
 	finf = open( outdir + "/var_progress.txt", "w" )
-
-	total_img = 0
 
 	avgfile = outdir + "/avg.hdf" 
 	varfile = outdir + "/var.hdf"
@@ -11156,10 +11155,10 @@ def defvar(files, outdir, fl, aa, radccc, writelp, writestack, repair = False, p
 	nz = img.get_zsize()
 
 
-	radcir = n/2 - 1
+	radcir = min(nx,ny,nz)/2 - 1
 	if(repair):  again = 2
 	else:        again = 1
-
+	ndump = 100 # write out ccc after each 100 steps
 	for repeat in xrange(again):
 		if(repeat == again -1):  extra = True
 		else:                    extra = False
@@ -11169,12 +11168,14 @@ def defvar(files, outdir, fl, aa, radccc, writelp, writestack, repair = False, p
 
 		avg1 = model_blank(nx,ny,nz)
 		avg2 = model_blank(nx,ny,nz)
+		total_img = 0
 		for f in files:
 			nimg = EMUtil.get_image_count( f )
 			print f,"   ",nimg
 			for i in xrange(nimg):
 				img = get_im( f, i )
-				if  extra:  Util.div_img(img, rota)
+				if(repair and extra):  Util.div_img(img, rota)
+				if(repair and extra and writelp):  img.write_image(f, i)
 				img = circumference( img, radcir, radcir+1 )
 				if(fl > 0.0):
 					img = filt_tanl( img, fl, aa )
@@ -11185,8 +11186,8 @@ def defvar(files, outdir, fl, aa, radccc, writelp, writestack, repair = False, p
 
 		avg = Util.addn_img(avg1, avg2)/total_img
 		if  extra:
-			avg.write_image( avgfile )
-			avg1 /= (total_img//2+total_image%2)
+			avg.write_image( avgfile)
+			avg1 /= (total_img//2+total_img%2)
 			avg1.write_image(avgfileE)
 			avg2 /= (total_img//2)
 			avg2.write_image(avgfileO)
@@ -11194,8 +11195,8 @@ def defvar(files, outdir, fl, aa, radccc, writelp, writestack, repair = False, p
 			del avg1, avg2
 
 		if extra:
+			from utilities import model_circle
 			cccmask = model_circle(radccc, nx, ny, nz)
-			ndump = 100  # after ndump volumes calculate ccc
 		var1 = model_blank(nx,ny,nz)
 		var2 = model_blank(nx,ny,nz)
 		if(fl > 0.0 and writestack and extra):
@@ -11207,6 +11208,9 @@ def defvar(files, outdir, fl, aa, radccc, writelp, writestack, repair = False, p
 				if(i%2 == 0):  Util.add_img2(var1 , img)
 				else:	       Util.add_img2(var2 , img)
 				if(i%ndump == 0):
+					from utilities import info
+					info(var1)
+					info(var2) 
 					finf.write( 'ntot, ccc: %6d %10.8f\n' % (i, ccc(var1, var2, cccmask)) )
 					finf.flush()
 		else:
@@ -11216,23 +11220,24 @@ def defvar(files, outdir, fl, aa, radccc, writelp, writestack, repair = False, p
 				print f,"   ",nimg
 				for i in xrange(nimg):
 					img = get_im( f, i )
-					if  extra:  Util.div_img(img, rota)
+					if(repair and extra and not writelp):  Util.div_img(img, rota)
 					img = circumference( img, radcir, radcir+1 )
 					if(fl > 0.0): img = filt_tanl( img, fl, aa )
 					if pca and extra: pcaer.insert(img)
 					Util.sub_img(img, avg)
-					if(total_img%2 == 0):
-						Util.add_img2(var1, img)
-					else:
-						Util.add_img2(var1 , img)
+					if(total_img%2 == 0): Util.add_img2(var1, img)
+					else:                 Util.add_img2(var2 , img)
 					total_img += 1
 					if(total_img%ndump == 0 and extra):
+						from utilities import info
+						info(var1)
+						info(var2)
 						finf.write( 'ntot, ccc: %6d %10.8f\n' % (total_img, ccc(var1, var2, cccmask)) )
 						finf.flush()
 
 		var = Util.addn_img(var1, var2)/(total_img-1)
 		if extra:
-			var1 /= (total_img//2+total_image%2 - 1)
+			var1 /= (total_img//2+total_img%2 - 1)
 			var1.write_image(varfileE)
 			var2 /= (total_img//2 - 1)
 			var2.write_image(varfileO)
@@ -11240,8 +11245,9 @@ def defvar(files, outdir, fl, aa, radccc, writelp, writestack, repair = False, p
 			var.write_image( varfile )
 			del var, var1, var2, cccmask
 		else:
-			from morhology import square_root
+			from morphology import square_root
 			rota = square_root(var.rotavg_i())
+			#rota.write_image( outdir+"rota.hdf", repeat)
 			del var
 	
 	if pca:
