@@ -10057,7 +10057,7 @@ def pca( input_stacks, output_stack, subavg, mask_radius, sdir, nvec, shuffle, g
 			print "Subtracting ", subavg, " from each image"
 		avg = get_image( subavg )
 		pca.setavg( avg )
-	
+
 	files = file_set( input_stacks )
 	if MPI:
 		from mpi import mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
@@ -11023,11 +11023,10 @@ def normal_prj( prj_stack, outdir, refvol, r, niter, snr, sym, MPI=False ):
 
 def incvar(prefix, nfile, nprj, output, fl, fh, radccc, writelp, writestack):
 	from statistics import variancer, ccc
-	from string import atoi, replace, split, atof
-	from EMAN2 import EMUtil
-	from utilities import get_im, circumference, model_circle, drop_image
-	from filter import filt_btwl
-	from math import sqrt
+	from string     import atoi, replace, split, atof
+	from utilities  import get_im, circumference, model_circle, drop_image
+	from filter     import filt_btwl
+	from math       import sqrt
 	import os
 
 	all_varer = variancer()
@@ -11128,12 +11127,12 @@ class file_set :
 
 		return self.files[ifile], imgid - self.fends[ifile-1]
 
-def defvar(files, outdir, fl, aa, radccc, writelp, writestack):
+def defvar(files, outdir, fl, aa, radccc, writelp, writestack, pca=False, pcamask=None, pcanvec=None):
 
-	from math import sqrt
+	from utilities import get_im, get_image, circumference, model_blank
+	from filter    import filt_tanl
+	from math      import sqrt
 	import os
-	from utilities import get_im, get_image, circumference
-	from filter import filt_tanl
 
 	if os.path.exists(outdir):
 		ERROR('Output directory exists, please change the name and restart the program', " ", 1)
@@ -11145,54 +11144,79 @@ def defvar(files, outdir, fl, aa, radccc, writelp, writestack):
 	varfile = outdir + "/var.hdf"
 	if writestack: filtered = outdir + "/tanl_prj.hdf"
 
-	n = get_image( files[0] ).get_xsize()
-	
+	img = get_image( files[0] )
+	nx = img.get_xsize()
+	ny = img.get_ysize()
+	nz = img.get_zsize()
+
+
 	radcir = n/2 - 1
 
-	avg = None
+	if pca:
+		pcamask = get_im( pcamask)
+		pcaer = pcanalyzer(pcamask, outdir, pcanvec, False)
+
+	avg1 = model_blank(nx,ny,nz)
+	avg2 = model_blank(nx,ny,nz)
 	for f in files:
 		nimg = EMUtil.get_image_count( f )
+		print f,"   ",nimg
 		for i in xrange(nimg):
 			img = get_im( f, i )
 			img = circumference( img, radcir, radcir+1 )
 			if(fl > 0.0):
 				img = filt_tanl( img, fl, aa )
 				if writestack: img.write_image( filtered, total_img )
-
-			if avg is None:
-				avg = img.copy()
-			else:
-				Util.add_img(avg, img)
+			if(total_img%2 == 0):	Util.add_img(avg1, img)
+			else:                   Util.add_img(avg2, img)
 			total_img += 1
 
-	avg /= total_img
-	
-	var = None
+	avg = Util.addn_img(avg1, avg2)/total_img
+
+	del avg1, avg2
+	var1 = model_blank(nx,ny,nz)
+	var2 = model_blank(nx,ny,nz)
 	if(fl > 0.0 and writestack):
 		for i in xrange(total_img):
 			img = get_im( filtered, i )
-				
+			if pca: pcaer.insert(img)
+
 			Util.sub_img(img, avg)
 			if var is None:
 				var = Util.muln_img(img, img)
 			else:
 				Util.add_img2(var , img)
 	else:
+		total_img = 0
 		for f in files:
 			nimg = EMUtil.get_image_count( f )
+			print f,"   ",nimg
 			for i in xrange(nimg):
 				img = get_im( f, i )
 				if(fl > 0.0): img = filt_tanl( img, fl, aa )
+				if pca: pcaer.insert(img)
 				Util.sub_img(img, avg)
-				if var is None:
-					var = Util.muln_img(img, img)
+				if(total_img%2 == 0):
+					Util.add_img2(var1, img)
 				else:
-					Util.add_img2(var , img)
+					Util.add_img2(var1 , img)
 
-	var /=(total_img-1)
+	var = Util.addn_img(var1, var2)/(total_img-1)
 
 	avg.write_image( avgfile )
 	var.write_image( varfile )
+
+	if pca:
+		assert not(all_avg is None)
+		
+		pcaer.setavg( avg )
+
+		eigs = pcaer.analyze()
+		eigfile = outdir + "/eigvol.hdf"
+		for i in xrange( len(eigs) ):
+			eigs[i].write_image( eigfile, i )
+
+
 
 def var_mpi(files, outdir, fl, fh, radccc, writelp, writestack, method="inc", pca=False, pcamask=None, pcanvec=None):
 	from statistics import inc_variancer, def_variancer, ccc, pcanalyzer
@@ -11259,7 +11283,6 @@ def var_mpi(files, outdir, fl, fh, radccc, writelp, writestack, method="inc", pc
 	iprint = 0
 	iadded = 0
 
-
 	niter = nimage/(2*ncpu)*2
 	nimage = niter * ncpu
 	for i in xrange(myid, nimage, ncpu):
@@ -11274,9 +11297,9 @@ def var_mpi(files, outdir, fl, fh, radccc, writelp, writestack, method="inc", pc
 			img.write_image(lpstack, iwrite)
 			iwrite += 1
 
-		if i%2==0: 
+		if i%2==0:
 			odd_varer.insert(img)
-		else: 
+		else:
 			eve_varer.insert(img)
 
 		all_varer.insert(img)
@@ -11313,19 +11336,19 @@ def var_mpi(files, outdir, fl, fh, radccc, writelp, writestack, method="inc", pc
 					odd_var.write_image( varfileO, 0 )
 
 
-			if pca and iadded==niter:
-				from utilities import bcast_EMData_to_all
-				assert not(all_avg is None)
+	if pca:
+		from utilities import bcast_EMData_to_all
+		assert not(all_avg is None)
 
-				bcast_EMData_to_all( all_avg, myid )
-				
-				pcaer.setavg( all_avg )
+		bcast_EMData_to_all( all_avg, myid )
+		
+		pcaer.setavg( all_avg )
 
-				eigs = pcaer.analyze()
-				if myid==0:
-					eigfile = outdir + "/eigvol.hdf"
-					for i in xrange( len(eigs) ):
-						eigs[i].write_image( eigfile, i )
+		eigs = pcaer.analyze()
+		if myid==0:
+			eigfile = outdir + "/eigvol.hdf"
+			for i in xrange( len(eigs) ):
+				eigs[i].write_image( eigfile, i )
 
 
 def incvar_mpi(files, outdir, fl, fh, radccc, writelp, writestack):

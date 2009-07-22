@@ -1,23 +1,24 @@
 #!/usr/bin/env python
 import sys
 import os
-from global_def import SPARXVERSION
+import global_def
+from global_def import *
 
 def main():
 	from   optparse       import OptionParser
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " filelist outdir  --fl=flit_low_value --aa=filt_fall_off --radccc=radius_ccc --writelp --writestack --MPI"
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--fl",        type="float",  default=0.0,    help="cut-off frequency of hyperbolic tangent low-pass Fourier filter")
-	parser.add_option("--aa",        type="float",  default=0.0,    help="fall-off of hyperbolic tangent low-pass Fourier filter")
-	parser.add_option("--radccc",    type="int",    default=-1,     help="radius for ccc caclualtion")
-	parser.add_option("--writelp",   action="store_true", default=False, help="write the low pass filtered volume to disk (default is False)" )
-	parser.add_option("--writestack", action="store_true", default=False, help="write the stack contain all variance map" )
-	parser.add_option("--MPI", action="store_true", default=False, help="use MPI version" )
-	parser.add_option("--pca", action="store_true", default=False, help="run pca" )
-	parser.add_option("--pcamask", type="string", help="mask for pca" )
-	parser.add_option("--pcanvec", type="int", help="number of eigvectors for pca")
-	parser.add_option("--method", type="string", default="inc", help="calculation method: def: calculate from definition, inc: use incremental. default is inc")
+	parser.add_option("--fl",         type="float",  default=0.0,    help="cut-off frequency of hyperbolic tangent low-pass Fourier filter")
+	parser.add_option("--aa",         type="float",  default=0.0,    help="fall-off of hyperbolic tangent low-pass Fourier filter")
+	parser.add_option("--radccc",     type="int",    default=-1,     help="radius for ccc calculation")
+	parser.add_option("--writelp",    action="store_true", default=False, help="write low-pass filtered volumes to disk (default is False)" )
+	parser.add_option("--writestack", action="store_true", default=False, help="write the stack containing all variance maps" )
+	parser.add_option("--MPI",        action="store_true", default=False, help="use MPI version" )
+	parser.add_option("--pca",        action="store_true", default=False, help="run pca" )
+	parser.add_option("--pcamask",    type="string", help="mask for pca" )
+	parser.add_option("--pcanvec",    type="int", help="number of eigvectors computed in PCA")
+	parser.add_option("--method",     type="string", default="inc", help="calculation method: def: calculate from definition, inc: use incremental. default is inc")
 	(options, args) = parser.parse_args(sys.argv[1:])
 
 	if len(args)<2 :
@@ -40,10 +41,14 @@ def main():
 			init_mpi_bdb()
 
 
+			global_def.BATCH = True
 			var_mpi( files, outdir, options.fl, options.aa, options.radccc, options.writelp, options.writestack, options.method, options.pca, options.pcamask, options.pcanvec)
+			global_def.BATCH = False
 		else:
 			from applications import defvar
-			defvar( files, outdir, options.fl, options.aa, options.radccc, options.writelp, options.writestack)
+			global_def.BATCH = True
+			defvar( files, outdir, options.fl, options.aa, options.radccc, options.writelp, options.writestack, options.pca, options.pcamask, options.pcanvec)
+			global_def.BATCH = False
 
 
 if __name__ == "__main__":
