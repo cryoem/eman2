@@ -1681,6 +1681,7 @@ The basic design of EMAN Processors: <br>\
 	 * Originally added for use by e2tomohunter.py
 	 *@author David Woolford
 	 *@date April 29th 2009
+	 *@ingroup CUDA_ENABLED
 	 *@param value The Fourier amplitude threshold cutoff
 	 */
 	class BinarizeFourierProcessor:public Processor

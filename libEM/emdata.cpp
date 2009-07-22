@@ -1393,14 +1393,24 @@ void EMData::zero_corner_circulant(const int radius)
 
 EMData *EMData::calc_ccf(EMData * with, fp_flag fpflag,bool center)
 {
-
+	ENTERFUNC;
 	if( with == 0 ) {
+		EXITFUNC;
 		return convolution(this,this,fpflag, center);
 	}
 	else if ( with == this ){ // this if statement is not necessary, the correlation function tests to see if with == this
+		EXITFUNC;
 		return correlation(this, this, fpflag,center);
 	}
 	else {
+		
+#ifdef EMAN2_USING_CUDA
+		if (gpu_operation_preferred()) {
+			EXITFUNC;
+			return calc_ccf_cuda(with,false,center);
+		}
+#endif
+		
 		// If the argument EMData pointer is not the same size we automatically resize it
 		bool undoresize = false;
 		int wnx = with->get_xsize(); int wny = with->get_ysize(); int wnz = with->get_zsize();
@@ -1418,6 +1428,7 @@ EMData *EMData::calc_ccf(EMData * with, fp_flag fpflag,bool center)
 			with->clip_inplace(r);
 		}
 
+		EXITFUNC;
 		return cor;
 	}
 }

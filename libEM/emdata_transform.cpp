@@ -154,6 +154,13 @@ EMData *EMData::do_fft() const
 {
 	ENTERFUNC;
 
+#ifdef EMAN2_USING_CUDA
+	if (gpu_operation_preferred()) {
+		EXITFUNC;
+		return do_fft_cuda();
+	}
+#endif
+
 	if ( is_complex() ) {
 		LOGERR("real image expected. Input image is complex image.");
 		throw ImageFormatException("real image expected. Input image is complex image.");
@@ -233,6 +240,13 @@ EMData *EMData::do_fft_inplace()
 EMData *EMData::do_ift()
 {
 	ENTERFUNC;
+
+#ifdef EMAN2_USING_CUDA
+	if (gpu_operation_preferred()) {
+		EXITFUNC;
+		return do_ift_cuda();
+	}
+#endif
 
 	if (!is_complex()) {
 		LOGERR("complex image expected. Input image is real image.");
@@ -867,12 +881,48 @@ void EMData::render_amp24( int x0, int y0, int ixsize, int iysize,
 	EXITFUNC;
 }
 
+void EMData::ap2ri()
+{
+	ENTERFUNC;
+
+	if (!is_complex() || is_ri()) {
+		return;
+	}
+
+#ifdef EMAN2_USING_CUDA
+	if (gpu_operation_preferred()) {
+		EMDataForCuda tmp = get_data_struct_for_cuda();
+		emdata_ap2ri(&tmp);
+		set_ri(true);
+		gpu_update();
+		EXITFUNC;
+		return;
+	}
+#endif
+
+	Util::ap2ri(get_data(), nx * ny * nz);
+	set_ri(true);
+	update();
+	EXITFUNC;
+}
+
 void EMData::ri2inten()
 {
 	ENTERFUNC;
 
 	if (!is_complex()) return;
 	if (!is_ri()) ap2ri();
+
+#ifdef EMAN2_USING_CUDA
+	if (gpu_operation_preferred()) {
+		EMDataForCuda tmp = get_data_struct_for_cuda();
+		emdata_ri2inten(&tmp);
+		set_attr("is_intensity", int(1));
+		gpu_update();
+		EXITFUNC;
+		return;
+	}
+#endif
 
 	float * data = get_data();
 	size_t size = nx * ny * nz;
@@ -904,7 +954,7 @@ void EMData::ri2ap()
 		return;
 	}
 #endif
-	
+
 	float * data = get_data();
 
 	size_t size = nx * ny * nz;
@@ -1640,7 +1690,7 @@ EMData*   EMData::bispecRotTransInvDirect(int type)
 			float ValNow  = pow( (RotTransInv[TotalInd] + RotTransInv[TotalIndBar]) / Weight, 1.0f/3.0f )  ;
 #else
 			float ValNow  = cbrt( (RotTransInv[TotalInd] + RotTransInv[TotalIndBar]) / Weight )  ;
-#endif	//_WIN32			
+#endif	//_WIN32
 			RotTransInvF -> set_value_at(jk,jq,ValNow);//  include /Weight
  			RotTransInvF -> set_value_at(jq,jk,ValNow );//  include /Weight
 		}}
@@ -1650,20 +1700,6 @@ EMData*   EMData::bispecRotTransInvDirect(int type)
 
 		return  RotTransInvF ;
 	}
-}
-
-void EMData::ap2ri()
-{
-	ENTERFUNC;
-
-	if (!is_complex() || is_ri()) {
-		return;
-	}
-
-	Util::ap2ri(get_data(), nx * ny * nz);
-	set_ri(true);
-	update();
-	EXITFUNC;
 }
 
 

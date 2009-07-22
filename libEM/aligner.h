@@ -190,6 +190,7 @@ namespace EMAN
 
 	/** rotational alignment using angular correlation
 	 * @param rfp_mode Either 0,1 or 2. A temporary flag for testing the rotational foot print. O is the original eman1 way. 1 is just using calc_ccf without padding. 2 is using calc_mutual_correlation without padding
+	 * @ingroup CUDA_ENABLED
      */
 	class RotationalAligner:public Aligner
 	{
@@ -266,6 +267,7 @@ namespace EMAN
 	 * @param maxshift Maximum translation in pixels
 	 * @param nozero Zero translation not permitted (useful for CCD images)
 	 * @param rfp_mode Either 0,1 or 2. A temporary flag for testing the rotational foot print
+	 * @ingroup CUDA_ENABLED
      */
 	class RotateTranslateAligner:public Aligner
 	{
@@ -348,6 +350,7 @@ namespace EMAN
 	/** rotational and flip alignment
 	 * @param imask
 	 * @param rfp_mode Either 0,1 or 2. A temporary flag for testing the rotational foot print
+	 * @ingroup CUDA_ENABLED
      */
 	class RotateFlipAligner:public Aligner
 	{
@@ -393,6 +396,7 @@ namespace EMAN
 	 * @param usedot
 	 * @param maxshift Maximum translation in pixels
 	 * @param rfp_mode Either 0,1 or 2. A temporary flag for testing the rotational foot print
+	 * @ingroup CUDA_ENABLED
      */
 	class RotateTranslateFlipAligner:public Aligner
 	{

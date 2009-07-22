@@ -461,6 +461,7 @@ namespace EMAN
 		 * specific flags.
 		 * @param center whether or not to center the image (bring bottom left corner to center)
 		 * @return Real-space image.
+		 * @ingroup CUDA_ENABLED
 		 */
 		EMData *calc_ccf(EMData * with, fp_flag fpflag = CIRCULANT, bool center=false);
 

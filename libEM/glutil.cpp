@@ -183,10 +183,10 @@ void GLUtil::colored_rectangle(const vector<float>& data,const float& alpha,cons
 
 	glBegin(GL_LINE_LOOP);
 	glColor4f(data[0],data[1],data[2],alpha);
-	glVertex2f(data[3],data[4]);
-	glVertex2f(data[5],data[4]);
-	glVertex2f(data[5],data[6]);
-	glVertex2f(data[3],data[6]);
+	glVertex2i(data[3],data[4]);
+	glVertex2i(data[5],data[4]);
+	glVertex2i(data[5],data[6]);
+	glVertex2i(data[3],data[6]);
 	glEnd();
 
 	if (center_point) {

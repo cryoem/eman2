@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
 			gpu=1;
 		}
 #endif
-    } 
+    }
     if (argc > 2) {
     	// assume it's the boxsize
     	stringstream ss;

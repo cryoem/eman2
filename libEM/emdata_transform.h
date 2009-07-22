@@ -5,40 +5,40 @@
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
 
 /** This file is a part of "emdata.h", to use functions in this file,
  * you should "#include "emdata.h",
- * NEVER directly include this file. */ 
+ * NEVER directly include this file. */
 
 #ifndef emdata__transform_h__
-#define emdata__transform_h__ 
+#define emdata__transform_h__
 
 public:
 
@@ -46,6 +46,7 @@ public:
  * image. the current image is not changed. The result is in
  * real/imaginary format.
  * @return The FFT of the current image in real/imaginary format.
+ * @ingroup CUDA_ENABLED
  */
 EMData *do_fft() const;
 
@@ -81,6 +82,7 @@ EMData* do_fft_inplace();
  *
  * @exception ImageFormatException If the image is not a complex image.
  * @return The current image's inverse fourier transform image.
+ * @ingroup CUDA_ENABLED
  */
 EMData *do_ift();
 
@@ -149,26 +151,32 @@ std::string render_ap24(int x, int y, int xsize, int ysize,
  * @param ref
  * @param cmap
  * @exception ImageDimensionException If the image is not 2D.
- */		 
+ */
 void render_amp24(int x, int y, int xsize, int ysize,
 				  int bpl, float scale, int min_gray, int max_gray,
 				  float min_render, float max_render,
 				  void *ref, void cmap(void *, int coord, unsigned char *tri));
 
 
-/** convert the complex image from real/imaginary to amplitude/phase */
+/** convert the complex image from real/imaginary to amplitude/phase
+ * @ingroup CUDA_ENABLED
+*/
 void ri2ap();
 
-/** convert the complex image from amplitude/phase to real/imaginary */
+/** convert the complex image from amplitude/phase to real/imaginary
+ * @ingroup CUDA_ENABLED
+ * */
 void ap2ri();
 
 /** convert the complex image from real/imaginary to Intensity/0.
-This conversion cannot be reversed, and the image remains marked as R/I */
+This conversion cannot be reversed, and the image remains marked as R/I
+ * @ingroup CUDA_ENABLED
+*/
 void ri2inten();
 
 /**   This computes the rotational and translational bispectral
         invariants of an image. The invariants are labelled by the Fourier
-    Harmonic label given by N. 
+    Harmonic label given by N.
      fVec is the real input image
       NK is the number of Fourier components one wishes to use in calculating this bispectrum
    the output is a single 2D image whose x,y labels are lengths, corresponding to the two lengths of sides of
@@ -178,9 +186,9 @@ EMData*   bispecRotTransInvN(int N, int NK);
 
 
 /**   This computes the rotational and translational bispectral
-        invariants of an image. 
+        invariants of an image.
    the output is a single 3d Volume whose x,y labels are lengths, corresponding to the two lengths of sides of
-         a triangle 
+         a triangle
          the z label is for the angle  */
 EMData*  bispecRotTransInvDirect(int type=0);
 
@@ -189,6 +197,7 @@ EMData*  bispecRotTransInvDirect(int type=0);
  * Very robust clip insertion code works in all way you might think possible
  * @param block An image block.
  * @param origin The origin location to insert the clip.
+ * @ingroup CUDA_ENABLED (but slow)
  */
 void insert_clip(const EMData * const block, const IntPoint & origin);
 
@@ -208,7 +217,7 @@ void insert_clip(const EMData * const block, const IntPoint & origin);
 
 void insert_scaled_sum(EMData *block, const FloatPoint & center,
 					   float scale=1.0, float mult_factor=1.0);
-					   
+
 
 
 #endif	//emdata__transform_h__

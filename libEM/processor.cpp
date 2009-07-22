@@ -3434,13 +3434,24 @@ void NormalizeToLeastSquareProcessor::process_inplace(EMData * image)
 
 
 void BinarizeFourierProcessor::process_inplace(EMData* image) {
-
+	ENTERFUNC;
 	if (!image->is_complex()) throw ImageFormatException("Fourier binary thresholding processor only works for complex images");
 
 	float threshold = params.set_default("value",-1.0f);
 	if (threshold < 0) throw InvalidParameterException("For fourier amplitude-based thresholding, the threshold must be greater than or equal to 0.");
 
-	image->ri2ap(); //
+	image->ri2ap(); //  works for cuda
+
+#ifdef EMAN2_USING_CUDA
+	if (image->gpu_operation_preferred()) {
+		EMDataForCuda tmp = image->get_data_struct_for_cuda();
+		binarize_fourier_amp_processor(&tmp,threshold);
+		image->set_ri(true); // So it can be used for fourier multiplaction, for example
+		image->gpu_update();
+		EXITFUNC;
+		return;
+	}
+#endif
 
 	float* d = image->get_data();
 	for( size_t i = 0; i < image->get_size()/2; ++i, d+=2) {
@@ -3457,6 +3468,7 @@ void BinarizeFourierProcessor::process_inplace(EMData* image) {
 	// No need to run ap2ri, because 1+0i is the same in either notation
 	image->set_ri(true); // So it can be used for fourier multiplaction, for example
 	image->update();
+	EXITFUNC;
 }
 
 
@@ -8201,10 +8213,9 @@ void Rotate180Processor::process_inplace(EMData* image) {
 
 #ifdef EMAN2_USING_CUDA
 	if (image->gpu_operation_preferred() ) {
-		Transform t(Dict("type","2d","alpha",180));
-// 		cout << "rotate 180 cuda" << endl;
-		Dict params("transform",(Transform*)&t);
-		image->process_inplace("math.transform",params);
+		EMDataForCuda tmp = image->get_data_struct_for_cuda();
+		emdata_rotate_180(&tmp);
+		image->gpu_update();
 		EXITFUNC;
 		return;
 	}

@@ -168,7 +168,7 @@ def get_ali_data(filename,probe,aliset):
 	
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog <probe> <image to be aligned> [options]"""
+	usage = """%prog <images to be aligned> [options]"""
 	
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
@@ -179,7 +179,7 @@ def main():
 	parser.add_option("--rphi",type="float",help="Phi range", default=180.0)
 	parser.add_option("--raz",type="float",help="Azimuth range", default=360.0)
 	parser.add_option("--daz",type="float",help="Azimuth delta", default=10.0)
-	parser.add_option("--thresh",type="float",help="Threshold", default=1.0)
+	parser.add_option("--thresh",type="float",help="Threshold", default=0.0)
 	parser.add_option("--nsoln",type="int",help="The number of solutions to report", default=10)
 	parser.add_option("--searchx",type="int",help="The maximum search distance, x direction", default=5)
 	parser.add_option("--searchy",type="int",help="The maximum search distance, y direction", default=5)
@@ -247,6 +247,12 @@ def main():
 		probeMRC=EMData(options.probe,0)
 		print_info(targetMRC,"Probe Information")
 		
+		if using_cuda(options):
+			targetMRC.set_gpu_rw_current()
+			targetMRC.cuda_lock() # locking it prevents if from being overwritten
+			probeMRC.set_gpu_rw_current()
+			probeMRC.cuda_lock()
+		
 		bestCCF= EMData(options.nsoln,1,1)
 		bestCCF.to_zero()
 	
@@ -277,7 +283,7 @@ def main():
 				maxnum=0
 				while phirot <= -azrot+rarad:
 					t = Transform({"type":"eman","az":azrot,"phi":phirot,"alt":altrot})
-					dMRC= probeMRC.process("math.transform",{"transform":t}) # more efficient than copying than transforming
+					dMRC= probeMRC.process("math.transform",{"transform":t}) # more efficient than copying followed by a transform
 					currentCCF=tomoccf(targetMRC,dMRC)
 					scalar=ccfFFT(currentCCF,options.thresh,box)
 					if scalar>maxnum:
@@ -297,7 +303,7 @@ def main():
 					#print "Trying rotation %f %f"%(altrot, azrot)
 					while phirot <= -azrot+rarad:
 						t = Transform({"type":"eman","az":azrot,"phi":phirot,"alt":altrot})
-						dMRC= probeMRC.process("math.transform",{"transform":t}) # more efficient than copying than
+						dMRC= probeMRC.process("math.transform",{"transform":t}) # more efficient than copying followed by a transform
 						currentCCF=tomoccf(targetMRC,dMRC)
 						scalar=ccfFFT(currentCCF,options.thresh,box)
 						if scalar>maxnum:
@@ -311,6 +317,9 @@ def main():
 					prog += 1.0
 					E2progress(logid,prog/total_prog)
 		
+		if using_cuda(options):
+			targetMRC.cuda_unlock()
+			probeMRC.cuda_unlock()
 		
 		print minnum,maxnum, float(maxnum)/float(minnum)
 	
@@ -354,6 +363,9 @@ def main():
 	
 	E2end(logid)
 	
+def using_cuda(options):
+	return EMUtil.cuda_available() and options.cuda
+	
 def print_info(image,first_line="Information"):
 	
 	print first_line
@@ -379,7 +391,7 @@ def updateCCF(bestCCF,bestALT,bestAZ,bestPHI,bestX,bestY,bestZ,altrot,azrot,phir
 	xbest = best[0]
 	ybest = best[1]
 	zbest = best[2]
-	bestValue = currentValue = currentCCF.get(xbest,ybest,zbest)/scalar
+	bestValue = currentCCF.get_value_at_wrap(xbest,ybest,zbest)/scalar
 	inlist=0
 	while inlist < n:
 		if  bestValue > bestCCF.get(inlist):
