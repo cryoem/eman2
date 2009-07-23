@@ -347,11 +347,7 @@ class OrientationListAnimation(Animatable):
 		self.rot_vec = None
 		self.__establish_sphere_points(self.stage)
 		self.arc_points[0].append(self.radius*self.start_point)
-		
-		
-		
-		
-	
+
 	def __establish_sphere_points(self,stage):
 		self.start_point = self.transforms[stage].transpose()*self.z_point
 		self.end_point = self.transforms[stage+1].transpose()*self.z_point

@@ -599,7 +599,7 @@ namespace EMAN
 
 			virtual string get_name() const
 			{
-				return "refine3d";
+				return "refine.3d";
 			}
 
 			virtual string get_desc() const
@@ -655,7 +655,7 @@ namespace EMAN
 			
 			virtual string get_name() const
 			{
-				return "rt_3d_grid";
+				return "rt.3d.grid";
 			}
 
 			virtual string get_desc() const
@@ -712,7 +712,7 @@ namespace EMAN
 			
 			virtual string get_name() const
 			{
-				return "rt_3d_sphere";
+				return "rt.3d.sphere";
 			}
 
 			virtual string get_desc() const

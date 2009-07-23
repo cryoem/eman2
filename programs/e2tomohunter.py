@@ -77,15 +77,27 @@ def check_options(options,filenames):
 		error_messages.append("Error - nsoln must be greater than 0. Suggest using 10")
 	
 	
-	atleast_0 = ["ralt","rphi","raz","searchx","searchy","searchz"]
-	for attr in atleast_0:
-		if getattr(options,attr) < 0:
-			error_messages.append("Error - %s must be greater than  or equal to 0" %attr)
+	if options.align == None:
+		error_messages.append("Error - you have to supply the align option")
+	else:
+		error = check_eman2_type_string(options.align,Aligners,"Aligners")
+		if error != None:
+			error_messages.append(error)
 			
-	greater_than_0 = ["dalt","dphi","daz"]
-	for attr in greater_than_0:
-		if getattr(options,attr) <= 0:
-			error_messages.append("Error - %s must be greater than 0" %attr)
+	if options.ralign != None:
+		error = check_eman2_type_string(options.ralign,Aligners,"Aligners")
+		if error != None:
+			error_messages.append(error)
+	
+	#atleast_0 = ["ralt","rphi","raz","searchx","searchy","searchz"]
+	#for attr in atleast_0:
+		#if getattr(options,attr) < 0:
+			#error_messages.append("Error - %s must be greater than  or equal to 0" %attr)
+			
+	#greater_than_0 = ["dalt","dphi","daz"]
+	#for attr in greater_than_0:
+		#if getattr(options,attr) <= 0:
+			#error_messages.append("Error - %s must be greater than 0" %attr)
 	
 	return error_messages
 
@@ -173,21 +185,25 @@ def main():
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
 	parser.add_option("--probe",type="string",help="The probe. This is the model that the input images will be aligned to", default=None)
-	parser.add_option("--dalt",type="float",help="Altitude delta", default=10.0)
-	parser.add_option("--ralt",type="float",help="Altitude range", default=180.0)
-	parser.add_option("--dphi",type="float",help="Phi delta", default=10.0)
-	parser.add_option("--rphi",type="float",help="Phi range", default=180.0)
-	parser.add_option("--raz",type="float",help="Azimuth range", default=360.0)
-	parser.add_option("--daz",type="float",help="Azimuth delta", default=10.0)
+	#parser.add_option("--dalt",type="float",help="Altitude delta", default=10.0)
+	#parser.add_option("--ralt",type="float",help="Altitude range", default=180.0)
+	#parser.add_option("--dphi",type="float",help="Phi delta", default=10.0)
+	#parser.add_option("--rphi",type="float",help="Phi range", default=180.0)
+	#parser.add_option("--raz",type="float",help="Azimuth range", default=360.0)
+	#parser.add_option("--daz",type="float",help="Azimuth delta", default=10.0)
 	parser.add_option("--thresh",type="float",help="Threshold", default=0.0)
 	parser.add_option("--nsoln",type="int",help="The number of solutions to report", default=10)
-	parser.add_option("--searchx",type="int",help="The maximum search distance, x direction", default=5)
-	parser.add_option("--searchy",type="int",help="The maximum search distance, y direction", default=5)
-	parser.add_option("--searchz",type="int",help="The maximum search distance, z direction", default=5)
+	#parser.add_option("--nsoln",type="int",help="The number of solutions to report", default=10)
+	#parser.add_option("--searchx",type="int",help="The maximum search distance, x direction", default=5)
+	#parser.add_option("--searchy",type="int",help="The maximum search distance, y direction", default=5)
+	#parser.add_option("--searchz",type="int",help="The maximum search distance, z direction", default=5)
 	parser.add_option("--n",type="int",help="0 or 1, multiplication by the reciprocal of the boxsize", default=1)
 	parser.add_option("--dbls",type="string",help="data base list storage, used by the workflow. You can ignore this argument.",default=None)
 	parser.add_option("--aliset",type="string",help="Supplied with avgout. Used to choose different alignment parameters from the local database. Used by workflow.", default=None)
 	parser.add_option("--avgout",type="string",help="If specified will produce an averaged output, only works if you've previously run alignments", default=None)
+	parser.add_option("--align",type="string",help="The aligner and its parameters. e.g. --align=rot_3d_grid:ralt=180:dalt=10:dphi=10:rphi=180:search=5", default=None)
+	parser.add_option("--ralign",type="string",help="This is the second stage aligner used to refine the first alignment. This is usually the \'refine\' aligner.", default=None)
+	
 	if EMUtil.cuda_available():
 		parser.add_option("--cuda",action="store_true",help="GPU acceleration using CUDA. Tantalizing glimpse into the future", default=False)
    
@@ -207,36 +223,43 @@ def main():
 		gen_average(options,args,logid)
 		exit(0)
 	
-	ral,dal = options.ralt,options.dalt
-	rap,dap = options.rphi, options.dphi
-	daz = options.daz
+	#ral,dal = options.ralt,options.dalt
+	#rap,dap = options.rphi, options.dphi
+	#daz = options.daz
 
-	altarray=[]
-	alt=0
-	while alt <= ral:
-		altarray.append(alt)
-		alt=alt+dal
+	#altarray=[]
+	#alt=0
+	#while alt <= ral:
+		#altarray.append(alt)
+		#alt=alt+dal
 	
-	azarray=[]
-	az=-180
-	while az < 180:
-		azarray.append(az)
-		az=az+daz
+	#azarray=[]
+	#az=-180
+	#while az < 180:
+		#azarray.append(az)
+		#az=az+daz
 
-	rarad=rap
-	darad=dap
-	maxfrac=0
+	#rarad=rap
+	#darad=dap
+	#maxfrac=0
 	
-	nx,ny,nz = gimme_image_dimensions3D(args[0])
-	box=nx
-	if options.n:
-		norm = 1.0/(box*box*box)
-	else:
-		norm = 1.0
+	#nx,ny,nz = gimme_image_dimensions3D(args[0])
+	#box=nx
+	#if options.n:
+		#norm = 1.0/(box*box*box)
+	#else:
+		#norm = 1.0
 		
-	prog = 0
-	total_prog = (len(altarray)-1)*len(azarray)*len(args)+len(args)
+	#prog = 0
+	#total_prog = (len(altarray)-1)*len(azarray)*len(args)+len(args)
 	E2progress(logid,0.0)
+	
+	ali = parsemodopt(options.align)
+	rali = None
+	if options.ralign != None:
+		rali = parsemodopt(options.ralign)
+	
+	ali[1]["threshold"] = options.thresh # this one is used universally
 	
 	for arg in args:
 		
@@ -252,76 +275,81 @@ def main():
 			targetMRC.cuda_lock() # locking it prevents if from being overwritten
 			probeMRC.set_gpu_rw_current()
 			probeMRC.cuda_lock()
+			
 		
-		bestCCF= EMData(options.nsoln,1,1)
-		bestCCF.to_zero()
-	
-		bestAZ=EMData(options.nsoln,1,1)
-		bestAZ.to_zero()
-	
-		bestALT= EMData(options.nsoln,1,1)
-		bestALT.to_zero()
-	
-		bestPHI=EMData(options.nsoln,1,1)
-		bestPHI.to_zero()
+		solns = probeMRC.xform_align_nbest(ali[0],targetMRC,ali[1],options.nsoln)
 		
-		bestX=EMData(options.nsoln,1,1)
-		bestX.to_zero()
+		print solns
 		
-		bestY=EMData(options.nsoln,1,1)
-		bestY.to_zero()
-		
-		bestZ=EMData(options.nsoln,1,1)
-		bestZ.to_zero()
+		#bestCCF= EMData(options.nsoln,1,1)
+		#bestCCF.to_zero()
 	
-		for altrot in altarray:
-			print "Trying rotation %f"%(altrot)
-			if (altrot==0.):
-				azrot=0.
-				phirot=-azrot-rarad
-				minnum=10000000
-				maxnum=0
-				while phirot <= -azrot+rarad:
-					t = Transform({"type":"eman","az":azrot,"phi":phirot,"alt":altrot})
-					dMRC= probeMRC.process("math.transform",{"transform":t}) # more efficient than copying followed by a transform
-					currentCCF=tomoccf(targetMRC,dMRC)
-					scalar=ccfFFT(currentCCF,options.thresh,box)
-					if scalar>maxnum:
-						maxnum=int(scalar)
-					if scalar<minnum:
-						minnum=int(scalar)
-					scalar=scalar/(box*box*box/2.)
-					bestCCF=updateCCF(bestCCF,bestALT,bestAZ,bestPHI,bestX,bestY,bestZ,altrot,azrot,phirot,currentCCF,scalar,options.nsoln,options.searchx,options.searchy,options.searchz)
-					phirot=phirot+darad
+		#bestAZ=EMData(options.nsoln,1,1)
+		#bestAZ.to_zero()
+	
+		#bestALT= EMData(options.nsoln,1,1)
+		#bestALT.to_zero()
+	
+		#bestPHI=EMData(options.nsoln,1,1)
+		#bestPHI.to_zero()
+		
+		#bestX=EMData(options.nsoln,1,1)
+		#bestX.to_zero()
+		
+		#bestY=EMData(options.nsoln,1,1)
+		#bestY.to_zero()
+		
+		#bestZ=EMData(options.nsoln,1,1)
+		#bestZ.to_zero()
+	
+		#for altrot in altarray:
+			#print "Trying rotation %f"%(altrot)
+			#if (altrot==0.):
+				#azrot=0.
+				#phirot=-azrot-rarad
+				#minnum=10000000
+				#maxnum=0
+				#while phirot <= -azrot+rarad:
+					#t = Transform({"type":"eman","az":azrot,"phi":phirot,"alt":altrot})
+					#dMRC= probeMRC.process("math.transform",{"transform":t}) # more efficient than copying followed by a transform
+					#currentCCF=tomoccf(targetMRC,dMRC)
+					#scalar=ccfFFT(currentCCF,options.thresh,box)
+					#if scalar>maxnum:
+						#maxnum=int(scalar)
+					#if scalar<minnum:
+						#minnum=int(scalar)
+					#scalar=scalar/(box*box*box/2.)
+					#bestCCF=updateCCF(bestCCF,bestALT,bestAZ,bestPHI,bestX,bestY,bestZ,altrot,azrot,phirot,currentCCF,scalar,options.nsoln,options.searchx,options.searchy,options.searchz)
+					#phirot=phirot+darad
 				
-				prog += 1.0
-				E2progress(logid,prog/total_prog)
+				#prog += 1.0
+				#E2progress(logid,prog/total_prog)
 		
-			else:
-				for azrot in azarray:
-					phirot=-azrot-rarad
-					#print "Trying rotation %f %f"%(altrot, azrot)
-					while phirot <= -azrot+rarad:
-						t = Transform({"type":"eman","az":azrot,"phi":phirot,"alt":altrot})
-						dMRC= probeMRC.process("math.transform",{"transform":t}) # more efficient than copying followed by a transform
-						currentCCF=tomoccf(targetMRC,dMRC)
-						scalar=ccfFFT(currentCCF,options.thresh,box)
-						if scalar>maxnum:
-							maxnum=int(scalar)
-						if scalar<minnum:
-							minnum=int(scalar)
-						scalar=scalar/(box*box*box/2.)
-						bestCCF=updateCCF(bestCCF,bestALT,bestAZ,bestPHI,bestX,bestY,bestZ,altrot,azrot,phirot,currentCCF,scalar,options.nsoln,options.searchx,options.searchy,options.searchz)
-						phirot=phirot+darad
+			#else:
+				#for azrot in azarray:
+					#phirot=-azrot-rarad
+					##print "Trying rotation %f %f"%(altrot, azrot)
+					#while phirot <= -azrot+rarad:
+						#t = Transform({"type":"eman","az":azrot,"phi":phirot,"alt":altrot})
+						#dMRC= probeMRC.process("math.transform",{"transform":t}) # more efficient than copying followed by a transform
+						#currentCCF=tomoccf(targetMRC,dMRC)
+						#scalar=ccfFFT(currentCCF,options.thresh,box)
+						#if scalar>maxnum:
+							#maxnum=int(scalar)
+						#if scalar<minnum:
+							#minnum=int(scalar)
+						#scalar=scalar/(box*box*box/2.)
+						#bestCCF=updateCCF(bestCCF,bestALT,bestAZ,bestPHI,bestX,bestY,bestZ,altrot,azrot,phirot,currentCCF,scalar,options.nsoln,options.searchx,options.searchy,options.searchz)
+						#phirot=phirot+darad
 					
-					prog += 1.0
-					E2progress(logid,prog/total_prog)
+					#prog += 1.0
+					#E2progress(logid,prog/total_prog)
 		
 		if using_cuda(options):
 			targetMRC.cuda_unlock()
 			probeMRC.cuda_unlock()
 		
-		print minnum,maxnum, float(maxnum)/float(minnum)
+		#print minnum,maxnum, float(maxnum)/float(minnum)
 	
 		out=file("log-s3-%s_%s.txt"%(get_file_tag(arg),get_file_tag(options.probe)),"w")
 		peak=0
@@ -334,13 +362,14 @@ def main():
 			if db == None: db = {}
 			results = []
 	
-	
-		while peak < 10:
-			ALT=bestALT.get(peak)
-			AZ=bestAZ.get(peak)
-			PHI=bestPHI.get(peak)
-			COEFF=str(bestCCF.get(peak))
-			LOC=str( ( (bestX.get(peak)),(bestY.get(peak)),(bestZ.get(peak) ) ) )
+		for d in solns:
+			t = d["xform.align3d"]
+			params = t.get_params("eman")
+			ALT=params["alt"]
+			AZ=params["az"]
+			PHI=params["phi"]
+			COEFF=str(d["score"])
+			LOC=str( ( (params["tx"]),(params["tx"]),(params["tx"] ) ) )
 			line="Peak %d rot=( %f, %f, %f ) trans= %s coeff= %s\n"%(peak,ALT,AZ,PHI,LOC,COEFF)
 			out.write(line)
 			peak=peak+1
@@ -349,6 +378,21 @@ def main():
 				t = Transform({"type":"eman","alt":ALT,"phi":PHI,"az":AZ})
 				t.set_trans(bestX.get(peak),bestY.get(peak),bestZ.get(peak))
 				results.append(t)
+	
+		#while peak < 10:
+			#ALT=bestALT.get(peak)
+			#AZ=bestAZ.get(peak)
+			#PHI=bestPHI.get(peak)
+			#COEFF=str(bestCCF.get(peak))
+			#LOC=str( ( (bestX.get(peak)),(bestY.get(peak)),(bestZ.get(peak) ) ) )
+			#line="Peak %d rot=( %f, %f, %f ) trans= %s coeff= %s\n"%(peak,ALT,AZ,PHI,LOC,COEFF)
+			#out.write(line)
+			#peak=peak+1
+			
+			#if options.dbls:
+				#t = Transform({"type":"eman","alt":ALT,"phi":PHI,"az":AZ})
+				#t.set_trans(bestX.get(peak),bestY.get(peak),bestZ.get(peak))
+				#results.append(t)
 				
 		if options.dbls:
 			if db.has_key(arg):d = db[arg]

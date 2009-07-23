@@ -1087,7 +1087,68 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 	return result;
 }
 
+static double refalifn3d(const gsl_vector * v, void *params)
+{
+	Dict *dict = (Dict *) params;
+	double x = gsl_vector_get(v, 0);
+	double y = gsl_vector_get(v, 1);
+	double z = gsl_vector_get(v, 2);
+	double az = gsl_vector_get(v, 3);
+ 	double alt = gsl_vector_get(v, 4);
+ 	double phi = gsl_vector_get(v, 5);
+	EMData *this_img = (*dict)["this"];
+	EMData *with = (*dict)["with"];
+	bool mirror = (*dict)["mirror"];
 
+	Transform* t = (*dict)["transform"];
+
+	Dict orig_params = t->get_params("eman");
+
+	Vec3f zz(0,0,1);
+
+	Vec3f vv  = (*t).transpose()*zz;
+	Vec3f normal = Vec3f(-vv[2],0,-vv[0]);
+	normal.normalize();
+	delete t; t = 0;
+
+	Dict d;
+	d["type"] = "spin";
+	d["Omega"] = alt;
+	d["n1"] = normal[0];
+	d["n2"] = normal[1];
+	d["n3"] = normal[2];
+
+	Transform normal_rot(d);
+	
+	Vec3f  start_point = normal_rot*vv;
+	
+	Dict e;
+	e["type"] = "spin";
+	e["Omega"] = az;
+	e["n1"] = vv[0];
+	e["n2"] = vv[1];
+	e["n3"] = vv[2];
+	
+	Transform perturb(e);
+	Vec3f end_point = perturb*start_point;
+	
+	Transform soln;
+	soln.set_rotation(end_point);
+	Dict new_params = soln.get_params("eman");
+	new_params["phi"] = phi+(float)orig_params["phi"];
+	soln.set_params(new_params);
+	perturb.set_trans((float)x,(float)y,(float)z);
+	perturb.set_mirror(mirror);
+	EMData *tmp = this_img->process("math.transform",Dict("transform",&perturb));
+
+	Cmp* c = (Cmp*) ((void*)(*dict)["cmp"]);
+	double result = c->cmp(tmp,with);
+	if ( tmp != 0 ) delete tmp;
+
+	return result;
+}
+
+/*
 static double refalifn3d(const gsl_vector * v, void *params)
 {
 	Dict *dict = (Dict *) params;
@@ -1115,7 +1176,7 @@ static double refalifn3d(const gsl_vector * v, void *params)
 	if ( tmp != 0 ) delete tmp;
 
 	return result;
-}
+}*/
 
 EMData* Refine3DAligner::align(EMData * this_img, EMData *to,
 	const string & cmp_name, const Dict& cmp_params) const
@@ -1148,13 +1209,14 @@ EMData* Refine3DAligner::align(EMData * this_img, EMData *to,
 	}else {
 		t = new Transform(); // is the identity	
 	}
-
+// 	t->printme();
 	int np = 6;
 	Dict gsl_params;
 	gsl_params["this"] = this_img;
 	gsl_params["with"] = to;
 	gsl_params["snr"]  = params["snr"];
 	gsl_params["mirror"] = mirror;
+	gsl_params["transform"] = t;
 
 	const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex;
 	gsl_vector *ss = gsl_vector_alloc(np);
@@ -1163,7 +1225,7 @@ EMData* Refine3DAligner::align(EMData * this_img, EMData *to,
 	float stepy = params.set_default("stepy",1.0f);
 	float stepz = params.set_default("stepz",1.0f);
 	// Default step is 5 degree - note in EMAN1 it was 0.1 radians
-	float stepaz = params.set_default("stepaz",5.0f);
+	float stepaz = params.set_default("stepaz",180.0f);
 	float stepphi = params.set_default("stepalt",5.0f);
 	float stepalt = params.set_default("stepphi",5.0f);
 
@@ -1217,6 +1279,56 @@ EMData* Refine3DAligner::align(EMData * this_img, EMData *to,
 	EMData *result;
 	if ( fmaxshift >= (float)gsl_vector_get(s->x, 0) && fmaxshift >= (float)gsl_vector_get(s->x, 1)  && fmaxshift >= (float)gsl_vector_get(s->x, 2) )
 	{
+		
+// 		Transform* t = (*dict)["transform"];
+// 
+// 		Dict orig_params = t->get_params("eman");
+// 
+// 		Vec3f zz(0,0,1);
+// 
+// 		Vec3f vv  = (*t).transpose()*zz;
+// 		Vec3f normal = Vec3f(-vv[2],0,-vv[0]);
+// 		normal.normalize();
+// 		delete t; t = 0;
+// 
+// 		Dict d;
+// 		d["type"] = "spin";
+// 		d["Omega"] = alt;
+// 		d["n1"] = normal[0];
+// 		d["n2"] = normal[1];
+// 		d["n3"] = normal[2];
+// 
+// 		Transform normal_rot(d);
+// 	
+// 		Vec3f  start_point = normal_rot*vv;
+// 	
+// 		Dict e;
+// 		e["type"] = "spin";
+// 		e["Omega"] = az;
+// 		e["n1"] = vv[0];
+// 		e["n2"] = vv[1];
+// 		e["n3"] = vv[2];
+// 	
+// 		Transform perturb(e);
+// 		Vec3f end_point = perturb*start_point;
+// 	
+// 		Transform soln;
+// 		soln.set_rotation(end_point);
+// 		Dict new_params = soln.get_params("eman");
+// 		new_params["phi"] = phi+(float)orig_params["phi"];
+// 		soln.set_params(new_params);
+// 		perturb.set_trans((float)x,(float)y,(float)z);
+// 		perturb.set_mirror(mirror);
+// 		
+// 		Dict d("type","eman","az",(float)gsl_vector_get(s->x, 3));
+// 		d["alt"] = (float)gsl_vector_get(s->x, 4);
+// 		d["phi"] = (float)gsl_vector_get(s->x, 5);
+// 		Transform tsoln(d);
+// 		tsoln.set_trans((float)gsl_vector_get(s->x, 0),(float)gsl_vector_get(s->x, 1),(float)gsl_vector_get(s->x, 2) );
+// 		tsoln.set_mirror(mirror);
+// 		result = this_img->process("math.transform",Dict("transform",&tsoln));
+// 		result->set_attr("xform.align3d",&tsoln);
+		
 		Dict d("type","eman","az",(float)gsl_vector_get(s->x, 3));
 		d["alt"] = (float)gsl_vector_get(s->x, 4);
 		d["phi"] = (float)gsl_vector_get(s->x, 5);
@@ -1272,16 +1384,16 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 		check.push_back("searchy");
 		check.push_back("searchz");
 		for(vector<string>::const_iterator cit = check.begin(); cit != check.end(); ++cit) {
-			if (params.has_key(*cit)) throw InvalidParameterException("If you supply the search parameter you can supply any of the searchx, searchy, or searchz parameters");
+			if (params.has_key(*cit)) throw InvalidParameterException("The search parameter is mutually exclusive of the searchx, searchy, and searchz parameters");
 		}
 		int search  = params["search"];
 		searchx = search;
 		searchy = search;
 		searchz = search;
 	} else {
-		searchx = params.set_default("searchx",3);;
-		searchy = params.set_default("searchy",3);;
-		searchz = params.set_default("searchz",3);;
+		searchx = params.set_default("searchx",3);
+		searchy = params.set_default("searchy",3);
+		searchz = params.set_default("searchz",3);
 	}
 
 	float ralt = params.set_default("ralt",180.f);
@@ -1291,7 +1403,8 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	float daz = params.set_default("daz",10.f);
 	float dphi = params.set_default("dphi",10.f);
 	float threshold = params.set_default("threshold",0.f);
-	bool verbose = params.set_default("verbose",true);
+	if (threshold < 0.0f) throw InvalidParameterException("The threshold parameter must be greater than or equal to zero");
+	bool verbose = params.set_default("verbose",false);
 	
 	vector<Dict> solns;
 	if (nsoln == 0) return solns; // What was the user thinking?
@@ -1304,9 +1417,6 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	}
 	Dict d;
 	d["type"] = "eman"; // d is used in the loop below
-// 	Transform solution_transform;
-// 	EMData* solution_emdata = 0;
-// 	float global_best = -99999999999.9f;
 	for ( float alt = 0.0f; alt <= ralt; alt += dalt) {
 		// An optimization for the range of az is made at the top of the sphere 
 		// If you think about it, this is just a coarse way of making this approach slightly more efficient
@@ -1334,11 +1444,12 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 				t.set_trans(point[0],point[1],point[2]);
 				if (threshold > 0.0f) {
 					// Now do weighting based on missing wedges
-					ccf->do_fft_inplace();// Be memory efficient (if possible, the fft routine probably makes a copy but in future this could change)
-					ccf->process_inplace("threshold.binary.fourier",Dict("value",threshold));
-					float map_sum =  ccf->get_attr("mean");
+					EMData* ccf_fft = ccf->do_fft(); // so cuda works, or else we could do an fft_inplace - though honestly it probably makes no difference
+					ccf_fft->process_inplace("threshold.binary.fourier",Dict("value",threshold));
+					float map_sum =  ccf_fft->get_attr("mean");
 					if (map_sum == 0.0f) throw UnexpectedBehaviorException("The number of voxels in the Fourier image with an amplitude above your threshold is zero. Please adjust your parameters");
 					best_score /= map_sum;
+					delete ccf_fft; ccf_fft = 0;
 				}
 				unsigned int j = 0;
 				for ( vector<Dict>::iterator it = solns.begin(); it != solns.end(); ++it, ++j ) {
@@ -1396,25 +1507,23 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 		check.push_back("searchy");
 		check.push_back("searchz");
 		for(vector<string>::const_iterator cit = check.begin(); cit != check.end(); ++cit) {
-			if (params.has_key(*cit)) throw InvalidParameterException("If you supply the search parameter you can supply any of the searchx, searchy, or searchz parameters");
+			if (params.has_key(*cit)) throw InvalidParameterException("The search parameter is mutually exclusive of the searchx, searchy, and searchz parameters");
 		}
 		int search  = params["search"];
 		searchx = search;
 		searchy = search;
 		searchz = search;
 	} else {
-		searchx = params.set_default("searchx",3);;
-		searchy = params.set_default("searchy",3);;
-		searchz = params.set_default("searchz",3);;
+		searchx = params.set_default("searchx",3);
+		searchy = params.set_default("searchy",3);
+		searchz = params.set_default("searchz",3);
 	}
 
 	float rphi = params.set_default("rphi",180.f);
 	float dphi = params.set_default("dphi",10.f);
-	float delta = params.set_default("delta",10.f);
-	string sym_string = params.set_default("sym","c1");
-	string orientgen = params.set_default("orientgen","eman");
 	float threshold = params.set_default("threshold",0.f);
-	bool verbose = params.set_default("verbose",true);
+	if (threshold < 0.0f) throw InvalidParameterException("The threshold parameter must be greater than or equal to zero");
+	bool verbose = params.set_default("verbose",false);
 	
 	vector<Dict> solns;
 	if (nsoln == 0) return solns; // What was the user thinking?
@@ -1426,14 +1535,31 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 		solns.push_back(d); 
 	}
 	
-	Symmetry3D* sym = Factory<Symmetry3D>::get(sym_string);
 	Dict d;
-	d["delta"] = delta;
-	d["inc_mirror"] = true; // This should probably always be true for 3D case
-	vector<Transform> transforms = sym->gen_orientations(orientgen,d);
+	d["inc_mirror"] = true; // This should probably always be true for 3D case. If it ever changes we might have to make inc_mirror a parameter
+	if ( params.has_key("delta") && params.has_key("n") ) {
+		throw InvalidParameterException("The delta and n parameters are mutually exclusive in the RT3DSphereAligner aligner");
+	} else if ( params.has_key("n") ) {
+		d["n"] = params["n"];
+	} else {
+		// If they didn't specify either then grab the default delta - if they did supply delta we're still safe doing this
+		d["delta"] = params.set_default("delta",10.f);
+	}
+	
+	Symmetry3D* sym = Factory<Symmetry3D>::get((string)params.set_default("sym","c1"));
+	vector<Transform> transforms = sym->gen_orientations((string)params.set_default("orientgen","eman"),d);
+	
+	float verbose_alt = -1.0f;;
 	for(vector<Transform>::const_iterator trans_it = transforms.begin(); trans_it != transforms.end(); trans_it++) {
 		Dict params = trans_it->get_params("eman");
 		float az = params["az"];
+		if (verbose) {
+			float alt = params["alt"];
+			if ( alt != verbose_alt ) {
+				verbose_alt = alt;
+				cout << "Trying angle " << alt << endl;
+			}
+		}
 		for( float phi = -rphi-az; phi <= rphi-az; phi += dphi ) {
 			params["phi"] = phi;
 			Transform t(params);
@@ -1444,11 +1570,12 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 			t.set_trans(point[0],point[1],point[2]);
 			if (threshold > 0.0f) {
 				// Now do weighting based on missing wedges
-				ccf->do_fft_inplace();// Be memory efficient (if possible, the fft routine probably makes a copy but in future this could change)
-				ccf->process_inplace("threshold.binary.fourier",Dict("value",threshold));
-				float map_sum =  ccf->get_attr("mean");
+				EMData* ccf_fft = ccf->do_fft();// so cuda works, or else we could do an fft_inplace - though honestly it probably makes no difference
+				ccf_fft->process_inplace("threshold.binary.fourier",Dict("value",threshold));
+				float map_sum =  ccf_fft->get_attr("mean");
 				if (map_sum == 0.0f) throw UnexpectedBehaviorException("The number of voxels in the Fourier image with an amplitude above your threshold is zero. Please adjust your parameters");
 				best_score /= map_sum;
+				delete ccf_fft; ccf_fft = 0;
 			}
 			
 			unsigned int j = 0;
@@ -1463,11 +1590,6 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 // 					for(vector<Dict>::iterator it = solns.begin(); it != solns.end(); ++it) {
 // 						Dict& d = (*it);
 // 						cout << (float) d["score"] << " ";
-// 					}
-// 					cout << endl;
-// 					for(vector<Dict>::iterator it = solns.begin(); it != solns.end(); ++it) {
-// 						Dict& d = (*it);
-// 						((Transform*)d["xform.align3d"])->printme();
 // 					}
 // 					cout << endl;
 					break;

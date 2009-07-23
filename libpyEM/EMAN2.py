@@ -1107,12 +1107,14 @@ def name_has_no_tag(file_name):
 	if idx1 >= idx2: return True # -1 == -1 
 	else: return False
 	
-# a function for testing whether a type of Averager, Aligner, Comparitor, Projector, Reconstructor etc
-# can be created from the command line string. Returns false if there are problems
-# examples
-# if not check_eman2_type(options.simaligncmp,Cmps,"Comparitor") : exit(1)
-# if not check_eman2_type(options.simalign,Aligners,"Aligner"): exit(1)
+
 def check_eman2_type(modoptstring, object, objectname, verbose=True):
+	''' a function for testing whether a type of Averager, Aligner, Comparitor, Projector, Reconstructor etc
+	 can be created from the command line string. Returns false if there are problems
+	 examples
+	 if not check_eman2_type(options.simaligncmp,Cmps,"Comparitor") : exit(1)
+	 if not check_eman2_type(options.simalign,Aligners,"Aligner"): exit(1)
+	'''
 	if modoptstring == None:
 		if verbose:
 			print "Error: expecting a string but got python None, was looking for a type of %s" %objectname
@@ -1136,6 +1138,34 @@ def check_eman2_type(modoptstring, object, objectname, verbose=True):
 		return False
 
 	return True
+
+def check_eman2_type_string(modoptstring, object, objectname):
+	''' a function for testing whether a type of Averager, Aligner, Comparitor, Projector, Reconstructor etc
+	can be created from the command line string. Returns false if there are problems
+	examples
+	error =  check_eman2_type_string(options.simaligncmp,Cmps,"Comparitor") 
+	if error != None:
+		 print error
+		 exit(1)
+	Another example:
+	error = check_eman2_type_string(options.simalign,Aligners,"Aligner") ETC
+	'''
+	if modoptstring == None:
+		return "Error: expecting a string but got python None, was looking for a type of %s" %objectname
+	 
+	if modoptstring == "":
+		return "Error: expecting a string was not empty, was looking for a type of %s" %objectname
+	
+	try:
+		p = parsemodopt(modoptstring)
+		if p[0] == None:
+			return "Error: Can't interpret the construction string %s" %(modoptstring)
+		object.get(p[0], p[1])
+	except RuntimeError:
+		return "Error: the specified %s (%s) does not exist or cannot be constructed" %(objectname, modoptstring)
+		
+
+	return None
 
 def qplot(img):
 	"""This will plot a 1D image using qplot
