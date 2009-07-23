@@ -127,6 +127,24 @@ namespace EMAN
 		}
 
 		virtual TypeDict get_param_types() const = 0;
+		
+		/** This function first added in the context of the 3D aligners used by e2tomohunter:
+		 * which wants the n best solutions, as opposed to just the best. Return value is an
+		 * ordered vector of Dicts of length nsoln. The data with idx 0 has the best solution in 
+		 * it. The Dicts in the vector have two keys, "score" (which is a floating point score, 
+		 * probably correlation score), and "xform.align3d", which is a Transform containing
+		 * the alignment parameters
+		 * @param this_img the image that will be  aligned (transformed) and compared to to_img as part of the process of finding the best alignment
+		 * @param to_img the image that will stay still as this_img is transformed and compared to it
+		 * @param nsoln the number of solutions you want to receive in the return vector. 
+		 * @param cmp_name the name of a comparator - may be unused
+		 * @param cmp_params the params of the comparator - may be unused
+		 * @return an ordered vector of Dicts of length nsoln. The Dicts in the vector have keys "score" (i.e. correlation score) and "xform.align3d" (Transform containing the alignment)
+		 */
+		virtual vector<Dict> xform_align_nbest(EMData * this_img, EMData * to_img, const unsigned int nsoln, const string & cmp_name, const Dict& cmp_params) const {
+			vector<Dict> solns;
+			return solns;
+		}
 
 	  protected:
 		mutable Dict params;
@@ -155,20 +173,20 @@ namespace EMAN
 	class TranslationalAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, EMData * to_img,
+		virtual EMData * align(EMData * this_img, EMData * to_img,
 						const string & cmp_name="dot", const Dict& cmp_params = Dict()) const;
 
-		EMData * align(EMData * this_img, EMData * to_img) const
+		virtual EMData * align(EMData * this_img, EMData * to_img) const
 		{
 			return align(this_img, to_img, "", Dict());
 		}
 
-		string get_name() const
+		virtual string get_name() const
 		{
 			return "translational";
 		}
 
-		string get_desc() const
+		virtual string get_desc() const
 		{
 			return "Translational 2D and 3D alignment by cross-correlation";
 		}
@@ -178,7 +196,7 @@ namespace EMAN
 			return new TranslationalAligner();
 		}
 
-		TypeDict get_param_types() const
+		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
 			d.put("intonly", EMObject::INT,"Integer pixel translations only");
@@ -195,20 +213,20 @@ namespace EMAN
 	class RotationalAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, EMData * to_img,
+		virtual EMData * align(EMData * this_img, EMData * to_img,
 						const string & cmp_name = "dot", const Dict& cmp_params = Dict()) const;
 
-		EMData * align(EMData * this_img, EMData * to_img) const
+		virtual EMData * align(EMData * this_img, EMData * to_img) const
 		{
 			return align(this_img, to_img, "", Dict());
 		}
 
-		string get_name() const
+		virtual string get_name() const
 		{
 			return "rotational";
 		}
 
-		string get_desc() const
+		virtual string get_desc() const
 		{
 			return "Performs rotational alignment,works accurately if the image is precentered, normally called internally in combination with translational and flip alignment";
 		}
@@ -220,7 +238,7 @@ namespace EMAN
 
 		static EMData * align_180_ambiguous(EMData * this_img, EMData * to_img, int rfp_mode = 0);
 
-		TypeDict get_param_types() const
+		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
 			d.put("rfp_mode", EMObject::INT,"Either 0,1 or 2. A temporary flag for testing the rotational foot print. O is the original eman1 way. 1 is just using calc_ccf without padding. 2 is using calc_mutual_correlation without padding.");
@@ -233,20 +251,20 @@ namespace EMAN
 	class RotatePrecenterAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, EMData * to_img,
+		virtual EMData * align(EMData * this_img, EMData * to_img,
 						const string & cmp_name = "dot", const Dict& cmp_params = Dict()) const;
 
-		EMData * align(EMData * this_img, EMData * to_img) const
+		virtual EMData * align(EMData * this_img, EMData * to_img) const
 		{
 			return align(this_img, to_img, "", Dict());
 		}
 
-		string get_name() const
+		virtual string get_name() const
 		{
 			return "rotate_precenter";
 		}
 
-		string get_desc() const
+		virtual string get_desc() const
 		{
 			return "Performs rotational alignment and works accurately if the image is precentered";
 		}
@@ -256,7 +274,7 @@ namespace EMAN
 			return new RotatePrecenterAligner();
 		}
 
-		TypeDict get_param_types() const
+		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
 			return d;
@@ -272,20 +290,20 @@ namespace EMAN
 	class RotateTranslateAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, EMData * to_img,
+		  virtual EMData * align(EMData * this_img, EMData * to_img,
 					   const string & cmp_name="dot", const Dict& cmp_params = Dict()) const;
 
-		EMData * align(EMData * this_img, EMData * to_img) const
+		virtual EMData * align(EMData * this_img, EMData * to_img) const
 		{
 			return align(this_img, to_img, "sqeuclidean", Dict());
 		}
 
-		string get_name() const
+		virtual string get_name() const
 		{
 			return "rotate_translate";
 		}
 
-		string get_desc() const
+		virtual string get_desc() const
 		{
 			return "Performs rotational alignment and follows this with translational alignment.";
 		}
@@ -295,7 +313,7 @@ namespace EMAN
 			return new RotateTranslateAligner();
 		}
 
-		TypeDict get_param_types() const
+		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
 			//d.put("usedot", EMObject::INT);
@@ -313,20 +331,20 @@ namespace EMAN
 	class RotateTranslateBestAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, EMData * to_img,
+		virtual EMData * align(EMData * this_img, EMData * to_img,
 					   const string & cmp_name="dot", const Dict& cmp_params = Dict()) const;
 
-		EMData * align(EMData * this_img, EMData * to_img) const
+		virtual EMData * align(EMData * this_img, EMData * to_img) const
 		{
 			return align(this_img, to_img, "frc", Dict());
 		}
 
-		string get_name() const
+		virtual string get_name() const
 		{
 			return "rotate_translate_best";
 		}
 
-		string get_desc() const
+		virtual string get_desc() const
 		{
 			return "Full 2D alignment using 'Rotational' and 'Translational', also incorporates 2D 'Refine' alignments.";
 		}
@@ -336,7 +354,7 @@ namespace EMAN
 			return new RotateTranslateBestAligner();
 		}
 
-		TypeDict get_param_types() const
+		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
 			d.put("maxshift", EMObject::INT, "Maximum translation in pixels");
@@ -355,18 +373,18 @@ namespace EMAN
 	class RotateFlipAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, EMData * to_img,
+		virtual EMData * align(EMData * this_img, EMData * to_img,
 					   const string & cmp_name="dot", const Dict& cmp_params = Dict()) const;
-		EMData * align(EMData * this_img, EMData * to_img) const
+		virtual EMData * align(EMData * this_img, EMData * to_img) const
 		{
 			return align(this_img, to_img, "", Dict());
 		}
-		string get_name() const
+		virtual string get_name() const
 		{
 			return "rotate_flip";
 		}
 
-		string get_desc() const
+		virtual string get_desc() const
 		{
 			return "Performs two rotational alignments, one using the original image and one using the hand-flipped image. Decides which alignment is better using a comparitor and returns it";
 		}
@@ -376,7 +394,7 @@ namespace EMAN
 			return new RotateFlipAligner();
 		}
 
-		TypeDict get_param_types() const
+		virtual TypeDict get_param_types() const
 		{
 			return static_get_param_types();
 		}
@@ -401,19 +419,19 @@ namespace EMAN
 	class RotateTranslateFlipAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, EMData * to_img,
+		virtual EMData * align(EMData * this_img, EMData * to_img,
 					   const string & cmp_name="dot", const Dict& cmp_params = Dict()) const;
-		EMData * align(EMData * this_img, EMData * to_img) const
+		virtual EMData * align(EMData * this_img, EMData * to_img) const
 		{
 			return align(this_img, to_img, "sqeuclidean", Dict());
 		}
 
-		string get_name() const
+		virtual string get_name() const
 		{
 			return "rotate_translate_flip";
 		}
 
-		string get_desc() const
+		virtual string get_desc() const
 		{
 			return " Does two 'rotate_translate' alignments, one to accommodate for possible handedness change. Decided which alignment is better using a comparitor and returns the aligned image as the solution";
 		}
@@ -423,7 +441,7 @@ namespace EMAN
 			return new RotateTranslateFlipAligner();
 		}
 
-		TypeDict get_param_types() const
+		virtual TypeDict get_param_types() const
 		{
 			return static_get_param_types();
 		}
@@ -446,19 +464,19 @@ namespace EMAN
 	class RTFExhaustiveAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, EMData * to_img,
+		virtual EMData * align(EMData * this_img, EMData * to_img,
 					   const string & cmp_name="dot", const Dict& cmp_params = Dict()) const;
-		EMData * align(EMData * this_img, EMData * to_img) const
+		virtual EMData * align(EMData * this_img, EMData * to_img) const
 		{
 			return align(this_img, to_img, "sqeuclidean", Dict());
 		}
 
-		string get_name() const
+		virtual string get_name() const
 		{
 			return "rtf_exhaustive";
 		}
 
-		string get_desc() const
+		virtual string get_desc() const
 		{
 			return "Experimental full 2D alignment with handedness check using semi-exhaustive search (not necessarily better than RTFBest)";
 		}
@@ -468,7 +486,7 @@ namespace EMAN
 			return new RTFExhaustiveAligner();
 		}
 
-		TypeDict get_param_types() const
+		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
 
@@ -488,18 +506,18 @@ namespace EMAN
 	class RTFSlowExhaustiveAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, EMData * to_img,
+		virtual EMData * align(EMData * this_img, EMData * to_img,
 						const string & cmp_name, const Dict& cmp_params) const;
-		EMData * align(EMData * this_img, EMData * to_img) const
+		virtual EMData * align(EMData * this_img, EMData * to_img) const
 		{
-			return align(this_img, to_img, "SqEuclidean", Dict());
+			return align(this_img, to_img, "sqeuclidean", Dict());
 		}
-		string get_name() const
+		virtual string get_name() const
 		{
 			return "rtf_slow_exhaustive";
 		}
 
-		string get_desc() const
+		virtual string get_desc() const
 		{
 			return "Experimental full 2D alignment with handedness check using more exhaustive search (not necessarily better than RTFBest)";
 		}
@@ -509,7 +527,7 @@ namespace EMAN
 			return new RTFSlowExhaustiveAligner();
 		}
 
-		TypeDict get_param_types() const
+		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
 
@@ -526,20 +544,20 @@ namespace EMAN
 	class RefineAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, EMData * to_img,
+		virtual EMData * align(EMData * this_img, EMData * to_img,
 					   const string & cmp_name="dot", const Dict& cmp_params = Dict()) const;
 
-		EMData * align(EMData * this_img, EMData * to_img) const
+		virtual EMData * align(EMData * this_img, EMData * to_img) const
 		{
 			return align(this_img, to_img, "sqeuclidean", Dict());
 		}
 
-		string get_name() const
+		virtual string get_name() const
 		{
 			return "refine";
 		}
 
-		string get_desc() const
+		virtual string get_desc() const
 		{
 			return "Refines a preliminary 2D alignment using a simplex algorithm. Subpixel precision.";
 		}
@@ -549,7 +567,7 @@ namespace EMAN
 			return new RefineAligner();
 		}
 
-		TypeDict get_param_types() const
+		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
 
@@ -571,20 +589,20 @@ namespace EMAN
 	class Refine3DAligner:public Aligner
 	{
 		public:
-			EMData * align(EMData * this_img, EMData * to_img,
+			virtual EMData * align(EMData * this_img, EMData * to_img,
 						   const string & cmp_name="dot", const Dict& cmp_params = Dict()) const;
 
-			EMData * align(EMData * this_img, EMData * to_img) const
+			virtual EMData * align(EMData * this_img, EMData * to_img) const
 			{
 				return align(this_img, to_img, "sqeuclidean", Dict());
 			}
 
-			string get_name() const
+			virtual string get_name() const
 			{
 				return "refine3d";
 			}
 
-			string get_desc() const
+			virtual string get_desc() const
 			{
 				return "Refines a preliminary 3D alignment using a simplex algorithm. Subpixel precision.";
 			}
@@ -594,7 +612,7 @@ namespace EMAN
 				return new Refine3DAligner();
 			}
 
-			TypeDict get_param_types() const
+			virtual TypeDict get_param_types() const
 			{
 				TypeDict d;
 				d.put("xform.align3d", EMObject::TRANSFORM);
@@ -607,6 +625,121 @@ namespace EMAN
 				d.put("precision", EMObject::FLOAT);
 				d.put("maxiter", EMObject::INT, "The maximum number of iterations that can be performed by the Simplex minimizer");
 				d.put("maxshift", EMObject::INT,"Maximum translation in pixels in any direction");
+				return d;
+			}
+	};
+	
+	/** rotational and translational alignment using a square qrid of Altitude and Azimuth values (the phi range is specifiable)
+	 * This aligner is ported from the original tomohunter.py - it is less efficient than searching on the sphere, but very useful
+	 * if you want to search in a specific, local area.
+	 * @author David Woolford (ported from Mike Schmids e2tomohunter code - Mike Schmid is the intellectual author)
+	 */
+	class RT3DGridAligner:public Aligner
+	{
+		public:
+			/** See Aligner comments for more details
+			 */
+			virtual EMData * align(EMData * this_img, EMData * to_img,
+						   const string & cmp_name, const Dict& cmp_params) const;
+			/** See Aligner comments for more details
+			 */
+			virtual EMData * align(EMData * this_img, EMData * to_img) const
+			{
+				return align(this_img, to_img, "sqeuclidean", Dict());
+			}
+			
+			
+			/** See Aligner comments for more details
+			 */
+			virtual vector<Dict> xform_align_nbest(EMData * this_img, EMData * to_img, const unsigned int nsoln, const string & cmp_name, const Dict& cmp_params) const;
+			
+			virtual string get_name() const
+			{
+				return "rt_3d_grid";
+			}
+
+			virtual string get_desc() const
+			{
+				return "3D rotational and translational alignment using specified ranges and maximum shifts";
+			}
+
+			static Aligner *NEW()
+			{
+				return new RT3DGridAligner();
+			}
+
+			virtual TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("daz", EMObject::FLOAT,"The angle increment in the azimuth direction. Default is 10");
+				d.put("raz", EMObject::FLOAT,"The range of angles to sample in the azimuth direction. Default is 360.");
+				d.put("dphi", EMObject::FLOAT,"The angle increment in the phi direction. Default is 10.");
+				d.put("rphi", EMObject::FLOAT,"The range of angles to sample in the phi direction. Default is 180.");
+				d.put("dalt", EMObject::FLOAT,"The angle increment in the altitude direction. Default is 10.");
+				d.put("ralt", EMObject::FLOAT,"The range of angles to sample in the altitude direction. Default is 180.");
+				d.put("search", EMObject::INT,"The maximum length of the detectable translational shift - if you supply this parameter you can not supply the maxshiftx, maxshifty or maxshiftz parameters. Each approach is mutually exclusive.");
+				d.put("searchx", EMObject::INT,"The maximum length of the detectable translational shift in the x direction- if you supply this parameter you can not supply the maxshift parameters. Default is 3.");
+				d.put("searchy", EMObject::INT,"The maximum length of the detectable translational shift in the y direction- if you supply this parameter you can not supply the maxshift parameters. Default is 3.");
+				d.put("searchz", EMObject::INT,"The maximum length of the detectable translational shift in the z direction- if you supply this parameter you can not supply the maxshift parameters. Default is 3");
+				d.put("verbose", EMObject::BOOL,"Turn this on to have useful information printed to standard out.");
+				d.put("threshold", EMObject::FLOAT,"Threshold applied to the Fourier amplitudes of the ccf image - helps to correct for the missing wedge.");
+				
+				return d;
+			}
+	};
+	
+	/** 3D rotational and translational alignment using spherical sampling, can reduce the search space based on symmetry
+	 * @author David Woolford
+	 */
+	class RT3DSphereAligner:public Aligner
+	{
+		public:
+			/** See Aligner comments for more details
+			 */
+			virtual EMData * align(EMData * this_img, EMData * to_img,
+								   const string & cmp_name, const Dict& cmp_params) const;
+			/** See Aligner comments for more details
+			 */
+			virtual EMData * align(EMData * this_img, EMData * to_img) const
+			{
+				return align(this_img, to_img, "sqeuclidean", Dict());
+			}
+			
+			
+			/** See Aligner comments for more details
+			 */
+			virtual vector<Dict> xform_align_nbest(EMData * this_img, EMData * to_img, const unsigned int nsoln, const string & cmp_name, const Dict& cmp_params) const;
+			
+			virtual string get_name() const
+			{
+				return "rt_3d_sphere";
+			}
+
+			virtual string get_desc() const
+			{
+				return "3D rotational and translational alignment using spherical sampling. Can reduce the search space if symmetry is supplied";
+			}
+
+			static Aligner *NEW()
+			{
+				return new RT3DSphereAligner();
+			}
+
+			virtual TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("sym", EMObject::STRING,"The symmtery to use as the basis of the spherical sampling. Default is c1 (asymmetry).");
+				d.put("orientgen", EMObject::STRING,"Advanced. The orientation generation strategy. Default is eman");
+				d.put("delta", EMObject::FLOAT,"Angle the separates points on the sphere. This is exclusive of the \'n\' paramater. Default is 10");
+				d.put("n", EMObject::INT,"An alternative to the delta argument, this is the number of points you want generated on the sphere. Default is OFF");
+				d.put("dphi", EMObject::FLOAT,"The angle increment in the phi direction. Default is 10.");
+				d.put("rphi", EMObject::FLOAT,"The range of angles to sample in the phi direction. Default is 180.");
+				d.put("search", EMObject::INT,"The maximum length of the detectable translational shift - if you supply this parameter you can not supply the maxshiftx, maxshifty or maxshiftz parameters. Each approach is mutually exclusive.");
+				d.put("searchx", EMObject::INT,"The maximum length of the detectable translational shift in the x direction- if you supply this parameter you can not supply the maxshift parameters. Default is 3.");
+				d.put("searchy", EMObject::INT,"The maximum length of the detectable translational shift in the y direction- if you supply this parameter you can not supply the maxshift parameters. Default is 3.");
+				d.put("searchz", EMObject::INT,"The maximum length of the detectable translational shift in the z direction- if you supply this parameter you can not supply the maxshift parameters. Default is 3");
+				d.put("verbose", EMObject::BOOL,"Turn this on to have useful information printed to standard out.");
+				d.put("threshold", EMObject::FLOAT,"Threshold applied to the Fourier amplitudes of the ccf image - helps to correct for the missing wedge.");
 				return d;
 			}
 	};

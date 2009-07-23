@@ -137,6 +137,19 @@ EMData *EMData::align(const string & aligner_name, EMData * to_img,
 	return result;
 }
 
+vector<Dict> EMData::xform_align_nbest(const string & aligner_name, EMData * to_img,
+								const Dict & params, const unsigned int nsoln, const string & comp_name, 
+										const Dict& cmp_params)
+{
+	ENTERFUNC;
+	Aligner *a = Factory < Aligner >::get(aligner_name, params);
+	vector<Dict> result;
+	if (a) {
+		result = a->xform_align_nbest(this,to_img,nsoln,comp_name,cmp_params);
+	}
+
+	return result;
+}
 
 EMData *EMData::project(const string & projector_name, const Dict & params)
 {

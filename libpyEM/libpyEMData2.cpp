@@ -82,6 +82,8 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_process_overloads_1_2, proces
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_cmp_overloads_2_3, cmp, 2, 3)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_align_overloads_2_5, align, 2, 5)
+		
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_xform_align_nbest_overloads_2_6, xform_align_nbest, 2, 6)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_project_overloads_1_2, project, 1, 2)
 
@@ -295,6 +297,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("process", (EMAN::EMData* (EMAN::EMData::*)(const std::string&, const EMAN::Dict&) const )&EMAN::EMData::process, EMAN_EMData_process_overloads_1_2()[ return_value_policy< manage_new_object >() ])
 	.def("process", (EMAN::EMData* (EMAN::EMData::*)(EMAN::Processor*) const )&EMAN::EMData::process, return_value_policy< manage_new_object >())
 	.def("cmp", &EMAN::EMData::cmp, EMAN_EMData_cmp_overloads_2_3())
+	.def("xform_align_nbest", &EMAN::EMData::xform_align_nbest, EMAN_EMData_xform_align_nbest_overloads_2_6())
 	.def("align", &EMAN::EMData::align, EMAN_EMData_align_overloads_2_5()[ return_value_policy< manage_new_object >() ])
 	.def("project", (EMAN::EMData* (EMAN::EMData::*)(const std::string&, const EMAN::Dict&) )&EMAN::EMData::project, EMAN_EMData_project_overloads_1_2()[ return_value_policy< manage_new_object >() ])
 	.def("project", (EMAN::EMData* (EMAN::EMData::*)(const std::string&, const EMAN::Transform&) )&EMAN::EMData::project, return_value_policy< manage_new_object >() )

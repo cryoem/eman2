@@ -20,7 +20,6 @@ void emdata_unwrap(EMDataForCuda* data, int r1, int r2, int xs, int num_pi, int 
 void emdata_phaseorigin_to_center(EMDataForCuda* cuda_data);
 
 EMDataForCuda* emdata_transform_cuda(const float* const m,const int nx, const int ny, const int nz);
-EMDataForCuda* emdata_rotate180_cuda(const int nx, const int ny);
 
 void emdata_ri2ap( EMDataForCuda* cuda_data);
 

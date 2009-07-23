@@ -91,6 +91,21 @@ float cmp(const string & cmpname, EMData * with, const Dict & params = Dict());
 EMData *align(const string & aligner_name, EMData * to_img,
 			  const Dict & params = Dict(), const string & comp_name = "dot", 
 			  const Dict& cmp_params = Dict());
+			  
+/** Align this image with another image, return the parameters of the "n best" solutions
+ * See Aligner::xform_align_nbest for more comments
+ * @param aligner_name Alignment algorithm name.
+ * @param to_img The image 'this' image aligns to.
+ * @param params  Alignment algorithm parameters in a keyed dictionary.
+ * @param nsoln the number of solutions you want to receive in the return vector. 
+ * @param comp_name Comparison algorithm used in alignment.
+ * @param cmp_params Parameter dictionary for comparison algorithm.
+ * @exception NotExistingObjectError If the alignment algorithm doesn't exist.
+ * @return an ordered vector of Dicts of length nsoln. The Dicts in the vector have keys "score" (i.e. correlation score) and "xform.align3d" (Transform containing the alignment)
+ */
+vector<Dict> xform_align_nbest(const string & aligner_name, EMData * to_img,
+			  const Dict & params = Dict(), const unsigned int nsoln = 1, const string & comp_name = "dot", 
+										 const Dict& cmp_params = Dict());
 
 /** Calculate the projection of this image and return the result.
  * @param projector_name Projection algorithm name.

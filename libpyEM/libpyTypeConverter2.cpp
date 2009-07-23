@@ -76,6 +76,7 @@ BOOST_PYTHON_MODULE(libpyTypeConverter2)
 	EMAN::vector_to_python<EMAN::Vec3i>();
 	EMAN::vector_to_python<EMAN::IntPoint>();
 	EMAN::vector_to_python< std::vector<EMAN::Vec3f> >();
+	EMAN::vector_to_python<EMAN::Dict>();
 	EMAN::vector_from_python<int>();
 	EMAN::vector_from_python<long>();
 	EMAN::vector_from_python<float>();

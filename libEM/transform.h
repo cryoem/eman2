@@ -173,13 +173,13 @@ namespace EMAN
 			 * @param euler_type the euler type of the retrieved rotation
 			 * @return a dictionary containing the parameters
 			 */
-			Dict get_params(const string& euler_type);
+			Dict get_params(const string& euler_type) const;
 
 			/** Get the parameters of the inverse of the transform as though it were in RSMT order not MTSR
 			 * @param euler_type the euler type of the retrieved rotation
 			 * @return a dictionary containing the parameters
 			 */
-			Dict get_params_inverse(const string& euler_type);
+			Dict get_params_inverse(const string& euler_type) const;
 
 			//=============== set and get post trans =============
 			/** Set the post translation component

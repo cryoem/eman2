@@ -38,6 +38,7 @@
 #include "emdata.h"
 #include "processor.h"
 #include "util.h"
+#include "symmetry.h"
 #include <gsl/gsl_multimin.h>
 
 #ifdef EMAN2_USING_CUDA
@@ -60,6 +61,8 @@ template <> Factory < Aligner >::Factory()
 	force_add(&RTFSlowExhaustiveAligner::NEW);
 	force_add(&RefineAligner::NEW);
 	force_add(&Refine3DAligner::NEW);
+	force_add(&RT3DGridAligner::NEW);
+	force_add(&RT3DSphereAligner::NEW);
 }
 
 // Note, the translational aligner assumes that the correlation image
@@ -1236,6 +1239,245 @@ EMData* Refine3DAligner::align(EMData * this_img, EMData *to,
 
 	if ( c != 0 ) delete c;
 	return result;
+}
+
+EMData* RT3DGridAligner::align(EMData * this_img, EMData *to, const string & cmp_name, const Dict& cmp_params) const 
+{
+
+	vector<Dict> alis = xform_align_nbest(this_img,to,1,cmp_name,cmp_params);
+	
+	Dict t;
+	Transform* tr = (Transform*) alis[0]["xform.align3d"];
+	t["transform"] = tr;
+	EMData* soln = this_img->process("math.transform",t);
+	delete tr; tr = 0;
+	
+	return soln;
+	
+}
+
+vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, const unsigned int nsoln, const string & cmp_name, const Dict& cmp_params) const {
+	
+	if ( this_img->get_ndim() != 3 || to->get_ndim() != 3 ) {
+		throw ImageDimensionException("This aligner only works for 3D images");
+	}
+	
+	int searchx = 0;
+	int searchy = 0;
+	int searchz = 0;
+	
+	if (params.has_key("search")) {
+		vector<string> check;
+		check.push_back("searchx");
+		check.push_back("searchy");
+		check.push_back("searchz");
+		for(vector<string>::const_iterator cit = check.begin(); cit != check.end(); ++cit) {
+			if (params.has_key(*cit)) throw InvalidParameterException("If you supply the search parameter you can supply any of the searchx, searchy, or searchz parameters");
+		}
+		int search  = params["search"];
+		searchx = search;
+		searchy = search;
+		searchz = search;
+	} else {
+		searchx = params.set_default("searchx",3);;
+		searchy = params.set_default("searchy",3);;
+		searchz = params.set_default("searchz",3);;
+	}
+
+	float ralt = params.set_default("ralt",180.f);
+	float rphi = params.set_default("rphi",180.f);
+	float raz = params.set_default("raz",180.f);
+	float dalt = params.set_default("dalt",10.f);
+	float daz = params.set_default("daz",10.f);
+	float dphi = params.set_default("dphi",10.f);
+	float threshold = params.set_default("threshold",0.f);
+	bool verbose = params.set_default("verbose",true);
+	
+	vector<Dict> solns;
+	if (nsoln == 0) return solns; // What was the user thinking?
+	for (unsigned int i = 0; i < nsoln; ++i ) {
+		Dict d;
+		d["score"] = -1.e24;
+		Transform t; // identity by default
+		d["xform.align3d"] = &t; // deep copy is going on here
+		solns.push_back(d); 
+	}
+	Dict d;
+	d["type"] = "eman"; // d is used in the loop below
+// 	Transform solution_transform;
+// 	EMData* solution_emdata = 0;
+// 	float global_best = -99999999999.9f;
+	for ( float alt = 0.0f; alt <= ralt; alt += dalt) {
+		// An optimization for the range of az is made at the top of the sphere 
+		// If you think about it, this is just a coarse way of making this approach slightly more efficient
+		if (verbose) {
+			cout << "Trying angle " << alt << endl;
+		}
+		
+		float begin_az = -raz;
+		float end_az = raz;
+		if (alt == 0.0f) {
+			begin_az = 0.0f;
+			end_az = 0.0f;
+		}
+		
+		for ( float az = begin_az; az <= end_az; az += daz ){
+			for( float phi = -rphi-az; phi <= rphi-az; phi += dphi ) {
+				d["alt"] = alt;
+				d["phi"] = phi;
+				d["az"] = az;
+				Transform t(d);
+				EMData* transformed = this_img->process("math.transform",Dict("transform",&t));
+				EMData* ccf = transformed->calc_ccf(to);
+				IntPoint point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
+				float best_score = ccf->get_value_at_wrap(point[0],point[1],point[2]);
+				t.set_trans(point[0],point[1],point[2]);
+				if (threshold > 0.0f) {
+					// Now do weighting based on missing wedges
+					ccf->do_fft_inplace();// Be memory efficient (if possible, the fft routine probably makes a copy but in future this could change)
+					ccf->process_inplace("threshold.binary.fourier",Dict("value",threshold));
+					float map_sum =  ccf->get_attr("mean");
+					if (map_sum == 0.0f) throw UnexpectedBehaviorException("The number of voxels in the Fourier image with an amplitude above your threshold is zero. Please adjust your parameters");
+					best_score /= map_sum;
+				}
+				unsigned int j = 0;
+				for ( vector<Dict>::iterator it = solns.begin(); it != solns.end(); ++it, ++j ) {
+					if ( (float)(*it)["score"] < best_score ) {
+						vector<Dict>::reverse_iterator rit = solns.rbegin();
+						copy(rit+1,solns.rend()-j,rit);
+						Dict& d = (*it);
+						d["score"] = best_score;
+						d["xform.align3d"] = &t;
+						
+// 						for(vector<Dict>::iterator it = solns.begin(); it != solns.end(); ++it) {
+// 							Dict& d = (*it);
+// 							cout << (float) d["score"] << " ";
+// 						}
+// 						cout << endl;
+						break;
+					}
+				}
+			}
+		}
+	}
+	
+	return solns;
+	
+}
+
+EMData* RT3DSphereAligner::align(EMData * this_img, EMData *to, const string & cmp_name, const Dict& cmp_params) const 
+{
+
+	vector<Dict> alis = xform_align_nbest(this_img,to,1,cmp_name,cmp_params);
+	
+	Dict t;
+	Transform* tr = (Transform*) alis[0]["xform.align3d"];
+	t["transform"] = tr;
+	EMData* soln = this_img->process("math.transform",t);
+	delete tr; tr = 0;
+	
+	return soln;
+	
+}
+
+vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to, const unsigned int nsoln, const string & cmp_name, const Dict& cmp_params) const {
+	
+	if ( this_img->get_ndim() != 3 || to->get_ndim() != 3 ) {
+		throw ImageDimensionException("This aligner only works for 3D images");
+	}
+	
+	int searchx = 0;
+	int searchy = 0;
+	int searchz = 0;
+	
+	if (params.has_key("search")) {
+		vector<string> check;
+		check.push_back("searchx");
+		check.push_back("searchy");
+		check.push_back("searchz");
+		for(vector<string>::const_iterator cit = check.begin(); cit != check.end(); ++cit) {
+			if (params.has_key(*cit)) throw InvalidParameterException("If you supply the search parameter you can supply any of the searchx, searchy, or searchz parameters");
+		}
+		int search  = params["search"];
+		searchx = search;
+		searchy = search;
+		searchz = search;
+	} else {
+		searchx = params.set_default("searchx",3);;
+		searchy = params.set_default("searchy",3);;
+		searchz = params.set_default("searchz",3);;
+	}
+
+	float rphi = params.set_default("rphi",180.f);
+	float dphi = params.set_default("dphi",10.f);
+	float delta = params.set_default("delta",10.f);
+	string sym_string = params.set_default("sym","c1");
+	string orientgen = params.set_default("orientgen","eman");
+	float threshold = params.set_default("threshold",0.f);
+	bool verbose = params.set_default("verbose",true);
+	
+	vector<Dict> solns;
+	if (nsoln == 0) return solns; // What was the user thinking?
+	for (unsigned int i = 0; i < nsoln; ++i ) {
+		Dict d;
+		d["score"] = -1.e24;
+		Transform t; // identity by default
+		d["xform.align3d"] = &t; // deep copy is going on here
+		solns.push_back(d); 
+	}
+	
+	Symmetry3D* sym = Factory<Symmetry3D>::get(sym_string);
+	Dict d;
+	d["delta"] = delta;
+	d["inc_mirror"] = true; // This should probably always be true for 3D case
+	vector<Transform> transforms = sym->gen_orientations(orientgen,d);
+	for(vector<Transform>::const_iterator trans_it = transforms.begin(); trans_it != transforms.end(); trans_it++) {
+		Dict params = trans_it->get_params("eman");
+		float az = params["az"];
+		for( float phi = -rphi-az; phi <= rphi-az; phi += dphi ) {
+			params["phi"] = phi;
+			Transform t(params);
+			EMData* transformed = this_img->process("math.transform",Dict("transform",&t));
+			EMData* ccf = transformed->calc_ccf(to);
+			IntPoint point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
+			float best_score = ccf->get_value_at_wrap(point[0],point[1],point[2]);
+			t.set_trans(point[0],point[1],point[2]);
+			if (threshold > 0.0f) {
+				// Now do weighting based on missing wedges
+				ccf->do_fft_inplace();// Be memory efficient (if possible, the fft routine probably makes a copy but in future this could change)
+				ccf->process_inplace("threshold.binary.fourier",Dict("value",threshold));
+				float map_sum =  ccf->get_attr("mean");
+				if (map_sum == 0.0f) throw UnexpectedBehaviorException("The number of voxels in the Fourier image with an amplitude above your threshold is zero. Please adjust your parameters");
+				best_score /= map_sum;
+			}
+			
+			unsigned int j = 0;
+			for ( vector<Dict>::iterator it = solns.begin(); it != solns.end(); ++it, ++j ) {
+				if ( (float)(*it)["score"] < best_score ) {
+					vector<Dict>::reverse_iterator rit = solns.rbegin();
+					copy(rit+1,solns.rend()-j,rit);
+					Dict& d = (*it);
+					d["score"] = best_score;
+					d["xform.align3d"] = &t; // deep copy is going on here
+// 					cout << "After" << endl;
+// 					for(vector<Dict>::iterator it = solns.begin(); it != solns.end(); ++it) {
+// 						Dict& d = (*it);
+// 						cout << (float) d["score"] << " ";
+// 					}
+// 					cout << endl;
+// 					for(vector<Dict>::iterator it = solns.begin(); it != solns.end(); ++it) {
+// 						Dict& d = (*it);
+// 						((Transform*)d["xform.align3d"])->printme();
+// 					}
+// 					cout << endl;
+					break;
+				}
+			}
+		}
+	}
+	delete sym; sym = 0;
+	return solns;
+	
 }
 
 CUDA_Aligner::CUDA_Aligner() {

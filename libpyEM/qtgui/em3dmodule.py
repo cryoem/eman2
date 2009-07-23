@@ -384,6 +384,8 @@ class EM3DExampleModule(EM3DModule):
 	def __init__(self,application=None):
 		EM3DModule.__init__(self,application)
 		self.text = "bdb:EMAN2"
+		
+		self.dl = None
 	
 	def current_text(self): return self.text
 	

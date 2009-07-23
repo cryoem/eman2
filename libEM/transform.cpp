@@ -420,7 +420,7 @@ void Transform::set_params_inverse(const Dict& d) {
 }
 
 
-Dict Transform::get_params(const string& euler_type) {
+Dict Transform::get_params(const string& euler_type) const {
 	Dict params = get_rotation(euler_type);
 
 	Vec3f v = get_trans();
@@ -440,7 +440,7 @@ Dict Transform::get_params(const string& euler_type) {
 
 
 
-Dict Transform::get_params_inverse(const string& euler_type) {
+Dict Transform::get_params_inverse(const string& euler_type) const {
 	Transform inv(inverse());
 
 	Dict params = inv.get_rotation(euler_type);
