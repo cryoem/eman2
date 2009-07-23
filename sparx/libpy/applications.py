@@ -11020,7 +11020,7 @@ def normal_prj( prj_stack, outdir, refvol, r, niter, snr, sym, MPI=False ):
 
 	info.write( "output written to file " + prj_file + '\n' )
 	info.flush()
-
+"""
 def incvar(prefix, nfile, nprj, output, fl, fh, radccc, writelp, writestack):
 	from statistics import variancer, ccc
 	from string     import atoi, replace, split, atof
@@ -11097,7 +11097,7 @@ def incvar(prefix, nfile, nprj, output, fl, fh, radccc, writelp, writestack):
 
 	all_var = circumference( all_var, radcir, radcir+2 )
 	all_var.write_image( output, 0 )
-
+"""
 
 class file_set :
 
@@ -11155,7 +11155,7 @@ def defvar(files, outdir, fl, aa, radccc, writelp, writestack, repair = False, p
 	nz = img.get_zsize()
 
 
-	radcir = min(nx,ny,nz)/2 - 1
+	radcir = min(nx,ny,nz)//2 - 1
 	if(repair):  again = 2
 	else:        again = 1
 	ndump = 100 # write out ccc after each 100 steps
@@ -11262,26 +11262,39 @@ def defvar(files, outdir, fl, aa, radccc, writelp, writestack, repair = False, p
 
 def var_mpi(files, outdir, fl, fh, radccc, writelp, writestack, method="inc", pca=False, pcamask=None, pcanvec=None):
 	from statistics import inc_variancer, def_variancer, ccc, pcanalyzer
-	from string import atoi, replace, split, atof
-	from EMAN2 import EMUtil
-	from utilities import memory_usage, get_im, circumference, model_circle, drop_image, info
-	from filter import filt_btwl, filt_gaussl, filt_tanl
-	from math import sqrt
+	from string     import atoi, replace, split, atof
+	from utilities  import memory_usage, get_im, circumference, model_circle, drop_image, info
+	from filter     import filt_btwl, filt_gaussl, filt_tanl
+	from math       import sqrt
 	import os
-	from mpi import mpi_comm_rank, mpi_comm_size,mpi_barrier,MPI_COMM_WORLD
+	from mpi        import mpi_comm_rank, mpi_comm_size, mpi_barrier, MPI_COMM_WORLD, MPI_INT, mpi_bcast
 
         myid = mpi_comm_rank( MPI_COMM_WORLD )
         ncpu = mpi_comm_size( MPI_COMM_WORLD )
         if myid==0:
 		if os.path.exists(outdir):
-			ERROR('Output directory exists, please change the name and restart the program', " ", 1)
+			ERROR('Output directory exists, please change the name and restart the program', " var_mpi", 1)
 		os.system( "mkdir " + outdir )
 		finf = open( outdir + "/var_progress.txt", "w" )
 
 	mpi_barrier( MPI_COMM_WORLD )
 
-	n = get_im(files[0]).get_xsize()
+	if( myid == 0 ):
+		img = get_im(files[0])
+		nx = img.get_xsize()
+		ny = img.get_ysize()
+		nz = img.get_zsize()
+	else:
+		nx = 0
+		ny = 0
+		nz = 0
+	nx = mpi_bcast(nx, 1, MPI_INT, 0, MPI_COMM_WORLD)
+	nx = nx[0]
+	ny = mpi_bcast(ny, 1, MPI_INT, 0, MPI_COMM_WORLD)
+	ny = ny[0]
+	nz = mpi_bcast(nz, 1, MPI_INT, 0, MPI_COMM_WORLD)
 
+	"""
 	if method=="def":
 		all_varer = def_variancer(n,n,n)
 		odd_varer = def_variancer(n,n,n)
@@ -11290,7 +11303,7 @@ def var_mpi(files, outdir, fl, fh, radccc, writelp, writestack, method="inc", pc
 		all_varer = inc_variancer(n,n,n)
 		odd_varer = inc_variancer(n,n,n)
 		eve_varer = inc_variancer(n,n,n)
-
+	"""
 	if pca:
 		pcamask = get_im( pcamask)
 		pcaer = pcanalyzer(pcamask, outdir, pcanvec, True)
@@ -11305,15 +11318,15 @@ def var_mpi(files, outdir, fl, fh, radccc, writelp, writestack, method="inc", pc
 	oddstack = outdir + "/oddvarstack.hdf"
 	evestack = outdir + "/evevarstack.hdf"
 
+	if( myid == 0):
+		if os.path.exists(varfile):	os.system("rm -f " + varfile)
+		if os.path.exists(avgfile):	os.system("rm -f " + avgfile)
+		if os.path.exists(varstack):	os.system("rm -f " + varstack)
+		if os.path.exists(oddstack):	os.system("rm -f " + oddstack)
+		if os.path.exists(evestack):	os.system("rm -f " + evestack)
 
-	if os.path.exists(varfile):	os.system("rm -f " + varfile)
-	if os.path.exists(avgfile):	os.system("rm -f " + avgfile)
-	if os.path.exists(varstack):	os.system("rm -f " + varstack)
-	if os.path.exists(oddstack):	os.system("rm -f " + oddstack)
-	if os.path.exists(evestack):	os.system("rm -f " + evestack)
-
-	cccmask = model_circle(radccc, n, n, n)
-	radcir = n/2-1
+	cccmask = model_circle(radccc, nx, ny, nz)
+	radcir = min(nx,ny,nz)//2-1
 
         mystack = file_set( files )
         nimage = mystack.nimg()
@@ -11329,7 +11342,7 @@ def var_mpi(files, outdir, fl, fh, radccc, writelp, writestack, method="inc", pc
 	nimage = niter * ncpu
 	for i in xrange(myid, nimage, ncpu):
 
-		filename, imgid = mystack.get( i )	
+		filename, imgid = mystack.get( i )
 
 		img = get_im( filename, imgid )
 		img = circumference( img, radcir, radcir+1 )
