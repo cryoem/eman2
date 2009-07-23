@@ -418,6 +418,10 @@ class EMPDBViewer(EM3DModule):
 		return self.inspector
 		
 	def draw_objects(self):
+		
+		if (self.text != self.fName): 
+			self.dl=None
+			self.fName = self.text
 
 		if (self.dl == None):
 			self.dl=glGenLists(1)
@@ -906,7 +910,7 @@ class EMPDBViewer(EM3DModule):
 class EMPDBInspector(EM3DInspector):
 	def __init__(self,target):
 		EM3DInspector.__init__(self,target)
-		self.tabwidget.insertTab(0,self.get_example_tab(),"Example")
+		self.tabwidget.insertTab(0,self.get_example_tab(),"Main")
 		self.tabwidget.setCurrentIndex(0)
 			
 	def get_example_tab(self):
@@ -924,20 +928,30 @@ class EMPDBInspector(EM3DInspector):
 		text_label = QtGui.QLabel("Enter Text:",self)
 		hbl1.addWidget(text_label)
 		hbl1.addWidget(self.text)
+		self.browse = QtGui.QPushButton("Browse")
+		hbl1.addWidget(self.browse)
 		vbl.addLayout(hbl1)
 		
 		QtCore.QObject.connect(self.text, QtCore.SIGNAL("textChanged(const QString&)"), self.on_text_change)
+		QtCore.QObject.connect(self.browse, QtCore.SIGNAL("clicked(bool)"), self.on_browse)
 		
 		return widget
 	
 	def on_text_change(self,text):
 		self.target().set_current_text(str(text))
 		self.target().updateGL()
+
+	def on_browse(self):
+		self.fileName = QtGui.QFileDialog.getOpenFileName(self, "open file", "/home", "Text files (*.pdb)")
+		if (self.fileName == ""): return
+		self.target().set_current_text(str(self.fileName)) #self.target().text and self.text are what the user sees. 
+		self.text.setText(self.fileName) #if self.text changes, then self.fName becomes self.text and the image regenerates
+		self.target().updateGL()
 	
 if __name__ == '__main__':
 	from emapplication import EMStandAloneApplication
 	em_app = EMStandAloneApplication()
-	window = EMPDBViewer()
+	window = EMPDBViewer("/home/muthu/project/probe.pdb")
 	em_app.show()
 	em_app.execute()
 
