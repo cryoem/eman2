@@ -999,16 +999,18 @@ class EMPlot3DInspector(QtGui.QWidget,EMLightsInspectorBase):       ###########
 			v_big.addLayout(h4)
 
 			h5 = QtGui.QHBoxLayout()
-			self.transform = QtGui.QPushButton("Perform Transform")
+			self.viewTransform = QtGui.QPushButton("View Transform")
+			h5.addWidget(self.viewTransform)
+			self.transform = QtGui.QPushButton("Write Transform")
 			h5.addWidget(self.transform)
-			h5.addWidget(QtGui.QLabel("	File Name: ",self))
-	
+			h5.addWidget(QtGui.QLabel("  File Name: ",self))
 			self.fileName = QtGui.QLabel("_________ ")
 			h5.addWidget(self.fileName)
 			v_big.addLayout(h5)		
 			vbl.addLayout(v_big)
 
 			QtCore.QObject.connect(self.transform, QtCore.SIGNAL("clicked(bool)"), self.pTransform)
+			QtCore.QObject.connect(self.viewTransform, QtCore.SIGNAL("clicked(bool)"), self.vTransform)
 
 		######
 		
@@ -1191,6 +1193,11 @@ class EMPlot3DInspector(QtGui.QWidget,EMLightsInspectorBase):       ###########
 		self.b.right_transform(t2)
 		self.b.save_to_pdb("%s.pdb"%str(self.TransformNumber))
 		self.fileName.setText("%s.pdb"%str(self.TransformNumber))
+		#self.target().full_refresh()
+		#self.target().updateGL()
+
+	def vTransform(self, i):	
+		print "This function is not ready yet"
 		#self.target().full_refresh()
 		#self.target().updateGL()
 	
