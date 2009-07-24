@@ -10370,7 +10370,7 @@ def cml_find_structure_main(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_se
 		cml_export_txtagls(out_dir, 'angles_%03i' % itrial, Ori, disc_init, 'Init')
 		# Find structure
 		Ori, disc, ite = cml_find_structure(Prj, Ori, Rot, out_dir, 'angles_%03i' % itrial, maxit, first_zero, flag_weights)
-		print_msg('trials %03i\tdisc init: %10.7f\tnb ite: %i\tdisc end: %10.7f\n' % (0, disc_init, ite + 1, disc))
+		print_msg('trials %03i\tdisc init: %10.7f\tnb ite: %i\tdisc end: %10.7f\n' % (itrial, disc_init, ite + 1, disc))
 		if disc < bestdisc:
 			bestdisc = disc
 			ibest    = itrial
@@ -10447,7 +10447,7 @@ def cml_find_structure_MPI(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_see
 		cml_export_struc(stack, out_dir, itrial, Ori)
 
 		from development import cml2_ori_collinearity
-		coll[itrial] = cml2_ori_collinearity(Ori)
+	coll[itrial] = cml2_ori_collinearity(Ori)
 
 	mpi_barrier(MPI_COMM_WORLD)
 	disc_init = mpi_reduce(disc_init, trials, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
@@ -12064,7 +12064,7 @@ def k_means_stab(stack, outdir, maskname, opt_method, K, npart = 5, CTF = False,
 	from utilities 	 import print_begin_msg, print_end_msg, print_msg, file_type
 	from statistics  import k_means_stab_update_tag, k_means_headlog, k_means_open_unstable, k_means_stab_gather
 	from statistics  import k_means_classical, k_means_SSE, k_means_SA_T0, k_means_stab_init_tag
-	from statistics  import k_means_headlog, k_means_stab_asg2part, k_means_stab_H, k_means_stab_export
+	from statistics  import k_means_headlog, k_means_stab_asg2part, k_means_stab_pwa, k_means_stab_export
 	import sys, logging, os
 
 	# set params
@@ -12153,8 +12153,8 @@ def k_means_stab(stack, outdir, maskname, opt_method, K, npart = 5, CTF = False,
 		ALL_PART = k_means_stab_asg2part(ALL_ASG, LUT)
 
 		# calculate the stability
-		stb, nb_stb, STB_PART = k_means_stab_H(ALL_PART)
-		logging.info('... Stability: %5.2f %% (%d objects)' % (stb, nb_stb))
+		MATCH, STB_PART, CT_s, CT_t, ST, st = k_means_stab_pwa(ALL_PART, 50)
+		logging.info('... Stability: %5.2f %% (%d objects)' % (st, sum(CT_s)))
 
 		# manage the stability
 		if stb < th_stab_max:
@@ -12173,7 +12173,7 @@ def k_means_stab(stack, outdir, maskname, opt_method, K, npart = 5, CTF = False,
 			continue
 
 		# export the stable class averages
-		count_k, id_rejected = k_means_stab_export(STB_PART, stack, num_run, outdir, th_nobj)
+		count_k, id_rejected = k_means_stab_export(STB_PART, stack, num_run, outdir, th_nobj, CTF)
 		logging.info('... Export %i stable class averages: average_stb_run%02d.hdf (rejected %i images)' % (count_k, num_run, len(id_rejected)))
 		
 		# tag informations to the header
@@ -12328,7 +12328,7 @@ def k_means_stab_CUDA(stack, outdir, maskname, K, npart = 5, F = 0, FK = 0, maxr
 					logging.info('[STOP] request by the user')
 
 					# export the stable class averages
-					count_k, id_rejected = k_means_stab_export(STB_PART, stack, num_run, outdir, th_nobj)
+					count_k, id_rejected = k_means_stab_export(STB_PART, stack, num_run, outdir, th_nobj, CTF)
 					logging.info('... Export %i stable class averages: average_stb_run%02d.hdf (rejected %i images)' % (count_k, num_run, len(id_rejected)))
 
 					# tag informations to the header
@@ -12359,7 +12359,7 @@ def k_means_stab_CUDA(stack, outdir, maskname, K, npart = 5, F = 0, FK = 0, maxr
 			continue
 	
 		# export the stable class averages
-		count_k, id_rejected = k_means_stab_export(STB_PART, stack, num_run, outdir, th_nobj)
+		count_k, id_rejected = k_means_stab_export(STB_PART, stack, num_run, outdir, th_nobj, CTF)
 		logging.info('... Export %i stable class averages: average_stb_run%02d.hdf (rejected %i images)' % (count_k, num_run, len(id_rejected)))
 
 		# tag informations to the header
@@ -12469,7 +12469,7 @@ def k_means_stab_CUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_no
 	logging.info('... Stability: %5.2f %% (%d objects)' % (st, sum(CT_s)))
 	
 	# export the stable class averages
-	count_k, id_rejected = k_means_stab_export(STB_PART, stack, 0, outdir, th_nobj)
+	count_k, id_rejected = k_means_stab_export(STB_PART, stack, 0, outdir, th_nobj, CTF)
 	logging.info('... Export %i stable class averages: average_stb_run%02d.hdf (rejected %i images)' % (count_k, 0, len(id_rejected)))
 
 	# tag informations to the header
@@ -12483,7 +12483,7 @@ def k_means_stab_MPI(stack, outdir, maskname, opt_method, K, npart = 5, CTF = Fa
 	from utilities 	 import print_begin_msg, print_end_msg, print_msg, file_type
 	from statistics  import k_means_stab_update_tag, k_means_headlog, k_means_open_unstable_MPI, k_means_stab_gather
 	from statistics  import k_means_cla_MPI, k_means_SSE_MPI, k_means_SA_T0_MPI, k_means_stab_init_tag
-	from statistics  import k_means_headlog, k_means_stab_asg2part, k_means_stab_H, k_means_stab_export
+	from statistics  import k_means_headlog, k_means_stab_asg2part, k_means_stab_pwa, k_means_stab_export
 	from mpi         import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier, MPI_COMM_WORLD
 	from mpi         import mpi_bcast, MPI_FLOAT
 	import sys, logging, os
@@ -12590,8 +12590,9 @@ def k_means_stab_MPI(stack, outdir, maskname, opt_method, K, npart = 5, CTF = Fa
 			ALL_PART = k_means_stab_asg2part(ALL_ASG, LUT)
 
 			# calculate the stability
-			stb, nb_stb, STB_PART = k_means_stab_H(ALL_PART)
-			logging.info('... Stability: %5.2f %% (%d objects)' % (stb, nb_stb))
+			MATCH, STB_PART, CT_s, CT_t, ST, st = k_means_stab_pwa(ALL_PART, 50)
+			logging.info('... Stability: %5.2f %% (%d objects)' % (st, sum(CT_s)))
+			
 
 		mpi_barrier(MPI_COMM_WORLD)
 		stb = mpi_bcast(stb, 1, MPI_FLOAT, main_node, MPI_COMM_WORLD)
@@ -12617,7 +12618,7 @@ def k_means_stab_MPI(stack, outdir, maskname, opt_method, K, npart = 5, CTF = Fa
 
 		if myid == main_node:
 			# export the stable class averages
-			count_k, id_rejected = k_means_stab_export(STB_PART, stack, num_run, outdir, th_nobj)
+			count_k, id_rejected = k_means_stab_export(STB_PART, stack, num_run, outdir, th_nobj, CTF)
 			logging.info('... Export %i stable class averages: average_stb_run%02d.hdf (rejected %i images)' % (count_k, num_run, len(id_rejected)))
 			
 			# tag informations to the header
