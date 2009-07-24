@@ -1677,20 +1677,8 @@ def ali3d_e_G_DUD(stack, ref_vol, maskfile=None, radius=-1, dtheta=2):
 	for im in xrange(nima):
 		ima = EMData()
 		ima.read_image(stack, im)
-		#ima *= mask2D
-		#ima.process_inplace("normalize.mask", {"mask":mask2D, "no_sigma":1})
 		dataim.append(ima)
 	
-	#npad = 2
-	#N = nx*npad
-	#K = 6
-	#alpha = 1.75
-	#r = nx/2
-	#v = K/2.0/N
-	#params = {"filter_type":Processor.fourier_filter_types.KAISER_SINH_INVERSE, "alpha":alpha, "K":K, "r":r, "v":v, "N":N}
-	#del alpha, r, v, K, N
-	
-	#Util.mul_img(vol, mask3D)
 	volft, kb  = prep_vol(vol)
 
 	total_time = 0.0
@@ -1699,15 +1687,15 @@ def ali3d_e_G_DUD(stack, ref_vol, maskfile=None, radius=-1, dtheta=2):
 	for im in xrange(nima):
 		begin_time = time()
 
-		refim = dataim[im]
+		refim = dataim[im].copy()
 
 		phi, theta, psi, s2x, s2y = get_params_proj(refim)
-		
+
 		s2x = -s2x
 		s2y = -s2y
 
 		P = 5
-		max_P = 30
+		max_P = 50
 		converge = False
 		beta = []
 		delta = 0.1
@@ -1717,21 +1705,21 @@ def ali3d_e_G_DUD(stack, ref_vol, maskfile=None, radius=-1, dtheta=2):
 		beta.append([phi, theta, psi+delta, s2x, s2y])
 		beta.append([phi, theta, psi, s2x+delta, s2y])
 		beta.append([phi, theta, psi, s2x, s2y+delta])
-		
 
 		Y = matrix(get_image_data(refim)).flatten(1)
 		omega = []
-		proj0 = prgs(volft, kb, beta[0])
+		proj_0 = prgs(volft, kb, beta[0])
 		for p in xrange(1, P+1):
-			projp = prgs(volft, kb, beta[p])
-			diffim = Util.subn_img(projp, proj0)
+			proj_p = prgs(volft, kb, beta[p])
+			diffim = Util.subn_img(proj_p, proj_0)
 			P2 = matrix(get_image_data(diffim)).flatten(1)
 			if p == 1: F = P2
 			else: F = concatenate((F, P2))
-			omega.append(projp.cmp("SqEuclidean", proj0))
+			omega.append(proj_p.cmp("SqEuclidean", proj_0))
+			
 					
-		projp = prgs(volft, kb, beta[P])
-		Fs = matrix(get_image_data(projp)).flatten(1)
+		proj_p = prgs(volft, kb, beta[P])
+		Fs = matrix(get_image_data(proj_p)).flatten(1)
 
 		A = [[delta, 0, 0, 0, 0], [0, delta, 0, 0, 0], [0, 0, delta, 0, 0], [0, 0, 0, delta, 0], [0, 0, 0, 0, delta]]
 		while converge == False and P < max_P:
@@ -1746,19 +1734,18 @@ def ali3d_e_G_DUD(stack, ref_vol, maskfile=None, radius=-1, dtheta=2):
 			dpsi = float(H[2][0])
 			ds2x = float(H[3][0])
 			ds2y = float(H[4][0])
-			print "P=", P, "dd=", dphi**2+dtheta**2+dpsi**2+ds2x**2+ds2y**2
-			if dphi**2+dtheta**2+dpsi**2+ds2x**2+ds2y**2 < 1e-6: converge = True
-			beta.append([beta[P][0]+dphi, beta[P][1]+dtheta, beta[P][2]+dpsi, beta[P][3]+ds2x, beta[P][4]+ds2y])
-			P += 1
+			d = dphi**2+dtheta**2+dpsi**2+ds2x**2+ds2y**2 
+			if d < 1e-6: converge = True
 			if converge == False:
-				proj_new = prgs(volft, kb, beta[P])
-				diffim = Util.subn_img(proj_new, proj0)
+				A.append([dphi, dtheta, dpsi, ds2x, ds2y])
+		 		beta.append([beta[P][0]+dphi, beta[P][1]+dtheta, beta[P][2]+dpsi, beta[P][3]+ds2x, beta[P][4]+ds2y])
+				P += 1
+				proj_p = prgs(volft, kb, beta[P])
+				diffim = Util.subn_img(proj_p, proj_0)
 				P2 = matrix(get_image_data(diffim)).flatten(1)
 				F = concatenate((F, P2))
-				Fs = matrix(get_image_data(proj_new)).flatten(1)
-				omega.append(proj_new.cmp("SqEuclidean", proj0))
-				A.append([dphi, dtheta, dpsi, ds2x, ds2y])
-		print "P =", P, "   converge =", converge
+				Fs = matrix(get_image_data(proj_p)).flatten(1)
+				omega.append(proj_p.cmp("SqEuclidean", proj_0))
 
 		set_params_proj(dataim[im], [beta[P][0], beta[P][1], beta[P][2], -beta[P][3], -beta[P][4]])
 
