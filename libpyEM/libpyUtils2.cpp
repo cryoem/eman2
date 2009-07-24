@@ -266,7 +266,7 @@ int pysstevd(const string& jobz, int n, array& diag, array& subdiag, array& qmat
     float* f = get_fptr( qmat );
     float* g = get_fptr( fwork );
     int*  ih = get_iptr( iwork );
-
+	cout<<"  pointers "<<d<<"  "<<e<<"  "<<f<<"  "<<g<<"  "<<ih<<"  "<<endl;
     sstevd_( (char*)jobz.c_str(), &n, d, e, f, &kstep, g, &lfwrk, ih, &liwrk, &info );
     return info;
 }
