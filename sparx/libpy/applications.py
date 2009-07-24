@@ -4294,7 +4294,7 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	from utilities      import model_circle, drop_image, get_image, get_input_from_string
 	from utilities      import get_params_proj
 	from utilities      import estimate_3D_center, rotate_3D_shift
-	from filter         import filt_params, fit_tanh, filt_tanl
+	from filter         import filt_params, fit_tanh, filt_tanl, filt_ctf
 	from statistics     import fsc_mask
 	import os
 	import types
