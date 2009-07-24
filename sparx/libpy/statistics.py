@@ -7426,12 +7426,12 @@ class def_variancer:
 			Util.add_img2( var, Util.subn_img(img, avg) )
 
 		reduce_EMData_to_root( var, myid, rootid )
-		if myid==rootid:
+		if myid == rootid:
 			var /= (nimg-1)
 			var.set_attr( "nimg", nimg )
 			return var, avg
-
-		return None, None
+		else:
+			return None, None
 
 
         def mpi_getavg(self, myid, rootid ):
@@ -7447,8 +7447,8 @@ class def_variancer:
 		if myid==rootid:
 			nimg = int( nimg[0] )
 			return cpy1/nimg
-
-		return None
+		else:
+			return None
 
 	def getvar(self):
 		avg1 = self.sum1/self.nimg
@@ -7460,7 +7460,6 @@ class def_variancer:
 		avg2 *= (float(self.nimg)/float(self.nimg-1))
 		 
 		return avg2
-
 
 	def getavg(self):
 		return self.sum1/self.nimg
@@ -7774,6 +7773,7 @@ class pcanalyzer:
 		else:
 			self.file = sdir + ("/maskedimg.bin" )
 			self.MPI  = False
+			self.myid = 0
 		self.sdir = sdir
 		self.nimg = 0
 		self.nvec = nvec
@@ -7823,9 +7823,7 @@ class pcanalyzer:
 		from string import replace
 		seed( 10000 + 10*self.myid )
 
-
 		shfflfile = replace( self.file, "masked", "shuffled" )
-
 
 		print self.myid, "shuffling"
 		sumdata = zeros( (self.ncov), float32 )
@@ -7882,12 +7880,12 @@ class pcanalyzer:
 		if self.myid==0:
 			print "analyze: ", self.ncov, " nvec: ", self.nvec
 		from time import time
-		from numpy import zeros, float32, int32
+		from numpy import zeros, float32, int32, int64
 		ncov = self.ncov
 		kstep = self.nvec + 20 # the choice of kstep is purely heuristic
 
 		diag    = zeros( (kstep), float32 )
-		subdiag = zeros( (kstep-1), float32 )
+		subdiag = zeros( (kstep), float32 )
 		vmat    = zeros( (kstep, ncov), float32 )
 
 		lanczos_start = time()
@@ -7901,14 +7899,11 @@ class pcanalyzer:
 
 			fwork = zeros( (lfwrk), float32 )
 			iwork = zeros( (liwrk), int32 )
-
 			info = Util.sstevd( "V", kstep, diag, subdiag, qmat, kstep, fwork, lfwrk, iwork, liwrk)
-			
 
 			eigval = zeros( (self.nvec), float32 )
 			for j in xrange(self.nvec):
 				eigval[j] = diag[kstep-j-1]
-
 
 			from utilities import model_blank, get_image_data
 			eigimgs = []

@@ -7,7 +7,7 @@ from global_def import *
 def main():
 	from   optparse       import OptionParser
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " filelist outdir  --fl=filter_low_value --aa=filter_fall_off --radccc=radius_ccc --overwrite --filtered --repair --pca --pcamask --pcaanvec --MPI"
+	usage = progname + " filelist outdir  --fl=filter_low_value --aa=filter_fall_off --radccc=radius_ccc --overwrite --filtered --repair --pca --pcamask --pcanvec --MPI"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--fl",         type="float",  default=0.0,    help="cut-off frequency of hyperbolic tangent low-pass Fourier filter")
 	parser.add_option("--aa",         type="float",  default=0.0,    help="fall-off of hyperbolic tangent low-pass Fourier filter")

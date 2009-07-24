@@ -246,10 +246,11 @@ int* get_iptr( array& a )
 */
 	PyArrayObject* aptr = (PyArrayObject*)a.ptr();
         char datatype = aptr->descr->type;
-        if( datatype != 'i' )
+        if( datatype != 'i' && datatype != 'l') // for some reaons on a mac it is 'l'
         {
-        	PyErr_SetString(PyExc_ValueError, "expected an integer PyArrayObject for get_iptr");
-		return NULL;
+		//cout << "datatype != 'i's: " << datatype << endl;
+        	//PyErr_SetString(PyExc_ValueError, "expected an integer PyArrayObject for get_iptr");
+		throw std::runtime_error( "Expected a int array for get_fptr" );
 	}
 
 	return (int*)(aptr->data);
@@ -266,7 +267,7 @@ int pysstevd(const string& jobz, int n, array& diag, array& subdiag, array& qmat
     float* f = get_fptr( qmat );
     float* g = get_fptr( fwork );
     int*  ih = get_iptr( iwork );
-	cout<<"  pointers "<<d<<"  "<<e<<"  "<<f<<"  "<<g<<"  "<<ih<<"  "<<endl;
+
     sstevd_( (char*)jobz.c_str(), &n, d, e, f, &kstep, g, &lfwrk, ih, &liwrk, &info );
     return info;
 }
