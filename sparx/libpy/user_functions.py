@@ -129,7 +129,7 @@ def ref_ali2d_c( ref_data ):
 	global  ref_ali2d_counter
 	ref_ali2d_counter += 1
 	print_msg("ref_ali2d   #%6d\n"%(ref_ali2d_counter))
-	fl = min(0.1+ref_ali2d_counter*0.01, 0.4)
+	fl = min(0.1+ref_ali2d_counter*0.003, 0.4)
 	aa = 0.1
 	msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
 	print_msg(msg)
@@ -157,7 +157,7 @@ def ref_ali2d_m( ref_data ):
 	global  ref_ali2d_counter
 	ref_ali2d_counter += 1
 	print_msg("ref_ali2d   #%6d\n"%(ref_ali2d_counter))
-	fl = 0.25
+	fl = 0.4
 	aa = 0.1
 	msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
 	print_msg(msg)
@@ -323,6 +323,8 @@ def ref_ali3d( ref_data ):
 	#volf = threshold(volf)
 	Util.mul_img(volf, ref_data[0])
 	fl, aa = fit_tanh(ref_data[3])
+	fl = 0.4
+	aa = 0.1
 	msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
 	print_msg(msg)
 	volf = filt_tanl(volf, fl, aa)
@@ -729,6 +731,7 @@ def constant( ref_data ):
 	tavg = filt_tanl(ref_data[2], fl, aa)
 	cs = [0.0]*2
 	return  tavg, cs
+
 
 # rewrote factory dict to provide a flexible interface for providing user functions dynamically.
 #    factory is a class that checks how it's called. static labels are rerouted to the original
