@@ -40,7 +40,7 @@ import sys
 def main():
 	
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack outdir <maskfile> --K=number_of_classes --trials=num_trials --opt_method=optimization_method --maxit=max_iter --CTF --rand_seed=1000 --crit=criterion_name --F=factor_temperature --T0=init_temperature --MPI --CUDA"
+	usage = progname + " stack outdir <maskfile> --K=number_of_classes --trials=num_trials --opt_method=optimization_method --maxit=max_iter --CTF --rand_seed=1000 --crit=criterion_name --F=factor_temperature --T0=init_temperature --normalize --MPI --CUDA"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--K",          type="int",          default=2,         help=" Number of classes (default 2)")
 	parser.add_option("--trials",     type="int",          default=1,         help=" Number of trials of K-means (default 1)")
@@ -54,6 +54,7 @@ def main():
 	parser.add_option("--MPI",        action="store_true", default=False,     help=" whether using MPI version ")
 	parser.add_option("--CUDA",       action="store_true", default=False,     help=" whether using CUDA version")
 	parser.add_option("--debug",      action="store_true", default=False,     help="")
+	parser.add_option("--normalize",  action="store_true", default=False,     help=" normalize images under the mask")
 	
 	(options, args) = parser.parse_args()
     	if len(args) < 2 or len(args) > 3:
@@ -75,7 +76,7 @@ def main():
 
 		from  applications  import  k_means_main
 		global_def.BATCH = True
-		k_means_main(args[0], args[1], mask, options.opt_method, options.K, options.rand_seed, options.maxit, options.trials, options.crit, options.CTF, options.F, options.T0, options.MPI, options.CUDA, options.debug)
+		k_means_main(args[0], args[1], mask, options.opt_method, options.K, options.rand_seed, options.maxit, options.trials, options.crit, options.CTF, options.F, options.T0, options.MPI, options.CUDA, options.debug, options.normalize)
 		global_def.BATCH = False
 
 if __name__ == "__main__":

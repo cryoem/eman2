@@ -92,7 +92,7 @@ def add_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None, a
  			Util.add_img2(var, ima)
 	 		if get_ctf2: Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
 		sumsq = Util.addn_img(ave1, ave2)
-		tavg = Util.divn_img(susmq, ctf_2_sum)
+		tavg = Util.divn_img(sumsq, ctf_2_sum)
 		Util.mul_img(sumsq, sumsq.conjg())
 		Util.div_img(sumsq, ctf_2_sum)
 	 	Util.sub_img(var, sumsq)
@@ -1499,10 +1499,10 @@ def k_means_list_active(stack):
 	return LUT, N
 
 # k-means open and prepare images
-def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, listID = None):
+def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, listID = None, flagnorm = False):
 	from utilities     import get_params2D, get_image, get_params3D
 	from fundamentals  import rot_shift2D, rot_shift3D
-	
+	from sys import exit
 	if CTF:
 		from morphology		import ctf_2, ctf_1d
 		from filter		import filt_ctf, filt_table
@@ -1535,6 +1535,7 @@ def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, listID = None):
 	ct   = 0
 	for i in xrange(N_start, N_stop):
 		image = DATA[ct].copy()
+		
 		# 3D object
 		if nz > 1:
 			phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(image)
@@ -1551,11 +1552,12 @@ def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, listID = None):
 			ctf[i]  = ctf_1d(nx, ctf_params)
 			ctf2[i] = ctf_2(nx, ctf_params)
 
-		# normalize
-		ave, std, mi, mx = Util.infomask(image, mask, True)
-		image -= ave
-		image /= std
-
+		if flagnorm:
+			# normalize
+			ave, std, mi, mx = Util.infomask(image, mask, True)
+			image -= ave
+			image /= std
+		
 		# apply mask
 		if mask != None:
 			if CTF: Util.mul_img(image, mask)
@@ -1858,7 +1860,6 @@ def k_means_classical(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, D
 			ERROR('Mask must be an image, not a file name!', 'k-means', 1)
 
 	N = len(im_M)
-
 	t_start = time.time()
 		
 	# Informations about images
@@ -2023,7 +2024,7 @@ def k_means_classical(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, D
 					if select != res['pos']:
 						ct_pert    += 1
 						res['pos']  = select
-			
+					
 				# update assign
 				if res['pos'] != assign[im]:
 					Cls['n'][assign[im]] -= 1
@@ -2031,7 +2032,7 @@ def k_means_classical(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, D
 					assign[im]            = res['pos']
 					Cls['n'][assign[im]] += 1
 					change                = True
-	
+				
 			# manage empty cluster
 			for k in xrange(K):
 				if Cls['n'][k] <= 1:
@@ -2172,7 +2173,7 @@ def k_means_classical(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, D
 			Cls['var'][k].do_ift_inplace()
 			Cls['ave'][k].depad()
 			Cls['var'][k].depad()
-	
+
 	# information display
 	running_time(t_start)
 	print_msg('Criterion = %11.6e \n' % Je)
@@ -2297,7 +2298,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 						Cls['n'][k] = 0
 			if flag == 1:
 				retrial = 0
-		
+	
 		if CTF:
 			## Calculate averages ave = S CTF.F / S CTF**2, first init ctf2
 			for k in xrange(K):	Cls_ctf2[k] = [0] * len_ctm
@@ -2450,7 +2451,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 						for i in xrange(len_ctm):
 							Cls_ctf2[assign_from][i] -= ctf2[im][i]
 							Cls_ctf2[assign_to][i]   += ctf2[im][i]
-										
+														
 					# empty cluster control
 					if Cls['n'][assign_from] <= 1:
 						print_msg('>>> WARNING: Empty cluster, restart with new partition %d.\n\n' % wd_trials)
@@ -3094,7 +3095,7 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 		
 	# [all] gather in main_node
 	assign = mpi_reduce(assign, N, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
-	assign = assign.tolist() # convert array gave by MPI to list
+	assign = assign.tolist() # convert array given by MPI to list
 
 	# [main_node] write the result
 	if myid == main_node and CTF:
@@ -5399,7 +5400,9 @@ def k_means_stab_pwa(PART, lim = 50):
 		if CT_t[k] == 0: continue
 		ST[k] = 100.0 * CT_s[k] / float(CT_t[k])
 
-	st = 100.0 * sum(CT_s) / float(sum(CT_t))
+	if sum(CT_t) == 0:
+		st = 0
+	else:   st = 100.0 * sum(CT_s) / float(sum(CT_t))
 
 	return MATCH, STB_PART, CT_s, CT_t, ST, st
 
@@ -5432,9 +5435,9 @@ def k_means_stab_H(ALL_PART):
 	return stability, nb_stb, ALL_PART[0]
 
 # Build and export the stable class averages 
-def k_means_stab_export(PART, stack, num_run, outdir, th_nobj):
-	from utilities    import model_blank, get_params2D
-	from fundamentals import rot_shift2D
+def k_means_stab_export(PART, stack, num_run, outdir, th_nobj, CTF = False):
+	from utilities    import model_blank, get_params2D, get_im
+	from fundamentals import rot_shift2D, fftip
 	
 	K    = len(PART)
 	im   = EMData()
@@ -5456,13 +5459,21 @@ def k_means_stab_export(PART, stack, num_run, outdir, th_nobj):
 	for k in xrange(K):
 		nobjs = len(PART[k])
 		if nobjs >= th_nobj:
-			for ID in PART[k]:
-				im.read_image(stack, int(ID))
-				alpha, sx, sy, mirror, scale = get_params2D(im)
-				im = rot_shift2D(im, alpha, sx, sy, mirror)
-				
-				Util.add_img(AVE[ck], im)
-			Util.mul_scalar(AVE[ck], 1.0 / float(nobjs))
+			if CTF:
+				data = []
+				for ID in PART[k]: data.append(get_im(stack, int(ID)))
+				AVE[ck], dum, dum, dum, dum = add_ave_varf(data, None, 'a', True)
+				fftip(AVE[ck])
+				AVE[ck].depad()
+			else:
+
+				for ID in PART[k]:
+					im.read_image(stack, int(ID))
+					alpha, sx, sy, mirror, scale = get_params2D(im)
+					im = rot_shift2D(im, alpha, sx, sy, mirror)
+
+					Util.add_img(AVE[ck], im)
+				Util.mul_scalar(AVE[ck], 1.0 / float(nobjs))
 
 			AVE[ck].set_attr('Class_average', 1.0)
 			AVE[ck].set_attr('nobjects', nobjs)

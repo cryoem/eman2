@@ -11877,7 +11877,7 @@ def refvol( vollist, fsclist, output, mask ):
 
 # K-means main driver
 def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, trials, critname,
-		 CTF = False, F = 0, T0 = 0, MPI = False, CUDA = False, DEBUG = False):
+		 CTF = False, F = 0, T0 = 0, MPI = False, CUDA = False, DEBUG = False, flagnorm = False):
 	from utilities 	import print_begin_msg, print_end_msg, print_msg, file_type
 	from statistics import k_means_criterion, k_means_export, k_means_open_im, k_means_headlog, k_means_locasg2glbasg, k_means_list_active
 	import sys
@@ -11919,10 +11919,10 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 			# with BDB all node can not read the same data base in the same time
 			import os
 			for i in xrange(nb_cpu):
-				if myid == i: [im_M, mask, ctf, ctf2] = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, listID)
+				if myid == i: [im_M, mask, ctf, ctf2] = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, listID, flagnorm)
 				mpi_barrier(MPI_COMM_WORLD)
 		else:
-			[im_M, mask, ctf, ctf2] = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, listID)
+			[im_M, mask, ctf, ctf2] = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, listID, flagnorm)
 	
 		if   opt_method == 'cla':
 			[Cls, assign] = k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, [CTF, ctf, ctf2], myid, main_node, N_start, N_stop, F, T0)
@@ -12003,7 +12003,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		from statistics import k_means_classical, k_means_SSE
 
 		listID, N = k_means_list_active(stack)
-		[im_M, mask, ctf, ctf2] = k_means_open_im(stack, maskname, 0, N, N, CTF, listID)
+		[im_M, mask, ctf, ctf2] = k_means_open_im(stack, maskname, 0, N, N, CTF, listID, flagnorm)
 
 		if T0 == -1:
 			from development import k_means_SA_T0
