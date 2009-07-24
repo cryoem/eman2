@@ -50,10 +50,8 @@
 using namespace EMAN;
 
 XYData::XYData()
+	: ymin(FLT_MAX), ymax(-FLT_MAX), mean_x_spacing(0)
 {
-	ymin = FLT_MAX;
-	ymax = -FLT_MAX;
-	mean_x_spacing = 0;
 }
 
 void XYData::update()
@@ -192,13 +190,13 @@ void XYData::set_xy_list(const vector<float>& xlist, const vector<float>& ylist)
 	if(xlist.size() != ylist.size()) {
 		throw InvalidParameterException("xlist and ylist size does not match!");
 	}
-	
+
 	for(unsigned int i=0; i<xlist.size(); ++i) {
 		data.push_back(Pair(xlist[i], ylist[i]));
 	}
 }
 
-void XYData::set_size(size_t n) 
+void XYData::set_size(size_t n)
 {
 	data.resize(n, Pair(0.0f, 0.0f));
 }
@@ -210,7 +208,7 @@ vector<float> XYData::get_xlist() const
 	for(cit=data.begin(); cit!=data.end(); ++cit) {
 		xlist.push_back( (*cit).x);
 	}
-	
+
 	return xlist;
 }
 
@@ -221,6 +219,6 @@ vector<float> XYData::get_ylist() const
 	for(cit=data.begin(); cit!=data.end(); ++cit) {
 		ylist.push_back( (*cit).y);
 	}
-	
+
 	return ylist;
 }
