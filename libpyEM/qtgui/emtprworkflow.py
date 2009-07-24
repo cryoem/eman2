@@ -248,85 +248,6 @@ class EMReconstructAliFile(WorkFlowTask):
 		self.form.closeEvent(None)
 		self.form = None
 
-class EMTomohunterTask(WorkFlowTask):
-	'''Use this task for running e2tomohunter.py from the workflow'''
-	
-	# written by Grant Tang
-	documentation_string = "This is useful information about this task."
-
-	def __init__(self):
-		WorkFlowTask.__init__(self)
-		self.window_title = "Tomohunter Input Form"
-		self.preferred_size = (640,480)
-		self.form_db_name = "bdb:emform.tomohunter"
-	def get_params(self):
-		params = []
-		db = db_open_dict(self.form_db_name)
-		
-		self.ptcl_table_tool = EMTomoPtclReportTool(tpr_ptcls_ali_dict,"Particles","targetimage")
-		self.probe_tool = EMTomoPtclReportTool(tpr_probes_dict,"Probe","probeimage")
-		
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="SPR",desc_long="Information regarding this task",property=None,defaultunits=self.__doc__,choices=None))
-#		targetimage = ParamDef(name="targetimage",vartype="url",desc_short="target image file name",desc_long="target image file name",property=None,defaultunits=project_db.get("targetimage",dfl=[]),choices=[])
-#		probeimage = ParamDef(name="probeimage",vartype="url",desc_short="probe image file name",desc_long="probe image file name",property=None,defaultunits=project_db.get("probeimage",dfl=[]),choices=[])
-		norm = ParamDef(name="n",vartype="int",desc_short="normalization",desc_long="if the normalization needed",property=None,defaultunits=db.get("n",dfl=0),choices=[0,1])
-		nsoln = ParamDef(name="nsoln",vartype="int",desc_short="#solution",desc_long="number of solution",property=None,defaultunits=db.get("nsoln",10),choices=None)
-		thresh = ParamDef(name="thresh",vartype="float",desc_short="threshold",desc_long="threshold",property=None,defaultunits=db.get("thresh",1.0),choices=None)
-		searchx = ParamDef(name="searchx",vartype="int",desc_short="searchx",desc_long="searchx",property=None,defaultunits=db.get("searchx",0),choices=None)
-		searchy = ParamDef(name="searchy",vartype="int",desc_short="searchy",desc_long="searchy",property=None,defaultunits=db.get("searchy",0),choices=None)
-		searchz = ParamDef(name="searchz",vartype="int",desc_short="searchz",desc_long="searchz",property=None,defaultunits=db.get("searchz",0),choices=None)
-		ralt = ParamDef(name="ralt",vartype="float",desc_short="ralt",desc_long="Altitude range",property=None,defaultunits=db.get("ralt",180.0),choices=None)
-		dalt = ParamDef(name="dalt",vartype="float",desc_short="dalt",desc_long="Altitude delta",property=None,defaultunits=db.get("dalt",10.0),choices=None)
-		daz = ParamDef(name="daz",vartype="float",desc_short="daz",desc_long="Azimuth delta",property=None,defaultunits=db.get("daz",10.0),choices=None)
-		rphi = ParamDef(name="rphi",vartype="float",desc_short="rphi",desc_long="Phi range",property=None,defaultunits=db.get("rphi",180.0),choices=None)
-		dphi = ParamDef(name="dphi",vartype="float",desc_short="dphi",desc_long="Phi delta",property=None,defaultunits=db.get("dphi",10.0),choices=None)
-		params.append([self.probe_tool.get_particle_table(),self.ptcl_table_tool.get_particle_table()])
-		params.append([norm,thresh,nsoln])
-		params.append([searchx,searchy,searchz])
-		params.append([ralt,dalt,daz,rphi,dphi])
-		#db_close_dict("bdb:project")
-		return params
-
-	def write_db_entry(self,key,value):
-		WorkFlowTask.write_db_entry(self,key,value)
-	
-	def check_params(self,params):
-		error_msg = []
-		if len(params["targetimage"]) == 0: error_msg.append("Please choose at leaset one particle file")
-		if len(params["probeimage"]) != 1: error_msg.append("Please choose a single probe file to proceed")
-		return error_msg
-	
-	def on_form_ok(self,params):
-		
-		error_message = self.check_params(params)
-		if len(error_message):
-			self.show_error_message(error_message)
-			return
-		self.write_db_entries(params) # will only write filenames
-		options = EmptyObject()
-		string_args = ["dalt","ralt","dphi","rphi","raz","daz","thresh","nsoln","searchx","searchy","searchz","n","probe"]
-		options.filenames = params['targetimage']
-		options.dalt = params['dalt']
-		options.ralt = params['ralt']
-		options.dphi = params['dphi']
-		options.rphi = params['rphi']
-		options.raz = params['ralt']
-		options.daz = params['dalt']
-		options.probe = params['probeimage'][0]
-		options.n = params['n']
-		options.thresh = params['thresh']
-		options.nsoln = params['nsoln']
-		options.searchx = params['searchx']
-		options.searchy = params['searchy']
-		options.searchz = params['searchz']
-		bool_args = []
-		additional_args = ["--dbls=%s" %tpr_ptcls_ali_dict]
-		temp_file_name = "e2tomohunter_stdout.txt"
-		self.spawn_single_task('e2tomohunter.py',options,string_args,bool_args,additional_args,temp_file_name)
-		self.emit(QtCore.SIGNAL("task_idle"))
-		self.form.closeEvent(None)
-		self.form = None
-
 class EMTomoPtclReportTool:
 	''' has a, not is a'''
 	def __init__(self,project_dict=tpr_ptcls_dict,title="Set Me Please",name="filenames"):
@@ -1257,21 +1178,36 @@ class EMTomohunterTask(WorkFlowTask):
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="SPR",desc_long="Information regarding this task",property=None,defaultunits=self.__doc__,choices=None))
 #		targetimage = ParamDef(name="targetimage",vartype="url",desc_short="target image file name",desc_long="target image file name",property=None,defaultunits=project_db.get("targetimage",dfl=[]),choices=[])
 #		probeimage = ParamDef(name="probeimage",vartype="url",desc_short="probe image file name",desc_long="probe image file name",property=None,defaultunits=project_db.get("probeimage",dfl=[]),choices=[])
-		norm = ParamDef(name="n",vartype="int",desc_short="normalization",desc_long="if the normalization needed",property=None,defaultunits=db.get("n",dfl=0),choices=[0,1])
+#		norm = ParamDef(name="n",vartype="int",desc_short="normalization",desc_long="if the normalization needed",property=None,defaultunits=db.get("n",dfl=0),choices=[0,1])
 		nsoln = ParamDef(name="nsoln",vartype="int",desc_short="#solution",desc_long="number of solution",property=None,defaultunits=db.get("nsoln",10),choices=None)
-		thresh = ParamDef(name="thresh",vartype="float",desc_short="threshold",desc_long="threshold",property=None,defaultunits=db.get("thresh",1.0),choices=None)
-		searchx = ParamDef(name="searchx",vartype="int",desc_short="searchx",desc_long="searchx",property=None,defaultunits=db.get("searchx",0),choices=None)
-		searchy = ParamDef(name="searchy",vartype="int",desc_short="searchy",desc_long="searchy",property=None,defaultunits=db.get("searchy",0),choices=None)
-		searchz = ParamDef(name="searchz",vartype="int",desc_short="searchz",desc_long="searchz",property=None,defaultunits=db.get("searchz",0),choices=None)
-		ralt = ParamDef(name="ralt",vartype="float",desc_short="ralt",desc_long="Altitude range",property=None,defaultunits=db.get("ralt",180.0),choices=None)
-		dalt = ParamDef(name="dalt",vartype="float",desc_short="dalt",desc_long="Altitude delta",property=None,defaultunits=db.get("dalt",10.0),choices=None)
-		daz = ParamDef(name="daz",vartype="float",desc_short="daz",desc_long="Azimuth delta",property=None,defaultunits=db.get("daz",10.0),choices=None)
-		rphi = ParamDef(name="rphi",vartype="float",desc_short="rphi",desc_long="Phi range",property=None,defaultunits=db.get("rphi",180.0),choices=None)
-		dphi = ParamDef(name="dphi",vartype="float",desc_short="dphi",desc_long="Phi delta",property=None,defaultunits=db.get("dphi",10.0),choices=None)
+#		thresh = ParamDef(name="thresh",vartype="float",desc_short="threshold",desc_long="threshold",property=None,defaultunits=db.get("thresh",1.0),choices=None)
+#		searchx = ParamDef(name="searchx",vartype="int",desc_short="searchx",desc_long="searchx",property=None,defaultunits=db.get("searchx",0),choices=None)
+#		searchy = ParamDef(name="searchy",vartype="int",desc_short="searchy",desc_long="searchy",property=None,defaultunits=db.get("searchy",0),choices=None)
+#		searchz = ParamDef(name="searchz",vartype="int",desc_short="searchz",desc_long="searchz",property=None,defaultunits=db.get("searchz",0),choices=None)
+#		ralt = ParamDef(name="ralt",vartype="float",desc_short="ralt",desc_long="Altitude range",property=None,defaultunits=db.get("ralt",180.0),choices=None)
+#		dalt = ParamDef(name="dalt",vartype="float",desc_short="dalt",desc_long="Altitude delta",property=None,defaultunits=db.get("dalt",10.0),choices=None)
+#		daz = ParamDef(name="daz",vartype="float",desc_short="daz",desc_long="Azimuth delta",property=None,defaultunits=db.get("daz",10.0),choices=None)
+#		rphi = ParamDef(name="rphi",vartype="float",desc_short="rphi",desc_long="Phi range",property=None,defaultunits=db.get("rphi",180.0),choices=None)
+#		dphi = ParamDef(name="dphi",vartype="float",desc_short="dphi",desc_long="Phi delta",property=None,defaultunits=db.get("dphi",10.0),choices=None)
 		params.append([self.probe_tool.get_particle_table(),self.ptcl_table_tool.get_particle_table_with_ptcls(self.ptcls_list)])
-		params.append([norm,thresh,nsoln])
-		params.append([searchx,searchy,searchz])
-		params.append([ralt,dalt,daz,rphi,dphi])
+		params.append(nsoln)
+#		params.append([searchx,searchy,searchz])
+#		params.append([ralt,dalt,daz,rphi,dphi])
+		
+		data = dump_aligners_list()
+		data_3d = {}
+		data_3d["rt.3d.grid"] = data["rt.3d.grid"]
+		data_3d["rt.3d.sphere"] = data["rt.3d.sphere"]
+		
+		pstrategy = EMEmanStrategyWidget(data_3d,name="align",desc_short="Main Alignment Strategy",desc_long="Choose an alignment strategy",defaultunits="rt.3d.grid")
+		params.append(pstrategy)
+		
+		data_r3d = {}
+		data_r3d["refine.3d"] = data["refine.3d"]
+		data_r3d["None"] = ["Choose this to stop the refinement aligner from being used"]
+		prstrategy = EMEmanStrategyWidget(data_r3d,name="ralign",desc_short="Refinement Alignment Strategy",desc_long="Choose a refine alignment strategy. Choose None to disable this",defaultunits="None")
+		params.append(prstrategy)
+		
 		#db_close_dict("bdb:project")
 		return params
 
@@ -1292,21 +1228,17 @@ class EMTomohunterTask(WorkFlowTask):
 			return
 		self.write_db_entries(params) # will only write filenames
 		options = EmptyObject()
-		string_args = ["dalt","ralt","dphi","rphi","raz","daz","thresh","nsoln","searchx","searchy","searchz","n","probe"]
+		string_args = ["align","probe"]
 		options.filenames = params['targetimage']
-		options.dalt = params['dalt']
-		options.ralt = params['ralt']
-		options.dphi = params['dphi']
-		options.rphi = params['rphi']
-		options.raz = params['ralt']
-		options.daz = params['dalt']
+		options.align = params['align']
 		options.probe = params['probeimage'][0]
-		options.n = params['n']
-		options.thresh = params['thresh']
+#		options.n = params['n']
 		options.nsoln = params['nsoln']
-		options.searchx = params['searchx']
-		options.searchy = params['searchy']
-		options.searchz = params['searchz']
+		
+		if params["ralign"] != "None":
+			string_args.append("ralign")
+			options.ralign = params['ralign']
+			
 		bool_args = []
 		additional_args = ["--dbls=%s" %tpr_ptcls_ali_dict]
 		temp_file_name = "e2tomohunter_stdout.txt"
@@ -1328,7 +1260,7 @@ class EMTomoChooseTomoHunterPtclsTask(EMBaseTomoChooseFilteredPtclsTask):
 			error("Please choose some data")
 			return
 		choice = params["tomo_filt_choice"]
-		
+		print "tomo hunter chose"
 		task = EMTomohunterTask(self.particles_map[self.particles_name_map[choice]],self.name_map)
 		self.emit(QtCore.SIGNAL("replace_task"),task,"Filter Tomo Particles")
 		self.form.closeEvent(None)

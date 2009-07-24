@@ -1087,33 +1087,32 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 	return result;
 }
 
-static double refalifn3d(const gsl_vector * v, void *params)
+static Transform refalin3d_perturb(const Transform*const t, const float& delta, const float& arc, const float& phi, const float& x, const float& y, const float& z)
 {
-	Dict *dict = (Dict *) params;
-	double x = gsl_vector_get(v, 0);
-	double y = gsl_vector_get(v, 1);
-	double z = gsl_vector_get(v, 2);
-	double az = gsl_vector_get(v, 3);
- 	double alt = gsl_vector_get(v, 4);
- 	double phi = gsl_vector_get(v, 5);
-	EMData *this_img = (*dict)["this"];
-	EMData *with = (*dict)["with"];
-	bool mirror = (*dict)["mirror"];
-
-	Transform* t = (*dict)["transform"];
-
 	Dict orig_params = t->get_params("eman");
+	float orig_phi = orig_params["phi"];
+// 	cout << " in the thingy old phi " << orig_phi << " orig_az " <<  (float) orig_params["az"] << " orig alt " << (float) orig_params["alt"] << endl;
+	float orig_x = orig_params["tx"];
+	float orig_y = orig_params["ty"];
+	float orig_z = orig_params["tz"];
+	orig_params["phi"] = 0;
+	orig_params["tx"] = 0;
+	orig_params["ty"] = 0;
+	orig_params["tz"] = 0;
+	Transform t_no_phi(orig_params);
 
 	Vec3f zz(0,0,1);
+// 	Vec3f vv(0,0,1);
 
-	Vec3f vv  = (*t).transpose()*zz;
+	Vec3f vv  = t_no_phi.transpose()*zz;
 	Vec3f normal = Vec3f(-vv[2],0,-vv[0]);
+// 	Vec3f normal = Vec3f(-1.0,0.0,0.0);
 	normal.normalize();
-	delete t; t = 0;
+	
 
 	Dict d;
 	d["type"] = "spin";
-	d["Omega"] = alt;
+	d["Omega"] = delta;
 	d["n1"] = normal[0];
 	d["n2"] = normal[1];
 	d["n3"] = normal[2];
@@ -1121,30 +1120,73 @@ static double refalifn3d(const gsl_vector * v, void *params)
 	Transform normal_rot(d);
 	
 	Vec3f  start_point = normal_rot*vv;
-	
+	start_point.normalize();
+
 	Dict e;
 	e["type"] = "spin";
-	e["Omega"] = az;
+	e["Omega"] = arc;
 	e["n1"] = vv[0];
 	e["n2"] = vv[1];
 	e["n3"] = vv[2];
 	
 	Transform perturb(e);
 	Vec3f end_point = perturb*start_point;
+	end_point.normalize();
 	
-	Transform soln;
-	soln.set_rotation(end_point);
-	Dict new_params = soln.get_params("eman");
-	new_params["phi"] = phi+(float)orig_params["phi"];
-	soln.set_params(new_params);
-	perturb.set_trans((float)x,(float)y,(float)z);
-	perturb.set_mirror(mirror);
-	EMData *tmp = this_img->process("math.transform",Dict("transform",&perturb));
+	Vec3d major_normal = end_point.cross(start_point);
+	major_normal.normalize();
 
+	Dict f;
+	f["type"] = "spin";
+	f["Omega"] = delta;
+	f["n1"] = major_normal[0];
+	f["n2"] = major_normal[1];
+	f["n3"] = major_normal[2];
+	
+	Dict g;
+	g["type"] = "eman";
+	g["alt"] = 0;
+	g["az"] = 0;
+	g["phi"] = 0*phi+orig_phi;
+	
+// 	cout << " soln phi " << phi << " phi + orig_phi " << phi+orig_phi  << " az " << az << " alt " << alt << endl;
+	Transform soln(f);
+	Transform phi_rot(g);
+	soln = phi_rot*soln*t_no_phi;
+	soln.set_trans(x+orig_x,y+orig_y,z+orig_z);
+	
+	Dict params = soln.get_params("eman");
+// 	float new_phi = params["phi"];
+// 	float new_alt = params["alt"];
+// 	float new_az = params["az"];
+// 	cout << " in the thingy new phi " << new_phi << " new_az " <<  new_az << " new_alt " << new_alt << new_alt << endl;
+	
+	return soln;
+}
+
+static double refalifn3d(const gsl_vector * v, void *params)
+{
+	Dict *dict = (Dict *) params;
+	double x = gsl_vector_get(v, 0);
+	double y = gsl_vector_get(v, 1);
+	double z = gsl_vector_get(v, 2);
+	double arc = gsl_vector_get(v, 3);
+ 	double delta = gsl_vector_get(v, 4);
+ 	double phi = gsl_vector_get(v, 5);
+	EMData *this_img = (*dict)["this"];
+	EMData *with = (*dict)["with"];
+// 	bool mirror = (*dict)["mirror"];
+
+	Transform* t = (*dict)["transform"];
+	
+	Transform soln = refalin3d_perturb(t,(float)delta,(float)arc,(float)phi,(float)x,(float)y,(float)z);
+
+	EMData *tmp = this_img->process("math.transform",Dict("transform",&soln));
 	Cmp* c = (Cmp*) ((void*)(*dict)["cmp"]);
 	double result = c->cmp(tmp,with);
 	if ( tmp != 0 ) delete tmp;
-
+	delete t; t = 0;
+// 	cout << result << " " << az << " " << alt << " " << phi << " " << x << " " << y << " " << z << endl;
 	return result;
 }
 
@@ -1182,10 +1224,8 @@ EMData* Refine3DAligner::align(EMData * this_img, EMData *to,
 	const string & cmp_name, const Dict& cmp_params) const
 {
 
-	if (!to) {
-		return 0;
-	}
-	
+	if (!to or !this_img) throw NullPointerException("Input image is null"); // not sure if this is necessary, it was there before I started
+		
 	if (to->get_ndim() != 3 || this_img->get_ndim() != 3) throw ImageDimensionException("The Refine3D aligner only works for 3D images");
 
 	float saz = 0.0;
@@ -1197,20 +1237,16 @@ EMData* Refine3DAligner::align(EMData * this_img, EMData *to,
 	bool mirror = false;
 	Transform* t;
 	if (params.has_key("xform.align3d") ) {
+		// Unlike the 2d refine aligner, this class doesn't require the starting transform's 
+		// parameters to form the starting guess. Instead the Transform itself
+		// is perturbed carefully (using quaternion rotation) to overcome problems that arise 
+		// when you use orthogonally-based Euler angles
 		t = params["xform.align3d"];
-		Dict params = t->get_params("eman");
-		saz = params["az"];
-		sphi = params["phi"];
-		salt = params["alt"];
-		sdx = params["tx"];
-		sdy = params["ty"];
-		sdz = params["tz"];
-		mirror = params["mirror"];
 	}else {
 		t = new Transform(); // is the identity	
 	}
-// 	t->printme();
-	int np = 6;
+
+	int np = 6; // the number of dimensions
 	Dict gsl_params;
 	gsl_params["this"] = this_img;
 	gsl_params["with"] = to;
@@ -1225,15 +1261,15 @@ EMData* Refine3DAligner::align(EMData * this_img, EMData *to,
 	float stepy = params.set_default("stepy",1.0f);
 	float stepz = params.set_default("stepz",1.0f);
 	// Default step is 5 degree - note in EMAN1 it was 0.1 radians
-	float stepaz = params.set_default("stepaz",180.0f);
-	float stepphi = params.set_default("stepalt",5.0f);
-	float stepalt = params.set_default("stepphi",5.0f);
+	float half_circle_step = 180.0f; // This shouldn't be altered
+	float stepphi = params.set_default("stephi",5.0f);
+	float stepdelta = params.set_default("stepdelta",5.0f);
 
 	gsl_vector_set(ss, 0, stepx);
 	gsl_vector_set(ss, 1, stepy);
 	gsl_vector_set(ss, 2, stepz);
-	gsl_vector_set(ss, 3, stepaz);
-	gsl_vector_set(ss, 4, stepalt);
+	gsl_vector_set(ss, 3, half_circle_step);
+	gsl_vector_set(ss, 4, stepdelta);
 	gsl_vector_set(ss, 5, stepphi);
 
 	gsl_vector *x = gsl_vector_alloc(np);
@@ -1260,7 +1296,7 @@ EMData* Refine3DAligner::align(EMData * this_img, EMData *to,
 	int iter = 1;
 
 	float precision = params.set_default("precision",0.04f);
-	int maxiter = params.set_default("maxiter",28);
+	int maxiter = params.set_default("maxiter",60);
 	while (rval == GSL_CONTINUE && iter < maxiter) {
 		iter++;
 		status = gsl_multimin_fminimizer_iterate(s);
@@ -1277,66 +1313,21 @@ EMData* Refine3DAligner::align(EMData * this_img, EMData *to,
 	}
 	float fmaxshift = static_cast<float>(maxshift);
 	EMData *result;
-	if ( fmaxshift >= (float)gsl_vector_get(s->x, 0) && fmaxshift >= (float)gsl_vector_get(s->x, 1)  && fmaxshift >= (float)gsl_vector_get(s->x, 2) )
+	if ( fmaxshift >= (float)gsl_vector_get(s->x, 0) && fmaxshift >= (float)gsl_vector_get(s->x, 1)  && fmaxshift >= (float)gsl_vector_get(s->x, 2))
 	{
+		float x = (float)gsl_vector_get(s->x, 0);
+		float y = (float)gsl_vector_get(s->x, 1);
+		float z = (float)gsl_vector_get(s->x, 2);
+				
+		float arc = (float)gsl_vector_get(s->x, 3);
+		float delta = (float)gsl_vector_get(s->x, 4);
+		float phi = (float)gsl_vector_get(s->x, 5);
 		
-// 		Transform* t = (*dict)["transform"];
-// 
-// 		Dict orig_params = t->get_params("eman");
-// 
-// 		Vec3f zz(0,0,1);
-// 
-// 		Vec3f vv  = (*t).transpose()*zz;
-// 		Vec3f normal = Vec3f(-vv[2],0,-vv[0]);
-// 		normal.normalize();
-// 		delete t; t = 0;
-// 
-// 		Dict d;
-// 		d["type"] = "spin";
-// 		d["Omega"] = alt;
-// 		d["n1"] = normal[0];
-// 		d["n2"] = normal[1];
-// 		d["n3"] = normal[2];
-// 
-// 		Transform normal_rot(d);
-// 	
-// 		Vec3f  start_point = normal_rot*vv;
-// 	
-// 		Dict e;
-// 		e["type"] = "spin";
-// 		e["Omega"] = az;
-// 		e["n1"] = vv[0];
-// 		e["n2"] = vv[1];
-// 		e["n3"] = vv[2];
-// 	
-// 		Transform perturb(e);
-// 		Vec3f end_point = perturb*start_point;
-// 	
-// 		Transform soln;
-// 		soln.set_rotation(end_point);
-// 		Dict new_params = soln.get_params("eman");
-// 		new_params["phi"] = phi+(float)orig_params["phi"];
-// 		soln.set_params(new_params);
-// 		perturb.set_trans((float)x,(float)y,(float)z);
-// 		perturb.set_mirror(mirror);
-// 		
-// 		Dict d("type","eman","az",(float)gsl_vector_get(s->x, 3));
-// 		d["alt"] = (float)gsl_vector_get(s->x, 4);
-// 		d["phi"] = (float)gsl_vector_get(s->x, 5);
-// 		Transform tsoln(d);
-// 		tsoln.set_trans((float)gsl_vector_get(s->x, 0),(float)gsl_vector_get(s->x, 1),(float)gsl_vector_get(s->x, 2) );
-// 		tsoln.set_mirror(mirror);
-// 		result = this_img->process("math.transform",Dict("transform",&tsoln));
-// 		result->set_attr("xform.align3d",&tsoln);
+		Transform tsoln = refalin3d_perturb(t,delta,arc,phi,x,y,z);
 		
-		Dict d("type","eman","az",(float)gsl_vector_get(s->x, 3));
-		d["alt"] = (float)gsl_vector_get(s->x, 4);
-		d["phi"] = (float)gsl_vector_get(s->x, 5);
-		Transform tsoln(d);
-		tsoln.set_trans((float)gsl_vector_get(s->x, 0),(float)gsl_vector_get(s->x, 1),(float)gsl_vector_get(s->x, 2) );
-		tsoln.set_mirror(mirror);
-		result = this_img->process("math.transform",Dict("transform",&tsoln));
+ 		result = this_img->process("math.transform",Dict("transform",&tsoln));
 		result->set_attr("xform.align3d",&tsoln);
+
 	} else { // The refine aligner failed - this shift went beyond the max shift
 		result = this_img->process("math.transform",Dict("transform",t));
 		result->set_attr("xform.align3d",t);
@@ -1439,6 +1430,7 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 				Transform t(d);
 				EMData* transformed = this_img->process("math.transform",Dict("transform",&t));
 				EMData* ccf = transformed->calc_ccf(to);
+				delete transformed; transformed =0;
 				IntPoint point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
 				float best_score = ccf->get_value_at_wrap(point[0],point[1],point[2]);
 				t.set_trans(point[0],point[1],point[2]);
@@ -1468,6 +1460,7 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 						break;
 					}
 				}
+				delete ccf; ccf =0;
 			}
 		}
 	}
@@ -1565,6 +1558,7 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 			Transform t(params);
 			EMData* transformed = this_img->process("math.transform",Dict("transform",&t));
 			EMData* ccf = transformed->calc_ccf(to);
+			delete transformed; transformed =0;
 			IntPoint point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
 			float best_score = ccf->get_value_at_wrap(point[0],point[1],point[2]);
 			t.set_trans(point[0],point[1],point[2]);
@@ -1577,6 +1571,7 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 				best_score /= map_sum;
 				delete ccf_fft; ccf_fft = 0;
 			}
+			delete ccf; ccf =0;
 			
 			unsigned int j = 0;
 			for ( vector<Dict>::iterator it = solns.begin(); it != solns.end(); ++it, ++j ) {
@@ -1595,6 +1590,7 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 					break;
 				}
 			}
+			
 		}
 	}
 	delete sym; sym = 0;

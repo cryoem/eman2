@@ -571,20 +571,26 @@ namespace EMAN
 		{
 			TypeDict d;
 
-			d.put("mode", EMObject::INT);
-			d.put("xform.align2d", EMObject::TRANSFORM);
-			d.put("stepx", EMObject::FLOAT);
-			d.put("stepy", EMObject::FLOAT);
-			d.put("stepaz", EMObject::FLOAT);
-			d.put("precision", EMObject::FLOAT);
+			d.put("mode", EMObject::INT, "Currently unused");
+			d.put("xform.align2d", EMObject::TRANSFORM, "The Transform storing the starting guess. If unspecified the identity matrix is used");
+			d.put("stepx", EMObject::FLOAT, "The x increment used to create the starting simplex. Default is 1");
+			d.put("stepy", EMObject::FLOAT, "The y increment used to create the starting simplex. Default is 1");
+			d.put("stepaz", EMObject::FLOAT, "The rotational increment used to create the starting simplex. Default is 5");
+			d.put("precision", EMObject::FLOAT, "The precision which, if achieved, can stop the iterative refinement before reaching the maximum iterations. Default is 0.04.");
 			d.put("maxiter", EMObject::INT,"The maximum number of iterations that can be performed by the Simplex minimizer");
-			d.put("maxshift", EMObject::INT,"Maximum translation in pixels in any direction");
+			d.put("maxshift", EMObject::INT,"Maximum translation in pixels in any direction. If the solution yields a shift beyond this value in any direction, then the refinement is judged a failure and the original alignment is used as the solution.");
 			return d;
 		}
 	};
 
 
-	/** refine alignment. Refines a preliminary 3D alignment using a simplex algorithm. Subpixel precision.
+	/** Refine alignment. Refines a preliminary 3D alignment using a simplex algorithm. Subpixel precision.
+	 * Uses quaternions extensively, separates the in plane (phi) rotation and the 2 rotations that define
+	 * a point on the sphere (POTS), manipulating them independently. The POTS is"jiggled" in a local circular
+	 * sub manifold of the sphere (of radius stepdelta). Phi is allowed to vary as a normal variable. The result
+	 * is combined into a single transform and then a similarity is computed, etc. Translation also varies.
+	 * @author David Woolford
+	 * @date June 23 2009
 	 */
 	class Refine3DAligner:public Aligner
 	{
@@ -615,24 +621,24 @@ namespace EMAN
 			virtual TypeDict get_param_types() const
 			{
 				TypeDict d;
-				d.put("xform.align3d", EMObject::TRANSFORM);
-				d.put("stepx", EMObject::FLOAT);
-				d.put("stepy", EMObject::FLOAT);
-				d.put("stepz", EMObject::FLOAT);
-				d.put("stepphi", EMObject::FLOAT);
-				d.put("stepalt", EMObject::FLOAT);
-				d.put("stepaz", EMObject::FLOAT);
-				d.put("precision", EMObject::FLOAT);
-				d.put("maxiter", EMObject::INT, "The maximum number of iterations that can be performed by the Simplex minimizer");
-				d.put("maxshift", EMObject::INT,"Maximum translation in pixels in any direction");
+				d.put("xform.align3d", EMObject::TRANSFORM,"The Transform storing the starting guess. If unspecified the identity matrix is used");
+				d.put("stepx", EMObject::FLOAT, "The x increment used to create the starting simplex. Default is 1");
+				d.put("stepy", EMObject::FLOAT,"The y increment used to create the starting simplex. Default is 1");
+				d.put("stepz", EMObject::FLOAT, "The z increment used to create the starting simplex. Default is 1." );
+				d.put("stepphi", EMObject::FLOAT, "The phi incremenent used to creat the starting simplex. This is the increment applied to the inplane rotation. Default is 5." );
+				d.put("stepdelta", EMObject::FLOAT,"The angular increment which represents a good initial step along the sphere, thinking in terms of quaternions. Default is 5.");
+				d.put("precision", EMObject::FLOAT, "The precision which, if achieved, can stop the iterative refinement before reaching the maximum iterations. Default is 0.04." );
+				d.put("maxiter", EMObject::INT, "The maximum number of iterations that can be performed by the Simplex minimizer. Default is 60.");
+				d.put("maxshift", EMObject::INT,"Maximum translation in pixels in any direction. If the solution yields a shift beyond this value in any direction, then the refinement is judged a failure and the original alignment is used as the solution.");
 				return d;
 			}
 	};
 	
 	/** rotational and translational alignment using a square qrid of Altitude and Azimuth values (the phi range is specifiable)
-	 * This aligner is ported from the original tomohunter.py - it is less efficient than searching on the sphere, but very useful
-	 * if you want to search in a specific, local area.
-	 * @author David Woolford (ported from Mike Schmids e2tomohunter code - Mike Schmid is the intellectual author)
+	 * This aligner is ported from the original tomohunter.py - it is less efficient than searching on the sphere (RT3DSphereAligner),
+	 * but very useful  if you want to search in a specific, small, local area.
+	 * @author David Woolford (ported from Mike Schmid's e2tomohunter code - Mike Schmid is the intellectual author)
+	 * @date June 23 2009
 	 */
 	class RT3DGridAligner:public Aligner
 	{
@@ -688,8 +694,11 @@ namespace EMAN
 			}
 	};
 	
-	/** 3D rotational and translational alignment using spherical sampling, can reduce the search space based on symmetry
+	/** 3D rotational and translational alignment using spherical sampling, can reduce the search space based on symmetry.
+	 * can also make use of different OrientationGenerators (random, for example)
+	 * 160-180% more efficient than the RT3DGridAligner
 	 * @author David Woolford
+	 * @date June 23 2009
 	 */
 	class RT3DSphereAligner:public Aligner
 	{
