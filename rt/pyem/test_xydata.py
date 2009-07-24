@@ -63,6 +63,7 @@ class TestXYData(unittest.TestCase):
         ly = (i+100 for i in range(10))
         xy.set_xy_list(lx, ly)
         
+        xy.update();
         self.assertAlmostEqual(5.0, xy.get_x(5), 3)
         self.assertAlmostEqual(105.0, xy.get_y(5), 3)
         self.assertAlmostEqual(106.0, xy.get_yatx(6), 3)
