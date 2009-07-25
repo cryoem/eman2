@@ -35,7 +35,6 @@ from time import time
 from math import ceil
 from copy import copy
 
-
 class EMProjectDB:
 	"""
 	It's implemented as a singleton
@@ -582,10 +581,7 @@ class Cache:
 		oldcache = self.cache
 		self.cache = [object]
 		self.cache.extend(oldcache)
-		if len(self.cache) > self.maxsize:
-			self.cache.pop(self.maxsize)
-			if len(self.cache) != self.maxsize:
-				print "error, the caching mechanism is not working correctly"
+		
 	
 	def get_image(self,image_name, *args, **kargs):
 		encapsulated_image = None
@@ -597,6 +593,9 @@ class Cache:
 			
 			
 		if encapsulated_image == None:
+			if len(self.cache) >= self.maxsize:
+				self.cache.pop(-1)
+			
 			#if we make it here the cfimage is not cached
 			#print "had to cache an image for",image_name
 			encapsulated_image = getattr(Cache.factory,self.accessor_name)(image_name)
@@ -616,6 +615,9 @@ class Cache:
 		for object in self.get_cache():
 			if object.get_image_name() == image_name:
 				return object
+		
+		if len(self.cache) >= self.maxsize:
+			self.cache.pop(-1)
 		
 		encapsulated_object = getattr(Cache.factory,self.accessor_name)(image_name)
 		self.add_to_cache(encapsulated_object)
@@ -1790,7 +1792,11 @@ class Boxable:
 					#else: print "directory exists, particles"
 				else:
 					#print "making directory particles"
-					os.makedirs("particles")
+					try: os.makedirs("particles")
+					except: 
+						if not os.path.isdir("particles"):
+							raise RuntimeError("could not make particles directory?")
+						else: pass # it was just made by another process!
 				
 				
 			image_name = self.get_image_file_name(imageformat)

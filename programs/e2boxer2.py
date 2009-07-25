@@ -33,21 +33,34 @@
 
 from emboxerbase import *
 from valslider import ValSlider
-from EMAN2 import BoxingTools,gm_time_string,Transform
+from EMAN2 import BoxingTools,gm_time_string,Transform, E2init, E2end, E2progress
 from pyemtbx.boxertools import CoarsenedFlattenedImageCache,FLCFImageCache
 from copy import deepcopy
 
 SWARM_TEMPLATE_MIN = TEMPLATE_MIN # this comes from emboxerbase
+
 
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] <image> <image2>....
 
 a refactoring of e2boxer
+
+For example:
+
+e2boxer2.py ????.mrc --boxsize=256
 """
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 	parser.add_option("--boxsize","-B",type="int",help="Box size in pixels",default=-1)
+	parser.add_option("--write_dbbox",action="store_true",help="Write coordinate file (eman1 dbbox) files",default=False)
+	parser.add_option("--write_ptcls",action="store_true",help="Write particles to disk",default=False)
+	parser.add_option("--force","-f",action="store_true",help="Force overwrite",default=False)
+	parser.add_option("--format", help="Format of the output particles images, should be bdb,img,spi or hdf", default="bdb")
+	parser.add_option("--norm", type="string",help="Normalization processor to apply to written particle images. Should be normalize, normalize.edgemean,etc.Specifc \"None\" to turn this off", default="normalize.edgemean")
+	parser.add_option("--invert",action="store_true",help="If writing outputt inverts pixel intensities",default=False)
+	parser.add_option("--suffix",type="string",help="suffix which is appended to the names of output particle and coordinate files",default="_ptcls")
+	parser.add_option("--dbls",type="string",help="data base list storage, used by the workflow. You can ignore this argument.",default=None)
 	
 	(options, args) = parser.parse_args()
 	
@@ -64,19 +77,80 @@ a refactoring of e2boxer
 			error += "Error: "+e +"\n"
 		parser.error(error)
 	
+	logid=E2init(sys.argv)
+	
 	if cache_box_size: db["box_size"] = options.boxsize
 	
-	args = [abs_path(arg) for arg in args] # always try to use full file names 
+	args = [abs_path(arg) for arg in args] # always try to use full file names  - this means the workflow can keep track of where images come from
 
-	application = EMStandAloneApplication()
+	
 #	QtCore.QObject.connect(gui, QtCore.SIGNAL("module_idle"), on_idle)
 	
-	module = EMBoxerModule(args,options.boxsize)
-	module.show_interfaces()
-	# this is an example of how to add your own custom tools:
-	module.add_tool(SwarmTool,particle_diameter=options.boxsize)
-	application.execute()
-
+	if options.write_dbbox or options.write_ptcls:
+		write_output(args,options,logid)
+	else:
+		application = EMStandAloneApplication()
+		module = EMBoxerModule(args,options.boxsize)
+		# this is an example of how to add your own custom tools:
+		module.add_tool(SwarmTool,particle_diameter=options.boxsize)
+		module.show_interfaces()
+		application.execute()
+		
+	E2end(logid)
+		
+def write_output(args,options,logid):
+	params = {}
+	params["filenames"] = args
+	params["suffix"] = options.suffix
+	params["format"] = options.format
+	
+	total_progress = 0
+	if options.write_ptcls:total_progress += len(args)
+	if options.write_dbbox:total_progress += len(args)
+	progress = 0.0
+	E2progress(logid,0.0)
+	
+	if options.write_ptcls:
+		names = get_particle_outnames(params)
+		for i,output in enumerate(names):
+			input = args[i]
+			box_list = EMBoxList()
+			box_list.load_boxes_from_database(input)
+			box_list.write_particles(input,output,options.boxsize,options.invert,options.norm)
+			if options.dbls and len(box_list)>0:
+				from EMAN2 import get_file_tag
+				db = db_open_dict("bdb:project")	
+				particle_data =  db.get(options.dbls,dfl={})
+				if isinstance(particle_data,list): # this is for back compatibility - in June 2009 we transitioned from lists to dicts
+					d = {}
+					for name in particle_data:
+						s={}
+						s["Original Data"] = name
+						d[get_file_tag(name)] = s
+					particle_data = d
+	
+				
+				s={}
+				s["Original Data"] = output
+				particle_data[get_file_tag(output)] = s
+				db[options.dbls] = particle_data
+				
+				
+			progress += 1.0
+			E2progress(logid,progress/total_progress)
+		
+	if options.write_dbbox:
+		names = get_coord_outnames(params)
+		
+		for i,output in enumerate(names):
+			input = args[i]
+			box_list = EMBoxList()
+			box_list.load_boxes_from_database(input)
+			box_list.write_coordinates(input,output,box_size) # input is redundant but it makes output interfaces generic
+	
+			progress += 1.0
+			E2progress(logid,progress/total_progress)
+			
 def gen_rot_ave_template(image_name,ref_boxes,shrink,box_size,iter=4):
 	
 	ptcls = []
@@ -496,7 +570,6 @@ class SwarmBoxer:
 		'''
 		Closes the template viewer if it exists
 		'''
-		print "del sb"
 		if self.template_viewer != None:
 			self.template_viewer.closeEvent(None)
 			self.template_viewer = None

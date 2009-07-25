@@ -1344,11 +1344,11 @@ class EMTomoBoxerModule(QtCore.QObject):
 		''' @return the number of boxes currently in the image '''
 		return len(self.coord_list)
 
-from emsprworkflow import EMFormTask
+from emsprworkflow import WorkFlowTask
 from emdatastorage import ParamDef
-class TomoBoxerOutputForm(EMFormTask):
+class TomoBoxerOutputForm(WorkFlowTask):
 	def __init__(self,target,file_names,file_indices):
-		EMFormTask.__init__(self)
+		WorkFlowTask.__init__(self)
 		self.window_title = "e2tomoboxer write output"
 		self.preferred_size = [240,240]
 		self.target = weakref.ref(target)

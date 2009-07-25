@@ -607,14 +607,14 @@ def float_lt(self,item2):
 	try:
 		f = float(self.text())
 	except:
-		return 1
+		return 0
 	
 	try:
 		f2 = float(item2.text())
 	except:
-		return 0
+		return 1
 	
-	return f < f2 
+	return f > f2 
 
 def int_lt(self,item2):
 	'''
@@ -623,14 +623,14 @@ def int_lt(self,item2):
 	try:
 		f = int(self.text())
 	except:
-		return 1
+		return 0
 	
 	try:
 		f2 = int(item2.text())
 	except:
-		return 0
+		return 1
 	
-	return f < f2 
+	return f > f2 
 
 	
 
@@ -2046,8 +2046,10 @@ class EMTableFormWidget(EMFormWidget):
 
 def get_example_form_params():
 	params = []
-	pstrategy = EMEmanStrategyWidget(dump_aligners_list(),desc_short="Strategy",desc_long="Choose a strategy",defaultunits=None)
+	pstrategy = EMEmanStrategyWidget(dump_aligners_list(),name="align",desc_short="Strategy",desc_long="Choose a strategy",defaultunits=None)
 	params.append(pstrategy)
+	pstrategy2 = EMEmanStrategyWidget(dump_processors_list(),name="proc",desc_short="Processors",desc_long="Choose a processor",defaultunits=None)
+	params.append(pstrategy2)
 	params.append(ParamDef(name="box size",vartype="int",desc_short="int",desc_long="An integer value",property=None,defaultunits=128,choices=[]))
 	params.append(ParamDef(name="apix",vartype="float",desc_short="float",desc_long="A floating point value",property=None,defaultunits=1.0,choices=[]))
 	ps = ParamDef(name="model",vartype="string",desc_short="string",desc_long="A string value",property=None,defaultunits="Three thousand series",choices=None)

@@ -33,15 +33,15 @@
 from EMAN2 import EMAN2db
 from emdatastorage import ParamDef 
 
-from emsprworkflow import EMFormTask
+from emsprworkflow import WorkFlowTask
 from emapplication import get_application
 
 global HOMEDB
 HOMEDB=EMAN2db.EMAN2DB.open_db()
 
-class EMPreferencesTask(EMFormTask):
+class EMPreferencesTask(WorkFlowTask):
 	def __init__(self,application=None):
-		EMFormTask.__init__(self)
+		WorkFlowTask.__init__(self)
 		self.preferred_size = [240,240]
 		self.window_title = "EMAN2 preferences"
 		

@@ -71,57 +71,57 @@ class EmptyObject:
 		pass
 	
 
-class EMFormTask(QtCore.QObject):
-	'''
-	Something that reflects the common interface for all of the tasks
-	'''
-	def __init__(self):
-		QtCore.QObject.__init__(self)
-		self.window_title = "Set me please" # inheriting classes should set this
-		self.preferred_size = (480,640) # inheriting classes can change this if they choose
-
-	def run_form(self): 
-		self.form = EMFormModule(self.get_params(),get_application())
-		self.form.qt_widget.resize(*self.preferred_size)
-		self.form.setWindowTitle(self.window_title)
-		get_application().show_specific(self.form)
-		self.make_form_connections()
-	def make_form_connections(self):
-		'''
-		Make the necesessary form connections
-		'''
-		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_ok"),self.on_form_ok)
-		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
-		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_close"),self.on_form_close)
-		
-	def get_params(self): raise NotImplementedError
-	
-	def on_form_ok(self,params):
-		self.write_db_entries(params)			
-		self.form.closeEvent(None)
-		self.form = None
-		self.emit(QtCore.SIGNAL("task_idle"))
-		
-	def on_form_cancel(self):
-		self.form.closeEvent(None)
-		self.form = None
-		self.emit(QtCore.SIGNAL("task_idle"))
-	
-	def on_form_close(self):
-		self.emit(QtCore.SIGNAL("task_idle"))
-
-	def closeEvent(self,event):
-		self.form.closeEvent(None)
-		#self.emit(QtCore.SIGNAL("task_idle")
-		
-	def write_db_entries(self,dictionary):
-		'''
-		Write the dictionary key/entries into the database using self.form_db_name
-		Writes all keys except for "blurb" - note the the "blurb" key is mostly used in the context
-		of these forms to display helpful information to the user - it doesn't need to be stored in the
-		database 
-		'''
-		raise NotImplementedError
+#class EMFormTask(QtCore.QObject):
+#	'''
+#	Something that reflects the common interface for all of the tasks
+#	'''
+#	def __init__(self):
+#		QtCore.QObject.__init__(self)
+#		self.window_title = "Set me please" # inheriting classes should set this
+#		self.preferred_size = (480,640) # inheriting classes can change this if they choose
+#
+#	def run_form(self): 
+#		self.form = EMFormModule(self.get_params(),get_application())
+#		self.form.qt_widget.resize(*self.preferred_size)
+#		self.form.setWindowTitle(self.window_title)
+#		get_application().show_specific(self.form)
+#		self.make_form_connections()
+#	def make_form_connections(self):
+#		'''
+#		Make the necesessary form connections
+#		'''
+#		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_ok"),self.on_form_ok)
+#		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
+#		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_close"),self.on_form_close)
+#		
+#	def get_params(self): raise NotImplementedError
+#	
+#	def on_form_ok(self,params):
+#		self.write_db_entries(params)			
+#		self.form.closeEvent(None)
+#		self.form = None
+#		self.emit(QtCore.SIGNAL("task_idle"))
+#		
+#	def on_form_cancel(self):
+#		self.form.closeEvent(None)
+#		self.form = None
+#		self.emit(QtCore.SIGNAL("task_idle"))
+#	
+#	def on_form_close(self):
+#		self.emit(QtCore.SIGNAL("task_idle"))
+#
+#	def closeEvent(self,event):
+#		self.form.closeEvent(None)
+#		#self.emit(QtCore.SIGNAL("task_idle")
+#		
+#	def write_db_entries(self,dictionary):
+#		'''
+#		Write the dictionary key/entries into the database using self.form_db_name
+#		Writes all keys except for "blurb" - note the the "blurb" key is mostly used in the context
+#		of these forms to display helpful information to the user - it doesn't need to be stored in the
+#		database 
+#		'''
+#		raise NotImplementedError
 
 
 def error(msg,title="Almost"):
@@ -287,7 +287,7 @@ class WorkFlowTask:
 		options is an object with the filenames, all string args and all bool_args as attributes 
 		string_args=["
 		bool_args=["
-		additional_args=["--auto_db,--auto_fit"]
+		additional_args=["--auto_db,--autofit"]
 		temp_file_name = "etctf_auto_tmp.txt"
 		'''
 		project_db = db_open_dict("bdb:project")
@@ -358,7 +358,7 @@ class WorkFlowTask:
 		options is an object with the filenames, all string args and all bool_args as attributes 
 		string_args=["
 		bool_args=["
-		additional_args=["--auto_db,--auto_fit"]
+		additional_args=["--auto_db,--autofit"]
 		temp_file_name = "etctf_auto_tmp.txt"
 		'''
 		project_db = db_open_dict("bdb:project")	
@@ -914,11 +914,11 @@ class EMRawDataReportTask(WorkFlowTask):
 			
 
 	class ProjectListContextMenu:
-		def __init__(self,project_list=spr_raw_data_dict,remove_only=False):
+		def __init__(self,project_list=spr_raw_data_dict,remove_only=False,using_file_tags=False):
 			self.project_list = project_list
 			self.validator = AddFilesToProjectValidator(self.project_list)
 			self.context_menu = {}
-			self.context_menu["Remove"] = EMRawDataReportTask.ProjectListContextMenu.RemoveFilesFromProject(self.project_list)
+			self.context_menu["Remove"] = EMRawDataReportTask.ProjectListContextMenu.RemoveFilesFromProject(self.project_list,using_file_tags)
 			if not remove_only: self.context_menu["Add"] = EMRawDataReportTask.ProjectListContextMenu.AddFilesToProjectViaContext(self.project_list)
 		
 		def items(self):
@@ -926,8 +926,9 @@ class EMRawDataReportTask(WorkFlowTask):
 		
 		
 		class RemoveFilesFromProject:
-			def __init__(self,project_list):
+			def __init__(self,project_list,using_file_tags=False):
 				self.project_list = project_list
+				self.using_file_tags = using_file_tags
 			def __call__(self,names,table_widget):
 				if len(names) == 0: return # nothing happened
 			
@@ -939,10 +940,14 @@ class EMRawDataReportTask(WorkFlowTask):
 				project_names = data_dict.keys()
 				
 				full_names = [table_widget.convert_text(name) for name in names]
-		
-				for name in full_names:
+				db_full_names = [table_widget.convert_text(name) for name in names]
+				if self.using_file_tags:
+					db_full_names = [get_file_tag(table_widget.convert_text(name)) for name in names]
+					
+					
+				for name in db_full_names:
 					if name not in project_names:
-						# this shouldn't happen 
+						# this shouldn't happen, but luckily it was here because it alerted me to an error once
 						EMErrorMessageDisplay.run(["%s is not in the project list" %name])
 						return
 				
@@ -952,7 +957,7 @@ class EMRawDataReportTask(WorkFlowTask):
 				for idx in indices:
 					table_widget.removeRow(idx)
 					
-				data_dict.remove_names(full_names)
+				data_dict.remove_names(db_full_names)
 				
 		class AddFilesToProject:
 			def __init__(self,project_list):
@@ -1178,7 +1183,7 @@ class EMFilterRawDataTask(WorkFlowTask):
 					idx = file.rfind(".")
 					if idx == -1: error_message.append("Couldn't interpret %s" %file)
 					else:
-						type_ = file[idx:]
+						type_ = file[idx+1:]
 						if type_ not in get_supported_2d_write_formats(): type_ = ".mrc"
 						reps.append(file[:idx]+"_filt"+type_)
 			self.output_names = reps
@@ -1193,7 +1198,7 @@ class EMFilterRawDataTask(WorkFlowTask):
 					idx = file.rfind(".")
 					if idx == -1: error_message.append("Couldn't interpret %s" %file)
 					else:
-						type_ = file[idx:]
+						type_ = file[idx+1:]
 						if type_ not in get_supported_2d_write_formats():
 							error_message.append("Can not inplace filter %s files (%s)" %(type_,file))		
 						
@@ -1644,7 +1649,7 @@ class EMParticleReportTask(ParticleWorkFlowTask):
 
 		from emform import EM2DStackTable,EMFileTable,int_lt
 		table = EM2DStackTable(particle_names,desc_short="Project Particle Sets",desc_long="")
-		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(self.project_list)
+		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(self.project_list,using_file_tags=True)
 		table.add_context_menu_data(context_menu_data)
 		table.add_button_data(EMRawDataReportTask.ProjectAddRawDataButton(table,context_menu_data))
 		table.insert_column_data(1,EMFileTable.EMColumnData("Particles On Disk",EMParticleReportTask.get_num_ptcls,"Particles currently stored on disk that are associated with this image",int_lt))
@@ -1748,7 +1753,7 @@ class EMParticleImportTask(ParticleWorkFlowTask):
 				s += w
 				if w != warning[-1]: s+= ", "
 			s += " are already in database format: they will merely be associated with the project"
-			EMErrorMessageDisplay(s,"Warning")
+			error(s,"Warning")
 					
 	def on_form_ok(self,params):
 		
@@ -1801,7 +1806,7 @@ class EMParticleImportTask(ParticleWorkFlowTask):
 		progress.close()
 		
 		get_application().setOverrideCursor(Qt.ArrowCursor)
-		return True,cmd
+		return True,"success"
 	
 	
 	class ProjectAddRawDataButton():
@@ -1945,26 +1950,52 @@ class E2BoxerTask(ParticleWorkFlowTask):
 		data_dict = EMProjectDataDict(spr_ptcls_dict)
 		dict = data_dict.get_data_dict() # this is to protect against back compatibility problems
 	
+#	def get_boxes_in_database(file_name):
+#		
+#		db_name = "bdb:e2boxercache#boxes"
+#		db_name = "bdb:e2boxer.cache"		
+#		box_maps = {}
+#		nbox = 0
+#		if db_check_dict(db_name):
+#			e2boxer_db = db_open_dict(db_name,ro=True)
+#			for name in e2boxer_db.keys():
+#				d = e2boxer_db[name]
+#				if not isinstance(d,dict): continue
+#				if not d.has_key("e2boxer_image_name"): # this is the test, if something else has this key then we're screwed.
+#					continue
+#				name = d["e2boxer_image_name"]
+#				if get_file_tag(name) != get_file_tag(file_name): continue
+#				
+#				for key in ["auto_boxes","manual_boxes","reference_boxes"]:
+#					if d.has_key(key):
+#						boxes = d[key]
+#						if boxes != None: nbox += len(boxes)
+#		return str(nbox)
+	
 	def get_boxes_in_database(file_name):
 		
-		db_name = "bdb:e2boxer.cache"		
+		db_name = "bdb:e2boxercache#boxes"
+		#db_name = "bdb:e2boxer.cache"		
 		box_maps = {}
 		nbox = 0
 		if db_check_dict(db_name):
 			e2boxer_db = db_open_dict(db_name,ro=True)
-			for name in e2boxer_db.keys():
-				d = e2boxer_db[name]
-				if not isinstance(d,dict): continue
-				if not d.has_key("e2boxer_image_name"): # this is the test, if something else has this key then we're screwed.
-					continue
-				name = d["e2boxer_image_name"]
-				if get_file_tag(name) != get_file_tag(file_name): continue
-				
-				for key in ["auto_boxes","manual_boxes","reference_boxes"]:
-					if d.has_key(key):
-						boxes = d[key]
-						if boxes != None: nbox += len(boxes)
-		return str(nbox)
+			if e2boxer_db.has_key(file_name):
+				return str(len(e2boxer_db[file_name]))
+		return "-"
+#			for name in e2boxer_db.keys():
+#				d = e2boxer_db[name]
+#				if not isinstance(d,dict): continue
+#				if not d.has_key("e2boxer_image_name"): # this is the test, if something else has this key then we're screwed.
+#					continue
+#				name = d["e2boxer_image_name"]
+#				if get_file_tag(name) != get_file_tag(file_name): continue
+#				
+#				for key in ["auto_boxes","manual_boxes","reference_boxes"]:
+#					if d.has_key(key):
+#						boxes = d[key]
+#						if boxes != None: nbox += len(boxes)
+		
 
 	get_boxes_in_database = staticmethod(get_boxes_in_database)
 #	get_num_particles_project = staticmethod(get_num_particles_project)
@@ -2240,7 +2271,115 @@ class E2BoxerAutoTaskGeneral(E2BoxerAutoTask):
 			params.append(ParamDef(name="filenames",vartype="url",desc_short="File Names",desc_long="The names of the particle files you want to interactively box using e2boxer",property=None,defaultunits=[],choices=[]))
 		
 		return params
+
+
+class OldBoxerRecoveryDialog(QtGui.QDialog):
+	def __init__(self):
+		'''
+		@param sym some kind of symmetry, such as "d7", "icos" etc
+		'''
+		QtGui.QDialog.__init__(self)
+		self.setWindowTitle("Old Boxer Recovery")
+		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "green_boxes.png"))
+
+		self.vbl = QtGui.QVBoxLayout(self)
+		self.vbl.setMargin(0)
+		self.vbl.setSpacing(6)
+		self.vbl.setObjectName("vbl")
+		
+		text_edit = QtGui.QTextEdit("")
+		text_edit.setReadOnly(True)
+		text_edit.setWordWrapMode(QtGui.QTextOption.WordWrap)
+		text_edit.setText("The workflow has detected you have data stored in the local database that was generated with an old version of e2boxer. You can recover it (recommended), in which case the old data is converted so it can be interpreted within the current framework. Alternatively you can just delete it, which means the box coordinates will be lost forever.")
+		self.vbl.addWidget(text_edit)
+		self.button_hbl = QtGui.QHBoxLayout()
+		self.recover = QtGui.QPushButton("Recover")
+		self.recover.setToolTip("The old database will be converted to a format recognized by the new boxer. The old database will then be deleted.")
+		self.recover.setDefault(True)
+		self.remove = QtGui.QPushButton("Remove")
+		self.remove.setToolTip("The old database will be removed and all previous boxing results will be deleted from disk.")
+		self.cancel = QtGui.QPushButton("Cancel")
+		self.cancel.setToolTip("The operation will be cancelled.")
+		self.button_hbl.addWidget(self.cancel )
+		self.button_hbl.addWidget(self.remove )
+		self.button_hbl.addWidget(self.recover )
+		self.vbl.addLayout(self.button_hbl)
+
 	
+		QtCore.QObject.connect(self.recover, QtCore.SIGNAL("clicked(bool)"), self.on_recover)
+		QtCore.QObject.connect(self.remove, QtCore.SIGNAL("clicked(bool)"), self.on_remove)
+		QtCore.QObject.connect(self.cancel, QtCore.SIGNAL("clicked(bool)"), self.on_cancel)
+		self.ret_code = 0
+	def on_cancel(self,int):
+		self.ret_code = 0
+		self.accept()
+		
+	def on_remove(self,int):
+		self.ret_code = 1
+		self.accept()
+		
+	def on_recover(self,int):
+		self.ret_code = 2
+		self.accept()
+	
+	def exec_(self):
+		'''
+		Customized exec_ function
+		@return None if the user hit cancel or a dictionary containing important parameters if the user hit ok
+		'''
+		QtGui.QDialog.exec_(self)
+		return self.ret_code
+
+def recover_old_boxer_database():
+	old_boxer_database = "bdb:e2boxer.cache"
+	if db_check_dict(old_boxer_database):
+		recovery_items = []
+		db = db_open_dict(old_boxer_database)
+		for key,value in db.items():
+			if isinstance(key,str) and len(key) > 2 and key[-3:] == "_DD":
+				if isinstance(value,dict):
+					if value.has_key("reference_boxes") or value.has_key("auto_boxes") or value.has_key("manual_boxes"):
+						if value.has_key("e2boxer_image_name"):
+							recovery_items.append([key,value])
+		if len(recovery_items) > 0:
+			dialog = OldBoxerRecoveryDialog()
+			code = dialog.exec_()
+			if code == 0:
+				return 0
+			else:
+				if code == 1:
+					db_remove_dict(old_boxer_database)
+				else: # code == 2
+					new_db_name = "bdb:e2boxercache#boxes"
+					db = db_open_dict(new_db_name)
+					for item in recovery_items:
+						from pyemtbx.boxertools import TrimBox
+						value = item[1]
+						name = value["e2boxer_image_name"]
+						auto = None
+						ref = None
+						man = None
+						new_boxes = []
+						for box_name in ["reference_boxes","auto_boxes","manual_boxes"]:
+							if value.has_key(box_name):
+								old_boxes =  value[box_name]
+								for box in old_boxes:
+									x = box.xcorner+box.xsize/2
+									y = box.ycorner+box.ysize/2
+	#									score = box.correlation_score
+									new_boxes.append([x,y,"manual"])
+						
+						print name,len(new_boxes)
+						if db.has_key(name):
+							new_boxes = new_boxes.extend(db[name])
+						
+						db[name] = new_boxes
+					
+					db_remove_dict(old_boxer_database)
+			return 1
+		
+	return 1
+			
 
 
 class E2BoxerGuiTask(E2BoxerTask):	
@@ -2252,7 +2391,7 @@ class E2BoxerGuiTask(E2BoxerTask):
 		E2BoxerTask.__init__(self)
 		self.window_title = "Launch e2boxer Interface"
 		self.boxer_module = None # this will actually point to an EMBoxerModule, potentially
-
+		recover_old_boxer_database()
 	def get_params(self):
 		params = []
 		
@@ -2284,14 +2423,23 @@ class E2BoxerGuiTask(E2BoxerTask):
 			options.running_mode = "gui"
 			options.method = "Swarm"
 			
-			from e2boxer import EMBoxerModule
-			self.boxer_module = EMBoxerModule(get_application(),options)
+			from emboxerbase import EMBoxerModule
+			from e2boxer2 import  SwarmTool
+			self.boxer_module = EMBoxerModule(params["filenames"],params["interface_boxsize"])
+															
+			
+			# this is an example of how to add your own custom tools:
+			self.boxer_module.add_tool(SwarmTool,particle_diameter=options.boxsize)
+			
+			
+#			from e2boxer import EMBoxerModule
+#			self.boxer_module = EMBoxerModule(get_application(),options)
 			self.emit(QtCore.SIGNAL("gui_running"),"Boxer",self.boxer_module) # The controlled program should intercept this signal and keep the E2BoxerTask instance in memory, else signals emitted internally in boxer won't work
 			
-			QtCore.QObject.connect(self.boxer_module, QtCore.SIGNAL("module_idle"), self.on_boxer_idle)
 			QtCore.QObject.connect(self.boxer_module, QtCore.SIGNAL("module_closed"), self.on_boxer_closed)
 			self.form.closeEvent(None)
-			self.boxer_module.show_guis()
+#			self.boxer_module.show_guis()
+			self.boxer_module.show_interfaces()
 			self.form = None
 			
 	def on_form_close(self):
@@ -2300,17 +2448,11 @@ class E2BoxerGuiTask(E2BoxerTask):
 			self.emit(QtCore.SIGNAL("task_idle"))
 		else: pass
 	
-	def on_boxer_closed(self): 
+	def on_boxer_closed(self):
 		if self.boxer_module != None:
 			self.boxer_module = None
 			self.emit(QtCore.SIGNAL("gui_exit"))
 	
-	def on_boxer_idle(self):
-		'''
-		Presently this means boxer did stuff but never opened any guis, so it's safe just to emit the signal
-		'''
-		self.boxer_module = None
-		self.emit(QtCore.SIGNAL("gui_exit"))
 
 class E2BoxerGuiTaskGeneral(E2BoxerGuiTask):	
 	def __init__(self):
@@ -2356,14 +2498,14 @@ class E2BoxerOutputTask(E2BoxerTask):
 		db = db_open_dict(self.form_db_name)
 		pbox = ParamDef(name="output_boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=db.get("output_boxsize",dfl=128),choices=[])	
 		pfo = ParamDef(name="force",vartype="boolean",desc_short="Force overwrite",desc_long="Whether or not to force overwrite files that already exist",property=None,defaultunits=db.get("force",dfl=False),choices=None)
-		pwc = ParamDef(name="write_coord_files",vartype="boolean",desc_short="Write box coord files",desc_long="Whether or not box db files should be written",property=None,defaultunits=db.get("write_coord_files",dfl=False),choices=None)
-		pwb = ParamDef(name="write_box_images",vartype="boolean",desc_short="Write box image files",desc_long="Whether or not box images should be written",property=None,defaultunits=db.get("write_box_images",dfl=True),choices=None)
-		pinv = ParamDef(name="invert_output",vartype="boolean",desc_short="Invert",desc_long="Do you want the pixel intensities in the output inverted?",property=None,defaultunits=db.get("invert_output",dfl=False),choices=None)
-		pn =  ParamDef(name="normproc",vartype="string",desc_short="Normalize images",desc_long="How the output box images should be normalized",property=None,defaultunits=db.get("normproc",dfl="normalize.edgemean"),choices=["normalize","normalize.edgemean","none"])
-		pop = ParamDef(name="outformat",vartype="string",desc_short="Output image format",desc_long="The format of the output box images",property=None,defaultunits=db.get("outformat",dfl="bdb"),choices=self.output_formats)
+		pwc = ParamDef(name="write_dbbox",vartype="boolean",desc_short="Write box coord files",desc_long="Whether or not box db files should be written",property=None,defaultunits=db.get("write_dbbox",dfl=False),choices=None)
+		pwb = ParamDef(name="write_ptcls",vartype="boolean",desc_short="Write box image files",desc_long="Whether or not box images should be written",property=None,defaultunits=db.get("write_ptcls",dfl=True),choices=None)
+		pinv = ParamDef(name="invert",vartype="boolean",desc_short="Invert",desc_long="Do you want the pixel intensities in the output inverted?",property=None,defaultunits=db.get("invert",dfl=False),choices=None)
+		pn =  ParamDef(name="norm",vartype="string",desc_short="Normalize images",desc_long="How the output box images should be normalized",property=None,defaultunits=db.get("norm",dfl="normalize.edgemean"),choices=["normalize","normalize.edgemean","none"])
+		pop = ParamDef(name="format",vartype="string",desc_short="Output image format",desc_long="The format of the output box images",property=None,defaultunits=db.get("format",dfl="bdb"),choices=self.output_formats)
 		
 		#db_close_dict(self.form_db_name)
-		pwb.dependents = ["invert_output","normproc","outformat"] # these are things that become disabled when the pwb checkbox is unchecked etc
+		pwb.dependents = ["invert","norm","format"] # these are things that become disabled when the pwb checkbox is unchecked etc
 		
 		params.append([pbox,pfo])
 		params.append([pwc,pwb,pinv])
@@ -2375,7 +2517,7 @@ class E2BoxerOutputTask(E2BoxerTask):
 		
 		error_message = []
 		if params["output_boxsize"] < 1: error_message.append("Boxsize must be greater than 0.")
-		if not params["write_coord_files"] and not params["write_box_images"]: error_message.append("You must choose at least one of the write_coords/write_box_images options")
+		if not params["write_ptcls"] and not params["write_dbbox"]: error_message.append("You must choose at least one of the write_coords/write_box_images options")
 	
 		return error_message
 	
@@ -2398,11 +2540,11 @@ class E2BoxerOutputTask(E2BoxerTask):
 			
 			options.just_output=True # this is implicit, it has to happen
 			
-			string_args = ["normproc","outformat","boxsize"]
-			bool_args = ["force","write_coord_files","write_box_images","just_output","invert_output"]
-			additional_args = ["--method=Swarm", "--auto=db","--dbls=%s" %spr_ptcls_dict]
-			temp_file_name = "e2boxer_autobox_stdout.txt"
-			self.spawn_task("e2boxer.py",options,string_args,bool_args,additional_args,temp_file_name)
+			string_args = ["norm","format","boxsize"]
+			bool_args = ["force","write_dbbox","write_ptcls","invert"]
+			additional_args = ["--dbls=%s" %spr_ptcls_dict]
+			temp_file_name = "e2boxer2_autobox_stdout.txt"
+			self.spawn_task("e2boxer2.py",options,string_args,bool_args,additional_args,temp_file_name)
 			self.emit(QtCore.SIGNAL("task_idle"))
 			self.form.closeEvent(None)
 			self.form = None
@@ -2837,7 +2979,7 @@ class E2CTFAutoFitTask(E2CTFWorkFlowTask):
 			
 			string_args = ["oversamp","ac","apix","cs","voltage"]
 			bool_args = ["nosmooth","nonorm","autohp","invert"]
-			additional_args = ["--auto_fit"]
+			additional_args = ["--autofit"]
 			temp_file_name = "e2ctf_autofit_stdout.txt"
 			self.spawn_task("e2ctf.py",options,string_args,bool_args,additional_args,temp_file_name)
 			
@@ -3028,7 +3170,7 @@ class E2CTFSFOutputTask(E2CTFWorkFlowTask):
 
 
 class E2CTFOutputTaskGeneral(E2CTFOutputTask):
-	''' This one uses the names in the e2ctf.parms to generate it's table of options, not the particles in the particles directory
+	''' Use this form for generating CTF-related output. 
 	'''
 	warning_string = "\n\n\nNOTE: There are no CTF parameters currently stored for any images in the local database. You can change this by running automated fitting with e2ctf."
 	
@@ -3044,7 +3186,7 @@ class E2CTFOutputTaskGeneral(E2CTFOutputTask):
 		
 		from emform import EM2DStackTable,EMFileTable,float_lt,int_lt
 		table = EM2DStackTable(names,desc_short="Particle Images",desc_long="")
-		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(names)
+		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(names,using_file_tags=True)
 		table.add_context_menu_data(context_menu_data)
 		table.add_button_data(EMRawDataReportTask.ProjectAddRawDataButton(table,context_menu_data))
 	#	table.insert_column_data(1,EMFileTable.EMColumnData("Particles On Disk",EMParticleReportTask.get_num_ptcls,"Particles currently stored on disk that are associated with this image"))
@@ -3069,9 +3211,9 @@ class E2CTFOutputTaskGeneral(E2CTFOutputTask):
 		
 		
 		if num == 0:
-			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFOutputTask.documentation_string+E2CTFOutputTaskGeneral.warning_string,choices=None))
+			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
 		else:
-			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFOutputTask.documentation_string,choices=None))
+			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
 			params.append(p)
 			pwiener = ParamDef(name="wiener",vartype="boolean",desc_short="Wiener",desc_long="Wiener filter your particle images using parameters in the database. Phase flipping will also occur",property=None,defaultunits=False,choices=None)
 			pphase = ParamDef(name="phaseflip",vartype="boolean",desc_short="Phase flip",desc_long="Phase flip your particle images using parameters in the database",property=None,defaultunits=False,choices=None)

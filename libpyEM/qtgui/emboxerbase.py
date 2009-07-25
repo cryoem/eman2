@@ -334,7 +334,7 @@ class EMBox:
 		
 		if self.image == None or self.image.get_xsize() != box_size or self.image.get_ysize() != box_size:
 			global BigImageCache
-			data=BigImageCache.get_object(image_name).get_image(use_alternate=True)
+			data=BigImageCache.get_object(image_name).get_image(use_alternate=True) # use alternate is a red herring
 			r = Region(self.x-box_size/2,self.y-box_size/2,box_size,box_size)
 			self.image = data.get_clip(r)
 			if norm != None:
@@ -1320,7 +1320,9 @@ class EMBoxList:
 			f.write(str(int(xc))+'\t'+str(int(yc))+'\t'+str(box_size)+'\t'+str(box_size)+'\n')
 		f.close()
 
-class EMBoxerModule:
+
+import PyQt4
+class EMBoxerModule(PyQt4.QtCore.QObject):
 	'''
 	The EMBoxerModule is like a coordinator. It has 4 widgets: 1 inspector, 1 2D window viewer, and 2 particle 
 	stack viewers (one for viewing boxed particles, one for viewing thumbnails).
@@ -1333,6 +1335,7 @@ class EMBoxerModule:
 		@file_name the name of a file on disk
 		@exception RuntimeError raised if the file does not exist
 		'''
+		PyQt4.QtCore.QObject.__init__(self)
 		self.file_names = file_names # a list of file names
 		self.current_idx = None # an index into self.file_names
 		self.box_size = box_size # the current box size
@@ -1837,6 +1840,8 @@ class EMBoxerModule:
 	def done(self):
 		for module in [self.main_2d_window, self.thumbs_window,self.particles_window ]:
 			if module != None: module.closeEvent(None)
+			
+		self.emit(PyQt4.QtCore.SIGNAL("module_closed"))
 				
 	def run_output_dialog(self):
 		from emsprworkflow import E2BoxerProgramOutputTask
@@ -1904,12 +1909,12 @@ class EMBoxerWriteOutputTask(WorkFlowTask):
 		pwc = ParamDef(name="write_coords",vartype="boolean",desc_short="Write Coordinates",desc_long="Whether or not to write .box files",property=None,defaultunits=db.get("write_coords",dfl=False),choices=None)
 		psuffix = ParamDef(name="suffix",vartype="string",desc_short="Output Suffix", desc_long="This text will be appended to the names of the output files",property=None,defaultunits=db.get("suffix",dfl="_ptcls"),choices=None )
 		pwb = ParamDef(name="write_particles",vartype="boolean",desc_short="Write Particles",desc_long="Whether or not box images should be written",property=None,defaultunits=db.get("write_particles",dfl=True),choices=None)
-		pinv = ParamDef(name="invert_output",vartype="boolean",desc_short="Invert Pixels",desc_long="Do you want the pixel intensities in the output inverted?",property=None,defaultunits=db.get("invert_output",dfl=False),choices=None)
+		pinv = ParamDef(name="invert",vartype="boolean",desc_short="Invert Pixels",desc_long="Do you want the pixel intensities in the output inverted?",property=None,defaultunits=db.get("invert",dfl=False),choices=None)
 		pn =  ParamDef(name="normproc",vartype="string",desc_short="Normalize Images",desc_long="How the output box images should be normalized",property=None,defaultunits=db.get("normproc",dfl="normalize.edgemean"),choices=["normalize","normalize.edgemean","normalize.ramp.normvar","None"])
-		pop = ParamDef(name="outformat",vartype="string",desc_short="Output Image Format",desc_long="The format of the output box images",property=None,defaultunits=db.get("outformat",dfl="bdb"),choices=self.output_formats)
+		pop = ParamDef(name="format",vartype="string",desc_short="Output Image Format",desc_long="The format of the output box images",property=None,defaultunits=db.get("format",dfl="bdb"),choices=self.output_formats)
 
 
-	   	pwb.dependents = ["invert_output","normproc","outformat","suffix"] # these are things that become disabled when the pwb checkbox is unchecked etc
+	   	pwb.dependents = ["invert","normproc","format","suffix"] # these are things that become disabled when the pwb checkbox is unchecked etc
 		
 		params.append([pbox,pfo])
 		params.append([pwc,pwb])
@@ -1937,10 +1942,10 @@ class EMBoxerWriteOutputTask(WorkFlowTask):
 			return
 		
 		particle_output_names = []
-		if params["write_particles"]: particle_output_names = self.get_particle_outnames(params)
+		if params["write_particles"]: particle_output_names = get_particle_outnames(params)
 
 		coord_output_names = []
-		if params["write_coords"]: coord_output_names = self.get_coord_outnames(params)
+		if params["write_coords"]: coord_output_names =  get_coord_outnames(params)
 		
 		if not params["force"]:
 			warning = []
@@ -1955,7 +1960,7 @@ class EMBoxerWriteOutputTask(WorkFlowTask):
 				return
 		
 		if len(particle_output_names) > 0:
-			self.write_output(params["filenames"],particle_output_names,EMBoxList.write_particles,params["output_boxsize"],"Writing Particles", [params["invert_output"], params["normproc"]])
+			self.write_output(params["filenames"],particle_output_names,EMBoxList.write_particles,params["output_boxsize"],"Writing Particles", [params["invert"], params["normproc"]])
 		if len(coord_output_names) > 0:
 			self.write_output(params["filenames"],coord_output_names,EMBoxList.write_coordinates,params["output_boxsize"],"Writing Coordinates")
 
@@ -1994,24 +1999,24 @@ class EMBoxerWriteOutputTask(WorkFlowTask):
 		progress.qt_widget.setValue(n)
 		progress.qt_widget.close()
 			
-	def get_particle_outnames(self,params):
-		input = params["filenames"]
-		outformat = params["outformat"]
-		output = []
-		for name in input:
-			if outformat == "bdb":
-				out = "bdb:particles#" + get_file_tag(name) + params["suffix"]
-			else:
-				out = get_file_tag(name)+ params["suffix"]+"."+outformat
-			output.append(out)
-		return output
-	
-	def get_coord_outnames(self,params):
-		input = params["filenames"]
-		output = []
-		for name in input:
-			output.append(get_file_tag(name)+".box")
-		return output
+def get_particle_outnames(params):
+	input = params["filenames"]
+	format = params["format"]
+	output = []
+	for name in input:
+		if format == "bdb":
+			out = "bdb:particles#" + get_file_tag(name) + params["suffix"]
+		else:
+			out = get_file_tag(name)+ params["suffix"]+"."+format
+		output.append(out)
+	return output
+
+def get_coord_outnames(params):
+	input = params["filenames"]
+	output = []
+	for name in input:
+		output.append(get_file_tag(name)+".box")
+	return output
 
 from emapplication import EMQtWidgetModule
 class EMBoxerInspectorModule(EMQtWidgetModule):
@@ -2071,7 +2076,9 @@ class EMBoxerInspector(QtGui.QWidget):
 	
 	def on_status_msg_change(self,s):
 		if self.busy: return
-		if len(s) == 0: self.target().load_default_status_msg()
+		if len(s) == 0: 
+			if self.target() != None:
+				self.target().load_default_status_msg()
 		
 	def set_status_message(self,mesg,timeout=1000):
 		self.busy = True

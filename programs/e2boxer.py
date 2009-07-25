@@ -145,6 +145,9 @@ for single particle analysis."""
 	parser.add_option("--out_dir",default=False,help="Directory to write particle files to")
 
 	(options, args) = parser.parse_args()
+	if options.method == "Swarm":
+		print "Note: Please consider switching to e2boxer2.py"
+	
 	filenames = []
 	error_message = []
 	for arg in args:
