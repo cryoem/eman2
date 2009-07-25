@@ -456,8 +456,8 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		ap_list = []
 		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Interactive Boxing - e2boxer")))
 		self.launchers["Interactive Boxing - e2boxer"] = self.launch_e2boxer_gui
-		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Auto Boxing - e2boxer")))
-		self.launchers["Auto Boxing - e2boxer"] = self.launch_e2boxer_auto
+#		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Auto Boxing - e2boxer")))
+#		self.launchers["Auto Boxing - e2boxer"] = self.launch_e2boxer_auto
 		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Generate Output - e2boxer")))
 		self.launchers["Generate Output - e2boxer"] = self.launch_e2boxer_output
 		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Particle Import")))
@@ -468,7 +468,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		ap_list[1].setIcon(0,self.icons["green_boxes"])
 		ap_list[2].setIcon(0,self.icons["green_boxes"])
 		ap_list[3].setIcon(0,self.icons["green_boxes"])
-		ap_list[4].setIcon(0,self.icons["green_boxes"])
+#		ap_list[4].setIcon(0,self.icons["green_boxes"])
 		ap.addChildren(ap_list)
 		
 		mis_list = []
