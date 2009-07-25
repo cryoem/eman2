@@ -13,10 +13,10 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " prj_stack .. average eigvol output_factcoords --rad=radius --neigvol=number_of_eigvol --of=output_format"
 	parser = OptionParser(usage, version=SPARXVERSION)
-	parser.add_option("--rad", type="int",  default=-1, help="radius of mask")
-	parser.add_option("--neigvol", type="int", default=-1, help="number of eigvenvectors to use (default all)")
-	parser.add_option("--of", type="string", default="hdf", help="output format: hdf or txt (default is hdf)")
-	parser.add_option("--MPI", action="store_true", help="flag for MPI version")
+	parser.add_option("--rad",       type="int",    default=-1, help="radius of mask")
+	parser.add_option("--neigvol",   type="int",    default=-1, help="number of eigvenvectors to use (default all)")
+	parser.add_option("--of",        type="string", default="hdf", help="output format: hdf or txt (default is hdf)")
+	parser.add_option("--MPI",       action="store_true", help="flag for MPI version")
 
 	(options, args) = parser.parse_args()
 

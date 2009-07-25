@@ -11426,13 +11426,12 @@ def var_mpi(files, outdir, fl, aa, radccc, writelp, writestack, repair = False, 
 		assert not(avg is None)
 		
 		pcaer.setavg( avg )
-		print  myid,"  A"
+
 		eigs = pcaer.analyze()
-		print  myid,"  B"
+
 		if myid==0:
 			eigfile = outdir + "/eigvol.hdf"
 			for i in xrange( len(eigs) ):
-				print  "  c",i
 				eigs[i].write_image( eigfile, i )
 
 """
@@ -11688,7 +11687,7 @@ def incvar_mpi(files, outdir, fl, fh, radccc, writelp, writestack):
 		#all_var = circumference( all_var, radcir, radcir+1 )
 		all_var.write_image( output, 0 )
 
-def factcoords_vol( vol_stacks, avgvol_stack, eigvol_stack, prefix, rad = -1, neigvol = -1, of = "txt", MPI=False):
+def factcoords_vol( vol_stacks, avgvol_stack, eigvol_stack, prefix, rad = -1, neigvol = -1, of = "hdf", MPI=False):
 	from utilities import get_im, model_circle, model_blank
 
 	if MPI:
@@ -11704,17 +11703,19 @@ def factcoords_vol( vol_stacks, avgvol_stack, eigvol_stack, prefix, rad = -1, ne
 		if MPI and ncpu > 1:
 			foutput = open( "%s%04d.txt" %(prefix,myid), "w" )
 		else:
-			foutput = open( prefix+".txt", "w" );
+			foutput = open( prefix+".txt", "w" )
 	else:
 		if MPI and ncpu > 1:
 			foutput = "%s%04d.hdf" % (prefix,myid)
 		else:
 			foutput = prefix + ".hdf" 
 
-	eigvols = []
-	if(neigvol < 0): neigvol = EMUtil.get_image_count( eigvol_stack )
-	for i in xrange(neigvol):
-		eigvols.append( get_im(eigvol_stack, i) )
+	
+	if(neigvol < 0):
+		eigvols = EMData.read_images(eigvol_stack)
+		neigvol = len(eigvols)
+	else:
+		eigvols = EMData.read_images(eigvol_stack,range(neigvol))
 
 	if( avgvol_stack != None):
 		avgvol = get_im( avgvol_stack )
@@ -11727,16 +11728,16 @@ def factcoords_vol( vol_stacks, avgvol_stack, eigvol_stack, prefix, rad = -1, ne
 	files = file_set( vol_stacks )
 	vol_bgn,vol_end = MPI_start_end( files.nimg(), ncpu, myid )
 
-	for i in xrange( vol_bgn, vol_end ) :
+	for i in xrange( vol_bgn, vol_end ):
 		fname,imgid = files.get( i )
 		exp_vol = get_im( fname, imgid )
 		if(avgvol_stack != None):  
 			Util.sub_img(exp_vol, avgvol)
 
-		if of=="hdf": 
+		if of=="hdf":
 			img = model_blank( len(eigvols) )
 
-		for j in xrange( neigvol ) :
+		for j in xrange( neigvol ):
 			d = exp_vol.cmp( "dot", eigvols[j], {"negative":0, "mask":m} )
 
 			if of=="hdf":
@@ -11754,11 +11755,11 @@ def factcoords_vol( vol_stacks, avgvol_stack, eigvol_stack, prefix, rad = -1, ne
 			print 'myid: ', myid, i+1, ' done'
 
 def factcoords_prj( prj_stacks, avgvol_stack, eigvol_stack, prefix, rad, neigvol, of, MPI):
-	from utilities import get_im, get_image, model_circle, model_blank, get_params_proj
-	from projection import prgs, prep_vol, project
-	from filter import filt_ctf
-	from statistics import im_diff
-	from utilities import memory_usage
+	from utilities    import get_im, get_image, model_circle, model_blank, get_params_proj
+	from projection   import prgs, prep_vol
+	from filter       import filt_ctf
+	from statistics   import im_diff
+	from utilities    import memory_usage
 
 	if MPI:
 		from mpi import mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
@@ -11782,63 +11783,44 @@ def factcoords_prj( prj_stacks, avgvol_stack, eigvol_stack, prefix, rad, neigvol
 	nx = get_im( prj_stacks[0] ).get_xsize()
 	ny = nx
 
+	if neigvol==-1:  neigvol = EMUtil.get_image_count( eigvol_stack )
 	# average volumes and eigen volumes.
-	if neigvol==-1:
-		neigvol = EMUtil.get_image_count( eigvol_stack )
-	
-	#eigvolfts = []
-	#for i in xrange(neigvol):
-	#	volft, kb = prep_vol(get_im(eigvol_stack, i) )
-	#	eigvolfts.append( volft )
-	#avgvolft, kb = prep_vol( get_image( avgvol_stack ) )
-	eigvols = []
-	for i in xrange(neigvol):
-		eigvols.append( get_im(eigvol_stack,i) )
-	avgvol = get_im( avgvol_stack )
-
+	eigvols = [None]*neigvol
+	for j in xrange(neigvol):
+		eigvols[j] =  get_im(eigvol_stack, j) 
+	avgvol =  3.0*get_im( avgvol_stack )
+	for j in xrange(neigvol):
+		ev = eigvols[j].get_attr('eigval')
+		ev = avgvol + ev*eigvols[j]
+		ev.write_image("refvol.hdf",j)
+		eigvols[j],kb = prep_vol( ev )
 	m = model_circle( rad, nx, ny )
-
 
 	files = file_set( prj_stacks )
 	nprj  = files.nimg()
 	img_bgn, img_end = MPI_start_end( nprj, ncpu, myid )
-
-
-	for i in xrange( img_bgn, img_end ) :
+	ltot = -1
+	for i in xrange( img_bgn, img_end ):
 		fname,imgid = files.get(i)
 		exp_prj = get_im( fname, imgid )
-		
-		phi,tht,psi,s2x,s2y = get_params_proj(exp_prj)
+
+		phi,theta,psi,s2x,s2y = get_params_proj(exp_prj)
 		ctf = exp_prj.get_attr("ctf")
 
-		from filter import filt_tanb
-		shift_params = {"filter_type" : Processor.fourier_filter_types.SHIFT,
-				"x_shift" : s2x, "y_shift" : s2y, "z_shift" : 0.0}
-		exp_prj =  Processor.EMFourierFilter(exp_prj, shift_params)
-	
-		#ref_prj = prgs( volft, kb, [phi, theta, psi, 0.0, 0.0] )
-		ref_prj = project( avgvol, [phi,tht,psi,0.0,0.0], rad )
-		ref_prj = filt_ctf( ref_prj, ctf )
 
-		diff,a,b = im_diff( ref_prj, exp_prj, m)
+		if of=="hdf": img = model_blank( len(eigvols) )
 
-		if of=="hdf":
-			img = model_blank( len(eigvols) )
+		for j in xrange( neigvol ):
 
-		for j in xrange( neigvol ) :
-
-			#ref_eigprj = prgs( eigvolfts[j], kb, [phi, tht, psi, 0.0, 0.0] )
-			ref_eigprj = project( eigvols[j], [phi,tht,psi,0.0,0.0],rad )
+			ref_eigprj = prgs( eigvols[j], kb, [phi, theta, psi, s2x, s2y] )
 			ref_eigprj = filt_ctf( ref_eigprj, ctf )
+			ref_eigprj.write_image("frefprj.hdf",ltot)
+			d = exp_prj.cmp( "dot", ref_eigprj, {"negative":0, "mask":m} )
 
-			d = diff.cmp( "dot", ref_eigprj, {"negative":0, "mask":m} )
+			if of=="hdf":  img.set_value_at( j, 0, 0, d )
+			else:           foutput.write( "    %e" % d )
 
-			if of=="hdf":
-				img.set_value_at( j, 0, 0, d )
-			else:
-				foutput.write( "    %e" % d )
-
-                if of=="hdf":
+        	if of=="hdf":
 			if MPI:
 				img.write_image( foutput, i-img_bgn )
 			else:
@@ -11848,8 +11830,92 @@ def factcoords_prj( prj_stacks, avgvol_stack, eigvol_stack, prefix, rad, neigvol
 			foutput.write( "\n" )
 			foutput.flush()
 
-		if(i%100 == 0):  print 'myid:', myid, i, ' done'
-	 
+		if(i%100 == 0):
+			print 'myid:', myid, i, ' done'
+			jojo=raw_input(" jojo :")
+"""
+def factcoords_prj( prj_stacks, avgvol_stack, eigvol_stack, prefix, rad, neigvol, of, MPI):
+	from utilities    import get_im, get_image, model_circle, model_blank, get_params_proj
+	from projection   import prgs, prep_vol
+	from filter       import filt_ctf
+	from statistics   import im_diff
+	from utilities    import memory_usage
+
+	if MPI:
+		from mpi import mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
+		ncpu = mpi_comm_size( MPI_COMM_WORLD )
+		myid = mpi_comm_rank( MPI_COMM_WORLD )
+	else:
+		ncpu = 1
+		myid = 0
+
+        if of=="txt":
+		if MPI and ncpu > 1:
+			foutput = open( "%s%04d.txt" % (prefix, myid), "w" )
+		else:
+			foutput = open( prefix+".txt", "w" )
+	else:
+		if MPI and ncpu > 1:
+			foutput = "%s%04d.hdf" % (prefix, myid)
+		else:
+			foutput = prefix + ".hdf"
+
+	nx = get_im( prj_stacks[0] ).get_xsize()
+	ny = nx
+
+	if neigvol==-1:  neigvol = EMUtil.get_image_count( eigvol_stack )
+	# average volumes and eigen volumes.
+	eigvols = [None]*neigvol
+	for j in xrange(neigvol):
+		eigvols[j], kb = prep_vol( get_im(eigvol_stack, j) )
+	avgvol,kb = prep_vol( get_im( avgvol_stack ) )
+
+	m = model_circle( rad, nx, ny )
+
+	files = file_set( prj_stacks )
+	nprj  = files.nimg()
+	img_bgn, img_end = MPI_start_end( nprj, ncpu, myid )
+	ltot = -1
+	for i in xrange( img_bgn, img_end ):
+		fname,imgid = files.get(i)
+		exp_prj = get_im( fname, imgid )
+
+		phi,theta,psi,s2x,s2y = get_params_proj(exp_prj)
+		ctf = exp_prj.get_attr("ctf")
+
+		ref_prj = prgs( avgvol, kb, [phi, theta, psi, s2x, s2y] )
+		ref_prj = filt_ctf( ref_prj, ctf )
+		ltot += 1
+		ref_prj.write_image("projection.hdf",ltot)
+		diff,a,b = im_diff( ref_prj, exp_prj, m)
+		diff.write_image("difference.hdf",ltot)
+
+		if of=="hdf": img = model_blank( len(eigvols) )
+
+		for j in xrange( neigvol ) :
+
+			ref_eigprj = prgs( eigvols[j], kb, [phi, theta, psi, s2x, s2y] )
+			ref_eigprj = filt_ctf( ref_eigprj, ctf )
+			ref_eigprj.write_image("refprj.hdf",ltot)
+			d = diff.cmp( "dot", ref_eigprj, {"negative":0, "mask":m} )
+
+			if of=="hdf":  img.set_value_at( j, 0, 0, d )
+			else:           foutput.write( "    %e" % d )
+
+        	if of=="hdf":
+			if MPI:
+				img.write_image( foutput, i-img_bgn )
+			else:
+				img.write_image( foutput, i )
+		else:
+			foutput.write( "    %d" % i )
+			foutput.write( "\n" )
+			foutput.flush()
+
+		if(i%100 == 0):
+			print 'myid:', myid, i, ' done'
+			jojo=raw_input(" jojo :")
+"""	 
 def refvol( vollist, fsclist, output, mask ):
 	from utilities     import get_image, read_fsc
 	from fundamentals  import rops_table
