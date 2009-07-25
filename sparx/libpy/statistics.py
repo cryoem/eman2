@@ -30,7 +30,7 @@
 #
 from EMAN2_cppwrap import *
 from global_def import *
-#test
+
 def add_oe_series(data, ali_params="xform.align2d"):
 	"""
 		Calculate odd and even sum of an image series using current alignment parameters

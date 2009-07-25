@@ -7,13 +7,13 @@ from sys import exit
 from time import time
 #vol = EMData()
 #vol.read_image("../model001.tcp")
-nx = 64
-vol = model_circle(30,nx,nx,nx)
+nx = 128
+vol = model_circle(61,nx,nx,nx)
 #vol.read_image("model.spi")
 #info(e)
 nx = vol.get_xsize()
 r = nx//2-2
-delta=5.0
+delta=1.5
 '''
 angles=even_angles(delta,0.,90.,0,359.99,"S")
 i1 = len(angles)
@@ -26,7 +26,7 @@ for i in xrange(i2-i1):
 angles=even_angles(delta,0.,179.9,0.0,359.99,"S", phiEqpsi="Zero")
 volft,kb=prep_vol(vol)
 
-stack_data="datan.hdf"
+stack_data="bdb:data128"
 import os
 os.system("rm -f  "+stack_data)
 #print  angles
@@ -60,11 +60,13 @@ for i in xrange(nangles):
 	proj.set_attr_dict({'active':1, 'ctf_applied':0})
 	proj.write_image(stack_data, i)
 print time()-start
+del vol
+del volft
 start=time()
 nprojdata = EMUtil.get_image_count(stack_data)
 vol1   = recons3d_4nn(stack_data, range(nprojdata))
 print time()-start
-vol1.write_image("v0.hdf", 0)
+vol1.write_image("b4_128.hdf", 0)
 exit()
 del volft
 write_text_file(ppp, "params.txt")

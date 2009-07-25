@@ -31,7 +31,6 @@
 
 from EMAN2_cppwrap import *
 from global_def import *
-import types
 
 def params_2D_3D(alpha, sx, sy, mirror):
 	"""

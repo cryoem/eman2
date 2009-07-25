@@ -44,5 +44,4 @@ from alignment       import *
 from morphology      import *
 from reconstruction  import *
 from applications    import *
-from stefan          import *
 from global_def      import *
