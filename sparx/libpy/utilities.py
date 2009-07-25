@@ -2437,13 +2437,15 @@ def circumference( img, inner = -1, outer = -1):
 	nx = img.get_xsize()
 	ny = img.get_ysize()
 	nz = img.get_zsize()
-	if( outer == -1):  outer = nx//2 -1
-	if( inner == -1):  inner = outer -1
+	if( inner == -1):
+		inner = nx//2 -2
+		if( outer <= inner ):  outer = inner + 1
+	else:
+		if( outer <= inner ):  outer = inner + 1
 	inner_sphere = model_circle(inner, nx, ny, nz)
-	inner_rest   = model_blank(nx, ny, nz, 1.0) - inner_sphere
-	shell        = model_circle(outer, nx, ny, nz) - inner_sphere
 
-	[mean_a,sigma,imin,imax] = Util.infomask(img, shell, True)
+	[mean_a,sigma,imin,imax] = Util.infomask(img, model_circle(outer, nx, ny, nz) - inner_sphere, True)
+	inner_rest   = model_blank(nx, ny, nz, 1.0) - inner_sphere
 	Util.mul_img(inner_sphere, img)
 	return Util.addn_img(inner_sphere, Util.mult_scalar(inner_rest, mean_a ) )
 
