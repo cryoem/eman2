@@ -16,6 +16,8 @@ def main():
 	parser.add_option("--rad",       type="int",    default=-1, help="radius of mask")
 	parser.add_option("--neigvol",   type="int",    default=-1, help="number of eigvenvectors to use (default all)")
 	parser.add_option("--of",        type="string", default="hdf", help="output format: hdf or txt (default is hdf)")
+	parser.add_option("--fl",        type="float",  default=0.0,    help="cut-off frequency of hyperbolic tangent low-pass Fourier filter")
+	parser.add_option("--aa",        type="float",  default=0.0,    help="fall-off of hyperbolic tangent low-pass Fourier filter")
 	parser.add_option("--MPI",       action="store_true", help="flag for MPI version")
 
 	(options, args) = parser.parse_args()
@@ -44,10 +46,10 @@ def main():
 		nz = get_im( stacks[0]).get_zsize()
 		if( nz == 1):
 			from applications import factcoords_prj
-			factcoords_prj(stacks, avgvol, eigvol, output, options.rad, options.neigvol, options.of, options.MPI)
+			factcoords_prj(stacks, avgvol, eigvol, output, options.rad, options.neigvol, options.of, options.fl, options.aa, options.MPI)
 		else:
 			from applications import factcoords_vol
-			factcoords_vol(stacks, avgvol, eigvol, output, options.rad, options.neigvol, options.of, options.MPI)
+			factcoords_vol(stacks, avgvol, eigvol, output, options.rad, options.neigvol, options.of, options.fl, options.aa, options.MPI)
 		global_def.BATCH = False
 		
 
