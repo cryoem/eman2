@@ -429,8 +429,8 @@ class ValRenderer:
 
 
 class EMPDBViewer(EM3DModule):
-	def __init__(self, application=None):
-		EM3DModule.__init__(self,application)
+	def __init__(self, application=None,ensure_gl_context=True,application_control=True):
+		EM3DModule.__init__(self,application,ensure_gl_context=ensure_gl_context,application_control=application_control)
 		#self.fName = raw_input ("Enter the file name of a pdb file: ")
 		self.fName = ""
 		self.text = self.fName
@@ -473,13 +473,14 @@ class EMPDBViewer(EM3DModule):
 		
 	
 	def draw_objects(self):
-
+		self.init_basic_shapes() # only does something the first time you call it
 		if (self.text == ""): 
 			#default drawing
 			self.createDefault()
 			return
 			
 		
+		#self.gl_context_parent.makeCurrent()
 		if (self.text != self.fName): 
 			if (self.dl != None): glDeleteLists(self.dl, 1)
 			self.dl=None
@@ -527,7 +528,11 @@ class EMPDBViewer(EM3DModule):
 					self.cylinder_to_from(nt, pt, 0.2)
 			glEndList()
 
-		glCallList(self.dl)
+		try: glCallList(self.dl)
+		except: 
+			print "call list failed",self.dl
+			glDeleteLists(self.dl,1)
+			self.dl = None
 
 
 	def makeStick (self, res, index1, index2):
@@ -677,6 +682,7 @@ if __name__ == '__main__':
 	from emapplication import EMStandAloneApplication
 	em_app = EMStandAloneApplication()
 	window = EMPDBViewer()
+	window.set_current_text("fh-solution-0-1UF2-T.pdb")
 	em_app.show()
 	em_app.execute()
 

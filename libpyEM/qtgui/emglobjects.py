@@ -1945,7 +1945,7 @@ class EMImage3DGUIModule(EMGUIModule):
 			vh = self.gl_context_parent.viewport_height()
 			vw = self.gl_context_parent.viewport_width()
 		except:
-			print "fixme 2"
+			# this means the set up isn't quite right, but the bc screen isn't that valuable anyhow
 			return
 		
 		if vh == 0 or vw == 0: return

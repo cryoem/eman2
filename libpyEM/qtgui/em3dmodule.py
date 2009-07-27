@@ -44,7 +44,7 @@ from libpyGLUtils2 import *
 
 import weakref
 
-class EM3DModule(EMLightsDrawer,EMImage3DGUIModule):
+class EM3DModule(EMImage3DGUIModule):
 	
 	def get_qt_widget(self):
 		if self.qt_context_parent == None:	
@@ -68,9 +68,9 @@ class EM3DModule(EMLightsDrawer,EMImage3DGUIModule):
 	def get_desktop_hint(self):
 		return "image"
 
-	def __init__(self,application=None):
-		EMImage3DGUIModule.__init__(self,application,ensure_gl_context=True)
-		EMLightsDrawer.__init__(self)
+	def __init__(self,application=None,ensure_gl_context=True,application_control=True):
+		EMImage3DGUIModule.__init__(self,application,ensure_gl_context=ensure_gl_context,application_control=application_control)
+		#EMLightsDrawer.__init__(self)
 		self.cam = Camera2(self)
 		self.vdtools = EMViewportDepthTools(self)
 		self.perspective = False
@@ -122,11 +122,12 @@ class EM3DModule(EMLightsDrawer,EMImage3DGUIModule):
 	
 	def render(self):
 		if self.first_render_flag:
-			self.initializeGL()
-			self.init_basic_shapes() # only does something the first time you call it
-			self.init_font_renderer()
+#			self.initializeGL()
+#			self.init_basic_shapes() # only does something the first time you call it
+#			self.init_font_renderer()
 			if not self.perspective:self.gl_context_parent.load_orthographic()
 			else: self.gl_context_parent.load_perspective()
+			self.first_render_flag = False
 					
 		#self.vdtools.set_update_P_inv()
 		glPushMatrix()
@@ -142,10 +143,10 @@ class EM3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		
 		glPopMatrix()
 		
-		glPushMatrix()
-		self.cam.translate_only()
-		EMLightsDrawer.draw(self)
-		glPopMatrix()
+#		glPushMatrix()
+#		self.cam.translate_only()
+#		EMLightsDrawer.draw(self)
+#		glPopMatrix()
 		
 	
 	def draw_objects(self):
@@ -161,39 +162,39 @@ class EM3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		self.load_gl_color("blue")
 		glCallList(self.spheredl)
 		glPopMatrix()
-#		
-#		glPushMatrix()
-#		glTranslate(0,100,0)
-#		glScale(50,10,10)
-#		glTranslate(-0.5,0,0)
-#		glRotate(90,0,1,0)
-#		self.load_gl_color("emerald")
-#		glCallList(self.cylinderdl)
-#		glPopMatrix()
-#		
-#		glPushMatrix()
-#		glTranslate(-100,25,0)
-#		glScale(10,50,10)
-#		glTranslate(-0.5,0,0)
-#		glRotate(90,1,0,0)
-#		self.load_gl_color("gold")
-#		glCallList(self.cappedcylinderdl)
-#		glPopMatrix()
-#		
-#		glPushMatrix()
-#		glTranslate(0,-100,0)
-#		glScale(15,15,15)
-#		self.load_gl_color("copper")
-#		glCallList(self.diskdl)
-#		glPopMatrix()
-#		
-#		glPushMatrix()
-#		glTranslate(0,-100,-10)
-#		glScale(15,15,15)
-#		glRotate(180,0,1,0)
-#		self.load_gl_color("silver")
-#		glCallList(self.diskdl)
-#		glPopMatrix()
+		
+		glPushMatrix()
+		glTranslate(0,100,0)
+		glScale(50,10,10)
+		glTranslate(-0.5,0,0)
+		glRotate(90,0,1,0)
+		self.load_gl_color("emerald")
+		glCallList(self.cylinderdl)
+		glPopMatrix()
+		
+		glPushMatrix()
+		glTranslate(-100,25,0)
+		glScale(10,50,10)
+		glTranslate(-0.5,0,0)
+		glRotate(90,1,0,0)
+		self.load_gl_color("gold")
+		glCallList(self.cappedcylinderdl)
+		glPopMatrix()
+		
+		glPushMatrix()
+		glTranslate(0,-100,0)
+		glScale(15,15,15)
+		self.load_gl_color("copper")
+		glCallList(self.diskdl)
+		glPopMatrix()
+		
+		glPushMatrix()
+		glTranslate(0,-100,-10)
+		glScale(15,15,15)
+		glRotate(180,0,1,0)
+		self.load_gl_color("silver")
+		glCallList(self.diskdl)
+		glPopMatrix()
 		
 		glPushMatrix()
 		glTranslate(0,0,50)
@@ -205,13 +206,13 @@ class EM3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		glPopMatrix()
 		
 		
-#		glPushMatrix()
-#		glTranslate(0,-50,-50)
-#		s = "=^_^="
-#		bbox = self.font_renderer.bounding_box(s)
-#		glTranslate(-(bbox[3]-bbox[0])/2, -(bbox[4]-bbox[1])/2,-(bbox[5]-bbox[02])/2)
-#		self.font_renderer.render_string(s)
-#		glPopMatrix()
+		glPushMatrix()
+		glTranslate(0,-50,-50)
+		s = "=^_^="
+		bbox = self.font_renderer.bounding_box(s)
+		glTranslate(-(bbox[3]-bbox[0])/2, -(bbox[4]-bbox[1])/2,-(bbox[5]-bbox[02])/2)
+		self.font_renderer.render_string(s)
+		glPopMatrix()
 	
 	
 	def init_font_renderer(self):
@@ -223,7 +224,7 @@ class EM3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		
 		
 	def init_basic_shapes(self):
-		self.gl_context_parent.makeCurrent()
+		#self.gl_context_parent.makeCurrent()
 		if self.gq == None:
 			
 			self.gq=gluNewQuadric() # a quadric for general use
@@ -335,7 +336,7 @@ class EM3DInspector(QtGui.QWidget):
 	def __init__(self,target,enable_advanced=True):
 		QtGui.QWidget.__init__(self,None)
 		self.target = weakref.ref(target) # prevent a strong cycle - this target object should be an EM3DModule, but that could change depending on who builds on this object
-		
+		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"single_image_3d.png"))
 		self.vbl = QtGui.QVBoxLayout(self) # this is the main vbl
 		
 		self.advanced_tab = None
@@ -399,6 +400,9 @@ class EM3DExampleModule(EM3DModule):
 		return self.inspector
 		
 	def draw_objects(self):
+		
+		self.init_basic_shapes() # only does something the first time you call it
+		self.init_font_renderer()
 		
 		glPushMatrix()
 		glTranslate(100,0,0)
