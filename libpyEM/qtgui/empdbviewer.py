@@ -467,25 +467,18 @@ class EMPDBViewer(EM3DModule):
 		if self.inspector == None:
 			self.inspector = EMPDBInspector(self)
 		return self.inspector
+
+	def createDefault(self):
+		return          #display a default pdb here
 		
+	
 	def draw_objects(self):
 
 		if (self.text == ""): 
 			#default drawing
+			self.createDefault()
 			return
-			'''
-			for i in range(0,100):
-				#glPushMatrix()
-				glTranslate(i,-i,i)
-				glScale(1,1,1)
-				if (i%2 == 0): self.load_gl_color("white")
-				elif (i%3 == 0): self.load_gl_color ("blue")
-				elif (i%5 == 0): self.load_gl_color ("green")
-				else: self.load_gl_color("red")
-				glCallList(self.highresspheredl)
-				return
-				#glPopMatrix
-			'''
+			
 		
 		if (self.text != self.fName): 
 			if (self.dl != None): glDeleteLists(self.dl, 1)
