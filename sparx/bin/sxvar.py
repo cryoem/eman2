@@ -7,7 +7,7 @@ from global_def import *
 def main():
 	from   optparse       import OptionParser
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " filelist outdir  --fl=filter_low_value --aa=filter_fall_off --radccc=radius_ccc --overwrite --filtered --repair --pca --pcamask --pcanvec --MPI"
+	usage = progname + " filelist outdir  --fl=filter_low_value --aa=filter_fall_off --radccc=radius_ccc --overwrite --filtered --repair=repairfile --pca --pcamask --pcanvec --MPI"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--fl",         type="float",  default=0.0,    help="cut-off frequency of hyperbolic tangent low-pass Fourier filter")
 	parser.add_option("--aa",         type="float",  default=0.0,    help="fall-off of hyperbolic tangent low-pass Fourier filter")
@@ -15,7 +15,7 @@ def main():
 	parser.add_option("--overwrite",  action="store_true", default=False, help="write repaired bootstrap volumes to original files (default is False)" )
 	parser.add_option("--filtered",   action="store_true", default=False, help="write the stack containing all low-pass filtered volumes to disk (default is False)" )
 	parser.add_option("--MPI",        action="store_true", default=False, help="use MPI version" )
-	parser.add_option("--repair",     action="store_true", default=False, help="repair original bootstrap volumes")
+	parser.add_option("--repair",     type="string", help="repair file for original bootstrap volumes")
 	parser.add_option("--pca",        action="store_true", default=False, help="run pca" )
 	parser.add_option("--pcamask",    type="string", help="mask for pca" )
 	parser.add_option("--pcanvec",    type="int", help="number of eigvectors computed in PCA")

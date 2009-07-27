@@ -11263,6 +11263,177 @@ def defvar(files, outdir, fl, aa, radccc, writelp, writestack, repair = False, p
 		for i in xrange( len(eigs) ):
 			eigs[i].write_image( eigfile, i )
 
+def var_mpi(files, outdir, fl, aa, radccc, writelp, writestack, frepa = None, pca=False, pcamask=None, pcanvec=None):
+	from string     import atoi, replace, split, atof
+	from utilities  import get_im, circumference, model_circle, model_blank
+	from utilities  import bcast_EMData_to_all, reduce_EMData_to_root
+	from filter     import filt_tanl
+	from mpi        import mpi_comm_rank, mpi_comm_size, mpi_barrier, mpi_bcast, mpi_reduce
+	from mpi        import MPI_COMM_WORLD, MPI_INT, MPI_SUM
+	import os
+
+        myid = mpi_comm_rank( MPI_COMM_WORLD )
+        ncpu = mpi_comm_size( MPI_COMM_WORLD )
+        if myid==0:
+		if os.path.exists(outdir):
+			ERROR('Output directory exists, please change the name and restart the program', " var_mpi", 1)
+		os.system( "mkdir " + outdir )
+		#finf = open( outdir + "/var_progress.txt", "w" )
+
+	mpi_barrier( MPI_COMM_WORLD )
+
+	if( myid == 0 ):
+		print "  START "
+		img = get_im(files[0])
+		nx = img.get_xsize()
+		ny = img.get_ysize()
+		nz = img.get_zsize()
+		del img
+	else:
+		nx = 0
+		ny = 0
+		nz = 0
+	nx = mpi_bcast(nx, 1, MPI_INT, 0, MPI_COMM_WORLD)
+	nx = int(nx[0])
+	ny = mpi_bcast(ny, 1, MPI_INT, 0, MPI_COMM_WORLD)
+	ny = int(ny[0])
+	nz = mpi_bcast(nz, 1, MPI_INT, 0, MPI_COMM_WORLD)
+	nz = int(nz[0])
+	if(frepa == None):  repair = False
+	else:               repair = True
+
+	if pca:
+		from statistics import pcanalyzer
+		if(myid == 0):  pcamask = get_im( pcamask)
+		else:           pcamask = model_blank(nx,ny,nz)
+		bcast_EMData_to_all(pcamask, myid)
+		pcaer = pcanalyzer(pcamask, outdir, pcanvec, True)
+
+	varfile = outdir + "/var.hdf"
+	avgfile = outdir + "/avg.hdf"
+	varfileE = outdir + "/varE.hdf"
+	avgfileE = outdir + "/avgE.hdf"
+	varfileO = outdir + "/varO.hdf"
+	avgfileO = outdir + "/avgO.hdf"
+	#varstack = outdir + "/varstack.hdf" 
+	#oddstack = outdir + "/oddvarstack.hdf"
+	#evestack = outdir + "/evevarstack.hdf"
+
+	cccmask = model_circle(radccc, nx, ny, nz)
+	radcir = min(nx,ny,nz)//2-1
+
+        nfiles = len( files )
+	if(nfiles < ncpu):
+		ERROR('Number of files less than number of processors specified, reduce number of processors', " var_mpi", 1)
+		
+	file_start, file_end = MPI_start_end(nfiles, ncpu, myid)
+
+	#if(repair):  again = 2
+	#else:        again = 1
+	again = 1
+	ndump = 100 # write out ccc after each 100 steps
+	if repair: rota = get_im(frepa)
+
+	iwrite = 0
+	istack = 0
+	iprint = 0
+	iadded = 0
+
+	for repeat in xrange(again):
+
+		avg1 = model_blank(nx,ny,nz)
+		avg2 = model_blank(nx,ny,nz)
+		total_img = 0
+		for ifile in xrange(file_start, file_end):
+			nimg = EMUtil.get_image_count( files[ifile] )
+			print myid," A  ",files[ifile],"   ",nimg
+			for i in xrange(nimg):
+				img = get_im( files[ifile], i )
+				if(repair):  Util.div_img(img, rota)
+				if(repair and writelp):  img.write_image(files[ifile], i)
+				img = circumference( img, radcir, radcir+1 )
+				if(fl > 0.0):
+					img = filt_tanl( img, fl, aa )
+					if writestack: img.write_image( outdir+"/filtered%04d.hdf"%(ifile), i )
+				if(total_img%2 == 0):	Util.add_img(avg1, img)
+				else:			Util.add_img(avg2, img)
+				total_img += 1
+		reduce_EMData_to_root(avg1, myid)
+		reduce_EMData_to_root(avg2, myid)
+		total_img = mpi_reduce(total_img, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD)
+		if( myid == 0):
+			total_img = int(total_img[0])
+			avg = Util.addn_img(avg1, avg2)
+			Util.mul_scalar(avg, 1.0/float(total_img))
+		else:    avg = model_blank(nx,ny,nz)
+		bcast_EMData_to_all( avg, myid )
+		if(myid == 0 ):
+			Util.mul_scalar(avg1, 1.0/float(total_img//2+total_img%2 - 1 ))
+			avg1.write_image(avgfileE)
+			Util.mul_scalar(avg2, 1.0/float(total_img//2 - 1) )
+			avg2.write_image(avgfileO)
+			avg.write_image( avgfile)
+
+		del avg1, avg2
+
+		var1 = model_blank(nx,ny,nz)
+		var2 = model_blank(nx,ny,nz)
+		if(fl > 0.0 and writestack):
+			for ifile in xrange(file_start, file_end):
+				f = outdir+"/filtered%04d.hdf"%(ifile)
+				nimg = EMUtil.get_image_count( f )
+				print myid," V  ",f,"   ",nimg
+				for i in xrange(nimg):
+					img = get_im(f , i )
+					if pca: pcaer.insert(img)
+					Util.sub_img(img, avg)
+					if(i%2 == 0):  Util.add_img2(var1 , img)
+					else:	       Util.add_img2(var2 , img)
+		else:
+			for ifile in xrange(file_start, file_end):
+				nimg = EMUtil.get_image_count( files[ifile] )
+				print myid," V  ",files[ifile],"   ",nimg
+				for i in xrange(nimg):
+					img = get_im( files[ifile], i )
+					if(repair and not writelp):  Util.div_img(img, rota)
+					img = circumference( img, radcir, radcir+1 )
+					if(fl > 0.0): img = filt_tanl( img, fl, aa )
+					if pca : pcaer.insert(img)
+					Util.sub_img(img, avg)
+					if(total_img%2 == 0): Util.add_img2(var1, img)
+					else:                 Util.add_img2(var2 , img)
+
+		reduce_EMData_to_root(var1, myid)
+		reduce_EMData_to_root(var2, myid)
+		if( myid == 0):
+			var = Util.addn_img(var1, var2)
+			Util.mul_scalar(var, 1.0/float(total_img-1) )
+		else:    var = model_blank(nx,ny,nz)
+		bcast_EMData_to_all( var, myid )
+		if(  (myid == 0)):
+			Util.mul_scalar(var1, 1.0/float(total_img//2+total_img%2 - 1 ))
+			var1.write_image(varfileE)
+			Util.mul_scalar(var2, 1.0/float(total_img//2 - 1) )
+			var2.write_image(varfileO)
+
+			var.write_image( varfile )
+			del var1, var2
+		del var
+
+	if pca:
+		assert not(avg is None)
+		
+		pcaer.setavg( avg )
+
+		eigs = pcaer.analyze()
+
+		if myid==0:
+			eigfile = outdir + "/eigvol.hdf"
+			for i in xrange( len(eigs) ):
+				eigs[i].write_image( eigfile, i )
+
+"""
+
 def var_mpi(files, outdir, fl, aa, radccc, writelp, writestack, repair = False, pca=False, pcamask=None, pcanvec=None):
 	from string     import atoi, replace, split, atof
 	from utilities  import get_im, circumference, model_circle, model_blank
@@ -11434,7 +11605,8 @@ def var_mpi(files, outdir, fl, aa, radccc, writelp, writestack, repair = False, 
 			for i in xrange( len(eigs) ):
 				eigs[i].write_image( eigfile, i )
 
-"""
+
+
 def var_mpi(files, outdir, fl, fh, radccc, writelp, writestack, method="inc", pca=False, pcamask=None, pcanvec=None):
 	from statistics import inc_variancer, def_variancer, ccc, pcanalyzer
 	from string     import atoi, replace, split, atof
