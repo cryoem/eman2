@@ -403,7 +403,8 @@ class EM3DInspector(QtGui.QWidget):
 class EMPDBViewer(EM3DModule):
 	def __init__(self, application=None):
 		EM3DModule.__init__(self,application)
-		self.fName = raw_input ("Enter the file name of a pdb file: ")
+		#self.fName = raw_input ("Enter the file name of a pdb file: ")
+		self.fName = ""
 		self.text = self.fName
 		self.dl = None
 	
@@ -418,6 +419,8 @@ class EMPDBViewer(EM3DModule):
 		return self.inspector
 		
 	def draw_objects(self):
+
+		if (self.text == ""): return
 		
 		if (self.text != self.fName): 
 			self.dl=None
@@ -925,8 +928,8 @@ class EMPDBInspector(EM3DInspector):
 		hbl1 = QtGui.QHBoxLayout()
 		self.text = QtGui.QLineEdit()
 		self.text.setText(self.target().current_text())
-		text_label = QtGui.QLabel("Enter Text:",self)
-		hbl1.addWidget(text_label)
+		#text_label = QtGui.QLabel("Enter Text:",self)
+		#hbl1.addWidget(text_label)
 		hbl1.addWidget(self.text)
 		self.browse = QtGui.QPushButton("Browse")
 		hbl1.addWidget(self.browse)
@@ -951,7 +954,7 @@ class EMPDBInspector(EM3DInspector):
 if __name__ == '__main__':
 	from emapplication import EMStandAloneApplication
 	em_app = EMStandAloneApplication()
-	window = EMPDBViewer("/home/muthu/project/probe.pdb")
+	window = EMPDBViewer()
 	em_app.show()
 	em_app.execute()
 
