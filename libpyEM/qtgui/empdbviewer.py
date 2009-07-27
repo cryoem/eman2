@@ -33,6 +33,58 @@
 from em3dmodule import *
 from EMAN2 import PDBReader
 
+class SideChainRenderer:
+	def __init__(self): pass
+	
+	def makeStick (self, res, index1, index2):
+		n = [0,0,0]
+		p = [0,0,0]
+		p[0] = res[0][index1]
+		p[1] = res[1][index1]
+		p[2] = res[2][index1]
+
+		n[0] = res[0][index2]
+		n[1] = res[1][index2]
+		n[2] = res[2][index2]
+		self.cylinder_to_from(n, p, 0.2)	
+
+	def cylinder_to_from(self,next,prev,scale=0.5):
+
+		dx = next[0] - prev[0]
+		dy = next[1] - prev[1]
+		dz = next[2] - prev[2]
+		try:
+			length = sqrt(dx**2 + dy**2 + dz**2)
+		except: return
+		if length == 0: return
+		
+
+		alt = acos(dz/length)*180.0/pi
+		phi = atan2(dy,dx)*180.0/pi
+		
+		glPushMatrix()
+		glTranslatef(prev[0],prev[1],prev[2] )
+		glRotatef(90+phi,0,0,1)
+		glRotatef(alt,1,0,0)
+		glScalef(scale,scale,length)
+		
+		glCallList(self.cylinderdl)
+
+		glPopMatrix()		
+		
+
+class AlaRenderer(SideChainRenderer):
+	def __init__(self): pass
+	def __call__(self,res):
+		print "rendered ala"
+		t1 = res[3].index('CB')
+
+		self.makeStick(res, 0, 1)
+		self.makeStick(res, 1, 2)
+		self.makeStick(res, 2, 3)
+
+		self.makeStick(res, 1, t1)
+
 class EMPDBViewer(EM3DModule):
 	def __init__(self, application=None):
 		EM3DModule.__init__(self,application)
@@ -40,7 +92,10 @@ class EMPDBViewer(EM3DModule):
 		self.fName = ""
 		self.text = self.fName
 		self.dl = None
-	
+		
+		self.side_chain_renderer = {}
+		self.side_chain_renderer["ALA"] = AlaRenderer()
+		
 	def current_text(self): return self.text
 	
 	def set_current_text(self,text):
@@ -74,11 +129,20 @@ class EMPDBViewer(EM3DModule):
 					elif (str(res[3][i])[0] == 'O'): self.load_gl_color("blue")
 					elif (str(res[3][i])[0] == 'S'): self.load_gl_color("red")
 					else: self.load_gl_color("silver")
-					glCallList(self.spheredl)
+					glCallList(self.highresspheredl)
 					glPopMatrix()
-		
+			
+#			self.load_gl_color("silver")
 			for k in range (0, len(self.allResidues)):
+				
+				
+				
 				res = self.allResidues[k]
+				key =  res[4][0]
+				if self.side_chain_renderer.has_key(key):
+					print "has key"
+					self.side_chain_renderer[key](res)
+					continue
 				if res[4][0] == "ALA":
 					#t1 = res[3].index('N')
 					#t2 = res[3].index('CA')
@@ -520,15 +584,14 @@ class EMPDBViewer(EM3DModule):
 
 
 	def cylinder_to_from(self,next,prev,scale=0.5):
-
 		dx = next[0] - prev[0]
 		dy = next[1] - prev[1]
 		dz = next[2] - prev[2]
+		from math import sqrt,acos,atan2,pi
 		try:
 			length = sqrt(dx**2 + dy**2 + dz**2)
 		except: return
 		if length == 0: return
-		
 
 		alt = acos(dz/length)*180.0/pi
 		phi = atan2(dy,dx)*180.0/pi
@@ -588,6 +651,7 @@ if __name__ == '__main__':
 	from emapplication import EMStandAloneApplication
 	em_app = EMStandAloneApplication()
 	window = EMPDBViewer()
+	window.set_current_text("fh-solution-0-1UF2-T.pdb")
 	em_app.show()
 	em_app.execute()
 
