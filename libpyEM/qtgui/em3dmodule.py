@@ -332,7 +332,7 @@ class EM3DModule(EMLightsDrawer,EMImage3DGUIModule):
 
 
 class EM3DInspector(QtGui.QWidget):
-	def __init__(self,target):
+	def __init__(self,target,enable_advanced=True):
 		QtGui.QWidget.__init__(self,None)
 		self.target = weakref.ref(target) # prevent a strong cycle - this target object should be an EM3DModule, but that could change depending on who builds on this object
 		
@@ -345,7 +345,7 @@ class EM3DInspector(QtGui.QWidget):
 		#self.vbl.addLayout(self.hbl_check)
 		self.vbl.addWidget(self.tabwidget)
 		
-		self.insert_advanced_tab()
+		if enable_advanced:	self.insert_advanced_tab()
 		
 	def insert_advanced_tab(self):
 		if self.advanced_tab == None:
@@ -360,25 +360,26 @@ class EM3DInspector(QtGui.QWidget):
 
 	
 	def update_rotations(self,t3d):
-		self.advanced_tab.update_rotations(t3d)
+		if self.advanced_tab:
+			self.advanced_tab.update_rotations(t3d)
 	
 	def set_scale(self,val):
-		self.advanced_tab.set_scale(val)
+		if self.advanced_tab: self.advanced_tab.set_scale(val)
 	
 	def set_xy_trans(self, x, y):
-		self.advanced_tab.set_xy_trans(x,y)
+		if self.advanced_tab: self.advanced_tab.set_xy_trans(x,y)
 	
 	def set_xyz_trans(self,x,y,z):
-		self.advanced_tab.set_xyz_trans(x,y,z)
+		if self.advanced_tab: self.advanced_tab.set_xyz_trans(x,y,z)
 		
 	def set_directional_light_dir(self,d):
-		self.advanced_tab.set_directional_light_dir(d)
+		if self.advanced_tab: self.advanced_tab.set_directional_light_dir(d)
 	
 	def set_positional_light_pos(self,d):
-		self.advanced_tab.set_positional_light_pos(d)
+		if self.advanced_tab: self.advanced_tab.set_positional_light_pos(d)
 		
 	def set_positional_light_dir(self,d):
-		self.advanced_tab.set_positional_light_dir(d)
+		if self.advanced_tab: self.advanced_tab.set_positional_light_dir(d)
 	
 class EM3DExampleModule(EM3DModule):
 	def __init__(self,application=None):

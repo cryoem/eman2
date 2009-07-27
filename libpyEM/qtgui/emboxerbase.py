@@ -306,6 +306,12 @@ ScaledExclusionImageCache = Cache(ScaledExclusionImage)
 
 
 class EMBox:
+	'''
+	A basic encapsulation of a box - it has a central coordinate, a type attribute which can be
+	customized for specific boxes, and a score attribute, which could be useful to a particular
+	tool.
+	Also has convenient functions for moving, getting the associated box image, etc
+	'''
 	BOX_COLORS = {}
 	def __init__(self,x,y,type,score=0.0):
 		self.x = x # central x coordinate
@@ -316,6 +322,12 @@ class EMBox:
 	
 	def set_box_color(box_type,box_color,force=False):
 		'''
+		static - use this function to register a box color with a particular EMBox.type attribute
+		This is critical - if you don't register your unique box type using this function you'll
+		get a runttime error
+		@param box_type a string such as "manual" or "swarm_auto", or "swarm_ref", etc
+		@param box_color an RGB list [R,G,B] (floats)
+		@param force something you'd set to True if you want to force the overwrite of the old color (previously stored)
 		'''
 		if not force and EMBox.BOX_COLORS.has_key(box_type):
 			# this is just to make sure there are no conflicts - if someone is resetting a color they 
@@ -463,15 +475,43 @@ class EMBoxingTool:
 		raise NotImplementedException("Inheriting classes must supply this function")
 	
 	def moving_ptcl_established(self,box_num,x,y):
+		'''
+		This is required by the ParticlesWindowEventHandler
+		This function is called when a particle is first clicked on
+		@param box_num the box number (int)
+		@param x the x coordinate of the mouse
+		@param y the y coordinate of the mouse
+		'''
 		raise NotImplementedException("Inheriting classes must supply this function")
 	
 	def move_ptcl(self,box_num,x,y,scale):
+		'''
+		This is required by the ParticlesWindowEventHandler
+		This function is called when a particle is moved
+		@param box_num the box number (int)
+		@param x the x coordinate of the mouse
+		@param y the y coordinate of the mouse
+		@param scale the current scale of the particle viewer window, for imposing the correct amount of movement
+		'''
 		raise NotImplementedException("Inheriting classes must supply this function")
 	
 	def release_moving_ptcl(self,box_num,x,y):
+		'''
+		This is required by the ParticlesWindowEventHandler
+		This function is called when a particle is released
+		@param box_num the box number (int)
+		@param x the x coordinate of the mouse
+		@param y the y coordinate of the mouse
+		'''
 		raise NotImplementedException("Inheriting classes must supply this function")
 	
 	def delete_ptcl(self,box_num):
+		'''
+		This is required by the ParticlesWindowEventHandler
+		This function is called when a particle is deleted. It is the responsible of the EMBoxingTool
+		to handle particle deletion.
+		@param box_num the box number (int)
+		'''
 		raise NotImplementedException("Inheriting classes must supply this function")
 	
 	def get_unique_box_types(self):
