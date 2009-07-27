@@ -32,6 +32,7 @@
 
 from em3dmodule import *
 from EMAN2 import PDBReader
+import sys
 
 
 class AlaRenderer:
@@ -46,6 +47,387 @@ class AlaRenderer:
 
 		target.makeStick(res, 1, t1)
 
+class ArgRenderer:
+	def __init__(self): pass
+		
+	def __call__(self,res,target):
+		t1 = res[3].index('CB')
+		t2 = res[3].index('CG')
+		t3 = res[3].index('CD')
+		t4 = res[3].index('NE')
+		t5 = res[3].index('CZ')
+		t6 = res[3].index('NH1')
+		t7 = res[3].index('NH2')
+
+
+		target.makeStick(res, 0, 1)
+		target.makeStick(res, 1, 2)
+		target.makeStick(res, 2, 3)
+
+		target.makeStick(res, 1, t1)
+		target.makeStick(res, t1, t2)
+		target.makeStick(res, t2, t3)
+		target.makeStick(res, t3, t4)
+		target.makeStick(res, t4, t5)
+		target.makeStick(res, t5, t6)
+		target.makeStick(res, t5, t7)
+
+class AspRenderer:
+	def __init__(self): pass
+		
+	def __call__(self,res,target):
+		t1 = res[3].index('CB')
+		t2 = res[3].index('CG')
+		t3 = res[3].index('OD1')
+		t4 = res[3].index('OD2')
+
+
+		target.makeStick(res, 0, 1)
+		target.makeStick(res, 1, 2)
+		target.makeStick(res, 2, 3)
+
+		target.makeStick(res, 1, t1)
+		target.makeStick(res, t1, t2)
+		target.makeStick(res, t2, t3)
+		target.makeStick(res, t2, t4)
+
+class AsnRenderer:
+	def __init__(self): pass
+		
+	def __call__(self,res,target):
+		t1 = res[3].index('CB')
+		t2 = res[3].index('CG')
+		t3 = res[3].index('OD1')
+		t4 = res[3].index('ND2')
+
+
+		target.makeStick(res, 0, 1)
+		target.makeStick(res, 1, 2)
+		target.makeStick(res, 2, 3)
+
+		target.makeStick(res, 1, t1)
+		target.makeStick(res, t1, t2)
+		target.makeStick(res, t2, t3)
+		target.makeStick(res, t2, t4)
+
+class CysRenderer:
+	def __init__(self): pass
+		
+	def __call__(self,res,target):
+		t1 = res[3].index('CB')
+		t2 = res[3].index('SG')
+
+		target.makeStick(res, 0, 1)
+		target.makeStick(res, 1, 2)
+		target.makeStick(res, 2, 3)
+
+		target.makeStick(res, 1, t1)
+		target.makeStick(res, t1, t2)
+
+class GlyRenderer:
+	def __init__(self): pass
+		
+	def __call__(self,res,target):
+		target.makeStick(res, 0, 1)
+		target.makeStick(res, 1, 2)
+		target.makeStick(res, 2, 3)
+
+class GlnRenderer:
+	def __init__(self): pass
+		
+	def __call__(self,res,target):
+		t1 = res[3].index('CB')
+		t2 = res[3].index('CG')
+		t3 = res[3].index('CD')
+		t4 = res[3].index('OE1')
+		t5 = res[3].index('NE2')
+
+
+		target.makeStick(res, 0, 1)
+		target.makeStick(res, 1, 2)
+		target.makeStick(res, 2, 3)
+
+		target.makeStick(res, 1, t1)
+		target.makeStick(res, t1, t2)
+		target.makeStick(res, t2, t3)
+		target.makeStick(res, t3, t4)
+		target.makeStick(res, t3, t5)
+
+class GluRenderer:
+	def __init__(self): pass
+		
+	def __call__(self,res,target):
+		t1 = res[3].index('CB')
+		t2 = res[3].index('CG')
+		t3 = res[3].index('CD')
+		t4 = res[3].index('OE1')
+		t5 = res[3].index('OE2')
+
+
+		target.makeStick(res, 0, 1)
+		target.makeStick(res, 1, 2)
+		target.makeStick(res, 2, 3)
+
+		target.makeStick(res, 1, t1)
+		target.makeStick(res, t1, t2)
+		target.makeStick(res, t2, t3)
+		target.makeStick(res, t3, t4)
+		target.makeStick(res, t3, t5)
+
+class HisRenderer:
+	def __init__(self): pass
+		
+	def __call__(self,res,target):
+		t1 = res[3].index('CB')
+		t2 = res[3].index('CG')
+		t3 = res[3].index('CD2')
+		t4 = res[3].index('ND1')
+		t5 = res[3].index('NE2')
+		t6 = res[3].index('CE1')
+
+
+		target.makeStick(res, 0, 1)
+		target.makeStick(res, 1, 2)
+		target.makeStick(res, 2, 3)
+
+		target.makeStick(res, 1, t1)
+		target.makeStick(res, t1, t2)
+		target.makeStick(res, t2, t3)
+		target.makeStick(res, t2, t4)
+		target.makeStick(res, t3, t5)
+		target.makeStick(res, t5, t6)
+		target.makeStick(res, t4, t6)
+
+class IleRenderer:
+	def __init__(self): pass
+		
+	def __call__(self,res,target):
+		t1 = res[3].index('CB')
+		t2 = res[3].index('CG1')
+		t3 = res[3].index('CG2')
+		t4 = res[3].index('CD1')
+
+
+		target.makeStick(res, 0, 1)
+		target.makeStick(res, 1, 2)
+		target.makeStick(res, 2, 3)
+
+		target.makeStick(res, 1, t1)
+		target.makeStick(res, t1, t2)
+		target.makeStick(res, t1, t3)
+		target.makeStick(res, t2, t4)
+
+class LeuRenderer:
+	def __init__(self): pass
+		
+	def __call__(self,res,target):
+		t1 = res[3].index('CB')
+		t2 = res[3].index('CG')
+		t3 = res[3].index('CD1')
+		t4 = res[3].index('CD2')
+
+
+		target.makeStick(res, 0, 1)
+		target.makeStick(res, 1, 2)
+		target.makeStick(res, 2, 3)
+
+		target.makeStick(res, 1, t1)
+		target.makeStick(res, t1, t2)
+		target.makeStick(res, t2, t3)
+		target.makeStick(res, t2, t4)
+
+class LysRenderer:
+	def __init__(self): pass
+		
+	def __call__(self,res,target):
+		t1 = res[3].index('CB')
+		t2 = res[3].index('CG')
+		t3 = res[3].index('CD')
+		t4 = res[3].index('CE')
+		t5 = res[3].index('NZ')
+
+
+		target.makeStick(res, 0, 1)
+		target.makeStick(res, 1, 2)
+		target.makeStick(res, 2, 3)
+
+		target.makeStick(res, 1, t1)
+		target.makeStick(res, t1, t2)
+		target.makeStick(res, t2, t3)
+		target.makeStick(res, t3, t4)
+		target.makeStick(res, t4, t5)
+
+class MetRenderer:
+	def __init__(self): pass
+		
+	def __call__(self,res,target):
+		t1 = res[3].index('CB')
+		t2 = res[3].index('CG')
+		t3 = res[3].index('SD')
+		t4 = res[3].index('CE')
+
+
+		target.makeStick(res, 0, 1)
+		target.makeStick(res, 1, 2)
+		target.makeStick(res, 2, 3)
+
+		target.makeStick(res, 1, t1)
+		target.makeStick(res, t1, t2)
+		target.makeStick(res, t2, t3)
+		target.makeStick(res, t3, t4)
+
+class PheRenderer:
+	def __init__(self): pass
+		
+	def __call__(self,res,target):
+		t1 = res[3].index('CB')
+		t2 = res[3].index('CG')
+		t3 = res[3].index('CD1')
+		t4 = res[3].index('CD2')
+		t5 = res[3].index('CE1')
+		t6 = res[3].index('CE2')
+		t7 = res[3].index('CZ')
+
+
+		target.makeStick(res, 0, 1)
+		target.makeStick(res, 1, 2)
+		target.makeStick(res, 2, 3)
+
+		target.makeStick(res, 1, t1)
+		target.makeStick(res, t1, t2)
+		target.makeStick(res, t2, t3)
+		target.makeStick(res, t2, t4)
+		target.makeStick(res, t3, t5)
+		target.makeStick(res, t4, t6)
+		target.makeStick(res, t5, t7)
+		target.makeStick(res, t6, t7)
+
+class ProRenderer:
+	def __init__(self): pass
+		
+	def __call__(self,res,target):
+		t1 = res[3].index('CB')
+		t2 = res[3].index('CG')
+		t3 = res[3].index('CD')
+		t4 = res[3].index('N')
+
+
+		target.makeStick(res, 0, 1)
+		target.makeStick(res, 1, 2)
+		target.makeStick(res, 2, 3)
+
+		target.makeStick(res, 1, t1)
+		target.makeStick(res, t1, t2)
+		target.makeStick(res, t2, t3)
+		target.makeStick(res, t3, t4)
+
+class SerRenderer:
+	def __init__(self): pass
+		
+	def __call__(self,res,target):
+		t1 = res[3].index('CB')
+		t2 = res[3].index('OG')
+
+		target.makeStick(res, 0, 1)
+		target.makeStick(res, 1, 2)
+		target.makeStick(res, 2, 3)
+
+		target.makeStick(res, 1, t1)
+		target.makeStick(res, t1, t2)
+
+class ThrRenderer:
+	def __init__(self): pass
+		
+	def __call__(self,res,target):
+		t1 = res[3].index('CB')
+		t2 = res[3].index('CG2')
+		t3 = res[3].index('OG1')
+
+		target.makeStick(res, 0, 1)
+		target.makeStick(res, 1, 2)
+		target.makeStick(res, 2, 3)
+
+		target.makeStick(res, 1, t1)
+		target.makeStick(res, t1, t2)
+		target.makeStick(res, t1, t3)
+
+class TrpRenderer:
+	def __init__(self): pass
+		
+	def __call__(self,res,target):
+		t1 = res[3].index('CB')
+		t2 = res[3].index('CG')
+		t3 = res[3].index('CD1')
+		t4 = res[3].index('CD2')
+		t5 = res[3].index('NE1')
+		t6 = res[3].index('CE2')
+		t7 = res[3].index('CE3')
+		t8 = res[3].index('CZ3')
+		t9 = res[3].index('CH2')
+		t10 = res[3].index('CZ2')
+
+		target.makeStick(res, 0, 1)
+		target.makeStick(res, 1, 2)
+		target.makeStick(res, 2, 3)
+
+		target.makeStick(res, 1, t1)
+		target.makeStick(res, t1, t2)
+		target.makeStick(res, t2, t3)
+		target.makeStick(res, t2, t4)
+		target.makeStick(res, t3, t5)
+		target.makeStick(res, t5, t6)
+		target.makeStick(res, t4, t6)
+		target.makeStick(res, t4, t7)
+		target.makeStick(res, t7, t8)
+		target.makeStick(res, t8, t9)
+		target.makeStick(res, t10, t9)
+
+class TyrRenderer:
+	def __init__(self): pass
+		
+	def __call__(self,res,target):
+		t1 = res[3].index('CB')
+		t2 = res[3].index('CG')
+		t3 = res[3].index('CD1')
+		t4 = res[3].index('CD2')
+		t5 = res[3].index('CE1')
+		t6 = res[3].index('CE2')
+		t7 = res[3].index('CZ')
+		t8 = res[3].index('OH')
+
+
+		target.makeStick(res, 0, 1)
+		target.makeStick(res, 1, 2)
+		target.makeStick(res, 2, 3)
+
+		target.makeStick(res, 1, t1)
+		target.makeStick(res, t1, t2)
+		target.makeStick(res, t2, t3)
+		target.makeStick(res, t2, t4)
+		target.makeStick(res, t3, t5)
+		target.makeStick(res, t4, t6)
+		target.makeStick(res, t5, t7)
+		target.makeStick(res, t6, t7)
+		target.makeStick(res, t7, t8)
+
+class ValRenderer:
+	def __init__(self): pass
+		
+	def __call__(self,res,target):
+		t1 = res[3].index('CB')
+		t2 = res[3].index('CG2')
+		t3 = res[3].index('CG1')
+
+		target.makeStick(res, 0, 1)
+		target.makeStick(res, 1, 2)
+		target.makeStick(res, 2, 3)
+
+		target.makeStick(res, 1, t1)
+		target.makeStick(res, t1, t2)
+		target.makeStick(res, t1, t3)
+
+
+
 class EMPDBViewer(EM3DModule):
 	def __init__(self, application=None):
 		EM3DModule.__init__(self,application)
@@ -56,6 +438,25 @@ class EMPDBViewer(EM3DModule):
 		
 		self.side_chain_renderer = {}
 		self.side_chain_renderer["ALA"] = AlaRenderer()
+		self.side_chain_renderer["ARG"] = ArgRenderer()
+		self.side_chain_renderer["ASP"] = AspRenderer()
+		self.side_chain_renderer["ASN"] = AsnRenderer()
+		self.side_chain_renderer["CYS"] = CysRenderer()
+		self.side_chain_renderer["GLY"] = GlyRenderer()
+		self.side_chain_renderer["GLN"] = GlnRenderer()
+		self.side_chain_renderer["GLU"] = GluRenderer()
+		self.side_chain_renderer["HIS"] = HisRenderer()
+		self.side_chain_renderer["ILE"] = IleRenderer()
+		self.side_chain_renderer["LEU"] = LeuRenderer()
+		self.side_chain_renderer["LYS"] = LysRenderer()
+		self.side_chain_renderer["MET"] = MetRenderer()
+		self.side_chain_renderer["PHE"] = PheRenderer()
+		self.side_chain_renderer["PRO"] = ProRenderer()
+		self.side_chain_renderer["SER"] = SerRenderer()
+		self.side_chain_renderer["THR"] = ThrRenderer()
+		self.side_chain_renderer["TRP"] = TrpRenderer()
+		self.side_chain_renderer["TYR"] = TyrRenderer()
+		self.side_chain_renderer["VAL"] = ValRenderer()
 		
 	def current_text(self): return self.text
 	
@@ -69,9 +470,25 @@ class EMPDBViewer(EM3DModule):
 		
 	def draw_objects(self):
 
-		if (self.text == ""): return
+		if (self.text == ""): 
+			#default drawing
+			return
+			'''
+			for i in range(0,100):
+				#glPushMatrix()
+				glTranslate(i,-i,i)
+				glScale(1,1,1)
+				if (i%2 == 0): self.load_gl_color("white")
+				elif (i%3 == 0): self.load_gl_color ("blue")
+				elif (i%5 == 0): self.load_gl_color ("green")
+				else: self.load_gl_color("red")
+				glCallList(self.highresspheredl)
+				return
+				#glPopMatrix
+			'''
 		
 		if (self.text != self.fName): 
+			if (self.dl != None): glDeleteLists(self.dl, 1)
 			self.dl=None
 			self.fName = self.text
 
@@ -79,7 +496,7 @@ class EMPDBViewer(EM3DModule):
 			self.dl=glGenLists(1)
 			glNewList(self.dl,GL_COMPILE)
 			self.buildResList()
-			
+
 			for res in self.allResidues:
 				for i in range (0, len(res[0])):
 					glPushMatrix()
@@ -96,356 +513,12 @@ class EMPDBViewer(EM3DModule):
 #			self.load_gl_color("silver")
 			for k in range (0, len(self.allResidues)):
 				
-				
-				
 				res = self.allResidues[k]
 				key =  res[4][0]
 				if self.side_chain_renderer.has_key(key):
 					self.side_chain_renderer[key](res,self)
 					continue
-				if res[4][0] == "ALA":
-					#t1 = res[3].index('N')
-					#t2 = res[3].index('CA')
-					#t3 = res[3].index('C')
-					#t4 = res[3].index('O')
-					t1 = res[3].index('CB')
 
-					self.makeStick(res, 0, 1)
-					self.makeStick(res, 1, 2)
-					self.makeStick(res, 2, 3)
-
-					self.makeStick(res, 1, t1)
-				
-			
-				elif res[4][0] == "ARG":
-					t1 = res[3].index('CB')
-					t2 = res[3].index('CG')
-					t3 = res[3].index('CD')
-					t4 = res[3].index('NE')
-					t5 = res[3].index('CZ')
-					t6 = res[3].index('NH1')
-					t7 = res[3].index('NH2')
-
-
-					self.makeStick(res, 0, 1)
-					self.makeStick(res, 1, 2)
-					self.makeStick(res, 2, 3)
-
-					self.makeStick(res, 1, t1)
-					self.makeStick(res, t1, t2)
-					self.makeStick(res, t2, t3)
-					self.makeStick(res, t3, t4)
-					self.makeStick(res, t4, t5)
-					self.makeStick(res, t5, t6)
-					self.makeStick(res, t5, t7)
-
-			
-				elif res[4][0] == "ASP":
-					t1 = res[3].index('CB')
-					t2 = res[3].index('CG')
-					t3 = res[3].index('OD1')
-					t4 = res[3].index('OD2')
-
-
-					self.makeStick(res, 0, 1)
-					self.makeStick(res, 1, 2)
-					self.makeStick(res, 2, 3)
-
-					self.makeStick(res, 1, t1)
-					self.makeStick(res, t1, t2)
-					self.makeStick(res, t2, t3)
-					self.makeStick(res, t2, t4)
-				
-			
-				elif res[4][0] == "ASN":
-					t1 = res[3].index('CB')
-					t2 = res[3].index('CG')
-					t3 = res[3].index('OD1')
-					t4 = res[3].index('ND2')
-
-
-					self.makeStick(res, 0, 1)
-					self.makeStick(res, 1, 2)
-					self.makeStick(res, 2, 3)
-
-					self.makeStick(res, 1, t1)
-					self.makeStick(res, t1, t2)
-					self.makeStick(res, t2, t3)
-					self.makeStick(res, t2, t4)
-
-				elif res[4][0] == "CYS":
-					t1 = res[3].index('CB')
-					t2 = res[3].index('SG')
-
-					self.makeStick(res, 0, 1)
-					self.makeStick(res, 1, 2)
-					self.makeStick(res, 2, 3)
-
-					self.makeStick(res, 1, t1)
-					self.makeStick(res, t1, t2)
-
-
-				elif res[4][0] == "GLY":
-					self.makeStick(res, 0, 1)
-					self.makeStick(res, 1, 2)
-					self.makeStick(res, 2, 3)
-
-				elif res[4][0] == "GLN":
-					t1 = res[3].index('CB')
-					t2 = res[3].index('CG')
-					t3 = res[3].index('CD')
-					t4 = res[3].index('OE1')
-					t5 = res[3].index('NE2')
-
-
-					self.makeStick(res, 0, 1)
-					self.makeStick(res, 1, 2)
-					self.makeStick(res, 2, 3)
-
-					self.makeStick(res, 1, t1)
-					self.makeStick(res, t1, t2)
-					self.makeStick(res, t2, t3)
-					self.makeStick(res, t3, t4)
-					self.makeStick(res, t3, t5)
-
-				elif res[4][0] == "GLU":
-					t1 = res[3].index('CB')
-					t2 = res[3].index('CG')
-					t3 = res[3].index('CD')
-					t4 = res[3].index('OE1')
-					t5 = res[3].index('OE2')
-
-
-					self.makeStick(res, 0, 1)
-					self.makeStick(res, 1, 2)
-					self.makeStick(res, 2, 3)
-
-					self.makeStick(res, 1, t1)
-					self.makeStick(res, t1, t2)
-					self.makeStick(res, t2, t3)
-					self.makeStick(res, t3, t4)
-					self.makeStick(res, t3, t5)
-
-			
-				elif res[4][0] == "HIS":
-					t1 = res[3].index('CB')
-					t2 = res[3].index('CG')
-					t3 = res[3].index('CD2')
-					t4 = res[3].index('ND1')
-					t5 = res[3].index('NE2')
-					t6 = res[3].index('CE1')
-
-
-					self.makeStick(res, 0, 1)
-					self.makeStick(res, 1, 2)
-					self.makeStick(res, 2, 3)
-
-					self.makeStick(res, 1, t1)
-					self.makeStick(res, t1, t2)
-					self.makeStick(res, t2, t3)
-					self.makeStick(res, t2, t4)
-					self.makeStick(res, t3, t5)
-					self.makeStick(res, t5, t6)
-					self.makeStick(res, t4, t6)
-
-
-				elif res[4][0] == "ILE":	
-					t1 = res[3].index('CB')
-					t2 = res[3].index('CG1')
-					t3 = res[3].index('CG2')
-					t4 = res[3].index('CD1')
-
-
-					self.makeStick(res, 0, 1)
-					self.makeStick(res, 1, 2)
-					self.makeStick(res, 2, 3)
-
-					self.makeStick(res, 1, t1)
-					self.makeStick(res, t1, t2)
-					self.makeStick(res, t1, t3)
-					self.makeStick(res, t2, t4)
-
-			
-				elif res[4][0] == "LEU":
-					t1 = res[3].index('CB')
-					t2 = res[3].index('CG')
-					t3 = res[3].index('CD1')
-					t4 = res[3].index('CD2')
-
-
-					self.makeStick(res, 0, 1)
-					self.makeStick(res, 1, 2)
-					self.makeStick(res, 2, 3)
-
-					self.makeStick(res, 1, t1)
-					self.makeStick(res, t1, t2)
-					self.makeStick(res, t2, t3)
-					self.makeStick(res, t2, t4)
-
-				elif res[4][0] == "LYS":
-					t1 = res[3].index('CB')
-					t2 = res[3].index('CG')
-					t3 = res[3].index('CD')
-					t4 = res[3].index('CE')
-					t5 = res[3].index('NZ')
-
-
-					self.makeStick(res, 0, 1)
-					self.makeStick(res, 1, 2)
-					self.makeStick(res, 2, 3)
-
-					self.makeStick(res, 1, t1)
-					self.makeStick(res, t1, t2)
-					self.makeStick(res, t2, t3)
-					self.makeStick(res, t3, t4)
-					self.makeStick(res, t4, t5)
-
-			
-				elif res[4][0] == "MET":
-					t1 = res[3].index('CB')
-					t2 = res[3].index('CG')
-					t3 = res[3].index('SD')
-					t4 = res[3].index('CE')
-
-
-					self.makeStick(res, 0, 1)
-					self.makeStick(res, 1, 2)
-					self.makeStick(res, 2, 3)
-
-					self.makeStick(res, 1, t1)
-					self.makeStick(res, t1, t2)
-					self.makeStick(res, t2, t3)
-					self.makeStick(res, t3, t4)
-
-				elif res[4][0] == "PHE":
-					t1 = res[3].index('CB')
-					t2 = res[3].index('CG')
-					t3 = res[3].index('CD1')
-					t4 = res[3].index('CD2')
-					t5 = res[3].index('CE1')
-					t6 = res[3].index('CE2')
-					t7 = res[3].index('CZ')
-
-
-					self.makeStick(res, 0, 1)
-					self.makeStick(res, 1, 2)
-					self.makeStick(res, 2, 3)
-
-					self.makeStick(res, 1, t1)
-					self.makeStick(res, t1, t2)
-					self.makeStick(res, t2, t3)
-					self.makeStick(res, t2, t4)
-					self.makeStick(res, t3, t5)
-					self.makeStick(res, t4, t6)
-					self.makeStick(res, t5, t7)
-					self.makeStick(res, t6, t7)
-
-				elif res[4][0] == "PRO":
-					t1 = res[3].index('CB')
-					t2 = res[3].index('CG')
-					t3 = res[3].index('CD')
-					t4 = res[3].index('N')
-
-
-					self.makeStick(res, 0, 1)
-					self.makeStick(res, 1, 2)
-					self.makeStick(res, 2, 3)
-
-					self.makeStick(res, 1, t1)
-					self.makeStick(res, t1, t2)
-					self.makeStick(res, t2, t3)
-					self.makeStick(res, t3, t4)
-
-				elif res[4][0] == "SER":
-					t1 = res[3].index('CB')
-					t2 = res[3].index('OG')
-
-					self.makeStick(res, 0, 1)
-					self.makeStick(res, 1, 2)
-					self.makeStick(res, 2, 3)
-
-					self.makeStick(res, 1, t1)
-					self.makeStick(res, t1, t2)
-
-			
-				elif res[4][0] == "THR":
-					t1 = res[3].index('CB')
-					t2 = res[3].index('CG2')
-					t3 = res[3].index('OG1')
-
-					self.makeStick(res, 0, 1)
-					self.makeStick(res, 1, 2)
-					self.makeStick(res, 2, 3)
-
-					self.makeStick(res, 1, t1)
-					self.makeStick(res, t1, t2)
-					self.makeStick(res, t1, t3)
-
-				elif res[4][0] == "TRP":
-					t1 = res[3].index('CB')
-					t2 = res[3].index('CG')
-					t3 = res[3].index('CD1')
-					t4 = res[3].index('CD2')
-					t5 = res[3].index('NE1')
-					t6 = res[3].index('CE2')
-					t7 = res[3].index('CE3')
-					t8 = res[3].index('CZ3')
-					t9 = res[3].index('CH2')
-					t10 = res[3].index('CZ2')
-
-					self.makeStick(res, 0, 1)
-					self.makeStick(res, 1, 2)
-					self.makeStick(res, 2, 3)
-
-					self.makeStick(res, 1, t1)
-					self.makeStick(res, t1, t2)
-					self.makeStick(res, t2, t3)
-					self.makeStick(res, t2, t4)
-					self.makeStick(res, t3, t5)
-					self.makeStick(res, t5, t6)
-					self.makeStick(res, t4, t6)
-					self.makeStick(res, t4, t7)
-					self.makeStick(res, t7, t8)
-					self.makeStick(res, t8, t9)
-					self.makeStick(res, t10, t9)
-
-				elif res[4][0] == "TYR":
-					t1 = res[3].index('CB')
-					t2 = res[3].index('CG')
-					t3 = res[3].index('CD1')
-					t4 = res[3].index('CD2')
-					t5 = res[3].index('CE1')
-					t6 = res[3].index('CE2')
-					t7 = res[3].index('CZ')
-					t8 = res[3].index('OH')
-
-
-					self.makeStick(res, 0, 1)
-					self.makeStick(res, 1, 2)
-					self.makeStick(res, 2, 3)
-
-					self.makeStick(res, 1, t1)
-					self.makeStick(res, t1, t2)
-					self.makeStick(res, t2, t3)
-					self.makeStick(res, t2, t4)
-					self.makeStick(res, t3, t5)
-					self.makeStick(res, t4, t6)
-					self.makeStick(res, t5, t7)
-					self.makeStick(res, t6, t7)
-					self.makeStick(res, t7, t8)
-
-				elif res[4][0] == "VAL":
-					t1 = res[3].index('CB')
-					t2 = res[3].index('CG2')
-					t3 = res[3].index('CG1')
-
-					self.makeStick(res, 0, 1)
-					self.makeStick(res, 1, 2)
-					self.makeStick(res, 2, 3)
-
-					self.makeStick(res, 1, t1)
-					self.makeStick(res, t1, t2)
-					self.makeStick(res, t1, t3)
 
 				if (k!=0):
 				
@@ -611,7 +684,6 @@ if __name__ == '__main__':
 	from emapplication import EMStandAloneApplication
 	em_app = EMStandAloneApplication()
 	window = EMPDBViewer()
-	window.set_current_text("fh-solution-0-1UF2-T.pdb")
 	em_app.show()
 	em_app.execute()
 
