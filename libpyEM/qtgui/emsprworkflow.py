@@ -223,7 +223,7 @@ class WorkFlowTask:
 		self.emit(QtCore.SIGNAL("task_idle"))
 
 	def closeEvent(self,event):
-		self.form.closeEvent(None)
+		if self.form != None: self.form.closeEvent(None)
 		#self.emit(QtCore.SIGNAL("task_idle")
 		
 	def write_db_entries(self,dictionary):

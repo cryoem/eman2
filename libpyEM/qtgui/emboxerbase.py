@@ -1198,7 +1198,16 @@ class EMBoxList:
 		
 		return False
 	
-	def get_boxes(self): return self.boxes
+	def get_boxes(self,as_dict=False):
+		'''
+		Get the list of boxes, optionally get them as a dict - idx is the key, box itself is the value
+		@param as_dict force the return object to be a dictionary, not a list
+		'''
+		if not as_dict: return self.boxes
+		else:
+			ret = {}
+			for i,box in enumerate(self.boxes): ret[i] = box
+			return ret
 	
 	def get_boxes_filt(self,filt,as_dict=False):
 		'''
@@ -1507,6 +1516,14 @@ class EMBoxerModule(PyQt4.QtCore.QObject):
 		'''
 		return self.box_list.get_boxes_filt(filt,as_dict)
 	
+	def get_boxes(self,as_dict=False):
+		'''
+		A way of getting all of the boxes as a list or a dict
+		@param as_dict - results are returned as a dict, key is the box number, value is the box itself
+		@return a list of boxes  - or - if as_dict is supplied a dict is returned and the keys are box numbers, the values are the boxes
+		'''
+		return self.box_list.get_boxes(as_dict)
+	
 	def set_box(self,box,box_number,update_display=False):
 		'''
 		@param box_number the number of the box for which you want to get
@@ -1528,7 +1545,7 @@ class EMBoxerModule(PyQt4.QtCore.QObject):
 		box= self.box_list[box_number]
 		self.box_placement_update_exclusion_image(box.x,box.y)
 	
-	def add_boxes(self,boxes):
+	def add_boxes(self,boxes,update_gl=True):
 		'''
 		boxes should be a list like [[x,y,type],[x,y,type],....[int,int,string]]
 		'''
@@ -1540,10 +1557,10 @@ class EMBoxerModule(PyQt4.QtCore.QObject):
 		self.box_list.save_boxes_to_database(self.current_file())
 		if self.particles_window:
 			self.particles_window.set_data(self.box_list.get_particle_images(self.current_file(), self.box_size))
-			self.particles_window.updateGL()
+			if update_gl: self.particles_window.updateGL()
 		if self.main_2d_window:
 			self.main_2d_window.update_shapes(self.box_list.get_box_shapes(self.box_size))
-			self.main_2d_window.updateGL()
+			if update_gl: self.main_2d_window.updateGL()
 		self.load_default_status_msg()
 	
 	def add_box(self,x,y,type=ManualBoxingTool.BOX_TYPE):
@@ -1583,14 +1600,14 @@ class EMBoxerModule(PyQt4.QtCore.QObject):
 					self.main_2d_window.set_other_data(self.get_exclusion_image(),self.get_subsample_rate(),True)
 					self.main_2d_window.updateGL()
 	
-	def remove_boxes(self,box_numbers):
+	def remove_boxes(self,box_numbers,update_gl=True):
 		'''
 		Removes a list of box numbers from the display and also those that are stored in the local database
 		@param box_numbers a list of integer box numbers
 		'''
 		self.box_list.remove_boxes(box_numbers)
 		self.box_list.save_boxes_to_database(self.current_file())
-		self.full_box_update()
+		self.full_box_update(update_gl)
 		self.load_default_status_msg()
 	
 	def remove_box(self,box_number,exclude_region=False):
@@ -1610,13 +1627,13 @@ class EMBoxerModule(PyQt4.QtCore.QObject):
 		
 		self.load_default_status_msg()
 		
-	def full_box_update(self):
+	def full_box_update(self,update_gl=True):
 		if self.particles_window != None:
 			self.particles_window.set_data(self.box_list.get_particle_images(self.current_file(), self.box_size))
-			self.particles_window.updateGL()
+			if update_gl:self.particles_window.updateGL()
 		if self.main_2d_window != None:
 			self.main_2d_window.set_shapes(self.box_list.get_box_shapes(self.box_size))
-			self.main_2d_window.updateGL()
+			if update_gl:self.main_2d_window.updateGL()
 	
 	def move_box(self,box_number,dx,dy):
 		self.box_list.move_box(box_number,dx,dy)

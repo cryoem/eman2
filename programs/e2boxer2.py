@@ -464,6 +464,12 @@ class SwarmPanel:
 		if self.busy: return
 		val = self.proximity_thr.getValue()
 		self.target().set_proximity_threshold(val)
+		
+	def proximal_threshold(self):
+		'''
+		Gets the value stored by the proximity threshold slider
+		'''
+		return self.proximity_thr.getValue()
 	
 	def proximity_threshold_release(self,val):
 		if self.busy: return 
@@ -855,13 +861,18 @@ class SwarmBoxer:
 		
 		for i,key in enumerate(keys):
 			box1 = boxes[key]
+			collision = False
 			for j in range(i+1,len(keys)):
 				key2 = keys[j]
 				box2 = boxes[key2]
 				if ((box1[0]-box2[0])**2 + (box1[1]-box2[1])**2) < nearness_sq:
-					if return_idxs.count(key) == 0: return_idxs.append(key)
-					if return_idxs.count(key2) == 0: return_idxs.append(key2)
-
+					collision = True
+					if box2[2] == SwarmBoxer.AUTO_NAME and return_idxs.count(key2) == 0: return_idxs.append(key2)
+			
+			if collision:
+				# for efficiency
+				if box1[2] == SwarmBoxer.AUTO_NAME and return_idxs.count(key) == 0: return_idxs.append(key)
+				
 		return return_idxs
 	
 	def set_proximity_removal_enabled(self,val):
@@ -869,27 +880,27 @@ class SwarmBoxer:
 		'''
 		if val == False:
 			self.proximity_threshold = None
-		
+			if len(self.proximal_boxes) != 0:
+				self.target().add_boxes(self.proximal_boxes)
+				self.proximal_boxes = []
+		else:
+			if self.proximity_threshold == None:
+				self.proximity_threshold = self.panel_object.proximal_threshold()
+				self.__remove_proximal_particles_from_target()
 	def set_proximity_threshold(self,val):
 		'''
 		The SwarmPanel call this function when the user changes the proximity threshold
 		'''
 		if self.proximity_threshold == val: return
-		from PyQt4 import QtCore
-		get_application().setOverrideCursor(QtCore.Qt.BusyCursor)
+		
+		
 		
 		if self.proximity_threshold == None or self.proximity_threshold < val or len(self.proximal_boxes) == 0:
 			self.proximity_threshold = val
-			boxes = self.target().get_boxes_filt(SwarmBoxer.AUTO_NAME,as_dict=True)
-			proximal_boxes_idxs = self.get_proximal_boxes(boxes)
-			proximal_boxes_idxs.sort()
-			proximal_boxes_idxs.reverse()
-			proximal_boxes = [boxes[idx] for idx in proximal_boxes_idxs]
-			
-			conv = [box.to_list() for box in proximal_boxes]
-			self.proximal_boxes.extend(conv)
-			self.target().remove_boxes(proximal_boxes_idxs)
+			self.__remove_proximal_particles_from_target()
 		else:
+			from PyQt4 import QtCore
+			get_application().setOverrideCursor(QtCore.Qt.BusyCursor)
 			self.proximity_threshold = val
 			if len(self.proximal_boxes) == 0: return
 			
@@ -904,14 +915,43 @@ class SwarmBoxer:
 					boxes.append(self.proximal_boxes.pop(idx))
 				
 				self.target().add_boxes(boxes)
+			get_application().setOverrideCursor(QtCore.Qt.ArrowCursor)
 				
 		cache = get_database_entry(self.target().current_file(),SwarmBoxer.SWARM_BOXERS,dfl=[])
 		if len(cache) > 0:
 			cache[-1][10] = self.proximity_threshold # just store the new proximity threshold
 			set_database_entry(self.target().current_file(),SwarmBoxer.SWARM_BOXERS,cache)
 			
+		
+		
+#	def __remove_proximal_particles_from_target(self):
+#		from PyQt4 import QtCore
+#		get_application().setOverrideCursor(QtCore.Qt.BusyCursor)
+#		boxes = self.target().get_boxes_filt(SwarmBoxer.AUTO_NAME,as_dict=True)
+#		proximal_boxes_idxs = self.get_proximal_boxes(boxes)
+#		proximal_boxes_idxs.sort()
+#		proximal_boxes_idxs.reverse()
+#		proximal_boxes = [boxes[idx] for idx in proximal_boxes_idxs]
+#		
+#		conv = [box.to_list() for box in proximal_boxes]
+#		self.proximal_boxes.extend(conv)
+#		self.target().remove_boxes(proximal_boxes_idxs)
+#		get_application().setOverrideCursor(QtCore.Qt.ArrowCursor)
+#		
+	def __remove_proximal_particles_from_target(self):
+		from PyQt4 import QtCore
+		get_application().setOverrideCursor(QtCore.Qt.BusyCursor)
+		boxes = self.target().get_boxes()
+		proximal_boxes_idxs = self.get_proximal_boxes(boxes)
+		proximal_boxes_idxs.sort()
+		proximal_boxes_idxs.reverse()
+		proximal_boxes = [boxes[idx] for idx in proximal_boxes_idxs]
+		
+		conv = [box.to_list() for box in proximal_boxes]
+		self.proximal_boxes.extend(conv)
+		self.target().remove_boxes(proximal_boxes_idxs)
 		get_application().setOverrideCursor(QtCore.Qt.ArrowCursor)
-				
+		
 	def check_proximity_add_boxes(self,boxes):
 		'''
 		boxes is always a list
@@ -1295,16 +1335,11 @@ class SwarmBoxer:
 					dx,dy = self.xform_center_propagate([box.x,box.y],image_name,scaled_template,self.particle_diameter)
 					self.move_ref(box_num,image_name,dx,dy,allow_template_update=False)
 		
-		if self.proximity_threshold != None:
-			proximal_boxes_idxs = self.get_proximal_boxes(boxes)
-			proximal_boxes_idxs.sort()
-			proximal_boxes_idxs.reverse()
-			proximal_boxes = [boxes.pop(idx) for idx in proximal_boxes_idxs]
-			
-			self.proximal_boxes.extend(proximal_boxes)
-		
 	   	boxes.sort(compare_box_correlation) # sorting like this will often put large ice contaminations in a group, thanks Pawel Penczek
-		self.target().add_boxes(boxes)
+		self.target().add_boxes(boxes,self.proximity_threshold == None)
+		
+		if self.proximity_threshold != None:
+			self.__remove_proximal_particles_from_target()
 		
 		if cache:
 			self.cache_current_state()
