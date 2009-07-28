@@ -120,7 +120,8 @@ def add_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None, a
 	if st[2] < 0.0:  ERROR("Negative variance!", "add_ave_varf", 1)
 	return tavg, ave1, ave2, var, sumsq
 
-def add_ave_varf_MPI(myid, data, mask = None, mode = "a", CTF = False, ctf_2_sum = None, ali_params = "xform.align2d", main_node = 0):
+
+def add_ave_varf_MPI(myid, data, mask = None, mode = "a", CTF = False, ctf_2_sum = None, ali_params = "xform.align2d", main_node = 0, comm = -1):
 	"""
 		Calculate sum of an image series and sum of squares in Fourier space
 		Since this is the MPI version, we need to reduce sum and sum of squares 
@@ -131,7 +132,11 @@ def add_ave_varf_MPI(myid, data, mask = None, mode = "a", CTF = False, ctf_2_sum
 	from utilities    import    model_blank, get_params2D
 	from fundamentals import    rot_shift2D, fft, fftip
 	from utilities    import    reduce_EMData_to_root
-	from mpi          import    mpi_reduce, MPI_INT, MPI_SUM, MPI_COMM_WORLD
+	from mpi          import    mpi_reduce, MPI_INT, MPI_SUM
+	
+	if comm == -1:
+		from mpi import MPI_COMM_WORLD
+		comm = MPI_COMM_WORLD
 
 	n = len(data)
 	nx = data[0].get_xsize()
@@ -177,21 +182,21 @@ def add_ave_varf_MPI(myid, data, mask = None, mode = "a", CTF = False, ctf_2_sum
 			if(i%2 == 0):   Util.add_img(ave1, ima)
 			else:           Util.add_img(ave2, ima)
 			Util.add_img2(var, ima)
-	reduce_EMData_to_root(ave1, myid, main_node)
-	reduce_EMData_to_root(ave2, myid, main_node)
-	reduce_EMData_to_root(var, myid, main_node)
-	if get_ctf2: reduce_EMData_to_root(ctf_2_sum, myid, main_node)
+	reduce_EMData_to_root(ave1, myid, main_node, comm)
+	reduce_EMData_to_root(ave2, myid, main_node, comm)
+	reduce_EMData_to_root(var, myid, main_node, comm)
+	if get_ctf2: reduce_EMData_to_root(ctf_2_sum, myid, main_node, comm)
 	nima = n
-	nima = mpi_reduce(nima, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
+	nima = mpi_reduce(nima, 1, MPI_INT, MPI_SUM, main_node, comm)
 	if myid == 0:
 		nima = int(nima)
 		sumsq = Util.addn_img(ave1, ave2)
 		if CTF:
-			tavg  = Util.divn_img(sumsq, ctf_2_sum)
+			tavg = Util.divn_img(sumsq, ctf_2_sum)
 			Util.mul_img(sumsq, sumsq.conjg())
 			Util.div_img(sumsq, ctf_2_sum)
 		else:
-			tavg  = sumsq/nima
+			tavg = sumsq/nima
 			Util.mul_img(sumsq, sumsq.conjg())
 			Util.mul_scalar(sumsq, 1.0/float(nima))
 		Util.sub_img(var, sumsq)
@@ -203,73 +208,6 @@ def add_ave_varf_MPI(myid, data, mask = None, mode = "a", CTF = False, ctf_2_sum
 		sumsq = EMData()
 	return tavg, ave1, ave2, var, sumsq
 
-'''
-This does not appear to be right, Yang - can it be removed?  PAP 04/28/09
-def add_ave_varf_ML_MPI(data, mask = None, mode = "a", CTF = False):
-	"""
-		Calculate sum of an image series and sum of squares in Fourier space
-		Since this is the MPI version, we need to reduce sum and sum of squares 
-		on the main node and calculate variance there.
-		mode - "a" use current alignment parameters
-		CTF  - if True, use CTF for calculations of the sum.
-	"""
-	from utilities    import    model_blank, get_params2D
-	from fundamentals import    rot_shift2D, fft
-
-	n = len(data)
-	nx = data[0].get_xsize()
-	ny = data[0].get_ysize()
-	ave = model_blank(nx, ny)
-	var = EMData(nx, ny, 1, False)
-
-	if CTF:
-		from morphology   import ctf_img
-		from filter       import filt_ctf, filt_table
-		from utilities    import get_arb_params
-		parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
-		if data[0].get_attr_default('ctf_applied', 1) == 1: 
-			ERROR("data cannot be ctf-applied","add_oe_ave_varf",1)
-	 	for i in xrange(n):
-	 		if mode == "a":
-				attr_list = data[i].get_attr_dict()	
-				if attr_list.has_key('Prob'):
-					p = data[i].get_attr('Prob')
-					K = len(p)
-		 			alpha  = data[i].get_attr('alpha_l')
-		 			sx     = data[i].get_attr('sx_l')
-	 				sy     = data[i].get_attr('sy_l')
-	 				mirror = data[i].get_attr('mirror_l')
-		 			ima_tmp = rot_shift2D(data[i], alpha[0], sx[0], sy[0], mirror[0])
-					Util.mul_scalar(ima_tmp, p[0])
-					for k in xrange(1, K):
-						ima_tmp2 = rot_shift2D(data[i], alpha[k], sx[k], sy[k], mirror[k])
-						Util.mul_scalar(ima_tmp2, p[k])
-						Util.add_img(ima_tmp, ima_tmp2)
-					ima = ima_tmp.copy()
-				else:
-	 				alpha, sx, sy, mirror, scale = get_params2D(data[i])
-		 			ima = rot_shift2D(data[i], alpha, sx, sy, mirror)
-				#  Here we have a possible problem: varf works only if CTF is applied after rot/shift
-				#    while calculation of average (and in general principle) CTF should be applied before rot/shift
-				#    here we use the first possibility
-			else:
-		 		ima = data[i].copy()
-	 		ctf_params = ima.get_attr( "ctf" )
-	 		oc = filt_ctf(ima, ctf_params, dopad=False)
-			Util.add_img(ave, oc)
- 			Util.add_img2(var, fft(ima))
-	else:
-		for i in xrange(n):
-			if mode == "a":
-	 			alpha, sx, sy, mirror, scale = get_params2D(data[i])
-		 		ima = rot_shift2D(data[i], alpha, sx, sy, mirror)
-			else:
-				ima = data[i].copy()
-			Util.add_img(ave, ima)
-			Util.add_img2(var, fft(ima))
-	
-	return ave, var
-'''
 
 def sum_oe(data, mode = "a", CTF = False, ctf_2_sum = None):
 	"""
