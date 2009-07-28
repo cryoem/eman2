@@ -431,7 +431,6 @@ class ValRenderer:
 class EMPDBViewer(EM3DModule):
 	def __init__(self, application=None,ensure_gl_context=True,application_control=True):
 		EM3DModule.__init__(self,application,ensure_gl_context=ensure_gl_context,application_control=application_control)
-		#self.fName = raw_input ("Enter the file name of a pdb file: ")
 		self.fName = ""
 		self.text = self.fName
 		self.dl = None
@@ -682,7 +681,7 @@ if __name__ == '__main__':
 	from emapplication import EMStandAloneApplication
 	em_app = EMStandAloneApplication()
 	window = EMPDBViewer()
-	window.set_current_text("fh-solution-0-1UF2-T.pdb")
+	#window.set_current_text("fh-solution-0-1UF2-T.pdb")
 	em_app.show()
 	em_app.execute()
 
