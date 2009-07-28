@@ -122,7 +122,11 @@ class EMPDBValTool(EM3DModule):
 		if self.inspector == None:
 			self.inspector = EMPDBValToolInspector(self)
 		return self.inspector
-	
+
+	def run_validate(self):
+		val1 = int(self.get_inspector().text1.text())
+		val2 = float(self.get_inspector().text2.text())
+		self.emit(QtCore.SIGNAL("run_validate"), str(self.current_mrc), str(self.current_pdb), val1, val2)
 
 class EMPDBValToolInspector(EM3DInspector):
 	def __init__(self,target,enable_advanced=False):
@@ -190,11 +194,18 @@ class EMPDBValToolInspector(EM3DInspector):
 	def runValidate(self, i):	
 		self.target().update_pdb_file()
 		self.target().update_mrc_file()
+		
+		if (str(self.text1.text()) == ""): self.text1.setText("20") #default
+		if (str(self.text2.text()) == ""): self.text2.setText("5.0") #default
+
 		print self.target().current_mrc
 		print self.target().current_pdb
 		print str(self.text1.text())
 		print str(self.text2.text())
-		print "This function is not ready yet."
+
+		if ((str(self.target().current_mrc)!= "") and (str(self.target().current_pdb)!= "")): 
+			self.target().run_validate()
+			print "This function is not ready yet."
 	
 if __name__ == '__main__':
 	from emapplication import EMStandAloneApplication
