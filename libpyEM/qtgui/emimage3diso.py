@@ -359,11 +359,15 @@ class EMIsosurfaceModule(EMImage3DGUIModule):
 		
 	def resizeEvent(self,width=0,height=0):
 		self.vdtools.set_update_P_inv()
+
+	def get_mrc_file(self): #added by muthu
+		return self.get_inspector().mrcfileName
 		
 
 class EMIsoInspector(QtGui.QWidget):
 	def __init__(self,target,enable_browse=False) :
 		QtGui.QWidget.__init__(self,None)
+
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"desktop.png"))
 		self.target=weakref.ref(target)
 		self.rotation_sliders = EMTransformPanel(target,self)
@@ -373,6 +377,19 @@ class EMIsoInspector(QtGui.QWidget):
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
 		
+		self.mrcChanged = False #added by Muthu
+		
+		if enable_browse:
+			hblbrowse = QtGui.QHBoxLayout()
+			self.mrc_text = QtGui.QLineEdit()
+			hblbrowse.addWidget(self.mrc_text)
+			self.mrc_browse = QtGui.QPushButton("Browse")
+			hblbrowse.addWidget(self.mrc_browse)
+			self.vbl.addLayout(hblbrowse)
+
+			QtCore.QObject.connect(self.mrc_text, QtCore.SIGNAL("textEdited(const QString&)"), self.on_mrc_text_change) #added by Muthu
+			QtCore.QObject.connect(self.mrc_browse, QtCore.SIGNAL("clicked(bool)"), self.on_mrc_browse) # added by Muthu
+
 		self.hbl = QtGui.QHBoxLayout()
 		self.hbl.setMargin(0)
 		self.hbl.setSpacing(6)
@@ -441,6 +458,20 @@ class EMIsoInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.emission_tab.g, QtCore.SIGNAL("valueChanged"), self.update_material)
 		QtCore.QObject.connect(self.emission_tab.b, QtCore.SIGNAL("valueChanged"), self.update_material)
 		QtCore.QObject.connect(self.shininess, QtCore.SIGNAL("valueChanged"), self.update_material)
+
+
+
+	def on_mrc_text_change(self,text): #if enable_browse, added by muthu
+		print "Use the Browse button to update the mrc file"
+
+	def on_mrc_browse(self): #if enable_browse, added by muthu
+		self.mrcfileName = QtGui.QFileDialog.getOpenFileName(self, "open file", "/home", "Text files (*.mrc)")
+		if (self.mrcfileName == ""): return
+		mrcData = EMData(str(self.mrcfileName))
+		self.target().set_data(mrcData)
+		self.mrc_text.setText(self.mrcfileName) 
+		self.mrcChanged = True
+		self.target().updateGL()
 	
 	def update_rotations(self,t3d):
 		self.rotation_sliders.update_rotations(t3d)

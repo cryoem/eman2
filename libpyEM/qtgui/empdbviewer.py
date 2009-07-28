@@ -461,6 +461,7 @@ class EMPDBViewer(EM3DModule):
 	
 	def set_current_text(self,text):
 		self.text = text
+		self.get_inspector().text.setText(self.text)
 	
 	def get_inspector(self):
 		if self.inspector == None:
@@ -635,18 +636,39 @@ class EMPDBViewer(EM3DModule):
 		glCallList(self.cylinderdl)
 
 		glPopMatrix()		
+	
+	def get_pdb_file(self):
+		return self.fName
 		
 class EMPDBInspector(EM3DInspector):
 	def __init__(self,target,enable_advanced=False):
 		EM3DInspector.__init__(self,target,enable_advanced)
-		self.tabwidget.insertTab(0,self.get_example_tab(),"Main")
+		self.tabwidget.insertTab(0,self.get_pdb_tab(),"PDB Main")
 		self.tabwidget.setCurrentIndex(0)
+		
+		'''
+		self.vbl.setMargin(0)
+		self.vbl.setSpacing(6)
+		self.vbl.setObjectName("vbl")
+
+		hbl1 = QtGui.QHBoxLayout()
+		self.text = QtGui.QLineEdit()
+		self.text.setText(self.target().current_text())
+		hbl1.addWidget(self.text)
+		self.browse = QtGui.QPushButton("Browse")
+		hbl1.addWidget(self.browse)
+		self.vbl.addLayout(hbl1)
+
+		QtCore.QObject.connect(self.text, QtCore.SIGNAL("textChanged(const QString&)"), self.on_text_change)
+		QtCore.QObject.connect(self.browse, QtCore.SIGNAL("clicked(bool)"), self.on_browse)
+		'''
+		
 			
-	def get_example_tab(self):
+	def get_pdb_tab(self):
 		'''
 		@return an QtGui.QWidget, i.e. for insertion into a tab widget, or layour, etc
 		'''
-		widget = QtGui.QWidget()
+		widget = QtGui.QTabWidget()
 		vbl = QtGui.QVBoxLayout(widget)
 		vbl.setMargin(0)
 		vbl.setSpacing(6)
@@ -654,21 +676,20 @@ class EMPDBInspector(EM3DInspector):
 		hbl1 = QtGui.QHBoxLayout()
 		self.text = QtGui.QLineEdit()
 		self.text.setText(self.target().current_text())
-		#text_label = QtGui.QLabel("Enter Text:",self)
-		#hbl1.addWidget(text_label)
 		hbl1.addWidget(self.text)
 		self.browse = QtGui.QPushButton("Browse")
 		hbl1.addWidget(self.browse)
 		vbl.addLayout(hbl1)
 		
-		QtCore.QObject.connect(self.text, QtCore.SIGNAL("textChanged(const QString&)"), self.on_text_change)
+		QtCore.QObject.connect(self.text, QtCore.SIGNAL("textEdited(const QString&)"), self.on_text_change)
 		QtCore.QObject.connect(self.browse, QtCore.SIGNAL("clicked(bool)"), self.on_browse)
 		
 		return widget
 	
 	def on_text_change(self,text):
-		self.target().set_current_text(str(text))
-		self.target().updateGL()
+		#self.target().set_current_text(str(text))
+		#self.target().updateGL()
+		print "Use the Browse button to update the pdb file"
 
 	def on_browse(self):
 		self.fileName = QtGui.QFileDialog.getOpenFileName(self, "open file", "/home", "Text files (*.pdb)")
