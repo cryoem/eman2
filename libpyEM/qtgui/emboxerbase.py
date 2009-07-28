@@ -320,6 +320,27 @@ class EMBox:
 		self.score = score # can be some kind of score, such as correlation
 		self.image = None # an image
 	
+	
+	def __getitem__(self,idx):
+		'''
+		A highly specialized implementation of __getitem__ - makes it so you can treat an EMBox
+		as a list - throughout the emboxer code boxes are stored either as lists in the format
+		[x,y,type,score], or are encapsulated as an EMBox. So if you wrote a function
+		for dealing with a box stored as a list, this function helps your code to work for
+		boxes stored as EMBoxes too
+		'''
+		if idx == 0: return self.x
+		elif idx == 1: return self.y
+		elif idx == 2: return self.type
+		else: raise RuntimeError("Out of bounds request in EMBox")
+		
+	def to_list(self):
+		'''
+		A way of getting the most important information of an EMBox in a
+		@return a list: [self.x,self.y,self.type]
+		'''
+		return [self.x,self.y,self.type]
+	
 	def set_box_color(box_type,box_color,force=False):
 		'''
 		static - use this function to register a box color with a particular EMBox.type attribute
@@ -1179,6 +1200,24 @@ class EMBoxList:
 	
 	def get_boxes(self): return self.boxes
 	
+	def get_boxes_filt(self,filt,as_dict=False):
+		'''
+		A way of getting all of the boxes of a certain type, for example
+		self.get_boxes_filt("swarm_auto")
+		@param a filter, will be compared against the EMBox.type attribute, e.g. "manual","swarm_auto","swarm_ref"
+		@param as_dict - results are returned as a dict, key is the box number, value is the box itself
+		@return a list of boxes that have the type filt - or - if as_dict is supplied a dict is returned and the keys are box numbers, the values are the boxes
+		'''
+		if as_dict: ret = {}
+		else: ret = []
+		
+		for i,box in enumerate(self.boxes):
+			if filt == box.type:
+				if as_dict: ret[i] = box
+				else: ret.append(box)
+				
+		return ret
+	
 	def clear_boxes(self,types,cache=False):
 		for i in xrange(len(self.boxes)-1,-1,-1):
 			if self.boxes[i].type in types:
@@ -1458,6 +1497,16 @@ class EMBoxerModule(PyQt4.QtCore.QObject):
 		'''
 		return self.box_list.get_box(box_number)
 	
+	def get_boxes_filt(self,filt,as_dict=False):
+		'''
+		A way of getting all of the boxes of a certain type, for example
+		self.get_boxes_filt("swarm_auto")
+		@param a filter, will be compared against the EMBox.type attribute, e.g. "manual","swarm_auto","swarm_ref"
+		@param as_dict - results are returned as a dict, key is the box number, value is the box itself
+		@return a list of boxes that have the type filt - or - if as_dict is supplied a dict is returned and the keys are box numbers, the values are the boxes
+		'''
+		return self.box_list.get_boxes_filt(filt,as_dict)
+	
 	def set_box(self,box,box_number,update_display=False):
 		'''
 		@param box_number the number of the box for which you want to get
@@ -1533,7 +1582,17 @@ class EMBoxerModule(PyQt4.QtCore.QObject):
 				if self.main_2d_window:
 					self.main_2d_window.set_other_data(self.get_exclusion_image(),self.get_subsample_rate(),True)
 					self.main_2d_window.updateGL()
-		
+	
+	def remove_boxes(self,box_numbers):
+		'''
+		Removes a list of box numbers from the display and also those that are stored in the local database
+		@param box_numbers a list of integer box numbers
+		'''
+		self.box_list.remove_boxes(box_numbers)
+		self.box_list.save_boxes_to_database(self.current_file())
+		self.full_box_update()
+		self.load_default_status_msg()
+	
 	def remove_box(self,box_number,exclude_region=False):
 		'''
 		Removes the box from those that are stored and those that are displayed. Optionally adds the area

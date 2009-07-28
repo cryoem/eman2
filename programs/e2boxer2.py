@@ -374,6 +374,17 @@ class SwarmPanel:
 			self.advanced_hbl2.addWidget(self.thr)
 			vbl.addLayout(self.advanced_hbl2)
 			
+			self.overlap_hbl = QtGui.QHBoxLayout()
+			self.enable_overlap_removal  = QtGui.QCheckBox("Proximity Threshold")
+			self.enable_overlap_removal.setToolTip("Remove closely positioned particles.")
+			self.enable_overlap_removal.setChecked(False)
+			self.proximity_thr = ValSlider(None,(0,self.particle_diameter*2),"")
+			self.proximity_thr.setValue(0.001)
+			self.proximity_thr.setEnabled(False)
+			self.overlap_hbl.addWidget(self.enable_overlap_removal)
+			self.overlap_hbl.addWidget(self.proximity_thr)
+			vbl.addLayout(self.overlap_hbl)
+			
 			hbl_bb = QtGui.QHBoxLayout()
 			self.step_back=QtGui.QPushButton("Step Back")
 			self.step_back.setToolTip("Recall the previous Swarm states")
@@ -397,7 +408,8 @@ class SwarmPanel:
 			QtCore.QObject.connect(self.thr,QtCore.SIGNAL("sliderReleased"),self.new_threshold_release)
 			QtCore.QObject.connect(self.step_back, QtCore.SIGNAL("clicked(bool)"), self.step_back_clicked)
 			QtCore.QObject.connect(self.step_forward, QtCore.SIGNAL("clicked(bool)"), self.step_forward_clicked)
-			
+			QtCore.QObject.connect(self.proximity_thr,QtCore.SIGNAL("sliderReleased"),self.new_proximity_threshold_release)
+			QtCore.QObject.connect(self.enable_overlap_removal, QtCore.SIGNAL("clicked(bool)"), self.enable_overlap_removal_clicked)
 		return self.widget
 	
 	def update_states(self,swarm_boxer):
@@ -408,6 +420,14 @@ class SwarmPanel:
 		elif mode == SwarmBoxer.SELECTIVE: self.selbut.setChecked(True)
 		elif mode == SwarmBoxer.MORESELECTIVE: self.morselbut.setChecked(True)
 		else: raise RuntimeError("This shouldn't happen")
+		
+		if swarm_boxer.proximity_threshold != None:
+			self.enable_overlap_removal.setChecked(True)
+			self.proximity_thr.setEnabled(True)
+			self.proximity_thr.setValue(swarm_boxer.proximity_threshold)
+		else:
+			self.enable_overlap_removal.setChecked(False)
+			self.proximity_thr.setEnabled(False)
 		
 		#self.auto_update.setChecked(swarm_boxer.auto_update)
 		t = swarm_boxer.peak_score
@@ -433,6 +453,16 @@ class SwarmPanel:
 		self.busy = False
 
 	
+	def enable_overlap_removal_clicked(self,val):
+		if self.busy: return 
+		self.proximity_thr.setEnabled(val)
+		self.target().set_proximity_removal_enabled(val)
+	
+	def new_proximity_threshold_release(self,val):
+		if self.busy: return 
+		val = float(val)
+		self.target().set_proximity_threshold(val)
+		
 	def new_threshold_release(self,val):
 		val = float(val)
 		self.target().set_interactive_threshold(val)
@@ -584,6 +614,8 @@ class SwarmBoxer:
 		self.profile = None
 		self.peak_score = None
 		self.profile_trough_point = None
+		self.proximity_threshold = self.particle_diameter
+		self.proximal_boxes = [] # this is like a temporary cache that stores boxes removed  by the application of the proximity threshold. If the user shortens the proximity threshold then previously removed boxes can be recalled.
 	
 	def to_list(self):
 		'''
@@ -600,11 +632,12 @@ class SwarmBoxer:
 		7		self.pick_mode				Int - either SwarmBoxer.THRESHOLD, SwarmBoxer.SELECTIVE, or SwarmBoxer.MORESELECTIVE 
 		8		self.interactive_threshol	Float or None - If not None, this is a theshold value that overrides self.peak_score
 		9		unique id					String - that which is return by gm_time_string - this can be used to decide what is the best autoboxer (i.e. is not really related to interactive boxing)
+		10		self.proximity_threshold	Float or None - If not None, this is a threshold used to remove auto-selected particles that are too close to each other
 		-----------------
 		Note that it would be possible to append entries, but that if you disrupt the order which is specified above you will destroy back compatibility
 		'''
 		l = [self.ref_boxes,self.templates,self.profile,self.peak_score,self.profile_trough_point,self.particle_diameter,self.update_template]
-		l.extend([self.pick_mode, self.interactive_threshold, gm_time_string()])
+		l.extend([self.pick_mode, self.interactive_threshold, gm_time_string(),self.proximity_threshold])
 		return deepcopy(l)
 		
 	def load_from_list(self,l):
@@ -624,7 +657,12 @@ class SwarmBoxer:
 		self.pick_mode = l[7]
 		self.interactive_threshold = l[8]
 		# entry 9 is not required, it is the creation stamp used to ascertain if common boxer instances are being used by different images, it has no relevance to interactive boxing
-		
+		try: # this try/except is for back compatibility only
+			
+			self.proximity_threshold = l[10]
+		except:
+			self.proximity_threshold = None
+			
 	def step_back(self):
 		'''
 		That which is called by the SwarmPanel when "Step Back" is clicked
@@ -727,7 +765,12 @@ class SwarmBoxer:
 		self.panel_object.enable_step_forward(False)
 		self.panel_object.enable_step_back(True,len(self.step_back_cache))
 		if len(self.step_back_cache) >= SwarmBoxer.CACHE_MAX: self.step_back_cache.pop(0)
-		
+	
+	def set_last_database_entry(self):
+		cache = get_database_entry(self.target().current_file(),SwarmBoxer.SWARM_BOXERS,dfl=[])
+		cache[-1] = self.to_list()
+		set_database_entry(self.target().current_file(),SwarmBoxer.SWARM_BOXERS,cache)
+	
 	def cache_to_database(self):
 		'''
 		Stores the SwarmBoxer.SWARM_BOXERS and SwarmBoxer.SWARM_FWD_BOXER entries on the local database 
@@ -763,7 +806,7 @@ class SwarmBoxer:
 		else: self.panel_object.enable_step_forward(False)
 			
 		self.step_back_cache = get_database_entry(file_name,SwarmBoxer.SWARM_BOXERS,dfl=[])
-		
+		if self.step_back_cache == None: self.step_back_cache = []
 		if len(self.step_back_cache) > 0 and l != None:
 #			print self.step_back_cache[-1][9],l[9]
 			if self.step_back_cache[-1][9] == l[9]: # this is the time stamp - if they match we definitely shouldn't push on to the stacks
@@ -787,7 +830,100 @@ class SwarmBoxer:
 		if self.template_viewer != None:
 			self.template_viewer.set_data(self.templates,soft_delete=True)
 			self.template_viewer.updateGL()
+
+	def get_proximal_boxes(self,boxes):
+		'''
+		very inefficient, but does the job
+		'''
+		if self.proximity_threshold == None: return # you probably should not have called this function if the proximity threshold is None anyway
+		if len(boxes) < 2: return # can't remove overlapping in this case
 		
+		return_idxs = []
+		
+		nearness_sq = self.proximity_threshold**2 # avoid use of sqrt
+		
+		if isinstance(boxes,dict): keys = boxes.keys()
+		elif isinstance(boxes,list): keys = [i for i in range(len(boxes))]
+		
+		for i,key in enumerate(keys):
+			box1 = boxes[key]
+			for j in range(i+1,len(keys)):
+				key2 = keys[j]
+				box2 = boxes[key2]
+				if ((box1[0]-box2[0])**2 + (box1[1]-box2[1])**2) < nearness_sq:
+					if return_idxs.count(key) == 0: return_idxs.append(key)
+					if return_idxs.count(key2) == 0: return_idxs.append(key2)
+
+		return return_idxs
+	
+	def set_proximity_removal_enabled(self,val):
+		'''
+		'''
+		if val == False:
+			self.proximity_threshold = None
+		
+	def set_proximity_threshold(self,val):
+		'''
+		The SwarmPanel call this function when the user changes the proximity threshold
+		'''
+		if self.proximity_threshold == val: return
+	
+		if self.proximity_threshold == None or self.proximity_threshold < val or len(self.proximal_boxes) == 0:
+			self.proximity_threshold = val
+			boxes = self.target().get_boxes_filt(SwarmBoxer.AUTO_NAME,as_dict=True)
+			proximal_boxes_idxs = self.get_proximal_boxes(boxes)
+			proximal_boxes_idxs.sort()
+			proximal_boxes_idxs.reverse()
+			proximal_boxes = [boxes[idx] for idx in proximal_boxes_idxs]
+			
+			conv = [box.to_list() for box in proximal_boxes]
+			self.proximal_boxes.extend(conv)
+			self.target().remove_boxes(proximal_boxes_idxs)
+		else:
+			self.proximity_threshold = val
+			if len(self.proximal_boxes) == 0: return
+			
+			add_idxs = self.check_proximity_add_boxes(self.proximal_boxes)
+					
+			if len(add_idxs) > 0:
+				add_idxs.sort()
+				add_idxs.reverse()
+				# already in reverse order
+				boxes = []
+				for idx in add_idxs:
+					boxes.append(self.proximal_boxes.pop(idx))
+				
+				self.target().add_boxes(boxes)
+				
+		self.set_last_database_entry()
+				
+	def check_proximity_add_boxes(self,boxes):
+		'''
+		boxes is always a list
+		'''
+		
+		keys = [i for i in range(len(boxes))]
+		
+		add_idxs = []
+		nearness_sq = self.proximity_threshold**2 # avoid use of sqrt
+		for i,key in enumerate(keys):
+			box1 = boxes[key]
+			nearness = None
+			near_idx = None
+			for j in range(0,len(keys)):
+				if j == i: continue
+				
+				key2 = keys[j]
+				box2 = boxes[key2]
+				dist = ((box1[0]-box2[0])**2 + (box1[1]-box2[1])**2)
+				if nearness == None or dist < nearness:
+					nearness = dist
+					near_idx = j
+					
+			if nearness > nearness_sq:
+				add_idxs.append(i)
+				
+		return add_idxs
 	
 	def set_interactive_threshold(self,val):
 		'''
@@ -1039,12 +1175,14 @@ class SwarmBoxer:
 		@param force_remove_auto_boxes if True all of the autoboxed boxes in the EMBoxerModule are removed and the 'entire' image is autoboxed again. This might be False if you know the template has not changed
 		@param cache whether or not the newly establish state, i.e. at the end of this function, should be cached to the database and internally. Generally True but sometimes False (see self.load_from_last_state) .
 		'''
+		self.proximal_boxes = [] # this is always res
 		if self.gui_mode:
 			from PyQt4 import QtCore 
 			get_application().setOverrideCursor(QtCore.Qt.BusyCursor)
 		
 		if self.signal_template_update or force_remove_auto_boxes:
 			self.target().clear_boxes([SwarmBoxer.AUTO_NAME])
+			
 			self.get_2d_window().updateGL()
 			
 		
@@ -1141,6 +1279,15 @@ class SwarmBoxer:
 					
 					dx,dy = self.xform_center_propagate([box.x,box.y],image_name,scaled_template,self.particle_diameter)
 					self.move_ref(box_num,image_name,dx,dy,allow_template_update=False)
+		
+		print self.proximity_threshold
+		if self.proximity_threshold != None:
+			proximal_boxes_idxs = self.get_proximal_boxes(boxes)
+			proximal_boxes_idxs.sort()
+			proximal_boxes_idxs.reverse()
+			proximal_boxes = [boxes.pop(idx) for idx in proximal_boxes_idxs]
+			
+			self.proximal_boxes.extend(proximal_boxes)
 		
 	   	boxes.sort(compare_box_correlation) # sorting like this will often put large ice contaminations in a group, thanks Pawel Penczek
 		self.target().add_boxes(boxes)
