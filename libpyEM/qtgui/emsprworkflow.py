@@ -2204,7 +2204,7 @@ class E2BoxerAutoTask(E2BoxerTask):
 		E2BoxerTask.__init__(self)
 		self.window_title = "e2boxer Autoboxing"
 		self.boxer_module = None # this will actually point to an EMBoxerModule, potentially
-
+		recover_old_boxer_database()
 	def get_params(self):
 		params = []
 		
@@ -2476,7 +2476,7 @@ class E2BoxerOutputTask(E2BoxerTask):
 		E2BoxerTask.__init__(self)
 		self.window_title = "Generate e2boxer Output"
 		self.output_formats = ["bdb","hdf"] # disable img from the workflow because in EMAN2 we want to store more metadata in the header
-	
+		recover_old_boxer_database()
 #	def __del__(self):
 #		print "output task dies"
 	

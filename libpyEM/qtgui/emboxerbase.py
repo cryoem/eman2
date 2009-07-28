@@ -1740,8 +1740,6 @@ class EMBoxerModule(PyQt4.QtCore.QObject):
 		
 		if not file_exists(file_name): raise RuntimeError("The file %s does not exist" %file_name)
 		
-		for name, mouse_handler in self.tools.items():
-			mouse_handler.set_current_file(file_name,name==self.current_tool)
 				
 		if self.main_2d_window != None:
 
@@ -1762,9 +1760,10 @@ class EMBoxerModule(PyQt4.QtCore.QObject):
 			self.particles_window.set_data(particles)
 			self.particles_window.updateGL()
 
-				
-				
 			self.load_default_status_msg()
+			
+		for name, mouse_handler in self.tools.items():
+			mouse_handler.set_current_file(file_name,name==self.current_tool)
 			
 		get_application().setOverrideCursor(QtCore.Qt.ArrowCursor)
 	

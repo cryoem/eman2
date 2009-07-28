@@ -406,9 +406,11 @@ class SwarmPanel:
 			QtCore.QObject.connect(self.method_group,QtCore.SIGNAL("buttonClicked (QAbstractButton *)"),self.method_group_clicked)
 			QtCore.QObject.connect(self.enable_interactive_threshold, QtCore.SIGNAL("clicked(bool)"), self.interact_thresh_clicked)
 			QtCore.QObject.connect(self.thr,QtCore.SIGNAL("sliderReleased"),self.new_threshold_release)
+			QtCore.QObject.connect(self.thr,QtCore.SIGNAL("textChanged"),self.new_threshold_text_changed)
 			QtCore.QObject.connect(self.step_back, QtCore.SIGNAL("clicked(bool)"), self.step_back_clicked)
 			QtCore.QObject.connect(self.step_forward, QtCore.SIGNAL("clicked(bool)"), self.step_forward_clicked)
-			QtCore.QObject.connect(self.proximity_thr,QtCore.SIGNAL("sliderReleased"),self.new_proximity_threshold_release)
+			QtCore.QObject.connect(self.proximity_thr,QtCore.SIGNAL("sliderReleased"),self.proximity_threshold_release)
+			QtCore.QObject.connect(self.proximity_thr,QtCore.SIGNAL("textChanged"),self.proximity_threshold_text_changed)
 			QtCore.QObject.connect(self.enable_overlap_removal, QtCore.SIGNAL("clicked(bool)"), self.enable_overlap_removal_clicked)
 		return self.widget
 	
@@ -458,12 +460,23 @@ class SwarmPanel:
 		self.proximity_thr.setEnabled(val)
 		self.target().set_proximity_removal_enabled(val)
 	
-	def new_proximity_threshold_release(self,val):
+	def proximity_threshold_text_changed(self):
+		if self.busy: return
+		val = self.proximity_thr.getValue()
+		self.target().set_proximity_threshold(val)
+	
+	def proximity_threshold_release(self,val):
 		if self.busy: return 
 		val = float(val)
 		self.target().set_proximity_threshold(val)
-		
+	
+	def new_threshold_text_changed(self):
+		if self.busy: return
+		val = self.thr.getValue()
+		self.target().set_interactive_threshold(val)
+	
 	def new_threshold_release(self,val):
+		if self.busy: return
 		val = float(val)
 		self.target().set_interactive_threshold(val)
 	
@@ -614,7 +627,7 @@ class SwarmBoxer:
 		self.profile = None
 		self.peak_score = None
 		self.profile_trough_point = None
-		self.proximity_threshold = self.particle_diameter
+		self.proximity_threshold = None
 		self.proximal_boxes = [] # this is like a temporary cache that stores boxes removed  by the application of the proximity threshold. If the user shortens the proximity threshold then previously removed boxes can be recalled.
 	
 	def to_list(self):
@@ -766,11 +779,6 @@ class SwarmBoxer:
 		self.panel_object.enable_step_back(True,len(self.step_back_cache))
 		if len(self.step_back_cache) >= SwarmBoxer.CACHE_MAX: self.step_back_cache.pop(0)
 	
-	def set_last_database_entry(self):
-		cache = get_database_entry(self.target().current_file(),SwarmBoxer.SWARM_BOXERS,dfl=[])
-		cache[-1] = self.to_list()
-		set_database_entry(self.target().current_file(),SwarmBoxer.SWARM_BOXERS,cache)
-	
 	def cache_to_database(self):
 		'''
 		Stores the SwarmBoxer.SWARM_BOXERS and SwarmBoxer.SWARM_FWD_BOXER entries on the local database 
@@ -867,7 +875,9 @@ class SwarmBoxer:
 		The SwarmPanel call this function when the user changes the proximity threshold
 		'''
 		if self.proximity_threshold == val: return
-	
+		from PyQt4 import QtCore
+		get_application().setOverrideCursor(QtCore.Qt.BusyCursor)
+		
 		if self.proximity_threshold == None or self.proximity_threshold < val or len(self.proximal_boxes) == 0:
 			self.proximity_threshold = val
 			boxes = self.target().get_boxes_filt(SwarmBoxer.AUTO_NAME,as_dict=True)
@@ -895,7 +905,12 @@ class SwarmBoxer:
 				
 				self.target().add_boxes(boxes)
 				
-		self.set_last_database_entry()
+		cache = get_database_entry(self.target().current_file(),SwarmBoxer.SWARM_BOXERS,dfl=[])
+		if len(cache) > 0:
+			cache[-1][10] = self.proximity_threshold # just store the new proximity threshold
+			set_database_entry(self.target().current_file(),SwarmBoxer.SWARM_BOXERS,cache)
+			
+		get_application().setOverrideCursor(QtCore.Qt.ArrowCursor)
 				
 	def check_proximity_add_boxes(self,boxes):
 		'''
@@ -1280,7 +1295,6 @@ class SwarmBoxer:
 					dx,dy = self.xform_center_propagate([box.x,box.y],image_name,scaled_template,self.particle_diameter)
 					self.move_ref(box_num,image_name,dx,dy,allow_template_update=False)
 		
-		print self.proximity_threshold
 		if self.proximity_threshold != None:
 			proximal_boxes_idxs = self.get_proximal_boxes(boxes)
 			proximal_boxes_idxs.sort()
