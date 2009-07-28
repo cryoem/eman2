@@ -159,7 +159,6 @@ def ali2d_reduce(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, center=1, maxi
 			sub_rate_previous = sub_rate
 
 	print_end_msg("ali2d_reduce")
-"""
 
 
 def ali2d_reduce(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0,\
@@ -245,7 +244,7 @@ def ali2d_reduce_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 
 		
 	if myid == main_node:
 		print_end_msg("ali2d_reduce_MPI")
-
+"""
 
 def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, CTF=False, user_func_name="ref_ali2d", MPI=False):
 	if MPI:
@@ -558,23 +557,12 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			if myid == main_node: 		print_msg("Maskfile                    : user provided in-core mask\n\n")
 			mask = maskfile
 	else: 
-		if myid == main_node: 	print_msg("*Maskfile                    : default, a circle with radius %i\n\n"%(last_ring))
+		if myid == main_node: 	print_msg("Maskfile                    : default, a circle with radius %i\n\n"%(last_ring))
 		mask = model_circle(last_ring, nx, nx)
 
 	cnx  = nx/2+1
  	cny  = cnx
  	mode = "F"
-
-	# generate the mask in Fourier space
-	maskI = EMData(nx, nx, 1, False)
-	for x in xrange((nx+2)/2):
-		for y in xrange(nx):
- 			if y > nx/2-1: yy = y-nx
-			else: yy = y
-			if x**2+yy**2 < (nx*0.49)**2:
-				maskI.set_value_at(x*2, y, 1) 
-	maskI.set_value_at(0, 0, 0)
-	maskI.set_value_at(1, 0, 0)
 
 	data = EMData.read_images(stack, range(image_start, image_end))
 
@@ -590,11 +578,9 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	else:
 		ctf_2_sum = None
 
-	## TO TEST
-	#for im in data:
-	#	set_params2D(im, [random()*360.0, 0.0, 0.0, randint(0, 1), 1.0])
+	for im in data:
+		set_params2D(im, [random()*360.0, 0.0, 0.0, randint(0, 1), 1.0])
 	
-        #tavg = ave_series(data, False)
 	tavg_I, ave1, ave2, var, sumsq = add_ave_varf_MPI(key, data, None, "a", CTF, ctf_2_sum, "xform.align2d", group_main_node, group_comm)
 	
 	if key == group_main_node:
@@ -608,25 +594,17 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		tavg = fft(Util.divn_img(tavg_I, var))
 
 		drop_image(tavg, os.path.join(outdir, "initial_aqf%02d.hdf"%(color)))
-		a0 = Util.infomask(SSNR, maskI, True)
+		a0 = Util.infomask(filt_tophatb(SSNR, 0.01, 0.49), None, True)
 		sum_SSNR = a0[0]
-		#a0 = tavg.cmp("dot", tavg, dict(negative = 0, mask = mask))
 
-		msg = "Initial criterion for average %d : %12.3e\n"%(color, sum_SSNR)
 		if myid != main_node:
-			mpi_send(msg, len(msg), MPI_INT, main_node, color, MPI_COMM_WORLD)
+			mpi_send(sum_SSNR, 1, MPI_FLOAT, main_node, color, MPI_COMM_WORLD)
 		else:
-			print_msg(msg)
-			for isav in xrange(1, number_of_ave):
-				msg = mpi_recv(100, MPI_INT, isav, isav, MPI_COMM_WORLD)
-				msg_string = ""
-				index = 0
-				num = msg[index]
-				while num != 0:
-					msg_string += chr(num)
-					index += 1
-					num = msg[index]
-				print_msg(msg_string)
+			print_msg("Initial criterion for average %d : %12.3e\n"%(0, sum_SSNR))
+			for iave in xrange(1, number_of_ave):
+				sum_SSNR = mpi_recv(100, MPI_FLOAT, iave, iave, MPI_COMM_WORLD)
+				sum_SSNR = float(sum_SSNR[0])
+				print_msg("Initial criterion for average %d : %12.3e\n"%(iave, sum_SSNR))
 	else: tavg = EMData()
 	bcast_EMData_to_all(tavg, key, group_main_node, group_comm)
 
@@ -642,18 +620,17 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		ref_data.append(None)
 		ref_data.append(None)
 	
+	# Generate the chessboard image
 	if myid == main_node:
-		mix_x1 = model_blank(nx, nx)
-		mix_x2 = model_blank(nx, nx)
-		mix_y1 = model_blank(nx, nx)
-		mix_y2 = model_blank(nx, nx)
+		chessboard1 = model_blank(nx, nx)
+		chessboard2 = model_blank(nx, nx)
 		for ii in xrange(nx):
-			temp_value = float(ii)/nx
+			iii = ii/(nx/8)
 			for jj in xrange(nx):
-				mix_x1.set_value_at(ii, jj, temp_value)
-				mix_x2.set_value_at(ii, jj, 1-temp_value) 
-				mix_y1.set_value_at(jj, ii, temp_value)
-				mix_y2.set_value_at(jj, ii, 1-temp_value)
+				jjj = jj/(nx/8)
+				kkk = (iii+jjj)%2
+				chessboard1.set_value_at(ii, jj, kkk)
+				chessboard2.set_value_at(ii, jj, 1-kkk) 
 
 	N_step = 0
 	cs = [0.0]*2
@@ -677,9 +654,9 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			cs = [float(cs[0]), float(cs[1])]
 			old_ali = []
 			for im in data:
-				alphan, sxn, syn, mirror, scale = get_params2D(im)
+				alphan, sxn, syn, mirror, scale = get_params2D(im, ali_params)
 				old_ali.append([alphan, sxn, syn, mirror, scale])
-			sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF, ali_params)
+			sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF=CTF, ali_params=ali_params)
 			sx_sum = mpi_reduce(sx_sum, 1, MPI_FLOAT, MPI_SUM, group_main_node, group_comm)
 			sy_sum = mpi_reduce(sy_sum, 1, MPI_FLOAT, MPI_SUM, group_main_node, group_comm)
 
@@ -701,7 +678,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			if key == group_main_node:
 				SSNR = sumsq.copy()
 				Util.div_filter(SSNR, var)
-				a0 = Util.infomask(SSNR, maskI, True)
+				a0 = Util.infomask(filt_tophatb(SSNR, 0.01, 0.49), None, True)
 				sum_SSNR = a0[0]
 
 				tavg = fft(tavg_I)
@@ -732,7 +709,6 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				if Iter == max_iter-1:
 					drop_image(tavg, os.path.join(outdir, "aqf%02d_%02d.hdf"%(ipt, color)))
 					
-				#a1 = tavg.cmp("dot", tavg, dict(negative = 0, mask = ref_data[0]))
 				msg += "MERGE # %2d     Average # %2d     ITERATION # %4d     criterion = %15.7e\n\n"%(ipt, color, Iter, sum_SSNR)
 			else:
 				tavg = EMData(nx, nx, 1, True)
@@ -744,7 +720,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 
 		mirror_list = [0]*(nima*number_of_ave)
 		for nim in xrange(image_start, image_end):
-			dummy, dummy, dummy, mirror, dummy = get_params2D(data[nim-image_start])
+			dummy, dummy, dummy, mirror, dummy = get_params2D(data[nim-image_start], ali_params)
 			mirror_list[nim+color*nima] = mirror
 		mirror_list = mpi_reduce(mirror_list, nima*number_of_ave, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
 	
@@ -792,7 +768,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					img.write_image(os.path.join(outdir, "avg_before_ali%02d.hdf"%(ipt)), isav)
 				"""
 				for isav in xrange(number_of_ave):
-					savg[isav] = rot_shift2D(savg[isav], randint(0, 360), randint(-2, 2), randint(-2, 2), randint(0,1))
+					savg[isav] = rot_shift2D(savg[isav], randint(0, 360), randint(-2, 2), randint(-2, 2), randint(0, 1))
 					savg[isav].set_attr_dict({'xform.align2d':tnull, 'active':1})
 				"""
 				for isav in xrange(number_of_ave):
@@ -815,13 +791,9 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				i1 = 0
 				i2 = 1
 				while itp < number_of_ave:
-					x_or_y = randint(0, 1)
-					if x_or_y == 0:	
-						tsavg.append(Util.addn_img(Util.muln_img(savg[qt[i1][1]], mix_x1), Util.muln_img(savg[qt[i2][1]], mix_x2)))
-					else:
-						tsavg.append(Util.addn_img(Util.muln_img(savg[qt[i1][1]], mix_y1), Util.muln_img(savg[qt[i2][1]], mix_y2)))
+					tsavg.append(Util.addn_img(Util.muln_img(savg[qt[i1][1]], chessboard1), Util.muln_img(savg[qt[i2][1]], chessboard2)))
 					itp += 1
-					if i2-i1==1:
+					if i2-i1 == 1:
 						i2 += 1
 						i1 = 0
 					else:
@@ -845,7 +817,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					recv_attr_dict(group_main_node, stack, data, par_str, image_start, image_end, group_number_of_proc, group_comm)
 			else:
 				send_attr_dict(group_main_node, data, par_str, image_start, image_end, group_comm)
-			if myid == main_node: print_msg("Iteration %2d ends here.\n"%(ipt))
+			if myid == main_node: print_msg("Iteration %2d ends here.\n\n\n"%(ipt))
 	if myid == main_node:  print_end_msg("ali2d_a_MPI")
 
 
