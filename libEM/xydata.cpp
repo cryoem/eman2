@@ -143,6 +143,7 @@ float XYData::calc_correlation(XYData * xy, float minx, float maxx) const
 	float norm1 = 0;
 	float norm2 = 0;
 
+	xy->update();
 	for (size_t i = 0; i < n; i++) {
 		float x = data[i].x;
 		if (x >= minx && x <= maxx && xy->is_validx(x)) {
@@ -160,8 +161,9 @@ float XYData::calc_correlation(XYData * xy, float minx, float maxx) const
 }
 
 
-float XYData::get_yatx(float x) const
+float XYData::get_yatx(float x)
 {
+	update();	//update to set the mean_x_spacing value
 	int s = (int) floor((x - data[0].x) / mean_x_spacing);
 	int nx = (int) data.size();
 
