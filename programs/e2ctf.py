@@ -707,6 +707,7 @@ def sfact(s):
 	global sfcurve
 	if sfcurve==None : init_sfcurve(None)
 
+	sfcurve.update()
 	return 10.0**sfcurve.get_yatx(s)
 	
 	#if s<.004 : return 0
