@@ -969,7 +969,7 @@ def EMSelectorTemplate(Type):
 			if self.dialog_mode: return
 			
 			if self.gl_image_preview  != None:
-				get_application().hide_specific(self.gl_image_preview)
+				get_application().close_specific(self.gl_image_preview)
 		
 		def list_widget_item_entered(self,item):
 			self.current_list_widget = item.listWidget()
@@ -1071,6 +1071,8 @@ def EMSelectorTemplate(Type):
 				if not isinstance(self.gl_image_preview,EM3DSymViewerModule):
 					if self.gl_image_preview != None: get_application().close_specific(self.gl_image_preview)
 					self.gl_image_preview = EM3DSymViewerModule()
+					QtCore.QObject.connect(self.gl_image_preview.emitter(), QtCore.SIGNAL("module_closed"),self.preview_module_closed)
+					
 				
 				
 				self.gl_image_preview.set_emdata_list_as_data(EMDataListCache(full_path))
@@ -1089,6 +1091,7 @@ def EMSelectorTemplate(Type):
 				if not isinstance(self.gl_image_preview,EMPlot2DModule):
 					if self.gl_image_preview != None: get_application().close_specific(self.gl_image_preview)
 					self.gl_image_preview = EMPlot2DModule(get_application())
+					QtCore.QObject.connect(self.gl_image_preview.emitter(), QtCore.SIGNAL("module_closed"),self.preview_module_closed)
 		
 				self.gl_image_preview.set_data_from_file(filename,self.replace.isChecked())
 				get_application().show_specific(self.gl_image_preview)
@@ -1106,6 +1109,7 @@ def EMSelectorTemplate(Type):
 				if not isinstance(self.gl_image_preview,EMPlot2DModule):
 					if self.gl_image_preview != None: get_application().close_specific(self.gl_image_preview)
 					self.gl_image_preview = EMPlot2DModule(get_application())
+					QtCore.QObject.connect(self.gl_image_preview.emitter(), QtCore.SIGNAL("module_closed"),self.preview_module_closed)
 		
 				self.gl_image_preview.set_data(title,list_data,self.replace.isChecked())
 				get_application().show_specific(self.gl_image_preview)
@@ -1175,6 +1179,12 @@ def EMSelectorTemplate(Type):
 			self.module_events.append(ModuleEventsManager(self,preview))
 			get_application().show_specific(preview)
 			get_application().setOverrideCursor(Qt.ArrowCursor)
+		
+		def preview_module_closed(self):
+			'''
+			Slot for signal that is emitted when a module is closed
+			'''
+			self.gl_image_preview = None
 		
 		def module_closed(self,module):
 			import sys

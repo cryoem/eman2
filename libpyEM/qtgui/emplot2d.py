@@ -191,7 +191,7 @@ class EMPlot2DModule(EMGUIModule):
 	def __del__(self):
 		if self.under_qt_control:
 			self.qt_context_parent.deleteLater()
-		self.clear_gl_memory()
+		#self.clear_gl_memory()
 		self.core_object.deleteLater()
 	
 	def set_data(self,key,input_data,replace=False,quiet=False,color=0,linewidth=1):

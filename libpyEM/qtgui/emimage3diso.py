@@ -60,7 +60,7 @@ class EMIsosurfaceModule(EMImage3DGUIModule):
 	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
 		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
 
-	def __init__(self,image=None,application=None,ensure_gl_context=True,application_control=True):
+	def __init__(self,image=None,application=None,ensure_gl_context=True,application_control=True,enable_file_browse=False):
 		self.data = None
 		EMImage3DGUIModule.__init__(self,application,ensure_gl_context,application_control=application_control)
 		self.init()
@@ -78,6 +78,7 @@ class EMIsosurfaceModule(EMImage3DGUIModule):
 		self.inspector=None
 		self.data_copy = None		
 		self.vdtools = EMViewportDepthTools(self)
+		self.enable_file_browse = enable_file_browse
 		
 		if image :
 			self.set_data(image)
@@ -343,7 +344,7 @@ class EMIsosurfaceModule(EMImage3DGUIModule):
 		self.get_inspector().update_rotations(t3d)
 	
 	def get_inspector(self):
-		if not self.inspector : self.inspector=EMIsoInspector(self)
+		if not self.inspector : self.inspector=EMIsoInspector(self,self.enable_file_browse)
 		return self.inspector
 		
 	def set_contrast(self,val):
@@ -361,7 +362,7 @@ class EMIsosurfaceModule(EMImage3DGUIModule):
 		
 
 class EMIsoInspector(QtGui.QWidget):
-	def __init__(self,target) :
+	def __init__(self,target,enable_browse=False) :
 		QtGui.QWidget.__init__(self,None)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"desktop.png"))
 		self.target=weakref.ref(target)

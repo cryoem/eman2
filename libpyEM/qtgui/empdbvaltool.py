@@ -48,6 +48,7 @@ class EMPDBValTool(EM3DModule):
 		self.iso_module = None # will eventuall be a EMImage3DModule
 	
 		self.t = 0
+		
 	def __init_pdb_module(self):
 		if self.pdb_module == None:
 			self.pdb_module = EMPDBViewer(None,False,False)
@@ -63,7 +64,7 @@ class EMPDBValTool(EM3DModule):
 		
 	def __init_iso_module(self):
 		if self.iso_module == None:
-			self.iso_module = EMIsosurfaceModule(None,None,False,False)
+			self.iso_module = EMIsosurfaceModule(None,None,False,False,enable_file_browse=True)
 			self.get_inspector().addTab(self.iso_module.get_inspector(),"Isosurface")
 			self.__set_module_contexts(self.iso_module)
 	
@@ -81,6 +82,12 @@ class EMPDBValTool(EM3DModule):
 		self.iso_module.set_data(data)
 	
 	def draw_objects(self):
+		
+		if self.pdb_module == None:
+			self.__init_pdb_module()
+		if self.iso_module == None:
+			self.__init_iso_module()
+
 
 		if self.pdb_module != None:
 			glPushMatrix()
@@ -104,14 +111,15 @@ class EMPDBValToolInspector(EM3DInspector):
 		
 	def addTab(self,widget,name):
 		self.tabwidget.addTab(widget,name)
+
 	
 if __name__ == '__main__':
 	from emapplication import EMStandAloneApplication
 	em_app = EMStandAloneApplication()
 	window = EMPDBValTool()
 	em_app.show()
-	window.set_pdb_file("fh-solution-0-1UF2-T.pdb")
-	window.set_iso_file("rdv-target2.mrc")
+#	window.set_pdb_file("fh-solution-0-1UF2-T.pdb")
+#	window.set_iso_file("rdv-target2.mrc")
 	em_app.execute()
 
 		
