@@ -11731,7 +11731,7 @@ def var_mpi(files, outdir, fl, aa, radccc, writelp, writestack, frepa = None, pc
 			if(fl > 0.0):
 				img = filt_tanl( img, fl, aa )
 				if writestack: img.write_image( outdir+"/filtered%04d.hdf"%(ifile), i )
-			if(total_img%2 == 0):	Util.addf_img(avg1, img)
+			if(total_img%2 == 0):	Util.add_img(avg1, img)
 			else:			Util.add_img(avg2, img)
 			total_img += 1
 	reduce_EMData_to_root(avg1, myid)
