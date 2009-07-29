@@ -11534,105 +11534,92 @@ def defvar(files, outdir, fl, aa, radccc, writelp, writestack, repair = False, p
 	nz = img.get_zsize()
 
 
-	radcir = min(nx,ny,nz)//2 - 1
-	if(repair):  again = 2
-	else:        again = 1
+	radcir = min(nx,ny,nz)//2 - 2
 	ndump = 100 # write out ccc after each 100 steps
-	for repeat in xrange(again):
-		if(repeat == again -1):  extra = True
-		else:                    extra = False
-		if pca and extra:
-			from statistics import pcanalyzer
-			pcamask = get_im( pcamask)
-			pcaer = pcanalyzer(pcamask, outdir, pcanvec, False)
+	if pca :
+		from statistics import pcanalyzer
+		pcamask = get_im( pcamask)
+		pcaer = pcanalyzer(pcamask, outdir, pcanvec, False)
 
-		avg1 = model_blank(nx,ny,nz)
-		avg2 = model_blank(nx,ny,nz)
+	avg1 = model_blank(nx,ny,nz)
+	avg2 = model_blank(nx,ny,nz)
+	total_img = 0
+	mf = 0
+	for f in files:
+		nimg = EMUtil.get_image_count( f )
+		print f," A  ",nimg
+		if writestack: filtered = outdir + "/filtered%04i.hdf"%mf
+		mf += 1
+		for i in xrange(nimg):
+			img = get_im( f, i )
+			if(repair and extra):  Util.div_img(img, rota)
+			if(repair and extra and writelp):  img.write_image(f, i)
+			img = circumference( img, radcir )
+			if(fl > 0.0):
+				img = filt_tanl( img, fl, aa )
+				if writestack and extra: img.write_image( filtered, total_img )
+			if(total_img%2 == 0):	Util.add_img(avg1, img)
+			else:			Util.add_img(avg2, img)
+			total_img += 1
+
+	avg = Util.addn_img(avg1, avg2)
+	Util.mul_scalar(avg, 1.0/float(total_img))
+	Util.mul_scalar(avg1, 1.0/float(total_img//2+total_img%2 - 1 ))
+	avg1.write_image(avgfileE)
+	Util.mul_scalar(avg2, 1.0/float(total_img//2 - 1) )
+	avg2.write_image(avgfileO)
+	avg.write_image( avgfile)
+
+	del avg1, avg2
+
+	from utilities import model_circle
+	cccmask = model_circle(radccc, nx, ny, nz)
+	var1 = model_blank(nx,ny,nz)
+	var2 = model_blank(nx,ny,nz)
+	if(fl > 0.0 and writestack):
 		total_img = 0
-		mf = 0
+		for f in files:
+			filtered = outdir + "/filtered%04i.hdf"%mf
+			nimg = EMUtil.get_image_count( filtered )
+			print f," V  ",nimg
+			for i in xrange(nimg):
+				img = get_im( filtered, i )
+				if pca: pcaer.insert(img)
+
+				Util.sub_img(img, avg)
+				if(i%2 == 0):  Util.add_img2(var1 , img)
+				else:	       Util.add_img2(var2 , img)
+				if(i%ndump == 0):
+					finf.write( 'ntot, ccc: %6d %10.8f\n' % (i, ccc(var1, var2, cccmask)) )
+					finf.flush()
+	else:
+		total_img = 0
 		for f in files:
 			nimg = EMUtil.get_image_count( f )
-			print f," A  ",nimg
-			if writestack and extra: filtered = outdir + "/filtered%04i.hdf"%mf
-			mf += 1
+			print f," V  ",nimg
 			for i in xrange(nimg):
 				img = get_im( f, i )
-				if(repair and extra):  Util.div_img(img, rota)
-				if(repair and extra and writelp):  img.write_image(f, i)
-				img = circumference( img, radcir, radcir+1 )
-				if(fl > 0.0):
-					img = filt_tanl( img, fl, aa )
-					if writestack and extra: img.write_image( filtered, total_img )
-				if(total_img%2 == 0):	Util.add_img(avg1, img)
-				else:			Util.add_img(avg2, img)
+				if(repair and not writelp):  Util.div_img(img, rota)
+				img = circumference( img, radcir )
+				if(fl > 0.0): img = filt_tanl( img, fl, aa )
+				if pca and extra: pcaer.insert(img)
+				Util.sub_img(img, avg)
+				if(total_img%2 == 0): Util.add_img2(var1, img)
+				else:                 Util.add_img2(var2 , img)
 				total_img += 1
+				if(total_img%ndump == 0 and extra):
+					finf.write( 'ntot, ccc: %6d %10.8f\n' % (total_img, ccc(var1, var2, cccmask)) )
+					finf.flush()
 
-		avg = Util.addn_img(avg1, avg2)
-		Util.mul_scalar(avg, 1.0/float(total_img))
-		if  extra:
-			Util.mul_scalar(avg1, 1.0/float(total_img//2+total_img%2 - 1 ))
-			avg1.write_image(avgfileE)
-			Util.mul_scalar(avg2, 1.0/float(total_img//2 - 1) )
-			avg2.write_image(avgfileO)
-			avg.write_image( avgfile)
+	var = Util.addn_img(var1, var2)
+	Util.mul_scalar(var, 1.0/float(total_img-1) )
+	Util.mul_scalar(var1, 1.0/float(total_img//2+total_img%2 - 1 ))
+	var1.write_image(varfileE)
+	Util.mul_scalar(var2, 1.0/float(total_img//2 - 1) )
+	var2.write_image(varfileO)
 
-			del avg1, avg2
-
-		if extra:
-			from utilities import model_circle
-			cccmask = model_circle(radccc, nx, ny, nz)
-		var1 = model_blank(nx,ny,nz)
-		var2 = model_blank(nx,ny,nz)
-		if(fl > 0.0 and writestack and extra):
-			total_img = 0
-			for f in files:
-				filtered = outdir + "/filtered%04i.hdf"%mf
-				nimg = EMUtil.get_image_count( filtered )
-				print f," V  ",nimg
-				for i in xrange(nimg):
-					img = get_im( filtered, i )
-					if pca: pcaer.insert(img)
-
-					Util.sub_img(img, avg)
-					if(i%2 == 0):  Util.add_img2(var1 , img)
-					else:	       Util.add_img2(var2 , img)
-					if(i%ndump == 0):
-						finf.write( 'ntot, ccc: %6d %10.8f\n' % (i, ccc(var1, var2, cccmask)) )
-						finf.flush()
-		else:
-			total_img = 0
-			for f in files:
-				nimg = EMUtil.get_image_count( f )
-				print f," V  ",nimg
-				for i in xrange(nimg):
-					img = get_im( f, i )
-					if(repair and extra and not writelp):  Util.div_img(img, rota)
-					img = circumference( img, radcir, radcir+1 )
-					if(fl > 0.0): img = filt_tanl( img, fl, aa )
-					if pca and extra: pcaer.insert(img)
-					Util.sub_img(img, avg)
-					if(total_img%2 == 0): Util.add_img2(var1, img)
-					else:                 Util.add_img2(var2 , img)
-					total_img += 1
-					if(total_img%ndump == 0 and extra):
-						finf.write( 'ntot, ccc: %6d %10.8f\n' % (total_img, ccc(var1, var2, cccmask)) )
-						finf.flush()
-
-		var = Util.addn_img(var1, var2)
-		Util.mul_scalar(var, 1.0/float(total_img-1) )
-		if extra:
-			Util.mul_scalar(var1, 1.0/float(total_img//2+total_img%2 - 1 ))
-			var1.write_image(varfileE)
-			Util.mul_scalar(var2, 1.0/float(total_img//2 - 1) )
-			var2.write_image(varfileO)
-
-			var.write_image( varfile )
-			del var, var1, var2, cccmask
-		else:
-			from morphology import square_root
-			rota = square_root(var.rotavg_i())
-			#rota.write_image( outdir+"rota.hdf", repeat)
-			del var
+	var.write_image( varfile )
+	del var, var1, var2, cccmask
 	
 	if pca:
 		assert not(avg is None)
@@ -11711,8 +11698,8 @@ def var_mpi(files, outdir, fl, aa, radccc, writelp, writestack, frepa = None, pc
 	#oddstack = outdir + "/oddvarstack.hdf"
 	#evestack = outdir + "/evevarstack.hdf"
 
-	cccmask = model_circle(radccc, nx, ny, nz)
-	radcir = min(nx,ny,nz)//2-1
+	if(radccc < 1):  radcir = min(nx,ny,nz)//2-2
+	else:            radcir = radccc
 
         nfiles = len( files )
 	if(nfiles < ncpu):
@@ -11730,6 +11717,7 @@ def var_mpi(files, outdir, fl, aa, radccc, writelp, writestack, frepa = None, pc
 
 	avg1 = model_blank(nx,ny,nz)
 	avg2 = model_blank(nx,ny,nz)
+
 	total_img = 0
 	for ifile in xrange(file_start, file_end):
 		nimg = EMUtil.get_image_count( files[ifile] )
@@ -11748,13 +11736,13 @@ def var_mpi(files, outdir, fl, aa, radccc, writelp, writestack, frepa = None, pc
 	reduce_EMData_to_root(avg1, myid)
 	reduce_EMData_to_root(avg2, myid)
 	total_img = mpi_reduce(total_img, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD)
-	if( myid == 0):
+	if( myid == 0) :
 		total_img = int(total_img[0])
 		avg = Util.addn_img(avg1, avg2)
 		Util.mul_scalar(avg, 1.0/float(total_img))
 	else:    avg = model_blank(nx,ny,nz)
 	bcast_EMData_to_all( avg, myid )
-	if(myid == 0 ):
+	if( myid == 0 ):
 		Util.mul_scalar(avg1, 1.0/float(total_img//2+total_img%2 - 1 ))
 		avg1.write_image(avgfileE)
 		Util.mul_scalar(avg2, 1.0/float(total_img//2 - 1) )
@@ -11783,8 +11771,8 @@ def var_mpi(files, outdir, fl, aa, radccc, writelp, writestack, frepa = None, pc
 			for i in xrange(nimg):
 				img = get_im( files[ifile], i )
 				if(repair and not writelp):  Util.div_img(img, rota)
-				img = circumference( img, radcir, radcir+1 )
-				if(fl > 0.0): img = filt_tanl( img, fl, aa )
+				img = circumference( img, radcir )
+				if(fl > 0.0): img = filt_tanl( img, fl, aa)
 				if pca : pcaer.insert(img)
 				Util.sub_img(img, avg)
 				if(total_img%2 == 0): Util.add_img2(var1, img)
