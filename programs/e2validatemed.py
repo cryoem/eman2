@@ -36,6 +36,7 @@ from e2foldhunterstat import *
 from emapplication import EMStandAloneApplication,get_application
 from empdbvaltool import EMPDBValTool
 from emplot3d import *
+import os
 
 class E2ValidateMed():
 	
@@ -70,6 +71,8 @@ class E2ValidateMed():
 			self.__init_em_val()
 			get_application().show_specific(self.em_val)
 		self.em_val.set_pdb_file(str(new_pdb_file), shouldDelete=True)
+		os.remove(str(new_pdb_file))
+		print new_pdb_file
 
 	def on_plot3d_closed(self):
 		self.plot3d = None
@@ -81,8 +84,17 @@ class E2ValidateMed():
 		data = []
 		initPoint = []
 
+		try:
+			f = open(pdb_file)
+			print "her"
+			f.close()
+		except IOError:	
+			print "Sorry, this pdb is only in temporary memory. Please write the transform to the hard drive to validate."
+			return
+
 		vals, rotList, b, data, initPoint = self.fh_stat.gen_data(mrc_file, pdb_file, trans, iso_thresh)
 		get_application().close_specific(self.plot3d)
+
 		self.plot3d = None
 
 		if self.plot3d == None:
