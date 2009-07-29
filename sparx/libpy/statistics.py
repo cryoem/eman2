@@ -5263,7 +5263,7 @@ def k_means_match_pwa(PART, lim = 50):
 		mat = get_mat(PART[i], PART[j])
 		MAT.append(mat)
 		MAX[i][j] = max_g(mat)
-	
+
 	# matching
 	nl   = np - 1
 	Nmax = []
@@ -5288,7 +5288,7 @@ def k_means_match_pwa(PART, lim = 50):
 	else:
 		RES = []
 		for imax in MAX[0][1]: RES.append([imax[1][0], imax[1][1]])
-	
+
 	return RES
 
 # Stability with pairwise agreement matching
@@ -5512,7 +5512,7 @@ def k_means_open_unstable(stack, maskname, CTF):
 
 	return im_M, mask, ctf, ctf2, lim, N
 
-# Convert local assignment to absolute partition
+# Convert local all assignment to absolute all partition
 def k_means_stab_asg2part(ALL_ASG, LUT):
 	K = max(ALL_ASG[0]) + 1
 	N = len(ALL_ASG[0])
@@ -5523,6 +5523,15 @@ def k_means_stab_asg2part(ALL_ASG, LUT):
 		ALL_PART.append(PART)
 
 	return ALL_PART
+
+# Convert local assignment to absolute partion
+def k_means_asg_loc2glb(ASG, LUT):
+	K = max(ASG) + 1
+	N = len(ASG)
+	PART = [[] for i in xrange(K)]
+	for n in xrange(N): PART[ASG[n]].append(LUT[n])
+
+	return PART
 
 # Update information to the header of the stack file
 # TODO this function need to be clean up
