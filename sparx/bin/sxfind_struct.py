@@ -51,7 +51,7 @@ def main():
 	parser.add_option("--maxit",      type="int",          default=100,      help=" Maximum iterations ")
 	parser.add_option("--debug",      action="store_true", default=False,    help=" Help to debug")
 	parser.add_option("--first_zero", action="store_true", default=False,    help=" Assign the first projection orientation to 0")
-	parser.add_option("--weights",    action="store_true", default=True,     help=" Use Voronoi weighting (set to 0)")
+	parser.add_option("--noweights",  action="store_true", default=False,     help=" Use Voronoi weighting (set to 0)")
 	parser.add_option("--MPI",        action="store_true", default=False,    help=" MPI version")
 	parser.add_option("--trials",     type="int",          default=1,        help=" Number of trials for the MPI version")
 	parser.add_option("--MPIGA",      action="store_true", default=False,    help=" MPI version (Genetic algorithm)")
@@ -64,27 +64,29 @@ def main():
 		print "Please run '" + progname + " -h' for detailed options"
 	else:
 		if options.maxit < 1: options.maxit = 1
+		if options.noweights: weights = False
+		else:                 weights = True
 
 		if options.MPIGA:
 			from development import cml2_main_mpi
 			global_def.BATCH = True
 			cml2_main_mpi(args[0], args[1], options.ir, options.ou, options.delta, options.dpsi, 
 				      options.lf, options.hf, options.rand_seed, options.maxit, options.given, options.first_zero, 
-				      options.weights, options.debug, options.maxgen, options.pcross, options.pmut)
+				      weights, options.debug, options.maxgen, options.pcross, options.pmut)
 			global_def.BATCH = False
 		elif options.MPI:
 			from applications import cml_find_structure_MPI
 			global_def.BATCH = True
 			cml_find_structure_MPI(args[0], args[1], options.ir, options.ou, options.delta, options.dpsi, 
 				    options.lf, options.hf, options.rand_seed, options.maxit, options.given, options.first_zero, 
-				    options.weights, options.debug, options.trials)
+				    weights, options.debug, options.trials)
 			global_def.BATCH = False
 		else:
 			from applications import cml_find_structure_main
 			global_def.BATCH = True
 			cml_find_structure_main(args[0], args[1], options.ir, options.ou, options.delta, options.dpsi, 
 				    options.lf, options.hf, options.rand_seed, options.maxit, options.given, options.first_zero, 
-				    options.weights, options.debug, options.trials)
+				    weights, options.debug, options.trials)
 			global_def.BATCH = False
 
 
