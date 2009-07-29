@@ -12277,6 +12277,26 @@ def factcoords_vol( vol_stacks, avgvol_stack, eigvol_stack, prefix, rad = -1, ne
 		for j in xrange( neigvol ):
 			d.append( exp_vol.cmp( "dot", eigvols[j], {"negative":0, "mask":m} ) )
 
+	if  MPI:
+		from mpi import MPI_INT, MPI_FLOAT, MPI_TAG_UB, MPI_COMM_WORLD, mpi_recv, mpi_send
+		if myid == 0:
+			ltot = 0
+			base = 0
+			for iq in xrange( ncpu ):
+				if(iq == 0):
+					ltot = spill_out(ltot, base, d, neigvol, foutput)
+				else:
+					lend = mpi_recv(1, MPI_INT, iq, MPI_TAG_UB, MPI_COMM_WORLD)
+					lend = int(lend[0])
+					d = mpi_recv(lend, MPI_FLOAT, iq, MPI_TAG_UB, MPI_COMM_WORLD)
+					ltot = spill_out(ltot, base, d, neigvol, foutput)
+				base += len(d)/neigvol
+		else:
+			mpi_send([len(d)], 1, MPI_INT, 0, MPI_TAG_UB, MPI_COMM_WORLD)
+			mpi_send(d, len(d), MPI_FLOAT, 0, MPI_TAG_UB, MPI_COMM_WORLD)
+	else:
+		ltot = 0
+		ltot = spill_out(ltot, base, d, neigvol, foutput)
 
 """
 def factcoords_prj( prj_stacks, avgvol_stack, eigvol_stack, prefix, rad, neigvol, fl=0.0, aa=0.0, MPI=False):
