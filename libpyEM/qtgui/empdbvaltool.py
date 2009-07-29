@@ -36,6 +36,7 @@ from EMAN2 import PDBReader
 from empdbviewer import *
 from emimage3diso import *
 import sys
+import os
 
 
 class EMPDBValTool(EM3DModule):
@@ -50,6 +51,8 @@ class EMPDBValTool(EM3DModule):
 
 		self.current_mrc = ""
 		self.current_pdb = ""
+
+		self.shouldDelete = False
 
 		self.t = 0
 
@@ -81,7 +84,9 @@ class EMPDBValTool(EM3DModule):
 		if self.pdb_module == None:
 			self.__init_pdb_module()
 		self.pdb_module.set_current_text(pdb_file)
+		self.shouldDelete = shouldDelete
 		if shouldDelete: self.pdb_module.delete_pdb(pdb_file)
+
 
 		
 	def set_iso_file(self,file_name):
@@ -205,6 +210,9 @@ class EMPDBValToolInspector(EM3DInspector):
 		#print str(self.text1.text())
 		#print str(self.text2.text())
 
+		if (self.target().pdb_module.pdb_delete): 
+			print "Sorry, this pdb is only in temporary memory. Please write the transform to the hard drive to validate."			
+			return
 		if ((str(self.target().current_mrc) != "") and (str(self.target().current_pdb)!= "")): 
 			self.target().run_validate()
 		if (str(self.target().current_mrc) == ""):

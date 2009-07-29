@@ -544,11 +544,11 @@ class EMPDBViewer(EM3DModule):
 			glDeleteLists(self.dl,1)
 			self.dl = None
 
-
 		if self.pdb_delete: 
 			os.remove(str(self.pdbFile_to_delete))
 			print self.pdbFile_to_delete
 			self.pdb_delete = False
+
 
 
 	def makeStick (self, res, index1, index2):
@@ -712,7 +712,8 @@ class EMPDBInspector(EM3DInspector):
 		self.fileName = QtGui.QFileDialog.getOpenFileName(self, "open file", "/home", "Text files (*.pdb)")
 		if (self.fileName == ""): return
 		self.target().set_current_text(str(self.fileName)) #self.target().text and self.text are what the user sees. 
-		self.text.setText(self.fileName) #if self.text changes, then self.fName becomes self.text and the image regenerates
+		self.text.setText(self.fileName) #if self.text changes, then self.fName becomes self.text and the image regenerates	
+		self.target().pdb_delete = False
 		self.target().updateGL()
 	
 if __name__ == '__main__':
