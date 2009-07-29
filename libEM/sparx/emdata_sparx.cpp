@@ -4967,20 +4967,15 @@ EMData* EMData::norm_pad(bool donorm, int npad, int valtype) {
 	bytes = nx*sizeof(float);
 	EMData* fpimage = copy_head();
 	fpimage->set_size(nxpad+offset, nypad, nzpad);
-	if( npad > 1)
-        {
-            if( valtype==0 )
-            {
-                fpimage->to_zero();
-            }
-            else
-            {
-                float val = circumference(this, 1);
-                float* data = fpimage->get_data();
-                int nxyz = (nxpad+offset)*nypad*nzpad;
-                for( int i=0; i < nxyz; ++i )
-                    data[i] = val;
-            }          
+	if( npad > 1) {
+        	if( valtype==0 ) {
+        	    fpimage->to_zero();
+        	} else {
+        	    float val = circumference(this, 1);
+        	    float* data = fpimage->get_data();
+        	    int nxyz = (nxpad+offset)*nypad*nzpad;
+        	    for( int i=0; i < nxyz; ++i )  data[i] = val;
+        	}	   
         }
 
 
