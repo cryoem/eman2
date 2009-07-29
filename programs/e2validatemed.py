@@ -93,7 +93,7 @@ class E2ValidateMed():
 			return
 
 		vals, rotList, b, data, initPoint = self.fh_stat.gen_data(mrc_file, pdb_file, trans, iso_thresh)
-		get_application().close_specific(self.plot3d)
+		#get_application().close_specific(self.plot3d)
 
 		self.plot3d = None
 
