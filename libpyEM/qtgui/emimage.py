@@ -106,7 +106,7 @@ class EMImageModule(object):
 		a new instance.
 		"""
 		
-		if isinstance(data,EMData) and data.get_size()==0: raise str("Can not display an EMData object that has no pixels")
+		if isinstance(data,EMData) and data.get_size()==0: raise RuntimeError("Can not display an EMData object that has no pixels")
 		
 		from EMAN2 import remove_directories_from_name
 		if force_plot and force_2d:

@@ -71,7 +71,7 @@ class EMSelectorModule(EMQtWidgetModule):
 def EMSelectorTemplate(Type):
 	''' 
 	This is just an example of using nested scope inheritance to achieve templated inheritance, ala what you'd do in C++
-	It solve a problem for me, but the best solution may be to break the functionality into two (written, not templated) classes
+	It solved a problem for me, but the best solution may be to break the functionality into two (written, not templated) classes
 	'''
 	class EMSelectorDialog(Type):
 		'''
@@ -309,16 +309,11 @@ def EMSelectorTemplate(Type):
 			self.up_arrow_icon = QtGui.QIcon(directory + "/up_arrow.png")
 			self.plot_icon = QtGui.QIcon(directory + "/plot.png")
 			self.euler_icon = QtGui.QIcon(get_image_directory() + "eulerxplor.png")
+			
 		def __init_plot_options(self):
 			self.replace = QtGui.QRadioButton("Replace")
 			self.include = QtGui.QRadioButton("Include")
 			self.include.setChecked(True)
-		
-		#def __init_3d_options(self):
-			#self.threed_options_label = QtGui.QLabel("3D options:",self)
-			#self.replace_3d = QtGui.QCheckBox("Replace")
-			#self.include_3d = QtGui.QCheckBox("Include")
-			#self.include_3d.setChecked(True)
 	
 		def __init_preview_options(self):
 			self.preview_options = QtGui.QComboBox(self)
@@ -334,13 +329,6 @@ def EMSelectorTemplate(Type):
 				self.groupbox.setEnabled(True)
 			else:
 				self.groupbox.setEnabled(False)
-				
-#			if str(qstring) == "No preview":
-#				self.force_2d.setEnabled(False)
-#				self.force_plot.setEnabled(False)
-#			else:
-#				self.force_2d.setEnabled(True)
-#				self.force_plot.setEnabled(True)
 		
 		def previews_allowed(self):
 			if self.dialog_mode: return False
@@ -359,36 +347,6 @@ def EMSelectorTemplate(Type):
 		
 			QtCore.QObject.connect(self.ok_button, QtCore.SIGNAL("clicked(bool)"),self.ok_button_clicked)
 			QtCore.QObject.connect(self.cancel_button, QtCore.SIGNAL("clicked(bool)"),self.cancel_button_clicked)
-		
-#		def __init__force_2d_tb(self):
-#			self.force_2d = QtGui.QCheckBox("Force 2D")
-#			self.force_2d.setChecked(False)
-#			self.force_2d.setEnabled(False)
-#			
-#			QtCore.QObject.connect(self.force_2d, QtCore.SIGNAL("clicked(bool)"),self.force_2d_clicked)
-#			
-#		def __init__force_plot_tb(self):
-#			self.force_plot = QtGui.QCheckBox("Force plot")
-#			self.force_plot.setChecked(False)
-#			self.force_plot.setEnabled(False)
-#			
-#			QtCore.QObject.connect(self.force_plot, QtCore.SIGNAL("clicked(bool)"),self.force_plot_clicked)
-		
-#		def force_2d_clicked(self):
-#			self.force_clicked(self.force_2d)
-#			
-#		def force_plot_clicked(self):
-#			self.force_clicked(self.force_plot)
-		
-#		def force_clicked(self,f):
-#			if self.current_force == None:
-#				self.current_force = f
-#			elif f == self.current_force:
-#				self.current_force = None
-#				return
-#			else:
-#				self.current_force.setChecked(False)
-#				self.current_force = f
 	
 		def single_preview_clicked(self,bool):
 			pass
@@ -828,38 +786,32 @@ def EMSelectorTemplate(Type):
 			
 			self.list_widget_data.append(None)
 			
-			QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemDoubleClicked(QListWidgetItem*)"),self.list_widget_dclicked)
-			QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemPressed(QListWidgetItem*)"),self.list_widget_clicked)
-			QtCore.QObject.connect(list_widget, QtCore.SIGNAL("currentRowChanged (int)"),self.list_widget_row_changed)
+			#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemDoubleClicked(QListWidgetItem*)"),self.list_widget_dclicked)
+			#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemPressed(QListWidgetItem*)"),self.list_widget_clicked)
+			#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("currentRowChanged (int)"),self.list_widget_row_changed)
 			#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("paintEvent (int)"),self.list_widget_row_changed)
 			QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemEntered(QListWidgetItem*)"),self.list_widget_item_entered)
 			#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("currentItemChanged(QListWidgetItem*,QListWidgetItem*)"),self.list_widget_current_changed)
 			#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemChanged(QListWidgetItem*)"),self.list_widget_item_changed)
 			#\QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemActivated(QListWidgetItem*)"),self.list_widget_item_activated)
 			#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("activated(QModelIndex)"),self.activated)
-			QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemSelectionChanged()"),self.selection_changed)
+			#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemSelectionChanged()"),self.selection_changed)
+			
+#		def list_widget_current_changed(self,new,prev):
+#			if new != None:
+#				if self.current_list_widget == new.listWidget():
+#					self.act_on_list_widget_clicked(new,False)
 		
 		def __go_back_a_directory(self):
 			self.lock = True
 			dtag = get_dtag()
 			
 			new_dir = self.starting_directory[0:self.starting_directory.rfind(dtag)]
-	#		new_dir.replace("/bdb/","EMAN2DB/") # this works for the time being but needs investigating
-	#		if len(new_dir) > 4 and new_dir[-4:] == "/bdb": 
-	#			new_dir.replace("/bdb","/EMAN2DB")  # this works for the time being but needs investigating
-	#			print "replaced",new_dir
-	#		else:
-	#			print "no replace"
+
 			if len(new_dir) == 0: new_dir = get_dtag()
 			elif  new_dir[-1] == ":": new_dir += get_dtag() # C: becomes C:/
 			elif len(new_dir) == 1 and new_dir != get_dtag(): new_dir += ":/"# C becomes C:/
-			#if  self.db_listing.responsible_for(new_dir):
-				#new_dir = self.db_listing.
-			#print "going back a directory",new_dir
-	#		if not os.access(new_dir,os.R_OK):
-	#			print new_dir
-	#			print "can't go up a directory, don't have read permission"
-	#			self.new_dir = e2gethome() # send the user back to home
+
 				
 			self.starting_directory = new_dir
 			for j in range(0,len(self.list_widgets)):
@@ -919,10 +871,10 @@ def EMSelectorTemplate(Type):
 			self.lock = False
 			self.hide_preview()
 			
-		def selection_changed(self):
-			if not self.lock:
-				self.__update_selections()
-			
+#		def selection_changed(self):
+#			if not self.lock:
+#				self.__update_selections()
+#			
 		def __update_selections(self):
 			'''
 			Makes the list of currently selected files accurate and up to date. Called when
@@ -972,10 +924,32 @@ def EMSelectorTemplate(Type):
 				get_application().close_specific(self.gl_image_preview)
 		
 		def list_widget_item_entered(self,item):
-			self.current_list_widget = item.listWidget()
-	
-		def list_widget_row_changed(self,i):
-			return
+			list_widget = item.listWidget()
+			if list_widget != self.current_list_widget:
+				if self.current_list_widget != None:
+					QtCore.QObject.disconnect(self.current_list_widget,QtCore.SIGNAL("itemSelectionChanged()"), self.current_item_changed)
+				self.current_list_widget = item.listWidget()
+				QtCore.QObject.connect(self.current_list_widget,QtCore.SIGNAL("itemSelectionChanged()"), self.current_item_changed)
+#				
+		def current_item_changed(self):
+			'''
+			This function handles any change in current item
+			'''
+			if self.lock: return
+			if self.current_list_widget == None: return 
+			item = self.current_list_widget.currentItem()
+			if item != None:
+				self.act_on_list_widget_clicked(item,False)
+				
+#		def list_widget_row_changed(self,i):
+#			print "r"
+#			if self.lock: return
+#			if self.current_list_widget != None:
+#				print "row changed",i
+##				item = self.current_list_widget.item(i)
+##				if item == None: return
+##				self.act_on_list_widget_clicked(item,False)
+#			return
 		
 		def keyPressEvent(self,event):
 			if event.key() == Qt.Key_F1:
@@ -985,13 +959,13 @@ def EMSelectorTemplate(Type):
 				except:
 					pass
 		
-		def list_widget_clicked(self,item):
-			self.list_widget_clickerooni(item,False)
-		
+#		def list_widget_clicked(self,item):
+#			self.act_on_list_widget_clicked(item,False)
+#		
 		def list_widget_dclicked(self,item):
-			self.list_widget_clickerooni(item,True)
+			self.act_on_list_widget_clicked(item,True)
 		
-		def list_widget_clickerooni(self,item,allow_preview=True):
+		def act_on_list_widget_clicked(self,item,allow_preview=True):
 			self.stop_animation() # this needs a bit more attention - we can stop the animation even if we click on the list_widget that's being animated...hmmm
 			if self.lock : return
 			if self.current_list_widget == None: return
@@ -1025,10 +999,8 @@ def EMSelectorTemplate(Type):
 					self.list_widget_data[i] = None
 					
 				if not self.check_preview_item_wants_to_list(item):
-					print "error 101" # facetiousness?
-					return
+					raise RuntimeError("Code has become inconsistent") # this  should never happen
 			
-		
 			n = len(self.list_widgets)-1
 			if self.current_list_widget  == self.list_widgets[n]:
 					self.lock = True

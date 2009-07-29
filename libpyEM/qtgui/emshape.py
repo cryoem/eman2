@@ -270,7 +270,7 @@ class EMShape:
 					if EMShape.font_renderer != None and EMShape.font_renderer != 1:
 						
 						GL.glTranslate(s[4],s[5],.2)
-						bbox = self.font_renderer.bounding_box(s[6])
+						bbox = EMShape.font_renderer.bounding_box(s[6])
 						GLUtil.mx_bbox(bbox,(0,0,0,0),(1,1,1,1))
 						EMShape.font_renderer.render_string(s[6])
 					else:

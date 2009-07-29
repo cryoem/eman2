@@ -47,12 +47,10 @@ class EMPDBValTool(EM3DModule):
 		self.pdb_module = None # will eventually be a EMPDBViewer
 		self.iso_module = None # will eventuall be a EMImage3DModule
 
-
 		self.current_mrc = ""
 		self.current_pdb = ""
 
 		self.t = 0
-
 
 	def __init_pdb_module(self):
 		if self.pdb_module == None:

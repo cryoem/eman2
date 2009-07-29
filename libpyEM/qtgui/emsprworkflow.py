@@ -2739,8 +2739,10 @@ class E2CTFWorkFlowTask(EMParticleReportTask):
 #			print "CTF columns dies"
 		
 		def __get_num_filtered(self,name,filt):
-			if self.db_map.has_key(name):
-				val = self.db_map[name]
+			
+			tag = get_file_tag(name)
+			if self.db_map.has_key(tag):
+				val = self.db_map[tag]
 				if val.has_key(filt):
 					file_name = val[filt]
 					return str(EMUtil.get_image_count(file_name))
@@ -2748,8 +2750,9 @@ class E2CTFWorkFlowTask(EMParticleReportTask):
 			return ""
 		
 		def __get_dim_filtered(self,name,filt):
-			if self.db_map.has_key(name):
-				val = self.db_map[name]
+			tag = get_file_tag(name)
+			if self.db_map.has_key(tag):
+				val = self.db_map[tag]
 				if val.has_key(filt):
 					file_name = val[filt]
 					nx,ny,nz = gimme_image_dimensions3D(file_name)
