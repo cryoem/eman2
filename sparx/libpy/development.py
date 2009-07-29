@@ -6731,6 +6731,7 @@ def err_func(args, data):
 			alpha3, sx3, sy3, scale3 = compose_transform2(alpha*sign, sx*sign, sy, 1.0, alpha2, sx2, sy2, 1.0)
 			this_err = 50*abs(sin((alpha3-alpha_i2)/180.0*pi/2))+sqrt((sx3-sx_i2)**2+(sy3-sy_i2)**2) 
 			err += this_err
+
 	return -err/mirror_same
 
 def ave_ali_err(stack):
@@ -11142,3 +11143,564 @@ def proj_ali_incore_cone(volref, kb, template_angles, projdata, first_ring, last
 		finfo.write( "new params: %8.3f %8.3f %8.3f %8.3f %8.3f\n" %(phi, theta, psi, s2x, s2y) )
 		finfo.flush()
 
+###############################################################################################
+## OLD CODE K-MEANS STABLE ####################################################################
+# 2009-07-29 14:04:48 All should be remove after a while, until to be sure nothing
+#                     is missing in the new code. JB.
+
+# 2008-12-18 11:43:11
+
+# K-means main stability
+def k_means_stab(stack, outdir, maskname, opt_method, K, npart = 5, CTF = False, F = 0, FK = 0, maxrun = 50, th_nobj = 0, th_stab_max = 6.0, th_stab_min = 3.0, th_dec = 5, rand_seed = 0, MPI = False, CUDA = False):
+	if MPI:
+		k_means_stab_MPI(stack, outdir, maskname, opt_method, K, npart, CTF, F, FK, maxrun, th_nobj, th_stab_max, th_stab_min, th_dec, rand_seed)
+		return
+	elif CUDA:
+		k_means_stab_CUDA(stack, outdir, maskname, K, npart, F, FK, maxrun, th_nobj, th_stab_max, th_stab_min, th_dec, rand_seed)
+		return
+	
+	from utilities 	 import print_begin_msg, print_end_msg, print_msg, file_type
+	from statistics  import k_means_stab_update_tag, k_means_headlog, k_means_open_unstable, k_means_stab_gather
+	from statistics  import k_means_classical, k_means_SSE, k_means_SA_T0, k_means_stab_init_tag
+	from statistics  import k_means_headlog, k_means_stab_asg2part, k_means_stab_pwa, k_means_stab_export
+	import sys, logging, os
+
+	# set params
+	trials   = 1
+	maxit    = 1e9
+	critname = ''
+
+	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
+	os.mkdir(outdir)
+
+	# create main log
+	f = open(outdir + '/main_log.txt', 'w')
+	f.close()
+	logging.basicConfig(filename = outdir + '/main_log.txt', format = '%(asctime)s     %(message)s', level = logging.INFO)
+	logging.info('::: Start k-means stability :::')
+
+	# manage random seed
+	rnd = []
+	for n in xrange(1, npart + 1): rnd.append(n * (2**n) + rand_seed)
+	logging.info('Init list random seed: %s' % rnd)
+
+	# loop over run
+	stb          = 6.0
+	flag_run     = True
+	num_run      = 0
+	while flag_run:
+		flag_cluster = False
+		num_run += 1
+		logging.info('RUN %02d K = %03d %s' % (num_run, K, 40 * '-'))
+
+		# open unstable images
+		logging.info('... Open images')
+		[im_M, mask, ctf, ctf2, LUT, N] = k_means_open_unstable(stack, maskname, CTF)
+		logging.info('... %d unstable images found' % N)
+		if N < 2:
+			logging.info('[STOP] Not enough images')
+			num_run -= 1
+			break
+		if F != 0:
+			try:
+				T0, ct_pert = k_means_SA_T0(im_M, mask, K, rand_seed, [CTF, ctf, ctf2], F)
+				logging.info('... Select first temperature T0: %4.2f (dst %d)' % (T0, ct_pert))
+			except SystemExit:
+				logging.info('[STOP] Not enough images')
+				num_run -= 1
+				break
+		else: T0 = 0
+
+		# loop over partition
+		ALL_ASG = []
+		print_begin_msg('k-means')
+		for n in xrange(npart):
+			logging.info('...... Start partition: %d' % (n + 1))
+			k_means_headlog(stack, 'partition %d' % (n+1), opt_method, N, K, critname, maskname, trials, maxit, CTF, T0, F, rnd[n], 1)
+			if   opt_method == 'cla':
+				try:			[Cls, assign] = k_means_classical(im_M, mask, K, rnd[n], maxit, trials, [CTF, ctf, ctf2], F, T0, False)
+				except SystemExit:	flag_cluster  = True
+			elif opt_method == 'SSE':
+				try:			[Cls, assign] = k_means_SSE(im_M, mask, K, rnd[n], maxit, trials, [CTF, ctf, ctf2], F, T0, False)
+				except SystemExit:      flag_cluster  = True
+			if flag_cluster:
+				logging.info('[WARNING] Empty cluster')
+				break
+			
+			ALL_ASG.append(assign)
+
+		print_end_msg('k-means')
+
+		if flag_cluster:
+			num_run -= 1
+			if   FK == 0: K -= th_dec
+			else:
+				newK = int(float(K) * FK)
+				if (K - newK) < th_dec: K -= th_dec
+				else: K = newK
+
+			if K > 1:
+				logging.info('[WARNING] Restart the run with K = %d' % K)
+				continue
+			else:
+				logging.info('[STOP] Not enough number of clusters ')
+				break
+
+		# convert local assignment to absolute partition
+		logging.info('... Convert local assign to abs partition')
+		ALL_PART = k_means_stab_asg2part(ALL_ASG, LUT)
+
+		# calculate the stability
+		MATCH, STB_PART, CT_s, CT_t, ST, st = k_means_stab_pwa(ALL_PART, 100)
+		logging.info('... Stability: %5.2f %% (%d objects)' % (st, sum(CT_s)))
+
+		# manage the stability
+		if stb < th_stab_max:
+			if   FK == 0: K -= th_dec
+			elif FK != 1:
+				newK = int(float(K) * FK)
+				if (K - newK) < th_dec: K -= th_dec
+				else: K = newK
+
+		if K < 2:
+			logging.info('[STOP] Not enough number of clusters')
+			break
+		if stb < th_stab_min:
+			logging.info('[WARNING] Stability too low, restart the run with K = %d' % K)
+			num_run -= 1
+			continue
+
+		# export the stable class averages
+		count_k, id_rejected = k_means_stab_export(STB_PART, stack, num_run, outdir, th_nobj, CTF)
+		logging.info('... Export %i stable class averages: average_stb_run%02d.hdf (rejected %i images)' % (count_k, num_run, len(id_rejected)))
+		
+		# tag informations to the header
+		logging.info('... Update info to the header')
+		k_means_stab_update_tag(stack, ALL_PART, STB_PART, num_run, id_rejected)
+
+		# stop if max run is reach
+		if num_run >= maxrun:
+			flag_run = False
+			logging.info('[STOP] Max number of runs is reached (%d)' % maxrun)
+
+	# merge all stable averages
+	ct = k_means_stab_gather(num_run, maskname, outdir)
+	logging.info('Gather and normalize all stable class averages: averages.hdf (%d images)' % ct)
+	
+	logging.info('::: END k-means stability :::')
+
+# K-means main stability
+def k_means_stab_CUDA(stack, outdir, maskname, K, npart = 5, F = 0, FK = 0, maxrun = 50, th_nobj = 0, th_stab_max = 6.0, th_stab_min = 3.0, th_dec = 5, rand_seed = 0):
+	
+	from utilities 	 import print_begin_msg, print_end_msg, print_msg
+	from utilities   import model_blank, get_image, get_im
+	from statistics  import k_means_cuda_init_open_im, k_means_cuda_open_im, k_means_stab_init_tag
+	from statistics  import k_means_cuda_headlog, k_means_cuda_error, k_means_cuda_info
+
+	from statistics  import k_means_stab_update_tag, k_means_stab_gather, k_means_stab_init_tag
+	from statistics  import k_means_stab_asg2part, k_means_stab_H, k_means_stab_export
+	import sys, logging, os, pickle
+
+	# create a directory
+	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
+	os.mkdir(outdir)
+
+	# create main log
+	f = open(outdir + '/main_log.txt', 'w')
+	f.close()
+		
+	logging.basicConfig(filename = outdir + '/main_log.txt', format = '%(asctime)s     %(message)s', level = logging.INFO)
+	logging.info('::: Start k-means stability :::')
+
+	# manage random seed
+	rnd = []
+	for n in xrange(1, npart + 1): rnd.append(n * (2**n) + rand_seed)
+	logging.info('Init list random seed: %s' % rnd)
+
+	# loop over run
+	flag_run     = True
+	num_run      = 0
+	maxit        = int(1e9)
+	T0           = float(-1) # auto
+	while flag_run:
+		flag_cluster = False
+		num_run += 1
+		logging.info('RUN %02d K = %03d %s' % (num_run, K, 40 * '-'))
+
+		# create k-means obj
+		KmeansCUDA = CUDA_kmeans()
+
+		# open unstable images
+		logging.info('... Open images')
+		LUT, mask, N, m = k_means_cuda_init_open_im(stack, maskname)
+		logging.info('... %d unstable images found' % N)
+		if N < 2:
+			logging.info('[STOP] Not enough images')
+			num_run -= 1
+			break
+		KmeansCUDA.setup(m, N, K, F, T0, maxit, 0)
+		k_means_cuda_open_im(KmeansCUDA, stack, LUT, mask)
+
+		# loop over partition
+		ALL_ASG = []
+		print_begin_msg('k-means')
+		for n in xrange(npart):
+			# info
+			logging.info('...... Start partition: %d' % (n + 1))
+			partdir = 'partition %d' % (n + 1)
+			ncpu   = 1
+			method = 'cla'
+			k_means_cuda_headlog(stack, partdir, method, N, K, maskname, maxit, T0, F, rnd[n], ncpu, m)
+
+			# classification
+			KmeansCUDA.set_rnd(rnd[n])
+			status = KmeansCUDA.kmeans()
+			if   status == 0:
+				pass
+			elif status == 5 or status == 4:
+				logging.info('[WARNING] Empty cluster')
+				k_means_cuda_error(status)
+				flag_cluster = True
+				break
+			else:
+				k_means_cuda_error(status)
+				logging.info('[ERROR] CUDA status %i' % status)
+				sys.exit()
+
+			# get back the partition and its infos
+			PART = KmeansCUDA.get_partition()
+			ALL_ASG.append(PART)
+			INFO = KmeansCUDA.get_info()
+			k_means_cuda_info(INFO)
+
+			import cPickle
+			f = open('part%i.pck' % n, 'w')
+			cPickle.dump(PART, f)
+			f.close()
+
+		# end of classification
+		print_end_msg('k-means')
+
+		# destroy k-means
+		del KmeansCUDA
+
+		# flow control if empty cluster
+		if flag_cluster:
+			num_run -= 1
+			if   FK == 0: K -= th_dec
+			else:
+				newK = int(float(K) * FK)
+				if (K - newK) < th_dec: K -= th_dec
+				else: K = newK
+
+			if K > 1:
+				logging.info('[WARNING] Restart the run with K = %d' % K)
+				continue
+			else:
+				logging.info('[STOP] Not enough number of clusters ')
+				break
+
+		# convert local assignment to absolute partition
+		logging.info('... Convert local assign to abs partition')
+		ALL_PART = k_means_stab_asg2part(ALL_ASG, LUT)
+
+		# glooton control
+		try:
+			cmd = open('control', 'r').readline()
+			cmd = cmd.strip(' \n')
+			if cmd == 'stop':
+				logging.info('[STOP] request by the user')
+				break
+		except: pass
+
+		# calculate the stability
+		stb, nb_stb, STB_PART = k_means_stab_H(ALL_PART)
+		logging.info('... Stability: %5.2f %% (%d objects)' % (stb, nb_stb))
+
+		# security to stop k-means stable cuda properly
+		if os.path.exists('control'):
+			try:
+				cmd = open('control', 'r').readline()
+				cmd = cmd.strip(' \n')
+				if cmd == 'stop':
+					logging.info('[STOP] request by the user')
+
+					# export the stable class averages
+					count_k, id_rejected = k_means_stab_export(STB_PART, stack, num_run, outdir, th_nobj, CTF)
+					logging.info('... Export %i stable class averages: average_stb_run%02d.hdf (rejected %i images)' % (count_k, num_run, len(id_rejected)))
+
+					# tag informations to the header
+					logging.info('... Update info to the header')
+					k_means_stab_update_tag(stack, ALL_PART, STB_PART, num_run, id_rejected)
+					try:
+						import os
+						os.system('rm control')
+					except: pass
+
+					break
+			except: pass
+
+		# manage the stability
+		if stb < th_stab_max:
+			if   FK == 0: K -= th_dec
+			elif FK != 1:
+				newK = int(float(K) * FK)
+				if (K - newK) < th_dec: K -= th_dec
+				else: K = newK
+
+		if K < 2:
+			logging.info('[STOP] Not enough number of clusters')
+			break
+		if stb < th_stab_min:
+			logging.info('[WARNING] Stability too low, restart the run with K = %d' % K)
+			num_run -= 1
+			continue
+	
+		# export the stable class averages
+		count_k, id_rejected = k_means_stab_export(STB_PART, stack, num_run, outdir, th_nobj, CTF)
+		logging.info('... Export %i stable class averages: average_stb_run%02d.hdf (rejected %i images)' % (count_k, num_run, len(id_rejected)))
+
+		# tag informations to the header
+		logging.info('... Update info to the header')
+		k_means_stab_update_tag(stack, ALL_PART, STB_PART, num_run, id_rejected)
+
+		# stop if max run is reach
+		if num_run >= maxrun:
+			flag_run = False
+			logging.info('[STOP] Max number of runs is reached (%d)' % maxrun)
+
+	# merge stable averages
+	ct = k_means_stab_gather(num_run, maskname, outdir)
+	logging.info('Gather and normalize all stable class averages: averages.hdf (%d images)' % ct)
+	
+	logging.info('::: END k-means stability :::')
+
+
+# K-means main stability
+def k_means_stab_MPI(stack, outdir, maskname, opt_method, K, npart = 5, CTF = False, F = 0, FK = 0, maxrun = 50, th_nobj = 0, th_stab_max = 6.0, th_stab_min = 3.0, th_dec = 5, rand_seed = 0):
+	from utilities 	 import print_begin_msg, print_end_msg, print_msg, file_type
+	from statistics  import k_means_stab_update_tag, k_means_headlog, k_means_open_unstable_MPI, k_means_stab_gather
+	from statistics  import k_means_cla_MPI, k_means_SSE_MPI, k_means_SA_T0_MPI, k_means_stab_init_tag
+	from statistics  import k_means_headlog, k_means_stab_asg2part, k_means_stab_pwa, k_means_stab_export
+	from mpi         import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier, MPI_COMM_WORLD
+	from mpi         import mpi_bcast, MPI_FLOAT
+	import sys, logging, os
+
+	sys.argv  = mpi_init(len(sys.argv), sys.argv)
+	nb_cpu    = mpi_comm_size(MPI_COMM_WORLD)
+	myid      = mpi_comm_rank(MPI_COMM_WORLD)
+	main_node = 0
+	mpi_barrier(MPI_COMM_WORLD)
+
+	# set params
+	trials   = 1
+	maxit    = 1e9
+	critname = ''
+
+	if myid == main_node:
+		if os.path.exists(outdir): ERROR('Output directory exists, please change the name and restart the program', " ", 1)
+		os.mkdir(outdir)
+
+	mpi_barrier(MPI_COMM_WORLD)
+		
+	logging.basicConfig(filename = outdir + '/main_log.txt', format = '%(asctime)s     %(message)s', level = logging.INFO)
+	if myid == main_node: logging.info('::: Start k-means stability :::')
+
+	# manage random seed
+	rnd = []
+	for n in xrange(1, npart + 1): rnd.append(n * (2**n) + rand_seed)
+	if myid == main_node: logging.info('Init list random seed: %s' % rnd)
+
+	# loop over run
+	stb          = 6.0
+	flag_run     = True
+	num_run      = 0
+	while flag_run:
+		flag_cluster = False
+		num_run += 1
+		if myid == main_node: logging.info('RUN %02d K = %03d %s' % (num_run, K, 40 * '-'))
+
+		# open unstable images
+		if myid == main_node: logging.info('... Open images')
+		[im_M, mask, ctf, ctf2, LUT, N, N_start, N_stop] = k_means_open_unstable_MPI(stack, maskname, CTF, nb_cpu, main_node, myid)
+		if myid == main_node: logging.info('... %d unstable images found' % N)
+		if N < nb_cpu:
+			logging.info('[STOP] Node %02d - Not enough images' % myid)
+			num_run -= 1
+			break
+		if F != 0:
+			try:
+				T0, ct_pert = k_means_SA_T0_MPI(im_M, mask, K, rand_seed, [CTF, ctf, ctf2], F, myid, main_node, N_start, N_stop)
+				if myid == main_node: logging.info('... Select first temperature T0: %4.2f (dst %d)' % (T0, ct_pert))
+			except SystemExit:
+				if myid == main_node: logging.info('[STOP] Not enough images')
+				num_run -= 1
+				mpi_barrier(MPI_COMM_WORLD)
+				break
+		else: T0 = 0
+
+		# loop over partition
+		ALL_ASG = []
+		if myid == main_node: print_begin_msg('k-means')
+		for n in xrange(npart):
+			flag_cluster = False
+			if myid == main_node:
+				logging.info('...... Start partition: %d' % (n + 1))
+				k_means_headlog(stack, 'partition %d' % (n+1), opt_method, N, K, critname, maskname, trials, maxit, CTF, T0, F, rnd[n], nb_cpu)
+			if   opt_method == 'cla':
+				try: [Cls, assign] = k_means_cla_MPI(im_M, mask, K, rnd[n], maxit, trials, [CTF, ctf, ctf2], myid, main_node, N_start, N_stop, F, T0)
+				except SystemExit:
+					if myid == main_node: logging.info('[WARNING] Empty cluster')
+					mpi_barrier(MPI_COMM_WORLD)
+					flag_cluster = True
+					break
+			elif opt_method == 'SSE':
+				try: [Cls, assign] = k_means_SSE_MPI(im_M, mask, K, rnd[n], maxit, trials, [CTF, ctf, ctf2], myid, main_node, nb_cpu, N_start, N_stop, F, T0)
+				except SystemExit:
+					if myid == main_node: logging.info('[WARNING] Empty cluster')
+					mpi_barrier(MPI_COMM_WORLD)
+					flag_cluster = True
+					break
+			
+			ALL_ASG.append(assign)
+				
+		if myid == main_node: print_end_msg('k-means')
+
+		if flag_cluster:
+			num_run -= 1
+			if   FK == 0: K -= th_dec
+			else:
+				newK = int(float(K) * FK)
+				if (K - newK) < th_dec: K -= th_dec
+				else: K = newK
+				
+			if K > 1:
+				if myid == main_node: logging.info('[WARNING] Restart the run with K = %d' % K)
+				mpi_barrier(MPI_COMM_WORLD)
+				continue
+			else:
+				if myid == main_node: logging.info('[STOP] Not enough number of clusters ')
+				mpi_barrier(MPI_COMM_WORLD)
+				break
+	
+		if myid == main_node:
+			# convert local assignment to absolute partition
+			logging.info('... Convert local assign to abs partition')
+			ALL_PART = k_means_stab_asg2part(ALL_ASG, LUT)
+
+			# calculate the stability
+			MATCH, STB_PART, CT_s, CT_t, ST, st = k_means_stab_pwa(ALL_PART, 50)
+			logging.info('... Stability: %5.2f %% (%d objects)' % (st, sum(CT_s)))
+			
+
+		mpi_barrier(MPI_COMM_WORLD)
+		stb = mpi_bcast(stb, 1, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+		stb = stb.tolist()[0]
+
+		# manage the stability
+		if stb < th_stab_max:
+			if   FK == 0: K -= th_dec
+			elif FK != 1:
+				newK = int(float(K) * FK)
+				if (K - newK) < th_dec: K -= th_dec
+				else: K = newK
+
+		if K < 2:
+			if myid == main_node: logging.info('[STOP] Not enough number of clusters')
+			mpi_barrier(MPI_COMM_WORLD)
+			break
+		if stb < th_stab_min:
+			if myid == main_node: logging.info('[WARNING] Stability too low, restart the run with K = %d' % K)
+			mpi_barrier(MPI_COMM_WORLD)
+			num_run -= 1
+			continue
+
+		if myid == main_node:
+			# export the stable class averages
+			count_k, id_rejected = k_means_stab_export(STB_PART, stack, num_run, outdir, th_nobj, CTF)
+			logging.info('... Export %i stable class averages: average_stb_run%02d.hdf (rejected %i images)' % (count_k, num_run, len(id_rejected)))
+			
+			# tag informations to the header
+			logging.info('... Update info to the header')
+			k_means_stab_update_tag(stack, ALL_PART, STB_PART, num_run, id_rejected)
+
+		mpi_barrier(MPI_COMM_WORLD)
+
+		# stop if max run is reach
+		if num_run >= maxrun:
+			flag_run = False
+			if myid == main_node: logging.info('[STOP] Max number of runs is reached (%d)' % maxrun)
+
+	if myid == main_node:
+		# merge and clean all stable averages
+		ct = k_means_stab_gather(num_run, maskname, outdir)
+		logging.info('Gather and normalize all stable class averages: averages.hdf (%d images)' % ct)
+
+		logging.info('::: END k-means stability :::')
+
+	mpi_barrier(MPI_COMM_WORLD)
+
+
+'''
+# sxk_means_stability.py
+
+import os
+import global_def
+from   global_def import *
+from   optparse import OptionParser
+import sys
+def main():
+	
+	progname = os.path.basename(sys.argv[0])
+	usage = progname + " stack outdir <maskfile> --K=2 --nb_part=5 --opt_method='SSE' --CTF --F=0.9 --max_run=10 --th_nobj=10 --th_stab_max=6.0 --th_stab_min=3.0 --min_dec_K=5 --FK=0 --rand_seed=0 --MPI --CUDA"
+	parser = OptionParser(usage,version=SPARXVERSION)
+	parser.add_option("--K",              type="int",          default=2,         help="Number of classes for k-means (default 2)")
+	parser.add_option("--nb_part",        type="int",          default=5,         help="Number of partitions used to calculate the stability (default 5)")
+	parser.add_option("--opt_method",     type='string',       default="SSE",     help="K-means method: SSE (default), cla")
+	parser.add_option("--CTF",            action="store_true", default=False,     help="Perform classification using CTF information")
+	parser.add_option("--F",              type="float",        default=0.0,       help="Factor to decrease temperature in simulate annealing, ex.: 0.95")
+	parser.add_option("--FK",             type="float",        default=0,         help="Cooling factor to decrease K according the number of runs")
+	parser.add_option("--max_run",        type="int",          default=50,        help="Maximum number of runs (default 50)")
+	parser.add_option("--th_nobj",        type="int",          default=10,        help="Cleanning threshold, classes with number of images < th_nobj are removed (default 10)")
+	parser.add_option("--th_stab_max",    type="float",        default=6.0,       help="Stability threshold where K stop to decrease (default 6.0)")
+	parser.add_option("--th_stab_min",    type="float",        default=0.0,       help="Stability threshold required to start the next run in percent (default 3.0)")
+	parser.add_option("--min_dec_K",      type="int",          default=5,         help="Minimum decrement value to K when the stability is to low (default 5)")
+	parser.add_option("--rand_seed",      type="int",          default=0,         help="Random seed")
+	parser.add_option("--MPI",            action="store_true", default=False,     help="MPI version")
+	parser.add_option("--CUDA",           action="store_true", default=False,     help="CUDA version")
+	
+	(options, args) = parser.parse_args()
+    	if len(args) < 2 or len(args) > 3:
+				print "usage: " + usage
+        			print "Please run '" + progname + " -h' for detailed options"
+	elif(options.opt_method != "cla"  and options.opt_method != "SSE"):
+			sys.stderr.write("ERROR: unknown method\n\n")
+			sys.exit()
+	else:
+		if len(args) == 2: mask = None
+		else:              mask = args[2]
+
+		if options.K < 2:
+			sys.stderr.write('ERROR: K must be > 1 group\n\n')
+			sys.exit()
+
+		if options.nb_part < 2:
+			sys.stderr.write('ERROR: nb_part must be > 1 partition\n\n')
+			sys.exit()
+
+		from  applications  import  k_means_stab
+		global_def.BATCH = True
+		k_means_stab(args[0], args[1], mask, options.opt_method, options.K, options.nb_part, options.CTF, options.F, options.FK, options.max_run, options.th_nobj, options.th_stab_max, options.th_stab_min, options.min_dec_K, options.rand_seed, options.MPI, options.CUDA)
+		global_def.BATCH = False
+
+if __name__ == "__main__":
+	        main()
+
+
+
+'''
+
+
+
+## END OLD CODE K-MEANS STABLE ################################################################
+###############################################################################################

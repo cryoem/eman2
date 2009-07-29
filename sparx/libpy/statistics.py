@@ -1582,16 +1582,11 @@ def k_means_headlog(stackname, outname, method, N, K, crit, maskname, trials, ma
 	print_msg('Output seed names           : %s\n\n'   % outname)
 
 # K-means write results output directory
-def k_means_export(Cls, crit, assign, out_seedname):
+def k_means_export(Cls, crit, assign, out_seedname, part = -1):
 	from utilities import print_msg
-	
-	if out_seedname.split(':')[0] == 'bdb':
-		BDB = True
-	else:
-		BDB = False
-		import os
-		if os.path.exists(out_seedname):  os.system('rm -rf ' + out_seedname)
-		os.mkdir(out_seedname)
+	import os
+
+	if not os.path.exists(out_seedname): os.mkdir(out_seedname)
 
 	# write the report on the logfile
 	Je = 0
@@ -1613,7 +1608,7 @@ def k_means_export(Cls, crit, assign, out_seedname):
 		else:                print_msg('\t%s\t%11.6e\n' % ('Sum of Squares Error Ji', Cls['Ji'][k]))
 
 		# limitation of hdf file in the numbers of attributes
-		if Cls['n'][k] > 16000 and not BDB:
+		if Cls['n'][k] > 16000:
 			print 'WARNING: limitation of number attributes in hdf file, the results will be export in separate files \n'
 			outfile = open('%d_kmeans.txt' % (k + 1), 'w')
 			list_images = []
@@ -1639,13 +1634,12 @@ def k_means_export(Cls, crit, assign, out_seedname):
 			Cls['var'][k].set_attr('Ji', Cls['Ji'][k])
 			Cls['var'][k].set_attr('Je', Je)
 
-		if BDB:
-			Cls['ave'][k].write_image(out_seedname + '_aves', k)
-			Cls['var'][k].write_image(out_seedname + '_vars', k)
-		else:
-			Cls['ave'][k].write_image(out_seedname + "/averages.hdf", k)
-			Cls['var'][k].write_image(out_seedname + "/variances.hdf", k)
-
+			if part == -1:
+				Cls['ave'][k].write_image(out_seedname + "/averages.hdf", k)
+				Cls['var'][k].write_image(out_seedname + "/variances.hdf", k)
+			else:
+				Cls['ave'][k].write_image(out_seedname + "/averages_%02i.hdf" % part, k)
+				Cls['var'][k].write_image(out_seedname + "/variances_%02i.hdf" % part, k)
 
 # K-means compute criterion in order to validate the number of groups
 def k_means_criterion(Cls, crit_name=''):
@@ -4533,6 +4527,7 @@ def k_means_SA_T0_MPI(im_M, mask, K, rand_seed, CTF, F, myid, main_node, N_start
 	from alignment          import select_k
 	from mpi                import mpi_reduce, mpi_bcast, mpi_barrier, mpi_recv, mpi_send
 	from mpi                import MPI_SUM, MPI_FLOAT, MPI_INT, MPI_LOR, MPI_COMM_WORLD
+	from copy               import deepcopy
 	import sys
 	import time
 	if CTF[0]:
@@ -4627,13 +4622,13 @@ def k_means_SA_T0_MPI(im_M, mask, K, rand_seed, CTF, F, myid, main_node, N_start
 	FLAG_EXIT = FLAG_EXIT.tolist()[0]
 	mpi_barrier(MPI_COMM_WORLD)
 	if FLAG_EXIT: sys.exit()
-
+	print 'flag ok'
 	# [sync] waiting assignment
 	assign = mpi_bcast(assign, N, MPI_INT, main_node, MPI_COMM_WORLD)
 	assign = assign.tolist()     # convert array gave by MPI to list
 	Cls['n'] = mpi_bcast(Cls['n'], K, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 	Cls['n'] = Cls['n'].tolist() # convert array gave by MPI to list
-
+	print 'asg ok'
 	## Calculate averages, if CTF: ave = S CTF.F / S CTF**2
 	if CTF:
 		# first init ctf2
@@ -4649,17 +4644,19 @@ def k_means_SA_T0_MPI(im_M, mask, K, rand_seed, CTF, F, myid, main_node, N_start
 
 		# sync
 		mpi_barrier(MPI_COMM_WORLD)
-
 		for k in xrange(K):
+			print k
 			Cls_ctf2[k] = mpi_reduce(Cls_ctf2[k], len_ctm, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 			Cls_ctf2[k] = mpi_bcast(Cls_ctf2[k],  len_ctm, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 			Cls_ctf2[k] = Cls_ctf2[k].tolist()    # convert array gave by MPI to list
-
+			
+			
 			reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
 			bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
 
 			for i in xrange(len_ctm):	Cls_ctf2[k][i] = 1.0 / float(Cls_ctf2[k][i])
 			Cls['ave'][k] = filt_table(Cls['ave'][k], Cls_ctf2[k])
+
 	else:
 		# [id] Calculates averages, first calculate local sum
 		for im in xrange(N_start, N_stop):	Util.add_img(Cls['ave'][int(assign[im])], im_M[im])
@@ -4673,6 +4670,9 @@ def k_means_SA_T0_MPI(im_M, mask, K, rand_seed, CTF, F, myid, main_node, N_start
 			bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
 			Cls['ave'][k] = Util.mult_scalar(Cls['ave'][k], 1.0/float(Cls['n'][k]))
 
+	print 'averages ok'
+	sys.exit()
+	print 'start clustering'
 	## Clustering		
 	th = int(float(N)*0.8)
 	T0 = -1
@@ -4728,7 +4728,7 @@ def k_means_SA_T0_MPI(im_M, mask, K, rand_seed, CTF, F, myid, main_node, N_start
 
 	# sync
 	mpi_barrier(MPI_COMM_WORLD)
-
+	print 'done'
 	# if not found, set to the max value
 	if T0 == -1: T0 = Tm
 	
@@ -5373,7 +5373,7 @@ def k_means_stab_H(ALL_PART):
 	return stability, nb_stb, ALL_PART[0]
 
 # Build and export the stable class averages 
-def k_means_stab_export(PART, stack, num_run, outdir, th_nobj, CTF = False):
+def k_means_stab_export(PART, stack, outdir, th_nobj, CTF = False):
 	from utilities    import model_blank, get_params2D, get_im
 	from fundamentals import rot_shift2D, fftip
 	
@@ -5391,7 +5391,7 @@ def k_means_stab_export(PART, stack, num_run, outdir, th_nobj, CTF = False):
 		if len(PART[k]) >= th_nobj:
 			Kr += 1
 	if Kr == 0:
-		imbk.write_image(outdir + '/average_stb_run%02d.hdf' % num_run, 0)
+		imbk.write_image(outdir + '/averages.hdf', 0)
 		return 0, []
 	for k in xrange(Kr): AVE.append(imbk.copy())
 	for k in xrange(K):
@@ -5417,7 +5417,7 @@ def k_means_stab_export(PART, stack, num_run, outdir, th_nobj, CTF = False):
 			AVE[ck].set_attr('nobjects', nobjs)
 			AVE[ck].set_attr('members', PART[k])
 			AVE[ck].set_attr('k_ref', k)
-			AVE[ck].write_image(outdir + '/average_stb_run%02d.hdf' % num_run, ck)
+			AVE[ck].write_image(outdir + '/averages.hdf', ck)
 			ck += 1
 		else:
 			lrej.extend(PART[k])
@@ -5525,7 +5525,7 @@ def k_means_stab_asg2part(ALL_ASG, LUT):
 	return ALL_PART
 
 # Convert local assignment to absolute partion
-def k_means_asg_loc2glb(ASG, LUT):
+def k_means_asg_locasg2glbpart(ASG, LUT):
 	K = max(ASG) + 1
 	N = len(ASG)
 	PART = [[] for i in xrange(K)]
@@ -5534,28 +5534,10 @@ def k_means_asg_loc2glb(ASG, LUT):
 	return PART
 
 # Update information to the header of the stack file
-# TODO this function need to be clean up
-def k_means_stab_update_tag(stack, ALL_PART, STB_PART, num_run, lrej):
+def k_means_stab_update_tag(stack, STB_PART, lrej):
 	from utilities import file_type, write_header
 
 	N  = EMUtil.get_image_count(stack)
-
-	'''
-	# prepare partitions given by the run
-	nb_part = len(ALL_PART)
-	K       = len(ALL_PART[0])
-	ALL_ASG = []
-	for PART in ALL_PART:
-		ASG = [-1] * N
-		for k in xrange(K):
-			for ID in PART[k]: ASG[ID] = k
-		ALL_ASG.append(ASG)
-
-	# prepare partition stable
-	STB_ASG = [-1] * N
-	for k in xrange(K):
-		for ID in STB_PART[k]: STB_ASG[ID] = k
-	'''
 	# prepare for active images
 	list_stb = []
 	for part in STB_PART: list_stb.extend(part)
@@ -5563,46 +5545,19 @@ def k_means_stab_update_tag(stack, ALL_PART, STB_PART, num_run, lrej):
 	ext = file_type(stack)
 	if ext == 'bdb':
 		DB = db_open_dict(stack)
-		'''
-		for n in xrange(N):
-			# run partitions
-			vec = []
-			for i in xrange(nb_part): vec.append(ALL_ASG[i][n])
-			DB.set_attr(n, 'stab_run%02d' % num_run, vec)
-			# stable partition
-			val = DB.get_attr(n, 'stab_part')
-			if isinstance(val, list): val.append(STB_ASG[n]) # if n-ieme run (list of value)
-			elif  val == -2: val = [STB_ASG[n]]              # if first run  (no value define by -2)
-			else: val == [val, STB_ASG[n]]                   # if second run (scalar)
-			DB.set_attr(n, 'stab_part', val)
-		'''
-		# those are stable
+		# these are stable
 		for ID in list_stb: DB.set_attr(ID, 'active', 0)
-		# those are still unstable
+		# these are still unstable
 		for ID in lrej: DB.set_attr(ID, 'active', 1)
 		DB.close()
 	else:
 		im = EMData()
-		'''
-		for n in xrange(N):
-			im.read_image(stack, n, True)
-			vec = []
-			for i in xrange(nb_part): vec.append(ALL_ASG[i][n])
-			im.set_attr('stab_run%02d' % num_run, vec)
-			# stab partitions
-			val = im.get_attr('stab_part')
-			if isinstance(val, list): val.append(STB_ASG[n]) # if n-ieme run (list of value)
-			elif  val == -2: val = [STB_ASG[n]]              # if first run  (no value define by -2)
-			else: val = [val, STB_ASG[n]]                    # if second run (scalar)
-			im.set_attr('stab_part', val)
-			write_header(stack, im, n)
-		'''
-		# those are stable
+		# these are stable
 		for ID in list_stb:
 			im.read_image(stack, ID, True)
 			im.set_attr('active', 0)
 			write_header(stack, im, ID)
-		# those are still unstable
+		# these are still unstable
 		for ID in lrej:
 			im.read_image(stack, ID, True)
 			im.set_attr('active', 1.0)

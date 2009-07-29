@@ -40,15 +40,18 @@ import sys
 def main():
 	
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack outdir <maskfile> --K=2 --nb_part=5 --F=0.9 --th_nobj=10 --rand_seed=0 --CUDA"
+	usage = progname + " stack outdir <maskfile> --K=2 --nb_part=5 --F=0.9 --th_nobj=10 --rand_seed=0 --opt_method=cla --match=pwa --CTF --CUDA --MPI"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--K",              type="int",          default=2,         help="Number of classes for k-means (default 2)")
 	parser.add_option("--nb_part",        type="int",          default=5,         help="Number of partitions used to calculate the stability (default 5)")
 	parser.add_option("--F",              type="float",        default=0.0,       help="Factor to decrease temperature in simulate annealing, ex.: 0.95")
 	parser.add_option("--th_nobj",        type="int",          default=10,        help="Cleanning threshold, classes with number of images < th_nobj are removed (default 10)")
 	parser.add_option("--rand_seed",      type="int",          default=0,         help="Random seed")
+	parser.add_option("--opt_method",     type='string',       default="SSE",     help="K-means method: SSE (default), cla")
+	parser.add_option("--match",          type='string',       default='pwa',     help='Algorithm to match partitions: pwa, pair-wise agreement (default), or hh, hierarchical Hungarian algorithm')
+	parser.add_option("--CTF",            action="store_true", default=False,     help="Perform classification using CTF information")
 	parser.add_option("--CUDA",           action="store_true", default=False,     help="CUDA version")
-	
+	parser.add_option("--MPI",            action="store_true", default=False,     help="Whether using MPI version ")	
 	(options, args) = parser.parse_args()
     	if len(args) < 2 or len(args) > 3:
 				print "usage: " + usage
@@ -65,14 +68,24 @@ def main():
 			sys.stderr.write('ERROR: nb_part must be > 1 partition\n\n')
 			sys.exit()
 
-		if not options.CUDA:
-			print 'only CUDA version'
-			sys.exit()
+		if options.CUDA:
+			from  applications  import  k_means_stab_CUDA_stream
+			global_def.BATCH = True
+			k_means_stab_CUDA_stream(args[0], args[1], mask, options.K, options.nb_part, options.F, options.th_nobj, options.rand_seed, options.match)
+			global_def.BATCH = False
+		elif options.MPI:
+			from  applications  import  k_means_stab_MPI_stream
+			global_def.BATCH = True
+			k_means_stab_MPI_stream(args[0], args[1], mask, options.K, options.nb_part, options.F, options.th_nobj, options.rand_seed, options.opt_method, options.CTF, options.match)
+			global_def.BATCH = False
+		else:
+			from  applications  import  k_means_stab_stream
+			global_def.BATCH = True
+			k_means_stab_stream(args[0], args[1], mask, options.K, options.nb_part, options.F, options.th_nobj, options.rand_seed, options.opt_method, options.CTF, options.match)
+			global_def.BATCH = False
+			
+			
 
-		from  applications  import  k_means_stab_CUDA_stream
-		global_def.BATCH = True
-		k_means_stab_CUDA_stream(args[0], args[1], mask, options.K, options.nb_part, options.F, options.th_nobj, options.rand_seed)
-		global_def.BATCH = False
 
 if __name__ == "__main__":
 	        main()
