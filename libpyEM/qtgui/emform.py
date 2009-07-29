@@ -37,7 +37,7 @@ from PyQt4.QtCore import Qt
 import os
 from emselector import EMSelectorModule
 from emapplication import EMQtWidgetModule,get_application
-from EMAN2 import Util, get_image_directory,file_exists,dump_aligners_list
+from EMAN2 import Util, get_image_directory,file_exists,dump_aligners_list,dump_processors_list
 import EMAN2
 import weakref
 
@@ -973,7 +973,6 @@ class EMEmanStrategyWidget(QtGui.QWidget):
 				self.selection_changed(self.main_combo.itemText(start_idx))
 	
 	def selection_changed(self,s):
-		print 
 		strategy = str(s)
 		self.current_strategy = strategy
 		if self.current_widget != None:
@@ -1455,7 +1454,6 @@ class IncorpParamTable:
 class IncorpStringList:
 	def __init__(self): pass
 	def __call__(self,param,layout,target):
-		print target
 		target.incorporate_list(param,layout,target,str)
 
 class IncorpFloatList:
@@ -1898,8 +1896,8 @@ class EMParamTableEventHandler:
 			cumulative_width += self.table_widget.columnWidth(i)
 		
 		tab_widget_width = self.table_widget.geometry().width()
-		print cumulative_width,self.table_widget.width(),tab_widget_width,self.table_widget.frameSize().width()
-		print self.table_widget.getContentsMargins()
+		#print cumulative_width,self.table_widget.width(),tab_widget_width,self.table_widget.frameSize().width()
+		#print self.table_widget.getContentsMargins()
 		
 		if cumulative_width < self.table_widget.width():
 			scale = float(self.table_widget.width())/cumulative_width

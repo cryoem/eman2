@@ -338,6 +338,9 @@ class EMGenClassAverages:
 		self.__finalize_writing()
 	
 	def progress_callback(self,i):
+		'''
+		Had to supply this function so that the infrastructure works with and without parallelism enabled
+		'''
 		print i
 	
 	def __finalize_writing(self):
@@ -828,6 +831,7 @@ class EMClassAveTask(EMTask):
 			
 			average.set_attr("ptcl_repr",np)
 			average.set_attr("class_ptcl_idxs",images.keys())
+			#average.set_attr("exc_class_ptcl_idxs",[]) # SEGFAULT
 		return average,alis
 
 	def __get_init_average_from_ali(self,images,norm,sigma=None):
@@ -873,6 +877,7 @@ class EMClassAveTask(EMTask):
 		average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 		average.set_attr("ptcl_repr",np)
 		average.set_attr("class_ptcl_idxs",images.keys())
+		#average.set_attr("exc_class_ptcl_idxs",[]) # SEG FAULT
 	
 		return average
 		
@@ -892,11 +897,13 @@ class EMClassAveTask(EMTask):
 		averager=Averagers.get(averager_parms[0], averager_parms[1])
 		
 		inclusion = {} # stores a flag, True or False, indicating whether the particle was included in the class average
-		record = [] # stores the ptcl indices, which is then stored as the "class_ptcl_idxs" header attribute
+		record = [] # stores the ptcl indices of the included particles, which is then stored as the "class_ptcl_idxs" header attribute
+		exc_record = [] # stores the ptcl indices of the excluded particles, which is then stored as the "exc_class_ptcl_idxs" header attribute
 		np = 0 # number of particles
 		for ptcl_idx,ali in alis.items():
 			if ( cullthresh != None ):
 				if ( sims[ptcl_idx] > cullthresh ) :
+					exc_record.append(ptcl_idx)
 					inclusion[ptcl_idx] = False
 					continue
 				
@@ -920,7 +927,8 @@ class EMClassAveTask(EMTask):
 #			for idx,ali in alis.items(): alis[idx] = t*ali # warning, inpace modification of the alis ! 
 			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 			average.set_attr("ptcl_repr",np)
-			average.set_attr("class_ptcl_idxs",record)
+			if len(record) > 0: average.set_attr("class_ptcl_idxs",record) # if prevents a seg fault
+			if len(exc_record) > 0: average.set_attr("exc_class_ptcl_idxs",exc_record) # if prevents a seg fault
 		return average,inclusion
 	
 	def __get_average(self,images,norm,alis,inclusions,sigma=None):
@@ -937,10 +945,13 @@ class EMClassAveTask(EMTask):
 		averager_parms =  self.options["averager"]
 		if sigma: averager_parms[1]["sigma"] = sigma
 		averager=Averagers.get(averager_parms[0], averager_parms[1])
-		record = [] # stores the ptcl indices, which is then stored as the "class_ptcl_idxs" header attribute
+		record = [] # stores the ptcl indices of the included particles, which is then stored as the "class_ptcl_idxs" header attribute
+		exc_record = [] # stores the ptcl indices of the excluded particles, which is then stored as the "exc_class_ptcl_idxs" header attribute
 		np = 0 # number of particles
 		for ptcl_idx,ali in alis.items():
-			if inclusions != None and inclusions[ptcl_idx] == False: continue
+			if inclusions != None and inclusions[ptcl_idx] == False: 
+				exc_record.append(ptcl_idx)
+				continue
 			record.append(ptcl_idx)
 			image = images[ptcl_idx]			
 			rslt = image.process("math.transform",{"transform":ali})
@@ -961,7 +972,8 @@ class EMClassAveTask(EMTask):
 #				for idx,ali in alis.items(): alis[idx] = t*ali # warning, inpace modification of the alis ! 
 			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 			average.set_attr("ptcl_repr",np)
-			average.set_attr("class_ptcl_idxs",record)
+			if len(record) > 0: average.set_attr("class_ptcl_idxs",record) # if prevents a seg fault
+			if len(exc_record) > 0: average.set_attr("exc_class_ptcl_idxs",exc_record) # if prevents a seg fault
 		return average
 		
 class EMClassAveTaskDC(EMClassAveTask):

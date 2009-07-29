@@ -100,12 +100,13 @@ class E2ValidateMed():
 		if self.plot3d == None:
 			self.__init_plot3d()
 
+		get_application().show_specific(self.plot3d)
 		self.plot3d.set_Vals(vals)
 		self.plot3d.set_Rotations(rotList)
 		self.plot3d.set_Probe(b)
 		self.plot3d.set_data(data,"Rotation Angles with Z Score")
 		self.plot3d.set_data(initPoint, "Original Probe", shape = "Cube")
-		get_application().show_specific(self.plot3d)
+		
 
 if __name__ == '__main__':
 	from emapplication import EMStandAloneApplication

@@ -280,7 +280,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 		ColumnGraphics.__init__(self)
 		
 		self.eulers = [] # will eventually store Transform objects
-		self.points = [] # will eventually store the points on the asymmetric unit
+		#self.points = [] # will eventually store the points on the asymmetric unit
 		self.point_colors = [] # will eventually store colors for the different points
 		self.cam = Camera2(self) # Stores the camera position
 		#self.cam.allow_phi_rotations = False

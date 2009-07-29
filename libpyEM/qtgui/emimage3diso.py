@@ -465,7 +465,8 @@ class EMIsoInspector(QtGui.QWidget):
 		print "Use the Browse button to update the mrc file"
 
 	def on_mrc_browse(self): #if enable_browse, added by muthu
-		self.mrcfileName = QtGui.QFileDialog.getOpenFileName(self, "open file", "/home", "Text files (*.mrc)")
+		import os
+		self.mrcfileName = QtGui.QFileDialog.getOpenFileName(self, "open file", os.getcwd(), "Text files (*.mrc)")
 		if (self.mrcfileName == ""): return
 		mrcData = EMData(str(self.mrcfileName))
 		self.target().set_data(mrcData)

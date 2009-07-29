@@ -702,7 +702,8 @@ class EMPDBInspector(EM3DInspector):
 		print "Use the Browse button to update the pdb file"
 
 	def on_browse(self):
-		self.fileName = QtGui.QFileDialog.getOpenFileName(self, "open file", "/home", "Text files (*.pdb)")
+		import os
+		self.fileName = QtGui.QFileDialog.getOpenFileName(self, "open file", os.getcwd(), "Text files (*.pdb)")
 		if (self.fileName == ""): return
 		self.target().set_current_text(str(self.fileName)) #self.target().text and self.text are what the user sees. 
 		self.text.setText(self.fileName) #if self.text changes, then self.fName becomes self.text and the image regenerates	

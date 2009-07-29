@@ -91,7 +91,11 @@ class EMPreferencesTask(WorkFlowTask):
 		self.form.qt_widget.resize(*self.preferred_size)
 		self.form.setWindowTitle(self.window_title)
 		get_application().show_specific(self.form)
-		self.make_form_connections()
+		
+		from PyQt4 import QtCore
+		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_ok"),self.on_form_ok)
+		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
+		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_close"),self.on_form_close)
 		
 	def write_db_entries(self,params):
 		HOMEDB.open_dict("display_preferences")
