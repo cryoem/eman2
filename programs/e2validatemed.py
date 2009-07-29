@@ -86,14 +86,15 @@ class E2ValidateMed():
 
 		try:
 			f = open(pdb_file)
-			print "her"
 			f.close()
 		except IOError:	
 			print "Sorry, this pdb is only in temporary memory. Please write the transform to the hard drive to validate."
 			return
 
 		vals, rotList, b, data, initPoint = self.fh_stat.gen_data(mrc_file, pdb_file, trans, iso_thresh)
-		#get_application().close_specific(self.plot3d)
+
+		if self.plot3d == None:	get_application().close_specific(self.plot3d)
+
 
 		self.plot3d = None
 
@@ -105,8 +106,7 @@ class E2ValidateMed():
 		self.plot3d.set_Rotations(rotList)
 		self.plot3d.set_Probe(b)
 		self.plot3d.set_data(data,"Rotation Angles with Z Score")
-		self.plot3d.set_data(initPoint, "Original Probe", shape = "Cube")
-		
+		self.plot3d.set_data(initPoint, "Original Probe",shape="Cube")
 
 if __name__ == '__main__':
 	from emapplication import EMStandAloneApplication

@@ -52,13 +52,13 @@ from PyQt4.QtCore import QTimer
 from time import *
 import copy
 
-from emglobjects import EMImage3DGUIModule, Camera2,get_default_gl_colors,EMViewportDepthTools2,get_RGB_tab,get_gl_lights_vector,draw_volume_bounds,init_glut,get_default_gl_colors
+from emglobjects import EMImage3DGUIModule, Camera2,get_default_gl_colors,EMViewportDepthTools2,get_RGB_tab,get_gl_lights_vector,draw_volume_bounds,get_default_gl_colors,init_glut
 from emlights import *
 from emimageutil import EMTransformPanel
 
 MAG_INCREMENT_FACTOR = 1.1
 
-	
+
 class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
 		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
@@ -114,9 +114,9 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		if self.font_renderer == None:
 			self.font_renderer = get_3d_font_renderer()
 #<<<<<<< emplot3d.py
-			self.font_renderer.set_face_size(self.font_size)
-			self.font_renderer.set_depth(12)
-			self.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
+#			self.font_renderer.set_face_size(self.font_size)
+#			self.font_renderer.set_depth(12)
+#			self.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
 #=======
 			self.font_renderer.set_face_size(self.font_size)
 			self.font_renderer.set_depth(self.font_depth)
@@ -374,7 +374,8 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		self.using_global_theme = False
 
 	def render(self): #######
-
+		self.gl_widget.makeCurrent()
+		init_glut()
 		if self.font_renderer == None:
 			self.init_font_renderer()
 		#if (not isinstance(self.data,EMData)): return
@@ -416,6 +417,7 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 			glEndList()
 		
 		if ( self.draw_dl == 0 ):
+			
 			self.draw_dl=glGenLists(1)
 				
 			glNewList(self.draw_dl,GL_COMPILE)
@@ -424,6 +426,7 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 			glEndList(self.draw_dl)
 			
 		glCallList(self.draw_dl)
+			
 		
 		if self.draw_data_cube: self.draw_cube()
 		
@@ -455,7 +458,7 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		Will do a scatter plot using the available data
 		If any data is 2D it will simply ignore it
 		'''
-		init_glut()
+		
 	
 		minx,miny,minz,maxx,maxy,maxz = None,None,None,None,None,None
 		mins = [None,None,None]
@@ -514,7 +517,10 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 					if (self.data_based_coloring and (w!=None)):
 						color = self.get_data_color(w[i], key)
 					elif not self.using_global_theme:
-						color = self.get_color_interp(self.axis_colors[key],(x[i]-mn[0])/float(mx[0]-mn[0]), (y[i]-mn[1])/float(mx[1]-mn[1]),(z[i]-mn[2])/float(mx[2]-mn[2]))				
+						if len(x) == 1:
+							color = self.get_color_interp(self.axis_colors[key],1,1,1)
+						else:
+							color = self.get_color_interp(self.axis_colors[key],(x[i]-mn[0])/float(mx[0]-mn[0]), (y[i]-mn[1])/float(mx[1]-mn[1]),(z[i]-mn[2])/float(mx[2]-mn[2]))
 					else:
 						color = self.get_color_interp(self.global_theme,(x[i]-minx)/float(width), (y[i]-miny)/float(height),(z[i]-minz)/float(depth))
 			
