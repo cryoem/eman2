@@ -1472,6 +1472,8 @@ The basic design of EMAN Processors: <br>\
 					TypeDict d;
 					d.put("scale", EMObject::FLOAT, "The amount by which to scale" );
 					d.put("clip", EMObject::INT, "The length of each output dimension. Non sophisticated, output dimensions can't be different" );
+					/**d.put("clipx", EMObject::INT, "The length of the output x dimension. Exclusive of the clip.");
+					*/
 					return d;
 				}
 

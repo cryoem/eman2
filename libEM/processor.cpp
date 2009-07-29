@@ -8121,13 +8121,33 @@ EMData* IntTranslateProcessor::process(const EMData* const image) {
 
 
 void ScaleTransformProcessor::process_inplace(EMData* image) {
-	int clip = params.set_default("clip",0);
-	if (clip < 0) throw InvalidParameterException("The clip parameter must be greater than 0"); // If it's zero it's not used
-	float scale = params.set_default("scale",0.0f);
-	if (scale <= 0.0f) throw InvalidParameterException("The scale parameter must be greater than 0");
 	int ndim = image->get_ndim();
 	if (ndim != 2 && ndim != 3) throw UnexpectedBehaviorException("The Scale Transform processors only works for 2D and 3D images");
 
+	if ( image->get_xsize() != image->get_ysize()) {
+		throw ImageDimensionException("x size and y size of image do not match. This processor only works for uniformly sized data");
+	}
+	if ( ndim == 3 ) {
+		if ( image->get_xsize() != image->get_zsize()) {
+		throw ImageDimensionException("x size and z size of image do not match. This processor only works for uniformly sized data");
+		}
+	}
+	
+	float scale = params.set_default("scale",0.0f);
+	if (scale <= 0.0f) throw InvalidParameterException("The scale parameter must be greater than 0");
+	
+	int clip = 0;
+	
+	if(params.has_key("clip"))
+	{
+		clip = params["clip"]; 
+		if (clip < 0) throw InvalidParameterException("The clip parameter must be greater than 0"); // If it's zero it's not used
+	}
+	else
+	{
+		clip = scale*image->get_xsize();
+	}
+	
 	Region r;
 	if (ndim == 3) {
 		 r = Region( (image->get_xsize()-clip)/2, (image->get_xsize()-clip)/2, (image->get_xsize()-clip)/2,clip, clip,clip);
@@ -8157,14 +8177,33 @@ void ScaleTransformProcessor::process_inplace(EMData* image) {
 }
 
 EMData* ScaleTransformProcessor::process(const EMData* const image) {
-	int clip = params.set_default("clip",0);
-	if (clip < 0) throw InvalidParameterException("The clip parameter must be greater than 0"); // If it's zero it's not used
-
-	float scale = params.set_default("scale",0.0f);
-	if (scale <= 0.0f) throw InvalidParameterException("The scale parameter must be greater than 0");
 	int ndim = image->get_ndim();
 	if (ndim != 2 && ndim != 3) throw UnexpectedBehaviorException("The Scale Transform processors only works for 2D and 3D images");
 
+	if ( image->get_xsize() != image->get_ysize()) {
+		throw ImageDimensionException("x size and y size of image do not match. This processor only works for uniformly sized data");
+	}
+	if ( ndim == 3 ) {
+		if ( image->get_xsize() != image->get_zsize()) {
+		throw ImageDimensionException("x size and z size of image do not match. This processor only works for uniformly sized data");
+		}
+	}
+	
+	float scale = params.set_default("scale",0.0f);
+	if (scale <= 0.0f) throw InvalidParameterException("The scale parameter must be greater than 0");
+	
+	int clip = 0;
+	
+	if(params.has_key("clip"))
+	{
+		clip = params["clip"]; 
+		if (clip < 0) throw InvalidParameterException("The clip parameter must be greater than 0"); // If it's zero it's not used
+	}
+	else
+	{
+		clip = scale*image->get_xsize();
+	}
+	
 	Region r;
 	if (ndim == 3) {
 		 r = Region( (image->get_xsize()-clip)/2, (image->get_xsize()-clip)/2, (image->get_xsize()-clip)/2,clip, clip,clip);
