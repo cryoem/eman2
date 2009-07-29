@@ -373,8 +373,8 @@ class EMBox:
 			if norm != None:
 				self.image.process_inplace(norm)
 				
-			self.image.set_attr("src_coord",[self.x,self.y])
-			self.image.set_attr("src_image",image_name)
+			self.image.set_attr("ptcl_source_coord",[self.x,self.y])
+			self.image.set_attr("ptcl_source_image",image_name)
 			
 		return self.image
 	

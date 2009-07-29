@@ -8123,7 +8123,6 @@ EMData* IntTranslateProcessor::process(const EMData* const image) {
 void ScaleTransformProcessor::process_inplace(EMData* image) {
 	int clip = params.set_default("clip",0);
 	if (clip < 0) throw InvalidParameterException("The clip parameter must be greater than 0"); // If it's zero it's not used
-
 	float scale = params.set_default("scale",0.0f);
 	if (scale <= 0.0f) throw InvalidParameterException("The scale parameter must be greater than 0");
 	int ndim = image->get_ndim();

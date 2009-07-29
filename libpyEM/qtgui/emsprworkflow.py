@@ -2006,7 +2006,19 @@ class E2BoxerTask(ParticleWorkFlowTask):
 			self.header_cache = {}
 			self.translation_cache = {}
 			self.project_dict = project_dict
-
+			data_dict = EMProjectDataDict(self.project_dict)
+			particle_names = data_dict.get_names()
+			
+			# cache everything at the start, it's the most efficient approach, in this strategy
+			for name in particle_names:
+				a = EMData()
+				a.read_image(name,0,True) # header only
+				d = a.get_attr_dict()
+				if d.has_key("ptcl_source_image"):
+					file_name = d["ptcl_source_image"]
+					self.header_cache[name] = d
+					self.translation_cache[file_name] = name
+			
 		def get_num_particles_project(self,file_name):
 			'''
 			Get the particles in the project that are associated with a specific file name
