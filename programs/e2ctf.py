@@ -360,7 +360,6 @@ def pspec_and_ctf_fit(options,debug=False):
 	filename,EMAN2CTF,im_1d,bg_1d,im_2d,bg_2d,qual"""
 	global logid
 	img_sets=[]
-
 	db_parms=db_open_dict("bdb:e2ctf.parms")
 	db_im2d=db_open_dict("bdb:e2ctf.im2d")
 	db_bg2d=db_open_dict("bdb:e2ctf.bg2d")

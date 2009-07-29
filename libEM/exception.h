@@ -289,6 +289,7 @@ namespace EMAN {
 		const char *name() const { return "InvalidValueException"; }
 
 	};
+
 #define InvalidValueException(val, desc) \
  _InvalidValueException(val, __FILE__, __LINE__, desc)
 
