@@ -836,6 +836,9 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 			self.inspector=EMPlot3DInspector(self)
 		return self.inspector
 
+	def runTransform (self, new_pdb_file): #added by Muthu
+		self.emit(QtCore.SIGNAL("view_transform"), str(new_pdb_file))
+
 
 
 class EMPlot3DInspector(QtGui.QWidget,EMLightsInspectorBase):       ###########
@@ -1186,18 +1189,30 @@ class EMPlot3DInspector(QtGui.QWidget,EMLightsInspectorBase):       ###########
 	
 	def pTransform(self, i):	
 		self.b = self.target().get_Probe()
+		c = self.b.copy()
+
 		self.rotList = self.target().get_Rotations()
 
 		self.TransformNumber = int(self.tNum.text())
 		t2 = Transform(self.rotList[self.TransformNumber].get_params("eman"))
-		self.b.right_transform(t2)
-		self.b.save_to_pdb("%s.pdb"%str(self.TransformNumber))
-		self.fileName.setText("%s.pdb"%str(self.TransformNumber))
+
+		c.right_transform(t2)
+		c.save_to_pdb("%s t.pdb"%str(self.TransformNumber))
+		self.fileName.setText("%s t.pdb"%str(self.TransformNumber))
 		#self.target().full_refresh()
 		#self.target().updateGL()
 
 	def vTransform(self, i):	
-		print "This function is not ready yet"
+		self.b = self.target().get_Probe()
+		d = self.b.copy()
+		self.rotList = self.target().get_Rotations()
+		self.TransformNumber = int(self.tNum.text())
+		t2 = Transform(self.rotList[self.TransformNumber].get_params("eman"))
+		d.right_transform(t2)
+		d.save_to_pdb("%s t.pdb"%str(self.TransformNumber))
+		new_pdb_file = "%s t.pdb"%str(self.TransformNumber)
+
+		self.target().runTransform(new_pdb_file)
 		#self.target().full_refresh()
 		#self.target().updateGL()
 	

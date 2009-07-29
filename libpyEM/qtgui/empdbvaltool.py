@@ -35,6 +35,7 @@ from EMAN2 import PDBReader
 
 from empdbviewer import *
 from emimage3diso import *
+import sys
 
 
 class EMPDBValTool(EM3DModule):
@@ -74,11 +75,13 @@ class EMPDBValTool(EM3DModule):
 			self.__set_module_contexts(self.iso_module)
 
 	
-	def set_pdb_file(self,pdb_file):
+	def set_pdb_file(self,pdb_file, shouldDelete=False):
 		self.current_pdb = pdb_file
+		print self.current_pdb
 		if self.pdb_module == None:
 			self.__init_pdb_module()
 		self.pdb_module.set_current_text(pdb_file)
+		if shouldDelete: self.pdb_module.delete_pdb(pdb_file)
 
 		
 	def set_iso_file(self,file_name):
@@ -124,6 +127,7 @@ class EMPDBValTool(EM3DModule):
 	def run_validate(self):
 		val1 = int(self.get_inspector().text1.text())
 		val2 = float(self.get_inspector().text2.text())
+
 		self.emit(QtCore.SIGNAL("run_validate"), str(self.current_mrc), str(self.current_pdb), val1, val2)
 
 class EMPDBValToolInspector(EM3DInspector):
@@ -196,23 +200,26 @@ class EMPDBValToolInspector(EM3DInspector):
 		if (str(self.text1.text()) == ""): self.text1.setText("20") #default
 		if (str(self.text2.text()) == ""): self.text2.setText("5.0") #default
 
-		print self.target().current_mrc
-		print self.target().current_pdb
-		print str(self.text1.text())
-		print str(self.text2.text())
+		#print self.target().current_mrc
+		#print self.target().current_pdb
+		#print str(self.text1.text())
+		#print str(self.text2.text())
 
-		if ((str(self.target().current_mrc)!= "") and (str(self.target().current_pdb)!= "")): 
+		if ((str(self.target().current_mrc) != "") and (str(self.target().current_pdb)!= "")): 
 			self.target().run_validate()
-			print "This function is not ready yet."
-	
+		if (str(self.target().current_mrc) == ""):
+			print "Please properly load an mrc file"
+		if (str(self.target().current_pdb) == ""):
+			print "Please properly load a pdb file"
+
 if __name__ == '__main__':
 	from emapplication import EMStandAloneApplication
 	em_app = EMStandAloneApplication()
 	window = EMPDBValTool()
 	em_app.show()
 
-	#window.set_pdb_file("fh-solution-0-1UF2-T.pdb")
-	#window.set_iso_file("rdv-target2.mrc")
+	window.set_pdb_file("fh-solution-0-1UF2-T.pdb")
+	window.set_iso_file("rdv-target2.mrc")
 
 	em_app.execute()
 

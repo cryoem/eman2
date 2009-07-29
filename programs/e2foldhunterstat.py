@@ -367,7 +367,8 @@ class E2FoldHunterStat:
 		rotData2.append(az)
 		rotData2.append(phi)
 		rotData2.append(dist)
-		return vals, rotList, b, rotData
+		b = a.copy()
+		return vals, rotList, a, data, initPoint
 
 
 if __name__ == '__main__':

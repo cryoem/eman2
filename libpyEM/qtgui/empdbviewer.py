@@ -33,6 +33,7 @@
 from em3dmodule import *
 from EMAN2 import PDBReader
 import sys
+import os
 
 
 class AlaRenderer:
@@ -457,12 +458,21 @@ class EMPDBViewer(EM3DModule):
 		self.side_chain_renderer["TYR"] = TyrRenderer()
 		self.side_chain_renderer["VAL"] = ValRenderer()
 		
+		self.pdb_delete = False
+		self.pdbFile_to_delete = None
+
 	def current_text(self): return self.text
 	
 	def set_current_text(self,text):
 		self.text = text
 		self.get_inspector().text.setText(self.text)
+		self.updateGL()
 	
+	def delete_pdb(self, pdb_file_delete):
+		self.pdb_delete = True
+		self.pdbFile_to_delete = pdb_file_delete
+		return
+		
 	def get_inspector(self):
 		if self.inspector == None:
 			self.inspector = EMPDBInspector(self)
@@ -535,6 +545,12 @@ class EMPDBViewer(EM3DModule):
 			self.dl = None
 
 
+		if self.pdb_delete: 
+			os.remove(str(self.pdbFile_to_delete))
+			print self.pdbFile_to_delete
+			self.pdb_delete = False
+
+
 	def makeStick (self, res, index1, index2):
 		n = [0,0,0]
 		p = [0,0,0]
@@ -573,6 +589,7 @@ class EMPDBViewer(EM3DModule):
 		resName = []
 		amino = []
 		currentRes = 1
+
 
     		for i in range(0, len(point_x)):
         		if (point_resNum[i]==currentRes):
