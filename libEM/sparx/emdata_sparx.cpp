@@ -3411,7 +3411,6 @@ vector<float> EMData::max_search() {
 	if (dim == 1) {
 		float max = -1e20f;
 		int index = -1;
-		float temp;
 		for (int i=0; i<nx; i++) {
 			if (buf(i)>max) {
 				max = buf(i);
