@@ -11730,7 +11730,7 @@ def var_mpi(files, outdir, fl, aa, radccc, writelp, writestack, frepa = None, pc
 			if(fl > 0.0):
 				img = filt_tanl( img, fl, aa )
 				if writestack: img.write_image( outdir+"/filtered%04d.hdf"%(ifile), i )
-			if(total_img%2 == 0):	Util.add_img(avg1, img)
+			if(total_img%2 == 0):	Util.addf_img(avg1, img)
 			else:			Util.add_img(avg2, img)
 			total_img += 1
 	reduce_EMData_to_root(avg1, myid)
@@ -12234,7 +12234,7 @@ def incvar_mpi(files, outdir, fl, fh, radccc, writelp, writestack):
 		all_var.write_image( output, 0 )
 """
 
-def factcoords_vol( vol_stacks, avgvol_stack, eigvol_stack, prefix, rad = -1, neigvol = -1, of = "hdf", fl=0.0, aa=0.0, MPI=False):
+def factcoords_vol( vol_stacks, avgvol_stack, eigvol_stack, prefix, rad = -1, neigvol = -1, fl=0.0, aa=0.0, MPI=False):
 	from utilities import get_im, model_circle, model_blank
 
 	if MPI:
@@ -12246,16 +12246,8 @@ def factcoords_vol( vol_stacks, avgvol_stack, eigvol_stack, prefix, rad = -1, ne
 		myid = 0
 
 
-        if of=="txt":
-		if MPI and ncpu > 1:
-			foutput = open( "%s%04d.txt" %(prefix,myid), "w" )
-		else:
-			foutput = open( prefix+".txt", "w" )
-	else:
-		if MPI and ncpu > 1:
-			foutput = "%s%04d.hdf" % (prefix,myid)
-		else:
-			foutput = prefix + ".hdf" 
+        if( myid == 0 ):
+		foutput = open( prefix+".txt", "w" )
 
 	
 	if(neigvol < 0):
@@ -12275,33 +12267,19 @@ def factcoords_vol( vol_stacks, avgvol_stack, eigvol_stack, prefix, rad = -1, ne
 	files = file_set( vol_stacks )
 	vol_bgn,vol_end = MPI_start_end( files.nimg(), ncpu, myid )
 
+	d = []
 	for i in xrange( vol_bgn, vol_end ):
 		fname,imgid = files.get( i )
 		exp_vol = get_im( fname, imgid )
 		if(avgvol_stack != None):  
 			Util.sub_img(exp_vol, avgvol)
 
-		if of=="hdf":
-			img = model_blank( len(eigvols) )
-
 		for j in xrange( neigvol ):
-			d = exp_vol.cmp( "dot", eigvols[j], {"negative":0, "mask":m} )
+			d.append( exp_vol.cmp( "dot", eigvols[j], {"negative":0, "mask":m} ) )
 
-			if of=="hdf":
-				img.set_value_at( j, 0, 0, d )
-			else:
-				foutput.write( "    %e" % d )
-                if of=="hdf":
-			img.write_image( foutput, i )
-		else:
-			foutput.write( "    %d" % i )
-			foutput.write( "\n" )
-			foutput.flush()
 
-		if (i+1)%100==0:
-			print 'myid: ', myid, i+1, ' done'
-
-def factcoords_prj( prj_stacks, avgvol_stack, eigvol_stack, prefix, rad, neigvol, of, fl=0.0, aa=0.0, MPI=False):
+"""
+def factcoords_prj( prj_stacks, avgvol_stack, eigvol_stack, prefix, rad, neigvol, fl=0.0, aa=0.0, MPI=False):
 	from utilities    import get_im, get_image, model_circle, model_blank, get_params_proj
 	from projection   import prgs, prep_vol
 	from filter       import filt_ctf, filt_tanl
@@ -12317,13 +12295,11 @@ def factcoords_prj( prj_stacks, avgvol_stack, eigvol_stack, prefix, rad, neigvol
 		myid = 0
 
         if(myid == 0):
-		if of=="txt":   foutput = open( prefix+".txt", "w" )
-		else:           foutput = prefix + ".hdf"
+		foutput = open( prefix+".txt", "w" )
 
 	neigvol = 1
 	nprj = 400000*neigvol
 	img_bgn, img_end = MPI_start_end( nprj, ncpu, myid )
-	#ltot = -1
 	d = []
 	d = range(img_bgn, img_end)
 	for i in xrange(len(d)):  d[i] = float(d[i])
@@ -12335,22 +12311,22 @@ def factcoords_prj( prj_stacks, avgvol_stack, eigvol_stack, prefix, rad, neigvol
 			base = 0
 			for iq in xrange( ncpu ):
 				if(iq == 0):
-					ltot = spill_out(ltot, base, d, neigvol, of, foutput)
+					ltot = spill_out(ltot, base, d, neigvol, foutput)
 				else:
 					lend = mpi_recv(1, MPI_INT, iq, MPI_TAG_UB, MPI_COMM_WORLD)
 					lend = int(lend[0])
 					d = mpi_recv(lend, MPI_FLOAT, iq, MPI_TAG_UB, MPI_COMM_WORLD)
-					ltot = spill_out(ltot, base, d, neigvol, of, foutput)
+					ltot = spill_out(ltot, base, d, neigvol, foutput)
 				base += len(d)/neigvol
 		else:
 			mpi_send([len(d)], 1, MPI_INT, 0, MPI_TAG_UB, MPI_COMM_WORLD)
 			mpi_send(d, len(d), MPI_FLOAT, 0, MPI_TAG_UB, MPI_COMM_WORLD)
 	else:
 		ltot = 0
-		ltot = spill_out(ltot, base, d, neigvol, of, foutput)
+		ltot = spill_out(ltot, base, d, neigvol, foutput)
 
 """
-def factcoords_prj( prj_stacks, avgvol_stack, eigvol_stack, prefix, rad, neigvol, of, fl=0.0, aa=0.0, MPI=False):
+def factcoords_prj( prj_stacks, avgvol_stack, eigvol_stack, prefix, rad, neigvol, fl=0.0, aa=0.0, MPI=False):
 	from utilities    import get_im, get_image, model_circle, model_blank, get_params_proj
 	from projection   import prgs, prep_vol
 	from filter       import filt_ctf, filt_tanl
@@ -12366,8 +12342,7 @@ def factcoords_prj( prj_stacks, avgvol_stack, eigvol_stack, prefix, rad, neigvol
 		myid = 0
 
         if(myid == 0):
-		if of=="txt":   foutput = open( prefix+".txt", "w" )
-		else:           foutput = prefix + ".hdf"
+		foutput = open( prefix+".txt", "w" )
 
 	nx = get_im( prj_stacks[0] ).get_xsize()
 	ny = nx
@@ -12419,40 +12394,30 @@ def factcoords_prj( prj_stacks, avgvol_stack, eigvol_stack, prefix, rad, neigvol
 			base = 0
 			for iq in xrange( ncpu ):
 				if(iq == 0):
-					ltot = spill_out(ltot, base, d, neigvol, of, foutput)
+					ltot = spill_out(ltot, base, d, neigvol, foutput)
 				else:
 					lend = mpi_recv(1, MPI_INT, iq, MPI_TAG_UB, MPI_COMM_WORLD)
 					lend = int(lend[0])
 					d = mpi_recv(lend, MPI_FLOAT, iq, MPI_TAG_UB, MPI_COMM_WORLD)
-					ltot = spill_out(ltot, base, d, neigvol, of, foutput)
+					ltot = spill_out(ltot, base, d, neigvol, foutput)
 				base += len(d)/neigvol
 		else:
 			mpi_send([len(d)], 1, MPI_INT, 0, MPI_TAG_UB, MPI_COMM_WORLD)
 			mpi_send(d, len(d), MPI_FLOAT, 0, MPI_TAG_UB, MPI_COMM_WORLD)
 	else:
 		ltot = 0
-		ltot = spill_out(ltot, base, d, neigvol, of, foutput)
-"""
-def spill_out(ltot, base, d, neigvol, of, foutput):
-	if of=="hdf":
-		from utilities import model_blank
-		img = model_blank(neigvol+1)
+		ltot = spill_out(ltot, base, d, neigvol, foutput)
+
+def spill_out(ltot, base, d, neigvol, foutput):
 	loc = 0
 	for i in xrange(len(d)//neigvol):
 		for j in xrange( neigvol):
-			if of=="hdf":
-				img.set_value_at( j, 0, 0, float(d[loc]) )
-			else:
-				foutput.write( "    %e" % d[loc] )
+			foutput.write( "    %e" % d[loc] )
 			ltot += 1
 			loc += 1
-		if of=="hdf":
-			img.set_value_at( neigvol, 0, 0, float(i+base) )
-			img.write_image( foutput, i+base )
-		else:
-			foutput.write( "    %d" % (i+base) )
-			foutput.write( "\n" )
-	if(of != "hdf"):  foutput.flush()
+		foutput.write( "    %d" % (i+base) )
+		foutput.write( "\n" )
+	foutput.flush()
 	return  ltot
 
 
