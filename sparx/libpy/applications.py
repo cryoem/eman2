@@ -12387,6 +12387,7 @@ def factcoords_prj( prj_stacks, avgvol_stack, eigvol_stack, prefix, rad, neigvol
 	d = []
 	for i in xrange( img_bgn, img_end ):
 		fname,imgid = files.get(i)
+		if(i%1000 == 0):  print  "  ",myid,"   ",i
 		exp_prj = get_im( fname, imgid )
 
 		phi,theta,psi,s2x,s2y = get_params_proj(exp_prj)
