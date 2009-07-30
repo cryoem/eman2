@@ -592,6 +592,9 @@ def powspec_with_bg(stackfile,radius=0,edgenorm=True,oversamp=1):
 			im1.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
 		
 		im2=im1.copy()
+
+#		print im2.get_size(), im1.get_size()
+
 		im1*=mask1
 		imf=im1.do_fft()
 		imf.ri2inten()
