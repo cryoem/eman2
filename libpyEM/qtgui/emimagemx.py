@@ -2667,10 +2667,19 @@ class EMImageInspectorMX(QtGui.QWidget):
 		self.brts.setRange(-1.0,1.0)
 		self.conts.setRange(0,1.0)
 		self.update_brightness_contrast()
-
+e = EMData()
 
 class EMLightWeightParticleCache:
-	def __init__(self,data,cache_max=1024):
+	def from_file(file_name):
+		
+		n = EMUtil.get_image_count(file_name)
+		data = [[file_name,i,[]] for i in xrange(n)]
+		
+		return EMLightWeightParticleCache(data,len(data))
+		
+	from_file = staticmethod(from_file)
+	
+	def __init__(self,data,cache_max=2048):
 		'''
 		@param data list of lists - lists in in the list are of the form [image_name, idx, [list of functions that take an EMData as the first argument]]
 		'''
@@ -2704,6 +2713,14 @@ class EMLightWeightParticleCache:
 	
 	def get_image_header(self,idx):
 		return self[idx].get_attr_dict()
+		#adj_idx = idx-self.cache_start
+		#image = self.cache[adj_idx]
+		#if image == None:
+		#	data = self.data[idx]
+			
+		#	e.read_image(data[0],data[1],True)
+		#	return e.get_attr_dict()
+		#else:image.get_attr_dict()
 	
 	def get_image_keys(self):
 		if self.header_keys == None:
@@ -2730,8 +2747,9 @@ class EMLightWeightParticleCache:
 			
 	
 	def __getitem__(self,idx):
-		if idx < self.cache_start or idx >= self.cache_start+self.cache_max:
-			self.refocus_cahe(idx)
+		if idx < self.cache_start or idx > self.cache_start+self.cache_max:
+			self.refocus_cache(idx)
+			d
 			
 		adj_idx = idx-self.cache_start
 		image = self.cache[adj_idx]
