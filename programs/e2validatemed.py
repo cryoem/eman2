@@ -32,7 +32,7 @@
 
 from EMAN2 import *
 from PyQt4 import QtCore
-from e2foldhunterstat import *
+from emfoldhunterstat import *
 from emapplication import EMStandAloneApplication,get_application
 from empdbvaltool import EMPDBValTool
 from emplot3d import *
