@@ -4637,8 +4637,8 @@ def k_means_SA_T0_MPI(im_M, mask, K, rand_seed, CTF, F, myid, main_node, N_start
 	
 	if CTF:
 		Cls_ctf2    = {}
-		len_ctm	    = len(ctf2[0])
-			
+		len_ctm	    = len(ctf2[N_start])
+
 	# Init the cluster by an image empty
 	buf.to_zero()
 	for k in xrange(K):
@@ -4676,13 +4676,13 @@ def k_means_SA_T0_MPI(im_M, mask, K, rand_seed, CTF, F, myid, main_node, N_start
 	FLAG_EXIT = FLAG_EXIT.tolist()[0]
 	mpi_barrier(MPI_COMM_WORLD)
 	if FLAG_EXIT: sys.exit()
-	print 'flag ok'
+
 	# [sync] waiting assignment
 	assign = mpi_bcast(assign, N, MPI_INT, main_node, MPI_COMM_WORLD)
 	assign = assign.tolist()     # convert array gave by MPI to list
 	Cls['n'] = mpi_bcast(Cls['n'], K, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 	Cls['n'] = Cls['n'].tolist() # convert array gave by MPI to list
-	print 'asg ok'
+
 	## Calculate averages, if CTF: ave = S CTF.F / S CTF**2
 	if CTF:
 		# first init ctf2
@@ -4699,12 +4699,9 @@ def k_means_SA_T0_MPI(im_M, mask, K, rand_seed, CTF, F, myid, main_node, N_start
 		# sync
 		mpi_barrier(MPI_COMM_WORLD)
 		for k in xrange(K):
-			print k
 			Cls_ctf2[k] = mpi_reduce(Cls_ctf2[k], len_ctm, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 			Cls_ctf2[k] = mpi_bcast(Cls_ctf2[k],  len_ctm, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 			Cls_ctf2[k] = Cls_ctf2[k].tolist()    # convert array gave by MPI to list
-			
-			
 			reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
 			bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
 
@@ -4724,9 +4721,6 @@ def k_means_SA_T0_MPI(im_M, mask, K, rand_seed, CTF, F, myid, main_node, N_start
 			bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
 			Cls['ave'][k] = Util.mult_scalar(Cls['ave'][k], 1.0/float(Cls['n'][k]))
 
-	print 'averages ok'
-	sys.exit()
-	print 'start clustering'
 	## Clustering		
 	th = int(float(N)*0.8)
 	T0 = -1
@@ -4782,7 +4776,7 @@ def k_means_SA_T0_MPI(im_M, mask, K, rand_seed, CTF, F, myid, main_node, N_start
 
 	# sync
 	mpi_barrier(MPI_COMM_WORLD)
-	print 'done'
+
 	# if not found, set to the max value
 	if T0 == -1: T0 = Tm
 	
