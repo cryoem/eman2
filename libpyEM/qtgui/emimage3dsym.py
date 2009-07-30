@@ -195,7 +195,6 @@ class EulerData:
 	def __len__(self): return len(self.data)
 	
 	def set_data(self,data):
-		t = time()
 		self.data = data
 		self.eulers = []
 		for i in xrange(len(self.data)):
@@ -210,54 +209,34 @@ class EulerData:
 		
 		# get the first header and get any items that can be cast to a float
 		header = self.data[0].get_attr_dict()
-		print "up to here took",time()-t
 		self.score_options = []
 		for key,value in header.items():
 			try:
+				# make sure we can cast the value to a float, that way in can become the height of the cylinder
 				float(value)
 				self.score_options.append(key)
 			except: pass
-	
-#		if len(data) == 1:
-#			self.score_options = options
-#		else:
-#			self.score_options = []
-#			for key in options:
-#				success = True
-#				for i in range(1,len(self.data)):
-#					if hasattr(self.data,"get_image_header"):
-#						header = self.data.get_image_header(i)
-#					else:
-#						header = self.data[i].get_attr_dict()
-#					try:
-#						value = header[key]
-#						float(value)
-#					except:
-#						success = False
-#						break
-#					
-#					success = True
-#					break
-#					
-#				if success:
-#					self.score_options.append(key)
 		
 		self.score_options.append("None")
 		self.score_options.sort()
 		
-		print "set data took",time()-t
 	def get_eulers(self): return self.eulers
 	
 	def get_score_options(self): return self.score_options
 	
 	def get_score_list(self,key,normalize=True,log_scale=False):
 		l = []
-		for d in self.data: 
+		for i in range(len(self.data)):
+			if hasattr(self.data,"get_image_header"):
+				d = self.data.get_image_header(i)
+			else:
+				d = self.data[i]
+			 
 			if log_scale:
-				try: l.append(log(float(d.get_attr(key))))
+				try: l.append(log(float(d[key])))
 				except: l.append(0)
 			else:
-				l.append(float(d.get_attr(key)))
+				l.append(float(d[key]))
 		if normalize: return self.normalize_float_list(l)
 		else: return l
 	
@@ -390,11 +369,11 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 		else: self.set_column_scores(None)
 		self.get_inspector().set_score_options(self.euler_data.get_score_options(),default)
 		self.force_update = True
-		  
 		if self.image_display_window and self.displayed_image_number and len(self.euler_data) > self.displayed_image_number:
 			self.image_display_window.set_data(self.euler_data[self.displayed_image_number],"Data")
 			self.image_display_window.updateGL()
 		else: self.displayed_image_number = None # blanket response
+		
 	def set_column_score_key(self,key):
 		if key == "None":
 			self.set_column_scores(None)
@@ -1711,13 +1690,13 @@ class EMSymInspector(QtGui.QWidget):
 			QtCore.QObject.connect(self.cylinder_log,QtCore.SIGNAL("stateChanged(int)"),self.cylinder_log_clicked)
 		else:
 			self.score_options.clear()
-
 			idx = 0
 			for i,k in enumerate(options): 
 				self.score_options.addItem(k)
 				if k == default: idx = i
 			self.score_options.setCurrentIndex(idx)
 		self.busy = False
+		
 		
 	def cylinder_log_clicked(self,val):
 		self.target().set_log_scale(val)

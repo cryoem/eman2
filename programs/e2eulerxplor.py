@@ -487,7 +487,6 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 			if len(d) != 0 and len(d[dir]) != 0: self.au_data.update(d)
 
 	def check_refine_db_dir(self,dir,s1="classes",s2="class_indices",s3="cls_result",s4="threed",s5="projections"):
-		t = time()
 		names = [s1,s2,s3,s4,s5]
 		data = {}
 		data[dir] = []
@@ -521,7 +520,6 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 	
 				if not fail:
 					data[dir].append(r)
-		print "check_refine_db_dir took", time()-t
 		return data
 	
 	def set_projection_file(self,projection_file): self.projection_file = projection_file
@@ -536,7 +534,6 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 
 	
 	def au_selected(self,refine_dir,cls):
-		t = time()
 		self.refine_dir = refine_dir
 		get_application().setOverrideCursor(Qt.BusyCursor)
 		data = []
@@ -600,10 +597,8 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 		#b = [a[i].set_attr("xform.projection",eulers[i]) for i in range(len(eulers))]
 		#b = [a[i].set_attr("ptcl_repr",1) for i in range(len(eulers))]
 		
-		t1 = time()
 		self.set_emdata_list_as_data(EMLightWeightParticleCache.from_file(self.average_file),"ptcl_repr")
 		#self.set_emdata_list_as_data(EMDataListCache(self.average_file),"ptcl_repr")
-		print "set emdata as list took",time()-t1
 #		self.set_emdata_list_as_data(a,"ptcl_repr")
 		self.force_update = True
 		self.au_point_selected(self.class_idx,None)
@@ -613,7 +608,6 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 		self.previous_len = len(eulers)
 		if not self.init_lock:self.updateGL()
 		get_application().setOverrideCursor(Qt.ArrowCursor)
-		print "au_selected took",time()-t
 		
 	def __get_file_headers(self,filename):
 		headers = []
@@ -633,7 +627,6 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 		self.current_events_handler = self.events_handlers["inspect"]
 	
 	def au_point_selected(self,i,event=None):
-		t = time()
 		if i == None: 
 			if event != None and event.modifiers()&Qt.ShiftModifier:
 				if self.special_euler != None:
@@ -685,7 +678,6 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 		
 		if not self.init_lock: self.updateGL()
 		
-		print "au point selected took",time()-t
 		
 	def on_mx_view_closed(self):
 		self.proj_class_viewer = None
@@ -815,7 +807,6 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 	
 	def mx_image_selected(self,event,lc):
 #		self.arc_anim_points = None
-		t1 = time()
 		get_application().setOverrideCursor(Qt.BusyCursor)
 		if lc != None: self.sel = lc[0]
 		
@@ -832,7 +823,6 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 			
 			bdata = []
 			data = []
-			t = time()
 			for val in included:
 				bdata.append([self.particle_file,val,[ApplyAttribute("ptcl_idx",val)]])
 				
@@ -895,8 +885,6 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 			
 			self.updateGL()
 			
-			print "mx_image_selected took",time()-t1
-	
 	def check_images_in_memory(self):
 		if self.alignment_file != None:
 			if self.dx == None:
