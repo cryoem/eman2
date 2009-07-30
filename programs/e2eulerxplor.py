@@ -50,7 +50,10 @@ from libpyGLUtils2 import GLUtil
 from emsprworkflow import error
 from emanimationutil import OrientationListAnimation,Animator
 from valslider import ValSlider
+from emimagemx import EMLightWeightParticleCache
 from time import time
+
+
 def get_eulers_from(filename):
 	eulers = []
 	n = EMUtil.get_image_count(filename)
@@ -542,6 +545,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 
 	
 	def au_selected(self,refine_dir,cls):
+		t = time()
 		self.refine_dir = refine_dir
 		get_application().setOverrideCursor(Qt.BusyCursor)
 		data = []
@@ -599,13 +603,16 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 
 		self.specify_eulers(eulers)
 		from emimagemx import EMDataListCache
-		a = EMData.read_images(self.average_file)
+		#a = EMData.read_images(self.average_file)
 		#a = [test_image() for i in range(EMUtil.get_image_count(self.average_file))]
 		#print len(a),len(eulers)
 		#b = [a[i].set_attr("xform.projection",eulers[i]) for i in range(len(eulers))]
 		#b = [a[i].set_attr("ptcl_repr",1) for i in range(len(eulers))]
 		
-		self.set_emdata_list_as_data(EMDataListCache(self.average_file),"ptcl_repr")
+		t1 = time()
+		self.set_emdata_list_as_data(EMLightWeightParticleCache.from_file(self.average_file),"ptcl_repr")
+		#self.set_emdata_list_as_data(EMDataListCache(self.average_file),"ptcl_repr")
+		print "set emdata as list took",time()-t1
 #		self.set_emdata_list_as_data(a,"ptcl_repr")
 		self.force_update = True
 		self.au_point_selected(self.class_idx,None)
@@ -615,6 +622,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 		self.previous_len = len(eulers)
 		if not self.init_lock:self.updateGL()
 		get_application().setOverrideCursor(Qt.ArrowCursor)
+		print "au_selected took",time()-t
 		
 	def __get_file_headers(self,filename):
 		headers = []
@@ -840,7 +848,6 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 			for val in excluded:
 				bdata.append([self.particle_file,val,[]])
 	
-			from emimagemx import EMLightWeightParticleCache
 			data = EMLightWeightParticleCache(bdata)
 			
 			first = False

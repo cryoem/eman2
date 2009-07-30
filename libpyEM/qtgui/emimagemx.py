@@ -2749,7 +2749,6 @@ class EMLightWeightParticleCache:
 	def __getitem__(self,idx):
 		if idx < self.cache_start or idx > self.cache_start+self.cache_max:
 			self.refocus_cache(idx)
-			d
 			
 		adj_idx = idx-self.cache_start
 		image = self.cache[adj_idx]

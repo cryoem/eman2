@@ -197,7 +197,11 @@ class EulerData:
 	def set_data(self,data):
 		self.data = data
 		self.eulers = []
-		for d in self.data:
+		for i in xrange(len(self.data)):
+			if hasattr(self.data,"get_image_header"):
+				d = self.data.get_image_header(i)
+			else:
+				d = self.data[i]
 			try:
 				self.eulers.append(d["xform.projection"])
 			except:
