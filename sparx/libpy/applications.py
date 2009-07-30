@@ -12470,8 +12470,9 @@ def refvol( vollist, fsclist, output, mask ):
 # K-means main driver
 def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, trials, critname,
 		 CTF = False, F = 0, T0 = 0, MPI = False, CUDA = False, DEBUG = False, flagnorm = False):
-	from utilities 	import print_begin_msg, print_end_msg, print_msg, file_type, get_im
+	from utilities 	import print_begin_msg, print_end_msg, print_msg, file_type, get_im, model_blank
 	from statistics import k_means_criterion, k_means_export, k_means_open_im, k_means_headlog, k_means_locasg2glbasg, k_means_list_active
+	from statistics import k_means_open_txt
 	import sys
 
 	ext = file_type(stack)
@@ -12517,23 +12518,12 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 			# with BDB all node can not read the same data base in the same time
 			import os
 			for i in xrange(nb_cpu):
-				if myid == i: [im_M, mask, ctf, ctf2] = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, listID, flagnorm)
+				if myid == i: im_M, mask, ctf, ctf2 = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, listID, flagnorm)
 				mpi_barrier(MPI_COMM_WORLD)
 		elif TXT:
-			im_M = []
-			nx   = len(data[0].split().strip('\n'))
-			for line in data:
-				im = model_blank(nx)
-				line = line.split().strip('\n')
-				for i in xrange(nx):
-					val = float(val)
-					im.set_value_at_fast(i, val)
-				im_M.append(im)
-			mask = get_image(maskname)
-			ctf, ctf2 = None, None
-			
+			im_M, mask, ctf, ctf2 = k_means_open_txt(stack, maskname, N_start, N_stop, N)
 		else:
-			[im_M, mask, ctf, ctf2] = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, listID, flagnorm)
+			im_M, mask, ctf, ctf2 = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, listID, flagnorm)
 	
 		if   opt_method == 'cla':
 			[Cls, assign] = k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, [CTF, ctf, ctf2], myid, main_node, N_start, N_stop, F, T0)
@@ -12594,7 +12584,8 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		AVE  = KmeansCUDA.get_averages() # return flat images
 
 		# local to absolue index
-		N    = EMUtil.get_image_count(stack)
+		if not TXT:
+			N = EMUtil.get_image_count(stack)
 		GASG = k_means_locasg2glbasg(ASG, LUT, N)
 
 		# export data
@@ -12607,14 +12598,16 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		# end
 		print_end_msg('k-means')
 
-		## TO DO
-		# 1- trials for empty class??
-
 	else:
 		from statistics import k_means_classical, k_means_SSE
 
-		listID, N = k_means_list_active(stack)
-		[im_M, mask, ctf, ctf2] = k_means_open_im(stack, maskname, 0, N, N, CTF, listID, flagnorm)
+		if TXT:
+			N = open(stack, 'r').readlines()
+			im_M, mask, ctf, ctf2 = k_means_open_txt(stack, maskname, 0, N, N)
+
+		else:
+			listID, N = k_means_list_active(stack)
+			im_M, mask, ctf, ctf2 = k_means_open_im(stack, maskname, 0, N, N, CTF, listID, flagnorm)
 
 		if T0 == -1:
 			from development import k_means_SA_T0
@@ -12632,7 +12625,8 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 			sys.exit()
 			
 		crit = k_means_criterion(Cls, critname)
-		N = EMUtil.get_image_count(stack)
+		if not TXT:
+			N = EMUtil.get_image_count(stack)
 		glb_assign = k_means_locasg2glbasg(assign, listID, N)
 		k_means_export(Cls, crit, glb_assign, out_dir)
 

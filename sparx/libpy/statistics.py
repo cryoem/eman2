@@ -1436,6 +1436,25 @@ def k_means_list_active(stack):
 
 	return LUT, N
 
+# k_means open and prepare images from text file
+def k_means_open_txt(stack, maskname, N_start, N_stop, N):
+	from utilities import get_image, model_blank
+
+	im_M = [0] * N
+	data = open(stack, 'r').readlines()
+	nx   = len(data[0].split())
+	mask = get_image(maskname)
+	for i in xrange(N_start, N_stop):
+		im   = model_blank(nx)
+		line = data[i]
+		line = line.split()
+		for i in xrange(nx):
+			val = float(line[i])
+			im.set_value_at_fast(i, val)
+		im_M[i] = Util.compress_image_mask(im, mask)
+
+	return im_M, mask, None, None
+
 # k-means open and prepare images
 def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, listID = None, flagnorm = False):
 	from utilities     import get_params2D, get_image, get_params3D
@@ -4199,28 +4218,42 @@ def k_means_cuda_headlog(stackname, outname, method, N, K, maskname, maxit, T0, 
 def k_means_cuda_init_open_im(stack, maskname):
 	from utilities import get_image, get_im, model_blank, file_type
 
+	ext = file_type(stack)
+	if ext == 'txt': TXT = True
+	else:            TXT = False
+
 	# open mask if defined
 	if maskname != None: mask = get_image(maskname)
 	else:
 		# anyway image must be a flat image
-		im = get_im(stack, 0)
-		mask = model_blank(im.get_xsize(), im.get_ysize(), im.get_zsize())
-		mask.to_one()
-		del im
+		if TXT:
+			line = open(stack, 'r').readline()
+			nx   = len(line.split())
+			mask = model_blank(nx)
+			mask.to_one()
+		else:
+			im = get_im(stack, 0)
+			mask = model_blank(im.get_xsize(), im.get_ysize(), im.get_zsize())
+			mask.to_one()
+			del im
 
 	# get some params
-	N  = EMUtil.get_image_count(stack)
+	if TXT: N = len(open(stack, 'r').readlines())
+	else:   N = EMUtil.get_image_count(stack)
 	im = Util.compress_image_mask(mask, mask)
 	m  = im.get_xsize()
 	del im
 
 	# check if the flag active is used, in the case where k-means will run for the stability
-	image = EMData()
-	image.read_image(stack, 0, True)
-	flagactive = True
-	try:	active = image.get_attr('active')
-	except: flagactive = False
-	del image
+	if TXT:
+		flagactive = False
+	else:
+		image = EMData()
+		image.read_image(stack, 0, True)
+		flagactive = True
+		try:	active = image.get_attr('active')
+		except: flagactive = False
+		del image
 	
 	# if flag active used, prepare the list of images
 	if flagactive:
@@ -4243,9 +4276,30 @@ def k_means_cuda_init_open_im(stack, maskname):
 
 # k-means open, prepare, and load images for CUDA k-means
 def k_means_cuda_open_im(KmeansCUDA, stack, lim, mask):
-	from utilities     import get_params2D, get_params3D, get_im
+	from utilities     import get_params2D, get_params3D, get_im, file_type, model_blank
 	from fundamentals  import rot_shift2D, rot_shift3D
 	
+	ext = file_type(stack)
+	if ext == 'txt': TXT = True
+	else:            TXT = False
+
+	# to manage coord fact in text file format
+	if TXT:
+		c    = 0
+		data = open(stack, 'r').readlines()
+		nx   = len(data[0].split())
+		for line in data:
+			im   = model_blank(nx)
+			line = line.split()
+			for i in xrange(nx):
+				val = float(line[i])
+				im.set_value_at_fast(i, val)
+			im = Util.compress_image_mask(im, mask)
+			KmeansCUDA.append_flat_image(image, c)
+			c += 1
+			
+		return
+
 	# some parameters
 	image = get_im(stack, 0)
 	nx = image.get_xsize()
