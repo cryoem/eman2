@@ -70,9 +70,8 @@ class E2ValidateMed():
 		if self.em_val == None:
 			self.__init_em_val()
 			get_application().show_specific(self.em_val)
-		self.em_val.set_pdb_file(str(new_pdb_file), shouldDelete=True)
+		self.em_val.set_pdb_file(str(new_pdb_file))
 		os.remove(str(new_pdb_file))
-		print new_pdb_file
 
 	def on_plot3d_closed(self):
 		self.plot3d = None
@@ -92,14 +91,15 @@ class E2ValidateMed():
 			return
 
 		vals, rotList, b, data, initPoint = self.fh_stat.gen_data(mrc_file, pdb_file, trans, iso_thresh)
-
-		if self.plot3d == None:	get_application().close_specific(self.plot3d)
-
+	
+		if self.plot3d:	get_application().close_specific(self.plot3d)
 
 		self.plot3d = None
 
 		if self.plot3d == None:
 			self.__init_plot3d()
+
+
 
 		get_application().show_specific(self.plot3d)
 		self.plot3d.set_Vals(vals)

@@ -45,14 +45,11 @@ class EMPDBValTool(EM3DModule):
 	'''
 	def __init__(self, application=None,ensure_gl_context=True,application_control=True):
 		EM3DModule.__init__(self,application,ensure_gl_context=ensure_gl_context,application_control=application_control)
-		#self.fName = raw_input ("Enter the file name of a pdb file: ")
 		self.pdb_module = None # will eventually be a EMPDBViewer
 		self.iso_module = None # will eventuall be a EMImage3DModule
 
 		self.current_mrc = ""
 		self.current_pdb = ""
-
-		#self.shouldDelete = False
 
 		self.t = 0
 
@@ -78,14 +75,12 @@ class EMPDBValTool(EM3DModule):
 			self.__set_module_contexts(self.iso_module)
 
 	
-	def set_pdb_file(self,pdb_file, shouldDelete=False):
+	def set_pdb_file(self,pdb_file):
 		self.current_pdb = pdb_file
 		print self.current_pdb
 		if self.pdb_module == None:
 			self.__init_pdb_module()
 		self.pdb_module.set_current_text(pdb_file)
-		#self.shouldDelete = shouldDelete
-		#if shouldDelete: self.pdb_module.delete_pdb(pdb_file)
 
 
 		
@@ -187,16 +182,9 @@ class EMPDBValToolInspector(EM3DInspector):
 
 			self.addTab(self.opt_tab,"Validate Options")
 
-			#QtCore.QObject.connect(self.text1, QtCore.SIGNAL("textChanged(const QString&)"), self.trans_changed)
-			#QtCore.QObject.connect(self.text2, QtCore.SIGNAL("textChanged(const QString&)"), self.isoval_changed)
 			QtCore.QObject.connect(self.validate, QtCore.SIGNAL("clicked(bool)"), self.runValidate)
 
-	
-	#def trans_changed(self, transNum):
-		#print "The new number of transformations is: " + str(transNum)
 
-	#def isoval_changed(self,isovalNum):
-		#print "The new isosurface threshold value is: " + str(isovalNum)
 
 	def runValidate(self, i):	
 		self.target().update_pdb_file()
@@ -205,14 +193,6 @@ class EMPDBValToolInspector(EM3DInspector):
 		if (str(self.text1.text()) == ""): self.text1.setText("20") #default
 		if (str(self.text2.text()) == ""): self.text2.setText("5.0") #default
 
-		#print self.target().current_mrc
-		#print self.target().current_pdb
-		#print str(self.text1.text())
-		#print str(self.text2.text())
-
-		#if (self.target().pdb_module.pdb_delete): 
-			#print "Sorry, this pdb is only in temporary memory. Please write the transform to the hard drive to validate."			
-			#return
 		if ((str(self.target().current_mrc) != "") and (str(self.target().current_pdb)!= "")): 
 			self.target().run_validate()
 		if (str(self.target().current_mrc) == ""):

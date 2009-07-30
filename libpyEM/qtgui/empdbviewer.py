@@ -467,11 +467,7 @@ class EMPDBViewer(EM3DModule):
 		self.text = text
 		self.get_inspector().text.setText(self.text)
 		self.updateGL()
-	
-	#def delete_pdb(self, pdb_file_delete):
-		#self.pdb_delete = True
-		#self.pdbFile_to_delete = pdb_file_delete
-		#return
+
 		
 	def get_inspector(self):
 		if self.inspector == None:
@@ -707,7 +703,6 @@ class EMPDBInspector(EM3DInspector):
 		if (self.fileName == ""): return
 		self.target().set_current_text(str(self.fileName)) #self.target().text and self.text are what the user sees. 
 		self.text.setText(self.fileName) #if self.text changes, then self.fName becomes self.text and the image regenerates	
-		#self.target().pdb_delete = False
 		self.target().updateGL()
 	
 if __name__ == '__main__':

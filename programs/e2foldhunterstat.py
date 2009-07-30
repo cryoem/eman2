@@ -62,7 +62,6 @@ class E2FoldHunterStat:
 		transNum = trans_Num
 
 		s2iso = iso_Thresh
-		#s2iso = 5.0
 		dVol = .05
 
 		################################################################
@@ -90,10 +89,6 @@ class E2FoldHunterStat:
 				tempValue = target.get(tempX, tempY, tempZ)
 				pixelValues.append(tempValue)
 				atomCount=atomCount+1
-
-		
-		#printValues()
-		#getPixelForAtom()
 
 		##############################################################
 
@@ -139,7 +134,7 @@ class E2FoldHunterStat:
 
 		rotList = all_rots
 
-		score1 =[]  #.005
+		score1 =[]
 		s1_sdv,s2_sdv,s3_sdv=0.0,0.0,0.0
 		s1_mean,s2_mean,s3_mean=0.0,0.0,0.0
 		score2 =[]
@@ -159,7 +154,7 @@ class E2FoldHunterStat:
 			p = 0
 			t_pixelValues = []
 
-			for m in range(0, atomCount):  #.025 seconds per transform
+			for m in range(0, atomCount):
 				tempX_t=int(((float(points[(p)])/apix_x)+(xMax*.5))+.5)
 				tempY_t=int(((float(points[(p+1)])/apix_y)+(yMax*.5))+.5)
 				tempZ_t=int(((float(points[(p+2)])/apix_z)+(zMax*.5))+.5)
@@ -178,8 +173,7 @@ class E2FoldHunterStat:
 			sumValues = 0.0
 			for x in t_pixelValues:
 				sumValues = sumValues + x
-			sumValues = (sumValues/atomCount)
-			#score1.append(sumValues) 
+			sumValues = (sumValues/atomCount) 
 			####################
 
 			###### score 2  #.001 seconds per transform
@@ -189,22 +183,21 @@ class E2FoldHunterStat:
 			for x in t_pixelValues:
 				if (x>=isoValue): includeValue = includeValue + 1.0
 			percentAbove = (includeValue/atomCount)
-			#score2.append(perecentAbove)
 			#######
 
 
-			###### score 3   #.1 second per transform	
+			###### score 3 	
 			pA = b.makePointArray(b)	
 			pA.save_to_pdb("thisFile100.txt")
 			probe_MRC = pA.pdb2mrc_by_summation(xMax,apix_x,4.0)
-			probe_MRC.process_inplace("normalize.toimage",{"noisy":target,"keepzero":1}) #.01 seconds
+			probe_MRC.process_inplace("normalize.toimage",{"noisy":target,"keepzero":1}) 
 
-			probe_MRC.process_inplace("threshold.binary",{"value":1.0})#.02 seconds
+			probe_MRC.process_inplace("threshold.binary",{"value":1.0})
 			target_binary = target.process("threshold.binary",{"value":1.0})
 			c = (target_binary - probe_MRC)
-			c.process_inplace("threshold.binary",{"value":0.1}) #.015 seconds
+			c.process_inplace("threshold.binary",{"value":0.1}) 
 
-			remainder_volume = c["mean"]*(xMax*yMax*zMax) #.018 seconds
+			remainder_volume = c["mean"]*(xMax*yMax*zMax)
 			MRC_volume = target_binary["mean"]*(xMax*yMax*zMax)
 
 			excludePercent = (float(remainder_volume)/MRC_volume)
@@ -228,7 +221,6 @@ class E2FoldHunterStat:
 				score3.append(volumePercent)
 			
 				####################
-
 		'''
 		print '\n'
 		print score1
@@ -247,8 +239,6 @@ class E2FoldHunterStat:
 				calc1.append(score1[l])
 				calc2.append(score2[l])
 				calc3.append(score3[l])
-
-		print len(calc1)
 
 		s1_mean = mean(calc1)
 		s1_std = std(calc1)
@@ -272,8 +262,12 @@ class E2FoldHunterStat:
 				s3.append(((calc3[cCount]-s3_mean)/s3_std))
 				cCount=cCount+1
 				#s3.append(calc3[cCount])
-			#print str(s1[i]) + '   ' + str(s2[i]) + '   ' + str(s3[i])	
-			#print int(s1[i]+.5), int(s2[i]+.5), int(s3[i]+.5)
+
+
+		print "number of transformations preformed: " + str(len(calc1))
+		print "score 1: " + str(s1[0])
+		print "score 2: " + str(s2[0])
+		print "score 3: " + str(s3[0])
 
 		##### Create Dictionary
 		vals = {}
@@ -305,11 +299,6 @@ class E2FoldHunterStat:
 		vals["score_2"] = s2
 		vals["score_3"] = s3
 		vals["tNum"] = tNum
-
-		#for i in rotList:
-			#print i.get_params("eman")["alt"]
-			#print i.get_params("eman")["az"]
-			#print '\n'
 
 		s4 =[]
 		for i in range(0,len(s1)):
