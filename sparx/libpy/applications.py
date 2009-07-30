@@ -10111,7 +10111,7 @@ def recons3d_n_MPI(prj_stack, pid_list, vol_stack, ctf, snr, sign, npad, sym, ve
 		else:
 			drop_image(vol, vol_stack)
 		if not(info is None):
-			info.write( "result wrote to " + vol_stack + "\n")
+			info.write( "result written to " + vol_stack + "\n")
 			info.write( "Total time: %10.3f\n" % (time()-time_start) )
 			info.flush()
 

@@ -44,7 +44,7 @@ def main():
 		arglist.append( arg )
 
 	progname = os.path.basename( arglist[0] )
-	usage = progname + " prj_stack vol_stack [begin end step] --CTF --npad=ntimes_padding --snr=signal_noise_ratio --sym=symmetry --verbose=(0|1) --MPI"
+	usage = progname + " prj_stack volume [begin end step] --CTF --npad=ntimes_padding --list=file --snr=signal_noise_ratio --sym=symmetry --verbose=(0|1) --MPI"
 	parser = OptionParser(usage, version=SPARXVERSION)
 
 	parser.add_option("--CTF",     action="store_true", default=False, help="apply CTF correction")
@@ -52,7 +52,7 @@ def main():
 	parser.add_option("--snr",     type="float",	    default=1.0,   help="Signal-to-Noise Ratio" )
 	parser.add_option("--sym",     type="string",	    default="c1",  help="symmetry" )
 	parser.add_option("--list",    type="string",                      help="file with list of images to be used in the first column" )
-	parser.add_option("--verbose", type="int", default=0,              help="verbose level: 0 no verbose, 1 verbose" )
+	parser.add_option("--verbose", type="int",          default=0,     help="verbose level: 0 no verbose, 1 verbose" )
 	parser.add_option("--MPI",     action="store_true", default=False, help="use MPI version ")
 	(options,args) = parser.parse_args(arglist[1:])
 
