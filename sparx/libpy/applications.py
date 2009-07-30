@@ -11490,8 +11490,7 @@ class file_set :
 		totimg = 0
 		for i in xrange(nfile):
 			totimg += EMUtil.get_image_count( self.files[i] )
-			self.fends[i] = totimg
-		
+			self.fends[i] = totimg		
 
 	def nimg(self):
 		return self.fends[-1]
@@ -11508,7 +11507,7 @@ class file_set :
 
 		return self.files[ifile], imgid - self.fends[ifile-1]
 
-def defvar(files, outdir, fl, aa, radccc, writelp, writestack, repair = False, pca=False, pcamask=None, pcanvec=None):
+def defvar(files, outdir, fl, aa, radccc, writelp, writestack, frepa = "default", pca=False, pcamask=None, pcanvec=None):
 	from utilities  import get_im, get_image, circumference, model_blank
 	from filter     import filt_tanl
 	from statistics import ccc
@@ -11527,13 +11526,19 @@ def defvar(files, outdir, fl, aa, radccc, writelp, writestack, repair = False, p
 	avgfileE = outdir + "/avgE.hdf"
 	varfileO = outdir + "/varO.hdf"
 	avgfileO = outdir + "/avgO.hdf"
-	
 
 	img = get_image( files[0] )
 	nx = img.get_xsize()
 	ny = img.get_ysize()
 	nz = img.get_zsize()
-
+	if(frepa == "None"):  repair = False
+	else:
+		repair = True
+		if(frepa == "default"):
+			from math import sqrt
+			from utilities import model_gauss
+			rota = model_gauss(sqrt(2.0)*nx, nx,ny,nz)
+		else:   rota = get_im(frepa)
 
 	radcir = min(nx,ny,nz)//2 - 2
 	ndump = 100 # write out ccc after each 100 steps
@@ -11553,12 +11558,12 @@ def defvar(files, outdir, fl, aa, radccc, writelp, writestack, repair = False, p
 		mf += 1
 		for i in xrange(nimg):
 			img = get_im( f, i )
-			if(repair and extra):  Util.div_img(img, rota)
-			if(repair and extra and writelp):  img.write_image(f, i)
+			if(repair):  Util.div_img(img, rota)
+			if(repair and writelp):  img.write_image(f, i)
 			img = circumference( img, radcir )
 			if(fl > 0.0):
 				img = filt_tanl( img, fl, aa )
-				if writestack and extra: img.write_image( filtered, total_img )
+				if writestack: img.write_image( filtered, total_img )
 			if(total_img%2 == 0):	Util.add_img(avg1, img)
 			else:			Util.add_img(avg2, img)
 			total_img += 1
@@ -11578,7 +11583,6 @@ def defvar(files, outdir, fl, aa, radccc, writelp, writestack, repair = False, p
 	var1 = model_blank(nx,ny,nz)
 	var2 = model_blank(nx,ny,nz)
 	if(fl > 0.0 and writestack):
-		total_img = 0
 		for f in files:
 			filtered = outdir + "/filtered%04i.hdf"%mf
 			nimg = EMUtil.get_image_count( filtered )
@@ -11603,12 +11607,12 @@ def defvar(files, outdir, fl, aa, radccc, writelp, writestack, repair = False, p
 				if(repair and not writelp):  Util.div_img(img, rota)
 				img = circumference( img, radcir )
 				if(fl > 0.0): img = filt_tanl( img, fl, aa )
-				if pca and extra: pcaer.insert(img)
+				if pca: pcaer.insert(img)
 				Util.sub_img(img, avg)
 				if(total_img%2 == 0): Util.add_img2(var1, img)
 				else:                 Util.add_img2(var2 , img)
 				total_img += 1
-				if(total_img%ndump == 0 and extra):
+				if(total_img%ndump == 0):
 					finf.write( 'ntot, ccc: %6d %10.8f\n' % (total_img, ccc(var1, var2, cccmask)) )
 					finf.flush()
 
@@ -11621,7 +11625,7 @@ def defvar(files, outdir, fl, aa, radccc, writelp, writestack, repair = False, p
 
 	var.write_image( varfile )
 	del var, var1, var2, cccmask
-	
+
 	if pca:
 		assert not(avg is None)
 
@@ -11632,7 +11636,7 @@ def defvar(files, outdir, fl, aa, radccc, writelp, writestack, repair = False, p
 		for i in xrange( len(eigs) ):
 			eigs[i].write_image( eigfile, i )
 
-def var_mpi(files, outdir, fl, aa, radccc, writelp, writestack, frepa = None, pca=False, pcamask=None, pcanvec=None):
+def var_mpi(files, outdir, fl, aa, radccc, writelp, writestack, frepa = "default", pca=False, pcamask=None, pcanvec=None):
 	from string     import atoi, replace, split, atof
 	from utilities  import get_im, circumference, model_circle, model_blank
 	from utilities  import bcast_EMData_to_all, reduce_EMData_to_root
@@ -11679,8 +11683,14 @@ def var_mpi(files, outdir, fl, aa, radccc, writelp, writestack, frepa = None, pc
 	ny = int(ny[0])
 	nz = mpi_bcast(nz, 1, MPI_INT, 0, MPI_COMM_WORLD)
 	nz = int(nz[0])
-	if(frepa == None):  repair = False
-	else:               repair = True
+	if(frepa == "None"):  repair = False
+	else:
+		repair = True
+		if(frepa == "default"):
+			from math import sqrt
+			from utilities import model_gauss
+			rota = model_gauss(sqrt(2.0)*nx, nx,ny,nz)
+		else:   rota = get_im(frepa)
 
 	if pca:
 		from statistics import pcanalyzer
@@ -11709,7 +11719,6 @@ def var_mpi(files, outdir, fl, aa, radccc, writelp, writestack, frepa = None, pc
 	file_start, file_end = MPI_start_end(nfiles, ncpu, myid)
 
 	#ndump = 100 # write out ccc after each 100 steps
-	if repair: rota = get_im(frepa)
 
 	iwrite = 0
 	istack = 0

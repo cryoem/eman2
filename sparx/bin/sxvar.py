@@ -15,7 +15,7 @@ def main():
 	parser.add_option("--overwrite",  action="store_true", default=False, help="write repaired bootstrap volumes to original files (default is False)" )
 	parser.add_option("--filtered",   action="store_true", default=False, help="write the stack containing all low-pass filtered volumes to disk (default is False)" )
 	parser.add_option("--MPI",        action="store_true", default=False, help="use MPI version" )
-	parser.add_option("--repair",     type="string", help="repair file for original bootstrap volumes")
+	parser.add_option("--repair",     type="string", default="default", help="repair original bootstrap volumes: None, default, or repait file name")
 	parser.add_option("--pca",        action="store_true", default=False, help="run pca" )
 	parser.add_option("--pcamask",    type="string", help="mask for pca" )
 	parser.add_option("--pcanvec",    type="int", help="number of eigvectors computed in PCA")
