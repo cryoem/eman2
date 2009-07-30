@@ -3,7 +3,7 @@
 */
 
 /*
- * Author: Muthu Alagappan, 07/14/2009, muthuram@stanford.edu
+ * Author: Muthu Alagappan, 07/14/2009, (m.alagappan901@gmail.com)
  * Copyright (c) 2000-2006 Baylor College of Medicine
  *
  * This software is issued under a joint BSD/GNU license. You may use the

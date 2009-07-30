@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Author: Muthu Alagappan, 07/22/09
+# Author: Muthu Alagappan, 07/22/09, (m.alagappan901@gmail.com)
 # Copyright (c) 2000-2006 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -47,6 +47,7 @@ class E2FoldHunterStat:
 	
 	def __init__(self): pass
 
+	#Given a mrc file, pdb file, and optional other information, this function returns several data stuctures representing the results
 	def gen_data(self, mrc_file_name, pdb_file_name, trans_Num, iso_Thresh):
 
 		target = EMData(mrc_file_name)
@@ -61,7 +62,7 @@ class E2FoldHunterStat:
 
 		transNum = trans_Num
 
-		s2iso = iso_Thresh
+		s2iso = float(iso_Thresh)
 		dVol = .05
 
 		################################################################
@@ -92,7 +93,7 @@ class E2FoldHunterStat:
 
 		##############################################################
 
-		######################## write into pdb file
+		######################## write into pdb file in correct format
 
 		f_pdb = open (pdb_file_name, "r")
 		entries = f_pdb.readlines()
@@ -115,9 +116,9 @@ class E2FoldHunterStat:
 			else: f.write('\n')
 
 		f.close()
-
 		################################################################
 
+		########################## Get random rotations
 		xTrans = (.25*xMax)
 		yTrans = (.25*yMax)
 		zTrans = (.25*zMax)
@@ -134,6 +135,9 @@ class E2FoldHunterStat:
 
 		rotList = all_rots
 
+		################################################################
+
+		####################### calculates scores for each transformation
 		score1 =[]
 		s1_sdv,s2_sdv,s3_sdv=0.0,0.0,0.0
 		s1_mean,s2_mean,s3_mean=0.0,0.0,0.0
@@ -192,10 +196,10 @@ class E2FoldHunterStat:
 			probe_MRC = pA.pdb2mrc_by_summation(xMax,apix_x,4.0)
 			probe_MRC.process_inplace("normalize.toimage",{"noisy":target,"keepzero":1}) 
 
-			probe_MRC.process_inplace("threshold.binary",{"value":1.0})
-			target_binary = target.process("threshold.binary",{"value":1.0})
+			probe_MRC.process_inplace("threshold.binary",{"value":s2iso})
+			target_binary = target.process("threshold.binary",{"value":s2iso})
 			c = (target_binary - probe_MRC)
-			c.process_inplace("threshold.binary",{"value":0.1}) 
+			c.process_inplace("threshold.binary",{"value":0.01}) 
 
 			remainder_volume = c["mean"]*(xMax*yMax*zMax)
 			MRC_volume = target_binary["mean"]*(xMax*yMax*zMax)
@@ -203,8 +207,7 @@ class E2FoldHunterStat:
 			excludePercent = (float(remainder_volume)/MRC_volume)
 			volumePercent = 1-excludePercent
 
-			#score3.append(volumePercent) #raw scores
-			flag = 0
+			flag = 0  #if flag is 1, it throws out bad values
 			if flag:
 				if (volumePercent >= dVol and percentAbove>=cutOff): 
 						score1.append(sumValues)
@@ -215,12 +218,12 @@ class E2FoldHunterStat:
 					score1.append("none")
 					score2.append("none")
 					score3.append("none")		
-			else: 
+			else: #when flag is 0, it uses all calculated scores
 				score1.append(sumValues)
 				score2.append(percentAbove)
 				score3.append(volumePercent)
 			
-				####################
+		#######################################################################
 		'''
 		print '\n'
 		print score1
@@ -300,23 +303,28 @@ class E2FoldHunterStat:
 		vals["score_3"] = s3
 		vals["tNum"] = tNum
 
-		s4 =[]
+		###########################################################3
+
+		############# Misc. tasks
+
+		s4 =[] #calculates cumulative z-score
 		for i in range(0,len(s1)):
 			te = s1[i] + s2[i] + s3[i]
 			s4.append(te)
 
-		dist =[]
+		dist =[] #calculates distance translated
 		for i in rotList:
 			tempor = i.get_params("eman")
 			d = (tempor['tx'])**2 + (tempor['ty'])**2 + (tempor['tz'])**2
 			d = (d)**.5
 			dist.append(d)
 
-		blank = []
+		blank = [] #blank list
 		for i in range(0,len(s1)):
 			blank.append(0)
 
 
+		'''
 		mpl1 =[] #holds standard deviation scores for only good transforms
 		mpl2 =[]
 		mpl3 =[]
@@ -331,7 +339,7 @@ class E2FoldHunterStat:
 				d = (vals['tx'][t])**2 + (vals['ty'][t])**2 + (vals['tz'][t])**2
 				d = (d)**.5
 				mplDist.append(d)
-
+		'''
 		
 		############ emplot 3d
 		data = []
@@ -344,6 +352,13 @@ class E2FoldHunterStat:
 		initPoint.append(s2[:1])
 		initPoint.append(s3[:1])
 
+		initPoint2 = []
+		initPoint2.append(s1[:1])
+		initPoint2.append(s2[:1])
+		initPoint2.append(s3[:1])
+		initPoint2.append([0])
+		initPoint2.append([0])
+
 		rotData = []
 		rotData.append(alt)
 		rotData.append(az)
@@ -351,19 +366,22 @@ class E2FoldHunterStat:
 		rotData.append(s4)
 		rotData.append(dist)
 
-		rotData2 = []
-		rotData2.append(alt)
-		rotData2.append(az)
-		rotData2.append(phi)
-		rotData2.append(dist)
 		b = a.copy()
-		return vals, rotList, a, data, initPoint
+		return vals, rotList, b, data, initPoint
+		#vals is a dictionary of all transformation information and score values
+		#rotlist is a list of all the random transformations
+		#b is the original PDBReader object
+		#data is one form of data which contains the three scores (return "rotData and initPoint2" instead of "data and initPoint" to plot the alt, az, phi angles)
+		#initPoint contains just the data for the original value
+
+		###################################################
 
 
 if __name__ == '__main__':
 	from emapplication import EMStandAloneApplication
 	em_app = EMStandAloneApplication()
 	window2 = E2FoldHunterStat()
+	print "This program is meant to be run in conjunction with e2validatemed.py in the programs directory"
 	em_app.show()
 	em_app.execute()
 

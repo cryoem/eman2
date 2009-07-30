@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Author: Muthu Alagappan, 07/22/09
+# Author: Muthu Alagappan, m.alagappan901@gmail.com, 07/22/09
 # Copyright (c) 2000-2006 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -33,7 +33,6 @@
 from em3dmodule import *
 from EMAN2 import PDBReader
 import sys
-import os
 
 
 class AlaRenderer:
@@ -458,24 +457,22 @@ class EMPDBViewer(EM3DModule):
 		self.side_chain_renderer["TYR"] = TyrRenderer()
 		self.side_chain_renderer["VAL"] = ValRenderer()
 		
-		#self.pdb_delete = False
-		#self.pdbFile_to_delete = None
+
 
 	def current_text(self): return self.text
 	
-	def set_current_text(self,text):
+	def set_current_text(self,text):  #changes self.text and updatesGL, when self.text changes, it redisplays using the new file
 		self.text = text
 		self.get_inspector().text.setText(self.text)
 		self.updateGL()
 
-		
 	def get_inspector(self):
 		if self.inspector == None:
 			self.inspector = EMPDBInspector(self)
 		return self.inspector
 
 	def createDefault(self):
-		return          #display a default pdb here
+		return          #display a default pdb here, currently not done
 		
 	
 	def draw_objects(self):
@@ -492,12 +489,12 @@ class EMPDBViewer(EM3DModule):
 			self.dl=None
 			self.fName = self.text
 
-		if (self.dl == None):
+		if (self.dl == None): #self.dl is the display list, every time a new file is added, this is changed back to None
 			self.dl=glGenLists(1)
 			glNewList(self.dl,GL_COMPILE)
 			self.buildResList()
 
-			for res in self.allResidues:
+			for res in self.allResidues: #goes through self.allResidues and displays a sphere for every atom in the pdb
 				for i in range (0, len(res[0])):
 					glPushMatrix()
 					glTranslate(res[0][i], res[1][i], res[2][i])
@@ -515,12 +512,12 @@ class EMPDBViewer(EM3DModule):
 				
 				res = self.allResidues[k]
 				key =  res[4][0]
-				if self.side_chain_renderer.has_key(key):
+				if self.side_chain_renderer.has_key(key): #goes through each residue and draws the newtwork of sticks connecting atoms
 					self.side_chain_renderer[key](res,self)
 					continue
 
 
-				if (k!=0):
+				if (k!=0): #connects residues together from the nitrogen of one residue to the O of the next residue
 				
 					nt = [0,0,0]
 					pt = [0,0,0]
@@ -540,7 +537,7 @@ class EMPDBViewer(EM3DModule):
 			glDeleteLists(self.dl,1)
 			self.dl = None
 
-	def makeStick (self, res, index1, index2):
+	def makeStick (self, res, index1, index2): #draws a cylinder between two atoms once the index for start and stop is given
 		n = [0,0,0]
 		p = [0,0,0]
 		p[0] = res[0][index1]
@@ -552,7 +549,7 @@ class EMPDBViewer(EM3DModule):
 		n[2] = res[2][index2]
 		self.cylinder_to_from(n, p, 0.2)	
 
-	def buildResList (self):
+	def buildResList (self): # calls PDBReader to read the given pdb file and create a list (self.allResidues) of lists (x,y,z,atom name, residue name) of lists (all the values for that residue)
 
 		self.allResidues = []
 		
@@ -652,23 +649,6 @@ class EMPDBInspector(EM3DInspector):
 		self.tabwidget.insertTab(0,self.get_pdb_tab(),"PDB Main")
 		self.tabwidget.setCurrentIndex(0)
 		
-		'''
-		self.vbl.setMargin(0)
-		self.vbl.setSpacing(6)
-		self.vbl.setObjectName("vbl")
-
-		hbl1 = QtGui.QHBoxLayout()
-		self.text = QtGui.QLineEdit()
-		self.text.setText(self.target().current_text())
-		hbl1.addWidget(self.text)
-		self.browse = QtGui.QPushButton("Browse")
-		hbl1.addWidget(self.browse)
-		self.vbl.addLayout(hbl1)
-
-		QtCore.QObject.connect(self.text, QtCore.SIGNAL("textChanged(const QString&)"), self.on_text_change)
-		QtCore.QObject.connect(self.browse, QtCore.SIGNAL("clicked(bool)"), self.on_browse)
-		'''
-		
 			
 	def get_pdb_tab(self):
 		'''
@@ -693,8 +673,6 @@ class EMPDBInspector(EM3DInspector):
 		return widget
 	
 	def on_text_change(self,text):
-		#self.target().set_current_text(str(text))
-		#self.target().updateGL()
 		print "Use the Browse button to update the pdb file"
 
 	def on_browse(self):

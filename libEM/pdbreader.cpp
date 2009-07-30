@@ -3,7 +3,7 @@
  */
 
 /*
- * Author: Wen Jiang, 08/11/2004 (jiang12@purdue.edu)
+ * Author: Muthu Alagappan, 08/11/2004 (m.alagappan901@gmail.com)
  * Copyright (c) 2000-2006 Baylor College of Medicine
  *
  * This software is issued under a joint BSD/GNU license. You may use the
@@ -68,6 +68,8 @@ void PDBReader::zero()
 	memset((void *) points, 0, 4 * n * sizeof(double));
 }
 
+
+//copies all relevant information that exists into a new PDBReader object.
 PDBReader *PDBReader::copy()
 {
 	PDBReader *pa2 = new PDBReader();
@@ -85,6 +87,7 @@ PDBReader *PDBReader::copy()
 	return pa2;
 }
 
+
 PDBReader & PDBReader::operator=(PDBReader & pa)
 {
 	if (this != &pa) {
@@ -99,6 +102,7 @@ size_t PDBReader::get_number_points() const
 	return n;
 }
 
+//reallocates the number of points
 void PDBReader::set_number_points(size_t nn)
 {
 	if (n != nn) {
@@ -118,8 +122,8 @@ void PDBReader::set_points_array(double *p)
 }
 
 
-//important functions: read, write, transform, toPointArray
 
+// adds purely the x values to a vector
 vector<float> PDBReader::get_x() {
 	for (int i=0; i<atomName.size(); i++) {
         	x.push_back(points[4*i]);
@@ -131,11 +135,13 @@ vector<float> PDBReader::get_x() {
 	return x;
 }
 
+// adds purely the y values to a vector
 vector<float> PDBReader::get_y() {
 	//cout << y.size() << endl;
 	return y;
 }
 
+// adds purely the z values to a vector
 vector<float> PDBReader::get_z() {
 	return z;
 }
@@ -153,7 +159,7 @@ vector<int> PDBReader::get_resNum() {
 }
 
 
-
+//Accurately parses a pdb file for all information
 bool PDBReader::read_from_pdb(const char *file)
 {
 	pWords.clear();
@@ -193,7 +199,6 @@ bool PDBReader::read_from_pdb(const char *file)
 			residueName.push_back(pWords[count].substr(17,3));
 			chainId.push_back(pWords[count].substr(21,1));
 			elementSym.push_back(pWords[count].substr(76,2));
-			//cout << atomName[count] << residueName[count] << chainId[count] << elementSym[count] << endl;
 
 			float x, y, z, tf;
 			int an, sn;
@@ -203,9 +208,7 @@ bool PDBReader::read_from_pdb(const char *file)
 			if (count + 1 > get_number_points()) {
 				set_number_points(2 * (count + 1)); 
 			}   //makes sure point array is big enough
-	#ifdef DEBUG
-			printf("Atom %4d: x,y,z = %8g,%8g,%8g\te = %g\n", count, x, y, z, e);
-	#endif
+
 			points[4 * count] = x;
 			points[4 * count + 1] = y;
 			points[4 * count + 2] = z;
@@ -222,6 +225,7 @@ bool PDBReader::read_from_pdb(const char *file)
 }
 
 
+//Accurately writes a pdb file once the information is alread stored.
 void PDBReader::save_to_pdb(const char *file) const {
 	FILE *fp = fopen(file, "w");
 	for (int i = 0; i <head.size(); i++) {
@@ -251,7 +255,7 @@ void PDBReader::save_to_pdb(const char *file) const {
 
 }
 
-
+//returns a vector of the x,y,z values 
 vector<float> PDBReader::get_points() {
 vector<float> ret;
 for (unsigned int i=0; i<n; i++) {
@@ -263,7 +267,7 @@ for (unsigned int i=0; i<n; i++) {
 return ret;
 }
 
-
+//performs a right transform of all x,y,z points given a Transform object
 void PDBReader::right_transform(const Transform& transform) {
 	for ( unsigned int i = 0; i < 4 * n; i += 4) {
 		Transform s = transform.transpose();
@@ -285,16 +289,4 @@ PointArray* PDBReader::makePointArray (const PDBReader& p) {
 	return pArray;
 }
 
-
-/*
-int main()
-{
-	PDBReader ex;
-	cout << "hi" <<endl;
-	//ex.read_pdb("/home/muthu/project/probe.pdb");
-	//PDBReader *cop = ex.copy();
-	//ex.save_pdb("current.txt");
-	return 0;
-}
-*/
 

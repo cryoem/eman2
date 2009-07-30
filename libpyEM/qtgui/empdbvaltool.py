@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Author: Muthu Alagappan, 07/22/09
+# Author: Muthu Alagappan, m.alagappan901@gmail.com,  07/22/09
 # Copyright (c) 2000-2006 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -48,8 +48,8 @@ class EMPDBValTool(EM3DModule):
 		self.pdb_module = None # will eventually be a EMPDBViewer
 		self.iso_module = None # will eventuall be a EMImage3DModule
 
-		self.current_mrc = ""
-		self.current_pdb = ""
+		self.current_mrc = "" #holds the current mrc file name
+		self.current_pdb = "" #holds the current pdb file name
 
 		self.t = 0
 
@@ -80,8 +80,7 @@ class EMPDBValTool(EM3DModule):
 		print self.current_pdb
 		if self.pdb_module == None:
 			self.__init_pdb_module()
-		self.pdb_module.set_current_text(pdb_file)
-
+		self.pdb_module.set_current_text(pdb_file) #updates GL with the new pdb file
 
 		
 	def set_iso_file(self,file_name):
@@ -94,10 +93,10 @@ class EMPDBValTool(EM3DModule):
 		if self.iso_module == None: self. __init_iso_module()
 		self.iso_module.set_data(data)
 
-	def update_pdb_file(self):
+	def update_pdb_file(self):  #updates current_pdb with the current file
 		self.current_pdb = self.pdb_module.get_pdb_file()
 
-	def update_mrc_file(self):
+	def update_mrc_file(self):  #updates current_mrc with the current file
 		if self.iso_module.get_inspector().mrcChanged:		
 			self.current_mrc = self.iso_module.get_mrc_file()
 	
@@ -124,9 +123,9 @@ class EMPDBValTool(EM3DModule):
 			self.inspector = EMPDBValToolInspector(self)
 		return self.inspector
 
-	def run_validate(self):
-		val1 = int(self.get_inspector().text1.text())
-		val2 = float(self.get_inspector().text2.text())
+	def run_validate(self): #called by the inspector to tell the mediator to validate the fit
+		val1 = int(self.get_inspector().text1.text()) #val 1 = number of transformations
+		val2 = float(self.get_inspector().text2.text()) #val 2 = isosurface threshold value
 
 		self.emit(QtCore.SIGNAL("run_validate"), str(self.current_mrc), str(self.current_pdb), val1, val2)
 
@@ -134,8 +133,8 @@ class EMPDBValToolInspector(EM3DInspector):
 	def __init__(self,target,enable_advanced=False):
 		EM3DInspector.__init__(self,target,enable_advanced)
 
-		self.text1 = ""
-		self.text2 = ""
+		self.text1 = "" #text line edit for "number of transformations"
+		self.text2 = "" #text line edit for "isosurface threshold value"
 
 		self.options_module = None # will eventually be the options tab
 		self.__init_options_module()
@@ -190,10 +189,10 @@ class EMPDBValToolInspector(EM3DInspector):
 		self.target().update_pdb_file()
 		self.target().update_mrc_file()
 		
-		if (str(self.text1.text()) == ""): self.text1.setText("20") #default
-		if (str(self.text2.text()) == ""): self.text2.setText("5.0") #default
+		if (str(self.text1.text()) == ""): self.text1.setText("20") #default value 20
+		if (str(self.text2.text()) == ""): self.text2.setText("5.0") #default value 5.0
 
-		if ((str(self.target().current_mrc) != "") and (str(self.target().current_pdb)!= "")): 
+		if ((str(self.target().current_mrc) != "") and (str(self.target().current_pdb)!= "")): #only calls validate if both strings are valid
 			self.target().run_validate()
 		if (str(self.target().current_mrc) == ""):
 			print "Please properly load an mrc file"

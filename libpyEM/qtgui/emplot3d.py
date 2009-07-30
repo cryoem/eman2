@@ -83,7 +83,7 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		self.rotaList=None # Added by Muthu as part of Matt Baker's work
 		self.vals=None # Added by Muthu as part of Matt Baker's work
 		self.b = None #Added by Muthu for transforms
-		self.e2fhstat=0 #Added by Muthu as a switch for e2fhstat
+		self.e2fhstat=0 #Added by Muthu as a switch for e2fhstat options in the widget 
 		self.colorCol = 3 #Added by Muthu
 
 		self.vdtools = EMViewportDepthTools2(self.gl_context_parent)
@@ -127,15 +127,15 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		self.data_based_coloring = value	
 		print "set dbc to",value
 
-	def set_Rotations(self,rotList):
+	def set_Rotations(self,rotList): # Added by Muthu
 		self.rotaList = rotList
 		self.e2fhstat = self.e2fhstat+1
 		
-	def set_Vals (self, val):
+	def set_Vals (self, val): # Added by Muthu
 		self.vals = val
 		self.e2fhstat = self.e2fhstat+1
 
-	def set_Probe (self, b):
+	def set_Probe (self, b): # Added by Muthu
 		self.b = b
 		self.e2fhstat = self.e2fhstat+1
 	
@@ -196,7 +196,7 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		
 		EMImage3DGUIModule.mouseReleaseEvent(self,event)
 
-	def on_hit_update(self,indexer):
+	def on_hit_update(self,indexer): 
 		if (self.e2fhstat!=3): return
 		self.get_inspector().on_hit_update(indexer, self.vals)
 
@@ -640,15 +640,12 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		self.sc=(self.sc/120.0)
 		for i in range(n):
 			glPushMatrix()
-			#s = str(mn+(i-1.0)/n*interval)
 			s = str(mn+(i*interval)/(n-1.0))
 			s = s[:4]
 			bbox = self.font_renderer.bounding_box(s)
 			glTranslate( (i)/(n-1.0)*width,0,0)
-			#-((bbox[3]-bbox[0])/2.0)
 			glScale(self.sc, self.sc, self.sc)
-		
-			#GLUtil.mx_bbox(bbox,[0,1,0,1],[0,0,0,1])
+
 			
 			self.font_renderer.render_string(s)
 			glTranslate((bbox[3]-bbox[0])/2.0,0,0)
@@ -670,16 +667,12 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		interval = mx-mn
 		for i in range(n):
 			glPushMatrix()
-			#s = str(mn+(i-1.0)/n*interval)
 			s = str(mn+(i*interval)/(n-1.0))
 			s = s[:4]
 			bbox = self.font_renderer.bounding_box(s)
 			glTranslate(0, (i)/(n-1.0)*height,0)
-			#-(bbox[4]-bbox[1])/2.0
 			glScale(self.sc, self.sc, self.sc)
-			# GLUtil.mx_bbox(bbox,[0,1,0,1],[0,0,0,1])
 			self.font_renderer.render_string(s)
-			#glTranslate(0,(bbox[4]-bbox[1])/2.0,0)
 
 			#glutSolidOctahedron()
 			glPopMatrix()
@@ -698,16 +691,12 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		interval = mx-mn
 		for i in range(n):
 			glPushMatrix()
-			#s = str(mn+(i-1.0)/n*interval)
 			s = str(mn+(i*interval)/(n-1.0))
 			s = s[:4]
 			bbox = self.font_renderer.bounding_box(s)
 			glTranslate(0, 0, (i)/(n-1.0)*depth)
-			#-(bbox[5]-bbox[2])/2.0
 			glScale(self.sc, self.sc, self.sc)
-			# GLUtil.mx_bbox(bbox,[0,1,0,1],[0,0,0,1])
 			self.font_renderer.render_string(s)
-			#glTranslate(0,0,(bbox[5]-bbox[2])/2.0)
 
 			#glutSolidOctahedron()
 			glPopMatrix()
@@ -898,7 +887,7 @@ class EMPlot3DInspector(QtGui.QWidget,EMLightsInspectorBase):       ###########
 		QtCore.QObject.connect(self.glcontrast, QtCore.SIGNAL("valueChanged"), target.set_GL_contrast)
 		QtCore.QObject.connect(self.glbrightness, QtCore.SIGNAL("valueChanged"), target.set_GL_brightness)
 		
-	def on_hit_update(self,indexer, vals):
+	def on_hit_update(self,indexer, vals):  # displays the information for each point in the widget when a user clicks on a point
 		self.diction = vals
 		self.tNum.setText(str(self.diction["tNum"][indexer]))
 		self.transX.setText(str(self.diction["tx"][indexer]))
@@ -915,9 +904,7 @@ class EMPlot3DInspector(QtGui.QWidget,EMLightsInspectorBase):       ###########
 		self.fileName.setText("_________ ")
 		#self.target().full_refresh()
 		#self.target().updateGL()
-	
-	#def fhstat (self, starter):
-		#self.f = starter #Added by Muthu to track when to run transformation stuff
+
 
 	def update_rotations(self,t3d):
 		self.rotation_sliders.update_rotations(t3d)
@@ -943,7 +930,7 @@ class EMPlot3DInspector(QtGui.QWidget,EMLightsInspectorBase):       ###########
 		vbl.addWidget(self.setlist)
 
 		#####
-		if (self.target().getFh()): 
+		if (self.target().getFh()):   #if self.target().e2fhsatat is 3, then it displays all the extra information (flag)
 			v_big = QtGui.QVBoxLayout()	
 			v_big.setMargin(0)
 			v_big.setSpacing(6)
@@ -1124,6 +1111,7 @@ class EMPlot3DInspector(QtGui.QWidget,EMLightsInspectorBase):       ###########
 #			print "plot error"
 			return
 		n = len(self.target().data[i])-1
+
 		axes = self.target().axes[i]
 		self.slidex.setRange(0,n)
 		self.slidey.setRange(0,n)
@@ -1193,9 +1181,9 @@ class EMPlot3DInspector(QtGui.QWidget,EMLightsInspectorBase):       ###########
 			self.target().full_refresh()
 			self.target().updateGL()
 	
-	def pTransform(self, i):	
+	def pTransform(self, i):	# Added by Muthu - Writes a transform into the current directory in pdb format
 		self.b = self.target().get_Probe()
-		c = self.b.copy()
+		c = self.b.copy() #makes a new copy of the probe
 
 		self.rotList = self.target().get_Rotations()
 
@@ -1205,12 +1193,11 @@ class EMPlot3DInspector(QtGui.QWidget,EMLightsInspectorBase):       ###########
 		c.right_transform(t2)
 		c.save_to_pdb("%s t.pdb"%str(self.TransformNumber))
 		self.fileName.setText("%s t.pdb"%str(self.TransformNumber))
-		#self.target().full_refresh()
-		#self.target().updateGL()
 
-	def vTransform(self, i):	
+
+	def vTransform(self, i):	# Added by Muthu - Displays the transformation in emvaltool 
 		self.b = self.target().get_Probe()
-		d = self.b.copy()
+		d = self.b.copy() #makes a new copy of the probe
 		self.rotList = self.target().get_Rotations()
 		self.TransformNumber = int(self.tNum.text())
 		t2 = Transform(self.rotList[self.TransformNumber].get_params("eman"))
@@ -1219,8 +1206,7 @@ class EMPlot3DInspector(QtGui.QWidget,EMLightsInspectorBase):       ###########
 		new_pdb_file = "%s t.pdb"%str(self.TransformNumber)
 
 		self.target().runTransform(new_pdb_file)
-		#self.target().full_refresh()
-		#self.target().updateGL()
+
 	
 	def data_change(self):
 		
