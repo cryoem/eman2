@@ -27,7 +27,7 @@ def main():
         from string import atoi
         input_stack  = args[0]
         imgstart     = atoi( args[1] )
-        imgend       = atoi( args[2] )
+        imgend       = atoi( args[2] ) +1
         output_stack = args[3]
 
         if options.rad is None:
