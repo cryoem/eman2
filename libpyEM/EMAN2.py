@@ -372,6 +372,17 @@ def numbered_bdb(bdb_url):
 			else: 
 				return "bdb:"+useful_info[0]+"#"+useful_info[1] + "_"+str(i)+str(j)
 
+	
+def get_header(filename,i):
+	if filename[0:4] == "bdb:":
+		db = db_open_dict(filename)
+		return db.get_header(i)
+	else:
+		read_header_only = True
+		e = EMData()
+		e.read_image(filename,i,read_header_only)
+		return e.get_attr_dict()
+
 def remove_image(fsp):
 	"""This will remove the image file pointed to by fsp. The reason for this function
 	to exist is formats like IMAGIC which store data in two files. This insures that

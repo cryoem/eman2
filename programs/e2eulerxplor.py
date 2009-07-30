@@ -41,7 +41,7 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 import weakref
 from optparse import OptionParser
-from EMAN2 import Util, E2init, E2end,EMANVERSION,is_2d_image_mx, EMUtil, db_open_dict, EMData, Transform, db_check_dict, db_close_dict, get_files_and_directories,get_file_tag,gimme_image_dimensions3D,Region, Vec3f, parsesym, test_image,Symmetries
+from EMAN2 import Util, E2init, E2end,EMANVERSION,is_2d_image_mx, EMUtil, db_open_dict, EMData, Transform, db_check_dict, db_close_dict, get_files_and_directories,get_file_tag,gimme_image_dimensions3D,Region, Vec3f, parsesym, test_image,Symmetries,get_header
 from emapplication import get_application
 from emimagemx import EMImageMXModule
 import os
@@ -115,16 +115,7 @@ def normalize_ptcl(ptcl):
 	diff = float(mx-mn)
 	norm = [ (val-mn)/(diff) for val in ptcl ]
 	return norm		
-	
-def get_header(filename,i):
-	if filename[0:4] == "bdb:":
-		db = db_open_dict(filename)
-		return db.get_header(i)
-	else:
-		read_header_only = True
-		e = EMData()
-		e.read_image(filename,i,read_header_only)
-		return e.get_attr_dict()
+
 
 def get_normalize_colors(ptcls):
 	mn = min(ptcls)
@@ -602,7 +593,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 		#eulers = s.gen_orientations("rand",{"n":EMUtil.get_image_count(self.average_file)})
 
 		self.specify_eulers(eulers)
-		from emimagemx import EMDataListCache
+		#from emimagemx import EMDataListCache
 		#a = EMData.read_images(self.average_file)
 		#a = [test_image() for i in range(EMUtil.get_image_count(self.average_file))]
 		#print len(a),len(eulers)
@@ -843,10 +834,10 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 			data = []
 			t = time()
 			for val in included:
-				bdata.append([self.particle_file,val,[]])
+				bdata.append([self.particle_file,val,[ApplyAttribute("ptcl_idx",val)]])
 				
 			for val in excluded:
-				bdata.append([self.particle_file,val,[]])
+				bdata.append([self.particle_file,val,[ApplyAttribute("ptcl_idx",val)]])
 	
 			data = EMLightWeightParticleCache(bdata)
 			
@@ -952,6 +943,14 @@ class ApplyTransform:
 	
 	def __call__(self,emdata):
 		emdata.transform(self.transform)
+		
+class ApplyAttribute:
+	def __init__(self,attribute,value):
+		self.attribute = attribute
+		self.value = value
+	
+	def __call__(self,emdata):
+		emdata.set_attr(self.attribute,self.value)
 
 
 class EMAsymmetricUnitInspector(EMSymInspector):

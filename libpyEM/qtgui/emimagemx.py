@@ -2104,7 +2104,6 @@ class EMImageInspectorMX(QtGui.QWidget):
 		except Exception, inst:
 			print type(inst)     # the exception instance
 			print inst.args      # arguments stored in .args
-			print int
 		
 		action=self.vals.addAction("Img #")
 		action.setCheckable(1)
@@ -2667,6 +2666,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 		self.brts.setRange(-1.0,1.0)
 		self.conts.setRange(0,1.0)
 		self.update_brightness_contrast()
+		
 e = EMData()
 
 class EMLightWeightParticleCache:
@@ -2712,15 +2712,16 @@ class EMLightWeightParticleCache:
 		return self.ysize
 	
 	def get_image_header(self,idx):
-		return self[idx].get_attr_dict()
-		#adj_idx = idx-self.cache_start
-		#image = self.cache[adj_idx]
-		#if image == None:
-		#	data = self.data[idx]
-			
-		#	e.read_image(data[0],data[1],True)
-		#	return e.get_attr_dict()
-		#else:image.get_attr_dict()
+#		return self[idx].get_attr_dict()
+		adj_idx = idx-self.cache_start
+		image = self.cache[adj_idx]
+		if image == None:
+			data = self.data[idx]
+			h = get_header(data[0],data[1])
+			return h
+			#e.read_image(data[0],data[1],True)
+			#return e.get_attr_dict()
+		else:return image.get_attr_dict()
 	
 	def get_image_keys(self):
 		if self.header_keys == None:

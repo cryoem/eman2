@@ -387,7 +387,6 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 			self.image_display_window.set_data(self.euler_data[self.displayed_image_number],"Data")
 			self.image_display_window.updateGL()
 		else: self.displayed_image_number = None # blanket response
-		
 	def set_column_score_key(self,key):
 		if key == "None":
 			self.set_column_scores(None)
@@ -1065,6 +1064,16 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 			if self.display_euler and self.sym_object != None:
 				glCallList(self.sphere_points_dl)
 			glPopMatrix()
+			
+		if (self.arc_anim_points):
+			self.load_gl_color("gold")
+			for points in self.arc_anim_points:
+				for i in range(0,len(points)-1):
+					self.cylinder_to_from(points[i],points[i+1],scale=0.25)
+
+			if len(self.arc_anim_points[-1]) > 0:
+				self.cylinder_to_from(Vec3f(0,0,0),self.arc_anim_points[-1][-1],scale=0.25)
+		
 
 		if self.trace_dl != 0:
 			self.load_gl_color("black")
