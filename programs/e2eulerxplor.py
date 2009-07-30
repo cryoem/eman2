@@ -641,7 +641,6 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 					self.special_euler = None
 					if not self.init_lock:self.regen_dl()
 			return
-		print "took",time()-t
 #		self.arc_anim_points = None
 		self.projection = None
 		if self.euler_data:
@@ -661,7 +660,6 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 		else: return
 		
 		#if self.projection  == None and self.average == None: return
-		print "took",time()-t
 		first = False
 		if self.proj_class_viewer == None:
 			first = True
@@ -678,10 +676,8 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 		self.proj_class_viewer.set_data(disp)
 		
 		self.proj_class_viewer.updateGL()
-		print "took",time()-t
 		if self.particle_viewer != None:
 			self.mx_image_selected(None,None)
-		print "took",time()-t	
 		if first: self.proj_class_viewer.optimally_resize()
 		
 		if i != self.special_euler:
@@ -820,6 +816,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 	
 	def mx_image_selected(self,event,lc):
 #		self.arc_anim_points = None
+		t1 = time()
 		get_application().setOverrideCursor(Qt.BusyCursor)
 		if lc != None: self.sel = lc[0]
 		
@@ -834,23 +831,18 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 			all = included + excluded
 			#all.sort()
 			
+			bdata = []
 			data = []
 			t = time()
 			for val in included:
-				e = EMData(self.particle_file,val)
-				e.set_attr("ptcl_idx",val)
-				e.set_attr("included",1)
-				e.mxset = [1]
-				data.append(e)
-			print "read good took",time()-t
+				bdata.append([self.particle_file,val,[]])
+				
 			for val in excluded:
-				print "append"
-				e = EMData(self.particle_file,val)
-				e.set_attr("ptcl_idx",val)
-				e.set_attr("included",0)
-				e.mxset = [0]
-				data.append(e)
-		
+				bdata.append([self.particle_file,val,[]])
+	
+			from emimagemx import EMLightWeightParticleCache
+			data = EMLightWeightParticleCache(bdata)
+			
 			first = False
 			if self.particle_viewer == None:
 				first = True
@@ -867,12 +859,15 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 				self.particle_viewer.set_data(data)
 			else:
 				
-				for i,idx in enumerate(all):
+				for i,[name,idx,f] in enumerate(bdata):
 					index = -1
-					for j in range(self.classes.get_xsize()):
-						if int(self.classes.get(j,idx)) == self.class_idx:
-							index = j
-							break
+					if self.classes.get_xsize() == 1:
+						index = 0 # just assume it's the first one - this is potentially fatal assumption, but in obscure situations only
+					else:
+						for j in range(self.classes.get_xsize()):
+							if int(self.classes.get(j,idx)) == self.class_idx:
+								index = j
+								break
 					if index == -1:
 						print "couldn't find"
 						get_application().setOverrideCursor(Qt.ArrowCursor)
@@ -885,7 +880,8 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 					
 					t = Transform({"type":"2d","alpha":a,"mirror":int(m)})
 					t.set_trans(x,y)
-					data[i].transform(t)
+					f.append(ApplyTransform(t))
+					#data[i].transform(t)
 				self.particle_viewer.set_data(data)
 
 			
@@ -901,6 +897,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 			
 			self.updateGL()
 			
+			print "mx_image_selected took",time()-t1
 	
 	def check_images_in_memory(self):
 		if self.alignment_file != None:
@@ -932,7 +929,23 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 		if self.proj_class_viewer !=None: self.proj_class_viewer.closeEvent(None)
 		if self.particle_viewer != None: self.particle_viewer.closeEvent(None)
 		get_application().close_specific(self)
+
+
+def set_included_1(e):
+	e.set_attr("included",1)
+	e.mxset = [1]
+
+def set_included_0(e):
+	e.set_attr("included",0)
+	e.mxset = [0]
 	
+class ApplyTransform:
+	def __init__(self,transform):
+		self.transform = transform
+	
+	def __call__(self,emdata):
+		emdata.transform(self.transform)
+
 
 class EMAsymmetricUnitInspector(EMSymInspector):
 	def get_desktop_hint(self):

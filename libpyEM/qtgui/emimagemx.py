@@ -906,7 +906,10 @@ class EMImageMXModule(EMGUIModule):
 				self.data.set_xyz(str(self.inspector.xyz.currentText()))
 				filename = data_or_filename
 		else:
-			if data_or_filename != None and len(data_or_filename) > 0:
+			
+			if isinstance(data_or_filename, EMLightWeightParticleCache):
+				self.data = data_or_filename
+			elif data_or_filename != None and len(data_or_filename) > 0:
 				self.data = EMDataListCache(data_or_filename,cache_size,soft_delete=soft_delete)
 				self.get_inspector()
 				self.inspector.disable_xyz()
@@ -2665,7 +2668,132 @@ class EMImageInspectorMX(QtGui.QWidget):
 		self.conts.setRange(0,1.0)
 		self.update_brightness_contrast()
 
+
+class EMLightWeightParticleCache:
+	def __init__(self,data,cache_max=1024):
+		'''
+		@param data list of lists - lists in in the list are of the form [image_name, idx, [list of functions that take an EMData as the first argument]]
+		'''
+		self.data = data
+		self.cache_start = 0
+		self.cache_max = cache_max
+		self.cache = [None for i in range(self.cache_max)]
+		self.xsize = None
+		self.ysize = None
+		self.header_keys = None
+		# set stuff
+		self.visible_sets = [] 
+		self.sets = {}
+
+	def __len__(self):
+		return len(self.data)
 	
+	def get_xsize(self):
+		if self.xsize == None:
+			image = self[self.cache_start]
+			self.xsize = image.get_xsize()
+		
+		return self.xsize
+	
+	def get_ysize(self):
+		if self.ysize == None:
+			image = self[self.cache_start]
+			self.ysize = image.get_ysize()
+		
+		return self.ysize
+	
+	def get_image_header(self,idx):
+		return self[idx].get_attr_dict()
+	
+	def get_image_keys(self):
+		if self.header_keys == None:
+			self.header_keys = self.get_image_header(self.cache_start).keys()
+		return self.header_keys
+	
+	def refocus_cache(self,new_focus):
+		new_cache_start = new_focus-self.cache_max/2
+		if new_cache_start < self.cache_start and (new_cache_start + self.cache_max) > self.cache_start:
+			overlap = new_cache_start + self.cache_max - self.cache_start
+			cache = [None for i in range(0,self.cache_max-overlap)]
+			cache.extend(self.cache[0:overlap])
+			self.cache = cache
+		elif new_cache_start > self.cache_start and  new_cache_start < (self.cache_start + self.cache_max):
+			cache = self.cache[new_cache_start:self.cache_start+self.cache_max]
+			overlap =self.cache_max - ( new_cache_start - self.cache_start)
+			cache = [None for i in range(0,self.cache_max-overlap)]
+			cache.extend(self.cache[0:overlap])
+			self.cache = cache
+		else:
+			self.cache = [None for i in range(self.cache_max)]
+			
+		self.cache_start = new_cache_start
+			
+	
+	def __getitem__(self,idx):
+		if idx < self.cache_start or idx >= self.cache_start+self.cache_max:
+			self.refocus_cahe(idx)
+			
+		adj_idx = idx-self.cache_start
+		image = self.cache[adj_idx]
+		if image == None:
+			a = self.__load_item(idx,adj_idx)
+			return a
+		else: return image
+	
+	def __load_item(self,idx,adj_idx):
+		data = self.data[idx]
+		a = EMData(data[0],data[1])
+		for func in data[2]: func(a) # this is supplied for future use
+		self.cache[adj_idx] = a
+		return a
+	
+	def on_timer(self):
+		'''
+		call this to load unloaded images in the cache
+		'''
+		for idx,i in enumerate(self.cache):
+			if i == None:
+				# only does one at a time
+				self.__load_item(idx,idx+self.cache_start)
+				return
+			
+	def __init_sets(self):
+		pass
+
+	def make_set_visible(self,i):
+		pass
+
+	def set_current_set(self,i):
+		pass
+			
+	def make_set_not_visible(self,i):
+		pass
+	
+	def delete_set(self,idx):
+		pass
+	
+	def clear_sets(self):
+		pass
+	
+	def associate_set(self,idx,lst,mxset=False):
+		pass
+
+	def image_set_associate(self,idx):
+		'''
+		Associate the image with the set (or disassociate)
+		'''
+		pass
+				
+	def save_lst(self,fsp):
+		# Get the output filespec
+		return # doesn't work yet
+	
+	def save_data(self):
+		pass
+
+#				d.write_image(fsp,-1)
+
+
 class EMDataListCache:
 	'''
 	This class designed primarily for memory management in the context of large lists of EMData objects. It is only efficient
