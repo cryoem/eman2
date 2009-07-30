@@ -195,6 +195,7 @@ class EulerData:
 	def __len__(self): return len(self.data)
 	
 	def set_data(self,data):
+		t = time()
 		self.data = data
 		self.eulers = []
 		for i in xrange(len(self.data)):
@@ -209,35 +210,42 @@ class EulerData:
 		
 		# get the first header and get any items that can be cast to a float
 		header = self.data[0].get_attr_dict()
-		
-		options = []
+		print "up to here took",time()-t
+		self.score_options = []
 		for key,value in header.items():
 			try:
 				float(value)
-				options.append(key)
+				self.score_options.append(key)
 			except: pass
 	
-		if len(data) == 1:
-			self.score_options = options
-		else:
-			self.score_options = []
-			for key in options:
-				success = True
-				for i in range(1,len(self.data)):
-					header = self.data[i].get_attr_dict()
-					try:
-						value = header[key]
-						float(value)
-					except:
-						success = False
-						break
-					
-				if success:
-					self.score_options.append(key)
+#		if len(data) == 1:
+#			self.score_options = options
+#		else:
+#			self.score_options = []
+#			for key in options:
+#				success = True
+#				for i in range(1,len(self.data)):
+#					if hasattr(self.data,"get_image_header"):
+#						header = self.data.get_image_header(i)
+#					else:
+#						header = self.data[i].get_attr_dict()
+#					try:
+#						value = header[key]
+#						float(value)
+#					except:
+#						success = False
+#						break
+#					
+#					success = True
+#					break
+#					
+#				if success:
+#					self.score_options.append(key)
 		
 		self.score_options.append("None")
 		self.score_options.sort()
-			
+		
+		print "set data took",time()-t
 	def get_eulers(self): return self.eulers
 	
 	def get_score_options(self): return self.score_options
