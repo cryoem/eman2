@@ -657,7 +657,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 			first = True
 			self.proj_class_viewer = EMImageMXModule(data=None,application=get_application())
 			QtCore.QObject.connect(self.proj_class_viewer.emitter(),QtCore.SIGNAL("module_closed"),self.on_mx_view_closed)
-			self.proj_class_viewer.set_mouse_mode("app" )
+			self.proj_class_viewer.set_mouse_mode("App" )
 			QtCore.QObject.connect(self.proj_class_viewer.emitter(),QtCore.SIGNAL("mx_image_selected"), self.mx_image_selected)
 			get_application().show_specific(self.proj_class_viewer)
 			
@@ -741,7 +741,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 			if self.particle_viewer == None:
 				first = True
 				self.particle_viewer = EMImageMXModule(data=None,application=get_application())
-				self.particle_viewer.set_mouse_mode("app" )
+				self.particle_viewer.set_mouse_mode("App" )
 				QtCore.QObject.connect(self.particle_viewer.emitter(),QtCore.SIGNAL("module_closed"),self.on_particle_mx_view_closed)
 				QtCore.QObject.connect(self.particle_viewer.emitter(),QtCore.SIGNAL("mx_image_selected"), self.particle_selected)
 				get_application().show_specific(self.particle_viewer)
@@ -835,7 +835,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 			if self.particle_viewer == None:
 				first = True
 				self.particle_viewer = EMImageMXModule(data=None,application=get_application())
-				self.particle_viewer.set_mouse_mode("app" )
+				self.particle_viewer.set_mouse_mode("App" )
 				QtCore.QObject.connect(self.particle_viewer.emitter(),QtCore.SIGNAL("module_closed"),self.on_particle_mx_view_closed)
 				QtCore.QObject.connect(self.particle_viewer.emitter(),QtCore.SIGNAL("mx_image_selected"), self.particle_selected)
 				get_application().show_specific(self.particle_viewer)

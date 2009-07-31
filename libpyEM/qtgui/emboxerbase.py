@@ -1832,7 +1832,7 @@ class EMBoxerModule(PyQt4.QtCore.QObject):
 			self.thumbs_window.desktop_hint = "rotor" # this is to make it work in the desktop
 				
 			self.thumbs_window.set_data(self.image_thumbs,soft_delete=True)
-			self.thumbs_window.set_mouse_mode("app")
+			self.thumbs_window.set_mouse_mode("App")
 			self.thumbs_window.update_window_title("Thumbnails")
 			self.signal_slot_handlers["thumbs_window"] = ThumbsEventHandler(self,self.thumbs_window)
 			for tool in self.tools.values():
@@ -1865,7 +1865,7 @@ class EMBoxerModule(PyQt4.QtCore.QObject):
 			self.particles_window=EMImageMXModule(application=get_application())
 			self.particles_window.desktop_hint = "rotor" # this is to make it work in the desktop
 				
-			self.particles_window.set_mouse_mode("app")
+			self.particles_window.set_mouse_mode("App")
 			self.particles_window.update_window_title("Particles")
 			self.signal_slot_handlers["particles_window"] = ParticlesWindowEventHandler(self,self.particles_window)
 			for tool in self.tools.values():

@@ -907,9 +907,9 @@ class EMImageMXModule(EMGUIModule):
 		cache_size = -1
 		
 		if isinstance(data_or_filename,str):
-			nx,ny,nz = gimme_image_dimensions3D(data_or_filename)
-			bytes_per_image = nx*ny*4.0
-			cache_size = int(75000000/bytes_per_image) # 75 MB
+#			nx,ny,nz = gimme_image_dimensions3D(data_or_filename)
+#			bytes_per_image = nx*ny*4.0
+#			cache_size = int(75000000/bytes_per_image) # 75 MB
 			
 			if nz == 1:
 				#self.data = EMDataListCache(data_or_filename,cache_size,soft_delete=soft_delete)
@@ -1252,9 +1252,6 @@ class EMImageMXModule(EMGUIModule):
 			invscale=1.0/self.scale
 			self.set_label_ratio = 0.1
 			self.coords = {}
-			nsets = len(self.data.visible_sets)
-			current_sets = copy.copy(self.data.visible_sets)
-			current_sets.sort()
 			
 			if self.matrix_panel.visiblerows:
 				for row in range(self.matrix_panel.ystart,self.matrix_panel.visiblerows):
@@ -1365,32 +1362,6 @@ class EMImageMXModule(EMGUIModule):
 								glPopMatrix()
 								iss  += 1
 						if not light: glEnable(GL_LIGHTING)
-						
-#						if nsets>0 and hasattr(d,"mxset") and len(d.mxset) > 0:
-#							
-#							
-#							iss = 0
-#							for rot,set in enumerate(current_sets):
-#								#s
-#								if set in d.mxset:
-#									x_pos_ratio = 1-self.set_label_ratio
-#									y_pos_ratio = x_pos_ratio
-#									y_pos_ratio -= 2*float(iss)/nsets*self.set_label_ratio
-#									y_pos_ratio *= 2
-#									x_pos_ratio *= 2
-#									self.load_set_color(set)
-#									width = w/2.0
-#									height = h/2.0
-#									
-#									glPushMatrix()
-#									glTranslatef(tx+x_pos_ratio*width,real_y+y_pos_ratio*height,0)
-#									#glScale((1-0.2*rot/nsets)*width,(1-0.2*rot/nsets)height,1.0)
-#									#self.__render_excluded_hollow_square()
-#									glScale(self.set_label_ratio*width,self.set_label_ratio*height,1.0)
-#									self.__render_excluded_square()
-#									
-#									glPopMatrix()
-#									iss  += 1
 #									
 							
 			for i in self.selected:

@@ -2248,7 +2248,7 @@ class Boxable:
 		e = EMData().read_images("classes.init.hdf")
 		self.imagemx2p = EMImage(e)
 		self.imagemx2 = self.imagemx2p.child
-		self.imagemx2.setmmode("app")
+		self.imagemx2.setmmode("App")
 		QtCore.QObject.connect(self.imagemx2,QtCore.SIGNAL("mousedown"),self.box_selected)
 		self.imagemx2p.show()
 		

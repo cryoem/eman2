@@ -1462,7 +1462,7 @@ class EMBoxerModule(QtCore.QObject):
 		self.guimx.desktop_hint = "rotor"
 		self.fancy_mode = EMBoxerModule.PLAIN_MODE
 		
-		self.guimx.set_mouse_mode("app")
+		self.guimx.set_mouse_mode("App")
 		
 		qt_target = get_application().get_qt_emitter(self.guimx)
 
@@ -1987,7 +1987,7 @@ class EMBoxerModule(QtCore.QObject):
 		except: 
 			pass # this will happen if fancy widgets are being used
 		
-		self.guimxit.set_mouse_mode("app")
+		self.guimxit.set_mouse_mode("App")
 			#app.setOverrideCursor(QtCore.Qt.BusyCursor)
 #		except: 
 #			app.setOverrideCursor(QtCore.Qt.ArrowCursor)
