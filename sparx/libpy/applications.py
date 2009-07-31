@@ -602,7 +602,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		else:
 			print_msg("Initial criterion for average %d : %12.3e\n"%(0, sum_SSNR))
 			for iave in xrange(1, number_of_ave):
-				sum_SSNR = mpi_recv(100, MPI_FLOAT, iave, iave, MPI_COMM_WORLD)
+				sum_SSNR = mpi_recv(1, MPI_FLOAT, iave, iave, MPI_COMM_WORLD)
 				sum_SSNR = float(sum_SSNR[0])
 				print_msg("Initial criterion for average %d : %12.3e\n"%(iave, sum_SSNR))
 	else: tavg = EMData()
