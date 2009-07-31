@@ -1037,7 +1037,7 @@ def EMSelectorTemplate(Type):
 		
 		def preview_euler_view(self, full_path):
 			if self.dialog_mode: return
-			from emimagemx import EMDataListCache
+			from emimagemx import EMLightWeightParticleCache
 			from emimage3dsym import EM3DSymViewerModule
 			if self.single_preview_only():
 				if not isinstance(self.gl_image_preview,EM3DSymViewerModule):
@@ -1047,13 +1047,13 @@ def EMSelectorTemplate(Type):
 					
 				
 				
-				self.gl_image_preview.set_emdata_list_as_data(EMDataListCache(full_path))
+				self.gl_image_preview.set_emdata_list_as_data(EMLightWeightParticleCache.from_file(full_path))
 				get_application().show_specific(self.gl_image_preview)
 				self.gl_image_preview.updateGL()
 				
 			else:
 				preview = EM3DSymViewerModule(get_application())
-				preview.set_emdata_list_as_data(EMDataListCache(full_path))
+				preview.set_emdata_list_as_data(EMLightWeightParticleCache.from_file(full_path))
 				get_application().show_specific(preview)
 				
 		def preview_plot(self,filename):
@@ -1607,8 +1607,11 @@ class EMFS2DImageStackItem(EMFSListingItem):
 	
 	def get_emdata(self):
 		'''This one returns a list'''
-		from emimagemx import EMDataListCache
-		return EMDataListCache(self.full_path)
+#		from emimagemx import EMDataListCache
+#		return EMDataListCache(self.full_path)
+		
+		from imagemx import EMLightWeightParticleCache
+		return EMLightWeightParticleCache.from_file(self.full_path)
 	
 	def is_2d_stack(self): return True
 	
@@ -2267,8 +2270,11 @@ class EMDB2DImageStackItem(EMListingItem):
 #		return save_as(db_name,target.application())
 #	
 	def get_emdata(self):
-		from emimagemx import EMDataListCache
-		return EMDataListCache(self.get_path())
+#		from emimagemx import EMDataListCache
+#		return EMDataListCache(self.get_path())
+	
+		from imagemx import EMLightWeightParticleCache
+		return EMLightWeightParticleCache.from_file(self.get_path())
 	
 	def get_path(self):
 		return "bdb:"+self.database_directory+"#"+self.database

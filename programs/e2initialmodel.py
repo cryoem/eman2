@@ -60,7 +60,7 @@ def main():
 	parser.add_option("--orientgen",type="string", default="eman",help="The type of orientation generator. Default is safe. See e2help.py orientgens")
 
 	# Database Metadata storage
-	parser.add_option("--dbls",type="string",default=None,help="data base list storage, used by the workflow. You can ignore this argument.",default=None)
+	parser.add_option("--dbls",type="string",default=None,help="data base list storage, used by the workflow. You can ignore this argument.")
 	
 	(options, args) = parser.parse_args()
 	verbose=options.verbose

@@ -62,7 +62,7 @@ class EMImageMXWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMatri
 	"""
 	def __init__(self, em_mx_module,parent=None):
 		#self.initflag = True
-		self.mmode = "drag"
+		self.mmode = "Drag"
 
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True)
@@ -198,6 +198,13 @@ class EMMXCoreMouseEvents:
 		pass
 
 class EMMXCoreMouseEventsMediator:
+	'''
+	This class is like documentation. It doesn't really need to exist. MouseEventHandlers talk to this
+	and not to the EMImageMXModule. This talks to the EMImageMXModule. So instead the MouseEventHandlers could
+	just talk directly to EMImageMXModule - I like it here because I can see exactly what's required of the
+	MouseEventHandlers - however the problem could be solved using subclassing as a method of documentation
+	It's much of a muchness.
+	'''
 	def __init__(self,target):
 		if not isinstance(target,EMImageMXModule):
 			print "error, the target should be a EMImageMXModule"
@@ -217,8 +224,8 @@ class EMMXCoreMouseEventsMediator:
 	def get_box_image(self,idx):
 		return self.target().get_box_image(idx)
 	
-	def pop_box_image(self,idx,event=None,redraw=False):
-		self.target().pop_box_image(idx,event,redraw)
+	def remove_particle_image(self,idx,event=None,redraw=False):
+		self.target().remove_particle_image(idx,event,redraw)
 		
 	def image_set_associate(self,idx,event=None,redraw=False):
 		self.target().image_set_associate(idx,event,redraw)
@@ -257,7 +264,7 @@ class EMMXDelMouseEvents(EMMXCoreMouseEvents):
 		if event.button()==Qt.LeftButton:
 			lc=self.mediator.scr_to_img((event.x(),event.y()))
 			if lc != None and self.lc != None and lc[0] == self.lc[0]:
-				self.mediator.pop_box_image(lc[0],event,True)
+				self.mediator.remove_particle_image(lc[0],event,True)
 				#self.mediator.force_display_update()
 				
 			self.lc = None
@@ -404,7 +411,7 @@ class EMMAppMouseEvents(EMMXCoreMouseEvents):
 				self.mediator.emit(QtCore.SIGNAL("mx_mouseup"),event,lc)
 			else:
 				if lc != None:
-					self.mediator.pop_box_image(lc[0],event,True)
+					self.mediator.remove_particle_image(lc[0],event,True)
 					self.mediator.force_display_update()
 			
 class EMMatrixPanel:
@@ -435,8 +442,6 @@ class EMMatrixPanel:
 #			target.scale = scale
 #			view_scale = taget.scale
 #			[self.ystart,self.visiblerows,self.visiblecols] = self.visible_row_col(view_width,view_height,view_scale,view_data,y)
-#			if self.ystart == None: 
-#				print "kill me now....please"
 		xsep = view_width - self.visiblecols*(rendered_image_width+self.min_sep)
 		self.xoffset = xsep/2		
 		
@@ -556,31 +561,32 @@ class EMImageMXModule(EMGUIModule):
 		'''
 		Called from e2eulerxplor
 		'''
-		self.get_inspector()
-		self.inspector.add_set(idx,name,display)
-		self.data.associate_set(idx,lst)
+		#self.get_inspector()
+		self.sets_manager.enable_set(name)
+		self.force_display_update()
+		self.updateGL()
+		#self.sets_manager.associate_set(idx,lst)
 	
 	def clear_sets(self):
-		self.inspector.clear_sets()
-		self.data.clear_sets()
+		self.sets_manager.clear_sets()
+		self.force_display_update()
 		self.updateGL()
 	
 	def set_single_active_set(self,db_name,idx=0,exclusive=0):
 		'''
 		Called from emform
 		'''
-		db = db_open_dict("bdb:select")
-		set_list = db[db_name]
-		if set_list == None: set_list = []
+#		db = db_open_dict("bdb:select")
+#		set_list = db[db_name]
+#		if set_list == None: set_list = []
 		
 		self.get_inspector()
-		self.inspector.clear_sets()
-		self.inspector.add_set(idx,db_name,True)
+		self.sets_manager.clear_sets()
+		self.sets_manager.enable_set(db_name)
+		#self.sets_manager.associate_set(idx,set_list,True)
 		
-		self.data.clear_sets()
-		self.data.associate_set(idx,set_list,True)
-		
-		self.inspector.set_set_mode()
+		self.sets_manager.enable_sets_mode()
+		self.force_display_update()
 		self.updateGL()
 		
 	def load_font_renderer(self):
@@ -643,7 +649,7 @@ class EMImageMXModule(EMGUIModule):
 		self.mousedrag=None
 		self.nimg=0
 		self.changec={}
-		self.mmode="drag"
+		self.mmode="Drag"
 		self.selected=[]
 		self.hist = []
 		self.targetorigin=None
@@ -663,6 +669,8 @@ class EMImageMXModule(EMGUIModule):
 		self.emdata_list_cache = None # all import emdata list cache, the object that stores emdata objects efficiently. Must be initialized via set_data or set_image_file_name
 		self.animation_enabled = False
 		self.line_animation = None
+		self.sets_manager = EMMXSetsManager(self) # we need this for managing sets
+		self.deletion_manager = EMMXDeletionManager(self) # we need this for managing deleted particles
 		
 		self.coords={}
 		self.nshown=0
@@ -701,6 +709,12 @@ class EMImageMXModule(EMGUIModule):
 	def get_emit_signals_and_connections(self):
 		return {"set_origin":self.set_origin,"set_scale":self.set_scale,"origin_update":self.origin_update}
 	
+	def get_data(self):
+		'''
+		Gets the current data object, this is either an EMDataListCache, an EM3DDataListCache, an EMLightWeightParticleCache, or None
+		'''	
+		return self.data
+	
 	def width(self):
 		if self.gl_widget != None:
 			return self.view_width()
@@ -727,10 +741,10 @@ class EMImageMXModule(EMGUIModule):
 	def __init_mouse_handlers(self):
 		self.mouse_events_mediator = EMMXCoreMouseEventsMediator(self)
 		self.mouse_event_handlers = {}
-		self.mouse_event_handlers["app"] = EMMAppMouseEvents(self.mouse_events_mediator)
-		self.mouse_event_handlers["del"] = EMMXDelMouseEvents(self.mouse_events_mediator)
-		self.mouse_event_handlers["drag"] = EMMXDragMouseEvents(self.mouse_events_mediator)
-		self.mouse_event_handlers["set"] = EMMXSetMouseEvents(self.mouse_events_mediator)
+		self.mouse_event_handlers["App"] = EMMAppMouseEvents(self.mouse_events_mediator)
+		self.mouse_event_handlers["Del"] = EMMXDelMouseEvents(self.mouse_events_mediator)
+		self.mouse_event_handlers["Drag"] = EMMXDragMouseEvents(self.mouse_events_mediator)
+		self.mouse_event_handlers[self.sets_manager.unique_name()] = EMMXSetMouseEvents(self.mouse_events_mediator)
 		self.mouse_event_handler = self.mouse_event_handlers[self.mmode]
 		
 	def set_mouse_mode(self,mode):
@@ -749,6 +763,8 @@ class EMImageMXModule(EMGUIModule):
 	def get_inspector(self):
 		if not self.inspector : 
 			self.inspector=EMImageInspectorMX(self)
+			button = self.inspector.add_panel(self.sets_manager.get_panel_widget(),self.sets_manager.unique_name())
+			self.sets_manager.set_button(button)
 			self.inspector_update()
 		return self.inspector
 	
@@ -764,10 +780,10 @@ class EMImageMXModule(EMGUIModule):
 	def get_scale(self):
 		return self.scale
 	
-	def pop_box_image(self,idx,event=None,update_gl=False):
+	def remove_particle_image(self,idx,event=None,update_gl=False):
 		if self.reroute_delete == False:
-			val = self.data.delete_box(idx)
-			if val > 0 and update_gl:
+			self.deletion_manager.delete_box(idx)
+			if update_gl:
 				self.force_display_update()
 				self.updateGL()
 				if event != None: self.emit(QtCore.SIGNAL("mx_boxdeleted"),event,[idx],False) 
@@ -776,14 +792,14 @@ class EMImageMXModule(EMGUIModule):
 	
 	
 	def image_set_associate(self,idx,event=None,update_gl=False):
-		val = self.data.image_set_associate(idx)
-		if val > 0 and update_gl:
+		self.sets_manager.image_set_associate(idx)
+		if update_gl:
 			self.force_display_update()
 			self.updateGL()
-		self.get_inspector()
-		self.inspector.save_set()
+#		self.get_inspector()
+#		self.inspector.save_set()
 		
-#	def pop_box_image(self,idx,event=None,update_gl=False):
+#	def remove_particle_image(self,idx,event=None,update_gl=False):
 #		if self.reroute_delete_target  == None:
 #			d = self.data.pop(idx)
 #			self.display_states = []
@@ -793,7 +809,7 @@ class EMImageMXModule(EMGUIModule):
 #				self.updateGL()
 #			return d
 #		else:
-#			self.reroute_delete_target.pop_box_image(idx)
+#			self.reroute_delete_target.remove_particle_image(idx)
 #			if event != None: self.emit(QtCore.SIGNAL("mx_boxdeleted"),event,[idx],False)
 
 	def get_box_image(self,idx):
@@ -896,7 +912,9 @@ class EMImageMXModule(EMGUIModule):
 			cache_size = int(75000000/bytes_per_image) # 75 MB
 			
 			if nz == 1:
-				self.data = EMDataListCache(data_or_filename,cache_size,soft_delete=soft_delete)
+				#self.data = EMDataListCache(data_or_filename,cache_size,soft_delete=soft_delete)
+				# this is much faster
+				self.data = EMLightWeightParticleCache.from_file(data_or_filename)
 				self.get_inspector()
 				self.inspector.disable_xyz()
 			else:
@@ -1106,6 +1124,8 @@ class EMImageMXModule(EMGUIModule):
 				vec=(vec[0]/h,vec[1]/h)
 				self.origin=(self.origin[0]+vec[0]*self.targetspeed,self.origin[1]+vec[1]*self.targetspeed)
 			#self.updateGL()
+		# need to think this through yet...	
+		#self.data.on_idle()
 	
 	def display_state_changed(self):
 		display_states = []
@@ -1190,6 +1210,8 @@ class EMImageMXModule(EMGUIModule):
 		self.matrix_panel.update_panel_params(self.view_width(),self.gl_widget.height(),self.scale,self.data,self.origin[1],self)
 		
 		if render: 
+			deleted_idxs = self.deletion_manager.deleted_ptcls()
+			visible_set_data = self.sets_manager.visible_set_data()
 			if self.draw_background:
 				self.__draw_backdrop()
 		
@@ -1280,8 +1302,12 @@ class EMImageMXModule(EMGUIModule):
 						self.coords[i]=(tx,ty,tw,th)
 						
 						draw_tex = True
-						d = self.data[i]
-						if not d.has_attr("excluded"):
+						excluded = False
+						try:
+							(ii for ii in deleted_idxs if ii == i ).next()
+							excluded = True
+						except: pass
+						if not excluded:
 							#print rx,ry,tw,th,self.gl_widget.width(),self.gl_widget.height(),self.origin
 							if not self.glflags.npt_textures_unsupported():
 								a=GLUtil.render_amp8(self.data[i],rx,ry,tw,th,(tw-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
@@ -1310,34 +1336,63 @@ class EMImageMXModule(EMGUIModule):
 							
 						if draw_tex : self.nshown+=1
 						
-						if nsets>0 and hasattr(d,"mxset") and len(d.mxset) > 0:
-							light = glIsEnabled(GL_LIGHTING)
-							glEnable(GL_LIGHTING)
+						light = glIsEnabled(GL_LIGHTING)
+						glEnable(GL_LIGHTING)
+						iss = 0
+						for set_name,set_list in visible_set_data.items():
+							in_set = False
+							try:
+								(ii for ii in set_list  if ii == i ).next()
+								in_set = True
+							except: pass
 							
-							iss = 0
-							for rot,set in enumerate(current_sets):
-								#s
-								if set in d.mxset:
-									x_pos_ratio = 1-self.set_label_ratio
-									y_pos_ratio = x_pos_ratio
-									y_pos_ratio -= 2*float(iss)/nsets*self.set_label_ratio
-									y_pos_ratio *= 2
-									x_pos_ratio *= 2
-									self.load_set_color(set)
-									width = w/2.0
-									height = h/2.0
+							if in_set:
+								x_pos_ratio = 1-self.set_label_ratio
+								y_pos_ratio = x_pos_ratio
+								y_pos_ratio -= 2*float(iss)/len(visible_set_data)*self.set_label_ratio
+								y_pos_ratio *= 2
+								x_pos_ratio *= 2
+								self.sets_manager.load_set_color(set_name)
+								width = w/2.0
+								height = h/2.0
 									
-									glPushMatrix()
-									glTranslatef(tx+x_pos_ratio*width,real_y+y_pos_ratio*height,0)
-									#glScale((1-0.2*rot/nsets)*width,(1-0.2*rot/nsets)height,1.0)
-									#self.__render_excluded_hollow_square()
-									glScale(self.set_label_ratio*width,self.set_label_ratio*height,1.0)
-									self.__render_excluded_square()
-									
-									glPopMatrix()
-									iss  += 1
-									
-							if not light: glEnable(GL_LIGHTING)
+								glPushMatrix()
+								glTranslatef(tx+x_pos_ratio*width,real_y+y_pos_ratio*height,0)
+								#glScale((1-0.2*rot/nsets)*width,(1-0.2*rot/nsets)height,1.0)
+								#self.__render_excluded_hollow_square()
+								glScale(self.set_label_ratio*width,self.set_label_ratio*height,1.0)
+								self.__render_excluded_square()
+								glPopMatrix()
+								iss  += 1
+						if not light: glEnable(GL_LIGHTING)
+						
+#						if nsets>0 and hasattr(d,"mxset") and len(d.mxset) > 0:
+#							
+#							
+#							iss = 0
+#							for rot,set in enumerate(current_sets):
+#								#s
+#								if set in d.mxset:
+#									x_pos_ratio = 1-self.set_label_ratio
+#									y_pos_ratio = x_pos_ratio
+#									y_pos_ratio -= 2*float(iss)/nsets*self.set_label_ratio
+#									y_pos_ratio *= 2
+#									x_pos_ratio *= 2
+#									self.load_set_color(set)
+#									width = w/2.0
+#									height = h/2.0
+#									
+#									glPushMatrix()
+#									glTranslatef(tx+x_pos_ratio*width,real_y+y_pos_ratio*height,0)
+#									#glScale((1-0.2*rot/nsets)*width,(1-0.2*rot/nsets)height,1.0)
+#									#self.__render_excluded_hollow_square()
+#									glScale(self.set_label_ratio*width,self.set_label_ratio*height,1.0)
+#									self.__render_excluded_square()
+#									
+#									glPopMatrix()
+#									iss  += 1
+#									
+							
 			for i in self.selected:
 				try:
 					data = self.coords[i]	
@@ -1678,6 +1733,7 @@ class EMImageMXModule(EMGUIModule):
 			msg.exec_()
 			return
 		
+		self.data.set_excluded_ptcls(self.deletion_manager.deleted_ptcls())
 		from emsave import save_data
 		file_name = save_data(self.data)
 		if file_name == self.file_name and file_exists(file_name): # the file we are working with was overwritten
@@ -2095,7 +2151,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 		
 		try:
 			self.vals.clear()
-			vn=self.target().data.get_image_keys()
+			vn=self.target().data.get_image_header_keys()
 			vn.sort()
 			for i in vn:
 				action=self.vals.addAction(i)
@@ -2155,24 +2211,21 @@ class EMImageInspectorMX(QtGui.QWidget):
 		self.mapp.setCheckable(1)
 		self.hbl2.addWidget(self.mapp)
 		
-		self.mdel = QtGui.QPushButton("Del")
-		self.mdel.setCheckable(1)
-		self.hbl2.addWidget(self.mdel)
+		self.mDel = QtGui.QPushButton("Del")
+		self.mDel.setCheckable(1)
+		self.hbl2.addWidget(self.mDel)
 
 		self.mdrag = QtGui.QPushButton("Drag")
 		self.mdrag.setCheckable(1)
 		self.hbl2.addWidget(self.mdrag)
 		
-		self.mset = QtGui.QPushButton("Sets")
-		self.mset.setCheckable(1)
-		self.hbl2.addWidget(self.mset)
-
-		self.bg=QtGui.QButtonGroup()
-		self.bg.setExclusive(1)
-		self.bg.addButton(self.mapp)
-		self.bg.addButton(self.mdel)
-		self.bg.addButton(self.mdrag)
-		self.bg.addButton(self.mset)
+		
+		self.mouse_mode_but_grp=QtGui.QButtonGroup()
+		self.mouse_mode_but_grp.setExclusive(1)
+		self.mouse_mode_but_grp.addButton(self.mapp)
+		self.mouse_mode_but_grp.addButton(self.mDel)
+		self.mouse_mode_but_grp.addButton(self.mdrag)
+#		self.mouse_mode_but_grp.addButton(self.mset)
 		
 		self.mdrag.setChecked(True)
 		
@@ -2191,7 +2244,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 			self.font_label.setAlignment(Qt.AlignRight|Qt.AlignVCenter)
 			self.hbl.addWidget(self.font_label)
 		
-			self.font_size = QtGui.QSpinBox(self)
+			self.font_size = QtGui.QSpinBox()
 			self.font_size.setObjectName("nrow")
 			self.font_size.setRange(1,50)
 			self.font_size.setValue(int(self.target().get_font_size()))
@@ -2205,60 +2258,28 @@ class EMImageInspectorMX(QtGui.QWidget):
 		self.banim.setChecked(self.target().animation_enabled)
 		self.hbl.addWidget(self.banim)
 		
-		self.tabwidget = QtGui.QTabWidget(self)
+		self.tabwidget = QtGui.QTabWidget()
 			
 		self.tabwidget.addTab(self.get_image_manip_page(),"Main")
-		self.tabwidget.addTab(self.get_sets_page(),"Sets")
-		self.vbl.addWidget(self.tabwidget)
-
 		
-		# this stuff was used by flick... now it's here until I redo flick (for reference)
-#		if allow_col_variation:
-#			self.lbl2 = QtGui.QLabel("#/col:")
-#			self.lbl2.setAlignment(Qt.AlignRight|Qt.AlignVCenter)
-#			self.hbl.addWidget(self.lbl2)
-#			
-#			self.ncol = QtGui.QSpinBox(self)
-#			self.ncol.setObjectName("ncol")
-#			self.ncol.setRange(1,50)
-#			self.ncol.setValue(self.target().get_rows())
-#			self.hbl.addWidget(self.ncol)
-#			
-#		if allow_window_variation:
-#			self.lbl3 = QtGui.QLabel("#/mx:")
-#			self.lbl3.setAlignment(Qt.AlignRight|Qt.AlignVCenter)
-#			self.hbl.addWidget(self.lbl3)
-#			
-#			self.nmx = QtGui.QSpinBox(self)
-#			self.nmx.setObjectName("ncol")
-#			self.nmx.setRange(1,50)
-#			self.nmx.setValue(self.target().get_mxs())
-#			self.hbl.addWidget(self.nmx)
+		self.vbl.addWidget(self.tabwidget)
 		
 		self.lowlim=0
 		self.highlim=1.0
-		self.del_mode_set = None # Because a selection set can have any name, the deletion mode set can be anyhting
+		self.Del_mode_set = None # Because a selection set can have any name, the Deletion mode set can be anyhting
 		
 		self.update_brightness_contrast()
 		minden = self.target().get_density_min()
 		maxden = self.target().get_density_max()
-#		try:
-#			self.hist.set_data(self.target().get_hist(),minden,maxden)
-#		except:
-#			pass
+
 		self.busy=0
 		
 		QtCore.QObject.connect(self.vals, QtCore.SIGNAL("triggered(QAction*)"), self.newValDisp)
-#		if allow_col_variation:
-#			QtCore.QObject.connect(self.ncol, QtCore.SIGNAL("valueChanged(int)"), self.target().set_mx_rows)
-#		if allow_window_variation:
-#			QtCore.QObject.connect(self.nmx, QtCore.SIGNAL("valueChanged(int)"), self.target().set_mxs)
-		
-		#QtCore.QObject.connect(self.mmeas, QtCore.SIGNAL("clicked(bool)"), self.setMeasMode)
-		QtCore.QObject.connect(self.mapp, QtCore.SIGNAL("clicked(bool)"), self.set_app_mode)
-		QtCore.QObject.connect(self.mdel, QtCore.SIGNAL("clicked(bool)"), self.set_del_mode)
-		QtCore.QObject.connect(self.mdrag, QtCore.SIGNAL("clicked(bool)"), self.set_drag_mode)
-		QtCore.QObject.connect(self.mset, QtCore.SIGNAL("clicked(bool)"), self.set_set_mode)
+#		QtCore.QObject.connect(self.mapp, QtCore.SIGNAL("clicked(bool)"), self.set_app_mode)
+#		QtCore.QObject.connect(self.mDel, QtCore.SIGNAL("clicked(bool)"), self.set_Del_mode)
+#		QtCore.QObject.connect(self.mdrag, QtCore.SIGNAL("clicked(bool)"), self.set_drag_mode)
+#		QtCore.QObject.connect(self.mset, QtCore.SIGNAL("clicked(bool)"), self.set_set_mode)
+		QtCore.QObject.connect(self.mouse_mode_but_grp,QtCore.SIGNAL("buttonClicked(QAbstractButton *)"),self.mouse_mode_button_clicked)
 
 		QtCore.QObject.connect(self.bsavedata, QtCore.SIGNAL("clicked(bool)"), self.save_data)
 		if allow_opt_button:
@@ -2266,6 +2287,24 @@ class EMImageInspectorMX(QtGui.QWidget):
 		QtCore.QObject.connect(self.bsnapshot, QtCore.SIGNAL("clicked(bool)"), self.snapShot)
 		QtCore.QObject.connect(self.banim, QtCore.SIGNAL("clicked(bool)"), self.animation_clicked)
 	
+	def add_panel(self,widget,name):
+		self.tabwidget.addTab(widget,name)
+		
+		
+		button = QtGui.QPushButton(name)
+		button.setCheckable(1)
+		self.hbl2.addWidget(button)
+		
+		self.mouse_mode_but_grp.addButton(button)
+		return button
+	
+	def set_mouse_mode(self,mode):
+		b = (button for button in self.mouse_mode_but_grp.buttons() if str(button.text()) == mode ).next() # raises if it's not there, as it should
+		b.setChecked(True) # triggers an event telling the EMImageMXModule to changes its mouse event handler
+
+	def set_current_tab(self,widget):
+		self.tabwidget.setCurrentWidget(widget)
+
 	def enable_xyz(self):
 			
 		if self.xyz == None:
@@ -2274,14 +2313,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 			self.hbl.addWidget(self.xyz)
 			self.xyz.setCurrentIndex(2)
 			QtCore.QObject.connect(self.xyz, QtCore.SIGNAL("currentIndexChanged(const QString&)"), self.target().xyz_changed)
-			
-		
-#		self.xyz = None
-#		if self.target().using_ftgl():
-#			self.font_label = QtGui.QLabel("font size:")
-#			self.font_label.setAlignment(Qt.AlignRight|Qt.AlignVCenter)
-#			self.hbl.addWidget(self.font_label)
-	
+
 	def disable_xyz(self):
 		if self.xyz != None:
 			self.hbl.removeWidget(self.xyz)
@@ -2295,18 +2327,18 @@ class EMImageInspectorMX(QtGui.QWidget):
 		return "inspector"
 	
 	def get_image_manip_page(self):
-		self.impage = QtGui.QWidget(self)
+		self.impage = QtGui.QWidget()
 		vbl = QtGui.QVBoxLayout(self.impage )
 		vbl.setMargin(2)
 		vbl.setSpacing(6)
 		vbl.setObjectName("get_image_manip_page")
 		
-		self.scale = ValSlider(self,(0.1,5.0),"Mag:")
+		self.scale = ValSlider(None,(0.1,5.0),"Mag:")
 		self.scale.setObjectName("scale")
 		self.scale.setValue(self.target().scale)
 		vbl.addWidget(self.scale)
 		
-		self.mins = ValSlider(self,label="Min:")
+		self.mins = ValSlider(None,label="Min:")
 		self.mins.setObjectName("mins")
 		vbl.addWidget(self.mins)
 		minden = self.target().get_density_min()
@@ -2314,25 +2346,25 @@ class EMImageInspectorMX(QtGui.QWidget):
 		self.mins.setRange(minden,maxden)
 		self.mins.setValue(minden)
 		
-		self.maxs = ValSlider(self,label="Max:")
+		self.maxs = ValSlider(None,label="Max:")
 		self.maxs.setObjectName("maxs")
 		vbl.addWidget(self.maxs)
 		self.maxs.setRange(minden,maxden)
 		self.maxs.setValue(maxden)
 		
-		self.brts = ValSlider(self,label="Brt:")
+		self.brts = ValSlider(None,label="Brt:")
 		self.brts.setObjectName("brts")
 		vbl.addWidget(self.brts)
 		self.brts.setValue(0.0)
 		self.brts.setRange(-1.0,1.0)
 		
-		self.conts = ValSlider(self,label="Cont:")
+		self.conts = ValSlider(None,label="Cont:")
 		self.conts.setObjectName("conts")
 		vbl.addWidget(self.conts)
 		self.conts.setValue(0.5)
 		self.conts.setRange(-1.0,1.0)
 		
-		self.gammas = ValSlider(self,(.5,2.0),"Gam:")
+		self.gammas = ValSlider(None,(.5,2.0),"Gam:")
 		self.gammas.setObjectName("gamma")
 		self.gammas.setValue(1.0)
 		vbl.addWidget(self.gammas)
@@ -2346,228 +2378,11 @@ class EMImageInspectorMX(QtGui.QWidget):
 
 		
 		return self.impage
-		
-	def get_sets_page(self):
-		self.setspage = QtGui.QWidget(self)
-		hbl = QtGui.QHBoxLayout(self.setspage)
-		self.setlist=QtGui.QListWidget(self)
-		self.setlist.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
-		hbl.addWidget(self.setlist)
-		
-		available = self.target().data.sets.keys()
-		first =  True
-		for k in available:
-			a = QtGui.QListWidgetItem("set"+str(k))
-				
-			flag2 = Qt.ItemFlags(Qt.ItemIsSelectable)
-			flag3 = Qt.ItemFlags(Qt.ItemIsEnabled)
-		  	flag4 = Qt.ItemFlags(Qt.ItemIsUserCheckable)
-			
-			a.setFlags(flag2|flag3|flag4)
-			a.setCheckState(Qt.Unchecked)
-			
-			self.setlist.addItem(a)
-			if first: 
-				a.setSelected(True)
-				first = False
-			
-			
-		vbl = QtGui.QVBoxLayout()
-		
-		self.new_set_button = QtGui.QPushButton("New")
-		vbl.addWidget(self.new_set_button)
-		self.delete_set_button = QtGui.QPushButton("Delete")
-		vbl.addWidget(self.delete_set_button)
-		self.save_set_button = QtGui.QPushButton("Save")
-		vbl.addWidget(self.save_set_button)
-		
-		hbl.addLayout(vbl)
-		
-		QtCore.QObject.connect(self.save_set_button, QtCore.SIGNAL("clicked(bool)"), self.save_set)
-		QtCore.QObject.connect(self.new_set_button, QtCore.SIGNAL("clicked(bool)"), self.new_set)
-		QtCore.QObject.connect(self.delete_set_button, QtCore.SIGNAL("clicked(bool)"), self.delete_set)
-		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("itemChanged(QListWidgetItem*)"),self.set_list_item_changed)
-		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("currentRowChanged(int)"),self.set_list_row_changed)
-			
-		return self.setspage
 	
-	def set_list_row_changed(self,i):
-		if self.busy: return
-		a = self.setlist.item(i)
-		idx = a.index_key
-		self.target().data.set_current_set(idx)
-		
-	def set_list_item_changed(self,item):
-		checked = False
-		if item.checkState() == Qt.Checked: checked = True
-		
-		i = item.index_key
-				
-		if checked:
-			self.target().data.set_current_set(i)
-			self.target().data.make_set_visible(i)
-		else:
-			self.target().data.make_set_not_visible(i)
-			
-		self.target().force_display_update()
-		self.target().updateGL()
+	def mouse_mode_button_clicked(self,button):
+		s = str(button.text())
+		self.target().set_mouse_mode(s)
 	
-	def save_set(self,unused=None):
-		selections = self.setlist.selectedItems()
-		for i in selections:
-			idx = i.index_key
-			if self.target().data.sets.has_key(idx):
-				s = self.target().data.sets[idx]
-				db = db_open_dict("bdb:select")
-				db[str(i.text())] = s
-			else:
-				print "there should be a warning message saying the set is empty"
-	def delete_set(self,unused):
-		self.busy = 1
-		selections = self.setlist.selectedItems()
-		
-		for i in selections:
-			idx = i.index_key
-			self.target().data.delete_set(idx)
-			db_name = "bdb:select#"+text
-			if db_check_dict(db_name): db_remove_dict(db_name)
-				
-		items = self.get_set_list_items_copy()
-		
-		stext = [s.text() for s in selections]
-		
-		new_items = []
-		for i in items:
-			if i.text() not in stext:
-				new_items.append(i)
-				
-		self.setlist.clear()
-		for i in new_items: self.setlist.addItem(i)
-#		if len(new_items) > 0:
-#			new_items[-1].setSelected(True)
-		
-		self.busy = 0
-		
-		self.target().force_display_update()
-		self.target().updateGL()
-	
-	def get_set_list_items_copy(self):
-		items = [QtGui.QListWidgetItem(self.setlist.item(i)) for i in range(self.setlist.count())]
-		return items
-
-	def clear_sets(self):
-		self.setlist.clear()
-	
-	def add_set(self,set_idx,set_name,display=True):
-		items = self.get_set_list_items_copy()
-		for item in items:
-			if str(item.text()) == set_name:
-				if item.checkState() == Qt.Checked:
-					
-					if display:
-						self.target().data.set_current_set(set_idx)
-						self.target().data.make_set_visible(set_idx)
-				return
-			 
-		
-		flag1 = Qt.ItemFlags(Qt.ItemIsEditable)
-		flag2 = Qt.ItemFlags(Qt.ItemIsSelectable)
-		flag3 = Qt.ItemFlags(Qt.ItemIsEnabled)
-	  	flag4 = Qt.ItemFlags(Qt.ItemIsUserCheckable)
-		a = QtGui.QListWidgetItem(set_name)
-		a.setFlags(flag1|flag2|flag3|flag4)
-		#a.setTextColor(qt_color_map[colortypes[parms[j][0]]])
-		#if visible[j]:
-		if display:	a.setCheckState(Qt.Checked)
-		else: a.setCheckState(Qt.Unchecked)
-		a.index_key = set_idx
-	
-	#a.setCheckState(Qt.Unchecked)
-		
-		self.setlist.addItem(a)
-	
-		a.setSelected(True)
-		
-		if display:
-			self.target().data.set_current_set(set_idx)
-			self.target().data.make_set_visible(set_idx)
-		
-		
-	def new_set(self,unused=None):
-		set = self.get_available_set_name()
-		flag1 = Qt.ItemFlags(Qt.ItemIsEditable)
-		flag2 = Qt.ItemFlags(Qt.ItemIsSelectable)
-		flag3 = Qt.ItemFlags(Qt.ItemIsEnabled)
-	  	flag4 = Qt.ItemFlags(Qt.ItemIsUserCheckable)
-		a = QtGui.QListWidgetItem(set)
-		a.setFlags(flag1|flag2|flag3|flag4)
-		#a.setTextColor(qt_color_map[colortypes[parms[j][0]]])
-		#if visible[j]:
-		a.setCheckState(Qt.Checked)
-		i = int(a.text()[-1])
-		a.index_key = i
-		
-		#a.setCheckState(Qt.Unchecked)
-			
-		self.setlist.addItem(a) 
-		a.setSelected(True)
-		self.target().data.set_current_set(i)
-		self.target().data.make_set_visible(i)
-	
-	def get_available_set_name(self):
-		
-		unavailable = []
-		for i in range(self.setlist.count()):
-			idx = self.setlist.item(i).index_key
-			unavailable.append(idx)
-		
-		i = 0
-		while True:
-			if unavailable.count(i) == 0:
-				return "set"+str(i)
-			else:
-				i += 1
-			
-	def set_del_mode(self,i):
-		self.target().set_mouse_mode("del")
-		
-	def set_app_mode(self,i):
-		self.target().set_mouse_mode("app")
-	
-	#def setMeasMode(self,i):
-		#self.target.set_mouse_mode("meas")
-	
-	def set_drag_mode(self,i):
-		self.target().set_mouse_mode("drag")
-		
-	def set_set_mode(self,unused=None):
-		if self.busy: return
-		self.busy = 1
-		if not self.mset.isChecked():
-			self.mset.setChecked(True)
-		n = self.setlist.count()
-		if n == 0:
-			self.new_set() # enables the new set too
-		else: # make sure a set is selected
-			for i in range(n):
-				a = self.setlist.item(i)
-				if a.isSelected(): # something is selected, make sure its current in the data object
-					a.setCheckState(Qt.Checked)
-					i = a.index_key
-					self.target().data.set_current_set(i)
-					self.target().data.make_set_visible(i)
-					break
-			else:
-				a = self.setlist.item(0)
-				a.setCheckState(Qt.Checked)
-				a.setSelected(True) # just make the first one the selected set
-				self.target().data.set_current_set(0)
-				self.target().data.make_set_visible(0)
-					
-			
-		self.target().set_mouse_mode("set")
-		self.tabwidget.setCurrentIndex(1) # This is the Sets page, but if someone could change the tab set up and break this behaviou
-		self.busy = 0
 	def set_scale(self,val):
 		if self.busy : return
 		self.busy=1
@@ -2667,9 +2482,552 @@ class EMImageInspectorMX(QtGui.QWidget):
 		self.conts.setRange(0,1.0)
 		self.update_brightness_contrast()
 		
-e = EMData()
 
-class EMLightWeightParticleCache:
+class EMMXDeletionManager:
+	'''
+	This class handles everything to do with Deleting particles
+	'''
+	def __init__(self,target):
+		self.target = weakref.ref(target)
+		self.deleted_idxs = []
+	def delete_box(self,idx):
+		val = self.target().get_data().delete_box(idx)
+		if val == 0:
+			self.deleted_idxs.append(idx)
+			
+	def deleted_ptcls(self):
+		return self.deleted_idxs
+
+class EMMXSetsListWidgetItem(QtGui.QListWidgetItem):
+	def __init__(self,*args):
+		self.set_index = -1
+		if len(args) > 0:
+			if isinstance(args[0],EMMXSetsListWidgetItem):
+				self.set_index = args[0].set_idx()
+			
+		QtGui.QListWidgetItem.__init__(self,*args)
+		
+	def set_idx(self): return self.set_index
+	
+	def assign_set_idx(self,val): self.set_index = val
+
+class EMMXSetsPanel:
+	'''
+	Encapsulates the widgets that are used by the sets management system
+	Talks directly to the EMMXSetsManager as opposed to the EMImageMXModule
+	'''
+	def __init__(self,target):
+		self.target = weakref.ref(target) # this should be an EMMXSetsManager
+		self.widget = None # this will be a qt widget
+		self.busy = False
+		
+	def get_widget(self):
+		self.busy = True
+		if self.widget == None:
+			
+			self.widget = QtGui.QWidget()
+			hbl = QtGui.QHBoxLayout(self.widget)
+			self.setlist=QtGui.QListWidget()
+			self.setlist.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
+			hbl.addWidget(self.setlist)
+				
+			vbl = QtGui.QVBoxLayout()
+			
+			self.new_set_button = QtGui.QPushButton("New")
+			vbl.addWidget(self.new_set_button)
+			self.delete_set_button = QtGui.QPushButton("delete")
+			vbl.addWidget(self.delete_set_button)
+			self.save_set_button = QtGui.QPushButton("Save")
+			vbl.addWidget(self.save_set_button)
+			
+			hbl.addLayout(vbl)
+			
+			QtCore.QObject.connect(self.save_set_button, QtCore.SIGNAL("clicked(bool)"), self.save_set)
+			QtCore.QObject.connect(self.new_set_button, QtCore.SIGNAL("clicked(bool)"), self.new_set)
+			QtCore.QObject.connect(self.delete_set_button, QtCore.SIGNAL("clicked(bool)"), self.delete_set)
+			QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("itemChanged(QListWidgetItem*)"),self.set_list_item_changed)
+			QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("currentRowChanged(int)"),self.set_list_row_changed)
+		
+		self.busy = False
+		return self.widget
+	
+	def set_list_row_changed(self,i):
+		if self.busy: return
+		a = self.setlist.item(i)
+		#idx = a.set_idx()
+		idx = str(a.text())
+		self.target().set_current_set(idx)
+		
+	def set_list_item_changed(self,item):
+		checked = False
+		if item.checkState() == Qt.Checked: checked = True
+		
+		#i = item.set_idx()
+		
+		i = str(item.text())
+				
+		if checked:
+			self.target().set_current_set(i)
+			self.target().make_set_visible(i)
+		else:
+			self.target().make_set_invisible(i)
+			
+		self.target().request_display_update()
+				
+	def delete_set(self,unused):
+		self.busy = True
+		selections = self.setlist.selectedItems()
+		
+		for i in selections:
+#			idx = i.set_idx()
+			idx = str(i.text())
+			self.target().delete_set(idx)
+				
+		items = self.get_set_list_items_copy()
+		
+		stext = [s.text() for s in selections]
+		
+		new_items = []
+		for i in items:
+			if i.text() not in stext:
+				new_items.append(i)
+				
+		self.setlist.clear()
+		for i in new_items: self.setlist.addItem(i)
+		
+		self.busy = False
+		
+		self.target().request_display_update()
+		
+		
+	def new_set(self,unused=None):
+		set = self.get_available_set_name()
+		flag1 = Qt.ItemFlags(Qt.ItemIsEditable)
+		flag2 = Qt.ItemFlags(Qt.ItemIsSelectable)
+		flag3 = Qt.ItemFlags(Qt.ItemIsEnabled)
+	  	flag4 = Qt.ItemFlags(Qt.ItemIsUserCheckable)
+		a = EMMXSetsListWidgetItem(set)
+		a.setFlags(flag1|flag2|flag3|flag4)
+		color = self.target().get_set_color(set)
+		a.setTextColor(self.to_qt_color(color))
+		#a.setTextColor(qt_color_map[colortypes[parms[j][0]]])
+		#if visible[j]:
+		a.setCheckState(Qt.Checked)
+#		i = int(a.text()[-1])
+#		a.index_key = i
+#		a.setProperty("index_key",i)
+#		a.assign_set_idx(i)
+		
+		#a.setCheckState(Qt.Unchecked)
+			
+		self.setlist.addItem(a) 
+		a.setSelected(True)
+		self.target().set_current_set(str(a.text()))
+		self.target().make_set_visible(str(a.text()))
+	
+		
+	def get_set_list_items_copy(self):
+		items = [EMMXSetsListWidgetItem(self.setlist.item(i)) for i in range(self.setlist.count())]
+		
+		return items
+	
+	def get_available_set_name(self):
+		unavailable = []
+		for i in range(self.setlist.count()):
+		#	idx = self.setlist.item(i).set_idx()
+			idx = str(self.setlist.item(i).text())
+			unavailable.append(idx)
+			
+		
+		i = 0
+		while True:
+			new_name = "Set"+str(i)
+			if unavailable.count(new_name) == 0:
+				return new_name
+			else:
+				i += 1
+
+	def add_set(self,set_name,display=True):
+		
+		items = self.get_set_list_items_copy()
+		for item in items:
+			if str(item.text()) == set_name:
+				if item.checkState() == Qt.Checked:
+					
+					if display:
+						self.target().set_current_set(set_name)
+						self.target().make_set_visible(set_name)
+				return
+			 
+		flag1 = Qt.ItemFlags(Qt.ItemIsEditable)
+		flag2 = Qt.ItemFlags(Qt.ItemIsSelectable)
+		flag3 = Qt.ItemFlags(Qt.ItemIsEnabled)
+	  	flag4 = Qt.ItemFlags(Qt.ItemIsUserCheckable)
+		a = EMMXSetsListWidgetItem(set_name)
+		a.setFlags(flag1|flag2|flag3|flag4)
+		color = self.target().get_set_color(set_name)
+		a.setTextColor(self.to_qt_color(color))
+		if display:	a.setCheckState(Qt.Checked)
+		else: a.setCheckState(Qt.Unchecked)
+		
+#		a.index_key = set_idx
+#		a.setProperty("index_key", set_idx)
+		#a.assign_set_idx(set_idx)
+		
+		
+		self.setlist.addItem(a)
+	
+		a.setSelected(True)
+		
+		if display:
+			self.target().set_current_set(set_name)
+			self.target().make_set_visible(set_name)
+	
+	def to_qt_color(self,color):
+		return QtGui.QColor(int(255*color[0]),int(255*color[1]),int(255*color[2]))
+	
+	def add_init_sets(self,set_names):
+		
+		for set_name in set_names:
+			
+			flag1 = Qt.ItemFlags(Qt.ItemIsEditable)
+			flag2 = Qt.ItemFlags(Qt.ItemIsSelectable)
+			flag3 = Qt.ItemFlags(Qt.ItemIsEnabled)
+		  	flag4 = Qt.ItemFlags(Qt.ItemIsUserCheckable)
+			a = EMMXSetsListWidgetItem(set_name)
+			color = self.target().get_set_color(set_name)
+			a.setTextColor(self.to_qt_color(color))
+			a.setFlags(flag1|flag2|flag3|flag4)
+			a.setCheckState(Qt.Unchecked)
+#			a.index_key = set_name
+#			a.setProperty("index_key", set_names)
+			#a.assign_set_idx(set_name)
+			
+			self.setlist.addItem(a)
+		
+			a.setSelected(True)
+			
+	def save_set(self):
+		selections = self.setlist.selectedItems()
+		for item in selections:
+			self.target().save_set(str(item.text()))
+
+	def clear_sets(self):
+		self.setlist.clear()
+		
+	def set_mode_enabled(self):
+		n = self.setlist.count()
+		if n == 0:
+			self.new_set() # enables the new set too
+		else: # make sure a set is selected
+			for i in range(n):
+				a = self.setlist.item(i)
+				if a.isSelected(): # something is selected, make sure its current in the data object
+					a.setCheckState(Qt.Checked)
+#					i = a.set_idx()
+					i = str(a.text())
+					self.target().set_current_set(i)
+					self.target().make_set_visible(i)
+					break
+			else:
+				a = self.setlist.item(0)
+				a.setCheckState(Qt.Checked)
+				a.setSelected(True) # just make the first one the selected set
+				self.target().set_current_set(str(a.text()))
+				self.target().make_set_visible(str(a.text()))
+					
+class EMMXSetsManager:
+	'''
+	This is a class that separates the management of sets from the management of data
+	'''
+	
+	def __init__(self,target):
+		self.target = weakref.ref(target) # target should be an EMImageMXModule
+		# set stuff
+		self.visible_sets = [] # this is a list of visible sets, ints
+		self.sets = {} # this is a dictionary, keys are set numbers, values are list of indices of particles in the set 
+		self.sets_color_map = {} # this is a dictionary mapping a set number (int) to a an int which is used for a color 
+		self.keys = None
+		self.current_set = None # an int represent the curret set
+		self.panel = None # this will be the associated widget
+		self.button = None # this will be a button in the inspector
+		self.__init_sets()
+	
+	def get_set_color(self,set_name):
+		if not self.sets_color_map.has_key(set_name):
+			self.sets_color_map[set_name] = len(self.sets_color_map)
+	
+		return BoxingTools.get_color(self.sets_color_map[set_name]+1)
+	
+	def load_set_color(self,set_name):
+		
+		color = self.get_set_color(set_name)
+		c = [color[0],color[1],color[2],1.0]
+		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,c)
+		glMaterial(GL_FRONT,GL_SPECULAR,c)
+	  	glMaterial(GL_FRONT,GL_SHININESS,100.0)
+	
+	def set_button(self,button):
+		self.button = button
+	
+	def add_set(self,set_name,display=True):
+		if self.panel == None: self.__init_panel()
+		self.panel.add_set(set_name,display)
+	
+	def unique_name(self): 
+		'''
+		A way to get a unique name for this object. If we end up adding more modules in the same
+		fashion then they should have the same function, etc. For the time being this is the only
+		object that is added in a modular fashion to the EMImageMXModule
+		'''
+		return "Sets"
+	
+	def __init_panel(self):
+		if self.panel == None:
+			self.panel = EMMXSetsPanel(self)
+			self.panel.get_widget()
+			self.panel.add_init_sets(self.sets.keys())
+		
+	def get_panel_widget(self):
+		'''
+		Gets the panel widget for addition to the EMImageMXInspector
+		'''
+		if self.panel == None: self.__init_panel()
+			
+		return self.panel.get_widget()
+	
+	def __init_sets(self):
+		'''
+		Tries to read an previously establish sets from the local database
+		'''
+		if db_check_dict("bdb:select"):
+			db = db_open_dict("bdb:select")
+			for k,value in db.items():
+				if isinstance(value,list):
+					if len(value) > 0 and isinstance(value[0],int):
+						self.sets[k] = value
+						
+	def request_display_update(self):
+		'''
+		A way for children objects to get the display to update
+		'''
+		self.target().force_display_update()
+		self.target().updateGL()
+		
+	def get_available_sets(self,data_too=False):
+		'''
+		Gets the currently known sets
+		'''
+		return self.sets.keys()
+	
+	def has_set(self,set_name):
+		'''
+		Ask whether we have the given set in memory
+		'''
+		return self.sets.has_key(set_name)
+	
+	def get_set(self,set_name):
+		'''
+		Get the given se
+		'''
+		return self.sets[set_name]
+	
+	def visible_set_data(self):
+		'''
+		Get the visible sets as a dict
+		'''
+		d = {}
+		for s in self.visible_sets:
+			d[s] = self.sets[s]
+		return d
+	
+	def make_set_visible(self,set_name):
+		'''
+		Make a particular set visible
+		'''
+		if set_name not in self.visible_sets:
+			self.visible_sets.append(set_name)
+#		
+	def set_current_set(self,set_name):
+		if set_name == self.current_set: return # already this set
+		
+		self.current_set = set_name
+		
+		if not self.sets.has_key(set_name):
+			self.sets[set_name] = []
+			
+		if set_name not in self.visible_sets: self.visible_sets.append(set_name)
+
+	def enable_set(self,set_name):
+		act = True
+		if db_check_dict("bdb:select"):
+			db = db_open_dict("bdb:select")
+			if db.has_key(set_name):
+				self.sets[set_name] = db[set_name]
+				act = False
+		if act:
+			self.sets[set_name] = []
+			
+		self.panel.add_set(set_name,display)
+	
+	def make_set_invisible(self,set_name):
+		'''
+		Remove a set from the list of visible sets
+		'''
+		if set_name in self.visible_sets: self.visible_sets.remove(set_name)
+		if set_name == self.current_set: self.current_set = None
+	
+	def delete_set(self,set_name):
+		if self.sets.has_key(set_name):
+			self.sets.pop(set_name)
+		else:
+			raise RuntimeError("Error, attempt to delete a set that didn't exist")
+		
+		self.make_set_invisible(set_name)
+
+	def clear_sets(self):
+		'''
+		A way to remove all information stored by this class - re-establish a blank slate
+		'''
+		self.sets = {}
+		self.visible_sets = []
+		if self.panel != None:
+			self.panel.clear_sets()
+			
+		self.sets_color_map = {} 
+	
+	def associate_set(self,set_name,set_lst,force=False):
+		'''
+		@param set_name the name of the set, usually an int starting at 0
+		@param set_list a list of particle indices indicating particles that are in the set
+		@param force - needs to be specified if a set with the given set_name already exists
+		'''
+		if self.sets.has_key(set_name) and not force:
+			raise RuntimeError("Cannot replace a set without supplying the force flag")
+		
+		self.sets[set_name] = set_lst
+#			
+	
+	def image_set_associate(self,idx):
+		'''
+		Associate/disassociate the image with self.current_set 
+		@param idx particle index
+		'''
+		if self.current_set == None: return 0
+		
+		val = -1
+		l = self.sets[self.current_set]
+		try:
+			#http://dev.ionous.net/2009/01/python-find-item-in-list.html
+			val = (i for i in l if i == idx ).next()
+		except:
+			pass
+		
+		if val == -1: # it wasn't in the list - we add the particle to the list
+			l.append(idx)
+		else: # it is in the list so we remove it
+			l.remove(idx)
+			
+		self.save_current_set()
+		
+	def enable_sets_mode(self,unused=None):
+		inspector = self.target().get_inspector()
+		inspector.set_mouse_mode(self.unique_name())
+		self.target().set_mouse_mode(self.unique_name())
+		inspector.set_current_tab(self.get_panel_widget())
+
+		if self.panel == None: self.__init_panel()
+		self.panel.set_mode_enabled()
+	
+
+	def save_current_set(self):
+		if self.current_set == None: raise RuntimeError("Can't save current set, it doesn't exist")
+		db = db_open_dict("bdb:select")
+		db[self.current_set] = self.sets[self.current_set]
+	
+	def save_set(self,set_name):
+		if not self.sets.has_key(set_name): raise RuntimeError("Unknown set %s" %set_name)
+		db = db_open_dict("bdb:select")
+		db[set_name] =self.sets[set_name]
+		
+	def save_sets(self):
+		db = db_open_dict("bdb:select")
+		for key,value in self.sets.items():
+			db[key] = value
+			
+class EMMXDataCache:
+	'''
+	Base class for EMMXDataCaches
+	'''
+	def __init__(self):
+		self.excluded_list = [] # a list of excluded idxs, used when saving the data to disk
+		
+	
+	def delete_box(self,idx):
+		'''
+		@ must return a value = 1 indicates the box is permanently gone, 0 indicates the class is happy to do nothing
+		and let the calling program display the deleted box differently
+		'''
+		raise NotImplementedException
+	def __getitem__(self,idx): 
+		'''
+		operator[] must be supported
+		'''
+		raise NotImplementedException
+	
+	def __len__(self,idx): 
+		'''
+		must be able to get the length 
+		'''
+		raise NotImplementedException
+	
+	def get_xsize(self):
+		'''
+		must be able to get the xsize of the data
+		'''
+		raise NotImplementedException
+	
+	def get_ysize(self):
+		'''
+		must be able to get the xsize of the data
+		'''
+		raise NotImplementedException
+	
+	def get_image_header_keys(self):
+		'''
+		Must be able to get the keys of in a typical EMData header, usually you just get the
+		header of first image, cache it, and return it whenever it is asked for
+		'''
+		raise NotImplementedException
+	
+	def get_image_header(self,idx):
+		'''
+		Must be able to get the header of the image at the given index. Suggest reading only header
+		from disk if the image is not already in memory
+		'''
+		raise NotImplementedException
+	def on_idle(self):
+		'''
+		the EMImageMXModule is at liberty to call this function when it becomes idle, etc.
+		This function is useful for miserly caching-strategies, i.e. you can load images that
+		are not already in memory
+		'''
+		raise NotImplementedException
+	
+	# CONCRETE FUNCTIONALITY	
+	def set_excluded_ptcls(self,excluded_list):
+		self.excluded_list = excluded_list
+	
+	
+	def get_item_from_emsave(self,idx):
+		try:
+			(i for i in self.excluded_list if i == idx).next()
+			return None
+		except:
+			return self[idx]
+	
+
+class EMLightWeightParticleCache(EMMXDataCache):
 	def from_file(file_name):
 		
 		n = EMUtil.get_image_count(file_name)
@@ -2683,6 +3041,7 @@ class EMLightWeightParticleCache:
 		'''
 		@param data list of lists - lists in in the list are of the form [image_name, idx, [list of functions that take an EMData as the first argument]]
 		'''
+		EMMXDataCache.__init__(self)
 		self.data = data
 		self.cache_start = 0
 		self.cache_max = cache_max
@@ -2696,6 +3055,13 @@ class EMLightWeightParticleCache:
 
 	def __len__(self):
 		return len(self.data)
+	
+	def delete_box(self,idx):
+		'''
+		@ must return a value = 1 indicates the box is permanently gone, 0 indicates the class is happy to do nothing
+		and let the calling program display the deleted box differently
+		'''
+		return 0
 	
 	def get_xsize(self):
 		if self.xsize == None:
@@ -2723,7 +3089,7 @@ class EMLightWeightParticleCache:
 			#return e.get_attr_dict()
 		else:return image.get_attr_dict()
 	
-	def get_image_keys(self):
+	def get_image_header_keys(self):
 		if self.header_keys == None:
 			self.header_keys = self.get_image_header(self.cache_start).keys()
 		return self.header_keys
@@ -2765,7 +3131,7 @@ class EMLightWeightParticleCache:
 		self.cache[adj_idx] = a
 		return a
 	
-	def on_timer(self):
+	def on_idle(self):
 		'''
 		call this to load unloaded images in the cache
 		'''
@@ -2774,45 +3140,9 @@ class EMLightWeightParticleCache:
 				# only does one at a time
 				self.__load_item(idx,idx+self.cache_start)
 				return
-			
-	def __init_sets(self):
-		pass
-
-	def make_set_visible(self,i):
-		pass
-
-	def set_current_set(self,i):
-		pass
-			
-	def make_set_not_visible(self,i):
-		pass
-	
-	def delete_set(self,idx):
-		pass
-	
-	def clear_sets(self):
-		pass
-	
-	def associate_set(self,idx,lst,mxset=False):
-		pass
-
-	def image_set_associate(self,idx):
-		'''
-		Associate the image with the set (or disassociate)
-		'''
-		pass
-				
-	def save_lst(self,fsp):
-		# Get the output filespec
-		return # doesn't work yet
-	
-	def save_data(self):
-		pass
-
-#				d.write_image(fsp,-1)
 
 
-class EMDataListCache:
+class EMDataListCache(EMMXDataCache):
 	'''
 	This class designed primarily for memory management in the context of large lists of EMData objects. It is only efficient
 	if accessing contiguous blocks of images - it is not effecient if randomly accessing images.
@@ -2832,6 +3162,7 @@ class EMDataListCache:
 	LIST_MODE = 'list_mode'
 	FILE_MODE = 'file_mode'
 	def __init__(self,object,cache_size=256,start_idx=0,soft_delete=False):
+		EMMXDataCache.__init__(self)
 		#DB = EMAN2db.EMAN2DB.open_db(".")
 		self.xsize = -1
 		self.ysize = -1
@@ -2873,7 +3204,7 @@ class EMDataListCache:
 #		self.__init_sets()
 		
 		self.current_iter = 0 # For iteration support
-		self.soft_delete = soft_delete # toggle to prevent permanent deletion of particles
+		self.soft_delete = soft_delete # toggle to prevent permanent Deletion of particles
 		self.image_width = -1
 		self.image_height = -1
 	
@@ -2936,7 +3267,7 @@ class EMDataListCache:
 		elif self.mode == EMDataListCache.LIST_MODE:
 			return self.images[idx].get_attr_dict()
 	
-	def get_image_keys(self):
+	def get_image_header_keys(self):
 		if self.keys == None:
 			if self.mode == EMDataListCache.FILE_MODE:
 				for i in self.images:
@@ -2955,146 +3286,30 @@ class EMDataListCache:
 				
 		return self.keys
 	
-#	def __init_sets(self):
-#		if db_check_dict("bdb:select"):
-#			db = db_open_dict("bdb:select")
-#			keys = db.keys()
-#			for k in keys:
-#				try:
-#					idx = int(k[-1])
-#					self.sets[idx] = db[k]
-#					self.set_init_flag[idx] = True
-#				except: pass
+	def on_idle(self):
+		'''
+		call this to load unloaded images in the cache
+		'''
+		for idx,i in enumerate(self.cache):
+			if i == None:
+				# only does one at a time
+				self.__load_item(idx,idx+self.cache_start)
+				return
 	
-	def make_set_visible(self,i):
-		if i not in self.visible_sets:
-			self.visible_sets.append(i)
-		
-	def set_current_set(self,i):
-		if i == self.current_set: return # already this set
-		self.current_set = i
-		
-		if not self.sets.has_key(i):
-			self.sets[i] = []
-			self.set_init_flag[i] = False
-		elif self.set_init_flag[i]:
-			for k in self.images.keys():
-				if self.sets[i].count(k) != 0:
-					im = self.images[k]
-					if hasattr(im,"mxset"):
-						im.mxset.append(i)
-					else:
-						im.mxset = [i]
-			self.set_init_flag[i] = False
-			
-	def make_set_not_visible(self,i):
-		if i in self.visible_sets: self.visible_sets.remove(i)
-		if i == self.current_set:
-			self.current_set = None
-	
-	def delete_set(self,idx):
-		if self.sets.has_key(idx):
-			self.sets.pop(idx)
-		self.make_set_not_visible(idx)
-		
-		for im in self.images:
-			if hasattr(im,"mxset") and idx in im.mxset: 
-				im.mxset.remove(idx)
-				if len(im.mxset) == 0: delattr(im,"mxset")
-
 	def delete_box(self,idx):
+		'''
+		@ must return a value = 1 indicates the box is permanently gone, 0 indicates the class is happy to do nothing
+		and let the calling program display the deleted box differently
+		'''
 		if self.mode == EMDataListCache.LIST_MODE and not self.soft_delete:
 			# we can actually delete the emdata object
-			self.exclusions.append(idx)
 			image = self.images.pop(idx)
 			self.max_idx = len(self.images)
 			self.cache_size = self.max_idx
 			return 1
 		elif self.mode == EMDataListCache.FILE_MODE or self.soft_delete:
-			if self.images[idx].has_attr("excluded"):
-				self.images[idx].del_attr("excluded")
-				self.exclusions.remove(idx)
-			else:
-				self.images[idx]["excluded"] = True
-				self.exclusions.append(idx)
-			return 2
-		return 0
-	
-	def clear_sets(self):
-		for key in self.sets.keys():
-			self.delete_set(key)
-		self.sets = {}
-	
-	def associate_set(self,idx,lst,mxset=False):
-		self.sets[idx] = lst
-		if mxset:
-			for key,im in self.images.items():
-				if key in lst:
-					if hasattr(im,"mxset"):
-						im.mxset.append(idx)
-					else:
-						im.mxset = [idx]
-			
-	
-	def image_set_associate(self,idx):
-		'''
-		Associate the image with the set (or disassociate)
-		'''
-		if self.current_set == None: return 0 # there is no set, nothing happens
+			return 0
 		
-		im = self.images[idx]
-		
-		if hasattr(im,"mxset") and self.current_set in im.mxset:
-			#print self.current_set,self.sets,im.mxset,idx 
-			im.mxset.remove(self.current_set)
-			if len(im.mxset) == 0: delattr(im,"mxset")
-			self.sets[self.current_set].remove(idx)
-		else:
-			if hasattr(im,"mxset"):
-				im.mxset.append(self.current_set)
-			else:
-				im.mxset = [self.current_set]
-#				im.mxset = self.current_set
-			self.sets[self.current_set].append(idx)
-			
-		return 1
-				
-	def save_lst(self,fsp):
-		# Get the output filespec
-		return # doesn't work yet
-		f = file(fsp,'w')
-		f.write('#LST\n')
-		
-		if self.mode == EMDataListCache.LIST_MODE and not self.soft_delete:
-			raise # fixme - saving an lst in list mode is something that needs thought. EMAN2 only supports sets, anyway.
-		elif self.mode == EMDataListCache.FILE_MODE or self.soft_delete:
-			indices = [i for i in range(self.max_idx)]
-			if self.sets.has_key(0):
-				for exc in self.sets[0]: indices.remove(exc)
-			if self.mode ==  EMDataListCache.FILE_MODE:
-				for idx in indices:	f.write(str(idx)+'\t'+self.file_name+'\n')
-			elif self.soft_delete:
-				for idx in indices:	f.write(str(idx)+'\n')
-	
-		f.close()
-	def save_data(self):
-		fsp=QtGui.QFileDialog.getSaveFileName(None, "Specify name of file to save","","","")
-		fsp=str(fsp)
-		try:
-			if fsp == self.file_name:
-				print "writing over the same file is currently not supported"
-				return
-		except: pass
-		
-		if fsp != '':
-			for idx in range(self.max_idx):
-				d = self.__getitem__(idx)
-				try:
-					d.get_attr("excluded")
-					continue
-				except: pass
-				d.write_image(fsp,-1)
-
 	def get_max_idx(self):
 		''' Get the maximum image index  '''
 		return self.max_idx
@@ -3137,7 +3352,7 @@ class EMDataListCache:
 						if self.mode ==  EMDataListCache.FILE_MODE:
 							a = EMData()
 							a.read_image(self.file_name,idx)
-							if idx in self.exclusions: a["excluded"] = True
+#							if idx in self.exclusions: a["excluded"] = True
 							cache[idx] = a
 							if self.current_set != None:
 								sets = []
@@ -3193,13 +3408,19 @@ class EMDataListCache:
 		else:
 			self.current_iter += 1
 			return self[self.current_iter-1]
-		
-class EM3DDataListCache:
+	def on_idle(self):
+		'''
+		call this to load unloaded images in the cache, for example
+		'''
+		pass
+	
+class EM3DDataListCache(EMMXDataCache):
 	'''
 	A class that looks like a list to the outside word
 	automated way of handling 3d images for the EMImageMXModule
 	'''
 	def __init__(self,filename):
+		EMMXDataCache.__init__(self)
 		self.filename = filename
 		self.nx,self.ny,self.nz = gimme_image_dimensions3D(filename)
 		if self.nz == 1: raise RuntimeError("EM3DDataForMx class is only meant to be used with 3D images")
@@ -3211,9 +3432,13 @@ class EM3DDataListCache:
 		self.major_axis = "z"
 		self.max_idx = self.nz
 		
-		# set stuff
-		self.visible_sets = [] 
-		self.sets = {}
+		
+	def delete_box(self,idx):
+		'''
+		@ must return a value = 1 indicates the box is permanently gone, 0 indicates the class is happy to do nothing
+		and let the calling program display the deleted box differently
+		'''
+		return 0
 	
 	def set_xyz(self,xyz):
 		if xyz != self.major_axis:
@@ -3238,21 +3463,11 @@ class EM3DDataListCache:
 		return self.header
 
 	
-	def get_image_keys(self):
+	def get_image_header_keys(self):
 		if self.keys == None:
 			self.keys = self[0].get_attr_dict().keys()
 				
 		return self.keys
-	
-	def delete_box(self,idx):
-		if self[idx].has_attr("excluded"):
-			self[idx].del_attr("excluded")
-			self.exclusions.remove(idx)
-		else:
-			self[idx]["excluded"] = True
-			self.exclusions.append(idx)
-			return 2
-		return 0
 	
 	def get_max_idx(self):
 		''' Get the maximum image index  '''
@@ -3318,125 +3533,14 @@ class EM3DDataListCache:
 		else:
 			self.current_iter += 1
 			return self[self.current_iter-1]
-
-	
-	def __init_sets(self):
-		pass
-#		if db_check_dict("bdb:select"):
-#			db = db_open_dict("bdb:select")
-#			keys = db.keys()
-#			for k in keys:
-#				try:
-#					idx = int(k[-1])
-#					self.sets[idx] = db[k]
-#					self.set_init_flag[idx] = True
-#				except: pass
-#	
-	def make_set_visible(self,i):
-		pass
-#		if i not in self.visible_sets:
-#			self.visible_sets.append(i)
-#		
-	def set_current_set(self,i):
-		pass
-#		if i == self.current_set: return # already this set
-#		self.current_set = i
-#		
-#		if not self.sets.has_key(i):
-#			self.sets[i] = []
-#			self.set_init_flag[i] = False
-#		elif self.set_init_flag[i]:
-#			for k in self.images.keys():
-#				if self.sets[i].count(k) != 0:
-#					im = self.images[k]
-#					if hasattr(im,"mxset"):
-#						im.mxset.append(i)
-#					else:
-#						im.mxset = [i]
-#			self.set_init_flag[i] = False
-			
-	def make_set_not_visible(self,i):
-		pass
-#		if i in self.visible_sets: self.visible_sets.remove(i)
-#		if i == self.current_set:
-#			self.current_set = None
-	
-	def delete_set(self,idx):
-		pass
-#		if self.sets.has_key(idx):
-#			self.sets.pop(idx)
-#		self.make_set_not_visible(idx)
-#		
-#		for im in self.images:
-#			if hasattr(im,"mxset") and idx in im.mxset: 
-#				print im.mxset
-#				im.mxset.remove(idx)
-#				if len(im.mxset) == 0: delattr(im,"mxset")
-	
-	def clear_sets(self):
-		pass
-#		self.sets = {}
-	
-	def associate_set(self,idx,lst,mxset=False):
-		pass
-#		self.sets[idx] = lst
-#		if mxset:
-#			for key,im in self.images.items():
-#				if key in lst:
-#					if hasattr(im,"mxset"):
-#						im.mxset.append(idx)
-#					else:
-#						im.mxset = [idx]
-#			
-	
-	def image_set_associate(self,idx):
+		
+	def on_idle(self):
 		'''
-		Associate the image with the set (or disassociate)
+		call this to load unloaded images in the cache, for example
 		'''
 		pass
-#		if self.current_set == None: return 0 # there is no set, nothing happens
-#		
-#		im = self.images[idx]
-#		
-#		if hasattr(im,"mxset") and self.current_set in im.mxset:
-#			#print self.current_set,self.sets,im.mxset,idx 
-#			im.mxset.remove(self.current_set)
-#			if len(im.mxset) == 0: delattr(im,"mxset")
-#			self.sets[self.current_set].remove(idx)
-#		else:
-#			if hasattr(im,"mxset"):
-#				im.mxset.append(self.current_set)
-#			else:
-#				im.mxset = [self.current_set]
-##				im.mxset = self.current_set
-#			self.sets[self.current_set].append(idx)
-#			
-#		return 1
-				
-	def save_lst(self,fsp):
-		# Get the output filespec
-		return # doesn't work yet
-	
-	def save_data(self):
-		pass
-#		fsp=QtGui.QFileDialog.getSaveFileName(None, "Specify name of file to save","","","")
-#		fsp=str(fsp)
-#		try:
-#			if fsp == self.file_name:
-#				print "writing over the same file is currently not supported"
-#				return
-#		except: pass
-#		
-#		if fsp != '':
-#			for idx in range(self.max_idx):
-#				d = self.__getitem__(idx)
-#				try:
-#					d.get_attr("excluded")
-#					continue
-#				except: pass
-#				d.write_image(fsp,-1)
 
-	
+
 
 if __name__ == '__main__':
 	em_app = EMStandAloneApplication()
@@ -3446,10 +3550,9 @@ if __name__ == '__main__':
 		data = []
 		for i in range(0,200):
 			e = test_image(Util.get_irand(0,9))
-			e.set_attr("excluded",Util.get_irand(0,1))
 			data.append(e)
 			
-		window.set_data(data) 
+		window.set_data(data,soft_delete=True) 
 	else :
 		a=EMData.read_images(sys.argv[1])
 		window.set_file_name(sys.argv[1])

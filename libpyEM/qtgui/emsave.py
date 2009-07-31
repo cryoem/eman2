@@ -34,10 +34,8 @@
 from PyQt4.QtCore import Qt
 from PyQt4 import QtGui,QtCore
 from EMAN2 import EMData, file_exists, gimme_image_dimensions3D,get_image_directory,EMUtil,get_file_tag,gm_time_string
-from emimagemx import EMDataListCache
 from EMAN2db import db_check_dict, db_remove_dict
 import os
-
 # For example usage see http://blake.bcm.edu/emanwiki/EMAN2ImageFormats#SavingEMDatafromPython
 
 class EMFileTypeValidator:
@@ -120,7 +118,6 @@ def save_data(item_object):
 	@param item_object can be an EMData, a list of EMDatas, an EMDataListCache, or a list of EMListingItems in the selector
 	@return the name of the file that was written to disk. May be and empty string ("") if no writing occurred
 	'''
-	from emimagemx import EMDataListCache
 	saver = None
 	if EMSingleImageSaveDialog.validate_save_argument(item_object):
 		saver = EMSingleImageSaveDialog()
@@ -374,14 +371,15 @@ class EMStackSaveDialog(EMFileSaver):
 		@param item_object the item you want to test
 		@return true or False
 		'''
-		from emimagemx import EMDataListCache
+		
+		#from emimagemx import EMMXDataCache
 		fine = False
-		if isinstance(item_object,list):
+		if hasattr(item_object,"get_item_from_emsave"): # this is True EMMXDataCache
+			fine = True
+		elif isinstance(item_object,list):
 		    if hasattr(item_object[0],"get_attr_dict"):
 		    	fine = True
-		elif isinstance(item_object,EMDataListCache):
-			fine = True
-			
+
 		return fine
 	# mimic a static function
 	validate_save_argument = staticmethod(validate_save_argument)
@@ -429,7 +427,8 @@ class EMStackSaveDialog(EMFileSaver):
 			try:
 					d = self.__item_list[i].get_emdata() # this will be case from the selector
 			except:
-				d = self.__item_list[i] # this will be the case from emimagemx
+				d = self.__item_list.get_item_from_emsave(i) # this will be the case from emimagemx
+				if d == None: continue # this will be the case if the image is shown as deleted in the emimagemx interface
 			
 			progress.setValue(tally)
 			tally += 1
