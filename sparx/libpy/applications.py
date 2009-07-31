@@ -12552,7 +12552,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 			N = EMUtil.get_image_count(stack)
 			glb_assign = k_means_locasg2glbasg(assign, listID, N)
 			crit = k_means_criterion(Cls, critname)
-			k_means_export(Cls, crit, glb_assign, out_dir)
+			k_means_export(Cls, crit, glb_assign, out_dir, TXT)
 			print_end_msg('k-means')
 
 		mpi_barrier(MPI_COMM_WORLD)
@@ -12599,7 +12599,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 
 		# export data
 		k_means_cuda_info(INFO)
-		k_means_cuda_export(GASG, AVE, out_dir, mask)
+		k_means_cuda_export(GASG, AVE, out_dir, mask, TXT)
 
 		# destroy obj
 		del KmeansCUDA
@@ -12637,7 +12637,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		if not TXT:
 			N = EMUtil.get_image_count(stack)
 		glb_assign = k_means_locasg2glbasg(assign, listID, N)
-		k_means_export(Cls, crit, glb_assign, out_dir)
+		k_means_export(Cls, crit, glb_assign, out_dir, TXT)
 
 		print_end_msg('k-means')
 
@@ -12875,7 +12875,7 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_nob
 	from mpi         import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier, MPI_COMM_WORLD
 	from mpi         import mpi_bcast, MPI_FLOAT
 	from utilities 	 import print_begin_msg, print_end_msg, print_msg
-	from utilities   import model_blank, get_image, get_im
+	from utilities   import model_blank, get_image, get_im, file_type
 	from statistics  import k_means_stab_update_tag, k_means_headlog, k_means_open_unstable_MPI
 	from statistics  import k_means_cla_MPI, k_means_SSE_MPI, k_means_SA_T0_MPI, k_means_criterion, k_means_locasg2glbasg
 	from statistics  import k_means_stab_asg2part, k_means_stab_pwa, k_means_stab_export, k_means_stab_H, k_means_export
@@ -12886,6 +12886,10 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_nob
 	myid      = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
 	mpi_barrier(MPI_COMM_WORLD)
+
+	ext = file_type(stack)
+	TXT = False
+	if ext == 'txt': TXT = True
 
 	# create a directory
 	if myid == main_node:
@@ -12955,7 +12959,7 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_nob
 			ALL_ASG.append(assign)
 			crit       = k_means_criterion(Cls, critname)
 			glb_assign = k_means_locasg2glbasg(assign, LUT, N)
-			k_means_export(Cls, crit, glb_assign, outdir, n)
+			k_means_export(Cls, crit, glb_assign, outdir, n, TXT)
 	
 	if myid == main_node:
 		# end of classification
@@ -12966,7 +12970,7 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_nob
 		ALL_PART = k_means_stab_asg2part(ALL_ASG, LUT)
 
 		# calculate the stability
-		if match   == 'HH':
+		if match   == 'hh':
 			stb, nb_stb, STB_PART = k_means_stab_H(ALL_PART)
 			logging.info('... Stability: %5.2f %% (%d objects)' % (stb, nb_stb))
 		elif match == 'pwa':
@@ -12974,12 +12978,13 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_nob
 			logging.info('... Stability: %5.2f %% (%d objects)' % (st, sum(CT_s)))
 
 		# export the stable class averages
-		count_k, id_rejected = k_means_stab_export(STB_PART, stack, outdir, th_nobj, CTF)
-		logging.info('... Export %i stable class averages: average.hdf (rejected %i images)' % (count_k, len(id_rejected)))
+		if not TXT:
+			count_k, id_rejected = k_means_stab_export(STB_PART, stack, outdir, th_nobj, CTF)
+			logging.info('... Export %i stable class averages: average.hdf (rejected %i images)' % (count_k, len(id_rejected)))
 
-		# tag informations to the header
-		logging.info('... Update info to the header')
-		k_means_stab_update_tag(stack, STB_PART, id_rejected)
+		        # tag informations to the header
+			logging.info('... Update info to the header')
+			k_means_stab_update_tag(stack, STB_PART, id_rejected)
 
 		logging.info('::: END k-means stability :::')
 

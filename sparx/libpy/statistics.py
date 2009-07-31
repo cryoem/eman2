@@ -1448,9 +1448,9 @@ def k_means_open_txt(stack, maskname, N_start, N_stop, N):
 		im   = model_blank(nx)
 		line = data[i]
 		line = line.split()
-		for i in xrange(nx):
-			val = float(line[i])
-			im.set_value_at_fast(i, val)
+		for j in xrange(nx):
+			val = float(line[j])
+			im.set_value_at_fast(j, 0, val)
 		im_M[i] = Util.compress_image_mask(im, mask)
 
 	return im_M, mask, None, None
@@ -1601,7 +1601,7 @@ def k_means_headlog(stackname, outname, method, N, K, crit, maskname, trials, ma
 	print_msg('Output seed names           : %s\n\n'   % outname)
 
 # K-means write results output directory
-def k_means_export(Cls, crit, assign, out_seedname, part = -1):
+def k_means_export(Cls, crit, assign, out_seedname, part = -1, TXT = False):
 	from utilities import print_msg
 	import os
 
@@ -1627,9 +1627,9 @@ def k_means_export(Cls, crit, assign, out_seedname, part = -1):
 		else:                print_msg('\t%s\t%11.6e\n' % ('Sum of Squares Error Ji', Cls['Ji'][k]))
 
 		# limitation of hdf file in the numbers of attributes
-		if Cls['n'][k] > 16000:
-			print 'WARNING: limitation of number attributes in hdf file, the results will be export in separate files \n'
-			outfile = open('%d_kmeans.txt' % (k + 1), 'w')
+		if Cls['n'][k] > 16000 or TXT:
+			if Cls['n'][k] > 16000: print 'WARNING: limitation of number attributes in hdf file, the results will be export in separate files \n'
+			outfile = open(out_seedname + '/kmeans_grp_%03i.txt' % (k + 1), 'w')
 			list_images = []
 			for i in xrange(len(assign)):
 				if assign[i] == k:
@@ -4352,7 +4352,7 @@ def k_means_cuda_info(INFO):
 	print_msg('Criteria Davies-Bouldin is  : %11.6e\n' % INFO['DB'])
 
 # K-means write results output directory
-def k_means_cuda_export(PART, FLATAVE, out_seedname, mask, part = -1):
+def k_means_cuda_export(PART, FLATAVE, out_seedname, mask, part = -1, TXT = False):
 	from utilities import print_msg
 	import os
 	
@@ -4377,7 +4377,7 @@ def k_means_cuda_export(PART, FLATAVE, out_seedname, mask, part = -1):
 		AVE = Util.reconstitute_image_mask(FLATAVE[k], mask)
 
 		# limitation of hdf format
-		if flagHDF:
+		if flagHDF or TXT:
 			outfile = open('grp_%d_kmeans' % (k + 1), 'w')
 			for id in GRP[k]: outfile.write('%i\n' % int(id))
 			outfile.close()
@@ -5497,18 +5497,28 @@ def k_means_stab_init_tag(stack):
 def k_means_open_unstable_MPI(stack, maskname, CTF, nb_cpu, main_node, myid):
 	from utilities    import file_type
 	from mpi          import mpi_bcast, mpi_barrier, MPI_COMM_WORLD, MPI_INT
-	from statistics   import k_means_open_im
+	from statistics   import k_means_open_im, k_means_open_txt
+
+	ext = file_type(stack)
+	BDB, TXT = False, False
+	if ext == 'bdb':   BDB = True
+	elif ext == 'txt': TXT = True
 
 	N = 0
 	if myid == main_node:
-		N    = EMUtil.get_image_count(stack)
+		if TXT:
+			data = open(stack, 'r').readlines()
+			N    = len(data)
+		else:
+			N    = EMUtil.get_image_count(stack)
 		lim  = []
-		ext  = file_type(stack)
-		if ext == 'bdb':
+		if BDB:
 			DB = db_open_dict(stack)
 			for n in xrange(N):
 				if DB.get_attr(n, 'active'): lim.append(n)
 			DB.close()
+		elif TXT:
+			lim = range(N)
 		else:
 			im = EMData()
 			for n in xrange(N):
@@ -5529,10 +5539,15 @@ def k_means_open_unstable_MPI(stack, maskname, CTF, nb_cpu, main_node, myid):
 	N_stop  = int(round(float(N) / nb_cpu * (myid + 1)))
 
 	# Now each node read his part of data (unsynchronise due to bdb)
-	for cpu in xrange(nb_cpu):
-		if cpu == myid:			
-			im_M, mask, ctf, ctf2 = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, lim)
-		mpi_barrier(MPI_COMM_WORLD)
+	if BDB:
+		for cpu in xrange(nb_cpu):
+			if cpu == myid:			
+				im_M, mask, ctf, ctf2 = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, lim)
+			mpi_barrier(MPI_COMM_WORLD)
+	elif TXT:
+		im_M, mask, ctf, ctf2 = k_means_open_txt(stack, maskname, N_start, N_stop, N)
+	else:
+		im_M, mask, ctf, ctf2 = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, lim)
 
 	return im_M, mask, ctf, ctf2, lim, N, N_start, N_stop
 
