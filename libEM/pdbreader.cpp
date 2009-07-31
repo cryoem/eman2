@@ -38,6 +38,7 @@
 #include <cstring>
 #include <string>
 #include <stdio.h>
+#include <iostream>
 
 using namespace EMAN;
 
@@ -218,6 +219,7 @@ bool PDBReader::read_from_pdb(const char *file)
 			count++;
 		}
 	}
+
 	
 	fclose(fp);
 	set_number_points(count);

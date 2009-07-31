@@ -39,392 +39,634 @@ class AlaRenderer:
 	def __init__(self): pass
 		
 	def __call__(self,res,target):
-		t1 = res[3].index('CB')
+		try: t1 = res[3].index('CB')
+		except: pass
 
-		target.makeStick(res, 0, 1)
-		target.makeStick(res, 1, 2)
-		target.makeStick(res, 2, 3)
+		try: target.makeStick(res, 0, 1)
+		except: pass		
+		try: target.makeStick(res, 1, 2)
+		except: pass
+		try: target.makeStick(res, 2, 3)
+		except: pass
 
-		target.makeStick(res, 1, t1)
+		try: target.makeStick(res, 1, t1)
+		except: pass
 
 class ArgRenderer:
 	def __init__(self): pass
 		
 	def __call__(self,res,target):
-		t1 = res[3].index('CB')
-		t2 = res[3].index('CG')
-		t3 = res[3].index('CD')
-		t4 = res[3].index('NE')
-		t5 = res[3].index('CZ')
-		t6 = res[3].index('NH1')
-		t7 = res[3].index('NH2')
+
+		try: t1 = res[3].index('CB')
+		except: pass
+		try: t2 = res[3].index('CG')
+		except: pass
+		try: t3 = res[3].index('CD')
+		except: pass
+		try: t4 = res[3].index('NE')
+		except: pass
+		try: t5 = res[3].index('CZ')
+		except: pass
+		try: t6 = res[3].index('NH1')
+		except: pass
+		try: t7 = res[3].index('NH2')
+		except: pass
+		
 
 
-		target.makeStick(res, 0, 1)
-		target.makeStick(res, 1, 2)
-		target.makeStick(res, 2, 3)
+		try: target.makeStick(res, 0, 1)
+		except: pass
+		try: target.makeStick(res, 1, 2)
+		except: pass
+		try: target.makeStick(res, 2, 3)
+		except: pass
 
-		target.makeStick(res, 1, t1)
-		target.makeStick(res, t1, t2)
-		target.makeStick(res, t2, t3)
-		target.makeStick(res, t3, t4)
-		target.makeStick(res, t4, t5)
-		target.makeStick(res, t5, t6)
-		target.makeStick(res, t5, t7)
+		try: target.makeStick(res, 1, t1)
+		except: pass
+		try: target.makeStick(res, t1, t2)
+		except: pass
+		try: target.makeStick(res, t2, t3)
+		except: pass
+		try: target.makeStick(res, t3, t4)
+		except: pass
+		try: target.makeStick(res, t4, t5)
+		except: pass
+		try: target.makeStick(res, t5, t6)
+		except: pass
+		try: target.makeStick(res, t5, t7)
+		except: pass
 
 class AspRenderer:
 	def __init__(self): pass
 		
 	def __call__(self,res,target):
-		t1 = res[3].index('CB')
-		t2 = res[3].index('CG')
-		t3 = res[3].index('OD1')
-		t4 = res[3].index('OD2')
+		try: t1 = res[3].index('CB')
+		except: pass
+		try: t2 = res[3].index('CG')
+		except: pass
+		try: t3 = res[3].index('OD1')
+		except: pass
+		try: t4 = res[3].index('OD2')
+		except: pass
 
 
-		target.makeStick(res, 0, 1)
-		target.makeStick(res, 1, 2)
-		target.makeStick(res, 2, 3)
+		try: target.makeStick(res, 0, 1)
+		except: pass
+		try: target.makeStick(res, 1, 2)
+		except: pass
+		try: target.makeStick(res, 2, 3)
+		except: pass
 
-		target.makeStick(res, 1, t1)
-		target.makeStick(res, t1, t2)
-		target.makeStick(res, t2, t3)
-		target.makeStick(res, t2, t4)
+		try: target.makeStick(res, 1, t1)
+		except: pass
+		try: target.makeStick(res, t1, t2)
+		except: pass
+		try: target.makeStick(res, t2, t3)
+		except: pass
+		try: target.makeStick(res, t2, t4)
+		except: pass
 
 class AsnRenderer:
 	def __init__(self): pass
 		
 	def __call__(self,res,target):
-		t1 = res[3].index('CB')
-		t2 = res[3].index('CG')
-		t3 = res[3].index('OD1')
-		t4 = res[3].index('ND2')
+		try: t1 = res[3].index('CB')
+		except: pass
+		try: t2 = res[3].index('CG')
+		except: pass
+		try: t3 = res[3].index('OD1')
+		except: pass
+		try: t4 = res[3].index('ND2')
+		except: pass
 
 
-		target.makeStick(res, 0, 1)
-		target.makeStick(res, 1, 2)
-		target.makeStick(res, 2, 3)
+		try: target.makeStick(res, 0, 1)
+		except: pass
+		try: target.makeStick(res, 1, 2)
+		except: pass
+		try: target.makeStick(res, 2, 3)
+		except: pass
 
-		target.makeStick(res, 1, t1)
-		target.makeStick(res, t1, t2)
-		target.makeStick(res, t2, t3)
-		target.makeStick(res, t2, t4)
+		try: target.makeStick(res, 1, t1)
+		except: pass
+		try: target.makeStick(res, t1, t2)
+		except: pass
+		try: target.makeStick(res, t2, t3)
+		except: pass
+		try: target.makeStick(res, t2, t4)
+		except: pass
 
 class CysRenderer:
 	def __init__(self): pass
 		
 	def __call__(self,res,target):
-		t1 = res[3].index('CB')
-		t2 = res[3].index('SG')
+		try: t1 = res[3].index('CB')
+		except: pass
+		try: t2 = res[3].index('SG')
+		except: pass
 
-		target.makeStick(res, 0, 1)
-		target.makeStick(res, 1, 2)
-		target.makeStick(res, 2, 3)
+		try: target.makeStick(res, 0, 1)
+		except: pass
+		try: target.makeStick(res, 1, 2)
+		except: pass
+		try: target.makeStick(res, 2, 3)
+		except: pass
 
-		target.makeStick(res, 1, t1)
-		target.makeStick(res, t1, t2)
+		try: target.makeStick(res, 1, t1)
+		except: pass
+		try: target.makeStick(res, t1, t2)
+		except: pass
 
 class GlyRenderer:
 	def __init__(self): pass
 		
 	def __call__(self,res,target):
-		target.makeStick(res, 0, 1)
-		target.makeStick(res, 1, 2)
-		target.makeStick(res, 2, 3)
+		try: target.makeStick(res, 0, 1)
+		except: pass
+		try: target.makeStick(res, 1, 2)
+		except: pass
+		try: target.makeStick(res, 2, 3)
+		except: pass
 
 class GlnRenderer:
 	def __init__(self): pass
 		
 	def __call__(self,res,target):
-		t1 = res[3].index('CB')
-		t2 = res[3].index('CG')
-		t3 = res[3].index('CD')
-		t4 = res[3].index('OE1')
-		t5 = res[3].index('NE2')
+		try: t1 = res[3].index('CB')
+		except: pass
+		try: t2 = res[3].index('CG')
+		except: pass
+		try: t3 = res[3].index('CD')
+		except: pass
+		try: t4 = res[3].index('OE1')
+		except: pass
+		try: t5 = res[3].index('NE2')
+		except: pass
 
 
-		target.makeStick(res, 0, 1)
-		target.makeStick(res, 1, 2)
-		target.makeStick(res, 2, 3)
+		try: target.makeStick(res, 0, 1)
+		except: pass
+		try: target.makeStick(res, 1, 2)
+		except: pass
+		try: target.makeStick(res, 2, 3)
+		except: pass
 
-		target.makeStick(res, 1, t1)
-		target.makeStick(res, t1, t2)
-		target.makeStick(res, t2, t3)
-		target.makeStick(res, t3, t4)
-		target.makeStick(res, t3, t5)
+		try: target.makeStick(res, 1, t1)
+		except: pass
+		try: target.makeStick(res, t1, t2)
+		except: pass
+		try: target.makeStick(res, t2, t3)
+		except: pass
+		try: target.makeStick(res, t3, t4)
+		except: pass
+		try: target.makeStick(res, t3, t5)
+		except: pass
 
 class GluRenderer:
 	def __init__(self): pass
 		
 	def __call__(self,res,target):
-		t1 = res[3].index('CB')
-		t2 = res[3].index('CG')
-		t3 = res[3].index('CD')
-		t4 = res[3].index('OE1')
-		t5 = res[3].index('OE2')
+		try: t1 = res[3].index('CB')
+		except: pass
+		try: t2 = res[3].index('CG')
+		except: pass
+		try: t3 = res[3].index('CD')
+		except: pass
+		try: t4 = res[3].index('OE1')
+		except: pass
+		try: t5 = res[3].index('OE2')
+		except: pass
 
 
-		target.makeStick(res, 0, 1)
-		target.makeStick(res, 1, 2)
-		target.makeStick(res, 2, 3)
+		try: target.makeStick(res, 0, 1)
+		except: pass
+		try: target.makeStick(res, 1, 2)
+		except: pass
+		try: target.makeStick(res, 2, 3)
+		except: pass
 
-		target.makeStick(res, 1, t1)
-		target.makeStick(res, t1, t2)
-		target.makeStick(res, t2, t3)
-		target.makeStick(res, t3, t4)
-		target.makeStick(res, t3, t5)
+		try: target.makeStick(res, 1, t1)
+		except: pass
+		try: target.makeStick(res, t1, t2)
+		except: pass
+		try: target.makeStick(res, t2, t3)
+		except: pass
+		try: target.makeStick(res, t3, t4)
+		except: pass
+		try: target.makeStick(res, t3, t5)
+		except: pass
 
 class HisRenderer:
 	def __init__(self): pass
 		
 	def __call__(self,res,target):
-		t1 = res[3].index('CB')
-		t2 = res[3].index('CG')
-		t3 = res[3].index('CD2')
-		t4 = res[3].index('ND1')
-		t5 = res[3].index('NE2')
-		t6 = res[3].index('CE1')
+		try: t1 = res[3].index('CB')
+		except: pass
+		try: t2 = res[3].index('CG')
+		except: pass
+		try: t3 = res[3].index('CD2')
+		except: pass
+		try: t4 = res[3].index('ND1')
+		except: pass
+		try: t5 = res[3].index('NE2')
+		except: pass
+		try: t6 = res[3].index('CE1')
+		except: pass
 
 
-		target.makeStick(res, 0, 1)
-		target.makeStick(res, 1, 2)
-		target.makeStick(res, 2, 3)
+		try: target.makeStick(res, 0, 1)
+		except: pass
+		try: target.makeStick(res, 1, 2)
+		except: pass
+		try: target.makeStick(res, 2, 3)
+		except: pass
 
-		target.makeStick(res, 1, t1)
-		target.makeStick(res, t1, t2)
-		target.makeStick(res, t2, t3)
-		target.makeStick(res, t2, t4)
-		target.makeStick(res, t3, t5)
-		target.makeStick(res, t5, t6)
-		target.makeStick(res, t4, t6)
+		try: target.makeStick(res, 1, t1)
+		except: pass
+		try: target.makeStick(res, t1, t2)
+		except: pass
+		try: target.makeStick(res, t2, t3)
+		except: pass
+		try: target.makeStick(res, t2, t4)
+		except: pass
+		try: target.makeStick(res, t3, t5)
+		except: pass
+		try: target.makeStick(res, t5, t6)
+		except: pass
+		try: target.makeStick(res, t4, t6)
+		except: pass
 
 class IleRenderer:
 	def __init__(self): pass
 		
 	def __call__(self,res,target):
-		t1 = res[3].index('CB')
-		t2 = res[3].index('CG1')
-		t3 = res[3].index('CG2')
-		t4 = res[3].index('CD1')
+		try: t1 = res[3].index('CB')
+		except: pass
+		try: t2 = res[3].index('CG1')
+		except: pass
+		try: t3 = res[3].index('CG2')
+		except: pass
+		try: t4 = res[3].index('CD1')
+		except: pass
 
 
-		target.makeStick(res, 0, 1)
-		target.makeStick(res, 1, 2)
-		target.makeStick(res, 2, 3)
+		try: target.makeStick(res, 0, 1)
+		except: pass
+		try: target.makeStick(res, 1, 2)
+		except: pass
+		try: target.makeStick(res, 2, 3)
+		except: pass
 
-		target.makeStick(res, 1, t1)
-		target.makeStick(res, t1, t2)
-		target.makeStick(res, t1, t3)
-		target.makeStick(res, t2, t4)
+		try: target.makeStick(res, 1, t1)
+		except: pass
+		try: target.makeStick(res, t1, t2)
+		except: pass
+		try: target.makeStick(res, t1, t3)
+		except: pass
+		try: target.makeStick(res, t2, t4)
+		except: pass
 
 class LeuRenderer:
 	def __init__(self): pass
 		
 	def __call__(self,res,target):
-		t1 = res[3].index('CB')
-		t2 = res[3].index('CG')
-		t3 = res[3].index('CD1')
-		t4 = res[3].index('CD2')
+		try: t1 = res[3].index('CB')
+		except: pass
+		try: t2 = res[3].index('CG')
+		except: pass
+		try: t3 = res[3].index('CD1')
+		except: pass
+		try: t4 = res[3].index('CD2')
+		except: pass
 
 
-		target.makeStick(res, 0, 1)
-		target.makeStick(res, 1, 2)
-		target.makeStick(res, 2, 3)
+		try: target.makeStick(res, 0, 1)
+		except: pass
+		try: target.makeStick(res, 1, 2)
+		except: pass
+		try: target.makeStick(res, 2, 3)
+		except: pass
 
-		target.makeStick(res, 1, t1)
-		target.makeStick(res, t1, t2)
-		target.makeStick(res, t2, t3)
-		target.makeStick(res, t2, t4)
+		try: target.makeStick(res, 1, t1)
+		except: pass
+		try: target.makeStick(res, t1, t2)
+		except: pass
+		try: target.makeStick(res, t2, t3)
+		except: pass
+		try: target.makeStick(res, t2, t4)
+		except: pass
 
 class LysRenderer:
 	def __init__(self): pass
 		
 	def __call__(self,res,target):
-		t1 = res[3].index('CB')
-		t2 = res[3].index('CG')
-		t3 = res[3].index('CD')
-		t4 = res[3].index('CE')
-		t5 = res[3].index('NZ')
+		try: t1 = res[3].index('CB')
+		except: pass
+		try: t2 = res[3].index('CG')
+		except: pass
+		try: t3 = res[3].index('CD')
+		except: pass
+		try: t4 = res[3].index('CE')
+		except: pass
+		try: t5 = res[3].index('NZ')
+		except: pass
 
 
-		target.makeStick(res, 0, 1)
-		target.makeStick(res, 1, 2)
-		target.makeStick(res, 2, 3)
+		try: target.makeStick(res, 0, 1)
+		except: pass
+		try: target.makeStick(res, 1, 2)
+		except: pass
+		try: target.makeStick(res, 2, 3)
+		except: pass
 
-		target.makeStick(res, 1, t1)
-		target.makeStick(res, t1, t2)
-		target.makeStick(res, t2, t3)
-		target.makeStick(res, t3, t4)
-		target.makeStick(res, t4, t5)
+		try: target.makeStick(res, 1, t1)
+		except: pass
+		try: target.makeStick(res, t1, t2)
+		except: pass
+		try: target.makeStick(res, t2, t3)
+		except: pass
+		try: target.makeStick(res, t3, t4)
+		except: pass
+		try: target.makeStick(res, t4, t5)
+		except: pass
 
 class MetRenderer:
 	def __init__(self): pass
 		
 	def __call__(self,res,target):
-		t1 = res[3].index('CB')
-		t2 = res[3].index('CG')
-		t3 = res[3].index('SD')
-		t4 = res[3].index('CE')
+		try: t1 = res[3].index('CB')
+		except: pass
+		try: t2 = res[3].index('CG')
+		except: pass
+		try: t3 = res[3].index('SD')
+		except: pass
+		try: t4 = res[3].index('CE')
+		except: pass
 
 
-		target.makeStick(res, 0, 1)
-		target.makeStick(res, 1, 2)
-		target.makeStick(res, 2, 3)
+		try: target.makeStick(res, 0, 1)
+		except: pass
+		try: target.makeStick(res, 1, 2)
+		except: pass
+		try: target.makeStick(res, 2, 3)
+		except: pass
 
-		target.makeStick(res, 1, t1)
-		target.makeStick(res, t1, t2)
-		target.makeStick(res, t2, t3)
-		target.makeStick(res, t3, t4)
+		try: target.makeStick(res, 1, t1)
+		except: pass
+		try: target.makeStick(res, t1, t2)
+		except: pass
+		try: target.makeStick(res, t2, t3)
+		except: pass
+		try: target.makeStick(res, t3, t4)
+		except: pass
 
 class PheRenderer:
 	def __init__(self): pass
 		
 	def __call__(self,res,target):
-		t1 = res[3].index('CB')
-		t2 = res[3].index('CG')
-		t3 = res[3].index('CD1')
-		t4 = res[3].index('CD2')
-		t5 = res[3].index('CE1')
-		t6 = res[3].index('CE2')
-		t7 = res[3].index('CZ')
+		try: t1 = res[3].index('CB')
+		except: pass
+		try: t2 = res[3].index('CG')
+		except: pass
+		try: t3 = res[3].index('CD1')
+		except: pass
+		try: t4 = res[3].index('CD2')
+		except: pass
+		try: t5 = res[3].index('CE1')
+		except: pass
+		try: t6 = res[3].index('CE2')
+		except: pass
+		try: t7 = res[3].index('CZ')
+		except: pass
 
 
-		target.makeStick(res, 0, 1)
-		target.makeStick(res, 1, 2)
-		target.makeStick(res, 2, 3)
+		try: target.makeStick(res, 0, 1)
+		except: pass
+		try: target.makeStick(res, 1, 2)
+		except: pass
+		try: target.makeStick(res, 2, 3)
+		except: pass
 
-		target.makeStick(res, 1, t1)
-		target.makeStick(res, t1, t2)
-		target.makeStick(res, t2, t3)
-		target.makeStick(res, t2, t4)
-		target.makeStick(res, t3, t5)
-		target.makeStick(res, t4, t6)
-		target.makeStick(res, t5, t7)
-		target.makeStick(res, t6, t7)
+		try: target.makeStick(res, 1, t1)
+		except: pass
+		try: target.makeStick(res, t1, t2)
+		except: pass
+		try: target.makeStick(res, t2, t3)
+		except: pass
+		try: target.makeStick(res, t2, t4)
+		except: pass
+		try: target.makeStick(res, t3, t5)
+		except: pass
+		try: target.makeStick(res, t4, t6)
+		except: pass
+		try: target.makeStick(res, t5, t7)
+		except: pass
+		try: target.makeStick(res, t6, t7)
+		except: pass
 
 class ProRenderer:
 	def __init__(self): pass
 		
 	def __call__(self,res,target):
-		t1 = res[3].index('CB')
-		t2 = res[3].index('CG')
-		t3 = res[3].index('CD')
-		t4 = res[3].index('N')
+		try: t1 = res[3].index('CB')
+		except: pass
+		try: t2 = res[3].index('CG')
+		except: pass
+		try: t3 = res[3].index('CD')
+		except: pass
+		try: t4 = res[3].index('N')
+		except: pass
 
 
-		target.makeStick(res, 0, 1)
-		target.makeStick(res, 1, 2)
-		target.makeStick(res, 2, 3)
+		try: target.makeStick(res, 0, 1)
+		except: pass
+		try: target.makeStick(res, 1, 2)
+		except: pass
+		try: target.makeStick(res, 2, 3)
+		except: pass
 
-		target.makeStick(res, 1, t1)
-		target.makeStick(res, t1, t2)
-		target.makeStick(res, t2, t3)
-		target.makeStick(res, t3, t4)
+		try: target.makeStick(res, 1, t1)
+		except: pass
+		try: target.makeStick(res, t1, t2)
+		except: pass
+		try: target.makeStick(res, t2, t3)
+		except: pass
+		try: target.makeStick(res, t3, t4)
+		except: pass
 
 class SerRenderer:
 	def __init__(self): pass
 		
 	def __call__(self,res,target):
-		t1 = res[3].index('CB')
-		t2 = res[3].index('OG')
+		try: t1 = res[3].index('CB')
+		except: pass
+		try: t2 = res[3].index('OG')
+		except: pass
 
-		target.makeStick(res, 0, 1)
-		target.makeStick(res, 1, 2)
-		target.makeStick(res, 2, 3)
+		try: target.makeStick(res, 0, 1)
+		except: pass
+		try: target.makeStick(res, 1, 2)
+		except: pass
+		try: target.makeStick(res, 2, 3)
+		except: pass
 
-		target.makeStick(res, 1, t1)
-		target.makeStick(res, t1, t2)
+		try: target.makeStick(res, 1, t1)
+		except: pass
+		try: target.makeStick(res, t1, t2)
+		except: pass
 
 class ThrRenderer:
 	def __init__(self): pass
 		
 	def __call__(self,res,target):
-		t1 = res[3].index('CB')
-		t2 = res[3].index('CG2')
-		t3 = res[3].index('OG1')
+		try: t1 = res[3].index('CB')
+		except: pass
+		try: t2 = res[3].index('CG2')
+		except: pass
+		try: t3 = res[3].index('OG1')
+		except: pass
 
-		target.makeStick(res, 0, 1)
-		target.makeStick(res, 1, 2)
-		target.makeStick(res, 2, 3)
+		try: target.makeStick(res, 0, 1)
+		except: pass
+		try: target.makeStick(res, 1, 2)
+		except: pass
+		try: target.makeStick(res, 2, 3)
+		except: pass
 
-		target.makeStick(res, 1, t1)
-		target.makeStick(res, t1, t2)
-		target.makeStick(res, t1, t3)
+		try: target.makeStick(res, 1, t1)
+		except: pass
+		try: target.makeStick(res, t1, t2)
+		except: pass
+		try: target.makeStick(res, t1, t3)
+		except: pass
 
 class TrpRenderer:
 	def __init__(self): pass
 		
 	def __call__(self,res,target):
-		t1 = res[3].index('CB')
-		t2 = res[3].index('CG')
-		t3 = res[3].index('CD1')
-		t4 = res[3].index('CD2')
-		t5 = res[3].index('NE1')
-		t6 = res[3].index('CE2')
-		t7 = res[3].index('CE3')
-		t8 = res[3].index('CZ3')
-		t9 = res[3].index('CH2')
-		t10 = res[3].index('CZ2')
+		try: t1 = res[3].index('CB')
+		except: pass
+		try: t2 = res[3].index('CG')
+		except: pass
+		try: t3 = res[3].index('CD1')
+		except: pass
+		try: t4 = res[3].index('CD2')
+		except: pass
+		try: t5 = res[3].index('NE1')
+		except: pass
+		try: t6 = res[3].index('CE2')
+		except: pass
+		try: t7 = res[3].index('CE3')
+		except: pass
+		try: t8 = res[3].index('CZ3')
+		except: pass
+		try: t9 = res[3].index('CH2')
+		except: pass
+		try: t10 = res[3].index('CZ2')
+		except: pass
 
-		target.makeStick(res, 0, 1)
-		target.makeStick(res, 1, 2)
-		target.makeStick(res, 2, 3)
+		try: target.makeStick(res, 0, 1)
+		except: pass
+		try: target.makeStick(res, 1, 2)
+		except: pass
+		try: target.makeStick(res, 2, 3)
+		except: pass
 
-		target.makeStick(res, 1, t1)
-		target.makeStick(res, t1, t2)
-		target.makeStick(res, t2, t3)
-		target.makeStick(res, t2, t4)
-		target.makeStick(res, t3, t5)
-		target.makeStick(res, t5, t6)
-		target.makeStick(res, t4, t6)
-		target.makeStick(res, t4, t7)
-		target.makeStick(res, t7, t8)
-		target.makeStick(res, t8, t9)
-		target.makeStick(res, t10, t9)
+		try: target.makeStick(res, 1, t1)
+		except: pass
+		try: target.makeStick(res, t1, t2)
+		except: pass
+		try: target.makeStick(res, t2, t3)
+		except: pass
+		try: target.makeStick(res, t2, t4)
+		except: pass
+		try: target.makeStick(res, t3, t5)
+		except: pass
+		try: target.makeStick(res, t5, t6)
+		except: pass
+		try: target.makeStick(res, t4, t6)
+		except: pass
+		try: target.makeStick(res, t4, t7)
+		except: pass
+		try: target.makeStick(res, t7, t8)
+		except: pass
+		try: target.makeStick(res, t8, t9)
+		except: pass
+		try: target.makeStick(res, t10, t9)
+		except: pass
 
 class TyrRenderer:
 	def __init__(self): pass
 		
 	def __call__(self,res,target):
-		t1 = res[3].index('CB')
-		t2 = res[3].index('CG')
-		t3 = res[3].index('CD1')
-		t4 = res[3].index('CD2')
-		t5 = res[3].index('CE1')
-		t6 = res[3].index('CE2')
-		t7 = res[3].index('CZ')
-		t8 = res[3].index('OH')
+		try: t1 = res[3].index('CB')
+		except: pass
+		try: t2 = res[3].index('CG')
+		except: pass
+		try: t3 = res[3].index('CD1')
+		except: pass
+		try: t4 = res[3].index('CD2')
+		except: pass
+		try: t5 = res[3].index('CE1')
+		except: pass
+		try: t6 = res[3].index('CE2')
+		except: pass
+		try: t7 = res[3].index('CZ')
+		except: pass
+		try: t8 = res[3].index('OH')
+		except: pass
 
 
-		target.makeStick(res, 0, 1)
-		target.makeStick(res, 1, 2)
-		target.makeStick(res, 2, 3)
+		try: target.makeStick(res, 0, 1)
+		except: pass
+		try: target.makeStick(res, 1, 2)
+		except: pass
+		try: target.makeStick(res, 2, 3)
+		except: pass
 
-		target.makeStick(res, 1, t1)
-		target.makeStick(res, t1, t2)
-		target.makeStick(res, t2, t3)
-		target.makeStick(res, t2, t4)
-		target.makeStick(res, t3, t5)
-		target.makeStick(res, t4, t6)
-		target.makeStick(res, t5, t7)
-		target.makeStick(res, t6, t7)
-		target.makeStick(res, t7, t8)
+		try: target.makeStick(res, 1, t1)
+		except: pass
+		try: target.makeStick(res, t1, t2)
+		except: pass
+		try: target.makeStick(res, t2, t3)
+		except: pass
+		try: target.makeStick(res, t2, t4)
+		except: pass
+		try: target.makeStick(res, t3, t5)
+		except: pass
+		try: target.makeStick(res, t4, t6)
+		except: pass
+		try: target.makeStick(res, t5, t7)
+		except: pass
+		try: target.makeStick(res, t6, t7)
+		except: pass
+		try: target.makeStick(res, t7, t8)
+		except: pass
 
 class ValRenderer:
 	def __init__(self): pass
 		
 	def __call__(self,res,target):
-		t1 = res[3].index('CB')
-		t2 = res[3].index('CG2')
-		t3 = res[3].index('CG1')
+		try: t1 = res[3].index('CB')
+		except: pass
+		try: t2 = res[3].index('CG2')
+		except: pass
+		try: t3 = res[3].index('CG1')
+		except: pass
 
-		target.makeStick(res, 0, 1)
-		target.makeStick(res, 1, 2)
-		target.makeStick(res, 2, 3)
+		try: target.makeStick(res, 0, 1)
+		except: pass
+		try: target.makeStick(res, 1, 2)
+		except: pass
+		try: target.makeStick(res, 2, 3)
+		except: pass
 
-		target.makeStick(res, 1, t1)
-		target.makeStick(res, t1, t2)
-		target.makeStick(res, t1, t3)
+		try: target.makeStick(res, 1, t1)
+		except: pass
+		try: target.makeStick(res, t1, t2)
+		except: pass
+		try: target.makeStick(res, t1, t3)
+		except: pass
 
 
 
@@ -574,7 +816,7 @@ class EMPDBViewer(EM3DModule):
 		atomName =[]
 		resName = []
 		amino = []
-		currentRes = 1
+		currentRes = point_resNum[0]
 
 
     		for i in range(0, len(point_x)):

@@ -267,10 +267,10 @@ class E2FoldHunterStat:
 				#s3.append(calc3[cCount])
 
 
-		print "number of transformations preformed: " + str(len(calc1))
-		print "score 1: " + str(s1[0])
-		print "score 2: " + str(s2[0])
-		print "score 3: " + str(s3[0])
+		print "Number of transformations preformed: " + str(len(calc1))
+		print "score 1 - Real space correlation: " + str(s1[0]) + " standard deviations above the mean"
+		print "score 2 - Atom inclusion: " + str(s2[0]) + " standard deviations above the mean"
+		print "score 3 - Volume overlap: " + str(s3[0]) + " standard deviations above the mean"
 
 		##### Create Dictionary
 		vals = {}
@@ -303,7 +303,7 @@ class E2FoldHunterStat:
 		vals["score_3"] = s3
 		vals["tNum"] = tNum
 
-		###########################################################3
+		############################################################
 
 		############# Misc. tasks
 
