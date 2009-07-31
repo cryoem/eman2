@@ -903,7 +903,7 @@ class EMRawDataReportTask(WorkFlowTask):
 		table.add_column_data(EMFileTable.EMColumnData("Dimensions",EMRawDataReportTask.get_image_dimensions,"The dimensions of the file on disk"))
 		return table,n
 	
-	class ProjectAddRawDataButton():
+	class ProjectAddRawDataButton:
 		def __init__(self,table_widget,context_menu_data):
 			self.table_widget = weakref.ref(table_widget)
 			self.context_menu_data = context_menu_data
@@ -1052,7 +1052,7 @@ class EMRawDataReportTask(WorkFlowTask):
 		
 
 		
-class AddFilesToProjectValidator():
+class AddFilesToProjectValidator:
 	def __init__(self,project_list=spr_raw_data_dict):
 		self.project_list = project_list
 	def validate_file_name(self,list_of_names):
@@ -1358,7 +1358,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 		return table, len(ptcl_list)
 
 	
-	class AddDataButton():
+	class AddDataButton:
 		def __init__(self,table_widget,context_menu_data):
 			self.table_widget = weakref.ref(table_widget)
 			self.context_menu_data = context_menu_data
@@ -1809,7 +1809,7 @@ class EMParticleImportTask(ParticleWorkFlowTask):
 		return True,"success"
 	
 	
-	class ProjectAddRawDataButton():
+	class ProjectAddRawDataButton:
 		def __init__(self,table_widget,context_menu_data):
 			self.table_widget = weakref.ref(table_widget)
 			self.context_menu_data = context_menu_data
@@ -4375,7 +4375,7 @@ class E2Refine2DChooseSetsTask(ParticleWorkFlowTask):
 		
 		self.write_db_entries(params)
 		
-class E2RefFreeClassAveTool():
+class E2RefFreeClassAveTool:
 	def __init__(self):
 		self.project_data_at_init = None
 	

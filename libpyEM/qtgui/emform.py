@@ -582,7 +582,7 @@ class EMFileTable(QtGui.QTableWidget):
 			layout.addWidget(button,0)
 			QtCore.QObject.connect(button,QtCore.SIGNAL("clicked(bool)"),button_data.function)
 	
-	class EMColumnData():
+	class EMColumnData:
 		'''
 		This class defines what's required to add column data to the EMFileTable
 		'''
@@ -592,7 +592,7 @@ class EMFileTable(QtGui.QTableWidget):
 			self.tooltip = tooltip # The helpful tooltip
 			self.lt_function = lt_function # less than function - if specified is used as the operator< and sophisticates the sorting behavior
 			
-	class EMButtonData():
+	class EMButtonData:
 		'''
 		This class defines what's required to add button data to the EMFileTable
 		'''
