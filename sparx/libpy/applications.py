@@ -11883,54 +11883,6 @@ def factcoords_vol( vol_stacks, avgvol_stack, eigvol_stack, prefix, rad = -1, ne
 		ltot = 0
 		ltot = spill_out(ltot, base, d, neigvol, foutput)
 
-"""
-def factcoords_prj( prj_stacks, avgvol_stack, eigvol_stack, prefix, rad, neigvol, fl=0.0, aa=0.0, MPI=False):
-	from utilities    import get_im, get_image, model_circle, model_blank, get_params_proj
-	from projection   import prgs, prep_vol
-	from filter       import filt_ctf, filt_tanl
-	from statistics   import im_diff
-	from utilities    import memory_usage
-
-	if MPI:
-		from mpi import mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
-		ncpu = mpi_comm_size( MPI_COMM_WORLD )
-		myid = mpi_comm_rank( MPI_COMM_WORLD )
-	else:
-		ncpu = 1
-		myid = 0
-
-        if(myid == 0):
-		foutput = open( prefix+".txt", "w" )
-
-	neigvol = 1
-	nprj = 400000*neigvol
-	img_bgn, img_end = MPI_start_end( nprj, ncpu, myid )
-	d = []
-	d = range(img_bgn, img_end)
-	for i in xrange(len(d)):  d[i] = float(d[i])
-
-	if  MPI:
-		from mpi import MPI_INT, MPI_FLOAT, MPI_TAG_UB, MPI_COMM_WORLD, mpi_recv, mpi_send
-		if myid == 0:
-			ltot = 0
-			base = 0
-			for iq in xrange( ncpu ):
-				if(iq == 0):
-					ltot = spill_out(ltot, base, d, neigvol, foutput)
-				else:
-					lend = mpi_recv(1, MPI_INT, iq, MPI_TAG_UB, MPI_COMM_WORLD)
-					lend = int(lend[0])
-					d = mpi_recv(lend, MPI_FLOAT, iq, MPI_TAG_UB, MPI_COMM_WORLD)
-					ltot = spill_out(ltot, base, d, neigvol, foutput)
-				base += len(d)/neigvol
-		else:
-			mpi_send([len(d)], 1, MPI_INT, 0, MPI_TAG_UB, MPI_COMM_WORLD)
-			mpi_send(d, len(d), MPI_FLOAT, 0, MPI_TAG_UB, MPI_COMM_WORLD)
-	else:
-		ltot = 0
-		ltot = spill_out(ltot, base, d, neigvol, foutput)
-
-"""
 def factcoords_prj( prj_stacks, avgvol_stack, eigvol_stack, prefix, rad, neigvol, fl=0.0, aa=0.0, MPI=False):
 	from utilities    import get_im, get_image, model_circle, model_blank, get_params_proj
 	from projection   import prgs, prep_vol
