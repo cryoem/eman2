@@ -5201,13 +5201,13 @@ def Hungarian(part1, part2):
 	indexes = m.compute(cost_MAT)
 
 	return indexes, MAT
-	
 
 # Match two partitions with hungarian algorithm
-def k_means_match_clusters_asg(asg1, asg2):
+def k_means_match_clusters_asg_(asg1, asg2):
 	from statistics import Munkres
-	import sys
+	import sys, time
 	
+	t1 = time.time()
 	K   = len(asg1)
 	MAT = [[0] * K for i in xrange(K)]
 
@@ -5217,6 +5217,8 @@ def k_means_match_clusters_asg(asg1, asg2):
 			for index in asg1[k1]:
 				if index in asg2[k2]:
 					MAT[k1][k2] += 1
+	t2 = time.time()
+	print 'cont table', t2 - t1, 's'
 	cost_MAT = []
 	for row in MAT:
 		cost_row = []
@@ -5224,8 +5226,14 @@ def k_means_match_clusters_asg(asg1, asg2):
 			cost_row += [sys.maxint - col]
 		cost_MAT += [cost_row]
 
+	t3 = time.time()
+	print 'cost MAT', t3 - t2, 's'
+
 	m = Munkres()
 	indexes = m.compute(cost_MAT)
+
+	t4 = time.time()
+	print 'hungarian', t4 - t3, 's'
 
 	list_stable = []
 	list_objs   = []
@@ -5243,6 +5251,49 @@ def k_means_match_clusters_asg(asg1, asg2):
 		nb_tot_objs += len(list_in)
 		nb_tot_objs += len(list_out)
 
+		list_stable.append(list_in)
+
+	t5 = time.time()
+	print 'stable', t5 - t4, 's'
+
+	return list_stable, nb_tot_objs
+	
+
+# Match two partitions with hungarian algorithm
+def k_means_match_clusters_asg(asg1, asg2):
+	# asg1 and asg2 are numpy array
+	from numpy      import zeros, argmax
+	from statistics import Munkres
+	import sys, time
+	
+	t1   = time.time()
+	K    = len(asg1)
+	MAT  = zeros((K, K))
+	for k1 in xrange(K):
+		for k2 in xrange(K):
+			for index in asg1[k1]:
+				arg = argmax(asg2[k2] == index)
+				if arg != 0: MAT[k1][k2] += 1
+				elif index == asg2[k2][0]:
+					MAT[k1][k2] += 1
+	cost_MAT = sys.maxint - MAT
+	m = Munkres()
+	indexes = m.compute(cost_MAT)
+
+	list_stable = []
+	list_objs   = []
+	nb_tot_objs = 0
+	for r, c in indexes:
+		list_in  = []
+		for index in asg1[r]:
+			arg = argmax(asg2[c] == index)
+			if arg != 0:
+				list_in.append(index)
+				nb_tot_objs += 1
+			elif index == asg2[c][0]:
+				list_in.append(index)
+				nb_tot_objs += 1
+		
 		list_stable.append(list_in)
 
 	return list_stable, nb_tot_objs
@@ -5600,12 +5651,20 @@ def k_means_open_unstable(stack, maskname, CTF):
 
 # Convert local all assignment to absolute all partition
 def k_means_stab_asg2part(ALL_ASG, LUT):
+	from numpy import array
+	p = len(ALL_ASG)
 	K = max(ALL_ASG[0]) + 1
 	N = len(ALL_ASG[0])
+
 	ALL_PART = []
 	for ASG in ALL_ASG:
-		PART = [[] for i in xrange(K)]
-		for n in xrange(N): PART[ASG[n]].append(LUT[n])
+		TMP  = [[] for i in xrange(K)]
+		for n in xrange(N): TMP[ASG[n]].append(LUT[n])
+		PART = []
+		for k in xrange(K):
+			a = array(TMP[k])
+			a.sort()
+			PART.append(a)
 		ALL_PART.append(PART)
 
 	return ALL_PART

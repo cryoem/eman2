@@ -12510,7 +12510,7 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_nob
 		print_end_msg('k-means')
 
 		# convert local assignment to absolute partition
-		logging.info('... Convert local assign to abs partition')
+		logging.info('... Convert assignment to partition')
 		ALL_PART = k_means_stab_asg2part(ALL_ASG, LUT)
 
 		# calculate the stability
