@@ -907,7 +907,7 @@ class EMImageMXModule(EMGUIModule):
 		cache_size = -1
 		
 		if isinstance(data_or_filename,str):
-#			nx,ny,nz = gimme_image_dimensions3D(data_or_filename)
+			nx,ny,nz = gimme_image_dimensions3D(data_or_filename)
 #			bytes_per_image = nx*ny*4.0
 #			cache_size = int(75000000/bytes_per_image) # 75 MB
 			
@@ -2999,7 +2999,25 @@ class EMMXDataCache:
 	
 
 class EMLightWeightParticleCache(EMMXDataCache):
+	'''
+	A light weight particle cache is exactly that and more. Basically you initialize it with a list of filenames and particle indices 
+	corresponding to the particles that you want to view. So the calling function doesn't do any image reading, you just tell this
+	thing what will need to be (or not) read.
+	
+	Primary data is basically a list like this: [[filename, idx, [func1,func2,...]], [filename, idx2, [func1,func2,...]],...]
+	the filename and idx variables should be obvious, however the extra list contains functions that take an EMData as the argument -
+	I used this, for example, for assignint attributes to images once they are in memory, and for transforming them, etc.
+	
+	A big advantage of this cache is that it only displays the images that is asked for. Additionally, it has a maximum cache size,
+	and refocuses the cache when asked an image outside its current index bounds. This makes this cache only suitable for linear access
+	schemes, not random.
+	
+	'''
 	def from_file(file_name):
+		'''
+		If this was C++ this would be the constructor for this class that took a single file name
+		@param file_name the name of a particle stack file
+		'''
 		
 		n = EMUtil.get_image_count(file_name)
 		data = [[file_name,i,[]] for i in xrange(n)]
@@ -3011,6 +3029,7 @@ class EMLightWeightParticleCache(EMMXDataCache):
 	def __init__(self,data,cache_max=2048):
 		'''
 		@param data list of lists - lists in in the list are of the form [image_name, idx, [list of functions that take an EMData as the first argument]]
+		@param cache_max the maximum number of stored images - you might have to shorten this if you have very large images
 		'''
 		EMMXDataCache.__init__(self)
 		self.data = data
@@ -3025,6 +3044,9 @@ class EMLightWeightParticleCache(EMMXDataCache):
 		self.sets = {}
 
 	def __len__(self):
+		'''
+		support for len
+		'''
 		return len(self.data)
 	
 	def delete_box(self,idx):
@@ -3035,6 +3057,9 @@ class EMLightWeightParticleCache(EMMXDataCache):
 		return 0
 	
 	def get_xsize(self):
+		'''
+		Get the get_xsize of the particles. Assumes all particle have the same size, which is potentially flawed
+		'''
 		if self.xsize == None:
 			image = self[self.cache_start]
 			self.xsize = image.get_xsize()
@@ -3042,6 +3067,9 @@ class EMLightWeightParticleCache(EMMXDataCache):
 		return self.xsize
 	
 	def get_ysize(self):
+		'''
+		Get the get_ysize of the particles. Assumes all particle have the same size, which is potentially flawed
+		'''
 		if self.ysize == None:
 			image = self[self.cache_start]
 			self.ysize = image.get_ysize()
@@ -3049,6 +3077,11 @@ class EMLightWeightParticleCache(EMMXDataCache):
 		return self.ysize
 	
 	def get_image_header(self,idx):
+		'''
+		Gets the header of the ith particle. Does not read the full image into memory if it's not stored, instead
+		just reading the header and returning it. This can give significant speeds ups where only headers are needed,
+		i.e. e2eulerxplor
+		'''
 #		return self[idx].get_attr_dict()
 		adj_idx = idx-self.cache_start
 		image = self.cache[adj_idx]
@@ -3061,11 +3094,18 @@ class EMLightWeightParticleCache(EMMXDataCache):
 		else:return image.get_attr_dict()
 	
 	def get_image_header_keys(self):
+		'''
+		Gets the keys in the header of the first image
+		'''
 		if self.header_keys == None:
 			self.header_keys = self.get_image_header(self.cache_start).keys()
 		return self.header_keys
 	
 	def refocus_cache(self,new_focus):
+		'''
+		Called internally to refocus the cache on a new focal point.
+		@param new_focus the value at which the current cache failed - i.e. the first value that was beyond the current cache limits
+		'''
 		new_cache_start = new_focus-self.cache_max/2
 		if new_cache_start < self.cache_start and (new_cache_start + self.cache_max) > self.cache_start:
 			overlap = new_cache_start + self.cache_max - self.cache_start
@@ -3085,6 +3125,9 @@ class EMLightWeightParticleCache(EMMXDataCache):
 			
 	
 	def __getitem__(self,idx):
+		'''
+		operator[] support - the main interface
+		'''
 		if idx < self.cache_start or idx > self.cache_start+self.cache_max:
 			self.refocus_cache(idx)
 			
@@ -3096,15 +3139,19 @@ class EMLightWeightParticleCache(EMMXDataCache):
 		else: return image
 	
 	def __load_item(self,idx,adj_idx):
+		'''
+		Work horse function for reading an image and applying any of the supplied functions 
+		'''
 		data = self.data[idx]
 		a = EMData(data[0],data[1])
-		for func in data[2]: func(a) # this is supplied for future use
+		for func in data[2]: func(a) 
 		self.cache[adj_idx] = a
 		return a
 	
 	def on_idle(self):
 		'''
 		call this to load unloaded images in the cache
+		This needs to be rethought, maybe use a thread?
 		'''
 		for idx,i in enumerate(self.cache):
 			if i == None:
@@ -3115,6 +3162,9 @@ class EMLightWeightParticleCache(EMMXDataCache):
 
 class EMDataListCache(EMMXDataCache):
 	'''
+	This class became semi-redundant after the introduction of the EMLightWeightParticleCache, however it is still used
+	as the primary container for lists of the form [EMData,EMData,EMData,EMData,...]. 
+	
 	This class designed primarily for memory management in the context of large lists of EMData objects. It is only efficient
 	if accessing contiguous blocks of images - it is not effecient if randomly accessing images.
 	
