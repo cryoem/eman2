@@ -12669,12 +12669,16 @@ def k_means_groups(stack, out_file, maskname, opt_method, K1, K2, rand_seed, max
 # K-means main stability stream command line, CUDA version
 def k_means_stab_CUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_nobj = 0, rand_seed = 0, match = 'pwa'):
 	from utilities 	 import print_begin_msg, print_end_msg, print_msg
-	from utilities   import model_blank, get_image, get_im
+	from utilities   import model_blank, get_image, get_im, file_type
 	from statistics  import k_means_cuda_init_open_im, k_means_cuda_open_im
 	from statistics  import k_means_cuda_headlog, k_means_cuda_error, k_means_cuda_info
 	from statistics  import k_means_stab_update_tag, k_means_stab_gather, k_means_locasg2glbasg
 	from statistics  import k_means_stab_asg2part, k_means_stab_pwa, k_means_stab_export, k_means_cuda_export, k_means_stab_H
 	import sys, logging, os, pickle
+
+	ext = file_type(stack)
+	TXT = False
+	if ext == 'txt': TXT = True
 
 	# create a directory
 	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
@@ -12754,7 +12758,7 @@ def k_means_stab_CUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_no
 	ALL_PART = k_means_stab_asg2part(ALL_ASG, LUT)
 
 	# calculate the stability
-	if match   == 'HH':
+	if match   == 'hh':
 		stb, nb_stb, STB_PART = k_means_stab_H(ALL_PART)
 		logging.info('... Stability: %5.2f %% (%d objects)' % (stb, nb_stb))
 	elif match == 'pwa':
@@ -12774,11 +12778,15 @@ def k_means_stab_CUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_no
 # K-means main stability stream command line
 def k_means_stab_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_nobj = 0, rand_seed = 0, opt_method = 'cla', CTF = False, match = 'pwa'):
 	from utilities 	 import print_begin_msg, print_end_msg, print_msg
-	from utilities   import model_blank, get_image, get_im
+	from utilities   import model_blank, get_image, get_im, file_type
 	from statistics  import k_means_stab_update_tag, k_means_headlog, k_means_open_unstable, k_means_export
 	from statistics  import k_means_classical, k_means_SSE, k_means_SA_T0, k_means_criterion, k_means_locasg2glbasg
 	from statistics  import k_means_stab_asg2part, k_means_stab_pwa, k_means_stab_export, k_means_stab_H
 	import sys, logging, os, pickle
+
+	ext = file_type(stack)
+	TXT = False
+	if ext == 'txt': TXT = True
 
 	# create a directory
 	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
@@ -12843,7 +12851,7 @@ def k_means_stab_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_nobj = 
 		ALL_ASG.append(assign)
 		crit       = k_means_criterion(Cls, critname)
 		glb_assign = k_means_locasg2glbasg(assign, LUT, N)
-		k_means_export(Cls, crit, glb_assign, outdir, n)
+		k_means_export(Cls, crit, glb_assign, outdir, n, TXT)
 		
 	# end of classification
 	print_end_msg('k-means')
@@ -12853,27 +12861,28 @@ def k_means_stab_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_nobj = 
 	ALL_PART = k_means_stab_asg2part(ALL_ASG, LUT)
 
 	# calculate the stability
-	if match   == 'HH':
+	if match   == 'hh':
 		stb, nb_stb, STB_PART = k_means_stab_H(ALL_PART)
 		logging.info('... Stability: %5.2f %% (%d objects)' % (stb, nb_stb))
 	elif match == 'pwa':
 		MATCH, STB_PART, CT_s, CT_t, ST, st = k_means_stab_pwa(ALL_PART, 100)
 		logging.info('... Stability: %5.2f %% (%d objects)' % (st, sum(CT_s)))
 	
-	# export the stable class averages
-	count_k, id_rejected = k_means_stab_export(STB_PART, stack, outdir, th_nobj, CTF)
-	logging.info('... Export %i stable class averages: average.hdf (rejected %i images)' % (count_k, len(id_rejected)))
+	if not TXT:
+		# export the stable class averages
+		count_k, id_rejected = k_means_stab_export(STB_PART, stack, outdir, th_nobj, CTF)
+		logging.info('... Export %i stable class averages: average.hdf (rejected %i images)' % (count_k, len(id_rejected)))
 
-	# tag informations to the header
-	logging.info('... Update info to the header')
-	k_means_stab_update_tag(stack, STB_PART, id_rejected)
+		# tag informations to the header
+		logging.info('... Update info to the header')
+		k_means_stab_update_tag(stack, STB_PART, id_rejected)
 	
 	logging.info('::: END k-means stability :::')
 
 # K-means main stability stream command line
 def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_nobj = 0, rand_seed = 0, opt_method = 'cla', CTF = False, match = 'pwa'):
 	from mpi         import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier, MPI_COMM_WORLD
-	from mpi         import mpi_bcast, MPI_FLOAT
+	from mpi         import mpi_bcast, MPI_FLOAT, MPI_INT
 	from utilities 	 import print_begin_msg, print_end_msg, print_msg
 	from utilities   import model_blank, get_image, get_im, file_type
 	from statistics  import k_means_stab_update_tag, k_means_headlog, k_means_open_unstable_MPI
@@ -12891,12 +12900,20 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_nob
 	TXT = False
 	if ext == 'txt': TXT = True
 
-	# create a directory
-	if myid == main_node:
-		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
-		os.mkdir(outdir)
+	nx = 0
+        if myid == main_node:
+		if os.path.exists(outdir):
+			nx = 1
+			ERROR('Output directory exists, please change the name and restart the program', " k_means_mpi", 0)
+		else:
+			os.system( "mkdir " + outdir )
+	nx = mpi_bcast(nx, 1, MPI_INT, 0, MPI_COMM_WORLD)
+	nx = int(nx[0])
+	if(nx != 0):
+		import sys
+		exit()
 
-	mpi_barrier(MPI_COMM_WORLD)
+	mpi_barrier( MPI_COMM_WORLD )
 
 	if myid == main_node:
 		# create main log
@@ -12920,7 +12937,7 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_nob
 	# open unstable images
 	if myid == main_node: logging.info('... Open images')
 	im_M, mask, ctf, ctf2, LUT, N, N_start, N_stop = k_means_open_unstable_MPI(stack, maskname, CTF, nb_cpu, main_node, myid)
-	if myid == main_node: logging.info('... %d unstable images found' % N)
+	if myid == main_node: logging.info('... %d active images found' % N)
 	if N < 2:
 		logging.info('[STOP] Not enough images')
 		sys.exit()

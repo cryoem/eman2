@@ -1628,8 +1628,8 @@ def k_means_export(Cls, crit, assign, out_seedname, part = -1, TXT = False):
 
 		# limitation of hdf file in the numbers of attributes
 		if Cls['n'][k] > 16000 or TXT:
-			if Cls['n'][k] > 16000: print 'WARNING: limitation of number attributes in hdf file, the results will be export in separate files \n'
-			outfile = open(out_seedname + '/kmeans_grp_%03i.txt' % (k + 1), 'w')
+			if not TXT: print 'WARNING: limitation of number attributes in hdf file, the results will be exported in separate files \n'
+			outfile = open(out_seedname + '/kmeans_part_%02i_grp_%03i.txt' % (part, k + 1), 'w')
 			list_images = []
 			for i in xrange(len(assign)):
 				if assign[i] == k:
@@ -5554,16 +5554,28 @@ def k_means_open_unstable_MPI(stack, maskname, CTF, nb_cpu, main_node, myid):
 # k-means open and prepare images, only unstable objects (active = 1)
 def k_means_open_unstable(stack, maskname, CTF):
 	from utilities     import file_type
-	from statistics    import k_means_open_im
+	from statistics    import k_means_open_im, k_means_open_txt
+
+	ext = file_type(stack)
+	BDB, TXT = False, False
+	if ext == 'bdb':   BDB = True
+	elif ext == 'txt': TXT = True
 	
-	N    = EMUtil.get_image_count(stack)
 	lim  = []
-	ext  = file_type(stack)
-	if ext == 'bdb':
+	if TXT:
+		data = open(stack, 'r').readlines()
+		N    = len(data)
+	else:
+		N    = EMUtil.get_image_count(stack)
+
+
+	if BDB:
 		DB = db_open_dict(stack)
 		for n in xrange(N):
 			if DB.get_attr(n, 'active'): lim.append(n)
 		DB.close()
+	elif TXT:
+		lim = range(N)
 	else:
 		im = EMData()
 		for n in xrange(N):
@@ -5571,7 +5583,8 @@ def k_means_open_unstable(stack, maskname, CTF):
 			if im.get_attr('active'): lim.append(n)
 
 	N = len(lim)
-	im_M, mask, ctf, ctf2 = k_means_open_im(stack, maskname, 0, N, N, CTF, lim)
+	if TXT:	im_M, mask, ctf, ctf2 = k_means_open_txt(stack, maskname, 0, N, N)
+	else:   im_M, mask, ctf, ctf2 = k_means_open_im(stack, maskname, 0, N, N, CTF, lim)
 
 	return im_M, mask, ctf, ctf2, lim, N
 
