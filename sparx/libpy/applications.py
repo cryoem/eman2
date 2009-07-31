@@ -11538,6 +11538,7 @@ def defvar(files, outdir, fl, aa, radccc, writelp, writestack, frepa = "default"
 			from math import sqrt
 			from utilities import model_gauss
 			rota = model_gauss(sqrt(2.0)*nx, nx,ny,nz)
+			Util.mul_scalar( rota, 1.0/(rota.get_value_at(nx//2, ny//2, nz//2)) )
 		else:   rota = get_im(frepa)
 
 	radcir = min(nx,ny,nz)//2 - 2
@@ -11690,6 +11691,7 @@ def var_mpi(files, outdir, fl, aa, radccc, writelp, writestack, frepa = "default
 			from math import sqrt
 			from utilities import model_gauss
 			rota = model_gauss(sqrt(2.0)*nx, nx,ny,nz)
+			Util.mul_scalar( rota, 1.0/(rota.get_value_at(nx//2, ny//2, nz//2)) )
 		else:   rota = get_im(frepa)
 
 	if pca:
