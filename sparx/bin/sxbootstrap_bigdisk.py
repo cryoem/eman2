@@ -9,7 +9,7 @@ def bootstrap_genbuf( prjfile, bufprefix, beg, end, CTF, npad, finfo=None ):
 	start_time = time()
 	istore = newfile_store( bufprefix, npad, CTF )
 	for i in xrange( beg, end ):
-		prj = get_im( prjfile, i ) 
+		prj = get_im( prjfile, i )
 		istore.add_image( prj, prj.get_attr("xform.projection") )
 		if not(info is None) and (i%100==99 or i==end-1):
 			finfo.write( "%6d buffered, time: %10.3f\n" % (i+1, time()-start_time) )
@@ -195,7 +195,7 @@ def bootstrap( prjfile, wgts, outdir, bufprefix, nbufvol, nvol, seedbase, snr, g
 	groupsize = ncpu/ngroup
 	if genbuf and (myid%groupsize==0):
 		bootstrap_genbuf( prjfile, bufprefix, 0, nprj, CTF, npad, finfo )
-	
+
 	if genbuf and MPI:
 		mpi_barrier( MPI_COMM_WORLD )
 
@@ -255,7 +255,7 @@ def main():
 	if options.MPI:
 		from mpi import mpi_init, mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
 		sys.argv = mpi_init( len(sys.argv), sys.argv )
-		
+
 		from utilities import init_mpi_bdb
 		init_mpi_bdb()
 
@@ -263,7 +263,7 @@ def main():
 	outdir = args[2]
 	bufprefix = args[3]
 	bootstrap( prjfile, wgts, outdir, bufprefix, options.nbufvol, options.nvol, options.seedbase, options.snr, options.genbuf, options.ngroup, options.CTF, options.npad, options.MPI )
-	
+
 
 if __name__ == "__main__":
 	main()
