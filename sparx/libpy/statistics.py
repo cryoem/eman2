@@ -5420,6 +5420,14 @@ def k_means_stab_H(ALL_PART):
 
 	return stability, nb_stb, ALL_PART[0]
 
+# Export stable averages to text file
+def k_means_stab_export_txt(PART, outdir):
+	K = len(PART)
+	for k in xrange(K):
+		f = open(outdir + '/averages_grp_%03i.txt', 'w')
+		for id in PART[k]: f.write('%i\n' % id)
+	f.close()
+
 # Build and export the stable class averages 
 def k_means_stab_export(PART, stack, outdir, th_nobj, CTF = False):
 	from utilities    import model_blank, get_params2D, get_im

@@ -12995,10 +12995,12 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_nob
 			logging.info('... Stability: %5.2f %% (%d objects)' % (st, sum(CT_s)))
 
 		# export the stable class averages
-		if not TXT:
-			count_k, id_rejected = k_means_stab_export(STB_PART, stack, outdir, th_nobj, CTF)
-			logging.info('... Export %i stable class averages: average.hdf (rejected %i images)' % (count_k, len(id_rejected)))
+		if TXT:	count_k, id_rejected = k_means_stab_export_txt(STB_PART, outdir)
+		else:   count_k, id_rejected = k_means_stab_export(STB_PART, stack, outdir, th_nobj, CTF)
+			
+		logging.info('... Export %i stable class averages: average.hdf (rejected %i images)' % (count_k, len(id_rejected)))
 
+		if not TXT:
 		        # tag informations to the header
 			logging.info('... Update info to the header')
 			k_means_stab_update_tag(stack, STB_PART, id_rejected)
