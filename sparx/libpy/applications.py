@@ -12011,12 +12011,6 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 	from statistics import k_means_open_txt
 	import sys
 
-	ext = file_type(stack)
-	BDB = False
-	TXT = False
-	if   ext == 'bdb': BDB = True
-	elif ext == 'txt': TXT = True
-
 	if (T0 == 0 and F != 0) or (T0 != 0 and F == 0):
 		ERROR('Ambigues parameters F=%f T0=%f' % (F, T0), 'k-means', 1)
 		sys.exit()
@@ -12031,6 +12025,11 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		main_node = 0
 		mpi_barrier(MPI_COMM_WORLD)
 
+		ext = file_type(stack)
+		if   ext == 'bdb': BDB = True
+		else:               BDB = False
+		if ext == 'txt': TXT = True
+		else:              TXT = False
 		if myid == main_node:
 			print_begin_msg('k-means')
 			if TXT:
@@ -12038,6 +12037,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 				N      = len(data)
 				listID = range(N)
 			else:	listID, N = k_means_list_active(stack)
+			NTOTAL = N
 			k_means_headlog(stack, out_dir, opt_method, N, K, critname, maskname, trials, maxit, CTF, T0, F, rand_seed, nb_cpu)
 		
 		mpi_barrier(MPI_COMM_WORLD)
@@ -12062,9 +12062,11 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 			im_M, mask, ctf, ctf2 = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, listID, flagnorm)
 	
 		if   opt_method == 'cla':
-			[Cls, assign] = k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, [CTF, ctf, ctf2], myid, main_node, N_start, N_stop, F, T0)
+			[Cls, assign] = k_means_cla_MPI(im_M, mask, K, rand_seed, maxit,\
+				trials, [CTF, ctf, ctf2], myid, main_node, N_start, N_stop, F, T0)
 		elif opt_method == 'SSE':
-			[Cls, assign] = k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, [CTF, ctf, ctf2], myid, main_node, nb_cpu, N_start, N_stop, F, T0)
+			[Cls, assign] = k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit,\
+				trials, [CTF, ctf, ctf2], myid, main_node, nb_cpu, N_start, N_stop, F, T0)
 		else:
 			ERROR('opt_method %s unknown!' % opt_method, 'k-means', 1)
 			sys.exit()
@@ -12076,10 +12078,10 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 			pickle.dump(assign, f)
 			f.close()
 			"""
-			N = EMUtil.get_image_count(stack)
-			glb_assign = k_means_locasg2glbasg(assign, listID, N)
+			#N = EMUtil.get_image_count(stack)
+			glb_assign = k_means_locasg2glbasg(assign, listID, NTOTAL)
 			crit = k_means_criterion(Cls, critname)
-			k_means_export(Cls, crit, glb_assign, out_dir, TXT)
+			k_means_export(Cls, crit, glb_assign, out_dir, 0, TXT = TXT)
 			print_end_msg('k-means')
 
 		mpi_barrier(MPI_COMM_WORLD)
@@ -12088,6 +12090,11 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		from statistics import k_means_cuda_open_im, k_means_cuda_headlog, k_means_cuda_error
 		from statistics import k_means_cuda_export, k_means_cuda_init_open_im, k_means_cuda_info
 		from utilities  import model_blank, get_im, get_image
+		ext = file_type(stack)
+		if   ext == 'bdb': BDB = True
+		else:               BDB = False
+		if ext == 'txt': TXT = True
+		else:              TXT = False
 		
 		# instance of CUDA kmeans obj
 		KmeansCUDA = CUDA_kmeans()
@@ -12126,7 +12133,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 
 		# export data
 		k_means_cuda_info(INFO)
-		k_means_cuda_export(GASG, AVE, out_dir, mask, TXT)
+		k_means_cuda_export(GASG, AVE, out_dir, mask, 0, TXT = TXT)
 
 		# destroy obj
 		del KmeansCUDA
@@ -12137,6 +12144,11 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 	else:
 		from statistics import k_means_classical, k_means_SSE
 
+		ext = file_type(stack)
+		if   ext == 'bdb': BDB = True
+		else:               BDB = False
+		if ext == 'txt': TXT = True
+		else:              TXT = False
 		if TXT:
 			N = open(stack, 'r').readlines()
 			im_M, mask, ctf, ctf2 = k_means_open_txt(stack, maskname, 0, N, N)
@@ -12164,7 +12176,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		if not TXT:
 			N = EMUtil.get_image_count(stack)
 		glb_assign = k_means_locasg2glbasg(assign, listID, N)
-		k_means_export(Cls, crit, glb_assign, out_dir, TXT)
+		k_means_export(Cls, crit, glb_assign, out_dir, 0, TXT = TXT)
 
 		print_end_msg('k-means')
 
