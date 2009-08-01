@@ -366,7 +366,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 		else:
 			EMImage3DGUIModule.keyPressEvent(self,event)
 	
-	def __init__(self,application,ensure_gl_context=True,application_control=True,auto=True):
+	def __init__(self,application=None,ensure_gl_context=True,application_control=True,auto=True,sparse_mode=False):
 		self.init_lock = True # a lock indicated that we are still in the __init__ function
 		self.au_data = None # This will be a dictionary, keys will be refinement directories, values will be something like available iterations for visual study
 		if auto: # this a flag that tells the eulerxplorer to search for refinement data and automatically add elements to the inspector, if so
@@ -397,7 +397,10 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 		self.class_idx = None # This is the idx of the current class being studied in the interface
 			
 		self.previous_len = -1 # To keep track of the number of class averages that were previously viewable. This helps to make sure we can switch to the same class average in the context of a different refinement iteration
-		
+		self.mirror_eulers = False
+		if sparse_mode:
+			self.mirror_eulers = True # If True the drawn Eulers are are also rendered on the opposite side of the sphere - see EM3DSymViewerModule.make_sym_dl_lis
+				
 		# Grab the symmetry from the workflow database if possible
 		sym = "icos"
 		if db_check_dict("bdb:emform.e2refine"):
@@ -414,12 +417,12 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 			combo_entries = self.au_data.keys()
 			combo_entries.sort()
 			combo_entries.reverse()
-		
+			
 			if len(combo_entries) > 0:
 				au = combo_entries[0]
 				cls = self.au_data[au][0][0]
 				self.au_selected(au,cls)
-				self.mirror_eulers = True # If True the drawn Eulers are are also rendered on the opposite side of the sphere - see EM3DSymViewerModule.make_sym_dl_lis
+				self.mirror_eulers = True 
 						
 		self.init_lock = False
 		self.force_update=True # Force a display udpdate in EMImage3DSymModule
@@ -525,7 +528,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 	def set_projection_file(self,projection_file): self.projection_file = projection_file
 	def get_inspector(self):
 		if not self.inspector : 
-			if self.au_data == None or len(self.au_data) == 0:
+			if (self.au_data == None or len(self.au_data) == 0) and self.mirror_eulers == False: #self.mirror_eulers thing is a little bit of a hack, it's tied to the sparse_mode flag in the init function, which is used by euler_display in EMAN2.py
 				self.inspector=EMAsymmetricUnitInspector(self,True,True)
 			else: 
 				self.inspector=EMAsymmetricUnitInspector(self)

@@ -185,7 +185,7 @@ def main():
 	parser.add_option("--ralign",type="string",help="This is the second stage aligner used to refine the first alignment. This is usually the \'refine\' aligner.", default=None)
 	
 	if EMUtil.cuda_available():
-		parser.add_option("--cuda",action="store_true",help="GPU acceleration using CUDA. Tantalizing glimpse into the future", default=False)
+		parser.add_option("--cuda",action="store_true",help="GPU acceleration using CUDA. Experimental", default=False)
    
 	(options, args) = parser.parse_args()
 	
@@ -199,7 +199,7 @@ def main():
 		
 	logid=E2init(sys.argv)
 	
-	if options.avgout:
+	if options.avgout: # unfortunately this functionality is part of this script.
 		gen_average(options,args,logid)
 		exit(0)
 	
@@ -214,20 +214,20 @@ def main():
 	
 	ali[1]["threshold"] = options.thresh # this one is used universally
 	
+	probeMRC=EMData(options.probe,0)
+	print_info(probeMRC,"Probe Information")
+	if using_cuda(options):
+		probeMRC.set_gpu_rw_current()
+		probeMRC.cuda_lock()
+	
 	for arg in args:
 		targetMRC =EMData(arg,0)
 		print_info(targetMRC,"Target Information")
-		
-		probeMRC=EMData(options.probe,0)
-		print_info(targetMRC,"Probe Information")
-		
+
 		if using_cuda(options):
 			targetMRC.set_gpu_rw_current()
 			targetMRC.cuda_lock() # locking it prevents if from being overwritten
-			probeMRC.set_gpu_rw_current()
-			probeMRC.cuda_lock()
 			
-		
 		solns = probeMRC.xform_align_nbest(ali[0],targetMRC,ali[1],options.nsoln)
 		
 		
@@ -240,6 +240,9 @@ def main():
 				
 		out=file("log-s3-%s_%s.txt"%(get_file_tag(arg),get_file_tag(options.probe)),"w")
 		peak=0
+		
+		if using_cuda(options):
+			targetMRC.cuda_unlock() # locking it prevents if from being overwritten
 		
 		db = None
 		pdb = None
@@ -279,6 +282,9 @@ def main():
 		E2progress(logid,progress/total_prog)
 			
 		out.close()
+		
+	if using_cuda(options):
+		probeMRC.cuda_unlock()
 	E2progress(logid,1.0) # just make sure of it
 		
 	

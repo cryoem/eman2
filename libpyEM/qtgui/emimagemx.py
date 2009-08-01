@@ -561,12 +561,10 @@ class EMImageMXModule(EMGUIModule):
 		'''
 		Called from e2eulerxplor
 		'''
-		#self.get_inspector()
 		self.sets_manager.enable_set(name)
 		self.force_display_update()
 		self.updateGL()
-		#self.sets_manager.associate_set(idx,lst)
-	
+
 	def clear_sets(self):
 		self.sets_manager.clear_sets()
 		self.force_display_update()
@@ -576,14 +574,9 @@ class EMImageMXModule(EMGUIModule):
 		'''
 		Called from emform
 		'''
-#		db = db_open_dict("bdb:select")
-#		set_list = db[db_name]
-#		if set_list == None: set_list = []
-		
 		self.get_inspector()
 		self.sets_manager.clear_sets()
 		self.sets_manager.enable_set(db_name)
-		#self.sets_manager.associate_set(idx,set_list,True)
 		
 		self.sets_manager.enable_sets_mode()
 		self.force_display_update()
@@ -796,29 +789,10 @@ class EMImageMXModule(EMGUIModule):
 		if update_gl:
 			self.force_display_update()
 			self.updateGL()
-#		self.get_inspector()
-#		self.inspector.save_set()
-		
-#	def remove_particle_image(self,idx,event=None,update_gl=False):
-#		if self.reroute_delete_target  == None:
-#			d = self.data.pop(idx)
-#			self.display_states = []
-#			if event != None: self.emit(QtCore.SIGNAL("mx_boxdeleted"),event,[idx],False)
-#			if update_gl:
-#				self.display_states = [] 
-#				self.updateGL()
-#			return d
-#		else:
-#			self.reroute_delete_target.remove_particle_image(idx)
-#			if event != None: self.emit(QtCore.SIGNAL("mx_boxdeleted"),event,[idx],False)
 
 	def get_box_image(self,idx):
 		return self.data[idx]
 
-	#def emit(self,*args,**kargs):
-		#qt_widget = self.application.get_qt_emitter(self)
-		#qt_widget.emit(*args,**kargs)
-	
 	def clear_gl_memory(self):
 		self.gl_context_parent.makeCurrent() # this is important  when you have more than one OpenGL context operating at the same time
 		if self.main_display_list != 0:
@@ -2839,6 +2813,7 @@ class EMMXSetsManager:
 		if act:
 			self.sets[set_name] = []
 			
+		if self.panel == None: self.__init_panel()
 		self.panel.add_set(set_name,display)
 	
 	def make_set_invisible(self,set_name):

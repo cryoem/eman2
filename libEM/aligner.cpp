@@ -995,9 +995,9 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 		sdx = params["tx"];
 		sdy = params["ty"];
 		mirror = params["mirror"];
-		
+
 	} else {
-		t = new Transform(); // is the identity	
+		t = new Transform(); // is the identity
 	}
 
 	int np = 3;
@@ -1075,7 +1075,7 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 		result = this_img->process("math.transform",Dict("transform",t));
 		result->set_attr("xform.align2d",t);
 	}
-	
+
 	delete t;
 	t = 0;
 
@@ -1091,7 +1091,6 @@ static Transform refalin3d_perturb(const Transform*const t, const float& delta, 
 {
 	Dict orig_params = t->get_params("eman");
 	float orig_phi = orig_params["phi"];
-// 	cout << " in the thingy old phi " << orig_phi << " orig_az " <<  (float) orig_params["az"] << " orig alt " << (float) orig_params["alt"] << endl;
 	float orig_x = orig_params["tx"];
 	float orig_y = orig_params["ty"];
 	float orig_z = orig_params["tz"];
@@ -1102,65 +1101,44 @@ static Transform refalin3d_perturb(const Transform*const t, const float& delta, 
 	Transform t_no_phi(orig_params);
 
 	Vec3f zz(0,0,1);
-// 	Vec3f vv(0,0,1);
 
 	Vec3f vv  = t_no_phi.transpose()*zz;
 	Vec3f normal = Vec3f(-vv[2],0,-vv[0]);
-// 	Vec3f normal = Vec3f(-1.0,0.0,0.0);
+
 	normal.normalize();
-	
 
 	Dict d;
 	d["type"] = "spin";
-	d["Omega"] = delta;
-	d["n1"] = normal[0];
-	d["n2"] = normal[1];
-	d["n3"] = normal[2];
+	d["Omega"] = arc;
+	d["n1"] = vv[0];
+	d["n2"] = vv[1];
+	d["n3"] = vv[2];
 
-	Transform normal_rot(d);
-	
-	Vec3f  start_point = normal_rot*vv;
-	start_point.normalize();
+	Transform q(d);
+
+	Vec3f  rot_vec = q*normal;
+	rot_vec.normalize();
 
 	Dict e;
 	e["type"] = "spin";
-	e["Omega"] = arc;
-	e["n1"] = vv[0];
-	e["n2"] = vv[1];
-	e["n3"] = vv[2];
-	
-	Transform perturb(e);
-	Vec3f end_point = perturb*start_point;
-	end_point.normalize();
-	
-	Vec3d major_normal = end_point.cross(start_point);
-	major_normal.normalize();
+	e["Omega"] = delta;
+	e["n1"] = rot_vec[0];
+	e["n2"] = rot_vec[1];
+	e["n3"] = rot_vec[2];
 
-	Dict f;
-	f["type"] = "spin";
-	f["Omega"] = delta;
-	f["n1"] = major_normal[0];
-	f["n2"] = major_normal[1];
-	f["n3"] = major_normal[2];
-	
+	Transform perturb(e);
+
 	Dict g;
 	g["type"] = "eman";
 	g["alt"] = 0;
 	g["az"] = 0;
 	g["phi"] = 0*phi+orig_phi;
-	
-// 	cout << " soln phi " << phi << " phi + orig_phi " << phi+orig_phi  << " az " << az << " alt " << alt << endl;
-	Transform soln(f);
+
 	Transform phi_rot(g);
-	soln = phi_rot*soln*t_no_phi;
+	Transform soln = phi_rot*t_no_phi*perturb;
 	soln.set_trans(x+orig_x,y+orig_y,z+orig_z);
-	
+
 	Dict params = soln.get_params("eman");
-// 	float new_phi = params["phi"];
-// 	float new_alt = params["alt"];
-// 	float new_az = params["az"];
-// 	cout << " in the thingy new phi " << new_phi << " new_az " <<  new_az << " new_alt " << new_alt << new_alt << endl;
-	
 	return soln;
 }
 
@@ -1178,7 +1156,7 @@ static double refalifn3d(const gsl_vector * v, void *params)
 // 	bool mirror = (*dict)["mirror"];
 
 	Transform* t = (*dict)["transform"];
-	
+
 	Transform soln = refalin3d_perturb(t,(float)delta,(float)arc,(float)phi,(float)x,(float)y,(float)z);
 
 	EMData *tmp = this_img->process("math.transform",Dict("transform",&soln));
@@ -1225,7 +1203,7 @@ EMData* Refine3DAligner::align(EMData * this_img, EMData *to,
 {
 
 	if (!to or !this_img) throw NullPointerException("Input image is null"); // not sure if this is necessary, it was there before I started
-		
+
 	if (to->get_ndim() != 3 || this_img->get_ndim() != 3) throw ImageDimensionException("The Refine3D aligner only works for 3D images");
 
 	float saz = 0.0;
@@ -1237,13 +1215,13 @@ EMData* Refine3DAligner::align(EMData * this_img, EMData *to,
 	bool mirror = false;
 	Transform* t;
 	if (params.has_key("xform.align3d") ) {
-		// Unlike the 2d refine aligner, this class doesn't require the starting transform's 
+		// Unlike the 2d refine aligner, this class doesn't require the starting transform's
 		// parameters to form the starting guess. Instead the Transform itself
-		// is perturbed carefully (using quaternion rotation) to overcome problems that arise 
+		// is perturbed carefully (using quaternion rotation) to overcome problems that arise
 		// when you use orthogonally-based Euler angles
 		t = params["xform.align3d"];
 	}else {
-		t = new Transform(); // is the identity	
+		t = new Transform(); // is the identity
 	}
 
 	int np = 6; // the number of dimensions
@@ -1284,7 +1262,7 @@ EMData* Refine3DAligner::align(EMData * this_img, EMData *to,
 	Cmp *c = Factory < Cmp >::get(cmp_name, cmp_params);
 	gsl_params["cmp"] = (void *) c;
 	minex_func.f = &refalifn3d;
-	
+
 	minex_func.n = np;
 	minex_func.params = (void *) &gsl_params;
 
@@ -1305,7 +1283,7 @@ EMData* Refine3DAligner::align(EMData * this_img, EMData *to,
 		}
 		rval = gsl_multimin_test_size(gsl_multimin_fminimizer_size(s), precision);
 	}
-	
+
 	int maxshift = params.set_default("maxshift",-1);
 
 	if (maxshift <= 0) {
@@ -1318,13 +1296,13 @@ EMData* Refine3DAligner::align(EMData * this_img, EMData *to,
 		float x = (float)gsl_vector_get(s->x, 0);
 		float y = (float)gsl_vector_get(s->x, 1);
 		float z = (float)gsl_vector_get(s->x, 2);
-				
+
 		float arc = (float)gsl_vector_get(s->x, 3);
 		float delta = (float)gsl_vector_get(s->x, 4);
 		float phi = (float)gsl_vector_get(s->x, 5);
-		
+
 		Transform tsoln = refalin3d_perturb(t,delta,arc,phi,x,y,z);
-		
+
  		result = this_img->process("math.transform",Dict("transform",&tsoln));
 		result->set_attr("xform.align3d",&tsoln);
 
@@ -1332,7 +1310,7 @@ EMData* Refine3DAligner::align(EMData * this_img, EMData *to,
 		result = this_img->process("math.transform",Dict("transform",t));
 		result->set_attr("xform.align3d",t);
 	}
-	
+
 	delete t;
 	t = 0;
 
@@ -1344,31 +1322,32 @@ EMData* Refine3DAligner::align(EMData * this_img, EMData *to,
 	return result;
 }
 
-EMData* RT3DGridAligner::align(EMData * this_img, EMData *to, const string & cmp_name, const Dict& cmp_params) const 
+EMData* RT3DGridAligner::align(EMData * this_img, EMData *to, const string & cmp_name, const Dict& cmp_params) const
 {
 
 	vector<Dict> alis = xform_align_nbest(this_img,to,1,cmp_name,cmp_params);
-	
+
 	Dict t;
 	Transform* tr = (Transform*) alis[0]["xform.align3d"];
 	t["transform"] = tr;
 	EMData* soln = this_img->process("math.transform",t);
+	soln->set_attr("xform.align3d",tr);
 	delete tr; tr = 0;
-	
+
 	return soln;
-	
+
 }
 
 vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, const unsigned int nsoln, const string & cmp_name, const Dict& cmp_params) const {
-	
+
 	if ( this_img->get_ndim() != 3 || to->get_ndim() != 3 ) {
 		throw ImageDimensionException("This aligner only works for 3D images");
 	}
-	
+
 	int searchx = 0;
 	int searchy = 0;
 	int searchz = 0;
-	
+
 	if (params.has_key("search")) {
 		vector<string> check;
 		check.push_back("searchx");
@@ -1396,7 +1375,7 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	float threshold = params.set_default("threshold",0.f);
 	if (threshold < 0.0f) throw InvalidParameterException("The threshold parameter must be greater than or equal to zero");
 	bool verbose = params.set_default("verbose",false);
-	
+
 	vector<Dict> solns;
 	if (nsoln == 0) return solns; // What was the user thinking?
 	for (unsigned int i = 0; i < nsoln; ++i ) {
@@ -1404,24 +1383,24 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 		d["score"] = -1.e24;
 		Transform t; // identity by default
 		d["xform.align3d"] = &t; // deep copy is going on here
-		solns.push_back(d); 
+		solns.push_back(d);
 	}
 	Dict d;
 	d["type"] = "eman"; // d is used in the loop below
 	for ( float alt = 0.0f; alt <= ralt; alt += dalt) {
-		// An optimization for the range of az is made at the top of the sphere 
+		// An optimization for the range of az is made at the top of the sphere
 		// If you think about it, this is just a coarse way of making this approach slightly more efficient
 		if (verbose) {
 			cout << "Trying angle " << alt << endl;
 		}
-		
+
 		float begin_az = -raz;
 		float end_az = raz;
 		if (alt == 0.0f) {
 			begin_az = 0.0f;
 			end_az = 0.0f;
 		}
-		
+
 		for ( float az = begin_az; az <= end_az; az += daz ){
 			for( float phi = -rphi-az; phi <= rphi-az; phi += dphi ) {
 				d["alt"] = alt;
@@ -1451,7 +1430,7 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 						Dict& d = (*it);
 						d["score"] = best_score;
 						d["xform.align3d"] = &t;
-						
+
 // 						for(vector<Dict>::iterator it = solns.begin(); it != solns.end(); ++it) {
 // 							Dict& d = (*it);
 // 							cout << (float) d["score"] << " ";
@@ -1464,36 +1443,37 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 			}
 		}
 	}
-	
+
 	return solns;
-	
+
 }
 
-EMData* RT3DSphereAligner::align(EMData * this_img, EMData *to, const string & cmp_name, const Dict& cmp_params) const 
+EMData* RT3DSphereAligner::align(EMData * this_img, EMData *to, const string & cmp_name, const Dict& cmp_params) const
 {
 
 	vector<Dict> alis = xform_align_nbest(this_img,to,1,cmp_name,cmp_params);
-	
+
 	Dict t;
 	Transform* tr = (Transform*) alis[0]["xform.align3d"];
 	t["transform"] = tr;
 	EMData* soln = this_img->process("math.transform",t);
+	soln->set_attr("xform.align3d",tr);
 	delete tr; tr = 0;
-	
+
 	return soln;
-	
+
 }
 
 vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to, const unsigned int nsoln, const string & cmp_name, const Dict& cmp_params) const {
-	
+
 	if ( this_img->get_ndim() != 3 || to->get_ndim() != 3 ) {
 		throw ImageDimensionException("This aligner only works for 3D images");
 	}
-	
+
 	int searchx = 0;
 	int searchy = 0;
 	int searchz = 0;
-	
+
 	if (params.has_key("search")) {
 		vector<string> check;
 		check.push_back("searchx");
@@ -1517,7 +1497,7 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 	float threshold = params.set_default("threshold",0.f);
 	if (threshold < 0.0f) throw InvalidParameterException("The threshold parameter must be greater than or equal to zero");
 	bool verbose = params.set_default("verbose",false);
-	
+
 	vector<Dict> solns;
 	if (nsoln == 0) return solns; // What was the user thinking?
 	for (unsigned int i = 0; i < nsoln; ++i ) {
@@ -1525,9 +1505,9 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 		d["score"] = -1.e24;
 		Transform t; // identity by default
 		d["xform.align3d"] = &t; // deep copy is going on here
-		solns.push_back(d); 
+		solns.push_back(d);
 	}
-	
+
 	Dict d;
 	d["inc_mirror"] = true; // This should probably always be true for 3D case. If it ever changes we might have to make inc_mirror a parameter
 	if ( params.has_key("delta") && params.has_key("n") ) {
@@ -1538,10 +1518,10 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 		// If they didn't specify either then grab the default delta - if they did supply delta we're still safe doing this
 		d["delta"] = params.set_default("delta",10.f);
 	}
-	
+
 	Symmetry3D* sym = Factory<Symmetry3D>::get((string)params.set_default("sym","c1"));
 	vector<Transform> transforms = sym->gen_orientations((string)params.set_default("orientgen","eman"),d);
-	
+
 	float verbose_alt = -1.0f;;
 	for(vector<Transform>::const_iterator trans_it = transforms.begin(); trans_it != transforms.end(); trans_it++) {
 		Dict params = trans_it->get_params("eman");
@@ -1572,7 +1552,7 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 				delete ccf_fft; ccf_fft = 0;
 			}
 			delete ccf; ccf =0;
-			
+
 			unsigned int j = 0;
 			for ( vector<Dict>::iterator it = solns.begin(); it != solns.end(); ++it, ++j ) {
 				if ( (float)(*it)["score"] < best_score ) {
@@ -1590,12 +1570,12 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 					break;
 				}
 			}
-			
+
 		}
 	}
 	delete sym; sym = 0;
 	return solns;
-	
+
 }
 
 CUDA_Aligner::CUDA_Aligner() {
