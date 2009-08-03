@@ -5,13 +5,13 @@ from sparx import *
 from time import time
 from optparse import OptionParser
 
-def bootstrap_genbuf( prjfile, bufprefix, beg, end, CTF, npad, finfo=None ):
+def bootstrap_genbuf( prjfile, bufprefix, beg, end, CTF, npad, info=None ):
 	start_time = time()
 	istore = newfile_store( bufprefix, npad, CTF )
 	for i in xrange( beg, end ):
 		prj = get_im( prjfile, i )
 		istore.add_image( prj, prj.get_attr("xform.projection") )
-		if not(info is None) and (i%100==99 or i==end-1):
+		if( not(info is None) and ((i%100==99 or i==end-1))):
 			finfo.write( "%6d buffered, time: %10.3f\n" % (i+1, time()-start_time) )
 			finfo.flush()
 
@@ -162,8 +162,9 @@ def write_mults( fmults, iter, mults ):
 	fmults.flush()
 
 
-def bootstrap( prjfile, wgts, outdir, bufprefix, nbufvol, nvol, seedbase, snr, genbuf, ngroup, CTF, npad, MPI ) :
+def bootstrap( prjfile, wgts, outdir, bufprefix, nbufvol, nvol, seedbase, snr, genbuf, ngroup, CTF, npad, MPI, verbose = 0 ) :
 	from random import seed
+	import os
 
 	nprj = EMUtil.get_image_count( prjfile )
 
@@ -179,7 +180,6 @@ def bootstrap( prjfile, wgts, outdir, bufprefix, nbufvol, nvol, seedbase, snr, g
 
 
 	if myid==0:
-		import os
 		if os.path.exists(outdir):
 			os.system( "rm -rf " + outdir )
 		os.system( "mkdir " + outdir )
@@ -187,28 +187,26 @@ def bootstrap( prjfile, wgts, outdir, bufprefix, nbufvol, nvol, seedbase, snr, g
 	if MPI:
 		mpi_barrier( MPI_COMM_WORLD )
 
-
-
-	finfo=open( outdir+("/progress%04d.txt" % myid), "w" )
-
+	if(verbose == 1):  finfo=open( os.path.join(outdir, "progress%04d.txt" % myid), "w" )
+	else:              finfo = None
 
 	groupsize = ncpu/ngroup
 	if genbuf and (myid%groupsize==0):
 		bootstrap_genbuf( prjfile, bufprefix, 0, nprj, CTF, npad, finfo )
-
+	
 	if genbuf and MPI:
 		mpi_barrier( MPI_COMM_WORLD )
 
 	myseed = seedbase + 10*myid
 
 	seed( seedbase + 10*myid )
-	volfile = outdir + ("/bsvol%04d.hdf" % myid)
-
+	volfile = os.path.join(outdir, "bsvol%04d.hdf" % myid)
 
 	niter = nvol/ncpu/nbufvol
 	for iter in xrange(niter):
-		finfo.write( "Iteration %d: \n" % iter )
-		finfo.flush()
+		if(verbose == 1):
+			finfo.write( "Iteration %d: \n" % iter )
+			finfo.flush()
 
 		iter_start = time()
 		mults = bootstrap_mults(accu_prbs, nbufvol, 0, nprj)
@@ -220,8 +218,9 @@ def bootstrap( prjfile, wgts, outdir, bufprefix, nbufvol, nvol, seedbase, snr, g
 		rectors = None
 		fftvols = None
 		wgtvols = None
-		finfo.write( "time for iteration: %10.3f\n" % (time() - iter_start) )
-		finfo.flush()
+		if(verbose == 1):
+			finfo.write( "time for iteration: %10.3f\n" % (time() - iter_start) )
+			finfo.flush()
 
 def main():
 
@@ -234,15 +233,16 @@ def main():
 	progname = os.path.basename(arglist[0])
 	usage = progname + " prjstack wgtfile outdir bufprefix --nvol --nbufvol --seedbase --snr --genbuf --ngroup --npad --CTF"
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--nvol", type="int", help="number of bootstrap volumes to be generated.")
-	parser.add_option("--nbufvol", type="int", help="number of fftvol in the memory" )
-	parser.add_option("--genbuf", action="store_true", default=False, help="whether generate the buffer")
-	parser.add_option("--ngroup", type="int", default=1, help="how many groups used (each group will share a buffer)")
-	parser.add_option("--CTF", action="store_true", default=False, help="whether consider CTF" )
-	parser.add_option("--snr",  type="float", default=1.0, help="signal-to-noise ratio" )
-	parser.add_option("--npad", type="int", default=4, help="times of padding" )
-	parser.add_option("--seedbase", type="int", help="random seed base" )
-	parser.add_option("--MPI", action="store_true", default=False, help="use MPI")
+	parser.add_option("--nvol",     type="int",                         help="number of bootstrap volumes to be generated.")
+	parser.add_option("--nbufvol",  type="int",                         help="number of fftvol in the memory" )
+	parser.add_option("--genbuf",   action="store_true", default=False, help="whether generate the buffer")
+	parser.add_option("--ngroup",   type="int",          default=1,     help="how many groups to use (each group will share a buffer)")
+	parser.add_option("--CTF",      action="store_true", default=False, help="whether consider CTF" )
+	parser.add_option("--snr",      type="float",        default=1.0,   help="signal-to-noise ratio" )
+	parser.add_option("--npad",     type="int",          default=4,     help="times of padding" )
+	parser.add_option("--seedbase", type="int",                         help="random seed base" )
+	parser.add_option("--MPI",      action="store_true", default=False, help="use MPI")
+	parser.add_option("--verbose",  type="int",          default=0,     help="verbose level: 0 no, 1 yes" )
 
 	(options, args) = parser.parse_args( arglist[1:] )
 
@@ -252,6 +252,7 @@ def main():
 
 	prjfile = args[0]
 
+	if options.MPI and options.genbuf:   ERROR('Generation of buffer does not have MPI version, swith off MPI flag', "sxbootstrap_bigdisk", 1)
 	if options.MPI:
 		from mpi import mpi_init, mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
 		sys.argv = mpi_init( len(sys.argv), sys.argv )
@@ -262,7 +263,7 @@ def main():
 	wgts = read_text_file( args[1], 0 )
 	outdir = args[2]
 	bufprefix = args[3]
-	bootstrap( prjfile, wgts, outdir, bufprefix, options.nbufvol, options.nvol, options.seedbase, options.snr, options.genbuf, options.ngroup, options.CTF, options.npad, options.MPI )
+	bootstrap( prjfile, wgts, outdir, bufprefix, options.nbufvol, options.nvol, options.seedbase, options.snr, options.genbuf, options.ngroup, options.CTF, options.npad, options.MPI, options.verbose )
 
 
 if __name__ == "__main__":

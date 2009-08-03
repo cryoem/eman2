@@ -79,12 +79,6 @@ def exclude( prjccc, nexclude, bothside ):
 	
 	return exclist
 
-
-
-
-
-
-
 def bootstrap_calcwgts( prjfile, wgtfile, voronoi, delta, refvol=None, fl=None, fh=None, CTF=False, nexclude=0, bothside=False, MPI=False, verbose=True ):
 	from projection import prep_vol,prgs
 
@@ -109,8 +103,7 @@ def bootstrap_calcwgts( prjfile, wgtfile, voronoi, delta, refvol=None, fl=None, 
 	if voronoi:
 		angs = [0.0] * (2*nprj)
 		for iprj in xrange(beg,end):
-			prj = get_im( prjfile, iprj )
-			phi,tht,psi,s2x,s2y = get_params_proj( prj )
+			phi,tht,psi,s2x,s2y = get_params_proj( get_im( prjfile, iprj ) )
 			angs[2*iprj] = phi
 			angs[2*iprj+1] = tht
 		
@@ -210,8 +203,6 @@ def bootstrap_calcwgts( prjfile, wgtfile, voronoi, delta, refvol=None, fl=None, 
 				else:
 					wgt = 1.0/int(occurs[aid])
 			print >> os, wgt
-		
-
 
 
 def main():
@@ -225,13 +216,13 @@ def main():
 	progname = os.path.basename(arglist[0])
 	usage = progname + " prjstack wgtfile [refvol] --voronoi --MPI --CTF --delta --fl --fh --nexclude --exclude_bothside"
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--voronoi", action="store_true", default=False, help="use voronoi diagram to create weights")
-	parser.add_option("--delta", type="float", default=1.0, help="for weights calculation")
-	parser.add_option("--CTF", action="store_true", default=False, help="whether consider CTF" )
-	parser.add_option("--MPI", action="store_true", default=False, help="whether running mpi version")
-	parser.add_option("--fl",  type="float",   default=None, help="before calculate projection apply filtration to projection" )
-	parser.add_option("--fh",  type="float",   default=None, help="before calculate projection apply filtration to projection" )
-	parser.add_option("--nexclude", type="int", default=None, help="number of projections (with lowest CCC) to be excluded." )
+	parser.add_option("--voronoi",  action="store_true", default=False, help="use Voronoi diagram to create weights")
+	parser.add_option("--delta",    type="float",        default=1.0,   help="for weights calculation")
+	parser.add_option("--CTF",      action="store_true", default=False, help="whether consider CTF" )
+	parser.add_option("--MPI",      action="store_true", default=False, help="use MPI")
+	parser.add_option("--fl",       type="float",        default=None,  help="before calculate projection apply filtration to projection" )
+	parser.add_option("--fh",       type="float",        default=None,  help="before calculate projection apply filtration to projection" )
+	parser.add_option("--nexclude", type="int",          default=None,  help="number of projections (with lowest CCC) to be excluded." )
 	parser.add_option("--exclude_bothside", action="store_true", default=False, help="exclude also projection with highest CCC." )
 
 

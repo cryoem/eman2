@@ -3915,87 +3915,78 @@ struct cmpang
 
 //helper function for the weights calculation by Voronoi to Cml
 vector<double> Util::cml_weights(const vector<float>& cml){
-    static const int NBIN = 100;
-    int nline=cml.size()/2;
-    vector<double> weights(nline);
+	static const int NBIN = 100;
+	int nline=cml.size()/2;
+	vector<double> weights(nline);
 
-    vector<ori_t> angs(nline);
-    for( int i=0; i < nline; ++i )
-    {
-        angs[i].iphi = int( NBIN*cml[2*i] );
-        angs[i].itht = int( NBIN*cml[2*i+1] );
-        if( angs[i].itht == 180*NBIN )
-            angs[i].itht = 0;
-        angs[i].id = i;
-    }
+	vector<ori_t> angs(nline);
+	for( int i=0; i < nline; ++i ) {
+		angs[i].iphi = int( NBIN*cml[2*i] );
+		angs[i].itht = int( NBIN*cml[2*i+1] );
+		if( angs[i].itht == 180*NBIN ) angs[i].itht = 0;
+		angs[i].id = i;
+	}
 
-    //std::cout << "# of angs: " << angs.size() << std::endl;
+	//std::cout << "# of angs: " << angs.size() << std::endl;
 
-    std::sort( angs.begin(), angs.end(), cmpang() );
+	std::sort( angs.begin(), angs.end(), cmpang() );
 
-    vector<float> newphi;
-    vector<float> newtht;
-    vector< vector<int> > indices;
+	vector<float> newphi;
+	vector<float> newtht;
+	vector< vector<int> > indices;
 
-    int curt_iphi = -1;
-    int curt_itht = -1;
-    for(unsigned int i=0 ;i < angs.size(); ++i )
-    {
-        if( angs[i].iphi==curt_iphi && angs[i].itht==curt_itht )
-        {
-            Assert( indices.size() > 0 );
-            indices.back().push_back(angs[i].id);
-        }
-        else
-        {
-            curt_iphi = angs[i].iphi;
-            curt_itht = angs[i].itht;
+	int curt_iphi = -1;
+	int curt_itht = -1;
+	for(unsigned int i=0 ;i < angs.size(); ++i ) {
+		if( angs[i].iphi==curt_iphi && angs[i].itht==curt_itht ) {
+			Assert( indices.size() > 0 );
+			indices.back().push_back(angs[i].id);
+		} else {
+			curt_iphi = angs[i].iphi;
+			curt_itht = angs[i].itht;
 
-            newphi.push_back( float(curt_iphi)/NBIN );
-            newtht.push_back( float(curt_itht)/NBIN );
-            indices.push_back( vector<int>(1,angs[i].id) );
-        }
-    }
+			newphi.push_back( float(curt_iphi)/NBIN );
+			newtht.push_back( float(curt_itht)/NBIN );
+			indices.push_back( vector<int>(1,angs[i].id) );
+		}
+	}
 
-    //std::cout << "# of indpendent ang: " << newphi.size() << std::endl;
+	//std::cout << "# of indpendent ang: " << newphi.size() << std::endl;
 
 
-    int num_agl = newphi.size();
+	int num_agl = newphi.size();
 
-    if(num_agl>2){
-	vector<double> w=Util::vrdg(newphi, newtht);
-	
-        Assert( w.size()==newphi.size() );
-        Assert( indices.size()==newphi.size() );
+	if(num_agl>2) {
+		vector<double> w=Util::vrdg(newphi, newtht);
 
-        for(unsigned int i=0; i < newphi.size(); ++i )
-        {
-            /*
-            std::cout << "phi,tht,w,n: ";
-            std::cout << boost::format( "%10.3f" ) % newphi[i] << " ";
-            std::cout << boost::format( "%10.3f" ) % newtht[i] << " ";
-            std::cout << boost::format( "%8.6f"  ) % w[i] << " ";
-            std::cout << indices[i].size() << "(";
-            */
+		Assert( w.size()==newphi.size() );
+		Assert( indices.size()==newphi.size() );
 
-            for(unsigned int j=0; j < indices[i].size(); ++j )
-            {
-                int id = indices[i][j];
-		weights[id] = w[i]/indices[i].size();
-                //std::cout << id << " ";
-            }
+		for(unsigned int i=0; i < newphi.size(); ++i ) {
+		    /*
+		    std::cout << "phi,tht,w,n: ";
+		    std::cout << boost::format( "%10.3f" ) % newphi[i] << " ";
+		    std::cout << boost::format( "%10.3f" ) % newtht[i] << " ";
+		    std::cout << boost::format( "%8.6f"  ) % w[i] << " ";
+		    std::cout << indices[i].size() << "(";
+		    */
 
-            //std::cout << ")" << std::endl;
+		    for(unsigned int j=0; j < indices[i].size(); ++j ) {
+		    	    int id = indices[i][j];
+		    	    weights[id] = w[i]/indices[i].size();
+		    	    //std::cout << id << " ";
+		    }
 
-        }
-    }
-    else{
-	cout<<"warning"<<endl;
-	double val = PI2/float(nline);
-	for(int i=0; i<nline; i++){weights[i]=val;}
-    }
+		    //std::cout << ")" << std::endl;
 
-    return weights;
+		}
+	} else {
+		cout<<"warning in Util.cml_weights"<<endl;
+		double val = PI2/float(nline);
+		for(int i=0; i<nline; i++)  weights[i]=val;
+	}
+
+	return weights;
 
 }
 

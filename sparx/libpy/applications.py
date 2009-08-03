@@ -10582,31 +10582,19 @@ def varimax(input_stack, imglist, output_stack, mask_radius, verbose ) :
 		vec.write_image( output_stack, iout)
 		iout = iout + 1
 
-def bootstrap_genbuf(prj_stack, outdir, verbose, CTF=False, MPI=False):
-	from EMAN2 import file_store
-	import string
-	from mpi import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD, mpi_init
+def bootstrap_genbuf(prj_stack, buf_prefix, npad, verbose, CTF=False):
+	from EMAN2 import newfile_store
+	import os
+	size = 1
+	myid = 0
+	print  
+	if os.path.exists( buf_prefix + ".bin" ):
+		ERROR('Output file exists, please change the name and restart the program', "bootstrap_genbuf", 1)
 
-	npad = 4
+	if(verbose == 1):  finfo=open( os.path.join(outdir, "progress%04d.txt" % myid), "w" )
+	else:              finfo = None
 
-	if(MPI):
-		size = mpi_comm_size(MPI_COMM_WORLD)
-		myid = mpi_comm_rank(MPI_COMM_WORLD)
-	else:
-		size = 1
-		myid = 0
-
-	if os.path.exists(outdir):
-		os.system( "rm " + outdir )
-
-	os.system( "mkdir " + outdir )
-
-	buf_prefix = outdir + "/tmpslice";
-	store = file_store(buf_prefix, npad, 1, CTF)
-
-	if verbose != 0 :
-		mystatus = outdir + ("/genbuf%04d.txt" % (myid) )
-		output = open( mystatus, "w" )
+	store = newfile_store(buf_prefix, npad, CTF)
 
 	nimage = EMUtil.get_image_count( prj_stack )
 	for i in xrange(nimage):
@@ -10614,13 +10602,9 @@ def bootstrap_genbuf(prj_stack, outdir, verbose, CTF=False, MPI=False):
 		proj.read_image( prj_stack, i )
 		store.add_image( proj, proj.get_attr("xform.projection") )
 
-		if( verbose !=0 and (i+1) % 100 == 0 ) :
-			output.write( "proj %4d done\n" % (i+1) )
-			output.flush()
-
-	if verbose != 0:
-		output.write( "proj %4d done\n" % nimage )
-		output.flush()
+		if( verbose == 1 and ((i+1) % 100 == 0  or i==nimage-1)) :
+			finfo.write( "projection %6d buffered\n" % (i+1) )
+			finfo.flush()
  
 def bootstrap_run(prj_stack, media, outdir, nvol, CTF, snr, sym, verbose, MPI=False):
 
@@ -10637,7 +10621,7 @@ def bootstrap_run(prj_stack, media, outdir, nvol, CTF, snr, sym, verbose, MPI=Fa
 
 	if myid==0:
 		if os.path.exists(outdir):
-			ERROR('Output directory exists, please change the name and restart the program', " ", 1)
+			ERROR('Output directory exists, please change the name and restart the program', "bootstrap_run", 1)
 		os.system( "mkdir " + outdir )
 	if MPI:
 		mpi_barrier( MPI_COMM_WORLD )	
