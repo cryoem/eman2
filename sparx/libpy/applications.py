@@ -605,7 +605,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				sum_SSNR = mpi_recv(1, MPI_FLOAT, iave, iave, MPI_COMM_WORLD)
 				sum_SSNR = float(sum_SSNR[0])
 				print_msg("Initial criterion for average %d : %12.3e\n"%(iave, sum_SSNR))
-	else: tavg = EMData()
+	else: tavg = model_blank(nx, nx)
 	bcast_EMData_to_all(tavg, key, group_main_node, group_comm)
 
 	# precalculate rings
