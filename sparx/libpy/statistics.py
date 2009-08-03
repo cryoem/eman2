@@ -1630,7 +1630,7 @@ def k_means_export(Cls, crit, assign, out_seedname, part = -1, TXT = False):
 		if Cls['n'][k] > 16000 or TXT:
 			if not TXT: print 'WARNING: limitation of number attributes in hdf file, the results will be exported in separate files \n'
 
-			if part == -1: outfile = open(out_seedname + '/kmeans_part_%02i_grp_%03i.txt' % (part, k + 1), 'w')
+			if part != -1: outfile = open(out_seedname + '/kmeans_part_%02i_grp_%03i.txt' % (part, k + 1), 'w')
 			else:          outfile = open(out_seedname + '/kmeans_grp_%03i.txt' % (k + 1), 'w')
 			list_images = []
 			for i in xrange(len(assign)):
