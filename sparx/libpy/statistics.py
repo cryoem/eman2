@@ -1629,8 +1629,9 @@ def k_means_export(Cls, crit, assign, out_seedname, part = -1, TXT = False):
 		# limitation of hdf file in the numbers of attributes
 		if Cls['n'][k] > 16000 or TXT:
 			if not TXT: print 'WARNING: limitation of number attributes in hdf file, the results will be exported in separate files \n'
-			#  there is something wrong wiht part here, I do not get the logic PAP
-			outfile = open(out_seedname + '/kmeans_part_%02i_grp_%03i.txt' % (part, k + 1), 'w')
+
+			if part == -1: outfile = open(out_seedname + '/kmeans_part_%02i_grp_%03i.txt' % (part, k + 1), 'w')
+			else:          outfile = open(out_seedname + '/kmeans_grp_%03i.txt' % (k + 1), 'w')
 			list_images = []
 			for i in xrange(len(assign)):
 				if assign[i] == k:
@@ -5204,63 +5205,6 @@ def Hungarian(part1, part2):
 	return indexes, MAT
 
 # Match two partitions with hungarian algorithm
-def k_means_match_clusters_asg_(asg1, asg2):
-	from statistics import Munkres
-	import sys, time
-	
-	t1 = time.time()
-	K   = len(asg1)
-	MAT = [[0] * K for i in xrange(K)]
-
-	# prepare matrix
-	for k1 in xrange(K):
-		for k2 in xrange(K):
-			for index in asg1[k1]:
-				if index in asg2[k2]:
-					MAT[k1][k2] += 1
-	t2 = time.time()
-	print 'cont table', t2 - t1, 's'
-	cost_MAT = []
-	for row in MAT:
-		cost_row = []
-		for col in row:
-			cost_row += [sys.maxint - col]
-		cost_MAT += [cost_row]
-
-	t3 = time.time()
-	print 'cost MAT', t3 - t2, 's'
-
-	m = Munkres()
-	indexes = m.compute(cost_MAT)
-
-	t4 = time.time()
-	print 'hungarian', t4 - t3, 's'
-
-	list_stable = []
-	list_objs   = []
-	nb_tot_objs = 0
-	for r, c in indexes:
-		#print r, c
-		list_in  = []
-		list_out = []
-		for index1 in asg1[r]:
-			if index1 in asg2[c]:
-				list_in.append(index1)
-			else:
-				list_out.append(index1)
-
-		nb_tot_objs += len(list_in)
-		nb_tot_objs += len(list_out)
-
-		list_stable.append(list_in)
-
-	t5 = time.time()
-	print 'stable', t5 - t4, 's'
-
-	return list_stable, nb_tot_objs
-	
-
-# Match two partitions with hungarian algorithm
 def k_means_match_clusters_asg(asg1, asg2):
 	# asg1 and asg2 are numpy array
 	from numpy      import zeros, argmax
@@ -5273,10 +5217,13 @@ def k_means_match_clusters_asg(asg1, asg2):
 	for k1 in xrange(K):
 		for k2 in xrange(K):
 			for index in asg1[k1]:
+				#if asg2[k2] == []: continue
 				arg = argmax(asg2[k2] == index)
 				if arg != 0: MAT[k1][k2] += 1
 				elif index == asg2[k2][0]:
 					MAT[k1][k2] += 1
+	print time.time() - t1, 's'
+
 	cost_MAT = sys.maxint - MAT
 	m = Munkres()
 	indexes = m.compute(cost_MAT)

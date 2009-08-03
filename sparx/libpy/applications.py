@@ -12037,7 +12037,6 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 				N      = len(data)
 				listID = range(N)
 			else:	listID, N = k_means_list_active(stack)
-			NTOTAL = N
 			k_means_headlog(stack, out_dir, opt_method, N, K, critname, maskname, trials, maxit, CTF, T0, F, rand_seed, nb_cpu)
 		
 		mpi_barrier(MPI_COMM_WORLD)
@@ -12078,10 +12077,10 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 			pickle.dump(assign, f)
 			f.close()
 			"""
-			#N = EMUtil.get_image_count(stack)
-			glb_assign = k_means_locasg2glbasg(assign, listID, NTOTAL)
+			N = EMUtil.get_image_count(stack)
+			glb_assign = k_means_locasg2glbasg(assign, listID, N)
 			crit = k_means_criterion(Cls, critname)
-			k_means_export(Cls, crit, glb_assign, out_dir, 0, TXT = TXT)
+			k_means_export(Cls, crit, glb_assign, out_dir, 0, TXT)
 			print_end_msg('k-means')
 
 		mpi_barrier(MPI_COMM_WORLD)
@@ -12133,7 +12132,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 
 		# export data
 		k_means_cuda_info(INFO)
-		k_means_cuda_export(GASG, AVE, out_dir, mask, 0, TXT = TXT)
+		k_means_cuda_export(GASG, AVE, out_dir, mask, 0, TXT)
 
 		# destroy obj
 		del KmeansCUDA
@@ -12145,10 +12144,10 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		from statistics import k_means_classical, k_means_SSE
 
 		ext = file_type(stack)
-		if   ext == 'bdb': BDB = True
-		else:               BDB = False
+		if ext == 'bdb': BDB = True
+		else:            BDB = False
 		if ext == 'txt': TXT = True
-		else:              TXT = False
+		else:            TXT = False
 		if TXT:
 			N = open(stack, 'r').readlines()
 			im_M, mask, ctf, ctf2 = k_means_open_txt(stack, maskname, 0, N, N)
@@ -12176,7 +12175,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		if not TXT:
 			N = EMUtil.get_image_count(stack)
 		glb_assign = k_means_locasg2glbasg(assign, listID, N)
-		k_means_export(Cls, crit, glb_assign, out_dir, 0, TXT = TXT)
+		k_means_export(Cls, crit, glb_assign, out_dir, 0, TXT)
 
 		print_end_msg('k-means')
 
