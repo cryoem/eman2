@@ -46,15 +46,15 @@ mpirun -np 4 sxali3d_d.py bdb:data ab_initio_volf.hdf ali3d_d --ou=30 --xr='2.0 
 # Refinement of the 3D structure using high accuracy alignment
 mpirun -np 4 sxali3d_e.py bdb:data ali3d_e --ou=30 --delta=2 --maxit=1 --chunk=0.25 --function=reference4 --MPI  --debug || exit
 
-# bootstrap calculation
+# bootstrap calculations
+#  Calculate weights of projections to account for their uneven distribution
 mpirun -np 4 sxbootstrap_calcwgts.py bdb:data wgts.txt --voronoi --MPI || exit
 
-# bootstrap calculation
-sxbootstrap_bigdisk.py bdb:data wgts.txt bootstrap tmpslice --nvol=1 --nbufvol=1 --seedbase=10000 --snr=1.0 --npad=2 --genbuf || exit
-rm -rf bootstrap
+#  Generate buffer containing 2D projection data
+sxbootstrap_genbuf.py bdb:data BUFFER  || exit
 
-# bootstrap calculation
-mpirun -np 4 sxbootstrap_bigdisk.py bdb:data wgts.txt bootstrap tmpslice --nvol=100 --nbufvol=5 --seedbase=10000 --snr=1.0 --MPI || exit
+# Calculate bootstrap volumes
+mpirun -np 4 sxbootstrap_bigdisk.py bdb:data wgts.txt bootstrap BUFFER --nvol=100 --nbufvol=5 --seedbase=10000 --snr=1.0 --MPI || exit
 
 # Compute real-space variance
 mpirun -np 4 sxvar.py bootstrap/bsvol000*.hdf defvar --fl=0.16 --fh=0.20 --radccc=24 --MPI || exit
