@@ -12228,6 +12228,8 @@ def k_means_stab_CUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_no
 	# open unstable images
 	logging.info('... Open images')
 	LUT, mask, N, m = k_means_cuda_init_open_im(stack, maskname)
+	if not TXT: Ntot = EMUtil.get_image_count(stack)
+	else:       Ntot = N
 	logging.info('... %d unstable images found' % N)
 	if N < 2:
 		logging.info('[STOP] Not enough images')
@@ -12266,7 +12268,7 @@ def k_means_stab_CUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_no
 		INFO = KmeansCUDA.get_info()
 		k_means_cuda_info(INFO)
 		AVE  = KmeansCUDA.get_averages()
-		GASG = k_means_locasg2glbasg(ASG, LUT, N)
+		GASG = k_means_locasg2glbasg(ASG, LUT, Ntot)
 		k_means_cuda_export(GASG, AVE, outdir, mask, n)
 		
 	# end of classification
@@ -12335,6 +12337,8 @@ def k_means_stab_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_nobj = 
 	# open unstable images
 	logging.info('... Open images')
 	im_M, mask, ctf, ctf2, LUT, N = k_means_open_unstable(stack, maskname, CTF)
+	if not TXT: Ntot = EMUtil.get_image_count(stack)
+	else:       Ntot = N
 	logging.info('... %d unstable images found' % N)
 	if N < 2:
 		logging.info('[STOP] Not enough images')
@@ -12372,7 +12376,7 @@ def k_means_stab_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_nobj = 
 		# export partition
 		ALL_ASG.append(assign)
 		crit       = k_means_criterion(Cls, critname)
-		glb_assign = k_means_locasg2glbasg(assign, LUT, N)
+		glb_assign = k_means_locasg2glbasg(assign, LUT, Ntot)
 		k_means_export(Cls, crit, glb_assign, outdir, n, TXT)
 		
 	# end of classification
@@ -12459,7 +12463,10 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_nob
 	# open unstable images
 	if myid == main_node: logging.info('... Open images')
 	im_M, mask, ctf, ctf2, LUT, N, N_start, N_stop = k_means_open_unstable_MPI(stack, maskname, CTF, nb_cpu, main_node, myid)
-	if myid == main_node: logging.info('... %d active images found' % N)
+	if myid == main_node:
+		if not TXT: Ntot = EMUtil.get_image_count(stack)
+		else:       Ntot = N
+		logging.info('... %d active images found' % N)
 	if N < 2:
 		logging.info('[STOP] Not enough images')
 		sys.exit()
@@ -12497,7 +12504,7 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_nob
 		if myid == main_node:
 			ALL_ASG.append(assign)
 			crit       = k_means_criterion(Cls, critname)
-			glb_assign = k_means_locasg2glbasg(assign, LUT, N)
+			glb_assign = k_means_locasg2glbasg(assign, LUT, Ntot)
 			k_means_export(Cls, crit, glb_assign, outdir, n, TXT)
 	
 	if myid == main_node:

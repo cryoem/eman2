@@ -45,7 +45,7 @@ def main():
 	parser.add_option("--K",              type="int",          default=2,         help="Number of classes for k-means (default 2)")
 	parser.add_option("--nb_part",        type="int",          default=5,         help="Number of partitions used to calculate the stability (default 5)")
 	parser.add_option("--F",              type="float",        default=0.0,       help="Factor to decrease temperature in simulate annealing, ex.: 0.95")
-	parser.add_option("--th_nobj",        type="int",          default=0,         help="Cleanning threshold, classes with number of images < th_nobj are removed (default 10)")
+	parser.add_option("--th_nobj",        type="int",          default=1,         help="Cleanning threshold, classes with number of images < th_nobj are removed (default 10)")
 	parser.add_option("--rand_seed",      type="int",          default=0,         help="Random seed")
 	parser.add_option("--opt_method",     type='string',       default="SSE",     help="K-means method: SSE (default), cla")
 	parser.add_option("--match",          type='string',       default='hh',      help='Algorithm to match partitions: pwa, pair-wise agreement (default), or hh, hierarchical Hungarian algorithm')

@@ -5471,7 +5471,7 @@ def k_means_stab_export(PART, stack, outdir, th_nobj, CTF = False):
 
 			AVE[ck].set_attr('Class_average', 1.0)
 			AVE[ck].set_attr('nobjects', nobjs)
-			AVE[ck].set_attr('members', PART[k])
+			AVE[ck].set_attr('members', PART[k].tolist())
 			AVE[ck].set_attr('k_ref', k)
 			AVE[ck].write_image(outdir + '/averages.hdf', ck)
 			ck += 1
@@ -5632,7 +5632,7 @@ def k_means_stab_update_tag(stack, STB_PART, lrej):
 	N  = EMUtil.get_image_count(stack)
 	# prepare for active images
 	list_stb = []
-	for part in STB_PART: list_stb.extend(part)
+	for part in STB_PART: list_stb.extend(part.tolist())
 
 	ext = file_type(stack)
 	if ext == 'bdb':
