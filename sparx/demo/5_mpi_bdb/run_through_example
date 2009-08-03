@@ -57,7 +57,7 @@ sxbootstrap_genbuf.py bdb:data BUFFER  || exit
 mpirun -np 4 sxbootstrap_bigdisk.py bdb:data wgts.txt bootstrap BUFFER --nvol=100 --nbufvol=5 --seedbase=10000 --snr=1.0 --MPI || exit
 
 # Compute real-space variance
-mpirun -np 4 sxvar.py bootstrap/bsvol000*.hdf defvar --fl=0.16 --fh=0.20 --radccc=24 --MPI || exit
+mpirun -np 4 sxvar.py bootstrap/bsvol000*.hdf defvar --fl=0.16 --aa=0.20 --radccc=24 --MPI || exit
 
 # generate reference volume using average volume and variance
 ../generate_refvols.py defvar/avg.hdf defvar/var.hdf 88.0 || exit
