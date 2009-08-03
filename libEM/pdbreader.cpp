@@ -285,8 +285,7 @@ PointArray* PDBReader::makePointArray (const PDBReader& p) {
 	PointArray* pArray  = new PointArray;
 	p.save_to_pdb("thisFile3.txt");
 	pArray->read_from_pdb("thisFile3.txt");
-	//pArray.save_to_pdb("thisFile0.txt");
-	//remove("thisFile2.txt");
+	remove("thisFile3.txt");
 	
 	return pArray;
 }

@@ -1032,7 +1032,9 @@ EMData *PointArray::pdb2mrc_by_summation(int map_size, float apix, float res)
 	double table_step_size = 0.001;	// number of steps for each pixel
 	double inv_table_step_size = 1.0 / table_step_size;
 	int table_size = int (max_table_x * gauss_real_width / (apix * table_step_size) * 1.25);
-	double *table = (double *) malloc(sizeof(double) * table_size);
+	vector<double> table;
+	table.resize(table_size);
+	//double *table = (double *) malloc(sizeof(double) * table_size);
 	for (int i = 0; i < table_size; i++) {
 		double x = -i * table_step_size * apix / gauss_real_width;
 		table[i] = exp(-x * x);
@@ -1071,14 +1073,17 @@ EMData *PointArray::pdb2mrc_by_summation(int map_size, float apix, float res)
 
 		for (int k = kmin; k < kmax; k++) {
 			int table_index_z = int (fabs(k - zc) * inv_table_step_size);
+			if ( table_index_z >= table.size() ) continue;
 			double zval = table[table_index_z];
 			size_t pd_index_z = k * map_size * map_size;
 			for (int j = jmin; j < jmax; j++) {
 				int table_index_y = int (fabs(j - yc) * inv_table_step_size);
+				if ( table_index_y >= table.size() ) continue;
 				double yval = table[table_index_y];
 				size_t pd_index = pd_index_z + j * map_size + imin;
 				for (int i = imin; i < imax; i++, pd_index++) {
 					int table_index_x = int (fabs(i - xc) * inv_table_step_size);
+					if ( table_index_x >= table.size() ) continue;
 					double xval = table[table_index_x];
 					pd[pd_index] += (float) (fval * zval * yval * xval);
 				}

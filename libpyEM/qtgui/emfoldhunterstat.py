@@ -52,6 +52,7 @@ class E2FoldHunterStat:
 
 		target = EMData(mrc_file_name)
 
+
 		apix_x = target["apix_x"]
 		apix_y = target["apix_y"]
 		apix_z = target["apix_z"]
@@ -61,10 +62,9 @@ class E2FoldHunterStat:
 		zMax = target.get_zsize()
 
 		transNum = trans_Num
+		s2iso = iso_Thresh
 
-		s2iso = float(iso_Thresh)
 		dVol = .05
-
 		################################################################
 
 
@@ -91,9 +91,13 @@ class E2FoldHunterStat:
 				pixelValues.append(tempValue)
 				atomCount=atomCount+1
 
+		
+		#printValues()
+		#getPixelForAtom()
+
 		##############################################################
 
-		######################## write into pdb file in correct format
+		######################## write into pdb file
 
 		f_pdb = open (pdb_file_name, "r")
 		entries = f_pdb.readlines()
@@ -116,15 +120,15 @@ class E2FoldHunterStat:
 			else: f.write('\n')
 
 		f.close()
+
 		################################################################
 
-		########################## Get random rotations
 		xTrans = (.25*xMax)
 		yTrans = (.25*yMax)
 		zTrans = (.25*zMax)
 
-		all_rots=[]
 
+		all_rots=[]
 		s = Symmetries.get("c1")
 		all_rots = s.gen_orientations("rand", {"n":transNum, "phitoo":1})
 		for i in all_rots:
@@ -132,13 +136,11 @@ class E2FoldHunterStat:
 	
 		all_rots[0].set_params({"type":"eman", "alt":0, "az":0, "phi":0, 'ty':0.0, "tz":0.0, "tx":0.0})
 		all_rots[0].set_trans(0,0,0)
-
 		rotList = all_rots
 
-		################################################################
 
-		####################### calculates scores for each transformation
-		score1 =[]
+
+		score1 =[]  #.005
 		s1_sdv,s2_sdv,s3_sdv=0.0,0.0,0.0
 		s1_mean,s2_mean,s3_mean=0.0,0.0,0.0
 		score2 =[]
@@ -152,13 +154,14 @@ class E2FoldHunterStat:
 
 			t = Transform(rotList[i].get_params("eman"))
 			b = a.copy()
+			
 			b.right_transform(t)  
 			points = b.get_points()
 
 			p = 0
 			t_pixelValues = []
 
-			for m in range(0, atomCount):
+			for m in range(0, atomCount):  #.025 seconds per transform
 				tempX_t=int(((float(points[(p)])/apix_x)+(xMax*.5))+.5)
 				tempY_t=int(((float(points[(p+1)])/apix_y)+(yMax*.5))+.5)
 				tempZ_t=int(((float(points[(p+2)])/apix_z)+(zMax*.5))+.5)
@@ -177,7 +180,8 @@ class E2FoldHunterStat:
 			sumValues = 0.0
 			for x in t_pixelValues:
 				sumValues = sumValues + x
-			sumValues = (sumValues/atomCount) 
+			sumValues = (sumValues/atomCount)
+			print sumValues
 			####################
 
 			###### score 2  #.001 seconds per transform
@@ -187,17 +191,18 @@ class E2FoldHunterStat:
 			for x in t_pixelValues:
 				if (x>=isoValue): includeValue = includeValue + 1.0
 			percentAbove = (includeValue/atomCount)
+			print percentAbove
 			#######
 
-
-			###### score 3 	
+			###### score 3   #.1 second per transform	
 			pA = b.makePointArray(b)	
-			pA.save_to_pdb("thisFile100.txt")
 			probe_MRC = pA.pdb2mrc_by_summation(xMax,apix_x,4.0)
 			probe_MRC.process_inplace("normalize.toimage",{"noisy":target,"keepzero":1}) 
 
-			probe_MRC.process_inplace("threshold.binary",{"value":s2iso})
+			probe_MRC.process_inplace("threshold.binary",{"value":1})
+
 			target_binary = target.process("threshold.binary",{"value":s2iso})
+
 			c = (target_binary - probe_MRC)
 			c.process_inplace("threshold.binary",{"value":0.01}) 
 
@@ -206,8 +211,11 @@ class E2FoldHunterStat:
 
 			excludePercent = (float(remainder_volume)/MRC_volume)
 			volumePercent = 1-excludePercent
+			print volumePercent
+			print " "
 
-			flag = 0  #if flag is 1, it throws out bad values
+			#score3.append(volumePercent) #raw scores
+			flag = 0
 			if flag:
 				if (volumePercent >= dVol and percentAbove>=cutOff): 
 						score1.append(sumValues)
@@ -218,12 +226,13 @@ class E2FoldHunterStat:
 					score1.append("none")
 					score2.append("none")
 					score3.append("none")		
-			else: #when flag is 0, it uses all calculated scores
+			else: 
 				score1.append(sumValues)
 				score2.append(percentAbove)
 				score3.append(volumePercent)
 			
-		#######################################################################
+				####################
+
 		'''
 		print '\n'
 		print score1
@@ -242,6 +251,8 @@ class E2FoldHunterStat:
 				calc1.append(score1[l])
 				calc2.append(score2[l])
 				calc3.append(score3[l])
+
+		print len(calc1)
 
 		s1_mean = mean(calc1)
 		s1_std = std(calc1)
@@ -267,7 +278,7 @@ class E2FoldHunterStat:
 				#s3.append(calc3[cCount])
 
 
-		print "Number of transformations preformed: " + str(len(calc1))
+		print "number of transformations preformed: " + str(len(calc1))
 		print "score 1 - Real space correlation: " + str(s1[0]) + " standard deviations above the mean"
 		print "score 2 - Atom inclusion: " + str(s2[0]) + " standard deviations above the mean"
 		print "score 3 - Volume overlap: " + str(s3[0]) + " standard deviations above the mean"
@@ -303,28 +314,23 @@ class E2FoldHunterStat:
 		vals["score_3"] = s3
 		vals["tNum"] = tNum
 
-		############################################################
-
-		############# Misc. tasks
-
-		s4 =[] #calculates cumulative z-score
+		s4 =[]
 		for i in range(0,len(s1)):
 			te = s1[i] + s2[i] + s3[i]
 			s4.append(te)
 
-		dist =[] #calculates distance translated
+		dist =[]
 		for i in rotList:
 			tempor = i.get_params("eman")
 			d = (tempor['tx'])**2 + (tempor['ty'])**2 + (tempor['tz'])**2
 			d = (d)**.5
 			dist.append(d)
 
-		blank = [] #blank list
+		blank = []
 		for i in range(0,len(s1)):
 			blank.append(0)
 
 
-		'''
 		mpl1 =[] #holds standard deviation scores for only good transforms
 		mpl2 =[]
 		mpl3 =[]
@@ -339,7 +345,7 @@ class E2FoldHunterStat:
 				d = (vals['tx'][t])**2 + (vals['ty'][t])**2 + (vals['tz'][t])**2
 				d = (d)**.5
 				mplDist.append(d)
-		'''
+
 		
 		############ emplot 3d
 		data = []
@@ -375,7 +381,7 @@ class E2FoldHunterStat:
 		#initPoint contains just the data for the original value
 
 		###################################################
-
+		
 
 if __name__ == '__main__':
 	from emapplication import EMStandAloneApplication
