@@ -196,7 +196,7 @@ def add_ave_varf_MPI(myid, data, mask = None, mode = "a", CTF = False, ctf_2_sum
 			Util.mul_img(sumsq, sumsq.conjg())
 			Util.div_img(sumsq, ctf_2_sum)
 		else:
-			tavg = sumsq/nima
+			tavg = Util.mult_scalar(sumsq, 1/float(nima))
 			Util.mul_img(sumsq, sumsq.conjg())
 			Util.mul_scalar(sumsq, 1.0/float(nima))
 		Util.sub_img(var, sumsq)
