@@ -47,6 +47,57 @@ class E2FoldHunterStat:
 	
 	def __init__(self): pass
 
+	def __init__spherical_surface_gauss_dist(self, t, delta, n, xTrans, yTrans,zTrans):
+		''' 
+		@param t is a transform 
+		@param delta is the angular range of the gaussian point cloud on the surface of the sphere
+		@param n is the total number of transforms you want
+		'''
+		transforms_func = []
+
+		for i in range(n):
+
+			# First get the vector that points to the point on 
+			# the sphere that represents the rotation
+			z = Vec3f(0,0,1)
+			v = t.transpose()*z
+			# Get a vector that is orthogonal to v - its direction
+			# doesn't matter because we're going to rotate it randomly
+			normal = Vec3f(-v[2],0,-v[0])
+			normal.normalize()
+
+			# Rotate the normal vector by a random
+			# amount about v. This is making a random axis of
+			# rotation that is orthogonal to v.
+			qdict = {}
+			qdict["type"]  = "spin"
+			qdict["n1"] = v[0]
+			qdict["n2"] = v[1]
+			qdict["n3"] = v[2]
+			qdict["Omega"] = Util.get_frand(0,180) # only need to 180 becaues the final rotation can be negative or positive
+			q = Transform(qdict)
+			normal_d = q*normal # this is the random axis of rotation
+
+			# now we use normal_d to create the final 
+			# rotation matrix (the thing we're really after)
+			# using quaternions
+			qdict_d = {}
+			qdict_d["n1"] = normal_d[0]
+			qdict_d["n2"] = normal_d[1]
+			qdict_d["n3"] = normal_d[2]
+			qdict_d["Omega"] = Util.get_gauss_rand(0,delta)
+			qdict_d["type"] = "spin"
+			q_d = Transform(qdict_d)
+			# voila!
+			p = t*q_d
+			p.set_trans(random.randint(-xTrans, xTrans),random.randint(-yTrans, yTrans),random.randint(-zTrans, zTrans))
+			tempRot = p.get_params("eman")				
+			tempRot["phi"] = Util.get_frand(0,360)
+			finalRot = Transform(tempRot)
+			print finalRot.get_params("eman")
+			transforms_func.append(finalRot)
+		return transforms_func
+
 	#Given a mrc file, pdb file, and optional other information, this function returns several data stuctures representing the results
 	def gen_data(self, mrc_file_name, pdb_file_name, trans_Num, iso_Thresh):
 
@@ -119,11 +170,11 @@ class E2FoldHunterStat:
 
 		################################################################
 
-		xTrans = (.25*xMax)
-		yTrans = (.25*yMax)
-		zTrans = (.25*zMax)
+		xTrans = (.1*xMax)
+		yTrans = (.1*yMax)
+		zTrans = (.1*zMax)
 
-
+		'''
 		######### Generate random transformations
 		all_rots=[]
 		s = Symmetries.get("c1")
@@ -135,8 +186,11 @@ class E2FoldHunterStat:
 		all_rots[0].set_trans(0,0,0)
 		rotList = all_rots
 		#################################################################
-
-
+		'''
+		first_rot = Transform({"type":"eman", "alt":0, "az":0, "phi":0, "ty":0.0, "tz":0.0, "tx":0.0})
+		rotList = []
+		rotList.append(first_rot)
+		rotList.extend(self.__init__spherical_surface_gauss_dist(first_rot, 5, transNum-1, xTrans, yTrans, zTrans))
 
 		score1 =[]  
 		s1_sdv,s2_sdv,s3_sdv=0.0,0.0,0.0
