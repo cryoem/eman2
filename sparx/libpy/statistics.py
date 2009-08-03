@@ -5222,7 +5222,7 @@ def k_means_match_clusters_asg(asg1, asg2):
 				if arg != 0: MAT[k1][k2] += 1
 				elif index == asg2[k2][0]:
 					MAT[k1][k2] += 1
-	print time.time() - t1, 's'
+	#print time.time() - t1, 's'
 
 	cost_MAT = sys.maxint - MAT
 	m = Munkres()
