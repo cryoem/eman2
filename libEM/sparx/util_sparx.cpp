@@ -4011,7 +4011,7 @@ void Util::set_line(EMData* img, int posline, EMData* line, int offset, int leng
 
 /* This function prepare the line from sinogram by cutting off some frequencies,
  * and creating the mirror part (complexe conjugate of the first part). Then
- * both lines (mirror and not) are drop to the sinogram.
+ * both lines (mirror and without) are drop to the sinogram.
  * line is in Fourrier space, ilf low frequency, ihf high frequency, nblines 
  * number of lines of the half sinogram (the non miror part), sino the sinogram,
  * pos_line the position of the line in the sino.
@@ -4207,7 +4207,7 @@ vector<int> Util::cml_line_insino_all(vector<float> Rot, vector<int> seq, int n_
 }
 
 
-// 2009-03-26 10:46:14 JB. This function calculate all common-lines in space, for latter the weighting
+// 2009-03-26 10:46:14 JB. This function calculate all common-lines in space for Voronoi
 vector<double> Util::cml_line_in3d(vector<float> Ori, vector<int> seq, int nprj, int nlines){
     // seq is the pairwise index ij: 0, 1, 0, 2, 0, 3, 1, 2, 1, 3, 2, 3
     vector<double> cml(2*nlines); // [phi, theta] / line
@@ -4458,6 +4458,58 @@ Dict Util::min_dist_four(EMData* image, const vector<EMData*>& data) {
 	return retvals;
 }
 
+// helper to create the contengency table for partition matching (k-means)
+int Util::k_means_cont_table_(int* grp1, int* grp2, int* stb, long int s1, long int s2, int flag) {
+    // flag define is the list of stable obj must be store to stb, but the size st
+    // must be know before. The trick is first start wihtout the flag to get number
+    // of elements stable, then again with the flag to get the list. This avoid to
+    // have two differents functions for the same thing.
+    long int d2 = grp2[s2 - 1] - grp2[0];
+    long int p2 = 0;
+    long int i1 = 0;
+    long int i2 = 0;
+    long int max = 0;
+    long int cont = 0;
+    long int i = 0;
+    int stop1 = 0;
+    int stop2 = 0;
+
+    for (i=0; i<s1; i++) {
+	p2 = (long int)s2 * (double)grp1[i] / (double)d2;
+	if (p2 >= s2) {p2 = s2 - 1;}
+	i1 = p2;
+	i2 = p2;
+	max = s2;
+	if (grp1[i] < grp2[0] || grp1[i] > grp2[s2 - 1]) {continue;}
+
+	stop1 = 0;
+	stop2 = 0;    
+	while (max--) {
+	    if (grp1[i] == grp2[i1]) {
+		if (flag) {stb[cont] = grp1[i];}
+		cont++;
+		break;
+	    }
+	    if (grp2[i1] < grp1[i]) {stop1=1;}
+	    if (grp1[i] == grp2[i2]) {
+		if (flag) {stb[cont] = grp1[i];}
+		cont++;
+		break;
+	    }
+	    if (grp2[i2] > grp1[i]) {stop2=1;}
+	    //printf("i1 %li i2 %li    v2 %i v2 %i   stop1 %i stop2 %i\n", i1, i2, grp2[i1], grp2[i2], stop1, stop2);
+
+	    if (stop1 & stop2) {break;}
+	    i1--;
+	    i2++;
+	    if (i1 < 0) {i1 = 0;}
+	    if (i2 >= s2) {i2 = s2 - 1;}
+	}
+	//printf("v1: %i    ite: %li   cont: %li\n", grp1[i], s2-max, cont);
+    }
+
+    return cont;
+}
 
 #define old_ptr(i,j,k)          old_ptr[i+(j+(k*ny))*nx]
 #define new_ptr(iptr,jptr,kptr) new_ptr[iptr+(jptr+(kptr*new_ny))*new_nx]

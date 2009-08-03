@@ -439,6 +439,7 @@ class FakeKaiserBessel : public KaiserBessel {
         // k-means helper
         static Dict min_dist_real(EMData* image, const vector<EMData*>& data);
         static Dict min_dist_four(EMData* image, const vector<EMData*>& data);
+        static int k_means_cont_table_(int* grp1, int* grp2, int* stb, long int s1, long int s2, int flag);
 
         // new code common-lines
         static vector<double> cml_weights(const vector<float>& cml);

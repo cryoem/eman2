@@ -314,6 +314,17 @@ void readarray( object& f, array& x, int size)
 
     fread( fx, sizeof(float), size, fh );
 }
+
+
+// k_means_cont_table_ is locate to util_sparx.cpp
+int pyk_means_cont_table(array& grp1, array& grp2, array& stb, long int s1, long int s2, int flag) {
+    int* pt_grp1 = get_iptr(grp1);
+    int* pt_grp2 = get_iptr(grp2);
+    int* pt_stb  = get_iptr(stb);
+    return EMAN::Util::k_means_cont_table_(pt_grp1, pt_grp2, pt_stb, s1, s2, flag);
+}
+
+
 // Module ======================================================================
 BOOST_PYTHON_MODULE(libpyUtils2)
 {
@@ -478,6 +489,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
 		.def("saxpy",  &pysaxpy )
 		.def("sdot",   &pysdot  )
 		.def("readarray", &readarray )
+		.def("k_means_cont_table", &pyk_means_cont_table)
 		.staticmethod("point_is_in_triangle_2d")
 		.staticmethod("point_is_in_convex_polygon_2d")
 		.staticmethod("infomask")
@@ -623,6 +635,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
 		.staticmethod("saxpy")
 		.staticmethod("sdot")
 		.staticmethod("readarray")
+		.staticmethod("k_means_cont_table")
 	);
 
     scope* EMAN_Util_sincBlackman_scope = new scope(

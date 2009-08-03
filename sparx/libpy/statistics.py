@@ -5207,42 +5207,40 @@ def Hungarian(part1, part2):
 # Match two partitions with hungarian algorithm
 def k_means_match_clusters_asg(asg1, asg2):
 	# asg1 and asg2 are numpy array
-	from numpy      import zeros, argmax
+	from numpy      import zeros, array
 	from statistics import Munkres
 	import sys, time
 	
 	t1   = time.time()
 	K    = len(asg1)
 	MAT  = zeros((K, K))
+	dummy = array([0])
 	for k1 in xrange(K):
 		for k2 in xrange(K):
-			for index in asg1[k1]:
-				#if asg2[k2] == []: continue
-				arg = argmax(asg2[k2] == index)
-				if arg != 0: MAT[k1][k2] += 1
-				elif index == asg2[k2][0]:
-					MAT[k1][k2] += 1
-	#print time.time() - t1, 's'
+			MAT[k1][k2] = Util.k_means_cont_table(asg1[k1], asg2[k2], dummy, asg1[k1].size, asg2[k2].size, 0)
+
+	#t2 = time.time()
+	#print 'cont table', t2 - t1, 's'
 
 	cost_MAT = sys.maxint - MAT
 	m = Munkres()
 	indexes = m.compute(cost_MAT)
+	#t3 = time.time()
+	#print 'hh', t3 - t2, 's'
 
 	list_stable = []
-	list_objs   = []
 	nb_tot_objs = 0
 	for r, c in indexes:
-		list_in  = []
-		for index in asg1[r]:
-			arg = argmax(asg2[c] == index)
-			if arg != 0:
-				list_in.append(index)
-				nb_tot_objs += 1
-			elif index == asg2[c][0]:
-				list_in.append(index)
-				nb_tot_objs += 1
-		
-		list_stable.append(list_in)
+		cont = MAT[r][c]
+		if cont == 0:
+			list_stable.append(array([], 'int'))
+			continue
+		nb_tot_objs += cont
+		objs = array([0] * cont)
+		dummy = Util.k_means_cont_table(asg1[r], asg2[c], objs, asg1[r].size, asg2[c].size, 1)
+		list_stable.append(objs)
+
+	#print 'list stable', time.time() - t3, 's'
 
 	return list_stable, nb_tot_objs
 
@@ -5409,6 +5407,7 @@ def k_means_stab_H(ALL_PART):
 
 			nb_stb = 0
 			for i in xrange(K): nb_stb += len(LIST_stb[i])
+
 
 		ALL_PART = []
 		ALL_PART = deepcopy(newPART)
