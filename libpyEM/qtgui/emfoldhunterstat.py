@@ -227,9 +227,9 @@ class E2FoldHunterStat:
 				tempX_t=int(((float(points[(p)])/apix_x)+(xMax*.5))+.5)
 				tempY_t=int(((float(points[(p+1)])/apix_y)+(yMax*.5))+.5)
 				tempZ_t=int(((float(points[(p+2)])/apix_z)+(zMax*.5))+.5)
-				if (tempX_t>xMax): tempX_t = xMax	
-				if (tempY_t>yMax): tempY_t = yMax
-				if (tempZ_t>zMax): tempZ_t = zMax
+				if (tempX_t>=xMax): tempX_t = xMax-1	
+				if (tempY_t>=yMax): tempY_t = yMax-1
+				if (tempZ_t>=zMax): tempZ_t = zMax-1
 				if (tempX_t<0): tempX_t = 0
 				if (tempY_t<0): tempY_t = 0
 				if (tempZ_t<0): tempZ_t = 0
