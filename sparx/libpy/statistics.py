@@ -188,7 +188,7 @@ def add_ave_varf_MPI(myid, data, mask = None, mode = "a", CTF = False, ctf_2_sum
 	if get_ctf2: reduce_EMData_to_root(ctf_2_sum, myid, main_node, comm)
 	nima = n
 	nima = mpi_reduce(nima, 1, MPI_INT, MPI_SUM, main_node, comm)
-	if myid == 0:
+	if myid == main_node:
 		nima = int(nima)
 		sumsq = Util.addn_img(ave1, ave2)
 		if CTF:
@@ -196,7 +196,7 @@ def add_ave_varf_MPI(myid, data, mask = None, mode = "a", CTF = False, ctf_2_sum
 			Util.mul_img(sumsq, sumsq.conjg())
 			Util.div_img(sumsq, ctf_2_sum)
 		else:
-			tavg = Util.mult_scalar(sumsq, 1/float(nima))
+			tavg = Util.mult_scalar(sumsq, 1.0/float(nima))
 			Util.mul_img(sumsq, sumsq.conjg())
 			Util.mul_scalar(sumsq, 1.0/float(nima))
 		Util.sub_img(var, sumsq)

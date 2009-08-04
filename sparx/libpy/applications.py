@@ -470,7 +470,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
 
-	number_of_ave = 4
+	number_of_ave = 8
 	color = myid%number_of_ave
 	key = myid/number_of_ave
 	group_comm = mpi_comm_split(MPI_COMM_WORLD, color, key)
@@ -621,13 +621,14 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		ref_data.append(None)
 	
 	# Generate the chessboard image
+	grid_size = 8
 	if myid == main_node:
 		chessboard1 = model_blank(nx, nx)
 		chessboard2 = model_blank(nx, nx)
 		for ii in xrange(nx):
-			iii = ii/(nx/8)
+			iii = ii/grid_size
 			for jj in xrange(nx):
-				jjj = jj/(nx/8)
+				jjj = jj/grid_size
 				kkk = (iii+jjj)%2
 				chessboard1.set_value_at(ii, jj, kkk)
 				chessboard2.set_value_at(ii, jj, 1-kkk) 
