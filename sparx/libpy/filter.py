@@ -187,10 +187,8 @@ def filt_ctf(img, ctf, dopad=True, sign=1):
 	b_factor = dict["bfactor"]
 	ampcont = dict["ampcont"]
 
-        if dopad:
-		ip = 1
-	else:
-		ip = 0
+        if dopad and not img.is_complex():  ip = 1
+	else:                             ip = 0
 
 	params = {"filter_type": Processor.fourier_filter_types.CTF_,
 	 	"defocus" : dz,

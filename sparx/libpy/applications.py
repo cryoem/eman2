@@ -11206,11 +11206,14 @@ def MPI_start_end(nima, nproc, myid):
 	image_end   = int(round(float(nima)/nproc*(myid+1)))
 	return image_start, image_end
 
-def normal_prj( prj_stack, outdir, refvol, r, niter, snr, sym, MPI=False ):
-	def peak_range( nx, ctf_params ):
-		from morphology import ctf_1d
-		ctf = ctf_1d( nx, ctf_params )
-    
+def normal_prj( prj_stack, outdir, refvol, weights, r, niter, snr, sym, verbose = 0, CTF = False, MPI=False ):
+	def peak_range( nx, ctf ):
+		"""
+		  Find first maximum of the CTF, use CTF^2, so the sign will be ignored
+		"""
+		from morphology import ctf_2
+		ctf = ctf_2( nx, ctf )
+
 		for i in xrange( 1, len(ctf)-1 ):
 			prev = ctf[i-1]
 			curt = ctf[i]
@@ -11222,169 +11225,203 @@ def normal_prj( prj_stack, outdir, refvol, r, niter, snr, sym, MPI=False ):
 
 		assert false
 
-	from utilities import get_image, get_im, model_circle, drop_spider_doc, bcast_EMData_to_all,drop_image
-	from projection import prep_vol, prgs
-	from filter import filt_ctf, filt_btwo,filt_tophatb
-	from statistics import ccc
+	from utilities     import get_image, get_im, model_circle, drop_spider_doc
+	from utilities     import drop_image, get_params_proj
+	from projection    import prep_vol, prgs
+	from filter        import filt_ctf, filt_btwo, filt_tophatb
+	from fundamentals  import fft
+	from statistics    import ccc
 	import os
 
+	if(MPI and not (weights is None)):
+		ERROR('Application of weights does not have MPI version', "normal_prj", 1)
+
 	if MPI:
-		from mpi import mpi_comm_size, mpi_comm_rank, mpi_barrier
-		sys.argv = mpi_init(len(sys.argv),sys.argv)
+		from mpi import mpi_comm_size, mpi_comm_rank, mpi_barrier, mpi_init, mpi_reduce, mpi_bcast, MPI_COMM_WORLD, MPI_FLOAT, MPI_SUM
+		from utilities     import bcast_EMData_to_all
 		nproc = mpi_comm_size( MPI_COMM_WORLD )
 		myid  = mpi_comm_rank( MPI_COMM_WORLD )
 	else:
 		nproc = 1
 		myid  = 0
+		if( not (weights is None) ):
+			#  This section is application of weights
+			from utilities import read_text_file
+			s = read_text_file(weights)
+			img_number     = EMUtil.get_image_count( prj_stack )
+			if(len(s) != img_number):  ERROR('Number of images does not agree with number of weights', "normal_prj", 1)
+			for i in xrange(img_number):
+				img = get_im(prj_stack, i)
+				Util.mul_scalar(img, s[i])
+				img.write_image(outdir, i)
+			return
 
-	img1st = get_image( prj_stack )
-	nx = img1st.get_xsize()
-	ny = img1st.get_ysize()
+	if myid==0:
+		if os.path.exists(outdir):
+			ERROR('Output directory exists, please change the name and restart the program', "normal_prj", 1)
+    		os.system( "mkdir " + outdir )
 
-	if r < 0:
-	    r = nx/2-1
+	if MPI:
+		mpi_barrier( MPI_COMM_WORLD )
+
+
+	img = get_image( prj_stack )
+	nx  = img.get_xsize()
+	ny  = img.get_ysize()
+	del img
+
+	if r <= 0:  r = nx//2-1
 
 	img_number     = EMUtil.get_image_count( prj_stack )
 	img_node_start, img_node_end = MPI_start_end(img_number, nproc, myid )
 
-	if myid==0:
-    		ERROR('Output directory exists, please change the name and restart the program', " ", 1)
-    		os.system( "mkdir " + outdir )
 
-	if MPI: 
-		mpi_barrier( MPI_COMM_WORLD )
+	if(verbose == 1):  info=open( os.path.join(outdir, "progress%04d.txt" % myid), "w" )
+	else:              info = None
 
+	imgdata = EMData.read_images(prj_stack, range(img_node_start, img_node_end))
 
-	infofile = outdir + ("/progress%04d.txt" % (myid+1))
-	info = open( infofile, 'w' )
+	if(verbose == 1):
+		info.write( ' all images loaded\n' )
+		info.flush( )
 
+	pred = [1.0]* len(imgdata)
 
-	imgdata = []
-	for i in xrange(img_node_start, img_node_end):
-		img = get_im(prj_stack, i)
-		imgdata.append(img)
-	info.write( ' all imgs loaded\n' )
-	info.flush( )
-
-
-	odd_start = img_node_start%2
-	eve_start = 1 - odd_start
-
-	newimg = [None]*len(imgdata)
-
-	pred = [None]* len(imgdata)
-	for i in xrange( len(imgdata) ):
-		pred[i] = [1.0, 1.0]
-
-	from reconstruction import rec3D_MPI,rec3D_MPI_noCTF,rec3D_MPI_noCTF
+	from reconstruction import rec3D_MPI,rec3D_MPI_noCTF,rec3D_MPI_noCTF, recons3d_4nn_ctf, recons3d_4nn
         if refvol is None:
-		fsc_file = outdir + "/fsc_init.dat"
-		vol_file = outdir + "/vol_init.hdf"
-		refvol, fscc = rec3D_MPI( imgdata, snr, sym, None, fsc_file, myid, 0, 1.0, odd_start, eve_start, None )
-		bcast_EMData_to_all( refvol, myid )
-		if myid==0: 
+		fsc_file = os.path.join(outdir, "fsc_init.dat")
+		vol_file = os.path.join(outdir, "vol_init.hdf")
+		if  MPI:
+			if  CTF:  refvol, fscc = rec3D_MPI( imgdata, snr, sym, None, fsc_file, myid )
+			else:     refvol, fscc = rec3D_MPI_noCTF( imgdata, sym, None, fsc_file, myid )
+			bcast_EMData_to_all( refvol, myid )
+		else:
+			if CTF:   refvol = recons3d_4nn_ctf( imgdata, range(len(imgdata)), snr, 1, sym)
+			else:	   refvol = recons3d_4nn( imgdata, range(len(imgdata)), sym)
+		if myid==0:
 			refvol.write_image( vol_file )
-		info.write( "inital reconstructed volume wrote to " + vol_file + "\n" )
-		info.flush()
+		if(verbose == 1):
+			info.write( "inital reconstructed volume written to " + vol_file + "\n" )
+			info.flush()
 
 
+    	mask = model_circle( r, nx, ny )
 	for iter in xrange(niter) :
-		volft, kb = prep_vol( refvol )
-    		mask = model_circle( r, nx, ny )
+		refvol, kb = prep_vol( refvol )
 
 		scales = []
 		for i in xrange( len(imgdata) ) :
-			exp_prj = imgdata[i]
-			nx = imgdata[i].get_xsize()
+			exp_prj = imgdata[i].copy()
+			if  CTF:  ctf = exp_prj.get_attr( "ctf" )
+
 			phi,theta,psi,s2x,s2y = get_params_proj( exp_prj )
 
-			ref_prj = prgs( volft, kb, [phi, theta, psi, -s2x, -s2y] )
-			ref_prj = filt_btwo( ref_prj, 0.01,0.1,0.2)
- 
-			ctf_params = exp_prj.get_attr( "ctf" )
+			ref_prj = filt_btwo( fft( prgs( refvol, kb, [phi, theta, psi, -s2x, -s2y] ) ), 0.01, 0.1, 0.2)
 
-			nx = exp_prj.get_xsize()
-			frange = peak_range( nx, ctf_params)
+			if  CTF:
+				ref_prj = filt_ctf( filt_ctf( ref_prj, ctf ), ctf )
+				frange = peak_range( nx, ctf_params)
 
-
-			ref_ctfprj = filt_ctf( ref_prj, defocus, Cs, voltage, pixel, wgh )
-			ref_ctfprj2 = filt_ctf( ref_ctfprj, defocus, Cs, voltage, pixel, wgh )
-
-
-			if exp_prj.get_attr('ctf_applied')==0.0:
-				exp_ctfprj2 = filt_ctf( exp_prj,    defocus, Cs, voltage, pixel, wgh )
+			if  CTF:
+				if exp_prj.get_attr('ctf_applied')==0.0:
+					exp_prj = filt_ctf( fft(exp_prj), ctf )
+				else:
+					exp_prj = fft(exp_prj)
 			else:
-				exp_ctfprj2 = exp_prj.copy()
+				exp_prj = fft(exp_prj)
 
-			ex_refprj = ref_ctfprj2
-			ex_expprj = exp_ctfprj2
+			if  CTF:
+				ref_prj = filt_tophatb( ref_prj, frange[0], frange[1], False )
+				exp_prj = filt_tophatb( exp_prj, frange[0], frange[1], False )
 
-			tophat_ref = filt_tophatb( ex_refprj, frange[0], frange[1], False )
-			tophat_exp = filt_tophatb( ex_expprj, frange[0], frange[1], False )
-         
-			ref_mask = tophat_ref*mask
-			exp_mask = tophat_exp*mask
-			curtccc = ccc( ref_mask, exp_mask, mask )
-       
+			ref_prj = fft(ref_prj)
+			exp_prj = fft(exp_prj)
+			Util.mul_img(ref_prj, mask)
+			Util.mul_img(exp_prj, mask)
+			curtccc = ccc( ref_prj, exp_prj, mask )
+
 			try:
-				a = exp_mask.dot( ref_mask ) / exp_mask.dot(exp_mask)
+				a = exp_prj.dot( ref_prj ) / exp_prj.dot(exp_prj)
 			except:
 				print 'exception at myid, i:', myid, i
 				a = 1.0
 
 		        scales.append( a )
-			info.write( "i, a, b, ccc, defocus:  %4d %10.5f %10.5f %10.5f %10.5f\n" %(i, a, 0.0, curtccc, defocus) )
-			info.flush()
+			if(verbose == 1):
+				info.write( "i, a, b, ccc:  %4d %10.5f %10.5f %10.5f\n" %(i, a, 0.0, curtccc) )
+				info.flush()
 
  	   	sum_scale = sum( scales )
 
-		total_sum_scale = mpi_reduce( sum_scale, 1, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD )
-		total_sum_scale = mpi_bcast( total_sum_scale, 1, MPI_FLOAT, 0, MPI_COMM_WORLD)
+		if  MPI:
+			total_sum_scale = mpi_reduce( sum_scale, 1, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD )
+			total_sum_scale = mpi_bcast( total_sum_scale, 1, MPI_FLOAT, 0, MPI_COMM_WORLD)
+			sum_scale = float(total_sum_scale[0][0])
 
-		avg_scale = total_sum_scale[0][0]/img_number
+		avg_scale = sum_scale/img_number
 
 		assert( len(imgdata)==len(scales) )
-
 
 		for i in xrange( len(imgdata) ):
 			s = scales[i] / avg_scale
 			imgdata[i] *= s
-			pred[i][0] *= s
-			pred[i][1] /= s
+			pred[i] *= s
 
-    		scale_file = outdir + ('/newscale%04d_%04d.txt' % (myid, iter))
+    		scale_file = os.path.join(outdir, "newscale%04d_%04d.txt" % (myid, iter))
     		drop_spider_doc( scale_file, pred )
 
-		fsc_file = outdir + "/" + ( "fsc_%04d.dat" % iter )
-		vol_file = outdir + "/" + ( "vol_%04d.spi" % iter )
-		info.write( 'running reconstruction\n' )
-		info.flush()
-		refvol,fscc = rec3D_MPI( imgdata, snr, sym, None, fsc_file, myid, 0, 1.0, odd_start, eve_start, None )
-		info.write( 'reconstruction finished\n' )
-		info.flush()
-
-
+		fsc_file = os.path.join(outdir, ( "fsc_%04d.dat" % iter ))
+		vol_file = os.path.join(outdir, ( "vol_%04d.hdf" % iter ))
+		if(verbose == 1):
+			info.write( 'running reconstruction\n' )
+			info.flush()
+		if  MPI:
+			if  CTF:  refvol, fscc = rec3D_MPI( imgdata, snr, sym, None, fsc_file, myid )
+			else:     refvol, fscc = rec3D_MPI_noCTF( imgdata, sym, None, fsc_file, myid )
+			bcast_EMData_to_all( refvol, myid )
+		else:
+			if CTF:   refvol = recons3d_4nn_ctf( imgdata, range(len(imgdata)), snr, 1, sym)
+			else:	   refvol = recons3d_4nn( imgdata, range(len(imgdata)), sym)
+		if(verbose == 1):
+			info.write( 'reconstruction finished\n' )
+			info.flush()
 
 		if myid==0:
 			drop_image( refvol, vol_file )
-			info.write( "reconstructed volume wrote to " + vol_file  + "\n")
+			if(verbose == 1):
+				info.write( "reconstructed volume written to " + vol_file  + "\n")
+				info.flush()
+
+		if  MPI:  bcast_EMData_to_all( refvol, myid )
+		[mean,sigma,fmin,fmax] = Util.infomask( refvol, None, True )
+		if(verbose == 1):
+			info.write( 'vol all after reconstruction, myid: %d %10.3e %10.3e %10.3e %10.3e\n' % ( myid, mean, sigma, fmin, fmax ) )
 			info.flush()
 
-		bcast_EMData_to_all( refvol, myid )
-		[mean,sigma,fmin,fmax] = Util.infomask( refvol, None, True )
-		info.write( 'vol all after reconstruction, myid: %d %10.3e %10.3e %10.3e %10.3e\n' % ( myid, mean, sigma, fmin, fmax ) )
-		info.flush()
+	if(myid == 0):
+		foutput = open( os.path.join(outdir,"weights.txt"), "w" )
+	if  MPI:
+		from mpi import MPI_INT, MPI_TAG_UB, mpi_recv, mpi_send
+		if myid == 0:
+			ltot = 0
+			base = 0
+			for iq in xrange( nproc ):
+				if(iq == 0):
+					ltot = spill_out(ltot, base, pred, 1, foutput)
+				else:
+					lend = mpi_recv(1, MPI_INT, iq, MPI_TAG_UB, MPI_COMM_WORLD)
+					lend = int(lend[0])
+					pred = mpi_recv(lend, MPI_FLOAT, iq, MPI_TAG_UB, MPI_COMM_WORLD)
+					ltot = spill_out(ltot, base, pred, 1, foutput)
+				base += len(pred)
+		else:
+			mpi_send([len(pred)], 1, MPI_INT, 0, MPI_TAG_UB, MPI_COMM_WORLD)
+			mpi_send(pred, len(pred), MPI_FLOAT, 0, MPI_TAG_UB, MPI_COMM_WORLD)
+	else:
+		ltot = 0
+		base = 0
+		ltot = spill_out(ltot, base, pred, 1, foutput)
 
-	prj_file = outdir + ("/prj%04d.hdf" % myid)
-	info.write( "writing resulting projections to file " + prj_file + '\n' )
-	info.flush()
-
-	for iprj in xrange( len(imgdata) ):
-		imgdata[iprj].write_image( prj_file, iprj )
-
-
-	info.write( "output written to file " + prj_file + '\n' )
-	info.flush()
 """
 def incvar(prefix, nfile, nprj, output, fl, fh, radccc, writelp, writestack):
 	from statistics import variancer, ccc
@@ -11947,6 +11984,7 @@ def factcoords_prj( prj_stacks, avgvol_stack, eigvol_stack, prefix, rad, neigvol
 			mpi_send(d, len(d), MPI_FLOAT, 0, MPI_TAG_UB, MPI_COMM_WORLD)
 	else:
 		ltot = 0
+		base = 0
 		ltot = spill_out(ltot, base, d, neigvol, foutput)
 
 def spill_out(ltot, base, d, neigvol, foutput):

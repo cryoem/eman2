@@ -50,6 +50,7 @@ mpirun -np 4 sxali3d_e.py bdb:data ali3d_e --ou=30 --delta=2 --maxit=1 --chunk=0
 mpirun -np 4 sxnormal_prj.py bdb:data norma --r=24 --niter=3 --MPI || exit
 
 sxnormal_prj.py bdb:data  bdb:data  --apply_weights=norma/weights.txt || exit
+#  The data is overwritten
 
 # bootstrap calculations
 #  Calculate weights of projections to account for their uneven distribution
