@@ -93,7 +93,7 @@ int cuda_kmeans(float* h_IM, float* h_AVE, unsigned short int* h_ASG, float* h_I
 
     // SA
     float T;
-    float ref_SA = (float) N * 0.9; //0.97
+    float ref_SA = (float) N * 0.97;
     float inc_SA [N_SCHEDULE] = {100, 90, 80, 70, 60, 50, 40, 30, 20, 10, \
 				 9, 8, 7, 6, 5, 4, 3, 2, 1,		\
 				 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, \
@@ -109,10 +109,10 @@ int cuda_kmeans(float* h_IM, float* h_AVE, unsigned short int* h_ASG, float* h_I
     float vmin = 0.0f;
 
     srand(rnd);
-    float Je = 0.0f;
+    //float Je = 0.0f;
     
     // Initialize CUBLAS
-    printf("simpleCUBLAS test running..\n");
+    //printf("simpleCUBLAS test running..\n");
 
     status = cublasInit();
     if (status != CUBLAS_STATUS_SUCCESS) return ERROR_DEVICE;
@@ -223,8 +223,8 @@ int cuda_kmeans(float* h_IM, float* h_AVE, unsigned short int* h_ASG, float* h_I
 	if (status != CUBLAS_STATUS_SUCCESS) return ERROR_DEVICE;
 
 	// compute Je
-	Je = 0.0f;
-	for (i = 0; i < N; i++) Je += ((h_IM2[i] + h_AVE2[h_ASG[i]] - 2 * h_DIST[i * K + h_ASG[i]]) / (float)m);
+	//Je = 0.0f;
+	//for (i = 0; i < N; i++) Je += ((h_IM2[i] + h_AVE2[h_ASG[i]] - 2 * h_DIST[i * K + h_ASG[i]]) / (float)m);
 	   
 	////////////////////////////////////////////////////////////
 	////// SIMULATED ANNEALING /////////////////////////////////
@@ -396,9 +396,10 @@ int cuda_kmeans(float* h_IM, float* h_AVE, unsigned short int* h_ASG, float* h_I
 		return ERROR_EMPTY;
 	    }
 	}
+	
 	    
-	printf("ite: %i T: %f CRE: %i         Je: %e   ", ite, T, count_im_moved, Je);
-	printf("\n");
+	//printf("ite: %i T: %f CRE: %i         Je: %e   ", ite, T, count_im_moved, Je);
+	//printf("\n");
 	//print_int(h_NC, K);
 
     //////////////////////////////////////////////////////////////////
@@ -408,14 +409,13 @@ int cuda_kmeans(float* h_IM, float* h_AVE, unsigned short int* h_ASG, float* h_I
 	
     // save running time of the current partition							
     mt2 = time(NULL);
-    printf("time: %f\n", (float)(mt2 - mt1));
+    //printf("time: %f\n", (float)(mt2 - mt1));
     h_INFO[TIME_INFO] = (float)(mt2 - mt1);
 
     // save number of iterations
     h_INFO[NOI_INFO] = (float)ite;
 
     ////// COMPUTE CRITERION  /////////////////////////////////////////
-    printf("compute crit\n");
     // compute the distances again with GPU
     cublasGetError();
     cublasSgemm('t', 'n', K, N, m, alpha, d_AVE, m, d_IM, m, beta, d_DIST, K);
@@ -475,7 +475,7 @@ int rnd_asg(unsigned short int* ASG, unsigned int* NC, int K, int N) {
 	    if (NC[k] <= 1) {
 		flag = 0;
 		if (ret == 0) {
-		    printf("Erreur randomize assignment\n");
+		    //printf("Erreur randomize assignment\n");
 		    return EXIT_FAILURE;
 		}
 		for (k = 0; k < K; k++) NC[k] = 0;
