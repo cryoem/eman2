@@ -239,7 +239,7 @@ def main():
 	parser.add_option("--ngroup",   type="int",          default=1,     help="how many groups to use (each group will share a buffer)")
 	parser.add_option("--CTF",      action="store_true", default=False, help="whether consider CTF" )
 	parser.add_option("--snr",      type="float",        default=1.0,   help="signal-to-noise ratio" )
-	parser.add_option("--npad",     type="int",          default=4,     help="times of padding" )
+	parser.add_option("--npad",     type="int",          default=2,     help="times of padding" )
 	parser.add_option("--seedbase", type="int",                         help="random seed base" )
 	parser.add_option("--MPI",      action="store_true", default=False, help="use MPI")
 	parser.add_option("--verbose",  type="int",          default=0,     help="verbose level: 0 no, 1 yes" )
