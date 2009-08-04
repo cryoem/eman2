@@ -11312,27 +11312,24 @@ def normal_prj( prj_stack, outdir, refvol, weights, r, niter, snr, sym, verbose 
 		scales = []
 		for i in xrange( len(imgdata) ) :
 			exp_prj = imgdata[i].copy()
-			if  CTF:  ctf = exp_prj.get_attr( "ctf" )
 
 			phi,theta,psi,s2x,s2y = get_params_proj( exp_prj )
 
 			ref_prj = filt_btwo( fft( prgs( refvol, kb, [phi, theta, psi, -s2x, -s2y] ) ), 0.01, 0.1, 0.2)
 
 			if  CTF:
+				ctf = exp_prj.get_attr( "ctf" )
 				ref_prj = filt_ctf( filt_ctf( ref_prj, ctf ), ctf )
-				frange = peak_range( nx, ctf_params)
+				frange = peak_range( nx, ctf)
 
-			if  CTF:
 				if exp_prj.get_attr('ctf_applied')==0.0:
 					exp_prj = filt_ctf( fft(exp_prj), ctf )
 				else:
 					exp_prj = fft(exp_prj)
-			else:
-				exp_prj = fft(exp_prj)
-
-			if  CTF:
 				ref_prj = filt_tophatb( ref_prj, frange[0], frange[1], False )
 				exp_prj = filt_tophatb( exp_prj, frange[0], frange[1], False )
+			else:
+				exp_prj = fft(exp_prj)
 
 			ref_prj = fft(ref_prj)
 			exp_prj = fft(exp_prj)
@@ -11348,7 +11345,7 @@ def normal_prj( prj_stack, outdir, refvol, weights, r, niter, snr, sym, verbose 
 
 		        scales.append( a )
 			if(verbose == 1):
-				info.write( "i, a, b, ccc:  %4d %10.5f %10.5f %10.5f\n" %(i, a, 0.0, curtccc) )
+				info.write( "i, a, ccc:  %4d %10.5f  %10.5f\n" %(i, a, curtccc) )
 				info.flush()
 
  	   	sum_scale = sum( scales )
