@@ -528,6 +528,8 @@ def check(options,verbose=False):
 		if not os.path.exists(options.path):
 			print "Error: the path %s does not exist" %options.path
 			error = True
+	else:
+		options.path = numbered_path("refine",True)
 			
 	if hasattr(options,"parallel") and options.parallel != None:
   		if len(options.parallel) < 2:

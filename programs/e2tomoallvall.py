@@ -114,96 +114,104 @@ class EMAllVAll:
 		
 		
 	def execute(self):
-		options = self.options
-		align_data = EMAN2.parsemodopt(options.align)
-		cmp_data = EMAN2.parsemodopt(options.cmp)
-		ralign_data = None
-		if options.ralign != None: ralign_data = EMAN2.parsemodopt(options.ralign)
+		alignment_jobs = []
+		for i in range(len(self.files)):
+			for j in range(i+1,len(self.files)):
+				alignment_jobs.append([i,j])
+		from e2tomoaverage import EMTomoAlignments
+		alignments_manager = EMTomoAlignments(self.options)
+		alignments_manager.execute(alignment_jobs, self.files,self)
 		
-		if self.options.parallel and len(self.options.parallel) > 2 and self.options.parallel[:2] == "dc":
-			task_customers = []
-			tids = []
-			
-			for i in range(len(self.files)):
-				for j in range(i+1,len(self.files)):
-					data = {}
-					data["probe"] = ("cache",self.files[i],0)
-					data["target"] = ("cache",self.files[j],0)
-					data["target_idx"] = j
-					data["probe_idx"] = i
-
-			
-					task = EMTomoAlignTaskDC(data=data,align_data=align_data,cmp_data=cmp_data,ralign_data=ralign_data,using_cuda=self.using_cuda)
-				
-					from EMAN2PAR import EMTaskCustomer
-					etc=EMTaskCustomer(self.options.parallel)
-					#print "Est %d CPUs"%etc.cpu_est()
-					tid=etc.send_task(task)
-					#print "Task submitted tid=",tid
-					
-					task_customers.append(etc)
-					tids.append(tid)
-					
-			self.dc_monitor(task_customers,tids)
-		else:
-			n = len(self.files)
-			n = n*(n-1)/2 # geometris sequence
-			p = 0.0
-			for i in range(len(self.files)):
-				for j in range(i+1,len(self.files)):
-					probe = EMData(self.files[i])
-					target = EMData(self.files[j])
-					data = {}
-					data["target"] = target
-					data["probe"] = probe
-					data["target_idx"] = j
-					data["probe_idx"] = i
-
-			
-					task = EMTomoAlignTask(data=data,align_data=align_data,cmp_data=cmp_data,ralign_data=ralign_data,using_cuda=self.using_cuda)
-				
-					rslts = task.execute(self.progress_callback)
-					self.write_output(rslts)
-					
-					p += 1.0
-					E2progress(self.logger,p/n)
+#		options = self.options
+#		align_data = EMAN2.parsemodopt(options.align)
+#		cmp_data = EMAN2.parsemodopt(options.cmp)
+#		ralign_data = None
+#		if options.ralign != None: ralign_data = EMAN2.parsemodopt(options.ralign)
+#		
+#		if self.options.parallel and len(self.options.parallel) > 2 and self.options.parallel[:2] == "dc":
+#			task_customers = []
+#			tids = []
+#			
+#			for i in range(len(self.files)):
+#				for j in range(i+1,len(self.files)):
+#					data = {}
+#					data["probe"] = ("cache",self.files[i],0)
+#					data["target"] = ("cache",self.files[j],0)
+#					data["target_idx"] = j
+#					data["probe_idx"] = i
+#
+#			
+#					task = EMTomoAlignTaskDC(data=data,align_data=align_data,cmp_data=cmp_data,ralign_data=ralign_data,using_cuda=self.using_cuda)
+#				
+#					from EMAN2PAR import EMTaskCustomer
+#					etc=EMTaskCustomer(self.options.parallel)
+#					#print "Est %d CPUs"%etc.cpu_est()
+#					tid=etc.send_task(task)
+#					#print "Task submitted tid=",tid
+#					
+#					task_customers.append(etc)
+#					tids.append(tid)
+#					
+#			self.dc_monitor(task_customers,tids)
+#		else:
+#			n = len(self.files)
+#			n = n*(n-1)/2 # geometris sequence
+#			p = 0.0
+#			for i in range(len(self.files)):
+#				for j in range(i+1,len(self.files)):
+#					probe = EMData(self.files[i])
+#					target = EMData(self.files[j])
+#					data = {}
+#					data["target"] = target
+#					data["probe"] = probe
+#					data["target_idx"] = j
+#					data["probe_idx"] = i
+#
+#			
+#					task = EMTomoAlignTask(data=data,align_data=align_data,cmp_data=cmp_data,ralign_data=ralign_data,using_cuda=self.using_cuda)
+#				
+#					rslts = task.execute(self.progress_callback)
+#					self.write_output(rslts)
+#					
+#					p += 1.0
+#					E2progress(self.logger,p/n)
 					
 		self.finalize_writing()
 
 			
-	def progress_callback(self,percent):
-		'''
-		Need this function in order to use a uniform interface for parallel and non parallel
-		'''
-		pass
+#	def progress_callback(self,percent):
+#		'''
+#		Need this function in order to use a uniform interface for parallel and non parallel
+#		'''
+#		pass
 	
-	def dc_monitor(self,task_customers,tids):
-		'''
-		This program runs a loop that ends only when all of the argument tasks are complete
-		'''
-		import time
-		n = len(task_customers)
-		while 1:
-			if len(task_customers) == 0: break
-			print len(task_customers),"tomo averaging tasks left in main loop"
-			st_vals = task_customers[0].check_task(tids)
-			for i in xrange(len(task_customers)-1,-1,-1):
-				st = st_vals[i]
-				if st==100:
-					task_customer = task_customers[i]
-					tid = tids[i] 
-					
-					task_customers.pop(i)
-					tids.pop(i)
-
-					rslts = task_customer.get_results(tid)
-					
-					self.write_output(rslts[1])
-
-					if self.logger != None:
-						E2progress(self.logger,1.0-len(task_customers)/(n))
-			
-			time.sleep(5)
+#	def dc_monitor(self,task_customers,tids):
+#		'''
+#		This program runs a loop that ends only when all of the argument tasks are complete
+#		'''
+#		import time
+#		n = len(task_customers)
+#		while 1:
+#			if len(task_customers) == 0: break
+#			print len(task_customers),"tomo averaging tasks left in main loop"
+#			st_vals = task_customers[0].check_task(tids)
+#			for i in xrange(len(task_customers)-1,-1,-1):
+#				st = st_vals[i]
+#				if st==100:
+#					task_customer = task_customers[i]
+#					tid = tids[i] 
+#					
+#					task_customers.pop(i)
+#					tids.pop(i)
+#
+#					rslts = task_customer.get_results(tid)
+#					
+#					self.write_output(rslts[1])
+#
+#					if self.logger != None:
+#						E2progress(self.logger,1.0-len(task_customers)/(n))
+#			
+#			time.sleep(5)
 			
 	def write_output(self,results):
 		
@@ -215,11 +223,11 @@ class EMAllVAll:
 		a = ali.get_params("eman")
 		self.output_images[0].set(target_idx,probe_idx,cmp)
 		self.output_images[1].set(target_idx,probe_idx,a["tx"])
-		self.output_images[1].set(target_idx,probe_idx,a["ty"])
-		self.output_images[1].set(target_idx,probe_idx,a["tz"])
-		self.output_images[1].set(target_idx,probe_idx,a["az"])
-		self.output_images[1].set(target_idx,probe_idx,a["alt"])
-		self.output_images[1].set(target_idx,probe_idx,a["phi"])
+		self.output_images[2].set(target_idx,probe_idx,a["ty"])
+		self.output_images[3].set(target_idx,probe_idx,a["tz"])
+		self.output_images[4].set(target_idx,probe_idx,a["az"])
+		self.output_images[5].set(target_idx,probe_idx,a["alt"])
+		self.output_images[6].set(target_idx,probe_idx,a["phi"])
 		
 		
 		# here we put the inverted alignment as well, yes this is redundant but it 
@@ -229,11 +237,11 @@ class EMAllVAll:
 		
 		self.output_images[0].set(probe_idx,target_idx,cmp)
 		self.output_images[1].set(probe_idx,target_idx,ai["tx"])
-		self.output_images[1].set(probe_idx,target_idx,ai["ty"])
-		self.output_images[1].set(probe_idx,target_idx,ai["tz"])
-		self.output_images[1].set(probe_idx,target_idx,ai["az"])
-		self.output_images[1].set(probe_idx,target_idx,ai["alt"])
-		self.output_images[1].set(probe_idx,target_idx,ai["phi"])
+		self.output_images[2].set(probe_idx,target_idx,ai["ty"])
+		self.output_images[3].set(probe_idx,target_idx,ai["tz"])
+		self.output_images[4].set(probe_idx,target_idx,ai["az"])
+		self.output_images[5].set(probe_idx,target_idx,ai["alt"])
+		self.output_images[6].set(probe_idx,target_idx,ai["phi"])
 		
 	def finalize_writing(self):
 		'''
@@ -241,6 +249,7 @@ class EMAllVAll:
 		'''
 		
 		for i,image in enumerate(self.output_images):
+			image.set_attr("file_names",self.files)
 			image.write_image(self.options.output,i)
 		
 		
@@ -281,14 +290,12 @@ class EMTomoAlignTask:
 		progress = 0.0
 		max_progress = 3
 		progress += 1.0
-		print progress
 		progress_callback(int(100*(progress/float(max_progress))))
 
 		ali = probe.align(self.align_data[0],target,self.align_data[1])
 		
 		progress += 1.0
 		progress_callback(int(100*(progress/float(max_progress))))
-		print progress
 		if self.ralign_data != None:
 			xform_align3d = ali.get_attr("xform.align3d")
 			self.ralign_data[1]["xform.align3d"] = xform_align3d
@@ -301,7 +308,6 @@ class EMTomoAlignTask:
 		
 		progress += 1.0
 		progress_callback(int(100*(progress/float(max_progress))))
-		print progress
 	
 		results = {}
 		results["cmp"] = ali.cmp(self.cmp_data[0],target,self.cmp_data[1])
