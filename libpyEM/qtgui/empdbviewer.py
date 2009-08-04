@@ -857,7 +857,6 @@ class EMPDBViewer(EM3DModule):
 				amino.append(resName[:])
 				self.allResidues.append(amino[:])
 				break
-		print len(self.allResidues)
 
 	def cylinder_to_from(self,next,prev,scale=0.5):
 		dx = next[0] - prev[0]

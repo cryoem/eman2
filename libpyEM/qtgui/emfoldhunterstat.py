@@ -133,11 +133,11 @@ class E2FoldHunterStat:
 
 		for item in pdb_lines:
 			itemS = str(item[0:6].strip())
-			if (itemS == "ENDMDL"): 		
+			if (itemS == "ENDMDL" and len(pixelValues)>0): 		
 				break
 			elif (itemS == "END"): 		
 				break
-			elif (itemS == "TER"): 		
+			elif (itemS == "TER" and len(pixelValues)>0): 		
 				break
 			elif (itemS == "HETATM"):
 				continue
@@ -259,7 +259,7 @@ class E2FoldHunterStat:
 			probe_MRC = pA.pdb2mrc_by_summation(xMax,apix_x,4.0)
 			probe_MRC.process_inplace("normalize.toimage",{"noisy":target,"keepzero":1}) 
 
-			probe_MRC.process_inplace("threshold.binary",{"value":1})
+			probe_MRC.process_inplace("threshold.binary",{"value":.0001})
 
 			target_binary = target.process("threshold.binary",{"value":s2iso})
 

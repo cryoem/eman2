@@ -203,7 +203,7 @@ bool PDBReader::read_from_pdb(const char *file)
 			break;
 		}
 		if ((strncmp(s, "TER", 3) == 0) && (ter_stop ==0)){
-			ter_stop = 1;
+			if (count !=0) {ter_stop = 1;}
 			count_stop = count;
 		}
 		if (strncmp(s, "ATOM", 4) != 0) {
