@@ -128,6 +128,7 @@ void PDBReader::set_points_array(double *p)
 
 // adds purely the x values to a vector
 vector<float> PDBReader::get_x() {
+	if (count_stop == 0) {count_stop = atomName.size();}
 	for (int i=0; i<count_stop; i++) {
         	x.push_back(points[4*i]);
        	 	y.push_back(points[4*i + 1]);
@@ -202,10 +203,10 @@ bool PDBReader::read_from_pdb(const char *file)
 		if (strncmp(s, "END", 6) == 0){
 			break;
 		}
-		if ((strncmp(s, "TER", 3) == 0) && (ter_stop ==0)){
-			if (count !=0) {ter_stop = 1;}
-			count_stop = count;
-		}
+		//if ((strncmp(s, "TER", 3) == 0) && (ter_stop ==0)){
+			//if (count !=0) {ter_stop = 1;}
+			//count_stop = count;
+		//}
 		if (strncmp(s, "ATOM", 4) != 0) {
 			if (count == 0) {head.push_back(s);}
 			else {tail.push_back(s);}

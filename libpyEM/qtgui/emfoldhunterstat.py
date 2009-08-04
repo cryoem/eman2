@@ -137,8 +137,8 @@ class E2FoldHunterStat:
 				break
 			elif (itemS == "END"): 		
 				break
-			elif (itemS == "TER" and len(pixelValues)>0): 		
-				break
+			#elif (itemS == "TER" and len(pixelValues)>0): 		
+				#break
 			elif (itemS == "HETATM"):
 				continue
 			elif (itemS == "ATOM"):

@@ -79,14 +79,15 @@ class EMIsosurfaceModule(EMImage3DGUIModule):
 		self.data_copy = None		
 		self.vdtools = EMViewportDepthTools(self)
 		self.enable_file_browse = enable_file_browse
-		
+		self.force_update = False
 		if image :
 			self.set_data(image)
 		
 #	def __del__(self):
 #		print "iso died"
 #		pass
-#	
+	def set_force_update(self,val=True): self.force_update = val
+
 	def get_type(self):
 		return "Isosurface"
 	
@@ -149,8 +150,9 @@ class EMIsosurfaceModule(EMImage3DGUIModule):
 		
 		self.cam.position()
 		glShadeModel(GL_SMOOTH)
-		if ( self.isodl == 0 ):
+		if ( self.isodl == 0 or self.force_update ):
 			self.get_iso_dl()
+			self.force_update = False
 		glStencilFunc(GL_EQUAL,self.rank,0)
 		glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE)
 		glMaterial(GL_FRONT, GL_AMBIENT, self.colors[self.isocolor]["ambient"])
@@ -242,6 +244,8 @@ class EMIsosurfaceModule(EMImage3DGUIModule):
 			print "Error, tried to set data that is invalid for EMIsosurface"
 			return
 		self.data=data
+		if self.isodl != 0:
+			self.force_update = True
 		
 		self.minden=data.get_attr("minimum")
 		self.maxden=data.get_attr("maximum")

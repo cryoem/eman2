@@ -91,7 +91,10 @@ class EMPDBValTool(EM3DModule):
 
 	def set_iso_data(self,data):
 		if self.iso_module == None: self. __init_iso_module()
-		self.iso_module.set_data(data.copy())
+		self.iso_module.set_data(data)
+		print "set force update"
+		self.iso_module.set_force_update(True)
+		self.iso_module.updateGL()
 
 	def update_pdb_file(self):  #updates current_pdb with the current file
 		self.current_pdb = self.pdb_module.get_pdb_file()
