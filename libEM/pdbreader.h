@@ -130,6 +130,7 @@ namespace EMAN
 		vector<string> lines;
 		size_t n;
 		int ter_stop;
+		int count_stop;
 
 		vector<float> x;
 		vector<float> y;
