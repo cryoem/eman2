@@ -57,7 +57,7 @@ sxnormal_prj.py bdb:data  bdb:data  --apply_weights=norma/weights.txt || exit
 mpirun -np 4 sxbootstrap_calcwgts.py bdb:data wgts.txt --voronoi --MPI || exit
 
 #  Generate buffer containing 2D projection data
-sxbootstrap_genbuf.py bdb:data BUFFER  || exit
+sxbootstrap_genbuf.py bdb:data BUFFER --CTF || exit
 
 # Calculate bootstrap volumes
 mpirun -np 4 sxbootstrap_bigdisk.py bdb:data wgts.txt bootstrap BUFFER --nvol=100 --nbufvol=5 --seedbase=10000 --snr=1.0 --CTF --MPI || exit
