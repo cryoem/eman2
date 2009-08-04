@@ -179,9 +179,9 @@ class E2FoldHunterStat:
 		'''
 		################################################################
 
-		xTrans = (.1*xMax)
-		yTrans = (.1*yMax)
-		zTrans = (.1*zMax)
+		xTrans = (.25*xMax)
+		yTrans = (.25*yMax)
+		zTrans = (.25*zMax)
 
 		'''
 		######### Generate random transformations
