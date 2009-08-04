@@ -94,7 +94,6 @@ class E2FoldHunterStat:
 			tempRot = p.get_params("eman")				
 			tempRot["phi"] = Util.get_frand(0,360)
 			finalRot = Transform(tempRot)
-			print finalRot.get_params("eman")
 			transforms_func.append(finalRot)
 		return transforms_func
 
@@ -134,16 +133,26 @@ class E2FoldHunterStat:
 
 		for item in pdb_lines:
 			itemS = str(item[0:6].strip())
-			if (itemS == "ATOM"):
+			if (itemS == "ENDMDL"): 		
+				break
+			elif (itemS == "END"): 		
+				break
+			elif (itemS == "TER"): 		
+				break
+			elif (itemS == "HETATM"):
+				continue
+			elif (itemS == "ATOM"):
 				tempX=int((((float(item[30:38].strip()))/apix_x)+(xMax*.5))+.5)
 				tempY=int((((float(item[38:46].strip()))/apix_y)+(yMax*.5))+.5)
 				tempZ=int((((float(item[46:54].strip()))/apix_z)+(zMax*.5))+.5)	
 				tempValue = target.get(tempX, tempY, tempZ)
 				pixelValues.append(tempValue)
 				atomCount=atomCount+1
+			else: continue
 
 		##############################################################
 
+		'''
 		######################## write accurately into pdb file
 
 		f_pdb = open (pdb_file_name, "r")
@@ -167,7 +176,7 @@ class E2FoldHunterStat:
 			else: f.write('\n')
 
 		f.close()
-
+		'''
 		################################################################
 
 		xTrans = (.1*xMax)
@@ -212,6 +221,7 @@ class E2FoldHunterStat:
 
 			p = 0
 			t_pixelValues = []
+
 
 			for m in range(0, atomCount): 
 				tempX_t=int(((float(points[(p)])/apix_x)+(xMax*.5))+.5)
@@ -299,8 +309,6 @@ class E2FoldHunterStat:
 				calc1.append(score1[l])
 				calc2.append(score2[l])
 				calc3.append(score3[l])
-
-		print len(calc1)
 
 		s1_mean = mean(calc1)
 		s1_std = std(calc1)

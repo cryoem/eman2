@@ -53,6 +53,7 @@ PDBReader::PDBReader( int nn)
 {
 	n = nn;
 	points = (double *) calloc(4 * n, sizeof(double));
+	ter_stop = 0;
 }
 
 PDBReader::~PDBReader()
@@ -85,6 +86,7 @@ PDBReader *PDBReader::copy()
 	pa2->tail = tail;
 	pa2->head = head;
 	pa2->pointInfo = pointInfo;
+	pa2->lines = lines;
 	return pa2;
 }
 
@@ -163,6 +165,7 @@ vector<int> PDBReader::get_resNum() {
 //Accurately parses a pdb file for all information
 bool PDBReader::read_from_pdb(const char *file)
 {
+
 	pWords.clear();
 	atomName.clear();
 	residueName.clear();
@@ -170,6 +173,9 @@ bool PDBReader::read_from_pdb(const char *file)
 	elementSym.clear();
 	tail.clear();
 	head.clear();
+	lines.clear();
+	pointInfo.clear();
+	ter_stop = 0;
 
 	struct stat filestat;
 	stat(file, &filestat);
@@ -187,9 +193,13 @@ bool PDBReader::read_from_pdb(const char *file)
 	size_t count = 0;
 
 	while ((fgets(s, 200, fp) != NULL)) {
-
+		lines.push_back(s);
 		if (strncmp(s, "ENDMDL", 6) == 0)
+			ter_stop =1;
+		if (strncmp(s, "END", 6) == 0)
 			break;
+		if (strncmp(s, "TER", 3) == 0)
+			ter_stop = 1;
 		if (strncmp(s, "ATOM", 4) != 0) {
 			if (count == 0) {head.push_back(s);}
 			else {tail.push_back(s);}
@@ -228,6 +238,7 @@ bool PDBReader::read_from_pdb(const char *file)
 
 
 //Accurately writes a pdb file once the information is alread stored.
+/*
 void PDBReader::save_to_pdb(const char *file) const {
 	FILE *fp = fopen(file, "w");
 	for (int i = 0; i <head.size(); i++) {
@@ -253,9 +264,40 @@ void PDBReader::save_to_pdb(const char *file) const {
 		strcpy(tail2, tail[i].c_str());
 		fprintf (fp, tail2);
 	}
+	fprintf (fp, "END");
 	fclose(fp);
 
 }
+*/
+
+
+//Accurately writes a pdb file once the information is alread stored.
+void PDBReader::save_to_pdb(const char *file) const {
+	FILE *fp = fopen(file, "w");
+	int m = 0;
+	for (int i =0; i< lines.size(); i++) {
+		char liner [200];
+		strcpy (liner, lines[i].c_str());
+		if (strncmp(liner, "ATOM", 4) != 0) {
+			fprintf (fp, liner);
+		}
+		else {
+			string curr = pWords[m];
+			string mid, final;
+			mid = curr.substr(12, 10);
+			final = curr.substr(76,2);
+			char mid2 [12];
+			strcpy(mid2, mid.c_str());
+			char final2 [4];
+			strcpy(final2, final.c_str());
+			fprintf(fp, "ATOM  %5d %10s%4d    %8.3f%8.3f%8.3f  1.00%6.2f          %2s\n", pointInfo[2*m], mid2, pointInfo[2*m +1], points[4 * m], points[4 * m + 1], points[4 * m + 2], points[4*m + 3], final2);
+			m++;
+		}
+	}	
+	fclose(fp);
+
+}
+
 
 //returns a vector of the x,y,z values 
 vector<float> PDBReader::get_points() {

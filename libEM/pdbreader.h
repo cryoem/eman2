@@ -127,7 +127,9 @@ namespace EMAN
 		vector<string> elementSym;
 		vector<string> tail;
 		vector<string> head;
+		vector<string> lines;
 		size_t n;
+		int ter_stop;
 
 		vector<float> x;
 		vector<float> y;
