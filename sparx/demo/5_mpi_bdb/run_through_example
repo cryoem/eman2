@@ -14,7 +14,7 @@ rm tmp.hdf
 
 ../generate_projections.py --format="bdb"  || exit
 
-e2boxer.py --method=Gauss -A cmd -B 64 --write_box_images --var --pix_in=5.2 --pix_out=5.2 --ccf_lo=4.0 --ccf_hi=60.0 --outformat=bdb --out_file=bdb:data2 mic*.hdf --force
+#e2boxer.py --method=Gauss -A cmd -B 64 --write_box_images --var --pix_in=5.2 --pix_out=5.2 --ccf_lo=4.0 --ccf_hi=60.0 --outformat=bdb --out_file=bdb:data2 mic*.hdf --force
 
 # Reference-free alignment of the entire 2D dataset
 mpirun -np 4 sxali2d_c.py bdb:data ali2d_c --ou=30 --xr=3 --yr=3 --ts=1 --maxit=5 --MPI || exit
@@ -46,6 +46,11 @@ mpirun -np 4 sxali3d_d.py bdb:data ab_initio_volf.hdf ali3d_d --ou=30 --xr='2.0 
 # Refinement of the 3D structure using high accuracy alignment
 mpirun -np 4 sxali3d_e.py bdb:data ali3d_e --ou=30 --delta=2 --maxit=1 --chunk=0.25 --function=reference4 --MPI  --debug || exit
 
+# Renormalize the data
+mpirun -np 4 sxnormal_prj.py bdb:data norma --r=24 --niter=3 --MPI || exit
+
+sxnormal_prj.py bdb:data  bdb:data  --apply_weights=norma/weights.txt || exit
+
 # bootstrap calculations
 #  Calculate weights of projections to account for their uneven distribution
 mpirun -np 4 sxbootstrap_calcwgts.py bdb:data wgts.txt --voronoi --MPI || exit
@@ -63,4 +68,4 @@ mpirun -np 4 sxvar.py bootstrap/bsvol000*.hdf defvar --fl=0.16 --aa=0.20 --radcc
 ../generate_refvols.py defvar/avg.hdf defvar/var.hdf 88.0 || exit
 
 # 3D multi reference alignment
-mpirun -np 4 sxali3d_m.py bdb:data rem.hdf ali3d_m --ou=30 --xr='4' --ts='2' --delta='15' --center=1 --nassign=3 --nrefine=1 --ref_a=P --MPI || exit
+#mpirun -np 4 sxali3d_m.py bdb:data rem.hdf ali3d_m --ou=30 --xr='4' --ts='2' --delta='15' --center=1 --nassign=3 --nrefine=1 --ref_a=P --MPI || exit
