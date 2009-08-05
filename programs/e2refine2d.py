@@ -189,7 +189,7 @@ def main():
 			tmp_data = pdb.get(options.dbls, dfl={})
 			if isinstance(tmp_data,list):
 				d = {}
-				for name in tmp_data:
+				for name in tmp_data: # this is for back compatibility it could be removed in 2010
 					s = {}
 					s["Original Data"] = name
 					d[name] = s

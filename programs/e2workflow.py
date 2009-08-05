@@ -965,7 +965,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	def launch_tomo_probe_report(self): self.launch_task(EMTomoProbeReportTask(),"Tomogram Probes")
 	def launch_tomo_ptcl_ali_report(self): self.launch_task(EMTomoChooseAlignedSetTask(),"Tomo Particle Alignment Report Report")
 	def launch_tomo_ave_report(self): self.launch_task(EMTomoAveragesReportTask(),"Tomo Averages Report")
-	def launch_tomo_boostrap_probe(self): error("This form is yet to be implemented")
+	def launch_tomo_boostrap_probe(self): self.launch_task(EMTomoBootStapChoosePtclsTask(),"Boot Stap A Tomo Average")
 	def launch_gen_ave_tomo(self): self.launch_task(EMTomoGenerateAverageChooseDataTask(),"Choose Alignment Set")
 	def launch_tomo_filt_ptcl_report(self): self.launch_task(EMTomoChooseFilteredPtclsTask(),"Filtered Tomo Particles")
 	def launch_tomo_filter_ptcls(self): self.launch_task(EMTomoChooseFilteredPtclsForFiltTask(),"Filter/Rotate Tomo Particles")

@@ -341,7 +341,12 @@ class EMBaseTomoChooseFilteredPtclsTask(WorkFlowTask):
 		params = []
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
 		if len(choices) > 0:
-			params.append(ParamDef(name="tomo_filt_choice",vartype="choice",desc_long="Choose from the filtered tomogram particles",desc_short="Choose data",property=None,defaultunits=db.get("tomo_filt_choice",dfl=""),choices=choices))
+			if len(choices) == 1:
+				vartype = "choice"
+			else:
+				vartype = "string"
+				
+			params.append(ParamDef(name="tomo_filt_choice",vartype=vartype,desc_long="Choose from the filtered tomogram particles",desc_short="Choose data",property=None,defaultunits=db.get("tomo_filt_choice",dfl=""),choices=choices))				
 		else:
 			params.append(ParamDef(name="blurb2",vartype="text",desc_short="",desc_long="",property=None,defaultunits="There are no particles in the project. Go back to earlier stages and box/import particles",choices=None))
 		return params
@@ -896,7 +901,7 @@ class E2TomoFilterParticlesTask(WorkFlowTask):
 				d = {}
 				d[params["name"]] = outnames[i]
 				db_map[real_name] = d
-		project_db[project_list] = db_map
+		data_dict.update(db_map)
 
 class E2TomoScaleClipTask(E2TomoFilterParticlesTask):
 	'''Scale and clipping'''
@@ -1153,6 +1158,132 @@ class EMTomoChooseFilteredPtclsForFiltTask(EMBaseTomoChooseFilteredPtclsTask):
 		
 		self.write_db_entries(params)
 
+class EMTomoBootStapChoosePtclsTask(EMBaseTomoChooseFilteredPtclsTask):
+	"""Choose the particle set you wish to use to generate the bootstrapped probe. The sets available will include the raw particles and any filtered sets you have generated.""" 
+
+	def __init__(self):
+		EMBaseTomoChooseFilteredPtclsTask.__init__(self)
+		self.form_db_name ="bdb:tomo.choose.forbootstraptomo"
+
+	def on_form_ok(self,params):
+		if not params.has_key("tomo_filt_choice") or params["tomo_filt_choice"] == None:
+			error("Please choose some data")
+			return
+		choice = params["tomo_filt_choice"]
+		print "tomo hunter chose"
+		task = EMTomoBootstrapTask(self.particles_map[self.particles_name_map[choice]],self.name_map)
+		self.emit(QtCore.SIGNAL("replace_task"),task,"Filter Tomo Particles")
+		self.form.closeEvent(None)
+		self.form = None
+		
+		self.write_db_entries(params)
+
+
+class EMTomoBootstrapTask(WorkFlowTask):
+	'''Use this task for running e2tomoaverage.py from the workflow for generating a bootstrapped probe'''
+	
+	# written by Grant Tang
+	documentation_string = "This is useful information about this task."
+
+	def __init__(self,ptcls_list=[],name_map={}):
+		WorkFlowTask.__init__(self)
+		self.window_title = "Tomohunter Input Form"
+		self.preferred_size = (640,480)
+		self.form_db_name = "bdb:emform.tomohunter"
+		self.ptcls_list = ptcls_list
+		self.name_map = name_map
+		
+	def run_form(self):
+		self.form = EMTableFormModule(self.get_params(),get_application())
+		self.form.qt_widget.resize(*self.preferred_size)
+		self.form.setWindowTitle(self.window_title)
+		get_application().show_specific(self.form)
+		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_ok"),self.on_form_ok)
+		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
+		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_close"),self.on_form_close)
+		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("display_file"),self.on_display_file)
+		
+	def get_params(self):
+		table_params = []
+		params = []
+		db = db_open_dict(self.form_db_name)
+		
+		self.ptcl_table_tool = EMTomoPtclReportTool(title="Particles",name="targetimage")
+		
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="SPR",desc_long="Information regarding this task",property=None,defaultunits=self.__doc__,choices=None))
+		nsoln = ParamDef(name="nsoln",vartype="int",desc_short="Number of solutions",desc_long="number of solution",property=None,defaultunits=db.get("nsoln",10),choices=None)
+		params.append(self.ptcl_table_tool.get_particle_table_with_ptcls(self.ptcls_list))
+		params.append(nsoln)
+		pparallel = ParamDef(name="parallel",vartype="string",desc_short="Parallel",desc_long="Parallel arguments (advanced). Leave blank if unsure",property=None,defaultunits=db.get("parallel",dfl=""),choices=None)
+		params.append(pparallel)
+		
+		table_params.append(["Main",params])
+		
+		advanced_params = []
+		data = dump_aligners_list()
+		data_3d = {}
+		data_3d["rt.3d.grid"] = data["rt.3d.grid"]
+		data_3d["rt.3d.sphere"] = data["rt.3d.sphere"]
+		
+		pstrategy = EMEmanStrategyWidget(data_3d,name="align",desc_short="Main Alignment Strategy",desc_long="Choose an alignment strategy",defaultunits="rt.3d.grid")
+		advanced_params.append(pstrategy)
+		
+		pcmp = EMEmanStrategyWidget(dump_cmps_list(),name="cmp",desc_short="Comparison Method",desc_long="Supply your comparator",defaultunits="dot.tomo")
+		advanced_params.append(pcmp)
+		
+		data_r3d = {}
+		data_r3d["refine.3d"] = data["refine.3d"]
+		data_r3d["None"] = ["Choose this to stop the refinement aligner from being used"]
+		prstrategy = EMEmanStrategyWidget(data_r3d,name="ralign",desc_short="Refinement Alignment Strategy",desc_long="Choose a refine alignment strategy. Choose None to disable this",defaultunits="None")
+		advanced_params.append(prstrategy)
+		
+		table_params.append(["Advanced",advanced_params])
+		#db_close_dict("bdb:project")
+		return table_params
+
+	def write_db_entry(self,key,value):
+		WorkFlowTask.write_db_entry(self,key,value)
+	
+	def check_params(self,params):
+		error_msg = []
+		if len(params["targetimage"]) == 0: error_msg.append("Please choose at leaset one particle file")
+		return error_msg
+	
+	def on_form_ok(self,params):
+		
+		error_message = self.check_params(params)
+		if len(error_message):
+			self.show_error_message(error_message)
+			return
+		self.write_db_entries(params) # will only write filenames
+		options = EmptyObject()
+		string_args = ["align","cmp","aligncmp"]
+		options.filenames = params['targetimage']
+		options.align = params['align']
+#		options.n = params['n']
+		options.nsoln = params['nsoln']
+		
+		options.cmp = params["cmp"]
+		options.aligncmp = params["cmp"]
+		
+		if params["ralign"] != "None":
+			string_args.append("ralign","raligncmp")
+			options.ralign = params['ralign']
+			options.raligncmp = params["cmp"]
+			
+		if params.has_key("parallel") and len(params["parallel"]) > 0:
+			string_args.append('parallel')
+			options.parallel = params['parallel']
+			
+		bool_args = []
+		additional_args = ["--dbls=%s" %tpr_probes_dict, "--bootstrap"]
+		temp_file_name = "e2tomoaverage_stdout.txt"
+		self.spawn_single_task('e2tomoaverage.py',options,string_args,bool_args,additional_args,temp_file_name)
+		self.emit(QtCore.SIGNAL("task_idle"))
+		self.form.closeEvent(None)
+		self.form = None
+
+
 
 class EMTomohunterTask(WorkFlowTask):
 	'''Use this task for running e2tomohunter.py from the workflow'''
@@ -1168,7 +1299,18 @@ class EMTomohunterTask(WorkFlowTask):
 		self.ptcls_list = ptcls_list
 		self.name_map = name_map
 		
+	def run_form(self):
+		self.form = EMTableFormModule(self.get_params(),get_application())
+		self.form.qt_widget.resize(*self.preferred_size)
+		self.form.setWindowTitle(self.window_title)
+		get_application().show_specific(self.form)
+		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_ok"),self.on_form_ok)
+		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
+		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_close"),self.on_form_close)
+		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("display_file"),self.on_display_file)
+		
 	def get_params(self):
+		table_params = []
 		params = []
 		db = db_open_dict(self.form_db_name)
 		
@@ -1176,40 +1318,35 @@ class EMTomohunterTask(WorkFlowTask):
 		self.probe_tool = EMTomoPtclReportTool(tpr_probes_dict,"Probe","probeimage")
 		
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="SPR",desc_long="Information regarding this task",property=None,defaultunits=self.__doc__,choices=None))
-#		targetimage = ParamDef(name="targetimage",vartype="url",desc_short="target image file name",desc_long="target image file name",property=None,defaultunits=project_db.get("targetimage",dfl=[]),choices=[])
-#		probeimage = ParamDef(name="probeimage",vartype="url",desc_short="probe image file name",desc_long="probe image file name",property=None,defaultunits=project_db.get("probeimage",dfl=[]),choices=[])
-#		norm = ParamDef(name="n",vartype="int",desc_short="normalization",desc_long="if the normalization needed",property=None,defaultunits=db.get("n",dfl=0),choices=[0,1])
-		nsoln = ParamDef(name="nsoln",vartype="int",desc_short="#solution",desc_long="number of solution",property=None,defaultunits=db.get("nsoln",10),choices=None)
-#		thresh = ParamDef(name="thresh",vartype="float",desc_short="threshold",desc_long="threshold",property=None,defaultunits=db.get("thresh",1.0),choices=None)
-#		searchx = ParamDef(name="searchx",vartype="int",desc_short="searchx",desc_long="searchx",property=None,defaultunits=db.get("searchx",0),choices=None)
-#		searchy = ParamDef(name="searchy",vartype="int",desc_short="searchy",desc_long="searchy",property=None,defaultunits=db.get("searchy",0),choices=None)
-#		searchz = ParamDef(name="searchz",vartype="int",desc_short="searchz",desc_long="searchz",property=None,defaultunits=db.get("searchz",0),choices=None)
-#		ralt = ParamDef(name="ralt",vartype="float",desc_short="ralt",desc_long="Altitude range",property=None,defaultunits=db.get("ralt",180.0),choices=None)
-#		dalt = ParamDef(name="dalt",vartype="float",desc_short="dalt",desc_long="Altitude delta",property=None,defaultunits=db.get("dalt",10.0),choices=None)
-#		daz = ParamDef(name="daz",vartype="float",desc_short="daz",desc_long="Azimuth delta",property=None,defaultunits=db.get("daz",10.0),choices=None)
-#		rphi = ParamDef(name="rphi",vartype="float",desc_short="rphi",desc_long="Phi range",property=None,defaultunits=db.get("rphi",180.0),choices=None)
-#		dphi = ParamDef(name="dphi",vartype="float",desc_short="dphi",desc_long="Phi delta",property=None,defaultunits=db.get("dphi",10.0),choices=None)
+		nsoln = ParamDef(name="nsoln",vartype="int",desc_short="Number of solutions",desc_long="number of solution",property=None,defaultunits=db.get("nsoln",10),choices=None)
 		params.append([self.probe_tool.get_particle_table(),self.ptcl_table_tool.get_particle_table_with_ptcls(self.ptcls_list)])
 		params.append(nsoln)
-#		params.append([searchx,searchy,searchz])
-#		params.append([ralt,dalt,daz,rphi,dphi])
+		pparallel = ParamDef(name="parallel",vartype="string",desc_short="Parallel",desc_long="Parallel arguments (advanced). Leave blank if unsure",property=None,defaultunits=db.get("parallel",dfl=""),choices=None)
+		params.append(pparallel)
 		
+		table_params.append(["Main",params])
+		
+		advanced_params = []
 		data = dump_aligners_list()
 		data_3d = {}
 		data_3d["rt.3d.grid"] = data["rt.3d.grid"]
 		data_3d["rt.3d.sphere"] = data["rt.3d.sphere"]
 		
 		pstrategy = EMEmanStrategyWidget(data_3d,name="align",desc_short="Main Alignment Strategy",desc_long="Choose an alignment strategy",defaultunits="rt.3d.grid")
-		params.append(pstrategy)
+		advanced_params.append(pstrategy)
 		
+		pcmp = EMEmanStrategyWidget(dump_cmps_list(),name="cmp",desc_short="Comparison Method",desc_long="Supply your comparator",defaultunits="dot.tomo")
+		advanced_params.append(pcmp)
+	
 		data_r3d = {}
 		data_r3d["refine.3d"] = data["refine.3d"]
 		data_r3d["None"] = ["Choose this to stop the refinement aligner from being used"]
 		prstrategy = EMEmanStrategyWidget(data_r3d,name="ralign",desc_short="Refinement Alignment Strategy",desc_long="Choose a refine alignment strategy. Choose None to disable this",defaultunits="None")
-		params.append(prstrategy)
-		
+		advanced_params.append(prstrategy)
+	
+		table_params.append(["Advanced",advanced_params])
 		#db_close_dict("bdb:project")
-		return params
+		return table_params
 
 	def write_db_entry(self,key,value):
 		WorkFlowTask.write_db_entry(self,key,value)
@@ -1228,16 +1365,24 @@ class EMTomohunterTask(WorkFlowTask):
 			return
 		self.write_db_entries(params) # will only write filenames
 		options = EmptyObject()
-		string_args = ["align","probe"]
+		string_args = ["align","probe","cmp","aligncmp"]
 		options.filenames = params['targetimage']
 		options.align = params['align']
 		options.probe = params['probeimage'][0]
 #		options.n = params['n']
 		options.nsoln = params['nsoln']
 		
+		options.cmp = params["cmp"]
+		options.aligncmp = params["cmp"]
+		
 		if params["ralign"] != "None":
-			string_args.append("ralign")
+			string_args.append("ralign","raligncmp")
 			options.ralign = params['ralign']
+			options.raligncmp = params["cmp"]
+			
+		if params.has_key("parallel") and len(params["parallel"]) > 0:
+			string_args.append('parallel')
+			options.parallel = params['parallel']
 			
 		bool_args = []
 		additional_args = ["--dbls=%s" %tpr_ptcls_ali_dict]

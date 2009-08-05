@@ -1133,7 +1133,7 @@ class EMFormWidget(QtGui.QWidget):
 		self.plot_icon = QtGui.QIcon(get_image_directory() + "/plot.png")
 		
 	def incorporate_params(self,params,layout):
-		for param in self.params:
+		for param in params:
 			act = True
 			if isinstance(param,list):
 				ftable = True
@@ -2017,23 +2017,21 @@ class EMTableFormWidget(EMFormWidget):
 			widget = QtGui.QWidget(None)
 			vbl =  QtGui.QVBoxLayout(widget)
 			#print paramlist
-			#EMFormWidget.incorporate_params(self,paramlist,vbl)
-			for param in paramlist:
-				
-				if isinstance(param,list) and len(param) != 1:
-					hbl=QtGui.QHBoxLayout()
-					for iparam in param:
-						try:
-							self.auto_incorporate[iparam.vartype](iparam,hbl,self)
-						except:
-							print iparam
-							if iparam.vartype == "EMButtonDialog": 
-								print "it was a button"
-								self.auto_incorporate[iparam.vartype](iparam,hbl,self)
-					vbl.addLayout(hbl)
-					continue
-				else:
-					self.auto_incorporate[param.vartype](param,vbl,self)
+			EMFormWidget.incorporate_params(self,paramlist,vbl)
+#			for param in paramlist:
+#				EMFormWidget.incorporate_params(self, params, vbl)
+#				if isinstance(param,list) and len(param) != 1:
+#					hbl=QtGui.QHBoxLayout()
+#					for iparam in param:
+#						try:
+#							self.auto_incorporate[iparam.vartype](iparam,hbl,self)
+#						except:
+#							if iparam.vartype == "EMButtonDialog": 
+#								self.auto_incorporate[iparam.vartype](iparam,hbl,self)
+#					vbl.addLayout(hbl)
+#					continue
+#				else:
+#					self.auto_incorporate[param.vartype](param,vbl,self)
 #			
 			tabwidget.addTab(widget,title)
 		

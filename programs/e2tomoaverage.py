@@ -33,39 +33,26 @@
 from optparse import OptionParser
 from EMAN2 import file_exists,EMData,E2init,E2progress,E2end,EMANVERSION,check_eman2_type_string,numbered_bdb,Transform,EMUtil
 import EMAN2
-from EMAN2db import EMTask
-from e2tomoallvall import EMTomoAlignTask,EMTomoAlignTaskDC
+from EMAN2db import EMTask,db_open_dict
+from e2tomoallvall import EMTomoAlignTask,EMTomoAlignTaskDC,check_tomo_options
 
 tomo_ave_path_root = "tomo_ave" # this  string is used for making output directories automatically
 
 def check_options(options,args):
+	'''
+	A way to check the options, arg as returned by parser.parse_args()  in e2tomoaverage
+	'''
 	error = []
+	
+	error.extend(check_tomo_options(options)) # there is a big bunch of generic options
+	
 	if len(args) < 2:
 		error.append("Error - to average you must supply atleast two images")
 	else:
 		for arg in args:
 			if not file_exists(arg):
 				error.append("%s does not exist" %arg)
-
-	if options.align == None:
-		error.append("Error - you have to supply the align option")
-	else:
-		e = check_eman2_type_string(options.align,EMAN2.Aligners,"Aligners")
-		if e != None:
-			error.append(e)
-			
-	if options.ralign != None: # not strictly necessary
-		e = check_eman2_type_string(options.ralign,EMAN2.Aligners,"Aligners")
-		if e != None:
-			error.append(e)
 	
-	if options.cmp == None:
-		error.append("Error - you have to supply the cmp option")
-	else:
-		e = check_eman2_type_string(options.cmp,EMAN2.Cmps,"Cmps")
-		if e != None:
-			error.append(e)
-			
 	if options.path != None:
 		if not os.path.exists(options.path):
 			error.append( "Error: the path %s does not exist" %options.path)
@@ -89,29 +76,51 @@ class EMBootStrappedAverages:
 		self.logger = logger
 		self.images = None
 		self.using_cuda = EMUtil.cuda_available() and options.cuda
+		self.current_files = None
+		self.jobs_completed = 0
+		self.total_jobs = 0 # you can never know how many jobs will need to be completed
+		self.current_progress = 0.0
 		
 	def get_all_v_all_cmd(self):
+		'''
+		A function for get the allvall command
+		'''
 		options = self.options
 		cmd = "e2tomoallvall.py"
 		for file in self.files: cmd += " " + file
 		cmd += " --align=" + options.align
+		cmd += " --aligncmp=" + options.aligncmp
 		cmd += " --cmp=" + options.cmp
 		if options.ralign != None:
 			cmd += " --ralign=" + options.ralign
+			cmd += " --raligncmp=" + options.raligncmp
 
-		
+		cmd += " --nsoln=" + str(options.nsoln)
 		
 		if options.parallel:
 			cmd += " --parallel="+options.parallel
 		return cmd
 	
 	def get_all_v_all_output(self):
+		'''
+		A function for getting the name of an output file
+		'''
 		return numbered_bdb("bdb:"+self.options.path+"#all_v_all")
 		#return numbered_bdb("bdb:tomo_ave#all_v_all")
 	
 	def get_couples(self,cmp_data):
 		'''
-		
+		A function for finding the couples in a matrix of similarity data
+		Only considers the top half of the triangle - i.e. assumes similarity matrix is from an all
+		versus all program and therefore the diagonal is redundant etc.
+		The approach taken here is from Mike Schmid and is best explained inductively - first find the best couple and record
+		it (there is always at least one couple). Put the indices of this couple in list of
+		'taken' indices, the importance of which will become imminently obvious - Now find the next best couple - one of two scenarios occurs:
+		1. Both of the indices are not present in the 'taken' list - Make them a couple and add both indices to the 'taken' list
+		2. One of the indices is in the 'taken indices' list, in which case add the index which was not already in the 'taken' list 
+		into it.
+		This process finds all nicely isolated pairs and is guaranteed to find at least one pair.
+		@returns a list of index pairs which are the located couples
 		'''
 		couples = []
 		taken = []
@@ -165,16 +174,39 @@ class EMBootStrappedAverages:
 			
 		return couples
 	
+	def save_to_workflow_db(self,output_name):
+		'''
+		Used by the workflow to automatically add the names of averages to a list
+		that is displayed in a form
+		'''
+		if self.options.dbls:
+			pdb = db_open_dict("bdb:project")
+			tmp_data = pdb.get(self.options.dbls, dfl={})
+			s = {}
+			s["Original Data"] = output_name
+			tmp_data[output_name]= s
+			# global.spr_ref_free_class_aves
+			pdb[self.options.dbls] = tmp_data
+	
 	def execute(self):
-		print "tomo averaging execute"
+		'''
+		The main function - executes the job of performing all v all boot strapped probe generation
+		'''
+		if self.logger: E2progress(self.logger,0.0)
 		all_v_all_cmd = self.get_all_v_all_cmd()
 		all_v_all_output = self.get_all_v_all_output()
 		
+		# NOTE: calling the allvall program is probably not strictly necessary, seeing
+		# as there is a generic framework for generating and executing alignment jobs
+		# implemented below that would be easily adaptable to this - however I left it
+		# because doing it this way is absolutely equivalent and has the same cost. 
 		all_v_all_cmd += " --output="+all_v_all_output
 		print "executing",all_v_all_cmd
+		if self.logger:	E2progress(self.logger,0.01)
 		if ( os.system(all_v_all_cmd) != 0 ):
 			print "Failed to execute %s" %all_v_all_cmd
 			sys.exit(1)
+		if self.logger:	E2progress(self.logger,0.02)
 		
 		images = []
 		images.append(EMData(all_v_all_output,0))
@@ -186,20 +218,21 @@ class EMBootStrappedAverages:
 		images.append(EMData(all_v_all_output,6))
 		
 		# keep tracks of the names of the new files
+		big_n = images[0].get_xsize()*(images[0].get_xsize()-1)/2.0
+		
 		iter = 1
 		current_files = self.files
+		# this loop 
 		while True:
 			couples = self.get_couples(images[0])
 			taken = range(images[0].get_xsize())
-			print len(couples),len(taken)
-			
-			
+			#print len(couples),len(taken)
 			new_files = []
 
 			# write the averages of the couples to disk, store the new names
 			for i,j in couples:
-				image_1 = EMData(current_files[i],0)
-				image_2 = EMData(current_files[j],0)
+				image_1 = EMData(current_files[j],0)
+				image_2 = EMData(current_files[i],0)
 				
 				d = {}
 				d["type"] = "eman"
@@ -213,12 +246,13 @@ class EMBootStrappedAverages:
 				image_1.process_inplace("math.transform",{"transform":t})
 				image_2 += image_1
 				image_2.mult(.5)
-				image_2.set_attr("src_image",current_files[i]) # so we can recollect how it was created
-				image_2.set_attr("added_src_image",current_files[j]) # so we can recollect how it was created
+				image_2.set_attr("src_image",current_files[j]) # so we can recollect how it was created
+				image_2.set_attr("added_src_image",current_files[i]) # so we can recollect how it was created
 				image_2.set_attr("added_src_transform",t) # so we can recollect how it was created
 				image_2.set_attr("added_src_cmp",images[0](i,j)) # so we can recollect how it was created
 				output_name = numbered_bdb("bdb:"+self.options.path+"#tomo_ave_0"+str(iter))
 				image_2.write_image(output_name,0)
+				if self.options.dbls: self.save_to_workflow_db(output_name)
 				new_files.append(output_name)
 				taken.remove(i)
 				taken.remove(j)
@@ -249,8 +283,11 @@ class EMBootStrappedAverages:
 				for j in range(i+1,len(new_files)):
 					alignment_jobs.append([i,j])
 					
+			if self.logger: 
+				E2progress(self.logger,1.0-len(alignment_jobs)/big_n)
+					
 			self.register_current_images(new_images)
-			
+			self.register_current_files(new_files)
 			alignments_manager = EMTomoAlignments(self.options)
 			alignments_manager.execute(alignment_jobs, new_files,self)
 			
@@ -261,73 +298,88 @@ class EMBootStrappedAverages:
 			images = new_images
 			iter += 1
 			
+		if self.logger: E2progress(self.logger,1.0)
+					
+			
 	
-	def register_current_images(self,images): self.images = images
+	def register_current_images(self,images): 
+		'''
+		This is just a formalization of doing self.images = images
+		'''
+		self.images = images
+	def register_current_files(self,files):
+		'''
+		This is just a formalization of doing self.current_files = files
+		'''
+		self.current_files = files
 	
 	def write_current_images(self,files):
+		'''
+		Writes the image results to disk
+		'''
 		output = self.get_all_v_all_output()
 		for i,image in enumerate(self.images):
 			image.set_attr("file_names",files)
 			image.write_image(output,i)
 	
-	def write_output(self,results):
-		cmp = results["cmp"]
-		ali = results["ali"]
-		target_idx = results["target_idx"]
-		probe_idx = results["probe_idx"]
-		
-		a = ali.get_params("eman")
-		self.images[0].set(target_idx,probe_idx,cmp)
-		self.images[1].set(target_idx,probe_idx,a["tx"])
-		self.images[2].set(target_idx,probe_idx,a["ty"])
-		self.images[3].set(target_idx,probe_idx,a["tz"])
-		self.images[4].set(target_idx,probe_idx,a["az"])
-		self.images[5].set(target_idx,probe_idx,a["alt"])
-		self.images[6].set(target_idx,probe_idx,a["phi"])
+	def process_output(self,results):
+		'''
+		Stores results (alignment, scores etc) in  memory
+		'''
+		from e2tomoallvall import EMTomoOutputWriter
+		output_writer = EMTomoOutputWriter()
+		output_writer.write_ouptut(results, self.images, self.current_files)
 		
 		
-		# here we put the inverted alignment as well, yes this is redundant but it 
-		# seams like the most logical way to fit with the current eman2 philosophies
-		ali_inv = ali.inverse()
-		ai = ali_inv.get_params("eman")
-		
-		self.images[0].set(probe_idx,target_idx,cmp)
-		self.images[1].set(probe_idx,target_idx,ai["tx"])
-		self.images[2].set(probe_idx,target_idx,ai["ty"])
-		self.images[3].set(probe_idx,target_idx,ai["tz"])
-		self.images[4].set(probe_idx,target_idx,ai["az"])
-		self.images[5].set(probe_idx,target_idx,ai["alt"])
-		self.images[6].set(probe_idx,target_idx,ai["phi"])
-		
-
-
 class EMTomoAlignments:
 	'''
-	A class for performing many alignments, takes care of parallel considerations
+	A class for performing many alignments, takes care of parallel considerations automatically
+	This class is used extensively, in e2tomoallvall, e2tomoaverage, and e2tomohunter
 	'''
 	def __init__(self,options):
 		self.options = options
 		self.using_cuda = EMUtil.cuda_available() and options.cuda
+		self.nsoln = options.nsoln
 		
 	def execute(self,alignment_jobs,files,caller):
+		'''
+		The main function
+		@param alignment_jobs a list of alignment pair indices like this [[0,1],[2,1],[2,3],[0,5],...] etc the indices pair represent images to be aligned and correspond to the order of the files argument
+		@param files a list of filenames - used to read image based on the indices present in alignment_jobs
+		@param caller - the calling object - it needs to have a function called process_output that takes a dictionary as the argument 
+		'''
 		options = self.options
 		align_data = EMAN2.parsemodopt(options.align)
+		align_cmp_data = EMAN2.parsemodopt(options.aligncmp)
 		cmp_data = EMAN2.parsemodopt(options.cmp)
 		ralign_data = None
-		if options.ralign != None: ralign_data = EMAN2.parsemodopt(options.ralign)
+		if options.ralign != None: 
+			ralign_data = EMAN2.parsemodopt(options.ralign)
+			ralign_cmp_data = EMAN2.parsemodopt(options.raligncmp)
+			
 		
+		data = {}
+		data["align"] = align_data
+		data["aligncmp"] = align_cmp_data
+		data["cmp"] = cmp_data
+		if ralign_data:
+			data["ralign"] = ralign_data
+			data["raligncmp"] = ralign_cmp_data
+			
+		data["using_cuda"] = self.using_cuda
+		data["nsoln"] = self.nsoln
+			
 		if self.options.parallel and len(self.options.parallel) > 2 and self.options.parallel[:2] == "dc":
 			task_customers = []
 			tids = []
 
 			for i,j in alignment_jobs:
-				data = {}
 				data["probe"] = ("cache",files[i],0)
 				data["target"] = ("cache",files[j],0)
 				data["target_idx"] = j
 				data["probe_idx"] = i
 
-				task = EMTomoAlignTaskDC(data=data,align_data=align_data,cmp_data=cmp_data,ralign_data=ralign_data,using_cuda=self.using_cuda)
+				task = EMTomoAlignTaskDC(data=data)
 				
 				from EMAN2PAR import EMTaskCustomer
 				etc=EMTaskCustomer(self.options.parallel)
@@ -345,21 +397,24 @@ class EMTomoAlignments:
 			for i,j in alignment_jobs:
 				probe = EMData(files[i],0)
 				target = EMData(files[j],0)
-				data = {}
 				data["target"] = target
 				data["probe"] = probe
 				data["target_idx"] = j
 				data["probe_idx"] = i
 
 		
-				task = EMTomoAlignTask(data=data,align_data=align_data,cmp_data=cmp_data,ralign_data=ralign_data,using_cuda=self.using_cuda)
-			
+				task = EMTomoAlignTask(data=data)
 				rslts = task.execute(self.progress_callback)
-				caller.write_output(rslts)
+				caller.process_output(rslts)
 				
 				p += 1.0
 				
 	def progress_callback(self,val):
+		'''
+		The function needs to be supplied in order to make the task execution interface consistent
+		DC tasks are given a progress_callback function that does something - tasks that 
+		are executed in the current thread call this function and currently it does nothing
+		'''
 		pass
 			
 	def dc_monitor(self,task_customers,tids,caller):
@@ -383,7 +438,7 @@ class EMTomoAlignments:
 
 					rslts = task_customer.get_results(tid)
 					
-					caller.write_output(rslts[1])
+					caller.process_output(rslts[1])
 			
 			time.sleep(5)			
 
@@ -393,22 +448,26 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] <image1> <image2> <image3> <image4> ....
 	
-Boot straps an initial probe doing all versus all alignment of the input images
+Currently only supports bootstrapping an initial probe doing all versus all alignment of the input images
 
 """
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
 	parser.add_option("--align",type="string",help="The aligner and its parameters. e.g. --align=rt.3d.grid:ralt=180:dalt=10:dphi=10:rphi=180:search=5", default="rt.3d.grid")
-	parser.add_option("--cmp",type="string",help="The comparator used to obtain the final similarity", default="dot")
+	parser.add_option("--aligncmp",type="string",help="The comparator used for determing the best initial alignment", default="dot.tomo:threshold=0")
+	parser.add_option("--cmp",type="string",help="The comparator used to obtain the final similarity", default="dot.tomo:threshold=0")
 	parser.add_option("--ralign",type="string",help="This is the second stage aligner used to refine the first alignment. This is usually the \'refine\' aligner.", default=None)
-	parser.add_option("--boostrap",action="store_true",default=True,help="Boot strap alignment")
+	parser.add_option("--raligncmp",type="string",help="The comparator used for determing the refined alignment", default="dot.tomo:threshold=0")
+	parser.add_option("--bootstrap",action="store_true",default=True,help="Boot strap alignment")
 	parser.add_option("--output",type="string",default="e2tomoave.hdf",help="The output image which will store the results matrix")
 	parser.add_option("--parallel",type="string",default=None,help="Use parallelism")
 	parser.add_option("--path", default=None, type="string",help="The name of a directory where results are placed. If unspecified will generate one automatically of type tomo_ave_??.")
+	parser.add_option("--nsoln", default=1, type="int",help="If supplied and greater than 1, the nsoln-best alignments will be written to a text file. This is useful for debug but may be left unspecified")
+	parser.add_option("--dbls",type="string",help="data base list storage, used by the workflow. You can ignore this argument.",default=None)
 	if EMUtil.cuda_available():
 		parser.add_option("--cuda",action="store_true",help="GPU acceleration using CUDA. Experimental", default=False)
-	
+
 	(options, args) = parser.parse_args()
 	
 	error_messages = check_options(options,args)
@@ -421,7 +480,7 @@ Boot straps an initial probe doing all versus all alignment of the input images
 	
 	logger=E2init(sys.argv)
 	
-	if options.boostrap:
+	if options.bootstrap:
 		module = EMBootStrappedAverages(args,options,logger)
 		module.execute()
 	else:

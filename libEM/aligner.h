@@ -127,16 +127,16 @@ namespace EMAN
 		}
 
 		virtual TypeDict get_param_types() const = 0;
-		
+
 		/** This function first added in the context of the 3D aligners used by e2tomohunter:
 		 * which wants the n best solutions, as opposed to just the best. Return value is an
-		 * ordered vector of Dicts of length nsoln. The data with idx 0 has the best solution in 
-		 * it. The Dicts in the vector have two keys, "score" (which is a floating point score, 
+		 * ordered vector of Dicts of length nsoln. The data with idx 0 has the best solution in
+		 * it. The Dicts in the vector have two keys, "score" (which is a floating point score,
 		 * probably correlation score), and "xform.align3d", which is a Transform containing
 		 * the alignment parameters
 		 * @param this_img the image that will be  aligned (transformed) and compared to to_img as part of the process of finding the best alignment
 		 * @param to_img the image that will stay still as this_img is transformed and compared to it
-		 * @param nsoln the number of solutions you want to receive in the return vector. 
+		 * @param nsoln the number of solutions you want to receive in the return vector.
 		 * @param cmp_name the name of a comparator - may be unused
 		 * @param cmp_params the params of the comparator - may be unused
 		 * @return an ordered vector of Dicts of length nsoln. The Dicts in the vector have keys "score" (i.e. correlation score) and "xform.align3d" (Transform containing the alignment)
@@ -633,7 +633,7 @@ namespace EMAN
 				return d;
 			}
 	};
-	
+
 	/** rotational and translational alignment using a square qrid of Altitude and Azimuth values (the phi range is specifiable)
 	 * This aligner is ported from the original tomohunter.py - it is less efficient than searching on the sphere (RT3DSphereAligner),
 	 * but very useful  if you want to search in a specific, small, local area.
@@ -651,14 +651,14 @@ namespace EMAN
 			 */
 			virtual EMData * align(EMData * this_img, EMData * to_img) const
 			{
-				return align(this_img, to_img, "sqeuclidean", Dict());
+				return align(this_img, to_img, "dot.tomo", Dict());
 			}
-			
-			
+
+
 			/** See Aligner comments for more details
 			 */
 			virtual vector<Dict> xform_align_nbest(EMData * this_img, EMData * to_img, const unsigned int nsoln, const string & cmp_name, const Dict& cmp_params) const;
-			
+
 			virtual string get_name() const
 			{
 				return "rt.3d.grid";
@@ -688,12 +688,10 @@ namespace EMAN
 				d.put("searchy", EMObject::INT,"The maximum length of the detectable translational shift in the y direction- if you supply this parameter you can not supply the maxshift parameters. Default is 3.");
 				d.put("searchz", EMObject::INT,"The maximum length of the detectable translational shift in the z direction- if you supply this parameter you can not supply the maxshift parameters. Default is 3");
 				d.put("verbose", EMObject::BOOL,"Turn this on to have useful information printed to standard out.");
-				d.put("threshold", EMObject::FLOAT,"Threshold applied to the Fourier amplitudes of the ccf image - helps to correct for the missing wedge.");
-				
 				return d;
 			}
 	};
-	
+
 	/** 3D rotational and translational alignment using spherical sampling, can reduce the search space based on symmetry.
 	 * can also make use of different OrientationGenerators (random, for example)
 	 * 160-180% more efficient than the RT3DGridAligner
@@ -713,12 +711,12 @@ namespace EMAN
 			{
 				return align(this_img, to_img, "sqeuclidean", Dict());
 			}
-			
-			
+
+
 			/** See Aligner comments for more details
 			 */
 			virtual vector<Dict> xform_align_nbest(EMData * this_img, EMData * to_img, const unsigned int nsoln, const string & cmp_name, const Dict& cmp_params) const;
-			
+
 			virtual string get_name() const
 			{
 				return "rt.3d.sphere";
@@ -748,12 +746,11 @@ namespace EMAN
 				d.put("searchy", EMObject::INT,"The maximum length of the detectable translational shift in the y direction- if you supply this parameter you can not supply the maxshift parameters. Default is 3.");
 				d.put("searchz", EMObject::INT,"The maximum length of the detectable translational shift in the z direction- if you supply this parameter you can not supply the maxshift parameters. Default is 3");
 				d.put("verbose", EMObject::BOOL,"Turn this on to have useful information printed to standard out.");
-				d.put("threshold", EMObject::FLOAT,"Threshold applied to the Fourier amplitudes of the ccf image - helps to correct for the missing wedge.");
 				return d;
 			}
 	};
 
-	
+
 	class CUDA_Aligner
 	{
 	  public:

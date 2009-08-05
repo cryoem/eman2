@@ -44,6 +44,7 @@ template <> Factory < Cmp >::Factory()
 	force_add(&CccCmp::NEW);
 	force_add(&SqEuclideanCmp::NEW);
 	force_add(&DotCmp::NEW);
+	force_add(&TomoDotCmp::NEW);
 	force_add(&QuadMinDotCmp::NEW);
 	force_add(&OptVarianceCmp::NEW);
 	force_add(&PhaseCmp::NEW);
@@ -437,6 +438,37 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 
 	EXITFUNC;
 	return (float) (negative*result);
+}
+
+
+float TomoDotCmp::cmp(EMData * image, EMData *with) const
+{
+	ENTERFUNC;
+	float threshold = params.set_default("threshold",0.f);
+	if (threshold < 0.0f) throw InvalidParameterException("The threshold parameter must be greater than or equal to zero");
+
+	if ( threshold > 0) {
+		EMData* ccf = params.set_default("ccf",(EMData*) NULL);
+		bool ccf_ownership = false;
+		if (!ccf) {
+			ccf = image->calc_ccf(with);
+			ccf_ownership = true;
+		}
+		int tx = params.set_default("tx",0); int ty = params.set_default("ty",0); int tz = params.set_default("tz",0);
+		float best_score = ccf->get_value_at_wrap(tx,ty,tz)/static_cast<float>(image->get_size());
+		EMData* ccf_fft = ccf->do_fft();// so cuda works, or else we could do an fft_inplace - though honestly doing an fft inplace is less efficient anyhow
+		if (ccf_ownership) delete ccf; ccf = 0;
+		ccf_fft->process_inplace("threshold.binary.fourier",Dict("value",threshold));
+		float map_sum =  ccf_fft->get_attr("mean");
+		if (map_sum == 0.0f) throw UnexpectedBehaviorException("The number of voxels in the Fourier image with an amplitude above your threshold is zero. Please adjust your parameters");
+		best_score /= map_sum;
+		delete ccf_fft; ccf_fft = 0;
+		return -best_score;
+	} else {
+		return -image->dot(with);
+	}
+
+
 }
 
 // Even though this uses doubles, it might be wise to recode it row-wise

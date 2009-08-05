@@ -256,6 +256,44 @@ namespace EMAN
 			d.put("mask", EMObject::EMDATA, "image mask");
 			return d;
 		}
+	};
+
+	/** Use dot product but normalize based on characteristics of the missing wedge
+	* @author David Woolford (a port of Mike Schmid's code - Mike Schmid is the intellectual author)
+	* @date 2009-08-04
+	* @param threshold threshold value to count large fourier amplitudes in the ccf image
+	*/
+	class TomoDotCmp:public Cmp
+	{
+	  public:
+		virtual float cmp(EMData * image, EMData * with) const;
+
+		virtual string get_name() const
+		{
+			return "dot.tomo";
+		}
+
+		virtual string get_desc() const
+		{
+			return "straight dot product with consideration given for the missing wedge - normalization is applied by detecting significantly large Fourier amplitudes in the cross correlation image";
+		}
+
+		static Cmp *NEW()
+		{
+			return new TomoDotCmp();
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("threshold", EMObject::FLOAT,"Threshold applied to the Fourier amplitudes of the ccf image - helps to correct for the missing wedge.");
+			d.put("ccf", EMObject::EMDATA,"The ccf image, can be provided if it already exists to avoid recalculating it");
+			d.put("tx", EMObject::INT, "The x location of the maximum in the ccf image. May be negative. Useful thing to supply if you know the maximum is not at the phase origin");
+			d.put("ty", EMObject::INT, "The y location of the maximum in the ccf image. May be negative. Useful thing to supply if you know the maximum is not at the phase origin");
+			d.put("tz", EMObject::INT, "The z location of the maximum in the ccf image. May be negative. Useful thing to supply if you know the maximum is not at the phase origin");
+
+			return d;
+		}
 
 	};
 

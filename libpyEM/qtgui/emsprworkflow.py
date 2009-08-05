@@ -654,7 +654,7 @@ class EMProjectDataDict:
 		
 	def update(self,more_data_dict):
 		'''
-	x	@param more_data_dict a dictionary that will be added to the data dictionary using dict.update
+		@param more_data_dict a dictionary that will be added to the data dictionary using dict.update
 		'''
 		dict = self.get_data_dict()
 		dict.update(more_data_dict)

@@ -47,6 +47,10 @@ from math import *
 from sys import argv
 from optparse import OptionParser
 
+from e2tomoallvall import check_tomo_options
+
+tomo_hunter_path_root = "tomo_hunt"
+
 def check_options(options,filenames):
 	'''
 	Check the parser options
@@ -54,6 +58,9 @@ def check_options(options,filenames):
 	@return a list of error messages
 	'''
 	error_messages = []
+	
+	error_messages.extend(check_tomo_options(options))
+	
 	if not options.probe or not file_exists(options.probe):
 		error_messages.append("You have to specify a valid probe")
 	
@@ -73,26 +80,12 @@ def check_options(options,filenames):
 				if x != nx or y != ny or z != nz:
 					error_messages.append("File %s does not have the same dimensions as file %s" %(filenames[i],filenames[0]))
 									
-	if options.nsoln <= 0:
-		error_messages.append("Error - nsoln must be greater than 0. Suggest using 10")
-	
-	
-	if options.align == None:
-		error_messages.append("Error - you have to supply the align option")
-	else:
-		error = check_eman2_type_string(options.align,Aligners,"Aligners")
-		if error != None:
-			error_messages.append(error)
-			
-	if options.ralign != None:
-		error = check_eman2_type_string(options.ralign,Aligners,"Aligners")
-		if error != None:
-			error_messages.append(error)
-	
 	return error_messages
 
 def gen_average(options,args,logid=None):
-	
+	'''
+	Uses information stored in a dictionary in the local database to produce an average
+	'''
 	project_list = "global.tpr_ptcls_ali_dict"
 	db = db_open_dict("bdb:project",ro=True)
 	db_map = db.get(project_list,dfl={})
@@ -140,6 +133,9 @@ def gen_average(options,args,logid=None):
 		pdb[options.dbls] = db
 
 def get_ali_data(filename,probe,aliset):
+	'''
+	Get alignment data from the local datase
+	'''
 	from emtprworkflow import EMProbeAliTools
 	from emsprworkflow import EMPartSetOptions
 	
@@ -167,7 +163,145 @@ def get_ali_data(filename,probe,aliset):
 				return alis[0]
 			
 	return None
+
+class EMTomoHunter:
+	'''
+	This class oversees the execution jobs as supplied by e2tomohunter
+	This boils down to figuring out all of the alignments that need to performed and
+	then executing them in the current context or using parallelism
+	'''
+	def __init__(self,files,options,logger):
+		'''
+		@param options - the options returned by the call to (options, args) = parser.parse_args() 
+		@param args - a list of image names - args is that which is returned by the call to (options, args) = parser.parse_args()
+		'''
+		self.options = options
+		self.files = files
+		self.logger = logger
+		self.using_cuda = EMUtil.cuda_available() and options.cuda
+		self.output_images = None
+		self.total_jobs = len(files) # used for recording progress
+		self.jobs_completed = 0 # used for recording progress
+		self.init_output()
 	
+	def init_output(self):
+		'''
+		Initialize memory for storing alignment results
+		'''
+		self.output_images = []
+		e = EMData(len(self.files),1)
+		e.to_zero()
+		
+		# need to store correlation score (or cmp score)
+		self.output_images.append(e)
+		
+		# need to store translation x
+		self.output_images.append(e.copy())
+		# need to store translation y
+		self.output_images.append(e.copy())
+		# need to store translation z
+		self.output_images.append(e.copy())
+		
+		# need to store translation az
+		self.output_images.append(e.copy())
+		# need to store translation alt
+		self.output_images.append(e.copy())
+		# need to store translation phi
+		self.output_images.append(e.copy())
+		
+	
+	def execute(self):
+		'''
+		Execute the tomohunter jobs
+		'''
+		if self.logger != None:
+			E2progress(self.logger,0.0)
+		alignment_jobs = []
+		
+		probe_idx = len(self.files)-1
+		for i in range(len(self.files)):
+			alignment_jobs.append([probe_idx,i])
+		
+		self.files.append(self.options.probe)
+			
+		from e2tomoaverage import EMTomoAlignments
+		alignments_manager = EMTomoAlignments(self.options)
+		alignments_manager.execute(alignment_jobs, self.files,self)
+		
+		self.finalize_writing()
+		
+	def process_output(self,results):
+		cmp = results["cmp"]
+		ali = results["ali"]
+		target_idx = results["target_idx"]
+		probe_idx = results["probe_idx"]
+		
+		a = ali.get_params("eman")
+		self.output_images[0].set(target_idx,0,cmp)
+		self.output_images[1].set(target_idx,0,a["tx"])
+		self.output_images[2].set(target_idx,0,a["ty"])
+		self.output_images[3].set(target_idx,0,a["tz"])
+		self.output_images[4].set(target_idx,0,a["az"])
+		self.output_images[5].set(target_idx,0,a["alt"])
+		self.output_images[6].set(target_idx,0,a["phi"])
+		
+		all_solns = results["all_solns"]
+		if len(all_solns) > 1:
+			target_name = get_file_tag(self.files[target_idx])
+			probe_name = get_file_tag(self.files[probe_idx]) 
+			out=file("log-s3-%s_%s.txt"%(target_name,probe_name),"w")
+			peak = 0
+			for d in all_solns:
+				t = d["xform.align3d"]
+				# inverting because the probe was aligned to the target
+				t = t.inverse()
+				params = t.get_params("eman")
+				ALT=params["alt"]
+				AZ=params["az"]
+				PHI=params["phi"]
+				COEFF=str(d["score"])
+				LOC=str( ( (params["tx"]),(params["tx"]),(params["tx"] ) ) )
+				line="Peak %d rot=( %f, %f, %f ) trans= %s coeff= %s\n"%(peak,ALT,AZ,PHI,LOC,COEFF)
+				out.write(line)
+				peak=peak+1
+				
+			out.close()
+		
+		
+		options = self.options
+		if options.dbls:
+			pdb = db_open_dict("bdb:project")
+			db = pdb.get(options.dbls,dfl={})
+			if db == None: db = {}
+			results = []
+			for d in all_solns:
+				t = d["xform.align3d"]
+				# inverting because the probe was aligned to the target
+				t = t.inverse()
+				results.append(t)
+			
+			arg = self.files[target_idx]
+			if db.has_key(arg):d = db[arg]
+			else:d = {}
+			d[options.probe] = results
+			db[arg] = d
+			pdb[options.dbls] = db
+			
+		if self.logger != None:
+			self.jobs_completed += 1.0 # used for recording progress
+			E2progress(self.logger,self.jobs_completed/self.total_jobs)
+			
+	def finalize_writing(self):
+		'''
+		Writes the output images to disk
+		'''
+		path = numbered_path(tomo_hunter_path_root,True)
+		output_name =  numbered_bdb("bdb:"+path+"#simmx")
+		for i,image in enumerate(self.output_images):
+			image.set_attr("file_names",self.files)
+			image.write_image(output_name,i)
+				
+		
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog <images to be aligned> [options]"""
@@ -176,14 +310,17 @@ def main():
 
 	parser.add_option("--probe",type="string",help="The probe. This is the model that the input images will be aligned to", default=None)
 	parser.add_option("--thresh",type="float",help="Threshold", default=0.0)
-	parser.add_option("--nsoln",type="int",help="The number of solutions to report", default=10)
 	parser.add_option("--n",type="int",help="0 or 1, multiplication by the reciprocal of the boxsize", default=1)
 	parser.add_option("--dbls",type="string",help="data base list storage, used by the workflow. You can ignore this argument.",default=None)
 	parser.add_option("--aliset",type="string",help="Supplied with avgout. Used to choose different alignment parameters from the local database. Used by workflow.", default=None)
 	parser.add_option("--avgout",type="string",help="If specified will produce an averaged output, only works if you've previously run alignments", default=None)
-	parser.add_option("--align",type="string",help="The aligner and its parameters. e.g. --align=rot.3d.grid:ralt=180:dalt=10:dphi=10:rphi=180:search=5", default=None)
+	parser.add_option("--parallel",type="string",default=None,help="Use parallelism")
+	parser.add_option("--align",type="string",help="The aligner and its parameters. e.g. --align=rt.3d.grid:ralt=180:dalt=10:dphi=10:rphi=180:search=5", default="rt.3d.grid")
+	parser.add_option("--aligncmp",type="string",help="The comparator used for determing the best initial alignment", default="dot.tomo:threshold=0")
+	parser.add_option("--cmp",type="string",help="The comparator used to obtain the final similarity", default="dot.tomo:threshold=0")
 	parser.add_option("--ralign",type="string",help="This is the second stage aligner used to refine the first alignment. This is usually the \'refine\' aligner.", default=None)
-	
+	parser.add_option("--raligncmp",type="string",help="The comparator used for determing the refined alignment", default="dot.tomo:threshold=0")
+	parser.add_option("--nsoln",type="int",help="The number of solutions to report", default=10)
 	if EMUtil.cuda_available():
 		parser.add_option("--cuda",action="store_true",help="GPU acceleration using CUDA. Experimental", default=False)
    
@@ -207,82 +344,9 @@ def main():
 	total_prog = len(args)
 	E2progress(logid,0.0)
 	
-	ali = parsemodopt(options.align)
-	rali = None
-	if options.ralign != None:
-		rali = parsemodopt(options.ralign)
-	
-	ali[1]["threshold"] = options.thresh # this one is used universally
-	
-	probeMRC=EMData(options.probe,0)
-	print_info(probeMRC,"Probe Information")
-	if using_cuda(options):
-		probeMRC.set_gpu_rw_current()
-		probeMRC.cuda_lock()
-	
-	for arg in args:
-		targetMRC =EMData(arg,0)
-		print_info(targetMRC,"Target Information")
+	tomohunter = EMTomoHunter(args,options,logid)
+	tomohunter.execute()
 
-		if using_cuda(options):
-			targetMRC.set_gpu_rw_current()
-			targetMRC.cuda_lock() # locking it prevents if from being overwritten
-			
-		solns = probeMRC.xform_align_nbest(ali[0],targetMRC,ali[1],options.nsoln)
-		
-		
-		if rali:
-			refine_parms=rali[1]
-			for s in solns:
-				refine_parms["xform.align3d"] = s["xform.align3d"]
-				aligned = probeMRC.align(rali[0],targetMRC,refine_parms)
-				s["xform.align3d"] = aligned.get_attr("xform.align3d")
-				
-		out=file("log-s3-%s_%s.txt"%(get_file_tag(arg),get_file_tag(options.probe)),"w")
-		peak=0
-		
-		if using_cuda(options):
-			targetMRC.cuda_unlock() # locking it prevents if from being overwritten
-		
-		db = None
-		pdb = None
-		if options.dbls:
-			pdb = db_open_dict("bdb:project")
-			db = pdb.get(options.dbls,dfl={})
-			if db == None: db = {}
-			results = []
-	
-		for d in solns:
-			t = d["xform.align3d"]
-			# inverting because the probe was aligned to the target
-			t = t.inverse()
-			params = t.get_params("eman")
-			ALT=params["alt"]
-			AZ=params["az"]
-			PHI=params["phi"]
-			COEFF=str(d["score"])
-			LOC=str( ( (params["tx"]),(params["tx"]),(params["tx"] ) ) )
-			line="Peak %d rot=( %f, %f, %f ) trans= %s coeff= %s\n"%(peak,ALT,AZ,PHI,LOC,COEFF)
-			out.write(line)
-			peak=peak+1
-			
-			if options.dbls:
-				t = Transform({"type":"eman","alt":ALT,"phi":PHI,"az":AZ})
-				t.set_trans(params["tx"]),(params["tx"]),(params["tx"])
-				results.append(t)
-		
-		if options.dbls:
-			if db.has_key(arg):d = db[arg]
-			else:d = {}
-			d[options.probe] = results
-			db[arg] = d
-			pdb[options.dbls] = db
-			
-		prog += 1.0
-		E2progress(logid,progress/total_prog)
-			
-		out.close()
-		
 	if using_cuda(options):
 		probeMRC.cuda_unlock()
 	E2progress(logid,1.0) # just make sure of it
@@ -299,73 +363,7 @@ def print_info(image,first_line="Information"):
 	print "   mean:	   %f"%(image.get_attr("mean"))
 	print "   sigma:	  %f"%(image.get_attr("sigma"))
 	
-	
-def tomoccf(targetMRC,probeMRC):
-	ccf=targetMRC.calc_ccf(probeMRC)
-	# removed a toCorner...this puts the phaseorigin at the left corner, but we can work around this by
-	# by using EMData.calc_max_location_wrap (below)
-	return (ccf)
 
-def ccfFFT(currentCCF, thresh, box):
-	tempCCF = currentCCF.do_fft()
-	#tempCCF.ri2ap()
-	tempCCF.process_inplace("threshold.binary.fourier",{"value":thresh}) 
-	mapSum=tempCCF["mean"]*box*box*box
-	return(mapSum)
-
-def updateCCF(bestCCF,bestALT,bestAZ,bestPHI,bestX,bestY,bestZ,altrot,azrot,phirot,currentCCF,scalar,n,searchx,searchy,searchz):
-	best = currentCCF.calc_max_location_wrap(searchx,searchy,searchz)
-	xbest = best[0]
-	ybest = best[1]
-	zbest = best[2]
-	bestValue = currentCCF.get_value_at_wrap(xbest,ybest,zbest)/scalar
-	inlist=0
-	while inlist < n:
-		if  bestValue > bestCCF.get(inlist):
-			swlist=n-1
-			while swlist >inlist:
-				#print swlist
-				bestCCF.set(swlist,bestCCF.get(swlist-1,))
-				bestALT.set(swlist,bestALT.get(swlist-1))
-				bestAZ.set(swlist,bestAZ.get(swlist-1))
-				bestPHI.set(swlist,bestPHI.get(swlist-1))
-				bestX.set(swlist,bestX.get(swlist-1))
-				bestY.set(swlist,bestY.get(swlist-1))
-				bestZ.set(swlist,bestZ.get(swlist-1))
-				swlist=swlist-1
-			bestCCF.set(inlist,bestValue)
-			bestALT.set(inlist,altrot)
-			bestAZ.set(inlist,azrot)
-			bestPHI.set(inlist,phirot)
-			bestX.set(inlist,xbest)
-			bestY.set(inlist,ybest)
-			bestZ.set(inlist,zbest)
-			break
-		inlist=inlist+1
-	
-	#bestCCF.update() uneccessary?
-	#bestALT.update()
-	#bestAZ.update()
-	#bestPHI.update()
-	return(bestCCF)
-
-
-def check(options,args):
-	#should write a function to check the inputs, such as positive range, delta less than range etc
-	#should also check that the file names exist
-	
-	error = False
-	if options.nsoln <= 0:
-		error = True
-		print "Error - nsoln must be greater than 0. Suggest using 10"
-	
-	if options.ralt <= 0:
-		error = True
-		print "Error - ralt must be greater than 0"
-	
-	# etc....
-	
-	return error
 
 # If executed as a program
 if __name__ == '__main__':

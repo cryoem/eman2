@@ -1380,7 +1380,7 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	if (nsoln == 0) return solns; // What was the user thinking?
 	for (unsigned int i = 0; i < nsoln; ++i ) {
 		Dict d;
-		d["score"] = -1.e24;
+		d["score"] = 1.e24;
 		Transform t; // identity by default
 		d["xform.align3d"] = &t; // deep copy is going on here
 		solns.push_back(d);
@@ -1409,37 +1409,31 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 				Transform t(d);
 				EMData* transformed = this_img->process("math.transform",Dict("transform",&t));
 				EMData* ccf = transformed->calc_ccf(to);
-				delete transformed; transformed =0;
+
 				IntPoint point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
-				float best_score = ccf->get_value_at_wrap(point[0],point[1],point[2]);
-				t.set_trans(point[0],point[1],point[2]);
-				if (threshold > 0.0f) {
-					// Now do weighting based on missing wedges
-					EMData* ccf_fft = ccf->do_fft(); // so cuda works, or else we could do an fft_inplace - though honestly it probably makes no difference
-					ccf_fft->process_inplace("threshold.binary.fourier",Dict("value",threshold));
-					float map_sum =  ccf_fft->get_attr("mean");
-					if (map_sum == 0.0f) throw UnexpectedBehaviorException("The number of voxels in the Fourier image with an amplitude above your threshold is zero. Please adjust your parameters");
-					best_score /= map_sum;
-					delete ccf_fft; ccf_fft = 0;
+				Dict altered_cmp_params(cmp_params);
+				if (cmp_name == "dot.tomo") {
+					altered_cmp_params["ccf"] = ccf;
+					altered_cmp_params["tx"] = point[0];
+					altered_cmp_params["ty"] = point[1];
+					altered_cmp_params["tz"] = point[2];
 				}
+
+				float best_score = transformed->cmp(cmp_name,to,altered_cmp_params);
+				delete transformed; transformed =0;
+				delete ccf; ccf = 0;
+
 				unsigned int j = 0;
 				for ( vector<Dict>::iterator it = solns.begin(); it != solns.end(); ++it, ++j ) {
-					if ( (float)(*it)["score"] < best_score ) {
+					if ( (float)(*it)["score"] > best_score ) {  // Note greater than - EMAN2 preferes minimums as a matter of policy
 						vector<Dict>::reverse_iterator rit = solns.rbegin();
 						copy(rit+1,solns.rend()-j,rit);
 						Dict& d = (*it);
 						d["score"] = best_score;
 						d["xform.align3d"] = &t;
-
-// 						for(vector<Dict>::iterator it = solns.begin(); it != solns.end(); ++it) {
-// 							Dict& d = (*it);
-// 							cout << (float) d["score"] << " ";
-// 						}
-// 						cout << endl;
 						break;
 					}
 				}
-				delete ccf; ccf =0;
 			}
 		}
 	}
@@ -1502,7 +1496,7 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 	if (nsoln == 0) return solns; // What was the user thinking?
 	for (unsigned int i = 0; i < nsoln; ++i ) {
 		Dict d;
-		d["score"] = -1.e24;
+		d["score"] = 1.e24;
 		Transform t; // identity by default
 		d["xform.align3d"] = &t; // deep copy is going on here
 		solns.push_back(d);
@@ -1538,35 +1532,27 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 			Transform t(params);
 			EMData* transformed = this_img->process("math.transform",Dict("transform",&t));
 			EMData* ccf = transformed->calc_ccf(to);
-			delete transformed; transformed =0;
 			IntPoint point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
-			float best_score = ccf->get_value_at_wrap(point[0],point[1],point[2]);
-			t.set_trans(point[0],point[1],point[2]);
-			if (threshold > 0.0f) {
-				// Now do weighting based on missing wedges
-				EMData* ccf_fft = ccf->do_fft();// so cuda works, or else we could do an fft_inplace - though honestly it probably makes no difference
-				ccf_fft->process_inplace("threshold.binary.fourier",Dict("value",threshold));
-				float map_sum =  ccf_fft->get_attr("mean");
-				if (map_sum == 0.0f) throw UnexpectedBehaviorException("The number of voxels in the Fourier image with an amplitude above your threshold is zero. Please adjust your parameters");
-				best_score /= map_sum;
-				delete ccf_fft; ccf_fft = 0;
+			Dict altered_cmp_params(cmp_params);
+			if (cmp_name == "dot.tomo") {
+				altered_cmp_params["ccf"] = ccf;
+				altered_cmp_params["tx"] = point[0];
+				altered_cmp_params["ty"] = point[1];
+				altered_cmp_params["tz"] = point[2];
 			}
+
+			float best_score = transformed->cmp(cmp_name,to,altered_cmp_params);
+			delete transformed; transformed =0;
 			delete ccf; ccf =0;
 
 			unsigned int j = 0;
 			for ( vector<Dict>::iterator it = solns.begin(); it != solns.end(); ++it, ++j ) {
-				if ( (float)(*it)["score"] < best_score ) {
+				if ( (float)(*it)["score"] > best_score ) { // Note greater than - EMAN2 preferes minimums as a matter of policy
 					vector<Dict>::reverse_iterator rit = solns.rbegin();
 					copy(rit+1,solns.rend()-j,rit);
 					Dict& d = (*it);
 					d["score"] = best_score;
 					d["xform.align3d"] = &t; // deep copy is going on here
-// 					cout << "After" << endl;
-// 					for(vector<Dict>::iterator it = solns.begin(); it != solns.end(); ++it) {
-// 						Dict& d = (*it);
-// 						cout << (float) d["score"] << " ";
-// 					}
-// 					cout << endl;
 					break;
 				}
 			}
