@@ -334,10 +334,18 @@ class E2FoldHunterStat:
 				#s3.append(calc3[cCount])
 
 
-		print "number of transformations preformed: " + str(len(calc1))
+		print " " 
+		print " " 	
+		print "Number of transformations performed: " + str(len(calc1))
 		print "score 1 - Real space correlation: " + str(s1[0]) + " standard deviations above the mean"
+		print "The average pixel value (real space correlation): " + str(score1[0])
+		print " " 
 		print "score 2 - Atom inclusion: " + str(s2[0]) + " standard deviations above the mean"
+		print "The atom inclusion percentage is: " + str(score2[0]*100) + "%"
+		print " " 
 		print "score 3 - Volume overlap: " + str(s3[0]) + " standard deviations above the mean"
+		print "The volume overlap of the model and map is: " + str(score3[0]*100) + "%"
+
 
 		##### Create Dictionary
 		vals = {}

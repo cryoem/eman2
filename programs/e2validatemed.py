@@ -90,6 +90,9 @@ class E2ValidateMed():
 			print "Sorry, this pdb is only in temporary memory. Please write the transform to the hard drive to validate."
 			return
 
+	
+		print " " 
+		print " " 
 		print "This process can take a few minutes depending on the number of transformations requested"
 
 		vals, rotList, b, data, initPoint = self.fh_stat.gen_data(mrc_file, pdb_file, trans, iso_thresh)
@@ -101,6 +104,7 @@ class E2ValidateMed():
 			self.__init_plot3d()
 
 		print "Note: The original probe is displayed by a cube"
+		print " " 
 
 		get_application().show_specific(self.plot3d)
 		self.plot3d.set_Vals(vals)
