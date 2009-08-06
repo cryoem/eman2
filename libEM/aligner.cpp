@@ -1135,7 +1135,7 @@ static Transform refalin3d_perturb(const Transform*const t, const float& delta, 
 	g["phi"] = 0*phi+orig_phi;
 
 	Transform phi_rot(g);
-	Transform soln = phi_rot*t_no_phi*perturb;
+	Transform soln = t_no_phi*perturb*phi_rot;
 	soln.set_trans(x+orig_x,y+orig_y,z+orig_z);
 
 	Dict params = soln.get_params("eman");

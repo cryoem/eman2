@@ -117,7 +117,7 @@ def main():
 	parser.add_option("--start", default=None,type="string", help="This is a starting model for FFT reconstruction")
 	parser.add_option("--smw", default=1.0,type="float", help="This is the starting model weight")
 	# Database Metadata storage
-	parser.add_option("--dbls",type="string",default=None,help="data base list storage, used by the workflow. You can ignore this argument.",default=None)
+	parser.add_option("--dbls",type="string",default=None,help="data base list storage, used by the workflow. You can ignore this argument.")
 	
 	(options, args) = parser.parse_args()
 
@@ -260,7 +260,14 @@ def main():
 			output.clip_inplace(Region((pad-options.nx)/2,(pad-options.nx)/2,options.nx,options.nx))
 
 	# apply any post processing operations
-		
+	if db_check_dict("bdb:project"):
+		# this is a temporary workaround to get things working in the workflow
+		db = db_open_dict("bdb:project")
+		apix = db.get("global.apix",dfl=1)
+		output.set_attr("apix_x",apix)
+		output.set_attr("apix_y",apix)
+		output.set_attr("apix_z",apix)
+	
 	if options.postprocess == None:
 		options.postprocess = ["normalize.circlemean"]
 	if options.postprocess != None:
@@ -273,15 +280,6 @@ def main():
 				print "warning - application of the post processor",p," failed. Continuing anyway"
 					
 	# write the reconstruction to disk
-	
-	if db_check_dict("bdb:project"):
-		# this is a temporary workaround to get things working in the workflow
-		db = db_open_dict("bdb:project")
-		apix = db.get("global.apix",dfl=1)
-		output.set_attr("apix_x",apix)
-		output.set_attr("apix_y",apix)
-		output.set_attr("apix_z",apix)
-	
 	output.write_image(options.output,0)
 	if options.verbose:
 			print "Output File: "+options.output

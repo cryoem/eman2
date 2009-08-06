@@ -1170,7 +1170,6 @@ class EMTomoBootStapChoosePtclsTask(EMBaseTomoChooseFilteredPtclsTask):
 			error("Please choose some data")
 			return
 		choice = params["tomo_filt_choice"]
-		print "tomo hunter chose"
 		task = EMTomoBootstrapTask(self.particles_map[self.particles_name_map[choice]],self.name_map)
 		self.emit(QtCore.SIGNAL("replace_task"),task,"Filter Tomo Particles")
 		self.form.closeEvent(None)
@@ -1267,7 +1266,7 @@ class EMTomoBootstrapTask(WorkFlowTask):
 		options.aligncmp = params["cmp"]
 		
 		if params["ralign"] != "None":
-			string_args.append("ralign","raligncmp")
+			string_args.extend(["ralign","raligncmp"])
 			options.ralign = params['ralign']
 			options.raligncmp = params["cmp"]
 			

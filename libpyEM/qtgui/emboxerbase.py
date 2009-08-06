@@ -399,17 +399,20 @@ class EMBoxingTool:
 	'''
 	This class defines the interface necessary for integration of a custom tool, such as an automatic boxer,
 	into EMBoxerModule.
-	-- Background --
-	The EMBoxerModule is like a coordinator. It has 4 widgets: 1 inspector, 1 2D window viewer, and 2 particle 
-	stack viewers (one for viewing boxed particles, one for viewing thumbnails). If you want to integrate your own
-	tool, you have to make it react to the events that occur in the 2D window, and (optionally) the events that happen
-	in the particle stack viewer. The object that takes care of rerouting the events of the 2D window is called the 
-	"Main2DWindowEventHandler", which is the object that ultimately retains the reference to any objects that subclass
-	from this object (or provide an equivalent interface) and have been registered as an available too using EMBoxerModule.add_tool.
-	So... the Main2DWindowEventHandler expects an interface and so does the EMBoxerModule, and a little down the line the 
-	EMBoxInspector all expects an interface. Hence, the necessary interface is defined in this class.
+
+	EMBoxingTools need to supply a widget (which is automatically added to a tab widget in the inspector of the main module),
+	when the uses activates the tab corresponding to the concrete EMBoxingTool instance then it becomes active, and 
+	mouse events from the various windows are rerouted to it.Thus you have to make your EMBoxingTool
+	capable of reacting to the events that occur in the 2D window and particle stack viewer windows.
+	(For events that happen in the 2D window see the Main2DWindowEventHandler, for events that happen
+	in the particle stack viewer see the ParticlesWindowEventHandler). The expected interface for acquiring the widget
+	and mouse-related functions is defined in this object. 
+	
+	I (David Woolford) prefer to encapsulate all things concerned with the accompanying widget into a separate class, see
+	for example the ErasingPanel and the ManualBoxingPanel, which supply the widgets for the EraseTool and ManualBoxingTool
+	objects. That way the EMBoxingTool is the only object that needs to be explicitly aware of the Widget supplying 
+	class, and it nicely layers the design of everything.
 	----
-	For EXAMPLES of tools that already work with EMBoxerModule see EraseTool, ManualBoxingTool, and in e2boxer set SwarmTool
 	'''
 	
 	def __init__(self,target,**kargs):
@@ -451,7 +454,8 @@ class EMBoxingTool:
 		raise  NotImplementedException("Inheriting classes must supply this function")
 	
 	def mouse_move(self,event):
-		'''
+		''''
+		required by the Main2DWindowEventHandler
 		How shall you respond to the mouse move event?
 		@param event a QtGui.QEvent
 		'''
@@ -459,6 +463,7 @@ class EMBoxingTool:
 		
 	def mouse_wheel(self,event):
 		'''
+		required by the Main2DWindowEventHandler
 		How shall you respond to the mouse wheel event?
 		@param event a QtGui.QEvent
 		'''
@@ -466,6 +471,7 @@ class EMBoxingTool:
 	
 	def mouse_down(self,event) :
 		'''
+		required by the Main2DWindowEventHandler
 		How shall you respond to the mouse down event?
 		@param event a QtGui.QEvent
 		'''
@@ -474,6 +480,7 @@ class EMBoxingTool:
 	
 	def mouse_drag(self,event) :
 		'''
+		required by the Main2DWindowEventHandlers
 		How shall you respond to the mouse drag event?
 		@param event a QtGui.QEvent
 		'''
@@ -482,6 +489,7 @@ class EMBoxingTool:
 		
 	def mouse_up(self,event) :
 		'''
+		required by the Main2DWindowEventHandler
 		How shall you respond to the mouse up event?
 		@param event a QtGui.QEvent
 		'''
@@ -490,6 +498,7 @@ class EMBoxingTool:
 	
 	def key_press(self,event):
 		'''
+		required by the Main2DWindowEventHandler
 		How shall you respond to the key press event?
 		@param event a QtGui.QEvent
 		'''

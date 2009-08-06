@@ -948,7 +948,9 @@ class EMEmanStrategyWidget(QtGui.QWidget):
 		
 		self.main_combo = QtGui.QComboBox()
 		start_idx = None
-		for i,key in enumerate(self.dumped_dict.keys()):
+		dumped_dict_keys = self.dumped_dict.keys()
+		dumped_dict_keys.sort()
+		for i,key in enumerate(dumped_dict_keys):
 			if key == self.defaultunits:
 				start_idx = i
 			self.main_combo.addItem(key)
@@ -963,8 +965,6 @@ class EMEmanStrategyWidget(QtGui.QWidget):
 		self.vbl.addWidget(groupbox)
 		
 		QtCore.QObject.connect(self.main_combo, QtCore.SIGNAL("currentIndexChanged(QString)"), self.selection_changed)
-	
-	
 		
 		if start_idx != None:
 			if start_idx != 0:

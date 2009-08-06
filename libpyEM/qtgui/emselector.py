@@ -632,7 +632,6 @@ def EMSelectorTemplate(Type):
 				get_application().setOverrideCursor(Qt.BusyCursor)
 				if self.menu_selected_items[0].is_2d_plot():
 					data =	EMPlot3DModule.parse_txt_file(self.menu_selected_items[0].get_path())
-					print len(data)
 					d = [ i*.01 for i in xrange(0,len(data[0])) ]
 					self.preview_item_explicit([d,data[1],data[1]],EMPlot3DModule)
 				else:
@@ -1028,11 +1027,12 @@ def EMSelectorTemplate(Type):
 			return preview_occured
 	
 		def check_preview_item_wants_to_list(self,item):
-			if self.db_listing.preview_item_wants_to_list(item):
-				return True
-			elif self.dir_listing.preview_item_wants_to_list(item):
-				return True
-			
+			return item.is_previewable()
+#			if self.db_listing.preview_item_wants_to_list(item):
+#				return True
+#			elif self.dir_listing.preview_item_wants_to_list(item):
+#				return True
+#			
 			return False
 		
 		def preview_euler_view(self, full_path):
@@ -1506,9 +1506,6 @@ class EMFSListing:
 	def is_previewable(self,item):
 		return item.type_of_me in self.previewable_types
 		
-	def preview_item_wants_to_list(self,item):
-		return item.is_previewable()
-
 	#def is_previewable(self,file_or_folder):
 		## this may not be strictly correct, seeing as if it's a file it will return true
 		#return os.path.isfile(file_or_folder)
@@ -2197,12 +2194,6 @@ class EMDBListing:
 	def is_previewable(self,item):
 		return item.type_of_me in self.previewable_types
 
-	def preview_item_wants_to_list(self,item):
-		'''
-		Sometimes a previeable item will still be able to list information
-		'''
-		return item.is_previewable()
-	
 	def do_preview(self,item):
 		#if not os.path.isfile(item.full_path): return False
 		return item.do_preview(self.target())
