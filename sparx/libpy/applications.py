@@ -12314,7 +12314,7 @@ def k_means_stab_CUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_no
 	del KmeansCUDA
 
 	# convert local assignment to absolute partition
-	logging.info('... Convert local assign to abs partition')
+	logging.info('... Matching local assign to abs partition')
 	ALL_PART = k_means_stab_asg2part(ALL_ASG, LUT)
 
 	# calculate the stability
@@ -12419,7 +12419,7 @@ def k_means_stab_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_nobj = 
 	print_end_msg('k-means')
 
 	# convert local assignment to absolute partition
-	logging.info('... Convert local assign to abs partition')
+	logging.info('... Matching')
 	ALL_PART = k_means_stab_asg2part(ALL_ASG, LUT)
 
 	# calculate the stability
@@ -12548,7 +12548,7 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_nob
 		print_end_msg('k-means')
 
 		# convert local assignment to absolute partition
-		logging.info('... Convert assignment to partition')
+		logging.info('... Matching')
 		ALL_PART = k_means_stab_asg2part(ALL_ASG, LUT)
 
 		# calculate the stability
