@@ -5245,7 +5245,7 @@ def k_means_match_clusters_asg(asg1, asg2):
 		nb_tot_objs += cont
 		objs = zeros(cont, 'int')
 		dummy = Util.k_means_cont_table(asg1[r], asg2[c], objs, asg1[r].size, asg2[c].size, 1)
-		list_stable.append(objs)
+		list_stable.append(objs.tolist())
 
 	return list_stable, nb_tot_objs
 
@@ -5501,7 +5501,7 @@ def k_means_stab_export(PART, stack, outdir, th_nobj, CTF = False):
 
 			AVE[ck].set_attr('Class_average', 1.0)
 			AVE[ck].set_attr('nobjects', nobjs)
-			AVE[ck].set_attr('members', PART[k].tolist())
+			AVE[ck].set_attr('members', PART[k])
 			AVE[ck].set_attr('k_ref', k)
 			AVE[ck].write_image(outdir + '/averages.hdf', ck)
 			ck += 1
