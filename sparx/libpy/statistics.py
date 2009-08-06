@@ -5224,7 +5224,7 @@ def k_means_match_clusters_asg(asg1, asg2):
 	K        = len(asg1)
 	MAT      = [[0] * K for i in xrange(K)] 
 	cost_MAT = [[0] * K for i in xrange(K)]
-	dummy    = array([0])
+	dummy    = array([0], 'int32')
 	for k1 in xrange(K):
 		for k2 in xrange(K):
 			MAT[k1][k2] = Util.k_means_cont_table(asg1[k1], asg2[k2], dummy, asg1[k1].size, asg2[k2].size, 0)
@@ -5234,16 +5234,15 @@ def k_means_match_clusters_asg(asg1, asg2):
 			cost_MAT[i][j] = sys.maxint - MAT[i][j]
 	m = Munkres()
 	indexes = m.compute(cost_MAT)
-
 	list_stable = []
 	nb_tot_objs = 0
 	for r, c in indexes:
 		cont = MAT[r][c]
 		if cont == 0:
-			list_stable.append(array([], 'int'))
+			list_stable.append(array([], 'int32'))
 			continue
 		nb_tot_objs += cont
-		objs = zeros(cont, 'int')
+		objs = zeros(cont, 'int32')
 		dummy = Util.k_means_cont_table(asg1[r], asg2[c], objs, asg1[r].size, asg2[c].size, 1)
 		list_stable.append(objs)
 
@@ -5289,8 +5288,8 @@ def k_means_match_pwa(PART, lim = -1):
 	def get_mat(part1, part2):
 	    K = len(part1)
 
-	    MAT  = zeros((K, K), 'int')
-	    dummy = array([0])
+	    MAT  = zeros((K, K), 'int32')
+	    dummy = array([0], 'int32')
 	    for k1 in xrange(K):
 		    for k2 in xrange(K):
 			    MAT[k1][k2] = Util.k_means_cont_table(part1[k1], part2[k2], dummy, part1[k1].size, part2[k2].size, 0)
@@ -5309,7 +5308,7 @@ def k_means_match_pwa(PART, lim = -1):
 			    val.append([mat[m1[k]][k], m1[k], k])
 	    val.sort(reverse = True)
 	    # change to flat format [l0, c0, l1, c1, ..., li, ci]
-	    res = zeros((2 * len(val)), 'int')
+	    res = zeros((2 * len(val)), 'int32')
 	    ct  = 0
 	    for obj in val:
 		    res[ct] = obj[1]
@@ -5349,10 +5348,10 @@ def k_means_match_pwa(PART, lim = -1):
 	#====== main ==================
 	# prepare table
 	np   = len(PART)
-	if lim == -1: lim = len(PART[0])             # number of groups
+	if lim == -1: lim = len(PART[0])               # number of groups
 	MAX  = []
-	Nmax = zeros((np - 1), 'int')                # number of maximum per pairwise table
-	pos  = zeros((np * (np - 1) / 2 + 1), 'int') # position list of maximum in MAX
+	Nmax = zeros((np - 1), 'int32')                # number of maximum per pairwise table
+	pos  = zeros((np * (np - 1) / 2 + 1), 'int32') # position list of maximum in MAX
 	for i in xrange(1, np):
 		for j in xrange(i):
 			mat  = get_mat(PART[j], PART[i])
@@ -5362,14 +5361,14 @@ def k_means_match_pwa(PART, lim = -1):
 			pos[mono(i, j) + 1] = 2 * nb
 			MAX.extend(lmax)
 
-	MAX = array(MAX)
+	MAX = array(MAX, 'int32')
 
 	# matching
 	Nmax  = pos[1:] 
 	Nmax  = Nmax / 2
 	pos   = pos.cumsum()
-	res   = zeros((np), 'int')
-	lmax  = zeros((np - 1), 'int')
+	res   = zeros((np), 'int32')
+	lmax  = zeros((np - 1), 'int32')
 	MATCH = []
 	if np > 2:
 		# for each maximum in p0p1
@@ -5394,7 +5393,7 @@ def k_means_match_pwa(PART, lim = -1):
 	else:
 		# if only two partitions return the list of maximum
 		for i in xrange(0, 2*Nmax[0], 2):
-			MATCH.append(array([MAX[i], MAX[i+1]], 'int'))
+			MATCH.append(array([MAX[i], MAX[i+1]], 'int32'))
 
 	return MATCH
 
@@ -5416,12 +5415,12 @@ def k_means_stab_pwa(PART, lim = -1):
 	st       = 0
 
 	for k in xrange(nm):
-		kk   = MATCH[k][0]
+		kk   = int(MATCH[k][0]) # due to numpy obj
 		vmax = [0] * np
 		vmin = [0] * np
 		for i in xrange(np):
-		    vmax[i] = max(PART[i][MATCH[k][i]])
-		    vmin[i] = min(PART[i][MATCH[k][i]])
+		    vmax[i] = max(PART[i][int(MATCH[k][i])])
+		    vmin[i] = min(PART[i][int(MATCH[k][i])])
 
 		vmax = int(max(vmax))
 		vmin = int(min(vmin))
@@ -5429,7 +5428,7 @@ def k_means_stab_pwa(PART, lim = -1):
 
 		asg = [0] * vd
 		for i in xrange(np):
-		    for item in PART[i][MATCH[k][i]]: asg[int(item) - vmin] += 1
+		    for item in PART[i][int(MATCH[k][i])]: asg[int(item) - vmin] += 1
 
 		stb  = []
 		for i in xrange(vd):
@@ -5642,7 +5641,7 @@ def k_means_stab_asg2part(ALL_ASG, LUT):
 		for n in xrange(N): TMP[ASG[n]].append(LUT[n])
 		PART = []
 		for k in xrange(K):
-			a = array(TMP[k])
+			a = array(TMP[k], 'int32')
 			a.sort()
 			PART.append(a)
 		ALL_PART.append(PART)
