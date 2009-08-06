@@ -1256,7 +1256,7 @@ def ccc(img1, img2, mask=None):
 
 def ccr(list1, list2):
 	"""Cross-correlation coefficient between two lists
-	   Usage: result = ccr)list1, list2)
+	   Usage: result = ccr(list1, list2)
 	"""
 	N = len(list1)
 	s1=s2=q1=q2=ccr=0.0
