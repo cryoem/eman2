@@ -65,9 +65,8 @@ void EMData::read_image(const string & filename, int img_index, bool nodata,
 				set_complex(true);
 				set_fftpad(true);
 			}
-			if (attr_dict.has_key("is_fftodd")) {
-				if (1 == int(attr_dict["is_fftodd"]))
-					set_fftodd(true);
+			if (attr_dict.has_key("is_fftodd") && (int)attr_dict["is_fftodd"] == 1) {
+				set_fftodd(true);
 			}
 			if ((int) attr_dict["is_complex_ri"] == 1) {
 				set_ri(true);
@@ -86,7 +85,7 @@ void EMData::read_image(const string & filename, int img_index, bool nodata,
 //			}
 
 			if (!nodata) {
-				
+
 				if (region) {
 					nx = (int)region->get_width();
 					if (nx <= 0) nx = 1;
@@ -125,7 +124,7 @@ void EMData::read_image(const string & filename, int img_index, bool nodata,
 	EXITFUNC;
 }
 
-#include <sys/stat.h> 
+#include <sys/stat.h>
 
 void EMData::write_image(const string & filename, int img_index,
 						 EMUtil::ImageType imgtype,
@@ -137,7 +136,7 @@ void EMData::write_image(const string & filename, int img_index,
 
 	struct stat fileinfo;
 	if ( region && stat(filename.c_str(),&fileinfo) != 0 ) throw UnexpectedBehaviorException("To write an image using a region the file must already exist and be the correct dimensions");
-	
+
 	if (is_complex() && is_shuffled())
 		fft_shuffle();
 

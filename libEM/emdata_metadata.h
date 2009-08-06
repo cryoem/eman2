@@ -862,7 +862,10 @@ inline void set_fftpad(bool is_fftpadded)
  */
 inline bool is_fftodd() const
 {
-	if(flags & EMDATA_FFTODD || (int)attr_dict["is_fftodd"] == 1) {
+	if(flags & EMDATA_FFTODD) {
+		return true;
+	}
+	else if( attr_dict.has_key("is_fftodd") && (int)attr_dict["is_fftodd"] == 1 ) {
 		return true;
 	}
 	else {
