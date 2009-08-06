@@ -5216,6 +5216,8 @@ def Hungarian(part1, part2):
 
 # Match two partitions with hungarian algorithm
 def k_means_match_clusters_asg(asg1, asg2):
+	print asg1
+	print asg2
 	# asg1 and asg2 are numpy array
 	from numpy      import zeros, array
 	from statistics import Munkres
@@ -5662,7 +5664,7 @@ def k_means_stab_update_tag(stack, STB_PART, lrej):
 	N  = EMUtil.get_image_count(stack)
 	# prepare for active images
 	list_stb = []
-	for part in STB_PART: list_stb.extend(part.tolist())
+	for part in STB_PART: list_stb.extend(part)
 
 	ext = file_type(stack)
 	if ext == 'bdb':
