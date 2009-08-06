@@ -5216,8 +5216,6 @@ def Hungarian(part1, part2):
 
 # Match two partitions with hungarian algorithm
 def k_means_match_clusters_asg(asg1, asg2):
-	print asg1
-	print asg2
 	# asg1 and asg2 are numpy array
 	from numpy      import zeros, array
 	from statistics import Munkres
@@ -5247,7 +5245,7 @@ def k_means_match_clusters_asg(asg1, asg2):
 		nb_tot_objs += cont
 		objs = zeros(cont, 'int')
 		dummy = Util.k_means_cont_table(asg1[r], asg2[c], objs, asg1[r].size, asg2[c].size, 1)
-		list_stable.append(objs.tolist())
+		list_stable.append(objs)
 
 	return list_stable, nb_tot_objs
 
@@ -5278,7 +5276,10 @@ def k_means_stab_H(ALL_PART):
 	for i in xrange(K): nb_stb += len(ALL_PART[0][i])
 	stability = (float(nb_stb) / float(tot_gbl)) * 100
 
-	return stability, nb_stb, ALL_PART[0]
+	STB_PART = []
+	for part in ALL_PART[0]: STB_PART.append(part.tolist())
+
+	return stability, nb_stb, STB_PART
 
 # Pairwise recurence agreement matching between paritions given by k-means
 def k_means_match_pwa(PART, lim = -1):
