@@ -12326,7 +12326,7 @@ def k_means_stab_CUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_no
 		logging.info('... Stability: %5.2f %% (%d objects)' % (st, sum(CT_s)))
 	
 	# export the stable class averages
-	count_k, id_rejected = k_means_stab_export(STB_PART, stack, outdir, th_nobj, CTF)
+	count_k, id_rejected = k_means_stab_export(STB_PART, stack, outdir, th_nobj)
 	logging.info('... Export %i stable class averages: average.hdf (rejected %i images)' % (count_k, len(id_rejected)))
 
 	# tag informations to the header
