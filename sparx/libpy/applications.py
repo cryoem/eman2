@@ -12322,7 +12322,7 @@ def k_means_stab_CUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_no
 		stb, nb_stb, STB_PART = k_means_stab_H(ALL_PART)
 		logging.info('... Stability: %5.2f %% (%d objects)' % (stb, nb_stb))
 	elif match == 'pwa':
-		MATCH, STB_PART, CT_s, CT_t, ST, st = k_means_stab_pwa(ALL_PART, 100)
+		MATCH, STB_PART, CT_s, CT_t, ST, st = k_means_stab_pwa(ALL_PART)
 		logging.info('... Stability: %5.2f %% (%d objects)' % (st, sum(CT_s)))
 	
 	# export the stable class averages
@@ -12427,7 +12427,7 @@ def k_means_stab_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_nobj = 
 		stb, nb_stb, STB_PART = k_means_stab_H(ALL_PART)
 		logging.info('... Stability: %5.2f %% (%d objects)' % (stb, nb_stb))
 	elif match == 'pwa':
-		MATCH, STB_PART, CT_s, CT_t, ST, st = k_means_stab_pwa(ALL_PART, 100)
+		MATCH, STB_PART, CT_s, CT_t, ST, st = k_means_stab_pwa(ALL_PART)
 		logging.info('... Stability: %5.2f %% (%d objects)' % (st, sum(CT_s)))
 	
 	if not TXT:
@@ -12556,7 +12556,7 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_nob
 			stb, nb_stb, STB_PART = k_means_stab_H(ALL_PART)
 			logging.info('... Stability: %5.2f %% (%d objects)' % (stb, nb_stb))
 		elif match == 'pwa':
-			MATCH, STB_PART, CT_s, CT_t, ST, st = k_means_stab_pwa(ALL_PART, 100)
+			MATCH, STB_PART, CT_s, CT_t, ST, st = k_means_stab_pwa(ALL_PART)
 			logging.info('... Stability: %5.2f %% (%d objects)' % (st, sum(CT_s)))
 
 		# export the stable class averages
