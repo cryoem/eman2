@@ -193,7 +193,7 @@ class EMPDBValToolInspector(EM3DInspector):
 		self.target().update_mrc_file()
 		
 		if (str(self.text1.text()) == ""): self.text1.setText("20") #default value 20
-		if (str(self.text2.text()) == ""): self.text2.setText("5.0") #default value 5.0
+		if (str(self.text2.text()) == ""): self.text2.setText("0.1") #default value 5.0
 
 		if ((str(self.target().current_mrc) != "") and (str(self.target().current_pdb)!= "")): #only calls validate if both strings are valid
 			self.target().run_validate()
