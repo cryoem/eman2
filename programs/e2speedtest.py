@@ -330,6 +330,7 @@ so in most cases it is not dealt with.'
         print 'An Intel Core2 Duo T9400 2.53Ghz SF ----------------------------- 2730'
         print 'An Intel Xeon E5430 2.66Ghz SF ---------------------------------- 2800'
         print 'An Intel Xeon X5355 2.66Ghz SF ---------------------------------- 2920'
+        print 'An Intel Xeon X5550 2.66Ghz SF ---------------------------------- 3060'
         print 'An Intel Xeon X5450 3.0Ghz SF ----------------------------------- 3220'
         print 'An Intel Xeon X5460 3.16Ghz SF ---------------------------------- 3320'
         print '\nYour machines speed factor = %1.1f\n' % (25000.0 / ti)
