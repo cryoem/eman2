@@ -97,6 +97,31 @@ class E2FoldHunterStat:
 			transforms_func.append(finalRot)
 		return transforms_func
 
+	def get_percentile (self, val):
+		percentile = 0.0
+		if val>=2.5: percentile = 99
+		elif val>=2.25 : percentile = 98
+		elif val>=2.0 : percentile = 97
+		elif val>=1.75:percentile = 95
+		elif val>=1.5:percentile = 93
+		elif val>=1.25:percentile = 89
+		elif val>=1.0:percentile = 84
+		elif val>=.75:percentile = 77
+		elif val>=.5:percentile = 69
+		elif val>=.25:percentile = 59
+		elif val>=-0.0:percentile = 50
+		elif val>=-.25:percentile = 40
+		elif val>=-.5:percentile = 30
+		elif val>=-.75:percentile = 22
+		elif val>=-1.0:percentile = 15
+		elif val>=-1.25:percentile = 10
+		elif val>=-1.5:percentile = 6
+		elif val>=-1.75:percentile = 4
+		elif val>=-2.0:percentile = 2
+		elif val>=-2.25:percentile = 1
+	
+		return percentile
+
 	#Given a mrc file, pdb file, and optional other information, this function returns several data stuctures representing the results
 	def gen_data(self, mrc_file_name, pdb_file_name, trans_Num, iso_Thresh):
 
@@ -268,8 +293,11 @@ class E2FoldHunterStat:
 
 			remainder_volume = c["mean"]*(xMax*yMax*zMax)
 			MRC_volume = target_binary["mean"]*(xMax*yMax*zMax)
-
-			excludePercent = (float(remainder_volume)/MRC_volume)
+			if(remainder_volume==0): excludePercent = 0.0
+			elif (MRC_volume==0): 
+				excludePercent = 1.0
+				print "Try choosing a different (smaller) isosurface threshold value. "
+			else: excludePercent = (float(remainder_volume)/MRC_volume)
 			volumePercent = 1-excludePercent
 			#####################################
 
@@ -319,6 +347,9 @@ class E2FoldHunterStat:
 		s1 =[]             #score1,2,3 holds raw scores of all transforms ("none" for bad transforms)-  s1,2,3 holds std scores of all transforms (0.0 for bad transforms)
 		s2 =[]
 		s3 =[]
+		s1p = []
+		s2p = []
+		s3p = []
 
 		cCount = 0
 		for i in range(0,len(score1)):
@@ -327,9 +358,17 @@ class E2FoldHunterStat:
 				s2.append(0.0)
 				s3.append(0.0)
 			else:
-				s1.append(((calc1[cCount]-s1_mean)/s1_std))
-				s2.append(((calc2[cCount]-s2_mean)/s2_std))
-				s3.append(((calc3[cCount]-s3_mean)/s3_std))
+				temp_std_x = ((calc1[cCount]-s1_mean)/s1_std)
+				temp_std_y = ((calc2[cCount]-s2_mean)/s2_std)
+				temp_std_z = ((calc3[cCount]-s3_mean)/s3_std)
+
+				s1p.append(int(self.get_percentile(float(temp_std_x))))
+				s2p.append(int(self.get_percentile(float(temp_std_y))))
+				s3p.append(int(self.get_percentile(float(temp_std_z))))
+
+				s1.append(temp_std_x)
+				s2.append(temp_std_y)
+				s3.append(temp_std_z)
 				cCount=cCount+1
 				#s3.append(calc3[cCount])
 
@@ -338,13 +377,17 @@ class E2FoldHunterStat:
 		print " " 	
 		print "Number of transformations performed: " + str(len(calc1))
 		print "score 1 - Real space correlation: " + str(s1[0]) + " standard deviations above the mean"
+		print "score 1 - Real space correlation - Percentile Rank: " + str(s1p[0])
 		print "The average pixel value (real space correlation): " + str(score1[0])
 		print " " 
 		print "score 2 - Atom inclusion: " + str(s2[0]) + " standard deviations above the mean"
+		print "score 2 - Atom inclusion - Percentile Rank: " + str(s2p[0])
 		print "The atom inclusion percentage is: " + str(score2[0]*100) + "%"
 		print " " 
 		print "score 3 - Volume overlap: " + str(s3[0]) + " standard deviations above the mean"
+		print "score 3 - Volume overlap - Percentile Rank: " + str(s3p[0])
 		print "The volume overlap of the model and map is: " + str(score3[0]*100) + "%"
+		print " " 
 
 
 		##### Create Dictionary
@@ -376,6 +419,9 @@ class E2FoldHunterStat:
 		vals["score_1"] = s1
 		vals["score_2"] = s2
 		vals["score_3"] = s3
+		vals["score_1_p"] = s1p
+		vals["score_2_p"] = s2p
+		vals["score_3_p"] = s3p
 		vals["tNum"] = tNum
 
 		s4 =[] #cumulative z score
