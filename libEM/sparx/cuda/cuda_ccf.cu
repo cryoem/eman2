@@ -127,12 +127,12 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAG
 
 
     printf("\nMemory to be allocated on the video card:\n");
-    printf("For NIMAGE subject images: %10.3f MB\n", NIMAGE*NX*NY*4/1000000.0);
-    printf("For reference image: %10.3f KB\n", NX*NY*4/1000.0);
-    printf("For NIMAGE subject images in polar coordinates: %10.3f MB\n", NIMAGE*(RING_LENGTH+2)*NRING*4/1000000.0);
-    printf("For reference image in polar coordinates: %10.3f KB\n", (RING_LENGTH+2)*NRING*4/1000.0);
-    printf("For all ccfs: %10.3f MB\n", (RING_LENGTH+2)*NIMAGE*(2*KX+1)*(2*KY+1)*2*4/1000000.0);
-    printf("Total memory: %10.3f MB\n\n", ((NIMAGE+1)*(NX*NY+(RING_LENGTH+2)*NRING)+(RING_LENGTH+2)*NIMAGE*(2*KX+1)*(2*KY+1)*2)*4/1000000.0);
+    printf("For %5d subject images                      : %10.3f MB\n", NIMAGE, NIMAGE*NX*NY*4/1000000.0);
+    printf("For reference image                           : %10.3f KB\n", NX*NY*4/1000.0);
+    printf("For %5d subject images in polar coordinates : %10.3f MB\n", NIMAGE, NIMAGE*(RING_LENGTH+2)*NRING*4/1000000.0);
+    printf("For reference image in polar coordinates      : %10.3f KB\n", (RING_LENGTH+2)*NRING*4/1000.0);
+    printf("For all crosss-correlation functions (CCF)    : %10.3f MB\n", (RING_LENGTH+2)*NIMAGE*(2*KX+1)*(2*KY+1)*2*4/1000000.0);
+    printf("Total memory used                             : %10.3f MB\n\n", ((NIMAGE+1)*(NX*NY+(RING_LENGTH+2)*NRING)+(RING_LENGTH+2)*NIMAGE*(2*KX+1)*(2*KY+1)*2)*4/1000000.0);
 
 
     /* Allocate the matrix for all NIMAGE subject images on the video card */
@@ -165,8 +165,8 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAG
     	for (j = 0; j < RING_LENGTH; j++) {
 		index = i*(RING_LENGTH+2)+j;
 		ang = float(j)/RING_LENGTH*PI*2;
- 	      	points[index*2] = (i/31.*25+1)*cosf(ang);
-		points[index*2+1] = (i/31.*25+1)*sinf(ang);
+ 	      	points[index*2] = (i+1)*cosf(ang);
+		points[index*2+1] = (i+1)*sinf(ang);
     	}
 	
     /* Fill the matrix for the coordinates of shifts */
@@ -257,7 +257,7 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAG
     /* Memory clean up */
     free(subject_image_polar);
     free(ref_image_polar);
-    for (k=0; k<NROW; k++)    
+    for (k=0; k<NROW; k++)
 	cudaFreeArray(subject_image_array[k]);
     if (NIMAGE_LEFT!=0)
         cudaFreeArray(subject_image_array_left);
@@ -279,24 +279,24 @@ __global__ void complex_mul(float *ccf, int BLOCK_SIZE, int NRING, int NIMAGE, i
 
     // Block index
     int bx = blockIdx.x;
-    
+
     // Thread index
     int tx = threadIdx.x;
-    
+
     float ccf_s_real = 0.0;
-    float ccf_s_imag = 0.0; 
+    float ccf_s_imag = 0.0;
     float ccf_m_real = 0.0;
     float ccf_m_imag = 0.0;
     float sub_real, sub_imag, ref_real, ref_imag;
-    int i_block, b_image, subject_index, ref_index, ccf_index;	
+    int i_block, b_image, subject_index, ref_index, ccf_index;
     float sr_rr, si_ri, sr_ri, si_rr;
-    
+
     b_image = bx*BLOCK_SIZE*NRING;
     for (int i = 0; i < NRING; i++) {
     	i_block = i*BLOCK_SIZE;
 	subject_index = (b_image+i_block+tx)*2;
         ref_index = (i_block+tx)*2;
-	
+
 	sub_real = tex1Dfetch(texim_subject, subject_index);
     	sub_imag = tex1Dfetch(texim_subject, subject_index+1);
 	ref_real = tex1Dfetch(texim_ref, ref_index);
@@ -304,18 +304,18 @@ __global__ void complex_mul(float *ccf, int BLOCK_SIZE, int NRING, int NIMAGE, i
 	sr_rr = sub_real*ref_real;
         si_ri = sub_imag*ref_imag;
         sr_ri = sub_real*ref_imag;
-        si_rr = sub_imag*ref_real;	
+        si_rr = sub_imag*ref_real;
 	ccf_s_real += sr_rr+si_ri;
 	ccf_s_imag += -sr_ri+si_rr;
         ccf_m_real += sr_rr-si_ri;
         ccf_m_imag += -sr_ri-si_rr;
     }
-    
+
     ccf_index = (bx*BLOCK_SIZE+tx)*2;
     int ccf_OFFSET = BLOCK_SIZE*2*NIMAGE*(2*KX+1)*(2*KY+1);
-    ccf[ccf_index] = ccf_s_real;    
+    ccf[ccf_index] = ccf_s_real;
     ccf[ccf_index+1] = ccf_s_imag;
-    ccf[ccf_index+ccf_OFFSET] = ccf_m_real;    
+    ccf[ccf_index+ccf_OFFSET] = ccf_m_real;
     ccf[ccf_index+ccf_OFFSET+1] = ccf_m_imag;
 }
 
@@ -338,6 +338,6 @@ __global__ void resample_to_polar(float* image, float dx, float dy, int NX, int 
     float shifts_x = tex1Dfetch(texim_shifts, by*2);
     float shifts_y = tex1Dfetch(texim_shifts, by*2+1);
 
-    image[img_index] = tex2D(tex, cnx+points_x+shifts_x+dx, cny+points_y+shifts_y+dy);       
+    image[img_index] = tex2D(tex, cnx+points_x+shifts_x+dx, cny+points_y+shifts_y+dy);
 }
  
