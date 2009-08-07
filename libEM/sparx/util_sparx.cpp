@@ -1903,7 +1903,7 @@ EMData* Util::Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, 
 	return out;
 }
 
-float Util::bilinear(float xold, float yold, int nsam, int, float* xim)
+float Util::bilinear(float xold, float yold, int nsam, int nrow, float* xim)
 {
 /*
 c  purpose: linear interpolation
@@ -1945,10 +1945,9 @@ c  purpose: linear interpolation
 //     &            (IXOLD .GE. 1 .AND. IXOLD .LE. NSAM-1)) THEN
 //c                INSIDE BOUNDARIES OF OUTPUT IMAGE
 	xdif = xold - ixold;
-	bilinear = ydif* (xim(ixold,iyold+1) - xim(ixold,iyold)) +
-	           xdif* (xim(ixold+1,iyold) - xim(ixold,iyold) +
-			   ydif* (xim(ixold+1,iyold+1) - xim(ixold+1,iyold) -
-			         (xim(ixold,iyold+1) - xim(ixold,iyold)) ));
+	bilinear = xim(ixold, iyold) + ydif* (xim(ixold, iyold+1) - xim(ixold, iyold)) +
+	           xdif* (xim(ixold+1, iyold) - xim(ixold, iyold) +
+			   ydif* (xim(ixold+1, iyold+1) - xim(ixold+1, iyold) - xim(ixold, iyold+1) + xim(ixold, iyold)) );
 
 	return bilinear;
 }
