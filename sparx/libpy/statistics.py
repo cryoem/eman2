@@ -5629,22 +5629,22 @@ def k_means_open_unstable(stack, maskname, CTF):
 	return im_M, mask, ctf, ctf2, lim, N
 
 # Convert local all assignment to absolute all partition
-def k_means_stab_asg2part(ALL_ASG, LUT):
-	from numpy import array
-	p = len(ALL_ASG)
-	K = max(ALL_ASG[0]) + 1
-	N = len(ALL_ASG[0])
+def k_means_stab_asg2part(outdir, npart):
+	from numpy     import array
+	from utilities import get_im
 
 	ALL_PART = []
-	for ASG in ALL_ASG:
-		TMP  = [[] for i in xrange(K)]
-		for n in xrange(N): TMP[ASG[n]].append(LUT[n])
-		PART = []
+	for n in xrange(npart):
+		name = outdir + '/averages_%02i.hdf' % n
+		K    = EMUtil.get_image_count(name)
+		part = []
 		for k in xrange(K):
-			a = array(TMP[k], 'int32')
-			a.sort()
-			PART.append(a)
-		ALL_PART.append(PART)
+			im  = get_im(name, k)
+			lid = im.get_attr('members')
+			lid = array(lid, 'int32')
+			lid.sort()
+			part.append(lid.copy())
+		ALL_PART.append(part)
 
 	return ALL_PART
 

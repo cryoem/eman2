@@ -12274,7 +12274,6 @@ def k_means_stab_CUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_no
 	k_means_cuda_open_im(KmeansCUDA, stack, LUT, mask)
 
 	# loop over partition
-	ALL_ASG = []
 	print_begin_msg('k-means')
 	for n in xrange(npart):
 		# info
@@ -12299,8 +12298,7 @@ def k_means_stab_CUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_no
 			sys.exit()
 
 		# get back the partition and its infos
-		ASG = KmeansCUDA.get_partition()
-		ALL_ASG.append(ASG)
+		ASG  = KmeansCUDA.get_partition()
 		INFO = KmeansCUDA.get_info()
 		k_means_cuda_info(INFO)
 		AVE  = KmeansCUDA.get_averages()
@@ -12313,9 +12311,9 @@ def k_means_stab_CUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_no
 	# destroy k-means
 	del KmeansCUDA
 
-	# convert local assignment to absolute partition
+	# read assignment and convert to partition
 	logging.info('... Matching')
-	ALL_PART = k_means_stab_asg2part(ALL_ASG, LUT)
+	ALL_PART = k_means_stab_asg2part(outdir, npart)
 
 	# calculate the stability
 	if match   == 'hh':
@@ -12323,7 +12321,7 @@ def k_means_stab_CUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_no
 		logging.info('... Stability: %5.2f %% (%d objects)' % (stb, nb_stb))
 	elif match == 'pwa':
 		MATCH, STB_PART, CT_s, CT_t, ST, st = k_means_stab_pwa(ALL_PART)
-		logging.info('... Stability: %5.2f %% (%d objects)' % (st, sum(CT_s)))
+		logging.info('... Stability: %5.2f %% (%d objects)' % (sum(ST) / float(len(ST)), sum(CT_s)))
 	
 	# export the stable class averages
 	count_k, id_rejected = k_means_stab_export(STB_PART, stack, outdir, th_nobj)
@@ -12390,7 +12388,6 @@ def k_means_stab_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_nobj = 
 	else: T0 = 0
 
 	# loop over partition
-	ALL_ASG = []
 	print_begin_msg('k-means')
 	for n in xrange(npart):
 		# info
@@ -12410,7 +12407,6 @@ def k_means_stab_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_nobj = 
 			sys.exit()
 
 		# export partition
-		ALL_ASG.append(assign)
 		crit       = k_means_criterion(Cls, critname)
 		glb_assign = k_means_locasg2glbasg(assign, LUT, Ntot)
 		k_means_export(Cls, crit, glb_assign, outdir, n, TXT)
@@ -12418,9 +12414,9 @@ def k_means_stab_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_nobj = 
 	# end of classification
 	print_end_msg('k-means')
 
-	# convert local assignment to absolute partition
+	# convert all assignment to partition
 	logging.info('... Matching')
-	ALL_PART = k_means_stab_asg2part(ALL_ASG, LUT)
+	ALL_PART = k_means_stab_asg2part(outdir, npart)
 
 	# calculate the stability
 	if match   == 'hh':
@@ -12428,7 +12424,7 @@ def k_means_stab_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_nobj = 
 		logging.info('... Stability: %5.2f %% (%d objects)' % (stb, nb_stb))
 	elif match == 'pwa':
 		MATCH, STB_PART, CT_s, CT_t, ST, st = k_means_stab_pwa(ALL_PART)
-		logging.info('... Stability: %5.2f %% (%d objects)' % (st, sum(CT_s)))
+		logging.info('... Stability: %5.2f %% (%d objects)' % (sum(ST) / float(len(ST)), sum(CT_s)))
 	
 	if not TXT:
 		# export the stable class averages
@@ -12516,7 +12512,6 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_nob
 	else: T0 = 0
 
 	# loop over partition
-	ALL_ASG = []
 	if myid == main_node: print_begin_msg('k-means')
 	for n in xrange(npart):
 		# info
@@ -12538,7 +12533,6 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_nob
 
 		# export partition
 		if myid == main_node:
-			ALL_ASG.append(assign)
 			crit       = k_means_criterion(Cls, critname)
 			glb_assign = k_means_locasg2glbasg(assign, LUT, Ntot)
 			k_means_export(Cls, crit, glb_assign, outdir, n, TXT)
@@ -12547,9 +12541,9 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_nob
 		# end of classification
 		print_end_msg('k-means')
 
-		# convert local assignment to absolute partition
+		# convert all assignment to partition
 		logging.info('... Matching')
-		ALL_PART = k_means_stab_asg2part(ALL_ASG, LUT)
+		ALL_PART = k_means_stab_asg2part(outdir, npart)
 
 		# calculate the stability
 		if match   == 'hh':
@@ -12557,7 +12551,7 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_nob
 			logging.info('... Stability: %5.2f %% (%d objects)' % (stb, nb_stb))
 		elif match == 'pwa':
 			MATCH, STB_PART, CT_s, CT_t, ST, st = k_means_stab_pwa(ALL_PART)
-			logging.info('... Stability: %5.2f %% (%d objects)' % (st, sum(CT_s)))
+			logging.info('... Stability: %5.2f %% (%d objects)' % (sum(ST) / float(len(ST)), sum(CT_s)))
 
 		# export the stable class averages
 		if TXT:	count_k, id_rejected = k_means_stab_export_txt(STB_PART, outdir)
