@@ -157,9 +157,9 @@ int main(int argc, char *argv[])
 		data[i]->process_inplace("normalize.circlemean");
 		data[i]->process_inplace("mask.sharp", Dict("outer_radius", data[i]->get_xsize()/2));
 
-		if (i < 5) {
-			data[i]->write_image("speed.hed", i, EMUtil::IMAGE_IMAGIC);
-		}
+//		if (i < 5) {
+//			data[i]->write_image("speed.hed", i, EMUtil::IMAGE_IMAGIC);
+//		}
     }
 
     if (low) {

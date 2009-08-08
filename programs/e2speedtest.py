@@ -97,8 +97,8 @@ improved with time."""
         data[i].process_inplace('normalize.circlemean')
         data[i].process_inplace('mask.sharp', {'outer_radius':data[i].get_xsize()/2});
         
-        if i < 5 :
-            data[i].write_image('speed.hed', i, EMUtil.ImageType.IMAGE_IMAGIC)
+#        if i < 5 :
+#            data[i].write_image('speed.hed', i, EMUtil.ImageType.IMAGE_IMAGIC)
             
     if options.low:
         print 'Low level tests starting. Please note that compiling with optimization may \
