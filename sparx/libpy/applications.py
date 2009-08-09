@@ -11755,12 +11755,12 @@ def var_mpi(files, outdir, fl, aa, radccc, writelp, writestack, frepa = "default
 		print myid," A  ",files[ifile],"   ",nimg
 		for i in xrange(nimg):
 			img = get_im( files[ifile], i )
-			if(repair):  Util.div_img(img, rota)
-			if(repair and writelp):  img.write_image(files[ifile], i)
 			img = circumference( img, radcir )
 			if(fl > 0.0):
 				img = filt_tanl( img, fl, aa )
 				if writestack: img.write_image( outdir+"/filtered%04d.hdf"%(ifile), i )
+			if(repair):  Util.div_img(img, rota) #img = circumference(Util.divn_img(img, rota), radcir)
+			if(repair and writelp):  img.write_image(files[ifile], i)
 			if(total_img%2 == 0):	Util.add_img(avg1, img)
 			else:			Util.add_img(avg2, img)
 			total_img += 1
@@ -11801,9 +11801,9 @@ def var_mpi(files, outdir, fl, aa, radccc, writelp, writestack, frepa = "default
 			print myid," V  ",files[ifile],"   ",nimg
 			for i in xrange(nimg):
 				img = get_im( files[ifile], i )
-				if(repair and not writelp):  Util.div_img(img, rota)
 				img = circumference( img, radcir )
 				if(fl > 0.0): img = filt_tanl( img, fl, aa)
+				if(repair and not writelp):  Util.div_img(img, rota) #img = circumference(Util.divn_img(img, rota), radcir)
 				if pca : pcaer.insert(img)
 				Util.sub_img(img, avg)
 				if(total_img%2 == 0): Util.add_img2(var1, img)
@@ -11818,11 +11818,11 @@ def var_mpi(files, outdir, fl, aa, radccc, writelp, writestack, frepa = "default
 	bcast_EMData_to_all( var, myid )
 	if(  (myid == 0)):
 		Util.mul_scalar(var1, 1.0/float(total_img//2+total_img%2 - 1 ))
-		var1.write_image(varfileE)
+		circumference(var1, radcir-1).write_image(varfileE)
 		Util.mul_scalar(var2, 1.0/float(total_img//2 - 1) )
-		var2.write_image(varfileO)
+		circumference(var2, radcir-1).write_image(varfileO)
 
-		var.write_image( varfile )
+		circumference(var, radcir-1).write_image( varfile )
 		del var1, var2
 	del var
 
