@@ -11755,7 +11755,7 @@ def var_mpi(files, outdir, fl, aa, radccc, writelp, writestack, frepa = "default
 		print myid," A  ",files[ifile],"   ",nimg
 		for i in xrange(nimg):
 			img = get_im( files[ifile], i )
-			img = circumference( img, radcir )
+			#img = circumference( img, radcir )
 			if(fl > 0.0):
 				img = filt_tanl( img, fl, aa )
 				if writestack: img.write_image( outdir+"/filtered%04d.hdf"%(ifile), i )
@@ -11801,7 +11801,7 @@ def var_mpi(files, outdir, fl, aa, radccc, writelp, writestack, frepa = "default
 			print myid," V  ",files[ifile],"   ",nimg
 			for i in xrange(nimg):
 				img = get_im( files[ifile], i )
-				img = circumference( img, radcir )
+				#img = circumference( img, radcir )
 				if(fl > 0.0): img = filt_tanl( img, fl, aa)
 				if(repair and not writelp):  Util.div_img(img, rota) #img = circumference(Util.divn_img(img, rota), radcir)
 				if pca : pcaer.insert(img)
