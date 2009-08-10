@@ -125,6 +125,7 @@ class E2FoldHunterStat:
 	#Given a mrc file, pdb file, and optional other information, this function returns several data stuctures representing the results
 	def gen_data(self, mrc_file_name, pdb_file_name, trans_Num, iso_Thresh):
 
+		zz = time.time()
 		target = EMData(mrc_file_name)
 
 
@@ -440,7 +441,7 @@ class E2FoldHunterStat:
 		for i in range(0,len(s1)):
 			blank.append(0)
 
-
+		'''
 		mpl1 =[] #holds standard deviation scores for only good transforms
 		mpl2 =[]
 		mpl3 =[]
@@ -455,7 +456,7 @@ class E2FoldHunterStat:
 				d = (vals['tx'][t])**2 + (vals['ty'][t])**2 + (vals['tz'][t])**2
 				d = (d)**.5
 				mplDist.append(d)
-
+		'''
 		
 		############ emplot 3d
 		data = []
@@ -483,6 +484,8 @@ class E2FoldHunterStat:
 		rotData.append(dist)
 
 		b = a.copy()
+		zz = time.time() - zz
+		print zz
 		return vals, rotList, b, data, initPoint
 		#vals is a dictionary of all transformation information and score values
 		#rotlist is a list of all the random transformations
