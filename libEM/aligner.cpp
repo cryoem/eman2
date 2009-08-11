@@ -1202,7 +1202,7 @@ EMData* Refine3DAligner::align(EMData * this_img, EMData *to,
 	const string & cmp_name, const Dict& cmp_params) const
 {
 
-	if (!to or !this_img) throw NullPointerException("Input image is null"); // not sure if this is necessary, it was there before I started
+	if (!to || !this_img) throw NullPointerException("Input image is null"); // not sure if this is necessary, it was there before I started
 
 	if (to->get_ndim() != 3 || this_img->get_ndim() != 3) throw ImageDimensionException("The Refine3D aligner only works for 3D images");
 
