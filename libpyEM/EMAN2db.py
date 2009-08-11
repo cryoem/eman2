@@ -56,7 +56,7 @@ except:
 
 # If set, fairly verbose debugging information will be written to the console
 # larger numbers will increase the amount of output
-DBDEBUG=1
+DBDEBUG=0
 
 # Flags used to open the database environment
 envopenflags=db.DB_CREATE|db.DB_INIT_MPOOL|db.DB_INIT_LOCK|db.DB_INIT_LOG|db.DB_THREAD
