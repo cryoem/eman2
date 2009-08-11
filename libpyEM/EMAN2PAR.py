@@ -792,7 +792,9 @@ class EMDCTaskClient(EMTaskClient):
 			if self.verbose : print "Task done %d"%task.taskid
 			if self.verbose>3 : print self.__dict__
 
-			while 1:
+			retry=True
+			while retry:
+				retry=False
 				try:
 					sock,sockf=openEMDCsock(self.addr,clientid=self.myid,retry=10)
 					sockf.write("DONE")
@@ -808,17 +810,20 @@ class EMDCTaskClient(EMTaskClient):
 					sendobj(sockf,k)
 					try : sendobj(sockf,v)
 					except :
-						print "ERROR (retrying) on : ",k, " in ",ret.items()
+						print "ERROR (retrying ",task.taskid,") on : ",k, " in ",ret.items()
 						if isinstance(v,EMData) : v.write_image("error.hdf",-1)
 						time.sleep(5)
-						sockf.close()
-						sock.close()
-						continue
-				sendobj(sockf,None)
-				sockf.flush()
-				sockf.close()
-				sock.close()
-				break
+						retry=True
+
+				try:
+					sendobj(sockf,None)
+					sockf.flush()
+					sockf.close()
+					sock.close()
+				except:
+					print "Error on flush (%d)"%task.taskid
+					retry=True
+				
 			if self.verbose : print "Task returned %d"%task.taskid
 			if self.verbose>2 : print "Results :",ret
 			

@@ -790,7 +790,7 @@ class DBDict:
 		self.name = name
 		self.parent=parent
 		self.dbenv=dbenv
-		self.lock=threading.Lock()	# used to reduce thread conflicts ... should probably be using threading.Lock
+		self.lock=threading.Lock()	# used to reduce thread conflicts
 		self.file=file
 		self.rohint=ro
 		self.lasttime=time.time()		# last time the database was accessed
@@ -1033,7 +1033,6 @@ of these occasional errors"""
 			
 			self.put(dumps(key,-1),dumps(ad,-1),txn=self.txn)
 
-			if not self.has_key("maxrec") or key>self["maxrec"] : self["maxrec"]=key
 			if isinstance(key,int) and (not self.has_key("maxrec") or key>self["maxrec"]) : self["maxrec"]=key
 			
 			# write the binary data
@@ -1198,7 +1197,6 @@ of these occasional errors"""
 			
 			self.put(dumps(key,-1),dumps(ad,-1),txn=txn)
 
-			if not self.has_key("maxrec") or key>self["maxrec"] : self["maxrec"]=key
 			if isinstance(key,int) and (not self.has_key("maxrec") or key>self["maxrec"]) : self["maxrec"]=key
 			
 			# write the binary data
