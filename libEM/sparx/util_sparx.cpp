@@ -1812,25 +1812,6 @@ EMData* Util::Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, 
 	//     cns2 and cnr2 are predefined centers
 	//     no need to set to zero, all elements are defined
 	dpi = 2*atan(1.0);
-	/*std::cout << lcirc << std::endl;
-	clock_t start_time, end_time;
-	it = 10; inr = numr(1,it); l = numr(3,it); lt = l / 4; std::cout << inr << " " << l << std::endl;
-	dfi = dpi / lt; jt = 1;
-	fi = dfi * jt;
-	inr = numr(1,1);
-	x = sin(fi)* inr; y = cos(fi)*inr;
-	xold = x+cns2;    yold = y+cnr2;
-	start_time = clock();
-	float b = 0.0;
-	for (int iii=1; iii<=100000; iii++) {
-	     for (int jjj=1; jjj<=100000; jjj++) {
-	     	     float a=quadri(xold,yold,nsam,nrow,xim);
-	     	     b = b + a + iii - jjj;
-	     }
-	}
-	end_time = clock();
-	std::cout << "Elapsed time for 10^10 quadri is " << (double(end_time)-double(start_time))/CLOCKS_PER_SEC << " seconds. Results is " << b << std::endl;
-	exit(0); */
 	for (it=1; it<=nring; it++) {
 		// radius of the ring
 		inr = numr(1,it);
@@ -3057,8 +3038,8 @@ c
 			d2     = circ2(jc+1);
 
 			t1     = c1 * d1;
-			t3     = c1 * d2;
 			t2     = c2 * d2;
+			t3     = c1 * d2;
 			t4     = c2 * d1;
 
 			q(j)   += t1 + t2;
