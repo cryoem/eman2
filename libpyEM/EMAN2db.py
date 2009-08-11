@@ -798,9 +798,11 @@ class DBDict:
 		open read-write, it will be opened read-only"""
 
 		global DBDEBUG
-		if DBDEBUG and self.lock : print"DB %s locked. Waiting"%self.name
-		while self.lock : time.sleep(1)
-		self.lock.acquire()
+		if DBDEBUG:
+			while not self.lock.acquire(False) :
+				print"DB %s locked. Waiting"%self.name
+				time.sleep(1)
+		else : self.lock.acquire()
 		self.lasttime=time.time()
 		if self.bdb!=None :
 			if ro==True or self.isro==False : 

@@ -55,9 +55,10 @@ Various utilities related to BDB databases."""
 	parser.add_option("--long","-l",action="store_true",help="Long listing",default=False)
 	parser.add_option("--short","-s",action="store_true",help="Dense listing of names only",default=False)
 	parser.add_option("--filt",type="string",help="Only include dictionary names containing the specified string",default=None)
+	parser.add_option("--filtexclude",type="string",help="Exclude dictionary names containing the specified string",default=None)
+	parser.add_option("--match",type="string",help="Only include dictionaries matching the provided Python regular expression",default=None)
 	parser.add_option("--exclude",type="string",help="The name of a database containing a list of exclusion keys",default=None)
 
-	parser.add_option("--match",type="string",help="Only include dictionaries matching the provided Python regular expression",default=None)
 	parser.add_option("--makevstack",type="string",help="Creates a 'virtual' BDB stack with its own metadata, but the binary data taken from the (filtered) list of stacks",default=None)
 	parser.add_option("--appendvstack",type="string",help="Appends to/creates a 'virtual' BDB stack with its own metadata, but the binary data taken from the (filtered) list of stacks",default=None)
 
@@ -95,6 +96,9 @@ Various utilities related to BDB databases."""
 		if options.filt:
 			dbs=[db for db in dbs if options.filt in db]
 			
+		if options.filtexclude:
+			dbs=[db for db in dbs if options.filtexclude not in db]
+
 		if options.match!=None:
 			dbs=[db for db in dbs if re.match(options.match,db)]
 		
