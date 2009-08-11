@@ -203,7 +203,7 @@ class EMProject3DTaskDC(EMTask):
 			projection.set_attr("xform.projection",euler)
 			projection.set_attr("ptcl_repr",0)
 			projections[indices[i]] = projection
-			print "call back",int(100*(i+1)/float(n))
+#			print "call back",int(100*(i+1)/float(n))
 			progress_callback(int(100*(i+1)/float(n)))
 		d = {}
 		d["projections"] = projections

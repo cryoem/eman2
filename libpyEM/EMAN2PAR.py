@@ -541,9 +541,14 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				
 				cnt=0
 				while (1) :
-					key=recvobj(self.sockf)
-					if key==None : break
-					val=recvobj(self.sockf)
+					try:
+						key=recvobj(self.sockf)
+						if key==None : break
+						val=recvobj(self.sockf)
+					except:
+						traceback.print_exc()
+						print "Error in network communications"
+						break
 					result[key]=val				# store each key in the database
 					cnt+=1
 					if self.verbose>3: print key,val
@@ -775,29 +780,31 @@ class EMDCTaskClient(EMTaskClient):
 			# Return results
 			if self.verbose : print "Task done %d"%task.taskid
 			if self.verbose>3 : print self.__dict__
-			try:
-				sock,sockf=openEMDCsock(self.addr,clientid=self.myid,retry=10)
-				sockf.write("DONE")
-			except:
-				print "Server communication failure, trying again in 2 minutes"
-				time.sleep(120)
-				sock,sockf=openEMDCsock(self.addr,clientid=self.myid,retry=10)
-				sockf.write("DONE")
 
-			sendobj(sockf,task.taskid)
+			while 1:
+				try:
+					sock,sockf=openEMDCsock(self.addr,clientid=self.myid,retry=10)
+					sockf.write("DONE")
+				except:
+					print "Server communication failure, trying again in 2 minutes"
+					time.sleep(120)
+					sock,sockf=openEMDCsock(self.addr,clientid=self.myid,retry=10)
+					sockf.write("DONE")
 
-			for k,v in ret.items():
-				sendobj(sockf,k)
-				try : sendobj(sockf,v)
-				except :
-					print "ERROR on : ",k, " in ",ret.items()
-					if isinstance(v,EMData) : v.write_image("error.hdf",-1)
-					sendobj(sockf,None)
+				sendobj(sockf,task.taskid)
 
-			sendobj(sockf,None)
-			sockf.flush()
-			sockf.close()
-			sock.close()
+				for k,v in ret.items():
+					sendobj(sockf,k)
+					try : sendobj(sockf,v)
+					except :
+						print "ERROR (retrying) on : ",k, " in ",ret.items()
+						if isinstance(v,EMData) : v.write_image("error.hdf",-1)
+						time.sleep(5)
+						continue
+				sendobj(sockf,None)
+				sockf.flush()
+				sockf.close()
+				sock.close()
 			if self.verbose : print "Task returned %d"%task.taskid
 			if self.verbose>2 : print "Results :",ret
 			
