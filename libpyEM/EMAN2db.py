@@ -879,7 +879,7 @@ class DBDict:
 	def close_one(self):
 		"""Will select and close any excess open databases. Closure is based on the number of times it has been repoened and the
 		time it was last used."""
-		if not DBDict.closelock.acquire(blocking=0) : return  
+		if not DBDict.closelock.acquire(False) : return  
 
 		global MAXOPEN
 #		l=[(i.opencount,i.lasttime,i) for i in self.alldicts if i.bdb!=None]		# list of all open databases and usage,time info
@@ -905,7 +905,7 @@ class DBDict:
 	def close(self):
 		global DBDEBUG
 		n=0
-		while not self.lock.acquire(blocking=0) and n<3: 
+		while not self.lock.acquire(False) and n<3: 
 			print "Sleep on close ",self.name
 			time.sleep(1)
 			n+=1
