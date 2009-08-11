@@ -534,7 +534,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 					if self.verbose: print "Task sent, no ACK"
 					if Task!=None : self.queue.task_rerun(task.taskid)
 				if task!=None : 
-					EMDCTaskHandler.dbugfile.write("Task %5d sent to %s  (%s)  [%s]\n"%(task.taskid,self.client_address[0],r,local_datetime()))
+					EMDCTaskHandler.dbugfile.write("Task %5d sent to %s (%08X)  (%s)  [%s]\n"%(task.taskid,self.client_address[0],client_id,r,local_datetime()))
 					EMDCTaskHandler.dbugfile.flush()
 				EMDCTaskHandler.tasklock.release()
 
@@ -544,7 +544,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				# the first object we get is the task identifier
 				tid=data
 				
-				if self.verbose>1 : print "DONE task ",tid
+				if self.verbose>1 : print "DONE task (%08X) "%client_id,tid
 				
 				# then we get a sequence of key,value objects, ending with a final None key
 				result=db_open_dict("bdb:%s#result_%d"%(self.queue.path,tid))
@@ -558,6 +558,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 					except:
 						traceback.print_exc()
 						print "Error in network communications"
+						cnt=-1
 						break
 					result[key]=val				# store each key in the database
 					cnt+=1
@@ -566,8 +567,8 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				result.close()
 				if self.verbose>2 : print "Task %d: %d data elements"%(tid,cnt)
 
-				self.queue.task_done(tid)		# don't mark the task as done until we've stored the results
-				EMDCTaskHandler.dbugfile.write("Task %5d complete with %d data elements  [%s]\n"%(tid,cnt,local_datetime()))
+				if cnt>=0 : self.queue.task_done(tid)		# don't mark the task as done until we've stored the results
+				EMDCTaskHandler.dbugfile.write("Task %5d complete from %08X with %d data elements  [%s]\n"%(tid,client_id,cnt,local_datetime()))
 				EMDCTaskHandler.dbugfile.flush()
 
 			# Request data from the server
@@ -810,11 +811,14 @@ class EMDCTaskClient(EMTaskClient):
 						print "ERROR (retrying) on : ",k, " in ",ret.items()
 						if isinstance(v,EMData) : v.write_image("error.hdf",-1)
 						time.sleep(5)
+						sockf.close()
+						sock.close()
 						continue
 				sendobj(sockf,None)
 				sockf.flush()
 				sockf.close()
 				sock.close()
+				break
 			if self.verbose : print "Task returned %d"%task.taskid
 			if self.verbose>2 : print "Results :",ret
 			
