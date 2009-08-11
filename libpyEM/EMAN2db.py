@@ -56,7 +56,7 @@ except:
 
 # If set, fairly verbose debugging information will be written to the console
 # larger numbers will increase the amount of output
-DBDEBUG=0
+DBDEBUG=1
 
 # Flags used to open the database environment
 envopenflags=db.DB_CREATE|db.DB_INIT_MPOOL|db.DB_INIT_LOCK|db.DB_INIT_LOG|db.DB_THREAD
@@ -85,7 +85,7 @@ def DB_cleanup(signum=None,stack=None):
 		if stack!=None : traceback.print_stack(stack)
 	for d in DBDict.alldicts.keys(): 
 		d.close()
-		d.lock.acquire()		# prevents reopening
+		d.lock.acquire(False)		# prevents reopening
 	for e in EMAN2DB.opendbs.values(): e.close()
 	for d in DBDict.alldicts.keys(): d.lock.release()	# This will (intentionally) allow the threads to fail, since the environment is now closed
 	if signum in (2,15) :
@@ -910,7 +910,7 @@ class DBDict:
 			time.sleep(1)
 			n+=1
 		if n>=4 : return	# failed too many times, just return and let things fail where they may...
-		self.lock.acquire()
+
 		if self.bdb == None: 
 			self.lock.release()
 			return
