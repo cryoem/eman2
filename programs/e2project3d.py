@@ -159,10 +159,12 @@ class EMParallelProject3D:
 			raise NotImplementedError("The parallelism option you specified (%s) is not suppored" %self.options.parallel )
 				
 	def __write_output_data(self,rslts):
-		if not rslts.has_key("projections"):
-			print "Something went wrong, there is no projections key in the results?"
-			return False
-		for idx,image in rslts["projections"].items():
+		#if not rslts.has_key("projections"):
+			#print "Something went wrong, there is no projections key in the results?"
+			#return False
+#		print rslts.keys()
+		for idx,image in rslts.items():
+			if not isinstance(image,EMData): continue
 			t = image.get_attr("xform.projection")
 			image.write_image(self.options.outfile,idx)
 		
@@ -205,9 +207,9 @@ class EMProject3DTaskDC(EMTask):
 			projections[indices[i]] = projection
 #			print "call back",int(100*(i+1)/float(n))
 			progress_callback(int(100*(i+1)/float(n)))
-		d = {}
-		d["projections"] = projections
-		return d
+		#d = {}
+		#d["projections"] = projections
+		return projections
 	
 
 def main():

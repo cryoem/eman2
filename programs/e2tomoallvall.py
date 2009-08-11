@@ -37,7 +37,7 @@ from EMAN2db import EMTask
 
 def check_tomo_options(options):
 	'''
-	Checks options.align, options.aligncmp, options.cmp and options.nsoln
+	Checks options.align, options.aligncmp, options.cmp and options.nsoln, and options.shrink
 	Checks options.ralign if it is not None, and if not None, checks options.raligncmp
 	Used by e2tomoaverage
 	@param options - as returned by (options, args) = parser.parse_args() in e2tomoallvall and e2tomoaverage 
@@ -78,6 +78,9 @@ def check_tomo_options(options):
 	
 	if options.nsoln <= 0:
 		error.append( "nsoln must be greater than" )
+		
+	if options.shrink != None and options.shrink <= 1:
+		error.append( "If you supply the shrink argument it must be greater than 1" )
 	
 	return error
 
@@ -383,6 +386,7 @@ Boot straps an initial probe doing all versus all alignment of the input images
 	parser.add_option("--force",action="store_true",default=False,help="Force overwrite the output file if it already exists")
 	parser.add_option("--parallel",type="string",default=None,help="Use parallelism")
 	parser.add_option("--nsoln", default=1, type="int",help="If supplied and greater than 1, the nsoln-best alignments will be written to a text file. This is useful for debug but may be left unspecified")
+	parser.add_option("--shrink",type="int",help="Shrink the data as part of the alignment - for speed purposes but at the potential loss of accuracy",default=None)
 	if EMUtil.cuda_available():
 		parser.add_option("--cuda",action="store_true",help="GPU acceleration using CUDA. Experimental", default=False)
  

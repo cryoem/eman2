@@ -99,6 +99,9 @@ class EMBootStrappedAverages:
 		
 		if options.parallel:
 			cmd += " --parallel="+options.parallel
+			
+		if options.shrink:
+			cmd += " --shrink="+str(options.shrink)
 		return cmd
 	
 	def get_all_v_all_output(self):
@@ -328,7 +331,7 @@ class EMBootStrappedAverages:
 		'''
 		from e2tomoallvall import EMTomoOutputWriter
 		output_writer = EMTomoOutputWriter()
-		output_writer.write_ouptut(results, self.images, self.current_files)
+		output_writer.process_output(results, self.images, self.current_files)
 		
 		
 class EMTomoAlignments:
@@ -373,9 +376,31 @@ class EMTomoAlignments:
 			task_customers = []
 			tids = []
 
+			if options.shrink:
+				scratch_name_1 = numbered_bdb("bdb:tomo_scratch#scratch_shrink")
+				scratch_name_2 = numbered_bdb("bdb:tomo_scratch##scratch_shrink")
+			else: print "no shrink" 
+
 			for i,j in alignment_jobs:
-				data["probe"] = ("cache",files[i],0)
-				data["target"] = ("cache",files[j],0)
+				if options.shrink:
+					a = EMData(files[i],0)
+					a.process_inplace("math.meanshrink",{"n":options.shrink})
+					a.set_attr("src_image",files[i])
+					a.write_image(scratch_name_1,0)
+					
+					a = EMData(files[j],0)
+					a.process_inplace("math.meanshrink",{"n":options.shrink})
+					a.set_attr("src_image",files[j])
+					a.write_image(scratch_name_2,0)
+					
+					data["probe"] = ("cache",scratch_name_1,0)
+					data["target"] = ("cache",scratch_name_2,0)
+				else:
+					data["probe"] = ("cache",files[i],0)
+					data["target"] = ("cache",files[j],0)
+				
+				
+				
 				data["target_idx"] = j
 				data["probe_idx"] = i
 
@@ -395,8 +420,16 @@ class EMTomoAlignments:
 			n = len(alignment_jobs)
 			p = 0.0
 			for i,j in alignment_jobs:
+				
 				probe = EMData(files[i],0)
 				target = EMData(files[j],0)
+				
+				if options.shrink:
+					probe.process_inplace("math.meanshrink",{"n":options.shrink})
+					target.process_inplace("math.meanshrink",{"n":options.shrink})
+				else:
+					print "no shrink"
+				
 				data["target"] = target
 				data["probe"] = probe
 				data["target_idx"] = j
@@ -405,6 +438,9 @@ class EMTomoAlignments:
 		
 				task = EMTomoAlignTask(data=data)
 				rslts = task.execute(self.progress_callback)
+				
+				if options.shrink:
+					self.correction_translation(rslts,options.shrink)
 				caller.process_output(rslts)
 				
 				p += 1.0
@@ -437,12 +473,33 @@ class EMTomoAlignments:
 					tids.pop(i)
 
 					rslts = task_customer.get_results(tid)
+					if options.shrink: self.correction_translation(rslts,options.shrink)
 					
 					caller.process_output(rslts[1])
 			
-			time.sleep(5)			
-
-
+			time.sleep(5)
+		
+	def	correction_translation(self,results,shrink):
+		ali = results["ali"]
+		a = ali.get_params("eman")
+		tx = shrink*a["tx"]
+		ty = shrink*a["ty"]
+		tz = shrink*a["tz"]
+		ali.set_trans(tx,ty,tz)
+		results["ali"] = ali
+		
+		all_solns = results["all_solns"]
+		for d in all_solns:
+			ali = d["xform.align3d"]
+			a = ali.get_params("eman")
+			tx = shrink*a["tx"]
+			ty = shrink*a["ty"]
+			tz = shrink*a["tz"]
+			ali.set_trans(tx,ty,tz)
+			d["xform.align3d"] = ali
+			
+		results["all_soln"] = all_solns
+			
 import os,sys
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -465,10 +522,13 @@ Currently only supports bootstrapping an initial probe doing all versus all alig
 	parser.add_option("--path", default=None, type="string",help="The name of a directory where results are placed. If unspecified will generate one automatically of type tomo_ave_??.")
 	parser.add_option("--nsoln", default=1, type="int",help="If supplied and greater than 1, the nsoln-best alignments will be written to a text file. This is useful for debug but may be left unspecified")
 	parser.add_option("--dbls",type="string",help="data base list storage, used by the workflow. You can ignore this argument.",default=None)
+	parser.add_option("--shrink",type="int",help="Shrink the data as part of the alignment - for speed purposes but at the potential loss of accuracy",default=None)
 	if EMUtil.cuda_available():
 		parser.add_option("--cuda",action="store_true",help="GPU acceleration using CUDA. Experimental", default=False)
 
 	(options, args) = parser.parse_args()
+	
+	print options.shrink
 	
 	error_messages = check_options(options,args)
 	if len(error_messages) != 0:

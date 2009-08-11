@@ -222,7 +222,7 @@ class EMTomoHunter:
 		for i in range(len(self.files)):
 			alignment_jobs.append([probe_idx,i])
 		
-		self.files.append(self.options.probe)
+		self.files.append(self.options.probe) # EMTomoAlignments needs the name of the probe
 			
 		from e2tomoaverage import EMTomoAlignments
 		alignments_manager = EMTomoAlignments(self.options)
@@ -321,6 +321,7 @@ def main():
 	parser.add_option("--ralign",type="string",help="This is the second stage aligner used to refine the first alignment. This is usually the \'refine\' aligner.", default=None)
 	parser.add_option("--raligncmp",type="string",help="The comparator used for determing the refined alignment", default="dot.tomo:threshold=0")
 	parser.add_option("--nsoln",type="int",help="The number of solutions to report", default=10)
+	parser.add_option("--shrink",type="int",help="Shrink the data as part of the alignment - for speed purposes but at the potential loss of accuracy",default=None)
 	if EMUtil.cuda_available():
 		parser.add_option("--cuda",action="store_true",help="GPU acceleration using CUDA. Experimental", default=False)
    
