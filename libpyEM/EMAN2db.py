@@ -436,7 +436,9 @@ class EMTaskQueue:
 	keeps increasing. When a task is complete, it is shifted to the 
 	tasks_done list, and the 'max' value is increased if necessary. There is
 	no guarantee in either list that all keys less than 'max' will exist."""
-	
+
+	lock=threading.Lock()
+
 	def __init__(self,path=None,ro=False):
 		"""path should point to the directory where the disk-based task queue will reside without bdb:"""
 		if path==None or len(path)==0 : path="."
@@ -454,6 +456,7 @@ class EMTaskQueue:
 	
 	def get_task(self,clientid=0):
 		"""This will return the next task waiting for execution"""
+		EMTaskQueue.lock.acquire()
 		for tid in sorted(self.active.keys()):
 			task=self.active[tid]
 			if isinstance(task,int) : continue
@@ -464,16 +467,19 @@ class EMTaskQueue:
 				task.starttime=time.time()
 				task.clientid=clientid
 				self.active[tid]=task
+				EMTaskQueue.lock.release()
 				return task 
-			
+
+		EMTaskQueue.lock.release()
 		return None
 	
 	def add_group(self):
 		"""returns a new (unique) group id to be used for related tasks"""
+		EMTaskQueue.lock.acquire()
 		try: ret=self.active["grpctr"]+1
 		except: ret=1
 		self.active["grpctr"]=ret
-		
+		EMTaskQueue.lock.release()
 		return ret
 	
 	def add_task(self,task):
@@ -483,6 +489,8 @@ class EMTaskQueue:
 		if not isinstance(task,EMTask) : raise Exception,"Invalid Task"
 		#self.active["max"]+=1
 		#tid=self.active["max"]
+		
+		EMTaskQueue.lock.acquire()
 		try: tid=max(self.active["maxrec"],self.complete["maxrec"])+1
 		except: tid=1
 		task.taskid=tid
@@ -499,6 +507,7 @@ class EMTaskQueue:
 				did=self.nametodid[k[1]]			# get the existing did from the cache (modtime,int)
 				if fmt!=did[0]	:					# if the file has been changed, we need to assign a new did
 					del self.didtoname[did]
+					EMTaskQueue.lock.release()
 					raise Exception
 			except: 
 				did=(fmt,random.randint(0,999999))	# since there may be multiple files with the same timestamp, we also use a random int
@@ -513,6 +522,7 @@ class EMTaskQueue:
 				task.data[j][1]=did
 
 		self.active[tid]=task		# store the task in the queue
+		EMTaskQueue.lock.release()
 		return tid
 		
 	def task_progress(self,taskid,percent):
@@ -543,17 +553,21 @@ class EMTaskQueue:
 	
 	def task_done(self, tid):
 		"""Mark a Task as complete, by shifting a task to the tasks_complete queue"""
+		EMTaskQueue.lock.acquire()
 		try:
 			task=self.active[tid]
 			if task==None:
 				print "*** Warning, task %d was already complete"%tid
+				EMTaskQueue.lock.release()
 				return
 		except:
+			EMTaskQueue.lock.release()
 			return
 		
 		task.endtime=time.time()
 		self.complete[tid]=task
 		del self.active[tid]
+		EMTaskQueue.lock.release()
 		#if self.complete["max"]<tid : self.complete["max"]=tid
 		#self.active["min"]=min(self.active.keys())
 		
@@ -576,18 +590,18 @@ class EMTaskQueue:
 		
 	def task_aborted(self, taskid):
 		"""Mark a Task as being aborted, by shifting a task to the tasks_complete queue"""
+		EMTaskQueue.lock.acquire()
 		try:
 			task=self.active[tid]
 		except:
+			EMTaskQueue.lock.release()
 			return
 		
 		#if self.active["min"]==taskid : self.active["min"]=min(self.active.keys())
 		self.complete[tid]=task
 		self.active[tid]=None
-		
+		EMTaskQueue.lock.release()
 
-		
-	
 class EMTask:
 	"""This class represents a task to be completed. Generally it will be subclassed. This is effectively
 	an abstract superclass to define common member variables and methods. Note that the data dictionary,
