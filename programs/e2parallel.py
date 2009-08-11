@@ -49,13 +49,13 @@ logid=None
 def main():
 	global debug,logid
 	progname = os.path.basename(sys.argv[0])
-	commandlist=("dcserver","dcclient","dckill")
+	commandlist=("dcserver","dcclient","dckill","dckillclients")
 	usage = """%prog [options] <command> ...
 	
 This program implements much of EMAN2's coarse-grained parallelism mechanism. There are several flavors available via
 different options in this program. The simplest, and easiest to use is probably the client/server Distriuted Computing system.
 
-<command> is one of: dcserver, dcclient, dckill, servmon
+<command> is one of: dcserver, dcclient, dckill, dckillclients servmon
 
 run e2parallel.py servmon to run a GUI server monitor. This MUST run on the same machine in the same directory as the server.
 
@@ -85,6 +85,9 @@ run e2parallel.py dcclient on as many other machines as possible, pointing at th
 	elif args[0]=="dckill" :
 		killdcserver(options.server,options.port,options.verbose)
 	
+	elif args[0]=="dckillclients" :
+		killdcclients(options.server,options.port,options.verbose)
+
 	elif args[0]=="servmon" :
 		runservmon()
 		
@@ -96,6 +99,10 @@ def rundcserver(port,verbose):
 #	EMAN2db.MPIMODE=1	# this diables caching on the server so the customer knows it can freely write to local database files
 	server=runEMDCServer(port,verbose)			# never returns
 
+def killdcclients(server,port,verbose):
+	import EMAN2db
+	server=runEMDCServer(port,verbose,True)			# never returns
+
 
 def rundcclient(host,port,verbose):
 	"""Starts a DC client running, runs forever"""
@@ -103,7 +110,7 @@ def rundcclient(host,port,verbose):
 	client.run(dieifnoserver=300)
 
 def killdcserver(server,port,verbose):
-	EMDCsendonecom(server,port,"QUIT",None)
+	EMDCsendonecom(server,port,"QUIT")
 
 
 # We import Qt even if we don't need it

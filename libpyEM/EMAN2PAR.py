@@ -389,10 +389,11 @@ class DCThreadingMixIn:
 #class ThreadingTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer): pass
 class ThreadingTCPServer(DCThreadingMixIn, SocketServer.TCPServer): pass
 
-def runEMDCServer(port,verbose):
+def runEMDCServer(port,verbose,killclients=False):
 	"""This will create a ThreadingTCPServer instance and execute it"""
 	try: EMDCTaskHandler.verbose=int(verbose)
 	except: EMDCTaskHandler.verbose=0
+	EMDCTaskHandler.killclients=killclients
 	EMDCTaskHandler.clients={}
 
 	if port!=None and port>0 : 
@@ -411,6 +412,7 @@ def runEMDCServer(port,verbose):
 				continue
 			break
 
+	if killclients : print "Client killing mode"
 	server.serve_forever()
 
 class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
@@ -419,6 +421,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 	verbose=0
 	rtcount=0
 	datacount=0
+	killclients=False
 	tasklock=threading.Lock()
 	dbugfile=file("debug.out","w")
 	rotate=('/','-','\\','|')
@@ -499,6 +502,13 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 			######################  These are issued by clients
 			# Ready for a task
 			if cmd=="RDYT" :
+				if EMDCTaskHandler.killclients:
+					sendobj(self.sockf,"EXIT")
+					self.sockf.flush()
+					r=self.sockf.read(4)
+					print "Client killed"
+					break
+				
 				EMDCTaskHandler.tasklock.acquire()
 				
 				# Get the first task and send it (pickled)
@@ -728,8 +738,8 @@ class EMDCTaskClient(EMTaskClient):
 				task=recvobj(sockf)
 				sockf.write("ACK ")
 				sockf.flush()
-				if self.verbose and task!=None: print "%s running task id %d"%(socket.gethostname(),task.taskid)
 				if task=="EXIT" : break
+				if self.verbose and task!=None: print "%s running task id %d"%(socket.gethostname(),task.taskid)
 			except :
 				print "No response from server, sleeping 30 sec"
 				if time.time()-lastjob>dieifnoserver :
