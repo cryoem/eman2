@@ -84,9 +84,9 @@ def DB_cleanup(signum=None,stack=None):
 		if stack!=None : traceback.print_stack(stack)
 	for d in DBDict.alldicts.keys(): 
 		d.close()
-		d.lock=True		# prevents reopening
+		d.lock.acquire()		# prevents reopening
 	for e in EMAN2DB.opendbs.values(): e.close()
-	for d in DBDict.alldicts.keys(): d.lock=False	# This will (intentionally) allow the threads to fail, since the environment is now closed
+	for d in DBDict.alldicts.keys(): d.lock.release()	# This will (intentionally) allow the threads to fail, since the environment is now closed
 	if signum in (2,15) :
 		print "Shutdown complete, exiting" 
 		sys.exit(1)
@@ -629,23 +629,22 @@ class EMAN2DB:
 	"""This class implements a local database of data and metadata for EMAN2"""
 	
 	opendbs={}
-	lock=False
+	lock=threading.Lock()
 	
 	def open_db(path=None):
 		"""This is an alternate constructor which may return a cached (already open)
 		EMAN2DB instance"""
 		# check the cache of opened dbs first
 #		if not path : path=e2getcwd()
-		while EMAN2DB.lock : 
-			time.sleep(1)
-		EMAN2DB.lock=True
+		EMAN2DB.lock.acquire()
+
 		if not path : path=e2gethome()+"/.eman2"
 		if path=="." or path=="./" : path=e2getcwd()
 		if EMAN2DB.opendbs.has_key(path) : 
-			EMAN2DB.lock=False
+			EMAN2DB.lock.release()
 			return EMAN2DB.opendbs[path]
 		ret=EMAN2DB(path)
-		EMAN2DB.lock=False
+		EMAN2DB.lock.release()
 		return ret
 	
 	open_db=staticmethod(open_db)
@@ -764,7 +763,7 @@ class DBDict:
 	
 	alldicts=weakref.WeakKeyDictionary()
 	nopen=0
-	closelock=0
+	closelock=threading.Lock()
 	fixedkeys=frozenset(("nx","ny","nz","minimum","maximum","mean","sigma","square_sum","mean_nonzero","sigma_nonzero"))
 	def __init__(self,name,file=None,dbenv=None,path=None,parent=None,ro=False):
 		"""This is a persistent dictionary implemented as a BerkeleyDB Hash
@@ -776,7 +775,7 @@ class DBDict:
 		self.name = name
 		self.parent=parent
 		self.dbenv=dbenv
-		self.lock=False				# used to reduce thread conflicts ... should probably be using threading.Lock
+		self.lock=threading.Lock()	# used to reduce thread conflicts ... should probably be using threading.Lock
 		self.file=file
 		self.rohint=ro
 		self.lasttime=time.time()		# last time the database was accessed
@@ -800,17 +799,17 @@ class DBDict:
 		global DBDEBUG
 		if DBDEBUG and self.lock : print"DB %s locked. Waiting"%self.name
 		while self.lock : time.sleep(1)
-		self.lock=True
+		self.lock.acquire()
 		self.lasttime=time.time()
 		if self.bdb!=None :
 			if ro==True or self.isro==False : 
 				if DBDEBUG : print "already open",self.name
-				self.lock=False
+				self.lock.release()
 				return  		# return if the database is already open and in a compatible read-only mode
 			if DBDEBUG : print "reopening R/W ",self.name
-			self.lock=False
+			self.lock.release()
 			self.close()	# we need to reopen read-write
-			self.lock=True
+			self.lock.acquire()
 
 		#if DBDEBUG:
 			## look at the locking subsystem stats
@@ -829,7 +828,7 @@ class DBDict:
 				self.bdb.open(self.path+"/"+file,self.name,db.DB_BTREE,db.DB_RDONLY|db.DB_THREAD)
 			except db.DBNoSuchFileError:
 				self.bdb=None
-				self.lock=False
+				self.lock.release()
 				if DBDEBUG : traceback.print_exc()
 				print "Cannot open or find ",self.name
 				raise Exception
@@ -847,7 +846,7 @@ class DBDict:
 				self.bdb.open(self.path+"/"+file,self.name,db.DB_BTREE,db.DB_CREATE|db.DB_THREAD)
 			except :
 				self.bdb=None
-				self.lock=False
+				self.lock.release()
 				traceback.print_exc()
 				print "Unable to open read/write ",self.name
 				return
@@ -862,12 +861,12 @@ class DBDict:
 			
 		self.opencount+=1	# how many times we have had to reopen this database
 		DBDict.nopen+=1
-		self.lock=False
+		self.lock.release()
 
 		global MAXOPEN
 		if DBDict.nopen>MAXOPEN : self.close_one() 
 
-		if DBDEBUG : print "Opened ",self.name, self.lock
+		if DBDEBUG : print "Opened ",self.name
 
 #		print "%d open"%DBDict.nopen
 #		print "opened ",self.name,ro
@@ -877,8 +876,8 @@ class DBDict:
 	def close_one(self):
 		"""Will select and close any excess open databases. Closure is based on the number of times it has been repoened and the
 		time it was last used."""
-		if DBDict.closelock : return		# someone else is already handling it
-		DBDict.closelock=True
+		if not DBDict.closelock.acquire(blocking=0) : return  
+
 		global MAXOPEN
 #		l=[(i.opencount,i.lasttime,i) for i in self.alldicts if i.bdb!=None]		# list of all open databases and usage,time info
 		l=[(i.lasttime,i.opencount,i) for i in self.alldicts if i.bdb!=None]		# sort by time 
@@ -898,25 +897,25 @@ class DBDict:
 				else :
 					print "Warning: attempt to autoclose the DB we just opened, please report this"
 		
-		DBDict.closelock=False
+		DBDict.closelock.release()
 
 	def close(self):
 		global DBDEBUG
 		n=0
-		while self.lock and n<3: 
+		while not self.lock.acquire(blocking=0) and n<3: 
 			print "Sleep on close ",self.name
 			time.sleep(1)
 			n+=1
-		if n>=5 : return	# failed too many times, just return and let things fail where they may...
-		self.lock=True
+		if n>=4 : return	# failed too many times, just return and let things fail where they may...
+		self.lock.acquire()
 		if self.bdb == None: 
-			self.lock=False
+			self.lock.release()
 			return
 #		print "close x ",self.path+"/"+str(self.file),self.name,"XXX"
 		self.bdb.close()
 		self.bdb=None
 		DBDict.nopen-=1
-		self.lock=False
+		self.lock.release()
 		if DBDEBUG : print "Closed ",self.name
 
 	def sync(self):

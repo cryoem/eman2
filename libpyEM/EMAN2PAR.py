@@ -419,7 +419,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 	verbose=0
 	rtcount=0
 	datacount=0
-	tasklock=False
+	tasklock=threading.Lock()
 	dbugfile=file("debug.out","w")
 	rotate=('/','-','\\','|')
 	
@@ -499,8 +499,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 			######################  These are issued by clients
 			# Ready for a task
 			if cmd=="RDYT" :
-				while self.tasklock : time.sleep(1)
-				self.tasklock=True
+				EMDCTaskHandler.tasklock.acquire()
 				
 				# Get the first task and send it (pickled)
 				EMDCTaskHandler.clients[client_id]=(self.client_address[0],time.time())
@@ -518,14 +517,16 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				r="HUH"
 				try:
 					r=self.sockf.read(4)
-					if r!="ACK " : raise Exception
+					if r!="ACK " : 
+						EMDCTaskHandler.tasklock.release()
+						raise Exception
 				except:
 					if self.verbose: print "Task sent, no ACK"
 					if Task!=None : self.queue.task_rerun(task.taskid)
 				if task!=None : 
 					EMDCTaskHandler.dbugfile.write("Task %5d sent to %s  (%s)  [%s]\n"%(task.taskid,self.client_address[0],r,local_datetime()))
 					EMDCTaskHandler.dbugfile.flush()
-				self.tasklock=False
+				EMDCTaskHandler.tasklock.release()
 
 			
 			# Job is completed, results returned
