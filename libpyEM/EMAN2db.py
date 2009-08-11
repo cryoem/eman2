@@ -41,6 +41,7 @@ import sys
 import time
 import fnmatch
 import random
+import threading
 import traceback
 try:
 	from bsddb3 import db
