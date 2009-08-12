@@ -341,7 +341,7 @@ def recvobj(sock):
 	if datlen<=0 :return None
 	return loads(sock.read(datlen))
 
-def EMDCsendonecom(addr,cmd,data):
+def EMDCsendonecom(addr,cmd,data,clientid=0):
 	"""Connects to an EMAN EMDCServer sends one command, receives a returned object and returns it.
 	addr is the standard (host,port) tuple. cmd is a 4 character string, and data is the payload.
 	Returns the response from the server."""
@@ -352,7 +352,7 @@ def EMDCsendonecom(addr,cmd,data):
 	#if sockf.read(4)!="EMAN" : raise Exception,"Not an EMAN server"
 	#sockf.write("EMAN")
 	#sockf.write(pack("I4s",EMAN2PARVER,cmd))
-	sock,sockf=openEMDCsock(addr,retry=12)
+	sock,sockf=openEMDCsock(addr,clientid=clientid,retry=12)
 	sockf.write(cmd)
 	sendobj(sockf,data)
 	sockf.flush()
@@ -781,7 +781,7 @@ class EMDCTaskClient(EMTaskClient):
 			if self.task==None : 
 				signal.alarm(0)
 				return True 
-			ret=EMDCsendonecom(self.addr,"PROG",(self.task.taskid,progress))
+			ret=EMDCsendonecom(self.addr,"PROG",(self.task.taskid,progress),clientid=self.myid)
 		
 		signal.alarm(0)
 		return ret
