@@ -514,7 +514,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 			if self.verbose : 
 				if cmd=="RDYT" :
 					EMDCTaskHandler.rtcount+=1
-					print " %s  (%d)   \r"%(EMDCTaskHandler.rotate[EMDCTaskHandler.rtcount%4],len(EMDCTaskHandler.clients.keys())-1),
+					print " %s  (%d)   \r"%(EMDCTaskHandler.rotate[EMDCTaskHandler.rtcount%4],len(EMDCTaskHandler.clients.bdb)-1),
 					sys.stdout.flush()
 				elif cmd=="DATA" :
 					EMDCTaskHandler.datacount+=1
@@ -526,7 +526,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 					print"? \r",
 					sys.stdout.flush()
 				elif cmd=="PROG" :
-					print "Command %s (%s): %s %s    \r"%(str(self.client_address),str(client_id),cmd,str(data))
+					print "Command %s (%s): %s %s    \r"%(str(self.client_address),str(client_id),cmd,str(data)),
 					sys.stdout.flush()
 				else :
 					try: print "Command %s (%s): %s (%d)"%(str(self.client_address),str(client_id),cmd,len(data))
@@ -687,9 +687,9 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 			# At the moment, this is the number of hosts that have communicated with us
 			# so it doesn't handle multiple cores
 			elif cmd=="NCPU" :
-				sendobj(self.sockf,len(EMDCTaskHandler.clients.keys())-1)
+				sendobj(self.sockf,len(EMDCTaskHandler.clients.bdb)-1)
 				self.sockf.flush()
-				if self.verbose : print len(EMDCTaskHandler.clients.keys())-1," clients reported"
+				if self.verbose : print len(EMDCTaskHandler.clients.bdb)-1," clients reported"
 				
 			elif cmd=="NGRP" :
 				sendobj(self.sockf,self.queue.add_group())
