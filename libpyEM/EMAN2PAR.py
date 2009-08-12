@@ -336,7 +336,7 @@ def recvobj(sock):
 	return loads(sock.read(datlen))
 
 def EMDCsendonecom(addr,cmd,data):
-	"""Connects to an EMAN EMDCServer sends one command then disconnects.
+	"""Connects to an EMAN EMDCServer sends one command, receives a returned object and returns it.
 	addr is the standard (host,port) tuple. cmd is a 4 character string, and data is the payload.
 	Returns the response from the server."""
 	#addr=tuple(addr)
@@ -593,15 +593,15 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				if self.verbose>1 : print "Task execution abort : ",data
 
 			# Progress message indicating that processing continues
-			# request should be (taskid,percent complete)
+			# data should be (taskid,percent complete)
 			# returns "OK  " if processing should continue
 			# retunrs "ABOR" if processing should be aborted
 			elif cmd=="PROG" :
 				EMDCTaskHandler.clients[client_id]=(self.client_address[0],time.time())
 				ret=self.queue.task_progress(data[0],data[1])
 				if self.verbose>2 : print "Task progress report : ",data
-				if ret : self.sockf.send("OK  ")
-				else : self.sockf.send("ABOR")
+				if ret : sendobj(self.sockf,"OK  ")
+				else : sendobj(self.sockf,"ABOR")
 
 			###################### These are utility commands
 			# Returns whatever is sent as data
@@ -711,13 +711,18 @@ class EMDCTaskClient(EMTaskClient):
 		EMTaskClient.__init__(self)
 		self.addr=(server,port)
 		self.verbose=verbose
+		self.lastupdate=0
+		self.task=None
 
 	def imalive(self,progress):
 		"""Executed code should call this periodically to inidicate that they are still running. This must be called at least once every 5 minutes
 		with an integer in the range 0-100. 100 means about to exit, 0 means not started yet. A -1 indicates an error has occurred and the request
 		is being aborted."""
-		
-		return True
+		if time.time()-self.lastupdate>60 : 
+			self.lastupdate=time.time()
+			if self.task==None : return True 
+			ret=EMDCsendonecom(self.addr,"PROG",(self.task.taskid,progress))
+		return ret
 
 	def run(self,dieifidle=86400,dieifnoserver=86400):
 		"""This is the actual client execution block. dieifidle is an integer number of seconds after
@@ -741,6 +746,7 @@ class EMDCTaskClient(EMTaskClient):
 				sockf.flush()
 				if task=="EXIT" : break
 				if self.verbose and task!=None: print "%s running task id %d"%(socket.gethostname(),task.taskid)
+				self.task=task
 			except :
 				print "No response from server, sleeping 30 sec"
 				if time.time()-lastjob>dieifnoserver :
