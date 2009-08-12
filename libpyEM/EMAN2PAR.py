@@ -323,7 +323,7 @@ def openEMDCsock(addr,clientid=0, retry=3):
 def sendobj(sock,obj):
 	"""Sends an object as a (binary) size then a binary pickled object to a socket file object"""
 	if obj==None : 
-		sock.write("\0\0\0\0")
+		sock.write(pack("I",0))
 		return
 	strobj=dumps(obj,-1)
 	sock.write(pack("I",len(strobj)))
@@ -402,8 +402,15 @@ def runEMDCServer(port,verbose,killclients=False):
 	EMDCTaskHandler.clients=db_open_dict("bdb:clients")
 
 	if port!=None and port>0 : 
-		server = SocketServer.ThreadingTCPServer(("", port), EMDCTaskHandler)	# "" is the hostname and will bind to any IPV4 interface/address
-#		server = SocketServer.TCPServer(("", port), EMDCTaskHandler)	# "" is the hostname and will bind to any IPV4 interface/address
+		server=None
+		while server==None:
+			try:
+				server = SocketServer.ThreadingTCPServer(("", port), EMDCTaskHandler)	# "" is the hostname and will bind to any IPV4 interface/address
+		#		server = SocketServer.TCPServer(("", port), EMDCTaskHandler)	# "" is the hostname and will bind to any IPV4 interface/address
+			except :
+				print "Port in use, waiting"
+				time.sleep(5)
+				continue
 		if verbose: print server
 	# EMAN2 will use ports in the range 9900-9999
 	else :
@@ -625,6 +632,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				if self.verbose : print "Task progress report : ",data
 				if ret : sendobj(self.sockf,"OK  ")
 				else : sendobj(self.sockf,"ABOR")
+				self.sockf.flush()
 
 			###################### These are utility commands
 			# Returns whatever is sent as data
