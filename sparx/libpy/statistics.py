@@ -1483,7 +1483,7 @@ def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, listID = None, fla
 		from fundamentals 	import fftip
 		from utilities          import get_arb_params
 
-	im_M = [0] * N
+	im_M = [None] * N
 	im   = EMData()
 	im.read_image(stack, listID[N_start], True)
 	nx = im.get_xsize()
@@ -1504,12 +1504,14 @@ def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, listID = None, fla
 
 	if listID is None: listim = range(N_start, N_stop)
 	else:              listim = listID[N_start:N_stop]
-	
+
 	DATA = im.read_images(stack, listim)
+	# I deleted DATA, there is no need for the second buffer, PAP 08/11/09
+	#  Well, I had to reinstate it due to incurrect way you handle data in your MPI code.
 	ct   = 0
 	for i in xrange(N_start, N_stop):
 		image = DATA[ct].copy()
-		
+
 		# 3D object
 		if nz > 1:
 			phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(image)
@@ -1519,7 +1521,7 @@ def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, listID = None, fla
 		elif ny > 1:
 			alpha, sx, sy, mirror, scale = get_params2D(image)
 			image = rot_shift2D(image, alpha, sx, sy, mirror, scale)
-			
+
 		# obtain ctf
 		if CTF:
 			ctf_params = image.get_attr( "ctf" )
@@ -1531,7 +1533,7 @@ def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, listID = None, fla
 			ave, std, mi, mx = Util.infomask(image, mask, True)
 			image -= ave
 			image /= std
-		
+
 		# apply mask
 		if mask != None:
 			if CTF: Util.mul_img(image, mask)
@@ -5495,8 +5497,9 @@ def k_means_stab_export(PART, stack, outdir, th_nobj, CTF = False):
 
 				for ID in PART[k]:
 					im.read_image(stack, int(ID))
-					alpha, sx, sy, mirror, scale = get_params2D(im)
-					im = rot_shift2D(im, alpha, sx, sy, mirror)
+					if( im.get_ysize() > 1):  # here you should have testing of sizes, as during the input PAP 08/11/09
+						alpha, sx, sy, mirror, scale = get_params2D(im)
+						im = rot_shift2D(im, alpha, sx, sy, mirror)
 
 					Util.add_img(AVE[ck], im)
 				Util.mul_scalar(AVE[ck], 1.0 / float(nobjs))
@@ -5505,7 +5508,7 @@ def k_means_stab_export(PART, stack, outdir, th_nobj, CTF = False):
 			AVE[ck].set_attr('nobjects', nobjs)
 			AVE[ck].set_attr('members', PART[k])
 			AVE[ck].set_attr('k_ref', k)
-			AVE[ck].write_image(outdir + '/averages.hdf', ck)
+			AVE[ck].write_image(outdir + '/averages.hdf', ck)  # change to proper merging of dir names PAP
 			ck += 1
 		else:
 			lrej.extend(PART[k])
@@ -5575,10 +5578,10 @@ def k_means_open_unstable_MPI(stack, maskname, CTF, nb_cpu, main_node, myid):
 	lim = mpi_bcast(lim, N, MPI_INT, main_node, MPI_COMM_WORLD)
 	lim = lim.tolist()
 
-	N_start = int(round(float(N) / nb_cpu * myid))
+	N_start = int(round(float(N) / nb_cpu * myid))  # This is not a canonical way of doing that, there is function in SPARX, please use it PAP
 	N_stop  = int(round(float(N) / nb_cpu * (myid + 1)))
 
-	# Now each node read his part of data (unsynchronise due to bdb)
+	# Now each node read his part of data (unsynchronise due to bdb)  # I do not think it is necessary, bdb should work! PAP
 	if BDB:
 		for cpu in xrange(nb_cpu):
 			if cpu == myid:			
@@ -5589,6 +5592,9 @@ def k_means_open_unstable_MPI(stack, maskname, CTF, nb_cpu, main_node, myid):
 	else:
 		im_M, mask, ctf, ctf2 = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, lim)
 
+	#  It is awful how you coded MPI.  After some research I realized in your implementation each node carries all images!
+	#  Please correct it - read other code in the system and see how to handle it properly.  Each node should carry only its share of data!
+	#  PAP  08/11/09
 	return im_M, mask, ctf, ctf2, lim, N, N_start, N_stop
 
 # k-means open and prepare images, only unstable objects (active = 1)
@@ -7246,8 +7252,7 @@ def var_bydef(vol_stack, vol_list, info):
 		info.write( "\n" )
 	return vars/(len(vol_list)-1)
 
-
-def histogram2d( datai, dataj, nbini, nbinj ) :
+def histogram2d( datai, dataj, nbini, nbinj ):
 	fmaxi = max( datai )
 	fmini = min( datai )
 	fmaxj = max( dataj )
@@ -7272,6 +7277,30 @@ def histogram2d( datai, dataj, nbini, nbinj ) :
 		id = int( (datai[k]-start_i)/binsize_i )
 		jd = int( (dataj[k]-start_j)/binsize_j )
 		hist[id][jd]+=1
+
+	return region,hist
+
+def hist_list( data, nbin = -1 ):
+	"""
+	  Calculate histogram of list elements
+	  nbin will be set scuh that in aveerage there is 10 elements per bin
+	"""
+	if(nbin < 0):  nbin = len(data)//10
+	fmaxi = max( data )
+	fmini = min( data )
+
+	binsize_i = (fmaxi - fmini)/(nbin-1)
+	start_i = fmini-binsize_i/2.0
+
+	region = [None]*nbin
+	hist = [None]*nbin
+	for i in xrange(nbin):
+		region[i] = start_i + i*binsize_i
+		hist[i] = 0
+
+	for d in data:
+		i = int( (d-start_i)/binsize_i )
+		hist[i] += 1
 
 	return region,hist
 

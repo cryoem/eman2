@@ -12475,7 +12475,7 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_nob
 
 	if myid == main_node:
 		# create main log
-		f = open(outdir + '/main_log.txt', 'w')
+		f = open(outdir + '/main_log.txt', 'w')   # please change to os.path.join  PAP 08/11/09
 		f.close()
 		
 	logging.basicConfig(filename = outdir + '/main_log.txt', format = '%(asctime)s     %(message)s', level = logging.INFO)
@@ -12483,12 +12483,12 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_nob
 
 	# manage random seed
 	rnd = []
-	for n in xrange(1, npart + 1): rnd.append(n * (2**n) + rand_seed)
+	for n in xrange(1, npart + 1): rnd.append(n * (2**n) + rand_seed)  # are you sure the seeds are random when the user does not provide a seed? PAP 08/11/09
 	if myid == main_node: logging.info('Init list random seed: %s' % rnd)
 
 	trials       = 1
-	maxit        = int(1e9)
-	T0           = float(-1) # auto
+	maxit        = 100000000  # made changes here PAP
+	T0           = -1.0 # auto
 	critname     = ''
 	if myid == main_node: logging.info('K = %03d %s' % (K, 40 * '-'))
 
@@ -12499,17 +12499,17 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_nob
 		if not TXT: Ntot = EMUtil.get_image_count(stack)
 		else:       Ntot = N
 		logging.info('... %d active images found' % N)
-	if N < 2:
+	if N < K:
 		logging.info('[STOP] Not enough images')
 		sys.exit()
-	if F != 0:
+	if F != 0.0:
 		try:
 			T0, ct_pert = k_means_SA_T0_MPI(im_M, mask, K, rand_seed, [CTF, ctf, ctf2], F, myid, main_node, N_start, N_stop)
 			if myid == main_node: logging.info('... Select first temperature T0: %4.2f (dst %d)' % (T0, ct_pert))
 		except SystemExit:
 			if myid == main_node: logging.info('[STOP] Not enough images')
 			sys.exit()
-	else: T0 = 0
+	else: T0 = 0.0
 
 	# loop over partition
 	if myid == main_node: print_begin_msg('k-means')
@@ -12518,7 +12518,7 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_nob
 		if myid == main_node:
 			logging.info('...... Start partition: %d' % (n + 1))
 			k_means_headlog(stack, 'partition %d' % (n + 1), opt_method, N, K, critname, maskname, trials, maxit, CTF, T0, F, rnd[n], nb_cpu)
-		
+
 		flag_cluster = False
 		# classification
 		if   opt_method == 'cla':
