@@ -497,9 +497,6 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 		self.sockf.flush()
 		client_id=unpack("I",self.sockf.read(4))[0]
 
-		# keep track of clients
-		EMDCTaskHandler.clients[client_id]=(self.client_address[0],time.time())
-
 		while (1):
 			cmd = self.sockf.read(4)
 			if len(cmd)<4 :
@@ -541,6 +538,9 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 					print "Client killed"
 					break
 				
+				# keep track of clients
+				EMDCTaskHandler.clients[client_id]=(self.client_address[0],time.time())
+				
 				EMDCTaskHandler.tasklock.acquire()
 				
 				# Get the first task and send it (pickled)
@@ -575,6 +575,9 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				tid=data
 				
 				if self.verbose>1 : print "DONE task (%08X) "%client_id,tid
+				
+				# keep track of clients
+				EMDCTaskHandler.clients[client_id]=(self.client_address[0],time.time())
 				
 				# then we get a sequence of key,value objects, ending with a final None key
 				result=db_open_dict("bdb:%s#result_%d"%(self.queue.path,tid))
@@ -633,6 +636,9 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				if ret : sendobj(self.sockf,"OK  ")
 				else : sendobj(self.sockf,"ABOR")
 				self.sockf.flush()
+
+				# keep track of clients
+				EMDCTaskHandler.clients[client_id]=(self.client_address[0],time.time())
 
 			###################### These are utility commands
 			# Returns whatever is sent as data
@@ -748,7 +754,9 @@ class EMDCTaskClient(EMTaskClient):
 	def imalive(self,progress):
 		"""Executed code should call this periodically to inidicate that they are still running. This must be called at least once every 5 minutes
 		with an integer in the range 0-100. 100 means about to exit, 0 means not started yet. A -1 indicates an error has occurred and the request
-		is being aborted."""
+		is being aborted. If this function returns False, the client should abort the task in progress."""
+		ret=True
+		
 		if time.time()-self.lastupdate>60 : 
 			self.lastupdate=time.time()
 			if self.task==None : return True 
