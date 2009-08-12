@@ -752,6 +752,7 @@ class EMDCTaskClient(EMTaskClient):
 		communicate with. Both default to 24 hours."""
 		count=0
 		lastjob=time.time()
+		lastserv=time.time()
 		while (1):
 			count +=1
 			# connect to the server
@@ -771,11 +772,12 @@ class EMDCTaskClient(EMTaskClient):
 				self.task=task
 			except :
 				print "No response from server, sleeping 30 sec"
-				if time.time()-lastjob>dieifnoserver :
+				if time.time()-lastserv>dieifnoserver :
 					print "No server for too long. Terminating"
 					break
 				time.sleep(30)
 				continue
+			lastserv=time.time()
 
 			if task==None:
 				if self.verbose :
