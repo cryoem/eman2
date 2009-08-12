@@ -454,8 +454,8 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 	close"""
 
 		# periodic housekeeping
-		if time.time()-EMDCTaskHandler.laskhk>30 :
-			EMDCTaskHandler.laskhk=time.time()
+		if time.time()-EMDCTaskHandler.lasthk>30 :
+			EMDCTaskHandler.lasthk=time.time()
 			self.housekeeping()
 
 		if self.verbose>1 : print "connection from %s"%(str(self.client_address))

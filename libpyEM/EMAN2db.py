@@ -525,13 +525,17 @@ class EMTaskQueue:
 		EMTaskQueue.lock.release()
 		return tid
 		
-	def task_progress(self,taskid,percent):
+	def task_progress(self,tid,percent):
 		"""Update task progress, unless task is already complete/aborted. Returns True if progress
 		update successful"""
 		try : task=self.active[tid]
 		except :
-			task=self.complete[tid]
-			return False
+			try:
+				task=self.complete[tid]
+				return False
+			except:
+				print "ERROR: Progress, No such task : ",tid,percent
+				return False
 		task.progtime=(time.time(),percent)
 		self.active[tid]=task
 		return True
