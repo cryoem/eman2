@@ -331,7 +331,12 @@ def sendobj(sock,obj):
 
 def recvobj(sock):
 	"""receives a packed length followed by a binary (pickled) object from a socket file object and returns"""
-	datlen=unpack("I",sock.read(4))[0]
+	l=sock.read(4)
+	try : 
+		datlen=unpack("I",l)[0]
+	except:
+		print "Format error in unpacking '%s'"%l
+		raise Exception,"Protocol error"
 	if datlen<=0 :return None
 	return loads(sock.read(datlen))
 
@@ -394,7 +399,6 @@ def runEMDCServer(port,verbose,killclients=False):
 	try: EMDCTaskHandler.verbose=int(verbose)
 	except: EMDCTaskHandler.verbose=0
 	EMDCTaskHandler.killclients=killclients
-	EMDCTaskHandler.clients={}
 
 	if port!=None and port>0 : 
 		server = SocketServer.ThreadingTCPServer(("", port), EMDCTaskHandler)	# "" is the hostname and will bind to any IPV4 interface/address
@@ -436,14 +440,15 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 		self.sockf=request.makefile()		# this turns our socket into a buffered file-like object
 		SocketServer.BaseRequestHandler.__init__(self,request,client_address,server)
 		self.client_address=client_address
+		self.clients=db_open_dict("clients")
 
 	def housekeeping(self):
 		# if we haven't heard from a client in 5 minutes, assume it's gone
-		for k in EMDCTaskHandler.clients:
-			c=EMDCTaskHandler.clients[k]
+		for k in self.clients:
+			c=self.clients[k]
 			if time.time()-c[1]>300 :
 				if self.verbose : print "Client %d is stale, removing"%k
-				del EMDCTaskHandler.clients[k]
+				del self.clients[k]
 
 	def handle(self):
 		"""Process requests from a client. The exchange is:
@@ -483,7 +488,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 		client_id=unpack("I",self.sockf.read(4))[0]
 
 		# keep track of clients
-		EMDCTaskHandler.clients[client_id]=(self.client_address[0],time.time())
+		self.clients[client_id]=(self.client_address[0],time.time())
 
 		while (1):
 			cmd = self.sockf.read(4)
@@ -500,7 +505,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 			if self.verbose : 
 				if cmd=="RDYT" :
 					EMDCTaskHandler.rtcount+=1
-					print " %s  (%d)   \r"%(EMDCTaskHandler.rotate[EMDCTaskHandler.rtcount%4],len(EMDCTaskHandler.clients)),
+					print " %s  (%d)   \r"%(EMDCTaskHandler.rotate[EMDCTaskHandler.rtcount%4],len(self.clients)),
 					sys.stdout.flush()
 				elif cmd=="DATA" :
 					EMDCTaskHandler.datacount+=1
@@ -606,14 +611,14 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 			elif cmd=="ABOR" : 
 				self.queue.task_rerun(data)
 				if self.verbose : print "Task execution abort : ",data
-				del EMDCTaskHandler.clients[client_id]		# assume this client is going away unless we hear from it again
+				del self.clients[client_id]		# assume this client is going away unless we hear from it again
 
 			# Progress message indicating that processing continues
 			# data should be (taskid,percent complete)
 			# returns "OK  " if processing should continue
 			# retunrs "ABOR" if processing should be aborted
 			elif cmd=="PROG" :
-				EMDCTaskHandler.clients[client_id]=(self.client_address[0],time.time())
+				self.clients[client_id]=(self.client_address[0],time.time())
 				ret=self.queue.task_progress(data[0],data[1])
 				if self.verbose : print "Task progress report : ",data
 				if ret : sendobj(self.sockf,"OK  ")
@@ -655,9 +660,9 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 			# At the moment, this is the number of hosts that have communicated with us
 			# so it doesn't handle multiple cores
 			elif cmd=="NCPU" :
-				sendobj(self.sockf,len(EMDCTaskHandler.clients))
+				sendobj(self.sockf,len(self.clients))
 				self.sockf.flush()
-				if self.verbose : print len(EMDCTaskHandler.clients)," clients reported"
+				if self.verbose : print len(self.clients)," clients reported"
 				
 			elif cmd=="NGRP" :
 				sendobj(self.sockf,self.queue.add_group())
