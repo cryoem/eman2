@@ -343,14 +343,14 @@ class ShrunkenTomogram:
 		
 		db = db_open_dict(db_name)
 		
-		if db.has_key("maxrec"):
-			for idx in range(0,db["maxrec"]+1):
-				header = db.get_header(idx)
-				try:
-					if header["shrunken_from"] == file_name:
-						return [db_name,idx]
-				except:
-					pass
+		#if db.has_key("maxrec"):
+		for idx in range(0,len(db)):
+			header = db.get_header(idx)
+			try:
+				if header["shrunken_from"] == file_name:
+					return [db_name,idx]
+			except:
+				pass
 				
 		db_close_dict(db_name)
 		return [None,None]

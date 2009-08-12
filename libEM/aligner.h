@@ -530,7 +530,6 @@ namespace EMAN
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-
 			d.put("flip", EMObject::EMDATA,"Optional. This is the flipped version of the images that is being aligned. If specified it will be used for the handedness check, if not a flipped copy of the image will be made");
 			d.put("maxshift", EMObject::INT,"The maximum length of the detectable translational shift");
 			d.put("transtep", EMObject::FLOAT,"The translation step to take when honing the alignment, which occurs after coarse alignment");

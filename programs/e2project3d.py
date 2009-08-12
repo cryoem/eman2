@@ -159,13 +159,8 @@ class EMParallelProject3D:
 			raise NotImplementedError("The parallelism option you specified (%s) is not suppored" %self.options.parallel )
 				
 	def __write_output_data(self,rslts):
-		#if not rslts.has_key("projections"):
-			#print "Something went wrong, there is no projections key in the results?"
-			#return False
-#		print rslts.keys()
 		for idx,image in rslts.items():
-			if not isinstance(image,EMData): continue
-			t = image.get_attr("xform.projection")
+			if not isinstance(image,EMData): continue # this is here because we get the dimensions of the database as a key (e.g. '40x40x1').
 			image.write_image(self.options.outfile,idx)
 		
 		return True

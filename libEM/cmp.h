@@ -287,6 +287,7 @@ namespace EMAN
 		{
 			TypeDict d;
 			d.put("threshold", EMObject::FLOAT,"Threshold applied to the Fourier amplitudes of the ccf image - helps to correct for the missing wedge.");
+			d.put("norm", EMObject::BOOL,"Whether the cross correlation image should be normalized. Default is false.");
 			d.put("ccf", EMObject::EMDATA,"The ccf image, can be provided if it already exists to avoid recalculating it");
 			d.put("tx", EMObject::INT, "The x location of the maximum in the ccf image. May be negative. Useful thing to supply if you know the maximum is not at the phase origin");
 			d.put("ty", EMObject::INT, "The y location of the maximum in the ccf image. May be negative. Useful thing to supply if you know the maximum is not at the phase origin");

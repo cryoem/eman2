@@ -454,6 +454,8 @@ float TomoDotCmp::cmp(EMData * image, EMData *with) const
 			ccf = image->calc_ccf(with);
 			ccf_ownership = true;
 		}
+		bool norm = params.set_default("norm",false);
+		if (norm) ccf->process_inplace("normalize");
 		int tx = params.set_default("tx",0); int ty = params.set_default("ty",0); int tz = params.set_default("tz",0);
 		float best_score = ccf->get_value_at_wrap(tx,ty,tz)/static_cast<float>(image->get_size());
 		EMData* ccf_fft = ccf->do_fft();// so cuda works, or else we could do an fft_inplace - though honestly doing an fft inplace is less efficient anyhow

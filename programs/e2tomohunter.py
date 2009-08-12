@@ -2,7 +2,7 @@
 
 #
 # Author: Matthew Baker, 10/2005, modified 02/2006 by MFS  
-# ported to EMAN2 by David Woolford October 6th 2008
+# ported and refactored using EMAN2 by David Woolford October 6th 2008
 # Copyright (c) 2000-2006 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -47,7 +47,7 @@ from math import *
 from sys import argv
 from optparse import OptionParser
 
-from e2tomoallvall import check_tomo_options
+from e2tomoaverage import check_tomo_options
 
 tomo_hunter_path_root = "tomo_hunt"
 
@@ -260,7 +260,7 @@ class EMTomoHunter:
 				AZ=params["az"]
 				PHI=params["phi"]
 				COEFF=str(d["score"])
-				LOC=str( ( (params["tx"]),(params["tx"]),(params["tx"] ) ) )
+				LOC=str( ( (params["tx"]),(params["ty"]),(params["tz"] ) ) )
 				line="Peak %d rot=( %f, %f, %f ) trans= %s coeff= %s\n"%(peak,ALT,AZ,PHI,LOC,COEFF)
 				out.write(line)
 				peak=peak+1
@@ -322,6 +322,7 @@ def main():
 	parser.add_option("--raligncmp",type="string",help="The comparator used for determing the refined alignment", default="dot.tomo:threshold=0")
 	parser.add_option("--nsoln",type="int",help="The number of solutions to report", default=10)
 	parser.add_option("--shrink",type="int",help="Shrink the data as part of the alignment - for speed purposes but at the potential loss of accuracy",default=None)
+	parser.add_option("--filter",type="string",help="The name and parameters of an EMAN2 processor. Will be applied prior to shrinking.",default=None)
 	if EMUtil.cuda_available():
 		parser.add_option("--cuda",action="store_true",help="GPU acceleration using CUDA. Experimental", default=False)
    
