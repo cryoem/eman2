@@ -46,6 +46,7 @@ import time
 import socket
 import sys
 import random
+import signal
 import traceback
 
 # used to make sure servers and clients are running the same version
@@ -384,7 +385,7 @@ class DCThreadingMixIn:
 	def process_request(self, request, client_address):
 		"""Start a new thread to process the request."""
 		
-		while threading.active_count()>6 : 
+		while threading.active_count()>12 : 
 			time.sleep(2)
 		
 		t = threading.Thread(target = self.process_request_thread,
@@ -452,11 +453,12 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 	def housekeeping(self):
 		# if we haven't heard from a client in 5 minutes, assume it's gone
 		for k in EMDCTaskHandler.clients.keys():
+			if k=="maxrec" : continue
 			c=EMDCTaskHandler.clients[k]
 			
 			try:
-				if time.time()-c[1]>300 :
-					if self.verbose : print "Client %d is stale, removing"%k
+				if time.time()-c[1]>300 or k==0 :
+					if self.verbose : print "Removing client %d"%k
 					del EMDCTaskHandler.clients[k]
 			except: continue
 
@@ -512,7 +514,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 			if self.verbose : 
 				if cmd=="RDYT" :
 					EMDCTaskHandler.rtcount+=1
-					print " %s  (%d)   \r"%(EMDCTaskHandler.rotate[EMDCTaskHandler.rtcount%4],len(EMDCTaskHandler.clients.keys())),
+					print " %s  (%d)   \r"%(EMDCTaskHandler.rotate[EMDCTaskHandler.rtcount%4],len(EMDCTaskHandler.clients.keys())-1),
 					sys.stdout.flush()
 				elif cmd=="DATA" :
 					EMDCTaskHandler.datacount+=1
@@ -523,11 +525,13 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 					EMDCTaskHandler.datacount+=1
 					print"? \r",
 					sys.stdout.flush()
+				elif cmd=="PROG" :
+					print "Command %s (%s): %s %s    \r"%(str(self.client_address),str(client_id),cmd,str(data))
+					sys.stdout.flush()
 				else :
-					try: print "Command %s: %s (%d)"%(str(self.client_address),cmd,len(data))
-					except: print "Command %s: %s (-)"%(str(self.client_address),cmd)
+					try: print "Command %s (%s): %s (%d)"%(str(self.client_address),str(client_id),cmd,len(data))
+					except: print "Command %s (%s): %s (-)"%(str(self.client_address),str(client_id),cmd)
 			
-
 			######################  These are issued by clients
 			# Ready for a task
 			if cmd=="RDYT" :
@@ -539,7 +543,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 					break
 				
 				# keep track of clients
-				EMDCTaskHandler.clients[client_id]=(self.client_address[0],time.time())
+				EMDCTaskHandler.clients[client_id]=(self.client_address[0],time.time(),cmd)
 				
 				EMDCTaskHandler.tasklock.acquire()
 				
@@ -577,7 +581,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				if self.verbose>1 : print "DONE task (%08X) "%client_id,tid
 				
 				# keep track of clients
-				EMDCTaskHandler.clients[client_id]=(self.client_address[0],time.time())
+				EMDCTaskHandler.clients[client_id]=(self.client_address[0],time.time(),cmd)
 				
 				# then we get a sequence of key,value objects, ending with a final None key
 				result=db_open_dict("bdb:%s#result_%d"%(self.queue.path,tid))
@@ -617,6 +621,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 					sendobj(self.sockf,None)
 					if self.verbose : print "Error sending %s(%d)"%(fsp,data[2])
 				self.sockf.flush()
+				EMDCTaskHandler.clients[client_id]=(self.client_address[0],time.time(),cmd)
 				
 			# Notify that a task has been aborted
 			# request should be taskid
@@ -631,14 +636,20 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 			# returns "OK  " if processing should continue
 			# retunrs "ABOR" if processing should be aborted
 			elif cmd=="PROG" :
+				if EMDCTaskHandler.killclients:
+					sendobj(self.sockf,"ABOR")
+					self.sockf.flush()
+					print "Client killed"
+					break
+
 				ret=self.queue.task_progress(data[0],data[1])
-				if self.verbose : print "Task progress report : ",data
+				if self.verbose>2 : print "Task progress report : ",data
 				if ret : sendobj(self.sockf,"OK  ")
 				else : sendobj(self.sockf,"ABOR")
 				self.sockf.flush()
 
 				# keep track of clients
-				EMDCTaskHandler.clients[client_id]=(self.client_address[0],time.time())
+				EMDCTaskHandler.clients[client_id]=(self.client_address[0],time.time(),cmd)
 
 			###################### These are utility commands
 			# Returns whatever is sent as data
@@ -676,9 +687,9 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 			# At the moment, this is the number of hosts that have communicated with us
 			# so it doesn't handle multiple cores
 			elif cmd=="NCPU" :
-				sendobj(self.sockf,len(EMDCTaskHandler.clients.keys()))
+				sendobj(self.sockf,len(EMDCTaskHandler.clients.keys())-1)
 				self.sockf.flush()
-				if self.verbose : print len(EMDCTaskHandler.clients.keys())," clients reported"
+				if self.verbose : print len(EMDCTaskHandler.clients.keys())-1," clients reported"
 				
 			elif cmd=="NGRP" :
 				sendobj(self.sockf,self.queue.add_group())
@@ -740,6 +751,12 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 #		# just send back the same data, but upper-cased
 #		self.request.send(self.data.upper())
 
+def DCclient_alarm(signum=None,stack=None):
+#		if stack!=None : traceback.print_stack(stack)
+	print "ALARM - network interrupt"
+	if stack!=None : traceback.print_stack(stack)
+	return
+
 class EMDCTaskClient(EMTaskClient):
 	"""Distributed Computing Task Client. This client will connect to an EMDCTaskServer, request jobs to run
  and run them ..."""
@@ -750,6 +767,7 @@ class EMDCTaskClient(EMTaskClient):
 		self.verbose=verbose
 		self.lastupdate=0
 		self.task=None
+		signal.signal(signal.SIGALRM,DCclient_alarm)	# this is used for network timeouts
 
 	def imalive(self,progress):
 		"""Executed code should call this periodically to inidicate that they are still running. This must be called at least once every 5 minutes
@@ -757,11 +775,15 @@ class EMDCTaskClient(EMTaskClient):
 		is being aborted. If this function returns False, the client should abort the task in progress."""
 		ret=True
 		
+		signal.alarm(60)
 		if time.time()-self.lastupdate>60 : 
 			self.lastupdate=time.time()
-			if self.task==None : return True 
+			if self.task==None : 
+				signal.alarm(0)
+				return True 
 			ret=EMDCsendonecom(self.addr,"PROG",(self.task.taskid,progress))
-			
+		
+		signal.alarm(0)
 		return ret
 
 	def run(self,dieifidle=86400,dieifnoserver=86400):
@@ -776,6 +798,7 @@ class EMDCTaskClient(EMTaskClient):
 			# connect to the server
 			if self.verbose>1 : print "Connect to (%s,%d)"%self.addr
 			try :
+				signal.alarm(60)
 				sock,sockf=openEMDCsock(self.addr,clientid=self.myid,retry=3)
 				sockf.write("RDYT")
 				sendobj(sockf,None)
@@ -785,6 +808,7 @@ class EMDCTaskClient(EMTaskClient):
 				task=recvobj(sockf)
 				sockf.write("ACK ")
 				sockf.flush()
+				signal.alarm(0)
 				if task=="EXIT" : break
 				if self.verbose and task!=None: print "%s running task id %d"%(socket.gethostname(),task.taskid)
 				self.task=task
@@ -843,6 +867,7 @@ class EMDCTaskClient(EMTaskClient):
 			retry=True
 			retrycount=0
 			while retry:
+				signal.alarm(60)
 				retry=False
 				retrycount+=1
 				if retrycount>10 :
@@ -858,6 +883,7 @@ class EMDCTaskClient(EMTaskClient):
 					retry=True
 					continue
 
+				signal.alarm(60)
 				try:
 					sendobj(sockf,task.taskid)
 				except:
@@ -866,6 +892,7 @@ class EMDCTaskClient(EMTaskClient):
 					continue
 
 				for k,v in ret.items():
+					signal.alarm(60)
 					try:
 						sendobj(sockf,k)
 						sendobj(sockf,v)
@@ -889,6 +916,8 @@ class EMDCTaskClient(EMTaskClient):
 				except:
 					print "Error on close (%d)"%task.taskid
 					retry=True
+				
+			signal.alarm(0)
 			
 			if retrycount>10 : break			# if we completely failed once, this client should die
 			
@@ -902,6 +931,7 @@ class EMDCTaskClient(EMTaskClient):
 		
 	def get_data(self,sockf,did,imnum):
 		"""request data from the server on an open connection"""
+		signal.alarm(240)
 		if self.verbose>2 : print "Retrieve %s : %d"%(str(did),imnum)
 		sockf.write("DATA")
 		sendobj(sockf,["cache",did,imnum])
@@ -914,7 +944,8 @@ class EMDCTaskClient(EMTaskClient):
 			sendobj(sockf,["cache",did,imnum])
 			sockf.flush()
 			ret=recvobj(sockf)
-			
+		signal.alarm(0)
+
 		return ret
 		
 	#		self.sockf=
