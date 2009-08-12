@@ -309,7 +309,6 @@ def main():
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
 	parser.add_option("--probe",type="string",help="The probe. This is the model that the input images will be aligned to", default=None)
-	parser.add_option("--thresh",type="float",help="Threshold", default=0.0)
 	parser.add_option("--n",type="int",help="0 or 1, multiplication by the reciprocal of the boxsize", default=1)
 	parser.add_option("--dbls",type="string",help="data base list storage, used by the workflow. You can ignore this argument.",default=None)
 	parser.add_option("--aliset",type="string",help="Supplied with avgout. Used to choose different alignment parameters from the local database. Used by workflow.", default=None)
