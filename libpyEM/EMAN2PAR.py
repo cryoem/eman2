@@ -421,6 +421,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 	verbose=0
 	rtcount=0
 	datacount=0
+	lasthk=0
 	killclients=False
 	tasklock=threading.Lock()
 	dbugfile=file("debug.out","w")
@@ -436,6 +437,14 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 		SocketServer.BaseRequestHandler.__init__(self,request,client_address,server)
 		self.client_address=client_address
 
+	def housekeeping(self):
+		# if we haven't heard from a client in 5 minutes, assume it's gone
+		for k in EMDCTaskHandler.clients:
+			c=EMDCTaskHandler.clients[k]
+			if time.time()-c[1]>300 :
+				if self.verbose : print "Client %d is stale, removing"%k
+				del EMDCTaskHandler.clients[k]
+
 	def handle(self):
 		"""Process requests from a client. The exchange is:
 	send EMAN,version
@@ -443,6 +452,11 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 	recv command, data len, data (if len not 0)
 	send command, data len, data (if len not 0)
 	close"""
+
+		# periodic housekeeping
+		if time.time()-EMDCTaskHandler.laskhk>30 :
+			EMDCTaskHandler.laskhk=time.time()
+			self.housekeeping()
 
 		if self.verbose>1 : print "connection from %s"%(str(self.client_address))
 
@@ -467,6 +481,9 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 		self.sockf.write("ACK ")
 		self.sockf.flush()
 		client_id=unpack("I",self.sockf.read(4))[0]
+
+		# keep track of clients
+		EMDCTaskHandler.clients[client_id]=(self.client_address[0],time.time())
 
 		while (1):
 			cmd = self.sockf.read(4)
@@ -512,8 +529,6 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				EMDCTaskHandler.tasklock.acquire()
 				
 				# Get the first task and send it (pickled)
-				EMDCTaskHandler.clients[client_id]=(self.client_address[0],time.time())
-
 				task=self.queue.get_task(client_id)		# get the next task
 
 				if task==None :
@@ -590,7 +605,8 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 			# no return
 			elif cmd=="ABOR" : 
 				self.queue.task_rerun(data)
-				if self.verbose>1 : print "Task execution abort : ",data
+				if self.verbose : print "Task execution abort : ",data
+				del EMDCTaskHandler.clients[client_id]		# assume this client is going away unless we hear from it again
 
 			# Progress message indicating that processing continues
 			# data should be (taskid,percent complete)
@@ -599,7 +615,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 			elif cmd=="PROG" :
 				EMDCTaskHandler.clients[client_id]=(self.client_address[0],time.time())
 				ret=self.queue.task_progress(data[0],data[1])
-				if self.verbose>2 : print "Task progress report : ",data
+				if self.verbose : print "Task progress report : ",data
 				if ret : sendobj(self.sockf,"OK  ")
 				else : sendobj(self.sockf,"ABOR")
 
@@ -722,6 +738,7 @@ class EMDCTaskClient(EMTaskClient):
 			self.lastupdate=time.time()
 			if self.task==None : return True 
 			ret=EMDCsendonecom(self.addr,"PROG",(self.task.taskid,progress))
+			
 		return ret
 
 	def run(self,dieifidle=86400,dieifnoserver=86400):
@@ -765,7 +782,7 @@ class EMDCTaskClient(EMTaskClient):
 				if time.time()-lastjob>dieifidle : 
 					print "Idle too long. Terminating"
 					break
-				time.sleep(10)
+				time.sleep(15)
 				continue
 			sockf.flush()
 			
@@ -799,37 +816,57 @@ class EMDCTaskClient(EMTaskClient):
 			if self.verbose>3 : print self.__dict__
 
 			retry=True
+			retrycount=0
 			while retry:
 				retry=False
+				retrycount+=1
+				if retrycount>10 :
+					print "Failed in 10 attempts to send results, aborting (%d)"%task.taskid
+					break
+					
 				try:
 					sock,sockf=openEMDCsock(self.addr,clientid=self.myid,retry=10)
 					sockf.write("DONE")
 				except:
-					print "Server communication failure, trying again in 2 minutes"
-					time.sleep(120)
-					sock,sockf=openEMDCsock(self.addr,clientid=self.myid,retry=10)
-					sockf.write("DONE")
+					print "Server communication failure, trying again in 1 minute (%d)"%task.taskid
+					time.sleep(60)
+					retry=True
+					continue
 
-				sendobj(sockf,task.taskid)
+				try:
+					sendobj(sockf,task.taskid)
+				except:
+					print "Immediate ERROR (retrying ",task.taskid,")"
+					retry=True
+					continue
 
 				for k,v in ret.items():
-					sendobj(sockf,k)
-					try : sendobj(sockf,v)
+					try:
+						sendobj(sockf,k)
+						sendobj(sockf,v)
 					except :
 						print "ERROR (retrying ",task.taskid,") on : ",k, " in ",ret.items()
 						if isinstance(v,EMData) : v.write_image("error.hdf",-1)
-						time.sleep(5)
+						time.sleep(3)
 						retry=True
+						break
 
 				try:
 					sendobj(sockf,None)
 					sockf.flush()
-					sockf.close()
-					sock.close()
 				except:
 					print "Error on flush (%d)"%task.taskid
 					retry=True
 				
+				try:
+					sockf.close()
+					sock.close()
+				except:
+					print "Error on close (%d)"%task.taskid
+					retry=True
+			
+			if retrycount>10 : break			# if we completely failed once, this client should die
+			
 			if self.verbose : print "Task returned %d"%task.taskid
 			if self.verbose>2 : print "Results :",ret
 			
