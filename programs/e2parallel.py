@@ -49,7 +49,7 @@ logid=None
 def main():
 	global debug,logid
 	progname = os.path.basename(sys.argv[0])
-	commandlist=("dcserver","dcclient","dckill","dckillclients")
+	commandlist=("dcserver","dcclient","dckill","dckillclients","dcservmon")
 	usage = """%prog [options] <command> ...
 	
 This program implements much of EMAN2's coarse-grained parallelism mechanism. There are several flavors available via
@@ -88,7 +88,7 @@ run e2parallel.py dcclient on as many other machines as possible, pointing at th
 	elif args[0]=="dckillclients" :
 		killdcclients(options.server,options.port,options.verbose)
 
-	elif args[0]=="servmon" :
+	elif args[0]=="dcservmon" :
 		runservmon()
 		
 def rundcserver(port,verbose):
@@ -134,28 +134,49 @@ def runservmon():
 
 	queue=EMAN2db.EMTaskQueue(".",ro=True)
 
-	activedata=TaskData(queue.active)
-	completedata=TaskData(queue.complete)
+#	activedata=TaskData(queue.active)
+#	completedata=TaskData(queue.complete)
 
 	app = QtGui.QApplication([])
+	window = GUIservmon()
 
-	# Should probably make a class for this, but we'll just make do with this for now
-	window = QtGui.QMainWindow()
-	
-	vbl=QtGui.QVboxLayout()
-	actview=QtGui.TableView()
-	actview.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
-	vbl.addWidget(actview)
-	
-	doneview=QtGui.TableView()
-	
-	
-	
-	ui.tableView.setModel(data)
+#	ui.tableView.setModel(data)
 
 	window.show()
 	app.exec_()
 	
+class GUIservmon(QtGui.QMainWindow):
+	"""A DC server monitor GUI"""
+	def __init__(self):
+		QtGui.QWidget.__init__(self,None)
+
+		self.cw=QtGui.QWidget()
+		self.setCentralWidget(self.cw)
+		self.vbl=QtGui.QVBoxLayout(self.cw)
+		
+		self.tabs = QtGui.QTabWidget()
+		self.vbl.addWidget(self.tabs)
+		self.tabs.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
+	
+		self.activetab=QtGui.QWidget()
+		self.vblat=QtGui.QVBoxLayout(self.activetab)
+		self.actview=QtGui.QTableView()
+		self.vblat.addWidget(self.actview)
+		self.tabs.addTab(self.activetab,"Active")
+		
+		self.donetab=QtGui.QWidget()
+		self.vbldt=QtGui.QVBoxLayout(self.donetab)
+		self.doneview=QtGui.QTableView()
+		self.vbldt.addWidget(self.doneview)
+		self.tabs.addTab(self.donetab,"Complete")
+		
+		self.clienttab=QtGui.QWidget()
+		self.vblct=QtGui.QVBoxLayout(self.clienttab)
+		self.clientview=QtGui.QTableView()
+		self.vblct.addWidget(self.clientview)
+		self.tabs.addTab(self.clienttab,"Clients")
+
+#		self.vbl.addWidget(self.tabs)
 
 class TaskData(QtCore.QAbstractTableModel):
 	def __init__(self,target):

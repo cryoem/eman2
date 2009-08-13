@@ -282,10 +282,15 @@ class EMParallelSimMX:
 					st = st_vals[i]
 					if st==100:
 						task_customer = self.task_customers[i]
-						tid = self.tids[i] 
+						tid = self.tids[i]
 						
-						rslts = task_customer.get_results(tid)
-						self.__store_output_data(rslts[1])
+						try:
+							rslts = task_customer.get_results(tid)
+							self.__store_output_data(rslts[1])
+						except:
+							print "ERROR storing results for task %d. Rerunning."%tid
+							task_customer.rerun_task(tid)
+							contintue
 						if self.logger != None:
 							E2progress(self.logger,1.0-len(self.task_customers)/float(len(blocks)))
 							if self.options.verbose: 

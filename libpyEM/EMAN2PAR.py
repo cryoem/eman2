@@ -52,6 +52,12 @@ import traceback
 # used to make sure servers and clients are running the same version
 EMAN2PARVER=10
 
+def DCcustomer_alarm(signum=None,stack=None):
+#		if stack!=None : traceback.print_stack(stack)
+	print "ALARM - network interrupt"
+#	if stack!=None : traceback.print_stack(stack)
+	return
+
 class EMTaskCustomer:
 	"""This will communicate with the specified task server on behalf of an application needing to
 	have tasks completed"""
@@ -68,6 +74,7 @@ class EMTaskCustomer:
 		elif len(self.addr)==1 : self.addr.append(9990)
 		else : self.addr[1]=int(self.addr[1])
 		self.addr=tuple(self.addr)
+		signal.signal(signal.SIGALRM,DCcustomer_alarm)	# this is used for network timeouts
 
 	def wait_for_server(self,delay=10):
 		print "%s: Server communication failure, sleeping %d secs"%(time.ctime(),delay)
@@ -89,14 +96,19 @@ class EMTaskCustomer:
 		if self.servtype=="dc" :
 			n=0
 			while (n==0) :
-				try: n = EMDCsendonecom(self.addr,"NCPU",None)
+				try:
+					signal.alarm(60)
+					n = EMDCsendonecom(self.addr,"NCPU",None)
+					signal.alarm(0)
 				except:
+					signal.alarm(60)
 					self.wait_for_server()
+					signal.alarm(60)
 					n=EMDCsendonecom(self.addr,"NCPU",None)
+					signal.alarm(0)
 				if not wait : return n
 				if n==0 : 
 					print "Server reports no CPUs available. I will try again in 60 sec"
-					time.sleep(60)
 			return n
 
 	def new_group(self):
@@ -107,6 +119,15 @@ class EMTaskCustomer:
 			except:
 				self.wait_for_server()
 				return EMDCsendonecom(self,addr,"NCPU",None)
+
+	def rerun_task(self,tid):
+		"""Trigger an already submitted task to be re-executed"""
+		
+		if self.servtype=="dc":
+			try: return EMDCsendonecom(self.addr,"RQUE",tid)
+			except:
+				self.wait_for_server()
+				return EMDCsendonecom(self,addr,"RQUE",tid)
 
 	def send_task(self,task):
 		"""Send a task to the server. Returns a taskid."""
@@ -122,11 +143,17 @@ class EMTaskCustomer:
 			except: pass
 		
 		if self.servtype=="dc" :
-			try: return EMDCsendonecom(self.addr,"TASK",task)
+			try: 
+				signal.alarm(60)
+				ret=EMDCsendonecom(self.addr,"TASK",task)
+				signal.alarm(0)
+				return ret
 			except:
 				traceback.print_exc()
 				print "***************************  ERROR SENDING TASK"
+				signal.alarm(60)
 				self.wait_for_server()
+				signal.alarm(0)
 				return EMDCsendonecom(self.addr,"TASK",task)
 
 		raise Exception,"Unknown server type"
@@ -135,9 +162,14 @@ class EMTaskCustomer:
 		"""Check on the status of a list of tasks. Returns a list of ints, -1 to 100. -1 for a task
 		that hasn't been started. 0-99 for tasks that have begun, but not completed. 100 for completed tasks."""
 		if self.servtype=="dc":
-			try: return EMDCsendonecom(self.addr,"STAT",taskid_list)
+			try:
+				signal.alarm(60)
+				ret=EMDCsendonecom(self.addr,"STAT",taskid_list)
+				signal.alarm(0)
 			except:
+				signal.alarm(60)
 				self.wait_for_server()
+				signal.alarm(0)
 				return EMDCsendonecom(self.addr,"STAT",taskid_list)
 				
 		raise Exception,"Unknown server type"
@@ -146,16 +178,19 @@ class EMTaskCustomer:
 		"""Get the results for a completed task. Returns a tuple with the task object and dictionary."""
 		if self.servtype=="dc":
 			try:
+				signal.alarm(60)
 				sock,sockf=openEMDCsock(self.addr,retry=10)
 				sockf.write("RSLT")
 				sendobj(sockf,taskid)
 				sockf.flush()
 				
+				signal.alarm(60)
 				task=recvobj(sockf)
 				
 				k=0
 				rd={}
 				while 1:
+					signal.alarm(240)
 					k=recvobj(sockf)
 					if k==None: break
 					v=recvobj(sockf)
@@ -165,6 +200,7 @@ class EMTaskCustomer:
 #				print "RESULT ",rd
 				sockf.write("ACK ")
 				sockf.flush()
+				signal.alarm(0)
 				return (task,rd)
 			except:
 				traceback.print_exc()
@@ -684,7 +720,15 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 					self.sockf.flush()
 				
 				EMDCTaskHandler.dbugfile.write("Task %5d queued [%s]\n"%(tid,local_datetime()))
-					
+
+			# This will requeue a task which has already been run (and may be completed)
+			# This will generally happen if there was some unexpected error in the returned results
+			# and should not ever really be necessary. It is likely indicative of some sort of 
+			# problem with one of the compute nodes
+			elif cmd=="RQUE":
+				self.queue.task_rerun(data)
+				if self.verbose : print "Requeuing ",data
+
 			# Get an estimate of the number of CPUs available to run jobs
 			# At the moment, this is the number of hosts that have communicated with us
 			# so it doesn't handle multiple cores

@@ -580,9 +580,14 @@ class EMTaskQueue:
 		"""If a task has been started somewhere, but execution fails due to a problem with the target node, call
 		this and the task will be returned to the queue, unless it has failed MAXTASKFAIL times."""
 		try:
-			task=self.active[tid]
+			task=self.active[taskid]
+			cpl=False
 		except:
-			return
+			try : 
+				task=self.complete[taskid]
+				cpl=True
+			except:
+				return
 
 		if task.failcount==MAXTASKFAIL :
 			self.task_aborted(taskid)
@@ -590,6 +595,16 @@ class EMTaskQueue:
 		
 		task.failcount+=1
 		task.starttime=None
+		task.progtime=None
+		task.endtime=None
+		task.clientid=None
+		task.exechost=None
+		
+		if cpl :
+			print "Completed task %d requeued (%d failures)"%(taskid,task.failcount)
+			del self.complete[taskid]
+			self.active[taskid]=task
+			
 		return
 		
 	def task_aborted(self, taskid):

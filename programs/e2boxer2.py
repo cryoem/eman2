@@ -174,10 +174,11 @@ def gen_rot_ave_template(image_name,ref_boxes,shrink,box_size,iter=4):
 		raise RuntimeError("No boxes are flagged as contributing to the template")
 	
 	# bootstrap the original average 
-	ave = ptcls[0].copy()
+	ave = ptcls[0].process("xform.centeracf")
 	for i in range(1,len(ptcls)):
-		ta = ptcls[i].align("translational",ave)
-		ave.add(ta)
+		ave.add(ptcls[i].process("xform.centeracf"))
+#		ta = ptcls[i].align("translational",ave)
+#		ave.add(ta)
 	
 	ave.process_inplace("xform.centeracf")
 	ave.process_inplace("math.radialaverage")
