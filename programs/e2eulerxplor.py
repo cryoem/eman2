@@ -198,8 +198,11 @@ class InputEventsHandler:
 	handling class. Others exist in emimage2d, emimagemx, and e2boxer. Eventually they should all use the same approach, and 
 	I vote for using this one
 	'''
-	def __init__(self,parent):
-		self.parent = weakref.ref(parent)
+	def __init__(self,parent=None):
+		if parent != None:
+			self.parent = weakref.ref(parent)
+		else:
+			self.parent = None
 		
 	def mousePressEvent(self,event):
 		pass
@@ -221,7 +224,7 @@ class InputEventsHandler:
 	
 class InputEventsManager(InputEventsHandler):
 	def __init__(self):
-		InputEventsHandler.__init__(self,self)
+		InputEventsHandler.__init__(self)
 		self.current_events_handler = None
 		
 	def mousePressEvent(self,event):
