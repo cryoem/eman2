@@ -50,7 +50,7 @@ from emimage3diso import EMIsosurfaceModule
 from emimage3dvol import EMVolumeModule
 from emimage3dslice import EM3DSliceViewerModule
 from emimage3dsym import EM3DSymViewerModule
-from e2eulerxplor import EMAsymmetricUnitViewer
+from e2eulerxplor import EMEulerExplorer
 from emlights import EMLightsInspectorBase,EMLightsDrawer
 
 from emglobjects import Camera2, EMViewportDepthTools, Camera, EMImage3DGUIModule,EMGLProjectionViewMatrices,EMOpenGLFlagsAndTools,get_default_gl_colors
@@ -593,10 +593,10 @@ class EMImage3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		return self.viewables[self.currentselection].get_inspector()
 	
 	def add_sym(self):
-		# the difference between the EMAsymmetricUnitViewer and the EM3DSymViewerModule
-		# is only that the EMAsymmetricUnitViewer will look in the current directory for refinement directories and
+		# the difference between the EMEulerExplorer and the EM3DSymViewerModule
+		# is only that the EMEulerExplorer will look in the current directory for refinement directories and
 		# display related information. Simply change from one to the other if you don't like it
-		module = EMAsymmetricUnitViewer(None,True,False)
+		module = EMEulerExplorer(None,True,False)
 		#module = EM3DSymViewerModule(None,True,False)
 		module.set_radius(self.radius)
 		self.num_sym += 1

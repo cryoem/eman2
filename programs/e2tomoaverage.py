@@ -710,6 +710,7 @@ class EMTomoAlignTask:
 			probe.set_gpu_rw_current()
 			probe.cuda_lock()
 		
+		print probe.get_xsize()
 		progress = 0.0
 		max_progress = 3
 		progress += 1.0

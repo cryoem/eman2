@@ -506,6 +506,9 @@ class EMClassAveTask(EMTask):
 		ptcl_indices,images,usefilt_images,norm,culling,ref,verbose,sigma_image = self.init_memory()
 		total_averages = 1+self.options["iter"]
 		
+		ref_mask = None
+		if ref != None: ref_mask = ref.process("threshold.notzero")
+		
 		if ref: total_averages += 1
 		progress = 0
 		ali_images = images # these are the images that used for the alignment - they can also be the usefilt images
@@ -524,6 +527,9 @@ class EMClassAveTask(EMTask):
 	   		if verbose:
 	   			print "Generating initial class average using input alignment parameters, #ptcls ", len(ptcl_indices)
 	   		average = self.__get_init_average_from_ali(images,norm,sigma)
+	   		if ref_mask != None:
+	   			if verbose: print "ref masking" 
+	   			average.mult(ref_mask)
 	   		alis = self.data["init_alis"]
 	  	 
 	  	progress += 1
@@ -555,6 +561,9 @@ class EMClassAveTask(EMTask):
 	   		
 	   		if sigma_image: sigma = sigma_image.copy()
 	   		average, inclusions = self.__get_average_with_culling(images,norm,all_alis[-1],sims,threshold,sigma)
+	   		if ref_mask != None:
+	   			if verbose: print "ref masking"
+	   			average.mult(ref_mask)
 	   		all_inclusions.append(inclusions)
 	   		averages.append(average)
 	   		if sigma != None: all_sigmas.append(sigma)

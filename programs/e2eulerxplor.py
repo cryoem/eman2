@@ -185,7 +185,7 @@ Works if launched in a workflow directory.
 	logid=E2init(sys.argv)
 	
 	em_app = EMStandAloneApplication()
-	window = EMAsymmetricUnitViewer(application=em_app)
+	window = EMEulerExplorer(application=em_app)
 
 	em_app.show()
 	em_app.execute()
@@ -321,6 +321,7 @@ class ClassOrientationEvents(InputEventsHandler,QtCore.QObject):
 #				return i
 #		print vv
 #		
+		# the problem with this approach is that depth testing is not part of picking
 		sb = [0 for i in xrange(0,512)]
 		glSelectBuffer(512)
 		glRenderMode(GL_SELECT)
@@ -357,7 +358,7 @@ class ClassOrientationEvents(InputEventsHandler,QtCore.QObject):
 	def wheelEvent(self,event):
 		EMImage3DGUIModule.wheelEvent(self.parent(),event)
 	
-class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
+class EMEulerExplorer(InputEventsManager,EM3DSymViewerModule,Animator):
 	def get_desktop_hint(self): return "image"
 	def keyPressEvent(self,event):
 		
@@ -450,8 +451,8 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 		self.trace_great_triangles(val)
 		
 		self.eulers = self.specified_eulers
-		if self.eulers == None:
-			return 0
+		if self.eulers == None:	return 0
+		
 #		if not self.colors_specified: self.point_colors = []
 #		else: self.point_colors = self.specified_colors
 #		self.points = []
@@ -699,7 +700,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 	def particle_selected(self,event,lc):
 		if lc != None:
 			d = lc[3]
-			ptcl_idx = d["ptcl_idx"]
+			ptcl_idx = d["Img #"]
 			data = self.au_data[self.refine_dir]
 			prj = []
 			cls_result = []
@@ -724,90 +725,7 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 				transforms.append(e["xform.projection"])
 				
 			self.alignment_time_animation(transforms)
-						
-		
-	def mx_image_selected_old(self,event,lc):
-#		self.arc_anim_points = None
-		get_application().setOverrideCursor(Qt.BusyCursor)
-		if lc != None: self.sel = lc[0]
-		if self.clsdb != None and self.particle_file != None and self.particle_file > -1:
-			class_db = db_open_dict(self.clsdb)
-			indices = class_db[str(self.class_idx)]
-			mx = []
-			if indices == None: return
-			for val in indices:
-				e = EMData(self.particle_file,val)
-				e.set_attr("ptcl_idx",val)
-				mx.append(e)
-			
-			first = False
-			if self.particle_viewer == None:
-				first = True
-				self.particle_viewer = EMImageMXModule(data=None,application=get_application())
-				self.particle_viewer.set_mouse_mode("App" )
-				QtCore.QObject.connect(self.particle_viewer.emitter(),QtCore.SIGNAL("module_closed"),self.on_particle_mx_view_closed)
-				QtCore.QObject.connect(self.particle_viewer.emitter(),QtCore.SIGNAL("mx_image_selected"), self.particle_selected)
-				get_application().show_specific(self.particle_viewer)
-			
-			
-			self.check_images_in_memory()
-			incs = []
-			excs = []
-			for i,idx in enumerate(indices):
-				index = -1
-				for j in range(self.classes.get_xsize()):
-					if int(self.classes.get(j,idx)) == self.class_idx:
-						index = j
-						break
-				if index == -1:
-					print "couldn't find"
-					get_application().setOverrideCursor(Qt.ArrowCursor)
-					return
-				kept = self.inclusions.get(index,idx)
-				if kept:
-					incs.append(i)
-				else: excs.append(i)
-				mx[i]["included"] = kept
-				mx[i].mxset = [kept]
-			
-			if self.sel== 0 or self.alignment_file == None:
-				self.particle_viewer.set_data(mx)
-			else:
-				
-				for i,idx in enumerate(indices):
-					index = -1
-					for j in range(self.classes.get_xsize()):
-						if int(self.classes.get(j,idx)) == self.class_idx:
-							index = j
-							break
-					if index == -1:
-						print "couldn't find"
-						get_application().setOverrideCursor(Qt.ArrowCursor)
-						return
-				
-					x = self.dx.get(index,idx)
-					y = self.dy.get(index,idx)
-					a = self.da.get(index,idx)
-					m = self.dflip.get(index,idx)
-					
-					t = Transform({"type":"2d","alpha":a,"mirror":int(m)})
-					t.set_trans(x,y)
-					mx[i].transform(t)
-				self.particle_viewer.set_data(mx)
 
-			
-			if first:
-				self.particle_viewer.updateGL()
-				self.particle_viewer.optimally_resize()
-				
-			self.particle_viewer.enable_set(0,"Excluded",True,excs)
-			self.particle_viewer.enable_set(1,"Included",False,incs)
-			self.particle_viewer.updateGL()
-			
-			get_application().setOverrideCursor(Qt.ArrowCursor)
-			
-			self.updateGL()
-	
 	def mx_image_selected(self,event,lc):
 #		self.arc_anim_points = None
 		get_application().setOverrideCursor(Qt.BusyCursor)
@@ -826,11 +744,18 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 			
 			bdata = []
 			data = []
+			idx_included = []
+			running_idx = 0
 			for val in included:
-				bdata.append([self.particle_file,val,[ApplyAttribute("ptcl_idx",val)]])
-				
+				bdata.append([self.particle_file,val,[ApplyAttribute("Img #",val)]])
+				idx_included.append(running_idx)
+				running_idx += 1
+			
+			idx_excluded = []
 			for val in excluded:
-				bdata.append([self.particle_file,val,[ApplyAttribute("ptcl_idx",val)]])
+				bdata.append([self.particle_file,val,[ApplyAttribute("Img #",val)]])
+				idx_excluded.append(running_idx)
+				running_idx += 1
 	
 			data = EMLightWeightParticleCache(bdata)
 			
@@ -879,9 +804,10 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule,Animator):
 			if first:
 				self.particle_viewer.updateGL()
 				self.particle_viewer.optimally_resize()
-				
-			self.particle_viewer.enable_set(0,"Excluded",True,excluded)
-			self.particle_viewer.enable_set(1,"Included",False,included)
+			
+			self.particle_viewer.clear_sets(False)
+			self.particle_viewer.enable_set("Excluded",idx_excluded,True,False)
+			self.particle_viewer.enable_set("Included",idx_included,False,False)
 			self.particle_viewer.updateGL()
 			
 			get_application().setOverrideCursor(Qt.ArrowCursor)

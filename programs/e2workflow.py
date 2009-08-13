@@ -777,9 +777,9 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		get_application().setOverrideCursor(Qt.ArrowCursor)
 		
 	def launch_eulers(self):
-		from e2eulerxplor import EMAsymmetricUnitViewer
+		from e2eulerxplor import EMEulerExplorer
 		get_application().setOverrideCursor(Qt.BusyCursor)
-		module = EMAsymmetricUnitViewer(get_application(),auto=True)
+		module = EMEulerExplorer(get_application(),auto=True)
 		self.module().emit(QtCore.SIGNAL("launching_module"),"Eulers",module)
 		get_application().show_specific(module)
 		self.add_module([str(module),"Eulerxplor",module])

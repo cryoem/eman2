@@ -522,8 +522,8 @@ def euler_display(emdata_list):
 	if len(emdata_list) == 0: return
 	if GUIMode:
 		#from emimage3dsym import EM3DSymViewerModule
-		from e2eulerxplor import EMAsymmetricUnitViewer
-		module = EMAsymmetricUnitViewer(auto=False,sparse_mode=True)
+		from e2eulerxplor import EMEulerExplorer
+		module = EMEulerExplorer(auto=False,sparse_mode=True)
 		if isinstance(emdata_list[0],EMData): module.set_emdata_list_as_data(emdata_list)
 		elif isinstance(emdata_list[0],Transform):
 			module.specify_eulers(emdata_list)

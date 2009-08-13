@@ -557,20 +557,21 @@ class EMMatrixPanel:
 
 class EMImageMXModule(EMGUIModule):
 	
-	def enable_set(self,idx,name,display=True,lst=[]):
+	def enable_set(self,name,lst=[],display=True,update=True):
 		'''
 		Called from e2eulerxplor
 		'''
-		self.sets_manager.enable_set(name)
+		self.get_inspector()
+		self.sets_manager.associate_set(name,lst,display)
 		self.force_display_update()
-		self.updateGL()
-
-	def clear_sets(self):
+		if update: self.updateGL()
+		
+	def clear_sets(self,update=True):
 		self.sets_manager.clear_sets()
 		self.force_display_update()
-		self.updateGL()
+		if update: self.updateGL()
 	
-	def set_single_active_set(self,db_name,idx=0,exclusive=0):
+	def set_single_active_set(self,db_name):
 		'''
 		Called from emform
 		'''
@@ -1299,9 +1300,6 @@ class EMImageMXModule(EMGUIModule):
 							self.__render_excluded_square()
 							glPopMatrix()
 							
-									
-							
-							
 						if drawlabel:
 							self.__draw_mx_text(tx,ty,txtcol,i)
 							
@@ -1480,8 +1478,7 @@ class EMImageMXModule(EMGUIModule):
 				glPushMatrix()
 				glTranslate(tx,tagy,0)
 				glTranslate(0,1,0.2)
-				if v=="Img #" : 
-					#print i,self.img_num_offset,self.max_idx,(i+self.img_num_offset)%self.max_idx,
+				if v=="Img #" and not self.data[i].has_attr("Img #") : 
 					idx = i+self.img_num_offset
 					if idx != 0: idx = idx%self.max_idx
 					sidx = str(idx)
@@ -2459,7 +2456,7 @@ class EMMXSetsListWidgetItem(QtGui.QListWidgetItem):
 class EMMXSetsPanel:
 	'''
 	Encapsulates the widgets that are used by the sets management system
-	Talks directly to the EMMXSetsManager as opposed to the EMImageMXModule
+	Talks directly to the EMMXSetsManager
 	'''
 	def __init__(self,target):
 		self.target = weakref.ref(target) # this should be an EMMXSetsManager
@@ -2598,7 +2595,6 @@ class EMMXSetsPanel:
 		for item in items:
 			if str(item.text()) == set_name:
 				if item.checkState() == Qt.Checked:
-					
 					if display:
 						self.target().set_current_set(set_name)
 						self.target().make_set_visible(set_name)
@@ -2803,7 +2799,7 @@ class EMMXSetsManager:
 			
 		if set_name not in self.visible_sets: self.visible_sets.append(set_name)
 
-	def enable_set(self,set_name):
+	def enable_set(self,set_name,display=True):
 		act = True
 		if db_check_dict("bdb:select"):
 			db = db_open_dict("bdb:select")
@@ -2842,7 +2838,7 @@ class EMMXSetsManager:
 			
 		self.sets_color_map = {} 
 	
-	def associate_set(self,set_name,set_lst,force=False):
+	def associate_set(self,set_name,set_lst,display=True,force=False):
 		'''
 		@param set_name the name of the set, usually an int starting at 0
 		@param set_list a list of particle indices indicating particles that are in the set
@@ -2853,6 +2849,7 @@ class EMMXSetsManager:
 		
 		self.sets[set_name] = set_lst
 #			
+		self.panel.add_set(set_name,display)
 	
 	def image_set_associate(self,idx):
 		'''
@@ -2975,7 +2972,7 @@ class EMMXDataCache:
 
 class EMLightWeightParticleCache(EMMXDataCache):
 	'''
-	A light weight particle cache is exactly that and more. Basically you initialize it with a list of filenames and particle indices 
+	A light weight particle cache is exactly that and more. Initialize it with a list of filenames and particle indices 
 	corresponding to the particles that you want to view. So the calling function doesn't do any image reading, you just tell this
 	thing what will need to be (or not) read.
 	
@@ -2983,8 +2980,8 @@ class EMLightWeightParticleCache(EMMXDataCache):
 	the filename and idx variables should be obvious, however the extra list contains functions that take an EMData as the argument -
 	I used this, for example, for assignint attributes to images once they are in memory, and for transforming them, etc.
 	
-	A big advantage of this cache is that it only displays the images that is asked for. Additionally, it has a maximum cache size,
-	and refocuses the cache when asked an image outside its current index bounds. This makes this cache only suitable for linear access
+	A big advantage of this cache is that it only displays the images that are asked for. Additionally, it has a maximum cache size,
+	and refocuses the cache when asked for an image outside its current index bounds. This makes this cache only suitable for linear access
 	schemes, not random.
 	
 	'''
@@ -3140,13 +3137,7 @@ class EMDataListCache(EMMXDataCache):
 	This class became semi-redundant after the introduction of the EMLightWeightParticleCache, however it is still used
 	as the primary container for lists of the form [EMData,EMData,EMData,EMData,...]. 
 	
-	This class designed primarily for memory management in the context of large lists of EMData objects. It is only efficient
-	if accessing contiguous blocks of images - it is not effecient if randomly accessing images.
-	
-	The basic strategy is this - if asked for an image that is not currently in memory, then the cache is refocused about the newly
-	requested image index.
-	
-	You can initialize this object with a filename of an image matrix. Then you can treat it as though it's
+	You can also initialize this object with a filename of an image matrix. Then you can treat it as though it's
 	a list of EMData objects. For example,
 	
 	data = EMDataListCache("particles.hdf")
@@ -3414,6 +3405,7 @@ class EM3DDataListCache(EMMXDataCache):
 	'''
 	A class that looks like a list to the outside word
 	automated way of handling 3d images for the EMImageMXModule
+	
 	'''
 	def __init__(self,filename):
 		EMMXDataCache.__init__(self)
