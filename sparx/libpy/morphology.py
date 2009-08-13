@@ -73,6 +73,13 @@ def erosion(f, mask = None, morphtype="BINARY"):
 		return filt_erosion_(f, mask, morph_type.GRAYLEVEL)
 	else: print "Unknown erosion type."
 
+def invert(im):
+	"""
+	 Invert contrast of an image (while keeping the average)
+	"""
+	p = Util.infomask(im, None, True)
+	return ((-1.0*im) + 2*p[0])
+
 #def compress(img, value = 0.0, frange=1.0):
 #	return img.process( "threshold.compress", {"value": value, "range": frange } )
 

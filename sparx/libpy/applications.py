@@ -10398,7 +10398,7 @@ def ssnr3d_MPI(stack, output_volume = None, ssnr_text_file = None, mask = None, 
 		vol_ssnr2, output_volume+"2.spi", "s")
 		"""
 
-def pca( input_stacks, output_stack, subavg, mask_radius, sdir, nvec, shuffle, genbuf, maskfile="", MPI=False, verbose=False) :
+def pca( input_stacks, output_stack, subavg, mask_radius, sdir, nvec, shuffle, genbuf, maskfile="", MPI=False, verbose=False):
 	from utilities import get_image, get_im, model_circle, model_blank
 	from statistics import pcanalyzer
 
