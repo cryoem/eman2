@@ -191,7 +191,6 @@ def gen_rot_ave_template(image_name,ref_boxes,shrink,box_size,iter=4):
 			ta = particle.align("translational",ave)
 			t.append(ta)
 			
-	
 		ave = t[0].copy()
 		for i in range(1,len(ptcls)):
 			ave.add(t[i])
@@ -638,7 +637,7 @@ class SwarmBoxer:
 	
 	def to_list(self):
 		'''
-		Stores the vital variable attributes of this object in a list - returns a deep copy. The list contains these entries:
+		Stores the vital attributes of this object in a list - returns a deep copy. The list contains these entries:
 		-----------------------------
 		Index   Variable			Description
 		0		self.ref_boxes		List of SwarmBox object - this information could technically be used to regenerate the template and the picking parameters
@@ -796,8 +795,9 @@ class SwarmBoxer:
 		'''
 		Handles the situation when the user changes the current image being studied in the main interface
 		in the EMBoxerModule.
-		A groovy thing happens - if the user has "auto updates" selected in the SwarmPanel then
-		the last boxer from the previous image (i.e. self.step_back_cache[-1]) is pushed to the top
+		An autobox will occur if the image being changed to is in an empty state this the current image
+		has Swarm Data that is useful
+		Specifically, the last boxer from the previous image (i.e. self.step_back_cache[-1]) is pushed to the top
 		of the boxer stack for the new image and auto boxing occurs. This is easily undone if the results
 		are unwanted, i.e. by pressing "Step Back" in the SwarmPanel
 		
@@ -806,12 +806,14 @@ class SwarmBoxer:
 		
 		'''
 		l = None
-		if active_tool:
-			if self.auto_update and len(self.step_back_cache) > 0:
-				l = deepcopy(self.step_back_cache[-1])
-				if l[1] == None:
-					# there is no template, it's an empty autoboxer
-					l = None
+		#if active_tool:
+			#if self.auto_update and len(self.step_back_cache) > 0:
+		if len(self.step_back_cache) > 0:
+			l = deepcopy(self.step_back_cache[-1])
+			if l[1] == None:
+				# there is no template, it's an empty autoboxer
+				l = None
+		
 		self.reset()
 		self.mvt_cache = get_database_entry(file_name,SwarmBoxer.SWARM_USER_MVT,dfl=[])
 		
@@ -823,10 +825,15 @@ class SwarmBoxer:
 		if self.step_back_cache == None: self.step_back_cache = []
 		if len(self.step_back_cache) > 0 and l != None:
 #			print self.step_back_cache[-1][9],l[9]
-			if self.step_back_cache[-1][9] == l[9]: # this is the time stamp - if they match we definitely shouldn't push on to the stacks
+#			if self.step_back_cache[-1][9] == l[9]: # this is the time stamp - if they match we definitely shouldn't push on to the stacks
 #				print "saved a redundant step"
-				l = None
-	
+#				l = None
+			if self.step_back_cache[-1][1] != None: # this means the handing on of parameters only ever happens if the current state is empty
+				l = None # there is a template, it's an non-trivial autoboxer
+			else:
+				pass
+				# this means we're in the clear in terms of automatically boxing this image
+		
 		if l != None:
 			self.step_back_cache.append(l)
 			self.cache_to_database()
@@ -1398,7 +1405,7 @@ class SwarmBoxer:
 		'''
 		Clears all associated boxes from the EMBoxerModule and internally, establishing a clean, blank state
 		'''
-		empty = (self.templates == None or len(self.templates) > 0)
+		empty = (self.templates == None or len(self.templates) == 0)
 		self.target().clear_boxes([SwarmBoxer.REF_NAME,SwarmBoxer.AUTO_NAME,SwarmBoxer.WEAK_REF_NAME],cache=True)
 		self.reset()
 		self.panel_object.enable_view_template(False)

@@ -221,7 +221,9 @@ class ThumbsEventHandler:
 		if lc == None: return
 		im=lc[0]
 		self.target().set_current_file_by_idx(im)
-		self.target().get_2d_window().updateGL()
+		try:
+			self.target().get_2d_window().updateGL()
+		except: pass #window is closed
 	
 	def module_closed(self):
 		self.target().thumbs_window_closed()
@@ -1070,7 +1072,9 @@ class ParticlesWindowEventHandler(BoxEventsHandler):
 			self.mouse_handler.moving_ptcl_established(im,event.x(),event.y())
 		#self.target().moving_ptcl_established(im,event.x(),event.y())
 		#self.target().get_2d_window().set_active(im,.9,.9,.4)
-		self.target().get_2d_window().updateGL()
+		try:
+			self.target().get_2d_window().updateGL()
+		except: pass #window is closed
 		
 	def box_moved(self,event,scale):
 		if self.mouse_handler == None: return
