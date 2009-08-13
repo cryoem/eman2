@@ -975,14 +975,18 @@ def get_image(imagename, nx = 0, ny = 1, nz = 1, im = 0):
 	return e
 
 def get_im(stackname, im = 0):
-	"""Read an image from the disk stack 
+	"""Read an image from the disk stack, or return im's image from the list of images
 
-	Usage: myimage = readImage("path/to/stack", im)
+	Usage: myimage = get_im("path/to/stack", im)
+	   or: myimage = get_im( data, im )
 	"""
-	e = EMData()
-	e.read_image(stackname, im)
-	return  e
-    
+	if type(stackname) == type(""):
+		e = EMData()
+		e.read_image(stackname, im)
+		return  e
+	else:
+		return  stackname[im]
+
 def get_image_data(img):
     """
     Return a NumPY array containing the image data. 

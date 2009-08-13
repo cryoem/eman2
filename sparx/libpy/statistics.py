@@ -832,18 +832,18 @@ def aves_wiener(input_stack, mode="a", SNR=1.0):
 		mode="a" will apply alignment parameters to the input image.
 	"""
 	
-	from fundamentals import fft, rot_shift2D
-	from morphology   import ctf_img
-	from filter 	  import filt_ctf
-	from utilities    import pad, get_params2D
-	from math 	  import sqrt
+	from  fundamentals import fft, rot_shift2D
+	from  morphology   import ctf_img
+	from  filter 	   import filt_ctf
+	from  utilities    import pad, get_params2D, get_im
+	from  math 	   import sqrt
 	
-	n = EMUtil.get_image_count(input_stack)
-	ima = EMData()
-	ima.read_image(input_stack, 0)
+	if type(input_stack) == type(""):	n = EMUtil.get_image_count(input_stack)
+	else:  n = len(input_stack)
+	ima = get_im(input_stack, 0)
 	nx = ima.get_xsize()
 	ny = ima.get_xsize()
-	
+
 	if ima.get_attr_default('ctf_applied', 2) > 0:	ERROR("data cannot be ctf-applied", "aves_wiener", 1)
 
 	nx2 = 2*nx
@@ -853,8 +853,7 @@ def aves_wiener(input_stack, mode="a", SNR=1.0):
 	snrsqrt = sqrt(SNR)
 
 	for i in xrange(n):
-		ima = EMData()
-		ima.read_image(input_stack, i)
+		ima = get_im(input_stack, i)
 		ctf_params = ima.get_attr("ctf")
 		if mode == "a":
 	 		alpha, sx, sy, mirror, scale = get_params2D(ima)
@@ -869,8 +868,7 @@ def aves_wiener(input_stack, mode="a", SNR=1.0):
 	var = EMData(nx,ny)
 	var.to_zero()
 	for i in xrange(n):
-		ima = EMData()
-		ima.read_image(input_stack, i)
+		ima = get_im(input_stack, i)
 		ctf_params = ima.get_attr("ctf")
 		if mode == "a":
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
