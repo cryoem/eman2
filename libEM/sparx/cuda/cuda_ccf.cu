@@ -110,7 +110,7 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAG
     }
 
     /* Allocate host memory for the coordinates of sampling points */
-    points = (float*)malloc((RING_LENGTH+2)*NRING*2*sizeof(float));
+    points = (float*)malloc(RING_LENGTH*NRING*2*sizeof(float));
     if (points == 0) {
        fprintf (stderr, "Host memory allocation error!\n");
        return;
@@ -131,18 +131,18 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAG
     printf("For reference image                           : %10.3f KB\n", NX*NY*4/1000.0);
     printf("For %5d subject images in polar coordinates : %10.3f MB\n", NIMAGE, NIMAGE*(RING_LENGTH+2)*NRING*4/1000000.0);
     printf("For reference image in polar coordinates      : %10.3f KB\n", (RING_LENGTH+2)*NRING*4/1000.0);
-    printf("For all crosss-correlation functions (CCF)    : %10.3f MB\n", (RING_LENGTH+2)*NIMAGE*(2*KX+1)*(2*KY+1)*2*4/1000000.0);
+    printf("For all cross-correlation functions (CCF)     : %10.3f MB\n", (RING_LENGTH+2)*NIMAGE*(2*KX+1)*(2*KY+1)*2*4/1000000.0);
     printf("Total memory used                             : %10.3f MB\n\n", ((NIMAGE+1)*(NX*NY+(RING_LENGTH+2)*NRING)+(RING_LENGTH+2)*NIMAGE*(2*KX+1)*(2*KY+1)*2)*4/1000000.0);
 
 
     /* Allocate the matrix for all NIMAGE subject images on the video card */
     for (k=0; k<NROW; k++)
-       cudaMallocArray(&subject_image_array[k], &channelDesc, NY, NX*NIMAGE_ROW);
+       cudaMallocArray(&subject_image_array[k], &channelDesc, NX, NY*NIMAGE_ROW);
     if (NIMAGE_LEFT != 0)
-       cudaMallocArray(&subject_image_array_left, &channelDesc, NY, NX*NIMAGE_LEFT);
+       cudaMallocArray(&subject_image_array_left, &channelDesc, NX, NY*NIMAGE_LEFT);
  
     /* Allocate the matrix for the reference image on the video card */
-    cudaMallocArray(&ref_image_array, &channelDesc, NY, NX);
+    cudaMallocArray(&ref_image_array, &channelDesc, NX, NY);
  
     /* Allocate the matrix for all NIMAGE subject images in polar coordinates on the video card */
     cudaMalloc((void**)&d_subject_image_polar, NIMAGE*(RING_LENGTH+2)*NRING*sizeof(float));
@@ -154,7 +154,7 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAG
     cudaMalloc((void**)&d_ccf, 2*(RING_LENGTH+2)*NIMAGE*(2*KX+1)*(2*KY+1)*sizeof(float));
 
     /* Allocate the matrix for the coordinates of the sampling points on the video card */
-    cudaMalloc((void**)&d_points, (RING_LENGTH+2)*NRING*2*sizeof(float));
+    cudaMalloc((void**)&d_points, RING_LENGTH*NRING*2*sizeof(float));
 
     /* Allocate the matrix for the coordinates of the shifts on the video card */
     cudaMalloc((void**)&d_shifts, NIMAGE_ROW*2*sizeof(float));
@@ -163,7 +163,7 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAG
     /* Fill the matrix for the coordinates of sampling points */
     for (i = 0; i < NRING; i++) 
     	for (j = 0; j < RING_LENGTH; j++) {
-		index = i*(RING_LENGTH+2)+j;
+		index = i*RING_LENGTH+j;
 		ang = float(j)/RING_LENGTH*PI*2;
  	      	points[index*2] = (i+1)*cosf(ang);
 		points[index*2+1] = (i+1)*sinf(ang);
@@ -174,9 +174,9 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAG
 
 
     /* Copy the matrix for the coordinates of sampling points to the video card */
-    cudaMemcpy(d_points, points, (RING_LENGTH+2)*NRING*2*sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_points, points, RING_LENGTH*NRING*2*sizeof(float), cudaMemcpyHostToDevice);
     cudaGetTextureReference(&texPtr, "texim_points");
-    cudaBindTexture(0, texPtr, d_points, &channelDesc, (RING_LENGTH+2)*NRING*2*sizeof(float));
+    cudaBindTexture(0, texPtr, d_points, &channelDesc, RING_LENGTH*NRING*2*sizeof(float));
 
     /* Copy the matrix for the coordinates of shifts to the video card */
     cudaMemcpy(d_shifts, shifts, NIMAGE_ROW*2*sizeof(float), cudaMemcpyHostToDevice);
@@ -289,26 +289,26 @@ __global__ void complex_mul(float *ccf, int BLOCK_SIZE, int NRING, int NIMAGE, i
     float ccf_m_imag = 0.0;
     float sub_real, sub_imag, ref_real, ref_imag;
     int i_block, b_image, subject_index, ref_index, ccf_index;
-    float sr_rr, si_ri, sr_ri, si_rr;
+    float rr_sr, ri_si, rr_si, ri_sr;
 
     b_image = bx*BLOCK_SIZE*NRING;
     for (int i = 0; i < NRING; i++) {
-    	i_block = i*BLOCK_SIZE;
+	i_block = i*BLOCK_SIZE;
 	subject_index = (b_image+i_block+tx)*2;
-        ref_index = (i_block+tx)*2;
+	ref_index = (i_block+tx)*2;
 
 	sub_real = tex1Dfetch(texim_subject, subject_index);
-    	sub_imag = tex1Dfetch(texim_subject, subject_index+1);
+	sub_imag = tex1Dfetch(texim_subject, subject_index+1);
 	ref_real = tex1Dfetch(texim_ref, ref_index);
 	ref_imag = tex1Dfetch(texim_ref, ref_index+1);
-	sr_rr = sub_real*ref_real;
-        si_ri = sub_imag*ref_imag;
-        sr_ri = sub_real*ref_imag;
-        si_rr = sub_imag*ref_real;
-	ccf_s_real += sr_rr+si_ri;
-	ccf_s_imag += -sr_ri+si_rr;
-        ccf_m_real += sr_rr-si_ri;
-        ccf_m_imag += -sr_ri-si_rr;
+	rr_sr = ref_real*sub_real;
+	ri_si = ref_imag*sub_imag;
+	rr_si = ref_real*sub_imag;
+	ri_sr = ref_imag*sub_real;
+	ccf_s_real += rr_sr+ri_si;
+	ccf_s_imag += -rr_si+ri_sr;
+	ccf_m_real += rr_sr-ri_si;
+	ccf_m_imag += -rr_si-ri_sr;
     }
 
     ccf_index = (bx*BLOCK_SIZE+tx)*2;
@@ -327,17 +327,17 @@ __global__ void resample_to_polar(float* image, float dx, float dy, int NX, int 
     
     // Thread index
     int tx = threadIdx.x;
- 
-    float cnx = NX/2+dx;
-    float cny = by*NX+NY/2+dy;
+
+    float cnx = NX/2+dx+0.5;
+    float cny = by*NY+NY/2+dy+0.5;
 
     int img_index = (by*NRING+bx)*(RING_LENGTH+2)+tx;
-    int index = bx*(RING_LENGTH+2)+tx;
+    int index = bx*RING_LENGTH+tx;
     float points_x = tex1Dfetch(texim_points, index*2);
     float points_y = tex1Dfetch(texim_points, index*2+1);
     float shifts_x = tex1Dfetch(texim_shifts, by*2);
     float shifts_y = tex1Dfetch(texim_shifts, by*2+1);
 
-    image[img_index] = tex2D(tex, cnx+points_x+shifts_x+dx, cny+points_y+shifts_y+dy);
+    image[img_index] = tex2D(tex, cnx+points_x+shifts_x, cny+points_y+shifts_y);
 }
- 
+
