@@ -1324,7 +1324,11 @@ class SwarmBoxer:
 			peak_score = correlation.get(x,y)
 			box = [xx,yy,type,peak_score]
 			self.center_propagate(box,image_name,scaled_template,self.particle_diameter)
-			boxes.append(box)
+			
+			exc_x = box[0]/exclusion_shrink
+			exc_y = box[1]/exclusion_shrink
+			if exclusion_image.get(exc_x,exc_y) != 0: boxes.append(box)
+			#else the particle was re-centered on an excluded region!
 		
 		self.target().set_status_message("Updating Positions",0)
 		self.update_auto_box_user_mvt(boxes)
