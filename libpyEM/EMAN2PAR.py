@@ -305,7 +305,7 @@ def openEMDCsock(addr,clientid=0, retry=3):
 			if sockf.read(4)!="EMAN" : raise Exception,"Not an EMAN server"
 			break
 		except:
-			time.sleep(5)
+			time.sleep(8)
 			if i>2 : print "Retrying connect to server (%d)"%i
 			continue
 	else: raise Exception,"Exceeded max retries in opening socket to "+str(addr)
@@ -385,8 +385,10 @@ class DCThreadingMixIn:
 	def process_request(self, request, client_address):
 		"""Start a new thread to process the request."""
 		
-		while threading.active_count()>12 : 
+		count=0
+		while threading.active_count()>8 and count<10: 
 			time.sleep(2)
+			count +=1
 		
 		t = threading.Thread(target = self.process_request_thread,
 								args = (request, client_address))
