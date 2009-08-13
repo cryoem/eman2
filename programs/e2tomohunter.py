@@ -249,7 +249,7 @@ class EMTomoHunter:
 		if len(all_solns) > 1:
 			target_name = get_file_tag(self.files[target_idx])
 			probe_name = get_file_tag(self.files[probe_idx]) 
-			out=file("log-s3-%s_%s.txt"%(target_name,probe_name),"w")
+			out=file("log-s3-%s_VS_%s.txt"%(target_name,probe_name),"w")
 			peak = 0
 			for d in all_solns:
 				t = d["xform.align3d"]

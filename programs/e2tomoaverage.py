@@ -316,6 +316,14 @@ class EMBootStrappedAverages:
 				image_1 = EMData(current_files[j],0)
 				image_2 = EMData(current_files[i],0)
 				
+				image_1_weight = 1
+				if image_1.has_attr("total_inc"): image_1_weight = image_1["total_inc"]
+				image_2_weight = 1
+				if image_2.has_attr("total_inc"): image_2_weight = image_2["total_inc"]
+				total_weight = image_1_weight+image_2_weight
+				image_1.mult(float(image_1_weight)/total_weight)
+				image_2.mult(float(image_2_weight)/total_weight)
+				
 				d = {}
 				d["type"] = "eman"
 				d["tx"] = images[1].get(i,j)
@@ -326,12 +334,14 @@ class EMBootStrappedAverages:
 				d["phi"] = images[6].get(i,j)
 				t = Transform(d)
 				image_1.process_inplace("math.transform",{"transform":t})
+				
 				image_2 += image_1
-				image_2.mult(.5)
 				image_2.set_attr("src_image",current_files[j]) # so we can recollect how it was created
 				image_2.set_attr("added_src_image",current_files[i]) # so we can recollect how it was created
 				image_2.set_attr("added_src_transform",t) # so we can recollect how it was created
 				image_2.set_attr("added_src_cmp",images[0](i,j)) # so we can recollect how it was created
+				image_2.set_attr("total_inc",total_weight) # so we can recollect how it was created
+				
 				output_name = numbered_bdb("bdb:"+self.options.path+"#tomo_ave_0"+str(iter-1))
 				image_2.write_image(output_name,0)
 				if self.options.dbls: self.save_to_workflow_db(output_name)
@@ -461,7 +471,7 @@ class EMTomoOutputWriter:
 		if len(all_solns) > 1:
 			target_name = get_file_tag(files[target_idx])
 			probe_name = get_file_tag(files[probe_idx]) 
-			out=file("log-s3-%s_%s.txt"%(target_name,probe_name),"w")
+			out=file("log-s3-%s_VS_%s.txt"%(target_name,probe_name),"w")
 			peak = 0
 			for d in all_solns:
 				t = d["xform.align3d"]

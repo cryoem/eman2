@@ -39,7 +39,6 @@ from emsave import EMFileTypeValidator
 class EMProjectListCleanup:
 	'''
 	'''
-	
 	def clean_up_ali_params(dict_db_name="global.tpr_ptcls_ali_dict"):
 		project_db = db_open_dict("bdb:project")
 		db_map = project_db.get(dict_db_name,dfl={})
@@ -1177,6 +1176,10 @@ class EMTomoBootStapChoosePtclsTask(EMBaseTomoChooseFilteredPtclsTask):
 		
 		self.write_db_entries(params)
 
+class EMTomoAlignParams:
+	'''
+	A class that get parameters commonly used by alignment based programs
+	'''
 
 class EMTomoBootstrapTask(WorkFlowTask):
 	'''Use this task for running e2tomoaverage.py from the workflow for generating a bootstrapped probe'''
@@ -1215,6 +1218,8 @@ class EMTomoBootstrapTask(WorkFlowTask):
 		params.append(nsoln)
 		pparallel = ParamDef(name="parallel",vartype="string",desc_short="Parallel",desc_long="Parallel arguments (advanced). Leave blank if unsure",property=None,defaultunits=db.get("parallel",dfl=""),choices=None)
 		params.append(pparallel)
+		pshrink = ParamDef(name="shrink",vartype="int",desc_short="Shrink",desc_long="Shrink the data at various stages, for speed purposes but at the expense of resolution",property=None,defaultunits=db.get("shrink",dfl=4),choices=[])
+		params.append(pshrink)
 		
 		table_params.append(["Main",params])
 		
@@ -1230,11 +1235,24 @@ class EMTomoBootstrapTask(WorkFlowTask):
 		pcmp = EMEmanStrategyWidget(dump_cmps_list(),name="cmp",desc_short="Comparison Method",desc_long="Supply your comparator",defaultunits="dot.tomo")
 		advanced_params.append(pcmp)
 		
+		
 		data_r3d = {}
 		data_r3d["refine.3d"] = data["refine.3d"]
 		data_r3d["None"] = ["Choose this to stop the refinement aligner from being used"]
 		prstrategy = EMEmanStrategyWidget(data_r3d,name="ralign",desc_short="Refinement Alignment Strategy",desc_long="Choose a refine alignment strategy. Choose None to disable this",defaultunits="None")
 		advanced_params.append(prstrategy)
+		
+		proc_data = dump_processors_list()
+		proc_data_d = {}
+		for key in proc_data.keys():
+			if len(key) >= 7 and key[:7] == "filter.":
+				proc_data_d[key] = proc_data[key]
+				
+		proc_data_d["None"] = ["Choose this to stop filtering from occuring"]
+
+		if len(proc_data_d) > 0:
+			pproc_str = EMEmanStrategyWidget(proc_data_d,name="filter",desc_short="Filter",desc_long="Choose",defaultunits="None")
+			advanced_params.append(pproc_str)
 		
 		table_params.append(["Advanced",advanced_params])
 		#db_close_dict("bdb:project")
@@ -1246,6 +1264,8 @@ class EMTomoBootstrapTask(WorkFlowTask):
 	def check_params(self,params):
 		error_msg = []
 		if len(params["targetimage"]) == 0: error_msg.append("Please choose at leaset one particle file")
+		if params.has_key("shrink") and params["shrink"] <= 1:
+			error_msg.append("If you supply the shrink argument it must be greater than 1. To avoid shrinking leave it blank.")
 		return error_msg
 	
 	def on_form_ok(self,params):
@@ -1273,6 +1293,15 @@ class EMTomoBootstrapTask(WorkFlowTask):
 		if params.has_key("parallel") and len(params["parallel"]) > 0:
 			string_args.append('parallel')
 			options.parallel = params['parallel']
+		
+		if params.has_key("shrink"):
+			string_args.append('shrink')
+			options.shrink = params['shrink']
+			
+		if params.has_key("filter"):
+			string_args.append('filter')
+			options.filter = params['filter']
+			
 			
 		bool_args = []
 		additional_args = ["--dbls=%s" %tpr_probes_dict, "--bootstrap"]
@@ -1322,6 +1351,8 @@ class EMTomohunterTask(WorkFlowTask):
 		params.append(nsoln)
 		pparallel = ParamDef(name="parallel",vartype="string",desc_short="Parallel",desc_long="Parallel arguments (advanced). Leave blank if unsure",property=None,defaultunits=db.get("parallel",dfl=""),choices=None)
 		params.append(pparallel)
+		pshrink = ParamDef(name="shrink",vartype="int",desc_short="Shrink",desc_long="Shrink the data at various stages, for speed purposes but at the expense of resolution",property=None,defaultunits=db.get("shrink",dfl=4),choices=[])
+		params.append(pshrink)
 		
 		table_params.append(["Main",params])
 		
@@ -1342,6 +1373,18 @@ class EMTomohunterTask(WorkFlowTask):
 		data_r3d["None"] = ["Choose this to stop the refinement aligner from being used"]
 		prstrategy = EMEmanStrategyWidget(data_r3d,name="ralign",desc_short="Refinement Alignment Strategy",desc_long="Choose a refine alignment strategy. Choose None to disable this",defaultunits="None")
 		advanced_params.append(prstrategy)
+		
+		proc_data = dump_processors_list()
+		proc_data_d = {}
+		for key in proc_data.keys():
+			if len(key) >= 7 and key[:7] == "filter.":
+				proc_data_d[key] = proc_data[key]
+				
+		proc_data_d["None"] = ["Choose this to stop filtering from occuring"]
+
+		if len(proc_data_d) > 0:
+			pproc_str = EMEmanStrategyWidget(proc_data_d,name="filter",desc_short="Filter",desc_long="Choose",defaultunits="None")
+			advanced_params.append(pproc_str)
 	
 		table_params.append(["Advanced",advanced_params])
 		#db_close_dict("bdb:project")
@@ -1354,6 +1397,8 @@ class EMTomohunterTask(WorkFlowTask):
 		error_msg = []
 		if len(params["targetimage"]) == 0: error_msg.append("Please choose at leaset one particle file")
 		if len(params["probeimage"]) != 1: error_msg.append("Please choose a single probe file to proceed")
+		if params.has_key("shrink") and params["shrink"] <= 1:
+			error_msg.append("If you supply the shrink argument it must be greater than 1. To avoid shrinking leave it blank.")
 		return error_msg
 	
 	def on_form_ok(self,params):
@@ -1382,6 +1427,14 @@ class EMTomohunterTask(WorkFlowTask):
 		if params.has_key("parallel") and len(params["parallel"]) > 0:
 			string_args.append('parallel')
 			options.parallel = params['parallel']
+			
+		if params.has_key("shrink"):
+			string_args.append('shrink')
+			options.shrink = params['shrink']
+			
+		if params.has_key("filter"):
+			string_args.append('filter')
+			options.filter = params['filter']
 			
 		bool_args = []
 		additional_args = ["--dbls=%s" %tpr_ptcls_ali_dict]

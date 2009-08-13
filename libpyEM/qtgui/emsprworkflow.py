@@ -69,60 +69,6 @@ class EmptyObject:
 	'''
 	def __init__(self):
 		pass
-	
-
-#class EMFormTask(QtCore.QObject):
-#	'''
-#	Something that reflects the common interface for all of the tasks
-#	'''
-#	def __init__(self):
-#		QtCore.QObject.__init__(self)
-#		self.window_title = "Set me please" # inheriting classes should set this
-#		self.preferred_size = (480,640) # inheriting classes can change this if they choose
-#
-#	def run_form(self): 
-#		self.form = EMFormModule(self.get_params(),get_application())
-#		self.form.qt_widget.resize(*self.preferred_size)
-#		self.form.setWindowTitle(self.window_title)
-#		get_application().show_specific(self.form)
-#		self.make_form_connections()
-#	def make_form_connections(self):
-#		'''
-#		Make the necesessary form connections
-#		'''
-#		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_ok"),self.on_form_ok)
-#		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
-#		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_close"),self.on_form_close)
-#		
-#	def get_params(self): raise NotImplementedError
-#	
-#	def on_form_ok(self,params):
-#		self.write_db_entries(params)			
-#		self.form.closeEvent(None)
-#		self.form = None
-#		self.emit(QtCore.SIGNAL("task_idle"))
-#		
-#	def on_form_cancel(self):
-#		self.form.closeEvent(None)
-#		self.form = None
-#		self.emit(QtCore.SIGNAL("task_idle"))
-#	
-#	def on_form_close(self):
-#		self.emit(QtCore.SIGNAL("task_idle"))
-#
-#	def closeEvent(self,event):
-#		self.form.closeEvent(None)
-#		#self.emit(QtCore.SIGNAL("task_idle")
-#		
-#	def write_db_entries(self,dictionary):
-#		'''
-#		Write the dictionary key/entries into the database using self.form_db_name
-#		Writes all keys except for "blurb" - note the the "blurb" key is mostly used in the context
-#		of these forms to display helpful information to the user - it doesn't need to be stored in the
-#		database 
-#		'''
-#		raise NotImplementedError
-
 
 def error(msg,title="Almost"):
 	EMErrorMessageDisplay.run(msg,title)
@@ -1184,8 +1130,8 @@ class EMFilterRawDataTask(WorkFlowTask):
 					if idx == -1: error_message.append("Couldn't interpret %s" %file)
 					else:
 						type_ = file[idx+1:]
-						if type_ not in get_supported_2d_write_formats(): type_ = ".mrc"
-						reps.append(file[:idx]+"_filt"+type_)
+						if type_ not in get_supported_2d_write_formats(): type_ = "mrc"
+						reps.append(file[:idx]+"_filt."+type_)
 			self.output_names = reps
 			
 			for name in self.output_names:
@@ -1273,7 +1219,6 @@ class EMFilterRawDataTask(WorkFlowTask):
 				i += 1
 				progress.qt_widget.setValue(i)
 				get_application().processEvents()
-			
 			e.write_image(outname,0)
 			#db_close_dict(db_name)
 			cancelled_writes.append(outname)
@@ -3903,7 +3848,7 @@ class EMClassificationTools(ParticleWorkFlowTask):
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2RefineParticlesTask.simmx_documentation,choices=None))
 
 		db = db_open_dict(self.form_db_name)
-		pshrink = ParamDef(name="shrink",vartype="int",desc_short="Shrink",desc_long="The the downsampling rate used to shrink the data at various stages in refinement, for speed purposes",property=None,defaultunits=db.get("shrink",dfl=4),choices=[])
+		pshrink = ParamDef(name="shrink",vartype="int",desc_short="Shrink",desc_long="Shrink the data at various stages in refinement, for speed purposes",property=None,defaultunits=db.get("shrink",dfl=4),choices=[])
 		
 		
 		params.append(pshrink)
