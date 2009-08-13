@@ -12047,8 +12047,8 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 
 		ext = file_type(stack)
 		if   ext == 'bdb': BDB = True
-		else:               BDB = False
-		if ext == 'txt': TXT = True
+		else:              BDB = False
+		if ext == 'txt':   TXT = True
 		else:              TXT = False
 		if myid == main_node:
 			print_begin_msg('k-means')
@@ -12067,7 +12067,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		listID = mpi_bcast(listID, N, MPI_INT, main_node, MPI_COMM_WORLD)
 		listID = listID.tolist()
 
-		N_start = int(round(float(N) / nb_cpu * myid))
+		N_start = int(round(float(N) / nb_cpu * myid))  # This is not the right way fo doing it, please read other code. PAP.
 		N_stop  = int(round(float(N) / nb_cpu * (myid + 1)))
 		if BDB:
 			# with BDB all node can not read the same data base in the same time
@@ -12097,7 +12097,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 			pickle.dump(assign, f)
 			f.close()
 			"""
-			N = EMUtil.get_image_count(stack)
+			#N = EMUtil.get_image_count(stack)  #I commented this one out PAP.
 			glb_assign = k_means_locasg2glbasg(assign, listID, N)
 			crit = k_means_criterion(Cls, critname)
 			k_means_export(Cls, crit, glb_assign, out_dir, 0, TXT)
@@ -12112,7 +12112,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		ext = file_type(stack)
 		if   ext == 'bdb': BDB = True
 		else:               BDB = False
-		if ext == 'txt': TXT = True
+		if ext == 'txt':   TXT = True
 		else:              TXT = False
 		
 		# instance of CUDA kmeans obj
