@@ -444,7 +444,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 	
 	def mouseReleaseEvent(self,event):
 		
-		if self.euler_data != None and (event.modifiers()&Qt.ShiftModifier or self.mouse_mode == "pick"):
+		if self.euler_data != None: #and (event.modifiers()&Qt.ShiftModifier or self.mouse_mode == "pick"):
 			
 			v = self.vdtools.wview.tolist()
 				
@@ -470,14 +470,14 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 				if len(c) > 0:
 					self.object_picked(int(c[0]-1))
 					break
-			else:
-				if self.special_euler != None:
-					self.special_euler = None
-					self.regen_dl()
-			return
+#			else:
+#				if self.special_euler != None:
+#					self.special_euler = None
+#					self.regen_dl()
+			#return
 		
 		
-		EMImage3DGUIModule.mousePressEvent(self,event)
+		EMImage3DGUIModule.mouseReleaseEvent(self,event)
 	
 	def get_type(self):
 		return "Symmetry Viewer"
