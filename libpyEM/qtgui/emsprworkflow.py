@@ -653,6 +653,7 @@ class EMProjectDataDict:
 			# remove the dictionary if any data was lost
 			self.__remove_dict_if_files_lost()
 			
+			# this recovery function removed on August 14th
 #			if self.data_dict_name == spr_ptcls_dict:
 #				self.__convert_ptcls_dict_to_tags()
 			
@@ -669,27 +670,28 @@ class EMProjectDataDict:
 		project_db = db_open_dict(self.db_name)
 		project_db[self.data_dict_name] = dict
 		
-	def __convert_ptcls_dict_to_tags(self):
-		'''
-		Converts the ptcls dict so that its keys are file tags, not full names
-		This was deemed necessary when we ran into problems using the full names for particle files,
-		specifically at the point of building sets and removing bad particles
-		This function is only called if the self.data_dict_name is spr_ptcls_dict (in self.get_data_dict)
-		'''
-		
-		project_db = db_open_dict(self.db_name)
-		data_dict = project_db.get(spr_ptcls_dict,dfl={})
-		acted = False
-		for key, value in data_dict.items():
-			tag = get_file_tag(key)
-			if tag != key:
-				acted = True
-				data_dict.pop(key)
-				data_dict[tag] = value
-		
-		if acted:
-			error("Converted global.spr_ptcls_dict to using file tags","Warning")
-			project_db[spr_ptcls_dict] = data_dict
+#	def __convert_ptcls_dict_to_tags(self):
+#		'''
+#		Converts the ptcls dict so that its keys are file tags, not full names
+#		This was deemed necessary when we ran into problems using the full names for particle files,
+#		specifically at the point of building sets and removing bad particles
+#		This function is only called if the self.data_dict_name is spr_ptcls_dict (in self.get_data_dict)
+#		'''
+#		
+#		project_db = db_open_dict(self.db_name)
+#		data_dict = project_db.get(spr_ptcls_dict,dfl={})
+#		acted = False
+#		for key, value in data_dict.items():
+#			tag = get_file_tag(key)
+#			print tag,key
+#			if tag != key:
+#				acted = True
+#				data_dict.pop(key)
+#				data_dict[tag] = value
+#		
+#		if acted:
+#			error("Converted global.spr_ptcls_dict to using file tags","Warning")
+#			project_db[spr_ptcls_dict] = data_dict
 	
 	def __remove_dict_if_files_lost(self):
 		'''
@@ -1729,7 +1731,6 @@ class EMParticleImportTask(ParticleWorkFlowTask):
 
 		
 		for input,output in params["name_map"].items():
-			print input,output 
 			if len(input) > 3 and input[:4] == "bdb:": 
 				i += 1
 				progress.setValue(i)
