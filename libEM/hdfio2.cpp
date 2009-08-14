@@ -535,6 +535,24 @@ int HdfIO2::read_header(Dict & dict, int image_index, const Region *, bool)
 		H5Aclose(attr);
 	}
 
+	if(dict.has_key("ctf")) {
+		string ctfString = (string)dict["ctf"];
+		if(ctfString.substr(0, 1) == "O") {
+			Ctf * ctf_ = new EMAN1Ctf();
+			ctf_->from_string(ctfString);
+			dict.erase("ctf");
+			dict["ctf"] = ctf_;
+			delete ctf_;
+		}
+		else if(ctfString.substr(0, 1) == "E") {
+			Ctf * ctf_ = new EMAN2Ctf();
+			ctf_->from_string(ctfString);
+			dict.erase("ctf");
+			dict["ctf"] = ctf_;
+			delete ctf_;
+		}
+	}
+
 	H5Gclose(igrp);
 	EXITFUNC;
 	return 0;
@@ -591,15 +609,15 @@ int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
 	if (ds<0) throw ImageWriteException(filename,"Image does not exist");
 	hid_t spc=H5Dget_space(ds);
 
-	
-	
+
+
 	if (area) {
 		throw UnexpectedBehaviorException("Reading regions is not supported for HDF images");
 		// See http://www.hdfgroup.org/HDF5/Tutor/select.html
 		// What I implemented below seems logically correct but something is wrong... lots of seg faults
 // 		hid_t memoryspace=H5Dget_space(ds); //H5Scopy(spc); //H5Dget_space(ds);
 // 		hid_t dataspace=H5Scopy(spc); //H5Dget_space(ds);
-// 		dataspace = H5Screate_simple (3, dimsf, NULL); 
+// 		dataspace = H5Screate_simple (3, dimsf, NULL);
 
 //		hsize_t     count[2];              /* size of the hyperslab in the file */
 // 		hsize_t     offset[2];              /* size of the hyperslab in the file */
@@ -636,7 +654,7 @@ int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
 		H5Dread(ds,H5T_NATIVE_FLOAT,spc,spc,H5P_DEFAULT,data);
 		H5Sclose(spc);
 	}
-	
+
 	H5Dclose(ds);
 	EXITFUNC;
 	return 0;
@@ -777,7 +795,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 
 // 	hsize_t dims[3]= { (int)dict["nz"],(int)dict["ny"],(int)dict["nx"] };
 // 	space=H5Screate_simple(3,dims,NULL);
-	
+
 	H5Dwrite(ds,H5T_NATIVE_FLOAT,spc,spc,H5P_DEFAULT,data);
 
 	H5Sclose(spc);
