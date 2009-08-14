@@ -230,16 +230,16 @@ float* EMData::get_data() const
 
 }
 
-#include <sys/stat.h> 
+#include <sys/stat.h>
 
 void EMData::write_data(string fsp,size_t loc,const Region* area,const int file_nx, const int file_ny, const int file_nz) {
-	
+
 	if (area) {
 		struct stat fileinfo;
-		if ( stat(fsp.c_str(),&fileinfo) != 0 ) throw UnexpectedBehaviorException("To write an image using a region the file must already exist and be the correct dimensions");	
+		if ( stat(fsp.c_str(),&fileinfo) != 0 ) throw UnexpectedBehaviorException("To write an image using a region the file must already exist and be the correct dimensions");
 	}
-	
-	
+
+
 	FILE *f = 0;
 	f=fopen(fsp.c_str(), "rb+");
 	if (!f) f=fopen(fsp.c_str(), "wb");
@@ -254,7 +254,7 @@ void EMData::write_data(string fsp,size_t loc,const Region* area,const int file_
 		if (file_ny != 0) fny = file_ny;
 		int fnz = nz;
 		if (file_nz != 0) fnz = file_nz;
-		
+
 		EMUtil::process_region_io(get_data(), f, ImageIO::READ_WRITE,
 								  0, 4,fnx,fny,fnz,area);
 	}

@@ -49,7 +49,6 @@ import sys
 from libpyGLUtils2 import GLUtil
 from emsprworkflow import error
 from emanimationutil import OrientationListAnimation,Animator
-from valslider import ValSlider
 from emimagemx import EMLightWeightParticleCache
 from time import time
 

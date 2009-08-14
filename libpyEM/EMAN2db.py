@@ -320,7 +320,7 @@ def db_read_image(self,fsp,*parms):
 		if keys:
 			key=keys[parms[0]]
 		else: key=parms[0]
-#		try :
+		
 		x=db.get(key,target=self,nodata=nodata,region=region)
 #		except: 
 #			raise Exception("Could not access "+str(fsp)+" "+str(key))
@@ -1126,7 +1126,7 @@ of these occasional errors"""
 			else : return "%s*%d"%(pkey+fkey,n*4*r["nx"]*r["ny"]*r["nz"])
 		return None
 
-	def get(self,key,dfl=None,txn=None,target=None,nodata=0,region=None):
+	def get(self,key,dfl=None,txn=None,target=None,nodata=0,region=None,idx=0):
 		"""Alternate method for retrieving records. Permits specification of an EMData 'target'
 		object in which to place the read object"""
 		self.realopen(self.rohint)
@@ -1170,7 +1170,7 @@ of these occasional errors"""
 				else:
 					try: n=loads(self.bdb.get(fkey+dumps(key,-1)))
 					except: raise KeyError,"Undefined data location key for : ",key
-					ret.read_data(pkey+fkey,n*4*nx*ny*nz,region,rnx,rny,rnz)
+					ret.read_data(pkey+fkey,key*4*rnx*rny*rnz,region,rnx,rny,rnz)
 			return ret
 		return r
 		
