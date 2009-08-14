@@ -985,7 +985,7 @@ def get_im(stackname, im = 0):
 		e.read_image(stackname, im)
 		return  e
 	else:
-		return  stackname[im]
+		return  stackname[im].copy()
 
 def get_image_data(img):
     """

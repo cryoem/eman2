@@ -522,7 +522,9 @@ def add_series(stack, i1=0 ,i2=0):
 	"""
 	from utilities import model_blank, get_im
 
-	if(i2==0): i2 = EMUtil.get_image_count(stack)-1
+	if(i2==0):
+		if  type(stack) == type(""): i2 = EMUtil.get_image_count(stack)-1
+		else:                       i2 = len(stack)-1
 	ave = get_im(stack, i1)
 	var = ave*ave  #pow(ave,2.0)
 	nx = ave.get_xsize()
@@ -537,15 +539,10 @@ def add_series(stack, i1=0 ,i2=0):
 
 	ii=i2-i1+1
 	ave = Util.mult_scalar(ave, 1.0/float(ii))  
-	#ave /= ii
-	#var = (var - pow(ave,2)/ii)/(ii-1)
-	#var = (var-ave*ave*ii)/(ii-1)
 	e = model_blank(nx, ny, nz)
 	Util.add_img2(e, ave)
 	var = Util.madn_scalar(var, e, -float(ii))
 	Util.mul_scalar(var, 1.0/float(ii-1))
-	#var -= ave*ave*ii
-	#var /= (ii-1)
 	
 	return ave, var
 
