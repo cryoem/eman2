@@ -653,8 +653,8 @@ class EMProjectDataDict:
 			# remove the dictionary if any data was lost
 			self.__remove_dict_if_files_lost()
 			
-			if self.data_dict_name == spr_ptcls_dict:
-				self.__convert_ptcls_dict_to_tags()
+#			if self.data_dict_name == spr_ptcls_dict:
+#				self.__convert_ptcls_dict_to_tags()
 			
 			project_db = db_open_dict(self.db_name)
 			self.data_dict = project_db.get(self.data_dict_name,dfl={})
@@ -1442,21 +1442,18 @@ class CTFColumns:
 	
 	def get_defocus(self,name):
 		ctf = self.get_ctf(name)
-		if ctf != None:
-			return "%.3f" %ctf.defocus
-		else: return ""
+		try: return "%.3f" %ctf.defocus
+		except: return ""
 	
 	def get_bfactor(self,name):
 		ctf = self.get_ctf(name)
-		if ctf != None:
-			return "%.3f" %ctf.bfactor
-		else: return ""
+		try: return "%.3f" %ctf.bfactor
+		except: return ""
 			
 	def get_sampling(self,name):
 		ctf = self.get_ctf(name)
-		if ctf != None:
-			return str(len(ctf.background))
-		else: return ""
+		try: return str(len(ctf.background))
+		except: return ""
 			
 	def get_snr(self,name):
 		ctf = self.get_ctf(name)
@@ -1467,18 +1464,18 @@ class CTFColumns:
 			return "%.3f" %snr
 		else: return ""
 		
-	def get_snr_integral(self,name):
-		ctf = self.get_ctf(name)
-		if ctf != None:
-			igl = 0
-			apix = ctf.apix
-			nyq = 1/(2.0*apix)
-			n = float(len(ctf.snr))
-			for i,snr in enumerate(ctf.snr):
-				igl += i/n*snr
-			igl /= n
-			return "%.3f" %igl
-		else: return ""
+#	def get_snr_integral(self,name):
+#		ctf = self.get_ctf(name)
+#		if ctf != None:
+#			igl = 0
+#			apix = ctf.apix
+#			nyq = 1/(2.0*apix)
+#			n = float(len(ctf.snr))
+#			for i,snr in enumerate(ctf.snr):
+#				igl += i/n*snr
+#			igl /= n
+#			return "%.3f" %igl
+#		else: return ""
 
 class CTFDBColumns(CTFColumns):
 	def __init__(self):
@@ -1710,9 +1707,11 @@ class EMParticleImportTask(ParticleWorkFlowTask):
 		success, cmd = self.import_data(params)
 		if not success:
 			s = "The command: " + cmd, "failed to complete"
+			error(s)
 			return
 		else:
 			data_dict = EMProjectDataDict(spr_ptcls_dict)
+			print params["name_map"].values()
 			data_dict.add_names(params["name_map"].values(),use_file_tag=True)
 		
 		self.emit(QtCore.SIGNAL("task_idle"))
@@ -1730,6 +1729,7 @@ class EMParticleImportTask(ParticleWorkFlowTask):
 
 		
 		for input,output in params["name_map"].items():
+			print input,output 
 			if len(input) > 3 and input[:4] == "bdb:": 
 				i += 1
 				progress.setValue(i)

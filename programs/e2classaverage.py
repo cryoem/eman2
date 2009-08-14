@@ -507,8 +507,9 @@ class EMClassAveTask(EMTask):
 		total_averages = 1+self.options["iter"]
 		
 		ref_mask = None
-		if ref != None: ref_mask = ref.process("threshold.notzero")
-		
+		if ref != None: 
+			ref_mask = ref.process("threshold.notzero")
+			ref_mask.write_image("masked.hdf",-1)
 		if ref: total_averages += 1
 		progress = 0
 		ali_images = images # these are the images that used for the alignment - they can also be the usefilt images
