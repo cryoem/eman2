@@ -10561,18 +10561,26 @@ def prepare_2d_forPCA(input_stack, output_stack, average, avg = False, CTF = Fal
 			set_arb_params(ima, [0.0,0.0,0.0,0], pali)
 			ima.write_image(output_stack, i)
 
-def varimax(input_stack, imglist, output_stack, mask_radius, verbose ) :
-	from utilities import get_image, model_circle
-	from EMAN2 import Analyzers
+def varimax(input_stack, imglist, output_stack, maskfile, mask_radius, verbose ) :
+	from utilities import get_im, model_circle
+	from EMAN2     import Analyzers
 
-	data = get_image( input_stack )
-	mask = model_circle( mask_radius, data.get_xsize(), data.get_ysize(), data.get_zsize() )
+	data = get_im( input_stack )
+
+	if maskfile:
+		import types
+		if type(maskfile) is types.StringType: mask = get_im(maskfile)
+		else:                                  mask = maskfile
+	else:
+		if(mask_radius < 1):  mask_radius = data.get_xsize()//2-2
+		mask = model_circle( mask_radius, data.get_xsize(), data.get_ysize(), data.get_zsize() )
 
 	ana = Analyzers.get( "varimax", {"mask":mask} )
 
 	for i in imglist:
-		data = EMData()
-		data.read_image( input_stack, i)
+		data = get_im( input_stack, i)
+		eigval = data.get_attr_default('eigval', 1.0)
+		Util.mul_scalar(data, eigval)
 		ana.insert_image( data )
 		#print "Inserting image %4d" % i
 

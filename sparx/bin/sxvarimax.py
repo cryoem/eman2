@@ -10,9 +10,9 @@ import sys
       
 def main():
     progname = os.path.basename(sys.argv[0])
-    usage = progname + " input_stack start end output_stack --rad=mask_radius"
+    usage = progname + " input_stack start end output_stack  <mask> --rad=mask_radius"
     parser = OptionParser(usage, version=SPARXVERSION)
-    parser.add_option("--rad", type="int",  help="radius of mask")
+    parser.add_option("--rad",     type="int", default=-1, help="radius of mask")
     parser.add_option("--verbose", type="int", default=0,  help="verbose level (0|1)")
 
 
@@ -20,7 +20,7 @@ def main():
 
     
 
-    if len(args) !=  4:
+    if len(args) < 4:
         print "usage: " + usage
 	print "Please run '" + progname + " -h' for details"
     else:
@@ -29,14 +29,12 @@ def main():
         imgstart     = atoi( args[1] )
         imgend       = atoi( args[2] ) +1
         output_stack = args[3]
-
-        if options.rad is None:
-            print "Error: mask radius is not given"
-            sys.exit(-1)
+	if(len(args) == 5):  mask = args[4]
+	else:               mask = None
 
         from applications import varimax
 	global_def.BATCH = True
-        varimax(input_stack, range(imgstart, imgend), output_stack, options.rad, options.verbose)
+        varimax(input_stack, range(imgstart, imgend), output_stack, mask, options.rad, options.verbose)
 	global_def.BATCH = False
 
 if __name__ == "__main__":
