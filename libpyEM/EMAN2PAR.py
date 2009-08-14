@@ -166,6 +166,7 @@ class EMTaskCustomer:
 				signal.alarm(60)
 				ret=EMDCsendonecom(self.addr,"STAT",taskid_list)
 				signal.alarm(0)
+				return ret
 			except:
 				signal.alarm(60)
 				self.wait_for_server()
