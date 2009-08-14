@@ -11662,7 +11662,7 @@ def var_mpi(files, outdir, fl, aa, radccc, writelp, writestack, frepa = "default
 	from utilities  import bcast_EMData_to_all, reduce_EMData_to_root
 	from filter     import filt_tanl
 	from mpi        import mpi_comm_rank, mpi_comm_size, mpi_barrier, mpi_bcast, mpi_reduce
-	from mpi        import MPI_COMM_WORLD, MPI_INT, MPI_SUM
+	from mpi        import MPI_COMM_WORLD, MPI_INT, MPI_FLOAT, MPI_SUM
 	import os
 	"""
 	  writelp means overwrite original stacks with repaired ones
@@ -11692,7 +11692,7 @@ def var_mpi(files, outdir, fl, aa, radccc, writelp, writestack, frepa = "default
 		nx = img.get_xsize()
 		ny = img.get_ysize()
 		nz = img.get_zsize()
-		del img
+		#del img
 	else:
 		nx = 0
 		ny = 0
@@ -11719,7 +11719,11 @@ def var_mpi(files, outdir, fl, aa, radccc, writelp, writestack, frepa = "default
 		else:           pcamask = model_blank(nx,ny,nz)
 		bcast_EMData_to_all(pcamask, myid)
 		pcaer = pcanalyzer(pcamask, outdir, pcanvec, True)
-
+		if( myid == 0 ):  refstat = Util.infomask(img, pcamask, True)
+		else:             refstat = [0.0,0.0,0.0,0.0]
+		refstat = mpi_bcast(refstat, 4, MPI_FLOAT, 0, MPI_COMM_WORLD)
+		refstat = refstat.tolist()
+		
 	varfile = outdir + "/var.hdf"
 	avgfile = outdir + "/avg.hdf"
 	varfileE = outdir + "/varE.hdf"
@@ -11759,7 +11763,13 @@ def var_mpi(files, outdir, fl, aa, radccc, writelp, writestack, frepa = "default
 			if(fl > 0.0):
 				img = filt_tanl( img, fl, aa )
 				if writestack: img.write_image( outdir+"/filtered%04d.hdf"%(ifile), i )
-			if(repair):  Util.div_img(img, rota) #img = circumference(Util.divn_img(img, rota), radcir)
+			if(repair):
+				Util.div_img(img, rota) #img = circumference(Util.divn_img(img, rota), radcir)
+				if pca:
+					pc = Util.infomask(img, pcamask, True)
+					img -= pc[0]
+					img *= (refstat[1]/pc[1])
+					img += refstat[1]
 			if(repair and writelp):  img.write_image(files[ifile], i)
 			if(total_img%2 == 0):	Util.add_img(avg1, img)
 			else:			Util.add_img(avg2, img)
@@ -11804,6 +11814,11 @@ def var_mpi(files, outdir, fl, aa, radccc, writelp, writestack, frepa = "default
 				#img = circumference( img, radcir )
 				if(fl > 0.0): img = filt_tanl( img, fl, aa)
 				if(repair and not writelp):  Util.div_img(img, rota) #img = circumference(Util.divn_img(img, rota), radcir)
+				if pca:
+					pc = Util.infomask(img, pcamask, True)
+					img -= pc[0]
+					img *= (refstat[1]/pc[1])
+					img += refstat[1]
 				if pca : pcaer.insert(img)
 				Util.sub_img(img, avg)
 				if(total_img%2 == 0): Util.add_img2(var1, img)
