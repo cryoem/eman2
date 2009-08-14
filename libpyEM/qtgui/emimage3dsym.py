@@ -468,7 +468,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 			for hit in hits:
 				a,b,c=hit
 				if len(c) > 0:
-					self.object_picked(c[0]-1)
+					self.object_picked(int(c[0]-1))
 					break
 			else:
 				if self.special_euler != None:

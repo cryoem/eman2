@@ -172,7 +172,7 @@ class EMTaskCustomer:
 				self.wait_for_server()
 				signal.alarm(0)
 				return EMDCsendonecom(self.addr,"STAT",taskid_list)
-				
+		print self.servtype
 		raise Exception,"Unknown server type"
 	
 	def get_results(self,taskid):

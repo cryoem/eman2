@@ -218,7 +218,7 @@ class EMTomoHunter:
 			E2progress(self.logger,0.0)
 		alignment_jobs = []
 		
-		probe_idx = len(self.files)-1
+		probe_idx = len(self.files)
 		for i in range(len(self.files)):
 			alignment_jobs.append([probe_idx,i])
 		
@@ -248,7 +248,7 @@ class EMTomoHunter:
 		all_solns = results["all_solns"]
 		if len(all_solns) > 1:
 			target_name = get_file_tag(self.files[target_idx])
-			probe_name = get_file_tag(self.files[probe_idx]) 
+			probe_name = get_file_tag(self.files[probe_idx])
 			out=file("log-s3-%s_VS_%s.txt"%(target_name,probe_name),"w")
 			peak = 0
 			for d in all_solns:

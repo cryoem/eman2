@@ -327,42 +327,6 @@ def generate_and_save_projections(options, data, eulers, smear=0):
 			d = euler.get_params("eman")
 			print "%d\t%4.2f\t%4.2f\t%4.2f" % (i, d["az"], d["alt"], d["phi"])
 
-
-#def verify_mirror_test(data, eulers, symmetry, projector):
-	
-	#sym_object = get_sym_object( symmetry )
-	
-	#for i,euler in enumerate(eulers) :
-		#a = {"alt" : euler[0] * rad2deg,"az" : euler[1] * rad2deg,"phi" : euler[2] * rad2deg}
-		#t3d = Transform3D(EULER_EMAN, a)
-		#b = {"t3d": t3d }
-		#p=data.project(options.projector,b)
-		
-		#mirrorEuler = sym_object.asym_unit_mirror_orientation(euler)
-			
-		
-		##Get the projection in this orientations
-		#p_mirror = data.project(projector,{"alt" : mirrorEuler[0] * rad2deg,"az" : mirrorEuler[1]* rad2deg,"phi" : mirrorEuler[2] * rad2deg})
-		
-		### Actually do the mirroring
-		#if sym_object.is_d_symmetry():
-			#p_mirror.process_inplace("mirror", {"axis":'y'})
-		#elif sym_object.is_c_symmetry():
-			#p_mirror.process_inplace("mirror", {"axis":'x'})
-		##FIXME: The mirror orientation is dependent on the platonic symmetry see http://blake.bcm.edu/emanwiki/EMAN2/Symmetry
-		#elif sym_object.is_platonic_symmetry():
-			#p_mirror.process_inplace("mirror", {"axis":'y'})
-			
-		
-		### Calculate and write the difference to disk
-		#p_difference = p_mirror-p
-		#p_difference.write_image(symmetry+"mirror_debug_difference.img",-1)
-		#p_mirror.write_image(symmetry+"mirror_debug.img",-1)
-		
-		### Print debug information
-		#print "Orientation %d\t%4.2f\t%4.2f\t%4.2f" % (i, euler[0] * rad2deg, euler[1] * rad2deg, euler[2] * rad2deg)
-		#print "Mirror %d\t%4.2f\t%4.2f\t%4.2f" % (i, mirrorEuler[0] * rad2deg, mirrorEuler[1] * rad2deg, mirrorEuler[2] * rad2deg)
-
 def check(options, verbose=False):
 	
 	error = False

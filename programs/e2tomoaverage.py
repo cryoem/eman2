@@ -564,7 +564,6 @@ class EMTomoAlignments:
 					data["target"] = ("cache",files[j],0)
 				
 				
-				
 				data["target_idx"] = j
 				data["probe_idx"] = i
 

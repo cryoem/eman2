@@ -1859,7 +1859,7 @@ class EMBDBReader(EMBrowseDelegate):
 #					from emsprworkflow import EMErrorMessageDisplay
 #					EMErrorMessageDisplay.run(["Warning: the %s database might be corrupted." %db_name], "Data loss" )
 					
-				return False
+				return None
 		
 		if db and len(db) > 0:
 			#n = DB[f[0]]["maxrec"]
