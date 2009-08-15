@@ -342,7 +342,6 @@ class EMEulerExplorer(InputEventsManager,EM3DSymViewerModule,Animator):
 		Redefinition of EMImage3DSymModule.generate_current_display_list
 		
 		'''
-		
 		if self.init_lock: return 0
 		if self.au_data == None or len(self.au_data) == 0:
 			EM3DSymViewerModule.generate_current_display_list(self,force)

@@ -258,7 +258,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 			self.gl_context_parent = EMSymViewerWidget(self)
 			self.qt_context_parent = EMParentWin(self.gl_context_parent)
 			self.qt_context_parent.setWindowIcon(QtGui.QIcon(get_image_directory() + "eulerxplor.png"))
-			self.qt_context_parent.setWindowTitle("Eulerxplor")
+			self.qt_context_parent.setWindowTitle(self.window_title)
 			self.gl_widget = self.gl_context_parent
 		return self.qt_context_parent
 
@@ -266,6 +266,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 	def __init__(self,application=None,ensure_gl_context=True,application_control=True):
 		self.arc_anim_dl = None
 		self.arc_anim_points = None
+		self.window_title = "EulerXplor"
 		EMImage3DGUIModule.__init__(self,application,ensure_gl_context,application_control)
 		Orientations.__init__(self)
 		ColumnGraphics.__init__(self)
@@ -407,10 +408,6 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 		self.regen_dl()
 		
 	def set_arc_color(self,s): self.arc_color = s
-
-	def get_inspector(self):
-		if not self.inspector : self.inspector=EMSymInspector(self)
-		return self.inspector
 	
 	def keyPressEvent(self,event):
 		
@@ -1564,8 +1561,6 @@ class EMSymChoiceDialog(QtGui.QDialog):
 		self.setWindowTitle("Choose Distribution Parameters")
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "eulerxplor.png"))
 
-		
-
 		self.vbl = QtGui.QVBoxLayout(self)
 		self.vbl.setMargin(0)
 		self.vbl.setSpacing(6)
@@ -1574,10 +1569,8 @@ class EMSymChoiceDialog(QtGui.QDialog):
 		self.sparse_syms_widgets = SparseSymChoicesWidgets(self,self.target)
 		self.sparse_syms_widgets.add_top_buttons(self.vbl)
 		self.sparse_syms_widgets.add_symmetry_options(self.vbl)
-		
-		
+
 		self.vbl.addWidget(self.target.get_qt_widget(),10)
-		
 		
 		self.button_hbl = QtGui.QHBoxLayout()
 		self.ok = QtGui.QPushButton("Ok")
@@ -1761,16 +1754,16 @@ class EMSymInspector(QtGui.QWidget):
 		self.display_tab = QtGui.QWidget()
 		self.display_tab.vbl = QtGui.QVBoxLayout(self.display_tab)
 				
-		self.glcontrast = ValSlider(self.display_tab,(1.0,5.0),"GLShd:")
-		self.glcontrast.setObjectName("GLShade")
-		self.glcontrast.setValue(1.0)
-		self.display_tab.vbl.addWidget(self.glcontrast)
-		
-		self.glbrightness = ValSlider(self.display_tab,(-1.0,0.0),"GLBst:")
-		self.glbrightness.setObjectName("GLBoost")
-		self.glbrightness.setValue(0.1)
-		self.glbrightness.setValue(0.0)
-		self.display_tab.vbl.addWidget(self.glbrightness)
+#		self.glcontrast = ValSlider(self.display_tab,(1.0,5.0),"GLShd:")
+#		self.glcontrast.setObjectName("GLShade")
+#		self.glcontrast.setValue(1.0)
+#		self.display_tab.vbl.addWidget(self.glcontrast)
+#		
+#		self.glbrightness = ValSlider(self.display_tab,(-1.0,0.0),"GLBst:")
+#		self.glbrightness.setObjectName("GLBoost")
+#		self.glbrightness.setValue(0.1)
+#		self.glbrightness.setValue(0.0)
+#		self.display_tab.vbl.addWidget(self.glbrightness)
 		
 		keys = self.target().colors.keys()
 		keys.sort()
@@ -1818,8 +1811,8 @@ class EMSymInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.width_scale, QtCore.SIGNAL("valueChanged"), self.target().set_width_scale)
 		QtCore.QObject.connect(self.height_scale, QtCore.SIGNAL("valueChanged"), self.target().set_height_scale)
 		QtCore.QObject.connect(self.arc_width_scale, QtCore.SIGNAL("valueChanged"), self.target().set_arc_width_scale)
-		QtCore.QObject.connect(self.glcontrast, QtCore.SIGNAL("valueChanged"), self.target().set_GL_contrast)
-		QtCore.QObject.connect(self.glbrightness, QtCore.SIGNAL("valueChanged"), self.target().set_GL_brightness)
+#		QtCore.QObject.connect(self.glcontrast, QtCore.SIGNAL("valueChanged"), self.target().set_GL_contrast)
+#		QtCore.QObject.connect(self.glbrightness, QtCore.SIGNAL("valueChanged"), self.target().set_GL_brightness)
 		QtCore.QObject.connect(self.arc_color,QtCore.SIGNAL("currentIndexChanged(int)"),self.arc_color_changed)
 		QtCore.QObject.connect(self.small_column_color,QtCore.SIGNAL("currentIndexChanged(int)"),self.small_column_color_changed)
 		QtCore.QObject.connect(self.tall_column_color,QtCore.SIGNAL("currentIndexChanged(int)"),self.tall_column_color_changed)

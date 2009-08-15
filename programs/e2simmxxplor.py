@@ -72,23 +72,27 @@ class EMSimmxExplorer(EM3DSymViewerModule):
 		self.init_lock = True # a lock indicated that we are still in the __init__ function
 		self.au_data = None # This will be a dictionary, keys will be refinement directories, values will be something like available iterations for visual study	
 		EM3DSymViewerModule.__init__(self,application,ensure_gl_context=ensure_gl_context,application_control=application_control)
+		self.window_title = "SimmxXplor"
 		#InputEventsManager.__init__(self)
 	
 		self.projection_file = projection_file # a projection file produced by e2project3d
 		self.simmx_file = simmx_file # a similarity matrix produced by e2simmx or by e2classaverage - should have the same number of columns (nx) as the number of projections
 		self.particle_file = particle_file # a similarity matrix produced by e2simmx or by e2classaverage - should have the same number of columns (nx) as the number of projections
 		self.num_particles = None # keep track of the total number of particles ( the y dimension of the simmx file)
-		self.current_particle = None # keep track of the current particle
+		self.current_particle = 0 # keep track of the current particle
 		self.current_projection = None # keep track of the current projection
 		self.projections = None # a list of the projections - the initial design keeps them all in memory - this could be overcome
 		self.mx_display = None # mx display module for displaying projection and aligned particle
 		self.mirror_eulers = True # If True the drawn Eulers are are also rendered on the opposite side of the sphere - see EM3DSymViewerModule.make_sym_dl_lis
 		
-		
 	def set_projection_file(self,file): self.projection_file = file
 	def set_simmx_file(self,file): self.simmx_file = file
 	def set_particle_file(self,file): self.particle_file = file
 	
+	def get_num_particles(self):
+		if self.simmx_file == None: return None
+		nx,ny =  gimme_image_dimensions2D(self.simmx_file)
+		return ny
 	def init_vitals(self):
 		'''
 		Vital information
@@ -111,7 +115,6 @@ class EMSimmxExplorer(EM3DSymViewerModule):
 		
 		self.projections = EMData().read_images(self.projection_file)
 		
-		self.current_particle = 0
 		self.__update_cmp_attribute(False)
 		
 		self.set_emdata_list_as_data(self.projections,"cmp")
@@ -129,12 +132,14 @@ class EMSimmxExplorer(EM3DSymViewerModule):
 		self.regen_dl()
 		
 	def render(self):
+		if self.inspector == None: self.get_inspector()
 		if self.projections == None:
-			try:
-				self.init_vitals()
-			except:
-				print "failed to initialize vital information"
-				return
+			try:self.init_vitals()
+			except: return
+			#except:
+			#	self.get_inspector()
+			#	print "failed to initialize vital information"
+			#	return
 			
 		EM3DSymViewerModule.render(self)
 	
@@ -149,7 +154,7 @@ class EMSimmxExplorer(EM3DSymViewerModule):
 			QtCore.QObject.connect(self.mx_display.emitter(),QtCore.SIGNAL("module_closed"),self.on_mx_display_closed)
 			resize_necessary = True
 		
-		self.__update_display(False)
+		self.update_display(False)
 
 		if resize_necessary:
 			get_application().show_specific(self.mx_display)
@@ -161,7 +166,7 @@ class EMSimmxExplorer(EM3DSymViewerModule):
 			self.special_euler = object_number
 			self.regen_dl()
 			
-	def __update_display(self,update=True):
+	def update_display(self,update=True):
 		'''
 		Uses self.current_particle and self.current_projection to udpate the self.mx_display
 		'''
@@ -209,38 +214,54 @@ class EMSimmxExplorer(EM3DSymViewerModule):
 		if self.current_particle != idx:
 			self.current_particle = idx
 			self.__update_cmp_attribute()
-			self.__update_display(True)
+			self.update_display(True)
 		
 class EMSimmxXplorInspector(EMSymInspector):
 	def get_desktop_hint(self):
 		return "inspector"
 	
 	def __init__(self,target,enable_trace=False,enable_og=False) :
+		self.ptcl_slider = None
+		self.combo = None
+		
 		EMSymInspector.__init__(self,target,enable_trace=enable_trace,enable_og=enable_og)
 		if self.target().projection_file == None:
 			self.add_simmx_dir_data_widgets()
 		else: self.add_simmx_options()
+		
+#	def __del__(self):
+#		print "simmx xplor died"
 		
 	def add_simmx_options(self):
 		from PyQt4 import QtGui,QtCore
 		self.simmx_tab= QtGui.QWidget()
 		vbl = QtGui.QVBoxLayout(self.simmx_tab)
 		
-		from valslider import ValSlider
-		self.ptcl_slider = ValSlider(None,(0,self.target().num_particles-1),"Particle:")
-		self.ptcl_slider.setValue(self.target().current_particle)
-		self.ptcl_slider.setIntonly(True)
-		vbl.addWidget(self.ptcl_slider)
-		
-		self.connect(self.ptcl_slider, QtCore.SIGNAL("valueChanged"), self.set_ptcl_idx)
-			
+		self.__init_ptcl_slider(vbl)	
 		self.tabwidget.insertTab(0,self.simmx_tab,"Simmx")
 		self.tabwidget.setCurrentIndex(0)
+		
+	def __init_ptcl_slider(self,layout):
+		
+		from valslider import ValSlider
+		if self.combo == None: n = self.target().get_num_particles()
+		else:
+			dir = str(self.combo.currentText())
+			data = (d for d in self.data if d[0] == dir).next()
+			n = EMUtil.get_image_count(data[1])
+		
+		if n == None: n = 0
+		else: n -= 1
+		self.ptcl_slider = ValSlider(None,(0,n),"Particle:")
+		self.ptcl_slider.setValue(self.target().current_particle)
+		self.ptcl_slider.setIntonly(True)
+		layout.addWidget(self.ptcl_slider)
+		from PyQt4 import QtCore
+		self.connect(self.ptcl_slider, QtCore.SIGNAL("valueChanged"), self.set_ptcl_idx)
 		
 	def set_ptcl_idx(self,val):
 		self.target().set_ptcl_idx(val)
 		self.score_option_changed() # this might be a hack - it forces the cylinder heights to update.
-	
 	
 	def add_simmx_dir_data_widgets(self):
 		from PyQt4 import QtGui,QtCore
@@ -267,11 +288,50 @@ class EMSimmxXplorInspector(EMSymInspector):
 		self.list_widget.setMouseTracking(True)
 		QtCore.QObject.connect(self.list_widget,QtCore.SIGNAL("itemClicked(QListWidgetItem *)"),self.list_widget_item_clicked)
 	
-		self.update_simmx_list(first_time=True)
+		self.update_simmx_list(True)
 		vbl.addWidget(self.list_widget)
 		self.tabwidget.insertTab(0,self.simmx_dir_tab,"Simmx")
 		self.tabwidget.setCurrentIndex(0)
-
+		
+		self.update_target()
+		
+		if self.ptcl_slider == None:
+			self.__init_ptcl_slider(vbl)
+		else:
+			dir = str(self.combo.currentText())
+			data = (d for d in self.data if d[0] == dir).next()
+			n = EMUtil.get_image_count(data[1])
+			if n == None: n = 0
+			else: n -= 1
+			self.ptcl_slider.setRange(0,n)
+			
+		
+	def update_target(self,update=False):
+		simmx_file = self.simmx_selection()
+		if simmx_file == None:
+			print "it was None"
+			return
+		
+		dir = str(self.combo.currentText())
+		data = (d for d in self.data if d[0] == dir).next()
+		
+		self.target().set_particle_file(data[1])
+		
+		idx = ( i for i in range(len(data[3])) if data[3][i] == simmx_file ).next()
+		projection_file = data[2][idx]
+		
+		self.target().set_simmx_file(simmx_file)
+		self.target().set_projection_file(projection_file)
+		if update: 
+			self.target().init_vitals()
+			self.target().update_display()
+			self.target().updateGL()
+		
+	def simmx_selection(self):
+		selected_items = self.list_widget.selectedItems() # need to preserve the selection
+		if len(selected_items) == 0: return None
+		else: return str(selected_items[0].text())
+		
 	def update_simmx_list(self,first_time=False):
 		from PyQt4 import QtGui,QtCore
 		selected_items = self.list_widget.selectedItems() # need to preserve the selection
@@ -281,10 +341,9 @@ class EMSimmxXplorInspector(EMSymInspector):
 		data = (d for d in self.data if d[0] == dir).next()
 #	
 #		
-#		s_text = None
-#		if len(selected_items) == 1 :
-#			s_text = str(selected_items[0].text())
-#			if len(s_text) > 4: s_text = s_text[-4:] 
+		s_text = None
+		if len(selected_items) == 1 :
+			s_text = str(selected_items[0].text())
 			
 		self.list_widget.clear()
 		for i,vals in enumerate(data[3]):
@@ -293,18 +352,15 @@ class EMSimmxXplorInspector(EMSymInspector):
 			a = QtGui.QListWidgetItem(str(choice),self.list_widget)
 			if first_time and i == 0:
 				self.list_widget.setItemSelected(a,True)
-#			elif len(choice) > 4 and (choice[-4:] == s_text):
-#				self.list_widget.setItemSelected(a,True)
+			elif choice == s_text:
+				self.list_widget.setItemSelected(a,True)
 				
-		selected_items = self.list_widget.selectedItems() # need to preserve the selection
-#		if len(selected_items) == 1:
-#			self.emit(QtCore.SIGNAL("au_selected"),self.refine_dir,str(selected_items[0].text()))
-
+				
 	def on_combo_change(self,s):
-		print s
+		self.update_target(True)
 		
 	def list_widget_item_clicked(self,item):
-		print item.text()
+		self.update_target(True)
 		
 
 def simmx_xplore_dir_data():
