@@ -397,26 +397,21 @@ class EMEulerExplorer(InputEventsManager,EM3DSymViewerModule,Animator):
 		names = [s1,s2,s3,s4,s5]
 		data = {}
 		data[dir] = []
+		register_db_name = "bdb:"+dir+"#register"
+		# needs to exist
+		if not db_check_dict(register_db_name):return {}
+		db = db_open_dict(register_db_name,ro=True)
+		if not db.has_key("cmd_dict"): return {}
+		# need to be able to get the input data
+		cmd = db["cmd_dict"]
+		if not cmd.has_key("input"): return {}
+		
 		for i in range(0,9):
 			for j in range(0,9):
 				last_bit = str(i)+str(j)
 				fail = False
 				r = []
-				
-				register_db_name = "bdb:"+dir+"#register"
-				
-				# needs to exist
-				if not db_check_dict(register_db_name):
-					continue
 				# cmd dictionary needs to be stored
-				db = db_open_dict(register_db_name,ro=True)
-				if not db.has_key("cmd_dict"):
-					continue
-		
-				cmd = db["cmd_dict"]
-				# need to be able to get the input data
-				if not cmd.has_key("input"):
-					continue
 				
 				for name in names:
 					db_name = "bdb:"+dir+"#"+name+"_"+last_bit

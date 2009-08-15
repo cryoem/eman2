@@ -55,9 +55,9 @@ Simmx xplor for comparator evaluation
 	
 	em_app = EMStandAloneApplication()
 	window = EMSimmxExplorer(application=em_app)
-	window.set_simmx_file(args[0])
-	window.set_projection_file(args[1])
-	if len(args) > 2:window.set_particle_file(args[2])
+	if len(args) > 0: window.set_simmx_file(args[0])
+	if len(args) > 1: window.set_projection_file(args[1])
+	if len(args) > 2: window.set_particle_file(args[2])
 
 	em_app.show()
 	em_app.execute()
@@ -113,11 +113,6 @@ class EMSimmxExplorer(EM3DSymViewerModule):
 		
 		self.current_particle = 0
 		self.__update_cmp_attribute(False)
-#		e = EMData()
-#		for i in range(len(self.projections)):
-#			r = Region(self.current_particle,i,1,1)
-#			e.read_image(self.simmx_file,0,False,r)
-#			self.projections[i].set_attr("cmp",e.get(0))
 		
 		self.set_emdata_list_as_data(self.projections,"cmp")
 		
@@ -135,7 +130,11 @@ class EMSimmxExplorer(EM3DSymViewerModule):
 		
 	def render(self):
 		if self.projections == None:
-			self.init_vitals()
+			try:
+				self.init_vitals()
+			except:
+				print "failed to initialize vital information"
+				return
 			
 		EM3DSymViewerModule.render(self)
 	
@@ -218,7 +217,9 @@ class EMSimmxXplorInspector(EMSymInspector):
 	
 	def __init__(self,target,enable_trace=False,enable_og=False) :
 		EMSymInspector.__init__(self,target,enable_trace=enable_trace,enable_og=enable_og)
-		self.add_simmx_options()
+		if self.target().projection_file == None:
+			self.add_simmx_dir_data_widgets()
+		else: self.add_simmx_options()
 		
 	def add_simmx_options(self):
 		from PyQt4 import QtGui,QtCore
@@ -238,9 +239,131 @@ class EMSimmxXplorInspector(EMSymInspector):
 		
 	def set_ptcl_idx(self,val):
 		self.target().set_ptcl_idx(val)
-		self.score_option_changed()
+		self.score_option_changed() # this might be a hack - it forces the cylinder heights to update.
 	
 	
+	def add_simmx_dir_data_widgets(self):
+		from PyQt4 import QtGui,QtCore
+		self.data = simmx_xplore_dir_data()
+		if len(self.data) == 0: raise RuntimeError("There is no simmx refinement data in the current directory")
+		
+		self.simmx_dir_tab= QtGui.QWidget()
+		vbl = QtGui.QVBoxLayout(self.simmx_dir_tab)
+		
+		combo_entries = [d[0] for d in self.data]
+		combo_entries.sort()
+		combo_entries.reverse()
+		self.combo = QtGui.QComboBox(self)
+		for e in combo_entries: self.combo.addItem(e)
+			
+		self.connect(self.combo,QtCore.SIGNAL("currentIndexChanged(QString&)"),self.on_combo_change)
+		self.connect(self.combo,QtCore.SIGNAL("currentIndexChanged(const QString&)"),self.on_combo_change)
+			
+		vbl.addWidget(self.combo)
+		
+		self.list_widget = QtGui.QListWidget(None)
+		
+		self.list_widget.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
+		self.list_widget.setMouseTracking(True)
+		QtCore.QObject.connect(self.list_widget,QtCore.SIGNAL("itemClicked(QListWidgetItem *)"),self.list_widget_item_clicked)
+	
+		self.update_simmx_list(first_time=True)
+		vbl.addWidget(self.list_widget)
+		self.tabwidget.insertTab(0,self.simmx_dir_tab,"Simmx")
+		self.tabwidget.setCurrentIndex(0)
+
+	def update_simmx_list(self,first_time=False):
+		from PyQt4 import QtGui,QtCore
+		selected_items = self.list_widget.selectedItems() # need to preserve the selection
+		
+		dir = str(self.combo.currentText())
+		
+		data = (d for d in self.data if d[0] == dir).next()
+#	
+#		
+#		s_text = None
+#		if len(selected_items) == 1 :
+#			s_text = str(selected_items[0].text())
+#			if len(s_text) > 4: s_text = s_text[-4:] 
+			
+		self.list_widget.clear()
+		for i,vals in enumerate(data[3]):
+			choice = vals
+			
+			a = QtGui.QListWidgetItem(str(choice),self.list_widget)
+			if first_time and i == 0:
+				self.list_widget.setItemSelected(a,True)
+#			elif len(choice) > 4 and (choice[-4:] == s_text):
+#				self.list_widget.setItemSelected(a,True)
+				
+		selected_items = self.list_widget.selectedItems() # need to preserve the selection
+#		if len(selected_items) == 1:
+#			self.emit(QtCore.SIGNAL("au_selected"),self.refine_dir,str(selected_items[0].text()))
+
+	def on_combo_change(self,s):
+		print s
+		
+	def list_widget_item_clicked(self,item):
+		print item.text()
+		
+
+def simmx_xplore_dir_data():
+	'''
+	Returns a list containing the names of files that can be used by e2simmxplor
+	Format - [refine_dir, particle_file,[projection_00,projection_01..],[simmx_00, simmx_01..]]
+	'''
+	dirs,files = get_files_and_directories()
+	
+	dirs.sort()
+	for i in range(len(dirs)-1,-1,-1):
+		if len(dirs[i]) != 9:
+			dirs.pop(i)
+		elif dirs[i][:7] != "refine_":
+			dirs.pop(i)
+		else:
+			try: int(dirs[i][7:])
+			except: dirs.pop(i)
+	
+	
+	ret = []
+	
+	for dir in dirs:
+		register_db_name = "bdb:"+dir+"#register"
+		if not db_check_dict(register_db_name): continue
+		db = db_open_dict(register_db_name,ro=True)
+		if not db.has_key("cmd_dict"): continue
+		# need to be able to get the input data
+		cmd = db["cmd_dict"]
+		if not cmd.has_key("input"): continue
+		input = cmd["input"]
+		
+		projs = []
+		simxs  = []
+		fail = False
+		for i in range(0,9):
+			for j in range(0,9):
+				last_bit = str(i)+str(j)
+				r = []
+				
+				proj_db = "bdb:"+dir+"#projections_"+last_bit
+				simx_db = "bdb:"+dir+"#simmx_"+last_bit
+				if db_check_dict(proj_db) and db_check_dict(simx_db):
+					projs.append(proj_db)
+					simxs.append(simx_db)
+				else:
+					fail = True
+					
+				
+				if fail: break
+				
+			if fail: break
+
+		if len(projs) > 0:
+			projs.reverse()
+			simxs.reverse()
+			ret.append([dir,input,projs,simxs])
+			
+	return ret
 	
 if __name__ == '__main__':
 	main()

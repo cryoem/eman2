@@ -132,9 +132,6 @@ class EMParallelSimMX:
 			
 		return self.__task_options
 	
-	
-	
-	
 	def __init_memory(self,options):
 		'''
 		@param options is always self.options - the initialization argument. Could be changed.
@@ -161,6 +158,8 @@ class EMParallelSimMX:
 		n = 1
 		if self.options.saveali: n = 5 # the total number of images written to disk
 		for i in range(n):
+			e.set_attr("projection_file",self.args[0])
+			e.set_attr("particle_file",self.args[1])
 			e.write_image(output,i)
 	
 	def __get_blocks(self):
@@ -213,7 +212,7 @@ class EMParallelSimMX:
 		This function is for testing. 
 		Goes through all of the blocks and adds a '1' to the pixels in the corresponding
 		location in the image for each block. If any pixel is non zero there is a problem
-		This call to this function could be removed eventually - if the data sets are huge
+		The call to this function could be removed eventually - if the data sets are huge
 		then it could potentially occupy a lot of memory 
 		'''
 		e = EMData()
@@ -573,6 +572,8 @@ def main():
 
 	# initialize output array
 	mxout=[EMData()]
+	mxout[0].set_attr("projection_file",args[0])
+	mxout[0].set_attr("particle_file",args[1])
 	mxout[0].set_size(crange[1]-crange[0],rrange[1]-rrange[0],1)
 	mxout[0].to_zero()
 	if options.saveali : 
