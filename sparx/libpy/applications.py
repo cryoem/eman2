@@ -11977,6 +11977,7 @@ def factcoords_prj( prj_stacks, avgvol_stack, eigvol_stack, prefix, rad, neigvol
 		#ltot += 1
 		#ref_prj.write_image("projection.hdf",ltot)
 		diff,a,b = im_diff( ref_prj, exp_prj, m)
+		nrmd = diff.cmp( "dot", diff, {"negative":0, "mask":m} )
 		#diff.write_image("difference.hdf",ltot)
 
 		for j in xrange( neigvol ) :
@@ -11984,7 +11985,7 @@ def factcoords_prj( prj_stacks, avgvol_stack, eigvol_stack, prefix, rad, neigvol
 			ref_eigprj = prgs( eigvols[j], kb, [phi, theta, psi, -s2x, -s2y] )
 			ref_eigprj = filt_ctf( ref_eigprj, ctf )
 
-			d.append( diff.cmp( "dot", ref_eigprj, {"negative":0, "mask":m} )*eigvals[j] )
+			d.append( diff.cmp( "dot", ref_eigprj, {"negative":0, "mask":m} )*eigvals[j]/nrmd )
         		#print  i,j,d[-1]
 	if  MPI:
 		from mpi import MPI_INT, MPI_FLOAT, MPI_TAG_UB, MPI_COMM_WORLD, mpi_recv, mpi_send
