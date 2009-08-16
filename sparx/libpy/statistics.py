@@ -1480,7 +1480,8 @@ def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, listID = None, fla
 
 	im_M = [None] * N
 	im   = EMData()
-	im.read_image(stack, listID[N_start], True)
+	if(listID == None): listID = range(N)
+	im.read_image(stack, listID[N_start])
 	nx = im.get_xsize()
 	ny = im.get_ysize()
 	nz = im.get_zsize()
@@ -4009,6 +4010,7 @@ def k_means_groups_MPI(stack, out_file, maskname, opt_method, K1, K2, rand_seed,
 
 	# Seq reading due to BDB file
 	for i in xrange(ncpu):
+		print  stack, maskname, N_start, N_stop, N
 		if myid == i: [im_M, mask, ctf, ctf2] = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF)
 		mpi_barrier(MPI_COMM_WORLD)
 
