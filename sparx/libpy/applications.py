@@ -246,9 +246,9 @@ def ali2d_reduce_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 
 		print_end_msg("ali2d_reduce_MPI")
 """
 
-def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, CTF=False, user_func_name="ref_ali2d", MPI=False):
+def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, CTF=False, user_func_name="ref_ali2d", restart=-1, MPI=False):
 	if MPI:
-		ali2d_a_MPI(stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, center, maxit, CTF, user_func_name)
+		ali2d_a_MPI(stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, center, maxit, CTF, user_func_name, restart)
 		return
 	
 	from utilities    import model_circle, combine_params2, drop_image, get_image, get_input_from_string
@@ -441,7 +441,7 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	print_end_msg("ali2d_a")
 
 
-def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, CTF=False, user_func_name="ref_ali2d"):
+def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, CTF=False, user_func_name="ref_ali2d", restart=-1):
 
 	"""
 	In this version of ali2d_a_MPI, we use MPI group management trying to increase the speedup of the program
@@ -459,6 +459,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	from utilities    import print_msg, print_begin_msg, print_end_msg
 	from fundamentals import fft, rot_shift2D, fshift
 	from random       import randint, random
+	from string       import split, atoi, atof
 	import os
 
 	from mpi 	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
@@ -470,7 +471,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
 
-	number_of_ave = 8
+	number_of_ave = 4
 	color = myid%number_of_ave
 	key = myid/number_of_ave
 	group_comm = mpi_comm_split(MPI_COMM_WORLD, color, key)
@@ -481,8 +482,9 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	
 	if myid == main_node:
 		print_begin_msg("ali2d_a_MPI")
-		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
-		os.mkdir(outdir)
+		if restart==-1:  
+			if os.path.exists(outdir): ERROR('Output directory exists, please change the name and restart the program', " ", 1)
+			os.mkdir(outdir)
 
 	first_ring=int(ir); last_ring=int(ou); rstep=int(rs); max_iter=int(maxit);
 	if max_iter == 0:
@@ -591,7 +593,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		drop_image(tavg, os.path.join(outdir, "initial_aqc%02d.hdf"%(color)))
 		drop_image(var, os.path.join(outdir, "initial_var%02d.hdf"%(color)))
 
-		tavg = fft(Util.divn_img(tavg_I, var))
+		#tavg = fft(Util.divn_img(tavg_I, var))
 
 		drop_image(tavg, os.path.join(outdir, "initial_aqf%02d.hdf"%(color)))
 		a0 = Util.infomask(filt_tophatb(SSNR, 0.01, 0.49), None, True)
@@ -621,7 +623,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		ref_data.append(None)
 	
 	# Generate the chessboard image
-	grid_size = 8
+	grid_size = 4
 	if myid == main_node:
 		chessboard1 = model_blank(nx, nx)
 		chessboard2 = model_blank(nx, nx)
@@ -631,107 +633,120 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				jjj = jj/grid_size
 				kkk = (iii+jjj)%2
 				chessboard1.set_value_at(ii, jj, kkk)
-				chessboard2.set_value_at(ii, jj, 1-kkk) 
+				chessboard2.set_value_at(ii, jj, 1-kkk)
 
 	N_step = 0
-	cs = [0.0]*2
 	sx_sum = 0.0
 	sy_sum = 0.0
 	N_merge = 10
 
-	for ipt in xrange(N_merge):
+	for ipt in xrange(max(restart, 0), N_merge):
 
-		total_iter = 0
-		
-		if ipt == N_merge-1: ali_params = "xform.align2d"
-		else: ali_params = "xform.align2d_%02d"%(ipt)		
-		
-		for im in data:
-			set_params2D(im, [0.0, 0.0, 0.0, 0, 1.0], ali_params)
 		if key == group_main_node:
-			msg = ""
-		for Iter in xrange(max_iter):
-			cs = mpi_bcast(cs, 2, MPI_FLOAT, group_main_node, group_comm)
-			cs = [float(cs[0]), float(cs[1])]
-			old_ali = []
+		        msg = ""
+
+		if restart==-1 or ipt>restart:
+			total_iter = 0
+
 			for im in data:
-				alphan, sxn, syn, mirror, scale = get_params2D(im, ali_params)
-				old_ali.append([alphan, sxn, syn, mirror, scale])
-			sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF=CTF, ali_params=ali_params)
-			sx_sum = mpi_reduce(sx_sum, 1, MPI_FLOAT, MPI_SUM, group_main_node, group_comm)
-			sy_sum = mpi_reduce(sy_sum, 1, MPI_FLOAT, MPI_SUM, group_main_node, group_comm)
+			        set_params2D(im, [0.0, 0.0, 0.0, 0, 1.0])
+			cs = [0.0]*2
+			for Iter in xrange(max_iter):
+			        cs = mpi_bcast(cs, 2, MPI_FLOAT, group_main_node, group_comm)
+			        cs = [float(cs[0]), float(cs[1])]
+			        old_ali = []
+			        for im in data:
+			        	alphan, sxn, syn, mirror, scale = get_params2D(im)
+			        	old_ali.append([alphan, sxn, syn, mirror, scale])
+			        sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF=CTF)
+			        sx_sum = mpi_reduce(sx_sum, 1, MPI_FLOAT, MPI_SUM, group_main_node, group_comm)
+			        sy_sum = mpi_reduce(sy_sum, 1, MPI_FLOAT, MPI_SUM, group_main_node, group_comm)
 
-			pixel_error = 0.0
-			mirror_change = 0
-			for im in xrange(len(data)):
-				alphan, sxn, syn, mirror, scale = get_params2D(data[im], ali_params) 
-				if old_ali[im][3] == mirror:
-					this_error = max_pixel_error(old_ali[im][0], old_ali[im][1], old_ali[im][2], alphan, sxn, syn, last_ring*2)
-					pixel_error += this_error
-				else:
-					mirror_change += 1
+			        pixel_error = 0.0
+			        mirror_change = 0
+			        for im in xrange(len(data)):
+			        	alphan, sxn, syn, mirror, scale = get_params2D(data[im]) 
+			        	if old_ali[im][3] == mirror:
+			        		this_error = max_pixel_error(old_ali[im][0], old_ali[im][1], old_ali[im][2], alphan, sxn, syn, last_ring*2)
+			        		pixel_error += this_error
+			        	else:
+			        		mirror_change += 1
 
-			tavg_I, ave1, ave2, var, sumsq = add_ave_varf_MPI(key, data, None, "a", CTF, ctf_2_sum, ali_params, group_main_node, group_comm)
-			
-			mirror_change = mpi_reduce(mirror_change, 1, MPI_INT, MPI_SUM, group_main_node, group_comm)
-			pixel_error = mpi_reduce(pixel_error, 1, MPI_FLOAT, MPI_SUM, group_main_node, group_comm)
+			        tavg_I, ave1, ave2, var, sumsq = add_ave_varf_MPI(key, data, None, "a", CTF, ctf_2_sum, "xform.align2d", group_main_node, group_comm)
 
+			        mirror_change = mpi_reduce(mirror_change, 1, MPI_INT, MPI_SUM, group_main_node, group_comm)
+			        pixel_error = mpi_reduce(pixel_error, 1, MPI_FLOAT, MPI_SUM, group_main_node, group_comm)
+
+			        if key == group_main_node:
+			        	SSNR = sumsq.copy()
+			        	Util.div_filter(SSNR, var)
+			        	a0 = Util.infomask(filt_tophatb(SSNR, 0.01, 0.49), None, True)
+			        	sum_SSNR = a0[0]
+
+			        	tavg = fft(tavg_I)
+			        	if Iter == max_iter-1:
+			        		drop_image(tavg, os.path.join(outdir, "aqc%02d_%02d.hdf"%(ipt, color)))
+			        		drop_image(var, os.path.join(outdir, "var%02d_%02d.hdf"%(ipt, color)))
+
+			        	real_tavg = tavg.copy()
+			        	#tavg = fft(Util.divn_img(tavg_I, var))
+
+			        	ref_data[2] = tavg
+			        	#  call user-supplied function to prepare reference image, i.e., center and filter it
+			        	if center == -1:
+			        		# When center = -1, which is by default, we use the average center method
+			        		ref_data[1] = 0
+			        		tavg, dummy = user_func(ref_data)
+			        		cs[0] = float(sx_sum[0])/nima
+			        		cs[1] = float(sy_sum[0])/nima
+			        		pixel_error = float(pixel_error[0])/(nima-mirror_change)
+			        		mirror_change = float(mirror_change[0])/nima
+			        		tavg = fshift(tavg, -cs[0], -cs[1])
+			        		msg += "Average center x =	%10.3f    Center y     = %10.3f\n"%(cs[0], cs[1])
+			        		msg += "Mirror change = 	%10.3f    Pixel error  = %10.3f\n"%(mirror_change, pixel_error)
+			        	else:
+			        		tavg, cs = user_func(ref_data)
+
+			        	if Iter == max_iter-1:
+			        		drop_image(tavg, os.path.join(outdir, "aqf%02d_%02d.hdf"%(ipt, color)))
+
+			        	msg += "MERGE # %2d	Average # %2d	  ITERATION # %4d     criterion = %15.7e\n\n"%(ipt, color, Iter, sum_SSNR)
+			        else:
+			        	tavg = EMData(nx, nx, 1, True)
+			        	cs = [0.0]*2		       
+			        bcast_EMData_to_all(tavg, key, group_main_node, group_comm)
+			        total_iter += 1
+
+			# Here, we reduce the alignment parameters scattered on all nodes to the main node.
+			mirror_list = [0]*(nima*number_of_ave)
+			info_file = os.path.join(outdir, "ali_params_%02d_%02d_%02d"%(ipt, color, key))
+			finfo = open(info_file, "w")
+			for nim in xrange(image_start, image_end):
+			        alpha, sx, sy, mirror, dummy = get_params2D(data[nim-image_start])
+			        finfo.write("%20f %20f %20f %1d\n"%(alpha, sx, sy, mirror))
+			        mirror_list[nim+color*nima] = mirror
+			finfo.close()
+		else:
 			if key == group_main_node:
-				SSNR = sumsq.copy()
-				Util.div_filter(SSNR, var)
-				a0 = Util.infomask(filt_tophatb(SSNR, 0.01, 0.49), None, True)
-				sum_SSNR = a0[0]
-
-				tavg = fft(tavg_I)
-				if Iter == max_iter-1:
-					drop_image(tavg, os.path.join(outdir, "aqc%02d_%02d.hdf"%(ipt, color)))
-					drop_image(var, os.path.join(outdir, "var%02d_%02d.hdf"%(ipt, color)))
-
-				real_tavg = tavg.copy()
-				tavg = fft(Util.divn_img(tavg_I, var))
-
-				ref_data[2] = tavg
-				#  call user-supplied function to prepare reference image, i.e., center and filter it
-				if center == -1:
-					# When center = -1, which is by default, we use the average center method
-					ref_data[1] = 0
-					tavg, cs = user_func(ref_data)
-					cs[0] = float(sx_sum[0])/nima
-					cs[1] = float(sy_sum[0])/nima
-					pixel_error = float(pixel_error[0])/(nima-mirror_change)
-					mirror_change = float(mirror_change[0])/nima
-					tavg = fshift(tavg, -cs[0], -cs[1])
-					msg += "Average center x =	 %10.3f	   Center y 	= %10.3f\n"%(cs[0], cs[1])
-					msg += "Mirror change =   	 %10.3f	   Pixel error 	= %10.3f\n"%(mirror_change, pixel_error)
-					#if mirror_change < 0.004 and pixel_error < 0.2: again = 0
-				else:
-					tavg, cs = user_func(ref_data)
-
-				if Iter == max_iter-1:
-					drop_image(tavg, os.path.join(outdir, "aqf%02d_%02d.hdf"%(ipt, color)))
-					
-				msg += "MERGE # %2d     Average # %2d     ITERATION # %4d     criterion = %15.7e\n\n"%(ipt, color, Iter, sum_SSNR)
-			else:
-				tavg = EMData(nx, nx, 1, True)
-				cs = [0.0]*2			
-			bcast_EMData_to_all(tavg, key, group_main_node, group_comm)
-			total_iter += 1
-			#again = mpi_bcast(again, 1, MPI_INT, group_main_node, group_comm)
-			#if again == 0: break
-
-		mirror_list = [0]*(nima*number_of_ave)
-		for nim in xrange(image_start, image_end):
-			dummy, dummy, dummy, mirror, dummy = get_params2D(data[nim-image_start], ali_params)
-			mirror_list[nim+color*nima] = mirror
+				real_tavg = get_image(os.path.join(outdir, "aqc%02d_%02d.hdf"%(ipt, color)))
+			mirror_list = [0]*(nima*number_of_ave)
+			info_file = os.path.join(outdir, "ali_params_%02d_%02d_%02d"%(ipt, color, key))
+			finfo = open(info_file, "r")
+			for nim in xrange(image_start, image_end):
+				s = finfo.readline()
+				ss = split(s)
+				alpha = atof(ss[0])
+				sx = atof(ss[1])
+				sy = atof(ss[2])
+				mirror = atoi(ss[3])
+				set_params2D(data[nim-image_start], [alpha, sx, sy, mirror, 1.0])
+			        mirror_list[nim+color*nima] = mirror
+			finfo.close()
+		
 		mirror_list = mpi_reduce(mirror_list, nima*number_of_ave, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
-	
 
 		if key == group_main_node:
-			if myid != main_node:
-				mpi_send(msg, len(msg), MPI_INT, main_node, color+100, MPI_COMM_WORLD)
-				send_EMData(real_tavg, main_node, color+200)
-				tavg = recv_EMData(main_node, color+300)
-			else:
+			if myid == main_node:
 				# Print the message on the main node
 				print_msg(msg)
 				
@@ -765,7 +780,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				for isav in xrange(1, number_of_ave):
 					img = recv_EMData(isav, isav+200)
 					savg.append(img.copy())
-					Util.add_img(tavg, img)
+					Util.add_img(real_tavg, img)
 					img.write_image(os.path.join(outdir, "avg_before_ali%02d.hdf"%(ipt)), isav)
 				"""
 				for isav in xrange(number_of_ave):
@@ -776,8 +791,8 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					savg[isav].set_attr_dict({'active':1})
 					set_params2D(savg[isav], [0.0, 0.0, 0.0, 0, 1.0])
 				for inp in xrange(5):
-					sx_sum, sy_sum = ali2d_single_iter(savg, numr, wr, [0.0, 0.0], tavg, cnx, cny, 3.0, 3.0, 0.5, mode, False)
-					tavg = ave_series(savg)
+					sx_sum, sy_sum = ali2d_single_iter(savg, numr, wr, [0.0, 0.0], real_tavg, cnx, cny, 3.0, 3.0, 0.5, mode, False)
+					real_tavg = ave_series(savg)
 				qt = [[None, None] for inp in xrange(number_of_ave)]
 				for isav in xrange(number_of_ave):
 	 				alpha, sx, sy, mirror, scale = get_params2D(savg[isav])
@@ -805,20 +820,23 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					send_EMData(tsavg[isav], isav, isav+300)
 				tavg = tsavg[0].copy()
 				del tsavg
-		bcast_EMData_to_all(tavg, key, group_main_node, group_comm)
-		
-		mpi_barrier(MPI_COMM_WORLD)
-		#par_str = [ali_params, "ID"]
-		par_str = [ali_params]
-		if color == 0:    # We can only use one group of alignment as the final results
-			if key == group_main_node:
-				if file_type(stack) == "bdb":
-					recv_attr_dict_bdb(group_main_node, stack, data, par_str, image_start, image_end, group_number_of_proc, group_comm)
-				else:
-					recv_attr_dict(group_main_node, stack, data, par_str, image_start, image_end, group_number_of_proc, group_comm)
 			else:
-				send_attr_dict(group_main_node, data, par_str, image_start, image_end, group_comm)
-			if myid == main_node: print_msg("Iteration %2d ends here.\n\n\n"%(ipt))
+				mpi_send(msg, len(msg), MPI_INT, main_node, color+100, MPI_COMM_WORLD)
+				send_EMData(real_tavg, main_node, color+200)
+				tavg = recv_EMData(main_node, color+300)
+		bcast_EMData_to_all(tavg, key, group_main_node, group_comm)
+		mpi_barrier(MPI_COMM_WORLD)
+		if myid == main_node: print_msg("Iteration %2d ends here.\n\n\n"%(ipt))
+
+	par_str = ["xform.align2d"]
+	if color == 0:    # We can only use one group of alignment as the final results
+		if key == group_main_node:
+			if file_type(stack) == "bdb":
+				recv_attr_dict_bdb(group_main_node, stack, data, par_str, image_start, image_end, group_number_of_proc, group_comm)
+			else:
+				recv_attr_dict(group_main_node, stack, data, par_str, image_start, image_end, group_number_of_proc, group_comm)
+		else:
+			send_attr_dict(group_main_node, data, par_str, image_start, image_end, group_comm)
 	if myid == main_node:  print_end_msg("ali2d_a_MPI")
 
 
