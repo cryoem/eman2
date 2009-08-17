@@ -125,6 +125,7 @@ except:
 
 	QtGui=dummy()
 	QtGui.QWidget=dummy
+	QtGui.QMainWindow=dummy
 	QtCore=dummy()
 	QtCore.QAbstractTableModel=dummy
 	
