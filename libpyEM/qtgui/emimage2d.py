@@ -1447,7 +1447,7 @@ class EMImage2DModule(EMGUIModule):
 					glEnd()
 				else:
 #					print "shape",s.shape
-					s.draw(self.img_to_scr_shape)
+					s.draw()		# No need for coordinate transform any more
 #					GLUtil.colored_rectangle(s.shape[1:8],alpha)
 			except: pass
 			
@@ -1595,15 +1595,6 @@ class EMImage2DModule(EMGUIModule):
 			v1=v0[1]
 			v0=v0[0]
 		return (v0*self.scale-self.origin[0],self.gl_widget.height()-v1*self.scale+self.origin[1])
-
-	def img_to_scr_shape(self,v0,v1=None):
-		#print v0,v1,"in image2d",self.origin
-		if v1==None:
-			v1=v0[1]
-			v0=v0[0]
-#		return (v0*self.scale-self.origin[0],self.gl_widget.height()-v1*self.scale+self.origin[1])
-		return (v0,self.gl_widget.height()-v1)
-
 
 	def closeEvent(self,event) :
 		self.__write_display_settings_to_db()

@@ -122,6 +122,8 @@ except:
 		"A dummy class for use when Qt not installed"
 		def __init__(self):
 			print "ERROR: Qt4 could not be imported, check your PyQt installation"
+			import traceback
+			traceback.print_exc()
 
 	QtGui=dummy()
 	QtGui.QWidget=dummy
