@@ -45,7 +45,8 @@ def initGL():
 	GL.glNewList(EMShape.dlists,GL.GL_COMPILE)
 	GL.glBegin(GL.GL_LINE_LOOP)
 	d2r=pi/180.0
-	for i in range(90): GL.glVertex(sin(i*d2r*4.0),cos(i*d2r*4.0))
+	for i in range(90): 
+		GL.glVertex(sin(i*d2r*4.0),cos(i*d2r*4.0))
 	GL.glEnd()
 	GL.glEndList()
 
@@ -238,11 +239,12 @@ class EMShape:
 					GLUT.glutStrokeCharacter(GLUT.GLUT_STROKE_ROMAN,ord(i))
 			GL.glPopMatrix()
 		elif s[0]=="circle":
+#			print s[6],v,v2
 			GL.glPushMatrix()
 			GL.glColor(*col)
 			GL.glLineWidth(s[7])
 			GL.glTranslate(v[0],v[1],0)
-			GL.glScalef(s[6]*(v2[0]-v[0]),s[6]*(v2[1]-v[1]),1.0)
+			GL.glScalef(s[6]*(v2[0]-v[0]),s[6]*(v[1]-v2[1]),1.0)
 			GL.glCallList(EMShape.dlists)
 			GL.glPopMatrix()
 		else:

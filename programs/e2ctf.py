@@ -1110,6 +1110,7 @@ def ctf_env_points(im_1d,bg_1d,ctf) :
 try:
 	from PyQt4 import QtCore, QtGui, QtOpenGL
 	from PyQt4.QtCore import Qt
+	from emshape import *
 	from valslider import ValSlider
 except:
 	print "Warning: PyQt4 must be installed to use the --gui option"
@@ -1384,7 +1385,20 @@ class GUIctf(QtGui.QWidget):
 		val=self.curset
 		ctf=self.data[val][1]
 		ds=self.data[val][1].dsbg
-		s=[ds*i for i in range(len(ctf.background))]
+		r=len(ctf.background)
+		s=[ds*i for i in range(r)]
+		
+		# This updates the image circles
+		fit=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP)
+		zeros=[]
+		for i in range(1,len(fit)): 
+			if fit[i-1]*fit[i]<=0.0: zeros.append(i)
+			
+		shp={"z1":EMShape(("circle",0.0,1.0,0.0,r,r,zeros[0],1.0)),
+			"z2":EMShape(("circle",0.0,0.8,0.0,r,r,zeros[1],1.0)),
+			"z3":EMShape(("circle",0.0,0.6,0.0,r,r,zeros[2],1.0))}
+		self.guiim.add_shapes(shp)
+		
 		if self.plotmode==1:
 			self.guiplot.set_data("fg",(s,self.data[val][2]),True,True)
 			self.guiplot.set_data("bg",(s,self.data[val][3]))

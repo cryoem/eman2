@@ -510,7 +510,7 @@ class EMImage2DModule(EMGUIModule):
 		self.list_idx = 0	# and idx to the list_data
 		
 		self.use_display_list = True # whether or not a display list should be used to render the image pixelsw - if on, this will save on time if the view of the image is unchanged, which can quite often be the case
-		self.main_display_list = 0	# if using display lists, the stores the display list
+		self.main_display_list = -1	# if using display lists, the stores the display list
 		self.display_states = [] # if using display lists, this stores the states that are checked, and if different, will cause regeneration of the display list
 		self.hist = []
 		
@@ -555,9 +555,9 @@ class EMImage2DModule(EMGUIModule):
 		if (self.shapelist != 0):
 			glDeleteLists(self.shapelist,1)
 			self.shapelist = 0
-		if self.main_display_list != 0:
+		if self.main_display_list != -1:
 			glDeleteLists(self.main_display_list,1)
-			self.main_display_list = 0
+			self.main_display_list = -1
 	
 	
 	def set_mouse_mode(self,mode):
@@ -1128,11 +1128,11 @@ class EMImage2DModule(EMGUIModule):
 		render = False
 		if self.use_display_list:
 			if update:
-				if self.main_display_list != 0:
+				if self.main_display_list != -1:
 					glDeleteLists(self.main_display_list,1)
-					self.main_display_list = 0
+					self.main_display_list = -1
 
-			if self.main_display_list == 0:
+			if self.main_display_list == -1:
 				self.main_display_list = glGenLists(1)
 				render = True
 		else: render = True
@@ -1451,7 +1451,9 @@ class EMImage2DModule(EMGUIModule):
 					glVertex( (x1+x2)/2.0, (y1+y2)/2.0,0);
 					glEnd()
 				else:
-					GLUtil.colored_rectangle(s.shape[1:8],alpha)
+					print "shape",s.shape
+					s.draw(self.img_to_scr)
+#					GLUtil.colored_rectangle(s.shape[1:8],alpha)
 			except: pass
 			
 		if isanimated:
@@ -1591,6 +1593,14 @@ class EMImage2DModule(EMGUIModule):
 		#print v0,v1,"in image2d",self.origin
 		try: return ((v0+self.origin[0])/self.scale,(self.gl_widget.height()-(v1-self.origin[1]))/self.scale)
 		except:	return ((v0[0]+self.origin[0])/self.scale,(self.gl_widget.height()-(v0[1]-self.origin[1]))/self.scale)
+
+	def img_to_scr(self,v0,v1=None):
+		#print v0,v1,"in image2d",self.origin
+		if v1==None:
+			v1=v0[1]
+			v0=v0[0]
+		return (v0*self.scale-self.origin[0],self.gl_widget.height()-v1*self.scale+self.origin[1])
+
 
 	def closeEvent(self,event) :
 		self.__write_display_settings_to_db()
