@@ -38,7 +38,7 @@ import sys
 from libpyGLUtils2 import *
 
 
-def initGL():
+def initCircle():
 	"""Call this static function once to initialize necessary display lists"""
 	if EMShape.dlists>=0 and GL.glIsList(EMShape.dlists): return
 	EMShape.dlists=GL.glGenLists(1)
@@ -75,6 +75,8 @@ class EMShape:
 """
 	font_renderer = None
 	glutinit = True
+	dlists=-1
+
 	def __init__(self,init=None) :
 		"""init is a list/tuple containing the above parameters describing the shape"""
 		from emglobjects import init_glut
@@ -83,6 +85,7 @@ class EMShape:
 			EMShape.glutint = False
 		if init : self.shape=list(init)
 		else : self.shape=["None",0,0,0,0,0,0,0,0]
+		initCircle()
 		self.blend = 1.0
 		self.blendinc = 0.2
 		self.isanimated = False
@@ -94,7 +97,6 @@ class EMShape:
 				EMShape.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
 			except:
 				EMShape.font_renderer = 1
-	dlists=-1
 	
 	
 	def draw(self,d2s=None,col=None):
@@ -112,7 +114,6 @@ class EMShape:
 		v=d2s(s[4],s[5])
 		v2=d2s(s[4]+1,s[5]+1)
 		sc=v2[0]-v[0]
-
 		
 		if  self.isanimated:
 			#print self.blend, "was the blend value"
@@ -244,7 +245,7 @@ class EMShape:
 			GL.glColor(*col)
 			GL.glLineWidth(s[7])
 			GL.glTranslate(v[0],v[1],0)
-			GL.glScalef(s[6]*(v2[0]-v[0]),s[6]*(v[1]-v2[1]),1.0)
+			GL.glScalef(s[6]*(v2[0]-v[0]),s[6]*(v2[1]-v[1]),1.0)
 			GL.glCallList(EMShape.dlists)
 			GL.glPopMatrix()
 		else:

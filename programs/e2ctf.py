@@ -1390,14 +1390,17 @@ class GUIctf(QtGui.QWidget):
 		
 		# This updates the image circles
 		fit=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP)
-		zeros=[]
-		for i in range(1,len(fit)): 
-			if fit[i-1]*fit[i]<=0.0: zeros.append(i)
-			
-		shp={"z1":EMShape(("circle",0.0,1.0,0.0,r,r,zeros[0],1.0)),
-			"z2":EMShape(("circle",0.0,0.8,0.0,r,r,zeros[1],1.0)),
-			"z3":EMShape(("circle",0.0,0.6,0.0,r,r,zeros[2],1.0))}
+		shp={}
+		nz=0
+		for i in range(1,len(fit)):
+			if fit[i-1]*fit[i]<=0.0: 
+				nz+=1
+				shp["z%d"%i]=EMShape(("circle",0.0,0.0,1.0/nz,r,r,i,1.0))
+#				if nz==1: print ("circle",0.0,0.0,1.0/nz,r,r,i,1.0)
+		
+		self.guiim.del_shapes()
 		self.guiim.add_shapes(shp)
+		self.guiim.updateGL()
 		
 		if self.plotmode==1:
 			self.guiplot.set_data("fg",(s,self.data[val][2]),True,True)

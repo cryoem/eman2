@@ -63,7 +63,6 @@ MAG_INC = 1.1
 
 from emglobjects import EMOpenGLFlagsAndTools
 
-
 class EMImage2DWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 	def __init__(self, em_image_2d_module):
 		fmt=QtOpenGL.QGLFormat()
@@ -113,9 +112,6 @@ class EMImage2DWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		glLoadIdentity()
 		
 		#self.cam.position()
-		if self.initimageflag == True:
-			self.target().initializeGL()
-			self.initimageflag = False
 		#context = OpenGL.contextdata.getContext(None)
 		#print "Image2D context is", context
 		glPushMatrix()
@@ -214,8 +210,11 @@ class EMImage2DMouseEventsMediator:
 	def get_shapes(self):
 		return self.target().get_shapes()
 
-	def scr_to_img(self,x,y):
+	def scr_to_img(self,x,y=None):
 		return self.target().scr_to_img(x,y)
+
+	def img_to_scr(self,x,y=None):
+		return self.target().img_to_scr(x,y)
 	
 	def force_display_update(self):
 		self.target().force_display_update()
@@ -253,6 +252,7 @@ class EMImage2DEmitMouseMode(EMImage2DMouseEvents):
 	def mouse_down(self,event):
 		lc=self.mediator.scr_to_img(event.x(),event.y())
 		self.mediator.emit(QtCore.SIGNAL("mousedown"), event,lc)
+#		print "mousedown",event.x(),event.y(),self.mediator.scr_to_img(event.x(),event.y()),self.mediator.img_to_scr(self.mediator.scr_to_img(event.x(),event.y()))
 		
 	def mouse_move(self,event):
 		lc=self.mediator.scr_to_img(event.x(),event.y())
@@ -1057,10 +1057,6 @@ class EMImage2DModule(EMGUIModule):
 	
 			return False
 		
-	def initializeGL(self):
-		emshape.initGL()
-		self.init_gl_flag = False
-
 	def force_display_update(self):
 		self.display_states = []
 
@@ -1097,7 +1093,6 @@ class EMImage2DModule(EMGUIModule):
 		if not self.data and not self.fft : return
 		if not self.is_visible(): 
 			return
-		if self.init_gl_flag: self.initializeGL()
 		
 		try:
 			self.image_change_count = self.data.get_changecount() # this is important when the user has more than one display instance of the same image, for instance in e2.py if 
@@ -1451,8 +1446,8 @@ class EMImage2DModule(EMGUIModule):
 					glVertex( (x1+x2)/2.0, (y1+y2)/2.0,0);
 					glEnd()
 				else:
-					print "shape",s.shape
-					s.draw(self.img_to_scr)
+#					print "shape",s.shape
+					s.draw(self.img_to_scr_shape)
 #					GLUtil.colored_rectangle(s.shape[1:8],alpha)
 			except: pass
 			
@@ -1600,6 +1595,14 @@ class EMImage2DModule(EMGUIModule):
 			v1=v0[1]
 			v0=v0[0]
 		return (v0*self.scale-self.origin[0],self.gl_widget.height()-v1*self.scale+self.origin[1])
+
+	def img_to_scr_shape(self,v0,v1=None):
+		#print v0,v1,"in image2d",self.origin
+		if v1==None:
+			v1=v0[1]
+			v0=v0[0]
+#		return (v0*self.scale-self.origin[0],self.gl_widget.height()-v1*self.scale+self.origin[1])
+		return (v0,self.gl_widget.height()-v1)
 
 
 	def closeEvent(self,event) :
