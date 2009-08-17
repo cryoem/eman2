@@ -41,7 +41,7 @@ import sys
 def main():
 	progname = os.path.basename(sys.argv[0])
 	#usage = progname + " stack outdir <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range --ts=translation_step --center=center --maxit=max_iter --CTF --function=user_function_name --randomize --T0=T0 --F=F --MPI"
-	usage = progname + " stack outdir <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range --ts=translation_step --center=center --maxit=max_iter --CTF --function=user_function_name --MPI"
+	usage = progname + " stack outdir <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range --ts=translation_step --center=center --maxit=max_iter --CTF --function=user_function_name --restart=0 --MPI"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ir",    type="float",  default=1,             help="inner radius for rotational correlation > 0 (set to 1)")
 	parser.add_option("--ou",    type="float",  default=-1,            help="outer radius for rotational correlation < int(nx/2)-1 (set to the radius of the particle)")
@@ -56,6 +56,7 @@ def main():
 	#parser.add_option("--random_method", type="string", default="",    help="SA: Simulated Annealing   ML: Maximum Likelihood")
 	#parser.add_option("--T0",    type="float",  default=1.0,           help="initial temperature for simulated annealing")
 	#parser.add_option("--F",     type="float",  default=0.996,         help="cooling rate for simulated annealing")
+	parser.add_option("--restart", type="int", default=-1,             help="name of the reference preparation function")
 	parser.add_option("--MPI", action="store_true", default=False,     help="use MPI version ")
 	(options, args) = parser.parse_args()
 	if len(args) < 2 or len(args) >3:
@@ -75,7 +76,7 @@ def main():
 			init_mpi_bdb()
 
 		global_def.BATCH = True
-		ali2d_a(args[0], args[1], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.center, options.maxit, options.CTF, options.function, options.MPI)
+		ali2d_a(args[0], args[1], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.center, options.maxit, options.CTF, options.function, options.restart, options.MPI)
 		global_def.BATCH = False
 
 if __name__ == "__main__":
