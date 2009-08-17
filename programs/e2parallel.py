@@ -120,15 +120,16 @@ try:
 except:
 	class dummy:
 		"A dummy class for use when Qt not installed"
-		def __init__(self):
-			print "ERROR: Qt4 could not be imported, check your PyQt installation"
-			import traceback
-			traceback.print_exc()
+		def __init__(self,quiet=False):
+			if not quiet :
+				print "ERROR: Qt4 could not be imported, check your PyQt installation"
+				import traceback
+				traceback.print_exc()
 
-	QtGui=dummy()
+	QtGui=dummy(True)
 	QtGui.QWidget=dummy
 	QtGui.QMainWindow=dummy
-	QtCore=dummy()
+	QtCore=dummy(True)
 	QtCore.QAbstractTableModel=dummy
 	
 def runservmon():
