@@ -630,25 +630,26 @@ def ref_ali3dm_new( refdata ):
                 volf.write_image( outdir+("/volf%04d.hdf" % total_iter), i )
 
 def spruce_up_var_m( refdata ):
-	from utilities import model_circle, get_im
-	from filter    import filt_tanl, filt_gaussl
+	from utilities  import model_circle, get_im
+	from filter     import filt_tanl, filt_gaussl
 	from morphology import threshold
+	import os
 
-	numref = refdata[0]
-	outdir = refdata[1]
-	fscc   = refdata[2]
+	numref     = refdata[0]
+	outdir     = refdata[1]
+	fscc       = refdata[2]
 	total_iter = refdata[3]
-	varf   = refdata[4]
-	mask   = refdata[5]
-	ali50S = refdata[6]
+	varf       = refdata[4]
+	mask       = refdata[5]
+	ali50S     = refdata[6]
 
 	if ali50S:
 		mask_50S = get_im( "mask-50S.spi" )
 
 
 	if fscc is None:
-		flmin = 0.25
-		aamin = 0.15
+		flmin = 0.4
+		aamin = 0.1
 	else:
 		flmin,aamin,idmin=minfilt( fscc )
 		aamin = aamin
@@ -656,10 +657,10 @@ def spruce_up_var_m( refdata ):
 	print 'flmin,aamin:', flmin, aamin
 
 	for i in xrange(numref):
-		v = get_im( outdir + ("/vol%04d.hdf"% total_iter) , i )
-		volf = v.filter_by_image( varf )
+		volf = get_im( os.path.join(outdir, "vol%04d.hdf"% total_iter) , i )
+		if(not (varf is None) ):volf = volf.filter_by_image( varf )
 		volf = filt_tanl(volf, flmin, aamin)
-		stat = Util.infomask(volf, None, True)
+		stat = Util.infomask(volf, mask, True)
 		volf -= stat[0]
 		Util.mul_scalar(volf, 1.0/stat[1])
 
@@ -684,7 +685,7 @@ def spruce_up_var_m( refdata ):
 				params = ali_vol_3(v50S_i, v50S_0, 10.0, 0.5, mask=mask_50S)
 				volf = rot_shift3D( volf, params[0], params[1], params[2], params[3], params[4], params[5], 1.0)
 
-		volf.write_image( outdir+("/volf%04d.hdf"%total_iter), i )
+		volf.write_image( os.path.join(outdir, "volf%04d.hdf"%total_iter), i )
 
 def steady( ref_data ):
 	from utilities    import print_msg

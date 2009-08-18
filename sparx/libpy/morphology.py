@@ -873,7 +873,7 @@ def residual_1dpw2(list_1dpw2, polynomial_rankB = 2, Pixel_size = 1, cut_off = 0
 			freq.append(i/(2*Pixel_size*len(list_1dpw2)))
 	return res, freq
 
-def adaptive_mask(vol, nsigma = 1.0, ndilation = 3):
+def adaptive_mask(vol, nsigma = 1.0, ndilation = 3, kernel_size = 11, gauss_standard_dev =9):
 	from utilities  import gauss_edge, model_circle
 	from morphology import binarize, dilation
 	nx = vol.get_xsize()
@@ -883,7 +883,7 @@ def adaptive_mask(vol, nsigma = 1.0, ndilation = 3):
 	s1 = Util.infomask(vol, mc, True)
 	mask = Util.get_biggest_cluster(binarize(vol, s1[0]+s1[1]*nsigma))
 	for i in xrange(ndilation):   mask = dilation(mask)
-	mask = gauss_edge(mask, 11, 9)
+	mask = gauss_edge(mask, kernel_size, gauss_standard_dev)
 	return mask
 '''
 

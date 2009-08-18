@@ -5522,7 +5522,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 						finfo.write( "ID,iref,peak,trans: %6d %d %f %f %f %f %f %f"%(list_of_particles[im],iref,peak,phi,tht,psi,s2x,s2y) )
 						finfo.flush()
 
-	
+
 				if(peak > peaks[im]):
 					peaks[im] = peak
 					data[im].set_attr('group', iref)
@@ -5557,7 +5557,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 			sumvol = model_blank(nx, nx, nx)
 
 		for iref in xrange(numref):
-				#  3D stuff
+			#  3D stuff
 			from time import localtime, strftime
 			#if(myid == main_node):
 			#	print myid, " begin reconstruction at ", strftime("%d_%b_%Y_%H_%M_%S", localtime())
@@ -5582,10 +5582,10 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 			refdata = [None]*7
 			refdata[0] = numref
 			refdata[1] = outdir
-			refdata[2] = fscc
+			refdata[2] = None
 			refdata[3] = total_iter
 			refdata[4] = varf
-			refdata[5] = fscmask
+			refdata[5] = mask3D
 			refdata[6] = (runtype=="REFINEMENT") # whether align on 50S, this only happens at refinement step
 			user_func( refdata )
 
@@ -5604,7 +5604,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 	        		from utilities import recv_attr_dict
 	        		recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 	        else:		send_attr_dict(main_node, data, par_str, image_start, image_end)
-	
+
 	if myid==main_node:
 		print_end_msg("ali3d_m_MPI")
 
