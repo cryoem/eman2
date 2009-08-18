@@ -12738,11 +12738,10 @@ def HAC_averages(stack, dendoname, avename, K):
 			IM[n] = rot_shift2D(IM[n], alpha, sx, sy, mirror, scale)
 
 	part = Dendo[K]
-	imbk = model_blank(nx, ny)
 	AVE  = []
 	ct   = 0
 	for k in xrange(K):
-		AVE.append(imbk)
+		AVE.append(model_blank(nx, ny, nz))
 		nobj = len(part[k])
 		if nobj > 1:
 			for id in part[k]: Util.add_img(AVE[k], IM[id])
