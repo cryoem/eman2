@@ -902,7 +902,9 @@ class EMDCTaskClient(EMTaskClient):
 					
 					for j in image_range(*i[2:]):
 #						if not cache.has_key(j):
-						try: z=cache[j]
+						try: 
+							z=cache[j]
+							if z==None : raise Exception
 						except:
 							cache[j]=self.get_data(sockf,i[1],j)
 #							print j,cache[j]
