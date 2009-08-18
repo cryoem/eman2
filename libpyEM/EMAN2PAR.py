@@ -430,7 +430,7 @@ class DCThreadingMixIn:
 			time.sleep(2)
 			count +=1
 		
-		print threading.active_count()," threads running"
+#		print threading.active_count()," threads running"
 		t = threading.Thread(target = self.process_request_thread,
 								args = (request, client_address))
 		t.setName(str(N))

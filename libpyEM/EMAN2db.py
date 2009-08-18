@@ -1074,7 +1074,8 @@ of these occasional errors"""
 				p,l=r["data_path"].split("*")
 				ret.read_data(p,int(l))
 			else:
-				n=loads(self.bdb.get(fkey+dumps(key,-1)))
+				try: n=loads(self.bdb.get(fkey+dumps(key,-1)))	 # this is the index for this binary data item in the image-dimensions-specific binary data file
+				except: raise KeyError,"Undefined data location key for : ",key
 				ret.read_data(pkey+fkey,n*4*r["nx"]*r["ny"]*r["nz"])
 			k=set(r.keys())
 			k-=DBDict.fixedkeys
@@ -1168,9 +1169,9 @@ of these occasional errors"""
 					p,l=r["data_path"].split("*")
 					ret.read_data(p,int(l),region,rnx,rny,rnz)
 				else:
-					try: n=loads(self.bdb.get(fkey+dumps(key,-1)))
+					try: n=loads(self.bdb.get(fkey+dumps(key,-1)))	 # this is the index for this binary data item in the image-dimensions-specific binary data file
 					except: raise KeyError,"Undefined data location key for : ",key
-					try: ret.read_data(pkey+fkey,n*4*rnx*rny*rnz,region,rnx,rny,rnz)
+					try: ret.read_data(pkey+fkey,n*4*rnx*rny*rnz,region,rnx,rny,rnz)	# note that this uses n, NOT 'key'. Images cannot be located in the binary file based on their numerical key
 					except :
 						print "Data read error (%s) on %s (%d)"%(socket.gethostname(),pkey+fkey,key*4*rnx*rny*rnz)
 						traceback.print_exc()
