@@ -405,6 +405,7 @@ class DCThreadingMixIn:
 
 	# Decides how threads will act upon termination of the
 	# main process
+	N=1
 
 	def process_request_thread(self, request, client_address):
 		"""Same as in BaseServer but as a thread.
@@ -422,13 +423,17 @@ class DCThreadingMixIn:
 	def process_request(self, request, client_address):
 		"""Start a new thread to process the request."""
 		
+		N=DCThreadingMixIn.N
+		DCThreadingMixIn.N+=1
 		count=0
 		while threading.active_count()>8 and count<10: 
 			time.sleep(2)
 			count +=1
 		
+		print threading.active_count()," threads running"
 		t = threading.Thread(target = self.process_request_thread,
 								args = (request, client_address))
+		t.setName(str(N))
 		t.start()
 
 #class ThreadingTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer): pass
@@ -509,6 +514,8 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 	send command, data len, data (if len not 0)
 	close"""
 
+		if self.verbose>1 : print "Thread %s start"%threading.currentThread().getName()
+		
 		# periodic housekeeping
 		if time.time()-EMDCTaskHandler.lasthk>30 :
 			EMDCTaskHandler.lasthk=time.time()
@@ -542,7 +549,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 			cmd = self.sockf.read(4)
 			if len(cmd)<4 :
 				if self.verbose>1 : print "connection closed %s"%(str(self.client_address))
-				return
+				break
 			
 			if cmd=="ACK " :
 				print "Warning : Out of band ACK"
@@ -791,7 +798,9 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 			else :
 				sendobj(self.sockf,"ERROR: Unknown command")
 				self.sockf.flush()
-		# self.request is the TCP socket connected to the client
+
+		if self.verbose>1 : print "Thread %s exit"%threading.currentThread().getName()
+# self.request is the TCP socket connected to the client
 #		self.data = self.request.recv(1024).strip()
 #		print "%s wrote:" % self.client_address[0]
 #		print self.data
@@ -892,9 +901,13 @@ class EMDCTaskClient(EMTaskClient):
 					if self.verbose>2 : print "Open cache : ",cname
 					
 					for j in image_range(*i[2:]):
-						if not cache.has_key(j):
+#						if not cache.has_key(j):
+						try: z=cache[j]
+						except:
 							cache[j]=self.get_data(sockf,i[1],j)
 #							print j,cache[j]
+
+						z=cache[j]		# this is here to raise an exception if something went funny in the data retrieval
 							
 					i[1]=cname
 #				except: pass
