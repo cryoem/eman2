@@ -1170,7 +1170,11 @@ of these occasional errors"""
 				else:
 					try: n=loads(self.bdb.get(fkey+dumps(key,-1)))
 					except: raise KeyError,"Undefined data location key for : ",key
-					ret.read_data(pkey+fkey,key*4*rnx*rny*rnz,region,rnx,rny,rnz)
+					try: ret.read_data(pkey+fkey,key*4*rnx*rny*rnz,region,rnx,rny,rnz)
+					except :
+						print "Data read error (%s) on %s (%d)"%(socket.gethostname(),pkey+fkey,key*4*rnx*rny*rnz)
+						traceback.print_exc()
+						sys.exit(1)
 			return ret
 		return r
 		
