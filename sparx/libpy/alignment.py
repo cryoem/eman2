@@ -1556,5 +1556,4 @@ def align2d_g(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, r
 
 def max_pixel_error(alpha1, sx1, sy1, alpha2, sx2, sy2, d):
 	from math import sin, pi, sqrt
-	
 	return abs(sin((alpha1-alpha2)/180.0*pi/2))*d+sqrt((sx1-sx2)**2+(sy1-sy2)**2)
