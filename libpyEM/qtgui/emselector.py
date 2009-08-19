@@ -254,7 +254,7 @@ def EMSelectorBaseTemplate(Type):
 			self.module=weakref.ref(module) # Avoid strong cycle
 			self.desktop_hint = "dialog" # So the desktop knows how to display this
 			self.single_selection = single_selection # Flag indicating single selection in interface
-			self.browse_delegates = [EMBDBDelegate(self), EMFileSystemDelegate(self)] # Object capable of returning listed items based on url
+			self.browse_delegates = [EMBDBDelegate(self), EMFileSystemDelegate(self)] # Object capable of returning listed items based on url- Add your own
 			
 			self.hbl = QtGui.QVBoxLayout(self)
 			self.hbl.setMargin(0)
@@ -346,7 +346,7 @@ def EMSelectorBaseTemplate(Type):
 					if mod_time != widget.get_mod_time():
 						old_items = [widget.item(i) for i in range(widget.count())]
 						new_items = widget.get_delegate().get_items(widget.get_url())
-						old_set = set([str(item.text()) for item in old_items])
+						old_set = set([str(item.text()) for item in old_items if item.get_name() != EMUpArrowItem.NAME ]) # forget about the up arrow, it just confuses things
 						new_set = set([str(item.text()) for item in new_items])
 						
 						added = new_set - old_set
@@ -358,13 +358,20 @@ def EMSelectorBaseTemplate(Type):
 								widget.addItem(new_item)
 
 						if len(removed) > 0:
+							rm = []
+							clear_flag=False
 							for k in removed:
 								old_item = (item for item in old_items if item.text() == k).next()
-								if old_item.isSelected():
-									for j in range(idx+1,len(self.list_widgets)):
-										self.list_widgets[j].clear()
-								widget.takeItem(widget.row(old_item))
-
+								if old_item.isSelected():clear_flag = True
+								rm.append(widget.row(old_item))
+							
+							rm.sort()
+							rm.reverse()
+							for rm_idx in rm: widget.takeItem(rm_idx)
+							
+							if clear_flag:
+								for j in range(idx+1,len(self.list_widgets)):
+									self.list_widgets[j].clear()
 						widget.set_mod_time(mod_time)
 						self.lock = False
 						return
@@ -778,6 +785,9 @@ class EMBrowser(EMBrowserType):
 			common = [SAVE_AS,DELETE]
 			for item in selected_items:
 				actions = item.actions()
+				if actions == None: 
+					common = [] # the items has no actions - abort
+					break 
 				rm = []
 				for i,c in enumerate(common):
 					if c not in actions:
@@ -1325,13 +1335,13 @@ class EMFileSystemDelegate(EMBrowseDelegate):
 					if e.get_zsize() > 1: item = EM3DImageItem(self,file,full_name)
 					else: item = EM2DImageItem(self,file,full_name)
 			except:
-				item = EMGenericItem(self,file,file)
+				item = EMGenericFileItem(self,file,full_name)
 		
 		elif EMPlot2DModule.is_file_readable(full_name):
 			item = EMFSPlotItem(self,file,full_name)
 		else:
 			if filt != "EM types":
-				item = EMGenericItem(self,file,file)
+				item = EMGenericFileItem(self,file,full_name)
 
 		return item
 
@@ -2149,6 +2159,18 @@ class EMGenericItem(EMListItem):
 		
 	def get_name(self): return EMGenericItem.NAME
 
+
+class EMGenericFileItem(EMGenericItem):
+	'''
+	A generic item that can be deleted
+	'''
+	
+	def actions(self):
+		ret = [DELETE]
+		return  ret
+	
+	def get_url(self):
+		return str(self.key)
 
 class EMBrowserModule(EMQtWidgetModule):
 	def __init__(self):
